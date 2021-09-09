@@ -12,7 +12,7 @@ GUILDAは
 - Optimization toolbox
 
 ## Usage
-[チュートリアル](https://lim.ishizaki-lab.jp/guilda)をご覧ください．
+[チュートリアル](https://guilda-dev.github.io/guilda-doc/)をご覧ください．
 
 ## Reference
 Coming soon: 制御工学の立場から見た電力システム工学の書籍を執筆中
