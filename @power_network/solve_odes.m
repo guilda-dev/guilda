@@ -29,7 +29,7 @@ nx_k = tools.vcellfun(@(c) c.get_nx, controllers);
 idx_non_unit = find(tools.vcellfun(@(b) isa(b.component, 'component_empty'), bus));
 idx_controller = unique(...
     tools.vcellfun(@(c) [c.index_observe(:); c.index_input(:)],...
-    [controllers{:}; controllers_global{:}]));
+    [controllers(:); controllers_global(:)]));
 
 [Y, Ymat_all] = obj.get_admittance_matrix();
 
@@ -90,7 +90,7 @@ for i = 1:numel(t_simulated)-1
     out.simulated_bus{i} = simulated_bus;
     out.fault_bus{i} = f_;
     out.Ymat_reproduce{i} = Ymat_reproduce;
-    idx_simulated_bus = [2*simulated_bus-1, 2*simulated_bus]';
+    idx_simulated_bus = [2*simulated_bus-1; 2*simulated_bus];
    
     idx_fault_bus = [f_(:)*2-1, f_(:)*2]';
     idx_fault_bus = idx_fault_bus(:);
