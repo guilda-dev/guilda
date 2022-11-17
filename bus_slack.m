@@ -1,4 +1,11 @@
 classdef bus_slack < bus
+% モデル  ：slack母線
+%親クラス：busクラス
+%実行方法：obj = bus_slack(Vabs, Vangle, shunt)
+%　引数　：・　Vabs　：母線電圧の絶対値|V|の潮流設定値
+%　　　　　・　Vangle：母線電圧の偏角∠Vの潮流設定値
+%　　　　　・　shunt　：母線とグラウンドの間のアドミタンスの値
+%　出力　：busクラスのインスタンス
 
     properties(SetAccess=private)
         Vabs
@@ -16,6 +23,16 @@ classdef bus_slack < bus
             Vabs = norm([Vr; Vi]); %#ok
             Vangle = atan2(Vi, Vr); %#ok
             out = [Vabs-obj.Vabs; Vangle-obj.Vangle]; %#ok
+        end
+
+        function set_Vabs(obj,Vabs)
+            obj.Vabs = Vabs;
+            obj.edited = true;
+        end
+        
+        function set_Q(obj,Vangle)
+            obj.Vangle = Vangle;
+            obj.edited = true;
         end
     end
 end

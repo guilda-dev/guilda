@@ -1,9 +1,11 @@
 classdef avr < handle
+% AVRを定義するスーパークラス
+% AVRコントローラモデルを実装する場合はこのクラスを継承する。
     
     properties
-        Vfd_st
-        Vabs_st
-        sys
+        Vfd_st %界磁電圧の定常値
+        Vabs_st %母線電圧の定常値
+        sys %システム行列を格納するプロパティ
     end
     
     methods
@@ -27,13 +29,25 @@ classdef avr < handle
         end
         
         function [dx, Vfd] = get_Vfd(obj, x_avr, Vabs, Efd,  u)
-            Vfd = obj.Vfd_st - u;
+            %Vfd = obj.Vfd_st - u;
+            Vfd = obj.Vfd_st + u;
             dx = [];
         end
         
         function sys = get_sys(obj)
             sys = obj.sys;
         end
+        
+        function name_tag = get_state_name(obj)
+            nx = obj.get_nx;
+            name_tag = cell(1,nx);
+            if nx ~= 0
+                for i = 1:obj.get_nx
+                    name_tag{i} = ['state_avr',num2str(i)];
+                end
+            end
+        end
+        
     end
 end
 

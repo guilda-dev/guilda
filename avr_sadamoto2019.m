@@ -1,4 +1,9 @@
 classdef avr_sadamoto2019 < avr
+% モデル  ：定本先生が2019年の論文で紹介されたモデル 
+%親クラス：avrクラス
+%実行方法：avr_sadamoto2019(avr_tab)
+%　引数　：・avr_tab：テーブル型の変数。「'Te','Ka'」を列名として定義
+%　出力　：avrクラスの変数
     
     properties
         Ka
@@ -16,6 +21,10 @@ classdef avr_sadamoto2019 < avr
             sys.InputGroup.Efd = 2;
             sys.OutputGroup.Vfd = 1;
             obj.sys = sys;
+        end
+        
+        function name_tag = get_state_name(obj)
+            name_tag = {'Vfield'};
         end
         
         function nx = get_nx(obj)

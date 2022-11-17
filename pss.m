@@ -1,4 +1,10 @@
 classdef pss < handle
+% モデル ：PSSの実装モデル
+%         発電機モデルに付加するために実装されたクラス
+%親クラス：handleクラス
+%実行方法：obj = pss(parameter)
+%　引数　：parameter : table型．「'Kpss','Tpss','TL1p','TL1','TL2p','TL2'」を列名として定義
+%　出力　：pssクラスのインスタンス
     
     properties
         nx
@@ -23,6 +29,15 @@ classdef pss < handle
         
         function nx = get_nx(obj)
            nx = obj.nx; 
+        end
+        
+        function name_tag = get_state_name(obj)
+            name_tag = cell(1,obj.get_nx);
+            if obj.get_nx ~= 0
+                for i = 1:obj.get_nx
+                    name_tag{i} = ['xi',num2str(i)];
+                end
+            end
         end
         
         function [dx, u] = get_u(obj, x_pss, omega)

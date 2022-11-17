@@ -1,4 +1,12 @@
 classdef load_impedance < component
+% モデル ：定インピーダンス付加モデル
+%       ・状態：なし
+%       ・入力：２ポート「インピーダンス値の実部の倍率,インピーダンス値の虚部の倍率」
+%               *入力αのときインピーダンスの値は設定値の(1+α)倍となる．
+%親クラス：componentクラス
+%実行方法：obj = load_impedance()
+%　引数　：なし
+%　出力　：componentクラスのインスタンス
     
     properties(Access = private)
         YL_mat
@@ -45,6 +53,12 @@ classdef load_impedance < component
             varargout = cell(nargout, 1);
             [varargout{:}] = get_dx_constraint(varargin{:});
         end
+        
+%         function [dx, constraint] = get_dx_constraint_linear(obj, t, x, V, I, u)
+%             [A, B, C, D, BV, DV, BI, DI, ~, ~] = obj.get_linear_matrix_(x, V);
+%             dx = A*x + B*u + BI*(I-obj.I_st) + BV*(V-obj.V_st);
+%             constraint = C*x + D*u + DI*(I-obj.I_st) + DV*(V-obj.V_st);
+%         end
         
         function nu = get_nu(obj)
             nu = 2;

@@ -1,5 +1,10 @@
 classdef avr_IEEE_ST1 < avr
-    
+% モデル  ：IEEE_ST1モデル 
+%親クラス：avrクラス
+%実行方法：avr_IEEE_ST1(avr_tab)
+%　引数　：・avr_tab：テーブル型の変数。「't_tr', 'k_ap','k0','gamma_max','gamma_min'」を列名として定義
+%　出力　：avrクラスの変数
+
     properties
         Vref
         k_ap
@@ -7,7 +12,6 @@ classdef avr_IEEE_ST1 < avr
         k0
         gamma_max
         gamma_min
-        sys
     end
     
     methods
@@ -25,6 +29,10 @@ classdef avr_IEEE_ST1 < avr
             sys.InputGroup.u_avr = 3;
             sys.OutputGroup.Vfd = 1;
             obj.sys = sys;
+        end
+        
+        function name_tag = get_state_name(obj)
+            name_tag = {'Vfd'};
         end
         
         function nx = get_nx(obj)

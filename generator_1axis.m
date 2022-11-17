@@ -1,4 +1,15 @@
 classdef generator_1axis < component
+% モデル  ：同期発電機の一軸モデル
+%         ・状態：３つ「回転子偏角"δ",周波数偏差"Δω",内部電圧"E"」
+%               *AVRやPSSが付加されるとそれらの状態も追加される
+%         ・入力：２ポート「界磁入力"Vfield", 機械入力"Pmech"」
+%               *定常値からの追加分を指定
+% 親クラス：componentクラス
+% 実行方法：obj =　generator_1axis(omega, parameter)
+% 　引数　：・omega     : double値．系統周波数(50or60*2pi)
+% 　　　　　・parameter : table型．「'Xd', 'Xd_prime','Xq','T','M','D'」を列名として定義
+% 　出力　：componentクラスのインスタンス
+
     properties(Access = private)
         parameter_vec
         system_matrix
@@ -8,7 +19,6 @@ classdef generator_1axis < component
     end
     
     properties(SetAccess = private)
-        parameter
         x_equilibrium
         V_equilibrium
         I_equilibrium
@@ -17,6 +27,10 @@ classdef generator_1axis < component
         governor
         alpha_st
         omega0
+    end
+    
+    properties(SetAccess = public)
+        parameter
     end
     
     methods
@@ -31,6 +45,18 @@ classdef generator_1axis < component
             obj.governor = governor();
             obj.pss = pss();
             obj.system_matrix = struct();
+        end
+        
+        function name_tag = get_x_name(obj)
+            gen_state = {'delta','omega','Ed'};
+            avr_state = obj.avr.get_state_name;
+            pss_state = obj.pss.get_state_name;
+            governor_state = obj.governor.get_state_name;
+            name_tag = horzcat(gen_state,avr_state,pss_state,governor_state);
+        end
+
+        function u_name = get_port_name(obj)
+            u_name = {'Vfd','Pm'};
         end
         
         function out = get_nx(obj)
@@ -79,6 +105,7 @@ classdef generator_1axis < component
             [dx_pss, v] = obj.pss.get_u(x_pss, omega);
             [dx_avr, Vfd] = obj.avr.get_Vfd(x_avr, Vabs, Efd, u(1)-v);
             [dx_gov, P] = obj.governor.get_P(x_gov, omega, u(2));
+            
             
             dE = (-Efd + Vfd)/Tdo;
             ddelta = omega0 * omega; %#ok
@@ -214,7 +241,7 @@ classdef generator_1axis < component
             I = ss(eye(numel(feedin)));
             
             ret = feedback(G, I, feedin, feedout, 1);
-            ret_u = ret('I', {'u_avr',  'u_avr'});
+            ret_u = ret('I', {'u_avr',  'u_governor'});
             ret_V = ret('I', 'Vin');
             A = ret.a;
             B = ret_u.b;
@@ -227,6 +254,8 @@ classdef generator_1axis < component
             R = BV;
             S = zeros(1, size(A, 1));
             S(2) = 1;
+            R = [];
+            S = [];
         end
         
         function set_avr(obj, avr)
@@ -240,6 +269,14 @@ classdef generator_1axis < component
         function set_pss(obj, pss)
             if isa(pss, 'pss')
                 obj.pss = pss;
+            else
+                error('');
+            end
+        end
+
+        function set_governor(obj, governor)
+            if isa(governor, 'governor')
+                obj.governor = governor;
             else
                 error('');
             end

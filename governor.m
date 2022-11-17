@@ -1,4 +1,10 @@
 classdef governor < handle
+% モデル ：ガバナの実装モデル
+%         発電機モデルに付加するために実装されたクラス
+%親クラス：handleクラス
+%実行方法：obj = governor()
+%　引数　：なし
+%　出力　：governorクラスのインスタンス
     
     properties
         P
@@ -32,6 +38,17 @@ classdef governor < handle
         function sys = get_sys(obj)
             sys = obj.sys;
         end
+
+        function name_tag = get_state_name(obj)
+            nx = obj.get_nx;
+            name_tag = cell(1,nx);
+            if nx ~= 0
+                for i = 1:obj.get_nx
+                    name_tag{i} = ['state_governor',num2str(i)];
+                end
+            end
+        end
+
     end
 end
 

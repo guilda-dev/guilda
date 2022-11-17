@@ -1,10 +1,14 @@
 classdef bus < handle
+% 母線を定義するスーパークラス
+% 'bus_PV'と'bus_PQ','bus_slack'を子クラスに持つ。
     
     properties(SetAccess = private)
-        component
-        V_equilibrium
-        I_equilibrium
-        shunt
+        component %機器を格納するプロパティ
+        V_equilibrium %潮流状態の母線電圧フェーザ
+        I_equilibrium %潮流状態の母線電流フェーザ
+        shunt %シャント値
+        
+        edited = false; %編集済みかどうか
     end
     
     methods(Abstract)
@@ -35,6 +39,7 @@ classdef bus < handle
             obj.V_equilibrium = Veq;
             obj.I_equilibrium = Ieq;
             obj.component.set_equilibrium(Veq, Ieq);
+            obj.edited = false;
         end
         
         function set_shunt(obj, shunt)

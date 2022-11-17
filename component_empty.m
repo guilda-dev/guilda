@@ -1,4 +1,12 @@
 classdef component_empty < component
+% モデル  ：空の機器モデル
+%       ・状態：なし
+%       ・入力：ポートなし
+%親クラス：componentクラス
+%実行方法：obj = component_empty()
+%　引数　：なし
+%　出力　：componentクラスのインスタンス
+
     
     properties(SetAccess = private)
        x_equilibrium; 

@@ -1,4 +1,7 @@
 classdef controller < handle
+% コントローラを定義するスーパークラス
+% GUILDA上に制御器モデルを実装するために必要なmethodが定義されている。
+% 新しい制御器モデルを実装する場合はこのcontrollerクラスを継承すること。
     
     properties(SetAccess=private)
         index_input
@@ -47,6 +50,10 @@ classdef controller < handle
                 [~, u] = obj.get_dx_u_func(t(i), x(i, :)',  Xi(i), Vi(i), Ii(i), Ui(i));
                 uout(i, :) = u';
             end
+        end
+
+        function x_name = get_state_name(obj)
+            x_name = tools.arrayfun(@(i) ['x',num2str(i)],1:obj.get_nx);
         end
         
     end
