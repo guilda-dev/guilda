@@ -27,6 +27,8 @@ classdef power_network < handle
         options = simulate_options(obj, varargin);
         func = get_func_dx(obj, t, u, u_idx, fault, options);
         [Y, Ymat, A, Amat] = reduce_admittance_matrix(obj, Y, index);
+        data = information(obj, varargin);
+
         function initialize(obj)
             [V, I] = obj.calculate_power_flow();
             obj.set_equilibrium(V, I);
@@ -35,9 +37,11 @@ classdef power_network < handle
         function x = get.x_equilibrium(obj)
             x = tools.vcellfun(@(b) b.component.x_equilibrium, obj.a_bus);
         end
+
         function x = get.V_equilibrium(obj)
             x = tools.vcellfun(@(b) b.V_equilibrium, obj.a_bus);
         end
+        
         function x = get.I_equilibrium(obj)
             x = tools.vcellfun(@(b) b.I_equilibrium, obj.a_bus);
         end
@@ -54,7 +58,7 @@ classdef power_network < handle
         function remove_controller_local(obj, idx)
             remove_idx = [];
             for itr = 1:numel(obj.a_controller_local)
-                if ~isempty(intersect(obj.a_controller_local{itr}.idx, idx))
+                if ~isempty(intersect(obj.a_controller_local{itr}.idx_all, idx))
                     remove_idx = [remove_idx; itr]; %#ok
                 end
             end
@@ -64,13 +68,24 @@ classdef power_network < handle
         function remove_controller_global(obj, idx)
             remove_idx = [];
             for itr = 1:numel(obj.a_controller_global)
-                if ~isempty(intersect(obj.a_controller_global{itr}.idx, idx))
+                if ~isempty(intersect(obj.a_controller_global{itr}.idx_all, idx))
                     remove_idx = [remove_idx; itr]; %#ok
                 end
             end
             obj.a_controller_local(remove_idx) = [];
         end
         
+        function check_bus_edited(obj)
+            edited = tools.hcellfun(@(bus) bus.edited, obj.a_bus);
+            if any(edited)
+                disp(['bus',mat2str(find(edited)),'の潮流設定が変更されています.'])
+                sw = input('再度,潮流計算しますか？(y/n)：',"str");
+                if strcmp(sw,'y')
+                    obj.initialize();
+                end
+            end
+        end
+
     end
     
 end

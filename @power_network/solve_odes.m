@@ -29,11 +29,16 @@ nx_k = tools.vcellfun(@(c) c.get_nx, controllers);
 idx_non_unit = find(tools.vcellfun(@(b) isa(b.component, 'component_empty'), bus));
 idx_controller = unique(...
     tools.vcellfun(@(c) [c.index_observe(:); c.index_input(:)],...
-    [controllers; controllers_global]));
+    [controllers{:}; controllers_global{:}]));
 
 [Y, Ymat_all] = obj.get_admittance_matrix();
 
-t_simulated = get_t_simulated(t_cand, uf, fault_f);
+switch options.method
+    case 'zoh'
+        t_simulated = get_t_simulated(t_cand, uf, fault_f);
+    case 'foh'
+        t_simulated = t_cand;
+end
 
 sols = cell(numel(t_simulated)-1, 1);
 reporter = tools.Reporter(t_simulated(1), t_simulated(end), options.do_report, options.OutputFcn);
@@ -77,27 +82,40 @@ out.Ymat_reproduce = cell(numel(t_simulated)-1, 1);
 
 
 for i = 1:numel(t_simulated)-1
-    u_ = uf((t_simulated(i)+t_simulated(i+1))/2);
     f_ = fault_f((t_simulated(i)+t_simulated(i+1))/2);
     except = unique([f_(:); idx_controller(:)]);
     simulated_bus = setdiff(1:numel(bus), setdiff(idx_non_unit, except));
+    simulated_bus = simulated_bus(:);
     [~, Ymat, ~, Ymat_reproduce] = obj.reduce_admittance_matrix(Y, simulated_bus);
     out.simulated_bus{i} = simulated_bus;
     out.fault_bus{i} = f_;
     out.Ymat_reproduce{i} = Ymat_reproduce;
     idx_simulated_bus = [2*simulated_bus-1, 2*simulated_bus]';
-    idx_simulated_bus = idx_simulated_bus(:);
-    
+   
     idx_fault_bus = [f_(:)*2-1, f_(:)*2]';
     idx_fault_bus = idx_fault_bus(:);
     
     x = [x0; V0(idx_simulated_bus); I0(idx_fault_bus)];
     
-    func = @(t, x) power_network.get_dx(...
-        bus, controllers_global, controllers, Ymat,...
-        nx_bus, nx_kg, nx_k, nu_bus, ...
-        t, x, u_, idx_u, f_, simulated_bus...
-        );
+
+    switch options.method
+        case 'zoh'
+            u_ = uf((t_simulated(i)+t_simulated(i+1))/2);
+            func = @(t, x) power_network.get_dx(...
+                bus, controllers_global, controllers, Ymat,...
+                nx_bus, nx_kg, nx_k, nu_bus, ...
+                t, x, u_, idx_u, f_, simulated_bus...
+                );
+        case 'foh'
+            us_ = uf(t_simulated(i));
+            ue_ = uf(t_simulated(i+1));
+            u_ = @(t) (ue_*(t-t_simulated(i))+us_*(t_simulated(i+1)-t))/(t_simulated(i+1)-t_simulated(i));
+            func = @(t, x) power_network.get_dx(...
+                bus, controllers_global, controllers, Ymat,...
+                nx_bus, nx_kg, nx_k, nu_bus, ...
+                t, x, u_(t), idx_u, f_, simulated_bus...
+                );
+    end
     
     nx = numel(x0);
     nVI = numel(x)-nx;
@@ -112,11 +130,12 @@ for i = 1:numel(t_simulated)-1
     odeoptions = odeset('Mass',Mf, 'RelTol', options.RelTol, 'AbsTol', options.AbsTol, 'OutputFcn', r);
     sol = ode15s(func, t_simulated(i:i+1)', x, odeoptions);
     tend = t_simulated(i+1);
-    while sol.x(end) < tend && (obj.retry || ~reporter.reset)
+
+    while sol.x(end) < tend && (options.do_retry || ~reporter.reset)
         t_now = datetime();
-        r = @(t, y, flag) reporter.report(t, y, flag, obj.reset_time, t_now);
+        r = @(t, y, flag) reporter.report(t, y, flag, options.reset_time, t_now);
         odeoptions = odeset(odeoptions, 'OutputFcn', r);
-        sol = odextend(sol, [], tend, [], odeoptions);
+        sol = odextend(sol, [], tend, sol.y(:,end),odeoptions);
     end
     y = sol.y(:, end);
     V = y(nx+(1:numel(idx_simulated_bus)));

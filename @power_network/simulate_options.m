@@ -18,6 +18,7 @@ addParameter(p, 'do_report', true);
 addParameter(p, 'reset_time', inf);
 addParameter(p, 'do_retry', true);
 addParameter(p, 'OutputFcn', []);
+addParameter(p, 'tools', false);
 
 parse(p, varargin{:});
 options = p.Results;
