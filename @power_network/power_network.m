@@ -58,7 +58,7 @@ classdef power_network < handle
         function remove_controller_local(obj, idx)
             remove_idx = [];
             for itr = 1:numel(obj.a_controller_local)
-                if ~isempty(intersect(obj.a_controller_local{itr}.idx_all, idx))
+                if ~isempty(intersect(obj.a_controller_local{itr}.index_all, idx))
                     remove_idx = [remove_idx; itr]; %#ok
                 end
             end
@@ -68,7 +68,7 @@ classdef power_network < handle
         function remove_controller_global(obj, idx)
             remove_idx = [];
             for itr = 1:numel(obj.a_controller_global)
-                if ~isempty(intersect(obj.a_controller_global{itr}.idx_all, idx))
+                if ~isempty(intersect(obj.a_controller_global{itr}.index_all, idx))
                     remove_idx = [remove_idx; itr]; %#ok
                 end
             end
