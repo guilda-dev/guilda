@@ -25,12 +25,12 @@ classdef bus_PQ < bus
 
         function set_P(obj,P)
             obj.P = P;
-            obj.edited = true;
+            obj.edit_parameter;
         end
         
         function set_Q(obj,Q)
             obj.Q = Q;
-            obj.edited = true;
+            obj.edit_parameter;
         end
     end
 end

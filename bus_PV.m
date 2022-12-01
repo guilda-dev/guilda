@@ -26,12 +26,12 @@ classdef bus_PV < bus
 
         function set_P(obj,P)
             obj.P = P;
-            obj.edited = true;
+            obj.edit_parameter;
         end
         
         function set_Vabs(obj,Vabs)
             obj.Vabs = Vabs;
-            obj.edited = true;
+            obj.edit_parameter;
         end
     end
 end

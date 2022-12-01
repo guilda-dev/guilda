@@ -27,12 +27,12 @@ classdef bus_slack < bus
 
         function set_Vabs(obj,Vabs)
             obj.Vabs = Vabs;
-            obj.edited = true;
+            obj.edit_parameter;
         end
         
-        function set_Q(obj,Vangle)
+        function set_Vangle(obj,Vangle)
             obj.Vangle = Vangle;
-            obj.edited = true;
+            obj.edit_parameter;
         end
     end
 end

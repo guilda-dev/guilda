@@ -59,6 +59,10 @@ classdef bus < handle
                 error('must be a child of component');
             end
         end
+
+        function edit_parameter(obj)
+            pbj.edited  = true;
+        end
     end
 end
 
