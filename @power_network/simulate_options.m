@@ -19,7 +19,45 @@ addParameter(p, 'reset_time', inf);
 addParameter(p, 'do_retry', true);
 addParameter(p, 'OutputFcn', []);
 addParameter(p, 'tools', false);
+addParameter(p, 'with_grid_code', true);
 
 parse(p, varargin{:});
 options = p.Results;
+
+% 機器の接続状況を確認する
+idx_connected_comp = tools.vcellfun(@(b) b.component.is_connected_to_grid,obj.a_bus);
+idx_connected_br = tools.vcellfun(@(br) br.is_connected,obj.a_branch);
+
+if any(~idx_connected_comp)
+    disp('Some component is disconnected from grid.')
+    fprintf('Connect all devices to the grid?')
+    get_start = false;
+    while get_start==false
+        yes_or_no = input('(y/n):','s');
+        switch yes_or_no
+            case {'y','yes'}
+                cellfun(@(b) b.component.connect,obj.a_bus);
+                get_start =true;
+            case {'n', 'no'}
+                get_start =true;
+        end
+    end
+end
+
+if any(~idx_connected_br)
+    disp('Some branch is disconnected.')
+    fprintf('Connect all branch?')
+    get_start = false;
+    while get_start==false
+        yes_or_no = input('(y/n):','s');
+        switch yes_or_no
+            case {'y','yes'}
+                cellfun(@(br) br.branch.connect,obj.a_branch);
+                get_start =true;
+            case {'n', 'no'}
+                get_start =true;
+        end
+    end
+end
+
 end
