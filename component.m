@@ -6,12 +6,15 @@ classdef component < handle
     properties
         get_dx_con_func
         CostFunction = @(obj,t,x,V,I,u) 0;
+        grid_code    = @(obj,t,x,V,I,u) nan; 
+        restoration  = @(obj,t,x,V,I,u) nan;
     end
     
     properties(SetAccess = protected)
         x_equilibrium
         V_equilibrium
         I_equilibrium
+        is_connected_to_grid = true;
     end
     
     methods(Abstract)
@@ -172,6 +175,71 @@ classdef component < handle
             obj.CostFunction = func;
         end
 
+
+        % グリッドに接続/解列する条件式を定義する際のチェックメソッド
+        function set_grid_code(obj, code)
+            obj.grid_code = code;
+        end
+        function set.grid_code(obj, code)
+            obj.check_function(code,'logical');
+            obj.grid_code = code;
+        end
+        function set_restoration(obj, code)
+            obj.restoration = code;
+        end
+        function set.restoration(obj, code)
+            obj.check_function(code,'logical');
+            obj.restoration = code;
+        end
+
+        %機器の接続状況を示すis_connected_to_gridプロパティを操作するメソッド
+        function connect(obj)
+            obj.is_connected_to_grid = true;
+        end
+        function disconnect(obj)
+            obj.is_connected_to_grid = false;
+        end
+
+        %機器の接続状況を加味したダイナミクスの出力
+        function [dx, constraint] = get_dx_constraint_with_condition(obj, t, x, V, I, u)
+            [dx, constraint] = obj.get_dx_constraint(t, x, V, I, u);
+            if ~obj.check_connect(t, x, V, I, u)
+                constraint = I;
+            end
+        end
+        function [dx, constraint] = get_dx_constraint_linear_with_condition(obj, t, x, V, I, u)
+            [dx, constraint] = obj.get_dx_constraint_linear(t, x, V, I, u);
+            if ~obj.check_connect(t, x, V, I, u)
+                constraint = I;
+            end
+        end
+        function [dx, constraint] = get_dx_constraint_linear_disconnected(obj, t, x, V, I, u)
+            [dx, ~] = obj.get_dx_constraint_linear(t, x, V, I, u);
+            constraint = I;
+        end
+        function [dx, constraint] = get_dx_constraint_disconnected(obj, t, x, V, I, u)
+            [dx, ~] = obj.get_dx_constraint(t, x, V, I, u);
+            constraint = I;
+        end
+        function out = check_connect(obj, t,x,V,I,u)
+            if obj.is_connected_to_grid
+                tf = obj.grid_code(t, x, V, I, u);
+                if ~isnan(tf); obj.is_connected_to_grid = tf; end
+            else
+                tf = obj.restoration(t, x, V, I, u);
+                if ~isnan(tf); obj.is_connected_to_grid = tf; end
+            end
+            out = obj.is_connected_to_grid;
+        end
+        function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix_with_condition(obj,xst,Vst,Ist)
+            [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj,xst,Vst,Ist);
+            if ~obj.is_connected_to_grid
+                C  = zeros(size(C));
+                D  = zeros(size(D));
+                DV = zeros(2,2);
+                DI = -eye(2);
+            end
+        end
 
     end
 end
