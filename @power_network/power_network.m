@@ -28,6 +28,8 @@ classdef power_network < handle
         func = get_func_dx(obj, t, u, u_idx, fault, options);
         [Y, Ymat, A, Amat] = reduce_admittance_matrix(obj, Y, index);
         data = information(obj, varargin);
+        [cost_total,cost_branch,cost_component] = get_cost_function(obj,varargin)
+
 
         function initialize(obj)
             [V, I] = obj.calculate_power_flow();
@@ -47,11 +49,13 @@ classdef power_network < handle
         end
         
         function add_controller_local(obj, controller)
+            controller.register_net(obj)
             obj.remove_controller_local(controller.index_all);
             obj.a_controller_local{numel(obj.a_controller_local)+1} = controller;
         end
         
         function add_controller_global(obj, controller)
+            controller.register_net(obj)
             obj.a_controller_global{numel(obj.a_controller_global)+1} = controller;
         end
         

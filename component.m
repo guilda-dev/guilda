@@ -5,6 +5,7 @@ classdef component < handle
     
     properties
         get_dx_con_func
+        CostFunction = @(obj,t,x,V,I,u) 0;
     end
     
     properties(SetAccess = protected)
@@ -78,22 +79,22 @@ classdef component < handle
             
                 % xに関しての近似線形モデル
                 [A,C]   =  split_out(...
-                    work.nishino.developping.tools.linearlization(...
+                    tools.linearlization(...
                     @(x_) stack_out(@(x_) obj.get_dx_constraint(t, x_, Vst,  Ist,  ust),x_),xst),nx);
                 
                 % Vに関しての近似線形モデル
                 [BV,DV] =  split_out(...
-                    work.nishino.developping.tools.linearlization(...
+                    tools.linearlization(...
                     @(V_) stack_out(@(V_) obj.get_dx_constraint(t, xst, V_,  Ist,  ust),V_),Vst),nx);
             
                 % Iに関しての近似線形モデル
                 [BI,DI] = split_out(... 
-                    work.nishino.developping.tools.linearlization(...
+                    tools.linearlization(...
                     @(I_) stack_out(@(I_) obj.get_dx_constraint(t, xst,  Vst, I_,  ust),I_),Ist),nx);
                 
                 % uに関しての近似線形モデル
                 [B,D]   =  split_out(...
-                    work.nishino.developping.tools.linearlization(...
+                    tools.linearlization(...
                     @(u_) stack_out(@(u_) obj.get_dx_constraint(t, xst,  Vst,  Ist, u_),u_),ust),nx);
             
                 R = zeros(obj.get_nx,0);
@@ -142,7 +143,48 @@ classdef component < handle
                 end
             end
         end
+
+        function check_function(obj, f, val_type)
+            x = obj.x_equilibrium;
+            V = tools.complex2vec(obj.V_equilibrium);
+            I = tools.complex2vec(obj.I_equilibrium);
+            u = zeros(obj.get_nu,1);
+
+            try
+                val = f(obj,0,x,V,I,u);
+                if ~isa(val,val_type); error_code =1; 
+                else; error_code =0; end
+            catch
+                error_code = 2;
+            end
+            switch error_code
+                case 1; error(['The return type of the function should be ',val_type])
+                case 2; error('The function must be in the form of f(obj,t,x,V,I,u)')
+            end
+        end
+
+        % エネルギー関数を定義する際のチェックメソッド
+        function set_CostFunction(obj,func)
+            obj.CostFunction = func;
+        end
+        function set.CostFunction(obj,func)
+            obj.check_function(func,'double')
+            obj.CostFunction = func;
+        end
+
+
     end
 end
 
+
+
+function out = stack_out(func,x)
+    [dx,con] = func(x);
+    out = [dx;-con];
+end
+
+function [dx,con] = split_out(matrix,nx)
+    dx  = matrix(1:nx,:);
+    con = matrix(nx+1:end,:);
+end
 
