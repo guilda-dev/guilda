@@ -59,6 +59,12 @@ function out = information(obj,varargin)
     [component_names,~,idx] = unique(component_names,'stable');
 
     for comp_idx = 1:numel(component_names)
+        
+        component_name = component_names{comp_idx};
+        idx_dot = find(component_names{comp_idx}=='.',1,'last');
+        if ~isempty(idx_dot)
+            component_name = component_name(idx_dot+1:end);
+        end
 
         % パラメータの取得
         if options.component_para
@@ -82,7 +88,8 @@ function out = information(obj,varargin)
                 end
                 para = struct2table(para);
             end
-            out.component_para.(component_names{comp_idx}) = para;
+
+            out.component_para.(component_name) = para;
         end
        
         %平衡点の情報を取得
@@ -111,7 +118,7 @@ function out = information(obj,varargin)
                 end
                 ss = struct2table(ss);
             end
-            out.x_equilibrium.(component_names{comp_idx}) = ss;
+            out.x_equilibrium.(component_name) = ss;
         end
     end
     
@@ -130,20 +137,22 @@ function out = information(obj,varargin)
         end
         if options.component_para
             fprintf(['機器のパラメータ\n',bar,'\n'])
-            for i = 1:numel(component_names)
-                if ~isempty(out.component_para.(component_names{i}))
-                    disp(component_names{i})
-                    disp(out.component_para.(component_names{i}))
+            fn = fieldnames(out.component_para);
+            for i = 1:numel(fn)
+                if ~isempty(out.component_para.(fn{i}))
+                    disp(fn{i})
+                    disp(out.component_para.(fn{i}))
                     fprintf('\n\n')
                 end
             end
         end
         if options.x_equilibrium
             fprintf(['状態の平衡点\n',bar,'\n'])
-            for i = 1:numel(component_names)
-                if ~isempty(out.x_equilibrium.(component_names{i}))
-                    disp(component_names{i})
-                    disp(out.x_equilibrium.(component_names{i}))
+            fn = fieldnames(out.x_equilibrium);
+            for i = 1:numel(fn)
+                if ~isempty(out.x_equilibrium.(fn{i}))
+                    disp(fn{i})
+                    disp(out.x_equilibrium.(fn{i}))
                     fprintf('\n\n')
                 end
             end
