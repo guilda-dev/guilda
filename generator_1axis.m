@@ -19,9 +19,6 @@ classdef generator_1axis < component
     end
     
     properties(SetAccess = private)
-        x_equilibrium
-        V_equilibrium
-        I_equilibrium
         avr
         pss
         governor
@@ -110,6 +107,7 @@ classdef generator_1axis < component
             dE = (-Efd + Vfd)/Tdo;
             ddelta = omega0 * omega; %#ok
             domega = (P - d*omega - Vabs*E*sin(delta-Vangle)/Xdp + Vabs^2*(1/Xdp-1/Xq)*sin(2*(delta-Vangle))/2)/M;
+            
             
             dx = [ddelta; domega; dE; dx_avr; dx_pss; dx_gov];
         end

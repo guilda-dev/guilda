@@ -18,9 +18,6 @@ classdef load_power < component
     end
     
     properties(SetAccess = private)
-        x_equilibrium
-        V_equilibrium
-        I_equilibrium
         Y
     end
     

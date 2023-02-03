@@ -16,9 +16,6 @@ classdef load_current < component
     end
     
     properties(SetAccess = private)
-        x_equilibrium
-        V_equilibrium
-        I_equilibrium
         Y
     end
     

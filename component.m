@@ -7,8 +7,10 @@ classdef component < handle
         get_dx_con_func
     end
     
-    properties(Abstract, SetAccess = private)
+    properties(SetAccess = protected)
         x_equilibrium
+        V_equilibrium
+        I_equilibrium
     end
     
     methods(Abstract)

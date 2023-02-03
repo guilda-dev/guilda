@@ -15,13 +15,6 @@ classdef load_voltage < component
         S
     end
     
-    properties(SetAccess = private)
-        x_equilibrium
-        V_equilibrium
-        I_equilibrium
-        Y
-    end
-    
     methods
         function obj = load_voltage(varargin)
             obj.x_equilibrium = zeros(0, 1);
