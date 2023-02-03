@@ -6,14 +6,12 @@ classdef component_empty < component
 %実行方法：obj = component_empty()
 %　引数　：なし
 %　出力　：componentクラスのインスタンス
-
     
-    properties(SetAccess = private)
-       x_equilibrium; 
-    end
     
     methods
         function set_equilibrium(obj, Veq, Ieq)
+            obj.V_equilibrium = Veq;
+            obj.I_equilibrium = Ieq;
             obj. x_equilibrium = [];
         end
         
@@ -43,7 +41,6 @@ classdef component_empty < component
             DI = -eye(2);
             BI = zeros(0, 2);
         end
-
     end
 end
 

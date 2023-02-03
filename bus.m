@@ -1,7 +1,11 @@
 classdef bus < handle
 % 母線を定義するスーパークラス
 % 'bus_PV'と'bus_PQ','bus_slack'を子クラスに持つ。
-    
+
+    properties
+        CostFunction = @(obj,V,I) 0;
+    end
+
     properties(SetAccess = private)
         component %機器を格納するプロパティ
         V_equilibrium %潮流状態の母線電圧フェーザ
@@ -61,8 +65,31 @@ classdef bus < handle
         end
 
         function edit_parameter(obj)
-            pbj.edited  = true;
+            obj.edited  = true;
         end
+
+        function set_CostFunction(obj,func)
+            obj.CostFunction = func;
+        end
+        function set.CostFunction(obj,func)
+            obj.check_function(func,'double')
+            obj.CostFunction = func;
+        end
+
+        function check_function(obj, f, val_type)
+            try
+                val = f(obj, obj.V_equilibrium, obj.I_equilibrium);
+                if ~isa(val,val_type); error_code =1; 
+                else; error_code = 0; end
+            catch
+                error_code = 2;
+            end
+            switch error_code
+                case 1; error(['The return type of the function should be ',val_type])
+                case 2; error('The function must be in the form of f(obj,Vfrom,Vto)')
+            end
+        end
+
     end
 end
 

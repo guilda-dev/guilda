@@ -18,7 +18,7 @@ function data = plot_reference(obj,statename,set)
 
         case {'Vreal','Vimag','Vabs','Vangle'} %母線電圧フェーザを指定された場合
             data.access  = @(idx) obj.V{idx}{:,statename(2:end)};
-            data.legend  = @() flegend(set.bus_idx,set.legend);
+            %data.legend  = @() flegend(set.bus_idx,set.legend);
             data.bus_idx = set.bus_idx;
             data.command = ">> arrayfun(@(idx) plot(out.t,out.V{idx}{:,'"+statename(2:end)+"'}),"+mat2str(data.bus_idx)+")";
             switch statename(2:end)
@@ -38,7 +38,7 @@ function data = plot_reference(obj,statename,set)
 
         case {'Ireal','Iimag','Iabs','Iangle'} %母線電流のフェーザを指定された場合
             data.access  = @(idx) obj.I{idx}{:,statename(2:end)};
-            data.legend  = @() flegend(set.bus_idx,set.legend);
+            %data.legend  = @() flegend(set.bus_idx,set.legend);
             data.bus_idx = set.bus_idx;
             data.command = ">> arrayfun(@(idx) plot(out.t,out.I{idx}{:,'"+statename(2:end)+"'}),"+mat2str(data.bus_idx)+")";
             switch statename(2:end)
@@ -58,7 +58,7 @@ function data = plot_reference(obj,statename,set)
 
         case {'P','Q','S','Factor'} %電力を指定された場合
             data.access  = @(idx) obj.power{idx}{:,statename}; 
-            data.legend  = @() flegend(set.bus_idx,set.legend);
+            %data.legend  = @() flegend(set.bus_idx,set.legend);
             data.bus_idx = set.bus_idx;
             data.command = ">> arrayfun(@(idx) plot(out.t,out.power{idx}{:,'"+statename+"'}),"+mat2str(data.bus_idx)+")";
             switch statename
@@ -94,7 +94,7 @@ function data = plot_reference(obj,statename,set)
                 for i = 1:numel(componentlist)
                     componentName = obj.net_data.component_list.tag{i};
                     data(i).bus_idx = intersect(temp_bus_idx,find(obj.net_data.component_list.idx==i));
-                    data(i).legend  = @() flegend(data(i).bus_idx,set.legend);
+                    %data(i).legend  = @() flegend(data(i).bus_idx,set.legend);
                     data(i).access  = @(idx) obj.X{idx}{:,fstate(idx)}; 
                     data(i).title   = [statename,' @',componentName,' < component'];
                     data(i).command = ">> arrayfun(@(idx) plot(out.t,out.X{idx}{:,'"+statename+"')}),"+mat2str(data(i).bus_idx)+")";
@@ -102,7 +102,7 @@ function data = plot_reference(obj,statename,set)
                 end
             else
                 data.bus_idx = temp_bus_idx;
-                data.legend  = @() flegend(data.bus_idx,set.legend);
+                %data.legend  = @() flegend(data.bus_idx,set.legend);
                 data.access  = @(idx) obj.X{idx}{:,fstate(idx)}; 
                 data.title   = statename;
                 data.command = ">> arrayfun(@(idx) plot(out.t,out.X{idx}{:,'"+statename+"')}),"+mat2str(data.bus_idx)+")";
@@ -114,7 +114,7 @@ function data = plot_reference(obj,statename,set)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         case 'flat'
             data.access  = @(idx) ones(numel(obj.t),1);
-            data.legend  = @() flegend(set.bus_idx,set.legend);
+            %data.legend  = @() flegend(set.bus_idx,set.legend);
             data.bus_idx = set.bus_idx;
             data.title   = 'flat';
             data.command = ">> % No data...";
@@ -126,7 +126,7 @@ function data = plot_reference(obj,statename,set)
                 if strcmp(statename(end-2:end),'_pm')
                     temp = plot_reference(obj,statename(1:end-3),set);
                     data.access  = @(idx) sign(temp.access(idx)); 
-                    data.legend  = temp.legend;
+                    %data.legend  = temp.legend;
                     data.bus_idx = temp.bus_idx;
                     data.title   = ['sign ',temp.title];
                     data.command = ">> No Data..";
@@ -147,11 +147,11 @@ function data = plot_reference(obj,statename,set)
     end
 end
 
-function f = flegend(bus_idx,set_legend)
-    if set_legend
-        f = legend(arrayfun(@(idx) ['bus',num2str(idx)],bus_idx,'UniformOutput',false),'Location','best');
-    else
-        f = [];
-    end
-end
+% function f = flegend(bus_idx,set_legend)
+%     if set_legend
+%         f = legend(arrayfun(@(idx) ['bus',num2str(idx)],bus_idx,'UniformOutput',false),'Location','best');
+%     else
+%         f = [];
+%     end
+% end
     

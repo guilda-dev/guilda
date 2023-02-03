@@ -36,18 +36,9 @@ function varargout = plot(obj,varargin)
 % 　既定値 : false
 %
 
-
     set = inputParser;
     set.CaseSensitive = false;
-    addParameter(set, 'para'        ,{'X','Vabs','P'});
-    addParameter(set, 'bus_idx'     ,'all_bus'       );
-    addParameter(set, 'legend'      ,true            );
-    addParameter(set, 'disp_command',false           );
-    addParameter(set, 'LineWidth'   ,2               );
-    addParameter(set, 'plot'        ,true            );
-    addParameter(set, 'para_unique' ,true            );
-    addParameter(set, 'hold_on'     ,false           );
-    addParameter(set, 'angle_unwrap',false           );
+    cellfun(@(field) addParameter(set,field,obj.plot_properties.(field)), fieldnames(obj.plot_properties));
     parse(set, varargin{:});
     set = set.Results;
         
@@ -84,25 +75,32 @@ function varargout = plot(obj,varargin)
     if set.plot
         if ~set.hold_on
             plt       = figure();
+            colororder(set.colormap)
+            t = tiledlayout('flow','TileSpacing','compact');
         end
         data      = data(idx);
-        num_state = numel(data);
-        rsub      = ceil(sqrt(num_state)); 
-        vsub      = ceil(num_state/rsub);
-        fsubplot  = @(idx) subplot(vsub,rsub,idx);
-        fplot     = @(access,bus_idx) arrayfun(@(idx) plot(obj.t,access(idx),'LineWidth',set.LineWidth),bus_idx);
-        command   = tools.harrayfun(@(idx) plot_module(data,idx,fsubplot,fplot),1:num_state);
-        
+        fplot     = @(access,idx) plot(obj.t,access(idx),'LineWidth',set.LineWidth);
+        all_idx   = sort(unique(tools.harrayfun(@(idx)reshape(data(idx).bus_idx,1,[]),1:numel(data))));
+        command   = tools.harrayfun(@(idx) plot_module(data,idx,all_idx,fplot),1:numel(data));
+        if set.legend
+            lgd = legend(t.Children(1).Children(end:-1:1),tools.arrayfun(@(idx)['bus/component',num2str(idx)],all_idx));
+            lgd.Layout.Tile = 'east';
+            lgd.NumColumns = ceil(numel(all_idx)/40);
+        end
         if set.disp_command
             fprintf(horzcat(command{:}))
         end
         if nargout >0
             varargout{1} = plt;
         end
+
+        if nargout >1
+            varargout{2} = t;
+        end
     end
 
-    if nargout>1
-        varargout{2} = data;
+    if nargout>2
+        varargout{3} = data;
     end
 
 end
@@ -132,12 +130,17 @@ function out = identify_busidx(data,complist,buslist)
     end
 end
 
-function command = plot_module(data,idx,fsubplot,fplot)
+function command = plot_module(data,idx,all_idx,fplot)
     tdata = data(idx);
-    fsubplot(idx)
+    nexttile
     hold on
-    fplot(tdata.access,tdata.bus_idx);
-    tdata.legend();
+    for i = all_idx
+        if ismember(i,tdata.bus_idx)
+            fplot(tdata.access,i);
+        else
+            plot(nan,nan)
+        end
+    end
     xlabel('Time(s)')
     title(tdata.title,'FontSize',15)
     hold off

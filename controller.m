@@ -6,6 +6,7 @@ classdef controller < handle
     properties(SetAccess=private)
         index_input
         index_observe
+        CostFunction = @(obj, t, x, X, V, I, U_global) 0;
     end
     
     properties(Dependent)
@@ -15,6 +16,10 @@ classdef controller < handle
     methods(Abstract)
         [dx, u] = get_dx_u(obj, t, x, X, V, I, U_global);
         nx = get_nx(obj);
+    end
+
+    properties(Access = private)
+        power_network
     end
     
     properties
@@ -54,6 +59,35 @@ classdef controller < handle
 
         function x_name = get_state_name(obj)
             x_name = tools.arrayfun(@(i) ['x',num2str(i)],1:obj.get_nx);
+        end
+
+        function set_CostFunction(obj,func)
+            obj.CostFunction = func;
+        end
+        function set.CostFunction(obj,func)
+            obj.check_function(func, 'double');
+            obj.CostFunction = func;
+        end
+
+        function check_function(obj, f, val_type)
+            try
+                X = tools.arrayfun(@(i)   obj.power_network.a_bus{i}.component.x_equilibrium,obj.index_input(:));
+                V = tools.arrayfun(@(i)   obj.power_network.a_bus{i}.component.V_equilibrium,obj.index_input(:));
+                I = tools.arrayfun(@(i)   obj.power_network.a_bus{i}.component.I_equilibrium,obj.index_input(:));
+                U = tools.arrayfun(@(i) zeros(obj.power_network.a_bus{i}.component.get_nu,1),obj.index_observe(:));
+                val = f(obj, 0, x, X, V, I, U);
+                if ~isa(val,val_type); error_code =1; 
+                else; error_code =0; end
+            catch
+                error_code = 2;
+            end
+            switch error_code
+                case 1; error(['The return type of the function should be ',val_type])
+                case 2; error('The function must be in the form of f(obj,t,x,V,I,u)')
+            end
+        end
+        function register_net(obj,net)
+            obj.power_network = net;
         end
         
     end
