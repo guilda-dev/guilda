@@ -26,10 +26,15 @@ classdef simulationResult < handle
         Ymat_reproduce
         sols
         linear
+        idx_connected
     end
 
     properties(Access=private)
         net_data
+    end
+
+    properties
+        plot_properties
     end
 
     methods
@@ -75,6 +80,23 @@ classdef simulationResult < handle
                     obj.(field{i}) = out.(field{i});
                 end
             end
+            obj.plot_properties.para = {'X','Vabs','P'};
+            obj.plot_properties.bus_idx = 'all_bus';
+            obj.plot_properties.legend = true;
+            obj.plot_properties.disp_command = false;
+            obj.plot_properties.LineWidth = 2;
+            obj.plot_properties.plot = true;
+            obj.plot_properties.para_unique = true;
+            obj.plot_properties.hold_on = false;
+            obj.plot_properties.angle_unwrap = false;
+            obj.plot_properties.colormap = {...
+...%カラーユニバーサルデザイン
+'#FF4B00', '#005AFF', '#03AF7A', '#4DC4FF','#F6AA00', '#FFF100', '#000000', '#990099','#84919E',...
+...%Paul Tol氏提案 Muted
+'#332288', '#88CCEE', '#44AA99','#117733', '#999933', '#DDCC77', '#CC6677','#882255', '#AA4499', '#DDDDDD',...
+...%MATLABの代表的な指定色
+'red', 'green', 'blue', 'cyan', 'magenta', 'yellow',...
+'#0072BD','#D95319','#EDB120','#7E2F8E','#77AC30','#4DBEEE','#A2142F'};
 
         end
 
