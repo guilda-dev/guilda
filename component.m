@@ -20,6 +20,10 @@ classdef component < handle
         [dx, constraint] = get_dx_constraint(t, x, V, I, u);
     end
     
+    properties(SetAccess = public)
+        parameter = table();
+    end
+    
     methods
         function nx = get_nx(obj)
            nx = numel(obj.x_equilibrium); 

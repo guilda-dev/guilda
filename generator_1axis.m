@@ -26,10 +26,6 @@ classdef generator_1axis < component
         omega0
     end
     
-    properties(SetAccess = public)
-        parameter
-    end
-    
     methods
         function obj = generator_1axis(omega, parameter)
             obj.omega0 = omega;

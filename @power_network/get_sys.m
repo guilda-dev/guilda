@@ -60,7 +60,7 @@ for i = 1:numel(obj.a_bus)
         InputGroup.(['d', num2str(i)]) = idx+(1:nd);
         idx = idx + nd;
     end
-    if nz~=0
+    if nx~=0
         OutputGroup.(['x', num2str(i)]) = idx_y+(1:nx);
         idx_y = idx_y + nx;
     end
