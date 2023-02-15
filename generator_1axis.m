@@ -32,8 +32,10 @@ classdef generator_1axis < component
             if isstruct(parameter)
                 parameter = struct2table(parameter);
             end
-            obj.parameter = parameter(:, {'Xd', 'Xd_prime', 'Xq', 'T', 'M', 'D'});
+            obj.parameter = parameter(:, {'Xd', 'Xd_prime', 'Xq', 'Tdo', 'M', 'D'});
             obj.parameter_vec = obj.parameter.Variables;
+            T = obj.parameter{:,'Tdo'};
+            obj.parameter = [obj.parameter,table(T)];
             obj.avr = avr();
             obj.governor = governor();
             obj.pss = pss();
