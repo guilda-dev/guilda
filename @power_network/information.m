@@ -90,6 +90,9 @@ function out = information(obj,varargin)
                         otherwise
                             temp.memo = 'Parameter variable type is not supported.(struct,table)';
                     end
+                    if numel(temp)==0
+                        temp = struct();
+                    end
                     fname = fieldnames(temp);
                     temp.bus_idx = bus_idx;
                     temp = orderfields(temp,[{'bus_idx'};fname]);
