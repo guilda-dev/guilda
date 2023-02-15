@@ -46,12 +46,12 @@ classdef map_base < handle
             obj.nbr = numel(obj.net.a_branch);
             
             % グラフストラクチャの作成
-            %obj.G = graph(diag(ones(2*obj.nbus,1)), 'omitselfloops');
+            obj.G = graph(diag(ones(2*obj.nbus,1)), 'omitselfloops');
             from = [tools.hcellfun(@(br) br.from,obj.net.a_branch) , 1:obj.nbus];
             to   = [tools.hcellfun(@(br) br.to  ,obj.net.a_branch) ,(1:obj.nbus)+obj.nbus];
-            admittance =  tools.hcellfun(@(br) abs(1/br.x)  ,obj.net.a_branch);
+            admittance =  tools.hcellfun(@(br) abs(br.x)  ,obj.net.a_branch);
             EndNodes = [from;to]';
-            Weight   = [admittance, ones(1,obj.nbus)]';
+            Weight   = [normalize(admittance,'range',[2,3]), ones(1,obj.nbus)]';
             idx      = (1:obj.nbus+obj.nbr)';
             obj.G = graph(table(EndNodes,Weight,idx));
 
@@ -63,10 +63,10 @@ classdef map_base < handle
             % グラフプロット
             obj.Graph = plot(obj.G);
             axis off
-            %layout(obj.Graph,'force','WeightEffect','direct')
+            layout(obj.Graph,'force','WeightEffect','direct')
             % XYデータの初期設定
-                obj.Graph.XData = 10*[obj.Graph.XData(1:obj.nbus),obj.Graph.XData(1:obj.nbus)];
-                obj.Graph.YData = 10*[obj.Graph.YData(1:obj.nbus),obj.Graph.YData(1:obj.nbus)];
+                obj.Graph.XData = [obj.Graph.XData(1:obj.nbus),obj.Graph.XData(1:obj.nbus)];
+                obj.Graph.YData = [obj.Graph.YData(1:obj.nbus),obj.Graph.YData(1:obj.nbus)];
             % ラインの太さの初期設定
                 obj.Graph.LineWidth     = ones(obj.nbr+obj.nbus, 1);
             % ラインスタイルの初期設定
@@ -183,7 +183,7 @@ classdef map_base < handle
                     data = zeros(numel(data),3);
                     data(~isnan(temp),:) = obj.ColorMap(temp(~isnan(temp)),:);
                 elseif contains(target,'Width')
-                    data = obj.normalize( data, [2,8], false);
+                    data = obj.normalize( data, [1,7], false);
                     data(isnan(data)) = 2;
                 end
     
