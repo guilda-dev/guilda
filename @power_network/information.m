@@ -90,6 +90,9 @@ function out = information(obj,varargin)
                         otherwise
                             temp.memo = 'Parameter variable type is not supported.(struct,table)';
                     end
+                    if numel(temp)==0
+                        temp = struct();
+                    end
                     fname = fieldnames(temp);
                     temp.bus_idx = bus_idx;
                     temp = orderfields(temp,[{'bus_idx'};fname]);
@@ -170,6 +173,7 @@ function out = information(obj,varargin)
 
     if options.plot_graph
         out.graph = tools.graph.plot(obj);
+        out.graph.GCF = gcf;    
     end
 
     if options.export_tex_data

@@ -3,7 +3,7 @@ classdef plot < handle
     properties
         plt
         graph
-
+        GCF
         power_network
     end
 
@@ -33,6 +33,8 @@ classdef plot < handle
             subplot('Position',[0.5,0.1,0.001,0.7])
             axis off
             xline(0,'LineStyle',':','LineWidth',2)
+
+            obj.GCF = gcf;
 
         end
     end

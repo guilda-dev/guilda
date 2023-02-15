@@ -87,11 +87,11 @@ end
         else
             x = c.get_x0;
         end
-        X = tools.arrayfun(@(i) X{i}, c.index_input(:));
-        V = tools.arrayfun(@(i) V{i}, c.index_input(:));
-        I = tools.arrayfun(@(i) I{i}, c.index_input(:));
-        U = tools.arrayfun(@(i) u{i}, c.index_oberve(:));
-        cost_breakdown.controller_local(i) = c.CostFunction(c,x,X,V,I,U);
+        Xc = tools.arrayfun(@(i) X{i}, c.index_input(:));
+        Vc = tools.arrayfun(@(i) V{i}, c.index_input(:));
+        Ic = tools.arrayfun(@(i) I{i}, c.index_input(:));
+        Uc = tools.arrayfun(@(i) u{i}, c.index_oberve(:));
+        cost_breakdown.controller_local(i) = c.CostFunction(c,p.t,x,Xc,Vc,Ic,Uc);
     end
 
 
@@ -110,11 +110,11 @@ end
         else
             x = c.get_x0;
         end
-        X = tools.arrayfun(@(i) X{i}, c.index_input(:));
-        V = tools.arrayfun(@(i) V{i}, c.index_input(:));
-        I = tools.arrayfun(@(i) I{i}, c.index_input(:));
-        U = [];
-        cost_breakdown.controller_global(i) = c.CostFunction(c,x,X,V,I,U);
+        Xc = tools.arrayfun(@(i) X{i}, c.index_input(:));
+        Vc = tools.arrayfun(@(i) V{i}, c.index_input(:));
+        Ic = tools.arrayfun(@(i) I{i}, c.index_input(:));
+        Uc = [];
+        cost_breakdown.controller_global(i) = c.CostFunction(c,p.t,x,Xc,Vc,Ic,Uc);
     end
 
 
