@@ -29,3 +29,9 @@ codegen/
 
 # Octave session info
 octave-workspace
+
+# python version
+.python-version
+
+# image file of file Icon on macOS
+Icon?
