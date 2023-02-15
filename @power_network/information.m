@@ -170,6 +170,7 @@ function out = information(obj,varargin)
 
     if options.plot_graph
         out.graph = tools.graph.plot(obj);
+        out.graph.GCF = gcf;    
     end
 
     if options.export_tex_data
