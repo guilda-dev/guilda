@@ -17,9 +17,11 @@ addParameter(p, 'RelTol', 1e-8);
 addParameter(p, 'do_report', true);
 addParameter(p, 'reset_time', inf);
 addParameter(p, 'do_retry', true);
-addParameter(p, 'OutputFcn', []);
+addParameter(p, 'OutputFcn', []); %'live_grid_code'と指定した場合機器の接続状況をライブする。('grid_code'をtrueとしておく必要あり)
 addParameter(p, 'tools', false);
+addParameter(p, 'grid_code', false);
 
 parse(p, varargin{:});
 options = p.Results;
+
 end
