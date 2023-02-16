@@ -1,35 +1,42 @@
 function dx = get_dx(bus, controllers_global, controllers, Ymat,...
     nx_bus, nx_controller_global, nx_controller, nu_bus,...
-    t, x_all, u, idx_u, idx_fault, simulated_bus)
+    t, x_all, u, idx_u, idx_fault, simulated_bus, connected_bus, GridCode_checker)
 
+GridCode_checker.newline(t);
+
+n_simulated_bus = numel(simulated_bus);
 n1 = sum(nx_bus(simulated_bus));
 n2 = sum(nx_controller_global);
 n3 = sum(nx_controller);
-n4 = 2*numel(simulated_bus);
+n4 = 2*numel(connected_bus);
 n5 = 2*numel(idx_fault);
 
 x = x_all(1:n1);
 xkg = x_all(n1+(1:n2));
 xk = x_all(n1+n2+(1:n3));
 
-V = reshape(x_all(n1+n2+n3+(1:n4)), 2, []);
+Vraw = x_all(n1+n2+n3+(1:n4));
+GridCode_checker.report_branch(Vraw)
+
+V = reshape(Vraw, 2, []);
 I_fault = reshape(x_all(n1+n2+n3+n4+(1:n5)), 2, []);
 
+
 I = reshape(Ymat*V(:), 2, []);
-I(:, idx_fault) = I_fault;
 
 Vall = zeros(2, numel(bus));
 Iall = zeros(2, numel(bus));
 
-Vall(:, simulated_bus) = V;
-Iall(:, simulated_bus) = I;
+Vall(:, connected_bus) = V;
+Iall(:, connected_bus) = I;
+Iall(:, idx_fault)     = I_fault;
 
 idx = 0;
 
 x_bus = cell(numel(bus), 1);
 U_bus = cell(numel(bus), 1);
 
-for i = 1:numel(simulated_bus)
+for i = 1:n_simulated_bus
 %     b = bus{itr};
     x_bus{simulated_bus(i)} = x(idx+(1:nx_bus(simulated_bus(i))));
     idx = idx + nx_bus(simulated_bus(i));
@@ -87,15 +94,18 @@ end
 %     simulated_bus);
 
 
-dx_component = cell(numel(simulated_bus), 1);
-constraint = cell(numel(simulated_bus), 1);
+dx_component = cell(n_simulated_bus, 1);
+constraint = cell(n_simulated_bus, 1);
 for i = 1:numel(simulated_bus)
     idx = simulated_bus(i);
    [dx_component{i}, constraint{i}] = bus{idx}.component.get_dx_con_func(...
     t, x_bus{idx}, Vall(:, idx), Iall(:, idx), U_bus{idx}...   
     ); 
-end
 
+   status = GridCode_checker.report_component(idx, ...
+                    t, x_bus{idx}, Vall(:, idx), Iall(:, idx), U_bus{idx});
+   [dx_component{i}, constraint{i}] = GridCode_checker.dx_I_filter(idx,status,dx_component{i},constraint{i});
+end
 dx_algebraic = vertcat(constraint{:}, reshape(Vall(:, idx_fault), [], 1));
 
 dx = [vertcat(dx_component{:}); vertcat(dxkg{:}); vertcat(dxk{:}); dx_algebraic];
