@@ -9,20 +9,28 @@ classdef map_component < tools.graph.map_base
             obj@tools.graph.map_base(net)
 
             obj.function_CompSize    = @M;
-            obj.function_BusHeigth   = 0;
+            obj.function_BusHeight   = 0;
             obj.function_CompHeight  = @Height;
             obj.function_BranchColor = @BrP;
             obj.function_BranchWidth = @(br,Vfrom,Vto) abs(1/br.x);
             obj.function_BusLineColor= @BusP;
-            obj.function_BusLineWidth= 5;
+            obj.function_BusLineWidth= @(~,V,I) BusP([],V,I)^2;
             
             obj.set_MarkerStyle;
             obj.set_quiver
             obj.set_equilibrium
+
+
+            Position = obj.Graph.Parent.Position;
+            Position(1) = Position(1) + 0.95*Position(3);
+            Position(3) = 0.005;
+            Position(2) = Position(2) + Position(4)*0.1;
+            Position(4) = Position(4) * 0.8;
+            obj.set_colorbar('west',Position)
             
             hold off
             zlim([-1.1,1.1])
-            view(180,30)
+            view(0,30)
         end
     end
 

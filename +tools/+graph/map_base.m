@@ -5,7 +5,7 @@ classdef map_base < handle
         function_BusSize        = @(obj, V, I)     10;
         function_CompSize       = @(obj,t,x,V,I,u) 15;
 
-        function_BusHeigth      = @(obj, V, I)      0;
+        function_BusHeight      = @(obj, V, I)      0;
         function_CompHeight     = @(obj,t,x,V,I,u)  1;
 
         function_BusColor       = @(obj, V, I)     nan;
@@ -21,6 +21,7 @@ classdef map_base < handle
         Quiver
         
         ColorMap = turbo;
+        Colorbar
 
     end
 
@@ -31,12 +32,15 @@ classdef map_base < handle
         nbr
         Edge_idx_branch
         Edge_idx_BusLine
-        normalize_range = 1.5;
-        Colorbar
+        normalize_range = 2;
     end
 
     methods
         function obj = map_base(net)
+            blue = linspace(1,0.2,128);
+            red  = linspace(0.2,1,128);
+            obj.ColorMap = [ [zeros(128,2),blue'];...
+                             [ red',zeros(128,2)] ];
             obj.net = net;
             obj.initialize;
         end
@@ -92,32 +96,41 @@ classdef map_base < handle
                 obj.Graph.NodeFontSize              = 6*ones(obj.nbus*2,1);
                 obj.Graph.NodeFontWeight            = 'bold';
 
-            % カラーバーの初期設定
-                Position = obj.Graph.Parent.Position;
-                Position(1) = Position(1) + 0.1*Position(3);
-                Position(3) = 0.8*Position(3);
-                Position(2) = Position(2) + 0.05;
-                Position(4) = 0.01;
-                obj.Colorbar = colorbar('Location','south','Position',Position,'TickLabels',{});
-                obj.Colorbar.Parent.Colormap = obj.ColorMap;
-
             % エッジの透明度を調整
                 obj.Graph.EdgeAlpha = 0.8;
         end
+    
+        %機器の種類に応じて色付けする。
+        function set_Color_sybject2BusType(obj)
+            for i = 1:obj.nbus
+                bus = obj.net.a_bus{i};
+                switch class(bus)
+                    case 'bus_slack'
+                        obj.Graph.NodeColor(i,:) = [0.4940 0.1840 0.5560];
+                    case 'bus_PV'
+                        obj.Graph.NodeColor(i,:) = [0.8500 0.3250 0.0980];
+                    case 'bus_PQ'
+                        obj.Graph.NodeColor(i,:) = [0 0.4470 0.7410];
+                end
+            end
+        end
 
-        function set_equilibrium(obj)
-            [x,u] = obj.format_xu([],[]);
-            [V,I] = obj.format_VI([],[]);
-            t = 0;
-            already_foramt = true;
-
-            obj.set({ ...
-                'BusSize'  , 'CompSize'  , ...
-                'BusHeigth', 'CompHeight', ...
-                'BusColor' , 'CompColor' , ...
-                'BusLineColor', 'BranchColor', ...
-                'BusLineWidth', 'BranchWidth', ...
-                }, t,x,V,I,u,already_foramt)
+        %機器の種類に応じて色付けする。
+        function set_Color_sybject2CompType(obj)
+            for i = 1:obj.nbus
+                cName = class(obj.net.a_bus{i}.component);
+                if contains(cName, 'generator')
+                    obj.Graph.NodeColor(obj.nbus+i,:) = [0.8500 0.3250 0.0980];
+                elseif contains(cName, 'load')
+                    obj.Graph.NodeColor(obj.nbus+i,:) = [0 0.4470 0.7410];
+                elseif contains(cName, {'solar','wind'})
+                    obj.Graph.NodeColor(obj.nbus+i,:) = [0.4660 0.6740 0.1880];
+                elseif contains(cName, {'Battery','battey','Storage','storage'})
+                    obj.Graph.NodeColor(obj.nbus+i,:) = [0.9290 0.6940 0.1250];
+                else
+                    obj.Graph.NodeColor(obj.nbus+i,:) = [0 0 0];
+                end
+            end
         end
 
         function set(obj, target, t, x, V, I, u, already_format)
@@ -175,11 +188,7 @@ classdef map_base < handle
                     data = obj.normalize( data, [10,30], false);
                     data(isnan(data)) = 10;
                 elseif contains(target,'Color')
-                    if all(data>=0,'all')
-                        temp = round( obj.normalize( data, 1+[-255,255]));
-                    else
-                        temp = round( obj.normalize( data, [1,256]));
-                    end
+                    temp = round( obj.normalize( data, [1,256]));
                     data = zeros(numel(data),3);
                     data(~isnan(temp),:) = obj.ColorMap(temp(~isnan(temp)),:);
                 elseif contains(target,'Width')
@@ -192,7 +201,7 @@ classdef map_base < handle
                         obj.Graph.MarkerSize(1:obj.nbus)            = data;
                     case 'CompSize'
                         obj.Graph.MarkerSize(obj.nbus+(1:obj.nbus)) = data;
-                    case 'BusHeigth'
+                    case 'BusHeight'
                         obj.Graph.ZData(1:obj.nbus)                 = data;
                     case 'CompHeight'
                         obj.Graph.ZData(obj.nbus+(1:obj.nbus))      = data;
@@ -220,6 +229,34 @@ classdef map_base < handle
 
 
     methods(Access = protected)
+
+        function set_equilibrium(obj)
+            [x,u] = obj.format_xu([],[]);
+            [V,I] = obj.format_VI([],[]);
+            t = 0;
+            already_foramt = true;
+
+            obj.set({ ...
+                'BusSize'  , 'CompSize'  , ...
+                'BusHeight', 'CompHeight', ...
+                'BusColor' , 'CompColor' , ...
+                'BusLineColor', 'BranchColor', ...
+                'BusLineWidth', 'BranchWidth', ...
+                }, t,x,V,I,u,already_foramt)
+        end
+
+        %カラーバーを作成する関数
+        function set_colorbar(obj,location,Position)
+            obj.Colorbar = colorbar('Location',location,'Position',Position,'TickLabels',{});
+            obj.Colorbar.Parent.Colormap = obj.ColorMap;
+            obj.Colorbar.TickLabels  = {'-','o','+'};
+            obj.Colorbar.Limits      = [0,1];
+            obj.Colorbar.Ticks       = [0,0.5,1];
+            obj.Colorbar.FontWeight  = 'bold';
+            %obj.Colorbar.AxisLocation= 'in';
+            obj.Colorbar.FontSize    = 10;
+            %obj.Colorbar.FontAngle   = 'italic';
+        end
 
         %bus mainのグラフプロット上にグレーの円盤を作成する関数
         function plt = plot_circle(obj)
