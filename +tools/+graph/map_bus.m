@@ -6,8 +6,7 @@ classdef map_bus < tools.graph.map_base
 
             obj.function_CompSize    = 5;
             obj.function_BusSize     = 10;
-            obj.function_BusColor    = @BusColor;
-            obj.function_BusHeigth   = @( bus, V, I)     norm(V);
+            obj.function_BusHeight   = @( bus, V, I)     norm(V);
             obj.function_CompHeight  = @(comp,t,x,V,I,u) 0;
             obj.function_BranchColor = @(  br,Vf,Vt)     nan;
             obj.function_BranchWidth = @(  br,Vfrom,Vto) abs(1/br.x);
@@ -18,10 +17,11 @@ classdef map_bus < tools.graph.map_base
             obj.plot_circle();
             obj.set_MarkerTag;
             obj.set_equilibrium
+            obj.set_Color_sybject2BusType;
             
 
             hold off
-            zlim([0,1.1])
+            zlim([0,1.5])
             view(2)
         end
     end
@@ -49,13 +49,4 @@ classdef map_bus < tools.graph.map_base
 
 end
 
-function out = BusColor(bus,~,~)
-    switch class(bus)
-        case 'bus_slack'
-            out = -1;
-        case 'bus_PV'
-            out = 0;
-        case 'bus_PQ'
-            out = 1;
-    end
-end
+
