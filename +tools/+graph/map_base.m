@@ -99,6 +99,23 @@ classdef map_base < handle
             % エッジの透明度を調整
                 obj.Graph.EdgeAlpha = 0.8;
         end
+        
+
+        function set_equilibrium(obj)
+            [x,u] = obj.format_xu([],[]);
+            [V,I] = obj.format_VI([],[]);
+            t = 0;
+            already_foramt = true;
+
+            obj.set({ ...
+                'BusSize'  , 'CompSize'  , ...
+                'BusHeight', 'CompHeight', ...
+                'BusColor' , 'CompColor' , ...
+                'BusLineColor', 'BranchColor', ...
+                'BusLineWidth', 'BranchWidth', ...
+                }, t,x,V,I,u,already_foramt)
+        end
+
     
         %機器の種類に応じて色付けする。
         function set_Color_sybject2BusType(obj)
@@ -229,21 +246,6 @@ classdef map_base < handle
 
 
     methods(Access = protected)
-
-        function set_equilibrium(obj)
-            [x,u] = obj.format_xu([],[]);
-            [V,I] = obj.format_VI([],[]);
-            t = 0;
-            already_foramt = true;
-
-            obj.set({ ...
-                'BusSize'  , 'CompSize'  , ...
-                'BusHeight', 'CompHeight', ...
-                'BusColor' , 'CompColor' , ...
-                'BusLineColor', 'BranchColor', ...
-                'BusLineWidth', 'BranchWidth', ...
-                }, t,x,V,I,u,already_foramt)
-        end
 
         %カラーバーを作成する関数
         function set_colorbar(obj,location,Position)
