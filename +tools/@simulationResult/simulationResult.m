@@ -30,6 +30,7 @@ classdef simulationResult < handle
     end
 
     properties(Access=private)
+        net
         net_data
     end
 
@@ -38,8 +39,10 @@ classdef simulationResult < handle
     end
 
     methods
+        export_csv(obj)
 
         function obj = simulationResult(out,net,varargin)
+            obj.net = net;
             if nargin==3
                 obj.readme
             end
@@ -90,13 +93,13 @@ classdef simulationResult < handle
             obj.plot_properties.hold_on = false;
             obj.plot_properties.angle_unwrap = false;
             obj.plot_properties.colormap = {...
-...%カラーユニバーサルデザイン
-'#FF4B00', '#005AFF', '#03AF7A', '#4DC4FF','#F6AA00', '#FFF100', '#000000', '#990099','#84919E',...
-...%Paul Tol氏提案 Muted
-'#332288', '#88CCEE', '#44AA99','#117733', '#999933', '#DDCC77', '#CC6677','#882255', '#AA4499', '#DDDDDD',...
-...%MATLABの代表的な指定色
-'red', 'green', 'blue', 'cyan', 'magenta', 'yellow',...
-'#0072BD','#D95319','#EDB120','#7E2F8E','#77AC30','#4DBEEE','#A2142F'};
+            ...%カラーユニバーサルデザイン
+            '#FF4B00', '#005AFF', '#03AF7A', '#4DC4FF','#F6AA00', '#FFF100', '#000000', '#990099','#84919E',...
+            ...%Paul Tol氏提案 Muted
+            '#332288', '#88CCEE', '#44AA99','#117733', '#999933', '#DDCC77', '#CC6677','#882255', '#AA4499', '#DDDDDD',...
+            ...%MATLABの代表的な指定色
+            'red', 'green', 'blue', 'cyan', 'magenta', 'yellow',...
+            '#0072BD','#D95319','#EDB120','#7E2F8E','#77AC30','#4DBEEE','#A2142F'};
 
         end
 
