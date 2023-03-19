@@ -60,10 +60,11 @@ function varargout = plot(obj,varargin)
     if ischar(set.para)
         set.para = {set.para};
     end
-    
+
     data = tools.hcellfun(@(temp_statename) obj.plot_reference(temp_statename,set) ,set.para);
     if numel(data)==0
         disp('No parameter')
+        varargout = cell(1,nargout);
         return
     end
     if set.para_unique
@@ -71,13 +72,12 @@ function varargout = plot(obj,varargin)
     else
         idx = 1:numel(data);
     end
+
     
     if set.plot
-        if ~set.hold_on
-            plt       = figure();
-            colororder(set.colormap)
-            t = tiledlayout('flow','TileSpacing','compact');
-        end
+        plt       = figure();
+        colororder(set.colormap)
+        t = tiledlayout('flow','TileSpacing','compact');
         data      = data(idx);
         fplot     = @(access,idx) plot(obj.t,access(idx),'LineWidth',set.LineWidth);
         all_idx   = sort(unique(tools.harrayfun(@(idx)reshape(data(idx).bus_idx,1,[]),1:numel(data))));
@@ -97,12 +97,14 @@ function varargout = plot(obj,varargin)
         if nargout >1
             varargout{2} = t;
         end
+    else
+        if nargout >0; varargout{1} = []; end
+        if nargout >1; varargout{2} = []; end
     end
 
     if nargout>2
         varargout{3} = data;
     end
-
 end
 
 function out = identify_busidx(data,complist,buslist)

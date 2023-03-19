@@ -32,6 +32,7 @@ classdef map_base < handle
         nbr
         Edge_idx_branch
         Edge_idx_BusLine
+        Edge_idx_nonunit
         normalize_range = 2;
     end
 
@@ -63,9 +64,11 @@ classdef map_base < handle
             [~,Edge_idx] = sort(Edge_idx);
             obj.Edge_idx_branch  = Edge_idx( 1:obj.nbr);
             obj.Edge_idx_BusLine = Edge_idx((1:obj.nbus)+obj.nbr);
+            is_nonunit = tools.vcellfun(@(b) isa(b.component,'component_empty'), obj.net.a_bus);
+            obj.Edge_idx_nonunit = Edge_idx(find(is_nonunit)+obj.nbr);
 
             % グラフプロット
-            obj.Graph = plot(obj.G);
+            obj.Graph = plot(obj.G,'-');
             axis off
             layout(obj.Graph,'force','WeightEffect','direct')
             % XYデータの初期設定
@@ -99,6 +102,23 @@ classdef map_base < handle
             % エッジの透明度を調整
                 obj.Graph.EdgeAlpha = 0.8;
         end
+        
+
+        function set_equilibrium(obj)
+            [x,u] = obj.format_xu([],[]);
+            [V,I] = obj.format_VI([],[]);
+            t = 0;
+            already_foramt = true;
+
+            obj.set({ ...
+                'BusSize'  , 'CompSize'  , ...
+                'BusHeight', 'CompHeight', ...
+                'BusColor' , 'CompColor' , ...
+                'BusLineColor', 'BranchColor', ...
+                'BusLineWidth', 'BranchWidth', ...
+                }, t,x,V,I,u,already_foramt)
+        end
+
     
         %機器の種類に応じて色付けする。
         function set_Color_sybject2BusType(obj)
@@ -182,7 +202,11 @@ classdef map_base < handle
                 end
     
                 if contains(target,'Height')
-                    data = obj.normalize( data, [-1,1]);
+                    if contains(class(obj),'bus')
+                        data = obj.normalize( data, [0,1]);
+                    else
+                        data = obj.normalize( data, [-1,1]);
+                    end
                     data(isnan(data)) = 0;
                 elseif contains(target,'Size')
                     data = obj.normalize( data, [10,30], false);
@@ -225,25 +249,55 @@ classdef map_base < handle
             end
         end
 
+        function [data_out,lim] = normalize(obj, data_raw, min_max, zerobase)
+            if ~ all( isnan(data_raw), "all")
+                data = data_raw(~isnan(data_raw));
+                if ~ all( (data-data(1))==0 )
+                    if nargin < 4
+                        zerobase = true;
+                    end
+                    
+                    nlim = abs(obj.normalize_range);
+
+                    if zerobase
+                        med_data = median(abs(data));
+                        data = data/med_data;
+                        data = min( max(data, -nlim), nlim);
+                        minval = min(data);
+                        maxval = max(data);
+                        if minval>=0
+                            lim  = [minval,max(data)]*med_data;
+                            data = data * diff(min_max)/(max(data)-minval);
+                            data = min_max(1) + ( data - min(data) );
+                        elseif maxval<=0
+                            lim  = [min(data),maxval]*med_data;
+                            data = data * diff(min_max)/(maxval-min(data));
+                            data = min_max(2) + ( data - max(data) );
+                        else
+                            S = max(abs(data));
+                            data = mean(min_max) + ( data * diff(min_max)/(2*S) );
+                            lim  = [-1,1]*S*med_data;
+                        end
+                        
+                    else
+                        [data,C,S] = normalize(data,'center','median','scale','mad');
+                        data = min( max(data, -nlim), nlim);
+
+                        max_AbsVal = max(abs(data));
+                        lim = C + [-1,1] * S * max_AbsVal;
+                        data = mean(min_max) + ( data * diff(min_max)/(2*max_AbsVal) );
+                    end
+                    
+                    data_raw(~isnan(data_raw)) = data;
+                end
+            end
+            data_out = data_raw;
+        end
+
     end
 
 
     methods(Access = protected)
-
-        function set_equilibrium(obj)
-            [x,u] = obj.format_xu([],[]);
-            [V,I] = obj.format_VI([],[]);
-            t = 0;
-            already_foramt = true;
-
-            obj.set({ ...
-                'BusSize'  , 'CompSize'  , ...
-                'BusHeight', 'CompHeight', ...
-                'BusColor' , 'CompColor' , ...
-                'BusLineColor', 'BranchColor', ...
-                'BusLineWidth', 'BranchWidth', ...
-                }, t,x,V,I,u,already_foramt)
-        end
 
         %カラーバーを作成する関数
         function set_colorbar(obj,location,Position)
@@ -358,25 +412,5 @@ classdef map_base < handle
             I = arrayfun(@(idx) [real(I(idx));imag(I(idx))], (1:obj.nbus)','UniformOutput',false);
         end
 
-        function data_raw = normalize(obj, data_raw, min_max, zerobase)
-            if ~ all( isnan(data_raw), "all")
-                data = data_raw(~isnan(data_raw));
-                if ~ all( (data-data(1))==0  , "all")
-                    if nargin < 4
-                        zerobase = true;
-                    end
-                    
-                    if zerobase
-                        data = normalize(data,'center',0);
-                    else
-                        data = normalize(data);
-                    end
-                    nlim = abs(obj.normalize_range);
-                    data = min(max(data,-nlim),nlim);
-                    data = mean(min_max) + ( data/nlim * diff(min_max)/2 );
-                    data_raw(~isnan(data_raw)) = data;
-                end
-            end
-        end
     end
 end

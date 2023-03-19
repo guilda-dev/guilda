@@ -15,6 +15,7 @@ classdef map_component < tools.graph.map_base
             obj.function_BranchWidth = @(br,Vfrom,Vto) abs(1/br.x);
             obj.function_BusLineColor= @BusP;
             obj.function_BusLineWidth= @(~,V,I) BusP([],V,I)^2;
+            obj.function_CompColor       = @CompP;
             
             obj.set_MarkerStyle;
             obj.set_quiver
@@ -73,6 +74,12 @@ end
 function out = BusP(~,V,I)
     out = V(1)*I(1) + V(2)*I(2);
 end
+
+
+function out = CompP(~,~,~,V,I,~)
+    out = V(1)*I(1) + V(2)*I(2);
+end
+
 
 function out = M(comp,~,~,~,~,~)
     if contains(class(comp),'generator')
