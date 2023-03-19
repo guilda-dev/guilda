@@ -19,11 +19,11 @@ classdef network_IEEE9bus < power_network
         netname = 'IEEE9bus';
 
         omega0 = 60*2*pi;
-        bus = readtable(['parameters/',netname,'/bus.csv']);
-        branch = readtable(['parameters/',netname,'/branch.csv']);
-        machinery = readtable(['parameters/',netname,'/machinery.csv']);
-        excitation = readtable(['parameters/',netname,'/excitation.csv']);
-        pss_data = readtable(['parameters/',netname,'/pss.csv']);
+        bus         = readtable(['parameters/',netname,'/bus.csv']);
+        branch      = readtable(['parameters/',netname,'/branch.csv']);
+        machinery   = readtable(['parameters/',netname,'/machinery.csv']);
+        excitation  = readtable(['parameters/',netname,'/excitation.csv']);
+        pss_data    = readtable(['parameters/',netname,'/pss.csv']);
         
 %         mX = mean(machinery{:,{'Xd','Xq'}},2);
 %         machinery{:,'Xq'} = mX;
@@ -79,12 +79,14 @@ classdef network_IEEE9bus < power_network
             idx = machinery{:, 'No_bus'} == i;
             if sum(idx) ~= 0
                 g = generator(omega0, machinery(idx, :));
-                ex = excitation(excitation{:, 'No_bus'}==i, :);
-                g.set_avr(avr_sadamoto2019(ex));
-                p = pss_data(pss_data{:, 'No_bus'}==i, :);
-                g.set_pss(pss(p));
+                %ex = excitation(excitation{:, 'No_bus'}==i, :);
+                %g.set_avr(avr_sadamoto2019(ex));
+                g.set_avr(avr());
+                %p = pss_data(pss_data{:, 'No_bus'}==i, :);
+                %g.set_pss(pss(p));
             end
             obj.a_bus{end}.set_component(g)
         end
+
     end
 end

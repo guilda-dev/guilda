@@ -29,9 +29,6 @@ classdef component < handle
            nx = numel(obj.x_equilibrium); 
         end
 
-%         function get_dx_constraint_linear(obj,varargin)
-%             disp_message("get_dx_constraint_linear")
-%         end
 
         function [dx, con] = get_dx_constraint_linear(obj, ~, x, V, I, u)
             [A, B, C, D, BV, DV, BI, DI, ~, ~] = get_linear_matrix(obj);
@@ -39,9 +36,6 @@ classdef component < handle
             con = C*(x-obj.x_st) + D*u + DV*(V-obj.V_st) + DI*(I-obj.I_st);
         end
 
-%         function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, varargin)
-%             disp_message("get_dx_constraint_linear")
-%         end
         function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj,xst,Vst,Ist)
 
             %%% 引数の補完 %%%
@@ -56,7 +50,6 @@ classdef component < handle
             end
             
             %%% パラメータの型のチェック %%%
-
             if numel(xst) ~= obj.get_nx
                 error('The size of the specified x_st does not match the state')
             end
@@ -71,16 +64,15 @@ classdef component < handle
                 error('The type of the specified Ist is incorrect')
             end
 
-
             t = 0;
             ust = zeros(obj.get_nu,1);
-        
             t_dx = @(t) obj.get_dx_constraint( t, xst+0.1*ones(size(xst)), Vst+0.1*ones(size(Vst)),  Ist+0.1*ones(size(Ist)),  ust+0.1*ones(size(ust)) ) ;
             [dx0,con0] = t_dx(0);
             [dx10,con10] = t_dx(10);
-            if all((dx0-dx10)<1e-4) && all((con0-con10)<1e-4)
+            if ~ ( all((dx0-dx10)<1e-4) && all((con0-con10)<1e-4) )
+                warning('時変システムであるようです. t=0において近似線形化を実行します.')
+            end
                 nx = obj.get_nx;
-            
                 % xに関しての近似線形モデル
                 [A,C]   =  split_out(...
                     tools.linearlization(...
@@ -104,14 +96,6 @@ classdef component < handle
                 R = zeros(obj.get_nx,0);
                 S = zeros(0,obj.get_nx);
         
-            else
-                error('時変システムであるため数値的な近似線形化を行えませんでした．')
-            end
-        end
-
-        function disp_messsage(function_name)
-            error("Linear analysis cannot be performed. \n"...
-                 +"Please implement function '"+function_name+"' in class '"+class(obj)+"'.",[])
         end
 
         function x_name = get_state_name(obj)
