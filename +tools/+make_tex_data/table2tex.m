@@ -66,6 +66,7 @@ function str = val2str(value)
             case 'cell'
                 if numel(value)==1
                     str = val2str(value{1});
+                    str = cut(str);
                 else
                     str = 'cell data';
                 end
