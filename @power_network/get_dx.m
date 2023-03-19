@@ -1,6 +1,6 @@
 function dx = get_dx(bus, controllers_global, controllers, Ymat,...
     nx_bus, nx_controller_global, nx_controller, nu_bus,...
-    t, x_all, u, idx_u, idx_fault, simulated_bus)
+    t, x_all, u, idx_u, idx_fault, simulated_bus, OutputEq_manager)
 
 n1 = sum(nx_bus(simulated_bus));
 n2 = sum(nx_controller_global);
@@ -89,11 +89,14 @@ end
 
 dx_component = cell(numel(simulated_bus), 1);
 constraint = cell(numel(simulated_bus), 1);
+
+OutputEq_manager.new_time(t)
 for i = 1:numel(simulated_bus)
     idx = simulated_bus(i);
    [dx_component{i}, constraint{i}] = bus{idx}.component.get_dx_con_func(...
     t, x_bus{idx}, Vall(:, idx), Iall(:, idx), U_bus{idx}...   
-    ); 
+    );
+    OutputEq_manager.add_data(idx,t,x_bus{idx}, Vall(:, idx), Iall(:, idx), U_bus{idx});
 end
 
 dx_algebraic = vertcat(constraint{:}, reshape(Vall(:, idx_fault), [], 1));

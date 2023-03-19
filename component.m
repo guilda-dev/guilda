@@ -5,6 +5,7 @@ classdef component < handle
     
     properties
         get_dx_con_func
+        get_y_func
         CostFunction = @(obj,t,x,V,I,u) 0;
     end
     
@@ -29,6 +30,21 @@ classdef component < handle
            nx = numel(obj.x_equilibrium); 
         end
 
+
+        function y = get_y(obj,t,x,V,I,u)
+            y = [];
+        end
+
+        function ny = get_ny(obj)
+            x = obj.x_equilibrium;
+            V = [real(obj.V_equilibrium);imag(obj.V_equilibrium)];
+            I = [real(obj.I_equilibrium);imag(obj.I_equilibrium)];
+            u = zeros(obj.get_nu,1);
+            if isempty(obj.get_y_func)
+                obj.get_y_func = @get_y;
+            end
+            ny = numel(obj.get_y_func(obj,0,x,V,I,u));
+        end
 
         function [dx, con] = get_dx_constraint_linear(obj, ~, x, V, I, u)
             [A, B, C, D, BV, DV, BI, DI, ~, ~] = get_linear_matrix(obj);

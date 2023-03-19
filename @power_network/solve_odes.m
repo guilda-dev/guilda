@@ -80,6 +80,8 @@ out.simulated_bus = cell(numel(t_simulated)-1, 1);
 out.fault_bus = cell(numel(t_simulated)-1, 1);
 out.Ymat_reproduce = cell(numel(t_simulated)-1, 1);
 
+OutputEq_manager = tools.Outputeq_manager(obj);
+
 
 for i = 1:numel(t_simulated)-1
     f_ = fault_f((t_simulated(i)+t_simulated(i+1))/2);
@@ -104,8 +106,8 @@ for i = 1:numel(t_simulated)-1
             func = @(t, x) power_network.get_dx(...
                 bus, controllers_global, controllers, Ymat,...
                 nx_bus, nx_kg, nx_k, nu_bus, ...
-                t, x, u_, idx_u, f_, simulated_bus...
-                );
+                t, x, u_, idx_u, f_, simulated_bus,...
+                OutputEq_manager);
         case 'foh'
             us_ = uf(t_simulated(i));
             ue_ = uf(t_simulated(i+1));
@@ -113,8 +115,8 @@ for i = 1:numel(t_simulated)-1
             func = @(t, x) power_network.get_dx(...
                 bus, controllers_global, controllers, Ymat,...
                 nx_bus, nx_kg, nx_k, nu_bus, ...
-                t, x, u_(t), idx_u, f_, simulated_bus...
-                );
+                t, x, u_(t), idx_u, f_, simulated_bus,...
+                OutputEq_manager);
     end
     
     nx = numel(x0);
@@ -204,6 +206,8 @@ end
 
 out.sols = sols;
 out.linear = linear;
+out.OutputEq = OutputEq_manager.export_y(out.t);
+
 end
 
 function t_simulated = get_t_simulated(t_cand, uf, fault_f)
