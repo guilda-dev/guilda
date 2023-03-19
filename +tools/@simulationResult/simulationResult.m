@@ -20,6 +20,7 @@ classdef simulationResult < handle
         Xk_global
         U_global
         power
+        OutputEq
 
         simulated_bus
         fault_bus
@@ -87,7 +88,6 @@ classdef simulationResult < handle
             obj.plot_properties.LineWidth = 2;
             obj.plot_properties.plot = true;
             obj.plot_properties.para_unique = true;
-            obj.plot_properties.hold_on = false;
             obj.plot_properties.angle_unwrap = false;
             obj.plot_properties.colormap = {...
 ...%カラーユニバーサルデザイン
@@ -122,7 +122,7 @@ classdef simulationResult < handle
 %             %
 %             tools.UIanime(obj);
 %         end
-        anime(obj)
+        anime(obj,varargin)
 
         
         %使い方の表示
