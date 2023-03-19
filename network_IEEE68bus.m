@@ -1,4 +1,4 @@
-classdef network_IEEE68bus < power_network
+classdef network_IEEE68bus < power_network_old
 % モデル  ：IEEE68母線モデル
 %・母線1~16が発電機母線として"generator_1axis"が付加
 %・母線[17,18,20~29,33,36,39~42,44~53,55,56,59~61,64,67,68]母線は負荷母線として"load_impedance"が付加

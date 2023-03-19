@@ -1,4 +1,4 @@
-classdef network_sample3bus < power_network
+classdef network_sample3bus < power_network_old
 % モデル ：Tutorial【簡単なモデルを用いた一連の解析実行例】ページで作成した3busモデル
 %親クラス：power_networkクラス
 %実行方法：net =network_sample3bus
