@@ -1,0 +1,39 @@
+classdef ___NAME___ < branch
+% model         : ___DISCRIPTION___
+% SuperClass    : branch
+% constructor   : obj = ___NAME___(from, to, <<Described according to the arguments of the class to be defined>>)
+% varargin      :・from,to: Bus number to which the transmission line connects
+%                ・<<It would help others if you included a description of your arguments!>>
+% varargout     : Instance of branch class
+
+    % Inherited Properties from branch class
+    % ・from, to : Bus number to which the transmission line connects
+    
+    properties
+        % Add properties as appropriate for the model you define 
+    end
+    
+    methods
+        function obj = ___NAME___(from, to) %Arguments may be changed freely, but "from" and "to" must be retained.
+            obj@branch(from, to);
+            
+        end
+        
+        function Y = get_admittance_matrix(obj)
+            % The output this method should return is a 2*2 admittance matrix.
+            % If obj.from = i, obj.to = j, then the output would be Y = [Y11, Y12, Y21, Y22], 
+            % which is the relation as follows.
+            %
+            % Vi  = Y11 Y12 * Ii
+            % Vj    Y21 Y22   Ij
+            %
+
+
+            %%%%%%%%% define %%%%%%%%%
+            Y = 
+            %%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        end
+    end
+    
+end
