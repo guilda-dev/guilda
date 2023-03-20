@@ -7,7 +7,7 @@ classdef branch < handle
         to
     end
     methods(Abstract)
-        y = get_admittance_matrix(obj);
+        Y = get_admittance_matrix(obj);
     end
     
     methods

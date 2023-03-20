@@ -320,9 +320,9 @@ classdef generator_1axis < component
             obj.V_equilibrium = V;
             obj.I_equilibrium = I;
             obj.x_st = x_st;
-            obj.V_st = tools.complex2vec(V);
-            obj.I_st = tools.complex2vec(I);
-            obj.set_linear_matrix(x_st, tools.complex2vec(V));
+            obj.V_st = tools_complex2vec(V);
+            obj.I_st = tools_complex2vec(I);
+            obj.set_linear_matrix(x_st, tools_complex2vec(V));
         end
     end
 end

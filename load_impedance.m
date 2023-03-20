@@ -35,8 +35,8 @@ classdef load_impedance < component
             obj.V_equilibrium = Veq;
             obj.I_equilibrium = Ieq;
             obj.set_admittance(Ieq/Veq);
-            obj.V_st = tools.complex2vec(Veq);
-            obj.I_st = tools.complex2vec(Ieq);
+            obj.V_st = tools_complex2vec(Veq);
+            obj.I_st = tools_complex2vec(Ieq);
             obj.YL = obj.Y;
             
         end
@@ -66,7 +66,7 @@ classdef load_impedance < component
         
         function set_admittance(obj, y)
             obj.Y = y;
-            obj.YL_mat = tools.complex2matrix(obj.Y);
+            obj.YL_mat = tools_complex2matrix(obj.Y);
         end
         
         function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix_(obj, x, V)
@@ -76,7 +76,7 @@ classdef load_impedance < component
                 A = [];
                 B = zeros(0, 2);
                 C = zeros(2, 0);
-                D = [tools.complex2matrix(real(obj.YL))*V, tools.complex2matrix(1j*imag(obj.YL))*V];
+                D = [tools_complex2matrix(real(obj.YL))*V, tools_complex2matrix(1j*imag(obj.YL))*V];
                 BV = zeros(0, 2);
                 DV = obj.YL_mat;
                 R = obj.R;

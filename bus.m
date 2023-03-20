@@ -61,7 +61,7 @@ classdef bus < handle
         end
 
         function edit_parameter(obj)
-            pbj.edited  = true;
+            obj.edited  = true;
         end
     end
 end

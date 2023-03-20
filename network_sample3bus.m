@@ -1,4 +1,4 @@
-classdef network_sample3bus < power_network_old
+classdef network_sample3bus < power_network
 % モデル ：Tutorial【簡単なモデルを用いた一連の解析実行例】ページで作成した3busモデル
 %親クラス：power_networkクラス
 %実行方法：net =network_sample3bus
@@ -40,13 +40,13 @@ classdef network_sample3bus < power_network_old
             %母線1に同期発電機の1軸モデルを付加
             Xd = 1.569; Xd_prime = 0.963; Xq = 0.963; T = 5.14; M = 100; D = 10;
             mac_data = table(Xd,Xd_prime,Xq,T,M,D);
-            component1 = generator_1axis( omega0, mac_data);
+            component1 = generator_1axis(omega0, mac_data);
             obj.a_bus{1}.set_component(component1);
             
             %母線2にも同期発電機の1軸モデルを付加
             Xd = 1.220; Xd_prime = 0.667; Xq = 0.667; T = 8.97; M = 12; D = 10;
             mac_data = table(Xd,Xd_prime,Xq,T,M,D);
-            comp2 = generator_1axis( omega0, mac_data);
+            comp2 = generator_1axis(omega0, mac_data);
             obj.a_bus{2}.set_component(comp2);
             
             %母線3には定インピーダンスモデルを付加
