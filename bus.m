@@ -85,7 +85,7 @@ classdef bus < handle
                 error_code = 2;
             end
             switch error_code
-                case 1; error(['The return type of the function should be ',val_type])
+                case 1; error(['The type of the function output should be ',val_type])
                 case 2; error('The function must be in the form of f(obj,Vfrom,Vto)')
             end
         end
