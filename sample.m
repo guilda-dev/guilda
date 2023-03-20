@@ -21,7 +21,7 @@ title('各同期発電機の周波数偏差','FontSize',20)
 hold off
 
 %% 例2：3busの電力系統モデルの実装と負荷変動時の応答
-close all; clear;
+% close all; clear;
 %電力系統のフレームワークを作成
 net = power_network_old;
 
