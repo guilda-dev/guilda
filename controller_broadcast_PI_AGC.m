@@ -51,10 +51,10 @@ classdef controller_broadcast_PI_AGC < controller
         
         function [A, BX, BV, BI,  Bu, C, DX, DV, DI, Du] = get_linear_matrix(obj)
             A = 0;
-            nx = tools.vcellfun(@(b) b.component.get_nx(), obj.net.a_bus(obj.index_observe));
-            nu = tools.vcellfun(@(b) b.component.get_nu(), obj.net.a_bus(obj.index_observe));
+            nx = tools_vcellfun(@(b) b.component.get_nx(), obj.net.a_bus(obj.index_observe));
+            nu = tools_vcellfun(@(b) b.component.get_nu(), obj.net.a_bus(obj.index_observe));
             
-            BX = tools.harrayfun(@(i) [0, obj.K_observe(i), zeros(1,nx(i)-2)], 1:numel(nx));
+            BX = tools_harrayfun(@(i) [0, obj.K_observe(i), zeros(1,nx(i)-2)], 1:numel(nx));
             DX = zeros(numel(obj.K_input)*2, size(BX, 2));
             DX(2:2:end, :) = obj.K_input * BX * obj.Kp;
             

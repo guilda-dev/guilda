@@ -36,10 +36,10 @@ classdef controller < handle
         end
         
         function uout = get_input_vectorized(obj, t, x, X, V, I, U)
-            Xi = @(i) tools.cellfun(@(x) x(i, :)', X);
-            Vi = @(i) tools.hcellfun(@(v) v(i, :)', V);
-            Ii = @(j) tools.hcellfun(@(i) i(j, :)', I);
-            Ui = @(i) tools.cellfun(@(u) u(i, :)', U);
+            Xi = @(i) tools_cellfun(@(x) x(i, :)', X);
+            Vi = @(i) tools_hcellfun(@(v) v(i, :)', V);
+            Ii = @(j) tools_hcellfun(@(i) i(j, :)', I);
+            Ui = @(i) tools_cellfun(@(u) u(i, :)', U);
             
             [~, u] = obj.get_dx_u_func(t(1), x(1, :)',  Xi(1), Vi(1), Ii(1), Ui(1));
             
@@ -53,7 +53,7 @@ classdef controller < handle
         end
 
         function x_name = get_state_name(obj)
-            x_name = tools.arrayfun(@(i) ['x',num2str(i)],1:obj.get_nx);
+            x_name = tools_arrayfun(@(i) ['x',num2str(i)],1:obj.get_nx);
         end
         
     end
