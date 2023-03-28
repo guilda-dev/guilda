@@ -298,7 +298,7 @@ classdef power_network < handle
             addParameter(p, 'method', 'zoh', @(method) ismember(method, {'zoh', 'foh'}));
             addParameter(p, 'AbsTol', 1e-8);
             addParameter(p, 'RelTol', 1e-8);
-            addParameter(p, 'do_report', true);
+            addParameter(p, 'do_report', false);
             addParameter(p, 'reset_time', inf);
             addParameter(p, 'do_retry', true);
             addParameter(p, 'OutputFcn', []);

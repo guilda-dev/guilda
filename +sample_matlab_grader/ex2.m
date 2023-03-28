@@ -30,3 +30,32 @@ generator2 = generator_1axis(omega0, mac_data);
 mynet.a_bus{2}.set_component(generator2);
 load1 = load_impedance();
 mynet.a_bus{3}.set_component(load1);
+
+% 潮流計算の実行
+mynet.initialize;
+
+% シミュレーションの条件設定
+time = [0,5,20,35,60];
+u_idx = 3;
+u     = [0, 0.04, 0.06, 0.03, 0.03;...
+         0,    0,   0,   0,    0];
+
+% シミュレーションの実行
+out = mynet.simulate(time,u, u_idx);
+
+% 解析結果のプロット
+%データ抽出
+sampling_time = out.t;
+omega1 = out.X{1}(:,2); % 発電機①の周波数偏差
+omega2 = out.X{2}(:,2); % 発電機②の周波数偏差
+
+%プロット
+figure;
+hold on;
+plot(sampling_time, omega2,'LineWidth',2)
+plot(sampling_time, omega1,'LineWidth',2)
+xlabel('時刻(s)','FontSize',15);
+ylabel('周波数偏差','FontSize',15);
+legend({'機器2の周波数偏差','機器1の周波数偏差'})
+title('各同期発電機の周波数偏差','FontSize',20)
+hold off
