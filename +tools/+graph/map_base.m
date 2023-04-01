@@ -27,6 +27,7 @@ classdef map_base < handle
 
     properties(Access=protected)
         G
+        Axis
         net
         nbus
         nbr
@@ -37,13 +38,20 @@ classdef map_base < handle
     end
 
     methods
-        function obj = map_base(net)
+        function obj = map_base(net,ax)
             blue = linspace(1,0.2,128);
             red  = linspace(0.2,1,128);
             obj.ColorMap = [ [zeros(128,2),blue'];...
                              [ red',zeros(128,2)] ];
             obj.net = net;
-            obj.initialize;
+            
+            if nargin < 2
+                figure;
+                obj.Axis = gca;
+            else
+                obj.Axis = ax;
+            end
+            obj.initialize();
         end
 
         function initialize(obj)
@@ -68,8 +76,8 @@ classdef map_base < handle
             obj.Edge_idx_nonunit = Edge_idx(find(is_nonunit)+obj.nbr);
 
             % グラフプロット
-            obj.Graph = plot(obj.G,'-');
-            axis off
+            obj.Graph = plot(obj.Axis,obj.G,'-');
+            axis(obj.Axis,'off')
             layout(obj.Graph,'force','WeightEffect','direct')
             % XYデータの初期設定
                 obj.Graph.XData = [obj.Graph.XData(1:obj.nbus),obj.Graph.XData(1:obj.nbus)];
@@ -89,7 +97,7 @@ classdef map_base < handle
             % ノードの色の初期設定
                 obj.Graph.NodeColor     = zeros(2*obj.nbus,3);
             % ノードサイズのの初期設定
-                obj.Graph.MarkerSize    = ones(2*obj.nbus,1);
+                obj.Graph.MarkerSize    = 10*ones(2*obj.nbus,1);
 
             % ノードラベルの初期設定
                 Marker_tag                          = cell(1,2*obj.nbus);
@@ -136,16 +144,16 @@ classdef map_base < handle
         end
 
         %機器の種類に応じて色付けする。
-        function set_Color_sybject2CompType(obj)
+        function set_Color_subject2CompType(obj)
             for i = 1:obj.nbus
                 cName = class(obj.net.a_bus{i}.component);
-                if contains(cName, 'generator')
+                if contains( cName, 'generator')
                     obj.Graph.NodeColor(obj.nbus+i,:) = [0.8500 0.3250 0.0980];
-                elseif contains(cName, 'load')
+                elseif contains( cName, 'load')
                     obj.Graph.NodeColor(obj.nbus+i,:) = [0 0.4470 0.7410];
-                elseif contains(cName, {'solar','wind'})
+                elseif contains( cName, {'solar','wind'})
                     obj.Graph.NodeColor(obj.nbus+i,:) = [0.4660 0.6740 0.1880];
-                elseif contains(cName, {'Battery','battey','Storage','storage'})
+                elseif contains( cName, {'Battery','battey','Storage','storage'})
                     obj.Graph.NodeColor(obj.nbus+i,:) = [0.9290 0.6940 0.1250];
                 else
                     obj.Graph.NodeColor(obj.nbus+i,:) = [0 0 0];
@@ -313,8 +321,11 @@ classdef map_base < handle
         end
 
         %bus mainのグラフプロット上にグレーの円盤を作成する関数
-        function plt = plot_circle(obj)
-            hold on
+        function plt = plot_circle(obj,ax)
+            if nargin < 2
+                ax = gca;
+            end
+            hold(ax,'on')
             meanX  = mean(obj.Graph.XData);
             meanY  = mean(obj.Graph.YData);
             radius = 1.25 * max(abs([obj.Graph.XData-meanX,obj.Graph.YData-meanY]));
@@ -330,10 +341,14 @@ classdef map_base < handle
 
 
         %component mainのグラフプロットに電力の方向を表した矢印をプロット
-        function set_quiver(obj)
-            hold on
+        function set_quiver(obj,ax)
             
-            obj.Quiver = plot(graph(diag(ones(1,obj.nbus)),'omitselfloops'));
+            if nargin<2
+                ax = gca;
+            end
+            hold(ax,'on')
+
+            obj.Quiver = plot(ax,graph(diag(ones(1,obj.nbus)),'omitselfloops'));
             obj.Quiver.MarkerSize = 5 * obj.Graph.LineWidth(obj.Edge_idx_BusLine);
             obj.Quiver.NodeColor  =     obj.Graph.EdgeColor(obj.Edge_idx_BusLine,:);
             obj.Quiver.NodeLabel  = '';

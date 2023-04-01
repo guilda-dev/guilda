@@ -42,17 +42,17 @@ classdef map_component < tools.graph.map_base
                 comp = obj.net.a_bus{i}.component;
                 nclass = class(comp);
                 if contains(nclass,'generator') || contains(nclass,'Generator')
-                    obj.Graph.NodeLabel{obj.nbus+i}  = ['Gen',num2str(i)];
+                    obj.Graph.NodeLabel{obj.nbus+i}  = ['  Gen',num2str(i)];
                     obj.Graph.Marker{obj.nbus+i} = 'o';
                 elseif contains(nclass,'load') || contains(nclass,'Load')
-                    obj.Graph.NodeLabel{obj.nbus+i}  = ['Load',num2str(i)];
+                    obj.Graph.NodeLabel{obj.nbus+i}  = ['  Load',num2str(i)];
                     obj.Graph.Marker{obj.nbus+i} = 'v';
                 elseif isa(comp,'component_empty')
                     obj.Graph.NodeLabel{obj.nbus+i}  = '';
                     obj.Graph.Marker{obj.nbus+i} = 'none';
                 else
                     temp_idx = find(nclass=='.',1,"last");
-                    obj.Graph.NodeLabel{obj.nbus+i}  = nclass(temp_idx+1:end);
+                    obj.Graph.NodeLabel{obj.nbus+i}  =  ['  ',nclass(temp_idx+1:end)];
                     obj.Graph.Marker{obj.nbus+i} = 's';
                 end
                 obj.Graph.Marker(1:obj.nbus) = {'s'};

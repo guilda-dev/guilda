@@ -29,6 +29,7 @@ classdef power_network < handle
         [Y, Ymat, A, Amat] = reduce_admittance_matrix(obj, Y, index);
         data = information(obj, varargin);
         [cost_total,cost_branch,cost_component] = get_cost_function(obj,varargin)
+        controller_list(obj,fig)
 
 
         function initialize(obj)
