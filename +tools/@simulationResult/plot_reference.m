@@ -135,10 +135,23 @@ function data = plot_reference(obj,statename,set)
             end
             if isempty(data)
                 if isa(statename,'double')
-                    data = plot_reference(obj,statename(1:end-3),set);
+                    data = plot_reference(obj,'flat',set);
                     data.access  = @(idx) statename*data.access(idx); 
+                else
+                    para_list = obj.net_data.component_para;
+                    para_list_fields = fieldnames(para_list);
+                    is_para = tools.vcellfun(@(f) ismember(statename, para_list.(f).Properties.VariableNames) , para_list_fields);
+                    if any(is_para)
+                        idx_haspara = sort( tools.varrayfun(@(idx) para_list.(para_list_fields{idx}){:,'bus_idx'}, find(is_para) ) );
+                        data.access  = @(idx) obj.net.a_bus{idx}.component.parameter{1,statename} * ones(numel(obj.t),1);
+                        data.bus_idx = intersect(set.bus_idx, idx_haspara);
+                        data.title   = ['parameter : ',statename];
+                        data.command = ">> arrayfun(@(idx) plot(out.t([1,end]),[1,1]*net.a_bus{idx}.component.parameter{1,'"+statename+"')}),"+mat2str(data.bus_idx)+")";
+                        data.st      = @(idx) obj.net.a_bus{idx}.component.parameter{1,statename};
+                    end
                 end
             end
+
             
     end
     if set.angle_unwrap && (strcmp(statename(2:end),'angle')||strcmp(statename,'Factor'))

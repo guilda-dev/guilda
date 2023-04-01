@@ -34,8 +34,6 @@ classdef generator_1axis < component
             end
             obj.parameter = parameter(:, {'Xd', 'Xd_prime', 'Xq', 'Tdo', 'M', 'D'});
             obj.parameter_vec = obj.parameter.Variables;
-            T = obj.parameter{:,'Tdo'};
-            obj.parameter = [obj.parameter,table(T)];
             obj.avr = avr();
             obj.governor = governor();
             obj.pss = pss();
@@ -50,7 +48,7 @@ classdef generator_1axis < component
             name_tag = horzcat(gen_state,avr_state,pss_state,governor_state);
         end
 
-        function u_name = get_port_name(obj)
+        function u_name = get_u_name(obj)
             u_name = {'Vfd','Pm'};
         end
         
@@ -108,6 +106,7 @@ classdef generator_1axis < component
             
             
             dx = [ddelta; domega; dE; dx_avr; dx_pss; dx_gov];
+            
         end
         
         function [dx, con] = get_dx_constraint_linear(obj, t, x, V, I, u)

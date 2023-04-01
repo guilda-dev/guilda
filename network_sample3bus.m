@@ -6,8 +6,15 @@ classdef network_sample3bus < power_network
 %　出力　：power_networkクラスのインスタンス
 
     methods
-        function obj = network_sample3bus()
-        
+        function obj = network_sample3bus(varargin)
+
+            p = inputParser;
+            p.CaseSensitive = false;
+            addParameter(p, 'generator', 'generator_1axis');
+            parse(p, varargin{:});
+            para = p.Results;
+            generator = str2func(para.generator);
+
         %ブランチ(branch)の定義
             
             %母線1と母線2を繋ぐ送電線の定義
@@ -40,13 +47,13 @@ classdef network_sample3bus < power_network
             %母線1に同期発電機の1軸モデルを付加
             Xd = 1.569; Xd_prime = 0.963; Xq = 0.963; Tdo = 5.14; M = 100; D = 10;
             mac_data = table(Xd,Xd_prime,Xq,Tdo,M,D);
-            component1 = generator_1axis( omega0, mac_data);
+            component1 = generator( omega0, mac_data);
             obj.a_bus{1}.set_component(component1);
             
             %母線2にも同期発電機の1軸モデルを付加
             Xd = 1.220; Xd_prime = 0.667; Xq = 0.667; Tdo = 8.97; M = 12; D = 10;
             mac_data = table(Xd,Xd_prime,Xq,Tdo,M,D);
-            comp2 = generator_1axis( omega0, mac_data);
+            comp2 = generator( omega0, mac_data);
             obj.a_bus{2}.set_component(comp2);
             
             %母線3には定インピーダンスモデルを付加

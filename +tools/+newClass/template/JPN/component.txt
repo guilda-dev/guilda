@@ -1,0 +1,144 @@
+classdef ___NAME___ < component & tools.newClass.checker.for_component
+% モデル  ：___DISCRIPTION___
+%         ・状態： <<説明追加>>
+%         ・入力： <<説明追加>>
+% 親クラス：componentクラス
+% 実行方法：obj =　___NAME___(omega, parameter)
+% 　引数　：・parameter : table型．「<<パラメータ名を追加>>」を列名として定義
+% 　出力　：componentクラスのインスタンス
+
+    % 継承されているプロパティ
+    % ・x_equilibrium : 状態の平衡点を格納
+    % ・V_equilibrium : 電圧の定常潮流状態を格納
+    % ・I_equilibrium : 電流の定常潮流状態を格納
+    % ・parameter : モデルのパラメータ定数はこのフィールドに格納してください。
+    
+    properties
+        % 適宜プロパティを追加 
+    end
+    
+    methods
+        function obj = ___NAME___(parameter)
+            obj.parameter = parameter;
+
+        end
+        
+        function nu = get_nu(obj)
+            % 入力ポートの個数を定義
+            % 入力ポートが2個の場合
+            %   >> nu = 2;
+
+
+            %%%%%%%%%% 実装 %%%%%%%%%%
+            nu = 
+            %%%%%%%%%%%%%%%%%%%%%%%%%
+
+        end
+        
+        function [dx, con] = get_dx_constraint(obj, t, x, V, I, u)
+            % 引数：
+            % t : 時刻を表すスカラー値。単位は秒（s)
+            % x : 状態ベクトル
+            % V : 接続母線の電圧のベクトル[Vreal; Vimag]
+            % I : 接続母線の電流のベクトル[Ireal; Iimag]
+            % u : 入力ベクトル
+
+            % 出力
+            %  dx : 状態の時間微分のベクトル
+            % con : 制約条件を表すベクトル。数値積分を行う際はconの全ての値が0になるようにV,Iが決定される。
+
+
+            %%%%%%%%%% 実装 %%%%%%%%%%
+            dx      =         %f(x)　に対応するコード
+            [Ir,Ii] =         %母線に送り出す電流の実部・虚部を導出
+            %%%%%%%%%%%%%%%%%%%%%%%%%
+
+            con = I - [Ir; Ii];
+        end
+
+        function x_st = set_equilibrium(obj, V, I)
+            % V：潮流計算によって求められた母線電圧のフェーザ値（ = Vreal + 1j*Vimag ）
+            % I：潮流計算によって求められた母線電流のフェーザ値（ = Ireal + 1j*Iimag ）
+
+            % 出力
+            % x_st : 機器モデルの状態の平衡点（状態の変数の個数nと一致するベクトル(n×1 double)で定義すること）
+
+
+            %%%%%%%%%% 実装 %%%%%%%%%%
+            x_st = 
+            %%%%%%%%%%%%%%%%%%%%%%%%%
+
+            obj.x_equilibrium = x_st;
+            obj.V_equilibrium = V;
+            obj.I_equilibrium = I;
+        end
+
+
+        %%% 必須ではないが実装を推奨 %%%
+        %{
+        function tag = get_x_name(obj)
+            % 状態に変数名を名付けるメソッド
+            % 出力はcell配列で返す
+            % このメソッドが定義されていない場合は「x1,x2,...」と名付けられる
+            %
+            % 例）状態変数の名前が「x,v,a」の場合以下のように定義する
+            % 
+            %    >> tag = {'x','v','a'};
+
+
+            %%%%%%%%%% 実装 %%%%%%%%%%
+            tag =                     
+            %%%%%%%%%%%%%%%%%%%%%%%%%
+
+        end
+
+        function tag = get_u_name(obj)
+            % 入力のポート名を名付けるメソッド
+            % 出力はcell配列で返す
+            % このメソッドが定義されていない場合は「u1,u2,...」と名付けられる
+            %
+            % 例）入力ポートの名前を「port1,port2」とする場合以下のように定義する
+            % 
+            %    >> tag = {'port1','port2'};
+
+
+            %%%%%%%%%% 実装 %%%%%%%%%%
+            tag =                     
+            %%%%%%%%%%%%%%%%%%%%%%%%%
+
+        end
+
+        function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, x_st, Vst)
+            % 近似線形モデルのシステム行列を定義。
+            % 定義しない場合は、get_dX_constraintメソッドから数値的に導出される。
+            
+            % 出力
+            %　以下の式に対応する各行列
+            % [微分方程式]
+            % dx = A*(x-xeq) + B*u + BV*(V-Veq) + BI*(I-Ieq) + R*d
+            % [制約条件]
+            % 0  = C*(x-xeq) + D*u + DV*(V-Veq) + DI*(I-Ieq)
+            % [評価出力]
+            % y  = S*(x-xeq)
+
+
+            %%%%%%%%%% 実装 %%%%%%%%%%
+            A  = 
+            B  = 
+            C  = 
+            D  = 
+            BV = 
+            BI = 
+            DV = 
+            DI = 
+            R  = 
+            S  = 
+            %%%%%%%%%%%%%%%%%%%%%%%%%
+
+        end
+        %}
+    end
+        
+end
+
+

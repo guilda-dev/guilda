@@ -1,0 +1,94 @@
+classdef ___NAME___ < controller
+% model         : ___DISCRIPTION___
+% SuperClass    : controller
+% constructor   : obj =　___NAME___(y_idx, u_idx, <<Described according to the arguments of the class to be defined>>)
+% varargin      :・y_idx : array of double type. Number of the device to observed.
+%                ・u_idx : array of double type. Number of the device to input
+%                ・<<It would help others if you included a description of your arguments!>>
+% varargout     : Instance of controller class
+
+    % Inherited Properties from component class
+    % ・index_input   : Number list of devices to which the controller applies inputs
+    % ・index_observe : Number list of devices whose status is observed by the controller
+    % ・network       : "power_network" class with controller added
+    % ・parameter     : The parameter constants of the model should be stored in this field.
+    
+    properties
+        % Add properties as appropriate for the model you define 
+    end
+    
+    methods
+        function obj = ___NAME___(y_idx, u_idx) %Arguments may be changed freely, but "y_idx" and "u_idx" must be retained.
+            obj@controller(u_idx, y_idx);
+
+        end
+        
+        function nx = get_nx(obj) % Methods to define the number of states
+            % ex. When the number of state variables is one
+            %   >> nx = 1;
+
+
+            %%%%%%%%%% define %%%%%%%%%%
+            nx = 
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        end
+        
+        function [dx, u] = get_dx_u(obj, t, x, X, V, I, u_global)
+            % varargin:
+            % t : Scalar value representing time. Unit is seconds (s).
+            % x : controller state vector
+            % X : State of the device to be observed. The argument type is an array of cells, where each cell is a state vector of the observed device.
+            % V : Voltage of bus connected to the device to be observed. 2 x [number of busbars to be observed] double type array
+            % I : Current of bus connected to the device to be observed. 2 x [number of busbars to be observed] double type array
+            % u_global : Input vector from global controller
+
+            % varargout:
+            % dx : Vector of time derivatives of the controller state
+            % u  : Output vector of controller (input to equipment)
+
+
+            %%%%%%%%%% define %%%%%%%%%%
+            dx = 
+            u  = 
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        end
+
+
+        %%% Not a required implementation, but recommended %%%
+        %{        
+        function [A, BX, BV, BI,  Bu, C, DX, DV, DI, Du] = get_linear_matrix(obj)
+            % Define the system matrix of the approximate linear model.
+            % If not defined, it is derived numerically from the "get_dX_constraint" method.
+            
+            % varargout
+            %　Each matrix corresponding to the following equation
+            %  x : controller state vector
+            %  X : Column vector of the states of all components to be observed
+            %  u : Input from global controller to controller
+            %  U : Input from controller to target component
+            % [differential equation]
+            % dx = A*(x-xeq) + BX*(X-Xeq) + BV*(V-Veq) + BI*(I-Ieq) + Bu*(u-ueq)
+            % [output equation]
+            % U  = C*(x-xeq) + BX*(X-Xeq) + DV*(V-Veq) + DI*(I-Ieq) + Du*(u-ueq)
+
+
+            %%%%%%%%%% define %%%%%%%%%%
+            A  = 
+            BX =
+            BV =
+            BI =
+            Bu =
+            C  = 
+            DX =
+            DV = 
+            DI = 
+            Du = 
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        end
+        %}
+        
+    end
+end

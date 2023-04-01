@@ -42,7 +42,7 @@ classdef generator_2axis < component % 状態・パラメーターはqを先に�
             name_tag = horzcat(gen_state,avr_state,pss_state,governor_state);
         end
 
-        function u_name = get_port_name(obj)
+        function u_name = get_u_name(obj)
             u_name = {'Vfd','Pm'};
         end
         

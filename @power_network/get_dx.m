@@ -1,6 +1,6 @@
 function dx = get_dx(bus, controllers_global, controllers, Ymat,...
     nx_bus, nx_controller_global, nx_controller, nu_bus,...
-    t, x_all, u, idx_u, idx_fault, simulated_bus, connected_bus, GridCode_checker)
+    t, x_all, u, idx_u, idx_fault, simulated_bus, connected_bus, GridCode_checker, OutputEq_manager)
 
 GridCode_checker.newline(t);
 
@@ -96,15 +96,16 @@ end
 
 dx_component = cell(n_simulated_bus, 1);
 constraint = cell(n_simulated_bus, 1);
+
+OutputEq_manager.new_time(t)
 for i = 1:numel(simulated_bus)
     idx = simulated_bus(i);
-   [dx_component{i}, constraint{i}] = bus{idx}.component.get_dx_con_func(...
-    t, x_bus{idx}, Vall(:, idx), Iall(:, idx), U_bus{idx}...   
-    ); 
+    
+    status = GridCode_checker.report_component(idx,t, x_bus{idx}, Vall(:, idx), Iall(:, idx), U_bus{idx});
+    [dx_component{i}, constraint{i}] = bus{idx}.component.get_dx_con_func(t, x_bus{idx}, Vall(:, idx), Iall(:, idx), U_bus{idx}); 
+    [dx_component{i}, constraint{i}] = GridCode_checker.dx_I_filter(idx,status,dx_component{i},constraint{i});
 
-   status = GridCode_checker.report_component(idx, ...
-                    t, x_bus{idx}, Vall(:, idx), Iall(:, idx), U_bus{idx});
-   [dx_component{i}, constraint{i}] = GridCode_checker.dx_I_filter(idx,status,dx_component{i},constraint{i});
+    OutputEq_manager.add_data(idx,t,x_bus{idx}, Vall(:, idx), Iall(:, idx), U_bus{idx});
 end
 dx_algebraic = vertcat(constraint{:}, reshape(Vall(:, idx_fault), [], 1));
 

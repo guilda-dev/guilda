@@ -3,7 +3,7 @@ classdef controller < handle
 % GUILDA上に制御器モデルを実装するために必要なmethodが定義されている。
 % 新しい制御器モデルを実装する場合はこのcontrollerクラスを継承すること。
     
-    properties(SetAccess=private)
+    properties(SetAccess=protected)
         index_input
         index_observe
         CostFunction = @(obj, t, x, X, V, I, U_global) 0;
@@ -13,13 +13,17 @@ classdef controller < handle
         index_all
     end
     
+    properties
+        parameter
+    end
+    
     methods(Abstract)
         [dx, u] = get_dx_u(obj, t, x, X, V, I, U_global);
         nx = get_nx(obj);
     end
 
-    properties(Access = private)
-        power_network
+    properties(Access = protected)
+        network
     end
     
     properties
@@ -71,10 +75,10 @@ classdef controller < handle
 
         function check_function(obj, f, val_type)
             try
-                X = tools.arrayfun(@(i)   obj.power_network.a_bus{i}.component.x_equilibrium,obj.index_input(:));
-                V = tools.arrayfun(@(i)   obj.power_network.a_bus{i}.component.V_equilibrium,obj.index_input(:));
-                I = tools.arrayfun(@(i)   obj.power_network.a_bus{i}.component.I_equilibrium,obj.index_input(:));
-                U = tools.arrayfun(@(i) zeros(obj.power_network.a_bus{i}.component.get_nu,1),obj.index_observe(:));
+                X = tools.arrayfun(@(i)   obj.network.a_bus{i}.component.x_equilibrium,obj.index_input(:));
+                V = tools.arrayfun(@(i)   obj.network.a_bus{i}.component.V_equilibrium,obj.index_input(:));
+                I = tools.arrayfun(@(i)   obj.network.a_bus{i}.component.I_equilibrium,obj.index_input(:));
+                U = tools.arrayfun(@(i) zeros(obj.network.a_bus{i}.component.get_nu,1),obj.index_observe(:));
                 val = f(obj, 0, x, X, V, I, U);
                 if ~isa(val,val_type); error_code =1; 
                 else; error_code =0; end
@@ -86,8 +90,9 @@ classdef controller < handle
                 case 2; error('The function must be in the form of f(obj,t,x,V,I,u)')
             end
         end
+        
         function register_net(obj,net)
-            obj.power_network = net;
+            obj.network = net;
         end
         
     end

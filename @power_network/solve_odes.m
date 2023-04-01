@@ -87,6 +87,8 @@ out.simulated_bus = cell(numel(t_simulated)-1, 1);
 out.fault_bus = cell(numel(t_simulated)-1, 1);
 out.Ymat_reproduce = cell(numel(t_simulated)-1, 1);
 
+OutputEq_manager = tools.Outputeq_manager(obj);
+
 
 
 simulate_iteration = 1;
@@ -122,7 +124,8 @@ for i = 1:numel(t_simulated)-1
                     bus, controllers_global, controllers, Ymat,...
                     nx_bus, nx_kg, nx_k, nu_bus, ...
                     t, x, u_, idx_u, f_, simulated_bus,...
-                    connected_bus, checker);
+                    connected_bus, checker,...
+                    OutputEq_manager);
             case 'foh'
                 us_ = uf(t_simulated(i));
                 ue_ = uf(t_simulated(i+1));
@@ -131,7 +134,8 @@ for i = 1:numel(t_simulated)-1
                     bus, controllers_global, controllers, Ymat,...
                     nx_bus, nx_kg, nx_k, nu_bus, ...
                     t, x, u_(t), idx_u, f_, simulated_bus,...
-                    connected_bus, checker);
+                    connected_bus, checker,...
+                    OutputEq_manager);  
         end
         
         nx = numel(x0);
@@ -235,6 +239,8 @@ end
 out.sols = sols;
 out.linear = linear;
 out.GridCode_checker = checker;
+out.OutputEq = OutputEq_manager.export_y(out.t);
+
 end
 
 function t_simulated = get_t_simulated(t_cand, uf, fault_f)
