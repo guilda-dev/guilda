@@ -7,12 +7,16 @@ classdef component < handle
         get_dx_con_func
         get_y_func
         CostFunction = @(obj,t,x,V,I,u) 0;
+        grid_code    = @(obj,t,x,V,I,u) nan; 
+        restoration  = @(obj,t,x,V,I,u) nan;
     end
     
     properties(SetAccess = protected)
         x_equilibrium
         V_equilibrium
         I_equilibrium
+
+        is_connected = true;
     end
     
     methods(Abstract)
@@ -176,6 +180,30 @@ classdef component < handle
             obj.CostFunction = func;
         end
 
+
+        % グリッドに接続/解列する条件式を定義する際のチェックメソッド
+        function set_grid_code(obj, code)
+            obj.grid_code = code;
+        end
+        function set.grid_code(obj, code)
+            obj.check_function(code,'logical');
+            obj.grid_code = code;
+        end
+        function set_restoration(obj, code)
+            obj.restoration = code;
+        end
+        function set.restoration(obj, code)
+            obj.check_function(code,'logical');
+            obj.restoration = code;
+        end
+
+        %機器の接続状況を示すis_connectedプロパティを操作するメソッド
+        function connect(obj)
+            obj.is_connected = true;
+        end
+        function disconnect(obj)
+            obj.is_connected = false;
+        end
 
     end
 end

@@ -28,6 +28,7 @@ classdef simulationResult < handle
         sols
         linear
         idx_connected
+        GridCode_checker
     end
 
     properties(Access=private)
