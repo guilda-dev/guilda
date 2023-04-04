@@ -1,9 +1,8 @@
 classdef GridCode_checker < handle
 
     properties    
-        onoff = false;
-        ignore_disconnected_machine = false;
-
+        observe = true;
+        control = false;
 
         record_time
         record_component
@@ -18,7 +17,9 @@ classdef GridCode_checker < handle
         nbus
         nbr
 
-        logical_connect_idx
+        abr_grid_code
+        abus_grid_code
+        abus_restoration
 
         separate_Vmat_from
         separate_Vmat_to
@@ -34,23 +35,51 @@ classdef GridCode_checker < handle
     end
 
     methods
-        function obj = GridCode_checker(net, onoff, tlim)
+        function obj = GridCode_checker(net, mode, tlim)
+
+            switch mode
+                case 'ignore'
+                    obj.observe = false;
+                    obj.control = false;
+                case 'monitor'
+                    obj.observe = true;
+                    obj.control = false;
+                case 'control'
+                    obj.observe = true;
+                    obj.control = true;
+            end
+
             obj.net = net;
             obj.nbus = numel(net.a_bus);
             obj.nbr  = numel(net.a_branch);
-            obj.onoff = onoff;
-            obj.tnow  = tlim(1);
-            obj.tlim  = tlim;
-
+            obj.tnow = tlim(1);
+            obj.tlim = tlim;
             obj.separate_Vmat_from = zeros(2*obj.nbr,2*obj.nbus);
             obj.separate_Vmat_to   = zeros(2*obj.nbr,2*obj.nbus);
+
+            obj.abus_grid_code   = true(obj.nbus,1);
             for i = 1:obj.nbr
                 br = net.a_branch{i};
-                obj.separate_Vmat_from(2*i-1,2*br.from-1)   =  1;
-                obj.separate_Vmat_from(2*i  ,2*br.from)     =  1;
-                obj.separate_Vmat_to(2*i-1,2*br.to-1) = 1;
-                obj.separate_Vmat_to(2*i  ,2*br.to)   = 1;
+                obj.separate_Vmat_from(2*i+[-1,0],2*br.from+[-1,0]) = eye(2);
+                obj.separate_Vmat_to(  2*i+[-1,0],  2*br.to+[-1,0]) = eye(2);
+
+                Vfr = obj.net.a_bus{br.from}.V_equilibrium;
+                Vto = obj.net.a_bus{br.to  }.V_equilibrium;
+                obj.abr_grid_code(i) = ~isnan(br.grid_code(br,Vfr,Vto));
             end
+
+            obj.abus_grid_code   = true(obj.nbus,1);
+            obj.abus_restoration = true(obj.nbus,1);
+            for i = 1:obj.nbus
+                c = obj.net.a_bus{i}.component;
+                x = c.x_equilibrium;
+                V = tools.complex2vec(c.V_equilibrium);
+                I = tools.complex2vec(c.I_equilibrium);
+                u = zeros(c.get_nu,1);
+                obj.abus_grid_code(i)   = ~isnan(c.grid_code(c,0,x,V,I,u));
+                obj.abus_restoration(i) = ~isnan(c.restoration(c,0,x,V,I,u));
+            end
+            
         end
 
         function [value,isterminal,direction] = EventFcn(obj)
@@ -61,57 +90,54 @@ classdef GridCode_checker < handle
 
 
         function newline(obj, time)
-            obj.record_component = [obj.record_component,nan(obj.nbus,1)];
-            obj.record_branch    = [obj.record_branch   ,nan(obj.nbr ,1)]; 
-            obj.record_time      = [obj.record_time, time];
-        end
-        
-        function [Ymat, Ymat_all, Ymat_reproduce] = get_reproduce_admittance_matrix(obj, simulated_bus)
-            simulated_branch = find(tools.vcellfun(@( br) br.is_connected, obj.net.a_branch));
-            
-            [Y, Ymat_all]                = obj.net.get_admittance_matrix(1:obj.nbus, simulated_branch);
-            [~, Ymat, ~, Ymat_reproduce] = obj.net.reduce_admittance_matrix(Y, simulated_bus);
-
-            obj.set_Yreproduce(Ymat_reproduce);
+            if isempty(obj.record_time) || time >= obj.record_time(end)+0.1
+                obj.record_component = [obj.record_component,nan(obj.nbus,1)];
+                obj.record_branch    = [obj.record_branch   ,nan(obj.nbr ,1)]; 
+                obj.record_time      = [obj.record_time, time];
+            end
         end
         
 
-        function set_connect_bus(obj,idx)
-            obj.logical_connect_idx = false(obj.nbus,1);
-            obj.logical_connect_idx(idx) = true;
+        function set_Ymat_reproduce(obj, Ymat_reproduce)
+            obj.culcV_mat_from = obj.separate_Vmat_from * Ymat_reproduce;
+            obj.culcV_mat_to   = obj.separate_Vmat_to   * Ymat_reproduce;
         end
 
        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%  get_dx内で呼び出される関数軍　%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function status = report_component(obj, i, t, x, V, I, u)
+        function report_component(obj, i, t, x, V, I, u)
             comp = obj.net.a_bus{i}.component;
-            if obj.onoff
-                if comp.is_connected
+            if obj.observe
+                if comp.is_connected && obj.abus_grid_code(i)
                     status = comp.grid_code(comp,t,x,V,I,u);
                     if status == false
                         obj.Continue = false;
-                        comp.disconnect;
+                        if obj.control
+                            comp.disconnect;
+                        end
+                    elseif isnan(status)
+                        status = comp.is_connected;
+                    end
+                elseif (~comp.is_connected) && obj.abus_restoration(i)
+                    status = comp.restoration(comp,t,x,V,I,u);
+                    if status == true
+                        obj.Continue = false;
+                        if obj.control
+                            comp.connect;
+                        end
                     elseif isnan(status)
                         status = comp.is_connected;
                     end
                 else
-                    status = comp.restoration(comp,t,x,V,I,u);
-                    if status == true
-                        obj.Continue = false;
-                        comp.connect;
-                    elseif isnan(status)
-                        status = comp.is_connected;
-                    end
+                    status = comp.is_connected;
                 end
                 obj.record_component(i,end) = status;
-            else
-                status = comp.is_connected;
             end
         end
 
         function report_branch(obj, Varray)
-            if obj.onoff
+            if obj.observe
                 Vfrom = obj.culcV_mat_from * Varray;
                 Vto   = obj.culcV_mat_to   * Varray;
                 for i = 1:obj.nbr
@@ -131,20 +157,6 @@ classdef GridCode_checker < handle
                 end
             end
         end
-
-        function [dx,I] = dx_I_filter(obj,idx,status,dx,I)
-            if ~isnan(dx)
-                if obj.ignore_disconnected_machine
-                    if status==false
-                        dx = zeros(size(dx));
-                        I  = zeros(size(I));
-                    end
-                end
-            end
-            if ~ obj.logical_connect_idx(idx)
-                I = [];
-            end
-        end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -157,12 +169,12 @@ classdef GridCode_checker < handle
             subplot(1,2,1)
             hold on
             for i = 1:obj.nbus
-                [sheet, ~] = divide([],obj.record_component(i,:));
-                tidx = diff( [0,obj.record_time(sheet(1,:))] );
+                idx = find( diff([obj.record_component(i,:),2]) ~= 0 );
+                tidx = diff( [0,obj.record_time(idx)] );
                 b = barh(obj.nbus+1-i,tidx,'stacked');
-                arrayfun(@(idx) set(b(idx), 'FaceColor',[     0, 0.4470, 0.7410]), find(sheet(2,:)==true  ))
-                arrayfun(@(idx) set(b(idx), 'FaceColor',[0.8500, 0.3250, 0.0980]), find(sheet(2,:)==false ))
-                arrayfun(@(idx) set(b(idx), 'FaceColor',[     0,      0,      0]), find(isnan(sheet(2,:)) ))
+                arrayfun(@(idx) set(b(idx), 'FaceColor',[     0, 0.4470, 0.7410]), find(obj.record_component(i,idx)==true  ))
+                arrayfun(@(idx) set(b(idx), 'FaceColor',[0.8500, 0.3250, 0.0980]), find(obj.record_component(i,idx)==false ))
+                arrayfun(@(idx) set(b(idx), 'FaceColor',[     0,      0,      0]), find(isnan(obj.record_component(i,idx)) ))
             end
             yticklabels( arrayfun(@(i) ...
                         [class(obj.net.a_bus{obj.nbus+1-i}.component),'_',num2str(obj.nbus+1-i)], 1:obj.nbus, ...
@@ -173,12 +185,12 @@ classdef GridCode_checker < handle
             subplot(1,2,2)
             hold on
             for i = 1:obj.nbr
-                [sheet, ~] = divide([],obj.record_branch(i,:));
-                tidx = diff( [0,obj.record_time(sheet(1,:))] );
+                idx = find( diff([obj.record_branch(i,:),2]) ~= 0 );
+                tidx = diff( [0,obj.record_time(idx)] );
                 b = barh(obj.nbr+1-i,tidx);
-                arrayfun(@(idx) set(b(idx), 'FaceColor',[     0, 0.4470, 0.7410]), find(sheet(2,:)==true  ))
-                arrayfun(@(idx) set(b(idx), 'FaceColor',[0.8500, 0.3250, 0.0980]), find(sheet(2,:)==false ))
-                arrayfun(@(idx) set(b(idx), 'FaceColor',[     0,      0,      0]), find(isnan(sheet(2,:)) ))
+                arrayfun(@(idx) set(b(idx), 'FaceColor',[     0, 0.4470, 0.7410]), find(obj.record_branch(i,idx)==true  ))
+                arrayfun(@(idx) set(b(idx), 'FaceColor',[0.8500, 0.3250, 0.0980]), find(obj.record_branch(i,idx)==false ))
+                arrayfun(@(idx) set(b(idx), 'FaceColor',[     0,      0,      0]), find(isnan(obj.record_branch(i,idx)) ))
             end
             yticklabels( cellfun(@(br) ['branch',num2str(br.from),'-',num2str(br.to)], obj.net.a_branch, 'UniformOutput',false));
             yticks(1:obj.nbr)
@@ -210,7 +222,7 @@ classdef GridCode_checker < handle
             obj.tcnt = 2;
         end
 
-        function out = live(obj,t,~,~)
+        function out = live(obj,t,~,flag)
             if ~isempty(t)
                 if (t(end) - obj.tnow) >= 1
                     temp = obj.record_component(:,end);
@@ -227,11 +239,10 @@ classdef GridCode_checker < handle
                     drawnow
                     obj.tcnt = obj.tcnt + 1;
                     obj.tnow = obj.tnow + 1;
-                    obj.live(t(end),[],[]);
                 end
-    %             if strcmp(flag,'done')
-    %                 obj.live(ceil(obj.tlim(2)),[],[]);
-    %             end
+                if strcmp(flag,'done')
+                    obj.live(ceil(obj.tlim(2)),[],[]);
+                end
             end
             out = false;
         end
@@ -240,11 +251,6 @@ classdef GridCode_checker < handle
     end
 
     methods(Access =  private)
-
-        function set_Yreproduce(obj,Y)
-            obj.culcV_mat_from = obj.separate_Vmat_from * Y;
-            obj.culcV_mat_to = obj.separate_Vmat_to * Y;
-        end
 
         function set_axis(obj)
             tlim_format  = floor(obj.tlim(1)):1:ceil(obj.tlim(2));
@@ -255,28 +261,9 @@ classdef GridCode_checker < handle
             xlabel('second(s)')
             xticks(tlim_format)
             xlim([tlim_format(1),tlim_format(end)])
+            grid on
         end
     end
 end
 
 
-
-function [sheet,data] = divide(sheet,data)
-    if numel(data)~=0
-        mode = data(1);
-        idx = find(data~=mode,1,'first');
-        if isempty(sheet)
-            preidx = 0;
-        else
-            preidx = sheet(1,end);
-        end
-        if isempty(idx)
-            sheet = [ sheet, [preidx + numel(data);mode] ];
-        else
-            sheet = [ sheet, [preidx + idx-1;mode] ];
-            [sheet,data] = divide(sheet,data(idx:end));
-        end
-    else
-        sheet = zeros(2,0);
-    end
-end
