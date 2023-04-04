@@ -40,7 +40,10 @@ switch options.method
 end
 
 checker = tools.GridCode_checker(obj, options.grid_code, t);
-if options.grid_code && strcmp(options.OutputFcn,'live_grid_code')
+if strcmp(options.OutputFcn,'live_grid_code')
+    if strcmp(options.grid_code,'ignore')
+        checker = tools.GridCode_checker(obj, 'monitor', t);
+    end
     checker.live_init;
     options.OutputFcn = @(t,y,flag) checker.live(t,y,flag);
 end
@@ -95,9 +98,9 @@ simulate_iteration = 1;
 for i = 1:numel(t_simulated)-1
     f_ = fault_f((t_simulated(i)+t_simulated(i+1))/2);
     except = unique([f_(:); idx_controller(:)]);
-    simulated_bus = setdiff(1:numel(bus), setdiff(idx_non_unit, except));
-    simulated_bus = simulated_bus(:);
-    out.simulated_bus{i} = simulated_bus;
+    base_simulated_bus = setdiff(1:numel(bus), setdiff(idx_non_unit, except));
+    base_simulated_bus = base_simulated_bus(:);
+    out.simulated_bus{i} = base_simulated_bus;
     out.fault_bus{i} = f_;
    
     idx_fault_bus = [f_(:)*2-1, f_(:)*2]';
@@ -108,14 +111,19 @@ for i = 1:numel(t_simulated)-1
     t0   = t_simulated(i);
     tend = t_simulated(i+1);
     while simulating
-        connected_bus = find(tools.vcellfun(@(bus) bus.component.is_connected, obj.a_bus));
-        connected_bus = setdiff(connected_bus, setdiff(idx_non_unit, except));
-        checker.set_connect_bus(connected_bus);
-        [Ymat, Ymat_all, Ymat_reproduce] = checker.get_reproduce_admittance_matrix(connected_bus);
-        idx_connected_bus = [2*connected_bus-1, 2*connected_bus]';
-        idx_connected_bus = idx_connected_bus(:);
+        disconnected_bus = find(tools.vcellfun(@(bus) ~bus.component.is_connected, obj.a_bus));
+        disconnected_bus = intersect( disconnected_bus, idx_non_unit);
+        simulated_bus = setdiff(base_simulated_bus, setdiff(disconnected_bus, except));
+        connected_branch = find(tools.vcellfun(@( br) br.is_connected, obj.a_branch));
+        [Y, Ymat_all] = obj.get_admittance_matrix(1:numel(bus), connected_branch);
+        [~, Ymat, ~, Ymat_reproduce] = obj.reduce_admittance_matrix(Y, simulated_bus);
         
-        x = [x0; V0(idx_connected_bus); I0(idx_fault_bus)];
+        checker.set_Ymat_reproduce(Ymat_reproduce);
+
+        idx_simulated_bus = reshape([2*simulated_bus-1, 2*simulated_bus]',[],1);
+        idx_disconnected_bus = reshape([2*disconnected_bus-1, 2*disconnected_bus]',[],1);
+        
+        x = [x0; V0(idx_simulated_bus); I0(idx_fault_bus); V0(idx_disconnected_bus)];
     
         switch options.method
             case 'zoh'
@@ -123,9 +131,9 @@ for i = 1:numel(t_simulated)-1
                 func = @(t, x) power_network.get_dx(...
                     bus, controllers_global, controllers, Ymat,...
                     nx_bus, nx_kg, nx_k, nu_bus, ...
-                    t, x, u_, idx_u, f_, simulated_bus,...
-                    connected_bus, checker,...
-                    OutputEq_manager);
+                    t, x, u_, idx_u, f_, ...
+                    simulated_bus, disconnected_bus, ...
+                    checker, OutputEq_manager);
             case 'foh'
                 us_ = uf(t_simulated(i));
                 ue_ = uf(t_simulated(i+1));
@@ -133,17 +141,17 @@ for i = 1:numel(t_simulated)-1
                 func = @(t, x) power_network.get_dx(...
                     bus, controllers_global, controllers, Ymat,...
                     nx_bus, nx_kg, nx_k, nu_bus, ...
-                    t, x, u_(t), idx_u, f_, simulated_bus,...
-                    connected_bus, checker,...
-                    OutputEq_manager);  
+                    t, x, u_(t), idx_u, f_, ...
+                    simulated_bus, disconnected_bus, ...
+                    checker, OutputEq_manager);  
         end
         
         nx = numel(x0);
         nVI = numel(x)-nx;
-        nV = nVI-numel(f_)*2;
+        nV = numel(simulated_bus)*2;
         nI = numel(f_)*2;
         Mf = blkdiag(eye(nx), zeros(nVI));
-        %       r = @(t, y, flag) false;
+        %     r = @(t, y, flag) false;
         %     r = @odephas2;
         t_now = datetime;
         r = @(t, y, flag) reporter.report(t, y, flag, options.reset_time, t_now);
@@ -160,7 +168,7 @@ for i = 1:numel(t_simulated)-1
             sol = odextend(sol, [], tend, sol.y(:,end),odeoptions);
         end
 
-        if checker.Continue
+        if checker.Continue || sol.x(end)==tend
             simulating = false;
         else
             checker.Continue = true;
@@ -169,7 +177,7 @@ for i = 1:numel(t_simulated)-1
         out.Ymat_reproduce{i} = [out.Ymat_reproduce{i}, {Ymat_reproduce}];
         sols{i} = [sols{i},{sol}];
         y = sol.y(:, end);
-        V = y(nx+(1:numel(idx_connected_bus)));
+        V = y(nx+(1:numel(idx_simulated_bus)));
         x0 = y(1:nx);
         V0 = Ymat_reproduce*V;
         I0 = Ymat_all * V0;

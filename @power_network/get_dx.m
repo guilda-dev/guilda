@@ -1,46 +1,50 @@
 function dx = get_dx(bus, controllers_global, controllers, Ymat,...
     nx_bus, nx_controller_global, nx_controller, nu_bus,...
-    t, x_all, u, idx_u, idx_fault, simulated_bus, connected_bus, GridCode_checker, OutputEq_manager)
+    t, x_all, u, idx_u, idx_fault, simulated_bus, disconnected_bus, GridCode_checker, OutputEq_manager)
 
 GridCode_checker.newline(t);
 
-n_simulated_bus = numel(simulated_bus);
-n1 = sum(nx_bus(simulated_bus));
+has_state_bus = union(simulated_bus,disconnected_bus,'sorted');
+n_has_state_bus = numel(has_state_bus);
+n1 = sum(nx_bus(has_state_bus));
 n2 = sum(nx_controller_global);
 n3 = sum(nx_controller);
-n4 = 2*numel(connected_bus);
+n4 = 2*numel(simulated_bus);
 n5 = 2*numel(idx_fault);
+n6 = 2*numel(disconnected_bus);
 
 x = x_all(1:n1);
 xkg = x_all(n1+(1:n2));
 xk = x_all(n1+n2+(1:n3));
 
-Vraw = x_all(n1+n2+n3+(1:n4));
-GridCode_checker.report_branch(Vraw)
 
-V = reshape(Vraw, 2, []);
+V = reshape(x_all(n1+n2+n3+(1:n4)), 2, []);
 I_fault = reshape(x_all(n1+n2+n3+n4+(1:n5)), 2, []);
-
+V_disconnected = reshape(x_all(n1+n2+n3+n4+n5+(1:n6)), 2, []);
 
 I = reshape(Ymat*V(:), 2, []);
+GridCode_checker.report_branch(V(:))
 
 Vall = zeros(2, numel(bus));
 Iall = zeros(2, numel(bus));
 
-Vall(:, connected_bus) = V;
-Iall(:, connected_bus) = I;
+Vall(:, simulated_bus) = V;
+Iall(:, simulated_bus) = I;
 Iall(:, idx_fault)     = I_fault;
+
+Vall_disconnected = zeros(2, numel(bus));
+Vall_disconnected(:, disconnected_bus) = V_disconnected;
 
 idx = 0;
 
 x_bus = cell(numel(bus), 1);
 U_bus = cell(numel(bus), 1);
 
-for i = 1:n_simulated_bus
+for i = 1:n_has_state_bus
 %     b = bus{itr};
-    x_bus{simulated_bus(i)} = x(idx+(1:nx_bus(simulated_bus(i))));
-    idx = idx + nx_bus(simulated_bus(i));
-    U_bus{simulated_bus(i)} = zeros(nu_bus(simulated_bus(i)), 1);
+    x_bus{has_state_bus(i)} = x(idx+(1:nx_bus(has_state_bus(i))));
+    idx = idx + nx_bus(has_state_bus(i));
+    U_bus{has_state_bus(i)} = zeros(nu_bus(has_state_bus(i)), 1);
 end
 
 xkg_cell = cell(numel(controllers_global), 1);
@@ -94,20 +98,33 @@ end
 %     simulated_bus);
 
 
-dx_component = cell(n_simulated_bus, 1);
-constraint = cell(n_simulated_bus, 1);
+dx_component = cell(numel(bus), 1);
+constraint_I = cell(numel(bus), 1);
+constraint_V = cell(numel(bus), 1);
 
 OutputEq_manager.new_time(t)
+idx_connected = ~ismember(has_state_bus, disconnected_bus);
 for i = 1:numel(simulated_bus)
     idx = simulated_bus(i);
-    
-    status = GridCode_checker.report_component(idx,t, x_bus{idx}, Vall(:, idx), Iall(:, idx), U_bus{idx});
-    [dx_component{i}, constraint{i}] = bus{idx}.component.get_dx_con_func(t, x_bus{idx}, Vall(:, idx), Iall(:, idx), U_bus{idx}); 
-    [dx_component{i}, constraint{i}] = GridCode_checker.dx_I_filter(idx,status,dx_component{i},constraint{i});
-
-    OutputEq_manager.add_data(idx,t,x_bus{idx}, Vall(:, idx), Iall(:, idx), U_bus{idx});
+    if idx_connected(i)
+        [dx_component{idx}, constraint_I{idx}] = bus{idx}.component.get_dx_con_func(t, x_bus{idx}, Vall(:, idx), Iall(:, idx), U_bus{idx}); 
+        GridCode_checker.report_component(idx,t, x_bus{idx}, Vall(:, idx), Iall(:, idx), U_bus{idx});
+        OutputEq_manager.add_data(idx,t,x_bus{idx}, Vall(:, idx), Iall(:, idx), U_bus{idx});
+    else
+        [dx_component{idx}, constraint_V{idx}] = bus{idx}.component.get_dx_con_func(t, x_bus{idx}, Vall_disconnected(:, idx), [0;0], U_bus{idx}); 
+        constraint_I{i} = Iall(:,idx);
+        GridCode_checker.report_component(idx,t, x_bus{idx}, Vall_disconnected(:, idx), [0;0], U_bus{idx});
+        OutputEq_manager.add_data(idx,t,x_bus{idx}, Vall_disconnected(:, idx), [0;0], U_bus{idx});
+    end
 end
-dx_algebraic = vertcat(constraint{:}, reshape(Vall(:, idx_fault), [], 1));
+for idx = setdiff(disconnected_bus, simulated_bus)'
+    [dx_component{idx}, constraint_V{idx}] = bus{idx}.component.get_dx_con_func(t, x_bus{idx}, Vall_disconnected(:, idx), [0;0], U_bus{idx}); 
+    GridCode_checker.report_component(idx,t, x_bus{idx}, Vall_disconnected(:, idx), [0;0], U_bus{idx});
+    OutputEq_manager.add_data(idx,t,x_bus{idx}, Vall_disconnected(:, idx), [0;0], U_bus{idx});
+end
 
+
+dx_algebraic = vertcat(constraint_I{:}, reshape(Vall(:, idx_fault), [], 1), constraint_V{:});
 dx = [vertcat(dx_component{:}); vertcat(dxkg{:}); vertcat(dxk{:}); dx_algebraic];
+
 end
