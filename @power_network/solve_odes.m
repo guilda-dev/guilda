@@ -40,12 +40,16 @@ switch options.method
 end
 
 checker = tools.GridCode_checker(obj, options.grid_code, t);
+state_list = unique(tools.hcellfun(@(b) b.component.get_state_name, obj.a_bus));
 if strcmp(options.OutputFcn,'live_grid_code')
     if strcmp(options.grid_code,'ignore')
         checker = tools.GridCode_checker(obj, 'monitor', t);
     end
     checker.live_init;
     options.OutputFcn = @(t,y,flag) checker.live(t,y,flag);
+elseif ismember(options.OutputFcn, state_list)
+    response_reporter = tools.Response_reporter(obj,t,options.OutputFcn);
+    options.OutputFcn = @(t,y,flag) response_reporter.plotFcn(t,y,flag);
 end
 reporter = tools.Reporter(t_simulated(1), t_simulated(end), options.do_report, options.OutputFcn);
 
