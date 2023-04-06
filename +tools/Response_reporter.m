@@ -1,15 +1,8 @@
 classdef Response_reporter < handle
 
     properties
-        net
-        tlim
         state_tag = 'omega';
-
-        idx_state
-        idx_bus_num
-
-        ax
-        plot_line
+        time_interval = 0.1;
         colororder = [colororder;...
                         [ 51,  34, 136;...
                          136, 204, 238;...
@@ -24,6 +17,22 @@ classdef Response_reporter < handle
                      ];
     end
 
+    properties(SetAccess=private)
+        net
+        tlim
+        idx_state
+        idx_bus_num
+    end
+
+    properties(Access=private)
+        last_time = 0;
+        stash
+        ax
+        plot_line
+        time_line
+    end
+
+
     methods
         function obj = Response_reporter(net,tlim, state)
             obj.net = net;
@@ -32,6 +41,11 @@ classdef Response_reporter < handle
                 obj.state_tag = state;
             end
             obj.init_plot;
+        end
+
+        function set.state_tag(obj, state)
+            obj.state_tag = state;
+            obj.set_state;
         end
 
         function set_state(obj)
@@ -68,10 +82,11 @@ classdef Response_reporter < handle
                 idx_bus = obj.idx_bus_num(i);
                 idx_color = 1+ mod( i-1, size(obj.colororder,1) );
 
-                obj.plot_line{i} = animatedline('LineWidth',1.2,'Color',obj.colororder(idx_color,:));
+                obj.plot_line{i} = animatedline('LineWidth',1.1,'Color',obj.colororder(idx_color,:));
                 word_legend{i}   = [ class(obj.net.a_bus{idx_bus}.component),num2str(idx_bus) ];
             end
             legend(word_legend, 'Location', 'southoutside', 'Interpreter','none', 'NumColumns',4, 'FontSize',8)
+            obj.time_line = xline(0,'LineWidth',0.5);
             hold off
             obj.ax = gca;
         end
@@ -82,14 +97,25 @@ classdef Response_reporter < handle
                 obj.init_plot
             end
             if numel(t) ==1
-                hold on
-                for i = 1:numel(obj.idx_state)
-                    addpoints( obj.plot_line{i}, t(1), y(obj.idx_state(i)));
+                state = y(obj.idx_state);
+                newdata = [t; state(:)];
+                obj.stash = [obj.stash, newdata];
+
+                if ( t - obj.last_time ) > obj.time_interval
+                    obj.add_plot
+                    obj.last_time = t;
                 end
-                drawnow limitrate
-                hold off
             end
             out = false;
+        end
+
+        function add_plot(obj)
+            for i = 1:numel(obj.idx_state)
+                addpoints(obj.plot_line{i}, obj.stash(1,:), obj.stash(i+1,:) );
+            end
+            obj.time_line.Value = obj.stash(1,end);
+            drawnow limitrate
+            obj.stash = [];
         end
     end
 end

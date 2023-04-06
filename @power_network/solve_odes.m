@@ -47,7 +47,7 @@ if strcmp(options.OutputFcn,'live_grid_code')
     end
     checker.live_init;
     options.OutputFcn = @(t,y,flag) checker.live(t,y,flag);
-elseif ismember(options.OutputFcn, state_list)
+elseif any(strcmp(options.OutputFcn, state_list))
     response_reporter = tools.Response_reporter(obj,t,options.OutputFcn);
     options.OutputFcn = @(t,y,flag) response_reporter.plotFcn(t,y,flag);
 end
