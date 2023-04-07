@@ -41,16 +41,30 @@ end
 
 checker = tools.GridCode_checker(obj, options.grid_code, t);
 state_list = unique(tools.hcellfun(@(b) b.component.get_state_name, obj.a_bus));
-if strcmp(options.OutputFcn,'live_grid_code')
-    if strcmp(options.grid_code,'ignore')
-        checker = tools.GridCode_checker(obj, 'monitor', t);
-    end
-    checker.live_init;
-    options.OutputFcn = @(t,y,flag) checker.live(t,y,flag);
-elseif any(strcmp(options.OutputFcn, state_list))
-    response_reporter = tools.Response_reporter(obj,t,options.OutputFcn);
-    options.OutputFcn = @(t,y,flag) response_reporter.plotFcn(t,y,flag);
+if ~iscell(options.OutputFcn)
+    options.OutputFcn = {options.OutputFcn};
 end
+for i = 1:numel(options.OutputFcn)
+    switch class(options.OutputFcn{i})
+        case {'char','string'}
+            if strcmp(options.OutputFcn{i},'live_grid_code')
+                if strcmp(options.grid_code,'ignore')
+                    checker = tools.GridCode_checker(obj, 'monitor', t);
+                end
+                checker.set_axis;
+                options.OutputFcn{i} = @(t,y,flag) checker.live(t,y,flag);
+            elseif ismember(options.OutputFcn{i}, state_list)
+                response_reporter = tools.Response_reporter(obj,t,options.OutputFcn{i});
+                options.OutputFcn{i} = @(t,y,flag) response_reporter.plotFcn(t,y,flag);
+            end
+        case 'function_handle'
+            
+        otherwise
+            options.OutputFcn{i} = [];
+    end
+end
+options.OutputFcn = options.OutputFcn(tools.hcellfun(@(c) ~isempty(c), options.OutputFcn));
+
 reporter = tools.Reporter(t_simulated(1), t_simulated(end), options.do_report, options.OutputFcn);
 
 
