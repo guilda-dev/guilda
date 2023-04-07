@@ -41,16 +41,30 @@ end
 
 checker = tools.GridCode_checker(obj, options.grid_code, t);
 state_list = unique(tools.hcellfun(@(b) b.component.get_state_name, obj.a_bus));
-if strcmp(options.OutputFcn,'live_grid_code')
-    if strcmp(options.grid_code,'ignore')
-        checker = tools.GridCode_checker(obj, 'monitor', t);
-    end
-    checker.live_init;
-    options.OutputFcn = @(t,y,flag) checker.live(t,y,flag);
-elseif ismember(options.OutputFcn, state_list)
-    response_reporter = tools.Response_reporter(obj,t,options.OutputFcn);
-    options.OutputFcn = @(t,y,flag) response_reporter.plotFcn(t,y,flag);
+if ~iscell(options.OutputFcn)
+    options.OutputFcn = {options.OutputFcn};
 end
+for i = 1:numel(options.OutputFcn)
+    switch class(options.OutputFcn{i})
+        case {'char','string'}
+            if strcmp(options.OutputFcn{i},'live_grid_code')
+                if strcmp(options.grid_code,'ignore')
+                    checker = tools.GridCode_checker(obj, 'monitor', t);
+                end
+                checker.set_axis;
+                options.OutputFcn{i} = @(t,y,flag) checker.live(t,y,flag);
+            elseif ismember(options.OutputFcn{i}, state_list)
+                response_reporter = tools.Response_reporter(obj,t,options.OutputFcn{i});
+                options.OutputFcn{i} = @(t,y,flag) response_reporter.plotFcn(t,y,flag);
+            end
+        case 'function_handle'
+            
+        otherwise
+            options.OutputFcn{i} = [];
+    end
+end
+options.OutputFcn = options.OutputFcn(tools.hcellfun(@(c) ~isempty(c), options.OutputFcn));
+
 reporter = tools.Reporter(t_simulated(1), t_simulated(end), options.do_report, options.OutputFcn);
 
 
@@ -116,8 +130,8 @@ for i = 1:numel(t_simulated)-1
     tend = t_simulated(i+1);
     while simulating
         disconnected_bus = find(tools.vcellfun(@(bus) ~bus.component.is_connected, obj.a_bus));
-        disconnected_bus = intersect( disconnected_bus, idx_non_unit);
-        simulated_bus = setdiff(base_simulated_bus, setdiff(disconnected_bus, except));
+        disconnected_bus = setdiff( disconnected_bus, idx_non_unit);
+        simulated_bus = base_simulated_bus;
         connected_branch = find(tools.vcellfun(@( br) br.is_connected, obj.a_branch));
         [Y, Ymat_all] = obj.get_admittance_matrix(1:numel(bus), connected_branch);
         [~, Ymat, ~, Ymat_reproduce] = obj.reduce_admittance_matrix(Y, simulated_bus);
@@ -128,7 +142,7 @@ for i = 1:numel(t_simulated)-1
         idx_disconnected_bus = reshape([2*disconnected_bus-1, 2*disconnected_bus]',[],1);
         
         x = [x0; V0(idx_simulated_bus); I0(idx_fault_bus); V0(idx_disconnected_bus)];
-    
+
         switch options.method
             case 'zoh'
                 u_ = uf((t_simulated(i)+t_simulated(i+1))/2);
@@ -175,9 +189,9 @@ for i = 1:numel(t_simulated)-1
         if checker.Continue || sol.x(end)==tend
             simulating = false;
         else
-            checker.Continue = true;
             t0 = sol.x(end);
         end
+        checker.Continue = true;
         out.Ymat_reproduce{i} = [out.Ymat_reproduce{i}, {Ymat_reproduce}];
         sols{i} = [sols{i},{sol}];
         y = sol.y(:, end);
@@ -272,4 +286,3 @@ end
 
 t_simulated = t_cand([has_difference; true]);
 end
-

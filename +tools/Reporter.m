@@ -25,7 +25,7 @@ classdef Reporter < handle
             obj.reset = false;
             obj.do_report = do_report;
             if nargin < 3
-                obj.plotfunc = @odephas2;
+                obj.plotfunc = {@odephas2};
             else
                 obj.plotfunc = plotfunc;
             end
@@ -35,7 +35,8 @@ classdef Reporter < handle
             if isempty(obj.plotfunc)
                 f = false;
             else
-                f = obj.plotfunc(t, x, flag);
+                f = tools.vcellfun(@(fcn) fcn(t,x,flag), obj.plotfunc);
+                f = any(f);
             end
             t_now = datetime;
             [~, ~, ds] = hms(t_now - t_start);
