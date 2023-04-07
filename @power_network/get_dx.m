@@ -117,7 +117,7 @@ for i = 1:numel(simulated_bus)
         OutputEq_manager.add_data(idx,t,x_bus{idx}, Vall_disconnected(:, idx), [0;0], U_bus{idx});
     end
 end
-for idx = setdiff(disconnected_bus, simulated_bus)'
+for idx = reshape(setdiff(disconnected_bus, simulated_bus)',1,[])
     [dx_component{idx}, constraint_V{idx}] = bus{idx}.component.get_dx_con_func(t, x_bus{idx}, Vall_disconnected(:, idx), [0;0], U_bus{idx}); 
     GridCode_checker.report_component(idx,t, x_bus{idx}, Vall_disconnected(:, idx), [0;0], U_bus{idx});
     OutputEq_manager.add_data(idx,t,x_bus{idx}, Vall_disconnected(:, idx), [0;0], U_bus{idx});
