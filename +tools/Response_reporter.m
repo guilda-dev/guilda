@@ -78,6 +78,7 @@ classdef Response_reporter < handle
             xlabel('Time(s)',    'FontSize', 15, 'FontWeight', 'bold')
             ylabel(obj.state_tag,'FontSize', 15, 'FontWeight', 'bold')
             title('Response reporter', 'FontSize', 20, 'FontWeight', 'bold')
+            obj.time_line = xline(0,'LineWidth',0.5);
             for i = 1:nidx
                 idx_bus = obj.idx_bus_num(i);
                 idx_color = 1+ mod( i-1, size(obj.colororder,1) );
@@ -85,8 +86,7 @@ classdef Response_reporter < handle
                 obj.plot_line{i} = animatedline('LineWidth',1.1,'Color',obj.colororder(idx_color,:));
                 word_legend{i}   = [ class(obj.net.a_bus{idx_bus}.component),num2str(idx_bus) ];
             end
-            legend(word_legend, 'Location', 'southoutside', 'Interpreter','none', 'NumColumns',4, 'FontSize',8)
-            obj.time_line = xline(0,'LineWidth',0.5);
+            legend([{'time axis'};word_legend], 'Location', 'southoutside', 'Interpreter','none', 'NumColumns',4, 'FontSize',8)
             hold off
             obj.ax = gca;
         end
