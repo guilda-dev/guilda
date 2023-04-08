@@ -51,7 +51,6 @@ for i = 1:numel(options.OutputFcn)
                 if strcmp(options.grid_code,'ignore')
                     checker = tools.GridCode_checker(obj, 'monitor', t);
                 end
-                checker.set_axis;
                 options.OutputFcn{i} = @(t,y,flag) checker.live(t,y,flag);
             elseif ismember(options.OutputFcn{i}, state_list)
                 response_reporter = tools.Response_reporter(obj,t,options.OutputFcn{i});
