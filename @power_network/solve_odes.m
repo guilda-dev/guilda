@@ -109,7 +109,7 @@ out.Ymat_reproduce = cell(numel(t_simulated)-1, 1);
 
 OutputEq_manager = tools.Outputeq_manager(obj);
 
-
+idx_connected_origin = tools.vcellfun(@(b) b.component.is_connected, obj.a_bus);
 
 simulate_iteration = 1;
 for i = 1:numel(t_simulated)-1
@@ -266,7 +266,12 @@ out.linear = linear;
 out.GridCode_checker = checker;
 out.OutputEq = OutputEq_manager.export_y(out.t);
 
+arrayfun(@(i) obj.a_bus{i}.component.connect,    find( idx_connected_origin))
+arrayfun(@(i) obj.a_bus{i}.component.disconnect, find(~idx_connected_origin))
 end
+
+
+
 
 function t_simulated = get_t_simulated(t_cand, uf, fault_f)
 has_difference = true(numel(t_cand)-1, 1);
