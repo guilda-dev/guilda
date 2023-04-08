@@ -130,7 +130,7 @@ for i = 1:numel(t_simulated)-1
     while simulating
         disconnected_bus = find(tools.vcellfun(@(bus) ~bus.component.is_connected, obj.a_bus));
         disconnected_bus = setdiff( disconnected_bus, idx_non_unit);
-        simulated_bus = base_simulated_bus;
+        simulated_bus = setdiff( base_simulated_bus, setdiff(disconnected_bus, except));
         connected_branch = find(tools.vcellfun(@( br) br.is_connected, obj.a_branch));
         [Y, Ymat_all] = obj.get_admittance_matrix(1:numel(bus), connected_branch);
         [~, Ymat, ~, Ymat_reproduce] = obj.reduce_admittance_matrix(Y, simulated_bus);
