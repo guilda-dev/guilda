@@ -30,10 +30,16 @@ classdef GridCode_checker < handle
 
 
         % liveのためのプロパティ
-        ax
+        ax = cell(2,1)
         tlim
+        line_gridcode_component
+        line_gridcode_branch
+        line_connected_component
+        line_connected_branch
+        last_status_component
+        last_status_branch
         t_last
-        t_interval = 1;
+        t_interval = 0.5;
     end
 
     methods
@@ -58,6 +64,13 @@ classdef GridCode_checker < handle
             obj.tlim = tlim;
             obj.separate_Vmat_from = zeros(2*obj.nbr,2*obj.nbus);
             obj.separate_Vmat_to   = zeros(2*obj.nbr,2*obj.nbus);
+            obj.line_connected_branch = cell(obj.nbr,1);
+            obj.line_gridcode_branch  = cell(obj.nbr,1);
+            obj.line_connected_component = cell(obj.nbus,1);
+            obj.line_gridcode_component  = cell(obj.nbus,1);
+
+            obj.last_status_component = tools.vcellfun(@(bus) bus.component.is_connected, obj.net.a_bus   );
+            obj.last_status_branch    = tools.vcellfun(@(br)             br.is_connected, obj.net.a_branch);
 
             obj.abus_grid_code   = true(obj.nbus,1);
             for i = 1:obj.nbr
@@ -88,7 +101,15 @@ classdef GridCode_checker < handle
             if numel(obj.record_sampling_time)>1
                 pre_connected = [obj.record_connected_component(:,end-1); obj.record_connected_branch(:,end-1)];
                 now_connected = [obj.record_connected_component(:, end ); obj.record_connected_branch(:, end )];
-                if any(pre_connected ~= now_connected)
+                idx_change = pre_connected ~= now_connected;
+                if any(idx_change)
+                    for  i = reshape(find(idx_change),1,[])
+                        if i<=obj.nbus
+                            obj.add_line(obj.record_sampling_time(end),i,0,1,now_connected(i))
+                        else
+                           obj.add_line(obj.record_sampling_time(end),i-obj.nbus,0,2,now_connected(i))
+                        end
+                    end
                     obj.Continue = false;
                 end
             end
@@ -130,15 +151,37 @@ classdef GridCode_checker < handle
             if obj.observe
                 if is_connected && obj.abus_grid_code(i)
                     check = comp.grid_code(comp,t,x,V,I,u);
-                    if (~check) && obj.control
-                        comp.disconnect;
-                        obj.Continue = false;
+                    if ~check
+                        if obj.last_status_component(i)~=check
+                            obj.add_line(t,i,1,1,false)
+                            obj.last_status_component(i) = check;
+                        end
+                        if obj.control
+                            comp.disconnect;
+                            obj.Continue = false;
+                        end
+                    else
+                        if obj.last_status_component(i)~=check
+                            obj.add_line(t,i,1,1,false,[])
+                            obj.last_status_component(i) = check;
+                        end
                     end
                 elseif (~is_connected) && obj.abus_restoration(i)
                     check = comp.restoration(comp,t,x,V,I,u);
-                    if check && obj.control
-                        comp.connect;
-                        obj.Continue = false;
+                    if check
+                        if obj.last_status_component(i)~=check
+                            obj.add_line(t,i,1,1,true)
+                            obj.last_status_component(i) = check;
+                        end
+                        if obj.control
+                            comp.connect;
+                            obj.Continue = false;
+                        end
+                    else
+                        if obj.last_status_component(i)~=check
+                            obj.add_line(t,i,1,1,true,[])
+                            obj.last_status_component(i) = check;
+                        end
                     end
                 else
                     check = nan;
@@ -158,9 +201,20 @@ classdef GridCode_checker < handle
                 if obj.observe
                     if br.is_connected && obj.abr_grid_code(i)
                         check = br.grid_code(br, Vfrom(:,i), Vto(:,i));
-                        if (~check) && obj.control
-                            obj.Continue = false;
-                            br.disconnect;
+                        if ~check 
+                            if obj.last_status_branch(i)~=check
+                                obj.add_line(t,i,1,2,false)
+                                obj.last_status_branch(i) = check;
+                            end                   
+                            if obj.control
+                                obj.Continue = false;
+                                br.disconnect;
+                            end
+                        else
+                            if obj.last_status_branch(i)~=check
+                                obj.add_line(t,i,1,2,false,[])
+                                obj.last_status_branch(i) = check;
+                            end    
                         end
                     else
                         check = nan;
@@ -176,28 +230,28 @@ classdef GridCode_checker < handle
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%   解析結果のVisualization  %%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function view_result(obj)
-            obj.set_axis;
-            hold(obj.ax{1},'on')
-            for i = 1:obj.nbus
-                idx = find( diff([obj.record_gridcode_component(i,:),2]) ~= 0 );
-                tidx = diff( [0,obj.record_sampling_time(idx)] );
-                b = barh(obj.ax{1}, obj.nbus+1-i, tidx, 'stacked');
-                arrayfun(@(idx) set(b(idx), 'FaceColor',[     0, 0.4470, 0.7410]), find(obj.record_gridcode_component(i,idx)==true  ))
-                arrayfun(@(idx) set(b(idx), 'FaceColor',[0.8500, 0.3250, 0.0980]), find(obj.record_gridcode_component(i,idx)==false ))
-                arrayfun(@(idx) set(b(idx), 'FaceColor',[     0,      0,      0]), find(isnan(obj.record_gridcode_component(i,idx)) ))
-            end
-
-            hold(obj.ax{2},'on')
-            for i = 1:obj.nbr
-                idx = find( diff([obj.record_gridcode_branch(i,:),2]) ~= 0 );
-                tidx = diff( [0,obj.record_sampling_time(idx)] );
-                b = barh(obj.ax{2}, obj.nbr+1-i, tidx, 'stacked');
-                arrayfun(@(idx) set(b(idx), 'FaceColor',[     0, 0.4470, 0.7410]), find(obj.record_gridcode_branch(i,idx)==true  ))
-                arrayfun(@(idx) set(b(idx), 'FaceColor',[0.8500, 0.3250, 0.0980]), find(obj.record_gridcode_branch(i,idx)==false ))
-                arrayfun(@(idx) set(b(idx), 'FaceColor',[     0,      0,      0]), find(isnan(obj.record_gridcode_branch(i,idx)) ))
-            end
-        end
+%         function view_result(obj)
+%             obj.set_axis;
+%             hold(obj.ax{1},'on')
+%             for i = 1:obj.nbus
+%                 idx = find( diff([obj.record_gridcode_component(i,:),2]) ~= 0 );
+%                 tidx = diff( [0,obj.record_sampling_time(idx)] );
+%                 b = barh(obj.ax{1}, obj.nbus+1-i, tidx, 'stacked');
+%                 arrayfun(@(idx) set(b(idx), 'FaceColor',[     0, 0.4470, 0.7410]), find(obj.record_gridcode_component(i,idx)==true  ))
+%                 arrayfun(@(idx) set(b(idx), 'FaceColor',[0.8500, 0.3250, 0.0980]), find(obj.record_gridcode_component(i,idx)==false ))
+%                 arrayfun(@(idx) set(b(idx), 'FaceColor',[     0,      0,      0]), find(isnan(obj.record_gridcode_component(i,idx)) ))
+%             end
+% 
+%             hold(obj.ax{2},'on')
+%             for i = 1:obj.nbr
+%                 idx = find( diff([obj.record_gridcode_branch(i,:),2]) ~= 0 );
+%                 tidx = diff( [0,obj.record_sampling_time(idx)] );
+%                 b = barh(obj.ax{2}, obj.nbr+1-i, tidx, 'stacked');
+%                 arrayfun(@(idx) set(b(idx), 'FaceColor',[     0, 0.4470, 0.7410]), find(obj.record_gridcode_branch(i,idx)==true  ))
+%                 arrayfun(@(idx) set(b(idx), 'FaceColor',[0.8500, 0.3250, 0.0980]), find(obj.record_gridcode_branch(i,idx)==false ))
+%                 arrayfun(@(idx) set(b(idx), 'FaceColor',[     0,      0,      0]), find(isnan(obj.record_gridcode_branch(i,idx)) ))
+%             end
+%         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -210,6 +264,12 @@ classdef GridCode_checker < handle
         function out = live(obj,t,~,~)
             if isempty( obj.ax{1} ) || ~isgraphics( obj.ax{1} )
                 obj.set_axis;
+                device = {'component','branch'};
+                for ii = 1:2
+                    data = obj.(['record_connected_',device{ii}])(:,end);
+                    obj.add_line(obj.record_sampling_time(end),find( data),0,ii, true)
+                    obj.add_line(obj.record_sampling_time(end),find(~data),0,ii,false)
+                end
             end
 
             hold(obj.ax{1},'on')
@@ -227,19 +287,83 @@ classdef GridCode_checker < handle
             out = false;
         end
 
+        function add_line(obj, t, idx, line, device, true_or_false, ~)
+            % device = 1 --component
+            % device = 2 -- branch
+            % line = 0 -- connected
+            % line = 1 -- gridcode
+            if isgraphics(obj.ax{1})
+                num = [obj.nbus,obj.nbr];
+                if true_or_false
+                    marker = 'o';
+                    if line == 0
+                        color = [0.4660 0.6740 0.1880];
+                    else
+                        color = [     0, 0.4470, 0.7410];
+                    end
+                else
+                    marker = 'x';
+                    if line == 0
+                        color = [0,0,0];
+                    else
+                        color = [0.8500, 0.3250, 0.0980];
+                    end
+                end
+
+                if line==0
+                    a = '_connected';
+                    lw = 6;
+                    ls = '-';
+                else
+                    a = '_gridcode';
+                    lw = 2;
+                    ls = '-';
+                    %scatter(obj.ax{device}, t, num(device)+1-idx, 20, 'Marker',marker, 'MarkerEdgeColor', color, 'LineWidth', 2);
+                end
+
+                if device==1; field_name = ['line',a,'_component'];
+                else;         field_name = ['line',a,'_branch'];
+                end
+
+                for i = reshape(idx,1,[])
+                    f = obj.(field_name){i};
+                    if isgraphics(f)
+                        addpoints(obj.(field_name){i}, t, num(device)-i+1);%+0.02*line );
+                    end
+
+                    if nargin == 7 %|| (~true_or_false && line==0)
+                        obj.(field_name){i} = [];
+                    else
+                        obj.(field_name){i} = animatedline(obj.ax{device},'LineWidth',lw,'Color',color,'LineStyle',ls);
+                        if line==0
+                            obj.ax{device}.Children = [obj.ax{device}.Children(2:end);obj.ax{device}.Children(1)];
+                        end
+                        addpoints(obj.(field_name){i}, t, num(device)-i+1);%+0.02*line );
+                    end
+                end
+            end
+        end
+
         function add_point(obj,t)
             if (t - obj.t_last) >= obj.t_interval
-                t = obj.t_last + obj.t_interval/2;
+
                 obj.t_last = obj.t_last + obj.t_interval;
-
-                data = obj.record_connected_component(:,end);
-                scatter(obj.ax{1}, t, obj.nbus+1-find(data==1), 50, 'Marker', 'o', 'MarkerEdgeColor', [     0, 0.4470, 0.7410], 'LineWidth', 2);
-                scatter(obj.ax{1}, t, obj.nbus+1-find(data==0), 50, 'Marker', 'x', 'MarkerEdgeColor', [0.8500, 0.3250, 0.0980], 'LineWidth', 2);
-    
-                data = obj.record_connected_branch(:,end);
-                scatter(obj.ax{2}, t, obj.nbr+1-find(data==1), 50, 'Marker', 'o', 'MarkerEdgeColor', [     0, 0.4470, 0.7410], 'LineWidth', 2);
-                scatter(obj.ax{2}, t, obj.nbr+1-find(data==0), 50, 'Marker', 'x', 'MarkerEdgeColor', [0.8500, 0.3250, 0.0980], 'LineWidth', 2);
-
+                for i = 1:obj.nbus
+                    if isgraphics(obj.line_connected_component{i})
+                        addpoints(obj.line_connected_component{i}, obj.t_last, obj.nbus-i+1 );
+                    end
+                    if isgraphics(obj.line_gridcode_component{i})
+                        addpoints(obj.line_gridcode_component{i},  obj.t_last, obj.nbus-i+1 );
+                    end
+                end
+                for i = 1:obj.nbr
+                    if isgraphics(obj.line_connected_branch{i})
+                        addpoints(obj.line_connected_branch{i}, obj.t_last, obj.nbr-i+1 );
+                    end
+                    if isgraphics(obj.line_gridcode_branch{i})
+                        addpoints(obj.line_gridcode_branch{i},  obj.t_last, obj.nbr-i+1 );
+                    end
+                end
                 drawnow limitrate
                 obj.add_point(t)
             end
@@ -251,6 +375,7 @@ classdef GridCode_checker < handle
             list{2}     = cellfun(@(br) [' branch @bus',num2str(br.from),' - ',num2str(br.to)], obj.net.a_branch, 'UniformOutput',false);
             num         = [obj.nbus, obj.nbr];
             Title_list  = {'Component', 'Branch'};
+                     
 
             obj.ax = cell(2,1);
             figure('WindowState','maximized')
@@ -259,7 +384,7 @@ classdef GridCode_checker < handle
                 obj.ax{i} = gca;
                 obj.ax{i}.XLabel.String = 'second(s)';
 
-                obj.ax{i}.XTick = tlim_format;
+                %obj.ax{i}.XTick = tlim_format;
                 obj.ax{i}.YTick = 1:num(i);
 
                 obj.ax{i}.XLim = [tlim_format(1),tlim_format(end)];
@@ -270,14 +395,15 @@ classdef GridCode_checker < handle
                 obj.ax{i}.YAxis.FontWeight = 'bold';
                 obj.ax{i}.YAxis.TickLabelInterpreter = 'none';
 
-                obj.ax{i}.Title.FontSize   = 15;
+                obj.ax{i}.Title.FontSize   = 12;
                 obj.ax{i}.Title.FontWeight = 'bold';
-                obj.ax{i}.Title.String     = {Title_list{i},['○:',Title_list{i},' is connected, ×:',Title_list{i},' is disconnected']};
+                obj.ax{i}.Title.String     = ['Live status of each ',Title_list{i}];
 
                 grid on
 
             end
-            sgtitle('Live connection status of each device','FontSize',20,'FontWeight','bold')
+            sgtitle(['GreenLine: cconnected, GrayLine: disconnected',...
+                     'RedLine: Out of Grid code condition'],'FontSize',15,'FontWeight','bold')
             
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

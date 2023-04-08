@@ -103,7 +103,7 @@ constraint_I = cell(numel(bus), 1);
 constraint_V = cell(numel(bus), 1);
 
 OutputEq_manager.new_time(t)
-idx_connected = ~ismember(has_state_bus, disconnected_bus);
+idx_connected = ~ismember(simulated_bus, disconnected_bus);
 for i = 1:numel(simulated_bus)
     idx = simulated_bus(i);
     if idx_connected(i)
@@ -122,7 +122,6 @@ for idx = reshape(setdiff(disconnected_bus, simulated_bus)',1,[])
     GridCode_checker.report_component(idx,t, x_bus{idx}, Vall_disconnected(:, idx), [0;0], U_bus{idx});
     OutputEq_manager.add_data(idx,t,x_bus{idx}, Vall_disconnected(:, idx), [0;0], U_bus{idx});
 end
-
 
 dx_algebraic = vertcat(constraint_I{:}, reshape(Vall(:, idx_fault), [], 1), constraint_V{:});
 dx = [vertcat(dx_component{:}); vertcat(dxkg{:}); vertcat(dxk{:}); dx_algebraic];
