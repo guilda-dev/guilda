@@ -144,10 +144,9 @@ for i = 1:numel(t_simulated)-1
 
         [~, idx_intersect,~] = intersect( disconnected_bus, pre_disconnected_bus);
         V0_disconnected = V0_col2(:,disconnected_bus);
-        V0_disconnected(:, all(V0_disconnected==0)) = 0.5;
+        V0_disconnected(1, all(V0_disconnected==0)) = 1;
         V0_disconnected(:,idx_intersect) = pre_V0_disconnected;
 
-        xall0 = [x0; V0_simulated(:); I0(idx_fault_bus); V0_disconnected(:)];
 
         switch options.method
             case 'zoh'
@@ -169,7 +168,12 @@ for i = 1:numel(t_simulated)-1
                     simulated_bus, disconnected_bus, ...
                     checker, OutputEq_manager);  
         end
-        
+
+        func_algebraic = @(var) get_constraint(func,t0,numel(x0),x0,var);
+        option_algebraic = optimoptions('fsolve', 'MaxFunEvals', inf, 'MaxIterations', 200, 'UseParallel', false, 'Display', 'None');
+        var0 = fsolve(func_algebraic, [V0_simulated(:); I0(idx_fault_bus); V0_disconnected(:)], option_algebraic);
+        xall0 = [x0; var0];
+
         nx = numel(x0);
         nVI = numel(xall0)-nx;
         nV = numel(simulated_bus)*2;
@@ -181,7 +185,7 @@ for i = 1:numel(t_simulated)-1
         t_now = datetime;
         r = @(t, y, flag) reporter.report(t, y, flag, options.reset_time, t_now);
         E = @(t, y)       checker.EventFcn;
-    
+        
         odeoptions = odeset('Mass',Mf, 'RelTol', options.RelTol, 'AbsTol', options.AbsTol, 'OutputFcn', r, 'Events',E);
         sol = ode15s(func, [t0,tend], xall0, odeoptions);
     
@@ -315,3 +319,8 @@ end
 % function con =  get_constraint(f, V, t, x, u)
 %     [~, con] = f(t, x, V, [0;0], u);
 % end
+
+function out = get_constraint(func,t,nx,x0,var)
+    dx = func(t,[x0;var]);
+    out = dx(nx+1:end);
+end
