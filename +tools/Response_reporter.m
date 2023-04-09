@@ -84,9 +84,9 @@ classdef Response_reporter < handle
                 idx_color = 1+ mod( i-1, size(obj.colororder,1) );
 
                 obj.plot_line{i} = animatedline('LineWidth',1.1,'Color',obj.colororder(idx_color,:));
-                word_legend{i}   = [ class(obj.net.a_bus{idx_bus}.component),num2str(idx_bus) ];
+                word_legend{i}   = [ class(obj.net.a_bus{idx_bus}.component),' @bus',num2str(idx_bus) ];
             end
-            legend([{'time axis'};word_legend], 'Location', 'southoutside', 'Interpreter','none', 'NumColumns',4, 'FontSize',8)
+            legend([{'time axis'};word_legend], 'Location', 'southoutside', 'Interpreter','none', 'NumColumns',3, 'FontSize',8)
             hold off
             obj.ax = gca;
         end

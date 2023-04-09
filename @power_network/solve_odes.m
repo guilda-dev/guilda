@@ -109,7 +109,10 @@ out.Ymat_reproduce = cell(numel(t_simulated)-1, 1);
 
 OutputEq_manager = tools.Outputeq_manager(obj);
 
+idx_connected_origin = tools.vcellfun(@(b) b.component.is_connected, obj.a_bus);
 
+pre_disconnected_bus = [];
+pre_V0_disconnected = [];
 
 simulate_iteration = 1;
 for i = 1:numel(t_simulated)-1
@@ -134,13 +137,17 @@ for i = 1:numel(t_simulated)-1
         connected_branch = find(tools.vcellfun(@( br) br.is_connected, obj.a_branch));
         [Y, Ymat_all] = obj.get_admittance_matrix(1:numel(bus), connected_branch);
         [~, Ymat, ~, Ymat_reproduce] = obj.reduce_admittance_matrix(Y, simulated_bus);
-        
         checker.set_Ymat_reproduce(Ymat_reproduce);
-
-        idx_simulated_bus = reshape([2*simulated_bus-1, 2*simulated_bus]',[],1);
-        idx_disconnected_bus = reshape([2*disconnected_bus-1, 2*disconnected_bus]',[],1);
         
-        x = [x0; V0(idx_simulated_bus); I0(idx_fault_bus); V0(idx_disconnected_bus)];
+        V0_col2 = reshape(V0,2,[]);
+        V0_simulated = V0_col2(:,simulated_bus);
+
+        [~, idx_intersect,~] = intersect( disconnected_bus, pre_disconnected_bus);
+        V0_disconnected = V0_col2(:,disconnected_bus);
+        V0_disconnected(:, all(V0_disconnected==0)) = 0.5;
+        V0_disconnected(:,idx_intersect) = pre_V0_disconnected;
+
+        xall0 = [x0; V0_simulated(:); I0(idx_fault_bus); V0_disconnected(:)];
 
         switch options.method
             case 'zoh'
@@ -164,9 +171,10 @@ for i = 1:numel(t_simulated)-1
         end
         
         nx = numel(x0);
-        nVI = numel(x)-nx;
+        nVI = numel(xall0)-nx;
         nV = numel(simulated_bus)*2;
         nI = numel(f_)*2;
+        ndisconnect = numel(disconnected_bus)*2;
         Mf = blkdiag(eye(nx), zeros(nVI));
         %     r = @(t, y, flag) false;
         %     r = @odephas2;
@@ -175,7 +183,7 @@ for i = 1:numel(t_simulated)-1
         E = @(t, y)       checker.EventFcn;
     
         odeoptions = odeset('Mass',Mf, 'RelTol', options.RelTol, 'AbsTol', options.AbsTol, 'OutputFcn', r, 'Events',E);
-        sol = ode15s(func, [t0,tend], x, odeoptions);
+        sol = ode15s(func, [t0,tend], xall0, odeoptions);
     
         
         while sol.x(end) < tend && (options.do_retry || ~reporter.reset) && checker.Continue
@@ -194,7 +202,7 @@ for i = 1:numel(t_simulated)-1
         out.Ymat_reproduce{i} = [out.Ymat_reproduce{i}, {Ymat_reproduce}];
         sols{i} = [sols{i},{sol}];
         y = sol.y(:, end);
-        V = y(nx+(1:numel(idx_simulated_bus)));
+        V = y(nx+(1:2*numel(simulated_bus)));
         x0 = y(1:nx);
         V0 = Ymat_reproduce*V;
         I0 = Ymat_all * V0;
@@ -207,6 +215,10 @@ for i = 1:numel(t_simulated)-1
         out_V{simulate_iteration} = V;
         out_I{simulate_iteration} = I;
         out_t{simulate_iteration} = sol.x(:);
+
+
+        pre_V0_disconnected = sol.y(nx+nV+nI+(1:ndisconnect), end);
+        pre_disconnected_bus = disconnected_bus;
 
         simulate_iteration = simulate_iteration+1;
     end
@@ -266,7 +278,12 @@ out.linear = linear;
 out.GridCode_checker = checker;
 out.OutputEq = OutputEq_manager.export_y(out.t);
 
+arrayfun(@(i) obj.a_bus{i}.component.connect,    find( idx_connected_origin))
+arrayfun(@(i) obj.a_bus{i}.component.disconnect, find(~idx_connected_origin))
 end
+
+
+
 
 function t_simulated = get_t_simulated(t_cand, uf, fault_f)
 has_difference = true(numel(t_cand)-1, 1);
@@ -285,3 +302,16 @@ end
 
 t_simulated = t_cand([has_difference; true]);
 end
+
+
+
+% function  Vinit = get_Vinit(f, V0, t, x, u_)
+%     func = @(V) get_constraint(f, V, t, x, u_(t); 
+%     options = optimoptions('fsolve', 'MaxFunEvals', inf, 'MaxIterations', 200, 'UseParallel', false, 'Display', 'None');
+%     Vinit = fsolve(func, V0,options);
+% end
+% 
+% 
+% function con =  get_constraint(f, V, t, x, u)
+%     [~, con] = f(t, x, V, [0;0], u);
+% end

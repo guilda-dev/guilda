@@ -19,14 +19,14 @@ classdef component_empty < component
             nu = 0;
         end
         
-        function [dx, I] = get_dx_constraint(varargin)
+        function [dx, con] = get_dx_constraint(obj,~,~,~,I,~)
             dx = [];
-            I = [0; 0];
+            con = I(:);
         end
         
-        function [dx, I] = get_dx_constraint_linear(varargin)
+        function [dx, con] = get_dx_constraint_linear(obj,~,~,~,I,~)
             dx = [];
-            I = [0; 0];
+            con = I(:);
         end
         
         function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, varargin)
