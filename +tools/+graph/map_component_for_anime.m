@@ -5,16 +5,16 @@ classdef map_component_for_anime < tools.graph.map_base
     end
 
     methods
-        function obj = map_component_for_anime(net)
-            obj@tools.graph.map_base(net)
+        function obj = map_component_for_anime(net,ax)
+            obj@tools.graph.map_base(net,ax)
 
             obj.set_MarkerStyle;
             obj.set_LineStyle;
             obj.set_BusMarker;
             
-            hold off
-            zlim([-1.1,1.1])
-            view(0,30)
+            hold(ax,'off')
+            zlim(ax,[-1.1,1.1])
+            view(ax,0,30)
             obj.normalize_range = 4;
         end
     end

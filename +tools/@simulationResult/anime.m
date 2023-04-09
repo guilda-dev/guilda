@@ -42,14 +42,14 @@ function anime(obj,varargin)
 
     fig_movie = figure('Visible',"on",'WindowState','maximized');
     %レイアウトの決定
-    subplot('Position',[0,0.45,0.495,0.4])
-    graph_fig{1} = tools.graph.map_bus_for_anime(obj.net);
+    ax{1} = subplot('Position',[0,0.45,0.495,0.4]);
+    graph_fig{1} = tools.graph.map_bus_for_anime(obj.net,ax{1});
     graph_fig{1}.ColorMap = turbo;
     view(0,50)
-    subplot('Position',[0.25,0.43,0.001,0.001])
+    subplot('Position',[0.25,0.43,0.001,0.001]);
     title('\bf{Focus on bus}','FontSize',40,'FontAngle','italic','Color','#7E2F8E')
-    subplot('Position',[0.505,0.45,0.495,0.4])
-    graph_fig{2} = tools.graph.map_component_for_anime(obj.net);
+    ax{2} = subplot('Position',[0.505,0.45,0.495,0.4]);
+    graph_fig{2} = tools.graph.map_component_for_anime(obj.net,ax{2});
     graph_fig{2}.ColorMap = turbo;
     subplot('Position',[0.75,0.43,0.001,0.001])
     title('\bf{Focus on component}','FontSize',40,'FontAngle','italic','Color','#77AC30')
@@ -61,7 +61,7 @@ function anime(obj,varargin)
     xline(0,'LineStyle',':','LineWidth',2)
     subplot('Position',[0.5,0.35,0.001,0.001])
     title('\bf{Plotting System Responses}','FontSize',30)
-    sgtitle('\bf{Power system response}','FontSize',60,'FontAngle','italic')
+    sgtitle('Power system response','FontSize',60,'FontAngle','italic')
     subplot('Position',[0.5,0.43,0.001,0.001])
     plt_time = title('\bf{Time:0s}','FontSize',25,'Color','#FF0000');    
 
@@ -164,7 +164,7 @@ function anime(obj,varargin)
     graph_fig{2}.Graph.NodeColor(nbus+(1:nbus),:)  = a_CompColor;
 
     % 地絡のデータを整理
-    fault_time = tools.vcellfun(@(sol) sol.x(end),obj.sols);
+    fault_time = tools.vcellfun(@(sol) sol{end}.x(end),obj.sols);
     fault_marker_fig1 = [];
     fault_marker_fig2 = [];
     fault_text_fig1 = [];
@@ -202,29 +202,6 @@ function anime(obj,varargin)
         
         itr = idx_time(m);
 
-        if obj.t(itr) > fault_time(idx_current_fault)
-            idx_current_fault = idx_current_fault +1;
-            delete(fault_text_fig1)
-            delete(fault_text_fig2)
-            delete(fault_marker_fig1)
-            delete(fault_marker_fig2)
-            fault_bus = obj.fault_bus{idx_current_fault};
-
-            xfig1 = graph_fig{1}.Graph.XData(fault_bus);
-            yfig1 = graph_fig{1}.Graph.YData(fault_bus);
-            zfig1 = graph_fig{1}.Graph.ZData(fault_bus);
-            xfig2 = graph_fig{2}.Graph.XData(fault_bus);
-            yfig2 = graph_fig{2}.Graph.YData(fault_bus);
-            zfig2 = graph_fig{2}.Graph.ZData(fault_bus);
-
-            hold(graph_fig{1}.Graph.Parent, 'on')
-            fault_marker_fig1 = mark_fault(graph_fig{1}.Graph.Parent, xfig1, yfig1, zfig1);
-            fault_text_fig1   = text_fault(graph_fig{1}.Graph.Parent, xfig1, yfig1, zfig1,'fault');
-            hold(graph_fig{2}.Graph.Parent, 'on')
-            fault_marker_fig2 = mark_fault(graph_fig{2}.Graph.Parent, xfig2, yfig2, zfig2);
-            fault_text_fig2   = text_fault(graph_fig{2}.Graph.Parent, xfig2, yfig2, zfig2,'fault');
-        end
-
         if is_not_flat(1)
             %Bus Size
             graph_fig{1}.Graph.MarkerSize(1:nbus)   = option.Val_Bus_Size(:,itr);
@@ -257,6 +234,29 @@ function anime(obj,varargin)
             c = option.Val_Component_Color(:,itr);
             a_CompColor(~isnan(c),:) = graph_fig{2}.ColorMap(c(~isnan(c)),:);
             graph_fig{2}.Graph.NodeColor(nbus+(1:nbus),:)  = a_CompColor;
+        end
+
+        if obj.t(itr) > fault_time(idx_current_fault)
+            idx_current_fault = idx_current_fault +1;
+            delete(fault_text_fig1)
+            delete(fault_text_fig2)
+            delete(fault_marker_fig1)
+            delete(fault_marker_fig2)
+            fault_bus = obj.fault_bus{idx_current_fault};
+
+            xfig1 = graph_fig{1}.Graph.XData(fault_bus);
+            yfig1 = graph_fig{1}.Graph.YData(fault_bus);
+            zfig1 = graph_fig{1}.Graph.ZData(fault_bus);
+            xfig2 = graph_fig{2}.Graph.XData(fault_bus);
+            yfig2 = graph_fig{2}.Graph.YData(fault_bus);
+            zfig2 = graph_fig{2}.Graph.ZData(fault_bus);
+
+            hold(graph_fig{1}.Graph.Parent, 'on')
+            fault_marker_fig1 = mark_fault(graph_fig{1}.Graph.Parent, xfig1, yfig1, zfig1);
+            fault_text_fig1   = text_fault(graph_fig{1}.Graph.Parent, xfig1, yfig1, zfig1,'fault');
+            hold(graph_fig{2}.Graph.Parent, 'on')
+            fault_marker_fig2 = mark_fault(graph_fig{2}.Graph.Parent, xfig2, yfig2, zfig2);
+            fault_text_fig2   = text_fault(graph_fig{2}.Graph.Parent, xfig2, yfig2, zfig2,'fault');
         end
 
 
