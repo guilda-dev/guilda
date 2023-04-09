@@ -43,10 +43,14 @@ classdef simulationResult < handle
     methods
         export_csv(obj)
 
-        function obj = simulationResult(out,net,varargin)
+        function obj = simulationResult(out,net,print_readme)
             obj.net = net;
             if nargin==3
-                obj.readme
+                if print_readme
+                    obj.readme(true)
+                end
+            else
+                obj.readme(false)
             end
             %母線電圧/電流の絶対値/偏角、また電力P,Qの時間応答を追加する。
             bus_num = numel(out.V);
@@ -130,13 +134,18 @@ classdef simulationResult < handle
 
         
         %使い方の表示
-        function readme(obj)
+        function readme(obj, yes_no)
             fprintf(['\n' ...
                 '==================================\n',...
                 '  シミュレーション結果出力の補助ツール  \n',...
                 '      SimulationResultクラス       \n',...
                 '==================================\n\n'])
-            answer = input('使い方を表示しますか？(y/n)：',"s");
+            if yes_no
+                answer = 'y';
+            else
+                answer = input('使い方を表示しますか？(y/n)：',"s");
+            end
+            
             if strcmp(answer,'y')
                 help(class(obj))
                 disp('応答プロットを表示したい場合')

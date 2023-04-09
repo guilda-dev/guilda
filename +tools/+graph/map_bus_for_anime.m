@@ -1,8 +1,8 @@
 classdef map_bus_for_anime < tools.graph.map_base
     
     methods
-        function obj = map_bus_for_anime(net)
-            obj@tools.graph.map_base(net);
+        function obj = map_bus_for_anime(net,ax)
+            obj@tools.graph.map_base(net,ax);
 
             obj.function_CompSize    = 5;
             obj.function_BusSize     = 10;
@@ -14,13 +14,13 @@ classdef map_bus_for_anime < tools.graph.map_base
             obj.set_LineStyle;
             obj.set_MarkerStyle;
             
-            obj.plot_circle();
+            obj.plot_circle(ax);
             obj.set_MarkerTag;
             
 
-            hold off
-            zlim([0,1.1])
-            view(0,50)
+            hold(ax, 'off')
+            zlim(ax,[0,1.1])
+            view(ax,0,50)
             obj.normalize_range = 4;
         end
     end
