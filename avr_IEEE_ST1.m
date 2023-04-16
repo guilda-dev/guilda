@@ -44,7 +44,7 @@ classdef avr_IEEE_ST1 < avr
             x = V;
         end
         
-        function [dV_tr, Vfd] = get_Vfd(obj, V_tr, Vabs, Efd, Vpss)
+        function [dV_tr, Vfd, V_ap] = get_Vfd(obj, V_tr, Vabs, Efd, Vpss)
             dV_tr = (Vabs-V_tr)/obj.t_tr;
             V_ap = obj.k_ap*(obj.Vref+Vpss-V_tr);
             
@@ -54,8 +54,8 @@ classdef avr_IEEE_ST1 < avr
             Vfd = sat(V_ap, V_ap_min, V_ap_max);
         end
         
-        function [dV_tr, Vfd] = get_Vfd_linear(obj, V_tr, Vabs, Efd, u)
-            [dV_tr, Vfd] = get_Vfd(obj, V_tr, Vabs, Efd, u);
+        function [dV_tr, Vfd, V_ap] = get_Vfd_linear(obj, V_tr, Vabs, Efd, u)
+            [dV_tr, Vfd, V_ap] = get_Vfd(obj, V_tr, Vabs, Efd, u);
         end
         
         function [A, B, C, D] = get_linear_matrix(obj)

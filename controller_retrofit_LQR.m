@@ -1,4 +1,4 @@
-classdef controller_retrofit_avr_agc <  controller
+classdef controller_retrofit_LQR <  controller
     
     properties(Access=private)
        x_avr
@@ -30,7 +30,7 @@ classdef controller_retrofit_avr_agc <  controller
     end
     
     methods
-        function obj = controller_retrofit_avr_agc(net, idx, Q, R, model, model_agc)
+        function obj = controller_retrofit_LQR(net, idx, Q, R, model, model_agc)
             obj@controller(idx, idx);
             if nargin < 5
                 model = [];

@@ -37,9 +37,10 @@ classdef avr_sadamoto2019 < avr
             x = Vfd;
         end
         
-        function [dVfd, Vfd] = get_Vfd(obj, Vfd, Vabs, Efd, u)
+        function [dVfd, Vfd, Vap] = get_Vfd(obj, Vfd, Vabs, Efd, u)
             Vef = obj.Ka*(Vabs-obj.Vabs_st+u(1));
             dVfd = (-Vfd+obj.Vfd_st-Vef)/obj.Te;
+            Vap = Vfd;
         end
         
         function [dVfd, Vfd] = get_Vfd_linear(obj, Vfd, Vabs, Efd, u)
