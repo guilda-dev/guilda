@@ -16,7 +16,7 @@ out = obj.solve_odes(t, u, idx_u, options.fault,...
     tools.complex2vec(options.V0), tools.complex2vec(options.I0), options.linear, options);
 
 if options.tools
-    out = tools.simulationResult(out,obj,true);
+    out = tools.simulationResult(out,obj,false);
 end
 
 end

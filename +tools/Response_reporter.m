@@ -74,7 +74,7 @@ classdef Response_reporter < handle
             figure()
             hold on
             grid on
-            xlim(obj.tlim)
+            xlim(obj.tlim([1,end]))
             xlabel('Time(s)',    'FontSize', 15, 'FontWeight', 'bold')
             ylabel(obj.state_tag,'FontSize', 15, 'FontWeight', 'bold')
             title('Response reporter', 'FontSize', 20, 'FontWeight', 'bold')

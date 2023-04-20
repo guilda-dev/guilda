@@ -95,9 +95,8 @@ classdef generator_1axis < component
             
             Efd = Xd*E/Xdp - (Xd/Xdp-1)*Vabscos;
             
-            
-
-            
+            [dx_pss, v] = obj.pss.get_u(x_pss, omega);
+            [dx_avr, Vfd] = obj.avr.get_Vfd(x_avr, Vabs, Efd, u(1)-v);
             [dx_gov, P] = obj.governor.get_P(x_gov, omega, u(2));
             
             

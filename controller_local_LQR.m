@@ -32,7 +32,7 @@ classdef controller_local_LQR < controller
                 R = eye(c.get_nu);
             end
             if nargin<5
-                uidx = true(c.get_nu,1);
+                uidx = [true;false];%(c.get_nu,1);
             end
 
             obj.set_Q(Q)

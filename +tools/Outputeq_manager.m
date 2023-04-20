@@ -1,6 +1,8 @@
 classdef Outputeq_manager < handle
 
     properties
+        simulating = true
+
         net
         y
         t
@@ -19,7 +21,7 @@ classdef Outputeq_manager < handle
         end
 
         function add_data(obj,idx,t,x,V,I,u)
-            if obj.func_switch && obj.a_has_ny(idx)        
+            if obj.simulating && obj.func_switch && obj.a_has_ny(idx)        
                 c = obj.net.a_bus{idx}.component;
                 yi = c.get_y_func(c,t,x,V,I,u);
                 obj.y{idx} = [obj.y{idx} ; reshape(yi,1,[])];
@@ -27,10 +29,12 @@ classdef Outputeq_manager < handle
         end
 
         function new_time(obj,newtime)
-            obj.func_switch = (obj.t_latest ~= newtime);
-            if obj.func_switch
-                obj.t_latest = newtime;
-                obj.t = [obj.t ; newtime];
+            if obj.simulating
+                obj.func_switch = (obj.t_latest ~= newtime);
+                if obj.func_switch
+                    obj.t_latest = newtime;
+                    obj.t = [obj.t ; newtime];
+                end
             end
         end
 

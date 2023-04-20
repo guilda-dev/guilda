@@ -115,6 +115,7 @@ pre_disconnected_bus = [];
 pre_V0_disconnected = [];
 
 simulate_iteration = 1;
+
 for i = 1:numel(t_simulated)-1
     f_ = fault_f((t_simulated(i)+t_simulated(i+1))/2);
     except = unique([f_(:); idx_controller(:)]);
@@ -169,11 +170,15 @@ for i = 1:numel(t_simulated)-1
                     checker, OutputEq_manager);  
         end
 
+        checker.simulating          = false;
+        OutputEq_manager.simulating = false;
         func_algebraic = @(var) get_constraint(func,t0,numel(x0),x0,var);
-        option_algebraic = optimoptions('fsolve', 'MaxFunEvals', inf, 'MaxIterations', 200, 'UseParallel', false, 'Display', 'None');
+        option_algebraic = optimoptions('fsolve', 'MaxFunEvals', inf, 'MaxIterations', 50, 'UseParallel', false, 'Display', 'None');%'iter-detailed');
         var0 = fsolve(func_algebraic, [V0_simulated(:); I0(idx_fault_bus); V0_disconnected(:)], option_algebraic);
         xall0 = [x0; var0];
-
+        checker.simulating          = true;
+        OutputEq_manager.simulating = true;
+        
         nx = numel(x0);
         nVI = numel(xall0)-nx;
         nV = numel(simulated_bus)*2;
@@ -225,6 +230,9 @@ for i = 1:numel(t_simulated)-1
         pre_disconnected_bus = disconnected_bus;
 
         simulate_iteration = simulate_iteration+1;
+        %%
+        x0(sum(nx_bus)+1:end) = 0;
+        %%
     end
 end
 

@@ -1,6 +1,8 @@
 classdef GridCode_checker < handle
 
     properties    
+        simulating =true;
+
         observe = true;
         control = false;
         Continue = true;
@@ -122,7 +124,7 @@ classdef GridCode_checker < handle
 
 
         function newline(obj, time)
-            if isempty(obj.record_sampling_time) || time > obj.record_sampling_time(end)
+            if obj.simulating && (isempty(obj.record_sampling_time) || time > obj.record_sampling_time(end))
                 if isempty(obj.record_sampling_time)
                     obj.record_connected_component = tools.vcellfun(@(bus) bus.component.is_connected, obj.net.a_bus   );
                     obj.record_connected_branch    = tools.vcellfun(@(br)             br.is_connected, obj.net.a_branch);
@@ -148,67 +150,71 @@ classdef GridCode_checker < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%  get_dx内で呼び出される関数軍　%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function report_component(obj, i, t, x, V, I, u)
-            comp = obj.net.a_bus{i}.component;
-            is_connected = comp.is_connected;
-            if obj.observe
-                if is_connected && obj.abus_grid_code(i)
-                    check = comp.grid_code(comp,t,x,V,I,u);
-                    if check == false
-                        if obj.control
-                            comp.disconnect;
-                            obj.Continue = false;
-                        end
-                    end
-                    if obj.last_status_component(i) ~= check
-                        obj.add_line(t,i,1,1,check,'init')
-                        obj.last_status_component(i) = check;
-                    end
-                elseif (~is_connected) && obj.abus_restoration(i)
-                    check = comp.restoration(comp,t,x,V,I,u);
-                    if check == true
-                        if obj.control
-                            comp.connect;
-                            obj.Continue = false;
-                        end
-                    end
-                    if obj.last_status_component(i)~=check
-                        obj.add_line(t,i,1,1,check,'init')
-                        obj.last_status_component(i) = check;
-                    end
-                else
-                    check = nan;
-                end
-                obj.record_gridcode_component(i,end) = check;
-            end
-            obj.record_connected_component(i,end) = is_connected;
-        end
-
-        function report_branch(obj, Varray)
-            if obj.observe
-                Vfrom = reshape( obj.culcV_mat_from * Varray, 2, []);
-                Vto   = reshape( obj.culcV_mat_to   * Varray, 2, []);
-            end
-            for i = 1:obj.nbr
-                br = obj.net.a_branch{i};
+            if obj.simulating
+                comp = obj.net.a_bus{i}.component;
+                is_connected = comp.is_connected;
                 if obj.observe
-                    if br.is_connected && obj.abr_grid_code(i)
-                        check = br.grid_code(br, Vfrom(:,i), Vto(:,i));
-                        if ~check                   
+                    if is_connected && obj.abus_grid_code(i)
+                        check = comp.grid_code(comp,t,x,V,I,u);
+                        if check == false
                             if obj.control
+                                comp.disconnect;
                                 obj.Continue = false;
-                                br.disconnect;
                             end
                         end
-                        if obj.last_status_branch(i)~=check
-                            obj.add_line(t,i,1,2,check,'init')
-                            obj.last_status_branch(i) = check;
-                        end    
+                        if obj.last_status_component(i) ~= check
+                            obj.add_line(t,i,1,1,check,'init')
+                            obj.last_status_component(i) = check;
+                        end
+                    elseif (~is_connected) && obj.abus_restoration(i)
+                        check = comp.restoration(comp,t,x,V,I,u);
+                        if check == true
+                            if obj.control
+                                comp.connect;
+                                obj.Continue = false;
+                            end
+                        end
+                        if obj.last_status_component(i)~=check
+                            obj.add_line(t,i,1,1,check,'init')
+                            obj.last_status_component(i) = check;
+                        end
                     else
                         check = nan;
                     end
-                    obj.record_gridcode_branch(i,end) = check;
+                    obj.record_gridcode_component(i,end) = check;
                 end
-                obj.record_connected_branch(i,end) = br.is_connected;
+                obj.record_connected_component(i,end) = is_connected;
+            end
+        end
+
+        function report_branch(obj, Varray)
+            if obj.simulating
+                if obj.observe
+                    Vfrom = reshape( obj.culcV_mat_from * Varray, 2, []);
+                    Vto   = reshape( obj.culcV_mat_to   * Varray, 2, []);
+                end
+                for i = 1:obj.nbr
+                    br = obj.net.a_branch{i};
+                    if obj.observe
+                        if br.is_connected && obj.abr_grid_code(i)
+                            check = br.grid_code(br, Vfrom(:,i), Vto(:,i));
+                            if ~check                   
+                                if obj.control
+                                    obj.Continue = false;
+                                    br.disconnect;
+                                end
+                            end
+                            if obj.last_status_branch(i)~=check
+                                obj.add_line(t,i,1,2,check,'init')
+                                obj.last_status_branch(i) = check;
+                            end    
+                        else
+                            check = nan;
+                        end
+                        obj.record_gridcode_branch(i,end) = check;
+                    end
+                    obj.record_connected_branch(i,end) = br.is_connected;
+                end
             end
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -350,7 +356,7 @@ classdef GridCode_checker < handle
         end
             
         function set_axis(obj)
-            tlim_format = floor(obj.tlim(1)):obj.t_interval:ceil(obj.tlim(2));
+            tlim_format = floor(obj.tlim(1)):obj.t_interval:ceil(obj.tlim(end));
             list{1}     = arrayfun(@(i) [' ',class(obj.net.a_bus{obj.nbus+1-i}.component),' @bus',num2str(obj.nbus+1-i)], 1:obj.nbus, 'UniformOutput',false);
             list{2}     = cellfun(@(br) [' branch @bus',num2str(br.from),' - ',num2str(br.to)], obj.net.a_branch, 'UniformOutput',false);
             num         = [obj.nbus, obj.nbr];
