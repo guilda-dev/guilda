@@ -4,11 +4,6 @@ classdef handleCopyable < matlab.mixin.Copyable
         Tag
     end
 
-    properties(Access=protected)
-        path
-        domain
-    end
-
     properties(Access=private)
         log_stash = struct('warnlog',{'test'},'objlog',struct('origin',[],'copy',[]));
         log_handleCopy = struct('warnlog',{'test'},'objlog',struct('origin',[],'copy',[]));
@@ -18,21 +13,6 @@ classdef handleCopyable < matlab.mixin.Copyable
         function obj = handleCopyable()
             c = class(obj);
             obj.Tag  = c;
-            obj.path = c;
-
-            idx = find(c=='.');
-            obj.domain = tools.arrayfun(@(i) strrep(c(i:end),'.','_'),[0,idx]+1);
-
-            if contains(c,'.base')
-                c = strrep(c,'.base','');
-                idx = find(c=='.');
-                obj.domain = [obj.domain,tools.arrayfun(@(i) strrep(c(i:end),'.','_'),[0,idx]+1)];
-            end
-        end
-
-        function [domain, path] = get_path(obj)
-            domain  = obj.domain;
-            path    = obj.path;
         end
         
         function preview_copylog(obj)
@@ -63,18 +43,21 @@ classdef handleCopyable < matlab.mixin.Copyable
             for k = 1:length(props)
                 info = findprop(obj,props{k});
                 if ~info.Dependent
+                    skip = false;
                     try 
                         propi = obj.PropEditor_Get(props{k});
                     catch
                         obj.fwarning(obj,props{k},'GetAccess');
-                        break
+                        skip = true;
                     end
-                    [clone,ishandle] = obj.propcopy(propi);
-                    try
-                        cp.PropEditor_Set(props{k},clone);
-                    catch
-                        if ishandle
-                            obj.fwarning(obj,props{k},'SetAccess');
+                    if ~skip
+                        [clone,ishandle] = obj.propcopy(propi);
+                        try
+                            cp.PropEditor_Set(props{k},clone);
+                        catch
+                            if ishandle
+                                obj.fwarning(obj,props{k},'SetAccess');
+                            end
                         end
                     end
                 end

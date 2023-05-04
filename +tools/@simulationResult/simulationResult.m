@@ -63,7 +63,7 @@ classdef simulationResult < handle
             obj.V  = tools.arrayfun(@(b) array2table(fdata(V_Phasor,b),'VariableNames',fname),(1:bus_num)');
             obj.I  = tools.arrayfun(@(b) array2table(fdata(I_Phasor,b),'VariableNames',fname),(1:bus_num)');
             obj.X  = tools.arrayfun(@(b) array2table(out.X{b},'VariableNames',net.a_bus{b}.component.get_state_name),(1:bus_num)');
-            obj.power = tools.arrayfun(@(b) array2table([real(PQ{b}),imag(PQ{b}),abs(PQ{b}),angle(PQ{b})],"VariableNames",{'P','Q','S','Factor'}),(1:bus_num)');
+            obj.power = tools.arrayfun(@(b) array2table([real(PQ{b}),imag(PQ{b}),abs(PQ{b}),cos(angle(PQ{b}))],"VariableNames",{'P','Q','S','Factor'}),(1:bus_num)');
             
             fport = @(name,idx) tools.cellfun(@(c) [c,'(bus',num2str(idx),')'],name);
             fname = @(con) tools.harrayfun(@(idx) fport(reshape(net.a_bus{idx}.component.get_port_name,1,[]),idx), con.index_input);

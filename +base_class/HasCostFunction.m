@@ -4,21 +4,46 @@ classdef HasCostFunction < base_class.handleCopyable
     end
 
     methods(Abstract)
-        value = usage_CostFunction(func);
+        value = usage_function(func);
     end
     
     methods
 
         % エネルギー関数を定義する際のチェックメソッド
         function set.CostFunction(obj,value)
-            check_CostFunction(value);
+            obj.usage_function(func);
             obj.grid_code = value;
         end
-    end
 
-    methods(Access=private)
-        function check_CostFunction(obj,func)
-            obj.usage_CostFunction(func);
+        % エネルギー関数の時系列データを計算するメソッド
+        function out = get_cost_vectorized(obj, varargin)
+            if isempty(obj.CostFunction)
+                out = zeros(size(varargin{1},1),0);
+                return
+            end
+            
+            nvar = numel(varargin);
+            func = cell(1,nvar);
+            for i = 1:nvar
+                if iscell(varargin{i})
+                    func{i} = @(tidx) tools.cellfun(@(c) c(tidx,:).', varargin{i});
+                else
+                    func{i} = @(tidx) varargin{i}(tidx,:).';
+                end
+            end
+            fvar = @(i) tools.cellfun(@(f) f(i), func);
+            
+            var = fvar(1);
+            cost = obj.CostFunction(obj,var{:});
+            
+            out = zeros(numel(t), numel(cost));
+            out(1, :) = cost(:)';
+            
+            for i = 2:numel(t)
+                var = fvar(i);
+                cost = obj.CostFunction(obj,var{:});
+                out(i, :) = cost(:)';
+            end
         end
     end
 

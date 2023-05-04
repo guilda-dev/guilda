@@ -1,17 +1,15 @@
 classdef HasGridCode < base_class.handleCopyable
 
     properties(SetAccess = protected)
-        is_connected
+        is_connected = true;
     end
 
     properties
-        grid_code
-        restoration
+        grid_code = struct('parallel_on',[],'parallel_off',[])
     end
 
     methods(Abstract)
-        value = usage_grid_code(func);
-        value = usage_restoration(func);
+        value = usage_function(func);
     end
 
     methods
@@ -25,29 +23,32 @@ classdef HasGridCode < base_class.handleCopyable
         end
 
         % グリッドに接続/解列する条件式を定義する際のチェックメソッド
-        function set.grid_code(obj,value)
-            check_grid_code(value);
-            obj.grid_code = value;
+        function set_grid_code(obj,value, onoff)
+            arguments
+                obj
+                value
+                onoff = false;
+            end
+            obj.check_grid_code(value);
+            switch onoff
+                case {'on','ON',true}
+                    obj.grid_code.parallel_on  = value;
+                case {'off','OFF',false}
+                    obj.grid_code.parallel_off = value;
+            end
         end
-        function set.restoration(obj,value)
-            check_restoration(value);
-            obj.restoration = value;
-        end
+        % function set.grid_code(obj,value)
+        %     obj.check_grid_code(value);
+        %     obj.grid_code.parallel_off = value;
+        % end
     end
 
     methods(Access=private)
         function check_grid_code(obj,func)
-            val = obj.usage_grid_code(func);
+            val = obj.usage_function(func);
             if ~islogical(val) && ~isnan(val)
                 error('The output value of the function must be logical')
             end   
-        end
-
-        function check_restoration(obj,func)
-            val = obj.usage_restoration(func);
-            if ~islogical(val) && ~isnan(val)
-                error('The output value of the function must be logical')
-            end  
         end
     end
 

@@ -73,7 +73,7 @@ function data = plot_reference(obj,statename,set)
                     data.st      = @(idx) abs(obj.net_data.bus{idx,'P'}+1j*obj.net_data.bus{idx,'Q'});
                 case 'Factor' %力率
                     data.title   = 'cos(θ) :power factor';
-                    data.st      = @(idx) angle(obj.net_data.bus{idx,'P'}+1j*obj.net_data.bus{idx,'Q'});
+                    data.st      = @(idx) cos(angle(obj.net_data.bus{idx,'P'}+1j*obj.net_data.bus{idx,'Q'}));
             end
 
         case uni_state %状態変数を指定された場合
