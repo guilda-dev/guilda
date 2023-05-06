@@ -55,16 +55,9 @@ function out = simulate(obj, t, varargin)
         t0    = timelist(tidx);     % 対象の時間区間の開始時刻
         tend  = timelist(tidx+1);   % 対象の時間区間の終了時間
         retry = true;               % 下のwhile文に使用するタグの定義：ode solverがtendまで求解できるとretry=falseとなり次のforループに進む
+        ufunc = get_u(timelist(tidx+[0,1]),options.u);
+                    
         while retry                 % １つの時間区間中に機器の解列などでsolverが中断された場合，システムを構築し直しサイドodeを実行する
-            u0 = get_u(t0,options.u,options.method);                            % 対象の時間区間の開始時における入力の値を計算
-            switch options.method
-                case 'zoh'
-                    func = @(t,x) odefunc.fx(t,x,u0);                           % zoh(0次ホールド)の場合，対象の時間区間ではu0で一定となる
-                case 'foh'
-                    u1 = get_u(tend,options.u,options.method);                  % 対象の時間区間の終了時における入力の値を計算
-                    dudt = (u1-u0)/(tend-t0);
-                    func = @(t,x) odefunc.fx(t,x,u0+dudt*(t-t0));   % foh(1次ホールド)の場合，対象の時間区間ではtに応じたu0とu1の内分点となる．
-            end
     
             fbus = get_faultbus(timelist(tidx), options.fault);                 % 対象の時間区間において地絡が起きている母線番号を取得
             Mf   = odefunc.SimulationSetting(fbus,uidx);                        % odefuncクラスの初期設定を行う．出力としてodeソルバーで扱う微分代数方程式の微分方程式部分と代数方程式の部分を指定する質量行列を取得する
@@ -76,6 +69,8 @@ function out = simulate(obj, t, varargin)
             odeoptions = odeset('Mass',Mf, 'RelTol', options.RelTol, 'AbsTol', options.AbsTol, 'OutputFcn', r, 'Events',E);  % ode15sに適したoption型に整形する
     
             [x0,const0] = odefunc.reshape_allX2initX(xmac(:,end), xcl(:,end), xcg(:,end), V(:,end), I(:,end), Vvir(:,end)); % 初期値を取得する
+
+            func = @(t,x) odefunc.fx(t,x,fu(t,ufunc));
             try
                 sol  = ode15s(func, [t0,tend], [x0;const0], odeoptions);                                                            % odeソルバーの実行 
             catch
@@ -170,7 +165,16 @@ function out = simulate(obj, t, varargin)
         end
     end
     out.input.data.from_controller = U_bus;
-    uall = tools.varrayfun(@(t) reshape(get_u(t,options.u,options.method),1,[]), out.t);
+
+    uall = cell(numel(timelist)-1,1);
+    for i = 1:numel(timelist)-1
+        ts = timelist(i);
+        te = timelist(i+1);
+        ufunc = get_u([ts,te],options.u);
+        trange = t(t>=ts&t<te);
+        uall{i} = tools.harrayfun(@(tnow) fu(tnow,ufunc), trange(:)');
+    end
+    uall = [horzcat(uall{:}),fu(te,ufunc)].';
     for i = 1:numel(uidx)
         U_bus0{uidx(i)} = U_bus0{uidx(i)} + uall(:,lu(:,i));
         U_bus{uidx(i)}  = U_bus{uidx(i)}  + uall(:,lu(:,i));
@@ -197,31 +201,51 @@ function out = simulate(obj, t, varargin)
     
 end
 
+function uout = fu(t,ufunc)
+    u = cell(size(ufunc));
+    for i = 1:numel(ufunc)
+        u{i} = ufunc{i}(t);
+    end
+    uout = vertcat(u{:});
+end
 
-function uout = get_u(t,u,method)
-    if isempty(u)
-        uout = [];
-    else
-        switch method
-            case 'zoh'
-                fu = @(t,tlim,udata) udata(:,1);
-            case 'foh'
-                fu = @(t,tlim,udata) udata(:,1) + diff(udata,1,2)/diff(tlim)*(t-tlim(1));
-        end
-        udata = cell(numel(u),1);
-        for i=1:numel(u)
-            tlist = u(i).time;
-            s = find(tlist<=t,1,'last' );
-            e = find(tlist>=t,1,'first');
-            if s==e
-                udata{i} = u(i).u(:,s);
-            else
-                udata{i} = fu(t, [tlist(s),tlist(e)],[u(i).u(:,s),u(i).u(:,e)]);
+function ufunc = get_u(tlim,u)
+    ufunc = cell(numel(u),1);
+    for i = 1:numel(u)
+        is = find( u(i).time<=tlim(1), 1, "last" );
+        ie = find( u(i).time>=tlim(2) ,1, "first");
+        one = ones(numel(u(i).bus),1);
+        if strcmp(u(i).method,'function')
+            ufunc{i} = @(t) kron(one, u(i).function(t) );
+        elseif isempty(is) || isempty(ie)
+            nu = size(u(i).u, 1);
+            ufunc{i} = @(t) zeros(nu,1);
+        else
+            u0 = u(i).u(:,is);
+            t0 = u(i).time(is);
+            du = u(i).u(:,ie) - u(i).u(:,is);
+            dt = u(i).time(ie) - u(i).time(is);
+            switch u(i).method
+                case 'zoh'
+                    ufunc{i} = @(t) kron(one, u0);
+                case 'foh'
+                    dudt = du/dt;
+                    ufunc{i} = @(t) kron(one, u0 + dudt*(t-t0) );
+                case {'sin','cos'}
+                    ufunc{i} = @(t) kron(one, u0 + du/2 * (1-cos(pi*(t-t0)/dt)) );
+                case 'sigmoid'
+                    ufunc{i} = @(t) kron(one, u0 + du * 1./(1+exp(-20*(t-t0)/dt+10)) );
+                otherwise
+                    ui = size(u(i).u,1);
+                    y = u(i).u;
+                    x = u(i).time;
+                    m = u(i).method;
+                    ufunc{i} = @(t) kron(one, tools.varrayfun(@(i) interp1(x,y(i,:),t,m) ,1:ui) );
             end
         end
-        uout = vertcat(udata{:});
     end
 end
+
 
 function fault_bus = get_faultbus(t,fault)
     is_fault  = tools.structfun(@(x) t>=x.time(1) && t<x.time(end) , fault);

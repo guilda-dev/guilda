@@ -20,7 +20,7 @@ addParameter(p, 'reset_time'    , inf);
 addParameter(p, 'do_retry'      , true);
 addParameter(p, 'OutputFcn'     , []); %'live_grid_code'と指定した場合，機器の接続状況をライブする。
 addParameter(p, 'tools'         , true);
-addParameter(p, 'method'        , 'zoh'   , @(method) ismember(method, {'zoh', 'foh'}));
+addParameter(p, 'method'        , 'zoh'   );
 addParameter(p, 'grid_code'     , 'ignore', @(method) ismember(method, {'ignore', 'monitor', 'control'}));
 
 parse(p, varargin{:});
@@ -28,7 +28,7 @@ options = p.Results;
 
 
 options.fault    = organize_fault(options.fault);
-options.u        = organize_u(obj,t,u,uidx,options.u);
+options.u        = organize_u(obj,t,u,uidx,options.method,options.u);
 options.OutputFcn= organize_OutputFcn(obj,options.OutputFcn);
 
 end
@@ -51,22 +51,31 @@ function out_fault = organize_fault(fault)
 end
 
 
-function u_ = organize_u(net,t,u,u_idx,u_option)
-    u_ = [];
-    if ~isempty(u_idx)
-        nu = 0;
-        u_ = struct;
-        for i = 1:numel(u_idx)
-           idx = u_idx(i);
-           nui = net.a_bus{idx}.component.get_nu;
-           u_(i).bus  = idx;
-           u_(i).time = t;
-           u_(i).u    = u(nu+(1:nui),:);
-           nu = nu + nui;
-        end
+function u_ = organize_u(net, t, u, u_idx, u_method, u_list)
+    u_ = struct('bus',[],'time',t,'u',[],'method',u_method,'function',[]);
+
+    nu = 0;
+    for i = 1:numel(u_idx)
+       idx = u_idx(i);
+       nui = net.a_bus{idx}.component.get_nu;
+       u_(i).bus      = idx;
+       u_(i).time     = t;
+       u_(i).u        = u(nu+(1:nui),:);
+       u_(i).method   = u_method;
+       u_(i).function = [];
+       nu = nu + nui;
     end
-    if ~isempty(u_option)
-        u_ = [u_option(:),u_(:)];
+
+    for  i = 1:numel(u_list)
+        fn = intersect(fieldnames(u_list(i)), fieldnames(u_));
+        for ifn = 1:numel(fn)
+            u_(numel(u_idx)+i).(fn{ifn}) = u_list(i).(fn{ifn});
+        end
+        if isa(u_list(i).function,'function_handle')
+            u_(numel(u_idx)+i).method = 'function';
+        elseif isempty(u_list(i).method)
+            u_(numel(u_idx)+i).method = u_method;
+        end
     end
 end
 

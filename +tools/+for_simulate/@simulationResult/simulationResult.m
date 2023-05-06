@@ -147,9 +147,11 @@ classdef simulationResult < dynamicprops & matlab.mixin.CustomDisplay
             elseif istable(val)
                 val = table2array(val);
             elseif isstruct(val)
-                fd = fieldnames(val);
-                for i = 1:numel(fd)
-                    val.(fd{i}) = obj.any2array(val.(fd{i}));
+                for n = 1:numel(val)
+                    fd = fieldnames(val(n));
+                    for i = 1:numel(fd)
+                        val(n).(fd{i}) = obj.any2array(val(n).(fd{i}));
+                    end
                 end
             end
         end
