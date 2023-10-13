@@ -23,7 +23,6 @@ classdef broadcast_PI_AGC < controller
             obj.Kp = Kp;
             obj.K_input   = ones(numel(obj.index_input)  , 1)/numel(obj.index_input);
             obj.K_observe = ones(numel(obj.index_observe), 1)/numel(obj.index_observe);
-            obj.network = net;
         end
         
         function nx = get_nx(obj)

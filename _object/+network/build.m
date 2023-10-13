@@ -1,7 +1,7 @@
 function net = build(filepath)
 
     if nargin < 1
-        filepath = [uigetdir([pwd,'/_object/+network'],'Choose network data'),'/'];
+        filepath = [uigetdir(fullfile(pwd,'_object','+network'),'Choose network data'),'/'];
     else
         filepath = check_filepath(filepath);
     end

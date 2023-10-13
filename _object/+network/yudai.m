@@ -1,3 +1,4 @@
 function net = yudai()
-    net = network.build([pwd,'/_object/+network/yudai']);
+    fn = fullfile(pwd,'_object','+network','yudai');
+    net = network.build(fn);
 end
