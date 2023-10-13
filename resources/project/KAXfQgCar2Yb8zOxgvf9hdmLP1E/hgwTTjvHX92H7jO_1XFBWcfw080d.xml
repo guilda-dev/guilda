@@ -1,0 +1,4 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Info File="_GUILDAsystem/+supporters/+for_user/startup.m" GroupUUID="default" Icon="" Name="startup" Type="StartUp" Visible="0">
+    <Extension Name="StartUpPrev" Value="HEAD"/>
+</Info>
