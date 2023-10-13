@@ -1,0 +1,4 @@
+No,V_abs,V_angle,P_gen,Q_gen,P_load,Q_load,G_shunt,B_shunt,type,SetClass,SetMethod,ID
+1,2,0,0,0,0,0,0,0,slack,generator_1axis,set_component,1
+2,2,0,0.75,0,0,0,0,0,PV,generator_1axis,set_component,2
+3,0,0,0,0,-1.5,1,0,0,PQ,load_power,set_component,3

@@ -1,0 +1,4 @@
+No,V_abs,V_angle,P_gen,Q_gen,P_load,Q_load,G_shunt,B_shunt,type
+1,1,0,0,0,0,0,0,0,slack
+2,1,0,-2,0,0,0,0,0,PV
+3,1,0,-3,0,0,0,0,0,PV
