@@ -1,4 +1,4 @@
-function dx = fx(t, x, net, stash)
+function dx = fx(obj, t, x)
     
     V = zeros(2,stash.num.bus);
     I = zeros(2,stash.num.bus); 

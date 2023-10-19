@@ -31,7 +31,7 @@ function refresh_network_graph(app)
                 app.network_graph_data.Nsize(idx_temp,:) = str2num(Cset_table_temp{1});
                 nan_para_list(idx_temp) = {'pt'};
             else
-                idx_operator = sort(tools.hcellfun(@(pat) strfind(tempCsize,pat),{'/','*','+','-','(',')'}));
+                idx_operator = sort(tools.hcellfun(@(pat) strfind(tempCsize,pat),{'/','*','+','-','(',')',filesep}));
                 idx_operator = [idx_operator,numel(tempCsize)+1];
                 tempCsize = [tempCsize,' '];
                 Csize = cell(1,2*numel(idx_operator)+1);

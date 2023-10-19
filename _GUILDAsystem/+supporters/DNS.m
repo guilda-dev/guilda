@@ -107,12 +107,12 @@ function val = search_class(path,domain,address)
     for i = find(list{:,'isdir'})'
         folder = list{i,'name'}{1};
         if folder(1)=='+'
-            val = search_class([path,'/',folder],domain,[address,folder(2:end),'.']);
+            val = search_class(fullfile(path,folder),domain,[address,folder(2:end),'.']);
             if ~isnan(val)
                 return
             end
         elseif ismember(folder,{'_object','_script'})
-            val = search_class([path,'/',folder],domain,[]);
+            val = search_class(fullfile(path,folder),domain,[]);
             if ~isnan(val)
                 return
             end

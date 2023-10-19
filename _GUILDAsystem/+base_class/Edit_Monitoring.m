@@ -24,8 +24,8 @@ classdef Edit_Monitoring < handle
             obj.is_editted = false;
             for i = 1:numel(obj.children)
                 child = obj.children{i};
-                if ismethod(obj.parents,'reflected')
-                    child.reflectd;
+                if ismethod(child,'reflected')
+                    child.reflected;
                 end
             end
         end

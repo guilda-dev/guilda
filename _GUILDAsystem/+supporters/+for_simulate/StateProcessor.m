@@ -1,12 +1,27 @@
-classdef Factory_odeData < handle
+classdef StateProcessor < handle
     properties
         network
-        Ymat_rproduce
-        Ymat_all
+        
+        % シミュレーション中に使用
+        Ymat
+        I0const_bus
+        V0const_bus
+
+
+        % シミュレーション中の地絡・解列等を加味したインデックスの管理
         logical = struct('x',[],'xcl',[],'xcg',[],'V',[],'Iconst',[],'Vconst',[]);
         logivec = struct('x',[],'xcl',[],'xcg',[],'V',[],'Iconst',[],'Vconst',[]);
         logimat = struct('x',[],'xcl',[],'xcg',[],'V',[],'Iconst',[],'Vconst',[]);
         
+        % 全母線・機器・制御器のインデックスの管理
+        all_logivec = struct('x',[],'xcl',[],'xcg',[]);
+        all_logimat = struct('x',[],'xcl',[],'xcg',[]);
+        
+        % クロン縮約されたデータを元に戻す際に使用
+        Ymat_rproduce
+        Ymat_all
+
+        % simulation中のデータを格納していくプロパティ
         t
         V
         I
@@ -17,25 +32,32 @@ classdef Factory_odeData < handle
         sols
     end
     methods
-        function obj = Factory_odeData(net)
+        function obj = StateProcessor(net,ts,Xinit)
             obj.network = net;
-            obj.initialize;
+
+            temp{1} = tools.cellfun(@(b) true(b.component.get_nx,1), net.a_bus);
+            temp{2} = tools.cellfun(@(c) true(c.get_nx,1), net.a_controller_local );
+            temp{3} = tools.cellfun(@(c) true(c.get_nx,1), net.a_controller_global);
+            f = {'x','xcl','xcg'};
+            for i = 1:3
+                obj.logivec = setfield(obj.logivec,f{i}, tools.varrayfun( @(j) j*temp{i}{j}, 1:numel(temp{i}) ) );
+                obj.logimat = setfield(obj.logimat,f{i}, dlkdiag( temp{i}{:} ) );
+            end
+            
+            obj.t = ts(1);
+            obj.V = num2cell( reshape( Xinit.V0,2,[]),1);
+            obj.I = num2cell( reshape( Xinit.I0,2,[]),1);
+            obj.Vvir = num2cell( nan(2,numel(net.a_bus)),1);
+
+            obj.x    = tools.arrayfun(@(i) Xinit.sys(obj.logimat.x(  :,i)), 1:numel(temp{1}));
+            obj.xcl  = tools.arrayfun(@(i) Xinit.cl( obj.logimat.xcl(:,i)), 1:numel(temp{2}));
+            obj.xcg  = tools.arrayfun(@(i) Xinit.cg( obj.logimat.xcg(:,i)), 1:numel(temp{3}));
         end
 
-        function initialize(obj)
-            net = obj.network;
-            nbus = numel(net.a_bus);
-            nx   = numel(net.x_equilibrium);
-            nxcl = sum( tools.vcellfun(@(c) c.get_nx, net.a_controller_local ));
-            nxcg = sum( tools.vcellfun(@(c) c.get_nx, net.a_controller_global));
-            obj.V = zeros(nbus*2,0);
-            obj.I = zeros(nbus*2,0);
-            obj.x = zeros(nx,0);
-            obj.xcl = zeros(nxcl,0);
-            obj.xcg = zeros(nxcg,0);
-        end
+        function setidx(obj,V0const_bus,I0const_bus)
 
-        function setidx(obj,tool,Ymat_rep,Ymat,no_reduced_bus,Iconst_bus,Vconst_bus)
+            
+            
             obj.Ymat_rproduce = Ymat_rep;
             obj.Ymat_all      = Ymat;
             

@@ -1,14 +1,14 @@
 function net = build(filepath)
 
     if nargin < 1
-        filepath = [uigetdir(fullfile(pwd,'_object','+network'),'Choose network data'),'/'];
+        filepath = [uigetdir(fullfile(pwd,'_object','+network'),'Choose network data'),filesep];
     else
         filepath = check_filepath(filepath);
     end
     
     net = power_network;
 
-    idx_srash = find(filepath(1:end-1)=='/',1,"last");
+    idx_srash = find(filepath(1:end-1)==filesep,1,"last");
     if isempty(idx_srash); idx_srash=0; end
     Tag = filepath(idx_srash+1:end-1);
     if Tag(1)=='+'; Tag = Tag(2:end); end
@@ -65,21 +65,20 @@ end
 
 function filepath = check_filepath(filepath)
     if ~isfolder(filepath)
-        if isfolder([pwd,'/',filepath])
-            filepath = [pwd,'/',filepath];
+        if isfolder(fullfile(pwd,filepath))
+            filepath = fullfile(pwd,filepath);
+        elseif isfolder(fullfile(pwd,'_object','+network',filepath))
+            filepath = fullfile(pwd,'_object','+network',filepath);
 
-        elseif isfolder(['+network/',filepath])
-            filepath = ['+network/',filepath];
-
-        elseif isfolder(['+network/+',filepath])
-            filepath = ['+network/+',filepath];
+        elseif isfolder(fullfile(pwd,'_object',filepath))
+            filepath = fullfile(pwd,'_object',filepath);
         else
             error("filepath couldn't be identified")
         end
     end
 
-    if filepath(end)~='/'
-        filepath = [filepath,'/'];
+    if filepath(end)~=filesep
+        filepath = [filepath,filesep];
     end
 end
 
@@ -88,9 +87,9 @@ function Tab_memory = set_any(targetObj,Tab,Tab_memory,filepath)
     if ismember('SetClass',fieldnames(Tab)) && ismember('SetMethod',fieldnames(Tab))
         name   = Tab{:,'SetClass'}{1};
         if ~isempty(name)
-            name   = split(name,  {' ',',','/','-',newline});
+            name   = split(name,  {' ',',','/','-',newline,filesep});
             method = Tab{:,'SetMethod'}{1};
-            method = split(method,{' ',',','/','-',newline});
+            method = split(method,{' ',',','/','-',newline,filesep});
             for i = 1:numel(name)
                 [domain,data,Tab_memory] = get_obj(name{i},Tab_memory,filepath);
                 if isempty(data)

@@ -1,16 +1,22 @@
-classdef branch < base_class.HasCostFunction & base_class.HasGridCode
+classdef branch < base_class.HasGridCode & base_class.HasCostFunction
 % 送電網を定義するスーパークラス
 % 'branch_pi'と'branch_pi_transfer'を子クラスに持つ。
     
-    properties(Dependent)
+    properties(Dependent,Access=public)
         network
-    end
-
-    properties(SetAccess = private)
         from
         to
     end
-    
+
+    properties(SetAccess = protected)
+        index
+    end
+
+    properties(Access=protected)
+        bus_from
+        bus_to
+    end
+
     methods(Abstract)
         y = get_admittance_matrix(obj);
     end
@@ -36,9 +42,38 @@ classdef branch < base_class.HasCostFunction & base_class.HasGridCode
             end
         end
 
-        function n = get.network(obj)
-            n = obj.parents{1};
-        end
+        %% DependentプロパティのSetGetメソッド
+            function n = get.network(obj)
+                n = obj.parents{1};
+            end
+    
+            function set.from(obj,val)
+                if isa(obj.network,'power_network')
+                    obj.bus_from = obj.network.a_bus{val};
+                else
+                    obj.bus_from = struct('index',val);
+                end
+            end
+    
+            function set.to(obj,val)
+                if isa(obj.network,'power_network')
+                    obj.bus_to = obj.network.a_bus{val};
+                else
+                    obj.bus_to = struct('index',val);
+                end
+            end
+    
+            function n = get.from(obj)
+                n = obj.bus_from.index;
+            end
+    
+            function n = get.to(obj)
+                n = obj.bus_to.index;
+            end
+
+            function setprop(obj,name,val)
+                obj.(name)=val;
+            end
     end
 
     methods(Access=protected)

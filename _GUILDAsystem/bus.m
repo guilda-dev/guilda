@@ -1,16 +1,17 @@
-classdef bus   < base_class.HasCostFunction & base_class.Edit_Monitoring
+classdef bus   < base_class.Edit_Monitoring & base_class.HasCostFunction
 % 母線を定義するスーパークラス
 % 'bus_PV'と'bus_PQ','bus_slack'を子クラスに持つ。
+
+    properties(SetAccess = protected)
+        index
+        V_equilibrium %潮流状態の母線電圧フェーザ
+        I_equilibrium %潮流状態の母線電流フェーザ
+        shunt %シャント値
+    end
 
     properties(Dependent)
         component %機器を格納するプロパティ
         power_network
-    end
-
-    properties(SetAccess = protected)
-        V_equilibrium %潮流状態の母線電圧フェーザ
-        I_equilibrium %潮流状態の母線電流フェーザ
-        shunt %シャント値
     end
 
     methods(Abstract)

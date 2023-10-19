@@ -73,7 +73,7 @@ function generate(~,~,edit_name,edit_discription,pop,lang)
     end
 
 
-    filename = [pwd,'/+your_class/',new_name,'.m'];
+    filename = [pwd,filesep,'+your_class',filesep,new_name,'.m'];
     if isfolder('+your_class')
        if isfile(filename)
             [filename,num] = rename_file([filename(1:end-2),'_2.m']);
@@ -85,12 +85,12 @@ function generate(~,~,edit_name,edit_discription,pop,lang)
 
 
     language = lang.String{lang.Value};
-    text_data = fileread([pwd,'/+tools/+newClass/template/',language,'/',pop.String{pop.Value},'.txt']);
+    text_data = fileread([fullfile(pwd,'+tools','+newClass','template',language,pop.String{pop.Value}),'.txt']);
     text_data = strrep(text_data,'___NAME___',new_name);
     text_data = strrep(text_data,'___DISCRIPTION___',discription);
 
     writelines(text_data,filename)
-    open([pwd,'/+your_class/',new_name,'.m'])
+    open([fullfile(pwd,'+your_class',new_name),'.m'])
 end
 
 function [filename,idx] = rename_file(filename)
