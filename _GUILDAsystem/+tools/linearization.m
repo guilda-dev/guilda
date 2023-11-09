@@ -1,4 +1,4 @@
-function matrix = linearlization(func,steady_state)
+function matrix = linearization(func,steady_state)
 
     delta = 1e-8;
     

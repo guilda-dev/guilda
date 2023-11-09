@@ -7,7 +7,7 @@ function address = DNS(domain)
     end
 
     if iscell(domain)
-        tools.cellfun(@(o) DNS(o), domain)
+        tools.cellfun(@(o) debugger.DNS(o), domain)
     % elseif eval(['numel(?',domain,')'])==1
     %         address = domain;
     else
