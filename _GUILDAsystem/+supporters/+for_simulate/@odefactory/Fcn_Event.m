@@ -1,4 +1,4 @@
-function f = EventFcn(obj,varargin)
+function f = Fcn_Event(obj,varargin)
     f = obj.ToBeStop;
     if obj.ToBeStop
         obj.ToBeStop=true;

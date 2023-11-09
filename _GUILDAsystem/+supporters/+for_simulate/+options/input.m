@@ -5,17 +5,16 @@ classdef input < supporters.for_simulate.options.Abstract
     end
 
     methods
-        function obj = input(p,t,uidx,u,option)
+        function obj = input(p,uidx,u,option)
             obj.parent = p;
             obj.method = option.method;
-            obj.tlim = t;
-            
+            data = option.input;
             if ~isempty(data)
                switch class(data)
                     case 'cell'
-                        cellfun(@(d) obj.add(d), option.u);
+                        cellfun(@(d) obj.add(d), option.input);
                     case 'struct'
-                        arrayfun(@(i) abj.add(option.u(i)), (1:numel(option.u))');
+                        arrayfun(@(i) abj.add(option.input(i)), (1:numel(option.input))');
                     otherwise
                         error('')
                end
@@ -40,6 +39,9 @@ classdef input < supporters.for_simulate.options.Abstract
                 addParameter(p, 'function', []);
                 parse(p, varargin{:});
                 newdata = p.Results;
+                if isempty(newdata.index)
+                    return
+                end
             end
 
             if isa(newdata.function,'function_handle')

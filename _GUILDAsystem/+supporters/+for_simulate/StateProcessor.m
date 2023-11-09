@@ -41,7 +41,7 @@ classdef StateProcessor < handle
             f = {'x','xcl','xcg'};
             for i = 1:3
                 obj.logivec = setfield(obj.logivec,f{i}, tools.varrayfun( @(j) j*temp{i}{j}, 1:numel(temp{i}) ) );
-                obj.logimat = setfield(obj.logimat,f{i}, dlkdiag( temp{i}{:} ) );
+                obj.logimat = setfield(obj.logimat,f{i}, blkdiag( temp{i}{:} ) );
             end
             
             obj.t = ts(1);
@@ -55,9 +55,7 @@ classdef StateProcessor < handle
         end
 
         function setidx(obj,V0const_bus,I0const_bus)
-
-            
-            
+    
             obj.Ymat_rproduce = Ymat_rep;
             obj.Ymat_all      = Ymat;
             

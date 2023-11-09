@@ -1,16 +1,16 @@
 classdef Abstract < handle
     properties
         current_time
-        data
-        tlim    
+        data  
     end
 
-    properties(Access=private)
+    properties%(Access=private)
         parent
     end
 
     properties(Dependent)
         network
+        tlim  
     end
 
     methods(Abstract)
@@ -30,6 +30,10 @@ classdef Abstract < handle
             net = obj.parent.network;
         end
 
+        function t = get.tlim(obj)
+            t = obj.parent.tlim;
+        end
+
     end
 
 
@@ -39,7 +43,7 @@ classdef Abstract < handle
             idx = unique(idx,'sorted');
         end
         function idx = get_all_time(obj)
-            idx = [obj.tlim(:)',tools.harrayfun(@(i) obj.data(i).time(:)', 1:numel(obj.data))];
+            idx = [obj.tlim([1,end]),tools.harrayfun(@(i) obj.data(i).time(:)', 1:numel(obj.data))];
             idx = unique(idx,'sorted');
         end
     end

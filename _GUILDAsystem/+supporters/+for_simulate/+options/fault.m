@@ -1,7 +1,7 @@
 classdef fault < supporters.for_simulate.options.Abstract
 
     methods
-        function obj = fault(p,t,data)
+        function obj = fault(p,data)
             obj.parent = p;
             if ~isempty(data)
                switch class(data)
@@ -13,7 +13,6 @@ classdef fault < supporters.for_simulate.options.Abstract
                         error('')
                end
             end
-            obj.tlim = [t(1),t(end)];
         end
 
         function add(obj,data)

@@ -1,4 +1,4 @@
-classdef Factory_Reporter < handle
+classdef progress < handle
     
     properties
         time_end
@@ -17,7 +17,7 @@ classdef Factory_Reporter < handle
     end
     
     methods
-        function obj = Factory_Reporter(time, net, options)
+        function obj = progress(time, net, options)
             obj.time_start = time(1);
             obj.time_end = time(end);
             obj.flag = false;

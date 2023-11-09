@@ -1,4 +1,4 @@
-classdef Response_reporter < handle
+classdef response < handle
 
     properties
         state_list
@@ -30,7 +30,7 @@ classdef Response_reporter < handle
     end
 
     methods
-        function obj = Response_reporter(tlim,net,StateHolder,state,busidx)
+        function obj = response(tlim,net,StateHolder,state,busidx)
             obj.net = net;
             obj.tlim = tlim;
             obj.vargin = StateHolder;

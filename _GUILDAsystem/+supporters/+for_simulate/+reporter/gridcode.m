@@ -1,4 +1,4 @@
-classdef GridCode_checker < handle
+classdef gridcode < handle
 
     properties
         observe = true;
@@ -34,7 +34,7 @@ classdef GridCode_checker < handle
     end
 
     methods
-        function obj = GridCode_checker(net, tlim, stateholder, mode, live_equip)
+        function obj = gridcode(net, tlim, stateholder, mode, live_equip)
             arguments
                 net
                 tlim

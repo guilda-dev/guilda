@@ -1,9 +1,8 @@
 classdef parallel < supporters.for_simulate.options.Abstract
 
     methods
-        function obj = parallel(p,t,option)
+        function obj = parallel(p,option)
             obj.parent = p;
-            obj.tlim = t;
             data = option.parallel_component;
             if ~isempty(data)
                 switch class(data)
@@ -19,7 +18,7 @@ classdef parallel < supporters.for_simulate.options.Abstract
             n = 1+numel(obj.data);
             if nargin == 1
                 id = input('     Bus index : ');
-                 t ma= input('          Time : ');
+                 t = input('          Time : ');
                 onoff = input(' "on" or "off" : ' ,'s');
                 obj.data(n) = struct(...
                             'time', t,...
@@ -90,7 +89,7 @@ classdef parallel < supporters.for_simulate.options.Abstract
     
             function out = timetable(obj)
                 blist = obj.get_all_bus;
-                tlist = [tools.harrayfun(@(i) obj.data(i).time(:)',1:numel(obj.data)),obj.tlim(:)'];
+                tlist = [tools.harrayfun(@(i) obj.data(i).time(:)',1:numel(obj.data)),obj.tlim([1,end])];
                 [~,prior] = sort(tlist);
                 ilist = [tools.harrayfun(@(i) i*ones(1,numel(obj.data(i).time)),1:numel(obj.data)),0,0];
                 ilist = ilist(prior);
