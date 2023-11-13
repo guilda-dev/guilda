@@ -12,13 +12,17 @@ classdef DataProcessing < dynamicprops & matlab.mixin.CustomDisplay
 
     properties
         setting
-        data_format = 'table';
+        data_format(1,:) char {mustBeMember(data_format,{'array','table'})} = 'table';
     end
 
     properties(SetAccess=private)
         out_data
         net_data
-        opt_data
+        options
+    end
+
+    properties(Access=private)
+        option_class = struct();
     end
 
     methods
@@ -28,11 +32,19 @@ classdef DataProcessing < dynamicprops & matlab.mixin.CustomDisplay
             arguments
                 out
                 net
-                print_readme = [];
+                print_readme = false;
             end
         
         % 本クラスの使用方法を表示
-            obj.readme(print_readme)
+            obj.readme(print_readme);
+
+
+        % オプションに関するデータを取り出す
+            obj.options = out.options;
+            obj.option_class.input = out.input;
+            obj.option_class.fault = out.fault;
+            obj.option_class.parallel = out.parallel;
+            out = rmfield(out,{'options','input','fault','parallel'});
 
             
         % outデータを下処理
@@ -56,7 +68,7 @@ classdef DataProcessing < dynamicprops & matlab.mixin.CustomDisplay
             out.Xcon.global= farray2table(out.Xcon.global, fdata, @(~,i) net.a_controller_global{i}.get_state_name);
             
             funame = @(con) tools.harrayfun(@(idx) strcat(reshape(net.a_bus{idx}.component.get_port_name,1,[]),['_',num2str(idx)]), con.index_input);
-            out.Ucon.local=  farray2table(out.Ucon.local , fdata, @(~,i) funame(net.a_controller_local{i}));
+            out.Ucon.local = farray2table(out.Ucon.local , fdata, @(~,i) funame(net.a_controller_local{i}));
             out.Ucon.global= farray2table(out.Ucon.global, fdata, @(~,i) funame(net.a_controller_global{i}));
 
 
@@ -97,51 +109,18 @@ classdef DataProcessing < dynamicprops & matlab.mixin.CustomDisplay
             obj.initialize;
         end
         
-
-    % データ形式の変換に関するメソッド
-        function set.data_format(obj,format)
-            arguments
-                obj
-                format {mustBeMember(format,{'array','table'})} = 'table';
-            end
-            obj.data_format = format;
-            obj.initialize;
-        end
-        function initialize(obj)
-            allfield = fieldnames(obj.out_data);
-            for i = 1:numel(allfield)
-                field = allfield{i};
-                prop  = findprop(obj,field);
-                prop.GetMethod = @(~) obj.(strcat('get_',obj.data_format))(field);
+    % シミュレーション条件の表示
+        function  simulation_condition(obj)
+            figure
+            f = {'fault','input','parallel'};
+            for i = 1:3
+                op = obj.option_class.(f{i});
+                ax = subplot(1,3,i);
+                op.sentence;
+                op.plot(ax);
             end
         end
 
-
-    % データへのGetMethodを定義
-        function val = get_array(obj,name)
-            val = obj.out_data.(name);
-            val = obj.any2array(val);
-        end
-        function val = get_table(obj,name)
-            val = obj.out_data.(name);
-        end
-
-        function val = any2array(obj,val)
-            if iscell(val)
-                val = tools.cellfun(@(c) obj.any2array(c), val);
-            elseif istable(val)
-                val = table2array(val);
-            elseif isstruct(val)
-                for n = 1:numel(val)
-                    fd = fieldnames(val(n));
-                    for i = 1:numel(fd)
-                        val(n).(fd{i}) = obj.any2array(val(n).(fd{i}));
-                    end
-                end
-            end
-        end
-
-        
     %応答プロットに関するmethod
         function UIplot(obj)
             %ー実行方法ー
@@ -150,9 +129,9 @@ classdef DataProcessing < dynamicprops & matlab.mixin.CustomDisplay
             supporters.for_simulate.sol.UIplot(obj);
         end
         varargout = plot(obj,para,bus_idx,varargin);
-        data = plot_reference(obj,statename,set);
 
-        %応答のアニメーションに関するmethod
+
+    %応答のアニメーションに関するmethod
         function UIanime(obj,net)
             %ー実行方法ー
             %>> obj.UIanime(net)
@@ -217,10 +196,50 @@ classdef DataProcessing < dynamicprops & matlab.mixin.CustomDisplay
         
     end
     methods(Access=protected)
+
+        data = plot_reference(obj,statename,set);
+
         function propgrp = getPropertyGroups(obj)
             proplist = [{'data_format','plot_default'},fieldnames(obj.out_data)'];
             propgrp = matlab.mixin.util.PropertyGroup(proplist);
         end
+
+        
+        function initialize(obj)
+            allfield = fieldnames(obj.out_data);
+            for i = 1:numel(allfield)
+                field = allfield{i};
+                prop  = findprop(obj,field);
+                prop.GetMethod = @(~) obj.get_data(field);
+            end
+        end
+
+
+    % データへのGetMethodを定義
+        function val = get_data(obj,name)
+            switch obj.data_format
+                case 'array'
+                    val = obj.any2array(obj.out_data.(name));
+                case 'table'
+                    val = obj.out_data.(name);
+            end
+        end
+
+        function val = any2array(obj,val)
+            if iscell(val)
+                val = tools.cellfun(@(c) obj.any2array(c), val);
+            elseif istable(val)
+                val = table2array(val);
+            elseif isstruct(val)
+                for n = 1:numel(val)
+                    fd = fieldnames(val(n));
+                    for i = 1:numel(fd)
+                        val(n).(fd{i}) = obj.any2array(val(n).(fd{i}));
+                    end
+                end
+            end
+        end
+
     end
 
 end

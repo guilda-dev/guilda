@@ -112,7 +112,7 @@ classdef one_axis < component.generator.base
             Mpss = obj.pss.Mass;
             Mgov = obj.governor.Mass;
 
-            M = blkdiag(Msys,Mavr,Mpss,Mgov);
+            M = blkdiag(Msys,Mavr,Mpss,Mgov,0,0);
         end
         
         

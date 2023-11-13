@@ -83,6 +83,13 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
             con = ss.C * ( x - obj.x_equilibrium) + ss.D * u + ss.DV * (V - obj.V_st) + ss.DI * ( I - obj.I_st);
         end
 
+        function M = Mass(obj)
+            x = obj.x_equilibrium;
+            u = obj.u_equilibrium;
+            [dx,con] = obj.get_dx_constraint( 0, x, obj.V_st, obj.I_st, u);
+            M = blkdiag( eye(numel(dx)), zeros(length(con)) );
+        end
+
         function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj,xst,Vst,Ist)
 
             %%% 引数の補完 %%%

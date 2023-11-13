@@ -49,9 +49,13 @@ classdef controller < base_class.HasStateInput & base_class.HasGridCode & base_c
             
             [~, u(:)] = tools.arrayfun(@(i) obj.get_dx_u_func(t(i),x(i,:)',Xi(i),Vi(i),Ii(i),Ui(i)), 1:numel(t) );
             if iscell(u{1})
-                uout = tools.vcellfun(@(c) tools.hcellfun(@(ci) ci(:).', c), u);
+                nout = numel(u{1});
+                uout = cell(nout,1);
+                for i = 1:nout
+                    uout{i} = tools.harrayfun(@(idx) uout{idx}{i}(:), 1:numel(t)).';
+                end
             else
-                uout = tools.vcellfun(@(c) c(:).', u);
+                uout = {horzcat(u{:}).'};
             end
             
         end

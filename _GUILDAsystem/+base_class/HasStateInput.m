@@ -8,10 +8,6 @@ classdef HasStateInput < base_class.handleCopyable
         function u_name = get_port_name(obj)
             u_name = obj.get_name('naming_port','u');
         end
-
-        function M = Mass(obj)
-            M = eye(obj.get_nx);
-        end
     end
 
     methods(Access=private)

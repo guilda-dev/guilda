@@ -146,7 +146,7 @@ function out = identify_busidx(data,list)
             if ismember(data,{'all_bus','all','all bus'})
                 out = 1:numel(list.bus);
             else
-                domain = supporters.DNS(data);
+                domain = debugger.DNS(data);
                 switch char(domain)
                     case unique(convertStringsToChars(list.comp))
                         out = reshape(find(strcmp(list.comp,domain)),1,[]);

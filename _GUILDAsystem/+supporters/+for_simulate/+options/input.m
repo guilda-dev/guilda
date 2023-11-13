@@ -5,24 +5,23 @@ classdef input < supporters.for_simulate.options.Abstract
     end
 
     methods
-        function obj = input(p,uidx,u,option)
+        function obj = input(p, t, uidx, u, data, method)
             obj.parent = p;
-            obj.method = option.method;
-            data = option.input;
+            obj.method = method;
             if ~isempty(data)
                switch class(data)
                     case 'cell'
-                        cellfun(@(d) obj.add(d), option.input);
+                        cellfun(@(d) obj.add(t,d), data);
                     case 'struct'
-                        arrayfun(@(i) abj.add(option.input(i)), (1:numel(option.input))');
+                        arrayfun(@(i) abj.add(t,data(i)), (1:numel(data))');
                     otherwise
                         error('')
                end
             end
-            obj.add('index',uidx,'u',u);
+            obj.add(t,'index',uidx,'u',u);
         end
 
-        function add(obj,varargin)
+        function add(obj,set_t,varargin)
             if nargin == 1
                 id = input(' Bus index : ');
                 t  = input('Time Table : ');
@@ -32,7 +31,7 @@ classdef input < supporters.for_simulate.options.Abstract
             else
                 p = inputParser;
                 p.CaseSensitive = false;
-                addParameter(p, 'time'    , obj.tlim);
+                addParameter(p, 'time'    , set_t);
                 addParameter(p, 'index'   , []);
                 addParameter(p, 'u'       , []);
                 addParameter(p, 'method'  , obj.method);
@@ -75,11 +74,31 @@ classdef input < supporters.for_simulate.options.Abstract
                 error('入力の配列数が指定されたインデックスの機器の入力ポート数と一致しません')
             end
             newdata.logimat = l;
-            n = 1+numel(obj.data);
-            obj.data(n) = newdata;
+            % n = 1+numel(obj.data);
+            obj.data = [obj.data;newdata];
         end
         
         %% simulation中に使用するメソッド
+            function  udata = get_ufunc(obj,tnow)
+                ndata = numel(obj.data);
+                utemp = cell(ndata,1);
+                for i = 1:ndata
+                    d = obj.data(i);
+                    if d.is_now
+                        if isa(d.function,'function_handle')
+                            func = d.function;
+                        else
+                            func = make_function(tnow, d.time, d.u, d.method);
+                        end
+                        utemp{i} = struct(          ...
+                               'index',    d.index ,...
+                             'logimat',  d.logimat ,...
+                            'function',       func );
+                    end
+                end
+                udata = vertcat(utemp{:});
+            end
+                
             function idx = get_bus_list(obj)
                 idx = tools.harrayfun(@(i) func(obj.data(i)), 1:numel(obj.data));
                 idx = unique(idx,"sorted");
@@ -94,7 +113,7 @@ classdef input < supporters.for_simulate.options.Abstract
             end
     
             function tend = get_next_tend(obj,t)
-                tlist = tools.harrayfun(@(d) d.time(:)', 1:numel(obj.data));
+                tlist = tools.harrayfun(@(i) obj.data(i).time(:)', 1:numel(obj.data));
                 tlist = unique(tlist,"sorted");
                 tend  = tlist(find(tlist>t,1,"first"));
             end
@@ -103,16 +122,19 @@ classdef input < supporters.for_simulate.options.Abstract
                 for i = 1:numel(obj.data)
                     if t == obj.data(i).time(1)
                         obj.data(i).is_now = true;
-                    elseif t == obj.data(i).time(2)
+                    elseif t == obj.data(i).time(end)
                         obj.data(i).is_now = false;
                     end
                 end
             end
     
             function op = export_option(obj)
-                op = rmfield(obj.data,'logimat');
+                if isempty(obj.data)
+                    op = [];
+                else
+                    op = rmfield(obj.data,{'logimat','is_now'});
+                end
             end
-
 
         
         %% データ閲覧用のメソッド
@@ -193,5 +215,30 @@ classdef input < supporters.for_simulate.options.Abstract
                 end
             end
 
+    end
+end
+
+function func = make_function(tnow, tlist, u, method)
+    idx_0   = find(tlist <=tnow, 1, 'last' );
+    idx_end = find(tlist > tnow, 1, 'first');
+    
+    u0 = u(:,idx_0);
+    t0 = tlist(idx_0);
+    
+    du = u( :, idx_end) - u( :, idx_0);
+    dt = tlist(idx_end) - tlist(idx_0);
+    
+    switch method
+        case 'zoh'
+            func = @(t) u0;
+        case 'foh'
+            dudt = du/dt;
+            func = @(t) u0 + dudt*(t-t0);
+        case {'sin','cos'}
+            func = @(t) u0 + du/2 * (1-cos(pi*(t-t0)/dt));
+        case 'sigmoid'
+            func = @(t) u0 + du * 1./(1+exp(-20*(t-t0)/dt+10));
+        otherwise
+            func = @(t) tools.varrayfun(@(i) interp1( tlist, u(i,:), t, method) , 1:size(u,1) );
     end
 end

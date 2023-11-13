@@ -1,35 +1,59 @@
-function [x0,const0] = get_initial(obj,x0,xcl0,xcg0,V0,I0,Vvir0)
+function [x0,index] = get_initial(obj)
 
-    x0   = x0(  obj.logical.x  );
-    xcl0 = xcl0(obj.logical.xcl);
-    xcg0 = xcg0(obj.logical.xcg);
+    net = obj.network; 
+    x0  = nan(numel(obj.logimat.V),1);
 
-    net = obj.network;
-    V0comp = V0(1:2:end)+1j*V0(2:2:end);
-    I0comp = I0(1:2:end)+1j*I0(2:2:end);
-    for i = 1:numel(net.a_bus)
-        if isempty(x0) || any(isnan(x0(obj.logimat.x(:,i))))
-            warning('off')
-            c = net.a_bus{i}.component.copy;
-            x0(obj.logimat.x(:,i)) = c.set_equilibrium(V0comp(i),I0comp(i));
-            warning('on')
+    index = false(numel(obj.logimat.V),1);
+
+    for i = 1:numel(obj.simulated_bus)
+        idx  = obj.simulated_bus(i);
+        temp = obj.initial.x{idx};
+        if any(isnan(temp))
+            x0(obj.logimat.x(:,i)) = net.a_bus{idx}.component.x_equilibrium;
+            index(obj.logimat.x(:,i)) = true;
+        else
+            x0(obj.logimat.x(:,i)) = temp;
         end
     end
-    for i = 1:numel(net.a_controller_local)
-        if isempty(xcl0) || any(isnan(xcl0(obj.logimat.xcl(:,i))))
-            xcl0(obj.logimat.xcl(:,i)) = net.a_controller_local{i}.get_x0;
-        end
-    end
-    for i = 1:numel(net.a_controller_global)
-        if isempty(xcg0) || any(isnan(xcg0(obj.logimat.xcg(:,i))))
-            xcg0(obj.logimat.xcg(:,i)) = net.a_controller_global{i}.get_x0;
-        end
-    end
-    
-    x0 = [x0;xcl0;xcg0];
 
-    Vvir0(isnan(Vvir0))=0;
-    const0 = [V0(   obj.logical.V     ) ;...
-              I0(   obj.logical.Vconst) ;...
-              Vvir0(obj.logical.Iconst) ];
+    for i = 1:numel(obj.simulated_cl)
+        idx = obj.simulated_cl(i);
+        temp = obj.initial.xcl{idx};
+        if any(isnan(temp))
+            x0(obj.logimat.xcl(:,i)) = net.a_controller_local.get_x0;
+        else
+            x0(obj.logimat.xcl(:,i)) = temp;
+        end
+    end
+
+    for i = 1:numel(obj.simulated_cg)
+        idx = obj.simulated_cg(i);
+        temp = obj.initial.xcg{idx};
+        if any(isnan(temp))
+            x0(obj.logimat.xcg(:,i)) = net.a_controller_global.get_x0;
+        else
+            x0(obj.logimat.xcg(:,i)) = temp;
+        end
+    end
+
+    V = horzcat(obj.initial.V{obj.noreduced_bus});
+    x0(obj.logimat.V) = reshape(V,[],1);
+
+    if ~isempty(obj.V0const_bus)
+        V0 = horzcat(obj.initial.V0const{obj.V0const_bus});
+        idx = any(isnan(V0),1);
+        V0(1,idx) = 1; 
+        V0(2,idx) = 0; 
+        x0(obj.logimat.V0const)    = reshape(V0,[],1);
+        index(obj.logimat.V0const) = reshape([idx;idx],[],1);
+    end
+
+    if ~isempty(obj.I0const_bus)
+        I0 = horzcat(obj.initial.I0const{obj.I0const_bus});
+        idx = any(isnan(I0),1);
+        I0(1,idx) = 1; 
+        I0(2,idx) = 0; 
+        x0(obj.logimat.I0const) = reshape(I0,[],1);
+        index(obj.logimat.I0const) = reshape([idx;idx],[],1);
+    end
 end

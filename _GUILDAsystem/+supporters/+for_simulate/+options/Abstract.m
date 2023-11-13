@@ -1,10 +1,10 @@
-classdef Abstract < handle
+classdef Abstract < matlab.mixin.Copyable
     properties
         current_time
-        data  
+        data
     end
 
-    properties%(Access=private)
+    properties(Access=protected)
         parent
     end
 
@@ -31,7 +31,7 @@ classdef Abstract < handle
         end
 
         function t = get.tlim(obj)
-            t = obj.parent.tlim;
+            t = obj.parent.time;
         end
 
     end

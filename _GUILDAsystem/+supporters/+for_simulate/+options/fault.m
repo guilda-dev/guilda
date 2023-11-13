@@ -21,10 +21,12 @@ classdef fault < supporters.for_simulate.options.Abstract
                 id = input(' Bus index : ');
                 ts = input('Start Time : ');
                 te = input('  End Time : ');
-                obj.data(n) = struct(...
-                            'time',[ts,te],...
-                            'index', id ,...
-                            'is_now' , false);
+                obj.data = [obj.data;         ...
+                            struct(           ...
+                            'time',[ts,te]   ,...
+                            'index', id      ,...
+                            'is_now' , false) ...
+                           ];
             else
                 switch class(data)
                     case 'cell'
@@ -59,7 +61,7 @@ classdef fault < supporters.for_simulate.options.Abstract
             end
     
             function tend = get_next_tend(obj,t)
-                tlist = tools.harrayfun(@(d) d.time(:)', 1:numel(obj.data));
+                tlist = tools.harrayfun(@(i) obj.data(i).time(:)', 1:numel(obj.data));
                 tlist = unique(tlist,"sorted");
                 tend  = tlist(find(tlist>t,1,"first"));
             end
@@ -75,7 +77,11 @@ classdef fault < supporters.for_simulate.options.Abstract
             end
     
             function op = export_option(obj)
-                op = rmfield(obj.data,'is_now');
+                if isempty(obj.data)
+                    op = [];
+                else
+                    op = rmfield(obj.data,'is_now');
+                end
             end
 
 

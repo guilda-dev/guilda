@@ -3,7 +3,7 @@ classdef parallel < supporters.for_simulate.options.Abstract
     methods
         function obj = parallel(p,option)
             obj.parent = p;
-            data = option.parallel_component;
+            data = option.parallel_sys;
             if ~isempty(data)
                 switch class(data)
                     case 'cell'
@@ -20,10 +20,12 @@ classdef parallel < supporters.for_simulate.options.Abstract
                 id = input('     Bus index : ');
                  t = input('          Time : ');
                 onoff = input(' "on" or "off" : ' ,'s');
-                obj.data(n) = struct(...
-                            'time', t,...
-                            'index', id ,...
-                            'onoff'  , onoff);
+                obj.data = [obj.data;
+                            struct(        ...
+                            'time' , t    ,...
+                            'index', id   ,...
+                            'onoff', onoff)...
+                           ];
             else
                 switch class(data)
                     case 'cell'
@@ -37,7 +39,7 @@ classdef parallel < supporters.for_simulate.options.Abstract
                     case 'struct'
                         obj.data(n).time = data.time;
                         obj.data(n).index = data.index;
-                        obj.data(n).index = data.onoff;
+                        obj.data(n).onoff = data.onoff;
                     otherwise
                         if isempty(data)
                             return
@@ -62,7 +64,7 @@ classdef parallel < supporters.for_simulate.options.Abstract
             end
     
             function tend = get_next_tend(obj,t)
-                tlist = tools.harrayfun(@(d) d.time(:)', 1:numel(obj.data));
+                tlist = tools.harrayfun(@(i) obj.data(i).time(:)', 1:numel(obj.data));
                 tlist = unique(tlist,"sorted");
                 tend  = tlist(find(tlist>t,1,"first"));
             end
@@ -81,7 +83,11 @@ classdef parallel < supporters.for_simulate.options.Abstract
             end
     
             function op = export_option(obj)
-                op = obj.data;
+                if isempty(obj.data)
+                    op = [];
+                else
+                    op = obj.data;
+                end
             end
 
         
@@ -108,14 +114,14 @@ classdef parallel < supporters.for_simulate.options.Abstract
             end
     
             function plot(obj,ax)
-                [tlist,tab] = obj.timetable;
+                tab = obj.timetable;
     
                 if nargin<2
                     figure
                     ax = gca;
                 end
                 nbus = numel(obj.network.a_bus);
-                xlim(ax,[obj.time(1),obj.time(end)])
+                xlim(ax,[obj.tlim(1),obj.tlim(end)])
                 ylim(ax,[0,nbus])
                 grid(ax,'on')
                 hold(ax,'on')
