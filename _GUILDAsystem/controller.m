@@ -52,7 +52,7 @@ classdef controller < base_class.HasStateInput & base_class.HasGridCode & base_c
                 nout = numel(u{1});
                 uout = cell(nout,1);
                 for i = 1:nout
-                    uout{i} = tools.harrayfun(@(idx) uout{idx}{i}(:), 1:numel(t)).';
+                    uout{i} = tools.harrayfun(@(idx) u{idx}{i}(:), 1:numel(t)).';
                 end
             else
                 uout = {horzcat(u{:}).'};

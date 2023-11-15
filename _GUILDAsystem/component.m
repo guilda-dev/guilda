@@ -32,7 +32,6 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
     
     methods(Abstract)
         set_equilibrium(Veq, Ieq)
-        nu = get_nu(varargin)
         [dx, constraint] = get_dx_constraint(t, x, V, I, u);
     end
     
@@ -75,6 +74,10 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
 
         function nx = get_nx(obj)
            nx = numel(obj.x_equilibrium); 
+        end
+
+        function nu = get_nu(obj)
+           nu = numel(obj.u_equilibrium); 
         end
 
         function [dx, con] = get_dx_constraint_linear(obj, ~, x, V, I, u)
