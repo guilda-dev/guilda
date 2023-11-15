@@ -83,11 +83,11 @@ classdef progress < handle
                 fprintf('\n Simulation Start !!\n')
                 obj.disp_init
             else
-                [~,wid] = lastwarn;
+                wid = lastwarn;
                 if ~strcmp(obj.last_warn,wid)
                     obj.disp_init
                 end
-                per = floor( (t-obj.tlim(1))/(obj.tlim(end)-obj.tlim(1))*100 );
+                per = floor( (t(1)-obj.tlim(1))/(obj.tlim(end)-obj.tlim(1))*100 );
                 if per > obj.percent
                     if per == 100
                         fprintf(repmat('>',[1,max(per-obj.percent,0)]))
@@ -113,7 +113,7 @@ classdef progress < handle
             
             obj.simulating = true;
             obj.percent    = 1;
-            [~,obj.last_warn] = lastwarn;
+            obj.last_warn = lastwarn;
         end
 
     end

@@ -28,7 +28,7 @@ function set_options(obj,t,uidx,u,varargin)
             addParameter(p, 'parallel_branch'    , []);
             addParameter(p, 'parallel_con_local' , []);
             addParameter(p, 'parallel_con_global', []);
-            addParameter(p, 'simulate_when_disconnect', true);
+            addParameter(p, 'simulate_when_disconnect', false);
 
         % Set initial state value
             %addParameter(p, 'V0'               , net.V_equilibrium);

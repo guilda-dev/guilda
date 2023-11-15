@@ -13,7 +13,7 @@ classdef input < supporters.for_simulate.options.Abstract
                     case 'cell'
                         cellfun(@(d) obj.add(t,d), data);
                     case 'struct'
-                        arrayfun(@(i) abj.add(t,data(i)), (1:numel(data))');
+                        arrayfun(@(i) obj.add(t,data(i)), (1:numel(data))');
                     otherwise
                         error('')
                end
@@ -50,7 +50,7 @@ classdef input < supporters.for_simulate.options.Abstract
                     disp(newdata)
                     error('indexが指定されていません')
                 end
-                u = f(newdata.time(1));
+                u = newdata.function(newdata.time(1));
                 nu = numel(u);
             else
                 if size(newdata.u,2)~=numel(newdata.time)
@@ -190,11 +190,11 @@ classdef input < supporters.for_simulate.options.Abstract
                 end
                 switch language
                     case {'Japanese','ja'}
-                        w = {@(i) [num2str(i),'つ目の地絡 \n'],...
+                        w = {@(i) [num2str(i),'つ目の入力 \n'],...
                              @(t) ['　　　時間　：',num2str(t(1)),'~',num2str(t(end)),'秒 \n'],...
                              @(b) ['　　母線番号：',mat2str(b),'\n \n']};
                     otherwise  %'English'
-                        w = {@(i) [num2str(i),'-th fault\n'],...
+                        w = {@(i) [num2str(i),'-th 入力\n'],...
                              @(t) ['  time span  :',num2str(t(1)),'~',num2str(t(end)),'(s) \n'],...
                              @(b) ['  bus number :',mat2str(b),'\n \n']};
                 end

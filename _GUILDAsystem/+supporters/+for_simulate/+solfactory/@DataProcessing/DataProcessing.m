@@ -11,14 +11,14 @@ classdef DataProcessing < dynamicprops & matlab.mixin.CustomDisplay
 %
 
     properties
-        setting
         data_format(1,:) char {mustBeMember(data_format,{'array','table'})} = 'table';
+        setting
+        options
     end
 
     properties(SetAccess=private)
         out_data
         net_data
-        options
     end
 
     properties(Access=private)
@@ -70,6 +70,9 @@ classdef DataProcessing < dynamicprops & matlab.mixin.CustomDisplay
             funame = @(con) tools.harrayfun(@(idx) strcat(reshape(net.a_bus{idx}.component.get_port_name,1,[]),['_',num2str(idx)]), con.index_input);
             out.Ucon.local = farray2table(out.Ucon.local , fdata, @(~,i) funame(net.a_controller_local{i}));
             out.Ucon.global= farray2table(out.Ucon.global, fdata, @(~,i) funame(net.a_controller_global{i}));
+
+            out.Uinput = farray2table(out.Uinput, fdata, @(~,i) net.a_bus{i}.component.get_port_name  );
+            out.Utotal = farray2table(out.Utotal, fdata, @(~,i) net.a_bus{i}.component.get_port_name  );
 
 
         % プロパティへのデータ格納　及び　Dependentプロパティの生成
@@ -139,7 +142,7 @@ classdef DataProcessing < dynamicprops & matlab.mixin.CustomDisplay
             supporters.for_simulate.sol.UIanime(obj,net);
         end
 
-        % anime(obj,varargin)
+        anime(obj,net,varargin)
 
         
         %使い方の表示

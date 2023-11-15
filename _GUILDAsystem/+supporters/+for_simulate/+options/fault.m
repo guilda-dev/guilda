@@ -8,7 +8,7 @@ classdef fault < supporters.for_simulate.options.Abstract
                     case 'cell'
                         cellfun(@(d) obj.add(d), data);
                     case 'struct'
-                        arrayfun(@(i) abj.add(data(i)), (1:numel(data))');
+                        arrayfun(@(i) obj.add(data(i)), (1:numel(data))');
                     otherwise
                         error('')
                end

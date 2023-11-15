@@ -49,7 +49,7 @@ classdef animator < matlab.mixin.SetGet
             obj.out = out;
             obj.time_list = (out.t(1):0.001:out.t(end))';
             
-            nf = numel(obj.out.option.fault.data);
+            nf = numel(obj.out.option.fault);
             obj.faultdata.time = tools.varrayfun(@(i) out.option.fault.data(i).time(:)', 1:nf);
             obj.faultdata.index= tools.arrayfun(@(i) out.option.fault.data(i).index, 1:nf);
             obj.faultPlot = repmat({false},1,nf);
