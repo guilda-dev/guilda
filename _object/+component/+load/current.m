@@ -10,13 +10,13 @@ classdef current < component.load.abstract
 
     
     methods
-        function set_equilibrium(obj, ~, ~)
-            obj.x_equilibrium = zeros(0, 1);
+
+        function u_name = naming_port(obj)
             switch obj.porttype
-                case 'rate'
-                    obj.u_equilibrium = [1;1];
                 case 'value'
-                    obj.u_equilibrium = obj.I_st;
+                    u_name = {'Ireal','Iimag'};
+                case 'rate'
+                    u_name = {'IrealRate','IimagRate'};
             end
         end
         
@@ -29,18 +29,19 @@ classdef current < component.load.abstract
                     constraint = I - u(:);
             end
         end
-        
-        function nu = get_nu(~)
-            nu = 2;
-        end
 
-        function u_name = naming_port(obj)
-            switch obj.porttype
-                case 'value'
-                    u_name = {'Ireal','Iimag'};
-                case 'rate'
-                    u_name = {'IrealRate','IimagRate'};
+        function [x_st,u_st] = get_equilibrium(obj,~,Ieq)
+            if nargin<2
+                Ieq = obj.I_equilibrium;
             end
+
+            switch obj.porttype
+                case 'rate'
+                    u_st = [1;1];
+                case 'value'
+                    u_st = tools.complex2vec(Ieq);
+            end
+            x_st = zeros(0, 1);
         end
         
     end

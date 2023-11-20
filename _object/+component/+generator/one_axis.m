@@ -5,10 +5,8 @@ classdef one_axis < component.generator.base
 %         ・入力：２ポート「界磁入力"Vfield", 機械入力"Pmech"」
 %               *定常値からの追加分を指定
 % 親クラス：componentクラス
-% 実行方法：obj =　component.generator.1axis(omega, parameter)
-% 　引数　：・omega     : double値．系統周波数(50or60*2pi)
-% 　　　　　・parameter : table型．「'Xd', 'Xd_prime','Xq','T','M','D'」を列名として定義
-% 　出力　：componentクラスのインスタンス
+% 実行方法：obj =　component.generator.1axis(parameter)
+% 　引数　：・parameter : table型．「'Xd', 'Xd_prime','Xq','T','M','D'」を列名として定義
     
     
     methods
@@ -20,7 +18,6 @@ classdef one_axis < component.generator.base
             obj.set_avr( component.generator.avr.base() );
             obj.set_governor( component.generator.governor.base() );
             obj.set_pss( component.generator.pss.base() );
-            obj.system_matrix = struct();
         end
         
         function name_tag = naming_state(obj)
@@ -38,19 +35,13 @@ classdef one_axis < component.generator.base
             u_name = [u_avr,u_pss,u_gov];
         end
         
-        function out = get_nx(obj)
-            out = 3 + obj.avr.get_nx() + obj.pss.get_nx() + obj.governor.get_nx();
-        end
-        
-        function nu = get_nu(obj)
-            nu = obj.avr.get_nu() + obj.pss.get_nu() + obj.governor.get_nu();
-        end
-        
         function [dx, con] = get_dx_constraint(obj, ~, x, V, I, u)
             Xd  = obj.parameter.Xd;
             Xdp = obj.parameter.Xd_prime;
             Xq  = obj.parameter.Xq;
             d   = obj.parameter.D;
+            Tdo = obj.parameter.Tdo;
+            M   = obj.parameter.M;
 
             nx_avr = obj.avr.get_nx();
             nx_pss = obj.pss.get_nx();
@@ -92,35 +83,16 @@ classdef one_axis < component.generator.base
             [dx_avr, Vfd] = obj.avr.get_Vfd(x_avr, Vabs, Efd, u_avr-v);
             [dx_gov, Pm ] = obj.governor.get_P(x_gov, omega, u_gov);
             
-            ddelta = omega;
-            domega = Pm - d*omega - Vabs*E*sin(delta-Vangle)/Xdp + Vabs^2*(1/Xdp-1/Xq)*sin(2*(delta-Vangle))/2;
-            dE     = -Efd + Vfd;
-
-            %domega = (Pm - d*omega - Vabs*E*sin(delta-Vangle)/Xdp + Vabs^2*(1/Xdp-1/Xq)*sin(2*(delta-Vangle))/2)/M;
-            %dE     = (-Efd + Vfd)/Tdo;
+            ddelta = obj.omega0 * omega;
+            domega = (Pm - d*omega - Vabs*E*sin(delta-Vangle)/Xdp + Vabs^2*(1/Xdp-1/Xq)*sin(2*(delta-Vangle))/2)/M;
+            dE     = (-Efd + Vfd)/Tdo;
             
             dx = [ddelta; domega; dE; dx_avr; dx_pss; dx_gov];
             
         end
-
-        function M = Mass(obj)
-            Tdo = obj.parameter.Tdo;
-            M   = obj.parameter.M;
-            
-            Msys = diag([1/obj.omega0,M,Tdo]);
-            Mavr = obj.avr.Mass;
-            Mpss = obj.pss.Mass;
-            Mgov = obj.governor.Mass;
-
-            M = blkdiag(Msys,Mavr,Mpss,Mgov,0,0);
-        end
         
-        
-        function x_st = set_equilibrium(obj,V,I)
-            if nargin<2
-                V = obj.V_equilibrium;
-                I = obj.I_equilibrium;
-            end
+
+        function [x_st,u_st] = get_equilibrium(obj,V,I)
             Vangle = angle(V);
             Vabs =  abs(V);
             Pow = conj(I)*V;
@@ -137,11 +109,9 @@ classdef one_axis < component.generator.base
             [x_avr,u_avr] = obj.avr.initialize(Vfd, Vabs);
             [x_gov,u_gov] = obj.governor.initialize(P);
             [x_pss,u_pss] = obj.pss.initialize();
+
             x_st = [delta; 0; E; x_avr; x_pss; x_gov];
-            obj.x_equilibrium = x_st;
-            obj.u_equilibrium = [u_avr;u_pss;u_gov];
-            
-            obj.set_linear_matrix();
+            u_st = [u_avr; u_pss; u_gov];
         end
     end
 end
