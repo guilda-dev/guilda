@@ -28,6 +28,14 @@ classdef two_axis < component.generator.base % 状態・パラメーターはq�
             u_name = [u_avr,u_pss,u_gov];
         end
         
+        function out = get_nx(obj)
+            out = 4 + obj.avr.get_nx() + obj.pss.get_nx() + obj.governor.get_nx();
+        end
+        
+        function nu = get_nu(obj)
+            nu = obj.avr.get_nu() + obj.pss.get_nu() + obj.governor.get_nu();
+        end
+        
         function [dx, con] = get_dx_constraint(obj, t, x, V, I, u)%#ok
             % このx,V,Iは平衡状態ではなく、その時刻における値
 
@@ -236,7 +244,7 @@ classdef two_axis < component.generator.base % 状態・パラメーターはq�
         end
         
         % 潮流計算結果から逆算して平衡点を算出
-        function [x_st,u_st] = get_equilibrium(obj, V, I)
+        function x_st = set_equilibrium(obj, V, I)
             if nargin<2
                 V = obj.V_equilibrium;
                 I = obj.I_equilibrium;
@@ -265,7 +273,10 @@ classdef two_axis < component.generator.base % 状態・パラメーターはq�
             [x_gov,u_gov] = obj.governor.initialize(P);
             [x_pss,u_pss] = obj.pss.initialize();
             x_st = [delta; 0; Eq; Ed; x_avr; x_gov; x_pss];
-            u_st = [u_avr;u_pss;u_gov];
+            obj.x_equilibrium = x_st;
+            obj.u_equilibrium = [u_avr;u_pss;u_gov];
+            obj.set_linear_matrix(x_st, tools.complex2vec(V));
+
         end
     end
 end

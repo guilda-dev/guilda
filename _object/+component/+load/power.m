@@ -14,12 +14,15 @@
 
     methods
 
-        function u_name = naming_port(obj)
+        function set_equilibrium(obj)
+            obj.x_equilibrium = zeros(0, 1);
+            PQ = obj.V_equilibrium * conj(obj.I_equilibrium);
+            obj.PQ_st = [real(PQ); imag(PQ)];
             switch obj.porttype
-                case 'value'
-                    u_name = {'RealPower','ReactivePower'};
                 case 'rate'
-                    u_name = {'RealPowerRate','ReactivePowerRate'};
+                    obj.u_equilibrium = [1;1];
+                case 'value'
+                    obj.u_equilibrium = obj.PQ_st;
             end
         end
         
@@ -36,23 +39,18 @@
             I_ = PQ/V;
             constraint = I-[real(I_); -imag(I_)];
         end
+        
+        function nu = get_nu(~)
+            nu = 2;
+        end
 
-        function [x_st,u_st] = get_equilibrium(obj,Veq,Ieq)
-            if nargin<2
-                Veq = obj.V_equilibrium;
-                Ieq = obj.I_equilibrium;
-            end
-
-            PQ = Veq * conj(Ieq);
-            obj.PQ_st = [real(PQ); imag(PQ)];
-
+        function u_name = naming_port(obj)
             switch obj.porttype
-                case 'rate'
-                    u_st = [1;1];
                 case 'value'
-                    u_st = obj.PQ_st;
+                    u_name = {'RealPower','ReactivePower'};
+                case 'rate'
+                    u_name = {'RealPowerRate','ReactivePowerRate'};
             end
-            x_st = zeros(0, 1);
         end
         
         function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, x, V)

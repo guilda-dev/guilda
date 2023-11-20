@@ -10,13 +10,13 @@ classdef voltage < component.load.abstract
     
 
     methods
-        
-        function u_name = naming_port(obj)
+        function set_equilibrium(obj)
+            obj.x_equilibrium = zeros(0,1);
             switch obj.porttype
-                case 'value'
-                    u_name = {'Vreal','Vimag'};
                 case 'rate'
-                    u_name = {'VrealRate','VimagRate'};
+                    obj.u_equilibrium = [1;1];
+                case 'value'
+                    obj.u_equilibrium = obj.V_st;
             end
         end
         
@@ -30,18 +30,17 @@ classdef voltage < component.load.abstract
             end
         end
 
-        function [x_st,u_st] = get_equilibrium(obj,Veq,~)
-            if nargin<2
-                Veq = obj.V_equilibrium;
-            end
-
+        function nu = get_nu(~)
+            nu = 2;
+        end
+        
+        function u_name = naming_port(obj)
             switch obj.porttype
-                case 'rate'
-                    u_st = [1;1];
                 case 'value'
-                    u_st = tools.complex2vec(Veq);
+                    u_name = {'Vreal','Vimag'};
+                case 'rate'
+                    u_name = {'VrealRate','VimagRate'};
             end
-            x_st = zeros(0,1);
         end
         
     end

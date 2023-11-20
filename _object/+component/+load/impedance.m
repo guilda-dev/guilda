@@ -17,6 +17,18 @@ classdef impedance < component.load.abstract
         function obj = impedance()
             obj.x_equilibrium = zeros(0, 1);
         end
+        
+        function set_equilibrium(obj)
+            Veq = obj.V_equilibrium;
+            Ieq = obj.I_equilibrium;
+            obj.Y = Ieq/Veq;
+            switch obj.porttype
+                case 'value'
+                    obj.u_equilibrium = [real(obj.Y);imag(obj.Y)];
+                case 'rate'
+                    obj.u_equilibrium = [1;1];
+            end
+        end
 
         function [dx, constraint] = get_dx_constraint(obj, ~, ~, V, I, u)
             dx = zeros(0, 1);
@@ -31,20 +43,8 @@ classdef impedance < component.load.abstract
             constraint = I-I_;
         end
         
-        function [x_st,u_st] = get_equilibrium(obj,Veq,Ieq)
-            if nargin<2
-                Veq = obj.V_equilibrium;
-                Ieq = obj.I_equilibrium;
-            end
-            
-            obj.Y = Ieq/Veq;
-            switch obj.porttype
-                case 'value'
-                    u_st = [real(obj.Y);imag(obj.Y)];
-                case 'rate'
-                    u_st = [1;1];
-            end
-            x_st = [];
+        function nu = get_nu(~)
+            nu = 2;
         end
 
         function u_name = naming_port(obj)
