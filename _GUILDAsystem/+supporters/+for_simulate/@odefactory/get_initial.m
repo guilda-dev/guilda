@@ -20,7 +20,7 @@ function [x0,index] = get_initial(obj)
         idx = obj.simulated_cl(i);
         temp = obj.initial.xcl{idx};
         if any(isnan(temp))
-            x0(obj.logimat.xcl(:,i)) = net.a_controller_local.get_x0;
+            x0(obj.logimat.xcl(:,i)) = net.a_controller_local{i}.get_x0;
         else
             x0(obj.logimat.xcl(:,i)) = temp;
         end
@@ -30,7 +30,7 @@ function [x0,index] = get_initial(obj)
         idx = obj.simulated_cg(i);
         temp = obj.initial.xcg{idx};
         if any(isnan(temp))
-            x0(obj.logimat.xcg(:,i)) = net.a_controller_global.get_x0;
+            x0(obj.logimat.xcg(:,i)) = net.a_controller_global{i}.get_x0;
         else
             x0(obj.logimat.xcg(:,i)) = temp;
         end

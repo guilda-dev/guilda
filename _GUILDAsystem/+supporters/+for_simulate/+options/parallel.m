@@ -3,18 +3,17 @@ classdef parallel < supporters.for_simulate.options.Abstract
     methods
         function obj = parallel(p,option)
             obj.parent = p;
-            data = option.parallel_sys;
-            if ~isempty(data)
-                switch class(data)
-                    case 'cell'
-                    cellfun(@(d) obj.add(d), data);
-                    case 'struct'
-                    arrayfun(@(i) obj.add(data(i)), (1:numel(data))');
+            f = {   'parallel_sys','parallel_branch','parallel_con_local','parallel_con_global'};
+            type = {'component'   ,'branch'         ,'controller_local'  ,'controller_global'  };
+            for itype=1:4
+                data = option.(f{itype});
+                if ~isempty(data)
+                    arrayfun(@(i) obj.add(data(i),type{itype}), (1:numel(data))');
                 end
             end
         end
 
-        function add(obj,data)
+        function add(obj,data,type)
             n = 1+numel(obj.data);
             if nargin == 1
                 id = input('     Bus index : ');
@@ -22,30 +21,21 @@ classdef parallel < supporters.for_simulate.options.Abstract
                 onoff = input(' "on" or "off" : ' ,'s');
                 obj.data = [obj.data;
                             struct(        ...
+                            'type' , type ,...
                             'time' , t    ,...
                             'index', id   ,...
                             'onoff', onoff)...
                            ];
             else
-                switch class(data)
-                    case 'cell'
-                        if islogical(data{3})
-                            onoff = ["off","on"];
-                            data{3} = onoff(data{3}+1);
-                        end
-                        obj.data(n).time = data{1};
-                        obj.data(n).index = data{2};
-                        obj.data(n).onoff = data{3};
-                    case 'struct'
-                        obj.data(n).time = data.time;
-                        obj.data(n).index = data.index;
-                        obj.data(n).onoff = data.onoff;
-                    otherwise
-                        if isempty(data)
-                            return
-                        else
-                            error('')
-                        end
+                if isstruct(data)
+                    obj.data(n).type  = type;
+                    obj.data(n).time  = data.time;
+                    obj.data(n).index = data.index;
+                    obj.data(n).onoff = data.onoff;
+                elseif isempty(data)
+                    return
+                else
+                    error('')
                 end
 
                 if islogical(obj.data(n).onoff) || isnumeric(obj.data(n).onoff)
@@ -72,11 +62,17 @@ classdef parallel < supporters.for_simulate.options.Abstract
             function set_time(obj,t)
                 for i = 1:numel(obj.data)
                     if ismember(t, obj.data(i).time)
-                        idx = obj.data(i).index;
-                        if strcmp(obj.data(i).onoff,"on")
-                            arrayfun(@(i) obj.network.a_bus{i}.component.connect,idx)
-                        elseif strcmp(obj.data(i).onoff,"off")
-                            arrayfun(@(i) obj.network.a_bus{i}.component.disconnect,idx)
+                        idx   = obj.data(i).index;
+                        onoff = obj.data(i).onoff;
+                        switch obj.data(i).type
+                            case 'component'
+                                arrayfun(@(i) connect(obj.network.a_bus{i}.component    , onoff), idx)
+                            case 'branch'
+                                arrayfun(@(i) connect(obj.network.a_branch{i}           , onoff), idx)
+                            case 'controller_local'
+                                arrayfun(@(i) connect(obj.network.a_controller_local{i} , onoff), idx)
+                            case 'controller_global'
+                                arrayfun(@(i) connect(obj.network.a_controller_global{i}, onoff), idx)
                         end
                     end
                 end
@@ -182,5 +178,15 @@ classdef parallel < supporters.for_simulate.options.Abstract
                 end
             end
 
+    end
+end
+
+
+function connect(c,onoff)
+    switch onoff
+        case 'on'
+            c.connect
+        case 'off'
+            c.disconnect
     end
 end

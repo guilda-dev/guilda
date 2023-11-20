@@ -13,6 +13,11 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
         a_controller_local = {}
     end
 
+    properties(Dependent)
+        x0_controller_local
+        x0_controller_global
+    end
+
     properties
         omega0 = 2*pi*60;
         linear = false;
@@ -22,7 +27,7 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
 
         % 微分方程式の求解に関するメソッド
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        out    = simulate(obj, t, u, index_u, varargin);
+        [out,sim] = simulate(obj, t, u, index_u, varargin);
         [cost_total,cost_branch,cost_component] = get_cost_function(obj,varargin)
 
         
@@ -77,6 +82,14 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
         
         function x = get.I_equilibrium(obj)
             x = tools.vcellfun(@(b) b.I_equilibrium, obj.a_bus);
+        end
+
+        function x0 = get.x0_controller_local(obj)
+            x0 = tools.vcellfun(@(c) c.get_x0, obj.a_controller_local);
+        end
+
+        function x0 = get.x0_controller_global(obj)
+            x0 = tools.vcellfun(@(c) c.get_x0, obj.a_controller_global);
         end
     
 

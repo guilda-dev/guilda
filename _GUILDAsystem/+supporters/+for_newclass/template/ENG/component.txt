@@ -6,10 +6,10 @@ classdef ___NAME___ < component & tools.newClass.checker.for_component
 % constructor   : obj =　___NAME___(omega, parameter)
 % varargin      :・parameter : table type．Define <<Describe the parameter name>> as column name
 %                ・<<It would help others if you included a description of your arguments!>>
-% varargout     : Instance of component class
 
     % Inherited Properties from component class
     % ・x_equilibrium : The equilibrium point of the state is stored.
+    % ・u_equilibrium : The equilibrium point of the input is stored.
     % ・V_equilibrium : Voltage steady state at the connecting bus is stored
     % ・I_equilibrium : Current steady state at the connecting bus is stored。
     % ・parameter : The parameter constants of the model should be stored in this field.
@@ -21,17 +21,6 @@ classdef ___NAME___ < component & tools.newClass.checker.for_component
     methods
         function obj = ___NAME___(parameter)
             obj.parameter = parameter;
-
-        end
-        
-        function nu = get_nu(obj) % Define the number of input ports
-            % For 2 input ports
-            %   >> nu = 2;
-
-
-            %%%%%%%%%% define %%%%%%%%%%
-            nu = 
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         end
         
@@ -49,29 +38,28 @@ classdef ___NAME___ < component & tools.newClass.checker.for_component
 
 
             %%%%%%%%% define %%%%%%%%%
-            dx      =         %Code corresponding to "dx = f(x)"
-            [Ir,Ii] =         %Derive the real and imaginary parts of the current sent to the bus bar
+            dx      =                  %Code corresponding to "dx = f(x)"
+            [Ir,Ii] =                  %Derive the real and imaginary parts of the current sent to the bus bar
+            con     = I - [Ir; Ii];
             %%%%%%%%%%%%%%%%%%%%%%%%%%
 
-            con = I - [Ir; Ii];
         end
 
-        function x_st = set_equilibrium(obj, V, I)
+        function [x_st,u_st] = set_equilibrium(obj, V, I, flag)
             % varargin
             % V：Phasor value of bus voltage in steady state（ = Vreal + 1j*Vimag ）
             % I：Phasor value of bus current in steady state（ = Ireal + 1j*Iimag ）
 
             % varargout
             % x_st : Equilibrium point of the state of this model.
+            % u_st : Equilibrium point of the input of this model.
 
 
             %%%%%%%%%% define %%%%%%%%%%
             x_st = 
+            u_st = 
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-            obj.x_equilibrium = x_st;
-            obj.V_equilibrium = V;
-            obj.I_equilibrium = I;
         end
 
 

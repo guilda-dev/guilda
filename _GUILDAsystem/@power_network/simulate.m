@@ -1,4 +1,4 @@
-function out = simulate(obj, t, varargin)
+function [out,sim] = simulate(obj, t, varargin)
     simulator =  supporters.for_simulate.odefactory(obj,t,varargin{:});
-    out = simulator.run;    
+    [out,sim] = simulator.run;    
 end
