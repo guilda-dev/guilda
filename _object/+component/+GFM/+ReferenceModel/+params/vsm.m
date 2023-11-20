@@ -2,10 +2,10 @@ function params = vsm(omega0)
     if nargin==0
         omega0 = 2*pi*60;
     end
-    Dp = 1e5   / omega0 ;
-    Jr = 2*1e3 / omega0 ;
+    Dp = 10.3;
+    Jr = 12;
     Kp = 0.001;
-    Ki = 0.0021;
+    Ki = 0.5;
     Mf = 1;
     
     params = table(Jr,Dp,Kp,Ki,Mf);

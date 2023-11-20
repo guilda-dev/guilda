@@ -4,6 +4,9 @@ classdef main < component
         vsc_controller
         reference_model
         dc_source
+        % parameter
+        % x_equilibrium
+        % u_equilibrium
     end
 
     methods
@@ -103,8 +106,8 @@ classdef main < component
             p = obj.parameter;
             I = I/p.n;
 
-            ref = obj.reference_model;
             con = obj.vsc_controller;
+            ref = obj.reference_model;
             dc  = obj.dc_source;
 
             is_dq= x(1:2);
@@ -119,12 +122,12 @@ classdef main < component
             u_ref = u( (1:ref.get_nu) + con.get_nu              );
             u_dc  = u( (1: dc.get_nu) + con.get_nu + ref.get_nu );
             
-            [delta,omega]  = ref.get_angle(x_ref,V,I);
+            [delta,omega,~]  = ref.get_Vterminal(x_ref,V,I);
             
 
             % Convert from grid to converter reference
-                tensor = [ cos(delta), -sin(delta);...
-                           sin(delta),  cos(delta)];
+                tensor = [ sin(delta),  cos(delta); ... 
+                          -cos(delta),  sin(delta)] ;
                 I_   =  tensor   * i_dq;
                 V_dq =  tensor.' *    V;
            
@@ -145,6 +148,7 @@ classdef main < component
 
                 % Calculate converter dynamics
                 vs_dq = (1/2) * m * vdc;
+
                 d_isdq= (-(p.R * eye(2) + omega * p.L * [0, -1; 1, 0]) * is_dq - v_dq + vs_dq) / p.L;
                 d_vdq = ( -p.C * omega * [0, -1; 1, 0] * v_dq + is_dq - i_dq) / p.C; % d_vdq = (is_dq - i_dq) / p.C;
                 d_idq = (-(p.R_g * eye(2) + omega * p.L_g * [0, -1; 1, 0]) * i_dq - V_dq + v_dq) / p.L_g;
@@ -156,11 +160,9 @@ classdef main < component
 
         end
 
-        function x_st = set_equilibrium(obj, V, I)
-            if nargin<2
-                V = obj.V_equilibrium;
-                I = obj.I_equilibrium;
-            end
+        function [x_st,u_st] = get_equilibrium(obj, V, I, flag)
+            flag  = 'init';
+
             p = obj.parameter;
 
             V = tools.complex2vec(V);
@@ -168,29 +170,32 @@ classdef main < component
             I = I/p.n;
 
             % Reference model
-            [x_ref, u_ref, Vdq, Idq] = obj.reference_model.set_equilibrium(V,I);
-            omega_st = 1;
+                [x_ref, u_ref] = obj.reference_model.set_equilibrium(V,I,flag);
+            
+            
+            % Calculate equilibrium of "vdq,idq"
+                [delta_st, omega_st, Vdq] = obj.reference_model.get_Vterminal(x_ref,V,I);
+                tensor = [ sin(delta_st), -cos(delta_st); ... 
+                           cos(delta_st),  sin(delta_st)];
+                
+                %Vdq = tensor * V % equal >> Vbus_dq = [0; norm(V)]
+                Idq = tensor * I;
 
             % Converter
-            idq_st  = Idq;
-            vdq_st  = Vdq;  % +(p.R_g*eye(2) + omega_st*p.L_g*[0,-1;1,0]) * idq_st;
-            isdq_st = idq_st + omega_st*p.C*[0,-1;1,0]*vdq_st;
+                idq_st  = Idq;
+                vdq_st  = Vdq;  % +(p.R_g*eye(2) + omega_st*p.L_g*[0,-1;1,0]) * idq_st;
+                isdq_st = idq_st + omega_st*p.C*[0,-1;1,0]*vdq_st;
 
             % Low-level cascade control
-            [x_con, u_con, mdq] = obj.vsc_controller.set_equilibrium(vdq_st,isdq_st,omega_st);
+                [x_con, u_con, mdq] = obj.vsc_controller.set_equilibrium( vdq_st, isdq_st, omega_st, flag);
 
             % DC source
-            ix_st = 1/2 * mdq.' * isdq_st;
-            [x_dc,u_dc] = obj.dc_source.set_equilibrium(V,I,ix_st);
+                ix_st = 1/2 * mdq.' * isdq_st;
+                [x_dc,u_dc] = obj.dc_source.set_equilibrium(V,I,ix_st,flag);
 
 
             x_st = [isdq_st; vdq_st; idq_st; x_con; x_ref; x_dc];
-
-            obj.x_equilibrium = x_st;
-            obj.u_equilibrium = [u_con; u_ref; u_dc];
-            
-            obj.set_linear_matrix();
-
+            u_st = [u_con; u_ref; u_dc];
         end
 
     end

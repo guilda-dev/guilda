@@ -48,7 +48,7 @@ classdef droop < component.GFM.ReferenceModel.base
             omega = 1 + obj.parameter.Dw * (obj.P_st - V.'*I);
         end
 
-        function [x_ref, u_ref, Vbus_dq, Ibus_dq] = set_equilibrium(obj,V,I)
+        function [x_ref, u_ref, Vbus_dq, Ibus_dq] = set_equilibrium(obj,V,I,flag)
             Vabs = norm(V);
             Varg = atan2(V(2),V(1));
             
@@ -66,9 +66,10 @@ classdef droop < component.GFM.ReferenceModel.base
             x_ref = [delta_st; zeta_st];
             u_ref = [];
 
-            obj.Vabs_st = norm(v_st);
-            obj.P_st = V.'*I;
-
+            if strcmp(flag,'init')
+                obj.Vabs_st = norm(v_st);
+                obj.P_st = V.'*I;
+            end
 
             % Calculate equilibrium of "vdq,idq"
             tensor = [ cos(delta_st), sin(delta_st);...

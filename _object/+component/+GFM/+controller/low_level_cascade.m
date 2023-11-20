@@ -74,13 +74,14 @@ classdef low_level_cascade < handle
             dx = [dx_vdq; dx_idq];
         end
 
-        function [xst,ust,mdq] = set_equilibrium(obj,vdq,isdq,omega)
+        function [xst,ust,mdq] = set_equilibrium(obj,vdq,isdq,omega,flag)
             xst = zeros(4,1);
             ust = [];
 
             pc = obj.params_converter;
             vsdq_st = vdq + (pc.R * eye(2) + pc.L * omega * [0, -1; 1, 0]) * isdq;
             mdq = 2 * vsdq_st / obj.params_dc_source.vdc_st;
+
         end
 
     end

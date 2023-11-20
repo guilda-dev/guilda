@@ -13,7 +13,7 @@ classdef base < handle
         nu = get_nu(obj)
         dx = get_dx(obj, t, x, u, v_dq, i_dq, vdc)
         vdq_hat = calculate_vdq_hat(obj, t, x, u, v_dq, i_dq)
-        [delta,omega] = get_angle(obj,x,V,I)
+        [delta,omega] = get_Vterminal(obj,x,V,I)
         [x_ref, u_ref, vdq_st, idq_st] = set_equilibrium(obj,V,I)
     end
 

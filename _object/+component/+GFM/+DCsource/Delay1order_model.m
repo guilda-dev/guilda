@@ -59,8 +59,10 @@ classdef Delay1order_model < handle
             dx = [dvdc;di_t];
         end
         
-        function [xst,ust] = set_equilibrium(obj,V,I,ix)
-            obj.P_st = V.' * I;
+        function [xst,ust] = set_equilibrium(obj,V,I,ix,flag)
+            if strcmp(flag,'init')
+                obj.P_st = V.' * I;
+            end
 
             p = obj.parameter;
             it_st = p.vdc_st*p.Gdc + ix;
