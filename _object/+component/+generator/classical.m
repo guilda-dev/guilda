@@ -14,9 +14,9 @@ classdef classical < component.generator.base
         
         function name_tag = naming_state(obj)
             gen_state = {'delta','omega'};
-            avr_state = obj.avr.get_state_name;
-            pss_state = obj.pss.get_state_name;
-            governor_state = obj.governor.get_state_name;
+            avr_state = obj.avr.naming_state;
+            pss_state = obj.pss.naming_state;
+            governor_state = obj.governor.naming_state;
             name_tag = horzcat(gen_state,avr_state,pss_state,governor_state);
         end
 
@@ -30,7 +30,7 @@ classdef classical < component.generator.base
         % Vfdは定数であるため、界磁電圧に関する入力は必要ないのですが、AGCのコードで入力が１つの発電機が入ると面倒臭そうなので２つのままにしておきます
         function [dx, con] = get_dx_constraint(obj, t, x, V, I, u)%#ok
             
-            p = obj.prameter;
+            p = obj.parameter;
             nx_avr = obj.avr.get_nx();
             nx_pss = obj.pss.get_nx();
             nx_gov = obj.governor.get_nx();

@@ -86,7 +86,8 @@ classdef two_axis < component.generator.base % 状態・パラメーターはq�
             dx = [ddelta; domega; dEq; dEd; dx_avr; dx_pss; dx_gov];
         end
         
-        function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, x_st, Vst)
+        function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, x_st, Vst, Ist)
+            
             if nargin < 2 || (isempty(x_st) && isempty(Vst))
                 A  = obj.system_matrix.A;
                 B  = obj.system_matrix.B;
