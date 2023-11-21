@@ -160,10 +160,22 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
         end
 
 
-        function set_linear_matrix(obj,varargin)
+        function set_linear_matrix(obj,xst,Vst,Ist)
+
+            %%% 引数の補完 %%%
+            if nargin < 2 || isempty(xst)
+                xst = obj.x_equilibrium;
+            end
+            if nargin < 3 || isempty(Vst)
+                Vst = obj.V_st;
+            end
+            if nargin < 4 || isempty(Ist)
+                Ist = obj.I_st;
+            end
+
             sys = struct();
             [ sys.A , sys.B , sys.C , sys.D ,... 
-              sys.BV, sys.DV, sys.BI, sys.DI,sys.R , sys.S] = obj.get_linear_matrix(varargin{:});
+              sys.BV, sys.DV, sys.BI, sys.DI,sys.R , sys.S] = obj.get_linear_matrix(xst,Vst,Ist);
             obj.system_matrix = sys;
         end
         
@@ -173,6 +185,7 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
                 I = obj.I_equilibrium;
             end
             [x_st, u_st] = obj.get_equilibrium(V,I);
+            % [x_st, u_st] = obj.get_equilibrium(V,I,'init');
             obj.x_equilibrium = x_st;
             obj.u_equilibrium = u_st;
             obj.set_linear_matrix();
