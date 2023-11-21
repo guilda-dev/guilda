@@ -13,20 +13,12 @@ classdef empty < component
             obj.Tag = 'none';
         end
 
-        function set_equilibrium(obj,varargin)
-            obj. x_equilibrium = [];
-        end
-        
-        function nu = get_nu(~)
-            nu = 0;
+        function [x_st,u_st] = get_equilibrium(obj,varargin)
+            x_st = [];
+            u_st = [];
         end
         
         function [dx, con] = get_dx_constraint(~,~,~,~,I,~)
-            dx = [];
-            con = I(:);
-        end
-        
-        function [dx, con] = get_dx_constraint_linear(~,~,~,~,I,~)
             dx = [];
             con = I(:);
         end

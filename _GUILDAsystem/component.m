@@ -31,7 +31,6 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
 
     
     methods(Abstract)
-        set_equilibrium(Veq, Ieq)
         [dx, constraint] = get_dx_constraint(t, x, V, I, u);
     end
     
@@ -86,10 +85,14 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
             con = ss.C * ( x - obj.x_equilibrium) + ss.D * u + ss.DV * (V - obj.V_st) + ss.DI * ( I - obj.I_st);
         end
 
-        function M = Mass(obj)
+        function [dx, con] = check_dx_constraint(obj)
             x = obj.x_equilibrium;
             u = obj.u_equilibrium;
             [dx,con] = obj.get_dx_constraint( 0, x, obj.V_st, obj.I_st, u);
+        end
+
+        function M = Mass(obj)
+            [dx,con] = obj.check_dx_constraint;
             M = blkdiag( eye(numel(dx)), zeros(length(con)) );
         end
 
@@ -131,26 +134,26 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
                 warning('時変システムであるようです. t=0において近似線形化を実行します.')
             end
 
-                nx = obj.get_nx;
+                M = diag(obj.Mass);
                 % xに関しての近似線形モデル
                 [A,C]   =  split_out(...
                     tools.linearization(...
-                    @(x_) stack_out(@(x_) obj.get_dx_constraint(t, x_, Vst,  Ist,  ust),x_),xst),nx);
+                    @(x_) stack_out(@(x_) obj.get_dx_constraint(t, x_, Vst,  Ist,  ust),x_),xst),M);
                 
                 % Vに関しての近似線形モデル
                 [BV,DV] =  split_out(...
                     tools.linearization(...
-                    @(V_) stack_out(@(V_) obj.get_dx_constraint(t, xst, V_,  Ist,  ust),V_),Vst),nx);
+                    @(V_) stack_out(@(V_) obj.get_dx_constraint(t, xst, V_,  Ist,  ust),V_),Vst),M);
             
                 % Iに関しての近似線形モデル
                 [BI,DI] = split_out(... 
                     tools.linearization(...
-                    @(I_) stack_out(@(I_) obj.get_dx_constraint(t, xst,  Vst, I_,  ust),I_),Ist),nx);
+                    @(I_) stack_out(@(I_) obj.get_dx_constraint(t, xst,  Vst, I_,  ust),I_),Ist),M);
                 
                 % uに関しての近似線形モデル
                 [B,D]   =  split_out(...
                     tools.linearization(...
-                    @(u_) stack_out(@(u_) obj.get_dx_constraint(t, xst,  Vst,  Ist, u_),u_),ust),nx);
+                    @(u_) stack_out(@(u_) obj.get_dx_constraint(t, xst,  Vst,  Ist, u_),u_),ust),M);
             
                 R = zeros(obj.get_nx,0);
                 S = zeros(0,obj.get_nx);
@@ -162,6 +165,17 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
             [ sys.A , sys.B , sys.C , sys.D ,... 
               sys.BV, sys.DV, sys.BI, sys.DI,sys.R , sys.S] = obj.get_linear_matrix(varargin{:});
             obj.system_matrix = sys;
+        end
+        
+        function [x_st,u_st] = set_equilibrium(obj,V,I)
+            if nargin<2
+                V = obj.V_equilibrium;
+                I = obj.I_equilibrium;
+            end
+            [x_st, u_st] = obj.get_equilibrium(V,I);
+            obj.x_equilibrium = x_st;
+            obj.u_equilibrium = u_st;
+            obj.set_linear_matrix();
         end
         
         function val = usage_function(obj,func)
@@ -232,8 +246,9 @@ function out = stack_out(func,x)
     out = [dx;-con];
 end
 
-function [dx,con] = split_out(matrix,nx)
-    dx  = matrix(1:nx,:);
-    con = matrix(nx+1:end,:);
+function [dx,con] = split_out(matrix,M)
+    x = M~=0;
+    dx  = diag(1./M(x)) * matrix(x,:);
+    con = matrix(~x,:);
 end
 
