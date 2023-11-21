@@ -116,8 +116,8 @@ classdef odefactory < handle
         end
 
 
-        option = export_option(obj) % オプション設定を出力するためのメソッド
-        out    = export_out(obj)    % 現状のシミュレーション結果をoutとして出力
+        option    = export_option(obj) % オプション設定を出力するためのメソッド
+        [out,obj] = export_out(obj)    % 現状のシミュレーション結果をoutとして出力
 
 
         % タームの更新ごとに最終時刻を更新　>> fault,input,parallelのset.current_timeメソッドを実行し条件設定を更新
@@ -142,7 +142,7 @@ classdef odefactory < handle
 
 
         % シミュレーションを実行するメソッド
-        out = run(obj)
+        [out,obj] = run(obj)
 
         function set.ToBeStop(obj,val)
             if val; obj.GoNext =  true; end %#ok

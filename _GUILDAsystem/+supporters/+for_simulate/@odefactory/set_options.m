@@ -48,7 +48,7 @@ function set_options(obj,t,uidx,u,varargin)
             addParameter(p, 'OutputFcn'  ,  {} ); %状態変数名を指定
 
         % Whether the progress is live or not
-            addParameter(p, 'report'           , 'disp', @(method) ismember(method, {'none', 'cmd', 'dialog'}));
+            addParameter(p, 'report'           , 'disp', @(method) ismember(method, {'none', 'disp', 'dialog'}));
   
         % when simulation take a long time, whether continue or not 
             addParameter(p, 'time_limit'       , inf     , @(val) isnumeric(val) );

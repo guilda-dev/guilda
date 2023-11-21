@@ -1,4 +1,4 @@
-function out = run(obj)
+function [out,obj] = run(obj)
     % タグのリセット >> ToBeStopがtrueになったらシミュレーションを中断する。
         obj.ToBeStop = false;
         obj.start_time = datetime;          % シミュレーション開始時刻（現実時間）を記録

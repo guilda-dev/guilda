@@ -55,9 +55,8 @@ classdef progress < handle
                 end
                 return
             elseif ~obj.simulating && strcmp(flag, 'init')
-                obj.dialog = waitbar(0,'','Name','Simulation in progress...');
+                obj.dialog = waitbar(0,' ','Name','Simulation in progress...');
                 obj.simulating = true;
-
             else
                 if ~isgraphics(obj.dialog)
                     obj.parent.ToBestop = true;
@@ -107,7 +106,7 @@ classdef progress < handle
             te = [num2str( obj.tlim(end)),'s'];
             nw = numel(t0) + numel(te);
             disp([t0,repmat(' ',[1,101-nw]),te])
-            disp(['|',repmat(' ',[1,13-nw]),tools.harrayfun(@(i)[num2str(i),'%       '],10:10:90),' |'])
+            disp(['|',repmat(' ',[1,8]),tools.harrayfun(@(i)[num2str(i),'%       '],10:10:90),' |'])
             disp(['|',repmat('-',[1,9]),repmat('o---------',[1,9]),'|'])
             fprintf('|')
             
