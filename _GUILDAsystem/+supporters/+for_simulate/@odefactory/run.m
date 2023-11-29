@@ -1,4 +1,5 @@
 function [out,obj] = run(obj)
+     net = obj.network;
     % タグのリセット >> ToBeStopがtrueになったらシミュレーションを中断する。
         obj.ToBeStop = false;
         obj.start_time = datetime;          % シミュレーション開始時刻（現実時間）を記録
@@ -27,6 +28,9 @@ function [out,obj] = run(obj)
                 obj.set_parameter;                  
             % 入力データをinputメソッド内のクラスから生成
                 obj.ufunc = obj.input.get_ufunc(t0);
+
+                cellfun(@(c) c.update_idx, net.a_controller_local);
+                cellfun(@(c) c.update_idx, net.a_controller_global);
 
 
         % ソルバーのオプションの設定 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -64,7 +68,6 @@ function [out,obj] = run(obj)
 
 
         % 微分方程式の解をDataStorageに格納 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            net = obj.network;
             [X,Xcl,Xcg,V,I,Vvir] = obj.expand_Xode(sol.y, 1:numel(net.a_bus), 1:numel(net.a_controller_local), 1:numel(net.a_controller_global));
             obj.DataStorage.t   = [obj.DataStorage.t  , sol.x(:)'   ];
             obj.DataStorage.X   = [obj.DataStorage.X  , X(:)        ];
