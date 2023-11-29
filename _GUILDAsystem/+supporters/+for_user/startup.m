@@ -1,5 +1,5 @@
 function startup()
     
-    disp('Welcome to GUILDA!!')
+    disp('Welcome to GUILDA!!');
     
 end
