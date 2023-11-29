@@ -6,15 +6,19 @@ classdef one_axis < component.generator.base
 %               *定常値からの追加分を指定
 % 親クラス：componentクラス
 % 実行方法：obj =　component.generator.1axis(parameter)
-% 　引数　：・parameter : table型．「'Xd', 'Xd_prime','Xq','T','M','D'」を列名として定義
+% 　引数　：・parameter : table型．「'Xd', 'Xd_p','Xq','T','M','D'」を列名として定義
     
     
     methods
         function obj = one_axis(parameter)
+            arguments
+                parameter = 'NGT2';
+            end
+            parameter = component.generator.get_default_parameter(parameter);
             if isstruct(parameter)
                 parameter = struct2table(parameter);
             end
-            obj.parameter = parameter(:, {'Xd', 'Xd_prime', 'Xq', 'Tdo', 'M', 'D'});
+            obj.parameter = parameter(:, {'Xd', 'Xd_p', 'Xq', 'Td_p', 'M', 'D'});
             obj.set_avr( component.generator.avr.base() );
             obj.set_governor( component.generator.governor.base() );
             obj.set_pss( component.generator.pss.base() );
@@ -37,7 +41,7 @@ classdef one_axis < component.generator.base
         
         function [dx, con] = get_dx_constraint(obj, ~, x, V, I, u)
             Xd  = obj.parameter.Xd;
-            Xdp = obj.parameter.Xd_prime;
+            Xdp = obj.parameter.Xd_p;
             Xq  = obj.parameter.Xq;
             d   = obj.parameter.D;
             Tdo = obj.parameter.Tdo;
@@ -90,7 +94,6 @@ classdef one_axis < component.generator.base
             dx = [ddelta; domega; dE; dx_avr; dx_pss; dx_gov];
             
         end
-        
 
         function [x_st,u_st] = get_equilibrium(obj,V,I)
             Vangle = angle(V);
@@ -99,7 +102,7 @@ classdef one_axis < component.generator.base
             P = real(Pow);
             Q = imag(Pow);
             Xd  = obj.parameter{:, 'Xd'};
-            Xdp = obj.parameter{:, 'Xd_prime'};
+            Xdp = obj.parameter{:, 'Xd_p'};
             Xq  = obj.parameter{:, 'Xq'};
             delta = Vangle + atan(P/(Q+Vabs^2/Xq));
             Enum = Vabs^4 + Q^2*Xdp*Xq + Q*Vabs^2*Xdp + Q*Vabs^2*Xq + P^2*Xdp*Xq;
