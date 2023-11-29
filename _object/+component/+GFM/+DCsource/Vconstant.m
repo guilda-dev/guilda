@@ -26,7 +26,8 @@ classdef Vconstant < component.GFM.DCsource.AbstractClass
 
         function [dx,vdc] =  get_dx_vdc(obj, varargin)
             dx  = [];
-            vdc = obj.parameter.vdc_st;
+            Vbase = obj.converter.Vbase;
+            vdc   = obj.parameter.vdc_st/Vbase;
         end
 
         function [xst,ust] = set_equilibrium(varargin)

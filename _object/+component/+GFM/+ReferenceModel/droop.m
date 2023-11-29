@@ -25,55 +25,49 @@ classdef droop < component.GFM.ReferenceModel.base
         end
 
         % State variables: theta and zeta (PI controller)
-        function dx = get_dx(obj, t, x, u, v_dq, i_dq, vdc)%#ok
+        function [dx,con] = get_dx_constraint(obj, t, x, V, I, u)%#ok
             p = obj.parameter;
-            P = v_dq.' * i_dq;
+            P = V.' * I;
             
             d_delta = obj.omega0 * p.Dw * (obj.P_st - P);
-            d_zeta = p.Ki * (obj.Vabs_st - norm(v_dq)); 
+            d_zeta = p.Ki * (obj.Vabs_st - norm(V)); 
 
             dx = [d_delta;d_zeta];
+            con = [];
         end
 
-        function vdq_hat = calculate_vdq_hat(obj, t, x, u, v_dq, i_dq)%#ok
-            p = obj.parameter;
-            zeta = x(2);
-            vdq_hat = [2 * (p.Kp * (obj.Vabs_st - norm(v_dq)) + zeta); 0];
-        end
-
-        function [delta,omega] = get_angle(obj,x,V,I)
+        function [delta,omega,Vdq] = get_Vterminal(obj,x,V,I,u) %#ok
             delta = x(1);
-            omega = 1 + obj.parameter.Dw * (obj.P_st - V.'*I);
+            omega = obj.parameter.Dw * (obj.P_st - V.'*I);
+            zeta  = x(2);
+
+            p = obj.parameter;
+            Vdq = [ 0; 2*(p.Kp*(obj.Vabs_st-norm(V))+zeta)];
         end
 
-        function [x_ref, u_ref, Vbus_dq, Ibus_dq] = set_equilibrium(obj,V,I,flag)
-            Vabs = norm(V);
-            Varg = atan2(V(2),V(1));
-            
-            P = V.' * I;
-            Q = det([I,V]);
-            p = obj.converter.parameter;
+        function [x_ref, u_ref] = get_equilibrium(obj,V,I)
+            Vabs = abs(V);
+            Varg = angle(V);
 
+            Power = V * conj(I);
+            P = real(Power);
+            Q = imag(Power);
+            
+            L_g  = obj.converter.parameter.L_g / obj.converter.Lbase;
                 
             % Calculation of steady state values of angle difference and converter terminal voltage
+                delta_st = Varg + atan((P * L_g) / (Vabs^2 + Q * L_g));
+                v_st = P * L_g / (Vabs * sin(delta_st - Varg));
+                zeta_st = v_st / 2;
 
-            delta_st = Varg + atan((P * p.L_g) / (Vabs^2 + Q * p.L_g)); %delta_st = angle(V(1)+1j*V(2));
-            v_st = P * p.L_g / (Vabs * sin(delta_st - Varg)); %v_st = norm(V);
-            zeta_st = v_st / 2;
+            % Stack the calculated equilibrium points and steady-state inputs
+                x_ref = [delta_st; zeta_st];
+                u_ref = [];
 
-            x_ref = [delta_st; zeta_st];
-            u_ref = [];
-
-            if strcmp(flag,'init')
+            % if strcmp(flag,'init')
                 obj.Vabs_st = norm(v_st);
                 obj.P_st = V.'*I;
-            end
-
-            % Calculate equilibrium of "vdq,idq"
-            tensor = [ cos(delta_st), sin(delta_st);...
-                      -sin(delta_st), cos(delta_st)]; 
-            Vbus_dq = [v_st;0]; % equal >> Vbus_dq = tensor * V 
-            Ibus_dq = tensor * I;
+            % end
         end
 
     end

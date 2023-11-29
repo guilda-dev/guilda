@@ -25,68 +25,53 @@ classdef vsm < component.GFM.ReferenceModel.AbstractClass
         end
         
         % State variables: theta and zeta (PI controller)
-        function dx = get_dx(obj, t, x, u, v_dq, i_dq, vdc)%#ok
+        function [dx,con] = get_dx_constraint(obj, t, x, V, I, u)%#ok
+            omega = x(2);
             p = obj.parameter;
             
-            %delta = x(1);
-            omega = x(2);
-            %zeta = x(3);
-
-            P = v_dq.' * i_dq;
+            P = V.' * I;
             d_delta = obj.omega0 * omega;
-            d_zeta = p.Ki/p.Mf*(obj.Vabs_st - norm(v_dq));
+            d_zeta = p.Ki/p.Mf*(obj.Vabs_st - norm(V));
             d_omega = (obj.P_st - P - p.Dp * omega) / p.Jr;
 
             dx = [d_delta; d_omega; d_zeta];
-        end
-        
-        function vdq_hat = calculate_vdq_hat(obj, t, x, u, v_dq, i_dq)%#ok
-            p = obj.parameter;
-            omega = x(2)+1;
-            zeta = x(3);
-            i_f = p.Kp/p.Mf * (obj.Vabs_st - norm(v_dq)) + zeta;
-            vdq_hat = [0; 2 * i_f * omega];
+            con = [];
         end
 
-        function [delta,omega,Edq] = get_Vterminal(obj,x,V,I)
+        function [delta,omega,Vdq] = get_Vterminal(obj,x,V,I,u) %#ok
             delta = x(1);
             omega = x(2);
-            %Convert "frequency deviation" to "frequency"
-            omega = omega+1;%*obj.omega0;
+            zeta  = x(3);
 
-            if nargout==3
-                p = obj.converter.parameter;
-                v_st = V'*I * p.L_g / (norm(V) * sin(delta - atan2(V(2),V(1)) )) ;
-                Edq  = [0;v_st];
-            else
-                Edq=[];
-            end
+            p = obj.parameter;
+            i_f = p.Kp/p.Mf * (obj.Vabs_st - norm(V)) + zeta;
+            Vdq = [0; 2 * (omega+1) * p.Mf * i_f];
         end
 
-        function [x_ref, u_ref] = set_equilibrium(obj,V,I,flag)
-            Vabs = norm(V);
-            Varg = atan2(V(2),V(1));
-
+        function [x_ref, u_ref] = get_equilibrium(obj,V,I)
+            Vabs = abs(V);
+            Varg = angle(V);
             
-            P = V.' * I;
-            Q = det([I,V]);
-            p = obj.converter.parameter;
+            Power = V * conj(I);
+            P = real(Power);
+            Q = imag(Power);
 
+            L_g  = obj.converter.parameter.L_g / obj.converter.Lbase;
                 
             % Calculation of steady state values of angle difference and converter terminal voltage
+                delta_st = Varg + atan((P * L_g) / (Vabs^2 + Q * L_g));
+                omega_st = 0;
+                v_st = P * L_g / (Vabs * sin(delta_st - Varg));
+                zeta_st = v_st / 2;
 
-            delta_st = Varg + atan((P * p.L_g) / (Vabs^2 + Q * p.L_g)); %delta_st = angle(V(1)+1j*V(2));
-            omega_st = 0;
-            v_st = P * p.L_g / (Vabs * sin(delta_st - Varg));
-            zeta_st = v_st / 2;
+            % Stack the calculated equilibrium points and steady-state inputs
+                x_ref = [delta_st; omega_st; zeta_st];
+                u_ref = [];
 
-            x_ref = [delta_st; omega_st; zeta_st];
-            u_ref = [];
-
-            if strcmp(flag,'init')    
+            % if strcmp(flag,'init')    
                 obj.Vabs_st = norm(v_st);
                 obj.P_st = P;
-            end
+            % end
 
         end
         

@@ -35,9 +35,16 @@ classdef Delay1order_model < component.GFM.DCsource.AbstractClass
             i_t = x(2);
             Power = v_dq.'*i_dq;
 
+            % get parameter
+                p = obj.parameter;
+                vdc_st = p.vc_st / obj.converter.Vbase;
+                Gdc    = p.Gdc   / obj.converter.Ybase;
+                Cdc    = p.Cdc   / obj.converter.Cbase;
+
+
             % DC Voltage Control
-                idc_st =   p.Kdc * (p.vdc_st - vdc) ...
-                         + (obj.P_st/p.vdc_st) + (p.Gdc*vdc) + ((vdc*ix - Power) / p.vdc_st);
+                idc_st =   p.Kdc * (vdc_st - vdc) ...
+                         + (obj.P_st/vdc_st) + (Gdc*vdc) + ((vdc*ix - Power) / vdc_st);
 
             % DC Energy Source Model
                 di_t = (idc_st - i_t) / p.tau_dc;
@@ -49,7 +56,7 @@ classdef Delay1order_model < component.GFM.DCsource.AbstractClass
                 end
 
             % Converter
-                dvdc = (idc - p.Gdc*vdc - ix ) / p.Cdc; 
+                dvdc = (idc - Gdc*vdc - ix ) / Cdc; 
 
             dx = [dvdc;di_t];
         end
@@ -58,9 +65,12 @@ classdef Delay1order_model < component.GFM.DCsource.AbstractClass
             if strcmp(flag,'init')
                 obj.P_st = V.' * I;
             end
-
+    
             p = obj.parameter;
-            it_st = p.vdc_st*p.Gdc + ix;
+            vdc_st = p.vc_st / obj.converter.Vbase;
+            Gdc    = p.Gdc   / obj.converter.Ybase;
+
+            it_st = vdc_st*Gdc + ix;
             
 
             xst = [p.vdc_st;it_st];
