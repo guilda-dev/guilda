@@ -1,4 +1,4 @@
-No_machine,Xd,Xd_prime,Xd_pp,Xq,Xq_prime,Xq_pp,X_ls,Tdo,T,TTdo,Tqo,TTqo,M,D,SetClass,SetMethod,ID
+No_machine,Xd,Xd_p,Xd_pp,Xq,Xq_p,Xq_pp,X_ls,Td_p,T,Td_pp,Tq_p,Tq_pp,M,D,SetClass,SetMethod,ID
 1,0.1,0.031,0.025,0.069,0.028,0.025,0.0125,10.2,10.2,0.05,1.5,0.035,84,4,"avr_sadamoto2019, pss","set_avr, set_pss",1
 2,0.295,0.0697,0.05,0.282,0.06,0.05,0.035,6.56,6.56,0.05,1.5,0.035,60.4,9.75,"avr_sadamoto2019, pss","set_avr, set_pss",2
 3,0.2495,0.0531,0.045,0.237,0.05,0.045,0.0304,5.7,5.7,0.05,1.5,0.035,71.6,10,"avr_sadamoto2019, pss","set_avr, set_pss",3
