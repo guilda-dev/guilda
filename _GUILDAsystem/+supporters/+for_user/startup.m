@@ -4,7 +4,7 @@ function startup()
     disp('Welcome to GUILDA!!');
     disp(" ")
     
-    disp('Start git pull');
+    disp('<<< Start git pull >>>');
     path_guilda = pwd;
     c_path_guilda = split(path_guilda, '/');
     path_code_share = strcat('../../../', c_path_guilda{numel(c_path_guilda)-2});
@@ -23,7 +23,7 @@ function startup()
     if status~=0
         warning("git pull error in guilda");
     end
-    disp('Finish git pull');
+    disp('<<< Finish git pull >>>');
     disp(newline);
 
 end

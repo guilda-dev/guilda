@@ -1,7 +1,7 @@
 function shutdown()
 
     disp(newline);
-    disp('Start git push');
+    disp('<<< Start git push >>>');
 
     path_guilda = pwd;
     c_path_guilda = split(path_guilda, '/');
@@ -17,7 +17,7 @@ function shutdown()
         end
     end
 
-    disp('Finish git push');
+    disp('<<< Finish git push >>>');
     disp(" ")
     disp('Shut down GUILDA.');
     disp('----------------------------------------------------------------------------------------------------');
