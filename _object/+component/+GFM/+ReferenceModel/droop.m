@@ -7,9 +7,7 @@ classdef droop < component.GFM.ReferenceModel.base
     methods
         function obj = droop(para)
             if nargin==0
-                c = class(obj);
-                idx = find(c=='.',1,"last");
-                para = eval([c(1:idx),'params.',c(idx+1:end),'();']);
+                para = readtable([mfilename("fullpath"),'.csv']);
             end
             obj.parameter = para(:,{'Dw','Kp','Ki'});
         end
