@@ -1,7 +1,6 @@
-classdef Delay1order_model < handle
+classdef Delay1order_model < component.GFM.DCsource.AbstractClass
 
     properties
-        parameter  % P_st,vdc_st,idc_max,tau_dc,Kdc,R_dc 
         P_st
     end
 
@@ -34,8 +33,6 @@ classdef Delay1order_model < handle
             
             vdc = x(1);
             i_t = x(2);
-            p = obj.parameter;
-
             Power = v_dq.'*i_dq;
 
             % DC Voltage Control

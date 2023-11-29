@@ -1,4 +1,4 @@
-classdef vsm < component.GFM.ReferenceModel.base
+classdef vsm < component.GFM.ReferenceModel.AbstractClass
     properties(SetAccess=protected)
         P_st
         Vabs_st

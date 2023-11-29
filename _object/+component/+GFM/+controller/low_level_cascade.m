@@ -1,15 +1,4 @@
-classdef low_level_cascade < handle
-
-    properties
-        parameter
-        converter
-    end
-
-
-    properties(Dependent)
-        params_converter
-        params_dc_source
-    end
+classdef low_level_cascade < component.GFM.controller.AbstractClass
 
     methods
         function obj = low_level_cascade(para)
@@ -33,14 +22,6 @@ classdef low_level_cascade < handle
 
         function tag = naming_port(~)
             tag = [];
-        end
-
-        function p = get.params_converter(obj)
-            p = obj.converter.parameter;
-        end
-
-        function p = get.params_dc_source(obj)
-            p = obj.converter.dc_source.parameter;
         end
 
 

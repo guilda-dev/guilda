@@ -1,4 +1,4 @@
-classdef base < handle
+classdef AbstractClass < handle
     properties
         parameter
         converter
@@ -11,10 +11,10 @@ classdef base < handle
     methods(Abstract)
         nx = get_nx(obj)
         nu = get_nu(obj)
-        dx = get_dx(obj, t, x, u, v_dq, i_dq, vdc)
-        vdq_hat = calculate_vdq_hat(obj, t, x, u, v_dq, i_dq)
-        [delta,omega] = get_Vterminal(obj,x,V,I)
-        [x_ref, u_ref, vdq_st, idq_st] = set_equilibrium(obj,V,I)
+        
+        [dx,con] = get_dx_constraint(obj, t, x, V, I, u)
+        [x_ref, u_ref, vdq_st, idq_st] = get_equilibrium(obj,V,I)
+        [delta,omega] = get_Vterminal(obj,x,V,I,u)
     end
 
     methods

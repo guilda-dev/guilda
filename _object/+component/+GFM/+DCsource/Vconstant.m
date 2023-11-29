@@ -1,8 +1,4 @@
-classdef Vconstant < handle
-
-    properties
-        parameter  % P_st,vdc_st,idc_max,tau_dc,k_dc,R_dc
-    end
+classdef Vconstant < component.GFM.DCsource.AbstractClass
 
     methods
         function obj = Vconstant(params)
