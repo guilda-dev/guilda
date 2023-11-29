@@ -4,6 +4,11 @@ classdef park < component.generator.base % 状態・パラメーターはqを先
     
     methods
         function obj = park(parameter)
+            arguments
+                parameter = 'NGT2';
+            end
+            parameter = component.generator.get_default_parameter(parameter);
+            
             if isstruct(parameter)
                 parameter = struct2table(parameter);
             end

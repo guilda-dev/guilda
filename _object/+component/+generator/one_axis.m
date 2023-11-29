@@ -13,6 +13,10 @@ classdef one_axis < component.generator.base
     
     methods
         function obj = one_axis(parameter)
+            arguments
+                parameter = 'NGT2';
+            end
+            parameter = component.generator.get_default_parameter(parameter);
             if isstruct(parameter)
                 parameter = struct2table(parameter);
             end
