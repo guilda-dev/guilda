@@ -6,7 +6,7 @@ classdef two_axis < component.generator.base % 状態・パラメーターはq�
                 parameter = struct2table(parameter);
             end
             % 2軸用のパラメータ名に変更
-            obj.parameter = parameter(:, {'Xd', 'Xd_prime', 'Xq', 'Xq_prime', 'Tdo', 'Tqo', 'M', 'D'});
+            obj.parameter = parameter(:, {'Xd', 'Xd_p', 'Xq', 'Xq_p', 'Td_p', 'Tq_p', 'M', 'D'});
             obj.set_avr( component.generator.avr.base() );
             obj.set_governor( component.generator.governor.base() );
             obj.set_pss( component.generator.pss.base() );
@@ -66,8 +66,8 @@ classdef two_axis < component.generator.base % 状態・パラメーターはq�
             Vd = V(1)*sin(delta)-V(2)*cos(delta);
 
             % Id, Iqを定義
-            Iq = -(Ed-Vd)/p.Xq_prime;
-            Id =  (Eq-Vq)/p.Xd_prime;
+            Iq = -(Ed-Vd)/p.Xq_p;
+            Id =  (Eq-Vq)/p.Xd_p;
             
             % |I|cosI, |I|sinIを逆算
             Ir = Iq*cos(delta)+Id*sin(delta);
@@ -76,16 +76,16 @@ classdef two_axis < component.generator.base % 状態・パラメーターはq�
             con = I - [Ir; Ii];
             
             % Efdの修正とEfqの追加
-            Efd = p.Xd*Eq/p.Xd_prime - (p.Xd/p.Xd_prime-1)*Vq;
-            Efq = p.Xq*Ed/p.Xq_prime - (p.Xq/p.Xq_prime-1)*Vd;
+            Efd = p.Xd*Eq/p.Xd_p - (p.Xd/p.Xd_p-1)*Vq;
+            Efq = p.Xq*Ed/p.Xq_p - (p.Xq/p.Xq_p-1)*Vd;
             
             [dx_pss, v]   = obj.pss.get_u(x_pss, omega);
             [dx_avr, Vfd] = obj.avr.get_Vfd(x_avr, Vabs, Efd, u(1)-v);
             [dx_gov, P]   = obj.governor.get_P(x_gov, omega, u(2));
             
             % dEをdEqに，dEdの追加
-            dEq = (-Efd + Vfd)/p.Tdo;
-            dEd = (-Efq)/p.Tqo;
+            dEq = (-Efd + Vfd)/p.Td_p;
+            dEd = (-Efq)/p.Tq_p;
             ddelta = obj.omega0 * omega; 
             % PはPmechを指す
             domega = (P - p.D*omega - Vq*Iq - Vd*Id)/p.M;
@@ -136,8 +136,8 @@ classdef two_axis < component.generator.base % 状態・パラメーターはq�
             % u5 = Efq
             B_swing = [0,       0,      0,        0,        0;
                    1/p.M,       0, -1/p.M,        0,        0;
-                       0, 1/p.Tdo,      0, -1/p.Tdo,        0;
-                       0,       0,      0,        0, -1/p.Tqo
+                       0, 1/p.Td_p,      0, -1/p.Td_p,        0;
+                       0,       0,      0,        0, -1/p.Tq_p
                       ];
 
             % y = [delta, omega, Eq, Ed]
@@ -164,8 +164,8 @@ classdef two_axis < component.generator.base % 状態・パラメーターはq�
             
             dVq_dV = [cos(delta), sin(delta)];
             dVd_dV = [sin(delta), -cos(delta)];
-            dIr_dV = -dVq_dV*sin(delta)/p.Xd_prime + dVd_dV*cos(delta)/p.Xq_prime;
-            dIi_dV =  dVq_dV*cos(delta)/p.Xd_prime + dVd_dV*sin(delta)/p.Xq_prime;
+            dIr_dV = -dVq_dV*sin(delta)/p.Xd_p + dVd_dV*cos(delta)/p.Xq_p;
+            dIi_dV =  dVq_dV*cos(delta)/p.Xd_p + dVd_dV*sin(delta)/p.Xq_p;
             
             Vq = Vst(1)*cos(delta)+Vst(2)*sin(delta);
             Vd = Vst(1)*sin(delta)-Vst(2)*cos(delta);
@@ -174,18 +174,18 @@ classdef two_axis < component.generator.base % 状態・パラメーターはq�
             dVd_dd =  Vq;
             
             % d/dxV => [d/ddelta, d/dEq, d/dEd, d/dVr, d/dVi]
-            dEfd_dxV = -[dVq_dd, 0, 0, dVq_dV] * (p.Xd/p.Xd_prime-1) + [0, p.Xd/p.Xd_prime,               0, 0, 0];
-            dEfq_dxV = -[dVd_dd, 0, 0, dVd_dV] * (p.Xq/p.Xq_prime-1) + [0,               0, p.Xq/p.Xq_prime, 0, 0];
+            dEfd_dxV = -[dVq_dd, 0, 0, dVq_dV] * (p.Xd/p.Xd_p-1) + [0, p.Xd/p.Xd_p,               0, 0, 0];
+            dEfq_dxV = -[dVd_dd, 0, 0, dVd_dV] * (p.Xq/p.Xq_p-1) + [0,               0, p.Xq/p.Xq_p, 0, 0];
             
-            dIr_dd = (-dVq_dd*sin(delta)+(Eq-Vq)*cos(delta))/p.Xd_prime + (dVd_dd*cos(delta)-(Vd-Ed)*sin(delta))/p.Xq_prime;
-            dIi_dd = ( dVq_dd*cos(delta)+(Eq-Vq)*sin(delta))/p.Xd_prime + (dVd_dd*sin(delta)+(Vd-Ed)*cos(delta))/p.Xq_prime;
+            dIr_dd = (-dVq_dd*sin(delta)+(Eq-Vq)*cos(delta))/p.Xd_p + (dVd_dd*cos(delta)-(Vd-Ed)*sin(delta))/p.Xq_p;
+            dIi_dd = ( dVq_dd*cos(delta)+(Eq-Vq)*sin(delta))/p.Xd_p + (dVd_dd*sin(delta)+(Vd-Ed)*cos(delta))/p.Xq_p;
             
-            Ist =  [(Eq-Vq)*sin(delta)/p.Xd_prime + (Vd-Ed)*cos(delta)/p.Xq_prime;
-                    (Vq-Eq)*cos(delta)/p.Xd_prime + (Vd-Ed)*sin(delta)/p.Xq_prime]; 
+            Ist =  [(Eq-Vq)*sin(delta)/p.Xd_p + (Vd-Ed)*cos(delta)/p.Xq_p;
+                    (Vq-Eq)*cos(delta)/p.Xd_p + (Vd-Ed)*sin(delta)/p.Xq_p]; 
             
             % (delta, Eq, Ed, V) => (Ir, Ii)
-            KI = [dIr_dd,  sin(delta)/p.Xd_prime, -cos(delta)/p.Xq_prime, dIr_dV;
-                  dIi_dd, -cos(delta)/p.Xd_prime, -sin(delta)/p.Xq_prime, dIi_dV]; %ok
+            KI = [dIr_dd,  sin(delta)/p.Xd_p, -cos(delta)/p.Xq_p, dIr_dV;
+                  dIi_dd, -cos(delta)/p.Xd_p, -sin(delta)/p.Xq_p, dIi_dV]; %ok
             
             dP = Vst'*KI + Ist'*[zeros(2,3), eye(2)]; %ok
             % ここまで平衡状態
@@ -257,9 +257,9 @@ classdef two_axis < component.generator.base % 状態・パラメーターはq�
             P = real(Pow);
             Q = imag(Pow);
             Xd = obj.parameter{:, 'Xd'};
-            Xdp = obj.parameter{:, 'Xd_prime'};
+            Xdp = obj.parameter{:, 'Xd_p'};
             Xq = obj.parameter{:, 'Xq'};
-            Xqp = obj.parameter{:, 'Xq_prime'};
+            Xqp = obj.parameter{:, 'Xq_p'};
             delta = Vangle + atan(P/(Q+Vabs^2/Xq));
             Eqnum = P^2*Xdp*Xq + Q^2*Xdp*Xq + Vabs^2*Q*Xq + Vabs^2*Q*Xdp + Vabs^4;
             Eqden = Vabs*sqrt(P^2*Xq^2 + Q^2*Xq^2 + 2*Vabs^2*Q*Xq + Vabs^4);

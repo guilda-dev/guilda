@@ -8,7 +8,7 @@ classdef park < component.generator.base % 状態・パラメーターはqを先
                 parameter = struct2table(parameter);
             end
             % PARK用のパラメータ名に変更
-            obj.parameter = parameter(:, {'Xq', 'Xq_prime', 'Xq_pp','Xd', 'Xd_prime', 'Xd_pp','X_ls','Tdo', 'Tqo', 'TTdo','TTqo','M', 'D'});   % ソートしてるだけ
+            obj.parameter = parameter(:, {'Xq', 'Xq_p', 'Xq_pp','Xd', 'Xd_p', 'Xd_pp','X_ls','Td_p', 'Tq_p', 'Td_pp','Tq_pp','M', 'D'});   % ソートしてるだけ
             obj.set_avr( component.generator.avr.base() );
             obj.set_governor( component.generator.governor.base() );
             obj.set_pss( component.generator.pss.base() );
@@ -41,10 +41,10 @@ classdef park < component.generator.base % 状態・パラメーターはqを先
         
         function [dx, con] = get_dx_constraint(obj, ~, x, V, I, u)
             Xd  = obj.parameter.Xd;
-            Xdp = obj.parameter.Xd_prime;
+            Xdp = obj.parameter.Xd_p;
             Xdpp = obj.parameter.Xd_pp;
             Xq  = obj.parameter.Xq;
-            Xqp = obj.parameter.Xq_prime;
+            Xqp = obj.parameter.Xq_p;
             Xqpp = obj.parameter.Xq_pp;
             d   = obj.parameter.D;
             Xls = obj.parameter.X_ls;
@@ -108,8 +108,8 @@ classdef park < component.generator.base % 状態・パラメーターはqを先
             [dx_avr, Vfd] = obj.avr.get_Vfd(x_avr, Vabs, Efd, u_avr-v);
             [dx_gov, Pm] = obj.governor.get_P(x_gov, omega, u_gov);
                 
-            %dEq = (-Efd + Vfd)/Tdo;
-            %dEd = (-Efq)/Tqo;
+            %dEq = (-Efd + Vfd)/Td_p;
+            %dEd = (-Efq)/Tq_p;
             dEq = (-Efd + Vfd);
             dEd = (-Efq);
 
@@ -120,8 +120,8 @@ classdef park < component.generator.base % 状態・パラメーターはqを先
             %dpsid, dpsiqを追加
             psiq_ = -psiq-Ed-(Xqp-Xls)*Iq;
             psid_ = -psid+Eq-(Xdp-Xls)*Id;
-            %dpsiq = psiq_/TTqo;
-            %dpsid = psid_/TTdo;
+            %dpsiq = psiq_/Tq_pp;
+            %dpsid = psid_/Td_pp;
             dpsiq = psiq_;
             dpsid = psid_;
 
@@ -135,13 +135,13 @@ classdef park < component.generator.base % 状態・パラメーターはqを先
         end 
 
         function M = Mass(obj)
-            Tdo = obj.parameter.Tdo;
-            Tqo = obj.parameter.Tqo;
-            TTdo = obj.parameter.TTdo;
-            TTqo = obj.parameter.TTqo;
+            Td_p = obj.parameter.Td_p;
+            Tq_p = obj.parameter.Tq_p;
+            Td_pp = obj.parameter.Td_pp;
+            Tq_pp = obj.parameter.Tq_pp;
             M   = obj.parameter.M;
             
-            Msys = diag([1/obj.omega0,M,Tdo,Tqo,TTqo,TTdo]);
+            Msys = diag([1/obj.omega0,M,Td_p,Tq_p,Tq_pp,Td_pp]);
             Mavr = obj.avr.Mass;
             Mpss = obj.pss.Mass;
             Mgov = obj.governor.Mass;
@@ -161,9 +161,9 @@ classdef park < component.generator.base % 状態・パラメーターはqを先
             Q = imag(Pow);
 
             Xd = obj.parameter{:, 'Xd'};
-            Xdp = obj.parameter{:, 'Xd_prime'};
+            Xdp = obj.parameter{:, 'Xd_p'};
             Xq = obj.parameter{:, 'Xq'};
-            Xqp = obj.parameter{:, 'Xq_prime'};
+            Xqp = obj.parameter{:, 'Xq_p'};
             Xls = obj.parameter{:,'X_ls'};
             Xdpp = obj.parameter{:,'Xd_pp'};
             Xqpp = obj.parameter{:,'Xq_pp'};

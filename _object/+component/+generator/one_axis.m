@@ -7,7 +7,7 @@ classdef one_axis < component.generator.base
 % 親クラス：componentクラス
 % 実行方法：obj =　component.generator.1axis(omega, parameter)
 % 　引数　：・omega     : double値．系統周波数(50or60*2pi)
-% 　　　　　・parameter : table型．「'Xd', 'Xd_prime','Xq','T','M','D'」を列名として定義
+% 　　　　　・parameter : table型．「'Xd', 'Xd_p','Xq','T','M','D'」を列名として定義
 % 　出力　：componentクラスのインスタンス
     
     
@@ -16,7 +16,7 @@ classdef one_axis < component.generator.base
             if isstruct(parameter)
                 parameter = struct2table(parameter);
             end
-            obj.parameter = parameter(:, {'Xd', 'Xd_prime', 'Xq', 'Tdo', 'M', 'D'});
+            obj.parameter = parameter(:, {'Xd', 'Xd_p', 'Xq', 'Td_p', 'M', 'D'});
             obj.set_avr( component.generator.avr.base() );
             obj.set_governor( component.generator.governor.base() );
             obj.set_pss( component.generator.pss.base() );
@@ -48,7 +48,7 @@ classdef one_axis < component.generator.base
         
         function [dx, con] = get_dx_constraint(obj, ~, x, V, I, u)
             Xd  = obj.parameter.Xd;
-            Xdp = obj.parameter.Xd_prime;
+            Xdp = obj.parameter.Xd_p;
             Xq  = obj.parameter.Xq;
             d   = obj.parameter.D;
 
@@ -97,17 +97,17 @@ classdef one_axis < component.generator.base
             dE     = -Efd + Vfd;
 
             %domega = (Pm - d*omega - Vabs*E*sin(delta-Vangle)/Xdp + Vabs^2*(1/Xdp-1/Xq)*sin(2*(delta-Vangle))/2)/M;
-            %dE     = (-Efd + Vfd)/Tdo;
+            %dE     = (-Efd + Vfd)/Td_p;
             
             dx = [ddelta; domega; dE; dx_avr; dx_pss; dx_gov];
             
         end
 
         function M = Mass(obj)
-            Tdo = obj.parameter.Tdo;
+            Td_p = obj.parameter.Td_p;
             M   = obj.parameter.M;
             
-            Msys = diag([1/obj.omega0,M,Tdo]);
+            Msys = diag([1/obj.omega0,M,Td_p]);
             Mavr = obj.avr.Mass;
             Mpss = obj.pss.Mass;
             Mgov = obj.governor.Mass;
@@ -127,7 +127,7 @@ classdef one_axis < component.generator.base
             P = real(Pow);
             Q = imag(Pow);
             Xd  = obj.parameter{:, 'Xd'};
-            Xdp = obj.parameter{:, 'Xd_prime'};
+            Xdp = obj.parameter{:, 'Xd_p'};
             Xq  = obj.parameter{:, 'Xq'};
             delta = Vangle + atan(P/(Q+Vabs^2/Xq));
             Enum = Vabs^4 + Q^2*Xdp*Xq + Q*Vabs^2*Xdp + Q*Vabs^2*Xq + P^2*Xdp*Xq;
