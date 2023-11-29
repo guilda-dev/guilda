@@ -1,11 +1,14 @@
-classdef GFMI_vsm_DCconst < component.GFM.converter.main
+classdef GFMI_vsm_DCconst < component.GFM.GFMI
     methods
         function obj = GFMI_vsm_DCconst()
-            obj@component.GFM.converter.main();
+            obj@component.GFM.GFMI();
 
-            obj.set_reference_model('vsm');
-            obj.set_dc_source('Vconst');
-            obj.set_vsc_controller('low_level_cascade');
+            vsm = component.GFM.ReferenceModel.vsm();
+            obj.set_reference_model(vsm);
+
+            Vconst = component.GFM.DCsource.Vconstant();
+            obj.set_dc_source(Vconst);
+
         end
     end
 end

@@ -1,11 +1,14 @@
-classdef GFMI_droop_DCconst < component.GFM.converter.main
+classdef GFMI_droop_DCconst < component.GFM.GFMI
     methods
         function obj = GFMI_droop_DCconst()
-            obj@component.GFM.converter.main()
+            obj@component.GFM.GFMI()
 
-            obj.set_reference_model('droop');
-            obj.set_dc_source('Vconst');
-            obj.set_vsc_controller('low_level_cascade');
+            droop = component.GFM.ReferenceModel.droop();
+            obj.set_reference_model(droop);
+
+            Vconst = component.GFM.DCsource.Vconstant();
+            obj.set_dc_source(Vconst);
+            
         end
     end
 end
