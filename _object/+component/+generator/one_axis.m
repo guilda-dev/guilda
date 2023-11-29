@@ -39,83 +39,100 @@ classdef one_axis < component.generator.base
             u_name = [u_avr,u_pss,u_gov];
         end
         
-        function [dx, con] = get_dx_constraint(obj, ~, x, V, I, u)
-            Xd  = obj.parameter.Xd;
-            Xdp = obj.parameter.Xd_p;
-            Xq  = obj.parameter.Xq;
-            d   = obj.parameter.D;
-            Tdo = obj.parameter.Tdo;
-            M   = obj.parameter.M;
+        % 機器のダイナミクスを決めるメソッド
+            function [dx, con] = get_dx_constraint(obj, ~, x, V, I, u)
+                Xd  = obj.parameter.Xd;
+                Xdp = obj.parameter.Xd_p;
+                Xq  = obj.parameter.Xq;
+                d   = obj.parameter.D;
+                Tdo = obj.parameter.Tdo;
+                M   = obj.parameter.M;
+    
+                nx_avr = obj.avr.get_nx();
+                nx_pss = obj.pss.get_nx();
+                nx_gov = obj.governor.get_nx();
+    
+                nu_avr = obj.avr.get_nu();
+                nu_pss = obj.pss.get_nu();
+                nu_gov = obj.governor.get_nu();
+                
+                % 状態の抽出
+                delta = x(1);
+                omega = x(2);
+                E     = x(3);
+                x_avr = x(3+(1:nx_avr));
+                x_pss = x(3+nx_avr+(1:nx_pss));
+                x_gov = x(3+nx_avr+nx_pss+(1:nx_gov));
+    
+                % 入力の抽出
+                u_avr = u(1:nu_avr);
+                u_pss = u(nu_avr+(1:nu_pss));
+                u_gov = u(nu_avr+nu_pss+(1:nu_gov));
+                
+    
+                Vabs = norm(V);
+                Vangle = atan2(V(2), V(1));
+                
+                Vabscos = V(1)*cos(delta)+V(2)*sin(delta);
+                Vabssin = V(1)*sin(delta)-V(2)*cos(delta);
+                
+                Ir =  (E-Vabscos)*sin(delta)/Xdp + Vabssin*cos(delta)/Xq;
+                Ii = -(E-Vabscos)*cos(delta)/Xdp + Vabssin*sin(delta)/Xq;
+                
+                con = I - [Ir; Ii];
+                
+                Efd = Xd*E/Xdp - (Xd/Xdp-1)*Vabscos;
+                
+                
+                [dx_pss, v  ] = obj.pss.get_u(x_pss, omega, u_pss);
+                [dx_avr, Vfd] = obj.avr.get_Vfd(x_avr, Vabs, Efd, u_avr-v);
+                [dx_gov, Pm ] = obj.governor.get_P(x_gov, omega, u_gov);
+                
+                ddelta = obj.omega0 * omega;
+                domega = (Pm - d*omega - Vabs*E*sin(delta-Vangle)/Xdp + Vabs^2*(1/Xdp-1/Xq)*sin(2*(delta-Vangle))/2)/M;
+                dE     = (-Efd + Vfd)/Tdo;
+                
+                dx = [ddelta; domega; dE; dx_avr; dx_pss; dx_gov];
+            end
 
-            nx_avr = obj.avr.get_nx();
-            nx_pss = obj.pss.get_nx();
-            nx_gov = obj.governor.get_nx();
+        % 定常潮流状態からモデルの平衡点と定常入力値を求めるメソッド
+            function [x_st,u_st] = get_equilibrium(obj,V,I)
+                Vangle = angle(V);
+                Vabs =  abs(V);
+                Pow = conj(I)*V;
+                P = real(Pow);
+                Q = imag(Pow);
+                Xd  = obj.parameter{:, 'Xd'};
+                Xdp = obj.parameter{:, 'Xd_p'};
+                Xq  = obj.parameter{:, 'Xq'};
+                delta = Vangle + atan(P/(Q+Vabs^2/Xq));
+                Enum = Vabs^4 + Q^2*Xdp*Xq + Q*Vabs^2*Xdp + Q*Vabs^2*Xq + P^2*Xdp*Xq;
+                Eden = Vabs*sqrt(P^2*Xq^2 + Q^2*Xq^2 + 2*Q*Vabs^2*Xq + Vabs^4);
+                E = Enum/Eden;
+                Vfd = Xd*E/Xdp - (Xd/Xdp-1)*Vabs*cos(delta-Vangle);
+                [x_avr,u_avr] = obj.avr.initialize(Vfd, Vabs);
+                [x_gov,u_gov] = obj.governor.initialize(P);
+                [x_pss,u_pss] = obj.pss.initialize();
+                
+                x_st = [delta; 0; E; x_avr; x_pss; x_gov];
+                u_st = [u_avr; u_pss; u_gov];
+            end
 
-            nu_avr = obj.avr.get_nu();
-            nu_pss = obj.pss.get_nu();
-            nu_gov = obj.governor.get_nu();
-            
-            % 状態の抽出
-            delta = x(1);
-            omega = x(2);
-            E     = x(3);
-            x_avr = x(3+(1:nx_avr));
-            x_pss = x(3+nx_avr+(1:nx_pss));
-            x_gov = x(3+nx_avr+nx_pss+(1:nx_gov));
+        % GFMIのリファレンスモデルとして実装するために必要なメソッド
+            function [delta,omega,Vdq] = get_Vterminal(obj,x,V,I,u)%#ok
+                delta = x(1);
+                omega = x(2);
 
-            % 入力の抽出
-            u_avr = u(1:nu_avr);
-            u_pss = u(nu_avr+(1:nu_pss));
-            u_gov = u(nu_avr+nu_pss+(1:nu_gov));
-            
+                nx_avr = obj.avr.get_nx();
+                nx_pss = obj.pss.get_nx();
+                x_avr = x(2+(1:nx_avr));
+                x_pss = x(2+nx_avr+(1:nx_pss));
 
-            Vabs = norm(V);
-            Vangle = atan2(V(2), V(1));
-            
-            Vabscos = V(1)*cos(delta)+V(2)*sin(delta);
-            Vabssin = V(1)*sin(delta)-V(2)*cos(delta);
-            
-            Ir =  (E-Vabscos)*sin(delta)/Xdp + Vabssin*cos(delta)/Xq;
-            Ii = -(E-Vabscos)*cos(delta)/Xdp + Vabssin*sin(delta)/Xq;
-            
-            con = I - [Ir; Ii];
-            
-            Efd = Xd*E/Xdp - (Xd/Xdp-1)*Vabscos;
-            
-            
-            [dx_pss, v  ] = obj.pss.get_u(x_pss, omega, u_pss);
-            [dx_avr, Vfd] = obj.avr.get_Vfd(x_avr, Vabs, Efd, u_avr-v);
-            [dx_gov, Pm ] = obj.governor.get_P(x_gov, omega, u_gov);
-            
-            ddelta = obj.omega0 * omega;
-            domega = (Pm - d*omega - Vabs*E*sin(delta-Vangle)/Xdp + Vabs^2*(1/Xdp-1/Xq)*sin(2*(delta-Vangle))/2)/M;
-            dE     = (-Efd + Vfd)/Tdo;
-            
-            dx = [ddelta; domega; dE; dx_avr; dx_pss; dx_gov];
-            
-        end
+                [~,  v ] = obj.pss.get_u(x_pss, omega);
+                [~, Vfd] = obj.avr.get_Vfd(x_avr, norm(V), 0, u(1)-v);
 
-        function [x_st,u_st] = get_equilibrium(obj,V,I)
-            Vangle = angle(V);
-            Vabs =  abs(V);
-            Pow = conj(I)*V;
-            P = real(Pow);
-            Q = imag(Pow);
-            Xd  = obj.parameter{:, 'Xd'};
-            Xdp = obj.parameter{:, 'Xd_p'};
-            Xq  = obj.parameter{:, 'Xq'};
-            delta = Vangle + atan(P/(Q+Vabs^2/Xq));
-            Enum = Vabs^4 + Q^2*Xdp*Xq + Q*Vabs^2*Xdp + Q*Vabs^2*Xq + P^2*Xdp*Xq;
-            Eden = Vabs*sqrt(P^2*Xq^2 + Q^2*Xq^2 + 2*Q*Vabs^2*Xq + Vabs^4);
-            E = Enum/Eden;
-            Vfd = Xd*E/Xdp - (Xd/Xdp-1)*Vabs*cos(delta-Vangle);
-            [x_avr,u_avr] = obj.avr.initialize(Vfd, Vabs);
-            [x_gov,u_gov] = obj.governor.initialize(P);
-            [x_pss,u_pss] = obj.pss.initialize();
-
-            x_st = [delta; 0; E; x_avr; x_pss; x_gov];
-            u_st = [u_avr; u_pss; u_gov];
-        end
+                Vdq = [0;Vfd];
+            end
     end
 end
 

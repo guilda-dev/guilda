@@ -32,69 +32,86 @@ classdef classical < component.generator.base
             u_name = [u_avr,u_pss,u_gov];
         end
 
-        % Vfdは定数であるため、界磁電圧に関する入力は必要ないのですが、AGCのコードで入力が１つの発電機が入ると面倒臭そうなので２つのままにしておきます
-        function [dx, con] = get_dx_constraint(obj, t, x, V, I, u)%#ok
-            
-            p = obj.parameter;
-            nx_avr = obj.avr.get_nx();
-            nx_pss = obj.pss.get_nx();
-            nx_gov = obj.governor.get_nx();
-            
-            x_gen = x(1:2);
-            x_avr = x(2+(1:nx_avr));
-            x_pss = x(2+nx_avr+(1:nx_pss));
-            x_gov = x(2+nx_avr+nx_pss+(1:nx_gov));
-            
-            Vabs = norm(V);
-            %Vangle = atan2(V(2), V(1));
-            
-            delta = x_gen(1);
-            omega = x_gen(2);
-            
-            Efd = 0;
+        
+        % 機器のダイナミクスを決めるメソッド
+            function [dx, con] = get_dx_constraint(obj, t, x, V, I, u)%#ok
+                % Vfdは定数であるため、界磁電圧に関する入力は必要ないのですが、AGCのコードで入力が１つの発電機が入ると面倒臭そうなので２つのままにしておきます
+                p = obj.parameter;
+                nx_avr = obj.avr.get_nx();
+                nx_pss = obj.pss.get_nx();
+                nx_gov = obj.governor.get_nx();
+                
+                x_gen = x(1:2);
+                x_avr = x(2+(1:nx_avr));
+                x_pss = x(2+nx_avr+(1:nx_pss));
+                x_gov = x(2+nx_avr+nx_pss+(1:nx_gov));
+                
+                Vabs = norm(V);
+                %Vangle = atan2(V(2), V(1));
+                
+                delta = x_gen(1);
+                omega = x_gen(2);
 
-            [dx_pss, v] = obj.pss.get_u(x_pss, omega);
-            [dx_avr, Vfd] = obj.avr.get_Vfd(x_avr, Vabs, Efd, u(1)-v);
-            [dx_gov, P] = obj.governor.get_P(x_gov, omega, u(2));
- 
+                Efd = 0;
 
-            Vd  = V(1)*sin(delta)-V(2)*cos(delta);
-            Vq  = V(1)*cos(delta)+V(2)*sin(delta); 
-            Id  = (Vfd-Vq)/p.Xd;...
-            Iq  = Vd/p.Xq;
-            
-            Ir  =   Id*sin(delta) + Iq*cos(delta);
-            Ii  = - Id*cos(delta) + Iq*sin(delta);
+                [dx_pss, v] = obj.pss.get_u(x_pss, omega);
+                [dx_avr, Vfd] = obj.avr.get_Vfd(x_avr, Vabs, Efd, u(1)-v);
+                [dx_gov, P] = obj.governor.get_P(x_gov, omega, u(2));
 
-            ddelta = obj.omega0 * omega;
-            domega = ( P - p.D*omega - Vq*Iq - Vd*Id )/p.M;
+                Vd  = V(1)*sin(delta)-V(2)*cos(delta);
+                Vq  = V(1)*cos(delta)+V(2)*sin(delta);
+                Id  = (Vfd-Vq)/p.Xd;...
+                Iq  = Vd/p.Xq;
 
-            con = I - [Ir;Ii];
-            dx = [ddelta; domega; dx_avr; dx_pss; dx_gov];
+                Ir  =   Id*sin(delta) + Iq*cos(delta);
+                Ii  = - Id*cos(delta) + Iq*sin(delta);
 
-        end
+                ddelta = obj.omega0 * omega;
+                domega = ( P - p.D*omega - Vq*Iq - Vd*Id )/p.M;
 
-        function [x_st,u_st] = get_equilibrium(obj, V, I)
-            p = obj.parameter;
+                con = I - [Ir;Ii];
+                dx = [ddelta; domega; dx_avr; dx_pss; dx_gov];
+            end
 
-            Vangle = angle(V);
-            Vabs =  abs(V);
-            Pow = conj(I)*V;
-            P = real(Pow);
-            Q = imag(Pow);
+        % 定常潮流状態からモデルの平衡点と定常入力値を求めるメソッド
+            function [x_st,u_st] = get_equilibrium(obj, V, I)
+                p = obj.parameter;
+    
+                Vangle = angle(V);
+                Vabs =  abs(V);
+                Pow = conj(I)*V;
+                P = real(Pow);
+                Q = imag(Pow);
+    
+                delta = Vangle + atan(P/(Q+Vabs^2/p.Xq));
+    
+                Id = real(  1j*I*exp(-1j*delta) );
+                Vq = imag(  1j*V*exp(-1j*delta) );
+                Vfd = Id*p.Xd+Vq;
+                [x_avr,u_avr] = obj.avr.initialize(Vfd, Vabs);
+                [x_gov,u_gov] = obj.governor.initialize(P);
+                [x_pss,u_pss] = obj.pss.initialize();
+    
+                x_st = [delta; 0; x_avr; x_gov; x_pss];
+                u_st = [u_avr;u_pss;u_gov];
+            end
 
-            delta = Vangle + atan(P/(Q+Vabs^2/p.Xq));
+        % GFMIのリファレンスモデルとして実装するために必要なメソッド
+            function [delta,omega,Vdq] = get_Vterminal(obj,x,V,I,u)%#ok
+                delta  = x(1);
+                domega = x(2);
+                omega  = domega + 1;
 
-            Id = real(  1j*I*exp(-1j*delta) );
-            Vq = imag(  1j*V*exp(-1j*delta) );
-            Vfd = Id*p.Xd+Vq;
-            [x_avr,u_avr] = obj.avr.initialize(Vfd, Vabs);
-            [x_gov,u_gov] = obj.governor.initialize(P);
-            [x_pss,u_pss] = obj.pss.initialize();
+                nx_avr = obj.avr.get_nx();
+                nx_pss = obj.pss.get_nx();
+                x_avr = x(2+(1:nx_avr));
+                x_pss = x(2+nx_avr+(1:nx_pss));
 
-            x_st = [delta; 0; x_avr; x_gov; x_pss];
-            u_st = [u_avr;u_pss;u_gov];
-        end
+                [~,  v ] = obj.pss.get_u(x_pss, domega);
+                [~, Vfd] = obj.avr.get_Vfd(x_avr, norm(V), 0, u(1)-v);
+
+                Vdq = [0;Vfd];
+            end
     end
 end
 
