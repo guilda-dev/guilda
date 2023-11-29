@@ -5,12 +5,9 @@ classdef classical < component.generator.base
             arguments
                 parameter = 'NGT2';
             end
-            parameter = component.generator.get_default_parameter(parameter);
+            obj@component.generator.base(parameter)
             
-            if isstruct(parameter)
-                parameter = struct2table(parameter);
-            end
-            obj.parameter = parameter(:, {'Xd', 'Xq', 'M', 'D'});
+            obj.parameter = obj.parameter(:, {'Xd', 'Xq', 'M', 'D'});
             obj.set_avr( component.generator.avr.base() );
             obj.set_governor( component.generator.governor.base() );
             obj.set_pss( component.generator.pss.base() );
