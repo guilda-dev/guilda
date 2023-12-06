@@ -21,6 +21,8 @@ classdef odefactory < handle
         LastTime
         DataStorage = struct('t',[],'X',[],'Xcl',[],'Xcg',[],'V',[],'I',[],'sol',[],'u',[]);
         network                % << power_networkクラス
+
+        sampling_time   % シミュレーション結果のサンプリング時間
     end
 
 

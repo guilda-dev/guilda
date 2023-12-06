@@ -58,6 +58,9 @@ function set_options(obj,t,uidx,u,varargin)
             addParameter(p, 'AbsTol'           , 1e-8);
             addParameter(p, 'RelTol'           , 1e-8);
             addParameter(p, 'MaxOrder'         , 5   );    % 1~5
+            
+        % set ssampling time
+            addParameter(p, 'sampling_time'    , 'none');
 
         parse(p, varargin{:});
         op = p.Results;
@@ -99,6 +102,14 @@ function set_options(obj,t,uidx,u,varargin)
         V0vec = tools.complex2vec(net.V_equilibrium);
         V0 = num2cell(reshape(V0vec,2,[]),1);
         a_nan = tools.cellfun(@(b) nan(2,1), net.a_bus);
+
+        if isnumeric(op.sampling_time) && numel(op.sampling_time)
+            obj.sampling_time = t(1):op.sampling_time:t(end);
+        elseif strcmp(op.sampling_time,'none')
+            obj.sampling_time = 'none';
+        else
+            error('sampling_timeの設定値が正しくありません。')
+        end
 
         % 状態・代数の初期値を格納しておく
         obj.initial.x   = x0_sys;

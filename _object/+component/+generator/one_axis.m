@@ -14,11 +14,9 @@ classdef one_axis < component.generator.base
             arguments
                 parameter = 'NGT2';
             end
-            parameter = component.generator.get_default_parameter(parameter);
-            if isstruct(parameter)
-                parameter = struct2table(parameter);
-            end
-            obj.parameter = parameter(:, {'Xd', 'Xd_p', 'Xq', 'Td_p', 'M', 'D'});
+            obj@component.generator.base(parameter)
+            
+            obj.parameter = obj.parameter(:, {'Xd', 'Xd_p', 'Xq', 'Td_p', 'M', 'D'});
             obj.set_avr( component.generator.avr.base() );
             obj.set_governor( component.generator.governor.base() );
             obj.set_pss( component.generator.pss.base() );

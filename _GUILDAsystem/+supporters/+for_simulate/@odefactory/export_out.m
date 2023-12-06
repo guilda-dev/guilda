@@ -5,8 +5,6 @@ function [out,obj] = export_out(obj)
     
     outdata = struct();
     
-    outdata.t = data.t;
-    
     outdata.X   = organize(data.X  );
     outdata.V   = organize(data.V  );
     outdata.I   = organize(data.I  );
@@ -15,25 +13,24 @@ function [out,obj] = export_out(obj)
     outdata.Xcon.local  = organize(data.Xcl);
     outdata.Xcon.global = organize(data.Xcg);
    
-    Umac = tools.cellfun(@(b) zeros(numel(data.t),b.component.get_nu), net.a_bus);
+    Umac = tools.cellfun(@(b) zeros(numel(horzcat(data.t{:})),b.component.get_nu), net.a_bus);
 
     outdata.Ucon = struct();
     [outdata.Ucon.global, Umac] = calc_Ucon(net.a_controller_global, outdata, Umac, 'global');
     [outdata.Ucon.local , Umac] = calc_Ucon(net.a_controller_local , outdata, Umac, 'local' );
 
-    Uuser = tools.cellfun(@(b) tools.cellfun(@(s) zeros(numel(s.x),b.component.get_nu),data.sol), net.a_bus);
+    Uuser = tools.cellfun(@(b) tools.arrayfun(@(is) zeros(numel(data.t{is}),b.component.get_nu),1:numel(data.sol)), net.a_bus);
     time  = cell(numel(data.sol),1);
     for  is = 1:numel(data.sol)
-        sol  = data.sol{is};
         u    = data.u{is};
         for uid = 1:numel(u)
             ui = u(uid);
-            uval = tools.harrayfun(@(t) ui.function(t), sol.x);
+            uval = tools.harrayfun(@(t) ui.function(t), data.t{is});
             for idx = 1:numel(ui.index)
                 Uuser{ui.index(idx)}{is} = Uuser{ui.index(idx)}{is} + uval(ui.logimat(:,idx),:).';
             end
         end
-        time{is} = sol.x(:);
+        time{is} = data.t{is}(:);
     end
 
     outdata.t      = vertcat(time{:});

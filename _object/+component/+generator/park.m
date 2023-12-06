@@ -7,13 +7,10 @@ classdef park < component.generator.base % 状態・パラメーターはqを先
             arguments
                 parameter = 'NGT2';
             end
-            parameter = component.generator.get_default_parameter(parameter);
+            obj@component.generator.base(parameter)
             
-            if isstruct(parameter)
-                parameter = struct2table(parameter);
-            end
             % PARK用のパラメータ名に変更
-            obj.parameter = parameter(:, {'Xq', 'Xq_p', 'Xq_pp','Xd', 'Xd_p', 'Xd_pp','X_ls','Td_p', 'Tq_p', 'Td_pp','Tq_pp','M', 'D'});   % ソートしてるだけ
+            obj.parameter = obj.parameter(:, {'Xq', 'Xq_p', 'Xq_pp','Xd', 'Xd_p', 'Xd_pp','X_ls','Td_p', 'Tq_p', 'Td_pp','Tq_pp','M', 'D'});   % ソートしてるだけ
             obj.set_avr( component.generator.avr.base() );
             obj.set_governor( component.generator.governor.base() );
             obj.set_pss( component.generator.pss.base() );

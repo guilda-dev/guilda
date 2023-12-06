@@ -5,13 +5,10 @@ classdef two_axis < component.generator.base % 状態・パラメーターはq�
             arguments
                 parameter = 'NGT2';
             end
-            parameter = component.generator.get_default_parameter(parameter);
+            obj@component.generator.base(parameter)
             
-            if isstruct(parameter)
-                parameter = struct2table(parameter);
-            end
             % 2軸用のパラメータ名に変更
-            obj.parameter = parameter(:, {'Xd', 'Xd_p', 'Xq', 'Xq_p', 'Td_p', 'Tq_p', 'M', 'D'});
+            obj.parameter = obj.parameter(:, {'Xd', 'Xd_p', 'Xq', 'Xq_p', 'Td_p', 'Tq_p', 'M', 'D'});
             obj.set_avr( component.generator.avr.base() );
             obj.set_governor( component.generator.governor.base() );
             obj.set_pss( component.generator.pss.base() );

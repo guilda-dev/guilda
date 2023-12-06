@@ -5,12 +5,9 @@ classdef classical < component.generator.base
             arguments
                 parameter = 'NGT2';
             end
-            parameter = component.generator.get_default_parameter(parameter);
+            obj@component.generator.base(parameter)
             
-            if isstruct(parameter)
-                parameter = struct2table(parameter);
-            end
-            obj.parameter = parameter(:, {'Xd', 'Xq', 'M', 'D'});
+            obj.parameter = obj.parameter(:, {'Xd', 'Xq', 'M', 'D'});
             obj.set_avr( component.generator.avr.base() );
             obj.set_governor( component.generator.governor.base() );
             obj.set_pss( component.generator.pss.base() );
@@ -32,6 +29,13 @@ classdef classical < component.generator.base
             u_name = [u_avr,u_pss,u_gov];
         end
 
+        function out = get_nx(obj)
+            out = 2 + obj.avr.get_nx() + obj.pss.get_nx() + obj.governor.get_nx();
+        end
+        
+        function nu = get_nu(obj)
+            nu = obj.avr.get_nu() + obj.pss.get_nu() + obj.governor.get_nu();
+        end
         
         % 機器のダイナミクスを決めるメソッド
             function [dx, con] = get_dx_constraint(obj, t, x, V, I, u)%#ok
@@ -51,7 +55,7 @@ classdef classical < component.generator.base
                 
                 delta = x_gen(1);
                 omega = x_gen(2);
-
+                
                 Efd = 0;
 
                 [dx_pss, v] = obj.pss.get_u(x_pss, omega);
