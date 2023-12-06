@@ -16,9 +16,9 @@ classdef classical < component.generator.base
         
         function name_tag = naming_state(obj)
             gen_state = {'delta','omega'};
-            avr_state = obj.avr.get_state_name;
-            pss_state = obj.pss.get_state_name;
-            governor_state = obj.governor.get_state_name;
+            avr_state = obj.avr.naming_state;
+            pss_state = obj.pss.naming_state;
+            governor_state = obj.governor.naming_state;
             name_tag = horzcat(gen_state,avr_state,pss_state,governor_state);
         end
 
@@ -40,7 +40,7 @@ classdef classical < component.generator.base
         
         function [dx, con] = get_dx_constraint(obj, t, x, V, I, u)%#ok
             
-            p = obj.prameter;
+            p = obj.parameter;
             nx_avr = obj.avr.get_nx();
             nx_pss = obj.pss.get_nx();
             nx_gov = obj.governor.get_nx();
@@ -80,6 +80,12 @@ classdef classical < component.generator.base
         end
 
         function x_st = set_equilibrium(obj, V, I)
+
+            if nargin<2
+                V = obj.V_equilibrium;
+                I = obj.I_equilibrium;
+            end
+            
             p = obj.parameter;
 
             Vangle = angle(V);

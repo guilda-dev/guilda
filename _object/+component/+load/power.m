@@ -55,7 +55,7 @@
         
         function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, x, V)
             if nargin < 2
-                [A, B, C, D, BV, DV, BI, DI, R, S] = obj.get_linear_matrix_([], obj.V_st);
+                [A, B, C, D, BV, DV, BI, DI, R, S] = obj.get_linear_matrix([], obj.V_st);
             else
                 den = (V'*V)^2;
                 Vr = V(1);
@@ -69,8 +69,8 @@
                 D = [P*Vr Q*Vi; P*Vi -Q*Vr]/(V'*V);
                 BV = zeros(0, 2);
                 DV = [P, Q; -Q, P]*[(Vi^2-Vr^2)/den, -2*Vr*Vi/den; -2*Vr*Vi/den, (Vr^2-Vi^2)/den];
-                R = obj.R;
-                S = obj.S;
+                R = [];%obj.R;
+                S = [];%obj.S;
                 BI = zeros(0, 2);
                 DI = -eye(2);
             end
