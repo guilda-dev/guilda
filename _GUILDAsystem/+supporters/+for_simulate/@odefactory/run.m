@@ -3,7 +3,6 @@ function [out,obj] = run(obj)
     
     % タグのリセット >> ToBeStopがtrueになったらシミュレーションを中断する。
         obj.ToBeStop = false;
-        obj.start_time = datetime;          % シミュレーション開始時刻（現実時間）を記録
 
     % 解析中にfsolveで初期値を再評価する必要が出た場合に用いるオプション
         optimoption = optimoptions('fsolve', 'MaxFunEvals', inf, 'MaxIterations', 100, 'Display','none');%'iter-detailed');
@@ -59,6 +58,7 @@ function [out,obj] = run(obj)
                     x0(const_idx) = fsolve(@(var) fconst(var, @obj.fx, t0, x0, const_idx), const0, optimoption);
                     sol = ode15s(@obj.fx, [t0,te], x0, odeopt);
                 end
+                
             % 警告でodeソルバーが途中で停止した場合にソルバーを再開させる。
                 while sol.x(end)<te && obj.do_retry && ~obj.GoNext
                     sol = odextend(sol,[],te);
@@ -77,7 +77,7 @@ function [out,obj] = run(obj)
             obj.LastTime = sol.x(end);
 
         % 微分方程式の解をDataStorageに格納 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            if ~strcmp(obj.sampling_time,'none')
+            if ~strcmp(obj.sampling_time,'auto')
                 ts = sol.x(1);
                 te = sol.x(end);
                 tidx = obj.sampling_time(obj.sampling_time >= ts & obj.sampling_time < te);

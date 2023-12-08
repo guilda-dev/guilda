@@ -47,9 +47,6 @@ classdef odefactory < handle
 
         do_retry            % odeソルバーが警告により途中停止した場合に再施行するかどうかを指定
 
-        start_time          % シミュレーション開始時に現実時間を記録
-        time_limit          % シミュレーションを停止させる時間を指定(現実時間)
-
         odeoptions          % odeソルバーで使用するオプション
 
         % 全母線・機器・制御器のインデックスの管理

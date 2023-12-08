@@ -60,7 +60,7 @@ function set_options(obj,t,uidx,u,varargin)
             addParameter(p, 'MaxOrder'         , 5   );    % 1~5
             
         % set ssampling time
-            addParameter(p, 'sampling_time'    , 'none');
+            addParameter(p, 'sampling_time'    , 'auto');
 
         parse(p, varargin{:});
         op = p.Results;
@@ -105,8 +105,8 @@ function set_options(obj,t,uidx,u,varargin)
 
         if isnumeric(op.sampling_time) && numel(op.sampling_time)
             obj.sampling_time = t(1):op.sampling_time:t(end);
-        elseif strcmp(op.sampling_time,'none')
-            obj.sampling_time = 'none';
+        elseif strcmp(op.sampling_time,'auto')
+            obj.sampling_time = 'auto';
         else
             error('sampling_timeの設定値が正しくありません。')
         end
@@ -126,7 +126,7 @@ function set_options(obj,t,uidx,u,varargin)
         obj.input     = supporters.for_simulate.options.input(     obj, t, uidx, u, op.input, op.method);
         % obj.gridcode  = supporters.for_simulate.reporter.gridcode( obj, op.gridcode, op.gridcode_viewer);
         % obj.response  = supporters.for_simulate.reporter.response( obj, op.OutputFcn );
-        obj.progress  = supporters.for_simulate.reporter.progress( obj, op.report    ); 
+        obj.progress  = supporters.for_simulate.reporter.progress( obj, op.report, op.time_limit); 
 
 
         % その他のインデックス
@@ -140,20 +140,6 @@ function set_options(obj,t,uidx,u,varargin)
                 'MaxOrder'    , op.MaxOrder, ...
                 'MassSingular','yes'       );
         obj.isCalculated_disconnected_mac = op.simulate_when_disconnect;
-
-        tl = op.time_limit;
-        if isstruct(tl)
-            obj.time_limit   = duration(tl.H, tl.M, tl.S); 
-        elseif isnumeric(tl)
-            n = numel(tl);
-            if n==3
-                obj.time_limit = duration(tl(1),tl(2),tl(3));
-            elseif n==1
-                obj.time_limit = duration(0,0,tl);
-            else
-                error('The format of "option.time_limit" is incorrect.')
-            end
-        end
 
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
