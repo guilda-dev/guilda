@@ -30,9 +30,23 @@ classdef response < handle
     end
 
     methods
-        function obj = response(tlim,net,StateHolder,state,busidx)
+        function obj = response(tlim,net,state_name)
             obj.net = net;
             obj.tlim = tlim;
+
+            state_list = unique(tools.hcellfun(@(b) b.component.get_state_name(:)', net.a_bus));
+            state_mat = false(numel(net.a_bus),numel(state_name));
+            for i = 1:numel(state_name)
+                state_i = state_name{i};
+                switch state_i
+                    case state_list
+                    case {'I','V','P','Q'}
+                    otherwise
+                        if 
+                end
+            end
+            
+            
             obj.vargin = StateHolder;
             if nargin < 5
                 busidx = 1:numel(net.a_bus);
@@ -66,7 +80,7 @@ classdef response < handle
                     elseif contains(state{i},{'imag','Q'})
                         fdata = @(data) data(2);
                     elseif contains(state{i},{'abs','S'})
-                        fdata = @(data) norm(data);
+                        fdata = @(data) norm(data(1)+1j*data(2));
                     elseif contains(state{i},{'angle','arg'})
                         fdata = @(data) angle(data(1)+1j*data(2));
                     elseif contains(state{i},{'Factor'})
