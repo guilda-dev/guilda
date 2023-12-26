@@ -3,6 +3,7 @@ classdef local_LQR_retrofit <  controller
     properties(Access=private)
        x_avr
        x_pss
+       x_gov
     end
     
     properties
@@ -16,10 +17,12 @@ classdef local_LQR_retrofit <  controller
         x0
         V0
         I0
+        u0
         sys_fb
         sys_design
         avr
         pss
+        gov
         Vfd0
         Vabs0
         Efd0
@@ -40,12 +43,15 @@ classdef local_LQR_retrofit <  controller
             end
             obj.avr = net.a_bus{idx}.component.avr;
             obj.pss = net.a_bus{idx}.component.pss;
+            obj.gov = net.a_bus{idx}.component.governor;
             n_avr = obj.avr.get_nx;
             n_pss = obj.pss.get_nx;
+            n_gov = obj.gov.get_nx;
             nx = 3;
             
             obj.x_avr = @(x) x(nx+(1:n_avr));
             obj.x_pss = @(x) x(nx+n_avr+(1:n_pss));
+            obj.x_gov = @(x) x(nx+n_avr+n_pss+(1:n_gov));
             
             if isempty(model)
                model = ss(zeros(2, 2));
@@ -90,11 +96,13 @@ classdef local_LQR_retrofit <  controller
                 obj.K = lqr(A, B(:, 1), Q_, R);
             end
             obj.nx = size(A, 1);
-            obj.Xdp = net.a_bus{idx}.component.parameter{:, 'Xd_prime'};
+            obj.Xdp = net.a_bus{idx}.component.parameter{:, 'Xd_p'};
             obj.Xd = net.a_bus{idx}.component.parameter{:, 'Xd'};
             obj.x0 = net.a_bus{idx}.component.x_equilibrium;
             obj.V0 = tools.complex2vec(net.a_bus{idx}.component.V_equilibrium);
             obj.I0 = tools.complex2vec(net.a_bus{idx}.component.I_equilibrium);
+            obj.u0 = net.a_bus{idx}.component.u_equilibrium;
+
             obj.sys_fb = ss((A-B(:, 1)*obj.K), B(:, 1), [eye(size(A)); -obj.K], 0);
             Vabs0 = norm(obj.V0);
             Xd = obj.Xd;
@@ -122,12 +130,15 @@ classdef local_LQR_retrofit <  controller
         end
         
         
-        function [dx, u] = get_dx_u(obj, t, x, X, V, I, U)
+        function [dx, u] = get_dx_u(obj, t, x, X, Vcell, Icell, U)
             u = zeros(2, 1);
             x1 = x(1:numel(obj.x0));
             x2 = x(numel(obj.x0)+1:end);
             u(1) = -obj.K*[(X{1}-obj.x0-x1); -x2];
-            
+
+            V = cell2mat(Vcell);
+            I = cell2mat(Icell);
+
             P = I'*V - obj.I0'*obj.V0;
             Xd = obj.Xd;
             Xdp = obj.Xdp;
@@ -136,6 +147,7 @@ classdef local_LQR_retrofit <  controller
             omega = X{1}(2);
             x_pss = obj.x_pss(X{1});
             x_avr = obj.x_avr(X{1});
+            x_gov = obj.x_gov(X{1});
             
             Vabs = norm(V);
             
@@ -144,9 +156,12 @@ classdef local_LQR_retrofit <  controller
             
             [~, v] = obj.pss.get_u(x_pss, omega);
             [~, Vfd, Vap] = obj.avr.get_Vfd(x_avr, Vabs, Efd, u(1) + U{1}(1)-v);
+            [~, Pm ] = obj.gov.get_P(x_gov, omega, U{1}(2));
             
-            dx = obj.A*x + obj.Bv*[P; Efd-obj.Efd0; Vabs-obj.Vabs0; Vfd-obj.Vfd0; U{1}] ...
+            dx = obj.A*x + obj.Bv*[P-Pm; Efd-obj.Efd0; Vabs-obj.Vabs0; Vfd-obj.Vfd0; U{1}] ...
                 - obj.Bw*[delta-obj.delta0; omega; E-obj.E0; Vap-obj.Vfd0];
+            u = num2cell(u(:),1);
+
         end
     end
 end

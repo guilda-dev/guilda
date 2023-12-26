@@ -1,8 +1,8 @@
 function [out,obj] = run(obj)
-     net = obj.network;
+    net = obj.network;
+
     % タグのリセット >> ToBeStopがtrueになったらシミュレーションを中断する。
         obj.ToBeStop = false;
-        obj.start_time = datetime;          % シミュレーション開始時刻（現実時間）を記録
 
     % 解析中にfsolveで初期値を再評価する必要が出た場合に用いるオプション
         optimoption = optimoptions('fsolve', 'MaxFunEvals', inf, 'MaxIterations', 100, 'Display','none');%'iter-detailed');
@@ -61,15 +61,42 @@ function [out,obj] = run(obj)
                     x0(const_idx) = fsolve(@(var) fconst(var, @obj.fx, t0, x0, const_idx), const0, optimoption);
                     sol = ode15s(@obj.fx, [t0,te], x0, odeopt);
                 end
+                
             % 警告でodeソルバーが途中で停止した場合にソルバーを再開させる。
                 while sol.x(end)<te && obj.do_retry && ~obj.GoNext
                     sol = odextend(sol,[],te);
                 end
 
+        % 次のフェーズの初期値をセット
+            [X,Xcl,Xcg,V,I,Vvir] = obj.expand_Xode(sol.y(:,end), 1:numel(net.a_bus), 1:numel(net.a_controller_local), 1:numel(net.a_controller_global));
+            obj.initial.x   = tools.cellfun(@(c) c(:), X  );
+            obj.initial.xcl = tools.cellfun(@(c) c(:), Xcl);
+            obj.initial.xcg = tools.cellfun(@(c) c(:), Xcg);
+            obj.initial.V   = tools.cellfun(@(c) c(:), V  );
+            obj.initial.I0const(obj.I0const_bus) = tools.arrayfun(@(i) Vvir{i}(:), obj.I0const_bus);
+            obj.initial.V0const(obj.V0const_bus) = tools.arrayfun(@(i)    I{i}(:), obj.V0const_bus);
+            
+        % このフェーズのシミュレーションの最終時間を記録 %%%%%%%%%%%%%%%%%%%%%%%%%%
+            obj.LastTime = sol.x(end);
 
         % 微分方程式の解をDataStorageに格納 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            [X,Xcl,Xcg,V,I,Vvir] = obj.expand_Xode(sol.y, 1:numel(net.a_bus), 1:numel(net.a_controller_local), 1:numel(net.a_controller_global));
-            obj.DataStorage.t   = [obj.DataStorage.t  , sol.x(:)'   ];
+            if ~strcmp(obj.sampling_time,'auto')
+                ts = sol.x(1);
+                te = sol.x(end);
+                tidx = obj.sampling_time(obj.sampling_time >= ts & obj.sampling_time < te);
+                if te == obj.time(end)
+                    tidx = [tidx,te];%#ok
+                elseif isempty(tidx)
+                    continue
+                end
+                response = deval(sol,tidx);
+            else
+                tidx     = sol.x;
+                response = sol.y;
+            end
+
+            [X,Xcl,Xcg,V,I,~] = obj.expand_Xode(response, 1:numel(net.a_bus), 1:numel(net.a_controller_local), 1:numel(net.a_controller_global));
+            obj.DataStorage.t   = [obj.DataStorage.t  , {tidx(:)'}  ];
             obj.DataStorage.X   = [obj.DataStorage.X  , X(:)        ];
             obj.DataStorage.Xcl = [obj.DataStorage.Xcl, Xcl(:)      ];
             obj.DataStorage.Xcg = [obj.DataStorage.Xcg, Xcg(:)      ];
@@ -77,19 +104,6 @@ function [out,obj] = run(obj)
             obj.DataStorage.I   = [obj.DataStorage.I  , I(:)        ];
             obj.DataStorage.sol = [obj.DataStorage.sol, {sol}       ];
             obj.DataStorage.u   = [obj.DataStorage.u  , {obj.ufunc} ];
-
-
-        % 次のフェーズの初期値をセット
-            obj.initial.x   = tools.cellfun(@(c) c(:,end), X  );
-            obj.initial.xcl = tools.cellfun(@(c) c(:,end), Xcl);
-            obj.initial.xcg = tools.cellfun(@(c) c(:,end), Xcg);
-            obj.initial.V   = tools.cellfun(@(c) c(:,end), V  );
-            obj.initial.I0const(obj.I0const_bus) = tools.arrayfun(@(i) Vvir{i}(:,end), obj.I0const_bus);
-            obj.initial.V0const(obj.V0const_bus) = tools.arrayfun(@(i)    I{i}(:,end), obj.V0const_bus);
-
-
-        % このフェーズのシミュレーションの最終時間を記録 %%%%%%%%%%%%%%%%%%%%%%%%%%
-            obj.LastTime = sol.x(end);
 
     end
 

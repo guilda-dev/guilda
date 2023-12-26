@@ -5,35 +5,33 @@ function [out,obj] = export_out(obj)
     
     outdata = struct();
     
-    outdata.t = data.t;
-    
     outdata.X   = organize(data.X  );
     outdata.V   = organize(data.V  );
     outdata.I   = organize(data.I  );
+    outdata.t   = organize(data.t  );
     
     outdata.Xcon = struct();
     outdata.Xcon.local  = organize(data.Xcl);
     outdata.Xcon.global = organize(data.Xcg);
    
-    Umac = tools.cellfun(@(b) zeros(numel(data.t),b.component.get_nu), net.a_bus);
+    Umac = tools.cellfun(@(b) zeros(numel(horzcat(data.t{:})),b.component.get_nu), net.a_bus);
 
     outdata.Ucon = struct();
-    [outdata.Ucon.global, Umac] = calc_Ucon(net.a_controller_global, outdata, Umac, 'global');
-    [outdata.Ucon.local , Umac] = calc_Ucon(net.a_controller_local , outdata, Umac, 'local' );
+    [outdata.Ucon.global, Umac] = calc_Ucon_global(net.a_controller_global, outdata, Umac, 'global');
+    [outdata.Ucon.local, Umac] = calc_Ucon_local(net.a_controller_local , outdata, Umac, 'local' );
 
-    Uuser = tools.cellfun(@(b) tools.cellfun(@(s) zeros(numel(s.x),b.component.get_nu),data.sol), net.a_bus);
+    Uuser = tools.cellfun(@(b) tools.arrayfun(@(is) zeros(numel(data.t{is}),b.component.get_nu),1:numel(data.sol)), net.a_bus);
     time  = cell(numel(data.sol),1);
     for  is = 1:numel(data.sol)
-        sol  = data.sol{is};
         u    = data.u{is};
         for uid = 1:numel(u)
             ui = u(uid);
-            uval = tools.harrayfun(@(t) ui.function(t), sol.x);
+            uval = tools.harrayfun(@(t) ui.function(t), data.t{is});
             for idx = 1:numel(ui.index)
                 Uuser{ui.index(idx)}{is} = Uuser{ui.index(idx)}{is} + uval(ui.logimat(:,idx),:).';
             end
         end
-        time{is} = sol.x(:);
+        time{is} = data.t{is}(:);
     end
 
     outdata.t      = vertcat(time{:});
@@ -82,7 +80,7 @@ function out = organize(mat_data)
     end
 end
 
-function [ucon, uall] = calc_Ucon(a_con, outdata, umac, type)
+function [ucon, uall] = calc_Ucon_global(a_con, outdata, umac, type)
     ucon = cell(numel(a_con),1);
     uall = umac;
     for i = 1:numel(a_con)
@@ -102,3 +100,41 @@ function [ucon, uall] = calc_Ucon(a_con, outdata, umac, type)
         ucon{i} = horzcat(u{:});
     end
 end
+function [ucon, uall] = calc_Ucon_local(a_con, outdata, umac, type)
+    ucon = cell(numel(a_con),1);
+    uall = umac;
+    for i = 1:numel(a_con)
+        c = a_con{i};
+        in = c.index_input;
+        ob = c.index_observe;
+        u  = c.get_input_vectorized(       ...
+                    outdata.t             ,...
+                    outdata.Xcon.(type){i},...
+                    outdata.X(ob)         ,...
+                    outdata.V(ob)         ,...
+                    outdata.I(ob)         ,...
+                    umac(ob)          );
+        for j = 1:numel(in)
+           uall{in(j)} = uall{in(j)} + u{j};
+        end
+        ucon{i} = horzcat(u{:});
+    end
+end
+%{
+function [ucon, uall] = calc_Ucon_local(a_con, outdata, umac, type)
+    ucon = cell(numel(a_con),1);
+    uall = umac;
+    for i = 1:numel(a_con)
+        c = a_con{i};
+        %in = c.index_input;
+        ob = c.index_observe;
+        ucon{i}  = c.get_input_vectorized(       ...
+                    outdata.t             ,...
+                    outdata.Xcon.(type){i},...
+                    outdata.X(ob)         ,...
+                    outdata.V(ob)         ,...
+                    outdata.I(ob)         ,...
+                    umac(ob)          );
+    end
+end
+%}

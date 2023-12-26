@@ -14,9 +14,9 @@ classdef IEEE9bus_ < power_network
         function obj = IEEE9bus_(gen_model)
         
         if nargin<1
-            gen_model = 'component.generator.two_axis';
+            gen_model = 'component.generator.one_axis';
         end
-        netname = 'IEEE9bus_Vitor';
+        netname = 'IEEE9bus_';
 
         omega0 = 60*2*pi;
         tbus        = readtable(['+network/+',netname,'/bus.csv']);
@@ -82,8 +82,8 @@ classdef IEEE9bus_ < power_network
                 g = generator(machinery(idx, :));
                 ex = excitation(excitation{:, 'No_bus'}==i, :);
                 g.set_avr(component.generator.avr.sadamoto2019(ex));
-                % p = pss_data(pss_data{:, 'No_bus'}==i, :);
-                % % g.set_pss(pss(p));
+                p = pss_data(pss_data{:, 'No_bus'}==i, :);
+                g.set_pss(component.generator.pss.base(p));
                 % g.set_pss(pss_IEEE_PSS1(p));
             end
             obj.a_bus{end}.set_component(g)
