@@ -1,7 +1,7 @@
 function net = build(filepath)
 
     if nargin < 1
-        filepath = [uigetdir(fullfile(pwd,'_object','+network'),'Choose network data'),filesep];
+        filepath = [uigetdir(fullfile(pwd,'_GUILDA','_object','+network'),'Choose network data'),filesep];
     else
         filepath = check_filepath(filepath);
     end
@@ -67,11 +67,11 @@ function filepath = check_filepath(filepath)
     if ~isfolder(filepath)
         if isfolder(fullfile(pwd,filepath))
             filepath = fullfile(pwd,filepath);
-        elseif isfolder(fullfile(pwd,'_object','+network',filepath))
-            filepath = fullfile(pwd,'_object','+network',filepath);
+        elseif isfolder(fullfile(pwd,'_GUILDA','_object','+network',filepath))
+            filepath = fullfile(pwd,'_GUILDA','_object','+network',filepath);
 
-        elseif isfolder(fullfile(pwd,'_object',filepath))
-            filepath = fullfile(pwd,'_object',filepath);
+        elseif isfolder(fullfile(pwd,'_GUILDA','_object',filepath))
+            filepath = fullfile(pwd,'_GUILDA','_object',filepath);
         else
             error("filepath couldn't be identified")
         end
