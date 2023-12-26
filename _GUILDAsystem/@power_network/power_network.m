@@ -91,7 +91,7 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
         function x0 = get.x0_controller_global(obj)
             x0 = tools.vcellfun(@(c) c.get_x0, obj.a_controller_global);
         end
-    
+
 
 
         % 母線の追加・削除に関するメソッド
@@ -106,6 +106,10 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
         end
 
         function remove_bus(obj,index)
+            if nargin<2
+                index = 1:numel(obj.a_bus);
+            end
+            obj.remove_branch(index,'bus')
             obj.a_bus(index) = [];
             arrayfun(@(i) obj.a_bus{i}.setprop('index',i), 1:numel(obj.a_bus));
         end
@@ -127,8 +131,21 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
             obj.a_branch = [obj.a_branch,branch];
         end
 
-        function remove_branch(obj,index)
-            obj.a_branch(index) = [];
+        function remove_branch(obj,index,type)
+            if nargin<2
+                index = 1:numel(obj.a_branch);
+            end
+            if nargin<3
+                type = 'branch';
+            end
+            switch type
+                case 'branch'   %typeが'branch'なら指定されたindexのブランチを削除
+                    obj.a_branch(index) = [];
+                case 'bus'      %typeが'bus'なら指定されたindexの母線と接続するブランチを削除
+                    func = @(br) ismember(br.from,index) || ismember(br.to,index);
+                    idx  = tools.vcellfun(@(br) func(br), obj.a_branch);
+                    obj.a_branch(idx) = [];
+            end
             arrayfun(@(i) obj.a_branch{i}.setprop('index',i), 1:numel(obj.a_branch));
         end
 

@@ -37,6 +37,8 @@ function address = DNS(domain)
                 address = 'component.generator.two_axis';
             case 'generator_classical'
                 address = 'component.generator.classical';
+            case 'generator_park'
+                address = 'component.generator.park';
 
         % 負荷モデル
             case 'load_impedance'

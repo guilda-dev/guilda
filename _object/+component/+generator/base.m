@@ -7,8 +7,27 @@ classdef base < component
     end
 
     methods
-        function obj =  base()
+        function obj =  base(parameter)
             obj.Tag = 'Gen';
+
+            if istable(parameter)
+                obj.parameter = parameter;
+                
+            elseif isstruct(parameter)
+                obj.parameter = struct2table(parameter);
+
+            elseif ischar(parameter) || isstring(parameter)
+                parameter = char(parameter);
+                dataset = readtable('_object/+component/+generator/_default_para.csv');
+                switch parameter
+                    case 'NGT2'
+                        obj.parameter = dataset(1,:);
+                    case 'NGT6'
+                        obj.parameter = dataset(2,:);
+                    case 'NGT8'
+                        obj.parameter = dataset(3,:);
+                end
+            end
         end
         
         function set_avr(obj, avr)

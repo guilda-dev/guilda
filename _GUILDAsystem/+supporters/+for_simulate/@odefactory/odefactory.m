@@ -21,6 +21,8 @@ classdef odefactory < handle
         LastTime
         DataStorage = struct('t',[],'X',[],'Xcl',[],'Xcg',[],'V',[],'I',[],'sol',[],'u',[]);
         network                % << power_networkクラス
+
+        sampling_time   % シミュレーション結果のサンプリング時間
     end
 
 
@@ -44,9 +46,6 @@ classdef odefactory < handle
         GoNext   = false;   % このプロパティがtrueになると現在の最終値を初期値として再シミュレーション
 
         do_retry            % odeソルバーが警告により途中停止した場合に再施行するかどうかを指定
-
-        start_time          % シミュレーション開始時に現実時間を記録
-        time_limit          % シミュレーションを停止させる時間を指定(現実時間)
 
         odeoptions          % odeソルバーで使用するオプション
 
