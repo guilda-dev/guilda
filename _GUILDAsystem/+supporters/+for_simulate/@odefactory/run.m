@@ -1,6 +1,6 @@
 function [out,obj] = run(obj)
     net = obj.network;
-    
+
     % タグのリセット >> ToBeStopがtrueになったらシミュレーションを中断する。
         obj.ToBeStop = false;
 
@@ -28,6 +28,9 @@ function [out,obj] = run(obj)
                 obj.set_parameter;                  
             % 入力データをinputメソッド内のクラスから生成
                 obj.ufunc = obj.input.get_ufunc(t0);
+
+                cellfun(@(c) c.update_idx, net.a_controller_local);
+                cellfun(@(c) c.update_idx, net.a_controller_global);
 
 
         % ソルバーのオプションの設定 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
