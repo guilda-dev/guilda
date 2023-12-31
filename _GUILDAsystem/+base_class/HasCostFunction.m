@@ -10,9 +10,9 @@ classdef HasCostFunction < base_class.handleCopyable
     methods
 
         % エネルギー関数を定義する際のチェックメソッド
-        function set.CostFunction(obj,value)
+        function set.CostFunction(obj,func)
             obj.usage_function(func);
-            obj.grid_code = value;
+            obj.CostFunction = func;
         end
 
         % エネルギー関数の時系列データを計算するメソッド
