@@ -22,24 +22,12 @@ classdef impedance < component.load.abstract
             Veq = obj.V_equilibrium;
             Ieq = obj.I_equilibrium;
             obj.Y = Ieq/Veq;
-            switch obj.porttype
-                case 'value'
-                    obj.u_equilibrium = [real(obj.Y);imag(obj.Y)];
-                case 'rate'
-                    obj.u_equilibrium = [1;1];
-            end
+            obj.u_equilibrium = [real(obj.Y);imag(obj.Y)];
         end
 
         function [dx, constraint] = get_dx_constraint(obj, ~, ~, V, I, u)
             dx = zeros(0, 1);
-            switch obj.porttype
-                case 'value'
-                    I_ = [u(1),-u(2);u(2),u(1)]*V;
-                case 'rate'
-                    Yr = real(obj.Y)*u(1);
-                    Yi = imag(obj.Y)*u(2);
-                    I_ = [Yr,-Yi;Yi,Yr]*V;
-            end
+            I_ = [u(1),-u(2);u(2),u(1)]*V;
             constraint = I-I_;
         end
         
@@ -48,12 +36,7 @@ classdef impedance < component.load.abstract
         end
 
         function u_name = naming_port(obj)
-            switch obj.porttype
-                case 'value'
-                    u_name = {'Conductance','Susceptance'};
-                case 'rate'
-                    u_name = {'ConductanceRate','SusceptanceRate'};
-            end
+            u_name = {'Conductance','Susceptance'};
         end
 
         % function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, ~, V)

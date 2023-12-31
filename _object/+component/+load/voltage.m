@@ -12,22 +12,12 @@ classdef voltage < component.load.abstract
     methods
         function set_equilibrium(obj)
             obj.x_equilibrium = zeros(0,1);
-            switch obj.porttype
-                case 'rate'
-                    obj.u_equilibrium = [1;1];
-                case 'value'
-                    obj.u_equilibrium = obj.V_st;
-            end
+            obj.u_equilibrium = obj.V_st;
         end
         
         function [dx, constraint] = get_dx_constraint(obj, t, x, V, I, u)
             dx = zeros(0, 1);
-            switch obj.porttype
-                case 'rate'
-                    constraint = V - obj.V_st .* u(:);
-                case  'value'
-                    constraint = V - u(:);
-            end
+            constraint = V - u(:);
         end
 
         function nu = get_nu(~)
@@ -35,12 +25,7 @@ classdef voltage < component.load.abstract
         end
         
         function u_name = naming_port(obj)
-            switch obj.porttype
-                case 'value'
-                    u_name = {'Vreal','Vimag'};
-                case 'rate'
-                    u_name = {'VrealRate','VimagRate'};
-            end
+            u_name = {'Vreal','Vimag'};
         end
         
     end

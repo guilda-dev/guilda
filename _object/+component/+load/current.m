@@ -12,22 +12,12 @@ classdef current < component.load.abstract
     methods
         function set_equilibrium(obj, ~, ~)
             obj.x_equilibrium = zeros(0, 1);
-            switch obj.porttype
-                case 'rate'
-                    obj.u_equilibrium = [1;1];
-                case 'value'
-                    obj.u_equilibrium = obj.I_st;
-            end
+            obj.u_equilibrium = obj.I_st;
         end
         
         function [dx, constraint] = get_dx_constraint(obj, ~, ~, ~, I, u)
             dx = zeros(0, 1);
-            switch obj.porttype
-                case 'rate'
-                    constraint = I - obj.I_st .* u(:);
-                case 'value'
-                    constraint = I - u(:);
-            end
+            constraint = I - u(:);
         end
         
         function nu = get_nu(~)
@@ -35,12 +25,7 @@ classdef current < component.load.abstract
         end
 
         function u_name = naming_port(obj)
-            switch obj.porttype
-                case 'value'
-                    u_name = {'Ireal','Iimag'};
-                case 'rate'
-                    u_name = {'IrealRate','IimagRate'};
-            end
+            u_name = {'Ireal','Iimag'};
         end
         
     end

@@ -18,23 +18,12 @@
             obj.x_equilibrium = zeros(0, 1);
             PQ = obj.V_equilibrium * conj(obj.I_equilibrium);
             obj.PQ_st = [real(PQ); imag(PQ)];
-            switch obj.porttype
-                case 'rate'
-                    obj.u_equilibrium = [1;1];
-                case 'value'
-                    obj.u_equilibrium = obj.PQ_st;
-            end
+            obj.u_equilibrium = obj.PQ_st;
         end
         
         function [dx, constraint] = get_dx_constraint(obj, t, x, V, I, u)
             dx = zeros(0, 1);
-            switch obj.porttype
-                case 'rate'
-                    PQ = obj.PQ_st .* u(:);
-                    PQ = PQ(1)+1j*PQ(2);
-                case 'value'
-                    PQ = u(1) + 1j*u(2);
-            end
+            PQ = u(1) + 1j*u(2);
             V = V(1)+1j*V(2);
             I_ = PQ/V;
             constraint = I-[real(I_); -imag(I_)];
@@ -45,12 +34,7 @@
         end
 
         function u_name = naming_port(obj)
-            switch obj.porttype
-                case 'value'
-                    u_name = {'RealPower','ReactivePower'};
-                case 'rate'
-                    u_name = {'RealPowerRate','ReactivePowerRate'};
-            end
+            u_name = {'RealPower','ReactivePower'};
         end
         
         function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, x, V)
