@@ -139,7 +139,7 @@ classdef DataProcessing < dynamicprops & matlab.mixin.CustomDisplay
             %ー実行方法ー
             %>> obj.UIanime(net)
             %
-            supporters.for_simulate.sol.UIanime(obj,net);
+            supporters.for_simulate.solfactory.UIanime(obj,net);
         end
 
         anime(obj,net,varargin)

@@ -28,6 +28,10 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
         V_st
         I_st
     end
+    
+    properties
+        GraphCoordinate = [];
+    end
 
     
     methods(Abstract)

@@ -115,7 +115,8 @@ classdef map < handle
                 obj.a_component = tools.arrayfun(@(i) supporters.for_graph.elements.graph_node(obj.Graph,i+n_bus,obj,i,c{i}.component), (1:n_bus)');
                 obj.a_branch    = tools.arrayfun(@(i) supporters.for_graph.elements.graph_edge(obj.Graph,Edge_idx(i)     ,obj,i), (1:n_br )');
                 obj.a_busline   = tools.arrayfun(@(i) supporters.for_graph.elements.graph_edge(obj.Graph,Edge_idx(i+n_br),obj,i), (1:n_bus)');
-            
+ 
+                obj.adapt_GraphCoordinate;
         end
 
         function initialize(obj)
@@ -129,6 +130,7 @@ classdef map < handle
             cellfun(@(c) set(c,'marker', supporters.for_graph.function.marker.subject2CompType(c.object)), obj.a_component)
 
             not_empty = tools.vcellfun(@(b) ~isa(b.component,'component.empty'), obj.net.a_bus);
+
             cellfun(@(c) set(c,'ZData' , sign(culcP(c.object))), obj.a_component(not_empty));
             cellfun(@(c) set(c,'size' , 20), obj.a_component);
             cellfun(@(c) set(c,'color' , supporters.for_graph.function.Color.subject2CompType(c.object)), obj.a_component);
@@ -142,6 +144,7 @@ classdef map < handle
             view(obj.Axes,0,50)
             obj.ZLim = 3;
             axis(obj.Axes,'off')
+
         end
 
         function remove_margin(obj)
@@ -183,6 +186,18 @@ classdef map < handle
             for i = 1:numel(obj.net.a_bus)
                 c = obj.net.a_bus{i}.component;
                 obj.a_component{i} = supporters.for_graph.function.Color.subject2CompType(c);
+            end
+        end
+
+        %クラスのGraphCoordinateプロパティに応じて座標を移動させる
+        function adapt_GraphCoordinate(obj)
+            for c = [obj.a_component(:);obj.a_bus(:)]'
+                comp = c{1};
+                ax = comp.object.GraphCoordinate;
+                if ~isempty(ax)
+                    comp.XData = ax(1);
+                    comp.YData = ax(2);
+                end
             end
         end
 

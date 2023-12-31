@@ -24,18 +24,22 @@ function net = build(filepath)
             case {'slack','bus_slack',1}
                 V_abs = Tab_bus{i, 'V_abs'};
                 V_angle = Tab_bus{i, 'V_angle'};
-                net.add_bus(bus.slack(V_abs, V_angle, shunt));
+                bus_ = bus.slack(V_abs, V_angle, shunt);
                 
             case {'PV','bus_PV',2}
                 V_abs = Tab_bus{i, 'V_abs'};
                 P = Tab_bus{i, 'P_gen'};
-                net.add_bus(bus.PV(P, V_abs, shunt));
+                bus_ = bus.PV(P, V_abs, shunt);
                 
             case {'PQ','bus_PQ',3}
                 P = Tab_bus{i, 'P_load'};
                 Q = Tab_bus{i, 'Q_load'};
-                net.add_bus(bus.PQ(-P, -Q, shunt));
+               bus_ = bus.PQ(-P, -Q, shunt);
         end
+        if all(ismember({'GraphX','GraphY'},Tab_bus.Properties.VariableNames))
+            bus_.GraphCoordinate = Tab_bus{i,{'GraphX','GraphY'}};
+        end
+        net.add_bus(bus_);
     end
     
 % define branch class
