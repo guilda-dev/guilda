@@ -22,7 +22,6 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
 
     properties(SetAccess = protected)
         system_matrix    
-        InputType = 'Add';
     end
 
     properties
@@ -30,6 +29,10 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
         get_dx_con_func
     end
 
+    properties(SetAccess = protected)
+        InputType = 'Add';
+        u_func = @(obj,u) obj.u_equilibrium + u;
+    end
     
     properties(Access=protected,Dependent)
         V_st
@@ -196,27 +199,17 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
             switch val
                 case {'rate' ,'Rate', 1}
                     obj.InputType = 'Rate';
+                    obj.u_func = @(obj,u) diag(obj.u_equilibrium) * (1+u);
                 case {'add','Add',2}
                     obj.InputType = 'Add';
+                    obj.u_func = @(obj,u) obj.u_equilibrium + u;
                 case {'value','Value',3}
                     obj.InputType = 'Value';
+                    obj.u_func = @(obj,u) u;
                 otherwise
-                    error('porttype must be either "rate" or "value".')
+                    error('porttype must be "add","rate","value".')
             end
             obj.editted
-        end
-
-        function uout = convert_u(obj,u)
-            u
-            obj.u_equilibrium
-            switch obj.InputType
-                case 'Rate'
-                    uout = diag(obj.u_equilibrium) * (1+u);
-                case 'Add'
-                    uout = obj.u_equilibrium + u;
-                case 'Value'
-                    uout = u;
-            end
         end
         
         function val = usage_function(obj,func)

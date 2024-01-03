@@ -1,7 +1,12 @@
 classdef input < supporters.for_simulate.options.Abstract
 
+    properties
+        func_struct   % 入力信号のデータを格納する構造体
+    end
+    
     properties(Access=private)
         method
+        all_Uzeros    % 各機器の入力ポート数に従った零行列のcell配列を定義しておく
     end
 
     methods
@@ -19,6 +24,7 @@ classdef input < supporters.for_simulate.options.Abstract
                end
             end
             obj.add(t,'index',uidx,'u',u);
+            obj.all_Uzeros = tools.cellfun(@(b) zeros(b.component.get_nu,1), obj.network.a_bus);
         end
 
         function add(obj,set_t,varargin)
@@ -79,24 +85,29 @@ classdef input < supporters.for_simulate.options.Abstract
         end
         
         %% simulation中に使用するメソッド
-            function  udata = get_ufunc(obj,tnow)
-                ndata = numel(obj.data);
-                utemp = cell(ndata,1);
-                for i = 1:ndata
-                    d = obj.data(i);
-                    if d.is_now
-                        if isa(d.function,'function_handle')
-                            func = d.function;
-                        else
-                            func = make_function(tnow, d.time, d.u, d.method);
-                        end
-                        utemp{i} = struct(          ...
-                               'index',    d.index ,...
-                             'logimat',  d.logimat ,...
-                            'function',       func );
+            function Uinput = get_u(obj,t)
+                Uinput = obj.all_Uzeros;
+                for i = 1:numel(obj.func_struct)
+                    ui = obj.ufunc(i);
+                    uval = ui.function(t);
+                    for j = 1:numel(ui.index)
+                        val = uval(ui.logimat(:,j));
+                        Uinput{ui.index(j)} = Uinput{ui.index(j)} + val;
                     end
                 end
-                udata = vertcat(utemp{:});
+            end
+
+            function Uinput = get_uvec(obj,tvec)
+                tvec = zeros(1,numel(tvec));
+                Uinput = tools.cellfun(@(c) c*tvec, obj.all_Uzeros);
+                for i = 1:numel(obj.func_struct)
+                    ui = obj.ufunc(i);
+                    uval = tools.harrayfun(@(t) ui.function(t), tvec);
+                    for j = 1:numel(ui.index)
+                        val = uval(ui.logimat(:,j));
+                        Uinput{ui.index(j)} = Uinput{ui.index(j)} + val;
+                    end
+                end
             end
                 
             function idx = get_bus_list(obj)
@@ -119,13 +130,35 @@ classdef input < supporters.for_simulate.options.Abstract
             end
             
             function set_time(obj,t)
-                for i = 1:numel(obj.data)
+                
+                ndata = numel(obj.data);
+
+                for i = 1:ndata
                     if t == obj.data(i).time(1)
                         obj.data(i).is_now = true;
                     elseif t == obj.data(i).time(end)
                         obj.data(i).is_now = false;
                     end
                 end
+
+                for i = 1:ndata
+                    d = obj.data(i);
+                    if d.is_now
+                        if isa(d.function,'function_handle')
+                            func = d.function;
+                        else
+                            func = make_function(tnow, d.time, d.u, d.method);
+                        end
+                        udata(i) = struct(          ...
+                               'index',    d.index ,...
+                             'logimat',  d.logimat ,...
+                            'function',       func );
+                    end
+                end
+                if ndata==0
+                    udata = [];
+                end
+                obj.func_struct = udata;
             end
     
             function op = export_option(obj)
