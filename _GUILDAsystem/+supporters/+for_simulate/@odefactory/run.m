@@ -73,9 +73,6 @@ function [out,obj] = run(obj)
             obj.initial.V   = tools.cellfun(@(c) c(:), V  );
             obj.initial.I0const(obj.I0const_bus) = tools.arrayfun(@(i) Vvir{i}(:), obj.I0const_bus);
             obj.initial.V0const(obj.V0const_bus) = tools.arrayfun(@(i)    I{i}(:), obj.V0const_bus);
-            
-        % このフェーズのシミュレーションの最終時間を記録 %%%%%%%%%%%%%%%%%%%%%%%%%%
-            obj.LastTime = sol.x(end);
 
         % 微分方程式の解をDataStorageに格納 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             if ~strcmp(obj.sampling_time,'auto')
@@ -93,15 +90,39 @@ function [out,obj] = run(obj)
                 response = sol.y;
             end
 
-            [X,Xcl,Xcg,V,I,~] = obj.expand_Xode(response, 1:numel(net.a_bus), 1:numel(net.a_controller_local), 1:numel(net.a_controller_global));
-            obj.DataStorage.t   = [obj.DataStorage.t  , {tidx(:)'}  ];
-            obj.DataStorage.X   = [obj.DataStorage.X  , X(:)        ];
-            obj.DataStorage.Xcl = [obj.DataStorage.Xcl, Xcl(:)      ];
-            obj.DataStorage.Xcg = [obj.DataStorage.Xcg, Xcg(:)      ];
-            obj.DataStorage.V   = [obj.DataStorage.V  , V(:)        ];
-            obj.DataStorage.I   = [obj.DataStorage.I  , I(:)        ];
-            obj.DataStorage.sol = [obj.DataStorage.sol, {sol}       ];
-            obj.DataStorage.u   = [obj.DataStorage.u  , {obj.ufunc} ];
+            [X,Xcl,Xcg,V,I,~]   = obj.expand_Xode(response, 1:numel(net.a_bus), 1:numel(net.a_controller_local), 1:numel(net.a_controller_global));
+            Uin = obj.input.get_uvec(tidx);
+            [Ucg, Usum] = calc_Ucon(net.a_controller_global, tidx, Xcl, X, V, I, Uin );
+            [Ucl, Usum] = calc_Ucon(net.a_controller_local , tidx, Xcg, X, V, I, Usum);
+            Uall = tools.arrayfun(@(i) net.a_bus{i}.component.u_func(net.a_bus{i}.component,Usum{i}), 1:numel(Usum));
+
+            obj.DataStorage.t   = [obj.DataStorage.t   , {tidx(:)'}];
+            obj.DataStorage.X   = [obj.DataStorage.X   , X(:)      ];
+            obj.DataStorage.Xcl = [obj.DataStorage.Xcl , Xcl(:)    ];
+            obj.DataStorage.Xcg = [obj.DataStorage.Xcg , Xcg(:)    ];
+            obj.DataStorage.V   = [obj.DataStorage.V   , V(:)      ];
+            obj.DataStorage.I   = [obj.DataStorage.I   , I(:)      ];
+            obj.DataStorage.sol = [obj.DataStorage.sol , {sol}     ];
+            obj.DataStorage.uin = [obj.DataStorage.uin , Uin(:)    ];
+            obj.DataStorage.ucg = [obj.DataStorage.ucg , Ucg(:)    ];
+            obj.DataStorage.ucl = [obj.DataStorage.ucl , Ucl(:)    ];
+            obj.DataStorage.uall= [obj.DataStorage.uall, Uall(:)   ];
+
+            try %指定verが旧バージョン(=1)の場合に出力する必要のあるデータを保存しておく
+                id = load('_GUILDAsystem/_version_support/version_id.mat');
+                if id.ver == 1
+                    obj.DataStorage.simulated_bus = [obj.DataStorage.simulated_bus, {obj.simulated_bus}];
+                    obj.DataStorage.fault_bus     = [obj.DataStorage.fault_bus,{unique(union(obj.additional_V0bus(:)',obj.fault.get_bus_list),'sorted')}];
+                    obj.DataStorage.Ymat_reproduce= [obj.DataStorage.Ymat_reproduce,{obj.Vmat_reproduce}];
+                    obj.DataStorage.linear        = [obj.DataStorage.linear, net.linear];
+                end
+            catch 
+            end
+            
+
+        % このフェーズのシミュレーションの最終時間を記録 %%%%%%%%%%%%%%%%%%%%%%%%%%
+            % これによりinput,parallel,faultクラスのcurrent_timeが更新され各母線の接続状況がアップデートされる。
+            obj.LastTime = sol.x(end);
 
     end
 
@@ -121,4 +142,19 @@ function out = get_next_tend(obj)
     i = obj.input.get_next_tend(t);
     p = obj.parallel.get_next_tend(t);
     out = min([f,i,p,obj.StopTime,obj.time(end)]);
+end
+
+
+function [Uout,Usum] = calc_Ucon(con, t, Xcon, Xmac, V, I, U)
+    Uout = cell(numel(con),1);
+    Usum = U;
+    for i = 1:numel(con)
+        in = con{i}.index_input;
+        ob = con{i}.index_observe;
+        u  = con{i}.get_input_vectorized( t, Xcon{i}, Xmac(ob), V(ob), I(ob), U(ob) );
+        for j = 1:numel(in)
+           Usum{in(j)} = Usum{in(j)} + u{j};
+        end
+        Uout{i} = vertcat(u{:});
+    end
 end
