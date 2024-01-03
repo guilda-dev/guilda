@@ -168,6 +168,25 @@ classdef odefactory < handle
 
     end
 
+
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % ODEソルバーのEvents/OutputFcnに代入する関数 %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    methods(Access=protected)
+        function [value,isterminal,direction] = Fcn_Event(obj,~,~)
+            isterminal = 1;
+            direction  = 0;
+            value = ~obj.GoNext;
+        end
+
+        function out = Fcn_Output(obj,t,x,flag)
+            obj.progress.OutputFcn(t,x,flag);
+            obj.response.OutputFcn(t,x,flag);
+            out = [];
+        end
+    end
+
 end
 
 

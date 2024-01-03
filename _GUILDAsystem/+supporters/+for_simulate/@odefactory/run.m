@@ -20,7 +20,7 @@ function [out,obj] = run(obj)
             % 前回の最終時刻を本フェーズの開始時刻とする
                 t0 = obj.LastTime;
             % 本フェーズの終了時刻を取得
-                te = obj.get_next_tend; 
+                te = get_next_tend(obj); 
 
 
         % 微分方程式内で使用する各パラメータの計算 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -115,4 +115,12 @@ function con = fconst(var, func, t, xall, const_idx)
     xall(const_idx) = var;
     dx_all = func(t,xall);
     con  = dx_all(const_idx);
+end
+
+function out = get_next_tend(obj)
+    t = obj.LastTime;
+    f = obj.fault.get_next_tend(t);
+    i = obj.input.get_next_tend(t);
+    p = obj.parallel.get_next_tend(t);
+    out = min([f,i,p,obj.StopTime,obj.time(end)]);
 end
