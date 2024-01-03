@@ -4,19 +4,25 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
 % 新しい機器モデルを実装する場合はこのcomponentクラスを継承すること。
     
 
-    
+    properties(Dependent)
+        index
+        omega0
+        connected_bus
+    end
+
     properties(SetAccess = protected)
-        system_matrix
         x_equilibrium
         u_equilibrium
-        InputType = 'Add';
     end
 
     properties(Dependent)
         V_equilibrium
         I_equilibrium
-        omega0
-        connected_bus
+    end
+
+    properties(SetAccess = protected)
+        system_matrix    
+        InputType = 'Add';
     end
 
     properties
@@ -55,6 +61,10 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
             end
 
         % Get method
+            function i = get.index(obj)
+                i = obj.parents{1}.index;
+            end
+            
             function b = get.connected_bus(obj)
                 b = obj.parents{1};
             end
@@ -194,6 +204,19 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
                     error('porttype must be either "rate" or "value".')
             end
             obj.editted
+        end
+
+        function uout = convert_u(obj,u)
+            u
+            obj.u_equilibrium
+            switch obj.InputType
+                case 'Rate'
+                    uout = diag(obj.u_equilibrium) * (1+u);
+                case 'Add'
+                    uout = obj.u_equilibrium + u;
+                case 'Value'
+                    uout = u;
+            end
         end
         
         function val = usage_function(obj,func)
