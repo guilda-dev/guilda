@@ -21,7 +21,7 @@ classdef local_LQR < controller
     methods
 
         function obj = local_LQR(net, idx, Q, R, uidx)
-            obj@controller(idx,idx)
+            obj@controller(net,idx,idx)
             obj.set_index(idx);
             obj.network = net;
             c = net.a_bus{idx}.component;
