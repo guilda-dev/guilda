@@ -3,9 +3,9 @@ classdef GFMI_droop < component.GFM.converter.main
         function obj = GFMI_droop()
             obj@component.GFM.converter.main()
 
-            obj.reference_model = 'droop'     ;
-            obj.dc_source       = 'Delay1order'  ;
-            obj.vsc_controller  = 'low_level_cascade';
+            obj.set_reference_model = 'droop'     ;
+            obj.set_dc_source       = 'Delay1order'  ;
+            obj.set_vsc_controller  = 'low_level_cascade';
         end
     end
 end

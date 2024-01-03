@@ -14,11 +14,9 @@ classdef one_axis < component.generator.base
             arguments
                 parameter = 'NGT2';
             end
-            parameter = component.generator.get_default_parameter(parameter);
-            if isstruct(parameter)
-                parameter = struct2table(parameter);
-            end
-            obj.parameter = parameter(:, {'Xd', 'Xd_p', 'Xq', 'Td_p', 'M', 'D'});
+            obj@component.generator.base(parameter)
+            
+            obj.parameter = obj.parameter(:, {'Xd', 'Xd_p', 'Xq', 'Td_p', 'M', 'D'});
             obj.set_avr( component.generator.avr.base() );
             obj.set_governor( component.generator.governor.base() );
             obj.set_pss( component.generator.pss.base() );
@@ -39,12 +37,21 @@ classdef one_axis < component.generator.base
             u_name = [u_avr,u_pss,u_gov];
         end
         
+        function out = get_nx(obj)
+            out = 3 + obj.avr.get_nx() + obj.pss.get_nx() + obj.governor.get_nx();
+        end
+        
+        function nu = get_nu(obj)
+            nu = obj.avr.get_nu() + obj.pss.get_nu() + obj.governor.get_nu();
+        end
+        
         function [dx, con] = get_dx_constraint(obj, ~, x, V, I, u)
+            
             Xd  = obj.parameter.Xd;
             Xdp = obj.parameter.Xd_p;
             Xq  = obj.parameter.Xq;
             d   = obj.parameter.D;
-            Tdo = obj.parameter.Tdo;
+            Td_p = obj.parameter.Td_p;
             M   = obj.parameter.M;
 
             nx_avr = obj.avr.get_nx();
@@ -94,8 +101,13 @@ classdef one_axis < component.generator.base
             dx = [ddelta; domega; dE; dx_avr; dx_pss; dx_gov];
             
         end
-
+        
+        
         function [x_st,u_st] = get_equilibrium(obj,V,I)
+            if nargin<2
+                V = obj.V_equilibrium;
+                I = obj.I_equilibrium;
+            end
             Vangle = angle(V);
             Vabs =  abs(V);
             Pow = conj(I)*V;
@@ -109,12 +121,114 @@ classdef one_axis < component.generator.base
             Eden = Vabs*sqrt(P^2*Xq^2 + Q^2*Xq^2 + 2*Q*Vabs^2*Xq + Vabs^4);
             E = Enum/Eden;
             Vfd = Xd*E/Xdp - (Xd/Xdp-1)*Vabs*cos(delta-Vangle);
+
             [x_avr,u_avr] = obj.avr.initialize(Vfd, Vabs);
             [x_gov,u_gov] = obj.governor.initialize(P);
             [x_pss,u_pss] = obj.pss.initialize();
 
             x_st = [delta; 0; E; x_avr; x_pss; x_gov];
             u_st = [u_avr; u_pss; u_gov];
+        end
+
+        function [ret, sys_fb, sys_V] = get_sys(obj)
+ 
+            x_st = obj.x_equilibrium;
+            Vst =  tools.complex2vec(obj.V_equilibrium);
+
+            omega_bar = obj.omega0;
+            Xd  = obj.parameter{:, 'Xd'};
+            Xdp = obj.parameter{:, 'Xd_p'};
+            Xq  = obj.parameter{:, 'Xq'};
+            Td_p  = obj.parameter{:, 'Td_p'};
+            M  = obj.parameter{:, 'M'};
+            D  = obj.parameter{:, 'D'};
+            
+            A_swing = [0 omega_bar 0;
+                0 -D/M 0;
+                0 0 0];
+            % u1 = Pmech;
+            % u2 = Vfd;
+            % u3 = Pout
+            % u4 = Vabscos
+            B_swing = [0, 0, 0, 0;
+                1/M, 0, -1/M, 0;
+                0, 1/Td_p, 0, -1/Td_p
+                ];
+            % y = [delta, E]
+            C_swing = eye(3);
+            sys_swing = ss(A_swing, B_swing, C_swing, 0);
+            OutputGroup = struct();
+            OutputGroup.delta = 1;
+            OutputGroup.omega = 2;
+            OutputGroup.E = 3;
+            sys_swing.OutputGroup = OutputGroup;
+            InputGroup = struct();
+            InputGroup.Pmech = 1;
+            InputGroup.Vfd = 2;
+            InputGroup.Pout = 3;
+            InputGroup.Efd_swing = 4;
+            sys_swing.InputGroup = InputGroup;
+            
+            delta = x_st(1);
+            E = x_st(3);
+            
+            dVabscos_dV = [cos(delta), sin(delta)];
+            dVabssin_dV = [sin(delta), -cos(delta)];
+            dIr_dV = -dVabscos_dV*sin(delta)/Xdp + dVabssin_dV*cos(delta)/Xq;
+            dIi_dV =  dVabscos_dV*cos(delta)/Xdp + dVabssin_dV*sin(delta)/Xq;
+            
+            Vabscos = Vst(1)*cos(delta)+Vst(2)*sin(delta);
+            Vabssin = Vst(1)*sin(delta)-Vst(2)*cos(delta);
+            dVabscos = -Vabssin;
+            dVabssin = Vabscos;
+            
+            dEfd = -[dVabscos, 0, dVabscos_dV] * (Xd/Xdp-1) + [0, Xd/Xdp, 0, 0];
+            
+            dIr_dd = (-dVabscos*sin(delta)+(E-Vabscos)*cos(delta))/Xdp + (dVabssin*cos(delta)-Vabssin*sin(delta))/Xq;
+            dIi_dd = (dVabscos*cos(delta)+(E-Vabscos)*sin(delta))/Xdp + (dVabssin*sin(delta)+Vabssin*cos(delta))/Xq;
+            
+            Ist =  [(E-Vabscos)*sin(delta)/Xdp + Vabssin*cos(delta)/Xq;
+                -(E-Vabscos)*cos(delta)/Xdp + Vabssin*sin(delta)/Xq];
+            
+            % (delta, E, V) => (Ir, Ii)
+            KI = [dIr_dd, sin(delta)/Xdp, dIr_dV;
+                dIi_dd, -cos(delta)/Xdp, dIi_dV];
+            
+            dP = Vst'*KI + Ist'*[zeros(2), eye(2)];
+            
+            
+            sys_fb = ss([dP; dEfd; KI]);
+            InputGroup = struct();
+            InputGroup.delta = 1;
+            InputGroup.E = 2;
+            InputGroup.V = 3:4;
+            sys_fb.InputGroup = InputGroup;
+            OutputGroup = struct();
+            OutputGroup.P = 1;
+            OutputGroup.Efd = 2;
+            OutputGroup.I = 3:4;
+            sys_fb.OutputGroup = OutputGroup;
+            
+            Vabs = norm(Vst);
+            
+            sys_V = ss([eye(2); Vst'/Vabs]);
+            sys_V.InputGroup.Vin = 1:2;
+            OutputGroup = struct();
+            OutputGroup.V = 1:2;
+            OutputGroup.Vabs = 3;
+            sys_V.OutputGroup = OutputGroup;
+            
+            sys_avr = obj.avr.get_sys();
+            sys_pss = obj.pss.get_sys();
+            sys_gov = obj.governor.get_sys();
+            G = blkdiag(sys_swing, sys_fb, sys_V, sys_avr, -sys_pss, sys_gov);
+            ig = G.InputGroup;
+            og = G.OutputGroup;
+            feedin = [ig.Pout, ig.Efd, ig.Efd_swing, ig.delta, ig.E, ig.V, ig.Vabs, ig.Vfd, ig.u_avr, ig.omega, ig.omega_governor, ig.Pmech];
+            feedout = [og.P, og.Efd, og.Efd,  og.delta, og.E, og.V, og.Vabs, og.Vfd, og.v_pss, og.omega, og.omega, og.Pmech];
+            I = ss(eye(numel(feedin)));
+            
+            ret = feedback(G, I, feedin, feedout, 1);
         end
     end
 end

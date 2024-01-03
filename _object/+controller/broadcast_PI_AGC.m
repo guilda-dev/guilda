@@ -12,8 +12,12 @@ classdef broadcast_PI_AGC < controller
     properties(SetAccess = private)
         Kp
         Ki
-        K_input
-        K_observe
+        default_K_input
+        default_K_observe
+        K_input     %並列機器の制御対象
+        K_observe   %並列機器の制御対象
+        port_input   = 'Pmech'
+        port_observe = 'omega'
     end
     
     methods
@@ -21,8 +25,17 @@ classdef broadcast_PI_AGC < controller
             obj@controller(u_idx, y_idx);
             obj.Ki = Ki;
             obj.Kp = Kp;
-            obj.K_input   = ones(numel(obj.index_input)  , 1)/numel(obj.index_input);
-            obj.K_observe = ones(numel(obj.index_observe), 1)/numel(obj.index_observe);
+            obj.default_K_input   = ones(numel(u_idx),1);
+            obj.default_K_observe = ones(numel(u_idx),1);
+        end
+
+
+        function initialize(obj)          
+            % 制御値の振り分け(元々broadcast_PI_AGCに書かれていたものを並列を考慮して書き直した)
+            k = obj.default_K_input(ismember(obj.default_index_input, obj.index_input));
+            obj.K_input = k./sum(k);
+            o = obj.default_K_observe(ismember(obj.default_index_observe, obj.index_observe));
+            obj.K_observe   = o/sum(o);
         end
         
         function nx = get_nx(obj)
@@ -32,12 +45,22 @@ classdef broadcast_PI_AGC < controller
         function [dx, u] = get_dx_u(obj, t, x, X, V, I, u_global)
             omega = zeros(numel(X), 1);
             for i = 1:numel(X)
-                omega(i) = X{i}(2);
+                idx_state_ = obj.idx_state{i};
+                if ~isempty(X{i})
+                    omega(i) = X{i}(idx_state_);
+                end
             end
+            %omega = omega(ismember(obj.default_K_observe, obj.index_observe));
+            %omega = omega(obj.index_observe);
             omega_mean = sum(omega.*obj.K_observe(:));
             dx = omega_mean;
-            u = blkdiag(zeros(0, 1), obj.K_input(:)*(obj.Ki*x + obj.Kp*omega_mean))';
-            u = num2cell(u,1);
+            
+            K_ipt = obj.K_input;
+            u     = obj.zero_cell;
+            for i = 1:numel(K_ipt)
+                idx_port_ = obj.idx_port{i};
+                u{i}(idx_port_) = K_ipt(i)*(obj.Ki*x + obj.Kp*omega_mean);
+            end
         end
         
         function [dx, u] = get_dx_u_linear(obj, varargin)
@@ -85,14 +108,14 @@ classdef broadcast_PI_AGC < controller
         end
         function set_K_input(obj,K_input)
             if numel(K_input) == numel(obj.index_input)
-                obj.K_input = K_input;
+                obj.default_K_input = K_input;
             else
                 error('The number of elements in K_input must match the number of elements in index_input.')
             end
         end
         function set_K_observe(obj,K_observe)
             if numel(K_observe) == numel(obj.index_observe)
-                obj.K_observe = K_observe;
+                obj.default_K_observe = K_observe;
             else
                 error('The number of elements in K_input must match the number of elements in index_observe.')
             end

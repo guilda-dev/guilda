@@ -85,12 +85,12 @@ function generate(~,~,edit_name,edit_discription,pop,lang)
 
 
     language = lang.String{lang.Value};
-    text_data = fileread([fullfile(pwd,'+supporters','+for_newclass','template',language,pop.String{pop.Value}),'.txt']);
+    text_data = fileread([fullfile(pwd,'_GUILDA','_GUILDAsystem','+supporters','+for_newclass','template',language,pop.String{pop.Value}),'.txt']);
     text_data = strrep(text_data,'___NAME___',new_name);
     text_data = strrep(text_data,'___DISCRIPTION___',discription);
 
     writelines(text_data,filename)
-    open([fullfile(pwd,'+your_class',new_name),'.m'])
+    open([fullfile(pwd,'_GUILDA','_GUILDAsystem','+your_class',new_name),'.m'])
 end
 
 function [filename,idx] = rename_file(filename)

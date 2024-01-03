@@ -13,10 +13,12 @@ classdef one_axis_with_energy < component.generator.base
     
     methods
         function obj = one_axis_with_energy(parameter)
-            if isstruct(parameter)
-                parameter = struct2table(parameter);
+            arguments
+                parameter = 'NGT2';
             end
-            obj.parameter = parameter(:, {'Xd', 'Xd_prime', 'Xq', 'Tdo', 'M', 'D'});
+            obj@component.generator.base(parameter)
+            
+            obj.parameter = obj.parameter(:, {'Xd', 'Xd_prime', 'Xq', 'Tdo', 'M', 'D'});
             obj.set_avr( component.generator.avr.base() );
             obj.set_governor( component.generator.governor.base() );
             obj.set_pss( component.generator.pss.base() );

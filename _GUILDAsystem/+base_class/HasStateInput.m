@@ -21,7 +21,7 @@ classdef HasStateInput < base_class.handleCopyable
             if numel(name)>n
                 name(n+1:end) = [];
                 warning('the number of variable names exceeds the number of variables')
-                disp([para,' of ',class(obj),' :']); disp(u_name)
+                disp([para,' of ',class(obj),' :']); disp(name)
             elseif numel(name)<n
                 for i = numel(name)+1:n
                     name{i} = [para,num2str(i)];
