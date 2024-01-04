@@ -98,6 +98,14 @@ classdef controller < base_class.HasStateInput & base_class.HasGridCode & base_c
             n = obj.parents{1};
         end
 
+        function set_function(obj,linear)
+            if linear
+                obj.get_dx_u_func = @obj.get_dx_u;
+            else
+                obj.get_dx_u_func = @obj.get_dx_u_linear;
+            end
+        end
+
         function val = usage_function(obj,func)
             bus = obj.network.a_bus;
             x = obj.get_x0;

@@ -206,33 +206,9 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
         % 線形・非線形の切り替え
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function set.linear(obj,linear)
-            if linear
-                for i = 1:numel(obj.a_controller_global)    %#ok
-                    c = obj.a_controller_global{i};         %#ok
-                    c.get_dx_u_func = @c.get_dx_u_linear;
-                end
-                for i = 1:numel(obj.a_controller_local )    %#ok
-                    c = obj.a_controller_local{i};          %#ok
-                    c.get_dx_u_func = @c.get_dx_u_linear;
-                end
-                for i = 1:numel(obj.a_bus)                  %#ok
-                    c = obj.a_bus{i}.component;             %#ok
-                    c.get_dx_con_func = @c.get_dx_constraint_linear;
-                end
-            else
-                for i = 1:numel(obj.a_controller_global)    %#ok
-                    c = obj.a_controller_global{i};         %#ok
-                    c.get_dx_u_func = @c.get_dx_u;
-                end
-                for i = 1:numel(obj.a_controller_local )    %#ok
-                    c = obj.a_controller_local{i};          %#ok
-                    c.get_dx_u_func = @c.get_dx_u;
-                end
-                for i = 1:numel(obj.a_bus)                  %#ok
-                    c = obj.a_bus{i}.component;             %#ok
-                    c.get_dx_con_func = @c.get_dx_constraint;
-                end
-            end
+            cellfun(@(c) c.set_function(linear), obj.a_controller_local)    %#ok
+            cellfun(@(c) c.set_function(linear), obj.a_controller_global)   %#ok
+            cellfun(@(b) b.component.set_function(linear), obj.a_bus)       %#ok
             obj.linear = linear;
         end
 

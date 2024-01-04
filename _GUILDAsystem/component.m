@@ -144,27 +144,28 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
                 if ~ ( all((dx0-dx100)<1e-4) && all((con0-con100)<1e-4) )
                     warning('時変システムであるようです. t=0において近似線形化を実行します.')
                 end
-    
-                    nx = obj.get_nx;
+                    
+                    
+                    M = diag(obj.Mass);
                     % xに関しての近似線形モデル
                     [A,C]   =  split_out(...
                         tools.linearization(...
-                        @(x_) stack_out(@(x_) obj.get_dx_constraint(t, x_, Vst,  Ist,  ust),x_),xst),nx);
+                        @(x_) stack_out(@(x_) obj.get_dx_constraint(t, x_, Vst,  Ist,  ust),x_),xst),M);
                     
                     % Vに関しての近似線形モデル
                     [BV,DV] =  split_out(...
                         tools.linearization(...
-                        @(V_) stack_out(@(V_) obj.get_dx_constraint(t, xst, V_,  Ist,  ust),V_),Vst),nx);
+                        @(V_) stack_out(@(V_) obj.get_dx_constraint(t, xst, V_,  Ist,  ust),V_),Vst),M);
                 
                     % Iに関しての近似線形モデル
                     [BI,DI] = split_out(... 
                         tools.linearization(...
-                        @(I_) stack_out(@(I_) obj.get_dx_constraint(t, xst,  Vst, I_,  ust),I_),Ist),nx);
+                        @(I_) stack_out(@(I_) obj.get_dx_constraint(t, xst,  Vst, I_,  ust),I_),Ist),M);
                     
                     % uに関しての近似線形モデル
                     [B,D]   =  split_out(...
                         tools.linearization(...
-                        @(u_) stack_out(@(u_) obj.get_dx_constraint(t, xst,  Vst,  Ist, u_),u_),ust),nx);
+                        @(u_) stack_out(@(u_) obj.get_dx_constraint(t, xst,  Vst,  Ist, u_),u_),ust),M);
                 
                     R = zeros(obj.get_nx,0);
                     S = zeros(0,obj.get_nx);
@@ -202,17 +203,31 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
             switch val
                 case {'rate' ,'Rate', 1}
                     obj.InputType = 'Rate';
-                    obj.u_func = @(obj,u) diag(obj.u_equilibrium) * (1+u);
                 case {'add','Add',2}
                     obj.InputType = 'Add';
-                    obj.u_func = @(obj,u) obj.u_equilibrium + u;
                 case {'value','Value',3}
                     obj.InputType = 'Value';
-                    obj.u_func = @(obj,u) u;
                 otherwise
                     error('porttype must be "add","rate","value".')
             end
             obj.editted
+        end
+
+        function set_function(obj,linear)
+            if linear
+                obj.get_dx_con_func = @obj.get_dx_constraint_linear;
+                obj.u_func          = @(obj,u) u;
+            else  
+                obj.get_dx_con_func = @obj.get_dx_constraint;
+                switch obj.InputType
+                    case 'Rate'
+                        obj.u_func = @(obj,u) diag(obj.u_equilibrium) * (1+u);
+                    case 'Add'
+                        obj.u_func = @(obj,u) obj.u_equilibrium + u;
+                    case 'Value'
+                        obj.u_func = @(obj,u) u;
+                end
+            end
         end
         
         function [x_st,u_st] = set_equilibrium(obj,V,I)
