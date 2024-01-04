@@ -39,8 +39,9 @@ classdef base < base_class.handleCopyable
             M = eye(obj.get_nx);
         end
         
-        function nx = naming_port(obj)
-            nx = convertStringsToChars("u_gov"+(1:obj.get_nu));
+        function name = naming_port(obj)
+            name = {'Pmech'};
+            %nx = convertStringsToChars("u_gov"+(1:obj.get_nu));
         end
         
         function [dx, P] = get_P(obj, x_gov, omega, u)%#ok
