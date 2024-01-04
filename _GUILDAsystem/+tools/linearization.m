@@ -1,6 +1,6 @@
 function matrix = linearization(func,steady_state)
 
-    use_symbolic = true;
+    use_symbolic = false;
 
     if ~isempty(which('vpa')) & use_symbolic
         old_digit = digits(100);
