@@ -57,8 +57,9 @@ classdef broadcast_PI_AGC < controller
             
             K_ipt = obj.K_input;
             u     = obj.zero_cell;
-            for i = 1:numel(K_ipt)
-                idx_port_ = obj.idx_port{i};
+            for i = 1:numel(obj.index_input)
+                idx_comp_ = obj.index_input(i);
+                idx_port_ = obj.idx_port{idx_comp_};
                 u{i}(idx_port_) = K_ipt(i)*(obj.Ki*x + obj.Kp*omega_mean);
             end
         end

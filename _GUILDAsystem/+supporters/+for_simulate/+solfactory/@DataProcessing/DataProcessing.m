@@ -67,9 +67,8 @@ classdef DataProcessing < dynamicprops & matlab.mixin.CustomDisplay
             out.Xcon.local = farray2table(out.Xcon.local,  fdata, @(~,i) net.a_controller_local{i}.get_state_name );
             out.Xcon.global= farray2table(out.Xcon.global, fdata, @(~,i) net.a_controller_global{i}.get_state_name);
             
-            funame = @(con) tools.harrayfun(@(idx) strcat(reshape(net.a_bus{idx}.component.get_port_name,1,[]),['_',num2str(idx)]), con.index_input);
-            out.Ucon.local = farray2table(out.Ucon.local , fdata, @(~,i) funame(net.a_controller_local{i}));
-            out.Ucon.global= farray2table(out.Ucon.global, fdata, @(~,i) funame(net.a_controller_global{i}));
+            out.Ucon.local = farray2table(out.Ucon.local , fdata, @(~,i) net.a_controller_local{i}.get_port_name);
+            out.Ucon.global= farray2table(out.Ucon.global, fdata, @(~,i) net.a_controller_global{i}.get_port_name);
 
             out.Uinput = farray2table(out.Uinput, fdata, @(~,i) net.a_bus{i}.component.get_port_name  );
             out.Utotal = farray2table(out.Utotal, fdata, @(~,i) net.a_bus{i}.component.get_port_name  );

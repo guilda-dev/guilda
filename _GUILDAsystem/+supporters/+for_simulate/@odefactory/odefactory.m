@@ -236,13 +236,14 @@ classdef odefactory < handle
     methods(Access=protected)
     % 微分方程式を定義する本体。odeソルバーの引数としてこのメソッドが使用される
         function dx = fx(obj, t, x)
+            net = obj.network;
             % odeソルバー用の状態xから機器/制御器ごとに状態を分割
             [X,Xcl,Xcg,V,I] = obj.organize_Xode(x);
             % 外部入力を取得
             Uinput = obj.input.get_u(t);            
             % 制御器の微分方程式
-            [dxcl,Utemp] = obj.fx_controller( obj.simulated_cg, t, X, Xcg, V, I, Uinput);
-            [dxcg,U    ] = obj.fx_controller( obj.simulated_cl, t, X, Xcl, V, I, Utemp );
+            [dxcl,Utemp] = obj.fx_controller(net.a_controller_global, obj.simulated_cg, t, X, Xcg, V, I, Uinput);
+            [dxcg,U    ] = obj.fx_controller(net.a_controller_local , obj.simulated_cl, t, X, Xcl, V, I, Utemp );
             % 各機器の微分方程式を計算
             dxmac = obj.fx_component( obj.simulated_bus, t, X, V, I, U);
             % 返り値を作成
@@ -250,11 +251,11 @@ classdef odefactory < handle
         end
 
     % 各制御器の微分方程式を計算するメソッド
-        function [dxcon,U] = fx_controller(obj, index, t, Xcomponent, Xcon, V, I, Ucon)
+        function [dxcon,U] = fx_controller(~, a_controller, index, t, Xcomponent, Xcon, V, I, Ucon)
             dxcon = cell(numel(Xcon),1);
             U = Ucon;
             for i = index
-                c = obj.network.a_controller_global{i};
+                c = a_controller{i};
                 in = c.index_input;
                 ob = c.index_observe;
                 [dxcon{i},ucon] = c.get_dx_u_func( t, Xcon{i}, Xcomponent(ob), num2cell(V(:,ob),1), num2cell(I(:,ob),1), Ucon(ob));

@@ -92,8 +92,8 @@ function [out,obj] = run(obj)
 
             [X,Xcl,Xcg,V,I,~]   = obj.expand_Xode(response, 1:numel(net.a_bus), 1:numel(net.a_controller_local), 1:numel(net.a_controller_global));
             Uin = obj.input.get_uvec(tidx);
-            [Ucg, Usum] = calc_Ucon(net.a_controller_global, tidx, Xcl, X, V, I, Uin );
-            [Ucl, Usum] = calc_Ucon(net.a_controller_local , tidx, Xcg, X, V, I, Usum);
+            [Ucg, Usum] = calc_Ucon(net.a_controller_global, tidx, Xcg, X, V, I, Uin );
+            [Ucl, Usum] = calc_Ucon(net.a_controller_local , tidx, Xcl, X, V, I, Usum);
             Uall = tools.arrayfun(@(i) net.a_bus{i}.component.u_func(net.a_bus{i}.component,Usum{i}), 1:numel(Usum));
 
             obj.DataStorage.t   = [obj.DataStorage.t   , {tidx(:)'}];
@@ -104,9 +104,9 @@ function [out,obj] = run(obj)
             obj.DataStorage.I   = [obj.DataStorage.I   , I(:)      ];
             obj.DataStorage.sol = [obj.DataStorage.sol , {sol}     ];
             obj.DataStorage.uin = [obj.DataStorage.uin , Uin(:)    ];
+            obj.DataStorage.uall= [obj.DataStorage.uall, Uall(:)   ];
             obj.DataStorage.ucg = [obj.DataStorage.ucg , Ucg(:)    ];
             obj.DataStorage.ucl = [obj.DataStorage.ucl , Ucl(:)    ];
-            obj.DataStorage.uall= [obj.DataStorage.uall, Uall(:)   ];
 
             try %指定verが旧バージョン(=1)の場合に出力する必要のあるデータを保存しておく
                 id = load('_GUILDAsystem/_version_support/version_id.mat');

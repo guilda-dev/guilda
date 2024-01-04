@@ -88,7 +88,7 @@ classdef input < supporters.for_simulate.options.Abstract
             function Uinput = get_u(obj,t)
                 Uinput = obj.all_Uzeros;
                 for i = 1:numel(obj.func_struct)
-                    ui = obj.ufunc(i);
+                    ui = obj.func_struct(i);
                     uval = ui.function(t);
                     for j = 1:numel(ui.index)
                         val = uval(ui.logimat(:,j));
@@ -101,7 +101,7 @@ classdef input < supporters.for_simulate.options.Abstract
                 tvec = zeros(1,numel(tvec));
                 Uinput = tools.cellfun(@(c) c*tvec, obj.all_Uzeros);
                 for i = 1:numel(obj.func_struct)
-                    ui = obj.ufunc(i);
+                    ui = obj.func_struct(i);
                     uval = tools.harrayfun(@(t) ui.function(t), tvec);
                     for j = 1:numel(ui.index)
                         val = uval(ui.logimat(:,j));
@@ -141,21 +141,23 @@ classdef input < supporters.for_simulate.options.Abstract
                     end
                 end
 
+                cnt = 1;
                 for i = 1:ndata
                     d = obj.data(i);
                     if d.is_now
                         if isa(d.function,'function_handle')
                             func = d.function;
                         else
-                            func = make_function(tnow, d.time, d.u, d.method);
+                            func = make_function(t, d.time, d.u, d.method);
                         end
-                        udata(i) = struct(          ...
+                        udata(cnt) = struct(          ...
                                'index',    d.index ,...
                              'logimat',  d.logimat ,...
                             'function',       func );
+                        cnt = cnt+1;
                     end
                 end
-                if ndata==0
+                if cnt==1
                     udata = [];
                 end
                 obj.func_struct = udata;
@@ -260,7 +262,6 @@ function func = make_function(tnow, tlist, u, method)
     
     du = u( :, idx_end) - u( :, idx_0);
     dt = tlist(idx_end) - tlist(idx_0);
-    
     switch method
         case 'zoh'
             func = @(t) u0;

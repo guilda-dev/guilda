@@ -55,6 +55,15 @@ classdef controller < base_class.HasStateInput & base_class.HasGridCode & base_c
         function out = get_x0(obj)
             out = zeros(obj.get_nx(), 1);
         end
+
+        function name = get_port_name(obj)
+            name = tools.hcellfun(@(c) porti(c), obj.default_component_input); 
+            function out = porti(comp)
+                num = ['_',num2str(comp.index)];
+                out = tools.cellfun(@(c) [c,num], comp.get_port_name);
+                out = out(:)';
+            end
+        end
         
         function out = get.index_all(obj)
             out = unique([obj.index_observe; obj.index_input]);
@@ -69,22 +78,17 @@ classdef controller < base_class.HasStateInput & base_class.HasGridCode & base_c
         end
 
         function uout = get_input_vectorized(obj, t, x, X, V, I, U)
-            Xi = @(i) tools.cellfun(@(x) x(i, :)', X);
-            Vi = @(i) tools.cellfun(@(v) v(i, :)', V);
-            Ii = @(j) tools.cellfun(@(i) i(j, :)', I);
-            Ui = @(i) tools.cellfun(@(u) u(i, :)', U);
+            Xi = @(i) tools.cellfun(@(x) x(:,i)', X);
+            Vi = @(i) tools.cellfun(@(v) v(:,i)', V);
+            Ii = @(j) tools.cellfun(@(i) i(:,j)', I);
+            Ui = @(i) tools.cellfun(@(u) u(:,i)', U);
             
-            u_ = cell(numel(obj.index_input),numel(t));
             is = ismember( obj.default_index_input, obj.index_input);
-            zero = tools.cellfun(@(c) zeros(c.get_nu,1), obj.default_component_input);
-
+            zero = tools.cellfun(@(c) zeros(c.get_nu,1), obj.default_component_input(:));
+            u_ = repmat(zero,1,numel(t));
+            
             for ti = 1:numel(t)
-                xc = x(ti,:);
-                if any(isnan(xc)) || numel(xc)==0
-                    u_(:,ti) = zero;
-                else
-                    [~, u_(is,ti)] = obj.get_dx_u_func(t(ti),xc',Xi(ti),Vi(ti),Ii(ti),Ui(ti));
-                end
+                [~, u_(is,ti)] = obj.get_dx_u_func(t(ti),x(:,ti),Xi(ti),Vi(ti),Ii(ti),Ui(ti));
             end
             
             uout = tools.arrayfun(@(i) horzcat(u_{i,:}), (1:size(u_))');
@@ -118,21 +122,41 @@ classdef controller < base_class.HasStateInput & base_class.HasGridCode & base_c
         end
 
         function update_idx(obj)
-            % 並列機器を観測・制御対象とする
             net = obj.network;
-            idx_connect = find(tools.vcellfun(@(b) strcmp(b.component.parallel, "on"), net.a_bus));
-            obj.index_input   = intersect(idx_connect, obj.default_index_observe);
-            obj.index_observe = intersect(idx_connect, obj.default_index_input);
 
             % port_〇〇のindexを取得
             obj.idx_state = tools.cellfun(@(b) find(strcmp(get_state_name(b.component),obj.port_observe)), net.a_bus);
             obj.idx_port  = tools.cellfun(@(b) find(strcmp(get_port_name( b.component),obj.port_input)), net.a_bus);
+
+            % 並列機器を観測・制御対象とする
+            idx_connect = find(tools.vcellfun(@(b) strcmp(b.component.parallel, "on"), net.a_bus));
+            index_input_   = intersect(idx_connect, obj.default_index_input);
+            index_observe_ = intersect(idx_connect, obj.default_index_observe);
+
+            % 指定されたポート名を持たない機器番号を除外する
+            obj.index_input   = index_input_(  tools.harrayfun(@(i) ~isempty(obj.idx_port{i} ), index_input_  ));
+            obj.index_observe = index_observe_(tools.harrayfun(@(i) ~isempty(obj.idx_state{i}), index_observe_));
+            
 
             % 接続機器の各入力ポート数に合わせたゼロ行列をcell配列で定義しておく
             fz = @(i) zeros(net.a_bus{i}.component.get_nu,1);
             obj.zero_cell = tools.arrayfun(@(i) fz(i), obj.index_input(:));
 
             obj.initialize;
+
+            % 除外された機器番号に関するメッセージの表示
+            cls = class(obj);
+            func( obj.default_index_input,  index_input_,  'Input'  ,cls,'it has been disconnected.')
+            func( obj.default_index_observe,index_observe_,'Observe',cls,'it has been disconnected.')
+            func( index_input_,   obj.index_input,   'Input',   cls, ['it does not have a state called "',obj.port_input,'".'])
+            func( index_observe_, obj.index_observe, 'Observe', cls, ['it does not have a port called "',obj.port_observe,'".'])
+
+                function func( idx1,idx2,type, cls, cause)
+                    diff_idx = setdiff(idx1,idx2);
+                    if ~isempty(diff_idx)
+                        warning([type,'@',cls,' : Component ',mat2str(diff_idx),' was removed because ',cause])
+                    end
+                end
         end
         
     end
