@@ -34,7 +34,7 @@ classdef local_LQR_retrofit <  controller
     
     methods
         function obj = local_LQR_retrofit(net, idx, Q, R, model, model_agc)
-            obj@controller(idx, idx);
+            obj@controller(net, idx, idx);
             if nargin < 5
                 model = [];
             end

@@ -39,12 +39,12 @@ classdef one_axis < component.generator.base
         
         % 機器のダイナミクスを決めるメソッド
             function [dx, con] = get_dx_constraint(obj, ~, x, V, I, u)
-                Xd  = obj.parameter.Xd;
-                Xdp = obj.parameter.Xd_p;
-                Xq  = obj.parameter.Xq;
-                d   = obj.parameter.D;
-                Tdo = obj.parameter.Tdo;
-                M   = obj.parameter.M;
+                Xd   = obj.parameter.Xd;
+                Xdp  = obj.parameter.Xd_p;
+                Xq   = obj.parameter.Xq;
+                d    = obj.parameter.D;
+                Td_p = obj.parameter.Td_p;
+                M    = obj.parameter.M;
     
                 nx_avr = obj.avr.get_nx();
                 nx_pss = obj.pss.get_nx();
@@ -88,7 +88,7 @@ classdef one_axis < component.generator.base
                 
                 ddelta = obj.omega0 * omega;
                 domega = (Pm - d*omega - Vabs*E*sin(delta-Vangle)/Xdp + Vabs^2*(1/Xdp-1/Xq)*sin(2*(delta-Vangle))/2)/M;
-                dE     = (-Efd + Vfd)/Tdo;
+                dE     = (-Efd + Vfd)/Td_p;
                 
                 dx = [ddelta; domega; dE; dx_avr; dx_pss; dx_gov];
             end

@@ -14,6 +14,10 @@ classdef bus   < base_class.Edit_Monitoring & base_class.HasCostFunction
         power_network
     end
 
+    properties
+        GraphCoordinate = [];
+    end
+
     methods(Abstract)
         out = get_constraint(obj, Vr, Vi, P, Q)
     end
@@ -52,6 +56,7 @@ classdef bus   < base_class.Edit_Monitoring & base_class.HasCostFunction
         
         function set_component(obj, component)
             if isa(component, 'component')
+                component.GraphCoordinate = obj.GraphCoordinate;
                 component.register_parent(obj,'overwrite')
                 obj.register_child(component,'overwrite')
                 if ~isempty(obj.V_equilibrium) && ~isempty(obj.I_equilibrium)

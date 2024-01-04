@@ -44,7 +44,7 @@ function [x, xcl, xcg, V, I, Vvirtual] = expand_Xode(obj,xsys,idx_mac,idx_cl,idx
     I = cell(nbus,1);
     Vvirtual = cell(nbus,1);
 
-    temp0 = zeros(2,tdim);
+    %temp0 = zeros(2,tdim);
     tempN = nan(2,tdim);
 
     idx_temp = reshape([-1;0] + 2*idx_mac(:)',[],1);

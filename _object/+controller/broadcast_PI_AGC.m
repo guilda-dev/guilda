@@ -22,7 +22,7 @@ classdef broadcast_PI_AGC < controller
     
     methods
         function obj = broadcast_PI_AGC(net, y_idx, u_idx, Kp, Ki)
-            obj@controller(u_idx, y_idx);
+            obj@controller(net, u_idx, y_idx);
             obj.Ki = Ki;
             obj.Kp = Kp;
             obj.default_K_input   = ones(numel(u_idx),1);

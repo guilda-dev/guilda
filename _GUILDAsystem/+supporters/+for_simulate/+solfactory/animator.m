@@ -49,9 +49,9 @@ classdef animator < matlab.mixin.SetGet
             obj.out = out;
             obj.time_list = (out.t(1):0.001:out.t(end))';
             
-            nf = numel(obj.out.option.fault);
-            obj.faultdata.time = tools.varrayfun(@(i) out.option.fault.data(i).time(:)', 1:nf);
-            obj.faultdata.index= tools.arrayfun(@(i) out.option.fault.data(i).index, 1:nf);
+            nf = numel(obj.out.options.fault);
+            obj.faultdata.time = tools.varrayfun(@(i) out.options.fault(i).time(:)', 1:nf);
+            obj.faultdata.index= tools.arrayfun(@(i) out.options.fault(i).index, 1:nf);
             obj.faultPlot = repmat({false},1,nf);
 
             obj.make_figure
@@ -66,7 +66,7 @@ classdef animator < matlab.mixin.SetGet
             cellfun(@(p) set(obj, p ,option.(p)), para);
             obj.current_time = obj.time_list(1);
 
-            obj.controller = supporters.for_simulate.sol.animator_controller(obj);
+            obj.controller = supporters.for_simulate.solfactory.animator_controller(obj);
             
         end
 
@@ -81,7 +81,7 @@ classdef animator < matlab.mixin.SetGet
             text(ax,0,0,'Network Graph', 'FontSize',30,'FontWeight','bold','HorizontalAlignment','center')
             obj.TimeBoard = text(ax,0,-1,'Time:0(s)','FontSize',20,'FontWeight','bold','HorizontalAlignment','center');
             
-            obj.graphAxes  = subplot('Position',[0.4,0.1,0.59,0.75]);
+            obj.graphAxes  = subplot('Position',[0.4,0.05,0.59,0.75]);
             
             obj.pltAxes{1} = subplot('Position',[0.05,0.08,0.3,0.25]);
             obj.pltAxes{2} = subplot('Position',[0.05,0.38,0.3,0.25]);
@@ -294,9 +294,8 @@ classdef animator < matlab.mixin.SetGet
 end
 
 function yq = myspline(x,y,xq)
-    [~,idx,~] = unique(x);
-    nonidx = setdiff(1:numel(x),idx);
-    x(nonidx) = x(nonidx)+(1+rand(1,numel(nonidx)))*1e-15;
+    idx = diff(x)==0;
+    x(idx) = x(idx)-1e-15;
     yq = interp1(x,y,xq,'pchip');
 end
 

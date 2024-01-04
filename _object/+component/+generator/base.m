@@ -9,6 +9,7 @@ classdef base < component
     methods
         function obj =  base(parameter)
             obj.Tag = 'Gen';
+            obj.set_InputType('Add');
 
             if istable(parameter)
                 obj.parameter = parameter;

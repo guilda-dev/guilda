@@ -18,9 +18,14 @@ classdef controller < base_class.HasStateInput & base_class.HasGridCode & base_c
         index_observe          %制御観測先
     end
 
+    properties(Access=protected,Dependent)
+        default_index_input    %userの出力先の指定値(indexのdouble配列)
+        default_index_observe  %userの観測先の指定値(indexのdouble配列)
+    end
+
     properties(Access=protected)
-        default_index_input    %userの出力先の指定値
-        default_index_observe  %userの観測先の指定値
+        default_component_input     %userの出力先の指定値(componentクラスのcell配列)
+        default_component_observe   %userの観測先の指定値(componentクラスのcell配列)
         idx_state              %port_observeのindexを取得(何列目にport_observeで指定された状態量があるか)
         idx_port               %port_inputのindexを取得(何列目にport_inputで指定された状態量があるか)
         zero_cell 
@@ -42,9 +47,9 @@ classdef controller < base_class.HasStateInput & base_class.HasGridCode & base_c
     end
     
     methods
-        function obj = controller(index_input, index_observe)
-            obj.default_index_input = index_input;
-            obj.default_index_observe = index_observe;
+        function obj = controller(net, index_input, index_observe)
+            obj.default_component_input   = tools.arrayfun(@(i) net.a_bus{i}.component, index_input);
+            obj.default_component_observe = tools.arrayfun(@(i) net.a_bus{i}.component, index_observe);
         end
         
         function out = get_x0(obj)
@@ -54,24 +59,35 @@ classdef controller < base_class.HasStateInput & base_class.HasGridCode & base_c
         function out = get.index_all(obj)
             out = unique([obj.index_observe; obj.index_input]);
         end
-        
+
+        function out = get.default_index_input(obj)
+            out = tools.hcellfun(@(c) c.index, obj.default_component_input);
+        end
+
+        function out = get.default_index_observe(obj)
+            out = tools.hcellfun(@(c) c.index, obj.default_component_observe);
+        end
+
         function uout = get_input_vectorized(obj, t, x, X, V, I, U)
             Xi = @(i) tools.cellfun(@(x) x(i, :)', X);
             Vi = @(i) tools.cellfun(@(v) v(i, :)', V);
             Ii = @(j) tools.cellfun(@(i) i(j, :)', I);
             Ui = @(i) tools.cellfun(@(u) u(i, :)', U);
             
-            [~, u(:)] = tools.arrayfun(@(i) obj.get_dx_u_func(t(i),x(i,:)',Xi(i),Vi(i),Ii(i),Ui(i)), 1:numel(t) );
-            if iscell(u{1})
-                nout = numel(u{1});
-                uout = cell(nout,1);
-                for i = 1:nout
-                    uout{i} = tools.harrayfun(@(idx) u{idx}{i}(:), 1:numel(t)).';
+            u_ = cell(numel(obj.index_input),numel(t));
+            is = ismember( obj.default_index_input, obj.index_input);
+            zero = tools.cellfun(@(c) zeros(c.get_nu,1), obj.default_component_input);
+
+            for ti = 1:numel(t)
+                xc = x(ti,:);
+                if any(isnan(xc)) || numel(xc)==0
+                    u_(:,ti) = zero;
+                else
+                    [~, u_(is,ti)] = obj.get_dx_u_func(t(ti),xc',Xi(ti),Vi(ti),Ii(ti),Ui(ti));
                 end
-            else
-                uout = {horzcat(u{:}).'};
             end
             
+            uout = tools.arrayfun(@(i) horzcat(u_{i,:}), (1:size(u_))');
         end
         
         function n = get.network(obj)
@@ -105,12 +121,12 @@ classdef controller < base_class.HasStateInput & base_class.HasGridCode & base_c
             % 並列機器を観測・制御対象とする
             net = obj.network;
             idx_connect = find(tools.vcellfun(@(b) strcmp(b.component.parallel, "on"), net.a_bus));
-            obj.index_input = intersect(idx_connect, obj.default_index_observe);
+            obj.index_input   = intersect(idx_connect, obj.default_index_observe);
             obj.index_observe = intersect(idx_connect, obj.default_index_input);
 
             % port_〇〇のindexを取得
             obj.idx_state = tools.cellfun(@(b) find(strcmp(get_state_name(b.component),obj.port_observe)), net.a_bus);
-            obj.idx_port  = tools.cellfun(@(b) find(strcmp(get_port_name(b.component),obj.port_input)), net.a_bus);
+            obj.idx_port  = tools.cellfun(@(b) find(strcmp(get_port_name( b.component),obj.port_input)), net.a_bus);
 
             % 接続機器の各入力ポート数に合わせたゼロ行列をcell配列で定義しておく
             fz = @(i) zeros(net.a_bus{i}.component.get_nu,1);

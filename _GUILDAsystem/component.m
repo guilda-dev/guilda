@@ -4,9 +4,13 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
 % 新しい機器モデルを実装する場合はこのcomponentクラスを継承すること。
     
 
-    
+    properties(Dependent)
+        index
+        omega0
+        connected_bus
+    end
+
     properties(SetAccess = protected)
-        system_matrix
         x_equilibrium
         u_equilibrium
     end
@@ -14,8 +18,10 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
     properties(Dependent)
         V_equilibrium
         I_equilibrium
-        omega0
-        connected_bus
+    end
+
+    properties(SetAccess = protected)
+        system_matrix    
     end
 
     properties
@@ -23,10 +29,18 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
         get_dx_con_func
     end
 
+    properties(SetAccess = protected)
+        InputType = 'Add';
+        u_func = @(obj,u) obj.u_equilibrium + u;
+    end
     
     properties(Access=protected,Dependent)
         V_st
         I_st
+    end
+    
+    properties
+        GraphCoordinate = [];
     end
 
     
@@ -36,54 +50,134 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
     
     
     methods
-        
         function setprop(obj,prop,value)
             obj.(prop) = value;
         end
+    
+        % Set method 
+    
+            function set.parameter(obj, value)
+                obj.parameter = value;
+                obj.recalculate
+                obj.editted;
+            end
 
-        function set.parameter(obj, value)
-            obj.parameter = value;
-            obj.recalculate
-            obj.editted;
-        end
+        % Get method
+            function i = get.index(obj)
+                i = obj.parents{1}.index;
+            end
+            
+            function b = get.connected_bus(obj)
+                b = obj.parents{1};
+            end
+    
+            function out = get.V_equilibrium(obj)
+                out = obj.connected_bus.V_equilibrium;
+            end
+    
+            function out = get.I_equilibrium(obj)
+                out = obj.connected_bus.I_equilibrium;
+            end
+    
+            function out = get.omega0(obj)
+                out = obj.connected_bus.power_network.omega0;
+            end
+    
+            function out = get.V_st(obj)
+                out = [real(obj.V_equilibrium);imag(obj.V_equilibrium)];
+            end
+    
+            function out = get.I_st(obj)
+                out = [real(obj.I_equilibrium);imag(obj.I_equilibrium)];
+            end
 
-        function b = get.connected_bus(obj)
-            b = obj.parents{1};
-        end
+        % method for get number of state/input
+            function nx = get_nx(obj)
+               nx = numel(obj.x_equilibrium); 
+            end
+    
+            function nu = get_nu(obj)
+               nu = numel(obj.u_equilibrium); 
+            end
 
-        function out = get.V_equilibrium(obj)
-            out = obj.connected_bus.V_equilibrium;
-        end
+        % method for calculate linear system
+            function [dx, con] = get_dx_constraint_linear(obj, ~, x, V, I, u)
+                ss  = obj.system_matrix;
+                dx  = ss.A * ( x - obj.x_equilibrium) + ss.B * u + ss.BV * (V - obj.V_st) + ss.BI * ( I - obj.I_st);
+                con = ss.C * ( x - obj.x_equilibrium) + ss.D * u + ss.DV * (V - obj.V_st) + ss.DI * ( I - obj.I_st);
+            end
 
-        function out = get.I_equilibrium(obj)
-            out = obj.connected_bus.I_equilibrium;
-        end
+            function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj,xst,Vst,Ist)
+    
+                %%% 引数の補完 %%%
+                if nargin < 2 || isempty(xst)
+                    xst = obj.x_equilibrium;
+                end
+                if nargin < 3 || isempty(Vst)
+                    Vst = obj.V_equilibrium;
+                end
+                if nargin < 4 || isempty(Ist)
+                    Ist = obj.I_equilibrium;
+                end
+                
+                %%% パラメータの型のチェック %%%
+                if numel(xst) ~= obj.get_nx
+                    error('The size of the specified x_st does not match the state')
+                end
+                if numel(Vst) == 1
+                    Vst = tools.complex2vec(Vst);
+                elseif numel(Vst) ~= 2 || any(~isreal(Vst))
+                    error('The type of the specified Vst is incorrect')
+                end
+                if numel(Ist) == 1
+                    Ist = tools.complex2vec(Ist);
+                elseif numel(Ist) ~= 2 || any(~isreal(Ist))
+                    error('The type of the specified Ist is incorrect')
+                end
+                t = 0;
+                ust = obj.u_equilibrium;
+                
+                %%% 時変システムでないかの検査 %%%
+                t_dx = @(t) obj.get_dx_constraint(t,1.01*xst,1.01*Vst,1.01*Ist,ust);
+                [dx0,con0] = t_dx(0);
+                [dx100,con100] = t_dx(100);
+                if ~ ( all((dx0-dx100)<1e-4) && all((con0-con100)<1e-4) )
+                    warning('時変システムであるようです. t=0において近似線形化を実行します.')
+                end
+    
+                    nx = obj.get_nx;
+                    % xに関しての近似線形モデル
+                    [A,C]   =  split_out(...
+                        tools.linearization(...
+                        @(x_) stack_out(@(x_) obj.get_dx_constraint(t, x_, Vst,  Ist,  ust),x_),xst),nx);
+                    
+                    % Vに関しての近似線形モデル
+                    [BV,DV] =  split_out(...
+                        tools.linearization(...
+                        @(V_) stack_out(@(V_) obj.get_dx_constraint(t, xst, V_,  Ist,  ust),V_),Vst),nx);
+                
+                    % Iに関しての近似線形モデル
+                    [BI,DI] = split_out(... 
+                        tools.linearization(...
+                        @(I_) stack_out(@(I_) obj.get_dx_constraint(t, xst,  Vst, I_,  ust),I_),Ist),nx);
+                    
+                    % uに関しての近似線形モデル
+                    [B,D]   =  split_out(...
+                        tools.linearization(...
+                        @(u_) stack_out(@(u_) obj.get_dx_constraint(t, xst,  Vst,  Ist, u_),u_),ust),nx);
+                
+                    R = zeros(obj.get_nx,0);
+                    S = zeros(0,obj.get_nx);
+            end
+    
+    
+            function set_linear_matrix(obj,varargin)
+                sys = struct();
+                [ sys.A , sys.B , sys.C , sys.D ,... 
+                  sys.BV, sys.DV, sys.BI, sys.DI,sys.R , sys.S] = obj.get_linear_matrix(varargin{:});
+                obj.system_matrix = sys;
+            end
 
-        function out = get.omega0(obj)
-            out = obj.connected_bus.power_network.omega0;
-        end
-
-        function out = get.V_st(obj)
-            out = [real(obj.V_equilibrium);imag(obj.V_equilibrium)];
-        end
-
-        function out = get.I_st(obj)
-            out = [real(obj.I_equilibrium);imag(obj.I_equilibrium)];
-        end
-
-        function nx = get_nx(obj)
-           nx = numel(obj.x_equilibrium); 
-        end
-
-        function nu = get_nu(obj)
-           nu = numel(obj.u_equilibrium); 
-        end
-
-        function [dx, con] = get_dx_constraint_linear(obj, ~, x, V, I, u)
-            ss  = obj.system_matrix;
-            dx  = ss.A * ( x - obj.x_equilibrium) + ss.B * u + ss.BV * (V - obj.V_st) + ss.BI * ( I - obj.I_st);
-            con = ss.C * ( x - obj.x_equilibrium) + ss.D * u + ss.DV * (V - obj.V_st) + ss.DI * ( I - obj.I_st);
-        end
 
         function [dx, con] = check_dx_constraint(obj)
             x = obj.x_equilibrium;
@@ -96,87 +190,29 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
             M = blkdiag( eye(numel(dx)), zeros(length(con)) );
         end
 
-        function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj,xst,Vst,Ist)
-
-            %%% 引数の補完 %%%
-            if nargin < 2 || isempty(xst)
-                xst = obj.x_equilibrium;
+        function set_InputType(obj,val)
+            if nargin<2
+                disp_msg = ['1. Rate: input = u_equilibrium + u \n',...
+                            '2. Add : input = u_equilibrium * (1+u) \n',...
+                            '3.Value: input = u \n'];
+                input_msg = 'input 1 or 2 or 3';
+                candidate = {'rate','Rate','1','add','Add','2','value','Value',3};
+                val = tools.input(disp_msg,input_msg,'str',candidate);
             end
-            if nargin < 3 || isempty(Vst)
-                Vst = obj.V_equilibrium;
+            switch val
+                case {'rate' ,'Rate', 1}
+                    obj.InputType = 'Rate';
+                    obj.u_func = @(obj,u) diag(obj.u_equilibrium) * (1+u);
+                case {'add','Add',2}
+                    obj.InputType = 'Add';
+                    obj.u_func = @(obj,u) obj.u_equilibrium + u;
+                case {'value','Value',3}
+                    obj.InputType = 'Value';
+                    obj.u_func = @(obj,u) u;
+                otherwise
+                    error('porttype must be "add","rate","value".')
             end
-            if nargin < 4 || isempty(Ist)
-                Ist = obj.I_equilibrium;
-            end
-            
-            %%% パラメータの型のチェック %%%
-            if numel(xst) ~= obj.get_nx
-                error('The size of the specified x_st does not match the state')
-            end
-            if numel(Vst) == 1
-                Vst = tools.complex2vec(Vst);
-            elseif numel(Vst) ~= 2 || any(~isreal(Vst))
-                error('The type of the specified Vst is incorrect')
-            end
-            if numel(Ist) == 1
-                Ist = tools.complex2vec(Ist);
-            elseif numel(Ist) ~= 2 || any(~isreal(Ist))
-                error('The type of the specified Ist is incorrect')
-            end
-            t = 0;
-            ust = obj.u_equilibrium;
-            
-            %%% 時変システムでないかの検査 %%%
-            t_dx = @(t) obj.get_dx_constraint(t,1.01*xst,1.01*Vst,1.01*Ist,ust);
-            [dx0,con0] = t_dx(0);
-            [dx100,con100] = t_dx(100);
-            if ~ ( all((dx0-dx100)<1e-4) && all((con0-con100)<1e-4) )
-                warning('時変システムであるようです. t=0において近似線形化を実行します.')
-            end
-
-                M = diag(obj.Mass);
-                % xに関しての近似線形モデル
-                [A,C]   =  split_out(...
-                    tools.linearization(...
-                    @(x_) stack_out(@(x_) obj.get_dx_constraint(t, x_, Vst,  Ist,  ust),x_),xst),M);
-                
-                % Vに関しての近似線形モデル
-                [BV,DV] =  split_out(...
-                    tools.linearization(...
-                    @(V_) stack_out(@(V_) obj.get_dx_constraint(t, xst, V_,  Ist,  ust),V_),Vst),M);
-            
-                % Iに関しての近似線形モデル
-                [BI,DI] = split_out(... 
-                    tools.linearization(...
-                    @(I_) stack_out(@(I_) obj.get_dx_constraint(t, xst,  Vst, I_,  ust),I_),Ist),M);
-                
-                % uに関しての近似線形モデル
-                [B,D]   =  split_out(...
-                    tools.linearization(...
-                    @(u_) stack_out(@(u_) obj.get_dx_constraint(t, xst,  Vst,  Ist, u_),u_),ust),M);
-            
-                R = zeros(obj.get_nx,0);
-                S = zeros(0,obj.get_nx);
-        end
-
-
-        function set_linear_matrix(obj,xst,Vst,Ist)
-
-            %%% 引数の補完 %%%
-            if nargin < 2 || isempty(xst)
-                xst = obj.x_equilibrium;
-            end
-            if nargin < 3 || isempty(Vst)
-                Vst = obj.V_st;
-            end
-            if nargin < 4 || isempty(Ist)
-                Ist = obj.I_st;
-            end
-
-            sys = struct();
-            [ sys.A , sys.B , sys.C , sys.D ,... 
-              sys.BV, sys.DV, sys.BI, sys.DI,sys.R , sys.S] = obj.get_linear_matrix(xst,Vst,Ist);
-            obj.system_matrix = sys;
+            obj.editted
         end
         
         function [x_st,u_st] = set_equilibrium(obj,V,I)
@@ -186,6 +222,12 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
             end
             [x_st, u_st] = obj.get_equilibrium(V,I);
             % [x_st, u_st] = obj.get_equilibrium(V,I,'init');
+            if numel(x_st)==0
+                x_st = zeros(0,1);
+            end
+            if numel(u_st)==0
+                u_st = zeros(0,1);
+            end
             obj.x_equilibrium = x_st;
             obj.u_equilibrium = u_st;
             obj.set_linear_matrix();

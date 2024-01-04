@@ -1,4 +1,5 @@
 function net = Tutorial3bus()
-    fn = fullfile(pwd,'_GUILDA','_object','+network','Tutorial3bus');
+    fname = mfilename("fullpath");
+    fn = fullfile(fname);
     net = network.build(fn);
 end

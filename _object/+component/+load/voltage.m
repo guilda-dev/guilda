@@ -11,37 +11,18 @@ classdef voltage < component.load.abstract
 
     methods
         
-        function u_name = naming_port(obj)
-            switch obj.porttype
-                case 'value'
-                    u_name = {'Vreal','Vimag'};
-                case 'rate'
-                    u_name = {'VrealRate','VimagRate'};
-            end
+        function [x_st,u_st] = get_equilibrium(obj,Veq,~)
+            x_st = zeros(0,1);
+            u_st = tools.complex2vec(Veq);
         end
-        
+
         function [dx, constraint] = get_dx_constraint(obj, t, x, V, I, u)
             dx = zeros(0, 1);
-            switch obj.porttype
-                case 'rate'
-                    constraint = V - obj.V_st .* u(:);
-                case  'value'
-                    constraint = V - u(:);
-            end
+            constraint = V - u(:);
         end
 
-        function [x_st,u_st] = get_equilibrium(obj,Veq,~)
-            if nargin<2
-                Veq = obj.V_equilibrium;
-            end
-
-            switch obj.porttype
-                case 'rate'
-                    u_st = [1;1];
-                case 'value'
-                    u_st = tools.complex2vec(Veq);
-            end
-            x_st = zeros(0,1);
+        function u_name = naming_port(obj)
+            u_name = {'Vreal','Vimag'};
         end
         
     end

@@ -24,6 +24,7 @@
     継承先
     >> ・HasCostFunction.m   : コスト関数を管理するメソッドを備えたクラス
         継承先
+        >> ・branch.m        : [送電線]
         >> ・bus.m           : [母線]
         >> ・component.m     : [機器]
         >> ・controller.m    : [制御機]

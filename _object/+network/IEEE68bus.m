@@ -1,4 +1,5 @@
 function net = IEEE68bus()
-    fn = fullfile(pwd,'_GUILDA','_object','+network','IEEE68bus');
+    fname = mfilename("fullpath");
+    fn = fullfile(fname);
     net = network.build(fn);
 end
