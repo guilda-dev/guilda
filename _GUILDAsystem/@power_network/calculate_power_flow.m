@@ -1,4 +1,4 @@
-function [V, I] = calculate_power_flow(obj, varargin)
+function [V, I, flag] = calculate_power_flow(obj, varargin)
 n = numel(obj.a_bus);
 x0_all = kron(ones(n, 1), [1; 0]);
 
@@ -9,6 +9,7 @@ p.addParameter('MaxIterations', 2e4);
 p.addParameter('Display', 'none');%'iter-detailed');
 p.addParameter('UseParallel', false);
 p.addOptional('return_vector', false);
+p.addOptional('warning', true);
 p.parse(varargin{:});
 
 options = optimoptions('fsolve', 'MaxFunEvals', p.Results.MaxFunEvals,...
@@ -16,7 +17,17 @@ options = optimoptions('fsolve', 'MaxFunEvals', p.Results.MaxFunEvals,...
     'UseParallel', p.Results.UseParallel);
 
 [~, Ymat] = obj.get_admittance_matrix();
-V = fsolve(@(x) func_eq(obj.a_bus, Ymat, x), x0_all,options);
+[V,~,flag,~] = fsolve(@(x) func_eq(obj.a_bus, Ymat, x), x0_all,options);
+switch flag
+    case 0
+        if p.warning
+            warning('Power equation could not be solved. >> The number of iterations exceeds options.MaxIterations or the number of function evaluations exceeds options.MaxFunctionEvaluations.')
+        end
+    case {-2,-3}
+        if p.warning
+            warning('Power equation could not be solved. Please review the power flow settings')
+        end
+end
 I = Ymat*V;
 
 if ~p.Results.return_vector
