@@ -34,7 +34,7 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
 
         % 潮流計算に関するメソッド
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        [V, I] = calculate_power_flow(obj, varargin);
+        [V, I, flag] = calculate_power_flow(obj, varargin)
         function initialize(obj)
             [V, I] = obj.calculate_power_flow();
             for i = 1:numel(obj.a_bus)

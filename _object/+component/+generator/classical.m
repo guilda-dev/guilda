@@ -77,6 +77,112 @@ classdef classical < component.generator.base
                 dx = [ddelta; domega; dx_avr; dx_pss; dx_gov];
             end
 
+
+        % function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, x_st, Vst, Ist)
+        %     if nargin < 2 || isempty(x_st)
+        %         x_st = obj.x_equilibrium;
+        %     end
+        %     if nargin < 3 || isempty(Vst)
+        %         Vst = obj.V_st;
+        %     end
+        %     omega_bar = obj.omega0;
+        %     X = obj.parameter.Xd;
+        %     Xq = obj.parameter.Xq;
+        %     M  = obj.parameter.M;
+        %     d  = obj.parameter.D;
+        % 
+        %     % x1 = delta
+        %     % x2 = omega
+        %     A_swing = [0 obj.omega0;
+        %                0 -d/M];
+        %     % u1 = Pmech
+        %     % u2 = Pout
+        %     B_swing = [0, 0;
+        %                1/M, -1/M];
+        %     % y = [delta, omega]
+        %     C_swing = eye(2);
+        %     sys_swing = ss(A_swing, B_swing, C_swing, 0);
+        %     OutputGroup = struct();
+        %     OutputGroup.delta = 1;
+        %     OutputGroup.omega = 2;
+        %     sys_swing.OutputGroup = OutputGroup;
+        %     InputGroup = struct();
+        %     InputGroup.Pmech = 1;
+        %     InputGroup.Pout = 2;
+        %     sys_swing.InputGroup = InputGroup;
+        % 
+        %     % ここから下は平衡点
+        %     delta = x_st(1); %ok
+        % 
+        %     dVq_dV = [cos(delta), sin(delta)];
+        %     dVd_dV = [sin(delta), -cos(delta)]; %ok
+        %     dIr_dV = -dVq_dV*sin(delta)/X + dVd_dV*cos(delta)/X;
+        %     dIi_dV =  dVq_dV*cos(delta)/X + dVd_dV*sin(delta)/X;
+        % 
+        %     Vq = Vst(1)*cos(delta)+Vst(2)*sin(delta);
+        %     Vd = Vst(1)*sin(delta)-Vst(2)*cos(delta);
+        %     dVq = -Vd;
+        %     dVd = Vq; %ok
+        % 
+        % 
+        %     dIr_dd = (-dVq*sin(delta)+(obj.Vfd-Vq)*cos(delta))/X + (dVd*cos(delta)-Vd*sin(delta))/X;
+        %     dIi_dd = (dVq*cos(delta)+(obj.Vfd-Vq)*sin(delta))/X + (dVd*sin(delta)+Vd*cos(delta))/X; %ok
+        % 
+        %     Ist =  [(obj.Vfd*sin(delta) - Vq*sin(delta) + Vd*cos(delta))/X;
+        %             (-obj.Vfd*cos(delta) + Vq*cos(delta) + Vd*sin(delta))/X]; %ok
+        % 
+        %     % (delta, V) => (Ir, Ii)
+        %     KI = [dIr_dd, dIr_dV;
+        %           dIi_dd, dIi_dV];
+        % 
+        %     dP = Vst'*KI + Ist'*[zeros(2,1), eye(2)]; %ok
+        % 
+        % 
+        %     sys_fb = ss([dP; KI]);
+        %     InputGroup = struct();
+        %     InputGroup.delta = 1;
+        %     InputGroup.V = 2:3;
+        %     sys_fb.InputGroup = InputGroup;
+        %     OutputGroup = struct();
+        %     OutputGroup.P = 1;
+        %     OutputGroup.I = 2:3;
+        %     sys_fb.OutputGroup = OutputGroup;
+        % 
+        %     Vabs = norm(Vst); %ok
+        % 
+        %     sys_V = ss([eye(2); Vst'/Vabs]);
+        %     sys_V.InputGroup.Vin = 1:2;
+        %     OutputGroup = struct();
+        %     OutputGroup.V = 1:2;
+        %     OutputGroup.Vabs = 3;
+        %     sys_V.OutputGroup = OutputGroup;
+        % 
+        %     sys_avr = obj.avr.get_sys();
+        %     sys_pss = obj.pss.get_sys();
+        %     sys_gov = obj.governor.get_sys();
+        %     G = blkdiag(sys_swing, sys_fb, sys_V, sys_avr, -sys_pss, sys_gov);
+        %     ig = G.InputGroup;
+        %     og = G.OutputGroup;
+        %     feedin = [ig.Pout, ig.delta, ig.V, ig.omega_governor, ig.Pmech];
+        %     feedout = [og.P, og.delta, og.V, og.omega, og.Pmech];
+        %     I = ss(eye(numel(feedin))); %ok
+        % 
+        %     ret = feedback(G, I, feedin, feedout, 1);
+        %     ret_u = ret('I', {'u_avr',  'u_avr'});
+        %     ret_V = ret('I', 'Vin');
+        %     A = ret.a;
+        %     B = ret_u.b;
+        %     C = ret_u.c;
+        %     D = ret_u.d;
+        %     BV = ret_V.b;
+        %     DV = ret_V.d;
+        %     BI = zeros(size(A, 1), 2);
+        %     DI = -eye(2);
+        %     R = BV;
+        %     S = zeros(1, size(A, 1));
+        %     S(2) = 1;
+        % end
+
         % 定常潮流状態からモデルの平衡点と定常入力値を求めるメソッド
             function [x_st,u_st] = get_equilibrium(obj, V, I)
                 p = obj.parameter;

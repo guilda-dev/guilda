@@ -167,7 +167,7 @@ classdef GFMI < component
                     I  = I/p.n;
     
                 % Get terminal voltage values from the reference model.
-                    [delta,domega,vdq_hat]  = ref.get_Vterminal(x_ref,V,I,u_ref)
+                    [delta,domega,vdq_hat]  = ref.get_Vterminal(x_ref,V,I,u_ref);
                     omega = domega+1; %Convert "frequency deviation" to "frequency"
                 
                 % Convert from grid to converter reference

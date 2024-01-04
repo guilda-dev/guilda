@@ -93,6 +93,125 @@ classdef one_axis < component.generator.base
                 dx = [ddelta; domega; dE; dx_avr; dx_pss; dx_gov];
             end
 
+            function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, x_st, Vst, Ist)
+
+                if nargin < 2 || isempty(x_st)
+                    x_st = obj.x_equilibrium;
+                end
+                if nargin < 3 || isempty(Vst)
+                    Vst = obj.V_st;
+                end
+                omega_bar = obj.omega0;
+                Xd  = obj.parameter.Xd;
+                Xdp = obj.parameter.Xd_p;
+                Xq  = obj.parameter.Xq;
+                Tdo = obj.parameter.Td_p;
+                M   = obj.parameter.M;
+                d   = obj.parameter.D;
+                
+                A_swing = [0 obj.omega0 0;
+                    0 -d/M 0;
+                    0 0 0];
+                % u1 = Pmech;
+                % u2 = Vfd;
+                % u3 = Pout
+                % u4 = Vabscos
+                B_swing = [0, 0, 0, 0;
+                    1/M, 0, -1/M, 0;
+                    0, 1/Tdo, 0, -1/Tdo
+                    ];
+                % y = [delta, E]
+                C_swing = eye(3);
+                sys_swing = ss(A_swing, B_swing, C_swing, 0);
+                OutputGroup = struct();
+                OutputGroup.delta = 1;
+                OutputGroup.omega = 2;
+                OutputGroup.E = 3;
+                sys_swing.OutputGroup = OutputGroup;
+                InputGroup = struct();
+                InputGroup.Pmech = 1;
+                InputGroup.Vfd = 2;
+                InputGroup.Pout = 3;
+                InputGroup.Efd_swing = 4;
+                sys_swing.InputGroup = InputGroup;
+                
+                delta = x_st(1);
+                E = x_st(3);
+                
+                dVabscos_dV = [cos(delta), sin(delta)];
+                dVabssin_dV = [sin(delta), -cos(delta)];
+                dIr_dV = -dVabscos_dV*sin(delta)/Xdp + dVabssin_dV*cos(delta)/Xq;
+                dIi_dV =  dVabscos_dV*cos(delta)/Xdp + dVabssin_dV*sin(delta)/Xq;
+                
+                Vabscos = Vst(1)*cos(delta)+Vst(2)*sin(delta);
+                Vabssin = Vst(1)*sin(delta)-Vst(2)*cos(delta);
+                dVabscos = -Vabssin;
+                dVabssin = Vabscos;
+                
+                dEfd = -[dVabscos, 0, dVabscos_dV] * (Xd/Xdp-1) + [0, Xd/Xdp, 0, 0];
+                
+                dIr_dd = (-dVabscos*sin(delta)+(E-Vabscos)*cos(delta))/Xdp + (dVabssin*cos(delta)-Vabssin*sin(delta))/Xq;
+                dIi_dd = (dVabscos*cos(delta)+(E-Vabscos)*sin(delta))/Xdp + (dVabssin*sin(delta)+Vabssin*cos(delta))/Xq;
+                
+                Ist =  [(E-Vabscos)*sin(delta)/Xdp + Vabssin*cos(delta)/Xq;
+                    -(E-Vabscos)*cos(delta)/Xdp + Vabssin*sin(delta)/Xq];
+                
+                % (delta, E, V) => (Ir, Ii)
+                KI = [dIr_dd, sin(delta)/Xdp, dIr_dV;
+                    dIi_dd, -cos(delta)/Xdp, dIi_dV];
+                
+                dP = Vst'*KI + Ist'*[zeros(2), eye(2)];
+                
+                
+                sys_fb = ss([dP; dEfd; KI]);
+                InputGroup = struct();
+                InputGroup.delta = 1;
+                InputGroup.E = 2;
+                InputGroup.V = 3:4;
+                sys_fb.InputGroup = InputGroup;
+                OutputGroup = struct();
+                OutputGroup.P = 1;
+                OutputGroup.Efd = 2;
+                OutputGroup.I = 3:4;
+                sys_fb.OutputGroup = OutputGroup;
+                
+                Vabs = norm(Vst);
+                
+                sys_V = ss([eye(2); Vst'/Vabs]);
+                sys_V.InputGroup.Vin = 1:2;
+                OutputGroup = struct();
+                OutputGroup.V = 1:2;
+                OutputGroup.Vabs = 3;
+                sys_V.OutputGroup = OutputGroup;
+                
+                sys_avr = obj.avr.get_sys();
+                sys_pss = obj.pss.get_sys();
+                sys_gov = obj.governor.get_sys();
+                G = blkdiag(sys_swing, sys_fb, sys_V, sys_avr, -sys_pss, sys_gov);
+                ig = G.InputGroup;
+                og = G.OutputGroup;
+                feedin = [ig.Pout, ig.Efd, ig.Efd_swing, ig.delta, ig.E, ig.V, ig.Vabs, ig.Vfd, ig.u_avr, ig.omega, ig.omega_governor, ig.Pmech];
+                feedout = [og.P, og.Efd, og.Efd,  og.delta, og.E, og.V, og.Vabs, og.Vfd, og.v_pss, og.omega, og.omega, og.Pmech];
+                I = ss(eye(numel(feedin)));
+                
+                ret = feedback(G, I, feedin, feedout, 1);
+                ret_u = ret('I', {'u_avr',  'u_governor'});
+                ret_V = ret('I', 'Vin');
+                A = ret.a;
+                B = ret_u.b;
+                C = ret_u.c;
+                D = ret_u.d;
+                BV = ret_V.b;
+                DV = ret_V.d;
+                BI = zeros(size(A, 1), 2);
+                DI = -eye(2);
+                R = BV;
+                S = zeros(1, size(A, 1));
+                S(2) = 1;
+                R = [];
+                S = [];
+            end
+
         % 定常潮流状態からモデルの平衡点と定常入力値を求めるメソッド
             function [x_st,u_st] = get_equilibrium(obj,V,I)
                 Vangle = angle(V);
