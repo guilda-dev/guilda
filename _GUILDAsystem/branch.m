@@ -83,12 +83,6 @@ classdef branch < base_class.HasGridCode & base_class.HasCostFunction
         function val = PropEditor_Get(obj,prop)
             val = obj.(prop);
         end
-
-        function something_has_changed(obj)
-            if isa(obj.net,'power_network')
-                obj.net.something_has_changed;
-            end
-        end
     end
 end
 

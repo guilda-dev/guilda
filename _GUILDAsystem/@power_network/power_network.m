@@ -65,7 +65,7 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
         controller_list(obj,fig)
 
         function app = GUI(obj,varargin)
-            app = supporters.for_user.GUI(obj,varargin{:});
+            app = supporters.for_GUI.GUI(obj,varargin{:});
         end
 
 
@@ -97,7 +97,7 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
         % 母線の追加・削除に関するメソッド
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function add_bus(obj, bus)
-            bus = obj.check_class(bus,'bus');
+            bus = check_class(bus,'bus');
             bus_num = numel(obj.a_bus);
             arrayfun(@(i) bus{i}.setprop('index',bus_num+i), 1:numel(bus));
             cellfun(@(b)b.register_parent(obj,'overwrite'),bus)
@@ -119,7 +119,7 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
         % ブランチの追加・削除に関するメソッド
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function add_branch(obj, branch)
-            branch = obj.check_class(branch,'branch');
+            branch = check_class(branch,'branch');
             branch_num = numel(obj.a_branch);
             for i = 1:numel(branch)
                 branch{i}.register_parent(obj,'overwrite');
@@ -179,7 +179,7 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
         end
 
         function add_controller(obj,c,gl)
-            c = obj.check_class(c,'controller');
+            c = check_class(c,'controller');
             cellfun(@(ic)ic.register_parent(obj,'overwrite'),c)
             obj.register_child(c,'stack');
             if nargin==3 
@@ -215,14 +215,6 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
     end
     
     methods(Access=protected)
-        function data = check_class(obj,data,classname)%#ok
-            if ~iscell(data)
-                data = {data};
-            end
-            if any(tools.vcellfun(@(l) ~isa(l, classname),data))
-                error(['must be a child of ',classname]);
-            end
-        end
         function PropEditor_Set(obj,prop,val)
             obj.(prop) = val;
         end
@@ -231,6 +223,15 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
         end
     end
     
+end
+
+function data = check_class(data,classname)
+    if ~iscell(data)
+        data = {data};
+    end
+    if any(tools.vcellfun(@(l) ~isa(l, classname),data))
+        error(['must be a child of ',classname]);
+    end
 end
 
 
