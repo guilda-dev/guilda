@@ -11,7 +11,7 @@ function when_power_flow_table_edit(app,event)
         pause(10^(-5));
         app.net.a_bus{bus_idx}.(['set_',para_name])(newData);
         app.net.initialize;
-        data = supporters.for_user.func.look_para(app.net,false);
+        data = supporters.for_GUI.func.look_para(app.net,false);
         app.power_flow_table.Data          = data.flow_para;
         app.equilibrium_table.Data         = data.x_equilibrium;
         app.disp(['>> net.a_bus{',num2str(bus_idx),'}.',para_name,'=',num2str(event.NewData),';'])

@@ -1,7 +1,7 @@
 function refresh_network_graph(app)
     if app.net_changed_switch
         refresh_graph_controller_marker_setter(app);
-        app.network_graph_data = supporters.for_user.func.look_modelTree(app.net,false);
+        app.network_graph_data = supporters.for_GUI.func.look_modelTree(app.net,false);
         app.net_changed_color_switch = true;
         app.net_changed_switch = false;
     end
@@ -14,7 +14,7 @@ function refresh_network_graph(app)
         prior_idx = prior_idx(Cset_idx);
         [~,prior_idx] = sort(prior_idx,'descend');
         Cset_idx = Cset_idx(prior_idx);
-        idx = supporters.for_user.func.look_component_type(app.net);
+        idx = supporters.for_GUI.func.look_component_type(app.net);
         idx = struct2table(idx);
         temp = false(size(idx{:,1}));
         nan_para_list = cell(numel(app.net.a_bus),1);
@@ -105,7 +105,7 @@ function refresh_network_graph(app)
     end
 
     con_set_table = app.graph_controller_switch_table.Data;
-    con_table = supporters.for_user.func.look_controller(app.net);
+    con_table = supporters.for_GUI.func.look_controller(app.net);
     for i = 1:size(con_set_table,1)
         color = con_set_table{i,'color'};
         if con_set_table{i,{'idx_input'}}
