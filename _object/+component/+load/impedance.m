@@ -31,22 +31,26 @@ classdef impedance < component.load.abstract
             u_name = {'Conductance','Susceptance'};
         end
 
-        % function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, ~, V)
-        %     if nargin < 2
-        %         [A, B, C, D, BV, DV, BI, DI, R, S] = obj.get_linear_matrix([], obj.V_st);
-        %     else
-        %         A = [];
-        %         B = zeros(0, 2);
-        %         C = zeros(2, 0);
-        %         D = [tools.complex2matrix(real(obj.Y))*V, tools.complex2matrix(1j*imag(obj.Y))*V];
-        %         BV = zeros(0, 2);
-        %         DV = tools.complex2matrix(obj.Y);
-        %         R = [];
-        %         S = [];
-        %         BI = zeros(0, 2);
-        %         DI = -eye(2);
-        %     end
-        % end
+        function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, ~, V)
+            if nargin < 3
+                [A, B, C, D, BV, DV, BI, DI, R, S] = obj.get_linear_matrix([], obj.V_st);
+            else
+                if isempty(V)
+                    V = obj.V_st;
+                end
+
+                A = [];
+                B = zeros(0, 2);
+                C = zeros(2, 0);
+                D = [tools.complex2matrix(real(obj.Y))*V, tools.complex2matrix(1j*imag(obj.Y))*V];
+                BV = zeros(0, 2);
+                DV = tools.complex2matrix(obj.Y);
+                R = [];
+                S = [];
+                BI = zeros(0, 2);
+                DI = -eye(2);
+            end
+        end
         
     end
 end

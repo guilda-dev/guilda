@@ -24,6 +24,24 @@ classdef voltage < component.load.abstract
         function u_name = naming_port(obj)
             u_name = {'Vreal','Vimag'};
         end
+
+        function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, ~, ~)
+            if nargin < 3
+                [A, B, C, D, BV, DV, BI, DI, R, S] = obj.get_linear_matrix([], obj.V_st);
+            else
+
+                A  = [];
+                B  = zeros(0, 2);
+                C  = zeros(2, 0);
+                D  = eye(2);
+                BV = zeros(0, 2);
+                DV = -eye(2);
+                R  = [];
+                S  = [];
+                BI = zeros(0, 2);
+                DI = zeros(2, 2);
+            end
+        end
         
     end
 end

@@ -33,10 +33,14 @@
             u_name = {'RealPower','ReactivePower'};
         end
         
-        function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, x, V)
-            if nargin < 2
+        function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, ~, V)
+            if nargin < 3
                 [A, B, C, D, BV, DV, BI, DI, R, S] = obj.get_linear_matrix([], obj.V_st);
             else
+                if isempty(V)
+                    V = obj.V_st;
+                end
+
                 den = (V'*V)^2;
                 Vr = V(1);
                 Vi = V(2);

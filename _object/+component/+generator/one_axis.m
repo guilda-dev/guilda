@@ -17,9 +17,9 @@ classdef one_axis < component.generator.base
             obj@component.generator.base(parameter)
             
             obj.parameter = obj.parameter(:, {'Xd', 'Xd_p', 'Xq', 'Td_p', 'M', 'D'});
-            obj.set_avr( component.generator.avr.base() );
+            obj.set_avr(      component.generator.avr.base()      );
             obj.set_governor( component.generator.governor.base() );
-            obj.set_pss( component.generator.pss.base() );
+            obj.set_pss(      component.generator.pss.base()      );
         end
         
         function name_tag = naming_state(obj)
@@ -77,9 +77,8 @@ classdef one_axis < component.generator.base
                 Ir =  (E-Vabscos)*sin(delta)/Xdp + Vabssin*cos(delta)/Xq;
                 Ii = -(E-Vabscos)*cos(delta)/Xdp + Vabssin*sin(delta)/Xq;
                 
-                con = I - [Ir; Ii];
-                
-                Efd = Xd*E/Xdp - (Xd/Xdp-1)*Vabscos;
+                Efd  = Xd*E/Xdp - (Xd/Xdp-1)*Vabscos;
+                Pout = Vabs*E*sin(delta-Vangle)/Xdp - Vabs^2*(1/Xdp-1/Xq)*sin(2*(delta-Vangle))/2;
                 
                 
                 [dx_pss, v  ] = obj.pss.get_u(x_pss, omega, u_pss);
@@ -87,13 +86,14 @@ classdef one_axis < component.generator.base
                 [dx_gov, Pm ] = obj.governor.get_P(x_gov, omega, u_gov);
                 
                 ddelta = obj.omega0 * omega;
-                domega = (Pm - d*omega - Vabs*E*sin(delta-Vangle)/Xdp + Vabs^2*(1/Xdp-1/Xq)*sin(2*(delta-Vangle))/2)/M;
-                dE     = (-Efd + Vfd)/Td_p;
+                domega = (- d*omega - Pout + Pm )/M;
+                dE     = (          -  Efd + Vfd)/Td_p;
                 
                 dx = [ddelta; domega; dE; dx_avr; dx_pss; dx_gov];
+                con = I - [Ir; Ii];
             end
 
-            function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, x_st, Vst, Ist)
+            function [A, B, C, D, BV, DV, BI, DI, R, S] = get_system_matrix(obj, x_st, Vst, Ist)
 
                 if nargin < 2 || isempty(x_st)
                     x_st = obj.x_equilibrium;
@@ -260,9 +260,9 @@ classdef one_axis < component.generator.base
             Xd  = obj.parameter{:, 'Xd'};
             Xdp = obj.parameter{:, 'Xd_p'};
             Xq  = obj.parameter{:, 'Xq'};
-            Td_p  = obj.parameter{:, 'Td_p'};
-            M  = obj.parameter{:, 'M'};
-            D  = obj.parameter{:, 'D'};
+            Td_p= obj.parameter{:, 'Td_p'};
+            M   = obj.parameter{:, 'M'};
+            D   = obj.parameter{:, 'D'};
             
             A_swing = [0 omega_bar 0;
                 0 -D/M 0;
@@ -301,7 +301,7 @@ classdef one_axis < component.generator.base
             Vabscos = Vst(1)*cos(delta)+Vst(2)*sin(delta);
             Vabssin = Vst(1)*sin(delta)-Vst(2)*cos(delta);
             dVabscos = -Vabssin;
-            dVabssin = Vabscos;
+            dVabssin =  Vabscos;
             
             dEfd = -[dVabscos, 0, dVabscos_dV] * (Xd/Xdp-1) + [0, Xd/Xdp, 0, 0];
             
@@ -312,10 +312,10 @@ classdef one_axis < component.generator.base
                 -(E-Vabscos)*cos(delta)/Xdp + Vabssin*sin(delta)/Xq];
             
             % (delta, E, V) => (Ir, Ii)
-            KI = [dIr_dd, sin(delta)/Xdp, dIr_dV;
-                dIi_dd, -cos(delta)/Xdp, dIi_dV];
+            KI = [dIr_dd,  sin(delta)/Xdp, dIr_dV;
+                  dIi_dd, -cos(delta)/Xdp, dIi_dV];
             
-            dP = Vst'*KI + Ist'*[zeros(2), eye(2)];
+            dP = Vszt'*KI + Ist'*[zeros(2), eye(2)];
             
             
             sys_fb = ss([dP; dEfd; KI]);
