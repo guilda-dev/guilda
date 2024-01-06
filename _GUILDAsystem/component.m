@@ -119,7 +119,7 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
                         Vst = obj.V_st;
                         Ist = obj.I_st;
                         xst = obj.x_equilibrium;
-                        ust = obj.x_equilibrium;
+                        ust = obj.u_equilibrium;
                     else
                         % check form of Vst and Ist
                         if numel(Vst) == 1
@@ -215,7 +215,11 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
                     otherwise
                         error('porttype must be "add","rate","value".')
                 end
-                linear = obj.connected_bus.power_network.linear;
+                try
+                    linear = obj.connected_bus.power_network.linear;
+                catch
+                    linear = false;
+                end
                 obj.set_function(linear);
             end
     
