@@ -11,7 +11,7 @@ function [is_match, is_match_A, is_match_B, is_match_C, is_match_D] = test_get_s
     if ~contains(name_mat, '.mat')
         name_mat = strcat(name_mat, '.mat');
     end
-    path_mat = fullfile(pwd,'_GUILDA','_GUILDAsystem','+test_script','mat');
+    path_mat = fullfile(pwd,'_GUILDAsystem','+test_script','mat');
     
     if ~exist(fullfile(path_mat,name_mat),'file')
         error(strcat("Test data doesn't exist (mat name: ", name_mat, ")"));

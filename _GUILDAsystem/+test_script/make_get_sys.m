@@ -1,6 +1,6 @@
 function make_get_sys(net)
     name_mat = strcat(net.Tag,'.mat');
-    path_mat = fullfile(pwd,'_GUILDA','_GUILDAsystem','+test_script','mat');
+    path_mat = fullfile(pwd,'_GUILDAsystem','+test_script','mat');
     if ~exist(path_mat,'dir')
         mkdir(path_mat);
     end
