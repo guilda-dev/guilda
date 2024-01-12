@@ -17,7 +17,12 @@ function [out,obj] = export_out(obj)
     out.Utotal      = organize(storage.uall);
     out.sols = storage.sol;
 
-    id = load('_GUILDAsystem/_version_support/version_id.mat');
+    try
+        file = mfilename("fullpath");
+        id = load(replace(file,'+supporters/+for_simulate/@odefactory/export_out','_version_support/version_id.mat'));
+    catch
+        id.ver = 'latest';
+    end
     switch id.ver
         case '1'
             out.Xk        = out.Xcon.local;

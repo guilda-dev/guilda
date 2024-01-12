@@ -135,11 +135,11 @@ classdef classical < component.generator.base
             dVd = Vq; %ok
 
 
-            dIr_dd = (-dVq*sin(delta)+(obj.Vfd-Vq)*cos(delta))/X + (dVd*cos(delta)-Vd*sin(delta))/X;
-            dIi_dd = (dVq*cos(delta)+(obj.Vfd-Vq)*sin(delta))/X + (dVd*sin(delta)+Vd*cos(delta))/X; %ok
+            dIr_dd = (-dVq*sin(delta)+(obj.Vfield-Vq)*cos(delta))/X + (dVd*cos(delta)-Vd*sin(delta))/X;
+            dIi_dd = (dVq*cos(delta)+(obj.Vfield-Vq)*sin(delta))/X + (dVd*sin(delta)+Vd*cos(delta))/X; %ok
 
-            Ist =  [(obj.Vfd*sin(delta) - Vq*sin(delta) + Vd*cos(delta))/X;
-                    (-obj.Vfd*cos(delta) + Vq*cos(delta) + Vd*sin(delta))/X]; %ok
+            Ist =  [(obj.Vfield*sin(delta) - Vq*sin(delta) + Vd*cos(delta))/X;
+                    (-obj.Vfield*cos(delta) + Vq*cos(delta) + Vd*sin(delta))/X]; %ok
 
             % (delta, V) => (Ir, Ii)
             KI = [dIr_dd, dIr_dV;
@@ -188,9 +188,8 @@ classdef classical < component.generator.base
             DV = ret_V.d;
             BI = zeros(size(A, 1), 2);
             DI = -eye(2);
-            R = BV;
-            S = zeros(1, size(A, 1));
-            S(2) = 1;
+            R = [];
+            S = [];
         end
 
         % 定常潮流状態からモデルの平衡点と定常入力値を求めるメソッド
@@ -212,6 +211,7 @@ classdef classical < component.generator.base
                 [x_gov,u_gov] = obj.governor.initialize(P);
                 [x_pss,u_pss] = obj.pss.initialize();
     
+                obj.Vfield = Vfd;
                 x_st = [delta; 0; x_avr; x_gov; x_pss];
                 u_st = [u_avr;u_pss;u_gov];
             end
