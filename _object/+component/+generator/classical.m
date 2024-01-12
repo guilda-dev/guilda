@@ -1,4 +1,11 @@
 classdef classical < component.generator.base
+%モデル　: 同期発電機の古典モデル
+%　状態　: ２変数「回転子偏角"delta",周波数偏差"omega"」
+%　　　　  * AVRやPSSが付加されるとそれらの状態も追加される
+%　入力　: １ポート「機械入力"Pmech"」
+%実行方法: obj =　component.generator.classical(parameter)
+%　引数　: parameter : table型．「'Xd', 'Xq','M','D'」を列名として定義
+
     properties
         Vfield
     end

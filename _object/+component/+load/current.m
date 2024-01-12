@@ -1,12 +1,8 @@
 classdef current < component.load.abstract
-% モデル ：定電流負荷モデル
-%       ・状態：なし
-%       ・入力：２ポート「電流フェーザの実部の倍率,電流フェーザの虚部の倍率」
-%               *入力αのとき値は設定値の(1+α)倍となる．
-%親クラス：componentクラス
-%実行方法：obj = component.load.current()
-%　引数　：なし
-%　出力　：componentクラスのインスタンス    
+% モデル  ：定電流負荷モデル
+% 状態　　：なし
+% 入力　　：２ポート「電流フェーザの実部,電流フェーザの虚部」
+%実行方法 ：obj = component.load.current()
 
     
     methods

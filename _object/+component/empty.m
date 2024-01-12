@@ -1,16 +1,13 @@
 classdef empty < component
 % モデル  ：空の機器モデル
-%       ・状態：なし
-%       ・入力：ポートなし
-%親クラス：componentクラス
-%実行方法：obj = component.empty()
-%　引数　：なし
-%　出力　：componentクラスのインスタンス
+% 状態　　：なし
+% 入力　　：ポートなし
+%実行方法 ：obj = component.empty()
     
     
     methods
         function obj = empty()
-            obj.Tag = 'none';
+            obj.Tag = 'non';
         end
 
         function [x_st,u_st] = get_equilibrium(obj,varargin)

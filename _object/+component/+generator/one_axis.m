@@ -1,12 +1,10 @@
 classdef one_axis < component.generator.base
-% モデル  ：同期発電機の一軸モデル
-%         ・状態：３つ「回転子偏角"δ",周波数偏差"Δω",内部電圧"E"」
-%               *AVRやPSSが付加されるとそれらの状態も追加される
-%         ・入力：２ポート「界磁入力"Vfield", 機械入力"Pmech"」
-%               *定常値からの追加分を指定
-% 親クラス：componentクラス
-% 実行方法：obj =　component.generator.1axis(parameter)
-% 　引数　：・parameter : table型．「'Xd', 'Xd_p','Xq','T','M','D'」を列名として定義
+%モデル　: 同期発電機の１軸モデル
+%　状態　: ３変数「回転子偏角"delta",周波数偏差"omega",内部電圧"Ed"」
+%　　　　  * AVRやPSSが付加されるとそれらの状態も追加される
+%　入力　: ２ポート「界磁入力"Vfield", 機械入力"Pmech"」
+%実行方法: obj =　component.generator.one_axis(parameter)
+%　引数　: parameter : table型．「'Xd', 'Xd_p','Xq','Td_p','M','D'」を列名として定義
     
     
     methods

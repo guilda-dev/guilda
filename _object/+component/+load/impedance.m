@@ -1,12 +1,8 @@
 classdef impedance < component.load.abstract
-% モデル ：定インピーダンス付加モデル
-%       ・状態：なし
-%       ・入力：２ポート「インピーダンス値の実部の倍率,インピーダンス値の虚部の倍率」
-%               *入力αのときインピーダンスの値は設定値の(1+α)倍となる．
-%親クラス：componentクラス
-%実行方法：obj = component.load.impedance()
-%　引数　：なし
-%　出力　：componentクラスのインスタンス
+% モデル  ：定インピーダンス負荷モデル
+% 状態　　：なし
+% 入力　　：２ポート「インピーダンス値の実部,インピーダンス値の虚部」
+%実行方法 ：obj = component.load.impedance()
     
 
     properties(SetAccess = private)

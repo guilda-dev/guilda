@@ -1,4 +1,10 @@
-classdef two_axis < component.generator.base % 状態・パラメーターはqを先においている
+classdef two_axis < component.generator.base
+%モデル　: 同期発電機の２軸モデル
+%　状態　: ３変数「回転子偏角"delta",周波数偏差"omega",内部電圧"Ed","Eq"」
+%　　　　  * AVRやPSSが付加されるとそれらの状態も追加される
+%　入力　: ２ポート「界磁入力"Vfield", 機械入力"Pmech"」
+%実行方法: obj =　component.generator.two_axis(parameter)
+%　引数　: parameter : table型．「'Xd', 'Xd_p','Xq','Xq_p','Td_p','Tq_p','M','D'」を列名として定義
     
     methods
         function obj = two_axis(parameter)
