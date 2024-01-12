@@ -5,6 +5,7 @@
 \usepackage[letterpaper,top=2cm,bottom=2cm,left=3cm,right=3cm,margin=15truemm]{geometry}
 
 % Useful packages
+\usepackage{here}
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{autobreak}
@@ -17,9 +18,9 @@
 \maketitle{}
 \section{ネットワークのグラフ構造}
 
- \begin{figure}[h]
+ \begin{figure}[H]
  \begin{center}
- \includegraphics[width=0.9\linewidth]{data/network_graph.eps}
+ \includegraphics[width=\linewidth]{data/network_graph.eps}
  \end{center}
  \end{figure}
  \newpage
@@ -31,13 +32,35 @@
 \input{data/brnch.txt}
 
 \section{機器一覧}
-\subsection{機器のパラメータ}
+\input{data/component.txt}
+
+\subsection{パラメータ}
 \input{data/component_parameter.txt}
 
-\subsection{機器の平衡点}
+\subsection{平衡点}
 \input{data/component_equilibrium.txt}
 
 \subsection{各機器のダイナミクス}
 \input{data/component_dynamics.txt}
+
+
+\section{ローカルコントローラ一覧}
+\input{data/controller_local.txt}
+
+\subsection{パラメータ}
+\input{data/controller_local_parameter.txt}
+
+\subsection{平衡点}
+\input{data/controller_local_equilibrium.txt}
+
+
+\section{グローバルコントローラ一覧}
+\input{data/controller_global.txt}
+
+\subsection{パラメータ}
+\input{data/controller_global_parameter.txt}
+
+\subsection{平衡点}
+\input{data/controller_global_equilibrium.txt}
 
 \end{document}

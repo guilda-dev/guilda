@@ -39,8 +39,8 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
         I_st
     end
     
-    properties
-        GraphCoordinate = [];
+    properties(Dependent)
+        GraphCoordinate
     end
     
     methods(Abstract)
@@ -91,6 +91,10 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
     
             function out = get.I_st(obj)
                 out = [real(obj.I_equilibrium);imag(obj.I_equilibrium)];
+            end
+
+            function out = get.GraphCoordinate(obj)
+                out = obj.connected_bus.GraphCoordinate;
             end
 
         %% method for get number of state/input
