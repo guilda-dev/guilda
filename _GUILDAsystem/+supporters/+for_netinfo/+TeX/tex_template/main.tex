@@ -1,4 +1,4 @@
-\documentclass[landscape]{report}
+\documentclass{article}
 
 % Set page size and margins
 \pagestyle{empty}
@@ -7,60 +7,43 @@
 % Useful packages
 \usepackage{here}
 \usepackage{amsmath}
+\usepackage{ascmac}
 \usepackage{graphicx}
 \usepackage{autobreak}
 \usepackage{longtable}
+
+% If you want to use the pdflatex environment and support Japanese, please uncomment the following
+% \usepackage[whole]{bxcjkjatype}
 
 \title{Information in PowerNetwork}
 \author{by GUILDA}
 
 \begin{document}
 \maketitle{}
-\section{ネットワークのグラフ構造}
 
+\section{Graph Structure of Power Networks}
+\input{data/graph.tex}
  \begin{figure}[H]
  \begin{center}
- \includegraphics[width=\linewidth]{data/network_graph.eps}
+ \includegraphics[width=0.9\linewidth]{data/network_graph}
  \end{center}
  \end{figure}
- \newpage
-
-\section{母線の情報(潮流状態・接続機器の種類)}
-\input{data/bus.txt}
-
-\section{送電線のパラメータ}
-\input{data/brnch.txt}
-
-\section{機器一覧}
-\input{data/component.txt}
-
-\subsection{パラメータ}
-\input{data/component_parameter.txt}
-
-\subsection{平衡点}
-\input{data/component_equilibrium.txt}
-
-\subsection{各機器のダイナミクス}
-\input{data/component_dynamics.txt}
 
 
-\section{ローカルコントローラ一覧}
-\input{data/controller_local.txt}
+\section{Bus (power flow, connected component, etc...)}
+\input{data/bus.tex}
 
-\subsection{パラメータ}
-\input{data/controller_local_parameter.txt}
+\section{Branch (Admittance, connected bus, etc...)}
+\input{data/brnch.tex}
 
-\subsection{平衡点}
-\input{data/controller_local_equilibrium.txt}
+\section{Component (parameter, dynamics, etc...)}
+\input{data/component.tex}
 
+\section{Local controller (parameter, dynamics, etc...)}
+\input{data/controller_local.tex}
 
-\section{グローバルコントローラ一覧}
-\input{data/controller_global.txt}
+\section{Global controller (parameter, dynamics, etc...)}
+\input{data/controller_global.tex}
 
-\subsection{パラメータ}
-\input{data/controller_global_parameter.txt}
-
-\subsection{平衡点}
-\input{data/controller_global_equilibrium.txt}
 
 \end{document}

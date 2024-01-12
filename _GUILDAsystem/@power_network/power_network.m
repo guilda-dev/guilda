@@ -40,6 +40,8 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
             for i = 1:numel(obj.a_bus)
                obj.a_bus{i}.set_equilibrium(V(i), I(i)); 
             end
+            cellfun(@(c) c.update_idx, obj.a_controller_local)
+            cellfun(@(c) c.update_idx, obj.a_controller_global)
             obj.reflected;
             obj.linear = obj.linear;
         end
@@ -192,6 +194,7 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
                 end
             end
             for i = 1:numel(c)
+                c{i}.update_idx
                 switch c{i}.type
                     case 'local'
                         obj.a_controller_local = [obj.a_controller_local,c(i)];

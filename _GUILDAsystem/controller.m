@@ -4,7 +4,7 @@ classdef controller < base_class.HasStateInput & base_class.HasGridCode & base_c
 % 新しい制御器モデルを実装する場合はこのcontrollerクラスを継承すること。
     
     properties
-        parameter = table()
+        parameter = array2table(zeros(1,0))
         type = 'local';
     end
 

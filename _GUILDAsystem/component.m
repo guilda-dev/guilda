@@ -25,7 +25,7 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
     end
 
     properties
-        parameter = table();
+        parameter = array2table(zeros(1,0))
         get_dx_con_func
     end
 

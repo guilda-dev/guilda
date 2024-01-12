@@ -60,6 +60,7 @@ classdef InfoCenter < handle
                     func = @(c) reshape(c.get_x0,1,[]);
                     rowname = "con";
             end
+
             tab = obj.uni_tab(func,@(c)c.get_state_name,mlg);
             tab.Properties.RowNames = rowname+(1:size(tab,1));
         end
@@ -68,10 +69,12 @@ classdef InfoCenter < handle
             switch mlg
                 case 'mac'
                     func = @(c) reshape(c.u_equilibrium,1,[]);
+                    rowname = "mac";
                 case {'cl','cg'}
                     tab = [];return
             end
             tab = obj.uni_tab(func,@(c)c.get_port_name,mlg);
+            tab.Properties.RowNames = rowname+(1:size(tab,1));
         end
 
         function tab = uni_parameter(obj,mlg)
@@ -99,7 +102,7 @@ classdef InfoCenter < handle
             if isempty(obj.network_handle.a_bus)
                 data=[];return
             end
-            f = @(n,d) a2tab(d,'VariableNames',{n});
+            f = @(n,d) array2table(d,'VariableNames',{n});
             net = obj.network_handle;
             PQ_equilibrium = net.V_equilibrium .* conj(net.I_equilibrium);
             data = [ f( 'class'        ,obj.cn_bus                                 ) ,...
@@ -123,7 +126,7 @@ classdef InfoCenter < handle
             if isempty(obj.network_handle.a_branch)
                 data=[];return
             end
-            f = @(n,d) a2tab(d,'VariableNames',{n});
+            f = @(n,d) array2table(d,'VariableNames',{n});
             p = @(n)   obj.broadcast(@(c) get_prop(c,n), 'bra');
             net = obj.network_handle;
             data = [ f( 'class'   ,obj.cn_br ) ,...
@@ -143,7 +146,7 @@ classdef InfoCenter < handle
             if isempty(obj.network_handle.a_bus)
                 data=[];return
             end
-            f = @(n,d) a2tab(d,'VariableNames',{n});
+            f = @(n,d) array2table(d,'VariableNames',{n});
             net = obj.network_handle;
             data = [ f( 'class'   , obj.cn_mac                                  ),...
                      f( 'state'   , obj.broadcast(@(c){c.get_state_name},'mac') ), ...
@@ -157,7 +160,7 @@ classdef InfoCenter < handle
             if isempty(obj.network_handle.a_controller_local)
                 data=[];return
             end
-            f = @(n,d) a2tab(d,'VariableNames',{n});
+            f = @(n,d) array2table(d,'VariableNames',{n});
             net = obj.network_handle;
             data = [ f( 'class'        ,obj.cn_cl                                  ),...
                      f( 'index_observe',obj.broadcast(@(c) {c.index_observe} ,'cl') ),...
@@ -172,7 +175,7 @@ classdef InfoCenter < handle
             if isempty(obj.network_handle.a_controller_global)
                 data=[];return
             end
-            f = @(n,d) a2tab(d,'VariableNames',{n});
+            f = @(n,d) array2table(d,'VariableNames',{n});
             net = obj.network_handle;
             data = [ f( 'class'        ,obj.cn_cg                                  ),...
                      f( 'index_observe',obj.broadcast(@(c) {c.index_observe} ,'cg') ),...
@@ -184,8 +187,8 @@ classdef InfoCenter < handle
         end
 
         function tab = uni_tab(obj,fdata,ftag,mlg)
-            vars = unique(obj.broadcast(@(c)reshape(c.get_state_name,[],1),mlg),'stable');
-            tab = obj.broadcast(@(c) {a2tab(fdata(c),'VariableNames',ftag(c))},mlg);
+            vars = unique(obj.broadcast(@(c)ftag(c),mlg),'stable');
+            tab = obj.broadcast(@(c) {array2table(fdata(c),'VariableNames',ftag(c))},mlg);
             tab = horztab(tab,vars);
         end
 
@@ -217,7 +220,7 @@ classdef InfoCenter < handle
                     ismember(is,func(ib.component)) ...
                   ,obj.network_handle.a_bus) ...
                   ,uni);
-            tab = a2tab(tab,'VariableNames',uni);
+            tab = array2table(tab,'VariableNames',uni);
             tab.Properties.RowNames = "mac"+(1:numel(obj.network_handle.a_bus));
         end
 
@@ -234,7 +237,7 @@ classdef InfoCenter < handle
                     ismember(is,func(ib))...
                   ,a_con)...
                   ,uni);
-            tab = a2tab(tab,'VariableNames',uni);
+            tab = array2table(tab,'VariableNames',uni);
             if ~isempty(tab)
                 tab.Properties.RowNames = "con"+(1:numel(a_con));
             end
@@ -250,7 +253,7 @@ classdef InfoCenter < handle
 %                 idx = find(ilist==i);
 %                 
 %                 statenames = unique( tools.hcellfun(@(c) c.get_state_name, list(idx)), 'stable');
-%                 i_state = tools.vcellfun(@(c) tabcomp(a2tab(reshape(c.(f),1,[]),'VariableNames',c.get_state_name),statenames),list(idx));
+%                 i_state = tools.vcellfun(@(c) tabcomp(array2table(reshape(c.(f),1,[]),'VariableNames',c.get_state_name),statenames),list(idx));
 %                 i_state.Properties.RowNames = row + idx(:); 
 % 
 %                 paranames = unique( tools.hcellfun(@(c) c.parameter.Properties.VariableNames, list(idx)), 'stable');
@@ -268,19 +271,12 @@ classdef InfoCenter < handle
     
 end
 
-function tab = a2tab(array,varargin)
-    if isempty(array)
-        tab = [];
-    else
-        tab = array2table(array,varargin{:});
-    end
-end
-
 function out = horztab(tab,vars)
     if isempty(vars)
-        out = table();return
+        out = array2table(zeros(size(tab,1),0));
+        return
     end
-    out = tools.hcellfun( @(iv)a2tab(tools.vcellfun( @(it)get_prop(it,iv),tab),'VariableNames',{iv}),vars);
+    out = tools.hcellfun( @(iv)array2table(tools.vcellfun( @(it)get_prop(it,iv),tab),'VariableNames',{iv}),vars);
 end
 
 function out = get_prop(c,prop)

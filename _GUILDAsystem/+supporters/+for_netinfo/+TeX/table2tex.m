@@ -75,15 +75,18 @@ function Out = revise(In)
             end
         otherwise
             if isnumeric(In)
+                In(abs(In) < 1e-12) = 0;
                 if numel(In)==1 && isnan(In)
                     Out = '';
-                else
-                    In(abs(In) < 1e-12) = 0;
+                elseif numel(In)==1
                     Out = num2str(In);
-                    
                     if (isreal(In) && numel(Out) > 7) || (~isreal(In) && numel(Out) > 14)
                         Out = num2str(In,'%.3f');
                     end
+                elseif any(size(In)==1)
+                    Out = num2str(In(:)');
+                else
+                    Out = mat2str(In);
                 end
             else
                 Out = class(In);

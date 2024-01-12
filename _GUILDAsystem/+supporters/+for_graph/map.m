@@ -152,6 +152,10 @@ classdef map < handle
         end
 
         function set.ZLim(obj,data)
+            if strcmp(data,'auto')
+                Z = obj.Graph.ZData;
+                data = 1.1*[min(Z),max(Z)];
+            end
             if numel(data)==1
                 data = data*[-1,1];
             end
@@ -159,6 +163,10 @@ classdef map < handle
         end
 
         function set.XLim(obj,data)
+            if strcmp(data,'auto')
+                X = obj.Graph.XData;
+                data = 1.1*[min(X),max(X)];
+            end
             if numel(data)==1
                 data = data*[-1,1];
             end
@@ -166,6 +174,10 @@ classdef map < handle
         end
 
         function set.YLim(obj,data)
+            if strcmp(data,'auto')
+                Y = obj.Graph.YData;
+                data = 1.1*[min(Y),max(Y)];
+            end
             if numel(data)==1
                 data = data*[-1,1];
             end

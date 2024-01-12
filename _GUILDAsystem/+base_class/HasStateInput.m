@@ -8,6 +8,10 @@ classdef HasStateInput < base_class.handleCopyable
         function u_name = get_port_name(obj)
             u_name = obj.get_name('naming_port','u');
         end
+
+        function text = get_TeXdoc(obj)
+            text = 'No Documentation.';
+        end
     end
 
     methods(Access=private)
