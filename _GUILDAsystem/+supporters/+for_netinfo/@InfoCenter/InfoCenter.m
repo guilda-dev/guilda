@@ -187,7 +187,7 @@ classdef InfoCenter < handle
         end
 
         function tab = uni_tab(obj,fdata,ftag,mlg)
-            vars = unique(obj.broadcast(@(c)ftag(c),mlg),'stable');
+            vars = unique(obj.broadcast(@(c)reshape(ftag(c),[],1),mlg),'stable');
             tab = obj.broadcast(@(c) {array2table(fdata(c),'VariableNames',ftag(c))},mlg);
             tab = horztab(tab,vars);
         end

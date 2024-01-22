@@ -1,13 +1,15 @@
-function out = table2tex(data,Row)
-    if nargin<2
-        Row = [];
-    end
+function out = table2tex(data,Row,Rowidx)
+
     if numel(data)==0
         out = ['No Data',newline];
     else
+    
         % tableデータに関数パラメータを取得
-            nc = size(data,1);
-            nv = size(data,2);
+        nc = size(data,1);
+        nv = size(data,2);
+
+    if nargin<2; Row = []; end
+    if nargin<3; Rowidx = 1:nc; end
         
         % タブスペースのchar配列を定義
         tab  = '    ';
@@ -15,8 +17,9 @@ function out = table2tex(data,Row)
 
         TextCell = cell(3+nc,1+2*nv);
 
-        TextCell(  1:3,         1) = {[tab2,'&']}; 
-        TextCell(4:end,         1) = tools.arrayfun(@(i)[Row,num2str(i),'&'],1:nc);
+        TextCell([1,3],         1) = {[tab2,'&']}; 
+        TextCell(    2,         1) = {'No. &'}; 
+        TextCell(4:end,         1) = tools.arrayfun(@(i)[Row,num2str(i),'&'],Rowidx);
         TextCell(    2, 2:2:end-1) = tools.cellfun(@(r) ['\textbf{',repstr(r,1),'}'], data.Properties.VariableNames);
         TextCell(    :, 3:2:end-2) = {' & '};
         TextCell(1:end,       end) = {['\\',newline]};

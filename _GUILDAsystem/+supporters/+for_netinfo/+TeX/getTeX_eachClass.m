@@ -10,7 +10,7 @@ function text = getTeX_eachClass(a_class,TabData,TabParameter,TabXEquilibrium,Ta
 
     text_cell = cell( 6, n_name);
 
-    getText_Tabi = @(tab,idx) supporters.for_netinfo.TeX.table2tex( rmVar( tab(  idx, :) ) );
+    getText_Tabi = @(tab,idx) supporters.for_netinfo.TeX.table2tex( rmVar(tab(idx,:)),[],find(idx));
     for i = 1:n_name
         % 1. クラス名のサブセクション定義
         text_cell{1,i} = [newline,...

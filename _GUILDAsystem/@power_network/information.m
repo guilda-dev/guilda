@@ -4,10 +4,10 @@ function out = information(obj,varargin)
     p = inputParser;
     p.CaseSensitive = false;
     addParameter(p, 'do_report', true);
-    addParameter(p, 'plot_graph', false);
-    addParameter(p, 'HTML'      , false);
-    addParameter(p, 'export_tex_data', false);
-    
+    addParameter(p, 'graph'  , false);
+    addParameter(p, 'HTML'   , false);
+    addParameter(p, 'TeX'    , false);
+    addParameter(p, 'TeXpath', []   );
     
     parse(p, varargin{:});
     options = p.Results;
@@ -17,9 +17,9 @@ function out = information(obj,varargin)
         info.fprintf
     end
 
-    if options.plot_graph ~= 0
-        if isgraphics( options.plot_graph )
-            ax = options.plot_graph;
+    if options.graph ~= 0
+        if isgraphics( options.graph )
+            ax = options.graph;
         else
             figure
             ax = gca;
@@ -30,6 +30,10 @@ function out = information(obj,varargin)
     end
 
     out = info.data;
+
+    if options.TeX || ~isempty(options.TeXpath)
+        supporters.for_netinfo.TeX.main(obj,out);
+    end
 end
 
 
