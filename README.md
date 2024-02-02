@@ -6,6 +6,10 @@ GUILDAは
 
 という特徴をもつことを目指した電力システムのシミュレータです．
 
+## open in MATLAB Online
+以下のアイコンをクリックするとMATLAB Online上でGUILDAを開くことができます。
+[![Open in MATLAB Online](https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg)](https://matlab.mathworks.com/open/github/v1?repo=guilda-dev/guilda)
+
 ## Requirement
 - MATLAB
 - Control system toolbox
