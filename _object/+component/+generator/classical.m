@@ -178,7 +178,7 @@ classdef classical < component.generator.base
             I = ss(eye(numel(feedin))); %ok
 
             ret = feedback(G, I, feedin, feedout, 1);
-            ret_u = ret('I', {'u_avr',  'u_avr'});
+            ret_u = ret('I', {'u_avr',  'u_governor'});
             ret_V = ret('I', 'Vin');
             A = ret.a;
             B = ret_u.b;
