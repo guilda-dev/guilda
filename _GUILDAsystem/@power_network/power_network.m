@@ -5,7 +5,7 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
         V_equilibrium
         I_equilibrium
     end
-    
+
     properties(SetAccess = protected)
         a_bus = {}
         a_branch = {}
@@ -30,7 +30,7 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
         [out,sim] = simulate(obj, t, u, index_u, varargin);
         [cost_total,cost_branch,cost_component] = get_cost_function(obj,varargin)
 
-        
+
 
         % 潮流計算に関するメソッド
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,7 +38,7 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
         function initialize(obj)
             [V, I] = obj.calculate_power_flow();
             for i = 1:numel(obj.a_bus)
-               obj.a_bus{i}.set_equilibrium(V(i), I(i)); 
+                obj.a_bus{i}.set_equilibrium(V(i), I(i)); 
             end
             cellfun(@(c) c.update_idx, obj.a_controller_local)
             cellfun(@(c) c.update_idx, obj.a_controller_global)
@@ -46,14 +46,15 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
             obj.linear = obj.linear;
         end
 
-        
+
 
         % 近似線形化システムの取得に関するメソッド
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        sys =get_sys(obj, with_controller)
+        sys = get_sys(obj, with_controller)
+        sys = get_sys_polar(obj, with_controller)
 
 
-        
+
         % アドミタンス行列の取得に関するメソッド
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         [Y, Ymat] = get_admittance_matrix(obj, a_idx_bus, a_idx_branch)
@@ -81,7 +82,7 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
         function x = get.V_equilibrium(obj)
             x = tools.vcellfun(@(b) b.V_equilibrium, obj.a_bus);
         end
-        
+
         function x = get.I_equilibrium(obj)
             x = tools.vcellfun(@(b) b.I_equilibrium, obj.a_bus);
         end
@@ -166,13 +167,13 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
             end
             obj.remove_controller(type,index);
         end
-        
+
         function add_controller_global(obj, c)
             obj.add_controller(c,'global')
         end
-        
+
         function remove_controller_global(obj,busidx,conidx)
-                
+
             if nargin == 3
                 obj.controller_global(conidx) = [];
             end
@@ -204,7 +205,7 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
             end
         end
 
-        
+
 
         % 線形・非線形の切り替え
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -216,7 +217,7 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
         end
 
     end
-    
+
     methods(Access=protected)
         function PropEditor_Set(obj,prop,val)
             obj.(prop) = val;
@@ -225,7 +226,7 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
             val = obj.(prop);
         end
     end
-    
+
 end
 
 function data = check_class(data,classname)
