@@ -17,17 +17,15 @@ end
 
 
 % ローカルシステムの取得
-sys_local = get_sys_partial(net, idx_area, idx_bound_area, is_polar);
-sys_local.InputGroup.I_in = sys_local.InputGroup.I_branch_bound;
-sys_local.InputGroup = rmfield(sys_local.InputGroup, 'I_branch_bound');
+sys_local = get_sys_partial(net, idx_area, idx_bound_area, is_polar);;
 sys_local.OutputGroup.V_out = sys_local.OutputGroup.V_bound;
 sys_local.OutputGroup.V_local = sys_local.OutputGroup.V;
 sys_local.OutputGroup.I_local = sys_local.OutputGroup.I;
 if isfield(sys_local.OutputGroup, 'x')
     sys_local.OutputGroup.x_local = sys_local.OutputGroup.x;
-    sys_local.OutputGroup = rmfield(sys_local.OutputGroup, {'x', 'V', 'I', 'V_bound'});
+    sys_local.OutputGroup = rmfield(sys_local.OutputGroup, {'x', 'V', 'I'});
 else
-    sys_local.OutputGroup = rmfield(sys_local.OutputGroup, {'V', 'I', 'V_bound'});
+    sys_local.OutputGroup = rmfield(sys_local.OutputGroup, {'V', 'I'});
 end
 
 
@@ -151,40 +149,37 @@ function sys_env = sys_others2env(sys_others, Y_branch_bound, n_bound_area, with
     y21 = Y_branch_bound(nv1+1:end, 1:nv1);
     y22 = Y_branch_bound(nv1+1:end, nv1+1:end);
 
-    [A, BIb, CVb, DVbIb] = ssdata(sys_others('V_bound', 'I_branch_bound'));
-    [~, B, ~, DVb] = ssdata(sys_others('V_bound', 'u'));
+    [A, BI, CV, DVI] = ssdata(sys_others('V_bound', 'I_branch_bound'));
+    [~, Bu, ~, DV] = ssdata(sys_others('V_bound', 'u'));
     [~, ~, C, D] = ssdata(sys_others({'x', 'V', 'I'}, 'u'));
-    [~, ~, ~, DIb] = ssdata(sys_others({'x', 'V', 'I'}, 'I_branch_bound'));
-    nu = size(B, 2);
+    [~, ~, ~, DI] = ssdata(sys_others({'x', 'V', 'I'}, 'I_branch_bound'));
+    nu = size(Bu, 2);
 
     if is_polar
-        BIb = BIb*R.inv_I_branch_bound;
-        CVb = R.V_bound*CVb;
-        DVbIb = R.V_bound*DVbIb*R.inv_I_branch_bound;
+        BI = BI*R.inv_I_branch_bound;
+        CV = R.V_bound*CV;
+        DVI = R.V_bound*DVI*R.inv_I_branch_bound;
         C = R.R*C;
         D = R.R*D;
-        DIb = R.R*DIb;
+        DI = R.R*DI;
     end
 
     A11 = A;
-    A12 = [zeros(nx, nv2+ni1), BIb];
-    A21 = [CVb; zeros(ni1+ni2, nx)];
-    A22 = [-eye(nv2), zeros(nv2, ni1), DVbIb;
-        y12, -eye(ni1), zeros(ni1, nv2);
-        y22, zeros(ni2, nv1), -eye(ni2)];
-    B1 = [B, zeros(nx, nv1)];
-    B2 = [DVb, zeros(nv2, nv1);
+    A12 = [zeros(nx, nv2+ni1), BI];
+    A21 = [CV; zeros(ni1+ni2, nx)];
+    A22 = [-eye(nv2), zeros(nv2, ni1), DVI;
+        y12, -eye(ni1), zeros(ni1, ni2);
+        y22, zeros(ni2, ni1), -eye(ni2)];
+    B1 = [Bu, zeros(nx, nv1)];
+    B2 = [DV, zeros(nv2, nv1);
         zeros(ni1, nu), y11;
         zeros(ni2, nu), y21];
     C1 = [zeros(ni1, nx); C];
     C2 = [zeros(ni1, nv2), eye(ni1), zeros(ni1, ni2);
-        zeros(size(DIb, 1), nv2+ni1), DIb];
-    D__ = [zeros(ni1, nu+nv1); [D, zeros(size(DIb, 1), nv1)]];
+        zeros(size(DI, 1), nv2+ni1), DI];
+    D__ = [zeros(ni1, nu+nv1); D, zeros(size(DI, 1), nv1)];
 
-    A_ = A11-A12/A22*A21;
-    B_ = B1-A12/A22*B2;
-    C_ = C1-C2/A22*A21;
-    D_ = -C2/A22*B2; %D__-C2/A22*B2;
+    [A_, B_, C_, D_] = tools.dae2ode(A11,A12,A21,A22,B1,B2,C1,C2,D__);
 
     sys_env = ss(A_, B_, C_, D_);
     sys_env.InputGroup.u = 1:nu;

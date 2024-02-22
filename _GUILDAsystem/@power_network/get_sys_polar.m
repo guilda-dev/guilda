@@ -29,10 +29,7 @@ B2 = [D, zeros(nV, nd); zeros(nI, nu+nd)];
 C1 = [eye(nx); S; zeros(nI+nV, nx)];
 C2 = [zeros(nx+nz, nV+nI); eye(nV+nI)];
 
-A_ = A11-A12/A22*A21;
-B_ = B1-A12/A22*B2;
-C_ = C1-C2/A22*A21;
-D_ = -C2/A22*B2;
+[A_, B_, C_, D_] = tools.dae2ode(A11,A12,A21,A22,B1,B2,C1,C2);
 
 % V,Iの極座標表示への変換
 R_V = tools.matrix_polar_transform(obj.V_equilibrium);
