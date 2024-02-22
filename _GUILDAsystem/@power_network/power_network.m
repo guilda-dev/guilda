@@ -52,6 +52,7 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         sys = get_sys(obj, with_controller)
         sys = get_sys_polar(obj, with_controller)
+        [sys_local, sys_env] = get_sys_area(obj, idx_area, with_controller, is_polar)
 
 
 
