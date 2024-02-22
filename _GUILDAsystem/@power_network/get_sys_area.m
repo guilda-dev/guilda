@@ -16,8 +16,8 @@ end
 [idx_bound_area, idx_bound_others, branch_bound] = get_bound(net, idx_area);
 
 
-% ローカルシステムの取得
-sys_local = get_sys_partial(net, idx_area, idx_bound_area, is_polar);;
+% ローカルシステムの取得 (u,I_branch_bound)->(x_local,V_bound,V_local,I_local)
+sys_local = get_sys_partial(net, idx_area, idx_bound_area, is_polar);
 sys_local.OutputGroup.V_out = sys_local.OutputGroup.V_bound;
 sys_local.OutputGroup.V_local = sys_local.OutputGroup.V;
 sys_local.OutputGroup.I_local = sys_local.OutputGroup.I;
@@ -29,7 +29,7 @@ else
 end
 
 
-% 環境の取得
+% 環境の取得 (u_env,V_bound)->(I_branch_bound,x_env,V_env,I_env)
 idx_others = setdiff(1:n_bus, idx_area);
 sys_others = get_sys_partial(net, idx_others, idx_bound_others, is_polar);
 
@@ -70,7 +70,7 @@ end
 function sys = get_sys_partial(net, idx_area, idx_bound, is_polar)
     [idx_area_bound, ~, ic] = unique([idx_area(:); idx_bound(:)], 'sorted');
     idx_num_bound = ic(numel(idx_area)+1:end); % idx_area_boundでのboundの場所を取得
-    idx4Y = [idx_area_bound*2-1, idx_area_bound*2];
+    idx4Y = [idx_area_bound(:)*2-1, idx_area_bound(:)*2]';
     idx4Y = idx4Y(:);
 
     [A_each, B_each, C_each, D_each, BV_each, DV_each, BI_each, DI_each, R_each, S_each] =...
@@ -101,12 +101,9 @@ function sys = get_sys_partial(net, idx_area, idx_bound, is_polar)
     B1 = [B, zeros(nx, nIb)];
     B2 = blkdiag(D, selector4I_branch_bound);
     C1 = [eye(nx); zeros(nVb+nV+nI, nx)];
-    C2 = [zeros(nx, nV+nI); selector4V_bound, zeros(nVb, nI);eye(nV+nI)];
+    C2 = [zeros(nx, nV+nI); selector4V_bound, zeros(nVb, nI); eye(nV+nI)];
 
-    A_ = A11-A12/A22*A21;
-    B_ = B1-A12/A22*B2;
-    C_ = C1-C2/A22*A21;
-    D_ = -C2/A22*B2;
+    [A_, B_, C_, D_] = tools.dae2ode(A11,A12,A21,A22,B1,B2,C1,C2);
 
     if is_polar
         Rinv_I_branch_bound = tools.matrix_polar_transform(net.I_equilibrium(idx_bound), true);
@@ -182,26 +179,17 @@ function sys_env = sys_others2env(sys_others, Y_branch_bound, n_bound_area, with
     [A_, B_, C_, D_] = tools.dae2ode(A11,A12,A21,A22,B1,B2,C1,C2,D__);
 
     sys_env = ss(A_, B_, C_, D_);
-    sys_env.InputGroup.u = 1:nu;
+    sys_env.InputGroup.u_env = 1:nu;
     sys_env.InputGroup.V_bound = nu+(1:nv1);
     sys_env.OutputGroup.I_branch_bound = 1:ni1;
-    sys_env.OutputGroup.x = ni1+(1:nx);
+    sys_env.OutputGroup.x_env = ni1+(1:nx);
     nv_sum = numel(sys_others.OutputGroup.V);
     ni_sum = numel(sys_others.OutputGroup.I);
-    sys_env.OutputGroup.V = ni1+nx+(1:nv_sum);
-    sys_env.OutputGroup.I = ni1+nx+nv_sum+(1:ni_sum);
+    sys_env.OutputGroup.V_env = ni1+nx+(1:nv_sum);
+    sys_env.OutputGroup.I_env = ni1+nx+nv_sum+(1:ni_sum);
 
     if with_controller
         % TODO: 実装
     end
 
-    sys_env.InputGroup = rmfield(sys_env.InputGroup, 'u');
-    sys_env.OutputGroup.V_env = sys_env.OutputGroup.V;
-    sys_env.OutputGroup.I_env = sys_env.OutputGroup.I;
-    if isfield(sys_env.OutputGroup, 'x')
-        sys_env.OutputGroup.x_env = sys_env.OutputGroup.x;
-        sys_env.OutputGroup = rmfield(sys_env.OutputGroup, {'x', 'V', 'I'});
-    else
-        sys_env.OutputGroup = rmfield(sys_env.OutputGroup, {'V', 'I'});
-    end
 end
