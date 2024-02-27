@@ -13,7 +13,7 @@ n_bus = numel(obj.a_bus);
 if sum(idx_area>n_bus)>0
     error("idx_area contain non-existent bus number");
 end
-[idx_bound_area, idx_bound_others, branch_bound] = get_bound(obj, idx_area);
+[idx_bound_area, idx_bound_others, idx_branch_bound] = get_bound(obj, idx_area);
 
 
 % ローカルシステムの取得 (u,I_branch_bound)->(x_local,V_bound,V_local,I_local)
@@ -34,7 +34,7 @@ end
 idx_others = setdiff(1:n_bus, idx_area);
 sys_others = get_sys_partial(obj, idx_others, idx_bound_others, is_polar);
 
-Y_branch_bound_ = branch2admittance(n_bus, branch_bound);
+Y_branch_bound_ = obj.get_admittance_matrix([], idx_branch_bound);
 idx_bounds = [idx_bound_area; idx_bound_others];
 Y_branch_bound = tools.complex2matrix(Y_branch_bound_(idx_bounds, idx_bounds));
 
@@ -48,12 +48,12 @@ if is_polar
     R.I = tools.matrix_polar_transform(obj.I_equilibrium(idx_others_bound));
     R.R = blkdiag(eye(order(sys_others)), R.V, R.I);
 end
-sys_env = sys_others2env(sys_others, Y_branch_bound, n_bound_area, with_controller, is_polar, R);
+sys_env = sys_others2env(obj, sys_others, Y_branch_bound, n_bound_area, with_controller, idx_area, idx_others, is_polar, R);
 
 end
 
 % net: powe_networkクラス, idx_area: 抽出するエリアのindex(列ベクトル)
-function [idx_bound_area, idx_bound_others, branch_bound] = get_bound(net, idx_area)
+function [idx_bound_area, idx_bound_others, idx_branch_bound] = get_bound(net, idx_area)
     branch = net.a_branch;
     idx_from = tools.vcellfun(@(b) b.from, branch);
     idx_to = tools.vcellfun(@(b) b.to, branch);
@@ -65,6 +65,7 @@ function [idx_bound_area, idx_bound_others, branch_bound] = get_bound(net, idx_a
     idx_to_branch_bound = tools.hcellfun(@(b) b.to, branch_bound);
     idx_bound_area = unique(intersect([idx_from_branch_bound; idx_to_branch_bound], idx_area'), 'sorted');
     idx_bound_others = unique(setdiff([idx_from_branch_bound; idx_to_branch_bound], idx_area'), 'sorted');
+    idx_branch_bound = find(array_branch_io|array_branch_oi);
 end
 
 % net: powe_networkクラス, idx_area: 抽出するエリアのindex(列ベクトル), idx_bound: 境界のindex(列ベクトル)
@@ -127,17 +128,7 @@ function sys = get_sys_partial(net, idx_area, idx_bound, is_polar)
     sys.OutputGroup.I = nx+nVb+nV+(1:nI);
 end
 
-function Y_branch = branch2admittance(n_bus, branch)
-    Y_branch = zeros(n_bus);
-    for idx = 1:numel(branch)
-        Yidx = branch{idx}.get_admittance_matrix();
-        from = branch{idx}.from;
-        to = branch{idx}.to;
-        Y_branch([from, to], [from, to]) = Y_branch([from, to], [from, to]) + Yidx;
-    end
-end
-
-function sys_env = sys_others2env(sys_others, Y_branch_bound, n_bound_area, with_controller, is_polar, R)
+function sys_env = sys_others2env(net, sys_others, Y_branch_bound, n_bound_area, with_controller, idx_area, idx_others, is_polar, R)
     nv1 = n_bound_area*2; ni1 = nv1;
     nv2 = size(Y_branch_bound, 1)-nv1; ni2 = nv2;
     nx = order(sys_others);
@@ -180,17 +171,60 @@ function sys_env = sys_others2env(sys_others, Y_branch_bound, n_bound_area, with
     [A_, B_, C_, D_] = tools.dae2ode(A11,A12,A21,A22,B1,B2,C1,C2,D__);
 
     sys_env = ss(A_, B_, C_, D_);
-    sys_env.InputGroup.u_env = 1:nu;
+    sys_env.InputGroup.u = 1:nu;
     sys_env.InputGroup.V_bound = nu+(1:nv1);
     sys_env.OutputGroup.I_branch_bound = 1:ni1;
-    sys_env.OutputGroup.x_env = ni1+(1:nx);
+    sys_env.OutputGroup.x = ni1+(1:nx);
     nv_sum = numel(sys_others.OutputGroup.V);
     ni_sum = numel(sys_others.OutputGroup.I);
-    sys_env.OutputGroup.V_env = ni1+nx+(1:nv_sum);
-    sys_env.OutputGroup.I_env = ni1+nx+nv_sum+(1:ni_sum);
+    sys_env.OutputGroup.V = ni1+nx+(1:nv_sum);
+    sys_env.OutputGroup.I = ni1+nx+nv_sum+(1:ni_sum);
 
     if with_controller
-        % TODO: 実装
+        idx_local = tools.vcellfun(@(c) any(ismember(c.idx, idx_area)), net.a_controller_local);
+        controllers = net.a_controller_local(~idx_local);
+        sys_controller = net.get_sys_controllers(controllers, net.a_controllers_global);
+    else
+        sys_controller = net.get_sys_controllers({}, {});
     end
 
+    nx = tools.vcellfun(@(b) b.component.get_nx(), net.a_bus);
+    idx_x_end = [cumsum(nx); sum(nx)];
+    idx_x_start = [1; idx_x_end(1:end-1)+1];
+    nu = tools.vcellfun(@(b) b.component.get_nu(), net.a_bus);
+    idx_u_end = [cumsum(nu); sum(nu)];
+    idx_u_start = [1; idx_u_end(1:end-1)+1];
+
+    idx_x_local = tools.harrayfun(@(i) idx_x_start(i):idx_x_end(i), sort(idx_area));
+    idx_x_others = tools.harrayfun(@(i) idx_x_start(i):idx_x_end(i), sort(idx_others));
+    idx_u_global = tools.harrayfun(@(i) idx_u_start(i):idx_u_end(i), sort(idx_area));
+    idx_u_others = tools.harrayfun(@(i) idx_u_start(i):idx_u_end(i), sort(idx_others));
+
+    idx_VI_local = false(numel(net.a_bus), 2);
+    idx_VI_local(idx_area, :) = true;
+    idx_VI_local = reshape(idx_VI_local', [], 1);
+
+    idx_x = sys_controller.InputGroup.x;
+    idx_V = sys_controller.InputGroup.V;
+    idx_I = sys_controller.InputGroup.I;
+
+    sys_controller.InputGroup.x_local = idx_x(idx_x_local);
+    sys_controller.InputGroup.x_others = idx_x(idx_x_others);
+    sys_controller.InputGroup.V_local = idx_V(idx_VI_local);
+    sys_controller.InputGroup.V_others = idx_V(~idx_VI_local);
+    sys_controller.InputGroup.I_local = idx_I(idx_VI_local);
+    sys_controller.InputGroup.I_others = idx_I(~idx_VI_local);
+
+    idx_u = sys_controller.OutputGroup.u;
+    sys_controller.OutputGroup.u_local = idx_u(idx_u_global);
+    sys_controller.OutputGroup.u_others = idx_u(idx_u_others);
+
+    sys_env_ = blkdiag(sys_env, sys_controller);
+    feedin = [sys_env_.InputGroup.x_others, sys_env_.InputGroup.V_others, sys_env_.InputGroup.I_others, sys_env_.InputGroup.u];
+    feedout = [sys_env_.OutputGroup.x, sys_env_.OutputGroup.V, sys_env_.OutputGroup.I, sys_env_.OutputGroup.u_others];
+    sys_env = feedback(sys_env_, eye((numel(feedin))), feedin, feedout, 1);
+
+    fields_in = {'V_bound', 'x_local', 'V_local', 'I_local'};
+    fields_out = {'I_branch_bound', 'u_global'};
+    sys_env = sys_env(fields_out(isfield(sys_env.OutputGroup, fields_out)), fields_in(isfield(sys_env.InputGroup, fields_in)));
 end
