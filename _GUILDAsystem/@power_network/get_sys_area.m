@@ -1,6 +1,6 @@
 % 指定したエリアに注目したときのローカルシステムと環境を取得する
 
-function [sys_local, sys_env] = get_sys_area(net, idx_area, with_controller, is_polar)
+function [sys_local, sys_env] = get_sys_area(obj, idx_area, with_controller, is_polar)
 
 if nargin < 3
     with_controller = false;
@@ -9,16 +9,17 @@ if nargin < 4
     is_polar = true;
 end
 
-n_bus = numel(net.a_bus);
+n_bus = numel(obj.a_bus);
 if sum(idx_area>n_bus)>0
     error("idx_area contain non-existent bus number");
 end
-[idx_bound_area, idx_bound_others, branch_bound] = get_bound(net, idx_area);
+[idx_bound_area, idx_bound_others, branch_bound] = get_bound(obj, idx_area);
 
 
 % ローカルシステムの取得 (u,I_branch_bound)->(x_local,V_bound,V_local,I_local)
-sys_local = get_sys_partial(net, idx_area, idx_bound_area, is_polar);
-sys_local.OutputGroup.V_out = sys_local.OutputGroup.V_bound;
+sys_local = get_sys_partial(obj, idx_area, idx_bound_area, is_polar);
+sys_local.InputGroup.u_local = sys_local.InputGroup.u;
+sys_local.InputGroup = rmfield(sys_local.InputGroup, 'u');
 sys_local.OutputGroup.V_local = sys_local.OutputGroup.V;
 sys_local.OutputGroup.I_local = sys_local.OutputGroup.I;
 if isfield(sys_local.OutputGroup, 'x')
@@ -31,7 +32,7 @@ end
 
 % 環境の取得 (u_env,V_bound)->(I_branch_bound,x_env,V_env,I_env)
 idx_others = setdiff(1:n_bus, idx_area);
-sys_others = get_sys_partial(net, idx_others, idx_bound_others, is_polar);
+sys_others = get_sys_partial(obj, idx_others, idx_bound_others, is_polar);
 
 Y_branch_bound_ = branch2admittance(n_bus, branch_bound);
 idx_bounds = [idx_bound_area; idx_bound_others];
@@ -40,11 +41,11 @@ Y_branch_bound = tools.complex2matrix(Y_branch_bound_(idx_bounds, idx_bounds));
 n_bound_area = numel(idx_bound_area);
 R = struct();
 if is_polar
-    R.inv_I_branch_bound = tools.matrix_polar_transform(net.I_equilibrium(idx_bound_others), true);
-    R.V_bound = tools.matrix_polar_transform(net.V_equilibrium(idx_bound_others));
+    R.inv_I_branch_bound = tools.matrix_polar_transform(obj.I_equilibrium(idx_bound_others), true);
+    R.V_bound = tools.matrix_polar_transform(obj.V_equilibrium(idx_bound_others));
     idx_others_bound = unique([idx_others(:); idx_bound_others(:)], 'sorted');
-    R.V = tools.matrix_polar_transform(net.V_equilibrium(idx_others_bound));
-    R.I = tools.matrix_polar_transform(net.I_equilibrium(idx_others_bound));
+    R.V = tools.matrix_polar_transform(obj.V_equilibrium(idx_others_bound));
+    R.I = tools.matrix_polar_transform(obj.I_equilibrium(idx_others_bound));
     R.R = blkdiag(eye(order(sys_others)), R.V, R.I);
 end
 sys_env = sys_others2env(sys_others, Y_branch_bound, n_bound_area, with_controller, is_polar, R);
@@ -69,7 +70,7 @@ end
 % net: powe_networkクラス, idx_area: 抽出するエリアのindex(列ベクトル), idx_bound: 境界のindex(列ベクトル)
 function sys = get_sys_partial(net, idx_area, idx_bound, is_polar)
     [idx_area_bound, ~, ic] = unique([idx_area(:); idx_bound(:)], 'sorted');
-    idx_num_bound = ic(numel(idx_area)+1:end); % idx_area_boundでのboundの場所を取得
+    idx_num_bound = ic((numel(idx_area)+1):end); % idx_area_boundでのboundの場所を取得
     idx4Y = [idx_area_bound(:)*2-1, idx_area_bound(:)*2]';
     idx4Y = idx4Y(:);
 
@@ -142,9 +143,9 @@ function sys_env = sys_others2env(sys_others, Y_branch_bound, n_bound_area, with
     nx = order(sys_others);
 
     y11 = Y_branch_bound(1:nv1, 1:nv1);
-    y12 = Y_branch_bound(1:nv1, nv1+1:end);
-    y21 = Y_branch_bound(nv1+1:end, 1:nv1);
-    y22 = Y_branch_bound(nv1+1:end, nv1+1:end);
+    y12 = Y_branch_bound(1:nv1, (nv1+1):end);
+    y21 = Y_branch_bound((nv1+1):end, 1:nv1);
+    y22 = Y_branch_bound((nv1+1):end, (nv1+1):end);
 
     [A, BI, CV, DVI] = ssdata(sys_others('V_bound', 'I_branch_bound'));
     [~, Bu, ~, DV] = ssdata(sys_others('V_bound', 'u'));
