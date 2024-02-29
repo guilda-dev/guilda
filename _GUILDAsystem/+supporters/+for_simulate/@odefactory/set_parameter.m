@@ -39,7 +39,8 @@ function set_parameter(obj)
     obj.Ymat = Ymat_temp(idx_admittance, idx_admittance);
     obj.Vmat_reproduce = Vmat_reproduce(:, idx_admittance);
     obj.Imat_reproduce = zeros(size(obj.Vmat_reproduce));
-    obj.Imat_reproduce(idx_admittance,:) = eye(sum(idx_admittance));
+    idx_admittance = [-1;0] + 2*no_reduced(:)';
+    obj.Imat_reproduce(idx_admittance(:),:) = eye(numel(idx_admittance));
 
 
     logi{1} = fmac(tools.cellfun(@(b)b.component,net.a_bus), obj.simulated_bus );
