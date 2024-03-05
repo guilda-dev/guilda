@@ -2,10 +2,10 @@
 
 function [sys_local, sys_env] = get_sys_area(obj, idx_area, with_controller, is_polar)
 
-if nargin < 3
+if nargin < 3 || isempty(with_controller)
     with_controller = false;
 end
-if nargin < 4
+if nargin < 4 || isempty(is_polar)
     is_polar = true;
 end
 
@@ -16,7 +16,7 @@ end
 [idx_bound_area, idx_bound_others, idx_branch_bound] = get_bound(obj, idx_area);
 
 
-% ローカルシステムの取得 (u,I_branch_bound)->(x_local,V_bound,V_local,I_local)
+% ローカルシステムの取得 (u,I_bound)->(x_local,V_bound,V_local,I_local)
 sys_local = get_sys_partial(obj, idx_area, idx_bound_area, is_polar);
 sys_local.InputGroup.u_local = sys_local.InputGroup.u;
 sys_local.InputGroup = rmfield(sys_local.InputGroup, 'u');
@@ -30,7 +30,7 @@ else
 end
 
 
-% 環境の取得 (V_bound,x_local,V_local,I_local)->(I_branch_bound,u_global)
+% 環境の取得 (V_bound,x_local,V_local,I_local)->(I_bound,u_global)
 idx_others = setdiff(1:n_bus, idx_area);
 sys_others = get_sys_partial(obj, idx_others, idx_bound_others, false);
 
@@ -42,7 +42,7 @@ n_bound_area = numel(idx_bound_area);
 R = struct();
 if is_polar
     R.inv_V_bound = tools.matrix_polar_transform(obj.V_equilibrium(idx_bound_area), true);
-    R.I_branch_bound = tools.matrix_polar_transform(obj.I_equilibrium(idx_bound_area));
+    R.I_bound = tools.matrix_polar_transform(obj.I_equilibrium(idx_bound_area));
     idx_area_bound = unique([idx_area(:); idx_bound_area(:)], 'sorted');
     R.inv_V = tools.matrix_polar_transform(obj.V_equilibrium(idx_area_bound), true);
     R.inv_I = tools.matrix_polar_transform(obj.I_equilibrium(idx_area_bound), true);
@@ -84,10 +84,10 @@ function sys = get_sys_partial(net, idx_area, idx_bound, is_polar)
     nV = size(BV, 2); nI = size(BI, 2);
     nVb = numel(idx_bound)*2; nIb = nVb;
 
-    selector4I_branch_bound = zeros(nI, nIb);
+    selector4I_bound = zeros(nI, nIb);
     for ii = 1:numel(idx_bound)
         idx = idx_num_bound(ii);
-        selector4I_branch_bound(idx*2-1:idx*2, ii*2-1:ii*2) = eye(2);
+        selector4I_bound(idx*2-1:idx*2, ii*2-1:ii*2) = eye(2);
     end
     selector4V_bound = zeros(nVb, nV);
     for ii = 1:numel(idx_bound)
@@ -100,15 +100,15 @@ function sys = get_sys_partial(net, idx_area, idx_bound, is_polar)
     A21 = [C; zeros(nI, nx)];
     A22 = [DV, DI; Y, -eye(nI)];
     B1 = [B, zeros(nx, nIb)];
-    B2 = blkdiag(D, selector4I_branch_bound);
+    B2 = blkdiag(D, selector4I_bound);
     C1 = [eye(nx); zeros(nVb+nV+nI, nx)];
     C2 = [zeros(nx, nV+nI); selector4V_bound, zeros(nVb, nI); eye(nV+nI)];
 
     [A_, B_, C_, D_] = tools.dae2ode(A11,A12,A21,A22,B1,B2,C1,C2);
 
     if is_polar
-        Rinv_I_branch_bound = tools.matrix_polar_transform(net.I_equilibrium(idx_bound), true);
-        Rin = blkdiag(eye(nu), Rinv_I_branch_bound);
+        Rinv_I_bound = tools.matrix_polar_transform(net.I_equilibrium(idx_bound), true);
+        Rin = blkdiag(eye(nu), Rinv_I_bound);
         B_ = B_*Rin;
         R_V_bound = tools.matrix_polar_transform(net.V_equilibrium(idx_bound));
         R_V = tools.matrix_polar_transform(net.V_equilibrium(idx_area_bound));
@@ -120,7 +120,7 @@ function sys = get_sys_partial(net, idx_area, idx_bound, is_polar)
 
     sys = ss(A_, B_, C_, D_);
     sys.InputGroup.u = 1:size(B, 2);
-    sys.InputGroup.I_branch_bound = size(B, 2)+(1:nIb);
+    sys.InputGroup.I_bound = size(B, 2)+(1:nIb);
     sys.OutputGroup.x = 1:nx;
     sys.OutputGroup.V_bound = nx+(1:nVb);
     sys.OutputGroup.V = nx+nVb+(1:nV);
@@ -137,10 +137,10 @@ function sys_env = sys_others2env(net, sys_others, Y_branch_bound, n_bound_area,
     y21 = Y_branch_bound((nv1+1):end, 1:nv1);
     y22 = Y_branch_bound((nv1+1):end, (nv1+1):end);
 
-    [A, BI, CV, DVI] = ssdata(sys_others('V_bound', 'I_branch_bound'));
+    [A, BI, CV, DVI] = ssdata(sys_others('V_bound', 'I_bound'));
     [~, Bu, ~, DV] = ssdata(sys_others('V_bound', 'u'));
     [~, ~, C, D] = ssdata(sys_others({'x', 'V', 'I'}, 'u'));
-    [~, ~, ~, DI] = ssdata(sys_others({'x', 'V', 'I'}, 'I_branch_bound'));
+    [~, ~, ~, DI] = ssdata(sys_others({'x', 'V', 'I'}, 'I_bound'));
     nu = size(Bu, 2);
 
     A11 = A;
@@ -160,17 +160,10 @@ function sys_env = sys_others2env(net, sys_others, Y_branch_bound, n_bound_area,
 
     [A_, B_, C_, D_] = tools.dae2ode(A11,A12,A21,A22,B1,B2,C1,C2,D__);
 
-    % if is_polar
-    %     B_ = B_*blkdiag(eye(nu), R.inv_V_bound);
-    %     R_out = blkdiag(R.I_branch_bound, eye(nx), R.V, R.I);
-    %     C_ = R_out*C_;
-    %     D_ = R_out*D_;
-    % end
-
     sys_env = ss(A_, B_, C_, D_);
     sys_env.InputGroup.u = 1:nu;
     sys_env.InputGroup.V_bound = nu+(1:nv1);
-    sys_env.OutputGroup.I_branch_bound = 1:ni1;
+    sys_env.OutputGroup.I_bound = 1:ni1;
     sys_env.OutputGroup.x = ni1+(1:nx);
     nv_sum = numel(sys_others.OutputGroup.V);
     ni_sum = numel(sys_others.OutputGroup.I);
@@ -222,15 +215,15 @@ function sys_env = sys_others2env(net, sys_others, Y_branch_bound, n_bound_area,
     sys_env = feedback(sys_env_, eye((numel(feedin))), feedin, feedout, 1);
 
     fields_in = {'V_bound', 'x_local', 'V_local', 'I_local'};
-    fields_out = {'I_branch_bound', 'u_global'};
+    fields_out = {'I_bound', 'u_global'};
     sys_env = sys_env(fields_out(isfield(sys_env.OutputGroup, fields_out)), fields_in(isfield(sys_env.InputGroup, fields_in)));
 
     if is_polar
         [A, B, C, D] = ssdata(sys_env);
         R_in = blkdiag(R.inv_V_bound, eye(numel(idx_x_local)), R.inv_V, R.inv_I);
         B = B*R_in;
-        n_ug = size(C,1)-size(R.I_branch_bound, 1);
-        R_out = blkdiag(R.I_branch_bound, eye(n_ug));
+        n_ug = size(C,1)-size(R.I_bound, 1);
+        R_out = blkdiag(R.I_bound, eye(n_ug));
         C = R_out*C;
         D = R_out*D*R_in;
         ig = sys_env.InputGroup; og = sys_env.OutputGroup;
