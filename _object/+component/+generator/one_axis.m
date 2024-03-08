@@ -313,7 +313,7 @@ classdef one_axis < component.generator.base
             KI = [dIr_dd,  sin(delta)/Xdp, dIr_dV;
                   dIi_dd, -cos(delta)/Xdp, dIi_dV];
             
-            dP = Vszt'*KI + Ist'*[zeros(2), eye(2)];
+            dP = Vst'*KI + Ist'*[zeros(2), eye(2)];
             
             
             sys_fb = ss([dP; dEfd; KI]);
