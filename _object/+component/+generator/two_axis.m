@@ -95,20 +95,7 @@ classdef two_axis < component.generator.base
         end
         
         function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, x_st, Vst, Ist)
-            
-            if nargin < 2 || (isempty(x_st) && isempty(Vst))
-                A  = obj.system_matrix.A;
-                B  = obj.system_matrix.B;
-                C  = obj.system_matrix.C;
-                D  = obj.system_matrix.D;
-                BV = obj.system_matrix.BV;
-                DV = obj.system_matrix.DV;
-                BI = obj.system_matrix.BI;
-                DI = obj.system_matrix.DI;
-                R = obj.system_matrix.R;
-                S = obj.system_matrix.S;
-                return;
-            end
+
             if nargin < 2 || isempty(x_st)
                 x_st = obj.x_equilibrium;
             end
@@ -239,9 +226,8 @@ classdef two_axis < component.generator.base
             DV = ret_V.d;
             BI = zeros(size(A, 1), 2);
             DI = -eye(2);
-            R = BV;
-            S = zeros(1, size(A, 1));
-            S(2) = 1;
+            R = [];
+            S = [];
         end
         
         % 潮流計算結果から逆算して平衡点を算出

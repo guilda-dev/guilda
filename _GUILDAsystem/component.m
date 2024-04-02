@@ -262,7 +262,7 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
                 end
                 obj.x_equilibrium = x_st;
                 obj.u_equilibrium = u_st;
-                obj.set_linear_matrix(x_st);
+                obj.set_linear_matrix();
             end
     
             function set_linear_matrix(obj,varargin)

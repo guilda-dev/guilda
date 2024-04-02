@@ -91,7 +91,7 @@ classdef one_axis < component.generator.base
                 con = I - [Ir; Ii];
             end
 
-            function [A, B, C, D, BV, DV, BI, DI, R, S] = get_system_matrix(obj, x_st, Vst, Ist)
+            function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, x_st, Vst, Ist)
 
                 if nargin < 2 || isempty(x_st)
                     x_st = obj.x_equilibrium;
