@@ -32,10 +32,10 @@ function [is_match, is_match_A, is_match_B, is_match_C, is_match_D] = test_get_s
         is_match_C = isequal(sys.C, C_past);
         is_match_D = isequal(sys.D, D_past);
     else
-        is_match_A = all(all((A_past-sys.A)<tol));
-        is_match_B = all(all((B_past-sys.B)<tol));
-        is_match_C = all(all((C_past-sys.C)<tol));
-        is_match_D = all(all((D_past-sys.D)<tol));
+        is_match_A = all(all(abs(A_past-sys.A)<tol));
+        is_match_B = all(all(abs(B_past-sys.B)<tol));
+        is_match_C = all(all(abs(C_past-sys.C)<tol));
+        is_match_D = all(all(abs(D_past-sys.D)<tol));
     end
-    is_match = is_match_A & is_match_B & is_match_C & is_match_D;
+    is_match = is_match_A && is_match_B && is_match_C && is_match_D;
 end
