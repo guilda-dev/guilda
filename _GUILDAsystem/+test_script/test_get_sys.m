@@ -1,3 +1,9 @@
+%%% 線形化モデルの一致を確認するためのテストスクリプト
+%%% 使い方の例：
+%%%     net = network.IEEE68bus;
+%%%     test_script.test_get_sys(net, name_mat, is_perfect, tol);
+%%% name_mat: 比較するmatファイル, is_perfect:　完全一致か否か, tol: 完全一致でないときの許容誤差
+
 function [is_match, is_match_A, is_match_B, is_match_C, is_match_D] = test_get_sys(net, name_mat, is_perfect, tol)
     if nargin<4 || isempty(tol)
         tol = 1e-10;

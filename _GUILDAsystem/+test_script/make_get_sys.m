@@ -1,5 +1,10 @@
+%%% 線形化モデルの一致を確認するためのテストデータ作成スクリプト
+%%% 使い方の例：
+%%%     net = network.IEEE68bus;
+%%%     test_script.make_get_sys(net);
+
 function make_get_sys(net)
-    name_mat = strcat(net.Tag,'.mat');
+    name_mat = strcat('get_sys_', net.Tag, '.mat');
     path_mat = fullfile(pwd,'_GUILDA','_GUILDAsystem','+test_script','mat');
     if ~exist(path_mat,'dir')
         mkdir(path_mat);
@@ -16,15 +21,11 @@ function make_get_sys(net)
             case 'No'
                 return
             case 'Change mat name'
-                % prompt = 'Enter new mat name:'; % MATLABのバグで動かない
-                % dlgtitle = 'change mat name';
-                % fieldsize = [1 50];
-                % definput = {'.mat'};
-                % name_mat = inputdlg(prompt,dlgtitle,fieldsize,definput); 
-
-                % f = msgbox('Enter a new mat name in the command window'); % MATLABのバグで動かない
-
-                name_mat = input("What is a new mat name?: ","s");
+                prompt = 'Enter new mat name:';
+                dlgtitle = 'change mat name';
+                fieldsize = [1 50];
+                definput = {'.mat'};
+                name_mat = inputdlg(prompt,dlgtitle,fieldsize,definput);
         end
         if ~contains(name_mat, '.mat')
             name_mat = strcat(name_mat, '.mat');
@@ -36,5 +37,5 @@ function make_get_sys(net)
     B_past = sys.B;
     C_past = sys.C;
     D_past = sys.D;
-    save(fullfile(path_mat, name_mat),'A_past','B_past','C_past','D_past');
+    save(fullfile(path_mat, name_mat{:}),'A_past','B_past','C_past','D_past');
 end
