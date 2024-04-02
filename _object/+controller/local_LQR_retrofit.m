@@ -1,5 +1,10 @@
 classdef local_LQR_retrofit <  controller
     
+    properties(SetAccess=private)
+        port_input = []
+        port_observe = []
+    end
+
     properties(Access=private)
        x_avr
        x_pss
@@ -129,6 +134,9 @@ classdef local_LQR_retrofit <  controller
             nu = 2;
         end
         
+        function initialize(obj)
+            % レトロフィット制御器導入時は解列シミュレーション不可
+        end
         
         function [dx, u] = get_dx_u(obj, t, x, X, Vcell, Icell, U)
             u = zeros(2, 1);
@@ -156,7 +164,7 @@ classdef local_LQR_retrofit <  controller
             
             [~, v] = obj.pss.get_u(x_pss, omega);
             [~, Vfd, Vap] = obj.avr.get_Vfd(x_avr, Vabs, Efd, u(1) + U{1}(1)-v);
-            [~, Pm ] = obj.gov.get_P(x_gov, omega, U{1}(2));
+            [~, Pm] = obj.gov.get_P(x_gov, omega, U{1}(2));
             
             dx = obj.A*x + obj.Bv*[P-Pm; Efd-obj.Efd0; Vabs-obj.Vabs0; Vfd-obj.Vfd0; U{1}] ...
                 - obj.Bw*[delta-obj.delta0; omega; E-obj.E0; Vap-obj.Vfd0];

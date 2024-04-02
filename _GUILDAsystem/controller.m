@@ -123,9 +123,9 @@ classdef controller < base_class.HasStateInput & base_class.HasGridCode & base_c
             % linearが書き換えられた際に実行される
             function set_function(obj,linear)
                 if linear
-                    obj.get_dx_u_func = @obj.get_dx_u;
-                else
                     obj.get_dx_u_func = @obj.get_dx_u_linear;
+                else
+                    obj.get_dx_u_func = @obj.get_dx_u;
                 end
             end
 

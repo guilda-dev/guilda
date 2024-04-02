@@ -3,7 +3,6 @@ classdef local_LQR < controller
     properties
         Q
         R
-
         uidx
         V0 = 1; % 1 + 0j
     end
@@ -11,6 +10,8 @@ classdef local_LQR < controller
     properties(SetAccess = private)
         sys
         DX
+        port_input = []
+        port_observe = []
     end
 
     properties(Access = private)
@@ -23,7 +24,6 @@ classdef local_LQR < controller
         function obj = local_LQR(net, idx, Q, R, uidx)
             obj@controller(net,idx,idx)
             obj.set_index(idx);
-            obj.network = net;
             c = net.a_bus{idx}.component;
             if nargin<3
                 Q = eye(c.get_nx);
