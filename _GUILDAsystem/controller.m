@@ -57,7 +57,8 @@ classdef controller < base_class.HasStateInput & base_class.HasGridCode & base_c
         
 
 
-    %% simulateの際に使用するメソッド
+
+        %% simulateの際に使用するメソッド
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
             % 初期値を定義するメソッド >> デフォルトでは状態数分の零行列として定義する仕様

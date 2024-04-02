@@ -2,12 +2,15 @@ classdef DataProcessing < dynamicprops & matlab.mixin.CustomDisplay
 %
 %ーフィールドー
 %       既存の"net.simulate()"の出力結果に以下のフィールドを追加
-%         Vabs : 母線電圧の絶対値の応答
-%        Vangle: 母線電圧の偏角の応答
-%         Iabs : 母線電流の絶対値の応答
-%        Iangle: 母線電流の偏角の応答
-%          P   : 有効電力の応答
-%          Q   : 無効電力の応答
+%          t   : サンプリング時間のデータ
+%          X   : 各機器の状態の応答データ
+%          V   : 各母線の電圧の応答データ
+%          I   : 各母線の電流の応答データ
+%        Xcon  : 各制御機の状態の応答データ
+%        Ucon  : 各制御機の出力の時系列データ
+%       Uinput : 条件設定に外部入力の応答データ
+%       Utotal : 各機器への入力の時系列データ(Ucon+Uinput)
+%       power  : 各母線の電力の応答データ
 %
 
     properties
@@ -36,7 +39,15 @@ classdef DataProcessing < dynamicprops & matlab.mixin.CustomDisplay
             end
         
         % 本クラスの使用方法を表示
-            obj.readme(print_readme);
+            while ~islogical(print_readme)
+                yes_no = input('使い方を表示しますか？(y/n)：',"s");
+                if      strcmp(yes_no,'y'); yes_no = true;
+                elseif  strcmp(yes_no,'n'); yes_no = false;
+                end
+            end
+            if print_readme
+               obj.readme;
+            end
 
 
         % オプションに関するデータを取り出す
@@ -115,9 +126,9 @@ classdef DataProcessing < dynamicprops & matlab.mixin.CustomDisplay
         function  simulation_condition(obj)
             figure
             f = {'fault','input','parallel'};
-            for i = 1:3
+            for i = 1:numel(f)
                 op = obj.option_class.(f{i});
-                ax = subplot(1,3,i);
+                ax = subplot(1,numel(f),i);
                 op.sentence;
                 op.plot(ax);
             end
@@ -145,52 +156,42 @@ classdef DataProcessing < dynamicprops & matlab.mixin.CustomDisplay
 
         
         %使い方の表示
-        function readme(obj, yes_no)
+        function readme(obj)
             
-            while ~islogical(yes_no)
-                yes_no = input('使い方を表示しますか？(y/n)：',"s");
-                if      strcmp(yes_no,'y'); yes_no = true;
-                elseif  strcmp(yes_no,'n'); yes_no = false;
-                end
-            end
+            fprintf(['\n' ...
+            '==================================\n',...
+            '    シミュレーション結果の解析ツール   \n',...
+            '        DataProcessingクラス       \n',...
+            '==================================\n\n'])
+            help(class(obj))
             
-            if yes_no
-                fprintf(['\n' ...
-                '==================================\n',...
-                '  シミュレーション結果出力の補助ツール  \n',...
-                '      SimulationResultクラス       \n',...
-                '==================================\n\n'])
-                help(class(obj))
-                disp('応答プロットを表示したい場合')
-                disp('------------------------')
-                disp('● UIを使う場合')
-                help([class(obj),'.UIplot'])
-                disp('● コマンドで実行する場合')
+            disp('応答プロットを表示したい場合')
+            disp('------------------------')
+            
+            disp('● UIを使う場合')
+            help([class(obj),'.UIplot'])
+            
+            disp('● コマンドで実行する場合')
+            myhref(obj,'[引数の指定方法]','コマンドでプロットの実行をする場合','plot')
+
+            disp('アニメーションを表示したい場合')
+            disp('-------------------------')
+            
+            disp('● コマンドで実行する場合')
+            myhref(obj,'[引数の指定方法]','コマンドでプロットの実行をする場合','anime')
+        
+            function myhref(obj,ref,sentence,method)
                 disp('ー実行方法ー')
-                disp(' >> obj.plot();')
-                fprintf(' >> obj.plot(Name,Value,...)')
+                disp([' >> obj.',method,'();'])
+                fprintf([' >> obj.',method,'(Name,Value,...)'])
                 fprintf([' <a href="matlab:' ,...
                         'disp('' '');',...
-                        'disp([''コマンドでプロットの実行をする場合'']);',...
+                        'disp([''',sentence,''']);',...
                         'disp(''==================================================='');',...
-                        'help([''',class(obj),''',''.plot'']);',...
-                        'disp(''==================================================='');',...
-                        'disp('' '');',...
-                        '">[引数の指定方法]</a>\n\n\n'])
-                disp('アニメーションを表示したい場合')
-                disp('-------------------------')
-                disp('● コマンドで実行する場合')
-                disp('ー実行方法ー')
-                disp(' >> obj.anime();')
-                fprintf(' >> obj.anime(Name,Value,...)')
-                fprintf([' <a href="matlab:' ,...
-                        'disp('' '');',...
-                        'disp([''コマンドでプロットの実行をする場合'']);',...
-                        'disp(''==================================================='');',...
-                        'help([''',class(obj),''',''.anime'']);',...
+                        'help([''',class(obj),''',''.',method,''']);',...
                         'disp(''==================================================='');',...
                         'disp('' '');',...
-                        '">[引数の指定方法]</a>\n\n'])
+                        '">',ref,'</a>\n\n'])
                 disp(' ')
             end
             

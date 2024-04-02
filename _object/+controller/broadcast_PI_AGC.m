@@ -27,6 +27,7 @@ classdef broadcast_PI_AGC < controller
             obj.Kp = Kp;
             obj.default_K_input   = ones(numel(u_idx),1);
             obj.default_K_observe = ones(numel(u_idx),1);
+            obj.initialize;
         end
 
 
@@ -38,7 +39,7 @@ classdef broadcast_PI_AGC < controller
             obj.K_observe   = o/sum(o);
         end
         
-        function nx = get_nx(obj)
+        function nx = get_nx(~)
             nx = 1;
         end
         
@@ -52,7 +53,7 @@ classdef broadcast_PI_AGC < controller
             end
             %omega = omega(ismember(obj.default_K_observe, obj.index_observe));
             %omega = omega(obj.index_observe);
-            omega_mean = sum(omega.*obj.K_observe(:));
+            omega_mean = obj.K_observe(:).'*omega;
             dx = omega_mean;
             
             K_ipt = obj.K_input;
@@ -94,14 +95,14 @@ classdef broadcast_PI_AGC < controller
         end
 
         function set_Kp(obj,Kp)
-            if numel(Kp)==1
+            if isscalar(Kp)
                 obj.Kp = Kp;
             else
                 error('The number of elements in Kp must be 1.')
             end
         end
         function set_Ki(obj,Ki)
-            if numel(Ki)==1
+            if isscalar(Ki)
                 obj.Ki = Ki;
             else
                 error('The number of elements in Ki must be 1')

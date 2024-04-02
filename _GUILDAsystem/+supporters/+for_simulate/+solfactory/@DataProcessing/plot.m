@@ -35,10 +35,35 @@ function varargout = plot(obj,varargin)
 % 　Value : true/false
 % 　既定値 : false
 %
-%・ Name  :'from_equilibrium'
-% 　       実行コマンドの出力
+%・ Name  :'plot'
+% 　       figureの表示の有無
 % 　Value : true/false
 % 　既定値 : false
+%
+%・ Name  :'para_unique'
+% 　       同一のパラメータを指定された場合にユニークにするかどうかの設定
+% 　Value : true/false
+% 　既定値 : false
+%
+%・ Name  :'angle_unwrap'
+% 　       偏角関連のパラメータのプロットをpi周期で切り分けるかどうかの設定
+% 　Value : true/false
+% 　既定値 : false
+%x
+%・ Name  :'from_equilibrium'
+% 　       各パラメータの平衡点によるオフセットの有無
+% 　Value : true/false
+% 　既定値 : false
+%
+%・ Name  :'setting_update'
+% 　       パラメータ設定をしてプロットした場合に、次のout.plot()のデフォルト設定として書き換える
+% 　Value : true/false
+% 　既定値 : false
+%
+%・ Name  :'colormap'
+% 　       プロットのラインのカラーを設定
+% 　Value : cell配列(各セルには16進数のカラーコード)
+% 　既定値 : out.setting.plot.colormap を参照
 %
 
     set = inputParser;
