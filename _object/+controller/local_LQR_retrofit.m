@@ -1,8 +1,8 @@
 classdef local_LQR_retrofit <  controller
     
     properties(SetAccess=private)
-        port_input = []
-        port_observe = []
+        port_input = 'u_avr';
+        port_observe = 'Vfield'; % delta,omega,Ed,Vfieldだが、仮で設定
     end
 
     properties(Access=private)
@@ -82,16 +82,15 @@ classdef local_LQR_retrofit <  controller
             sys = feedback(sys_cat, eye(numel(feedin)), feedin, feedout, 1);
             obj.sys_design = sys;
             
-            [A, B, C, D] = ssdata(sys('I', {'u_avr'}));
-            [~, N, ~, M] = ssdata(sys('I', {'Vin'}));
-            [~, Br, ~, Dr] = ssdata(sys('I', {'Pout', 'Efd_swing', 'Vabs', 'Vfd' 'u_avr',  'u_governor'}));
-            [~, Bw, ~, Dw] = ssdata(sys('I', {'delta', 'delta_m', 'delta_agc', 'omega_agc', 'E', 'E_m', 'Vfd'}));
+            [A, B, ~, ~] = ssdata(sys(:, {'u_avr'}));
+            [~, Br, ~, ~] = ssdata(sys(:, {'Pout', 'Efd_swing', 'Vabs', 'Vfd' 'u_avr',  'u_governor'}));
+            [~, Bw, ~, ~] = ssdata(sys(:, {'delta', 'delta_m', 'delta_agc', 'omega_agc', 'E', 'E_m', 'Vfd'}));
             
             L = Br;
             
             obj.A = A;
             obj.Bv = L;
-            obj.Bw = [sum(Bw(:, [1:3]), 2), Bw(:, 4), sum(Bw(:, [5, 6]), 2), Bw(:, 7:end)];
+            obj.Bw = [sum(Bw(:, 1:3), 2), Bw(:, 4), sum(Bw(:, [5, 6]), 2), Bw(:, 7:end)];
             
             Q_ = zeros(size(A));
             Q_(1:size(Q, 1), 1:size(Q, 2)) = Q;
