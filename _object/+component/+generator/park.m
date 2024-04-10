@@ -17,7 +17,7 @@ classdef park < component.generator.base % 状態・パラメーターはqを先
             obj.system_matrix = struct();
         end
         
-        function name_tag = get_x_name(obj)
+        function name_tag = naming_state(obj)
             %Added psiq, psid
             gen_state = {'delta','omega','Eq','Ed','psiq','psid'};
             avr_state = obj.avr.naming_state;
@@ -151,7 +151,7 @@ classdef park < component.generator.base % 状態・パラメーターはqを先
             M = blkdiag(Msys,Mavr,Mpss,Mgov,0,0);
         end
 
-        function x_st = set_equilibrium(obj,V,I)
+        function [x_st,u_st] = get_equilibrium(obj,V,I)
             if nargin<2
                 V = obj.V_equilibrium;
                 I = obj.I_equilibrium;
@@ -210,10 +210,7 @@ classdef park < component.generator.base % 状態・パラメーターはqを先
             [x_gov,u_gov] = obj.governor.initialize(P);
             [x_pss,u_pss] = obj.pss.initialize();
             x_st = [delta; 0; Eq; Ed; psiq; psid; x_avr; x_gov; x_pss];
-            obj.x_equilibrium = x_st;
-            obj.u_equilibrium = [u_avr;u_pss;u_gov];
-            
-            obj.set_linear_matrix();
+            u_st = [u_avr;u_pss;u_gov];
         end
     end        
 end
