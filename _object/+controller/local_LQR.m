@@ -1,43 +1,38 @@
 classdef local_LQR < controller
-    
+% 一つのcomponentクラスに付加することを想定
+
     properties
         Q
         R
-        uidx
+
         V0 = 1; % 1 + 0j
     end
 
     properties(SetAccess = private)
         sys
         DX
-        port_input = []
-        port_observe = []
     end
 
     properties(Access = private)
         xss
         uilab
+        default_Q
+        default_R
     end
     
     methods
 
-        function obj = local_LQR(net, idx, Q, R, uidx)
+        function obj = local_LQR(net, idx, default_Q, default_R, port_input)
             obj@controller(net,idx,idx)
-            obj.set_index(idx);
-            c = net.a_bus{idx}.component;
-            if nargin<3
-                Q = eye(c.get_nx);
-            end
-            if nargin<4
-                R = eye(c.get_nu);
-            end
-            if nargin<5
-                uidx = [true;false];%(c.get_nu,1);
-            end
 
-            obj.set_Q(Q)
-            obj.uidx = uidx;
-            obj.set_R(R)
+            obj.set_index(idx);
+            
+            if nargin < 3; default_Q = []; end
+            if nargin < 4; default_R = []; end
+            if nargin ==5; obj.port_input = port_input; end
+
+            obj.default_Q = default_Q;
+            obj.default_R = default_R;
         end
 
         function nx = get_nx(~)
@@ -45,6 +40,12 @@ classdef local_LQR < controller
         end
 
         function initialize(obj)
+            xidx = obj.idx_state{1};
+            uidx = obj.idx_port{1};
+            
+            obj.Q = obj.default_Q(xidx,xidx);
+            obj.R = obj.default_R(uidx,uidx);
+
             if ~isempty(obj.Q) && ~isempty(obj.R)
                 [~,~,~,~,~,~,obj.DX,~,~,~] = obj.get_linear_matrix;
                 i = obj.index_observe;
@@ -54,14 +55,12 @@ classdef local_LQR < controller
         
         function [dx, u] = get_dx_u(obj, ~, ~, X, ~, ~, ~)
             dx = [];
-            u = obj.DX * (vertcat(X{:})- obj.xss); % + obj.Du*u_global;
-        end
-
-        function [dx, u] = get_dx_u_linear(obj, varargin)
-            [dx, u] = obj.get_dx_u(varargin{:});
+            u{1} = obj.DX * (X{1}(:) - obj.xss); % + obj.Du*u_global;
         end
         
         function [A, BX, BV, BI,  Bu, C, DX, DV, DI, Du] = get_linear_matrix(obj)
+
+            uidx = obj.idx_port{1};
 
             idx =  obj.index_observe;
             c = obj.network.a_bus{idx}.component;
@@ -76,12 +75,12 @@ classdef local_LQR < controller
 
             Acon = A - Bred / Dred * C;
             Bcon = B - Bred / Dred * D;
-            Bcon = Bcon(:,obj.uidx);
+            Bcon = Bcon( : , uidx );
                 
             K = lqr(Acon, Bcon, obj.Q, obj.R);
 
-            DX = zeros(numel(obj.uidx),size(K,2));
-            DX(obj.uidx,:) = - K;
+            DX = zeros(numel(uidx),size(K,2));
+            DX(uidx,:) = - K;
 
 
             nx = size(DX,2);
@@ -101,44 +100,43 @@ classdef local_LQR < controller
 
         end
 
-
-
-        function set.uidx(obj,val)
-            if islogical(val)
-                obj.uidx = val;
-                obj.set_R(eye(sum(val)));
-            else
-                error('uidx must be logical')
-            end
-        end
-
+    % インデックスの設定メソッド
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function set_index(obj,idx)
-            if numel(idx)==1
+            if isscalar(idx)
                 obj.index_input = idx;
                 obj.index_observe = idx;
             else
                 error('This controller cannot be attached to more than one device.')
             end
         end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function set_Q(obj,Q)
+
+
+    % 行列Q,RのSetメソッド
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function set.default_Q(obj,Q)
             s = size(Q);
             if any(s==1); Q = diag(Q); 
             elseif s(1)~=s(2); error('Q must be vector or square matrix');
             end
-            obj.Q = Q;
-            obj.initialize;
+            obj.default_Q = Q;
         end
 
-        function set_R(obj,R)
+        function set.default_R(obj,R)
             s = size(R);
             if any(s==1); R = diag(R); 
             elseif s(1)~=s(2); error('R must be vector or square matrix');
             end
-            obj.R = R;
-            obj.initialize;
+            obj.default_R = R;
         end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+    % parameterの設定をUIで行うためのメソッド(開発中)
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function set_parameter(obj,fig)
             i = obj.index_input;
             c = obj.network.a_bus{i}.component;
@@ -162,9 +160,6 @@ classdef local_LQR < controller
                         'FontSize'  , 10,...
                         'FontWeight', 'bold',...
                         'Editable'  , 'on');
-            
-
-
             Q_val = diag(obj.Q);
             xtab = table(Q_val);
             xtab.Properties.RowNames = state;
@@ -200,6 +195,7 @@ classdef local_LQR < controller
             obj.set_R(tab.Data{:,2}(obj.uidx));
             obj.uilab.Value = word_factory(obj);
         end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     end
 
 end

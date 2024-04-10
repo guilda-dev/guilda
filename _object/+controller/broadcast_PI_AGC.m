@@ -9,24 +9,28 @@ classdef broadcast_PI_AGC < controller
 % 　出力　：controllerクラスのインスタンス
     
     
-    properties(SetAccess = private)
+    properties(SetAccess = protected)
         Kp
         Ki
         default_K_input
         default_K_observe
         K_input     %並列機器の制御対象
         K_observe   %並列機器の制御対象
-        port_input   = 'Pmech'
-        port_observe = 'omega'
     end
     
     methods
         function obj = broadcast_PI_AGC(net, y_idx, u_idx, Kp, Ki)
             obj@controller(net, u_idx, y_idx);
+            
+            obj.port_input   = 'Pmech';
+            obj.port_observe = 'omega';
+
             obj.Ki = Ki;
             obj.Kp = Kp;
+
             obj.default_K_input   = ones(numel(u_idx),1);
             obj.default_K_observe = ones(numel(u_idx),1);
+
             obj.initialize;
         end
 

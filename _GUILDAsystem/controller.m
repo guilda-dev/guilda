@@ -8,14 +8,12 @@ classdef controller < base_class.HasStateInput & base_class.HasGridCode & base_c
         type = 'local';
     end
 
-    properties(SetAccess = private, Abstract)
-        port_input
-        port_observe
-    end
-
-    properties(SetAccess=protected)
+    properties(SetAccess = protected)
+        port_input   = 'all';
+        port_observe = 'all';
         index_input            %制御出力先
         index_observe          %制御観測先
+        system_matrix   
     end
 
     properties(Access=protected,Dependent)
@@ -51,6 +49,7 @@ classdef controller < base_class.HasStateInput & base_class.HasGridCode & base_c
     %% コンストラクターメソッド
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function obj = controller(net, index_input, index_observe)
+            obj.register_parent(net,'overwrite')
             obj.default_component_input   = tools.arrayfun(@(i) net.a_bus{i}.component, index_input);
             obj.default_component_observe = tools.arrayfun(@(i) net.a_bus{i}.component, index_observe);
         end
@@ -75,46 +74,56 @@ classdef controller < base_class.HasStateInput & base_class.HasGridCode & base_c
                 
                 is = ismember( obj.default_index_input, obj.index_input);
                 zero = tools.cellfun(@(c) zeros(c.get_nu,1), obj.default_component_input(:));
-                u_ = repmat(zero,1,numel(t));    
+                u_ = repmat(zero,1,numel(t));  
                 for ti = 1:numel(t)
                     [~, u_(is,ti)] = obj.get_dx_u_func(t(ti),x(:,ti),Xi(ti),Vi(ti),Ii(ti),Ui(ti));
                 end
-                uout = tools.arrayfun(@(i) horzcat(u_{i,:}), (1:size(u_))');
+                uout = tools.arrayfun(@(i) horzcat(u_{i,:}), (1:size(u_,1))');
             end
 
             % 機器の解列状況に応じてインデックスを更新させる
             function update_idx(obj)
-                net = obj.network;
     
                 % port_〇〇のindexを取得
-                obj.idx_state = tools.cellfun(@(b) find(strcmp(get_state_name(b.component),obj.port_observe)), net.a_bus);
-                obj.idx_port  = tools.cellfun(@(b) find(strcmp(get_port_name( b.component),obj.port_input)), net.a_bus);
+                if isempty(obj.port_observe)|| strcmp(obj.port_observe,'all')
+                    obj.idx_state = tools.cellfun(@(c) 1:c.get_nx, obj.default_component_observe);
+                else
+                    obj.idx_state = tools.cellfun(@(c) find(strcmp(c.get_state_name,obj.port_observe)), obj.default_component_observe);
+                end
+                if isempty(obj.port_input)|| strcmp(obj.port_input,'all')
+                    obj.idx_port  = tools.cellfun(@(c) 1:c.get_nu, obj.default_component_input);
+                else
+                    obj.idx_port  = tools.cellfun(@(c) find(strcmp(c.get_port_name,obj.port_input)), obj.default_component_input);
+                end
+
+                % portが空でない観測・制御対象のlogical
+                logi_has_in = tools.vcellfun(@(c) ~isempty(c), obj.idx_port);
+                logi_has_ob = tools.vcellfun(@(c) ~isempty(c), obj.idx_state);
     
                 % 並列機器を観測・制御対象とする
-                idx_connect = find(tools.vcellfun(@(b) strcmp(b.component.parallel, "on"), net.a_bus));
-                index_input_   = intersect(idx_connect, obj.default_index_input);
-                index_observe_ = intersect(idx_connect, obj.default_index_observe);
+                logi_connect_in = tools.vcellfun(@(b) strcmp(b.parallel, "on"), obj.default_component_input);
+                logi_connect_ob = tools.vcellfun(@(b) strcmp(b.parallel, "on"), obj.default_component_observe);
     
                 % 指定されたポート名を持たない機器番号を除外する
-                obj.index_input   = index_input_(  tools.harrayfun(@(i) ~isempty(obj.idx_port{i} ), index_input_  ));
-                obj.index_observe = index_observe_(tools.harrayfun(@(i) ~isempty(obj.idx_state{i}), index_observe_));
+                obj.index_input   = obj.default_index_input(   logi_has_in & logi_connect_in);
+                obj.index_observe = obj.default_index_observe( logi_has_ob & logi_connect_ob);
                 
     
                 % 接続機器の各入力ポート数に合わせたゼロ行列をcell配列で定義しておく
-                fz = @(i) zeros(net.a_bus{i}.component.get_nu,1);
-                obj.zero_cell = tools.arrayfun(@(i) fz(i), obj.index_input(:));
+                component = obj.default_component_input( logi_has_in & logi_connect_in );
+                obj.zero_cell = tools.cellfun(@(c) zeros(c.get_nu,1), component);
     
                 obj.initialize;
+                obj.set_linear_matrix;
     
                 % 除外された機器番号に関するメッセージの表示
                 cls = class(obj);
-                func( obj.default_index_input,  index_input_,  'Input'  ,cls,'it has been disconnected.')
-                func( obj.default_index_observe,index_observe_,'Observe',cls,'it has been disconnected.')
-                func( index_input_,   obj.index_input,   'Input',   cls, ['it does not have a state called "',obj.port_input,'".'])
-                func( index_observe_, obj.index_observe, 'Observe', cls, ['it does not have a port called "',obj.port_observe,'".'])
+                func( obj.default_index_input(~logi_connect_in)  ,  'Input' ,cls,'it has been disconnected.')
+                func( obj.default_index_observe(~logi_connect_ob), 'Observe',cls,'it has been disconnected.')
+                func( obj.default_index_input(~logi_has_in)      ,  'Input' ,cls, ['it does not have a state called "',obj.port_input,'".'])
+                func( obj.default_index_observe(~logi_has_ob)    , 'Observe',cls, ['it does not have a port called "',obj.port_observe,'".'])
     
-                    function func( idx1,idx2,type, cls, cause)
-                        diff_idx = setdiff(idx1,idx2);
+                    function func( diff_idx,type, cls, cause)
                         if ~isempty(diff_idx)
                             warning([type,'@',cls,' : Component ',mat2str(diff_idx),' was removed because ',cause])
                         end
@@ -141,6 +150,30 @@ classdef controller < base_class.HasStateInput & base_class.HasGridCode & base_c
                 out = tools.cellfun(@(c) [c,num], comp.get_port_name);
                 out = out(:)';
             end
+        end
+
+
+
+    %% 線形化関連のメソッド
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function set_linear_matrix(obj)
+            sys = struct();
+            [ sys.A , sys.BX, sys.BV, sys.BI, sys.Bu, ...
+              sys.C , sys.DX, sys.DV, sys.DI, sys.Du] = obj.get_linear_matrix();
+            obj.system_matrix = sys;
+        end
+
+        function [dx, u] = get_dx_u_linear(obj, ~, x, X, V, I, U_global)
+            %%% (要デバッグ) %%%
+            ss = obj.system_matrix;
+            
+            X = vertcat(X{:});
+            V = vertcat(V{:});
+            I = vertcat(I{:});
+            u = vertcat(U_global{:});
+
+            dx = ss.A*x + ss.BX*X + ss.BV*V + ss.BI*I + ss.Bu*u;
+             u = ss.C*x + ss.DX*X + ss.DV*V + ss.DI*I + ss.Du*u;
         end
         
 
