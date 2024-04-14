@@ -1,10 +1,15 @@
 classdef local_LQR < controller
 % 一つのcomponentクラスに付加することを想定
 
+    properties(SetAccess=protected)
+        type = 'local';
+        port_input   = 'all';
+        port_observe = 'all';
+    end
+
     properties
         Q
         R
-
         V0 = 1; % 1 + 0j
     end
 
@@ -43,50 +48,47 @@ classdef local_LQR < controller
             xidx = obj.idx_state{1};
             uidx = obj.idx_port{1};
             
-            obj.Q = obj.default_Q(xidx,xidx);
-            obj.R = obj.default_R(uidx,uidx);
+            obj.Q = xidx.'* obj.default_Q * xidx  ;
+            obj.R = uidx  * obj.default_R * uidx.';
 
             if ~isempty(obj.Q) && ~isempty(obj.R)
-                [~,~,~,~,~,~,obj.DX,~,~,~] = obj.get_linear_matrix;
-                i = obj.index_observe;
+                i = obj.connected_index_observe;
                 obj.xss = obj.network.a_bus{i}.component.x_equilibrium;
             end
         end
         
         function [dx, u] = get_dx_u(obj, ~, ~, X, ~, ~, ~)
             dx = [];
-            u{1} = obj.DX * (X{1}(:) - obj.xss); % + obj.Du*u_global;
+            u{1} = obj.system_matrix.DX * (X{1} - obj.xss); % + obj.Du*u_global;
         end
         
         function [A, BX, BV, BI,  Bu, C, DX, DV, DI, Du] = get_linear_matrix(obj)
 
-            uidx = obj.idx_port{1};
+            idx =  obj.connected_index_observe;
 
-            idx =  obj.index_observe;
             c = obj.network.a_bus{idx}.component;
-            [A, B, C, D, BV, DV, BI, DI, ~, ~] = c.get_linear_matrix;
-            
             Vst = c.V_equilibrium;
             Ist = c.I_equilibrium;
+            
+            [A, B, C, D, BV, DV, BI, DI, ~, ~] = c.get_linear_matrix;
+
             y   = Ist / (Vst - obj.V0);
             y   = tools.complex2matrix(y);
             Bred  = BV + BI*y;
             Dred  = DV + DI*y;
-
             Acon = A - Bred / Dred * C;
             Bcon = B - Bred / Dred * D;
-            Bcon = Bcon( : , uidx );
+            Bcon = blkdiag( obj.idx_state{:} ) * Bcon;
                 
             K = lqr(Acon, Bcon, obj.Q, obj.R);
 
-            DX = zeros(numel(uidx),size(K,2));
-            DX(uidx,:) = - K;
+            DX = - blkdiag( obj.idx_port{:} ) * K;
 
 
             nx = size(DX,2);
             ny = size(DX,1);
-            nVI = 2 * numel(obj.index_observe);
-            nu = sum(tools.varrayfun(@(i) obj.network.a_bus{i}.component.get_nu, obj.index_input));
+            nVI = 2 * numel(obj.connected_index_observe);
+            nu = sum(tools.varrayfun(@(i) obj.network.a_bus{i}.component.get_nu, obj.connected_index_input));
 
             A  = [];
             BX = zeros(0,nx);
@@ -104,8 +106,8 @@ classdef local_LQR < controller
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function set_index(obj,idx)
             if isscalar(idx)
-                obj.index_input = idx;
-                obj.index_observe = idx;
+                obj.connected_index_input = idx;
+                obj.connected_index_observe = idx;
             else
                 error('This controller cannot be attached to more than one device.')
             end
@@ -138,7 +140,7 @@ classdef local_LQR < controller
     % parameterの設定をUIで行うためのメソッド(開発中)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function set_parameter(obj,fig)
-            i = obj.index_input;
+            i = obj.connected_index_input;
             c = obj.network.a_bus{i}.component;
             port = c.get_port_name;
             state = c.get_state_name;
