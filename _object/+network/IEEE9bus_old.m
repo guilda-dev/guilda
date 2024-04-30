@@ -1,4 +1,4 @@
-classdef IEEE9bus_ < power_network
+classdef IEEE9bus_old < power_network
 % モデル  ：IEEE9母線モデル
 %・母線1~3が発電機母線として"generator_1axis"が付加
 %・母線[5,6,8]母線は負荷母線として"load_impedance"が付加
@@ -11,12 +11,12 @@ classdef IEEE9bus_ < power_network
     end
 
     methods
-        function obj = IEEE9bus_(gen_model)
+        function obj = IEEE9bus_old(gen_model)
         
         if nargin<1
             gen_model = 'component.generator.one_axis';
         end
-        netname = 'IEEE9bus_';
+        netname = 'IEEE9bus_old';
 
         omega0 = 60*2*pi;
         tbus        = readtable(['+network/+',netname,'/bus.csv']);
