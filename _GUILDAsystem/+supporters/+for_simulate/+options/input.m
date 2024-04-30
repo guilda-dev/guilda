@@ -28,6 +28,7 @@ classdef input < supporters.for_simulate.options.Abstract
         end
 
         function add(obj,set_t,varargin)
+        % データの取得
             if nargin == 1
                 id = input(' Bus index : ');
                 t  = input('Time Table : ');
@@ -48,7 +49,7 @@ classdef input < supporters.for_simulate.options.Abstract
                     return
                 end
             end
-
+        % データ内容の精査
             if isa(newdata.function,'function_handle')
                 newdata.u = [];
                 newdata.method = [];
@@ -80,6 +81,7 @@ classdef input < supporters.for_simulate.options.Abstract
                 error('入力の配列数が指定されたインデックスの機器の入力ポート数と一致しません')
             end
             newdata.logimat = l;
+            newdata.is_now = false;
             % n = 1+numel(obj.data);
             obj.data = [obj.data;newdata];
         end
@@ -98,13 +100,13 @@ classdef input < supporters.for_simulate.options.Abstract
             end
 
             function Uinput = get_uvec(obj,tvec)
-                tvec = zeros(1,numel(tvec));
-                Uinput = tools.cellfun(@(c) c*tvec, obj.all_Uzeros);
+                zero = zeros(1,numel(tvec));
+                Uinput = tools.cellfun(@(c) c*zero, obj.all_Uzeros);
                 for i = 1:numel(obj.func_struct)
                     ui = obj.func_struct(i);
                     uval = tools.harrayfun(@(t) ui.function(t), tvec);
                     for j = 1:numel(ui.index)
-                        val = uval(ui.logimat(:,j));
+                        val = uval(ui.logimat(:,j),:);
                         Uinput{ui.index(j)} = Uinput{ui.index(j)} + val;
                     end
                 end
@@ -130,9 +132,7 @@ classdef input < supporters.for_simulate.options.Abstract
             end
             
             function set_time(obj,t)
-                
                 ndata = numel(obj.data);
-
                 for i = 1:ndata
                     if t == obj.data(i).time(1)
                         obj.data(i).is_now = true;

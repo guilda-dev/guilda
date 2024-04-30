@@ -45,6 +45,7 @@ classdef component < base_class.HasStateInput & base_class.HasGridCode & base_cl
     
     methods(Abstract)
         [dx, constraint] = get_dx_constraint(t, x, V, I, u);
+        [x_st,u_st] = get_equilibrium(V,I);
     end
     
     
