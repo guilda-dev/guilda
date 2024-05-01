@@ -118,9 +118,9 @@ classdef one_axis < component.generator.base
                     1/M, 0, -1/M, 0;
                     0, 1/Tdo, 0, -1/Tdo
                     ];
-                % y = [delta, E]
+                % y = [delta, omega, E]
                 C_swing = eye(3);
-                sys_swing = ss(A_swing, B_swing, C_swing, 0);
+                sys_swing = ss(A_swing, B_swing, C_swing, 0); % 発電機モデル
                 OutputGroup = struct();
                 OutputGroup.delta = 1;
                 OutputGroup.omega = 2;
@@ -161,7 +161,7 @@ classdef one_axis < component.generator.base
                 dP = Vst'*KI + Ist'*[zeros(2), eye(2)];
                 
                 
-                sys_fb = ss([dP; dEfd; KI]);
+                sys_fb = ss([dP; dEfd; KI]); % delta,E,V→P,Efd,Iに変換するシステム
                 InputGroup = struct();
                 InputGroup.delta = 1;
                 InputGroup.E = 2;
@@ -175,7 +175,7 @@ classdef one_axis < component.generator.base
                 
                 Vabs = norm(Vst);
                 
-                sys_V = ss([eye(2); Vst'/Vabs]);
+                sys_V = ss([eye(2); Vst'/Vabs]); % Vin→V,Vabsに変換するシステム
                 sys_V.InputGroup.Vin = 1:2;
                 OutputGroup = struct();
                 OutputGroup.V = 1:2;
@@ -315,8 +315,9 @@ classdef one_axis < component.generator.base
             
             dP = Vst'*KI + Ist'*[zeros(2), eye(2)];
             
+            R_I = tools.matrix_polar_transform(obj.I_equilibrium);
             
-            sys_fb = ss([dP; dEfd; KI]);
+            sys_fb = ss([dP; dEfd; KI; R_I*KI]);
             InputGroup = struct();
             InputGroup.delta = 1;
             InputGroup.E = 2;
@@ -326,6 +327,7 @@ classdef one_axis < component.generator.base
             OutputGroup.P = 1;
             OutputGroup.Efd = 2;
             OutputGroup.I = 3:4;
+            OutputGroup.I_polar = 5:6;
             sys_fb.OutputGroup = OutputGroup;
             
             Vabs = norm(Vst);
@@ -336,15 +338,21 @@ classdef one_axis < component.generator.base
             OutputGroup.V = 1:2;
             OutputGroup.Vabs = 3;
             sys_V.OutputGroup = OutputGroup;
+
+            R_V = tools.matrix_polar_transform(obj.V_equilibrium, true);
+            sys_V_polar = ss([0,1; R_V]);
+            sys_V_polar.InputGroup.Vin_polar = 1:2;
+            sys_V_polar.OutputGroup.Vabs_polar = 1;
+            sys_V_polar.OutputGroup.V_polar = 2:3;
             
             sys_avr = obj.avr.get_sys();
             sys_pss = obj.pss.get_sys();
             sys_gov = obj.governor.get_sys();
-            G = blkdiag(sys_swing, sys_fb, sys_V, sys_avr, -sys_pss, sys_gov);
+            G = blkdiag(sys_swing, sys_fb, sys_V, sys_avr, -sys_pss, sys_gov, sys_V_polar);
             ig = G.InputGroup;
             og = G.OutputGroup;
-            feedin = [ig.Pout, ig.Efd, ig.Efd_swing, ig.delta, ig.E, ig.V, ig.Vabs, ig.Vfd, ig.u_avr, ig.omega, ig.omega_governor, ig.Pmech];
-            feedout = [og.P, og.Efd, og.Efd,  og.delta, og.E, og.V, og.Vabs, og.Vfd, og.v_pss, og.omega, og.omega, og.Pmech];
+            feedin = [ig.Pout, ig.Efd, ig.Efd_swing, ig.delta, ig.E, ig.V, ig.Vabs, ig.Vfd, ig.u_avr, ig.omega, ig.omega_governor, ig.Pmech, ig.V, ig.Vabs];
+            feedout = [og.P, og.Efd, og.Efd,  og.delta, og.E, og.V, og.Vabs, og.Vfd, og.v_pss, og.omega, og.omega, og.Pmech, og.V_polar, og.Vabs_polar];
             I = ss(eye(numel(feedin)));
             
             ret = feedback(G, I, feedin, feedout, 1);
