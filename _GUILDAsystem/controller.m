@@ -1,4 +1,4 @@
-classdef controller < base_class.HasStateInput & base_class.HasGridCode & base_class.HasCostFunction
+classdef controller < handle & base_class.HasStateInput & base_class.HasGridCode & base_class.HasCostFunction
 % コントローラを定義するスーパークラス
 % GUILDA上に制御器モデルを実装するために必要なmethodが定義されている。
 % 新しい制御器モデルを実装する場合はこのcontrollerクラスを継承すること。
@@ -79,7 +79,7 @@ classdef controller < base_class.HasStateInput & base_class.HasGridCode & base_c
                 for ti = 1:numel(t)
                     [~, u_(is,ti)] = obj.get_dx_u_func(t(ti),x(:,ti),Xi(ti),Vi(ti),Ii(ti),Ui(ti));
                 end
-                uout = tools.arrayfun(@(i) horzcat(u_{i,:}), (1:size(u_))');
+                uout = tools.arrayfun(@(i) horzcat(u_{i,:}), (1:size(u_,1))');
             end
 
             % 機器の解列状況に応じてインデックスを更新させる

@@ -1,7 +1,7 @@
-classdef GFMI_droop < component.GFM.converter.main
+classdef GFMI_droop < component.GFM.GFMI
     methods
         function obj = GFMI_droop()
-            obj@component.GFM.converter.main()
+            obj@component.GFM.GFMI()
 
             obj.set_reference_model = 'droop'     ;
             obj.set_dc_source       = 'Delay1order'  ;

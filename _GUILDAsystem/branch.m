@@ -1,4 +1,4 @@
-classdef branch < base_class.HasGridCode & base_class.HasCostFunction
+classdef branch < handle & base_class.HasGridCode & base_class.HasCostFunction
 % 送電網を定義するスーパークラス
 % 'branch_pi'と'branch_pi_transfer'を子クラスに持つ。
     

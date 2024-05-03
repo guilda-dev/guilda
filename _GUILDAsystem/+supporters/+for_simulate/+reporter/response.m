@@ -42,7 +42,6 @@ classdef response < handle
                     case state_list
                     case {'I','V','P','Q'}
                     otherwise
-                        if 
                 end
             end
             

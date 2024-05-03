@@ -1,4 +1,4 @@
-classdef component < base_class.HasStateInput & base_class.HasGridCode & base_class.HasCostFunction 
+classdef component < handle & base_class.HasStateInput & base_class.HasGridCode & base_class.HasCostFunction 
 % 機器を定義するスーパークラス
 % GUILDA上に機器モデルを実装するために必要なmethodが定義されている。
 % 新しい機器モデルを実装する場合はこのcomponentクラスを継承すること。

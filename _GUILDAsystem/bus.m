@@ -1,4 +1,4 @@
-classdef bus   < base_class.Edit_Monitoring & base_class.HasCostFunction
+classdef bus < handle & base_class.Edit_Monitoring & base_class.HasCostFunction
 % 母線を定義するスーパークラス
 % 'bus_PV'と'bus_PQ','bus_slack'を子クラスに持つ。
 
