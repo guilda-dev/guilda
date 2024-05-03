@@ -12,7 +12,7 @@ classdef branch < base_class.HasGridCode & base_class.HasCostFunction
         index
     end
 
-    properties(Access=protected)
+    properties(SetAccess=protected)
         bus_from
         bus_to
     end

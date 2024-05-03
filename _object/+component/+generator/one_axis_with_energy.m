@@ -25,7 +25,7 @@ classdef one_axis_with_energy < component.generator.base
         end
         
         function name_tag = naming_state(obj)
-            gen_state = {'delta','omega','Ed','WF','WG','LossWF','LossWG'};
+            gen_state = {'delta','omega','Eq','WF','WG','LossWF','LossWG'};
             avr_state = obj.avr.naming_state;
             pss_state = obj.pss.naming_state;
             governor_state = obj.governor.naming_state;

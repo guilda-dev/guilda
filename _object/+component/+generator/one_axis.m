@@ -18,10 +18,11 @@ classdef one_axis < component.generator.base
             obj.set_avr(      component.generator.avr.base()      );
             obj.set_governor( component.generator.governor.base() );
             obj.set_pss(      component.generator.pss.base()      );
+            
         end
         
         function name_tag = naming_state(obj)
-            gen_state = {'delta','omega','Ed'};
+            gen_state = {'delta','omega','Eq'};
             avr_state = obj.avr.naming_state;
             pss_state = obj.pss.naming_state;
             governor_state = obj.governor.naming_state;

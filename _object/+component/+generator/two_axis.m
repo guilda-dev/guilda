@@ -22,7 +22,7 @@ classdef two_axis < component.generator.base
         end
         
         function name_tag = naming_state(obj)
-            gen_state = {'delta','omega','Ed','Eq'};
+            gen_state = {'delta','omega','Eq','Ed'};
             avr_state = obj.avr.naming_state;
             pss_state = obj.pss.naming_state;
             governor_state = obj.governor.naming_state;
