@@ -7,7 +7,7 @@ classdef abstract < component
     methods
         function obj = abstract()
             obj.Tag = 'Load';
-            obj.set_InputType('Rate');
+            obj.InputType = 'Rate';
         end
     end
 

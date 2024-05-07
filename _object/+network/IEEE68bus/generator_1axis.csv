@@ -1,17 +1,17 @@
-No_machine,Xd,Xd_p,Xq,Td_p,T,M,D,SetClass,SetMethod,ID
-1,0.1,0.031,0.069,10.2,10.2,84,4,"avr_sadamoto2019, pss","set_avr, set_pss",1
-2,0.295,0.0697,0.282,6.56,6.56,60.4,9.75,"avr_sadamoto2019, pss","set_avr, set_pss",2
-3,0.2495,0.0531,0.237,5.7,5.7,71.6,10,"avr_sadamoto2019, pss","set_avr, set_pss",3
-4,0.262,0.0436,0.258,5.69,5.69,57.2,10,"avr_sadamoto2019, pss","set_avr, set_pss",4
-5,0.33,0.066,0.31,5.4,5.4,52,3,"avr_sadamoto2019, pss","set_avr, set_pss",5
-6,0.254,0.05,0.241,7.3,7.3,69.6,10,"avr_sadamoto2019, pss","set_avr, set_pss",6
-7,0.295,0.049,0.292,5.66,5.66,52.8,8,"avr_sadamoto2019, pss","set_avr, set_pss",7
-8,0.29,0.057,0.28,6.7,6.7,48.6,9,"avr_sadamoto2019, pss","set_avr, set_pss",8
-9,0.2106,0.057,0.205,4.79,4.79,69,14,"avr_sadamoto2019, pss","set_avr, set_pss",9
-10,0.169,0.0457,0.115,9.37,9.37,62,5.56,"avr_sadamoto2019, pss","set_avr, set_pss",10
-11,0.128,0.018,0.123,4.1,4.1,56.4,13.6,"avr_sadamoto2019, pss","set_avr, set_pss",11
-12,0.101,0.031,0.095,7.4,7.4,184.6,13.5,"avr_sadamoto2019, pss","set_avr, set_pss",12
-13,0.0296,0.00275,0.0143,5.9,5.9,992,66,"avr_sadamoto2019, pss","set_avr, set_pss",13
-14,0.018,0.00285,0.0173,4.1,4.1,1200,100,"avr_sadamoto2019, pss","set_avr, set_pss",14
-15,0.018,0.00285,0.0173,4.1,4.1,1200,100,"avr_sadamoto2019, pss","set_avr, set_pss",15
-16,0.0356,0.00355,0.0167,7.8,7.8,900,100,"avr_sadamoto2019, pss","set_avr, set_pss",16
+No_machine,Xd,Xd_p,Xq,Td_p,M,D,SetClass,SetMethod,ID
+1,0.1,0.031,0.069,10.2,84,4,"avr_sadamoto2019, pss","set_avr, set_pss",1
+2,0.295,0.0697,0.282,6.56,60.4,9.75,"avr_sadamoto2019, pss","set_avr, set_pss",2
+3,0.2495,0.0531,0.237,5.7,71.6,10,"avr_sadamoto2019, pss","set_avr, set_pss",3
+4,0.262,0.0436,0.258,5.69,57.2,10,"avr_sadamoto2019, pss","set_avr, set_pss",4
+5,0.33,0.066,0.31,5.4,52,3,"avr_sadamoto2019, pss","set_avr, set_pss",5
+6,0.254,0.05,0.241,7.3,69.6,10,"avr_sadamoto2019, pss","set_avr, set_pss",6
+7,0.295,0.049,0.292,5.66,52.8,8,"avr_sadamoto2019, pss","set_avr, set_pss",7
+8,0.29,0.057,0.28,6.7,48.6,9,"avr_sadamoto2019, pss","set_avr, set_pss",8
+9,0.2106,0.057,0.205,4.79,69,14,"avr_sadamoto2019, pss","set_avr, set_pss",9
+10,0.169,0.0457,0.115,9.37,62,5.56,"avr_sadamoto2019, pss","set_avr, set_pss",10
+11,0.128,0.018,0.123,4.1,56.4,13.6,"avr_sadamoto2019, pss","set_avr, set_pss",11
+12,0.101,0.031,0.095,7.4,184.6,13.5,"avr_sadamoto2019, pss","set_avr, set_pss",12
+13,0.0296,0.00275,0.0143,5.9,992,66,"avr_sadamoto2019, pss","set_avr, set_pss",13
+14,0.018,0.00285,0.0173,4.1,1200,100,"avr_sadamoto2019, pss","set_avr, set_pss",14
+15,0.018,0.00285,0.0173,4.1,1200,100,"avr_sadamoto2019, pss","set_avr, set_pss",15
+16,0.0356,0.00355,0.0167,7.8,900,100,"avr_sadamoto2019, pss","set_avr, set_pss",16

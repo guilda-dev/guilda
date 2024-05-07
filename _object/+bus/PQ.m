@@ -17,6 +17,7 @@ classdef PQ < bus
             obj@bus(shunt);
             obj.P = P;
             obj.Q = Q;
+            obj.set_component(component.empty());
         end
         
         function out = get_constraint(obj, Vr, Vi, P, Q)
@@ -25,10 +26,12 @@ classdef PQ < bus
 
         function set_P(obj,P)
             obj.P = P;
+            obj.editted("P")
         end
-        
+
         function set_Q(obj,Q)
             obj.Q = Q;
+            obj.editted("Q")
         end
     end
     methods(Access=protected)

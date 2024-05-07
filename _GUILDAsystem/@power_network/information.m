@@ -1,5 +1,6 @@
 function out = information(obj,varargin)
     %引数に与えられたネットワークのモデルのパラメータを調べる用の関数
+    obj.check_EditLog;
 
     p = inputParser;
     p.CaseSensitive = false;

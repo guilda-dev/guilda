@@ -1,4 +1,4 @@
-classdef two_axis < component.generator.base
+classdef two_axis < component.generator.abstract
 %モデル　: 同期発電機の２軸モデル
 %　状態　: ３変数「回転子偏角"delta",周波数偏差"omega",内部電圧"Ed","Eq"」
 %　　　　  * AVRやPSSが付加されるとそれらの状態も追加される
@@ -11,7 +11,7 @@ classdef two_axis < component.generator.base
             arguments
                 parameter = 'NGT2';
             end
-            obj@component.generator.base(parameter)
+            obj@component.generator.abstract(parameter)
             
             % 2軸用のパラメータ名に変更
             obj.parameter = obj.parameter(:, {'Xd', 'Xd_p', 'Xq', 'Xq_p', 'Td_p', 'Tq_p', 'M', 'D'});

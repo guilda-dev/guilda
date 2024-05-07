@@ -1,10 +1,30 @@
-function [x, xcl, xcg, V, I, Vvirtual] = expand_Xode(obj,xsys,idx_mac,idx_cl,idx_cg)
-
+function [x, xcl, xcg, V, I, Vvirtual] = expand_Xode(obj,xsys,idx_mac,idx_cl,idx_cg, tidx,uidx_mac,uidx_cl,uidx_cg)
     net = obj.network;
-
     nbus = numel(idx_mac);
     tdim = size(xsys,2);
+    
+    % (編集中)
+    % if nargin<6
+    %     tidx     = [];
+    %     uidx_mac = [];
+    %     uidx_cl  = [];
+    %     uidx_cg  = [];
+    % end
+    %      
+    % 必要に応じてインデックスを整理
+    %
+    % uidx controller global : idx_cg  + [idx_macをidx_inputに含むcg]
+    % uidx controller local  : idx_cl  + [idx_macをidx_inputに含むcl]
+    % uidx component         : idx_mac 
+    %
+    % xidx controller global : idx_cg  + [idx_macを含むcg]
+    % xidx controller local  : idx_cl  + [idx_macを含むcl]
+    % xidx component         : idx_mac + [idx_cg,idx_cl内のidx_observeに含まれる機器番号]
+    % Voltage,Current        : idx_mac + [idx_cg,idx_cl内のidx_observeに含まれる機器番号]
+    
 
+    
+    
     [~, logical_mac] = ismember(idx_mac, obj.simulated_bus);
     [~, logical_cl ] = ismember(idx_cl , obj.simulated_cl );
     [~, logical_cg ] = ismember(idx_cg , obj.simulated_cg );

@@ -126,7 +126,7 @@ function [domain,data,Tab_memory] = get_obj(name,Tab_memory,filepath)
     domain = [];
     data   = [];
     if ~isempty(name)
-        domain = debugger.DNS(name);
+        domain = tools.DNS(name);
         if ~isnan(domain)
             field = strrep(name,'.','_dot_');
             if isfield(Tab_memory,field)

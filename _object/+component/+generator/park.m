@@ -1,4 +1,5 @@
-classdef park < component.generator.base % 状態・パラメーターはqを先においている
+classdef park < component.generator.abstract
+    % 状態・パラメーターはqを先においている
     %edited
     %VとIの関係をedit
     
@@ -7,7 +8,7 @@ classdef park < component.generator.base % 状態・パラメーターはqを先
             arguments
                 parameter = 'NGT2';
             end
-            obj@component.generator.base(parameter)
+            obj@component.generator.abstract(parameter)
             
             % PARK用のパラメータ名に変更
             obj.parameter = obj.parameter(:, {'Xq', 'Xq_p', 'Xq_pp','Xd', 'Xd_p', 'Xd_pp','X_ls','Td_p', 'Tq_p', 'Td_pp','Tq_pp','M', 'D'});   % ソートしてるだけ

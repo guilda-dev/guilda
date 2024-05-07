@@ -1,4 +1,4 @@
-classdef one_axis < component.generator.base
+classdef one_axis < component.generator.abstract
 %モデル　: 同期発電機の１軸モデル
 %　状態　: ３変数「回転子偏角"delta",周波数偏差"omega",内部電圧"Ed"」
 %　　　　  * AVRやPSSが付加されるとそれらの状態も追加される
@@ -12,7 +12,7 @@ classdef one_axis < component.generator.base
             arguments
                 parameter = 'NGT2';
             end
-            obj@component.generator.base(parameter)
+            obj@component.generator.abstract(parameter)
             
             obj.parameter = obj.parameter(:, {'Xd', 'Xd_p', 'Xq', 'Td_p', 'M', 'D'});
             obj.set_avr(      component.generator.avr.base()      );

@@ -17,6 +17,7 @@ classdef PV < bus
             obj@bus(shunt);
             obj.Vabs = V;
             obj.P = P;
+            obj.set_component(component.empty());
         end
         
         function out = get_constraint(obj, Vr, Vi, P, Q)
@@ -26,10 +27,12 @@ classdef PV < bus
 
         function set_P(obj,P)
             obj.P = P;
+            obj.editted("P")
         end
         
         function set_Vabs(obj,Vabs)
             obj.Vabs = Vabs;
+            obj.editted("Vabs")
         end
     end
     methods(Access=protected)
