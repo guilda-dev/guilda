@@ -162,47 +162,27 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
             obj.add_controller(c,'local')
         end
 
-        function remove_controller_local(obj,type,index)
-            if nargin == 2
-                index = type;
-                type  = 'local_controller';
-            end
-            obj.remove_controller(type,index);
-        end
-
         function add_controller_global(obj, c)
             obj.add_controller(c,'global')
         end
 
-        function remove_controller_global(obj,busidx,conidx)
-
-            if nargin == 3
-                obj.controller_global(conidx) = [];
-            end
-            cidx = tools.vcellfun(@(c) ~isempty(intersect(c.index_all,busidx)), obj.controller_global);
-            obj.a_controller_global(cidx) = [];
+        function remove_controller_local(obj,index)
+            obj.a_controller_local(index) = [];
         end
 
-        function add_controller(obj,c,gl)
+        function remove_controller_global(objindex)
+            obj.a_controller_global(index) = [];
+        end
+
+        function add_controller(obj,c,type)
             c = check_class(c,'controller');
             cellfun(@(ic)ic.register_parent(obj,'overwrite'),c)
             obj.register_child(c,'stack');
-            if nargin==3 
-                if ismember(gl,{'local','global'})
-                    for i=1:numel(c)
-                        c{i}.type = gl;
-                    end
-                else
-                    error('The controller type must be specified as either local or global.')
-                end
-            end
+            if nargin==3; cellfun(@(con) con.set_glocal(type), c);end
             for i = 1:numel(c)
-                c{i}.update_idx
                 switch c{i}.type
-                    case 'local'
-                        obj.a_controller_local = [obj.a_controller_local,c(i)];
-                    case 'global'
-                        obj.a_controller_global = [obj.a_controller_global,c(i)];
+                    case 'local' ; obj.a_controller_local = [obj.a_controller_local,c(i)];
+                    case 'global'; obj.a_controller_global = [obj.a_controller_global,c(i)];
                 end
             end
         end
