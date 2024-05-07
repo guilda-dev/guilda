@@ -40,20 +40,20 @@ classdef IEEE_type1 < component.generator.avr.base
             nx = 3;
         end
 
-        function [dx, Vfd] = get_Vfd(obj, x_avr, Vabs, ~, u) % u:Vpss
+        function [dx, Vfd] = get_Vfd(obj, x_avr, Vabs, ~, Vpss)
             Vfd = x_avr(1);
             Vr = x_avr(2);
             Rf = x_avr(3);
             Se = obj.Se1*exp(obj.Se2*V_fd);
 
-            dV_fd = -(obj.Ke+Se)*Vfd/obj.Te + Vr/obj.Te;
-            dVr = -Vr/obj.Ta + obj.Ka*Rf/obj.Ta - obj.Ka*obj.Kf*Vfd/(obj.Ta*obj.Tf) + obj.Ka*(obj.Vref+u-Vabs)/obj.Ta;
+            dVfd = -(obj.Ke+Se)*Vfd/obj.Te + Vr/obj.Te;
+            dVr = -Vr/obj.Ta + obj.Ka*Rf/obj.Ta - obj.Ka*obj.Kf*Vfd/(obj.Ta*obj.Tf) + obj.Ka*(obj.Vref+Vpss-Vabs)/obj.Ta;
             dRf = -Rf/obj.Tf + obj.Kf*Vfd/(obj.Tf*obj.Tf);
-            dx = [dV_fd; dVr; dRf];
+            dx = [dVfd; dVr; dRf];
         end
 
-        function [dx, Vfd] = get_Vfd_linear(obj, x_avr, Vabs, ~, u)
-            [dx, Vfd] = get_Vfd(obj, x_avr, Vabs, ~, u);
+        function [dx, Vfd] = get_Vfd_linear(obj, x_avr, Vabs, Efd, u)
+            [dx, Vfd] = get_Vfd(obj, x_avr, Vabs, Efd, u);
         end
 
     end
