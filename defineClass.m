@@ -73,24 +73,23 @@ function generate(~,~,edit_name,edit_discription,pop,lang)
     end
 
 
-    filename = [pwd,filesep,'+your_class',filesep,new_name,'.m'];
-    if isfolder('+your_class')
-       if isfile(filename)
-            [filename,num] = rename_file([filename(1:end-2),'_2.m']);
-            new_name = [new_name,'_',num2str(num)];
-       end    
-    else
-        mkdir +your_class
+    filename_ = [uigetdir,filesep,new_name];
+    clsname   = new_name;
+    filename  = [filename_,'.m'];
+    idx = 1;
+    while isfile(filename)
+        idx = idx +1;
+        filename = [filename_,'_',num2str(idx),'.m'];
+        clsname  = [new_name,'_',num2str(idx)];
     end
 
-
     language = lang.String{lang.Value};
-    text_data = fileread([fullfile(pwd,'_GUILDA','_GUILDAsystem','+supporters','+for_newclass','template',language,pop.String{pop.Value}),'.txt']);
-    text_data = strrep(text_data,'___NAME___',new_name);
+    text_data = fileread([fullfile(tools.pwd,'_GUILDAsystem',['@',pop.String{pop.Value}],'template',language),'.txt']);
+    text_data = strrep(text_data,'___NAME___',clsname);
     text_data = strrep(text_data,'___DISCRIPTION___',discription);
 
     writelines(text_data,filename)
-    open([fullfile(pwd,'_GUILDA','_GUILDAsystem','+your_class',new_name),'.m'])
+    open(filename)
 end
 
 function [filename,idx] = rename_file(filename)

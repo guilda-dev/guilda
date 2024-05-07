@@ -88,8 +88,7 @@ classdef DataProcessing < dynamicprops & matlab.mixin.CustomDisplay
         % プロパティへのデータ格納　及び　Dependentプロパティの生成
                 % networkの状態を取得してプロパティに格納
                 % power_networkクラスはhandleクラスのため、netが変更されるとバグの原因になるため情報のみをstruct型で取得
-                info = net.information('do_report',false);
-                obj.net_data = info;
+                obj.net_data = net.information('do_report',false);
 
             obj.out_data = out;
             allfield = fieldnames(out);
