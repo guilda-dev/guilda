@@ -42,10 +42,10 @@ function set_options(obj,t,uidx,u,varargin)
 
         % Whether to consider grid codes in simulations
             addParameter(p, 'gridcode'         , 'ignore', @(method) ismember(method, {'ignore', 'interruption', 'monitor', 'control'}));
-            addParameter(p, 'gridcode_viewer'  , false   , @(method) islogical(method));
+            addParameter(p, 'gridcode_viewer'  , {'component','branch'}  , @(method) islogical(method));
 
         % Specify state responses to be plotted in real time
-            addParameter(p, 'OutputFcn'  ,  {} ); %状態変数名を指定
+            addParameter(p, 'OutputFcn'  ,  [] ); %状態変数名を指定
 
         % Whether the progress is live or not
             addParameter(p, 'report'           , 'disp', @(method) ismember(method, {'none', 'disp', 'dialog'}));
@@ -124,8 +124,8 @@ function set_options(obj,t,uidx,u,varargin)
         obj.fault     = supporters.for_simulate.options.fault(     obj, op.fault );
         obj.parallel  = supporters.for_simulate.options.parallel(  obj, op );
         obj.input     = supporters.for_simulate.options.input(     obj, t, uidx, u, op.input, op.method);
-        % obj.gridcode  = supporters.for_simulate.reporter.gridcode( obj, op.gridcode, op.gridcode_viewer);
-        % obj.response  = supporters.for_simulate.reporter.response( obj, op.OutputFcn );
+        obj.gridcode  = supporters.for_simulate.reporter.gridcode( obj, t, [], op.gridcode, op.gridcode_viewer);
+        obj.response  = supporters.for_simulate.reporter.response( obj, t, op.OutputFcn );
         obj.progress  = supporters.for_simulate.reporter.progress( obj, op.report, op.time_limit); 
 
 

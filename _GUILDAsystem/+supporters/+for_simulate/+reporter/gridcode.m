@@ -34,14 +34,15 @@ classdef gridcode < handle
     end
 
     methods
-        function obj = gridcode(net, tlim, stateholder, mode, live_equip)
+        function obj = gridcode(parent, tlim, stateholder, mode, live_equip)
             arguments
-                net
+                parent
                 tlim
                 stateholder
                 mode        %{mustBeMember(mode,{'ignore','monitor','control'})} = 'ignore';
                 live_equip  %{mustBeMember(live_equip,{'component','branch','controller',[]})} = {'component','branch'};
             end
+            net = parent.network;
 
             obj.vargin = stateholder;
 
@@ -77,7 +78,7 @@ classdef gridcode < handle
             f = fieldnames(obj.netdata.obj);
             for i=1:numel(f)
                 obj.netdata.num.(f{i}) = numel(obj.netdata.obj.(f{i})); 
-                obj.record.(f{i}).connect  = tools.hcellfun(@(c) c.is_connected, obj.netdata.obj.(f{i}));
+                obj.record.(f{i}).connect  = tools.hcellfun(@(c) strcmp(c.parallel, 'on'), obj.netdata.obj.(f{i}));
                 obj.record.(f{i}).gridcode = nan(1,obj.netdata.num.(f{i}));
             end
             obj.netdata.num.bus = numel(net.a_bus);
