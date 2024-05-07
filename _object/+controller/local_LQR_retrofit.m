@@ -1,9 +1,9 @@
 classdef local_LQR_retrofit <  controller
     
-    properties(SetAccess=private)
+    properties(SetAccess=protected)
         type = 'local';
-        port_input = 'u_avr';
-        port_observe = 'Vfield'; % delta,omega,Ed,Vfieldだが、仮で設定
+        port_input   = 'all';
+        port_observe = 'all'; % delta,omega,Ed,Vfieldだが、仮で設定
     end
 
     properties(Access=private)
