@@ -1,4 +1,5 @@
 function sys = get_sys_controllers(obj, controllers, controllers_global)
+obj.check_EditLog("controller")
 
 sys_global = get_sys_controllers_(obj, controllers_global, '_global');
 sys_local = get_sys_controllers_(obj, controllers, '');

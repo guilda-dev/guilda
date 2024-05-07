@@ -43,6 +43,25 @@ classdef pi_transformer < branch
             Ymat = [ (b+Y)/obj.tap^2,  -Y/conj(r) ;
                                 -Y/r,        b+Y  ];
         end
+
+        %% Setメソッド
+        %%%%%%%%%%%%%%%%%%%%%%%
+        function set.x(obj,val)
+            obj.x = val;
+            obj.editted("x");
+        end
+        function set.y(obj,val)
+            obj.y = val;
+            obj.editted("y");
+        end
+        function set.tap(obj,val)
+            obj.tap = val;
+            obj.editted("tap");
+        end
+        function set.phase(obj,val)
+            obj.phase = val;
+            obj.editted("phase");
+        end
     end
     
 end

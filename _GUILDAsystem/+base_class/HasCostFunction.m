@@ -4,15 +4,24 @@ classdef HasCostFunction < base_class.handleCopyable
     end
 
     methods(Abstract)
-        value = usage_function(func);
+        value = check_CostFunction(func);
     end
     
     methods
 
         % エネルギー関数を定義する際のチェックメソッド
         function set.CostFunction(obj,func)
-            obj.usage_function(func);
+            if obj.check %#ok
+                obj.check_CostFunction(func);
+            end
             obj.CostFunction = func;
+        end
+
+        % クラス内にget_CostFunctionメソッドが存在する場合、その関数をCostFunctionとして設定する
+        function set_CostFunctionMethod(obj)
+            if ismethod(obj,'get_CostFunction')
+                obj.CostFunction = @(obj,varargin) obj.get_CostFunction(varargin{:});
+            end
         end
 
         % エネルギー関数の時系列データを計算するメソッド
@@ -43,6 +52,20 @@ classdef HasCostFunction < base_class.handleCopyable
                 var = fvar(i);
                 cost = obj.CostFunction(obj,var{:});
                 out(i, :) = cost(:)';
+            end
+        end
+    end
+
+    properties(Access=private)
+        check = false;
+    end
+
+    methods(Access = protected)
+        function sudo_set_CostFunction(obj)
+            if ismethod(obj,'get_CostFunction')
+                obj.check = false;
+                obj.CostFunction = @(obj,varargin) obj.get_CostFunction(varargin{:});
+                obj.check = true;
             end
         end
     end

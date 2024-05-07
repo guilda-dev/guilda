@@ -166,7 +166,7 @@ classdef controller < handle & base_class.HasStateInput & base_class.HasGridCode
 
     %% get_dx_uの関数の型をチェックするためのメソッド
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function val = usage_function(obj,func)
+        function val = check_CostFunction(obj,func)
             bus = obj.network.a_bus;
             x = obj.get_x0;
             X = tools.arrayfun(@(i) bus{i}.component.x_equilibrium, obj.index_observe(:));

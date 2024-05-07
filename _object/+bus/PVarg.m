@@ -8,30 +8,31 @@ classdef PVarg < bus
 %　出力　：busクラスのインスタンス
     
     properties(SetAccess = protected)
-        Varg
+        Vangle
         P
     end
     
     methods
-        function obj = PVarg(P, Varg, shunt)
+        function obj = PVarg(P, Vangle, shunt)
             obj@bus(shunt);
-            obj.Varg = Varg;
+            obj.Vangle = Vangle;
             obj.P = P;
+            obj.set_component(component.empty());
         end
         
-        function out = get_constraint(obj, Vr, Vi, P, Q)
-            Varg = angle(Vr+1j*Vi); %#ok
-            out = [Varg-obj.Varg; P-obj.P]; %#ok
+        function out = get_constraint(obj, Vr, Vi, P, ~)
+            Vangle = angle(Vr+1j*Vi);%#ok
+            out = [Vangle-obj.Vangle; P-obj.P];%#ok
         end
 
         function set_P(obj,P)
             obj.P = P;
-            obj.edit_parameter;
+            obj.editted("P")
         end
         
         function set_Varg(obj,Varg)
             obj.Varg = Varg;
-            obj.edit_parameter;
+            obj.editted("Vangle")
         end
     end
     methods(Access=protected)

@@ -17,6 +17,7 @@ classdef slack < bus
             obj@bus(shunt);
             obj.Vabs = Vabs;
             obj.Vangle = Vangle;
+            obj.set_component(component.empty());
         end
         
         function out = get_constraint(obj, Vr, Vi, P, Q)
@@ -27,10 +28,12 @@ classdef slack < bus
 
         function set_Vabs(obj,Vabs)
             obj.Vabs = Vabs;
+            obj.editted("Vabs")
         end
         
         function set_Vangle(obj,Vangle)
             obj.Vangle = Vangle;
+            obj.editted("Vangle")
         end
     end
     methods(Access=protected)

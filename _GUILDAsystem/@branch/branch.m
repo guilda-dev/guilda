@@ -8,10 +8,6 @@ classdef branch < handle & base_class.HasGridCode & base_class.HasCostFunction
         to
     end
 
-    properties(SetAccess = protected)
-        index
-    end
-
     properties(SetAccess=protected)
         bus_from
         bus_to
@@ -28,25 +24,13 @@ classdef branch < handle & base_class.HasGridCode & base_class.HasCostFunction
             obj.Tag = 'Line';
         end
 
-        function val = usage_function(obj,func)
-            try
-                val = func(obj,0,[1;0],[1.01,0.01]);
-            catch
-                error(['The function handle seems to be in the wrong format.',newline,...
-                       'It must be in the following format',newline,...
-                       'func = @(obj,t,Vfrom,Vto) ~',newline,...
-                       '・obj : own class object',newline,...
-                       '・t = time(scalar)',newline,...
-                       '・Vfrom = [real(V);imag(V)] Bus voltage specified by obj.from',newline,...
-                       '・Vto   = [real(V);imag(V)] Bus voltage specified by obj.to',newline])
-            end
-        end
 
-        %% DependentプロパティのSetGetメソッド
-            function n = get.network(obj)
-                n = obj.parents{1};
-            end
-    
+        %% CostFunctionに代入する関数ハンドルのチェックメソッド
+        val = check_CostFunction(obj,func)
+
+
+        %% Setメソッド
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             function set.from(obj,val)
                 if isa(obj.network,'power_network')
                     obj.bus_from = obj.network.a_bus{val};
@@ -54,7 +38,6 @@ classdef branch < handle & base_class.HasGridCode & base_class.HasCostFunction
                     obj.bus_from = struct('index',val);
                 end
             end
-    
             function set.to(obj,val)
                 if isa(obj.network,'power_network')
                     obj.bus_to = obj.network.a_bus{val};
@@ -62,18 +45,24 @@ classdef branch < handle & base_class.HasGridCode & base_class.HasCostFunction
                     obj.bus_to = struct('index',val);
                 end
             end
-    
+
+
+        %% Getメソッド
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            function n = get.network(obj)
+                if ~isempty(obj.parents)
+                    n = obj.parents{1};
+                else
+                    n = [];
+                end
+            end
             function n = get.from(obj)
                 n = obj.bus_from.index;
             end
-    
             function n = get.to(obj)
                 n = obj.bus_to.index;
             end
 
-            function setprop(obj,name,val)
-                obj.(name)=val;
-            end
     end
 
     methods(Access=protected)

@@ -37,6 +37,17 @@ classdef T < branch
                         -Y^2, (Y+b)*Y ] ...
                    /(Y+b+Y);
         end
+
+        %% Setメソッド
+        %%%%%%%%%%%%%%%%%%%%%%%
+        function set.x(obj,val)
+            obj.x = val;
+            obj.editted("x");
+        end
+        function set.y(obj,val)
+            obj.y = val;
+            obj.editted("y");
+        end
     end
     
 end
