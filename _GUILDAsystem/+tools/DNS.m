@@ -7,7 +7,7 @@ function address = DNS(domain)
     end
 
     if iscell(domain)
-        tools.cellfun(@(o) debugger.DNS(o), domain)
+        tools.cellfun(@(o) tools.DNS(o), domain)
     % elseif eval(['numel(?',domain,')'])==1
     %         address = domain;
     else
@@ -80,7 +80,7 @@ function address = DNS(domain)
             case 'component_empty'
                 address = 'component.empty';
             otherwise
-                address = search_class(pwd,domain,[]);
+                address = search_class(tools.pwd,domain,[]);
         end
     end
     if isnan(address)
