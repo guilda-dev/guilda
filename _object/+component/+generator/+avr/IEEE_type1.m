@@ -33,27 +33,27 @@ classdef IEEE_type1 < component.generator.avr.base
         end
 
         function name_tag = naming_state(obj)
-            name_tag = {'Vfield'};
+            name_tag = {'Vfd','Vr','Rf'};
         end
 
         function nx = get_nx(obj)
             nx = 3;
         end
 
-        function [dx, Vfd] = get_Vfd(obj, x_avr, Vabs, Efd, u) % u:Vpss
+        function [dx, Vfd] = get_Vfd(obj, x_avr, Vabs, ~, u) % u:Vpss
             Vfd = x_avr(1);
-            V_R = x_avr(2);
-            R_F = x_avr(3);
+            Vr = x_avr(2);
+            Rf = x_avr(3);
             Se = obj.Se1*exp(obj.Se2*V_fd);
 
-            dV_fd = -(obj.Ke+Se)*Vfd/obj.Te + V_R/obj.Te;
-            dV_R = -V_R/obj.Ta + obj.Ka*R_F/obj.Ta - obj.Ka*obj.Kf*Vfd/(obj.Ta*obj.Tf) + obj.Ka*(obj.Vref+u-Vabs)/obj.Ta;
-            dR_F = -R_F/obj.Tf + obj.Kf*Vfd/obj.Tf*obj.Tf;
-            dx = [dV_fd; dV_R; dR_F];
+            dV_fd = -(obj.Ke+Se)*Vfd/obj.Te + Vr/obj.Te;
+            dVr = -Vr/obj.Ta + obj.Ka*Rf/obj.Ta - obj.Ka*obj.Kf*Vfd/(obj.Ta*obj.Tf) + obj.Ka*(obj.Vref+u-Vabs)/obj.Ta;
+            dRf = -Rf/obj.Tf + obj.Kf*Vfd/(obj.Tf*obj.Tf);
+            dx = [dV_fd; dVr; dRf];
         end
 
-        function [dx, Vfd, V_ap] = get_Vfd_linear(obj, V_fd, Vabs, Efd, u)
-            [dV_fd, Vfd, V_ap] = get_Vfd(obj, V_tr, Vabs, Efd, u);
+        function [dx, Vfd] = get_Vfd_linear(obj, x_avr, Vabs, ~, u)
+            [dx, Vfd] = get_Vfd(obj, x_avr, Vabs, ~, u);
         end
 
     end
