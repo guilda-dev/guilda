@@ -1,4 +1,4 @@
-classdef classical < component.generator.base
+classdef classical < component.generator.abstract
 %モデル　: 同期発電機の古典モデル
 %　状態　: ２変数「回転子偏角"delta",周波数偏差"omega"」
 %　　　　  * AVRやPSSが付加されるとそれらの状態も追加される
@@ -15,7 +15,7 @@ classdef classical < component.generator.base
             arguments
                 parameter = 'NGT2';
             end
-            obj@component.generator.base(parameter)
+            obj@component.generator.abstract(parameter)
             
             obj.parameter = obj.parameter(:, {'Xd', 'Xq', 'M', 'D'});
             obj.set_avr( component.generator.avr.base() );
