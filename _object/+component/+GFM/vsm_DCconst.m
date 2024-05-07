@@ -1,7 +1,7 @@
-classdef GFMI_vsm_DCconst < component.GFM.GFMI
+classdef vsm_DCconst < component.GFM.Inverter
     methods
-        function obj = GFMI_vsm_DCconst()
-            obj@component.GFM.GFMI();
+        function obj = vsm_DCconst()
+            obj@component.GFM.Inverter();
 
             vsm = component.GFM.ReferenceModel.vsm();
             obj.set_reference_model(vsm);

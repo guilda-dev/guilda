@@ -1,4 +1,4 @@
-classdef GFMI < component
+classdef Inverter < component
 
     properties (SetAccess = protected)
         vsc_controller 
@@ -18,7 +18,7 @@ classdef GFMI < component
 
     methods
 
-        function obj = GFMI(para)
+        function obj = Inverter(para)
             % Set parameters
                 if nargin==0
                     % If not specified as an argument, use default value from GFMI.csv

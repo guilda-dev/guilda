@@ -1,7 +1,7 @@
-classdef GFMI_droop_DCconst < component.GFM.GFMI
+classdef droop_DCconst < component.GFM.Inverter
     methods
-        function obj = GFMI_droop_DCconst()
-            obj@component.GFM.GFMI()
+        function obj = droop_DCconst()
+            obj@component.GFM.Inverter()
 
             droop = component.GFM.ReferenceModel.droop();
             obj.set_reference_model(droop);

@@ -1,7 +1,7 @@
-classdef GFMI_vsm_DC1order < component.GFM.GFMI
+classdef vsm_DC1order < component.GFM.Inverter
     methods
-        function obj = GFMI_vsm_DC1order()
-            obj@component.GFM.GFMI()
+        function obj = vsm_DC1order()
+            obj@component.GFM.Inverter()
 
             vsm = component.GFM.ReferenceModel.vsm();
             obj.set_reference_model(vsm);
