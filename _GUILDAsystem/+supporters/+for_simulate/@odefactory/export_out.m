@@ -40,6 +40,8 @@ function [out,obj] = export_out(obj)
             out.input    = obj.input.copy;
             out.parallel = obj.parallel.copy;
             out.fault    = obj.fault.copy;
+
+            net.reflected;
             out = supporters.for_simulate.solfactory.DataProcessing(out, net, obj.readme);
     end
 end
