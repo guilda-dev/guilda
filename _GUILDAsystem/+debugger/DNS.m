@@ -53,6 +53,8 @@ function address = DNS(domain)
         % avr
             case 'avr'
                 address = 'component.generator.avr.base';
+            case 'avr_IEEE_DC1'
+                address = 'component.generator.avr.IEEE_DC1';
             case 'avr_IEEE_ST1'
                 address = 'component.generator.avr.IEEE_ST1';
             case 'avr_sadamoto2019'
