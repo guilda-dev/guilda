@@ -1,5 +1,8 @@
 function startup()
     
+    disp([newline,newline]);
+    disp('Welcome to GUILDA!!');
+    disp('==========================================================================================');
     
     data = supporters.for_user.config;
     data = data.startup;
@@ -17,7 +20,7 @@ function startup()
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     switch data.version
         case 1
-            addpath('./_GUILDAsystem/_version_support')
+            addpath(fullfile(tools.pwd,'_GUILDAsystem','_version_support'))
         case "latest"
         otherwise
     end
@@ -29,13 +32,14 @@ function startup()
     isgit  = isfolder([tools.pwd,filesep,'.git']);
     if ispull && isgit
         status = system(strcat("git pull"));
-        if status~=0
+        if status==0
+            disp('<< git pull completed >> ')
+        else
             warning("git pull error in guilda_code_share");
         end
     end
 
     
-    disp('----------------------------------------------------------------------------------------------------');
-    disp('Welcome to GUILDA!!');
+    disp('==========================================================================================');
     disp(newline);
 end
