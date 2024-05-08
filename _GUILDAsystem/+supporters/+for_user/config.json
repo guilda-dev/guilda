@@ -10,6 +10,19 @@
     "GUI":{
         "print_cmd": "off",
     },
+    "git":{
+        "message": "disp",
+        "clean":[
+            "_GUILDAsystem",
+            "_object",
+            "_Tutorial",
+            "_UserTool",
+            ],
+        "stash":[
+            "_object",
+            "_UserTool"
+            ]
+    },
     "class_dictionary":[
         {
             "DocPath": [

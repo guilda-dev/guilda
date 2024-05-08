@@ -31,12 +31,7 @@ function startup()
     ispull = strcmp(data.gitpull,'on');
     isgit  = isfolder([tools.pwd,filesep,'.git']);
     if ispull && isgit
-        status = system(strcat("git pull"));
-        if status==0
-            disp('<< git pull completed >> ')
-        else
-            warning("git pull error in guilda_code_share");
-        end
+        supporters.for_user.gitpull;
     end
 
     
