@@ -41,7 +41,7 @@ function defineClass
     pop_lang.FontWeight = 'bold';
     
     
-    push.Callback = @(var1,var2) generate(var1,var2,edit_name,edit_discription,pop,pop_lang);
+    push.Callback = @(var1,var2) generate(var1,var2,edit_name,edit_discription,pop,pop_lang,f);
     pop_lang.Callback = @(var1,var2) set_lang(var1,var2,text,push);
 end
 
@@ -60,8 +60,10 @@ function set_lang(var,~,text,push)
     end
 end
 
-function generate(~,~,edit_name,edit_discription,pop,lang)
+function generate(~,~,edit_name,edit_discription,pop,lang,uifig)
     
+    language = lang.String{lang.Value};
+
     new_name    = edit_name.String;
     discription = edit_discription.String;
     if size(discription,1) ~= 1
@@ -72,8 +74,19 @@ function generate(~,~,edit_name,edit_discription,pop,lang)
         discription = [discription(:)',discription_end];
     end
 
-
-    filename_ = [uigetdir,filesep,new_name];
+    dirname = uigetdir;
+    % errordlgを使用するとなんかバグる
+    if contains(dirname,[tools.pwd,filesep]+["_GUILDAsystem","_object","_Tutorial"])
+        switch language
+            case 'JPN'
+                error(['GUILDAのソースフォルダ下以外を選択してください',newline,'ソースフォルダ',newline,'./_GUILDAsytem/',newline,'./_object/',newline,'./_Tutorial/'])
+                % errordlg({'GUILDAのソースフォルダ下以外を選択してください','./_GUILDAsytem/','./_object/','./_Tutorial/'})
+            case 'ENG'
+                error(['Select a path not under the GUILDA source folder',newline,'Source Folder',newline,'./_GUILDAsytem/',newline,'./_object/',newline,'./_Tutorial/'])
+                % errordlg({'Select a path not under the GUILDA source folder','./_GUILDAsytem/','./_object/','./_Tutorial/'})
+        end
+    end
+    filename_ = [dirname,filesep,new_name];
     clsname   = new_name;
     filename  = [filename_,'.m'];
     idx = 1;
@@ -83,13 +96,13 @@ function generate(~,~,edit_name,edit_discription,pop,lang)
         clsname  = [new_name,'_',num2str(idx)];
     end
 
-    language = lang.String{lang.Value};
     text_data = fileread([fullfile(tools.pwd,'_GUILDAsystem',['@',pop.String{pop.Value}],'template',language),'.txt']);
     text_data = strrep(text_data,'___NAME___',clsname);
     text_data = strrep(text_data,'___DISCRIPTION___',discription);
 
     writelines(text_data,filename)
     open(filename)
+    close(uifig)
 end
 
 function [filename,idx] = rename_file(filename)
