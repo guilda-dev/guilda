@@ -1,7 +1,10 @@
 function export_csv(obj)
+%ー実行方法ー
+%>> obj.export_csv();
+%
     
     path = uigetdir;
-    time_text = datestr(datetime('now'),'yyyy_mm_dd_HH_MM_ss');
+    time_text = datestr(datetime('now'),'yyyy_mm_dd_HH_MM_ss');%#ok
     subpath = [path,'/DataBox_',time_text];
     mkdir(subpath)
 
@@ -14,7 +17,7 @@ function export_csv(obj)
     path_comp = [subpath,'/component_state'];
     mkdir(path_comp)
     for i = 1:nbus
-        name = myclass(obj.net_data.component{i,'class'})
+        name = myclass(obj.net_data.component{i,'class'});
         filename = [path_comp,'/component',num2str(i),'_',name,'.csv'];
         writetable([time,obj.X{i}], filename)
     end

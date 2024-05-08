@@ -41,12 +41,12 @@ classdef DataProcessing < dynamicprops & matlab.mixin.CustomDisplay
         % 本クラスの使用方法を表示
             while ~islogical(print_readme)
                 yes_no = input('使い方を表示しますか？(y/n)：',"s");
-                if      strcmp(yes_no,'y'); yes_no = true;
-                elseif  strcmp(yes_no,'n'); yes_no = false;
+                if      strcmp(yes_no,'y'); print_readme = true;
+                elseif  strcmp(yes_no,'n'); print_readme = false;
                 end
             end
             if print_readme
-               obj.readme;
+               obj.doc;
             end
 
 
@@ -123,6 +123,9 @@ classdef DataProcessing < dynamicprops & matlab.mixin.CustomDisplay
         
     % シミュレーション条件の表示
         function  simulation_condition(obj)
+            %ー実行方法ー
+            %>> obj.simulation_condition;
+            %
             figure
             f = {'fault','input','parallel'};
             for i = 1:numel(f)
@@ -136,16 +139,19 @@ classdef DataProcessing < dynamicprops & matlab.mixin.CustomDisplay
         end
 
     %応答プロットに関するmethod
+        varargout = plot(obj,para,bus_idx,varargin);
+
         function UIplot(obj)
             %ー実行方法ー
             %>> obj.UIplot()
             %
-            supporters.for_simulate.sol.UIplot(obj);
+            supporters.for_simulate.solfactory.UIplot(obj);
         end
-        varargout = plot(obj,para,bus_idx,varargin);
 
 
     %応答のアニメーションに関するmethod
+        anime(obj,net,varargin)
+
         function UIanime(obj,net)
             %ー実行方法ー
             %>> obj.UIanime(net)
@@ -153,50 +159,9 @@ classdef DataProcessing < dynamicprops & matlab.mixin.CustomDisplay
             supporters.for_simulate.solfactory.UIanime(obj,net);
         end
 
-        anime(obj,net,varargin)
-
         
-        %使い方の表示
-        function readme(obj)
-            
-            fprintf(['\n' ...
-            '==================================\n',...
-            '    シミュレーション結果の解析ツール   \n',...
-            '        DataProcessingクラス       \n',...
-            '==================================\n\n'])
-            help(class(obj))
-            
-            disp('応答プロットを表示したい場合')
-            disp('------------------------')
-            
-            disp('● UIを使う場合')
-            help([class(obj),'.UIplot'])
-            
-            disp('● コマンドで実行する場合')
-            myhref(obj,'[引数の指定方法]','コマンドでプロットの実行をする場合','plot')
-
-            disp('アニメーションを表示したい場合')
-            disp('-------------------------')
-            
-            disp('● コマンドで実行する場合')
-            myhref(obj,'[引数の指定方法]','コマンドでプロットの実行をする場合','anime')
-        
-            function myhref(obj,ref,sentence,method)
-                disp('ー実行方法ー')
-                disp([' >> obj.',method,'();'])
-                fprintf([' >> obj.',method,'(Name,Value,...)'])
-                fprintf([' <a href="matlab:' ,...
-                        'disp('' '');',...
-                        'disp([''',sentence,''']);',...
-                        'disp(''==================================================='');',...
-                        'help([''',class(obj),''',''.',method,''']);',...
-                        'disp(''==================================================='');',...
-                        'disp('' '');',...
-                        '">',ref,'</a>\n\n'])
-                disp(' ')
-            end
-            
-        end
+    %使い方の表示
+        doc(obj)
         
     end
     methods(Access=protected)
