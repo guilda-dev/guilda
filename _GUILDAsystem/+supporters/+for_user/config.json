@@ -1,0 +1,89 @@
+{
+    "startup":{
+        "Tutorial" : "on",
+        "gitpull"  : "on",
+        "gitbranch": "current",
+        "version"  : 1,
+    },
+    "simulate":{
+    },
+    "GUI":{
+        "print_cmd": "off",
+    },
+    "class_dictionary":[
+        {
+            "DocPath": [
+                "_Tutorial",
+                "ClassManual",
+                "Branch_variety.mlx"
+                ],
+            "ClassList":[
+                "branch.pi",
+                "branch.pi_transformer",
+                "branch.T"
+                ]
+        },
+        {
+            "DocPath": [
+                "_Tutorial",
+                "ClassManual",
+                "Bus_variety.mlx"
+                ],
+            "ClassList":[
+                "bus.PV",
+                "bus.PQ",
+                "bus.slack"
+                ]
+        },
+        {
+            "DocPath": [
+                "_Tutorial",
+                "ClassManual",
+                "Component_Generator.mlx"
+                ],
+            "ClassList":[
+                "component.generator.abstract",
+                "component.generator.classical",
+                "component.generator.one_axis",
+                "component.generator.two_axis",
+                "component.generator.park"
+                ]
+        },
+        {
+            "DocPath": [
+                "_Tutorial",
+                "ClassManual",
+                "Component_Load.mlx"
+                ],
+            "ClassList":[
+                "component.load.abstract",
+                "component.load.current",
+                "component.load.impedance",
+                "component.load.power",
+                "component.load.voltage"
+                ]
+        },
+        {
+            "DocPath": [
+                "_Tutorial",
+                "ClassManual",
+                "Controller_AGC.mlx"
+                ],
+            "ClassList":[
+                "controller.broadcast_PI_AGC"
+                ]
+        },
+        {
+            "DocPath": [
+                "_Tutorial",
+                "ClassManual",
+                "Controller_LQR.mlx"
+                ],
+            "ClassList":[
+                "controller.local_LQR"
+                ]
+        }
+    ]
+}
+  
+  

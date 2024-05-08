@@ -3,25 +3,30 @@ function class_list = class_dictionary(class_name)
 if nargin == 0
     class_name = 'handle';
 end
+class_name = char(class_name);
 
 if strcmp(class_name([end-1,end]),'.m')
     class_name = class_name(1:end-2);
 end
-fprintf(['Search : "',class_name,'" class．．．\n\n'])
+ %fprintf(['Search : "',class_name,'" class．．．\n\n'])
 
 filename = ""; superclass = "";
 class_list = search_superclass(table(filename,superclass),cell(0),class_name);
 bar = '===================================================';
+
+
+DocPath = supporters.for_user.config;
+DocPath = DocPath.class_dictionary;
 
 disp(' ')
 disp([class_name,' class：'])
 disp(bar)
 disp('       Link　　　class tree')
 disp(bar)
-fprintf_doc_and_help(string(class_name));
+fprintf_doc_and_help(string(class_name),DocPath);
 space = '     ';
 disp([space,class_name])
-print_tree(class_list,string(class_name),[space,' ']);
+print_tree(class_list,string(class_name),[space,' '],DocPath);
 disp(bar)
 disp(' ')
 
@@ -64,42 +69,56 @@ function data = search_superclass(data,dir_list,class_name)
     end
 end
 
-function print_tree(data,superclass,preword)
+function print_tree(data,superclass,preword,DocPath)
     idx_list = find(data{:,'superclass'}==superclass);
     for idx = idx_list'
         filename = data{idx,'filename'};
-        fprintf_doc_and_help(filename);
+        fprintf_doc_and_help(filename,DocPath);
         if idx == idx_list(end)
             disp([preword,' ┗━ ',filename{:}])
-        print_tree(data,filename,[preword,'       ']);
+        print_tree(data,filename,[preword,'       '],DocPath);
         else
             disp([preword,' ┣━ ',filename{:}])
-        print_tree(data,filename,[preword,' ┃  ']);
+        print_tree(data,filename,[preword,' ┃  '],DocPath);
         end
     end
 end
 
-function fprintf_doc_and_help(filename)
- fprintf(['<a href="matlab:' ,...
-            'disp('' '');',...
-            'disp([''help：'',''',filename{:},''']);',...
-            'disp(''==================================================='');',...
-            'help(''',filename{:},''');',...
-            'disp(''==================================================='');',...
-            'disp('' '');',...
-            '"> [help]</a>'])
-        fprintf(',')
+function fprintf_doc_and_help(filename,DocPath)
+    fprintf(' ')
+    fprintf(['<a href="matlab:' ,...
+             'disp('' '');',...
+             'disp('' '');',...
+             'disp([''help：'',''',filename{:},''']);',...
+             'disp(''==================================================='');',...
+             'help(''',filename{:},''');',...
+             'disp(''==================================================='');',...
+             'disp('' '');',...
+             'disp('' '');',...
+             '">[help]</a>'])
+    fprintf(', ')
+
+    docpath = searchdoc(filename,DocPath);
+    if isempty(docpath)
         fprintf(['<a href="matlab:' ,...
-            'doc(''',filename{:},''');',...
-            '"> [doc]</a>'])
+                 'doc(''',filename{:},''');',...
+                 '">[doc]</a>'])
+    else
+        fprintf(['<a href="matlab:' ,...
+                 'open(''',docpath,''');',...
+                 '">[mlx]</a>'])
+    end
 end
 
-function fprintf_additional_word(filename)
-    switch filename
-        case "power_network"
-        case "component"
-        case "controller"
-        case "bus"
-        case "branch"
+
+function docpath = searchdoc(filename,data)
+    docpath = [];
+    i = 1;
+    num = numel(data);
+    while isempty(docpath) && i<=num
+        if ismember(filename,data(i).ClassList)
+            docpath = fullfile(data(i).DocPath{:});
+        end
+        i = i+1;
     end
 end
