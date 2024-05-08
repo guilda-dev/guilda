@@ -130,6 +130,8 @@ classdef DataProcessing < dynamicprops & matlab.mixin.CustomDisplay
                 ax = subplot(1,numel(f),i);
                 op.sentence;
                 op.plot(ax);
+                cls = class(op);
+                subtitle(cls(find(cls=='.',1,"last")+1:end))
             end
         end
 

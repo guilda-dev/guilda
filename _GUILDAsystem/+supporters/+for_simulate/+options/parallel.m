@@ -89,7 +89,7 @@ classdef parallel < supporters.for_simulate.options.Abstract
         
         % データ閲覧用のメソッド
     
-            function out = timetable(obj)
+            function [out,tlist] = timetable(obj)
                 blist = obj.get_all_bus;
                 tlist = [tools.harrayfun(@(i) obj.data(i).time(:)',1:numel(obj.data)),obj.tlim([1,end])];
                 [~,prior] = sort(tlist);
@@ -105,12 +105,12 @@ classdef parallel < supporters.for_simulate.options.Abstract
                         tab(ibus,i:end) = strcmp(id.onoff,'on');
                     end
                 end
-                row = tools.varrayfun(@(i) string(obj.network.a_bus{i}.component.Tag) + i, blist);
+                row = tools.arrayfun(@(i) string(obj.network.a_bus{i}.component.Tag) + i, blist);
                 out = array2table(tab,"RowNames",row,"VariableNames", arrayfun(@(c)string(c),tlist) );
             end
     
             function plot(obj,ax)
-                tab = obj.timetable;
+                [tab,tlist] = obj.timetable;
     
                 if nargin<2
                     figure

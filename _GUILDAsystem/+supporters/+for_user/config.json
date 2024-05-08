@@ -1,7 +1,7 @@
 {
     "startup":{
         "Tutorial" : "on",
-        "gitpull"  : "on",
+        "gitpull"  : "off",
         "gitbranch": "current",
         "version"  : 1,
     },
