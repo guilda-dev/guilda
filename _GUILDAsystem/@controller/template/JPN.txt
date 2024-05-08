@@ -1,7 +1,7 @@
 classdef ___NAME___ < controller
 % モデル  ：___DISCRIPTION___
 % 親クラス：controllerクラス
-% 実行方法：obj =　___NAME___(y_idx, u_idx, << 定義するクラスの引数に応じて記載 >>)
+% 実行方法：obj =　___NAME___(net, y_idx, u_idx, << 定義するクラスの引数に応じて記載 >>)
 % 　引数　：・y_idx : double配列。観測元の機器の番号
 % 　　　　　・u_idx : double配列。入力先の機器の番号
 %　　　　　 ・ << 引数の説明を記載しておくと他の人が助かります！ >>
@@ -13,26 +13,37 @@ classdef ___NAME___ < controller
     % ・index_observe : 制御器が状態を観測する機器の番号リスト
     % ・network       : 制御器を付加したpower_networkクラス
     % ・parameter     : モデルのパラメータ定数はこのフィールドに格納してください。
+
+    properties(SetAccess=protected) % 
+        type = 'local';             % 制御器が'local'か'global'かを入力
+        port_input   = 'all';       % 制御器が機器に印加する入力名
+        port_observe = 'all';       % 制御器が機器から観測する状態名
+    end
     
     properties
         % 適宜プロパティを追加 
     end
     
     methods
-        function obj = ___NAME___(y_idx, u_idx) %引数は適宜変更して良いがy_idx,u_idxは残すこと
-            obj@controller(u_idx, y_idx);
+        function obj = ___NAME___(net, y_idx, u_idx) %引数は適宜変更して良いがy_idx,u_idxは残すこと
+            obj@controller(net, u_idx, y_idx);
 
         end
         
         function nx = get_nx(obj)
             % 状態の個数を定義するメソッド
             % 状態変数の個数が1個の場合
-            %   >> nu = 1;
+            %   >> nx = 1;
 
 
             %%%%%%%%%% 実装 %%%%%%%%%%
             nx = 
             %%%%%%%%%%%%%%%%%%%%%%%%%
+
+        end
+
+        function initialize(obj)
+           % 機器の並列・解列シミュレーション時に制御器のパラメータを変える場合はここに記入
 
         end
         

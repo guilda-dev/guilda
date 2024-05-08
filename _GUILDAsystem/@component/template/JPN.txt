@@ -1,10 +1,10 @@
-classdef ___NAME___ < component & tools.newClass.checker.for_component
+classdef ___NAME___ < component
 % モデル  ：___DISCRIPTION___
 %         ・状態： <<説明追加>>
 %         ・入力： <<説明追加>>
 % 親クラス：componentクラス
-% 実行方法：obj =　___NAME___(omega, parameter)
-% 　引数　：・parameter : table型．「<<パラメータ名を追加>>」を列名として定義
+% 実行方法：obj =　___NAME___(parameter)
+% 　引数　：parameter : table型．「<<パラメータ名を追加>>」を列名として定義
 % 　出力　：componentクラスのインスタンス
 
     % 継承されているプロパティ
@@ -56,54 +56,52 @@ classdef ___NAME___ < component & tools.newClass.checker.for_component
             con = I - [Ir; Ii];
         end
 
-        function x_st = set_equilibrium(obj, V, I)
+        function [x_st, u_st] = get_equilibrium(obj, V, I)
             % V：潮流計算によって求められた母線電圧のフェーザ値（ = Vreal + 1j*Vimag ）
             % I：潮流計算によって求められた母線電流のフェーザ値（ = Ireal + 1j*Iimag ）
 
             % 出力
             % x_st : 機器モデルの状態の平衡点（状態の変数の個数nと一致するベクトル(n×1 double)で定義すること）
-
+            % u_st : 機器モデルの状態の定常入力値（入力ポートの個数nと一致するベクトル(n×1 double)で定義すること）
 
             %%%%%%%%%% 実装 %%%%%%%%%%
             x_st = 
+            u_st = 
             %%%%%%%%%%%%%%%%%%%%%%%%%
 
-            obj.x_equilibrium = x_st;
-            obj.V_equilibrium = V;
-            obj.I_equilibrium = I;
         end
 
 
         %%% 必須ではないが実装を推奨 %%%
         %{
-        function tag = naming_state(obj)
+        function name_tag = naming_state(obj)
             % 状態に変数名を名付けるメソッド
             % 出力はcell配列で返す
             % このメソッドが定義されていない場合は「x1,x2,...」と名付けられる
             %
             % 例）状態変数の名前が「x,v,a」の場合以下のように定義する
             % 
-            %    >> tag = {'x','v','a'};
+            %    >> name_tag = {'x','v','a'};
 
 
             %%%%%%%%%% 実装 %%%%%%%%%%
-            tag =                     
+            name_tag =                     
             %%%%%%%%%%%%%%%%%%%%%%%%%
 
         end
 
-        function tag = naming_port(obj)
+        function u_name = naming_port(obj)
             % 入力のポート名を名付けるメソッド
             % 出力はcell配列で返す
             % このメソッドが定義されていない場合は「u1,u2,...」と名付けられる
             %
             % 例）入力ポートの名前を「port1,port2」とする場合以下のように定義する
             % 
-            %    >> tag = {'port1','port2'};
+            %    >> u_name = {'port1','port2'};
 
 
             %%%%%%%%%% 実装 %%%%%%%%%%
-            tag =                     
+            u_name =                     
             %%%%%%%%%%%%%%%%%%%%%%%%%
 
         end

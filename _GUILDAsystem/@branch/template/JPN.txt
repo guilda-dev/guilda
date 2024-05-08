@@ -1,11 +1,11 @@
 classdef ___NAME___ < branch
-% モデル : ___DISCRIPTION___
-%親クラス： branch
-%実行方法：obj = ___NAME___(from, to, << 定義するクラスの引数に応じて記載 >>)
-%　引数　：・from,to: 接続する母線番号
-%　　　　　・ << 引数の説明を記載しておくと他の人が助かります！ >>
+%　モデル ：___DISCRIPTION___
+% 親クラス：branch
+% 実行方法：obj = ___NAME___(from, to, << 定義するクラスの引数に応じて記載 >>)
+%　 引数　：・from,to: 接続する母線番号
+%　　　　　 ・ << 引数の説明を記載しておくと他の人が助かります！ >>
 %
-%　出力　：branchクラスのインスタンス
+%　 出力　：branchクラスのインスタンス
 
     % 継承されているプロパティ
     % ・from, to : 接続する母線の番号
@@ -20,18 +20,18 @@ classdef ___NAME___ < branch
             
         end
         
-        function Y = get_admittance_matrix(obj)
+        function Ymat = get_admittance_matrix(obj)
             % このメソッドが返すべき出力は2*2のアドミタンス行列です。
             % obj.from = i, obj.to = j だとすると、
             %
-            % Vi  = Y11 Y12 * Ii
-            % Vj    Y21 Y22   Ij
+            % Vi = Y11 Y12 * Ii
+            % Vj   Y21 Y22   Ij
             %
-            % という関係になる Y = [Y11, Y12, Y21, Y22]を出力するということになります。
+            % という関係になる Ymat = [Y11, Y12, Y21, Y22]を出力するということになります。
 
 
             %%%%%%%%%% 実装 %%%%%%%%%%
-            Y = 
+            Ymat = 
             %%%%%%%%%%%%%%%%%%%%%%%%%
 
         end
