@@ -58,23 +58,23 @@ function gitpull()
             stash_list = [stash_list.Mo(:);stash_list.Un(:)];
             for i = 1:numel(stash_list)
                 if copyfile(stash_list(i), dirname)
-                    [~,stashfile,extc] = fileparts(stash_list(i));
-                    disp('▶︎completed：'+string([stashfile,extc]))
+                    [~,stashfile,extc] = fileparts(stash_list(i))
+                    disp('▶︎completed：'+stashfile+extc)
                 end
             end
-            disp(newline)
+            disp(' ')
         end
-        
+        disp('<<変更内容を破棄>>')
         cellfun(@(f) system(['git checkout HEAD ',f]), clean_list.Mo);
         cellfun(@(f) system(['git clean -fd ',f]), clean_list.Un);
-
     end
     
     status = system("git pull");
     if status==0
+        disp('  ')
         disp('=== git pull completed. ===')
     else
-        warning("git pull error in guilda_code_share");
+        warning("git pull error");
     end
 end
 
