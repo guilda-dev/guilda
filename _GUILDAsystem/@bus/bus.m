@@ -49,6 +49,7 @@ classdef bus < handle & base_class.Edit_Monitoring & base_class.HasCostFunction
         
         function set_component(obj, component)
             if isa(component, 'component')
+                component.omega0 = obj.power_network.omega0;
                 component.register_parent(obj,'overwrite')
                 component.register_index(obj.index)
                 obj.register_child(component,'overwrite')
