@@ -62,7 +62,7 @@ function address = DNS(domain)
             case 'pss'
                 address = 'component.generator.pss.base';
             case 'pss_IEEE_PSS1'
-                address = 'component.generator.pss.base';
+                address = 'component.generator.pss.IEEE_PSS1';
 
         % governor
             case 'governor'
