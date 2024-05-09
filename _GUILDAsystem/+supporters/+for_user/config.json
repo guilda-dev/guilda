@@ -1,9 +1,9 @@
 {
     "startup":{
-        "Tutorial" : "on",
+        "Tutorial" : "off",
         "gitpull"  : "off",
         "gitbranch": "current",
-        "version"  : 1,
+        "version"  : "latest",
     },
     "simulate":{
     },
@@ -12,6 +12,8 @@
     },
     "git":{
         "message": "disp",
+        "clean_UntrackedFiles": true,
+        "stash_UntrackedFiles": true,
         "clean":[
             "_GUILDAsystem",
             "_object",
