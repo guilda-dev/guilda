@@ -181,7 +181,7 @@ classdef response < handle
                     end
                     b = b+numel(busidx_l);
                     label_l = tools.arrayfun(@(i)[obj.stockFcn(fig_idx(l)).para,':bus/mac ',num2str(i)], busidx_l);
-                    label = [label,label_l];
+                    label = [label,label_l];%#ok
                 end
             lgd = legend(obj.ax.Children(end).Children(end:-1:1),label);
             lgd.Layout.Tile = 'east';
@@ -193,7 +193,7 @@ classdef response < handle
             if isempty(obj.ax) || ~isgraphics(obj.ax)
                 obj.init_plot
             end
-            if numel(t) ==1
+            if isscalar(t)
                 % データの保存
                 for i = 1:numel(obj.fig_unique)
                     fig_i = obj.fig_unique(i);
@@ -226,7 +226,7 @@ classdef response < handle
                 obj.stash.data{i} = [];
             end
             obj.stash.time = [];
-            drawnow limitrate
+            drawnow limitrate nocallbacks
         end
 
         function out = access(obj,idx,x)

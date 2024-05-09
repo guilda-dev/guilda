@@ -124,7 +124,7 @@ function set_options(obj,t,uidx,u,varargin)
         obj.fault     = supporters.for_simulate.options.fault(     obj, op.fault );
         obj.parallel  = supporters.for_simulate.options.parallel(  obj, op );
         obj.input     = supporters.for_simulate.options.input(     obj, t, uidx, u, op.input, op.method);
-        obj.gridcode  = supporters.for_simulate.reporter.gridcode( obj, t, [], op.gridcode, op.gridcode_viewer);
+        % obj.gridcode  = supporters.for_simulate.reporter.gridcode( obj, t, [], op.gridcode, op.gridcode_viewer);
         obj.response  = supporters.for_simulate.reporter.response( obj, t, op.OutputFcn );
         obj.progress  = supporters.for_simulate.reporter.progress( obj, op.report, op.time_limit); 
 

@@ -105,8 +105,12 @@ classdef parallel < supporters.for_simulate.options.Abstract
                         tab(ibus,i:end) = strcmp(id.onoff,'on');
                     end
                 end
-                row = tools.arrayfun(@(i) string(obj.network.a_bus{i}.component.Tag) + i, blist);
-                out = array2table(tab,"RowNames",row,"VariableNames", arrayfun(@(c)string(c),tlist) );
+                row = tools.varrayfun(@(i) string(obj.network.a_bus{i}.component.Tag) + i, blist);
+                if isempty(row)
+                    out = array2table(tab,"VariableNames", arrayfun(@(c)string(c),tlist) );
+                else
+                    out = array2table(tab,"RowNames",row,"VariableNames", arrayfun(@(c)string(c),tlist) );
+                end
             end
     
             function plot(obj,ax)
@@ -116,8 +120,13 @@ classdef parallel < supporters.for_simulate.options.Abstract
                     figure
                     ax = gca;
                 end
+                
+                t0 = obj.tlim(1);
+                te = obj.tlim(end);
                 nbus = numel(obj.network.a_bus);
-                xlim(ax,[obj.tlim(1),obj.tlim(end)])
+                
+                %座標軸の設定
+                xlim(ax,[t0,te])
                 ylim(ax,[0,nbus])
                 grid(ax,'on')
                 hold(ax,'on')
@@ -127,13 +136,31 @@ classdef parallel < supporters.for_simulate.options.Abstract
                 ax.XAxis.FontSize = 8;
                 ax.YAxis.FontSize = 8;
                 xlabel(ax,'Time(s)');
-                line = tools.varrayfun(@(i) { plot( tlist, (nbus+1-i)*ones(size(tlist)),'r-','LineWidth',2)}, 1:nbus);
-                for i = 2:numel(tlist)
-                    itab = tab{:,i}-tab{:,i-1};
-                    ibus = find(itab==1);
-                    plot(tlist(i)*ones(size(ibus)),(nbus+1)-ibus,'rx','LineWidth',2)
-                    for idx = find(itab==0 & tab{:,i}==1)'
-                        line{idx}.YData(i) = nan;
+
+                %ラインを追加
+                line = tools.varrayfun(@(i) { plot( [t0,te], (nbus+1-i)*[1,1],'g-','LineWidth',2)}, 1:nbus);
+
+                for i = 1:numel(tlist)
+                    if i==1
+                        itab = tab{:,i} - true(size(tab,1),1);
+                    else
+                        itab = tab{:,i} - tab{:,i-1};
+                    end
+
+                    for idx = 1:numel(itab)
+                        yval = nbus+1-idx;
+                        xval = tlist(i);
+                        switch itab(idx)
+                            case 0
+                            case -1 %解列した機器のline
+                                plot(xval,yval,'rx','LineWidth',2)
+                                line{idx}.XData(2) = xval;
+                                line{idx} = plot([xval,te], yval*[1,1], 'r-', 'LineWidth',2);
+                            case 1 %並列した機器のline
+                                plot(xval,yval,'go','LineWidth',2, 'MarkerFaceColor','g')
+                                line{idx}.XData(2) = xval;
+                                line{idx} = plot([xval,te], yval*[1,1], 'g-', 'LineWidth',2);
+                        end
                     end
                 end
                 hold(ax,'off')
