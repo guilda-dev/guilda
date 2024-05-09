@@ -3,9 +3,11 @@ classdef component < handle & base_class.HasStateInput & base_class.HasGridCode 
 % GUILDA上に機器モデルを実装するために必要なmethodが定義されている。
 % 新しい機器モデルを実装する場合はこのcomponentクラスを継承すること。
     
-
+    properties
+        omega0 = 2*pi*60;
+    end
+    
     properties(Dependent)
-        omega0
         connected_bus
     end
 
@@ -77,10 +79,6 @@ classdef component < handle & base_class.HasStateInput & base_class.HasGridCode 
     
             function out = get.I_equilibrium(obj)
                 out = obj.connected_bus.I_equilibrium;
-            end
-    
-            function out = get.omega0(obj)
-                out = obj.connected_bus.power_network.omega0;
             end
     
             function out = get.V_st(obj)
