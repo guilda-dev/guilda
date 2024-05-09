@@ -18,8 +18,8 @@ function startup()
     
     % 旧バージョンの場合version_supportをパスに追加
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    switch data.version
-        case 1
+    switch string(data.version)
+        case "1"
             addpath(fullfile(tools.pwd,'_GUILDAsystem','_version_support'))
         case "latest"
         otherwise
