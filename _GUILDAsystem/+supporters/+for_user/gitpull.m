@@ -108,7 +108,6 @@ function flag = Qdisp(msg,cleanlist,stashlist)
     disp(' 2：変更箇所を破棄してpullを実行')
     if ~isempty(stashlist.Mo) || ~isempty(stashlist.Un)
         disp(' 3：以下のファイルのみstashフォルダに複製してからpullを実行')
-        [stashlist.Mo(:);stashlist.Un(:)]
         cellfun(@(f) disp(['    ▶︎',f]),[stashlist.Mo(:);stashlist.Un(:)])
     end
     disp(' ')
