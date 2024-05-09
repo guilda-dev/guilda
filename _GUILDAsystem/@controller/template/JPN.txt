@@ -1,0 +1,107 @@
+classdef ___NAME___ < controller
+% モデル  ：___DISCRIPTION___
+% 親クラス：controllerクラス
+% 実行方法：obj =　___NAME___(net, y_idx, u_idx, << 定義するクラスの引数に応じて記載 >>)
+% 　引数　：・y_idx : double配列。観測元の機器の番号
+% 　　　　　・u_idx : double配列。入力先の機器の番号
+%　　　　　 ・ << 引数の説明を記載しておくと他の人が助かります！ >>
+%
+% 　出力　：controllerクラスのインスタンス
+
+    % 継承されているプロパティ
+    % ・index_input   : 制御器が入力を印加する機器の番号リスト
+    % ・index_observe : 制御器が状態を観測する機器の番号リスト
+    % ・network       : 制御器を付加したpower_networkクラス
+    % ・parameter     : モデルのパラメータ定数はこのフィールドに格納してください。
+
+    properties(SetAccess=protected) % 
+        type = 'local';             % 制御器が'local'か'global'かを入力
+        port_input   = 'all';       % 制御器が機器に印加する入力名
+        port_observe = 'all';       % 制御器が機器から観測する状態名
+    end
+    
+    properties
+        % 適宜プロパティを追加 
+    end
+    
+    methods
+        function obj = ___NAME___(net, y_idx, u_idx) %引数は適宜変更して良いがy_idx,u_idxは残すこと
+            obj@controller(net, u_idx, y_idx);
+
+        end
+        
+        function nx = get_nx(obj)
+            % 状態の個数を定義するメソッド
+            % 状態変数の個数が1個の場合
+            %   >> nx = 1;
+
+
+            %%%%%%%%%% 実装 %%%%%%%%%%
+            nx = 
+            %%%%%%%%%%%%%%%%%%%%%%%%%
+
+        end
+
+        function initialize(obj)
+           % 機器の並列・解列シミュレーション時に制御器のパラメータを変える場合はここに記入
+
+        end
+        
+        function [dx, u] = get_dx_u(obj, t, x, X, V, I, u_global)
+            % 引数：
+            % t : 時刻を表すスカラー値。単位は秒（s)
+            % x : 制御器の状態ベクトル
+            % X : 観測対象の機器の状態。型は各機器の状態ベクトルのcell配列。
+            % V : 観測対象の機器が接続する母線の電圧。２×[観測対象の母線の個数]のdouble型配列
+            % I : 観測対象の機器が接続する母線の電圧。２×[観測対象の母線の個数]のdouble型配列
+            % u_global : globalコントローラからの入力ベクトル
+
+            % 出力：
+            % dx : 制御器の状態の時間微分のベクトル
+            % u  : 制御器の出力ベクトル（機器への入力）
+
+
+            %%%%%%%%%% 実装 %%%%%%%%%%
+            dx = 
+            u  = 
+            %%%%%%%%%%%%%%%%%%%%%%%%%
+
+        end
+
+
+        %%% 必須ではないが実装を推奨 %%%
+        %{        
+        function [A, BX, BV, BI,  Bu, C, DX, DV, DI, Du] = get_linear_matrix(obj)
+            % 近似線形モデルのシステム行列を定義。
+            % 定義しない場合は、get_dX_constraintメソッドから数値的に導出される。
+            
+            % 出力
+            %　以下の式に対応する各行列
+            %  x : 制御器の状態ベクトル
+            %  X : 全ての観測対象の機器の状態を並べた列ベクトル
+            %  u : グローバルコントローラから制御器への入力
+            %  U : 制御器から対象機器への入力
+            % [微分方程式]
+            % dx = A*(x-xeq) + BX*(X-Xeq) + BV*(V-Veq) + BI*(I-Ieq) + Bu*(u-ueq)
+            % [制約条件]
+            % U  = C*(x-xeq) + BX*(X-Xeq) + DV*(V-Veq) + DI*(I-Ieq) + Du*(u-ueq)
+
+
+            %%%%%%%%%% 実装 %%%%%%%%%%
+            A  = 
+            BX =
+            BV =
+            BI =
+            Bu =
+            C  = 
+            DX =
+            DV = 
+            DI = 
+            Du = 
+            %%%%%%%%%%%%%%%%%%%%%%%%%
+
+        end
+        %}
+        
+    end
+end

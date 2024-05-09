@@ -1,0 +1,133 @@
+classdef ___NAME___ < component & tools.newClass.checker.for_component
+% model         : ___DISCRIPTION___
+%                ・state： <<add description>>
+%                ・input： <<add description>>
+% SuperClass    : component
+% constructor   : obj =　___NAME___(omega, parameter)
+% varargin      :・parameter : table type．Define <<Describe the parameter name>> as column name
+%                ・<<It would help others if you included a description of your arguments!>>
+
+    % Inherited Properties from component class
+    % ・x_equilibrium : The equilibrium point of the state is stored.
+    % ・u_equilibrium : The equilibrium point of the input is stored.
+    % ・V_equilibrium : Voltage steady state at the connecting bus is stored
+    % ・I_equilibrium : Current steady state at the connecting bus is stored。
+    % ・parameter : The parameter constants of the model should be stored in this field.
+    
+    properties
+        % Add properties as appropriate for the model you define 
+    end
+    
+    methods
+        function obj = ___NAME___(parameter)
+            obj.parameter = parameter;
+
+        end
+        
+        function [dx, con] = get_dx_constraint(obj, t, x, V, I, u)
+            % varargin：
+            % t : Scalar value representing time. Unit is seconds (s).
+            % x : Vector of the state
+            % V : Vector of the voltage of the connecting bus[Vreal; Vimag]
+            % I : Vector of the current of the connecting bus[Ireal; Iimag]
+            % u : Vector of the input
+
+            % varargout
+            %  dx : Vector of time derivatives of states
+            % con : A vector of constraints. When performing numerical integration, V and I are determined so that all values of con are zero.
+
+
+            %%%%%%%%% define %%%%%%%%%
+            dx      =                  %Code corresponding to "dx = f(x)"
+            [Ir,Ii] =                  %Derive the real and imaginary parts of the current sent to the bus bar
+            con     = I - [Ir; Ii];
+            %%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        end
+
+        function [x_st,u_st] = set_equilibrium(obj, V, I, flag)
+            % varargin
+            % V：Phasor value of bus voltage in steady state（ = Vreal + 1j*Vimag ）
+            % I：Phasor value of bus current in steady state（ = Ireal + 1j*Iimag ）
+
+            % varargout
+            % x_st : Equilibrium point of the state of this model.
+            % u_st : Equilibrium point of the input of this model.
+
+
+            %%%%%%%%%% define %%%%%%%%%%
+            x_st = 
+            u_st = 
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        end
+
+
+        %%% Not a required implementation, but recommended %%%
+        %{
+        function tag = naming_state(obj)
+            % Methods to name variables to state
+            % Output is returned as a cell array
+            % If this method is not defined, then state of this model will be named "x1,x2,...".
+            %
+            % Ex. If the names of the state variables are "x,v,a", define as follows
+            % 
+            %    >> tag = {'x','v','a'};
+
+
+            %%%%%%%%%% define %%%%%%%%%%
+            tag =                     
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        end
+
+        function tag = naming_port(obj)
+            % Methods to name variables to input
+            % Output is returned as a cell array
+            % If this method is not defined, then state of this model will be named "u1,u2,...".
+            %
+            % Ex. If the names of the input variables are "port1, port2", define as follows
+            % 
+            %    >> tag = {'port1','port2'};
+
+
+            %%%%%%%%%% define %%%%%%%%%%
+            tag =                     
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        end
+
+        function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, x_st, Vst)
+            % Define the system matrix of the approximate linear model.
+            % If not defined, it is derived numerically from the "get_dX_constraint" method.
+            
+            % varargout
+            %　Each matrix corresponding to the following equation
+            % [differential equation]
+            % dx = A*(x-xeq) + B*u + BV*(V-Veq) + BI*(I-Ieq) + R*d
+            % [constraint]
+            % 0  = C*(x-xeq) + D*u + DV*(V-Veq) + DI*(I-Ieq)
+            % [Evaluation output]
+            % y  = S*(x-xeq)
+
+
+            %%%%%%%%%% define %%%%%%%%%%
+            A  = 
+            B  = 
+            C  = 
+            D  = 
+            BV = 
+            BI = 
+            DV = 
+            DI = 
+            R  = 
+            S  = 
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        end
+        %}
+    end
+        
+end
+
+
