@@ -57,8 +57,17 @@ classdef IEEE_PSS1 < component.generator.pss.base
                 [obj.A, obj.B, obj.C, obj.D] = ssdata(pss);
             end
             obj.nx = size(obj.A, 1);
-            obj.Vpss_max = pss{:,'Vpss_max'};
-            obj.Vpss_min = pss{:,'Vpss_min'};
+            if sum(ismember(pss.Properties.VariableNames, 'Vpss_max')) > 0
+                obj.Vpss_max = pss{:,'Vpss_max'};
+            else
+                obj.Vpss_max = Inf;
+            end
+            if sum(ismember(pss.Properties.VariableNames, 'Vpss_min')) > 0
+                obj.Vpss_min = pss{:,'Vpss_min'};
+            else
+                obj.Vpss_min = -Inf;
+            end
+
         end
     end
 
