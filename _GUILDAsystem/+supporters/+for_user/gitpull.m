@@ -75,7 +75,7 @@ function gitpull()
     disp(' ')
     if status==0
         disp('=== git pull completed. ===')
-        type ./_GUILDAsystem/+supporters/+for_user/UpdateLog.txt
+        type(fullfile(tools.pwd,'_GUILDAsystem','+supporters','+for_user','UpdateLog.txt'))
     else
         warning("git pull error");
     end
