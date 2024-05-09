@@ -69,10 +69,13 @@ function gitpull()
         cellfun(@(f) system(['git clean -fd ',f]), clean_list.Un);
     end
     
+    disp(' ')
+    disp('<<pullの実行>>')
     status = system("git pull");
+    disp(' ')
     if status==0
-        disp('  ')
         disp('=== git pull completed. ===')
+        type ./_GUILDAsystem/+supporters/+for_user/UpdateLog.txt
     else
         warning("git pull error");
     end
