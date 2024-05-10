@@ -58,13 +58,13 @@ function gitpull()
             stash_list = [stash_list.Mo(:);stash_list.Un(:)];
             for i = 1:numel(stash_list)
                 if copyfile(stash_list(i), dirname)
-                    [~,stashfile,extc] = fileparts(stash_list(i))
+                    [~,stashfile,extc] = fileparts(stash_list(i));
                     disp('▶︎completed：'+stashfile+extc)
                 end
             end
             disp(' ')
         end
-        disp('<<変更内容を破棄>>')
+        disp('<<変更内容をリセット>>')
         cellfun(@(f) system(['git checkout HEAD ',f]), clean_list.Mo);
         cellfun(@(f) system(['git clean -fd ',f]), clean_list.Un);
     end
@@ -102,6 +102,11 @@ function flag = Qdisp(msg,cleanlist,stashlist)
     if ~isempty(cleanlist.Un)
         disp(' 新規作成されたファイル')
         cellfun(@(f) disp([' ▶',f]), cleanlist.Un);
+    end
+
+    if all(tools.hcellfun(@(c) contains( c, fullfile(tools.pwd,'_Tutorial') ), cleanlist.Mo))
+        flag = "clean";
+        return
     end
 
     fprintf('\n\n')
