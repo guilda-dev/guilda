@@ -104,7 +104,8 @@ function flag = Qdisp(msg,cleanlist,stashlist)
         cellfun(@(f) disp([' ▶',f]), cleanlist.Un);
     end
 
-    if all(tools.hcellfun(@(c) contains( c, fullfile(tools.pwd,'_Tutorial') ), cleanlist.Mo))
+    a_flag = tools.hcellfun(@(c) contains( c, fullfile(tools.pwd,'_Tutorial') ), cleanlist.Mo);
+    if all(a_flag)
         flag = "clean";
         return
     end
