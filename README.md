@@ -1,3 +1,4 @@
+![GUILDAロゴ横長](https://github.com/guilda-dev/guilda/assets/54563775/20094d9b-22f5-4fb8-aff8-d80dc3cde31b)
 # GUILDA: Grid & Utility Infrastructure Linkage Dynamics Analyzer
 
 [![Open in MATLAB Online](https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg)](https://matlab.mathworks.com/open/github/v1?repo=guilda-dev/guilda&project=./GUILDA.prj)
