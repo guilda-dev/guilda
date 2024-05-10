@@ -105,7 +105,7 @@ function flag = Qdisp(msg,cleanlist,stashlist)
     end
 
     a_flag = tools.hcellfun(@(c) contains( c, fullfile(tools.pwd,'_Tutorial') ), cleanlist.Mo);
-    if all(a_flag)
+    if all(a_flag) && ~isempty(a_flag)
         flag = "clean";
         return
     end
