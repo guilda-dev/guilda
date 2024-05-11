@@ -58,7 +58,7 @@ function gitpull()
             stash_list = [stash_list.Mo(:);stash_list.Un(:)];
             for i = 1:numel(stash_list)
                 if copyfile(stash_list(i), dirname)
-                    [~,stashfile,extc] = fileparts(stash_list(i))
+                    [~,stashfile,extc] = fileparts(stash_list(i));
                     disp('▶︎completed：'+stashfile+extc)
                 end
             end
