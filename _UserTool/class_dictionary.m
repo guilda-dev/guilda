@@ -12,7 +12,7 @@ end
 
 filename = ""; superclass = "";
 class_list = search_superclass(table(filename,superclass),cell(0),class_name);
-bar = '===================================================';
+bar = '=========================================================';
 
 
 DocPath = supporters.for_user.config;
@@ -21,10 +21,10 @@ DocPath = DocPath.class_dictionary;
 disp(' ')
 disp([class_name,' class：'])
 disp(bar)
-disp('       Link　　　class tree')
+disp('         Link　　  　  class tree')
 disp(bar)
 fprintf_doc_and_help(string(class_name),DocPath);
-space = '     ';
+space = '   ';
 disp([space,class_name])
 print_tree(class_list,string(class_name),[space,' '],DocPath);
 disp(bar)
@@ -87,6 +87,10 @@ end
 function fprintf_doc_and_help(filename,DocPath)
     fprintf(' ')
     fprintf(['<a href="matlab:' ,...
+                 'open(''',filename{:},''');',...
+                 '">[open]</a>'])
+    fprintf(',')
+    fprintf(['<a href="matlab:' ,...
              'disp('' '');',...
              'disp('' '');',...
              'disp([''help：'',''',filename{:},''']);',...
@@ -96,7 +100,7 @@ function fprintf_doc_and_help(filename,DocPath)
              'disp('' '');',...
              'disp('' '');',...
              '">[help]</a>'])
-    fprintf(', ')
+    fprintf(',')
 
     docpath = searchdoc(filename,DocPath);
     if isempty(docpath)
@@ -104,6 +108,7 @@ function fprintf_doc_and_help(filename,DocPath)
                  'doc(''',filename{:},''');',...
                  '">[doc]</a>'])
     else
+        docpath = char(fullfile(tools.pwd,docpath));
         fprintf(['<a href="matlab:' ,...
                  'open(''',docpath,''');',...
                  '">[mlx]</a>'])

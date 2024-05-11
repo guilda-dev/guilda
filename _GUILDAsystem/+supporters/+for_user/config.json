@@ -3,7 +3,7 @@
         "Tutorial" : "off",
         "gitpull"  : "off",
         "gitbranch": "current",
-        "version"  : "latest",
+        "version"  : 2,
     },
     "simulate":{
     },
