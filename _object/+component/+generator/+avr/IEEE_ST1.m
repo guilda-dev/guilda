@@ -4,7 +4,7 @@ classdef IEEE_ST1 < component.generator.abstract.SubClass
 % 実行方法： component.generator.avr.IEEE_ST1(parameter)
 %
 % 　引数　： parameter >>1. string型. "Kundur", "Board", "Chow", "Sadamoto"
-%                    >>2. table型.「'Ttr', 'k_ap','k0','gamma_max','gamma_min'」を列名として定義
+%                    >>2. table型.「'Ttr', 'Kap','k0','gamma_max','gamma_min'」を列名として定義
 %
 %
 % << Mode Discription >>
@@ -69,14 +69,16 @@ classdef IEEE_ST1 < component.generator.abstract.SubClass
             obj@component.generator.abstract.SubClass("AVR")
 
             % Define Parameter
-            [parameter,Tag] = ReadPara(parameter);
-            obj.Tag = "IEEE_ST1"+Tag;
-            obj.parameter = parameter(:,{'Kap','Ttr','Tap','k0','gamma_max','gamma_min'});
+            [obj.parameter,obj.Tag] = ReadPara(parameter);
         end
 
         function set_parameter(obj,para)
             flag = para{:,{'Ttr','Tap'}} ~= 0;
             obj.mode = array2table(flag,'VariableNames',{'tr','ap'});
+        end
+
+        function nx = get_nx(obj)
+            nx =sum(obj.mode.Variables);
         end
         
         function name_tag = naming_state(obj)
@@ -146,8 +148,10 @@ end
 
 function [datasheet,Tag] = ReadPara(ID)
     if istable(ID)
-        datasheet  = ID;
-        Tag = [];
+        datasheet = array2table([zeros(1,4),inf,-inf],'VariableNames',{'Kap','Ttr','Tap','k0','gamma_max','gamma_min'});
+        [idx,num] = ismember(datasheet.Properties.VariableNames, ID.Properties.VariableNames);
+        datasheet{:,idx} = ID{:,num(idx)};
+        Tag = "IEEE_ST1";
         return
     end
 
@@ -155,21 +159,22 @@ function [datasheet,Tag] = ReadPara(ID)
     switch string(ID)
         case {"1","Kundur"}
             datasheet = para(1,:);
-            Tag = "_Kundur";
+            Tag = "Kundur";
             
         case {"2","Board"}
             datasheet = para(2,:);
-            Tag = "_Board";
+            Tag = "Board";
 
         case {"3","Chow"}
             datasheet = para(3,:);
-            Tag = "_Chow";
+            Tag = "Chow";
 
         case {"4","Sadamoto"}
             datasheet = para(4,:);
-            Tag = "_Sadamoto";
+            Tag = "Sadamoto";
 
         otherwise
             error("Parameters could not be identified.")
     end
+    Tag = "IEEE_ST1_" + Tag;
 end

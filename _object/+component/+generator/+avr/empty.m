@@ -29,13 +29,9 @@ classdef empty < component.generator.abstract.SubClass
 
         function [A,B,C,D] = get_linear_matrix(obj, x_st, u_st, Vabs_st, Efd_st)%#ok
             A = [];
-            B = [];
+            B = zeros(0,3);
             C = [];
             D = [0,0,1];
-        end
-
-        function name = naming_port(~)
-            name = {'Vfd'};
         end
         
     end

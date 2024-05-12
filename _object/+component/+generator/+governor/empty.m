@@ -38,6 +38,10 @@ classdef empty < component.generator.abstract.SubClass
         function name = naming_port(~)
             name = {'Pm'};
         end
+
+        function nx = get_nx(~)
+            nx = 0;
+        end
     end
 
     methods(Access=protected)

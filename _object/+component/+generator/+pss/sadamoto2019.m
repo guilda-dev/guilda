@@ -29,6 +29,10 @@ classdef sadamoto2019 < component.generator.abstract.SubClass
             u_st = [];
         end
 
+        function nx = get_nx(~)
+            nx = 3;
+        end
+
         
         function [A,B,C,D] = get_linear_matrix(obj, x_st, u_st, omega_st)%#ok
                 para = obj.parameter{:,{'Kpss','Tpss','TL1p','TL1','TL2p','TL2'}};
@@ -36,7 +40,7 @@ classdef sadamoto2019 < component.generator.abstract.SubClass
                 TL1p = para(3);     TL1  = para(4);
                 TL2p = para(5);     TL2  = para(6);
                 
-                E = 1./diag(Tpss,TL1,TL2);
+                E = diag(1./[Tpss,TL1,TL2]);
                 A = E*[  -1, 0, 0;
                          -(Kpss/Tpss)*(1-TL1p/TL1), -1, 0;
                          -(Kpss*TL1p/Tpss*TL1)*(1-TL2p/TL2), (1-TL2p/TL2), -1 ];

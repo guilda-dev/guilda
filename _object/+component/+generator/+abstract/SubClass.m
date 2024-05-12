@@ -80,13 +80,13 @@ classdef SubClass < base_class.handleCopyable
             d = 1e-6;
             dmat = @(var) d*eye(numel(var));
 
-            [dx_st,out_st] = obj.get_dx_Vfd(x_st,u_st,varargin{:});
+            [dx_st,out_st] = obj.get_dx_u(x_st,u_st,varargin{:});
             
             dx = x_st + dmat(x_st);
             du = u_st + dmat(u_st);
 
-            [A(:),C(:)] = tools.arrayfun(@(i) obj.get_dx_Vfd( dx(i),  u_st, Vabs_st, Efd_st), 1:numel(x_st) );
-            [B(:),D(:)] = tools.arrayfun(@(i) obj.get_dx_Vfd(  x_st, du(:), Vabs_st, Efd_st), 1:numel(u_st) );
+            [A(:),C(:)] = tools.arrayfun(@(i) obj.get_dx_u( dx(:,i),    u_st, varargin{:}), 1:numel(x_st) );
+            [B(:),D(:)] = tools.arrayfun(@(i) obj.get_dx_u(    x_st, du(:,i), varargin{:}), 1:numel(u_st) );
 
             Bin = cell(1,numel(varargin));
             Din = cell(1,numel(varargin));
@@ -97,14 +97,13 @@ classdef SubClass < base_class.handleCopyable
             end
 
             %[dx/dVabs,dx/dEfd,dx/du_avr]
-            A = horzcat(A{:})-dx_st;
-            B = [horzcat(Bin{:}),horzcat(B{:})]-dx_st;
-            C = horzcat(C{:})-out_st;
-            D = [horzcat(Din{:}),horzcat(D{:})]-out_st;
+            A = ( horzcat(A{:})-dx_st )/d;
+            B = ( [horzcat(Bin{:}),horzcat(B{:})]-dx_st )/d;
+            C = ( horzcat(C{:})-out_st )/d;
+            D = ( [horzcat(Din{:}),horzcat(D{:})]-out_st )/d;
         end
 
         function sys = get_sys(obj,varargin)
-
             sys = obj.system_matrix;
             if isempty(sys)
                 if numel(varargin)>0

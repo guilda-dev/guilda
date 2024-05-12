@@ -22,6 +22,10 @@ classdef empty < component.generator.abstract.SubClass
              dx   = [];
             v_pss = 0 ;
         end
+
+        function nx = get_nx(~)
+            nx = 0;
+        end
         
         function [x_st, u_st] = get_equilibrium(obj, omega_st)%#ok
             x_st = [];
