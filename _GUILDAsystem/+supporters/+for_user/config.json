@@ -3,9 +3,23 @@
         "Tutorial" : "off",
         "gitpull"  : "off",
         "gitbranch": "current",
-        "version"  : 2,
+        "version"  : "latest",
     },
     "simulate":{
+    },
+    "calculate_power_flow":{
+        "fsolve" : {
+            "MaxFunEvals"  : 1e6,
+            "MaxIterations": 2e5,
+            "Display"      : "none",
+            "PlotFcn"      : [],
+            "UseParallel"  : false,
+        },
+        "option": {
+            "return_vector": false,
+            "warning"      : "warning",
+            "message"      : false,
+        }
     },
     "GUI":{
         "print_cmd": "off",

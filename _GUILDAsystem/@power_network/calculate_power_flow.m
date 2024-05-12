@@ -1,26 +1,43 @@
 function [V, I, flag, output] = calculate_power_flow(obj, varargin)
-n = numel(obj.a_bus);
-x0_all = kron(ones(n, 1), [1; 0]);
+%
 
-p = inputParser;
-p.CaseSensitive = false;
-p.addParameter('MaxFunEvals', 1e6);
-p.addParameter('MaxIterations', 2e5);
-p.addParameter('Display', 'none');%'iter-detailed');
-p.addParameter('UseParallel', false);
-p.addParameter('return_vector', false);
-p.addParameter('warning', @warning); % @warning, @error, []
-p.addParameter('message', false);
-p.parse(varargin{:});
-p = p.Results;
 
-if isempty(p.warning)
-    p.warning = @none;
+% 引数の整理
+    p = inputParser;
+    p.CaseSensitive = false;
+    para = supporters.for_user.config('calculate_power_flow');
+    cellfun(@(f) p.addParameter(f, para.fsolve.(f)), fieldnames(para.fsolve))
+    cellfun(@(f) p.addParameter(f, para.option.(f)), fieldnames(para.option))
+    p.parse(varargin{:});
+    p = p.Results;
+
+% optionのwarningパラメータを関数ハンドルに翻訳
+switch string(p.warning)
+    case "warning"
+        p.warning = @warning;
+    case "error"
+        p.warning = @error;
+    case "none"
+    otherwise
+        p.warning = @none;
 end
 
-options = optimoptions('fsolve', 'MaxFunEvals', p.MaxFunEvals,...
-    'MaxIterations', p.MaxIterations, 'Display', p.Display,...
-    'UseParallel', p.UseParallel);
+if islogical(p.Display)
+    if p.Display
+        p.Display = "iter-detailed";
+    else
+        p.Display = "none";
+    end
+end
+
+n = numel(obj.a_bus);
+x0_all = kron(ones(n, 1), [1; 0]);
+options = optimoptions('fsolve', ...
+                       'MaxFunEvals'  , p.MaxFunEvals,...
+                       'MaxIterations', p.MaxIterations, ...
+                       'Display'      , p.Display,...
+                       'PlotFcn'      , p.PlotFcn,...
+                       'UseParallel'  , p.UseParallel);
 
 [~, Ymat] = obj.get_admittance_matrix();
 [V,~,flag,output] = fsolve(@(x) func_eq(obj.a_bus, Ymat, x), x0_all,options);
