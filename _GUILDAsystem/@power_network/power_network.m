@@ -34,16 +34,17 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
 
         % 潮流計算に関するメソッド
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        [V, I, flag, output] = calculate_power_flow(obj, varargin)
-        function initialize(obj)
-            [V, I] = obj.calculate_power_flow();
+        [V, I, flag, output] = calculate_power_flow(obj,varargin)
+        function flag = initialize(obj,varargin)
+            obj.reflected;
+            [V, I, flag] = obj.calculate_power_flow(varargin{:});
             for i = 1:numel(obj.a_bus)
                 obj.a_bus{i}.set_equilibrium(V(i), I(i)); 
             end
             cellfun(@(c) c.update_idx, obj.a_controller_local)
             cellfun(@(c) c.update_idx, obj.a_controller_global)
-            obj.reflected;
             obj.linear = obj.linear;
+            flag = flag > 0;
         end
 
 
@@ -78,22 +79,27 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
         % DependentプロパティのGetメソッド
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function x = get.x_equilibrium(obj)
+            obj.check_EditLog;
             x = tools.vcellfun(@(b) b.component.x_equilibrium, obj.a_bus);
         end
 
         function x = get.V_equilibrium(obj)
+            obj.check_EditLog(["bus";"branch"]);
             x = tools.vcellfun(@(b) b.V_equilibrium, obj.a_bus);
         end
 
         function x = get.I_equilibrium(obj)
+            obj.check_EditLog(["bus";"branch"]);
             x = tools.vcellfun(@(b) b.I_equilibrium, obj.a_bus);
         end
 
         function x0 = get.x0_controller_local(obj)
+            obj.check_EditLog("controller");
             x0 = tools.vcellfun(@(c) c.get_x0, obj.a_controller_local);
         end
 
         function x0 = get.x0_controller_global(obj)
+            obj.check_EditLog("controller");
             x0 = tools.vcellfun(@(c) c.get_x0, obj.a_controller_global);
         end
 
@@ -104,9 +110,9 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
         function add_bus(obj, bus)
             bus = check_class(bus,'bus');
             bus_num = numel(obj.a_bus);
-            arrayfun(@(i) bus{i}.setprop('index',bus_num+i), 1:numel(bus));
+            arrayfun(@(i) bus{i}.register_index(bus_num+i), 1:numel(bus));
             cellfun(@(b)b.register_parent(obj,'overwrite'),bus)
-            obj.register_child(bus,'stack');
+            obj.register_child(bus,'stack')
             obj.a_bus = [obj.a_bus,bus];
         end
 
@@ -116,7 +122,7 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
             end
             obj.remove_branch(index,'bus')
             obj.a_bus(index) = [];
-            arrayfun(@(i) obj.a_bus{i}.setprop('index',i), 1:numel(obj.a_bus));
+            arrayfun(@(i) obj.a_bus{i}.register_index(i), 1:numel(obj.a_bus));
         end
 
 
@@ -130,9 +136,9 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
                 branch{i}.register_parent(obj,'overwrite');
                 branch{i}.from = branch{i}.from;
                 branch{i}.to   = branch{i}.to;
-                branch{i}.setprop('index',branch_num+i);
+                branch{i}.register_index(branch_num+i);
             end
-            obj.register_child(branch,'stack');
+            obj.register_child(branch,'stack')
             obj.a_branch = [obj.a_branch,branch];
         end
 
@@ -151,7 +157,7 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
                     idx  = tools.vcellfun(@(br) func(br), obj.a_branch);
                     obj.a_branch(idx) = [];
             end
-            arrayfun(@(i) obj.a_branch{i}.setprop('index',i), 1:numel(obj.a_branch));
+            arrayfun(@(i) obj.a_branch{i}.register_index(i), 1:numel(obj.a_branch));
         end
 
 
@@ -162,47 +168,27 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
             obj.add_controller(c,'local')
         end
 
-        function remove_controller_local(obj,type,index)
-            if nargin == 2
-                index = type;
-                type  = 'local_controller';
-            end
-            obj.remove_controller(type,index);
-        end
-
         function add_controller_global(obj, c)
             obj.add_controller(c,'global')
         end
 
-        function remove_controller_global(obj,busidx,conidx)
-
-            if nargin == 3
-                obj.controller_global(conidx) = [];
-            end
-            cidx = tools.vcellfun(@(c) ~isempty(intersect(c.index_all,busidx)), obj.controller_global);
-            obj.a_controller_global(cidx) = [];
+        function remove_controller_local(obj,index)
+            obj.a_controller_local(index) = [];
         end
 
-        function add_controller(obj,c,gl)
+        function remove_controller_global(objindex)
+            obj.a_controller_global(index) = [];
+        end
+
+        function add_controller(obj,c,type)
             c = check_class(c,'controller');
             cellfun(@(ic)ic.register_parent(obj,'overwrite'),c)
             obj.register_child(c,'stack');
-            if nargin==3 
-                if ismember(gl,{'local','global'})
-                    for i=1:numel(c)
-                        c{i}.type = gl;
-                    end
-                else
-                    error('The controller type must be specified as either local or global.')
-                end
-            end
+            if nargin==3; cellfun(@(con) con.set_glocal(type), c);end
             for i = 1:numel(c)
-                c{i}.update_idx
                 switch c{i}.type
-                    case 'local'
-                        obj.a_controller_local = [obj.a_controller_local,c(i)];
-                    case 'global'
-                        obj.a_controller_global = [obj.a_controller_global,c(i)];
+                    case 'local' ; obj.a_controller_local = [obj.a_controller_local,c(i)];
+                    case 'global'; obj.a_controller_global = [obj.a_controller_global,c(i)];
                 end
             end
         end
@@ -227,8 +213,39 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
         function val = PropEditor_Get(obj,prop)
             val = obj.(prop);
         end
-    end
 
+        function check_EditLog(obj,type)
+            if nargin==2 && ~isempty(obj.Edit_Log)
+                idx = ismember(obj.Edit_Log.cls,type);
+                Log = obj.Edit_Log(idx,:);
+            else
+                Log = obj.Edit_Log;
+            end
+
+            if ~isempty(Log)
+                w_temp = warning('backtrace');
+                warning('off','backtrace')
+                warning(['Some elements have been edited. Data may not be matched.',newline,...
+                         'To be sure, power flow calculations and equilibrium point calculations are recommended to be rerun.'],'verbose')
+                warning(w_temp.state,'backtrace')
+                flag = [];
+
+                disp('Edit Log')
+                disp(Log)
+                while isempty(flag)
+                    flag = input('Recalculate again?(y/n) : ','s');
+                    switch flag
+                    case {'y','yes',true,1}; flag = true;
+                    case {'n','no',false,0}; flag = false;
+                    otherwise; flag = [];
+                    end
+                end
+                if flag
+                    obj.initialize;
+                end
+            end
+        end
+    end
 end
 
 function data = check_class(data,classname)

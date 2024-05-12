@@ -1,4 +1,4 @@
-classdef one_axis < component.generator.base
+classdef one_axis < component.generator.abstract
 %モデル　: 同期発電機の１軸モデル
 %　状態　: ３変数「回転子偏角"delta",周波数偏差"omega",内部電圧"Ed"」
 %　　　　  * AVRやPSSが付加されるとそれらの状態も追加される
@@ -12,7 +12,7 @@ classdef one_axis < component.generator.base
             arguments
                 parameter = 'NGT2';
             end
-            obj@component.generator.base(parameter)
+            obj@component.generator.abstract(parameter)
             
             obj.parameter = obj.parameter(:, {'Xd', 'Xd_p', 'Xq', 'Td_p', 'M', 'D'});
             obj.set_avr(      component.generator.avr.base()      );
@@ -38,12 +38,13 @@ classdef one_axis < component.generator.base
         
         % 機器のダイナミクスを決めるメソッド
             function [dx, con] = get_dx_constraint(obj, ~, x, V, I, u)
-                Xd   = obj.parameter.Xd;
-                Xdp  = obj.parameter.Xd_p;
-                Xq   = obj.parameter.Xq;
-                d    = obj.parameter.D;
-                Td_p = obj.parameter.Td_p;
-                M    = obj.parameter.M;
+                p = obj.parameter.Variables;
+                Xd   = p(1);
+                Xdp  = p(2);
+                Xq   = p(3);
+                Td_p = p(4);
+                M    = p(5);
+                d    = p(6);
     
                 nx_avr = obj.avr.get_nx();
                 nx_pss = obj.pss.get_nx();

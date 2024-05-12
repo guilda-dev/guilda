@@ -201,7 +201,7 @@ classdef odefactory < handle
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % odeソルバーで使用する状態ベクトルを各機器の状態等に分割するメソッド %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    methods(Access=protected)
+    methods(Access=public)
     % odeソルバーで解析される機器・制御器のみの状態を取得 << 各itrationで実行されるため最低限の処理で構成
         [X,Xcl,Xcg,V,I] = organize_Xode(obj,xsys);
 
@@ -223,7 +223,7 @@ classdef odefactory < handle
 
         function out = Fcn_Output(obj,t,x,flag)
             obj.progress.OutputFcn(t,x,flag);
-            %obj.response.OutputFcn(t,x,flag);
+            obj.response.OutputFcn(t,x,flag);
             out = [];
         end
     end

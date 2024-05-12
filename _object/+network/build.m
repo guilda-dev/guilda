@@ -1,7 +1,7 @@
 function net = build(filepath)
 
     if nargin < 1
-        filepath = [uigetdir(fullfile(pwd,'_GUILDA','_object','+network'),'Choose network data'),filesep];
+        filepath = [uigetdir(fullfile(tools.pwd,'_object','+network'),'Choose network data'),filesep];
     else
         filepath = check_filepath(filepath);
     end
@@ -69,13 +69,13 @@ end
 
 function filepath = check_filepath(filepath)
     if ~isfolder(filepath)
-        if isfolder(fullfile(pwd,filepath))
-            filepath = fullfile(pwd,filepath);
-        elseif isfolder(fullfile(pwd,'_GUILDA','_object','+network',filepath))
-            filepath = fullfile(pwd,'_GUILDA','_object','+network',filepath);
+        if isfolder(fullfile(tools.pwd,filepath))
+            filepath = fullfile(tools.pwd,filepath);
+        elseif isfolder(fullfile(tools.pwd,'_object','+network',filepath))
+            filepath = fullfile(tools.pwd,'_object','+network',filepath);
 
-        elseif isfolder(fullfile(pwd,'_GUILDA','_object',filepath))
-            filepath = fullfile(pwd,'_GUILDA','_object',filepath);
+        elseif isfolder(fullfile(tools.pwd,'_object',filepath))
+            filepath = fullfile(tools.pwd,'_object',filepath);
         else
             error("filepath couldn't be identified")
         end
@@ -126,7 +126,7 @@ function [domain,data,Tab_memory] = get_obj(name,Tab_memory,filepath)
     domain = [];
     data   = [];
     if ~isempty(name)
-        domain = debugger.DNS(name);
+        domain = tools.DNS(name);
         if ~isnan(domain)
             field = strrep(name,'.','_dot_');
             if isfield(Tab_memory,field)
