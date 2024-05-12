@@ -93,7 +93,7 @@ classdef Machine < component
                 
 
                 [dx_pss, v  ] = obj.pss.get_dx_u( x_pss, u_pss, omega);
-                [dx_avr, Vfd] = obj.avr.get_dx_u( x_avr, u_avr-v, Vabs, Efd);
+                [dx_avr, Vfd] = obj.avr.get_dx_u( x_avr, u_avr+v, Vabs, Efd);
                 [dx_gov, Pm ] = obj.governor.get_dx_u( x_gov, u_gov, omega, P);
                 dx = [dx_avr;dx_pss;dx_gov];
         end

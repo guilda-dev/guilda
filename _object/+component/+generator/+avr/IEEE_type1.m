@@ -1,4 +1,4 @@
-classdef IEEE_type1 < component.generator.avr.base
+classdef IEEE_type1 < component.generator.abstract.SubClass
 % モデル　 : IEEE_type1モデル
 % 　　　　   (Power System Dynamics and Stability: With Synchrophasor Measurement and Power System Toolbox
 % 　　　　     p.142~144,184~185)
@@ -8,53 +8,63 @@ classdef IEEE_type1 < component.generator.avr.base
 % 　　　　    (ただし、S_E(E_{fd})={Se1}*exp({Se2}*E_{fd})と設定した)
 % 出力　　 : avrクラスの変数
 
-    properties
-        Vref
-        Ka
-        Ta
-        Ke
-        Te
-        Se1
-        Se2
-        Kf
-        Tf
-    end
-
     methods
-        function obj = IEEE_type1(avr_tab)
-            obj.Ka = avr_tab{:, 'Ka'};
-            obj.Ta = avr_tab{:, 'Ta'};
-            obj.Ke = avr_tab{:, 'Ke'};
-            obj.Te = avr_tab{:, 'Te'};
-            obj.Se1 = avr_tab{:, 'Se1'};
-            obj.Se2 = avr_tab{:, 'Se2'};
-            obj.Kf = avr_tab{:, 'Kf'};
-            obj.Tf = avr_tab{:, 'Tf'};
+        function obj = IEEE_type1(parameter)
+            obj@component.generator.abstract.SubClass("AVR");
+            obj.parameter = parameter;%(:,{'Ka', 'Ta', 'Ke', 'Te', 'Se1', 'Se2', 'Kf', 'Tf'});
+            obj.Tag = "IEEE_type1";
         end
 
-        function name_tag = naming_state(obj)
+        function name_tag = naming_state(~)
             name_tag = {'Vfd','Vr','Rf'};
         end
 
-        function nx = get_nx(obj)
-            nx = 3;
+        function nx = get_nx(~)
+            nx =3;
         end
 
-        function [dx, Vfd] = get_Vfd(obj, x_avr, Vabs, ~, Vpss)
+        function [x_st,u_st] = get_equilibrium(obj, Vabs_st, Efd_st)
+            para = obj.parameter{:,{'Ka', 'Ke', 'Kf', 'Tf', 'Se1', 'Se2'}};
+            Ka  = para(1); Ke  = para(2);
+            Kf  = para(3); Tf  = para(4);
+            Se1 = para(5); Se2 = para(6);
+
+            Se = Se1 * exp(Se2*Efd_st);
+
+            Vfd_st = Efd_st;
+            Rf_st  =  Kf/Tf * Vfd_st;
+            Vr_st  = (Ke+Se)* Vfd_st;
+
+            x_st = [ Vfd_st; Vr_st; Rf_st];
+            u_st = Vabs_st + Vr_st/Ka;
+        end
+
+        function [dx, Vfd] = get_dx_u(obj, x_avr, u_avr, Vabs, Efd)%#ok
+            % x_avr = [Vfd,Vr,Rf]
+            % u_avr = Vref + Vpss
+
+            para = obj.parameter{:,{'Ka', 'Ta', 'Ke', 'Te', 'Kf', 'Tf', 'Se1', 'Se2'}};
+            Ka  = para(1); Ta  = para(2);
+            Ke  = para(3); Te  = para(4);
+            Kf  = para(5); Tf  = para(6);
+            Se1 = para(7); Se2 = para(8);
+
             Vfd = x_avr(1);
-            Vr = x_avr(2);
-            Rf = x_avr(3);
-            Se = obj.Se1*exp(obj.Se2*V_fd);
+            Vr  = x_avr(2);
+            Rf  = x_avr(3);
+            Se  = Se1*exp(Se2*Vfd);
 
-            dVfd = -(obj.Ke+Se)*Vfd/obj.Te + Vr/obj.Te;
-            dVr = -Vr/obj.Ta + obj.Ka*Rf/obj.Ta - obj.Ka*obj.Kf*Vfd/(obj.Ta*obj.Tf) + obj.Ka*(obj.Vref+Vpss-Vabs)/obj.Ta;
-            dRf = -Rf/obj.Tf + obj.Kf*Vfd/(obj.Tf*obj.Tf);
-            dx = [dVfd; dVr; dRf];
+            dVfd = -(Ke+Se)*Vfd + Vr;
+            dVr  = -Vr + Ka*Rf - Ka*Kf*Vfd/Tf + Ka*(u_avr-Vabs);
+            dRf  = -Rf + Kf*Vfd/Tf;
+
+            E  = diag(1./[Te,Ta,Tf]);
+            dx = E * [dVfd; dVr; dRf];
+            
+            % dVfd = -(Ke+Se)*Vfd/Te + Vr/Te;
+            % dVr  = -Vr/Ta + Ka*Rf/Ta - Ka*Kf*Vfd/(Ta*Tf) + Ka*(u_avr-Vabs)/Ta;
+            % dRf  = -Rf/Tf + Kf*Vfd/(Tf*Tf);
+            % dx   = [dVfd; dVr; dRf];
         end
-
-        function [dx, Vfd] = get_Vfd_linear(obj, x_avr, Vabs, Efd, u)
-            [dx, Vfd] = get_Vfd(obj, x_avr, Vabs, Efd, u);
-        end
-
     end
 end

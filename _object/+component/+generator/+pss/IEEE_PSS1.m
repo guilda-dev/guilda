@@ -4,7 +4,7 @@ classdef IEEE_PSS1 < component.generator.abstract.SubClass
 % 実行方法： component.generator.avr.IEEE_PSS1(parameter)
 %
 % 　引数　： parameter >>1. string型. "Kundur", "Kundur12_5", "Kundur12_8", "Board", "Chow"
-%                    >>2. table型.「'Ttr', 'k_ap','k0','gamma_max','gamma_min'」を列名として定義
+%                    >>2. table型.「'Kpss','Tws','Td1','Tn1','Td2','Tn2','V_min','Vmax'」を列名として定義
 %
 %
 % << DataSheet for AVR IEEE_ST1 >>
@@ -57,19 +57,22 @@ classdef IEEE_PSS1 < component.generator.abstract.SubClass
                 parameter = "Kundur";
             end
             obj@component.generator.abstract.SubClass("PSS")
-            [parameter,Tag] = ReadPara(parameter);
-            obj.Tag = "IEEE_PSS1_"+Tag;
-            obj.parameter = parameter(:,{'Kpss','Tws','Td1','Tn1','Td2','Tn2','V_min','V_max'});
+            [obj.parameter,obj.Tag] = ReadPara(parameter);
         end
 
         function set_parameter(obj,para)
-            flag = para{:,{'Tws','Td1','Td2'}};
+            flag = para{:,{'Tws','Td1','Td2'}}~=0;
             obj.mode = array2table(flag,'VariableNames',{'ws','d1','d2'});
         end
 
-        function name_tag = naming_state(~)
+        function name_tag = naming_state(obj)
             name = {'xi_ws','xi1','xi2'};
             name_tag = name(obj.mode.Variables);
+        end
+
+
+        function nx = get_nx(obj)
+            nx =sum(obj.mode.Variables);
         end
 
         function [dx, v_pss] = get_dx_u(obj, x_pss, ~, omega)
@@ -89,7 +92,7 @@ classdef IEEE_PSS1 < component.generator.abstract.SubClass
         end
 
         function [A,B,C,D] = get_linear_matrix(obj, x_st, ~, omega_st)%#ok
-            para = obj.parameter(:,{'Kpss','Tws','Td1','Tn1','Td2','Tn2'});
+            para = obj.parameter{:,{'Kpss','Tws','Td1','Tn1','Td2','Tn2'}};
             Kpss = para(1);     Tws  = para(2);
             Td1  = para(3);     Tn1  = para(4);
             Td2  = para(5);     Tn2  = para(6);
@@ -126,8 +129,10 @@ end
 
 function [datasheet,Tag] = ReadPara(ID)
     if istable(ID)
-        datasheet  = ID;
-        Tag = [];
+        datasheet = array2table([zeros(1,6),-inf,inf],'VariableNames',{'Kpss','Tws','Td1','Tn1','Td2','Tn2','V_min','V_max'});
+        [idx,num] = ismember(datasheet.Properties.VariableNames, ID.Properties.VariableNames);
+        datasheet{:,idx} = ID{:,num(idx)};
+        Tag = "IEEE_PSS1";
         return
     end
 
@@ -135,21 +140,22 @@ function [datasheet,Tag] = ReadPara(ID)
     switch string(ID)
         case {"1","Kundur","Kundur12_5"}
             datasheet = para(1,:);
-            Tag = "_Kundur";
+            Tag = "Kundur";
 
         case {"2","Kundur12_8"}
             datasheet = para(4,:);
-            Tag = "_Kundur2";
+            Tag = "Kundur2";
         
         case {"3","Board"}
             datasheet = para(2,:);
-            Tag = "_Board";
+            Tag = "Board";
 
         case {"4","Chow"}
             datasheet = para(3,:);
-            Tag = "_Chow";
+            Tag = "Chow";
 
         otherwise
             error("Parameters could not be identified.")
     end
+    Tag = "IEEE_PSS1_" + Tag;
 end
