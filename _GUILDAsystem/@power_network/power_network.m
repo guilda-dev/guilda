@@ -34,16 +34,17 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
 
         % 潮流計算に関するメソッド
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        [V, I, flag, output] = calculate_power_flow(obj, varargin)
-        function initialize(obj)
+        [V, I, flag, output] = calculate_power_flow(obj,varargin)
+        function flag = initialize(obj,varargin)
             obj.reflected;
-            [V, I] = obj.calculate_power_flow();
+            [V, I, flag] = obj.calculate_power_flow(varargin{:});
             for i = 1:numel(obj.a_bus)
                 obj.a_bus{i}.set_equilibrium(V(i), I(i)); 
             end
             cellfun(@(c) c.update_idx, obj.a_controller_local)
             cellfun(@(c) c.update_idx, obj.a_controller_global)
             obj.linear = obj.linear;
+            flag = flag > 0;
         end
 
 

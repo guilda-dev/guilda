@@ -1,4 +1,4 @@
-function data = config()
+function data = config(field)
     fn = [tools.pwd,filesep,'config.json'];
     data = readstruct([tools.pwd,filesep,'_GUILDAsystem',filesep,'+supporters',filesep,'+for_user',filesep,'config.json']);
 
@@ -7,8 +7,11 @@ function data = config()
     else
         user = struct();
     end
-
     data = merge(data,user,{});
+
+    if nargin==1
+        data = data.(field);
+    end
 end
 
 function data = merge(data,user,fn)

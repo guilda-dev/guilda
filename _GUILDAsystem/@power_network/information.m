@@ -6,7 +6,6 @@ function out = information(obj,varargin)
     p.CaseSensitive = false;
     addParameter(p, 'do_report', true);
     addParameter(p, 'graph'  , false);
-    addParameter(p, 'HTML'   , false);
     addParameter(p, 'TeX'    , false);
     addParameter(p, 'TeXpath', []   );
     
