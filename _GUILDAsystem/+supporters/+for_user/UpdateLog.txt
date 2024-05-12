@@ -4,3 +4,4 @@
 2024/05/11 : class_dictionaryに[open]タグを追加
 2024/05/12 : @net.caluculate_power_flow：規定の処理設定をconfigで設定可能に変更
              @net.initialize：潮流計算が成功したかどうかのflagを返すように変更．
+2024/05/12 : Updata!! <<_Tutorial/ClassManual/Component.Generator.mlx>>
