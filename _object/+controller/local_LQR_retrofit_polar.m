@@ -1,4 +1,6 @@
-classdef local_LQR_retrofit <  controller
+% 実装内容は local_LQR_retrofit.m と同じ
+% modelの出力 V が極座標表示で得られる場合の実装
+classdef local_LQR_retrofit_polar <  controller
 
     properties(SetAccess=protected)
         type = 'local';
@@ -7,9 +9,9 @@ classdef local_LQR_retrofit <  controller
     end
 
     properties(Access=private)
-       x_avr
-       x_pss
-       x_gov
+        x_avr
+        x_pss
+        x_gov
     end
     
     properties
@@ -39,7 +41,7 @@ classdef local_LQR_retrofit <  controller
     end
     
     methods
-        function obj = local_LQR_retrofit(net, idx, Q, R, model, model_agc)
+        function obj = local_LQR_retrofit_polar(net, idx, Q, R, model, model_agc)
             obj@controller(net, idx, idx);
             if nargin < 5
                 model = [];
@@ -60,25 +62,25 @@ classdef local_LQR_retrofit <  controller
             obj.x_gov = @(x) x(nx+n_avr+n_pss+(1:n_gov));
             
             if isempty(model)
-               model = ss(zeros(2, 2));
-               model.InputGroup.E_m = 1;
-               model.InputGroup.delta_m = 2;
-               model.OutputGroup.V_m = 1:2;
+                model = ss(zeros(2, 2));
+                model.InputGroup.E_m = 1;
+                model.InputGroup.delta_m = 2;
+                model.OutputGroup.V_polar_m = 1:2; % [angleV, absV]
             end
             
             if isempty(model_agc)
-               model_agc = ss(zeros(1, 2));
-               model_agc.InputGroup.omega_agc = 1;
-               model_agc.InputGroup.delta_agc = 2;
-               model_agc.OutputGroup.u_agc = 1;
+                model_agc = ss(zeros(1, 2));
+                model_agc.InputGroup.omega_agc = 1;
+                model_agc.InputGroup.delta_agc = 2;
+                model_agc.OutputGroup.u_agc = 1;
             end
             
             sys = net.a_bus{idx}.component.get_sys();
             sys_ = sys;
             sys_cat = blkdiag(sys, model, model_agc);
-            feedout = [sys_cat.OutputGroup.delta, sys_cat.OutputGroup.E, sys_cat.OutputGroup.V_m,...
+            feedout = [sys_cat.OutputGroup.delta, sys_cat.OutputGroup.E, sys_cat.OutputGroup.V_polar_m,...
                 sys_cat.OutputGroup.u_agc, sys_cat.OutputGroup.omega, sys_cat.OutputGroup.delta];
-            feedin = [sys_cat.InputGroup.delta_m, sys_cat.InputGroup.E_m, sys_cat.InputGroup.Vin,...
+            feedin = [sys_cat.InputGroup.delta_m, sys_cat.InputGroup.E_m, sys_cat.InputGroup.Vin_polar,...
                 sys_cat.InputGroup.u_governor, sys_cat.InputGroup.omega_agc, sys_cat.InputGroup.delta_agc];
             sys = feedback(sys_cat, eye(numel(feedin)), feedin, feedout, 1);
             obj.sys_design = sys;
@@ -113,7 +115,7 @@ classdef local_LQR_retrofit <  controller
             Xd = obj.Xd;
             Xdp = obj.Xdp;
             E0 = obj.x0(3);
-            delta0 = obj.x0(1);            
+            delta0 = obj.x0(1);
             Vabscos0 = obj.V0(1)*cos(delta0) + obj.V0(2)*sin(delta0);
 
             Efd0 = Xd*E0/Xdp - (Xd/Xdp-1)*Vabscos0;
@@ -169,7 +171,6 @@ classdef local_LQR_retrofit <  controller
             dx = obj.A*x + obj.Bv*[P-Pm; Efd-obj.Efd0; Vabs-obj.Vabs0; Vfd-obj.Vfd0; U{1}] ...
                 - obj.Bw*[delta-obj.delta0; omega; E-obj.E0; Vap-obj.Vfd0];
             u = num2cell(u(:),1);
-
         end
 
         % 非線形シミュレーションのみ実行できるようにするための一時的な実装なので要修正

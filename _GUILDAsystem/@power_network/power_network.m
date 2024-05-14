@@ -176,7 +176,7 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
             obj.a_controller_local(index) = [];
         end
 
-        function remove_controller_global(objindex)
+        function remove_controller_global(obj,index)
             obj.a_controller_global(index) = [];
         end
 

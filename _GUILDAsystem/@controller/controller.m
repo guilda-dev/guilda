@@ -9,7 +9,7 @@ classdef controller < handle & base_class.HasStateInput & base_class.HasGridCode
 
     properties(SetAccess=protected, Abstract)
         type {mustBeMember(type,{'local','global'})}
-        port_input  
+        port_input
         port_observe
     end
 
@@ -157,18 +157,20 @@ classdef controller < handle & base_class.HasStateInput & base_class.HasGridCode
             sys = struct();
             [A,BX,BV,BI,Bu,C,DX,DV,DI,Du] = obj.get_linear_matrix();
 
-            sys.A  = A;
-            sys.BX = BX * blkdiag(obj.idx_state{:});
-            sys.BV = BV;
-            sys.BI = BI;
-            sys.Bu = Bu;
+            if ~isempty(A) % retrofitを動くようにするための一時的な処置（要修正）
+                sys.A  = A;
+                sys.BX = BX * blkdiag(obj.idx_state{:});
+                sys.BV = BV;
+                sys.BI = BI;
+                sys.Bu = Bu;
 
-            udiag = blkdiag(obj.idx_port{:});
-            sys.C  = udiag * C;
-            sys.DX = udiag * DX;
-            sys.DV = udiag * DV;
-            sys.DI = udiag * DI;
-            sys.Du = udiag * Du;
+                udiag = blkdiag(obj.idx_port{:});
+                sys.C  = udiag * C;
+                sys.DX = udiag * DX;
+                sys.DV = udiag * DV;
+                sys.DI = udiag * DI;
+                sys.Du = udiag * Du;
+            end
 
             obj.system_matrix = sys;
         end
