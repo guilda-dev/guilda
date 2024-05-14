@@ -1,0 +1,4 @@
+No_machine,Xd,Xd_p,Xq,Xq_p,Td_p,Tq_p,M,D,SetClass,SetMethod,ID
+1,0.146,0.0608,0.0969,0.0969,8.96,0.31,47.28,0.1,"avr_IEEE_DC1","set_avr",1
+2,0.8958,0.1198,0.8645,0.1969,6.0,0.535,12.8,0.2,"avr_IEEE_DC1","set_avr",2
+3,1.3125,0.1813,1.2578,0.25,5.89,0.6,6.02,0.3,"avr_IEEE_DC1","set_avr",3

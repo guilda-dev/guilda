@@ -1,4 +1,4 @@
-classdef classical < component.generator.abstract
+classdef classical < component.generator.abstract.Machine
 %モデル　: 同期発電機の古典モデル
 %　状態　: ２変数「回転子偏角"delta",周波数偏差"omega"」
 %　　　　  * AVRやPSSが付加されるとそれらの状態も追加される
@@ -6,8 +6,9 @@ classdef classical < component.generator.abstract
 %実行方法: obj =　component.generator.classical(parameter)
 %　引数　: parameter : table型．「'Xd', 'Xq','M','D'」を列名として定義
 
-    properties
-        Vfield
+    properties(SetAccess=protected)
+        GenState = {'delta','omega'};
+        GenPort  = [];
     end
     
     methods
@@ -15,36 +16,7 @@ classdef classical < component.generator.abstract
             arguments
                 parameter = 'NGT2';
             end
-            obj@component.generator.abstract(parameter)
-            
-            obj.parameter = obj.parameter(:, {'Xd', 'Xq', 'M', 'D'});
-            obj.set_avr( component.generator.avr.base() );
-            obj.set_governor( component.generator.governor.base() );
-            obj.set_pss( component.generator.pss.base() );
-            obj.system_matrix = struct();
-        end
-        
-        function name_tag = naming_state(obj)
-            gen_state = {'delta','omega'};
-            avr_state = obj.avr.naming_state;
-            pss_state = obj.pss.naming_state;
-            governor_state = obj.governor.naming_state;
-            name_tag = horzcat(gen_state,avr_state,pss_state,governor_state);
-        end
-
-        function u_name = naming_port(obj)
-            u_avr = obj.avr.naming_port;
-            u_pss = obj.pss.naming_port;
-            u_gov = obj.governor.naming_port;
-            u_name = [u_avr,u_pss,u_gov];
-        end
-
-        function out = get_nx(obj)
-            out = 2 + obj.avr.get_nx() + obj.pss.get_nx() + obj.governor.get_nx();
-        end
-        
-        function nu = get_nu(obj)
-            nu = obj.avr.get_nu() + obj.pss.get_nu() + obj.governor.get_nu();
+            obj@component.generator.abstract.Machine(parameter)
         end
         
         % 機器のダイナミクスを決めるメソッド
@@ -85,6 +57,50 @@ classdef classical < component.generator.abstract
 
                 con = I - [Ir;Ii];
                 dx = [ddelta; domega; dx_avr; dx_pss; dx_gov];
+            end
+
+        % 定常潮流状態からモデルの平衡点と定常入力値を求めるメソッド
+            function [x_st,u_st] = get_equilibrium(obj, V, I,flag)
+                p = obj.parameter;
+    
+                Vangle = angle(V);
+                Vabs =  abs(V);
+                Pow = conj(I)*V;
+                P = real(Pow);
+                Q = imag(Pow);
+    
+                delta = Vangle + atan(P/(Q+Vabs^2/p.Xq));
+    
+                Id = real(  1j*I*exp(-1j*delta) );
+                Vq = imag(  1j*V*exp(-1j*delta) );
+                Vfd = Id*p.Xd+Vq;
+
+                % 発電機のサブクラスの計算
+                    [x_avr,u_avr] = obj.avr.get_equilibrium(Vabs,Vfd);
+                    [x_gov,u_gov] = obj.governor.get_equilibrium(omega, P);
+                    [x_pss,u_pss] = obj.pss.get_equilibrium(omega);
+                    
+                    if nargin>3 && strcmp(flag,'set')
+                        obj.avr.set_linear_matrix(x_avr,u_avr,Vabs,Vfd);
+                        obj.governor.set_linear_matrix(x_gov,u_gov,omega, P);
+                        obj.pss.set_linear_matrix(x_pss,u_pss,omega);
+                    end
+    
+                x_st = [delta; 0; x_avr; x_gov; x_pss];
+                u_st = [u_avr;u_pss;u_gov];
+            end
+
+        % GFMIのリファレンスモデルとして実装するために必要なメソッド
+            function [delta,omega,Edq] = get_Vterminal(obj,x,V,I,u)%#ok
+                delta = x(1);
+
+                %[周波数偏差]から[周波数のpu値]へ変換
+                omega = 1+x(2);
+
+                %古典はEq=Vfdとして近似されたモデル
+                Ed = 0;
+                Vfd = u(1);
+                Edq = [Ed; Vfd];
             end
         % 
         % 
@@ -191,47 +207,6 @@ classdef classical < component.generator.abstract
         %     R = [];
         %     S = [];
         % end
-
-        % 定常潮流状態からモデルの平衡点と定常入力値を求めるメソッド
-            function [x_st,u_st] = get_equilibrium(obj, V, I)
-                p = obj.parameter;
-    
-                Vangle = angle(V);
-                Vabs =  abs(V);
-                Pow = conj(I)*V;
-                P = real(Pow);
-                Q = imag(Pow);
-    
-                delta = Vangle + atan(P/(Q+Vabs^2/p.Xq));
-    
-                Id = real(  1j*I*exp(-1j*delta) );
-                Vq = imag(  1j*V*exp(-1j*delta) );
-                Vfd = Id*p.Xd+Vq;
-                [x_avr,u_avr] = obj.avr.initialize(Vfd, Vabs);
-                [x_gov,u_gov] = obj.governor.initialize(P);
-                [x_pss,u_pss] = obj.pss.initialize();
-    
-                obj.Vfield = Vfd;
-                x_st = [delta; 0; x_avr; x_gov; x_pss];
-                u_st = [u_avr;u_pss;u_gov];
-            end
-
-        % GFMIのリファレンスモデルとして実装するために必要なメソッド
-            function [delta,omega,Vdq] = get_Vterminal(obj,x,V,I,u)%#ok
-                delta  = x(1);
-                domega = x(2);
-                omega  = domega + 1;
-
-                nx_avr = obj.avr.get_nx();
-                nx_pss = obj.pss.get_nx();
-                x_avr = x(2+(1:nx_avr));
-                x_pss = x(2+nx_avr+(1:nx_pss));
-
-                [~,  v ] = obj.pss.get_u(x_pss, domega);
-                [~, Vfd] = obj.avr.get_Vfd(x_avr, norm(V), 0, u(1)-v);
-
-                Vdq = [0;Vfd];
-            end
     end
 end
 

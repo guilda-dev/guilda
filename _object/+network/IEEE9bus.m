@@ -1,5 +1,6 @@
 %% IEEE9bus systrem
-% GUILDAの前身となるシミュレータで使用していたモデル
+% Power System Dynamics and Stability: With Synchrophasor Measurement and Power System Toolbox
+% p.142~144
 
 function net = IEEE9bus()
     fname = mfilename("fullpath");
