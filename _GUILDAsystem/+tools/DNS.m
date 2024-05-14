@@ -57,10 +57,6 @@ function address = DNS(domain)
                 address = 'component.generator.avr.IEEE_DC1';
             case 'avr_IEEE_ST1'
                 address = 'component.generator.avr.IEEE_ST1';
-            case 'avr_sadamoto2019'
-                address = 'component.generator.avr.sadamoto2019';
-            case 'avr_IEEE_type1'
-                address = 'component.generator.avr.IEEE_type1';
 
         % pss
             case 'pss'
