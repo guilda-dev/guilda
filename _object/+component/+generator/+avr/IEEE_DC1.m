@@ -33,7 +33,7 @@ classdef IEEE_DC1 < component.generator.abstract.SubClass
 % John Wiley & Sons, 2017.
 %
 %    Ttr,  Kap,  Tap, Vap_max, Vap_min,   Kst,  Tst,    Aex,   Tex,   a_ex,  b_ex
-%   0.00, 20.0, 0.20,     inf,    -inf, 0.063, 0.35,  1.000, 0.341, 0.0039, 1.555
+%   0.00, 20.0, 0.20,     inf,    -inf, 0.063, 0.35,  1.000, 0.314, 0.0039, 1.555
 %==================================================================================
 
 

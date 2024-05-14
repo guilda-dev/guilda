@@ -1,6 +1,6 @@
 classdef SubClass < base_class.handleCopyable
-% Governorを定義するスーパークラス
-% Governorモデルを実装する場合はこのクラスを継承する。
+% AVR, PSS, Governorを定義するスーパークラス
+% AVR, PSS, Governorモデルを実装する場合はこのクラスを継承する。
 
     properties
         parameter
