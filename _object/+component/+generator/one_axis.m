@@ -153,7 +153,7 @@ classdef one_axis < component.generator.abstract.Machine
                 sys_avr = obj.avr.get_sys();
                 sys_pss = obj.pss.get_sys();
                 sys_gov = obj.governor.get_sys();
-                G = blkdiag(sys_swing, sys_fb, sys_V, sys_avr, -sys_pss, sys_gov);
+                G = blkdiag(sys_swing, sys_fb, sys_V, sys_avr, sys_pss, sys_gov);
                 ig = G.InputGroup;
                 og = G.OutputGroup;
                 feedin  = [ig.Pout, ig.Efd, ig.Efd_swing,  ig.delta, ig.E, ig.V, ig.Vabs, ig.Vfd, ig.u_avr1, ig.omega, ig.omega_governor, ig.Pmech];
@@ -314,7 +314,7 @@ classdef one_axis < component.generator.abstract.Machine
             sys_avr = obj.avr.get_sys();
             sys_pss = obj.pss.get_sys();
             sys_gov = obj.governor.get_sys();
-            G = blkdiag(sys_swing, sys_fb, sys_V, sys_avr, -sys_pss, sys_gov);
+            G = blkdiag(sys_swing, sys_fb, sys_V, sys_avr, sys_pss, sys_gov);
             ig = G.InputGroup;
             og = G.OutputGroup;
             feedin = [ig.Pout, ig.Efd, ig.Efd_swing, ig.delta, ig.E, ig.V, ig.Vabs, ig.Vfd, ig.u_avr, ig.omega, ig.omega_governor, ig.Pmech];

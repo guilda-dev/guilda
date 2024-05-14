@@ -122,9 +122,8 @@ classdef IEEE_ST1 < component.generator.abstract.SubClass
                 D  = [ 0, 0, Kap];
             else
                 A1 = []; 
-                B1 = zeros(0,3); 
-                C1 = zeros(1,0); 
-                D  = [-Kap, 0, Kap];
+                B1 = zeros(0,3);
+                C1 = zeros(1,0);
             end
             if Tap
                 A2 = -1/Tap;

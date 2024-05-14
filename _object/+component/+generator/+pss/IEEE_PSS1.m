@@ -105,14 +105,14 @@ classdef IEEE_PSS1 < component.generator.abstract.SubClass
 
             if Td1~=0
                 Tnd1 = Tn1/Td1;
-                sys_d1 = ss(-1/Td1, (1-Tnd1), -Tnd1, Tnd1);
+                sys_d1 = ss(-1/Td1, (1/Td1-1/Tn1), -Tnd1, Tnd1);
             else
                 sys_d1 = ss(1);
             end
 
             if Td2~=0
                 Tnd2 = Tn2/Td2;
-                sys_d2 = ss(-1/Td2, (1-Tnd2), -Tnd2, Tnd2);
+                sys_d2 = ss(-1/Td2, (1/Td2-1/Tn2), -Tnd2, Tnd2);
             else
                 sys_d2 = ss(1);
             end

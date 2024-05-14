@@ -5,7 +5,7 @@ classdef IEEE_DC1 < component.generator.abstract.SubClass
 %
 % 引数　　 : ・avr_tab >>1. string型. "Anderson", "Sauer"
 %                    >>2. table型.「'Ttr', 'Kap', 'Tap', 'Vap_max', 'Vap_min', 'Kst', 'Tst', 'Aex', 'Tex', 'a_ex', 'b_ex'」を列名として定義
-%
+% 　　　　                  (ただし、Tex~=0,Tst~=0,Tap~=0とする。Tex==0のときはIEEE_ST1を使うこと。)
 %
 % <<  Model Discription >>
 % 　　　　   
@@ -48,62 +48,86 @@ classdef IEEE_DC1 < component.generator.abstract.SubClass
             [obj.parameter,obj.Tag] = ReadPara(avr_tab);
         end
 
-        function name_tag = naming_state(~)
-            name_tag = {'Vtr','Vap','Vfd','Vst'};
+        function name_tag = naming_state(obj)
+            if obj.parameter{:,'Ttr'}~=0
+                name_1 = {'Vtr'};
+            else
+                name_1 = {};
+            end
+            name_tag = {'Vfd','Vst','Vap',name_1{:}};
         end
 
-        function nx = get_nx(~)
-            nx =4;
+        function nx = get_nx(obj)
+            if obj.parameter{:,'Ttr'}~=0
+                nx = 4;
+            else
+                nx = 3;
+            end
         end
 
         function [x_st,u_st] = get_equilibrium(obj, Vabs_st, Efd_st)
-            para = obj.parameter{:,{'Kap', 'Aex', 'a_ex', 'b_ex'}};
+            para = obj.parameter{:,{'Kap', 'Aex', 'a_ex', 'b_ex', 'Ttr'}};
             Kap = para(1);
             Aex = para(2);
             a_ex= para(3); 
             b_ex= para(4);
+            Ttr = para(5);
 
-            Vtr_st = Vabs_st;
             Vfd_st = Efd_st;
-            Vap_st = Vfd_st * (Aex + a_ex * exp(b_ex*Vfd_st) ); % = Kap * (u_st - Vtr_st - Vst_st);
             Vst_st = 0;
-
-            x_st = [ Vtr_st; Vap_st; Vfd_st; Vst_st];
+            if Ttr~=0
+                Vtr_st = Vabs_st;
+            else
+                Vtr_st = [];
+            end
+            Vap_st = Vfd_st * (Aex + a_ex * exp(b_ex*Vfd_st) ); % = Kap * (u_st - Vtr_st - Vst_st);
+            x_st = [ Vfd_st; Vst_st; Vap_st; Vtr_st];
             u_st = Vabs_st + Vap_st/Kap;
         end
 
         function [dx, Vfd] = get_dx_u(obj, x_avr, u_avr, Vabs, Efd) %#ok
-            % x_avr = [Vtr,Vap,Vfd,Vst]
+            % x_avr = [Vfd,Vst,Vap,Vtr]
             % u_avr = Vref + Vpss
 
             % parameter
             para = obj.parameter{:,{'Ttr', 'Kap', 'Tap', 'Aex', 'Tex', 'Kst', 'Tst', 'a_ex', 'b_ex', 'Vap_max', 'Vap_min'}};
+            Ttr = para(1);
+            Kap = para(2);
             Aex = para(4);
             Kst = para(6);
-            a_ex= para(8); 
+            a_ex= para(8);
             b_ex= para(9);
             Vap_max = para(10);
             Vap_min = para(11);
 
             % state
-            Vtr = x_avr(1);
-            Vap = x_avr(2);
-            Vfd = x_avr(3);
-            Vst = x_avr(4);
+            Vfd = x_avr(1);
+            Vst = x_avr(2);
+            Vap = x_avr(3);
 
             %calculate dx
-            dVtr = -Vtr+Vabs;
+            if Ttr~=0
+                Vtr = x_avr(4);
+                dVtr = -Vtr+Vabs;
+            else
+                Vtr = Vabs;
+                dVtr = [];
+            end
             Vcom = u_avr - Vtr - Vst;
             if ( (Vap>Vap_min) && (Vap<Vap_max) ) || (Vap*Vcom<=0)
-                Kap = para(2);
                 dVap = -Vap + Kap*Vcom;
             else
-                dVap = 0;
+               dVap = 0;
             end
             dVfd = -( Aex+a_ex*exp(b_ex*Vfd) )*Vfd + Vap;
             dVst = -Vst + Kst * dVfd;
-            E  = diag(1./para([1,3,5,7])); %1./[Ttr,Tap,Tex,Tst]
-            dx = E * [dVtr; dVap; dVfd; dVst];
+            
+            if Ttr~=0
+                E = diag(1./para([1,3,5,7])); %1./[Tex,Tst,Tap,Ttr]
+            else
+                E = diag(1./para([3,5,7])); %1./[Tex,Tst,Tap]
+            end
+            dx = E * [dVfd; dVst; dVap; dVtr];
         end
 
     end
