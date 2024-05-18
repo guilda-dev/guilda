@@ -15,8 +15,7 @@ class_list = search_superclass(table(filename,superclass),cell(0),class_name);
 bar = '=========================================================';
 
 
-DocPath = supporters.for_user.config;
-DocPath = DocPath.class_dictionary;
+DocPath = supporters.for_user.config('class_dictionary');
 
 disp(' ')
 disp([class_name,' class：'])

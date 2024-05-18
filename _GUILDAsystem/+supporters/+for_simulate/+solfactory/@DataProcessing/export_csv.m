@@ -4,6 +4,9 @@ function export_csv(obj)
 %
     
     path = uigetdir;
+    if ~path
+        return
+    end
     time_text = datestr(datetime('now'),'yyyy_mm_dd_HH_MM_ss');%#ok
     subpath = [path,'/DataBox_',time_text];
     mkdir(subpath)

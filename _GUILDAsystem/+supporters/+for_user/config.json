@@ -3,7 +3,7 @@
         "Tutorial" : "off",
         "gitpull"  : "off",
         "gitbranch": "current",
-        "version"  : "latest",
+        "version"  : "latest"
     },
     "simulate":{
     },
@@ -13,16 +13,16 @@
             "MaxIterations": 2e5,
             "Display"      : "none",
             "PlotFcn"      : [],
-            "UseParallel"  : false,
+            "UseParallel"  : false
         },
         "option": {
             "return_vector": false,
             "warning"      : "warning",
-            "message"      : false,
+            "message"      : false
         }
     },
     "GUI":{
-        "print_cmd": "off",
+        "print_cmd": "off"
     },
     "git":{
         "message": "disp",
@@ -32,7 +32,7 @@
             "_GUILDAsystem",
             "_object",
             "_Tutorial",
-            "_UserTool",
+            "_UserTool"
             ],
         "stash":[
             "_object",
