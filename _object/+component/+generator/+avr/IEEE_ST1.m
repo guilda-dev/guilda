@@ -78,7 +78,7 @@ classdef IEEE_ST1 < component.generator.abstract.SubClass
         end
 
         function nx = get_nx(obj)
-            nx =sum(obj.mode.Variables);
+            nx = sum(obj.mode.Variables);
         end
         
         function name_tag = naming_state(obj)
@@ -115,6 +115,7 @@ classdef IEEE_ST1 < component.generator.abstract.SubClass
             Ttr = para(2);
             Tap = para(3);
 
+            D  = zeros(1,3);
             if Ttr
                 A1 = -1/Ttr;
                 B1 = [1/Ttr, 0, 0];
@@ -129,13 +130,12 @@ classdef IEEE_ST1 < component.generator.abstract.SubClass
                 A2 = -1/Tap;
                 B2 = [-Kap, 0, Kap]/Tap;
                 C2 = 1; 
-                D  = zeros(1,3);
             else
                 A2 = [];
                 B2 = zeros(0,3);
                 C2 = zeros(1,0); 
             end
-            A = [A1;A2];
+            A = blkdiag(A1,A2);
             B = [B1;B2];
             C = [C1,C2];
         end
