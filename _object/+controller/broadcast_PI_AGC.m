@@ -10,7 +10,7 @@ classdef broadcast_PI_AGC < controller
     
     properties(SetAccess=protected)
         type = 'global';
-        port_input   = 'Pmech';
+        port_input   = 'Pm';
         port_observe = 'omega';
     end
 
