@@ -177,6 +177,10 @@ classdef one_axis < component.generator.abstract.Machine
 
         % 定常潮流状態からモデルの平衡点と定常入力値を求めるメソッド
             function [x_st,u_st] = get_equilibrium(obj,V,I,flag)
+                if nargin<4
+                    flag = 'get';
+                end
+                
                 Vangle = angle(V);
                 Vabs =  abs(V);
                 Pow = conj(I)*V;
@@ -196,18 +200,22 @@ classdef one_axis < component.generator.abstract.Machine
                 Vfd = Xd*E/Xdp - (Xd/Xdp-1)*Vabs*cos(delta-Vangle);
 
                 % 発電機のサブクラスの計算
-                    [x_avr,u_avr] = obj.avr.get_equilibrium(Vabs,Vfd);
-                    [x_gov,u_gov] = obj.governor.get_equilibrium(omega, P);
-                    [x_pss,u_pss] = obj.pss.get_equilibrium(omega);
-                    
-                    if nargin>3 && strcmp(flag,'set')
-                        obj.avr.set_linear_matrix(x_avr,u_avr,Vabs,Vfd);
-                        obj.governor.set_linear_matrix(x_gov,u_gov,omega, P);
-                        obj.pss.set_linear_matrix(x_pss,u_pss,omega);
-                    end
+                switch flag
+                    case 'get'
+                        [x_avr,u_avr] = obj.avr.get_equilibrium(Vabs,Vfd);
+                        [x_gov,u_gov] = obj.governor.get_equilibrium(omega, P);
+                        [x_pss,u_pss] = obj.pss.get_equilibrium(omega);
+                        x_st = [delta; omega; E; x_avr; x_pss; x_gov];
+                        u_st = [u_avr; u_pss; u_gov];
+
+                    case 'set'
+                        obj.avr.set_equilibrium(Vabs,Vfd);
+                        obj.governor.set_equilibrium(omega, P);
+                        obj.pss.set_equilibrium(omega);
+                        x_st = [delta; omega; E];
+                        u_st = [];
+                end
                 
-                x_st = [delta; omega; E; x_avr; x_pss; x_gov];
-                u_st = [u_avr; u_pss; u_gov];
             end
 
         % GFMIのリファレンスモデルとして実装するために必要なメソッド

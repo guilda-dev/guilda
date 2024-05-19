@@ -40,17 +40,9 @@ classdef Machine < component
     
         % SubClassのSetメソッド
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function set_avr(obj, avr)
-            obj.set_controller(avr,'avr')
-        end
-        
-        function set_pss(obj, pss)
-            obj.set_controller(pss,'pss')
-        end
-
-        function set_governor(obj, governor)
-            obj.set_controller(governor,'governor')
-        end
+        function set_avr(obj, avr); obj.set_controller(avr,'avr'); end
+        function set_pss(obj, pss); obj.set_controller(pss,'pss'); end
+        function set_governor(obj, governor); obj.set_controller(governor,'governor'); end
 
 
         % 状態と入力ポートの変数名取得メソッド
@@ -97,6 +89,8 @@ classdef Machine < component
                 [dx_gov, Pm ] = obj.governor.get_dx_u( x_gov, u_gov, omega, P);
                 dx = [dx_avr;dx_pss;dx_gov];
         end
+
+        
 
         function [x_st,u_st] = set_equilibrium(obj,V,I)
             if nargin<2
@@ -158,13 +152,26 @@ classdef Machine < component
 
     methods(Access=private)
         function set_controller(obj,cls,type)
-            if isa(cls, 'component.generator.abstract.SubClass')
-                cls.generator = obj;
-                obj.(type) = cls;
-                obj.editted(['add',char(type)]);
-            else
-                error(['Variable is not "',type,'" class.'])
+            if nargin<3
+                type = 'controller'; 
             end
+            
+            idx = ismember({'avr','pss','governor'},type);
+
+            if any(idx)
+                if ~isa(cls, 'component.generator.abstract.SubClass')
+                    error(['Variable is not "',type,'" class.'])
+                end
+                obj.children{idx} = cls;
+                obj.(type) = cls;
+            else
+                if ~isa(cls,'controller')
+                    error(['Variable is not "',type,'" class.'])
+                end
+                obj.children{end+1} = cls;
+            end
+            cls.register_parent(obj,'overwrite')
+            obj.editted(['add ',char(type)]);
         end
     end
 end
