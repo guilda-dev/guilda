@@ -11,7 +11,7 @@ classdef component < handle & base_class.HasStateInput & base_class.HasGridCode 
         connected_bus
     end
 
-    properties(SetAccess = protected)
+    properties
         x_equilibrium
         u_equilibrium
     end
@@ -65,6 +65,15 @@ classdef component < handle & base_class.HasStateInput & base_class.HasGridCode 
                 obj.parameter = value;
                 obj.editted("Parameter");
             end
+            function set.x_equilibrium(obj, value)
+                obj.x_equilibrium = value;
+                obj.editted("x_equilibrium");
+            end
+            function set.u_equilibrium(obj, value)
+                obj.u_equilibrium = value;
+                obj.editted("u_equilibrium");
+            end
+
 
         %% Get method
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

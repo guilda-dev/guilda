@@ -44,6 +44,7 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
             cellfun(@(c) c.update_idx, obj.a_controller_local)
             cellfun(@(c) c.update_idx, obj.a_controller_global)
             obj.linear = obj.linear;
+            obj.reflected;
             flag = flag > 0;
         end
 
@@ -79,7 +80,7 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
         % DependentプロパティのGetメソッド
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function x = get.x_equilibrium(obj)
-            obj.check_EditLog;
+            obj.check_EditLog("component");
             x = tools.vcellfun(@(b) b.component.x_equilibrium, obj.a_bus);
         end
 
@@ -228,21 +229,9 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
                 warning(['Some elements have been edited. Data may not be matched.',newline,...
                          'To be sure, power flow calculations and equilibrium point calculations are recommended to be rerun.'],'verbose')
                 warning(w_temp.state,'backtrace')
-                flag = [];
 
                 disp('Edit Log')
                 disp(Log)
-                while isempty(flag)
-                    flag = input('Recalculate again?(y/n) : ','s');
-                    switch flag
-                    case {'y','yes',true,1}; flag = true;
-                    case {'n','no',false,0}; flag = false;
-                    otherwise; flag = [];
-                    end
-                end
-                if flag
-                    obj.initialize;
-                end
             end
         end
     end
