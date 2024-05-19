@@ -9,11 +9,11 @@ function gitpull()
     a_Un = repo.UntrackedFiles;
     a_Mo = repo.ModifiedFiles;
     
-    clean_path = [tools.pwd,filesep] + config.clean;
+    clean_path = [tools.pwd,filesep] + cellfun(@(c) string(c), config.clean);
     clean_list = struct('Mo',[],'Un',[]);
     clean_list.Mo = a_Mo( tools.vcellfun(@(s) contains(s,clean_path), a_Mo) );
 
-    stash_path = [tools.pwd,filesep] + config.stash;
+    stash_path = [tools.pwd,filesep] + cellfun(@(c) string(c), config.clean);
     stash_list = struct('Mo',[],'Un',[]);
     stash_list.Mo = a_Mo( tools.vcellfun(@(s) contains(s,stash_path), a_Mo) );
 
