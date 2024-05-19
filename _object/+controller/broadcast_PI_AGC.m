@@ -94,14 +94,14 @@ classdef broadcast_PI_AGC < controller
             end
         end
         function set_K_input(obj,K_input)
-            if numel(K_input) == numel(obj.connected_index_input)
+            if numel(K_input) == numel(obj.index_input)
                 obj.default_K_input = K_input;
             else
                 error('The number of elements in K_input must match the number of elements in index_input.')
             end
         end
         function set_K_observe(obj,K_observe)
-            if numel(K_observe) == numel(obj.connected_index_observe)
+            if numel(K_observe) == numel(obj.index_observe)
                 obj.default_K_observe = K_observe;
             else
                 error('The number of elements in K_input must match the number of elements in index_observe.')
