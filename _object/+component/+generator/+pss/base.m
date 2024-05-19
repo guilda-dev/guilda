@@ -89,6 +89,7 @@ classdef base < base_class.handleCopyable
             else
                 [obj.A, obj.B, obj.C, obj.D] = ssdata(pss);
             end
+            obj.nx = size(obj.A, 1);
         end
     end
 

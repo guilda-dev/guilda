@@ -111,6 +111,9 @@ classdef Inverter < component
                 elseif isa(c, 'component.GFM.ReferenceModel.AbstractClass')
                     c.converter = obj;
                     obj.reference_model = c;
+                elseif isa(c, 'component.generator.abstract')
+                    c.converter = obj;
+                    obj.reference_model = c;
                 elseif isa(c,'component')
                     if ismethod(c, 'get_Vterminal')
                         assert(~isempty(obj.connected_bus),'先にGFMをbusクラスに追加してください >> bus.set_component(gfm)')
@@ -173,10 +176,31 @@ classdef Inverter < component
                 % Convert from grid to converter reference
                     tensor = [ sin(delta),  cos(delta); ... 
                               -cos(delta),  sin(delta)] ;
+                %original
+                %{
                     V_dq =  tensor.' *    V;
                     I_   =  tensor   * i_dq;
                     con_I = I - I_;
-               
+                %}
+                %changed
+                
+                %start
+                pXname = obj.reference_model.parameter.Properties.VariableNames;
+                pX = obj.reference_model.parameter;
+
+                I_dq =  tensor.' *    I;
+                grid_tensor = [0  L_g*omega;
+                                -L_g*omega 0];
+
+                if (any(strcmp(pXname,'Xd')))
+                    V_dq = v_dq + [0 pX.Xq; -pX.Xd_p 0]* I_dq + grid_tensor * I_dq;
+                    %V_dq = v_dq + grid_tensor * I_dq;
+                else
+                    V_dq = v_dq + grid_tensor * I_dq;
+                end
+                V_ = tensor * V_dq;
+                con_V = V - V_;
+                %end
     
                 % Calculate dx
      
@@ -202,8 +226,8 @@ classdef Inverter < component
     
                 % Calculate dx/constraint
                 dx  = [d_isdq; d_vdq; d_idq; dx_con; dx_ref; dx_dc];
-                constraint = con_I; %[con_ref;con_I];
-    
+
+                constraint = [con_V];   
             end
     
             function [x_st,u_st] = get_equilibrium(obj, Vc, Ic, flag) %#ok
