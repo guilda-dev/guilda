@@ -94,7 +94,7 @@ function [out,obj] = run(obj)
             Uin = obj.input.get_uvec(tidx);
             [Ucg, Usum] = calc_Ucon(net.a_controller_global, tidx, Xcg, X, V, I, Uin );
             [Ucl, Usum] = calc_Ucon(net.a_controller_local , tidx, Xcl, X, V, I, Usum);
-            Uall = tools.arrayfun(@(i) net.a_bus{i}.component.u_func(net.a_bus{i}.component,Usum{i}), 1:numel(Usum));
+            Uall = tools.arrayfun(@(i) net.a_bus{i}.component.u_func(Usum{i}), 1:numel(Usum));
 
             obj.DataStorage.t   = [obj.DataStorage.t   , {tidx(:)'}];
             obj.DataStorage.X   = [obj.DataStorage.X   , X(:)      ];

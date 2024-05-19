@@ -77,6 +77,14 @@ classdef component < handle & base_class.HasStateInput & base_class.HasGridCode 
 
         %% Get method
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            function val = get.x_equilibrium(obj)
+                xsub_st = tools.vcellfun(@(sub) sub.x_equilibrium(:), obj.children);
+                val = [obj.x_equilibrium; xsub_st];
+            end
+            function val = get.u_equilibrium(obj)
+                usub_st = tools.vcellfun(@(sub) sub.u_equilibrium(:), obj.children);
+                val = [obj.u_equilibrium; usub_st];
+            end
             
             function b = get.connected_bus(obj)
                 b = obj.parents{1};
@@ -168,16 +176,16 @@ classdef component < handle & base_class.HasStateInput & base_class.HasGridCode 
             function set_function(obj,linear)
                 if linear
                     obj.get_dx_con_func = @obj.get_dx_constraint_linear;
-                    obj.u_func          = @(obj,u) u;
+                    obj.u_func          = @(u) u;
                 else  
                     obj.get_dx_con_func = @obj.get_dx_constraint;
                     switch obj.InputType
                         case 'Rate'
-                            obj.u_func = @(obj,u) diag(obj.u_equilibrium) * (1+u);
+                            obj.u_func = @(u) diag(obj.u_equilibrium) * (1+u);
                         case 'Add'
-                            obj.u_func = @(obj,u) obj.u_equilibrium + u;
+                            obj.u_func = @(u) obj.u_equilibrium + u;
                         case 'Value'
-                            obj.u_func = @(obj,u) u;
+                            obj.u_func = @(u) u;
                     end
                 end
             end
