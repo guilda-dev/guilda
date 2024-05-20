@@ -134,7 +134,7 @@ classdef vsm1axis < component.GFM.ReferenceModel.AbstractClass
             Vd = Iq*Xq;
             Vq = E - Id*Xdp;
             %}
-            Vdq = [0; obj.E_st];
+            Vdq = [0; E];
         end
 
         function [x_ref, u_ref] = get_equilibrium(obj,V,I)  
@@ -173,14 +173,13 @@ classdef vsm1axis < component.GFM.ReferenceModel.AbstractClass
     
             eq1 = P-Vq*Iq-Vd*Id == 0;
             eq2 = Q-Vq*Id+Vd*Iq == 0;
-
+            
             S = solve([eq1;eq2],[del e]);
             if(S.e(1)>0);delta_st = double(S.del(1));Eq_st = double(S.e(1));
             else; delta_st = double(S.del(2)); Eq_st= double(S.e(2));end
 
             Iq = real(I)*cos(delta_st)+imag(I)*sin(delta_st); %Iabs*cos(delta-Iang)
             Id = real(I)*sin(delta_st)-imag(I)*cos(delta_st); %Iabs*sin(delta-Iang)
-
 
             Vfd_st = Eq_st + (Xd-Xdp)*Id;
             omega_st = 0;
