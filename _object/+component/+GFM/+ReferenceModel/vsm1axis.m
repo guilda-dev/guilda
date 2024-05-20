@@ -111,14 +111,11 @@ classdef vsm1axis < component.GFM.ReferenceModel.AbstractClass
             omega = x(2);
             E     = x(3);
             zeta = x(4);
-            %{
+            
             Vq = V(1)*cos(delta)+V(2)*sin(delta);
             Vd = V(1)*sin(delta)-V(2)*cos(delta);
             Iq = I(1)*cos(delta)+I(2)*sin(delta);
             Id = I(1)*sin(delta)-I(2)*cos(delta);
-
-            Pout = Vq*Iq + Vd*Id;
-            Qout = Vq*Id - Vd*Iq;
 
 
             p = obj.parameter.Variables;
@@ -133,8 +130,8 @@ classdef vsm1axis < component.GFM.ReferenceModel.AbstractClass
             % Vd, Vqを定義
             Vd = Iq*Xq;
             Vq = E - Id*Xdp;
-            %}
-            Vdq = [0; E];
+            
+            Vdq = [Vd; Vq];
         end
 
         function [x_ref, u_ref] = get_equilibrium(obj,V,I)  
@@ -183,8 +180,8 @@ classdef vsm1axis < component.GFM.ReferenceModel.AbstractClass
 
             Vfd_st = Eq_st + (Xd-Xdp)*Id;
             omega_st = 0;
-            vq_st = Eq_st;
-            vd_st = 0;
+            vq_st = Eq_st - Xdp*Id;
+            vd_st = Iq*Xq;
             zeta_st = Vfd_st;
             obj.E_st = Eq_st;
             v_st = [vd_st;vq_st];

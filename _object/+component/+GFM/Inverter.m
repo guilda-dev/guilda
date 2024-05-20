@@ -193,8 +193,8 @@ classdef Inverter < component
                                 -L_g*omega 0];
 
                 if (any(strcmp(pXname,'Xd')))
-                    V_dq = v_dq + [0 pX.Xq; -pX.Xd_p 0]* I_dq + grid_tensor * I_dq;
-                    %V_dq = v_dq + grid_tensor * I_dq;
+                    %V_dq = v_dq + [0 pX.Xq; -pX.Xd_p 0]* I_dq + grid_tensor * I_dq;
+                    V_dq = v_dq + grid_tensor * I_dq;
                 else
                     V_dq = v_dq + grid_tensor * I_dq;
                 end
