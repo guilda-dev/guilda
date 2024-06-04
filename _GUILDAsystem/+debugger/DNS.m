@@ -29,7 +29,7 @@ function address = DNS(domain)
                 address = 'bus.PV';
             case 'bus_slack'
                 address = 'bus.slack';
-                    
+
         % 発電機モデル
             case 'generator_1axis'
                 address = 'component.generator.one_axis';
@@ -39,6 +39,10 @@ function address = DNS(domain)
                 address = 'component.generator.classical';
             case 'generator_park'
                 address = 'component.generator.park';
+            case 'generator_1axis_okada'
+                address = 'itomasa.okada.one_axis';
+            case 'generator_1axis_simple'
+                address = 'itomasa.okada.one_axis_simple';
 
         % 負荷モデル
             case 'load_impedance'

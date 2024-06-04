@@ -31,10 +31,9 @@ classdef sadamoto2019 < component.generator.avr.base
             nx = 1;
         end
         
-        function [dVfd, Vfd, Vap] = get_Vfd(obj, Vfd, Vabs, Efd, u)
+        function [dVfd, Vfd] = get_Vfd(obj, Vfd, Vabs, Efd, u)
             Vef = obj.Ka*(Vabs-obj.Vabs_st+u(1));
             dVfd = (-Vfd+obj.Vfd_st-Vef)/obj.Te;
-            Vap = Vfd;
         end
 
         function [x,u] = initialize(obj, Vfd, V)
@@ -45,7 +44,7 @@ classdef sadamoto2019 < component.generator.avr.base
         end
         
         function [dVfd, Vfd] = get_Vfd_linear(obj, Vfd, Vabs, Efd, u)
-            [dVfd, Vfd] = get_Vfd(obj, Vrfd, Vabs, u);
+            [dVfd, Vfd] = get_Vfd(obj, Vfd, Vabs, u);
         end
         
         function [A, B, C, D] = get_linear_matrix(obj)
