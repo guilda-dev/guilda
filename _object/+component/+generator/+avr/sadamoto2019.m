@@ -41,6 +41,14 @@ classdef sadamoto2019 < component.generator.avr.base
             obj.Vabs_st = V;
             x = Vfd;
             u = 0;
+
+            [A, B, C, D] = obj.get_linear_matrix();
+            sys = ss(A, B, C, D);
+            sys.InputGroup.Vabs = 1;
+            sys.InputGroup.u_avr = 3;
+            sys.InputGroup.Efd = 2;
+            sys.OutputGroup.Vfd = 1;
+            obj.sys = sys;
         end
         
         function [dVfd, Vfd] = get_Vfd_linear(obj, Vfd, Vabs, Efd, u)
