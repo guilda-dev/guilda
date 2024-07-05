@@ -264,6 +264,9 @@ classdef animator < matlab.mixin.SetGet
 
         function mark_fault(obj,t)
             t = obj.faultdata.time-t;
+            if isempty(t)
+                return; 
+            end
             idx = t(:,1).*t(:,2) <= 0;
             for i = 1:numel(idx)
                 if idx(i) && ~isgraphics(obj.faultPlot{i})
