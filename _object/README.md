@@ -139,7 +139,7 @@ GUILDAについては [こちら](../README.md) を参照ください。<br>
 
 以下は、IEEE68busを基準にしたときのネットワークを構成する各要素の比較です。
 
-||母線番号|IEEE\_68bus|IEEE\_68bus\_original[^1]|IEEE\_68bus\_past[^1]|
+||母線番号|IEEE68bus|IEEE68bus_original[^1]|IEEE68bus_past[^1]|
 |:--:|:--:|:--:|:--:|:--:|:--:|
 |送電網|1-16|変圧器なし|一部変圧器あり|一部変圧器あり<br>(IEEE\_68bus\_originalと同じ)|
 |発電機|1-12|-|Mの値が68busの値の2倍|Mの値が68busの値の2倍|
