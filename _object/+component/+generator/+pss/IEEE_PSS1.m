@@ -6,6 +6,8 @@ classdef IEEE_PSS1 < component.generator.abstract.SubClass
 % 　引数　： parameter >>1. string型. "Kundur", "Kundur12_5", "Kundur12_8", "Board", "Chow"
 %                    >>2. table型.「'Kpss','Tws','Td1','Tn1','Td2','Tn2','V_min','Vmax'」を列名として定義
 %
+% << Mode Discription >>
+%   教科書p.230~232参照
 %
 % << DataSheet for AVR IEEE_ST1 >>
 %
