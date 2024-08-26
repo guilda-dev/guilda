@@ -139,24 +139,41 @@ GUILDAについては [こちら](../README.md) を参照ください。<br>
 
 以下は、IEEE68busを基準にしたときのネットワークを構成する各要素の比較です。
 
-||母線番号|IEEE68bus|IEEE68bus_original[^1]|IEEE68bus_past[^1]|
+||母線番号|IEEE68bus|IEEE68bus_original|IEEE68bus_past|
 |:--:|:--:|:--:|:--:|:--:|:--:|
-|送電網|1-16|変圧器なし|一部変圧器あり|一部変圧器あり<br>(IEEE\_68bus\_originalと同じ)|
+|送電網[^1]|1-68|変圧器なし|一部変圧器あり|一部変圧器あり<br>(IEEE68bus_originalと同じ)|
+|潮流設定|1-68|-|変更なし|変更なし|
 |発電機|1-12|-|Mの値が68busの値の2倍|Mの値が68busの値の2倍|
 |発電機|13-16|-|Mの値が68busの値の2倍|Mの値が68busの値の4倍|
 |負荷|1-16|-|変更なし|変更なし|
-|avr|1-9|IEEE_ST1|IEEE_DC1|IEEE\_ST1<br>(IEEE\_68busとは異なるパラメータ)|
-|avr|10|IEEE_ST1|IEEE_ST1|IEEE\_ST1<br>(IEEE\_68busとは異なるパラメータ)|
-|avr|11-16|IEEE_ST1|avrなし|IEEE\_ST1<br>(IEEE\_68busとは異なるパラメータ)|
-|pss|1-9,11-16|IEEE_PSS1|pssなし|IEEE\_PSS1<br>(IEEE\_68busとは異なるパラメータ)|
-|pss|10|IEEE_PSS1|IEEE_PSS1|IEEE\_PSS1<br>(IEEE\_68busとは異なるパラメータ)|
+|avr|1-9|IEEE_ST1|IEEE_DC1|sadamoto2019|
+|avr|10|IEEE_ST1|IEEE_ST1<br>(IEEE68busと異なるパラメータ)|sadamoto2019|
+|avr|11-16|IEEE_ST1|なし|sadamoto2019|
+|pss|1-9,11-16|IEEE_PSS1|なし|sadamoto2019|
+|pss|10|IEEE_PSS1|IEEE_PSS1<br>(IEEE68busと異なるパラメータ)|sadamoto2019|
 
-[^1]: IEEE\_68bus\_originalとIEEE\_68bus\_past
+[^1]: 送電網パラメータはtap(変圧器のパラメータ)を除き、すべて同一
 
 <a id="anchor6-2"></a>                
 ### 3-machine 9bus system
+- IEEE9bus
+	- Power System Dynamics and Stability : With Synchrophasor Measurement and Power System Toolbox p.142~144
+- IEEE9bus_past
+	- GUILDA前身となるシミュレータで使用したモデル
 
+以下は、IEEE9busを基準にしたときのネットワークを構成する各要素の比較です。
+
+||母線番号|IEEE9bus|IEEE9bus_past|
+|:-:|:-:|:-:|:-:|
+|送電網|1-9|-<br>(変圧器なし, ロスあり)|変更なし|
+|潮流設定|1|-|異なるP_genの値|
+|潮流設定|2-9|-|変更なし|
+|発電機|1-3|-|すべて異なるパラメータ|
+|avr|1-3|IEEE\_DC1|sadamoto2019|
+|pss|1-3|なし|sadamto2019|
 
 <a id="anchor6-3"></a>
 ### 3bus test system
+- Tutorial3bus
+	- GUILDA Doc(Tutorial)で作成した3busテストシステム
 
