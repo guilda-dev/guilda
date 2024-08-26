@@ -9,6 +9,9 @@ classdef pss_sadamoto2019 < component.generator.abstract.SubClass
 % T.sadamoto, Dynamic Modeling, Stability, and Control of Power Systems With Distributed Energy Resources: Handling Faults Using Two Control Methods in Tandem, IEEE Control Systems Magazine, 2019.
 % 　Kpss, Tpss, TL1p, TL1,  TL2p, TL2
 % 　250,  10,   0.07, 0.02, 0.07, 0.02
+%
+% 　引数　： parameter >>table型.「'Kpss', 'Tpss', 'TL1p', 'TL1', 'TL2p', 'TL2'」を列名として定義
+%
 
     properties(SetAccess=protected)
         mode
