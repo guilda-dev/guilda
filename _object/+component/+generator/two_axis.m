@@ -1,6 +1,6 @@
 classdef two_axis < component.generator.abstract.Machine
 %モデル　: 同期発電機の２軸モデル
-%　状態　: ３変数「回転子偏角"delta",周波数偏差"omega",内部電圧"Ed","Eq"」
+%　状態　: ４変数「回転子偏角"delta",周波数偏差"omega",内部電圧"Ed","Eq"」
 %　　　　  * AVRやPSSが付加されるとそれらの状態も追加される
 %　入力　: ２ポート「界磁入力"Vfield", 機械入力"Pmech"」
 %実行方法: obj =　component.generator.two_axis(parameter)
