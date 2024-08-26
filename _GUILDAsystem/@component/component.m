@@ -38,7 +38,7 @@ classdef component < handle & base_class.HasStateInput & base_class.HasGridCode 
         u_func = @(obj,u) obj.u_equilibrium + u;
     end
     
-    properties(Access=protected,Dependent)
+    properties(Dependent)
         V_st
         I_st
     end
