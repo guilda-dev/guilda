@@ -1,9 +1,9 @@
 classdef PVarg < bus
 % モデル  ：PVarg母線
 %親クラス：busクラス
-%実行方法：obj = bus.PV(P, V, shunt)
+%実行方法：obj = bus.PV(P, Vangle, shunt)
 %　引数　：・　P　：有効電力Pの潮流設定値
-%　　　　　・　V　：電圧の絶対値|V|の潮流設定値
+%　　　　　・　Vangle　：電圧の偏角∠Vの潮流設定値
 %　　　　　・　shunt　：母線とグラウンドの間のアドミタンスの値
 %　出力　：busクラスのインスタンス
     

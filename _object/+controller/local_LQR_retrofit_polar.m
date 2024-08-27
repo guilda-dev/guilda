@@ -1,6 +1,14 @@
-% 実装内容は local_LQR_retrofit.m と同じ
-% modelの出力 V が極座標表示で得られる場合の実装
 classdef local_LQR_retrofit_polar <  controller
+% モデル  ：内部制御器がLQRのレトロフィットコントローラ（モデル入出力が極座標表示）
+% 親クラス：controllerクラス
+% 実行方法：obj = local_LQR_retrofit_polar(net, idx, Q, R, model, model_agc)
+% 　引数　：・net  ：networkクラスのインスタンス
+% 　　　　　・　idx  ： double配列。制御対象の母線番号
+% 　　　　　・　Q  ： double配列。状態量の重み行列
+% 　　　　　・　R  ： double配列。入力量の重み行列
+% 　　　　　・　model  ：ss型。環境モデルの一部 （(delta, E)->(angleV, absV））。入出力は極座標表示
+% 　　　　　・　model_agc  ：ss型。AGCのモデル
+% 　出力　：controllerクラスのインスタンス
 
     properties(SetAccess=protected)
         type = 'local';

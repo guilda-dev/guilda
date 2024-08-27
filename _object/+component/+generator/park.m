@@ -1,6 +1,6 @@
 classdef park < component.generator.abstract.Machine
 %モデル　: 同期発電機のparkモデル
-%　状態　: ５変数「回転子偏角"delta",周波数偏差"omega",内部電圧"Eq","Ed",鎖交磁束"psiq","psid"」
+%　状態　: ６変数「回転子偏角"delta",周波数偏差"omega",内部電圧"Eq","Ed",鎖交磁束"psiq","psid"」
 %　　　　  * AVRやPSSが付加されるとそれらの状態も追加される
 %　入力　: ２ポート「界磁入力"Vfield", 機械入力"Pmech"」
 %実行方法: obj =　component.generator.park(parameter)

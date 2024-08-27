@@ -8,6 +8,9 @@ classdef avr_sadamoto2019 < component.generator.avr.IEEE_ST1
 % 　Ka,   Te
 % 　0.05, 200
 %
+% 　引数　： parameter >>table型.「'Ka', 'Te'」を列名として定義
+%
+%
 % component.generator.avr.IEEE_ST1("sadamoto")と同じ構造を持つが、Ka, Teのみを変更する
 %    
     properties
