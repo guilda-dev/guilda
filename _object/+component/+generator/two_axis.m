@@ -94,52 +94,52 @@ classdef two_axis < component.generator.abstract.Machine
             Xqp = obj.parameter{:, 'Xq_p'};
 
 
-                % 発電機の平衡点を計算
+            % 発電機の平衡点を計算
 
-                delta = Vangle + atan(P/(Q+Vabs^2/Xq));
-                omega = 0;
+            delta = Vangle + atan(P/(Q+Vabs^2/Xq));
+            omega = 0;
 
-                tensor = [ sin(delta), -cos(delta);...
-                           cos(delta),  sin(delta)];            
-                Idq = tensor * tools.complex2vec(I);
-                Vdq = tensor * tools.complex2vec(V);
+            tensor = [ sin(delta), -cos(delta);...
+                       cos(delta),  sin(delta)];            
+            Idq = tensor * tools.complex2vec(I);
+            Vdq = tensor * tools.complex2vec(V);
 
-                Eq = Vdq(2) + Xdp*Idq(1);
-                Ed = Vdq(1) - Xqp*Idq(2);
-                
+            Eq = Vdq(2) + Xdp*Idq(1);
+            Ed = Vdq(1) - Xqp*Idq(2);
+            
 
-                Vfd = Eq + (Xd-Xdp) * Idq(1); 
-
-
-                % delta = Vangle + atan(P/(Q+Vabs^2/Xq));
-                % omega = 0;
-                % Eqnum = P^2*Xdp*Xq + Q^2*Xdp*Xq + Vabs^2*Q*Xq + Vabs^2*Q*Xdp + Vabs^4;
-                % Eqden = Vabs*sqrt(P^2*Xq^2 + Q^2*Xq^2 + 2*Vabs^2*Q*Xq + Vabs^4);
-                % Eq    = Eqnum/Eqden;
-                % Ednum = (Xq-Xqp)*Vabs*P;
-                % Edden = sqrt(P^2*Xq^2 + Q^2*Xq^2 + 2*Vabs^2*Q*Xq +Vabs^4);
-                % Ed    = Ednum/Edden
-                % Vfd   = Eq + (Xd-Xdp)*Iabs*sin(delta-Iangle);
+            Vfd = Eq + (Xd-Xdp) * Idq(1); 
 
 
-                % 発電機のサブクラスの計算
-                switch flag
-                    case 'get'
-                        [x_avr,u_avr] = obj.avr.get_equilibrium(Vabs,Vfd);
-                        [x_gov,u_gov] = obj.governor.get_equilibrium(omega, P);
-                        [x_pss,u_pss] = obj.pss.get_equilibrium(omega);
-        
-                        x_st = [delta; omega; Eq; Ed; x_avr; x_pss; x_gov];
-                        u_st = [u_avr; u_pss; u_gov];
+            % delta = Vangle + atan(P/(Q+Vabs^2/Xq));
+            % omega = 0;
+            % Eqnum = P^2*Xdp*Xq + Q^2*Xdp*Xq + Vabs^2*Q*Xq + Vabs^2*Q*Xdp + Vabs^4;
+            % Eqden = Vabs*sqrt(P^2*Xq^2 + Q^2*Xq^2 + 2*Vabs^2*Q*Xq + Vabs^4);
+            % Eq    = Eqnum/Eqden;
+            % Ednum = (Xq-Xqp)*Vabs*P;
+            % Edden = sqrt(P^2*Xq^2 + Q^2*Xq^2 + 2*Vabs^2*Q*Xq +Vabs^4);
+            % Ed    = Ednum/Edden
+            % Vfd   = Eq + (Xd-Xdp)*Iabs*sin(delta-Iangle);
 
-                    case 'set'
-                        [x_avr,u_avr] = obj.avr.set_equilibrium(Vabs,Vfd);      %#ok
-                        [x_gov,u_gov] = obj.governor.set_equilibrium(omega, P); %#ok
-                        [x_pss,u_pss] = obj.pss.set_equilibrium(omega);         %#ok
 
-                        x_st = [delta; omega; Eq; Ed];
-                        u_st = [];
-                end
+            % 発電機のサブクラスの計算
+            switch flag
+                case 'get'
+                    [x_avr,u_avr] = obj.avr.get_equilibrium(Vabs,Vfd);
+                    [x_gov,u_gov] = obj.governor.get_equilibrium(omega, P);
+                    [x_pss,u_pss] = obj.pss.get_equilibrium(omega);
+    
+                    x_st = [delta; omega; Eq; Ed; x_avr; x_pss; x_gov];
+                    u_st = [u_avr; u_pss; u_gov];
+
+                case 'set'
+                    [x_avr,u_avr] = obj.avr.set_equilibrium(Vabs,Vfd);      %#ok
+                    [x_gov,u_gov] = obj.governor.set_equilibrium(omega, P); %#ok
+                    [x_pss,u_pss] = obj.pss.set_equilibrium(omega);         %#ok
+
+                    x_st = [delta; omega; Eq; Ed];
+                    u_st = [];
+            end
         end
 
         % GFMIのリファレンスモデルとして実装するために必要なメソッド
