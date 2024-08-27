@@ -85,7 +85,9 @@ classdef SubClass < base_class.handleCopyable & base_class.Edit_Monitoring
         % 線形化モデルの導出に関わるメソッド
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function set_linear_matrix(obj,varargin)
-            [sys.A,sys.B,sys.C,sys.D] = get_linear_matrix(obj,varargin{:});
+            x_st = obj.x_equilibrium;
+            u_st = obj.u_equilibrium;
+            [sys.A,sys.B,sys.C,sys.D] = obj.get_linear_matrix(x_st,u_st,varargin{:});
             obj.system_matrix = sys;
         end
 
@@ -133,15 +135,15 @@ classdef SubClass < base_class.handleCopyable & base_class.Edit_Monitoring
 
         end
 
-
         function M = Mass(obj)
             M = eye(obj.get_nx);
         end
-        function set_equilibrium(obj,varargin)
+
+        function [x_st, u_st] = set_equilibrium(obj,varargin)
             [x_st, u_st] = obj.get_equilibrium(varargin{:});
             obj.x_equilibrium = x_st;
             obj.u_equilibrium = u_st;
-            obj.set_linear_matrix(x_st,u_st,varargin{:});
+            obj.set_linear_matrix(varargin{:})
         end
 
     end
