@@ -77,9 +77,11 @@ classdef two_axis < component.generator.abstract.Machine
         
         % 潮流計算結果から逆算して平衡点を算出
         function [x_st,u_st] = get_equilibrium(obj, V, I, flag)
-            if nargin<2
-                V = obj.V_equilibrium;
-                I = obj.I_equilibrium;
+            arguments
+                obj 
+                V   = obj.V_equilibrium;
+                I   = obj.I_equilibrium;
+                flag = 'get';
             end
             Vangle = angle(V);
             Vabs = abs(V);

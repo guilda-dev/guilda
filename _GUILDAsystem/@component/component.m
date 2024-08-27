@@ -198,7 +198,13 @@ classdef component < handle & base_class.HasStateInput & base_class.HasGridCode 
                     V = obj.V_equilibrium;
                     I = obj.I_equilibrium;
                 end
-                [x_st, u_st] = obj.get_equilibrium(V,I);
+                
+                try
+                    [x_st, u_st] = obj.get_equilibrium(V,I,'set');
+                catch
+                    [x_st, u_st] = obj.get_equilibrium(V,I);
+                end
+
                 if numel(x_st)==0
                     x_st = zeros(0,1);
                 end
