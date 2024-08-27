@@ -22,25 +22,29 @@ classdef one_axis < component.generator.abstract.Machine
         % 機器のダイナミクスを決めるメソッド
             function [dx, con] = get_dx_constraint(obj, ~, x, V, I, u)
                 p = obj.parameter{:,{'Xd','Xd_p','Xq','Td_p','M','D'}};
-                Xd   = p(1);    Xdp  = p(2);
+                Xd   = p(1);
+                Xdp  = p(2);
                 Xq   = p(3);
-                Td_p = p(4);
-                M    = p(5);    d    = p(6);
+                Tdp = p(4);
+                M    = p(5);
+                d    = p(6);
                 
                 % 状態の抽出
                 delta = x(1);
                 omega = x(2);
-                E     = x(3);
+                Edq   = [ 0; x(3) ];
                 
                 Vabs = norm(V);
-                Vangle = atan2(V(2), V(1));
                 
-                Vabscos = V(1)*cos(delta)+V(2)*sin(delta);
-                Vabssin = V(1)*sin(delta)-V(2)*cos(delta);
+                tensor = [ sin(delta), -cos(delta);...
+                           cos(delta),  sin(delta)];
                 
-                Efd= Xd*E/Xdp - (Xd/Xdp-1)*Vabscos;
-                P  = Vabs*E*sin(delta-Vangle)/Xdp - Vabs^2*(1/Xdp-1/Xq)*sin(2*(delta-Vangle))/2;
-                
+                Vdq = tensor * V;
+                Idq = tensor * I;
+
+                Efd= Edq(2) + (Xd-Xdp)*Idq(1);
+                P  = V.'*I;
+
                 
                 % AVR,PSS,Governorの状態/入力を抽出
                     x_sub = x(4:end);
@@ -49,15 +53,85 @@ classdef one_axis < component.generator.abstract.Machine
 
                 % 微分項の計算
                     ddelta = obj.omega0 * omega;
-                    domega = (- d*omega - P + Pm )/M;
-                    dE     = (          -  Efd + Vfd)/Td_p;
-                    dx = [ddelta; domega; dE; dx_sub];
+                    domega = (- d*omega - P + Pm ) / M;
+                    dEq    = (       -  Efd + Vfd) / Tdp;
+
+                    dx = [ddelta; domega; dEq; dx_sub];
                     
                 % 制約条件の計算
-                    Ir =  (E-Vabscos)*sin(delta)/Xdp + Vabssin*cos(delta)/Xq;
-                    Ii = -(E-Vabscos)*cos(delta)/Xdp + Vabssin*sin(delta)/Xq;
-                    con = I - [Ir; Ii];
+                    Iri = tensor \ [     0, 1/Xdp ;...
+                                     -1/Xq,     0 ] * (Edq-Vdq);
+                    con = I - Iri;
             end
+
+        % 定常潮流状態からモデルの平衡点と定常入力値を求めるメソッド
+            function [x_st,u_st] = get_equilibrium(obj,V,I,flag)
+                arguments
+                    obj 
+                    V   = obj.V_equilibrium;
+                    I   = obj.I_equilibrium;
+                    flag = 'get';
+                end
+
+                Xd  = obj.parameter.Xd;
+                Xdp = obj.parameter.Xd_p;
+                Xq  = obj.parameter.Xq;
+                
+                Vangle = angle(V);
+                Vabs   =  abs(V);
+                Pow    = conj(I)*V;
+                P      = real(Pow);
+                Q      = imag(Pow);
+                
+                
+                % 発電機の平衡点を計算
+                delta  = Vangle + atan(P/(Q+Vabs^2/Xq));
+                omega  = 0;
+                tensor = [ sin(delta), -cos(delta);...
+                           cos(delta),  sin(delta)];            
+                Idq = tensor * tools.complex2vec(I);
+                Vdq = tensor * tools.complex2vec(V);
+
+                Eq = Vdq(2) + Xdp*Idq(1);
+                % Ed = Vdq(1) - Xqp*Idq(2);
+
+                Vfd = Eq + (Xd-Xdp) * Idq(1); 
+
+
+                % 発電機のサブクラスの計算
+                switch flag
+                    case 'get'
+                        [x_avr,u_avr] = obj.avr.get_equilibrium(Vabs,Vfd);
+                        [x_gov,u_gov] = obj.governor.get_equilibrium(omega, P);
+                        [x_pss,u_pss] = obj.pss.get_equilibrium(omega);
+        
+                        x_st = [delta; omega; Eq; x_avr; x_pss; x_gov];
+                        u_st = [u_avr; u_pss; u_gov];
+
+                    case 'set'
+                        obj.avr.set_equilibrium(Vabs,Vfd);
+                        obj.governor.set_equilibrium(omega, P);
+                        obj.pss.set_equilibrium(omega);
+
+                        x_st = [delta; omega; Eq];
+                        u_st = [];
+                end
+            end
+
+            
+        % GFMIのリファレンスモデルとして実装するために必要なメソッド
+            function [delta,omega,Edq] = get_Vterminal(obj,x,V,I,u)%#ok
+                delta = x(1);
+
+                %[周波数偏差]から[周波数のpu値]へ変換
+                omega = x(2);
+
+                %１軸はEdが0として近似されたモデル
+                Ed = 0;
+                Eq = x(3);
+                Edq = [Ed; Eq];
+            end
+
 
             function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, x_st, Vst, Ist)
 
@@ -175,61 +249,7 @@ classdef one_axis < component.generator.abstract.Machine
                 S = [];
             end
 
-        % 定常潮流状態からモデルの平衡点と定常入力値を求めるメソッド
-            function [x_st,u_st] = get_equilibrium(obj,V,I,flag)
-                if nargin<4
-                    flag = 'get';
-                end
-                
-                Vangle = angle(V);
-                Vabs =  abs(V);
-                Pow = conj(I)*V;
-                P = real(Pow);
-                Q = imag(Pow);
-                Xd  = obj.parameter{:, 'Xd'};
-                Xdp = obj.parameter{:, 'Xd_p'};
-                Xq  = obj.parameter{:, 'Xq'};
-                
-                % 発電機の平衡点を計算
-                Enum = Vabs^4 + Q^2*Xdp*Xq + Q*Vabs^2*Xdp + Q*Vabs^2*Xq + P^2*Xdp*Xq;
-                Eden = Vabs*sqrt(P^2*Xq^2 + Q^2*Xq^2 + 2*Q*Vabs^2*Xq + Vabs^4);
-
-                delta = Vangle + atan(P/(Q+Vabs^2/Xq));
-                omega = 0;
-                E = Enum/Eden;
-                Vfd = Xd*E/Xdp - (Xd/Xdp-1)*Vabs*cos(delta-Vangle);
-
-                % 発電機のサブクラスの計算
-                switch flag
-                    case 'get'
-                        [x_avr,u_avr] = obj.avr.get_equilibrium(Vabs,Vfd);
-                        [x_gov,u_gov] = obj.governor.get_equilibrium(omega, P);
-                        [x_pss,u_pss] = obj.pss.get_equilibrium(omega);
-                        x_st = [delta; omega; E; x_avr; x_pss; x_gov];
-                        u_st = [u_avr; u_pss; u_gov];
-
-                    case 'set'
-                        obj.avr.set_equilibrium(Vabs,Vfd);
-                        obj.governor.set_equilibrium(omega, P);
-                        obj.pss.set_equilibrium(omega);
-                        x_st = [delta; omega; E];
-                        u_st = [];
-                end
-                
-            end
-
-        % GFMIのリファレンスモデルとして実装するために必要なメソッド
-            function [delta,omega,Edq] = get_Vterminal(obj,x)%#ok
-                delta = x(1);
-
-                %[周波数偏差]から[周波数のpu値]へ変換
-                omega = 1+x(2);
-
-                %１軸はEdが0として近似されたモデル
-                Ed = 0;
-                Eq = x(3);
-                Edq = [Ed; Eq];
-            end
+        
 
         function [ret, sys_fb, sys_V] = get_sys(obj)
  
