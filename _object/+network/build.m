@@ -92,14 +92,10 @@ end
 
 
 function Tab_memory = set_any(targetObj,Tab,Tab_memory,filepath,type_generator)
-    if nargin<5 || isempty(type_generator)
-        if ismember('SetClass',fieldnames(Tab))
-            name = Tab{:,'SetClass'}{1};
-        else
-            return;
-        end
-    else
-        switch type_generator
+    if ismember('SetClass',fieldnames(Tab)) && ismember('SetMethod',fieldnames(Tab))
+        name   = Tab{:,'SetClass'}{1};
+        if contains(name,'generator') && ~isempty(type_generator)
+            switch type_generator
             case {'generator_1axis', 'generator_one_axis', '1axis', 'one_axis'}
                 name = 'generator_1axis';
             case {'generator_2axis', 'generator_two_axis', '2axis', 'two_axis'}
@@ -110,36 +106,35 @@ function Tab_memory = set_any(targetObj,Tab,Tab_memory,filepath,type_generator)
                 name = 'generator_park';
             otherwise
                 error('type_generator is not defined');
-        end
-    end
-    if ~isempty(name)
-        name   = split(name,  {' ',',','/','-',newline,filesep});
-    end
-    if ismember('SetMethod',fieldnames(Tab))
-        method = Tab{:,'SetMethod'}{1};
-    end
-    method = split(method,{' ',',','/','-',newline,filesep});
-    for i = 1:numel(name)
-        [domain,data,Tab_memory] = get_obj(name{i},Tab_memory,filepath);
-        if isempty(data)
-            if ~isempty(domain)
-                try 
-                    Instance = eval([domain,'()']);
-                    targetObj.(method{i})(Instance);
-                catch
-                    warning(['Could not construct "',domain,'" to assign to class "',class(targetObj),'"'])
-                end
             end
-        else
-            idx = find(data{:,'ID'} == Tab{:,'ID'});
-            for j = idx(:)'
-                data_j = data(j,:);
-                except = {'ID','SetClass','SetMethod'};
-                include = ismember(except,data_j.Properties.VariableNames);
-                data_j(:,except(include)) = [];
-                Instance = eval([domain,'(data_j)']);
-                Tab_memory = set_any(Instance,data(j,:),Tab_memory,filepath);
-                targetObj.(method{i})(Instance);
+        end
+        if ~isempty(name)
+            name   = split(name,  {' ',',','/','-',newline,filesep});
+            method = Tab{:,'SetMethod'}{1};
+            method = split(method,{' ',',','/','-',newline,filesep});
+            for i = 1:numel(name)
+                [domain,data,Tab_memory] = get_obj(name{i},Tab_memory,filepath);
+                if isempty(data)
+                    if ~isempty(domain)
+                        try 
+                            Instance = eval([domain,'()']);
+                            targetObj.(method{i})(Instance);
+                        catch ME
+                            warning(['Could not construct "',domain,'" to assign to class "',class(targetObj),'"'])
+                        end
+                    end
+                else
+                    idx = find(data{:,'ID'} == Tab{:,'ID'});
+                    for j = idx(:)'
+                        data_j = data(j,:);
+                        except = {'ID','SetClass','SetMethod'};
+                        include = ismember(except,data_j.Properties.VariableNames);
+                        data_j(:,except(include)) = [];
+                        Instance = eval([domain,'(data_j)']);
+                        Tab_memory = set_any(Instance,data(j,:),Tab_memory,filepath);
+                        targetObj.(method{i})(Instance);
+                    end
+                end
             end
         end
     end
