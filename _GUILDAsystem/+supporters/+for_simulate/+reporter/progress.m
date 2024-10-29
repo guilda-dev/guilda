@@ -10,7 +10,7 @@ classdef progress < handle
 
     end
 
-    properties(Dependent,Access=protected)
+    properties(Dependent)
         tlim
     end
 
@@ -82,7 +82,7 @@ classdef progress < handle
                     delete(obj.dialog)
                     return
                 end
-                if numel(t)==1 && ( (t-obj.last_time) >= obj.sampling_period || t == obj.tlim(end) )
+                if isscalar(t) && ( (t-obj.last_time) >= obj.sampling_period || t == obj.tlim(end) )
                     obj.last_time = t;
                     obj.percent = (t-obj.tlim(1))/(obj.tlim(end)-obj.tlim(1));
                     waitbar(obj.percent,obj.dialog,sprintf('Time: %0.2f(s) / %0.2f(s)',t,obj.tlim(end)))

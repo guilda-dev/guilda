@@ -8,6 +8,7 @@ end
 if nargin < 4 || isempty(is_polar)
     is_polar = true;
 end
+obj.check_EditLog(["bus";"branch";"component"]);
 
 n_bus = numel(obj.a_bus);
 if sum(idx_area>n_bus)>0

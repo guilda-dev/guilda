@@ -1,0 +1,118 @@
+{
+    "startup":{
+        "Tutorial" : "off",
+        "gitpull"  : "off",
+        "gitbranch": "current",
+        "version"  : "latest"
+    },
+    "simulate":{
+    },
+    "calculate_power_flow":{
+        "fsolve" : {
+            "MaxFunEvals"  : 1e6,
+            "MaxIterations": 2e5,
+            "Display"      : "none",
+            "PlotFcn"      : [],
+            "UseParallel"  : false
+        },
+        "option": {
+            "return_vector": false,
+            "warning"      : "warning",
+            "message"      : false
+        }
+    },
+    "GUI":{
+        "print_cmd": "off"
+    },
+    "git":{
+        "message": "disp",
+        "clean_UntrackedFiles": true,
+        "stash_UntrackedFiles": true,
+        "clean":[
+            "_GUILDAsystem",
+            "_object",
+            "_Tutorial",
+            "_UserTool"
+            ],
+        "stash":[
+            "_object",
+            "_UserTool"
+            ]
+    },
+    "class_dictionary":[
+        {
+            "DocPath": [
+                "_Tutorial",
+                "ClassManual",
+                "Branch_variety.mlx"
+                ],
+            "ClassList":[
+                "branch.pi",
+                "branch.pi_transformer",
+                "branch.T"
+                ]
+        },
+        {
+            "DocPath": [
+                "_Tutorial",
+                "ClassManual",
+                "Bus_variety.mlx"
+                ],
+            "ClassList":[
+                "bus.PV",
+                "bus.PQ",
+                "bus.slack"
+                ]
+        },
+        {
+            "DocPath": [
+                "_Tutorial",
+                "ClassManual",
+                "Component_Generator.mlx"
+                ],
+            "ClassList":[
+                "component.generator.abstract",
+                "component.generator.classical",
+                "component.generator.one_axis",
+                "component.generator.two_axis",
+                "component.generator.park"
+                ]
+        },
+        {
+            "DocPath": [
+                "_Tutorial",
+                "ClassManual",
+                "Component_Load.mlx"
+                ],
+            "ClassList":[
+                "component.load.abstract",
+                "component.load.current",
+                "component.load.impedance",
+                "component.load.power",
+                "component.load.voltage"
+                ]
+        },
+        {
+            "DocPath": [
+                "_Tutorial",
+                "ClassManual",
+                "Controller_AGC.mlx"
+                ],
+            "ClassList":[
+                "controller.broadcast_PI_AGC"
+                ]
+        },
+        {
+            "DocPath": [
+                "_Tutorial",
+                "ClassManual",
+                "Controller_LQR.mlx"
+                ],
+            "ClassList":[
+                "controller.local_LQR"
+                ]
+        }
+    ]
+}
+  
+  

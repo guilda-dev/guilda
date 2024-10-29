@@ -1,4 +1,4 @@
-classdef droop < component.GFM.ReferenceModel.base
+classdef droop < component.GFM.ReferenceModel.AbstractClass
     properties
         P_st
         Vabs_st

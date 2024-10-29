@@ -1,11 +1,11 @@
 function out = information(obj,varargin)
     %引数に与えられたネットワークのモデルのパラメータを調べる用の関数
+    obj.check_EditLog;
 
     p = inputParser;
     p.CaseSensitive = false;
     addParameter(p, 'do_report', true);
     addParameter(p, 'graph'  , false);
-    addParameter(p, 'HTML'   , false);
     addParameter(p, 'TeX'    , false);
     addParameter(p, 'TeXpath', []   );
     

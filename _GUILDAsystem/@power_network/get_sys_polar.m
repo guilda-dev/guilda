@@ -4,6 +4,7 @@ function sys = get_sys_polar(obj, with_controller)
 if nargin < 2
     with_controller = false;
 end
+obj.check_EditLog(["bus";"branch";"component"]);
 
 [A_each, B_each, C_each, D_each, BV_each, DV_each, BI_each, DI_each, R_each, S_each] =...
     tools.cellfun(@(b) b.component.get_linear_matrix(), obj.a_bus);

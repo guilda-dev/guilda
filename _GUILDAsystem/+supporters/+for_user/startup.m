@@ -1,34 +1,53 @@
 function startup()
     
-    disp('----------------------------------------------------------------------------------------------------');
+    disp([newline,newline]);
     disp('Welcome to GUILDA!!');
-    disp(" ")
+    disp('==========================================================================================');
     
-    disp('<<< Start git pull >>>');
-    path_guilda = pwd;
-    c_path_guilda = split(path_guilda, '/');
-    path_code_share = strcat('../../../', c_path_guilda{numel(c_path_guilda)-2});
-    
-    url_code_share = 'https://github.com/guilda-dev/guilda_code_share.git';
+    data = supporters.for_user.config;
+    data = data.startup;
 
-    try
-        [status, cmdout] = system(strcat("git -C ", path_code_share, " remote -v"));
-        if and(status==0, contains(cmdout, url_code_share))
-            status = system(strcat("git -C ", path_code_share, " pull"));
-            if status~=0
-                warning("git pull error in guilda_code_share");
-            end
-            addpath(path_code_share);
-        end
-    
-        status = system("git pull");
-        if status~=0
-            warning("git pull error in guilda");
-        end
-        disp('<<< Finish git pull >>>');
-    catch
-        warning('error in git pull');
+    % プロジェクト開始時にTutorialのMail.mlxを起動する
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    switch data.Tutorial
+        case "on"
+            open _Tutorial/Main.mlx
+        case "off"
+        otherwise
     end
-    disp(newline);
+    
+    % 旧バージョンの場合version_supportをパスに追加
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    if isnumeric(data.version)
+        list = dir(fullfile(tools.pwd,'_GUILDAsystem','_version_support'));
+        for i = 1:numel(list)
+            name = list(i).name;
+            if contains(name,'ver') && list(i).isdir
+                veri = str2double(replace(name,'ver',''));
+                if ~isnan(veri) && veri>=data.version
+                    addpath(fullfile(tools.pwd,'_GUILDAsystem','_version_support',name))
+                end
+            end
+        end
+    else
+        switch string(data.version)
+            case "latest"
+            otherwise
+        end
+    end
 
+
+
+    % gitのプルの実行
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    ispull = strcmp(data.gitpull,'on');
+    isgit  = isfolder([tools.pwd,filesep,'.git']);
+    if ispull && isgit
+        supporters.for_user.gitpull;
+    end
+
+    
+    disp('  ')
+    disp('==========================================================================================');
+    disp(newline);
 end

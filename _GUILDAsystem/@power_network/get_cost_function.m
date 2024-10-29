@@ -46,7 +46,7 @@ br_function_state = find(tools.vcellfun(@(br) ~isempty(br.CostFunction), a_branc
 for i = 1:numel(br_function_state)
     idx = br_function_state(i);
     br = a_branch{idx};
-    cost_br = tools.varrayfun(@(j) horz(br.CostFunction(obj,t(j), V{br.from}(j,:),V{br.to}(j,:))), T');
+    cost_br = tools.varrayfun(@(j) horz(br.CostFunction(br, t(j), V{br.from}(j,:),V{br.to}(j,:))), T');
     %cost_br(isnan(cost_br)) = 0;
     cost_breakdown.branch{idx} = cost_br;
 end
@@ -68,7 +68,7 @@ component_function_state = find(tools.vcellfun(@(b) ~isempty(b.component.CostFun
 for i = 1:numel(component_function_state)
     idx = component_function_state(i);
     c = obj.a_bus{idx}.component;
-    cost_comp = tools.varrayfun(@(j) horz(c.CostFunction(a_bus{idx},t(j),X{idx}(j,:),V{idx}(j,:),I{idx}(j,:),u{idx}(j,:))), T');
+    cost_comp = tools.varrayfun(@(j) horz(c.CostFunction(c,t(j),X{idx}(j,:),V{idx}(j,:),I{idx}(j,:),u{idx}(j,:))), T');
     %cost_comp(isnan(cost_comp)) = 0;
     cost_breakdown.component{idx} = cost_comp;
 end
@@ -96,7 +96,7 @@ for i = 1:numel(controller_local_state)
         Vc = tools.arrayfun(@(i) V{i}(j,:), c.index_input(:));
         Ic = tools.arrayfun(@(i) I{i}(j,:), c.index_input(:));
         Uc = tools.arrayfun(@(o) u_local{o}(j,:), c.index_observe(:));
-        cost_breakdown.controller_local{idx}(j,:) = horz(c.CostFunction(obj,t(j),x(j),Xc,Vc,Ic,Uc));
+        cost_breakdown.controller_local{idx}(j,:) = horz(c.CostFunction(c,t(j),x(j),Xc,Vc,Ic,Uc));
     end
 end
 
