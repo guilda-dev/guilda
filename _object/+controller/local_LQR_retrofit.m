@@ -1,5 +1,3 @@
-% レトロフィット制御器の実装（内部制御器はLQR）
-% modelは+controller/+modeling/get_environmentで取得
 classdef local_LQR_retrofit <  controller
 % モデル  ：内部制御器がLQRのレトロフィットコントローラ
 % 親クラス：controllerクラス
@@ -8,8 +6,7 @@ classdef local_LQR_retrofit <  controller
 % 　　　　　・　idx  ： double配列。制御対象の母線番号
 % 　　　　　・　Q  ： double配列。状態量の重み行列
 % 　　　　　・　R  ： double配列。入力量の重み行列
-% 　　　　　・　model  ：ss型。環境モデルの一部 （(delta, E)->(angleV, absV)）。入出力は実部虚部表示
-% 　　　　　・　model_agc  ：ss型。AGCのモデル
+% 　　　　　・　model  ：ss型。環境モデルの一部 （(delta, E)->(angleV, absV)）。入出力は極座標表示。+controller/+modeling/get_environmentで取得
 % 　出力　：controllerクラスのインスタンス
 
     properties(SetAccess=protected)
@@ -45,6 +42,7 @@ classdef local_LQR_retrofit <  controller
                 model = ss(zeros(2,2));
                 model.InputGroup.delta_m = 1;
                 model.InputGroup.E_m = 2;
+                model.OutputGroup.V_polar_m = 1:2;
                 model.OutputGroup.angleV_m = 1;
                 model.OutputGroup.absV_m = 2;
             end

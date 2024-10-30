@@ -39,10 +39,6 @@ function address = DNS(domain)
                 address = 'component.generator.classical';
             case 'generator_park'
                 address = 'component.generator.park';
-            case 'generator_1axis_okada'
-                address = 'itomasa.okada.one_axis';
-            case 'generator_1axis_simple'
-                address = 'itomasa.okada.one_axis_simple';
 
         % 負荷モデル
             case 'load_impedance'
@@ -75,7 +71,7 @@ function address = DNS(domain)
         % governor
             case 'governor'
                 address = 'component.generator.governor.base';
-        
+
         % controller
             case 'controller_broadcast_PI_AGC'
                 address = 'controller.broadcast_PI_AGC';

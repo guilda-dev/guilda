@@ -19,7 +19,7 @@ environment.OutputGroup.angleV_m = 1;
 environment.OutputGroup.absV_m = 2;
 
 subsystem = net.a_bus{idx}.component.get_sys();
-subsystem.InputGroup.u = [subsystem.InputGroup.u_avr, subsystem.InputGroup.u_governor];
+subsystem.InputGroup.u = [subsystem.InputGroup.u_avr1, subsystem.InputGroup.Pm];
 subsystem = subsystem({'delta', 'omega', 'E'}, {'Vin_polar', 'u'});
 
 if do_check
