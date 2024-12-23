@@ -279,16 +279,6 @@ classdef one_axis < component.generator.abstract.Machine
 
         % レトロフィット制御器のために必要なメソッド
         function [sys, sys_linear, sys_v] = get_sys4retrofit(obj)
-            % if ~isa(obj.avr, 'component.generator.avr.sadamoto2019')
-            %     error('avr model assumes sadamoto2019 in retrofit controller');
-            % end
-            % if ~isa(obj.pss, 'component.generator.pss.base')
-            %     error('pss model assumes base in retrofit controller');
-            % end
-            % if ~isa(obj.governor, 'component.generator.governor.base')
-            %     error('governor model assumes base in retrofit controller');
-            % end
-
             omega0 = obj.omega0;
             Xd  = obj.parameter{:, 'Xd'};
             Xdp = obj.parameter{:, 'Xd_p'};
@@ -296,23 +286,26 @@ classdef one_axis < component.generator.abstract.Machine
             Tdp= obj.parameter{:, 'Td_p'};
             M   = obj.parameter{:, 'M'};
             D   = obj.parameter{:, 'D'};
-            Tavr = obj.avr.Te;
-            Kavr = obj.avr.Ka;
+            [Aavr, Bavr, Cavr, Davr] = ssdata(obj.avr.get_sys);
+            Bavr_absV = Bavr(:, 1); Bavr_Efd = Bavr(:, 2); Bavr_pss = Bavr(:, 3);
+            Davr_absV = Davr(:, 1); Davr_Efd = Davr(:, 2); Davr_pss = Davr(:, 3);
+            n_avr = size(Aavr, 1);
             [Apss, Bpss, Cpss, Dpss] = ssdata(obj.pss.get_sys);
+            n_pss = size(Apss, 1);
 
             % x = [delta; omega; E; x_avr; x_pss]
-            A_linear = [0, omega0, 0, 0, zeros(1,3);
-                0, -D/M, 0, 0, zeros(1,3);
-                0, 0, -Xd/Xdp/Tdp, 1/Tdp, zeros(1,3);
-                0, Kavr*Dpss/Tavr, 0, -1/Tavr, Kavr*Cpss/Tavr;
-                zeros(3,1), Bpss, zeros(3,2), Apss];
+            A_linear = [0, omega0, zeros(1, 1+n_avr+n_pss);
+                0, -D/M, zeros(1, 1+n_avr+n_pss);
+                0, Davr_pss*Dpss/Tdp, (Xd/(Xdp*Tdp))*(Davr_Efd-1), Cavr/Tdp, Davr_pss*Cpss/Tdp;
+                zeros(n_avr, 1), Bavr_pss*Dpss, Bavr_Efd*Xd/Xdp, Aavr, Bavr_pss*Cpss;
+                zeros(n_pss, 1), Bpss, zeros(n_pss, 1+n_avr), Apss];
             % u = [u_governor; u_avr]
-            Bu_linear = [0,0; 1/M, 0; 0, 0; 0, -Kavr/Tavr; zeros(3,2)];
+            Bu_linear = [0,0; 1/M, 0; 0, -Davr_pss/Tdp; 0, Bavr_pss; zeros(n_pss, 2)];
             % v = [v_omega; v_E; v_x_avr]
-            Bv_linear = [0, 0, 0; 1/M, 0, 0; 0, 1/Tdp, 0; 0, 0, 1/Tavr; zeros(3,3)];
+            Bv_linear = [zeros(1, 2+n_avr); 1/M, 0, zeros(1, n_avr); 0, 1/Tdp, zeros(1, n_avr); zeros(n_avr, 2), eye(n_avr); zeros(n_pss, 2+n_avr)];
             % w = [delta, E]
-            C_linear = [1, 0, 0, 0, zeros(1,3); 0, 0, 1, 0, zeros(1,3)];
-            sys_linear = ss(A_linear, [Bu_linear, Bv_linear], C_linear, 0);
+            C_linear = [1, zeros(1, 2+n_avr+n_pss); 0, 0, 1, zeros(1, n_avr+n_pss)];
+            sys_linear = ss(A_linear, [Bu_linear, Bv_linear], C_linear, []);
             sys_linear.InputGroup.u_governor = 1;
             sys_linear.InputGroup.u_avr = 2;
             sys_linear.InputGroup.v_omega = 3;
@@ -321,20 +314,27 @@ classdef one_axis < component.generator.abstract.Machine
             sys_linear.OutputGroup.delta = 1;
             sys_linear.OutputGroup.E = 2;
 
-            delta_st = obj.x_equilibrium(1);
-            E_st = obj.x_equilibrium(3);
+            delta_st  =obj.x_equilibrium(1);
+            E_st =obj.x_equilibrium(3);
             angleV_st = angle(obj.V_equilibrium);
             absV_st = abs(obj.V_equilibrium);
-            Vabscos_st = absV_st*cos(delta_st-angleV_st);
-            Vabssin_st = absV_st*sin(delta_st-angleV_st);
-            dv_omega_delta = E_st*Vabscos_st/Xdp - (1/Xdp-1/Xq)*(Vabscos_st^2-Vabssin_st^2);
-            dv_omega_E = Vabssin_st/Xdp;
-            dv_omega_angleV = -dv_omega_delta;
-            dv_omega_absV = E_st*sin(delta_st-angleV_st)/Xdp - 2*(1/Xdp-1/Xq)*absV_st*sin(delta_st-angleV_st)*cos(delta_st-angleV_st);
-            dv_omega = [dv_omega_delta, dv_omega_E, dv_omega_angleV, dv_omega_absV];
-            dv_E = [-(Xd/Xdp-1)*Vabssin_st, 0, (Xd/Xdp-1)*Vabssin_st, (Xd/Xdp-1)*cos(delta_st-angleV_st)];
-            dv_x_avr = [0,0,0,Kavr];
-            sys_v = ss([-dv_omega; dv_E; -dv_x_avr]);
+            sin_st = sin(delta_st-angleV_st);
+            cos_st = cos(delta_st-angleV_st);
+            dv_omega_ddelta = -(absV_st*E_st/Xdp)*cos_st + ((1/Xdp)-(1/Xq))*absV_st*absV_st*(cos_st*cos_st-sin_st*sin_st);
+            dv_omega_dE = -(absV_st/Xdp)*sin_st;
+            dv_omega_dangleV = -dv_omega_ddelta;
+            dv_omega_dabsV = -(E_st/Xdp)*sin_st + 2*((1/Xdp)-(1/Xq))*absV_st*sin_st*cos_st;
+            dv_E_ddelta = -(Xd/Xdp-1)*absV_st*sin_st + Davr_Efd*((Xd/Xdp)-1)*absV_st*sin_st;
+            dv_E_dE = 0;
+            dv_E_dangleV = -dv_E_ddelta;
+            dv_E_dabsV = (Xd/Xdp-1)*cos_st + Davr_absV - Davr_Efd*((Xd/Xdp)-1)*cos_st;
+            dv_x_avr_ddelta = Bavr_Efd*(Xd/Xdp-1)*absV_st*cos_st;
+            dv_x_avr_dE = 0;
+            dv_x_avr_dangleV = -dv_x_avr_ddelta;
+            dv_x_avr_dabsV = Bavr_absV + Bavr_Efd*(Xd/Xdp-1)*sin_st;
+            sys_v = ss([dv_omega_ddelta, dv_omega_dE, dv_omega_dangleV, dv_omega_dabsV;
+                dv_E_ddelta, dv_E_dE, dv_E_dangleV, dv_E_dabsV;
+                dv_x_avr_ddelta, dv_x_avr_dE, dv_x_avr_dangleV, dv_x_avr_dabsV]);
             sys_v.InputGroup.delta = 1;
             sys_v.InputGroup.E = 2;
             sys_v.InputGroup.angleV = 3;

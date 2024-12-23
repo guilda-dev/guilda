@@ -113,7 +113,7 @@ classdef local_LQR_retrofit <  controller
             x1 = x(1:numel(obj.X0));
             x2 = x(numel(obj.X0)+1:end);
             u = zeros(2, 1);
-            u(1) = -obj.K*[(X{1}-obj.X0-x1); x2];
+            u(1) = obj.K*[(X{1}-obj.X0-x1); x2];
 
             delta = X{1}(1); delta0 = obj.delta0;
             E = X{1}(3); E0 = obj.E0;
