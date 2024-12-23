@@ -75,7 +75,7 @@ classdef local_LQR_retrofit <  controller
             else
                 obj.K = lqr(A, Bu, Q_, R);
             end
-            obj.sys_fb = ss((A-Bu*obj.K), Bu, [eye(size(A)); -obj.K], 0);
+            obj.sys_fb = ss((A-Bu*obj.K), -Bu, [eye(size(A)); obj.K], 0);
             obj.sys_fb.InputGroup.u_retrofit = 1;
             obj.sys_fb.OutputGroup.x_retrofit = 1:size(A, 1);
             obj.sys_fb.OutputGroup.u_retrofit = size(A, 1)+1;
