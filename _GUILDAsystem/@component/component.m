@@ -11,7 +11,7 @@ classdef component < handle & base_class.HasStateInput & base_class.HasGridCode 
         connected_bus
     end
 
-    properties(SetAccess = protected)
+    properties
         x_equilibrium
         u_equilibrium
     end
@@ -38,7 +38,7 @@ classdef component < handle & base_class.HasStateInput & base_class.HasGridCode 
         u_func = @(obj,u) obj.u_equilibrium + u;
     end
     
-    properties(Access=protected,Dependent)
+    properties(Dependent)
         V_st
         I_st
     end
@@ -65,9 +65,26 @@ classdef component < handle & base_class.HasStateInput & base_class.HasGridCode 
                 obj.parameter = value;
                 obj.editted("Parameter");
             end
+            function set.x_equilibrium(obj, value)
+                obj.x_equilibrium = value;
+                obj.editted("x_equilibrium");
+            end
+            function set.u_equilibrium(obj, value)
+                obj.u_equilibrium = value;
+                obj.editted("u_equilibrium");
+            end
+
 
         %% Get method
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            function val = get.x_equilibrium(obj)
+                xsub_st = tools.vcellfun(@(sub) sub.x_equilibrium(:), obj.children);
+                val = [obj.x_equilibrium; xsub_st];
+            end
+            function val = get.u_equilibrium(obj)
+                usub_st = tools.vcellfun(@(sub) sub.u_equilibrium(:), obj.children);
+                val = [obj.u_equilibrium; usub_st];
+            end
             
             function b = get.connected_bus(obj)
                 b = obj.parents{1};
@@ -159,16 +176,16 @@ classdef component < handle & base_class.HasStateInput & base_class.HasGridCode 
             function set_function(obj,linear)
                 if linear
                     obj.get_dx_con_func = @obj.get_dx_constraint_linear;
-                    obj.u_func          = @(obj,u) u;
+                    obj.u_func          = @(u) u;
                 else  
                     obj.get_dx_con_func = @obj.get_dx_constraint;
                     switch obj.InputType
                         case 'Rate'
-                            obj.u_func = @(obj,u) diag(obj.u_equilibrium) * (1+u);
+                            obj.u_func = @(u) diag(obj.u_equilibrium) * (1+u);
                         case 'Add'
-                            obj.u_func = @(obj,u) obj.u_equilibrium + u;
+                            obj.u_func = @(u) obj.u_equilibrium + u;
                         case 'Value'
-                            obj.u_func = @(obj,u) u;
+                            obj.u_func = @(u) u;
                     end
                 end
             end
@@ -181,7 +198,13 @@ classdef component < handle & base_class.HasStateInput & base_class.HasGridCode 
                     V = obj.V_equilibrium;
                     I = obj.I_equilibrium;
                 end
-                [x_st, u_st] = obj.get_equilibrium(V,I);
+                
+                try
+                    [x_st, u_st] = obj.get_equilibrium(V,I,'set');
+                catch
+                    [x_st, u_st] = obj.get_equilibrium(V,I);
+                end
+
                 if numel(x_st)==0
                     x_st = zeros(0,1);
                 end

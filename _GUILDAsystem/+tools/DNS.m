@@ -29,7 +29,7 @@ function address = DNS(domain)
                 address = 'bus.PV';
             case 'bus_slack'
                 address = 'bus.slack';
-                    
+
         % 発電機モデル
             case 'generator_1axis'
                 address = 'component.generator.one_axis';
@@ -52,26 +52,30 @@ function address = DNS(domain)
 
         % avr
             case 'avr'
-                address = 'component.generator.avr.base';
+                address = 'component.generator.avr.empty';
+            case 'avr_IEEE_DC1'
+                address = 'component.generator.avr.IEEE_DC1';
             case 'avr_IEEE_ST1'
                 address = 'component.generator.avr.IEEE_ST1';
             case 'avr_sadamoto2019'
-                address = 'component.generator.avr.sadamoto2019';
+                address = 'network.past_object.avr_sadamoto2019';
 
         % pss
             case 'pss'
-                address = 'component.generator.pss.base';
+                address = 'component.generator.pss.empty';
             case 'pss_IEEE_PSS1'
-                address = 'component.generator.pss.base';
+                address = 'component.generator.pss.IEEE_PSS1';
+            case 'pss_sadamoto2019'
+                address = 'network.past_object.pss_sadamoto2019';
 
         % governor
             case 'governor'
                 address = 'component.generator.governor.base';
-        
+
         % controller
             case 'controller_broadcast_PI_AGC'
                 address = 'controller.broadcast_PI_AGC';
-            case 'controller_retrofit_LQR'
+            case {'controller_retrofit_LQR', 'controller_local_LQR_retrofit'}
                 address = 'controller.local_LQR_retrofit';
             case 'controller_local_LQR'
                 address = 'controller.local_LQR';

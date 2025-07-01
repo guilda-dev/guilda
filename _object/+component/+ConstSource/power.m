@@ -1,12 +1,15 @@
  classdef power < component.load.abstract
-% モデル ：定電力負荷モデル
+% モデル ：定電力電源モデル
 %       ・状態：なし
 %       ・入力：２ポート「有効電力の倍率,無効電力の倍率」
 %               *入力αのとき電力の値は設定値の(1+α)倍となる．
-%親クラス：componentクラス
-%実行方法：obj = component.load.power()
+%親クラス：component.load.abstractクラス
+%実行方法：obj = component.ConstSource.power()
 %　引数　：なし
 %　出力　：componentクラスのインスタンス
+%
+% ダイナミクスはload.powerと同じだが、正のPを持つ（電力を供給する）母線に付加されることを想定している。
+%
     
     properties
         PQ_st

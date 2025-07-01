@@ -60,7 +60,7 @@ classdef Edit_Monitoring < handle
         end
     end
 
-    methods(Access = private)
+    methods(Access = protected)
         function set_NewElements(obj,type,data,mode)
             arguments
                 obj 

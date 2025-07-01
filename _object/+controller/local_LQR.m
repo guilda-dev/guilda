@@ -1,5 +1,12 @@
 classdef local_LQR < controller
-% 一つのcomponentクラスに付加することを想定
+% モデル  ：LQRコントローラ
+% 親クラス：controllerクラス
+% 実行方法：obj = controller.local_LQR(net, idx, Q, R, port_input)
+% 　引数　：・net  ：networkクラスのインスタンス
+% 　　　　　・　idx  ： double配列。制御対象の母線番号
+% 　　　　　・　Q  ： double配列。状態量の重み行列
+% 　　　　　・　R  ： double配列。入力量の重み行列
+% 　　　　　・　port_input  ： string型。入力ポート名
 
     properties(SetAccess=protected)
         type = 'local';

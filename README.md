@@ -27,6 +27,10 @@ GUILDAは、本研究室と川口助教（群馬大）を中心に開発を進�
 
 ※Tutorialが毎回開くのが不要である場合は、ソースコード内の``config.json``ファイルを開き``Tutorial``の項目を``off``にしてください。
 
+## Pre-Prepared Objects
+``_object``フォルダを参照のこと。<br>
+具体的な各種オブジェクトの説明は[こちら](./_object/README.md)をご覧ください。 
+
 ## Reference
 
 #### ▶Tutorial

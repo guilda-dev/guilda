@@ -1,37 +1,22 @@
-classdef park < component.generator.abstract
-    % 状態・パラメーターはqを先においている
-    %edited
-    %VとIの関係をedit
+classdef park < component.generator.abstract.Machine
+%モデル　: 同期発電機のparkモデル
+%　状態　: ６変数「回転子偏角"delta",周波数偏差"omega",内部電圧"Eq","Ed",鎖交磁束"psiq","psid"」
+%　　　　  * AVRやPSSが付加されるとそれらの状態も追加される
+%　入力　: ２ポート「界磁入力"Vfield", 機械入力"Pmech"」
+%実行方法: obj =　component.generator.park(parameter)
+%　引数　: parameter : table型．「'Xd','Xd_p','Xd_pp','Xq','Xq_p','Xq_pp','X_ls','Td_p','Td_pp','Tq_p','Tq_pp','M','D'」を列名として定義
+    
+    properties(SetAccess=protected)
+        GenState = {'delta','omega','Eq','Ed','psiq','psid'};
+        GenPort  = [];
+    end
     
     methods
         function obj = park(parameter)
             arguments
                 parameter = 'NGT2';
             end
-            obj@component.generator.abstract(parameter)
-            
-            % PARK用のパラメータ名に変更
-            obj.parameter = obj.parameter(:, {'Xq', 'Xq_p', 'Xq_pp','Xd', 'Xd_p', 'Xd_pp','X_ls','Td_p', 'Tq_p', 'Td_pp','Tq_pp','M', 'D'});   % ソートしてるだけ
-            obj.set_avr( component.generator.avr.base() );
-            obj.set_governor( component.generator.governor.base() );
-            obj.set_pss( component.generator.pss.base() );
-            obj.system_matrix = struct();
-        end
-        
-        function name_tag = naming_state(obj)
-            %Added psiq, psid
-            gen_state = {'delta','omega','Eq','Ed','psiq','psid'};
-            avr_state = obj.avr.naming_state;
-            pss_state = obj.pss.naming_state;
-            governor_state = obj.governor.naming_state;
-            name_tag = horzcat(gen_state,avr_state,pss_state,governor_state);
-        end
-
-        function u_name = naming_port(obj)
-            u_avr = obj.avr.naming_port;
-            u_pss = obj.pss.naming_port;
-            u_gov = obj.governor.naming_port;
-            u_name = [u_avr,u_pss,u_gov];
+            obj@component.generator.abstract.Machine(parameter)
         end
         
         function out = get_nx(obj)
@@ -207,9 +192,17 @@ classdef park < component.generator.abstract
             Vfd = Xd*E/Xdp - (Xd/Xdp-1)*Vabs*cos(delta-Vangle);
             %}
 
-            [x_avr,u_avr] = obj.avr.initialize(Vfd, Vabs);
-            [x_gov,u_gov] = obj.governor.initialize(P);
-            [x_pss,u_pss] = obj.pss.initialize();
+                % 発電機のサブクラスの計算
+                    [x_avr,u_avr] = obj.avr.get_equilibrium(Vabs,Vfd);
+                    [x_gov,u_gov] = obj.governor.get_equilibrium(omega, P);
+                    [x_pss,u_pss] = obj.pss.get_equilibrium(omega);
+                    
+                    if nargin>3 && strcmp(flag,'set')
+                        obj.avr.set_linear_matrix(x_avr,u_avr,Vabs,Vfd);
+                        obj.governor.set_linear_matrix(x_gov,u_gov,omega, P);
+                        obj.pss.set_linear_matrix(x_pss,u_pss,omega);
+                    end
+                    
             x_st = [delta; 0; Eq; Ed; psiq; psid; x_avr; x_gov; x_pss];
             u_st = [u_avr;u_pss;u_gov];
         end
