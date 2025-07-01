@@ -84,7 +84,7 @@ function address = DNS(domain)
             case 'component_empty'
                 address = 'component.empty';
             otherwise
-                address = search_class(tools.pwd,domain,[]);
+                address = search_class(config.pwd,domain,[]);
         end
     end
     if isnan(address)

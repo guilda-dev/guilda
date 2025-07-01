@@ -10,7 +10,7 @@ classdef broadcast_PI_AGC < controller
     
     properties(SetAccess=protected)
         type = 'global';
-        port_input   = 'Pm';
+        port_input   = 'Pmech';
         port_observe = 'omega';
     end
 
@@ -19,8 +19,8 @@ classdef broadcast_PI_AGC < controller
         Ki
         default_K_input
         default_K_observe
-        K_input     %並列機器の制御対象
-        K_observe   %並列機器の制御対象
+        K_input             % 並列機器の制御対象
+        K_observe           % 並列機器の制御対象
     end
     
     methods
@@ -94,14 +94,14 @@ classdef broadcast_PI_AGC < controller
             end
         end
         function set_K_input(obj,K_input)
-            if numel(K_input) == numel(obj.index_input)
+            if numel(K_input) == numel(obj.connected_index_input)
                 obj.default_K_input = K_input;
             else
                 error('The number of elements in K_input must match the number of elements in index_input.')
             end
         end
         function set_K_observe(obj,K_observe)
-            if numel(K_observe) == numel(obj.index_observe)
+            if numel(K_observe) == numel(obj.connected_index_observe)
                 obj.default_K_observe = K_observe;
             else
                 error('The number of elements in K_input must match the number of elements in index_observe.')

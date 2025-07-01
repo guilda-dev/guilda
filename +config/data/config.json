@@ -1,0 +1,186 @@
+{
+    "ENV":{
+        "language":{
+            "Value": "JP",
+            "Type": "select",
+            "options":[
+                "JP",
+                "EN"
+            ]
+        },
+        "warning":{
+            "Value": "WARN",
+            "Type": "select",
+            "options":[
+                "WARN",
+                "DISP",
+                "OFF"
+            ]
+        }
+    },
+
+    "startup":{
+        "open":{
+            "Value": "Tutorial",
+            "Type": "select",
+            "options": [
+                "none",
+                "Tutorial",
+                "GUI"
+            ]
+        },
+        "gitpull":{
+            "Value": false,
+            "Type": "logical"
+        },
+        "version_support":{
+            "Value": true,
+            "Type": "logical"
+        }
+    },
+
+    "dynamics":{
+        "port_vw":{
+            "Value": "absV to Q/V",
+            "Type": "select",
+            "options": [
+                "absV to Q/V",
+                "logV to Q"
+            ]
+        }
+    },
+
+    "Optimization":{
+        "Algorithm_linprog":{
+            "Value": "dual-simplex-highs",
+            "Type": "select",
+            "options":[
+                "interior-point-legacy",
+                "interior-point",
+                "dual-simplex-highs"
+            ]
+        },
+        "Algorithm_quadprog":{
+            "Value": "interior-point-convex",
+            "Type": "select",
+            "options":[
+                "active-set",
+                "trust-region-reflective",
+                "interior-point-convex"
+            ]
+        },
+        "Algorithm_fmincon":{
+            "Value": "interior-point",
+            "Type": "select",
+            "options":[
+                "active-set",
+                "sqp-codegen",
+                "sqp",
+                "trust-region-reflective",
+                "interior-point"
+            ]
+        },
+        "Display":{
+            "Value": "none",
+            "Type": "select",
+            "options": [
+                "none",
+                "iter",
+                "iter-detailed",
+                "final",
+                "final-detailed",
+                "notify",
+                "notify-detailed"
+            ]
+        },
+        "MaxIteration":{
+            "Value": NaN,
+            "Type": "double"
+        },
+        "OptimalityTolerance":{
+            "Value": NaN,
+            "Type": "double"
+        },
+        "StepTolerance":{
+            "Value": NaN,
+            "Type": "double"
+        },
+        "MaxFunctionEvaluations":{
+            "Value": NaN,
+            "Type": "double"
+        },
+        "UseParallel":{
+            "Value": false,
+            "Type": "logical"
+        },
+        "message":{
+            "Value": false,
+            "Type": "logical"
+        }
+    },
+
+    "PF":{
+        "MaxIterations":{
+            "Value": 2e5,
+            "Type": "double"
+        },
+        "Display":{
+            "Value": "none",
+            "Type": "select",
+            "options": [
+                "none",
+                "iter",
+                "iter-detailed",
+                "final",
+                "final-detailed"
+            ]
+        },
+        "MaxFunEvals"  :{
+            "Value":1e6,
+            "Type": "double"
+        }, 
+        "UseParallel":{
+            "Value": false,
+            "Type": "logical"
+        },
+        "PlotFcn":{
+            "Value": "none",
+            "Type": "select",
+            "options":[
+                "none",
+                "optimplotx",
+                "optimplotfunccount",
+                "optimplotfval",
+                "optimplotstepsize",
+                "optimplotfirstorderopt"
+            ]
+        },
+        "warning":{
+            "Value": "WARN",
+            "Type": "select",
+            "options":[
+                "WARN",
+                "DISP",
+                "ERROR",
+                "OFF"
+            ]
+        }
+    },
+
+    "git":{
+        "message":{
+            "Value": true,
+            "Type": "logical"
+        },
+        "clean_UntrackedFiles":{
+            "Value": true,
+            "Type": "logical"
+        },
+        "stash_UntrackedFiles":{
+            "Value": true,
+            "Type": "logical"
+        }
+    }
+}
+  
+  

@@ -1,19 +1,9 @@
 classdef local_LQR_retrofit <  controller
-% モデル  ：内部制御器がLQRのレトロフィットコントローラ
-% 親クラス：controllerクラス
-% 実行方法：obj = local_LQR_retrofit(net, idx, Q, R, model, model_agc)
-% 　引数　：・net  ：networkクラスのインスタンス
-% 　　　　　・　idx  ： double配列。制御対象の母線番号
-% 　　　　　・　Q  ： double配列。状態量の重み行列
-% 　　　　　・　R  ： double配列。入力量の重み行列
-% 　　　　　・　model  ：ss型。環境モデルの一部 （(delta, E)->(angleV, absV)）。入出力は実部虚部表示
-% 　　　　　・　model_agc  ：ss型。AGCのモデル
-% 　出力　：controllerクラスのインスタンス
-
+    
     properties(SetAccess=protected)
         type = 'local';
-        port_input = 'all';
-        port_observe = 'all';
+        port_input   = 'all';
+        port_observe = 'all'; % delta,omega,Ed,Vfieldだが、仮で設定
     end
 
     properties(Access=private)
@@ -180,20 +170,6 @@ classdef local_LQR_retrofit <  controller
                 - obj.Bw*[delta-obj.delta0; omega; E-obj.E0; Vap-obj.Vfd0];
             u = num2cell(u(:),1);
 
-        end
-
-        % 非線形シミュレーションのみ実行できるようにするための一時的な実装なので要修正
-        function [A, BX, BV, BI, Bu, C, DX, DV, DI, Du] = get_linear_matrix(obj)
-            A = [];
-            BX = [];
-            BV = [];
-            BI = [];
-            Bu = [];
-            C = [];
-            DX = [];
-            DV = [];
-            DI = [];
-            Du = [];
         end
     end
 end

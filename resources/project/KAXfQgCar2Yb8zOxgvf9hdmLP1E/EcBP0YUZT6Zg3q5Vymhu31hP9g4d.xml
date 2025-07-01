@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Info File="+config/+systemCall/shutdown.m" GroupUUID="default" Icon="" Name="shutdown" Type="Shutdown" Visible="0">
+    <Extension Name="ShutdownPrev" Value="HEAD"/>
+</Info>

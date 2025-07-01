@@ -16,16 +16,22 @@ GUILDAは、本研究室と川口助教（群馬大）を中心に開発を進�
 
 ## Usage
 
-使用する際は必ず初めにプロジェクトファイル``GUILDA.prj``を起動してください。
-「現在のフォルダー」のウィンドウ内の``GUILDA.prj``をダブルクリックすると起動できます。
+GUILDAを使用する際は必ず初めにプロジェクトファイル``GUILDA_begin.prj``を起動する必要があります。
+「現在のフォルダー」のウィンドウ内の``GUILDA_begin.prj``をダブルクリックすることで起動できます。
 
 <img src="https://github.com/guilda-dev/guilda/assets/54563775/a83a40cc-8cff-4f8e-a466-6189f7e563fc" width="500">
   
+prjファイル起動時に以下の処理が自動的に実行されます。
+- 解析に必要な関数・クラスファイルのパスを追加
+- Gitからcloneしている場合、最新バージョンをpull
+- Tutorial用のライブエディタを開く
 
-- プロジェクトを起動すると必要なファイルのパスが追加されGUILDA内の各種クラスが使用可能になります。
-- またプロジェクト開始時に自動的にTutorial用のライブエディタが開きます。
+※起動するたびにpullをしたくない場合、またTutorialが毎回開くのが不要である場合は環境設定から変更できます。
+```matlab
+>> GUILDA_pref
+```
+環境設定画面を起動し、``startup``タブの各種対応項目の値を変更してください。
 
-※Tutorialが毎回開くのが不要である場合は、ソースコード内の``config.json``ファイルを開き``Tutorial``の項目を``off``にしてください。
 
 ## Pre-Prepared Objects
 ``_object``フォルダを参照のこと。<br>
@@ -34,11 +40,13 @@ GUILDAは、本研究室と川口助教（群馬大）を中心に開発を進�
 ## Reference
 
 #### ▶Tutorial
-本リポジトリ、ソースコード内の``_Tutorial``フォルダにTutorial用のライブエディタが作成されています。
-GUILDAの基本的な使用方法はそちらを参照ください。
+はじめて使用する方向けにライブエディタを使用したTutorialを用意しています。
+```matlab
+>> GUILDA_tutorial
+```
 
-[**<span style="color: red; "><u>研究室HP</u></span>**](https://lim.ishizaki-lab.jp/guilda)**<span style="color: red; ">のTutorialサイトは旧バージョンのGUILDAに対応するため、現バージョンでは一部実行できません。
-現在はソースコード内にライブエディタとしてTutorialが組み込まれています。</span>**
+[**<span style="color: red; "><u>研究室HP</u></span>**](https://lim.ishizaki-lab.jp/guilda)**<span style="color: red; ">のTutorialサイトは旧バージョンのGUILDAに対応するため、現バージョンでは一部実行方法が変更されています。
+Tutorialサイトの代替として現在はソースコード内にライブエディタのutorialが組み込まれています。</span>**
 
 
 #### ▶関連書籍

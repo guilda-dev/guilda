@@ -1,0 +1,39 @@
+{
+  "ENV": {
+    "language": "JP",
+    "warning": "WARN"
+  },
+  "startup": {
+    "open": "none",
+    "gitpull": false,
+    "version_support": true
+  },
+  "dynamics": {
+    "port_vw": "absV to Q/V"
+  },
+  "Optimization": {
+    "Algorithm_linprog": "dual-simplex-highs",
+    "Algorithm_quadprog": "interior-point-convex",
+    "Algorithm_fmincon": "interior-point",
+    "Display": "none",
+    "MaxIteration": NaN,
+    "OptimalityTolerance": NaN,
+    "StepTolerance": NaN,
+    "MaxFunctionEvaluations": NaN,
+    "UseParallel": false,
+    "message": false
+  },
+  "PF": {
+    "MaxIterations": 200000,
+    "Display": "none",
+    "MaxFunEvals": 1.0E+6,
+    "UseParallel": false,
+    "PlotFcn": "none",
+    "warning": "DISP"
+  },
+  "git": {
+    "message": true,
+    "clean_UntrackedFiles": true,
+    "stash_UntrackedFiles": true
+  }
+}
