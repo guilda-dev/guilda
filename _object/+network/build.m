@@ -87,6 +87,7 @@ function filepath = check_filepath(filepath)
 end
 
 
+<<<<<<< HEAD
 function Tab_memory = set_any(targetObj,Tab,Tab_memory,filepath)
     if ismember('SetClass',fieldnames(Tab)) && ismember('SetMethod',fieldnames(Tab))
         name   = Tab{:,'SetClass'}{1};
@@ -118,6 +119,53 @@ function Tab_memory = set_any(targetObj,Tab,Tab_memory,filepath)
                     end
                 end
             end
+=======
+function Tab_memory = set_any(targetObj,Tab,Tab_memory,filepath,type_generator)
+    if ismember('SetClass',fieldnames(Tab)) && ismember('SetMethod',fieldnames(Tab))
+        name   = Tab{:,'SetClass'}{1};
+        if contains(name,'generator') && ~isempty(type_generator)
+            switch type_generator
+            case {'generator_1axis', 'generator_one_axis', '1axis', 'one_axis'}
+                name = 'generator_1axis';
+            case {'generator_2axis', 'generator_two_axis', '2axis', 'two_axis'}
+                name = 'generator_2axis';
+            case {'generator_classical', 'classical'}
+                name = 'generator_classical';
+            case {'generator_park', 'park'}
+                name = 'generator_park';
+            otherwise
+                error('type_generator is not defined');
+            end
+        end
+        if ~isempty(name)
+            name   = split(name,  {' ',',','/','-',newline,filesep});
+            method = Tab{:,'SetMethod'}{1};
+            method = split(method,{' ',',','/','-',newline,filesep});
+            for i = 1:numel(name)
+                [domain,data,Tab_memory] = get_obj(name{i},Tab_memory,filepath);
+                if isempty(data)
+                    if ~isempty(domain)
+                        try 
+                            Instance = eval([domain,'()']);
+                            targetObj.(method{i})(Instance);
+                        catch ME
+                            warning(['Could not construct "',domain,'" to assign to class "',class(targetObj),'"'])
+                        end
+                    end
+                else
+                    idx = find(data{:,'ID'} == Tab{:,'ID'});
+                    for j = idx(:)'
+                        data_j = data(j,:);
+                        except = {'ID','SetClass','SetMethod'};
+                        include = ismember(except,data_j.Properties.VariableNames);
+                        data_j(:,except(include)) = [];
+                        Instance = eval([domain,'(data_j)']);
+                        Tab_memory = set_any(Instance,data(j,:),Tab_memory,filepath);
+                        targetObj.(method{i})(Instance);
+                    end
+                end
+            end
+>>>>>>> develop/code_refactoring
         end
     end
 end
