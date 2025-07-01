@@ -29,7 +29,7 @@ function address = DNS(domain)
                 address = 'bus.PV';
             case 'bus_slack'
                 address = 'bus.slack';
-                    
+
         % 発電機モデル
             case 'generator_1axis'
                 address = 'component.generator.one_axis';
@@ -71,7 +71,7 @@ function address = DNS(domain)
         % governor
             case 'governor'
                 address = 'component.generator.governor.base';
-        
+
         % controller
             case 'controller_broadcast_PI_AGC'
                 address = 'controller.broadcast_PI_AGC';
