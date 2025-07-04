@@ -69,7 +69,7 @@ classdef broadcast_PI_AGC < controller
             Bu = zeros( 1, nu);
             
             C  = obj.K_input(:) * obj.Ki;
-            DX = obj.K_input(:) * obj.Kp;
+            DX = obj.K_input(:) * obj.Kp * obj.K_observe(:).';
             DV = zeros( n_input, 2*n_observe);
             DI = zeros( n_input, 2*n_observe);
             Du = zeros( n_input, sum(nu) );

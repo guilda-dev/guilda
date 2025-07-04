@@ -153,19 +153,21 @@ classdef controller < handle & base_class.HasStateInput & base_class.HasGridCode
 
     %% 線形化関連のメソッド
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        [A, BX, BV, BI,  BU, C, DX, DV, DI, DU] = get_linear_matrix(obj)
         function set_linear_matrix(obj)
             sys = struct();
             [A,BX,BV,BI,Bu,C,DX,DV,DI,Du] = obj.get_linear_matrix();
 
+            xdiag = blkdiag(obj.idx_state{:});
             sys.A  = A;
-            sys.BX = BX * blkdiag(obj.idx_state{:});
+            sys.BX = BX * xdiag;
             sys.BV = BV;
             sys.BI = BI;
             sys.Bu = Bu;
 
             udiag = blkdiag(obj.idx_port{:});
             sys.C  = udiag * C;
-            sys.DX = udiag * DX;
+            sys.DX = udiag * DX * xdiag;
             sys.DV = udiag * DV;
             sys.DI = udiag * DI;
             sys.Du = udiag * Du;

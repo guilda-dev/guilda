@@ -190,6 +190,7 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
                     case 'local' ; obj.a_controller_local = [obj.a_controller_local,c(i)];
                     case 'global'; obj.a_controller_global = [obj.a_controller_global,c(i)];
                 end
+                c{i}.update_idx
             end
         end
 

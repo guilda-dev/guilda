@@ -45,9 +45,9 @@ if numel(controllers) == 0
     nin = sum(nx) + 4*numel(net.a_bus) + sum(nu);
     sys = ss(zeros(nout, nin));
 else
-    [A, Bx, Bv, Bi, Bu, C, Dx, Dv, Di, Du] = tools.cellfun(@(c) c.get_linear_matrix(), controllers);
-    index_observe = tools.cellfun(@(c) c.index_observe, controllers);
-    index_input = tools.cellfun(@(c) c.index_input, controllers);
+    [A, Bx, Bv, Bi, Bu, C, Dx, Dv, Di, Du] = tools.cellfun(@(c) struct2var(c.system_matrix), controllers);
+    index_observe = tools.cellfun(@(c) c.connected_index_observe, controllers);
+    index_input   = tools.cellfun(@(c) c.connected_index_input,   controllers);
 
     selector_u = @(idx) tools.varrayfun(@(i) (idx_u_start(i):idx_u_end(i))', idx);
     selector_x = @(idx) tools.varrayfun(@(i) (idx_x_start(i):idx_x_end(i))', idx);
@@ -160,4 +160,18 @@ for i = 1:numel(controllers)
     sys.OutputGroup.(name) = idx + (1:size(Du{i}, 1));
     idx = idx + size(Du{i}, 1);
 end
+end
+
+
+function [A, Bx, Bv, Bi, Bu, C, Dx, Dv, Di, Du] = struct2var(s)
+A  = s.A;
+Bx = s.BX; 
+Bv = s.BV;
+Bi = s.BI;
+Bu = s.Bu;
+C  = s.C;
+Dx = s.DX;
+Dv = s.DV;
+Di = s.DI;
+Du = s.Du;
 end
