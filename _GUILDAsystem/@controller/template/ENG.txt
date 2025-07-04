@@ -6,13 +6,30 @@ classdef ___NAME___ < controller
 %                ・u_idx : array of double type. Number of the device to input
 %                ・<<It would help others if you included a description of your arguments!>>
 % varargout     : Instance of controller class
-
-    % Inherited Properties from component class
-    % ・index_input   : Number list of devices to which the controller applies inputs
-    % ・index_observe : Number list of devices whose status is observed by the controller
-    % ・network       : "power_network" class with controller added
-    % ・parameter     : The parameter constants of the model should be stored in this field.
+%
+%
+%
+% Properties inherited from controller class
+%
+%   > network   : power_network class to which a controller is added
+%   > parameter : Parameter constants for the model should be stored in this field
+%
+% List of numbers of components that the controller observes and inputs 
+% number specified by the user as an argument when creating the instance
+%   > index_input   : list of numbers of components to which the controller applies input
+%   > index_observe : list of numbers of components to which the controller observes the state
+%
+% List of components in parallel 
+% used when considering the case where devices are disassembled from the system during simulation> 
+%   > connected_index_input   : Number List of components connected to the grid among the devices specified by index_input
+%   > connected_index_observe : Number List of components connected to the grid among the devices specified in index_iobserve
     
+    properties(SetAccess=protected) % 
+        type = 'local';             % Input whether the controller is 'local' or 'global
+        port_input   = 'all';       % Name of input applied to the component by the controller  : 'all' means input to all ports
+        port_observe = 'all';       % State name that the controller observes from the component: 'all' means all states are observed
+    end
+
     properties
         % Add properties as appropriate for the model you define 
     end
@@ -23,7 +40,8 @@ classdef ___NAME___ < controller
 
         end
         
-        function nx = get_nx(obj) % Methods to define the number of states
+        function nx = get_nx(obj) 
+            % Methods to define the number of states
             % ex. When the number of state variables is one
             %   >> nx = 1;
 
@@ -45,13 +63,49 @@ classdef ___NAME___ < controller
 
             % varargout:
             % dx : Vector of time derivatives of the controller state
-            % u  : Output vector of controller (input to equipment)
+            % u  : Output vector of controller (defined as a cell array for each input to each device)
 
 
             %%%%%%%%%% define %%%%%%%%%%
-            dx = 
-            u  = 
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+            % Acquire status/input and bus-bar voltage/current of component to be observed
+                x1 = X{1};
+                 :
+                xi = X{i};
+    
+                V1 = V{1};
+                 :
+                Vi = V{i};
+    
+                I1 = I{1};
+                 :
+                Ii = I{i};
+    
+                u1 = u_global{1};
+                 :
+                ui = u_global{i};
+    
+    
+            % Define state derivative and control inputs
+                dx =   ; % The number of arrays of state differential values must match the number of states defined in the get_nx method
+    
+                u1 = 
+                 :
+                ui = 
+    
+            % Control input converted to per-device cell array
+                u  = {u1,...,ui}
+
+            %%%%%%%%%%%%%%%%%%%%%%%%%
+
+        end
+
+        function initialize(obj)
+            % The main use of this method is to describe the updating process when you want to update the parameters of the controller according to the status of the parallelism sequence or other status of the equipment to be observed/input.
+            % If there is no need to execute anything, it is OK to define the method as it is from.
+            % The main execution timing is as follows.
+            % >> When added to the power_network class
+            % >> At the beginning of each term of the simulation
 
         end
 

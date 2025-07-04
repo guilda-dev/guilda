@@ -24,6 +24,18 @@ classdef ___NAME___ < component & tools.newClass.checker.for_component
 
         end
         
+        function nu = get_nu(obj)
+            % Define number of input ports
+            % with 2 input ports
+            %   >> nu = 2;
+
+
+            %%%%%%%%%% define %%%%%%%%%%
+            nu = 
+            %%%%%%%%%%%%%%%%%%%%%%%%%
+
+        end
+        
         function [dx, con] = get_dx_constraint(obj, t, x, V, I, u)
             % varargin：
             % t : Scalar value representing time. Unit is seconds (s).
