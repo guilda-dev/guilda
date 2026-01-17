@@ -1,7 +1,22 @@
-classdef controller < handle & base_class.HasStateInput & base_class.HasGridCode & base_class.HasCostFunction
+classdef Controller < GuildaLayer
 % コントローラを定義するスーパークラス
 % GUILDA上に制御器モデルを実装するために必要なmethodが定義されている。
 % 新しい制御器モデルを実装する場合はこのcontrollerクラスを継承すること。
+%
+% Properties
+% ・x_equilibrium    : 状態の平衡点
+% ・u_equilibrium    : 定常入力
+% ・y_equilibrium    : 定常出力
+%
+% ・is_parallel      : 機器の並解列の状況を表すlogical値（デフォルト値はtrue）
+% ・Parameter        : モデルのパラメータ定数はこのフィールドに格納してください。
+% ・Constraint       : 機器の系統への出力方程式の形式（デフォルトは"current"）
+% ・Tag              : タグを格納しておく（string型）
+% ・Index            : インデックスを格納（doubleのスカラー）
+%
+% ・IndexInput       : 
+% ・IndexObserve     : 
+%
     
     properties
         parameter = array2table(zeros(1,0))
@@ -56,7 +71,7 @@ classdef controller < handle & base_class.HasStateInput & base_class.HasGridCode
 
     %% コンストラクターメソッド
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function obj = controller(net, index_input, index_observe)
+        function obj = Controller(net, index_input, index_observe)
             obj.register_parent(net,'overwrite')
             obj.index_input  = index_input;
             obj.index_observe= index_observe;
@@ -243,8 +258,6 @@ classdef controller < handle & base_class.HasStateInput & base_class.HasGridCode
                        '・u = cell array of the input vector of each component to be observed',newline])
             end
         end
-
-        
         
     end
     

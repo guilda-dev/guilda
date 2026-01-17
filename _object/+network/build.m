@@ -1,13 +1,9 @@
-function net = build(filepath, type_generator)
+function net = build(filepath)
 
     if nargin < 1
         filepath = [uigetdir(fullfile(tools.pwd,'_object','+network'),'Choose network data'),filesep];
     else
         filepath = check_filepath(filepath);
-    end
-
-    if nargin < 2
-        type_generator = 'generator_1axis';
     end
     
     net = power_network;
@@ -65,7 +61,7 @@ function net = build(filepath, type_generator)
 % set component class
     Tab = struct;
     for i = 1:size(Tab_bus, 1)
-        Tab = set_any(net.a_bus{i},Tab_bus(i,:),Tab,filepath,type_generator);
+        Tab = set_any(net.a_bus{i},Tab_bus(i,:),Tab,filepath);
     end
     
     net.initialize();
@@ -91,6 +87,39 @@ function filepath = check_filepath(filepath)
 end
 
 
+<<<<<<< HEAD
+function Tab_memory = set_any(targetObj,Tab,Tab_memory,filepath)
+    if ismember('SetClass',fieldnames(Tab)) && ismember('SetMethod',fieldnames(Tab))
+        name   = Tab{:,'SetClass'}{1};
+        if ~isempty(name)
+            name   = split(name,  {' ',',','/','-',newline,filesep});
+            method = Tab{:,'SetMethod'}{1};
+            method = split(method,{' ',',','/','-',newline,filesep});
+            for i = 1:numel(name)
+                [domain,data,Tab_memory] = get_obj(name{i},Tab_memory,filepath);
+                if isempty(data)
+                    if ~isempty(domain)
+                        try 
+                            Instance = eval([domain,'()']);
+                            targetObj.(method{i})(Instance);
+                        catch
+                            warning(['Could not construct "',domain,'" to assign to class "',class(targetObj),'"'])
+                        end
+                    end
+                else
+                    idx = find(data{:,'ID'} == Tab{:,'ID'});
+                    for j = idx(:)'
+                        data_j = data(j,:);
+                        except = {'ID','SetClass','SetMethod'};
+                        include = ismember(except,data_j.Properties.VariableNames);
+                        data_j(:,except(include)) = [];
+                        Instance = eval([domain,'(data_j)']);
+                        Tab_memory = set_any(Instance,data(j,:),Tab_memory,filepath);
+                        targetObj.(method{i})(Instance);
+                    end
+                end
+            end
+=======
 function Tab_memory = set_any(targetObj,Tab,Tab_memory,filepath,type_generator)
     if ismember('SetClass',fieldnames(Tab)) && ismember('SetMethod',fieldnames(Tab))
         name   = Tab{:,'SetClass'}{1};
@@ -136,6 +165,7 @@ function Tab_memory = set_any(targetObj,Tab,Tab_memory,filepath,type_generator)
                     end
                 end
             end
+>>>>>>> develop/code_refactoring
         end
     end
 end
@@ -145,12 +175,8 @@ function [domain,data,Tab_memory] = get_obj(name,Tab_memory,filepath)
     data   = [];
     if ~isempty(name)
         domain = tools.DNS(name);
-        name_field = name;
-        if contains(name,'generator')
-            name = 'generator';
-        end
         if ~isnan(domain)
-            field = strrep(name_field,'.','_dot_');
+            field = strrep(name,'.','_dot_');
             if isfield(Tab_memory,field)
                 data = Tab_memory.(field);
             else

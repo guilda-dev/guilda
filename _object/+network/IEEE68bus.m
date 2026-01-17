@@ -1,16 +1,9 @@
 %% IEEE68bus systrem
-% 電力系統のシステム制御工学
-% p.253~255
-%
-% type_generator>> string型:"1axis","2axis","classical","park"のいづれかを指定（デフォルトは1axis）
-%
+% Robust Control in Power Systems
+% p.171~178
 
-function net = IEEE68bus(type_generator)
+function net = IEEE68bus()
     fname = mfilename("fullpath");
     fn = fullfile(fname);
-    if nargin<1
-        net = network.build(fn);
-    else
-        net = network.build(fn, type_generator);
-    end
+    net = network.build(fn);
 end

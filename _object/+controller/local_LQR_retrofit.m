@@ -1,4 +1,7 @@
 classdef local_LQR_retrofit <  controller
+<<<<<<< HEAD
+    
+=======
 % モデル  ：内部制御器がLQRのレトロフィットコントローラ
 % 親クラス：controllerクラス
 % 実行方法：obj = local_LQR_retrofit(net, idx, Q, R, model, model_agc)
@@ -9,10 +12,11 @@ classdef local_LQR_retrofit <  controller
 % 　　　　　・　model  ：ss型。環境モデルの一部 （(delta, E)->(angleV, absV)）。入出力は極座標表示。+controller/+modeling/get_environmentで取得
 % 　出力　：controllerクラスのインスタンス
 
+>>>>>>> develop/code_refactoring
     properties(SetAccess=protected)
         type = 'local';
-        port_input = 'all';
-        port_observe = 'all';
+        port_input   = 'all';
+        port_observe = 'all'; % delta,omega,Ed,Vfieldだが、仮で設定
     end
 
     properties
@@ -134,6 +138,8 @@ classdef local_LQR_retrofit <  controller
             u = num2cell(u(:), 1);
 
         end
+<<<<<<< HEAD
+=======
 
         function [dx, u] = get_dx_u_linear(obj, t, x, X, Vcell, Icell, U)
             [dx, u] = get_dx_u(obj, t, x, X, Vcell, Icell, U, true);
@@ -152,5 +158,6 @@ classdef local_LQR_retrofit <  controller
             DI = [];
             Du = [];
         end
+>>>>>>> develop/code_refactoring
     end
 end

@@ -1,241 +1,317 @@
-classdef component < handle & base_class.HasStateInput & base_class.HasGridCode & base_class.HasCostFunction 
-% 機器を定義するスーパークラス
+classdef Component < GuildaLayer
+% componentクラスの親クラス。
 % GUILDA上に機器モデルを実装するために必要なmethodが定義されている。
 % 新しい機器モデルを実装する場合はこのcomponentクラスを継承すること。
-    
+%
+%           ┌----------┐
+%  ┌---v--->|  BRANCH  |--->w--┐     
+%  |        └----------┘       |     
+%  |                           |
+%  |                           |
+%  |        ┌---------┐        | -
+%  o---v<---|   Bus   |<---w---o     
+%  |        └---------┘        | -
+%  |                           | 
+%  |                           |
+%  |        ┌-----------┐      |
+%  └---v--->|\\\\\\\\\\\|--->w-┘     v : V_BUS = [ ∠V ;  |V| ] or [ ∠V ;  log|V| ]
+%           |\Component\|            w : I_BUS = [  P ; Q/|V|] or [  P ;      Q  ]
+%  ┌---u--->|\\\\\\\\\\\|--->y-┐     u : input to component (e.g. Pmech,Vfield)
+%  |        └-----------┘      |     y : output from component (e.g. Vabs,Efield)
+%  |                           |
+%  |                           | 
+%  |                           |
+%  |        ┌------------┐     |
+%  └---u----| Controller |<--y-┘    
+%           └------------┘          
+%
+%
+%
+%  << 親クラスからの継承プロパティ >>
+%
+%     prop         class      description
+%==========================================================================
+%   ・parent   |LayerPackage| 階層構造の上位層にあたるLayerPackageクラス
+%   ・parent   |    cell    | 階層構造の下位層にあたるLayerPackageクラス
+%   ・tag      |   string   | クラスの呼称
+%   ・index    |   double   | インデックス番号、tagともにクラスの命名に使用
+%   ・parameter|   table    | ユーザが設定する定数は全てこのプロパティで管理
+%   ・editFlag |  logical   | 変更が加えられたかどうかの管理simulate前などに確認
+%   ・editLog  |   table    | 変更内容を「変更時間・対象クラス・変更内容」で管理
+%==========================================================================
+%
+
+
+%%%%%%%%%%%%%%%%
+%%% Abstract %%%
+%%%%%%%%%%%%%%%%
+    methods(Abstract)
+        [str_x, str_u, str_y] = name_xuy_vars(obj);
+        [rvec_xst, rvec_ust, rvec_yst]  = calculate_equilibrium(obj, rvec_vst, rvec_wst);
+        [Mass, svec_dx, svec_w, svec_y] = get_ODE_function(obj, sscl_t, svec_x, svec_v, svec_u, opt)
+    end
+
+%%%%%%%%%%%%%
+%%% Layer %%%
+%%%%%%%%%%%%%
+    properties(Dependent,Access=protected)
+        children (:,1) cell
+    end
+    properties(Dependent)
+        Bus
+        omega0
+    end
+    properties(SetAccess=protected)
+        SpecificControllers (:,1) cell = {}; % generatorのavr,pssなどのために設けた。
+        LocalControllers    (:,1) cell = {};
+    end
+    methods
+        function c = get.children(obj)
+            c = [obj.SpecificControllers;...
+                 obj.LocalControllers]; 
+        end
+        function net = get.Bus(obj)
+            net = obj.parent;
+        end
+        function w0 = get.omega0(obj)
+            w0 = obj.Bus.omega0;
+        end
+    end
+
+%%%%%%%%%%%%%%%%
+%%% dynamics %%%
+%%%%%%%%%%%%%%%%
+    methods
+        [sv_x, sv_v, sv_w, sv_u, sv_y] = get_ODE_vars(obj,lscl_flagtag)
+        Fac = get_ODE(obj,opt)
+    end
+
+%%%%%%%%%%%%%%
+%%% OPF/PF %%%
+%%%%%%%%%%%%%%
+    methods
+        optim = get_OPF(obj,opt)
+    end
+
+%%%%%%%%%%%%%%%%%
+%%% parameter %%%
+%%%%%%%%%%%%%%%%%
+    properties 
+        isConnected (1,1) logical = true;
+    end
+    properties(Dependent)
+    end
+    methods
+        function flag = validate_params(obj,params)
+            arguments
+                obj 
+                params (1,:) table 
+            end
+            varnames_old = string(obj.parameter.Properties.VariableNames);
+            varnames_new = string(params.Properties.VariableNames);
+            flag = all(varnames_old==varnames_new);
+            assert(flag,config.lang("parameterの変数名が間違っています。","The variable name for parameter is incorrect."))
+        end
+        function set.isConnected(obj,val)
+            arguments
+                obj 
+                val (1,1) logical = obj.isConnected
+            end
+            if obj.isConnected~=val
+                obj.isConnected = val;
+                if val
+                    obj.onEdit("parallel on")
+                else
+                    obj.onEdit("parallel off")
+                end
+            end
+        end
+    end
+
+ 
+%%%%%%%%%%%%%%%%%%%
+%%% Equilibrium %%%
+%%%%%%%%%%%%%%%%%%%
     properties
-        omega0 = 2*pi*60;
+        rateUscon (:,:) double
+        rateUlcon (:,:) double
+    end
+    properties(SetAccess=protected)
+        x_equilibrium
+        u_equilibrium 
+        y_equilibrium
+    end
+    properties(Dependent)
+        v_equilibrium
+        w_equilibrium
+    end
+
+    methods
+        function set.rateUscon(obj,val)
+            arguments
+                obj 
+                val double
+            end
+            rscl_uport = numel(obj.u_equilibrium)      ; %#ok
+            rscl_scon  = numel(obj.SpecificControllers); %#ok
+            assert(size(val,1)==rscl_uport, config.lang("行数は入力ポート数と一致する必要があります。","Row count must match the number of input ports."))
+            assert(size(val,2)==rscl_scon , config.lang("列数はSpecificControllersの個数と一致する必要があります。","Column count must match the number of SpecificControllers."))
+            obj.rateUscon = val;
+            obj.onEdit("change rateUscon")
+        end
+        
+        function set.rateUlcon(obj,val)
+            arguments
+                obj 
+                val double
+            end
+            rscl_uport = numel(obj.u_equilibrium)      ; %#ok
+            rscl_lcon  = numel(obj.LocalControllers); %#ok
+            assert(size(val,1)==rscl_uport, config.lang("行数は入力ポート数と一致する必要があります。","Row count must match the number of input ports."))
+            assert(size(val,2)==rscl_lcon , config.lang("列数はLocalControllersの個数と一致する必要があります。","Column count must match the number of LocalControllers."))
+            obj.rateUlcon = val;
+            obj.onEdit("change rateUlcon")
+        end
+
+        function val = get.v_equilibrium(obj)
+            val = obj.Bus.v_equilibrium(:,obj.);
+        end
+
+        function val = get.w_equilibrium(obj)
+            val = obj.Bus.w_equilibrium(:,obj.index);
+        end
+
+    end
+
+
+
+%% 　ここから旧ver
+    properties
+        is_parallel = true;
+        constraint  = "current";
     end
     
     properties(Dependent)
-        connected_bus
-    end
+        area
+        bus
+        local_controllers
 
-    properties
         x_equilibrium
         u_equilibrium
-    end
-
-    properties(Dependent)
+        y_equilibrium
         V_equilibrium
         I_equilibrium
     end
-
-    properties(SetAccess = protected)
-        system_matrix    
-    end
-
-    properties
-        parameter = array2table(zeros(1,0))
-        get_dx_con_func
-    end
-
-    properties
-        InputType = 'Add';
-    end
-
-    properties(SetAccess = protected)
-        u_func = @(obj,u) obj.u_equilibrium + u;
-    end
-    
-    properties(Dependent)
-        V_st
-        I_st
-    end
-    
-    properties(Dependent)
-        GraphCoordinate
-    end
-    
-    methods(Abstract)
-        [dx, constraint] = get_dx_constraint(t, x, V, I, u);
-        [x_st,u_st] = get_equilibrium(V,I);
-    end
-    
     
     methods
         function obj = component()
+            obj.tag = "MAC";
+            obj.InputType = "Add"; % "Add", "Rate", "Value"
+            
+            equilibrium.x = [];
+            equilibrium.u = [];
+            equilibrium.y = [];
+            equilibrium.v = zeros(4,1);
+            equilibrium.w = zeros(4,1);
+            obj.equilibrium = equilibrium;
+            
             b = bus.dammy();
             b.set_component(obj)
         end
+
+        function w0 = get.omega0(obj)
+            w0 = obj.area.omega0;
+        end
+
     
-        %% Set method 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            function set.parameter(obj, value)
-                obj.parameter = value;
-                obj.editted("Parameter");
-            end
-            function set.x_equilibrium(obj, value)
-                obj.x_equilibrium = value;
-                obj.editted("x_equilibrium");
-            end
-            function set.u_equilibrium(obj, value)
-                obj.u_equilibrium = value;
-                obj.editted("u_equilibrium");
-            end
-
-
-        %% Get method
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % equilibrium
+            % Get method
             function val = get.x_equilibrium(obj)
-                xsub_st = tools.vcellfun(@(sub) sub.x_equilibrium(:), obj.children);
-                val = [obj.x_equilibrium; xsub_st];
+                val = obj.equilibrium.x;
             end
             function val = get.u_equilibrium(obj)
-                usub_st = tools.vcellfun(@(sub) sub.u_equilibrium(:), obj.children);
-                val = [obj.u_equilibrium; usub_st];
+                val = obj.equilibrium.u;
             end
-            
-            function b = get.connected_bus(obj)
-                b = obj.parents{1};
-            end
-    
+            function val = get.y_equilibrium(obj)
+                val = obj.equilibrium.y;
+            end    
             function out = get.V_equilibrium(obj)
-                out = obj.connected_bus.V_equilibrium;
+                Vvec = obj.equilibrium.v(1:2);
+                out = Vvec(1)+1j*Vvec(2);
             end
-    
             function out = get.I_equilibrium(obj)
-                out = obj.connected_bus.I_equilibrium;
+                Ivec = obj.equilibrium.v(3:4);
+                out = Ivec(1)+1j*Ivec(2);
             end
+
+            % Set method 
+            function set.x_equilibrium(obj, value)
+                obj.equilibrium.x = value;
+                obj.onEdit("edit x_equilibrium.");
+            end
+            function set.u_equilibrium(obj, value)
+                obj.equilibrium.u = value;
+                obj.editted("edit u_equilibrium.");
+            end
+            function set.y_equilibrium(obj, value)
+                obj.equilibrium.y = value;
+                obj.editted("edit y_equilibrium.");
+            end
+            function set.V_equilibrium(obj,value)
+                obj.equilibrium.v(1:2) = [real(value);imag(value)];
+                obj.equilibrium.w(1:2) = [real(value);imag(value)];
+                obj.editted("edit V_equilibrium.");
+            end
+            function set.I_equilibrium(~,~)
+                obj.equilibrium.v(3:4) = [real(value);imag(value)];
+                obj.equilibrium.w(3:4) = [real(value);imag(value)];
+                obj.editted("edit I_equilibrium.");
+            end
+
+            % general 
+            function [xst,ust,yst] = set_equilibrium(obj,Veq,Ieq)
+                [xst, ust, yst] = obj.get_equilibrium(Veq,Ieq);
+                VI  = [real(Veq);imag(Veq);real(Ieq);imag(Ieq)];
+                obj.equilibrium = struct('x',xst,'u',ust,'y',yst,'v',VI,'w',VI);
+                obj.system_matrix = ss([]);
+                obj.unEdit;
+            end
+            function [xst,ust,yst] = get_equilibriuim(~,~,~)
+                xst = [];
+                ust = [];
+                yst = [];
+            end
+
+
+        % child/parents
+            % Get method 
+            function out = get.area(obj)
+                out = obj.bus.area;
+            end
+            function out = get.bus(obj)
+                out = obj.parents{1};
+            end
+            function out = get.local_controllers(obj)
+                out = obj.children;
+            end
+            % Set method
+            function add_controller(obj,c)
+                assert(isa(c,'controller'),'Not a "controller" class')
+                c.set_parents(obj,'overwrite')
+                obj.set_children(component,'append')
+                obj.onEdit('change component.')
+            end
+            function remove_controller(obj,varargin)
+                obj.remove_children(varargin{:})
+            end
+
+
+        % Set differential/output/input function
+            set_function(obj)
     
-            function out = get.V_st(obj)
-                out = [real(obj.V_equilibrium);imag(obj.V_equilibrium)];
-            end
-    
-            function out = get.I_st(obj)
-                out = [real(obj.I_equilibrium);imag(obj.I_equilibrium)];
-            end
-
-            function out = get.GraphCoordinate(obj)
-                out = obj.connected_bus.GraphCoordinate;
-            end
-
-        %% method for get number of state/input
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            function nx = get_nx(obj)
-               nx = numel(obj.x_equilibrium); 
-            end
-    
-            function nu = get_nu(obj)
-               nu = numel(obj.u_equilibrium); 
-            end
-
-
-        %% method for calculate linear system
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            
-            % 近似線形化した際のシステム行列を計算
-            [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj,Vst,Ist,xst,ust);
-
-            % 上のget_linear_matrixで得た行列をobj.system_matrixに格納する
-            function set_linear_matrix(obj,varargin)
-                sys = struct();
-                [ sys.A , sys.B , sys.C , sys.D ,... 
-                  sys.BV, sys.DV, sys.BI, sys.DI,sys.R , sys.S] = obj.get_linear_matrix(varargin{:});
-                obj.system_matrix = sys;
-            end
-
-            % 上でobj.system_matrixに格納されたシステム行列から近似線形化システムとしての入出力を担当する
-            function [dx, con] = get_dx_constraint_linear(obj, ~, x, V, I, u)
-                ss  = obj.system_matrix;
-                dx  = ss.A * ( x - obj.x_equilibrium) + ss.B * u + ss.BV * (V - obj.V_st) + ss.BI * ( I - obj.I_st);
-                con = ss.C * ( x - obj.x_equilibrium) + ss.D * u + ss.DV * (V - obj.V_st) + ss.DI * ( I - obj.I_st);
-            end
-    
-
-        %% 入力形式の指定を行うメソッド
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            function set.InputType(obj,val)
-                if nargin<2
-                    disp_msg = ['1. Rate: input = u_equilibrium + u \n',...
-                                '2. Add : input = u_equilibrium * (1+u) \n',...
-                                '3.Value: input = u \n'];
-                    input_msg = 'input 1 or 2 or 3';
-                    candidate = {'rate','Rate','1','add','Add','2','value','Value',3};
-                    val = tools.input(disp_msg,input_msg,'str',candidate);
-                end
-                switch val
-                    case {'rate' ,'Rate' ,1}
-                        obj.InputType = 'Rate';
-                    case {'add'  ,'Add'  ,2}
-                        obj.InputType = 'Add';
-                    case {'value','Value',3}
-                        obj.InputType = 'Value';
-                    otherwise
-                        error('InputType must be "add","rate","value".')
-                end
-                obj.editted("Input Type")
-                try
-                    linear = obj.connected_bus.power_network.linear;%#ok
-                catch
-                    linear = false;
-                end
-                obj.set_function(linear);
-            end
-    
-            function set_function(obj,linear)
-                if linear
-                    obj.get_dx_con_func = @obj.get_dx_constraint_linear;
-                    obj.u_func          = @(u) u;
-                else  
-                    obj.get_dx_con_func = @obj.get_dx_constraint;
-                    switch obj.InputType
-                        case 'Rate'
-                            obj.u_func = @(u) diag(obj.u_equilibrium) * (1+u);
-                        case 'Add'
-                            obj.u_func = @(u) obj.u_equilibrium + u;
-                        case 'Value'
-                            obj.u_func = @(u) u;
-                    end
-                end
-            end
-    
-    
-        %% 平衡点を計算
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            function [x_st,u_st] = set_equilibrium(obj,V,I)
-                if nargin<2
-                    V = obj.V_equilibrium;
-                    I = obj.I_equilibrium;
-                end
-                
-                try
-                    [x_st, u_st] = obj.get_equilibrium(V,I,'set');
-                catch
-                    [x_st, u_st] = obj.get_equilibrium(V,I);
-                end
-
-                if numel(x_st)==0
-                    x_st = zeros(0,1);
-                end
-                if numel(u_st)==0
-                    u_st = zeros(0,1);
-                end
-                obj.x_equilibrium = x_st;
-                obj.u_equilibrium = u_st;
-                obj.set_linear_matrix();
-            end
-
-
-            function M = Mass(obj)
-                [dx,con] = obj.check_dx_constraint;
-                M = blkdiag( eye(numel(dx)), zeros(length(con)) );
-            end
-    
-    
-        %% チェック用のメソッド
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            [dx, con] = check_dx_constraint(obj)
-            val = check_CostFunction(obj,func);
-    end
-
-    methods(Access=protected)
-        function PropEditor_Set(obj,prop,val)
-            obj.(prop) = val;
-        end
-        function val = PropEditor_Get(obj,prop)
-            val = obj.(prop);
-        end
+        % for check requirment / debug 
+            dx   = check_dx(obj)
+            flag = check_requirment(obj);
     end
 end
 

@@ -8,15 +8,6 @@ classdef InfoCenter < handle
         data
     end
 
-    properties(Access=private,Dependent)
-        % class name
-        cn_mac
-        cn_bus
-        cn_br
-        cn_cl
-        cn_cg
-    end
-
     methods
         fprintf(obj,lang)
 
@@ -82,49 +73,62 @@ classdef InfoCenter < handle
             tab = horztab(obj.broadcast(@(c) {c.parameter},mlg),vars);
         end
 
-        function out = get.cn_mac(obj)
-            out = obj.broadcast(@(c) string(class(c)),'mac');
+
+        %% Get method : Class Names
+        function out = get_names_component(obj)
+            out = tools.vcellfun(@(b) string(class(b.component)), obj.a_bus);
         end
-        function out = get.cn_bus(obj)
-            out = obj.broadcast(@(c) string(class(c)),'bus');
+        function out = get_names_bus(obj)
+            out = tools.vcellfun(@(b) string(class(b)), obj.a_bus);
         end
-        function out = get.cn_br(obj)
-            out = obj.broadcast(@(c) string(class(c)),'bra');
+        function out = get_names_branch(obj)
+            out = tools.vcellfun(@(b) string(class(b)), obj.a_branch);
         end
-        function out = get.cn_cl(obj)
-            out = obj.broadcast(@(c) string(class(c)),'cl');
+        function out = get_names_lcon(obj)% local controller
+            out = tools.vcellfun(@(c) string(class(c)), obj.a_controller_local);
         end
-        function out = get.cn_cg(obj)
-            out = obj.broadcast(@(c) string(class(c)),'cg');
+        function out = get_names_gcon(obj)% global controller
+            out = tools.vcellfun(@(c) string(class(c)), obj.a_controller_global);
         end
 
-        function data = busdata(obj)
+
+        %% Data Tab build
+        function data = build_bus_tab(obj)
             if isempty(obj.network_handle.a_bus)
-                data=[];return
+                data=[];
+                return
             end
-            f = @(n,d) array2table(d,'VariableNames',{n});
+            
+            % extract data
             net = obj.network_handle;
-            PQ_equilibrium = net.V_equilibrium .* conj(net.I_equilibrium);
-            data = [ f( 'class'        ,obj.cn_bus                                 ) ,...
-                     f( 'Vabs'         ,abs(  net.V_equilibrium)                   ) ,...
-                     f( 'Varg'         ,angle(net.V_equilibrium)                   ) ,...
-                     f( 'Iabs'         ,abs(  net.I_equilibrium)                   ) ,...
-                     f( 'Iarg'         ,angle(net.I_equilibrium)                   ) ,...
-                     f( 'RealPower'    ,real(PQ_equilibrium)                       ) ,...
-                     f( 'ReactivePower',imag(PQ_equilibrium)                       ) ,...
-                     f( 'ApparentPower',abs( PQ_equilibrium)                       ) ,...
-                     f( 'PowerFactor'  ,cos(angle(PQ_equilibrium))                 ) ,...
-                     f( 'shunt'        ,tools.vcellfun(@(b) b.shunt, net.a_bus)    ) ,...
-                     f( 'connected_component',obj.cn_mac                           ) ,...
-                     f( 'Vequilibrium' ,net.V_equilibrium                          ) ,...
-                     f( 'Iequilibrium' ,net.I_equilibrium                          ) ...
+            Vst = net.V_equilibrium;
+            Ist = net.I_equilibrium;
+            Sst = Vst .* conj(Ist);
+            shunt = tools.vcellfun(@(b) b.shunt, net.a_bus);
+
+            % build table
+            f = @(n,d) array2table(d,'VariableNames',{n});
+            data = [ f( 'class'        ,obj.cn_bus      ) ,...
+                     f( '|V|(pu)'      ,abs(   Vst )    ) ,...
+                     f( '∠V(deg)'      ,angle( Vst )    ) ,...
+                     f( '|I|(pu)'      ,abs(   Ist )    ) ,...
+                     f( '∠I(deg)'      ,angle( Ist )    ) ,...
+                     f( 'P(MW)'        ,real(  Sst )    ) ,...
+                     f( 'Q(MVar)'      ,imag(  Sst )    ) ,...
+                     f( 'S(VA)'        ,abs(   Sst )    ) ,...
+                     f( 'θ(factor)'    ,cos(angle(Sst)) ) ,...
+                     f( 'shunt'        ,shunt           ) ,...
+                     f( 'component'    ,obj.cn_mac      ) ,...
+                     f( 'Vequilibrium' ,Vst             ) ,...
+                     f( 'Iequilibrium' ,Ist             ) ...
                   ];
             data.Properties.RowNames = "bus" + (1:numel(net.a_bus))';
         end
 
-        function data = branchdata(obj)
+        function data = build_branch_tab(obj)
             if isempty(obj.network_handle.a_branch)
-                data=[];return
+                data=[];
+                return
             end
             f = @(n,d) array2table(d,'VariableNames',{n});
             p = @(n)   obj.broadcast(@(c) get_prop(c,n), 'bra');
