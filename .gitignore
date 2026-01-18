@@ -1,40 +1,56 @@
-# Windows default autosave extension
+# ==========================
+# OS Specific (Windows / macOS)
+# ==========================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# ==========================
+# MATLAB Generic
+# ==========================
+# Autosave files
 *.asv
 
-# OSX / *nix default autosave extension
-*.m~
+# Project files (often contain user-specific settings)
+*.prj
 
-# Compiled MEX binaries (all platforms)
+# Compiled MEX files (binary)
 *.mex*
+*.mexw64
+*.mexmaci64
+*.mexa64
 
-# Packaged app and toolbox files
-*.mlappinstall
-*.mltbx
-
-# Generated helpsearch folders
-helpsearch*/
-
-# Simulink code generation folders
-slprj/
-sccprj/
-
-# Matlab code generation folders
-codegen/
-
-# Simulink autosave extension
-*.autosave
-
-# Simulink cache files
+# Simulink cache & code generation (if applicable)
 *.slxc
+slprj/
+sfprj/
 
-# Octave session info
-octave-workspace
+# ==========================
+# MATLAB Drive Specific
+# ==========================
+# MATLAB Drive tag file (generated in root and subfolders)
+.MATLABDriveTag
 
-# python version
-.python-version
+# MATLAB Drive temporary files
+*.mw
 
-# image file of file Icon on macOS
-Icon?
+# ==========================
+# GUILDA Project Specific
+# ==========================
+# Ignore all files under the user directory
+@GUILDA/user/*
 
-stash/
-**/.DS_Store
+# If you want to track the folder structure but ignore content,
+# uncomment the following line (requires a .gitkeep file inside)
+# !@GUILDA/user/.gitkeep
