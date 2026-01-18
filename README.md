@@ -13,28 +13,29 @@ GUILDAは、本研究室と川口助教（群馬大）を中心に開発を進�
 - MATLAB
 - Control system toolbox
 - Optimization toolbox
+- Symboric Math toolbox
 
 ## Usage
 
-GUILDAを使用する際は必ず初めにプロジェクトファイル``GUILDA_begin.prj``を起動する必要があります。
-「現在のフォルダー」のウィンドウ内の``GUILDA_begin.prj``をダブルクリックすることで起動できます。
-
-<img src="https://github.com/guilda-dev/guilda/assets/54563775/a83a40cc-8cff-4f8e-a466-6189f7e563fc" width="500">
-  
-prjファイル起動時に以下の処理が自動的に実行されます。
-- 解析に必要な関数・クラスファイルのパスを追加
+はじめに``GUILDA``と実行します。
+```
+>> GUILDA
+```
+これにより、GUILDAが起動されます。起動時に以下の処理が自動的に実行されます。
 - Gitからcloneしている場合、最新バージョンをpull
+- 解析に必要な関数・クラスファイルのパスを追加
+- GUILDA内で使用する関数をサポートするtoolboxのインストールの確認
 - Tutorial用のライブエディタを開く
 
 ※起動するたびにpullをしたくない場合、またTutorialが毎回開くのが不要である場合は環境設定から変更できます。
 ```matlab
->> GUILDA_pref
+>> GUILDA.setting
 ```
 環境設定画面を起動し、``startup``タブの各種対応項目の値を変更してください。
 
 
 ## Pre-Prepared Objects
-``_object``フォルダを参照のこと。<br>
+``_GUILDAobject``フォルダを参照のこと。<br>
 具体的な各種オブジェクトの説明は[こちら](./_object/README.md)をご覧ください。 
 
 ## Reference
@@ -42,7 +43,7 @@ prjファイル起動時に以下の処理が自動的に実行されます。
 #### ▶Tutorial
 はじめて使用する方向けにライブエディタを使用したTutorialを用意しています。
 ```matlab
->> GUILDA_tutorial
+>> GUILDA.tutorial
 ```
 
 [**<span style="color: red; "><u>研究室HP</u></span>**](https://lim.ishizaki-lab.jp/guilda)**<span style="color: red; ">のTutorialサイトは旧バージョンのGUILDAに対応するため、現バージョンでは一部実行方法が変更されています。
