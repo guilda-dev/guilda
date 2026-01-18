@@ -1,0 +1,77 @@
+{
+    "baseMVA":{
+        "Value": 100,
+        "Type": "double",
+        "Description": "電力の基準値"
+    },
+    "Pmin":{
+        "Value": -Inf,
+        "Type": "double",
+        "Description": "有効電力容量（下限）"
+    },
+    "Pmax":{
+        "Value": Inf,
+        "Type": "double",
+        "Description": "有効電力容量（上限）"
+    },
+    "Qmin":{
+        "Value": -Inf,
+        "Type": "double",
+        "Description": "無効電力容量（下限）"
+    },
+    "Qmax":{
+        "Value": Inf,
+        "Type": "double",
+        "Description": "無効電力容量（上限）"
+    },
+    "PFset_P":{
+        "Value": 0,
+        "Type": "double",
+        "Description": "P(有効電力)の潮流設定"
+    },
+    "PFset_Q":{
+        "Value": 0,
+        "Type": "double",
+        "Description": "Q(無効電力)の潮流設定"
+    },
+    "OPFinit_P0":{
+        "Value": 0,
+        "Type": "double",
+        "Description": "OPFの決定変数P(有効電力)の初期値"
+    },
+    "OPFinit_Q0":{
+        "Value": 0,
+        "Type": "double",
+        "Description": "OPFの決定変数Q(無効電力)の初期値"
+    },
+    "OPFcost_HP":{
+        "Value": 1,
+        "Type": "double",
+        "Description": "OPFのコスト関数の係数 (cost+= HP*P^2)"
+    },
+    "OPFcost_HQ":{
+        "Value": 0,
+        "Type": "double",
+        "Description": "OPFのコスト関数の係数 (cost+= HQ*Q^2)"
+    },
+    "OPFcost_fP":{
+        "Value": 1,
+        "Type": "double",
+        "Description": "OPFのコスト関数の係数 (cost+= fP*P)"
+    },
+    "OPFcost_fQ":{
+        "Value": 0,
+        "Type": "double",
+        "Description": "OPFのコスト関数の係数 (cost+= fQ*Q)"
+    },
+    "OPFcost_startup":{
+        "Value": 0,
+        "Type": "double",
+        "Description": "OPFを計算する際の機器の停止コスト"
+    },
+    "OPFcost_shutdown":{
+        "Value": 0,
+        "Type": "double",
+        "Description": "OPFを計算する際の機器の停止コスト"
+    },
+}

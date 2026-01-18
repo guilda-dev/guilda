@@ -1,34 +1,56 @@
-function class_list = search_GUILDAclass(char_class)
-arguments
-    char_class (1,:) char = 'handle';
+function tab_out = dictionary(headword,opt)
+% Search classes implemented in this software
+    arguments
+        headword (1,1) string {mustBeMember(headword,["LayerPackage","PowerSystem","PowerNetwork","Branch","Component","Controller","LocalController","GlobalController","auxiliary"])} = "PowerSystem"
+        opt.disp (1,1) logical = true
+    end
+    
+    char_class = char(headword);
+
+    if strcmp(char_class([end-1,end]),'.m')
+        char_class = char_class(1:end-2);
+    end
+    
+    filename      = "handle";
+    superclass    = "";
+    class_list    = make_classlist(table(filename,superclass),cell(0), opt.disp);
+
+
+    if opt.disp
+        bar = "================================================================";
+        disp(' ')
+        disp("Search for '" + char_class + "' class")
+        disp(bar)
+        disp("     Link   　   Type      class tree ")
+        disp(bar)
+        fprintf_doc_and_help(char_class);
+        disp("  "+char_class)
+        print_tree(class_list,string(char_class),'');
+        disp(bar)
+    end
+
+    l_flag      = true;
+    str_parent  = headword;
+    tab_out     = [];
+    while l_flag
+        l_flag = false;
+        lv_child = ismember(class_list.superclass,str_parent);
+        if any(lv_child)
+            l_flag = true;
+            tab_add    = class_list(lv_child,:);
+            [~,iv_add] = sort(tab_add.superclass);
+            tab_out    = [tab_out; tab_add(iv_add,:)]; %#ok
+            class_list = class_list(~lv_child,:);
+            str_parent = tab_add.filename;
+        end
+    end
+    No = (1:size(tab_out,1))';
+    tab_out = [table(No), tab_out];
 end
 
+function data = make_classlist(data, cell_dirlist, l_disp)
 
-if strcmp(char_class([end-1,end]),'.m')
-    char_class = char_class(1:end-2);
-end
-
-filename      = "handle";
-superclass    = "";
-class_list    = make_classlist(table(filename,superclass),cell(0));
-
-
-bar = "=========================================================";
-disp(' ')
-disp("Search for '" + char_class + "' class")
-disp(bar)
-disp("     Link   　 class tree ")
-disp(bar)
-fprintf_doc_and_help(char_class);
-disp(char_class)
-print_tree(class_list,string(char_class),'  ');
-disp(bar)
-
-end
-
-function data = make_classlist(data, cell_dirlist)
-
-    list = dir(fullfile( config.pwd, cell_dirlist{:} ));
+    list = dir(fullfile( GUILDA.pwd, cell_dirlist{:} ));
     for idx = 1:numel(list)
         char_name = list(idx).name;
 
@@ -41,7 +63,7 @@ function data = make_classlist(data, cell_dirlist)
 
         % ディレクトリの場合：フォルダ内を探索
         if  list(idx).isdir
-            data = make_classlist( data, [cell_dirlist, {char_name}]);
+            data = make_classlist( data, [cell_dirlist, {char_name}], l_disp);
             continue
         end
         
@@ -58,13 +80,15 @@ function data = make_classlist(data, cell_dirlist)
         % ファイル名から呼び出し名に変換
         for i = numel(cell_dirlist):-1:1
             if cell_dirlist{i}(1)=='+'
-                filename = cell_dirlist{i}(3:end)+"."+filename;
+                filename = cell_dirlist{i}(2:end)+"."+filename;
             end
         end
 
         % 既に検出されているクラスの場合：スキップ  (普通は起きえないが同一名のクラスを定義している場合を考慮)
         if any( data.filename == filename )
-            disp(config.lang("同一名のクラスが検出されました："+filename,"A class with the same name was detected :"+filename))
+            if l_disp
+                disp("A class with the same name was detected :"+filename)
+            end
             continue
         end
 
@@ -72,7 +96,9 @@ function data = make_classlist(data, cell_dirlist)
         try
             superclass_list = superclasses(filename);
         catch
-            disp(config.lang("親クラスを解析できません："+filename,"Unable to analyze parent class : "+filename))
+            if l_disp
+                disp("Unable to analyze parent class : "+filename)
+            end
             superclass_list = {};
         end
 
@@ -94,14 +120,15 @@ function print_tree(data,superclass,char_preword)
     
         filelink = ['<a href="matlab:open(''',char_filename,''');">',char_filename,'</a>\n'];
         if idx == idx_list(end)
-            fprintf([char_preword,' ┗━ ',filelink])
-            print_tree(data,string(char_filename),[char_preword,'       ']);
+            fprintf([char_preword,'  ┗━━ ',filelink])
+            print_tree(data,string(char_filename),[char_preword,'    ']);
         else
-            fprintf([char_preword,' ┣━ ',filelink])
-            print_tree(data,string(char_filename),[char_preword,' ┃  ']);
+            fprintf([char_preword,'  ┣━━ ',filelink])
+            print_tree(data,string(char_filename),[char_preword,'  ┃ ']);
         end
     end
 end
+
 
 function fprintf_doc_and_help(char_filename)
     fprintf(' ')
@@ -125,5 +152,12 @@ function fprintf_doc_and_help(char_filename)
         fprintf(['<a href="matlab:' ,...
                  'doc(''',char_filename,''');',...
                  '">[doc]</a>  '])
+    end
+
+    c = meta.class.fromName(char_filename);
+    if c.Abstract
+        fprintf("-:Abstract")
+    else
+        fprintf("o:Concrete")
     end
 end

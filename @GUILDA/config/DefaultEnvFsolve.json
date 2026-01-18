@@ -1,0 +1,53 @@
+{
+    "MaxIterations":{
+        "Value": 400,
+        "Type": "double",
+        "Description": "'MaxIterations' option @fsolve"
+    },
+    "Display":{
+        "Value": "none",
+        "Type": "select",
+        "options": [
+            "none",
+            "iter",
+            "iter-detailed",
+            "final",
+            "final-detailed"
+        ],
+        "Description": "'Display' option @fsolve"
+    },
+    "MaxFunEvals"  :{
+        "Value": NaN,
+        "Type": "double",
+        "Description": "'MaxFunEvals' option @fsolve (If NaN, use default)"
+    }, 
+    "UseParallel":{
+        "Value": false,
+        "Type": "logical",
+        "Description": "'UseParallel' option @fsolve"
+    },
+    "PlotFcn":{
+        "Value": "none",
+        "Type": "select",
+        "options":[
+            "none",
+            "optimplotx",
+            "optimplotfunccount",
+            "optimplotfval",
+            "optimplotstepsize",
+            "optimplotfirstorderopt"
+        ],
+        "Description": "'PlotFcn' option @fsolve"
+    },
+    "WhenFailed":{
+        "Value": "WARN",
+        "Type": "select",
+        "options":[
+            "WARN",
+            "DISP",
+            "ERROR",
+            "NONE"
+        ],
+        "Description": "Behavior if fsolve fails to find an powerflow solution"
+    }
+}

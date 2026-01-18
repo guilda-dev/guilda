@@ -1,0 +1,12 @@
+{
+    "port_vw":{
+        "Value": "[Vre,Vim] to [-Iim,Ire]",
+        "Type": "select",
+        "options": [
+            "[theta,V] to [P,Q/V]",
+            "[theta,logV] to [P,Q]",
+            "[Vre,Vim] to [-Iim,Ire]"
+        ],
+        "Description": "I/O ports of linear system of Component"
+    }
+}
