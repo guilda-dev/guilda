@@ -1,5 +1,5 @@
 function check_requirement()
-% Verification of Toolbox Installation Required for GUIKDA Execution
+% Verification of Toolbox Installation Required for GUILDA Execution
 % show >> ./@GUILDA/config/ListToolbox.txt
 
     product_info = ver;
