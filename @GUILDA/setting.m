@@ -24,9 +24,15 @@ function setting()
         num_fields = numel(str_fields);
     
         % Clean up existing UI components before rebuilding
-        delete(uifig.Children);
-        uifig.Position(4) = 90 + 30*(num_fields+2) + 60;
+        % delete(uifig.Children);
+
+        uifig.Position(4) = 60 + 20+30*(num_fields)+20+60;
+        
+        %%%% UI LAYOUT
         uigrid = uigridlayout(uifig,[num_fields+4, 7],"BackgroundColor",backcolor);
+        uigrid.RowHeight          = [{'2x'},{'0.5x'},repmat({'1x'},1,num_fields),{'0.5x'},{'2x'}];
+        uigrid.ColumnWidth        = {2,'5x','13x','1x','1x','4x',2};
+
         uitab_field = uidropdown(uigrid, ...
                           'Items',fieldnames(env),...
                           'Value',field,...
@@ -35,6 +41,9 @@ function setting()
                           "FontWeight","bold",...
                           'BackgroundColor',backcolor2,...
                           "ValueChangedFcn", @(src,event) build_component(uifig, src.Value) );
+        uitab_field.Layout.Row    = 1;
+        uitab_field.Layout.Column = [2,3];
+
         uibtn_apply = uibutton(uigrid, ...
                           'Text'    ,'Apply',...
                           'FontSize',15,...
@@ -42,6 +51,9 @@ function setting()
                           "FontWeight","bold",...
                           'BackgroundColor',backcolor,...
                           "ButtonPushedFcn", @(src,event) set_env(src) );
+        uibtn_apply.Layout.Row    = 4+num_fields;  
+        uibtn_apply.Layout.Column = 2;
+
         uibtn_end  = uibutton(uigrid, ...
                           'Text'    ,'Complete',...
                           'FontSize',15,...
@@ -49,20 +61,14 @@ function setting()
                           "FontWeight","bold",...
                           'BackgroundColor',backcolor,...
                           "ButtonPushedFcn", @(src,event) closeUI(uifig,uibtn_apply) );
-        
-        uiimg_guilda = uiimage(uigrid,"ImageSource",pathlogo);
-        
-        %%%% UI LAYOUT
-        uigrid.RowHeight          = [{'3x'},{'0.5x'},repmat({'2x'},1,num_fields),{'1x'},{'2x'}];
-        uigrid.ColumnWidth        = {2,'5x','13x','1x','1x','4x',2};
-        uiimg_guilda.Layout.Row   = 1;
-        uiimg_guilda.Layout.Column= 6;
-        uitab_field.Layout.Row    = 1;
-        uitab_field.Layout.Column = [2,3];
-        uibtn_apply.Layout.Row    = 4+num_fields;  
-        uibtn_apply.Layout.Column = 2;
         uibtn_end.Layout.Row      = 4+num_fields;  
         uibtn_end.Layout.Column   = 6;
+        
+        uiimg_guilda = uiimage(uigrid,"ImageSource",pathlogo);
+        uiimg_guilda.Layout.Row   = 1;
+        uiimg_guilda.Layout.Column= 6;
+
+        
 
         for i = 1:num_fields
             ith_field = str_fields{i};
