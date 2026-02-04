@@ -1,10 +1,12 @@
 function gitpull()
 % Get new version from GitHub
 
+    % Check .git existence
     if ~isfolder([GUILDA.pwd,filesep,'.git'])
         disp("  .git file not found.")
     end
 
+    % Check modified files
     repo = gitrepo;
     str_ModifiedFiles  = repo.ModifiedFiles;
 
@@ -97,8 +99,9 @@ function gitpull()
         disp('  << git pull>>')
     end
     
-    % status = system("git pull");
-    status = 0;
+    % Execute git pull
+    status = system("git pull");
+
     if status==0
         disp('    Git pull ...ok')
     else
