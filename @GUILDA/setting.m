@@ -23,6 +23,8 @@ function setting()
         str_fields = fieldnames(data);
         num_fields = numel(str_fields);
     
+        % Clean up existing UI components before rebuilding
+        delete(uifig.Children);
         uifig.Position(4) = 90 + 30*(num_fields+2) + 60;
         uigrid = uigridlayout(uifig,[num_fields+4, 7],"BackgroundColor",backcolor);
         uitab_field = uidropdown(uigrid, ...
