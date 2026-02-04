@@ -155,7 +155,7 @@ function fprintf_doc_and_help(char_filename)
     end
 
     c = meta.class.fromName(char_filename);
-    if c.Abstract
+    if ~isempty(c) && c.Abstract
         fprintf("-:Abstract")
     else
         fprintf("o:Concrete")
