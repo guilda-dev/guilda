@@ -1,5 +1,0 @@
-_GUILDAsystem
-_GUILDAsystem/image
-_GUILDAobject
-_GUILDAfunction
-_Tutorial

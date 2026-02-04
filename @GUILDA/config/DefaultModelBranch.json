@@ -1,0 +1,52 @@
+{
+    "Rij":{
+        "Value": 0,
+        "Type": "double",
+        "Description": "Resistance ( Admittance=1/(Rij+jXij) )"
+    },
+    "Xij":{
+        "Value": 1,
+        "Type": "double",
+        "Description": "Reactance ( Admittance=1/(Rij+jXij) )"
+    },
+    "cij":{
+        "Value": 0,
+        "Type": "double",
+        "Description": "Ground Capacitance (= 1j*cij)"
+    },
+    "Tap":{
+        "Value": 1,
+        "Type": "double",
+        "Description": "Transformer tap ratio (Ignore the transformer if 1)"
+    },
+    "Phase":{
+        "Value": 0,
+        "Type": "double",
+        "Description": "Phase shifter adjustment angle [deg] (Ignore the phase shifter if 0)"
+    },
+    "Sij_max":{
+        "Value": Inf,
+        "Type": "double",
+        "Description": "Upper limit of apparent power"
+    },
+    "Iij_max":{
+        "Value": Inf,
+        "Type": "double",
+        "Description": "Upper limit of current |Iij|"
+    },
+    "Pij_max":{
+        "Value": Inf,
+        "Type": "double",
+        "Description": "Upper limit of active power"
+    },
+    "Qij_max":{
+        "Value": Inf,
+        "Type": "double",
+        "Description": "Upper limit of reactive power"
+    },
+    "Vargij_max":{
+        "Value": 90,
+        "Type": "double",
+        "Description": "Upper limit voltage phase difference [deg]"
+    }
+}

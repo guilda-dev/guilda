@@ -1,0 +1,32 @@
+{
+    "PrintLogo":{
+        "Value": true,
+        "Type": "logical",
+        "Description": "Print the GUILDA logo at startup"
+    },
+    "gitpull":{
+        "Value": false,
+        "Type": "logical",
+        "Description": "Pull from GitHub at startup"
+    },
+    "CheckRequirement":{
+        "Value": true,
+        "Type": "logical",
+        "Description": "Verifying version requirements at startup"
+    },
+    "PrintUpdateLog":{
+        "Value": true,
+        "Type": "logical",
+        "Description": "Display update log at startup"
+    },
+    "Tutorial":{
+        "Value": "LiveScript",
+        "Type": "select",
+        "options": [
+            "none",
+            "LiveScript",
+            "GUI"
+        ],
+        "Description": "Open the tutorial at startup"
+    }
+}

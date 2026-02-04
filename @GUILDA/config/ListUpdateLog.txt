@@ -1,0 +1,16 @@
+2025/10/01 : GUILDA ver5 start
+2025/10/08 : LayerPackage.m　       
+2025/10/09 : Build Layer Structure
+             >> GuildaWorksSpace.m : only generate
+             >> PowerNeteork.m     : @add_bus @add_branch @add_global_controller @remove_bus @remove_branch @remove_global_controller
+             >> Bus.m              : @set_network @add_component @add_cubicle @remove_component @remove_cubicle
+             >> Cubicle.m          : @set_bus
+             >> Branch.m           : @set_network
+2025/10/13 : >> Component.m        : 
+             >> ControllerPackage.m: only generate
+             >> LocalController.m  : only generate
+             >> GlobalController.m : only generate
+2025/10/14 : Parameter Operation
+             Parameter.m           : created by inheriting the dynamicprops class
+2025/10/15 : Rename "+config" >> "+GUILDAconfig"
+             GUILDAconfig.gitpull動くようになりました！

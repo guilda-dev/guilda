@@ -1,0 +1,52 @@
+{
+    "Gshunt":{
+        "Value": 0,
+        "Type": "double",
+        "Description": "Conductance element of shunt"
+    },
+    "Bshunt":{
+        "Value": 0,
+        "Type": "double",
+        "Description": "Susceptance element of shunt"
+    },
+    "Vmin":{
+        "Value": 0.5,
+        "Type": "double",
+        "Description": "Minimum voltage absolute by shunt in OPF"
+    },
+    "Vmax":{
+        "Value": 1.5,
+        "Type": "double",
+        "Description": "Maximum voltage absolute by shunt in OPF"
+    },
+    "baseKV":{
+        "Value": 230,
+        "Type": "double",
+        "Description": "Base voltage (kV)"
+    },
+    "baseMVA":{
+        "Value": 100,
+        "Type": "double",
+        "Description": "Base Power (MVA)"
+    },
+    "PFset_Varg":{
+        "Value": 0,
+        "Type": "double",
+        "Description": "Varg(電圧の位相)の潮流設定"
+    },
+    "PFset_V":{
+        "Value": 1,
+        "Type": "double",
+        "Description": "V(電圧の絶対値)の潮流設定"
+    },
+    "OPFinit_Varg0":{
+        "Value": 0,
+        "Type": "double",
+        "Description": "Initial value of voltage angle value when calculating power-flow [deg]"
+    },
+    "OPFinit_V0":{
+        "Value": 1,
+        "Type": "double",
+        "Description": "Initial value of voltage absolute value when calculating power-flow"
+    }
+}

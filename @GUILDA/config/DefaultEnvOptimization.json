@@ -1,0 +1,73 @@
+{
+    "Algorithm_linprog":{
+        "Value": "dual-simplex-highs",
+        "Type": "select",
+        "options":[
+            "interior-point-legacy",
+            "interior-point",
+            "dual-simplex-highs"
+        ],
+        "Description": "algorithm option @linprog"
+    },
+    "Algorithm_quadprog":{
+        "Value": "interior-point-convex",
+        "Type": "select",
+        "options":[
+            "active-set",
+            "trust-region-reflective",
+            "interior-point-convex"
+        ],
+        "Description": "algorithm option @quadprog"
+    },
+    "Algorithm_fmincon":{
+        "Value": "interior-point",
+        "Type": "select",
+        "options":[
+            "active-set",
+            "sqp-codegen",
+            "sqp",
+            "trust-region-reflective",
+            "interior-point"
+        ],
+        "Description": "algorithm option @fmincon"
+    },
+    "Display":{
+        "Value": "iter-detailed",
+        "Type": "select",
+        "options": [
+            "none",
+            "iter",
+            "iter-detailed",
+            "final",
+            "final-detailed",
+            "notify",
+            "notify-detailed"
+        ],
+        "Description": "'Display' option of solver"
+    },
+    "MaxIteration":{
+        "Value": NaN,
+        "Type": "double",
+        "Description": "'MaxIteration' option of solver (If blank, use default value.)"
+    },
+    "OptimalityTolerance":{
+        "Value": NaN,
+        "Type": "double",
+        "Description": "'OptimalityTolerance' option of solver (If blank, use default value.)"
+    },
+    "StepTolerance":{
+        "Value": NaN,
+        "Type": "double",
+        "Description": "'StepTolerance' option of solver (If blank, use default value.)"
+    },
+    "MaxFunctionEvaluations":{
+        "Value": NaN,
+        "Type": "double",
+        "Description": "'MaxFunctionEvaluations' option of solver (If blank, use default value.)"
+    },
+    "UseParallel":{
+        "Value": false,
+        "Type": "logical",
+        "Description": "'UseParallel' option of solver"
+    }
+}
