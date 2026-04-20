@@ -1,0 +1,6 @@
+Bus,P,Q,ParameterID,OpfID,Xaxis,Yaxis,Marker,BusPoint,MidXaxis,MidYaxis
+1,0,NaN,1,1,0.2,0.65,o,0.5,[],[]
+2,0.4,NaN,1,1,0.45,0.15,o,0.5,[],[]
+3,0,NaN,1,1,0.85,0.05,o,0.5,[],[]
+6,0,NaN,1,1,0.5,0.6,o,0.5,[],[]
+8,0,NaN,1,1,0.99,0.625,o,0.5,[],[]

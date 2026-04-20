@@ -1,0 +1,28 @@
+classdef IEEE14bus < PowerNetwork
+% <@Desc> 
+% Made by CsvNetHandler.export (2026/04/18 22:56:06)
+% <Model> IEEE14bus
+% <Summary>
+%  Bus       : 14
+%  Branch    : 20
+%  Component : 17
+%   > SG     : 5
+%   > Load   : 12
+%   > Others : 0
+% 
+% <@Role> PowerNetwork COnstructor
+% <@Constructor> 
+%  net = IEEE14bus()
+ 
+    properties(Constant)
+        ver = 1
+    end
+
+    methods
+        function obj = IEEE14bus()
+            str_filepath = mfilename("fullpath");
+            str_dirpath  = fileparts(str_filepath);
+            CsvNetHandler.import(str_dirpath, obj);
+        end
+    end
+end

@@ -1,0 +1,288 @@
+{
+    "_schemaVersion": "1.0.0",
+    "PowerNetwork.add_bus":
+    {
+        "inputs":[
+            {
+                "name":"obj",
+                "kind":"required",
+                "type":["PowerNetwork"],
+                "purpose":"PowerNetwork instance"
+            },
+            {
+                "name":"Varg",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Power Flow Setting of voltage angle [rad]"
+            },
+            {
+                "name":"V",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Power Flow Setting of voltage magnitude [pu]"
+            },
+            {
+                "name":"Gshunt",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Conductance to ground"
+            },
+            {
+                "name":"Bshunt",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Susceptance to ground"
+            },
+            {
+                "name":"Vmin",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Minimum voltage magnitude [pu]"
+            },
+            {
+                "name":"Vmax",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Maximum voltage magnitude [pu]"
+            },
+            {
+                "name":"baseKV",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Base voltage [kV]"
+            },
+            {
+                "name":"baseMVA",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Base power [MVA]"
+            },
+            {
+                "name":"OPFinit_Varg0",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"OPF initial voltage angle [rad]"
+            },
+            {
+                "name":"OPFinit_V0",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"OPF initial voltage magnitude [pu]"
+            },
+            {
+                "name":"Tag",
+                "kind":"namevalue",
+                "type":["char"],
+                "purpose":"Bus tag prefix"
+            }
+        ]
+    },
+    "PowerNetwork.add_branch":
+    {
+        "inputs":[
+            {
+                "name":"obj",
+                "kind":"required",
+                "type":["PowerNetwork"],
+                "purpose":"PowerNetwork instance"
+            },
+            {
+                "name":"Type",
+                "kind":"ordered",
+                "type":[
+                    "char", 
+                    "choices={'pi','pi_transfer','T','two_winding_transformer'}"
+                ],
+                "purpose":"Branch model type"
+            },
+            {
+                "name":"from_to",
+                "kind":"ordered",
+                "type":[["string"],["double"]],
+                "purpose":"Endpoint bus tags or bus indices"
+            },
+            {
+                "name":"R",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Resistance"
+            },
+            {
+                "name":"X",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Reactance"
+            },
+            {
+                "name":"C",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Capacitance to ground"
+            },
+            {
+                "name":"Tap",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Transformer tap ratio"
+            },
+            {
+                "name":"Phase",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Phase shift"
+            },
+            {
+                "name":"Smax",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Maximum apparent power flow"
+            },
+            {
+                "name":"Imax",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Maximum current flow"
+            },
+            {
+                "name":"Pmax",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Maximum active power flow"
+            },
+            {
+                "name":"Qmax",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Maximum reactive power flow"
+            },
+            {
+                "name":"Vargmax",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Maximum voltage angle difference"
+            },
+            {
+                "name":"Tag",
+                "kind":"namevalue",
+                "type":["char"],
+                "purpose":"Branch tag prefix"
+            }
+        ]
+    },
+    "Bus.add_component":
+    {
+        "inputs":[
+            {
+                "name":"obj",
+                "kind":"required", 
+                "type":["Bus"], 
+                "purpose":"Bus instance"
+            },
+            {
+                "name":"Type",
+                "kind":"required",
+                "type":[
+                    "char", 
+                    "choices={'load-impedance','load-power','gen-classical','gen-1axis','gen-park'}"
+                ],
+                "purpose":"Component type"
+            },
+            {
+                "name":"parameter",
+                "kind":"namevalue",
+                "type":["table"],
+                "purpose":"Component parameter table"
+            },
+            {
+                "name":"P",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Active power"
+            },
+            {
+                "name":"Q",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Reactive power"
+            },
+            {
+                "name":"baseMVA",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Base power [MVA]"
+            },
+            {
+                "name":"Pmin",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Minimum active power"
+            },
+            {
+                "name":"Pmax",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Maximum active power"
+            },
+            {
+                "name":"Qmin",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Minimum reactive power"
+            },
+            {
+                "name":"Qmax",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"Maximum reactive power"
+            },
+            {
+                "name":"OPFinit_P0",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"OPF initial active power"
+            },
+            {
+                "name":"OPFinit_Q0",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"OPF initial reactive power"
+            },
+            {
+                "name":"OPFcost_HP",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"OPF cost coefficient HP"
+            },
+            {
+                "name":"OPFcost_HQ",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"OPF cost coefficient HQ"
+            },
+            {
+                "name":"OPFcost_fP",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"OPF cost coefficient fP"
+            },
+            {
+                "name":"OPFcost_fQ",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"OPF cost coefficient fQ"
+            },
+            {
+                "name":"OPFcost_startup",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"OPF startup cost"
+            },
+            {
+                "name":"OPFcost_shutdown",
+                "kind":"namevalue",
+                "type":["double"],
+                "purpose":"OPF shutdown cost"
+            }
+        ]
+    }
+}

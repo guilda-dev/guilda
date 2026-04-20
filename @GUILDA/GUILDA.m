@@ -1,10 +1,8 @@
 classdef GUILDA < handle
-% A utility class for the GUILDA software.
+% <@Role> Utility
+% <@Desc> A utility class for the GUILDA software.
 % To start using the software, execute GUILDA.
 % >> GUILDA;
-% 
-% To modify the startup behavior, change the "startup" setting using the "setting" method.
-% >> GUILDA.setting;
 %
 % Utility Function
 % >> GUILDA.pwd()        : Get guilda path
@@ -13,9 +11,9 @@ classdef GUILDA < handle
 % >> GUILDA.gitpull()    : Get new version from GitHub
 % >> GUILDA.setting()    : Launch settings window (GUI launches)
 % >> GUILDA.tutorial()   : open Tutorial
+% >> GUILDA.doc()        : open documentation on browser
 % >> GUILDA.newclass()   : Create a new class (GUI launches)
 % >> GUILDA.dictionary() : Search classes implemented in this software
-%
 %
 % Major Folders within the @GUILDA Directory
 % <WARNING> DO NOT modify the files inside the following folders, as they are read and written by the system
@@ -23,7 +21,11 @@ classdef GUILDA < handle
 % - @GUILDA/config   : Stores configuration values used during guilda startup and internal analysis.
 % - @GUILDA/user     : Manages user-defined settings and tags for instantiated objects.
 %
-%
+% <@Constructor> 
+% >> GUILDA;
+% There are no input arguments for the constructor. However, it performs several startup operations, such as displaying the GUILDA logo, performing a Git pull, adding necessary paths, checking version requirements, launching the tutorial, and displaying the update log. These operations can be customized.
+% To customize the startup behavior, change the "startup" setting using the "setting" method.
+% >> GUILDA.setting;
 
     methods
         function obj = GUILDA
@@ -58,41 +60,39 @@ classdef GUILDA < handle
             if cf.CheckRequirement.Value
                 check_requirement
             end
-            % open Tutorial (Mail.mlx)
-            obj.tutorial( cf.Tutorial.Value )
+            % update documentation database
+            if cf.UpdateDoc.Value
+                obj.doc('update',true);
+            end
             % Disp Update log
             if cf.PrintUpdateLog.Value
+                disp(' ')
                 disp(' === Update Log === ')
-                cellfun(@(c) disp("  "+c), readlines(fullfile(GUILDApath,"ListUpdateLog.txt")));
+                cell_log = readlines(fullfile(GUILDApath,"ListUpdateLog.txt"));
+                cellfun(@(c) disp("  "+c), cell_log(7:end));
             end 
-            % ここを実行するのは自己責任でお願いします。
-            % 何か問題が発生しても我々は一切の責任を負いません
-            % most_annoying_ad()
-            % function most_annoying_ad()                
-            %     create_uncloseable_ad();
-            % end
-            % 
-            % function create_uncloseable_ad()
-            %     pos = [randi([100 800]), randi([100 500]), 300, 150];
-            %     f = figure('MenuBar', 'none', 'NumberTitle', 'off', ...
-            %         'Name', '⚠️ システム警告', 'Position', pos, ...
-            %         'WindowStyle', 'alwaysontop', 'Color', [1 0.3 0.3]);
-            % 
-            %     uicontrol(f, 'Style', 'text', 'String', '重大なエラーを検出しました。修復するにはこの画面を閉じてください。', ...
-            %         'Position', [20 50 260 60], 'FontSize', 11, 'BackgroundColor', [1 0.3 0.3]);
-            %                 
-            %     set(f, 'CloseRequestFcn', @(src, ~) multiply(src));
-            % end
-            % 
-            % function multiply(src)
-            %     delete(src);
-            %     create_uncloseable_ad(); 
-            %     create_uncloseable_ad(); 
-            % end
+            % update key map
+            if cf.UpdateKeyMap.Value
+                update_class_signature;
+            end
+            % open Tutorial (Mail.mlx)
+            if cf.Tutorial.Value
+                obj.tutorial;
+            end
+   
         end
 
-        function disp(obj)
-            help(obj)            
+        function disp(~)
+            fprintf( "  === @GUILDA Class Methods ===\n"+...
+                     "  >> GUILDA.pwd()        : Get guilda path\n"+...
+                     "  >> GUILDA.setting()    : Launch settings window (GUI launches)\n"+...
+                     "  >> GUILDA.tutorial()   : open Tutorial\n"+...
+                     "  >> GUILDA.doc()        : open documentation on browser\n"+...
+                     "  >> GUILDA.newclass()   : Create a new class (GUI launches)\n"+...
+                     "  >> GUILDA.dictionary() : Search classes implemented in this software"+...
+                     "  >> GUILDA.rmpath()     : Remove paths for use of this software\n"+...
+                     "  >> GUILDA.addpath()    : Add paths for use of this software\n"+...
+                     "  >> GUILDA.gitpull()    : Get new version from GitHub\n\n")
         end
     end
     
@@ -113,5 +113,7 @@ classdef GUILDA < handle
         gitpull()
         addpath()
         rmpath() 
+        document()
+        doc()
     end
 end

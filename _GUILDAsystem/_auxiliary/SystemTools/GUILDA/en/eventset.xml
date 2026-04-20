@@ -1,0 +1,9 @@
+<!--This is an XML file containing error messages related to the eventset function.-->
+<rsccat version="2" locale="en" product="GUILDA">
+    <message>
+        <entry key="ArgNameMismatch">Arguments must occur in name-value pairs.</entry>
+        <entry key="NoPropName">Expected argument {0,number,integer} to be a string or a character vector.</entry>
+        <entry key="InvalidPropName">Unrecognized property name ''{0}''.</entry>
+        <entry key="AmbiguousPropName">Ambiguous property name ''{0}'' ({1}).</entry>
+    </message>
+</rsccat>

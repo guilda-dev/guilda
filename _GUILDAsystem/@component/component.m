@@ -1,319 +1,171 @@
-classdef Component < GuildaLayer
-% componentクラスの親クラス。
-% GUILDA上に機器モデルを実装するために必要なmethodが定義されている。
-% 新しい機器モデルを実装する場合はこのcomponentクラスを継承すること。
-%
-%           ┌----------┐
-%  ┌---v--->|  BRANCH  |--->w--┐     
-%  |        └----------┘       |     
-%  |                           |
-%  |                           |
-%  |        ┌---------┐        | -
-%  o---v<---|   Bus   |<---w---o     
-%  |        └---------┘        | -
-%  |                           | 
-%  |                           |
-%  |        ┌-----------┐      |
-%  └---v--->|\\\\\\\\\\\|--->w-┘     v : V_BUS = [ ∠V ;  |V| ] or [ ∠V ;  log|V| ]
-%           |\Component\|            w : I_BUS = [  P ; Q/|V|] or [  P ;      Q  ]
-%  ┌---u--->|\\\\\\\\\\\|--->y-┐     u : input to component (e.g. Pmech,Vfield)
-%  |        └-----------┘      |     y : output from component (e.g. Vabs,Efield)
-%  |                           |
-%  |                           | 
-%  |                           |
-%  |        ┌------------┐     |
-%  └---u----| Controller |<--y-┘    
-%           └------------┘          
-%
-%
-%
-%  << 親クラスからの継承プロパティ >>
-%
-%     prop         class      description
-%==========================================================================
-%   ・parent   |LayerPackage| 階層構造の上位層にあたるLayerPackageクラス
-%   ・parent   |    cell    | 階層構造の下位層にあたるLayerPackageクラス
-%   ・tag      |   string   | クラスの呼称
-%   ・index    |   double   | インデックス番号、tagともにクラスの命名に使用
-%   ・parameter|   table    | ユーザが設定する定数は全てこのプロパティで管理
-%   ・editFlag |  logical   | 変更が加えられたかどうかの管理simulate前などに確認
-%   ・editLog  |   table    | 変更内容を「変更時間・対象クラス・変更内容」で管理
-%==========================================================================
-%
+classdef Component < PowerSystemModel
+% Class for managing equipment dynamics and power-flow settings 
 
-
-%%%%%%%%%%%%%%%%
-%%% Abstract %%%
-%%%%%%%%%%%%%%%%
+%% Abstract properties/methods
+    properties(Abstract,Constant)
+        key      (1,1) string
+        str_x    (:,1) string
+        str_u    (:,1) string 
+        str_y    (:,1) string
+        str_para (:,1) string
+    end
     methods(Abstract)
-        [str_x, str_u, str_y] = name_xuy_vars(obj);
-        [rvec_xst, rvec_ust, rvec_yst]  = calculate_equilibrium(obj, rvec_vst, rvec_wst);
-        [Mass, svec_dx, svec_w, svec_y] = get_ODE_function(obj, sscl_t, svec_x, svec_v, svec_u, opt)
+        [cv_Xequilibrium, cv_Uequilibrium] = get_equilibrium(obj,c_V,c_I,r_P,r_Q);
+        set_odefcn(obj, omega0)
     end
+    
 
-%%%%%%%%%%%%%
-%%% Layer %%%
-%%%%%%%%%%%%%
-    properties(Dependent,Access=protected)
-        children (:,1) cell
+%% Parameter
+    properties(SetAccess=protected)
+        a_Bus                                  % [   Layer   ] 接続しているBusクラス(a_Cubicleから辿る)
+        a_LocalController  = cell(0,1)         % [   Layer   ] 接続されているControllerクラスのcell配列        
+        rm_odeMass                             % [  Dynamics ] 数値積分の計算に使用する質量行列のシンボリック式
+        fv_odeDiff                             % [  Dynamics ] 数値積分の計算に使用する微分方程式のシンボリック式
+        fv_odeI                                % [  Dynamics ] 数値積分の計算に使用する接続方程式のシンボリック式
+        JacobiA
+        JacobiB
+        JacobiC
+        JacobiD
+        odeLinearSystem
     end
-    properties(Dependent)
-        Bus
-        omega0
+    properties
+        cv_Xcurrent = zeros(0,1)               % [  Simulation ] シミュレーション中の状態
+        cv_Ucurrent = zeros(0,1)               % [  Simulation ] シミュレーション中の入力
     end
     properties(SetAccess=protected)
-        SpecificControllers (:,1) cell = {}; % generatorのavr,pssなどのために設けた。
-        LocalControllers    (:,1) cell = {};
+        cv_Xequilibrium = zeros(0,1)           % [SteadyState] 状態の平衡点
+        cv_Uequilibrium = zeros(0,1)           % [SteadyState] 定常入力
+        c_Iequilibrium                         % [SteadyState] 定常潮流状態での機器の注入電流
     end
-    methods
-        function c = get.children(obj)
-            c = [obj.SpecificControllers;...
-                 obj.LocalControllers]; 
-        end
-        function net = get.Bus(obj)
-            net = obj.parent;
-        end
-        function w0 = get.omega0(obj)
-            w0 = obj.Bus.omega0;
-        end
-    end
-
-%%%%%%%%%%%%%%%%
-%%% dynamics %%%
-%%%%%%%%%%%%%%%%
-    methods
-        [sv_x, sv_v, sv_w, sv_u, sv_y] = get_ODE_vars(obj,lscl_flagtag)
-        Fac = get_ODE(obj,opt)
-    end
-
-%%%%%%%%%%%%%%
-%%% OPF/PF %%%
-%%%%%%%%%%%%%%
-    methods
-        optim = get_OPF(obj,opt)
-    end
-
-%%%%%%%%%%%%%%%%%
-%%% parameter %%%
-%%%%%%%%%%%%%%%%%
-    properties 
-        isConnected (1,1) logical = true;
-    end
+    properties (SetAccess={?odeSimulator, ?Component}, Hidden)
+        iv_odeX  = zeros(0,1);
+        iv_odeU  = zeros(0,1);        
+    end    
     properties(Dependent)
+        cv_Xequilibrium_all                    % [SteadyState] 制御器の状態も含めた平衡点
+        tab_parameter                          % [ Parameter ] ハイパーパラメータの設定値
     end
-    methods
-        function flag = validate_params(obj,params)
-            arguments
-                obj 
-                params (1,:) table 
-            end
-            varnames_old = string(obj.parameter.Properties.VariableNames);
-            varnames_new = string(params.Properties.VariableNames);
-            flag = all(varnames_old==varnames_new);
-            assert(flag,config.lang("parameterの変数名が間違っています。","The variable name for parameter is incorrect."))
+    properties(SetAccess=protected)
+        para_dynamics                          % [ Parameter ] tab_prameterの動特性の部分を管理するParameterクラス 
+        para_powerflow                         % [ Parameter ] tab_prameterの潮流設定の部分を管理するParameterクラス
+        para_operation                         % [ Parameter ] tab_prameterの運用基準の部分を管理するParameterクラス
+        para_OPF                               % [ Parameter ] tab_prameterのOPFの部分を管理するParameterクラス
+        para_graph                             % [ Parameter ] tab_prameterのグラフ描画の部分を管理するParameterクラス
+    end  
+    properties(Dependent, Access=protected)
+        parent                                 % [   Layer   ] Layerの上位に当たるクラス
+        children                               % [   Layer   ] Layerの下位に当たるクラス群
+    end
+    properties (Access={?odeSimulator, ?Component})
+        isController = false
+        isConnect    = true
+    end
+    properties (Hidden)
+        X_offset 
+        U_offset 
+    end
+
+    
+    
+%% Constructor
+    methods(Access=protected)
+        function obj = Component(str_tag, opt)
+            obj.str_tag        = str_tag;
+            obj.para_dynamics  = Parameter(obj,"dynamics");
+            obj.para_powerflow = Parameter(obj,"powerflow");
+            obj.para_OPF       = Parameter(obj,"OPF");
+            obj.para_graph     = Parameter(obj,"graph");
+            obj.para_operation = Parameter(obj,"operation");
+
+            obj.para_operation.add_entry( "baseMVA", opt.baseMVA          , "double",...
+                                             "Pmin", opt.Pmin             , "double",...
+                                             "Pmax", opt.Pmax             , "double",...
+                                             "Qmin", opt.Qmin             , "double",...
+                                             "Qmax", opt.Qmax             , "double");
+            obj.para_powerflow.add_entry(       "P", opt.P                , "double",...
+                                                "Q", opt.Q                , "double");
+            obj.para_OPF.add_entry(            "P0", opt.OPFinit_P0       , "double",...
+                                               "Q0", opt.OPFinit_Q0       , "double",...
+                                               "HP", opt.OPFcost_HP       , "double",...
+                                               "HQ", opt.OPFcost_HQ       , "double",...
+                                               "fP", opt.OPFcost_fP       , "double",...
+                                               "fQ", opt.OPFcost_fQ       , "double",...
+                                          "startup", opt.OPFcost_startup  , "double",...
+                                         "shutdown", opt.OPFcost_shutdown , "double");
+            obj.para_graph.add_entry(       "Xaxis", opt.Xaxis            , "double",...
+                                            "Yaxis", opt.Yaxis            , "double",...
+                                           "Marker", opt.Marker           , "string",...
+                                         "MidXaxis", opt.MidXaxis         , "string",...
+                                         "MidYaxis", opt.MidYaxis         , "string",...
+                                         "BusPoint", opt.BusPoint        , "string");
         end
-        function set.isConnected(obj,val)
-            arguments
-                obj 
-                val (1,1) logical = obj.isConnected
-            end
-            if obj.isConnected~=val
-                obj.isConnected = val;
-                if val
-                    obj.onEdit("parallel on")
-                else
-                    obj.onEdit("parallel off")
+    end
+
+%% Methods
+    methods
+        % Layer Structure
+        add_local_controller(obj, a_Controller)
+        remove_local_controller(obj,str_tag)
+
+        % OPF
+        [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Busvar, option)
+
+        % Dynamics
+        [n_odeX, n_odeU, Mass, x0] = reset_odeset(obj, n_odeX, n_odeU, omega0)
+
+        %get_sys
+        sys = get_sys(obj, x, V, u)
+
+    end
+
+    methods(Access={?Bus})
+        set_bus(obj,bus)
+        set_equilibrium(obj)
+    end
+
+
+%% Get Methods
+    methods
+        function x = get.cv_Xequilibrium_all(obj)
+            a_con = [obj.a_GlobalController; obj.a_LocalController];
+            x_con = tools.vcellfun(@(comp) comp.cv_Xequilibrium, a_con);
+            x     = [obj.cv_Xequilibrium; x_con];
+        end
+        function p = get.parent(obj)
+            p = obj.a_Bus;
+        end
+        function p = get.children(obj)
+            p = [ obj.a_LocalController  ;...
+                 {obj.para_dynamics       ; obj.para_powerflow     ;...
+                  obj.para_operation      ; obj.para_OPF           ;...
+                  obj.para_graph          }];
+        end
+        function tp = get.tab_parameter(obj)
+            dynamics  = obj.para_dynamics.tab_parameter;
+            powerflow = obj.para_powerflow.tab_parameter;
+            OPF       = obj.para_OPF.tab_parameter;
+            operation = obj.para_operation.tab_parameter;
+            graph     = obj.para_graph.tab_parameter;
+            tp        = table(dynamics,operation,powerflow,OPF,graph);
+        end
+    end
+
+%% Set Methods
+    methods
+        function set.tab_parameter(obj,val)
+            fieldname = val.Properties.VariableNames;
+            for i = 1:numel(fieldname)
+                propname = "para_"+fieldname{i};
+                tabdata  = val.(fieldname{i});
+                paraname = tabdata.Properties.VariableNames;
+                for j = 1:numel(paraname)
+                    obj.(propname).(paraname{j}) = tabdata.(paraname{j});
                 end
             end
         end
-    end
-
- 
-%%%%%%%%%%%%%%%%%%%
-%%% Equilibrium %%%
-%%%%%%%%%%%%%%%%%%%
-    properties
-        rateUscon (:,:) double
-        rateUlcon (:,:) double
-    end
-    properties(SetAccess=protected)
-        x_equilibrium
-        u_equilibrium 
-        y_equilibrium
-    end
-    properties(Dependent)
-        v_equilibrium
-        w_equilibrium
-    end
-
-    methods
-        function set.rateUscon(obj,val)
-            arguments
-                obj 
-                val double
-            end
-            rscl_uport = numel(obj.u_equilibrium)      ; %#ok
-            rscl_scon  = numel(obj.SpecificControllers); %#ok
-            assert(size(val,1)==rscl_uport, config.lang("行数は入力ポート数と一致する必要があります。","Row count must match the number of input ports."))
-            assert(size(val,2)==rscl_scon , config.lang("列数はSpecificControllersの個数と一致する必要があります。","Column count must match the number of SpecificControllers."))
-            obj.rateUscon = val;
-            obj.onEdit("change rateUscon")
-        end
-        
-        function set.rateUlcon(obj,val)
-            arguments
-                obj 
-                val double
-            end
-            rscl_uport = numel(obj.u_equilibrium)      ; %#ok
-            rscl_lcon  = numel(obj.LocalControllers); %#ok
-            assert(size(val,1)==rscl_uport, config.lang("行数は入力ポート数と一致する必要があります。","Row count must match the number of input ports."))
-            assert(size(val,2)==rscl_lcon , config.lang("列数はLocalControllersの個数と一致する必要があります。","Column count must match the number of LocalControllers."))
-            obj.rateUlcon = val;
-            obj.onEdit("change rateUlcon")
-        end
-
-        function val = get.v_equilibrium(obj)
-            val = obj.Bus.v_equilibrium(:,obj.);
-        end
-
-        function val = get.w_equilibrium(obj)
-            val = obj.Bus.w_equilibrium(:,obj.index);
-        end
-
-    end
-
-
-
-%% 　ここから旧ver
-    properties
-        is_parallel = true;
-        constraint  = "current";
-    end
-    
-    properties(Dependent)
-        area
-        bus
-        local_controllers
-
-        x_equilibrium
-        u_equilibrium
-        y_equilibrium
-        V_equilibrium
-        I_equilibrium
-    end
-    
-    methods
-        function obj = component()
-            obj.tag = "MAC";
-            obj.InputType = "Add"; % "Add", "Rate", "Value"
-            
-            equilibrium.x = [];
-            equilibrium.u = [];
-            equilibrium.y = [];
-            equilibrium.v = zeros(4,1);
-            equilibrium.w = zeros(4,1);
-            obj.equilibrium = equilibrium;
-            
-            b = bus.dammy();
-            b.set_component(obj)
-        end
-
-        function w0 = get.omega0(obj)
-            w0 = obj.area.omega0;
-        end
-
-    
-        % equilibrium
-            % Get method
-            function val = get.x_equilibrium(obj)
-                val = obj.equilibrium.x;
-            end
-            function val = get.u_equilibrium(obj)
-                val = obj.equilibrium.u;
-            end
-            function val = get.y_equilibrium(obj)
-                val = obj.equilibrium.y;
-            end    
-            function out = get.V_equilibrium(obj)
-                Vvec = obj.equilibrium.v(1:2);
-                out = Vvec(1)+1j*Vvec(2);
-            end
-            function out = get.I_equilibrium(obj)
-                Ivec = obj.equilibrium.v(3:4);
-                out = Ivec(1)+1j*Ivec(2);
-            end
-
-            % Set method 
-            function set.x_equilibrium(obj, value)
-                obj.equilibrium.x = value;
-                obj.onEdit("edit x_equilibrium.");
-            end
-            function set.u_equilibrium(obj, value)
-                obj.equilibrium.u = value;
-                obj.editted("edit u_equilibrium.");
-            end
-            function set.y_equilibrium(obj, value)
-                obj.equilibrium.y = value;
-                obj.editted("edit y_equilibrium.");
-            end
-            function set.V_equilibrium(obj,value)
-                obj.equilibrium.v(1:2) = [real(value);imag(value)];
-                obj.equilibrium.w(1:2) = [real(value);imag(value)];
-                obj.editted("edit V_equilibrium.");
-            end
-            function set.I_equilibrium(~,~)
-                obj.equilibrium.v(3:4) = [real(value);imag(value)];
-                obj.equilibrium.w(3:4) = [real(value);imag(value)];
-                obj.editted("edit I_equilibrium.");
-            end
-
-            % general 
-            function [xst,ust,yst] = set_equilibrium(obj,Veq,Ieq)
-                [xst, ust, yst] = obj.get_equilibrium(Veq,Ieq);
-                VI  = [real(Veq);imag(Veq);real(Ieq);imag(Ieq)];
-                obj.equilibrium = struct('x',xst,'u',ust,'y',yst,'v',VI,'w',VI);
-                obj.system_matrix = ss([]);
-                obj.unEdit;
-            end
-            function [xst,ust,yst] = get_equilibriuim(~,~,~)
-                xst = [];
-                ust = [];
-                yst = [];
-            end
-
-
-        % child/parents
-            % Get method 
-            function out = get.area(obj)
-                out = obj.bus.area;
-            end
-            function out = get.bus(obj)
-                out = obj.parents{1};
-            end
-            function out = get.local_controllers(obj)
-                out = obj.children;
-            end
-            % Set method
-            function add_controller(obj,c)
-                assert(isa(c,'controller'),'Not a "controller" class')
-                c.set_parents(obj,'overwrite')
-                obj.set_children(component,'append')
-                obj.onEdit('change component.')
-            end
-            function remove_controller(obj,varargin)
-                obj.remove_children(varargin{:})
-            end
-
-
-        % Set differential/output/input function
-            set_function(obj)
-    
-        % for check requirment / debug 
-            dx   = check_dx(obj)
-            flag = check_requirment(obj);
-    end
+    end   
 end
+
 
 
 

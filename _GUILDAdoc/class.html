@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GUILDA Reference - Class</title>
+  <link rel="stylesheet" href="style.css">
+  
+  <script src="./database/list_Classes.js"></script>
+</head>
+<body class="doc-layout">
+
+  <nav id="sidebar" style="padding: 20px; box-sizing: border-box; overflow-y: auto;">
+    <a href="index.html" style="display: block; margin-bottom: 20px;">
+      <img src="https://github.com/guilda-dev/guilda/assets/54563775/20094d9b-22f5-4fb8-aff8-d80dc3cde31b" alt="GUILDA Logo" style="width: 100%;">
+    </a>
+    <a href="index.html#tab-reference" class="btn" style="width: 100%; text-align: center; margin-bottom: 20px; box-sizing: border-box;">← Back to Home</a>
+    
+    <h3 style="margin-top: 0;">On this page</h3>
+    <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+      <li><a href="#description">Description</a></li>
+      <li><a href="#constructor">Constructor</a></li>
+      <li><a href="#properties">Properties</a></li>
+      <li><a href="#methods">Methods</a></li>
+    </ul>
+  </nav>
+
+  <main id="main-content" style="flex: 1; min-width: 0;">
+    <div id="dynamic-content">
+      <h1 style="color: #888;">Loading...</h1>
+    </div>
+  </main>
+
+  <script>
+    // Read URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const className = urlParams.get('class');
+    let propertyViewMode = 'attributes';
+    let methodViewMode = 'attributes';
+    let propertySearchTerm = '';
+    let methodSearchTerm = '';
+    let propertySortColumn = 'name';
+    let propertySortOrder = 1;
+    let methodSortColumn = 'name';
+    let methodSortOrder = 1;
+    let metaDataCache = null;
+    let classDocCache = null;
+
+    window.setPropertyViewMode = (mode) => {
+      propertyViewMode = mode;
+      if (classDocCache) renderClassPage(className, metaDataCache, classDocCache);
+    };
+
+    window.setMethodViewMode = (mode) => {
+      methodViewMode = mode;
+      if (classDocCache) renderClassPage(className, metaDataCache, classDocCache);
+    };
+
+    window.setPropertySearchTerm = (value) => {
+      propertySearchTerm = (value || '').toLowerCase();
+      if (classDocCache) renderClassPage(className, metaDataCache, classDocCache);
+    };
+
+    window.setMethodSearchTerm = (value) => {
+      methodSearchTerm = (value || '').toLowerCase();
+      if (classDocCache) renderClassPage(className, metaDataCache, classDocCache);
+    };
+
+    window.sortPropertyTable = (column) => {
+      if (propertySortColumn === column) {
+        propertySortOrder *= -1;
+      } else {
+        propertySortColumn = column;
+        propertySortOrder = 1;
+      }
+      if (classDocCache) renderClassPage(className, metaDataCache, classDocCache);
+    };
+
+    window.sortMethodTable = (column) => {
+      if (methodSortColumn === column) {
+        methodSortOrder *= -1;
+      } else {
+        methodSortColumn = column;
+        methodSortOrder = 1;
+      }
+      if (classDocCache) renderClassPage(className, metaDataCache, classDocCache);
+    };
+
+    function resolveClassMeta(dataList, targetClassName) {
+      const normalizedTarget = (targetClassName || '').toLowerCase();
+      return dataList.find(c => {
+        const name = (c.Name || c.name || '').toLowerCase();
+        const path = (c.path || '').toLowerCase();
+        return name === normalizedTarget || path.endsWith(`/${normalizedTarget}.js`) || path.endsWith(`\\${normalizedTarget}.js`);
+      });
+    }
+
+    function resolveFolder(meta, targetClassName) {
+      const classPath = (meta?.path || '').toLowerCase();
+      const classType = (meta?.Type || '').toLowerCase();
+      const classNameLower = (targetClassName || '').toLowerCase();
+
+      if (classPath.includes('/database/guildaobject/') || classPath.includes('\\database\\guildaobject\\')) return 'GUILDAobject';
+      if (classPath.includes('/database/guildasystem/') || classPath.includes('\\database\\guildasystem\\')) return 'GUILDAsystem';
+      if (classType === 'auxiliary') return 'GUILDAsystem';
+      if (classType === 'PowerSystemModel') {
+        if (classNameLower.startsWith('component.') || classNameLower.startsWith('branch.') || classNameLower.startsWith('controller.')) {
+          return 'GUILDAobject';
+        }
+        return 'GUILDAsystem';
+      }
+      if (classPath.endsWith('/guildaobject') || classPath.endsWith('\\guildaobject')) return 'GUILDAobject';
+      if (classPath.endsWith('/guildasystem') || classPath.endsWith('\\guildasystem')) return 'GUILDAsystem';
+      if (classNameLower.startsWith('component.') || classNameLower.startsWith('branch.') || classNameLower.startsWith('controller.')) return 'GUILDAobject';
+      return 'GUILDAsystem';
+    }
+
+    if (!className) {
+      document.getElementById('dynamic-content').innerHTML = "<h1 style='color:red;'>Error: Class not specified</h1><p>The URL must include ?class=ClassName.</p>";
+    } else {
+      // 1. Resolve the output folder from list_Classes.js path metadata
+      const dataList = typeof classListData !== 'undefined'
+        ? classListData
+        : (typeof class_list !== 'undefined' ? class_list : []);
+      const meta = resolveClassMeta(dataList, className);
+      const folder = resolveFolder(meta, className);
+
+      if (!folder) {
+        document.getElementById('dynamic-content').innerHTML = `
+          <h1 style="color:red;">Error</h1>
+          <p>Class metadata (<code>path</code>) was not found for <code>${className}</code> in <code>list_Classes.js</code>.</p>
+        `;
+      } else {
+        // 2. Load the generated class JSON script
+        const script = document.createElement('script');
+        script.src = `./database/${folder}/${className}.js`;
+        script.onload = () => {
+          try {
+            metaDataCache = meta;
+            classDocCache = (typeof window.classData !== 'undefined')
+              ? window.classData
+              : (typeof classData !== 'undefined' ? classData : null);
+            renderClassPage(className, metaDataCache, classDocCache);
+          } catch (err) {
+            document.getElementById('dynamic-content').innerHTML = `
+              <h1 style="color:red;">Render Error</h1>
+              <p>Failed to render class page.</p>
+              <pre>${(err && err.message) ? err.message : err}</pre>
+            `;
+          }
+        };
+        script.onerror = () => {
+          document.getElementById('dynamic-content').innerHTML = `
+            <h1 style="color:red;">Error 404</h1>
+            <p>File <code>./database/${folder}/${className}.js</code> could not be found.</p>
+          `;
+        };
+        document.head.appendChild(script);
+      }
+    }
+
+    // 3. Render the page
+    function renderClassPage(className, meta, classData) {
+      const nl2br = (text) => (text ?? '').toString().replace(/\n/g, '<br>');
+      const escapeAttr = (text) => (text ?? '').toString()
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      const escapeHtml = (text) => (text ?? '').toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+      const renderMarkdown = (input) => {
+        const rawText = (input ?? '').toString().replace(/\r\n?/g, '\n').trim();
+        if (!rawText) return '<p style="margin: 0;">N/A</p>';
+
+        const codeBlocks = [];
+        let text = rawText.replace(/```([\s\S]*?)```/g, (_, code) => {
+          const token = `@@CODEBLOCK_${codeBlocks.length}@@`;
+          codeBlocks.push(`<pre><code>${escapeHtml(code.trimEnd())}</code></pre>`);
+          return token;
+        });
+
+        const lines = text.split('\n');
+        const htmlParts = [];
+        let paragraphLines = [];
+        let listType = '';
+        let listItems = [];
+
+        const flushParagraph = () => {
+          if (!paragraphLines.length) return;
+          const paragraph = paragraphLines.join(' ').trim();
+          if (paragraph) {
+            htmlParts.push(`<p>${formatInlineMarkdown(paragraph)}</p>`);
+          }
+          paragraphLines = [];
+        };
+
+        const flushList = () => {
+          if (!listType || !listItems.length) return;
+          htmlParts.push(`<${listType}>${listItems.map((item) => `<li>${formatInlineMarkdown(item)}</li>`).join('')}</${listType}>`);
+          listType = '';
+          listItems = [];
+        };
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          const unorderedMatch = trimmed.match(/^[-*+]\s+(.*)$/);
+          const orderedMatch = trimmed.match(/^\d+\.\s+(.*)$/);
+
+          if (!trimmed) {
+            flushParagraph();
+            flushList();
+            continue;
+          }
+
+          const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
+          if (headingMatch) {
+            flushParagraph();
+            flushList();
+            const headingLevel = headingMatch[1].length;
+            htmlParts.push(`<h${headingLevel}>${formatInlineMarkdown(headingMatch[2])}</h${headingLevel}>`);
+            continue;
+          }
+
+          if (unorderedMatch || orderedMatch) {
+            flushParagraph();
+            const nextListType = unorderedMatch ? 'ul' : 'ol';
+            if (listType && listType !== nextListType) {
+              flushList();
+            }
+            listType = nextListType;
+            listItems.push((unorderedMatch || orderedMatch)[1]);
+            continue;
+          }
+
+          flushList();
+          paragraphLines.push(trimmed);
+        }
+
+        flushParagraph();
+        flushList();
+
+        let html = htmlParts.join('');
+        html = html.replace(/@@CODEBLOCK_(\d+)@@/g, (_, index) => codeBlocks[Number(index)] || '');
+        return html;
+      };
+      const formatInlineMarkdown = (text) => {
+        let output = escapeHtml(text);
+        output = output.replace(/`([^`]+)`/g, '<code>$1</code>');
+        output = output.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        output = output.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+        output = output.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+        return output;
+      };
+      const normalizeClassMeta = (raw) => ({
+        name: raw?.Name || raw?.ClassName || className,
+        type: raw?.Type || '',
+        parent: raw?.Parent || '',
+        abstract: raw?.Abstract ?? false,
+        hidden: raw?.Hidden ?? false,
+        description: raw?.Desc || '',
+        role: raw?.Role || '',
+        constructor: raw?.Constructor || '',
+        path: raw?.path || ''
+      });
+      const normalizeProperty = (p) => ({
+        name: p?.Name || '',
+        role: p?.Role || '',
+        type: p?.Type || '',
+        size: p?.Size || '',
+        defining: p?.Defining || '',
+        getAccess: p?.GetAccess || '',
+        setAccess: p?.SetAccess || '',
+        accessText: [p?.GetAccess || '', p?.SetAccess || ''].filter(Boolean).join(' / '),
+        abstract: p?.Abstract ?? false,
+        dependent: p?.Dependent ?? false,
+        constant: p?.Constant ?? false,
+        hidden: p?.Hidden ?? false,
+        description: p?.Desc || ''
+      });
+      const normalizeIoArray = (rawList) => {
+        if (!Array.isArray(rawList)) return [];
+        return rawList
+          .map((item) => ({
+            name: item?.Name || item?.name || '',
+            type: item?.Type || item?.type || item?.Class || item?.class || '',
+            description: item?.Description || item?.description || item?.Desc || item?.desc || ''
+          }))
+          .filter((item) => item.name || item.type || item.description);
+      };
+      const ioSummaryFromArray = (list) => {
+        if (!Array.isArray(list) || list.length === 0) return '';
+        return list.map((item) => {
+          const parts = [];
+          if (item.name) parts.push(item.name);
+          if (item.type) parts.push(`(${item.type})`);
+          if (item.description) parts.push(`: ${item.description}`);
+          return parts.join(' ').replace(' :', ':');
+        }).join('\n');
+      };
+      const normalizeMethod = (m) => ({
+        name: m?.Name || '',
+        defining: m?.Defining || '',
+        access: m?.Access || '',
+        static: m?.Static ?? false,
+        abstract: m?.Abstract ?? false,
+        hidden: m?.Hidden ?? false,
+        role: m?.Role || '',
+        description: m?.Desc || '',
+        abstractText: m?.Abst || '',
+        parameters: normalizeIoArray(m?.Parameters),
+        returns: normalizeIoArray(m?.Returns),
+        arginText: m?.Argin || '',
+        argoutText: m?.Argout || '',
+        vararginText: ioSummaryFromArray(normalizeIoArray(m?.Parameters)) || (m?.Argin || ''),
+        varargoutText: ioSummaryFromArray(normalizeIoArray(m?.Returns)) || (m?.Argout || '')
+      });
+
+      const sortRows = (rows, column, order) => rows.slice().sort((left, right) => {
+        const valueLeft = (left?.[column] ?? '').toString().toLowerCase();
+        const valueRight = (right?.[column] ?? '').toString().toLowerCase();
+        if (valueLeft > valueRight) return order;
+        if (valueLeft < valueRight) return -order;
+        return 0;
+      });
+
+      const normalizeSearch = (value) => (value ?? '').toString().toLowerCase();
+      const renderPropertyFlag = (value, label) => (value ? label : '');
+      const renderClassLink = (name) => {
+        const classNameValue = (name ?? '').toString();
+        return classNameValue ? `<a href="class.html?class=${encodeURIComponent(classNameValue)}">${classNameValue}</a>` : '';
+      };
+
+      const c = normalizeClassMeta(meta || classData || {});
+      const classDoc = classData || {};
+      const properties = Array.isArray(classDoc.properties) ? classDoc.properties : [];
+      const methods = Array.isArray(classDoc.methods) ? classDoc.methods : [];
+
+      const propertySearch = normalizeSearch(propertySearchTerm);
+      const methodSearch = normalizeSearch(methodSearchTerm);
+
+      const propertyRows = sortRows(
+        properties.map(normalizeProperty).filter((p) => {
+          const searchStr = `${p.name} ${p.role} ${p.type} ${p.size} ${p.defining} ${p.accessText} ${p.description}`.toLowerCase();
+          return searchStr.includes(propertySearch);
+        }),
+        propertySortColumn,
+        propertySortOrder
+      );
+
+      const methodRows = sortRows(
+        methods.map(normalizeMethod).filter((m) => {
+          const searchStr = `${m.name} ${m.defining} ${m.access} ${m.role} ${m.description} ${m.abstractText} ${m.vararginText} ${m.varargoutText}`.toLowerCase();
+          return searchStr.includes(methodSearch);
+        }),
+        methodSortColumn,
+        methodSortOrder
+      );
+
+      const propertyHeader = propertyViewMode === 'attributes'
+        ? `
+          <tr>
+            <th class="sortable-header" onclick="sortPropertyTable('name')">Name ↕</th>
+            <th class="sortable-header" onclick="sortPropertyTable('getAccess')">GetAccess ↕</th>
+            <th class="sortable-header" onclick="sortPropertyTable('setAccess')">SetAccess ↕</th>
+            <th class="sortable-header" onclick="sortPropertyTable('dependent')">Dependent ↕</th>
+            <th class="sortable-header" onclick="sortPropertyTable('constant')">Constant ↕</th>
+            <th class="sortable-header" onclick="sortPropertyTable('abstract')">Abstract ↕</th>
+            <th class="sortable-header" onclick="sortPropertyTable('hidden')">Hidden ↕</th>
+          </tr>`
+        : propertyViewMode === 'type'
+          ? `
+          <tr>
+            <th class="sortable-header" style="width: 20ch;" onclick="sortPropertyTable('name')">Name ↕</th>
+            <th class="sortable-header" style="width: 20ch;" onclick="sortPropertyTable('type')">Type ↕</th>
+            <th class="sortable-header" style="width: 20ch;" onclick="sortPropertyTable('size')">Size ↕</th>
+            <th class="sortable-header" style="width: auto;" onclick="sortPropertyTable('defining')">Defining Class ↕</th>
+          </tr>`
+        : `
+          <tr>
+            <th class="sortable-header" style="width: 20ch;" onclick="sortPropertyTable('name')">Name ↕</th>
+            <th class="sortable-header" style="width: 20ch;" onclick="sortPropertyTable('role')">Role ↕</th>
+            <th class="sortable-header" style="width: auto;" onclick="sortPropertyTable('description')">Description ↕</th>
+          </tr>`;
+      const methodHeader = methodViewMode === 'attributes'
+        ? `
+          <tr>
+            <th class="sortable-header" onclick="sortMethodTable('name')">Method ↕</th>
+            <th class="sortable-header" onclick="sortMethodTable('access')">Access ↕</th>
+            <th class="sortable-header" onclick="sortMethodTable('static')">Static ↕</th>
+            <th class="sortable-header" onclick="sortMethodTable('abstract')">Abstract ↕</th>
+            <th class="sortable-header" onclick="sortMethodTable('hidden')">Hidden ↕</th>
+          </tr>`
+        : (methodViewMode === 'details'
+          ? `
+            <tr>
+              <th class="sortable-header" style="width: 18ch;" onclick="sortMethodTable('name')">Method ↕</th>
+              <th class="sortable-header" style="width: auto;" onclick="sortMethodTable('vararginText')">varargin ↕</th>
+              <th class="sortable-header" style="width: auto;" onclick="sortMethodTable('varargoutText')">varargout ↕</th>
+              <th class="sortable-header" style="width: 20ch;" onclick="sortMethodTable('defining')">Defining Class ↕</th>
+            </tr>`
+          : (methodViewMode === 'description'
+          ? `
+            <tr>
+              <th class="sortable-header" style="width: 20ch;" onclick="sortMethodTable('name')">Method ↕</th>
+              <th class="sortable-header" style="width: 20ch;" onclick="sortMethodTable('role')">Role ↕</th>
+              <th class="sortable-header" style="width: auto;" onclick="sortMethodTable('description')">Description ↕</th>
+            </tr>`
+          : ''));
+
+      const container = document.getElementById('dynamic-content');
+      let html = `
+        <div style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">
+          <a href="index.html">Home</a> &gt; <a href="index.html">Reference</a> &gt; ${className}
+        </div>
+        <h1 style="font-size: 2.5rem; margin-bottom: 10px;">${c.name}</h1>
+        
+        <div class="meta-box" id="overview">
+          <table>
+            <tbody>
+              <tr><th style="width: 18%;">Type</th><td>${c.type || 'N/A'}</td></tr>
+              <tr><th>Parent</th><td>${c.parent || 'N/A'}</td></tr>
+              <tr><th>Abstract</th><td>${c.abstract ? 'true' : 'false'}</td></tr>
+              <tr><th>Hidden</th><td>${c.hidden ? 'true' : 'false'}</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="meta-box" style="margin-top: 16px;">
+          <h2 id="description" style="margin-top: 0;">Description</h2>
+          <div class="markdown-content">${renderMarkdown(c.description || 'N/A')}</div>
+        </div>
+
+        <div class="meta-box" style="margin-top: 16px;">
+          <h2 id="constructor" style="margin-top: 0;">Constructor</h2>
+          <div class="markdown-content">${renderMarkdown(c.constructor || 'N/A')}</div>
+        </div>
+      `;
+
+      // Properties セクション
+      html += `<h2 id="properties">Properties</h2>`;
+      if (properties.length > 0) {
+        html += `<input type="text" class="search-box" placeholder="Search properties..." value="${escapeAttr(propertySearchTerm)}" oninput="setPropertySearchTerm(this.value)">`;
+        html += `
+          <div class="view-switcher">
+            <button class="view-btn ${propertyViewMode === 'attributes' ? 'active' : ''}" onclick="setPropertyViewMode('attributes')">Meta Data</button>
+            <button class="view-btn ${propertyViewMode === 'type' ? 'active' : ''}" onclick="setPropertyViewMode('type')">Details</button>
+            <button class="view-btn ${propertyViewMode === 'description' ? 'active' : ''}" onclick="setPropertyViewMode('description')">Description</button>
+          </div>
+        `;
+        html += `<table class="compact-table description-table">
+          <thead>${propertyHeader}</thead>
+          <tbody>
+            ${propertyRows.length > 0 ? propertyRows.map(p => {
+              if (propertyViewMode === 'attributes') {
+                return `
+                  <tr>
+                    <td><strong>${p.name}</strong></td>
+                    <td>${p.getAccess || 'N/A'}</td>
+                    <td>${p.setAccess || 'N/A'}</td>
+                    <td>${renderPropertyFlag(p.dependent, 'Dependent')}</td>
+                    <td>${renderPropertyFlag(p.constant, 'Constant')}</td>
+                    <td>${renderPropertyFlag(p.abstract, 'Abstract')}</td>
+                    <td>${renderPropertyFlag(p.hidden, 'Hidden')}</td>
+                  </tr>
+                `;
+              }
+              if (propertyViewMode === 'type') {
+                return `
+                  <tr>
+                    <td style="width: 20ch;"><strong>${p.name}</strong></td>
+                    <td style="width: 20ch;">${nl2br(p.type)}</td>
+                    <td style="width: 20ch;">${nl2br(p.size)}</td>
+                    <td style="width: auto;">${renderClassLink(p.defining)}</td>
+                  </tr>
+                `;
+              }
+              return `
+                <tr>
+                  <td style="width: 20ch;"><strong>${p.name}</strong></td>
+                  <td style="width: 20ch;">${nl2br(p.role)}</td>
+                  <td style="width: auto;">${nl2br(p.description)}</td>
+                </tr>
+              `;
+            }).join('') : `<tr><td colspan="${propertyViewMode === 'attributes' ? 7 : propertyViewMode === 'type' ? 4 : 3}" style="text-align:center; color:#888;">No matching properties found.</td></tr>`}
+          </tbody>
+        </table>`;
+      } else {
+        html += `<p>No public properties.</p>`;
+      }
+
+      // Methods セクション
+      html += `<h2 id="methods">Methods</h2>`;
+      if (methods.length > 0) {
+        html += `<input type="text" class="search-box" placeholder="Search methods..." value="${escapeAttr(methodSearchTerm)}" oninput="setMethodSearchTerm(this.value)">`;
+        html += `
+          <div class="view-switcher">
+            <button class="view-btn ${methodViewMode === 'attributes' ? 'active' : ''}" onclick="setMethodViewMode('attributes')">Meta Data</button>
+            <button class="view-btn ${methodViewMode === 'details' ? 'active' : ''}" onclick="setMethodViewMode('details')">Details</button>
+            <button class="view-btn ${methodViewMode === 'description' ? 'active' : ''}" onclick="setMethodViewMode('description')">Description</button>
+          </div>
+        `;
+        html += `<table class="method-link-table compact-table ${methodViewMode === 'description' ? 'description-table' : ''}">
+          <thead>${methodHeader}</thead>
+          <tbody>
+            ${methodRows.length > 0 ? methodRows.map(m => {
+              if (methodViewMode === 'attributes') {
+                return `
+                  <tr class="clickable-row" onclick="window.location.href='method.html?class=${className}&method=${m.name}'">
+                    <td><span class="row-link">${m.name}</span></td>
+                    <td>${m.access || ''}</td>
+                    <td>${m.static ? 'true' : 'false'}</td>
+                    <td>${m.abstract ? 'true' : 'false'}</td>
+                    <td>${m.hidden ? 'true' : 'false'}</td>
+                  </tr>
+                `;
+              }
+              if (methodViewMode === 'description') {
+                return `
+                  <tr class="clickable-row" onclick="window.location.href='method.html?class=${className}&method=${m.name}'">
+                    <td style="width: 20ch;"><span class="row-link">${m.name}</span></td>
+                    <td style="width: 20ch;">${nl2br(m.role)}</td>
+                    <td style="width: auto;">${nl2br(m.abstractText)}</td>
+                  </tr>
+                `;
+              }
+              if (methodViewMode === 'details') {
+                return `
+                  <tr class="clickable-row" onclick="window.location.href='method.html?class=${className}&method=${m.name}'">
+                    <td style="width: 18ch;"><span class="row-link">${m.name}</span></td>
+                    <td style="width: auto;">${nl2br(m.vararginText || 'N/A')}</td>
+                    <td style="width: auto;">${nl2br(m.varargoutText || 'N/A')}</td>
+                    <td style="width: 20ch;">${renderClassLink(m.defining) || 'N/A'}</td>
+                  </tr>
+                `;
+              }
+              return `
+                <tr class="clickable-row" onclick="window.location.href='method.html?class=${className}&method=${m.name}'">
+                  <td><span class="row-link">${m.name}</span></td>
+                  <td>${nl2br(m.arginText)}</td>
+                  <td>${nl2br(m.argoutText)}</td>
+                </tr>
+              `;
+              }).join('') : `<tr><td colspan="${methodViewMode === 'attributes' ? 5 : methodViewMode === 'details' ? 4 : 3}" style="text-align:center; color:#888;">No matching methods found.</td></tr>`}
+          </tbody>
+        </table>`;
+      } else {
+        html += `<p>No methods available.</p>`;
+      }
+
+      container.innerHTML = html;
+    }
+  </script>
+</body>
+</html>

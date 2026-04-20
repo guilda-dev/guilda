@@ -1,0 +1,8 @@
+<!--This is an XML file containing error messages related to the class "PowerNetwork".-->
+<rsccat version="2" locale="en" product="GUILDA">
+    <message>        
+        <entry key="SetAbus">Use the method to add or remove Bus classes from a_Bus.&#xA;&#xA; &lt; When adding a Bus class &gt;&#xA;  &gt;&gt; obj.add_bus(BUS_INSTANCE)&#xA; &lt; When removing a Bus class &gt;&#xA;  &gt;&gt;  obj.aremove_bus('BUS_TAG')</entry> 
+        <entry key="SetAbranch">Use the method to add or remove Branch classes from a_Bus.&#xA;&#xA; &lt; When adding a Branch class &gt;&#xA;  &gt;&gt; obj.add_bus(BRANCH_INSTANCE,['BUSi_TAG','BUSj_TAG'])&#xA; &lt; When removing a Bus class &gt;&#xA;  &gt;&gt; obj.aremove_bus('BRANCH_TAG')</entry> 
+        <entry key="SetGcon">Use the method to add or remove Global Controller classes from a_Bus.&#xA;&#xA; &lt; When adding a Global Controller class &gt;&#xA;  &gt;&gt; obj.add_bus(GlobalCon_INSTANCE,[ComponentTag])&#xA; &lt; When removing a Global Controller class &gt;&#xA;  &gt;&gt; obj.aremove_bus(GlobalCon_TAG)</entry> 
+    </message>
+</rsccat>

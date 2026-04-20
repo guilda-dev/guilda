@@ -1,277 +1,201 @@
-classdef Branch < LayerPackage
-% 送電網を定義するスーパークラス
-% 'branch_pi'と'branch_pi_transfer'を子クラスに持つ。
-%
-%           ┌----------┐
-%  ┌---v--->|\\\\\\\\\\|--->w--┐     v : V_BUS = [ ∠V ;  |V| ] or [ ∠V ;  log|V| ]
-%  |        |\\BRANCH\\|       |     w : I_BUS = [  P ; Q/|V|] or [  P ;      Q  ]
-%  |        |\\\\\\\\\\|       |     
-%  |        └----------┘       |     
-%  |                           |
-%  |                           |
-%  |        ┌---------┐        |-
-%  o---v<---|         |<---w---o     
-%  |        |   Bus   |        |-    
-%  |        |         |        |     
-%  |        └---------┘        |     
-%  |                           | 
-%  |                           |
-%  |        ┌-----------┐      |
-%  └---v--->|           |--->w-┘     
-%           | Component |            
-%      u--->|           |--->y       
-%           └-----------┘            
-% 
-%
-%
-%  << 親クラスからの継承プロパティ >>
-%
-%     prop         class      description
-%==========================================================================
-%   ・parent   |LayerPackage| 階層構造の上位層にあたるLayerPackageクラス
-%   ・parent   |    cell    | 階層構造の下位層にあたるLayerPackageクラス
-%   ・tag      |   string   | クラスの呼称
-%   ・index    |   double   | インデックス番号、tagともにクラスの命名に使用
-%   ・parameter|   table    | ユーザが設定する定数は全てこのプロパティで管理
-%   ・editFlag |  logical   | 変更が加えられたかどうかの管理simulate前などに確認
-%   ・editLog  |   table    | 変更内容を「変更時間・対象クラス・変更内容」で管理
-%==========================================================================
-%
-%
-%  << 本クラス内での定義プロパティ >>
-%
-%     prop             class          description
-%==========================================================================
-%   ・network         | PowerNetwork| parentを参照するDependent
-%   ・omega0          | double      | networkのomegaを参照するDependent
-%   ・lineImpedance   | double      | parameterのデータから計算されるDependent
-%   ・lineAdmittance  | double      | networkのomegaを参照するDependent
-%   ・earthCapacitance| double      | networkのomegaを参照するDependent
-%   ・x_equilibrium   | double      | 
-%   ・v_equilibrium   | double      | 
-%   ・w_equilibrium   | double      | 
-%   ・V_equilibrium   | double      | 
-%   ・I_equilibrium   | double      | 
-%   ・from            | double      | 
-%   ・to              | double      | 
-%   ・isValid         | logical     | 
-%   ・isConnected     | logical     | 
-%   ・isLossy         | logical     | 
-%   ・isStatics       | logical     | 
-%==========================================================================
+classdef Branch < PowerSystemModel
+% <@Desc> 
+% Abstract class representing a branch in the power system, such as a transmission line or transformer.
+% It defines the structure and parameters of a branch, including its connection to buses and cubicles.
+% Main function
+% - build admittance matrix
+% - build OPF problem
+% - build ode function
+% <@Role> 
+% Power System Model
+% <@Constructor> 
+% Branch(tag, struct_default, opt)
 
-
-
-    properties(Dependent)
-        from
-        to
-
-        network
-        omega0
-        lineImpedance
-        lineAdmittance
-        earthCapacitance
-        
-        x_equilibrium 
-        v_equilibrium
-        w_equilibrium
-
-        V_equilibrium
-        I_equilibrium
-        isValid
+%% Abstract Methods/Properties
+    properties(Abstract, Constant)
+        % <@Desc> Key Value to identify the type of branch (e.g., "pi", "pi_transformer").
+        % <@Role> Signature
+        % <@Type> string
+        % <@Size> 1x1
+        key
     end
-
-    properties 
-        isConnected (1,1) logical = true;
-        isLossy     (1,1) logical = true;
-        isStatic    (1,1) logical = true;
-    end
-    
-    properties(Dependent,Access=protected)
-        children (:,1) cell
-    end
-
-    properties(Access=protected)
-        Buses (2,1) cell = {bus.empty,bus.empty};
-    end
-
     methods(Abstract)
-        y = get_admittance_matrix(obj);
+        % Dynamics
+        Ymat = get_admittance_matrix(obj)
     end
 
+%% Properties
+   properties(SetAccess=protected)
 
+        % <@Desc> PoweNetwork object to which the branch belongs
+        % <@Role> Layer Structure
+        % <@Type> PowerNetwork
+        % <@Size> 1×1
+        a_PowerNetwork 
+
+        % <@Desc> Bus objects connected by the branch
+        % <@Role> LayerStructure
+        % <@Type> Bus objects cell array
+        % <@Size> 2×1
+        a_Bus
+   end
+    properties(Dependent)
+
+        % <@Desc> Parameter table of the branch
+        % <@Role> Parameter
+        % <@Type> table
+        % <@Size> 1xn
+        tab_parameter
+
+        % <@Desc> Operating point of the Voltage at the branch terminals
+        % <@Role> Equilibrium
+        % <@Type> complex
+        % <@Size> 2×1
+        cv_Vequilibrium
+
+        % <@Desc> Operating point of the Voltage at the branch terminals
+        % <@Role> Equilibrium
+        % <@Type> complex
+        % <@Size> 2×1
+        cv_Iequilibrium
+    end
+
+    properties(SetAccess=protected)
+        % <@Desc> Operating point of the state variables related to the branch dynamics
+        % <@Role> Equilibrium
+        % <@Type> double
+        % <@Size> nx1
+        cv_Xequilibrium = [];
+    end
+    properties(Hidden,SetAccess=protected)
+
+        % <@Desc> Parameters related to the branch dynamics
+        % <@Role> Parameter
+        % <@Type> Parameter
+        % <@Size> 1×1
+        para_dynamics
+
+        % <@Desc> Parameters related to the branch operation
+        % <@Role> Parameter
+        % <@Type> Parameter
+        % <@Size> 1×1
+        para_operation    
+
+        % <@Desc> Parameters related to the branch status.
+        % <@Role> Parameter
+        % <@Type> Parameter
+        % <@Size> 1×1
+        para_status 
+        
+        % <@Desc> Parameters related to the branch graph plot.
+        % <@Role> Parameter
+        % <@Type> Parameter
+        % <@Size> 1×1
+        para_graph
+
+    end
+    properties(Dependent, Access=protected)
+
+        % <@Desc> manage hierarchical structure of layers.
+        % <@Role> Layer Structure
+        % <@Type> PowerNetwork(LayerPackage)
+        % <@Size> 1x1
+        parent
+
+        % <@Desc> manage hierarchical structure of layers.
+        % <@Role> Layer Structure
+        % <@Type> Cubicle(LayerPackage) cell array
+        % <@Size> Nx1
+        children
+    end
+
+%% Constructor
+    methods(Access={?Branch, ?PowerNetwork})
+        function obj = Branch(tag, opt)
+            obj.str_tag       = tag;
+            
+            a_Pm = Parameter(obj,"dynamics");
+            a_Po = Parameter(obj,"operation");
+            a_Ps = Parameter(obj,"status");
+            a_Pg = Parameter(obj,"graph");
+
+            assert( isreal(opt.R), "ERROR: R must be a real number.")
+            assert( isreal(opt.X), "ERROR: X must be a real number.")
+            assert( isreal(opt.C), "ERROR: C must be a real number.")
+
+            a_Pm.add_entry(        "R", opt.R        , "double" ,...
+                                   "X", opt.X        , "double" ,...
+                                   "C", opt.C        , "double" ,...
+                                 "tap", opt.Tap      , "double" ,...
+                               "phase", opt.Phase    , "double" );
+            a_Po.add_entry(     "Smax", opt.Smax     , "double" ,...
+                                "Imax", opt.Imax     , "double" ,...
+                                "Pmax", opt.Pmax     , "double" ,...
+                                "Qmax", opt.Qmax     , "double" ,...
+                             "Vargmax", opt.Vargmax  , "double" );
+            a_Ps.add_entry( "lossless", false        , "logical");
+            a_Pg.add_entry( "MidXaxis", opt.MidXaxis , "string",...
+                            "MidYaxis", opt.MidYaxis , "string",...
+                              "Marker", opt.Marker      , "string",...
+                        "BusFromPoint", opt.BusFromPoint, "double",...
+                          "BusToPoint", opt.BusToPoint  , "double");
+
+            obj.para_dynamics  = a_Pm;
+            obj.para_operation = a_Po;
+            obj.para_status    = a_Ps;
+            obj.para_graph     = a_Pg;
+        end
+    end
+
+%% Methods
+    methods(Access={?PowerNetwork})
+        set_network(obj,a_PowerNetwork)
+        set_bus(obj,a_Bus)
+    end
     methods
-        % Constractor
-        function obj = Branch(xij, cij, from, to)
-            arguments
-                xij  (1,2) double = [0,1];
-                cij  (1,1) doucle = 0;
-                from (1,1) double {mustBeNonnegative, mustBeInteger} = 0;
-                to   (1,1) double {mustBeNonnegative, mustBeInteger} = 0;
-            end
-            obj.from = from;
-            obj.to   = to;
-            obj.tag  = 'Line';
-            obj.parameter = array2table([xij,cij,nan,nan,inf],"VariableNames",["xreal","ximag","c","tap","phase","Pmax"]);
-        end
+        % OPF
+        [prob, x0, const] = build_opf_problem(obj, prob, x0, const, rm_V, option)
+        
+        % ode setting
+        [n_odeX, n_odeU, Mass, x0] = reset_odeset(~, n_odeX, n_odeU, omega0)
+    end
 
-        % Layer
-        connect_bus(obj,from,to)
-
-        % dynamics 
-        [svec_x, svec_v, svec_w] = get_ODE_vars(obj,lscl_flagtag)
-        [Mass, svec_x, svec_v, svec_w, svec_func_dx,  svec_func_w] = generate_ODE_dynamics(obj)
-
-        % OPF/PF
-        optim = generate_OPF_problem(obj,opt)
-    
-
-    %% GET METHOD
-        function idx = get.from(obj)
-            idx = obj.Buses{1}.index;
+%% Get Methods
+    methods
+        function tp = get.tab_parameter(obj)
+            dynamics  = obj.para_dynamics.tab_parameter;
+            operation = obj.para_operation.tab_parameter;
+            status    = obj.para_status.tab_parameter;
+            graph     = obj.para_graph.tab_parameter;
+            tp        = table(dynamics,status,operation,graph);
         end
-        function idx = get.to(obj)
-            idx = obj.Buses{2}.index;
+        function v = get.cv_Vequilibrium(obj)
+            v = cellfun(@(cub) cub.c_Vequilibrium, obj.a_Bus);
         end
-        function net = get.network(obj)
-            net = obj.parent;
-        end
-        function w0 = get.omega0(obj)
-            w0 = obj.network.omega0; 
-        end
-        function yij = get.lineAdmittance(obj)
-            if ~obj.isConnected
-                yij = 0;
-                return
-            end
-            p = obj.parameter{:,["xreal","ximag"]};
-            yij = 1/(p(1)+1j*p(2));
-            if ~obj.isLossy
-                yij = yij - real(yij);
-            end
-        end
-        function zij = get.lineImpedance(obj)
-            zij = 1/obj.lineAdmittance;
-        end
-        function cij = get.earthCapacitance(obj)
-            if ~obj.isConnected
-                cij = 0;
-                return
-            end
-            cij = 1j * obj.parameter.c;
-            if ~obj.isLossy
-                cij = cij - real(cij);
-            end
-        end
-        function x = get.x_equilibrium(obj)
-            if obj.isStatic
-                x = [];
-            else
-                Iconj = obj.I_equilibrium';
-                Ivec  = [imag(Iconj); real(Iconj)];
-                x     = Ivec(:);
-            end
-        end        
-        function v = get.v_equilibrium(obj)
-            v = tools.vcellfun(@(b) b.v_equilibrium, obj.Buses);
-        end
-        function w = get.w_equilibrium(obj)
-            Ist  = obj.I_equilibrium';
-            switch config.systemFunc.get("dynamics","port_vw","Value");
-                case "[theta,V] to [P,Q/V]"
-                    Vst   = obj.V_equilibrium.';
-                    PQst  = Vst .* Ist;
-                    PQvec = [ real(PQst); imag(PQst)./abs(Vst) ];
-                    w     = PQvec(:);
-                case "[theta,logV] to [P,Q]"
-                    PQst  = obj.V_equilibrium.' .* Ist;
-                    PQvec = [ real(PQst); imag(PQst) ];
-                    w     = PQvec(:);
-                case "[Vre,Vim] to [-Iim,Ire]"
-                    Ivec  = [imag(Ist); real(Ist)];
-                    w     = Ivec(:);
-            end
-        end
-        function V = get.V_equilibrium(obj)
-            V = tools.vcellfun(@(b) b.V_equilibrium, obj.Buses);
-        end
-        function I = get.I_equilibrium(obj)
+        function i = get.cv_Iequilibrium(obj)
             Y = obj.get_admittance_matrix;
-            I = Y*obj.V_equilibrium; 
+            i = Y * obj.cv_Vequilibrium;
         end
-        function flag = get.isValid(obj)
-            flag = all(tools.hcellfun(@(b) b.isValid), obj.Buses);
+        function p = get.parent(obj)
+            p = obj.a_PowerNetwork;
         end
-        function c = get.children(~)
-            c= {}; 
-        end
-
-
-    %% SET METHOD
-        % mode
-        function set.isConnected(obj,val)
-            arguments
-                obj 
-                val (1,1) logical = obj.isConnected
-            end
-            if obj.isConnected~=val
-                obj.isConnected = val;
-                if val
-                    obj.onEdit("parallel on")
-                else
-                    obj.onEdit("parallel off")
-                end
-            end
-        end
-        function set.isLossy(obj,val)
-            arguments
-                obj 
-                val (1,1) logical = obj.isLossy
-            end
-            if obj.isLossy~=val
-                obj.isLossy = val;
-                if val
-                    obj.onEdit("lossy")
-                else
-                    obj.onEdit("lossless")
-                end
-            end
-        end
-        function set.isStatic(obj,val)
-            arguments
-                obj 
-                val (1,1) logical = obj.isStatic
-            end
-            if obj.isStatic~=val
-                obj.isStatics = val;
-                if val
-                    obj.onEdit("get to Static")
-                else
-                    obj.onEdit("get to Dynamic")
-                end
-            end
-        end
-
-        % parameter
-        function set.lineImpedance(obj,zij)
-            arguments
-                obj 
-                zij (1,1) double 
-            end
-            obj.parameter{:,["xreal","ximag"]} = [real(zij),imag(zij)];
-        end
-        function set.lineAdmittance(obj,yij)
-            obj.lineImpedance = 1/yij;
-        end
-        function set.earthCapacitance(obj,cij)
-            arguments
-                obj 
-                cij (1,1) double
-            end
-            obj.parameter{:,"c"} = cij/1j;
+        function p = get.children(obj)
+            p = {obj.para_dynamics; obj.para_operation; obj.para_status; obj.para_graph};
         end
     end
-    
-    
-end
 
+%% Set Methods
+    methods
+        function set.tab_parameter(obj,val)
+            fieldname = val.Properties.VariableNames;
+            for i = 1:numel(fieldname)
+                propname = "para_"+fieldname{i};
+                tabdata  = val.(fieldname{i});
+                paraname = tabdata.Properties.VariableNames;
+                for j = 1:numel(paraname)
+                    obj.(propname).(paraname{j}) = tabdata.(paraname{j});
+                end
+            end
+        end
+    end
+end

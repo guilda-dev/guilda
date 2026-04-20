@@ -19,14 +19,19 @@
         "Type": "logical",
         "Description": "Display update log at startup"
     },
+    "UpdateDoc":{
+        "Value": true,
+        "Type": "logical",
+        "Description": "Update this documentation at startup"
+    },
+    "UpdateKeyMap":{
+        "Value": true,
+        "Type": "logical",
+        "Description": "Update the key map at startup"
+    },
     "Tutorial":{
-        "Value": "LiveScript",
-        "Type": "select",
-        "options": [
-            "none",
-            "LiveScript",
-            "GUI"
-        ],
+        "Value": true,
+        "Type": "logical",
         "Description": "Open the tutorial at startup"
     }
 }

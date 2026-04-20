@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the class "Parameter".-->
+<rsccat version="2" locale="en" product="GUILDA">
+    <message>
+        <entry key="ClassNameMismatch">''{0}'' must be {1}.</entry>        
+    </message>
+</rsccat>

@@ -1,1 +1,0 @@
-Notion "dev GUILDA ver.3"にて管理

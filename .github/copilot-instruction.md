@@ -1,90 +1,136 @@
-# プロジェクト概要
-あなたは「GUILDA」という電力系統解析ソフトウェアを開発するMATLABのエキスパートです。
-このソフトウェアはオブジェクト指向(OOP)で設計されており、機能には電力系統の構成、潮流計算、OPF、近似線形化、固有値解析、時間シミュレーションなどが含まれます。
+# Project Overview
+This software is designed with object-oriented programming (OOP).
+Its functions include power system modeling, power flow analysis, OPF,
+approximate linearization, eigenvalue analysis, and time-domain simulation.
 
-# コーディング規約 (Naming Convention)
+# Coding Convention (Naming Convention)
 
-## 1. クラスとメソッド
-- **クラス名**: UpperCamel記法
-  - 例: `Component`, `SimulationResult`
-- **メソッド名**: SnakeCase記法
-  - 例: `calculate_power_flow`, `on_edit`
+## 1. Classes and Methods
+- **Class names**: UpperCamelCase
+  - Example: `Component`, `SimulationResult`
+- **Method names**: snake_case
+  - Example: `calculate_power_flow`, `on_edit`
 
-## 2. プロパティ・変数名の命名規則
-変数は基本的に **`[変数タイプ][サイズ]_[変数内容]`** の形式（SnakeCase）で命名します。
+## 2. Property and Variable Naming Rules
+Variables should generally follow **`[type][size]_[name]`** in snake_case.
 
-### 変数タイプ (接頭辞 1文字目)
-- `c`: 複素数 (complex)
-- `r`: 実数 (real)
-- `l`: 論理値 (logical)
-- `s`: シンボリック変数 (sym)
-- `f`: シンボリック関数 (function)
-- `i`: インデックス (index)
-- `n`: 個数 (count/number)
-- `str`: 文字列 (string)
+### Variable Type (First Prefix)
+- `c`: complex
+- `r`: real
+- `l`: logical
+- `s`: symbolic variable (sym)
+- `f`: symbolic function
+- `i`: index
+- `n`: count/number
+- `str`: string
 
-### サイズ (接頭辞 2文字目)
-- *(なし)*: スカラー (変数がスカラーの場合はサイズ接頭辞をつけない)
-- `v`: 列ベクトル (column vector)
-- `r`: 行ベクトル (row vector)
-- `m`: 行列 (matrix)
+### Size (Second Prefix)
+- *(none)*: scalar (do not add a size prefix for scalars)
+- `v`: column vector
+- `r`: row vector
+- `m`: matrix
 
-### 命名の構成例
-- **`cv_Vequilibrium`**: [c:複素数] + [v:列ベクトル] + [_Vequilibrium]
-- **`im_solution`**: [i:インデックス] + [m:行列] + [_solution]
-- **`r_gain`**: [r:実数] + [(なし):スカラー] + [_gain]
-- **`str_message`**: [str:文字列] + [(なし):スカラー] + [_message]
-
----
-
-## 3. 例外的な命名規則 (固定プレフィックス)
-以下のデータ型については、サイズに関係なく指定された形式を使用してください。
-
-- **Dictionary型**: `dict_` + [変数内容]
-  - 例: `dict_params`
-- **関数ハンドル**: `fcn_` + [変数内容]
-  - 例: `fcn_objective`
-- **テーブル型**: `tab_` + [変数内容]
-  - 例: `tab_bus_data`
-- **GUILDA固有クラス (Cell配列)**: `a_` + **[クラス名]**
-  - GUILDA固有のクラスオブジェクトを格納するCell配列に使用。
-  - 例: `a_Controller` (Controllerクラスのオブジェクトを格納)
-- **Parameterクラス**: `params_` + [データ内容]
-  - GUILDA固有の "Parameter" クラスを格納する場合に使用。
-  - 例: `params_generator`
+### Naming Examples
+- **`cv_Vequilibrium`**: [c: complex] + [v: column vector] + [_Vequilibrium]
+- **`im_solution`**: [i: index] + [m: matrix] + [_solution]
+- **`r_gain`**: [r: real] + [none: scalar] + [_gain]
+- **`str_message`**: [str: string] + [none: scalar] + [_message]
 
 ---
 
-# Gitブランチ運用ルール (Branch Strategy)
-開発・公開プロセスにおいて以下のブランチ戦略を厳守すること。
+## 3. Exception Rules (Fixed Prefixes)
+For the following data types, use the fixed prefixes regardless of size.
 
-## ブランチ定義
+- **Dictionary type**: `dict_` + [name]
+  - Example: `dict_params`
+- **Function handle**: `fcn_` + [name]
+  - Example: `fcn_objective`
+- **Table type**: `tab_` + [name]
+  - Example: `tab_bus_data`
+- **Struct type**: `sct_` + [name]
+  - Example: `sct_results`
+- **GUILDA-specific class (cell array)**: `a_` + **[ClassName]**
+  - Used for cell arrays that store GUILDA class objects.
+  - Example: `a_Controller` (stores `Controller` class objects)
+- **Parameter class**: `params_` + [data name]
+  - Used when storing GUILDA's `Parameter` class.
+  - Example: `params_generator`
+
+## 4. How to Document Class Definitions
+
+### Help Comments for Class Definition
+For the class definition, include the following information in the help comments using the specified tags:
+```
+% <@Desc> Detailed description of the class and its purpose
+% <@Role> Role of the class, e.g. 'CoreComponent', 'Utility', 'DataStructure'
+% <@Constructor> Description of the constructor and its arguments
+%  i.e.
+%  >> obj = MyClass(arg1, arg2) 
+%      - arg1; description of arg1
+%      - arg2: description of arg2
+```
+
+### Help Comments for Methods
+For each method, include the following information in the help comments using the specified tags:
+```
+% <@Desc> detailed method description
+% <@Role> role of the method e.g. 'CoreFunction', 'HelperFunction', 'EventHandler'
+% <@Abst> method summary
+% <@Argin> [argument descriptions]
+%  e.g. 
+%      arg1 - [Description of arg1]
+%      arg2 - [Description of arg2]
+% <@Argout> [output descriptions]
+%  e.g. 
+%      out1 - [Description of out1]
+%      out2 - [Description of out2]
+% <@Option> [option descriptions]
+%  e.g.
+%     'OptionName' - [Description of the option]
+```
+
+### Help Comments for Properties
+For each property, include the following information in the help comments using the specified tags:
+```
+% <@Desc> description of the property
+% <@Role> role of the property e.g. OPF, simulate, linearize, etc.
+% <@Type> data type     e.g. 'double', 'logical', 'table', 'struct'
+% <@Size> data size     e.g. 1x1, 1xN, MxN
+```
+
+
+---
+
+# Git Branching Rules (Branch Strategy)
+The following branch strategy must be followed for development and release workflows.
+
+## Branch Definitions
 - **`main`**
-  - 機能実証済みの公開用ブランチ。
-  - 常に安定稼働するバージョンを保持する。
+  - Production/public branch with validated functionality.
+  - Must always remain stable.
 
 - **`beta`**
-  - 新機能追加や次期バージョン公開に向けた開発用ブランチ。
-  - 機能検証が完了した段階で `main` にマージする。
+  - Development branch for new features and upcoming releases.
+  - Merge into `main` after verification is complete.
 
 - **`develop/xx-yyyy`**
-  - 各種機能変更やバグ修正を行う作業用ブランチ。
-  - `beta` ブランチから分岐し、作業完了後は `beta` へマージする。
+  - Working branch for feature changes and bug fixes.
+  - Must branch from `beta` and merge back into `beta` after completion.
 
-## 作業フローと命名規則
-1. **作成 (Checkout)**: 必ず `beta` から分岐させる。
-2. **命名**: `develop/{Issue番号}-{実装内容（英数字）}`
-   - 例: `develop/12-add_opf_solver`
-3. **マージ (Merge)**:
-   - 実装完了後、Pull Requestを作成する。
-   - レビューと確認が済み次第、`beta` ブランチにマージする。
+## Workflow and Naming Rules
+1. **Create (Checkout)**: Always branch from `beta`.
+2. **Naming**: `develop/{IssueNumber}-{implementation}`
+   - Example: `develop/12-add_opf_solver`
+3. **Merge**:
+   - Create a Pull Request after implementation is complete.
+   - Merge into `beta` after review and verification.
 
 ---
 
-# 設計・実装ガイドライン
+# Design and Implementation Guidelines
 
-## クラスコンストラクタ
-- 引数なし (`nargin == 0`) で呼び出された場合でも、インスタンスの初期化に対応できるよう、必ず規定値を設定しておくこと。
+## Class Constructors
+- Even when called without arguments (`nargin == 0`), constructors must initialize instances with default values.
 
 ```matlab
 methods

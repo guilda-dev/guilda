@@ -1,8 +1,9 @@
 function tab_out = dictionary(headword,opt)
 % Search classes implemented in this software
     arguments
-        headword (1,1) string {mustBeMember(headword,["LayerPackage","PowerSystem","PowerNetwork","Branch","Component","Controller","LocalController","GlobalController","auxiliary"])} = "PowerSystem"
-        opt.disp (1,1) logical = true
+        headword   (1,1) string {mustBeMember(headword,  ["PowerSystemModel","PowerNetwork","Branch","Component","Controller","LocalController","GlobalController","auxiliary"])} = "PowerSystemModel"
+        opt.disp   (1,1) logical = true
+        opt.output (1,:) string {mustBeMember(opt.output,["PowerSystemModel","PowerNetwork","Branch","Component","Controller","LocalController","GlobalController","auxiliary"])} = headword
     end
     
     char_class = char(headword);
@@ -14,7 +15,6 @@ function tab_out = dictionary(headword,opt)
     filename      = "handle";
     superclass    = "";
     class_list    = make_classlist(table(filename,superclass),cell(0), opt.disp);
-
 
     if opt.disp
         bar = "================================================================";
@@ -29,23 +29,30 @@ function tab_out = dictionary(headword,opt)
         disp(bar)
     end
 
-    l_flag      = true;
-    str_parent  = headword;
-    tab_out     = [];
-    while l_flag
-        l_flag = false;
-        lv_child = ismember(class_list.superclass,str_parent);
-        if any(lv_child)
-            l_flag = true;
-            tab_add    = class_list(lv_child,:);
-            [~,iv_add] = sort(tab_add.superclass);
-            tab_out    = [tab_out; tab_add(iv_add,:)]; %#ok
-            class_list = class_list(~lv_child,:);
-            str_parent = tab_add.filename;
+    n_out   = numel(opt.output);
+    tab_out = cell(n_out,1);
+    for i = 1:n_out
+        l_flag      = true;
+        str_parent  = opt.output(i);
+        tab_outi     = [];
+        while l_flag
+            l_flag = false;
+            lv_child = ismember(class_list.superclass,str_parent);
+            if any(lv_child)
+                l_flag = true;
+                tab_add    = class_list(lv_child,:);
+                [~,iv_add] = sort(tab_add.superclass);
+                tab_outi   = [tab_outi; tab_add(iv_add,:)]; %#ok
+                class_list = class_list(~lv_child,:);
+                str_parent = tab_add.filename;
+            end
         end
+        No = (1:size(tab_outi,1))';
+        tab_out{i} = [table(No), tab_outi];
     end
-    No = (1:size(tab_out,1))';
-    tab_out = [table(No), tab_out];
+    if n_out==1
+        tab_out = tab_out{1};
+    end
 end
 
 function data = make_classlist(data, cell_dirlist, l_disp)

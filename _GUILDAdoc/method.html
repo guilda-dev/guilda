@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GUILDA Reference - Method</title>
+  <link rel="stylesheet" href="style.css">
+  
+  <script src="./database/list_Classes.js"></script>
+</head>
+<body class="doc-layout">
+
+  <nav id="sidebar" style="padding: 20px; box-sizing: border-box; overflow-y: auto;">
+    <a href="index.html" style="display: block; margin-bottom: 20px;">
+      <img src="https://github.com/guilda-dev/guilda/assets/54563775/20094d9b-22f5-4fb8-aff8-d80dc3cde31b" alt="GUILDA Logo" style="width: 100%;">
+    </a>
+    
+    <div id="sidebar-back-btn"></div>
+    
+    <h3 style="margin-top: 0;">On this page</h3>
+    <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#metadata">Metadata</a></li>
+      <li><a href="#signatures">Signatures</a></li>
+      <li><a href="#description">Description</a></li>
+      <li><a href="#arguments">Arguments</a></li>
+      <li><a href="#returns">Return Values</a></li>
+      <li><a href="#examples">Examples</a></li>
+    </ul>
+  </nav>
+
+  <main id="main-content" style="flex: 1; min-width: 0;">
+    <div id="dynamic-content">
+      <h1 style="color: #888;">Loading...</h1>
+    </div>
+  </main>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const className = urlParams.get('class');
+    const methodName = urlParams.get('method');
+
+    function resolveClassMeta(dataList, targetClassName) {
+      const normalizedTarget = (targetClassName || '').toLowerCase();
+      return dataList.find(c => {
+        const name = (c.Name || c.name || '').toLowerCase();
+        const path = (c.path || '').toLowerCase();
+        return name === normalizedTarget || path.endsWith(`/${normalizedTarget}.js`) || path.endsWith(`\\${normalizedTarget}.js`);
+      });
+    }
+
+    function resolveFolder(meta, targetClassName) {
+      const classPath = (meta?.path || '').toLowerCase();
+      const classType = (meta?.Type || '').toLowerCase();
+      const classNameLower = (targetClassName || '').toLowerCase();
+
+      if (classPath.includes('/database/guildaobject/') || classPath.includes('\\database\\guildaobject\\')) return 'GUILDAobject';
+      if (classPath.includes('/database/guildasystem/') || classPath.includes('\\database\\guildasystem\\')) return 'GUILDAsystem';
+      if (classType === 'auxiliary') return 'GUILDAsystem';
+      if (classType === 'PowerSystemModel') {
+        if (classNameLower.startsWith('component.') || classNameLower.startsWith('branch.') || classNameLower.startsWith('controller.')) {
+          return 'GUILDAobject';
+        }
+        return 'GUILDAsystem';
+      }
+      if (classPath.endsWith('/guildaobject') || classPath.endsWith('\\guildaobject')) return 'GUILDAobject';
+      if (classPath.endsWith('/guildasystem') || classPath.endsWith('\\guildasystem')) return 'GUILDAsystem';
+      if (classNameLower.startsWith('component.') || classNameLower.startsWith('branch.') || classNameLower.startsWith('controller.')) return 'GUILDAobject';
+      return 'GUILDAsystem';
+    }
+
+    if (!className || !methodName) {
+      document.getElementById('dynamic-content').innerHTML = "<h1 style='color:red;'>Error: Missing Parameters</h1>";
+    } else {
+      // 戻るボタンの設定
+      document.getElementById('sidebar-back-btn').innerHTML = `
+        <a href="index.html#tab-reference" class="btn" style="width: 100%; text-align: center; margin-bottom: 20px; box-sizing: border-box;">← Back to Home</a>
+      `;
+
+      // フォルダの判定とロード（list_Classes.js の path を参照）
+      const dataList = typeof classListData !== 'undefined'
+        ? classListData
+        : (typeof class_list !== 'undefined' ? class_list : []);
+      const meta = resolveClassMeta(dataList, className);
+      const folder = resolveFolder(meta, className);
+
+      if (!folder) {
+        document.getElementById('dynamic-content').innerHTML = `
+          <h1 style="color:red;">Error</h1>
+          <p>Class metadata (<code>path</code>) was not found for <code>${className}</code> in <code>list_Classes.js</code>.</p>
+        `;
+      } else {
+        const script = document.createElement('script');
+        script.src = `./database/${folder}/${className}.js`;
+        script.onload = () => {
+          const loadedClassData = (typeof window.classData !== 'undefined')
+            ? window.classData
+            : (typeof classData !== 'undefined' ? classData : null);
+          renderMethodPage(className, methodName, loadedClassData);
+        };
+        script.onerror = () => {
+          document.getElementById('dynamic-content').innerHTML = `<h1 style="color:red;">Error 404</h1><p>File not found.</p>`;
+        };
+        document.head.appendChild(script);
+      }
+    }
+
+    function renderMethodPage(className, methodName, classDoc) {
+      const nl2br = (text) => (text ?? '').toString().replace(/\n/g, '<br>');
+      const escapeHtml = (text) => (text ?? '').toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+      const formatInlineMarkdown = (text) => {
+        let output = escapeHtml(text);
+        output = output.replace(/`([^`]+)`/g, '<code>$1</code>');
+        output = output.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        output = output.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+        output = output.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+        return output;
+      };
+      const renderMarkdown = (input) => {
+        const rawText = (input ?? '').toString().replace(/\r\n?/g, '\n').trim();
+        if (!rawText) return '<p style="margin: 0;">N/A</p>';
+
+        const codeBlocks = [];
+        let text = rawText.replace(/```([\s\S]*?)```/g, (_, code) => {
+          const token = `@@CODEBLOCK_${codeBlocks.length}@@`;
+          codeBlocks.push(`<pre><code>${escapeHtml(code.trimEnd())}</code></pre>`);
+          return token;
+        });
+
+        const lines = text.split('\n');
+        const htmlParts = [];
+        let paragraphLines = [];
+        let listType = '';
+        let listItems = [];
+
+        const flushParagraph = () => {
+          if (!paragraphLines.length) return;
+          const paragraph = paragraphLines.join(' ').trim();
+          if (paragraph) {
+            htmlParts.push(`<p>${formatInlineMarkdown(paragraph)}</p>`);
+          }
+          paragraphLines = [];
+        };
+
+        const flushList = () => {
+          if (!listType || !listItems.length) return;
+          htmlParts.push(`<${listType}>${listItems.map((item) => `<li>${formatInlineMarkdown(item)}</li>`).join('')}</${listType}>`);
+          listType = '';
+          listItems = [];
+        };
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          const unorderedMatch = trimmed.match(/^[-*+]\s+(.*)$/);
+          const orderedMatch = trimmed.match(/^\d+\.\s+(.*)$/);
+
+          if (!trimmed) {
+            flushParagraph();
+            flushList();
+            continue;
+          }
+
+          const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
+          if (headingMatch) {
+            flushParagraph();
+            flushList();
+            const headingLevel = headingMatch[1].length;
+            htmlParts.push(`<h${headingLevel}>${formatInlineMarkdown(headingMatch[2])}</h${headingLevel}>`);
+            continue;
+          }
+
+          if (unorderedMatch || orderedMatch) {
+            flushParagraph();
+            const nextListType = unorderedMatch ? 'ul' : 'ol';
+            if (listType && listType !== nextListType) {
+              flushList();
+            }
+            listType = nextListType;
+            listItems.push((unorderedMatch || orderedMatch)[1]);
+            continue;
+          }
+
+          flushList();
+          paragraphLines.push(trimmed);
+        }
+
+        flushParagraph();
+        flushList();
+
+        let html = htmlParts.join('');
+        html = html.replace(/@@CODEBLOCK_(\d+)@@/g, (_, index) => codeBlocks[Number(index)] || '');
+        return html;
+      };
+      const renderClassLink = (name) => {
+        const classNameValue = (name ?? '').toString();
+        return classNameValue ? `<a href="class.html?class=${encodeURIComponent(classNameValue)}">${classNameValue}</a>` : '';
+      };
+      const splitLines = (text) => (text ?? '').toString().replace(/\r\n?/g, '\n').split('\n').map((line) => line.trim());
+      const normalizeCell = (value, fallback = 'N/A') => {
+        const text = (value ?? '').toString().trim();
+        return text ? escapeHtml(text) : fallback;
+      };
+      const toBoolText = (value) => (value ? 'true' : 'false');
+
+      const extractExampleFromDescription = (descriptionText) => {
+        const source = (descriptionText ?? '').toString().replace(/\r\n?/g, '\n');
+        const markerRegex = /(\n|^)(?:#+\s*)?(Example(?:s)?(?:\s+Usage)?|Usage|使用例)\s*:?\s*/i;
+        const markerMatch = source.match(markerRegex);
+        if (!markerMatch) {
+          return {
+            description: source.trim(),
+            examples: ''
+          };
+        }
+
+        const markerIndex = markerMatch.index ?? -1;
+        if (markerIndex < 0) {
+          return {
+            description: source.trim(),
+            examples: ''
+          };
+        }
+
+        const head = source.slice(0, markerIndex).trim();
+        const tailStart = markerIndex + markerMatch[0].length;
+        const tail = source.slice(tailStart).trim();
+        return {
+          description: head,
+          examples: tail
+        };
+      };
+
+      const parseSimpleEntries = (text, kind) => {
+        const items = [];
+        const lines = splitLines(text);
+        for (const line of lines) {
+          if (!line) continue;
+          const m = line.match(/^[-*+]\s*([^:]+)\s*:\s*(.+)$/);
+          if (!m) continue;
+          const name = (m[1] || '').trim();
+          const desc = (m[2] || '').trim();
+          if (!name) continue;
+          if (kind === 'param') {
+            items.push({
+              name,
+              type: '',
+              description: desc,
+              required: '',
+              default: ''
+            });
+          } else {
+            items.push({
+              name,
+              type: '',
+              description: desc
+            });
+          }
+        }
+        return items;
+      };
+
+      const normalizeParamArray = (rawList) => {
+        if (!Array.isArray(rawList)) return [];
+        return rawList
+          .map((p) => ({
+            name: p?.name || p?.Name || '',
+            type: p?.type || p?.Type || p?.class || p?.Class || '',
+            description: p?.description || p?.Description || p?.desc || p?.Desc || '',
+            required: p?.required ?? p?.Required ?? '',
+            default: p?.default ?? p?.Default ?? ''
+          }))
+          .filter((p) => (p.name || p.description || p.type));
+      };
+
+      const normalizeReturnArray = (rawList) => {
+        if (!Array.isArray(rawList)) return [];
+        return rawList
+          .map((r) => ({
+            name: r?.name || r?.Name || '',
+            type: r?.type || r?.Type || r?.class || r?.Class || '',
+            description: r?.description || r?.Description || r?.desc || r?.Desc || ''
+          }))
+          .filter((r) => (r.name || r.description || r.type));
+      };
+
+      const normalizeSignatureList = (raw) => {
+        if (Array.isArray(raw)) {
+          return raw.map((v) => (v ?? '').toString().trim()).filter(Boolean);
+        }
+        if (typeof raw === 'string') {
+          const text = raw.trim();
+          if (!text) return [];
+          if (text.includes('\n')) {
+            return text.split('\n').map((line) => line.trim()).filter(Boolean);
+          }
+          return [text];
+        }
+        return [];
+      };
+
+      const normalizeMethod = (m) => ({
+        name: m?.Name || '',
+        description: m?.Desc || m?.Abst || '',
+        overview: m?.Overview || m?.Summary || m?.Abst || '',
+        role: m?.Role || '',
+        defining: m?.Defining || '',
+        abstract: m?.Abstract ?? false,
+        access: m?.Access || '',
+        static: m?.Static ?? false,
+        hidden: m?.Hidden ?? false,
+        option: m?.Option || '',
+        signatures: m?.Signatures || [],
+        detailsCode: m?.DetailsCode || m?.Implementation || m?.DescriptionCode || '',
+        parameters: normalizeParamArray(m?.Parameters || m?.Arguments),
+        returns: normalizeReturnArray(m?.Returns || m?.ReturnValues),
+        examples: m?.Examples || m?.Example || '',
+        arginText: m?.Argin || '',
+        argoutText: m?.Argout || ''
+      });
+
+      if (!classDoc) {
+        document.getElementById('dynamic-content').innerHTML = `<h1 style="color:red;">Error</h1><p><code>classData</code> could not be loaded.</p>`;
+        return;
+      }
+
+      const rawMethodData = (classDoc.methods || []).find(m => m?.Name === methodName);
+      const methodData = rawMethodData ? normalizeMethod(rawMethodData) : null;
+      if (!methodData) {
+        document.getElementById('dynamic-content').innerHTML = `<h1 style="color:red;">Method not found</h1><p>${methodName} does not exist in ${className}.</p>`;
+        return;
+      }
+
+      const container = document.getElementById('dynamic-content');
+      const extracted = extractExampleFromDescription(methodData.description);
+      const normalizedDescription = extracted.description || methodData.description;
+
+      const signatures = normalizeSignatureList(methodData.signatures);
+      if (!signatures.length) signatures.push(`${methodName}()`);
+
+      const overviewText = (methodData.overview || normalizedDescription || '').toString().trim();
+
+      let parameterRows = methodData.parameters;
+      if (!parameterRows.length && methodData.arginText) {
+        parameterRows = parseSimpleEntries(methodData.arginText, 'param');
+      }
+
+      let returnRows = methodData.returns;
+      if (!returnRows.length && methodData.argoutText && methodData.argoutText.trim().toLowerCase() !== 'none') {
+        returnRows = parseSimpleEntries(methodData.argoutText, 'return');
+      }
+
+      const examplesList = [];
+      if (Array.isArray(methodData.examples)) {
+        methodData.examples.forEach((item) => {
+          const value = (item ?? '').toString().trim();
+          if (value) examplesList.push(value);
+        });
+      } else if (typeof methodData.examples === 'string' && methodData.examples.trim()) {
+        examplesList.push(methodData.examples.trim());
+      }
+      if (!examplesList.length && extracted.examples) {
+        examplesList.push(extracted.examples);
+      }
+
+      let html = `
+        <div style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">
+          <a href="index.html">Home</a> &gt; <a href="class.html?class=${className}">${className}</a> &gt; ${methodName}
+        </div>
+        <h1 style="font-size: 2.5rem; margin-bottom: 10px;">${methodName}</h1>
+        <div style="margin: -4px 0 10px 0; color: #666; font-size: 0.95rem;">
+          ${methodData.defining ? `Method defined in the ${renderClassLink(methodData.defining)} class.` : ''}
+        </div>
+        <hr style="margin: 0 0 18px 0; border: 0; border-top: 1px solid #dee2e6;">
+
+        <h2 id="overview">Overview</h2>
+        <div class="meta-box">
+          <div class="markdown-content">${renderMarkdown(overviewText || 'N/A')}</div>
+        </div>
+
+        <h2 id="metadata">Method Metadata</h2>
+        <div class="meta-box">
+          <table class="meta-table">
+            <tbody>
+              <tr><th style="width: 22%;">Name</th><td>${normalizeCell(methodData.name)}</td></tr>
+              <tr><th>Defining Class</th><td>${methodData.defining ? renderClassLink(methodData.defining) : 'N/A'}</td></tr>
+              <tr><th>Access</th><td>${normalizeCell(methodData.access)}</td></tr>
+              <tr><th>Static</th><td>${toBoolText(methodData.static)}</td></tr>
+              <tr><th>Abstract</th><td>${toBoolText(methodData.abstract)}</td></tr>
+              <tr><th>Hidden</th><td>${toBoolText(methodData.hidden)}</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2 id="signatures">Signatures</h2>
+        <div class="syntax-box">
+          <pre><code>${escapeHtml(signatures.join('\n'))}</code></pre>
+        </div>
+
+        <h2 id="description">Description</h2>
+        <div class="meta-box">
+          <div class="markdown-content">${renderMarkdown(normalizedDescription || 'N/A')}</div>
+        </div>
+        ${methodData.detailsCode ? `
+          <div class="meta-box" style="margin-top: -8px;">
+            <h3 style="margin-top: 0;">Implementation Notes (Code)</h3>
+            <pre><code>${escapeHtml(methodData.detailsCode)}</code></pre>
+          </div>
+        ` : ''}
+      `;
+
+      html += `<h2 id="arguments">Arguments / Parameters</h2>`;
+      if (parameterRows.length > 0) {
+        html += `
+          <table class="compact-table description-table">
+            <thead>
+              <tr>
+                <th style="width: 20%;">Name</th>
+                <th style="width: 18%;">Type / Class</th>
+                <th style="width: auto;">Description</th>
+                <th style="width: 16%;">Required</th>
+                <th style="width: 16%;">Default</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${parameterRows.map((p) => {
+                const requiredText = typeof p.required === 'boolean'
+                  ? (p.required ? 'Required' : 'Optional')
+                  : ((p.required ?? '').toString().trim() || 'N/A');
+                const defaultText = (p.default ?? '').toString().trim() || 'N/A';
+                return `
+                  <tr>
+                    <td><strong>${normalizeCell(p.name, '-')}</strong></td>
+                    <td>${normalizeCell(p.type, 'N/A')}</td>
+                    <td>${normalizeCell(p.description, '-')}</td>
+                    <td>${escapeHtml(requiredText)}</td>
+                    <td>${escapeHtml(defaultText)}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        `;
+      } else {
+        html += `<p>None</p>`;
+      }
+
+      html += `<h2 id="returns">Return Values</h2>`;
+      if (returnRows.length > 0) {
+        html += `
+          <table class="compact-table">
+            <thead>
+              <tr>
+                <th style="width: 22%;">Name</th>
+                <th style="width: 22%;">Type</th>
+                <th style="width: auto;">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${returnRows.map((r) => `
+                <tr>
+                  <td><strong>${normalizeCell(r.name, '-')}</strong></td>
+                  <td>${normalizeCell(r.type, 'N/A')}</td>
+                  <td>${normalizeCell(r.description, '-')}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } else {
+        html += `<p>None</p>`;
+      }
+
+      html += `<h2 id="examples">Examples</h2>`;
+      if (examplesList.length > 0) {
+        html += `<div class="meta-box">${examplesList.map((exampleText) => `<div class="example-block">${renderMarkdown(exampleText)}</div>`).join('')}</div>`;
+      } else {
+        html += `<p>No examples.</p>`;
+      }
+
+      container.innerHTML = html;
+    }
+  </script>
+</body>
+</html>

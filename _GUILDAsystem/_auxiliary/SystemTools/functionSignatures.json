@@ -1,0 +1,51 @@
+{
+  "eventset": {
+    "inputs": [
+        {      
+        "name":"Time",
+        "kind":"namevalue",
+        "repeating": true    
+      },
+        {      
+        "name":"OffsetCmp",
+        "kind":"namevalue",
+        "repeating": true        
+      },
+        {      
+        "name":"InitOffset",
+        "kind":"namevalue",
+        "repeating": true        
+      },
+        {      
+        "name":"OffsetX",
+        "kind":"namevalue",
+        "repeating": true        
+      },
+        {      
+        "name":"FltBus",
+        "kind":"namevalue",
+        "repeating": true        
+      },
+        {      
+        "name":"TrpBus",
+        "kind":"namevalue",
+        "repeating": true        
+      },
+        {      
+        "name":"TrpCmp",
+        "kind":"namevalue",
+        "repeating": true        
+      },
+        {      
+        "name":"Load",
+        "kind":"namevalue",
+        "repeating": true        
+      },
+        {         
+        "name":"LoadRate",
+        "kind":"namevalue",
+        "repeating": true
+      }
+    ]
+  }
+}

@@ -51,6 +51,11 @@ sfprj/
 # Ignore all files under the user directory
 @GUILDA/user/*
 
+# ========
+# Unity
+# =======
+_GUILDAsystem/_auxiliary/@未*
+
 # If you want to track the folder structure but ignore content,
 # uncomment the following line (requires a .gitkeep file inside)
 # !@GUILDA/user/.gitkeep

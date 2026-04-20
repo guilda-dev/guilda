@@ -1,0 +1,28 @@
+classdef ___MODEL_NAME___ < PowerNetwork
+% <@Desc> 
+% Made by CsvNetHandler.export (____MADE_DATE____)
+% <Model> ___MODEL_NAME___
+% <Summary>
+%  Bus       : ___BUS_NUM___
+%  Branch    : ___BRANCH_NUM___
+%  Component : ___COMPONENT_NUM___
+%   > SG     : ___GENERATOR_NUM___
+%   > Load   : ___LOAD_NUM___
+%   > Others : ___COMPENSATOR_NUM___
+% 
+% <@Role> PowerNetwork COnstructor
+% <@Constructor> 
+%  net = ___MODEL_NAME___()
+ 
+    properties(Constant)
+        ver = ___VERSION___
+    end
+
+    methods
+        function obj = ___MODEL_NAME___()
+            str_filepath = mfilename("fullpath");
+            str_dirpath  = fileparts(str_filepath);
+            CsvNetHandler.import(str_dirpath, obj);
+        end
+    end
+end

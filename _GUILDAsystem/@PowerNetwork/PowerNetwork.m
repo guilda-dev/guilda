@@ -1,134 +1,224 @@
-classdef PowerNetwork < LayerPackage
-% 全ての系統構成クラスを格納し管理するクラス
-% 時間応答や近似線形化、潮流計算や最適潮流計算などは本クラスのメソッドとして定義 
-% 格納されている母線や送電線、機器、制御機クラスから情報を抽出して各種解析をする
+classdef PowerNetwork < PowerSystemModel
+% A package for constructing a single electric power system (or power grid).
+% By storing classes corresponding to buses and transmission lines in this class's properties, 
+% various analyses can be performed. Component classes should be stored within the Bus class.
 %
 %
+% << This class primarily provides the following analyses >>
+%   * Power Flow Calculation (Load Flow)
+%   * Optimal Power Flow (OPF)
+%   * Time-Domain Simulation (Dynamic Simulation)
+%   * Construction of an Approximate Linearized Model
+%   * Eigenvalue Analysis
+%   * Others (e.g., Graph Plotting of the system structure)
 %
-%  << 親クラスからの継承プロパティ >>
 %
-%     prop         class      description
-% ========================================================================
-%   ・parent   |LayerPackage| 階層構造の上位層にあたるLayerPackageクラス
-%   ・parent   |    cell    | 階層構造の下位層にあたるLayerPackageクラス
-%   ・tag      |   string   | クラスの呼称
-%   ・index    |   double   | インデックス番号、tagともにクラスの命名に使用
-%   ・parameter|   table    | ユーザが設定する定数は全てこのプロパティで管理
-%   ・editFlag |  logical   | 変更が加えられたかどうかの管理simulate前などに確認
-%   ・editLog  |   table    | 変更内容を「変更時間・対象クラス・変更内容」で管理
-% ========================================================================
+% << Power Flow Setting >>
 %
+%  Changes to the powerflow settings should be made from the Bus/Component class.
+%
+%   -> To check power flow settings
+%      >> obj.disp_pf_set
+%
+%   -> When changing the bus voltage settings
+%      >> obj.a_Bus{i}.tab_parameter.powerflow.Varg = value
+%      >> obj.a_Bus{i}.tab_parameter.powerflow.V    = value
+%
+%   -> When changing the P or Q settings
+%      >> obj.a_Bus{i}.a_Component{j}.tab_parameter.powerflow.P = value
+%      >> obj.a_Bus{i}.a_Component{j}.tab_parameter.powerflow.Q = value
+%
+%   -> Method for obtaining tide calculation results
+%      >> [powerflow_bus, powerflow_cub] = obj.calculate_powerflow()
+%
+%   -> By executing the following command, steady-state values will be set.
+%      ( The internal process executes obj.calculate_powerflow and then sets 
+% 　　　the steady-state values of the Bus class using the result. )
+%      >> net.initialize("methods","powerflow calculation")
+%
+%
+% << Optimal PowerFlow(OPF) >>
+%
+%  If you intend to set the power flow based on the solution obtained from AC Optimal PowerFlow (AC OPF) calculation, 
+%  first, you adjust the hyperparameters used in the OPF calculation.
+%  Adjust the table data within the following properties, depending on the class:
+%
+%   -> Bus Class: Modify the following properties:
+%      >> obj.a_Bus{i}.tab_parameter.operation
+%      >> obj.a_Bus{i}.tab_parameter.OPF
+%
+%   -> Component Class: Modify the following properties:
+%      >> obj.a_Bus{i}.a_Component{j}.tab_parameter.operation
+%      >> obj.a_Bus{i}.a_Component{j}.tab_parameter.OPF
+%
+%  -> Branch Class: Modify the following properties:
+%      >> obj.a_Branch{i}.tab_parameter.operation
+%      >> obj.a_Branch{i}.tab_parameter.OPF
+%
+%  -> After modifying the hyperparameters, execute the following command to set the optimized power flow:
+%      >> net.initialize("methods","optimal powerflow")
+%
+%
+% << Time Simulation >>
+%    TBD
+% << Approximate Linearized Model >>
+%    TBD
+% << Eigenvalue Analysis >> 
+%    TBD
+
+%% Properties
+
+    properties%(SetAccess=protected) 
+       a_Bus              (:,1) cell = cell(0,1);   % Layer Structure
+    end
+    properties
+       a_Branch           (:,1) cell = cell(0,1);   % Layer Structure
+    end
+    properties
+       a_GlobalController (:,1) cell = cell(0,1);   % Layer Structure       
+    end
+    properties(SetAccess=protected)
+        solver_PF  = SolverPF();
+        % solver_OPF (1,1) OptimalPowerFlow     = OptimalPowerFlow();
+    end
 
     properties
-        omega0 (1,1) double {mustBePositive} = 60*2*pi; % 60Hz*2pi
+       str_methodPF       (1,1) string {mustBeMember(str_methodPF,["optimal powerflow","powerflow calculation","calculate from Xequilibrium","unset"])} = "unset"; % Calculate/Set Steady State
+    end
+    properties(Dependent) 
+        cv_Vequilibrium         % Steady State
+        cv_Iequilibrium         % Steady State
+        cv_Xequilibrium         % Steady State
+        tab_parameter           % Parameter
+    end
+    properties(Hidden,SetAccess=protected)
+        para_base               % Parameter
+    end
+    properties(Dependent, Access=protected)
+        parent                  % Layer Structure
+        children                % Layer Structure
+    end    
+    properties
+        rv_odeInit
     end
 
-    properties(Dependent,Access=protected)
-        children (:,1) cell
-    end
-
-    properties(SetAccess=protected)
-        Buses             = {};
-        Branches          = {};
-        GlobalControllers = {};
-        methodPF (1,1) string {mustBeMember(methodPF,["AC OPF","ELD","PF","manual","unset"])} = "unset";
-    end
-
-    properties(Dependent)
-        x_equilibrium
-        V_equilibrium
-        I_equilibrium
-        xbus_equilibrium
-        xbranch_equilibrium
-        xcg_equilibrium % equilibrium @ global controller
-    end
-
-
-    
+%% Constructor
     methods
-        % construct Layer @Bus 
-        add_bus(obj, BusInstance)
-        replace_bus(obj, BusInstance, i_bus)
-        remove_bus(obj, i_bus)
-
-        % construct Layer @Branch
-        add_branch(obj,BranchInstance,from,to)
-        replace_branch(obj,BranchInstance,i_branch)
-        remove_branch(obj,i_branch)
-
-        % construct Layer @GlobalController
-        add_global_controller(obj, ConInstance, index_observe, index_input)
-        replace_global_controler(obj,ConInstance,i_controller)
-        remove_global_controller(obj,i_controller)
-
-        % Set Lossy
-        function assume_lossy(obj)
-            for i = 1:numel(obj.Branches)
-                obj.Branches{i}.isLossy = true;
+        function obj = PowerNetwork(tag,struct_default,opt)
+            arguments
+                tag            (1,1) string = "PowerNetwork";
+                struct_default (1,1) struct = GUILDA.config("ModelNetwork"); %#ok 
+                opt.baseHz     (1,1) double {mustBePositive} = struct_default.Hz;
             end
+            obj.str_tag   = tag;
+            obj.para_base = Parameter(obj);
+            obj.para_base.add_entry("Hz", opt.baseHz, "double");
         end
-        function assume_lossless(obj)
-            for i = 1:numel(obj.Branches)
-                obj.Branches{i}.isLossy = false;
-            end
-        end
+    end
 
-        
-        % OPF/PF 
-        [zvec_V, zvec_I, flag, exitflag, output] = optimize_power_flow(obj,options); % 未実装
-        [zvec_V, zvec_I, flag, exitflag, output] = calculate_power_flow(obj, options)
-        
-        % Calculate Equilibrium Point
-        xst = set_equilibrium(obj,V,I,mode)
-        
-        % Calculate System Matrix
-        sys = get_sys(obj, class_list,target_index)
-        
-        % Make Admittance Matrix
-        [Ymat, GB] = get_admittance_matrix(obj, ivec_bus, ivec_branch)
+%% Methods
+    methods
+        % Layer Structure
+        bus = add_bus(obj, str_Bus, opt)
+        branch = add_branch(obj, str_Branch, from_to, opt)
+        add_global_controller(obj, a_Gcon, str_CompTag)
+        remove_bus( obj, str_BusTag)
+        remove_branch( obj, str_BranchTag)
+        remove_global_controller( obj, str_GconTag)
         
         % initialize
-        [flag,output,dataSheet] = initialize(obj,opt)
+        set_pf_set(obj, name, para)
+        [flag,powerflow_bus,powerflow_cub] = initialize(obj,options)
 
-        % Dynamic Analysis 
-        [out,sim] = simulate(obj, time, u, uidx, opt)
+        % OPF(optimal power-flow)
+        [powerflow_bus, powerflow_cub, flag, output, lambda, OPFprob] = optimize_powerflow(obj,options)
+        varargout = build_opf_problem(obj,method)
 
-        % Network Information Management
-        [data,Graph] = export(obj,options)
-
-        % illustrate Graph
-        [fig,G] = graph(obj,opt)
-        
+        % PF(powerflow) calculations
+        [Vbus,Ibus,Icub,flag,output] = calculate_powerflow(obj,OPTIMOPTIONS,opt)
+        varargout = disp_pf_set(obj)
     
-        % Get Method
-        function c = get.children(obj)
-            c = [obj.Buses; obj.Branches; obj.GlobalControllers];
-        end
-        function x = get.x_equilibrium(obj)
-            x = tools.vcellfun(@(b) tools.vcellfun(@(c) c.x_equilibium, b.Components), obj.Buses);
-        end
-        function V = get.V_equilibrium(obj)
-            V = tools.vcellfun(@(b) b.V_equilibrium, obj.Buses);
-        end
-        function I = get.I_equilibrium(obj)
-            I = tools.vcellfun(@(b) b.I_equilibrium, obj.Buses);
-        end
-        function x = get.xbus_equilibrium(obj)
-            x = tools.vcellfun(@(b) b.x_equilibium, obj.Buses);
-        end
-        function x = get.xbranch_equilibrium(obj)
-            x = tools.vcellfun(@(b) b.x_equilibium, obj.Branches);
-        end
-        function x0 = get.xcg_equilibrium(obj)
-            x0 = tools.vcellfun(@(c) c.x_equilibrium, obj.GlobalControllers);
-        end
+        % Static Analysis
+        sys = get_sys(obj)
+        tab_Ybus2bus = get_admittance_matrix(obj)
+        
+        % Time simulation
+        [sim_t, sim_y, out] = simulate(obj, InitialVal, FaultNum, time, u, uidx, opt)
+        [diff, mass, x0, para] = get_dae(obj,opt)
+        [Mass, x0] = reset_odeset(obj)
+        
+
+        % User Interface << Information >>
+        G = draw_diagram(obj,ax)
+        % G = draw_spring_model(obj,mode)
+        % list(obj,options)
+        % [fig,G] = graph(obj,opt)
+        % out = information(obj,opt)
     end
 
-    methods(Static)
-        function doc(~)
-            open("_Tutorial/Main.mlx")
+%% Get Method
+    methods
+        function tp = get.tab_parameter(obj)
+            base = obj.para_base.tab_parameter;
+            tp   = table(base);
+        end
+        function p = get.parent(~)
+            p = {};
+        end
+        function p = get.children(obj)
+            p = [obj.a_Bus; obj.a_Branch; obj.a_GlobalController; {obj.para_base}];
+        end
+        function V = get.cv_Vequilibrium(obj)
+            V = tools.vcellfun(@(b) b.c_Vequilibrium, obj.a_Bus);
+        end
+        function I = get.cv_Iequilibrium(obj)
+            I = tools.vcellfun(@(b) b.c_Iequilibrium, obj.a_Bus);
+        end
+        function x = get.cv_Xequilibrium(obj)
+            x_bus = tools.vcellfun(@(b) b.cv_Xequilibrium_all, obj.a_Bus);
+            x_bra = tools.vcellfun(@(b) b.cv_Xequilibrium, obj.a_Branch);
+            x_con = tools.vcellfun(@(c) c.cv_Xequilibrium, obj.a_GlobalController);
+            x = [x_bus; x_bra; x_con];
         end
     end
-
-
+%% Get Method
+    methods
+        function set.tab_parameter(obj,val)
+            fieldname = val.Properties.VariableNames;
+            for i = 1:numel(fieldname)
+                propname = "para_"+fieldname{i};
+                tabdata  = val.(fieldname{i});
+                paraname = tabdata.Properties.VariableNames;
+                for j = 1:numel(paraname)
+                    obj.(propname).(paraname{j}) = tabdata.(paraname{j});
+                end
+            end
+        end
+        function set.a_Bus(obj,val)
+            stack = dbstack('-completenames');            
+            if ~isempty(stack) && ~contains(stack(2).file, "_GUILDAsystem"+filesep+"@PowerNetwork")                 
+                error(msg('GUILDA:PowerNetwork:SetAbus'))
+            end
+            obj.a_Bus = val;
+        end
+        function set.a_Branch(obj,val)
+            stack = dbstack('-completenames');            
+            if ~isempty(stack) && ~contains(stack(2).file, "_GUILDAsystem"+filesep+"@PowerNetwork")                 
+                error(msg('GUILDA:PowerNetwork:SetAbranch'))
+            end
+            obj.a_Branch = val;
+        end
+        function set.a_GlobalController(obj,val)
+            stack = dbstack('-completenames');            
+            if ~isempty(stack) && ~contains(stack(2).file, "_GUILDAsystem"+filesep+"@PowerNetwork")                 
+                error(msg('GUILDA:PowerNetwork:SetGcon'))
+            end
+            obj.a_GlobalController = val;
+        end
+        
+        % function set.str_methodPF(~,~)
+        %     error("Property: Records the power flow calculation method used by obj.initialize()."+newline+...
+        %           " Update : Automatically refreshes based on the method used upon each execution of obj.initialize().")
+        % end
+    end
 end

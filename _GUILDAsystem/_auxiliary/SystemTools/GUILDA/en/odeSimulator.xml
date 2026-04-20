@@ -1,0 +1,7 @@
+<!--This is an XML file containing error messages related to the odeSimulator class.-->
+<rsccat version="2" locale="en" product="GUILDA">
+    <message>
+        <entry key="UnfeasibleDAE">I couldn't solve this DAE system. Too bad !!</entry>
+        <entry key="NoPropName">This property does not exist.</entry>        
+    </message>
+</rsccat>

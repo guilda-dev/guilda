@@ -1,0 +1,7 @@
+<!--This is an XML file containing error messages related to the class "Bus".-->
+<rsccat version="2" locale="en" product="GUILDA">
+    <message>        
+        <entry key="SetXeq">ERROR: cv_Xequilibrium is a Dependent Property that returns the combined equilibrium points from both&#xA;       the Bus itself (obj.cv_Xequilibrium_bus) and the Component class objects located under the a_Cubicle structure.&#xA;       - To set the Bus equilibrium point:&#xA;         >> obj.cv_Xequilibrium_bus = val&#xA;       - To set the Component equilibrium point:&#xA;         >> obj.a_Component{i}.cv_Xequilibrium_comp = val</entry> 
+        <entry key="NonUnitBus">Error: Non-unit bus '' {0} ''  cannot be assigned as the slack bus.</entry>         
+    </message>
+</rsccat>

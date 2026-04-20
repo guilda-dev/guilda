@@ -1,0 +1,49 @@
+function comp = add_component(obj,Type,opt)
+    arguments
+        obj
+        Type                 (1,:) char {mustBeMember(Type,{'gen-classical','gen-1axis','gen-park','load-impedance','load-power'})} % Component type
+        opt.parameter                     = nan;
+        opt.P                (1,1) double = 0;
+        opt.Q                (1,1) double = 0;
+        opt.baseMVA          (1,1) double = 100;
+        opt.Pmin             (1,1) double = -inf;
+        opt.Pmax             (1,1) double =  inf;
+        opt.Qmin             (1,1) double = -inf;
+        opt.Qmax             (1,1) double =  inf;
+        opt.OPFinit_P0       (1,1) double = 0;
+        opt.OPFinit_Q0       (1,1) double = 0;
+        opt.OPFcost_HP       (1,1) double = 1;
+        opt.OPFcost_HQ       (1,1) double = 0;
+        opt.OPFcost_fP       (1,1) double = 1;
+        opt.OPFcost_fQ       (1,1) double = 0;
+        opt.OPFcost_startup  (1,1) double = 0;
+        opt.OPFcost_shutdown (1,1) double = 0;
+        opt.Xaxis            (1,1) double = nan;
+        opt.Yaxis            (1,1) double = nan;
+        opt.Marker           (1,1) string = "o";
+        opt.MidXaxis         (1,1) string = "";
+        opt.MidYaxis         (1,1) string = "";
+        opt.BusPoint         (1,1) double = 0.5;
+    end
+    % Build Instance
+    index     = numel(obj.a_Component) + 1;
+    str_index = num2str(index)+obj.str_tag;
+    para      = opt.parameter;
+    opt       = rmfield( opt, "parameter");
+
+    % get component function
+    switch Type
+        case 'gen-classical';  mkInst = @component.generator.classical;
+        case 'gen-1axis';      mkInst = @component.generator.one_axis;
+        case 'gen-park';       mkInst = @component.generator.park;
+        case 'load-impedance'; mkInst = @component.load.impedance;
+        case 'load-power';     mkInst = @component.load.power;
+
+    end
+    comp = mkInst(str_index,para,opt);
+
+    % register
+    comp.set_bus(obj)
+    obj.a_Component = [obj.a_Component; {comp}];
+    obj.log_edit(obj.str_tag+" <<-connect--- "+comp.str_tag+"","Topology")
+end

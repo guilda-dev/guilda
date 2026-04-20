@@ -1,264 +1,180 @@
-classdef Bus < GuildaLayer
-% 母線を定義するスーパークラス
-% 'bus_PV'と'bus_PQ','bus_slack'を子クラスに持つ。
-%
-%           ┌----------┐
-%  ┌---v--->|          |--->w--┐     
-%  |        |  BRANCH  |       |     
-%  |        |          |       |     
-%  |        └----------┘       |    
-%  |                           |
-%  |                           |
-%  |        ┌---------┐        |-
-%  o---v<---|/////////|<---w---o     v : V_BUS = [ ∠V ;  |V| ] or [ ∠V ;  log|V| ]
-%  |        |///Bus///|        |-    w : I_BUS = [  P ; Q/|V|] or [  P ;      Q  ]
-%  |        |/////////|        |     
-%  |        └---------┘        |     
-%  |                           | 
-%  |                           |
-%  |        ┌-----------┐      |
-%  └---v--->|           |--->w-┘    
-%           | Component |           
-%      u--->|           |--->y      
-%           └-----------┘
-%
-%
-%  << 親クラスからの継承プロパティ >>
-%
-%     prop         class      description
-%==========================================================================
-%   ・parent   |LayerPackage| 階層構造の上位層にあたるLayerPackageクラス
-%   ・parent   |    cell    | 階層構造の下位層にあたるLayerPackageクラス
-%   ・tag      |   string   | クラスの呼称
-%   ・index    |   double   | インデックス番号、tagともにクラスの命名に使用
-%   ・parameter|   table    | ユーザが設定する定数は全てこのプロパティで管理
-%   ・editFlag |  logical   | 変更が加えられたかどうかの管理simulate前などに確認
-%   ・editLog  |   table    | 変更内容を「変更時間・対象クラス・変更内容」で管理
-%==========================================================================
-% 
-% 
-%  << クラス内で定義するプロパティ >>
-%     prop               class      description
-%==========================================================================
-%   ・Components    (:,1) cell    : componentクラスを格納するcell配列
-%   ・shunt         (1,2) double  : シャント値[実部,虚部]
-%   ・omega0        (1,1) double  : 系統周波数 60x2pi
-%   ・parameter     (1,:) table   : 列名(潮流設定とシャント値)Vabs,Varg,P,Q,shuntG,shuntB
-%   ・isFault       (1,1) logical : 地絡が起きている場合はtrue
-%   ・x_equilibrium (2,1) double  : 状態の平衡点  >>  [∠V;|V|] or [∠V;log|V|]
-%   ・v_equilibrium (2,1) double  : 出力の平衡点  >>  [∠V;|V|] or [∠V;log|V|]
-%   ・w_equilibrium (2,1) double  : 入力の平衡点  >>  [ P;Q/V] or [ P; Q]
-%   ・V_equilibrium (1,1) double  : 定常潮流状態の複素電圧
-%   ・I_equilibrium (1,1) double  : 定常潮流状態の複素電流
-%   ・ratePcomp     (:,1) double  : 各componentクラスの有効電力の比率
-%   ・rateQcomp     (:,1) double  : 各componentクラスの無効電力の比率
-%   ・mode_OPFconst (1,:)string   : OPFの制約条件のモード (string配列として複数選択可)
-%                                 ・電圧絶対値( 0.95 < |V|/|Vst| < 1.05) --> "P"
-%
+classdef Bus < PowerSystemModel
 
-    methods
-        function obj = Bus(shunt)
-            arguments
-                shunt (1,2) double = [0,0];
-            end
-            obj.shunt     = shunt;
-            obj.tag       = "Bus";
-            obj.parameter = array2table([nan(1,4),zeros(1,2)],"VariableNames",["theta","absV","P","Q","shuntG","shuntB"]);
-            obj.add_component(component.Empty());
-        end
-    end
-
-%%%%%%%%%%%%%%%%
-%%% Abstract %%%
-%%%%%%%%%%%%%%%%
-    methods(Abstract)
-        [svec_x, rvec_x0, svec_V,  svec_P, svec_Q ] = generate_PF_constraint(obj)
-    end
-
-%%%%%%%%%%%%%
-%%% Layer %%%
-%%%%%%%%%%%%%
-    properties(Dependent,Access=protected)
-        children (:,1) cell
-    end
-    properties(SetAccess=protected)
-        Components
-    end
-    methods
-        function c = get.children(obj)
-            c = obj.Components;
-        end
-        function add_component(obj,CompInstance)
-            arguments
-                obj 
-                CompInstance (1,1) Component
-            end
-            idx = numel(obj.Components)+1;
-            CompInstance.born(obj,idx)
-            obj.Components = [obj.Components; {CompInstance}];
-            obj.ratePcomp = ones(idx,1)/idx;
-            obj.rateQcomp = ones(idx,1)/idx;
-            obj.onEdit("add Component")
-        end
-        function set_component(obj,CompInstance)
-            arguments
-                obj 
-                CompInstance (1,1) Component
-            end
-            CompInstance.born(obj,1)
-            obj.Components{1} = CompInstance;
-            obj.onEdit("set Component")
-        end
-        function replace_component(obj,CompInstance,index)
-            arguments
-                obj 
-                CompInstance (1,1) Component
-                index        (1,1) double {mustBeInteger,mustBePositive} = 1;
-            end
-            CompInstance.born(obj,index)
-            cellfun(@(c) CompInstance.add_local_controller(c), obj.Components.LocalCOntrollers)
-            obj.Components{index} = CompInstance;
-            obj.onEdit("replace Component"+index)
-        end
-    end
-        
-
-%%%%%%%%%%%%%%%%
-%%% dynamics %%%
-%%%%%%%%%%%%%%%%
-    properties(SetAccess=protected)
-        simset
-    end
-    methods
-        [sv_x, sv_v, sv_w] = get_ODE_vars(obj,lscl_flagtag)
-        Fac = odeget(obj,opt)
-        odeset(obj,opt)
-    end
-
-%%%%%%%%%%%%%%
-%%% OPF/PF %%%
-%%%%%%%%%%%%%%
-    methods
-        Fac = get_OPF(obj,opt)
-    end
-
-%%%%%%%%%%%%%%%%%
-%%% parameter %%%
-%%%%%%%%%%%%%%%%%
+%% Properties
     properties
-        isFault   (1,1) ligical = false;
+        l_isSlack      (1,1) logical = false;   % Flag if bus is Slack Bus
     end
-    properties(Dependent)
-        shunt
-        omega0
+    properties (SetAccess=protected)
+        a_PowerNetwork                          % Layer Structure
+        a_Component                             % Layer Structure
+        cv_Xequilibrium     = zeros(0,1);       % Steady State
+        c_Vequilibrium      = 1;                % Steady State
+        c_Iequilibrium      = 0;                % Steady State
     end
-    methods
-        function flag = validate_params(obj,params)
-            arguments
-                obj 
-                params (1,:) table 
-            end
-            varnames_old = string(obj.parameter.Properties.VariableNames);
-            varnames_new = string(params.Properties.VariableNames);
-            flag = all(varnames_old==varnames_new);
-            assert(flag,config.lang("parameterの変数名が間違っています。","The variable name for parameter is incorrect."))
+    properties (Dependent)
+        cv_Xequilibrium_all                     % Steady State
+        tab_parameter                           % Parameter
+    end
+    properties (Hidden,SetAccess=protected)
+        para_dynamics                           % Parameter
+        para_OPF                                % Parameter
+        para_powerflow                          % Parameter
+        para_operation                          % Parameter
+        para_status                             % Parameter
+        para_graph                              % Parameter
+    end
+    properties (Dependent, Access=protected)
+        parent                                  % Layer Structure
+        children                                % Layer Structure
+    end
+    properties (SetAccess={?odeSimulator, ?Component}, Hidden)
+        iv_odeX  = zeros(0,1);
+        iv_odeU  = zeros(0,1);
+        rv_odeX0 = zeros(2,1);
+    end
+    properties (Access=public)
+        rv_odeInit
+    end
+    properties (Access={?odeSimulator})
+        l_isFault (1,1) logical = false
+    end
+    properties (Access={?odeSimulator, ?odeLinearizer})
+        l_isNonUnit (1,1) logical = false
+    end
+
+%% Constructor
+    methods (Access={?PowerNetwork ?Bus})
+        function obj = Bus(tag,opt)
+            % arguments is satisfied in the caller function (PowerNetwork.add_bus), so no need to validate here.
+            % arguments
+            %     tag                   (1,1) string = "Bus";
+            %     opt.Varg              (1,1) double = 0 /180*pi;
+            %     opt.V                 (1,1) double = 1;
+            %     opt.Gshunt            (1,1) double = 0;
+            %     opt.Bshunt            (1,1) double = 0;
+            %     opt.Vmin              (1,1) double = 0.5;
+            %     opt.Vmax              (1,1) double = 1.5;
+            %     opt.baseKV            (1,1) double = 230;
+            %     opt.baseMVA           (1,1) double = 100;
+            %     opt.OPFinit_Varg0     (1,1) double = 0 /180*pi;
+            %     opt.OPFinit_V0        (1,1) double = 1;
+            %     opt.GraphXaxis        (1,1) double = nan;
+            %     opt.GraphYaxis        (1,1) double = nan;
+            %     opt.GraphMarker       (1,1) string = "s";
+            % end
+            obj.str_tag        = tag;
+            obj.para_dynamics  = Parameter(obj,"dynamics");
+            obj.para_operation = Parameter(obj,"operation");
+            obj.para_OPF       = Parameter(obj,"OPF");
+            obj.para_status    = Parameter(obj,"status");
+            obj.para_powerflow = Parameter(obj,"powerflow");
+            obj.para_graph     = Parameter(obj,"graph");
+            
+            obj.para_dynamics.add_entry(  "Gshunt", opt.Gshunt        , "double",...
+                                          "Bshunt", opt.Bshunt        , "double");
+            obj.para_operation.add_entry( "baseKV", opt.baseKV        , "double",...
+                                         "baseMVA", opt.baseMVA       , "double",...
+                                            "Vmin", opt.Vmin          , "double",...
+                                            "Vmax", opt.Vmax          , "double");
+            obj.para_OPF.add_entry(        "Varg0", opt.OPFinit_Varg0 , "double",...
+                                              "V0", opt.OPFinit_V0    , "double");
+            obj.para_status.add_entry(     "fault", false             , "logical");
+            obj.para_powerflow.add_entry(      "V", opt.V             , "double",...
+                                            "Varg", opt.Varg          , "double");
+            obj.para_graph.add_entry(      "Xaxis", opt.Xaxis         , "double",...
+                                           "Yaxis", opt.Yaxis         , "double",...
+                                          "Marker", opt.Marker        , "string");
         end
-        function set.isFault(obj,val)
-            arguments
-                obj 
-                val (1,1) logical = obj.isFault;
-            end
-            if obj.isFault~=val
-                obj.isFault = val;
-                if val
-                    obj.onEdit("fault occurred")
-                else
-                    obj.onEdit("fault release")
+
+        % Layer Structure
+        set_network(obj,a_PowerNetwork)
+        
+        % Set equilibrium
+        set_equilibrium(obj, c_V, c_I, r_P, r_Q, opt)
+
+        % Build component
+        c = build_component(obj, key, varargin)
+    end
+    
+    methods
+        % Layer Structure
+        add_component(obj,a_component)
+        remove_component(obj,str_tag)
+        replace_component(obj, str_tag, Type, opt)
+
+        % PF(powerflow) calculation
+        tab_PFset    = get_pf_set(obj)
+
+        % OPF
+        [prob, x0, const, Vvar] = build_opf_problem(obj, prob, x0, const, Vvar, option)
+
+        % ODE
+        [n_odeX, n_odeU, Mass, x0] = reset_odeset(obj, n_odeX, n_odeU, omega0)
+
+        %get_sys
+        sys = get_sys(obj, opt)
+    end
+
+%% Get Methods
+    methods
+        function tp = get.tab_parameter(obj)
+            dynamics  =  obj.para_dynamics.tab_parameter;
+            operation =  obj.para_operation.tab_parameter;
+            powerflow =  obj.para_powerflow.tab_parameter;
+            OPF       =  obj.para_OPF.tab_parameter;
+            status    =  obj.para_status.tab_parameter;
+            graph     =  obj.para_graph.tab_parameter;
+            tp        =  table(dynamics,operation,powerflow,status,OPF,graph);
+        end
+        function x = get.cv_Xequilibrium_all(obj)
+            x_com = tools.vcellfun(@(comp) comp.cv_Xequilibrium_all, obj.a_Component);
+            x     = [obj.cv_Xequilibrium; x_com];
+        end
+        function p = get.parent(obj)
+            p = obj.a_PowerNetwork; 
+        end
+        function p = get.children(obj)
+            p = [ obj.a_Component;   ...
+                 {obj.para_dynamics; ...
+                  obj.para_operation;...
+                  obj.para_powerflow;...
+                  obj.para_OPF;      ...
+                  obj.para_status;
+                  obj.para_graph}];
+        end
+    end
+
+%% Set Methods
+    methods
+        function set.cv_Xequilibrium(~,~)
+            error(msg('GUILDA:Bus:SetXeq'))
+        end
+        function set.tab_parameter(obj,val)
+            fieldname = val.Properties.VariableNames;
+            for i = 1:numel(fieldname)
+                propname = "para_"+fieldname{i};
+                tabdata  = val.(fieldname{i});
+                paraname = tabdata.Properties.VariableNames;
+                for j = 1:numel(paraname)
+                    obj.(propname).(paraname{j}) = tabdata.(paraname{j});
                 end
             end
         end
-        function set.shunt(obj,shunt)
-            arguments
-                obj 
-                shunt (1,2) double = [0,0]; 
-            end
-            obj.parameter.shuntG = shunt(1);
-            obj.parameter.shuntB = shunt(2);
-            obj.onEdit("edit shunt")
-        end
-        function val = get.shunt(obj)
-            val = [obj.parameter.shuntG, obj.parameter.shuntB];
-        end
-        function w0 = get.omega0(obj)
-            w0 = obj.parent.omega0; 
-        end
-    end
- 
-%%%%%%%%%%%%%%%%%%%
-%%% Equilibrium %%%
-%%%%%%%%%%%%%%%%%%%
-    properties
-        Default_P_distribution
-        Default_Q_distribution
-    end
-    properties(SetAccess=protected)
-        V_equilibrium (1,1) double = 1;
-        I_equilibrium (1,1) double = 0;
-        Icomp_equilibrium (:,1) double = 0;
-        Pcomp_equilibrium (:,1) double = 0;
-        Qcomp_equilibrium (:,1) double = 0;
-    end
-    properties(Dependent)
-        x_equilibrium 
-        v_equilibrium
-        w_equilibrium
-    end
-    methods
-        set_equilibrium(obj,data)
-        
-        function set.ratePcomp(obj,val)
-            arguments
-                obj 
-                val (:,1) double
-            end
-            rscl_dim = numel(obj.Components); %#ok
-            assert(numel(val)==rscl_dim, config.lang("変数は"+rscl_dim+"次元である必要があります。","Variables must be in the "+rscl_dim+" dimension."))
-            obj.ratePcomp = val;
-            obj.onEdit("change ratePcomp")
-        end
-        
-        function set.rateQcomp(obj,val)
-            arguments
-                obj 
-                val (:,1) double
-            end
-            rscl_dim = numel(obj.Components); %#ok
-            assert(numel(val)==rscl_dim,config.lang("変数は"+rscl_dim+"次元である必要があります。","Variables must be in the "+rscl_dim+" dimension."))
-            obj.rateQcomp = val;
-            obj.onEdit("change rateQcomp")
-        end
-
-        function val = get.P_equilibrium(obj)
-            PQ  = obj.V_equilibrium * conj(obj.I_equilibrium);
-            val = [real(PQ);imag(PQ)];
-        end
-
-        function x = get.x_equilibrium(obj)
-            x = obj.v_equilibrium;
-        end
-
-        function x = get.v_equilibrium(obj)
-            switch config.systemFunc.get("dynamics","port_vw","Value")
-            case "absV to Q/V"; x = [ angle(obj.V_equilibrium); abs(obj.V_equilibrium) ];
-            case "logV to Q"  ; x = [ angle(obj.V_equilibrium); log(abs(obj.V_equilibrium)) ];
-            end
-        end
-        function w = get.w_equilibrium(obj)
-            switch config.systemFunc.get("dynamics","port_vw","Value")
-            case "absV to Q/V"; w = obj.S_equilibrium./[1;abs(obj.V_equilibrium)];
-            case "logV to Q"  ; w = obj.S_equilibrium;
+        function set.l_isSlack(obj,val)
+            if val
+                a_com = obj.a_Component;%#ok
+                if isempty(a_com)
+                    error(msg('GUILDA:Bus:NonUnitBus' ,string(obj)))
+                end
+                disp("INFO: "+string(obj)+" set as slack bus. ")
+                disp("      P and Q specifications for "+string(a_com{1})+" ignored in powerflow calculation.")
+                for busi = obj.a_PowerNetwork.a_Bus'%#ok
+                    if busi{1}~=obj
+                        busi{1}.l_isSlack = false; %#ok % Change l_isSlack to false for other buses
+                    end
+                end
+                obj.l_isSlack = true;
             end
         end
     end
 end
-

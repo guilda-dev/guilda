@@ -1,27 +1,17 @@
-function [Ymat, GB] = get_admittance_matrix(obj, ivec_bus, ivec_branch)
-    arguments
-        obj 
-        ivec_bus    (1,:) double {mustBeInteger(ivec_bus   ),mustBePositive(ivec_bus  )} = 1:numel(obj.Buses);
-        ivec_branch (1,:) double {mustBeInteger(ivec_branch),mustBePositive(ivec_branch)} = 1:numel(obj.Branches);
+function tab_Ybus2bus = get_admittance_matrix(obj)
+
+    str_Bus = string(obj.a_Bus);
+     
+    n_Bus   = numel(str_Bus);
+    tab_Ybus2bus   = array2table(zeros(n_Bus,n_Bus),"VariableNames",str_Bus,"RowNames",str_Bus);
+
+    for i = 1:numel(obj.a_Branch)
+        br  = obj.a_Branch{i};
+        Yij = br.get_admittance_matrix();
+        str_iBus = string(br.a_Bus);
+        tab_Ybus2bus{str_iBus,str_iBus} = tab_Ybus2bus{str_iBus,str_iBus} + Yij;
     end
 
-    n_bus = numel(obj.a_bus);
-    Y     = zeros(n_bus, n_bus);
-    shunt = tools.dcellfun(@(b) b.shunt, obj.Buses(ivec_bus));
-    
-
-    for i = ivec_branch
-        br      = obj.Branches{i};
-        ivec_rc = [br.from,br.to];
-        if all( ismember(ivec_rc, ivec_bus) )
-            Yij = br.get_admittance_matrix();
-            Y(ivec_rc,ivec_rc) = Y(ivec_rc,ivec_rc) + Yij;
-        end
-    end
-    
-    
-    Ymat = sparse( Y+shunt );
-    if nargout == 2
-        GB = tools.complex2matrix(Ymat);
-    end
+    cm_Yshunt = tools.dcellfun(@(b) b.tab_parameter.dynamics{1,["Gshunt","Bshunt"]}*[1;1j], obj.a_Bus);
+    tab_Ybus2bus.Variables = cm_Yshunt + tab_Ybus2bus.Variables; 
 end

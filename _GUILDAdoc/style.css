@@ -1,0 +1,533 @@
+@charset "UTF-8";
+
+/* =========================================
+   1. 変数定義 (Global Variables)
+========================================= */
+:root {
+  --primary-color: #0f4c81; 
+  --bg-color: #f4f7f6;
+  --text-color: #333333;
+  --border-color: #dee2e6;
+  --code-bg: #2d2d2d;
+  --code-text: #f8f8f2;
+  --sidebar-bg: #ffffff;
+  --tab-bg: #e9ecef;
+  --sidebar-width: 250px;
+}
+
+/* =========================================
+   2. 共通ベーススタイル (Base Styles)
+========================================= */
+body {
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  margin: 0;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+a { color: var(--primary-color); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+h1, h2, h3, h4 { color: var(--primary-color); }
+
+h1 { border-bottom: 3px solid var(--primary-color); padding-bottom: 10px; margin-top: 0; }
+h2 { margin-top: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; }
+
+pre { 
+  background-color: var(--code-bg); 
+  color: var(--code-text); 
+  padding: 15px; 
+  border-radius: 6px; 
+  overflow-x: auto; 
+  font-family: Consolas, Monaco, monospace; 
+  font-size: 0.95rem;
+}
+code { font-family: monospace; }
+.home-layout code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; color: #d63384; }
+.home-layout pre code { background: transparent; padding: 0; color: inherit; }
+
+/* レスポンシブテーブル */
+table { 
+  width: 100%; 
+  border-collapse: collapse; 
+  background: #fff; 
+  border-radius: 6px; 
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+  margin-bottom: 20px; 
+  overflow: hidden;
+}
+@media (max-width: 600px) {
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
+th { background-color: var(--primary-color); color: #fff; font-weight: normal; min-width: 120px; }
+tr:hover { background-color: #f8fbff; }
+
+/* 行全体をクリック可能にするスタイリング */
+.clickable-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.clickable-row:hover {
+  background-color: #eef4f9; 
+}
+.row-link {
+  font-weight: bold;
+  color: var(--primary-color);
+}
+.clickable-row:hover .row-link {
+  text-decoration: underline; 
+}
+
+.btn { 
+  display: inline-block; padding: 10px 20px; background-color: #fff; color: var(--primary-color); 
+  border: 2px solid var(--primary-color); border-radius: 6px; text-decoration: none; font-weight: bold; 
+  transition: all 0.3s ease; white-space: nowrap;
+}
+.btn:hover { background-color: var(--primary-color); color: #fff; text-decoration: none; }
+
+.search-box { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 1rem; box-sizing: border-box; }
+.sortable-header { cursor: pointer; user-select: none; transition: background-color 0.2s; }
+.sortable-header:hover { background-color: #0b3960; }
+
+/* =========================================
+   3. ホームページ用レイアウト (index.html)
+========================================= */
+body.home-layout header { background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
+.header-content { max-width: 1000px; margin: 0 auto; padding: 15px 20px 0 20px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; }
+.header-logo { height: 65px; margin-bottom: 10px; display: block; }
+
+.tabs { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab-button { background-color: var(--tab-bg); border: none; padding: 12px 24px; font-size: 1rem; font-weight: bold; color: #555; cursor: pointer; border-radius: 8px 8px 0 0; transition: background-color 0.2s, color 0.2s; white-space: nowrap; }
+.tab-button:hover { background-color: #d1d6db; }
+.tab-button.active { background-color: var(--primary-color); color: #fff; }
+
+body.home-layout main { max-width: 1050px; width: 95%; margin: 30px auto; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-radius: 8px; min-height: 60vh; }
+
+.tab-content { display: none; padding: clamp(15px, 5vw, 30px); }
+.tab-content.active { display: block; }
+
+/* ヒーローセクション */
+.hero-section { display: flex; align-items: center; justify-content: center; width: 100%; margin: 0 auto; gap: clamp(20px, 5vw, 50px); }
+.hero-text { flex: 0 1 auto; min-width: 0; }
+.hero-canvas-container { flex: 0 1 400px; width: 100%; height: clamp(150px, 25vh, 200px); position: relative; }
+#power-grid-animation { width: 100%; height: 100%; display: block; }
+
+@media (max-width: 768px) { .hero-section { flex-direction: column; align-items: center; text-align: center; } .hero-canvas-container { flex: 0 0 150px; } }
+
+.hero-title { 
+  font-size: clamp(3rem, 10vw, 6rem); font-weight: 900; letter-spacing: clamp(1px, 1vw, 5px); color: var(--primary-color); 
+  border-bottom: none; line-height: 1.0; margin: 0 0 15px 0; position: relative; 
+  text-shadow: 1px 1px 0px #0b3960, 2px 2px 0px #0b3960, 3px 3px 0px #0b3960, 4px 4px 0px #0b3960, 0.5vw 0.5vw 0px #888888; 
+}
+.hero-subtitle { font-size: clamp(0.8rem, 2vw, 1.1rem); font-weight: 500; color: #4a5568; margin: 0; }
+
+.install-buttons { display: flex; flex-wrap: wrap; gap: 15px; margin: 20px 0 30px 0; }
+
+/* Features & GIF */
+.feature-list li { margin-bottom: 8px; }
+.demo-gif-container { text-align: center; margin: 20px 0 30px 0; }
+/* ★追加：GIFの表示を最適化 */
+.demo-gif { width: 100%; max-width: 700px; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+/* License Box */
+.license-box pre {
+  background-color: #f8f9fa;
+  color: #5f6b7a;
+  border: 1px solid var(--border-color);
+  max-height: 250px;
+  overflow-y: auto;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+/* アップデートログ */
+#update-log-container { max-height: 420px; overflow-y: auto; padding-right: 10px; }
+#update-log-container::-webkit-scrollbar { width: 6px; }
+#update-log-container::-webkit-scrollbar-track { background: var(--bg-color); border-radius: 4px; }
+#update-log-container::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+#update-log-container::-webkit-scrollbar-thumb:hover { background: var(--primary-color); }
+.update-log-item { border-left: 4px solid var(--primary-color); padding-left: 15px; margin-bottom: 20px; }
+.update-date { font-size: 0.9em; color: #777; font-weight: bold; }
+
+
+/* --- Referenceタブ：セクションごとのカード背景 --- */
+.reference-section {
+  background-color: #f8fbff; 
+  border: 1px solid #dce4ec;
+  border-radius: 12px;
+  padding: 25px 30px;
+  margin-bottom: 35px;
+  box-shadow: 0 4px 6px rgba(15, 76, 129, 0.03);
+}
+.reference-section h2:first-child {
+  margin-top: 0;
+  border-bottom: 2px solid var(--primary-color);
+  padding-bottom: 8px;
+  margin-bottom: 20px;
+}
+@media (max-width: 600px) {
+  .reference-section { padding: 15px; }
+}
+
+
+/* --- Referenceタブ：中央寄せ＆縮小ラッパー --- */
+.intro-cards-wrapper {
+  max-width: 800px;
+  margin: 0 auto 15px auto; 
+}
+
+.intro-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin: 0;
+}
+@media (max-width: 700px) { .intro-cards-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 400px) { .intro-cards-grid { grid-template-columns: 1fr; } }
+
+.intro-cards-grid .core-class-card {
+  padding: 15px 12px;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+}
+.intro-cards-grid .core-class-card p { font-size: 0.75rem; margin-top: 8px; color: #5f6b7a; }
+.core-class-icon { font-size: 1.4rem; margin-bottom: 8px; display: block; }
+
+.core-class-card {
+  background-color: #ffffff; 
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  text-decoration: none !important;
+  cursor: pointer;
+  color: var(--text-color);
+}
+.core-class-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(15, 76, 129, 0.1); 
+  border-color: var(--primary-color);
+}
+.core-class-card h3 { margin: 0; font-family: monospace; font-size: 1.1rem; color: var(--primary-color); }
+
+
+/* --- トグルボタン（継承クラス） --- */
+.filter-toggles {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.filter-btn {
+  background-color: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 8px 16px;
+  color: #555;
+  cursor: pointer;
+  font-family: monospace;
+  font-weight: bold;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  outline: none;
+  flex: 0 0 auto;
+}
+.filter-btn:hover { background-color: #f1f5f9; border-color: var(--primary-color); }
+.filter-btn.active { background-color: var(--primary-color); color: #fff; border-color: var(--primary-color); }
+
+
+/* --- クラス図の見出しとUML凡例 --- */
+.class-diagram-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 30px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+.class-diagram-header h3 { margin: 0 !important; border-bottom: none; padding-bottom: 0; color: var(--primary-color); }
+
+.uml-notation-horizontal {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font-size: 0.75rem;
+  color: #5f6b7a;
+  background: #ffffff;
+  padding: 6px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+}
+.notation-title { font-weight: bold; color: var(--primary-color); letter-spacing: 0.5px; margin-right: 5px; }
+.notation-item { display: flex; align-items: center; gap: 4px; }
+.notation-item strong { color: #333; font-family: monospace; }
+@media (max-width: 600px) { .uml-notation-horizontal { flex-wrap: wrap; gap: 10px; } }
+
+/* UMLクラス図キャンバス */
+.uml-lr-scroll { 
+  width: 100%; 
+  overflow-x: auto; 
+  background: #ffffff; 
+  border: 1px solid var(--border-color); 
+  border-radius: 8px; 
+  margin: 15px 0; 
+}
+.uml-lr-canvas { 
+  position: relative; 
+  width: 940px;
+  height: 420px; 
+  margin: 0 auto; 
+}
+.uml-links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+.uml-link-line { stroke: #8ea6bd; stroke-width: 1.5; fill: none; }
+.uml-link-text { fill: #4c6075; font-size: 12px; font-family: monospace; }
+
+.uml-node { 
+  position: absolute; 
+  z-index: 2; 
+  background: #f8fbff; 
+  border: 1px solid #cfd8e3; 
+  border-left: 4px solid var(--primary-color); 
+  border-radius: 4px; 
+  padding: 10px; 
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+  box-sizing: border-box; 
+}
+.uml-class-name { font-family: monospace; font-weight: bold; font-size: 0.95rem; color: var(--primary-color); text-align: center; margin-bottom: 5px; }
+.uml-divider { height: 1px; background: #dee2e6; margin: 5px -10px; }
+.uml-prop-list { list-style: none; padding: 0; margin: 0; font-size: 0.75rem; color: #4a5568; }
+
+.uml-pos-pn        { left: 10px;  top: 130px; width: 210px; }
+.uml-pos-bus       { left: 280px; top: 40px;  width: 180px; }
+.uml-pos-branch    { left: 280px; top: 175px; width: 180px; }
+.uml-pos-gc        { left: 280px; top: 310px; width: 180px; }
+.uml-pos-component { left: 520px; top: 80px;  width: 180px; }
+.uml-pos-lc        { left: 760px; top: 110px; width: 150px; } 
+
+/* =========================================
+   4. ドキュメント用レイアウト (class / method)
+========================================= */
+body.doc-layout {
+  display: flex;
+  flex-direction: column;
+  font-family: "Cascadia Mono", "Consolas", "Menlo", "Monaco", monospace;
+}
+@media (min-width: 900px) {
+  body.doc-layout { flex-direction: row; }
+  body.doc-layout #sidebar { width: var(--sidebar-width); height: 100vh; position: fixed; border-right: 1px solid var(--border-color); }
+  body.doc-layout #main-content { margin-left: var(--sidebar-width); padding: 40px; }
+}
+
+.meta-box { background: #fff; padding: 15px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 20px; }
+
+/* Class / Method pages: keep boxes soft and blend with page tone */
+.doc-layout .meta-box {
+  background: #f7f9fb;
+  border: none;
+  box-shadow: none;
+}
+
+/* Class / Method pages: use a light code-block theme */
+.doc-layout pre {
+  background: #eef3f7;
+  color: #1f2d3d;
+  border: 1px solid #d3dde6;
+}
+
+.doc-layout pre code {
+  color: inherit;
+}
+
+.doc-layout code {
+  background: #e8eef4;
+  color: #1b3550;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.doc-layout .syntax-box {
+  background: #eef3f7;
+  border: none;
+  border-left: none;
+  box-shadow: none;
+}
+
+/* Remove framed table container look on class/method pages */
+.doc-layout table {
+  box-shadow: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.doc-layout .syntax-box pre {
+  margin: 0;
+}
+
+.meta-table {
+  margin-bottom: 0;
+}
+.meta-table th,
+.meta-table td {
+  vertical-align: top;
+}
+.example-block + .example-block {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border-color);
+}
+.method-link-table td:first-child { font-weight: bold; font-family: monospace; font-size: 1.1em; width: 30%; }
+.method-link-table td { vertical-align: top; }
+.io-list { list-style: none; margin: 0; padding: 0; font-size: 0.85rem; line-height: 1.45; }
+.io-list li { margin-bottom: 4px; }
+.io-empty { color: #888; font-style: italic; }
+.syntax-box { background: #eef2f5; padding: 15px; border-radius: 6px; font-family: monospace; margin-bottom: 20px; border-left: 4px solid #888; }
+
+.view-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 14px 0;
+}
+.view-panel {
+  border: 1px solid #cfd8e3;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 14px;
+  margin: 14px 0 18px 0;
+}
+.view-panel-row {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 12px 16px;
+  align-items: start;
+}
+.view-panel-row-stacked {
+  grid-template-columns: 1fr;
+}
+.view-panel-row-stacked .view-panel-label {
+  padding-top: 0;
+  margin-bottom: 6px;
+}
+.view-panel-row-stacked .view-panel-controls {
+  margin-left: 0;
+}
+.view-panel-row + .view-panel-row {
+  margin-top: 12px;
+}
+.view-panel-label {
+  min-width: 0;
+  font-weight: bold;
+  color: var(--primary-color);
+  font-size: 0.88rem;
+  padding-top: 10px;
+}
+.view-panel-controls {
+  min-width: 0;
+}
+.view-btn {
+  border: 1px solid var(--border-color);
+  background: #fff;
+  color: #555;
+  border-radius: 999px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-weight: bold;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+.view-btn:hover { border-color: var(--primary-color); background: #f1f7fd; }
+.view-btn.active { background: var(--primary-color); color: #fff; border-color: var(--primary-color); }
+
+.view-switcher .view-btn.active,
+.view-switcher .view-btn.active:hover {
+  background: var(--primary-color) !important;
+  color: #fff !important;
+  border-color: var(--primary-color) !important;
+}
+
+.reference-section .compact-table {
+  font-size: 0.78rem;
+}
+
+.reference-section .compact-table th,
+.reference-section .compact-table td {
+  padding: 7px 8px;
+}
+
+.doc-layout table { font-size: 0.88rem; }
+.doc-layout th, .doc-layout td { padding: 10px 12px; }
+
+body.doc-layout table th:nth-child(1),
+body.doc-layout table td:nth-child(1) {
+  white-space: nowrap;
+}
+
+body.doc-layout table td,
+body.doc-layout table th {
+  max-width: 420px;
+  word-break: break-word;
+}
+
+.doc-layout .compact-table td,
+.doc-layout .compact-table th {
+  padding: 10px 12px;
+  font-size: 0.92rem;
+}
+
+.doc-layout .description-table td:first-child,
+.doc-layout .description-table th:first-child {
+  width: 18%;
+}
+
+.doc-layout .description-table td:nth-child(2),
+.doc-layout .description-table th:nth-child(2) {
+  width: 16%;
+}
+
+.doc-layout .description-table td:nth-child(3),
+.doc-layout .description-table th:nth-child(3) {
+  width: auto;
+}
+
+.doc-layout .compact-table td:first-child,
+.doc-layout .compact-table th:first-child {
+  width: 22%;
+}
+
+.doc-layout .compact-table td:nth-child(2),
+.doc-layout .compact-table th:nth-child(2) {
+  width: 18%;
+}
+
+.doc-layout .compact-table td:nth-child(3),
+.doc-layout .compact-table th:nth-child(3) {
+  width: 18%;
+}
+
+.doc-layout .compact-table td:nth-child(4),
+.doc-layout .compact-table th:nth-child(4) {
+  width: 20%;
+}
+
+.doc-layout .compact-table td:nth-child(5),
+.doc-layout .compact-table th:nth-child(5) {
+  width: 22%;
+}
+
+body.doc-layout .meta-box table td,
+body.doc-layout .meta-box table th {
+  white-space: normal;
+}
+
+.doc-layout .method-link-table td:first-child { width: 22%; }
