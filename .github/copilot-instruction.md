@@ -1,3 +1,6 @@
+# japanese feedback
+Please provide your feedback in Japanese.
+
 # Project Overview
 This software is designed with object-oriented programming (OOP).
 Its functions include power system modeling, power flow analysis, OPF,
