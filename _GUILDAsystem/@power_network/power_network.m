@@ -69,6 +69,7 @@ classdef power_network  < base_class.handleCopyable & base_class.Edit_Monitoring
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         data   = information(obj, varargin);
         controller_list(obj,fig)
+        g      = plot_diagram(obj, varargin);
 
         function app = GUI(obj,varargin)
             app = supporters.for_GUI.GUI(obj,varargin{:});
