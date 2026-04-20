@@ -20,7 +20,7 @@
         "Description": "Display update log at startup"
     },
     "UpdateDoc":{
-        "Value": true,
+        "Value": false,
         "Type": "logical",
         "Description": "Update this documentation at startup"
     },

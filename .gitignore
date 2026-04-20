@@ -19,42 +19,34 @@ $RECYCLE.BIN/
 # ==========================
 # MATLAB Generic
 # ==========================
-# Autosave files
 *.asv
-
-# Project files (often contain user-specific settings)
-*.prj
-
-# Compiled MEX files (binary)
 *.mex*
 *.mexw64
 *.mexmaci64
 *.mexa64
 
-# Simulink cache & code generation (if applicable)
-*.slxc
-slprj/
-sfprj/
 
 # ==========================
 # MATLAB Drive Specific
 # ==========================
-# MATLAB Drive tag file (generated in root and subfolders)
 .MATLABDriveTag
-
-# MATLAB Drive temporary files
 *.mw
 
-# ==========================
-# GUILDA Project Specific
-# ==========================
-# Ignore all files under the user directory
-@GUILDA/user/*
 
-# ========
-# Unity
-# =======
-_GUILDAsystem/_auxiliary/@未*
+# ==========================
+# GUILDA Generic
+# ==========================
+@GUILDA/user/
+_GUILDAsystem/@Bus/add_component.m
+_GUILDAsystem/@PowerNetwork/add_branch.m
+
+
+# ==========================
+# GUILDA export data
+# ==========================
+_GUILDAexport
+ 
+
 
 # If you want to track the folder structure but ignore content,
 # uncomment the following line (requires a .gitkeep file inside)
