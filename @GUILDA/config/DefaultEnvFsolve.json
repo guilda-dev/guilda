@@ -1,6 +1,6 @@
 {
     "MaxIterations":{
-        "Value": 400,
+        "Value": 0,
         "Type": "double",
         "Description": "'MaxIterations' option @fsolve"
     },
@@ -17,7 +17,7 @@
         "Description": "'Display' option @fsolve"
     },
     "MaxFunEvals"  :{
-        "Value": NaN,
+        "Value": 0,
         "Type": "double",
         "Description": "'MaxFunEvals' option @fsolve (If NaN, use default)"
     }, 

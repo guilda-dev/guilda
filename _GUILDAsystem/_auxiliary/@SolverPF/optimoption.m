@@ -10,8 +10,11 @@ function opt = optimoption(obj)
                        "Display"     , obj.Display      ,...
                        "PlotFcn"     , str_PlotFcn      ,...
                        'SpecifyObjectiveGradient', true );
-    if ~isnan(obj.MaxFunEvals)
+    if obj.MaxFunEvals ~= 0
         opt = optimoptions(opt,"MaxFunctionEvaluations", obj.MaxFunEvals);
+    end
+    if obj.MaxIterations ~= 0
+        opt = optimoptions(opt, "MaxIterations", obj.MaxIterations);
     end
     if obj.ExportJSON
         opt = optimoptions( opt, "OutputFcn", @obj.OutputFcn );
