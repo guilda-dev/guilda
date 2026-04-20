@@ -86,111 +86,125 @@ classdef classical < component.generator.abstract
                 con = I - [Ir;Ii];
                 dx = [ddelta; domega; dx_avr; dx_pss; dx_gov];
             end
-        % 
-        % 
-        % function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, x_st, Vst, Ist)
-        %     if nargin < 2 || isempty(x_st)
-        %         x_st = obj.x_equilibrium;
-        %     end
-        %     if nargin < 3 || isempty(Vst)
-        %         Vst = obj.V_st;
-        %     end
-        %     omega_bar = obj.omega0;
-        %     X = obj.parameter.Xd;
-        %     Xq = obj.parameter.Xq;
-        %     M  = obj.parameter.M;
-        %     d  = obj.parameter.D;
-        % 
-        %     % x1 = delta
-        %     % x2 = omega
-        %     A_swing = [0 obj.omega0;
-        %                0 -d/M];
-        %     % u1 = Pmech
-        %     % u2 = Pout
-        %     B_swing = [0, 0;
-        %                1/M, -1/M];
-        %     % y = [delta, omega]
-        %     C_swing = eye(2);
-        %     sys_swing = ss(A_swing, B_swing, C_swing, 0);
-        %     OutputGroup = struct();
-        %     OutputGroup.delta = 1;
-        %     OutputGroup.omega = 2;
-        %     sys_swing.OutputGroup = OutputGroup;
-        %     InputGroup = struct();
-        %     InputGroup.Pmech = 1;
-        %     InputGroup.Pout = 2;
-        %     sys_swing.InputGroup = InputGroup;
-        % 
-        %     % ここから下は平衡点
-        %     delta = x_st(1); %ok
-        % 
-        %     dVq_dV = [cos(delta), sin(delta)];
-        %     dVd_dV = [sin(delta), -cos(delta)]; %ok
-        %     dIr_dV = -dVq_dV*sin(delta)/X + dVd_dV*cos(delta)/X;
-        %     dIi_dV =  dVq_dV*cos(delta)/X + dVd_dV*sin(delta)/X;
-        % 
-        %     Vq = Vst(1)*cos(delta)+Vst(2)*sin(delta);
-        %     Vd = Vst(1)*sin(delta)-Vst(2)*cos(delta);
-        %     dVq = -Vd;
-        %     dVd = Vq; %ok
-        % 
-        % 
-        %     dIr_dd = (-dVq*sin(delta)+(obj.Vfield-Vq)*cos(delta))/X + (dVd*cos(delta)-Vd*sin(delta))/X;
-        %     dIi_dd = (dVq*cos(delta)+(obj.Vfield-Vq)*sin(delta))/X + (dVd*sin(delta)+Vd*cos(delta))/X; %ok
-        % 
-        %     Ist =  [(obj.Vfield*sin(delta) - Vq*sin(delta) + Vd*cos(delta))/X;
-        %             (-obj.Vfield*cos(delta) + Vq*cos(delta) + Vd*sin(delta))/X]; %ok
-        % 
-        %     % (delta, V) => (Ir, Ii)
-        %     KI = [dIr_dd, dIr_dV;
-        %           dIi_dd, dIi_dV];
-        % 
-        %     dP = Vst'*KI + Ist'*[zeros(2,1), eye(2)]; %ok
-        % 
-        % 
-        %     sys_fb = ss([dP; KI]);
-        %     InputGroup = struct();
-        %     InputGroup.delta = 1;
-        %     InputGroup.V = 2:3;
-        %     sys_fb.InputGroup = InputGroup;
-        %     OutputGroup = struct();
-        %     OutputGroup.P = 1;
-        %     OutputGroup.I = 2:3;
-        %     sys_fb.OutputGroup = OutputGroup;
-        % 
-        %     Vabs = norm(Vst); %ok
-        % 
-        %     sys_V = ss([eye(2); Vst'/Vabs]);
-        %     sys_V.InputGroup.Vin = 1:2;
-        %     OutputGroup = struct();
-        %     OutputGroup.V = 1:2;
-        %     OutputGroup.Vabs = 3;
-        %     sys_V.OutputGroup = OutputGroup;
-        % 
-        %     sys_avr = obj.avr.get_sys();
-        %     sys_pss = obj.pss.get_sys();
-        %     sys_gov = obj.governor.get_sys();
-        %     G = blkdiag(sys_swing, sys_fb, sys_V, sys_avr, -sys_pss, sys_gov);
-        %     ig = G.InputGroup;
-        %     og = G.OutputGroup;
-        %     feedin = [ig.Pout, ig.delta, ig.V, ig.omega_governor, ig.Pmech];
-        %     feedout = [og.P, og.delta, og.V, og.omega, og.Pmech];
-        %     I = ss(eye(numel(feedin))); %ok
-        % 
-        %     ret = feedback(G, I, feedin, feedout, 1);
-        %     ret_u = ret('I', {'u_avr',  'u_governor'});
-        %     ret_V = ret('I', 'Vin');
-        %     A = ret.a;
-        %     B = ret_u.b;
-        %     C = ret_u.c;
-        %     D = ret_u.d;
-        %     BV = ret_V.b;
-        %     DV = ret_V.d;
-        %     BI = zeros(size(A, 1), 2);
-        %     DI = -eye(2);
-        %     R = [];
-        %     S = [];
-        % end
+        function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, x_st, Vst)
+            if nargin < 2 || isempty(x_st)
+                x_st = obj.x_equilibrium;
+            end
+            if nargin < 3 || isempty(Vst)
+                Vst = obj.V_st;
+            end
+            omega_bar = obj.omega0;
+            Xd = obj.parameter.Xd;
+            Xq = obj.parameter.Xq;
+            M  = obj.parameter.M;
+            d  = obj.parameter.D;
+
+            % sys_swing: states [delta, omega], inputs [Pmech, Pout]
+            A_swing = [0, omega_bar; 0, -d/M];
+            B_swing = [0, 0; 1/M, -1/M];
+            C_swing = eye(2);
+            sys_swing = ss(A_swing, B_swing, C_swing, 0);
+            OutputGroup = struct();
+            OutputGroup.delta = 1;
+            OutputGroup.omega = 2;
+            sys_swing.OutputGroup = OutputGroup;
+            InputGroup = struct();
+            InputGroup.Pmech = 1;
+            InputGroup.Pout  = 2;
+            sys_swing.InputGroup = InputGroup;
+
+            % Equilibrium values
+            delta = x_st(1);
+            Vfd   = obj.Vfield;
+
+            % Steady-state dq-frame voltage components
+            Vq = Vst(1)*cos(delta) + Vst(2)*sin(delta);
+            Vd = Vst(1)*sin(delta) - Vst(2)*cos(delta);
+            dVq_dd = -Vd;
+            dVd_dd =  Vq;
+
+            % Partial derivatives of Vd, Vq with respect to [Vr, Vi]
+            dVq_dV = [cos(delta), sin(delta)];
+            dVd_dV = [sin(delta), -cos(delta)];
+
+            % Partial derivatives of [Ir, Ii] with respect to [Vr, Vi]
+            % (using Xd for d-axis, Xq for q-axis)
+            dIr_dV = -sin(delta)/Xd * dVq_dV + cos(delta)/Xq * dVd_dV;
+            dIi_dV =  cos(delta)/Xd * dVq_dV + sin(delta)/Xq * dVd_dV;
+
+            % Partial derivatives of [Ir, Ii] with respect to delta
+            dIr_dd = (-dVq_dd*sin(delta) + (Vfd-Vq)*cos(delta))/Xd + (dVd_dd*cos(delta) - Vd*sin(delta))/Xq;
+            dIi_dd = ( dVq_dd*cos(delta) + (Vfd-Vq)*sin(delta))/Xd + (dVd_dd*sin(delta) + Vd*cos(delta))/Xq;
+
+            % Equilibrium current [Ir_st; Ii_st]
+            Ist = [(Vfd-Vq)*sin(delta)/Xd + Vd*cos(delta)/Xq;
+                   -(Vfd-Vq)*cos(delta)/Xd + Vd*sin(delta)/Xq];
+
+            % KI: Jacobian of [Ir, Ii] wrt [delta, Vfd, Vr, Vi]
+            KI = [dIr_dd, sin(delta)/Xd, dIr_dV;
+                  dIi_dd, -cos(delta)/Xd, dIi_dV];
+
+            % dP: Jacobian of Pout wrt [delta, Vfd, Vr, Vi]
+            dP = Vst' * KI + Ist' * [zeros(2,2), eye(2)];
+
+            % sys_fb: static system mapping [delta, Vfd, V] -> [P, I]
+            sys_fb = ss([dP; KI]);
+            InputGroup = struct();
+            InputGroup.delta = 1;
+            InputGroup.Vfd   = 2;
+            InputGroup.V     = 3:4;
+            sys_fb.InputGroup = InputGroup;
+            OutputGroup = struct();
+            OutputGroup.P = 1;
+            OutputGroup.I = 2:3;
+            sys_fb.OutputGroup = OutputGroup;
+
+            % sys_V: maps external Vin=[Vr,Vi] to [V, Vabs]
+            Vabs = norm(Vst);
+            sys_V = ss([eye(2); Vst'/Vabs]);
+            sys_V.InputGroup.Vin = 1:2;
+            OutputGroup = struct();
+            OutputGroup.V    = 1:2;
+            OutputGroup.Vabs = 3;
+            sys_V.OutputGroup = OutputGroup;
+
+            sys_avr = obj.avr.get_sys();
+            sys_pss = obj.pss.get_sys();
+            sys_gov = obj.governor.get_sys();
+
+            % Build combined open-loop system
+            G = blkdiag(sys_swing, sys_fb, sys_V, sys_avr, -sys_pss, sys_gov);
+            ig = G.InputGroup;
+            og = G.OutputGroup;
+
+            % Define feedback connections:
+            %   sys_swing.Pout          <- sys_fb.P
+            %   sys_fb.delta            <- sys_swing.delta
+            %   sys_fb.Vfd              <- sys_avr.Vfd
+            %   sys_fb.V                <- sys_V.V
+            %   sys_avr.Vabs            <- sys_V.Vabs
+            %   sys_avr.u_avr           <- (-sys_pss).v_pss  (effectively u_avr -= v_pss)
+            %   sys_pss.omega           <- sys_swing.omega
+            %   sys_gov.omega_governor  <- sys_swing.omega
+            %   sys_swing.Pmech         <- sys_gov.Pmech
+            feedin  = [ig.Pout, ig.delta, ig.Vfd, ig.V, ig.Vabs, ig.u_avr, ig.omega, ig.omega_governor, ig.Pmech];
+            feedout = [og.P,    og.delta, og.Vfd, og.V, og.Vabs, og.v_pss, og.omega, og.omega,           og.Pmech];
+            I = ss(eye(numel(feedin)));
+
+            ret   = feedback(G, I, feedin, feedout, 1);
+            ret_u = ret('I', {'u_avr', 'u_governor'});
+            ret_V = ret('I', 'Vin');
+            A  = ret.a;
+            B  = ret_u.b;
+            C  = ret_u.c;
+            D  = ret_u.d;
+            BV = ret_V.b;
+            DV = ret_V.d;
+            BI = zeros(size(A, 1), 2);
+            DI = -eye(2);
+            R  = [];
+            S  = [];
+        end
 
         % 定常潮流状態からモデルの平衡点と定常入力値を求めるメソッド
             function [x_st,u_st] = get_equilibrium(obj, V, I)
