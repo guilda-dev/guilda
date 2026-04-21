@@ -46,8 +46,8 @@ classdef power < component.load.abstract
 
             Dv   = obj.JacobiD(t, xst, Vst, ust);                                           
             Vabs = abs([1,1j]*Vst);
-            Du   = [Vst(1)/Vabs,  Vst(2)/Vabs;
-                    Vst(2)/Vabs, -Vst(1)/Vabs];
+            Du   = [Vst(1)/Vabs^2,  Vst(2)/Vabs^2;
+                    Vst(2)/Vabs^2, -Vst(1)/Vabs^2];
 
             sys = ss([Dv,Du]);            
 

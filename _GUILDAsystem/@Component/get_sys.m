@@ -40,8 +40,7 @@ function sys = get_sys(obj, x, V, u)
     A = Ax;
     B = [Bv, Bu];
     C = [eye(nx); Cx];
-    D = [zeros(nx,2*nu); [Dv, Du]];
-    
+    D = [zeros(nx,2*nu); [Dv, Du]];        
 
     sys = ss(A,B,C,D);
 
