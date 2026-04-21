@@ -36,6 +36,7 @@ classdef Component < PowerSystemModel
         cv_Xequilibrium = zeros(0,1)           % [SteadyState] 状態の平衡点
         cv_Uequilibrium = zeros(0,1)           % [SteadyState] 定常入力
         c_Iequilibrium                         % [SteadyState] 定常潮流状態での機器の注入電流
+        c_Vequilibrium                         % [SteadyState] 定常潮流状態での機器の注入電圧
     end
     properties (SetAccess={?odeSimulator, ?Component}, Hidden)
         iv_odeX  = zeros(0,1);

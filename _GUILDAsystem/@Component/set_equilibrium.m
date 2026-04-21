@@ -8,6 +8,7 @@ function set_equilibrium(obj,c_V,c_I,r_P,r_Q)
     end
     [cv_Xst,cv_Ust] = obj.get_equilibrium(c_V,c_I,r_P,r_Q);
     
+    obj.c_Vequilibrium  = c_V;
     obj.c_Iequilibrium  = c_I;
     obj.cv_Xequilibrium = cv_Xst;
     obj.cv_Uequilibrium = cv_Ust;
