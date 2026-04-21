@@ -111,9 +111,7 @@ function net = import(path, net, options)
             for i_opt = 1:length(str_CompOpt_)
                 str_opti = str_CompOpt_(i_opt);
                 val = tab_CompOpti.(str_opti);
-                if isnumeric(val) && ~isnan(val)
-                    sct_opt.(str_opti) = val;
-                end
+                sct_opt.(str_opti) = val;
             end
 
             % import OPF parameter if exists OpfID
@@ -123,9 +121,7 @@ function net = import(path, net, options)
                 assert(~isempty(tab_CompOpfi), "Not found OPF ID %s in %s", str_ID, str_CompOpfPath);
                 for i_opt = 1:length(str_CompOPF)
                     val = tab_CompOpfi{1, str_CompOPF(i_opt)};
-                    if isnumeric(val) && ~isnan(val)
-                        sct_opt.(str_CompOPF(i_opt)) = val;
-                    end
+                    sct_opt.(str_CompOPF(i_opt)) = val;
                 end
                 sct_opt = rmfield(sct_opt, "OpfID");
             end
