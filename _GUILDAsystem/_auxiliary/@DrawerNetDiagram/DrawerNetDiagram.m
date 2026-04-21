@@ -95,6 +95,12 @@ classdef DrawerNetDiagram < auxiliary
         set_network(obj, net)
     end
 
+    methods(Hidden)
+        output_txt = hover_bus(obj, i_bus)
+        output_txt = hover_branch(obj, i_branch)
+        output_txt = hover_component(obj, i_comp)
+    end
+
     % Private methods
     methods(Access = private)
         rehash(obj)

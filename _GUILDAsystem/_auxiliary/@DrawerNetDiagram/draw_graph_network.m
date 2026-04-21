@@ -55,9 +55,11 @@ function draw_graph_network(obj)
     h_node  = gobjects(n_node, 1);
     h_label = gobjects(n_node, 1);
     sct_nodelim(n_node) = struct('min',[],'max',[]);
+    node_data = struct("Type","Bus","Index",0);
     for i_node = 1:n_node
         marker = obj.tab_bus.graph.Marker(i_node);
-        [h_node(i_node),sct_nodelim(i_node)] = plot_node(ax, [x_main(i_node), y_main(i_node), z_main(i_node)], marker, node_radius, [1,1,1]*0.05);
+        node_data.Index = i_node;
+        [h_node(i_node),sct_nodelim(i_node)] = plot_node(ax, [x_main(i_node), y_main(i_node), z_main(i_node)], marker, node_radius, [1,1,1]*0.05, node_data);
         h_label(i_node) = text(ax, ...
             x_main(i_node) + node_radius*1.5, y_main(i_node) + node_radius*2, z_main(i_node) + node_radius*1.5, ...
             "", ...
@@ -71,6 +73,7 @@ function draw_graph_network(obj)
 
     % Branch Edge plot
     tab_branchgraph = obj.tab_branch.graph;
+    edge_data = struct("Type","Branch","Index",0);
     for i_edge = 1:n_edge
         idx = obj.im_edge(:, i_edge);
         edge_radius = edge_base_radius * (obj.EdgeWidthOffset + obj.EdgeWidthSclae * rv_edge_width(i_edge));
@@ -88,9 +91,9 @@ function draw_graph_network(obj)
         edge_MidX   = str2mat(edge_para.MidXaxis); 
         edge_MidY   = str2mat(edge_para.MidYaxis); 
 
-        [h_edge(i_edge), h_arrow(i_edge)] = plot_edge(ax, p1, p2, edge_radius, [0.20 0.20 0.20], edge_marker, edge_MidX, edge_MidY);        
+        edge_data.Index = i_edge;
+        [h_edge(i_edge), h_arrow(i_edge)] = plot_edge(ax, p1, p2, edge_radius, [0.20 0.20 0.20], edge_data, edge_marker, edge_MidX, edge_MidY);        
     end
-
 
     comp_handles = gobjects(0, 1);
     comp_labels  = gobjects(0, 1);
@@ -99,22 +102,24 @@ function draw_graph_network(obj)
     comp_parent  = zeros(0, 1);
     comp_xyz     = zeros(0, 3);
 
+    node_data = struct("Type","Component","Index",0);
     for i_comp = 1:obj.n_component
+        node_data.Index = i_comp;
+
         tab_compi   = obj.tab_component(i_comp, :);
         comp_marker = tab_compi.graph.Marker;
         i_compbus   = tab_compi.bus;
         comp_pos    = [tab_compi.graph.Xaxis, tab_compi.graph.Yaxis, z_main(i_compbus)];
         comp_xyz(end+1, :)   = comp_pos;
-        comp_handles(i_comp) = plot_node(ax, comp_pos, comp_marker, node_radius*0.75, [0.15 0.15 0.15]);
+        comp_handles(i_comp) = plot_node(ax, comp_pos, comp_marker, node_radius*0.75, [0.15 0.15 0.15], node_data);
 
         node_in   = tab_compi.graph.BusPoint;
         p_bus     = sct_nodelim(i_compbus).min * (1-node_in) + sct_nodelim(i_compbus).max * node_in;
         edge_MidX = str2mat(tab_compi.graph.MidXaxis);
         edge_MidY = str2mat(tab_compi.graph.MidYaxis);
         comp_edge_radius = edge_base_radius * 3;
-        [comp_edges(i_comp), comp_arrows(i_comp)] = plot_edge(ax, comp_pos, p_bus, comp_edge_radius, [0.20 0.20 0.20], "-", edge_MidX, edge_MidY);
 
-        
+        [comp_edges(i_comp), comp_arrows(i_comp)] = plot_edge(ax, comp_pos, p_bus, comp_edge_radius, [0.20 0.20 0.20], node_data, "-", edge_MidX, edge_MidY);
         
         comp_labels(i_comp)  = text(ax, ...
             comp_pos(1) + node_radius*1.5, comp_pos(2) + node_radius*2, comp_pos(3) + node_radius*1.5, ...
@@ -169,6 +174,10 @@ function draw_graph_network(obj)
     material(ax, 'shiny');
     hold(    ax, 'off');
     ax.Projection = 'perspective';
+
+    fig = ancestor(ax, 'figure');
+    dcm = datacursormode(fig);
+    set(dcm, 'Enable', 'on', 'UpdateFcn', @(src, event) customhover(src, event, ax, obj));
 end
 
 function fit_axes_to_content(ax, x_main, y_main, z_main, comp_xyz, node_radius)
@@ -250,4 +259,21 @@ function out = str2mat(in)
 end
 
 
-
+function txt = customhover(~, event_obj, ax, drawer)
+    hObj = event_obj.Target;
+    txt  = 'No Data...'; 
+    if (hObj.Parent == ax || hObj.Parent.Parent==ax) && isprop(hObj, 'UserData')
+        sct_ud = hObj.UserData;
+        if isstruct(sct_ud) && all(isfield(sct_ud,["Type","Index"]))
+            i = sct_ud.Index;
+            switch sct_ud.Type
+                case "Bus"
+                    txt = drawer.hover_bus(i);
+                case "Branch"
+                    txt = drawer.hover_branch(i);
+                case "Component"
+                    txt = drawer.hover_component(i);
+            end
+        end
+    end
+end

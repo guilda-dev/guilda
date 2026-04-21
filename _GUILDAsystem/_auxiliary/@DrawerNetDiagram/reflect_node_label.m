@@ -21,4 +21,6 @@ function reflect_node_label(obj)
     end
     obj.NodeLabelB = str_bus;
     obj.NodeLabelC = str_com;
+
+    obj.NodeLabelVisible = obj.NodeLabelVisible;
 end

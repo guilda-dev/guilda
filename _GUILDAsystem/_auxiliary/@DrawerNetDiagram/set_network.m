@@ -6,13 +6,18 @@ function set_network(obj, net)
     obj.n_component = sum(tools.vcellfun(@(b) numel(b.a_Component), a_bus));
     
     Ymat = net.get_admittance_matrix();
-    obj.cm_Ymat        = sparse(Ymat.Variables);
-    obj.tab_bus        = tools.vcellfun(@(b) b.tab_parameter(:,["operation","graph"]), a_bus);
-    obj.tab_branch     = tools.vcellfun(@(b) b.tab_parameter(:,["operation","graph","dynamics"]), a_branch);
+    obj.cm_Ymat    = sparse(Ymat.Variables);
+    get_tab = @(bus) [array2table(bus.str_bustype,"VariableNames","Type"),...
+                      bus.tab_parameter(:,["operation","graph"])];
+    obj.tab_bus    = tools.vcellfun(@(b) get_tab(b), a_bus);
 
-    obj.str_bus        = string(a_bus);
-    str_bus2bus        = tools.hcellfun(@(b) string(b.a_Bus), a_branch);
-    [~,obj.im_edge]    = ismember(str_bus2bus, obj.str_bus);    
+    get_tab = @(bra) [array2table(string(class(bra)),"VariableNames","class"),...
+                      bra.tab_parameter(:,["operation","graph","dynamics"])];
+    obj.tab_branch = tools.vcellfun(@(bra) get_tab(bra), a_branch);
+
+    obj.str_bus     = string(a_bus);
+    str_bus2bus     = tools.hcellfun(@(b) string(b.a_Bus), a_branch);
+    [~,obj.im_edge] = ismember(str_bus2bus, obj.str_bus);    
 
     % If any bus is missing coordinates, use a force-directed layout to determine positions.
     rm_axis = obj.tab_bus.graph{:, ["Xaxis","Yaxis"]};
@@ -39,12 +44,13 @@ function set_network(obj, net)
         str_busi = string(a_busi);
         a_compi  = a_busi.a_Component;
         n_compi  = numel(a_compi);
+        tab_busindex = array2table(i,"VariableNames","bus");
         for j = 1:n_compi
             a_compij = a_compi{j};
             i_comp   = i_comp+1;
             obj.str_component(i_comp) = replace(string(a_compij), str_busi, '');
-            bus     = i;
-            obj.tab_component{i_comp} = [table(bus),a_compij.tab_parameter(:,["operation","graph"])];
+            tab_classi = array2table(string(class(a_compij)), "VariableNames","class");
+            obj.tab_component{i_comp} = [tab_busindex, tab_classi, a_compij.tab_parameter(:,["operation","graph"])];
             if any( isnan( obj.tab_component{i_comp}.graph{:,["Xaxis","Yaxis"]} ))
                 % If component graph coordinates are not set, place them near the bus
                 diff = 0.05 * exp(1j*2*pi*(j-1)/n_compi); % Spread components around the bus
