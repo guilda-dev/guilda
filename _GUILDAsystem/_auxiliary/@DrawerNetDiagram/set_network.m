@@ -7,37 +7,10 @@ function set_network(obj, net)
     
     Ymat = net.get_admittance_matrix();
     obj.cm_Ymat        = sparse(Ymat.Variables);
-    obj.tab_bus        = tools.vcellfun(@(b) b.tab_parameter, a_bus);
-    obj.tab_branch     = tools.vcellfun(@(b) b.tab_parameter, a_branch);
+    obj.tab_bus        = tools.vcellfun(@(b) b.tab_parameter(:,["operation","graph"]), a_bus);
+    obj.tab_branch     = tools.vcellfun(@(b) b.tab_parameter(:,["operation","graph","dynamics"]), a_branch);
 
-    % extract component information
-    i_comp = 0;
-    obj.str_bus       = string(nan(obj.n_bus, 1));
-    obj.str_component = string(nan(obj.n_component, 1));
-    obj.tab_component = cell(obj.n_component, 1);
-    for i = 1:obj.n_bus
-        a_busi   = a_bus{i};
-        str_busi = string(a_busi);
-        a_compi  = a_busi.a_Component;
-        n_compi  = numel(a_compi);
-        obj.str_bus(i) = str_busi;
-        for j = 1:n_compi
-            a_compij = a_compi{j};
-            i_comp   = i_comp+1;
-            obj.str_component(i_comp) = replace(string(a_compij), str_busi, '');
-            bus     = i;
-            isSlack = a_busi.l_isSlack;
-            obj.tab_component{i_comp} = [table(bus,isSlack),a_compij.tab_parameter(:,["operation","powerflow","graph"])];
-            if any( isnan( obj.tab_component{i_comp}.graph{:,["Xaxis","Yaxis"]} ))
-                % If component graph coordinates are not set, place them near the bus
-                diff = 0.05 * exp(1j*2*pi*(j-1)/n_compi); % Spread components around the bus
-                obj.tab_component{i_comp}.graph.Xaxis = obj.tab_bus.graph.Xaxis(i) + real(diff);
-                obj.tab_component{i_comp}.graph.Yaxis = obj.tab_bus.graph.Yaxis(i) + imag(diff);
-            end
-        end
-    end
-    obj.tab_component = vertcat(obj.tab_component{:});
-
+    obj.str_bus        = string(a_bus);
     str_bus2bus        = tools.hcellfun(@(b) string(b.a_Bus), a_branch);
     [~,obj.im_edge]    = ismember(str_bus2bus, obj.str_bus);    
 
@@ -56,6 +29,31 @@ function set_network(obj, net)
         end
         obj.tab_bus.graph{:, ["Xaxis","Yaxis"]} = [x_main(:), y_main(:)];
     end
+
+    % extract component information
+    i_comp = 0;
+    obj.str_component = string(nan(obj.n_component, 1));
+    obj.tab_component = cell(obj.n_component, 1);
+    for i = 1:obj.n_bus
+        a_busi   = a_bus{i};
+        str_busi = string(a_busi);
+        a_compi  = a_busi.a_Component;
+        n_compi  = numel(a_compi);
+        for j = 1:n_compi
+            a_compij = a_compi{j};
+            i_comp   = i_comp+1;
+            obj.str_component(i_comp) = replace(string(a_compij), str_busi, '');
+            bus     = i;
+            obj.tab_component{i_comp} = [table(bus),a_compij.tab_parameter(:,["operation","graph"])];
+            if any( isnan( obj.tab_component{i_comp}.graph{:,["Xaxis","Yaxis"]} ))
+                % If component graph coordinates are not set, place them near the bus
+                diff = 0.05 * exp(1j*2*pi*(j-1)/n_compi); % Spread components around the bus
+                obj.tab_component{i_comp}.graph.Xaxis = obj.tab_bus.graph.Xaxis(i) + real(diff);
+                obj.tab_component{i_comp}.graph.Yaxis = obj.tab_bus.graph.Yaxis(i) + imag(diff);
+            end
+        end
+    end
+    obj.tab_component = vertcat(obj.tab_component{:});
 
 
     % Precompute matrices for efficient updates during plotting

@@ -24,16 +24,19 @@ classdef DrawerNetDiagram < auxiliary
         EdgeB2C_ColorVal  (:,1) double = [];
         NodeLabelB        (:,1) string = [];
         NodeLabelC        (:,1) string = [];
-        NodeLabelVisible  (1,1) logical = true;
+        NodeLabelVisible  (1,1) logical = false;
 
         EdgeB2B_forward   (:,1) double = [];
         EdgeB2C_forward   (:,1) double = [];
     end
 
     % Properties for storing graphics objects
-    properties(SetAccess = private)
+    properties
         ax
+    end
+    properties(SetAccess = private)
         plt
+        flag_new
     end
 
     % Private properties for storing parameters of the system
@@ -78,17 +81,23 @@ classdef DrawerNetDiagram < auxiliary
 
 
     methods
-        function obj = DrawerNetDiagram(net)
+        function obj = DrawerNetDiagram(net, ax)
+            arguments
+                net (1,1) PowerNetwork
+                ax  (1,1) matlab.graphics.axis.Axes = axes('Parent',figure());
+            end
+            obj.ax = ax;
             obj.set_network(net);
+            obj.set_powerflow(net);
         end
 
-        plot(obj, cv_V, ax)
-        set_V(obj, cv_V)
+        set_powerflow(obj, cv_Vbus, cv_Icomp)
         set_network(obj, net)
     end
 
     % Private methods
     methods(Access = private)
+        rehash(obj)
         draw_graph_network(obj)
         reflect_color_mode(obj)
         reflect_node_label(obj)
@@ -97,14 +106,17 @@ classdef DrawerNetDiagram < auxiliary
         function flag = validate(obj)
             flag = isempty(obj.plt) || ~isgraphics(obj.ax);
         end
-        function rehash(obj)
-            obj.reflect_color_mode();
-            obj.reflect_node_label();
-            obj.reflect_arrow_forward();
-        end
     end
 
     methods
+        function set.ax(obj,ax)
+            arguments
+                obj 
+                ax (1,1) matlab.graphics.axis.Axes
+            end
+            obj.ax = ax;
+            obj.flag_new = true; %#ok
+        end
 
         function set.ColorLim(obj, color_lim)
             obj.ColorLim  = color_lim;
