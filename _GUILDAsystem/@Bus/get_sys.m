@@ -4,29 +4,46 @@ function sys = get_sys(obj, opt)
         opt.port (1,1) {mustBeMember(opt.port, ["V2I", "I2V"])}
     end
 
-        sslin = cellfun(@(c) c.odeLinearSystem, obj.a_Component);        
+    sys = tools.cellfun(@(c) c.get_sys(), obj.a_Component);
 
-        lv_Bv = tools.cellfun(@(c) ismember(fieldnames(c.odeLinearSystem.InputGroup), obj.attach_tag( ["Vre","Vim"] )), obj.a_Component);       
+    Ax = tools.cellfun(@(ss) ss.A         , sys);
+    Bv = tools.cellfun(@(ss) ss.B(:,1:2)  , sys);
+    Bu = tools.cellfun(@(ss) ss.B(:,3:end), sys);
+    Cx = tools.cellfun(@(ss) ss.C         , sys);
+    Dv = tools.cellfun(@(ss) ss.D(:,1:2)  , sys);    
+    Du = tools.cellfun(@(ss) ss.D(:,3:end), sys);    
 
-        Cv = cellfun()
+    StateNames  = cell2mat( tools.cellfun(@(ss) ss.StateName , sys) );
+    InputNames  = cell2mat( tools.cellfun(@(ss) ss.InputName , sys) );
+    OutputNames = cell2mat( tools.cellfun(@(ss) ss.OutputName, sys) );
+    
+    switch opt.port
+        case "V2I"
+            A = blkdiag(Ax{:});
+            C = blkdiag(Cx{:});
+            B = [vertcat(Bv{:})     , blkdiag(Bu{:})];
+            D = [sum(cat(3,Dv{:}),3), horzcat(Du{:})];
+
+        case "I2V"
+            Dv = tools.cellfun(@(DV) DV^-1, Dv);
+            Cx = tools.cellfun(@(DV,CX) -DV * CX, Dv,Cx);                                      
+            Du = tools.cellfun(@(DV,DU) -DV * DU, Dv,Du);
+            Bv = tools.cellfun(@(BV,DV) BV*DV, Bv,Dv);
+            Ax = tools.cellfun(@(AX,BV,DV,CX) AX - BV*DV*CX, Ax,Bv,Dv,Cx);                       
+            Bu = tools.cellfun(@(BV,DV,DU,BU) -BV * DV * DU + BU, Bv,Dv,Du,Bu);
+
+            A =  blkdiag(Ax{:});
+            B = [vertcat(Bv{:})     , blkdiag(Bu{:})];
+            C =  blkdiag(Cx{:});
+            D = [sum(cat(3,Dv{:}),3), horzcat(Du{:})];
+            
+            [InputNames, OutputNames] = deal(OutputNames, InputNames);
+    end    
 
 
-        Cv{idx} = sslin.D(:, lg_Bv)^-1;
-        Cx{idx} = -Cv{idx} * sslin.C;                                      
-        Du{idx} = -Cv{idx} * sslin.D(:,~lg_Bv);
-        Av{idx} = sslin.B(:, lg_Bv)*Cv{idx};
-        Ax{idx} = sslin.A - Av{idx}*Cv{idx}*Cx{idx};                       
-        Bu{idx} = -Av{idx} * Cv{idx} * Du{idx} + sslin.B(:,~lg_Bv);                                                                                                                   
-       
-       
-        if idx == 1
-            arrayfun(@(S) attach_itag(S,"ode"), ["Ire","Iim"]+"_"+bus{i}.str_tag);                               
-            arrayfun(@(S) attach_itag(S,"net"), ["Ire","Iim"]+"_"+bus{i}.str_tag);    
-            arrayfun(@(S) attach_otag(S,"ode"), ["Vre","Vim"]+"_"+bus{i}.str_tag);                       
-            arrayfun(@(S) attach_otag(S,"net"), ["Vre","Vim"]+"_"+bus{i}.str_tag);                       
-        end
-
-        u_idx = reshape(comp{idx}.str_u+"_"+comp{idx}.str_tag, 1, []); 
-        arrayfun(@(S,N) attach_itag(S,"ode"), u_idx);                       
+    sys = ss(A,B,C,D);
+    sys.StateName  = StateNames;
+    sys.InputName  = InputNames;
+    sys.OutputName = OutputNames;
     
 end
