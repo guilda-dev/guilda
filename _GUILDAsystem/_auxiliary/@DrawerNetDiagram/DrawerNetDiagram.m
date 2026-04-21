@@ -11,7 +11,7 @@ classdef DrawerNetDiagram < auxiliary
                                             "P (active power)",   ...
                                             "Q (reactive power)", ...
                                             "User defined"])} = "I (current)";
-        NodeFontSize      (1,1) double = 3;
+        NodeFontSize      (1,1) double = 7;
         NodeFontWeight    (1,1) string = "bold";
         EdgeWidthSclae    (1,1) double = 0.15;
         EdgeWidthOffset   (1,1) double = 1.5;
@@ -24,7 +24,7 @@ classdef DrawerNetDiagram < auxiliary
         EdgeB2C_ColorVal  (:,1) double = [];
         NodeLabelB        (:,1) string = [];
         NodeLabelC        (:,1) string = [];
-        NodeLabelVisible  (1,1) logical = false;
+        NodeLabelMode     (1,1) string {mustBeMember(NodeLabelMode, ["none", "name", "info"])} = "name"
 
         EdgeB2B_forward   (:,1) double = [];
         EdgeB2C_forward   (:,1) double = [];
@@ -259,19 +259,10 @@ classdef DrawerNetDiagram < auxiliary
             end
         end
 
-        function set.NodeLabelVisible(obj, is_visible)
-            obj.NodeLabelVisible = is_visible;
+        function set.NodeLabelMode(obj, mode)
+            obj.NodeLabelMode = mode;
             if validate(obj) || ~isfield(obj.plt, 'NodeLabel'); return; end %#ok
-            for i =1:numel(obj.plt.NodeLabel)                               %#ok
-                if isgraphics(obj.plt.NodeLabel(i))                         %#ok
-                    obj.plt.NodeLabel(i).Visible = is_visible;              %#ok
-                end
-            end
-            for i =1:numel(obj.plt.CompLabel)                               %#ok
-                if isgraphics(obj.plt.CompLabel(i))                         %#ok
-                    obj.plt.CompLabel(i).Visible = is_visible;              %#ok
-                end
-            end
+            obj.reflect_node_label
         end
 
 
