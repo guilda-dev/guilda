@@ -3,7 +3,7 @@ function sys = get_sys(obj, x, V, u)
         obj 
         x (:,1) double = obj.cv_Xequilibrium
         V (:,1) double = [real(obj.c_Vequilibrium); imag(obj.c_Vequilibrium)]
-        u (:,1) double = obj.cv_Uequilibrium        
+        u (:,1) double = obj.cv_Uequilibrium                        
     end
 
     Mass = obj.rm_odeMass([], x, V, u);
@@ -31,7 +31,6 @@ function sys = get_sys(obj, x, V, u)
         case  'load-power'            
             Du = [ Vre/Vsq,  Vim/Vsq; Vim/Vsq, -Vre/Vsq];
     end
-
 
     x_Names = obj.attach_tag(obj.str_x);
     u_Names = obj.attach_tag(obj.str_u);

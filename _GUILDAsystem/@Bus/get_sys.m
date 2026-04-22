@@ -2,6 +2,7 @@ function sys = get_sys(obj, opt)
     arguments
         obj 
         opt.port (1,1) {mustBeMember(opt.port, ["V2I", "I2V"])} = "V2I"
+        opt.full (1,1) logical = false
     end
 
     sys = tools.cellfun(@(c) c.get_sys(), obj.a_Component);
@@ -22,15 +23,15 @@ function sys = get_sys(obj, opt)
     switch opt.port
         case "V2I"
             A =  diag(Ax{:});
-            C = [eye(size(A));   diag(Cx{:})];
+            C =  withStateMatrix([eye(size(A)); diag(Cx{:})], diag(Cx{:}), opt.full);
             B = [vertcat(Bv{:}), diag(Bu{:})];
 
             nx = size(A,1);
             nu = size(B,2);
-            D = [zeros(nx,nu); [sum(Dv{:}), horzcat(Du{:})]];
+            D  = withStateMatrix([zeros(nx,nu); [sum(Dv{:}), horzcat(Du{:})]], [sum(Dv{:}), horzcat(Du{:})], opt.full);
 
             InputNames  = [Vport; vertcat(InputNames{:})];
-            OutputNames = [vertcat(StateNames{:}); Iport];
+            OutputNames = withStateMatrix([vertcat(StateNames{:}); Iport], Iport, opt.full);
 
         case "I2V"
             Dv = tools.cellfun(@(DV) DV^-1, Dv);
@@ -42,14 +43,14 @@ function sys = get_sys(obj, opt)
 
             A =  diag(Ax{:});
             B = [vertcat(Bv{:}), diag(Bu{:})];
-            C = [eye(size(A));   diag(Cx{:})];
+            C =  withStateMatrix([eye(size(A)); diag(Cx{:})], diag(Cx{:}), opt.full);
 
             nx = size(A,1);
             nu = size(B,2);
-            D = [zeros(nx,nu); [sum(Dv{:}), horzcat(Du{:})]];
+            D  = withStateMatrix([zeros(nx,nu); [sum(Dv{:}), horzcat(Du{:})]], [sum(Dv{:}), horzcat(Du{:})], opt.full);
                         
             InputNames  = [Iport; vertcat(InputNames{:})];
-            OutputNames = [vertcat(StateNames{:}); Vport];
+            OutputNames = withStateMatrix([vertcat(StateNames{:}); Vport], Vport, opt.full);
     end    
 
 
@@ -92,6 +93,13 @@ function sys = get_sys(obj, opt)
         elseif any(nh == 0)
             varargin(cellfun(@isempty,varargin)) = [];
             mat = blkdiag(varargin{:});        
+        end
+    end
+
+    function mat = withStateMatrix(mat1, mat2, flag)
+        mat = mat2;
+        if flag
+            mat = mat1;
         end
     end
     
