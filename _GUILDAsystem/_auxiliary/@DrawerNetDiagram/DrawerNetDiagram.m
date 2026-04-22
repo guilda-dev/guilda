@@ -11,7 +11,7 @@ classdef DrawerNetDiagram < auxiliary
                                             "P (active power)",   ...
                                             "Q (reactive power)", ...
                                             "User defined"])} = "I (current)";
-        NodeFontSize      (1,1) double = 3;
+        NodeFontSize      (1,1) double = 7;
         NodeFontWeight    (1,1) string = "bold";
         EdgeWidthSclae    (1,1) double = 0.15;
         EdgeWidthOffset   (1,1) double = 1.5;
@@ -24,16 +24,20 @@ classdef DrawerNetDiagram < auxiliary
         EdgeB2C_ColorVal  (:,1) double = [];
         NodeLabelB        (:,1) string = [];
         NodeLabelC        (:,1) string = [];
-        NodeLabelVisible  (1,1) logical = true;
+        NodeLabelMode     (1,1) string {mustBeMember(NodeLabelMode, ["none", "name", "info"])} = "name"
 
         EdgeB2B_forward   (:,1) double = [];
         EdgeB2C_forward   (:,1) double = [];
+        GridWidth         (1,1) double = 0.01;
     end
 
     % Properties for storing graphics objects
-    properties(SetAccess = private)
+    properties
         ax
+    end
+    properties(SetAccess = private)
         plt
+        flag_new
     end
 
     % Private properties for storing parameters of the system
@@ -78,17 +82,37 @@ classdef DrawerNetDiagram < auxiliary
 
 
     methods
-        function obj = DrawerNetDiagram(net)
+        function obj = DrawerNetDiagram(net, ax, opt)
+            arguments
+                net (1,1) PowerNetwork
+                ax  (1,1) matlab.graphics.axis.Axes = axes('Parent',figure());
+                opt.?odeSimulator
+            end
+            obj.ax = ax;
+            
+            str_fd = fieldnames(opt);
+            for i_fd = 1:numel(str_fd)
+                stri = str_fd{i_fd};
+                obj.(stri) = opt.(stri);
+            end
+
             obj.set_network(net);
+            obj.set_powerflow(net);
         end
 
-        plot(obj, cv_V, ax)
-        set_V(obj, cv_V)
+        set_powerflow(obj, cv_Vbus, cv_Icomp)
         set_network(obj, net)
+    end
+
+    methods(Hidden)
+        output_txt = hover_bus(obj, i_bus)
+        output_txt = hover_branch(obj, i_branch)
+        output_txt = hover_component(obj, i_comp)
     end
 
     % Private methods
     methods(Access = private)
+        rehash(obj)
         draw_graph_network(obj)
         reflect_color_mode(obj)
         reflect_node_label(obj)
@@ -97,14 +121,17 @@ classdef DrawerNetDiagram < auxiliary
         function flag = validate(obj)
             flag = isempty(obj.plt) || ~isgraphics(obj.ax);
         end
-        function rehash(obj)
-            obj.reflect_color_mode();
-            obj.reflect_node_label();
-            obj.reflect_arrow_forward();
-        end
     end
 
     methods
+        function set.ax(obj,ax)
+            arguments
+                obj 
+                ax (1,1) matlab.graphics.axis.Axes
+            end
+            obj.ax = ax;
+            obj.flag_new = true; %#ok
+        end
 
         function set.ColorLim(obj, color_lim)
             obj.ColorLim  = color_lim;
@@ -241,19 +268,10 @@ classdef DrawerNetDiagram < auxiliary
             end
         end
 
-        function set.NodeLabelVisible(obj, is_visible)
-            obj.NodeLabelVisible = is_visible;
+        function set.NodeLabelMode(obj, mode)
+            obj.NodeLabelMode = mode;
             if validate(obj) || ~isfield(obj.plt, 'NodeLabel'); return; end %#ok
-            for i =1:numel(obj.plt.NodeLabel)                               %#ok
-                if isgraphics(obj.plt.NodeLabel(i))                         %#ok
-                    obj.plt.NodeLabel(i).Visible = is_visible;              %#ok
-                end
-            end
-            for i =1:numel(obj.plt.CompLabel)                               %#ok
-                if isgraphics(obj.plt.CompLabel(i))                         %#ok
-                    obj.plt.CompLabel(i).Visible = is_visible;              %#ok
-                end
-            end
+            obj.reflect_node_label
         end
 
 
@@ -302,7 +320,14 @@ classdef DrawerNetDiagram < auxiliary
                         set(ud.From, 'Visible', 'on');  
                 end
             end
-            
+        end
+
+        function set.GridWidth(obj,val)
+            val = abs(val);
+            if obj.validate; return; end
+            obj.GridWidth = val;
+            xticks(obj.ax, 0:val:1) %#ok
+            yticks(obj.ax, 0:val:1) %#ok
         end
     end
 end
