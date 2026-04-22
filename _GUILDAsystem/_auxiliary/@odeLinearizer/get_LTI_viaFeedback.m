@@ -11,7 +11,8 @@ function [A, B, C, D] = get_LTI_viaFeedback(obj)
     busInames = tools.cellfun(@(bi) bi.attach_tag(["Ire";"Iim"]), bus(l_isU));
     busVnames = tools.cellfun(@(bi) bi.attach_tag(["Vre";"Vim"]), bus(l_isU));
 
-    Ymat = complex2matrix(net.get_admittance_matrix.Variables);
+    Ymat = net.get_admittance_matrix.Variables;
+    Ymat = complex2matrix(Ymat);
     ssN  = ss(Ymat);
     ssN.InputName  = vertcat(busVnames{:});
     ssN.OutputName = vertcat(busInames{:});
