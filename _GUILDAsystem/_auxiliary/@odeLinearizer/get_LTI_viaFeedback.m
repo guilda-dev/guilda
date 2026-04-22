@@ -45,7 +45,7 @@ function [A, B, C, D] = get_LTI_viaFeedback(obj)
 
             str_x = [];
             str_u = [];                   
-            if isempty(obj.odeNonUnitBus) || ismember(argi, obj.odeNonUnitBus)
+            if isempty(obj.odeNonUnitBus) || ~ismember(argi, obj.odeNonUnitBus)
                 str_x = cell2mat( cellfun(@(C) C.attach_tag(C.str_x), COMP, 'UniformOutput', false) );
                 str_u = cell2mat( cellfun(@(C) C.attach_tag(C.str_u), COMP, 'UniformOutput', false) );                                          
             end
