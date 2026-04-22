@@ -34,11 +34,11 @@ function sys = get_sys(obj, opt)
 
         case "I2V"
             Dv = tools.cellfun(@(DV) DV^-1, Dv);
-            Cx = tools.cellfun(@(DV,CX) -DV * CX, Dv,Cx);                                      
-            Du = tools.cellfun(@(DV,DU) -DV * DU, Dv,Du);
-            Bv = tools.cellfun(@(BV,DV) BV*DV, Bv,Dv);
-            Ax = tools.cellfun(@(AX,BV,DV,CX) AX - BV*DV*CX, Ax,Bv,Dv,Cx);                       
-            Bu = tools.cellfun(@(BV,DV,DU,BU) -BV * DV * DU + BU, Bv,Dv,Du,Bu);
+            Cx = tools.cellfun(@(DV,CX) -DV * CX, Dv, Cx);                                      
+            Du = tools.cellfun(@(DV,DU) -DV * DU, Dv, Du);
+            Bv = tools.cellfun(@(BV,DV) BV*DV, Bv, Dv);
+            Ax = tools.cellfun(@(AX,BV,DV,CX) AX - BV*DV*CX, Ax, Bv, Dv, Cx);                       
+            Bu = tools.cellfun(@(BV,DV,DU,BU) -BV * DV * DU + BU, Bv, Dv, Du, Bu);
 
             A =  diag(Ax{:});
             B = [vertcat(Bv{:}), diag(Bu{:})];

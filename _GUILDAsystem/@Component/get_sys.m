@@ -6,6 +6,7 @@ function sys = get_sys(obj, x, V, u)
         u (:,1) double = obj.cv_Uequilibrium        
     end
 
+    Mass = obj.rm_odeMass([], x, V, u);
     Ax = obj.JacobiA([], x, V, u);
     Bv = obj.JacobiB([], x, V, u);    
     Cx = obj.JacobiC([], x, V, u);
@@ -37,10 +38,10 @@ function sys = get_sys(obj, x, V, u)
     v_Names = obj.attach_tag(["Vre";"Vim"]);
     i_Names = obj.attach_tag(["Ire";"Iim"]);
 
-    A = Ax;
-    B = [Bv, Bu];
+    A = Mass^-1 * Ax;
+    B = Mass^-1 * [Bv, Bu];
     C = [eye(nx); Cx];
-    D = [zeros(nx,2*nu); [Dv, Du]];        
+    D = [zeros(nx,2+nu); [Dv, Du]];        
 
     sys = ss(A,B,C,D);
 
