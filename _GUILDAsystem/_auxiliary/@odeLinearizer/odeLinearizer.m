@@ -1,5 +1,5 @@
 classdef odeLinearizer < handle
-   properties %(SetAccess=private)
+   properties (SetAccess=private)
        odeNetwork 
        odeLinearSystem
        odeNonUnitBus (:,1) double = []
@@ -12,28 +12,19 @@ classdef odeLinearizer < handle
            arguments
                net 
                NonUnit = tools.vcellfun(@(busi) isempty(busi.a_Component), net.a_Bus);
-               opt.Algorithm  {mustBeMember(opt.Algorithm, ["Feedbac","Kron"])} = "Feedback"
+               opt.Algorithm  {mustBeMember(opt.Algorithm, ["Kron","Feedback"])} = "Feedback"
            end
            obj.odeNetwork = net;
            bus = obj.odeNetwork.a_Bus;
 
-           for i=1:numel(bus)               
-               comp = bus{i}.a_Component;
-               ncom = numel(comp);
-               
-               idx = 1;
-               while idx <= ncom
-                   [~, ~, ~, ~, ~, ~] = comp{idx}.getLinearSystem();
-                   idx = idx + 1;
-               end               
-
+           for i=1:numel(bus)                              
                if ismember(i,NonUnit)
                    bus{i}.l_isNonUnit = true;
                    obj.odeNonUnitBus = [obj.odeNonUnitBus; i];
                end
            end
 
-           opt.Algorithm = opt.Algorithm;
+           obj.Algorithm = opt.Algorithm;
        end
 
        function varargout = get_sys(obj)

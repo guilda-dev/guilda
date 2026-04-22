@@ -12,6 +12,7 @@ classdef Bus < PowerSystemModel
         c_Iequilibrium      = 0;                % Steady State
     end
     properties (Dependent)
+        str_bustype                             % PowerFlow
         cv_Xequilibrium_all                     % Steady State
         tab_parameter                           % Parameter
     end
@@ -117,6 +118,10 @@ classdef Bus < PowerSystemModel
 
 %% Get Methods
     methods
+        function type = get.str_bustype(obj)
+            s = obj.get_pf_set;
+            type = s.Type;
+        end
         function tp = get.tab_parameter(obj)
             dynamics  =  obj.para_dynamics.tab_parameter;
             operation =  obj.para_operation.tab_parameter;

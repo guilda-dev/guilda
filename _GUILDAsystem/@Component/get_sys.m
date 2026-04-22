@@ -1,17 +1,19 @@
-function sys = get_sys(obj, x, V, u)
+function sys = get_sys(obj, x, V, u, opt)
     arguments
         obj 
-        x (:,1) double = obj.cv_Xequilibrium
-        V (:,1) double = [real(obj.c_Vequilibrium); imag(obj.c_Vequilibrium)]
-        u (:,1) double = obj.cv_Uequilibrium        
+        x        (:,1) double = obj.cv_Xequilibrium
+        V        (:,1) double = [real(obj.c_Vequilibrium); imag(obj.c_Vequilibrium)]
+        u        (:,1) double = obj.cv_Uequilibrium                        
+        opt.port (1,1) {mustBeMember(opt.port, ["V2I", "I2V"])} = "V2I"
+        opt.full (1,1) logical = true
     end
 
+    Mass = obj.rm_odeMass([], x, V, u);
     Ax = obj.JacobiA([], x, V, u);
     Bv = obj.JacobiB([], x, V, u);    
     Cx = obj.JacobiC([], x, V, u);
     Dv = obj.JacobiD([], x, V, u);
-
-    nx = numel(obj.str_x);
+    
     nu = numel(obj.str_u);
 
     Vre = V(1);
@@ -31,20 +33,54 @@ function sys = get_sys(obj, x, V, u)
             Du = [ Vre/Vsq,  Vim/Vsq; Vim/Vsq, -Vre/Vsq];
     end
 
+    xNames = obj.attach_tag(obj.str_x);
+    uNames = obj.attach_tag(obj.str_u);
+    Vport  = obj.attach_tag(["Vre";"Vim"]);
+    Iport  = obj.attach_tag(["Ire";"Iim"]);
 
-    x_Names = obj.attach_tag(obj.str_x);
-    u_Names = obj.attach_tag(obj.str_u);
-    v_Names = obj.attach_tag(["Vre";"Vim"]);
-    i_Names = obj.attach_tag(["Ire";"Iim"]);
+    switch opt.port
+        case "V2I"
+            A =  Ax;
+            C =  withStateMatrix([eye(size(A)); Cx], Cx, opt.full);
+            B = [Bv,Bu];
 
-    A = Ax;
-    B = [Bv, Bu];
-    C = [eye(nx); Cx];
-    D = [zeros(nx,2*nu); [Dv, Du]];        
+            nx = size(A,1);
+            nu = size(B,2);
+            D  = withStateMatrix([zeros(nx,nu); [Dv, Du]], [Dv, Du], opt.full);
 
-    sys = ss(A,B,C,D);
+            InputNames  = [Vport; uNames];
+            OutputNames = withStateMatrix([xNames; Iport], Iport, opt.full);
+        case "I2V"
+            inv_Dv = Dv^-1;
 
-    sys.StateName  = x_Names;
-    sys.InputName  = [v_Names;u_Names];
-    sys.OutputName = [x_Names;i_Names];
+            inv_Ax =  Ax - Bv * inv_Dv * Cx;                       
+            inv_Bv =  Bv * inv_Dv;
+            inv_Bu = -Bv * inv_Dv * Du + Bu;
+            inv_Cx = -inv_Dv * Cx;                        
+            inv_Du = -inv_Dv * Du;                        
+
+            A =  inv_Ax;
+            B = [inv_Bv, inv_Bu];
+            C =  withStateMatrix([eye(size(A)); inv_Cx], inv_Cx, opt.full);
+
+            nx = size(A,1);
+            nu = size(B,2);
+            D  = withStateMatrix([zeros(nx,nu); [inv_Dv, inv_Du]], [inv_Dv, inv_Du], opt.full);
+                        
+            InputNames  = [Iport; uNames];
+            OutputNames = withStateMatrix([xNames; Vport], Vport, opt.full);
+    end    
+
+    sys = ss(Mass^-1 * A, Mass^-1 * B, C, D);
+
+    sys.StateName  = xNames;
+    sys.InputName  = InputNames;
+    sys.OutputName = OutputNames;
+
+    function mat = withStateMatrix(mat1, mat2, flag)
+        mat = mat2;
+        if flag
+            mat = mat1;
+        end
+    end
 end

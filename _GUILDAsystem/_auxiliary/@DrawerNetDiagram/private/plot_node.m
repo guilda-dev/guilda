@@ -1,4 +1,4 @@
-function [h,s] = plot_node(ax, center_xyz, marker, radius, color)
+function [h,s] = plot_node(ax, center_xyz, marker, radius, color, nodedata)
     x0 = center_xyz(1);
     y0 = center_xyz(2);
     z0 = center_xyz(3);
@@ -34,6 +34,7 @@ function [h,s] = plot_node(ax, center_xyz, marker, radius, color)
             h = draw_cuboid(ax, x0, y0, z0, radius, color);
             s = get_lim_patch(h);
     end
+    h.UserData = nodedata;
 end
 
 function s = get_lim_surf(h)

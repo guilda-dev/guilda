@@ -1,11 +1,11 @@
-function [h, h_arrow] = plot_edge(ax, p_from, p_to, radius, color, type, MidXaxis, MidYaxis)
+function [h, h_arrow] = plot_edge(ax, p_from, p_to, radius, color, edgedata, type, MidXaxis, MidYaxis)
 
     h_arrow   = gobjects(1, 1);
     edge_type = string(type);
     mid_z     = mean([p_to(3), p_from(3)]) * ones(numel(MidXaxis), 1);
     mid_pts   = [MidXaxis(:), MidYaxis(:), mid_z];
     h_main    = draw_edge_tube(ax, p_from, p_to, radius, color, mid_pts);
-
+    h_main.UserData = edgedata;
     
     path = [p_from; mid_pts; p_to];
     if size(path, 1) > 1
@@ -24,6 +24,7 @@ function [h, h_arrow] = plot_edge(ax, p_from, p_to, radius, color, type, MidXaxi
         tip_from = 0.5 * (p_from_1 + p_from_2);
         dir_from = normalize(p_from_2 - p_from_1);
         h_arrow_from = draw_arrow_cone(ax, tip_from, dir_from, cone_len, cone_radius, color);
+        h_arrow_from.UserData = edgedata;
 
         % To-side arrow: midpoint of last segment (path(end-1:end,:)).
         p_to_1 = path(end-1, :);
@@ -31,6 +32,7 @@ function [h, h_arrow] = plot_edge(ax, p_from, p_to, radius, color, type, MidXaxi
         tip_to = 0.5 * (p_to_1 + p_to_2);
         dir_to = normalize(p_to_2 - p_to_1);
         h_arrow_to = draw_arrow_cone(ax, tip_to, dir_to, cone_len, cone_radius, color);
+        h_arrow_to.UserData = edgedata;
 
         h_arrow = hggroup('Parent', ax, 'HandleVisibility', 'off');
         set(h_arrow_from, 'Parent', h_arrow);
@@ -75,6 +77,8 @@ function [h, h_arrow] = plot_edge(ax, p_from, p_to, radius, color, type, MidXaxi
 
         h1 = draw_sphere(ax, c1(1), c1(2), c1(3), sphere_radius, color);
         h2 = draw_sphere(ax, c2(1), c2(2), c2(3), sphere_radius, color);
+        h1.UserData = edgedata;
+        h2.UserData = edgedata;
         set(h1, 'Parent', h_group);
         set(h2, 'Parent', h_group);
     end

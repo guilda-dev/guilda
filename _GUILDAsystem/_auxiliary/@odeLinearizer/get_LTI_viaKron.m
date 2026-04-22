@@ -1,75 +1,16 @@
-function [Ax_ode, Bx_ode, Cx_ode, Dx_ode] = get_LTI_viaKron(obj)           
-                      
-    net   = obj.odeNetwork;
-    bus   = net.a_Bus;          
-    n_bus = numel(bus);
-    
-    Ax = cell(n_bus,1);
-    Bv = cell(n_bus,1);
-    Bu = cell(n_bus,1);
-    Cx = cell(n_bus,1);
-    Dv = cell(n_bus,1);
-    Du = cell(n_bus,1);
-    
-    InputNames  = cell(n_bus,1);
-    StateNames  = cell(n_bus,1);
+function [Ax_ode, Bx_ode, Cx_ode, Dx_ode] = get_LTI_viaKron(obj)                                     
 
-    InputGroup  = cell(n_bus,1);
-    OutputGroup = cell(n_bus,1);
+    bus = obj.odeNetwork.a_Bus;
+    ssFromBus = tools.cellfun(@(bs) bs.get_sys("port", "V2I", "full", false), bus);    
 
-              
-    for i_bus = 1:n_bus
-        a_comp = bus{i_bus}.a_Component;
-        n_com = numel(a_comp);
-        
-        Axi = cell(1,n_com);
-        Bvi = cell(1,n_com);
-        Bui = cell(1,n_com);
-        Cxi = cell(1,n_com);
-        Dui = cell(1,n_com);
-        Dvi = zeros(2,2);
+    [input, output] = get_IO_port;
 
-
-        InputNames_i  = cell(n_com,1);
-        StateNames_i  = cell(n_com,1);
-
-        InputGroup_i  = cell(n_com,1);
-        OutputGroup_i = cell(n_com,1);
-
-        for i_com = 1:n_com
-            a_compi = a_comp{i_com};
-            sslin   = a_compi.odeLinearSystem;
-            lv_Bv   = ismember(fieldnames(sslin.InputGroup), ["Vre","Vim"]+"_"+a_compi.str_tag);                       
-            Axi{i_com} = sslin.A;
-            Bvi{i_com} = sslin.B(:, lv_Bv);
-            Bui{i_com} = sslin.B(:,~lv_Bv);
-            Cxi{i_com} = sslin.C;
-            Dui{i_com} = sslin.D(:,~lv_Bv);
-            Dvi = Dvi + sslin.D(:, lv_Bv);
-
-            str_x = a_compi.str_x;
-            str_u = a_compi.str_u;
-
-            StateNames_i{i_com}  = a_compi.attach_tag(str_x);
-            InputNames_i{i_com}  = a_compi.attach_tag(str_u);
-            
-            InputGroup_i{i_com}  = [str_u,repmat("u"+i_com, numel(str_u), 1)];
-            OutputGroup_i{i_com} = [str_x,repmat("x"+i_com, numel(str_x), 1)];
-        end
-
-        Ax{i_bus} = blkdiag(Axi{:});
-        Bv{i_bus} = vertcat(Bvi{:}); 
-        Bu{i_bus} = blkdiag(Bui{:});
-        Cx{i_bus} = horzcat(Cxi{:});
-        Du{i_bus} = horzcat(Dui{:});
-        Dv{i_bus} = Dvi;
-
-        StateNames{i_bus} = vertcat(StateNames_i{:});
-        InputNames{i_bus} = vertcat(InputNames_i{:});
-
-        InputGroup{i_bus}  = vertcat(InputGroup_i{:});
-        OutputGroup{i_bus} = vertcat(OutputGroup_i{:});
-    end
+    Ax = tools.cellfun(@(SS) SS.A         , ssFromBus);
+    Bv = tools.cellfun(@(SS) SS.B(:,1:2)  , ssFromBus);
+    Bu = tools.cellfun(@(SS) SS.B(:,3:end), ssFromBus);
+    Cx = tools.cellfun(@(SS) SS.C         , ssFromBus);
+    Dv = tools.cellfun(@(SS) SS.D(:,1:2)  , ssFromBus);
+    Du = tools.cellfun(@(SS) SS.D(:,3:end), ssFromBus);
 
     Ymat = obj.odeNetwork.get_admittance_matrix;
     Ymat = tools.complex2matrix( Ymat.Variables );
@@ -93,24 +34,29 @@ function [Ax_ode, Bx_ode, Cx_ode, Dx_ode] = get_LTI_viaKron(obj)
 
 
     sys = ss(Ax_ode, Bx_ode, Cx_ode, Dx_ode);
-    sys.InputName  = vertcat(InputNames{:});
-    sys.StateName  = vertcat(StateNames{:});
-    sys.OutputName = sys.StateName;
-
-    sys.InputGroup  = build_group_struct(vertcat(InputGroup{:}));
-    sys.OutputGroup = build_group_struct(vertcat(OutputGroup{:}));
+    sys.InputName  = input;
+    sys.StateName  = output;
+    sys.OutputName = output;    
 
     obj.odeLinearSystem = sys;
-end
 
-function sct_group = build_group_struct(group_names)
-    sct_group = struct();
-    n_row     = size(group_names, 1);
-    all_names = cellstr(string([group_names(:,1); group_names(:,2)]));
-    all_index = [(1:n_row)'; (1:n_row)'];
+    function [input, output] = get_IO_port()
+        BUS = obj.odeNetwork.a_Bus;
 
-    [unique_names, ~, ic] = unique(all_names);
-    for i = 1:numel(unique_names)
-        sct_group.(unique_names{i}) = all_index(ic == i).';
-    end
+        input  = cell(numel(BUS),1);
+        output = cell(numel(BUS),1);
+        for argi = 1:numel(BUS)
+            COMP = BUS{argi}.a_Component;            
+                          
+            str_x = cell2mat( cellfun(@(C) C.attach_tag(C.str_x), COMP, 'UniformOutput', false) );
+            str_u = cell2mat( cellfun(@(C) C.attach_tag(C.str_u), COMP, 'UniformOutput', false) );                                                      
+
+            input{argi}  = str_u;
+            output{argi} = str_x;
+        end
+
+        input  = cell2mat(input);
+        output = cell2mat(output);
+   end
+
 end
