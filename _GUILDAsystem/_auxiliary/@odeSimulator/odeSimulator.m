@@ -28,7 +28,7 @@ classdef (Sealed = true) odeSimulator < handle
     end
 
     properties (SetAccess=private, Hidden)
-        % このクラスのバージョン       
+        % Version of this class       
         Ver (1,1) double = 1.1
     end
 
@@ -66,11 +66,11 @@ classdef (Sealed = true) odeSimulator < handle
     methods (Access=private)       
 
         function manage_time(obj, time, varargin)
-            % 構造体で指定される時間イベントに対して、タイムテーブルを生成するメソッド.
-            % 動的シミュレーションを行う際には、このタイムテーブルを元にイベントを抽出し、
-            % 抽出したイベントに基づいてシステムを構築・解析する.
+            % A method that generates a timetable for time events specified by a structure.
+            % When performing dynamic simulation, events are extracted based on this timetable,
+            % and the system is constructed and analyzed based on the extracted events.
             %
-            % << 生成されるタイムテーブル >>
+            % << Generated timetable >>
             %      Time   | event1 | event2 | event3 | event4 | event5 ...  
             %   ----------+--------+--------+--------+--------+-----------
             %     0~10[s] |   1    |    0   |    0   |   0    |   0   
@@ -142,10 +142,10 @@ classdef (Sealed = true) odeSimulator < handle
         end
      
         function manage_simResults(obj, sol, RM, EM, et)
-            % シミュレーション結果を管理するためのメソッド.
-            % テーブル型の変数として管理される.
+            % Methods for managing simulation results.
+            % Managed as table-type variables.
             % 
-            % <<シミュレーション結果の管理>>
+            % << Management of Simulation Results >>
             %
             %     Time [s]   | delta | omega |  eq  |  ed  | psiq ...  
             %   -------------+-------+-------+------+------+---------
@@ -203,20 +203,7 @@ classdef (Sealed = true) odeSimulator < handle
                     sim(i).ImV.Properties.VariableNames = "Imag";
 
                     sim(i).t = obj.odeResults{:,1};
-                end
-
-                str_x = cell(n_bus,1);
-                str_v = cell(n_bus,1);
-                for i=1:n_bus
-                    a_comp = a_bus{i}.a_Component;                        
-
-                    str_v{i} = ["Vre";"Vim"]+"_"+string(a_bus{i});
-                    str_x{i} = cell2mat( cellfun(@(c) string(c)+"_"+c.str_x, a_comp, 'UniformOutput', false) );                            
-                end        
-                vnames = cell2mat([str_x;str_v]);
-
-                % 一時的なもの
-                % obj.odeResults.Properties.VariableNames = ["Time";vnames];                                
+                end                
 
                 obj.odeSimStruct = sim;
                 
@@ -229,8 +216,8 @@ classdef (Sealed = true) odeSimulator < handle
         end
 
         function initialize_odeSimulator(obj)            
-            % 各機器、母線に対して状態変数の番号を割り当てるメソッド.
-            % odeソルバーによる解析を行う前に実行する.
+            % A method for assigning state variable numbers to each device and bus.
+            % Execute this before performing analysis using the ODE solver.         
 
             bus = obj.odeNetwork.a_Bus;
 
@@ -279,9 +266,9 @@ classdef (Sealed = true) odeSimulator < handle
     methods (Hidden=true, Access={?odeSimulator, ?PowerNetwork})
         
         function odeX = getODEFunction(obj, t, x, Ymat, RM, EM, lg) %#ok 
-            % 解析対象のDAE系を取得するメソッド.            
+            % A method for retrieving the DAE system to be analyzed.            
             
-            x = EM*x; % 縮約されたものを元に戻す
+            x = EM*x; 
 
             odeX = zeros(size(x));
             odeV = zeros(size(obj.odeNetwork.a_Bus));
@@ -313,14 +300,12 @@ classdef (Sealed = true) odeSimulator < handle
                 idx = bus{i}.iv_odeX;
                 odeX(idx) = odeX(idx) + [real(I(i)); imag(I(i))]; 
             end
-            
-            % odeX = RM*odeX; 
-            odeX = odeX(lg); % 地絡と解列が発生している部分を縮約する
+                        
+            odeX = odeX(lg); 
         end
                 
         function jac = getODEJacobian(obj, t, x, Ymat, RM, EM, lg) %#ok    
-            % 解析対象のDAE系に関するヤコビアンを取得するメソッド.
-            % コントローラの接続にも対応できるように実装する予定.
+            % A method for obtaining the Jacobian of the DAE system under analysis.
 
             x = EM*x;
             
@@ -364,8 +349,7 @@ classdef (Sealed = true) odeSimulator < handle
             jac(lo,le) = jac(lo,le) - B;
             jac(le,lo) = jac(le,lo) + B;
             jac(le,le) = jac(le,le) + G; 
-
-            % jac = RM * jac * RM.';
+            
             jac = jac(lg,lg);
 
         end
@@ -508,7 +492,7 @@ classdef (Sealed = true) odeSimulator < handle
 
             while tp <= np          
 
-                TT = obj.odeTimeTable(tp,:); % 地絡と解列に関するイベントの取得
+                TT = obj.odeTimeTable(tp,:); % Retrieving events related to ground faults and circuit tripping.
                                 
                 [EM, RM, lg] = obj.getStateMatrix(obj.ODEvnt, TT(1,3:end)); 
                 [x0, Mass] = obj.getODESet(x0, Mass, RM, EM);
@@ -522,7 +506,7 @@ classdef (Sealed = true) odeSimulator < handle
                     t1 = TT{1, 't1'};
                     t2 = TT{1, 't2'};
                     
-                    sol = solve(o, 0, t2-t1); % 方程式を解く際には,[0, 各フェーズの時間]で指定する
+                    sol = solve(o, 0, t2-t1); % When solving the equation, specify [0, duration of each phase]
 
                     et = isequal(tp,np);     
 
@@ -537,12 +521,13 @@ classdef (Sealed = true) odeSimulator < handle
 
                         case 'IndexGTOne'
 
-                            % DAE系のインデックスが1より大きかった場合にインデックスを減らした新しいDAE系を構築する.
+                            % If the DAE index is greater than 1, construct a new DAE sequence with a reduced index.
                             [ODEfcn, x0, options] = ReduceDAEIndex(obj, o, options);
 
                         case 'NeedBetterY0'
 
-                            % 初期値の矛盾に関するエラーが発生した場合に、DAE系と整合性の取れる状態を計算する.
+                            % If an error related to initial value inconsistencies occurs, 
+                            % calculate a state that is consistent with the DAE system.
                             [ODEfcn, x0, options] = CalculateInitialCondition(o, options);
 
                         otherwise
@@ -551,7 +536,7 @@ classdef (Sealed = true) odeSimulator < handle
                     end
                    
 
-                    % エラーバンドリングを行った後、もう一度DAE系を解く.
+                    % After performing error bundling, solve the DAE system again.
                     try
                         [t,y] = ode15s(ODEfcn, time, x0, options);
                         sol = struct(    'Time', t.', ...
