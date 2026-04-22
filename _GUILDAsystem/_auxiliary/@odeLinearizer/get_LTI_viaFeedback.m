@@ -4,7 +4,7 @@ function [A, B, C, D] = get_LTI_viaFeedback(obj)
 
     l_isU = cellfun(@(b) ~b.l_isNonUnit, bus);    
 
-    ssFromBus = tools.cellfun(@(bs) bs.get_sys("port","I2V"), bus(l_isU));    
+    ssFromBus = tools.cellfun(@(bs) bs.get_sys("port","I2V","full",true), bus(l_isU));    
     ssG = blkdiag(ssFromBus{:});
 
     [input, output] = get_IO_port();    
