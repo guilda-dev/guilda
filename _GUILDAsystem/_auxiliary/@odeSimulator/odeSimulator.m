@@ -12,7 +12,7 @@ classdef (Sealed = true) odeSimulator < handle
         NonNegativeVariables {mustBePositive, mustBeInteger} = []        
         DelayDefinition = []        
         Sensitivity     = []        
-        EventDefinition = []        
+        EventDefinition = []
         EquationType  (1,1) string {mustBeMember(EquationType, ["standard","fullyimplicit","delay"])} = "standard"        
         Solver        matlab.ode.SolverID = "ode15s"                
         SolverOptions matlab.ode.Options  = matlab.ode.options.ODE15s         
@@ -228,6 +228,9 @@ classdef (Sealed = true) odeSimulator < handle
                 for j=1:numel(comp)
                     nx   = length(comp{j}.str_x);                        
                     idx_ = idx_ + nx;
+
+                    % comp{j}.X_offset = zeros(size(comp{j}.str_x));
+                    % comp{j}.U_offset = zeros(size(comp{j}.str_u));
         
                     if comp{j}.isController
                         con = comp{j}.a_LocalController{1};
@@ -505,6 +508,10 @@ classdef (Sealed = true) odeSimulator < handle
                 try
                     t1 = TT{1, 't1'};
                     t2 = TT{1, 't2'};
+
+                    startTime = tic;
+                    stopTime  = 5;
+                    o.EventDefinition = odeEvent("EventFcn",@(t,y) checkSimulationTime(t,y,startTime,stopTime),"Response","stop");        
                     
                     sol = solve(o, 0, t2-t1); % When solving the equation, specify [0, duration of each phase]
 
