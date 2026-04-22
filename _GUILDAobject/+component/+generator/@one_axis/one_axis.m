@@ -12,11 +12,10 @@ classdef one_axis < component.generator.abstract
             tab_para = obj.tab_parameter;      
             array    = tab_para.dynamics{:,obj.str_para};
 
-            % ヤコビアンに関しては後で実装する
-            % obj.JacobiA = @(t, x, V, u) getJacobiA(t, x, V, u, array, omega0);
-            % obj.JacobiB = @(t, x, V, u) getJacobiB(t, x, V, u, array, omega0);
-            % obj.JacobiC = @(t, x, V, u) getJacobiC(t, x, V, u, array, omega0);
-            % obj.JacobiD = @(t, x, V, u) getJacobiD(t, x, V, u, array, omega0);                     
+            obj.JacobiA = @(t, x, V, u) getJacobiA(t, x, V, u, array, omega0);
+            obj.JacobiB = @(t, x, V, u) getJacobiB(t, x, V, u, array, omega0);
+            obj.JacobiC = @(t, x, V, u) getJacobiC(t, x, V, u, array, omega0);
+            obj.JacobiD = @(t, x, V, u) getJacobiD(t, x, V, u, array, omega0);
 
             obj.rm_odeMass = @(t, x, V, u) obj.fcn_Mass(t, x, V, u, array, omega0);            
             obj.fv_odeDiff = @(t, x, V, u) obj.fcn_dx(t, x, V, u, array, omega0);
