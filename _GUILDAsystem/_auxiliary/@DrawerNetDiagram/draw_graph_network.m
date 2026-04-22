@@ -79,8 +79,8 @@ function draw_graph_network(obj)
         edge_radius = edge_base_radius * (obj.EdgeWidthOffset + obj.EdgeWidthSclae * rv_edge_width(i_edge));
         
         edge_para   = tab_branchgraph(i_edge,:);
-        node_in1    = min( max( edge_para.BusToPoint, 0),1);
-        node_in2    = min( max( edge_para.BusFromPoint, 0),1);
+        node_in1    = min( max( edge_para.BusFromPoint, 0),1);
+        node_in2    = min( max( edge_para.BusToPoint,   0),1);
         from_max    = sct_nodelim(idx(1)).max;
         from_min    = sct_nodelim(idx(1)).min;
         to_max      = sct_nodelim(idx(2)).max;
@@ -157,13 +157,20 @@ function draw_graph_network(obj)
     clim(    ax, obj.ColorLim);
     colormap(ax, obj.ColorMap);
     c = colorbar(ax, "westoutside");
-    c.Position(3) = 0.01;
-    axis(    ax, 'off'  );
+    c.Position(3) = 0.005;
+    ax.XColor  = "none";
+    ax.YColor  = "none";
+    ax.ZColor  = "none";
+    grid(    ax, 'on');
+    obj.GridWidth = obj.GridWidth;
+    zticks(0)
+    arrayfun(@(x) plot(x*[1,1],[0,0.005],'k-',"LineWidth",1), 0:0.1:1)
+    arrayfun(@(y) plot([0,0.005],y*[1,1],'k-',"LineWidth",1), 0:0.1:1)
+    arrayfun(@(x) plot(x*[1,1],[0.995,1],'k-',"LineWidth",1), 0:0.1:1)
+    arrayfun(@(y) plot([0.995,1],y*[1,1],'k-',"LineWidth",1), 0:0.1:1)
     axis(    ax, 'vis3d');
     pbaspect(ax, 'auto');
-    % axis(    ax, 'equal');
     daspect( ax, [1 1 1]);
-    grid(    ax, 'on');
     view(    ax,  0, 90);
     light(   ax, 'Position', [ 1.0,  0.0, 1.0], 'Style', 'infinite', 'Color', [0.35 0.35 0.35]);
     light(   ax, 'Position', [-1.0,  0.0, 1.0], 'Style', 'infinite', 'Color', [0.35 0.35 0.35]);
@@ -180,7 +187,7 @@ function draw_graph_network(obj)
     set(dcm, 'Enable', 'on', 'UpdateFcn', @(src, event) customhover(src, event, ax, obj));
 end
 
-function fit_axes_to_content(ax, x_main, y_main, z_main, comp_xyz, node_radius)
+function [xrange,yrange] = fit_axes_to_content(ax, x_main, y_main, z_main, comp_xyz, node_radius)
     pts = [x_main(:), y_main(:), z_main(:)];
     if ~isempty(comp_xyz)
         pts = [pts; comp_xyz];
@@ -204,9 +211,10 @@ function fit_axes_to_content(ax, x_main, y_main, z_main, comp_xyz, node_radius)
     pad = 0.05;
     offset = 0.05;
 
-
-    xlim(ax, [(minv(1) - pad * span(1) -offset), (maxv(1) + pad * span(1) +offset)]);
-    ylim(ax, [(minv(2) - pad * span(2) -offset), (maxv(2) + pad * span(2) +offset)]);
+    xrange = [min(0,(minv(1) - pad * span(1) -offset)), max(1,(maxv(1) + pad * span(1) +offset))];
+    yrange = [min(0,(minv(2) - pad * span(2) -offset)), max(1,(maxv(2) + pad * span(2) +offset))];
+    xlim(ax, xrange);
+    ylim(ax, yrange);
 
     z_half = max(xy_ref * 0.02, node_radius * 2);
     if span(3) < xy_ref * 0.02

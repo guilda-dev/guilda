@@ -2,11 +2,11 @@ function h = draw_cuboid_vertical(ax, x0, y0, z0, radius, color, scale_y)
 if nargin < 7 || isempty(scale_y)
     scale_y = 1;
 end
-wx = 1.0 * radius;
-wy = radius * scale_y;
-hgt = 1.4 * radius;
+wx = 0.005;
+wy = scale_y;
+hgt = radius;
 x = x0 + 0.5*wx*[-1 -1  1  1 -1 -1  1  1];
-y = y0 + 0.5*wy*[-1  1  1 -1 -1  1  1 -1];
+y = y0 + 0.5*wy*(1+[-1  1  1 -1 -1  1  1 -1]);
 z = z0 + 0.5*hgt*[-1 -1 -1 -1 1 1 1 1];
 f = [1 2 3 4; 5 6 7 8; 1 2 6 5; 2 3 7 6; 3 4 8 7; 4 1 5 8];
 h = patch(ax, 'Vertices', [x(:) y(:) z(:)], 'Faces', f, ...

@@ -28,6 +28,7 @@ classdef DrawerNetDiagram < auxiliary
 
         EdgeB2B_forward   (:,1) double = [];
         EdgeB2C_forward   (:,1) double = [];
+        GridWidth         (1,1) double = 0.01;
     end
 
     % Properties for storing graphics objects
@@ -81,12 +82,20 @@ classdef DrawerNetDiagram < auxiliary
 
 
     methods
-        function obj = DrawerNetDiagram(net, ax)
+        function obj = DrawerNetDiagram(net, ax, opt)
             arguments
                 net (1,1) PowerNetwork
                 ax  (1,1) matlab.graphics.axis.Axes = axes('Parent',figure());
+                opt.?odeSimulator
             end
             obj.ax = ax;
+            
+            str_fd = fieldnames(opt);
+            for i_fd = 1:numel(str_fd)
+                stri = str_fd{i_fd};
+                obj.(stri) = opt.(stri);
+            end
+
             obj.set_network(net);
             obj.set_powerflow(net);
         end
@@ -311,7 +320,14 @@ classdef DrawerNetDiagram < auxiliary
                         set(ud.From, 'Visible', 'on');  
                 end
             end
-            
+        end
+
+        function set.GridWidth(obj,val)
+            val = abs(val);
+            if obj.validate; return; end
+            obj.GridWidth = val;
+            xticks(obj.ax, 0:val:1) %#ok
+            yticks(obj.ax, 0:val:1) %#ok
         end
     end
 end
