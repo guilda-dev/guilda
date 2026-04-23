@@ -20,7 +20,7 @@ function sys = get_sys(obj, x, V, u, opt)
     Vim = V(2);
     Vsq = Vre^2*Vim^2;
 
-    Bu = [];
+    Bu = zeros(0,2);
     Du = zeros(nu,nu);
     switch obj.key
         case {'gen-park','gen-2axis','gen-1axis'}
@@ -40,47 +40,43 @@ function sys = get_sys(obj, x, V, u, opt)
 
     switch opt.port
         case "V2I"
-            A =  Ax;
-            C =  withStateMatrix([eye(size(A)); Cx], Cx, opt.full);
+            A =  Ax;            
             B = [Bv,Bu];
 
             nx = size(A,1);
             nu = size(B,2);
-            D  = withStateMatrix([zeros(nx,nu); [Dv, Du]], [Dv, Du], opt.full);
+
+            C  = [  eye(opt.full*nx,nx); Cx];
+            D  = [zeros(opt.full*nx,nu); [Dv, Du]];            
 
             InputNames  = [Vport; uNames];
-            OutputNames = withStateMatrix([xNames; Iport], Iport, opt.full);
+            OutputNames = {Iport;[xNames; Iport]};
+
         case "I2V"
             inv_Dv = Dv^-1;
 
             inv_Ax =  Ax - Bv * inv_Dv * Cx;                       
             inv_Bv =  Bv * inv_Dv;
-            inv_Bu = -Bv * inv_Dv * Du + Bu;
+            inv_Bu =  Bu - Bv * inv_Dv * Du;
             inv_Cx = -inv_Dv * Cx;                        
             inv_Du = -inv_Dv * Du;                        
 
             A =  inv_Ax;
-            B = [inv_Bv, inv_Bu];
-            C =  withStateMatrix([eye(size(A)); inv_Cx], inv_Cx, opt.full);
+            B = [inv_Bv, inv_Bu];            
 
             nx = size(A,1);
             nu = size(B,2);
-            D  = withStateMatrix([zeros(nx,nu); [inv_Dv, inv_Du]], [inv_Dv, inv_Du], opt.full);
+
+            C  = [  eye(opt.full*nx,nx); inv_Cx];
+            D  = [zeros(opt.full*nx,nu); [inv_Dv, inv_Du]];            
                         
             InputNames  = [Iport; uNames];
-            OutputNames = withStateMatrix([xNames; Vport], Vport, opt.full);
+            OutputNames = {Vport;[xNames; Vport]};
     end    
 
     sys = ss(Mass^-1 * A, Mass^-1 * B, C, D);
 
     sys.StateName  = xNames;
     sys.InputName  = InputNames;
-    sys.OutputName = OutputNames;
-
-    function mat = withStateMatrix(mat1, mat2, flag)
-        mat = mat2;
-        if flag
-            mat = mat1;
-        end
-    end
+    sys.OutputName = OutputNames{opt.full+1};    
 end

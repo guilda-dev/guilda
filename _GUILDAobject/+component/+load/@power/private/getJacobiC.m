@@ -1,3 +1,3 @@
 function C = getJacobiC(t, x, V, u, param) %#ok
-    C = [];
+    C = zeros(2,0);
 end
