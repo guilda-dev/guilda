@@ -235,8 +235,8 @@ classdef (Sealed = true) odeSimulator < handle
                     comp{j}.X_offset = zeros(size(comp{j}.str_x));
                     comp{j}.U_offset = zeros(size(comp{j}.str_u));
 
-                    if comp{j}.isController
-                        con = comp{j}.a_LocalController{1};
+                    if ~isempty(comp{j}.a_LocalController)
+                        con = comp{j}.a_LocalController;
         
                         con_nx = length(con.str_x);
                         con.iv_odeX = idx_ + (1:con_nx).';
@@ -244,8 +244,8 @@ classdef (Sealed = true) odeSimulator < handle
         
                         nx = nx + con_nx;
             
-                        if con.isController
-                            sub_con = con.a_LocalController{1};                    
+                        if ~isempty(con.a_LocalController)
+                            sub_con = con.a_LocalController;                    
         
                             sub_con_nx = length(sub_con.str_x);
                             con.iv_odeX = idx_ + (1:sub_con_nx).';
@@ -286,11 +286,32 @@ classdef (Sealed = true) odeSimulator < handle
                 bi = bus{i};
                 cm = bi.a_Component;
                 Vi = x(bi.iv_odeX);                                
-
+                
                 for j=1:numel(cm)
                     cj = cm{j};
                     xi = x(cj.iv_odeX);        
-                    ui = cj.cv_Uequilibrium + cj.U_offset;                    
+                    ui = cj.cv_Uequilibrium + cj.U_offset;               
+
+                    con = cj.a_LocalController;
+                    if ~isempty(con)
+
+                        sub_con = con.a_LocalController;
+                        yi_sub_con = 0;
+                        if ~isempty(sub_con)
+                            xi_sub_con = xi(sub_con.iv_odeX);                            
+                            dx_sub_con = sub_con.fv_odeDiff(t, xi_sub_con, Vi, xi(2));
+                            yi_sub_con = sub_con.fv_odeConY(t, xi_sub_con, Vi, xi(2));
+
+                            odeX(sub_con.iv_odeX) = odeX(sub_con.iv_odeX) + dx_sub_con;
+                        end
+
+                        xi_con = xi(con.iv_odeX);
+                        dx_con = con.fv_odeDiff(t, xi_con, Vi, yi_sub_con);
+                        yi_con = con.fv_odeConY(t, xi_con, Vi, yi_sub_con);
+
+                        odeX(con.iv_odeX) = odeX(con.iv_odeX) + dx_con;
+                        ui(2) = yi_con;
+                    end                    
             
                     dx = cj.fv_odeDiff(t, xi, Vi, ui);
                     Ix = cj.isConnect * cj.fv_odeI(t, xi, Vi, ui);
@@ -360,7 +381,7 @@ classdef (Sealed = true) odeSimulator < handle
 
         end
 
-        function [init, Mass] = getODESet(obj, x0, Mass, RM, EM)
+        function [init, Mass] = getODESet(obj, x0, Mass, RM, EM)            
 
             bus  = obj.odeNetwork.a_Bus;
             nbus = numel(bus);
@@ -370,7 +391,7 @@ classdef (Sealed = true) odeSimulator < handle
                 vi   = cell(nbus,1);
                 for i=1:nbus
                     busi  = bus{i};
-                    xi{i} = cell2mat( cellfun(@(B) B.cv_Xequilibrium + B.X_offset, busi.a_Component, 'UniformOutput', false) );
+                    xi{i} = cell2mat( cellfun(@(c) c.cv_Xequilibrium + c.X_offset, busi.a_Component, 'UniformOutput', false) );
                     vi{i} = [real(busi.c_Vequilibrium); imag(busi.c_Vequilibrium)];                 
                 end             
     
@@ -579,6 +600,8 @@ classdef (Sealed = true) odeSimulator < handle
 
             tab = obj.odeResults;
             stc = obj.odeSimStruct;
+
+            clear startTime
         end
     end
 end

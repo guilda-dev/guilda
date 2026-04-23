@@ -1,5 +1,6 @@
 classdef (Sealed = true) AVR_DC1 < LocalController
-    properties (Constant, Hidden=true)             
+    properties (Constant, Hidden=true)
+        key      = "avr"
         str_x    = ["Vtr";"Vap"; "Vfld"; "Vst"];
         str_u    = ["Vref";"Vpss"];   
         str_y    = ["Vfld"];
@@ -32,13 +33,14 @@ classdef (Sealed = true) AVR_DC1 < LocalController
                                             "tex", param.tex    , "double", ...
                                             "bex", param.bex    , "double", ...
                                             "kst", param.kst    , "double", ...
-                                            "tst", param.tst    , "double");
+                                            "tst", param.tst    , "double");                       
 
-            
-            omega0   = 60;
-            params   = obj.tab_parameter.dynamics{:,obj.str_para}.';
+        end        
+
+        function set_fcn(obj, omega0)            
+            params = obj.tab_parameter.dynamics{:,obj.str_para}.';
             obj.fv_odeDiff = @(t, x, V, u) obj.fcn_dx(t, x, V, u, params, omega0);
-            obj.fv_odeY    = @(t, x, V, u) obj.fcn_y(t, x, V, u, params, omega0);
+            obj.fv_odeConY = @(t, x, V, u) obj.fcn_y(t, x, V, u, params, omega0);
             obj.rm_odeMass = @(t, x, V, u) obj.fcn_Mass(t, x, V, u, params, omega0);
 
             obj.JacobiA = @(t, x, V, u) A_AVR_DC1(t, x, V, u, params, omega0);
@@ -46,7 +48,7 @@ classdef (Sealed = true) AVR_DC1 < LocalController
             obj.JacobiC = @(t, x, V, u) C_AVR_DC1(t, x, V, u, params, omega0);
             obj.JacobiD = @(t, x, V, u) D_AVR_DC1(t, x, V, u, params, omega0);
 
-        end        
+        end
         function [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj, V, u)                   
             tab = obj.tab_parameter.dynamics;
             Vap_max = tab{:, 'Vap_max'};

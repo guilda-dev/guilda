@@ -57,8 +57,7 @@ classdef Component < PowerSystemModel
         parent                                 % [   Layer   ] Layerの上位に当たるクラス
         children                               % [   Layer   ] Layerの下位に当たるクラス群
     end
-    properties (Access={?odeSimulator, ?Component})
-        isController = false
+    properties (Access={?odeSimulator, ?Component})        
         isConnect    = true
     end
     properties (Hidden)
@@ -137,9 +136,9 @@ classdef Component < PowerSystemModel
         end
         function p = get.children(obj)
             p = [ obj.a_LocalController  ;...
-                 {obj.para_dynamics       ; obj.para_powerflow     ;...
-                  obj.para_operation      ; obj.para_OPF           ;...
-                  obj.para_graph          }];
+                 {obj.para_dynamics      ; obj.para_powerflow     ;...
+                  obj.para_operation     ; obj.para_OPF           ;...
+                  obj.para_graph         }];
         end
         function tp = get.tab_parameter(obj)
             dynamics  = obj.para_dynamics.tab_parameter;
