@@ -25,6 +25,7 @@ classdef (Sealed = true) odeSimulator < handle
         odeTimeTable
         odeResults
         odeSimStruct
+        odeYmat
     end
 
     properties (SetAccess=private, Hidden)
@@ -60,6 +61,8 @@ classdef (Sealed = true) odeSimulator < handle
 
             obj.manage_time(time, evs);
             obj.initialize_odeSimulator;
+
+            obj.odeYmat = net.get_admittance_matrix.Variables;
         end        
     end
     
@@ -229,9 +232,9 @@ classdef (Sealed = true) odeSimulator < handle
                     nx   = length(comp{j}.str_x);                        
                     idx_ = idx_ + nx;
 
-                    % comp{j}.X_offset = zeros(size(comp{j}.str_x));
-                    % comp{j}.U_offset = zeros(size(comp{j}.str_u));
-        
+                    comp{j}.X_offset = zeros(size(comp{j}.str_x));
+                    comp{j}.U_offset = zeros(size(comp{j}.str_u));
+
                     if comp{j}.isController
                         con = comp{j}.a_LocalController{1};
         
@@ -268,7 +271,7 @@ classdef (Sealed = true) odeSimulator < handle
 
     methods (Hidden=true, Access={?odeSimulator, ?PowerNetwork})
         
-        function odeX = getODEFunction(obj, t, x, Ymat, RM, EM, lg) %#ok 
+        function odeX = getODEFunction(obj, t, x, RM, EM, lg) %#ok 
             % A method for retrieving the DAE system to be analyzed.            
             
             x = EM*x; 
@@ -298,7 +301,7 @@ classdef (Sealed = true) odeSimulator < handle
                 odeV(i) = [1,1j]*Vi;
             end        
 
-            I = Ymat*odeV;
+            I = obj.odeYmat*odeV;
             for i=1:numel(bus)
                 idx = bus{i}.iv_odeX;
                 odeX(idx) = odeX(idx) + [real(I(i)); imag(I(i))]; 
@@ -307,7 +310,7 @@ classdef (Sealed = true) odeSimulator < handle
             odeX = odeX(lg); 
         end
                 
-        function jac = getODEJacobian(obj, t, x, Ymat, RM, EM, lg) %#ok    
+        function jac = getODEJacobian(obj, t, x, RM, EM, lg) %#ok    
             % A method for obtaining the Jacobian of the DAE system under analysis.
 
             x = EM*x;
@@ -342,8 +345,8 @@ classdef (Sealed = true) odeSimulator < handle
                 lv(2*i+[-1;0]) = bi.iv_odeX; 
             end                               
         
-            G = real(Ymat);
-            B = imag(Ymat);
+            G = real(obj.odeYmat);
+            B = imag(obj.odeYmat);
 
             lo = lv(1:2:end);
             le = lv(2:2:end);
@@ -475,11 +478,22 @@ classdef (Sealed = true) odeSimulator < handle
 
         function [tab, stc] = simulate(obj)
             
-            o = guilda.internal.ode(obj); 
+            o = ode;
+        
+            cls = metaclass(o);
+            pList = arrayfun(@(P) P.Name, cls.PropertyList, 'UniformOutput', false);
+            pLogc = arrayfun(@(P) strcmp(P.SetAccess, 'public'), cls.PropertyList);
+        
+            props = pList(pLogc);
+            
+            nprops = numel(props);
+            ip = 1;
+            while ip <= nprops        
+                o.(props{ip}) = obj.(props{ip});
+                ip = ip + 1;        
+            end
 
-            options = odeset("RelTol", o.RelativeTolerance, "AbsTol", o.AbsoluteTolerance);
-
-            Ymat = obj.odeNetwork.get_admittance_matrix.Variables;
+            options = odeset("RelTol", o.RelativeTolerance, "AbsTol", o.AbsoluteTolerance);            
 
             if isempty(obj.ODEvnt)                
                 obj.manage_time([0,10], eventset("Time", [0,10]));
@@ -501,8 +515,8 @@ classdef (Sealed = true) odeSimulator < handle
                 [x0, Mass] = obj.getODESet(x0, Mass, RM, EM);
 
                 o.InitialValue = x0;
-                o.ODEFcn       = @(t,x) obj.getODEFunction(t,x,Ymat,RM,EM,~lg);                                       
-                o.Jacobian     = @(t,x) obj.getODEJacobian(t,x,Ymat,RM,EM,~lg);
+                o.ODEFcn       = @(t,x) obj.getODEFunction(t,x,RM,EM,~lg);                                       
+                o.Jacobian     = @(t,x) obj.getODEJacobian(t,x,RM,EM,~lg);
                 o.MassMatrix   = Mass;                
             
                 try
@@ -511,7 +525,8 @@ classdef (Sealed = true) odeSimulator < handle
 
                     startTime = tic;
                     stopTime  = 5;
-                    o.EventDefinition = odeEvent("EventFcn",@(t,y) checkSimulationTime(t,y,startTime,stopTime),"Response","stop");        
+                    SimulationTimer = @(t,y) checkSimulationTime(t,y,startTime,stopTime);
+                    o.EventDefinition = odeEvent("EventFcn", SimulationTimer, "Response", "stop");
                     
                     sol = solve(o, 0, t2-t1); % When solving the equation, specify [0, duration of each phase]
 
