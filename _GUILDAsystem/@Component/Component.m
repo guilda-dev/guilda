@@ -18,7 +18,7 @@ classdef Component < PowerSystemModel
 %% Parameter
     properties(SetAccess=protected)
         a_Bus                                  % [   Layer   ] 接続しているBusクラス(a_Cubicleから辿る)
-        a_LocalController  = cell(0,1)         % [   Layer   ] 接続されているControllerクラスのcell配列        
+        a_LocalController (:,1) = cell(0,1)    % [   Layer   ] 接続されているControllerクラスのcell配列        
         rm_odeMass                             % [  Dynamics ] 数値積分の計算に使用する質量行列のシンボリック式
         fv_odeDiff                             % [  Dynamics ] 数値積分の計算に使用する微分方程式のシンボリック式
         fv_odeI                                % [  Dynamics ] 数値積分の計算に使用する接続方程式のシンボリック式
