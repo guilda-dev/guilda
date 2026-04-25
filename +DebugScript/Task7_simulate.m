@@ -1,6 +1,6 @@
-ev1 = eventset("FltBus", "B001", "Time", [3,3.01]);
+ev1 = odeEventSet("ev1", net, "FaultBus", "B001", "TimeSpan", [3,3.01]);
 
-o = odeSimulator(net, [0,30], ev1);
+o = odeSimulator(net, ev1);
 
 [t, s] = o.simulate;
 

@@ -1,6 +1,6 @@
-ev = eventset("Time", [3,3.01], "TrpCmp", "SG1B002");
+ev1 = odeEventSet("ev1", net, "TimeSpan", [3,3.01], "TripUnit", "SG1B002");
 
-o = odeSimulator(net, [0,30], ev);
+o = odeSimulator(net, ev1);
 
 [t, s] = o.simulate;
 

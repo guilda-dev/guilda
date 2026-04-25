@@ -34,13 +34,16 @@ classdef (Sealed = true) odeSimulator < handle
     end
 
     methods
-        function obj = odeSimulator(net, time, evs, opt)            
+        function obj = odeSimulator(net, varargin, opt)            
             arguments                
-                net  (1,1) {mustBeA(net, 'PowerNetwork')}
-                time 
-                evs 
+                net  (1,1) {mustBeA(net, 'PowerNetwork')}                
+            end
+            arguments (Input, Repeating)
+                varargin {mustBeA(varargin, 'odeEventSet')}
+            end
+            arguments
                 opt.?odeSimulator
-            end                        
+            end                                    
             obj.odeNetwork = net;
 
             cls = metaclass(obj);
@@ -58,87 +61,16 @@ classdef (Sealed = true) odeSimulator < handle
                 end
                 i=i+1;
             end
-
-            obj.manage_time(time, evs);
+            
+            [obj.odeTimeTable, obj.ODEvnt] = table(varargin{:});
             obj.initialize_odeSimulator;
 
             obj.odeYmat = net.get_admittance_matrix.Variables;
         end        
+        
     end
     
-    methods (Access=private)       
-
-        function manage_time(obj, time, varargin)
-            % A method that generates a timetable for time events specified by a structure.
-            % When performing dynamic simulation, events are extracted based on this timetable,
-            % and the system is constructed and analyzed based on the extracted events.
-            %
-            % << Generated timetable >>
-            %      Time   | event1 | event2 | event3 | event4 | event5 ...  
-            %   ----------+--------+--------+--------+--------+-----------
-            %     0~10[s] |   1    |    0   |    0   |   0    |   0   
-            %    10~12[s] |   0    |    1   |    0   |   1    |   0   
-            %    12~15[s] |   0    |    0   |    1   |   1    |   1   
-            %       :         :         :        :       :        :
-            %
-            arguments
-                obj
-                time (:,2) double = zeros(0,2)                
-            end
-            arguments (Input, Repeating)
-                varargin 
-            end
-            
-            times = zeros(nargin-2,2);
-            for k=1:nargin-2
-                argi = varargin{k}.Time;
-                if isscalar(argi)
-                    times(k,:) = ones(1,2)*argi;
-                else
-                    times(k,:) = argi;
-                end
-            end
-                        
-            utimes = reshape(times, [], 1);
-            if isempty(time) || ( max(time) <= max(utimes) )               
-                time = [0, max(utimes)+10];
-            end
-            utime = unique([time(1); utimes; time(2)], "sorted", "first");
-        
-            all_time = [utime(1:end-1), utime(2:end)];
-            
-            vtab = size(all_time,1);
-            rtab = size(times,1);
-        
-            tab = array2table(false(vtab,rtab));
-            for i=1:vtab
-                fti = all_time(i,1);
-                eti = all_time(i,2);
-                for j=1:rtab
-                    ftj = times(j,1);
-                    etj = times(j,2);
-        
-                    if (fti < etj) && (ftj < eti)
-                        tab{i,j} = true;
-                    elseif (fti == ftj) && (fti == etj)
-                        tab{i,j} = true;
-                    end
-                end
-            end
-
-            if all(~tab{1,:})
-                varargin = [{eventset("Time", all_time(1,:))}, varargin];
-                tab = [array2table([true; false(vtab-1,1)], "VariableNames", "Var0"),tab];                
-            end
-
-            if all(~tab{end,:})
-                varargin = [varargin, {eventset("Time", all_time(end,:))}];
-                tab = [tab,array2table([false(vtab-1,1); true], "VariableNames", "Var "+"End")];
-            end
-            
-            obj.ODEvnt = [obj.ODEvnt, varargin];
-            obj.odeTimeTable = [array2table(all_time, "VariableNames", ["t1","t2"]), tab];
-        end
+    methods (Access=private)               
 
         function clear_event(obj)
             obj.ODEvnt = [];
@@ -427,8 +359,8 @@ classdef (Sealed = true) odeSimulator < handle
             bus = obj.odeNetwork.a_Bus;
             evs = event( tab{1,:} );
                     
-            bnms = cell2mat( cellfun(@(B) B.FltBus, evs, 'UniformOutput', false) );
-            cnms = cell2mat( cellfun(@(B) B.TrpCmp, evs, 'UniformOutput', false) );
+            bnms = cell2mat( cellfun(@(B) B.FaultBus, evs, 'UniformOutput', false) );
+            cnms = cell2mat( cellfun(@(B) B.TripUnit, evs, 'UniformOutput', false) );
 
             if isempty(bnms)
                 bnms = "";
@@ -514,11 +446,7 @@ classdef (Sealed = true) odeSimulator < handle
                 ip = ip + 1;        
             end
 
-            options = odeset("RelTol", o.RelativeTolerance, "AbsTol", o.AbsoluteTolerance);            
-
-            if isempty(obj.ODEvnt)                
-                obj.manage_time([0,10], eventset("Time", [0,10]));
-            end
+            options = odeset("RelTol", o.RelativeTolerance, "AbsTol", o.AbsoluteTolerance);                        
 
             tp = 1;
             np = size(obj.ODEvnt,2);
