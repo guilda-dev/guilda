@@ -222,7 +222,7 @@ classdef (Sealed = true) odeSimulator < handle
                 for j=1:numel(cm)
                     cj = cm{j};
                     xi = x(cj.iv_odeX);        
-                    ui = cj.cv_Uequilibrium + cj.U_offset;               
+                    ui = cj.cv_Uequilibrium + cj.U_offset(t,xi);               
 
                     con = cj.a_LocalController;
                     if ~isempty(con)
@@ -283,7 +283,7 @@ classdef (Sealed = true) odeSimulator < handle
                 for j=1:numel(cm)
                     cj = cm{j};
                     xi = x(cj.iv_odeX);        
-                    ui = cj.cv_Uequilibrium + cj.U_offset;                    
+                    ui = cj.cv_Uequilibrium + cj.U_offset(t,xi);                    
 
                     lx = [cj.iv_odeX; bi.iv_odeX];
                                 
@@ -311,114 +311,24 @@ classdef (Sealed = true) odeSimulator < handle
             
             jac = jac(lg,lg);
 
-        end
+        end       
 
-        function [init, Mass] = getODESet(obj, x0, Mass, RM, EM)            
+        function [x0, M0] = getNextPhase(obj, x0, M0, RM, EM) %#ok
+            a_bus  = obj.odeNetwork.a_Bus;            
 
-            bus  = obj.odeNetwork.a_Bus;
-            nbus = numel(bus);
+            x0 = EM*x0;
+            M0 = EM * M0 * EM.';
 
-            if isempty(x0)
-                xi   = cell(nbus,1);
-                vi   = cell(nbus,1);
-                for i=1:nbus
-                    busi  = bus{i};
-                    xi{i} = cell2mat( cellfun(@(c) c.cv_Xequilibrium + c.X_offset, busi.a_Component, 'UniformOutput', false) );
-                    vi{i} = [real(busi.c_Vequilibrium); imag(busi.c_Vequilibrium)];                 
-                end             
-    
-                init = RM * [vertcat(xi{:}); vertcat(vi{:})];
-            else
-                init = RM*x0;
-            end            
-            
-            if isempty(Mass)
-                
-                x    = EM*init;            
-                nx   = numel(x);
-                Mass = zeros(nx,nx);
+            for i=1:numel(a_bus)
+                a_Comp = a_bus{i}.a_Component;                
 
-                for i=1:nbus
-                    Vi   = x(bus{i}.iv_odeX);                
-                    comp = bus{i}.a_Component;
-                    for j=1:numel(comp)                    
-                        ci = comp{j}.iv_odeX;
-                        ui = comp{j}.cv_Uequilibrium;
-                        
-                        xi = x(ci);
-                        mi = comp{j}.rm_odeMass([], xi, Vi, ui);
-                        Mass(ci,ci) = Mass(ci,ci) + mi; 
-                    end
-                end            
-            end
+                for j=1:numel(a_Comp)
+                    if isa(a_Comp{j}, 'component.generator.abstract') && ~a_Comp{j}.isConnect
+                        c_idx = a_Comp{j}.iv_odeX;
+                        b_idx = a_bus{i}.iv_odeX;
+                        [x0(c_idx), ~] = a_Comp{j}.get_equilibrium([1,1j]*x(b_idx), 0+1j*0);                         
 
-            Mass = RM * Mass * RM.';            
-        end
-        
-        function [EM, RM, lg] = getStateMatrix(obj, event, tab)
-            bus = obj.odeNetwork.a_Bus;
-            evs = event( tab{1,:} );
-                    
-            bnms = cell2mat( cellfun(@(B) B.FaultBus, evs, 'UniformOutput', false) );
-            cnms = cell2mat( cellfun(@(B) B.TripUnit, evs, 'UniformOutput', false) );
-
-            if isempty(bnms)
-                bnms = "";
-            end
-
-            if isempty(cnms)
-                cnms = "";
-            end
-
-            bnms_all = cell2mat( cellfun(@(B) repmat(B.str_tag, [2,1]), bus, 'UniformOutput', false) );
-
-            cnms_all = cell(size(bus));
-            for i=1:numel(bus)
-                bnm = bus{i}.str_tag;
-                bus{i}.l_isFault = ismember(bnm, bnms_all);
-
-
-                cmp = bus{i}.a_Component;                                
-                c_c = cell(size(cmp));
-                for j=1:numel(cmp)
-                    c_c{j} = repmat( cmp{j}.str_tag, size(cmp{j}.str_x) );
-                    
-                    cmp{j}.isConnect = ~ismember(cmp{j}.str_tag, cnms);
-                end
-                cnms_all{i} = cell2mat(c_c);
-            end
-            cnms_all = cell2mat(cnms_all);
-
-            lg = ismember([cnms_all;bnms_all],[cnms;bnms]);
-
-            nlg = length(lg);
-
-            EM = eye(nlg);
-            RM = eye(nlg);
-
-            EM = EM(:,~lg);
-            RM = RM(~lg,:);
-            
-        end
-
-        function [x, Mass] = getTransitionSet(obj, x, Mass, RM, EM) %#ok
-            bus  = obj.odeNetwork.a_Bus;
-            nbus = numel(bus);
-
-            x = EM*x;
-            Mass = EM * Mass * EM.';
-
-            for i=1:nbus
-                com = bus{i}.a_Component;
-                ncom = numel(com);
-
-                for j=1:ncom
-                    if isa(com{j}, 'component.generator.abstract') && ~com{j}.isConnect
-                        c_idx = com{j}.iv_odeX;
-                        b_idx = bus{i}.iv_odeX;
-                        [x(c_idx), ~] = com{j}.get_equilibrium([1,1j]*x(b_idx), 0+1j*0);                         
-
-                        Mass(c_idx, c_idx) = com{j}.rm_odeMass([], [], x(b_idx), []);
+                        M0(c_idx, c_idx) = a_Comp{j}.rm_odeMass([], [], x0(b_idx), []);
                     end
                 end
             end            
@@ -458,19 +368,22 @@ classdef (Sealed = true) odeSimulator < handle
 
             while tp <= np          
 
-                TT = obj.odeTimeTable(tp,:); % Retrieving events related to ground faults and circuit tripping.
-                                
-                [EM, RM, lg] = obj.getStateMatrix(obj.ODEvnt, TT(1,3:end)); 
-                [x0, Mass] = obj.getODESet(x0, Mass, RM, EM);
+                TT = obj.odeTimeTable(tp,:); % Retrieving events related to ground faults and circuit tripping.                                               
 
-                o.InitialValue = x0;
-                o.ODEFcn       = @(t,x) obj.getODEFunction(t,x,RM,EM,~lg);                                       
-                o.Jacobian     = @(t,x) obj.getODEJacobian(t,x,RM,EM,~lg);
+                odeEvents = obj.ODEvnt( TT{:,3:end} );                
+
+                [EM, RM, lv_FBorTC, x0, Mass] = getInitialCondition(odeEvents{:}, "x0", x0, "M0", Mass);
+
+                o.InitialValue = x0;                
+                o.ODEFcn       = @(t,x) obj.getODEFunction(t,x,RM,EM,~lv_FBorTC);                                       
+                o.Jacobian     = @(t,x) obj.getODEJacobian(t,x,RM,EM,~lv_FBorTC);
                 o.MassMatrix   = Mass;                
             
                 try
                     t1 = TT{1, 't1'};
                     t2 = TT{1, 't2'};
+
+                    setEventCondition(odeEvents{:}, "TimePhase", [t1,t2], "Iteration", tp);
 
                     startTime = tic;
                     stopTime  = 5;
@@ -523,7 +436,7 @@ classdef (Sealed = true) odeSimulator < handle
 
                 tp = tp + 1;
 
-                [x0, Mass] = obj.getTransitionSet(reshape(sol.Solution(:,end),[],1), o.MassMatrix.MassMatrix, RM, EM);
+                [x0, Mass] = obj.getNextPhase(reshape(sol.Solution(:,end),[],1), o.MassMatrix.MassMatrix, RM, EM);
             end
 
             tab = obj.odeResults;

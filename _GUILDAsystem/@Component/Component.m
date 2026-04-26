@@ -57,8 +57,8 @@ classdef Component < PowerSystemModel
         parent                                 % [   Layer   ] Layerの上位に当たるクラス
         children                               % [   Layer   ] Layerの下位に当たるクラス群
     end
-    properties (Access={?odeSimulator, ?Component})        
-        isConnect    = true
+    properties (Access={?odeSimulator, ?Component, ?odeEventSet})        
+        isConnect = true
     end
     properties (Hidden)
         X_offset 

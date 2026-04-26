@@ -12,7 +12,7 @@ classdef (Sealed = true) odeEventSet < handle
 %    Since eventset outputs events within a time phase in structured format, when multiple events exist, 
 %    you must create a struct corresponding to each time event from the eventset function.
 %
-% OffsetUnit - Generator with Perturbation Applied to State Variables [ string scalar or vector ]
+% OffsetUnit - Generator with Perturbation Applied to State Variables [ string scalar ]
 %    Specify the generator that applies perturbations to the state variables.
 % 　　You can also specify an integer scalar or vector, or a device tag.
 %
@@ -33,17 +33,7 @@ classdef (Sealed = true) odeEventSet < handle
 % TripUnit - Trip Component [ string scalar or vector ]
 %    Specify the device to be disassembled. You can specify the device's tag or number using a scalar or vector.
 %
-% LoadChange - Load fluctuations [ string scalar or vector ]
-%    Specify this property when you want to simulate the impact on the system caused by fluctuations 
-%    in the supply-demand balance due to load variations. 
-%    You can specify the equipment type or number as a scalar or vector.
-% 
-% LoadRate - Load fluctuation [ double vector or function_handle ] 
-%    You can specify the extent of load variation using constants or function handles. 
-%    You can specify the number of loads experiencing demand variation in vector form. 
-%    Additionally, when simulating complex load variations, you can specify inputs using function handles.    
-%
-% InputUnit - Component to which an input is applied [ string scalar or vector ]
+% InputUnit - Component to which an input is applied [ string scalar  ]
 %    Specify which machine to apply the input to when requesting an input response. 
 %    The term "machine" here refers to synchronous generators or synchronous phase-shifting machines.
 %
@@ -61,24 +51,22 @@ classdef (Sealed = true) odeEventSet < handle
 
     properties(Access=public)
         TimeSpan    {mustBeRow, validateTimeSpanSize} = [0,10]
-        OffsetUnit  (:,1) string 
+        OffsetUnit  (1,1) string 
         OffsetState (:,1) string 
         OffsetValue (:,1) double 
         FaultBus    (:,1) string 
-        TripUnit    (:,1) string 
-        LoadChange  (:,1) string 
-        LoadRate    (:,1) {mustBeA(LoadRate,   {'double','cell','function_handle'})} 
-        InputUnit   (:,1) string
+        TripUnit    (:,1) string         
+        InputUnit   (1,1) string
         InputName   (:,1) string
         InputValue  (:,1) {mustBeA(InputValue, {'double','cell','function_handle'})}
     end
 
     properties(Access=private)
-        odeNetwork
-        odeOptions
+        odeNetwork        
+        odeTimeSpan
+        odeIteration (1,1) double = nan
     end
-    properties (SetAccess=private, Hidden)
-        % Version of this class       
+    properties (SetAccess=private, Hidden)        
         Ver (1,1) double = 1.1
     end
 
@@ -90,33 +78,22 @@ classdef (Sealed = true) odeEventSet < handle
                 opt.?odeEventSet
             end   
             obj.str_tag = tag;
-            obj.odeNetwork = net;
-
-            cls = metaclass(obj);
-            lv_propName = arrayfun(@(p) p.Name, cls.PropertyList, 'UniformOutput', false);
-            lv_isPublic = arrayfun(@(p) strcmp(p.SetAccess, 'public'), cls.PropertyList);
-
-            lv_OptFname = lv_propName(lv_isPublic);
-            lv_OptArray = cell(size(lv_OptFname));
-            options     = cell2struct(lv_OptArray, lv_OptFname);
+            obj.odeNetwork = net;                                                            
 
             strNames = fieldnames(opt);
 
             idx = 1;
             while idx <= numel(strNames)
-                idx_name = strNames{idx};
-                options.(idx_name) = opt.(idx_name);
+                idx_name = strNames{idx};                
                 obj.(idx_name) = opt.(idx_name);
                 idx = idx + 1;
-            end
-
-            obj.odeOptions = options;
+            end            
 
         end
     end    
 
-    methods 
-        function [odeTimeTable, options] = table(obj, varargin)
+    methods %(Access={?odeSimulator})
+        function [odeTimeTable, events] = table(obj, varargin)
             % A method that generates a timetable for time events specified by a structure.
             % When performing dynamic simulation, events are extracted based on this timetable,
             % and the system is constructed and analyzed based on the extracted events.
@@ -182,9 +159,164 @@ classdef (Sealed = true) odeEventSet < handle
                 tab = [tab,array2table([false(vtab-1,1); true], "VariableNames", "eNoOp")];
             end
                             
-            options = [fnp, odeEvents, enp];
+            events = [fnp, odeEvents, enp];
             odeTimeTable = [array2table(all_time, "VariableNames", ["t1","t2"]), tab];
         end
+        
+        function setEventCondition(obj, varargin, opt)
+            arguments
+                obj                                 
+            end
+            arguments (Input, Repeating)
+                varargin {mustBeA(varargin, 'odeEventSet')}
+            end
+            arguments
+                opt.TimePhase 
+                opt.Iteration {mustBeInteger}
+            end
+            
+            net = obj.odeNetwork;
+            bus = net.a_Bus;
+
+            odeEvents = [{obj},varargin]';                        
+
+            osU = cellfun(@(c) c.OffsetUnit,  odeEvents);
+            osX = cellfun(@(c) c.OffsetState, odeEvents, 'UniformOutput', false);
+            osV = cellfun(@(c) c.OffsetValue, odeEvents, 'UniformOutput', false);            
+
+            inU = cellfun(@(c) c.InputUnit,  odeEvents);
+            inN = cellfun(@(c) c.InputName,  odeEvents, 'UniformOutput', false);
+            inV = cellfun(@(c) c.InputValue, odeEvents, 'UniformOutput', false);
+
+            for i=1:numel(bus)
+                comp = bus{i}.a_Component;
+                for j=1:numel(comp)                    
+                    c_tag = comp{j}.str_tag;
+                    l_osU = ismember(osU, c_tag);
+                    l_inU = ismember(inU, c_tag);                    
+                    
+                    comp{j}.X_offset = zeros(size(comp{j}.str_x));                                       
+
+                    if any(l_osU)
+                        lv_X = ismember(comp{j}.str_x, osX{l_osU});                        
+                        comp{j}.X_offset(lv_X) = comp{j}.X_offset(lv_X) + osV{l_osU};
+                    end                    
+
+                    ini = repmat({@(t,x) 0}, size(comp{j}.str_u));
+                    if any(l_inU)
+                        l_inN = ismember(comp{j}.str_u, inN{l_inU});                                                
+                        
+                        exV = inV{l_inU};                                                                        
+                        if iscell(exV)
+                            for ni = 1:numel(exV)
+                                if isa(exV{ni}, 'double')
+                                    exV{ni} = @(t,x) exV{ni};
+
+                                elseif isa(exV{ni}, 'function_handle')
+                                    ts = diff(opt.TimePhase);
+                                    if odeEvents{l_inU}.odeIteration+1 == opt.Iteration
+                                        exV{ni} = @(t,x) exV{ni}(t+ts,x);
+                                    end
+                                else
+                                    error(msg('GUILDA:odeEventSet:InvalidInputType'))
+                                end
+                            end
+                            ini(l_inN) = exV;
+                        else                            
+                            if isa(exV, 'double')
+                                ini(l_inN) = arrayfun(@(in) @(t,x) in, exV, 'UniformOutput', false);      
+
+                            elseif isa(exV, 'function_handle')
+                                ini{l_inN} = exV;
+
+                            else
+                                error(msg('GUILDA:odeEventSet:InvalidInputType'))
+                            end
+                        end                        
+                    end
+                    comp{j}.U_offset = @(t,x) cellfun(@(f) f(t,x), ini);
+                end
+            end            
+
+            for ev = 1:numel(odeEvents)
+                odeEvents{ev}.odeIteration = opt.Iteration; 
+            end
+        end
+
+        function [EM, RM, lv_FBorTC, varargout] = getInitialCondition(obj, varargin, opt)
+            arguments
+                obj                 
+            end
+            arguments (Input, Repeating)
+                varargin {mustBeA(varargin, 'odeEventSet')} 
+            end
+            arguments
+                opt.x0 (:,1) double = []
+                opt.M0 (:,:) double = []
+            end
+
+            a_bus = obj.odeNetwork.a_Bus;
+            odeEvents = [{obj},varargin]';
+                    
+            BusFault = cell2mat( cellfun(@(B) B.FaultBus, odeEvents, 'UniformOutput', false) );
+            CompTrip = cell2mat( cellfun(@(B) B.TripUnit, odeEvents, 'UniformOutput', false) );            
+
+            Btag_all = cell2mat( cellfun(@(B) repmat(B.str_tag, [2,1]), a_bus, 'UniformOutput', false) );
+
+            Ctag_all = cell(size(a_bus));
+            
+            rm_M = zeros(0,0);
+            rv_V = cell(size(a_bus));
+            rv_X = cell(size(a_bus));
+            for i=1:numel(a_bus)
+                Btag = a_bus{i}.str_tag;
+                a_bus{i}.l_isFault = ismember(Btag, BusFault);
+
+                rv_V{i} = [real(a_bus{i}.c_Vequilibrium); imag(a_bus{i}.c_Vequilibrium)];
+
+                a_Comp = a_bus{i}.a_Component;                                
+                c_Ctag = cell(size(a_Comp));
+
+                rv_Cstate = cell(size(a_Comp));
+                for j=1:numel(a_Comp)
+                    c_Ctag{j} = repmat( a_Comp{j}.str_tag, size(a_Comp{j}.str_x) );                    
+                    a_Comp{j}.isConnect = ~ismember(a_Comp{j}.str_tag, CompTrip);
+
+                    rv_Cstate{j} = a_Comp{j}.cv_Xequilibrium + a_Comp{j}.X_offset;
+
+                    rm_M(a_Comp{j}.iv_odeX, a_Comp{j}.iv_odeX) = a_Comp{j}.rm_odeMass([], [], [], []);
+                end
+
+                rv_X{i} = vertcat(rv_Cstate{:});                
+                Ctag_all{i} = cell2mat(c_Ctag);
+            end
+            Ctag_all = cell2mat(Ctag_all);
+
+            lv_FBorTC = ismember([Ctag_all; Btag_all], [CompTrip; BusFault]);
+
+            nFBorTC = length(lv_FBorTC);
+
+            EM = eye(nFBorTC);
+            RM = eye(nFBorTC);
+
+            EM = EM(:, ~lv_FBorTC);
+            RM = RM(~lv_FBorTC, :);
+            
+            x0 = opt.x0;
+            if isempty(x0)
+                x0 = [vertcat(rv_X{:}); vertcat(rv_V{:})];
+            end
+            varargout{1} = RM * x0;                        
+            
+            M0 = opt.M0;
+            if isempty(M0)
+                nB = numel(a_bus);
+                M0 = blkdiag(rm_M, zeros(nB*2, nB*2));
+            end
+            varargout{2} = RM * M0 * RM.';                    
+            
+        end        
+        
     end
 
 end
