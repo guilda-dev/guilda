@@ -1,3 +1,5 @@
+net = network.IEEE14bus;
+
 ev1 = odeEventSet("ev1", net, "FaultBus", "B001", "TimeSpan", [3,3.01]);
 
 o = odeSimulator(net, ev1);
