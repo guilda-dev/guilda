@@ -1,4 +1,49 @@
 function [flag,tab_PFsol,output] = initialize(obj, options)
+% <@Desc>
+% Initializes the steady-state operating point of the power network.
+% Runs the selected power flow method and sets equilibrium values for all buses and components.
+% <@Role>
+% Steady State
+% <@Abst>
+% Executes power flow calculation or OPF, distributes results to bus/component equilibria.
+% <@Signatures>
+% [
+%   "[flag, tab_PFsol, output] = net.initialize()",
+%   "[flag, tab_PFsol, output] = net.initialize(methods=\"powerflow calculation\")"
+% ]
+% <@varargin>
+% [
+%   {
+%     "Name": "methods",
+%     "Type": "string scalar",
+%     "Description": "Method to use for initialization: \"powerflow calculation\", \"optimal powerflow\", or \"calculate from Xequilibrium\".",
+%     "Required": false,
+%     "Default": "\"powerflow calculation\""
+%   }
+% ]
+% <@varargout>
+% [
+%   {
+%     "Name": "flag",
+%     "Type": "logical",
+%     "Description": "True if the initialization converged successfully."
+%   },
+%   {
+%     "Name": "tab_PFsol",
+%     "Type": "table",
+%     "Description": "Power flow solution table with bus voltage, current, P, and Q."
+%   },
+%   {
+%     "Name": "output",
+%     "Type": "struct",
+%     "Description": "Solver output information struct."
+%   }
+% ]
+% <@Examples>
+% [
+%   "```matlab\n[flag, tab] = net.initialize();\n```",
+%   "```matlab\n[flag, tab] = net.initialize(methods=\"optimal powerflow\");\n```"
+% ]
     arguments
         obj
         options.methods (1,1) string {mustBeMember(options.methods,["powerflow calculation","optimal powerflow","calculate from Xequilibrium"])} = "powerflow calculation"

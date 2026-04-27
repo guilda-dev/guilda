@@ -1,4 +1,65 @@
 function bus = add_bus(obj, opt)
+% <@Desc>
+% Adds a new Bus object to the power network.
+% <@Role>
+% Layer Structure
+% <@Abst>
+% Creates a Bus instance with the given parameters and registers it in the network.
+% <@Signatures>
+% [
+%   "bus = net.add_bus()",
+%   "bus = net.add_bus(Tag=\"B\", V=1.0, Varg=0, Gshunt=0, Bshunt=0)"
+% ]
+% <@varargin>
+% [
+%   {
+%     "Name": "Tag",
+%     "Type": "string scalar",
+%     "Description": "Tag prefix for the bus name.",
+%     "Required": false,
+%     "Default": "\"B\""
+%   },
+%   {
+%     "Name": "V",
+%     "Type": "double scalar",
+%     "Description": "Initial voltage magnitude [pu].",
+%     "Required": false,
+%     "Default": "1"
+%   },
+%   {
+%     "Name": "Varg",
+%     "Type": "double scalar",
+%     "Description": "Initial voltage angle [rad].",
+%     "Required": false,
+%     "Default": "0"
+%   },
+%   {
+%     "Name": "Gshunt",
+%     "Type": "double scalar",
+%     "Description": "Shunt conductance [pu].",
+%     "Required": false,
+%     "Default": "0"
+%   },
+%   {
+%     "Name": "Bshunt",
+%     "Type": "double scalar",
+%     "Description": "Shunt susceptance [pu].",
+%     "Required": false,
+%     "Default": "0"
+%   }
+% ]
+% <@varargout>
+% [
+%   {
+%     "Name": "bus",
+%     "Type": "Bus",
+%     "Description": "Newly created and registered Bus object."
+%   }
+% ]
+% <@Examples>
+% [
+%   "```matlab\nbus = net.add_bus(V=1.0, Varg=0);\n```"
+% ]
     arguments
         obj 
         opt.Varg              (1,1) double = 0 /180*pi;

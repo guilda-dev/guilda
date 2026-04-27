@@ -1,4 +1,58 @@
 function comp = add_component(obj,Type,opt)
+% <@Desc>
+% Adds a new Component object (machine or load) to this bus.
+% <@Role>
+% Layer Structure
+% <@Abst>
+% Creates a component of the specified type and registers it in the bus.
+% <@Signatures>
+% [
+%   "comp = bus.add_component(Type)",
+%   "comp = bus.add_component(Type, P=0, Q=0, baseMVA=100)"
+% ]
+% <@varargin>
+% [
+%   {
+%     "Name": "Type",
+%     "Type": "char",
+%     "Description": "Component type: 'gen-classical', 'gen-1axis', 'gen-park', 'load-impedance', or 'load-power'.",
+%     "Required": true,
+%     "Default": "-"
+%   },
+%   {
+%     "Name": "P",
+%     "Type": "double scalar",
+%     "Description": "Active power injection [pu].",
+%     "Required": false,
+%     "Default": "0"
+%   },
+%   {
+%     "Name": "Q",
+%     "Type": "double scalar",
+%     "Description": "Reactive power injection [pu].",
+%     "Required": false,
+%     "Default": "0"
+%   },
+%   {
+%     "Name": "baseMVA",
+%     "Type": "double scalar",
+%     "Description": "Base apparent power [MVA].",
+%     "Required": false,
+%     "Default": "100"
+%   }
+% ]
+% <@varargout>
+% [
+%   {
+%     "Name": "comp",
+%     "Type": "Component",
+%     "Description": "Newly created and registered Component object."
+%   }
+% ]
+% <@Examples>
+% [
+%   "```matlab\ncomp = bus.add_component('gen-classical', P=1.0, Q=0.5);\n```"
+% ]
     arguments
         obj
         Type                 (1,:) char {mustBeMember(Type,{'gen-classical','gen-1axis','gen-park','load-impedance','load-power'})} % Component type

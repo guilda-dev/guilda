@@ -1,6 +1,22 @@
 function tab_Ybus2bus = get_admittance_matrix(obj)
-
-    str_Bus = string(obj.a_Bus);
+% <@Desc>
+% Computes the nodal admittance (Y-bus) matrix for the power network.
+% <@Role>
+% Power Flow
+% <@Abst>
+% Aggregates admittance contributions from all branches and shunt elements into a bus×bus table.
+% <@Signatures>
+% [
+%   "tab_Ybus2bus = net.get_admittance_matrix()"
+% ]
+% <@varargout>
+% [
+%   {
+%     "Name": "tab_Ybus2bus",
+%     "Type": "table",
+%     "Description": "N×N complex admittance matrix table with bus tag names as row and variable names."
+%   }
+% ]
      
     n_Bus   = numel(str_Bus);
     tab_Ybus2bus   = array2table(zeros(n_Bus,n_Bus),"VariableNames",str_Bus,"RowNames",str_Bus);

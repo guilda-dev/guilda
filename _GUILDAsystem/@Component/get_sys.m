@@ -1,4 +1,47 @@
 function sys = get_sys(obj, x, V, u)
+% <@Desc>
+% Computes the linearized state-space model of this component at the given operating point.
+% <@Role>
+% Linearize
+% <@Abst>
+% Evaluates Jacobian matrices and returns an ss object with named state, input, and output signals.
+% <@Signatures>
+% [
+%   "sys = comp.get_sys()",
+%   "sys = comp.get_sys(x, V, u)"
+% ]
+% <@varargin>
+% [
+%   {
+%     "Name": "x",
+%     "Type": "double vector",
+%     "Description": "State vector at the linearization point.",
+%     "Required": false,
+%     "Default": "obj.cv_Xequilibrium"
+%   },
+%   {
+%     "Name": "V",
+%     "Type": "double vector",
+%     "Description": "Bus voltage vector [Re(V); Im(V)] at the linearization point.",
+%     "Required": false,
+%     "Default": "[real(obj.c_Vequilibrium); imag(obj.c_Vequilibrium)]"
+%   },
+%   {
+%     "Name": "u",
+%     "Type": "double vector",
+%     "Description": "Input vector at the linearization point.",
+%     "Required": false,
+%     "Default": "obj.cv_Uequilibrium"
+%   }
+% ]
+% <@varargout>
+% [
+%   {
+%     "Name": "sys",
+%     "Type": "ss",
+%     "Description": "Linearized state-space model with named states, inputs, and outputs."
+%   }
+% ]
     arguments
         obj 
         x (:,1) double = obj.cv_Xequilibrium

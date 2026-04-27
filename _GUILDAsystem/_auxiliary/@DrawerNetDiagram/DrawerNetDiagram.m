@@ -1,9 +1,37 @@
 classdef DrawerNetDiagram < auxiliary
-    % 3D system diagram renderer implemented without digraph plot.
+% <@Desc>
+% 3D network diagram renderer for power systems.
+% Draws buses, branches, and components as a graph plot on a MATLAB axes object.
+% Supports interactive hover tooltips, color-coded edge/node visualization, and
+% dynamic updates to color values, labels, and edge directions.
+% <@Role>
+% auxiliary
+% <@Constructor>
+% DrawerNetDiagram(net, ax, opt)
+%  i.e.
+%  >> drawer = DrawerNetDiagram(net)
+%  >> drawer = DrawerNetDiagram(net, ax)
+%      - net: PowerNetwork object to visualize
+%      - ax:  MATLAB Axes object to draw on (default: new axes in a new figure)
 
     properties
+
+        % <@Desc> Color limits [min, max] for the colormap applied to edges and nodes.
+        % <@Role> Graph
+        % <@Type> double
+        % <@Size> 1x2
         ColorLim       (1,2) double = [0,2];
+
+        % <@Desc> Colormap matrix used for coloring edges and nodes.
+        % <@Role> Graph
+        % <@Type> double
+        % <@Size> Nx3
         ColorMap       (:,3) double = turbo;
+
+        % <@Desc> Color mode for edges/nodes ("none","Loss","I (current)","P (active power)","Q (reactive power)","User defined").
+        % <@Role> Graph
+        % <@Type> string
+        % <@Size> 1x1
         ColorMode      (1,1) string {mustBeMember(ColorMode, [...
                                             "none",               ...
                                             "Loss",               ...
@@ -11,32 +39,131 @@ classdef DrawerNetDiagram < auxiliary
                                             "P (active power)",   ...
                                             "Q (reactive power)", ...
                                             "User defined"])} = "I (current)";
+
+        % <@Desc> Font size for node labels.
+        % <@Role> Graph
+        % <@Type> double
+        % <@Size> 1x1
         NodeFontSize      (1,1) double = 7;
+
+        % <@Desc> Font weight for node labels ("bold", "normal", etc.).
+        % <@Role> Graph
+        % <@Type> string
+        % <@Size> 1x1
         NodeFontWeight    (1,1) string = "bold";
+
+        % <@Desc> Scale factor for edge width rendering.
+        % <@Role> Graph
+        % <@Type> double
+        % <@Size> 1x1
         EdgeWidthSclae    (1,1) double = 0.15;
+
+        % <@Desc> Offset added to edge width rendering.
+        % <@Role> Graph
+        % <@Type> double
+        % <@Size> 1x1
         EdgeWidthOffset   (1,1) double = 1.5;
+
+        % <@Desc> Mode for computing edge width ("none","G","B","Y","SvdMaxYmat").
+        % <@Role> Graph
+        % <@Type> string
+        % <@Size> 1x1
         EdgeWidthMode     (1,1) string {mustBeMember(EdgeWidthMode, ["none","G", "B", "Y", "SvdMaxYmat"])} = "SvdMaxYmat";
+
+        % <@Desc> Marker size for bus nodes.
+        % <@Role> Graph
+        % <@Type> double
+        % <@Size> 1x1
         MarkerSize        (1,1) double = 5;
+
+        % <@Desc> Mode for computing node height ("none","Vmag","Varg","Vsin","P","Q").
+        % <@Role> Graph
+        % <@Type> string
+        % <@Size> 1x1
         NodeHeightMode    (1,1) string {mustBeMember(NodeHeightMode, ["none", "Vmag", "Varg", "Vsin", "P", "Q"])} = "Varg";
+
+        % <@Desc> Color values for bus nodes (used when ColorMode is "User defined").
+        % <@Role> Graph
+        % <@Type> double
+        % <@Size> Nx1
         NodeB_ColorVal    (:,1) double = [];
+
+        % <@Desc> Color values for component nodes (used when ColorMode is "User defined").
+        % <@Role> Graph
+        % <@Type> double
+        % <@Size> Nx1
         NodeC_ColorVal    (:,1) double = [];
+
+        % <@Desc> Color values for bus-to-bus edges (used when ColorMode is "User defined").
+        % <@Role> Graph
+        % <@Type> double
+        % <@Size> Nx1
         EdgeB2B_ColorVal  (:,1) double = [];
+
+        % <@Desc> Color values for bus-to-component edges (used when ColorMode is "User defined").
+        % <@Role> Graph
+        % <@Type> double
+        % <@Size> Nx1
         EdgeB2C_ColorVal  (:,1) double = [];
+
+        % <@Desc> Label strings for bus nodes.
+        % <@Role> Graph
+        % <@Type> string
+        % <@Size> Nx1
         NodeLabelB        (:,1) string = [];
+
+        % <@Desc> Label strings for component nodes.
+        % <@Role> Graph
+        % <@Type> string
+        % <@Size> Nx1
         NodeLabelC        (:,1) string = [];
+
+        % <@Desc> Mode for displaying node labels ("none","name","info").
+        % <@Role> Graph
+        % <@Type> string
+        % <@Size> 1x1
         NodeLabelMode     (1,1) string {mustBeMember(NodeLabelMode, ["none", "name", "info"])} = "name"
 
+        % <@Desc> Forward power flow direction values for bus-to-bus edges (positive=forward, negative=reverse, zero=hidden).
+        % <@Role> Graph
+        % <@Type> double
+        % <@Size> Nx1
         EdgeB2B_forward   (:,1) double = [];
+
+        % <@Desc> Forward power flow direction values for bus-to-component edges.
+        % <@Role> Graph
+        % <@Type> double
+        % <@Size> Nx1
         EdgeB2C_forward   (:,1) double = [];
+
+        % <@Desc> Grid spacing for the axes tick marks.
+        % <@Role> Graph
+        % <@Type> double
+        % <@Size> 1x1
         GridWidth         (1,1) double = 0.01;
     end
 
     % Properties for storing graphics objects
     properties
+
+        % <@Desc> MATLAB Axes object used for rendering the diagram.
+        % <@Role> Graph
+        % <@Type> matlab.graphics.axis.Axes
+        % <@Size> 1x1
         ax
     end
     properties(SetAccess = private)
+
+        % <@Desc> Graphics object handles for the rendered diagram elements.
+        % <@Role> Graph
+        % <@Type> struct
+        % <@Size> 1x1
         plt
+
+        % <@Desc> Flag indicating whether the diagram needs to be fully redrawn.
+        % <@Role> Graph
+        % <@Type> logical
+        % <@Size> 1x1
         flag_new
     end
 
@@ -83,6 +210,42 @@ classdef DrawerNetDiagram < auxiliary
 
     methods
         function obj = DrawerNetDiagram(net, ax, opt)
+        % <@Desc>
+        % Creates a DrawerNetDiagram instance and renders the power network diagram.
+        % <@Role>
+        % Constructor
+        % <@Abst>
+        % Initialize axes, apply options, and draw the network.
+        % <@Signatures>
+        % [
+        %   "obj = DrawerNetDiagram(net)",
+        %   "obj = DrawerNetDiagram(net, ax)"
+        % ]
+        % <@varargin>
+        % [
+        %   {
+        %     "Name": "net",
+        %     "Type": "PowerNetwork",
+        %     "Description": "Power network to visualize.",
+        %     "Required": true,
+        %     "Default": "-"
+        %   },
+        %   {
+        %     "Name": "ax",
+        %     "Type": "matlab.graphics.axis.Axes",
+        %     "Description": "Axes object to draw on.",
+        %     "Required": false,
+        %     "Default": "new axes in a new figure"
+        %   }
+        % ]
+        % <@varargout>
+        % [
+        %   {
+        %     "Name": "obj",
+        %     "Type": "DrawerNetDiagram",
+        %     "Description": "Created DrawerNetDiagram instance."
+        %   }
+        % ]
             arguments
                 net (1,1) PowerNetwork
                 ax  (1,1) matlab.graphics.axis.Axes = axes('Parent',figure());

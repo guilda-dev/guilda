@@ -1,4 +1,55 @@
 function set_equilibrium(obj, c_V, c_I, r_P, r_Q, opt)
+% <@Desc>
+% Sets the steady-state equilibrium values for this bus and all its connected components.
+% Distributes active and reactive power among multiple connected components.
+% <@Role>
+% Steady State
+% <@Abst>
+% Assigns voltage, current, and distributes P/Q to each component's equilibrium.
+% <@Signatures>
+% [
+%   "bus.set_equilibrium(c_V, c_I)",
+%   "bus.set_equilibrium(c_V, c_I, r_P, r_Q)",
+%   "bus.set_equilibrium(c_V, c_I, r_P, r_Q, QdistributionRule=\"baseMVA\")"
+% ]
+% <@varargin>
+% [
+%   {
+%     "Name": "c_V",
+%     "Type": "complex double scalar",
+%     "Description": "Steady-state bus voltage phasor.",
+%     "Required": true,
+%     "Default": "-"
+%   },
+%   {
+%     "Name": "c_I",
+%     "Type": "complex double scalar",
+%     "Description": "Steady-state bus injection current phasor.",
+%     "Required": true,
+%     "Default": "-"
+%   },
+%   {
+%     "Name": "r_P",
+%     "Type": "double scalar",
+%     "Description": "Total active power injection at this bus [pu].",
+%     "Required": false,
+%     "Default": "real(c_V * conj(c_I))"
+%   },
+%   {
+%     "Name": "r_Q",
+%     "Type": "double scalar",
+%     "Description": "Total reactive power injection at this bus [pu].",
+%     "Required": false,
+%     "Default": "imag(c_V * conj(c_I))"
+%   },
+%   {
+%     "Name": "QdistributionRule",
+%     "Type": "string scalar",
+%     "Description": "Rule for distributing Q among components: \"baseMVA\" or \"Qmax\".",
+%     "Required": false,
+%     "Default": "\"baseMVA\""
+%   }
+% ]
     arguments
         obj 
         c_V 

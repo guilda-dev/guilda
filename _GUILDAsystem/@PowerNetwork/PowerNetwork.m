@@ -1,8 +1,8 @@
 classdef PowerNetwork < PowerSystemModel
+% <@Desc>
 % A package for constructing a single electric power system (or power grid).
-% By storing classes corresponding to buses and transmission lines in this class's properties, 
-% various analyses can be performed. Component classes should be stored within the Bus class.
-%
+% By storing Bus, Branch, and GlobalController objects in this class's properties,
+% various analyses can be performed.
 %
 % << This class primarily provides the following analyses >>
 %   * Power Flow Calculation (Load Flow)
@@ -12,52 +12,32 @@ classdef PowerNetwork < PowerSystemModel
 %   * Eigenvalue Analysis
 %   * Others (e.g., Graph Plotting of the system structure)
 %
-%
 % << Power Flow Setting >>
-%
-%  Changes to the powerflow settings should be made from the Bus/Component class.
-%
 %   -> To check power flow settings
 %      >> obj.disp_pf_set
-%
 %   -> When changing the bus voltage settings
 %      >> obj.a_Bus{i}.tab_parameter.powerflow.Varg = value
 %      >> obj.a_Bus{i}.tab_parameter.powerflow.V    = value
-%
 %   -> When changing the P or Q settings
 %      >> obj.a_Bus{i}.a_Component{j}.tab_parameter.powerflow.P = value
 %      >> obj.a_Bus{i}.a_Component{j}.tab_parameter.powerflow.Q = value
-%
-%   -> Method for obtaining tide calculation results
+%   -> Method for obtaining power flow calculation results
 %      >> [powerflow_bus, powerflow_cub] = obj.calculate_powerflow()
-%
-%   -> By executing the following command, steady-state values will be set.
-%      ( The internal process executes obj.calculate_powerflow and then sets 
-% 　　　the steady-state values of the Bus class using the result. )
+%   -> By executing the following command, steady-state values will be set
 %      >> net.initialize("methods","powerflow calculation")
 %
-%
-% << Optimal PowerFlow(OPF) >>
-%
-%  If you intend to set the power flow based on the solution obtained from AC Optimal PowerFlow (AC OPF) calculation, 
-%  first, you adjust the hyperparameters used in the OPF calculation.
-%  Adjust the table data within the following properties, depending on the class:
-%
-%   -> Bus Class: Modify the following properties:
+% << Optimal PowerFlow (OPF) >>
+%   -> Bus Class: Modify the following properties
 %      >> obj.a_Bus{i}.tab_parameter.operation
 %      >> obj.a_Bus{i}.tab_parameter.OPF
-%
-%   -> Component Class: Modify the following properties:
+%   -> Component Class: Modify the following properties
 %      >> obj.a_Bus{i}.a_Component{j}.tab_parameter.operation
 %      >> obj.a_Bus{i}.a_Component{j}.tab_parameter.OPF
-%
-%  -> Branch Class: Modify the following properties:
+%   -> Branch Class: Modify the following properties
 %      >> obj.a_Branch{i}.tab_parameter.operation
 %      >> obj.a_Branch{i}.tab_parameter.OPF
-%
-%  -> After modifying the hyperparameters, execute the following command to set the optimized power flow:
+%   -> After modifying the hyperparameters, execute the following command
 %      >> net.initialize("methods","optimal powerflow")
-%
 %
 % << Time Simulation >>
 %    TBD
@@ -65,46 +45,158 @@ classdef PowerNetwork < PowerSystemModel
 %    TBD
 % << Eigenvalue Analysis >> 
 %    TBD
+%
+% <@Role>
+% Power System Model
+% <@Constructor>
+% PowerNetwork(tag, struct_default, baseHz=value)
+%  i.e.
+%  >> net = PowerNetwork()
+%  >> net = PowerNetwork("MyNet", baseHz=50)
+%      - tag:     name string for the network (default: "PowerNetwork")
+%      - baseHz:  base system frequency [Hz] (default: from GUILDA config)
 
 %% Properties
 
     properties%(SetAccess=protected) 
-       a_Bus              (:,1) cell = cell(0,1);   % Layer Structure
+
+        % <@Desc> Cell array of Bus objects in the power system.
+        % <@Role> Layer Structure
+        % <@Type> Bus cell array
+        % <@Size> Nx1
+       a_Bus              (:,1) cell = cell(0,1);
     end
     properties
-       a_Branch           (:,1) cell = cell(0,1);   % Layer Structure
+
+        % <@Desc> Cell array of Branch objects (transmission lines/transformers) in the power system.
+        % <@Role> Layer Structure
+        % <@Type> Branch cell array
+        % <@Size> Nx1
+       a_Branch           (:,1) cell = cell(0,1);
     end
     properties
-       a_GlobalController (:,1) cell = cell(0,1);   % Layer Structure       
+
+        % <@Desc> Cell array of GlobalController objects in the power system.
+        % <@Role> Layer Structure
+        % <@Type> GlobalController cell array
+        % <@Size> Nx1
+       a_GlobalController (:,1) cell = cell(0,1);
     end
     properties(SetAccess=protected)
+
+        % <@Desc> Power flow solver object used for steady-state calculations.
+        % <@Role> Power Flow
+        % <@Type> SolverPF
+        % <@Size> 1x1
         solver_PF  = SolverPF();
         % solver_OPF (1,1) OptimalPowerFlow     = OptimalPowerFlow();
     end
 
     properties
-       str_methodPF       (1,1) string {mustBeMember(str_methodPF,["optimal powerflow","powerflow calculation","calculate from Xequilibrium","unset"])} = "unset"; % Calculate/Set Steady State
+
+        % <@Desc> String indicating which method was last used to initialize steady-state values.
+        % <@Role> Steady State
+        % <@Type> string
+        % <@Size> 1x1
+       str_methodPF       (1,1) string {mustBeMember(str_methodPF,["optimal powerflow","powerflow calculation","calculate from Xequilibrium","unset"])} = "unset";
     end
     properties(Dependent) 
-        cv_Vequilibrium         % Steady State
-        cv_Iequilibrium         % Steady State
-        cv_Xequilibrium         % Steady State
-        tab_parameter           % Parameter
+
+        % <@Desc> Steady-state bus voltage vector (complex).
+        % <@Role> Steady State
+        % <@Type> complex double
+        % <@Size> Nx1
+        cv_Vequilibrium
+
+        % <@Desc> Steady-state bus injection current vector (complex).
+        % <@Role> Steady State
+        % <@Type> complex double
+        % <@Size> Nx1
+        cv_Iequilibrium
+
+        % <@Desc> Steady-state state vector of the entire network.
+        % <@Role> Steady State
+        % <@Type> double
+        % <@Size> Nx1
+        cv_Xequilibrium
+
+        % <@Desc> Parameter table containing network parameters (base frequency, etc.).
+        % <@Role> Parameter
+        % <@Type> table
+        % <@Size> 1x1
+        tab_parameter
     end
     properties(Hidden,SetAccess=protected)
-        para_base               % Parameter
+
+        % <@Desc> Parameter container for base network settings (Hz).
+        % <@Role> Parameter
+        % <@Type> Parameter
+        % <@Size> 1x1
+        para_base
     end
     properties(Dependent, Access=protected)
-        parent                  % Layer Structure
-        children                % Layer Structure
+
+        % <@Desc> Parent object in the layer hierarchy (none for PowerNetwork).
+        % <@Role> Layer Structure
+        % <@Type> cell array
+        % <@Size> 0x1
+        parent
+
+        % <@Desc> Child Bus, Branch, GlobalController, and parameter objects in the layer hierarchy.
+        % <@Role> Layer Structure
+        % <@Type> cell array
+        % <@Size> Nx1
+        children
     end    
     properties
+
+        % <@Desc> User-defined initial state values for the network simulation.
+        % <@Role> Simulation
+        % <@Type> double
+        % <@Size> Nx1
         rv_odeInit
     end
 
 %% Constructor
     methods
         function obj = PowerNetwork(tag,struct_default,opt)
+        % <@Desc>
+        % Creates a PowerNetwork instance with the given tag and base frequency.
+        % <@Role>
+        % Constructor
+        % <@Abst>
+        % Initialize the network tag and base parameter container.
+        % <@Signatures>
+        % [
+        %   "obj = PowerNetwork()",
+        %   "obj = PowerNetwork(tag)",
+        %   "obj = PowerNetwork(tag, struct_default, baseHz=value)"
+        % ]
+        % <@varargin>
+        % [
+        %   {
+        %     "Name": "tag",
+        %     "Type": "string scalar",
+        %     "Description": "Tag string to identify this network.",
+        %     "Required": false,
+        %     "Default": "\"PowerNetwork\""
+        %   },
+        %   {
+        %     "Name": "baseHz",
+        %     "Type": "double scalar",
+        %     "Description": "Base frequency of the power system [Hz].",
+        %     "Required": false,
+        %     "Default": "from GUILDA config"
+        %   }
+        % ]
+        % <@varargout>
+        % [
+        %   {
+        %     "Name": "obj",
+        %     "Type": "PowerNetwork",
+        %     "Description": "Created PowerNetwork instance."
+        %   }
+        % ]
             arguments
                 tag            (1,1) string = "PowerNetwork";
                 struct_default (1,1) struct = GUILDA.config("ModelNetwork"); %#ok 
