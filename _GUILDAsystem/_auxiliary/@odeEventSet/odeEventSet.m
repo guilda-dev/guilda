@@ -45,11 +45,11 @@ classdef (Sealed = true) odeEventSet < handle
 % InputValue - Input Value [ double \ scalar or vector, function_handle ]
 %    When requesting an input response, specify the magnitude of the input using a scalar or a vector.
 %
-    properties(Access=private,Hidden)
+    properties (Access=private,Hidden)
         str_tag 
     end
 
-    properties(Access=public)
+    properties (Access=public)
         TimeSpan    {mustBeRow, validateTimeSpanSize} = [0,10]
         OffsetUnit  (1,1) string 
         OffsetState (:,1) string 
@@ -61,7 +61,7 @@ classdef (Sealed = true) odeEventSet < handle
         InputValue  (:,1) {mustBeA(InputValue, {'double','cell','function_handle'})}
     end
 
-    properties(Access=private)
+    properties (Access=private)
         odeNetwork        
         odeTimeSpan
         odeIteration (1,1) double = nan
@@ -92,7 +92,7 @@ classdef (Sealed = true) odeEventSet < handle
         end
     end    
 
-    methods %(Access={?odeSimulator})
+    methods (Access={?odeSimulator})
         function [odeTimeTable, events] = table(obj, varargin)
             % A method that generates a timetable for time events specified by a structure.
             % When performing dynamic simulation, events are extracted based on this timetable,
@@ -213,7 +213,11 @@ classdef (Sealed = true) odeEventSet < handle
                                     exV{ni} = @(t,x) exV{ni};
 
                                 elseif isa(exV{ni}, 'function_handle')
-                                    ts = diff(opt.TimePhase);
+                                    if nargin(exV{ni}) ~= 2
+                                        error(msg('GUILDA:odeEventSet:InvalidNargin'))
+                                    end
+
+                                    ts = opt.TimePhase(1) - odeEvents{l_inU}.TimePhase(1);
                                     if odeEvents{l_inU}.odeIteration+1 == opt.Iteration
                                         exV{ni} = @(t,x) exV{ni}(t+ts,x);
                                     end
@@ -227,6 +231,9 @@ classdef (Sealed = true) odeEventSet < handle
                                 ini(l_inN) = arrayfun(@(in) @(t,x) in, exV, 'UniformOutput', false);      
 
                             elseif isa(exV, 'function_handle')
+                                if nargin(exV) ~= 2
+                                    error(msg('GUILDA:odeEventSet:InvalidNargin'))
+                                end
                                 ini{l_inN} = exV;
 
                             else
@@ -315,7 +322,53 @@ classdef (Sealed = true) odeEventSet < handle
             end
             varargout{2} = RM * M0 * RM.';                    
             
-        end        
+        end    
+
+        function EventSettings = Event2State(obj, varargin, opt)
+            arguments
+                obj                                 
+            end
+            arguments (Input, Repeating)
+                varargin 
+            end
+            arguments                
+                opt.ODEResults 
+                opt.ODEYmatrix
+            end
+
+            a_bus = obj.odeNetwork.a_Bus;
+            a_cmp = cellfun(@(bi) bi.a_Component, a_bus, 'UniformOutput', false);
+            a_cmp = vertcat(a_cmp{:});
+            odeEvents = [{obj},varargin]';
+                                
+            CompTrip = cell2mat( cellfun(@(B) B.TripUnit, odeEvents, 'UniformOutput', false) );                        
+            Ctag_all = cell2mat( cellfun(@(B) string(B.a_Component), a_bus, 'UniformOutput', false) );                                
+            
+            lv_Ctagi = ismember(Ctag_all, CompTrip);            
+            
+            B_sti = cell2mat( cellfun(@(bi) bi.iv_odeX, a_bus, 'UniformOutput', false) );
+            C_sti = cell2mat( cellfun(@(ci) ci.iv_odeX, a_cmp(lv_Ctagi), 'UniformOutput', false) );            
+
+            Time = opt.ODEResults.Time;
+            xsol = opt.ODEResults.Solution;
+
+            if any(lv_Ctagi)
+                xsol(:, C_sti) = NaN;
+            end
+
+            Vsol = xsol(:, B_sti);
+            Isol = opt.ODEYmatrix * ( Vsol(:,1:2:end) + 1j*Vsol(:,2:2:end) ).';
+
+            Isol2RI = zeros(size(Vsol));
+            Isol2RI(:, 1:2:end) = real(Isol.');
+            Isol2RI(:, 2:2:end) = imag(Isol.');
+           
+            t = array2table(Time);
+            x = array2table(xsol);
+            I = array2table(Isol2RI);
+
+            EventSettings = table(t,x,I, 'VariableNames', {'t','x','i'});
+        end
         
     end
 

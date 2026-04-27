@@ -22,10 +22,9 @@ classdef (Sealed = true) odeSimulator < handle
     end
     properties (SetAccess=private, Hidden)
         odeNetwork 
-        odeTimeTable
-        odeResults
-        odeSimStruct
+        odeTimeTable                
         odeYmat
+        odeResult
     end
 
     properties (SetAccess=private, Hidden)
@@ -70,85 +69,7 @@ classdef (Sealed = true) odeSimulator < handle
         
     end
     
-    methods (Access=private)               
-
-        function clear_event(obj)
-            obj.ODEvnt = [];
-        end
-     
-        function manage_simResults(obj, sol, RM, EM, et)
-            % Methods for managing simulation results.
-            % Managed as table-type variables.
-            % 
-            % << Management of Simulation Results >>
-            %
-            %     Time [s]   | delta | omega |  eq  |  ed  | psiq ...  
-            %   -------------+-------+-------+------+------+---------
-            %         0      |  1.0  |   0   |  1.2 | 0.75 |  0.75   
-            %         1      |  1.0  |   0   |  1.2 | 0.75 |  0.75   
-            %         2      |  1.0  |   0   |  1.2 | 0.75 |  0.75   
-            %         :         :        :       :        :
-            %
-            arguments
-                obj 
-                sol 
-                RM %#ok
-                EM
-                et (1,1) logical = false
-            end
-
-            t = sol.Time;
-            y = EM*sol.Solution;
-            if isempty(obj.odeResults)
-                ny = size(y,1);
-                obj.odeResults = array2table(zeros(0,ny+1));
-            end
-            tab = array2table([t;y].');
-
-            obj.odeResults = [obj.odeResults; tab];            
-
-            if et
-                a_bus = obj.odeNetwork.a_Bus;
-                n_bus = numel(a_bus);                                
-
-                sim = struct(  't',            [], ...
-                               'X', cell(n_bus,1), ...
-                             'ReV', cell(n_bus,1), ...
-                             'ImV', cell(n_bus,1));
-
-                odeTable = obj.odeResults(:,2:end);
-
-                for i=1:n_bus
-                    com = a_bus{i}.a_Component;
-                    n_com = numel(com);
-
-                    sim_com = cell(n_com,1);
-                    for j=1:n_com
-                        idx_com = com{j}.iv_odeX;
-                        sim_com{j} = odeTable(:, idx_com);
-                        sim_com{j}.Properties.VariableNames = com{j}.str_x;
-                    end
-
-                    sim(i).X = sim_com;            
-
-                    sim(i).ReV = odeTable(:,a_bus{i}.iv_odeX(1));
-                    sim(i).ImV = odeTable(:,a_bus{i}.iv_odeX(2));
-
-                    sim(i).ReV.Properties.VariableNames = "Real";
-                    sim(i).ImV.Properties.VariableNames = "Imag";
-
-                    sim(i).t = obj.odeResults{:,1};
-                end                
-
-                obj.odeSimStruct = sim;
-                
-            end
-
-        end
-
-        function clear_simResults(obj)
-            obj.odeResults = [];
-        end
+    methods (Access=private)                       
 
         function initialize_odeSimulator(obj)            
             % A method for assigning state variable numbers to each device and bus.
@@ -326,7 +247,7 @@ classdef (Sealed = true) odeSimulator < handle
                     if isa(a_Comp{j}, 'component.generator.abstract') && ~a_Comp{j}.isConnect
                         c_idx = a_Comp{j}.iv_odeX;
                         b_idx = a_bus{i}.iv_odeX;
-                        [x0(c_idx), ~] = a_Comp{j}.get_equilibrium([1,1j]*x(b_idx), 0+1j*0);                         
+                        [x0(c_idx), ~] = a_Comp{j}.get_equilibrium([1,1j]*x0(b_idx), 0+1j*0);                         
 
                         M0(c_idx, c_idx) = a_Comp{j}.rm_odeMass([], [], x0(b_idx), []);
                     end
@@ -339,7 +260,7 @@ classdef (Sealed = true) odeSimulator < handle
 
     methods
 
-        function [tab, stc] = simulate(obj)
+        function out = simulate(obj)
             
             o = ode;
         
@@ -359,44 +280,38 @@ classdef (Sealed = true) odeSimulator < handle
             options = odeset("RelTol", o.RelativeTolerance, "AbsTol", o.AbsoluteTolerance);                        
 
             tp = 1;
-            np = size(obj.ODEvnt,2);
-
-            obj.clear_simResults();
+            np = size(obj.ODEvnt,2);                   
 
             x0   = [];
             Mass = [];
 
             while tp <= np          
 
-                TT = obj.odeTimeTable(tp,:); % Retrieving events related to ground faults and circuit tripping.                                               
+                % Retrieving events related to ground faults and circuit tripping.                                               
+                TT = obj.odeTimeTable(tp,:); 
 
                 odeEvents = obj.ODEvnt( TT{:,3:end} );                
+
+                t1 = TT{1, 't1'};
+                t2 = TT{1, 't2'};
+
+                setEventCondition(odeEvents{:}, "TimePhase", [t1,t2], "Iteration", tp);
 
                 [EM, RM, lv_FBorTC, x0, Mass] = getInitialCondition(odeEvents{:}, "x0", x0, "M0", Mass);
 
                 o.InitialValue = x0;                
-                o.ODEFcn       = @(t,x) obj.getODEFunction(t,x,RM,EM,~lv_FBorTC);                                       
-                o.Jacobian     = @(t,x) obj.getODEJacobian(t,x,RM,EM,~lv_FBorTC);
                 o.MassMatrix   = Mass;                
+                o.ODEFcn       = @(t,x) obj.getODEFunction(t,x,RM,EM,~lv_FBorTC);                                       
+                o.Jacobian     = @(t,x) obj.getODEJacobian(t,x,RM,EM,~lv_FBorTC);                
             
-                try
-                    t1 = TT{1, 't1'};
-                    t2 = TT{1, 't2'};
-
-                    setEventCondition(odeEvents{:}, "TimePhase", [t1,t2], "Iteration", tp);
-
+                try                    
                     startTime = tic;
                     stopTime  = 5;
                     SimulationTimer = @(t,y) checkSimulationTime(t,y,startTime,stopTime);
                     o.EventDefinition = odeEvent("EventFcn", SimulationTimer, "Response", "stop");
                     
-                    sol = solve(o, 0, t2-t1); % When solving the equation, specify [0, duration of each phase]
-
-                    et = isequal(tp,np);     
-
-                    sim_sol.Time = sol.Time + t1;
-                    sim_sol.Solution = sol.Solution;
-                    obj.manage_simResults(sim_sol, RM, EM, et);
+                    % When solving the equation, specify [0, duration of each phase]                                        
+                    sol = solve(o, 0, t2-t1); 
                 catch me                    
 
                     splitMSG = strsplit(me.identifier,':');                                        
@@ -422,27 +337,24 @@ classdef (Sealed = true) odeSimulator < handle
 
                     % After performing error bundling, solve the DAE system again.
                     try
-                        [t,y] = ode15s(ODEfcn, time, x0, options);
-                        sol = struct(    'Time', t.', ...
-                                     'Solution', y.');
-                           
-                        obj.manage_simResults( sol, RM, EM, isequal(tp,np) )
+                        [t,y] = ode15s(ODEfcn, [0,t2-t1], x0, options);
+                        sol = struct('Time', t.', 'Solution', y.');
 
                     catch ME
                         error(msg('GUILDA:odeSimulator:UnfeasibleDAE'))
                     end
                 end
                                 
-
-                tp = tp + 1;
+                obj.odeResult{tp} = Event2State( odeEvents{:}, "ODEResults", struct('Time', (sol.Time + t1)', 'Solution', (EM * sol.Solution).'), "ODEYmatrix", obj.odeYmat );                                
+                
 
                 [x0, Mass] = obj.getNextPhase(reshape(sol.Solution(:,end),[],1), o.MassMatrix.MassMatrix, RM, EM);
-            end
 
-            tab = obj.odeResults;
-            stc = obj.odeSimStruct;
+                tp = tp + 1;
+            end        
 
-            clear startTime
+            out = odeSimulationResult(obj.odeNetwork, obj.odeResult);            
+
         end
     end
 end
