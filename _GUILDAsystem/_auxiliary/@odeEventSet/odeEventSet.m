@@ -93,7 +93,7 @@ classdef (Sealed = true) odeEventSet < handle
     end    
 
     methods (Access={?odeSimulator})
-        function [odeTimeTable, events] = table(obj, varargin)
+        function [odeTimeTable, events] = table(obj, varargin, opt)
             % A method that generates a timetable for time events specified by a structure.
             % When performing dynamic simulation, events are extracted based on this timetable,
             % and the system is constructed and analyzed based on the extracted events.
@@ -112,6 +112,9 @@ classdef (Sealed = true) odeEventSet < handle
             arguments (Input, Repeating)
                 varargin {mustBeA(varargin, 'odeEventSet')}
             end
+            arguments
+                opt.time (:,1) double
+            end
 
             odeEvents = [{obj},varargin];
             
@@ -125,7 +128,7 @@ classdef (Sealed = true) odeEventSet < handle
                 end
             end
                         
-            all_time = getTimeSpan(times);                   
+            all_time = getTimeSpan(times, opt.time);                   
             
             vtab = size(all_time,1);
             rtab = size(times,1);

@@ -33,14 +33,15 @@ classdef (Sealed = true) odeSimulator < handle
     end
 
     methods
-        function obj = odeSimulator(net, varargin, opt)            
+        function obj = odeSimulator(net, time, varargin, opt)            
             arguments                
                 net  (1,1) {mustBeA(net, 'PowerNetwork')}                
+                time (:,1) double = []
             end
             arguments (Input, Repeating)
                 varargin {mustBeA(varargin, 'odeEventSet')}
             end
-            arguments
+            arguments                
                 opt.?odeSimulator
             end                                    
             obj.odeNetwork = net;
@@ -61,7 +62,7 @@ classdef (Sealed = true) odeSimulator < handle
                 i=i+1;
             end
             
-            [obj.odeTimeTable, obj.ODEvnt] = table(varargin{:});
+            [obj.odeTimeTable, obj.ODEvnt] = table(varargin{:}, "time", time);
             obj.initialize_odeSimulator;
 
             obj.odeYmat = net.get_admittance_matrix.Variables;

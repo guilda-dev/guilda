@@ -1,8 +1,6 @@
 ev1 = odeEventSet("ev1", net, "TimeSpan", [3,3.01], "TripUnit", "SG1B002");
 
-o = odeSimulator(net, ev1);
-
-sol = o.simulate;
+sol = net.simulate([0,50], ev1);
 
 xsol = sol.odeResults;
 
