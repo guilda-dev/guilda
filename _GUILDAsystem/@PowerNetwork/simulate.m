@@ -1,4 +1,58 @@
 function [sim_t, sim_y] = simulate(obj, time, odeopt)
+% <@Desc>
+% Runs a time-domain dynamic simulation of the power network.
+% <@Role>
+% Simulation
+% <@Abst>
+% Constructs the ODE system and integrates over the given time table.
+% <@Signatures>
+% [
+%   "[sim_t, sim_y] = net.simulate(time)"
+% ]
+% <@varargin>
+% [
+%   {
+%     "Name": "time",
+%     "Type": "table",
+%     "Description": "Simulation time table specifying Time, State, Bus, and disconnect info for each stage.",
+%     "Required": false,
+%     "Default": "default steady-state table"
+%   },
+%   {
+%     "Name": "Solver",
+%     "Type": "matlab.ode.SolverID",
+%     "Description": "ODE solver to use (e.g., \"ode15s\").",
+%     "Required": false,
+%     "Default": "\"ode15s\""
+%   },
+%   {
+%     "Name": "AbsoluteTolerance",
+%     "Type": "double scalar",
+%     "Description": "Absolute tolerance for the ODE solver.",
+%     "Required": false,
+%     "Default": "1e-6"
+%   },
+%   {
+%     "Name": "RelativeTolerance",
+%     "Type": "double scalar",
+%     "Description": "Relative tolerance for the ODE solver.",
+%     "Required": false,
+%     "Default": "1e-3"
+%   }
+% ]
+% <@varargout>
+% [
+%   {
+%     "Name": "sim_t",
+%     "Type": "double vector",
+%     "Description": "Time vector of the simulation result."
+%   },
+%   {
+%     "Name": "sim_y",
+%     "Type": "double matrix",
+%     "Description": "State matrix of the simulation result (rows = states, columns = time steps)."
+%   }
+% ]
     arguments
         obj 
         time (:,:) {mustBeA(time, "table")} = table([0,50],"steady state",0,[0 0], 'RowNames',{'Time Stage1'}, 'VariableNames',{'Time','State','Bus','Dis connect(Bus / Component No.)'})        

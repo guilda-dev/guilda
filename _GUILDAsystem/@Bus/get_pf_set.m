@@ -1,6 +1,22 @@
 function tab_PFset = get_pf_set(obj)
-% get the settings for power-flow calculations
-
+% <@Desc>
+% Returns the power flow settings for this bus (bus type, voltage, and P/Q values).
+% <@Role>
+% Power Flow
+% <@Abst>
+% Determines bus type (slack/PV/PQ) and collects power flow settings from the bus and its components.
+% <@Signatures>
+% [
+%   "tab_PFset = bus.get_pf_set()"
+% ]
+% <@varargout>
+% [
+%   {
+%     "Name": "tab_PFset",
+%     "Type": "table",
+%     "Description": "Table with columns Type, Varg, V, P, Q for the bus power flow settings."
+%   }
+% ]
     tab_V = obj.para_powerflow;
     a_com = obj.a_Component;
     if obj.l_isSlack

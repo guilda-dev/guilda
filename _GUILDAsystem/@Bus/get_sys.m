@@ -1,5 +1,41 @@
 function sys = get_sys(obj, opt)
-    arguments
+% <@Desc>
+% Computes the linearized state-space model of this bus (combining all connected components).
+% <@Role>
+% Linearize
+% <@Abst>
+% Aggregates component state-space models into a bus-level LTI system.
+% <@Signatures>
+% [
+%   "sys = bus.get_sys()",
+%   "sys = bus.get_sys(port=\"V2I\")",
+%   "sys = bus.get_sys(port=\"I2V\", full=true)"
+% ]
+% <@varargin>
+% [
+%   {
+%     "Name": "port",
+%     "Type": "string scalar",
+%     "Description": "Port convention: \"V2I\" (voltage-to-current) or \"I2V\" (current-to-voltage).",
+%     "Required": false,
+%     "Default": "\"V2I\""
+%   },
+%   {
+%     "Name": "full",
+%     "Type": "logical scalar",
+%     "Description": "If true, includes full state/input/output matrices. If false, returns reduced output.",
+%     "Required": false,
+%     "Default": "false"
+%   }
+% ]
+% <@varargout>
+% [
+%   {
+%     "Name": "sys",
+%     "Type": "ss",
+%     "Description": "Linearized state-space model for the bus with named signals."
+%   }
+% ]
         obj 
         opt.port (1,1) {mustBeMember(opt.port, ["V2I", "I2V"])} = "V2I"
         opt.full (1,1) logical = false

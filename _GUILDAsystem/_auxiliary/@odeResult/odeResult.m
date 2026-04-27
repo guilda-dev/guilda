@@ -1,30 +1,60 @@
 classdef odeResult < dynamicprops & matlab.mixin.CustomDisplay
-%
-%ーフィールドー
-%       既存の"net.simulate()"の出力結果に以下のフィールドを追加
-%          t   : サンプリング時間のデータ
-%          X   : 各機器の状態の応答データ
-%          V   : 各母線の電圧の応答データ
-%          I   : 各母線の電流の応答データ
-%        Xcon  : 各制御機の状態の応答データ
-%        Ucon  : 各制御機の出力の時系列データ
-%       Uinput : 条件設定に外部入力の応答データ
-%       Utotal : 各機器への入力の時系列データ(Ucon+Uinput)
-%       power  : 各母線の電力の応答データ
-%
+% <@Desc>
+% Container class for time-domain simulation results from PowerNetwork.simulate().
+% Stores response data for bus voltages, currents, component states, controller states,
+% and power values. Supports table or array data format via data_format property.
+% <@Role>
+% auxiliary
+% <@Constructor>
+% odeResult(out, net, print_readme)
+%  i.e.
+%  >> result = odeResult(out, net)
+%      - out:          simulation output struct from odeSimulator
+%      - net:          PowerNetwork object used in simulation
+%      - print_readme: whether to display usage instructions (default: false)
 
     properties
+
+        % <@Desc> Output data format: 'table' returns table, 'array' returns numeric array.
+        % <@Role> Simulation
+        % <@Type> char
+        % <@Size> 1x1
         data_format(1,:) char {mustBeMember(data_format,{'array','table'})} = 'table';
+
+        % <@Desc> Plot and display settings for result visualization.
+        % <@Role> Simulation
+        % <@Type> struct
+        % <@Size> 1x1
         setting
+
+        % <@Desc> ODE simulation options used during the simulation run.
+        % <@Role> Simulation
+        % <@Type> struct
+        % <@Size> 1x1
         options
     end
 
     properties(SetAccess=private)
+
+        % <@Desc> Processed simulation output data struct with all response fields.
+        % <@Role> Simulation
+        % <@Type> struct
+        % <@Size> 1x1
         out_data
+
+        % <@Desc> Network information struct captured at the time of simulation.
+        % <@Role> Simulation
+        % <@Type> struct
+        % <@Size> 1x1
         net_data
     end
 
     properties(Access=private)
+
+        % <@Desc> Internal struct storing option class data (input, fault, parallel).
+        % <@Role> Simulation
+        % <@Type> struct
+        % <@Size> 1x1
         option_class = struct();
     end
 

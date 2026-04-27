@@ -1,51 +1,221 @@
 classdef Bus < PowerSystemModel
+% <@Desc>
+% Represents a bus (node) in the power system model.
+% It stores connected Component objects, equilibrium state values, and
+% power flow settings. Bus objects are created and managed by the PowerNetwork class.
+% <@Role>
+% Power System Model
+% <@Constructor>
+% Bus instances are created via PowerNetwork.add_bus().
+%  i.e.
+%  >> bus = net.add_bus(Tag="B", V=1.0, Varg=0, Gshunt=0, Bshunt=0)
+%      - Tag:     tag prefix string (default: "B")
+%      - V:       voltage magnitude at steady state (default: 1.0)
+%      - Varg:    voltage angle at steady state [rad] (default: 0)
+%      - Gshunt:  shunt conductance (default: 0)
+%      - Bshunt:  shunt susceptance (default: 0)
+%      - Vmin:    minimum voltage limit (default: 0.5)
+%      - Vmax:    maximum voltage limit (default: 1.5)
+%      - baseKV:  base voltage [kV] (default: 230)
+%      - baseMVA: base power [MVA] (default: 100)
 
 %% Properties
     properties
-        l_isSlack      (1,1) logical = false;   % Flag if bus is Slack Bus
+
+        % <@Desc> Flag indicating whether this bus is designated as the Slack Bus.
+        % <@Role> PowerFlow
+        % <@Type> logical
+        % <@Size> 1x1
+        l_isSlack      (1,1) logical = false;
     end
     properties (SetAccess=protected)
-        a_PowerNetwork                          % Layer Structure
-        a_Component                             % Layer Structure
-        cv_Xequilibrium     = zeros(0,1);       % Steady State
-        c_Vequilibrium      = 1;                % Steady State
-        c_Iequilibrium      = 0;                % Steady State
+
+        % <@Desc> PowerNetwork object to which this bus belongs.
+        % <@Role> Layer Structure
+        % <@Type> PowerNetwork
+        % <@Size> 1x1
+        a_PowerNetwork
+
+        % <@Desc> Cell array of Component objects connected to this bus.
+        % <@Role> Layer Structure
+        % <@Type> Component cell array
+        % <@Size> Nx1
+        a_Component
+
+        % <@Desc> Steady-state values of the bus state variables.
+        % <@Role> Steady State
+        % <@Type> double
+        % <@Size> Nx1
+        cv_Xequilibrium     = zeros(0,1);
+
+        % <@Desc> Steady-state bus voltage (complex phasor).
+        % <@Role> Steady State
+        % <@Type> complex double
+        % <@Size> 1x1
+        c_Vequilibrium      = 1;
+
+        % <@Desc> Steady-state injection current at this bus (complex phasor).
+        % <@Role> Steady State
+        % <@Type> complex double
+        % <@Size> 1x1
+        c_Iequilibrium      = 0;
     end
     properties (Dependent)
-        str_bustype                             % PowerFlow
-        cv_Xequilibrium_all                     % Steady State
-        tab_parameter                           % Parameter
+
+        % <@Desc> Power flow bus type string: "PQ", "PV", or "Slack".
+        % <@Role> PowerFlow
+        % <@Type> string
+        % <@Size> 1x1
+        str_bustype
+
+        % <@Desc> Steady-state values including all connected controller states.
+        % <@Role> Steady State
+        % <@Type> double
+        % <@Size> Nx1
+        cv_Xequilibrium_all
+
+        % <@Desc> Parameter table containing all bus parameters (dynamics, operation, powerflow, OPF, status, graph).
+        % <@Role> Parameter
+        % <@Type> table
+        % <@Size> 1x1
+        tab_parameter
     end
     properties (Hidden,SetAccess=protected)
-        para_dynamics                           % Parameter
-        para_OPF                                % Parameter
-        para_powerflow                          % Parameter
-        para_operation                          % Parameter
-        para_status                             % Parameter
-        para_graph                              % Parameter
+
+        % <@Desc> Parameter container for bus dynamics settings (Gshunt, Bshunt).
+        % <@Role> Parameter
+        % <@Type> Parameter
+        % <@Size> 1x1
+        para_dynamics
+
+        % <@Desc> Parameter container for AC OPF initialization settings.
+        % <@Role> Parameter
+        % <@Type> Parameter
+        % <@Size> 1x1
+        para_OPF
+
+        % <@Desc> Parameter container for power flow settings (V, Varg).
+        % <@Role> Parameter
+        % <@Type> Parameter
+        % <@Size> 1x1
+        para_powerflow
+
+        % <@Desc> Parameter container for bus operating limits (baseKV, baseMVA, Vmin, Vmax).
+        % <@Role> Parameter
+        % <@Type> Parameter
+        % <@Size> 1x1
+        para_operation
+
+        % <@Desc> Parameter container for bus status flags (fault).
+        % <@Role> Parameter
+        % <@Type> Parameter
+        % <@Size> 1x1
+        para_status
+
+        % <@Desc> Parameter container for graph plotting settings (Xaxis, Yaxis, Marker).
+        % <@Role> Parameter
+        % <@Type> Parameter
+        % <@Size> 1x1
+        para_graph
     end
     properties (Dependent, Access=protected)
-        parent                                  % Layer Structure
-        children                                % Layer Structure
+
+        % <@Desc> Parent PowerNetwork object in the layer hierarchy.
+        % <@Role> Layer Structure
+        % <@Type> PowerNetwork
+        % <@Size> 1x1
+        parent
+
+        % <@Desc> Child components and parameter objects in the layer hierarchy.
+        % <@Role> Layer Structure
+        % <@Type> cell array
+        % <@Size> Nx1
+        children
     end
     properties (SetAccess={?odeSimulator, ?Component}, Hidden)
+
+        % <@Desc> ODE index mapping for bus state variables.
+        % <@Role> Simulation
+        % <@Type> double
+        % <@Size> Nx1
         iv_odeX  = zeros(0,1);
+
+        % <@Desc> ODE index mapping for bus input variables.
+        % <@Role> Simulation
+        % <@Type> double
+        % <@Size> Nx1
         iv_odeU  = zeros(0,1);
+
+        % <@Desc> Initial ODE state vector [Re(V); Im(V)] for the bus.
+        % <@Role> Simulation
+        % <@Type> double
+        % <@Size> 2x1
         rv_odeX0 = zeros(2,1);
     end
     properties (Access=public)
+
+        % <@Desc> User-defined initial state values for the bus simulation.
+        % <@Role> Simulation
+        % <@Type> double
+        % <@Size> Nx1
         rv_odeInit
     end
     properties (Access={?odeSimulator})
+
+        % <@Desc> Flag indicating whether a fault is currently applied to this bus.
+        % <@Role> Simulation
+        % <@Type> logical
+        % <@Size> 1x1
         l_isFault (1,1) logical = false
     end
     properties (Access={?odeSimulator, ?odeLinearizer})
+
+        % <@Desc> Flag indicating whether this bus is a non-unit bus (no connected Component).
+        % <@Role> Simulation
+        % <@Type> logical
+        % <@Size> 1x1
         l_isNonUnit (1,1) logical = false
     end
 
 %% Constructor
     methods (Access={?PowerNetwork ?Bus})
         function obj = Bus(tag,opt)
+        % <@Desc>
+        % Creates a Bus instance with the given tag and parameter options.
+        % This constructor is called internally by PowerNetwork.add_bus().
+        % <@Role>
+        % Constructor
+        % <@Abst>
+        % Initialize all parameter containers and register bus parameters.
+        % <@Signatures>
+        % [
+        %   "obj = Bus(tag, opt)"
+        % ]
+        % <@varargin>
+        % [
+        %   {
+        %     "Name": "tag",
+        %     "Type": "string scalar",
+        %     "Description": "Tag string to identify this bus.",
+        %     "Required": true,
+        %     "Default": "-"
+        %   },
+        %   {
+        %     "Name": "opt",
+        %     "Type": "struct",
+        %     "Description": "Option struct with bus parameters (V, Varg, Gshunt, Bshunt, Vmin, Vmax, baseKV, baseMVA, etc.).",
+        %     "Required": true,
+        %     "Default": "-"
+        %   }
+        % ]
+        % <@varargout>
+        % [
+        %   {
+        %     "Name": "obj",
+        %     "Type": "Bus",
+        %     "Description": "Created Bus instance."
+        %   }
+        % ]
             % arguments is satisfied in the caller function (PowerNetwork.add_bus), so no need to validate here.
             % arguments
             %     tag                   (1,1) string = "Bus";
