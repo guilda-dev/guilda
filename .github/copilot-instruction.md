@@ -101,33 +101,6 @@ For each property, include the following information in the help comments using 
 % <@Size> data size     e.g. 1x1, 1xN, MxN
 ```
 
-
----
-
-# Git Branching Rules (Branch Strategy)
-The following branch strategy must be followed for development and release workflows.
-
-## Branch Definitions
-- **`main`**
-  - Production/public branch with validated functionality.
-  - Must always remain stable.
-
-- **`beta`**
-  - Development branch for new features and upcoming releases.
-  - Merge into `main` after verification is complete.
-
-- **`develop/xx-yyyy`**
-  - Working branch for feature changes and bug fixes.
-  - Must branch from `beta` and merge back into `beta` after completion.
-
-## Workflow and Naming Rules
-1. **Create (Checkout)**: Always branch from `beta`.
-2. **Naming**: `develop/{IssueNumber}-{implementation}`
-   - Example: `develop/12-add_opf_solver`
-3. **Merge**:
-   - Create a Pull Request after implementation is complete.
-   - Merge into `beta` after review and verification.
-
 ---
 
 # Design and Implementation Guidelines
