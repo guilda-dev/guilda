@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the class 'odeEventSet'.-->
+<rsccat version="2" locale="en" product="GUILDA">
+    <message>        
+        <entry key="InvalidInputType">Input arguments must be function handles or of type double.</entry>        
+    </message>
+</rsccat>

@@ -1,26 +1,32 @@
 classdef LocalController < PowerSystemModel
-    properties(Dependent)
-        tab_parameter
+    properties(Abstract, Constant, Hidden=true)
+        key      (1,1) string 
+        str_x    (:,1) string
+        str_u    (:,1) string 
+        str_y    (:,1) string
+        str_para (:,1) string
     end
-    properties(Dependent, Access=protected)
-        parent 
-        children
-    end
-    properties(SetAccess=protected)
-        a_Component 
-        para_dynamics
-    end
+    methods (Abstract)        
+        dx = fcn_dx(obj, t, x, V, u, param, omega0)
+        y  = fcn_y(obj, t, x, V, u, param, omega0)
+        M  = fcn_Mass(obj, t, x, V, u, param, omega0)
 
-    properties(SetAccess=protected)           
+        set_odefcn(obj,omega0)
+    end   
+
+    properties(SetAccess=protected)
+        a_Component       
         a_LocalController = cell(0,1)          
-        rm_odeMass        = @(t,x,V,u)[]                  
-        fv_odeDiff        = @(t,x,V,u)[]                                   
-        fv_odeY           = @(t,x,V,u)[]                                   
-        JacobiA           = @(t,x,V,u)[]                   
-        JacobiB           = @(t,x,V,u)[]                   
-        JacobiC           = @(t,x,V,u)[]                   
-        JacobiD           = @(t,x,V,u)[]                           
     end
+    properties(SetAccess=protected)                   
+        rm_odeMass       
+        fv_odeDiff       
+        fv_odeConY
+        JacobiA        
+        JacobiB        
+        JacobiC        
+        JacobiD        
+    end    
     properties (SetAccess={?odeSimulator, ?Component}, Hidden)
         iv_odeX  = zeros(0,1);
         iv_odeU  = zeros(0,1);
@@ -29,25 +35,38 @@ classdef LocalController < PowerSystemModel
     properties(SetAccess=protected)
         cv_Xequilibrium (:,1) double = zeros(0,1)   
         cv_Uequilibrium (:,1) double = zeros(0,1)   
+    end    
+    properties(SetAccess=protected)
+        para_dynamics
+    end
+    properties(Dependent)
+        tab_parameter
+    end
+    properties(Dependent, Access=protected)
+        parent 
+        children
     end
     
     methods
         function obj = LocalController(tag)
             obj.str_tag = tag;
             obj.para_dynamics = Parameter(obj,"dynamics");
+        end        
+    end    
+    methods (Access={?Component,?LocalController})
+        function add_local_controller(obj,a_Controller)
+            obj.a_LocalController = a_Controller;
         end
-
+        function set_parent(obj,a_Component)
+            obj.a_Component = a_Component; 
+        end
     end
-    methods (Abstract)
-        dx = fcn_dx(obj, t, x, V, u, param, omega0)
-        y  = fcn_y(obj, t, x, V, u, param, omega0)
-        M  = fcn_Mass(obj, t, x, V, u, param, omega0)
-    end
-    methods
+    methods        
         function p = get.parent(obj)
             p = obj.a_Component;
         end
-        function p = get.children(obj) %#ok
+        function p = get.children(obj) 
+            p = obj.a_LocalController;
         end
         function tab = get.tab_parameter(obj)
             tab_tab  = obj.para_dynamics.tab_parameter;

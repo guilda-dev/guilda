@@ -1,13 +1,15 @@
 classdef (Sealed = true) PSS1 < LocalController
-    properties (Constant, Hidden=true)             
+    properties (Constant, Hidden=true)
+        key      = "pss"
         str_x    = ["xiWS"; "xi1"; "xi2"];
         str_u    = ["omega"];   
         str_y    = ["Vpss"];
         str_para = ["kpss"; "tWS"; "tn1"; "td1"; "tn2"; "td2"; "Vpss_min"; "Vpss_max"];
     end    
     methods
-        function obj = PSS1(param)
-            arguments                
+        function obj = PSS1(tag, param)
+            arguments            
+                tag            (1,1) string
                 param.kpss     (1,1) double = 20
                 param.tWS      (1,1) double = 10
                 param.tn1      (1,1) double = 0.05
@@ -18,7 +20,7 @@ classdef (Sealed = true) PSS1 < LocalController
                 param.Vpss_max (1,1) double = inf
                 
             end            
-            obj@LocalController("CP")                                    
+            obj@LocalController("CP"+tag)                                    
             
             obj.para_dynamics.add_entry(   "kpss", param.kpss    , "double", ...
                                             "tWS", param.tWS     , "double", ...
@@ -27,22 +29,24 @@ classdef (Sealed = true) PSS1 < LocalController
                                             "tn2", param.tn2     , "double", ...
                                             "td2", param.td2     , "double", ...
                                        "Vpss_max", param.Vpss_max, "double", ...
-                                       "Vpss_min", param.Vpss_min, "double");
-            
-            params   = obj.tab_parameter.dynamics{:,obj.str_para};
-            obj.fv_odeDiff = @(t, x, V, u) obj.fcn_dx(t, x, V, u, params);
-            obj.fv_odeY    = @(t, x, V, u) obj.fcn_y(t, x, V, u, params);
-            obj.rm_odeMass = @(t, x, V, u) obj.fcn_Mass(t, x, V, u, params);
-
-            obj.JacobiA = @(t, x, V, u) A_PSS1(t, x, V, u, param);
-            obj.JacobiB = @(t, x, V, u) B_PSS1(t, x, V, u, param);
-            obj.JacobiC = @(t, x, V, u) C_PSS1(t, x, V, u, param);
-            obj.JacobiD = @(t, x, V, u) D_PSS1(t, x, V, u, param);
+                                       "Vpss_min", param.Vpss_min, "double");                        
 
         end        
-        function [cv_Xequilibrium, cv_Uequilibrium] = get_equilibrium(obj, V, u) %#ok
-            cv_Xequilibrium = obj.dic_Xequilibrium.insert(obj.str_x, zeros(3,1));
-            cv_Uequilibrium = obj.dic_Uequilibrium.insert(obj.str_u,          0);
+        function set_odefcn(obj, omega0)
+            params = obj.tab_parameter.dynamics{:,obj.str_para};
+            obj.fv_odeDiff = @(t, x, V, u) obj.fcn_dx(t, x, V, u, params, omega0);
+            obj.fv_odeConY = @(t, x, V, u) obj.fcn_y(t, x, V, u, params, omega0);
+            obj.rm_odeMass = @(t, x, V, u) obj.fcn_Mass(t, x, V, u, params, omega0);
+
+            obj.JacobiA = @(t, x, V, u) A_PSS1(t, x, V, u, param, omega0);
+            obj.JacobiB = @(t, x, V, u) B_PSS1(t, x, V, u, param, omega0);
+            obj.JacobiC = @(t, x, V, u) C_PSS1(t, x, V, u, param, omega0);
+            obj.JacobiD = @(t, x, V, u) D_PSS1(t, x, V, u, param, omega0);
+
+        end
+        function get_equilibrium(obj, V, u) %#ok
+            obj.cv_Xequilibrium = zeros(3,1);
+            obj.cv_Uequilibrium = 0;
         end
     end
 

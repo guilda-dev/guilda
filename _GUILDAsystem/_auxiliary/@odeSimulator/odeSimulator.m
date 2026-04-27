@@ -12,7 +12,7 @@ classdef (Sealed = true) odeSimulator < handle
         NonNegativeVariables {mustBePositive, mustBeInteger} = []        
         DelayDefinition = []        
         Sensitivity     = []        
-        EventDefinition = []        
+        EventDefinition = []
         EquationType  (1,1) string {mustBeMember(EquationType, ["standard","fullyimplicit","delay"])} = "standard"        
         Solver        matlab.ode.SolverID = "ode15s"                
         SolverOptions matlab.ode.Options  = matlab.ode.options.ODE15s         
@@ -25,21 +25,25 @@ classdef (Sealed = true) odeSimulator < handle
         odeTimeTable
         odeResults
         odeSimStruct
+        odeYmat
     end
 
     properties (SetAccess=private, Hidden)
-        % このクラスのバージョン       
+        % Version of this class       
         Ver (1,1) double = 1.1
     end
 
     methods
-        function obj = odeSimulator(net, time, evs, opt)            
+        function obj = odeSimulator(net, varargin, opt)            
             arguments                
-                net  (1,1) {mustBeA(net, 'PowerNetwork')}
-                time 
-                evs 
+                net  (1,1) {mustBeA(net, 'PowerNetwork')}                
+            end
+            arguments (Input, Repeating)
+                varargin {mustBeA(varargin, 'odeEventSet')}
+            end
+            arguments
                 opt.?odeSimulator
-            end                        
+            end                                    
             obj.odeNetwork = net;
 
             cls = metaclass(obj);
@@ -57,95 +61,26 @@ classdef (Sealed = true) odeSimulator < handle
                 end
                 i=i+1;
             end
-
-            obj.manage_time(time, evs);
+            
+            [obj.odeTimeTable, obj.ODEvnt] = table(varargin{:});
             obj.initialize_odeSimulator;
+
+            obj.odeYmat = net.get_admittance_matrix.Variables;
         end        
+        
     end
     
-    methods (Access=private)       
-
-        function manage_time(obj, time, varargin)
-            % 構造体で指定される時間イベントに対して、タイムテーブルを生成するメソッド.
-            % 動的シミュレーションを行う際には、このタイムテーブルを元にイベントを抽出し、
-            % 抽出したイベントに基づいてシステムを構築・解析する.
-            %
-            % << 生成されるタイムテーブル >>
-            %      Time   | event1 | event2 | event3 | event4 | event5 ...  
-            %   ----------+--------+--------+--------+--------+-----------
-            %     0~10[s] |   1    |    0   |    0   |   0    |   0   
-            %    10~12[s] |   0    |    1   |    0   |   1    |   0   
-            %    12~15[s] |   0    |    0   |    1   |   1    |   1   
-            %       :         :         :        :       :        :
-            %
-            arguments
-                obj
-                time (:,2) double = zeros(0,2)                
-            end
-            arguments (Input, Repeating)
-                varargin 
-            end
-            
-            times = zeros(nargin-2,2);
-            for k=1:nargin-2
-                argi = varargin{k}.Time;
-                if isscalar(argi)
-                    times(k,:) = ones(1,2)*argi;
-                else
-                    times(k,:) = argi;
-                end
-            end
-                        
-            utimes = reshape(times, [], 1);
-            if isempty(time) || ( max(time) <= max(utimes) )               
-                time = [0, max(utimes)+10];
-            end
-            utime = unique([time(1); utimes; time(2)], "sorted", "first");
-        
-            all_time = [utime(1:end-1), utime(2:end)];
-            
-            vtab = size(all_time,1);
-            rtab = size(times,1);
-        
-            tab = array2table(false(vtab,rtab));
-            for i=1:vtab
-                fti = all_time(i,1);
-                eti = all_time(i,2);
-                for j=1:rtab
-                    ftj = times(j,1);
-                    etj = times(j,2);
-        
-                    if (fti < etj) && (ftj < eti)
-                        tab{i,j} = true;
-                    elseif (fti == ftj) && (fti == etj)
-                        tab{i,j} = true;
-                    end
-                end
-            end
-
-            if all(~tab{1,:})
-                varargin = [{eventset("Time", all_time(1,:))}, varargin];
-                tab = [array2table([true; false(vtab-1,1)], "VariableNames", "Var0"),tab];                
-            end
-
-            if all(~tab{end,:})
-                varargin = [varargin, {eventset("Time", all_time(end,:))}];
-                tab = [tab,array2table([false(vtab-1,1); true], "VariableNames", "Var "+"End")];
-            end
-            
-            obj.ODEvnt = [obj.ODEvnt, varargin];
-            obj.odeTimeTable = [array2table(all_time, "VariableNames", ["t1","t2"]), tab];
-        end
+    methods (Access=private)               
 
         function clear_event(obj)
             obj.ODEvnt = [];
         end
      
         function manage_simResults(obj, sol, RM, EM, et)
-            % シミュレーション結果を管理するためのメソッド.
-            % テーブル型の変数として管理される.
+            % Methods for managing simulation results.
+            % Managed as table-type variables.
             % 
-            % <<シミュレーション結果の管理>>
+            % << Management of Simulation Results >>
             %
             %     Time [s]   | delta | omega |  eq  |  ed  | psiq ...  
             %   -------------+-------+-------+------+------+---------
@@ -203,20 +138,7 @@ classdef (Sealed = true) odeSimulator < handle
                     sim(i).ImV.Properties.VariableNames = "Imag";
 
                     sim(i).t = obj.odeResults{:,1};
-                end
-
-                str_x = cell(n_bus,1);
-                str_v = cell(n_bus,1);
-                for i=1:n_bus
-                    a_comp = a_bus{i}.a_Component;                        
-
-                    str_v{i} = ["Vre";"Vim"]+"_"+string(a_bus{i});
-                    str_x{i} = cell2mat( cellfun(@(c) string(c)+"_"+c.str_x, a_comp, 'UniformOutput', false) );                            
-                end        
-                vnames = cell2mat([str_x;str_v]);
-
-                % 一時的なもの
-                % obj.odeResults.Properties.VariableNames = ["Time";vnames];                                
+                end                
 
                 obj.odeSimStruct = sim;
                 
@@ -229,8 +151,8 @@ classdef (Sealed = true) odeSimulator < handle
         end
 
         function initialize_odeSimulator(obj)            
-            % 各機器、母線に対して状態変数の番号を割り当てるメソッド.
-            % odeソルバーによる解析を行う前に実行する.
+            % A method for assigning state variable numbers to each device and bus.
+            % Execute this before performing analysis using the ODE solver.         
 
             bus = obj.odeNetwork.a_Bus;
 
@@ -241,9 +163,12 @@ classdef (Sealed = true) odeSimulator < handle
                 for j=1:numel(comp)
                     nx   = length(comp{j}.str_x);                        
                     idx_ = idx_ + nx;
-        
-                    if comp{j}.isController
-                        con = comp{j}.a_LocalController{1};
+
+                    comp{j}.X_offset = zeros(size(comp{j}.str_x));
+                    comp{j}.U_offset = zeros(size(comp{j}.str_u));
+
+                    if ~isempty(comp{j}.a_LocalController)
+                        con = comp{j}.a_LocalController;
         
                         con_nx = length(con.str_x);
                         con.iv_odeX = idx_ + (1:con_nx).';
@@ -251,8 +176,8 @@ classdef (Sealed = true) odeSimulator < handle
         
                         nx = nx + con_nx;
             
-                        if con.isController
-                            sub_con = con.a_LocalController{1};                    
+                        if ~isempty(con.a_LocalController)
+                            sub_con = con.a_LocalController;                    
         
                             sub_con_nx = length(sub_con.str_x);
                             con.iv_odeX = idx_ + (1:sub_con_nx).';
@@ -278,10 +203,10 @@ classdef (Sealed = true) odeSimulator < handle
 
     methods (Hidden=true, Access={?odeSimulator, ?PowerNetwork})
         
-        function odeX = getODEFunction(obj, t, x, Ymat, RM, EM, lg) %#ok 
-            % 解析対象のDAE系を取得するメソッド.            
+        function odeX = getODEFunction(obj, t, x, RM, EM, lg) %#ok 
+            % A method for retrieving the DAE system to be analyzed.            
             
-            x = EM*x; % 縮約されたものを元に戻す
+            x = EM*x; 
 
             odeX = zeros(size(x));
             odeV = zeros(size(obj.odeNetwork.a_Bus));
@@ -293,11 +218,32 @@ classdef (Sealed = true) odeSimulator < handle
                 bi = bus{i};
                 cm = bi.a_Component;
                 Vi = x(bi.iv_odeX);                                
-
+                
                 for j=1:numel(cm)
                     cj = cm{j};
                     xi = x(cj.iv_odeX);        
-                    ui = cj.cv_Uequilibrium + cj.U_offset;                    
+                    ui = cj.cv_Uequilibrium + cj.U_offset(t,xi);               
+
+                    con = cj.a_LocalController;
+                    if ~isempty(con)
+
+                        sub_con = con.a_LocalController;
+                        yi_sub_con = 0;
+                        if ~isempty(sub_con)
+                            xi_sub_con = xi(sub_con.iv_odeX);                            
+                            dx_sub_con = sub_con.fv_odeDiff(t, xi_sub_con, Vi, xi(2));
+                            yi_sub_con = sub_con.fv_odeConY(t, xi_sub_con, Vi, xi(2));
+
+                            odeX(sub_con.iv_odeX) = odeX(sub_con.iv_odeX) + dx_sub_con;
+                        end
+
+                        xi_con = xi(con.iv_odeX);
+                        dx_con = con.fv_odeDiff(t, xi_con, Vi, yi_sub_con);
+                        yi_con = con.fv_odeConY(t, xi_con, Vi, yi_sub_con);
+
+                        odeX(con.iv_odeX) = odeX(con.iv_odeX) + dx_con;
+                        ui(2) = yi_con;
+                    end                    
             
                     dx = cj.fv_odeDiff(t, xi, Vi, ui);
                     Ix = cj.isConnect * cj.fv_odeI(t, xi, Vi, ui);
@@ -308,19 +254,17 @@ classdef (Sealed = true) odeSimulator < handle
                 odeV(i) = [1,1j]*Vi;
             end        
 
-            I = Ymat*odeV;
+            I = obj.odeYmat*odeV;
             for i=1:numel(bus)
                 idx = bus{i}.iv_odeX;
                 odeX(idx) = odeX(idx) + [real(I(i)); imag(I(i))]; 
             end
-            
-            % odeX = RM*odeX; 
-            odeX = odeX(lg); % 地絡と解列が発生している部分を縮約する
+                        
+            odeX = odeX(lg); 
         end
                 
-        function jac = getODEJacobian(obj, t, x, Ymat, RM, EM, lg) %#ok    
-            % 解析対象のDAE系に関するヤコビアンを取得するメソッド.
-            % コントローラの接続にも対応できるように実装する予定.
+        function jac = getODEJacobian(obj, t, x, RM, EM, lg) %#ok    
+            % A method for obtaining the Jacobian of the DAE system under analysis.
 
             x = EM*x;
             
@@ -339,7 +283,7 @@ classdef (Sealed = true) odeSimulator < handle
                 for j=1:numel(cm)
                     cj = cm{j};
                     xi = x(cj.iv_odeX);        
-                    ui = cj.cv_Uequilibrium + cj.U_offset;                    
+                    ui = cj.cv_Uequilibrium + cj.U_offset(t,xi);                    
 
                     lx = [cj.iv_odeX; bi.iv_odeX];
                                 
@@ -354,8 +298,8 @@ classdef (Sealed = true) odeSimulator < handle
                 lv(2*i+[-1;0]) = bi.iv_odeX; 
             end                               
         
-            G = real(Ymat);
-            B = imag(Ymat);
+            G = real(obj.odeYmat);
+            B = imag(obj.odeYmat);
 
             lo = lv(1:2:end);
             le = lv(2:2:end);
@@ -364,118 +308,27 @@ classdef (Sealed = true) odeSimulator < handle
             jac(lo,le) = jac(lo,le) - B;
             jac(le,lo) = jac(le,lo) + B;
             jac(le,le) = jac(le,le) + G; 
-
-            % jac = RM * jac * RM.';
+            
             jac = jac(lg,lg);
 
-        end
+        end       
 
-        function [init, Mass] = getODESet(obj, x0, Mass, RM, EM)
+        function [x0, M0] = getNextPhase(obj, x0, M0, RM, EM) %#ok
+            a_bus  = obj.odeNetwork.a_Bus;            
 
-            bus  = obj.odeNetwork.a_Bus;
-            nbus = numel(bus);
+            x0 = EM*x0;
+            M0 = EM * M0 * EM.';
 
-            if isempty(x0)
-                xi   = cell(nbus,1);
-                vi   = cell(nbus,1);
-                for i=1:nbus
-                    busi  = bus{i};
-                    xi{i} = cell2mat( cellfun(@(B) B.cv_Xequilibrium + B.X_offset, busi.a_Component, 'UniformOutput', false) );
-                    vi{i} = [real(busi.c_Vequilibrium); imag(busi.c_Vequilibrium)];                 
-                end             
-    
-                init = RM * [vertcat(xi{:}); vertcat(vi{:})];
-            else
-                init = RM*x0;
-            end            
-            
-            if isempty(Mass)
-                
-                x    = EM*init;            
-                nx   = numel(x);
-                Mass = zeros(nx,nx);
+            for i=1:numel(a_bus)
+                a_Comp = a_bus{i}.a_Component;                
 
-                for i=1:nbus
-                    Vi   = x(bus{i}.iv_odeX);                
-                    comp = bus{i}.a_Component;
-                    for j=1:numel(comp)                    
-                        ci = comp{j}.iv_odeX;
-                        ui = comp{j}.cv_Uequilibrium;
-                        
-                        xi = x(ci);
-                        mi = comp{j}.rm_odeMass([], xi, Vi, ui);
-                        Mass(ci,ci) = Mass(ci,ci) + mi; 
-                    end
-                end            
-            end
+                for j=1:numel(a_Comp)
+                    if isa(a_Comp{j}, 'component.generator.abstract') && ~a_Comp{j}.isConnect
+                        c_idx = a_Comp{j}.iv_odeX;
+                        b_idx = a_bus{i}.iv_odeX;
+                        [x0(c_idx), ~] = a_Comp{j}.get_equilibrium([1,1j]*x(b_idx), 0+1j*0);                         
 
-            Mass = RM * Mass * RM.';            
-        end
-        
-        function [EM, RM, lg] = getStateMatrix(obj, event, tab)
-            bus = obj.odeNetwork.a_Bus;
-            evs = event( tab{1,:} );
-                    
-            bnms = cell2mat( cellfun(@(B) B.FltBus, evs, 'UniformOutput', false) );
-            cnms = cell2mat( cellfun(@(B) B.TrpCmp, evs, 'UniformOutput', false) );
-
-            if isempty(bnms)
-                bnms = "";
-            end
-
-            if isempty(cnms)
-                cnms = "";
-            end
-
-            bnms_all = cell2mat( cellfun(@(B) repmat(B.str_tag, [2,1]), bus, 'UniformOutput', false) );
-
-            cnms_all = cell(size(bus));
-            for i=1:numel(bus)
-                bnm = bus{i}.str_tag;
-                bus{i}.l_isFault = ismember(bnm, bnms_all);
-
-
-                cmp = bus{i}.a_Component;                                
-                c_c = cell(size(cmp));
-                for j=1:numel(cmp)
-                    c_c{j} = repmat( cmp{j}.str_tag, size(cmp{j}.str_x) );
-                    
-                    cmp{j}.isConnect = ~ismember(cmp{j}.str_tag, cnms);
-                end
-                cnms_all{i} = cell2mat(c_c);
-            end
-            cnms_all = cell2mat(cnms_all);
-
-            lg = ismember([cnms_all;bnms_all],[cnms;bnms]);
-
-            nlg = length(lg);
-
-            EM = eye(nlg);
-            RM = eye(nlg);
-
-            EM = EM(:,~lg);
-            RM = RM(~lg,:);
-            
-        end
-
-        function [x, Mass] = getTransitionSet(obj, x, Mass, RM, EM) %#ok
-            bus  = obj.odeNetwork.a_Bus;
-            nbus = numel(bus);
-
-            x = EM*x;
-            Mass = EM * Mass * EM.';
-
-            for i=1:nbus
-                com = bus{i}.a_Component;
-                ncom = numel(com);
-
-                for j=1:ncom
-                    if isa(com{j}, 'component.generator.abstract') && ~com{j}.isConnect
-                        c_idx = com{j}.iv_odeX;
-                        b_idx = bus{i}.iv_odeX;
-                        [x(c_idx), ~] = com{j}.get_equilibrium([1,1j]*x(b_idx), 0+1j*0);                         
-
-                        Mass(c_idx, c_idx) = com{j}.rm_odeMass([], [], x(b_idx), []);
+                        M0(c_idx, c_idx) = a_Comp{j}.rm_odeMass([], [], x0(b_idx), []);
                     end
                 end
             end            
@@ -488,15 +341,22 @@ classdef (Sealed = true) odeSimulator < handle
 
         function [tab, stc] = simulate(obj)
             
-            o = guilda.internal.ode(obj); 
-
-            options = odeset("RelTol", o.RelativeTolerance, "AbsTol", o.AbsoluteTolerance);
-
-            Ymat = obj.odeNetwork.get_admittance_matrix.Variables;
-
-            if isempty(obj.ODEvnt)                
-                obj.manage_time([0,10], eventset("Time", [0,10]));
+            o = ode;
+        
+            cls = metaclass(o);
+            pList = arrayfun(@(P) P.Name, cls.PropertyList, 'UniformOutput', false);
+            pLogc = arrayfun(@(P) strcmp(P.SetAccess, 'public'), cls.PropertyList);
+        
+            props = pList(pLogc);
+            
+            nprops = numel(props);
+            ip = 1;
+            while ip <= nprops        
+                o.(props{ip}) = obj.(props{ip});
+                ip = ip + 1;        
             end
+
+            options = odeset("RelTol", o.RelativeTolerance, "AbsTol", o.AbsoluteTolerance);                        
 
             tp = 1;
             np = size(obj.ODEvnt,2);
@@ -508,21 +368,29 @@ classdef (Sealed = true) odeSimulator < handle
 
             while tp <= np          
 
-                TT = obj.odeTimeTable(tp,:); % 地絡と解列に関するイベントの取得
-                                
-                [EM, RM, lg] = obj.getStateMatrix(obj.ODEvnt, TT(1,3:end)); 
-                [x0, Mass] = obj.getODESet(x0, Mass, RM, EM);
+                TT = obj.odeTimeTable(tp,:); % Retrieving events related to ground faults and circuit tripping.                                               
 
-                o.InitialValue = x0;
-                o.ODEFcn       = @(t,x) obj.getODEFunction(t,x,Ymat,RM,EM,~lg);                                       
-                o.Jacobian     = @(t,x) obj.getODEJacobian(t,x,Ymat,RM,EM,~lg);
+                odeEvents = obj.ODEvnt( TT{:,3:end} );                
+
+                [EM, RM, lv_FBorTC, x0, Mass] = getInitialCondition(odeEvents{:}, "x0", x0, "M0", Mass);
+
+                o.InitialValue = x0;                
+                o.ODEFcn       = @(t,x) obj.getODEFunction(t,x,RM,EM,~lv_FBorTC);                                       
+                o.Jacobian     = @(t,x) obj.getODEJacobian(t,x,RM,EM,~lv_FBorTC);
                 o.MassMatrix   = Mass;                
             
                 try
                     t1 = TT{1, 't1'};
                     t2 = TT{1, 't2'};
+
+                    setEventCondition(odeEvents{:}, "TimePhase", [t1,t2], "Iteration", tp);
+
+                    startTime = tic;
+                    stopTime  = 5;
+                    SimulationTimer = @(t,y) checkSimulationTime(t,y,startTime,stopTime);
+                    o.EventDefinition = odeEvent("EventFcn", SimulationTimer, "Response", "stop");
                     
-                    sol = solve(o, 0, t2-t1); % 方程式を解く際には,[0, 各フェーズの時間]で指定する
+                    sol = solve(o, 0, t2-t1); % When solving the equation, specify [0, duration of each phase]
 
                     et = isequal(tp,np);     
 
@@ -537,12 +405,13 @@ classdef (Sealed = true) odeSimulator < handle
 
                         case 'IndexGTOne'
 
-                            % DAE系のインデックスが1より大きかった場合にインデックスを減らした新しいDAE系を構築する.
+                            % If the DAE index is greater than 1, construct a new DAE sequence with a reduced index.
                             [ODEfcn, x0, options] = ReduceDAEIndex(obj, o, options);
 
                         case 'NeedBetterY0'
 
-                            % 初期値の矛盾に関するエラーが発生した場合に、DAE系と整合性の取れる状態を計算する.
+                            % If an error related to initial value inconsistencies occurs, 
+                            % calculate a state that is consistent with the DAE system.
                             [ODEfcn, x0, options] = CalculateInitialCondition(o, options);
 
                         otherwise
@@ -551,7 +420,7 @@ classdef (Sealed = true) odeSimulator < handle
                     end
                    
 
-                    % エラーバンドリングを行った後、もう一度DAE系を解く.
+                    % After performing error bundling, solve the DAE system again.
                     try
                         [t,y] = ode15s(ODEfcn, time, x0, options);
                         sol = struct(    'Time', t.', ...
@@ -567,11 +436,13 @@ classdef (Sealed = true) odeSimulator < handle
 
                 tp = tp + 1;
 
-                [x0, Mass] = obj.getTransitionSet(reshape(sol.Solution(:,end),[],1), o.MassMatrix.MassMatrix, RM, EM);
+                [x0, Mass] = obj.getNextPhase(reshape(sol.Solution(:,end),[],1), o.MassMatrix.MassMatrix, RM, EM);
             end
 
             tab = obj.odeResults;
             stc = obj.odeSimStruct;
+
+            clear startTime
         end
     end
 end

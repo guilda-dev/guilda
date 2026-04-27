@@ -1,0 +1,8 @@
+<!--This is an XML file containing error messages related to the class "Component".-->
+<rsccat version="2" locale="en" product="GUILDA">
+    <message>                        
+        <entry key="NumOfController">Warning: The AVR and PSS are already connected.</entry>         
+        <entry key="AldExtCon">Warning: AVR '' {0} '' already exists.</entry>         
+        <entry key="NotExtAvr">Error: You are attempting to connect a PSS even though there is no AVR.</entry>         
+    </message>
+</rsccat>

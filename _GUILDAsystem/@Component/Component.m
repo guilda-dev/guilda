@@ -18,7 +18,7 @@ classdef Component < PowerSystemModel
 %% Parameter
     properties(SetAccess=protected)
         a_Bus                                  % [   Layer   ] 接続しているBusクラス(a_Cubicleから辿る)
-        a_LocalController  = cell(0,1)         % [   Layer   ] 接続されているControllerクラスのcell配列        
+        a_LocalController (:,1) = cell(0,1)    % [   Layer   ] 接続されているControllerクラスのcell配列        
         rm_odeMass                             % [  Dynamics ] 数値積分の計算に使用する質量行列のシンボリック式
         fv_odeDiff                             % [  Dynamics ] 数値積分の計算に使用する微分方程式のシンボリック式
         fv_odeI                                % [  Dynamics ] 数値積分の計算に使用する接続方程式のシンボリック式
@@ -57,9 +57,8 @@ classdef Component < PowerSystemModel
         parent                                 % [   Layer   ] Layerの上位に当たるクラス
         children                               % [   Layer   ] Layerの下位に当たるクラス群
     end
-    properties (Access={?odeSimulator, ?Component})
-        isController = false
-        isConnect    = true
+    properties (Access={?odeSimulator, ?Component, ?odeEventSet})        
+        isConnect = true
     end
     properties (Hidden)
         X_offset 
@@ -137,9 +136,9 @@ classdef Component < PowerSystemModel
         end
         function p = get.children(obj)
             p = [ obj.a_LocalController  ;...
-                 {obj.para_dynamics       ; obj.para_powerflow     ;...
-                  obj.para_operation      ; obj.para_OPF           ;...
-                  obj.para_graph          }];
+                 {obj.para_dynamics      ; obj.para_powerflow     ;...
+                  obj.para_operation     ; obj.para_OPF           ;...
+                  obj.para_graph         }];
         end
         function tp = get.tab_parameter(obj)
             dynamics  = obj.para_dynamics.tab_parameter;

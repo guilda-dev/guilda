@@ -2,47 +2,57 @@
   "eventset": {
     "inputs": [
         {      
-        "name":"Time",
+        "name":"TimeSpan",
         "kind":"namevalue",
         "repeating": true    
       },
         {      
-        "name":"OffsetCmp",
+        "name":"OffsetUnit",
         "kind":"namevalue",
         "repeating": true        
       },
         {      
-        "name":"InitOffset",
+        "name":"OffsetState",
         "kind":"namevalue",
         "repeating": true        
       },
         {      
-        "name":"OffsetX",
+        "name":"OffsetValue",
         "kind":"namevalue",
         "repeating": true        
       },
         {      
-        "name":"FltBus",
+        "name":"FaultBus",
         "kind":"namevalue",
         "repeating": true        
       },
         {      
-        "name":"TrpBus",
+        "name":"TripUnit",
         "kind":"namevalue",
         "repeating": true        
       },
         {      
-        "name":"TrpCmp",
+        "name":"LoadChange",
         "kind":"namevalue",
         "repeating": true        
       },
         {      
-        "name":"Load",
+        "name":"LoadRate",
         "kind":"namevalue",
         "repeating": true        
       },
         {         
-        "name":"LoadRate",
+        "name":"InputUnit",
+        "kind":"namevalue",
+        "repeating": true
+      },
+        {         
+        "name":"InputName",
+        "kind":"namevalue",
+        "repeating": true
+      },
+        {         
+        "name":"InputValue",
         "kind":"namevalue",
         "repeating": true
       }

@@ -1,13 +1,15 @@
 classdef (Sealed = true) AVR_DC1 < LocalController
-    properties (Constant, Hidden=true)             
+    properties (Constant, Hidden=true)
+        key      = "avr"
         str_x    = ["Vtr";"Vap"; "Vfld"; "Vst"];
         str_u    = ["Vref";"Vpss"];   
         str_y    = ["Vfld"];
         str_para = ["ttr"; "Vap_max"; "Vap_min"; "kap"; "tap"; "aex1"; "aex2"; "tex"; "bex"; "kst"; "tst"];
     end    
     methods
-        function obj = AVR_DC1(param)
-            arguments                
+        function obj = AVR_DC1(tag, param)
+            arguments               
+                tag           (1,1) string 
                 param.ttr     (1,1) double = 0.00
                 param.Vap_max (1,1) double = 1
                 param.Vap_min (1,1) double = -1
@@ -20,7 +22,7 @@ classdef (Sealed = true) AVR_DC1 < LocalController
                 param.kst     (1,1) double = 0.08
                 param.tst     (1,1) double = 1.00
             end            
-            obj@LocalController("CA")                                 
+            obj@LocalController("CA"+tag)                                 
             
             obj.para_dynamics.add_entry(    "ttr", param.ttr    , "double", ...
                                         "Vap_max", param.Vap_max, "double", ...
@@ -32,13 +34,14 @@ classdef (Sealed = true) AVR_DC1 < LocalController
                                             "tex", param.tex    , "double", ...
                                             "bex", param.bex    , "double", ...
                                             "kst", param.kst    , "double", ...
-                                            "tst", param.tst    , "double");
+                                            "tst", param.tst    , "double");                       
 
-            
-            omega0   = 60;
-            params   = obj.tab_parameter.dynamics{:,obj.str_para}.';
+        end        
+
+        function set_odefcn(obj, omega0)            
+            params = obj.tab_parameter.dynamics{:,obj.str_para}.';
             obj.fv_odeDiff = @(t, x, V, u) obj.fcn_dx(t, x, V, u, params, omega0);
-            obj.fv_odeY    = @(t, x, V, u) obj.fcn_y(t, x, V, u, params, omega0);
+            obj.fv_odeConY = @(t, x, V, u) obj.fcn_y(t, x, V, u, params, omega0);
             obj.rm_odeMass = @(t, x, V, u) obj.fcn_Mass(t, x, V, u, params, omega0);
 
             obj.JacobiA = @(t, x, V, u) A_AVR_DC1(t, x, V, u, params, omega0);
@@ -46,8 +49,8 @@ classdef (Sealed = true) AVR_DC1 < LocalController
             obj.JacobiC = @(t, x, V, u) C_AVR_DC1(t, x, V, u, params, omega0);
             obj.JacobiD = @(t, x, V, u) D_AVR_DC1(t, x, V, u, params, omega0);
 
-        end        
-        function [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj, V, u)                   
+        end
+        function get_equilibrium(obj, V, u)                   
             tab = obj.tab_parameter.dynamics;
             Vap_max = tab{:, 'Vap_max'};
             Vap_min = tab{:, 'Vap_min'};
@@ -68,8 +71,8 @@ classdef (Sealed = true) AVR_DC1 < LocalController
             Vst_st  = 0;
             Vpss_st = 0;
 
-            rv_Xequilibrium = [Vtr_st; Vap_st; Vfld_st; Vst_st];
-            rv_Uequilibrium = [Vref_st;Vpss_st];            
+            obj.cv_Xequilibrium = [Vtr_st; Vap_st; Vfld_st; Vst_st];
+            obj.cv_Uequilibrium = [Vref_st;Vpss_st];            
         end
         function set_PSS(obj, cls)
             obj.a_LocalController{1} = cls;
