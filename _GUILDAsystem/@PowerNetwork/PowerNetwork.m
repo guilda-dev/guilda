@@ -135,7 +135,7 @@ classdef PowerNetwork < PowerSystemModel
         varargout = build_opf_problem(obj,method)
 
         % PF(powerflow) calculations
-        [Vbus,Ibus,Icub,flag,output] = calculate_powerflow(obj,OPTIMOPTIONS,opt)
+        [tab_PFsol, flag, output] = calculate_powerflow(obj,opt)
         varargout = disp_pf_set(obj)
     
         % Static Analysis

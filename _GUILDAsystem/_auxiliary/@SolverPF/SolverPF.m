@@ -6,12 +6,12 @@ classdef SolverPF < auxiliary
         UseParallel   (1,1) logical = false
         PlotFcn       (1,1) string {mustBeMember(PlotFcn,["none","optimplotx","optimplotfunccount","optimplotfval","optimplotstepsize","optimplotfirstorderopt"])} ="none"
         WhenFailed    (1,1) string {mustBeMember(WhenFailed,["WARN","ERROR","DISP","NONE"])} = "NONE"
-        ExportJSON    (1,1) logical = false;
+        dynamic       (1,1) struct  = struct("Mass",0,"Damper",0.1,"foh_PQ",0);
     end
 
     properties(SetAccess=private)
         rm_response
-        rr_stepsize
+        rr_step
         i_iteration 
     end
         
@@ -31,10 +31,11 @@ classdef SolverPF < auxiliary
                 end
             end
         end
-
-        opt = optimoption(obj)
+        
+        [powerflow_bus,flag,output] = solve(obj, net, mode)
+        [cv_Vbus,flag,output] = solve_algebraic(obj, tab_PFset, cm_Y)
+        [cv_Vbus,flag,output] = solve_dynamic(  obj, tab_PFset, cm_Y)
         stop = OutputFcn(obj, x, optimValues, state)
-        [powerflow_bus,flag,output] = solve(obj, tab_PFset, cm_Y)
 
     end
 end

@@ -1,33 +1,25 @@
-function [powerflow_bus,flag,output] = solve(obj, tab_PFset, cm_Y)
+function [powerflow_bus,flag,output] = solve(obj, net, mode, opt)
+    arguments
+        obj
+        net 
+        mode    (1,1) string {mustBeMember(mode,["algebraic","dynamic"])} = "algebraic"
+        opt.export  (1,1) logical = mode=="dynamic";
+        opt.filename(1,1) string  = string(datetime("now","Format","uuMMdd_HHmmss"))+"_PFcalculation.json"
+    end
+ 
+    tab_Ymat  = net.get_admittance_matrix;
+    tab_PFset = tools.vcellfun(@(b) b.get_pf_set, net.a_Bus);
+    str_Bus   = tab_PFset.Properties.RowNames;
+    cm_Y      = tab_Ymat{str_Bus,str_Bus};
 
-    % Collect Info
-    rm_Y  = sparse(tools.complex2matrix(cm_Y));
-    n_Bus = size(tab_PFset,1);
-
-    % Build Power Equation
-    fcn_PowerEq = cell(n_Bus,1);
-    for i_bus = 1:n_Bus
-        switch tab_PFset{i_bus,"Type"}
-            case "PV"
-                star = tab_PFset{i_bus,["P","V"]}.';
-                fcn_PowerEq{i_bus}  = @(v,i) PFconst_PV(v,i,star) ;
-            case "PQ"
-                star = tab_PFset{i_bus,["P","Q"]}.';
-                fcn_PowerEq{i_bus}  = @(v,i) PFconst_PQ(v,i,star) ;
-            case "slack"
-                star = tab_PFset{i_bus,["Varg","V"]}.';
-                fcn_PowerEq{i_bus}  = @(v,i) PFconst_slack(v,i,star) ;
-        end
+    switch mode
+        case "algebraic"
+            [cv_Vbus,flag,output] = obj.solve_algebraic(cm_Y, tab_PFset);
+        case "dynamic"
+            [cv_Vbus,flag,output] = obj.solve_dynamic(cm_Y, tab_PFset);
     end
 
-    % initial condition
-    rv_V0   = repmat([1;0],n_Bus,1);
-
-    % solve
-    [rv_Vsol,~,flag,output] = fsolve(@func, rv_V0, obj.optimoption);
-    
-    % sol -> Vbus -> Ibus -> Pbus,Qbus
-    cv_Vbus = reshape(rv_Vsol,2,[]).' * [1;1j];
+    % Vbus -> Ibus -> Pbus,Qbus
     cv_Ibus = cm_Y*cv_Vbus;
     cv_Sbus = cv_Vbus .* conj(cv_Ibus);
         
@@ -36,10 +28,74 @@ function [powerflow_bus,flag,output] = solve(obj, tab_PFset, cm_Y)
     powerflow_bus = array2table(...
         [angle(cv_Vbus),abs(cv_Vbus),real(cv_Sbus),imag(cv_Sbus),cv_Vbus,cv_Ibus], ...
         "VariableNames",["Varg","V","P","Q","Vphasor","Iphasor"],"RowNames",str_bus);
+
+
+    % export json each step value
+    if opt.export
+        n_Bus = size(tab_PFset,1);
+
+        out = struct();
+        out.nodes(n_Bus) = struct('Color',[], 'Label',[], 'Hover',[], ...
+                                  'Varg' ,[], 'Vabs' ,[] );
+        for i_bus = 1:n_Bus
+            tab_i = tab_PFset(i_bus,:);
     
+            type = tab_i.Type;
+            h = "Bus"+i_bus+" ("+type+")"+newline;
+            p = nan;
+            q = nan;
+            switch type
+                case "PV"
+                    c = [0,1,0,1];
+                    p = {tab_i.P};
+                    h = h+"P="+tab_i.P+", V="+tab_i.V;
+                case "PQ"
+                    c = [1,0,0,1];
+                    p = {tab_i.P};
+                    q = {tab_i.Q};
+                    h = h+"P="+tab_i.P+", Q="+tab_i.Q;
+                case "slack"
+                    c = [0,0,1,1];
+                    h = h+"Varg="+tab_i.Varg+", V="+tab_i.V;
+                otherwise
+                    c = [0,0,0,1];
+            end
+            l = num2str(i_bus);
+
+            if mode == "dynamic" && obj.dynamic.foh_PQ~=0
+                scale = min( obj.rr_step/obj.dynamic.foh_PQ, 1);
+                if isnumeric(p)&&~isnan(p); p = p{1}*scale; end
+                if isnumeric(q)&&~isnan(q); q = q{1}*scale; end
+            end
+    
+            out.nodes(i_bus).Color = c;
+            out.nodes(i_bus).Label = l;
+            out.nodes(i_bus).Hover = h;
+            out.nodes(i_bus).P     = p;
+            out.nodes(i_bus).Q     = q;
+            out.nodes(i_bus).Varg  = obj.rm_response(2*i_bus-1,:);
+            out.nodes(i_bus).Vabs  = obj.rm_response(2*i_bus  ,:);
+
+        end
+        g = graph(abs(cm_Y),'omitselfloops');
+        out.edges = reshape(g.Edges.EndNodes.', [], 1).';
+    
+        jsonStr = jsonencode(out,"PrettyPrint",true);
+        outFile = fullfile(GUILDA.pwd, opt.filename);
+        fid     = fopen(outFile, 'w'); 
+        fwrite(fid, jsonStr, 'char'); 
+        fclose(fid);
+
+        disp("<INFO>")
+        disp("  Exported json file: "+opt.filename);
+        disp("  You can upload this json file to the following link to visualize the calculation process.");
+        fprintf('  <a href="https://ta-nish18.github.io/GridSpring/">https://ta-nish18.github.io/GridSpring/</a>\n\n')
+    end
+
+
     % Notify
     if flag<=0
-        str_warnFlag = opt.WhenFailed;
+        str_warnFlag = obj.WhenFailed;
         if str_warnFlag=="SYSTEM DEFAULT"
             struct_default = GUILDA.config("EnvFsolve");
             str_warnFlag = struct_default.WhenFailed;
@@ -52,24 +108,4 @@ function [powerflow_bus,flag,output] = solve(obj, tab_PFset, cm_Y)
         end
     end
 
-    % function
-    function [con,jacobi] = func(rv_V)
-        con  = zeros(2*n_Bus,1);
-        jacobi_V = zeros(2*n_Bus,2*n_Bus);
-        jacobi_I = zeros(2*n_Bus,2*n_Bus);
-        rv_I = rm_Y*rv_V;
-        rm_V = reshape(rv_V,2,[]);
-        rm_I = reshape(rv_I,2,[]);
-        for i = 1:n_Bus
-            iv_con = 2*i+[-1,0];
-            rv_Vi  = rm_V(:,i);
-            rv_Ii  = rm_I(:,i);
-            [con(iv_con),...
-             jacobi_V(iv_con,iv_con),...
-             jacobi_I(iv_con,iv_con)] = fcn_PowerEq{i}(rv_Vi,rv_Ii);    
-        end
-        jacobi = sparse( jacobi_V+jacobi_I*rm_Y );
-    end
-
 end
-
