@@ -61,44 +61,111 @@ For the following data types, use the fixed prefixes regardless of size.
 
 ## 4. How to Document Class Definitions
 
-### Help Comments for Class Definition
-For the class definition, include the following information in the help comments using the specified tags:
-```
-% <@Desc> Detailed description of the class and its purpose
-% <@Role> Role of the class, e.g. 'CoreComponent', 'Utility', 'DataStructure'
-% <@Constructor> Description of the constructor and its arguments
-%  i.e.
-%  >> obj = MyClass(arg1, arg2) 
-%      - arg1; description of arg1
-%      - arg2: description of arg2
+#### Help Comments for Class Definition
+
+Write class-level tags directly below `classdef`, then keep constructor usage examples concrete:
+
+```matlab
+classdef MyClass
+    % <@Desc> Handles state updates and utility calculations for a subsystem.
+    % <@Role> CoreComponent
+    % <@Constructor> Create class instance with optional gain and label.
+    %  i.e.
+    %  >> obj = MyClass(r_gain, str_label)
+    %      - r_gain: scalar gain value (default: 1.0)
+    %      - str_label: display name (default: "default")
+
+    properties
+        r_gain
+        str_label
+    end
+
+    methods
+        function obj = MyClass(r_gain, str_label)
+            arguments
+                r_gain (1,1) double = 1.0
+                str_label (1,1) string = "default"
+            end
+            obj.r_gain = r_gain;
+            obj.str_label = str_label;
+        end
+    end
+end
 ```
 
-### Help Comments for Methods
-For each method, include the following information in the help comments using the specified tags:
-```
-% <@Desc> detailed method description
-% <@Role> role of the method e.g. 'CoreFunction', 'HelperFunction', 'EventHandler'
-% <@Abst> method summary
-% <@Argin> [argument descriptions]
-%  e.g. 
-%      arg1 - [Description of arg1]
-%      arg2 - [Description of arg2]
-% <@Argout> [output descriptions]
-%  e.g. 
-%      out1 - [Description of out1]
-%      out2 - [Description of out2]
-% <@Option> [option descriptions]
-%  e.g.
-%     'OptionName' - [Description of the option]
+#### Help Comments for Methods
+
+Add method tags immediately above each method body. Structured tags are parsed as JSON only.
+- **Text tags:** `Desc`, `Role`, `Abst`, `DetailsCode`, `Argin`, `Argout`, `Option`
+- **Structured tags (JSON only):** `Signatures`, `varargin`, `varargout`, `Examples`
+ **Structured schema:** `varargin` = `Name`, `Type`, `Description`, `Required`, `Default` / `varargout` = `Name`, `Type`, `Description`
+
+```matlab
+methods
+    function rv_y = calculate_output(obj, rv_u, r_gain)
+    % <@Desc>
+    % Computes an output vector from input data using a configurable gain.
+    % <@Abst>
+    % Typical example of method tags with parameters, return values, and examples.
+    % <@Signatures>
+    % [
+    %   "rv_y = obj.calculate_output(rv_u, r_gain)",
+    %   "rv_y = obj.calculate_output(rv_u)"
+    % ]
+    % <@varargin>
+    % [
+    %   {
+    %     "Name": "rv_u",
+    %     "Type": "double vector",
+    %     "Description": "Input signal vector.",
+    %     "Required": true,
+    %     "Default": "-"
+    %   },
+    %   {
+    %     "Name": "r_gain",
+    %     "Type": "double scalar",
+    %     "Description": "Scaling gain applied to the input.",
+    %     "Required": false,
+    %     "Default": "1.0"
+    %   }
+    % ]
+    % <@varargout>
+    % [
+    %   {
+    %     "Name": "rv_y",
+    %     "Type": "double vector",
+    %     "Description": "Scaled output vector."
+    %   }
+    % ]
+    % <@Examples>
+    % [
+    %   "```matlab\nrv_y = obj.calculate_output(rv_u, 2.0);\n```",
+    %   "```matlab\nrv_y = obj.calculate_output(randn(5,1));\n```"
+    % ]
+    end
+end
 ```
 
-### Help Comments for Properties
-For each property, include the following information in the help comments using the specified tags:
-```
-% <@Desc> description of the property
-% <@Role> role of the property e.g. OPF, simulate, linearize, etc.
-% <@Type> data type     e.g. 'double', 'logical', 'table', 'struct'
-% <@Size> data size     e.g. 1x1, 1xN, MxN
+Notes: If a structured tag is omitted or invalid JSON, exporter writes an empty default value.
+
+#### Help Comments for Properties
+
+Document each property right above its declaration. This helps readers understand data intent quickly:
+
+```matlab
+properties
+    % <@Desc> Gain applied to input/output calculations.
+    % <@Role> simulate
+    % <@Type> double
+    % <@Size> 1x1
+    r_gain
+
+    % <@Desc> Last computed output cached for diagnostics.
+    % <@Role> linearize
+    % <@Type> double
+    % <@Size> Nx1
+    rv_last_output
+end
 ```
 
 ---
