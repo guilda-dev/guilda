@@ -209,40 +209,15 @@ classdef (Sealed = true) odeEventSet < handle
                     if any(l_inU)
                         l_inN = ismember(comp{j}.str_u, inN{l_inU});                                                
                         
-                        exV = inV{l_inU};                                                                        
-                        if iscell(exV)
-                            for ni = 1:numel(exV)
-                                if isa(exV{ni}, 'double')
-                                    exV{ni} = @(t,x) exV{ni};
+                        exV = inV{l_inU};                                                                                                
+                        if ~iscell(exV)
+                            exV = arrayfun(@(exv) {exv}, exV);
+                        end
 
-                                elseif isa(exV{ni}, 'function_handle')
-                                    if nargin(exV{ni}) ~= 2
-                                        error(msg('GUILDA:odeEventSet:InvalidNargin'))
-                                    end
-
-                                    ts = opt.TimePhase(1) - odeEvents{l_inU}.TimePhase(1);
-                                    if odeEvents{l_inU}.odeIteration+1 == opt.Iteration
-                                        exV{ni} = @(t,x) exV{ni}(t+ts,x);
-                                    end
-                                else
-                                    error(msg('GUILDA:odeEventSet:InvalidInputType'))
-                                end
-                            end
-                            ini(l_inN) = exV;
-                        else                            
-                            if isa(exV, 'double')
-                                ini(l_inN) = arrayfun(@(in) @(t,x) in, exV, 'UniformOutput', false);      
-
-                            elseif isa(exV, 'function_handle')
-                                if nargin(exV) ~= 2
-                                    error(msg('GUILDA:odeEventSet:InvalidNargin'))
-                                end
-                                ini{l_inN} = exV;
-
-                            else
-                                error(msg('GUILDA:odeEventSet:InvalidInputType'))
-                            end
-                        end                        
+                        for ni = 1:numel(exV)                                
+                            exV{ni} = event2fhandle(exV{ni});
+                        end
+                        ini(l_inN) = exV;
                     end
                     comp{j}.U_offset = @(t,x) cellfun(@(f) f(t,x), ini);
                 end
@@ -250,6 +225,25 @@ classdef (Sealed = true) odeEventSet < handle
 
             for ev = 1:numel(odeEvents)
                 odeEvents{ev}.odeIteration = opt.Iteration; 
+            end
+
+            function exV = event2fhandle(exV)
+                if isa(exV, 'double')
+                    exV = @(t,x) exV;
+
+                elseif isa(exV, 'function_handle')
+                    if nargin(exV) ~= 2
+                        error(msg('GUILDA:odeEventSet:InvalidNargin'))
+                    end
+
+                    ts = opt.TimePhase(1) - odeEvents{l_inU}.TimePhase(1);
+                    if odeEvents{l_inU}.odeIteration+1 == opt.Iteration
+                        exV = @(t,x) exV(t+ts,x);
+                    end
+                else
+                    error(msg('GUILDA:odeEventSet:InvalidInputType'))
+                end
+
             end
         end
 
