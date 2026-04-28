@@ -281,7 +281,7 @@ classdef (Sealed = true) odeSimulator < handle
             options = odeset("RelTol", o.RelativeTolerance, "AbsTol", o.AbsoluteTolerance);                        
 
             tp = 1;
-            np = size(obj.ODEvnt,2);                   
+            np = size(obj.odeTimeTable,1);                   
 
             x0   = [];
             Mass = [];
@@ -305,9 +305,9 @@ classdef (Sealed = true) odeSimulator < handle
                 o.ODEFcn       = @(t,x) obj.getODEFunction(t,x,RM,EM,~lv_FBorTC);                                       
                 o.Jacobian     = @(t,x) obj.getODEJacobian(t,x,RM,EM,~lv_FBorTC);                
             
-                try                    
+                try                     
                     startTime = tic;
-                    stopTime  = 5;
+                    stopTime  = 30;
                     SimulationTimer = @(t,y) checkSimulationTime(t,y,startTime,stopTime);
                     o.EventDefinition = odeEvent("EventFcn", SimulationTimer, "Response", "stop");
                     

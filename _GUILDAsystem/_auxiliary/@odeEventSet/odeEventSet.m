@@ -236,7 +236,7 @@ classdef (Sealed = true) odeEventSet < handle
                         error(msg('GUILDA:odeEventSet:InvalidNargin'))
                     end
 
-                    ts = opt.TimePhase(1) - odeEvents{l_inU}.TimePhase(1);
+                    ts = opt.TimePhase(1) - odeEvents{l_inU}.TimeSpan(1);
                     if odeEvents{l_inU}.odeIteration+1 == opt.Iteration
                         exV = @(t,x) exV(t+ts,x);
                     end
