@@ -10,7 +10,6 @@ function [Graph, txt, sct] = new_plot(net)
     Graph = net.draw_diagram(ax1);
     Graph.GridWidth = 0.05;
     Graph.NodeFontSize = 5;
-    Graph.NodeHeightMode = "none";
     xlim(ax1,0.05+[0,1])
     grid(ax1,"off")
 
