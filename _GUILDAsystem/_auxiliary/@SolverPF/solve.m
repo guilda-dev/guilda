@@ -103,13 +103,20 @@ function [powerflow_bus,flag,output] = solve(obj, net, mode, opt)
         out.edges = reshape(g.Edges.EndNodes.', [], 1).';
     
         jsonStr = jsonencode(out,"PrettyPrint",true);
-        outFile = fullfile(GUILDA.pwd, opt.filename);
-        fid     = fopen(outFile, 'w'); 
+        outFile = char(opt.filename);
+        if ~strcmp(outFile( (end-4):end ), '.json')
+            outFile = opt.filename + ".json";
+        end
+        outPath = fullfile(GUILDA.pwd, "_GUILDAexport");
+        if ~isfolder(outPath)
+            mkdir(outPath)
+        end
+        fid     = fopen(fullfile(outPath,outFile), 'w'); 
         fwrite(fid, jsonStr, 'char'); 
         fclose(fid);
 
         disp("<INFO>")
-        disp("  Exported json file: "+opt.filename);
+        disp("  Exported json file: _GUILDAexport/"+ outFile);
         disp("  You can upload this json file to the following link to visualize the calculation process.");
         fprintf('  <a href="https://ta-nish18.github.io/GridSpring/">https://ta-nish18.github.io/GridSpring/</a>\n\n')
     end
