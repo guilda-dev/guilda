@@ -20,7 +20,7 @@ function reflect_node_label(obj)
                 str_com(i_com) = obj.str_component(i_com);
             end
         case "info"
-            is_visible = true
+            is_visible = true;
             for i_bus = 1:n_bus
                 str_bus(i_bus) = obj.str_bus(i_bus) + newline + ...
                                  " ∠V="  + num2str(rv_Varg(i_bus), '%.2f') + "°"+newline+ ...
