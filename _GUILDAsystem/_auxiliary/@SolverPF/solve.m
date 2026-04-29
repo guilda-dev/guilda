@@ -32,11 +32,31 @@ function [powerflow_bus,flag,output] = solve(obj, net, mode, opt)
 
     % export json each step value
     if opt.export
-        n_Bus = size(tab_PFset,1);
+        n_Bus    = size(tab_PFset,1);
 
         out = struct();
+    
+        l_slack = tab_PFset.Type'=="slack";
+        l_PV    = tab_PFset.Type'=="PV";
+        l_PQ    = tab_PFset.Type'=="PQ";
+
+        out.Text =   n_Bus+"Bus Model" +newline + ...
+                     " > slack : "              + mat2str(find(l_slack)) + newline + ...
+                     " > PV ("+sum(l_PV)+") : " + mat2str(find(l_PV))    + newline +...
+                     " > PQ ("+sum(l_PQ)+") : " + mat2str(find(l_PQ))    ;
+
         out.nodes(n_Bus) = struct('Color',[], 'Label',[], 'Hover',[], ...
                                   'Varg' ,[], 'Vabs' ,[] );
+
+
+        cr_Vbus = obj.rm_response(2:2:end,:) .* exp( 1j* obj.rm_response(1:2:end,:) );
+        cr_Ibus = cm_Y * cr_Vbus;
+        cr_Sbus = cr_Vbus .* conj(cr_Ibus);
+        rr_Pflow = -real(cr_Sbus);
+        rr_Iflow = -imag(cr_Sbus) ./ obj.rm_response(2:2:end,:);
+
+
+
         for i_bus = 1:n_Bus
             tab_i = tab_PFset(i_bus,:);
     
@@ -64,15 +84,17 @@ function [powerflow_bus,flag,output] = solve(obj, net, mode, opt)
 
             if mode == "dynamic" && obj.dynamic.foh_PQ~=0
                 scale = min( obj.rr_step/obj.dynamic.foh_PQ, 1);
-                if isnumeric(p)&&~isnan(p); p = p{1}*scale; end
-                if isnumeric(q)&&~isnan(q); q = q{1}*scale; end
+                if iscell(p); p = p{1}*scale; end
+                if iscell(q); q = q{1}*scale; end
             end
-    
+
             out.nodes(i_bus).Color = c;
             out.nodes(i_bus).Label = l;
             out.nodes(i_bus).Hover = h;
-            out.nodes(i_bus).P     = p;
-            out.nodes(i_bus).Q     = q;
+            out.nodes(i_bus).Pset  = p;
+            out.nodes(i_bus).Qset  = q;
+            out.nodes(i_bus).Pflow = rr_Pflow(i_bus,:);
+            out.nodes(i_bus).Iflow = rr_Iflow(i_bus,:);
             out.nodes(i_bus).Varg  = obj.rm_response(2*i_bus-1,:);
             out.nodes(i_bus).Vabs  = obj.rm_response(2*i_bus  ,:);
 

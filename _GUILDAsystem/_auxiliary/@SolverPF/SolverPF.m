@@ -6,7 +6,7 @@ classdef SolverPF < auxiliary
         UseParallel   (1,1) logical = false
         PlotFcn       (1,1) string {mustBeMember(PlotFcn,["none","optimplotx","optimplotfunccount","optimplotfval","optimplotstepsize","optimplotfirstorderopt"])} ="none"
         WhenFailed    (1,1) string {mustBeMember(WhenFailed,["WARN","ERROR","DISP","NONE"])} = "NONE"
-        dynamic       (1,1) struct  = struct("Mass",0,"Damper",0.1,"foh_PQ",0);
+        dynamic       (1,1) struct  = struct("Mass",0,"Damper",0.1,"foh_PQ",0,"t_span",0:1/120:50);
     end
 
     properties(SetAccess=private)
