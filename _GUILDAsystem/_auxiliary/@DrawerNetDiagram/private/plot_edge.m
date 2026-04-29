@@ -1,36 +1,33 @@
-function [h, h_arrow] = plot_edge(ax, p_from, p_to, radius, color, edgedata, type, MidXaxis, MidYaxis)
+function [h, h_arrow] = plot_edge(ax, path, radius, color, edgedata, type)
 
     h_arrow   = gobjects(1, 1);
     edge_type = string(type);
-    mid_z     = mean([p_to(3), p_from(3)]) * ones(numel(MidXaxis), 1);
-    mid_pts   = [MidXaxis(:), MidYaxis(:), mid_z];
-    h_main    = draw_edge_tube(ax, p_from, p_to, radius, color, mid_pts);
+    h_main    = draw_edge_tube(ax, path, radius, color);
     h_main.UserData = edgedata;
     
-    path = [p_from; mid_pts; p_to];
     if size(path, 1) > 1
         keep = [true; sqrt(sum(diff(path, 1, 1).^2, 2)) > eps];
         path = path(keep, :);
     end
 
     if size(path, 1) >= 2
-        L = norm(p_to - p_from);
-        cone_len    = min(max(2.4 * radius, 0.12 * L), 0.24 * L);
-        cone_radius = 1.9 * radius;
+        cone_radius = 2 * radius;
 
         % From-side arrow: midpoint of first segment (path(1:2,:)).
         p_from_1 = path(1, :);
         p_from_2 = path(2, :);
-        tip_from = 0.5 * (p_from_1 + p_from_2);
-        dir_from = normalize(p_from_2 - p_from_1);
+        tip_from = p_from_1;
+        dir_from = normalize(p_from_1 - p_from_2);
+        cone_len = min(norm(p_from_1 - p_from_2) * 0.5, cone_radius);
         h_arrow_from = draw_arrow_cone(ax, tip_from, dir_from, cone_len, cone_radius, color);
         h_arrow_from.UserData = edgedata;
 
         % To-side arrow: midpoint of last segment (path(end-1:end,:)).
         p_to_1 = path(end-1, :);
         p_to_2 = path(end, :);
-        tip_to = 0.5 * (p_to_1 + p_to_2);
+        tip_to = path(end, :);
         dir_to = normalize(p_to_2 - p_to_1);
+        cone_len = min(norm(p_to_2 - p_to_1) * 0.5, cone_radius*2);
         h_arrow_to = draw_arrow_cone(ax, tip_to, dir_to, cone_len, cone_radius, color);
         h_arrow_to.UserData = edgedata;
 

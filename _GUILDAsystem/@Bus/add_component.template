@@ -23,7 +23,6 @@ function comp = add_component(obj,Type,opt)
         opt.Marker           (1,1) string = "o";
         opt.MidXaxis         (1,1) string = "";
         opt.MidYaxis         (1,1) string = "";
-        opt.BusPoint         (1,1) double = 0.5;
     end
     % Build Instance
     index     = numel(obj.a_Component) + 1;
