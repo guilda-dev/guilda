@@ -40,8 +40,5 @@ function set_powerflow(obj, net, opt)
     obj.rm_Pbranch = real(cm_Sbranch);
     obj.rm_Qbranch = imag(cm_Sbranch);
 
-    rm_Varg = angle(obj.cm_Vbranch);
-    obj.EdgeB2B_forward = (rm_Varg(1,:) - rm_Varg(2,:)) >= 0;
-
     obj.rehash
 end

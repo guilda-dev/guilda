@@ -6,8 +6,8 @@ function h = draw_cone(ax, x0, y0, z0, radius, color, theta_offset)
     %   0      = rightward (>)
     %   pi     = leftward (<)
     
-    hgt = 2.0 * radius;
-    z_top = z0 + 0.8 * radius;
+    hgt    = 2.0 * radius;
+    z_top  = z0 + 0.8 * radius;
     z_apex = z_top - hgt;
 
     theta = (0:2) * (2*pi/3) + theta_offset;

@@ -11,13 +11,13 @@ classdef DrawerNetDiagram < auxiliary
                                             "P (active power)",   ...
                                             "Q (reactive power)", ...
                                             "User defined"])} = "I (current)";
-        NodeFontSize      (1,1) double = 7;
+        NodeFontSize      (1,1) double = 5;
         NodeFontWeight    (1,1) string = "bold";
         EdgeWidthSclae    (1,1) double = 0.15;
-        EdgeWidthOffset   (1,1) double = 1.5;
+        EdgeWidthOffset   (1,1) double = 1;
         EdgeWidthMode     (1,1) string {mustBeMember(EdgeWidthMode, ["none","G", "B", "Y", "SvdMaxYmat"])} = "SvdMaxYmat";
-        MarkerSize        (1,1) double = 5;
-        NodeHeightMode    (1,1) string {mustBeMember(NodeHeightMode, ["none", "Vmag", "Varg", "Vsin", "P", "Q"])} = "Varg";
+        MarkerSize        (1,1) double = 10;
+        NodeHeightMode    (1,1) string {mustBeMember(NodeHeightMode, ["none", "Vmag", "Varg", "Vsin", "P", "Q"])} = "none";
         NodeB_ColorVal    (:,1) double = [];
         NodeC_ColorVal    (:,1) double = [];
         EdgeB2B_ColorVal  (:,1) double = [];
@@ -246,6 +246,7 @@ classdef DrawerNetDiagram < auxiliary
             obj.EdgeB2C_ColorVal = rv_value;
             if validate(obj) || ~isfield(obj.plt, 'CompEdge'); return; end  %#ok
             obj.apply_color_values(obj.plt.CompEdge, rv_value);             %#ok
+            obj.apply_color_values(obj.plt.CompArrow,rv_value);             %#ok
         end
 
 

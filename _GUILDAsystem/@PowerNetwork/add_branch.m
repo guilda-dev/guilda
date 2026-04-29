@@ -16,8 +16,6 @@ function bra = add_branch(obj, Type, from_to, opt)
         opt.MidXaxis     (1,:) string = [];
         opt.MidYaxis     (1,:) string = [];
         opt.Marker       (1,1) string = "-";
-        opt.BusFromPoint (1,1) double = 0.5;
-        opt.BusToPoint   (1,1) double = 0.5;
     end
 
     % a_Busの番号で指定された場合
@@ -42,7 +40,6 @@ function bra = add_branch(obj, Type, from_to, opt)
         case 'pi';                      mkInst = @branch.pi;
         case 'pi_transformer';          mkInst = @branch.pi_transformer;
         case 'two_winding_transformer'; mkInst = @branch.two_winding_transformer;
-
     end
     bra = mkInst(str_Index, opt);
 
