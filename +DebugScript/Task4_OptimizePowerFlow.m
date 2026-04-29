@@ -1,4 +1,7 @@
-% 2-2 最適潮流計算 ( https://www.notion.so/dev-GUILDA-ver-3-12f6b8dd2f7980ef9a17f3dbebd7f30f?source=copy_link )
+% 4 最適潮流計算
+
+disp("under developping...")
+return
 
 % netを作成
 DebugScript.Task1_3_LayerStructure;

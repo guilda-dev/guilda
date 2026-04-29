@@ -14,7 +14,11 @@ function set_equilibrium(obj, c_V, c_I, r_P, r_Q, opt)
 
     a_Comp     = obj.a_Component;
     n_Comp     = numel(a_Comp);
-    tab_PQcomp = tools.vcellfun(@(c) c.para_powerflow.tab_parameter, a_Comp);
+    if isempty(a_Comp)
+        tab_PQcomp = array2table(zeros(0,2),"VariableNames",["P","Q"]);
+    else
+        tab_PQcomp = tools.vcellfun(@(c) c.para_powerflow.tab_parameter, a_Comp);
+    end
 
     % distrubute active power(P)
     if obj.l_isSlack
