@@ -4,6 +4,7 @@ function [cv_Vbus,flag,output] = solve_dynamic(obj, cm_Y, tab_PFset)
     M   = obj.dynamic.Mass;
     D   = obj.dynamic.Damper;
     foh = obj.dynamic.foh_PQ;
+    t_span = obj.dynamic.t_span;
     
     idx_slack = (tab_PFset.Type == "slack");
     idx_PV    = (tab_PFset.Type == "PV");
@@ -59,7 +60,6 @@ function [cv_Vbus,flag,output] = solve_dynamic(obj, cm_Y, tab_PFset)
                      'Mass', MassMat, ...
                      'Events', event_func, ...
                      'JPattern', J_pattern);
-    t_span = 0:1/60:(foh+50);
     [t_out, Y_out, ~, ~, ie] = ode15s(ode_func, t_span, Y0, options);
 
     % Convergence Test
@@ -69,10 +69,14 @@ function [cv_Vbus,flag,output] = solve_dynamic(obj, cm_Y, tab_PFset)
             output.message = '✔ The power flow calculation has converged within the tolerance limit.';
             flag = true;
         elseif any(ie == 2)
-            output.message = '✘ The process was terminated because a voltage collapse was detected.';
+            output.message = '✘ The process was terminated: Voltage collapse detected.';
+        elseif any(ie == 3)
+            output.message = '✘ The process was terminated: Phase angle instability detected.';
         end
     elseif t_out(end) >= t_span(end)
         output.message = '✘ The simulation did not converge within the specified time limit.';
+    else
+        output.message = 'undefined error';
     end
 
     % save step data
@@ -163,16 +167,20 @@ function [value, isterminal, direction] = convergence_events(~, Y, cm_Y, tab, N)
 
     % ① 収束判定: 有効・無効電力のミスマッチの最大値が閾値以下か
     tol = 1e-5;
-    max_mismatch = max([delta_P(idx_non_slack); delta_Q(idx_PQ); 0]);
-    
-    % value(1) が 0 になるとイベント発火
-    value(1) = max_mismatch - tol; 
-    isterminal(1) = 1; % 1ならシミュレーションを終了する
-    direction(1)  = 0;  % 減少・増加どちらからでも判定
+    max_mismatch  = max([delta_P(idx_non_slack); delta_Q(idx_PQ); 0]);
+    value(1)      = max_mismatch - tol; 
+    isterminal(1) = 1; 
+    direction(1)  = 0; % 減少・増加どちらからでも判定
 
     % ② 電圧崩壊判定: 電圧が極端に低くなった場合 (例: 0.01 pu以下)
     v_min = 1e-2;
-    value(2) = min(V(idx_PQ)) - v_min;
+    value(2)      = min(V(idx_PQ)) - v_min;
     isterminal(2) = 1;
-    direction(2) = -1; % 電圧が下がって閾値を超えた時のみ
+    direction(2)  = -1; % 電圧が下がって閾値を超えた時のみ
+
+    % ③ 角度が不安定化した場合： 
+    rot_max = 5;
+    value(3)      = all( theta>-(rot_max*2*pi) & theta<(rot_max*2*pi) );
+    isterminal(3) = 1; 
+    direction(3)  = 0; % 減少・増加どちらからでも判定
 end
