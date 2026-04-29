@@ -93,7 +93,7 @@ classdef (Sealed = true) odeEventSet < handle
     end    
 
     methods (Access={?odeSimulator})
-        function [odeTimeTable, events] = table(obj, varargin, opt)
+        function [odeTimeTable, odeEvents] = table(obj, varargin, opt)
             % A method that generates a timetable for time events specified by a structure.
             % When performing dynamic simulation, events are extracted based on this timetable,
             % and the system is constructed and analyzed based on the extracted events.
@@ -148,21 +148,20 @@ classdef (Sealed = true) odeEventSet < handle
                         tab{i,j} = true;
                     end
                 end
-            end            
+            end                        
 
-            fnp={};
-            enp={};
-            if all(~tab{1,:})         
-                fnp = {odeEventSet("fNoOP", obj.odeNetwork, "TimeSpan", times(1,:))};
-                tab = [array2table([true; false(vtab-1,1)], "VariableNames", "fNoOp"),tab];                
-            end
+            for IT = 1:vtab
+                if all( ~tab{IT,:} )
+                    lv_tab     = false(vtab,1);
+                    lv_tab(IT) = true;
+                    tabInsert  = table(lv_tab, 'VariableNames', "NoAction"+num2str(IT));
+                    oevInsert  = odeEventSet("NoAction"+num2str(IT), obj.odeNetwork, "TimeSpan", all_time(IT,:));
 
-            if all(~tab{end,:})                                
-                enp = {odeEventSet("eNoOP", obj.odeNetwork, "TimeSpan", times(end,:))};
-                tab = [tab,array2table([false(vtab-1,1); true], "VariableNames", "eNoOp")];
+                    tab = [tab, tabInsert]; %#ok
+                    odeEvents = [odeEvents, {oevInsert}]; %#ok
+                end
             end
-                            
-            events = [fnp, odeEvents, enp];
+                                        
             odeTimeTable = [array2table(all_time, "VariableNames", ["t1","t2"]), tab];
         end
         
@@ -181,7 +180,7 @@ classdef (Sealed = true) odeEventSet < handle
             net = obj.odeNetwork;
             bus = net.a_Bus;
 
-            odeEvents = [{obj},varargin]';                        
+            odeEvents = [{obj},varargin]';            
 
             osU = cellfun(@(c) c.OffsetUnit,  odeEvents);
             osX = cellfun(@(c) c.OffsetState, odeEvents, 'UniformOutput', false);
@@ -211,7 +210,11 @@ classdef (Sealed = true) odeEventSet < handle
                         
                         exV = inV{l_inU};                                                                                                
                         if ~iscell(exV)
-                            exV = arrayfun(@(exv) {exv}, exV);
+                            if isa(exV, 'function_handle')
+                                exV = {exV};
+                            else
+                                exV = arrayfun(@(exv) {exv}, exV);                            
+                            end                            
                         end
 
                         for ni = 1:numel(exV)                                
