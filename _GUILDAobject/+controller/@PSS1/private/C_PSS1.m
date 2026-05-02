@@ -5,6 +5,9 @@ function C = C_PSS1(t, x, V, u, param, omega0) %#ok
     td1 = param(4);
     tn2 = param(5);
     td2 = param(6);
+
+    Vpss_min = param(7); 
+    Vpss_max = param(8);
         
     xiWS = x(1);
     xi1  = x(2);

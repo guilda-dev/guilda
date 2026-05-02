@@ -84,36 +84,33 @@ classdef (Sealed = true) odeSimulator < handle
                 comp = bus{i}.a_Component;
                 for j=1:numel(comp)
                     nx   = length(comp{j}.str_x);                        
-                    idx_ = idx_ + nx;
-
-                    comp{j}.X_offset = zeros(size(comp{j}.str_x));
-                    comp{j}.U_offset = zeros(size(comp{j}.str_u));
+                    idx_ = idx_ + nx;                    
 
                     if ~isempty(comp{j}.a_LocalController)
                         con = comp{j}.a_LocalController;
-        
+
                         con_nx = length(con.str_x);
                         con.iv_odeX = idx_ + (1:con_nx).';
                         idx_ = idx_ + con_nx;
-        
+
                         nx = nx + con_nx;
-            
+
                         if ~isempty(con.a_LocalController)
                             sub_con = con.a_LocalController;                    
-        
+
                             sub_con_nx = length(sub_con.str_x);
                             con.iv_odeX = idx_ + (1:sub_con_nx).';
                             idx_ = idx_ + sub_con_nx;
-        
+
                             nx = nx + sub_con_nx;
                         end
                     end
-        
+
                     comp{j}.iv_odeX = idx + (1:nx).';
                     idx = idx + nx;
                 end
             end
-        
+
             for i=1:numel(bus)
                 bus{i}.iv_odeX = idx + (1:2).';
                 idx = idx + 2;
@@ -307,7 +304,7 @@ classdef (Sealed = true) odeSimulator < handle
             
                 try                     
                     startTime = tic;
-                    stopTime  = 30;
+                    stopTime  = 8;
                     SimulationTimer = @(t,y) checkSimulationTime(t,y,startTime,stopTime);
                     o.EventDefinition = odeEvent("EventFcn", SimulationTimer, "Response", "stop");
                     

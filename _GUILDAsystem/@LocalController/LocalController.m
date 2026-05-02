@@ -24,8 +24,10 @@ classdef LocalController < PowerSystemModel
         fv_odeConY
         JacobiA        
         JacobiB        
+        JacobiBu        
         JacobiC        
         JacobiD        
+        JacobiDu        
     end    
     properties (SetAccess={?odeSimulator, ?Component}, Hidden)
         iv_odeX  = zeros(0,1);
@@ -55,7 +57,7 @@ classdef LocalController < PowerSystemModel
     end    
     methods (Access={?Component,?LocalController})
         function add_local_controller(obj,a_Controller)
-            obj.a_LocalController = a_Controller;
+            obj.a_LocalController = {a_Controller};
         end
         function set_parent(obj,a_Component)
             obj.a_Component = a_Component; 

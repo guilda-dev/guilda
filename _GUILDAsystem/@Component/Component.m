@@ -22,10 +22,16 @@ classdef Component < PowerSystemModel
         rm_odeMass                             % [  Dynamics ] 数値積分の計算に使用する質量行列のシンボリック式
         fv_odeDiff                             % [  Dynamics ] 数値積分の計算に使用する微分方程式のシンボリック式
         fv_odeI                                % [  Dynamics ] 数値積分の計算に使用する接続方程式のシンボリック式
+        fv_odeY
         JacobiA
         JacobiB
+        JacobiBu
         JacobiC
+        JacobiCyx
         JacobiD
+        JacobiDu
+        JacobiDyv
+        JacobiDyu
         odeLinearSystem
     end
     properties

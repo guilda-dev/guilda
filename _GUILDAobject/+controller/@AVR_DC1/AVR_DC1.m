@@ -3,7 +3,7 @@ classdef (Sealed = true) AVR_DC1 < LocalController
         key      = "avr"
         str_x    = ["Vtr";"Vap"; "Vfld"; "Vst"];
         str_u    = ["Vref";"Vpss"];   
-        str_y    = ["Vfld"];
+        str_y    = ["Vfield"];
         str_para = ["ttr"; "Vap_max"; "Vap_min"; "kap"; "tap"; "aex1"; "aex2"; "tex"; "bex"; "kst"; "tst"];
     end    
     methods
@@ -48,6 +48,9 @@ classdef (Sealed = true) AVR_DC1 < LocalController
             obj.JacobiB = @(t, x, V, u) B_AVR_DC1(t, x, V, u, params, omega0);
             obj.JacobiC = @(t, x, V, u) C_AVR_DC1(t, x, V, u, params, omega0);
             obj.JacobiD = @(t, x, V, u) D_AVR_DC1(t, x, V, u, params, omega0);
+
+            obj.JacobiBu = @(t, x, V, u) getJacobiBu(t, x, V, u, params, omega0);
+            obj.JacobiDu = @(t, x, V, u) getJacobiDu(t, x, V, u, params, omega0);
 
         end
         function get_equilibrium(obj, V, u)                   
