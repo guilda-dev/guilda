@@ -1,4 +1,4 @@
-function C = C_PSS1(t, x, V, u, param, omega0) %#ok
+function Cyx = getJacobiCyx(t, x, V, u, param, omega0) %#ok
     
     kpss = param(1);     
     tn1 = param(3);
@@ -20,13 +20,13 @@ function C = C_PSS1(t, x, V, u, param, omega0) %#ok
     
     S = heaviside(vpl - Vpss_min) - heaviside(vpl - Vpss_max);
     
-    C = zeros(1, 3);    
+    Cyx = zeros(1, 3);    
         
     dv1_dxiWS = -tn1/td1;
     dv1_dxi1  = -tn1/td1;
     
-    C(1,[1,2,3]) = [S * (tn2/td2) * dv1_dxiWS, ...
-                    S * (tn2/td2) * dv1_dxi1 , ...
-                    S * (-tn2/td2)];
+    Cyx(1,[1,2,3]) = [S * (tn2/td2) * dv1_dxiWS, ...
+                      S * (tn2/td2) * dv1_dxi1 , ...
+                      S * (-tn2/td2)];
         
 end

@@ -11,8 +11,8 @@ classdef (Sealed = true) AVR_DC1 < LocalController
             arguments               
                 tag           (1,1) string 
                 param.ttr     (1,1) double = 0.00
-                param.Vap_max (1,1) double = 1
-                param.Vap_min (1,1) double = -1
+                param.Vap_max (1,1) double = Inf
+                param.Vap_min (1,1) double = -Inf
                 param.kap     (1,1) double = 57.1
                 param.tap     (1,1) double = 0.05
                 param.aex1    (1,1) double = -0.045
@@ -44,13 +44,13 @@ classdef (Sealed = true) AVR_DC1 < LocalController
             obj.fv_odeConY = @(t, x, V, u) obj.fcn_y(t, x, V, u, params, omega0);
             obj.rm_odeMass = @(t, x, V, u) obj.fcn_Mass(t, x, V, u, params, omega0);
 
-            obj.JacobiA = @(t, x, V, u) A_AVR_DC1(t, x, V, u, params, omega0);
-            obj.JacobiB = @(t, x, V, u) B_AVR_DC1(t, x, V, u, params, omega0);
-            obj.JacobiC = @(t, x, V, u) C_AVR_DC1(t, x, V, u, params, omega0);
-            obj.JacobiD = @(t, x, V, u) D_AVR_DC1(t, x, V, u, params, omega0);
+            obj.JacobiAxx = @(t, x, V, u) getJacobiAxx(t, x, V, u, params, omega0);
+            obj.JacobiBxv = @(t, x, V, u) getJacobiBxv(t, x, V, u, params, omega0);
+            obj.JacobiBxu = @(t, x, V, u) getJacobiBxu(t, x, V, u, params, omega0);
 
-            obj.JacobiBu = @(t, x, V, u) getJacobiBu(t, x, V, u, params, omega0);
-            obj.JacobiDu = @(t, x, V, u) getJacobiDu(t, x, V, u, params, omega0);
+            obj.JacobiCyx = @(t, x, V, u) getJacobiCyx(t, x, V, u, params, omega0);
+            obj.JacobiDyv = @(t, x, V, u) getJacobiDyv(t, x, V, u, params, omega0);            
+            obj.JacobiDyu = @(t, x, V, u) getJacobiDyu(t, x, V, u, params, omega0);
 
         end
         function get_equilibrium(obj, V, u)                   
@@ -84,8 +84,8 @@ classdef (Sealed = true) AVR_DC1 < LocalController
     end
 
     methods       
-        M  = fcn_Mass(obj, sv_x, sv_V, sv_I, sv_u, sv_y)
-        dx = fcn_dx(obj, sv_x, sv_V, sv_I, sv_u, sv_y)
-        y  = fcn_y(obj, sv_x, sv_V, sv_I, sv_u, sv_y)                
+        M  = fcn_Mass(obj, t, x, V, u, param, omega0)
+        dx = fcn_dx(obj, t, x, V, u, param, omega0)
+        y  = fcn_y(obj, t, x, V, u, param, omega0)                
     end
 end

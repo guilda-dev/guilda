@@ -29,8 +29,9 @@ classdef power < component.load.abstract
 
     methods
         dx = fcn_dx(obj, t, x, V, u, para);
-        I = fcn_I(obj, t, x, V, u, para);
-        M = fcn_Mass(obj, t, x, V, u, para);
+        I  = fcn_I(obj, t, x, V, u, para);
+        y  = fcn_Y(obj, t, x, V, u, para);
+        M  = fcn_Mass(obj, t, x, V, u, para);
     end
 
     methods       

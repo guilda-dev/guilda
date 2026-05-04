@@ -16,8 +16,8 @@ classdef (Sealed = true) PSS1 < LocalController
                 param.td1      (1,1) double = 0.02
                 param.tn2      (1,1) double = 3.00
                 param.td2      (1,1) double = 5.40
-                param.Vpss_min (1,1) double = -inf
-                param.Vpss_max (1,1) double = inf
+                param.Vpss_min (1,1) double = -Inf
+                param.Vpss_max (1,1) double = Inf
                 
             end            
             obj@LocalController("CP"+tag)                                    
@@ -38,13 +38,13 @@ classdef (Sealed = true) PSS1 < LocalController
             obj.fv_odeConY = @(t, x, V, u) obj.fcn_y(t, x, V, u, params, omega0);
             obj.rm_odeMass = @(t, x, V, u) obj.fcn_Mass(t, x, V, u, params, omega0);
 
-            obj.JacobiA = @(t, x, V, u) A_PSS1(t, x, V, u, params, omega0);
-            obj.JacobiB = @(t, x, V, u) B_PSS1(t, x, V, u, params, omega0);
-            obj.JacobiC = @(t, x, V, u) C_PSS1(t, x, V, u, params, omega0);
-            obj.JacobiD = @(t, x, V, u) D_PSS1(t, x, V, u, params, omega0);
+            obj.JacobiAxx = @(t, x, V, u) getJacobiAxx(t, x, V, u, params, omega0);
+            obj.JacobiBxv = @(t, x, V, u) getJacobiBxv(t, x, V, u, params, omega0);
+            obj.JacobiBxu = @(t, x, V, u) getJacobiBxu(t, x, V, u, params, omega0);
 
-            obj.JacobiBu = @(t, x, V, u) getJacobiBu(t, x, V, u, params, omega0);
-            obj.JacobiDu = @(t, x, V, u) getJacobiDu(t, x, V, u, params, omega0);
+            obj.JacobiCyx = @(t, x, V, u) getJacobiCyx(t, x, V, u, params, omega0);
+            obj.JacobiDyv = @(t, x, V, u) getJacobiDyv(t, x, V, u, params, omega0);            
+            obj.JacobiDyu = @(t, x, V, u) getJacobiDyu(t, x, V, u, params, omega0);
 
         end
         function get_equilibrium(obj, V, u) %#ok

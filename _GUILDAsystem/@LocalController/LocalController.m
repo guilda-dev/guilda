@@ -22,16 +22,17 @@ classdef LocalController < PowerSystemModel
         rm_odeMass       
         fv_odeDiff       
         fv_odeConY
-        JacobiA        
-        JacobiB        
-        JacobiBu        
-        JacobiC        
-        JacobiD        
-        JacobiDu        
+        JacobiAxx        
+        JacobiBxv        
+        JacobiBxu        
+        JacobiCyx        
+        JacobiDyv        
+        JacobiDyu        
     end    
     properties (SetAccess={?odeSimulator, ?Component}, Hidden)
         iv_odeX  = zeros(0,1);
         iv_odeU  = zeros(0,1);
+        iv_odeY  = zeros(0,1);
         rv_odeX0 = zeros(0,1);
     end    
     properties(SetAccess=protected)
