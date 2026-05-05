@@ -1,6 +1,6 @@
 net = network.IEEE14bus;
 
-ev1 = odeEventSet("ev1", net, "FaultBus", "B001", "TimeSpan", [3,3.01]);
+ev1 = odeEventSet("ev1", net, "FaultBus", "B008", "TimeSpan", [3,3.38]);
 
 sol = net.simulate([0,50], ev1);
 

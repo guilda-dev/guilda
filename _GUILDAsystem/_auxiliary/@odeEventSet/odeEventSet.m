@@ -274,7 +274,8 @@ classdef (Sealed = true) odeEventSet < handle
             
             rm_M = zeros(0,0);
             rv_V = cell(size(a_bus));
-            rv_X = cell(size(a_bus));
+            rv_X = cell(size(a_bus));            
+
             for i=1:numel(a_bus)
                 Btag = a_bus{i}.str_tag;
                 a_bus{i}.l_isFault = ismember(Btag, BusFault);
@@ -321,6 +322,15 @@ classdef (Sealed = true) odeEventSet < handle
                 rv_X{i} = vertcat(rv_Cstate{:});                
                 Ctag_all{i} = cell2mat(c_Ctag);
             end
+
+            if ~isempty(obj.odeNetwork.a_GlobalController)
+                a_GC = obj.odeNetwork.a_GlobalController{1};
+
+                rm_M(a_GC.iv_odeX, a_GC.iv_odeX) = a_GC.rm_odeMass([], [], [], []);
+                rv_X = [rv_X; {a_GC.cv_Xequilibrium}];
+                Ctag_all = [Ctag_all; {a_GC.str_tag}];
+            end
+
             Ctag_all = cell2mat(Ctag_all);
 
             lv_FBorTC = ismember([Ctag_all; Btag_all], [CompTrip; BusFault]);

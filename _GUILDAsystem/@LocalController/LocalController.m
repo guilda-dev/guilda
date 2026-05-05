@@ -22,9 +22,11 @@ classdef LocalController < PowerSystemModel
         rm_odeMass       
         fv_odeDiff       
         fv_odeConY
+
         JacobiAxx        
         JacobiBxv        
         JacobiBxu        
+        
         JacobiCyx        
         JacobiDyv        
         JacobiDyu        

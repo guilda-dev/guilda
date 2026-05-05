@@ -78,13 +78,7 @@ classdef (Sealed = true) odeSimulator < handle
             
             a_bus = obj.odeNetwork.a_Bus;
 
-            idx_TGT = 0;
-
-            gcon = obj.odeNetwork.a_GlobalController;
-            if ~isempty(gcon)
-                gcon{1}.iv_odeX = idx_TGT + 1;
-                idx_TGT = idx_TGT + 1;
-            end
+            idx_TGT = 0;                       
             
             for i=1:numel(a_bus)
                 a_comp = a_bus{i}.a_Component;
@@ -96,16 +90,32 @@ classdef (Sealed = true) odeSimulator < handle
                         a_LC1 = a_comp{j}.a_LocalController{1};
                         set_idx(a_LC1);                                                
 
-                        a_LC1.iv_odeY = a_comp{j}.iv_odeU( a_comp{j}.str_u=="Vfield" );                        
+                        a_LC1.iv_odeY = a_comp{j}.iv_odeU( a_comp{j}.str_u==a_LC1.str_y );                        
 
                         if ~isempty(a_LC1.a_LocalController)
                             a_LC2 = a_LC1.a_LocalController{1};
                             set_idx(a_LC2);                                      
 
-                            a_LC2.iv_odeY = a_LC1.iv_odeU( a_LC1.str_u=="Vpss" );
+                            a_LC2.iv_odeY = a_LC1.iv_odeU( a_LC1.str_u==a_LC2.str_y );
                             a_comp{j}.iv_odeY = a_LC2.iv_odeU;
                         end
                     end                    
+                end
+            end
+
+            idx = 1;
+            if ~isempty(obj.odeNetwork.a_GlobalController)
+                gcon = obj.odeNetwork.a_GlobalController{1};
+                nxgc = length(gcon.str_x);
+                gcon.iv_odeX = idx_TGT + (1:nxgc)';
+                idx_TGT = idx_TGT + nxgc;
+
+                nConUnit = gcon.controlledUnits;
+                while idx <= numel(nConUnit)
+                    gcon.iv_odeU(idx) = nConUnit{idx}.iv_odeX( nConUnit{idx}.str_x==gcon.str_u );
+                    gcon.iv_odeY(idx) = nConUnit{idx}.iv_odeU( nConUnit{idx}.str_u==gcon.str_y );
+
+                    idx = idx + 1;
                 end
             end
 
@@ -139,7 +149,18 @@ classdef (Sealed = true) odeSimulator < handle
             odeX = zeros(size(x));
             odeV = zeros(size(obj.odeNetwork.a_Bus));
             
-            a_bus = obj.odeNetwork.a_Bus;                                     
+            a_bus = obj.odeNetwork.a_Bus;
+
+            y_GC = zeros(size(x), 'like', x);
+            if ~isempty(obj.odeNetwork.a_GlobalController)
+                a_GC = obj.odeNetwork.a_GlobalController{1};
+
+                x_GC = x(a_GC.iv_odeX);
+                u_GC = x(a_GC.iv_odeU);
+
+                odeX(a_GC.iv_odeX) = a_GC.fv_odeDiff(t,x_GC,[],u_GC);                
+                y_GC(a_GC.iv_odeY) = a_GC.fv_odeY(t,x_GC,[],u_GC);
+            end
 
             for i=1:numel(a_bus)
                 a_comp = a_bus{i}.a_Component;
@@ -174,12 +195,13 @@ classdef (Sealed = true) odeSimulator < handle
                         yi_LC1 = a_LC1.fv_odeConY(t, xi_LC1, Vi, ui_LC1);
                         
                         ue_LC1 = a_LC1.cv_Uequilibrium;
-                        ue_LC1( a_LC1.str_u=="Vpss" ) = yi_LC2;
+                        ue_LC1( a_LC1.str_u==a_LC2.str_y ) = yi_LC2;
                         odeX([a_LC1.iv_odeX; a_LC1.iv_odeU]) = odeX([a_LC1.iv_odeX; a_LC1.iv_odeU]) + [dx_LC1; ui_LC1 - ue_LC1];
                         
-                        ue( a_comp{j}.str_u=="Vfield" ) = yi_LC1;
+                        ue( cj.str_u==a_LC1.str_y ) = yi_LC1;
                     end                    
-
+                                                            
+                    ue(1) = ue(1) + y_GC( cj.iv_odeU(1) ); % ひとまずはこれで実装する. マジックナンバーは気持ちが悪いので後で直す.                   
                     ue = ue + cj.U_offset(t);
 
                     dx = cj.fv_odeDiff(t, xi, Vi, ui);
@@ -212,6 +234,28 @@ classdef (Sealed = true) odeSimulator < handle
             odeJac = zeros(numel(x), numel(x));
 
             lv_Bus = zeros(0,1);
+
+            if ~isempty(obj.odeNetwork.a_GlobalController)
+                a_GC = obj.odeNetwork.a_GlobalController{1};
+                
+                lh_GC = [a_GC.iv_odeX; a_GC.iv_odeU];
+                lv_GC = [a_GC.iv_odeX; a_GC.iv_odeY];
+
+                x_GC = x(a_GC.iv_odeX);
+                u_GC = x(a_GC.iv_odeU);
+
+                Axx_GC = a_GC.JacobiAxx(t, x_GC, [], u_GC);
+                Bxv_GC = a_GC.JacobiBxv(t, x_GC, [], u_GC);
+                Bxu_GC = a_GC.JacobiBxu(t, x_GC, [], u_GC);                                    
+
+                Cyx_GC = a_GC.JacobiCyx(t, x_GC, [], u_GC);
+                Dyv_GC = a_GC.JacobiDyv(t, x_GC, [], u_GC);
+                Dyu_GC = a_GC.JacobiDyu(t, x_GC, [], u_GC);
+
+                odeJac(lv_GC, lh_GC) = odeJac(lv_GC, lh_GC) + [ Axx_GC,  Bxv_GC,  Bxu_GC;
+                                                                Cyx_GC,  Dyv_GC,  Dyu_GC];
+                               
+            end
 
             for i=1:numel(a_bus)                
                 cm = a_bus{i}.a_Component;

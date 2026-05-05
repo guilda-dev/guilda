@@ -11,16 +11,16 @@ classdef (Sealed = true) AVR_DC1 < LocalController
             arguments               
                 tag           (1,1) string 
                 param.ttr     (1,1) double = 0.00
+                param.tap     (1,1) double = 0.2
+                param.kap     (1,1) double = 20 
                 param.Vap_max (1,1) double = Inf
-                param.Vap_min (1,1) double = -Inf
-                param.kap     (1,1) double = 57.1
-                param.tap     (1,1) double = 0.05
-                param.aex1    (1,1) double = -0.045
-                param.aex2    (1,1) double = 0.0012
-                param.tex     (1,1) double = 0.50
-                param.bex     (1,1) double = 1.21
-                param.kst     (1,1) double = 0.08
-                param.tst     (1,1) double = 1.00
+                param.Vap_min (1,1) double = -Inf  
+                param.tex     (1,1) double = 0.314
+                param.aex1    (1,1) double = 1
+                param.aex2    (1,1) double = 0.0039                
+                param.bex     (1,1) double = 1.555
+                param.tst     (1,1) double = 0.35
+                param.kst     (1,1) double = 0.063                
             end            
             obj@LocalController("CA"+tag)                                 
             
