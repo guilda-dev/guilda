@@ -73,52 +73,68 @@ classdef (Sealed = true) odeSimulator < handle
     methods (Access=private)                       
 
         function initialize_odeSimulator(obj)            
-            % A method for assigning state variable numbers to each device and bus.
+            % Method for assigning state variable numbers to each device and bus.
             % Execute this before performing analysis using the ODE solver.         
-
-            bus = obj.odeNetwork.a_Bus;
-
-            idx  = 0;
-            idx_ = 0;
-            for i=1:numel(bus)
-                comp = bus{i}.a_Component;
-                for j=1:numel(comp)
-                    nx   = length(comp{j}.str_x);                        
-                    idx_ = idx_ + nx;
-
-                    comp{j}.X_offset = zeros(size(comp{j}.str_x));
-                    comp{j}.U_offset = zeros(size(comp{j}.str_u));
-
-                    if ~isempty(comp{j}.a_LocalController)
-                        con = comp{j}.a_LocalController;
-        
-                        con_nx = length(con.str_x);
-                        con.iv_odeX = idx_ + (1:con_nx).';
-                        idx_ = idx_ + con_nx;
-        
-                        nx = nx + con_nx;
             
-                        if ~isempty(con.a_LocalController)
-                            sub_con = con.a_LocalController;                    
-        
-                            sub_con_nx = length(sub_con.str_x);
-                            con.iv_odeX = idx_ + (1:sub_con_nx).';
-                            idx_ = idx_ + sub_con_nx;
-        
-                            nx = nx + sub_con_nx;
+            a_bus = obj.odeNetwork.a_Bus;
+
+            idx_TGT = 0;                       
+            
+            for i=1:numel(a_bus)
+                a_comp = a_bus{i}.a_Component;
+
+                for j=1:numel(a_comp)                    
+                    set_idx(a_comp{j});                                                                            
+
+                    if ~isempty(a_comp{j}.a_LocalController)
+                        a_LC1 = a_comp{j}.a_LocalController{1};
+                        set_idx(a_LC1);                                                
+
+                        a_LC1.iv_odeY = a_comp{j}.iv_odeU( a_comp{j}.str_u==a_LC1.str_y );                        
+
+                        if ~isempty(a_LC1.a_LocalController)
+                            a_LC2 = a_LC1.a_LocalController{1};
+                            set_idx(a_LC2);                                      
+
+                            a_LC2.iv_odeY = a_LC1.iv_odeU( a_LC1.str_u==a_LC2.str_y );
+                            a_comp{j}.iv_odeY = a_LC2.iv_odeU;
                         end
-                    end
-        
-                    comp{j}.iv_odeX = idx + (1:nx).';
-                    idx = idx + nx;
+                    end                    
                 end
             end
-        
-            for i=1:numel(bus)
-                bus{i}.iv_odeX = idx + (1:2).';
-                idx = idx + 2;
+
+            idx = 1;
+            if ~isempty(obj.odeNetwork.a_GlobalController)
+                gcon = obj.odeNetwork.a_GlobalController{1};
+                nxgc = length(gcon.str_x);
+                gcon.iv_odeX = idx_TGT + (1:nxgc)';
+                idx_TGT = idx_TGT + nxgc;
+
+                nConUnit = gcon.controlledUnits;
+                while idx <= numel(nConUnit)
+                    gcon.iv_odeU(idx) = nConUnit{idx}.iv_odeX( nConUnit{idx}.str_x==gcon.str_u );
+                    gcon.iv_odeY(idx) = nConUnit{idx}.iv_odeU( nConUnit{idx}.str_u==gcon.str_y );
+
+                    idx = idx + 1;
+                end
             end
 
+            for i=1:numel(a_bus)
+                a_bus{i}.iv_odeX = idx_TGT + (1:2).';
+                idx_TGT = idx_TGT + 2;
+            end
+
+            function set_idx(OBJ)
+                nx = length(OBJ.str_x);
+                nu = length(OBJ.str_u);
+
+                OBJ.iv_odeX = idx_TGT + (1:nx)';    
+                idx_TGT = idx_TGT + nx;
+
+                OBJ.iv_odeU = idx_TGT + (1:nu)';
+                idx_TGT = idx_TGT + nu;                
+            end
+            
         end
         
     end
@@ -126,119 +142,227 @@ classdef (Sealed = true) odeSimulator < handle
     methods (Hidden=true, Access={?odeSimulator, ?PowerNetwork})
         
         function odeX = getODEFunction(obj, t, x, RM, EM, lg) %#ok 
-            % A method for retrieving the DAE system to be analyzed.            
+            % Method for retrieving the DAE system to be analyzed.            
             
             x = EM*x; 
 
             odeX = zeros(size(x));
             odeV = zeros(size(obj.odeNetwork.a_Bus));
+            
+            a_bus = obj.odeNetwork.a_Bus;
 
-            net = obj.odeNetwork;
-            bus = net.a_Bus;                                     
+            y_GC = zeros(size(x), 'like', x);
+            if ~isempty(obj.odeNetwork.a_GlobalController)
+                a_GC = obj.odeNetwork.a_GlobalController{1};
 
-            for i=1:numel(bus)
-                bi = bus{i};
-                cm = bi.a_Component;
-                Vi = x(bi.iv_odeX);                                
-                
-                for j=1:numel(cm)
-                    cj = cm{j};
+                x_GC = x(a_GC.iv_odeX);
+                u_GC = x(a_GC.iv_odeU);
+
+                odeX(a_GC.iv_odeX) = a_GC.fv_odeDiff(t,x_GC,[],u_GC);                
+                y_GC(a_GC.iv_odeY) = a_GC.fv_odeY(t,x_GC,[],u_GC);
+            end
+
+            for i=1:numel(a_bus)
+                a_comp = a_bus{i}.a_Component;
+                Vi = x(a_bus{i}.iv_odeX);                                
+
+                for j=1:numel(a_comp)
+                    cj = a_comp{j};
                     xi = x(cj.iv_odeX);        
-                    ui = cj.cv_Uequilibrium + cj.U_offset(t,xi);               
+                    ui = x(cj.iv_odeU);
+                    yi = a_comp{j}.fv_odeY(t,xi,Vi,ui);
 
-                    con = cj.a_LocalController;
-                    if ~isempty(con)
+                    ue = cj.cv_Uequilibrium;                                   
 
-                        sub_con = con.a_LocalController;
-                        yi_sub_con = 0;
-                        if ~isempty(sub_con)
-                            xi_sub_con = xi(sub_con.iv_odeX);                            
-                            dx_sub_con = sub_con.fv_odeDiff(t, xi_sub_con, Vi, xi(2));
-                            yi_sub_con = sub_con.fv_odeConY(t, xi_sub_con, Vi, xi(2));
+                    if ~isempty(cj.a_LocalController)
+                        a_LC1  = cj.a_LocalController{1};                        
+                        yi_LC2 = 0;
 
-                            odeX(sub_con.iv_odeX) = odeX(sub_con.iv_odeX) + dx_sub_con;
+                        if ~isempty(a_LC1.a_LocalController)
+                            a_LC2  = a_LC1.a_LocalController{1};   
+                            
+                            xi_LC2 = x(a_LC2.iv_odeX);                            
+                            ui_LC2 = x(a_LC2.iv_odeU);
+                            dx_LC2 = a_LC2.fv_odeDiff(t, xi_LC2, Vi, ui_LC2);
+                            yi_LC2 = a_LC2.fv_odeConY(t, xi_LC2, Vi, ui_LC2);                            
+
+                            odeX([a_LC2.iv_odeX; a_LC2.iv_odeU]) = odeX([a_LC2.iv_odeX; a_LC2.iv_odeU]) + [dx_LC2; ui_LC2 - yi];
                         end
 
-                        xi_con = xi(con.iv_odeX);
-                        dx_con = con.fv_odeDiff(t, xi_con, Vi, yi_sub_con);
-                        yi_con = con.fv_odeConY(t, xi_con, Vi, yi_sub_con);
-
-                        odeX(con.iv_odeX) = odeX(con.iv_odeX) + dx_con;
-                        ui(2) = yi_con;
+                        xi_LC1 = x(a_LC1.iv_odeX);
+                        ui_LC1 = x(a_LC1.iv_odeU);
+                        dx_LC1 = a_LC1.fv_odeDiff(t, xi_LC1, Vi, ui_LC1);
+                        yi_LC1 = a_LC1.fv_odeConY(t, xi_LC1, Vi, ui_LC1);
+                        
+                        ue_LC1 = a_LC1.cv_Uequilibrium;
+                        ue_LC1( a_LC1.str_u==a_LC2.str_y ) = yi_LC2;
+                        odeX([a_LC1.iv_odeX; a_LC1.iv_odeU]) = odeX([a_LC1.iv_odeX; a_LC1.iv_odeU]) + [dx_LC1; ui_LC1 - ue_LC1];
+                        
+                        ue( cj.str_u==a_LC1.str_y ) = yi_LC1;
                     end                    
-            
+                                                            
+                    ue(1) = ue(1) + y_GC( cj.iv_odeU(1) ); % ひとまずはこれで実装する. マジックナンバーは気持ちが悪いので後で直す.                   
+                    ue = ue + cj.U_offset(t);
+
                     dx = cj.fv_odeDiff(t, xi, Vi, ui);
                     Ix = cj.isConnect * cj.fv_odeI(t, xi, Vi, ui);
-                                
-                    odeX([cj.iv_odeX; bi.iv_odeX]) = odeX([cj.iv_odeX; bi.iv_odeX]) + [dx; -real(Ix); -imag(Ix)];                                        
+
+                    odeX([cj.iv_odeX; cj.iv_odeU; a_bus{i}.iv_odeX]) = odeX([cj.iv_odeX; cj.iv_odeU; a_bus{i}.iv_odeX]) + [dx; ui - ue; -real(Ix); -imag(Ix)];                                        
+                    
                 end
 
                 odeV(i) = [1,1j]*Vi;
             end        
 
             I = obj.odeYmat*odeV;
-            for i=1:numel(bus)
-                idx = bus{i}.iv_odeX;
+            for i=1:numel(a_bus)
+                idx = a_bus{i}.iv_odeX;
                 odeX(idx) = odeX(idx) + [real(I(i)); imag(I(i))]; 
             end
-                        
+
             odeX = odeX(lg); 
+
         end
                 
-        function jac = getODEJacobian(obj, t, x, RM, EM, lg) %#ok    
-            % A method for obtaining the Jacobian of the DAE system under analysis.
+        function odeJac = getODEJacobian(obj, t, x, RM, EM, lg) %#ok    
+            % Method for obtaining the Jacobian of the DAE system under analysis.
 
             x = EM*x;
             
-            net = obj.odeNetwork;
-            bus = net.a_Bus;
+            a_bus = obj.odeNetwork.a_Bus;
 
-            jac = zeros(numel(x), numel(x));
+            odeJac = zeros(numel(x), numel(x));
 
-            lv = zeros(size(bus));
+            lv_Bus = zeros(0,1);
 
-            for i=1:numel(bus)
-                bi = bus{i};
-                cm = bi.a_Component;
-                Vi = x(bi.iv_odeX);                
+            if ~isempty(obj.odeNetwork.a_GlobalController)
+                a_GC = obj.odeNetwork.a_GlobalController{1};
+                
+                lh_GC = [a_GC.iv_odeX; a_GC.iv_odeU];
+                lv_GC = [a_GC.iv_odeX; a_GC.iv_odeY];
+
+                x_GC = x(a_GC.iv_odeX);
+                u_GC = x(a_GC.iv_odeU);
+
+                Axx_GC = a_GC.JacobiAxx(t, x_GC, [], u_GC);
+                Bxv_GC = a_GC.JacobiBxv(t, x_GC, [], u_GC);
+                Bxu_GC = a_GC.JacobiBxu(t, x_GC, [], u_GC);                                    
+
+                Cyx_GC = a_GC.JacobiCyx(t, x_GC, [], u_GC);
+                Dyv_GC = a_GC.JacobiDyv(t, x_GC, [], u_GC);
+                Dyu_GC = a_GC.JacobiDyu(t, x_GC, [], u_GC);
+
+                odeJac(lv_GC, lh_GC) = odeJac(lv_GC, lh_GC) + [ Axx_GC,  Bxv_GC,  Bxu_GC;
+                                                                Cyx_GC,  Dyv_GC,  Dyu_GC];
+                               
+            end
+
+            for i=1:numel(a_bus)                
+                cm = a_bus{i}.a_Component;
+                Vi = x(a_bus{i}.iv_odeX);                
 
                 for j=1:numel(cm)
                     cj = cm{j};
                     xi = x(cj.iv_odeX);        
-                    ui = cj.cv_Uequilibrium + cj.U_offset(t,xi);                    
+                    ui = x(cj.iv_odeU);                                
 
-                    lx = [cj.iv_odeX; bi.iv_odeX];
+                    lu = cj.iv_odeU;
+                    lh = [cj.iv_odeX; cj.iv_odeU; a_bus{i}.iv_odeX];
+                    lv = [cj.iv_odeX; a_bus{i}.iv_odeX];
+                    
+                    if ~isempty(cj.a_LocalController)
+                        a_LC1 = cj.a_LocalController{1};                                            
+
+                        if ~isempty(a_LC1.a_LocalController)
+                            a_LC2 = a_LC1.a_LocalController{1};
+
+                            xi_LC2 = x(a_LC2.iv_odeX);                            
+                            ui_LC2 = x(a_LC2.iv_odeU);                                                        
+
+                            Axx_LC2 = a_LC2.JacobiAxx(t, xi_LC2, Vi, ui_LC2);
+                            Bxv_LC2 = a_LC2.JacobiBxv(t, xi_LC2, Vi, ui_LC2);
+                            Bxu_LC2 = a_LC2.JacobiBxu(t, xi_LC2, Vi, ui_LC2);                                    
+        
+                            Cyx_LC2 = a_LC2.JacobiCyx(t, xi_LC2, Vi, ui_LC2);
+                            Dyv_LC2 = a_LC2.JacobiDyv(t, xi_LC2, Vi, ui_LC2);
+                            Dyu_LC2 = a_LC2.JacobiDyu(t, xi_LC2, Vi, ui_LC2);
+
+                            lu_LC2 = a_LC2.iv_odeU;
+                            lh_LC2 = [a_LC2.iv_odeX; a_LC2.iv_odeU; a_bus{i}.iv_odeX];
+                            lv_LC2 = [a_LC2.iv_odeX; a_LC2.iv_odeY];
+
+                            odeJac(lv_LC2, lh_LC2) = odeJac(lv_LC2, lh_LC2) + [ Axx_LC2,  Bxu_LC2,  Bxv_LC2; ...
+                                                                               -Cyx_LC2, -Dyu_LC2, -Dyv_LC2];                            
+
+                            
+                            odeJac(lu_LC2, lu_LC2) = odeJac(lu_LC2, lu_LC2) + eye(length(lu_LC2));
+                            
+                        end                        
+
+                        xi_LC1 = x(a_LC1.iv_odeX);
+                        ui_LC1 = x(a_LC1.iv_odeU);                                                
+
+                        Axx_LC1 = a_LC1.JacobiAxx(t, xi_LC1, Vi, ui_LC1);
+                        Bxv_LC1 = a_LC1.JacobiBxv(t, xi_LC1, Vi, ui_LC1);
+                        Bxu_LC1 = a_LC1.JacobiBxu(t, xi_LC1, Vi, ui_LC1);                                    
+    
+                        Cyx_LC1 = a_LC1.JacobiCyx(t, xi_LC1, Vi, ui_LC1);
+                        Dyv_LC1 = a_LC1.JacobiDyv(t, xi_LC1, Vi, ui_LC1);
+                        Dyu_LC1 = a_LC1.JacobiDyu(t, xi_LC1, Vi, ui_LC1);
+
+                        Cyx = cj.JacobiCyx(t, xi, Vi, ui);
+                        Dyv = cj.JacobiDyv(t, xi, Vi, ui);
+                        Dyu = cj.JacobiDyu(t, xi, Vi, ui);                    
+
+                        lu_LC1 = a_LC1.iv_odeU;
+                        lh_LC1 = [a_LC1.iv_odeX; a_LC1.iv_odeU; a_bus{i}.iv_odeX];
+                        lv_LC1 = [a_LC1.iv_odeX; a_LC1.iv_odeY];
+
+                        odeJac(lv_LC1, lh_LC1) = odeJac(lv_LC1, lh_LC1) + [ Axx_LC1,  Bxu_LC1,  Bxv_LC1; ...                                                                                   
+                                                                           -Cyx_LC1, -Dyu_LC1, -Dyv_LC1];
+
+                        odeJac(lu_LC1, lu_LC1) = odeJac(lu_LC1, lu_LC1) + eye(length(lu_LC1));
+
+                        odeJac(cj.iv_odeY, lh) = [-Cyx, -Dyu, -Dyv];
+                    end                                        
                                 
-                    jacA = cj.JacobiA(t, xi, Vi, ui);
-                    jacB = cj.JacobiB(t, xi, Vi, ui);
-                    jacC = cj.JacobiC(t, xi, Vi, ui);
-                    jacD = cj.JacobiD(t, xi, Vi, ui);
+                    Axx = cj.JacobiAxx(t, xi, Vi, ui);
+                    Bxv = cj.JacobiBxv(t, xi, Vi, ui);
+                    Bxu = cj.JacobiBxu(t, xi, Vi, ui);
+
+                    Cix = cj.JacobiCix(t, xi, Vi, ui);
+                    Div = cj.JacobiDiv(t, xi, Vi, ui);
+                    Diu = cj.JacobiDiu(t, xi, Vi, ui);                    
             
-                    jac(lx,lx) = jac(lx,lx) + [jacA, jacB; -jacC, -jacD]; 
+                    odeJac(lv,lh) = odeJac(lv,lh) + [ Axx,  Bxu,  Bxv; ...
+                                                     -Cix, -Diu, -Div]; 
+
+                    odeJac(lu,lu) = odeJac(lu,lu) + eye(length(lu));
+
                 end
 
-                lv(2*i+[-1;0]) = bi.iv_odeX; 
+                lv_Bus(2*i+[-1;0]) = a_bus{i}.iv_odeX; 
             end                               
         
             G = real(obj.odeYmat);
             B = imag(obj.odeYmat);
 
-            lo = lv(1:2:end);
-            le = lv(2:2:end);
+            lo = lv_Bus(1:2:end);
+            le = lv_Bus(2:2:end);
             
-            jac(lo,lo) = jac(lo,lo) + G;
-            jac(lo,le) = jac(lo,le) - B;
-            jac(le,lo) = jac(le,lo) + B;
-            jac(le,le) = jac(le,le) + G; 
+            odeJac(lo,lo) = odeJac(lo,lo) + G;
+            odeJac(lo,le) = odeJac(lo,le) - B;
+            odeJac(le,lo) = odeJac(le,lo) + B;
+            odeJac(le,le) = odeJac(le,le) + G; 
             
-            jac = jac(lg,lg);
+            odeJac = odeJac(lg,lg);
 
         end       
 
         function [x0, M0] = getNextPhase(obj, x0, M0, RM, EM) %#ok
             a_bus  = obj.odeNetwork.a_Bus;            
 
-            x0 = EM*x0;
+            x0 = EM * x0;
             M0 = EM * M0 * EM.';
 
             for i=1:numel(a_bus)
@@ -248,13 +372,30 @@ classdef (Sealed = true) odeSimulator < handle
                     if isa(a_Comp{j}, 'component.generator.abstract') && ~a_Comp{j}.isConnect
                         c_idx = a_Comp{j}.iv_odeX;
                         b_idx = a_bus{i}.iv_odeX;
-                        [x0(c_idx), ~] = a_Comp{j}.get_equilibrium([1,1j]*x0(b_idx), 0+1j*0);                         
+                        [x0(c_idx), u_equilibrium] = a_Comp{j}.get_equilibrium([1,1j]*x0(b_idx), 0+1j*0);                         
+                        
+                        if ~isempty(a_Comp{j}.a_LocalController)
+                            a_LC1 = a_Comp{j}.a_LocalController{1};
 
-                        M0(c_idx, c_idx) = a_Comp{j}.rm_odeMass([], [], x0(b_idx), []);
+                            v_LC1 = a_LC1.iv_odeX;                            
+                            [x0(v_LC1), ~] = a_LC1.get_equilibrium([1,1j]*x0(b_idx), u_equilibrium);                         
+
+                            M0(v_LC1, v_LC1) = a_LC1.rm_odeMass([], [], [], []);
+                            
+                            if ~isempty(a_LC1.a_LocalController)
+                                a_LC2 = a_LC1.a_LocalController{1};
+
+                                v_LC2 = a_LC2.iv_odeX;                                
+                                [x0(v_LC2), ~] = a_LC2.get_equilibrium([1,1j]*x0(b_idx), []);                         
+
+                                M0(v_LC2, v_LC2) = a_LC2.rm_odeMass([], [], [], []);
+                            end
+                        end
+
+                        M0(c_idx, c_idx) = a_Comp{j}.rm_odeMass([], [], [], []);
                     end
                 end
             end            
-
         end
 
     end
@@ -307,7 +448,7 @@ classdef (Sealed = true) odeSimulator < handle
             
                 try                     
                     startTime = tic;
-                    stopTime  = 30;
+                    stopTime  = 8;
                     SimulationTimer = @(t,y) checkSimulationTime(t,y,startTime,stopTime);
                     o.EventDefinition = odeEvent("EventFcn", SimulationTimer, "Response", "stop");
                     
@@ -326,8 +467,7 @@ classdef (Sealed = true) odeSimulator < handle
 
                         case 'NeedBetterY0'
 
-                            % If an error related to initial value inconsistencies occurs, 
-                            % calculate a state that is consistent with the DAE system.
+                            % If an error related to initial value inconsistencies occurs, calculate a state that is consistent with the DAE system.
                             [ODEfcn, x0, options] = CalculateInitialCondition(o, options);
 
                         otherwise

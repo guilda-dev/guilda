@@ -22,10 +22,16 @@ classdef Component < PowerSystemModel
         rm_odeMass                             % [  Dynamics ] 数値積分の計算に使用する質量行列のシンボリック式
         fv_odeDiff                             % [  Dynamics ] 数値積分の計算に使用する微分方程式のシンボリック式
         fv_odeI                                % [  Dynamics ] 数値積分の計算に使用する接続方程式のシンボリック式
-        JacobiA
-        JacobiB
-        JacobiC
-        JacobiD
+        fv_odeY
+        JacobiAxx 
+        JacobiBxv  
+        JacobiBxu  
+        JacobiCix  
+        JacobiDiv  
+        JacobiDiu 
+        JacobiCyx                
+        JacobiDyv
+        JacobiDyu
         odeLinearSystem
     end
     properties
@@ -41,6 +47,7 @@ classdef Component < PowerSystemModel
     properties (SetAccess={?odeSimulator, ?Component}, Hidden)
         iv_odeX  = zeros(0,1);
         iv_odeU  = zeros(0,1);        
+        iv_odeY  = zeros(0,1);        
     end    
     properties(Dependent)
         cv_Xequilibrium_all                    % [SteadyState] 制御器の状態も含めた平衡点

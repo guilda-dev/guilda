@@ -18,10 +18,11 @@ function dx = fcn_dx(obj, t, x, V, u, param, omega0) %#ok
 
     % 入力
     Vabs = abs([1,1j]*V);        
+    Vpss = u(2);
     % 計測用変圧器
     dx1 = -Vtr + Vabs;
     % コンパレータ
-    Vcom = Vref + u - Vtr - Vst;
+    Vcom = Vref + Vpss - Vtr - Vst;
     % 増幅器
     dx2 = ( -Vap + kap*Vcom )*( heaviside(Vap - Vap_min) - heaviside(Vap - Vap_max) );
     % 励磁器

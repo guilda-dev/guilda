@@ -121,7 +121,7 @@ classdef PowerNetwork < PowerSystemModel
         % Layer Structure
         bus = add_bus(obj, str_Bus, opt)
         branch = add_branch(obj, str_Branch, from_to, opt)
-        add_global_controller(obj, a_Gcon, str_CompTag)
+        add_global_controller(obj, a_Gcon)
         remove_bus( obj, str_BusTag)
         remove_branch( obj, str_BranchTag)
         remove_global_controller( obj, str_GconTag)

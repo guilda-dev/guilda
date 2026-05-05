@@ -14,10 +14,13 @@ classdef classical < component.generator.abstract
             tab_para = obj.tab_parameter;      
             array    = tab_para.dynamics{:,obj.str_para};
             
-            obj.JacobiA = @(t, x, V, u) getJacobiA(t, x, V, u, array, omega0);
-            obj.JacobiB = @(t, x, V, u) getJacobiB(t, x, V, u, array, omega0);
-            obj.JacobiC = @(t, x, V, u) getJacobiC(t, x, V, u, array, omega0);
-            obj.JacobiD = @(t, x, V, u) getJacobiD(t, x, V, u, array, omega0);         
+            obj.JacobiAxx = @(t, x, V, u) getJacobiAxx(t, x, V, u, array, omega0);
+            obj.JacobiBxv = @(t, x, V, u) getJacobiBxv(t, x, V, u, array, omega0);
+            obj.JacobiBxu = @(t, x, V, u) getJacobiBxu(t, x, V, u, array, omega0);
+            
+            obj.JacobiCix = @(t, x, V, u) getJacobiCix(t, x, V, u, array, omega0);
+            obj.JacobiDiv = @(t, x, V, u) getJacobiDiv(t, x, V, u, array, omega0);         
+            obj.JacobiDiu = @(t, x, V, u) getJacobiDiu(t, x, V, u, array, omega0);         
 
             obj.rm_odeMass = @(t, x, V, u) obj.fcn_Mass(t, x, V, u, array, omega0);
             obj.fv_odeDiff = @(t, x, V, u) obj.fcn_dx(t, x, V, u, array, omega0);

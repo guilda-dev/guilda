@@ -94,7 +94,7 @@ classdef (Sealed = true) odeEventSet < handle
 
     methods (Access={?odeSimulator})
         function [odeTimeTable, odeEvents] = table(obj, varargin, opt)
-            % A method that generates a timetable for time events specified by a structure.
+            % Method that generates a timetable for time events specified by a structure.
             % When performing dynamic simulation, events are extracted based on this timetable,
             % and the system is constructed and analyzed based on the extracted events.
             %
@@ -105,7 +105,7 @@ classdef (Sealed = true) odeEventSet < handle
             %    10~12[s] |   0    |    1   |    0   |   1    |   0   
             %    12~15[s] |   0    |    0   |    1   |   1    |   1   
             %       :         :         :        :       :        :
-            %
+            
             arguments
                 obj                
             end
@@ -204,7 +204,7 @@ classdef (Sealed = true) odeEventSet < handle
                         comp{j}.X_offset(lv_X) = comp{j}.X_offset(lv_X) + osV{l_osU};
                     end                    
 
-                    ini = repmat({@(t,x) 0}, size(comp{j}.str_u));
+                    ini = repmat({@(t) 0}, size(comp{j}.str_u));
                     if any(l_inU)
                         l_inN = ismember(comp{j}.str_u, inN{l_inU});                                                
                         
@@ -222,7 +222,7 @@ classdef (Sealed = true) odeEventSet < handle
                         end
                         ini(l_inN) = exV;
                     end
-                    comp{j}.U_offset = @(t,x) cellfun(@(f) f(t,x), ini);
+                    comp{j}.U_offset = @(t) cellfun(@(f) f(t), ini);
                 end
             end            
 
@@ -232,16 +232,16 @@ classdef (Sealed = true) odeEventSet < handle
 
             function exV = event2fhandle(exV)
                 if isa(exV, 'double')
-                    exV = @(t,x) exV;
+                    exV = @(t) exV;
 
                 elseif isa(exV, 'function_handle')
-                    if nargin(exV) ~= 2
+                    if nargin(exV) ~= 1
                         error(msg('GUILDA:odeEventSet:InvalidNargin'))
                     end
 
                     ts = opt.TimePhase(1) - odeEvents{l_inU}.TimeSpan(1);
                     if odeEvents{l_inU}.odeIteration+1 == opt.Iteration
-                        exV = @(t,x) exV(t+ts,x);
+                        exV = @(t) exV(t+ts);
                     end
                 else
                     error(msg('GUILDA:odeEventSet:InvalidInputType'))
@@ -274,7 +274,8 @@ classdef (Sealed = true) odeEventSet < handle
             
             rm_M = zeros(0,0);
             rv_V = cell(size(a_bus));
-            rv_X = cell(size(a_bus));
+            rv_X = cell(size(a_bus));            
+
             for i=1:numel(a_bus)
                 Btag = a_bus{i}.str_tag;
                 a_bus{i}.l_isFault = ismember(Btag, BusFault);
@@ -286,17 +287,50 @@ classdef (Sealed = true) odeEventSet < handle
 
                 rv_Cstate = cell(size(a_Comp));
                 for j=1:numel(a_Comp)
-                    c_Ctag{j} = repmat( a_Comp{j}.str_tag, size(a_Comp{j}.str_x) );                    
+                    c_Ctag{j} = repmat( a_Comp{j}.str_tag, size([a_Comp{j}.str_x; a_Comp{j}.str_u]) );                    
                     a_Comp{j}.isConnect = ~ismember(a_Comp{j}.str_tag, CompTrip);
 
-                    rv_Cstate{j} = a_Comp{j}.cv_Xequilibrium + a_Comp{j}.X_offset;
+                    rv_Cstate{j} = [a_Comp{j}.cv_Xequilibrium + a_Comp{j}.X_offset; a_Comp{j}.cv_Uequilibrium + a_Comp{j}.U_offset(0)];
 
-                    rm_M(a_Comp{j}.iv_odeX, a_Comp{j}.iv_odeX) = a_Comp{j}.rm_odeMass([], [], [], []);
+                    rx_idx = [a_Comp{j}.iv_odeX; a_Comp{j}.iv_odeU]; 
+                    nu_idx = numel(a_Comp{j}.iv_odeU); 
+                    rm_M(rx_idx, rx_idx) = blkdiag(a_Comp{j}.rm_odeMass([], [], [], []), zeros(nu_idx, nu_idx));
+                    
+                    if ~isempty(a_Comp{j}.a_LocalController)
+                        a_LC1 = a_Comp{j}.a_LocalController{1};
+                        
+                        c_Ctag{j} = [c_Ctag{j}; repmat( a_Comp{j}.str_tag, size([a_LC1.str_x; a_LC1.str_u]) )];                    
+                        rv_Cstate{j} = [rv_Cstate{j}; [a_LC1.cv_Xequilibrium; a_LC1.cv_Uequilibrium]];
+
+                        rx_idx = [a_LC1.iv_odeX; a_LC1.iv_odeU]; 
+                        nu_idx = numel(a_LC1.iv_odeU); 
+                        rm_M(rx_idx, rx_idx) = blkdiag(a_LC1.rm_odeMass([], [], [], []), zeros(nu_idx, nu_idx));
+                        
+                        if ~isempty(a_LC1.a_LocalController)
+                            a_LC2 = a_LC1.a_LocalController{1};
+                            
+                            c_Ctag{j} = [c_Ctag{j}; repmat( a_Comp{j}.str_tag, size([a_LC2.str_x; a_LC2.str_u]) )];                    
+                            rv_Cstate{j} = [rv_Cstate{j}; [a_LC2.cv_Xequilibrium; a_LC2.cv_Uequilibrium]];
+
+                            rx_idx = [a_LC2.iv_odeX; a_LC2.iv_odeU]; 
+                            nu_idx = numel(a_LC2.iv_odeU); 
+                            rm_M(rx_idx, rx_idx) = blkdiag(a_LC2.rm_odeMass([], [], [], []), zeros(nu_idx, nu_idx));
+                        end
+                    end
                 end
 
                 rv_X{i} = vertcat(rv_Cstate{:});                
                 Ctag_all{i} = cell2mat(c_Ctag);
             end
+
+            if ~isempty(obj.odeNetwork.a_GlobalController)
+                a_GC = obj.odeNetwork.a_GlobalController{1};
+
+                rm_M(a_GC.iv_odeX, a_GC.iv_odeX) = a_GC.rm_odeMass([], [], [], []);
+                rv_X = [rv_X; {a_GC.cv_Xequilibrium}];
+                Ctag_all = [Ctag_all; {a_GC.str_tag}];
+            end
+
             Ctag_all = cell2mat(Ctag_all);
 
             lv_FBorTC = ismember([Ctag_all; Btag_all], [CompTrip; BusFault]);

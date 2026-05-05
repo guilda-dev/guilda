@@ -1,4 +1,4 @@
-function B = getJacobiB(t, x, V, u, param, omega0) %#ok   
+function Bxv = getJacobiBxv(t, x, V, u, param, omega0) %#ok   
     delta = x(1);      
     Eq    = x(3);    
     Ed    = x(4);
@@ -30,10 +30,10 @@ function B = getJacobiB(t, x, V, u, param, omega0) %#ok
     dId_dVq = -1/Xdpp;
     dIq_dVd = 1/Xqpp;
 
-    B = zeros(6, 2);
+    Bxv = zeros(6, 2);
     
-    B(2,1) = -(dVd_dVre*Id + Vd*(dId_dVq*dVq_dVre) + dVq_dVre*Iq + Vq*(dIq_dVd*dVd_dVre));
-    B(2,2) = -(dVd_dVim*Id + Vd*(dId_dVq*dVq_dVim) + dVq_dVim*Iq + Vq*(dIq_dVd*dVd_dVim));
+    Bxv(2,1) = -(dVd_dVre*Id + Vd*(dId_dVq*dVq_dVre) + dVq_dVre*Iq + Vq*(dIq_dVd*dVd_dVre));
+    Bxv(2,2) = -(dVd_dVim*Id + Vd*(dId_dVq*dVq_dVim) + dVq_dVim*Iq + Vq*(dIq_dVd*dVd_dVim));
     
     df5_dVre  = -(Xqp-Xls)*dIq_dVd*dVd_dVre;
     df5_dVim  = -(Xqp-Xls)*dIq_dVd*dVd_dVim;
@@ -43,14 +43,14 @@ function B = getJacobiB(t, x, V, u, param, omega0) %#ok
 
     alpha_d = (Xdp-Xdpp)/(Xdp-Xls)^2;
     coeff_d = (Xd-Xdp);    
-    B(3,1) = -coeff_d * (dId_dVq*dVq_dVre + alpha_d*df6_dVre);
-    B(3,2) = -coeff_d * (dId_dVq*dVq_dVim + alpha_d*df6_dVim);
+    Bxv(3,1) = -coeff_d * (dId_dVq*dVq_dVre + alpha_d*df6_dVre);
+    Bxv(3,2) = -coeff_d * (dId_dVq*dVq_dVim + alpha_d*df6_dVim);
 
     alpha_q = (Xqp-Xqpp)/(Xqp-Xls)^2;
     coeff_q = (Xq-Xqp);    
-    B(4,1) = coeff_q * (dIq_dVd*dVd_dVre + alpha_q*df5_dVre);
-    B(4,2) = coeff_q * (dIq_dVd*dVd_dVim + alpha_q*df5_dVim);
+    Bxv(4,1) = coeff_q * (dIq_dVd*dVd_dVre + alpha_q*df5_dVre);
+    Bxv(4,2) = coeff_q * (dIq_dVd*dVd_dVim + alpha_q*df5_dVim);
 
-    B(5,[1,2]) = [df5_dVre, df5_dVim];     
-    B(6,[1,2]) = [df6_dVre, df6_dVim];     
+    Bxv(5,[1,2]) = [df5_dVre, df5_dVim];     
+    Bxv(6,[1,2]) = [df6_dVre, df6_dVim];     
 end

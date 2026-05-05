@@ -1,4 +1,4 @@
-function B = getJacobiB(t, x, V, u, param, omega0) %#ok
+function Bxv = getJacobiBxv(t, x, V, u, param, omega0) %#ok
     
     delta = x(1);
 
@@ -18,8 +18,8 @@ function B = getJacobiB(t, x, V, u, param, omega0) %#ok
     dP_dVre = K * (Vq*sin(delta) + Vd*cos(delta)) + (Vfd/Xd)*sin(delta);        
     dP_dVim = K * (Vq*(-cos(delta)) + Vd*sin(delta)) - (Vfd/Xd)*cos(delta);       
     
-    B = zeros(2, 2);
+    Bxv = zeros(2, 2);
         
-    B(1, [1,2]) = zeros(1,2);        
-    B(2, [1,2]) = [-dP_dVre, -dP_dVim];     
+    Bxv(1, [1,2]) = zeros(1,2);        
+    Bxv(2, [1,2]) = [-dP_dVre, -dP_dVim];     
 end

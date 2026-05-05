@@ -24,9 +24,9 @@ function [Mass, x0] = reset_odeset(obj)
     Mass = blkdiag(cell_Mass{:});
     x0   = vertcat(cell_x0{:});
 
-    % under development
-    % for i = numel(obj.a_GlobalController)
-    %     coni = obj.a_GlobalController;
-    %     n_odeX = coni.reset_odeset(n_odeX);
-    % end
+    if ~isempty(obj.a_GlobalController)
+        gcon = obj.a_GlobalController{1};
+        [gcon.cv_Xequilibrium, gcon.cv_Uequilibrium] = gcon.get_equilibrium;
+        gcon.set_odefcn(omega0);
+    end
 end
