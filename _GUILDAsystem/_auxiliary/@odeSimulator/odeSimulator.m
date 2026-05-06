@@ -152,6 +152,7 @@ classdef (Sealed = true) odeSimulator < handle
             a_bus = obj.odeNetwork.a_Bus;
 
             y_GC = zeros(size(x), 'like', x);
+            a_GC.str_y = "Pmech";
             if ~isempty(obj.odeNetwork.a_GlobalController)
                 a_GC = obj.odeNetwork.a_GlobalController{1};
 
@@ -201,7 +202,7 @@ classdef (Sealed = true) odeSimulator < handle
                         ue( cj.str_u==a_LC1.str_y ) = yi_LC1;
                     end                    
                                                             
-                    ue(1) = ue(1) + y_GC( cj.iv_odeU(1) ); % ひとまずはこれで実装する. マジックナンバーは気持ちが悪いので後で直す.                   
+                    ue( cj.str_u==a_GC.str_y ) = ue( cj.str_u==a_GC.str_y ) + y_GC( cj.iv_odeU( cj.str_u==a_GC.str_y ) ); 
                     ue = ue + cj.U_offset(t);
 
                     dx = cj.fv_odeDiff(t, xi, Vi, ui);
@@ -376,28 +377,7 @@ classdef (Sealed = true) odeSimulator < handle
 
         function out = simulate(obj)
             
-            o = ode;
-        
-            cls = metaclass(o);
-            pList = arrayfun(@(P) P.Name, cls.PropertyList, 'UniformOutput', false);
-            pLogc = arrayfun(@(P) strcmp(P.SetAccess, 'public'), cls.PropertyList);
-        
-            props = pList(pLogc);
-            
-            nprops = numel(props);
-            ip = 1;
-            while ip <= nprops        
-                o.(props{ip}) = obj.(props{ip});
-                ip = ip + 1;        
-            end
-
-            options = odeset("RelTol", o.RelativeTolerance, "AbsTol", o.AbsoluteTolerance);                        
-
-            tp = 1;
-            np = size(obj.odeTimeTable,1);                   
-
-            x0   = [];
-            Mass = [];
+            [o, x0, Mass, tp, np, options] = makeODE(obj);            
 
             while tp <= np          
 
