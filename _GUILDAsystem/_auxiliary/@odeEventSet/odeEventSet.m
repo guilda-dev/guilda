@@ -66,6 +66,14 @@ classdef (Sealed = true) odeEventSet < handle
         odeTimeSpan
         odeIteration (1,1) double = nan
     end
+
+    properties (Access=private)
+        sv_Btag
+        sv_Ctag
+        rv_Brep
+        rv_Crep
+    end
+
     properties (SetAccess=private, Hidden)        
         Ver (1,1) double = 1.1
     end
@@ -89,6 +97,27 @@ classdef (Sealed = true) odeEventSet < handle
                 idx = idx + 1;
             end            
 
+            cv_bus = net.a_Bus;            
+            sv_tag = cell(size(cv_bus));                
+            rv_rep = cell(size(cv_bus));                          
+
+            for i=1:numel(cv_bus)                              
+                a_Comp = cv_bus{i}.a_Component;                                                   
+                [sv_tag{i}, rv_rep{i}] = getTM(a_Comp);                                
+            end
+
+            if ~isempty(obj.odeNetwork.a_GlobalController)
+                a_GC = obj.odeNetwork.a_GlobalController{1};                
+                sv_tag = [sv_tag; {a_GC.str_tag}];
+                rv_rep = [rv_rep; {numel(a_GC.str_x)}];
+            end
+
+            obj.sv_Btag = string(net.a_Bus);
+            obj.sv_Ctag = vertcat(sv_tag{:});
+
+            obj.rv_Brep = 2*ones(i,1);            
+            obj.rv_Crep = vertcat(rv_rep{:});
+            
         end
     end    
 
@@ -266,73 +295,31 @@ classdef (Sealed = true) odeEventSet < handle
             odeEvents = [{obj},varargin]';
                     
             BusFault = cell2mat( cellfun(@(B) B.FaultBus, odeEvents, 'UniformOutput', false) );
-            CompTrip = cell2mat( cellfun(@(B) B.TripUnit, odeEvents, 'UniformOutput', false) );            
-
-            Btag_all = cell2mat( cellfun(@(B) repmat(B.str_tag, [2,1]), a_bus, 'UniformOutput', false) );
-
-            Ctag_all = cell(size(a_bus));
+            CompTrip = cell2mat( cellfun(@(B) B.TripUnit, odeEvents, 'UniformOutput', false) );                                    
             
             rm_M = zeros(0,0);
             rv_V = cell(size(a_bus));
             rv_X = cell(size(a_bus));            
 
             for i=1:numel(a_bus)
-                Btag = a_bus{i}.str_tag;
-                a_bus{i}.l_isFault = ismember(Btag, BusFault);
+                iBus = a_bus{i};                
+                iBus.l_isFault = ismember(iBus.str_tag, BusFault);
 
-                rv_V{i} = [real(a_bus{i}.c_Vequilibrium); imag(a_bus{i}.c_Vequilibrium)];
+                rv_V{i} = [real(iBus.c_Vequilibrium); imag(iBus.c_Vequilibrium)];
 
-                a_Comp = a_bus{i}.a_Component;                                
-                c_Ctag = cell(size(a_Comp));
-
-                rv_Cstate = cell(size(a_Comp));
-                for j=1:numel(a_Comp)
-                    c_Ctag{j} = repmat( a_Comp{j}.str_tag, size([a_Comp{j}.str_x; a_Comp{j}.str_u]) );                    
-                    a_Comp{j}.isConnect = ~ismember(a_Comp{j}.str_tag, CompTrip);
-
-                    rv_Cstate{j} = [a_Comp{j}.cv_Xequilibrium + a_Comp{j}.X_offset; a_Comp{j}.cv_Uequilibrium + a_Comp{j}.U_offset(0)];
-
-                    rx_idx = [a_Comp{j}.iv_odeX; a_Comp{j}.iv_odeU]; 
-                    nu_idx = numel(a_Comp{j}.iv_odeU); 
-                    rm_M(rx_idx, rx_idx) = blkdiag(a_Comp{j}.rm_odeMass([], [], [], []), zeros(nu_idx, nu_idx));
-                    
-                    if ~isempty(a_Comp{j}.a_LocalController)
-                        a_LC1 = a_Comp{j}.a_LocalController{1};
-                        
-                        c_Ctag{j} = [c_Ctag{j}; repmat( a_Comp{j}.str_tag, size([a_LC1.str_x; a_LC1.str_u]) )];                    
-                        rv_Cstate{j} = [rv_Cstate{j}; [a_LC1.cv_Xequilibrium; a_LC1.cv_Uequilibrium]];
-
-                        rx_idx = [a_LC1.iv_odeX; a_LC1.iv_odeU]; 
-                        nu_idx = numel(a_LC1.iv_odeU); 
-                        rm_M(rx_idx, rx_idx) = blkdiag(a_LC1.rm_odeMass([], [], [], []), zeros(nu_idx, nu_idx));
-                        
-                        if ~isempty(a_LC1.a_LocalController)
-                            a_LC2 = a_LC1.a_LocalController{1};
-                            
-                            c_Ctag{j} = [c_Ctag{j}; repmat( a_Comp{j}.str_tag, size([a_LC2.str_x; a_LC2.str_u]) )];                    
-                            rv_Cstate{j} = [rv_Cstate{j}; [a_LC2.cv_Xequilibrium; a_LC2.cv_Uequilibrium]];
-
-                            rx_idx = [a_LC2.iv_odeX; a_LC2.iv_odeU]; 
-                            nu_idx = numel(a_LC2.iv_odeU); 
-                            rm_M(rx_idx, rx_idx) = blkdiag(a_LC2.rm_odeMass([], [], [], []), zeros(nu_idx, nu_idx));
-                        end
-                    end
-                end
-
-                rv_X{i} = vertcat(rv_Cstate{:});                
-                Ctag_all{i} = cell2mat(c_Ctag);
+                a_Comp = iBus.a_Component;                                                                              
+                [rv_X{i}, rm_M, CompTrip] = getComponentSpecification(a_Comp, rv_X{i}, rm_M, CompTrip);                
             end
 
             if ~isempty(obj.odeNetwork.a_GlobalController)
                 a_GC = obj.odeNetwork.a_GlobalController{1};
 
                 rm_M(a_GC.iv_odeX, a_GC.iv_odeX) = a_GC.rm_odeMass([], [], [], []);
-                rv_X = [rv_X; {a_GC.cv_Xequilibrium}];
-                Ctag_all = [Ctag_all; {a_GC.str_tag}];
-            end
+                rv_X = [rv_X; {a_GC.cv_Xequilibrium}];                
+            end            
 
-            Ctag_all = cell2mat(Ctag_all);
-
+            Btag_all  = repelem(obj.sv_Btag, obj.rv_Brep);
+            Ctag_all  = repelem(obj.sv_Ctag, obj.rv_Crep);
             lv_FBorTC = ismember([Ctag_all; Btag_all], [CompTrip; BusFault]);
 
             nFBorTC = length(lv_FBorTC);
@@ -355,7 +342,7 @@ classdef (Sealed = true) odeEventSet < handle
                 M0 = blkdiag(rm_M, zeros(nB*2, nB*2));
             end
             varargout{2} = RM * M0 * RM.';                    
-            
+                                    
         end    
 
         function EventSettings = Event2State(obj, varargin, opt)
@@ -375,10 +362,9 @@ classdef (Sealed = true) odeEventSet < handle
             a_cmp = vertcat(a_cmp{:});
             odeEvents = [{obj},varargin]';
                                 
-            CompTrip = cell2mat( cellfun(@(B) B.TripUnit, odeEvents, 'UniformOutput', false) );                        
-            Ctag_all = cell2mat( cellfun(@(B) string(B.a_Component), a_bus, 'UniformOutput', false) );                                
+            CompTrip = cell2mat( cellfun(@(B) B.TripUnit, odeEvents, 'UniformOutput', false) );                                    
             
-            lv_Ctagi = ismember(Ctag_all, CompTrip);            
+            lv_Ctagi = ismember(obj.sv_Ctag, CompTrip);            
             
             B_sti = cell2mat( cellfun(@(bi) bi.iv_odeX, a_bus, 'UniformOutput', false) );
             C_sti = cell2mat( cellfun(@(ci) ci.iv_odeX, a_cmp(lv_Ctagi), 'UniformOutput', false) );            
@@ -406,4 +392,44 @@ classdef (Sealed = true) odeEventSet < handle
         
     end
 
+end
+
+
+function [sv_tag, rv_rep] = getTM(OBJs, sv_tag, rv_rep)
+    if nargin < 2
+        sv_tag = [];
+        rv_rep = [];
+    end
+
+    for no = 1:numel(OBJs)
+        OBJ = OBJs{no};
+        rs_idx = numel([OBJ.str_x; OBJ.str_u]);                
+        
+        sv_tag = [sv_tag; OBJ.str_tag]; %#ok
+        rv_rep = [rv_rep; rs_idx];      %#ok  
+
+        if ~isempty(OBJ.a_LocalController)
+            a_LC = OBJ.a_LocalController(1);
+            [sv_tag, rv_rep] = getTM(a_LC, sv_tag, rv_rep);
+        end
+    end
+end
+
+function [rv_x0, rm_Mass, TC] = getComponentSpecification(OBJs, rv_x0, rm_Mass, TC)
+
+    for no = 1:numel(OBJs)
+        OBJ = OBJs{no};
+        rx_idx = [OBJ.iv_odeX; OBJ.iv_odeU]; 
+        nu_idx = numel(OBJ.iv_odeU); 
+        
+        OBJ.isConnect = ~ismember(OBJ.str_tag, TC);                
+        rv_x0 = [rv_x0; OBJ.cv_Xequilibrium + OBJ.X_offset; OBJ.cv_Uequilibrium + OBJ.U_offset(0)]; %#ok
+        
+        rm_Mass(rx_idx, rx_idx) = blkdiag(OBJ.rm_odeMass([],[],[],[]), zeros(nu_idx, nu_idx));
+
+        if ~isempty(OBJ.a_LocalController)
+            a_LC = OBJ.a_LocalController(1);
+            [rv_x0, rm_Mass, TC] = getComponentSpecification(a_LC, rv_x0, rm_Mass, TC);
+        end
+    end
 end

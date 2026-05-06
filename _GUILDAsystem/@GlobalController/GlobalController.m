@@ -32,11 +32,16 @@ classdef GlobalController < PowerSystemModel
     properties (SetAccess=protected, Hidden)
         controlledUnits
     end
-    properties (SetAccess={?odeSimulator, ?Component}, Hidden)
+    properties (SetAccess={?odeSimulator, ?odeEventSet}, Hidden)
         iv_odeX (:,1) double = zeros(0,1);
         iv_odeU (:,1) double = zeros(0,1);
         iv_odeY (:,1) double = zeros(0,1);        
-    end    
+
+        X_offset = 0
+        U_offset = @(t) 0
+
+        isConnect (1,1) logical = true
+    end        
     properties(SetAccess={?PowerNetwork})
         cv_Xequilibrium (:,1) double = zeros(0,1)   
         cv_Uequilibrium (:,1) double = zeros(0,1)   

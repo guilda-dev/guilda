@@ -31,11 +31,15 @@ classdef LocalController < PowerSystemModel
         JacobiDyv        
         JacobiDyu        
     end    
-    properties (SetAccess={?odeSimulator, ?Component}, Hidden)
+    properties (SetAccess={?odeSimulator, ?odeEventSet}, Hidden)
         iv_odeX  = zeros(0,1);
         iv_odeU  = zeros(0,1);
         iv_odeY  = zeros(0,1);
-        rv_odeX0 = zeros(0,1);
+
+        X_offset = 0
+        U_offset = @(t) 0
+        
+        isConnect (1,1) logical = true
     end    
     properties(SetAccess=protected)
         cv_Xequilibrium (:,1) double = zeros(0,1)   
