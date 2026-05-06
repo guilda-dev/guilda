@@ -40,6 +40,7 @@ function bra = add_branch(obj, Type, from_to, opt)
         case 'pi';                      mkInst = @branch.pi;
         case 'pi_transformer';          mkInst = @branch.pi_transformer;
         case 'two_winding_transformer'; mkInst = @branch.two_winding_transformer;
+
     end
     bra = mkInst(str_Index, opt);
 
