@@ -21,11 +21,15 @@ classdef LocalController < PowerSystemModel
     properties(SetAccess=protected)                   
         rm_odeMass       
         fv_odeDiff       
-        fv_odeConY
+        fv_odeY
 
         JacobiAxx        
         JacobiBxv        
         JacobiBxu        
+
+        JacobiCix = @(t,x,V,u)[]        
+        JacobiDiv = @(t,x,V,u)[]                
+        JacobiDiu = @(t,x,V,u)[]               
         
         JacobiCyx        
         JacobiDyv        

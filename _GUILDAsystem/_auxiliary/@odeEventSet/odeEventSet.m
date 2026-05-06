@@ -308,7 +308,7 @@ classdef (Sealed = true) odeEventSet < handle
                 rv_V{i} = [real(iBus.c_Vequilibrium); imag(iBus.c_Vequilibrium)];
 
                 a_Comp = iBus.a_Component;                                                                              
-                [rv_X{i}, rm_M, CompTrip] = getComponentSpecification(a_Comp, rv_X{i}, rm_M, CompTrip);                
+                [rv_X{i}, rm_M, CompTrip] = getXM(a_Comp, rv_X{i}, rm_M, CompTrip);                
             end
 
             if ~isempty(obj.odeNetwork.a_GlobalController)
@@ -415,7 +415,7 @@ function [sv_tag, rv_rep] = getTM(OBJs, sv_tag, rv_rep)
     end
 end
 
-function [rv_x0, rm_Mass, TC] = getComponentSpecification(OBJs, rv_x0, rm_Mass, TC)
+function [rv_x0, rm_Mass, TC] = getXM(OBJs, rv_x0, rm_Mass, TC)
 
     for no = 1:numel(OBJs)
         OBJ = OBJs{no};
@@ -429,7 +429,7 @@ function [rv_x0, rm_Mass, TC] = getComponentSpecification(OBJs, rv_x0, rm_Mass, 
 
         if ~isempty(OBJ.a_LocalController)
             a_LC = OBJ.a_LocalController(1);
-            [rv_x0, rm_Mass, TC] = getComponentSpecification(a_LC, rv_x0, rm_Mass, TC);
+            [rv_x0, rm_Mass, TC] = getXM(a_LC, rv_x0, rm_Mass, TC);
         end
     end
 end

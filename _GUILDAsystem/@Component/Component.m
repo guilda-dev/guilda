@@ -19,19 +19,23 @@ classdef Component < PowerSystemModel
     properties(SetAccess=protected)
         a_Bus                                  % [   Layer   ] 接続しているBusクラス(a_Cubicleから辿る)
         a_LocalController (:,1) = cell(0,1)    % [   Layer   ] 接続されているControllerクラスのcell配列        
-        rm_odeMass                             % [  Dynamics ] 数値積分の計算に使用する質量行列のシンボリック式
-        fv_odeDiff                             % [  Dynamics ] 数値積分の計算に使用する微分方程式のシンボリック式
-        fv_odeI                                % [  Dynamics ] 数値積分の計算に使用する接続方程式のシンボリック式
+        rm_odeMass                             % [  Dynamics ] 数値積分の計算に使用する質量行列の関数ハンドル
+        fv_odeDiff                             % [  Dynamics ] 数値積分の計算に使用する微分方程式の関数ハンドル
+        fv_odeI                                % [  Dynamics ] 数値積分の計算に使用する接続方程式の関数ハンドル
         fv_odeY
-        JacobiAxx 
-        JacobiBxv  
-        JacobiBxu  
-        JacobiCix  
-        JacobiDiv  
-        JacobiDiu 
-        JacobiCyx                
-        JacobiDyv
-        JacobiDyu
+
+        JacobiAxx                              % [  Dynamics ] 微分方程式の状態変数に関するヤコビアン
+        JacobiBxv                              % [  Dynamics ] 微分方程式の母線変数に関するヤコビアン
+        JacobiBxu                              % [  Dynamics ] 微分方程式の入力に関するヤコビアン
+
+        JacobiCix                              % [  Dynamics ] 出力方程式(電流)の状態変数に関するヤコビアン
+        JacobiDiv                              % [  Dynamics ] 出力方程式(電流)の母線変数に関するヤコビアン
+        JacobiDiu                              % [  Dynamics ] 出力方程式(電流)の入力に関するヤコビアン
+
+        JacobiCyx = @(t,x,V,u) []              % [  Dynamics ] 出力方程式(コントローラ)の入力に関するヤコビアン
+        JacobiDyv = @(t,x,V,u) []              % [  Dynamics ] 出力方程式(コントローラ)の入力に関するヤコビアン
+        JacobiDyu = @(t,x,V,u) []              % [  Dynamics ] 出力方程式(コントローラ)の入力に関するヤコビアン
+
         odeLinearSystem
     end
     properties
@@ -45,9 +49,9 @@ classdef Component < PowerSystemModel
         c_Vequilibrium                         % [SteadyState] 定常潮流状態での機器の注入電圧
     end
     properties (SetAccess={?odeSimulator, ?Component}, Hidden)
-        iv_odeX  = zeros(0,1);
-        iv_odeU  = zeros(0,1);        
-        iv_odeY  = zeros(0,1);        
+        iv_odeX  = [];
+        iv_odeU  = [];        
+        iv_odeY  = [];        
     end    
     properties(Dependent)
         cv_Xequilibrium_all                    % [SteadyState] 制御器の状態も含めた平衡点

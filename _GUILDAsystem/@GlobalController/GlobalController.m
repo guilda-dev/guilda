@@ -21,6 +21,10 @@ classdef GlobalController < PowerSystemModel
         JacobiAxx        
         JacobiBxv        
         JacobiBxu        
+
+        JacobiCix = @(t,x,V,u)[]               
+        JacobiDiv = @(t,x,V,u)[]               
+        JacobiDiu = @(t,x,V,u)[]               
         
         JacobiCyx        
         JacobiDyv        

@@ -184,7 +184,7 @@ classdef (Sealed = true) odeSimulator < handle
                             xi_LC2 = x(a_LC2.iv_odeX);                            
                             ui_LC2 = x(a_LC2.iv_odeU);
                             dx_LC2 = a_LC2.fv_odeDiff(t, xi_LC2, Vi, ui_LC2);
-                            yi_LC2 = a_LC2.fv_odeConY(t, xi_LC2, Vi, ui_LC2);                            
+                            yi_LC2 = a_LC2.fv_odeY(t, xi_LC2, Vi, ui_LC2);                            
 
                             odeX([a_LC2.iv_odeX; a_LC2.iv_odeU]) = odeX([a_LC2.iv_odeX; a_LC2.iv_odeU]) + [dx_LC2; ui_LC2 - yi];
                         end
@@ -192,7 +192,7 @@ classdef (Sealed = true) odeSimulator < handle
                         xi_LC1 = x(a_LC1.iv_odeX);
                         ui_LC1 = x(a_LC1.iv_odeU);
                         dx_LC1 = a_LC1.fv_odeDiff(t, xi_LC1, Vi, ui_LC1);
-                        yi_LC1 = a_LC1.fv_odeConY(t, xi_LC1, Vi, ui_LC1);
+                        yi_LC1 = a_LC1.fv_odeY(t, xi_LC1, Vi, ui_LC1);
                         
                         ue_LC1 = a_LC1.cv_Uequilibrium;
                         ue_LC1( a_LC1.str_u==a_LC2.str_y ) = yi_LC2;
@@ -244,13 +244,7 @@ classdef (Sealed = true) odeSimulator < handle
                 x_GC = x(a_GC.iv_odeX);
                 u_GC = x(a_GC.iv_odeU);
 
-                Axx_GC = a_GC.JacobiAxx(t, x_GC, [], u_GC);
-                Bxv_GC = a_GC.JacobiBxv(t, x_GC, [], u_GC);
-                Bxu_GC = a_GC.JacobiBxu(t, x_GC, [], u_GC);                                    
-
-                Cyx_GC = a_GC.JacobiCyx(t, x_GC, [], u_GC);
-                Dyv_GC = a_GC.JacobiDyv(t, x_GC, [], u_GC);
-                Dyu_GC = a_GC.JacobiDyu(t, x_GC, [], u_GC);
+                [Axx_GC, Bxu_GC, Bxv_GC, Cyx_GC, Dyu_GC, Dyv_GC, ~, ~, ~] = getSubJacobian(a_GC, t, x_GC, [], u_GC);                
 
                 odeJac(lv_GC, lh_GC) = odeJac(lv_GC, lh_GC) + [ Axx_GC,  Bxv_GC,  Bxu_GC;
                                                                 Cyx_GC,  Dyv_GC,  Dyu_GC];
@@ -264,7 +258,9 @@ classdef (Sealed = true) odeSimulator < handle
                 for j=1:numel(cm)
                     cj = cm{j};
                     xi = x(cj.iv_odeX);        
-                    ui = x(cj.iv_odeU);                                
+                    ui = x(cj.iv_odeU);                 
+
+                    [Axx, Bxu, Bxv, Cyx, Dyu, Dyv, Cix, Diu, Div] = getSubJacobian(cj, t, xi, Vi, ui);
 
                     lu = cj.iv_odeU;
                     lh = [cj.iv_odeX; cj.iv_odeU; a_bus{i}.iv_odeX];
@@ -279,13 +275,7 @@ classdef (Sealed = true) odeSimulator < handle
                             xi_LC2 = x(a_LC2.iv_odeX);                            
                             ui_LC2 = x(a_LC2.iv_odeU);                                                        
 
-                            Axx_LC2 = a_LC2.JacobiAxx(t, xi_LC2, Vi, ui_LC2);
-                            Bxv_LC2 = a_LC2.JacobiBxv(t, xi_LC2, Vi, ui_LC2);
-                            Bxu_LC2 = a_LC2.JacobiBxu(t, xi_LC2, Vi, ui_LC2);                                    
-        
-                            Cyx_LC2 = a_LC2.JacobiCyx(t, xi_LC2, Vi, ui_LC2);
-                            Dyv_LC2 = a_LC2.JacobiDyv(t, xi_LC2, Vi, ui_LC2);
-                            Dyu_LC2 = a_LC2.JacobiDyu(t, xi_LC2, Vi, ui_LC2);
+                            [Axx_LC2, Bxu_LC2, Bxv_LC2, Cyx_LC2, Dyu_LC2, Dyv_LC2, ~, ~, ~] = getSubJacobian(a_LC2, t, xi_LC2, Vi, ui_LC2);                                                                            
 
                             lu_LC2 = a_LC2.iv_odeU;
                             lh_LC2 = [a_LC2.iv_odeX; a_LC2.iv_odeU; a_bus{i}.iv_odeX];
@@ -300,19 +290,9 @@ classdef (Sealed = true) odeSimulator < handle
                         end                        
 
                         xi_LC1 = x(a_LC1.iv_odeX);
-                        ui_LC1 = x(a_LC1.iv_odeU);                                                
+                        ui_LC1 = x(a_LC1.iv_odeU);                                      
 
-                        Axx_LC1 = a_LC1.JacobiAxx(t, xi_LC1, Vi, ui_LC1);
-                        Bxv_LC1 = a_LC1.JacobiBxv(t, xi_LC1, Vi, ui_LC1);
-                        Bxu_LC1 = a_LC1.JacobiBxu(t, xi_LC1, Vi, ui_LC1);                                    
-    
-                        Cyx_LC1 = a_LC1.JacobiCyx(t, xi_LC1, Vi, ui_LC1);
-                        Dyv_LC1 = a_LC1.JacobiDyv(t, xi_LC1, Vi, ui_LC1);
-                        Dyu_LC1 = a_LC1.JacobiDyu(t, xi_LC1, Vi, ui_LC1);
-
-                        Cyx = cj.JacobiCyx(t, xi, Vi, ui);
-                        Dyv = cj.JacobiDyv(t, xi, Vi, ui);
-                        Dyu = cj.JacobiDyu(t, xi, Vi, ui);                    
+                        [Axx_LC1, Bxu_LC1, Bxv_LC1, Cyx_LC1, Dyu_LC1, Dyv_LC1, ~, ~, ~] = getSubJacobian(a_LC1, t, xi_LC1, Vi, ui_LC1);                                                
 
                         lu_LC1 = a_LC1.iv_odeU;
                         lh_LC1 = [a_LC1.iv_odeX; a_LC1.iv_odeU; a_bus{i}.iv_odeX];
@@ -324,17 +304,9 @@ classdef (Sealed = true) odeSimulator < handle
                         odeJac(lu_LC1, lu_LC1) = odeJac(lu_LC1, lu_LC1) + eye(length(lu_LC1));
 
                         odeJac(cj.iv_odeY, lh) = [-Cyx, -Dyu, -Dyv];
-                    end                                        
-                                
-                    Axx = cj.JacobiAxx(t, xi, Vi, ui);
-                    Bxv = cj.JacobiBxv(t, xi, Vi, ui);
-                    Bxu = cj.JacobiBxu(t, xi, Vi, ui);
-
-                    Cix = cj.JacobiCix(t, xi, Vi, ui);
-                    Div = cj.JacobiDiv(t, xi, Vi, ui);
-                    Diu = cj.JacobiDiu(t, xi, Vi, ui);                    
+                    end                                                                                                                                    
             
-                    odeJac(lv,lh) = odeJac(lv,lh) + [ Axx,  Bxu,  Bxv; ...
+                    odeJac(lv,lh) = odeJac(lv,lh) + [ Axx,  Bxu,  Bxv; ...                                                     
                                                      -Cix, -Diu, -Div]; 
 
                     odeJac(lu,lu) = odeJac(lu,lu) + eye(length(lu));
@@ -355,7 +327,7 @@ classdef (Sealed = true) odeSimulator < handle
             odeJac(le,lo) = odeJac(le,lo) + B;
             odeJac(le,le) = odeJac(le,le) + G; 
             
-            odeJac = odeJac(lg,lg);
+            odeJac = odeJac(lg,lg);            
 
         end       
 
@@ -557,4 +529,19 @@ function [ODEfcn, x0, options] = CalculateInitialCondition(o, options)
     options.InitialSlope = xp0;                        
 
     ODEfcn = Func;
+end
+
+function [Axx, Bxu, Bxv, Cyx, Dyu, Dyv, Cix, Diu, Div] = getSubJacobian(OBJ, t, xi, Vi, ui)
+                
+    Axx = OBJ.JacobiAxx(t, xi, Vi, ui);
+    Bxv = OBJ.JacobiBxv(t, xi, Vi, ui);
+    Bxu = OBJ.JacobiBxu(t, xi, Vi, ui);                         
+
+    Cyx = OBJ.JacobiCyx(t, xi, Vi, ui);
+    Dyv = OBJ.JacobiDyv(t, xi, Vi, ui);
+    Dyu = OBJ.JacobiDyu(t, xi, Vi, ui);
+
+    Cix = OBJ.JacobiCix(t, xi, Vi, ui);
+    Div = OBJ.JacobiDiv(t, xi, Vi, ui);
+    Diu = OBJ.JacobiDiu(t, xi, Vi, ui);
 end

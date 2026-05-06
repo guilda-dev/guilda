@@ -40,9 +40,9 @@ classdef (Sealed = true) AVR_DC1 < LocalController
 
         function set_odefcn(obj, omega0)            
             params = obj.tab_parameter.dynamics{:,obj.str_para}.';
-            obj.fv_odeDiff = @(t, x, V, u) obj.fcn_dx(t, x, V, u, params, omega0);
-            obj.fv_odeConY = @(t, x, V, u) obj.fcn_y(t, x, V, u, params, omega0);
+            obj.fv_odeDiff = @(t, x, V, u) obj.fcn_dx(t, x, V, u, params, omega0);            
             obj.rm_odeMass = @(t, x, V, u) obj.fcn_Mass(t, x, V, u, params, omega0);
+            obj.fv_odeY    = @(t, x, V, u) obj.fcn_y(t, x, V, u, params, omega0);
 
             obj.JacobiAxx = @(t, x, V, u) getJacobiAxx(t, x, V, u, params, omega0);
             obj.JacobiBxv = @(t, x, V, u) getJacobiBxv(t, x, V, u, params, omega0);
