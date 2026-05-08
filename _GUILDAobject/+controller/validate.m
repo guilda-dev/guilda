@@ -1,105 +1,120 @@
-syms t     
-syms xiWS xi1 xi2
-syms Vre Vim     
-syms omega
+% syms t     
+% syms xiWS xi1 xi2
+% syms Vre Vim     
+% syms omega
+% 
+% kpss      = 20;
+% tWS       = 10;
+% tn1       = 0.05;
+% td1       = 0.02;
+% tn2       = 3.00;
+% td2       = 5.40;
+% Vpss_min  = -10;
+% Vpss_max  = 10;
+% 
+% x = [xiWS; xi1; xi2];
+% u = omega;
+% % ウォッシュアウトフィルタ
+% dx1 = -xiWS + kpss*omega;
+% vWS = kpss*omega - xiWS;
+% % 位相進み補償器
+% dx2 = -xi1 + (1-td1/tn1) * vWS;
+% v1  = tn1*(vWS-xi1)/td1;
+% % 飽和
+% dx3  = -xi2 + (1-td2/tn2) * v1;
+% vpl  = tn2*(v1-xi2)/td2;
+% Vpss = max(min(vpl, Vpss_max), Vpss_min);
+% 
+% dx = [dx1; dx2; dx3];
+% 
+% para = [kpss, tWS, tn1, td1, tn2, td2, Vpss_min, Vpss_max];
+% 
+% 
+% step = heaviside(vpl - Vpss_min) - heaviside(vpl - Vpss_max);
+% V    = [Vre; Vim];
+% 
+% jac = jacobian([dx;vpl], [x;V;u]);
+% jac = matlabFunction(jac, Vars={[x;V;u]});
+% 
+% 
+% pss = controller.PSS1("pss");
+% pss.set_odefcn(60);
+% 
+% for i=1:10000
+%     x_ = rand([3,1]);
+%     V_ = rand([2,1]);
+%     u_  = rand([1,1]);
+% 
+%     JacA  = pss.JacobiA(t,x_,V_,u_);
+%     JacB  = pss.JacobiB(t,x_,V_,u_);
+%     JacC  = pss.JacobiC(t,x_,V_,u_);
+%     JacD  = pss.JacobiD(t,x_,V_,u_);
+%     JacBu = pss.JacobiBu(t,x_,V_,u_);
+%     JacDu = pss.JacobiDu(t,x_,V_,u_);
+% 
+%     dif = zeros(1000*4,6);
+%     dif(i*(1:4), :) = jac([x_;V_;u_]) - [JacA, JacB, JacBu; JacC, JacD, JacDu];
+% end
+% 
+% all(dif < 1e-14, 1)
 
-kpss      = 20;
-tWS       = 10;
-tn1       = 0.05;
-td1       = 0.02;
-tn2       = 3.00;
-td2       = 5.40;
-Vpss_min  = -inf;
-Vpss_max  = inf;
-    
-x = [xiWS; xi1; xi2];
-u = omega;
-% ウォッシュアウトフィルタ
-dx1 = -xiWS + kpss*omega;
-vWS = kpss*omega - xiWS;
-% 位相進み補償器
-dx2 = -xi1 + (1-td1/tn1) * vWS;
-v1  = tn1*(vWS-xi1)/td1;
-% 飽和
-dx3  = -xi2 + (1-td2/tn2) * v1;
-vpl  = tn2*(v1-xi2)/td2;
-Vpss = max(min(vpl, Vpss_max), Vpss_min);
 
-dx = [dx1; dx2; dx3];
+ttr      = 0.00;
+Vap_max  = 1;
+Vap_min  = -1;
+kap      = 57.1;
+tap      = 0.05;
+aex1     = -0.045;
+aex2     = 0.0012;
+tex      = 0.50;
+bex      = 1.21;
+kst      = 0.08;
+tst      = 1.00;
 
-para = [kpss, tWS, tn1, td1, tn2, td2, Vpss_min, Vpss_max];
+% リファレンス値
+Vref = rand([1,1]);
 
+syms Vtr Vap Vfld Vst Vpss Vre Vim Vrf
 
-step = heaviside(vpl - Vpss_min) - heaviside(vpl - Vpss_max);
-V    = [Vre; Vim];
+% 入力
+Vabs = abs([1,1j]*[Vre;Vim]);        
+% 計測用変圧器
+dx1 = -Vtr + Vabs;
+% コンパレータ
+Vcom = Vref + Vpss - Vtr - Vst;
+% 増幅器
+dx2 = ( -Vap + kap*Vcom )*( heaviside(Vap - Vap_min) - heaviside(Vap - Vap_max) );
+% 励磁器
+dx3 = -( aex1 + aex2 * exp(bex*Vfld) ) * Vfld + Vap;
+% 安定化回路
+dx4 = -Vst;    
 
-jac = jacobian([dx;vpl], [x;V]);
-jac = matlabFunction(jac, Vars={[x;V;u]});
+dx = [dx1;dx2;dx3;dx4];
+
+x = [Vtr;Vap;Vfld;Vst];
+y = x(3);
+
+jac = jacobian([dx;y], [x;Vre;Vim;Vrf;Vpss]);
+jac = matlabFunction(jac, Vars={[x;Vre;Vim;Vrf;Vpss]});
+
+avr = controller.AVR_DC1("avr");
+avr.set_odefcn(60);
 
 for i=1:10000
-    x_ = rand([3,1]);
+    x_ = rand([4,1]);
     V_ = rand([2,1]);
-    u_  = rand([1,1]);
+    u_  = rand([2,1]);
 
-    dif = zeros(1000*4,5);
-    dif(i*(1:4), :) = jac([x_;V_;u_]) - pss_jacobian([x_;V_], u_, para, Vpss_max, Vpss_min);
+    JacA  = avr.JacobiA(t,x_,V_,u_);
+    JacB  = avr.JacobiB(t,x_,V_,u_);
+    JacC  = avr.JacobiC(t,x_,V_,u_);
+    JacD  = avr.JacobiD(t,x_,V_,u_);
+    JacBu = avr.JacobiBu(t,x_,V_,u_);
+    JacDu = avr.JacobiDu(t,x_,V_,u_);
+
+    dif = zeros(1000*5,8);
+    dif(i*(1:5), :) = jac([x_;V_;u_]) - [JacA, JacB, JacBu; JacC, JacD, JacDu];
 end
 
-all(dif < 1e-14)
+all(dif < 1e-14, 1)
 
-function J = pss_jacobian(x, u, param, Vpss_max, Vpss_min)
-    % パラメータの展開
-    kpss = param(1);     
-    tn1 = param(3);
-    td1 = param(4);
-    tn2 = param(5);
-    td2 = param(6);
-    
-    % 状態変数の展開
-    xiWS = x(1);
-    xi1  = x(2);
-    xi2  = x(3);
-    % Vre, Vim はこの系のdxには寄与しないが、ヤコビアンのサイズ維持のため参照
-    
-    % 中間変数の計算（飽和判定用）
-    omega = u;
-    vWS = kpss * omega - xiWS;
-    v1  = tn1 * (vWS - xi1) / td1;
-    vpl = tn2 * (v1 - xi2) / td2;
-    
-    % 飽和フラグ (飽和している場合は微係数は0)
-    if vpl > Vpss_max || vpl < Vpss_min
-        S = 0;
-    else
-        S = 1;
-    end
-
-    % ヤコビ行列の初期化 (4x5)
-    J = zeros(4, 5);
-
-    % --- Row 1: df1/dx (dx1) ---
-    J(1,1) = -1;
-    
-    % --- Row 2: df2/dx (dx2) ---
-    J(2,1) = -(1 - td1/tn1);
-    J(2,2) = -1;
-    
-    % --- Row 3: df3/dx (dx3) ---
-    % dx3 = -xi2 + (1-td2/tn2) * v1
-    % v1 = (tn1/td1)*(kpss*omega - xiWS - xi1)
-    J(3,1) = (1 - td2/tn2) * (-tn1/td1);
-    J(3,2) = (1 - td2/tn2) * (-tn1/td1);
-    J(3,3) = -1;
-    
-    % --- Row 4: dVpss/dx (Vpss) ---
-    % vpl = (tn2/td2) * (v1 - xi2)
-    % v1  = (tn1/td1) * (kpss*omega - xiWS - xi1)
-    dv1_dxiWS = -tn1/td1;
-    dv1_dxi1  = -tn1/td1;
-    
-    J(4,1) = S * (tn2/td2) * dv1_dxiWS;
-    J(4,2) = S * (tn2/td2) * dv1_dxi1;
-    J(4,3) = S * (-tn2/td2);
-    
-    % 第4列(Vre), 第5列(Vim) はすべて0のまま
-end

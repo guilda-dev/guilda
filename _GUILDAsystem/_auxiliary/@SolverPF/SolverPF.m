@@ -32,7 +32,7 @@ classdef SolverPF < auxiliary
             end
         end
         
-        [powerflow_bus,flag,output] = solve(obj, net, mode)
+        [powerflow_bus,flag,output] = solve(obj, net, mode, opt)
         [cv_Vbus,flag,output] = solve_algebraic(obj, tab_PFset, cm_Y)
         [cv_Vbus,flag,output] = solve_dynamic(  obj, tab_PFset, cm_Y)
         [cv_Vbus,flag,output] = solve_geodetic(obj, cm_Y, tab_PFset)

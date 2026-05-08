@@ -12,6 +12,10 @@ function [n_odeX, n_odeU, Mass, x0] = reset_odeset(obj, n_odeX, n_odeU, omega0)
     % set ode function
     obj.set_odefcn(omega0)
 
+    if ~isempty(obj.a_LocalController)
+        cellfun(@(con) con.set_odefcn(omega0), obj.a_LocalController);
+    end
+
     % Mass / x0
     x0   = obj.cv_Xcurrent;
     Mass = obj.rm_odeMass(0,x0,[0;0],zeros(n_odeUi,1));

@@ -19,10 +19,13 @@ classdef IEEE14bus < PowerNetwork
     end
 
     methods
-        function obj = IEEE14bus()
+        function obj = IEEE14bus(opt)
+            arguments
+                opt (1,1) logical = true
+            end
             str_filepath = mfilename("fullpath");
             str_dirpath  = fileparts(str_filepath);
-            CsvNetHandler.import(str_dirpath, obj);
+            CsvNetHandler.import(str_dirpath, obj, "Initialize", opt);
         end
     end
 end

@@ -2,7 +2,7 @@ function update_plot(net, Graph, txt, sct)
 
     fprintf(" >> グラフプロットに反映中...")
     cv_V = net.cv_Vequilibrium;
-    Graph.set_V(cv_V)
+    Graph.set_powerflow(net)
     disp(" ok!!")
 
     sys  = net.get_sys;

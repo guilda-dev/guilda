@@ -1,7 +1,9 @@
-ev = eventset("Time", [3,3.01], "TrpCmp", "SG1B002");
+net = network.IEEE14bus;
 
-o = odeSimulator(net, [0,30], ev);
+ev1 = odeEventSet("ev1", net, "TimeSpan", [3,3.01], "TripUnit", "SG1B002");
 
-[t, s] = o.simulate;
+sol = net.simulate([0,50], ev1);
 
-plot(s(1).t, [s(1).X{1}.omega, s(2).X{1}.omega, s(3).X{1}.omega, s(6).X{1}.omega, s(8).X{1}.omega])
+xsol = sol.odeResults;
+
+plot(xsol.t, [xsol.Bus{1}.X{1}.omega, xsol.Bus{2}.X{1}.omega, xsol.Bus{3}.X{1}.omega, xsol.Bus{6}.X{1}.omega, xsol.Bus{8}.X{1}.omega])

@@ -2,13 +2,16 @@ function [Graph, txt, sct] = new_plot(net)
     
     figure("Position", [0, 0, 1200, 600]);
     
-    t = tiledlayout(3, 5, 'Padding', 'compact','TileSpacing', 'none');
+    t = tiledlayout(3, 5, 'Padding', 'compact');
     ax1 = nexttile(t, 1, [3, 3]);
     ax2 = nexttile(t, 4, [1, 2]);
     ax3 = nexttile(t, 9, [2, 2]);
+
     Graph = net.draw_diagram(ax1);
-    Graph.NodeFontSize = 3;
-    Graph.NodeHeightMode = "none";
+    Graph.GridWidth = 0.05;
+    Graph.NodeFontSize = 5;
+    xlim(ax1,0.05+[0,1])
+    grid(ax1,"off")
 
     axis(ax2,"off")
     txt = text(ax2,0,0,"安定","FontSize",20,"FontWeight","bold","HorizontalAlignment","center","Color","b");

@@ -12,7 +12,7 @@ classdef (Sealed = true) odeSimulator < handle
         NonNegativeVariables {mustBePositive, mustBeInteger} = []        
         DelayDefinition = []        
         Sensitivity     = []        
-        EventDefinition = []        
+        EventDefinition = []
         EquationType  (1,1) string {mustBeMember(EquationType, ["standard","fullyimplicit","delay"])} = "standard"        
         Solver        matlab.ode.SolverID = "ode15s"                
         SolverOptions matlab.ode.Options  = matlab.ode.options.ODE15s         
@@ -22,24 +22,28 @@ classdef (Sealed = true) odeSimulator < handle
     end
     properties (SetAccess=private, Hidden)
         odeNetwork 
-        odeTimeTable
-        odeResults
-        odeSimStruct
+        odeTimeTable                
+        odeYmat
+        odeResult
     end
 
     properties (SetAccess=private, Hidden)
-        % このクラスのバージョン       
+        % Version of this class       
         Ver (1,1) double = 1.1
     end
 
     methods
-        function obj = odeSimulator(net, time, evs, opt)            
+        function obj = odeSimulator(net, time, varargin, opt)            
             arguments                
-                net  (1,1) {mustBeA(net, 'PowerNetwork')}
-                time 
-                evs 
+                net  (1,1) {mustBeA(net, 'PowerNetwork')}                
+                time (:,1) double = []
+            end
+            arguments (Input, Repeating)
+                varargin {mustBeA(varargin, 'odeEventSet')}
+            end
+            arguments                
                 opt.?odeSimulator
-            end                        
+            end                                    
             obj.odeNetwork = net;
 
             cls = metaclass(obj);
@@ -57,478 +61,352 @@ classdef (Sealed = true) odeSimulator < handle
                 end
                 i=i+1;
             end
-
-            obj.manage_time(time, evs);
+            
+            [obj.odeTimeTable, obj.ODEvnt] = table(varargin{:}, "time", time);
             obj.initialize_odeSimulator;
+
+            obj.odeYmat = net.get_admittance_matrix.Variables;
         end        
+        
     end
     
-    methods (Access=private)       
-
-        function manage_time(obj, time, varargin)
-            % 構造体で指定される時間イベントに対して、タイムテーブルを生成するメソッド.
-            % 動的シミュレーションを行う際には、このタイムテーブルを元にイベントを抽出し、
-            % 抽出したイベントに基づいてシステムを構築・解析する.
-            %
-            % << 生成されるタイムテーブル >>
-            %      Time   | event1 | event2 | event3 | event4 | event5 ...  
-            %   ----------+--------+--------+--------+--------+-----------
-            %     0~10[s] |   1    |    0   |    0   |   0    |   0   
-            %    10~12[s] |   0    |    1   |    0   |   1    |   0   
-            %    12~15[s] |   0    |    0   |    1   |   1    |   1   
-            %       :         :         :        :       :        :
-            %
-            arguments
-                obj
-                time (:,2) double = zeros(0,2)                
-            end
-            arguments (Input, Repeating)
-                varargin 
-            end
-            
-            times = zeros(nargin-2,2);
-            for k=1:nargin-2
-                argi = varargin{k}.Time;
-                if isscalar(argi)
-                    times(k,:) = ones(1,2)*argi;
-                else
-                    times(k,:) = argi;
-                end
-            end
-                        
-            utimes = reshape(times, [], 1);
-            if isempty(time) || ( max(time) <= max(utimes) )               
-                time = [0, max(utimes)+10];
-            end
-            utime = unique([time(1); utimes; time(2)], "sorted", "first");
-        
-            all_time = [utime(1:end-1), utime(2:end)];
-            
-            vtab = size(all_time,1);
-            rtab = size(times,1);
-        
-            tab = array2table(false(vtab,rtab));
-            for i=1:vtab
-                fti = all_time(i,1);
-                eti = all_time(i,2);
-                for j=1:rtab
-                    ftj = times(j,1);
-                    etj = times(j,2);
-        
-                    if (fti < etj) && (ftj < eti)
-                        tab{i,j} = true;
-                    elseif (fti == ftj) && (fti == etj)
-                        tab{i,j} = true;
-                    end
-                end
-            end
-
-            if all(~tab{1,:})
-                varargin = [{eventset("Time", all_time(1,:))}, varargin];
-                tab = [array2table([true; false(vtab-1,1)], "VariableNames", "Var0"),tab];                
-            end
-
-            if all(~tab{end,:})
-                varargin = [varargin, {eventset("Time", all_time(end,:))}];
-                tab = [tab,array2table([false(vtab-1,1); true], "VariableNames", "Var "+"End")];
-            end
-            
-            obj.ODEvnt = [obj.ODEvnt, varargin];
-            obj.odeTimeTable = [array2table(all_time, "VariableNames", ["t1","t2"]), tab];
-        end
-
-        function clear_event(obj)
-            obj.ODEvnt = [];
-        end
-     
-        function manage_simResults(obj, sol, RM, EM, et)
-            % シミュレーション結果を管理するためのメソッド.
-            % テーブル型の変数として管理される.
-            % 
-            % <<シミュレーション結果の管理>>
-            %
-            %     Time [s]   | delta | omega |  eq  |  ed  | psiq ...  
-            %   -------------+-------+-------+------+------+---------
-            %         0      |  1.0  |   0   |  1.2 | 0.75 |  0.75   
-            %         1      |  1.0  |   0   |  1.2 | 0.75 |  0.75   
-            %         2      |  1.0  |   0   |  1.2 | 0.75 |  0.75   
-            %         :         :        :       :        :
-            %
-            arguments
-                obj 
-                sol 
-                RM %#ok
-                EM
-                et (1,1) logical = false
-            end
-
-            t = sol.Time;
-            y = EM*sol.Solution;
-            if isempty(obj.odeResults)
-                ny = size(y,1);
-                obj.odeResults = array2table(zeros(0,ny+1));
-            end
-            tab = array2table([t;y].');
-
-            obj.odeResults = [obj.odeResults; tab];            
-
-            if et
-                a_bus = obj.odeNetwork.a_Bus;
-                n_bus = numel(a_bus);                                
-
-                sim = struct(  't',            [], ...
-                               'X', cell(n_bus,1), ...
-                             'ReV', cell(n_bus,1), ...
-                             'ImV', cell(n_bus,1));
-
-                odeTable = obj.odeResults(:,2:end);
-
-                for i=1:n_bus
-                    com = a_bus{i}.a_Component;
-                    n_com = numel(com);
-
-                    sim_com = cell(n_com,1);
-                    for j=1:n_com
-                        idx_com = com{j}.iv_odeX;
-                        sim_com{j} = odeTable(:, idx_com);
-                        sim_com{j}.Properties.VariableNames = com{j}.str_x;
-                    end
-
-                    sim(i).X = sim_com;            
-
-                    sim(i).ReV = odeTable(:,a_bus{i}.iv_odeX(1));
-                    sim(i).ImV = odeTable(:,a_bus{i}.iv_odeX(2));
-
-                    sim(i).ReV.Properties.VariableNames = "Real";
-                    sim(i).ImV.Properties.VariableNames = "Imag";
-
-                    sim(i).t = obj.odeResults{:,1};
-                end
-
-                str_x = cell(n_bus,1);
-                str_v = cell(n_bus,1);
-                for i=1:n_bus
-                    a_comp = a_bus{i}.a_Component;                        
-
-                    str_v{i} = ["Vre";"Vim"]+"_"+string(a_bus{i});
-                    str_x{i} = cell2mat( cellfun(@(c) string(c)+"_"+c.str_x, a_comp, 'UniformOutput', false) );                            
-                end        
-                vnames = cell2mat([str_x;str_v]);
-
-                % 一時的なもの
-                % obj.odeResults.Properties.VariableNames = ["Time";vnames];                                
-
-                obj.odeSimStruct = sim;
-                
-            end
-
-        end
-
-        function clear_simResults(obj)
-            obj.odeResults = [];
-        end
+    methods (Access=private)                       
 
         function initialize_odeSimulator(obj)            
-            % 各機器、母線に対して状態変数の番号を割り当てるメソッド.
-            % odeソルバーによる解析を行う前に実行する.
-
-            bus = obj.odeNetwork.a_Bus;
-
-            idx  = 0;
-            idx_ = 0;
-            for i=1:numel(bus)
-                comp = bus{i}.a_Component;
-                for j=1:numel(comp)
-                    nx   = length(comp{j}.str_x);                        
-                    idx_ = idx_ + nx;
-        
-                    if comp{j}.isController
-                        con = comp{j}.a_LocalController{1};
-        
-                        con_nx = length(con.str_x);
-                        con.iv_odeX = idx_ + (1:con_nx).';
-                        idx_ = idx_ + con_nx;
-        
-                        nx = nx + con_nx;
+            % Method for assigning state variable numbers to each device and bus.
+            % Execute this before performing analysis using the ODE solver.         
             
-                        if con.isController
-                            sub_con = con.a_LocalController{1};                    
-        
-                            sub_con_nx = length(sub_con.str_x);
-                            con.iv_odeX = idx_ + (1:sub_con_nx).';
-                            idx_ = idx_ + sub_con_nx;
-        
-                            nx = nx + sub_con_nx;
+            a_bus = obj.odeNetwork.a_Bus;
+
+            idx_TGT = 0;                       
+            
+            for i=1:numel(a_bus)
+                a_comp = a_bus{i}.a_Component;
+
+                for j=1:numel(a_comp)                    
+                    set_idx(a_comp{j});                                                                            
+
+                    if ~isempty(a_comp{j}.a_LocalController)
+                        a_LC1 = a_comp{j}.a_LocalController{1};
+                        set_idx(a_LC1);                                                
+
+                        a_LC1.iv_odeY = a_comp{j}.iv_odeU( a_comp{j}.str_u==a_LC1.str_y );                        
+
+                        if ~isempty(a_LC1.a_LocalController)
+                            a_LC2 = a_LC1.a_LocalController{1};
+                            set_idx(a_LC2);                                      
+
+                            a_LC2.iv_odeY = a_LC1.iv_odeU( a_LC1.str_u==a_LC2.str_y );
+                            a_comp{j}.iv_odeY = a_LC2.iv_odeU;
                         end
-                    end
-        
-                    comp{j}.iv_odeX = idx + (1:nx).';
-                    idx = idx + nx;
+                    end                    
                 end
             end
-        
-            for i=1:numel(bus)
-                bus{i}.iv_odeX = idx + (1:2).';
-                idx = idx + 2;
+
+            idx = 1;
+            if ~isempty(obj.odeNetwork.a_GlobalController)
+                gcon = obj.odeNetwork.a_GlobalController{1};
+                nxgc = length(gcon.str_x);
+                gcon.iv_odeX = idx_TGT + (1:nxgc)';
+                idx_TGT = idx_TGT + nxgc;
+
+                nConUnit = gcon.controlledUnits;
+                while idx <= numel(nConUnit)
+                    gcon.iv_odeU(idx) = nConUnit{idx}.iv_odeX( nConUnit{idx}.str_x==gcon.str_u );
+                    gcon.iv_odeY(idx) = nConUnit{idx}.iv_odeU( nConUnit{idx}.str_u==gcon.str_y );
+
+                    idx = idx + 1;
+                end
             end
 
+            for i=1:numel(a_bus)
+                a_bus{i}.iv_odeX = idx_TGT + (1:2).';
+                idx_TGT = idx_TGT + 2;
+            end
+
+            function set_idx(OBJ)
+                nx = length(OBJ.str_x);
+                nu = length(OBJ.str_u);
+
+                OBJ.iv_odeX = idx_TGT + (1:nx)';    
+                idx_TGT = idx_TGT + nx;
+
+                OBJ.iv_odeU = idx_TGT + (1:nu)';
+                idx_TGT = idx_TGT + nu;                
+            end
+            
         end
         
     end
 
     methods (Hidden=true, Access={?odeSimulator, ?PowerNetwork})
         
-        function odeX = getODEFunction(obj, t, x, Ymat, RM, EM, lg) %#ok 
-            % 解析対象のDAE系を取得するメソッド.            
+        function odeX = getODEFunction(obj, t, x, RM, EM, lg) %#ok 
+            % Method for retrieving the DAE system to be analyzed.            
             
-            x = EM*x; % 縮約されたものを元に戻す
+            x = EM*x; 
 
             odeX = zeros(size(x));
             odeV = zeros(size(obj.odeNetwork.a_Bus));
-
-            net = obj.odeNetwork;
-            bus = net.a_Bus;                                     
-
-            for i=1:numel(bus)
-                bi = bus{i};
-                cm = bi.a_Component;
-                Vi = x(bi.iv_odeX);                                
-
-                for j=1:numel(cm)
-                    cj = cm{j};
-                    xi = x(cj.iv_odeX);        
-                    ui = cj.cv_Uequilibrium + cj.U_offset;                    
             
+            a_bus = obj.odeNetwork.a_Bus;
+
+            y_GC = zeros(size(x), 'like', x);
+            a_GC.str_y = "Pmech";
+            if ~isempty(obj.odeNetwork.a_GlobalController)
+                a_GC = obj.odeNetwork.a_GlobalController{1};
+
+                x_GC = x(a_GC.iv_odeX);
+                u_GC = x(a_GC.iv_odeU);
+
+                odeX(a_GC.iv_odeX) = a_GC.fv_odeDiff(t,x_GC,[],u_GC);                
+                y_GC(a_GC.iv_odeY) = a_GC.fv_odeY(t,x_GC,[],u_GC);
+            end
+
+            for i=1:numel(a_bus)
+                a_comp = a_bus{i}.a_Component;
+                Vi = x(a_bus{i}.iv_odeX);                                
+
+                for j=1:numel(a_comp)
+                    cj = a_comp{j};
+                    xi = x(cj.iv_odeX);        
+                    ui = x(cj.iv_odeU);
+                    yi = a_comp{j}.fv_odeY(t,xi,Vi,ui);
+
+                    ue = cj.cv_Uequilibrium;                                   
+
+                    if ~isempty(cj.a_LocalController)
+                        a_LC1  = cj.a_LocalController{1};                        
+                        yi_LC2 = 0;
+
+                        if ~isempty(a_LC1.a_LocalController)
+                            a_LC2  = a_LC1.a_LocalController{1};   
+                            
+                            xi_LC2 = x(a_LC2.iv_odeX);                            
+                            ui_LC2 = x(a_LC2.iv_odeU);
+                            dx_LC2 = a_LC2.fv_odeDiff(t, xi_LC2, Vi, ui_LC2);
+                            yi_LC2 = a_LC2.fv_odeY(t, xi_LC2, Vi, ui_LC2);                            
+
+                            odeX([a_LC2.iv_odeX; a_LC2.iv_odeU]) = odeX([a_LC2.iv_odeX; a_LC2.iv_odeU]) + [dx_LC2; ui_LC2 - yi];
+                        end
+
+                        xi_LC1 = x(a_LC1.iv_odeX);
+                        ui_LC1 = x(a_LC1.iv_odeU);
+                        dx_LC1 = a_LC1.fv_odeDiff(t, xi_LC1, Vi, ui_LC1);
+                        yi_LC1 = a_LC1.fv_odeY(t, xi_LC1, Vi, ui_LC1);
+                        
+                        ue_LC1 = a_LC1.cv_Uequilibrium;
+                        ue_LC1( a_LC1.str_u==a_LC2.str_y ) = yi_LC2;
+                        odeX([a_LC1.iv_odeX; a_LC1.iv_odeU]) = odeX([a_LC1.iv_odeX; a_LC1.iv_odeU]) + [dx_LC1; ui_LC1 - ue_LC1];
+                        
+                        ue( cj.str_u==a_LC1.str_y ) = yi_LC1;
+                    end                    
+                                 
+                    lv_uy = cj.str_u==a_GC.str_y;
+                    ue( lv_uy ) = ue( lv_uy ) + y_GC( cj.iv_odeU( lv_uy ) ); 
+                    ue = ue + cj.U_offset(t);
+
                     dx = cj.fv_odeDiff(t, xi, Vi, ui);
                     Ix = cj.isConnect * cj.fv_odeI(t, xi, Vi, ui);
-                                
-                    odeX([cj.iv_odeX; bi.iv_odeX]) = odeX([cj.iv_odeX; bi.iv_odeX]) + [dx; -real(Ix); -imag(Ix)];                                        
+
+                    odeX([cj.iv_odeX; cj.iv_odeU; a_bus{i}.iv_odeX]) = odeX([cj.iv_odeX; cj.iv_odeU; a_bus{i}.iv_odeX]) + [dx; ui - ue; -real(Ix); -imag(Ix)];                                        
+                    
                 end
 
                 odeV(i) = [1,1j]*Vi;
             end        
 
-            I = Ymat*odeV;
-            for i=1:numel(bus)
-                idx = bus{i}.iv_odeX;
+            I = obj.odeYmat*odeV;
+            for i=1:numel(a_bus)
+                idx = a_bus{i}.iv_odeX;
                 odeX(idx) = odeX(idx) + [real(I(i)); imag(I(i))]; 
             end
-            
-            % odeX = RM*odeX; 
-            odeX = odeX(lg); % 地絡と解列が発生している部分を縮約する
+
+            odeX = odeX(lg); 
+
         end
                 
-        function jac = getODEJacobian(obj, t, x, Ymat, RM, EM, lg) %#ok    
-            % 解析対象のDAE系に関するヤコビアンを取得するメソッド.
-            % コントローラの接続にも対応できるように実装する予定.
+        function odeJac = getODEJacobian(obj, t, x, RM, EM, lg) %#ok    
+            % Method for obtaining the Jacobian of the DAE system under analysis.
 
             x = EM*x;
             
-            net = obj.odeNetwork;
-            bus = net.a_Bus;
+            a_bus = obj.odeNetwork.a_Bus;
 
-            jac = zeros(numel(x), numel(x));
+            odeJac = zeros(numel(x), numel(x));
 
-            lv = zeros(size(bus));
+            lv_Bus = zeros(0,1);
 
-            for i=1:numel(bus)
-                bi = bus{i};
-                cm = bi.a_Component;
-                Vi = x(bi.iv_odeX);                
+            if ~isempty(obj.odeNetwork.a_GlobalController)
+                a_GC = obj.odeNetwork.a_GlobalController{1};
+                
+                lh_GC = [a_GC.iv_odeX; a_GC.iv_odeU];
+                lv_GC = [a_GC.iv_odeX; a_GC.iv_odeY];
+
+                x_GC = x(a_GC.iv_odeX);
+                u_GC = x(a_GC.iv_odeU);
+
+                [Axx_GC, Bxu_GC, Bxv_GC, Cyx_GC, Dyu_GC, Dyv_GC, ~, ~, ~] = getSubJacobian(a_GC, t, x_GC, [], u_GC);                
+
+                odeJac(lv_GC, lh_GC) = odeJac(lv_GC, lh_GC) + [ Axx_GC,  Bxv_GC,  Bxu_GC;
+                                                                Cyx_GC,  Dyv_GC,  Dyu_GC];
+                               
+            end
+
+            for i=1:numel(a_bus)                
+                cm = a_bus{i}.a_Component;
+                Vi = x(a_bus{i}.iv_odeX);                
 
                 for j=1:numel(cm)
                     cj = cm{j};
                     xi = x(cj.iv_odeX);        
-                    ui = cj.cv_Uequilibrium + cj.U_offset;                    
+                    ui = x(cj.iv_odeU);                 
 
-                    lx = [cj.iv_odeX; bi.iv_odeX];
-                                
-                    jacA = cj.JacobiA(t, xi, Vi, ui);
-                    jacB = cj.JacobiB(t, xi, Vi, ui);
-                    jacC = cj.JacobiC(t, xi, Vi, ui);
-                    jacD = cj.JacobiD(t, xi, Vi, ui);
+                    [Axx, Bxu, Bxv, Cyx, Dyu, Dyv, Cix, Diu, Div] = getSubJacobian(cj, t, xi, Vi, ui);
+
+                    lu = cj.iv_odeU;
+                    lh = [cj.iv_odeX; cj.iv_odeU; a_bus{i}.iv_odeX];
+                    lv = [cj.iv_odeX; a_bus{i}.iv_odeX];
+                    
+                    if ~isempty(cj.a_LocalController)
+                        a_LC1 = cj.a_LocalController{1};                                            
+
+                        if ~isempty(a_LC1.a_LocalController)
+                            a_LC2 = a_LC1.a_LocalController{1};
+
+                            xi_LC2 = x(a_LC2.iv_odeX);                            
+                            ui_LC2 = x(a_LC2.iv_odeU);                                                        
+
+                            [Axx_LC2, Bxu_LC2, Bxv_LC2, Cyx_LC2, Dyu_LC2, Dyv_LC2, ~, ~, ~] = getSubJacobian(a_LC2, t, xi_LC2, Vi, ui_LC2);                                                                            
+
+                            lu_LC2 = a_LC2.iv_odeU;
+                            lh_LC2 = [a_LC2.iv_odeX; a_LC2.iv_odeU; a_bus{i}.iv_odeX];
+                            lv_LC2 = [a_LC2.iv_odeX; a_LC2.iv_odeY];
+
+                            odeJac(lv_LC2, lh_LC2) = odeJac(lv_LC2, lh_LC2) + [ Axx_LC2,  Bxu_LC2,  Bxv_LC2; ...
+                                                                               -Cyx_LC2, -Dyu_LC2, -Dyv_LC2];                            
+
+                            
+                            odeJac(lu_LC2, lu_LC2) = odeJac(lu_LC2, lu_LC2) + eye(length(lu_LC2));
+                            
+                        end                        
+
+                        xi_LC1 = x(a_LC1.iv_odeX);
+                        ui_LC1 = x(a_LC1.iv_odeU);                                      
+
+                        [Axx_LC1, Bxu_LC1, Bxv_LC1, Cyx_LC1, Dyu_LC1, Dyv_LC1, ~, ~, ~] = getSubJacobian(a_LC1, t, xi_LC1, Vi, ui_LC1);                                                
+
+                        lu_LC1 = a_LC1.iv_odeU;
+                        lh_LC1 = [a_LC1.iv_odeX; a_LC1.iv_odeU; a_bus{i}.iv_odeX];
+                        lv_LC1 = [a_LC1.iv_odeX; a_LC1.iv_odeY];
+
+                        odeJac(lv_LC1, lh_LC1) = odeJac(lv_LC1, lh_LC1) + [ Axx_LC1,  Bxu_LC1,  Bxv_LC1; ...                                                                                   
+                                                                           -Cyx_LC1, -Dyu_LC1, -Dyv_LC1];
+
+                        odeJac(lu_LC1, lu_LC1) = odeJac(lu_LC1, lu_LC1) + eye(length(lu_LC1));
+
+                        odeJac(cj.iv_odeY, lh) = [-Cyx, -Dyu, -Dyv];
+                    end                                                                                                                                    
             
-                    jac(lx,lx) = jac(lx,lx) + [jacA, jacB; -jacC, -jacD]; 
+                    odeJac(lv,lh) = odeJac(lv,lh) + [ Axx,  Bxu,  Bxv; ...                                                     
+                                                     -Cix, -Diu, -Div]; 
+
+                    odeJac(lu,lu) = odeJac(lu,lu) + eye(length(lu));
+
                 end
 
-                lv(2*i+[-1;0]) = bi.iv_odeX; 
+                lv_Bus(2*i+[-1;0]) = a_bus{i}.iv_odeX; 
             end                               
         
-            G = real(Ymat);
-            B = imag(Ymat);
+            G = real(obj.odeYmat);
+            B = imag(obj.odeYmat);
 
-            lo = lv(1:2:end);
-            le = lv(2:2:end);
+            lo = lv_Bus(1:2:end);
+            le = lv_Bus(2:2:end);
             
-            jac(lo,lo) = jac(lo,lo) + G;
-            jac(lo,le) = jac(lo,le) - B;
-            jac(le,lo) = jac(le,lo) + B;
-            jac(le,le) = jac(le,le) + G; 
-
-            % jac = RM * jac * RM.';
-            jac = jac(lg,lg);
-
-        end
-
-        function [init, Mass] = getODESet(obj, x0, Mass, RM, EM)
-
-            bus  = obj.odeNetwork.a_Bus;
-            nbus = numel(bus);
-
-            if isempty(x0)
-                xi   = cell(nbus,1);
-                vi   = cell(nbus,1);
-                for i=1:nbus
-                    busi  = bus{i};
-                    xi{i} = cell2mat( cellfun(@(B) B.cv_Xequilibrium + B.X_offset, busi.a_Component, 'UniformOutput', false) );
-                    vi{i} = [real(busi.c_Vequilibrium); imag(busi.c_Vequilibrium)];                 
-                end             
-    
-                init = RM * [vertcat(xi{:}); vertcat(vi{:})];
-            else
-                init = RM*x0;
-            end            
+            odeJac(lo,lo) = odeJac(lo,lo) + G;
+            odeJac(lo,le) = odeJac(lo,le) - B;
+            odeJac(le,lo) = odeJac(le,lo) + B;
+            odeJac(le,le) = odeJac(le,le) + G; 
             
-            if isempty(Mass)
-                
-                x    = EM*init;            
-                nx   = numel(x);
-                Mass = zeros(nx,nx);
+            odeJac = odeJac(lg,lg);            
 
-                for i=1:nbus
-                    Vi   = x(bus{i}.iv_odeX);                
-                    comp = bus{i}.a_Component;
-                    for j=1:numel(comp)                    
-                        ci = comp{j}.iv_odeX;
-                        ui = comp{j}.cv_Uequilibrium;
+        end       
+
+        function [x0, M0] = getNextPhase(obj, x0, M0, RM, EM) %#ok
+            a_bus  = obj.odeNetwork.a_Bus;            
+
+            x0 = EM * x0;
+            M0 = EM * M0 * EM.';
+
+            for i=1:numel(a_bus)
+                a_Comp = a_bus{i}.a_Component;                
+
+                for j=1:numel(a_Comp)
+                    if isa(a_Comp{j}, 'component.generator.abstract') && ~a_Comp{j}.isConnect
+                        c_idx = a_Comp{j}.iv_odeX;
+                        b_idx = a_bus{i}.iv_odeX;
+                        [x0(c_idx), u_equilibrium] = a_Comp{j}.get_equilibrium([1,1j]*x0(b_idx), 0+1j*0);                         
                         
-                        xi = x(ci);
-                        mi = comp{j}.rm_odeMass([], xi, Vi, ui);
-                        Mass(ci,ci) = Mass(ci,ci) + mi; 
-                    end
-                end            
-            end
+                        if ~isempty(a_Comp{j}.a_LocalController)
+                            a_LC1 = a_Comp{j}.a_LocalController{1};
 
-            Mass = RM * Mass * RM.';            
-        end
-        
-        function [EM, RM, lg] = getStateMatrix(obj, event, tab)
-            bus = obj.odeNetwork.a_Bus;
-            evs = event( tab{1,:} );
-                    
-            bnms = cell2mat( cellfun(@(B) B.FltBus, evs, 'UniformOutput', false) );
-            cnms = cell2mat( cellfun(@(B) B.TrpCmp, evs, 'UniformOutput', false) );
+                            v_LC1 = a_LC1.iv_odeX;                            
+                            [x0(v_LC1), ~] = a_LC1.get_equilibrium([1,1j]*x0(b_idx), u_equilibrium);                         
 
-            if isempty(bnms)
-                bnms = "";
-            end
+                            M0(v_LC1, v_LC1) = a_LC1.rm_odeMass([], [], [], []);
+                            
+                            if ~isempty(a_LC1.a_LocalController)
+                                a_LC2 = a_LC1.a_LocalController{1};
 
-            if isempty(cnms)
-                cnms = "";
-            end
+                                v_LC2 = a_LC2.iv_odeX;                                
+                                [x0(v_LC2), ~] = a_LC2.get_equilibrium([1,1j]*x0(b_idx), []);                         
 
-            bnms_all = cell2mat( cellfun(@(B) repmat(B.str_tag, [2,1]), bus, 'UniformOutput', false) );
+                                M0(v_LC2, v_LC2) = a_LC2.rm_odeMass([], [], [], []);
+                            end
+                        end
 
-            cnms_all = cell(size(bus));
-            for i=1:numel(bus)
-                bnm = bus{i}.str_tag;
-                bus{i}.l_isFault = ismember(bnm, bnms_all);
-
-
-                cmp = bus{i}.a_Component;                                
-                c_c = cell(size(cmp));
-                for j=1:numel(cmp)
-                    c_c{j} = repmat( cmp{j}.str_tag, size(cmp{j}.str_x) );
-                    
-                    cmp{j}.isConnect = ~ismember(cmp{j}.str_tag, cnms);
-                end
-                cnms_all{i} = cell2mat(c_c);
-            end
-            cnms_all = cell2mat(cnms_all);
-
-            lg = ismember([cnms_all;bnms_all],[cnms;bnms]);
-
-            nlg = length(lg);
-
-            EM = eye(nlg);
-            RM = eye(nlg);
-
-            EM = EM(:,~lg);
-            RM = RM(~lg,:);
-            
-        end
-
-        function [x, Mass] = getTransitionSet(obj, x, Mass, RM, EM) %#ok
-            bus  = obj.odeNetwork.a_Bus;
-            nbus = numel(bus);
-
-            x = EM*x;
-            Mass = EM * Mass * EM.';
-
-            for i=1:nbus
-                com = bus{i}.a_Component;
-                ncom = numel(com);
-
-                for j=1:ncom
-                    if isa(com{j}, 'component.generator.abstract') && ~com{j}.isConnect
-                        c_idx = com{j}.iv_odeX;
-                        b_idx = bus{i}.iv_odeX;
-                        [x(c_idx), ~] = com{j}.get_equilibrium([1,1j]*x(b_idx), 0+1j*0);                         
-
-                        Mass(c_idx, c_idx) = com{j}.rm_odeMass([], [], x(b_idx), []);
+                        M0(c_idx, c_idx) = a_Comp{j}.rm_odeMass([], [], [], []);
                     end
                 end
             end            
-
         end
 
     end
 
     methods
 
-        function [tab, stc] = simulate(obj)
+        function out = simulate(obj)
             
-            o = guilda.internal.ode(obj); 
-
-            options = odeset("RelTol", o.RelativeTolerance, "AbsTol", o.AbsoluteTolerance);
-
-            Ymat = obj.odeNetwork.get_admittance_matrix.Variables;
-
-            if isempty(obj.ODEvnt)                
-                obj.manage_time([0,10], eventset("Time", [0,10]));
-            end
-
-            tp = 1;
-            np = size(obj.ODEvnt,2);
-
-            obj.clear_simResults();
-
-            x0   = [];
-            Mass = [];
+            [o, x0, Mass, tp, np, options] = makeODE(obj);            
 
             while tp <= np          
 
-                TT = obj.odeTimeTable(tp,:); % 地絡と解列に関するイベントの取得
-                                
-                [EM, RM, lg] = obj.getStateMatrix(obj.ODEvnt, TT(1,3:end)); 
-                [x0, Mass] = obj.getODESet(x0, Mass, RM, EM);
+                % Retrieving events related to ground faults and circuit tripping.                                               
+                TT = obj.odeTimeTable(tp,:); 
 
-                o.InitialValue = x0;
-                o.ODEFcn       = @(t,x) obj.getODEFunction(t,x,Ymat,RM,EM,~lg);                                       
-                o.Jacobian     = @(t,x) obj.getODEJacobian(t,x,Ymat,RM,EM,~lg);
+                odeEvents = obj.ODEvnt( TT{:,3:end} );                
+
+                t1 = TT{1, 't1'};
+                t2 = TT{1, 't2'};
+
+                setEventCondition(odeEvents{:}, "TimePhase", [t1,t2], "Iteration", tp);
+
+                [EM, RM, lv_FBorTC, x0, Mass] = getInitialCondition(odeEvents{:}, "x0", x0, "M0", Mass);
+
+                o.InitialValue = x0;                
                 o.MassMatrix   = Mass;                
+                o.ODEFcn       = @(t,x) obj.getODEFunction(t,x,RM,EM,~lv_FBorTC);                                       
+                o.Jacobian     = @(t,x) obj.getODEJacobian(t,x,RM,EM,~lv_FBorTC);                
             
-                try
-                    t1 = TT{1, 't1'};
-                    t2 = TT{1, 't2'};
+                try                     
+                    startTime = tic;
+                    stopTime  = 8;
+                    SimulationTimer = @(t,y) checkSimulationTime(t,y,startTime,stopTime);
+                    o.EventDefinition = odeEvent("EventFcn", SimulationTimer, "Response", "stop");
                     
-                    sol = solve(o, 0, t2-t1); % 方程式を解く際には,[0, 各フェーズの時間]で指定する
-
-                    et = isequal(tp,np);     
-
-                    sim_sol.Time = sol.Time + t1;
-                    sim_sol.Solution = sol.Solution;
-                    obj.manage_simResults(sim_sol, RM, EM, et);
+                    % When solving the equation, specify [0, duration of each phase]                                        
+                    sol = solve(o, 0, t2-t1); 
                 catch me                    
 
                     splitMSG = strsplit(me.identifier,':');                                        
@@ -537,12 +415,12 @@ classdef (Sealed = true) odeSimulator < handle
 
                         case 'IndexGTOne'
 
-                            % DAE系のインデックスが1より大きかった場合にインデックスを減らした新しいDAE系を構築する.
+                            % If the DAE index is greater than 1, construct a new DAE sequence with a reduced index.
                             [ODEfcn, x0, options] = ReduceDAEIndex(obj, o, options);
 
                         case 'NeedBetterY0'
 
-                            % 初期値の矛盾に関するエラーが発生した場合に、DAE系と整合性の取れる状態を計算する.
+                            % If an error related to initial value inconsistencies occurs, calculate a state that is consistent with the DAE system.
                             [ODEfcn, x0, options] = CalculateInitialCondition(o, options);
 
                         otherwise
@@ -551,27 +429,26 @@ classdef (Sealed = true) odeSimulator < handle
                     end
                    
 
-                    % エラーバンドリングを行った後、もう一度DAE系を解く.
+                    % After performing error bundling, solve the DAE system again.
                     try
-                        [t,y] = ode15s(ODEfcn, time, x0, options);
-                        sol = struct(    'Time', t.', ...
-                                     'Solution', y.');
-                           
-                        obj.manage_simResults( sol, RM, EM, isequal(tp,np) )
+                        [t,y] = ode15s(ODEfcn, [0,t2-t1], x0, options);
+                        sol = struct('Time', t.', 'Solution', y.');
 
                     catch ME
                         error(msg('GUILDA:odeSimulator:UnfeasibleDAE'))
                     end
                 end
                                 
+                obj.odeResult{tp} = Event2State( odeEvents{:}, "ODEResults", struct('Time', (sol.Time + t1)', 'Solution', (EM * sol.Solution).'), "ODEYmatrix", obj.odeYmat );                                
+                
+
+                [x0, Mass] = obj.getNextPhase(reshape(sol.Solution(:,end),[],1), o.MassMatrix.MassMatrix, RM, EM);
 
                 tp = tp + 1;
+            end        
 
-                [x0, Mass] = obj.getTransitionSet(reshape(sol.Solution(:,end),[],1), o.MassMatrix.MassMatrix, RM, EM);
-            end
+            out = odeSimulationResult(obj.odeNetwork, obj.odeResult);            
 
-            tab = obj.odeResults;
-            stc = obj.odeSimStruct;
         end
     end
 end
@@ -633,4 +510,19 @@ function [ODEfcn, x0, options] = CalculateInitialCondition(o, options)
     options.InitialSlope = xp0;                        
 
     ODEfcn = Func;
+end
+
+function [Axx, Bxu, Bxv, Cyx, Dyu, Dyv, Cix, Diu, Div] = getSubJacobian(OBJ, t, xi, Vi, ui)
+                
+    Axx = OBJ.JacobiAxx(t, xi, Vi, ui);
+    Bxv = OBJ.JacobiBxv(t, xi, Vi, ui);
+    Bxu = OBJ.JacobiBxu(t, xi, Vi, ui);                         
+
+    Cyx = OBJ.JacobiCyx(t, xi, Vi, ui);
+    Dyv = OBJ.JacobiDyv(t, xi, Vi, ui);
+    Dyu = OBJ.JacobiDyu(t, xi, Vi, ui);
+
+    Cix = OBJ.JacobiCix(t, xi, Vi, ui);
+    Div = OBJ.JacobiDiv(t, xi, Vi, ui);
+    Diu = OBJ.JacobiDiu(t, xi, Vi, ui);
 end

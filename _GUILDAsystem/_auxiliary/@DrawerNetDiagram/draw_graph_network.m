@@ -1,4 +1,6 @@
 function draw_graph_network(obj)
+    edge_base_radius = 0.001;
+
 
     n_node   = obj.n_bus;
     rm_axis  = obj.tab_bus.graph{:, {'Xaxis', 'Yaxis'}}.';
@@ -16,7 +18,7 @@ function draw_graph_network(obj)
 
     span_xy = max([max(x_main)-min(x_main), max(y_main)-min(y_main), eps]);
     node_radius = 0.016 * span_xy * (obj.MarkerSize/10);
-    edge_base_radius = node_radius * 0.08;
+    
     rv_edge_width = zeros(n_edge, 1);
     for i_edge = 1:n_edge
         pd = obj.tab_branch.dynamics(i_edge, :);
@@ -61,14 +63,15 @@ function draw_graph_network(obj)
         node_data.Index = i_node;
         [h_node(i_node),sct_nodelim(i_node)] = plot_node(ax, [x_main(i_node), y_main(i_node), z_main(i_node)], marker, node_radius, [1,1,1]*0.05, node_data);
         h_label(i_node) = text(ax, ...
-            x_main(i_node) + node_radius*1.5, y_main(i_node) + node_radius*2, z_main(i_node) + node_radius*1.5, ...
+            x_main(i_node), y_main(i_node) + node_radius/2, z_main(i_node) + node_radius*1.5, ...
             "", ...
             'FontSize',   obj.NodeFontSize, ...
             'FontWeight', obj.NodeFontWeight, ...
-            'Color',      [0.85 0.65 0.13], ... % 黄土色
+            'Color',      [0,0,0], ... 
             'BackgroundColor', label_bg, ...
             'EdgeColor',  label_edge, ...
-            'Margin',     label_margin);
+            'Margin',     label_margin,...
+            'HorizontalAlignment','right');
     end
 
     % Branch Edge plot
@@ -79,20 +82,32 @@ function draw_graph_network(obj)
         edge_radius = edge_base_radius * (obj.EdgeWidthOffset + obj.EdgeWidthSclae * rv_edge_width(i_edge));
         
         edge_para   = tab_branchgraph(i_edge,:);
-        node_in1    = min( max( edge_para.BusFromPoint, 0),1);
-        node_in2    = min( max( edge_para.BusToPoint,   0),1);
         from_max    = sct_nodelim(idx(1)).max;
         from_min    = sct_nodelim(idx(1)).min;
         to_max      = sct_nodelim(idx(2)).max;
         to_min      = sct_nodelim(idx(2)).min;
-        p1 = from_min * (1-node_in1) + from_max * node_in1;
-        p2 =   to_min * (1-node_in2) +   to_max * node_in2;
-        edge_marker = edge_para.Marker;
+        
         edge_MidX   = str2mat(edge_para.MidXaxis); 
         edge_MidY   = str2mat(edge_para.MidYaxis); 
+        edge_marker = edge_para.Marker;
+
+        if numel(edge_MidX) ~= numel(edge_MidY)
+            error("The number of elements in MidX and MidY differs. (branch"+i_edge+")")
+        end
+
+        p1 = 0.5 * (from_min + from_max);
+        p2 = 0.5 * (to_min  + to_max);
+        if numel(edge_MidX) > 0
+            p1(1) = max( from_min(1), min( edge_MidX(1), from_max(1) ) );
+            p1(2) = max( from_min(2), min( edge_MidY(1), from_max(2) ) );
+
+            p2(1) = max( to_min(1), min( edge_MidX(end), to_max(1) ) );
+            p2(2) = max( to_min(2), min( edge_MidY(end), to_max(2) ) );
+        end
+        path = [p1; [edge_MidX(:), edge_MidY(:), ones(numel(edge_MidX),1)*mean([p1(3),p2(3)])]; p2];
 
         edge_data.Index = i_edge;
-        [h_edge(i_edge), h_arrow(i_edge)] = plot_edge(ax, p1, p2, edge_radius, [0.20 0.20 0.20], edge_data, edge_marker, edge_MidX, edge_MidY);        
+        [h_edge(i_edge), h_arrow(i_edge)] = plot_edge(ax, path, edge_radius, [0.20 0.20 0.20], edge_data, edge_marker);        
     end
 
     comp_handles = gobjects(0, 1);
@@ -113,16 +128,30 @@ function draw_graph_network(obj)
         comp_xyz(end+1, :)   = comp_pos;
         comp_handles(i_comp) = plot_node(ax, comp_pos, comp_marker, node_radius*0.75, [0.15 0.15 0.15], node_data);
 
-        node_in   = tab_compi.graph.BusPoint;
-        p_bus     = sct_nodelim(i_compbus).min * (1-node_in) + sct_nodelim(i_compbus).max * node_in;
         edge_MidX = str2mat(tab_compi.graph.MidXaxis);
         edge_MidY = str2mat(tab_compi.graph.MidYaxis);
         comp_edge_radius = edge_base_radius * 3;
 
-        [comp_edges(i_comp), comp_arrows(i_comp)] = plot_edge(ax, comp_pos, p_bus, comp_edge_radius, [0.20 0.20 0.20], node_data, "-", edge_MidX, edge_MidY);
+        bus_min = sct_nodelim(i_compbus).min;
+        bus_max = sct_nodelim(i_compbus).max;
+        p_bus     = 0.5 * ( bus_min + bus_max );
+        if numel(edge_MidY) ~= numel(edge_MidX)
+            error("The number of elements in MidX and MidY differs. (component"+i_comp+")")
+        end
+
+        path = [comp_pos; ...
+                [edge_MidX(:),edge_MidY(:), ones(numel(edge_MidX),1)*mean([comp_pos(3),p_bus(3)]) ] ];
+        
+        p_bus(1) = max( bus_min(1), min( path(end,1), bus_max(1) ) );
+        p_bus(2) = max( bus_min(2), min( path(end,2), bus_max(2) ) ); 
+        
+        path = [path; p_bus];
+
+        
+        [comp_edges(i_comp), comp_arrows(i_comp)] = plot_edge(ax, path, comp_edge_radius, [0.20 0.20 0.20], node_data, "-");
         
         comp_labels(i_comp)  = text(ax, ...
-            comp_pos(1) + node_radius*1.5, comp_pos(2) + node_radius*2, comp_pos(3) + node_radius*1.5, ...
+            comp_pos(1) + node_radius*1.5, comp_pos(2) + node_radius*1.5, comp_pos(3) + node_radius*1.5, ...
             "", ...
             'FontSize', obj.NodeFontSize, ...
             'FontWeight', 'bold', ...
@@ -183,6 +212,9 @@ function draw_graph_network(obj)
     ax.Projection = 'perspective';
 
     fig = ancestor(ax, 'figure');
+    set(fig, 'Renderer', 'opengl');     
+    set(fig, 'GraphicsSmoothing', 'on');
+    
     dcm = datacursormode(fig);
     set(dcm, 'Enable', 'on', 'UpdateFcn', @(src, event) customhover(src, event, ax, obj));
 end
@@ -267,10 +299,21 @@ function out = str2mat(in)
 end
 
 
-function txt = customhover(~, event_obj, ax, drawer)
-    hObj = event_obj.Target;
+function txt = customhover(src, event_obj, ax, drawer, hObj)
+    arguments
+        src
+        event_obj
+        ax 
+        drawer 
+        hObj     = event_obj.Target;
+    end
+
     txt  = 'No Data...'; 
-    if (hObj.Parent == ax || hObj.Parent.Parent==ax) && isprop(hObj, 'UserData')
+    % if hObj.Parent.Parent==ax
+    %     txt = customhover(src, event_obj, ax, drawer, hObj.Parent);
+    % end
+    % if hOhObj.Parent == ax && isprop(hObj, 'UserData')
+    if isprop(hObj, 'UserData')
         sct_ud = hObj.UserData;
         if isstruct(sct_ud) && all(isfield(sct_ud,["Type","Index"]))
             i = sct_ud.Index;
@@ -284,4 +327,17 @@ function txt = customhover(~, event_obj, ax, drawer)
             end
         end
     end
+end
+
+
+function P_near = find_nearest_point(P0, xall, yall)
+    x_min = min(xall);
+    x_max = max(xall);
+    y_min = min(yall);
+    y_max = max(yall);
+
+    near_x = max(x_min, min(P0(1), x_max));
+    near_y = max(y_min, min(P0(2), y_max));
+    
+    P_near = [near_x, near_y];
 end

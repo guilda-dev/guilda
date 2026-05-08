@@ -7,10 +7,14 @@ classdef abstract < Component
             
             if istable(parameter)
                 mp = parameter(:,obj.str_para);             
-            elseif ischar(parameter) || isstring(parameter)                
+            else 
                 datapath = fullfile(fileparts(mfilename("fullpath")), "parameter.csv");
                 dataset  = readtable(datapath);                
-                mp = dataset(string(parameter)==["NGT2";"NGT6";"NGT8"],obj.str_para);
+                if ischar(parameter) || isstring(parameter)                
+                    mp = dataset(string(parameter)==["NGT2";"NGT6";"NGT8"],obj.str_para);
+                else
+                    mp = dataset(1,obj.str_para);
+                end
             end
             
             name = cellfun(@(d) string(d), mp.Properties.VariableNames);

@@ -19,16 +19,16 @@ function [h,s] = plot_node(ax, center_xyz, marker, radius, color, nodedata)
             h = draw_sphere(ax, x0, y0, z0, radius*2, [0.6110 0.4660 0.1250]);
             s = get_lim_surf(h);
         case "^"
-            h = draw_cone(ax, x0, y0, z0-radius, radius*2, [0.7170 0.1920 0.1720], pi/2);
+            h = draw_cone(ax, x0, y0+radius, z0-radius, radius*2, [0.7170 0.1920 0.1720], pi/2);
             s = get_lim_patch(h);
         case "v"
-            h = draw_cone(ax, x0, y0, z0-radius, radius*2, [0.7170 0.1920 0.1720], -pi/2);
+            h = draw_cone(ax, x0, y0-radius, z0-radius, radius*2, [0.7170 0.1920 0.1720], -pi/2);
             s = get_lim_patch(h);
         case ">"
-            h = draw_cone(ax, x0, y0, z0-radius, radius*2, [0.7170 0.1920 0.1720], 0);
+            h = draw_cone(ax, x0+radius, y0, z0-radius, radius*2, [0.7170 0.1920 0.1720], 0);
             s = get_lim_patch(h);
         case "<"
-            h = draw_cone(ax, x0, y0, z0-radius, radius*2, [0.7170 0.1920 0.1720], pi);
+            h = draw_cone(ax, x0-radius, y0, z0-radius, radius*2, [0.7170 0.1920 0.1720], pi);
             s = get_lim_patch(h);
         otherwise
             h = draw_cuboid(ax, x0, y0, z0, radius, color);

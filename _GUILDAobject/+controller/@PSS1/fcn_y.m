@@ -7,6 +7,9 @@ function Vpss = fcn_y(obj, t, x, V, u, param, omega0) %#ok
     tn2 = param(5);
     td2 = param(6);
 
+    Vpss_min = param(7); 
+    Vpss_max = param(8);
+
     % 周波数
     omega = u;
 

@@ -18,14 +18,24 @@ classdef Component < PowerSystemModel
 %% Parameter
     properties(SetAccess=protected)
         a_Bus                                  % [   Layer   ] 接続しているBusクラス(a_Cubicleから辿る)
-        a_LocalController  = cell(0,1)         % [   Layer   ] 接続されているControllerクラスのcell配列        
-        rm_odeMass                             % [  Dynamics ] 数値積分の計算に使用する質量行列のシンボリック式
-        fv_odeDiff                             % [  Dynamics ] 数値積分の計算に使用する微分方程式のシンボリック式
-        fv_odeI                                % [  Dynamics ] 数値積分の計算に使用する接続方程式のシンボリック式
-        JacobiA
-        JacobiB
-        JacobiC
-        JacobiD
+        a_LocalController (:,1) = cell(0,1)    % [   Layer   ] 接続されているControllerクラスのcell配列        
+        rm_odeMass                             % [  Dynamics ] 数値積分の計算に使用する質量行列の関数ハンドル
+        fv_odeDiff                             % [  Dynamics ] 数値積分の計算に使用する微分方程式の関数ハンドル
+        fv_odeI                                % [  Dynamics ] 数値積分の計算に使用する接続方程式の関数ハンドル
+        fv_odeY
+
+        JacobiAxx                              % [  Dynamics ] 微分方程式の状態変数に関するヤコビアン
+        JacobiBxv                              % [  Dynamics ] 微分方程式の母線変数に関するヤコビアン
+        JacobiBxu                              % [  Dynamics ] 微分方程式の入力に関するヤコビアン
+
+        JacobiCix                              % [  Dynamics ] 出力方程式(電流)の状態変数に関するヤコビアン
+        JacobiDiv                              % [  Dynamics ] 出力方程式(電流)の母線変数に関するヤコビアン
+        JacobiDiu                              % [  Dynamics ] 出力方程式(電流)の入力に関するヤコビアン
+
+        JacobiCyx = @(t,x,V,u) []              % [  Dynamics ] 出力方程式(コントローラ)の入力に関するヤコビアン
+        JacobiDyv = @(t,x,V,u) []              % [  Dynamics ] 出力方程式(コントローラ)の入力に関するヤコビアン
+        JacobiDyu = @(t,x,V,u) []              % [  Dynamics ] 出力方程式(コントローラ)の入力に関するヤコビアン
+
         odeLinearSystem
     end
     properties
@@ -39,8 +49,9 @@ classdef Component < PowerSystemModel
         c_Vequilibrium                         % [SteadyState] 定常潮流状態での機器の注入電圧
     end
     properties (SetAccess={?odeSimulator, ?Component}, Hidden)
-        iv_odeX  = zeros(0,1);
-        iv_odeU  = zeros(0,1);        
+        iv_odeX  = [];
+        iv_odeU  = [];        
+        iv_odeY  = [];        
     end    
     properties(Dependent)
         cv_Xequilibrium_all                    % [SteadyState] 制御器の状態も含めた平衡点
@@ -57,9 +68,8 @@ classdef Component < PowerSystemModel
         parent                                 % [   Layer   ] Layerの上位に当たるクラス
         children                               % [   Layer   ] Layerの下位に当たるクラス群
     end
-    properties (Access={?odeSimulator, ?Component})
-        isController = false
-        isConnect    = true
+    properties (Access={?odeSimulator, ?Component, ?odeEventSet})        
+        isConnect = true
     end
     properties (Hidden)
         X_offset 
@@ -97,8 +107,7 @@ classdef Component < PowerSystemModel
                                             "Yaxis", opt.Yaxis            , "double",...
                                            "Marker", opt.Marker           , "string",...
                                          "MidXaxis", opt.MidXaxis         , "string",...
-                                         "MidYaxis", opt.MidYaxis         , "string",...
-                                         "BusPoint", opt.BusPoint        , "string");
+                                         "MidYaxis", opt.MidYaxis         , "string");
         end
     end
 
@@ -114,8 +123,11 @@ classdef Component < PowerSystemModel
         % Dynamics
         [n_odeX, n_odeU, Mass, x0] = reset_odeset(obj, n_odeX, n_odeU, omega0)
 
-        %get_sys
+        % get_sys
         sys = get_sys(obj, x, V, u)
+
+        % get jacobian
+        odeJacobian = getJacobian(obj, t, x, V, u)
 
     end
 
@@ -137,9 +149,9 @@ classdef Component < PowerSystemModel
         end
         function p = get.children(obj)
             p = [ obj.a_LocalController  ;...
-                 {obj.para_dynamics       ; obj.para_powerflow     ;...
-                  obj.para_operation      ; obj.para_OPF           ;...
-                  obj.para_graph          }];
+                 {obj.para_dynamics      ; obj.para_powerflow     ;...
+                  obj.para_operation     ; obj.para_OPF           ;...
+                  obj.para_graph         }];
         end
         function tp = get.tab_parameter(obj)
             dynamics  = obj.para_dynamics.tab_parameter;

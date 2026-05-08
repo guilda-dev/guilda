@@ -36,7 +36,7 @@ classdef Bus < PowerSystemModel
     properties (Access=public)
         rv_odeInit
     end
-    properties (Access={?odeSimulator})
+    properties (Access={?odeSimulator, ?odeEventSet})
         l_isFault (1,1) logical = false
     end
     properties (Access={?odeSimulator, ?odeLinearizer})
