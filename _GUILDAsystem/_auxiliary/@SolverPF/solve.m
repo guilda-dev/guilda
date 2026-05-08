@@ -2,8 +2,8 @@ function [powerflow_bus,flag,output] = solve(obj, net, mode, opt)
     arguments
         obj
         net 
-        mode    (1,1) string {mustBeMember(mode,["algebraic","dynamic"])} = "algebraic"
-        opt.export  (1,1) logical = mode=="dynamic";
+        mode    (1,1) string {mustBeMember(mode,["algebraic","dynamic","geodetic"])} = "algebraic"
+        opt.export  (1,1) logical = ismember(mode,["dynamic","geodetic"]);
         opt.filename(1,1) string  = string(datetime("now","Format","uuMMdd_HHmmss"))+"_PFcalculation.json"
     end
  
@@ -17,6 +17,8 @@ function [powerflow_bus,flag,output] = solve(obj, net, mode, opt)
             [cv_Vbus,flag,output] = obj.solve_algebraic(cm_Y, tab_PFset);
         case "dynamic"
             [cv_Vbus,flag,output] = obj.solve_dynamic(cm_Y, tab_PFset);
+        case "geodetic"
+            [cv_Vbus,flag,output] = obj.solve_geodetic(cm_Y, tab_PFset);
     end
 
     % Vbus -> Ibus -> Pbus,Qbus

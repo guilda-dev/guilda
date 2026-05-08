@@ -1,8 +1,8 @@
 function [tab_PFsol, flag, output] = calculate_powerflow(obj,mode,opt)
     arguments
         obj
-        mode    (1,1) string {mustBeMember(mode,["algebraic","dynamic"])} = "algebraic"
-        opt.export  (1,1) logical = mode=="dynamic";
+        mode    (1,1) string {mustBeMember(mode,["algebraic","dynamic","geodetic"])} = "algebraic"
+        opt.export  (1,1) logical = ismember(mode,["dynamic","geodetic"]);
         opt.filename(1,1) string  = string(datetime("now","Format","uuMMdd_HHmmss"))+"_PFcalculation.json"
     end
 

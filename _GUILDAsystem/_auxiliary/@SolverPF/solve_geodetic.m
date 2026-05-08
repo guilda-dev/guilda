@@ -1,4 +1,4 @@
-function [cv_Vbus,flag,output] = solve_dynamic(obj, cm_Y, tab_PFset)
+function [cv_Vbus,flag,output] = solve_geodetic(obj, cm_Y, tab_PFset)
 
     N   = size(tab_PFset,1);
     M   = obj.dynamic.Mass;
@@ -75,6 +75,8 @@ function [cv_Vbus,flag,output] = solve_dynamic(obj, cm_Y, tab_PFset)
         end
     elseif t_out(end) >= t_span(end)
         output.message = '✘ The simulation did not converge within the specified time limit.';
+    else
+        output.message = 'undefined error';
     end
 
     % save step data
@@ -89,9 +91,7 @@ function [cv_Vbus,flag,output] = solve_dynamic(obj, cm_Y, tab_PFset)
     cv_Vbus = rv_Vsol .* exp(1j*rv_Tsol);
 end
 
-% =========================================================
-% 母線ダイナミクスを計算するローカル関数
-% =========================================================
+
 function dY = bus_dynamics(t, Y, cm_Y, tab, D, N, foh_PQ)
     % 状態ベクトルの展開
     theta = Y(1:N);
@@ -112,12 +112,11 @@ function dY = bus_dynamics(t, Y, cm_Y, tab, D, N, foh_PQ)
     Q_spec = tab.Q * min(t/foh_PQ, 1);
 
     % 不平衡量の計算 (ベクトル)
-    delta_P = P_spec - P_net;
-    delta_Q = Q_spec - Q_net;
+    delta_P =        V.^2 .* (P_spec - P_net);
+    delta_Q = V./(V.^2+1) .* (Q_spec - Q_net);
 
-    % 駆動力の計算 (Qは電流次元に変換)
     force_theta = delta_P;
-    force_V     = delta_Q ./ max(V, 1e-6); % ゼロ除算防止
+    force_V     = delta_Q;
 
     % 運動方程式 (M * accel + D * vel = force) に基づく各変数の微分
     dtheta = omega;
