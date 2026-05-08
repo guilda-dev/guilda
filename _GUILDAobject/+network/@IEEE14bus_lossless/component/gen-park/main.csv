@@ -1,0 +1,6 @@
+Bus,P,Q,baseMVA,Pmin,Pmax,Qmin,Qmax,Xaxis,Yaxis,Marker,MidXaxis,MidYaxis,ParameterID,OpfID
+1,0,NaN,100,#NAME?,Inf,#NAME?,Inf,0.25,0.62,o,,,1,1
+2,0.4,NaN,100,#NAME?,Inf,#NAME?,Inf,0.415,0.22,o,,,1,1
+3,0,NaN,100,#NAME?,Inf,#NAME?,Inf,0.77,0.125,o,,,1,1
+6,0,NaN,100,#NAME?,Inf,#NAME?,Inf,0.47,0.57,o,[0.545],[0.57],1,1
+8,0,NaN,100,#NAME?,Inf,#NAME?,Inf,0.94,0.655,o,,,1,1
