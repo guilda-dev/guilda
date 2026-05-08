@@ -123,8 +123,11 @@ classdef Component < PowerSystemModel
         % Dynamics
         [n_odeX, n_odeU, Mass, x0] = reset_odeset(obj, n_odeX, n_odeU, omega0)
 
-        %get_sys
+        % get_sys
         sys = get_sys(obj, x, V, u)
+
+        % get jacobian
+        odeJacobian = getJacobian(obj, t, x, V, u)
 
     end
 

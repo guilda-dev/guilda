@@ -201,8 +201,9 @@ classdef (Sealed = true) odeSimulator < handle
                         
                         ue( cj.str_u==a_LC1.str_y ) = yi_LC1;
                     end                    
-                                                            
-                    ue( cj.str_u==a_GC.str_y ) = ue( cj.str_u==a_GC.str_y ) + y_GC( cj.iv_odeU( cj.str_u==a_GC.str_y ) ); 
+                                 
+                    lv_uy = cj.str_u==a_GC.str_y;
+                    ue( lv_uy ) = ue( lv_uy ) + y_GC( cj.iv_odeU( lv_uy ) ); 
                     ue = ue + cj.U_offset(t);
 
                     dx = cj.fv_odeDiff(t, xi, Vi, ui);
