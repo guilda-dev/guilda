@@ -48,6 +48,7 @@ function [powerflow_bus,flag,output] = solve(obj, net, mode, opt)
                      " > PQ ("+sum(l_PQ)+") : " + mat2str(find(l_PQ))    ;
 
         out.nodes(n_Bus) = struct('Color',[], 'Label',[], 'Hover',[], ...
+                                  'Pset', [], 'Qset', [], 'Pflow',[], 'Iflow',[], ...
                                   'Varg' ,[], 'Vabs' ,[] );
 
 
