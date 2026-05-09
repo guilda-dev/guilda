@@ -114,6 +114,9 @@ classdef Bus < PowerSystemModel
 
         %get_sys
         sys = get_sys(obj, opt)
+
+        % Graph plot
+        [last_index, node, edge] = get_geometric(obj, last_index, tab_V, tab_PQ, sct_comp)
     end
 
 %% Get Methods

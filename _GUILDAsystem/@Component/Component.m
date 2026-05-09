@@ -129,6 +129,9 @@ classdef Component < PowerSystemModel
         % get jacobian
         odeJacobian = getJacobian(obj, t, x, V, u)
 
+        % Graph plot
+        [node, edge, Pset, Qset] = get_geometric(obj, last_index, tab_V, sct_comp)
+        [node, edge] = get_geometric_parts( obj,rm_X, rm_U, cr_Vbus, cr_Ibus, cr_Pbus, cr_Qbus)
     end
 
     methods(Access={?Bus})

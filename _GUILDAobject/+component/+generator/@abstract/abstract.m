@@ -41,6 +41,8 @@ classdef abstract < Component
         function c = get.governor(obj); c = obj.SpecificControllers{1}; end    
         function c = get.avr(obj);      c = obj.SpecificControllers{2}; end    
         function c = get.pss(obj);      c = obj.SpecificControllers{3}; end    
+
+        [node, edge] = get_geometric_parts( obj, rm_X, rm_U, cr_Vbus, cr_Ibus, rr_Pbus, rr_Qbus)
     end
 
 end
