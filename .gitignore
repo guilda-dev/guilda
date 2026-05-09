@@ -38,6 +38,7 @@ $RECYCLE.BIN/
 # ==========================
 @GUILDA/user/
 _GUILDAsystem/@Bus/add_component.m
+_GUILDAsystem/@Bus/replace_component.m
 _GUILDAsystem/@PowerNetwork/add_branch.m
 
 

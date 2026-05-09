@@ -3,7 +3,7 @@ function replace_component(obj, str_tag, Type, parameter)
     arguments
         obj
         str_tag              (1,1) string
-        Type                 (1,:) char {mustBeMember(Type,{'gen-classical','gen-1axis','gen-park','load-impedance','load-power'})} % Component type
+        Type                 (1,:) char {mustBeMember(Type,{___KEY_LIST___})} % Component type
         parameter             = nan;
     end
 
@@ -35,12 +35,7 @@ function replace_component(obj, str_tag, Type, parameter)
     
     % get component function
     switch Type
-        case 'gen-classical';  mkInst = @component.generator.classical;
-        case 'gen-1axis';      mkInst = @component.generator.one_axis;
-        case 'gen-park';       mkInst = @component.generator.park;
-        case 'load-impedance'; mkInst = @component.load.impedance;
-        case 'load-power';     mkInst = @component.load.power;
-
+___KEY_CASES___
     end
     comp = mkInst(str_index, parameter, opt);
 

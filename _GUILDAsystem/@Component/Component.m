@@ -134,9 +134,14 @@ classdef Component < PowerSystemModel
         [node, edge] = get_geometric_parts( obj,rm_X, rm_U, cr_Vbus, cr_Ibus, cr_Pbus, cr_Qbus)
     end
 
+    methods%(Hidden)
+        % Debugger
+        flag = validate(obj)
+    end
+
     methods(Access={?Bus})
         set_bus(obj,bus)
-        set_equilibrium(obj)
+        set_equilibrium(obj,c_V,c_I,r_P,r_Q)
     end
 
 
