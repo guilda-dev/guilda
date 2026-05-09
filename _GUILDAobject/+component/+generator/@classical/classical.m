@@ -4,7 +4,7 @@ classdef classical < component.generator.abstract
         key      = "gen-classical";
         str_x    = ["delta";"omega"];        
         str_u    = ["Pmech";"Vfield"];        
-        str_y    = ["omega";"Efd";"Vabs"];        
+        str_y    = [];        
         str_para = ["M","D","Xd","Xq"]        
     end
     
@@ -25,6 +25,7 @@ classdef classical < component.generator.abstract
             obj.rm_odeMass = @(t, x, V, u) obj.fcn_Mass(t, x, V, u, array, omega0);
             obj.fv_odeDiff = @(t, x, V, u) obj.fcn_dx(t, x, V, u, array, omega0);
             obj.fv_odeI    = @(t, x, V, u) obj.fcn_I(t, x, V, u, array, omega0);
+            obj.fv_odeY    = @(t, x, V, u) obj.fcn_Y(t, x, V, u, array, omega0);
         end
         
         [cv_Xequilibrium, cv_Uequilibrium] = get_equilibrium(obj, c_V, c_I)
@@ -33,6 +34,7 @@ classdef classical < component.generator.abstract
     methods
         dx = fcn_dx(obj, t, x, V, u, param, omega0)
         I  = fcn_I(obj, t, x, V, u, param, omega0)
+        y  = fcn_Y(obj, t, x, V, u, para, omega0)
         M  = fcn_Mass(obj, t, x, V, u, param, omega0)
     end
 

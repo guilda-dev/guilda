@@ -12,8 +12,8 @@ function flag = validate(obj, l_message)
         c_I = [1,1j]*( rv_V/norm(rv_I) );
         obj.set_equilibrium(c_V,c_I)
     else
-        c_V = obj.a_Bus.c_Vequilibrium;
-        c_I = obj.a_Bus.c_Iequilibrium;
+        c_V = obj.c_Vequilibrium;
+        c_I = obj.c_Iequilibrium;
     end
 
     rv_X = obj.cv_Xequilibrium;
