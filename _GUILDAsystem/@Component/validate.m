@@ -12,8 +12,8 @@ function flag = validate(obj, l_message)
         c_I = [1,1j]*( rv_V/norm(rv_I) );
         obj.set_equilibrium(c_V,c_I)
     else
-        c_V = obj.a_Bus.c_Vequilibrium;
-        c_I = obj.a_Bus.c_Iequilibrium;
+        c_V = obj.c_Vequilibrium;
+        c_I = obj.c_Iequilibrium;
     end
 
     rv_X = obj.cv_Xequilibrium;
@@ -27,9 +27,6 @@ function flag = validate(obj, l_message)
     fcn_I  = @(x,v,u) obj.fv_odeI(   time, x, v, u);
     fcn_Y  = @(x,v,u) obj.fv_odeY(   time, x, v, u);
 
-    % validate dx=0 and I=Ist at the equilibrium point
-    dx_test = fcn_dx(rv_X,rv_V,rv_U);
-    I_test  = fcn_I( rv_X,rv_V,rv_U);
 
     % make variable
     sv_x  = obj.str_x;
@@ -41,9 +38,15 @@ function flag = validate(obj, l_message)
     nu = numel(sv_u);
     ny = numel(sv_y);
 
-    % get linearized matrix numerically
+    % make function
     e = @(i,n) delta/2 * ((1:n)==i).';
     v = @(c)   [real(c); imag(c)];
+
+    % validate dx=0 and I=Ist at the equilibrium point
+    dx_test = reshape(          fcn_dx(rv_X,rv_V,rv_U), nx, 1);
+    I_test  = reshape( v(fcn_I( rv_X,rv_V,rv_U) - c_I),  2, 1);
+
+    % get linearized matrix numerically
     Axx_test = reshape(    tools.harrayfun(@(i) fcn_dx(rv_X + e(i,nx), rv_V, rv_U) - fcn_dx(rv_X - e(i,nx), rv_V, rv_U), 1:nx) / delta , nx, nx);
     Bxv_test = reshape(    tools.harrayfun(@(i) fcn_dx(rv_X, rv_V + e(i, 2), rv_U) - fcn_dx(rv_X, rv_V - e(i, 2), rv_U), 1: 2) / delta , nx,  2);
     Bxu_test = reshape(    tools.harrayfun(@(i) fcn_dx(rv_X, rv_V, rv_U + e(i,nu)) - fcn_dx(rv_X, rv_V, rv_U - e(i,nu)), 1:nu) / delta , nx, nu);
@@ -69,8 +72,8 @@ function flag = validate(obj, l_message)
     % make flag
     mktab = @(flag,r,v) array2table(flag,"RowNames",r,"VariableNames",v);
     flag = struct( ...
-            "dx" , mktab(      abs(dx_test)    ,  sv_x, "diff" ),...
-            "I"  , mktab( abs(v(I_test - c_I)) ,  sv_i, "diff" ),...
+            "dx" , mktab(      abs(dx_test)      ,  sv_x, "diff" ),...
+            "I"  , mktab(      abs( I_test)      ,  sv_i, "diff" ),...
             "Axx", mktab( abs(Axx_test-Axx_valid), sv_x, sv_x), ...
             "Bxu", mktab( abs(Bxu_test-Bxu_valid), sv_x, sv_u), ...
             "Bxv", mktab( abs(Bxv_test-Bxv_valid), sv_x, sv_v), ...
@@ -99,7 +102,12 @@ function flag = validate(obj, l_message)
             elseif ismember(fn ,["Cyx","Dyu","Dyv"])
                 disp(">> obj.Jacobi"+fn+"(0,xst,Vst,ust) - (Numerical differentiation @obj.fv_odeY)"+newline)
             end
-            disp(flag.(fn))
+
+            if isempty(flag.(fn))
+                disp("   No Variables"+newline)
+            else
+                disp(flag.(fn))
+            end
         end
         disp(repmat('=',1,100))
     end
