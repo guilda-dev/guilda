@@ -128,9 +128,14 @@ classdef Component < PowerSystemModel
 
     end
 
+    methods%(Hidden)
+        % Debugger
+        flag = validate(obj)
+    end
+
     methods(Access={?Bus})
         set_bus(obj,bus)
-        set_equilibrium(obj)
+        set_equilibrium(obj,c_V,c_I,r_P,r_Q)
     end
 
 
