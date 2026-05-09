@@ -1,11 +1,5 @@
-classdef (Sealed = true) AVR_DC1 < LocalController
-    properties (Constant, Hidden=true)
-        key      = "avr"
-        str_x    = ["Vtr";"Vap"; "Vfld"; "Vst"];
-        str_u    = ["Vref";"Vpss"];   
-        str_y    = ["Vfield"];
-        str_para = ["ttr"; "Vap_max"; "Vap_min"; "kap"; "tap"; "aex1"; "aex2"; "tex"; "bex"; "kst"; "tst"];
-    end    
+classdef (Sealed = true) AVR_DC1 < controller.avr.base
+    
     methods
         function obj = AVR_DC1(tag, param)
             arguments               
@@ -22,7 +16,7 @@ classdef (Sealed = true) AVR_DC1 < LocalController
                 param.tst     (1,1) double = 0.35
                 param.kst     (1,1) double = 0.063                
             end            
-            obj@LocalController("CA"+tag)                                 
+            obj@controller.avr.base(tag)                                 
             
             obj.para_dynamics.add_entry(    "ttr", param.ttr    , "double", ...
                                         "Vap_max", param.Vap_max, "double", ...
@@ -35,6 +29,12 @@ classdef (Sealed = true) AVR_DC1 < LocalController
                                             "bex", param.bex    , "double", ...
                                             "kst", param.kst    , "double", ...
                                             "tst", param.tst    , "double");                       
+
+            obj.key      = "avr";
+            obj.str_x    = ["Vtr";"Vap"; "Vfld"; "Vst"];
+            obj.str_u    = ["Vref";"Vpss"];   
+            obj.str_y    = "Vfield";
+            obj.str_para = ["ttr"; "Vap_max"; "Vap_min"; "kap"; "tap"; "aex1"; "aex2"; "tex"; "bex"; "kst"; "tst"];
 
         end        
 

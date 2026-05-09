@@ -69,6 +69,7 @@ classdef Component < PowerSystemModel
         children                               % [   Layer   ] Layerの下位に当たるクラス群
     end
     properties (Access={?odeSimulator, ?Component, ?odeEventSet})        
+        isController = false;
         isConnect = true
     end
     properties (Hidden)
@@ -125,6 +126,9 @@ classdef Component < PowerSystemModel
 
         % get_sys
         sys = get_sys(obj, x, V, u)
+
+        % get dx, I and y
+        DAEvec = get_dx_algebraic(obj, t, x, Vi, u, DAEvec) 
 
         % get jacobian
         odeJacobian = getJacobian(obj, t, x, V, u)
