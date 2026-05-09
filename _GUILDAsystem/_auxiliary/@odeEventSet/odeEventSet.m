@@ -367,7 +367,7 @@ classdef (Sealed = true) odeEventSet < handle
             lv_Ctagi = ismember(obj.sv_Ctag, CompTrip);            
             
             B_sti = cell2mat( cellfun(@(bi) bi.iv_odeX, a_bus, 'UniformOutput', false) );
-            C_sti = cell2mat( cellfun(@(ci) ci.iv_odeX, a_cmp(lv_Ctagi), 'UniformOutput', false) );            
+            C_sti = cell2mat( cellfun(@(ci) ci.iv_odeX, a_cmp(lv_Ctagi), 'UniformOutput', false) );                        
 
             Time = opt.ODEResults.Time;
             xsol = opt.ODEResults.Solution;
