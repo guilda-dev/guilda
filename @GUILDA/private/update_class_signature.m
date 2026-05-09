@@ -12,9 +12,11 @@ function update_class_signature()
 
     str_GUILDApath         = GUILDA.pwd();
     str_path_add_component = fullfile(str_GUILDApath, '_GUILDAsystem', '@Bus', 'add_component');
+    str_path_rep_component = fullfile(str_GUILDApath, '_GUILDAsystem', '@Bus', 'replace_component');
     str_path_add_branch    = fullfile(str_GUILDApath, '_GUILDAsystem', '@PowerNetwork', 'add_branch');
 
     update_signature(str_path_add_component, str_comp_list  , str_comp_cases  )
+    update_signature(str_path_rep_component, str_comp_list  , str_comp_cases  )
     update_signature(str_path_add_branch   , str_branch_list, str_branch_cases)
 end
 
