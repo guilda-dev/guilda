@@ -226,14 +226,14 @@ classdef (Sealed = true) odeEventSet < handle
                     l_osU = ismember(osU, c_tag);
                     l_inU = ismember(inU, c_tag);                    
                     
-                    comp{j}.X_offset = zeros(size(comp{j}.str_x));                                       
+                    comp{j}.X_offset = zeros(size(comp{j}.str_x(:)));                                       
 
                     if any(l_osU)
                         lv_X = ismember(comp{j}.str_x, osX{l_osU});                        
                         comp{j}.X_offset(lv_X) = comp{j}.X_offset(lv_X) + osV{l_osU};
                     end                    
 
-                    ini = repmat({@(t) 0}, size(comp{j}.str_u));
+                    ini = repmat({@(t) 0}, size(comp{j}.str_u(:)));
                     if any(l_inU)
                         l_inN = ismember(comp{j}.str_u, inN{l_inU});                                                
                         
@@ -422,7 +422,7 @@ function [rv_x0, rm_Mass, TC] = getXM(OBJs, rv_x0, rm_Mass, TC)
         rx_idx = [OBJ.iv_odeX; OBJ.iv_odeU]; 
         nu_idx = numel(OBJ.iv_odeU); 
         
-        OBJ.isConnect = ~ismember(OBJ.str_tag, TC);                
+        OBJ.isConnect = ~ismember(OBJ.str_tag, TC);  
         rv_x0 = [rv_x0; OBJ.cv_Xequilibrium + OBJ.X_offset; OBJ.cv_Uequilibrium + OBJ.U_offset(0)]; %#ok
         
         rm_Mass(rx_idx, rx_idx) = blkdiag(OBJ.rm_odeMass([],[],[],[]), zeros(nu_idx, nu_idx));
