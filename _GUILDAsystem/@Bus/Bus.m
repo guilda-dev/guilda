@@ -99,9 +99,9 @@ classdef Bus < PowerSystemModel
     
     methods
         % Layer Structure
-        add_component(obj,a_component)
         remove_component(obj,str_tag)
-        replace_component(obj, str_tag, Type, opt)
+        comp = add_component(obj,Type,opt)
+        replace_component(obj, str_tag, Type, parameter)
 
         % PF(powerflow) calculation
         tab_PFset    = get_pf_set(obj)
