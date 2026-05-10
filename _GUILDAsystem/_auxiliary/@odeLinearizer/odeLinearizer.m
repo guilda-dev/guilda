@@ -30,9 +30,9 @@ classdef odeLinearizer < handle
        function varargout = get_sys(obj)
            switch obj.Algorithm
                case "Kron"
-                   [A,B,C,D] = obj.get_LTI_viaKron;
+                   [A,B,C,D,E] = obj.get_LTI_viaKron;
                case "Feedback"
-                   [A,B,C,D] = obj.get_LTI_viaFeedback;
+                   [A,B,C,D,E] = obj.get_LTI_viaFeedback;
            end
 
            if nargout == 1
@@ -42,12 +42,13 @@ classdef odeLinearizer < handle
                varargout{2} = B;
                varargout{3} = C;
                varargout{4} = D;
+               varargout{5} = E;
            end
        end
        
    end
    methods(Access=protected)
-       [A, B, C, D] = get_LTI_viaKron(obj)
-       [A, B, C, D] = get_LTI_viaFeedback(obj)           
+       [A, B, C, D, E] = get_LTI_viaKron(obj)
+       [A, B, C, D, E] = get_LTI_viaFeedback(obj)           
    end
 end

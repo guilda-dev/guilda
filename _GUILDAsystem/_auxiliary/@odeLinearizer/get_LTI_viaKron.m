@@ -1,4 +1,4 @@
-function [Ax_ode, Bx_ode, Cx_ode, Dx_ode] = get_LTI_viaKron(obj)                                     
+function [Ax_ode, Bx_ode, Cx_ode, Dx_ode, E_ode] = get_LTI_viaKron(obj)                                     
 
     bus = obj.odeNetwork.a_Bus;
     ssFromBus = tools.cellfun(@(bs) bs.get_sys("port", "V2I", "full", false), bus);    
@@ -11,6 +11,8 @@ function [Ax_ode, Bx_ode, Cx_ode, Dx_ode] = get_LTI_viaKron(obj)
     Cx = tools.cellfun(@(SS) SS.C         , ssFromBus);
     Dv = tools.cellfun(@(SS) SS.D(:,1:2)  , ssFromBus);
     Du = tools.cellfun(@(SS) SS.D(:,3:end), ssFromBus);
+
+    E = tools.cellfun(@(SS) SS.E, ssFromBus);
 
     Ymat = obj.odeNetwork.get_admittance_matrix;
     Ymat = tools.complex2matrix( Ymat.Variables );
@@ -31,9 +33,10 @@ function [Ax_ode, Bx_ode, Cx_ode, Dx_ode] = get_LTI_viaKron(obj)
     Bx_ode = Bu_dae - mat_v2x * Du_dae;
     Cx_ode = eye(n_x);
     Dx_ode = zeros(n_x,n_u);
+    E_ode  = blkdiag(E{:});
 
 
-    sys = ss(Ax_ode, Bx_ode, Cx_ode, Dx_ode);
+    sys = dss(Ax_ode, Bx_ode, Cx_ode, Dx_ode, E_ode);
     sys.InputName  = input;
     sys.StateName  = output;
     sys.OutputName = output;    

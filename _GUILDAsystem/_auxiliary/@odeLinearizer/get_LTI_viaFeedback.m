@@ -1,4 +1,4 @@
-function [A, B, C, D] = get_LTI_viaFeedback(obj)  
+function [A, B, C, D, E] = get_LTI_viaFeedback(obj)  
     net = obj.odeNetwork;
     bus = net.a_Bus;
 
@@ -23,6 +23,7 @@ function [A, B, C, D] = get_LTI_viaFeedback(obj)
     B = sysODE.B;
     C = sysODE.C;
     D = sysODE.D;
+    E = sysODE.E;
 
     obj.odeLinearSystem = sysODE;
 
