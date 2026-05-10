@@ -2,8 +2,8 @@ classdef base < LocalController
     properties (SetAccess=protected, Hidden)
         key      
         str_x    
-        str_u    
-        str_y    
+        str_u = ["Vref";"Vpss"]   
+        str_y = ["Vfield"]    
         str_para 
     end    
     methods
@@ -25,8 +25,8 @@ classdef base < LocalController
             obj.JacobiBxu = @(t, x, V, u) [];
 
             obj.JacobiCyx = @(t, x, V, u) [];
-            obj.JacobiDyv = @(t, x, V, u) [];
-            obj.JacobiDyu = @(t, x, V, u) [];
+            obj.JacobiDyv = @(t, x, V, u) zeros(1,2);
+            obj.JacobiDyu = @(t, x, V, u) zeros(1,2);
 
         end
 
@@ -39,11 +39,18 @@ classdef base < LocalController
             obj.a_LocalController{1} = controller.pss.base;
             obj.isController = true;
         end
+        
     end
 
     methods       
-        M  = fcn_Mass(obj, t, x, V, u, param, omega0)
-        dx = fcn_dx(obj, t, x, V, u, param, omega0)
-        y  = fcn_y(obj, t, x, V, u, param, omega0)                
+        function M  = fcn_Mass(obj, t, x, V, u, param, omega0) %#ok
+            M = [];
+        end
+        function dx = fcn_dx(obj, t, x, V, u, param, omega0) %#ok
+            dx = [];
+        end
+        function y  = fcn_y(obj, t, x, V, u, param, omega0) %#ok               
+            y = 0;
+        end
     end
 end

@@ -2,8 +2,8 @@ classdef base < LocalController
     properties (SetAccess=protected, Hidden)
         key      
         str_x    
-        str_u    
-        str_y    
+        str_u = "omega"   
+        str_y = "Vpss"   
         str_para 
     end    
     methods
@@ -24,19 +24,25 @@ classdef base < LocalController
             obj.JacobiBxu = @(t, x, V, u) [];
 
             obj.JacobiCyx = @(t, x, V, u) [];
-            obj.JacobiDyv = @(t, x, V, u) [];
-            obj.JacobiDyu = @(t, x, V, u) [];
+            obj.JacobiDyv = @(t, x, V, u) zeros(1,2);
+            obj.JacobiDyu = @(t, x, V, u) zeros(1,1);
 
         end
         function get_equilibrium(obj, V, u) %#ok
-            obj.cv_Xequilibrium = [];
-            obj.cv_Uequilibrium = [];
+            obj.cv_Xequilibrium = 0;
+            obj.cv_Uequilibrium = 0;
         end
     end
 
     methods
-        dx = fcn_dx(obj, t, x, V, u, para, omega0)
-        y  = fcn_y(obj, t, x, V, u, para, omega0)
-        M  = fcn_Mass(obj, t, x, V, u, para, omega0)
+        function dx = fcn_dx(obj, t, x, V, u, para, omega0) %#ok
+            dx = [];
+        end
+        function y  = fcn_y(obj, t, x, V, u, para, omega0) %#ok
+            y = 0;
+        end
+        function M  = fcn_Mass(obj, t, x, V, u, para, omega0) %#ok
+            M = [];
+        end
     end
 end

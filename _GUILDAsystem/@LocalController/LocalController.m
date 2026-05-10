@@ -73,7 +73,7 @@ classdef LocalController < PowerSystemModel
     end    
 
 %% Methods    
-    methods (Access={?Component,?LocalController})
+    methods %(Access={?Component,?LocalController})
         function add_local_controller(obj,a_Controller)
             obj.a_LocalController = {a_Controller};
             obj.isController = true;
@@ -87,7 +87,7 @@ classdef LocalController < PowerSystemModel
         [DAEvec, u] = get_dx_algebraic(obj, t, x, Vi, u, DAEvec)                
 
         % get sys
-        sys = get_sys(obj)
+        sys = get_sys(obj,x,V,u,opt)
     end
 
 
