@@ -19,6 +19,8 @@ classdef (Sealed = true) odeSimulator < handle
         AbsoluteTolerance (1,1) double {mustBePositive, mustBeBetween(AbsoluteTolerance,1e-15,1e-3, "closed")} = 1e-6        
         RelativeTolerance (1,1) double {mustBePositive, mustBeBetween(RelativeTolerance,1e-15,1e-3, "closed")} = 1e-4
         SeparateComplexParts matlab.lang.OnOffSwitchState = "off"
+        Reporter  (1,1) string {mustBeMember(Reporter,["none","disp","dialog"])} = "dialog"
+        TimeLimit (1,1) double = 8;
     end
     properties (SetAccess=private, Hidden)
         odeNetwork 
@@ -345,6 +347,14 @@ classdef (Sealed = true) odeSimulator < handle
             
             [o, x0, Mass, tp, np, options] = makeODE(obj);            
 
+            % Set reporter
+            str_evt = string(obj.odeTimeTable.Properties.VariableNames(3:end));
+            ts = obj.odeTimeTable{  1,"t1"};
+            te = obj.odeTimeTable{end,"t2"};
+            odeProg  = odeProgress( obj.Reporter, [ts,te], obj.TimeLimit);
+            o.SolverOptions.OutputFcn = odeProg.OutputFcn;
+            o.EventDefinition = odeEvent("EventFcn", @(t,x) odeProg.Events(), "Response", "stop");
+                
             while tp <= np          
 
                 % Retrieving events related to ground faults and circuit tripping.                                               
@@ -364,12 +374,18 @@ classdef (Sealed = true) odeSimulator < handle
                 o.ODEFcn       = @(t,x) obj.getODEFunction(t,x,RM,EM,~lv_FBorTC);                                       
                 o.Jacobian     = @(t,x) obj.getODEJacobian(t,x,RM,EM,~lv_FBorTC);                
             
-                try                     
-                    startTime = tic;
-                    stopTime  = 8;
-                    SimulationTimer = @(t,y) checkSimulationTime(t,y,startTime,stopTime);
-                    o.EventDefinition = odeEvent("EventFcn", SimulationTimer, "Response", "stop");
-                    
+                % update reporter
+                odeProg.timeoffset = t1;
+                odeProg.message  = "|";
+                if tp~=np
+                    str_evti = str_evt( obj.odeTimeTable{tp+1,3:end} );
+                    str_evti = str_evti(~contains(str_evti,"NoAction"));
+                    if ~isempty(str_evti)
+                        odeProg.message  = "|("+join(str_evti,",")+": t="+t2+")";
+                    end
+                end
+                
+                try         
                     % When solving the equation, specify [0, duration of each phase]                                        
                     sol = solve(o, 0, t2-t1); 
                 catch me                    
@@ -389,6 +405,7 @@ classdef (Sealed = true) odeSimulator < handle
                             [ODEfcn, x0, options] = CalculateInitialCondition(o, options);
 
                         otherwise
+                            odeProg.OutputFcn([],[],"break")
                             throw(me)
                                                     
                     end
@@ -400,6 +417,7 @@ classdef (Sealed = true) odeSimulator < handle
                         sol = struct('Time', t.', 'Solution', y.');
 
                     catch ME
+                        odeProg.OutputFcn([],[],"break")
                         error(msg('GUILDA:odeSimulator:UnfeasibleDAE'))
                     end
                 end

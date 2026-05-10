@@ -12,6 +12,8 @@ function odeResult = simulate(obj, time, varargin, option)
         option.Solver            matlab.ode.SolverID = "ode15s"
         option.AbsoluteTolerance (1,1) double {mustBePositive, mustBeBetween(option.AbsoluteTolerance,1e-15,1e-3, "closed")} = 1e-6
         option.RelativeTolerance (1,1) double {mustBePositive, mustBeBetween(option.RelativeTolerance,1e-15,1e-3, "closed")} = 1e-3        
+        option.Reporter          (1,1) string {mustBeMember(option.Reporter,["none","disp","dialog"])} = "dialog"
+        option.TimeLimit         (1,1) double = 8;
     end    
 
     op = [fieldnames(option)'; struct2cell(option)'];
