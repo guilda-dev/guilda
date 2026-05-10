@@ -18,7 +18,7 @@ function sys = get_sys(obj, x, V, u, opt)
 
     Vre = V(1);
     Vim = V(2);
-    Vsq = Vre^2*Vim^2;
+    Vsq = Vre^2+Vim^2;
 
     Bu = zeros(0,2);
     Du = zeros(nu,nu);

@@ -165,52 +165,18 @@ classdef (Sealed = true) odeSimulator < handle
 
             for i=1:numel(a_bus)
                 a_comp = a_bus{i}.a_Component;
-                Vi = x(a_bus{i}.iv_odeX);                                
+                Vi = x(a_bus{i}.iv_odeX);                                                                                             
 
                 for j=1:numel(a_comp)
                     cj = a_comp{j};
-                    xi = x(cj.iv_odeX);        
-                    ui = x(cj.iv_odeU);
-                    yi = a_comp{j}.fv_odeY(t,xi,Vi,ui);
-
-                    ue = cj.cv_Uequilibrium;                                   
-
-                    if ~isempty(cj.a_LocalController)
-                        a_LC1  = cj.a_LocalController{1};                        
-                        yi_LC2 = 0;
-
-                        if ~isempty(a_LC1.a_LocalController)
-                            a_LC2  = a_LC1.a_LocalController{1};   
-                            
-                            xi_LC2 = x(a_LC2.iv_odeX);                            
-                            ui_LC2 = x(a_LC2.iv_odeU);
-                            dx_LC2 = a_LC2.fv_odeDiff(t, xi_LC2, Vi, ui_LC2);
-                            yi_LC2 = a_LC2.fv_odeY(t, xi_LC2, Vi, ui_LC2);                            
-
-                            odeX([a_LC2.iv_odeX; a_LC2.iv_odeU]) = odeX([a_LC2.iv_odeX; a_LC2.iv_odeU]) + [dx_LC2; ui_LC2 - yi];
-                        end
-
-                        xi_LC1 = x(a_LC1.iv_odeX);
-                        ui_LC1 = x(a_LC1.iv_odeU);
-                        dx_LC1 = a_LC1.fv_odeDiff(t, xi_LC1, Vi, ui_LC1);
-                        yi_LC1 = a_LC1.fv_odeY(t, xi_LC1, Vi, ui_LC1);
-                        
-                        ue_LC1 = a_LC1.cv_Uequilibrium;
-                        ue_LC1( a_LC1.str_u==a_LC2.str_y ) = yi_LC2;
-                        odeX([a_LC1.iv_odeX; a_LC1.iv_odeU]) = odeX([a_LC1.iv_odeX; a_LC1.iv_odeU]) + [dx_LC1; ui_LC1 - ue_LC1];
-                        
-                        ue( cj.str_u==a_LC1.str_y ) = yi_LC1;
-                    end                    
-                                                            
-                    ue( cj.str_u==a_GC.str_y ) = ue( cj.str_u==a_GC.str_y ) + y_GC( cj.iv_odeU( cj.str_u==a_GC.str_y ) ); 
+                    ue = cj.cv_Uequilibrium;       
+                    uy = cj.str_u==a_GC.str_y;
+                    ue( uy ) = ue( uy ) + y_GC( cj.iv_odeU( uy ) ); 
                     ue = ue + cj.U_offset(t);
-
-                    dx = cj.fv_odeDiff(t, xi, Vi, ui);
-                    Ix = cj.isConnect * cj.fv_odeI(t, xi, Vi, ui);
-
-                    odeX([cj.iv_odeX; cj.iv_odeU; a_bus{i}.iv_odeX]) = odeX([cj.iv_odeX; cj.iv_odeU; a_bus{i}.iv_odeX]) + [dx; ui - ue; -real(Ix); -imag(Ix)];                                        
                     
+                    odeX = get_dx_algebraic(cj, t, x, Vi, ue, odeX);
                 end
+
 
                 odeV(i) = [1,1j]*Vi;
             end        

@@ -1,11 +1,5 @@
-classdef (Sealed = true) PSS1 < LocalController
-    properties (Constant, Hidden=true)
-        key      = "pss"
-        str_x    = ["xiWS"; "xi1"; "xi2"];
-        str_u    = ["omega"];   
-        str_y    = ["Vpss"];
-        str_para = ["kpss"; "tWS"; "tn1"; "td1"; "tn2"; "td2"; "Vpss_min"; "Vpss_max"];
-    end    
+classdef (Sealed = true) PSS1 < controller.pss.base
+
     methods
         function obj = PSS1(tag, param)
             arguments            
@@ -20,7 +14,7 @@ classdef (Sealed = true) PSS1 < LocalController
                 param.Vpss_max (1,1) double = Inf
                 
             end            
-            obj@LocalController("CP"+tag)                                    
+            obj@controller.pss.base(tag)                                    
             
             obj.para_dynamics.add_entry(   "kpss", param.kpss    , "double", ...
                                             "tWS", param.tWS     , "double", ...
@@ -29,7 +23,13 @@ classdef (Sealed = true) PSS1 < LocalController
                                             "tn2", param.tn2     , "double", ...
                                             "td2", param.td2     , "double", ...
                                        "Vpss_max", param.Vpss_max, "double", ...
-                                       "Vpss_min", param.Vpss_min, "double");                        
+                                       "Vpss_min", param.Vpss_min, "double");          
+
+            obj.key      = "pss";
+            obj.str_x    = ["xiWS"; "xi1"; "xi2"];
+            obj.str_u    = "omega";   
+            obj.str_y    = "Vpss";
+            obj.str_para = ["kpss"; "tWS"; "tn1"; "td1"; "tn2"; "td2"; "Vpss_min"; "Vpss_max"];
 
         end        
         function set_odefcn(obj, omega0)
