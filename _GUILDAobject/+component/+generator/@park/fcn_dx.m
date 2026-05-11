@@ -1,4 +1,4 @@
-function rvec_dx = fcn_dx(obj, t, x, V, u, para, omega0) %#ok
+function rvec_dx = fcn_dx(obj, t, x, V, I, u, para, omega0) %#ok
 
     V = [1,1j]*V;
      

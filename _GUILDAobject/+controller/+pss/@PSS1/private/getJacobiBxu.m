@@ -1,4 +1,4 @@
-function Bxu = getJacobiBu(t, x, V, u, param, omega0) %#ok
+function Bxu = getJacobiBu(t, x, V, I, u, param, omega0) %#ok
     nx = numel(x);
     nu = numel(u);
 

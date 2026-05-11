@@ -40,17 +40,19 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.base
 
         function set_odefcn(obj, omega0)            
             params = obj.tab_parameter.dynamics{:,obj.str_para}.';
-            obj.fv_odeDiff = @(t, x, V, u) obj.fcn_dx(t, x, V, u, params, omega0);            
-            obj.rm_odeMass = @(t, x, V, u) obj.fcn_Mass(t, x, V, u, params, omega0);
-            obj.fv_odeY    = @(t, x, V, u) obj.fcn_y(t, x, V, u, params, omega0);
+            obj.fv_odeDiff = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, params, omega0);            
+            obj.rm_odeMass = @(t,x,V,I,u) obj.fcn_Mass(t, x, V, I, u, params, omega0);
+            obj.fv_odeY    = @(t,x,V,I,u) obj.fcn_y(t, x, V, I, u, params, omega0);
 
-            obj.JacobiAxx = @(t, x, V, u) getJacobiAxx(t, x, V, u, params, omega0);
-            obj.JacobiBxv = @(t, x, V, u) getJacobiBxv(t, x, V, u, params, omega0);
-            obj.JacobiBxu = @(t, x, V, u) getJacobiBxu(t, x, V, u, params, omega0);
+            obj.JacobiAxx = @(t,x,V,I,u) getJacobiAxx(t, x, V, I, u, params, omega0);
+            obj.JacobiBxv = @(t,x,V,I,u) getJacobiBxv(t, x, V, I, u, params, omega0);
+            obj.JacobiBxi = @(t,x,V,I,u) getJacobiBxi(t, x, V, I, u, params, omega0);
+            obj.JacobiBxu = @(t,x,V,I,u) getJacobiBxu(t, x, V, I, u, params, omega0);
 
-            obj.JacobiCyx = @(t, x, V, u) getJacobiCyx(t, x, V, u, params, omega0);
-            obj.JacobiDyv = @(t, x, V, u) getJacobiDyv(t, x, V, u, params, omega0);            
-            obj.JacobiDyu = @(t, x, V, u) getJacobiDyu(t, x, V, u, params, omega0);
+            obj.JacobiCyx = @(t,x,V,I,u) getJacobiCyx(t, x, V, I, u, params, omega0);
+            obj.JacobiDyv = @(t,x,V,I,u) getJacobiDyv(t, x, V, I, u, params, omega0);            
+            obj.JacobiDyi = @(t,x,V,I,u) getJacobiDyi(t, x, V, I, u, params, omega0);
+            obj.JacobiDyu = @(t,x,V,I,u) getJacobiDyu(t, x, V, I, u, params, omega0);
 
         end
         function get_equilibrium(obj, V, u)                   
@@ -84,8 +86,8 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.base
     end
 
     methods       
-        M  = fcn_Mass(obj, t, x, V, u, param, omega0)
-        dx = fcn_dx(obj, t, x, V, u, param, omega0)
-        y  = fcn_y(obj, t, x, V, u, param, omega0)                
+        M  = fcn_Mass(obj, t, x, V, I, u, param, omega0)
+        dx = fcn_dx(obj, t, x, V, I, u, param, omega0)
+        y  = fcn_y(obj, t, x, V, I, u, param, omega0)                
     end
 end

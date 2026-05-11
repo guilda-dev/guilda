@@ -1,4 +1,4 @@
-function Bxv = getJacobiBxv(t, x, V, u, param, omega0) %#ok
+function Bxv = getJacobiBxv(t, x, V, I, u, param, omega0) %#ok
 
     Vre  = V(1);
     Vim  = V(2);

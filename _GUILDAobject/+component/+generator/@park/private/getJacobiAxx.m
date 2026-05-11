@@ -1,4 +1,4 @@
-function Axx = getJacobiAxx(t, x, V, u, param, omega0) %#ok
+function Axx = getJacobiAxx(t, x, V, I, u, param, omega0) %#ok
     delta = x(1);      
     Eq    = x(3);    
     Ed    = x(4);

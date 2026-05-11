@@ -1,7 +1,4 @@
-classdef broadcast_PI_AGC < GlobalController
-    % ローカルコントローラとグローバルコンロローラはPowerSystemを直接継承する
-    % GlobalControllerクラスとLocalControllerクラスはデフォルトでPowerNetworkクラスに接続される
-    % そこにコントローラを嵌め込むイメージで実装する    
+classdef broadcast_PI_AGC < GlobalController    
 
     properties (Constant, Hidden)
         key   = "agc"
@@ -44,17 +41,19 @@ classdef broadcast_PI_AGC < GlobalController
         function set_odefcn(obj, omega0)
             param = obj.tab_parameter.dynamics{:,obj.str_para};
 
-            obj.fv_odeDiff = @(t,x,V,u) obj.fcn_dx(t,x,V,u,param,omega0);
-            obj.fv_odeY    = @(t,x,V,u) obj.fcn_y(t,x,V,u,param,omega0);
-            obj.rm_odeMass = @(t,x,V,u) obj.fcn_Mass(t,x,V,u,param,omega0);
+            obj.fv_odeDiff = @(t,x,V,I,u) obj.fcn_dx(t,x,V,I,u,param,omega0);
+            obj.fv_odeY    = @(t,x,V,I,u) obj.fcn_y(t,x,V,I,u,param,omega0);
+            obj.rm_odeMass = @(t,x,V,I,u) obj.fcn_Mass(t,x,V,I,u,param,omega0);
 
-            obj.JacobiAxx = @(t,x,V,u) obj.getJacobiAxx(t,x,V,u,param,omega0);
-            obj.JacobiBxv = @(t,x,V,u) obj.getJacobiBxv(t,x,V,u,param,omega0);
-            obj.JacobiBxu = @(t,x,V,u) obj.getJacobiBxu(t,x,V,u,param,omega0);
+            obj.JacobiAxx = @(t,x,V,I,u) obj.getJacobiAxx(t,x,V,I,u,param,omega0);
+            obj.JacobiBxv = @(t,x,V,I,u) obj.getJacobiBxv(t,x,V,I,u,param,omega0);
+            obj.JacobiBxi = @(t,x,V,I,u) obj.getJacobiBxi(t,x,V,I,u,param,omega0);
+            obj.JacobiBxu = @(t,x,V,I,u) obj.getJacobiBxu(t,x,V,I,u,param,omega0);
 
-            obj.JacobiCyx = @(t,x,V,u) obj.getJacobiCyx(t,x,V,u,param,omega0);
-            obj.JacobiDyv = @(t,x,V,u) obj.getJacobiDyv(t,x,V,u,param,omega0);
-            obj.JacobiDyu = @(t,x,V,u) obj.getJacobiDyu(t,x,V,u,param,omega0);
+            obj.JacobiCyx = @(t,x,V,I,u) obj.getJacobiCyx(t,x,V,I,u,param,omega0);
+            obj.JacobiDyv = @(t,x,V,I,u) obj.getJacobiDyv(t,x,V,I,u,param,omega0);
+            obj.JacobiDyi = @(t,x,V,I,u) obj.getJacobiDyi(t,x,V,I,u,param,omega0);
+            obj.JacobiDyu = @(t,x,V,I,u) obj.getJacobiDyu(t,x,V,I,u,param,omega0);
         end
 
         function [cv_Xequilibrium, cv_Uequilibrium] = get_equilibrium(obj)
@@ -63,13 +62,13 @@ classdef broadcast_PI_AGC < GlobalController
             cv_Uequilibrium = zeros(nCU,1);
         end
 
-        function dx = fcn_dx(obj, t, x, V, u, param, omega0) %#ok
+        function dx = fcn_dx(obj, t, x, V, I, u, param, omega0) %#ok
             beta  = param(:,2);
             
             dx = beta.' * u;
         end
 
-        function y = fcn_y(obj, t, x, V, u, param, omega0) %#ok
+        function y = fcn_y(obj, t, x, V, I, u, param, omega0) %#ok
             alpha = param(:,1);
             beta  = param(:,2);
             kP    = param(1,3);
@@ -79,35 +78,43 @@ classdef broadcast_PI_AGC < GlobalController
             y = -alpha * (kP * w + kI * x);
         end    
 
-        function M = fcn_Mass(obj, t, x, V, u, param, omega0) %#ok
+        function M = fcn_Mass(obj, t, x, V, I, u, param, omega0) %#ok
             M = 1;
         end
 
-        function Axx = getJacobiAxx(obj, t, x, V, u, param, omega0) %#ok
+        function Axx = getJacobiAxx(obj, t, x, V, I, u, param, omega0) %#ok
             Axx = 0;
         end
 
-        function Bxv = getJacobiBxv(obj, t, x, V, u, param, omega0) %#ok
+        function Bxv = getJacobiBxv(obj, t, x, V, I, u, param, omega0) %#ok
             Bxv = [];
         end
 
-        function Bxu = getJacobiBxu(obj, t, x, V, u, param, omega0) %#ok
+        function Bxi = getJacobiBxi(obj, t, x, V, I, u, param, omega0) %#ok
+            Bxi = [];
+        end
+
+        function Bxu = getJacobiBxu(obj, t, x, V, I, u, param, omega0) %#ok
             beta = param(:,2);
             Bxu  = beta.';
         end
 
-        function Cyx = getJacobiCyx(obj, t, x, V, u, param, omega0) %#ok
+        function Cyx = getJacobiCyx(obj, t, x, V, I, u, param, omega0) %#ok
             alpha = param(:,1);
             kI    = param(1,4);
 
             Cyx = -kI * alpha;
         end
 
-        function Dyv = getJacobiDyv(obj, t, x, V, u, param, omega0) %#ok
+        function Dyv = getJacobiDyv(obj, t, x, V, I, u, param, omega0) %#ok
             Dyv = [];
         end
 
-        function Dyu = getJacobiDyu(obj, t, x, V, u, param, omega0) %#ok
+        function Dyi = getJacobiDyi(obj, t, x, V, I, u, param, omega0) %#ok
+            Dyi = [];
+        end
+
+        function Dyu = getJacobiDyu(obj, t, x, V, I, u, param, omega0) %#ok
             alpha = param(:,1);
             beta  = param(:,2);
             kP    = param(1,3);            

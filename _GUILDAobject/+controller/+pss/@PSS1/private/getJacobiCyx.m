@@ -1,4 +1,4 @@
-function Cyx = getJacobiCyx(t, x, V, u, param, omega0) %#ok
+function Cyx = getJacobiCyx(t, x, V, I, u, param, omega0) %#ok
     
     kpss = param(1);     
     tn1 = param(3);

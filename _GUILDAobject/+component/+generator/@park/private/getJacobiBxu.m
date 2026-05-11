@@ -1,4 +1,4 @@
-function Bxu = getJacobiBxu(t, x, V, u, array, omega0) %#ok
+function Bxu = getJacobiBxu(t, x, V, I, u, array, omega0) %#ok
     nx = numel(x);
     nu = numel(u);
     Bxu = zeros(nx,nu);

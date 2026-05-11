@@ -1,3 +1,3 @@
-function Bxv = getJacobiBxv(t, x, V, u, param, omega0) %#ok
-    Bxv = zeros(3,2);
+function Bxv = getJacobiBxv(t, x, V, I, u, param, omega0) %#ok
+    Bxv = [];
 end

@@ -1,4 +1,4 @@
-function Mass = fcn_Mass(obj, t, x, V, u, param, omega0) %#ok      
+function Mass = fcn_Mass(obj, t, x, V, I, u, param, omega0) %#ok      
         
     ttr = param(1);    
     tap = param(5);

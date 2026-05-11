@@ -1,4 +1,4 @@
-function dx = fcn_dx(obj, t, x, V, u, param, omega0) %#ok
+function dx = fcn_dx(obj, t, x, V, I, u, param, omega0) %#ok
                 
     % リファレンス値
     Vref = u(1);

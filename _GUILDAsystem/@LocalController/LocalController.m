@@ -28,14 +28,17 @@ classdef LocalController < PowerSystemModel
 
         JacobiAxx        
         JacobiBxv        
+        JacobiBxi        
         JacobiBxu        
 
-        JacobiCix = @(t,x,V,u)[]        
-        JacobiDiv = @(t,x,V,u)[]                
-        JacobiDiu = @(t,x,V,u)[]               
+        JacobiCix = @(t,x,V,I,u)[]        
+        JacobiDiv = @(t,x,V,I,u)[]                
+        JacobiDii = @(t,x,V,I,u)[]                
+        JacobiDiu = @(t,x,V,I,u)[]               
         
         JacobiCyx        
         JacobiDyv        
+        JacobiDyi        
         JacobiDyu        
     end    
     properties (SetAccess={?odeSimulator, ?odeEventSet}, Hidden)
@@ -84,7 +87,7 @@ classdef LocalController < PowerSystemModel
         end
 
         % get dx and y
-        [DAEvec, u] = get_dx_algebraic(obj, t, x, Vi, u, DAEvec)                
+        [DAEvec, u] = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)                
 
         % get sys
         sys = get_sys(obj,x,V,u,opt)
