@@ -18,5 +18,5 @@ function [n_odeX, n_odeU, Mass, x0] = reset_odeset(obj, n_odeX, n_odeU, omega0)
 
     % Mass / x0
     x0   = obj.cv_Xcurrent;
-    Mass = obj.rm_odeMass(0,x0,[0;0],zeros(n_odeUi,1));
+    Mass = obj.rm_odeMass(0,x0,[0;0],[0;0],zeros(n_odeUi,1));
 end

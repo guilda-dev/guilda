@@ -1,4 +1,4 @@
-function Cyx = getJacobiCyx(t,x,V,u,param,omega0) %#ok
+function Cyx = getJacobiCyx(t,x,V,I,u,param,omega0) %#ok
     ny = 1;
     nx = numel(x);
 

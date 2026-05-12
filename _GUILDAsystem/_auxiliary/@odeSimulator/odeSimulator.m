@@ -19,12 +19,17 @@ classdef (Sealed = true) odeSimulator < handle
         AbsoluteTolerance (1,1) double {mustBePositive, mustBeBetween(AbsoluteTolerance,1e-15,1e-3, "closed")} = 1e-6        
         RelativeTolerance (1,1) double {mustBePositive, mustBeBetween(RelativeTolerance,1e-15,1e-3, "closed")} = 1e-4
         SeparateComplexParts matlab.lang.OnOffSwitchState = "off"
+        Reporter  (1,1) string {mustBeMember(Reporter,["none","disp","dialog"])} = "dialog"
+        TimeLimit (1,1) double = 8;
     end
     properties (SetAccess=private, Hidden)
         odeNetwork 
         odeTimeTable                
         odeYmat
         odeResult
+    end
+    properties (Access=private)
+        rv_odeV
     end
 
     properties (SetAccess=private, Hidden)
@@ -65,7 +70,11 @@ classdef (Sealed = true) odeSimulator < handle
             [obj.odeTimeTable, obj.ODEvnt] = table(varargin{:}, "time", time);
             obj.initialize_odeSimulator;
 
-            obj.odeYmat = net.get_admittance_matrix.Variables;
+            odeYmat = tools.complex2matrix(net.get_admittance_matrix.Variables);
+            rv_odeV = cell2mat(tools.cellfun(@(b) b.iv_odeX, net.a_Bus));
+
+            obj.odeYmat = odeYmat;
+            obj.rv_odeV = rv_odeV;
         end        
         
     end
@@ -122,6 +131,8 @@ classdef (Sealed = true) odeSimulator < handle
             for i=1:numel(a_bus)
                 a_bus{i}.iv_odeX = idx_TGT + (1:2).';
                 idx_TGT = idx_TGT + 2;
+                a_bus{i}.iv_odeI = idx_TGT + (1:2).';                
+                idx_TGT = idx_TGT + 2;                
             end
 
             function set_idx(OBJ)
@@ -140,14 +151,17 @@ classdef (Sealed = true) odeSimulator < handle
     end
 
     methods (Hidden=true, Access={?odeSimulator, ?PowerNetwork})
-        
+                
+
         function odeX = getODEFunction(obj, t, x, RM, EM, lg) %#ok 
             % Method for retrieving the DAE system to be analyzed.            
             
             x = EM*x; 
 
             odeX = zeros(size(x));
-            odeV = zeros(size(obj.odeNetwork.a_Bus));
+            odeV = x(obj.rv_odeV);
+
+            I = obj.odeYmat*odeV;
             
             a_bus = obj.odeNetwork.a_Bus;
 
@@ -159,72 +173,37 @@ classdef (Sealed = true) odeSimulator < handle
                 x_GC = x(a_GC.iv_odeX);
                 u_GC = x(a_GC.iv_odeU);
 
-                odeX(a_GC.iv_odeX) = a_GC.fv_odeDiff(t,x_GC,[],u_GC);                
-                y_GC(a_GC.iv_odeY) = a_GC.fv_odeY(t,x_GC,[],u_GC);
+                odeX(a_GC.iv_odeX) = a_GC.fv_odeDiff(t,x_GC,[],[],u_GC);                
+                y_GC(a_GC.iv_odeY) = a_GC.fv_odeY(t,x_GC,[],[],u_GC);
             end
 
             for i=1:numel(a_bus)
                 a_comp = a_bus{i}.a_Component;
-                Vi = x(a_bus{i}.iv_odeX);                                
+
+                idx_V = a_bus{i}.iv_odeX;
+                idx_I = a_bus{i}.iv_odeI;
+
+                Vi = x(idx_V);                                                                                             
+                Ii = x(idx_I);                                                                                             
 
                 for j=1:numel(a_comp)
                     cj = a_comp{j};
-                    xi = x(cj.iv_odeX);        
-                    ui = x(cj.iv_odeU);
-                    yi = a_comp{j}.fv_odeY(t,xi,Vi,ui);
-
-                    ue = cj.cv_Uequilibrium;                                   
-
-                    if ~isempty(cj.a_LocalController)
-                        a_LC1  = cj.a_LocalController{1};                        
-                        yi_LC2 = 0;
-
-                        if ~isempty(a_LC1.a_LocalController)
-                            a_LC2  = a_LC1.a_LocalController{1};   
-                            
-                            xi_LC2 = x(a_LC2.iv_odeX);                            
-                            ui_LC2 = x(a_LC2.iv_odeU);
-                            dx_LC2 = a_LC2.fv_odeDiff(t, xi_LC2, Vi, ui_LC2);
-                            yi_LC2 = a_LC2.fv_odeY(t, xi_LC2, Vi, ui_LC2);                            
-
-                            odeX([a_LC2.iv_odeX; a_LC2.iv_odeU]) = odeX([a_LC2.iv_odeX; a_LC2.iv_odeU]) + [dx_LC2; ui_LC2 - yi];
-                        end
-
-                        xi_LC1 = x(a_LC1.iv_odeX);
-                        ui_LC1 = x(a_LC1.iv_odeU);
-                        dx_LC1 = a_LC1.fv_odeDiff(t, xi_LC1, Vi, ui_LC1);
-                        yi_LC1 = a_LC1.fv_odeY(t, xi_LC1, Vi, ui_LC1);
-                        
-                        ue_LC1 = a_LC1.cv_Uequilibrium;
-                        ue_LC1( a_LC1.str_u==a_LC2.str_y ) = yi_LC2;
-                        odeX([a_LC1.iv_odeX; a_LC1.iv_odeU]) = odeX([a_LC1.iv_odeX; a_LC1.iv_odeU]) + [dx_LC1; ui_LC1 - ue_LC1];
-                        
-                        ue( cj.str_u==a_LC1.str_y ) = yi_LC1;
-                    end                    
-                                                            
-                    ue( cj.str_u==a_GC.str_y ) = ue( cj.str_u==a_GC.str_y ) + y_GC( cj.iv_odeU( cj.str_u==a_GC.str_y ) ); 
+                    ue = cj.cv_Uequilibrium;       
+                    uy = cj.str_u==a_GC.str_y;
+                    ue( uy ) = ue( uy ) + y_GC( cj.iv_odeU( uy ) ); 
                     ue = ue + cj.U_offset(t);
-
-                    dx = cj.fv_odeDiff(t, xi, Vi, ui);
-                    Ix = cj.isConnect * cj.fv_odeI(t, xi, Vi, ui);
-
-                    odeX([cj.iv_odeX; cj.iv_odeU; a_bus{i}.iv_odeX]) = odeX([cj.iv_odeX; cj.iv_odeU; a_bus{i}.iv_odeX]) + [dx; ui - ue; -real(Ix); -imag(Ix)];                                        
                     
-                end
+                    odeX = get_dx_algebraic(cj, t, x, Vi, Ii, ue, odeX);
+                end                
 
-                odeV(i) = [1,1j]*Vi;
-            end        
-
-            I = obj.odeYmat*odeV;
-            for i=1:numel(a_bus)
-                idx = a_bus{i}.iv_odeX;
-                odeX(idx) = odeX(idx) + [real(I(i)); imag(I(i))]; 
-            end
+                odeX([idx_V;idx_I]) = odeX([idx_V;idx_I]) + [Ii;Ii - I([-1;0]+2*i)];
+                
+            end                    
 
             odeX = odeX(lg); 
 
         end
-                
+
         function odeJac = getODEJacobian(obj, t, x, RM, EM, lg) %#ok    
             % Method for obtaining the Jacobian of the DAE system under analysis.
 
@@ -234,7 +213,8 @@ classdef (Sealed = true) odeSimulator < handle
 
             odeJac = zeros(numel(x), numel(x));
 
-            lv_Bus = zeros(0,1);
+            rv_Bus_V = zeros(0,1);
+            rv_Bus_I = zeros(0,1);
 
             if ~isempty(obj.odeNetwork.a_GlobalController)
                 a_GC = obj.odeNetwork.a_GlobalController{1};
@@ -245,27 +225,36 @@ classdef (Sealed = true) odeSimulator < handle
                 x_GC = x(a_GC.iv_odeX);
                 u_GC = x(a_GC.iv_odeU);
 
-                [Axx_GC, Bxu_GC, Bxv_GC, Cyx_GC, Dyu_GC, Dyv_GC, ~, ~, ~] = getSubJacobian(a_GC, t, x_GC, [], u_GC);                
+                [Axx_GC, Bxu_GC, Bxv_GC, Bxi_GC, Cyx_GC, Dyu_GC, Dyv_GC, Dyi_GC, ~, ~, ~] = getSubJacobian(a_GC, t, x_GC, [], [], u_GC);                
 
-                odeJac(lv_GC, lh_GC) = odeJac(lv_GC, lh_GC) + [ Axx_GC,  Bxv_GC,  Bxu_GC;
-                                                                Cyx_GC,  Dyv_GC,  Dyu_GC];
+                odeJac(lv_GC, lh_GC) = odeJac(lv_GC, lh_GC) + [ Axx_GC,  Bxv_GC,  Bxu_GC, Bxi_GC;
+                                                                Cyx_GC,  Dyv_GC,  Dyu_GC, Dyi_GC];
                                
             end
 
             for i=1:numel(a_bus)                
                 cm = a_bus{i}.a_Component;
-                Vi = x(a_bus{i}.iv_odeX);                
+
+                idx_V = a_bus{i}.iv_odeX;
+                idx_I = a_bus{i}.iv_odeI;
+
+                Vi = x(idx_V);
+                Ii = x(idx_I);
 
                 for j=1:numel(cm)
                     cj = cm{j};
-                    xi = x(cj.iv_odeX);        
-                    ui = x(cj.iv_odeU);                 
 
-                    [Axx, Bxu, Bxv, Cyx, Dyu, Dyv, Cix, Diu, Div] = getSubJacobian(cj, t, xi, Vi, ui);
+                    idx_X = cj.iv_odeX;
+                    idx_U = cj.iv_odeU;
+                    idx_Y = cj.iv_odeY;
 
-                    lu = cj.iv_odeU;
-                    lh = [cj.iv_odeX; cj.iv_odeU; a_bus{i}.iv_odeX];
-                    lv = [cj.iv_odeX; a_bus{i}.iv_odeX];
+                    xi = x(idx_X);        
+                    ui = x(idx_U);                 
+
+                    [Axx, Bxu, Bxv, Bxi, Cyx, Dyu, Dyv, Dyi, Cix, Diu, Div, Dii] = getSubJacobian(cj, t, xi, Vi, Ii, ui);
+
+                    rh = [idx_X; idx_U; idx_V; idx_I];
+                    rv = [idx_X; idx_V];
                     
                     if ~isempty(cj.a_LocalController)
                         a_LC1 = cj.a_LocalController{1};                                            
@@ -273,64 +262,68 @@ classdef (Sealed = true) odeSimulator < handle
                         if ~isempty(a_LC1.a_LocalController)
                             a_LC2 = a_LC1.a_LocalController{1};
 
-                            xi_LC2 = x(a_LC2.iv_odeX);                            
-                            ui_LC2 = x(a_LC2.iv_odeU);                                                        
+                            idx_X_LC2 = a_LC2.iv_odeX;
+                            idx_U_LC2 = a_LC2.iv_odeU;
+                            idx_Y_LC2 = a_LC2.iv_odeY;
 
-                            [Axx_LC2, Bxu_LC2, Bxv_LC2, Cyx_LC2, Dyu_LC2, Dyv_LC2, ~, ~, ~] = getSubJacobian(a_LC2, t, xi_LC2, Vi, ui_LC2);                                                                            
+                            xi_LC2 = x(idx_X_LC2);                            
+                            ui_LC2 = x(idx_U_LC2);                                                        
 
-                            lu_LC2 = a_LC2.iv_odeU;
-                            lh_LC2 = [a_LC2.iv_odeX; a_LC2.iv_odeU; a_bus{i}.iv_odeX];
-                            lv_LC2 = [a_LC2.iv_odeX; a_LC2.iv_odeY];
+                            [Axx_LC2, Bxu_LC2, Bxv_LC2, Bxi_LC2, Cyx_LC2, Dyu_LC2, Dyv_LC2, Dyi_LC2, ~, ~, ~] = getSubJacobian(a_LC2, t, xi_LC2, Vi, Ii, ui_LC2);                                                                            
+                            
+                            rh_LC2 = [idx_X_LC2; idx_U_LC2; idx_I];
+                            rv_LC2 = [idx_X_LC2; idx_Y_LC2];
 
-                            odeJac(lv_LC2, lh_LC2) = odeJac(lv_LC2, lh_LC2) + [ Axx_LC2,  Bxu_LC2,  Bxv_LC2; ...
-                                                                               -Cyx_LC2, -Dyu_LC2, -Dyv_LC2];                            
+                            odeJac(rv_LC2, rh_LC2) = odeJac(rv_LC2, rh_LC2) + [ Axx_LC2,  Bxu_LC2,  Bxv_LC2,  Bxi_LC2; ...
+                                                                               -Cyx_LC2, -Dyu_LC2, -Dyv_LC2, -Dyi_LC2];                            
 
                             
-                            odeJac(lu_LC2, lu_LC2) = odeJac(lu_LC2, lu_LC2) + eye(length(lu_LC2));
+                            odeJac(idx_U_LC2,idx_U_LC2) = odeJac(idx_U_LC2,idx_U_LC2) + eye(length(idx_U_LC2));
+
+                            odeJac(idx_Y, lh) = [-Cyx, -Dyu, -Dyv, -Dyi];
                             
-                        end                        
+                        end 
 
-                        xi_LC1 = x(a_LC1.iv_odeX);
-                        ui_LC1 = x(a_LC1.iv_odeU);                                      
+                        idx_X_LC1 = a_LC1.iv_odeX;
+                        idx_U_LC1 = a_LC1.iv_odeU;
+                        idx_Y_LC1 = a_LC1.iv_odeY;
 
-                        [Axx_LC1, Bxu_LC1, Bxv_LC1, Cyx_LC1, Dyu_LC1, Dyv_LC1, ~, ~, ~] = getSubJacobian(a_LC1, t, xi_LC1, Vi, ui_LC1);                                                
 
-                        lu_LC1 = a_LC1.iv_odeU;
-                        lh_LC1 = [a_LC1.iv_odeX; a_LC1.iv_odeU; a_bus{i}.iv_odeX];
-                        lv_LC1 = [a_LC1.iv_odeX; a_LC1.iv_odeY];
+                        xi_LC1 = x(idx_X_LC1);
+                        ui_LC1 = x(idx_U_LC1);                                      
 
-                        odeJac(lv_LC1, lh_LC1) = odeJac(lv_LC1, lh_LC1) + [ Axx_LC1,  Bxu_LC1,  Bxv_LC1; ...                                                                                   
-                                                                           -Cyx_LC1, -Dyu_LC1, -Dyv_LC1];
+                        [Axx_LC1, Bxu_LC1, Bxv_LC1, Bxi_LC1, Cyx_LC1, Dyu_LC1, Dyv_LC1, Dyi_LC1, ~, ~, ~] = getSubJacobian(a_LC1, t, xi_LC1, Vi, Ii, ui_LC1);                                                
+                        
+                        rh_LC1 = [idx_X_LC1; idx_U_LC1; idx_V; idx_I];
+                        rv_LC1 = [idx_X_LC1; idx_Y_LC1];
 
-                        odeJac(lu_LC1, lu_LC1) = odeJac(lu_LC1, lu_LC1) + eye(length(lu_LC1));
+                        odeJac(rv_LC1, rh_LC1) = odeJac(rv_LC1, rh_LC1) + [ Axx_LC1,  Bxu_LC1,  Bxv_LC1,  Bxi_LC1; ...                                                                                   
+                                                                           -Cyx_LC1, -Dyu_LC1, -Dyv_LC1, -Dyi_LC1];
 
-                        odeJac(cj.iv_odeY, lh) = [-Cyx, -Dyu, -Dyv];
+                        odeJac(idx_U_LC1,idx_U_LC1) = odeJac(idx_U_LC1,idx_U_LC1) + eye(length(idx_U_LC1));
+                        
                     end                                                                                                                                    
             
-                    odeJac(lv,lh) = odeJac(lv,lh) + [ Axx,  Bxu,  Bxv; ...                                                     
-                                                     -Cix, -Diu, -Div]; 
+                    odeJac(rv,rh) = odeJac(rv,rh) + [ Axx,  Bxu,  Bxv,  Bxi;...                                                     
+                                                     -Cix, -Diu, -Div, -Dii]; 
 
-                    odeJac(lu,lu) = odeJac(lu,lu) + eye(length(lu));
+                    odeJac(idx_U,idx_U) = odeJac(idx_U,idx_U) + eye(length(idx_U));
 
                 end
 
-                lv_Bus(2*i+[-1;0]) = a_bus{i}.iv_odeX; 
+                rv_Bus_V(2*i+[-1;0]) = idx_V; 
+                rv_Bus_I(2*i+[-1;0]) = idx_I; 
             end                               
-        
-            G = real(obj.odeYmat);
-            B = imag(obj.odeYmat);
+                   
+            odeJac(rv_Bus_I,rv_Bus_V) = odeJac(rv_Bus_I,rv_Bus_V) - obj.odeYmat;
 
-            lo = lv_Bus(1:2:end);
-            le = lv_Bus(2:2:end);
-            
-            odeJac(lo,lo) = odeJac(lo,lo) + G;
-            odeJac(lo,le) = odeJac(lo,le) - B;
-            odeJac(le,lo) = odeJac(le,lo) + B;
-            odeJac(le,le) = odeJac(le,le) + G; 
+            odeJac([rv_Bus_V; rv_Bus_I], rv_Bus_I) = odeJac([rv_Bus_V; rv_Bus_I], rv_Bus_I) + [eye(2*i); eye(2*i)];
             
             odeJac = odeJac(lg,lg);            
 
         end       
+                
+        
 
         function [x0, M0] = getNextPhase(obj, x0, M0, RM, EM) %#ok
             a_bus  = obj.odeNetwork.a_Bus;            
@@ -353,7 +346,7 @@ classdef (Sealed = true) odeSimulator < handle
                             v_LC1 = a_LC1.iv_odeX;                            
                             [x0(v_LC1), ~] = a_LC1.get_equilibrium([1,1j]*x0(b_idx), u_equilibrium);                         
 
-                            M0(v_LC1, v_LC1) = a_LC1.rm_odeMass([], [], [], []);
+                            M0(v_LC1, v_LC1) = a_LC1.rm_odeMass([], [], [], [],[]);
                             
                             if ~isempty(a_LC1.a_LocalController)
                                 a_LC2 = a_LC1.a_LocalController{1};
@@ -361,11 +354,11 @@ classdef (Sealed = true) odeSimulator < handle
                                 v_LC2 = a_LC2.iv_odeX;                                
                                 [x0(v_LC2), ~] = a_LC2.get_equilibrium([1,1j]*x0(b_idx), []);                         
 
-                                M0(v_LC2, v_LC2) = a_LC2.rm_odeMass([], [], [], []);
+                                M0(v_LC2, v_LC2) = a_LC2.rm_odeMass([], [], [], [],[]);
                             end
                         end
 
-                        M0(c_idx, c_idx) = a_Comp{j}.rm_odeMass([], [], [], []);
+                        M0(c_idx, c_idx) = a_Comp{j}.rm_odeMass([], [], [], [], []);
                     end
                 end
             end            
@@ -379,6 +372,14 @@ classdef (Sealed = true) odeSimulator < handle
             
             [o, x0, Mass, tp, np, options] = makeODE(obj);            
 
+            % Set reporter
+            str_evt = string(obj.odeTimeTable.Properties.VariableNames(3:end));
+            ts = obj.odeTimeTable{  1,"t1"};
+            te = obj.odeTimeTable{end,"t2"};
+            odeProg  = odeProgress( obj.Reporter, [ts,te], obj.TimeLimit);
+            o.SolverOptions.OutputFcn = odeProg.OutputFcn;
+            o.EventDefinition = odeEvent("EventFcn", @(t,x) odeProg.Events(), "Response", "stop");
+                
             while tp <= np          
 
                 % Retrieving events related to ground faults and circuit tripping.                                               
@@ -398,12 +399,18 @@ classdef (Sealed = true) odeSimulator < handle
                 o.ODEFcn       = @(t,x) obj.getODEFunction(t,x,RM,EM,~lv_FBorTC);                                       
                 o.Jacobian     = @(t,x) obj.getODEJacobian(t,x,RM,EM,~lv_FBorTC);                
             
-                try                     
-                    startTime = tic;
-                    stopTime  = 8;
-                    SimulationTimer = @(t,y) checkSimulationTime(t,y,startTime,stopTime);
-                    o.EventDefinition = odeEvent("EventFcn", SimulationTimer, "Response", "stop");
-                    
+                % update reporter
+                odeProg.timeoffset = t1;
+                odeProg.message  = "|";
+                if tp~=np
+                    str_evti = str_evt( obj.odeTimeTable{tp+1,3:end} );
+                    str_evti = str_evti(~contains(str_evti,"NoAction"));
+                    if ~isempty(str_evti)
+                        odeProg.message  = "|("+join(str_evti,",")+": t="+t2+")";
+                    end
+                end
+                
+                try         
                     % When solving the equation, specify [0, duration of each phase]                                        
                     sol = solve(o, 0, t2-t1); 
                 catch me                    
@@ -423,6 +430,7 @@ classdef (Sealed = true) odeSimulator < handle
                             [ODEfcn, x0, options] = CalculateInitialCondition(o, options);
 
                         otherwise
+                            odeProg.OutputFcn([],[],"break")
                             throw(me)
                                                     
                     end
@@ -434,6 +442,7 @@ classdef (Sealed = true) odeSimulator < handle
                         sol = struct('Time', t.', 'Solution', y.');
 
                     catch ME
+                        odeProg.OutputFcn([],[],"break")
                         error(msg('GUILDA:odeSimulator:UnfeasibleDAE'))
                     end
                 end
@@ -511,17 +520,20 @@ function [ODEfcn, x0, options] = CalculateInitialCondition(o, options)
     ODEfcn = Func;
 end
 
-function [Axx, Bxu, Bxv, Cyx, Dyu, Dyv, Cix, Diu, Div] = getSubJacobian(OBJ, t, xi, Vi, ui)
+function [Axx, Bxu, Bxv, Bxi, Cyx, Dyu, Dyv, Dyi, Cix, Diu, Div, Dii] = getSubJacobian(OBJ, t, xi, Vi, Ii, ui)
                 
-    Axx = OBJ.JacobiAxx(t, xi, Vi, ui);
-    Bxv = OBJ.JacobiBxv(t, xi, Vi, ui);
-    Bxu = OBJ.JacobiBxu(t, xi, Vi, ui);                         
+    Axx = OBJ.JacobiAxx(t, xi, Vi, Ii, ui);
+    Bxv = OBJ.JacobiBxv(t, xi, Vi, Ii, ui);
+    Bxi = OBJ.JacobiBxi(t, xi, Vi, Ii, ui);                         
+    Bxu = OBJ.JacobiBxu(t, xi, Vi, Ii, ui);                         
 
-    Cyx = OBJ.JacobiCyx(t, xi, Vi, ui);
-    Dyv = OBJ.JacobiDyv(t, xi, Vi, ui);
-    Dyu = OBJ.JacobiDyu(t, xi, Vi, ui);
+    Cyx = OBJ.JacobiCyx(t, xi, Vi, Ii, ui);
+    Dyv = OBJ.JacobiDyv(t, xi, Vi, Ii, ui);
+    Dyi = OBJ.JacobiDyi(t, xi, Vi, Ii, ui);
+    Dyu = OBJ.JacobiDyu(t, xi, Vi, Ii, ui);
 
-    Cix = OBJ.JacobiCix(t, xi, Vi, ui);
-    Div = OBJ.JacobiDiv(t, xi, Vi, ui);
-    Diu = OBJ.JacobiDiu(t, xi, Vi, ui);
+    Cix = OBJ.JacobiCix(t, xi, Vi, Ii, ui);
+    Div = OBJ.JacobiDiv(t, xi, Vi, Ii, ui);
+    Dii = OBJ.JacobiDii(t, xi, Vi, Ii, ui);
+    Diu = OBJ.JacobiDiu(t, xi, Vi, Ii, ui);
 end

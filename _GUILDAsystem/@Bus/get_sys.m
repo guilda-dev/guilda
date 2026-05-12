@@ -14,6 +14,8 @@ function sys = get_sys(obj, opt)
     Dv = tools.cellfun(@(ss) ss.D(end-1:end,1:2)  , sys);    
     Du = tools.cellfun(@(ss) ss.D(end-1:end,3:end), sys);    
 
+    E = tools.cellfun(@(ss) ss.E, sys);
+
     StateNames = tools.cellfun(@(ss) ss.StateName , sys);
     InputNames = tools.cellfun(@(c) c.attach_tag(c.str_u), obj.a_Component);    
 
@@ -55,7 +57,7 @@ function sys = get_sys(obj, opt)
     end    
 
 
-    sys = ss(A,B,C,D);
+    sys = dss(A,B,C,D,blkdiag(E{:}));
     sys.StateName  = vertcat(StateNames{:});
     sys.InputName  = InputNames;
     sys.OutputName = OutputNames{opt.full+1};

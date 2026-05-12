@@ -26,15 +26,18 @@ classdef Component < PowerSystemModel
 
         JacobiAxx                              % [  Dynamics ] 微分方程式の状態変数に関するヤコビアン
         JacobiBxv                              % [  Dynamics ] 微分方程式の母線変数に関するヤコビアン
+        JacobiBxi                              % [  Dynamics ] 微分方程式の母線電流に関するヤコビアン
         JacobiBxu                              % [  Dynamics ] 微分方程式の入力に関するヤコビアン
 
         JacobiCix                              % [  Dynamics ] 出力方程式(電流)の状態変数に関するヤコビアン
-        JacobiDiv                              % [  Dynamics ] 出力方程式(電流)の母線変数に関するヤコビアン
+        JacobiDiv                              % [  Dynamics ] 出力方程式(電流)の母線電圧に関するヤコビアン
+        JacobiDii                              % [  Dynamics ] 出力方程式(電流)の母線電流に関するヤコビアン
         JacobiDiu                              % [  Dynamics ] 出力方程式(電流)の入力に関するヤコビアン
 
-        JacobiCyx = @(t,x,V,u) []              % [  Dynamics ] 出力方程式(コントローラ)の入力に関するヤコビアン
-        JacobiDyv = @(t,x,V,u) []              % [  Dynamics ] 出力方程式(コントローラ)の入力に関するヤコビアン
-        JacobiDyu = @(t,x,V,u) []              % [  Dynamics ] 出力方程式(コントローラ)の入力に関するヤコビアン
+        JacobiCyx = @(t,x,V,I,u) []              % [  Dynamics ] 出力方程式(コントローラ)の状態変数に関するヤコビアン
+        JacobiDyv = @(t,x,V,I,u) []              % [  Dynamics ] 出力方程式(コントローラ)の母線電圧に関するヤコビアン
+        JacobiDyi = @(t,x,V,I,u) []              % [  Dynamics ] 出力方程式(コントローラ)の母線電流に関するヤコビアン
+        JacobiDyu = @(t,x,V,I,u) []              % [  Dynamics ] 出力方程式(コントローラ)の入力に関するヤコビアン
 
         odeLinearSystem
     end
@@ -69,6 +72,7 @@ classdef Component < PowerSystemModel
         children                               % [   Layer   ] Layerの下位に当たるクラス群
     end
     properties (Access={?odeSimulator, ?Component, ?odeEventSet})        
+        isController = false;
         isConnect = true
     end
     properties (Hidden)
@@ -123,8 +127,14 @@ classdef Component < PowerSystemModel
         % Dynamics
         [n_odeX, n_odeU, Mass, x0] = reset_odeset(obj, n_odeX, n_odeU, omega0)
 
-        %get_sys
-        sys = get_sys(obj, x, V, u)
+        % get_sys
+        sys = get_sys(obj, x, V, I, u, opt)
+
+        % get dx, I and y
+        DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec) 
+
+        % get jacobian
+        odeJacobian = getJacobian(obj, t, x, V, u)
 
     end
 

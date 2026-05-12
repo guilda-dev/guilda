@@ -30,6 +30,7 @@ classdef Bus < PowerSystemModel
     end
     properties (SetAccess={?odeSimulator, ?Component}, Hidden)
         iv_odeX  = zeros(0,1);
+        iv_odeI  = zeros(0,1);
         iv_odeU  = zeros(0,1);
         rv_odeX0 = zeros(2,1);
     end

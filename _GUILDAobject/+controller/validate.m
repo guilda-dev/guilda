@@ -74,10 +74,8 @@ tst      = 1.00;
 % リファレンス値
 Vref = rand([1,1]);
 
-syms Vtr Vap Vfld Vst Vpss Vre Vim Vrf
+syms Vtr Vap Vfld Vst Vpss Vabs Vrf
 
-% 入力
-Vabs = abs([1,1j]*[Vre;Vim]);        
 % 計測用変圧器
 dx1 = -Vtr + Vabs;
 % コンパレータ
@@ -94,27 +92,67 @@ dx = [dx1;dx2;dx3;dx4];
 x = [Vtr;Vap;Vfld;Vst];
 y = x(3);
 
-jac = jacobian([dx;y], [x;Vre;Vim;Vrf;Vpss]);
-jac = matlabFunction(jac, Vars={[x;Vre;Vim;Vrf;Vpss]});
+jac = jacobian([dx;y], [x;Vrf;Vpss;Vabs]);
+jac = matlabFunction(jac, Vars={[x;Vrf;Vpss;Vabs]});
 
-avr = controller.AVR_DC1("avr");
+avr = controller.avr.AVR_DC1("avr");
 avr.set_odefcn(60);
 
 for i=1:10000
     x_ = rand([4,1]);
     V_ = rand([2,1]);
-    u_  = rand([2,1]);
+    u_  = rand([3,1]);
 
-    JacA  = avr.JacobiA(t,x_,V_,u_);
-    JacB  = avr.JacobiB(t,x_,V_,u_);
-    JacC  = avr.JacobiC(t,x_,V_,u_);
-    JacD  = avr.JacobiD(t,x_,V_,u_);
-    JacBu = avr.JacobiBu(t,x_,V_,u_);
-    JacDu = avr.JacobiDu(t,x_,V_,u_);
+    [A, B, C, D] = get_avr_jacobian(x_,u_);
 
-    dif = zeros(1000*5,8);
-    dif(i*(1:5), :) = jac([x_;V_;u_]) - [JacA, JacB, JacBu; JacC, JacD, JacDu];
+    dif = zeros(1000*5,7);
+    dif(i*(1:5), :) = double(jac([x_;V_;u_])) - [A,B;C,D];
 end
 
 all(dif < 1e-14, 1)
 
+
+function [Jx, Ju, Cy, Dy] = get_avr_jacobian(x, u)    
+    Vtr  = x(1);
+    Vap  = x(2);
+    Vfld = x(3);
+    Vst  = x(4);
+
+    
+    Vref = u(1);
+    Vpss = u(2);
+    Vabs = u(3);
+
+    
+    ttr      = 0.00;
+    Vap_max  = 1;
+    Vap_min  = -1;
+    kap      = 57.1;
+    tap      = 0.05;
+    aex1     = -0.045;
+    aex2     = 0.0012;
+    tex      = 0.50;
+    bex      = 1.21;
+    kst      = 0.08;
+    tst      = 1.00;
+
+    
+    H_rect = heaviside(Vap - Vap_min) - heaviside(Vap - Vap_max);
+
+    
+    Jx = [ -1,          0,                                             0,    0;
+          -kap*H_rect, -1*H_rect,                                      0,   -kap*H_rect;
+           0,           1, -(aex1 + aex2*(1 + bex*Vfld)*exp(bex*Vfld)),    0;
+           0,           0,                                             0,   -1];
+
+    
+    Ju = [ 0,           0,           1;
+           kap*H_rect,  kap*H_rect,  0;
+           0,           0,           0;
+           0,           0,           0];
+
+    
+    Cy = [0, 0, 1, 0];
+    Dy = [0, 0, 0];
+
+end

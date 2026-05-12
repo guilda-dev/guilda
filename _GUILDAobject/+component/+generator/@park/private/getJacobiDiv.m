@@ -1,4 +1,4 @@
-function Div = getJacobiDiv(t, x, V, u, param, omega0) %#ok
+function Div = getJacobiDiv(t, x, V, I, u, param, omega0) %#ok
     
     delta = x(1);          
     

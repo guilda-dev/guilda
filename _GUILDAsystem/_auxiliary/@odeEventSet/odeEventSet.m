@@ -115,7 +115,7 @@ classdef (Sealed = true) odeEventSet < handle
             obj.sv_Btag = string(net.a_Bus);
             obj.sv_Ctag = vertcat(sv_tag{:});
 
-            obj.rv_Brep = 2*ones(i,1);            
+            obj.rv_Brep = 4*ones(i,1);            
             obj.rv_Crep = vertcat(rv_rep{:});
             
         end
@@ -226,14 +226,14 @@ classdef (Sealed = true) odeEventSet < handle
                     l_osU = ismember(osU, c_tag);
                     l_inU = ismember(inU, c_tag);                    
                     
-                    comp{j}.X_offset = zeros(size(comp{j}.str_x));                                       
+                    comp{j}.X_offset = zeros(size(comp{j}.str_x(:)));                                       
 
                     if any(l_osU)
                         lv_X = ismember(comp{j}.str_x, osX{l_osU});                        
                         comp{j}.X_offset(lv_X) = comp{j}.X_offset(lv_X) + osV{l_osU};
                     end                    
 
-                    ini = repmat({@(t) 0}, size(comp{j}.str_u));
+                    ini = repmat({@(t) 0}, size(comp{j}.str_u(:)));
                     if any(l_inU)
                         l_inN = ismember(comp{j}.str_u, inN{l_inU});                                                
                         
@@ -305,7 +305,10 @@ classdef (Sealed = true) odeEventSet < handle
                 iBus = a_bus{i};                
                 iBus.l_isFault = ismember(iBus.str_tag, BusFault);
 
-                rv_V{i} = [real(iBus.c_Vequilibrium); imag(iBus.c_Vequilibrium)];
+                Ieq = iBus.c_Iequilibrium;
+                Veq = iBus.c_Vequilibrium;
+
+                rv_V{i} = [real(Veq); imag(Veq); real(Ieq); imag(Ieq)];
 
                 a_Comp = iBus.a_Component;                                                                              
                 [rv_X{i}, rm_M, CompTrip] = getXM(a_Comp, rv_X{i}, rm_M, CompTrip);                
@@ -314,7 +317,7 @@ classdef (Sealed = true) odeEventSet < handle
             if ~isempty(obj.odeNetwork.a_GlobalController)
                 a_GC = obj.odeNetwork.a_GlobalController{1};
 
-                rm_M(a_GC.iv_odeX, a_GC.iv_odeX) = a_GC.rm_odeMass([], [], [], []);
+                rm_M(a_GC.iv_odeX, a_GC.iv_odeX) = a_GC.rm_odeMass([], [], [], [], []);
                 rv_X = [rv_X; {a_GC.cv_Xequilibrium}];                
             end            
 
@@ -339,7 +342,7 @@ classdef (Sealed = true) odeEventSet < handle
             M0 = opt.M0;
             if isempty(M0)
                 nB = numel(a_bus);
-                M0 = blkdiag(rm_M, zeros(nB*2, nB*2));
+                M0 = blkdiag(rm_M, zeros(nB*4, nB*4));
             end
             varargout{2} = RM * M0 * RM.';                    
                                     
@@ -367,7 +370,7 @@ classdef (Sealed = true) odeEventSet < handle
             lv_Ctagi = ismember(obj.sv_Ctag, CompTrip);            
             
             B_sti = cell2mat( cellfun(@(bi) bi.iv_odeX, a_bus, 'UniformOutput', false) );
-            C_sti = cell2mat( cellfun(@(ci) ci.iv_odeX, a_cmp(lv_Ctagi), 'UniformOutput', false) );            
+            C_sti = cell2mat( cellfun(@(ci) ci.iv_odeX, a_cmp(lv_Ctagi), 'UniformOutput', false) );                        
 
             Time = opt.ODEResults.Time;
             xsol = opt.ODEResults.Solution;
@@ -377,15 +380,11 @@ classdef (Sealed = true) odeEventSet < handle
             end
 
             Vsol = xsol(:, B_sti);
-            Isol = opt.ODEYmatrix * ( Vsol(:,1:2:end) + 1j*Vsol(:,2:2:end) ).';
-
-            Isol2RI = zeros(size(Vsol));
-            Isol2RI(:, 1:2:end) = real(Isol.');
-            Isol2RI(:, 2:2:end) = imag(Isol.');
-           
+            Isol = opt.ODEYmatrix * Vsol.';
+            
             t = array2table(Time);
             x = array2table(xsol);
-            I = array2table(Isol2RI);
+            I = array2table(Isol.');
 
             EventSettings = table(t,x,I, 'VariableNames', {'t','x','i'});
         end
@@ -422,10 +421,10 @@ function [rv_x0, rm_Mass, TC] = getXM(OBJs, rv_x0, rm_Mass, TC)
         rx_idx = [OBJ.iv_odeX; OBJ.iv_odeU]; 
         nu_idx = numel(OBJ.iv_odeU); 
         
-        OBJ.isConnect = ~ismember(OBJ.str_tag, TC);                
+        OBJ.isConnect = ~ismember(OBJ.str_tag, TC);  
         rv_x0 = [rv_x0; OBJ.cv_Xequilibrium + OBJ.X_offset; OBJ.cv_Uequilibrium + OBJ.U_offset(0)]; %#ok
         
-        rm_Mass(rx_idx, rx_idx) = blkdiag(OBJ.rm_odeMass([],[],[],[]), zeros(nu_idx, nu_idx));
+        rm_Mass(rx_idx, rx_idx) = blkdiag(OBJ.rm_odeMass([],[],[],[],[]), zeros(nu_idx, nu_idx));
 
         if ~isempty(OBJ.a_LocalController)
             a_LC = OBJ.a_LocalController(1);

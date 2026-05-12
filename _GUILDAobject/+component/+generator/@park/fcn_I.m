@@ -1,4 +1,4 @@
-function I = fcn_I(obj, t, x, V, u, para, omega0) %#ok   
+function I = fcn_I(obj, t, x, V, I, u, para, omega0) %#ok   
 
     V = [1,1j]*V;
     
