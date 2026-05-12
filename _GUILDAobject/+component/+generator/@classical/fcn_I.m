@@ -1,4 +1,4 @@
-function I = fcn_I(obj, t, x, V, u, param, omega0) %#ok
+function I = fcn_I(obj, t, x, V, I ,u, param, omega0) %#ok
     
     Xd = param(3);
     Xq = param(4);

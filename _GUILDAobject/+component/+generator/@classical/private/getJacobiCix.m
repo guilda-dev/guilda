@@ -1,4 +1,4 @@
-function Cix = getJacobiCix(t, x, V, u, param, omega0) %#ok
+function Cix = getJacobiCix(t, x, V, I, u, param, omega0) %#ok
     
     delta = x(1);
     Vfd = u(2);
