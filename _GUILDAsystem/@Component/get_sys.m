@@ -1,8 +1,9 @@
-function sys = get_sys(obj, x, V, u, opt)
+function sys = get_sys(obj, x, V, I, u, opt)
     arguments
         obj 
         x        (:,1) double = obj.cv_Xequilibrium
         V        (:,1) double = [real(obj.c_Vequilibrium); imag(obj.c_Vequilibrium)]
+        I        (:,1) double = [real(obj.c_Iequilibrium); imag(obj.c_Iequilibrium)]
         u        (:,1) double = obj.cv_Uequilibrium                        
         opt.port (1,1) {mustBeMember(opt.port, ["V2I", "I2V"])} = "V2I"
         opt.full (1,1) logical = true
@@ -14,15 +15,15 @@ function sys = get_sys(obj, x, V, u, opt)
     Vport  = obj.attach_tag(["Vre";"Vim"]);
     Iport  = obj.attach_tag(["Ire";"Iim"]);    
 
-    Mass = obj.rm_odeMass([], x, V, u);
+    Mass = obj.rm_odeMass([], x, V, I, u);
 
-    Axx = obj.JacobiAxx([], x, V, u);
-    Bxv = obj.JacobiBxv([], x, V, u);    
-    Bxu = obj.JacobiBxu([], x, V, u);        
+    Axx = obj.JacobiAxx([], x, V, I, u);
+    Bxv = obj.JacobiBxv([], x, V, I, u);    
+    Bxu = obj.JacobiBxu([], x, V, I, u);        
 
-    Cix = obj.JacobiCix([], x, V, u);
-    Div = obj.JacobiDiv([], x, V, u);
-    Diu = obj.JacobiDiu([], x, V, u);              
+    Cix = obj.JacobiCix([], x, V, I, u);
+    Div = obj.JacobiDiv([], x, V, I, u);
+    Diu = obj.JacobiDiu([], x, V, I, u);              
 
     switch opt.port
         case "V2I"
