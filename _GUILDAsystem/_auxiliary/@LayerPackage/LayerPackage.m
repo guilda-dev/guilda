@@ -79,6 +79,7 @@ classdef LayerPackage < handle
         varargout = disp_tree(obj,str_space,str_ignore,l_isfirst)
         out = get_tag(obj,l_with_layer, str_split)
         out = attach_tag(obj,str_name_list)
+        [out, dict_cls] = struct(obj, l_disp, str_header, dict_cls)
 
         function set.str_tag(obj,str_newtag)
             str_newtag = obj.validate_tag(str_newtag);

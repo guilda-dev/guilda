@@ -149,6 +149,7 @@ classdef PowerNetwork < PowerSystemModel
         
 
         % User Interface << Information >>
+        info(obj, disp)
         G = draw_diagram(obj,ax)
         % G = draw_spring_model(obj,mode)
         % list(obj,options)

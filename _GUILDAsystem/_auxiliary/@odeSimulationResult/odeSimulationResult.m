@@ -11,7 +11,7 @@ classdef odeSimulationResult < handle
     methods
         function obj = odeSimulationResult(net, sol)
             
-            obj.odeNetwork = net;
+            obj.odeNetwork = net.info(false);
             a_bus = net.a_Bus;                        
 
             sol = reshape(sol, [], 1);
