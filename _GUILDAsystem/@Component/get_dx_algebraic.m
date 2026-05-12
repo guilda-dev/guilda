@@ -9,11 +9,12 @@ function DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)
     u_comp = x(rv_u);    
     
     y_comp = obj.fv_odeY(t,x_comp,Vi,Ii,u_comp);
+    y_name = obj.str_y;
 
     if obj.isController
         a_LC = obj.a_LocalController{1};
-        [DAEvec, y_avr] = get_dx_algebraic(a_LC, t, x, Vi, Ii, y_comp, DAEvec);
-        u(obj.str_u==a_LC.str_y) = y_avr;
+        [DAEvec, y_avr, y_name] = get_dx_algebraic(a_LC, t, x, Vi, Ii, y_comp, y_name, DAEvec);
+        u(obj.str_u==y_name) = y_avr;
     end
     
     X = obj.fv_odeDiff(t,x_comp,Vi,Ii,u_comp);

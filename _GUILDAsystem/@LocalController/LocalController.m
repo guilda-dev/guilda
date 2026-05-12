@@ -87,7 +87,7 @@ classdef LocalController < PowerSystemModel
         end
 
         % get dx and y
-        [DAEvec, u] = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)                
+        [DAEvec, u, y_name] = get_dx_algebraic(obj, t, x, Vi, Ii, u, y_name, DAEvec)                
 
         % get sys
         sys = get_sys(obj,x,V,u,opt)

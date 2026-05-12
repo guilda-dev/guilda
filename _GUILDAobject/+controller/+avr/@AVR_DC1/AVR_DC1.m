@@ -6,7 +6,7 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.base
                 tag           (1,1) string 
                 param.ttr     (1,1) double = 0.00
                 param.tap     (1,1) double = 0.2
-                param.kap     (1,1) double = 20 
+                param.kap     (1,1) double = 1000 
                 param.Vap_max (1,1) double = Inf
                 param.Vap_min (1,1) double = -Inf  
                 param.tex     (1,1) double = 0.314

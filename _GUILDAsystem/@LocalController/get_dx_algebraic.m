@@ -1,13 +1,23 @@
-function [DAEvec, u] = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec) 
+function [DAEvec, u, y_name] = get_dx_algebraic(obj, t, x, Vi, Ii, u, y_name, DAEvec) 
+
+    rv_U = obj.cv_Uequilibrium;
+
+    lv_U2Y = ismember(obj.str_u,y_name);
+    lv_Y2U = ismember(y_name,obj.str_u);
+
+    rv_U(lv_U2Y) = u(lv_Y2U);
 
     if obj.isController
         a_LC = obj.a_LocalController{1};
-        [DAEvec, u] = get_dx_algebraic(a_LC, t, x, Vi, Ii, u, DAEvec);    
+        
+        lv_Y2U = ismember(y_name,a_LC.str_u);        
 
-        ueq = obj.cv_Uequilibrium;
-        ueq(obj.str_u==a_LC.str_y) = u;
+        u_LC = u(lv_Y2U);
 
-        u = ueq;
+        [DAEvec, y_LC, y_name] = get_dx_algebraic(a_LC, t, x, Vi, Ii, u_LC, y_name, DAEvec);    
+        
+        lv_U2Y = ismember(obj.str_u,y_name);
+        rv_U(lv_U2Y) = y_LC;        
     end
 
     rv_x = obj.iv_odeX;
@@ -18,6 +28,7 @@ function [DAEvec, u] = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)
     
     X = obj.fv_odeDiff(t, x_con, Vi, Ii, u_con);        
     
-    DAEvec([rv_x;rv_u]) = DAEvec([rv_x;rv_u]) + [X; u_con - u];        
-    u = obj.fv_odeY(t, x_con, Vi, Ii, u_con);    
+    DAEvec([rv_x;rv_u]) = DAEvec([rv_x;rv_u]) + [X; u_con - rv_U];        
+    u = obj.fv_odeY(t, x_con, Vi, Ii, u_con);  
+    y_name = obj.str_y;
 end

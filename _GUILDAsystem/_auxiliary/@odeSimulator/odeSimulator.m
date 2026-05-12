@@ -268,6 +268,8 @@ classdef (Sealed = true) odeSimulator < handle
 
                             
                             odeJac(lu_LC2, lu_LC2) = odeJac(lu_LC2, lu_LC2) + eye(length(lu_LC2));
+
+                            odeJac(cj.iv_odeY, lh) = [-Cyx, -Dyu, -Dyv, -Dyi];
                             
                         end                        
 
@@ -284,8 +286,7 @@ classdef (Sealed = true) odeSimulator < handle
                                                                            -Cyx_LC1, -Dyu_LC1, -Dyv_LC1, -Dyi_LC1];
 
                         odeJac(lu_LC1, lu_LC1) = odeJac(lu_LC1, lu_LC1) + eye(length(lu_LC1));
-
-                        odeJac(cj.iv_odeY, lh) = [-Cyx, -Dyu, -Dyv, -Dyi];
+                        
                     end                                                                                                                                    
             
                     odeJac(lv,lh) = odeJac(lv,lh) + [ Axx,  Bxu,  Bxv,  Bxi;...                                                     
