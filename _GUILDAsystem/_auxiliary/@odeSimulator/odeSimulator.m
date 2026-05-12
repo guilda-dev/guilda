@@ -70,9 +70,11 @@ classdef (Sealed = true) odeSimulator < handle
             [obj.odeTimeTable, obj.ODEvnt] = table(varargin{:}, "time", time);
             obj.initialize_odeSimulator;
 
-            odeYmat = net.get_admittance_matrix.Variables;
-            obj.rv_odeV = cell2mat(tools.cellfun(@(b) b.iv_odeX, net.a_Bus));
-            obj.odeYmat = tools.complex2matrix(odeYmat);
+            odeYmat = tools.complex2matrix(net.get_admittance_matrix.Variables);
+            rv_odeV = cell2mat(tools.cellfun(@(b) b.iv_odeX, net.a_Bus));
+
+            obj.odeYmat = odeYmat;
+            obj.rv_odeV = rv_odeV;
         end        
         
     end
