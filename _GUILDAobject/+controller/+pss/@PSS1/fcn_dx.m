@@ -16,15 +16,11 @@ function dx = fcn_dx(obj, t, x, V, I, u, param, omega0) %#ok
     xi1  = x(2);
     xi2  = x(3);
     
-    % ウォッシュアウトフィルタ
-    dx1 = -xiWS + kpss*omega;
+    % ウォッシュアウトフィルタ    
     vWS = kpss*omega - xiWS;
-    % 位相進み補償器
-    dx2 = -xi1 + (1-td1/tn1) * vWS;
-    v1  = tn1*(vWS-xi1)/td1;
-    % 飽和
-    dx3  = -xi2 + (1-td2/tn2) * v1;        
+    % 位相進み補償器    
+    v1  = tn1*(vWS-xi1)/td1;    
 
-    dx = [dx1; dx2; dx3];
+    dx = [-xiWS + kpss*omega; -xi1 + (1-td1/tn1) * vWS; -xi2 + (1-td2/tn2) * v1];
     
 end

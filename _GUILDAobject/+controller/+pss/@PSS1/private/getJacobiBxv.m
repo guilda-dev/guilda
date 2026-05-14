@@ -1,3 +1,4 @@
 function Bxv = getJacobiBxv(t, x, V, I, u, param, omega0) %#ok
-    Bxv = [];
+    nx  = numel(x);
+    Bxv = zeros(nx,2);
 end

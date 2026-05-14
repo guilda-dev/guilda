@@ -16,11 +16,7 @@ function Vpss = fcn_y(obj, t, x, V, I, u, param, omega0) %#ok
     % 状態変数
     xiWS = x(1);
     xi1  = x(2);
-    xi2  = x(3);    
-
-    vWS = kpss*omega - xiWS;
-    v1  = tn1*(vWS-xi1)/td1;       
-
-    vpl  = tn2*(v1-xi2)/td2;
-    Vpss = max(min(vpl, Vpss_max), Vpss_min); 
+    xi2  = x(3);        
+    
+    Vpss = max( min(tn2*(tn1*(kpss*omega - xiWS - xi1)/td1 - xi2)/td2 , Vpss_max), Vpss_min); 
 end

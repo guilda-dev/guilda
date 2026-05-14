@@ -225,7 +225,7 @@ classdef (Sealed = true) odeSimulator < handle
                 x_GC = x(a_GC.iv_odeX);
                 u_GC = x(a_GC.iv_odeU);
 
-                [Axx_GC, Bxu_GC, Bxv_GC, Bxi_GC, Cyx_GC, Dyu_GC, Dyv_GC, Dyi_GC, ~, ~, ~] = getSubJacobian(a_GC, t, x_GC, [], [], u_GC);                
+                [Axx_GC, Bxu_GC, Bxv_GC, Bxi_GC, Cyx_GC, Dyu_GC, Dyv_GC, Dyi_GC, ~, ~, ~, ~] = getSubJacobian(a_GC, t, x_GC, [], [], u_GC);                
 
                 odeJac(lv_GC, lh_GC) = odeJac(lv_GC, lh_GC) + [ Axx_GC,  Bxv_GC,  Bxu_GC, Bxi_GC;
                                                                 Cyx_GC,  Dyv_GC,  Dyu_GC, Dyi_GC];
@@ -269,9 +269,9 @@ classdef (Sealed = true) odeSimulator < handle
                             xi_LC2 = x(idx_X_LC2);                            
                             ui_LC2 = x(idx_U_LC2);                                                        
 
-                            [Axx_LC2, Bxu_LC2, Bxv_LC2, Bxi_LC2, Cyx_LC2, Dyu_LC2, Dyv_LC2, Dyi_LC2, ~, ~, ~] = getSubJacobian(a_LC2, t, xi_LC2, Vi, Ii, ui_LC2);                                                                            
+                            [Axx_LC2, Bxu_LC2, Bxv_LC2, Bxi_LC2, Cyx_LC2, Dyu_LC2, Dyv_LC2, Dyi_LC2, ~, ~, ~, ~] = getSubJacobian(a_LC2, t, xi_LC2, Vi, Ii, ui_LC2);                                                                            
                             
-                            rh_LC2 = [idx_X_LC2; idx_U_LC2; idx_I];
+                            rh_LC2 = [idx_X_LC2; idx_U_LC2; idx_V; idx_I];
                             rv_LC2 = [idx_X_LC2; idx_Y_LC2];
 
                             odeJac(rv_LC2, rh_LC2) = odeJac(rv_LC2, rh_LC2) + [ Axx_LC2,  Bxu_LC2,  Bxv_LC2,  Bxi_LC2; ...
@@ -280,7 +280,7 @@ classdef (Sealed = true) odeSimulator < handle
                             
                             odeJac(idx_U_LC2,idx_U_LC2) = odeJac(idx_U_LC2,idx_U_LC2) + eye(length(idx_U_LC2));
 
-                            odeJac(idx_Y, lh) = [-Cyx, -Dyu, -Dyv, -Dyi];
+                            odeJac(idx_Y, rh) = [-Cyx, -Dyu, -Dyv, -Dyi];
                             
                         end 
 

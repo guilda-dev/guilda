@@ -27,7 +27,7 @@ classdef (Sealed = true) PSS1 < controller.pss.base
 
             obj.key      = "pss";
             obj.str_x    = ["xiWS"; "xi1"; "xi2"];
-            obj.str_u    = "omega";   
+            obj.str_u    = "Omega";   
             obj.str_y    = "Vpss";
             obj.str_para = ["kpss"; "tWS"; "tn1"; "td1"; "tn2"; "td2"; "Vpss_min"; "Vpss_max"];
 

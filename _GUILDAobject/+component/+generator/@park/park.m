@@ -4,7 +4,7 @@ classdef park < component.generator.abstract
         key      = "gen-park";     
         str_x    = ["delta";"omega";"Eq";"Ed";"psiq";"psid"];        
         str_u    = ["Pmech";"Vfield"];        
-        str_y    = ["omega"];        
+        str_y    = ["Omega"];        
         str_para = ["M","D","Xd","Xd_p","Xd_pp","Xq","Xq_p","Xq_pp","Td_p","Td_pp","Tq_p","Tq_pp","X_ls"]        
     end        
     

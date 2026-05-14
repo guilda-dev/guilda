@@ -9,6 +9,6 @@ function Bxv = getJacobiBxv(t, x, V, I, u, param, omega0) %#ok
 
     Bxv = zeros(4, 2);
     
-    Bxv(1,[1,2]) = [dVabs_dVre;dVabs_dVim];      
+    Bxv(1,[1,2]) = [dVabs_dVre,dVabs_dVim];      
     
 end
