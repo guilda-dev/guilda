@@ -41,7 +41,7 @@ function sys = get_sys(obj, opt)
             inv_Cx = horzcat(Cx{:});
             inv_Du = horzcat(Du{:});       
             inv_Ax = blkdiag(Ax{:}) - vertcat(Bv{:}) * inv_Dv * inv_Cx;                       
-            inv_Bv = vertcat(Bv{:})*inv_Dv;            
+            inv_Bv = vertcat(Bv{:}) * inv_Dv;            
             inv_Bu = blkdiag(Bu{:}) - vertcat(Bv{:}) * inv_Dv * inv_Du;
 
             A =  inv_Ax;

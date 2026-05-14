@@ -23,7 +23,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 
         lv_connect = ismember(blkConnect,sysConnect,"rows");
         
-        sys = connect(blksys,blkConnect(~lv_connect,:),1:numel(uSYS),1:2);            
+        sys = connect(blksys,blkConnect(~lv_connect,:),1:numel(uSYS),1:2);                    
 
         sys.StateName  = [xSYS; vertcat(x_tag{:})];
         sys.InputName  = uSYS;
@@ -131,7 +131,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     varargout{2} = tools.arrayfun(@(s) char(s), [Vport{2};uNames{2}]); 
     varargout{3} = tools.arrayfun(@(s) char(s), OutputNames{opt.full+1}); 
 
-    
+
     function Connect = connectCondition(in,out) 
         Connect = zeros(0,2);
 
@@ -149,7 +149,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     
                 Connect(nv_all+(1:nv), :) = [rv_val', repmat(out.(fo{idx}), [nv,1])];
                 
-                nv_all = nv_all + nv;
+                nv_all = nv_all + nv;            
             end
             
             idx = idx + 1;
