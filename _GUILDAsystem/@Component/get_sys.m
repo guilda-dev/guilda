@@ -16,14 +16,16 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     if ~isempty(sysCON) && opt.rec
         [SYS,xSYS,uSYS,ySYS] = obj.get_sys("full",false,"port",opt.port,"tag",false,"con",opt.con,"rec",false);        
 
-        blksys = append(SYS,sysCON{:});                
+        blksys = append(SYS,sysCON{:});            
 
         blkConnect = connectCondition(blksys.InputGroup,blksys.OutputGroup);
         sysConnect = connectCondition(SYS.InputGroup,SYS.OutputGroup);
 
-        lv_connect = ismember(blkConnect,sysConnect,"rows");
+        lv_connect = ismember(blkConnect,sysConnect,"rows");                        
+
+        opt = connectOptions("Simplify",false);
         
-        sys = connect(blksys,blkConnect(~lv_connect,:),1:numel(uSYS),1:2);                    
+        sys = connect(blksys,blkConnect(~lv_connect,:),1:numel(uSYS),1:2,opt);                                    
 
         sys.StateName  = [xSYS; vertcat(x_tag{:})];
         sys.InputName  = uSYS;
@@ -145,7 +147,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
             if any(lv)
                 str_i = fi{lv};
                 rv_val = in.(str_i);
-                nv = numel(rv_val);
+                nv = numel(rv_val);                
     
                 Connect(nv_all+(1:nv), :) = [rv_val', repmat(out.(fo{idx}), [nv,1])];
                 

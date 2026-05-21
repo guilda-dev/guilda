@@ -3,6 +3,7 @@ function sys = get_sys(obj, opt)
         obj 
         opt.port (1,1) {mustBeMember(opt.port, ["V2I", "I2V"])} = "V2I"
         opt.full (1,1) logical = false
+        opt.con  (1,1) logical = false
     end
 
     sys = tools.cellfun(@(c) c.get_sys("port", "V2I", "full", opt.full), obj.a_Component);

@@ -120,7 +120,7 @@ classdef broadcast_PI_AGC < GlobalController
             kP    = param(1,3);            
 
             Dyu = -kP * (alpha * beta.');
-        end
+        end        
                         
     end    
 end

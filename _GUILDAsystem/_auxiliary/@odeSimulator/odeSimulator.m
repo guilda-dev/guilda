@@ -28,7 +28,7 @@ classdef (Sealed = true) odeSimulator < handle
         odeYmat
         odeResult
     end
-    properties (Access=private)
+    properties %(Access=private)
         rv_odeV
     end
 
@@ -251,7 +251,7 @@ classdef (Sealed = true) odeSimulator < handle
                     xi = x(idx_X);        
                     ui = x(idx_U);                 
 
-                    [Axx, Bxu, Bxv, Bxi, Cyx, Dyu, Dyv, Dyi, Cix, Diu, Div, Dii] = getSubJacobian(cj, t, xi, Vi, Ii, ui);
+                    [Axx, Bxu, Bxv, Bxi, Cyx, Dyu, Dyv, Dyi, Cix, Diu, Div, Dii] = getSubJacobian(cj,t,xi,Vi,Ii,ui);
 
                     rh = [idx_X; idx_U; idx_V; idx_I];
                     rv = [idx_X; idx_V];
@@ -280,7 +280,7 @@ classdef (Sealed = true) odeSimulator < handle
                             
                             odeJac(idx_U_LC2,idx_U_LC2) = odeJac(idx_U_LC2,idx_U_LC2) + eye(length(idx_U_LC2));
 
-                            odeJac(idx_Y, rh) = [-Cyx, -Dyu, -Dyv, -Dyi];
+                            odeJac(idx_Y, rh) = odeJac(idx_Y, rh) + [-Cyx, -Dyu, -Dyv, -Dyi];
                             
                         end 
 
@@ -292,7 +292,7 @@ classdef (Sealed = true) odeSimulator < handle
                         xi_LC1 = x(idx_X_LC1);
                         ui_LC1 = x(idx_U_LC1);                                      
 
-                        [Axx_LC1, Bxu_LC1, Bxv_LC1, Bxi_LC1, Cyx_LC1, Dyu_LC1, Dyv_LC1, Dyi_LC1, ~, ~, ~] = getSubJacobian(a_LC1, t, xi_LC1, Vi, Ii, ui_LC1);                                                
+                        [Axx_LC1, Bxu_LC1, Bxv_LC1, Bxi_LC1, Cyx_LC1, Dyu_LC1, Dyv_LC1, Dyi_LC1, ~, ~, ~, ~] = getSubJacobian(a_LC1, t, xi_LC1, Vi, Ii, ui_LC1);                                                
                         
                         rh_LC1 = [idx_X_LC1; idx_U_LC1; idx_V; idx_I];
                         rv_LC1 = [idx_X_LC1; idx_Y_LC1];
@@ -377,7 +377,7 @@ classdef (Sealed = true) odeSimulator < handle
             ts = obj.odeTimeTable{  1,"t1"};
             te = obj.odeTimeTable{end,"t2"};
             odeProg  = odeProgress( obj.Reporter, [ts,te], obj.TimeLimit);
-            o.SolverOptions.OutputFcn = odeProg.OutputFcn;
+            o.SolverOptions.OutputFcn = odeProg.OutputFcn;            
             o.EventDefinition = odeEvent("EventFcn", @(t,x) odeProg.Events(), "Response", "stop");
                 
             while tp <= np          
@@ -411,7 +411,7 @@ classdef (Sealed = true) odeSimulator < handle
                 end
                 
                 try         
-                    % When solving the equation, specify [0, duration of each phase]                                        
+                    % When solving the equation, specify [0, duration of each phase]                         
                     sol = solve(o, 0, t2-t1); 
                 catch me                    
 
@@ -522,18 +522,18 @@ end
 
 function [Axx, Bxu, Bxv, Bxi, Cyx, Dyu, Dyv, Dyi, Cix, Diu, Div, Dii] = getSubJacobian(OBJ, t, xi, Vi, Ii, ui)
                 
-    Axx = OBJ.JacobiAxx(t, xi, Vi, Ii, ui);
-    Bxv = OBJ.JacobiBxv(t, xi, Vi, Ii, ui);
-    Bxi = OBJ.JacobiBxi(t, xi, Vi, Ii, ui);                         
-    Bxu = OBJ.JacobiBxu(t, xi, Vi, Ii, ui);                         
+    Axx = OBJ.JacobiAxx(t,xi,Vi,Ii,ui);
+    Bxv = OBJ.JacobiBxv(t,xi,Vi,Ii,ui);
+    Bxi = OBJ.JacobiBxi(t,xi,Vi,Ii,ui);                         
+    Bxu = OBJ.JacobiBxu(t,xi,Vi,Ii,ui);                         
 
-    Cyx = OBJ.JacobiCyx(t, xi, Vi, Ii, ui);
-    Dyv = OBJ.JacobiDyv(t, xi, Vi, Ii, ui);
-    Dyi = OBJ.JacobiDyi(t, xi, Vi, Ii, ui);
-    Dyu = OBJ.JacobiDyu(t, xi, Vi, Ii, ui);
+    Cyx = OBJ.JacobiCyx(t,xi,Vi,Ii,ui);
+    Dyv = OBJ.JacobiDyv(t,xi,Vi,Ii,ui);
+    Dyi = OBJ.JacobiDyi(t,xi,Vi,Ii,ui);
+    Dyu = OBJ.JacobiDyu(t,xi,Vi,Ii,ui);
 
-    Cix = OBJ.JacobiCix(t, xi, Vi, Ii, ui);
-    Div = OBJ.JacobiDiv(t, xi, Vi, Ii, ui);
-    Dii = OBJ.JacobiDii(t, xi, Vi, Ii, ui);
-    Diu = OBJ.JacobiDiu(t, xi, Vi, Ii, ui);
+    Cix = OBJ.JacobiCix(t,xi,Vi,Ii,ui);
+    Div = OBJ.JacobiDiv(t,xi,Vi,Ii,ui);
+    Dii = OBJ.JacobiDii(t,xi,Vi,Ii,ui);
+    Diu = OBJ.JacobiDiu(t,xi,Vi,Ii,ui);
 end

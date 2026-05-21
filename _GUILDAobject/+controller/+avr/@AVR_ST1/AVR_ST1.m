@@ -1,20 +1,16 @@
-classdef (Sealed = true) AVR_DC1 < controller.avr.base
+classdef (Sealed = true) AVR_ST1 < controller.avr.base
     
     methods
-        function obj = AVR_DC1(tag, param)
+        function obj = AVR_ST1(tag, param)
             arguments               
-                tag           (1,1) string 
-                param.ttr     (1,1) double = 0.01
-                param.tap     (1,1) double = 0.2
-                param.kap     (1,1) double = 0
+                tag           (1,1) string                 
+                param.ttr     (1,1) double = 0
+                param.tap     (1,1) double = 0.05
+                param.kap     (1,1) double = 30
                 param.Vap_max (1,1) double = Inf
-                param.Vap_min (1,1) double = -Inf  
-                param.tex     (1,1) double = 0.314
-                param.aex1    (1,1) double = 1
-                param.aex2    (1,1) double = 0.0039                
-                param.bex     (1,1) double = 1.555
-                param.tst     (1,1) double = 0.35
-                param.kst     (1,1) double = 0.063                
+                param.Vap_min (1,1) double = -Inf                                  
+                param.tst     (1,1) double = 0
+                param.kst     (1,1) double = 0
             end            
             obj@controller.avr.base(tag)                                 
             
@@ -22,19 +18,15 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.base
                                         "Vap_max", param.Vap_max, "double", ...
                                         "Vap_min", param.Vap_min, "double", ...
                                             "kap", param.kap    , "double", ...
-                                            "tap", param.tap    , "double", ...
-                                           "aex1", param.aex1   , "double", ...
-                                           "aex2", param.aex2   , "double", ...
-                                            "tex", param.tex    , "double", ...
-                                            "bex", param.bex    , "double", ...
+                                            "tap", param.tap    , "double", ...                                           
                                             "kst", param.kst    , "double", ...
                                             "tst", param.tst    , "double");                       
 
             obj.key      = "avr";
-            obj.str_x    = ["Vtr";"Vap"; "Vfld"; "Vst"];
+            obj.str_x    = ["Vtr";"Vap";"Vst"];
             obj.str_u    = ["Vref";"Vpss"];   
             obj.str_y    = "Vfield";
-            obj.str_para = ["ttr"; "Vap_max"; "Vap_min"; "kap"; "tap"; "aex1"; "aex2"; "tex"; "bex"; "kst"; "tst"];
+            obj.str_para = ["ttr"; "Vap_max"; "Vap_min"; "kap"; "tap"; "kst"; "tst"];
 
         end        
 
@@ -58,25 +50,22 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.base
         function get_equilibrium(obj, V, u)                   
             tab = obj.tab_parameter.dynamics;
             Vap_max = tab{:, 'Vap_max'};
-            Vap_min = tab{:, 'Vap_min'};
-            aex1    = tab{:, 'aex1'   };
-            aex2    = tab{:, 'aex2'   };
-            bex     = tab{:, 'bex'    };
+            Vap_min = tab{:, 'Vap_min'};            
             kap     = tab{:, 'kap'    };
 
-            Vfld_st = u(2);
-            Vap_st  = Vfld_st*(aex1 + aex2*exp(bex*Vfld_st));
+            Vap_st = u(2);            
             
             if Vap_st <= Vap_min || Vap_st >= Vap_max
                 obj.error(msg('GUILDA:AVR_DC1:InvalidValueRange'))
             end
-            Vcom_st = Vap_st/kap;            
-            Vref_st = abs(V) + Vcom_st;
-            Vtr_st  = abs(V);
+
             Vst_st  = 0;
+            Vcom_st = Vap_st/kap;                        
+            Vtr_st  = abs(V);            
+            Vref_st = Vcom_st + Vtr_st;
             Vpss_st = 0;
 
-            obj.cv_Xequilibrium = [Vtr_st; Vap_st; Vfld_st; Vst_st];
+            obj.cv_Xequilibrium = [Vtr_st; Vap_st; Vst_st];
             obj.cv_Uequilibrium = [Vref_st;Vpss_st];            
 
             obj.c_Vequilibrium = V;
