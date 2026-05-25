@@ -353,7 +353,7 @@ classdef (Sealed = true) odeEventSet < handle
                 obj                                 
             end
             arguments (Input, Repeating)
-                varargin 
+                varargin {mustBeA(varargin, 'odeEventSet')}
             end
             arguments                
                 opt.ODEResults 
