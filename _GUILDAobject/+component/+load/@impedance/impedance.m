@@ -21,9 +21,14 @@ classdef impedance < component.load.abstract
         set_odefcn(obj,omega0)
     end
     
+    methods        
+        [cv_Xequilibrium, cv_Uequilibrium] = get_equilibrium(obj,c_V,c_I,r_P,r_Q)        
+    end
+
     methods
-        cv_Y = function_out(obj,num,cv_X,c_V,c_I,r_P,r_Q,para)
-        [cv_Xequilibrium, cv_Uequilibrium]        = get_equilibrium(obj, c_V, c_I, r_P, r_Q)
-        [rm_Mass, fv_odeDiff, fv_odeOut, fv_odeI] = get_odeFunction(obj,sv_x,s_V,sv_u,sr_para)
+        dx = fcn_dx(obj,t,x,V,I,u,param);
+        I  = fcn_I(obj,t,x,V,I,u,param);
+        y  = fcn_Y(obj,t,x,V,I,u,param);
+        M  = fcn_Mass(obj,t,x,V,I,u,param);
     end
 end

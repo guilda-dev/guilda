@@ -24,7 +24,7 @@ classdef (Sealed = true) odeEventSet < handle
 %    This property specifies perturbations applied to the state of equipment such as generators. 
 %    Perturbations are specified as a scalar or a vector depending on the number of state variables 
 %    to which the perturbation is applied. The specific state variables to which the perturbation 
-%    applied are specified later using OffsetX.
+%    applied are specified later using OffsetState.
 %
 % FaultBus - Fault Bus [ string scalar or vector ]
 %    Specify the busbar causing the ground fault. Specify either the busbar number or the busbar tag. 

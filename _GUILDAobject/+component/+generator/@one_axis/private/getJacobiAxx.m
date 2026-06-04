@@ -1,4 +1,4 @@
-function A = getJacobiA(t, x, V, u, param, omega0) %#ok
+function Axx = getJacobiAxx(t,x,V,I,u,param,omega0) %#ok
 
     delta = x(1);
     Eq    = x(3);
@@ -24,15 +24,15 @@ function A = getJacobiA(t, x, V, u, param, omega0) %#ok
 
     dPout_ddelta = dVd_ddelta*Id + Vd*dId_ddelta + dVq_ddelta*Iq + Vq*dIq_ddelta;
 
-    A = zeros(3, 3);
+    Axx = zeros(3, 3);
 
-    A(1, 2) = 2 * pi * omega0;
+    Axx(1, 2) = 2 * pi * omega0;
 
-    A(2, 1) = -dPout_ddelta;
-    A(2, 2) = -D;
-    A(2, 3) = -Vd / Xdp;
+    Axx(2, 1) = -dPout_ddelta;
+    Axx(2, 2) = -D;
+    Axx(2, 3) = -Vd / Xdp;
 
-    A(3, 1) = -(Xd - Xdp) * Vd / Xdp;
-    A(3, 3) = -Xd / Xdp;
+    Axx(3, 1) = -(Xd - Xdp) * Vd / Xdp;
+    Axx(3, 3) = -Xd / Xdp;
 
 end
