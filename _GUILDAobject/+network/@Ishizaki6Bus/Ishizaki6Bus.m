@@ -9,7 +9,7 @@ classdef Ishizaki6Bus < PowerNetwork
         function obj = Ishizaki6Bus(alpha,opt)
             arguments
                 alpha (1,1) double = 1;               
-                opt.line {mustBeMember(opt.line, {'L23','L46','Both','None'})} = 'None'
+                opt.line {mustBeMember(opt.line, {'L23','L46','Both','None'})} = 'Both'
             end            
             str_filepath = mfilename("fullpath");
 
@@ -18,7 +18,7 @@ classdef Ishizaki6Bus < PowerNetwork
 
             tab_branch = readtable(bra_path);
 
-            tab_branch.R = tab_branch.R * alpha;
+            tab_branch.R = tab_branch.X * alpha;
             FromTo = tab_branch{:,["From","To"]};            
     
             switch opt.line
