@@ -19,6 +19,7 @@ classdef Ishizaki6Bus < PowerNetwork
             tab_branch = readtable(bra_path);
 
             tab_branch.R = tab_branch.X * alpha;
+            tab_branch{1:4,"R"} = 0;
             FromTo = tab_branch{:,["From","To"]};            
     
             switch opt.line

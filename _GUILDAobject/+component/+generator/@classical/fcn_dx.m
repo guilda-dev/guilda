@@ -18,7 +18,7 @@ function dx = fcn_dx(obj, t, x, V, I, u, param, omega0) %#ok
     Iq  = Vd/Xq;
     Pout = Vq*Iq + Vd*Id;
 
-    ddelta = omega0 * omega;
+    ddelta = 2 * omega0 * omega;
     domega = - D*omega - Pout + Pm;
     
     dx  = [ddelta; domega];
