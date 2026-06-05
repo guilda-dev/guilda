@@ -4,7 +4,7 @@ classdef odeLinearizer < handle
        odeLinearSystem
        odeNonUnitBus (:,1) double = []
 
-       Algorithm (1,1) string {mustBeMember(Algorithm, ["Kron","Feedback"])} = "Kron";
+       Algorithm (1,1) string {mustBeMember(Algorithm, ["Kron","Feedback","DAE"])} = "Kron";
    end
    
    methods
@@ -12,7 +12,7 @@ classdef odeLinearizer < handle
            arguments
                net 
                NonUnit = tools.vcellfun(@(busi) isempty(busi.a_Component), net.a_Bus);
-               opt.Algorithm  {mustBeMember(opt.Algorithm, ["Kron","Feedback"])} = "Feedback"
+               opt.Algorithm  {mustBeMember(opt.Algorithm, ["Kron","Feedback", "DAE"])} = "Feedback"
            end
            obj.odeNetwork = net;
            bus = obj.odeNetwork.a_Bus;
@@ -33,6 +33,8 @@ classdef odeLinearizer < handle
                    [A,B,C,D,E] = obj.get_LTI_viaKron;
                case "Feedback"
                    [A,B,C,D,E] = obj.get_LTI_viaFeedback;
+               case "DAE"
+                   [A,B,C,D,E] = obj.get_DAE;
            end
 
            if nargout == 1
@@ -48,6 +50,7 @@ classdef odeLinearizer < handle
        
    end
    methods(Access=protected)
+       [A, B, C, D, E] = get_DAE(obj)
        [A, B, C, D, E] = get_LTI_viaKron(obj)
        [A, B, C, D, E] = get_LTI_viaFeedback(obj)           
    end
