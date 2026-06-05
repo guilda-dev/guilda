@@ -61,43 +61,27 @@ function [A_dae, B_dae, C_dae, D_dae, E_dae] = get_DAE(obj,opt)
 
     switch opt
         case "theta&V" 
-            rm_S = [-rm_Q     , rm_P/rm_V;...
-                     rm_P/rm_V, rm_Q     ];
+            % rm_S = [-rm_Q     , rm_P/rm_V;...
+            %          rm_P/rm_V, rm_Q     ];
 
-            % さっきまで
             filt_o = [-    rm_Vi,       rm_Vr ;
                        rm_V\rm_Vr, rm_V\rm_Vi];
             filt_i = [-    rm_Vi,  rm_V\rm_Vr ;
                            rm_Vr,  rm_V\rm_Vi];
-            
-            % シンボリック
-            % filt_o = [-rm_V\rm_Vi, rm_V\rm_Vr;
-            %                 rm_Vr,      rm_Vi];
-            % filt_i = [-     rm_Vi, rm_V\rm_Vr ;
-            %                 rm_Vr, rm_V\rm_Vi];
-
-
 
             str_busvar = ["theta";"V"];
         case "theta&rho" 
-            rm_S = [-rm_Q, rm_P;...
-                     rm_P, rm_Q];
-            
-            % さっきまで
+            % rm_S = [-rm_Q, rm_P;...
+            %          rm_P, rm_Q];
+
             filt_o = [-rm_Vi,  rm_Vr ; 
                        rm_Vr,  rm_Vi];
             filt_i = [-rm_Vi,  rm_Vr ; 
                        rm_Vr,  rm_Vi];
-
-            % シンボリック
-            % filt_o = [-rm_Vi, rm_Vr ;
-            %            rm_Vr, rm_Vi];
-            % filt_i = [-rm_Vi, rm_Vr ; 
-            %            rm_Vr, rm_Vi];
             
             str_busvar = ["theta";"rho"];
         case "Vre&Vim"
-            rm_S = zeros(n_v, n_v);
+            % rm_S = zeros(n_v, n_v);
 
             filt_o = eye(n_v);
             filt_i = eye(n_v);

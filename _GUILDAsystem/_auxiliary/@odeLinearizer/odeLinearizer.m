@@ -5,6 +5,13 @@ classdef odeLinearizer < handle
        odeNonUnitBus (:,1) double = []
 
        Algorithm (1,1) string {mustBeMember(Algorithm, ["Kron","Feedback","DAE"])} = "Kron";
+
+       Kxx (:,:) double = []
+       Kxv (:,:) double = []
+       Kvx (:,:) double = []
+       Kvv (:,:) double = []
+       Lvv (:,:) double = []
+       
    end
    
    methods

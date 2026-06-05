@@ -139,7 +139,7 @@ classdef PowerNetwork < PowerSystemModel
         varargout = disp_pf_set(obj)
     
         % Static Analysis
-        sys = get_sys(obj)
+        [sys,lin] = get_sys(obj, opt)
         tab_Ybus2bus = get_admittance_matrix(obj)
         
         % Time simulation
