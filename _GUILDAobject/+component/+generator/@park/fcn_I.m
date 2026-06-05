@@ -18,10 +18,10 @@ function I = fcn_I(obj, t, x, V, I, u, para, omega0) %#ok
     Vd  = imag(Vdq);
     Vq  = real(Vdq);
     
-    terminal_q = ( (Xdpp-Xls)*Eq + (Xdp-Xdpp)*psid )/(Xdp-Xls);
-    terminal_d = ( (Xqpp-Xls)*Ed - (Xqp-Xqpp)*psiq )/(Xqp-Xls);
-    Id  = 1/Xdpp * (terminal_q-Vq); 
-    Iq  = 1/Xqpp * (Vd-terminal_d);
+    % terminal_q = ( (Xdpp-Xls)*Eq + (Xdp-Xdpp)*psid )/(Xdp-Xls);
+    % terminal_d = ( (Xqpp-Xls)*Ed - (Xqp-Xqpp)*psiq )/(Xqp-Xls);
+    Id  = 1/Xdpp * (( (Xdpp-Xls)*Eq + (Xdp-Xdpp)*psid )/(Xdp-Xls) - Vq); 
+    Iq  = 1/Xqpp * (Vd - ( (Xqpp-Xls)*Ed - (Xqp-Xqpp)*psiq )/(Xqp-Xls));
     Idq = Iq + 1j*Id;
     I   = exp(1j*delta) * conj(Idq);
 

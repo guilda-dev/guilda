@@ -128,7 +128,7 @@ classdef Component < PowerSystemModel
         [n_odeX, n_odeU, Mass, x0] = reset_odeset(obj, n_odeX, n_odeU, omega0)
 
         % get_sys
-        sys = get_sys(obj, x, V, I, u, opt)
+        [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 
         % get dx, I and y
         DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec) 

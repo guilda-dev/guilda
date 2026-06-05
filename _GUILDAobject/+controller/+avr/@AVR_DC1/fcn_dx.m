@@ -22,9 +22,14 @@ function dx = fcn_dx(obj, t, x, V, I, u, param, omega0) %#ok
     % 計測用変圧器
     dx1 = -Vtr + Vabs;
     % コンパレータ
-    Vcom = Vref + Vpss - Vtr - Vst;
+    Vcom = Vref + Vpss - Vtr - Vst;    
     % 増幅器
-    dx2 = ( -Vap + kap*Vcom )*( heaviside(Vap - Vap_min) - heaviside(Vap - Vap_max) );
+
+    dx2 = 0;
+    if Vap*Vcom<=0 || (Vap_min < Vap && Vap_max > Vap)
+        dx2 = -Vap + kap*Vcom;
+    end 
+
     % 励磁器
     dx3 = -( aex1 + aex2 * exp(bex*Vfld) ) * Vfld + Vap;
     % 安定化回路

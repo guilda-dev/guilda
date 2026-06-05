@@ -3,6 +3,7 @@ function sys = get_sys(obj, opt)
         obj 
         opt.port (1,1) {mustBeMember(opt.port, ["V2I", "I2V"])} = "V2I"
         opt.full (1,1) logical = false
+        opt.con  (1,1) logical = false
     end
 
     sys = tools.cellfun(@(c) c.get_sys("port", "V2I", "full", opt.full), obj.a_Component);
@@ -41,7 +42,7 @@ function sys = get_sys(obj, opt)
             inv_Cx = horzcat(Cx{:});
             inv_Du = horzcat(Du{:});       
             inv_Ax = blkdiag(Ax{:}) - vertcat(Bv{:}) * inv_Dv * inv_Cx;                       
-            inv_Bv = vertcat(Bv{:})*inv_Dv;            
+            inv_Bv = vertcat(Bv{:}) * inv_Dv;            
             inv_Bu = blkdiag(Bu{:}) - vertcat(Bv{:}) * inv_Dv * inv_Du;
 
             A =  inv_Ax;

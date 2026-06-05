@@ -28,21 +28,20 @@ function rvec_dx = fcn_dx(obj, t, x, V, I, u, para, omega0) %#ok
     Vd  = imag(Vdq);
     Vq  = real(Vdq);
     
-    % Current
-    terminal_q = ( (Xdpp-Xls)*Eq + (Xdp-Xdpp)*psid )/(Xdp-Xls);
-    terminal_d = ( (Xqpp-Xls)*Ed - (Xqp-Xqpp)*psiq )/(Xqp-Xls);
-    Id  = 1/Xdpp * (terminal_q-Vq); 
-    Iq  = 1/Xqpp * (Vd-terminal_d);
+    % Current    
+    Id  = 1/Xdpp * (( (Xdpp-Xls)*Eq + (Xdp-Xdpp)*psid )/(Xdp-Xls) - Vq); 
+    Iq  = 1/Xqpp * (Vd - ( (Xqpp-Xls)*Ed - (Xqp-Xqpp)*psiq )/(Xqp-Xls));
     Pout =  Vd*Id + Vq*Iq;
     
-    % Diff Fcn
-    ddelta = 2 * pi * omega0 *omega;
-    domega = - D*omega - Pout + Pm;
+    % Diff Fcn    
     dpsiq  = -psiq -Ed -(Xqp-Xls)*Iq;
-    dpsid  = -psid +Eq -(Xdp-Xls)*Id;
-    dEq    = - Eq - (Xd-Xdp)*( Id + (Xdp-Xdpp)/(Xdp-Xls)^2 * dpsid) + Vfd;
-    dEd    = - Ed + (Xq-Xqp)*( Iq + (Xqp-Xqpp)/(Xqp-Xls)^2 * dpsiq);
+    dpsid  = -psid +Eq -(Xdp-Xls)*Id;    
     
-    rvec_dx = [ddelta; domega; dEq; dEd; dpsiq; dpsid];
+    rvec_dx = [                                       2 * pi * omega0 *omega; 
+                                                       - D*omega - Pout + Pm;                
+                - Eq - (Xd-Xdp)*( Id + (Xdp-Xdpp)/(Xdp-Xls)^2 * dpsid) + Vfd; 
+                      - Ed + (Xq-Xqp)*( Iq + (Xqp-Xqpp)/(Xqp-Xls)^2 * dpsiq); 
+                                                                       dpsiq;
+                                                                       dpsid];
 
 end

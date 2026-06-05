@@ -31,4 +31,9 @@ function [DAEvec, u, y_name] = get_dx_algebraic(obj, t, x, Vi, Ii, u, y_name, DA
     DAEvec([rv_x;rv_u]) = DAEvec([rv_x;rv_u]) + [X; u_con - rv_U];        
     u = obj.fv_odeY(t, x_con, Vi, Ii, u_con);  
     y_name = obj.str_y;
+    
+end
+
+function rv_aEb = ismember(a,b)
+    rv_aEb = cast(sum(a==b',2),'logical');
 end

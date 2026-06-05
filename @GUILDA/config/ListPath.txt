@@ -3,4 +3,3 @@ _GUILDAsystem/_auxiliary
 _GUILDAsystem/_auxiliary/SystemTools
 _GUILDAobject
 _GUILDAtutorial
-ResearchProject2026

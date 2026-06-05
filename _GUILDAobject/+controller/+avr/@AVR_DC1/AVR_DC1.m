@@ -4,9 +4,9 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.base
         function obj = AVR_DC1(tag, param)
             arguments               
                 tag           (1,1) string 
-                param.ttr     (1,1) double = 0.00
+                param.ttr     (1,1) double = 0.01
                 param.tap     (1,1) double = 0.2
-                param.kap     (1,1) double = 1000 
+                param.kap     (1,1) double = 0
                 param.Vap_max (1,1) double = Inf
                 param.Vap_min (1,1) double = -Inf  
                 param.tex     (1,1) double = 0.314
@@ -78,6 +78,9 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.base
 
             obj.cv_Xequilibrium = [Vtr_st; Vap_st; Vfld_st; Vst_st];
             obj.cv_Uequilibrium = [Vref_st;Vpss_st];            
+
+            obj.c_Vequilibrium = V;
+            obj.c_Iequilibrium = [];
         end
         function set_PSS(obj, cls)
             obj.a_LocalController{1} = cls;

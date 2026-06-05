@@ -56,6 +56,12 @@ classdef LocalController < PowerSystemModel
         cv_Xequilibrium (:,1) double = zeros(0,1)   
         cv_Uequilibrium (:,1) double = zeros(0,1)   
     end    
+
+    properties(SetAccess=protected)
+        c_Vequilibrium (:,1) double = zeros(0,1)   
+        c_Iequilibrium (:,1) double = zeros(0,1)   
+    end    
+    
     properties(SetAccess=protected)
         para_dynamics
     end
@@ -90,7 +96,7 @@ classdef LocalController < PowerSystemModel
         [DAEvec, u, y_name] = get_dx_algebraic(obj, t, x, Vi, Ii, u, y_name, DAEvec)                
 
         % get sys
-        sys = get_sys(obj,x,V,u,opt)
+        [sys, varargout] = get_sys(obj,x,V,I,u,opt)
     end
 
 

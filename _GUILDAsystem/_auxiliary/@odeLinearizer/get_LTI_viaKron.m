@@ -3,7 +3,18 @@ function [Ax_ode, Bx_ode, Cx_ode, Dx_ode, E_ode] = get_LTI_viaKron(obj)
     bus = obj.odeNetwork.a_Bus;
     ssFromBus = tools.cellfun(@(bs) bs.get_sys("port", "V2I", "full", false), bus);    
 
-    [input, output] = get_IO_port;
+    busInames = cell2mat( tools.cellfun(@(bi) bi.attach_tag(["Ire";"Iim"]), bus) );
+    busVnames = cell2mat( tools.cellfun(@(bi) bi.attach_tag(["Vre";"Vim"]), bus) );
+
+    x = tools.cellfun(@(s) string(s.StateName),  ssFromBus);
+    i = tools.cellfun(@(s) string(s.InputName),  ssFromBus);
+    o = tools.cellfun(@(s) string(s.OutputName), ssFromBus);
+
+    input  = vertcat(i{:});
+    output = vertcat(o{:});
+
+    lv_input  = ismember(input, busVnames);
+    lv_output = ismember(output,busInames);
 
     Ax = tools.cellfun(@(SS) SS.A         , ssFromBus);
     Bv = tools.cellfun(@(SS) SS.B(:,1:2)  , ssFromBus);
@@ -37,29 +48,10 @@ function [Ax_ode, Bx_ode, Cx_ode, Dx_ode, E_ode] = get_LTI_viaKron(obj)
 
 
     sys = dss(Ax_ode, Bx_ode, Cx_ode, Dx_ode, E_ode);
-    sys.InputName  = input;
-    sys.StateName  = output;
-    sys.OutputName = output;    
+    sys.InputName  = input(~lv_input);
+    sys.StateName  = vertcat(x{:});
+    sys.OutputName = output(~lv_output);    
 
     obj.odeLinearSystem = sys;
-
-    function [input, output] = get_IO_port()
-        BUS = obj.odeNetwork.a_Bus;
-
-        input  = cell(numel(BUS),1);
-        output = cell(numel(BUS),1);
-        for argi = 1:numel(BUS)
-            COMP = BUS{argi}.a_Component;            
-                          
-            str_x = cell2mat( cellfun(@(C) C.attach_tag(C.str_x), COMP, 'UniformOutput', false) );
-            str_u = cell2mat( cellfun(@(C) C.attach_tag(C.str_u), COMP, 'UniformOutput', false) );                                                      
-
-            input{argi}  = str_u;
-            output{argi} = str_x;
-        end
-
-        input  = cell2mat(input);
-        output = cell2mat(output);
-   end
 
 end

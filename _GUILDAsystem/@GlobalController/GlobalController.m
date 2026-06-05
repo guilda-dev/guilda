@@ -34,7 +34,7 @@ classdef GlobalController < PowerSystemModel
         JacobiDyu        
     end    
     properties (SetAccess=protected)
-        PowerNetwork
+        PowerNetwork        
     end
     properties (SetAccess=protected, Hidden)
         controlledUnits
@@ -88,7 +88,38 @@ classdef GlobalController < PowerSystemModel
                 idx = idx + 1;
             end
             
-        end        
+        end
+
+        % get sys
+        function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
+            arguments
+                obj                 
+                x        (:,1) double  = obj.cv_Xequilibrium
+                V        (:,1) double  = zeros(2,1)
+                I        (:,1) double  = zeros(2,1)
+                u        (:,1) double  = obj.cv_Uequilibrium
+                opt.full (1,1) logical = true 
+            end
+
+            A = obj.JacobiAxx(0,x,V,I,u);
+            B = [obj.JacobiBxv(0,x,V,I,u),obj.JacobiBxu(0,x,V,I,u)];            
+
+            C = obj.JacobiCyx(0,x,V,I,u);
+            D = [obj.JacobiDyv(0,x,V,I,u),obj.JacobiDyu(0,x,V,I,u)];            
+
+            E = obj.rm_odeMass(0,x,V,I,u);
+
+            sys = dss(A,B,C,D,E);
+
+            a_Comp = obj.controlledUnits;            
+            xNames = obj.attach_tag(obj.str_x);
+            uNames = cellfun(@(s) s.attach_tag(s.str_y), a_Comp);
+            yNames = cellfun(@(s) s.attach_tag(s.str_u(s.str_u==obj.str_y)), a_Comp);
+
+            sys.StateName  = xNames;
+            sys.InputName  = uNames;
+            sys.OutputName = yNames;
+        end
     end    
     methods (Access={?Component,?LocalController})        
         function set_parent(obj,net)

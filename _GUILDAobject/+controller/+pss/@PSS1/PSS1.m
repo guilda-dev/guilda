@@ -4,7 +4,7 @@ classdef (Sealed = true) PSS1 < controller.pss.base
         function obj = PSS1(tag, param)
             arguments            
                 tag            (1,1) string
-                param.kpss     (1,1) double = 20
+                param.kpss     (1,1) double = 5
                 param.tWS      (1,1) double = 10
                 param.tn1      (1,1) double = 0.05
                 param.td1      (1,1) double = 0.02

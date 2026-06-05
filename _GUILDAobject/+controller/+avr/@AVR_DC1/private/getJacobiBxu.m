@@ -10,5 +10,5 @@ function Bxu = getJacobiBxu(t, x, V, I, u, param, omega0) %#ok
 
     Bxu = zeros(nx,nu);
 
-    Bxu(2,2) = kap*( heaviside(Vap - Vap_min) - heaviside(Vap - Vap_max) );
+    Bxu(2,[1,2]) = [kap,kap]*( heaviside(Vap - Vap_min) - heaviside(Vap - Vap_max) );
 end
