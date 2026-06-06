@@ -123,7 +123,7 @@ classdef PowerNetwork < PowerSystemModel
         branch = add_branch(obj, str_Branch, from_to, opt)
         add_global_controller(obj, a_Gcon)
         remove_bus( obj, str_BusTag)
-        remove_branch( obj, str_BranchTag)
+        remove_branch( obj, tag)
         remove_global_controller( obj, str_GconTag)
         
         % initialize

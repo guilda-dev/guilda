@@ -14,12 +14,11 @@ classdef Ishizaki6Bus < PowerNetwork
             str_filepath = mfilename("fullpath");
 
             new_path = replace(str_filepath,[filesep,'Ishizaki6Bus'],'');
-            bra_path = [new_path,[filesep,'branch',filesep,'parameter.csv']];
+            bra_path = [new_path,[filesep,'branch_origin',filesep,'parameter.csv']];
 
             tab_branch = readtable(bra_path);
 
-            tab_branch.R = tab_branch.X * alpha;
-            tab_branch{1:4,"R"} = 0;
+            tab_branch.R(5:end) = tab_branch.X(5:end) * alpha;            
             FromTo = tab_branch{:,["From","To"]};            
     
             switch opt.line
@@ -34,7 +33,8 @@ classdef Ishizaki6Bus < PowerNetwork
                     tab_branch = tab_branch(~lv_FT,:);
                 case 'None'
             end
-
+            
+            bra_path = [new_path,[filesep,'branch',filesep,'parameter.csv']];
             writetable(tab_branch,bra_path);
 
             str_dirpath  = fileparts(str_filepath);           
