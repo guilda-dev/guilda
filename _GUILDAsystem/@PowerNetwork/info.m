@@ -12,7 +12,7 @@ function info(obj, opt)
     
     bar  = string(repmat('=',1,100));
     sep  = @(s) disp( newline+bar+newline+"  "+s+newline+bar+newline);
-    list = @(c) string([' ',tools.hcellfun(@(ci) [char(ci.str_tag),'  '], c)]);
+    list = @(c) string([' ',tools.harrayfun(@(i) [char(c(i).str_tag),'  '], 1:numel(c))]);
 
     a_Bus = net.a_Bus;
     a_Bra = net.a_Branch;

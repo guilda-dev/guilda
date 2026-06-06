@@ -152,8 +152,7 @@ classdef Component < PowerSystemModel
 %% Get Methods
     methods
         function x = get.cv_Xequilibrium_all(obj)
-            a_con = [obj.a_GlobalController; obj.a_LocalController];
-            x_con = tools.vcellfun(@(comp) comp.cv_Xequilibrium, a_con);
+            x_con = tools.vcellfun(@(comp) comp.cv_Xequilibrium, obj.a_LocalController);
             x     = [obj.cv_Xequilibrium; x_con];
         end
         function p = get.parent(obj)

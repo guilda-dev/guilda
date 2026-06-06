@@ -22,7 +22,7 @@ function [net, dict_cls] = struct(obj, l_disp, str_header, dict_cls)
             inst_pi = obj.(str_pi);
         catch
             if l_disp
-                disp("(!) Failed to analyze. >> " + str_header_i)
+                disp("(!) Failed to get.  >> " + str_header_i)
             end
             continue
         end
@@ -43,9 +43,12 @@ function [out, dict_cls] = copy(data_inst, l_disp, str_head, dict_cls)
     elseif isa(data_inst, "LayerPackage")
         [out,dict_cls] = data_inst.struct(l_disp, str_head, dict_cls);
 
+    elseif isa(data_inst, "auxiliary")
+        out = "out of target.";
+
     elseif isa(data_inst,"handle")
         if l_disp
-            disp("(!) Unable to copy.    >> "+str_head)
+            disp("(!) Unable to copy. >> "+str_head)
         end
         out = nan;
     else
