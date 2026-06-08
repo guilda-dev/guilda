@@ -19,13 +19,14 @@ function flag = validate(obj, l_message)
     rv_X = obj.cv_Xequilibrium;
     rv_U = obj.cv_Uequilibrium;
     rv_V = [real(c_V); imag(c_V)];
+    rv_I = [real(c_I); imag(c_I)];
     
     time  = 0;
     delta = 1e-5;
 
-    fcn_dx = @(x,v,u) obj.fv_odeDiff(time, x, v, u);
-    fcn_I  = @(x,v,u) obj.fv_odeI(   time, x, v, u);
-    fcn_Y  = @(x,v,u) obj.fv_odeY(   time, x, v, u);
+    fcn_dx = @(x,v,i,u) obj.fv_odeDiff(time, x, v, i, u);
+    fcn_I  = @(x,v,i,u) obj.fv_odeI(   time, x, v, i, u);
+    fcn_Y  = @(x,v,i,u) obj.fv_odeY(   time, x, v, i, u);
 
 
     % make variable
@@ -43,30 +44,30 @@ function flag = validate(obj, l_message)
     v = @(c)   [real(c); imag(c)];
 
     % validate dx=0 and I=Ist at the equilibrium point
-    dx_test = reshape(          fcn_dx(rv_X,rv_V,rv_U), nx, 1);
-    I_test  = reshape( v(fcn_I( rv_X,rv_V,rv_U) - c_I),  2, 1);
+    dx_test = reshape(          fcn_dx(rv_X,rv_V,rv_I,rv_U), nx, 1);
+    I_test  = reshape( v(fcn_I( rv_X,rv_V,rv_I,rv_U) - c_I),  2, 1);
 
     % get linearized matrix numerically
-    Axx_test = reshape(    tools.harrayfun(@(i) fcn_dx(rv_X + e(i,nx), rv_V, rv_U) - fcn_dx(rv_X - e(i,nx), rv_V, rv_U), 1:nx) / delta , nx, nx);
-    Bxv_test = reshape(    tools.harrayfun(@(i) fcn_dx(rv_X, rv_V + e(i, 2), rv_U) - fcn_dx(rv_X, rv_V - e(i, 2), rv_U), 1: 2) / delta , nx,  2);
-    Bxu_test = reshape(    tools.harrayfun(@(i) fcn_dx(rv_X, rv_V, rv_U + e(i,nu)) - fcn_dx(rv_X, rv_V, rv_U - e(i,nu)), 1:nu) / delta , nx, nu);
-    Cix_test = reshape( v( tools.harrayfun(@(i) fcn_I( rv_X + e(i,nx), rv_V, rv_U) - fcn_I( rv_X - e(i,nx), rv_V, rv_U), 1:nx) / delta),  2, nx);
-    Div_test = reshape( v( tools.harrayfun(@(i) fcn_I( rv_X, rv_V + e(i, 2), rv_U) - fcn_I( rv_X, rv_V - e(i, 2), rv_U), 1: 2) / delta),  2,  2);
-    Diu_test = reshape( v( tools.harrayfun(@(i) fcn_I( rv_X, rv_V, rv_U + e(i,nu)) - fcn_I( rv_X, rv_V, rv_U - e(i,nu)), 1:nu) / delta),  2, nu);
-    Cyx_test = reshape(    tools.harrayfun(@(i) fcn_Y( rv_X + e(i,nx), rv_V, rv_U) - fcn_Y( rv_X - e(i,nx), rv_V, rv_U), 1:nx) / delta , ny, nx);
-    Dyv_test = reshape(    tools.harrayfun(@(i) fcn_Y( rv_X, rv_V + e(i, 2), rv_U) - fcn_Y( rv_X, rv_V - e(i, 2), rv_U), 1: 2) / delta , ny,  2);
-    Dyu_test = reshape(    tools.harrayfun(@(i) fcn_Y( rv_X, rv_V, rv_U + e(i,nu)) - fcn_Y( rv_X, rv_V, rv_U - e(i,nu)), 1:nu) / delta , ny, nu);
+    Axx_test = reshape(    tools.harrayfun(@(i) fcn_dx(rv_X + e(i,nx), rv_V, rv_I, rv_U) - fcn_dx(rv_X - e(i,nx), rv_V, rv_I, rv_U), 1:nx) / delta , nx, nx);
+    Bxv_test = reshape(    tools.harrayfun(@(i) fcn_dx(rv_X, rv_V + e(i, 2), rv_I, rv_U) - fcn_dx(rv_X, rv_V - e(i, 2), rv_I, rv_U), 1: 2) / delta , nx,  2);
+    Bxu_test = reshape(    tools.harrayfun(@(i) fcn_dx(rv_X, rv_V, rv_I, rv_U + e(i,nu)) - fcn_dx(rv_X, rv_V, rv_I, rv_U - e(i,nu)), 1:nu) / delta , nx, nu);
+    Cix_test = reshape( v( tools.harrayfun(@(i) fcn_I( rv_X + e(i,nx), rv_V, rv_I, rv_U) - fcn_I( rv_X - e(i,nx), rv_V, rv_I, rv_U), 1:nx) / delta),  2, nx);
+    Div_test = reshape( v( tools.harrayfun(@(i) fcn_I( rv_X, rv_V + e(i, 2), rv_I, rv_U) - fcn_I( rv_X, rv_V - e(i, 2), rv_I, rv_U), 1: 2) / delta),  2,  2);
+    Diu_test = reshape( v( tools.harrayfun(@(i) fcn_I( rv_X, rv_V, rv_I, rv_U + e(i,nu)) - fcn_I( rv_X, rv_V, rv_I, rv_U - e(i,nu)), 1:nu) / delta),  2, nu);
+    Cyx_test = reshape(    tools.harrayfun(@(i) fcn_Y( rv_X + e(i,nx), rv_V, rv_I, rv_U) - fcn_Y( rv_X - e(i,nx), rv_V, rv_I, rv_U), 1:nx) / delta , ny, nx);
+    Dyv_test = reshape(    tools.harrayfun(@(i) fcn_Y( rv_X, rv_V + e(i, 2), rv_I, rv_U) - fcn_Y( rv_X, rv_V - e(i, 2), rv_I, rv_U), 1: 2) / delta , ny,  2);
+    Dyu_test = reshape(    tools.harrayfun(@(i) fcn_Y( rv_X, rv_V, rv_I, rv_U + e(i,nu)) - fcn_Y( rv_X, rv_V, rv_I, rv_U - e(i,nu)), 1:nu) / delta , ny, nu);
     
     % get linearized matrix using methods
-    Axx_valid = reshape( obj.JacobiAxx(time, rv_X, rv_V, rv_U), nx, nx);
-    Bxv_valid = reshape( obj.JacobiBxv(time, rv_X, rv_V, rv_U), nx,  2);
-    Bxu_valid = reshape( obj.JacobiBxu(time, rv_X, rv_V, rv_U), nx, nu);
-    Cix_valid = reshape( obj.JacobiCix(time, rv_X, rv_V, rv_U),  2, nx);
-    Div_valid = reshape( obj.JacobiDiv(time, rv_X, rv_V, rv_U),  2,  2);
-    Diu_valid = reshape( obj.JacobiDiu(time, rv_X, rv_V, rv_U),  2, nu);
-    Cyx_valid = reshape( obj.JacobiCyx(time, rv_X, rv_V, rv_U), ny, nx);
-    Dyv_valid = reshape( obj.JacobiDyv(time, rv_X, rv_V, rv_U), ny,  2);
-    Dyu_valid = reshape( obj.JacobiDyu(time, rv_X, rv_V, rv_U), ny, nu);
+    Axx_valid = reshape( obj.JacobiAxx(time, rv_X, rv_V, rv_I, rv_U), nx, nx);
+    Bxv_valid = reshape( obj.JacobiBxv(time, rv_X, rv_V, rv_I, rv_U), nx,  2);
+    Bxu_valid = reshape( obj.JacobiBxu(time, rv_X, rv_V, rv_I, rv_U), nx, nu);
+    Cix_valid = reshape( obj.JacobiCix(time, rv_X, rv_V, rv_I, rv_U),  2, nx);
+    Div_valid = reshape( obj.JacobiDiv(time, rv_X, rv_V, rv_I, rv_U),  2,  2);
+    Diu_valid = reshape( obj.JacobiDiu(time, rv_X, rv_V, rv_I, rv_U),  2, nu);
+    Cyx_valid = reshape( obj.JacobiCyx(time, rv_X, rv_V, rv_I, rv_U), ny, nx);
+    Dyv_valid = reshape( obj.JacobiDyv(time, rv_X, rv_V, rv_I, rv_U), ny,  2);
+    Dyu_valid = reshape( obj.JacobiDyu(time, rv_X, rv_V, rv_I, rv_U), ny, nu);
 
 
     % make flag

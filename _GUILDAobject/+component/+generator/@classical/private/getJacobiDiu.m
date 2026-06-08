@@ -1,3 +1,7 @@
 function Diu = getJacobiDiu(t, x, V, I, u, param, omega0) %#ok
-    Diu = zeros(2,2);
+    
+    Xd = param(3);         
+    delta = x(1);
+    
+    Diu = [0, sin(delta)/Xd; 0, -cos(delta)/Xd];
 end

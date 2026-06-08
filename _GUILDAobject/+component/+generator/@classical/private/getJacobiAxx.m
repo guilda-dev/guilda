@@ -18,6 +18,6 @@ function Axx = getJacobiAxx(t, x, V, I, u, param, omega0) %#ok
     
     Axx = zeros(2, 2);
         
-    Axx(1, [1,2]) = [0, omega0];              
+    Axx(1, [1,2]) = [0, 2*pi*omega0];              
     Axx(2, [1,2]) = [-dP_ddelta, -D];  
 end
