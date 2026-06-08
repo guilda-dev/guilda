@@ -334,6 +334,9 @@ classdef (Sealed = true) odeSimulator < handle
             for i=1:numel(a_bus)
                 a_Comp = a_bus{i}.a_Component;                
 
+                b_idx_V = a_bus{i}.iv_odeX;
+                b_idx_I = a_bus{i}.iv_odeI;
+
                 for j=1:numel(a_Comp)
                     if isa(a_Comp{j}, 'component.generator.abstract') && ~a_Comp{j}.isConnect
                         c_idx = a_Comp{j}.iv_odeX;
@@ -360,6 +363,13 @@ classdef (Sealed = true) odeSimulator < handle
 
                         M0(c_idx, c_idx) = a_Comp{j}.rm_odeMass([], [], [], [], []);
                     end
+                end
+
+                if a_bus{i}.l_isFault
+                    x0([b_idx_V;b_idx_I]) = [real(a_bus{i}.c_Vequilibrium);
+                                             imag(a_bus{i}.c_Vequilibrium);
+                                             real(a_bus{i}.c_Iequilibrium);
+                                             imag(a_bus{i}.c_Iequilibrium)];
                 end
             end            
         end
