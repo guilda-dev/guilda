@@ -12,7 +12,7 @@ function info(obj, opt)
     
     bar  = string(repmat('=',1,100));
     sep  = @(s) disp( newline+bar+newline+"  "+s+newline+bar+newline);
-    list = @(c) string([' ',tools.harrayfun(@(i) [char(c(i).str_tag),'  '], 1:numel(c))]);
+    list = @(c) string([' ',tools.hcellfun(@(ci) [char(ci.str_tag),' '], c)]);
 
     a_Bus = net.a_Bus;
     a_Bra = net.a_Branch;
@@ -107,7 +107,7 @@ function info(obj, opt)
                 Input    = array2table( tools.vcellfun(@(x) x(:).', tab_com.cv_Uequilibrium), "VariableNames", str_u{1});
                 
                 Equilibrium = table(PowerFlow,State,Input);
-                tab_disp = [tab_disp, table(Equilibrium)];                   %#ok
+                tab_disp = [tab_disp, table(Equilibrium)]; %#ok
             end
             disp(newline+" << "+str_cls(i_cls)+" >>"+newline)
             disp(tab_disp);
@@ -141,9 +141,13 @@ function tab = cell2tab(cell_cls)
         for i_fd = 1:n_fd
             str_fdi = str_fd{i_fd};
             if isfield( a_clsi, str_fdi)
-                sct_cls(i_cls).(str_fdi) = a_clsi.(str_fdi);
+                if iscell(a_clsi.(str_fdi))
+                    sct_cls(i_cls).(str_fdi) = {a_clsi.(str_fdi)};
+                else
+                    sct_cls(i_cls).(str_fdi) = a_clsi.(str_fdi);
+                end
             else
-                sct_cls(i_cls).(str_fd{i_fd}) = [];
+                sct_cls(i_cls).(str_fdi) = [];
             end
         end
     end
