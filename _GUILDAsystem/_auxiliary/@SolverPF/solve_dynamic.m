@@ -10,11 +10,8 @@ function [cv_Vbus,flag,output] = solve_dynamic(obj, cm_Y, tab_PFset)
     idx_PV    = (tab_PFset.Type == "PV");
     
     % Initial State
-    Tinit = tab_PFset.Varg;
-    Tinit(isnan(Tinit)) = 0;
-    
-    Vinit     = tab_PFset.V;
-    Vinit(isnan(Vinit)) = 1;
+    Tinit = tab_PFset.Varg0;
+    Vinit = tab_PFset.V0;
 
     if M == 0
         Vc_0  = Vinit .* exp(1j * Tinit);

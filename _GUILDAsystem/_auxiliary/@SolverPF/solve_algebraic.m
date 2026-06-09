@@ -21,7 +21,10 @@ function [cv_Vbus,flag,output] = solve_algebraic(obj, cm_Y, tab_PFset)
     end
 
     % initial condition
-    rv_V0   = repmat([1;0],n_Bus,1);
+    V0 = tab_PFset.V0;
+    T0 = tab_PFset.Varg0;
+    
+    rv_V0 = reshape([V0.*cos(T0), V0.*sin(T0)].', [], 1);
 
     % optimoptions
 
