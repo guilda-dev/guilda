@@ -95,7 +95,8 @@ function [A_dae, B_dae, C_dae, D_dae, E_dae] = get_DAE(obj,opt)
     B_dae = blkdiag(eye(n_x),filt_o)      ...
             * B_dae;
 
-    str_busvar = reshape(str_busvar+(1:n_b),1,[]);
+    str_busvar = reshape(str_busvar+(1:n_b),2,[]);
+    str_busvar = reshape(str_busvar',1,[]);
 
     G = real( Y.Variables );
     B = imag( Y.Variables );
