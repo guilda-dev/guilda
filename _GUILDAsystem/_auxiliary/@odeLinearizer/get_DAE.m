@@ -28,7 +28,7 @@ function [A_dae, B_dae, C_dae, D_dae, E_dae] = get_DAE(obj,opt)
     n_v = size(Avx,1);
     n_u = size(Bxu,2);
 
-    A_temp = [Axx, Axv;  Avx, + Avv - Ymat];
+    A_temp = [Axx, Axv; -Avx, Ymat - Avv];
     B_temp = [Bxu; Bvu];
     
     A_dae = A_temp([1:n_x,(n_x+1):2:end,(n_x+2):2:end],[1:n_x,(n_x+1):2:end,(n_x+2):2:end]);
@@ -101,10 +101,11 @@ function [A_dae, B_dae, C_dae, D_dae, E_dae] = get_DAE(obj,opt)
     G = real( Y.Variables );
     B = imag( Y.Variables );
     obj.Lvv = filt_o * [-B,-G;G,-B] * filt_i;
+
     obj.Kxx = A_dae( 1:n_x, 1:n_x);
     obj.Kxv = A_dae( 1:n_x, n_x+(1:n_v));
     obj.Kvx = A_dae( n_x+(1:n_v), 1:n_x);
-    obj.Kvv = A_dae( n_x+(1:n_v), n_x+(1:n_v)) - obj.Lvv;
+    obj.Kvv = -obj.Lvv + A_dae( n_x+(1:n_v), n_x+(1:n_v));
 
 
     sys = dss(A_dae, B_dae, C_dae, D_dae, E_dae);
