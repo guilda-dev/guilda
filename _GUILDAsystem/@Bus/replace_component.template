@@ -49,6 +49,6 @@ ___KEY_CASES___
     
     obj.a_Component{lv_rmcub} = comp;   
     
-    comp.get_equilibrium(Vequilibrium, Iequilibrium);
+    comp.set_equilibrium(Vequilibrium, Iequilibrium);
     comp.set_odefcn(omega0);
 end
