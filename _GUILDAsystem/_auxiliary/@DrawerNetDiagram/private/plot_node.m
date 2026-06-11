@@ -31,7 +31,7 @@ function [h,s] = plot_node(ax, center_xyz, marker, radius, color, nodedata)
             h = draw_cone(ax, x0-radius, y0, z0-radius, radius*2, [0.7170 0.1920 0.1720], pi);
             s = get_lim_patch(h);
         case "none"
-            h = not_draw(ax, x0-radius, y0, z0-radius, radius*2, [0.7170 0.1920 0.1720], pi);
+            h = not_draw();
             s = get_lim_patch(h);
         otherwise
             h = draw_cuboid(ax, x0, y0, z0, radius, color);
