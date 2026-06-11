@@ -61,8 +61,8 @@ function [A_dae, B_dae, C_dae, D_dae, E_dae] = get_DAE(obj,opt)
 
     switch opt
         case "theta&V" 
-            % rm_S = [-rm_Q     , rm_P/rm_V;...
-            %          rm_P/rm_V, rm_Q     ];
+            rm_S = [-rm_Q     , rm_P/rm_V;...
+                     rm_P/rm_V, rm_Q     ];
 
             filt_o = [-    rm_Vi,       rm_Vr ;
                        rm_V\rm_Vr, rm_V\rm_Vi];
@@ -71,8 +71,8 @@ function [A_dae, B_dae, C_dae, D_dae, E_dae] = get_DAE(obj,opt)
 
             str_busvar = ["theta";"V"];
         case "theta&rho" 
-            % rm_S = [-rm_Q, rm_P;...
-            %          rm_P, rm_Q];
+            rm_S = [-rm_Q, rm_P;...
+                     rm_P, rm_Q];
 
             filt_o = [-rm_Vi,  rm_Vr ; 
                        rm_Vr,  rm_Vi];
@@ -81,7 +81,7 @@ function [A_dae, B_dae, C_dae, D_dae, E_dae] = get_DAE(obj,opt)
             
             str_busvar = ["theta";"rho"];
         case "Vre&Vim"
-            % rm_S = zeros(n_v, n_v);
+            rm_S = zeros(n_v, n_v);
 
             filt_o = eye(n_v);
             filt_i = eye(n_v);
@@ -100,7 +100,7 @@ function [A_dae, B_dae, C_dae, D_dae, E_dae] = get_DAE(obj,opt)
 
     G = real( Y.Variables );
     B = imag( Y.Variables );
-    obj.Lvv = filt_o * [-B,-G;G,-B] * filt_i;
+    obj.Lvv = filt_o * [-B,-G;G,-B] * filt_i + rm_S;
 
     obj.Kxx = A_dae( 1:n_x, 1:n_x);
     obj.Kxv = A_dae( 1:n_x, n_x+(1:n_v));
