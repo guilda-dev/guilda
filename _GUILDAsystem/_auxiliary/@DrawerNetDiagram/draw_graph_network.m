@@ -190,13 +190,13 @@ function draw_graph_network(obj)
     ax.XColor  = "none";
     ax.YColor  = "none";
     ax.ZColor  = "none";
-    grid(    ax, 'on');
+    % grid(    ax, 'on');
     obj.GridWidth = obj.GridWidth;
     zticks(0)
-    arrayfun(@(x) plot(x*[1,1],[0,0.005],'k-',"LineWidth",1), 0:0.1:1)
-    arrayfun(@(y) plot([0,0.005],y*[1,1],'k-',"LineWidth",1), 0:0.1:1)
-    arrayfun(@(x) plot(x*[1,1],[0.995,1],'k-',"LineWidth",1), 0:0.1:1)
-    arrayfun(@(y) plot([0.995,1],y*[1,1],'k-',"LineWidth",1), 0:0.1:1)
+    % arrayfun(@(x) plot(x*[1,1],[0,0.005],'k-',"LineWidth",1), 0:0.1:1)
+    % arrayfun(@(y) plot([0,0.005],y*[1,1],'k-',"LineWidth",1), 0:0.1:1)
+    % arrayfun(@(x) plot(x*[1,1],[0.995,1],'k-',"LineWidth",1), 0:0.1:1)
+    % arrayfun(@(y) plot([0.995,1],y*[1,1],'k-',"LineWidth",1), 0:0.1:1)
     axis(    ax, 'vis3d');
     pbaspect(ax, 'auto');
     daspect( ax, [1 1 1]);
