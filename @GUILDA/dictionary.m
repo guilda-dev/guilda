@@ -57,7 +57,7 @@ end
 
 function data = make_classlist(data, cell_dirlist, l_disp)
 
-    list = dir(fullfile( GUILDA.pwd, cell_dirlist{:} ));
+    list = dir(fullfile( pwd, cell_dirlist{:} ));
     for idx = 1:numel(list)
         char_name = list(idx).name;
 
