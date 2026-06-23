@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the class "Continuation_Power_Flow".-->
+<rsccat version="2" locale="en" product="GUILDA">
+    <message>        
+        <entry key="EmptyBus">No bus name has been specified.</entry>         
+    </message>
+</rsccat>
