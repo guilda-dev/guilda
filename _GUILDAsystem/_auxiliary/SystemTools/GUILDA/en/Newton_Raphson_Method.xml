@@ -1,0 +1,7 @@
+<!--This is an XML file containing error messages related to the class "Newton Raphson Method".-->
+<rsccat version="2" locale="en" product="GUILDA">
+    <message>        
+        <entry key="InvalidInput">Invalid input argument. Input argument must be of type `double`, a function handle, or a symbolic expression.</entry> 
+        <entry key="MaxIteration">The calculation was performed up to the maximum number of iterations, but it failed to converge.</entry>         
+    </message>
+</rsccat>
