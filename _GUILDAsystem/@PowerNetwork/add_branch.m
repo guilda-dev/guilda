@@ -28,7 +28,7 @@ function bra = add_branch(obj, Type, from_to, opt)
         assert(ir_bus(1),"Bus class '"+from_to(1)+"' not found.")
         assert(ir_bus(2),"Bus class '"+from_to(2)+"' not found.")
         
-        a_Bus = obj.a_Bus(ir_bus);
+        a_Bus = net.a_Bus(ir_bus);
     end
 
     n_Branch  = numel(obj.a_Branch);

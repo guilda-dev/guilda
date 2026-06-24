@@ -79,6 +79,10 @@ classdef Component < PowerSystemModel
         X_offset 
         U_offset 
     end
+    properties (SetAccess={?Continuation_Power_Flow})
+        PQ2BusG = @(t,V,u) zeros(2,1)
+        PQ2BusL = @(t,V,u) zeros(2,1)
+    end
 
     
     

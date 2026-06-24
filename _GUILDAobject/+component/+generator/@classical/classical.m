@@ -40,72 +40,28 @@ classdef classical < component.generator.abstract
 
     methods
         dx = fcn_dx(obj, t, x, V, I, u, param, omega0)
-        I  = fcn_I(obj, t, x, V, I, u, param, omega0)
+        I  = fcn_I(obj, t, x, V, I, u, param, omega0)        
         y  = fcn_Y(obj, t, x, V, I, u, param, omega0)
-        M  = fcn_Mass(obj, t, x, V, I, u, param, omega0)
+        M  = fcn_Mass(obj, t, x, V, I, u, param, omega0)        
     end
 
     methods
-        function [Ax, Bv, Bu, Cx, Dv, Du] = getLinearSystem(obj, t, xst, Vst, ust)         
+        function PQG = getCompPQG(obj,x,V,u,param) %#ok
+            delta = x(1);
+            E     = u(2);
+            Vabs  = abs(V);            
 
-            arguments
-                obj                 
-                t   (1,1) double = 0;
-                xst (:,1) double = obj.cv_Xequilibrium
-                Vst (:,1) double = [real(obj.parent.c_Vequilibrium); imag(obj.parent.c_Vequilibrium)]
-                ust (:,1) double = obj.cv_Uequilibrium
-            end
+            Xd = param(3);
+            Xq = param(4);    
 
-            Ax = obj.JacobiA(t, xst, Vst, ust);
-            Bv = obj.JacobiB(t, xst, Vst, ust);
-            Cx = obj.JacobiC(t, xst, Vst, ust);
-            Dv = obj.JacobiD(t, xst, Vst, ust);                   
+            phi = delta - angle(V);
 
-            Bu = [zeros(1,2);[0,1]];
-            Du =  zeros(2,2);
+            PQG = [(E * Vabs / Xd) * sin(phi) + 0.5 * Vabs^2 * (1/Xq - 1/Xd) * sin(2*phi);            
+                   (E * Vabs / Xd) * cos(phi) - Vabs^2 * (cos(phi)^2 / Xd + sin(phi)^2 / Xq)];            
+        end
 
-            sys = ss(Ax, [Bv,Bu], Cx, [Dv,Du]);
-
-            for i=1:numel(obj.str_x)                
-                StateName = arrayfun(@(n) char(n+"_"+obj.str_tag), obj.str_x, 'UniformOutput', false);
-            end
-
-            str_i = [["Vre";"Vim"]; obj.str_u];
-            for i=1:numel(str_i)
-                InputGroup.(str_i(i)+"_"+obj.str_tag) = i;                    
-                InputName = arrayfun(@(n) char(n+"_"+obj.str_tag), str_i, 'UniformOutput', false);
-            end
-
-            str_o = ["Ire";"Iim"];
-            for i=1:numel(str_o)
-                OutputGroup.(str_o(i)+"_"+obj.str_tag) = i;                    
-                OutputName = arrayfun(@(n) char(n+"_"+obj.str_tag), str_o, 'UniformOutput', false);
-            end
-
-            % InputName = obj.attach_tag([["Vre";"Vim"]; obj.str_u]);
-            % for i=1:numel(InputName)
-            %     InputGroup.(InputName(i)) = i;       
-            % end
-            % 
-            % OutputName = obj.attach_tag(["Ire";"Iim"]);
-            % for i=1:numel(OutputName)
-            %     OutputGroup.(OutputName(i)) = i;       
-            % end
-            
-            sys.StateName   = StateName;
-            sys.InputGroup  = InputGroup;
-            sys.InputName   = InputName;
-            sys.OutputGroup = OutputGroup;   
-            sys.OutputName  = OutputName;            
-
-            Ax = sys.A;
-            Bv = sys.B(:,1:2);
-            Bu = sys.B(:,3:4);
-            Cx = sys.C;
-            Dv = sys.D(:,1:2);
-            Du = sys.D(:,3:4);
-
-            obj.odeLinearSystem = sys;
-        end                       
+        function PQL = getCompPQL(obj,x,V,u,param) %#ok
+            PQL = zeros(2,1);
+        end        
     end
 end

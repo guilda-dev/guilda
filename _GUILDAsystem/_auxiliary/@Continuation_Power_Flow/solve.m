@@ -22,6 +22,6 @@ function [sol,sol_pred] = solve(obj)
         Iteration = Iteration + 1;                
     end
 
-    obj.CPF_Result.x_sol = [obj.rm_BusEM * sol(1:end-1)      + obj.CONSTANT; sol(end)     ];
-    obj.CPF_Result.x_prd = [obj.rm_BusEM * sol_pred(1:end-1) + obj.CONSTANT; sol_pred(end)];
+    obj.CPF_Result.x_sol = [obj.rm_BusEM * sol(1:end-1,:)      + obj.CONSTANT; sol(end,:)     ];
+    obj.CPF_Result.x_prd = [obj.rm_BusEM * sol_pred(1:end-1,:) + obj.CONSTANT; sol_pred(end,:)];
 end
