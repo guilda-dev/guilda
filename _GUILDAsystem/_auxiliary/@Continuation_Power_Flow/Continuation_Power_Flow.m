@@ -246,8 +246,7 @@ classdef (Sealed = true) Continuation_Power_Flow < handle
     end
 
     methods (Access = {?Continuation_Power_Flow})
-        func = get_PFeq_Bus(obj,x,Ymat);
-        func = get_PFeq_GBus(obj,x,Ymat);                                                    
+        func = get_PFeq(obj,x,Ymat);        
     end
 
     methods (Access=private, Hidden)
