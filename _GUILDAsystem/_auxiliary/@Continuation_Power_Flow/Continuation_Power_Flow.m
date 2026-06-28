@@ -77,6 +77,7 @@ classdef (Sealed = true) Continuation_Power_Flow < handle
         CONSTANT (:,1) double = []
         rm_BusRM (:,:) double
         rm_BusEM (:,:) double
+        rv_BusVi (:,1) double
     end
     
     methods
@@ -98,87 +99,147 @@ classdef (Sealed = true) Continuation_Power_Flow < handle
             end            
 
             if isempty(obj.CPFFcn)
-                Ymat = net.get_admittance_matrix.Variables;
-                if obj.CPFUseInternal
-                    obj.CPFFcn = @(x) obj.get_PFeq_GBus(x,Ymat);                
-                else
-                    obj.CPFFcn = @(x) obj.get_PFeq_Bus(x,Ymat);                
-                end                    
+                Ymat = net.get_admittance_matrix.Variables;                
+                obj.CPFFcn = @(x) obj.get_PFeq(x,Ymat);
             end
             obj.CPF_NRM = Newton_Raphson_Method("NRMFcn",obj.CPFFcn,"NRMJac",[],"NRMVal",0);
             obj.CPFJac  = obj.CPF_NRM.NRMJac;       
 
             if isempty(obj.CPFBus)
                 warning(msg('GUILDA:Continuation_Power_Flow:EmptyBus'))
-            end                                                        
-
-            a_Bus = net.a_Bus;
-            n_Bus = numel(a_Bus);
-            V_BRM = cell(n_Bus,1);            
-            V_BEM = cell(n_Bus,1);           
-
-            init  = cell(n_Bus,1);            
-            CONST = cell(n_Bus,1);            
-            idx_V = 0;
+            end                                                                                
 
             useInt = obj.CPFUseInternal;
-            idx23  = [useInt,~useInt]*[3;2];
+            a_Bus = net.a_Bus;
+            n_Bus = numel(a_Bus);
+            id_VX = 0;
+            
+            R = cell(1,n_Bus);
+            E = cell(1,n_Bus);
+            C = cell(n_Bus,1);
+            I = cell(n_Bus,1);
+
             for i=1:n_Bus
-                i_Bus  = a_Bus{i};                
+                i_Bus = a_Bus{i};
+                a_Comp = i_Bus.a_Component;
+                n_Comp = numel(a_Comp);    
+            
                 tab_PF = i_Bus.get_pf_set();                
-                rv_Veq = [abs(i_Bus.c_Vequilibrium);angle(i_Bus.c_Vequilibrium)];                
-
-                ExtraX  = eye(3);
-                switch tab_PF{:,"Type"}                    
-                    case "PV"                                                
-                        rv_Xeq = i_Bus.a_Component{1}.cv_Xequilibrium(1);
-
-                        C = [diag([~useInt,0]) * rv_Veq; zeros(useInt,1)];
-                        R = idx_V + [1,ones(useInt,1)*[2,3]];
-                        E = idx_V + [  ones(1,useInt),2,ones(1,useInt)*3];
-                        
-                        init{i} = ExtraX([useInt,true,useInt],:) * [rv_Veq;rv_Xeq];
-
-                    case "PQ"   
-                        C = ExtraX([true(1,2),useInt],:) * zeros(3,1);
-                        R = idx_V + (1:2);
-                        E = R;
-
-                        init{i} = rv_Veq;
-
-                    case "slack"                                  
-                        rv_Xeq = i_Bus.a_Component{1}.cv_Xequilibrium(1);
-
-                        C = [~useInt * eye(2) * rv_Veq; rv_Xeq(useInt)];
-                        R = idx_V + zeros(useInt,1) + (1:2);
-                        E = R;
-
-                        init{i} = rv_Veq(repmat(useInt,2,1));
-                end     
-
-                a_Comp = i_Bus.a_Component{1};                
-                params = a_Comp.tab_parameter.dynamics{:,a_Comp.str_para};
-                a_Comp.PQ2BusG = @(x,V,u) a_Comp.getCompPQG(x,V,u,params);
-                a_Comp.PQ2BusL = @(x,V,u) a_Comp.getCompPQL(x,V,u,params);
+                rv_Veq = [abs(i_Bus.c_Vequilibrium);angle(i_Bus.c_Vequilibrium)];                    
+            
+                Ci = cell(n_Comp,1);
+                Ri = cell(1,n_Comp);
+                Ei = cell(1,n_Comp);
+                Ii = cell(n_Comp,1);
                 
-                V_BRM{i} = R';
-                V_BEM{i} = E';
-                CONST{i} = C;
+                switch tab_PF{:,"Type"}
+                    case "slack"  
+                        i_Bus.iv_CPFV = id_VX + (1:2);            
 
-                idx_V = idx_V + idx23;
+                        i_BusC = ~useInt * eye(2) * rv_Veq;
+                        i_BusR = id_VX + zeros(useInt,1) + (1:2);
+                        i_BusE = i_BusR;
+                        i_BusI = rv_Veq(repmat(useInt,2,1));
+
+                        id_VX = id_VX + 2;
+                                    
+                        for j=1:n_Comp
+                            i_Comp = a_Comp{j};        
+                            rv_Xeq = i_Comp.cv_Xequilibrium;
+                            r_Xlen = numel(rv_Xeq);
+                            
+                            if useInt                                                            
+                                i_Comp.iv_CPFX = id_VX + (1:r_Xlen);
+                                iv_CX = (3:r_Xlen-2);
+            
+                                Ci{j} = [rv_Xeq(1);zeros(r_Xlen-1,1)];
+                                Ri{j} = id_VX + iv_CX;
+                                Ei{j} = Ri{j};       
+                                Ii{j} = rv_Xeq(iv_CX);
+            
+                                id_VX = id_VX + r_Xlen;                                                                
+                            end
+                            setPQ2Bus(i_Comp);
+                              
+                        end            
+                    case "PV"            
+                        i_Bus.iv_CPFV = id_VX + (1:2);     
+
+                        i_BusC = diag([~useInt,0]) * rv_Veq;
+                        i_BusR = id_VX + [1,ones(useInt,1)*2];
+                        i_BusE = id_VX + [  ones(1,useInt),2];
+                        i_BusI = rv_Veq([useInt,true]);
+
+                        id_VX = id_VX + 2;
+                        
+                        for j=1:numel(a_Comp)
+                            i_Comp = a_Comp{j};        
+                            rv_Xeq = i_Comp.cv_Xequilibrium;
+                            r_Xlen = numel(rv_Xeq);
+            
+                            if useInt 
+                                i_Comp.iv_CPFX = id_VX + (1:r_Xlen);
+                                iv_CX = [1,3:r_Xlen-1];
+            
+                                Ci{j} = zeros(r_Xlen,1);
+                                Ri{j} = id_VX + iv_CX;
+                                Ei{j} = Ri{j};
+                                Ii{j} = rv_Xeq(iv_CX);
+            
+                                id_VX = id_VX + r_Xlen;                                                                   
+                            end
+                            setPQ2Bus(i_Comp);
+                        end        
+                    case "PQ"
+                        i_Bus.iv_CPFV = id_VX + (1:2);            
+
+                        i_BusC = zeros(2,1);
+                        i_BusR = id_VX + (1:2);
+                        i_BusE = i_BusR;
+                        i_BusI = rv_Veq;
+            
+                        id_VX = id_VX + 2;
+
+                        a_Comp = i_Bus.a_Component;
+                        for j=1:numel(a_Comp)
+                            i_Comp = a_Comp{j};                            
+                            setPQ2Bus(i_Comp);
+                        end
+                end
+            
+                R{i} = [i_BusR,Ri{:}];
+                E{i} = [i_BusE,Ri{:}];
+                C{i} = [i_BusC;Ci{:}];
+                I{i} = [i_BusI;Ii{:}];
             end
 
-            iv_BRM_all = vertcat(V_BRM{:});
-            iv_BEM_all = vertcat(V_BEM{:});            
+            iv_BRM_all = horzcat(R{:});
+            iv_BEM_all = horzcat(E{:});            
 
-            RM = eye(idx23*n_Bus);
-            EM = eye(idx23*n_Bus);
+            RM = eye(id_VX);
+            EM = eye(id_VX);            
 
-            obj.rm_BusRM = RM(ismember(1:idx23*n_Bus,iv_BRM_all),:);
-            obj.rm_BusEM = EM(:,ismember(1:idx23*n_Bus,iv_BEM_all));
-            obj.CONSTANT = vertcat(CONST{:});
+            iv_BusVi = cell2mat( cellfun(@(b) b.iv_CPFV, a_Bus', 'UniformOutput', false) );
 
-            obj.CPFInitVal = vertcat(init{:});
+            obj.rv_BusVi = reshape(iv_BusVi,[],1);
+            obj.rm_BusRM = RM(ismember(1:id_VX,iv_BRM_all),:);
+            obj.rm_BusEM = EM(:,ismember(1:id_VX,iv_BEM_all));
+            obj.CONSTANT = vertcat(C{:});
+
+            obj.CPFInitVal = vertcat(I{:});
+
+            function setPQ2Bus(i_Comp)                
+                CompVeq = i_Comp.c_Vequilibrium;
+                CompIeq = i_Comp.c_Iequilibrium;
+                CompSeq = CompVeq * conj(CompIeq);
+                
+                params = i_Comp.tab_parameter.dynamics{:,i_Comp.str_para};                
+                if useInt 
+                    i_Comp.PQ2Bus = @(x,V,u) i_Comp.getCompPQ(x,V,u,params);
+                else
+                    i_Comp.PQ2Bus = @(x,V,u) [real(CompSeq);imag(CompSeq)];
+                end                
+            end
         end
 
         [sol,sol_pred] = solve(obj);                               

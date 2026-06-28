@@ -46,22 +46,18 @@ classdef classical < component.generator.abstract
     end
 
     methods
-        function PQG = getCompPQG(obj,x,V,u,param) %#ok
+        function PQ = getCompPQ(obj,x,V,u,param) %#ok
             delta = x(1);
             E     = u(2);
-            Vabs  = abs(V);            
+            Vabs  = V(1);            
 
             Xd = param(3);
             Xq = param(4);    
 
-            phi = delta - angle(V);
+            phi = delta - V(2);
 
-            PQG = [(E * Vabs / Xd) * sin(phi) + 0.5 * Vabs^2 * (1/Xq - 1/Xd) * sin(2*phi);            
-                   (E * Vabs / Xd) * cos(phi) - Vabs^2 * (cos(phi)^2 / Xd + sin(phi)^2 / Xq)];            
-        end
-
-        function PQL = getCompPQL(obj,x,V,u,param) %#ok
-            PQL = zeros(2,1);
+            PQ = [(E * Vabs / Xd) * sin(phi) + 0.5 * Vabs^2 * (1/Xq - 1/Xd) * sin(2*phi);            
+                  (E * Vabs / Xd) * cos(phi) - Vabs^2 * (cos(phi)^2 / Xd + sin(phi)^2 / Xq)];            
         end        
     end
 end

@@ -35,12 +35,8 @@ classdef power < component.load.abstract
     end
 
     methods       
-        function PQG = getCompPQG(obj,x,V,u,param) %#ok
-            PQG = zeros(2,1);
-        end
-
-        function PQL = getCompPQL(obj,x,V,u,param) %#ok
-            PQL = u;
+        function PQ = getCompPQ(obj,x,V,u,param) %#ok
+            PQ = u;
         end        
     end
 end
