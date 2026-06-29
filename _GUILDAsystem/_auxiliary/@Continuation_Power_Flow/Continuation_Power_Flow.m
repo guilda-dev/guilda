@@ -87,7 +87,7 @@ classdef (Sealed = true) Continuation_Power_Flow < handle
                 opt.?Continuation_Power_Flow 
             end
 
-            obj.CPFNet = net;
+            obj.CPFNet = net; 
 
             fnames = fieldnames(opt);
             argi = 1;
@@ -150,7 +150,7 @@ classdef (Sealed = true) Continuation_Power_Flow < handle
                             
                             if useInt                                                            
                                 i_Comp.iv_CPFX = id_VX + (1:r_Xlen);
-                                iv_CX = (3:r_Xlen-2);
+                                iv_CX = 3:r_Xlen;
             
                                 Ci{j} = [rv_Xeq(1);zeros(r_Xlen-1,1)];
                                 Ri{j} = id_VX + iv_CX;
@@ -177,7 +177,7 @@ classdef (Sealed = true) Continuation_Power_Flow < handle
                             rv_Xeq = i_Comp.cv_Xequilibrium;
                             r_Xlen = numel(rv_Xeq);
             
-                            if useInt 
+                            if useInt && ~isempty(rv_Xeq)
                                 i_Comp.iv_CPFX = id_VX + (1:r_Xlen);
                                 iv_CX = [1,3:r_Xlen];
             

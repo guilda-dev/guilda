@@ -19,29 +19,29 @@ function func = get_PFeq(obj,x,Ymat)
 
         i_Bus = bus{i};
         V_Bus = x(i_Bus.iv_CPFV);
-
-        Veq = i_Bus.c_Vequilibrium;
-        Ieq = i_Bus.c_Iequilibrium;
-        Peq = real(Veq*conj(Ieq));       
-
+        
         a_Comp = i_Bus.a_Component;                
         n_Comp = numel(a_Comp);
         f_Comp = cell(n_Comp,1);
         
+        PQG = zeros(2,1);
         PQC = zeros(2,1);
        
         for j=1:n_Comp
             i_Comp = a_Comp{j};
             X_Comp = x(i_Comp.iv_CPFX);
+            
+            compSeq = i_Comp.c_Vequilibrium * conj(i_Comp.c_Iequilibrium);
 
             isLoad  = ismember(i_Bus.str_tag,obj.CPFBus);
 
             Ueq = i_Comp.cv_Uequilibrium;
+            PQG = PQG + i_Comp.PQ2Bus(X_Comp,V_Bus,Ueq) * ~isLoad;
             PQC = PQC + i_Comp.PQ2Bus(X_Comp,V_Bus,Ueq) * (1 + lambda * or(isLoad, useInt));                        
              
-            if ~isempty(X_Comp)                
-                Fdx       = i_Comp.fv_odeDiff([],X_Comp,V_Bus,[],Ueq);
-                Fdx(1)    = PQC(1)-Peq;                 
+            if ~isempty(X_Comp)                                
+                Fdx       = i_Comp.fv_odeDiff([],X_Comp,[V_Bus(1)*cos(V_Bus(2));V_Bus(1)*sin(V_Bus(2))],[],Ueq);
+                Fdx(1)    = PQG(1)-real(compSeq);                 
                 f_Comp{j} = Fdx;
             end            
         end
