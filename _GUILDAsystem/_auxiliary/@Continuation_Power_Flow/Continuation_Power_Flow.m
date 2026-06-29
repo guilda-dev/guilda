@@ -179,7 +179,7 @@ classdef (Sealed = true) Continuation_Power_Flow < handle
             
                             if useInt 
                                 i_Comp.iv_CPFX = id_VX + (1:r_Xlen);
-                                iv_CX = [1,3:r_Xlen-1];
+                                iv_CX = [1,3:r_Xlen];
             
                                 Ci{j} = zeros(r_Xlen,1);
                                 Ri{j} = id_VX + iv_CX;
