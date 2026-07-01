@@ -43,9 +43,7 @@ function Axx = getJacobiAxx(t,x,V,I,u,param,omega0) %#ok
                       -dPout_dEq, ...
                       -dPout_dEd];
         
-    Axx(3, [1,3]) = [   -(Xd - Xdp) * dId_ddelta, ...
-                     -1 -(Xd - Xdp) * dId_dEq];    
+    Axx(3, [1,3]) = [-(Xd - Xdp) * dId_ddelta, -1-(Xd - Xdp) * dId_dEq];    
         
-    Axx(4, [1,4]) = [     (Xq - Xqp) * dIq_ddelta, ...
-                     -1 + (Xq - Xqp) * dIq_dEd];                
+    Axx(4, [1,4]) = [(Xq - Xqp) * dIq_ddelta, -1 + (Xq - Xqp) * dIq_dEd];                
 end
