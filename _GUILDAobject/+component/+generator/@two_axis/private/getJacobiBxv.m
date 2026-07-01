@@ -3,8 +3,8 @@ function Bxv = getJacobiBxv(t,x,V,I,u,param,omega0) %#ok
     Eq    = x(3);
     Ed    = x(4);
     
-    Vre   = V(5);
-    Vim   = V(6);
+    Vre   = V(1);
+    Vim   = V(2);
         
     Xd  = param(3);
     Xdp = param(4);
