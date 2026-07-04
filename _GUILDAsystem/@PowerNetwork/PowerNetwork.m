@@ -143,8 +143,7 @@ classdef PowerNetwork < PowerSystemModel
         tab_Ybus2bus = get_admittance_matrix(obj)
         
         % Time simulation
-        [sim_t, sim_y, out] = simulate(obj, InitialVal, FaultNum, time, u, uidx, opt)
-        [diff, mass, x0, para] = get_dae(obj,opt)
+        odeResult = simulate(obj, time, varargin, option)        
         [Mass, x0] = reset_odeset(obj)
         
 
