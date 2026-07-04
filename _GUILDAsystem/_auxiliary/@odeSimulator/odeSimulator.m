@@ -427,22 +427,11 @@ classdef (Sealed = true) odeSimulator < handle
 
                     splitMSG = strsplit(me.identifier,':');                                        
 
-                    switch splitMSG{end}
-
-                        case 'IntegrationTolNotMet'                            
-                            obj.odeResult{tp} = Event2State( odeEvents{:}, "ODEResults", struct('Time', (sol.Time + t1)', 'Solution', (EM * sol.Solution).'), "ODEYmatrix", obj.odeYmat );                     
-                            flag = true;
-                            break;
-
-                        case 'NeedBetterY0'
-
-                            % If an error related to initial value inconsistencies occurs, calculate a state that is consistent with the DAE system.
-                            [ODEfcn, x0, options] = CalculateInitialCondition(o, options);
-
-                        otherwise
-                            odeProg.OutputFcn([],[],"break")
-                            throw(me)
-                                                    
+                    if isequal(splitMSG{end},'NeedBetterY0')                    
+                        [ODEfcn, x0, options] = CalculateInitialCondition(o, options);
+                    else
+                        odeProg.OutputFcn([],[],"break")
+                        throw(me)                                                    
                     end
                    
 
@@ -456,17 +445,19 @@ classdef (Sealed = true) odeSimulator < handle
                         error(msg('GUILDA:odeSimulator:UnfeasibleDAE'))
                     end
                 end
-                                
+                                   
                 obj.odeResult{tp} = Event2State( odeEvents{:}, "ODEResults", struct('Time', (sol.Time + t1)', 'Solution', (EM * sol.Solution).'), "ODEYmatrix", obj.odeYmat );                     
-                
+                if sol.Time(end) < (2-t1)
+                    flag = true;
+                    break;
+                end
 
                 [x0, Mass] = obj.getNextPhase(reshape(sol.Solution(:,end),[],1), o.MassMatrix.MassMatrix, RM, EM);
 
                 tp = tp + 1;
             end        
 
-            out = odeSimulationResult(obj.odeNetwork, obj.odeResult);            
-            resetODE();
+            out = odeSimulationResult(obj.odeNetwork, obj.odeResult);                        
         end
     end
 end

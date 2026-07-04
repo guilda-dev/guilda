@@ -22,7 +22,5 @@ function [o, x0, Mass, tp, np, flag, options] = makeODE(obj)
     x0   = [];
     Mass = [];
 
-    warning('error','MATLAB:ode15s:IntegrationTolNotMet')
-
     flag = false;
 end
