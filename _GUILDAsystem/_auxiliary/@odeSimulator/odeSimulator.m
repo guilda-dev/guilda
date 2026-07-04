@@ -378,9 +378,9 @@ classdef (Sealed = true) odeSimulator < handle
 
     methods
 
-        function out = simulate(obj)
+        function [out,flag] = simulate(obj)
             
-            [o, x0, Mass, tp, np, options] = makeODE(obj);            
+            [o,x0,Mass,tp,np,flag,options] = makeODE(obj);            
 
             % Set reporter
             str_evt = string(obj.odeTimeTable.Properties.VariableNames(3:end));
@@ -429,10 +429,10 @@ classdef (Sealed = true) odeSimulator < handle
 
                     switch splitMSG{end}
 
-                        case 'IndexGTOne'
-
-                            % If the DAE index is greater than 1, construct a new DAE sequence with a reduced index.
-                            [ODEfcn, x0, options] = ReduceDAEIndex(obj, o, options);
+                        case 'MATLAB:ode15s:IntegrationTolNotMet'                            
+                            obj.odeResult{tp} = Event2State( odeEvents{:}, "ODEResults", struct('Time', (sol.Time + t1)', 'Solution', (EM * sol.Solution).'), "ODEYmatrix", obj.odeYmat );                     
+                            flag = true;
+                            break;
 
                         case 'NeedBetterY0'
 
@@ -466,68 +466,9 @@ classdef (Sealed = true) odeSimulator < handle
             end        
 
             out = odeSimulationResult(obj.odeNetwork, obj.odeResult);            
-
+            resetODE();
         end
     end
-end
-
-
-function [ODEfcn, x0, options] = ReduceDAEIndex(cls, ode, options)
-
-    a_bus = cls.odeNetwork.a_Bus;
-    n_bus = numel(a_bus);
-    str_x = cell(n_bus,1);
-    str_v = cell(n_bus,1);
-    for i=1:n_bus
-        a_comp = a_bus{i}.a_Component;                        
-
-        str_v{i} = ["Vre";"Vim"]+"_"+string(a_bus{i})+"(t)";
-        str_x{i} = cell2mat( cellfun(@(c) string(c)+"_"+c.str_x+"(t)", a_comp, 'UniformOutput', false) );                            
-    end        
-    sym_t = sym("t");
-    sym_x = str2sym(cell2mat([str_x;str_v]));                        
-
-    Mass = ode.MassMatrix.MassMatrix;
-    Func = ode.ODEFcn;
-       
-    eqns = Mass*sym_x == Func(sym_t, sym_x);
-
-    if ~isLowIndexDAE(eqns, sym_x)
-        [newEqns, newX] = reduceDAEIndex(eqns, sym_x);
-        if ~isLowIndexDAE(newEqns, newX)
-            error(me.message)
-        else
-            [newEqns,newX] = reduceRedundancies(newEqns,newX);
-
-            ODEfcn = matlabFunction(newEqns, Vars={newX});
-            x0_est  = zeros(size(newX));
-            xp0_est = x0_est;                        
-
-            [x0,xp0] = decic(ODEfcn, 0, x0_est, [], xp0_est, [], options); 
-                        
-            options.InitialSlope = xp0;
-        end
-    else
-        throw(me)
-    end
-end
-
-
-function [ODEfcn, x0, options] = CalculateInitialCondition(o, options)
-
-    Mass = @(t,y) o.MassMatrix.MassMatrix;
-    Func = o.ODEFcn;
-
-    x0_est  = o.InitialValue;
-    xp0_est = x0_est;
-    
-    dae = @(t,y,yp) Mass(t,y)*yp-Func(t,y);                        
-    [x0,xp0] = decic(dae, 0, x0_est, [], xp0_est, [], options); 
-
-    options.Mass = Mass;
-    options.InitialSlope = xp0;                        
-
-    ODEfcn = Func;
 end
 
 function [Axx, Bxu, Bxv, Bxi, Cyx, Dyu, Dyv, Dyi, Cix, Diu, Div, Dii] = getSubJacobian(OBJ, t, xi, Vi, Ii, ui)

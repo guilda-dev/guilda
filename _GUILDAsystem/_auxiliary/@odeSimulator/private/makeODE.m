@@ -1,4 +1,4 @@
-function [o, x0, Mass, tp, np, options] = makeODE(obj)
+function [o, x0, Mass, tp, np, options, flag] = makeODE(obj)
     o = ode;
         
     cls = metaclass(o);
@@ -21,4 +21,8 @@ function [o, x0, Mass, tp, np, options] = makeODE(obj)
 
     x0   = [];
     Mass = [];
+
+    warning('error','MATLAB:ode15s:IntegrationTolNotMet')
+
+    flag = false;
 end
