@@ -447,7 +447,7 @@ classdef (Sealed = true) odeSimulator < handle
                 end
                                    
                 obj.odeResult{tp} = Event2State( odeEvents{:}, "ODEResults", struct('Time', (sol.Time + t1)', 'Solution', (EM * sol.Solution).'), "ODEYmatrix", obj.odeYmat );                     
-                if sol.Time(end) < (2-t1)
+                if sol.Time(end) < (t2-t1)
                     flag = true;
                     break;
                 end
