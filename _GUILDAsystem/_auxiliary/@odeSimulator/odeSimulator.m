@@ -429,7 +429,7 @@ classdef (Sealed = true) odeSimulator < handle
 
                     switch splitMSG{end}
 
-                        case 'MATLAB:ode15s:IntegrationTolNotMet'                            
+                        case 'IntegrationTolNotMet'                            
                             obj.odeResult{tp} = Event2State( odeEvents{:}, "ODEResults", struct('Time', (sol.Time + t1)', 'Solution', (EM * sol.Solution).'), "ODEYmatrix", obj.odeYmat );                     
                             flag = true;
                             break;
