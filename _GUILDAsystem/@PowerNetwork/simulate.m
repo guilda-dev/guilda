@@ -1,4 +1,4 @@
-function odeResult = simulate(obj, time, varargin, option)
+function [odeResult,varargout] = simulate(obj, time, varargin, option)
     arguments
         obj 
         time (:,1) double = [] 
@@ -18,5 +18,5 @@ function odeResult = simulate(obj, time, varargin, option)
 
     op = [fieldnames(option)'; struct2cell(option)'];
     OS = odeSimulator(obj, time, varargin{:}, op{:});
-    odeResult = simulate(OS);
+    [odeResult,varargout{1}]= simulate(OS);
 end
