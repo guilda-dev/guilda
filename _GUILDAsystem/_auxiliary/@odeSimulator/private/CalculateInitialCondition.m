@@ -8,6 +8,7 @@ function [Func, x0, exitFlag, options] = CalculateInitialCondition(o, options)
     x0_est  = o.InitialValue;
     xp0_est = x0_est;
     
+    x0  = zeros(0,1);
     xp0 = zeros(0,1);
     dae = @(t,y,yp) Mass(t,y)*yp-Func(t,y);                        
     try
