@@ -1,4 +1,4 @@
-function [ODEfcn, x0, options] = CalculateInitialCondition(o, options)
+function [ODEfcn, x0, exitFlag, options] = CalculateInitialCondition(o, options)
 
     Mass = @(t,y) o.MassMatrix.MassMatrix;
     Func = o.ODEFcn;
@@ -7,7 +7,14 @@ function [ODEfcn, x0, options] = CalculateInitialCondition(o, options)
     xp0_est = x0_est;
     
     dae = @(t,y,yp) Mass(t,y)*yp-Func(t,y);                        
-    [x0,xp0] = decic(dae, 0, x0_est, [], xp0_est, [], options); 
+    try
+        exitFlag = false;
+        [x0,xp0] = decic(dae, 0, x0_est, [], xp0_est, [], options);         
+    catch me
+        exitFlag = true;
+        msg = me.message;
+        warning(msg)
+    end
 
     options.Mass = Mass;
     options.InitialSlope = xp0;                        

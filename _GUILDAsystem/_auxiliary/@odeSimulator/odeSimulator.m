@@ -428,7 +428,11 @@ classdef (Sealed = true) odeSimulator < handle
                     splitMSG = strsplit(me.identifier,':');                                        
 
                     if isequal(splitMSG{end},'NeedBetterY0')                    
-                        [ODEfcn, x0, options] = CalculateInitialCondition(o, options);
+                        [ODEfcn, x0, FLAG, options] = CalculateInitialCondition(o, options);
+                        if FLAG
+                            sol.Time = 0;
+                            break;
+                        end
                     else
                         odeProg.OutputFcn([],[],"break")
                         throw(me)                                                    
