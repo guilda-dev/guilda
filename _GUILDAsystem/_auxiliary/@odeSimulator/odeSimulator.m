@@ -227,8 +227,8 @@ classdef (Sealed = true) odeSimulator < handle
 
                 [Axx_GC, Bxu_GC, Bxv_GC, Bxi_GC, Cyx_GC, Dyu_GC, Dyv_GC, Dyi_GC, ~, ~, ~, ~] = getSubJacobian(a_GC, t, x_GC, [], [], u_GC);                
 
-                odeJac(lv_GC, lh_GC) = odeJac(lv_GC, lh_GC) + [ Axx_GC,  Bxv_GC,  Bxu_GC, Bxi_GC;
-                                                                Cyx_GC,  Dyv_GC,  Dyu_GC, Dyi_GC];
+                odeJac(lv_GC, lh_GC) = odeJac(lv_GC, lh_GC) + [  Axx_GC,   Bxv_GC,   Bxu_GC,  Bxi_GC;
+                                                                -Cyx_GC,  -Dyv_GC,  -Dyu_GC, -Dyi_GC];
                                
             end
 
