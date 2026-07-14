@@ -155,9 +155,9 @@ classdef Parameter < auxiliary & LayerPackage & dynamicprops
                 return
             end
             h_para   = numel(str_para);
-            % v_para   = sum( arrayfun(@(idx) numel(obj.(str_para(idx))), 1:h_para) )/h_para
-            % tab_para = array2table(zeros(v_para,h_para),"VariableNames",str_para);
-            tab_para = array2table(nan(1,h_para),"VariableNames",str_para);
+            v_para   = sum( arrayfun(@(idx) numel(obj.(str_para(idx))), 1:h_para) )/h_para;
+            tab_para = array2table(zeros(v_para,h_para),"VariableNames",str_para);
+            % tab_para = array2table(nan(1,h_para),"VariableNames",str_para);
             for i = 1:h_para
                 tab_para.(str_para(i)) = obj.(str_para(i));
             end
