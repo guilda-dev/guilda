@@ -18,9 +18,34 @@ function [A_dae, B_dae, C_dae, D_dae, E_dae] = get_DAE(obj,opt)
 
     Y = obj.odeNetwork.get_admittance_matrix;
     Ymat = tools.complex2matrix( Y.Variables );
-    
+
+    x = tools.cellfun(@(s) string(s.StateName),  ssFromBus);        
 
     Ex = tools.dcellfun(@(SS) SS.E, ssFromBus);
+
+    if ~isempty(obj.odeNetwork.a_GlobalController)
+        sysAGC = obj.odeNetwork.a_GlobalController{1}.get_sys("full",true);
+        nx = size(Axx,1);
+        nv = size(Axv,2);
+        nu = size(Bxu,2);
+
+        Axx = [zeros(1,nx+1);[zeros(nx,1),Axx]];        
+        Axv = [zeros(1,nv);Axv];        
+        Bxu = [zeros(1,nu);Bxu];
+        Avx = [zeros(size(Avx,1),1),Avx];        
+
+        SN = tools.vcellfun(@(s) string(s), sysAGC.StateName);
+        IN = tools.vcellfun(@(s) string(s), sysAGC.InputName);        
+
+        lv_GC = ismember([SN;vertcat(x{:})],[SN;IN]);
+
+        Axx(lv_GC,lv_GC) = Axx(lv_GC,lv_GC) + [sysAGC.A, sysAGC.B;sysAGC.C, sysAGC.D];
+
+        Ex = blkdiag(sysAGC.E,Ex);
+
+        output = [sysAGC.StateName;output];
+    end    
+
     Ev = zeros(size(Avv));
 
     n_b = numel(bus);
