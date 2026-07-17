@@ -74,6 +74,7 @@ classdef (Sealed = true) Continuation_Power_Flow < handle
     end
 
     properties (Access = private)
+        rv_POLD  (:,1) double = []
         CONSTANT (:,1) double = []
         rm_BusRM (:,:) double
         rm_BusEM (:,:) double

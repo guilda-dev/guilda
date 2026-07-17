@@ -16,11 +16,24 @@ function x_pred = Predict(obj,x_current,x_past)
 
         x_pred(l_p)  = beta * x_pred(~l_p);                
 
-        if x_pred(end) < 0
-            x_pred = -x_pred;
+        % if x_pred(end) < 0
+        %     x_pred = -x_pred;
+        % end
+
+        t = x_pred / norm(x_pred);
+        if ~isempty(obj.rv_POLD)
+            if dot(t,obj.rv_POLD) < 0
+                t = -t;
+            end
+        else            
+            if t(end) < 0
+                t = -t;
+            end
         end
 
-        x_pred = x_current + h * x_pred;
+        obj.rv_POLD = t;
+
+        x_pred = x_current + h * t;
     else                
         x_pred = (x_current - x_past) * h + x_current;
     end
