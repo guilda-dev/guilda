@@ -3,13 +3,13 @@ function out = attach_tag(obj,str_name_list)
 % Appends this class tag to each input name.
 % <@Role>
 % Tag
-% <@Abst>
+% <@Summary>
 % Generate names with layer tag suffix.
 % <@Signatures>
 % [
 %   "out = attach_tag(obj, str_name_list)"
 % ]
-% <@varargin>
+% <@Parameters>
 % [
 %   {
 %     "Name": "obj",
@@ -26,7 +26,7 @@ function out = attach_tag(obj,str_name_list)
 %     "Default": "-"
 %   }
 % ]
-% <@varargout>
+% <@Returns>
 % [
 %   {
 %     "Name": "out",
@@ -36,9 +36,7 @@ function out = attach_tag(obj,str_name_list)
 % ]
 % <@Examples>
 % [
-%   ">> obj.attach_tag([""V"", ""P""])"
-%   "ans ="
-%   "    [""V_Tag"",""P_Tag""]"
+%   ">> obj.attach_tag([\"V\", \"P\"])\nans =\n    [\"V_Tag\", \"P_Tag\"]"
 % ]
     arguments
         obj 

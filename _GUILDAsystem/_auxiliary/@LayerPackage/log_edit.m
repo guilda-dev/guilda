@@ -3,14 +3,14 @@ function log_edit(obj, log, tag, before, after, time, tab)
     % Records an edit event and propagates it to parent layers.
     % <@Role>
     % Edit Log
-    % <@Abst>
+    % <@Summary>
     % Append a new edit-log record.
     % <@Signatures>
     % [
     %   "log_edit(obj)",
     %   "log_edit(obj, log, tag, before, after, time, tab)"
     % ]
-    % <@varargin>
+    % <@Parameters>
     % [
     %   {
     %     "Name": "obj",
@@ -62,7 +62,7 @@ function log_edit(obj, log, tag, before, after, time, tab)
     %     "Default": "auto-generated"
     %   }
     % ]
-    % <@varargout>
+    % <@Returns>
     % []
     arguments
         obj 

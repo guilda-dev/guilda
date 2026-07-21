@@ -68,13 +68,13 @@ classdef Parameter < auxiliary & LayerPackage & dynamicprops
         % Creates a parameter container for a parent layer.
         % <@Role>
         % Constructor
-        % <@Abst>
+        % <@Summary>
         % Initialize the parameter container and callback.
         % <@Signatures>
         % [
         %   "obj = Parameter(a_parent, str_tag, CallBackChanged)"
         % ]
-        % <@varargin>
+        % <@Parameters>
         % [
         %   {
         %     "Name": "a_parent",
@@ -98,7 +98,7 @@ classdef Parameter < auxiliary & LayerPackage & dynamicprops
         %     "Default": "@(varargin) []"
         %   }
         % ]
-        % <@varargout>
+        % <@Returns>
         % [
         %   {
         %     "Name": "obj",
@@ -124,13 +124,13 @@ classdef Parameter < auxiliary & LayerPackage & dynamicprops
             % Builds a table from the registered parameter properties.
             % <@Role>
             % Parameter
-            % <@Abst>
+            % <@Summary>
             % Convert dynamic parameter properties into a table.
             % <@Signatures>
             % [
             %   "tab_para = get.tab_parameter(obj)"
             % ]
-            % <@varargin>
+            % <@Parameters>
             % [
             %   {
             %     "Name": "obj",
@@ -140,7 +140,7 @@ classdef Parameter < auxiliary & LayerPackage & dynamicprops
             %     "Default": "-"
             %   }
             % ]
-            % <@varargout>
+            % <@Returns>
             % [
             %   {
             %     "Name": "tab_para",

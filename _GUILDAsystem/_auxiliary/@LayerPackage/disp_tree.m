@@ -3,14 +3,14 @@ function varargout = disp_tree(obj,str_space,str_ignore,l_isfirst)
 % Displays or returns a text tree of this layer and its descendants.
 % <@Role>
 % Layer Structure
-% <@Abst>
+% <@Summary>
 % Render the hierarchy tree with optional filtering.
 % <@Signatures>
 % [
 %   "disp_tree(obj)",
 %   "text = disp_tree(obj, str_space, str_ignore, l_isfirst)"
 % ]
-% <@varargin>
+% <@Parameters>
 % [
 %   {
 %     "Name": "obj",
@@ -41,7 +41,7 @@ function varargout = disp_tree(obj,str_space,str_ignore,l_isfirst)
 %     "Default": "true"
 %   }
 % ]
-% <@varargout>
+% <@Returns>
 % [
 %   {
 %     "Name": "text",

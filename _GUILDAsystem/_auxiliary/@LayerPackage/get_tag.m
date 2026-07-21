@@ -3,14 +3,14 @@ function out = get_tag(obj,l_with_layer, str_split)
     % Returns the layer tag, optionally including parent-layer tags.
     % <@Role>
     % Tag
-    % <@Abst>
+    % <@Summary>
     % Build tag string with optional hierarchy composition.
     % <@Signatures>
     % [
     %   "out = get_tag(obj)",
     %   "out = get_tag(obj, l_with_layer, str_split)"
     % ]
-    % <@varargin>
+    % <@Parameters>
     % [
     %   {
     %     "Name": "obj",
@@ -34,7 +34,7 @@ function out = get_tag(obj,l_with_layer, str_split)
     %     "Default": "\"\""
     %   }
     % ]
-    % <@varargout>
+    % <@Returns>
     % [
     %   {
     %     "Name": "out",

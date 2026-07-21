@@ -3,13 +3,13 @@ function p = findparent(obj)
     % Finds the top-level parent layer in the hierarchy.
     % <@Role>
     % Layer Structure
-    % <@Abst>
+    % <@Summary>
     % Retrieve root layer from current object.
     % <@Signatures>
     % [
     %   "p = findparent(obj)"
     % ]
-    % <@varargin>
+    % <@Parameters>
     % [
     %   {
     %     "Name": "obj",
@@ -19,7 +19,7 @@ function p = findparent(obj)
     %     "Default": "-"
     %   }
     % ]
-    % <@varargout>
+    % <@Returns>
     % [
     %   {
     %     "Name": "p",
