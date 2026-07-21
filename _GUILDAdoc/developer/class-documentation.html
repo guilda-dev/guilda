@@ -10,8 +10,68 @@
   <main>
     <button type="button" class="developer-back-button" onclick="window.history.back()">← Back to For Developer</button>
     <h1>How to Define Class Documentation</h1>
-    <p class="page-lead">Documentation is stored next to MATLAB code using exact <code>&lt;@TagName&gt;</code> help-comment tags. GUILDA exports these comments and reflection metadata to <code>_GUILDAdoc/database</code>.</p>
-    <p><strong>Canonical tags should be used for new code.</strong> Legacy tags <code>Abst</code>, <code>varargin</code>, <code>varargout</code>, and <code>DetailsCode</code> remain readable as aliases for <code>Summary</code>, <code>Parameters</code>, <code>Returns</code>, and <code>Notes</code>.</p>
+    <p class="page-lead">GUILDA class documentation is generated from MATLAB reflection metadata and exact <code>&lt;@TagName&gt;</code> tags stored next to the implementation. The exporter writes a lightweight class index and one detailed JavaScript document per class under <code>_GUILDAdoc/database</code>.</p>
+
+    <h2>Collection Pipeline</h2>
+    <ol>
+      <li><code>GUILDA.doc("update", true)</code> obtains the <code>PowerSystemModel</code> class list from <code>GUILDA.dictionary</code> and prepends <code>LayerPackage</code>.</li>
+      <li><code>export_class_database</code> resolves each class with <code>meta.class.fromName</code>.</li>
+      <li>Reflection supplies class, property, and method attributes; source comments supply the tagged documentation.</li>
+      <li>The exporter validates tags and structured JSON, then writes the index and class documents.</li>
+      <li><code>doc-loader.js</code> reads the index first and loads a class document only when its class or method page is opened.</li>
+    </ol>
+
+    <h2>Sources and Precedence</h2>
+    <table>
+      <tr><th>Target</th><th>Primary source</th><th>Fallback</th></tr>
+      <tr><td>Class</td><td>Consecutive comment lines immediately after <code>classdef</code></td><td>MATLAB <code>help</code>, then reflection descriptions</td></tr>
+      <tr><td>Property</td><td>Consecutive comment lines immediately above the property declaration</td><td>MATLAB <code>help</code>, then reflection descriptions</td></tr>
+      <tr><td>Method</td><td>Consecutive comment lines after <code>function</code> in a separate method file</td><td>MATLAB <code>help</code>, then reflection descriptions</td></tr>
+    </table>
+    <p>Source comments are preferred because MATLAB's help renderer can change indentation. The exporter removes the MATLAB comment prefix but preserves meaningful leading spaces, blank lines, and text-art alignment inside tag values.</p>
+
+    <h2>Generated Data Structure</h2>
+    <h3>Class Index</h3>
+    <p><code>database/list_Classes.js</code> registers <code>window.GUILDA_DOC_INDEX</code>. Its schema version is currently <code>2</code>.</p>
+<pre><code>window.GUILDA_DOC_INDEX = {
+  schema: {
+    version: 2,
+    classDocumentVersion: 2,
+    modelCategories: [...],
+    coreClasses: [...],
+    tags: {...},
+    legacyAliases: {...}
+  },
+  classes: [...],
+  validation: {
+    warningCount: 0,
+    errorCount: 0,
+    classes: [...]
+  }
+};</code></pre>
+    <p>Each <code>classes</code> entry contains the fields below.</p>
+    <table>
+      <tr><th>Field</th><th>Source / purpose</th></tr>
+      <tr><td><code>Name</code></td><td>Fully qualified MATLAB class name.</td></tr>
+      <tr><td><code>Type</code></td><td>Derived category: <code>PowerSystemModel</code>, <code>auxiliary</code>, or <code>other</code>.</td></tr>
+      <tr><td><code>Model</code></td><td>Nearest system-model category, such as <code>PowerNetwork</code>, <code>Bus</code>, or <code>Component</code>.</td></tr>
+      <tr><td><code>Parent</code></td><td>Superclass names obtained from reflection.</td></tr>
+      <tr><td><code>Abstract</code>, <code>Hidden</code></td><td>Class attributes obtained from reflection.</td></tr>
+      <tr><td><code>Summary</code>, <code>Desc</code>, <code>Role</code>, <code>Constructor</code>, <code>Notes</code>, <code>SeeAlso</code>, <code>Since</code>, <code>Deprecated</code></td><td>Canonical class tags.</td></tr>
+      <tr><td><code>path</code></td><td>Internal path used to lazily load the detailed class document. It is required but is not displayed as documentation.</td></tr>
+    </table>
+    <p>Validation is stored centrally under <code>validation.classes</code>. The redundant per-index-entry fields <code>DocumentationStatus</code>, <code>DocumentationWarnings</code>, and <code>DocumentationErrors</code> are not generated.</p>
+
+    <h3>Detailed Class Documents</h3>
+    <p>Each class has a file in <code>database/GUILDAsystem</code> or <code>database/GUILDAobject</code>. It registers data under <code>window.GUILDA_DOC_CLASSES[ClassName]</code>.</p>
+<pre><code>{
+  schema: { name: "GUILDA class document", version: 2 },
+  ClassName: "component.generator.park",
+  properties: [...],
+  methods: [...],
+  validation: { Warnings: [...], Errors: [...] }
+}</code></pre>
+    <p>Property records combine reflection attributes such as <code>Defining</code>, <code>GetAccess</code>, <code>SetAccess</code>, <code>Dependent</code>, <code>Constant</code>, <code>Abstract</code>, and <code>Hidden</code> with property tags. Method records similarly combine <code>Defining</code>, <code>Access</code>, <code>Static</code>, <code>Abstract</code>, and <code>Hidden</code> with method tags.</p>
 
     <h2>Tag Schema</h2>
     <table>
@@ -20,6 +80,29 @@
       <tr><td>Property</td><td><code>Summary</code>, <code>Desc</code>, <code>Role</code>, <code>Type</code>, <code>Size</code>, <code>Unit</code>, <code>Default</code>, <code>Constraints</code>, <code>Notes</code>, <code>SeeAlso</code>, <code>Since</code>, <code>Deprecated</code></td></tr>
       <tr><td>Method</td><td><code>Summary</code>, <code>Desc</code>, <code>Role</code>, <code>Signatures</code>, <code>Parameters</code>, <code>Returns</code>, <code>Examples</code>, <code>Notes</code>, <code>Throws</code>, <code>SeeAlso</code>, <code>Since</code>, <code>Deprecated</code></td></tr>
     </table>
+    <p>Tags are case-sensitive field names and must use the exact form <code>&lt;@TagName&gt;</code>. For example, <code>&lt;Summary&gt;</code> is not a documentation tag. A tag value continues until the next valid tag or the end of the comment block.</p>
+    <p><strong>Use canonical names in new code.</strong> Existing documentation can also be read through these aliases:</p>
+    <table>
+      <tr><th>Legacy alias</th><th>Canonical tag</th></tr>
+      <tr><td><code>Abst</code></td><td><code>Summary</code></td></tr>
+      <tr><td><code>Description</code></td><td><code>Desc</code></td></tr>
+      <tr><td><code>varargin</code></td><td><code>Parameters</code></td></tr>
+      <tr><td><code>varargout</code></td><td><code>Returns</code></td></tr>
+      <tr><td><code>DetailsCode</code></td><td><code>Notes</code></td></tr>
+      <tr><td><code>Example</code></td><td><code>Examples</code></td></tr>
+      <tr><td><code>Seealso</code></td><td><code>SeeAlso</code></td></tr>
+    </table>
+
+    <h2>Authoring Rules</h2>
+    <ul>
+      <li>Use <code>Summary</code> for one concise sentence shown in reference tables.</li>
+      <li>Use <code>Desc</code> for the full explanation shown on the detail page. It does not replace a missing <code>Summary</code> in reference tables.</li>
+      <li>Single newlines, consecutive spaces, and indentation are preserved. ASCII diagrams are rendered as preformatted monospace text.</li>
+      <li><code>Signatures</code>, <code>Examples</code>, and <code>SeeAlso</code> must be JSON arrays of strings.</li>
+      <li><code>Parameters</code> and <code>Returns</code> must be JSON objects or arrays of objects.</li>
+      <li>Structured JSON must begin with <code>[</code> or <code>{</code>. Do not use MATLAB arrays or cell-array syntax.</li>
+      <li>Leave an optional tag empty when it does not apply; the exporter supplies its type-appropriate empty value.</li>
+    </ul>
 
     <h2>Class Documentation</h2>
 <pre><code>classdef MyClass
@@ -35,7 +118,7 @@
 end</code></pre>
 
     <h2>Method Documentation</h2>
-    <p><code>Signatures</code>, <code>Parameters</code>, <code>Returns</code>, <code>Examples</code>, and <code>SeeAlso</code> are JSON. Name-value options belong in <code>Parameters</code> with <code>Kind: "NameValue"</code>.</p>
+    <p>Name-value options belong in <code>Parameters</code> with <code>Kind: "NameValue"</code>. The normalized parameter fields are <code>Name</code>, <code>Kind</code>, <code>Type</code>, <code>Unit</code>, <code>Description</code>, <code>Required</code>, <code>Default</code>, and <code>Constraints</code>.</p>
 <pre><code>function rv_y = calculate_output(obj, rv_u, r_gain)
 % &lt;@Summary&gt; Scale an input vector.
 % &lt;@Desc&gt; Computes an output vector using a configurable scalar gain.
@@ -73,12 +156,31 @@ end</code></pre>
     % &lt;@Unit&gt; pu
     % &lt;@Default&gt; 1.0
     % &lt;@Constraints&gt; finite and positive
+    % &lt;@Notes&gt; Applied during output evaluation.
+    % &lt;@SeeAlso&gt; ["calculate_output"]
+    % &lt;@Since&gt; 4.2
+    % &lt;@Deprecated&gt;
     r_gain
 end</code></pre>
 
     <h2>Validation</h2>
-    <p>The exporter records unknown or duplicate tags and missing public API descriptions as warnings. Invalid structured JSON is recorded as an error. Use strict mode in automated checks to fail documentation generation when validation errors exist:</p>
+    <p>The exporter records unknown or duplicate tags, missing class descriptions, and undocumented public methods as warnings. Invalid structured JSON and failed class exports are recorded as errors. Diagnostics are available both in the generated class document and in the central index validation summary.</p>
+    <table>
+      <tr><th>Condition</th><th>Result</th></tr>
+      <tr><td>Unknown or duplicate tag</td><td>Warning</td></tr>
+      <tr><td>Class has neither <code>Summary</code> nor <code>Desc</code></td><td>Warning</td></tr>
+      <tr><td>Public, non-hidden method defined by the class has neither <code>Summary</code> nor <code>Desc</code></td><td>Warning</td></tr>
+      <tr><td>Malformed structured JSON</td><td>Error</td></tr>
+      <tr><td>Class reflection or file export failure</td><td>Error</td></tr>
+    </table>
+    <p>Use strict mode in automated checks to fail generation when one or more validation errors exist:</p>
 <pre><code>&gt;&gt; GUILDA.doc("update", true, "open", false, "strict", true);</code></pre>
+
+    <h2>Regenerating and Reviewing Documentation</h2>
+<pre><code>&gt;&gt; GUILDA.addpath();
+&gt;&gt; GUILDA.doc("update", true, "open", false);
+&gt;&gt; web(fullfile(GUILDA.pwd(), "_GUILDAdoc", "index.html"));</code></pre>
+    <p>After regeneration, review <code>database/list_Classes.js</code> for the index summary and open the Reference tab to verify class links, summaries, inheritance markers, and detailed class or method pages.</p>
   </main>
 </body>
 </html>
