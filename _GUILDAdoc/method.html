@@ -7,25 +7,26 @@
   <link rel="stylesheet" href="style.css">
   
   <script src="./database/list_Classes.js"></script>
+  <script src="./doc-loader.js"></script>
 </head>
 <body class="doc-layout">
 
   <nav id="sidebar" style="padding: 20px; box-sizing: border-box; overflow-y: auto;">
-    <a href="index.html" style="display: block; margin-bottom: 20px;">
-      <img src="https://github.com/guilda-dev/guilda/assets/54563775/20094d9b-22f5-4fb8-aff8-d80dc3cde31b" alt="GUILDA Logo" style="width: 100%;">
+    <a href="index.html" onclick="window.GuildaDocLoader.navigate('index.html'); return false;" style="display: block; margin-bottom: 20px;">
+      <img src="./images/GUILDAicon.png" alt="GUILDA Logo" style="width: 100%;">
     </a>
     
     <div id="sidebar-back-btn"></div>
     
     <h3 style="margin-top: 0;">On this page</h3>
     <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
-      <li><a href="#overview">Overview</a></li>
-      <li><a href="#metadata">Metadata</a></li>
-      <li><a href="#signatures">Signatures</a></li>
-      <li><a href="#description">Description</a></li>
-      <li><a href="#arguments">Arguments</a></li>
-      <li><a href="#returns">Return Values</a></li>
-      <li><a href="#examples">Examples</a></li>
+      <li><a href="#overview" onclick="document.getElementById('overview')?.scrollIntoView(); return false;">Overview</a></li>
+      <li><a href="#metadata" onclick="document.getElementById('metadata')?.scrollIntoView(); return false;">Metadata</a></li>
+      <li><a href="#signatures" onclick="document.getElementById('signatures')?.scrollIntoView(); return false;">Signatures</a></li>
+      <li><a href="#description" onclick="document.getElementById('description')?.scrollIntoView(); return false;">Description</a></li>
+      <li><a href="#arguments" onclick="document.getElementById('arguments')?.scrollIntoView(); return false;">Arguments</a></li>
+      <li><a href="#returns" onclick="document.getElementById('returns')?.scrollIntoView(); return false;">Return Values</a></li>
+      <li><a href="#examples" onclick="document.getElementById('examples')?.scrollIntoView(); return false;">Examples</a></li>
     </ul>
   </nav>
 
@@ -36,73 +37,23 @@
   </main>
 
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const className = urlParams.get('class');
-    const methodName = urlParams.get('method');
-
-    function resolveClassMeta(dataList, targetClassName) {
-      const normalizedTarget = (targetClassName || '').toLowerCase();
-      return dataList.find(c => {
-        const name = (c.Name || c.name || '').toLowerCase();
-        const path = (c.path || '').toLowerCase();
-        return name === normalizedTarget || path.endsWith(`/${normalizedTarget}.js`) || path.endsWith(`\\${normalizedTarget}.js`);
-      });
-    }
-
-    function resolveFolder(meta, targetClassName) {
-      const classPath = (meta?.path || '').toLowerCase();
-      const classType = (meta?.Type || '').toLowerCase();
-      const classNameLower = (targetClassName || '').toLowerCase();
-
-      if (classPath.includes('/database/guildaobject/') || classPath.includes('\\database\\guildaobject\\')) return 'GUILDAobject';
-      if (classPath.includes('/database/guildasystem/') || classPath.includes('\\database\\guildasystem\\')) return 'GUILDAsystem';
-      if (classType === 'auxiliary') return 'GUILDAsystem';
-      if (classType === 'PowerSystemModel') {
-        if (classNameLower.startsWith('component.') || classNameLower.startsWith('branch.') || classNameLower.startsWith('controller.')) {
-          return 'GUILDAobject';
-        }
-        return 'GUILDAsystem';
-      }
-      if (classPath.endsWith('/guildaobject') || classPath.endsWith('\\guildaobject')) return 'GUILDAobject';
-      if (classPath.endsWith('/guildasystem') || classPath.endsWith('\\guildasystem')) return 'GUILDAsystem';
-      if (classNameLower.startsWith('component.') || classNameLower.startsWith('branch.') || classNameLower.startsWith('controller.')) return 'GUILDAobject';
-      return 'GUILDAsystem';
-    }
+    const routeParams = window.GuildaDocLoader.getRouteParams();
+    const className = routeParams.get('class');
+    const methodName = routeParams.get('method');
 
     if (!className || !methodName) {
       document.getElementById('dynamic-content').innerHTML = "<h1 style='color:red;'>Error: Missing Parameters</h1>";
     } else {
       // 戻るボタンの設定
       document.getElementById('sidebar-back-btn').innerHTML = `
-        <a href="index.html#tab-reference" class="btn" style="width: 100%; text-align: center; margin-bottom: 20px; box-sizing: border-box;">← Back to Home</a>
+        <a href="index.html#tab-reference" onclick="window.GuildaDocLoader.navigate('index.html', 'tab-reference'); return false;" class="btn" style="width: 100%; text-align: center; margin-bottom: 20px; box-sizing: border-box;">← Back to Home</a>
       `;
 
-      // フォルダの判定とロード（list_Classes.js の path を参照）
-      const dataList = typeof classListData !== 'undefined'
-        ? classListData
-        : (typeof class_list !== 'undefined' ? class_list : []);
-      const meta = resolveClassMeta(dataList, className);
-      const folder = resolveFolder(meta, className);
-
-      if (!folder) {
-        document.getElementById('dynamic-content').innerHTML = `
-          <h1 style="color:red;">Error</h1>
-          <p>Class metadata (<code>path</code>) was not found for <code>${className}</code> in <code>list_Classes.js</code>.</p>
-        `;
-      } else {
-        const script = document.createElement('script');
-        script.src = `./database/${folder}/${className}.js`;
-        script.onload = () => {
-          const loadedClassData = (typeof window.classData !== 'undefined')
-            ? window.classData
-            : (typeof classData !== 'undefined' ? classData : null);
-          renderMethodPage(className, methodName, loadedClassData);
-        };
-        script.onerror = () => {
-          document.getElementById('dynamic-content').innerHTML = `<h1 style="color:red;">Error 404</h1><p>File not found.</p>`;
-        };
-        document.head.appendChild(script);
-      }
+      window.GuildaDocLoader.loadClass(className)
+        .then(({ data }) => renderMethodPage(className, methodName, data))
+        .catch((err) => {
+          document.getElementById('dynamic-content').innerHTML = `<h1 style="color:red;">Load Error</h1><p>${(err && err.message) ? err.message : err}</p>`;
+        });
     }
 
     function renderMethodPage(className, methodName, classDoc) {
@@ -197,7 +148,7 @@
       };
       const renderClassLink = (name) => {
         const classNameValue = (name ?? '').toString();
-        return classNameValue ? `<a href="class.html?class=${encodeURIComponent(classNameValue)}">${classNameValue}</a>` : '';
+        return classNameValue ? `<a href="${window.GuildaDocLoader.pageUrl('class.html', { class: classNameValue })}">${classNameValue}</a>` : '';
       };
       const splitLines = (text) => (text ?? '').toString().replace(/\r\n?/g, '\n').split('\n').map((line) => line.trim());
       const normalizeCell = (value, fallback = 'N/A') => {
@@ -268,10 +219,13 @@
         return rawList
           .map((p) => ({
             name: p?.name || p?.Name || '',
+            kind: p?.kind || p?.Kind || '',
             type: p?.type || p?.Type || p?.class || p?.Class || '',
+            unit: p?.unit || p?.Unit || '',
             description: p?.description || p?.Description || p?.desc || p?.Desc || '',
             required: p?.required ?? p?.Required ?? '',
-            default: p?.default ?? p?.Default ?? ''
+            default: p?.default ?? p?.Default ?? '',
+            constraints: p?.constraints || p?.Constraints || p?.range || p?.Range || ''
           }))
           .filter((p) => (p.name || p.description || p.type));
       };
@@ -282,6 +236,7 @@
           .map((r) => ({
             name: r?.name || r?.Name || '',
             type: r?.type || r?.Type || r?.class || r?.Class || '',
+            unit: r?.unit || r?.Unit || '',
             description: r?.description || r?.Description || r?.desc || r?.Desc || ''
           }))
           .filter((r) => (r.name || r.description || r.type));
@@ -304,17 +259,21 @@
 
       const normalizeMethod = (m) => ({
         name: m?.Name || '',
-        description: m?.Desc || m?.Abst || '',
-        overview: m?.Overview || m?.Summary || m?.Abst || '',
+        summary: m?.Summary || m?.Abst || '',
+        description: m?.Desc || m?.Summary || m?.Abst || '',
+        overview: m?.Summary || m?.Overview || m?.Abst || m?.Desc || '',
         role: m?.Role || '',
         defining: m?.Defining || '',
         abstract: m?.Abstract ?? false,
         access: m?.Access || '',
         static: m?.Static ?? false,
         hidden: m?.Hidden ?? false,
-        option: m?.Option || '',
         signatures: m?.Signatures || [],
-        detailsCode: m?.DetailsCode || m?.Implementation || m?.DescriptionCode || '',
+        notes: m?.Notes || m?.DetailsCode || m?.Implementation || m?.DescriptionCode || '',
+        throws: m?.Throws || '',
+        seeAlso: m?.SeeAlso || [],
+        since: m?.Since || '',
+        deprecated: m?.Deprecated || '',
         parameters: normalizeParamArray(m?.Parameters || m?.Arguments),
         returns: normalizeReturnArray(m?.Returns || m?.ReturnValues),
         examples: m?.Examples || m?.Example || '',
@@ -368,7 +327,7 @@
 
       let html = `
         <div style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">
-          <a href="index.html">Home</a> &gt; <a href="class.html?class=${className}">${className}</a> &gt; ${methodName}
+          <a href="${window.GuildaDocLoader.pageUrl('index.html')}">Home</a> &gt; <a href="${window.GuildaDocLoader.pageUrl('class.html', { class: className })}">${className}</a> &gt; ${methodName}
         </div>
         <h1 style="font-size: 2.5rem; margin-bottom: 10px;">${methodName}</h1>
         <div style="margin: -4px 0 10px 0; color: #666; font-size: 0.95rem;">
@@ -391,6 +350,9 @@
               <tr><th>Static</th><td>${toBoolText(methodData.static)}</td></tr>
               <tr><th>Abstract</th><td>${toBoolText(methodData.abstract)}</td></tr>
               <tr><th>Hidden</th><td>${toBoolText(methodData.hidden)}</td></tr>
+              <tr><th>Role</th><td>${normalizeCell(methodData.role)}</td></tr>
+              <tr><th>Since</th><td>${normalizeCell(methodData.since)}</td></tr>
+              <tr><th>Deprecated</th><td>${normalizeCell(methodData.deprecated, 'No')}</td></tr>
             </tbody>
           </table>
         </div>
@@ -404,11 +366,15 @@
         <div class="meta-box">
           <div class="markdown-content">${renderMarkdown(normalizedDescription || 'N/A')}</div>
         </div>
-        ${methodData.detailsCode ? `
+        ${methodData.notes ? `
           <div class="meta-box" style="margin-top: -8px;">
-            <h3 style="margin-top: 0;">Implementation Notes (Code)</h3>
-            <pre><code>${escapeHtml(methodData.detailsCode)}</code></pre>
+            <h3 style="margin-top: 0;">Notes</h3>
+            <div class="markdown-content">${renderMarkdown(methodData.notes)}</div>
           </div>
+        ` : ''}
+        ${methodData.throws ? `
+          <h2 id="errors">Errors</h2>
+          <div class="meta-box"><div class="markdown-content">${renderMarkdown(methodData.throws)}</div></div>
         ` : ''}
       `;
 
@@ -419,10 +385,13 @@
             <thead>
               <tr>
                 <th style="width: 20%;">Name</th>
-                <th style="width: 18%;">Type / Class</th>
+                <th style="width: 12%;">Kind</th>
+                <th style="width: 16%;">Type / Class</th>
+                <th style="width: 10%;">Unit</th>
                 <th style="width: auto;">Description</th>
-                <th style="width: 16%;">Required</th>
-                <th style="width: 16%;">Default</th>
+                <th style="width: 12%;">Required</th>
+                <th style="width: 14%;">Default</th>
+                <th style="width: 18%;">Constraints</th>
               </tr>
             </thead>
             <tbody>
@@ -434,10 +403,13 @@
                 return `
                   <tr>
                     <td><strong>${normalizeCell(p.name, '-')}</strong></td>
+                    <td>${normalizeCell(p.kind, 'Positional')}</td>
                     <td>${normalizeCell(p.type, 'N/A')}</td>
+                    <td>${normalizeCell(p.unit, 'N/A')}</td>
                     <td>${normalizeCell(p.description, '-')}</td>
                     <td>${escapeHtml(requiredText)}</td>
                     <td>${escapeHtml(defaultText)}</td>
+                    <td>${normalizeCell(p.constraints, 'N/A')}</td>
                   </tr>
                 `;
               }).join('')}
@@ -456,6 +428,7 @@
               <tr>
                 <th style="width: 22%;">Name</th>
                 <th style="width: 22%;">Type</th>
+                <th style="width: 14%;">Unit</th>
                 <th style="width: auto;">Description</th>
               </tr>
             </thead>
@@ -464,6 +437,7 @@
                 <tr>
                   <td><strong>${normalizeCell(r.name, '-')}</strong></td>
                   <td>${normalizeCell(r.type, 'N/A')}</td>
+                  <td>${normalizeCell(r.unit, 'N/A')}</td>
                   <td>${normalizeCell(r.description, '-')}</td>
                 </tr>
               `).join('')}
@@ -479,6 +453,11 @@
         html += `<div class="meta-box">${examplesList.map((exampleText) => `<div class="example-block">${renderMarkdown(exampleText)}</div>`).join('')}</div>`;
       } else {
         html += `<p>No examples.</p>`;
+      }
+
+      const seeAlsoList = normalizeSignatureList(methodData.seeAlso);
+      if (seeAlsoList.length > 0) {
+        html += `<h2 id="see-also">See Also</h2><div class="meta-box"><p>${seeAlsoList.map((item) => `<code>${escapeHtml(item)}</code>`).join(', ')}</p></div>`;
       }
 
       container.innerHTML = html;

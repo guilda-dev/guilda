@@ -1,4 +1,8 @@
-function export_class_database(str_class_list)
+function sct_summary = export_class_database(str_class_list, option)
+    arguments
+        str_class_list
+        option.strict (1,1) logical = false
+    end
     str_class_list = string(str_class_list);
     
     n_class = numel(str_class_list);
@@ -10,6 +14,7 @@ function export_class_database(str_class_list)
     rv_character = strlength(str_class_list);
     r_indent = max(rv_character) + 2;
     sct_class_info = struct([]);
+    sct_validation = repmat(struct('ClassName', '', 'Warnings', {{}}, 'Errors', {{}}), 0, 1);
     for i_class = 1:n_class
         str_class_i = str_class_list(i_class);
         str_class_char = char(str_class_i);
@@ -17,11 +22,29 @@ function export_class_database(str_class_list)
 
         fprintf("  export("+num2str(i_class, '%.3d') + "/" + num2str(n_class, '%.0f') + "): " + str_class_i + str_indent + " ... ")
         try
-            sct_info_i = export_class_doc(str_class_char);
+            [sct_info_i, sct_validation_i] = export_class_doc(str_class_char);
             sct_class_info = [sct_class_info, sct_info_i]; %#ok<AGROW>
-            disp("ok")
-        catch
+            sct_validation(end+1,1) = sct_validation_i; %#ok<AGROW>
+            n_warning_i = numel(sct_validation_i.Warnings);
+            n_error_i   = numel(sct_validation_i.Errors);
+            if n_warning_i == 0 && n_error_i == 0
+                disp("ok")
+            else
+                fprintf("ok (%d warning(s), %d error(s))\n", n_warning_i, n_error_i)
+                if option.strict
+                    cellfun(@(msg) fprintf("    warning: %s\n", msg), sct_validation_i.Warnings);
+                end
+                cellfun(@(msg) fprintf("    error: %s\n", msg), sct_validation_i.Errors);
+            end
+        catch ME
             disp("failed")
+            str_report = getReport(ME, 'extended', 'hyperlinks', 'off');
+            fprintf("%s\n", str_report)
+            sct_validation(end+1,1) = struct( ...
+                'ClassName', str_class_char, ...
+                'Warnings', {{}}, ...
+                'Errors', {{sprintf('Class export failed: %s', ME.message)}} ...
+            ); %#ok<AGROW>
         end
     end
 
@@ -31,8 +54,36 @@ function export_class_database(str_class_list)
 
     str_GUILDApath = GUILDA.pwd();
     str_file_name  = fullfile(str_GUILDApath, '_GUILDAdoc', 'database', 'list_Classes.js');
-    str_json       = jsonencode(sct_class_info, 'PrettyPrint', true);
-    str_js_content = sprintf('const class_list = %s;\n', str_json);
+    sct_schema = struct( ...
+        'name',                 'GUILDA documentation class index', ...
+        'version',              2, ...
+        'classDocumentVersion', 2, ...
+        'pathBase',             '_GUILDAdoc' ...
+    );
+    sct_schema.modelCategories = { ...
+        'PowerNetwork', 'Bus', 'Branch', 'Component', 'LocalController', 'GlobalController' ...
+    };
+    sct_schema.coreClasses = sct_schema.modelCategories;
+    sct_schema.tags = get_tag_schema();
+    sct_schema.legacyAliases = struct( ...
+        'Abst', 'Summary', ...
+        'varargin', 'Parameters', ...
+        'varargout', 'Returns', ...
+        'DetailsCode', 'Notes' ...
+    );
+    sct_database         = struct();
+    sct_database.schema  = sct_schema;
+    sct_database.classes = sct_class_info;
+    sct_database.validation = struct();
+    sct_database.validation.warningCount = sum(arrayfun(@(v) numel(v.Warnings), sct_validation));
+    sct_database.validation.errorCount   = sum(arrayfun(@(v) numel(v.Errors), sct_validation));
+    sct_database.validation.classes      = sct_validation;
+    str_json             = jsonencode(sct_database, 'PrettyPrint', true);
+    str_js_content       = sprintf([ ...
+        'window.GUILDA_DOC_INDEX = %s;\n', ...
+        'window.classListData = window.GUILDA_DOC_INDEX.classes;\n', ...
+        'const class_list = window.classListData;\n' ...
+    ], str_json);
     
     % Overwrite output file.
     file_id       = fopen(str_file_name, 'w', 'n', 'UTF-8');
@@ -41,59 +92,107 @@ function export_class_database(str_class_list)
     end
     fprintf(file_id, '%s', str_js_content);
     fclose(file_id);
+
+    sct_summary = struct( ...
+        'ClassCount',   numel(sct_class_info), ...
+        'WarningCount', sct_database.validation.warningCount, ...
+        'ErrorCount',   sct_database.validation.errorCount ...
+    );
+    if option.strict && sct_summary.ErrorCount > 0
+        error('export_class_database:ValidationFailed', ...
+            'Documentation validation failed with %d error(s).', sct_summary.ErrorCount);
+    end
 end
 
 
 
-function sct_info = export_class_doc(str_class_name)
+function [sct_info, sct_validation] = export_class_doc(str_class_name)
     % This method uses MATLAB's reflection capabilities to extract metadata from the class properties and methods.
     % It also reads custom tags defined in the help comments.
     % The extracted information is saved as a JavaScript file for the GUILDA documentation database.
     meta_class       = meta.class.fromName(str_class_name);
     
-    cell_prop_tags   = {'Desc', 'Role', 'Type', 'Size'};
-    cell_method_tags = {
-        'Desc', 'Role', 'Abst', 'DetailsCode', ...
-        'Signatures', ...
-        'Argin', 'Parameters', ...
-        'Argout', 'Returns', ...
-        'Examples', ...
-        'Option'
+    cell_prop_tags   = { ...
+        'Summary', 'Desc', 'Role', 'Type', 'Size', 'Unit', 'Default', ...
+        'Constraints', 'Notes', 'SeeAlso', 'Since', 'Deprecated' ...
     };
-    cell_class_tags  = {'Desc', 'Role', 'Constructor'};
+    cell_method_tags = {
+        'Summary', 'Desc', 'Role', 'Signatures', 'Parameters', 'Returns', ...
+        'Examples', 'Notes', 'Throws', 'SeeAlso', 'Since', 'Deprecated'
+    };
+    cell_class_tags  = { ...
+        'Summary', 'Desc', 'Role', 'Constructor', 'Notes', ...
+        'SeeAlso', 'Since', 'Deprecated' ...
+    };
 
-    sct_doc_data            = struct('ClassName', str_class_name, 'properties', [], 'methods', []);
-    sct_doc_data.properties = build_meta_section(meta_class.PropertyList, str_class_name, cell_prop_tags,   "property");
-    sct_doc_data.methods    = build_meta_section(meta_class.MethodList,   str_class_name, cell_method_tags, "method"  );
-    sct_info                = build_class_info(str_class_name, meta_class, cell_class_tags);
+    sct_doc_data            = struct( ...
+        'schema', struct('name', 'GUILDA class document', 'version', 2), ...
+        'ClassName', str_class_name, ...
+        'properties', [], ...
+        'methods', [], ...
+        'validation', struct('Warnings', {{}}, 'Errors', {{}}) ...
+    );
+    [sct_doc_data.properties, cell_prop_diagnostics] = build_meta_section(meta_class.PropertyList, str_class_name, cell_prop_tags, "property");
+    [sct_doc_data.methods, cell_method_diagnostics]  = build_meta_section(meta_class.MethodList, str_class_name, cell_method_tags, "method");
+    [sct_info, cell_class_diagnostics]               = build_class_info(str_class_name, meta_class, cell_class_tags);
+    cell_diagnostics = [cell_class_diagnostics; cell_prop_diagnostics; cell_method_diagnostics];
+    cell_warnings = cell_diagnostics(startsWith(cell_diagnostics, 'WARNING:'));
+    cell_errors   = cell_diagnostics(startsWith(cell_diagnostics, 'ERROR:'));
+    cell_warnings = erase(cell_warnings, 'WARNING: ');
+    cell_errors   = erase(cell_errors, 'ERROR: ');
+    sct_doc_data.validation = struct('Warnings', {cell_warnings}, 'Errors', {cell_errors});
+    sct_info.DocumentationStatus = char(get_documentation_status(cell_warnings, cell_errors));
+    sct_info.DocumentationWarnings = numel(cell_warnings);
+    sct_info.DocumentationErrors = numel(cell_errors);
+    sct_validation = struct('ClassName', str_class_name, 'Warnings', {cell_warnings}, 'Errors', {cell_errors});
 
     % Output JS file
     str_filepath   = which(str_class_name);
     str_GUILDApath = GUILDA.pwd;
     if contains(str_filepath, fullfile(str_GUILDApath, '_GUILDAsystem'))
+        str_database_folder = 'GUILDAsystem';
         str_file_name = fullfile(str_GUILDApath, '_GUILDAdoc', 'database', 'GUILDAsystem', [str_class_name, '.js']);
     else
+        str_database_folder = 'GUILDAobject';
         str_file_name = fullfile(str_GUILDApath, '_GUILDAdoc', 'database', 'GUILDAobject', [str_class_name, '.js']);
     end
-    sct_info.path  = str_file_name;
+    sct_info.path  = strrep(fullfile('.', 'database', str_database_folder, [str_class_name, '.js']), '\\', '/');
     str_json       = jsonencode(sct_doc_data, 'PrettyPrint', true);
-    str_js_content = sprintf('const classData = %s;\n', str_json);
+    str_class_key  = jsonencode(str_class_name);
+    str_js_content = sprintf([ ...
+        '(function (root) {\n', ...
+        '  const data = %s;\n', ...
+        '  root.GUILDA_DOC_CLASSES = root.GUILDA_DOC_CLASSES || {};\n', ...
+        '  root.GUILDA_DOC_CLASSES[%s] = data;\n', ...
+        '  root.classData = data;\n', ...
+        '})(window);\n' ...
+    ], str_json, str_class_key);
     file_id        = fopen(str_file_name, 'w', 'n', 'UTF-8');
+    if file_id < 0
+        error('export_class_database:FileOpenFailed', 'Failed to open output file: %s', str_file_name);
+    end
     fprintf(file_id, '%s', str_js_content);
     fclose(file_id);
 end
 
-function sct_section = build_meta_section(meta_list, str_class_name, cell_tags, str_kind)
+function [sct_section, cell_diagnostics] = build_meta_section(meta_list, str_class_name, cell_tags, str_kind)
     sct_section = struct([]);
+    cell_diagnostics = cell(0,1);
     for i_item = 1:numel(meta_list)
-        meta_item   = meta_list(i_item);
+        if iscell(meta_list)
+            meta_item = meta_list{i_item};
+        else
+            meta_item = meta_list(i_item);
+        end
         if ~strcmp(meta_item.DefiningClass.Name,'handle') && ~strcmp(meta_item.Name,'empty')
-            sct_section = [sct_section, build_meta_info(meta_item, str_class_name, cell_tags, str_kind)]; 
+            [sct_info_i, cell_diagnostics_i] = build_meta_info(meta_item, str_class_name, cell_tags, str_kind);
+            sct_section = [sct_section, sct_info_i]; %#ok<AGROW>
+            cell_diagnostics = [cell_diagnostics; cell_diagnostics_i]; %#ok<AGROW>
         end
     end
 end
 
-function sct_info = build_meta_info(meta_item, str_class_name, cell_tags, str_kind)
+function [sct_info, cell_diagnostics] = build_meta_info(meta_item, str_class_name, cell_tags, str_kind)
     if str_kind == "property"
         sct_info = struct( ...
             'Name',      meta_item.Name,               ...
@@ -120,7 +219,13 @@ function sct_info = build_meta_info(meta_item, str_class_name, cell_tags, str_ki
     if isempty(strtrim(str_raw_help))
         str_raw_help = sanitize_help_text([meta_item.Description,newline, meta_item.DetailedDescription]);
     end
-    sct_info = apply_help_tags(sct_info, str_raw_help, cell_tags);
+    str_context = char(str_class_name + "." + string(meta_item.Name));
+    [sct_info, cell_diagnostics] = apply_help_tags(sct_info, str_raw_help, cell_tags, str_kind, str_context);
+    if str_kind == "method" && strcmp(meta_item.DefiningClass.Name, str_class_name) ...
+            && is_public_access(sct_info.Access) && ~sct_info.Hidden ...
+            && isempty(strtrim(sct_info.Summary)) && isempty(strtrim(sct_info.Desc))
+        cell_diagnostics{end+1,1} = sprintf('WARNING: %s: public method has no Summary or Desc.', str_context);
+    end
 end
 
 function str_access = organize_access(dat)
@@ -129,18 +234,19 @@ function str_access = organize_access(dat)
         return
     end
 
-    if isscalar(dat)
+    if iscell(dat)
+        cell_access = cellfun(@organize_access, dat, 'UniformOutput', false);
+        cell_access = cell_access(~cellfun(@isempty, cell_access));
+        str_access = strjoin(cell_access, ', ');
+    elseif isscalar(dat)
         str_access = dat.Name;
-    elseif iscell(dat)
-        str_access = tools.hcellfun(@(d) [d.Name,', '], dat);
-        str_access = str_access(1:(end-2));
     else
-        str_access = tools.harrayfun(@(d) [d.Name,', '], dat);
-        str_access = str_access(1:(end-2));
+        cell_access = arrayfun(@(d) organize_access(d), dat, 'UniformOutput', false);
+        str_access = strjoin(cell_access, ', ');
     end
 end
 
-function sct_info = build_class_info(str_class_name, meta_class, cell_tags)
+function [sct_info, cell_diagnostics] = build_class_info(str_class_name, meta_class, cell_tags)
     cell_superclasses = superclasses(str_class_name);
 
     if any(strcmp(cell_superclasses, "PowerSystemModel"))
@@ -174,7 +280,10 @@ function sct_info = build_class_info(str_class_name, meta_class, cell_tags)
     if isempty(strtrim(str_help))
         str_help = sanitize_help_text([meta_class.Description,newline, meta_class.DetailedDescription]);
     end
-    sct_info = apply_help_tags(sct_info, str_help, cell_tags);
+    [sct_info, cell_diagnostics] = apply_help_tags(sct_info, str_help, cell_tags, "class", str_class_name);
+    if isempty(strtrim(sct_info.Summary)) && isempty(strtrim(sct_info.Desc))
+        cell_diagnostics{end+1,1} = sprintf('WARNING: %s: class has no Summary or Desc.', str_class_name);
+    end
 end
 
 function str_help = get_class_help_text(str_class_name)
@@ -212,7 +321,7 @@ function str_help = get_member_help_text(str_class_name, meta_item, str_kind)
 end
 
 function str_help = try_help(str_symbol)
-    str_help = '';
+    str_help = ''; %#ok<NASGU>
     try
         str_help = char(string(help(char(str_symbol))));
     catch
@@ -397,13 +506,37 @@ function str_clean_help = sanitize_help_text(str_raw_help)
     str_clean_help = strjoin(cell_lines, newline);
 end
 
-function sct_info = apply_help_tags(sct_info, str_raw_help, cell_tags)
-    sct_parsed_tags = parse_tagged_help(str_raw_help);
+function [sct_info, cell_diagnostics] = apply_help_tags(sct_info, str_raw_help, cell_tags, str_kind, str_context)
+    [sct_parsed_tags, cell_source_tags] = parse_tagged_help(str_raw_help);
+    cell_diagnostics = cell(0,1);
+
+    cell_allowed_tags = get_allowed_source_tags(cell_tags);
+    cell_unknown_tags = setdiff(unique(cell_source_tags, 'stable'), cell_allowed_tags, 'stable');
+    for i_tag = 1:numel(cell_unknown_tags)
+        cell_diagnostics{end+1,1} = sprintf( ...
+            'WARNING: %s: unknown %s tag <@%s>.', ...
+            str_context, str_kind, cell_unknown_tags{i_tag}); %#ok<AGROW>
+    end
+
+    cell_unique_tags = unique(cell_source_tags, 'stable');
+    for i_tag = 1:numel(cell_unique_tags)
+        if sum(strcmp(cell_source_tags, cell_unique_tags{i_tag})) > 1
+            cell_diagnostics{end+1,1} = sprintf( ...
+                'WARNING: %s: duplicate tag <@%s>; the last value is used.', ...
+                str_context, cell_unique_tags{i_tag}); %#ok<AGROW>
+        end
+    end
+
     for i_tag = 1:numel(cell_tags)
         str_tag_name = cell_tags{i_tag};
         [bln_found, str_source_tag] = resolve_tag_alias(sct_parsed_tags, str_tag_name);
         if bln_found
-            sct_info.(str_tag_name) = parse_tag_value(str_tag_name, sct_parsed_tags.(str_source_tag));
+            [sct_info.(str_tag_name), str_error] = parse_tag_value(str_tag_name, sct_parsed_tags.(str_source_tag));
+            if ~isempty(str_error)
+                cell_diagnostics{end+1,1} = sprintf( ...
+                    'ERROR: %s: invalid <@%s> value: %s', ...
+                    str_context, str_source_tag, str_error); %#ok<AGROW>
+            end
         else
             sct_info.(str_tag_name) = get_default_tag_value(str_tag_name);
         end
@@ -413,12 +546,20 @@ end
 function [bln_found, str_source_tag] = resolve_tag_alias(sct_parsed_tags, str_tag_name)
     cell_candidates = {str_tag_name};
     switch str_tag_name
+        case 'Summary'
+            cell_candidates = {'Summary', 'Abst'};
+        case 'Desc'
+            cell_candidates = {'Desc', 'Description'};
         case 'Parameters'
             cell_candidates = {'Parameters', 'varargin'};
         case 'Returns'
             cell_candidates = {'Returns', 'varargout'};
-        case 'Abst'
-            cell_candidates = {'Abst'};
+        case 'Notes'
+            cell_candidates = {'Notes', 'DetailsCode'};
+        case 'Examples'
+            cell_candidates = {'Examples', 'Example'};
+        case 'SeeAlso'
+            cell_candidates = {'SeeAlso', 'Seealso'};
     end
 
     bln_found = false;
@@ -433,7 +574,30 @@ function [bln_found, str_source_tag] = resolve_tag_alias(sct_parsed_tags, str_ta
     end
 end
 
-function sct_tag_data = parse_tagged_help(rawHelp)
+function cell_allowed_tags = get_allowed_source_tags(cell_canonical_tags)
+    cell_allowed_tags = cell(0,1);
+    for i_tag = 1:numel(cell_canonical_tags)
+        str_tag_name = cell_canonical_tags{i_tag};
+        switch str_tag_name
+            case 'Summary';    cell_aliases = {'Summary', 'Abst'};
+            case 'Desc';       cell_aliases = {'Desc', 'Description'};
+            case 'Parameters'; cell_aliases = {'Parameters', 'varargin'};
+            case 'Returns';    cell_aliases = {'Returns', 'varargout'};
+            case 'Notes';      cell_aliases = {'Notes', 'DetailsCode'};
+            case 'Examples';   cell_aliases = {'Examples', 'Example'};
+            case 'SeeAlso';    cell_aliases = {'SeeAlso', 'Seealso'};
+            otherwise;        cell_aliases = {str_tag_name};
+        end
+        cell_allowed_tags = [cell_allowed_tags; cell_aliases(:)]; %#ok<AGROW>
+    end
+    sct_all_tags = get_tag_schema();
+    cell_all_canonical = [sct_all_tags.class(:); sct_all_tags.property(:); sct_all_tags.method(:)];
+    cell_all_aliases = {'Abst'; 'Description'; 'varargin'; 'varargout'; 'DetailsCode'; 'Example'; 'Seealso'};
+    cell_allowed_tags = [cell_allowed_tags; cell_all_canonical; cell_all_aliases];
+    cell_allowed_tags = unique(cell_allowed_tags, 'stable');
+end
+
+function [sct_tag_data, cell_tag_names] = parse_tagged_help(rawHelp)
     str_help_text = char(string(rawHelp));
     str_help_text = regexprep(str_help_text, '\r\n?', '\n');
 
@@ -442,6 +606,7 @@ function sct_tag_data = parse_tagged_help(rawHelp)
     [cell_tag_tokens, iv_tag_starts, iv_tag_ends] = regexp(str_help_text, str_tag_pattern, 'tokens', 'start', 'end');
 
     sct_tag_data = struct();
+    cell_tag_names = cellfun(@(token) token{1}, cell_tag_tokens, 'UniformOutput', false);
     if isempty(iv_tag_starts)
         return
     end
@@ -481,32 +646,33 @@ end
 
 function out = get_default_tag_value(str_tag_name)
     switch str_tag_name
-        case {'Signatures', 'Examples'}
+        case {'Signatures', 'Examples', 'SeeAlso'}
             out = {};
         case {'Parameters'}
-            out = struct('Name', {}, 'Type', {}, 'Description', {}, 'Required', {}, 'Default', {});
+            out = empty_parameter_struct();
         case {'Returns'}
-            out = struct('Name', {}, 'Type', {}, 'Description', {});
+            out = empty_return_struct();
         otherwise
             out = '';
     end
 end
 
-function out = parse_tag_value(str_tag_name, str_raw_value)
+function [out, str_error] = parse_tag_value(str_tag_name, str_raw_value)
+    str_error = '';
     switch str_tag_name
-        case {'Signatures', 'Examples'}
-            out = parse_json_string_list(str_raw_value);
+        case {'Signatures', 'Examples', 'SeeAlso'}
+            [out, str_error] = parse_json_string_list(str_raw_value);
         case 'Parameters'
-            out = parse_json_parameters(str_raw_value);
+            [out, str_error] = parse_json_parameters(str_raw_value);
         case 'Returns'
-            out = parse_json_returns(str_raw_value);
+            [out, str_error] = parse_json_returns(str_raw_value);
         otherwise
             out = char(string(str_raw_value));
     end
 end
 
-function out = parse_json_string_list(str_raw_value)
-    val_json = try_jsondecode(str_raw_value);
+function [out, str_error] = parse_json_string_list(str_raw_value)
+    [val_json, str_error] = try_jsondecode(str_raw_value);
     if isempty(val_json)
         out = {};
         return
@@ -523,55 +689,74 @@ function out = parse_json_string_list(str_raw_value)
         out = cellfun(@(x) char(string(x)), val_json, 'UniformOutput', false);
     else
         out = {};
+        str_error = 'expected a JSON string or array of strings.';
     end
 end
 
-function out = parse_json_parameters(str_raw_value)
-    val_json = try_jsondecode(str_raw_value);
-    if isempty(val_json) || ~isstruct(val_json)
-        out = struct('Name', {}, 'Type', {}, 'Description', {}, 'Required', {}, 'Default', {});
+function [out, str_error] = parse_json_parameters(str_raw_value)
+    [val_json, str_error] = try_jsondecode(str_raw_value);
+    if isempty(val_json)
+        out = empty_parameter_struct();
+        return
+    end
+    if ~isstruct(val_json)
+        out = empty_parameter_struct();
+        str_error = 'expected a JSON object or array of parameter objects.';
         return
     end
 
     out = normalize_parameter_struct_array(val_json);
 end
 
-function out = parse_json_returns(str_raw_value)
-    val_json = try_jsondecode(str_raw_value);
-    if isempty(val_json) || ~isstruct(val_json)
-        out = struct('Name', {}, 'Type', {}, 'Description', {});
+function [out, str_error] = parse_json_returns(str_raw_value)
+    [val_json, str_error] = try_jsondecode(str_raw_value);
+    if isempty(val_json)
+        out = empty_return_struct();
+        return
+    end
+    if ~isstruct(val_json)
+        out = empty_return_struct();
+        str_error = 'expected a JSON object or array of return-value objects.';
         return
     end
 
     out = normalize_return_struct_array(val_json);
 end
 
-function val = try_jsondecode(str_raw_value)
+function [val, str_error] = try_jsondecode(str_raw_value)
     val = [];
+    str_error = '';
     str_text = strtrim(char(string(str_raw_value)));
     if isempty(str_text)
         return
     end
     if ~(startsWith(str_text, '[') || startsWith(str_text, '{'))
+        str_error = 'structured tags must contain JSON beginning with [ or {.';
         return
     end
     try
         val = jsondecode(str_text);
-    catch
+    catch ME
         val = [];
+        str_error = ME.message;
     end
 end
 
 function out = normalize_parameter_struct_array(val)
     if ~isstruct(val)
-        out = struct('Name', {}, 'Type', {}, 'Description', {}, 'Required', {}, 'Default', {});
+        out = empty_parameter_struct();
         return
     end
     val = val(:);
-    out = repmat(struct('Name', '', 'Type', '', 'Description', '', 'Required', '', 'Default', ''), numel(val), 1);
+    out = repmat(struct( ...
+        'Name', '', 'Kind', '', 'Type', '', 'Unit', '', 'Description', '', ...
+        'Required', '', 'Default', '', 'Constraints', '' ...
+    ), numel(val), 1);
     for i = 1:numel(val)
         out(i).Name = get_struct_field_str(val(i), {'Name','name'});
+        out(i).Kind = get_struct_field_str(val(i), {'Kind','kind'});
         out(i).Type = get_struct_field_str(val(i), {'Type','type','Class','class'});
+        out(i).Unit = get_struct_field_str(val(i), {'Unit','unit'});
         out(i).Description = get_struct_field_str(val(i), {'Description','description','Desc','desc'});
         req = get_struct_field(val(i), {'Required','required'});
         if isempty(req)
@@ -580,21 +765,34 @@ function out = normalize_parameter_struct_array(val)
             out(i).Required = req;
         end
         out(i).Default = get_struct_field_str(val(i), {'Default','default'});
+        out(i).Constraints = get_struct_field_str(val(i), {'Constraints','constraints','Range','range'});
     end
 end
 
 function out = normalize_return_struct_array(val)
     if ~isstruct(val)
-        out = struct('Name', {}, 'Type', {}, 'Description', {});
+        out = empty_return_struct();
         return
     end
     val = val(:);
-    out = repmat(struct('Name', '', 'Type', '', 'Description', ''), numel(val), 1);
+    out = repmat(struct('Name', '', 'Type', '', 'Unit', '', 'Description', ''), numel(val), 1);
     for i = 1:numel(val)
         out(i).Name = get_struct_field_str(val(i), {'Name','name'});
         out(i).Type = get_struct_field_str(val(i), {'Type','type','Class','class'});
+        out(i).Unit = get_struct_field_str(val(i), {'Unit','unit'});
         out(i).Description = get_struct_field_str(val(i), {'Description','description','Desc','desc'});
     end
+end
+
+function out = empty_parameter_struct()
+    out = struct( ...
+        'Name', {}, 'Kind', {}, 'Type', {}, 'Unit', {}, 'Description', {}, ...
+        'Required', {}, 'Default', {}, 'Constraints', {} ...
+    );
+end
+
+function out = empty_return_struct()
+    out = struct('Name', {}, 'Type', {}, 'Unit', {}, 'Description', {});
 end
 
 function out = get_struct_field(s, candidates)
@@ -616,4 +814,36 @@ function out = get_struct_field_str(s, candidates)
     else
         out = char(string(v));
     end
+end
+
+function sct_schema = get_tag_schema()
+    sct_schema = struct();
+    sct_schema.class = { ...
+        'Summary', 'Desc', 'Role', 'Constructor', 'Notes', ...
+        'SeeAlso', 'Since', 'Deprecated' ...
+    };
+    sct_schema.property = { ...
+        'Summary', 'Desc', 'Role', 'Type', 'Size', 'Unit', 'Default', ...
+        'Constraints', 'Notes', 'SeeAlso', 'Since', 'Deprecated' ...
+    };
+    sct_schema.method = { ...
+        'Summary', 'Desc', 'Role', 'Signatures', 'Parameters', 'Returns', ...
+        'Examples', 'Notes', 'Throws', 'SeeAlso', 'Since', 'Deprecated' ...
+    };
+    sct_schema.structured = {'Signatures', 'Parameters', 'Returns', 'Examples', 'SeeAlso'};
+end
+
+function str_status = get_documentation_status(cell_warnings, cell_errors)
+    if ~isempty(cell_errors)
+        str_status = "error";
+    elseif ~isempty(cell_warnings)
+        str_status = "warning";
+    else
+        str_status = "ok";
+    end
+end
+
+function bln_public = is_public_access(str_access)
+    str_access = lower(strtrim(char(string(str_access))));
+    bln_public = strcmp(str_access, 'public') || isempty(str_access);
 end

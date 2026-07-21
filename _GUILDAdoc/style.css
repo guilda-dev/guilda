@@ -89,8 +89,6 @@ tr:hover { background-color: #f8fbff; }
 .btn:hover { background-color: var(--primary-color); color: #fff; text-decoration: none; }
 
 .search-box { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 1rem; box-sizing: border-box; }
-.sortable-header { cursor: pointer; user-select: none; transition: background-color 0.2s; }
-.sortable-header:hover { background-color: #0b3960; }
 
 /* =========================================
    3. ホームページ用レイアウト (index.html)
@@ -219,31 +217,212 @@ body.home-layout main { max-width: 1050px; width: 95%; margin: 30px auto; backgr
 .core-class-card h3 { margin: 0; font-family: monospace; font-size: 1.1rem; color: var(--primary-color); }
 
 
-/* --- トグルボタン（継承クラス） --- */
+/* --- Referenceタブ：分類ボタンと表内継承ツリー --- */
 .filter-toggles {
   display: flex;
   flex-wrap: nowrap;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 0;
   overflow-x: auto;
   padding-bottom: 2px;
 }
+
 .filter-btn {
-  background-color: #fff;
+  flex: 0 0 auto;
+  padding: 8px 16px;
   border: 1px solid var(--border-color);
   border-radius: 20px;
-  padding: 8px 16px;
+  outline: none;
+  background-color: #fff;
   color: #555;
   cursor: pointer;
   font-family: monospace;
-  font-weight: bold;
   font-size: 0.9rem;
+  font-weight: bold;
   transition: all 0.2s;
-  outline: none;
-  flex: 0 0 auto;
 }
-.filter-btn:hover { background-color: #f1f5f9; border-color: var(--primary-color); }
-.filter-btn.active { background-color: var(--primary-color); color: #fff; border-color: var(--primary-color); }
+
+.filter-btn:hover {
+  border-color: var(--primary-color);
+  background-color: #f1f5f9;
+}
+
+.filter-btn.active {
+  border-color: var(--primary-color);
+  background-color: var(--primary-color);
+  color: #fff;
+}
+
+.inheritance-table {
+  table-layout: fixed;
+}
+
+.inheritance-table th:first-child,
+.inheritance-table td:first-child {
+  width: 48%;
+}
+
+.inheritance-table th:nth-child(2),
+.inheritance-table td:nth-child(2) {
+  width: 12%;
+}
+
+.inheritance-table th:nth-child(3),
+.inheritance-table td:nth-child(3) {
+  width: 40%;
+}
+
+.inheritance-table td:first-child {
+  position: relative;
+  white-space: nowrap;
+}
+
+.tree-table-name {
+  display: flex;
+  min-width: max-content;
+  min-height: 22px;
+  padding-left: calc(var(--tree-depth, 0) * 22px);
+  align-items: center;
+  gap: 0;
+  box-sizing: border-box;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+.tree-guide {
+  position: absolute;
+  top: 0;
+  bottom: -1px;
+  left: calc(8px + var(--tree-level, 0) * 22px);
+  width: 22px;
+  pointer-events: none;
+}
+
+.tree-guide.has-next::before,
+.tree-guide.tree-branch.is-last::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 9px;
+  border-left: 2px solid #b2c4d3;
+}
+
+.tree-guide.has-next::before {
+  bottom: -1px;
+}
+
+.tree-guide.tree-branch.is-last::before {
+  bottom: 50%;
+}
+
+.tree-guide.tree-branch::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 9px;
+  width: 13px;
+  border-top: 2px solid #b2c4d3;
+}
+
+.tree-node-marker {
+  width: 8px;
+  height: 8px;
+  margin: 0 8px 0 2px;
+  flex: 0 0 8px;
+  border: 2px solid var(--primary-color);
+  border-radius: 50%;
+  background: var(--primary-color);
+  box-sizing: border-box;
+}
+
+.tree-node-marker.is-abstract {
+  background: #fff;
+}
+
+.tree-node-marker.is-root {
+  width: 11px;
+  height: 11px;
+  flex-basis: 11px;
+  border-radius: 3px;
+  background: #24384a;
+  border-color: #24384a;
+}
+
+.tree-root-label {
+  color: #24384a;
+  font-weight: bold;
+}
+
+.tree-class-link {
+  color: var(--primary-color);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.tree-class-link:hover {
+  text-decoration: underline;
+}
+
+.tree-class-link.is-abstract {
+  font-style: italic;
+}
+
+.tree-empty {
+  padding: 16px !important;
+  color: #777;
+  text-align: center;
+}
+
+.tree-root-row td {
+  background: #e8f1f8;
+  font-weight: 600;
+}
+
+.tree-category-row td {
+  border-top: 2px solid #cad9e6;
+  background: #f4f8fc;
+}
+
+.tree-category-row .tree-class-link {
+  font-weight: 700;
+}
+
+.inheritance-table tbody tr:hover td {
+  background-color: #eef5fb;
+}
+
+.abstract-value {
+  font-weight: 700;
+}
+
+.abstract-value.is-true {
+  color: #c62828;
+}
+
+.abstract-value.is-false {
+  color: #1565c0;
+}
+
+.abstract-value.is-na {
+  color: #6f7c87;
+}
+
+.auxiliary-table {
+  table-layout: fixed;
+}
+
+.auxiliary-table th:nth-child(1),
+.auxiliary-table td:nth-child(1) { width: 28%; }
+.auxiliary-table th:nth-child(2),
+.auxiliary-table td:nth-child(2) { width: 12%; }
+.auxiliary-table th:nth-child(3),
+.auxiliary-table td:nth-child(3) { width: 60%; }
+
+@media (max-width: 700px) {
+  .inheritance-table,
+  .auxiliary-table {
+    min-width: 850px;
+  }
+}
 
 
 /* --- クラス図の見出しとUML凡例 --- */
