@@ -10,6 +10,7 @@
   <script src="./database/list_Classes.js"></script>
   <script src="./doc-loader.js"></script>
   <script src="./database/list_Tutorials.js"></script>
+  <script src="./database/list_developer.js"></script>
 </head>
 <body class="home-layout">
 
@@ -357,125 +358,9 @@ sol = net.simulate([0, 50], fault);</code></pre>
 
     <div id="tab-developer" class="tab-content">
       <h1>For Developer</h1>
-      
-      <h2>1. Folder Structure</h2>
-      <table>
-        <tr><th>Folder Name</th><th>Description</th></tr>
-        <tr><td><code>@GUILDA/</code></td><td>GUILDA's utility functions</td></tr>
-        <tr><td><code>_GUILDAsystem/</code></td><td>Analysis framework and common base classes</td></tr>
-        <tr><td><code>_GUILDAobject/</code></td><td>Specific device models, transmission line models, and network templates</td></tr>
-        <tr><td><code>_Tutorial/</code></td><td>Tutorial live script files</td></tr>
-      </table>
+      <p class="developer-intro">Guides for contributors and maintainers of GUILDA. Select a topic to open its dedicated page.</p>
 
-      <h2>2. Naming Conventions in GUILDA</h2>
-      <p>Variable naming follows: <strong><code>[variableType][size]_[variableDescription]</code></strong>.</p>
-      
-      <h3>Variable Type (1st Prefix Token)</h3>
-      <ul>
-        <li><code>c</code>: complex</li>
-        <li><code>r</code>: real</li>
-        <li><code>l</code>: logical</li>
-        <li><code>s</code>: symbolic variable (<code>sym</code>)</li>
-        <li><code>f</code>: symbolic function</li>
-        <li><code>i</code>: index</li>
-        <li><code>n</code>: count/number</li>
-        <li><code>str</code>: string</li>
-      </ul>
-
-      <h3>Size (2nd Prefix Token)</h3>
-      <ul>
-        <li><em>(none)</em>: scalar</li>
-        <li><code>v</code>: column vector</li>
-        <li><code>r</code>: row vector</li>
-        <li><code>m</code>: matrix</li>
-      </ul>
-
-      <h3>Naming Composition Examples</h3>
-      <ul>
-        <li><strong><code>cv_Vequilibrium</code></strong>: [c: complex] + [v: column vector] + [_Vequilibrium]</li>
-        <li><strong><code>im_solution</code></strong>: [i: index] + [m: matrix] + [_solution]</li>
-        <li><strong><code>r_gain</code></strong>: [r: real] + [(none): scalar] + [_gain]</li>
-      </ul>
-
-      <h3>Exceptional Naming Rules (Fixed Prefixes)</h3>
-      <ul>
-        <li><strong>Dictionary type</strong>: <code>dict_</code> + [variable description] (e.g., <code>dict_params</code>)</li>
-        <li><strong>Function handle</strong>: <code>fcn_</code> + [variable description] (e.g., <code>fcn_objective</code>)</li>
-        <li><strong>Table type</strong>: <code>tab_</code> + [variable description] (e.g., <code>tab_bus_data</code>)</li>
-        <li><strong>GUILDA-specific class (cell array)</strong>: <code>a_</code> + <strong>[ClassName]</strong> (e.g., <code>a_Controller</code>)</li>
-        <li><strong>Parameter class</strong>: <code>params_</code> + [data description] (e.g., <code>params_generator</code>)</li>
-      </ul>
-
-        <h2>3. How to Define Class Documentation</h2>
-        <p>Documentation is stored next to MATLAB code using exact <code>&lt;@TagName&gt;</code> help-comment tags. GUILDA exports these comments and reflection metadata to <code>_GUILDAdoc/database</code>.</p>
-        <p><strong>Canonical tags should be used for new code.</strong> Legacy tags <code>Abst</code>, <code>varargin</code>, <code>varargout</code>, and <code>DetailsCode</code> remain readable as aliases for <code>Summary</code>, <code>Parameters</code>, <code>Returns</code>, and <code>Notes</code>.</p>
-
-        <h3>Tag Schema</h3>
-        <table>
-          <tr><th>Target</th><th>Canonical tags</th></tr>
-          <tr><td>Class</td><td><code>Summary</code>, <code>Desc</code>, <code>Role</code>, <code>Constructor</code>, <code>Notes</code>, <code>SeeAlso</code>, <code>Since</code>, <code>Deprecated</code></td></tr>
-          <tr><td>Property</td><td><code>Summary</code>, <code>Desc</code>, <code>Role</code>, <code>Type</code>, <code>Size</code>, <code>Unit</code>, <code>Default</code>, <code>Constraints</code>, <code>Notes</code>, <code>SeeAlso</code>, <code>Since</code>, <code>Deprecated</code></td></tr>
-          <tr><td>Method</td><td><code>Summary</code>, <code>Desc</code>, <code>Role</code>, <code>Signatures</code>, <code>Parameters</code>, <code>Returns</code>, <code>Examples</code>, <code>Notes</code>, <code>Throws</code>, <code>SeeAlso</code>, <code>Since</code>, <code>Deprecated</code></td></tr>
-        </table>
-
-        <h3>Class Documentation</h3>
-      <pre><code>classdef MyClass
-    % &lt;@Summary&gt; Updates subsystem states and evaluates utility signals.
-    % &lt;@Desc&gt; Long-form explanation of responsibilities and intended use.
-    % &lt;@Role&gt; CoreComponent
-    % &lt;@Constructor&gt; obj = MyClass(r_gain, str_label)
-    % &lt;@Notes&gt; Call initialize after changing topology-related settings.
-    % &lt;@SeeAlso&gt; ["PowerNetwork", "Component"]
-    % &lt;@Since&gt; 4.2
-    % &lt;@Deprecated&gt;
-    ...
-end</code></pre>
-
-        <h3>Method Documentation</h3>
-        <p><code>Signatures</code>, <code>Parameters</code>, <code>Returns</code>, <code>Examples</code>, and <code>SeeAlso</code> are JSON. Name-value options belong in <code>Parameters</code> with <code>Kind: "NameValue"</code>.</p>
-      <pre><code>function rv_y = calculate_output(obj, rv_u, r_gain)
-% &lt;@Summary&gt; Scale an input vector.
-% &lt;@Desc&gt; Computes an output vector using a configurable scalar gain.
-% &lt;@Signatures&gt;
-% ["rv_y = obj.calculate_output(rv_u, r_gain)"]
-% &lt;@Parameters&gt;
-% [
-%   {
-%     "Name": "rv_u",
-%     "Kind": "Positional",
-%     "Type": "double vector",
-%     "Unit": "pu",
-%     "Description": "Input signal vector.",
-%     "Required": true,
-%     "Default": "-",
-%     "Constraints": "finite column vector"
-%   }
-% ]
-% &lt;@Returns&gt;
-% [{"Name":"rv_y","Type":"double vector","Unit":"pu","Description":"Scaled output."}]
-% &lt;@Examples&gt;
-% ["```matlab\nrv_y = obj.calculate_output(rv_u, 2.0);\n```"]
-% &lt;@Notes&gt; This method does not modify the object state.
-% &lt;@Throws&gt; Errors when the input and gain dimensions are incompatible.
-% &lt;@SeeAlso&gt; ["simulate", "get_sys"]
-end</code></pre>
-
-        <h3>Property Documentation</h3>
-      <pre><code>properties
-    % &lt;@Summary&gt; Gain applied to input/output calculations.
-    % &lt;@Desc&gt; Scalar gain used by calculate_output.
-    % &lt;@Role&gt; simulate
-    % &lt;@Type&gt; double
-    % &lt;@Size&gt; 1x1
-    % &lt;@Unit&gt; pu
-    % &lt;@Default&gt; 1.0
-    % &lt;@Constraints&gt; finite and positive
-    r_gain
-end</code></pre>
-
-        <h3>Validation</h3>
-        <p>The exporter records unknown or duplicate tags and missing public API descriptions as warnings. Invalid structured JSON is recorded as an error. Use strict mode in automated checks to fail documentation generation when validation errors exist:</p>
-      <pre><code>&gt;&gt; GUILDA.doc("update", true, "open", false, "strict", true);</code></pre>
+      <div id="developer-link-container" class="developer-link-grid"></div>
     </div>
   </main>
 
@@ -585,6 +470,34 @@ end</code></pre>
         toc.innerHTML = '<p style="color:#888;">No tutorial data found.</p>';
         abs.innerHTML = '';
       }
+    }
+
+    function renderDeveloperLinks() {
+      const container = document.getElementById('developer-link-container');
+      if (!container) return;
+
+      const data = typeof developerData !== 'undefined' ? developerData : null;
+      if (!Array.isArray(data) || data.length === 0) {
+        container.innerHTML = '<p style="color:#888;">No developer guides found.</p>';
+        return;
+      }
+
+      const escapeHtml = (value) => (value ?? '').toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+
+      container.innerHTML = data.map((item, index) => `
+        <a class="developer-link-card" href="${escapeHtml(item.link)}">
+          <span class="developer-link-number">${String(index + 1).padStart(2, '0')}</span>
+          <span class="developer-link-content">
+            <span class="developer-link-title">${escapeHtml(item.title)}</span>
+            <span class="developer-link-description">${escapeHtml(item.description)}</span>
+          </span>
+          <span class="developer-link-action">View guide <span aria-hidden="true">→</span></span>
+        </a>
+      `).join('');
     }
 
     function firstLineText(value) {
@@ -796,12 +709,14 @@ end</code></pre>
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      if (location.hash === '#tab-reference') {
-        openTab('tab-reference');
+      const requestedTab = location.hash.replace(/^#/, '');
+      if (requestedTab && document.getElementById(requestedTab)?.classList.contains('tab-content')) {
+        openTab(requestedTab);
       }
       renderPowerGridAnimation(); 
       renderUpdateLog(); 
       renderTutorials(); 
+      renderDeveloperLinks();
       renderReferenceNavigation();
       
       renderInheritanceTree();

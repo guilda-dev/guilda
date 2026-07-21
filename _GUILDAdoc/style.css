@@ -125,6 +125,39 @@ body.home-layout main { max-width: 1050px; width: 95%; margin: 30px auto; backgr
 
 .install-buttons { display: flex; flex-wrap: wrap; gap: 15px; margin: 20px 0 30px 0; }
 
+/* Developer guides */
+.developer-intro { max-width: 720px; margin-bottom: 26px; color: #5f6b7a; }
+.developer-link-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+.developer-link-card {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  gap: 20px;
+  align-items: center;
+  min-height: 112px;
+  padding: 20px 24px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: #f8fbff;
+  color: var(--text-color);
+  box-sizing: border-box;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.developer-link-card:hover { transform: translateX(4px); border-color: var(--primary-color); box-shadow: 0 6px 16px rgba(15, 76, 129, 0.12); text-decoration: none; }
+.developer-link-number { color: #7f98ad; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.82rem; font-weight: bold; }
+.developer-link-content { display: flex; min-width: 0; flex-direction: column; gap: 5px; }
+.developer-link-title { color: var(--primary-color); font-size: 1.15rem; font-weight: bold; }
+.developer-link-description { color: #5f6b7a; }
+.developer-link-action { color: var(--primary-color); font-weight: bold; white-space: nowrap; }
+@media (max-width: 650px) {
+  .developer-link-card { grid-template-columns: 34px minmax(0, 1fr); gap: 12px; padding: 18px; }
+  .developer-link-action { grid-column: 2; }
+}
+
+body.developer-layout main { max-width: 900px; width: 95%; margin: 30px auto; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-radius: 8px; min-height: 60vh; box-sizing: border-box; padding: clamp(20px, 5vw, 40px); }
+.developer-back-button { margin: 0 0 22px; padding: 8px 14px; border: 1px solid var(--primary-color); border-radius: 6px; background: #fff; color: var(--primary-color); cursor: pointer; font: inherit; font-weight: bold; }
+.developer-back-button:hover { background: var(--primary-color); color: #fff; }
+.developer-layout .page-lead { color: #5f6b7a; font-size: 1.05rem; }
+
 /* Features & GIF */
 .feature-list li { margin-bottom: 8px; }
 .demo-gif-container { text-align: center; margin: 20px 0 30px 0; }

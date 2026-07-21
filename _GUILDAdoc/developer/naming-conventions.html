@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GUILDA Developer Guide - Naming Conventions</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body class="developer-layout">
+  <main>
+    <button type="button" class="developer-back-button" onclick="window.history.back()">← Back to For Developer</button>
+    <h1>Naming Conventions in GUILDA</h1>
+    <p class="page-lead">Variable naming follows <strong><code>[variableType][size]_[variableDescription]</code></strong>.</p>
+
+    <h2>Variable Type (1st Prefix Token)</h2>
+    <ul>
+      <li><code>c</code>: complex</li><li><code>r</code>: real</li><li><code>l</code>: logical</li>
+      <li><code>s</code>: symbolic variable (<code>sym</code>)</li><li><code>f</code>: symbolic function</li>
+      <li><code>i</code>: index</li><li><code>n</code>: count/number</li><li><code>str</code>: string</li>
+    </ul>
+
+    <h2>Size (2nd Prefix Token)</h2>
+    <ul>
+      <li><em>(none)</em>: scalar</li><li><code>v</code>: column vector</li>
+      <li><code>r</code>: row vector</li><li><code>m</code>: matrix</li>
+    </ul>
+
+    <h2>Naming Composition Examples</h2>
+    <ul>
+      <li><strong><code>cv_Vequilibrium</code></strong>: [c: complex] + [v: column vector] + [_Vequilibrium]</li>
+      <li><strong><code>im_solution</code></strong>: [i: index] + [m: matrix] + [_solution]</li>
+      <li><strong><code>r_gain</code></strong>: [r: real] + [(none): scalar] + [_gain]</li>
+    </ul>
+
+    <h2>Exceptional Naming Rules (Fixed Prefixes)</h2>
+    <ul>
+      <li><strong>Dictionary type</strong>: <code>dict_</code> + [variable description] (e.g., <code>dict_params</code>)</li>
+      <li><strong>Function handle</strong>: <code>fcn_</code> + [variable description] (e.g., <code>fcn_objective</code>)</li>
+      <li><strong>Table type</strong>: <code>tab_</code> + [variable description] (e.g., <code>tab_bus_data</code>)</li>
+      <li><strong>GUILDA-specific class (cell array)</strong>: <code>a_</code> + <strong>[ClassName]</strong> (e.g., <code>a_Controller</code>)</li>
+      <li><strong>Parameter class</strong>: <code>params_</code> + [data description] (e.g., <code>params_generator</code>)</li>
+    </ul>
+  </main>
+</body>
+</html>
