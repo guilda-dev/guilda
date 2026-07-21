@@ -411,9 +411,9 @@
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Summary": "",
-      "Desc": "============================================================================================================================================================================================                                                                                  \n============================================================================================================================================================================================                                                                                  \n\n////////     ////        //////     //   //     ////          ////   ////      /////      //////      ////////      //\n//       //        //   //    //   //    //             // // // //     //   //     //   //     //            //\n/////       //   ===  //////     //   //     ////          //  ///  //     //   //     //    //    //////        //\n//       //        //   //    //   //         //        //       //     //   //     //   //     //            //\n////////      ////       //////      /////      /////         //       //      /////      //////      ////////      /////////\n\n============================================================================================================================================================================================ \n============================================================================================================================================================================================                                                                                  \n\n510 (8)   \n||\n┌---||---┐\n|   ||   |\nLL       |\n|\n| \n530 (9)   520 (10)  |  500 (11)          320 (12)      340 (13)           330 (14)          350 (15)      \n||         ||     └---||                  ||-------------||----------------||----------------||                   \n┌---||---------||---------||------------------||             ||                ||                ||                   \n|   ||         ||---┐     ||---┐          ┌---||---┐         ||---┐        ┌---||        ┌-------||---┐            100 (3)      \n|                   |          |          |        |              |        |             |            |               ||    \nLL                  LL         LL         LL       |              LL       LL            |            LL              ||-----SG\n| ┌---LL                              |                            ||    \n| |                                   |                            ||         \n310 (16) =======                                  |               110 (17)     ||    \n|                                     |                  ||        ||-----SG\n|                                     |         ┌--------||--------||    \n| ┌---LL                              |         |    ┌---||        ||         \n| |                                   |         |    |             ||    \n======= 300 (18)             360 (19)    |         |    LL            ||-----SG\n250 (20)          260 (7)          |   |                         ||        |         |                  ||    \n||               ||--------------┘   └-------------------------||--------┘         |                  ||         \n┌----||---------------||         370 (21)                           ||---┐              |     ┌------------||    \n|    ||---┐           ||            ||                                   |              |     |            ||-----SG\n|         |           ||------------||---┐                               LL             |     |            ||    \n|         LL          ||            ||   |                                              |     |            ||\n|                     ||---┐             LL                         1311 (1)            |     |       ┌----||--------------------┐\n|                          |                                         ||                 |     |       |    ||------┐             |\n|                          LL                                 ┌------||----SG           |     |       LL           |             |\n|                                                             |      ||                 |     |                    |         ========= 170 (30)\n|                                                             |                         |     |                    |             |  |\n|                                             130 (5) ============================================                 |             |  LL\n|                                                       |           |            |            |            ||------┘             |\n2412 (2)    240 (6)        |                                                       |           |            |            |            ||                    |\n||        ||          |                                                       |           |            |            |            ||                 ======= 180 (31)  \nSC----||--------||----------┘                                                       |           |            |            |            ||-----SG             |  \n||        ||                                                                  |           |            |            |            ||                    |  \n||----┐                                                             |           |            |            └------------||                    LL\n||    |                                                             |           |            |                         ||\n270 (22)     ||    LL   230 (23)   220 (24)    210 (25)   200 (26)    150 (27)   |           |            |                         ||-----SG\n||        ||          ||          ||          ||          ||          ||      |           |            |                         ||\n┌----||--------||----------||----------||----------||----------||----------||------┘           |            |                    ┌----||\n|    ||        ||          ||---┐      ||---┐      ||---┐      ||---┐      ||---┐              |            |                    |    ||\nLL                              |           |           |           |           |   140 (28) =====        ===== 160 (29)         |    ||-----SG\nLL          LL          LL          LL          LL             |            |                    LL   ||\n|            |                         ||\nLL           LL                        ||\n< symbol >         < name >                                                                                                                    ||-----SG\n--, |   :   Transmission Line                                                                                                               ||\n||\n>>                                                                                                                                        120 (4)\n>>     :   Transformer      \n>>\n\nSG     :   Synchronous Generator\nSC     :   Synchronous Compensator\nLL     :   Load\n===, ||  :   Bus\n(.)    :   Bus Number",
-      "Role": "PowerNetwork COnstructor",
+      "Summary": "The PowerNetwork class for the IEEE 31-bus model",
+      "Desc": " ============================================================================================================================================================================================                                                                                  \n  ============================================================================================================================================================================================                                                                                  \n \n                                  ////////     ////        //////     //   //     ////          ////   ////      /////      //////      ////////      //\n                                       //       //        //   //    //   //    //             // // // //     //   //     //   //     //            //\n                                   /////       //   ===  //////     //   //     ////          //  ///  //     //   //     //    //    //////        //\n                                     //       //        //   //    //   //         //        //       //     //   //     //   //     //            //\n                              ////////      ////       //////      /////      /////         //       //      /////      //////      ////////      /////////\n \n  ============================================================================================================================================================================================ \n  ============================================================================================================================================================================================                                                                                  \n \n                                            510 (8)   \n                                             ||\n                                         ┌---||---┐\n                                         |   ||   |\n                                         LL       |\n                                                  |\n                                                  | \n                              530 (9)   520 (10)  |  500 (11)          320 (12)      340 (13)           330 (14)          350 (15)      \n                                ||         ||     └---||                  ||-------------||----------------||----------------||                   \n                            ┌---||---------||---------||------------------||             ||                ||                ||                   \n                            |   ||         ||---┐     ||---┐          ┌---||---┐         ||---┐        ┌---||        ┌-------||---┐            100 (3)      \n                            |                   |          |          |        |              |        |             |            |               ||    \n                            LL                  LL         LL         LL       |              LL       LL            |            LL              ||-----SG\n                                                                               | ┌---LL                              |                            ||    \n                                                                               | |                                   |                            ||         \n                                                                   310 (16) =======                                  |               110 (17)     ||    \n                                                                               |                                     |                  ||        ||-----SG\n                                                                               |                                     |         ┌--------||--------||    \n                                                                               | ┌---LL                              |         |    ┌---||        ||         \n                                                                               | |                                   |         |    |             ||    \n                                                                            ======= 300 (18)             360 (19)    |         |    LL            ||-----SG\n                                          250 (20)          260 (7)          |   |                         ||        |         |                  ||    \n                                            ||               ||--------------┘   └-------------------------||--------┘         |                  ||         \n                                       ┌----||---------------||         370 (21)                           ||---┐              |     ┌------------||    \n                                       |    ||---┐           ||            ||                                   |              |     |            ||-----SG\n                                       |         |           ||------------||---┐                               LL             |     |            ||    \n                                       |         LL          ||            ||   |                                              |     |            ||\n                                       |                     ||---┐             LL                         1311 (1)            |     |       ┌----||--------------------┐\n                                       |                          |                                         ||                 |     |       |    ||------┐             |\n                                       |                          LL                                 ┌------||----SG           |     |       LL           |             |\n                                       |                                                             |      ||                 |     |                    |         ========= 170 (30)\n                                       |                                                             |                         |     |                    |             |  |\n                                       |                                             130 (5) ============================================                 |             |  LL\n                                       |                                                       |           |            |            |            ||------┘             |\n            2412 (2)    240 (6)        |                                                       |           |            |            |            ||                    |\n                 ||        ||          |                                                       |           |            |            |            ||                 ======= 180 (31)  \n           SC----||--------||----------┘                                                       |           |            |            |            ||-----SG             |  \n                 ||        ||                                                                  |           |            |            |            ||                    |  \n                           ||----┐                                                             |           |            |            └------------||                    LL\n                           ||    |                                                             |           |            |                         ||\n              270 (22)     ||    LL   230 (23)   220 (24)    210 (25)   200 (26)    150 (27)   |           |            |                         ||-----SG\n                 ||        ||          ||          ||          ||          ||          ||      |           |            |                         ||\n            ┌----||--------||----------||----------||----------||----------||----------||------┘           |            |                    ┌----||\n            |    ||        ||          ||---┐      ||---┐      ||---┐      ||---┐      ||---┐              |            |                    |    ||\n            LL                              |           |           |           |           |   140 (28) =====        ===== 160 (29)         |    ||-----SG\n                                            LL          LL          LL          LL          LL             |            |                    LL   ||\n                                                                                                           |            |                         ||\n                                                                                                           LL           LL                        ||\n   < symbol >         < name >                                                                                                                    ||-----SG\n      --, |   :   Transmission Line                                                                                                               ||\n                                                                                                                                                  ||\n       >>                                                                                                                                        120 (4)\n       >>     :   Transformer      \n       >>\n \n       SG     :   Synchronous Generator\n       SC     :   Synchronous Compensator\n       LL     :   Load\n     ===, ||  :   Bus\n       (.)    :   Bus Number",
+      "Role": "PowerNetwork Constructor",
       "Signatures": [],
       "Parameters": [],
       "Returns": [],
@@ -831,9 +831,9 @@
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Summary": "Validate whether the layer has an initialized edit state.",
-      "Desc": "Checks the layer edit state and warns when edits remain unapplied.",
-      "Role": "Edit Log",
+      "Summary": " Validate whether the layer has an initialized edit state.",
+      "Desc": " Checks the layer edit state and warns when edits remain unapplied.",
+      "Role": " Edit Log",
       "Signatures": [
         "flag = check_edit(obj)"
       ],
@@ -867,9 +867,9 @@
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Summary": "Initialize edit state for this layer and descendants.",
-      "Desc": "Resets edit status and clears edit logs recursively.",
-      "Role": "Edit Log",
+      "Summary": " Initialize edit state for this layer and descendants.",
+      "Desc": " Resets edit status and clears edit logs recursively.",
+      "Role": " Edit Log",
       "Signatures": [
         "reset_edit(obj)"
       ],
@@ -898,9 +898,9 @@
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Summary": "Append a new edit-log record.",
-      "Desc": "Records an edit event and propagates it to parent layers.",
-      "Role": "Edit Log",
+      "Summary": " Append a new edit-log record.",
+      "Desc": " Records an edit event and propagates it to parent layers.",
+      "Role": " Edit Log",
       "Signatures": [
         "log_edit(obj)",
         "log_edit(obj, log, tag, before, after, time, tab)"
@@ -1012,9 +1012,9 @@
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Summary": "Generate names with layer tag suffix.",
-      "Desc": "Appends this class tag to each input name.",
-      "Role": "Tag",
+      "Summary": " Generate names with layer tag suffix.",
+      "Desc": " Appends this class tag to each input name.",
+      "Role": " Tag",
       "Signatures": [
         "out = attach_tag(obj, str_name_list)"
       ],
@@ -1062,9 +1062,9 @@
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Summary": "Build tag string with optional hierarchy composition.",
-      "Desc": "Returns the layer tag, optionally including parent-layer tags.",
-      "Role": "Tag",
+      "Summary": " Build tag string with optional hierarchy composition.",
+      "Desc": " Returns the layer tag, optionally including parent-layer tags.",
+      "Role": " Tag",
       "Signatures": [
         "out = get_tag(obj)",
         "out = get_tag(obj, l_with_layer, str_split)"
@@ -1121,9 +1121,9 @@
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Summary": "Render the hierarchy tree with optional filtering.",
-      "Desc": "Displays or returns a text tree of this layer and its descendants.",
-      "Role": "Layer Structure",
+      "Summary": " Render the hierarchy tree with optional filtering.",
+      "Desc": " Displays or returns a text tree of this layer and its descendants.",
+      "Role": " Layer Structure",
       "Signatures": [
         "disp_tree(obj)",
         "text = disp_tree(obj, str_space, str_ignore, l_isfirst)"
@@ -1191,7 +1191,7 @@
       "Abstract": false,
       "Hidden": true,
       "Summary": "Convert the layer object to a tag string.",
-      "Desc": "Returns the tag string representation of this layer object.",
+      "Desc": " Returns the tag string representation of this layer object.",
       "Role": "Tag",
       "Signatures": [
         "str = string(obj)"
@@ -1229,7 +1229,7 @@
       "Abstract": false,
       "Hidden": true,
       "Summary": "Convert layer parameters into table format.",
-      "Desc": "Returns the parameter table associated with this layer object.",
+      "Desc": " Returns the parameter table associated with this layer object.",
       "Role": "Parameter",
       "Signatures": [
         "tab = table(obj)"
@@ -1261,7 +1261,10 @@
     }
   ],
   "validation": {
-    "Warnings": [],
+    "Warnings": [
+      "network.TEST31bus: unknown class tag <@Model>.",
+      "network.TEST31bus.TEST31bus: unknown method tag <@Model>."
+    ],
     "Errors": []
   }
 };

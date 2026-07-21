@@ -316,7 +316,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
       <div class="reference-section">
         <h2>Inherited Classes</h2>
         <p>The first column shows the inheritance hierarchy generated from each class's <code>Parent</code> metadata. Select a category to focus on one subtree, or select a class name to open its reference page.</p>
-
+        
         <div class="view-panel">
           <div class="view-panel-row view-panel-row-stacked">
             <div class="view-panel-label">Display Classes</div>
@@ -326,7 +326,12 @@ sol = net.simulate([0, 50], fault);</code></pre>
           </div>
         </div>
 
-        <input type="search" id="class-search" class="search-box" placeholder="Search for a class, role, or description..." autocomplete="off">
+        <input type="search" id="class-search" class="search-box" placeholder="Search for a class, role, or summary..." autocomplete="off">
+        <div class="inheritance-legend" aria-label="Class marker legend">
+          <span class="inheritance-legend-item"><span class="tree-node-marker" aria-hidden="true"></span>Concrete class</span>
+          <span class="inheritance-legend-item"><span class="tree-node-marker is-abstract" aria-hidden="true"></span>Abstract class</span>
+        </div>
+
         <table class="compact-table inheritance-table" aria-live="polite">
           <thead id="inherited-list-thead"></thead>
           <tbody id="class-list-tbody"></tbody>
@@ -341,8 +346,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
           <thead id="auxiliary-list-thead">
             <tr>
               <th>Class Name</th>
-              <th>Abstract</th>
-              <th>Description</th>
+              <th>Summary</th>
             </tr>
           </thead>
           <tbody id="auxiliary-list-tbody"></tbody>
@@ -652,20 +656,16 @@ end</code></pre>
         .replace(/'/g, '&#039;');
     }
 
-    function renderAbstractValue(value) {
-      return `<span class="abstract-value ${value ? 'is-true' : 'is-false'}">${value ? 'true' : 'false'}</span>`;
-    }
-
     function renderInheritanceTree() {
       const thead = document.getElementById('inherited-list-thead');
       const tbody = document.getElementById('class-list-tbody');
       if (!thead || !tbody) return;
 
-      thead.innerHTML = '<tr><th>Class Hierarchy</th><th>Abstract</th><th>Description</th></tr>';
+      thead.innerHTML = '<tr><th>Class Hierarchy</th><th>Summary</th></tr>';
 
       const classes = getClassReferenceData().filter(c => c.Type === 'PowerSystemModel');
       if (!classes.length) {
-        tbody.innerHTML = '<tr><td colspan="3" class="tree-empty">No class reference data found.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="2" class="tree-empty">No class reference data found.</td></tr>';
         return;
       }
 
@@ -683,7 +683,7 @@ end</code></pre>
 
       const subtreeRoot = activeFilter === 'All' ? root : nodes.get(activeFilter);
       if (!subtreeRoot) {
-        tbody.innerHTML = '<tr><td colspan="3" class="tree-empty">No classes were found for this category.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="2" class="tree-empty">No classes were found for this category.</td></tr>';
         return;
       }
 
@@ -714,7 +714,7 @@ end</code></pre>
       }
 
       if (visibleNames && !visibleNames.size) {
-        tbody.innerHTML = '<tr><td colspan="3" class="tree-empty">No matching classes found.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="2" class="tree-empty">No matching classes found.</td></tr>';
         return;
       }
 
@@ -740,7 +740,7 @@ end</code></pre>
       }).join('');
 
       tbody.innerHTML = rows.map(({ node, guides }) => {
-        const description = firstLineText(node.Summary || node.Desc) || '';
+        const summary = firstLineText(node.Summary) || '';
         const isCategoryRoot = !node.Synthetic && (
           (activeFilter === 'All' && guides.length === 1) ||
           (activeFilter !== 'All' && guides.length === 0)
@@ -752,14 +752,13 @@ end</code></pre>
         const rowAttributes = `${rowClasses ? ` class="${rowClasses}"` : ''} data-tree-depth="${guides.length}"`;
         const classLabel = node.Synthetic
           ? '<span class="tree-root-label">PowerSystemModel</span>'
-          : `<a class="tree-class-link${node.Abstract ? ' is-abstract' : ''}" href="${window.GuildaDocLoader.pageUrl('class.html', { class: node.Name })}" title="${escapeHtml(description || node.Role || '')}">${escapeHtml(node.Name)}</a>`;
+          : `<a class="tree-class-link${node.Abstract ? ' is-abstract' : ''}" href="${window.GuildaDocLoader.pageUrl('class.html', { class: node.Name })}" title="${escapeHtml(summary || node.Role || '')}">${escapeHtml(node.Name)}</a>`;
         const nodeMarker = `<span class="tree-node-marker${node.Abstract ? ' is-abstract' : ''}${node.Synthetic ? ' is-root' : ''}" aria-hidden="true"></span>`;
         const hierarchyCell = `<div class="tree-table-name" style="--tree-depth:${guides.length}">${renderGuides(guides)}${nodeMarker}${classLabel}</div>`;
 
         return `<tr${rowAttributes}>
           <td>${hierarchyCell}</td>
-          <td>${node.Synthetic ? '<span class="abstract-value is-na">—</span>' : renderAbstractValue(node.Abstract)}</td>
-          <td>${node.Synthetic ? 'Root of the power-system model class hierarchy.' : escapeHtml(description)}</td>
+          <td>${node.Synthetic ? 'Root of the power-system model class hierarchy.' : escapeHtml(summary)}</td>
         </tr>`;
       }).join('');
     }
@@ -776,7 +775,7 @@ end</code></pre>
 
       if (auxData.length === 0) {
         if (auxThead) auxThead.innerHTML = '';
-        auxTbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#888;">No auxiliary classes found.</td></tr>';
+        auxTbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#888;">No auxiliary classes found.</td></tr>';
         return;
       }
 
@@ -784,16 +783,14 @@ end</code></pre>
         auxThead.innerHTML = `
           <tr>
             <th>Class Name</th>
-            <th>Abstract</th>
-            <th>Description</th>
+            <th>Summary</th>
           </tr>
         `;
       }
       auxTbody.innerHTML = auxData.map(c => `
         <tr class="clickable-row" onclick="window.GuildaDocLoader.navigate('class.html', { class: '${c.Name || ''}' })" title="View details for ${c.Name || ''}">
           <td><span class="row-link">${c.Name || ''}</span></td>
-          <td>${renderAbstractValue(c.Abstract)}</td>
-          <td>${firstLineText(c.Summary || c.Desc || '')}</td>
+          <td>${firstLineText(c.Summary || '')}</td>
         </tr>
       `).join('');
     }

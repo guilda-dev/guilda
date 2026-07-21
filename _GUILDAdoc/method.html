@@ -75,6 +75,14 @@
         const rawText = (input ?? '').toString().replace(/\r\n?/g, '\n').trim();
         if (!rawText) return '<p style="margin: 0;">N/A</p>';
 
+        const sourceLines = rawText.split('\n');
+        const textArtLineCount = sourceLines.filter((line) =>
+          /[┌┐└┘│─]/.test(line) || /(?:={6,}|-{6,}|~{3,}|\/{3,})/.test(line)
+        ).length;
+        if (textArtLineCount >= 2) {
+          return `<pre class="doc-text-art">${escapeHtml(rawText)}</pre>`;
+        }
+
         const codeBlocks = [];
         let text = rawText.replace(/```([\s\S]*?)```/g, (_, code) => {
           const token = `@@CODEBLOCK_${codeBlocks.length}@@`;
@@ -90,9 +98,9 @@
 
         const flushParagraph = () => {
           if (!paragraphLines.length) return;
-          const paragraph = paragraphLines.join(' ').trim();
+          const paragraph = paragraphLines.map((line) => formatInlineMarkdown(line)).join('<br>');
           if (paragraph) {
-            htmlParts.push(`<p>${formatInlineMarkdown(paragraph)}</p>`);
+            htmlParts.push(`<p>${paragraph}</p>`);
           }
           paragraphLines = [];
         };
@@ -136,7 +144,7 @@
           }
 
           flushList();
-          paragraphLines.push(trimmed);
+          paragraphLines.push(line);
         }
 
         flushParagraph();

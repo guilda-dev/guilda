@@ -20,6 +20,7 @@
     <h3 style="margin-top: 0;">On this page</h3>
     <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
       <li><a href="#description" onclick="document.getElementById('description')?.scrollIntoView(); return false;">Description</a></li>
+      <li><a href="#role" onclick="document.getElementById('role')?.scrollIntoView(); return false;">Role</a></li>
       <li><a href="#constructor" onclick="document.getElementById('constructor')?.scrollIntoView(); return false;">Constructor</a></li>
       <li><a href="#properties" onclick="document.getElementById('properties')?.scrollIntoView(); return false;">Properties</a></li>
       <li><a href="#methods" onclick="document.getElementById('methods')?.scrollIntoView(); return false;">Methods</a></li>
@@ -121,6 +122,14 @@
         const rawText = (input ?? '').toString().replace(/\r\n?/g, '\n').trim();
         if (!rawText) return '<p style="margin: 0;">N/A</p>';
 
+        const sourceLines = rawText.split('\n');
+        const textArtLineCount = sourceLines.filter((line) =>
+          /[┌┐└┘│─]/.test(line) || /(?:={6,}|-{6,}|~{3,}|\/{3,})/.test(line)
+        ).length;
+        if (textArtLineCount >= 2) {
+          return `<pre class="doc-text-art">${escapeHtml(rawText)}</pre>`;
+        }
+
         const codeBlocks = [];
         let text = rawText.replace(/```([\s\S]*?)```/g, (_, code) => {
           const token = `@@CODEBLOCK_${codeBlocks.length}@@`;
@@ -136,9 +145,9 @@
 
         const flushParagraph = () => {
           if (!paragraphLines.length) return;
-          const paragraph = paragraphLines.join(' ').trim();
+          const paragraph = paragraphLines.map((line) => formatInlineMarkdown(line)).join('<br>');
           if (paragraph) {
-            htmlParts.push(`<p>${formatInlineMarkdown(paragraph)}</p>`);
+            htmlParts.push(`<p>${paragraph}</p>`);
           }
           paragraphLines = [];
         };
@@ -182,7 +191,7 @@
           }
 
           flushList();
-          paragraphLines.push(trimmed);
+          paragraphLines.push(line);
         }
 
         flushParagraph();
@@ -206,18 +215,18 @@
       const normalizeClassMeta = (raw) => ({
         name: raw?.Name || raw?.ClassName || className,
         type: raw?.Type || '',
+        model: raw?.Model || '',
         parent: raw?.Parent || '',
         abstract: raw?.Abstract ?? false,
         hidden: raw?.Hidden ?? false,
         summary: raw?.Summary || '',
-        description: raw?.Desc || raw?.Summary || '',
+        description: raw?.Desc || '',
         role: raw?.Role || '',
         constructor: raw?.Constructor || '',
         notes: raw?.Notes || '',
         seeAlso: normalizeStringList(raw?.SeeAlso),
         since: raw?.Since || '',
         deprecated: raw?.Deprecated || '',
-        documentationStatus: raw?.DocumentationStatus || '',
         path: raw?.path || ''
       });
       const normalizeProperty = (p) => ({
@@ -385,19 +394,29 @@
           <a href="${window.GuildaDocLoader.pageUrl('index.html')}">Home</a> &gt; <a href="${window.GuildaDocLoader.pageUrl('index.html', 'tab-reference')}">Reference</a> &gt; ${className}
         </div>
         <h1 style="font-size: 2.5rem; margin-bottom: 10px;">${c.name}</h1>
+
+        <div class="meta-box" style="margin-top: 16px;">
+          <h2 id="summary" style="margin-top: 0;">Summary</h2>
+          <div class="markdown-content">${renderMarkdown(c.summary || 'N/A')}</div>
+        </div>
         
         <div class="meta-box" id="overview">
           <table>
             <tbody>
               <tr><th style="width: 18%;">Type</th><td>${c.type || 'N/A'}</td></tr>
+              <tr><th>Model</th><td>${c.model || 'N/A'}</td></tr>
               <tr><th>Parent</th><td>${c.parent || 'N/A'}</td></tr>
               <tr><th>Abstract</th><td>${c.abstract ? 'true' : 'false'}</td></tr>
               <tr><th>Hidden</th><td>${c.hidden ? 'true' : 'false'}</td></tr>
               <tr><th>Since</th><td>${c.since || 'N/A'}</td></tr>
               <tr><th>Deprecated</th><td>${c.deprecated || 'No'}</td></tr>
-              <tr><th>Documentation</th><td>${c.documentationStatus || 'N/A'}</td></tr>
             </tbody>
           </table>
+        </div>
+
+        <div class="meta-box" style="margin-top: 16px;">
+          <h2 id="role" style="margin-top: 0;">Role</h2>
+          <div class="markdown-content">${renderMarkdown(c.role || 'N/A')}</div>
         </div>
 
         <div class="meta-box" style="margin-top: 16px;">

@@ -141,9 +141,6 @@ function [sct_info, sct_validation] = export_class_doc(str_class_name)
     cell_warnings = erase(cell_warnings, 'WARNING: ');
     cell_errors   = erase(cell_errors, 'ERROR: ');
     sct_doc_data.validation = struct('Warnings', {cell_warnings}, 'Errors', {cell_errors});
-    sct_info.DocumentationStatus = char(get_documentation_status(cell_warnings, cell_errors));
-    sct_info.DocumentationWarnings = numel(cell_warnings);
-    sct_info.DocumentationErrors = numel(cell_errors);
     sct_validation = struct('ClassName', str_class_name, 'Warnings', {cell_warnings}, 'Errors', {cell_errors});
 
     % Output JS file
@@ -287,30 +284,22 @@ function [sct_info, cell_diagnostics] = build_class_info(str_class_name, meta_cl
 end
 
 function str_help = get_class_help_text(str_class_name)
-    str_help = sanitize_help_text(try_help(str_class_name));
+    % Parse the source first so that indentation and text-art alignment are
+    % not changed by MATLAB's help renderer.
+    str_class_path = which(str_class_name);
+    str_help = extract_class_comment_block(str_class_path);
     if ~isempty(strtrim(str_help))
         return
     end
 
-    str_class_path = which(str_class_name);
-    str_help = extract_class_comment_block(str_class_path);
+    str_help = sanitize_help_text(try_help(str_class_name));
 end
 
 function str_help = get_member_help_text(str_class_name, meta_item, str_kind)
     str_help = '';
     str_member_name = string(meta_item.Name);
 
-    % First try MATLAB help system.
-    if str_kind == "method"
-        str_help = sanitize_help_text(try_help(str_class_name + "." + str_member_name));
-    elseif str_kind == "property"
-        str_help = sanitize_help_text(try_help(str_class_name + "." + str_member_name));
-    end
-    if ~isempty(strtrim(str_help))
-        return
-    end
-
-    % Fallback: parse source files under @ClassName.
+    % Parse source files first to preserve intentional whitespace.
     str_class_path = which(str_class_name);
     if str_kind == "method"
         str_method_path = fullfile(fileparts(str_class_path), char(str_member_name + ".m"));
@@ -318,6 +307,12 @@ function str_help = get_member_help_text(str_class_name, meta_item, str_kind)
     elseif str_kind == "property"
         str_help = extract_property_comment_block(str_class_path, char(str_member_name));
     end
+    if ~isempty(strtrim(str_help))
+        return
+    end
+
+    % Fallback to MATLAB's help system when source comments are unavailable.
+    str_help = sanitize_help_text(try_help(str_class_name + "." + str_member_name));
 end
 
 function str_help = try_help(str_symbol)
@@ -494,7 +489,6 @@ function str_clean_help = sanitize_help_text(str_raw_help)
     end
 
     cell_lines = cell_lines(cell_keep);
-    cell_lines = cellfun(@(s) regexprep(s, '^\s+', ''), cell_lines, 'UniformOutput', false);
 
     while ~isempty(cell_lines) && isempty(strtrim(cell_lines{1}))
         cell_lines(1) = [];
@@ -627,16 +621,19 @@ function [sct_tag_data, cell_tag_names] = parse_tagged_help(rawHelp)
         end
 
         cell_lines = regexp(str_raw_value, '\n', 'split');
-        for i_line = 1:numel(cell_lines)
-            cell_lines{i_line} = regexprep(cell_lines{i_line}, '^\s+', '');
-        end
 
-        while ~isempty(cell_lines) && isempty(cell_lines{1})
+        while ~isempty(cell_lines) && isempty(strtrim(cell_lines{1}))
             cell_lines(1) = [];
         end
 
-        while ~isempty(cell_lines) && isempty(cell_lines{end})
+        while ~isempty(cell_lines) && isempty(strtrim(cell_lines{end}))
             cell_lines(end) = [];
+        end
+
+        % Remove only the separator after an inline tag. Do not left-trim
+        % every line: leading spaces can be meaningful in tables and diagrams.
+        if ~isempty(cell_lines)
+            cell_lines{1} = regexprep(cell_lines{1}, '^ ', '', 'once');
         end
 
         str_normalized_value = strjoin(cell_lines, '\n');
@@ -831,16 +828,6 @@ function sct_schema = get_tag_schema()
         'Examples', 'Notes', 'Throws', 'SeeAlso', 'Since', 'Deprecated' ...
     };
     sct_schema.structured = {'Signatures', 'Parameters', 'Returns', 'Examples', 'SeeAlso'};
-end
-
-function str_status = get_documentation_status(cell_warnings, cell_errors)
-    if ~isempty(cell_errors)
-        str_status = "error";
-    elseif ~isempty(cell_warnings)
-        str_status = "warning";
-    else
-        str_status = "ok";
-    end
 end
 
 function bln_public = is_public_access(str_access)

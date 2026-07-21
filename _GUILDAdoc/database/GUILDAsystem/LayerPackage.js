@@ -169,9 +169,9 @@
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Summary": "Ensure tag uniqueness among same-layer objects.",
-      "Desc": "Validates tag uniqueness within sibling layers and renames on conflicts.",
-      "Role": "Tag",
+      "Summary": " Ensure tag uniqueness among same-layer objects.",
+      "Desc": " Validates tag uniqueness within sibling layers and renames on conflicts.",
+      "Role": " Tag",
       "Signatures": [
         "str_newtag = validate_tag(obj, str_newtag)"
       ],
@@ -217,9 +217,9 @@
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Summary": "Retrieve child layers recursively.",
-      "Desc": "Collects all descendant layers from the current layer.",
-      "Role": "Layer Structure",
+      "Summary": " Retrieve child layers recursively.",
+      "Desc": " Collects all descendant layers from the current layer.",
+      "Role": " Layer Structure",
       "Signatures": [
         "c = findchildren(obj)"
       ],
@@ -253,9 +253,9 @@
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Summary": "Retrieve root layer from current object.",
-      "Desc": "Finds the top-level parent layer in the hierarchy.",
-      "Role": "Layer Structure",
+      "Summary": " Retrieve root layer from current object.",
+      "Desc": " Finds the top-level parent layer in the hierarchy.",
+      "Role": " Layer Structure",
       "Signatures": [
         "p = findparent(obj)"
       ],
@@ -289,9 +289,9 @@
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Summary": "Validate whether the layer has an initialized edit state.",
-      "Desc": "Checks the layer edit state and warns when edits remain unapplied.",
-      "Role": "Edit Log",
+      "Summary": " Validate whether the layer has an initialized edit state.",
+      "Desc": " Checks the layer edit state and warns when edits remain unapplied.",
+      "Role": " Edit Log",
       "Signatures": [
         "flag = check_edit(obj)"
       ],
@@ -325,9 +325,9 @@
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Summary": "Initialize edit state for this layer and descendants.",
-      "Desc": "Resets edit status and clears edit logs recursively.",
-      "Role": "Edit Log",
+      "Summary": " Initialize edit state for this layer and descendants.",
+      "Desc": " Resets edit status and clears edit logs recursively.",
+      "Role": " Edit Log",
       "Signatures": [
         "reset_edit(obj)"
       ],
@@ -356,9 +356,9 @@
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Summary": "Append a new edit-log record.",
-      "Desc": "Records an edit event and propagates it to parent layers.",
-      "Role": "Edit Log",
+      "Summary": " Append a new edit-log record.",
+      "Desc": " Records an edit event and propagates it to parent layers.",
+      "Role": " Edit Log",
       "Signatures": [
         "log_edit(obj)",
         "log_edit(obj, log, tag, before, after, time, tab)"
@@ -470,9 +470,9 @@
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Summary": "Generate names with layer tag suffix.",
-      "Desc": "Appends this class tag to each input name.",
-      "Role": "Tag",
+      "Summary": " Generate names with layer tag suffix.",
+      "Desc": " Appends this class tag to each input name.",
+      "Role": " Tag",
       "Signatures": [
         "out = attach_tag(obj, str_name_list)"
       ],
@@ -520,9 +520,9 @@
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Summary": "Build tag string with optional hierarchy composition.",
-      "Desc": "Returns the layer tag, optionally including parent-layer tags.",
-      "Role": "Tag",
+      "Summary": " Build tag string with optional hierarchy composition.",
+      "Desc": " Returns the layer tag, optionally including parent-layer tags.",
+      "Role": " Tag",
       "Signatures": [
         "out = get_tag(obj)",
         "out = get_tag(obj, l_with_layer, str_split)"
@@ -579,9 +579,9 @@
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Summary": "Render the hierarchy tree with optional filtering.",
-      "Desc": "Displays or returns a text tree of this layer and its descendants.",
-      "Role": "Layer Structure",
+      "Summary": " Render the hierarchy tree with optional filtering.",
+      "Desc": " Displays or returns a text tree of this layer and its descendants.",
+      "Role": " Layer Structure",
       "Signatures": [
         "disp_tree(obj)",
         "text = disp_tree(obj, str_space, str_ignore, l_isfirst)"
@@ -649,7 +649,7 @@
       "Abstract": false,
       "Hidden": true,
       "Summary": "Convert the layer object to a tag string.",
-      "Desc": "Returns the tag string representation of this layer object.",
+      "Desc": " Returns the tag string representation of this layer object.",
       "Role": "Tag",
       "Signatures": [
         "str = string(obj)"
@@ -687,7 +687,7 @@
       "Abstract": false,
       "Hidden": true,
       "Summary": "Convert layer parameters into table format.",
-      "Desc": "Returns the parameter table associated with this layer object.",
+      "Desc": " Returns the parameter table associated with this layer object.",
       "Role": "Parameter",
       "Signatures": [
         "tab = table(obj)"
@@ -725,8 +725,8 @@
       "Abstract": false,
       "Hidden": false,
       "Summary": "",
-      "Desc": "Abstract base class for layer hierarchy management in GUILDA.\nIt centralizes parent/children relationships, tag handling, and edit logging.",
-      "Role": "auxiliary",
+      "Desc": " Abstract base class for layer hierarchy management in GUILDA.\n  It centralizes parent/children relationships, tag handling, and edit logging.",
+      "Role": " auxiliary",
       "Signatures": [],
       "Parameters": [],
       "Returns": [],

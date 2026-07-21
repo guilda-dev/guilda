@@ -259,17 +259,12 @@ body.home-layout main { max-width: 1050px; width: 95%; margin: 30px auto; backgr
 
 .inheritance-table th:first-child,
 .inheritance-table td:first-child {
-  width: 48%;
+  width: 55%;
 }
 
 .inheritance-table th:nth-child(2),
 .inheritance-table td:nth-child(2) {
-  width: 12%;
-}
-
-.inheritance-table th:nth-child(3),
-.inheritance-table td:nth-child(3) {
-  width: 40%;
+  width: 45%;
 }
 
 .inheritance-table td:first-child {
@@ -347,6 +342,24 @@ body.home-layout main { max-width: 1050px; width: 95%; margin: 30px auto; backgr
   border-color: #24384a;
 }
 
+.inheritance-legend {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin: 10px 0 14px;
+  color: #5f6b7a;
+  font-size: 0.9rem;
+}
+
+.inheritance-legend-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.inheritance-legend .tree-node-marker {
+  margin-left: 0;
+}
+
 .tree-root-label {
   color: #24384a;
   font-weight: bold;
@@ -390,32 +403,14 @@ body.home-layout main { max-width: 1050px; width: 95%; margin: 30px auto; backgr
   background-color: #eef5fb;
 }
 
-.abstract-value {
-  font-weight: 700;
-}
-
-.abstract-value.is-true {
-  color: #c62828;
-}
-
-.abstract-value.is-false {
-  color: #1565c0;
-}
-
-.abstract-value.is-na {
-  color: #6f7c87;
-}
-
 .auxiliary-table {
   table-layout: fixed;
 }
 
 .auxiliary-table th:nth-child(1),
-.auxiliary-table td:nth-child(1) { width: 28%; }
+.auxiliary-table td:nth-child(1) { width: 35%; }
 .auxiliary-table th:nth-child(2),
-.auxiliary-table td:nth-child(2) { width: 12%; }
-.auxiliary-table th:nth-child(3),
-.auxiliary-table td:nth-child(3) { width: 60%; }
+.auxiliary-table td:nth-child(2) { width: 65%; }
 
 @media (max-width: 700px) {
   .inheritance-table,
@@ -526,6 +521,18 @@ body.doc-layout {
 
 .doc-layout pre code {
   color: inherit;
+}
+
+.doc-layout .markdown-content p {
+  white-space: pre-wrap;
+}
+
+.doc-layout pre.doc-text-art {
+  overflow-x: auto;
+  white-space: pre;
+  tab-size: 4;
+  font-family: "Cascadia Mono", "Consolas", "Menlo", "Monaco", monospace;
+  line-height: 1.35;
 }
 
 .doc-layout code {
