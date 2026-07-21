@@ -1,4 +1,9 @@
-const classData = {
+(function (root) {
+  const data = {
+  "schema": {
+    "name": "GUILDA class document",
+    "version": 2
+  },
   "ClassName": "PowerNetwork",
   "properties": [
     {
@@ -10,10 +15,18 @@ const classData = {
       "Constant": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
       "Type": "",
-      "Size": ""
+      "Size": "",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "a_Branch",
@@ -24,10 +37,18 @@ const classData = {
       "Constant": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
       "Type": "",
-      "Size": ""
+      "Size": "",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "a_GlobalController",
@@ -38,10 +59,18 @@ const classData = {
       "Constant": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
       "Type": "",
-      "Size": ""
+      "Size": "",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "solver_PF",
@@ -52,10 +81,18 @@ const classData = {
       "Constant": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
       "Type": "",
-      "Size": ""
+      "Size": "",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "str_methodPF",
@@ -66,10 +103,18 @@ const classData = {
       "Constant": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
       "Type": "",
-      "Size": ""
+      "Size": "",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "cv_Vequilibrium",
@@ -80,10 +125,18 @@ const classData = {
       "Constant": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
       "Type": "",
-      "Size": ""
+      "Size": "",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "cv_Iequilibrium",
@@ -94,10 +147,18 @@ const classData = {
       "Constant": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
       "Type": "",
-      "Size": ""
+      "Size": "",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "cv_Xequilibrium",
@@ -108,10 +169,18 @@ const classData = {
       "Constant": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
       "Type": "",
-      "Size": ""
+      "Size": "",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "tab_parameter",
@@ -122,10 +191,18 @@ const classData = {
       "Constant": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
       "Type": "",
-      "Size": ""
+      "Size": "",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "para_base",
@@ -136,10 +213,18 @@ const classData = {
       "Constant": false,
       "Abstract": false,
       "Hidden": true,
+      "Summary": "",
       "Desc": "",
       "Role": "",
       "Type": "",
-      "Size": ""
+      "Size": "",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "parent",
@@ -150,10 +235,18 @@ const classData = {
       "Constant": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
       "Type": "",
-      "Size": ""
+      "Size": "",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "children",
@@ -164,10 +257,18 @@ const classData = {
       "Constant": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
       "Type": "",
-      "Size": ""
+      "Size": "",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "rv_odeInit",
@@ -178,10 +279,18 @@ const classData = {
       "Constant": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
       "Type": "",
-      "Size": ""
+      "Size": "",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "str_editFlag",
@@ -192,10 +301,18 @@ const classData = {
       "Constant": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "Flag to indicate if the layer has been edited.",
       "Role": "Edit Log",
       "Type": "string",
-      "Size": "1x1"
+      "Size": "1x1",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "tab_editLog",
@@ -206,10 +323,18 @@ const classData = {
       "Constant": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "Log of edits made to the layer, including timestamp, ID, log message, tag, and before/after states.",
       "Role": "Edit Log",
       "Type": "table",
-      "Size": "Nx6"
+      "Size": "Nx6",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "l_managedTag",
@@ -220,10 +345,18 @@ const classData = {
       "Constant": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "Flag to indicate if the layer is managed by the tag system.",
       "Role": "Tag",
       "Type": "logical",
-      "Size": "1x1"
+      "Size": "1x1",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "str_tag",
@@ -234,10 +367,18 @@ const classData = {
       "Constant": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "User-defined tag for the layer, used for identification and management within the layer structure.",
       "Role": "Tag",
       "Type": "string",
-      "Size": "1x1"
+      "Size": "1x1",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     }
   ],
   "methods": [
@@ -248,112 +389,58 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
       "Signatures": [],
-      "Argin": "",
       "Parameters": [],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
-      "Name": "build_GraphMassSpring",
+      "Name": "draw_diagram",
       "Defining": "PowerNetwork",
       "Access": "public",
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
       "Signatures": [],
-      "Argin": "",
       "Parameters": [],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
-      "Name": "information",
+      "Name": "info",
       "Defining": "PowerNetwork",
       "Access": "public",
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
       "Signatures": [],
-      "Argin": "",
       "Parameters": [],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
-    },
-    {
-      "Name": "graph",
-      "Defining": "PowerNetwork",
-      "Access": "public",
-      "Static": false,
-      "Abstract": false,
-      "Hidden": false,
-      "Desc": "",
-      "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
-      "Signatures": [],
-      "Argin": "",
-      "Parameters": [],
-      "Argout": "",
-      "Returns": [],
-      "Examples": [],
-      "Option": ""
-    },
-    {
-      "Name": "export",
-      "Defining": "PowerNetwork",
-      "Access": "public",
-      "Static": false,
-      "Abstract": false,
-      "Hidden": false,
-      "Desc": "",
-      "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
-      "Signatures": [],
-      "Argin": "",
-      "Parameters": [],
-      "Argout": "",
-      "Returns": [],
-      "Examples": [],
-      "Option": ""
-    },
-    {
-      "Name": "list",
-      "Defining": "PowerNetwork",
-      "Access": "public",
-      "Static": false,
-      "Abstract": false,
-      "Hidden": false,
-      "Desc": "",
-      "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
-      "Signatures": [],
-      "Argin": "",
-      "Parameters": [],
-      "Argout": "",
-      "Returns": [],
-      "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "reset_odeset",
@@ -362,36 +449,18 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
       "Signatures": [],
-      "Argin": "",
       "Parameters": [],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
-    },
-    {
-      "Name": "get_dae",
-      "Defining": "PowerNetwork",
-      "Access": "public",
-      "Static": false,
-      "Abstract": false,
-      "Hidden": false,
-      "Desc": "",
-      "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
-      "Signatures": [],
-      "Argin": "",
-      "Parameters": [],
-      "Argout": "",
-      "Returns": [],
-      "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "simulate",
@@ -400,17 +469,18 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
       "Signatures": [],
-      "Argin": "",
       "Parameters": [],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "get_admittance_matrix",
@@ -419,17 +489,18 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
       "Signatures": [],
-      "Argin": "",
       "Parameters": [],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "get_sys",
@@ -438,17 +509,18 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
       "Signatures": [],
-      "Argin": "",
       "Parameters": [],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "disp_pf_set",
@@ -457,17 +529,18 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
       "Signatures": [],
-      "Argin": "",
       "Parameters": [],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "calculate_powerflow",
@@ -476,17 +549,18 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
       "Signatures": [],
-      "Argin": "",
       "Parameters": [],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "build_opf_problem",
@@ -495,17 +569,18 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
       "Signatures": [],
-      "Argin": "",
       "Parameters": [],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "optimize_powerflow",
@@ -514,17 +589,18 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
       "Signatures": [],
-      "Argin": "",
       "Parameters": [],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "initialize",
@@ -533,17 +609,18 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
       "Signatures": [],
-      "Argin": "",
       "Parameters": [],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "set_pf_set",
@@ -552,17 +629,18 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
       "Signatures": [],
-      "Argin": "",
       "Parameters": [],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "remove_global_controller",
@@ -571,17 +649,18 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
       "Signatures": [],
-      "Argin": "",
       "Parameters": [],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "remove_branch",
@@ -590,17 +669,18 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
       "Signatures": [],
-      "Argin": "",
       "Parameters": [],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "remove_bus",
@@ -609,17 +689,18 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
       "Signatures": [],
-      "Argin": "",
       "Parameters": [],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "add_global_controller",
@@ -628,17 +709,18 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
       "Signatures": [],
-      "Argin": "",
       "Parameters": [],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "add_branch",
@@ -647,17 +729,18 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
       "Signatures": [],
-      "Argin": "",
       "Parameters": [],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "add_bus",
@@ -666,17 +749,38 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
       "Signatures": [],
-      "Argin": "",
       "Parameters": [],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
+    },
+    {
+      "Name": "draw_spring_model",
+      "Defining": "PowerNetwork",
+      "Access": "public",
+      "Static": false,
+      "Abstract": false,
+      "Hidden": false,
+      "Summary": "",
+      "Desc": "",
+      "Role": "",
+      "Signatures": [],
+      "Parameters": [],
+      "Returns": [],
+      "Examples": [],
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "set_equilibrium",
@@ -685,17 +789,18 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
       "Signatures": [],
-      "Argin": "",
       "Parameters": [],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "GUILDAoptions_fsolve",
@@ -704,17 +809,18 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "",
       "Role": "",
-      "Abst": "",
-      "DetailsCode": "",
       "Signatures": [],
-      "Argin": "",
       "Parameters": [],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "check_edit",
@@ -723,29 +829,34 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "Validate whether the layer has an initialized edit state.",
       "Desc": "Checks the layer edit state and warns when edits remain unapplied.",
       "Role": "Edit Log",
-      "Abst": "Validate whether the layer has an initialized edit state.",
-      "DetailsCode": "",
       "Signatures": [
         "flag = check_edit(obj)"
       ],
-      "Argin": "",
       "Parameters": {
         "Name": "obj",
+        "Kind": "",
         "Type": "LayerPackage",
+        "Unit": "",
         "Description": "Target layer object.",
         "Required": true,
-        "Default": "-"
+        "Default": "-",
+        "Constraints": ""
       },
-      "Argout": "",
       "Returns": {
         "Name": "flag",
         "Type": "logical scalar",
+        "Unit": "",
         "Description": "True when state is initialized."
       },
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "reset_edit",
@@ -754,25 +865,29 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "Initialize edit state for this layer and descendants.",
       "Desc": "Resets edit status and clears edit logs recursively.",
       "Role": "Edit Log",
-      "Abst": "Initialize edit state for this layer and descendants.",
-      "DetailsCode": "",
       "Signatures": [
         "reset_edit(obj)"
       ],
-      "Argin": "",
       "Parameters": {
         "Name": "obj",
+        "Kind": "",
         "Type": "LayerPackage",
+        "Unit": "",
         "Description": "Target layer object.",
         "Required": true,
-        "Default": "-"
+        "Default": "-",
+        "Constraints": ""
       },
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "log_edit",
@@ -781,70 +896,112 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "Append a new edit-log record.",
       "Desc": "Records an edit event and propagates it to parent layers.",
       "Role": "Edit Log",
-      "Abst": "Append a new edit-log record.",
-      "DetailsCode": "",
       "Signatures": [
         "log_edit(obj)",
         "log_edit(obj, log, tag, before, after, time, tab)"
       ],
-      "Argin": "",
       "Parameters": [
         {
           "Name": "obj",
+          "Kind": "",
           "Type": "LayerPackage",
+          "Unit": "",
           "Description": "Target layer object.",
           "Required": true,
-          "Default": "-"
+          "Default": "-",
+          "Constraints": ""
         },
         {
           "Name": "log",
+          "Kind": "",
           "Type": "string scalar",
+          "Unit": "",
           "Description": "Edit message.",
           "Required": false,
-          "Default": "\"\""
+          "Default": "\"\"",
+          "Constraints": ""
         },
         {
           "Name": "tag",
+          "Kind": "",
           "Type": "string scalar",
+          "Unit": "",
           "Description": "Edited field tag.",
           "Required": false,
-          "Default": "\"\""
+          "Default": "\"\"",
+          "Constraints": ""
         },
         {
           "Name": "before",
+          "Kind": "",
           "Type": "double scalar",
+          "Unit": "",
           "Description": "Value before edit.",
           "Required": false,
-          "Default": "NaN"
+          "Default": "NaN",
+          "Constraints": ""
         },
         {
           "Name": "after",
+          "Kind": "",
           "Type": "double scalar",
+          "Unit": "",
           "Description": "Value after edit.",
           "Required": false,
-          "Default": "NaN"
+          "Default": "NaN",
+          "Constraints": ""
         },
         {
           "Name": "time",
+          "Kind": "",
           "Type": "string scalar",
+          "Unit": "",
           "Description": "Timestamp for the event.",
           "Required": false,
-          "Default": "current time"
+          "Default": "current time",
+          "Constraints": ""
         },
         {
           "Name": "tab",
+          "Kind": "",
           "Type": "table (1x6)",
+          "Unit": "",
           "Description": "Prebuilt edit-log row.",
           "Required": false,
-          "Default": "auto-generated"
+          "Default": "auto-generated",
+          "Constraints": ""
         }
       ],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
+    },
+    {
+      "Name": "struct",
+      "Defining": "LayerPackage",
+      "Access": "public",
+      "Static": false,
+      "Abstract": false,
+      "Hidden": false,
+      "Summary": "",
+      "Desc": "",
+      "Role": "",
+      "Signatures": [],
+      "Parameters": [],
+      "Returns": [],
+      "Examples": [],
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "attach_tag",
@@ -853,38 +1010,48 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "Generate names with layer tag suffix.",
       "Desc": "Appends this class tag to each input name.",
       "Role": "Tag",
-      "Abst": "Generate names with layer tag suffix.",
-      "DetailsCode": "",
       "Signatures": [
         "out = attach_tag(obj, str_name_list)"
       ],
-      "Argin": "",
       "Parameters": [
         {
           "Name": "obj",
+          "Kind": "",
           "Type": "LayerPackage",
+          "Unit": "",
           "Description": "Target layer object.",
           "Required": true,
-          "Default": "-"
+          "Default": "-",
+          "Constraints": ""
         },
         {
           "Name": "str_name_list",
+          "Kind": "",
           "Type": "string array",
+          "Unit": "",
           "Description": "Base names to be tagged.",
           "Required": true,
-          "Default": "-"
+          "Default": "-",
+          "Constraints": ""
         }
       ],
-      "Argout": "",
       "Returns": {
         "Name": "out",
         "Type": "string array",
+        "Unit": "",
         "Description": "Input names with layer tag suffix."
       },
-      "Examples": [],
-      "Option": ""
+      "Examples": [
+        ">> obj.attach_tag([\"V\", \"P\"])\nans =\n    [\"V_Tag\", \"P_Tag\"]"
+      ],
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "get_tag",
@@ -893,46 +1060,57 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "Build tag string with optional hierarchy composition.",
       "Desc": "Returns the layer tag, optionally including parent-layer tags.",
       "Role": "Tag",
-      "Abst": "Build tag string with optional hierarchy composition.",
-      "DetailsCode": "",
       "Signatures": [
         "out = get_tag(obj)",
         "out = get_tag(obj, l_with_layer, str_split)"
       ],
-      "Argin": "",
       "Parameters": [
         {
           "Name": "obj",
+          "Kind": "",
           "Type": "LayerPackage",
+          "Unit": "",
           "Description": "Target layer object.",
           "Required": true,
-          "Default": "-"
+          "Default": "-",
+          "Constraints": ""
         },
         {
           "Name": "l_with_layer",
+          "Kind": "",
           "Type": "logical scalar",
+          "Unit": "",
           "Description": "Include parent-layer tags recursively.",
           "Required": false,
-          "Default": "false"
+          "Default": "false",
+          "Constraints": ""
         },
         {
           "Name": "str_split",
+          "Kind": "",
           "Type": "string scalar",
+          "Unit": "",
           "Description": "Delimiter for composed tags.",
           "Required": false,
-          "Default": "\"\""
+          "Default": "\"\"",
+          "Constraints": ""
         }
       ],
-      "Argout": "",
       "Returns": {
         "Name": "out",
         "Type": "string",
+        "Unit": "",
         "Description": "Layer tag string."
       },
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "disp_tree",
@@ -941,53 +1119,67 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "Render the hierarchy tree with optional filtering.",
       "Desc": "Displays or returns a text tree of this layer and its descendants.",
       "Role": "Layer Structure",
-      "Abst": "Render the hierarchy tree with optional filtering.",
-      "DetailsCode": "",
       "Signatures": [
         "disp_tree(obj)",
         "text = disp_tree(obj, str_space, str_ignore, l_isfirst)"
       ],
-      "Argin": "",
       "Parameters": [
         {
           "Name": "obj",
+          "Kind": "",
           "Type": "LayerPackage",
+          "Unit": "",
           "Description": "Root layer object.",
           "Required": true,
-          "Default": "-"
+          "Default": "-",
+          "Constraints": ""
         },
         {
           "Name": "str_space",
+          "Kind": "",
           "Type": "string scalar",
+          "Unit": "",
           "Description": "Indentation prefix for recursive rendering.",
           "Required": false,
-          "Default": "\"\""
+          "Default": "\"\"",
+          "Constraints": ""
         },
         {
           "Name": "str_ignore",
+          "Kind": "",
           "Type": "string array",
+          "Unit": "",
           "Description": "Class names to ignore in output.",
           "Required": false,
-          "Default": "[\"Parameter\"]"
+          "Default": "[\"Parameter\"]",
+          "Constraints": ""
         },
         {
           "Name": "l_isfirst",
+          "Kind": "",
           "Type": "logical scalar",
+          "Unit": "",
           "Description": "Whether this call is the root invocation.",
           "Required": false,
-          "Default": "true"
+          "Default": "true",
+          "Constraints": ""
         }
       ],
-      "Argout": "",
       "Returns": {
         "Name": "text",
         "Type": "string",
+        "Unit": "",
         "Description": "Hierarchy string when one output is requested."
       },
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "string",
@@ -996,31 +1188,36 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": true,
+      "Summary": "Convert the layer object to a tag string.",
       "Desc": "Returns the tag string representation of this layer object.",
       "Role": "Tag",
-      "Abst": "Convert the layer object to a tag string.",
-      "DetailsCode": "",
       "Signatures": [
         "str = string(obj)"
       ],
-      "Argin": "",
       "Parameters": {
         "Name": "obj",
+        "Kind": "",
         "Type": "LayerPackage",
+        "Unit": "",
         "Description": "Target layer object.",
         "Required": true,
-        "Default": "-"
+        "Default": "-",
+        "Constraints": ""
       },
-      "Argout": "",
       "Returns": {
         "Name": "str",
         "Type": "string",
+        "Unit": "",
         "Description": "Tag string of the layer object."
       },
       "Examples": [
         "```matlab\nstr = string(obj);\n```"
       ],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "table",
@@ -1029,31 +1226,67 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": true,
+      "Summary": "Convert layer parameters into table format.",
       "Desc": "Returns the parameter table associated with this layer object.",
       "Role": "Parameter",
-      "Abst": "Convert layer parameters into table format.",
-      "DetailsCode": "",
       "Signatures": [
         "tab = table(obj)"
       ],
-      "Argin": "",
       "Parameters": {
         "Name": "obj",
+        "Kind": "",
         "Type": "LayerPackage",
+        "Unit": "",
         "Description": "Target layer object.",
         "Required": true,
-        "Default": "-"
+        "Default": "-",
+        "Constraints": ""
       },
-      "Argout": "",
       "Returns": {
         "Name": "tab",
         "Type": "table",
+        "Unit": "",
         "Description": "Parameter table of the layer."
       },
       "Examples": [
         "```matlab\ntab = table(obj);\n```"
       ],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     }
-  ]
+  ],
+  "validation": {
+    "Warnings": [
+      "PowerNetwork: class has no Summary or Desc.",
+      "PowerNetwork.PowerNetwork: public method has no Summary or Desc.",
+      "PowerNetwork.draw_diagram: public method has no Summary or Desc.",
+      "PowerNetwork.info: public method has no Summary or Desc.",
+      "PowerNetwork.reset_odeset: public method has no Summary or Desc.",
+      "PowerNetwork.simulate: public method has no Summary or Desc.",
+      "PowerNetwork.get_admittance_matrix: public method has no Summary or Desc.",
+      "PowerNetwork.get_sys: public method has no Summary or Desc.",
+      "PowerNetwork.disp_pf_set: public method has no Summary or Desc.",
+      "PowerNetwork.calculate_powerflow: public method has no Summary or Desc.",
+      "PowerNetwork.build_opf_problem: public method has no Summary or Desc.",
+      "PowerNetwork.optimize_powerflow: public method has no Summary or Desc.",
+      "PowerNetwork.initialize: public method has no Summary or Desc.",
+      "PowerNetwork.set_pf_set: public method has no Summary or Desc.",
+      "PowerNetwork.remove_global_controller: public method has no Summary or Desc.",
+      "PowerNetwork.remove_branch: public method has no Summary or Desc.",
+      "PowerNetwork.remove_bus: public method has no Summary or Desc.",
+      "PowerNetwork.add_global_controller: public method has no Summary or Desc.",
+      "PowerNetwork.add_branch: public method has no Summary or Desc.",
+      "PowerNetwork.add_bus: public method has no Summary or Desc.",
+      "PowerNetwork.draw_spring_model: public method has no Summary or Desc.",
+      "PowerNetwork.set_equilibrium: public method has no Summary or Desc."
+    ],
+    "Errors": []
+  }
 };
+  root.GUILDA_DOC_CLASSES = root.GUILDA_DOC_CLASSES || {};
+  root.GUILDA_DOC_CLASSES["PowerNetwork"] = data;
+  root.classData = data;
+})(window);
