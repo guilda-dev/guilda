@@ -750,3 +750,86 @@ body.doc-layout .meta-box table th {
 }
 
 .doc-layout .method-link-table td:first-child { width: 22%; }
+
+/* --- Naming Conventions: Variable Name Generator --- */
+.name-generator {
+  background-color: #f8fbff;
+  border: 1px solid #dce4ec;
+  border-radius: 12px;
+  padding: 22px 24px;
+  margin-bottom: 30px;
+}
+.name-generator h2 { margin-top: 0; border-bottom: none; padding-bottom: 0; }
+.name-generator-desc { color: #5f6b7a; margin-top: 4px; margin-bottom: 18px; }
+.name-generator-row { margin-bottom: 16px; }
+.name-generator-row:last-of-type { margin-bottom: 0; }
+.name-generator-label {
+  display: block;
+  font-weight: bold;
+  color: var(--primary-color);
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+.name-generator-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.ng-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 68px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: #fff;
+  color: #555;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+.ng-btn:hover { border-color: var(--primary-color); background: #f1f7fd; }
+.ng-btn.active { background: var(--primary-color); border-color: var(--primary-color); color: #fff; }
+.ng-btn-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+.ng-btn-label { font-size: 0.7rem; }
+.name-generator-input {
+  width: 100%;
+  max-width: 320px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  box-sizing: border-box;
+}
+.name-generator-input.is-invalid { border-color: #d9534f; }
+.name-generator-error {
+  display: none;
+  color: #d9534f;
+  font-size: 0.8rem;
+  margin: 6px 0 0;
+}
+.name-generator-result {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--border-color);
+}
+.name-generator-output {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--primary-color);
+  background: #eef3f7;
+  border: 1px solid #d3dde6;
+  border-radius: 6px;
+  padding: 10px 16px;
+  word-break: break-all;
+}
+.name-generator-copy-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.name-generator-copy-btn:disabled:hover { background-color: #fff; color: var(--primary-color); }
