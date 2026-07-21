@@ -10,7 +10,9 @@ function [o, x0, Mass, tp, np, flag, options] = makeODE(obj)
     nprops = numel(props);
     ip = 1;
     while ip <= nprops        
-        o.(props{ip}) = obj.(props{ip});
+        if isprop(obj,props{ip})
+            o.(props{ip}) = obj.(props{ip});
+        end
         ip = ip + 1;        
     end
 

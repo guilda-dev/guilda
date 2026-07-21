@@ -2,25 +2,21 @@ classdef (Sealed = true) odeSimulator < handle
 
     properties        
         ODEvnt        
-        MassMatrix   (1,1) {mustBeA( MassMatrix, ["odeMassMatrix" ,"function_handle" ])} = odeMassMatrix        
-        ODEFcn       (1,1) {mustBeA(     ODEFcn, [       "odeFcn" ,"function_handle" ])} = @(t,x)[]                   
-        Jacobian     (1,1) {mustBeA(   Jacobian, [  "odeJacobian" ,"function_handle" ])} = odeJacobian                
-        InitialTime  (1,1) double {mustBeReal} = 0               
-        Parameters   (:,1) double = []        
-        InitialSlope (:,1) double = []                        
-        InitialValue (:,1) double = []        
-        NonNegativeVariables {mustBePositive, mustBeInteger} = []        
-        DelayDefinition = []        
-        Sensitivity     = []        
+        MassMatrix     (1,1) {mustBeA( MassMatrix, ["odeMassMatrix" ,"function_handle" ])} = odeMassMatrix        
+        ODEFcn         (1,1) {mustBeA(     ODEFcn, [       "odeFcn" ,"function_handle" ])} = @(t,x)[]                   
+        Jacobian       (1,1) {mustBeA(   Jacobian, [  "odeJacobian" ,"function_handle" ])} = odeJacobian                        
+        InitialTime    (1,1) double {mustBeReal} = 0                         
+        InitialSlope   (:,1) double = []                        
+        InitialValue   (:,1) double = []                
         EventDefinition = []
-        EquationType  (1,1) string {mustBeMember(EquationType, ["standard","fullyimplicit","delay"])} = "standard"        
-        Solver        matlab.ode.SolverID = "ode15s"                
-        SolverOptions matlab.ode.Options  = matlab.ode.options.ODE15s         
+        EquationType   (1,1) string {mustBeMember(EquationType, ["standard","fullyimplicit","delay"])} = "standard" 
+        Solver         matlab.ode.SolverID = "ode15s"
+        SolverOptions  matlab.ode.Options  = matlab.ode.options.ODE15s         
         AbsoluteTolerance (1,1) double {mustBePositive, mustBeBetween(AbsoluteTolerance,1e-15,1e-3, "closed")} = 1e-6        
         RelativeTolerance (1,1) double {mustBePositive, mustBeBetween(RelativeTolerance,1e-15,1e-3, "closed")} = 1e-4
         SeparateComplexParts matlab.lang.OnOffSwitchState = "off"
         Reporter  (1,1) string {mustBeMember(Reporter,["none","disp","dialog"])} = "dialog"
-        TimeLimit (1,1) double = 8;
+        TimeLimit (1,1) double = 10;
     end
     properties (SetAccess=private, Hidden)
         odeNetwork 
