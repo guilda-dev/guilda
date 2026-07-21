@@ -4,5 +4,5 @@ function Cyx = getJacobiCyx(t, x, V, I, u, param, omega0) %#ok
     
     Vap = x(2);
 
-    Cyx = [0,1,0] * (heaviside(Vap - Vap_min) - heaviside(Vap - Vap_max));
+    Cyx = [0,1,0] * (tools.heaviside(Vap - Vap_min) - tools.heaviside(Vap - Vap_max));
 end

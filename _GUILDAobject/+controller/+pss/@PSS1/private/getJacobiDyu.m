@@ -23,5 +23,5 @@ function Dyu = getJacobiDyu(t,x,V,I,u,param,omega0) %#ok
 
     Vpl  = tn2*(v1-xi2)/td2;
 
-    Dyu(1,1) = tn1*tn2*kpss/td1/td2 * ( heaviside(Vpl - Vpss_min) - heaviside(Vpl - Vpss_max) );
+    Dyu(1,1) = tn1*tn2*kpss/td1/td2 * ( tools.heaviside(Vpl - Vpss_min) - tools.heaviside(Vpl - Vpss_max) );
 end

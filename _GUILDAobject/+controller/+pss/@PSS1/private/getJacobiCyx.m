@@ -18,7 +18,7 @@ function Cyx = getJacobiCyx(t, x, V, I, u, param, omega0) %#ok
     v1  = tn1 * (vWS - xi1) / td1;
     vpl = tn2 * (v1 - xi2) / td2;
     
-    S = heaviside(vpl - Vpss_min) - heaviside(vpl - Vpss_max);
+    S = tools.heaviside(vpl - Vpss_min) - tools.heaviside(vpl - Vpss_max);
     
     Cyx = zeros(1, 3);    
         
