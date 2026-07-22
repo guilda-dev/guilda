@@ -833,3 +833,129 @@ body.doc-layout .meta-box table th {
 }
 .name-generator-copy-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .name-generator-copy-btn:disabled:hover { background-color: #fff; color: var(--primary-color); }
+
+/* --- Class Documentation: Tag Comment Generator --- */
+.tag-generator {
+  background-color: #f8fbff;
+  border: 1px solid #dce4ec;
+  border-radius: 12px;
+  padding: 22px 24px;
+  margin-bottom: 30px;
+}
+.tag-generator h2 { margin-top: 0; border-bottom: none; padding-bottom: 0; }
+.tag-generator-desc { color: #5f6b7a; margin-top: 4px; margin-bottom: 18px; }
+.tag-generator-row { margin-bottom: 0; }
+.tag-generator-label {
+  display: block;
+  font-weight: bold;
+  color: var(--primary-color);
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+.tag-generator-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.tg-target-btn {
+  padding: 10px 22px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: #fff;
+  color: #555;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: bold;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+.tg-target-btn:hover { border-color: var(--primary-color); background: #f1f7fd; }
+.tg-target-btn.active { background: var(--primary-color); border-color: var(--primary-color); color: #fff; }
+
+.tag-generator-fields { margin-top: 20px; }
+.tag-generator-field { margin-bottom: 14px; }
+.tag-generator-field:last-child { margin-bottom: 0; }
+.tag-generator-field-label {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: bold;
+  font-size: 0.8rem;
+  color: var(--primary-color);
+  margin-bottom: 4px;
+}
+.tag-generator-input {
+  display: block;
+  width: 100%;
+  max-width: 640px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  box-sizing: border-box;
+  resize: vertical;
+}
+.tag-generator-empty { color: #5f6b7a; font-style: italic; margin-top: 20px; }
+
+.tag-generator-result {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--border-color);
+}
+.tag-generator-hint {
+  font-weight: bold;
+  color: var(--primary-color);
+  background: #eef3f7;
+  border: 1px solid #d3dde6;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 0 0 14px;
+}
+.tag-generator-output-wrap { margin: 0 0 14px; max-height: 340px; }
+.tag-generator-output { white-space: pre; }
+.tag-generator-copy-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.tag-generator-copy-btn:disabled:hover { background-color: #fff; color: var(--primary-color); }
+
+/* --- Class Documentation: table-style inputs for JSON tags --- */
+.tag-generator-field-table .tag-generator-field-label { margin-bottom: 8px; }
+.tg-table-scroll { overflow-x: auto; max-width: 100%; }
+.tg-table { border-collapse: collapse; width: 100%; min-width: 480px; }
+.tg-table th {
+  text-align: left;
+  font-size: 0.75rem;
+  color: var(--primary-color);
+  padding: 0 8px 6px;
+  white-space: nowrap;
+}
+.tg-table td { padding: 3px 8px 3px 0; vertical-align: middle; }
+.tg-table-input, .tg-table-select {
+  width: 100%;
+  min-width: 90px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  box-sizing: border-box;
+}
+.tg-table-checkbox { width: 18px; height: 18px; }
+.tg-table-remove-btn {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: #fff;
+  color: #d9534f;
+  width: 28px;
+  height: 28px;
+  line-height: 1;
+  cursor: pointer;
+  font-size: 1rem;
+}
+.tg-table-remove-btn:hover { background: #fdeeee; border-color: #d9534f; }
+.tg-table-add-btn {
+  margin-top: 8px;
+  padding: 6px 14px;
+  border: 1px dashed var(--primary-color);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--primary-color);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+.tg-table-add-btn:hover { background: #f1f7fd; }
