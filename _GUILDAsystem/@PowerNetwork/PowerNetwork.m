@@ -156,7 +156,6 @@ classdef PowerNetwork < PowerSystemModel
         remove_global_controller( obj, str_GconTag)
         
         % initialize
-        set_pf_set(obj, name, para)
         [flag,powerflow_bus,powerflow_cub] = initialize(obj,options)
 
         % OPF(optimal power-flow)
@@ -165,7 +164,6 @@ classdef PowerNetwork < PowerSystemModel
 
         % PF(powerflow) calculations
         [tab_PFsol, flag, output] = calculate_powerflow(obj,opt)
-        varargout = disp_pf_set(obj)
     
         % Static Analysis
         [sys,lin] = get_sys(obj, opt)

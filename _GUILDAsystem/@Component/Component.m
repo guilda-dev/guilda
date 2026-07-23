@@ -41,10 +41,6 @@ classdef Component < PowerSystemModel
 
         odeLinearSystem
     end
-    properties
-        cv_Xcurrent = zeros(0,1)               % [  Simulation ] シミュレーション中の状態
-        cv_Ucurrent = zeros(0,1)               % [  Simulation ] シミュレーション中の入力
-    end
     properties(SetAccess=protected)
         cv_Xequilibrium = zeros(0,1)           % [SteadyState] 状態の平衡点
         cv_Uequilibrium = zeros(0,1)           % [SteadyState] 定常入力

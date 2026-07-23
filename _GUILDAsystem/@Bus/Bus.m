@@ -7,13 +7,11 @@ classdef Bus < PowerSystemModel
     properties (SetAccess=protected)
         a_PowerNetwork                          % Layer Structure
         a_Component                             % Layer Structure
-        cv_Xequilibrium     = zeros(0,1);       % Steady State
         c_Vequilibrium      = 1;                % Steady State
         c_Iequilibrium      = 0;                % Steady State
     end
     properties (Dependent)
         str_bustype                             % PowerFlow
-        cv_Xequilibrium_all                     % Steady State
         tab_parameter                           % Parameter
     end
     properties (Hidden,SetAccess=protected)
@@ -49,23 +47,6 @@ classdef Bus < PowerSystemModel
 %% Constructor
     methods (Access={?PowerNetwork ?Bus})
         function obj = Bus(tag,opt)
-            % arguments is satisfied in the caller function (PowerNetwork.add_bus), so no need to validate here.
-            % arguments
-            %     tag                   (1,1) string = "Bus";
-            %     opt.Varg              (1,1) double = 0 /180*pi;
-            %     opt.V                 (1,1) double = 1;
-            %     opt.Gshunt            (1,1) double = 0;
-            %     opt.Bshunt            (1,1) double = 0;
-            %     opt.Vmin              (1,1) double = 0.5;
-            %     opt.Vmax              (1,1) double = 1.5;
-            %     opt.baseKV            (1,1) double = 230;
-            %     opt.baseMVA           (1,1) double = 100;
-            %     opt.OPFinit_Varg0     (1,1) double = 0 /180*pi;
-            %     opt.OPFinit_V0        (1,1) double = 1;
-            %     opt.GraphXaxis        (1,1) double = nan;
-            %     opt.GraphYaxis        (1,1) double = nan;
-            %     opt.GraphMarker       (1,1) string = "s";
-            % end
             obj.str_tag        = tag;
             obj.para_dynamics  = Parameter(obj,"dynamics");
             obj.para_operation = Parameter(obj,"operation");
@@ -94,9 +75,6 @@ classdef Bus < PowerSystemModel
         
         % Set equilibrium
         set_equilibrium(obj, c_V, c_I, r_P, r_Q, opt)
-
-        % Build component
-        c = build_component(obj, key, varargin)
     end
     
     methods
@@ -132,10 +110,6 @@ classdef Bus < PowerSystemModel
             graph     =  obj.para_graph.tab_parameter;
             tp        =  table(dynamics,operation,powerflow,status,graph);
         end
-        function x = get.cv_Xequilibrium_all(obj)
-            x_com = tools.vcellfun(@(comp) comp.cv_Xequilibrium_all, obj.a_Component);
-            x     = [obj.cv_Xequilibrium; x_com];
-        end
         function p = get.parent(obj)
             p = obj.a_PowerNetwork; 
         end
@@ -151,9 +125,6 @@ classdef Bus < PowerSystemModel
 
 %% Set Methods
     methods
-        function set.cv_Xequilibrium(~,~)
-            error(msg('GUILDA:Bus:SetXeq'))
-        end
         function set.tab_parameter(obj,val)
             fieldname = val.Properties.VariableNames;
             for i = 1:numel(fieldname)
@@ -170,9 +141,9 @@ classdef Bus < PowerSystemModel
                 a_com = obj.a_Component;%#ok
                 if isempty(a_com)
                     error(msg('GUILDA:Bus:NonUnitBus' ,string(obj)))
+                else
+                    disp(msg('GUILDA:Bus:SetSlack' ,string(obj),string(a_com{1})))
                 end
-                disp("INFO: "+string(obj)+" set as slack bus. ")
-                disp("      P and Q specifications for "+string(a_com{1})+" ignored in powerflow calculation.")
                 for busi = obj.a_PowerNetwork.a_Bus'%#ok
                     if busi{1}~=obj
                         busi{1}.l_isSlack = false; %#ok % Change l_isSlack to false for other buses

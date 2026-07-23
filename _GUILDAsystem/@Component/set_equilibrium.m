@@ -12,9 +12,6 @@ function set_equilibrium(obj,c_V,c_I,r_P,r_Q)
     obj.c_Iequilibrium  = c_I;
     obj.cv_Xequilibrium = cv_Xst;
     obj.cv_Uequilibrium = cv_Ust;
-    
-    obj.cv_Xcurrent = cv_Xst;
-    obj.cv_Ucurrent = cv_Ust;
 
     if ~isempty(obj.a_LocalController)
         cellfun(@(con) con.get_equilibrium(c_V, cv_Ust), obj.a_LocalController);        
