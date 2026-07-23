@@ -34,18 +34,10 @@ classdef (Sealed = true) odeSimulator < handle
     end
 
     methods
-        function obj = odeSimulator(net, time, varargin, opt)            
-            arguments                
-                net  (1,1) {mustBeA(net, 'PowerNetwork')}                
-                time (:,1) double = []
-            end
-            arguments (Input, Repeating)
-                varargin {mustBeA(varargin, 'odeEventSet')}
-            end
-            arguments                
+        function obj = odeSimulator(opt)            
+            arguments                                
                 opt.?odeSimulator
-            end                                    
-            obj.odeNetwork = net;
+            end                                                
 
             cls = metaclass(obj);
             propNames = arrayfun(@(p) p.Name, cls.PropertyList, 'UniformOutput', false);
@@ -61,16 +53,7 @@ classdef (Sealed = true) odeSimulator < handle
                     obj.(stri) = opt.(stri);
                 end
                 i=i+1;
-            end
-            
-            [obj.odeTimeTable, obj.ODEvnt] = table(varargin{:}, "time", time);
-            obj.initialize_odeSimulator;
-
-            odeYmat = tools.complex2matrix(net.get_admittance_matrix.Variables);
-            rv_odeV = cell2mat(tools.cellfun(@(b) b.iv_odeX, net.a_Bus));
-
-            obj.odeYmat = odeYmat;
-            obj.rv_odeV = rv_odeV;
+            end                        
         end        
         
     end
@@ -374,7 +357,17 @@ classdef (Sealed = true) odeSimulator < handle
 
     methods
 
-        function [out,flag] = simulate(obj)
+        function [out,flag] = simulate(obj, net, time, varargin)
+            obj.odeNetwork = net;
+
+            [obj.odeTimeTable, obj.ODEvnt] = table(varargin{:}, "time", time);
+            obj.initialize_odeSimulator;
+
+            rm_YMAT = tools.complex2matrix(net.get_admittance_matrix.Variables);
+            rv_ODEV = cell2mat(tools.cellfun(@(b) b.iv_odeX, net.a_Bus));
+
+            obj.odeYmat = rm_YMAT;
+            obj.rv_odeV = rv_ODEV;
             
             [o,x0,Mass,tp,np,flag,options] = makeODE(obj);            
 

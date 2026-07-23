@@ -116,6 +116,8 @@ classdef Component < PowerSystemModel
                                            "Marker", opt.Marker           , "string",...
                                          "MidXaxis", opt.MidXaxis         , "string",...
                                          "MidYaxis", opt.MidYaxis         , "string");
+
+            % 機器の微分代数方程式とヤコビアンに関する関数ハンドルを登録する
         end
     end
 
