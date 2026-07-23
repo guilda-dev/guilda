@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GUILDA Developer Guide - Class Documentation</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body class="developer-layout">
+  <main>
+    <button type="button" class="developer-back-button" onclick="window.history.back()">← Back to For Developer</button>
+    <h1>How to Define Class Documentation</h1>
+    <p class="page-lead">GUILDA class documentation is generated from MATLAB reflection metadata and exact <code>&lt;@TagName&gt;</code> tags stored next to the implementation. The exporter writes a lightweight class index and one detailed JavaScript document per class under <code>_GUILDAdoc/database</code>.</p>
+
+    <section class="tag-generator" aria-label="Documentation Tag Generator">
+      <h2>Documentation Tag Generator</h2>
+      <p class="tag-generator-desc">Pick what you're documenting, fill in the tags you need, then copy the generated comment block into your MATLAB source.</p>
+
+      <div class="tag-generator-row">
+        <span class="tag-generator-label">Target</span>
+        <div class="tag-generator-options" id="tg-target-options">
+          <button type="button" class="tg-target-btn" data-target="class">Class</button>
+          <button type="button" class="tg-target-btn" data-target="method">Method</button>
+          <button type="button" class="tg-target-btn" data-target="property">Property</button>
+        </div>
+      </div>
+
+      <div class="tag-generator-fields" id="tg-fields"></div>
+      <p class="tag-generator-empty" id="tg-empty">Select a target above to see its tag fields.</p>
+
+      <div class="tag-generator-result">
+        <p class="tag-generator-hint" id="tg-hint">Fill in at least one tag to generate the comment block.</p>
+        <pre class="tag-generator-output-wrap" id="tg-output-wrap" style="display: none;"><code class="tag-generator-output" id="tg-output"></code></pre>
+        <button type="button" class="btn tag-generator-copy-btn" id="tg-copy-btn" disabled>Copy</button>
+      </div>
+    </section>
+
+    <h2>Collection Pipeline</h2>
+    <ol>
+      <li><code>GUILDA.doc("update", true)</code> obtains the <code>PowerSystemModel</code> class list from <code>GUILDA.dictionary</code> and prepends <code>LayerPackage</code>.</li>
+      <li><code>export_class_database</code> resolves each class with <code>meta.class.fromName</code>.</li>
+      <li>Reflection supplies class, property, and method attributes; source comments supply the tagged documentation.</li>
+      <li>The exporter validates tags and structured JSON, then writes the index and class documents.</li>
+      <li><code>doc-loader.js</code> reads the index first and loads a class document only when its class or method page is opened.</li>
+    </ol>
+
+    <h2>Sources and Precedence</h2>
+    <table>
+      <tr><th>Target</th><th>Primary source</th><th>Fallback</th></tr>
+      <tr><td>Class</td><td>Consecutive comment lines immediately after <code>classdef</code></td><td>MATLAB <code>help</code>, then reflection descriptions</td></tr>
+      <tr><td>Property</td><td>Consecutive comment lines immediately above the property declaration</td><td>MATLAB <code>help</code>, then reflection descriptions</td></tr>
+      <tr><td>Method</td><td>Consecutive comment lines after <code>function</code> in a separate method file</td><td>MATLAB <code>help</code>, then reflection descriptions</td></tr>
+    </table>
+    <p>Source comments are preferred because MATLAB's help renderer can change indentation. The exporter removes the MATLAB comment prefix but preserves meaningful leading spaces, blank lines, and text-art alignment inside tag values.</p>
+
+    <h2>Generated Data Structure</h2>
+    <h3>Class Index</h3>
+    <p><code>database/list_Classes.js</code> registers <code>window.GUILDA_DOC_INDEX</code>. Its schema version is currently <code>2</code>.</p>
+<pre><code>window.GUILDA_DOC_INDEX = {
+  schema: {
+    version: 2,
+    classDocumentVersion: 2,
+    modelCategories: [...],
+    coreClasses: [...],
+    tags: {...},
+    legacyAliases: {...}
+  },
+  classes: [...],
+  validation: {
+    warningCount: 0,
+    errorCount: 0,
+    classes: [...]
+  }
+};</code></pre>
+    <p>Each <code>classes</code> entry contains the fields below.</p>
+    <table>
+      <tr><th>Field</th><th>Source / purpose</th></tr>
+      <tr><td><code>Name</code></td><td>Fully qualified MATLAB class name.</td></tr>
+      <tr><td><code>Type</code></td><td>Derived category: <code>PowerSystemModel</code>, <code>auxiliary</code>, or <code>other</code>.</td></tr>
+      <tr><td><code>Model</code></td><td>Nearest system-model category, such as <code>PowerNetwork</code>, <code>Bus</code>, or <code>Component</code>.</td></tr>
+      <tr><td><code>Parent</code></td><td>Superclass names obtained from reflection.</td></tr>
+      <tr><td><code>Abstract</code>, <code>Hidden</code></td><td>Class attributes obtained from reflection.</td></tr>
+      <tr><td><code>Summary</code>, <code>Desc</code>, <code>Role</code>, <code>Constructor</code>, <code>Notes</code>, <code>SeeAlso</code>, <code>Since</code>, <code>Deprecated</code></td><td>Canonical class tags.</td></tr>
+      <tr><td><code>path</code></td><td>Internal path used to lazily load the detailed class document. It is required but is not displayed as documentation.</td></tr>
+    </table>
+    <p>Validation is stored centrally under <code>validation.classes</code>. The redundant per-index-entry fields <code>DocumentationStatus</code>, <code>DocumentationWarnings</code>, and <code>DocumentationErrors</code> are not generated.</p>
+
+    <h3>Detailed Class Documents</h3>
+    <p>Each class has a file in <code>database/GUILDAsystem</code> or <code>database/GUILDAobject</code>. It registers data under <code>window.GUILDA_DOC_CLASSES[ClassName]</code>.</p>
+<pre><code>{
+  schema: { name: "GUILDA class document", version: 2 },
+  ClassName: "component.generator.park",
+  properties: [...],
+  methods: [...],
+  validation: { Warnings: [...], Errors: [...] }
+}</code></pre>
+    <p>Property records combine reflection attributes such as <code>Defining</code>, <code>GetAccess</code>, <code>SetAccess</code>, <code>Dependent</code>, <code>Constant</code>, <code>Abstract</code>, and <code>Hidden</code> with property tags. Method records similarly combine <code>Defining</code>, <code>Access</code>, <code>Static</code>, <code>Abstract</code>, and <code>Hidden</code> with method tags.</p>
+
+    <h2>Tag Schema</h2>
+    <table>
+      <tr><th>Target</th><th>Canonical tags</th></tr>
+      <tr><td>Class</td><td><code>Summary</code>, <code>Desc</code>, <code>Role</code>, <code>Constructor</code>, <code>Notes</code>, <code>SeeAlso</code>, <code>Since</code>, <code>Deprecated</code></td></tr>
+      <tr><td>Property</td><td><code>Summary</code>, <code>Desc</code>, <code>Role</code>, <code>Type</code>, <code>Size</code>, <code>Unit</code>, <code>Default</code>, <code>Constraints</code>, <code>Notes</code>, <code>SeeAlso</code>, <code>Since</code>, <code>Deprecated</code></td></tr>
+      <tr><td>Method</td><td><code>Summary</code>, <code>Desc</code>, <code>Role</code>, <code>Signatures</code>, <code>Parameters</code>, <code>Returns</code>, <code>Examples</code>, <code>Notes</code>, <code>Throws</code>, <code>SeeAlso</code>, <code>Since</code>, <code>Deprecated</code></td></tr>
+    </table>
+    <p>Tags are case-sensitive field names and must use the exact form <code>&lt;@TagName&gt;</code>. For example, <code>&lt;Summary&gt;</code> is not a documentation tag. A tag value continues until the next valid tag or the end of the comment block.</p>
+    <p><strong>Use canonical names in new code.</strong> Existing documentation can also be read through these aliases:</p>
+    <table>
+      <tr><th>Legacy alias</th><th>Canonical tag</th></tr>
+      <tr><td><code>Abst</code></td><td><code>Summary</code></td></tr>
+      <tr><td><code>Description</code></td><td><code>Desc</code></td></tr>
+      <tr><td><code>varargin</code></td><td><code>Parameters</code></td></tr>
+      <tr><td><code>varargout</code></td><td><code>Returns</code></td></tr>
+      <tr><td><code>DetailsCode</code></td><td><code>Notes</code></td></tr>
+      <tr><td><code>Example</code></td><td><code>Examples</code></td></tr>
+      <tr><td><code>Seealso</code></td><td><code>SeeAlso</code></td></tr>
+    </table>
+
+    <h2>Authoring Rules</h2>
+    <ul>
+      <li>Use <code>Summary</code> for one concise sentence shown in reference tables.</li>
+      <li>Use <code>Desc</code> for the full explanation shown on the detail page. It does not replace a missing <code>Summary</code> in reference tables.</li>
+      <li>Single newlines, consecutive spaces, and indentation are preserved. ASCII diagrams are rendered as preformatted monospace text.</li>
+      <li><code>Signatures</code>, <code>Examples</code>, and <code>SeeAlso</code> must be JSON arrays of strings.</li>
+      <li><code>Parameters</code> and <code>Returns</code> must be JSON objects or arrays of objects.</li>
+      <li>Structured JSON must begin with <code>[</code> or <code>{</code>. Do not use MATLAB arrays or cell-array syntax.</li>
+      <li>Leave an optional tag empty when it does not apply; the exporter supplies its type-appropriate empty value.</li>
+    </ul>
+
+    <h2>Class Documentation</h2>
+<pre><code>classdef MyClass
+    % &lt;@Summary&gt; Updates subsystem states and evaluates utility signals.
+    % &lt;@Desc&gt; Long-form explanation of responsibilities and intended use.
+    % &lt;@Role&gt; CoreComponent
+    % &lt;@Constructor&gt; obj = MyClass(r_gain, str_label)
+    % &lt;@Notes&gt; Call initialize after changing topology-related settings.
+    % &lt;@SeeAlso&gt; ["PowerNetwork", "Component"]
+    % &lt;@Since&gt; 4.2
+    % &lt;@Deprecated&gt;
+    ...
+end</code></pre>
+
+    <h2>Method Documentation</h2>
+    <p>Name-value options belong in <code>Parameters</code> with <code>Kind: "NameValue"</code>. The normalized parameter fields are <code>Name</code>, <code>Kind</code>, <code>Type</code>, <code>Unit</code>, <code>Description</code>, <code>Required</code>, <code>Default</code>, and <code>Constraints</code>.</p>
+<pre><code>function rv_y = calculate_output(obj, rv_u, r_gain)
+% &lt;@Summary&gt; Scale an input vector.
+% &lt;@Desc&gt; Computes an output vector using a configurable scalar gain.
+% &lt;@Signatures&gt;
+% ["rv_y = obj.calculate_output(rv_u, r_gain)"]
+% &lt;@Parameters&gt;
+% [
+%   {
+%     "Name": "rv_u",
+%     "Kind": "Positional",
+%     "Type": "double vector",
+%     "Unit": "pu",
+%     "Description": "Input signal vector.",
+%     "Required": true,
+%     "Default": "-",
+%     "Constraints": "finite column vector"
+%   }
+% ]
+% &lt;@Returns&gt;
+% [{"Name":"rv_y","Type":"double vector","Unit":"pu","Description":"Scaled output."}]
+% &lt;@Examples&gt;
+% ["```matlab\nrv_y = obj.calculate_output(rv_u, 2.0);\n```"]
+% &lt;@Notes&gt; This method does not modify the object state.
+% &lt;@Throws&gt; Errors when the input and gain dimensions are incompatible.
+% &lt;@SeeAlso&gt; ["simulate", "get_sys"]
+end</code></pre>
+
+    <h2>Property Documentation</h2>
+<pre><code>properties
+    % &lt;@Summary&gt; Gain applied to input/output calculations.
+    % &lt;@Desc&gt; Scalar gain used by calculate_output.
+    % &lt;@Role&gt; simulate
+    % &lt;@Type&gt; double
+    % &lt;@Size&gt; 1x1
+    % &lt;@Unit&gt; pu
+    % &lt;@Default&gt; 1.0
+    % &lt;@Constraints&gt; finite and positive
+    % &lt;@Notes&gt; Applied during output evaluation.
+    % &lt;@SeeAlso&gt; ["calculate_output"]
+    % &lt;@Since&gt; 4.2
+    % &lt;@Deprecated&gt;
+    r_gain
+end</code></pre>
+
+    <h2>Validation</h2>
+    <p>The exporter records unknown or duplicate tags, missing class descriptions, and undocumented public methods as warnings. Invalid structured JSON and failed class exports are recorded as errors. Diagnostics are available both in the generated class document and in the central index validation summary.</p>
+    <table>
+      <tr><th>Condition</th><th>Result</th></tr>
+      <tr><td>Unknown or duplicate tag</td><td>Warning</td></tr>
+      <tr><td>Class has neither <code>Summary</code> nor <code>Desc</code></td><td>Warning</td></tr>
+      <tr><td>Public, non-hidden method defined by the class has neither <code>Summary</code> nor <code>Desc</code></td><td>Warning</td></tr>
+      <tr><td>Malformed structured JSON</td><td>Error</td></tr>
+      <tr><td>Class reflection or file export failure</td><td>Error</td></tr>
+    </table>
+    <p>Use strict mode in automated checks to fail generation when one or more validation errors exist:</p>
+<pre><code>&gt;&gt; GUILDA.doc("update", true, "open", false, "strict", true);</code></pre>
+
+    <h2>Regenerating and Reviewing Documentation</h2>
+<pre><code>&gt;&gt; GUILDA.addpath();
+&gt;&gt; GUILDA.doc("update", true, "open", false);
+&gt;&gt; web(fullfile(GUILDA.pwd(), "_GUILDAdoc", "index.html"));</code></pre>
+    <p>After regeneration, review <code>database/list_Classes.js</code> for the index summary and open the Reference tab to verify class links, summaries, inheritance markers, and detailed class or method pages.</p>
+  </main>
+
+  <script>
+    (function () {
+      var TAG_SETS = {
+        class: {
+          pasteHint: 'Paste this directly under the "classdef ClassName" line, before any properties or methods blocks.',
+          fields: [
+            { tag: 'Summary', rows: 2, placeholder: 'One concise sentence shown in reference tables.' },
+            { tag: 'Desc', rows: 3, placeholder: 'Full explanation shown on the class detail page.' },
+            { tag: 'Role', rows: 1, placeholder: 'e.g. CoreComponent' },
+            { tag: 'Constructor', rows: 1, placeholder: 'e.g. obj = MyClass(r_gain, str_label)' },
+            { tag: 'Notes', rows: 2, placeholder: 'Implementation notes, caveats, usage order.' },
+            { tag: 'SeeAlso', rows: 1, placeholder: 'JSON array, e.g. ["PowerNetwork", "Component"]' },
+            { tag: 'Since', rows: 1, placeholder: 'e.g. 4.2' },
+            { tag: 'Deprecated', rows: 1, placeholder: 'Leave empty unless deprecated.' }
+          ]
+        },
+        property: {
+          pasteHint: 'Paste this directly above the property declaration, inside the "properties" block.',
+          fields: [
+            { tag: 'Summary', rows: 2, placeholder: 'One concise sentence shown in reference tables.' },
+            { tag: 'Desc', rows: 3, placeholder: 'Full explanation shown on the class detail page.' },
+            { tag: 'Role', rows: 1, placeholder: 'e.g. simulate' },
+            { tag: 'Type', rows: 1, placeholder: 'e.g. double' },
+            { tag: 'Size', rows: 1, placeholder: 'e.g. 1x1' },
+            { tag: 'Unit', rows: 1, placeholder: 'e.g. pu' },
+            { tag: 'Default', rows: 1, placeholder: 'e.g. 1.0' },
+            { tag: 'Constraints', rows: 1, placeholder: 'e.g. finite and positive' },
+            { tag: 'Notes', rows: 2, placeholder: 'Implementation notes, caveats.' },
+            { tag: 'SeeAlso', rows: 1, placeholder: 'JSON array, e.g. ["calculate_output"]' },
+            { tag: 'Since', rows: 1, placeholder: 'e.g. 4.2' },
+            { tag: 'Deprecated', rows: 1, placeholder: 'Leave empty unless deprecated.' }
+          ]
+        },
+        method: {
+          pasteHint: 'Paste this directly after the "function ..." line, before the method body.',
+          fields: [
+            { tag: 'Summary', rows: 2, placeholder: 'One concise sentence shown in reference tables.' },
+            { tag: 'Desc', rows: 3, placeholder: 'Full explanation shown on the class detail page.' },
+            { tag: 'Role', rows: 1, placeholder: 'e.g. simulate' },
+            {
+              tag: 'Signatures', type: 'table', mode: 'list',
+              columns: [{ key: 'value', label: 'Signature', placeholder: 'e.g. rv_y = obj.calculate_output(rv_u, r_gain)' }]
+            },
+            {
+              tag: 'Parameters', type: 'table', mode: 'object',
+              columns: [
+                { key: 'Name', label: 'Name', placeholder: 'rv_u' },
+                { key: 'Kind', label: 'Kind', type: 'select', options: ['Positional', 'NameValue'] },
+                { key: 'Type', label: 'Type', placeholder: 'double vector' },
+                { key: 'Unit', label: 'Unit', placeholder: 'pu' },
+                { key: 'Description', label: 'Description', placeholder: 'Input signal vector.' },
+                { key: 'Required', label: 'Required', type: 'checkbox' },
+                { key: 'Default', label: 'Default', placeholder: '-' },
+                { key: 'Constraints', label: 'Constraints', placeholder: 'finite column vector' }
+              ]
+            },
+            {
+              tag: 'Returns', type: 'table', mode: 'object',
+              columns: [
+                { key: 'Name', label: 'Name', placeholder: 'rv_y' },
+                { key: 'Type', label: 'Type', placeholder: 'double vector' },
+                { key: 'Unit', label: 'Unit', placeholder: 'pu' },
+                { key: 'Description', label: 'Description', placeholder: 'Scaled output.' }
+              ]
+            },
+            { tag: 'Examples', rows: 3, placeholder: 'JSON array of example code strings.' },
+            { tag: 'Notes', rows: 2, placeholder: 'Implementation notes, caveats.' },
+            { tag: 'Throws', rows: 2, placeholder: 'Conditions under which this method errors.' },
+            { tag: 'SeeAlso', rows: 1, placeholder: 'JSON array, e.g. ["simulate", "get_sys"]' },
+            { tag: 'Since', rows: 1, placeholder: 'e.g. 4.2' },
+            { tag: 'Deprecated', rows: 1, placeholder: 'Leave empty unless deprecated.' }
+          ]
+        }
+      };
+
+      var targetButtons = Array.prototype.slice.call(document.querySelectorAll('#tg-target-options .tg-target-btn'));
+      var fieldsContainer = document.getElementById('tg-fields');
+      var emptyMsg = document.getElementById('tg-empty');
+      var hint = document.getElementById('tg-hint');
+      var outputWrap = document.getElementById('tg-output-wrap');
+      var output = document.getElementById('tg-output');
+      var copyBtn = document.getElementById('tg-copy-btn');
+
+      var currentTarget = null;
+      var currentFieldEntries = [];
+
+      targetButtons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          currentTarget = btn.getAttribute('data-target');
+          targetButtons.forEach(function (b) { b.classList.toggle('active', b === btn); });
+          renderFields();
+          update();
+        });
+      });
+
+      function renderFields() {
+        var set = TAG_SETS[currentTarget];
+        fieldsContainer.innerHTML = '';
+        currentFieldEntries = [];
+        if (!set) {
+          emptyMsg.style.display = 'block';
+          return;
+        }
+        emptyMsg.style.display = 'none';
+        set.fields.forEach(function (f) {
+          if (f.type === 'table') {
+            var wrap = createTableField(f);
+            fieldsContainer.appendChild(wrap);
+            currentFieldEntries.push({ tag: f.tag, kind: 'table', wrap: wrap, config: f });
+            return;
+          }
+
+          var row = document.createElement('div');
+          row.className = 'tag-generator-field';
+
+          var label = document.createElement('label');
+          label.className = 'tag-generator-field-label';
+          label.textContent = f.tag;
+          label.setAttribute('for', 'tg-input-' + f.tag);
+
+          var control = document.createElement('textarea');
+          control.className = 'tag-generator-input';
+          control.id = 'tg-input-' + f.tag;
+          control.rows = f.rows || 1;
+          control.placeholder = f.placeholder || '';
+          control.dataset.tag = f.tag;
+          control.addEventListener('input', update);
+
+          row.appendChild(label);
+          row.appendChild(control);
+          fieldsContainer.appendChild(row);
+          currentFieldEntries.push({ tag: f.tag, kind: 'simple', control: control });
+        });
+      }
+
+      function createTableField(f) {
+        var wrap = document.createElement('div');
+        wrap.className = 'tag-generator-field tag-generator-field-table';
+
+        var label = document.createElement('span');
+        label.className = 'tag-generator-field-label';
+        label.textContent = f.tag;
+        wrap.appendChild(label);
+
+        var tableScroll = document.createElement('div');
+        tableScroll.className = 'tg-table-scroll';
+
+        var table = document.createElement('table');
+        table.className = 'tg-table';
+
+        var thead = document.createElement('thead');
+        var headRow = document.createElement('tr');
+        f.columns.forEach(function (col) {
+          var th = document.createElement('th');
+          th.textContent = col.label;
+          headRow.appendChild(th);
+        });
+        headRow.appendChild(document.createElement('th'));
+        thead.appendChild(headRow);
+        table.appendChild(thead);
+
+        var tbody = document.createElement('tbody');
+        table.appendChild(tbody);
+        tableScroll.appendChild(table);
+        wrap.appendChild(tableScroll);
+
+        var addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'tg-table-add-btn';
+        addBtn.textContent = '+ Add row';
+        addBtn.addEventListener('click', function () {
+          addTableRow(f, tbody);
+          update();
+        });
+        wrap.appendChild(addBtn);
+
+        wrap._tbody = tbody;
+        addTableRow(f, tbody);
+
+        return wrap;
+      }
+
+      function addTableRow(f, tbody) {
+        var tr = document.createElement('tr');
+        f.columns.forEach(function (col) {
+          var td = document.createElement('td');
+          var input;
+          if (col.type === 'checkbox') {
+            input = document.createElement('input');
+            input.type = 'checkbox';
+            input.className = 'tg-table-checkbox';
+            input.addEventListener('change', update);
+          } else if (col.type === 'select') {
+            input = document.createElement('select');
+            input.className = 'tg-table-select';
+            col.options.forEach(function (opt) {
+              var o = document.createElement('option');
+              o.value = opt;
+              o.textContent = opt;
+              input.appendChild(o);
+            });
+            input.addEventListener('change', update);
+          } else {
+            input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'tg-table-input';
+            input.placeholder = col.placeholder || '';
+            input.addEventListener('input', update);
+          }
+          input.dataset.col = col.key;
+          td.appendChild(input);
+          tr.appendChild(td);
+        });
+
+        var tdAction = document.createElement('td');
+        var removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'tg-table-remove-btn';
+        removeBtn.textContent = '×';
+        removeBtn.setAttribute('aria-label', 'Remove row');
+        removeBtn.addEventListener('click', function () {
+          tbody.removeChild(tr);
+          if (tbody.children.length === 0) addTableRow(f, tbody);
+          update();
+        });
+        tdAction.appendChild(removeBtn);
+        tr.appendChild(tdAction);
+
+        tbody.appendChild(tr);
+      }
+
+      function tableFieldToJson(entry) {
+        var f = entry.config;
+        var rows = Array.prototype.slice.call(entry.wrap._tbody.querySelectorAll('tr'));
+
+        if (f.mode === 'list') {
+          var items = rows.map(function (tr) {
+            return tr.querySelector('[data-col="value"]').value.trim();
+          }).filter(function (v) { return v !== ''; });
+          return items.length ? JSON.stringify(items) : '';
+        }
+
+        var objs = rows.map(function (tr) {
+          var obj = {};
+          f.columns.forEach(function (col) {
+            var input = tr.querySelector('[data-col="' + col.key + '"]');
+            if (col.type === 'checkbox') {
+              obj[col.key] = input.checked;
+            } else {
+              var v = input.value.trim();
+              if (v !== '') obj[col.key] = v;
+            }
+          });
+          var meaningfulKeys = Object.keys(obj).filter(function (k) { return k !== 'Required'; });
+          return meaningfulKeys.length ? obj : null;
+        }).filter(function (o) { return o !== null; });
+
+        return objs.length ? JSON.stringify(objs, null, 2) : '';
+      }
+
+      function formatTag(tagName, rawValue) {
+        var value = (rawValue || '').replace(/\r\n/g, '\n');
+        var lines = value.split('\n');
+        while (lines.length && lines[lines.length - 1].trim() === '') lines.pop();
+        while (lines.length && lines[0].trim() === '') lines.shift();
+        if (lines.length === 0) return null;
+        if (lines.length === 1) return '% <@' + tagName + '> ' + lines[0];
+        var out = ['% <@' + tagName + '>'];
+        lines.forEach(function (l) { out.push('% ' + l); });
+        return out.join('\n');
+      }
+
+      function update() {
+        var set = TAG_SETS[currentTarget];
+        if (!set) {
+          hint.textContent = 'Select a target above to begin.';
+          output.textContent = '';
+          outputWrap.style.display = 'none';
+          copyBtn.disabled = true;
+          return;
+        }
+
+        var blocks = [];
+        currentFieldEntries.forEach(function (entry) {
+          var raw = entry.kind === 'table' ? tableFieldToJson(entry) : entry.control.value;
+          var block = formatTag(entry.tag, raw);
+          if (block) blocks.push(block);
+        });
+
+        if (blocks.length === 0) {
+          output.textContent = '';
+          outputWrap.style.display = 'none';
+          hint.textContent = 'Fill in at least one tag to generate the comment block.';
+          copyBtn.disabled = true;
+          return;
+        }
+
+        output.textContent = blocks.join('\n');
+        outputWrap.style.display = 'block';
+        hint.textContent = set.pasteHint;
+        copyBtn.disabled = false;
+      }
+
+      function fallbackCopy(text) {
+        var temp = document.createElement('textarea');
+        temp.value = text;
+        temp.style.position = 'fixed';
+        temp.style.opacity = '0';
+        document.body.appendChild(temp);
+        temp.select();
+        try { document.execCommand('copy'); } catch (e) { /* ignore */ }
+        document.body.removeChild(temp);
+      }
+
+      copyBtn.addEventListener('click', function () {
+        if (copyBtn.disabled) return;
+        var text = output.textContent;
+        var flash = function () {
+          var original = 'Copy';
+          copyBtn.textContent = 'Copied!';
+          setTimeout(function () { copyBtn.textContent = original; }, 1200);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(flash, function () {
+            fallbackCopy(text);
+            flash();
+          });
+        } else {
+          fallbackCopy(text);
+          flash();
+        }
+      });
+
+      update();
+    })();
+  </script>
+</body>
+</html>

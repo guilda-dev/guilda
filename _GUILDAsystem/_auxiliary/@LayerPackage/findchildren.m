@@ -3,13 +3,13 @@ function c = findchildren(obj)
     % Collects all descendant layers from the current layer.
     % <@Role>
     % Layer Structure
-    % <@Abst>
+    % <@Summary>
     % Retrieve child layers recursively.
     % <@Signatures>
     % [
     %   "c = findchildren(obj)"
     % ]
-    % <@varargin>
+    % <@Parameters>
     % [
     %   {
     %     "Name": "obj",
@@ -19,7 +19,7 @@ function c = findchildren(obj)
     %     "Default": "-"
     %   }
     % ]
-    % <@varargout>
+    % <@Returns>
     % [
     %   {
     %     "Name": "c",

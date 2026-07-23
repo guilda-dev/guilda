@@ -73,10 +73,12 @@ classdef TEST31bus < PowerNetwork
 %    ===, ||  :   Bus
 %      (.)    :   Bus Number
 % 
-% <@Role> PowerNetwork COnstructor
+% <@Model> IEEE31bus
+% <@Summary> The PowerNetwork class for the IEEE 31-bus model
+% <@Role> PowerNetwork Constructor
 % <@Constructor> 
-%  net = TEST31bus()
- 
+%  net = network.TEST31bus()
+
     properties(Constant)
         ver = 1.1
     end

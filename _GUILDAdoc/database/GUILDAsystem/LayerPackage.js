@@ -1,4 +1,9 @@
-const classData = {
+(function (root) {
+  const data = {
+  "schema": {
+    "name": "GUILDA class document",
+    "version": 2
+  },
   "ClassName": "LayerPackage",
   "properties": [
     {
@@ -10,10 +15,18 @@ const classData = {
       "Constant": false,
       "Abstract": true,
       "Hidden": false,
+      "Summary": "",
       "Desc": "manage parameter related to any analyis.",
       "Role": "Parameter",
       "Type": "Parameter",
-      "Size": "1x1"
+      "Size": "1x1",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "parent",
@@ -24,10 +37,18 @@ const classData = {
       "Constant": false,
       "Abstract": true,
       "Hidden": false,
+      "Summary": "",
       "Desc": "manage hierarchical structure of layers.",
       "Role": "Layer Structure",
       "Type": "LayerPackage",
-      "Size": "1x1"
+      "Size": "1x1",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "children",
@@ -38,10 +59,18 @@ const classData = {
       "Constant": false,
       "Abstract": true,
       "Hidden": false,
+      "Summary": "",
       "Desc": "manage hierarchical structure of layers.",
       "Role": "Layer Structure",
       "Type": "LayerPackage cell array",
-      "Size": "Nx1"
+      "Size": "Nx1",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "str_editFlag",
@@ -52,10 +81,18 @@ const classData = {
       "Constant": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "Flag to indicate if the layer has been edited.",
       "Role": "Edit Log",
       "Type": "string",
-      "Size": "1x1"
+      "Size": "1x1",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "tab_editLog",
@@ -66,10 +103,18 @@ const classData = {
       "Constant": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "Log of edits made to the layer, including timestamp, ID, log message, tag, and before/after states.",
       "Role": "Edit Log",
       "Type": "table",
-      "Size": "Nx6"
+      "Size": "Nx6",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "l_managedTag",
@@ -80,10 +125,18 @@ const classData = {
       "Constant": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "Flag to indicate if the layer is managed by the tag system.",
       "Role": "Tag",
       "Type": "logical",
-      "Size": "1x1"
+      "Size": "1x1",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "str_tag",
@@ -94,10 +147,18 @@ const classData = {
       "Constant": false,
       "Abstract": false,
       "Hidden": false,
+      "Summary": "",
       "Desc": "User-defined tag for the layer, used for identification and management within the layer structure.",
       "Role": "Tag",
       "Type": "string",
-      "Size": "1x1"
+      "Size": "1x1",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     }
   ],
   "methods": [
@@ -108,38 +169,46 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Desc": "Validates tag uniqueness within sibling layers and renames on conflicts.",
-      "Role": "Tag",
-      "Abst": "Ensure tag uniqueness among same-layer objects.",
-      "DetailsCode": "",
+      "Summary": " Ensure tag uniqueness among same-layer objects.",
+      "Desc": " Validates tag uniqueness within sibling layers and renames on conflicts.",
+      "Role": " Tag",
       "Signatures": [
         "str_newtag = validate_tag(obj, str_newtag)"
       ],
-      "Argin": "",
       "Parameters": [
         {
           "Name": "obj",
+          "Kind": "",
           "Type": "LayerPackage",
+          "Unit": "",
           "Description": "Target layer object.",
           "Required": true,
-          "Default": "-"
+          "Default": "-",
+          "Constraints": ""
         },
         {
           "Name": "str_newtag",
+          "Kind": "",
           "Type": "string scalar",
+          "Unit": "",
           "Description": "Candidate tag.",
           "Required": true,
-          "Default": "-"
+          "Default": "-",
+          "Constraints": ""
         }
       ],
-      "Argout": "",
       "Returns": {
         "Name": "str_newtag",
         "Type": "string scalar",
+        "Unit": "",
         "Description": "Validated unique tag."
       },
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "findchildren",
@@ -148,29 +217,34 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Desc": "Collects all descendant layers from the current layer.",
-      "Role": "Layer Structure",
-      "Abst": "Retrieve child layers recursively.",
-      "DetailsCode": "",
+      "Summary": " Retrieve child layers recursively.",
+      "Desc": " Collects all descendant layers from the current layer.",
+      "Role": " Layer Structure",
       "Signatures": [
         "c = findchildren(obj)"
       ],
-      "Argin": "",
       "Parameters": {
         "Name": "obj",
+        "Kind": "",
         "Type": "LayerPackage",
+        "Unit": "",
         "Description": "Target layer object.",
         "Required": true,
-        "Default": "-"
+        "Default": "-",
+        "Constraints": ""
       },
-      "Argout": "",
       "Returns": {
         "Name": "c",
         "Type": "cell array",
+        "Unit": "",
         "Description": "Flattened descendant list including self when managed."
       },
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "findparent",
@@ -179,29 +253,34 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Desc": "Finds the top-level parent layer in the hierarchy.",
-      "Role": "Layer Structure",
-      "Abst": "Retrieve root layer from current object.",
-      "DetailsCode": "",
+      "Summary": " Retrieve root layer from current object.",
+      "Desc": " Finds the top-level parent layer in the hierarchy.",
+      "Role": " Layer Structure",
       "Signatures": [
         "p = findparent(obj)"
       ],
-      "Argin": "",
       "Parameters": {
         "Name": "obj",
+        "Kind": "",
         "Type": "LayerPackage",
+        "Unit": "",
         "Description": "Target layer object.",
         "Required": true,
-        "Default": "-"
+        "Default": "-",
+        "Constraints": ""
       },
-      "Argout": "",
       "Returns": {
         "Name": "p",
         "Type": "LayerPackage",
+        "Unit": "",
         "Description": "Top-level parent layer (or self if root)."
       },
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "check_edit",
@@ -210,29 +289,34 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Desc": "Checks the layer edit state and warns when edits remain unapplied.",
-      "Role": "Edit Log",
-      "Abst": "Validate whether the layer has an initialized edit state.",
-      "DetailsCode": "",
+      "Summary": " Validate whether the layer has an initialized edit state.",
+      "Desc": " Checks the layer edit state and warns when edits remain unapplied.",
+      "Role": " Edit Log",
       "Signatures": [
         "flag = check_edit(obj)"
       ],
-      "Argin": "",
       "Parameters": {
         "Name": "obj",
+        "Kind": "",
         "Type": "LayerPackage",
+        "Unit": "",
         "Description": "Target layer object.",
         "Required": true,
-        "Default": "-"
+        "Default": "-",
+        "Constraints": ""
       },
-      "Argout": "",
       "Returns": {
         "Name": "flag",
         "Type": "logical scalar",
+        "Unit": "",
         "Description": "True when state is initialized."
       },
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "reset_edit",
@@ -241,25 +325,29 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Desc": "Resets edit status and clears edit logs recursively.",
-      "Role": "Edit Log",
-      "Abst": "Initialize edit state for this layer and descendants.",
-      "DetailsCode": "",
+      "Summary": " Initialize edit state for this layer and descendants.",
+      "Desc": " Resets edit status and clears edit logs recursively.",
+      "Role": " Edit Log",
       "Signatures": [
         "reset_edit(obj)"
       ],
-      "Argin": "",
       "Parameters": {
         "Name": "obj",
+        "Kind": "",
         "Type": "LayerPackage",
+        "Unit": "",
         "Description": "Target layer object.",
         "Required": true,
-        "Default": "-"
+        "Default": "-",
+        "Constraints": ""
       },
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "log_edit",
@@ -268,70 +356,112 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Desc": "Records an edit event and propagates it to parent layers.",
-      "Role": "Edit Log",
-      "Abst": "Append a new edit-log record.",
-      "DetailsCode": "",
+      "Summary": " Append a new edit-log record.",
+      "Desc": " Records an edit event and propagates it to parent layers.",
+      "Role": " Edit Log",
       "Signatures": [
         "log_edit(obj)",
         "log_edit(obj, log, tag, before, after, time, tab)"
       ],
-      "Argin": "",
       "Parameters": [
         {
           "Name": "obj",
+          "Kind": "",
           "Type": "LayerPackage",
+          "Unit": "",
           "Description": "Target layer object.",
           "Required": true,
-          "Default": "-"
+          "Default": "-",
+          "Constraints": ""
         },
         {
           "Name": "log",
+          "Kind": "",
           "Type": "string scalar",
+          "Unit": "",
           "Description": "Edit message.",
           "Required": false,
-          "Default": "\"\""
+          "Default": "\"\"",
+          "Constraints": ""
         },
         {
           "Name": "tag",
+          "Kind": "",
           "Type": "string scalar",
+          "Unit": "",
           "Description": "Edited field tag.",
           "Required": false,
-          "Default": "\"\""
+          "Default": "\"\"",
+          "Constraints": ""
         },
         {
           "Name": "before",
+          "Kind": "",
           "Type": "double scalar",
+          "Unit": "",
           "Description": "Value before edit.",
           "Required": false,
-          "Default": "NaN"
+          "Default": "NaN",
+          "Constraints": ""
         },
         {
           "Name": "after",
+          "Kind": "",
           "Type": "double scalar",
+          "Unit": "",
           "Description": "Value after edit.",
           "Required": false,
-          "Default": "NaN"
+          "Default": "NaN",
+          "Constraints": ""
         },
         {
           "Name": "time",
+          "Kind": "",
           "Type": "string scalar",
+          "Unit": "",
           "Description": "Timestamp for the event.",
           "Required": false,
-          "Default": "current time"
+          "Default": "current time",
+          "Constraints": ""
         },
         {
           "Name": "tab",
+          "Kind": "",
           "Type": "table (1x6)",
+          "Unit": "",
           "Description": "Prebuilt edit-log row.",
           "Required": false,
-          "Default": "auto-generated"
+          "Default": "auto-generated",
+          "Constraints": ""
         }
       ],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
+    },
+    {
+      "Name": "struct",
+      "Defining": "LayerPackage",
+      "Access": "public",
+      "Static": false,
+      "Abstract": false,
+      "Hidden": false,
+      "Summary": "",
+      "Desc": "",
+      "Role": "",
+      "Signatures": [],
+      "Parameters": [],
+      "Returns": [],
+      "Examples": [],
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "attach_tag",
@@ -340,38 +470,48 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Desc": "Appends this class tag to each input name.",
-      "Role": "Tag",
-      "Abst": "Generate names with layer tag suffix.",
-      "DetailsCode": "",
+      "Summary": " Generate names with layer tag suffix.",
+      "Desc": " Appends this class tag to each input name.",
+      "Role": " Tag",
       "Signatures": [
         "out = attach_tag(obj, str_name_list)"
       ],
-      "Argin": "",
       "Parameters": [
         {
           "Name": "obj",
+          "Kind": "",
           "Type": "LayerPackage",
+          "Unit": "",
           "Description": "Target layer object.",
           "Required": true,
-          "Default": "-"
+          "Default": "-",
+          "Constraints": ""
         },
         {
           "Name": "str_name_list",
+          "Kind": "",
           "Type": "string array",
+          "Unit": "",
           "Description": "Base names to be tagged.",
           "Required": true,
-          "Default": "-"
+          "Default": "-",
+          "Constraints": ""
         }
       ],
-      "Argout": "",
       "Returns": {
         "Name": "out",
         "Type": "string array",
+        "Unit": "",
         "Description": "Input names with layer tag suffix."
       },
-      "Examples": [],
-      "Option": ""
+      "Examples": [
+        ">> obj.attach_tag([\"V\", \"P\"])\nans =\n    [\"V_Tag\", \"P_Tag\"]"
+      ],
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "get_tag",
@@ -380,46 +520,57 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Desc": "Returns the layer tag, optionally including parent-layer tags.",
-      "Role": "Tag",
-      "Abst": "Build tag string with optional hierarchy composition.",
-      "DetailsCode": "",
+      "Summary": " Build tag string with optional hierarchy composition.",
+      "Desc": " Returns the layer tag, optionally including parent-layer tags.",
+      "Role": " Tag",
       "Signatures": [
         "out = get_tag(obj)",
         "out = get_tag(obj, l_with_layer, str_split)"
       ],
-      "Argin": "",
       "Parameters": [
         {
           "Name": "obj",
+          "Kind": "",
           "Type": "LayerPackage",
+          "Unit": "",
           "Description": "Target layer object.",
           "Required": true,
-          "Default": "-"
+          "Default": "-",
+          "Constraints": ""
         },
         {
           "Name": "l_with_layer",
+          "Kind": "",
           "Type": "logical scalar",
+          "Unit": "",
           "Description": "Include parent-layer tags recursively.",
           "Required": false,
-          "Default": "false"
+          "Default": "false",
+          "Constraints": ""
         },
         {
           "Name": "str_split",
+          "Kind": "",
           "Type": "string scalar",
+          "Unit": "",
           "Description": "Delimiter for composed tags.",
           "Required": false,
-          "Default": "\"\""
+          "Default": "\"\"",
+          "Constraints": ""
         }
       ],
-      "Argout": "",
       "Returns": {
         "Name": "out",
         "Type": "string",
+        "Unit": "",
         "Description": "Layer tag string."
       },
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "disp_tree",
@@ -428,53 +579,67 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Desc": "Displays or returns a text tree of this layer and its descendants.",
-      "Role": "Layer Structure",
-      "Abst": "Render the hierarchy tree with optional filtering.",
-      "DetailsCode": "",
+      "Summary": " Render the hierarchy tree with optional filtering.",
+      "Desc": " Displays or returns a text tree of this layer and its descendants.",
+      "Role": " Layer Structure",
       "Signatures": [
         "disp_tree(obj)",
         "text = disp_tree(obj, str_space, str_ignore, l_isfirst)"
       ],
-      "Argin": "",
       "Parameters": [
         {
           "Name": "obj",
+          "Kind": "",
           "Type": "LayerPackage",
+          "Unit": "",
           "Description": "Root layer object.",
           "Required": true,
-          "Default": "-"
+          "Default": "-",
+          "Constraints": ""
         },
         {
           "Name": "str_space",
+          "Kind": "",
           "Type": "string scalar",
+          "Unit": "",
           "Description": "Indentation prefix for recursive rendering.",
           "Required": false,
-          "Default": "\"\""
+          "Default": "\"\"",
+          "Constraints": ""
         },
         {
           "Name": "str_ignore",
+          "Kind": "",
           "Type": "string array",
+          "Unit": "",
           "Description": "Class names to ignore in output.",
           "Required": false,
-          "Default": "[\"Parameter\"]"
+          "Default": "[\"Parameter\"]",
+          "Constraints": ""
         },
         {
           "Name": "l_isfirst",
+          "Kind": "",
           "Type": "logical scalar",
+          "Unit": "",
           "Description": "Whether this call is the root invocation.",
           "Required": false,
-          "Default": "true"
+          "Default": "true",
+          "Constraints": ""
         }
       ],
-      "Argout": "",
       "Returns": {
         "Name": "text",
         "Type": "string",
+        "Unit": "",
         "Description": "Hierarchy string when one output is requested."
       },
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "string",
@@ -483,31 +648,36 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": true,
-      "Desc": "Returns the tag string representation of this layer object.",
+      "Summary": "Convert the layer object to a tag string.",
+      "Desc": " Returns the tag string representation of this layer object.",
       "Role": "Tag",
-      "Abst": "Convert the layer object to a tag string.",
-      "DetailsCode": "",
       "Signatures": [
         "str = string(obj)"
       ],
-      "Argin": "",
       "Parameters": {
         "Name": "obj",
+        "Kind": "",
         "Type": "LayerPackage",
+        "Unit": "",
         "Description": "Target layer object.",
         "Required": true,
-        "Default": "-"
+        "Default": "-",
+        "Constraints": ""
       },
-      "Argout": "",
       "Returns": {
         "Name": "str",
         "Type": "string",
+        "Unit": "",
         "Description": "Tag string of the layer object."
       },
       "Examples": [
         "```matlab\nstr = string(obj);\n```"
       ],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "table",
@@ -516,31 +686,36 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": true,
-      "Desc": "Returns the parameter table associated with this layer object.",
+      "Summary": "Convert layer parameters into table format.",
+      "Desc": " Returns the parameter table associated with this layer object.",
       "Role": "Parameter",
-      "Abst": "Convert layer parameters into table format.",
-      "DetailsCode": "",
       "Signatures": [
         "tab = table(obj)"
       ],
-      "Argin": "",
       "Parameters": {
         "Name": "obj",
+        "Kind": "",
         "Type": "LayerPackage",
+        "Unit": "",
         "Description": "Target layer object.",
         "Required": true,
-        "Default": "-"
+        "Default": "-",
+        "Constraints": ""
       },
-      "Argout": "",
       "Returns": {
         "Name": "tab",
         "Type": "table",
+        "Unit": "",
         "Description": "Parameter table of the layer."
       },
       "Examples": [
         "```matlab\ntab = table(obj);\n```"
       ],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     },
     {
       "Name": "LayerPackage",
@@ -549,17 +724,28 @@ const classData = {
       "Static": false,
       "Abstract": false,
       "Hidden": false,
-      "Desc": "Abstract base class for layer hierarchy management in GUILDA.\nIt centralizes parent/children relationships, tag handling, and edit logging.",
-      "Role": "auxiliary",
-      "Abst": "",
-      "DetailsCode": "",
+      "Summary": "",
+      "Desc": " Abstract base class for layer hierarchy management in GUILDA.\n  It centralizes parent/children relationships, tag handling, and edit logging.",
+      "Role": " auxiliary",
       "Signatures": [],
-      "Argin": "",
       "Parameters": [],
-      "Argout": "",
       "Returns": [],
       "Examples": [],
-      "Option": ""
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
     }
-  ]
+  ],
+  "validation": {
+    "Warnings": [
+      "LayerPackage.struct: public method has no Summary or Desc."
+    ],
+    "Errors": []
+  }
 };
+  root.GUILDA_DOC_CLASSES = root.GUILDA_DOC_CLASSES || {};
+  root.GUILDA_DOC_CLASSES["LayerPackage"] = data;
+  root.classData = data;
+})(window);

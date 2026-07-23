@@ -91,12 +91,12 @@ classdef LayerPackage < handle
         % <@Desc> 
         % Returns the parameter table associated with this layer object.
         % <@Role> Parameter
-        % <@Abst> Convert layer parameters into table format.
+        % <@Summary> Convert layer parameters into table format.
         % <@Signatures>
         % [
         %   "tab = table(obj)"
         % ]
-        % <@varargin>
+        % <@Parameters>
         % [
         %   {
         %     "Name": "obj",
@@ -106,7 +106,7 @@ classdef LayerPackage < handle
         %     "Default": "-"
         %   }
         % ]
-        % <@varargout>
+        % <@Returns>
         % [
         %   {
         %     "Name": "tab",
@@ -125,12 +125,12 @@ classdef LayerPackage < handle
         % <@Desc> 
         % Returns the tag string representation of this layer object.
         % <@Role> Tag
-        % <@Abst> Convert the layer object to a tag string.
+        % <@Summary> Convert the layer object to a tag string.
         % <@Signatures>
         % [
         %   "str = string(obj)"
         % ]
-        % <@varargin>
+        % <@Parameters>
         % [
         %   {
         %     "Name": "obj",
@@ -140,7 +140,7 @@ classdef LayerPackage < handle
         %     "Default": "-"
         %   }
         % ]
-        % <@varargout>
+        % <@Returns>
         % [
         %   {
         %     "Name": "str",

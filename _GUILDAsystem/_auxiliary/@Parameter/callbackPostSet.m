@@ -3,13 +3,13 @@ function callbackPostSet(obj,name,cls,event)
     % Validates a property after it is changed and logs edits.
     % <@Role>
     % Edit Log
-    % <@Abst>
+    % <@Summary>
     % Check type consistency and record changes when values differ.
     % <@Signatures>
     % [
     %   "callbackPostSet(obj, name, cls, event)"
     % ]
-    % <@varargin>
+    % <@Parameters>
     % [
     %   {
     %     "Name": "obj",
@@ -40,7 +40,7 @@ function callbackPostSet(obj,name,cls,event)
     %     "Default": "-"
     %   }
     % ]
-    % <@varargout>
+    % <@Returns>
     % []
     val_pre  = obj.val_stash;
     val_post = event.AffectedObject.(name);            

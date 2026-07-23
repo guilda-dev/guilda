@@ -3,13 +3,13 @@ function str_newtag = validate_tag(obj,str_newtag)
     % Validates tag uniqueness within sibling layers and renames on conflicts.
     % <@Role>
     % Tag
-    % <@Abst>
+    % <@Summary>
     % Ensure tag uniqueness among same-layer objects.
     % <@Signatures>
     % [
     %   "str_newtag = validate_tag(obj, str_newtag)"
     % ]
-    % <@varargin>
+    % <@Parameters>
     % [
     %   {
     %     "Name": "obj",
@@ -26,7 +26,7 @@ function str_newtag = validate_tag(obj,str_newtag)
     %     "Default": "-"
     %   }
     % ]
-    % <@varargout>
+    % <@Returns>
     % [
     %   {
     %     "Name": "str_newtag",

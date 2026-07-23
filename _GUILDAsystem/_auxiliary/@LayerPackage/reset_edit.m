@@ -3,13 +3,13 @@ function reset_edit(obj)
     % Resets edit status and clears edit logs recursively.
     % <@Role>
     % Edit Log
-    % <@Abst>
+    % <@Summary>
     % Initialize edit state for this layer and descendants.
     % <@Signatures>
     % [
     %   "reset_edit(obj)"
     % ]
-    % <@varargin>
+    % <@Parameters>
     % [
     %   {
     %     "Name": "obj",
@@ -19,7 +19,7 @@ function reset_edit(obj)
     %     "Default": "-"
     %   }
     % ]
-    % <@varargout>
+    % <@Returns>
     % []
     obj.str_editFlag = "initialized";
     obj.tab_editLog  = array2table(zeros(0,6),'VariableNames',{'timestamp','ID','log','tag','before','after'});

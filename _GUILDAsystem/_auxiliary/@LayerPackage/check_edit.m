@@ -3,13 +3,13 @@ function flag = check_edit(obj)
 % Checks the layer edit state and warns when edits remain unapplied.
 % <@Role>
 % Edit Log
-% <@Abst>
+% <@Summary>
 % Validate whether the layer has an initialized edit state.
 % <@Signatures>
 % [
 %   "flag = check_edit(obj)"
 % ]
-% <@varargin>
+% <@Parameters>
 % [
 %   {
 %     "Name": "obj",
@@ -19,7 +19,7 @@ function flag = check_edit(obj)
 %     "Default": "-"
 %   }
 % ]
-% <@varargout>
+% <@Returns>
 % [
 %   {
 %     "Name": "flag",

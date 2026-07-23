@@ -8,7 +8,9 @@
   
   <script src="./database/list_UpdateLog.js"></script>
   <script src="./database/list_Classes.js"></script>
+  <script src="./doc-loader.js"></script>
   <script src="./database/list_Tutorials.js"></script>
+  <script src="./database/list_developer.js"></script>
 </head>
 <body class="home-layout">
 
@@ -73,14 +75,6 @@
       <h2>Update Log</h2>
       <div id="update-log-container"></div>
 
-      <hr style="margin: 40px 0; border: 0; border-top: 1px solid #dee2e6;">
-
-      <h2>Authors</h2>
-      <ul>
-        <li><a href="http://hashi-lab.ei.st.gunma-u.ac.jp/~hashimotos/member/kawaguchi/" target="_blank">Takahiro Kawaguchi (Gunma University)</a></li>
-        <li><a href="https://lim.ishizaki-lab.jp" target="_blank">Takayuki Ishizaki (Tokyo Institute of Technology)</a></li>
-      </ul>
-
       <h2>Related Book</h2>
       <p>
         GUILDA is closely linked with the textbook
@@ -100,67 +94,126 @@
     </div>
 
     <div id="tab-getting-started" class="tab-content">
+      <h1>Getting Started</h1>
+
       <h2>Install Now</h2>
       <div class="install-buttons">
         <a href="https://github.com/guilda-dev/guilda" target="_blank" class="btn">From GitHub</a>
         <a href="https://matlab.mathworks.com/open/github/v1?repo=guilda-dev/guilda&project=./GUILDA.prj" target="_blank" class="btn">Open in MATLAB Online</a>
       </div>
 
-      <h2>Requirement</h2>
-      <p>This software is written in MATLAB. The following toolboxes are required:</p>
+      <h2>Requirements</h2>
+      <p>GUILDA runs on MATLAB and requires the following products:</p>
       <ul>
         <li>MATLAB</li>
-        <li>Control system toolbox</li>
-        <li>Optimization toolbox</li>
-        <li>Symbolic Math toolbox</li>
+        <li>Control System Toolbox</li>
+        <li>Symbolic Math Toolbox</li>
+        <li>Optimization Toolbox</li>
       </ul>
 
-      <h2>Setup</h2>
-      <p>
-        Once the installation is complete, open the installed folder in MATLAB. You need to execute the following command every time you use GUILDA. 
-      </p>
-<pre><code>>> GUILDA</code></pre>
-      <p>In this process, the following steps are automatically executed:</p>
+      <h2>Start GUILDA</h2>
+      <p>Open the GUILDA repository folder in MATLAB and run the constructor at the beginning of a session.</p>
+<pre><code>&gt;&gt; GUILDA;</code></pre>
+      <p>The constructor prepares the environment by performing the configured startup tasks:</p>
       <ul>
-        <li>If cloned from Git, the latest version is pulled.</li>
-        <li>Paths for functions and class files necessary for analysis are added.</li>
-        <li>Toolbox installation check and tutorial live editor opening.</li>
+        <li>Print the GUILDA logo.</li>
+        <li>Pull the latest revision when Git update is enabled.</li>
+        <li>Add the required GUILDA folders to the MATLAB path. This step is always performed.</li>
+        <li>Check the required MATLAB products.</li>
+        <li>Update the generated documentation database and class signature map when enabled.</li>
+        <li>Display the update log and open the tutorial when enabled.</li>
       </ul>
-<pre><code>>> GUILDA.setting</code></pre>
+
+      <h2>Startup Settings</h2>
+      <p>Use the settings window to enable or disable optional startup tasks. Path setup cannot be disabled because it is required to use GUILDA.</p>
+<pre><code>&gt;&gt; GUILDA.setting();</code></pre>
       
       <img src="./images/setting_startup.png" alt="GUILDA Environment Settings" style="width: 50%; max-width: 100%; height: auto; display: block; margin: 20px 0; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
 
-      <h3>Utility Functions</h3>
-<pre><code>>> GUILDA.rmpath()      % Remove GUILDA paths if needed 
->> GUILDA.addpath()     % Re-add GUILDA paths if needed
->> GUILDA.setting()     % Check settings and environment
->> GUILDA.tutorial()    % Access tutorials
->> GUILDA.dictionary()  % dictionary for GUILDA-specific classes</code></pre>
+      <h2>Utility Functions</h2>
+<pre><code>&gt;&gt; GUILDA.pwd()         % Get the GUILDA repository path
+&gt;&gt; GUILDA.rmpath()      % Remove GUILDA folders from the MATLAB path
+&gt;&gt; GUILDA.addpath()     % Add the required folders again
+&gt;&gt; GUILDA.gitpull()     % Pull the latest revision from GitHub
+&gt;&gt; GUILDA.setting()     % Open environment and startup settings
+&gt;&gt; GUILDA.tutorial()    % Open the tutorial
+&gt;&gt; GUILDA.doc()         % Open this documentation
+&gt;&gt; GUILDA.dictionary()  % Search the implemented class hierarchy
+&gt;&gt; GUILDA.newclass()    % Open the class creation tool (under development)</code></pre>
+
+      <h2>Managed GUILDA Folders</h2>
+      <p>The following folders under <code>@GUILDA</code> are managed by GUILDA and should not be edited directly:</p>
+      <table>
+        <tr><th>Folder</th><th>Purpose</th></tr>
+        <tr><td><code>@GUILDA/private</code></td><td>Internal functions used by GUILDA class methods.</td></tr>
+        <tr><td><code>@GUILDA/config</code></td><td>Configuration values used during startup and internal analyses.</td></tr>
+        <tr><td><code>@GUILDA/user</code></td><td>User settings and tags associated with instantiated objects.</td></tr>
+      </table>
     </div>
 
     <div id="tab-tutorial" class="tab-content">
       <h1>Basic Workflow</h1>
-      <p>
-        To perform power system analysis, a model must first be defined. Defining a model requires specifying the system configuration and the operating point (equilibrium point). Once these are established, various analyses become possible.
-      </p>
+      <p>A typical GUILDA analysis proceeds from environment setup and network construction to operating-point initialization, followed by simulation, linearization, or controller evaluation. The examples below follow the verification flow in <code>+DebugScript</code> and use the current API names.</p>
       <p>For users who want to learn through hands-on experience, please refer to the <a href="#hands-on-tutorial" style="font-weight: bold;">Hands-on Tutorial</a> section below.</p>
       
-      <h2>1. Modeling</h2>
-      <p>In GUILDA, each component is an object. Design the system by instantiating objects and adding them to the <code>PowerNetwork</code>.</p>
-<pre><code>>> net = PowerNetwork()                           % This class serves as the foundation to which various devices are added.
->> bus = net.add_bus("Bus1")                      % Add a bus
->> mac = component.generator.classical(parameter) % Define a synchronous generator
->> bus.add_component(mac)                         % Add the generator to the bus
->> line = branch.pi(parameter)                    % Define a transmission line
->> net.add_branch(line)                           % Add the transmission line to the network</code></pre>
+      <h2>1. Prepare the Environment</h2>
+      <p>Run GUILDA once per MATLAB session. The constructor adds the required folders and performs the enabled startup checks.</p>
+<pre><code>&gt;&gt; GUILDA;</code></pre>
 
-      <h2>2. Power Flow Calculation</h2>
-<pre><code>>> out = net.calculate_power_flow(option)
->> net.initialize()</code></pre>
-      
-      <h2>3. Analysis</h2>
-<pre><code>>> sol = net.simulate(option)
->> sys = net.get_sys(option)</code></pre>
+      <h2>2. Build or Load a Network</h2>
+      <p>For a quick analysis, load one of the packaged networks. To build a model manually, create a <code>PowerNetwork</code> and add buses, branches, and components in that order.</p>
+<pre><code>% Load a packaged test network
+net = network.IEEE14bus;
+
+% Minimal structure of a manually assembled network
+net = PowerNetwork("TestSystem");
+net.add_bus();
+net.add_bus();
+net.add_branch("pi", [1, 2]);
+net.a_Bus{1}.add_component("gen-park");
+net.a_Bus{2}.add_component("load-power");</code></pre>
+
+      <h2>3. Set and Initialize the Operating Point</h2>
+      <p>Set the power-flow parameters on buses and components, inspect the power-flow solution when needed, and then initialize the model. Initialization distributes the equilibrium voltage, current, active power, and reactive power to each object.</p>
+<pre><code>% Example power-flow settings
+net.a_Bus{1}.tab_parameter.powerflow{:, ["V", "Varg"]} = [1.05, 0.00];
+net.a_Bus{1}.a_Component{1}.tab_parameter.powerflow{:, ["P", "Q"]} = [nan, nan];
+
+powerflow = net.calculate_powerflow();
+net.initialize();</code></pre>
+
+      <h2>4. Run a Time-Domain Simulation</h2>
+      <p>Use <code>odeEventSet</code> to describe disturbances. Events can represent state offsets, input changes, bus faults, and unit trips.</p>
+<pre><code>net = network.IEEE14bus;
+fault = odeEventSet("fault", net, ...
+    "FaultBus", "B008", ...
+    "TimeSpan", [3, 3.1]);
+
+sol = net.simulate([0, 50], fault);
+xsol = sol.odeResults;
+
+figure;
+hold on;
+arrayfun(@(i) plot(xsol.t, xsol.Bus(i).Component(1).X.omega), [1, 2, 3, 6, 8]);</code></pre>
+
+      <h2>5. Obtain a Linear Model</h2>
+      <p>After initialization, obtain the linearized interconnected model. Buses without dynamic units can be specified with the <code>NonUnit</code> option.</p>
+<pre><code>net = network.IEEE14bus;
+net.initialize();
+
+sys = net.get_sys();
+sysReduced = net.get_sys("NonUnit", 7);
+eig(sys.A)</code></pre>
+
+      <h2>6. Add and Evaluate Controllers</h2>
+      <p>Local controllers are attached to components; global controllers are attached to the network. Reinitialize the network after changing its controller structure, then repeat the simulation or linearization.</p>
+<pre><code>avr = controller.avr.AVR_ST1("avr1");
+pss = controller.pss.PSS1("pss1");
+net.a_Bus{1}.a_Component{1}.add_local_controller(avr, pss);
+net.initialize();
+
+fault = odeEventSet("fault", net, "FaultBus", "B008", "TimeSpan", [3, 3.01]);
+sol = net.simulate([0, 50], fault);</code></pre>
 
       <hr style="margin: 50px 0; border: 0; border-top: 2px dashed #dee2e6;">
       
@@ -180,38 +233,7 @@
         <p>In GUILDA, the system model is primarily constructed using the following elements. The <code>PowerNetwork</code> class acts as a container, and by setting other classes within it, the system model is completed and ready for analysis.</p>
         
         <div class="intro-cards-wrapper">
-          <div class="intro-cards-grid">
-            <a href="class.html?class=PowerNetwork" class="core-class-card">
-              <span class="core-class-icon">📄</span>
-              <h3>PowerNetwork</h3>
-              <p>Entire power network manager containing Bus, Branch, etc.</p>
-            </a>
-            <a href="class.html?class=Bus" class="core-class-card">
-              <span class="core-class-icon">📄</span>
-              <h3>Bus</h3>
-              <p>A bus in the system. Multiple components can be attached.</p>
-            </a>
-            <a href="class.html?class=Branch" class="core-class-card">
-              <span class="core-class-icon">📄</span>
-              <h3>Branch</h3>
-              <p>Transmission lines and transformers.</p>
-            </a>
-            <a href="class.html?class=Component" class="core-class-card">
-              <span class="core-class-icon">📄</span>
-              <h3>Component</h3>
-              <p>Devices such as generators, loads, and inverters.</p>
-            </a>
-            <a href="class.html?class=LocalController" class="core-class-card">
-              <span class="core-class-icon">📄</span>
-              <h3>LocalController</h3>
-              <p>Local controllers attached to components (AVR, PSS).</p>
-            </a>
-            <a href="class.html?class=GlobalController" class="core-class-card">
-              <span class="core-class-icon">📄</span>
-              <h3>GlobalController</h3>
-              <p>Global controllers coordinating multiple components (AGC).</p>
-            </a>
-          </div>
+          <div class="intro-cards-grid" id="core-class-cards"></div>
         </div>
       </div>
 
@@ -262,9 +284,9 @@
               <div class="uml-class-name">PowerNetwork</div>
               <div class="uml-divider"></div>
               <ul class="uml-prop-list">
-                <li><strong>buses</strong> : Bus [0..*]</li>
-                <li><strong>branches</strong> : Branch [0..*]</li>
-                <li><strong>globalControllers</strong> : GlobalController [0..*]</li>
+                <li><strong>a_Bus</strong> : Bus [0..*]</li>
+                <li><strong>a_Branch</strong> : Branch [0..*]</li>
+                <li><strong>a_GlobalController</strong> : GlobalController [0..*]</li>
               </ul>
             </div>
 
@@ -272,7 +294,7 @@
               <div class="uml-class-name">Bus</div>
               <div class="uml-divider"></div>
               <ul class="uml-prop-list">
-                <li><strong>components</strong> : Component [0..*]</li>
+                <li><strong>a_Component</strong> : Component [0..*]</li>
               </ul>
             </div>
 
@@ -283,7 +305,7 @@
               <div class="uml-class-name">Component</div>
               <div class="uml-divider"></div>
               <ul class="uml-prop-list">
-                <li><strong>localControllers</strong> : LocalController [0..*]</li>
+                <li><strong>a_LocalController</strong> : LocalController [0..*]</li>
               </ul>
             </div>
 
@@ -294,44 +316,25 @@
 
       <div class="reference-section">
         <h2>Inherited Classes</h2>
-        <p>Classes that define specific dynamics based on the base classes mentioned above are actually used as the system model. Select a toggle below to display the list of inherited classes for each category.</p>
-
+        <p>The first column shows the inheritance hierarchy generated from each class's <code>Parent</code> metadata. Select a category to focus on one subtree, or select a class name to open its reference page.</p>
+        
         <div class="view-panel">
-          <div class="view-panel-row view-panel-row-stacked">
-            <div class="view-panel-label">Display Information</div>
-            <div class="view-panel-controls">
-              <div class="view-switcher" id="inherited-view-switcher">
-                <button class="view-btn active" data-mode="attributes" onclick="setInheritedViewMode('attributes')">Attributes / Parent Class</button>
-                <button class="view-btn" data-mode="description" onclick="setInheritedViewMode('description')">Description</button>
-              </div>
-            </div>
-          </div>
-
           <div class="view-panel-row view-panel-row-stacked">
             <div class="view-panel-label">Display Classes</div>
             <div class="view-panel-controls">
-              <div class="filter-toggles">
-                <button class="filter-btn active" onclick="filterClasses('All', this)">All</button>
-                <button class="filter-btn" onclick="filterClasses('PowerNetwork', this)">PowerNetwork</button>
-                <button class="filter-btn" onclick="filterClasses('Bus', this)">Bus</button>
-                <button class="filter-btn" onclick="filterClasses('Branch', this)">Branch</button>
-                <button class="filter-btn" onclick="filterClasses('Component', this)">Component</button>
-                <button class="filter-btn" onclick="filterClasses('LocalController', this)">LocalController</button>
-                <button class="filter-btn" onclick="filterClasses('GlobalController', this)">GlobalController</button>
-              </div>
+              <div class="filter-toggles" id="class-filter-toggles"></div>
             </div>
           </div>
         </div>
 
-        <input type="text" id="class-search" class="search-box" placeholder="Search for classes...">
-        <table class="compact-table">
-          <thead id="inherited-list-thead">
-            <tr>
-              <th class="sortable-header" onclick="sortClassList('Name')">Class Name ↕</th>
-              <th class="sortable-header" onclick="sortClassList('Parent')">Parent Class ↕</th>
-              <th class="sortable-header" onclick="sortClassList('Abstract')">Abstract ↕</th>
-            </tr>
-          </thead>
+        <input type="search" id="class-search" class="search-box" placeholder="Search for a class, role, or summary..." autocomplete="off">
+        <div class="inheritance-legend" aria-label="Class marker legend">
+          <span class="inheritance-legend-item"><span class="tree-node-marker" aria-hidden="true"></span>Concrete class</span>
+          <span class="inheritance-legend-item"><span class="tree-node-marker is-abstract" aria-hidden="true"></span>Abstract class</span>
+        </div>
+
+        <table class="compact-table inheritance-table" aria-live="polite">
+          <thead id="inherited-list-thead"></thead>
           <tbody id="class-list-tbody"></tbody>
         </table>
       </div>
@@ -340,23 +343,11 @@
         <h2>Auxiliary Classes</h2>
         <p>Although these classes do not directly correspond to the physical components of the power system model, they are essential for various analyses and data management within GUILDA.</p>
 
-        <div class="view-panel">
-          <div class="view-panel-row view-panel-row-stacked">
-            <div class="view-panel-label">Display Information</div>
-            <div class="view-panel-controls">
-              <div class="view-switcher" id="auxiliary-view-switcher">
-                <button class="view-btn active" data-mode="attributes" onclick="setAuxiliaryViewMode('attributes')">Attributes / Parent Class</button>
-                <button class="view-btn" data-mode="description" onclick="setAuxiliaryViewMode('description')">Description</button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <table class="compact-table">
+        <table class="compact-table auxiliary-table">
           <thead id="auxiliary-list-thead">
             <tr>
               <th>Class Name</th>
-              <th>Parent</th>
-              <th>Abstract</th>
+              <th>Summary</th>
             </tr>
           </thead>
           <tbody id="auxiliary-list-tbody"></tbody>
@@ -367,153 +358,9 @@
 
     <div id="tab-developer" class="tab-content">
       <h1>For Developer</h1>
-      
-      <h2>1. Folder Structure</h2>
-      <table>
-        <tr><th>Folder Name</th><th>Description</th></tr>
-        <tr><td><code>@GUILDA/</code></td><td>GUILDA's utility functions</td></tr>
-        <tr><td><code>_GUILDAsystem/</code></td><td>Analysis framework and common base classes</td></tr>
-        <tr><td><code>_GUILDAobject/</code></td><td>Specific device models, transmission line models, and network templates</td></tr>
-        <tr><td><code>_Tutorial/</code></td><td>Tutorial live script files</td></tr>
-      </table>
+      <p class="developer-intro">Guides for contributors and maintainers of GUILDA. Select a topic to open its dedicated page.</p>
 
-      <h2>2. Naming Conventions in GUILDA</h2>
-      <p>Variable naming follows: <strong><code>[variableType][size]_[variableDescription]</code></strong>.</p>
-      
-      <h3>Variable Type (1st Prefix Token)</h3>
-      <ul>
-        <li><code>c</code>: complex</li>
-        <li><code>r</code>: real</li>
-        <li><code>l</code>: logical</li>
-        <li><code>s</code>: symbolic variable (<code>sym</code>)</li>
-        <li><code>f</code>: symbolic function</li>
-        <li><code>i</code>: index</li>
-        <li><code>n</code>: count/number</li>
-        <li><code>str</code>: string</li>
-      </ul>
-
-      <h3>Size (2nd Prefix Token)</h3>
-      <ul>
-        <li><em>(none)</em>: scalar</li>
-        <li><code>v</code>: column vector</li>
-        <li><code>r</code>: row vector</li>
-        <li><code>m</code>: matrix</li>
-      </ul>
-
-      <h3>Naming Composition Examples</h3>
-      <ul>
-        <li><strong><code>cv_Vequilibrium</code></strong>: [c: complex] + [v: column vector] + [_Vequilibrium]</li>
-        <li><strong><code>im_solution</code></strong>: [i: index] + [m: matrix] + [_solution]</li>
-        <li><strong><code>r_gain</code></strong>: [r: real] + [(none): scalar] + [_gain]</li>
-      </ul>
-
-      <h3>Exceptional Naming Rules (Fixed Prefixes)</h3>
-      <ul>
-        <li><strong>Dictionary type</strong>: <code>dict_</code> + [variable description] (e.g., <code>dict_params</code>)</li>
-        <li><strong>Function handle</strong>: <code>fcn_</code> + [variable description] (e.g., <code>fcn_objective</code>)</li>
-        <li><strong>Table type</strong>: <code>tab_</code> + [variable description] (e.g., <code>tab_bus_data</code>)</li>
-        <li><strong>GUILDA-specific class (cell array)</strong>: <code>a_</code> + <strong>[ClassName]</strong> (e.g., <code>a_Controller</code>)</li>
-        <li><strong>Parameter class</strong>: <code>params_</code> + [data description] (e.g., <code>params_generator</code>)</li>
-      </ul>
-
-        <h2>3. How to Define Class Documentation</h2>
-        <p><span style="color: #d93025; font-weight: 700;">Note: Please follow the exact notation below for the tag name in Help Comment <code>&lt;@tag&gt;</code>!</span></p>
-        <p>As part of GUILDA startup processing, class information is analyzed and exported as JavaScript files to <code>_GUILDAdoc/database</code>. This mechanism keeps this documentation site synchronized with the latest GUILDA information.</p>
-        <p>During this analysis, information is categorized based on <code>&lt;@tag&gt;</code>. If these tag names are changed, the documentation site will no longer be updated correctly. Text from one tag (for example, <code>&lt;@tag1&gt;</code>) up to the next tag (for example, <code>&lt;@tag2&gt;</code>) is recognized as the content of the first tag. Line breaks within that range are allowed.</p>
-
-        <h3>Help Comments for Class Definition</h3>
-        <p>Write class-level tags directly below <code>classdef</code>, then keep constructor usage examples concrete:</p>
-      <pre><code>classdef MyClass
-    % &lt;@Desc&gt; Handles state updates and utility calculations for a subsystem.
-    % &lt;@Role&gt; CoreComponent
-    % &lt;@Constructor&gt; Create class instance with optional gain and label.
-    %  i.e.
-    %  &gt;&gt; obj = MyClass(r_gain, str_label)
-    %      - r_gain: scalar gain value (default: 1.0)
-    %      - str_label: display name (default: "default")
-
-      properties
-        r_gain
-        str_label
-      end
-
-      methods
-        function obj = MyClass(r_gain, str_label)
-          arguments
-            r_gain (1,1) double = 1.0
-            str_label (1,1) string = "default"
-          end
-          obj.r_gain = r_gain;
-          obj.str_label = str_label;
-        end
-      end
-    end</code></pre>
-
-        <h3>Help Comments for Methods</h3>
-        <p>Add method tags immediately above each method body. Structured tags are parsed as JSON only.</p>
-        <p><strong>Text tags:</strong> <code>Desc</code>, <code>Role</code>, <code>Abst</code>, <code>DetailsCode</code>, <code>Argin</code>, <code>Argout</code>, <code>Option</code></p>
-        <p><strong>Structured tags (JSON only):</strong> <code>Signatures</code>, <code>varargin</code>, <code>varargout</code>, <code>Examples</code></p>
-        <p><strong>Structured schema:</strong> <code>varargin</code> = <code>Name</code>, <code>Type</code>, <code>Description</code>, <code>Required</code>, <code>Default</code> / <code>varargout</code> = <code>Name</code>, <code>Type</code>, <code>Description</code></p>
-      <pre><code>methods
-        function rv_y = calculate_output(obj, rv_u, r_gain)
-        % &lt;@Desc&gt;
-        % Computes an output vector from input data using a configurable gain.
-        % &lt;@Abst&gt;
-        % Typical example of method tags with parameters, return values, and examples.
-        % &lt;@Signatures&gt;
-        % [
-        %   "rv_y = obj.calculate_output(rv_u, r_gain)",
-        %   "rv_y = obj.calculate_output(rv_u)"
-        % ]
-        % &lt;@varargin&gt;
-        % [
-        %   {
-        %     "Name": "rv_u",
-        %     "Type": "double vector",
-        %     "Description": "Input signal vector.",
-        %     "Required": true,
-        %     "Default": "-"
-        %   },
-        %   {
-        %     "Name": "r_gain",
-        %     "Type": "double scalar",
-        %     "Description": "Scaling gain applied to the input.",
-        %     "Required": false,
-        %     "Default": "1.0"
-        %   }
-        % ]
-        % &lt;@varargout&gt;
-        % [
-        %   {
-        %     "Name": "rv_y",
-        %     "Type": "double vector",
-        %     "Description": "Scaled output vector."
-        %   }
-        % ]
-        % &lt;@Examples&gt;
-        % [
-        %   "```matlab\nrv_y = obj.calculate_output(rv_u, 2.0);\n```",
-        %   "```matlab\nrv_y = obj.calculate_output(randn(5,1));\n```"
-        % ]
-        end
-    end</code></pre>
-        <p>Notes: If a structured tag is omitted or invalid JSON, exporter writes an empty default value.</p>
-
-        <h3>Help Comments for Properties</h3>
-        <p>Document each property right above its declaration. This helps readers understand data intent quickly:</p>
-      <pre><code>properties
-      % &lt;@Desc&gt; Gain applied to input/output calculations.
-      % &lt;@Role&gt; simulate
-      % &lt;@Type&gt; double
-      % &lt;@Size&gt; 1x1
-      r_gain
-
-      % &lt;@Desc&gt; Last computed output cached for diagnostics.
-      % &lt;@Role&gt; linearize
-      % &lt;@Type&gt; double
-      % &lt;@Size&gt; Nx1
-      rv_last_output
-    end</code></pre>
+      <div id="developer-link-container" class="developer-link-grid"></div>
     </div>
   </main>
 
@@ -625,150 +472,208 @@
       }
     }
 
+    function renderDeveloperLinks() {
+      const container = document.getElementById('developer-link-container');
+      if (!container) return;
+
+      const data = typeof developerData !== 'undefined' ? developerData : null;
+      if (!Array.isArray(data) || data.length === 0) {
+        container.innerHTML = '<p style="color:#888;">No developer guides found.</p>';
+        return;
+      }
+
+      const escapeHtml = (value) => (value ?? '').toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+
+      container.innerHTML = data.map((item, index) => `
+        <a class="developer-link-card" href="${escapeHtml(item.link)}">
+          <span class="developer-link-number">${String(index + 1).padStart(2, '0')}</span>
+          <span class="developer-link-content">
+            <span class="developer-link-title">${escapeHtml(item.title)}</span>
+            <span class="developer-link-description">${escapeHtml(item.description)}</span>
+          </span>
+          <span class="developer-link-action">View guide <span aria-hidden="true">→</span></span>
+        </a>
+      `).join('');
+    }
+
     function firstLineText(value) {
       const text = (value ?? '').toString().replace(/\r\n?/g, '\n').trim();
       return text ? text.split('\n')[0] : '';
     }
 
-    // --- Dynamic Class List Logic ---
-    let sortColumn = 'Name';
-    let sortOrder = 1;
+    function getClassReferenceData() {
+      return window.GuildaDocLoader ? window.GuildaDocLoader.getClasses() : [];
+    }
+
+    function getModelCategories(data) {
+      const configured = window.GuildaDocLoader?.getSchema()?.modelCategories;
+      if (Array.isArray(configured) && configured.length) return configured;
+      return [...new Set(data.filter(c => c.Type === 'PowerSystemModel').map(c => c.Model).filter(Boolean))];
+    }
+
+    function renderReferenceNavigation() {
+      const data = getClassReferenceData();
+      const schema = window.GuildaDocLoader?.getSchema() || {};
+      const categories = getModelCategories(data);
+      const coreClassNames = Array.isArray(schema.coreClasses) && schema.coreClasses.length
+        ? schema.coreClasses
+        : categories;
+
+      const cards = document.getElementById('core-class-cards');
+      if (cards) {
+        cards.innerHTML = coreClassNames.map(name => data.find(c => c.Name === name)).filter(Boolean).map(c => `
+          <a href="${window.GuildaDocLoader.pageUrl('class.html', { class: c.Name })}" class="core-class-card">
+            <span class="core-class-icon">📄</span>
+            <h3>${c.Name}</h3>
+            <p>${firstLineText(c.Summary || c.Desc) || c.Role || `Reference for ${c.Name}.`}</p>
+          </a>
+        `).join('');
+      }
+
+      const toggles = document.getElementById('class-filter-toggles');
+      if (toggles) {
+        toggles.innerHTML = ['All', ...categories].map(name => `
+          <button class="filter-btn${name === activeFilter ? ' active' : ''}" data-filter="${name}">${name}</button>
+        `).join('');
+        toggles.querySelectorAll('.filter-btn').forEach(btn => {
+          btn.addEventListener('click', () => filterClasses(btn.dataset.filter, btn));
+        });
+      }
+
+    }
+
+    // --- Dynamic Inheritance Tree Logic ---
     let activeFilter = 'All';
-    let inheritedViewMode = 'attributes';
-    let auxiliaryViewMode = 'attributes';
 
-    function setInheritedViewMode(mode) {
-      inheritedViewMode = mode;
-      const switcher = document.getElementById('inherited-view-switcher');
-      if (switcher) {
-        switcher.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
-        const target = switcher.querySelector(`.view-btn[data-mode="${mode}"]`);
-        if (target) target.classList.add('active');
-      }
-      renderPowerSystemClassList();
+    function filterClasses(className, btnElement) {
+      activeFilter = className;
+      document.querySelectorAll('#class-filter-toggles .filter-btn').forEach(btn => btn.classList.remove('active'));
+      if (btnElement) btnElement.classList.add('active');
+      renderInheritanceTree();
     }
 
-    function setAuxiliaryViewMode(mode) {
-      auxiliaryViewMode = mode;
-      const switcher = document.getElementById('auxiliary-view-switcher');
-      if (switcher) {
-        switcher.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
-        const target = switcher.querySelector(`.view-btn[data-mode="${mode}"]`);
-        if (target) target.classList.add('active');
-      }
-      renderAuxiliaryClassList();
+    function classSearchText(classData) {
+      return `${classData.Name || ''} ${classData.Parent || ''} ${classData.Model || ''} ${classData.Role || ''} ${classData.Summary || ''} ${classData.Desc || ''} ${classData.Notes || ''}`.toLowerCase();
     }
 
-    function filterClasses(parentName, btnElement) {
-      activeFilter = parentName;
-      
-      document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.remove('active');
-      });
-      btnElement.classList.add('active');
-
-      renderPowerSystemClassList();
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     }
 
-    function renderPowerSystemClassList() {
-      const tbody = document.getElementById('class-list-tbody');
+    function renderInheritanceTree() {
       const thead = document.getElementById('inherited-list-thead');
-      if (!tbody) return;
+      const tbody = document.getElementById('class-list-tbody');
+      if (!thead || !tbody) return;
 
-      const data = typeof classListData !== 'undefined' ? classListData : (typeof class_list !== 'undefined' ? class_list : null);
-      
-      if (!data || !Array.isArray(data) || data.length === 0) {
-        if (thead) thead.innerHTML = '';
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#888;">No class reference data found.</td></tr>';
+      thead.innerHTML = '<tr><th>Class Hierarchy</th><th>Summary</th></tr>';
+
+      const classes = getClassReferenceData().filter(c => c.Type === 'PowerSystemModel');
+      if (!classes.length) {
+        tbody.innerHTML = '<tr><td colspan="2" class="tree-empty">No class reference data found.</td></tr>';
         return;
       }
 
-      let powerSystemData = data.filter(c => c.Type === 'PowerSystemModel');
+      const root = { Name: 'PowerSystemModel', Synthetic: true, Children: [] };
+      const nodes = new Map(classes.map(c => [c.Name, { ...c, Children: [] }]));
+      const parentOf = new Map();
+
+      nodes.forEach(node => {
+        const parentNames = (node.Parent || '').split(',').map(name => name.trim()).filter(Boolean);
+        const parentName = parentNames.find(name => nodes.has(name)) || 'PowerSystemModel';
+        const parent = parentName === 'PowerSystemModel' ? root : nodes.get(parentName);
+        parent.Children.push(node);
+        parentOf.set(node.Name, parent);
+      });
+
+      const subtreeRoot = activeFilter === 'All' ? root : nodes.get(activeFilter);
+      if (!subtreeRoot) {
+        tbody.innerHTML = '<tr><td colspan="2" class="tree-empty">No classes were found for this category.</td></tr>';
+        return;
+      }
+
+      const subtreeNames = new Set();
+      const collectSubtree = node => {
+        subtreeNames.add(node.Name);
+        node.Children.forEach(collectSubtree);
+      };
+      collectSubtree(subtreeRoot);
 
       const searchBox = document.getElementById('class-search');
-      const term = searchBox ? searchBox.value.toLowerCase() : '';
-      
-      const filtered = powerSystemData.filter(c => {
-        if (activeFilter !== 'All') {
-          const classModel = (c.Model || '').toLowerCase();
-          if (classModel !== activeFilter.toLowerCase()) {
-            return false;
-          }
-        }
-        const searchStr = `${c.Name || ''} ${c.Type || ''} ${c.Parent || ''} ${c.Desc || ''} ${c.Role || ''} ${c.Constructor || ''}`.toLowerCase();
-        return searchStr.includes(term);
-      });
+      const term = (searchBox?.value || '').trim().toLowerCase();
+      let visibleNames = null;
 
-      filtered.sort((a,b) => {
-        const valA = (a[sortColumn] || '').toString().toLowerCase();
-        const valB = (b[sortColumn] || '').toString().toLowerCase();
-        if (valA > valB) return sortOrder;
-        if (valA < valB) return -sortOrder;
-        return 0;
-      });
+      if (term) {
+        visibleNames = new Set();
+        if (subtreeRoot.Name.toLowerCase().includes(term)) visibleNames.add(subtreeRoot.Name);
+        nodes.forEach(node => {
+          if (!subtreeNames.has(node.Name)) return;
+          if (!classSearchText(node).includes(term)) return;
+          let current = node;
+          while (current) {
+            visibleNames.add(current.Name);
+            if (current === subtreeRoot) break;
+            current = parentOf.get(current.Name);
+          }
+        });
+      }
 
-      if (filtered.length === 0) {
-        if (inheritedViewMode === 'attributes') {
-          if (thead) {
-            thead.innerHTML = `
-              <tr>
-                <th class="sortable-header" onclick="sortClassList('Name')">Class Name ↕</th>
-                <th class="sortable-header" onclick="sortClassList('Parent')">Parent Class ↕</th>
-                <th class="sortable-header" onclick="sortClassList('Abstract')">Abstract ↕</th>
-              </tr>
-            `;
-          }
-          tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No matching classes found.</td></tr>';
-        } else {
-          if (thead) {
-            thead.innerHTML = `
-              <tr>
-                <th class="sortable-header" onclick="sortClassList('Name')">Class Name ↕</th>
-                <th class="sortable-header" onclick="sortClassList('Role')">Role ↕</th>
-                <th class="sortable-header" onclick="sortClassList('Desc')">Description ↕</th>
-              </tr>
-            `;
-          }
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No matching classes found.</td></tr>';
-        }
+      if (visibleNames && !visibleNames.size) {
+        tbody.innerHTML = '<tr><td colspan="2" class="tree-empty">No matching classes found.</td></tr>';
         return;
       }
 
-      if (inheritedViewMode === 'attributes') {
-        if (thead) {
-          thead.innerHTML = `
-            <tr>
-              <th class="sortable-header" onclick="sortClassList('Name')">Class Name ↕</th>
-              <th class="sortable-header" onclick="sortClassList('Parent')">Parent Class ↕</th>
-              <th class="sortable-header" onclick="sortClassList('Abstract')">Abstract ↕</th>
-            </tr>
-          `;
-        }
-        tbody.innerHTML = filtered.map(c => `
-          <tr class="clickable-row" onclick="window.location.href='class.html?class=${c.Name || ''}'" title="View details for ${c.Name || ''}">
-            <td><span class="row-link">${c.Name || ''}</span></td>
-            <td><code style="color: #666; background: #f0f0f0;">${c.Parent || 'N/A'}</code></td>
-            <td>${c.Abstract ? 'true' : 'false'}</td>
-          </tr>
-        `).join('');
-      } else {
-        if (thead) {
-          thead.innerHTML = `
-            <tr>
-              <th class="sortable-header" onclick="sortClassList('Name')">Class Name ↕</th>
-              <th class="sortable-header" onclick="sortClassList('Role')">Role ↕</th>
-              <th class="sortable-header" onclick="sortClassList('Desc')">Description ↕</th>
-            </tr>
-          `;
-        }
-        tbody.innerHTML = filtered.map(c => `
-          <tr class="clickable-row" onclick="window.location.href='class.html?class=${c.Name || ''}'" title="View details for ${c.Name || ''}">
-            <td><span class="row-link">${c.Name || ''}</span></td>
-            <td>${c.Role || ''}</td>
-            <td>${firstLineText(c.Desc || '')}</td>
-          </tr>
-        `).join('');
-      }
+      const rows = [];
+      const flattenTree = (node, guides = []) => {
+        if (visibleNames && !visibleNames.has(node.Name)) return;
+        rows.push({ node, guides });
+        const children = node.Children.filter(child => !visibleNames || visibleNames.has(child.Name));
+        children.forEach((child, index) => {
+          flattenTree(child, [...guides, index < children.length - 1]);
+        });
+      };
+      flattenTree(subtreeRoot);
+
+      const renderGuides = guides => guides.map((hasNext, index) => {
+        const isBranch = index === guides.length - 1;
+        const classes = [
+          'tree-guide',
+          isBranch ? 'tree-branch' : 'tree-ancestor',
+          hasNext ? 'has-next' : 'is-last'
+        ];
+        return `<span class="${classes.join(' ')}" style="--tree-level:${index}" aria-hidden="true"></span>`;
+      }).join('');
+
+      tbody.innerHTML = rows.map(({ node, guides }) => {
+        const summary = firstLineText(node.Summary) || '';
+        const isCategoryRoot = !node.Synthetic && (
+          (activeFilter === 'All' && guides.length === 1) ||
+          (activeFilter !== 'All' && guides.length === 0)
+        );
+        const rowClasses = [
+          node.Synthetic ? 'tree-root-row' : '',
+          isCategoryRoot ? 'tree-category-row' : ''
+        ].filter(Boolean).join(' ');
+        const rowAttributes = `${rowClasses ? ` class="${rowClasses}"` : ''} data-tree-depth="${guides.length}"`;
+        const classLabel = node.Synthetic
+          ? '<span class="tree-root-label">PowerSystemModel</span>'
+          : `<a class="tree-class-link${node.Abstract ? ' is-abstract' : ''}" href="${window.GuildaDocLoader.pageUrl('class.html', { class: node.Name })}" title="${escapeHtml(summary || node.Role || '')}">${escapeHtml(node.Name)}</a>`;
+        const nodeMarker = `<span class="tree-node-marker${node.Abstract ? ' is-abstract' : ''}${node.Synthetic ? ' is-root' : ''}" aria-hidden="true"></span>`;
+        const hierarchyCell = `<div class="tree-table-name" style="--tree-depth:${guides.length}">${renderGuides(guides)}${nodeMarker}${classLabel}</div>`;
+
+        return `<tr${rowAttributes}>
+          <td>${hierarchyCell}</td>
+          <td>${node.Synthetic ? 'Root of the power-system model class hierarchy.' : escapeHtml(summary)}</td>
+        </tr>`;
+      }).join('');
     }
 
     function renderAuxiliaryClassList() {
@@ -776,78 +681,50 @@
       const auxThead = document.getElementById('auxiliary-list-thead');
       if (!auxTbody) return;
 
-      const data = typeof classListData !== 'undefined' ? classListData : (typeof class_list !== 'undefined' ? class_list : null);
+      const data = getClassReferenceData();
       if (!data || !Array.isArray(data)) return;
 
       const auxData = data.filter(c => c.Type === 'auxiliary');
 
       if (auxData.length === 0) {
         if (auxThead) auxThead.innerHTML = '';
-        auxTbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#888;">No auxiliary classes found.</td></tr>';
+        auxTbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#888;">No auxiliary classes found.</td></tr>';
         return;
       }
 
-      if (auxiliaryViewMode === 'attributes') {
-        if (auxThead) {
-          auxThead.innerHTML = `
-            <tr>
-              <th>Class Name</th>
-              <th>Parent Class</th>
-              <th>Abstract</th>
-            </tr>
-          `;
-        }
-        auxTbody.innerHTML = auxData.map(c => `
-          <tr class="clickable-row" onclick="window.location.href='class.html?class=${c.Name || ''}'" title="View details for ${c.Name || ''}">
-            <td><span class="row-link">${c.Name || ''}</span></td>
-            <td><code style="color: #666; background: #f0f0f0;">${c.Parent || 'N/A'}</code></td>
-            <td>${c.Abstract ? 'true' : 'false'}</td>
+      if (auxThead) {
+        auxThead.innerHTML = `
+          <tr>
+            <th>Class Name</th>
+            <th>Summary</th>
           </tr>
-        `).join('');
-      } else {
-        if (auxThead) {
-          auxThead.innerHTML = `
-            <tr>
-              <th>Class Name</th>
-              <th>Role</th>
-              <th>Description</th>
-            </tr>
-          `;
-        }
-        auxTbody.innerHTML = auxData.map(c => `
-          <tr class="clickable-row" onclick="window.location.href='class.html?class=${c.Name || ''}'" title="View details for ${c.Name || ''}">
-            <td><span class="row-link">${c.Name || ''}</span></td>
-            <td>${c.Role || ''}</td>
-            <td>${firstLineText(c.Desc || '')}</td>
-          </tr>
-        `).join('');
+        `;
       }
-    }
-
-    function sortClassList(col) { 
-      if(sortColumn === col) {
-        sortOrder *= -1; 
-      } else {
-        sortColumn = col; 
-        sortOrder = 1;
-      }
-      renderPowerSystemClassList(); 
+      auxTbody.innerHTML = auxData.map(c => `
+        <tr class="clickable-row" onclick="window.GuildaDocLoader.navigate('class.html', { class: '${c.Name || ''}' })" title="View details for ${c.Name || ''}">
+          <td><span class="row-link">${c.Name || ''}</span></td>
+          <td>${firstLineText(c.Summary || '')}</td>
+        </tr>
+      `).join('');
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      if (location.hash === '#tab-reference') {
-        openTab('tab-reference');
+      const requestedTab = location.hash.replace(/^#/, '');
+      if (requestedTab && document.getElementById(requestedTab)?.classList.contains('tab-content')) {
+        openTab(requestedTab);
       }
       renderPowerGridAnimation(); 
       renderUpdateLog(); 
       renderTutorials(); 
+      renderDeveloperLinks();
+      renderReferenceNavigation();
       
-      renderPowerSystemClassList();
+      renderInheritanceTree();
       renderAuxiliaryClassList();
 
       const searchBox = document.getElementById('class-search');
       if(searchBox) {
-        searchBox.addEventListener('input', renderPowerSystemClassList);
+        searchBox.addEventListener('input', renderInheritanceTree);
       }
     });
   </script>
