@@ -12,7 +12,6 @@ function [flag,tab_PFsol,output] = initialize(obj, options)
             [tab_PFsol, output, flag] = optimize_powerflow(obj,"methods","AC OPF");
     end
     
-
     % distribute Qcomponent
     for i_bus = 1:numel(obj.a_Bus)
         rr_PFsol = tab_PFsol{i_bus,["Vphasor","Iphasor","P","Q"]};
@@ -23,7 +22,6 @@ function [flag,tab_PFsol,output] = initialize(obj, options)
         obj.a_Bus{i_bus}.set_equilibrium(c_Vbus,c_Ibus,r_Pbus,r_Qbus)
     end
 
-    obj.str_methodPF = options.methods;
-    obj.reset_odeset;
+    % reset log
     obj.reset_edit()
 end

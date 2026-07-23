@@ -1,4 +1,4 @@
-classdef SolverPF < auxiliary
+classdef PowerFlowCalculation < auxiliary
     properties(Access=public)
         MaxIterations (1,1) double {mustBeNonnegative,mustBeInteger} = 0
         Display       (1,1) string {mustBeMember(Display,["none","iter","iter-detailed","final","final-detailed"])} = "none"
@@ -16,9 +16,9 @@ classdef SolverPF < auxiliary
     end
         
     methods
-        function obj = SolverPF(opt)
+        function obj = PowerFlowCalculation(opt)
             arguments
-                opt.?SolverPF
+                opt.?PowerFlowCalculation
             end
             sct_def = GUILDA.config("EnvFsolve");
             str_fn  = fieldnames(sct_def);

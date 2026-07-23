@@ -1,4 +1,5 @@
 classdef PowerNetwork < PowerSystemModel
+% <@Desc>
 % A package for constructing a single electric power system (or power grid).
 % By storing classes corresponding to buses and transmission lines in this class's properties, 
 % various analyses can be performed. Component classes should be stored within the Bus class.
@@ -70,20 +71,48 @@ classdef PowerNetwork < PowerSystemModel
 
     properties%(SetAccess=protected) 
        a_Bus              (:,1) cell = cell(0,1);   % Layer Structure
-    end
-    properties
        a_Branch           (:,1) cell = cell(0,1);   % Layer Structure
-    end
-    properties
        a_GlobalController (:,1) cell = cell(0,1);   % Layer Structure       
     end
     properties(SetAccess=protected)
-        solver_PF  = SolverPF();
-        % solver_OPF (1,1) OptimalPowerFlow     = OptimalPowerFlow();
-    end
 
-    properties
-       str_methodPF       (1,1) string {mustBeMember(str_methodPF,["optimal powerflow","powerflow calculation","calculate from Xequilibrium","unset"])} = "unset"; % Calculate/Set Steady State
+        % <@Summary> "PowerFlowCalculation" class
+        % <@Desc>
+        % 潮流計算解析に使用するPowerFlowCalculationクラスを保存。
+        % >> obj.calculate_power_flow
+        % 内部で、obj.solver_PF.solveを実行する。
+        % 
+        % 潮流計算の設定内容を変更したい場合はobj.solver_PF内のプロパティを編集。
+        % <@Role> calculate power-flow
+        % <@Size> 1×1
+        % <@Default> PowerFlowCalculation()
+        solver_PF  = PowerFlowCalculation();
+
+        % <@Summary> "OptimalPowerFlow" class
+        % <@Desc>
+        % 最適潮流計算に使用するOptimalPowerFlowクラスを保存
+        % >> obj.optimize_power_flow
+        % 内部で使用
+        % <@Role> optimal power-flow
+        % <@Size> 1×1
+        % <@Default> OptimalPowerFlow()
+        solver_OPF 
+
+        % <@Summary> "ContinuousPowerFlow" class
+        solver_CPF 
+
+        % <@Summary> "odeSimulator" class
+        % <@Desc>
+        % 時間応答シミュレーションに使用するodeSimulatorクラスを保存。
+        % >> obj.simulate
+        % 内部で使用
+        % 
+        % 時間応答シミュレーションのソルバーの設定内容を変更したい場合はobj.solver_ODE内のプロパティを編集。
+        % <@Role> time simulation
+        % <@Size> 1×1
+        % <@Default> odeSimulator()
+        % <@Since> 4.0
+        solver_ODE = odeSimulator();
     end
     properties(Dependent) 
         cv_Vequilibrium         % Steady State
