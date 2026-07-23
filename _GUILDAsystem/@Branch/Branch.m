@@ -18,6 +18,8 @@ classdef Branch < PowerSystemModel
         % <@Type> string
         % <@Size> 1x1
         key
+
+        header
     end
     methods(Abstract)
         % Dynamics
@@ -59,14 +61,7 @@ classdef Branch < PowerSystemModel
         % <@Size> 2×1
         cv_Iequilibrium
     end
-
-    properties(SetAccess=protected)
-        % <@Desc> Operating point of the state variables related to the branch dynamics
-        % <@Role> Equilibrium
-        % <@Type> double
-        % <@Size> nx1
-        cv_Xequilibrium = [];
-    end
+    
     properties(Hidden,SetAccess=protected)
 
         % <@Desc> Parameters related to the branch dynamics
@@ -111,8 +106,8 @@ classdef Branch < PowerSystemModel
 
 %% Constructor
     methods(Access={?Branch, ?PowerNetwork})
-        function obj = Branch(tag, opt)
-            obj.str_tag       = tag;
+        function obj = Branch(index, opt)
+            obj.str_tag = obj.header+index;
             
             a_Pm = Parameter(obj,"dynamics");
             a_Po = Parameter(obj,"operation");

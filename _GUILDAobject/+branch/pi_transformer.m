@@ -17,12 +17,8 @@ classdef pi_transformer < Branch
 %  
 
     properties(Constant)
-        key = "pi_transformer"
-    end
-    methods(Access={?PowerNetwork})
-        function obj = pi_transformer(index, varargin)
-            obj@Branch("ET"+index, varargin{:})
-        end
+        header = "ET"
+        key    = "pi_transformer"
     end
        
     methods

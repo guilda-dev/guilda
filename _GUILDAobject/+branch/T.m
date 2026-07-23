@@ -15,13 +15,9 @@ classdef T < Branch
 %  ---------------------
     
 
-    properties(Constant)     
-        key = "T"
-    end
-    methods(Access={?PowerNetwork})
-        function obj = T(index, varargin)
-            obj@Branch("EL"+index, varargin{:})
-        end
+    properties(Constant)   
+        header = "EL"
+        key    = "T"
     end
        
     methods

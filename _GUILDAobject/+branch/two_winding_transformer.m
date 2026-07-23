@@ -1,12 +1,8 @@
 classdef two_winding_transformer < Branch
 
-    properties(Constant)      
-        key = "two_winding_transformer"
-    end
-    methods(Access={?PowerNetwork})
-        function obj = two_winding_transformer(index, varargin)
-            obj@Branch("ET"+index, varargin{:})
-        end
+    properties(Constant)     
+        header = "ET"
+        key    = "two_winding_transformer"
     end
        
     methods
