@@ -3,13 +3,13 @@ function callbackPreSet(obj,name,event)
     % Stores the current value before a property is changed.
     % <@Role>
     % Edit Log
-    % <@Abst>
+    % <@Summary>
     % Stash the previous property value for later comparison.
     % <@Signatures>
     % [
     %   "callbackPreSet(obj, name, event)"
     % ]
-    % <@varargin>
+    % <@Parameters>
     % [
     %   {
     %     "Name": "obj",
@@ -33,7 +33,7 @@ function callbackPreSet(obj,name,event)
     %     "Default": "-"
     %   }
     % ]
-    % <@varargout>
+    % <@Returns>
     % []
     obj.val_stash = event.AffectedObject.(name);
 end

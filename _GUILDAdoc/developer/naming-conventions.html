@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GUILDA Developer Guide - Naming Conventions</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body class="developer-layout">
+  <main>
+    <button type="button" class="developer-back-button" onclick="window.history.back()">← Back to For Developer</button>
+    <h1>Naming Conventions in GUILDA</h1>
+    <p class="page-lead">Variable naming follows <strong><code>[variableType][size]_[variableDescription]</code></strong>.</p>
+    <p class="page-lead">Example: <code>lv_faultflag</code>, <code>cv_SGvoltage</code>, <code>lm_xresponse</code></p>
+
+    <section class="name-generator" aria-label="Variable Name Generator">
+      <h2>Variable Name Generator</h2>
+      <p class="name-generator-desc">Pick a variable type and a size, then type a description to build a name that follows the convention. Copy it when you're done.</p>
+
+      <div class="name-generator-row">
+        <span class="name-generator-label">Variable Type</span>
+        <div class="name-generator-options" id="ng-type-options">
+          <button type="button" class="ng-btn" data-var-type="c"><span class="ng-btn-code">c</span><span class="ng-btn-label">complex</span></button>
+          <button type="button" class="ng-btn" data-var-type="r"><span class="ng-btn-code">r</span><span class="ng-btn-label">real</span></button>
+          <button type="button" class="ng-btn" data-var-type="l"><span class="ng-btn-code">l</span><span class="ng-btn-label">logical</span></button>
+          <button type="button" class="ng-btn" data-var-type="s"><span class="ng-btn-code">s</span><span class="ng-btn-label">string</span></button>
+          <button type="button" class="ng-btn" data-var-type="f"><span class="ng-btn-code">f</span><span class="ng-btn-label">function handle</span></button>
+          <button type="button" class="ng-btn" data-var-type="i"><span class="ng-btn-code">i</span><span class="ng-btn-label">index</span></button>
+          <button type="button" class="ng-btn" data-var-type="n"><span class="ng-btn-code">n</span><span class="ng-btn-label">count</span></button>
+        </div>
+      </div>
+
+      <div class="name-generator-row">
+        <span class="name-generator-label">Size</span>
+        <div class="name-generator-options" id="ng-size-options">
+          <button type="button" class="ng-btn" data-var-size=""><span class="ng-btn-code">(none)</span><span class="ng-btn-label">scalar</span></button>
+          <button type="button" class="ng-btn" data-var-size="v"><span class="ng-btn-code">v</span><span class="ng-btn-label">column vector</span></button>
+          <button type="button" class="ng-btn" data-var-size="r"><span class="ng-btn-code">r</span><span class="ng-btn-label">row vector</span></button>
+          <button type="button" class="ng-btn" data-var-size="m"><span class="ng-btn-code">m</span><span class="ng-btn-label">matrix</span></button>
+        </div>
+      </div>
+
+      <div class="name-generator-row">
+        <span class="name-generator-label">Description</span>
+        <input type="text" id="ng-content-input" class="name-generator-input" placeholder="e.g. voltage" autocomplete="off" spellcheck="false">
+        <p class="name-generator-error" id="ng-content-error">Only letters (a-z, A-Z) are allowed — no numbers or symbols.</p>
+      </div>
+
+      <div class="name-generator-result">
+        <code class="name-generator-output" id="ng-output">Select a type and size, then enter a description.</code>
+        <button type="button" class="btn name-generator-copy-btn" id="ng-copy-btn" disabled>Copy</button>
+      </div>
+    </section>
+
+    <h2>Variable Type (1st Prefix Token)</h2>
+    <ul>
+      <li><code>c</code>: complex</li><li><code>r</code>: real</li><li><code>l</code>: logical</li>
+      <li><code>s</code>: string</li><li><code>f</code>: function handle (cell array if the variable itself is an array)</li>
+      <li><code>i</code>: index</li><li><code>n</code>: count</li>
+    </ul>
+
+    <h2>Size (2nd Prefix Token)</h2>
+    <ul>
+      <li><em>(none)</em>: scalar</li><li><code>v</code>: column vector</li>
+      <li><code>r</code>: row vector</li><li><code>m</code>: matrix</li>
+    </ul>
+
+    <h2>Naming Composition Examples</h2>
+    <ul>
+      <li><strong><code>cv_Vequilibrium</code></strong>: [c: complex] + [v: column vector] + [_Vequilibrium] — a complex-valued vector of equilibrium voltages</li>
+      <li><strong><code>im_solution</code></strong>: [i: index] + [m: matrix] + [_solution] — a matrix of indices for an analysis result</li>
+      <li><strong><code>r_gain</code></strong>: [r: real] + [(none): scalar] + [_gain]</li>
+    </ul>
+
+    <h2>Exceptional Naming Rules (Fixed Prefixes)</h2>
+    <ul>
+      <li><strong>Table type</strong>: <code>tab_</code> + [variable description], regardless of argument or output count (e.g., <code>tab_bus_data</code>)</li>
+      <li><strong>GUILDA-specific class (cell array)</strong>: <code>a_</code> + <strong>[ClassName]</strong> (e.g., <code>a_Controller</code>)</li>
+      <li><strong>Parameter class</strong>: <code>para_</code> + [data description], only for properties holding GUILDA's <code>Parameter</code> class (e.g., <code>para_generator</code>)</li>
+    </ul>
+  </main>
+
+  <script>
+    (function () {
+      var typeButtons = Array.prototype.slice.call(document.querySelectorAll('#ng-type-options .ng-btn'));
+      var sizeButtons = Array.prototype.slice.call(document.querySelectorAll('#ng-size-options .ng-btn'));
+      var contentInput = document.getElementById('ng-content-input');
+      var errorMsg = document.getElementById('ng-content-error');
+      var output = document.getElementById('ng-output');
+      var copyBtn = document.getElementById('ng-copy-btn');
+
+      var selectedType = null;
+      var selectedSize = null;
+
+      function selectButton(buttons, target) {
+        buttons.forEach(function (btn) { btn.classList.toggle('active', btn === target); });
+      }
+
+      typeButtons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          selectedType = btn.getAttribute('data-var-type');
+          selectButton(typeButtons, btn);
+          update();
+        });
+      });
+
+      sizeButtons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          selectedSize = btn.getAttribute('data-var-size');
+          selectButton(sizeButtons, btn);
+          update();
+        });
+      });
+
+      contentInput.addEventListener('input', update);
+
+      function update() {
+        var content = contentInput.value;
+        var isValidContent = /^[A-Za-z]*$/.test(content);
+        errorMsg.style.display = isValidContent ? 'none' : 'block';
+        contentInput.classList.toggle('is-invalid', !isValidContent);
+
+        var ready = selectedType !== null && selectedSize !== null && isValidContent && content.length > 0;
+
+        if (ready) {
+          output.textContent = selectedType + selectedSize + '_' + content;
+        } else if (selectedType === null || selectedSize === null) {
+          output.textContent = 'Select a type and size, then enter a description.';
+        } else if (!isValidContent) {
+          output.textContent = 'Fix the description above to generate a name.';
+        } else {
+          output.textContent = 'Enter a description to generate a name.';
+        }
+
+        copyBtn.disabled = !ready;
+      }
+
+      function fallbackCopy(text) {
+        var temp = document.createElement('textarea');
+        temp.value = text;
+        temp.style.position = 'fixed';
+        temp.style.opacity = '0';
+        document.body.appendChild(temp);
+        temp.select();
+        try { document.execCommand('copy'); } catch (e) { /* ignore */ }
+        document.body.removeChild(temp);
+      }
+
+      copyBtn.addEventListener('click', function () {
+        if (copyBtn.disabled) return;
+        var text = output.textContent;
+        var flash = function () {
+          var original = 'Copy';
+          copyBtn.textContent = 'Copied!';
+          setTimeout(function () { copyBtn.textContent = original; }, 1200);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(flash, function () {
+            fallbackCopy(text);
+            flash();
+          });
+        } else {
+          fallbackCopy(text);
+          flash();
+        }
+      });
+
+      update();
+    })();
+  </script>
+</body>
+</html>

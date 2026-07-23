@@ -3,13 +3,13 @@ function add_entry(obj,names,defaults,valids)
     % Adds dynamic properties and attaches change listeners.
     % <@Role>
     % Parameter
-    % <@Abst>
+    % <@Summary>
     % Register parameter names, defaults, and validation classes.
     % <@Signatures>
     % [
     %   "add_entry(obj, names, defaults, valids)"
     % ]
-    % <@varargin>
+    % <@Parameters>
     % [
     %   {
     %     "Name": "obj",
@@ -40,7 +40,7 @@ function add_entry(obj,names,defaults,valids)
     %     "Default": "-"
     %   }
     % ]
-    % <@varargout>
+    % <@Returns>
     % []
     arguments
         obj 

@@ -7,21 +7,23 @@
   <link rel="stylesheet" href="style.css">
   
   <script src="./database/list_Classes.js"></script>
+  <script src="./doc-loader.js"></script>
 </head>
 <body class="doc-layout">
 
   <nav id="sidebar" style="padding: 20px; box-sizing: border-box; overflow-y: auto;">
-    <a href="index.html" style="display: block; margin-bottom: 20px;">
-      <img src="https://github.com/guilda-dev/guilda/assets/54563775/20094d9b-22f5-4fb8-aff8-d80dc3cde31b" alt="GUILDA Logo" style="width: 100%;">
+    <a href="index.html" onclick="window.GuildaDocLoader.navigate('index.html'); return false;" style="display: block; margin-bottom: 20px;">
+      <img src="./images/GUILDAicon.png" alt="GUILDA Logo" style="width: 100%;">
     </a>
-    <a href="index.html#tab-reference" class="btn" style="width: 100%; text-align: center; margin-bottom: 20px; box-sizing: border-box;">← Back to Home</a>
+    <a href="index.html#tab-reference" onclick="window.GuildaDocLoader.navigate('index.html', 'tab-reference'); return false;" class="btn" style="width: 100%; text-align: center; margin-bottom: 20px; box-sizing: border-box;">← Back to Home</a>
     
     <h3 style="margin-top: 0;">On this page</h3>
     <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
-      <li><a href="#description">Description</a></li>
-      <li><a href="#constructor">Constructor</a></li>
-      <li><a href="#properties">Properties</a></li>
-      <li><a href="#methods">Methods</a></li>
+      <li><a href="#description" onclick="document.getElementById('description')?.scrollIntoView(); return false;">Description</a></li>
+      <li><a href="#role" onclick="document.getElementById('role')?.scrollIntoView(); return false;">Role</a></li>
+      <li><a href="#constructor" onclick="document.getElementById('constructor')?.scrollIntoView(); return false;">Constructor</a></li>
+      <li><a href="#properties" onclick="document.getElementById('properties')?.scrollIntoView(); return false;">Properties</a></li>
+      <li><a href="#methods" onclick="document.getElementById('methods')?.scrollIntoView(); return false;">Methods</a></li>
     </ul>
   </nav>
 
@@ -33,8 +35,8 @@
 
   <script>
     // Read URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const className = urlParams.get('class');
+    const routeParams = window.GuildaDocLoader.getRouteParams();
+    const className = routeParams.get('class');
     let propertyViewMode = 'attributes';
     let methodViewMode = 'attributes';
     let propertySearchTerm = '';
@@ -86,77 +88,21 @@
       if (classDocCache) renderClassPage(className, metaDataCache, classDocCache);
     };
 
-    function resolveClassMeta(dataList, targetClassName) {
-      const normalizedTarget = (targetClassName || '').toLowerCase();
-      return dataList.find(c => {
-        const name = (c.Name || c.name || '').toLowerCase();
-        const path = (c.path || '').toLowerCase();
-        return name === normalizedTarget || path.endsWith(`/${normalizedTarget}.js`) || path.endsWith(`\\${normalizedTarget}.js`);
-      });
-    }
-
-    function resolveFolder(meta, targetClassName) {
-      const classPath = (meta?.path || '').toLowerCase();
-      const classType = (meta?.Type || '').toLowerCase();
-      const classNameLower = (targetClassName || '').toLowerCase();
-
-      if (classPath.includes('/database/guildaobject/') || classPath.includes('\\database\\guildaobject\\')) return 'GUILDAobject';
-      if (classPath.includes('/database/guildasystem/') || classPath.includes('\\database\\guildasystem\\')) return 'GUILDAsystem';
-      if (classType === 'auxiliary') return 'GUILDAsystem';
-      if (classType === 'PowerSystemModel') {
-        if (classNameLower.startsWith('component.') || classNameLower.startsWith('branch.') || classNameLower.startsWith('controller.')) {
-          return 'GUILDAobject';
-        }
-        return 'GUILDAsystem';
-      }
-      if (classPath.endsWith('/guildaobject') || classPath.endsWith('\\guildaobject')) return 'GUILDAobject';
-      if (classPath.endsWith('/guildasystem') || classPath.endsWith('\\guildasystem')) return 'GUILDAsystem';
-      if (classNameLower.startsWith('component.') || classNameLower.startsWith('branch.') || classNameLower.startsWith('controller.')) return 'GUILDAobject';
-      return 'GUILDAsystem';
-    }
-
     if (!className) {
-      document.getElementById('dynamic-content').innerHTML = "<h1 style='color:red;'>Error: Class not specified</h1><p>The URL must include ?class=ClassName.</p>";
+      document.getElementById('dynamic-content').innerHTML = "<h1 style='color:red;'>Error: Class not specified</h1><p>The URL must specify a class name.</p>";
     } else {
-      // 1. Resolve the output folder from list_Classes.js path metadata
-      const dataList = typeof classListData !== 'undefined'
-        ? classListData
-        : (typeof class_list !== 'undefined' ? class_list : []);
-      const meta = resolveClassMeta(dataList, className);
-      const folder = resolveFolder(meta, className);
-
-      if (!folder) {
-        document.getElementById('dynamic-content').innerHTML = `
-          <h1 style="color:red;">Error</h1>
-          <p>Class metadata (<code>path</code>) was not found for <code>${className}</code> in <code>list_Classes.js</code>.</p>
-        `;
-      } else {
-        // 2. Load the generated class JSON script
-        const script = document.createElement('script');
-        script.src = `./database/${folder}/${className}.js`;
-        script.onload = () => {
-          try {
-            metaDataCache = meta;
-            classDocCache = (typeof window.classData !== 'undefined')
-              ? window.classData
-              : (typeof classData !== 'undefined' ? classData : null);
-            renderClassPage(className, metaDataCache, classDocCache);
-          } catch (err) {
-            document.getElementById('dynamic-content').innerHTML = `
-              <h1 style="color:red;">Render Error</h1>
-              <p>Failed to render class page.</p>
-              <pre>${(err && err.message) ? err.message : err}</pre>
-            `;
-          }
-        };
-        script.onerror = () => {
+      window.GuildaDocLoader.loadClass(className)
+        .then(({ meta, data }) => {
+          metaDataCache = meta;
+          classDocCache = data;
+          renderClassPage(className, metaDataCache, classDocCache);
+        })
+        .catch((err) => {
           document.getElementById('dynamic-content').innerHTML = `
-            <h1 style="color:red;">Error 404</h1>
-            <p>File <code>./database/${folder}/${className}.js</code> could not be found.</p>
+            <h1 style="color:red;">Load Error</h1>
+            <p>${(err && err.message) ? err.message : err}</p>
           `;
-        };
-        document.head.appendChild(script);
-      }
+        });
     }
 
     // 3. Render the page
@@ -176,6 +122,14 @@
         const rawText = (input ?? '').toString().replace(/\r\n?/g, '\n').trim();
         if (!rawText) return '<p style="margin: 0;">N/A</p>';
 
+        const sourceLines = rawText.split('\n');
+        const textArtLineCount = sourceLines.filter((line) =>
+          /[┌┐└┘│─]/.test(line) || /(?:={6,}|-{6,}|~{3,}|\/{3,})/.test(line)
+        ).length;
+        if (textArtLineCount >= 2) {
+          return `<pre class="doc-text-art">${escapeHtml(rawText)}</pre>`;
+        }
+
         const codeBlocks = [];
         let text = rawText.replace(/```([\s\S]*?)```/g, (_, code) => {
           const token = `@@CODEBLOCK_${codeBlocks.length}@@`;
@@ -191,9 +145,9 @@
 
         const flushParagraph = () => {
           if (!paragraphLines.length) return;
-          const paragraph = paragraphLines.join(' ').trim();
+          const paragraph = paragraphLines.map((line) => formatInlineMarkdown(line)).join('<br>');
           if (paragraph) {
-            htmlParts.push(`<p>${formatInlineMarkdown(paragraph)}</p>`);
+            htmlParts.push(`<p>${paragraph}</p>`);
           }
           paragraphLines = [];
         };
@@ -237,7 +191,7 @@
           }
 
           flushList();
-          paragraphLines.push(trimmed);
+          paragraphLines.push(line);
         }
 
         flushParagraph();
@@ -255,22 +209,38 @@
         output = output.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
         return output;
       };
+      const normalizeStringList = (raw) => Array.isArray(raw)
+        ? raw.map((value) => (value ?? '').toString().trim()).filter(Boolean)
+        : ((raw ?? '').toString().trim() ? [(raw ?? '').toString().trim()] : []);
       const normalizeClassMeta = (raw) => ({
         name: raw?.Name || raw?.ClassName || className,
         type: raw?.Type || '',
+        model: raw?.Model || '',
         parent: raw?.Parent || '',
         abstract: raw?.Abstract ?? false,
         hidden: raw?.Hidden ?? false,
+        summary: raw?.Summary || '',
         description: raw?.Desc || '',
         role: raw?.Role || '',
         constructor: raw?.Constructor || '',
+        notes: raw?.Notes || '',
+        seeAlso: normalizeStringList(raw?.SeeAlso),
+        since: raw?.Since || '',
+        deprecated: raw?.Deprecated || '',
         path: raw?.path || ''
       });
       const normalizeProperty = (p) => ({
         name: p?.Name || '',
+        summary: p?.Summary || '',
         role: p?.Role || '',
         type: p?.Type || '',
         size: p?.Size || '',
+        unit: p?.Unit || '',
+        defaultValue: p?.Default || '',
+        constraints: p?.Constraints || '',
+        notes: p?.Notes || '',
+        since: p?.Since || '',
+        deprecated: p?.Deprecated || '',
         defining: p?.Defining || '',
         getAccess: p?.GetAccess || '',
         setAccess: p?.SetAccess || '',
@@ -279,7 +249,7 @@
         dependent: p?.Dependent ?? false,
         constant: p?.Constant ?? false,
         hidden: p?.Hidden ?? false,
-        description: p?.Desc || ''
+        description: p?.Desc || p?.Summary || ''
       });
       const normalizeIoArray = (rawList) => {
         if (!Array.isArray(rawList)) return [];
@@ -309,8 +279,12 @@
         abstract: m?.Abstract ?? false,
         hidden: m?.Hidden ?? false,
         role: m?.Role || '',
-        description: m?.Desc || '',
-        abstractText: m?.Abst || '',
+        summary: m?.Summary || m?.Abst || '',
+        description: m?.Desc || m?.Summary || m?.Abst || '',
+        notes: m?.Notes || m?.DetailsCode || '',
+        throws: m?.Throws || '',
+        since: m?.Since || '',
+        deprecated: m?.Deprecated || '',
         parameters: normalizeIoArray(m?.Parameters),
         returns: normalizeIoArray(m?.Returns),
         arginText: m?.Argin || '',
@@ -331,7 +305,7 @@
       const renderPropertyFlag = (value, label) => (value ? label : '');
       const renderClassLink = (name) => {
         const classNameValue = (name ?? '').toString();
-        return classNameValue ? `<a href="class.html?class=${encodeURIComponent(classNameValue)}">${classNameValue}</a>` : '';
+        return classNameValue ? `<a href="${window.GuildaDocLoader.pageUrl('class.html', { class: classNameValue })}">${classNameValue}</a>` : '';
       };
 
       const c = normalizeClassMeta(meta || classData || {});
@@ -344,7 +318,7 @@
 
       const propertyRows = sortRows(
         properties.map(normalizeProperty).filter((p) => {
-          const searchStr = `${p.name} ${p.role} ${p.type} ${p.size} ${p.defining} ${p.accessText} ${p.description}`.toLowerCase();
+          const searchStr = `${p.name} ${p.summary} ${p.role} ${p.type} ${p.size} ${p.unit} ${p.defaultValue} ${p.constraints} ${p.defining} ${p.accessText} ${p.description} ${p.notes} ${p.deprecated}`.toLowerCase();
           return searchStr.includes(propertySearch);
         }),
         propertySortColumn,
@@ -353,7 +327,7 @@
 
       const methodRows = sortRows(
         methods.map(normalizeMethod).filter((m) => {
-          const searchStr = `${m.name} ${m.defining} ${m.access} ${m.role} ${m.description} ${m.abstractText} ${m.vararginText} ${m.varargoutText}`.toLowerCase();
+          const searchStr = `${m.name} ${m.defining} ${m.access} ${m.role} ${m.summary} ${m.description} ${m.notes} ${m.throws} ${m.vararginText} ${m.varargoutText} ${m.deprecated}`.toLowerCase();
           return searchStr.includes(methodSearch);
         }),
         methodSortColumn,
@@ -376,7 +350,10 @@
           <tr>
             <th class="sortable-header" style="width: 20ch;" onclick="sortPropertyTable('name')">Name ↕</th>
             <th class="sortable-header" style="width: 20ch;" onclick="sortPropertyTable('type')">Type ↕</th>
-            <th class="sortable-header" style="width: 20ch;" onclick="sortPropertyTable('size')">Size ↕</th>
+            <th class="sortable-header" style="width: 12ch;" onclick="sortPropertyTable('size')">Size ↕</th>
+            <th class="sortable-header" style="width: 12ch;" onclick="sortPropertyTable('unit')">Unit ↕</th>
+            <th class="sortable-header" style="width: 16ch;" onclick="sortPropertyTable('defaultValue')">Default ↕</th>
+            <th class="sortable-header" style="width: auto;" onclick="sortPropertyTable('constraints')">Constraints ↕</th>
             <th class="sortable-header" style="width: auto;" onclick="sortPropertyTable('defining')">Defining Class ↕</th>
           </tr>`
         : `
@@ -407,26 +384,39 @@
             <tr>
               <th class="sortable-header" style="width: 20ch;" onclick="sortMethodTable('name')">Method ↕</th>
               <th class="sortable-header" style="width: 20ch;" onclick="sortMethodTable('role')">Role ↕</th>
-              <th class="sortable-header" style="width: auto;" onclick="sortMethodTable('description')">Description ↕</th>
+              <th class="sortable-header" style="width: auto;" onclick="sortMethodTable('summary')">Summary ↕</th>
             </tr>`
           : ''));
 
       const container = document.getElementById('dynamic-content');
       let html = `
         <div style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">
-          <a href="index.html">Home</a> &gt; <a href="index.html">Reference</a> &gt; ${className}
+          <a href="${window.GuildaDocLoader.pageUrl('index.html')}">Home</a> &gt; <a href="${window.GuildaDocLoader.pageUrl('index.html', 'tab-reference')}">Reference</a> &gt; ${className}
         </div>
         <h1 style="font-size: 2.5rem; margin-bottom: 10px;">${c.name}</h1>
+
+        <div class="meta-box" style="margin-top: 16px;">
+          <h2 id="summary" style="margin-top: 0;">Summary</h2>
+          <div class="markdown-content">${renderMarkdown(c.summary || 'N/A')}</div>
+        </div>
         
         <div class="meta-box" id="overview">
           <table>
             <tbody>
               <tr><th style="width: 18%;">Type</th><td>${c.type || 'N/A'}</td></tr>
+              <tr><th>Model</th><td>${c.model || 'N/A'}</td></tr>
               <tr><th>Parent</th><td>${c.parent || 'N/A'}</td></tr>
               <tr><th>Abstract</th><td>${c.abstract ? 'true' : 'false'}</td></tr>
               <tr><th>Hidden</th><td>${c.hidden ? 'true' : 'false'}</td></tr>
+              <tr><th>Since</th><td>${c.since || 'N/A'}</td></tr>
+              <tr><th>Deprecated</th><td>${c.deprecated || 'No'}</td></tr>
             </tbody>
           </table>
+        </div>
+
+        <div class="meta-box" style="margin-top: 16px;">
+          <h2 id="role" style="margin-top: 0;">Role</h2>
+          <div class="markdown-content">${renderMarkdown(c.role || 'N/A')}</div>
         </div>
 
         <div class="meta-box" style="margin-top: 16px;">
@@ -438,6 +428,9 @@
           <h2 id="constructor" style="margin-top: 0;">Constructor</h2>
           <div class="markdown-content">${renderMarkdown(c.constructor || 'N/A')}</div>
         </div>
+
+        ${c.notes ? `<div class="meta-box" style="margin-top: 16px;"><h2 style="margin-top: 0;">Notes</h2><div class="markdown-content">${renderMarkdown(c.notes)}</div></div>` : ''}
+        ${c.seeAlso.length ? `<div class="meta-box" style="margin-top: 16px;"><h2 style="margin-top: 0;">See Also</h2><p>${c.seeAlso.map(renderClassLink).join(', ')}</p></div>` : ''}
       `;
 
       // Properties セクション
@@ -473,7 +466,10 @@
                   <tr>
                     <td style="width: 20ch;"><strong>${p.name}</strong></td>
                     <td style="width: 20ch;">${nl2br(p.type)}</td>
-                    <td style="width: 20ch;">${nl2br(p.size)}</td>
+                    <td style="width: 12ch;">${nl2br(p.size)}</td>
+                    <td style="width: 12ch;">${nl2br(p.unit) || 'N/A'}</td>
+                    <td style="width: 16ch;">${nl2br(p.defaultValue) || 'N/A'}</td>
+                    <td style="width: auto;">${nl2br(p.constraints) || 'N/A'}</td>
                     <td style="width: auto;">${renderClassLink(p.defining)}</td>
                   </tr>
                 `;
@@ -485,7 +481,7 @@
                   <td style="width: auto;">${nl2br(p.description)}</td>
                 </tr>
               `;
-            }).join('') : `<tr><td colspan="${propertyViewMode === 'attributes' ? 7 : propertyViewMode === 'type' ? 4 : 3}" style="text-align:center; color:#888;">No matching properties found.</td></tr>`}
+            }).join('') : `<tr><td colspan="${propertyViewMode === 'attributes' ? 7 : propertyViewMode === 'type' ? 7 : 3}" style="text-align:center; color:#888;">No matching properties found.</td></tr>`}
           </tbody>
         </table>`;
       } else {
@@ -509,7 +505,7 @@
             ${methodRows.length > 0 ? methodRows.map(m => {
               if (methodViewMode === 'attributes') {
                 return `
-                  <tr class="clickable-row" onclick="window.location.href='method.html?class=${className}&method=${m.name}'">
+                  <tr class="clickable-row" onclick="window.GuildaDocLoader.navigate('method.html', { class: '${className}', method: '${m.name}' })">
                     <td><span class="row-link">${m.name}</span></td>
                     <td>${m.access || ''}</td>
                     <td>${m.static ? 'true' : 'false'}</td>
@@ -520,16 +516,16 @@
               }
               if (methodViewMode === 'description') {
                 return `
-                  <tr class="clickable-row" onclick="window.location.href='method.html?class=${className}&method=${m.name}'">
+                  <tr class="clickable-row" onclick="window.GuildaDocLoader.navigate('method.html', { class: '${className}', method: '${m.name}' })">
                     <td style="width: 20ch;"><span class="row-link">${m.name}</span></td>
                     <td style="width: 20ch;">${nl2br(m.role)}</td>
-                    <td style="width: auto;">${nl2br(m.abstractText)}</td>
+                    <td style="width: auto;">${nl2br(m.summary || m.description)}</td>
                   </tr>
                 `;
               }
               if (methodViewMode === 'details') {
                 return `
-                  <tr class="clickable-row" onclick="window.location.href='method.html?class=${className}&method=${m.name}'">
+                  <tr class="clickable-row" onclick="window.GuildaDocLoader.navigate('method.html', { class: '${className}', method: '${m.name}' })">
                     <td style="width: 18ch;"><span class="row-link">${m.name}</span></td>
                     <td style="width: auto;">${nl2br(m.vararginText || 'N/A')}</td>
                     <td style="width: auto;">${nl2br(m.varargoutText || 'N/A')}</td>
@@ -538,7 +534,7 @@
                 `;
               }
               return `
-                <tr class="clickable-row" onclick="window.location.href='method.html?class=${className}&method=${m.name}'">
+                <tr class="clickable-row" onclick="window.GuildaDocLoader.navigate('method.html', { class: '${className}', method: '${m.name}' })">
                   <td><span class="row-link">${m.name}</span></td>
                   <td>${nl2br(m.arginText)}</td>
                   <td>${nl2br(m.argoutText)}</td>
