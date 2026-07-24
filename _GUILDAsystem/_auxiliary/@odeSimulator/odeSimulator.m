@@ -170,7 +170,7 @@ classdef (Sealed = true) odeSimulator < handle
                     ue = cj.rv_Uequilibrium;       
                     uy = cj.sv_u==a_GC.sv_y;
                     ue( uy ) = ue( uy ) + y_GC( cj.iv_odeU( uy ) ); 
-                    ue = ue + cj.U_offset(t);
+                    ue = ue + cj.rv_Uoffset(t);
                     
                     odeX = get_dx_algebraic(cj, t, x, Vi, Ii, ue, odeX);
                 end                
@@ -317,7 +317,7 @@ classdef (Sealed = true) odeSimulator < handle
                 b_idx_I = a_bus{i}.iv_odeI;
 
                 for j=1:numel(a_Comp)
-                    if isa(a_Comp{j}, 'component.generator.abstract') && ~a_Comp{j}.isConnect
+                    if isa(a_Comp{j}, 'component.generator.abstract') && ~a_Comp{j}.l_isConnect
                         c_idx = a_Comp{j}.iv_odeX;
                         b_idx = a_bus{i}.iv_odeX;
                         [x0(c_idx), u_equilibrium] = a_Comp{j}.get_equilibrium([1,1j]*x0(b_idx), 0+1j*0);                         

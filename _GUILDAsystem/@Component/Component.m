@@ -23,12 +23,9 @@ classdef Component < PowerSystemModel
         f_dx                                   % [  Dynamics ] 数値積分の計算に使用する微分方程式の関数ハンドル
         f_I                                    % [  Dynamics ] 数値積分の計算に使用する接続方程式の関数ハンドル
         f_Y
-
         f_JacobiDx
         f_JacobiI        
         f_JacobiY
-        
-        odeLinearSystem
     end
     properties(SetAccess=protected)
         rv_Xequilibrium = zeros(0,1)           % [SteadyState] 状態の平衡点
@@ -57,15 +54,15 @@ classdef Component < PowerSystemModel
         children                               % [   Layer   ] Layerの下位に当たるクラス群
     end
     properties (Access={?odeSimulator, ?Component, ?odeEventSet})        
-        isController = false;
-        isConnect = true
+        l_hasController = false;
+        l_isConnect     = true
     end
     properties (Hidden)
-        X_offset 
-        U_offset 
+        rv_Xoffset 
+        rv_Uoffset 
     end
     properties (SetAccess={?Continuation_Power_Flow})
-        iv_CPFX = zeros(0,1)                
+        iv_CPFX  = zeros(0,1)                
         PQ2Bus = @(t,V,u) zeros(2,1)
     end
 
@@ -129,6 +126,7 @@ classdef Component < PowerSystemModel
         [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Busvar, option)
 
         % Dynamics
+        % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 消すのーーーーー？？？？？？ to Terao
         [n_odeX, n_odeU, Mass, x0] = reset_odeset(obj, n_odeX, n_odeU, omega0)
 
         % get_sys
@@ -137,12 +135,9 @@ classdef Component < PowerSystemModel
         % get dx, I and y
         DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec) 
 
-        % get jacobian
-        odeJacobian = getJacobian(obj, t, x, V, u)
-
     end
 
-    methods%(Hidden)
+    methods(Hidden)
         % Debugger
         flag = validate(obj)
     end

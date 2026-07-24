@@ -37,7 +37,7 @@ classdef base < LocalController
         
         function set_PSS(obj, cls) %#ok
             obj.a_LocalController{1} = controller.pss.base;
-            obj.isController = true;
+            obj.l_hasController = true;
         end
         
     end

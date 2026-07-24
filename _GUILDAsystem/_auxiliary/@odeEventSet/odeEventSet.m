@@ -226,11 +226,11 @@ classdef (Sealed = true) odeEventSet < handle
                     l_osU = ismember(osU, c_tag);
                     l_inU = ismember(inU, c_tag);                    
                     
-                    comp{j}.X_offset = zeros(size(comp{j}.sv_x(:)));                                       
+                    comp{j}.rv_Xoffset = zeros(size(comp{j}.sv_x(:)));                                       
 
                     if any(l_osU)
                         lv_X = ismember(comp{j}.sv_x, osX{l_osU});                        
-                        comp{j}.X_offset(lv_X) = comp{j}.X_offset(lv_X) + osV{l_osU};
+                        comp{j}.rv_Xoffset(lv_X) = comp{j}.rv_Xoffset(lv_X) + osV{l_osU};
                     end                    
 
                     ini = repmat({@(t) 0}, size(comp{j}.sv_u(:)));
@@ -251,7 +251,7 @@ classdef (Sealed = true) odeEventSet < handle
                         end
                         ini(l_inN) = exV;
                     end
-                    comp{j}.U_offset = @(t) cellfun(@(f) f(t), ini);
+                    comp{j}.rv_Uoffset = @(t) cellfun(@(f) f(t), ini);
                 end
             end            
 
@@ -421,8 +421,8 @@ function [rv_x0, rm_Mass, TC] = getXM(OBJs, rv_x0, rm_Mass, TC)
         rx_idx = [OBJ.iv_odeX; OBJ.iv_odeU]; 
         nu_idx = numel(OBJ.iv_odeU); 
         
-        OBJ.isConnect = ~ismember(OBJ.str_tag, TC);  
-        rv_x0 = [rv_x0; OBJ.rv_Xequilibrium + OBJ.X_offset; OBJ.rv_Uequilibrium + OBJ.U_offset(0)]; %#ok
+        OBJ.l_isConnect = ~ismember(OBJ.str_tag, TC);  
+        rv_x0 = [rv_x0; OBJ.rv_Xequilibrium + OBJ.rv_Xoffset; OBJ.rv_Uequilibrium + OBJ.rv_Uoffset(0)]; %#ok
         
         rm_Mass(rx_idx, rx_idx) = blkdiag(OBJ.f_Mass([],[],[],[],[]), zeros(nu_idx, nu_idx));
 

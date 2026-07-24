@@ -53,7 +53,7 @@ function add_local_controller(obj, varargin)
             idx = idx + 1;
         end
 
-        obj.isController = true;
+        obj.l_hasController = true;
     end
     
 end

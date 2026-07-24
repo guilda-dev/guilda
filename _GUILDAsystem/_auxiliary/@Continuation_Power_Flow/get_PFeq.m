@@ -36,8 +36,8 @@ function func = get_PFeq(obj,x,Ymat)
             isLoad  = ismember(i_Bus.str_tag,obj.CPFBus);
 
             Ueq = i_Comp.rv_Uequilibrium;
-            PQG = PQG + i_Comp.PQ2Bus(X_Comp,V_Bus,Ueq) * ~isLoad;
-            PQC = PQC + i_Comp.PQ2Bus(X_Comp,V_Bus,Ueq) * (1 + lambda * or(isLoad, useInt));                        
+            PQG = PQG + i_Comp.f_PQ2Bus(X_Comp,V_Bus,Ueq) * ~isLoad;
+            PQC = PQC + i_Comp.f_PQ2Bus(X_Comp,V_Bus,Ueq) * (1 + lambda * or(isLoad, useInt));                        
              
             if ~isempty(X_Comp)                                
                 Fdx       = i_Comp.f_dx([],X_Comp,[V_Bus(1)*cos(V_Bus(2));V_Bus(1)*sin(V_Bus(2))],[],Ueq);

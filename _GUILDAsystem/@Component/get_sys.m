@@ -8,7 +8,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         opt.port (1,1) {mustBeMember(opt.port, ["V2I", "I2V"])} = "V2I"
         opt.full (1,1) logical = true
         opt.tag  (1,1) logical = true
-        opt.con  (1,1) logical = obj.isController
+        opt.con  (1,1) logical = obj.l_hasController
         opt.rec  (1,1) logical = true
     end        
 

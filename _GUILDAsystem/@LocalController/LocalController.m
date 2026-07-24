@@ -46,11 +46,11 @@ classdef LocalController < PowerSystemModel
         iv_odeU  = zeros(0,1);
         iv_odeY  = zeros(0,1);
 
-        X_offset = 0
-        U_offset = @(t) 0
+        rv_Xoffset = 0
+        rv_Uoffset = @(t) 0
         
-        isConnect    (1,1) logical = true
-        isController (1,1) logical = false
+        l_isConnect    (1,1) logical = true
+        l_hasController (1,1) logical = false
     end    
     properties(SetAccess=protected)
         rv_Xequilibrium (:,1) double = zeros(0,1)   
@@ -85,7 +85,7 @@ classdef LocalController < PowerSystemModel
     methods %(Access={?Component,?LocalController})
         function add_local_controller(obj,a_Controller)
             obj.a_LocalController = {a_Controller};
-            obj.isController = true;
+            obj.l_hasController = true;
         end
 
         function set_parent(obj,a_Component)

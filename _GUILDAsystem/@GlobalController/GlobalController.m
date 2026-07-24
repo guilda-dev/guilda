@@ -44,10 +44,10 @@ classdef GlobalController < PowerSystemModel
         iv_odeU (:,1) double = zeros(0,1);
         iv_odeY (:,1) double = zeros(0,1);        
 
-        X_offset = 0
-        U_offset = @(t) 0
+        rv_Xoffset = 0
+        rv_Uoffset = @(t) 0
 
-        isConnect (1,1) logical = true
+        l_isConnect (1,1) logical = true
     end        
     properties(SetAccess={?PowerNetwork})
         rv_Xequilibrium (:,1) double = zeros(0,1)   

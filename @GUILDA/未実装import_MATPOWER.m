@@ -50,7 +50,7 @@ function net = import_MATPOWER(results)
             end
             
             if status==0
-                Geni.isConnected = false;
+                Geni.l_isConnected = false;
             end
 
             Busi.add_component(Geni);
@@ -88,7 +88,7 @@ function net = import_MATPOWER(results)
         end
 
         if ( status == 0)
-            Branchi.isConnected = Flase;
+            Branchi.l_isConnected = Flase;
         end
 
         Branchi.parameter.OPF{1,["P_max","arg_min","arg_max"]} = [Pmax,arg_min,arg_max];

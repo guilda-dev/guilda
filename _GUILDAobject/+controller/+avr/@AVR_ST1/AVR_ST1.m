@@ -73,7 +73,7 @@ classdef (Sealed = true) AVR_ST1 < controller.avr.base
         end
         function set_PSS(obj, cls)
             obj.a_LocalController{1} = cls;
-            obj.isController = true;
+            obj.l_hasController = true;
         end
     end
 

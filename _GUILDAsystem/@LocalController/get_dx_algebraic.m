@@ -7,7 +7,7 @@ function [DAEvec, u, y_name] = get_dx_algebraic(obj, t, x, Vi, Ii, u, y_name, DA
 
     rv_U(lv_U2Y) = u(lv_Y2U);
 
-    if obj.isController
+    if obj.l_hasController
         a_LC = obj.a_LocalController{1};
         
         lv_Y2U = ismember(y_name,a_LC.sv_u);        

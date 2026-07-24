@@ -236,9 +236,9 @@ classdef (Sealed = true) Continuation_Power_Flow < handle
                 
                 params = i_Comp.tab_parameter.dynamics{:,i_Comp.sv_para};                
                 if useInt 
-                    i_Comp.PQ2Bus = @(x,V,u) i_Comp.getCompPQ(x,V,u,params);
+                    i_Comp.f_PQ2Bus = @(x,V,u) i_Comp.getCompPQ(x,V,u,params);
                 else
-                    i_Comp.PQ2Bus = @(x,V,u) [real(CompSeq);imag(CompSeq)];
+                    i_Comp.f_PQ2Bus = @(x,V,u) [real(CompSeq);imag(CompSeq)];
                 end                
             end
         end
