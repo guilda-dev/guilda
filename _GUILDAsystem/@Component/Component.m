@@ -11,7 +11,7 @@ classdef Component < PowerSystemModel
     end
     methods(Abstract)
         [cv_Xequilibrium, cv_Uequilibrium] = get_equilibrium(obj,c_V,c_I,r_P,r_Q);
-        set_odefcn(obj, omega0)
+        % set_odefcn(obj, omega0)
     end
     
 
@@ -112,10 +112,34 @@ classdef Component < PowerSystemModel
                                            "Marker", opt.Marker           , "string",...
                                          "MidXaxis", opt.MidXaxis         , "string",...
                                          "MidYaxis", opt.MidYaxis         , "string");
+                        
+        end        
 
-            % 機器の微分代数方程式とヤコビアンに関する関数ハンドルを登録する
+        function set_odefcn(obj,omega0)
+            array = obj.tab_parameter.dynamics{:,obj.str_para};
+
+            obj.JacobiAxx = @(t,x,V,I,u) obj.getJacobiAxx(t, x, V, I, u, array, omega0);
+            obj.JacobiBxv = @(t,x,V,I,u) obj.getJacobiBxv(t, x, V, I, u, array, omega0);
+            obj.JacobiBxi = @(t,x,V,I,u) obj.getJacobiBxi(t, x, V, I, u, array, omega0);
+            obj.JacobiBxu = @(t,x,V,I,u) obj.getJacobiBxu(t, x, V, I, u, array, omega0);
+
+            obj.JacobiCix = @(t,x,V,I,u) obj.getJacobiCix(t, x, V, I, u, array, omega0);
+            obj.JacobiDiv = @(t,x,V,I,u) obj.getJacobiDiv(t, x, V, I, u, array, omega0);            
+            obj.JacobiDii = @(t,x,V,I,u) obj.getJacobiDii(t, x, V, I, u, array, omega0);
+            obj.JacobiDiu = @(t,x,V,I,u) obj.getJacobiDiu(t, x, V, I, u, array, omega0);
+
+            obj.JacobiCyx = @(t,x,V,I,u) obj.getJacobiCyx(t, x, V, I, u, array, omega0);
+            obj.JacobiDyv = @(t,x,V,I,u) obj.getJacobiDyv(t, x, V, I, u, array, omega0);
+            obj.JacobiDyi = @(t,x,V,I,u) obj.getJacobiDyi(t, x, V, I, u, array, omega0);
+            obj.JacobiDyu = @(t,x,V,I,u) obj.getJacobiDyu(t, x, V, I, u, array, omega0);
+
+            obj.rm_odeMass = @(t,x,V,I,u) obj.fcn_Mass(t, x, V, I, u, array, omega0);            
+            obj.fv_odeDiff = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, array, omega0);
+            obj.fv_odeI    = @(t,x,V,I,u) obj.fcn_I(t, x, V, I, u, array, omega0);
+            obj.fv_odeY    = @(t,x,V,I,u) obj.fcn_Y(t, x, V, I, u, array, omega0);
         end
     end
+            
 
 %% Methods
     methods
