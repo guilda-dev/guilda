@@ -6,10 +6,10 @@ classdef power < component.load.abstract
 
     properties(Constant)
         key      = "load-power";
-        str_x    = [];
-        str_u    = ["Pload","Qload"];
-        str_y    = [];
-        str_para = [];
+        sv_x    = [];
+        sv_u    = ["Pload","Qload"];
+        sv_y    = [];
+        sv_para = [];
         Prefix = "LP";
     end
 
@@ -20,7 +20,7 @@ classdef power < component.load.abstract
     end
     
     methods
-        [cv_Xequilibrium, cv_Uequilibrium]  = get_equilibrium(obj, c_V, c_I);    
+        [rv_Xequilibrium, rv_Uequilibrium]  = get_equilibrium(obj, c_V, c_I);    
     end
 
     methods

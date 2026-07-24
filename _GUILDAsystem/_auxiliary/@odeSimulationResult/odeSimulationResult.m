@@ -28,12 +28,12 @@ classdef odeSimulationResult < handle
                 for j=1:numel(a_Comp)
                     c_idx = a_Comp{j}.iv_odeX;
                     sol_c_idx = X(:,c_idx);
-                    sol_c_idx.Properties.VariableNames = a_Comp{j}.str_x;
+                    sol_c_idx.Properties.VariableNames = a_Comp{j}.sv_x;
                     obj.odeResults.Bus(i).Component(j).X = sol_c_idx;                    
 
                     c_idx = a_Comp{j}.iv_odeU;
                     sol_c_idx = X(:,c_idx);
-                    sol_c_idx.Properties.VariableNames = a_Comp{j}.str_u;
+                    sol_c_idx.Properties.VariableNames = a_Comp{j}.sv_u;
                     obj.odeResults.Bus(i).Component(j).U = sol_c_idx;                    
                 end
                 

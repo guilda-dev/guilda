@@ -7,26 +7,26 @@ function out = reorder(sys,opt)
 
     switch opt.method
         case "VariableNames"
-            str_x = tools.vcellfun(@(n) extractVar(n), sys.StateName );
-            str_u = tools.vcellfun(@(n) extractVar(n), sys.InputName );
-            str_y = tools.vcellfun(@(n) extractVar(n), sys.OutputName );
+            sv_x = tools.vcellfun(@(n) extractVar(n), sys.StateName );
+            sv_u = tools.vcellfun(@(n) extractVar(n), sys.InputName );
+            sv_y = tools.vcellfun(@(n) extractVar(n), sys.OutputName );
         case "ComponentNames"
-            str_x = tools.vcellfun(@(n) extractMac(n), sys.StateName );
-            str_u = tools.vcellfun(@(n) extractMac(n), sys.InputName );
-            str_y = tools.vcellfun(@(n) extractMac(n), sys.OutputName );
+            sv_x = tools.vcellfun(@(n) extractMac(n), sys.StateName );
+            sv_u = tools.vcellfun(@(n) extractMac(n), sys.InputName );
+            sv_y = tools.vcellfun(@(n) extractMac(n), sys.OutputName );
     end
 
     if opt.direction=="stable"
-        [ ~, ~, flag_x] = unique(str_x, "stable");
-        [ ~, ~, flag_u] = unique(str_u, "stable");
-        [ ~, ~, flag_y] = unique(str_y, "stable");
+        [ ~, ~, flag_x] = unique(sv_x, "stable");
+        [ ~, ~, flag_u] = unique(sv_u, "stable");
+        [ ~, ~, flag_y] = unique(sv_y, "stable");
         [ ~, i_x] = sort(flag_x);
         [ ~, i_u] = sort(flag_u);
         [ ~, i_y] = sort(flag_y);
     else
-        [ ~, i_x] = sort(str_x, 1, opt.direction);
-        [ ~, i_u] = sort(str_u, 1, opt.direction);
-        [ ~, i_y] = sort(str_y, 1, opt.direction);
+        [ ~, i_x] = sort(sv_x, 1, opt.direction);
+        [ ~, i_u] = sort(sv_u, 1, opt.direction);
+        [ ~, i_y] = sort(sv_y, 1, opt.direction);
     end
 
     out = sys(i_y,i_u);

@@ -1,4 +1,4 @@
-function [cv_Xequilibrium,cv_Uequilibrium] = get_equilibrium(obj,c_V,c_I,r_P,r_Q) %#ok
+function [rv_Xequilibrium,rv_Uequilibrium] = get_equilibrium(obj,c_V,c_I,r_P,r_Q) %#ok
         
     Vabs = abs(c_V);
     Varg = angle(c_V);
@@ -18,6 +18,6 @@ function [cv_Xequilibrium,cv_Uequilibrium] = get_equilibrium(obj,c_V,c_I,r_P,r_Q
     Est = [ -(Xd-Xdp)*Id + Vfd; ...
              (Xq-Xqp)*Iq      ];
     
-    cv_Xequilibrium = [dst; wst; Est];
-    cv_Uequilibrium = [r_P;Vfd];
+    rv_Xequilibrium = [dst; wst; Est];
+    rv_Uequilibrium = [r_P;Vfd];
 end

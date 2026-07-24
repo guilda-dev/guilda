@@ -4,13 +4,13 @@ classdef Component < PowerSystemModel
 %% Abstract properties/methods
     properties(Abstract,Constant)
         key      (1,1) string
-        str_x    (:,1) string
-        str_u    (:,1) string 
-        str_y    (:,1) string
-        str_para (:,1) string
+        sv_x    (:,1) string
+        sv_u    (:,1) string 
+        sv_y    (:,1) string
+        sv_para (:,1) string
     end
     methods(Abstract)
-        [cv_Xequilibrium, cv_Uequilibrium] = get_equilibrium(obj,c_V,c_I,r_P,r_Q);
+        [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj,c_V,c_I,r_P,r_Q);
         % set_odefcn(obj, omega0)
     end
     
@@ -19,35 +19,20 @@ classdef Component < PowerSystemModel
     properties(SetAccess=protected)
         a_Bus                                  % [   Layer   ] 接続しているBusクラス(a_Cubicleから辿る)
         a_LocalController (:,1) = cell(0,1)    % [   Layer   ] 接続されているControllerクラスのcell配列        
-        rm_odeMass                             % [  Dynamics ] 数値積分の計算に使用する質量行列の関数ハンドル
-        fv_odeDiff                             % [  Dynamics ] 数値積分の計算に使用する微分方程式の関数ハンドル
-        fv_odeI                                % [  Dynamics ] 数値積分の計算に使用する接続方程式の関数ハンドル
-        fv_odeY
+        f_Mass                             % [  Dynamics ] 数値積分の計算に使用する質量行列の関数ハンドル
+        f_dx                                   % [  Dynamics ] 数値積分の計算に使用する微分方程式の関数ハンドル
+        f_I                                    % [  Dynamics ] 数値積分の計算に使用する接続方程式の関数ハンドル
+        f_Y
 
-        JacobiAxx                              % [  Dynamics ] 微分方程式の状態変数に関するヤコビアン
-        JacobiBxv                              % [  Dynamics ] 微分方程式の母線変数に関するヤコビアン
-        JacobiBxi                              % [  Dynamics ] 微分方程式の母線電流に関するヤコビアン
-        JacobiBxu                              % [  Dynamics ] 微分方程式の入力に関するヤコビアン
-
-        JacobiCix                              % [  Dynamics ] 出力方程式(電流)の状態変数に関するヤコビアン
-        JacobiDiv                              % [  Dynamics ] 出力方程式(電流)の母線電圧に関するヤコビアン
-        JacobiDii                              % [  Dynamics ] 出力方程式(電流)の母線電流に関するヤコビアン
-        JacobiDiu                              % [  Dynamics ] 出力方程式(電流)の入力に関するヤコビアン
-
-        JacobiCyx = @(t,x,V,I,u) []              % [  Dynamics ] 出力方程式(コントローラ)の状態変数に関するヤコビアン
-        JacobiDyv = @(t,x,V,I,u) []              % [  Dynamics ] 出力方程式(コントローラ)の母線電圧に関するヤコビアン
-        JacobiDyi = @(t,x,V,I,u) []              % [  Dynamics ] 出力方程式(コントローラ)の母線電流に関するヤコビアン
-        JacobiDyu = @(t,x,V,I,u) []              % [  Dynamics ] 出力方程式(コントローラ)の入力に関するヤコビアン
-
-        JacobiDx
-        JacobiI        
-        JacobiY
+        f_JacobiDx
+        f_JacobiI        
+        f_JacobiY
         
         odeLinearSystem
     end
     properties(SetAccess=protected)
-        cv_Xequilibrium = zeros(0,1)           % [SteadyState] 状態の平衡点
-        cv_Uequilibrium = zeros(0,1)           % [SteadyState] 定常入力
+        rv_Xequilibrium = zeros(0,1)           % [SteadyState] 状態の平衡点
+        rv_Uequilibrium = zeros(0,1)           % [SteadyState] 定常入力
         c_Iequilibrium                         % [SteadyState] 定常潮流状態での機器の注入電流
         c_Vequilibrium                         % [SteadyState] 定常潮流状態での機器の注入電圧
     end
@@ -57,7 +42,7 @@ classdef Component < PowerSystemModel
         iv_odeY  = [];        
     end    
     properties(Dependent)
-        cv_Xequilibrium_all                    % [SteadyState] 制御器の状態も含めた平衡点
+        rv_Xequilibrium_all                    % [SteadyState] 制御器の状態も含めた平衡点
         tab_parameter                          % [ Parameter ] ハイパーパラメータの設定値
     end
     properties(SetAccess=protected)
@@ -120,16 +105,16 @@ classdef Component < PowerSystemModel
         end        
 
         function set_odefcn(obj,omega0)
-            array = obj.tab_parameter.dynamics{:,obj.str_para};
+            array = obj.tab_parameter.dynamics{:,obj.sv_para};
             
-            obj.JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,array,omega0);
-            obj.JacobiI  = @(t,x,V,I,u) obj.Jacobi_I(t,x,V,I,u,array,omega0);
-            obj.JacobiY  = @(t,x,V,I,u) obj.Jacobi_y(t,x,V,I,u,array,omega0);            
+            obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,array,omega0);
+            obj.f_JacobiI  = @(t,x,V,I,u) obj.Jacobi_I(t,x,V,I,u,array,omega0);
+            obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_y(t,x,V,I,u,array,omega0);            
 
-            obj.rm_odeMass = @(t,x,V,I,u) obj.fcn_Mass(t, x, V, I, u, array, omega0);            
-            obj.fv_odeDiff = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, array, omega0);
-            obj.fv_odeI    = @(t,x,V,I,u) obj.fcn_I(t, x, V, I, u, array, omega0);
-            obj.fv_odeY    = @(t,x,V,I,u) obj.fcn_Y(t, x, V, I, u, array, omega0);
+            obj.f_Mass = @(t,x,V,I,u) obj.fcn_Mass(t, x, V, I, u, array, omega0);            
+            obj.f_dx = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, array, omega0);
+            obj.f_I    = @(t,x,V,I,u) obj.fcn_I(t, x, V, I, u, array, omega0);
+            obj.f_Y    = @(t,x,V,I,u) obj.fcn_Y(t, x, V, I, u, array, omega0);
         end
     end
             
@@ -170,9 +155,9 @@ classdef Component < PowerSystemModel
 
 %% Get Methods
     methods
-        function x = get.cv_Xequilibrium_all(obj)
-            x_con = tools.vcellfun(@(comp) comp.cv_Xequilibrium, obj.a_LocalController);
-            x     = [obj.cv_Xequilibrium; x_con];
+        function x = get.rv_Xequilibrium_all(obj)
+            x_con = tools.vcellfun(@(comp) comp.rv_Xequilibrium, obj.a_LocalController);
+            x     = [obj.rv_Xequilibrium; x_con];
         end
         function p = get.parent(obj)
             p = obj.a_Bus;

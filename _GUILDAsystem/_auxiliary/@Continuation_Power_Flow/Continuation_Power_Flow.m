@@ -146,7 +146,7 @@ classdef (Sealed = true) Continuation_Power_Flow < handle
                                     
                         for j=1:n_Comp
                             i_Comp = a_Comp{j};        
-                            rv_Xeq = i_Comp.cv_Xequilibrium;
+                            rv_Xeq = i_Comp.rv_Xequilibrium;
                             r_Xlen = numel(rv_Xeq);
                             
                             if useInt                                                            
@@ -175,7 +175,7 @@ classdef (Sealed = true) Continuation_Power_Flow < handle
                         
                         for j=1:numel(a_Comp)
                             i_Comp = a_Comp{j};        
-                            rv_Xeq = i_Comp.cv_Xequilibrium;
+                            rv_Xeq = i_Comp.rv_Xequilibrium;
                             r_Xlen = numel(rv_Xeq);
             
                             if useInt && ~isempty(rv_Xeq)
@@ -234,7 +234,7 @@ classdef (Sealed = true) Continuation_Power_Flow < handle
                 CompIeq = i_Comp.c_Iequilibrium;
                 CompSeq = CompVeq * conj(CompIeq);
                 
-                params = i_Comp.tab_parameter.dynamics{:,i_Comp.str_para};                
+                params = i_Comp.tab_parameter.dynamics{:,i_Comp.sv_para};                
                 if useInt 
                     i_Comp.PQ2Bus = @(x,V,u) i_Comp.getCompPQ(x,V,u,params);
                 else

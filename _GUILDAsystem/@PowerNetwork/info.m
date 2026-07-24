@@ -100,11 +100,11 @@ function info(obj, opt)
                 Q = imag(S);
                 PowerFlow = table(theta,V,P,Q);
 
-                str_x    = tab_com{1,"str_x"};
-                State    = array2table( tools.vcellfun(@(x) x(:).', tab_com.cv_Xequilibrium), "VariableNames", str_x{1});
+                sv_x    = tab_com{1,"sv_x"};
+                State    = array2table( tools.vcellfun(@(x) x(:).', tab_com.rv_Xequilibrium), "VariableNames", sv_x{1});
 
-                str_u    = tab_com{1,"str_u"};
-                Input    = array2table( tools.vcellfun(@(x) x(:).', tab_com.cv_Uequilibrium), "VariableNames", str_u{1});
+                sv_u    = tab_com{1,"sv_u"};
+                Input    = array2table( tools.vcellfun(@(x) x(:).', tab_com.rv_Uequilibrium), "VariableNames", sv_u{1});
                 
                 Equilibrium = table(PowerFlow,State,Input);
                 tab_disp = [tab_disp, table(Equilibrium)]; %#ok

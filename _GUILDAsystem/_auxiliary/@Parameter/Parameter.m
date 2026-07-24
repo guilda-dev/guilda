@@ -21,7 +21,7 @@ classdef Parameter < auxiliary & LayerPackage & dynamicprops
         % <@Role> Parameter
         % <@Type> string
         % <@Size> 1xN
-        str_parameter = [];
+        sv_parameter = [];
 
         % <@Desc> Stashed value used for change comparison.
         % <@Role> Parameter
@@ -148,18 +148,18 @@ classdef Parameter < auxiliary & LayerPackage & dynamicprops
             %     "Description": "Parameter table."
             %   }
             % ]
-            str_para = obj.str_parameter;
-            if isempty(str_para)
+            sv_para = obj.sv_parameter;
+            if isempty(sv_para)
                 NoData = nan;       %#ok
                 tab_para = table(NoData); %#ok
                 return
             end
-            h_para   = numel(str_para);
-            v_para   = sum( arrayfun(@(idx) numel(obj.(str_para(idx))), 1:h_para) )/h_para;
-            tab_para = array2table(zeros(v_para,h_para),"VariableNames",str_para);
-            % tab_para = array2table(nan(1,h_para),"VariableNames",str_para);
+            h_para   = numel(sv_para);
+            v_para   = sum( arrayfun(@(idx) numel(obj.(sv_para(idx))), 1:h_para) )/h_para;
+            tab_para = array2table(zeros(v_para,h_para),"VariableNames",sv_para);
+            % tab_para = array2table(nan(1,h_para),"VariableNames",sv_para);
             for i = 1:h_para
-                tab_para.(str_para(i)) = obj.(str_para(i));
+                tab_para.(sv_para(i)) = obj.(sv_para(i));
             end
         end
         function p = get.parent(obj); p = obj.a_cls; end

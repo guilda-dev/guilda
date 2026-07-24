@@ -78,13 +78,13 @@ classdef (Sealed = true) odeSimulator < handle
                         a_LC1 = a_comp{j}.a_LocalController{1};
                         set_idx(a_LC1);                                                
 
-                        a_LC1.iv_odeY = a_comp{j}.iv_odeU( a_comp{j}.str_u==a_LC1.str_y );                        
+                        a_LC1.iv_odeY = a_comp{j}.iv_odeU( a_comp{j}.sv_u==a_LC1.sv_y );                        
 
                         if ~isempty(a_LC1.a_LocalController)
                             a_LC2 = a_LC1.a_LocalController{1};
                             set_idx(a_LC2);                                      
 
-                            a_LC2.iv_odeY = a_LC1.iv_odeU( a_LC1.str_u==a_LC2.str_y );
+                            a_LC2.iv_odeY = a_LC1.iv_odeU( a_LC1.sv_u==a_LC2.sv_y );
                             a_comp{j}.iv_odeY = a_LC2.iv_odeU;
                         end
                     end                    
@@ -94,14 +94,14 @@ classdef (Sealed = true) odeSimulator < handle
             idx = 1;
             if ~isempty(obj.odeNetwork.a_GlobalController)
                 gcon = obj.odeNetwork.a_GlobalController{1};
-                nxgc = length(gcon.str_x);
+                nxgc = length(gcon.sv_x);
                 gcon.iv_odeX = idx_TGT + (1:nxgc)';
                 idx_TGT = idx_TGT + nxgc;
 
                 nConUnit = gcon.controlledUnits;
                 while idx <= numel(nConUnit)
-                    gcon.iv_odeU(idx) = nConUnit{idx}.iv_odeX( nConUnit{idx}.str_x==gcon.str_u );
-                    gcon.iv_odeY(idx) = nConUnit{idx}.iv_odeU( nConUnit{idx}.str_u==gcon.str_y );
+                    gcon.iv_odeU(idx) = nConUnit{idx}.iv_odeX( nConUnit{idx}.sv_x==gcon.sv_u );
+                    gcon.iv_odeY(idx) = nConUnit{idx}.iv_odeU( nConUnit{idx}.sv_u==gcon.sv_y );
 
                     idx = idx + 1;
                 end
@@ -115,8 +115,8 @@ classdef (Sealed = true) odeSimulator < handle
             end
 
             function set_idx(OBJ)
-                nx = length(OBJ.str_x);
-                nu = length(OBJ.str_u);
+                nx = length(OBJ.sv_x);
+                nu = length(OBJ.sv_u);
 
                 OBJ.iv_odeX = idx_TGT + (1:nx)';    
                 idx_TGT = idx_TGT + nx;
@@ -145,15 +145,15 @@ classdef (Sealed = true) odeSimulator < handle
             a_bus = obj.odeNetwork.a_Bus;
 
             y_GC = zeros(size(x), 'like', x);
-            a_GC.str_y = "Pmech";
+            a_GC.sv_y = "Pmech";
             if ~isempty(obj.odeNetwork.a_GlobalController)
                 a_GC = obj.odeNetwork.a_GlobalController{1};
 
                 x_GC = x(a_GC.iv_odeX);
                 u_GC = x(a_GC.iv_odeU);
 
-                odeX(a_GC.iv_odeX) = a_GC.fv_odeDiff(t,x_GC,[],[],u_GC);                
-                y_GC(a_GC.iv_odeY) = a_GC.fv_odeY(t,x_GC,[],[],u_GC);
+                odeX(a_GC.iv_odeX) = a_GC.f_dx(t,x_GC,[],[],u_GC);                
+                y_GC(a_GC.iv_odeY) = a_GC.f_Y(t,x_GC,[],[],u_GC);
             end
 
             for i=1:numel(a_bus)
@@ -167,8 +167,8 @@ classdef (Sealed = true) odeSimulator < handle
 
                 for j=1:numel(a_comp)
                     cj = a_comp{j};
-                    ue = cj.cv_Uequilibrium;       
-                    uy = cj.str_u==a_GC.str_y;
+                    ue = cj.rv_Uequilibrium;       
+                    uy = cj.sv_u==a_GC.sv_y;
                     ue( uy ) = ue( uy ) + y_GC( cj.iv_odeU( uy ) ); 
                     ue = ue + cj.U_offset(t);
                     
@@ -328,7 +328,7 @@ classdef (Sealed = true) odeSimulator < handle
                             v_LC1 = a_LC1.iv_odeX;                            
                             [x0(v_LC1), ~] = a_LC1.get_equilibrium([1,1j]*x0(b_idx), u_equilibrium);                         
 
-                            M0(v_LC1, v_LC1) = a_LC1.rm_odeMass([], [], [], [],[]);
+                            M0(v_LC1, v_LC1) = a_LC1.f_Mass([], [], [], [],[]);
                             
                             if ~isempty(a_LC1.a_LocalController)
                                 a_LC2 = a_LC1.a_LocalController{1};
@@ -336,11 +336,11 @@ classdef (Sealed = true) odeSimulator < handle
                                 v_LC2 = a_LC2.iv_odeX;                                
                                 [x0(v_LC2), ~] = a_LC2.get_equilibrium([1,1j]*x0(b_idx), []);                         
 
-                                M0(v_LC2, v_LC2) = a_LC2.rm_odeMass([], [], [], [],[]);
+                                M0(v_LC2, v_LC2) = a_LC2.f_Mass([], [], [], [],[]);
                             end
                         end
 
-                        M0(c_idx, c_idx) = a_Comp{j}.rm_odeMass([], [], [], [], []);
+                        M0(c_idx, c_idx) = a_Comp{j}.f_Mass([], [], [], [], []);
                     end
                 end
 

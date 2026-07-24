@@ -2,15 +2,15 @@ classdef classical < component.generator.abstract
 
     properties (Constant)      
         key      = "gen-classical";
-        str_x    = ["delta";"omega"];        
-        str_u    = ["Pmech";"Vfield"];        
-        str_y    = "omega";        
-        str_para = ["M","D","Xd","Xq"]        
+        sv_x    = ["delta";"omega"];        
+        sv_u    = ["Pmech";"Vfield"];        
+        sv_y    = "omega";        
+        sv_para = ["M","D","Xd","Xq"]        
     end
     
 
     methods                
-        [cv_Xequilibrium, cv_Uequilibrium] = get_equilibrium(obj, c_V, c_I)
+        [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj, c_V, c_I)
     end        
 
     methods

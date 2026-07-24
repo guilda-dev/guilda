@@ -16,23 +16,23 @@ function flag = validate(obj, l_message)
         c_I = obj.c_Iequilibrium;
     end
 
-    rv_X = obj.cv_Xequilibrium;
-    rv_U = obj.cv_Uequilibrium;
+    rv_X = obj.rv_Xequilibrium;
+    rv_U = obj.rv_Uequilibrium;
     rv_V = [real(c_V); imag(c_V)];
     rv_I = [real(c_I); imag(c_I)];
     
     time  = 0;
     delta = 1e-5;
 
-    fcn_dx = @(x,v,i,u) obj.fv_odeDiff(time, x, v, i, u);
-    fcn_I  = @(x,v,i,u) obj.fv_odeI(   time, x, v, i, u);
-    fcn_Y  = @(x,v,i,u) obj.fv_odeY(   time, x, v, i, u);
+    fcn_dx = @(x,v,i,u) obj.f_dx(time, x, v, i, u);
+    fcn_I  = @(x,v,i,u) obj.f_I(   time, x, v, i, u);
+    fcn_Y  = @(x,v,i,u) obj.f_Y(   time, x, v, i, u);
 
 
     % make variable
-    sv_x  = obj.str_x;
-    sv_u  = obj.str_u;
-    sv_y  = obj.str_y;
+    sv_x  = obj.sv_x;
+    sv_u  = obj.sv_u;
+    sv_y  = obj.sv_y;
     sv_i  = ["Ire"; "Iim"];
     sv_v  = ["Vre"; "Vim"];
     nx = numel(sv_x);
@@ -93,15 +93,15 @@ function flag = validate(obj, l_message)
         for fn = sv_fn
             disp(" ")
             if fn =="dx"
-                disp(">> obj.fv_odeDiff(0,xst,Vst,ust)"+newline)
+                disp(">> obj.f_dx(0,xst,Vst,ust)"+newline)
             elseif fn == "I"
-                disp(">> Ist - obj.fv_odeI(0,xst,Vst,ust)"+newline)
+                disp(">> Ist - obj.f_I(0,xst,Vst,ust)"+newline)
             elseif ismember(fn ,["Axx","Bxu","Bxv"])
-                disp(">> obj.Jacobi"+fn+"(0,xst,Vst,ust) - (Numerical differentiation @obj.fv_odeDiff)"+newline)
+                disp(">> obj.Jacobi"+fn+"(0,xst,Vst,ust) - (Numerical differentiation @obj.f_dx)"+newline)
             elseif ismember(fn ,["Cix","Diu","Div"])
-                disp(">> obj.Jacobi"+fn+"(0,xst,Vst,ust) - (Numerical differentiation @obj.fv_odeI)"+newline)
+                disp(">> obj.Jacobi"+fn+"(0,xst,Vst,ust) - (Numerical differentiation @obj.f_I)"+newline)
             elseif ismember(fn ,["Cyx","Dyu","Dyv"])
-                disp(">> obj.Jacobi"+fn+"(0,xst,Vst,ust) - (Numerical differentiation @obj.fv_odeY)"+newline)
+                disp(">> obj.Jacobi"+fn+"(0,xst,Vst,ust) - (Numerical differentiation @obj.f_Y)"+newline)
             end
 
             if isempty(flag.(fn))

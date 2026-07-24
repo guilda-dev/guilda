@@ -4,10 +4,10 @@ classdef LocalController < PowerSystemModel
 %% Abstract properties/methods    
     properties(Abstract, SetAccess=protected, Hidden)
         key      (1,1) string 
-        str_x    (:,1) string
-        str_u    (:,1) string 
-        str_y    (:,1) string
-        str_para (:,1) string
+        sv_x    (:,1) string
+        sv_u    (:,1) string 
+        sv_y    (:,1) string
+        sv_para (:,1) string
     end
     methods (Abstract)        
         dx = fcn_dx(obj, t, x, V, u, param, omega0)
@@ -22,9 +22,9 @@ classdef LocalController < PowerSystemModel
         a_Component       
         a_LocalController = cell(0,1)          
         
-        rm_odeMass       
-        fv_odeDiff       
-        fv_odeY
+        f_Mass       
+        f_dx       
+        f_Y
 
         JacobiAxx        
         JacobiBxv        
@@ -53,8 +53,8 @@ classdef LocalController < PowerSystemModel
         isController (1,1) logical = false
     end    
     properties(SetAccess=protected)
-        cv_Xequilibrium (:,1) double = zeros(0,1)   
-        cv_Uequilibrium (:,1) double = zeros(0,1)   
+        rv_Xequilibrium (:,1) double = zeros(0,1)   
+        rv_Uequilibrium (:,1) double = zeros(0,1)   
     end    
 
     properties(SetAccess=protected)

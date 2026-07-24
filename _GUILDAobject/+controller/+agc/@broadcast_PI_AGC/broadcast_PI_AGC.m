@@ -2,10 +2,10 @@ classdef broadcast_PI_AGC < GlobalController
 
     properties (Constant, Hidden)
         key   = "agc"
-        str_x = "xi"
-        str_u = "omega"
-        str_y = "Pmech"
-        str_para = ["alpha","beta","kP","kI"]
+        sv_x = "xi"
+        sv_u = "omega"
+        sv_y = "Pmech"
+        sv_para = ["alpha","beta","kP","kI"]
     end           
     
     methods
@@ -39,11 +39,11 @@ classdef broadcast_PI_AGC < GlobalController
         end
 
         function set_odefcn(obj, omega0)
-            param = obj.tab_parameter.dynamics{:,obj.str_para};
+            param = obj.tab_parameter.dynamics{:,obj.sv_para};
 
-            obj.fv_odeDiff = @(t,x,V,I,u) obj.fcn_dx(t,x,V,I,u,param,omega0);
-            obj.fv_odeY    = @(t,x,V,I,u) obj.fcn_y(t,x,V,I,u,param,omega0);
-            obj.rm_odeMass = @(t,x,V,I,u) obj.fcn_Mass(t,x,V,I,u,param,omega0);
+            obj.f_dx = @(t,x,V,I,u) obj.fcn_dx(t,x,V,I,u,param,omega0);
+            obj.f_Y    = @(t,x,V,I,u) obj.fcn_y(t,x,V,I,u,param,omega0);
+            obj.f_Mass = @(t,x,V,I,u) obj.fcn_Mass(t,x,V,I,u,param,omega0);
 
             obj.JacobiAxx = @(t,x,V,I,u) obj.getJacobiAxx(t,x,V,I,u,param,omega0);
             obj.JacobiBxv = @(t,x,V,I,u) obj.getJacobiBxv(t,x,V,I,u,param,omega0);
@@ -56,10 +56,10 @@ classdef broadcast_PI_AGC < GlobalController
             obj.JacobiDyu = @(t,x,V,I,u) obj.getJacobiDyu(t,x,V,I,u,param,omega0);
         end
 
-        function [cv_Xequilibrium, cv_Uequilibrium] = get_equilibrium(obj)
+        function [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj)
             nCU = numel(obj.controlledUnits);
-            cv_Xequilibrium = 0;
-            cv_Uequilibrium = zeros(nCU,1);
+            rv_Xequilibrium = 0;
+            rv_Uequilibrium = zeros(nCU,1);
         end
 
         function dx = fcn_dx(obj, t, x, V, I, u, param, omega0) %#ok

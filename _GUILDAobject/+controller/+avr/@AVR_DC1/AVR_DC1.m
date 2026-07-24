@@ -31,18 +31,18 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.base
                                             "tst", param.tst    , "double");                       
 
             obj.key      = "avr";
-            obj.str_x    = ["Vtr";"Vap"; "Vfld"; "Vst"];
-            obj.str_u    = ["Vref";"Vpss"];   
-            obj.str_y    = "Vfield";
-            obj.str_para = ["ttr"; "Vap_max"; "Vap_min"; "kap"; "tap"; "aex1"; "aex2"; "tex"; "bex"; "kst"; "tst"];
+            obj.sv_x    = ["Vtr";"Vap"; "Vfld"; "Vst"];
+            obj.sv_u    = ["Vref";"Vpss"];   
+            obj.sv_y    = "Vfield";
+            obj.sv_para = ["ttr"; "Vap_max"; "Vap_min"; "kap"; "tap"; "aex1"; "aex2"; "tex"; "bex"; "kst"; "tst"];
 
         end        
 
         function set_odefcn(obj, omega0)            
-            params = obj.tab_parameter.dynamics{:,obj.str_para}.';
-            obj.fv_odeDiff = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, params, omega0);            
-            obj.rm_odeMass = @(t,x,V,I,u) obj.fcn_Mass(t, x, V, I, u, params, omega0);
-            obj.fv_odeY    = @(t,x,V,I,u) obj.fcn_y(t, x, V, I, u, params, omega0);
+            params = obj.tab_parameter.dynamics{:,obj.sv_para}.';
+            obj.f_dx = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, params, omega0);            
+            obj.f_Mass = @(t,x,V,I,u) obj.fcn_Mass(t, x, V, I, u, params, omega0);
+            obj.f_Y    = @(t,x,V,I,u) obj.fcn_y(t, x, V, I, u, params, omega0);
 
             obj.JacobiAxx = @(t,x,V,I,u) getJacobiAxx(t, x, V, I, u, params, omega0);
             obj.JacobiBxv = @(t,x,V,I,u) getJacobiBxv(t, x, V, I, u, params, omega0);
@@ -76,8 +76,8 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.base
             Vst_st  = 0;
             Vpss_st = 0;
 
-            obj.cv_Xequilibrium = [Vtr_st; Vap_st; Vfld_st; Vst_st];
-            obj.cv_Uequilibrium = [Vref_st;Vpss_st];            
+            obj.rv_Xequilibrium = [Vtr_st; Vap_st; Vfld_st; Vst_st];
+            obj.rv_Uequilibrium = [Vref_st;Vpss_st];            
 
             obj.c_Vequilibrium = V;
             obj.c_Iequilibrium = [];

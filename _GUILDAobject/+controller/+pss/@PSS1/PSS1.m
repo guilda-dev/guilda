@@ -26,17 +26,17 @@ classdef (Sealed = true) PSS1 < controller.pss.base
                                        "Vpss_min", param.Vpss_min, "double");          
 
             obj.key      = "pss";
-            obj.str_x    = ["xiWS"; "xi1"; "xi2"];
-            obj.str_u    = "omega";   
-            obj.str_y    = "Vpss";
-            obj.str_para = ["kpss"; "tWS"; "tn1"; "td1"; "tn2"; "td2"; "Vpss_min"; "Vpss_max"];
+            obj.sv_x    = ["xiWS"; "xi1"; "xi2"];
+            obj.sv_u    = "omega";   
+            obj.sv_y    = "Vpss";
+            obj.sv_para = ["kpss"; "tWS"; "tn1"; "td1"; "tn2"; "td2"; "Vpss_min"; "Vpss_max"];
 
         end        
         function set_odefcn(obj, omega0)
-            params = obj.tab_parameter.dynamics{:,obj.str_para};
-            obj.fv_odeDiff = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, params, omega0);            
-            obj.rm_odeMass = @(t,x,V,I,u) obj.fcn_Mass(t, x, V, I, u, params, omega0);
-            obj.fv_odeY    = @(t,x,V,I,u) obj.fcn_y(t, x, V, I, u, params, omega0);
+            params = obj.tab_parameter.dynamics{:,obj.sv_para};
+            obj.f_dx = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, params, omega0);            
+            obj.f_Mass = @(t,x,V,I,u) obj.fcn_Mass(t, x, V, I, u, params, omega0);
+            obj.f_Y    = @(t,x,V,I,u) obj.fcn_y(t, x, V, I, u, params, omega0);
 
             obj.JacobiAxx = @(t,x,V,I,u) getJacobiAxx(t, x, V, I, u, params, omega0);
             obj.JacobiBxv = @(t,x,V,I,u) getJacobiBxv(t, x, V, I, u, params, omega0);
@@ -50,8 +50,8 @@ classdef (Sealed = true) PSS1 < controller.pss.base
 
         end
         function get_equilibrium(obj, V, u) %#ok
-            obj.cv_Xequilibrium = zeros(3,1);
-            obj.cv_Uequilibrium = 0;
+            obj.rv_Xequilibrium = zeros(3,1);
+            obj.rv_Uequilibrium = 0;
         end
     end
 

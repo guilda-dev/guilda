@@ -26,7 +26,7 @@ function [Mass, x0] = reset_odeset(obj)
 
     if ~isempty(obj.a_GlobalController)
         gcon = obj.a_GlobalController{1};
-        [gcon.cv_Xequilibrium, gcon.cv_Uequilibrium] = gcon.get_equilibrium;
+        [gcon.rv_Xequilibrium, gcon.rv_Uequilibrium] = gcon.get_equilibrium;
         gcon.set_odefcn(omega0);
     end
 end

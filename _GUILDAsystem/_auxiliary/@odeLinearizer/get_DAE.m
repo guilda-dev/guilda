@@ -147,11 +147,11 @@ function [A_dae, B_dae, C_dae, D_dae, E_dae] = get_DAE(obj,opt)
         for argi = 1:numel(bus)
             COMP = bus{argi}.a_Component;
                           
-            str_x = cell2mat( cellfun(@(C) C.attach_tag(C.str_x), COMP, 'UniformOutput', false) );
-            str_u = cell2mat( cellfun(@(C) C.attach_tag(C.str_u), COMP, 'UniformOutput', false) );                                                      
+            sv_x = cell2mat( cellfun(@(C) C.attach_tag(C.sv_x), COMP, 'UniformOutput', false) );
+            sv_u = cell2mat( cellfun(@(C) C.attach_tag(C.sv_u), COMP, 'UniformOutput', false) );                                                      
 
-            input{argi}  = str_u;
-            output{argi} = str_x;
+            input{argi}  = sv_u;
+            output{argi} = sv_x;
         end
 
         input  = cell2mat(input);

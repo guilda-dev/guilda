@@ -117,7 +117,7 @@ classdef PowerNetwork < PowerSystemModel
     properties(Dependent) 
         cv_Vequilibrium         % Steady State
         cv_Iequilibrium         % Steady State
-        cv_Xequilibrium         % Steady State
+        rv_Xequilibrium         % Steady State
         tab_parameter           % Parameter
     end
     properties(Hidden,SetAccess=protected)
@@ -201,10 +201,10 @@ classdef PowerNetwork < PowerSystemModel
         function I = get.cv_Iequilibrium(obj)
             I = tools.vcellfun(@(b) b.c_Iequilibrium, obj.a_Bus);
         end
-        function x = get.cv_Xequilibrium(obj)
-            x_bus = tools.vcellfun(@(b) b.cv_Xequilibrium_all, obj.a_Bus);
-            x_bra = tools.vcellfun(@(b) b.cv_Xequilibrium, obj.a_Branch);
-            x_con = tools.vcellfun(@(c) c.cv_Xequilibrium, obj.a_GlobalController);
+        function x = get.rv_Xequilibrium(obj)
+            x_bus = tools.vcellfun(@(b) b.rv_Xequilibrium_all, obj.a_Bus);
+            x_bra = tools.vcellfun(@(b) b.rv_Xequilibrium, obj.a_Branch);
+            x_con = tools.vcellfun(@(c) c.rv_Xequilibrium, obj.a_GlobalController);
             x = [x_bus; x_bra; x_con];
         end
     end

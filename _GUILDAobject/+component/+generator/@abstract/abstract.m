@@ -6,14 +6,14 @@ classdef abstract < Component
             obj.para_powerflow.Q = nan;
             
             if istable(parameter)
-                mp = parameter(:,obj.str_para);             
+                mp = parameter(:,obj.sv_para);             
             else 
                 datapath = fullfile(fileparts(mfilename("fullpath")), "parameter.csv");
                 dataset  = readtable(datapath);                
                 if ischar(parameter) || isstring(parameter)                
-                    mp = dataset(string(parameter)==["NGT2";"NGT6";"NGT8"],obj.str_para);
+                    mp = dataset(string(parameter)==["NGT2";"NGT6";"NGT8"],obj.sv_para);
                 else
-                    mp = dataset(1,obj.str_para);
+                    mp = dataset(1,obj.sv_para);
                 end
             end
             

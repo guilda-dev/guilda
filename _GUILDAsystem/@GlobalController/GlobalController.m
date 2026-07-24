@@ -1,10 +1,10 @@
 classdef GlobalController < PowerSystemModel
     properties(Abstract, Constant, Hidden=true)
         key      (1,1) string 
-        str_x    (:,1) string
-        str_u    (:,1) string 
-        str_y    (:,1) string
-        str_para (:,1) string
+        sv_x    (:,1) string
+        sv_u    (:,1) string 
+        sv_y    (:,1) string
+        sv_para (:,1) string
     end
     methods (Abstract)        
         dx = fcn_dx(obj, t, x, V, I, u, param, omega0)
@@ -14,9 +14,9 @@ classdef GlobalController < PowerSystemModel
         set_odefcn(obj,omega0)
     end       
     properties(SetAccess=protected)                   
-        rm_odeMass       
-        fv_odeDiff       
-        fv_odeY
+        f_Mass       
+        f_dx       
+        f_Y
 
         JacobiAxx        
         JacobiBxv        
@@ -50,8 +50,8 @@ classdef GlobalController < PowerSystemModel
         isConnect (1,1) logical = true
     end        
     properties(SetAccess={?PowerNetwork})
-        cv_Xequilibrium (:,1) double = zeros(0,1)   
-        cv_Uequilibrium (:,1) double = zeros(0,1)   
+        rv_Xequilibrium (:,1) double = zeros(0,1)   
+        rv_Uequilibrium (:,1) double = zeros(0,1)   
     end    
     properties(SetAccess=protected)
         para_dynamics
@@ -94,10 +94,10 @@ classdef GlobalController < PowerSystemModel
         function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
             arguments
                 obj                 
-                x        (:,1) double  = obj.cv_Xequilibrium
+                x        (:,1) double  = obj.rv_Xequilibrium
                 V        (:,1) double  = zeros(2,1)
                 I        (:,1) double  = zeros(2,1)
-                u        (:,1) double  = obj.cv_Uequilibrium
+                u        (:,1) double  = obj.rv_Uequilibrium
                 opt.full (1,1) logical = true 
             end
 
@@ -107,14 +107,14 @@ classdef GlobalController < PowerSystemModel
             C = obj.JacobiCyx(0,x,V,I,u);
             D = [obj.JacobiDyv(0,x,V,I,u),obj.JacobiDyu(0,x,V,I,u)];            
 
-            E = obj.rm_odeMass(0,x,V,I,u);
+            E = obj.f_Mass(0,x,V,I,u);
 
             sys = dss(A,B,C,D,E);
 
             a_Comp = obj.controlledUnits;            
-            xNames = obj.attach_tag(obj.str_x);
-            uNames = cellfun(@(s) s.attach_tag(s.str_y), a_Comp);
-            yNames = cellfun(@(s) s.attach_tag(s.str_u(s.str_u==obj.str_y)), a_Comp);
+            xNames = obj.attach_tag(obj.sv_x);
+            uNames = cellfun(@(s) s.attach_tag(s.sv_y), a_Comp);
+            yNames = cellfun(@(s) s.attach_tag(s.sv_u(s.sv_u==obj.sv_y)), a_Comp);
 
             sys.StateName  = xNames;
             sys.InputName  = uNames;

@@ -109,7 +109,7 @@ classdef (Sealed = true) odeEventSet < handle
             if ~isempty(obj.odeNetwork.a_GlobalController)
                 a_GC = obj.odeNetwork.a_GlobalController{1};                
                 sv_tag = [sv_tag; {a_GC.str_tag}];
-                rv_rep = [rv_rep; {numel(a_GC.str_x)}];
+                rv_rep = [rv_rep; {numel(a_GC.sv_x)}];
             end
 
             obj.sv_Btag = string(net.a_Bus);
@@ -226,16 +226,16 @@ classdef (Sealed = true) odeEventSet < handle
                     l_osU = ismember(osU, c_tag);
                     l_inU = ismember(inU, c_tag);                    
                     
-                    comp{j}.X_offset = zeros(size(comp{j}.str_x(:)));                                       
+                    comp{j}.X_offset = zeros(size(comp{j}.sv_x(:)));                                       
 
                     if any(l_osU)
-                        lv_X = ismember(comp{j}.str_x, osX{l_osU});                        
+                        lv_X = ismember(comp{j}.sv_x, osX{l_osU});                        
                         comp{j}.X_offset(lv_X) = comp{j}.X_offset(lv_X) + osV{l_osU};
                     end                    
 
-                    ini = repmat({@(t) 0}, size(comp{j}.str_u(:)));
+                    ini = repmat({@(t) 0}, size(comp{j}.sv_u(:)));
                     if any(l_inU)
-                        l_inN = ismember(comp{j}.str_u, inN{l_inU});                                                
+                        l_inN = ismember(comp{j}.sv_u, inN{l_inU});                                                
                         
                         exV = inV{l_inU};                                                                                                
                         if ~iscell(exV)
@@ -317,8 +317,8 @@ classdef (Sealed = true) odeEventSet < handle
             if ~isempty(obj.odeNetwork.a_GlobalController)
                 a_GC = obj.odeNetwork.a_GlobalController{1};
 
-                rm_M(a_GC.iv_odeX, a_GC.iv_odeX) = a_GC.rm_odeMass([], [], [], [], []);
-                rv_X = [rv_X; {a_GC.cv_Xequilibrium}];                
+                rm_M(a_GC.iv_odeX, a_GC.iv_odeX) = a_GC.f_Mass([], [], [], [], []);
+                rv_X = [rv_X; {a_GC.rv_Xequilibrium}];                
             end            
 
             Btag_all  = repelem(obj.sv_Btag, obj.rv_Brep);
@@ -402,7 +402,7 @@ function [sv_tag, rv_rep] = getTM(OBJs, sv_tag, rv_rep)
 
     for no = 1:numel(OBJs)
         OBJ = OBJs{no};
-        rs_idx = numel([OBJ.str_x; OBJ.str_u]);                
+        rs_idx = numel([OBJ.sv_x; OBJ.sv_u]);                
         
         sv_tag = [sv_tag; OBJ.str_tag]; %#ok
         rv_rep = [rv_rep; rs_idx];      %#ok  
@@ -422,9 +422,9 @@ function [rv_x0, rm_Mass, TC] = getXM(OBJs, rv_x0, rm_Mass, TC)
         nu_idx = numel(OBJ.iv_odeU); 
         
         OBJ.isConnect = ~ismember(OBJ.str_tag, TC);  
-        rv_x0 = [rv_x0; OBJ.cv_Xequilibrium + OBJ.X_offset; OBJ.cv_Uequilibrium + OBJ.U_offset(0)]; %#ok
+        rv_x0 = [rv_x0; OBJ.rv_Xequilibrium + OBJ.X_offset; OBJ.rv_Uequilibrium + OBJ.U_offset(0)]; %#ok
         
-        rm_Mass(rx_idx, rx_idx) = blkdiag(OBJ.rm_odeMass([],[],[],[],[]), zeros(nu_idx, nu_idx));
+        rm_Mass(rx_idx, rx_idx) = blkdiag(OBJ.f_Mass([],[],[],[],[]), zeros(nu_idx, nu_idx));
 
         if ~isempty(OBJ.a_LocalController)
             a_LC = OBJ.a_LocalController(1);

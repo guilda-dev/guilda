@@ -5,10 +5,10 @@ classdef impedance < component.load.abstract
 
     properties(Constant)
         key      = "load-impedance";
-        str_x    = [];
-        str_u    = ["R";"X"];
-        str_y    = [];
-        str_para = [];
+        sv_x    = [];
+        sv_u    = ["R";"X"];
+        sv_y    = [];
+        sv_para = [];
     end
 
     methods(Access={?Bus})
@@ -18,7 +18,7 @@ classdef impedance < component.load.abstract
     end
 
     methods        
-        [cv_Xequilibrium, cv_Uequilibrium] = get_equilibrium(obj,c_V,c_I,r_P,r_Q)        
+        [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj,c_V,c_I,r_P,r_Q)        
     end
 
     methods

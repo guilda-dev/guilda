@@ -1,10 +1,10 @@
 classdef droop < component.generator.abstract
     properties (Constant)      
         key      = "gen-droop";
-        str_x    = "delta";        
-        str_u    = ["Pmech";"Vfield"];        
-        str_y    = string.empty(0,1)        
-        str_para = ["D","Xd","Xq"]        
+        sv_x    = "delta";        
+        sv_u    = ["Pmech";"Vfield"];        
+        sv_y    = string.empty(0,1)        
+        sv_para = ["D","Xd","Xq"]        
     end
     methods        
         dx = fcn_dx(obj, t, x, V, I, u, param, omega0)
@@ -14,7 +14,7 @@ classdef droop < component.generator.abstract
     end
 
     methods        
-        [cv_Xequilibrium, cv_Uequilibrium] = get_equilibrium(obj, c_V, c_I)
+        [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj, c_V, c_I)
     end
 
     methods (Static)

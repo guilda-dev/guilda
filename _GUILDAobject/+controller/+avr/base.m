@@ -1,10 +1,10 @@
 classdef base < LocalController
     properties (SetAccess=protected, Hidden)
         key      
-        str_x    
-        str_u = ["Vref";"Vpss"]   
-        str_y = ["Vfield"]    
-        str_para 
+        sv_x    
+        sv_u = ["Vref";"Vpss"]   
+        sv_y = ["Vfield"]    
+        sv_para 
     end    
     methods
         function obj = base(tag) 
@@ -16,9 +16,9 @@ classdef base < LocalController
 
         function set_odefcn(obj, omega0) %#ok           
 
-            obj.fv_odeDiff = @(t, x, V, u) [];
-            obj.rm_odeMass = @(t, x, V, u) [];
-            obj.fv_odeY    = @(t, x, V, u) obj.cv_Xequilibrium(3);
+            obj.f_dx = @(t, x, V, u) [];
+            obj.f_Mass = @(t, x, V, u) [];
+            obj.f_Y    = @(t, x, V, u) obj.rv_Xequilibrium(3);
 
             obj.JacobiAxx = @(t, x, V, u) [];
             obj.JacobiBxv = @(t, x, V, u) [];
@@ -31,8 +31,8 @@ classdef base < LocalController
         end
 
         function get_equilibrium(obj, V, u) %#ok                              
-            obj.cv_Xequilibrium = u(2);
-            obj.cv_Uequilibrium = [];
+            obj.rv_Xequilibrium = u(2);
+            obj.rv_Uequilibrium = [];
         end
         
         function set_PSS(obj, cls) %#ok

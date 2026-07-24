@@ -18,7 +18,7 @@ function sys = get_sys(obj, opt)
     E = tools.cellfun(@(ss) ss.E, sys);
 
     StateNames = tools.cellfun(@(ss) ss.StateName , sys);
-    InputNames = tools.cellfun(@(c) c.attach_tag(c.str_u), obj.a_Component);    
+    InputNames = tools.cellfun(@(c) c.attach_tag(c.sv_u), obj.a_Component);    
 
     Vport = arrayfun(@(str) obj.attach_tag(str), ["Vre";"Vim"]);
     Iport = arrayfun(@(str) obj.attach_tag(str), ["Ire";"Iim"]);

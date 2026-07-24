@@ -55,7 +55,7 @@ function add_entry(obj,names,defaults,valids)
         default = defaults{i};
         valid   = valids{i};
         
-        obj.str_parameter   = [obj.str_parameter,name];
+        obj.sv_parameter   = [obj.sv_parameter,name];
         dprop               = obj.addprop( name );
         dprop.SetObservable = true;
         obj.(name)          = default;

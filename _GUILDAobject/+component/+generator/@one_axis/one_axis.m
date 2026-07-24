@@ -1,14 +1,14 @@
 classdef one_axis < component.generator.abstract
     properties (Constant)        
         key      = "gen-1axis";
-        str_x    = ["delta";"omega";"Eq"];        
-        str_u    = ["Pmech";"Vfield"];        
-        str_y    = ["omega"];        
-        str_para = ["M";"D";"Xd";"Xq";"Xd_p";"Td_p"]
+        sv_x    = ["delta";"omega";"Eq"];        
+        sv_u    = ["Pmech";"Vfield"];        
+        sv_y    = ["omega"];        
+        sv_para = ["M";"D";"Xd";"Xq";"Xd_p";"Td_p"]
     end        
 
     methods        
-        [cv_Xequilibrium, cv_Uequilibrium] = get_equilibrium(obj, c_V, c_I, r_P, r_Q)       
+        [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj, c_V, c_I, r_P, r_Q)       
     end        
     methods
         dx = fcn_dx(obj,t,x,V,I,u,para,omega0)

@@ -1,10 +1,10 @@
 function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     arguments
         obj 
-        x        (:,1) double = obj.cv_Xequilibrium
+        x        (:,1) double = obj.rv_Xequilibrium
         V        (:,1) double = [real(obj.c_Vequilibrium); imag(obj.c_Vequilibrium)]
         I        (:,1) double = [real(obj.c_Iequilibrium); imag(obj.c_Iequilibrium)]
-        u        (:,1) double = obj.cv_Uequilibrium                        
+        u        (:,1) double = obj.rv_Uequilibrium                        
         opt.port (1,1) {mustBeMember(opt.port, ["V2I", "I2V"])} = "V2I"
         opt.full (1,1) logical = true
         opt.tag  (1,1) logical = true
@@ -34,14 +34,14 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         return
     end
     
-    xNames = {obj.str_x; obj.attach_tag(obj.str_x)};
-    uNames = {obj.str_u; obj.attach_tag(obj.str_u)};    
-    yNames = {obj.str_y; obj.attach_tag(obj.str_y)};    
+    xNames = {obj.sv_x; obj.attach_tag(obj.sv_x)};
+    uNames = {obj.sv_u; obj.attach_tag(obj.sv_u)};    
+    yNames = {obj.sv_y; obj.attach_tag(obj.sv_y)};    
 
     Vport  = {["Vre";"Vim"]; obj.attach_tag(["Vre";"Vim"])};
     Iport  = {["Ire";"Iim"]; obj.attach_tag(["Ire";"Iim"])};    
 
-    Mass = obj.rm_odeMass([],x,V,I,u);
+    Mass = obj.f_Mass([],x,V,I,u);
 
     Axx = obj.JacobiAxx([],x,V,I,u);
     Bxv = obj.JacobiBxv([],x,V,I,u);    
