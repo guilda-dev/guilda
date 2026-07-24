@@ -16,18 +16,9 @@ classdef one_axis < component.generator.abstract
         y  = fcn_Y(obj,t,x,V,I,u,para,omega0)
         M  = fcn_Mass(obj,t,x,V,I,u,para,omega0)
     end
-    methods (Static)
-        Axx = getJacobiAxx(t, x, V, I, u, param, omega0)
-        Bxv = getJacobiBxv(t, x, V, I, u, param, omega0)
-        Bxi = getJacobiBxi(t, x, V, I, u, param, omega0)
-        Bxu = getJacobiBxu(t, x, V, I, u, param, omega0)
-        Cyx = getJacobiCyx(t, x, V, I, u, param, omega0)
-        Dyv = getJacobiDyv(t, x, V, I, u, param, omega0)
-        Dyi = getJacobiDyi(t, x, V, I, u, param, omega0)
-        Dyu = getJacobiDyu(t, x, V, I, u, param, omega0)
-        Cix = getJacobiCix(t, x, V, I, u, param, omega0)
-        Div = getJacobiDiv(t, x, V, I, u, param, omega0)
-        Dii = getJacobiDii(t, x, V, I, u, param, omega0)
-        Diu = getJacobiDiu(t, x, V, I, u, param, omega0)
+    methods (Static)        
+        [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0);
+        [Cyx,Dyv,Dyi,Dyu] = Jacobi_y(t,x,V,I,u,param,omega0);
+        [Cix,Div,Dii,Diu] = Jacobi_I(t,x,V,I,u,param,omega0);
     end
 end
