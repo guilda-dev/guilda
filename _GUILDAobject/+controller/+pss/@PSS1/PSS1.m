@@ -31,24 +31,10 @@ classdef (Sealed = true) PSS1 < controller.pss.base
             obj.sv_y    = "Vpss";
             obj.sv_para = ["kpss"; "tWS"; "tn1"; "td1"; "tn2"; "td2"; "Vpss_min"; "Vpss_max"];
 
+            obj.set_odefcn(60);
+
         end        
-        function set_odefcn(obj, omega0)
-            params = obj.tab_parameter.dynamics{:,obj.sv_para};
-            obj.f_dx = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, params, omega0);            
-            obj.f_Mass = @(t,x,V,I,u) obj.fcn_Mass(t, x, V, I, u, params, omega0);
-            obj.f_Y    = @(t,x,V,I,u) obj.fcn_y(t, x, V, I, u, params, omega0);
-
-            obj.JacobiAxx = @(t,x,V,I,u) getJacobiAxx(t, x, V, I, u, params, omega0);
-            obj.JacobiBxv = @(t,x,V,I,u) getJacobiBxv(t, x, V, I, u, params, omega0);
-            obj.JacobiBxi = @(t,x,V,I,u) getJacobiBxi(t, x, V, I, u, params, omega0);
-            obj.JacobiBxu = @(t,x,V,I,u) getJacobiBxu(t, x, V, I, u, params, omega0);
-
-            obj.JacobiCyx = @(t,x,V,I,u) getJacobiCyx(t, x, V, I, u, params, omega0);
-            obj.JacobiDyv = @(t,x,V,I,u) getJacobiDyv(t, x, V, I, u, params, omega0);            
-            obj.JacobiDyi = @(t,x,V,I,u) getJacobiDyi(t, x, V, I, u, params, omega0);
-            obj.JacobiDyu = @(t,x,V,I,u) getJacobiDyu(t, x, V, I, u, params, omega0);
-
-        end
+        
         function get_equilibrium(obj, V, u) %#ok
             obj.rv_Xequilibrium = zeros(3,1);
             obj.rv_Uequilibrium = 0;
@@ -59,5 +45,9 @@ classdef (Sealed = true) PSS1 < controller.pss.base
         dx = fcn_dx(obj, t, x, V, I, u, para, omega0)
         y  = fcn_y(obj, t, x, V, I, u, para, omega0)
         M  = fcn_Mass(obj, t, x, V, I, u, para, omega0)
+    end
+    methods (Static)
+        [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0)
+        [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t,x,V,I,u,param,omega0)
     end
 end

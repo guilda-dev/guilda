@@ -13,8 +13,6 @@ classdef LocalController < PowerSystemModel
         dx = fcn_dx(obj, t, x, V, u, param, omega0)
         y  = fcn_y(obj, t, x, V, u, param, omega0)
         M  = fcn_Mass(obj, t, x, V, u, param, omega0)
-
-        set_odefcn(obj,omega0)
     end   
     
 %% Parameter    
@@ -26,20 +24,8 @@ classdef LocalController < PowerSystemModel
         f_dx       
         f_Y
 
-        JacobiAxx        
-        JacobiBxv        
-        JacobiBxi        
-        JacobiBxu        
-
-        JacobiCix = @(t,x,V,I,u)[]        
-        JacobiDiv = @(t,x,V,I,u)[]                
-        JacobiDii = @(t,x,V,I,u)[]                
-        JacobiDiu = @(t,x,V,I,u)[]               
-        
-        JacobiCyx        
-        JacobiDyv        
-        JacobiDyi        
-        JacobiDyu        
+        f_JacobiDx        
+        f_JacobiY        
     end    
     properties (SetAccess={?odeSimulator, ?odeEventSet}, Hidden)
         iv_odeX  = zeros(0,1);
@@ -82,7 +68,7 @@ classdef LocalController < PowerSystemModel
     end    
 
 %% Methods    
-    methods %(Access={?Component,?LocalController})
+    methods (Access={?Component,?LocalController})
         function add_local_controller(obj,a_Controller)
             obj.a_LocalController = {a_Controller};
             obj.l_hasController = true;
@@ -96,7 +82,20 @@ classdef LocalController < PowerSystemModel
         [DAEvec, u, y_name] = get_dx_algebraic(obj, t, x, Vi, Ii, u, y_name, DAEvec)                
 
         % get sys
-        [sys, varargout] = get_sys(obj,x,V,I,u,opt)
+        [sys, varargout] = get_sys(obj,x,V,I,u,opt)        
+    end
+
+    methods (Access=protected)
+        function set_odefcn(obj, omega0)            
+            param = obj.tab_parameter.dynamics{:,obj.sv_para}.';
+
+            obj.f_dx   = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, param, omega0);            
+            obj.f_Mass = @(t,x,V,I,u) obj.fcn_Mass(t, x, V, I, u, param, omega0);
+            obj.f_Y    = @(t,x,V,I,u) obj.fcn_y(t, x, V, I, u, param, omega0);
+
+            obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
+            obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
+        end
     end
 
 

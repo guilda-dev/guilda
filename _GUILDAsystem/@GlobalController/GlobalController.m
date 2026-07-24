@@ -10,28 +10,14 @@ classdef GlobalController < PowerSystemModel
         dx = fcn_dx(obj, t, x, V, I, u, param, omega0)
         y  = fcn_y(obj, t, x, V, I, u, param, omega0)
         M  = fcn_Mass(obj, t, x, V, I, u, param, omega0)
-
-        set_odefcn(obj,omega0)
     end       
     properties(SetAccess=protected)                   
         f_Mass       
         f_dx       
         f_Y
 
-        JacobiAxx        
-        JacobiBxv        
-        JacobiBxi
-        JacobiBxu
-
-        JacobiCix = @(t,x,V,I,u)[]               
-        JacobiDiv = @(t,x,V,I,u)[]               
-        JacobiDii = @(t,x,V,I,u)[]               
-        JacobiDiu = @(t,x,V,I,u)[]               
-        
-        JacobiCyx        
-        JacobiDyv
-        JacobiDyi
-        JacobiDyu        
+        f_JacobiDx
+        f_JacobiY                
     end    
     properties (SetAccess=protected)
         PowerNetwork        
@@ -120,7 +106,19 @@ classdef GlobalController < PowerSystemModel
             sys.InputName  = uNames;
             sys.OutputName = yNames;
         end
-    end    
+    end   
+    methods (Access=protected)
+        function set_odefcn(obj, omega0)
+            param = obj.tab_parameter.dynamics{:,obj.sv_para};
+
+            obj.f_dx   = @(t,x,V,I,u) obj.fcn_dx(t,x,V,I,u,param,omega0);
+            obj.f_Y    = @(t,x,V,I,u) obj.fcn_y(t,x,V,I,u,param,omega0);
+            obj.f_Mass = @(t,x,V,I,u) obj.fcn_Mass(t,x,V,I,u,param,omega0);
+            
+            obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
+            obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
+        end
+    end
     methods (Access={?Component,?LocalController})        
         function set_parent(obj,net)
             obj.PowerNetwork = {net}; 

@@ -34,27 +34,11 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.base
             obj.sv_x    = ["Vtr";"Vap"; "Vfld"; "Vst"];
             obj.sv_u    = ["Vref";"Vpss"];   
             obj.sv_y    = "Vfield";
-            obj.sv_para = ["ttr"; "Vap_max"; "Vap_min"; "kap"; "tap"; "aex1"; "aex2"; "tex"; "bex"; "kst"; "tst"];
+            obj.sv_para = ["ttr"; "Vap_max"; "Vap_min"; "kap"; "tap"; "aex1"; "aex2"; "tex"; "bex"; "kst"; "tst"];              
 
+            obj.set_odefcn(60);
         end        
 
-        function set_odefcn(obj, omega0)            
-            params = obj.tab_parameter.dynamics{:,obj.sv_para}.';
-            obj.f_dx = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, params, omega0);            
-            obj.f_Mass = @(t,x,V,I,u) obj.fcn_Mass(t, x, V, I, u, params, omega0);
-            obj.f_Y    = @(t,x,V,I,u) obj.fcn_y(t, x, V, I, u, params, omega0);
-
-            obj.JacobiAxx = @(t,x,V,I,u) getJacobiAxx(t, x, V, I, u, params, omega0);
-            obj.JacobiBxv = @(t,x,V,I,u) getJacobiBxv(t, x, V, I, u, params, omega0);
-            obj.JacobiBxi = @(t,x,V,I,u) getJacobiBxi(t, x, V, I, u, params, omega0);
-            obj.JacobiBxu = @(t,x,V,I,u) getJacobiBxu(t, x, V, I, u, params, omega0);
-
-            obj.JacobiCyx = @(t,x,V,I,u) getJacobiCyx(t, x, V, I, u, params, omega0);
-            obj.JacobiDyv = @(t,x,V,I,u) getJacobiDyv(t, x, V, I, u, params, omega0);            
-            obj.JacobiDyi = @(t,x,V,I,u) getJacobiDyi(t, x, V, I, u, params, omega0);
-            obj.JacobiDyu = @(t,x,V,I,u) getJacobiDyu(t, x, V, I, u, params, omega0);
-
-        end
         function get_equilibrium(obj, V, u)                   
             tab = obj.tab_parameter.dynamics;
             Vap_max = tab{:, 'Vap_max'};
@@ -92,5 +76,11 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.base
         M  = fcn_Mass(obj, t, x, V, I, u, param, omega0)
         dx = fcn_dx(obj, t, x, V, I, u, param, omega0)
         y  = fcn_y(obj, t, x, V, I, u, param, omega0)                
+    end
+
+    methods (Static)
+        [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0)
+        [Cix,Div,Dii,Diu] = Jacobi_I(t,x,V,I,u,param,omega0)
+        [Cyx,Dyv,Dyi,Dyu] = Jacobi_y(t,x,V,I,u,param,omega0)
     end
 end

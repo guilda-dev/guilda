@@ -11,24 +11,8 @@ classdef base < LocalController
             arguments
                 tag = "base"
             end
-            obj@LocalController("CA"+tag)                                                                           
-        end        
-
-        function set_odefcn(obj, omega0) %#ok           
-
-            obj.f_dx = @(t, x, V, u) [];
-            obj.f_Mass = @(t, x, V, u) [];
-            obj.f_Y    = @(t, x, V, u) obj.rv_Xequilibrium(3);
-
-            obj.JacobiAxx = @(t, x, V, u) [];
-            obj.JacobiBxv = @(t, x, V, u) [];
-            obj.JacobiBxu = @(t, x, V, u) [];
-
-            obj.JacobiCyx = @(t, x, V, u) [];
-            obj.JacobiDyv = @(t, x, V, u) zeros(1,2);
-            obj.JacobiDyu = @(t, x, V, u) zeros(1,2);
-
-        end
+            obj@LocalController("CA"+tag)                                                                                           
+        end                
 
         function get_equilibrium(obj, V, u) %#ok                              
             obj.rv_Xequilibrium = u(2);

@@ -11,6 +11,11 @@ function [flag,tab_PFsol,output] = initialize(obj, options)
         case "optimal powerflow"
             [tab_PFsol, output, flag] = optimize_powerflow(obj,"methods","AC OPF");
     end
+
+    if ~isempty(obj.a_GlobalController)        
+        a_GC = obj.a_GlobalController{1};
+        [a_GC.rv_Xequilibrium, a_GC.rv_Uequilibrium] = a_GC.get_equilibrium();
+    end
     
     % distribute Qcomponent
     for i_bus = 1:numel(obj.a_Bus)
@@ -20,7 +25,7 @@ function [flag,tab_PFsol,output] = initialize(obj, options)
         r_Pbus = rr_PFsol(3);
         r_Qbus = rr_PFsol(4);
         obj.a_Bus{i_bus}.set_equilibrium(c_Vbus,c_Ibus,r_Pbus,r_Qbus)
-    end
+    end    
 
     % reset log
     obj.reset_edit()

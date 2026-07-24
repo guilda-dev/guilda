@@ -1,5 +1,4 @@
-function Axx = getJacobiAxx(t, x, V, I, u, param, omega0) %#ok    
-
+function [Axx,Bxv,Bxi,Bxu] = Jaocbi_dx(t,x,V,I,u,param,omega0) %#ok
     Vtr  = x(1);
     Vap  = x(2);
     Vfld = x(3);
@@ -31,5 +30,24 @@ function Axx = getJacobiAxx(t, x, V, I, u, param, omega0) %#ok
     Axx(3,[2,3]) = [1, -aex1 - aex2 * exp_part * (1 + bex * Vfld)];         
     
     Axx(4,4) = -1; 
+
+    Vre  = V(1);
+    Vim  = V(2);
     
+    Vabs = sqrt(Vre^2 + Vim^2);
+    dVabs_dVre = Vre / Vabs;
+    dVabs_dVim = Vim / Vabs;
+
+    Bxv = zeros(4, 2);
+    
+    Bxv(1,[1,2]) = [dVabs_dVre,dVabs_dVim];      
+
+    nx  = numel(x);
+    Bxi = zeros(nx,2);
+    
+    nu = numel(u);    
+
+    Bxu = zeros(nx,nu);
+
+    Bxu(2,[1,2]) = [kap,kap]*( tools.heaviside(Vap - Vap_min) - tools.heaviside(Vap - Vap_max) );
 end

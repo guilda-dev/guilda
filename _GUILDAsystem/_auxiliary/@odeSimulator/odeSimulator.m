@@ -204,7 +204,9 @@ classdef (Sealed = true) odeSimulator < auxiliary
                 x_GC = x(a_GC.iv_odeX);
                 u_GC = x(a_GC.iv_odeU);
 
-                [Axx_GC, Bxu_GC, Bxv_GC, Bxi_GC, Cyx_GC, Dyu_GC, Dyv_GC, Dyi_GC, ~, ~, ~, ~] = getSubJacobian(a_GC, t, x_GC, [], [], u_GC);                
+                % [Axx_GC, Bxu_GC, Bxv_GC, Bxi_GC, Cyx_GC, Dyu_GC, Dyv_GC, Dyi_GC, ~, ~, ~, ~] = getSubJacobian(a_GC, t, x_GC, [], [], u_GC);                
+                [Axx_GC, Bxv_GC, Bxi_GC, Bxu_GC] = a_GC.f_JacobiDx(t,x_GC,[],[],u_GC);
+                [Cyx_GC, Dyv_GC, Dyi_GC, Dyu_GC] = a_GC.f_JacobiY(t,x_GC,[],[],u_GC);                                              
 
                 odeJac(lv_GC, lh_GC) = odeJac(lv_GC, lh_GC) + [  Axx_GC,   Bxv_GC,   Bxu_GC,  Bxi_GC;
                                                                 -Cyx_GC,  -Dyv_GC,  -Dyu_GC, -Dyi_GC];
@@ -230,7 +232,10 @@ classdef (Sealed = true) odeSimulator < auxiliary
                     xi = x(idx_X);        
                     ui = x(idx_U);                 
 
-                    [Axx, Bxu, Bxv, Bxi, Cyx, Dyu, Dyv, Dyi, Cix, Diu, Div, Dii] = getSubJacobian(cj,t,xi,Vi,Ii,ui);
+                    % [Axx, Bxu, Bxv, Bxi, Cyx, Dyu, Dyv, Dyi, Cix, Diu, Div, Dii] = getSubJacobian(cj,t,xi,Vi,Ii,ui);
+                    [Axx, Bxv, Bxi, Bxu] = cj.f_JacobiDx(t,xi,Vi,Ii,ui);
+                    [Cix, Div, Dii, Diu] = cj.f_JacobiI(t,xi,Vi,Ii,ui);
+                    [Cyx, Dyv, Dyi, Dyu] = cj.f_JacobiY(t,xi,Vi,Ii,ui);
 
                     rh = [idx_X; idx_U; idx_V; idx_I];
                     rv = [idx_X; idx_V];
@@ -248,7 +253,10 @@ classdef (Sealed = true) odeSimulator < auxiliary
                             xi_LC2 = x(idx_X_LC2);                            
                             ui_LC2 = x(idx_U_LC2);                                                        
 
-                            [Axx_LC2, Bxu_LC2, Bxv_LC2, Bxi_LC2, Cyx_LC2, Dyu_LC2, Dyv_LC2, Dyi_LC2, ~, ~, ~, ~] = getSubJacobian(a_LC2, t, xi_LC2, Vi, Ii, ui_LC2);                                                                            
+                            % [Axx_LC2, Bxu_LC2, Bxv_LC2, Bxi_LC2, Cyx_LC2, Dyu_LC2, Dyv_LC2, Dyi_LC2, ~, ~, ~, ~] = getSubJacobian(a_LC2, t, xi_LC2, Vi, Ii, ui_LC2);                                                                            
+                            % [Cix, Div, Dii, Diu] = cj.f_JacobiI(t,xi,Vi,Ii,ui);         
+                            [Axx_LC2, Bxv_LC2, Bxi_LC2, Bxu_LC2] = a_LC2.f_JacobiDx(t,xi_LC2,Vi,Ii,ui_LC2);
+                            [Cyx_LC2, Dyv_LC2, Dyi_LC2, Dyu_LC2] = a_LC2.f_JacobiY(t,xi_LC2,Vi,Ii,ui_LC2);                                              
                             
                             rh_LC2 = [idx_X_LC2; idx_U_LC2; idx_V; idx_I];
                             rv_LC2 = [idx_X_LC2; idx_Y_LC2];
@@ -271,7 +279,9 @@ classdef (Sealed = true) odeSimulator < auxiliary
                         xi_LC1 = x(idx_X_LC1);
                         ui_LC1 = x(idx_U_LC1);                                      
 
-                        [Axx_LC1, Bxu_LC1, Bxv_LC1, Bxi_LC1, Cyx_LC1, Dyu_LC1, Dyv_LC1, Dyi_LC1, ~, ~, ~, ~] = getSubJacobian(a_LC1, t, xi_LC1, Vi, Ii, ui_LC1);                                                
+                        % [Axx_LC1, Bxu_LC1, Bxv_LC1, Bxi_LC1, Cyx_LC1, Dyu_LC1, Dyv_LC1, Dyi_LC1, ~, ~, ~, ~] = getSubJacobian(a_LC1, t, xi_LC1, Vi, Ii, ui_LC1);                                                
+                        [Axx_LC1, Bxv_LC1, Bxi_LC1, Bxu_LC1] = a_LC1.f_JacobiDx(t,xi_LC1,Vi,Ii,ui_LC1);
+                        [Cyx_LC1, Dyv_LC1, Dyi_LC1, Dyu_LC1] = a_LC1.f_JacobiY(t,xi_LC1,Vi,Ii,ui_LC1);                                              
                         
                         rh_LC1 = [idx_X_LC1; idx_U_LC1; idx_V; idx_I];
                         rv_LC1 = [idx_X_LC1; idx_Y_LC1];

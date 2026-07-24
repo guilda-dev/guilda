@@ -1,5 +1,4 @@
-function Cyx = getJacobiCyx(t, x, V, I, u, param, omega0) %#ok
-    
+function [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t,x,V,I,u,param,omega0) %#ok
     kpss = param(1);     
     tn1 = param(3);
     td1 = param(4);
@@ -28,5 +27,15 @@ function Cyx = getJacobiCyx(t, x, V, I, u, param, omega0) %#ok
     Cyx(1,[1,2,3]) = [S * (tn2/td2) * dv1_dxiWS, ...
                       S * (tn2/td2) * dv1_dxi1 , ...
                       S * (-tn2/td2)];
-        
+
+    Dyv = zeros(1,2);
+
+    Dyi = zeros(1,2);
+
+    nu = numel(u);
+    Dyu = zeros(1,nu);   
+
+    Vpl  = tn2*(v1-xi2)/td2;
+
+    Dyu(1,1) = tn1*tn2*kpss/td1/td2 * ( tools.heaviside(Vpl - Vpss_min) - tools.heaviside(Vpl - Vpss_max) );
 end
