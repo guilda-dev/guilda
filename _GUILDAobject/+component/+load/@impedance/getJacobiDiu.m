@@ -1,4 +1,4 @@
-function Diu = getJacobiDiu(t, x, V, I, u, param) %#ok
+function Diu = getJacobiDiu(t, x, V, I, u, param, omega0) %#ok
     Vre = V(1);
     Vim = V(2);    
 
