@@ -63,7 +63,7 @@ classdef Component < PowerSystemModel
     end
     properties (SetAccess={?ContinuationPowerFlow})
         iv_CPFX  = zeros(0,1)                
-        PQ2Bus = @(t,V,u) zeros(2,1)
+        f_PQ2Bus = @(t,V,u) zeros(2,1)
     end
 
     

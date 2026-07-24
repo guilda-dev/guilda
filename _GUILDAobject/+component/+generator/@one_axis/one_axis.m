@@ -21,4 +21,30 @@ classdef one_axis < component.generator.abstract
         [Cyx,Dyv,Dyi,Dyu] = Jacobi_y(t,x,V,I,u,param,omega0);
         [Cix,Div,Dii,Diu] = Jacobi_I(t,x,V,I,u,param,omega0);
     end
+
+    methods
+        function PQ = getCompPQ(obj,x,V,u,para) %#ok
+
+            V = V(1) * exp(1j*V(2));
+            
+            Xq = para(4);
+            Xdp  = para(5);     
+
+            % State
+            delta = x(1);            
+            Eq    = x(3);                            
+
+            % dq-trans
+            Vdq = exp(1j*delta) * conj(V);
+            Vd  = imag(Vdq);
+            Vq  = real(Vdq);
+
+            % Current    
+            Id = Vd/Xq;
+            Iq = (Eq - Vq)/Xdp;
+            PQ = [Vd*Id + Vq*Iq;
+                  Vq*Id - Vd*Iq];
+
+        end
+    end
 end
