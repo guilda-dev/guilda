@@ -117,7 +117,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "str_x",
+      "Name": "sv_x",
       "Defining": "LocalController",
       "GetAccess": "public",
       "SetAccess": "protected",
@@ -139,7 +139,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "str_u",
+      "Name": "sv_u",
       "Defining": "LocalController",
       "GetAccess": "public",
       "SetAccess": "protected",
@@ -161,7 +161,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "str_y",
+      "Name": "sv_y",
       "Defining": "LocalController",
       "GetAccess": "public",
       "SetAccess": "protected",
@@ -183,7 +183,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "str_para",
+      "Name": "sv_para",
       "Defining": "LocalController",
       "GetAccess": "public",
       "SetAccess": "protected",
@@ -249,7 +249,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "rm_odeMass",
+      "Name": "f_Mass",
       "Defining": "LocalController",
       "GetAccess": "public",
       "SetAccess": "protected",
@@ -271,7 +271,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "fv_odeDiff",
+      "Name": "f_dx",
       "Defining": "LocalController",
       "GetAccess": "public",
       "SetAccess": "protected",
@@ -293,7 +293,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "fv_odeY",
+      "Name": "f_Y",
       "Defining": "LocalController",
       "GetAccess": "public",
       "SetAccess": "protected",
@@ -645,7 +645,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "X_offset",
+      "Name": "rv_Xoffset",
       "Defining": "LocalController",
       "GetAccess": "public",
       "SetAccess": "odeSimulator, odeEventSet",
@@ -667,7 +667,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "U_offset",
+      "Name": "rv_Uoffset",
       "Defining": "LocalController",
       "GetAccess": "public",
       "SetAccess": "odeSimulator, odeEventSet",
@@ -689,7 +689,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "isConnect",
+      "Name": "l_isConnect",
       "Defining": "LocalController",
       "GetAccess": "public",
       "SetAccess": "odeSimulator, odeEventSet",
@@ -711,7 +711,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "isController",
+      "Name": "l_hasController",
       "Defining": "LocalController",
       "GetAccess": "public",
       "SetAccess": "odeSimulator, odeEventSet",
@@ -733,7 +733,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "cv_Xequilibrium",
+      "Name": "rv_Xequilibrium",
       "Defining": "LocalController",
       "GetAccess": "public",
       "SetAccess": "protected",
@@ -755,7 +755,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "cv_Uequilibrium",
+      "Name": "rv_Uequilibrium",
       "Defining": "LocalController",
       "GetAccess": "public",
       "SetAccess": "protected",
@@ -1300,6 +1300,26 @@
     },
     {
       "Name": "add_local_controller",
+      "Defining": "LocalController",
+      "Access": "public",
+      "Static": false,
+      "Abstract": false,
+      "Hidden": false,
+      "Summary": "",
+      "Desc": "",
+      "Role": "",
+      "Signatures": [],
+      "Parameters": [],
+      "Returns": [],
+      "Examples": [],
+      "Notes": "",
+      "Throws": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
+    },
+    {
+      "Name": "validate",
       "Defining": "LocalController",
       "Access": "public",
       "Static": false,

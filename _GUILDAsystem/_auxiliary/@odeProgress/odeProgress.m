@@ -1,4 +1,4 @@
-classdef odeProgress < handle
+classdef odeProgress < auxiliary
     properties
         message    (1,1) string = "|"
         timeoffset (1,1) double = 0

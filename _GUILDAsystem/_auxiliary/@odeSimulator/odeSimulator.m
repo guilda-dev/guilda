@@ -1,4 +1,4 @@
-classdef (Sealed = true) odeSimulator < handle 
+classdef (Sealed = true) odeSimulator < auxiliary
 
     properties        
         ODEvnt        

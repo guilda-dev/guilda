@@ -29,7 +29,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "str_x",
+      "Name": "sv_x",
       "Defining": "GlobalController",
       "GetAccess": "public",
       "SetAccess": "none",
@@ -51,7 +51,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "str_u",
+      "Name": "sv_u",
       "Defining": "GlobalController",
       "GetAccess": "public",
       "SetAccess": "none",
@@ -73,7 +73,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "str_y",
+      "Name": "sv_y",
       "Defining": "GlobalController",
       "GetAccess": "public",
       "SetAccess": "none",
@@ -95,7 +95,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "str_para",
+      "Name": "sv_para",
       "Defining": "GlobalController",
       "GetAccess": "public",
       "SetAccess": "none",
@@ -117,7 +117,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "rm_odeMass",
+      "Name": "f_Mass",
       "Defining": "GlobalController",
       "GetAccess": "public",
       "SetAccess": "protected",
@@ -139,7 +139,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "fv_odeDiff",
+      "Name": "f_dx",
       "Defining": "GlobalController",
       "GetAccess": "public",
       "SetAccess": "protected",
@@ -161,7 +161,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "fv_odeY",
+      "Name": "f_Y",
       "Defining": "GlobalController",
       "GetAccess": "public",
       "SetAccess": "protected",
@@ -557,7 +557,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "X_offset",
+      "Name": "rv_Xoffset",
       "Defining": "GlobalController",
       "GetAccess": "public",
       "SetAccess": "odeSimulator, odeEventSet",
@@ -579,7 +579,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "U_offset",
+      "Name": "rv_Uoffset",
       "Defining": "GlobalController",
       "GetAccess": "public",
       "SetAccess": "odeSimulator, odeEventSet",
@@ -601,7 +601,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "isConnect",
+      "Name": "l_isConnect",
       "Defining": "GlobalController",
       "GetAccess": "public",
       "SetAccess": "odeSimulator, odeEventSet",
@@ -623,7 +623,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "cv_Xequilibrium",
+      "Name": "rv_Xequilibrium",
       "Defining": "GlobalController",
       "GetAccess": "public",
       "SetAccess": "PowerNetwork",
@@ -645,7 +645,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "cv_Uequilibrium",
+      "Name": "rv_Uequilibrium",
       "Defining": "GlobalController",
       "GetAccess": "public",
       "SetAccess": "PowerNetwork",

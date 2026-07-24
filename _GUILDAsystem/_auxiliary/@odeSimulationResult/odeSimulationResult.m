@@ -1,4 +1,4 @@
-classdef odeSimulationResult < handle
+classdef odeSimulationResult < auxiliary
 
     properties 
 

@@ -7,6 +7,28 @@
   "ClassName": "branch.T",
   "properties": [
     {
+      "Name": "header",
+      "Defining": "branch.T",
+      "GetAccess": "public",
+      "SetAccess": "none",
+      "Dependent": false,
+      "Constant": true,
+      "Abstract": false,
+      "Hidden": false,
+      "Summary": "",
+      "Desc": "",
+      "Role": "",
+      "Type": "",
+      "Size": "",
+      "Unit": "",
+      "Default": "",
+      "Constraints": "",
+      "Notes": "",
+      "SeeAlso": [],
+      "Since": "",
+      "Deprecated": ""
+    },
+    {
       "Name": "key",
       "Defining": "branch.T",
       "GetAccess": "public",
@@ -130,28 +152,6 @@
       "Role": "Equilibrium",
       "Type": "complex",
       "Size": "2×1",
-      "Unit": "",
-      "Default": "",
-      "Constraints": "",
-      "Notes": "",
-      "SeeAlso": [],
-      "Since": "",
-      "Deprecated": ""
-    },
-    {
-      "Name": "cv_Xequilibrium",
-      "Defining": "Branch",
-      "GetAccess": "public",
-      "SetAccess": "protected",
-      "Dependent": false,
-      "Constant": false,
-      "Abstract": false,
-      "Hidden": false,
-      "Summary": "",
-      "Desc": "Operating point of the state variables related to the branch dynamics",
-      "Role": "Equilibrium",
-      "Type": "double",
-      "Size": "nx1",
       "Unit": "",
       "Default": "",
       "Constraints": "",
@@ -383,9 +383,9 @@
   ],
   "methods": [
     {
-      "Name": "T",
+      "Name": "get_admittance_matrix",
       "Defining": "branch.T",
-      "Access": "PowerNetwork",
+      "Access": "public",
       "Static": false,
       "Abstract": false,
       "Hidden": false,
@@ -403,7 +403,7 @@
       "Deprecated": ""
     },
     {
-      "Name": "get_admittance_matrix",
+      "Name": "T",
       "Defining": "branch.T",
       "Access": "public",
       "Static": false,
@@ -941,7 +941,8 @@
   "validation": {
     "Warnings": [
       "branch.T: class has no Summary or Desc.",
-      "branch.T.get_admittance_matrix: public method has no Summary or Desc."
+      "branch.T.get_admittance_matrix: public method has no Summary or Desc.",
+      "branch.T.T: public method has no Summary or Desc."
     ],
     "Errors": []
   }

@@ -1,4 +1,4 @@
-classdef odeLinearizer < handle
+classdef odeLinearizer < auxiliary
    properties (SetAccess=private)
        odeNetwork 
        odeLinearSystem

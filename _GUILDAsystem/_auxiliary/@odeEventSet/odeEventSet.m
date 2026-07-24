@@ -1,4 +1,4 @@
-classdef (Sealed = true) odeEventSet < handle
+classdef (Sealed = true) odeEventSet < auxiliary
 
 % DODEEVENTSET provides options for dynamic simulation in the form of a structure.
 %    EVENTSET = (Name1, Val1, Names2, Val2, ...) is a function that outputs options 

@@ -40,7 +40,7 @@ classdef Bus < PowerSystemModel
     properties (Access={?odeSimulator, ?odeLinearizer})
         l_isNonUnit (1,1) logical = false
     end
-    properties (SetAccess={?Continuation_Power_Flow})
+    properties (SetAccess={?ContinuationPowerFlow})
         iv_CPFV = zeros(0,1)        
     end
 

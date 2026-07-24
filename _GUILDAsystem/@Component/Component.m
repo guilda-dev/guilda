@@ -61,7 +61,7 @@ classdef Component < PowerSystemModel
         rv_Xoffset 
         rv_Uoffset 
     end
-    properties (SetAccess={?Continuation_Power_Flow})
+    properties (SetAccess={?ContinuationPowerFlow})
         iv_CPFX  = zeros(0,1)                
         PQ2Bus = @(t,V,u) zeros(2,1)
     end
