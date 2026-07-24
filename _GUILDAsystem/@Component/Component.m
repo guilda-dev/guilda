@@ -106,10 +106,10 @@ classdef Component < PowerSystemModel
             
             obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,array,omega0);
             obj.f_JacobiI  = @(t,x,V,I,u) obj.Jacobi_I(t,x,V,I,u,array,omega0);
-            obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_y(t,x,V,I,u,array,omega0);            
+            obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,array,omega0);            
 
             obj.f_Mass = @(t,x,V,I,u) obj.fcn_Mass(t, x, V, I, u, array, omega0);            
-            obj.f_dx = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, array, omega0);
+            obj.f_dx   = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, array, omega0);
             obj.f_I    = @(t,x,V,I,u) obj.fcn_I(t, x, V, I, u, array, omega0);
             obj.f_Y    = @(t,x,V,I,u) obj.fcn_Y(t, x, V, I, u, array, omega0);
         end
