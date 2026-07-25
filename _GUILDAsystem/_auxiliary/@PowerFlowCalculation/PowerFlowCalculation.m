@@ -1,11 +1,11 @@
 classdef PowerFlowCalculation < auxiliary
     properties(Access=public)
-        MaxIterations (1,1) double {mustBeNonnegative,mustBeInteger} = 0
-        Display       (1,1) string {mustBeMember(Display,["none","iter","iter-detailed","final","final-detailed"])} = "none"
-        MaxFunEvals   (1,1) double {mustBeNonnegative,mustBeInteger} = 0
-        UseParallel   (1,1) logical = false
-        PlotFcn       (1,1) string {mustBeMember(PlotFcn,["none","optimplotx","optimplotfunccount","optimplotfval","optimplotstepsize","optimplotfirstorderopt"])} ="none"
-        WhenFailed    (1,1) string {mustBeMember(WhenFailed,["WARN","ERROR","DISP","NONE"])} = "NONE"
+        MaxIterations (1,1) double {mustBeNonnegative,mustBeInteger}
+        Display       (1,1) string {mustBeMember(Display,["none","iter","iter-detailed","final","final-detailed"])}='none'
+        MaxFunEvals   (1,1) double {mustBeNonnegative,mustBeInteger}
+        UseParallel   (1,1) logical
+        PlotFcn       (1,1) string {mustBeMember(PlotFcn,["none","optimplotx","optimplotfunccount","optimplotfval","optimplotstepsize","optimplotfirstorderopt"])}="none"
+        WhenFailed    (1,1) string {mustBeMember(WhenFailed,["WARN","ERROR","DISP","NONE"])}="NONE"
         dynamic       (1,1) struct  = struct("Mass",0,"Damper",0.1,"foh_PQ",0,"t_span",0:1/120:50);
     end
 
@@ -16,20 +16,14 @@ classdef PowerFlowCalculation < auxiliary
     end
         
     methods
-        function obj = PowerFlowCalculation(opt)
-            arguments
-                opt.?PowerFlowCalculation
-            end
-            sct_def = GUILDA.config("EnvFsolve");
-            str_fn  = fieldnames(sct_def);
-            for i_fi = 1:numel(str_fn)
-                stri = str_fn{i_fi};
-                if isfield(opt,stri)
-                    obj.(stri) = opt.(stri);
-                else
-                    obj.(stri) = sct_def.(stri);
-                end
-            end
+        function obj = PowerFlowCalculation()
+            sct = GUILDA.config("PowerFlowCalculation");
+            obj.MaxIterations = sct.MaxIterations.Value;
+            obj.Display       = sct.Display.Value;
+            obj.MaxFunEvals   = sct.MaxFunEvals.Value;
+            obj.UseParallel   = sct.UseParallel.Value;
+            obj.PlotFcn       = sct.PlotFcn.Value;
+            obj.WhenFailed    = sct.WhenFailed.Value;
         end
         
         [powerflow_bus,flag,output] = solve(obj, net, mode, opt)
