@@ -11,23 +11,35 @@ classdef Component < PowerSystemModel
     end
     methods(Abstract)
         [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj,c_V,c_I,r_P,r_Q);
-        % set_odefcn(obj, omega0)
     end
+    methods(Abstract, Static)      
+        rv_dx = fcn_dx(  obj, r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)
+        c_I   = fcn_I(   obj, r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)        
+        rv_y  = fcn_Y(   obj, r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)
+        rm_M  = fcn_Mass(obj, r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)
+    end
+
+%% override recommended
+    % methods(Static)
+    %     [rm_Axx,rm_Bxv,rm_Bxi,rm_Bxu] = Jacobi_dx(r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0);
+    %     [rm_Cyx,rm_Dyv,rm_Dyi,rm_Dyu] = Jacobi_Y( r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0);
+    %     [rm_Cix,rm_Div,rm_Dii,rm_Diu] = Jacobi_I( r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0);
+    % end
     
 
 %% Parameter
     properties(SetAccess=protected)
         a_Bus                                  % [   Layer   ] 接続しているBusクラス(a_Cubicleから辿る)
         a_LocalController (:,1) = cell(0,1)    % [   Layer   ] 接続されているControllerクラスのcell配列        
-        f_Mass                             % [  Dynamics ] 数値積分の計算に使用する質量行列の関数ハンドル
+
+        f_Mass                                 % [  Dynamics ] 数値積分の計算に使用する質量行列の関数ハンドル
         f_dx                                   % [  Dynamics ] 数値積分の計算に使用する微分方程式の関数ハンドル
         f_I                                    % [  Dynamics ] 数値積分の計算に使用する接続方程式の関数ハンドル
         f_Y
         f_JacobiDx
         f_JacobiI        
         f_JacobiY
-    end
-    properties(SetAccess=protected)
+
         rv_Xequilibrium = zeros(0,1)           % [SteadyState] 状態の平衡点
         rv_Uequilibrium = zeros(0,1)           % [SteadyState] 定常入力
         c_Iequilibrium                         % [SteadyState] 定常潮流状態での機器の注入電流
@@ -98,15 +110,28 @@ classdef Component < PowerSystemModel
                                            "Marker", opt.Marker           , "string",...
                                          "MidXaxis", opt.MidXaxis         , "string",...
                                          "MidYaxis", opt.MidYaxis         , "string");
-                        
         end        
 
         function set_odefcn(obj,omega0)
-            array = obj.tab_parameter.dynamics{:,obj.sv_para};
+            array = obj.para_dynamics.tab_parameter{:,obj.sv_para};
             
-            obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,array,omega0);
-            obj.f_JacobiI  = @(t,x,V,I,u) obj.Jacobi_I(t,x,V,I,u,array,omega0);
-            obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,array,omega0);            
+            if ismethod(obj, "Jacobi_dx")
+                obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,array,omega0);
+            else
+                obj.f_JacobiDx = @(t,x,V,I,u) Jacobi_dx_num(obj,t,x,V,I,u,array,omega0);
+            end
+
+            if ismethod(obj, "Jacobi_I")
+                obj.f_JacobiI  = @(t,x,V,I,u) obj.Jacobi_I(t,x,V,I,u,array,omega0);
+            else
+                obj.f_JacobiI  = @(t,x,V,I,u) Jacobi_I_num(obj,t,x,V,I,u,array,omega0);
+            end
+
+            if ismethod(obj, "Jacobi_Y")
+                obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,array,omega0);            
+            else
+                obj.f_JacobiY  = @(t,x,V,I,u) Jacobi_Y_num(obj,t,x,V,I,u,array,omega0);            
+            end
 
             obj.f_Mass = @(t,x,V,I,u) obj.fcn_Mass(t, x, V, I, u, array, omega0);            
             obj.f_dx   = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, array, omega0);

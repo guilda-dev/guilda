@@ -8,27 +8,23 @@ function flag = validate(obj, l_message)
     if obj.str_editFlag == "unset"
         rv_V = rand(2,1);
         rv_I = rand(2,1);
-        c_V = [1,1j]*( rv_V/norm(rv_V) );
-        c_I = [1,1j]*( rv_V/norm(rv_I) );
-        obj.set_equilibrium(c_V,c_I)
+        c_V  = [1,1j]*( rv_V/norm(rv_V) );
+        c_I  = [1,1j]*( rv_V/norm(rv_I) );
+        [rv_x,rv_u] = obj.get_equilibrium(c_V,c_I);
     else
         c_V = obj.c_Vequilibrium;
         c_I = obj.c_Iequilibrium;
+        rv_V = [real(c_V); imag(c_V)];
+        rv_I = [real(c_I); imag(c_I)];
+        rv_x = obj.rv_Xequilibrium;
+        rv_u = obj.rv_Uequilibrium;
     end
 
-    rv_X = obj.rv_Xequilibrium;
-    rv_U = obj.rv_Uequilibrium;
-    rv_V = [real(c_V); imag(c_V)];
-    rv_I = [real(c_I); imag(c_I)];
     
-    time  = 0;
-    delta = 1e-5;
-
-    fcn_dx = @(x,v,i,u) obj.f_dx(time, x, v, i, u);
-    fcn_I  = @(x,v,i,u) obj.f_I(   time, x, v, i, u);
-    fcn_Y  = @(x,v,i,u) obj.f_Y(   time, x, v, i, u);
-
-
+    r_omega0 = 2*pi*60;
+    r_t      = 0;
+    rr_param = obj.para_dynamics.tab_parameter{:,obj.sv_para};
+    
     % make variable
     sv_x  = obj.sv_x;
     sv_u  = obj.sv_u;
@@ -39,52 +35,50 @@ function flag = validate(obj, l_message)
     nu = numel(sv_u);
     ny = numel(sv_y);
 
-    % make function
-    e = @(i,n) delta/2 * ((1:n)==i).';
-    v = @(c)   [real(c); imag(c)];
+
+    com2vec = @(c) [real(c);imag(c)];
 
     % validate dx=0 and I=Ist at the equilibrium point
-    dx_test = reshape(          fcn_dx(rv_X,rv_V,rv_I,rv_U), nx, 1);
-    I_test  = reshape( v(fcn_I( rv_X,rv_V,rv_I,rv_U) - c_I),  2, 1);
-
-    % get linearized matrix numerically
-    Axx_test = reshape(    tools.harrayfun(@(i) fcn_dx(rv_X + e(i,nx), rv_V, rv_I, rv_U) - fcn_dx(rv_X - e(i,nx), rv_V, rv_I, rv_U), 1:nx) / delta , nx, nx);
-    Bxv_test = reshape(    tools.harrayfun(@(i) fcn_dx(rv_X, rv_V + e(i, 2), rv_I, rv_U) - fcn_dx(rv_X, rv_V - e(i, 2), rv_I, rv_U), 1: 2) / delta , nx,  2);
-    Bxu_test = reshape(    tools.harrayfun(@(i) fcn_dx(rv_X, rv_V, rv_I, rv_U + e(i,nu)) - fcn_dx(rv_X, rv_V, rv_I, rv_U - e(i,nu)), 1:nu) / delta , nx, nu);
-    Cix_test = reshape( v( tools.harrayfun(@(i) fcn_I( rv_X + e(i,nx), rv_V, rv_I, rv_U) - fcn_I( rv_X - e(i,nx), rv_V, rv_I, rv_U), 1:nx) / delta),  2, nx);
-    Div_test = reshape( v( tools.harrayfun(@(i) fcn_I( rv_X, rv_V + e(i, 2), rv_I, rv_U) - fcn_I( rv_X, rv_V - e(i, 2), rv_I, rv_U), 1: 2) / delta),  2,  2);
-    Diu_test = reshape( v( tools.harrayfun(@(i) fcn_I( rv_X, rv_V, rv_I, rv_U + e(i,nu)) - fcn_I( rv_X, rv_V, rv_I, rv_U - e(i,nu)), 1:nu) / delta),  2, nu);
-    Cyx_test = reshape(    tools.harrayfun(@(i) fcn_Y( rv_X + e(i,nx), rv_V, rv_I, rv_U) - fcn_Y( rv_X - e(i,nx), rv_V, rv_I, rv_U), 1:nx) / delta , ny, nx);
-    Dyv_test = reshape(    tools.harrayfun(@(i) fcn_Y( rv_X, rv_V + e(i, 2), rv_I, rv_U) - fcn_Y( rv_X, rv_V - e(i, 2), rv_I, rv_U), 1: 2) / delta , ny,  2);
-    Dyu_test = reshape(    tools.harrayfun(@(i) fcn_Y( rv_X, rv_V, rv_I, rv_U + e(i,nu)) - fcn_Y( rv_X, rv_V, rv_I, rv_U - e(i,nu)), 1:nu) / delta , ny, nu);
-    
-    % get linearized matrix using methods
-    Axx_valid = reshape( obj.JacobiAxx(time, rv_X, rv_V, rv_I, rv_U), nx, nx);
-    Bxv_valid = reshape( obj.JacobiBxv(time, rv_X, rv_V, rv_I, rv_U), nx,  2);
-    Bxu_valid = reshape( obj.JacobiBxu(time, rv_X, rv_V, rv_I, rv_U), nx, nu);
-    Cix_valid = reshape( obj.JacobiCix(time, rv_X, rv_V, rv_I, rv_U),  2, nx);
-    Div_valid = reshape( obj.JacobiDiv(time, rv_X, rv_V, rv_I, rv_U),  2,  2);
-    Diu_valid = reshape( obj.JacobiDiu(time, rv_X, rv_V, rv_I, rv_U),  2, nu);
-    Cyx_valid = reshape( obj.JacobiCyx(time, rv_X, rv_V, rv_I, rv_U), ny, nx);
-    Dyv_valid = reshape( obj.JacobiDyv(time, rv_X, rv_V, rv_I, rv_U), ny,  2);
-    Dyu_valid = reshape( obj.JacobiDyu(time, rv_X, rv_V, rv_I, rv_U), ny, nu);
-
+    dx_test = reshape( obj.fcn_dx(r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0), nx, 1);
+    I_test  = com2vec( obj.fcn_I( r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0) ) -rv_I;
 
     % make flag
     mktab = @(flag,r,v) array2table(flag,"RowNames",r,"VariableNames",v);
     flag = struct( ...
-            "dx" , mktab(      abs(dx_test)      ,  sv_x, "diff" ),...
-            "I"  , mktab(      abs( I_test)      ,  sv_i, "diff" ),...
-            "Axx", mktab( abs(Axx_test-Axx_valid), sv_x, sv_x), ...
-            "Bxu", mktab( abs(Bxu_test-Bxu_valid), sv_x, sv_u), ...
-            "Bxv", mktab( abs(Bxv_test-Bxv_valid), sv_x, sv_v), ...
-            "Cix", mktab( abs(Cix_test-Cix_valid), sv_i, sv_x), ...
-            "Cyx", mktab( abs(Cyx_test-Cyx_valid), sv_y, sv_x), ...
-            "Diu", mktab( abs(Diu_test-Diu_valid), sv_i, sv_u), ...
-            "Div", mktab( abs(Div_test-Div_valid), sv_i, sv_v), ...
-            "Dyu", mktab( abs(Dyu_test-Dyu_valid), sv_y, sv_u), ...
-            "Dyv", mktab( abs(Dyv_test-Dyv_valid), sv_y, sv_v)  ...
-            );
+        "dx" , mktab(      abs(dx_test)      ,  sv_x, "diff" ),...
+        "I"  , mktab(      abs( I_test)      ,  sv_i, "diff" )...
+        );
+
+    % validate linearized matrix
+    if ismethod(obj,"Jacobi_dx")
+        [Axx_test , Bxv_test , Bxi_test , Bxu_test ] = Jacobi_dx_num(obj,r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0);
+        [Axx_valid, Bxv_valid, Bxi_valid, Bxu_valid] = obj.Jacobi_dx(r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0);
+        Axx_valid = reshape( Axx_valid, nx, nx);
+        Bxv_valid = reshape( Bxv_valid, nx,  2);
+        Bxi_valid = reshape( Bxi_valid, nx,  2);
+        Bxu_valid = reshape( Bxu_valid, nx, nu);
+
+        flag.Axx = mktab( abs(Axx_test-reshape(Axx_valid, nx, nx)), sv_x, sv_x);
+        flag.Bxv = mktab( abs(Bxv_test-reshape(Bxv_valid, nx,  2)), sv_x, sv_v);
+        flag.Bxi = mktab( abs(Bxi_test-reshape(Bxi_valid, nx,  2)), sv_x, sv_v);
+        flag.Bxu = mktab( abs(Bxu_test-reshape(Bxu_valid, nx, nu)), sv_x, sv_u);
+    end
+    if ismethod(obj,"Jacobi_I")
+        [Cix_test, Div_test, Dii_test, Diu_test] = Jacobi_I_num( obj,r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0);
+        [Cix_valid, Div_valid, Dii_valid, Diu_valid] = obj.Jacobi_I( r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0);
+        flag.Cix = mktab( abs(Cix_test-reshape(Cix_valid,  2, nx)), sv_i, sv_x);
+        flag.Div = mktab( abs(Div_test-reshape(Div_valid,  2,  2)), sv_i, sv_v);
+        flag.Dii = mktab( abs(Dii_test-reshape(Dii_valid,  2,  2)), sv_i, sv_v);
+        flag.Diu = mktab( abs(Diu_test-reshape(Diu_valid,  2, nu)), sv_i, sv_u);
+    end
+    if ismethod(obj,"Jacobi_Y")
+        [Cyx_test , Dyv_test , Dyi_test , Dyu_test ] = Jacobi_Y_num( obj,r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0);
+        [Cyx_valid, Dyv_valid, Dyi_valid, Dyu_valid] = obj.Jacobi_Y( r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0);
+        flag.Cyx = mktab( abs(Cyx_test-reshape(Cyx_valid,ny,nx)), sv_y, sv_x);
+        flag.Dyv = mktab( abs(Dyv_test-reshape(Dyv_valid,ny, 2)), sv_y, sv_v);
+        flag.Dyi = mktab( abs(Dyi_test-reshape(Dyi_valid,ny, 2)), sv_y, sv_v);
+        flag.Dyu = mktab( abs(Dyu_test-reshape(Dyu_valid,ny,nu)), sv_y, sv_u);
+    end
 
     % message
     if l_message

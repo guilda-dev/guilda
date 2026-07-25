@@ -135,7 +135,7 @@ classdef Parameter < auxiliary & LayerPackage & dynamicprops
             %   {
             %     "Name": "obj",
             %     "Type": "Parameter",
-            %     "Description": "Target parameter container.",
+            %     "Description": "Target parameter class.",
             %     "Required": true,
             %     "Default": "-"
             %   }
@@ -150,16 +150,13 @@ classdef Parameter < auxiliary & LayerPackage & dynamicprops
             % ]
             sv_para = obj.sv_parameter;
             if isempty(sv_para)
-                NoData = nan;       %#ok
-                tab_para = table(NoData); %#ok
-                return
-            end
-            h_para   = numel(sv_para);
-            v_para   = sum( arrayfun(@(idx) numel(obj.(sv_para(idx))), 1:h_para) )/h_para;
-            tab_para = array2table(zeros(v_para,h_para),"VariableNames",sv_para);
-            % tab_para = array2table(nan(1,h_para),"VariableNames",sv_para);
-            for i = 1:h_para
-                tab_para.(sv_para(i)) = obj.(sv_para(i));
+                NoData = nan;               %#ok
+                tab_para = table(NoData);   %#ok
+            else
+                for s_ipara =  sv_para(:)'
+                    sct_para.(s_ipara) = obj.(s_ipara);
+                end
+                tab_para = struct2table(sct_para);
             end
         end
         function p = get.parent(obj); p = obj.a_cls; end
