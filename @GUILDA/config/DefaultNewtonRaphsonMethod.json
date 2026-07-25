@@ -1,0 +1,27 @@
+{
+    "ConvTol":{
+        "Value": 1e-5,
+        "Type": "double",
+        "Description": "Tolerance for Convergence Criterion"
+    },
+    "MaxIter":{
+        "Value": 1000,
+        "Type": "double",
+        "Description": "Max Iterations"
+    },
+    "InitVal":{
+        "Value": 1,
+        "Type": "double",
+        "Description": "Initial value"
+    },
+    "Increment":{
+        "Value": 1e-4,
+        "Type": "double",
+        "Description": "Increase"
+    },
+    "StepSize":{
+        "Value": 1,
+        "Type": "double",
+        "Description": "Step Size"
+    }
+}

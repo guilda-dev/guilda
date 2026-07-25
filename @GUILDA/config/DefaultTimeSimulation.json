@@ -1,0 +1,36 @@
+{
+    "RelativeTolerance":{
+        "Value": 1e-4,
+        "Type": "double",
+        "Description": "'RelTol' option (1e-15 < tol < 1e-3)"
+    },
+    "AbsoluteTolerance":{
+        "Value": 1e-6,
+        "Type": "double",
+        "Description": "'AbsTol' option (1e-15 < tol < 1e-3)"
+    },
+    "SeparateComplexParts":{
+        "Value": "off",
+        "Type": "select",
+        "options":[
+            "on",
+            "off"
+        ],
+        "Description": "'MaxStep' option @ode15s (If blank, use default value.)"
+    },
+    "Reporter":{    
+        "Value": "dialog",
+        "Type": "select",
+        "options":[
+            "none",
+            "disp",
+            "dialog"
+        ],
+        "Description": "'PlotFcn' option @fsolve"
+    },
+    "TimeLimit":{
+        "Value": 10,
+        "Type": "double",
+        "Description": "Force the simulation to terminate if the specified time is exceeded."
+    },
+}

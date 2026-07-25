@@ -1,0 +1,37 @@
+{
+    "PrintLogo":{
+        "Value": true,
+        "Type": "logical",
+        "Description": "Print the GUILDA logo at startup"
+    },
+    "gitpull":{
+        "Value": false,
+        "Type": "logical",
+        "Description": "Pull from GitHub at startup"
+    },
+    "CheckRequirement":{
+        "Value": true,
+        "Type": "logical",
+        "Description": "Verifying version requirements at startup"
+    },
+    "PrintUpdateLog":{
+        "Value": true,
+        "Type": "logical",
+        "Description": "Display update log at startup"
+    },
+    "UpdateDoc":{
+        "Value": false,
+        "Type": "logical",
+        "Description": "Update this documentation at startup"
+    },
+    "UpdateKeyMap":{
+        "Value": true,
+        "Type": "logical",
+        "Description": "Update the key map at startup"
+    },
+    "Tutorial":{
+        "Value": true,
+        "Type": "logical",
+        "Description": "Open the tutorial at startup"
+    }
+}
