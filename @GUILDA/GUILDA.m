@@ -105,7 +105,7 @@ classdef GUILDA < handle
         class_list = dictionary(char_class,opt)
         net        = import_MATPOWER(results)
         path       = pwd()
-        out        = config(field)
+        data       = config(category,parameter,option)
 
         newclass()
         tutorial(mode)
