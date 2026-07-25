@@ -122,7 +122,11 @@ classdef odeProgress < auxiliary
                 case 'done'
                     return
                 case 'break'
-                    obj.message = "|(break: t="+obj.tlast+")";
+                    if isempty(obj.tlast)
+                        obj.message = "|(break)";
+                    else
+                        obj.message = "|(break: t="+obj.tlast+")";
+                    end
                     flag = 'done';
                     return
                 otherwise
