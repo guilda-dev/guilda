@@ -1,4 +1,4 @@
-classdef (Sealed = true) PSS1 < controller.pss.base
+classdef (Sealed = true) PSS1 < controller.pss.abstract
 
     methods
         function obj = PSS1(tag, param)
@@ -14,7 +14,7 @@ classdef (Sealed = true) PSS1 < controller.pss.base
                 param.Vpss_max (1,1) double = Inf
                 
             end            
-            obj@controller.pss.base(tag)                                    
+            obj@controller.pss.abstract(tag)                                    
             
             obj.para_dynamics.add_entry(   "kpss", param.kpss    , "double", ...
                                             "tWS", param.tWS     , "double", ...
@@ -41,13 +41,12 @@ classdef (Sealed = true) PSS1 < controller.pss.base
         end
     end
 
-    methods
+    methods (Static)
         dx = fcn_dx(obj, t, x, V, I, u, para, omega0)
         y  = fcn_y(obj, t, x, V, I, u, para, omega0)
         M  = fcn_Mass(obj, t, x, V, I, u, para, omega0)
-    end
-    methods (Static)
+
         [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0)
         [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t,x,V,I,u,param,omega0)
-    end
+    end    
 end

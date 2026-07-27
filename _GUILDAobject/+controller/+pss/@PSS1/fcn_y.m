@@ -1,4 +1,4 @@
-function Vpss = fcn_y(obj, t, x, V, I, u, param, omega0) %#ok
+function Vpss = fcn_y(t, x, V, I, u, param, omega0) %#ok
     % 一番最初についてるゲイン
     kpss = param(1);     
     % 位相進み補償器

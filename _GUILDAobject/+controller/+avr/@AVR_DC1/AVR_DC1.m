@@ -30,7 +30,7 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.abstract
                                             "kst", param.kst    , "double", ...
                                             "tst", param.tst    , "double");                       
 
-            obj.key      = "avr";
+            obj.key     = "avr";
             obj.sv_x    = ["Vtr";"Vap"; "Vfld"; "Vst"];
             obj.sv_u    = ["Vref";"Vpss"];   
             obj.sv_y    = "Vfield";
@@ -70,17 +70,14 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.abstract
             obj.a_LocalController{1} = cls;
             obj.l_hasController = true;
         end
-    end
-
-    methods       
-        M  = fcn_Mass(obj, t, x, V, I, u, param, omega0)
-        dx = fcn_dx(obj, t, x, V, I, u, param, omega0)
-        y  = fcn_y(obj, t, x, V, I, u, param, omega0)                
-    end
+    end    
 
     methods (Static)
-        [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0)
-        [Cix,Div,Dii,Diu] = Jacobi_I(t,x,V,I,u,param,omega0)
-        [Cyx,Dyv,Dyi,Dyu] = Jacobi_y(t,x,V,I,u,param,omega0)
+        M  = fcn_Mass(t, x, V, I, u, param, omega0)
+        dx = fcn_dx(t, x, V, I, u, param, omega0)
+        y  = fcn_y(t, x, V, I, u, param, omega0)                
+
+        [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0)        
+        [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t,x,V,I,u,param,omega0)
     end
 end

@@ -25,16 +25,5 @@ classdef abstract < LocalController
         end
         
     end
-
-    methods       
-        function M  = fcn_Mass(obj, t, x, V, u, param, omega0) %#ok
-            M = [];
-        end
-        function dx = fcn_dx(obj, t, x, V, u, param, omega0) %#ok
-            dx = [];
-        end
-        function y  = fcn_y(obj, t, x, V, u, param, omega0) %#ok               
-            y = 0;
-        end
-    end
+    
 end
