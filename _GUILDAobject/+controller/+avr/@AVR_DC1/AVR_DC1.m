@@ -1,4 +1,4 @@
-classdef (Sealed = true) AVR_DC1 < controller.avr.base
+classdef (Sealed = true) AVR_DC1 < controller.avr.abstract
     
     methods
         function obj = AVR_DC1(tag, param)
@@ -16,7 +16,7 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.base
                 param.tst     (1,1) double = 0.35
                 param.kst     (1,1) double = 0.063                
             end            
-            obj@controller.avr.base(tag)                                 
+            obj@controller.avr.abstract(tag)                                 
             
             obj.para_dynamics.add_entry(    "ttr", param.ttr    , "double", ...
                                         "Vap_max", param.Vap_max, "double", ...

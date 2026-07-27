@@ -1,4 +1,4 @@
-classdef base < LocalController
+classdef abstract < LocalController
     properties (SetAccess=protected, Hidden)
         key      
         sv_x    
@@ -7,7 +7,7 @@ classdef base < LocalController
         sv_para 
     end    
     methods
-        function obj = base(tag) 
+        function obj = abstract(tag) 
             arguments
                 tag = "base"
             end

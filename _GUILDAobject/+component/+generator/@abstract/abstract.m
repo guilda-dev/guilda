@@ -25,7 +25,8 @@ classdef abstract < Component
             % obj.set_avr( component.generator.avr.base() );
             % obj.set_governor( component.generator.governor.base() );
             % obj.set_pss( component.generator.pss.base() );
-            obj.set_odefcn(60)            
+            Hz = obj.para_base.Hz;
+            obj.set_odefcn(Hz)            
         end
     end    
 

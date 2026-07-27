@@ -9,7 +9,7 @@ classdef LocalController < PowerSystemModel
         sv_y    (:,1) string
         sv_para (:,1) string
     end
-    methods (Abstract)        
+    methods (Abstract, Static)        
         dx = fcn_dx(obj, t, x, V, u, param, omega0)
         y  = fcn_y(obj, t, x, V, u, param, omega0)
         M  = fcn_Mass(obj, t, x, V, u, param, omega0)

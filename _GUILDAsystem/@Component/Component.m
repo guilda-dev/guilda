@@ -55,6 +55,7 @@ classdef Component < PowerSystemModel
         tab_parameter                          % [ Parameter ] ハイパーパラメータの設定値
     end
     properties(SetAccess=protected)
+        para_base
         para_dynamics                          % [ Parameter ] tab_prameterの動特性の部分を管理するParameterクラス 
         para_powerflow                         % [ Parameter ] tab_prameterの潮流設定の部分を管理するParameterクラス
         para_operation                         % [ Parameter ] tab_prameterの運用基準の部分を管理するParameterクラス
@@ -84,12 +85,14 @@ classdef Component < PowerSystemModel
     methods(Access=protected)
         function obj = Component(str_tag, opt)
             obj.str_tag        = str_tag;
+            obj.para_base      = Parameter(obj);            
             obj.para_dynamics  = Parameter(obj,"dynamics");
             obj.para_powerflow = Parameter(obj,"powerflow");
             obj.para_OPF       = Parameter(obj,"OPF");
             obj.para_graph     = Parameter(obj,"graph");
             obj.para_operation = Parameter(obj,"operation");
 
+            obj.para_base.add_entry("Hz", opt.baseHz, "double");
             obj.para_operation.add_entry( "baseMVA", opt.baseMVA          , "double",...
                                              "Pmin", opt.Pmin             , "double",...
                                              "Pmax", opt.Pmax             , "double",...
@@ -190,12 +193,13 @@ classdef Component < PowerSystemModel
                   obj.para_graph         }];
         end
         function tp = get.tab_parameter(obj)
+            base      = obj.para_base.tab_parameter;
             dynamics  = obj.para_dynamics.tab_parameter;
             powerflow = obj.para_powerflow.tab_parameter;
             OPF       = obj.para_OPF.tab_parameter;
             operation = obj.para_operation.tab_parameter;
             graph     = obj.para_graph.tab_parameter;
-            tp        = table(dynamics,operation,powerflow,OPF,graph);
+            tp        = table(base,dynamics,operation,powerflow,OPF,graph);
         end
     end
 
