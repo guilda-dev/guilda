@@ -75,12 +75,6 @@ classdef Branch < PowerSystemModel
         % <@Type> Parameter
         % <@Size> 1×1
         para_operation    
-
-        % <@Desc> Parameters related to the branch status.
-        % <@Role> Parameter
-        % <@Type> Parameter
-        % <@Size> 1×1
-        para_status 
         
         % <@Desc> Parameters related to the branch graph plot.
         % <@Role> Parameter
@@ -111,7 +105,6 @@ classdef Branch < PowerSystemModel
             
             a_Pm = Parameter(obj,"dynamics");
             a_Po = Parameter(obj,"operation");
-            a_Ps = Parameter(obj,"status");
             a_Pg = Parameter(obj,"graph");
 
             assert( isreal(opt.R), "ERROR: R must be a real number.")
@@ -128,14 +121,12 @@ classdef Branch < PowerSystemModel
                                 "Pmax", opt.Pmax     , "double" ,...
                                 "Qmax", opt.Qmax     , "double" ,...
                              "Vargmax", opt.Vargmax  , "double" );
-            a_Ps.add_entry( "lossless", false        , "logical");
             a_Pg.add_entry( "MidXaxis", opt.MidXaxis , "string",...
                             "MidYaxis", opt.MidYaxis , "string",...
                               "Marker", opt.Marker      , "string");
 
             obj.para_dynamics  = a_Pm;
             obj.para_operation = a_Po;
-            obj.para_status    = a_Ps;
             obj.para_graph     = a_Pg;
         end
     end
@@ -158,9 +149,8 @@ classdef Branch < PowerSystemModel
         function tp = get.tab_parameter(obj)
             dynamics  = obj.para_dynamics.tab_parameter;
             operation = obj.para_operation.tab_parameter;
-            status    = obj.para_status.tab_parameter;
             graph     = obj.para_graph.tab_parameter;
-            tp        = table(dynamics,status,operation,graph);
+            tp        = table(dynamics,operation,graph);
         end
         function v = get.cv_Vequilibrium(obj)
             v = cellfun(@(cub) cub.c_Vequilibrium, obj.a_Bus);
@@ -173,7 +163,7 @@ classdef Branch < PowerSystemModel
             p = obj.a_PowerNetwork;
         end
         function p = get.children(obj)
-            p = {obj.para_dynamics; obj.para_operation; obj.para_status; obj.para_graph};
+            p = {obj.para_dynamics; obj.para_operation; obj.para_graph};
         end
     end
 

@@ -18,7 +18,6 @@ classdef Bus < PowerSystemModel
         para_dynamics                           % Parameter
         para_powerflow                          % Parameter
         para_operation                          % Parameter
-        para_status                             % Parameter
         para_graph                              % Parameter
     end
     properties (Dependent, Access=protected)
@@ -50,7 +49,6 @@ classdef Bus < PowerSystemModel
             obj.str_tag        = tag;
             obj.para_dynamics  = Parameter(obj,"dynamics");
             obj.para_operation = Parameter(obj,"operation");
-            obj.para_status    = Parameter(obj,"status");
             obj.para_powerflow = Parameter(obj,"powerflow");
             obj.para_graph     = Parameter(obj,"graph");
             
@@ -60,7 +58,6 @@ classdef Bus < PowerSystemModel
                                          "baseMVA", opt.baseMVA  , "double",...
                                             "Vmin", opt.Vmin     , "double",...
                                             "Vmax", opt.Vmax     , "double");
-            obj.para_status.add_entry(     "fault", false        , "logical");
             obj.para_powerflow.add_entry(      "V", opt.V        , "double",...
                                             "Varg", opt.Varg     , "double",...
                                               "V0", opt.V0       , "double",...
@@ -106,9 +103,8 @@ classdef Bus < PowerSystemModel
             dynamics  =  obj.para_dynamics.tab_parameter;
             operation =  obj.para_operation.tab_parameter;
             powerflow =  obj.para_powerflow.tab_parameter;
-            status    =  obj.para_status.tab_parameter;
             graph     =  obj.para_graph.tab_parameter;
-            tp        =  table(dynamics,operation,powerflow,status,graph);
+            tp        =  table(dynamics,operation,powerflow,graph);
         end
         function p = get.parent(obj)
             p = obj.a_PowerNetwork; 
@@ -118,7 +114,6 @@ classdef Bus < PowerSystemModel
                  {obj.para_dynamics; ...
                   obj.para_operation;...
                   obj.para_powerflow;...
-                  obj.para_status;   ...
                   obj.para_graph}];
         end
     end
