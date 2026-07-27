@@ -52,3 +52,8 @@ _GUILDAexport
 # If you want to track the folder structure but ignore content,
 # uncomment the following line (requires a .gitkeep file inside)
 # !@GUILDA/user/.gitkeep
+
+
+_GUILDAdoc/database/list_Classes.js
+_GUILDAdoc/database/GUILDAsystem
+_GUILDAdoc/database/GUILDAobject
