@@ -6,10 +6,10 @@ classdef GlobalController < PowerSystemModel
         sv_y    (:,1) string
         sv_para (:,1) string
     end
-    methods (Abstract)        
-        dx = fcn_dx(obj, t, x, V, I, u, param, omega0)
-        y  = fcn_y(obj, t, x, V, I, u, param, omega0)
-        M  = fcn_Mass(obj, t, x, V, I, u, param, omega0)
+    methods (Abstract, Static)        
+        dx = fcn_dx(t, x, V, I, u, param, omega0)
+        y  = fcn_y(t, x, V, I, u, param, omega0)
+        M  = fcn_Mass(t, x, V, I, u, param, omega0)
     end       
     properties(SetAccess=protected)                   
         f_Mass       

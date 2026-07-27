@@ -146,8 +146,10 @@ classdef (Sealed = true) odeSimulator < auxiliary
                 x_GC = x(a_GC.iv_odeX);
                 u_GC = x(a_GC.iv_odeU);
 
-                odeX(a_GC.iv_odeX) = a_GC.f_dx(t,x_GC,[],[],u_GC);                
-                y_GC(a_GC.iv_odeY) = a_GC.f_Y(t,x_GC,[],[],u_GC);
+                u_connect = tools.dcellfun(@(CU) CU.l_isConnect, a_GC.controlledUnits);
+
+                odeX(a_GC.iv_odeX) = a_GC.f_dx(t,x_GC,[],[],u_connect*u_GC);                
+                y_GC(a_GC.iv_odeY) = a_GC.f_Y(t,x_GC,[],[],u_connect*u_GC);
             end
 
             for i=1:numel(a_bus)
