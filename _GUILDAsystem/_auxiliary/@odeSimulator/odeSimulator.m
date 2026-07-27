@@ -11,12 +11,14 @@ classdef (Sealed = true) odeSimulator < auxiliary
         EventDefinition = []
         EquationType   (1,1) string {mustBeMember(EquationType, ["standard","fullyimplicit","delay"])} = "standard" 
         Solver         matlab.ode.SolverID = "ode15s"
-        SolverOptions  matlab.ode.Options  = matlab.ode.options.ODE15s         
-        AbsoluteTolerance (1,1) double {mustBePositive, mustBeBetween(AbsoluteTolerance,1e-15,1e-3, "closed")} = 1e-6        
-        RelativeTolerance (1,1) double {mustBePositive, mustBeBetween(RelativeTolerance,1e-15,1e-3, "closed")} = 1e-4
+        SolverOptions  matlab.ode.Options  = matlab.ode.options.ODE15s  
+        
+        % set up GUILDA.setting
+        AbsoluteTolerance   (1,1) double {mustBePositive, mustBeBetween(AbsoluteTolerance,1e-15,1e-3, "closed")} = 1e-6        
+        RelativeTolerance   (1,1) double {mustBePositive, mustBeBetween(RelativeTolerance,1e-15,1e-3, "closed")} = 1e-4
         SeparateComplexParts matlab.lang.OnOffSwitchState = "off"
-        Reporter  (1,1) string {mustBeMember(Reporter,["none","disp","dialog"])} = "dialog"
-        TimeLimit (1,1) double = 10;
+        Reporter            (1,1) string {mustBeMember(Reporter,["none","disp","dialog"])} = "dialog"
+        TimeLimit           (1,1) double = 10;
     end
     properties (SetAccess=private, Hidden)
         odeNetwork 
@@ -34,26 +36,18 @@ classdef (Sealed = true) odeSimulator < auxiliary
     end
 
     methods
-        function obj = odeSimulator(opt)            
-            arguments                                
-                opt.?odeSimulator
-            end                                                
-
-            cls = metaclass(obj);
-            propNames = arrayfun(@(p) p.Name, cls.PropertyList, 'UniformOutput', false);
-            
-            strNames = fieldnames(opt);
-            
-            i=1;
-            while i<=length(strNames)
-                stri = strNames{i};
-                if ~strcmpi(propNames, stri)
-                    error(msg('GUILDA:odeSimulator:NoPropNames', string(stri)))
-                else
-                    obj.(stri) = opt.(stri);
-                end
-                i=i+1;
-            end                        
+        function obj = odeSimulator() 
+            sct = GUILDA.config("TimeSimulation");
+            obj.AbsoluteTolerance   = sct.AbsoluteTolerance.Value;
+            obj.RelativeTolerance   = sct.RelativeTolerance.Value; 
+            obj.SeparateComplexParts= sct.SeparateComplexParts.Value; 
+            obj.Reporter            = sct.Reporter.Value; 
+            val = sct.TimeLimit.Value;
+            if isnumeric(val) && val>0
+                obj.TimeLimit = val;
+            else
+                obj.TimeLimit = inf;
+            end                    
         end        
         
     end
