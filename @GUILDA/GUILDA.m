@@ -64,13 +64,6 @@ classdef GUILDA < handle
             if cf.UpdateDoc.Value
                 obj.doc('update',true);
             end
-            % Disp Update log
-            if cf.PrintUpdateLog.Value
-                disp(' ')
-                disp(' === Update Log === ')
-                cell_log = readlines(fullfile(GUILDApath,"ListUpdateLog.txt"));
-                cellfun(@(c) disp("  "+c), cell_log(7:end));
-            end 
             % update key map
             if cf.UpdateKeyMap.Value
                 update_class_signature;

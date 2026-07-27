@@ -14,11 +14,6 @@
         "Type": "logical",
         "Description": "Verifying version requirements at startup"
     },
-    "PrintUpdateLog":{
-        "Value": true,
-        "Type": "logical",
-        "Description": "Display update log at startup"
-    },
     "UpdateDoc":{
         "Value": false,
         "Type": "logical",
