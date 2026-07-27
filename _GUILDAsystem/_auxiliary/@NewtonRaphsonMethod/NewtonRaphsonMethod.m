@@ -52,11 +52,11 @@ classdef (Sealed = true) NewtonRaphsonMethod < auxiliary
         NRMJac          
         NRMVal 
         
-        ConvTol   (1,1) double  = 1e-5;
-        MaxIter   (1,1) double  = 1000;
-        InitVal   (:,1) double  = 1;
-        Increment (1,1) double  = 1e-4;
-        StepSize  (1,1) double  = 1;        
+        ConvTol   (1,1) double  = GUILDA.config("NewtonRaphsonMethod","ConvTol"  );
+        MaxIter   (1,1) double  = GUILDA.config("NewtonRaphsonMethod","MaxIter"  );
+        InitVal   (:,1) double  = GUILDA.config("NewtonRaphsonMethod","InitVal"  );
+        Increment (1,1) double  = GUILDA.config("NewtonRaphsonMethod","Increment");
+        StepSize  (1,1) double  = GUILDA.config("NewtonRaphsonMethod","StepSize" );
     end
     
     methods

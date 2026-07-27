@@ -8,5 +8,10 @@
             "[Vre,Vim] to [-Iim,Ire]"
         ],
         "Description": "I/O ports of linear system of Component"
+    },
+    "Hz":{
+        "Value": 60,
+        "Type": "double",
+        "Description": "Grid Frequency"
     }
 }

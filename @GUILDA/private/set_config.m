@@ -14,6 +14,7 @@ function set_config(Env)
     text = jsonencode(format(Env), PrettyPrint=true,ConvertInfAndNaN=false);
     path = fullfile(GUILDA.pwd,'@GUILDA','user',"GUILDAconfig.json");
     writelines(text,path)
+    GUILDA.config([],[],"reset",true);
 end
 
 

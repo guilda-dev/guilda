@@ -25,7 +25,9 @@ function out = get_config(varargin)
         env_sys.(field)  = readstruct(path_def_sys);
     end
 
-    out = merge_config(env_sys, env_user);
+    out   = merge_config(env_sys, env_user);
+    first = {'EnvStartup','Model'};
+    out   = orderfields(out,[first,reshape(setdiff(fieldnames(out),first),1,[])]);
     if numel(varargin)>0
         out  = getfield(out,varargin{:});
     end

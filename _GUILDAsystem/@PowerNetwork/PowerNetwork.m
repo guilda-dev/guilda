@@ -86,7 +86,7 @@ classdef PowerNetwork < PowerSystemModel
         % <@Role> calculate power-flow
         % <@Size> 1×1
         % <@Default> PowerFlowCalculation()
-        solver_PF  = PowerFlowCalculation();
+        solver_PF  
 
         % <@Summary> "OptimalPowerFlow" class
         % <@Desc>
@@ -112,7 +112,7 @@ classdef PowerNetwork < PowerSystemModel
         % <@Size> 1×1
         % <@Default> odeSimulator()
         % <@Since> 4.0
-        solver_ODE = odeSimulator();
+        solver_ODE 
     end
     properties(Dependent) 
         cv_Vequilibrium         % Steady State
@@ -133,15 +133,15 @@ classdef PowerNetwork < PowerSystemModel
 
 %% Constructor
     methods
-        function obj = PowerNetwork(tag,struct_default,opt)
+        function obj = PowerNetwork(tag,opt)
             arguments
                 tag            (1,1) string = "PowerNetwork";
-                struct_default (1,1) struct = GUILDA.config("ModelNetwork"); %#ok 
-                opt.baseHz     (1,1) double {mustBePositive} = struct_default.Hz;
+                opt.baseHz     (1,1) double {mustBePositive} = GUILDA.config("Model","Hz");
             end
             obj.str_tag   = tag;
             obj.para_base = Parameter(obj);
-            obj.para_base.add_entry("Hz", opt.baseHz, "double");
+            % obj.para_base.add_entry("Hz", opt.baseHz, "double");
+            obj.reset_solver;
         end
     end
 
@@ -157,6 +157,7 @@ classdef PowerNetwork < PowerSystemModel
         
         % initialize
         [flag,powerflow_bus,powerflow_cub] = initialize(obj,options)
+        reset_solver(obj);
 
         % OPF(optimal power-flow)
         [powerflow_bus, powerflow_cub, flag, output, lambda, OPFprob] = optimize_powerflow(obj,options)

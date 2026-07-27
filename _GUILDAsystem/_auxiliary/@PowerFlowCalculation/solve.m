@@ -118,10 +118,6 @@ function [powerflow_bus,flag,output] = solve(obj, net, mode, opt)
     % Notify
     if flag<=0
         str_warnFlag = obj.WhenFailed;
-        if str_warnFlag=="SYSTEM DEFAULT"
-            struct_default = GUILDA.config("EnvFsolve");
-            str_warnFlag = struct_default.WhenFailed;
-        end
         switch str_warnFlag
         case "WARN" ; warning(output.message)
         case "ERROR"; error(output.message)
