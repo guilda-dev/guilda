@@ -11,6 +11,16 @@ function sct_summary = export_class_database(str_class_list, option)
     disp(" === Update Documentation Database === ")
     disp("  Exporting class database for '_GUILDAdoc/database' ...")
 
+    if ~isfolder("_GUILDAdoc/database")
+        mkdir _GUILDAdoc/database
+    end
+    if ~isfolder("_GUILDAdoc/database/GUILDAsystem")
+        mkdir _GUILDAdoc/database/GUILDAsystem
+    end
+    if ~isfolder("_GUILDAdoc/database/GUILDAobject")
+        mkdir _GUILDAdoc/database/GUILDAobject
+    end
+
     rv_character = strlength(str_class_list);
     r_indent = max(rv_character) + 2;
     sct_class_info = struct([]);
