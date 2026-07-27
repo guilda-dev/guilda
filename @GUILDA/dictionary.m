@@ -156,9 +156,8 @@ function fprintf_doc_and_help(char_filename)
                  char_filename,'.doc;',...
                  '">[mlx]</a>  '])
     else
-        fprintf(['<a href="matlab:' ,...
-                 'doc(''',char_filename,''');',...
-                 '">[doc]</a>  '])
+        char_filename_for_cmd = strrep(char_filename, '''', '''''');
+        fprintf('<a href="matlab:GUILDA.doc(''class'', ''%s'')">[doc]</a>  ', char_filename_for_cmd)
     end
 
     c = meta.class.fromName(char_filename);
