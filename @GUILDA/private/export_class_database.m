@@ -66,8 +66,8 @@ function sct_summary = export_class_database(str_class_list, option)
     str_file_name  = fullfile(str_GUILDApath, '_GUILDAdoc', 'database', 'list_Classes.js');
     sct_schema = struct( ...
         'name',                 'GUILDA documentation class index', ...
-        'version',              2, ...
-        'classDocumentVersion', 2, ...
+        'version',              3, ...
+        'classDocumentVersion', 3, ...
         'pathBase',             '_GUILDAdoc' ...
     );
     sct_schema.modelCategories = { ...
@@ -128,7 +128,7 @@ function [sct_info, sct_validation] = export_class_doc(str_class_name)
     };
     cell_method_tags = {
         'Summary', 'Desc', 'Role', 'Signatures', 'Parameters', 'Returns', ...
-        'Examples', 'Notes', 'Throws', 'SeeAlso', 'Since', 'Deprecated'
+        'Calls', 'Examples', 'Notes', 'Throws', 'SeeAlso', 'Since', 'Deprecated'
     };
     cell_class_tags  = { ...
         'Summary', 'Desc', 'Role', 'Constructor', 'Notes', ...
@@ -136,7 +136,7 @@ function [sct_info, sct_validation] = export_class_doc(str_class_name)
     };
 
     sct_doc_data            = struct( ...
-        'schema', struct('name', 'GUILDA class document', 'version', 2), ...
+        'schema', struct('name', 'GUILDA class document', 'version', 3), ...
         'ClassName', str_class_name, ...
         'properties', [], ...
         'methods', [], ...
@@ -655,6 +655,8 @@ function out = get_default_tag_value(str_tag_name)
     switch str_tag_name
         case {'Signatures', 'Examples', 'SeeAlso'}
             out = {};
+        case 'Calls'
+            out = {};
         case {'Parameters'}
             out = empty_parameter_struct();
         case {'Returns'}
@@ -669,6 +671,8 @@ function [out, str_error] = parse_tag_value(str_tag_name, str_raw_value)
     switch str_tag_name
         case {'Signatures', 'Examples', 'SeeAlso'}
             [out, str_error] = parse_json_string_list(str_raw_value);
+        case 'Calls'
+            [out, str_error] = parse_json_calls(str_raw_value);
         case 'Parameters'
             [out, str_error] = parse_json_parameters(str_raw_value);
         case 'Returns'
@@ -728,6 +732,31 @@ function [out, str_error] = parse_json_returns(str_raw_value)
     end
 
     out = normalize_return_struct_array(val_json);
+end
+
+function [out, str_error] = parse_json_calls(str_raw_value)
+    str_text = strtrim(char(string(str_raw_value)));
+    if ~isempty(str_text) && ~startsWith(str_text, '[')
+        out = {};
+        str_error = 'expected a JSON array of call objects.';
+        return
+    end
+    [val_json, str_error] = try_jsondecode(str_raw_value);
+    if isempty(val_json)
+        out = {};
+        return
+    end
+    if ~isstruct(val_json)
+        out = {};
+        str_error = 'expected a JSON array of call objects.';
+        return
+    end
+
+    [sct_calls, str_validation_error] = normalize_call_struct_array(val_json);
+    out = num2cell(sct_calls);
+    if ~isempty(str_validation_error)
+        str_error = str_validation_error;
+    end
 end
 
 function [val, str_error] = try_jsondecode(str_raw_value)
@@ -791,6 +820,31 @@ function out = normalize_return_struct_array(val)
     end
 end
 
+function [out, str_error] = normalize_call_struct_array(val)
+    str_error = '';
+    if ~isstruct(val)
+        out = struct('Class', {}, 'Method', {}, 'Condition', {});
+        str_error = 'expected a JSON array of call objects.';
+        return
+    end
+    val = val(:);
+    out = repmat(struct('Class', '', 'Method', '', 'Condition', ''), numel(val), 1);
+    cell_invalid = {};
+    for i = 1:numel(val)
+        out(i).Class = get_struct_field_str(val(i), {'Class','class'});
+        out(i).Method = get_struct_field_str(val(i), {'Method','method'});
+        out(i).Condition = get_struct_field_str(val(i), {'Condition','condition'});
+        if isempty(strtrim(out(i).Class)) || isempty(strtrim(out(i).Method))
+            cell_invalid{end+1} = sprintf('%d', i); %#ok<AGROW>
+        end
+    end
+    if ~isempty(cell_invalid)
+        str_error = sprintf( ...
+            'Calls entries %s must contain non-empty Class and Method fields.', ...
+            strjoin(cell_invalid, ', '));
+    end
+end
+
 function out = empty_parameter_struct()
     out = struct( ...
         'Name', {}, 'Kind', {}, 'Type', {}, 'Unit', {}, 'Description', {}, ...
@@ -835,9 +889,9 @@ function sct_schema = get_tag_schema()
     };
     sct_schema.method = { ...
         'Summary', 'Desc', 'Role', 'Signatures', 'Parameters', 'Returns', ...
-        'Examples', 'Notes', 'Throws', 'SeeAlso', 'Since', 'Deprecated' ...
+        'Calls', 'Examples', 'Notes', 'Throws', 'SeeAlso', 'Since', 'Deprecated' ...
     };
-    sct_schema.structured = {'Signatures', 'Parameters', 'Returns', 'Examples', 'SeeAlso'};
+    sct_schema.structured = {'Signatures', 'Parameters', 'Returns', 'Calls', 'Examples', 'SeeAlso'};
 end
 
 function bln_public = is_public_access(str_access)

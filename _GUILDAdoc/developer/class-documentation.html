@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GUILDA Developer Guide - Class Documentation</title>
   <link rel="stylesheet" href="../style.css">
+  <script src="../database/list_Classes.js"></script>
+  <script src="../doc-loader.js"></script>
 </head>
 <body class="developer-layout">
   <main>
@@ -55,11 +57,11 @@
 
     <h2>Generated Data Structure</h2>
     <h3>Class Index</h3>
-    <p><code>database/list_Classes.js</code> registers <code>window.GUILDA_DOC_INDEX</code>. Its schema version is currently <code>2</code>.</p>
+    <p><code>database/list_Classes.js</code> registers <code>window.GUILDA_DOC_INDEX</code>. Its schema version is currently <code>3</code>.</p>
 <pre><code>window.GUILDA_DOC_INDEX = {
   schema: {
-    version: 2,
-    classDocumentVersion: 2,
+    version: 3,
+    classDocumentVersion: 3,
     modelCategories: [...],
     coreClasses: [...],
     tags: {...},
@@ -88,7 +90,7 @@
     <h3>Detailed Class Documents</h3>
     <p>Each class has a file in <code>database/GUILDAsystem</code> or <code>database/GUILDAobject</code>. It registers data under <code>window.GUILDA_DOC_CLASSES[ClassName]</code>.</p>
 <pre><code>{
-  schema: { name: "GUILDA class document", version: 2 },
+  schema: { name: "GUILDA class document", version: 3 },
   ClassName: "component.generator.park",
   properties: [...],
   methods: [...],
@@ -101,7 +103,7 @@
       <tr><th>Target</th><th>Canonical tags</th></tr>
       <tr><td>Class</td><td><code>Summary</code>, <code>Desc</code>, <code>Role</code>, <code>Constructor</code>, <code>Notes</code>, <code>SeeAlso</code>, <code>Since</code>, <code>Deprecated</code></td></tr>
       <tr><td>Property</td><td><code>Summary</code>, <code>Desc</code>, <code>Role</code>, <code>Type</code>, <code>Size</code>, <code>Unit</code>, <code>Default</code>, <code>Constraints</code>, <code>Notes</code>, <code>SeeAlso</code>, <code>Since</code>, <code>Deprecated</code></td></tr>
-      <tr><td>Method</td><td><code>Summary</code>, <code>Desc</code>, <code>Role</code>, <code>Signatures</code>, <code>Parameters</code>, <code>Returns</code>, <code>Examples</code>, <code>Notes</code>, <code>Throws</code>, <code>SeeAlso</code>, <code>Since</code>, <code>Deprecated</code></td></tr>
+      <tr><td>Method</td><td><code>Summary</code>, <code>Desc</code>, <code>Role</code>, <code>Signatures</code>, <code>Parameters</code>, <code>Returns</code>, <code>Calls</code>, <code>Examples</code>, <code>Notes</code>, <code>Throws</code>, <code>SeeAlso</code>, <code>Since</code>, <code>Deprecated</code></td></tr>
     </table>
     <p>Tags are case-sensitive field names and must use the exact form <code>&lt;@TagName&gt;</code>. For example, <code>&lt;Summary&gt;</code> is not a documentation tag. A tag value continues until the next valid tag or the end of the comment block.</p>
     <p><strong>Use canonical names in new code.</strong> Existing documentation can also be read through these aliases:</p>
@@ -123,6 +125,7 @@
       <li>Single newlines, consecutive spaces, and indentation are preserved. ASCII diagrams are rendered as preformatted monospace text.</li>
       <li><code>Signatures</code>, <code>Examples</code>, and <code>SeeAlso</code> must be JSON arrays of strings.</li>
       <li><code>Parameters</code> and <code>Returns</code> must be JSON objects or arrays of objects.</li>
+      <li><code>Calls</code> must be a JSON array of objects with <code>Class</code>, <code>Method</code>, and <code>Condition</code>.</li>
       <li>Structured JSON must begin with <code>[</code> or <code>{</code>. Do not use MATLAB arrays or cell-array syntax.</li>
       <li>Leave an optional tag empty when it does not apply; the exporter supplies its type-appropriate empty value.</li>
     </ul>
@@ -142,6 +145,7 @@ end</code></pre>
 
     <h2>Method Documentation</h2>
     <p>Name-value options belong in <code>Parameters</code> with <code>Kind: "NameValue"</code>. The normalized parameter fields are <code>Name</code>, <code>Kind</code>, <code>Type</code>, <code>Unit</code>, <code>Description</code>, <code>Required</code>, <code>Default</code>, and <code>Constraints</code>.</p>
+    <p><code>Calls</code> lists methods called directly by the documented method. Every entry contains <code>Class</code>, <code>Method</code>, and <code>Condition</code>. Use the fully qualified MATLAB class name in <code>Class</code>. Leave <code>Condition</code> empty for an unconditional call. The method page resolves these entries recursively, displays each condition, stops cyclic paths, and links every resolved node to its method page.</p>
 <pre><code>function rv_y = calculate_output(obj, rv_u, r_gain)
 % &lt;@Summary&gt; Scale an input vector.
 % &lt;@Desc&gt; Computes an output vector using a configurable scalar gain.
@@ -162,6 +166,11 @@ end</code></pre>
 % ]
 % &lt;@Returns&gt;
 % [{"Name":"rv_y","Type":"double vector","Unit":"pu","Description":"Scaled output."}]
+% &lt;@Calls&gt;
+% [
+%   {"Class":"MyClass","Method":"validate_input","Condition":""},
+%   {"Class":"PowerNetwork","Method":"initialize","Condition":"obj.is_ready"}
+% ]
 % &lt;@Examples&gt;
 % ["```matlab\nrv_y = obj.calculate_output(rv_u, 2.0);\n```"]
 % &lt;@Notes&gt; This method does not modify the object state.
@@ -271,6 +280,14 @@ end</code></pre>
                 { key: 'Description', label: 'Description', placeholder: 'Scaled output.' }
               ]
             },
+            {
+              tag: 'Calls', type: 'table', mode: 'calls',
+              columns: [
+                { key: 'Class', label: 'Class', type: 'class-select' },
+                { key: 'Method', label: 'Method', type: 'method-select' },
+                { key: 'Condition', label: 'Condition', placeholder: 'Blank means always; e.g. obj.is_ready' }
+              ]
+            },
             { tag: 'Examples', rows: 3, placeholder: 'JSON array of example code strings.' },
             { tag: 'Notes', rows: 2, placeholder: 'Implementation notes, caveats.' },
             { tag: 'Throws', rows: 2, placeholder: 'Conditions under which this method errors.' },
@@ -291,6 +308,7 @@ end</code></pre>
 
       var currentTarget = null;
       var currentFieldEntries = [];
+      var tableValidationMessage = '';
 
       targetButtons.forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -393,7 +411,30 @@ end</code></pre>
         f.columns.forEach(function (col) {
           var td = document.createElement('td');
           var input;
-          if (col.type === 'checkbox') {
+          if (col.type === 'class-select') {
+            input = document.createElement('select');
+            input.className = 'tg-table-select';
+            appendSelectOption(input, '', 'Select class');
+            var classes = window.GuildaDocLoader
+              ? window.GuildaDocLoader.getClasses().slice()
+              : [];
+            classes.sort(function (left, right) {
+              return (left.Name || '').localeCompare(right.Name || '');
+            }).forEach(function (classMeta) {
+              appendSelectOption(input, classMeta.Name, classMeta.Name);
+            });
+            input.addEventListener('change', function () {
+              var methodSelect = tr.querySelector('[data-col="Method"]');
+              if (methodSelect) populateMethodSelect(input.value, methodSelect);
+              update();
+            });
+          } else if (col.type === 'method-select') {
+            input = document.createElement('select');
+            input.className = 'tg-table-select';
+            input.disabled = true;
+            appendSelectOption(input, '', 'Select class first');
+            input.addEventListener('change', update);
+          } else if (col.type === 'checkbox') {
             input = document.createElement('input');
             input.type = 'checkbox';
             input.className = 'tg-table-checkbox';
@@ -437,6 +478,55 @@ end</code></pre>
         tbody.appendChild(tr);
       }
 
+      function appendSelectOption(select, value, label) {
+        var option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        select.appendChild(option);
+      }
+
+      function populateMethodSelect(className, methodSelect) {
+        methodSelect._loadRequest = (methodSelect._loadRequest || 0) + 1;
+        var requestId = methodSelect._loadRequest;
+        methodSelect.innerHTML = '';
+        methodSelect.disabled = true;
+
+        if (!className || !window.GuildaDocLoader) {
+          appendSelectOption(methodSelect, '', 'Select class first');
+          update();
+          return;
+        }
+
+        appendSelectOption(methodSelect, '', 'Loading methods...');
+        window.GuildaDocLoader.loadClass(className).then(function (result) {
+          if (methodSelect._loadRequest !== requestId) return;
+          var methods = Array.isArray(result.data && result.data.methods)
+            ? result.data.methods
+            : [];
+          var methodNames = methods.map(function (method) {
+            return (method && method.Name) || '';
+          }).filter(function (name, index, allNames) {
+            return name && allNames.indexOf(name) === index;
+          }).sort(function (left, right) {
+            return left.localeCompare(right);
+          });
+
+          methodSelect.innerHTML = '';
+          appendSelectOption(methodSelect, '', methodNames.length ? 'Select method' : 'No methods available');
+          methodNames.forEach(function (name) {
+            appendSelectOption(methodSelect, name, name);
+          });
+          methodSelect.disabled = methodNames.length === 0;
+          update();
+        }).catch(function () {
+          if (methodSelect._loadRequest !== requestId) return;
+          methodSelect.innerHTML = '';
+          appendSelectOption(methodSelect, '', 'Failed to load methods');
+          methodSelect.disabled = true;
+          update();
+        });
+      }
+
       function tableFieldToJson(entry) {
         var f = entry.config;
         var rows = Array.prototype.slice.call(entry.wrap._tbody.querySelectorAll('tr'));
@@ -446,6 +536,30 @@ end</code></pre>
             return tr.querySelector('[data-col="value"]').value.trim();
           }).filter(function (v) { return v !== ''; });
           return items.length ? JSON.stringify(items) : '';
+        }
+
+        if (f.mode === 'calls') {
+          var hasInvalidRow = false;
+          var calls = rows.map(function (tr) {
+            var className = tr.querySelector('[data-col="Class"]').value.trim();
+            var methodName = tr.querySelector('[data-col="Method"]').value.trim();
+            var condition = tr.querySelector('[data-col="Condition"]').value.trim();
+            if (!className && !methodName && !condition) return null;
+            if (!className || !methodName) {
+              hasInvalidRow = true;
+              return null;
+            }
+            return {
+              Class: className,
+              Method: methodName,
+              Condition: condition
+            };
+          }).filter(function (call) { return call !== null; });
+          entry.wrap.classList.toggle('has-error', hasInvalidRow);
+          if (hasInvalidRow) {
+            tableValidationMessage = 'Complete both Class and Method for every Calls row.';
+          }
+          return calls.length ? JSON.stringify(calls, null, 2) : '';
         }
 
         var objs = rows.map(function (tr) {
@@ -489,11 +603,20 @@ end</code></pre>
         }
 
         var blocks = [];
+        tableValidationMessage = '';
         currentFieldEntries.forEach(function (entry) {
           var raw = entry.kind === 'table' ? tableFieldToJson(entry) : entry.control.value;
           var block = formatTag(entry.tag, raw);
           if (block) blocks.push(block);
         });
+
+        if (tableValidationMessage) {
+          output.textContent = blocks.join('\n');
+          outputWrap.style.display = blocks.length ? 'block' : 'none';
+          hint.textContent = tableValidationMessage;
+          copyBtn.disabled = true;
+          return;
+        }
 
         if (blocks.length === 0) {
           output.textContent = '';

@@ -1,9 +1,11 @@
 (function (root) {
   'use strict';
 
-  const SUPPORTED_INDEX_VERSION = 2;
-  const SUPPORTED_CLASS_VERSION = 2;
+  const SUPPORTED_INDEX_VERSION = 3;
+  const SUPPORTED_CLASS_VERSION = 3;
   const pendingLoads = new Map();
+  const loaderScriptUrl = document.currentScript?.src || root.location.href;
+  const documentationRootUrl = new URL('.', loaderScriptUrl);
 
   function schemaVersion(value) {
     const version = Number(value?.schema?.version ?? 0);
@@ -95,7 +97,9 @@
     const meta = findClass(className);
     if (!meta) return '';
     const relativePath = normalizeClassPath(meta.path);
-    if (relativePath) return relativePath;
+    if (relativePath) {
+      return new URL(relativePath.replace(/^\.\//, ''), documentationRootUrl).href;
+    }
     return '';
   }
 

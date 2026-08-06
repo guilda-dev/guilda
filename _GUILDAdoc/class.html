@@ -287,6 +287,12 @@
         deprecated: m?.Deprecated || '',
         parameters: normalizeIoArray(m?.Parameters),
         returns: normalizeIoArray(m?.Returns),
+        calls: Array.isArray(m?.Calls)
+          ? m.Calls.map((call) => {
+              if (typeof call === 'string') return call;
+              return `${call?.Class || call?.class || ''} ${call?.Method || call?.method || ''} ${call?.Condition || call?.condition || ''}`.trim();
+            }).filter(Boolean)
+          : [],
         arginText: m?.Argin || '',
         argoutText: m?.Argout || '',
         vararginText: ioSummaryFromArray(normalizeIoArray(m?.Parameters)) || (m?.Argin || ''),
@@ -327,7 +333,7 @@
 
       const methodRows = sortRows(
         methods.map(normalizeMethod).filter((m) => {
-          const searchStr = `${m.name} ${m.defining} ${m.access} ${m.role} ${m.summary} ${m.description} ${m.notes} ${m.throws} ${m.vararginText} ${m.varargoutText} ${m.deprecated}`.toLowerCase();
+          const searchStr = `${m.name} ${m.defining} ${m.access} ${m.role} ${m.summary} ${m.description} ${m.notes} ${m.throws} ${m.calls.join(' ')} ${m.vararginText} ${m.varargoutText} ${m.deprecated}`.toLowerCase();
           return searchStr.includes(methodSearch);
         }),
         methodSortColumn,

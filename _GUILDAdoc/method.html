@@ -26,6 +26,7 @@
       <li><a href="#description" onclick="document.getElementById('description')?.scrollIntoView(); return false;">Description</a></li>
       <li><a href="#arguments" onclick="document.getElementById('arguments')?.scrollIntoView(); return false;">Arguments</a></li>
       <li><a href="#returns" onclick="document.getElementById('returns')?.scrollIntoView(); return false;">Return Values</a></li>
+      <li><a href="#calls" onclick="document.getElementById('calls')?.scrollIntoView(); return false;">Method Calls</a></li>
       <li><a href="#examples" onclick="document.getElementById('examples')?.scrollIntoView(); return false;">Examples</a></li>
     </ul>
   </nav>
@@ -56,7 +57,7 @@
         });
     }
 
-    function renderMethodPage(className, methodName, classDoc) {
+    async function renderMethodPage(className, methodName, classDoc) {
       const nl2br = (text) => (text ?? '').toString().replace(/\n/g, '<br>');
       const escapeHtml = (text) => (text ?? '').toString()
         .replace(/&/g, '&amp;')
@@ -265,6 +266,27 @@
         return [];
       };
 
+      const normalizeCallArray = (raw) => {
+        if (!Array.isArray(raw)) return [];
+        return raw.map((call) => {
+          if (typeof call === 'string') {
+            const separatorIndex = call.lastIndexOf('.');
+            return separatorIndex > 0
+              ? {
+                  className: call.slice(0, separatorIndex).trim(),
+                  methodName: call.slice(separatorIndex + 1).trim(),
+                  condition: ''
+                }
+              : { className: '', methodName: call.trim(), condition: '' };
+          }
+          return {
+            className: (call?.Class || call?.class || '').toString().trim(),
+            methodName: (call?.Method || call?.method || '').toString().trim(),
+            condition: (call?.Condition || call?.condition || '').toString().trim()
+          };
+        }).filter((call) => call.methodName);
+      };
+
       const normalizeMethod = (m) => ({
         name: m?.Name || '',
         summary: m?.Summary || m?.Abst || '',
@@ -284,6 +306,7 @@
         deprecated: m?.Deprecated || '',
         parameters: normalizeParamArray(m?.Parameters || m?.Arguments),
         returns: normalizeReturnArray(m?.Returns || m?.ReturnValues),
+        calls: normalizeCallArray(m?.Calls),
         examples: m?.Examples || m?.Example || '',
         arginText: m?.Argin || '',
         argoutText: m?.Argout || ''
@@ -294,12 +317,87 @@
         return;
       }
 
-      const rawMethodData = (classDoc.methods || []).find(m => m?.Name === methodName);
+      const rawMethodData = (Array.isArray(classDoc.methods) ? classDoc.methods : [])
+        .find(m => m?.Name === methodName);
       const methodData = rawMethodData ? normalizeMethod(rawMethodData) : null;
       if (!methodData) {
         document.getElementById('dynamic-content').innerHTML = `<h1 style="color:red;">Method not found</h1><p>${methodName} does not exist in ${className}.</p>`;
         return;
       }
+
+      const findMethod = (doc, name) => {
+        const methods = Array.isArray(doc?.methods) ? doc.methods : [];
+        return methods.find((method) => method?.Name === name)
+          || methods.find((method) => (method?.Name || '').toLowerCase() === name.toLowerCase());
+      };
+
+      const makeMethodKey = (targetClassName, targetMethodName) =>
+        `${targetClassName}.${targetMethodName}`.toLowerCase();
+
+      const loadCallTreeNode = async (targetClassName, targetMethodName, condition, ancestry, suppliedDoc = null) => {
+        const key = makeMethodKey(targetClassName, targetMethodName);
+        if (ancestry.has(key)) {
+          return {
+            className: targetClassName,
+            methodName: targetMethodName,
+            summary: '',
+            condition,
+            children: [],
+            cycle: true,
+            missing: false
+          };
+        }
+
+        try {
+          const targetDoc = suppliedDoc || (await window.GuildaDocLoader.loadClass(targetClassName)).data;
+          const targetRawMethod = findMethod(targetDoc, targetMethodName);
+          if (!targetRawMethod) {
+            return {
+              className: targetClassName,
+              methodName: targetMethodName,
+              summary: '',
+              condition,
+              children: [],
+              cycle: false,
+              missing: true
+            };
+          }
+
+          const targetMethod = normalizeMethod(targetRawMethod);
+          const nextAncestry = new Set(ancestry);
+          nextAncestry.add(key);
+          const childReferences = targetMethod.calls
+            .map((reference) => ({
+              className: reference.className || targetMethod.defining || targetClassName,
+              methodName: reference.methodName,
+              condition: reference.condition || ''
+            }))
+            .filter((reference) => reference.className && reference.methodName);
+          const children = await Promise.all(childReferences.map((reference) =>
+            loadCallTreeNode(reference.className, reference.methodName, reference.condition, nextAncestry)
+          ));
+
+          return {
+            className: targetClassName,
+            methodName: targetMethod.name || targetMethodName,
+            summary: targetMethod.summary || '',
+            condition,
+            children,
+            cycle: false,
+            missing: false
+          };
+        } catch (error) {
+          return {
+            className: targetClassName,
+            methodName: targetMethodName,
+            summary: '',
+            condition,
+            children: [],
+            cycle: false,
+            missing: true
+          };
+        }
+      };
 
       const container = document.getElementById('dynamic-content');
       const extracted = extractExampleFromDescription(methodData.description);
@@ -456,6 +554,23 @@
         html += `<p>None</p>`;
       }
 
+      html += `
+        <h2 id="calls">Method Calls</h2>
+        <div class="view-switcher method-call-view-switcher" role="group" aria-label="Call tree label">
+          <button type="button" class="view-btn active" data-call-tree-mode="name">Method Name</button>
+          <button type="button" class="view-btn" data-call-tree-mode="summary">Summary</button>
+        </div>
+        <table class="compact-table method-call-tree">
+          <thead>
+            <tr><th>Call Tree</th></tr>
+          </thead>
+          <tbody id="method-call-tree-body">
+            <tr><td class="tree-empty">Loading method calls...</td></tr>
+          </tbody>
+        </table>
+        <p id="method-call-tree-status" class="method-call-tree-status" aria-live="polite"></p>
+      `;
+
       html += `<h2 id="examples">Examples</h2>`;
       if (examplesList.length > 0) {
         html += `<div class="meta-box">${examplesList.map((exampleText) => `<div class="example-block">${renderMarkdown(exampleText)}</div>`).join('')}</div>`;
@@ -469,6 +584,81 @@
       }
 
       container.innerHTML = html;
+
+      const callTreeBody = document.getElementById('method-call-tree-body');
+      const callTreeStatus = document.getElementById('method-call-tree-status');
+      const modeButtons = Array.from(document.querySelectorAll('[data-call-tree-mode]'));
+      let callTreeMode = 'name';
+
+      const renderGuides = (guides) => guides.map((hasNext, index) => {
+        const isBranch = index === guides.length - 1;
+        const classes = [
+          'tree-guide',
+          isBranch ? 'tree-branch' : 'tree-ancestor',
+          hasNext ? 'has-next' : 'is-last'
+        ];
+        return `<span class="${classes.join(' ')}" style="--tree-level:${index}" aria-hidden="true"></span>`;
+      }).join('');
+
+      const renderCallTree = (rootNode) => {
+        const rows = [];
+        const flattenTree = (node, guides = []) => {
+          rows.push({ node, guides });
+          node.children.forEach((child, index) => {
+            flattenTree(child, [...guides, index < node.children.length - 1]);
+          });
+        };
+        flattenTree(rootNode);
+
+        callTreeBody.innerHTML = rows.map(({ node, guides }) => {
+          const fallbackSummary = node.missing
+            ? `[Unresolved: ${node.methodName}]`
+            : `[No summary: ${node.methodName}]`;
+          const label = callTreeMode === 'summary'
+            ? ((node.summary || '').toString().trim() || fallbackSummary)
+            : node.methodName;
+          const title = `${node.className}.${node.methodName}`;
+          const marker = `<span class="tree-node-marker${guides.length === 0 ? ' is-root' : ''}" aria-hidden="true"></span>`;
+          const suffix = node.cycle
+            ? '<span class="method-call-note"> (cycle)</span>'
+            : (node.missing ? '<span class="method-call-note"> (unresolved)</span>' : '');
+          const condition = guides.length > 0
+            ? `<span class="method-call-condition"><strong>Condition:</strong> ${escapeHtml(node.condition || 'Always')}</span>`
+            : '';
+          const content = node.missing
+            ? `<span class="method-call-missing" title="${escapeHtml(title)}">${escapeHtml(label)}</span>`
+            : `<a class="tree-class-link method-call-link" href="${window.GuildaDocLoader.pageUrl('method.html', { class: node.className, method: node.methodName })}" title="${escapeHtml(title)}">${escapeHtml(label)}</a>`;
+          const nodeContent = `<span class="method-call-node-content">${content}${suffix}${condition}</span>`;
+          const hierarchy = `<div class="tree-table-name" style="--tree-depth:${guides.length}">${renderGuides(guides)}${marker}${nodeContent}</div>`;
+          return `<tr data-tree-depth="${guides.length}"><td>${hierarchy}</td></tr>`;
+        }).join('');
+
+        callTreeStatus.textContent = rootNode.children.length
+          ? ''
+          : 'No called methods are documented in the Calls metadata.';
+      };
+
+      modeButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          callTreeMode = button.dataset.callTreeMode === 'summary' ? 'summary' : 'name';
+          modeButtons.forEach((candidate) => {
+            candidate.classList.toggle('active', candidate === button);
+          });
+          if (button.callTreeRoot) {
+            renderCallTree(button.callTreeRoot);
+          }
+        });
+      });
+
+      const rootAncestry = new Set();
+      if (methodData.defining && methodData.defining !== className) {
+        rootAncestry.add(makeMethodKey(methodData.defining, methodName));
+      }
+      const callTreeRoot = await loadCallTreeNode(className, methodName, '', rootAncestry, classDoc);
+      modeButtons.forEach((button) => {
+        button.callTreeRoot = callTreeRoot;
+      });
+      renderCallTree(callTreeRoot);
     }
   </script>
 </body>
