@@ -13,7 +13,7 @@ function add_local_controller(obj, a_Controller)
 % [
 %   {
 %     "Name": "a_Controller",
-%     "Type": "Controller",
+%     "Type": "LocalController",
 %     "Description": "LocalController instance to attach to this component.",
 %     "Required": true,
 %     "Default": "-"
