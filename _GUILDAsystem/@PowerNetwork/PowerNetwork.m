@@ -133,14 +133,12 @@ classdef PowerNetwork < PowerSystemModel
 
 %% Constructor
     methods
-        function obj = PowerNetwork(tag,opt)
+        function obj = PowerNetwork(tag)
             arguments
-                tag            (1,1) string = "PowerNetwork";
-                opt.baseHz     (1,1) double {mustBePositive} = GUILDA.config("Model","Hz");
+                tag (1,1) string = "PowerNetwork";
             end
             obj.str_tag   = tag;
             obj.para_base = Parameter(obj);
-            % obj.para_base.add_entry("Hz", opt.baseHz, "double");
             obj.reset_solver;
         end
     end
@@ -148,7 +146,7 @@ classdef PowerNetwork < PowerSystemModel
 %% Methods
     methods
         % Layer Structure
-        bus = add_bus(obj, str_Bus, opt)
+        bus    = add_bus(  obj,  str_Bus,    opt)
         branch = add_branch(obj, str_Branch, from_to, opt)
         add_global_controller(obj, a_Gcon)
         remove_bus( obj, str_BusTag)

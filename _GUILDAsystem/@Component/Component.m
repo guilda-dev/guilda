@@ -148,15 +148,9 @@ classdef Component < PowerSystemModel
     methods
         % Layer Structure
         add_local_controller(obj, a_Controller)
-        remove_local_controller(obj,str_tag)
 
         % OPF
         [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Busvar, option)
-
-        % Dynamics
-        % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 消すのーーーーー？？？？？？ to Terao  
-        %                                                                      後々消しましょう!!         to Nishino
-        [n_odeX, n_odeU, Mass, x0] = reset_odeset(obj, n_odeX, n_odeU, omega0)
 
         % get_sys
         [sys, varargout] = get_sys(obj, x, V, I, u, opt)
