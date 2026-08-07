@@ -54,6 +54,8 @@ classdef (Sealed = true) AVR_ST1 < controller.avr.abstract
 
             obj.c_Vequilibrium = V;
             obj.c_Iequilibrium = [];
+
+            cellfun(@(c) c.get_equilibrium(V,u), obj.a_LocalController);
         end
 
         function set_PSS(obj, cls)

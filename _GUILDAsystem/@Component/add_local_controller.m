@@ -48,7 +48,10 @@ function add_local_controller(obj, varargin)
                end
             end
 
-            obj.a_LocalController(str_setKeys==new_con.key) = {new_con};            
+            if strcmp(new_con.key, "avr")
+                obj.a_LocalController{1} = new_con;            
+            end
+            % obj.a_LocalController(str_setKeys==new_con.key) = {new_con};            
 
             idx = idx + 1;
         end

@@ -14,9 +14,10 @@ classdef abstract < LocalController
             obj@LocalController("CA"+tag)                                                                                           
         end                
 
-        function get_equilibrium(obj, V, u) %#ok                              
+        function get_equilibrium(obj, V, u)      
             obj.rv_Xequilibrium = u(2);
             obj.rv_Uequilibrium = [];
+            cellfun(@(c) c.get_equilibrium(V,u), obj.a_LocalController);
         end
         
         function set_PSS(obj, cls) %#ok
