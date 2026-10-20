@@ -1,5 +1,18 @@
 classdef Component < PowerSystemModel
-% Class for managing equipment dynamics and power-flow settings 
+% <@Desc>
+% Abstract base class for equipment (machine/load) models connected to a bus.
+% It defines the interface for dynamics, power flow settings, and linearization.
+% Inherit from this class to implement a new equipment model.
+% <@Role>
+% Power System Model
+% <@Constructor>
+% Component instances are created via Bus.add_component().
+%  i.e.
+%  >> comp = bus.add_component(Type, P=0, Q=0, baseMVA=100, ...)
+%      - Type:    component type string (e.g., 'gen-classical', 'gen-1axis', 'load-power')
+%      - P:       active power injection [pu] (default: 0)
+%      - Q:       reactive power injection [pu] (default: 0)
+%      - baseMVA: base power [MVA] (default: 100)
 
 %% Abstract properties/methods
     properties(Abstract,Constant)
@@ -17,45 +30,180 @@ classdef Component < PowerSystemModel
 
 %% Parameter
     properties(SetAccess=protected)
-        a_Bus                                  % [   Layer   ] 接続しているBusクラス(a_Cubicleから辿る)
-        a_LocalController  = cell(0,1)         % [   Layer   ] 接続されているControllerクラスのcell配列        
-        rm_odeMass                             % [  Dynamics ] 数値積分の計算に使用する質量行列のシンボリック式
-        fv_odeDiff                             % [  Dynamics ] 数値積分の計算に使用する微分方程式のシンボリック式
-        fv_odeI                                % [  Dynamics ] 数値積分の計算に使用する接続方程式のシンボリック式
+
+        % <@Desc> Bus object to which this component is connected.
+        % <@Role> Layer Structure
+        % <@Type> Bus
+        % <@Size> 1x1
+        a_Bus
+
+        % <@Desc> Cell array of local controller objects connected to this component.
+        % <@Role> Layer Structure
+        % <@Type> LocalController cell array
+        % <@Size> Nx1
+        a_LocalController  = cell(0,1)
+
+        % <@Desc> Mass matrix function handle for the ODE numerical integration.
+        % <@Role> Dynamics
+        % <@Type> function_handle
+        % <@Size> 1x1
+        rm_odeMass
+
+        % <@Desc> Differential equation function handle for the ODE numerical integration.
+        % <@Role> Dynamics
+        % <@Type> function_handle
+        % <@Size> 1x1
+        fv_odeDiff
+
+        % <@Desc> Connection equation function handle for the ODE numerical integration.
+        % <@Role> Dynamics
+        % <@Type> function_handle
+        % <@Size> 1x1
+        fv_odeI
+
+        % <@Desc> Jacobian matrix A (state-to-state) for linearized model.
+        % <@Role> Linearize
+        % <@Type> function_handle
+        % <@Size> 1x1
         JacobiA
+
+        % <@Desc> Jacobian matrix B (input-to-state) for linearized model.
+        % <@Role> Linearize
+        % <@Type> function_handle
+        % <@Size> 1x1
         JacobiB
+
+        % <@Desc> Jacobian matrix C (state-to-output) for linearized model.
+        % <@Role> Linearize
+        % <@Type> function_handle
+        % <@Size> 1x1
         JacobiC
+
+        % <@Desc> Jacobian matrix D (input-to-output) for linearized model.
+        % <@Role> Linearize
+        % <@Type> function_handle
+        % <@Size> 1x1
         JacobiD
+
+        % <@Desc> Cached linearized state-space system object.
+        % <@Role> Linearize
+        % <@Type> ss
+        % <@Size> 1x1
         odeLinearSystem
     end
     properties
-        cv_Xcurrent = zeros(0,1)               % [  Simulation ] シミュレーション中の状態
-        cv_Ucurrent = zeros(0,1)               % [  Simulation ] シミュレーション中の入力
+
+        % <@Desc> Current state vector during simulation.
+        % <@Role> Simulation
+        % <@Type> complex double
+        % <@Size> Nx1
+        cv_Xcurrent = zeros(0,1)
+
+        % <@Desc> Current input vector during simulation.
+        % <@Role> Simulation
+        % <@Type> complex double
+        % <@Size> Nx1
+        cv_Ucurrent = zeros(0,1)
     end
     properties(SetAccess=protected)
-        cv_Xequilibrium = zeros(0,1)           % [SteadyState] 状態の平衡点
-        cv_Uequilibrium = zeros(0,1)           % [SteadyState] 定常入力
-        c_Iequilibrium                         % [SteadyState] 定常潮流状態での機器の注入電流
-        c_Vequilibrium                         % [SteadyState] 定常潮流状態での機器の注入電圧
+
+        % <@Desc> Equilibrium (steady-state) state vector.
+        % <@Role> Steady State
+        % <@Type> complex double
+        % <@Size> Nx1
+        cv_Xequilibrium = zeros(0,1)
+
+        % <@Desc> Equilibrium (steady-state) input vector.
+        % <@Role> Steady State
+        % <@Type> complex double
+        % <@Size> Nx1
+        cv_Uequilibrium = zeros(0,1)
+
+        % <@Desc> Steady-state injection current at the connected bus (complex).
+        % <@Role> Steady State
+        % <@Type> complex double
+        % <@Size> 1x1
+        c_Iequilibrium
+
+        % <@Desc> Steady-state voltage at the connected bus (complex).
+        % <@Role> Steady State
+        % <@Type> complex double
+        % <@Size> 1x1
+        c_Vequilibrium
     end
     properties (SetAccess={?odeSimulator, ?Component}, Hidden)
+
+        % <@Desc> ODE index mapping for component state variables.
+        % <@Role> Simulation
+        % <@Type> double
+        % <@Size> Nx1
         iv_odeX  = zeros(0,1);
-        iv_odeU  = zeros(0,1);        
+
+        % <@Desc> ODE index mapping for component input variables.
+        % <@Role> Simulation
+        % <@Type> double
+        % <@Size> Nx1
+        iv_odeU  = zeros(0,1);
     end    
     properties(Dependent)
-        cv_Xequilibrium_all                    % [SteadyState] 制御器の状態も含めた平衡点
-        tab_parameter                          % [ Parameter ] ハイパーパラメータの設定値
+
+        % <@Desc> Equilibrium state vector including all connected controller states.
+        % <@Role> Steady State
+        % <@Type> double
+        % <@Size> Nx1
+        cv_Xequilibrium_all
+
+        % <@Desc> Parameter table containing all component parameters (dynamics, operation, powerflow, OPF, graph).
+        % <@Role> Parameter
+        % <@Type> table
+        % <@Size> 1x1
+        tab_parameter
     end
     properties(SetAccess=protected)
-        para_dynamics                          % [ Parameter ] tab_prameterの動特性の部分を管理するParameterクラス 
-        para_powerflow                         % [ Parameter ] tab_prameterの潮流設定の部分を管理するParameterクラス
-        para_operation                         % [ Parameter ] tab_prameterの運用基準の部分を管理するParameterクラス
-        para_OPF                               % [ Parameter ] tab_prameterのOPFの部分を管理するParameterクラス
-        para_graph                             % [ Parameter ] tab_prameterのグラフ描画の部分を管理するParameterクラス
+
+        % <@Desc> Parameter container for component dynamics settings.
+        % <@Role> Parameter
+        % <@Type> Parameter
+        % <@Size> 1x1
+        para_dynamics
+
+        % <@Desc> Parameter container for power flow settings (P, Q).
+        % <@Role> Parameter
+        % <@Type> Parameter
+        % <@Size> 1x1
+        para_powerflow
+
+        % <@Desc> Parameter container for operating limits (baseMVA, Pmin, Pmax, Qmin, Qmax).
+        % <@Role> Parameter
+        % <@Type> Parameter
+        % <@Size> 1x1
+        para_operation
+
+        % <@Desc> Parameter container for OPF cost and initialization settings.
+        % <@Role> Parameter
+        % <@Type> Parameter
+        % <@Size> 1x1
+        para_OPF
+
+        % <@Desc> Parameter container for graph plotting settings.
+        % <@Role> Parameter
+        % <@Type> Parameter
+        % <@Size> 1x1
+        para_graph
     end  
     properties(Dependent, Access=protected)
-        parent                                 % [   Layer   ] Layerの上位に当たるクラス
-        children                               % [   Layer   ] Layerの下位に当たるクラス群
+
+        % <@Desc> Parent Bus object in the layer hierarchy.
+        % <@Role> Layer Structure
+        % <@Type> Bus
+        % <@Size> 1x1
+        parent
+
+        % <@Desc> Child controllers and parameter objects in the layer hierarchy.
+        % <@Role> Layer Structure
+        % <@Type> cell array
+        % <@Size> Nx1
+        children
     end
     properties (Access={?odeSimulator, ?Component})
         isController = false
@@ -71,6 +219,42 @@ classdef Component < PowerSystemModel
 %% Constructor
     methods(Access=protected)
         function obj = Component(str_tag, opt)
+        % <@Desc>
+        % Creates a Component instance with the given tag and parameter options.
+        % This is a protected constructor called by subclass constructors.
+        % <@Role>
+        % Constructor
+        % <@Abst>
+        % Initialize all parameter containers and register component parameters.
+        % <@Signatures>
+        % [
+        %   "obj = Component(str_tag, opt)"
+        % ]
+        % <@varargin>
+        % [
+        %   {
+        %     "Name": "str_tag",
+        %     "Type": "string scalar",
+        %     "Description": "Tag string to identify this component.",
+        %     "Required": true,
+        %     "Default": "-"
+        %   },
+        %   {
+        %     "Name": "opt",
+        %     "Type": "struct",
+        %     "Description": "Option struct with component parameters (P, Q, baseMVA, Pmin, Pmax, Qmin, Qmax, OPF settings, graph settings).",
+        %     "Required": true,
+        %     "Default": "-"
+        %   }
+        % ]
+        % <@varargout>
+        % [
+        %   {
+        %     "Name": "obj",
+        %     "Type": "Component",
+        %     "Description": "Created Component instance."
+        %   }
+        % ]
             obj.str_tag        = str_tag;
             obj.para_dynamics  = Parameter(obj,"dynamics");
             obj.para_powerflow = Parameter(obj,"powerflow");

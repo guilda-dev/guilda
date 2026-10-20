@@ -1,4 +1,48 @@
 function [tab_PFsol, flag, output] = calculate_powerflow(obj,mode,opt)
+% <@Desc>
+% Runs the power flow calculation for the network and returns bus voltage and current solutions.
+% <@Role>
+% Power Flow
+% <@Abst>
+% Solves the power flow equations using either the algebraic or dynamic method.
+% <@Signatures>
+% [
+%   "[tab_PFsol, flag, output] = net.calculate_powerflow()",
+%   "[tab_PFsol, flag, output] = net.calculate_powerflow(\"algebraic\")",
+%   "[tab_PFsol, flag, output] = net.calculate_powerflow(\"dynamic\")"
+% ]
+% <@varargin>
+% [
+%   {
+%     "Name": "mode",
+%     "Type": "string scalar",
+%     "Description": "Solution method: \"algebraic\" (Newton-Raphson) or \"dynamic\" (transient simulation).",
+%     "Required": false,
+%     "Default": "\"algebraic\""
+%   }
+% ]
+% <@varargout>
+% [
+%   {
+%     "Name": "tab_PFsol",
+%     "Type": "table",
+%     "Description": "Power flow solution table with Vphasor, Iphasor, P, Q for each bus."
+%   },
+%   {
+%     "Name": "flag",
+%     "Type": "logical",
+%     "Description": "True if the power flow converged successfully."
+%   },
+%   {
+%     "Name": "output",
+%     "Type": "struct",
+%     "Description": "Solver output information struct."
+%   }
+% ]
+% <@Examples>
+% [
+%   "```matlab\n[tab, flag] = net.calculate_powerflow();\n```"
+% ]
     arguments
         obj
         mode    (1,1) string {mustBeMember(mode,["algebraic","dynamic"])} = "algebraic"

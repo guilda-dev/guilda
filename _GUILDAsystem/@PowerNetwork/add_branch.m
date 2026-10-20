@@ -1,4 +1,65 @@
 function bra = add_branch(obj, Type, from_to, opt)
+% <@Desc>
+% Adds a new Branch object (transmission line or transformer) to the power network.
+% <@Role>
+% Layer Structure
+% <@Abst>
+% Creates a Branch instance of the specified type and registers it between two buses.
+% <@Signatures>
+% [
+%   "bra = net.add_branch(Type, from_to)",
+%   "bra = net.add_branch(Type, from_to, R=0, X=1, C=0)"
+% ]
+% <@varargin>
+% [
+%   {
+%     "Name": "Type",
+%     "Type": "char",
+%     "Description": "Branch type: 'T', 'pi', 'pi_transformer', or 'two_winding_transformer'.",
+%     "Required": true,
+%     "Default": "-"
+%   },
+%   {
+%     "Name": "from_to",
+%     "Type": "1x2 string or double",
+%     "Description": "Source and destination bus indices or tag names.",
+%     "Required": false,
+%     "Default": "[1, 2]"
+%   },
+%   {
+%     "Name": "R",
+%     "Type": "double scalar",
+%     "Description": "Branch resistance [pu].",
+%     "Required": false,
+%     "Default": "0"
+%   },
+%   {
+%     "Name": "X",
+%     "Type": "double scalar",
+%     "Description": "Branch reactance [pu].",
+%     "Required": false,
+%     "Default": "1"
+%   },
+%   {
+%     "Name": "C",
+%     "Type": "double scalar",
+%     "Description": "Branch shunt capacitance [pu].",
+%     "Required": false,
+%     "Default": "0"
+%   }
+% ]
+% <@varargout>
+% [
+%   {
+%     "Name": "bra",
+%     "Type": "Branch",
+%     "Description": "Newly created and registered Branch object."
+%   }
+% ]
+% <@Examples>
+% [
+%   "```matlab\nbra = net.add_branch('pi', [1,2], R=0.01, X=0.1, C=0.05);\n```"
+% ]
     arguments
         obj 
         Type         (1,:) char {mustBeMember(Type,{'T','pi','pi_transformer','two_winding_transformer'})}
