@@ -127,9 +127,6 @@ classdef PowerNetwork < PowerSystemModel
         parent                  % Layer Structure
         children                % Layer Structure
     end    
-    properties
-        rv_odeInit
-    end
 
 %% Constructor
     methods

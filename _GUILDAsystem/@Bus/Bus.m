@@ -35,10 +35,6 @@ classdef Bus < PowerSystemModel
         iv_odeX  = zeros(0,1);
         iv_odeI  = zeros(0,1);
         iv_odeU  = zeros(0,1);
-        rv_odeX0 = zeros(2,1);
-    end
-    properties (Access=public)
-        rv_odeInit
     end
     properties (SetAccess={?ContinuationPowerFlow})
         iv_CPFV = zeros(0,1)        
@@ -57,7 +53,6 @@ classdef Bus < PowerSystemModel
             obj.para_dynamics.add_entry(  "Gshunt", opt.Gshunt   , "double",...
                                           "Bshunt", opt.Bshunt   , "double");
             obj.para_operation.add_entry( "baseKV", opt.baseKV   , "double",...
-                                         "baseMVA", opt.baseMVA  , "double",...
                                             "Vmin", opt.Vmin     , "double",...
                                             "Vmax", opt.Vmax     , "double");
             obj.para_powerflow.add_entry(      "V", opt.V        , "double",...

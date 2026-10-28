@@ -16,7 +16,8 @@ function net = import(path, net, options)
 % Bus 
     % Variable Names
     str_BusReq  = ["V", "Varg"];
-    str_BusOpt  = ["Gshunt", "Bshunt", "Vmin", "Vmax", "baseKV", "baseMVA", "Tag", "Xaxis","Yaxis","Marker"];
+    % (a "baseMVA" column is accepted and ignored: the system base is net.tab_parameter.base.baseMVA)
+    str_BusOpt  = ["Gshunt", "Bshunt", "Vmin", "Vmax", "baseKV", "Tag", "Xaxis","Yaxis","Marker"];
     
     % validate table
     tab_bus    = readtable(fullfile(path, "bus", "parameter.csv"), "TextType", "string");

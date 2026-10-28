@@ -11,7 +11,6 @@ function set_equilibrium(obj, c_V, c_I, r_P, r_Q, opt)
     % The bus owns V. Its current is the sum of the component currents
     % (Dependent), so c_I is only used for the default r_P and r_Q.
     obj.c_Vequilibrium = c_V;
-    obj.rv_odeX0 = [real(c_V); imag(c_V)];
 
     a_Comp     = obj.a_Component;
     n_Comp     = numel(a_Comp);

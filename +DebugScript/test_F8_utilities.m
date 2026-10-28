@@ -86,6 +86,16 @@ assert(n_comp(net2) == n_comp(net))
 assert(norm(net2.get_admittance_matrix.Variables - net.get_admittance_matrix.Variables, "fro") < 1e-10)
 assert(norm(net2.cv_Vequilibrium - net.cv_Vequilibrium) < 1e-8)
 
+% 母線の baseMVA は廃止: 書き出さず、読み込み時は列があっても無視する (テンプレートの CSV には残っている)
+tab_bus = readtable(fullfile(str_path, "bus", "parameter.csv"));
+assert(~ismember("baseMVA", string(tab_bus.Properties.VariableNames)))
+tab_bus.baseMVA = repmat(50, height(tab_bus), 1);
+writetable(tab_bus, fullfile(str_path, "bus", "parameter.csv"));
+net3 = DebugScript.helper.quiet(@() CsvNetHandler.import(str_path));
+assert(norm(net3.cv_Vequilibrium - net.cv_Vequilibrium) < 1e-8)
+assert(~ismember("baseMVA", string(net3.a_Bus{1}.tab_parameter.operation.Properties.VariableNames)))
+assert(net3.tab_parameter.base.baseMVA == 100 && net3.tab_parameter.base.Hz == GUILDA.config("Model","Hz"))
+
 % 同じフォルダへの再出力は Overwrite 指定が必要
 try
     CsvNetHandler.export(net, "RoundTrip14", "savepath", str_dir);

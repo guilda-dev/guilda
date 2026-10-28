@@ -8,7 +8,6 @@ function bus = add_bus(obj, opt)
         opt.Vmin              (1,1) double = 0.5;
         opt.Vmax              (1,1) double = 1.5;
         opt.baseKV            (1,1) double = 230;
-        opt.baseMVA           (1,1) double = 100;
         opt.Varg0             (1,1) double = 0/180*pi;
         opt.V0                (1,1) double = 1;
         opt.Tag               (1,1) string = 'B';
