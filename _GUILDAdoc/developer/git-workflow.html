@@ -242,7 +242,7 @@
     <div class="gw-roles">
       <div class="gw-role" style="--c:#0f4c81">
         <div class="gw-role-name">main</div>
-        <p>Released, stable code. Every release is tagged.</p>
+        <p>Released, stable code. Every release is tagged. Contains no coding-assistant config.</p>
         <div class="gw-flow">from <span class="gw-chip is-none">—</span> into <span class="gw-chip is-none">—</span></div>
       </div>
       <div class="gw-role" style="--c:#1e7b3c">
@@ -380,20 +380,23 @@ breaks after a bus is removed. Refs #51.</div>
     </ol>
 
     <h2 id="release">Release</h2>
-    <ol class="gw-steps" style="--n:3">
-      <li><svg class="gw-icon gw-step-icon" aria-hidden="true"><use href="#gw-i-pr"/></svg><span class="gw-step-title">PR into main</span><span>Open a pull request from the integration branch into <code>main</code>.</span></li>
-      <li><svg class="gw-icon gw-step-icon" aria-hidden="true"><use href="#gw-i-tag"/></svg><span class="gw-step-title">Tag vX.Y</span><span>After merging, tag the merge commit on <code>main</code> as <code>vX.Y</code>. Existing tags:</span><span class="gw-tags"><span class="gw-tag">v1.0</span><span class="gw-tag">v1.1</span><span class="gw-tag">v2.0</span><span class="gw-tag">v2.1</span></span></li>
-      <li><svg class="gw-icon gw-step-icon" aria-hidden="true"><use href="#gw-i-branch"/></svg><span class="gw-step-title">Next branch</span><span>Create the next integration branch from <code>main</code>.</span></li>
+    <ol class="gw-steps" style="--n:4">
+      <li><svg class="gw-icon gw-step-icon" aria-hidden="true"><use href="#gw-i-pr"/></svg><span class="gw-step-title">Review PR</span><span>Open a pull request from the integration branch into <code>main</code> for review. Do not merge it on GitHub.</span></li>
+      <li><svg class="gw-icon gw-step-icon" aria-hidden="true"><use href="#gw-i-merge"/></svg><span class="gw-step-title">release.sh</span><span>From a clean <code>versionX.Y</code>, run <code>bash .claude/release/release.sh X.Y</code>. It merges into <code>main</code> with <code>--no-ff</code>, removes the assistant config, commits <code>chore: release vX.Y</code>, and tags the merge commit <code>vX.Y</code>. Existing tags:</span><span class="gw-tags"><span class="gw-tag">v1.0</span><span class="gw-tag">v1.1</span><span class="gw-tag">v2.0</span><span class="gw-tag">v2.1</span></span></li>
+      <li><svg class="gw-icon gw-step-icon" aria-hidden="true"><use href="#gw-i-tag"/></svg><span class="gw-step-title">Push</span><span>Check the result, then run the printed <code>git push origin main vX.Y</code>. GitHub marks the pull request as merged.</span></li>
+      <li><svg class="gw-icon gw-step-icon" aria-hidden="true"><use href="#gw-i-branch"/></svg><span class="gw-step-title">Next branch</span><span>Run <code>bash .claude/release/start-version.sh X.Y PREV</code>: it creates the next <code>versionX.Y</code> from <code>main</code> and restores the assistant config from <code>versionPREV</code>.</span></li>
     </ol>
+    <p><strong>Assistant config never lands in <code>main</code>.</strong> <code>.claude/</code>, <code>.codex/</code> and <code>.github/copilot-instructions.md</code> are tracked on the integration and work branches only, so users who clone <code>main</code> or run <code>GUILDA.gitpull</code> never get them. <code>release.sh</code> removes them from the release merge and checks that <code>main</code> has none; <code>start-version.sh</code> brings them back. If the merge conflicts, the script aborts: merge <code>main</code> into <code>versionX.Y</code>, resolve the conflicts there, and run it again.</p>
 
     <h2 id="dont">Do not</h2>
     <ul class="gw-dont">
       <li><svg class="gw-icon gw-dont-icon" aria-hidden="true"><use href="#gw-i-no"/></svg><span><strong>Direct commits</strong>Commit directly to <code>main</code>.</span></li>
+      <li><svg class="gw-icon gw-dont-icon" aria-hidden="true"><use href="#gw-i-no"/></svg><span><strong>Manual merges into main</strong>Merge or cherry-pick into <code>main</code> by hand or on GitHub; release with <code>release.sh</code>.</span></li>
       <li><svg class="gw-icon gw-dont-icon" aria-hidden="true"><use href="#gw-i-no"/></svg><span><strong>Force-push</strong>Force-push to <code>main</code> or the integration branch.</span></li>
       <li><svg class="gw-icon gw-dont-icon" aria-hidden="true"><use href="#gw-i-no"/></svg><span><strong>Generated / personal files</strong>Commit generated files or personal settings (see <a href="folder-structure.html#generated">Generated files</a>).</span></li>
       <li><svg class="gw-icon gw-dont-icon" aria-hidden="true"><use href="#gw-i-no"/></svg><span><strong>Other prefixes</strong>Create work branches with other prefixes such as <code>dev/</code> or <code>develop/</code>.</span></li>
     </ul>
-    <p><strong>Enforced by Claude Code hooks</strong> (<code>.claude/settings.json</code>, <code>.claude/hooks/</code>): Claude Code sessions in this repository are blocked from creating branches with other names, committing on <code>main</code>, <code>versionX.Y</code> or non-work branches, force-pushing or deleting <code>main</code> / <code>versionX.Y</code>, and editing generated files; a commit message that breaks the format is sent back for <code>git commit --amend</code>.</p>
+    <p><strong>Enforced by Claude Code hooks</strong> (<code>.claude/settings.json</code>, <code>.claude/hooks/</code>): Claude Code sessions in this repository are blocked from creating branches with other names, committing on <code>main</code>, <code>versionX.Y</code> or non-work branches, force-pushing or deleting <code>main</code> / <code>versionX.Y</code>, running <code>git merge</code> or <code>git cherry-pick</code> on <code>main</code> (use <code>release.sh</code>), and editing generated files; a commit message that breaks the format is sent back for <code>git commit --amend</code>.</p>
   </main>
 
   <script>
