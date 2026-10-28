@@ -6,149 +6,73 @@
   <title>GUILDA Developer Guide - Git Workflow</title>
   <link rel="stylesheet" href="../style.css">
   <style>
-    .gw-icon { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -0.15em; flex: none; }
-    .gw-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-    .gw-caption { color: #5f6b7a; font-size: 0.9rem; margin: 6px 0 0; }
-
-    /* Branch graph */
-    .gw-graph-card { margin: 18px 0 10px; padding: 14px 14px 10px; background: #f8fbff; border: 1px solid #dce4ec; border-radius: 10px; }
-    .gw-graph-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .gw-graph { display: block; width: 100%; min-width: 600px; height: auto; }
-    .gw-graph text { font-family: inherit; }
-    .gw-graph .gw-lane-name { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 15px; font-weight: bold; }
-    .gw-graph .gw-lane-sub { font-size: 12px; fill: #5f6b7a; }
-    .gw-graph .gw-note { font-size: 12px; fill: #5f6b7a; }
-    .gw-graph-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-top: 6px; }
-    .gw-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; color: #5f6b7a; font-size: 0.85rem; }
-    .gw-legend span { display: inline-flex; align-items: center; gap: 6px; }
-    .gw-legend svg { width: 16px; height: 16px; }
-    .gw-scroll-hint { display: none; color: #5f6b7a; font-size: 0.8rem; margin: 0 0 6px; }
-    .gw-replay { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 1px solid #0f4c81; border-radius: 6px; background: #fff; color: #0f4c81; font: inherit; font-size: 0.85rem; font-weight: bold; cursor: pointer; }
-    .gw-replay:hover { background: #0f4c81; color: #fff; }
-
+    /* Git Workflow page only (gw-*); shared parts are dg-* in style.css */
+    .gw-graph { min-width: 620px; }
     .gw-play .gw-pop { transform-box: fill-box; transform-origin: center; animation: gw-pop 0.4s ease-out var(--d, 0s) both; }
     .gw-play .gw-draw { stroke-dasharray: 1; animation: gw-draw 0.5s ease-in-out var(--d, 0s) both; }
     .gw-play .gw-fade { animation: gw-fade 0.4s ease-out var(--d, 0s) both; }
-    @keyframes gw-pop { from { opacity: 0; transform: scale(0.2); } 70% { transform: scale(1.25); } to { opacity: 1; transform: scale(1); } }
+    @keyframes gw-pop { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: scale(1); } }
     @keyframes gw-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
     @keyframes gw-fade { from { opacity: 0; } to { opacity: 1; } }
 
-    /* Branch role cards */
-    .gw-roles { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin: 14px 0 6px; }
-    .gw-role { border: 1px solid #dee2e6; border-top: 5px solid var(--c); border-radius: 8px; padding: 12px 14px; background: #fff; }
-    .gw-role-name { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: bold; color: var(--c); font-size: 1rem; }
-    .gw-role p { margin: 6px 0 10px; font-size: 0.92rem; }
-    .gw-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 0.8rem; color: #5f6b7a; }
-    .gw-chip { display: inline-block; padding: 2px 8px; border-radius: 10px; background: #f4f7f6; border: 1px solid #dee2e6; color: #333; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.8rem; white-space: nowrap; }
-    .gw-chip.is-none { color: #5f6b7a; font-family: inherit; }
-
-    /* Anatomy (branch name / commit line) */
-    .gw-pattern { margin: 10px 0 4px; font-size: 0.95rem; color: #5f6b7a; }
-    .gw-anatomy { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px 2px; margin: 12px 0 18px; padding: 18px 16px 12px; background: #f8fbff; border: 1px solid #dce4ec; border-radius: 10px; }
-    .gw-part { display: inline-flex; flex-direction: column; align-items: stretch; min-width: 0; max-width: 100%; }
-    .gw-part-text { padding: 4px 8px; border-radius: 6px 6px 0 0; background: var(--bg); border-bottom: 3px solid var(--c); color: #333; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 1.15rem; font-weight: bold; overflow-wrap: anywhere; }
-    .gw-part-label { margin-top: 5px; color: var(--c); font-size: 0.78rem; font-weight: bold; text-align: center; line-height: 1.3; }
-    .gw-sep { padding: 4px 1px; color: #5f6b7a; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 1.15rem; font-weight: bold; white-space: pre; }
-    .gw-c-type { --c: #0f4c81; --bg: #e8f0f8; }
-    .gw-c-issue { --c: #8a6d00; --bg: #fff8e1; }
-    .gw-c-slug { --c: #1e7b3c; --bg: #e7f6ec; }
-
-    /* Rule tiles */
-    .gw-rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin: 10px 0 18px; padding: 0; list-style: none; }
-    .gw-rule { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid #dee2e6; border-radius: 8px; background: #fff; font-size: 0.9rem; }
-    .gw-rule-mark { flex: none; display: inline-flex; align-items: center; justify-content: center; min-width: 42px; height: 42px; padding: 0 4px; box-sizing: border-box; border-radius: 8px; background: #e8f0f8; color: #0f4c81; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: bold; font-size: 0.95rem; }
-
-    /* Type cards */
-    .gw-types { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; margin: 10px 0 22px; }
-    .gw-type { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border: 1px solid #dee2e6; border-left: 5px solid var(--c); border-radius: 8px; background: #fff; }
-    .gw-badge { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; padding: 3px 10px; border-radius: 12px; background: var(--bg); color: var(--c); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: bold; font-size: 0.92rem; white-space: nowrap; }
-    .gw-type-use { font-size: 0.9rem; }
-    .gw-type-example { color: #5f6b7a; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.82rem; overflow-wrap: anywhere; }
-    .gw-t-feature { --c: #0f4c81; --bg: #e8f0f8; }
-    .gw-t-fix { --c: #b02a37; --bg: #fdeeee; }
-    .gw-t-refactor { --c: #5f6b7a; --bg: #eef1f4; }
-    .gw-t-docs { --c: #1e7b3c; --bg: #e7f6ec; }
-    .gw-t-test { --c: #8a6d00; --bg: #fff8e1; }
-    .gw-t-chore { --c: #333; --bg: #f4f7f6; }
+    .gw-branches .dg-row { grid-template-columns: minmax(0, 15rem) minmax(0, 1fr) minmax(0, 13rem); }
+    .gw-types .dg-row { grid-template-columns: 8rem minmax(0, 1fr) minmax(0, 1fr); align-items: center; }
+    .gw-map .dg-row { grid-template-columns: 7rem 1.5rem 7rem minmax(0, 1fr); align-items: center; }
+    .gw-branch-name { font-family: var(--dg-mono); font-weight: bold; }
+    .gw-example { color: var(--dg-muted); font-family: var(--dg-mono); font-size: 0.85rem; overflow-wrap: anywhere; }
 
     /* Commit message mock */
-    .gw-msg { margin: 10px 0 18px; border: 1px solid #dce4ec; border-radius: 10px; overflow: hidden; background: #fff; }
-    .gw-msg-row { display: grid; grid-template-columns: 110px minmax(0, 1fr); border-bottom: 1px solid #dee2e6; }
-    .gw-msg-row:last-child { border-bottom: none; }
-    .gw-msg-tag { padding: 10px 12px; background: #f8fbff; border-right: 1px solid #dce4ec; color: #0f4c81; font-size: 0.78rem; font-weight: bold; }
-    .gw-msg-tag small { display: block; color: #5f6b7a; font-weight: normal; }
-    .gw-msg-text { padding: 10px 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.9rem; white-space: pre-wrap; overflow-wrap: anywhere; }
-    .gw-msg-blank .gw-msg-text { color: #9aa6b2; font-style: italic; font-family: inherit; }
-    .gw-meter { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-family: inherit; font-size: 0.78rem; color: #1e7b3c; white-space: nowrap; }
-    .gw-meter-bar { position: relative; flex: 1; height: 8px; border-radius: 4px; background: #eef1f4; overflow: hidden; }
-    .gw-meter-bar span { position: absolute; inset: 0 auto 0 0; width: 79%; border-radius: 4px; background: #1e7b3c; }
-    .gw-play-meter .gw-meter-bar span { animation: gw-grow 1.2s ease-out both; }
-    @keyframes gw-grow { from { width: 0; } }
+    .gw-msg-row { display: grid; grid-template-columns: 130px minmax(0, 1fr); border-top: 1px solid var(--gh-border); }
+    .gw-msg-row:first-child { border-top: 0; }
+    .gw-msg-tag { padding: 12px 14px; border-right: 1px solid var(--gh-border); background: var(--gh-panel); color: var(--gh-muted); font-size: 0.8rem; }
+    .gw-msg-tag b { display: block; color: var(--gh-text); font-weight: 600; }
+    .gw-msg-text { padding: 12px 14px; font-family: var(--dg-mono); font-size: 0.9rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .gw-msg-text.is-title { font-weight: 600; }
+    .gw-msg-text.is-blank { color: var(--gh-muted); font-family: inherit; font-style: italic; }
+    .gw-meter { display: flex; align-items: center; gap: 10px; margin-top: 8px; color: var(--gh-open); font: 600 0.78rem var(--dg-mono); }
+    .gw-meter-bar { position: relative; flex: 1; height: 6px; overflow: hidden; border-radius: 3px; background: #21262d; }
+    .gw-meter-bar span { position: absolute; inset: 0 auto 0 0; width: 79%; border-radius: 3px; background: var(--gh-open); }
 
-    /* Commit type <-> branch type */
-    .gw-map { display: grid; gap: 8px; margin: 10px 0 18px; }
-    .gw-map-row { display: grid; grid-template-columns: 124px 40px 110px minmax(0, 1fr); align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid #dee2e6; border-radius: 8px; background: #fff; }
-    .gw-map-head { border: none; background: none; padding: 0 10px; color: #5f6b7a; font-size: 0.78rem; font-weight: bold; }
-    .gw-map-link { height: 0; border-top: 2px dashed #9fb3c8; }
-    .gw-map-use { font-size: 0.88rem; }
-    .gw-map .gw-badge { justify-self: start; }
-    .gw-mix { display: block; width: 100%; max-width: 460px; height: auto; margin: 4px 0 0; }
+    /* Pull request mock */
+    .gw-merge { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .gw-merge-btn { padding: 5px 14px; border-radius: 6px; background: #238636; color: #fff; font-weight: 600; font-size: 0.85rem; }
+    .gw-merge-btn.is-secondary { background: #21262d; border: 1px solid var(--gh-border); color: var(--gh-text); }
+    .gw-task { display: flex; align-items: center; gap: 8px; margin-top: 6px; color: var(--gh-text); }
+    .gw-task .dg-icon { color: var(--gh-open); width: 16px; height: 16px; }
 
-    /* Step diagrams */
-    .gw-steps { list-style: none; margin: 22px 0 14px; padding: 0; display: grid; grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)); gap: 24px; counter-reset: gw-step; }
-    .gw-steps > li { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 20px 12px 14px; border: 1px solid #dce4ec; border-radius: 10px; background: #f8fbff; font-size: 0.88rem; counter-increment: gw-step; }
-    .gw-steps > li::before { content: counter(gw-step); position: absolute; top: -13px; left: 12px; width: 26px; height: 26px; border-radius: 50%; background: #0f4c81; color: #fff; font-weight: bold; font-size: 0.85rem; line-height: 26px; text-align: center; }
-    .gw-steps > li:not(:last-child)::after { content: ""; position: absolute; top: 50%; right: -19px; margin-top: -7px; border: 7px solid transparent; border-left: 10px solid #9fb3c8; }
-    .gw-step-icon { width: 30px; height: 30px; color: #0f4c81; }
-    .gw-step-title { color: #0f4c81; font-weight: bold; font-size: 0.95rem; }
-    .gw-steps code { overflow-wrap: anywhere; }
-    .gw-tags { display: flex; flex-wrap: wrap; gap: 4px; }
-    .gw-tag { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 4px; background: #fff8e1; border: 1px solid #e0a800; color: #333; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.78rem; font-weight: bold; }
-    @media (max-width: 760px) {
-      .gw-steps { grid-template-columns: minmax(0, 1fr); gap: 26px; }
-      .gw-steps > li:not(:last-child)::after { top: auto; right: auto; bottom: -22px; left: 50%; margin: 0 0 0 -7px; border: 7px solid transparent; border-top: 10px solid #9fb3c8; }
-    }
-
-    /* Do-not cards */
-    .gw-dont { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin: 14px 0 0; padding: 0; list-style: none; }
-    .gw-dont li { display: flex; align-items: flex-start; gap: 12px; padding: 14px; border: 1px solid #f1c6cb; border-left: 5px solid #b02a37; border-radius: 8px; background: #fdeeee; }
-    .gw-dont-icon { width: 30px; height: 30px; color: #b02a37; }
-    .gw-dont strong { display: block; color: #b02a37; margin-bottom: 2px; }
-
-    @media (max-width: 520px) {
+    @media (max-width: 640px) {
+      .gw-branches .dg-row, .gw-types .dg-row { grid-template-columns: minmax(0, 1fr); }
+      .gw-map .dg-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+      .gw-map .dg-row > .dg-row-arrow { display: block; }
+      .gw-map .dg-rows-head { display: none; }
+      .gw-map .dg-row > :last-child { flex-basis: 100%; }
       .gw-msg-row { grid-template-columns: minmax(0, 1fr); }
-      .gw-msg-tag { border-right: none; border-bottom: 1px dashed #dce4ec; padding: 6px 12px; }
-      .gw-msg-tag small { display: inline; margin-left: 6px; }
-      .gw-map-row { display: flex; flex-wrap: wrap; align-items: center; }
-      .gw-map-link { width: 20px; }
-      .gw-map-use { flex-basis: 100%; }
-      .gw-map-head { display: none; }
-      .gw-scroll-hint { display: block; }
+      .gw-msg-tag { border-right: 0; border-bottom: 1px solid var(--gh-border); padding: 6px 14px; }
+      .gw-msg-tag b { display: inline; margin-right: 6px; }
     }
     @media (prefers-reduced-motion: reduce) {
-      .gw-play .gw-pop, .gw-play .gw-draw, .gw-play .gw-fade, .gw-play-meter .gw-meter-bar span { animation: none; }
-      .gw-replay { display: none; }
+      .gw-play .gw-pop, .gw-play .gw-draw, .gw-play .gw-fade { animation: none; }
+      #gw-replay { display: none; }
     }
   </style>
 </head>
-<body class="developer-layout">
-  <!-- Icon set (stroke icons, 24x24) -->
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-    <symbol id="gw-i-feature" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></symbol>
-    <symbol id="gw-i-fix" viewBox="0 0 24 24"><rect x="8" y="7" width="8" height="13" rx="4"/><path d="M12 11v9M4 11h4M16 11h4M4 16h4M16 16h4M9 3l2 4M15 3l-2 4"/></symbol>
-    <symbol id="gw-i-refactor" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></symbol>
-    <symbol id="gw-i-docs" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"/></symbol>
-    <symbol id="gw-i-test" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3M7.5 15h9"/></symbol>
-    <symbol id="gw-i-chore" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></symbol>
-    <symbol id="gw-i-sync" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="12" r="2"/><path d="M6 7v10M6 7c0 4 5 5 10 5"/></symbol>
-    <symbol id="gw-i-pr" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/><path d="M6 8v8M18 16V9a3 3 0 0 0-3-3h-4M13 4l-2 2 2 2"/></symbol>
-    <symbol id="gw-i-hash" viewBox="0 0 24 24"><path d="M10 4 8 20M16 4l-2 16M5 9h15M4 15h15"/></symbol>
-    <symbol id="gw-i-check" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12 3 3 5-6"/></symbol>
-    <symbol id="gw-i-merge" viewBox="0 0 24 24"><circle cx="6" cy="18" r="2"/><circle cx="6" cy="6" r="2"/><circle cx="18" cy="18" r="2"/><path d="M6 8v8M8 6c6 0 10 4 10 10M14 4l6 6M20 4l-6 6"/></symbol>
-    <symbol id="gw-i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="7.5" r="1.5"/></symbol>
-    <symbol id="gw-i-branch" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="7" r="2"/><path d="M6 7v10M18 9c0 5-12 3-12 8"/></symbol>
-    <symbol id="gw-i-no" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></symbol>
-    <symbol id="gw-i-replay" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.5M4 4v4.5h4.5"/></symbol>
+<body class="developer-layout dg">
+  <!-- Icon sprite (stroke icons, 24x24) -->
+  <svg class="dg-sprite" aria-hidden="true" focusable="false">
+    <symbol id="dg-i-feature" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></symbol>
+    <symbol id="dg-i-fix" viewBox="0 0 24 24"><rect x="8" y="7" width="8" height="13" rx="4"/><path d="M12 11v9M4 11h4M16 11h4M4 16h4M16 16h4M9 3l2 4M15 3l-2 4"/></symbol>
+    <symbol id="dg-i-refactor" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></symbol>
+    <symbol id="dg-i-docs" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"/></symbol>
+    <symbol id="dg-i-test" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3M7.5 15h9"/></symbol>
+    <symbol id="dg-i-chore" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></symbol>
+    <symbol id="dg-i-pr" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/><path d="M6 8v8M18 16V9a3 3 0 0 0-3-3h-4M13 4l-2 2 2 2"/></symbol>
+    <symbol id="dg-i-commit" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M2 12h6M16 12h6"/></symbol>
+    <symbol id="dg-i-branch" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="7" r="2"/><path d="M6 7v10M18 9c0 5-12 3-12 8"/></symbol>
+    <symbol id="dg-i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="dg-i-no" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></symbol>
+    <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+    <symbol id="dg-i-shield" viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+    <symbol id="dg-i-replay" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.5M4 4v4.5h4.5"/></symbol>
   </svg>
 
   <main>
@@ -165,119 +89,107 @@
       <a href="#dont">Do not</a>
     </nav>
 
+    <!-- ===================== Branch model ===================== -->
     <h2 id="branches">Branch model</h2>
-    <div class="gw-graph-card">
-      <p class="gw-scroll-hint">Scroll the graph sideways →</p>
-      <div class="gw-graph-scroll">
+    <div class="dg-gh">
+      <div class="dg-gh-chrome"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-branch"/></svg>GUILDA / <b>Network graph</b></div>
+      <div class="dg-gh-scroll">
         <svg class="gw-graph gw-play" id="gw-graph" viewBox="0 0 880 270" role="img" aria-labelledby="gw-graph-title gw-graph-desc">
           <title id="gw-graph-title">Branch graph</title>
-          <desc id="gw-graph-desc">version4.0 is cut from main. Work branches feature/42 and fix/51 are cut from version4.0 and merged back into it by pull requests. At release, version4.0 is merged into main, the merge commit is tagged v4.0, and the next integration branch is cut from main.</desc>
+          <desc id="gw-graph-desc">The integration branch versionX.Y is cut from main. Work branches feature/42 and fix/51 are cut from versionX.Y and merged back into it by pull requests. At release, versionX.Y is merged into main, the merge commit is tagged vX.Y, and the next integration branch is cut from main.</desc>
 
           <!-- lane labels -->
-          <text class="gw-lane-name" x="12" y="50" fill="#0f4c81">main</text>
-          <text class="gw-lane-sub" x="12" y="66">releases · tag vX.Y</text>
-          <text class="gw-lane-name" x="12" y="115" fill="#1e7b3c">version4.0</text>
-          <text class="gw-lane-sub" x="12" y="131">integration</text>
-          <text class="gw-lane-name" x="12" y="180" fill="#d63384">feature/42-…</text>
-          <text class="gw-lane-sub" x="12" y="196">work branch</text>
-          <text class="gw-lane-name" x="12" y="240" fill="#b38600">fix/51-…</text>
-          <text class="gw-lane-sub" x="12" y="256">work branch</text>
+          <g font-size="14" font-weight="bold">
+            <text x="14" y="50" fill="#58a6ff">main</text>
+            <text x="14" y="115" fill="#3fb950">versionX.Y</text>
+            <text x="14" y="180" fill="#a371f7">feature/42-…</text>
+            <text x="14" y="240" fill="#d29922">fix/51-…</text>
+          </g>
+          <g font-size="11" fill="#8b949e">
+            <text x="14" y="66">releases · tag vX.Y</text>
+            <text x="14" y="131">integration</text>
+            <text x="14" y="196">work branch</text>
+            <text x="14" y="256">work branch</text>
+          </g>
 
           <!-- main lane -->
-          <path d="M165 45 H870" stroke="#0f4c81" stroke-width="5" stroke-linecap="round" fill="none"/>
-
-          <!-- cut version4.0 from main -->
-          <path class="gw-draw" style="--d:.5s" pathLength="1" d="M190 45 C220 45 220 110 250 110" stroke="#1e7b3c" stroke-width="4" fill="none"/>
-          <path class="gw-draw" style="--d:1.1s" pathLength="1" d="M250 110 H430" stroke="#1e7b3c" stroke-width="4" fill="none"/>
-          <path class="gw-draw" style="--d:2.5s" pathLength="1" d="M430 110 H630" stroke="#1e7b3c" stroke-width="4" fill="none"/>
-
+          <path d="M165 45 H870" stroke="#58a6ff" stroke-width="4" stroke-linecap="round" fill="none"/>
+          <!-- integration branch -->
+          <path class="gw-draw" style="--d:.4s" pathLength="1" d="M190 45 C220 45 220 110 250 110" stroke="#3fb950" stroke-width="4" fill="none"/>
+          <path class="gw-draw" style="--d:.8s" pathLength="1" d="M250 110 H430" stroke="#3fb950" stroke-width="4" fill="none"/>
+          <path class="gw-draw" style="--d:2s" pathLength="1" d="M430 110 H630" stroke="#3fb950" stroke-width="4" fill="none"/>
           <!-- feature/42 -->
-          <path class="gw-draw" style="--d:1.1s" pathLength="1" d="M250 110 C280 110 280 175 310 175" stroke="#d63384" stroke-width="4" fill="none"/>
-          <path class="gw-draw" style="--d:1.5s" pathLength="1" d="M310 175 H370" stroke="#d63384" stroke-width="4" fill="none"/>
-          <path class="gw-draw" style="--d:2s" pathLength="1" d="M370 175 C400 175 400 110 430 110" stroke="#d63384" stroke-width="4" fill="none"/>
-
+          <path class="gw-draw" style="--d:.8s" pathLength="1" d="M250 110 C280 110 280 175 310 175 H370 C400 175 400 110 430 110" stroke="#a371f7" stroke-width="4" fill="none"/>
           <!-- fix/51 -->
-          <path class="gw-draw" style="--d:2.5s" pathLength="1" d="M430 110 C465 110 455 235 490 235" stroke="#e0a800" stroke-width="4" fill="none"/>
-          <path class="gw-draw" style="--d:2.9s" pathLength="1" d="M490 235 H550" stroke="#e0a800" stroke-width="4" fill="none"/>
-          <path class="gw-draw" style="--d:3.4s" pathLength="1" d="M550 235 C590 235 590 110 630 110" stroke="#e0a800" stroke-width="4" fill="none"/>
-
-          <!-- release: version4.0 into main -->
-          <path class="gw-draw" style="--d:4s" pathLength="1" d="M630 110 H690 C715 110 715 45 740 45" stroke="#1e7b3c" stroke-width="4" fill="none"/>
+          <path class="gw-draw" style="--d:2s" pathLength="1" d="M430 110 C465 110 455 235 490 235 H550 C590 235 590 110 630 110" stroke="#d29922" stroke-width="4" fill="none"/>
+          <!-- release: integration branch into main -->
+          <path class="gw-draw" style="--d:3s" pathLength="1" d="M630 110 H690 C715 110 715 45 740 45" stroke="#3fb950" stroke-width="4" fill="none"/>
           <!-- next integration branch -->
-          <path class="gw-fade" style="--d:5s" d="M740 45 C770 45 770 110 800 110 H865" stroke="#1e7b3c" stroke-width="4" stroke-dasharray="8 6" fill="none" opacity="0.55"/>
+          <path class="gw-fade" style="--d:3.8s" d="M740 45 C770 45 770 110 800 110 H865" stroke="#3fb950" stroke-width="4" stroke-dasharray="8 6" fill="none" opacity="0.5"/>
 
           <!-- commits -->
-          <circle class="gw-pop" style="--d:.2s" cx="190" cy="45" r="9" fill="#0f4c81"/>
-          <circle class="gw-pop" style="--d:.9s" cx="250" cy="110" r="8" fill="#1e7b3c"/>
-          <circle class="gw-pop" style="--d:1.4s" cx="310" cy="175" r="8" fill="#d63384"/>
-          <circle class="gw-pop" style="--d:1.7s" cx="370" cy="175" r="8" fill="#d63384"/>
-          <circle class="gw-pop" style="--d:2.3s" cx="430" cy="110" r="9" fill="#fff" stroke="#1e7b3c" stroke-width="4"/>
-          <circle class="gw-pop" style="--d:2.8s" cx="490" cy="235" r="8" fill="#e0a800"/>
-          <circle class="gw-pop" style="--d:3.1s" cx="550" cy="235" r="8" fill="#e0a800"/>
-          <circle class="gw-pop" style="--d:3.7s" cx="630" cy="110" r="9" fill="#fff" stroke="#1e7b3c" stroke-width="4"/>
-          <circle class="gw-pop" style="--d:4.4s" cx="740" cy="45" r="10" fill="#fff" stroke="#0f4c81" stroke-width="5"/>
+          <g stroke="#0d1117" stroke-width="3">
+            <circle class="gw-pop" style="--d:.2s" cx="190" cy="45" r="8" fill="#58a6ff"/>
+            <circle class="gw-pop" style="--d:.7s" cx="250" cy="110" r="8" fill="#3fb950"/>
+            <circle class="gw-pop" style="--d:1.1s" cx="310" cy="175" r="8" fill="#a371f7"/>
+            <circle class="gw-pop" style="--d:1.3s" cx="370" cy="175" r="8" fill="#a371f7"/>
+            <circle class="gw-pop" style="--d:2.3s" cx="490" cy="235" r="8" fill="#d29922"/>
+            <circle class="gw-pop" style="--d:2.5s" cx="550" cy="235" r="8" fill="#d29922"/>
+          </g>
+          <circle class="gw-pop" style="--d:1.7s" cx="430" cy="110" r="8" fill="#0d1117" stroke="#3fb950" stroke-width="3"/>
+          <circle class="gw-pop" style="--d:2.8s" cx="630" cy="110" r="8" fill="#0d1117" stroke="#3fb950" stroke-width="3"/>
+          <circle class="gw-pop" style="--d:3.4s" cx="740" cy="45" r="10" fill="#0d1117" stroke="#58a6ff" stroke-width="4"/>
 
           <!-- notes -->
-          <g class="gw-fade" style="--d:.6s"><text class="gw-note" x="232" y="74">cut</text></g>
-          <g class="gw-fade" style="--d:2.3s"><rect x="384" y="132" width="34" height="20" rx="10" fill="#fff" stroke="#d63384"/><text x="401" y="146" text-anchor="middle" font-size="12" font-weight="bold" fill="#d63384">PR</text></g>
-          <g class="gw-fade" style="--d:3.7s"><rect x="588" y="160" width="34" height="20" rx="10" fill="#fff" stroke="#b38600"/><text x="605" y="174" text-anchor="middle" font-size="12" font-weight="bold" fill="#b38600">PR</text></g>
-          <g class="gw-fade" style="--d:4.4s"><text class="gw-note" x="676" y="80" text-anchor="middle">release</text></g>
-          <g class="gw-pop" style="--d:4.7s">
-            <path d="M716 8 H764 L772 18 L764 28 H716 Z" fill="#fff8e1" stroke="#e0a800" stroke-width="1.5"/>
-            <text x="742" y="23" text-anchor="middle" font-size="13" font-weight="bold" fill="#333">v4.0</text>
+          <g font-size="12">
+            <g class="gw-fade" style="--d:.5s"><text x="232" y="74" fill="#8b949e">cut</text></g>
+            <g class="gw-fade" style="--d:1.7s"><rect x="384" y="132" width="34" height="20" rx="10" fill="#161b22" stroke="#a371f7"/><text x="401" y="146" text-anchor="middle" font-weight="bold" fill="#a371f7">PR</text></g>
+            <g class="gw-fade" style="--d:2.8s"><rect x="588" y="160" width="34" height="20" rx="10" fill="#161b22" stroke="#d29922"/><text x="605" y="174" text-anchor="middle" font-weight="bold" fill="#d29922">PR</text></g>
+            <g class="gw-fade" style="--d:3.4s"><text x="676" y="80" text-anchor="middle" fill="#8b949e">release</text></g>
+            <g class="gw-pop" style="--d:3.6s"><path d="M712 8 H764 L772 18 L764 28 H712 Z" fill="#161b22" stroke="#d29922" stroke-width="1.5"/><text x="740" y="23" text-anchor="middle" font-weight="bold" fill="#d29922">vX.Y</text></g>
+            <g class="gw-fade" style="--d:4s"><text x="820" y="134" text-anchor="middle" fill="#8b949e">next version</text></g>
           </g>
-          <g class="gw-fade" style="--d:5.3s"><text class="gw-note" x="820" y="132" text-anchor="middle">next versionX.Y</text></g>
         </svg>
       </div>
-      <div class="gw-graph-bar">
-        <div class="gw-legend">
-          <span><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="#5f6b7a"/></svg>commit</span>
-          <span><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="#fff" stroke="#5f6b7a" stroke-width="2.5"/></svg>merge commit</span>
-          <span><svg viewBox="0 0 16 16"><path d="M1 3H11L15 8L11 13H1Z" fill="#fff8e1" stroke="#e0a800"/></svg>release tag</span>
-        </div>
-        <button type="button" class="gw-replay" id="gw-replay"><svg class="gw-icon" aria-hidden="true"><use href="#gw-i-replay"/></svg>Replay</button>
+      <div class="dg-gh-legend">
+        <span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="#8b949e"/></svg>commit</span>
+        <span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="none" stroke="#8b949e" stroke-width="2.5"/></svg>merge commit</span>
+        <span><svg viewBox="0 0 14 14"><path d="M1 3H9L13 7L9 11H1Z" fill="none" stroke="#d29922" stroke-width="1.5"/></svg>release tag</span>
+        <button type="button" class="dg-gh-btn" id="gw-replay"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-replay"/></svg>Replay</button>
       </div>
     </div>
 
-    <div class="gw-roles">
-      <div class="gw-role" style="--c:#0f4c81">
-        <div class="gw-role-name">main</div>
-        <p>Released, stable code. Every release is tagged. Contains no coding-assistant config.</p>
-        <div class="gw-flow">from <span class="gw-chip is-none">—</span> into <span class="gw-chip is-none">—</span></div>
-      </div>
-      <div class="gw-role" style="--c:#1e7b3c">
-        <div class="gw-role-name">versionX.Y</div>
-        <p>Integration branch for the next release (currently <code>version4.0</code>).</p>
-        <div class="gw-flow">from <span class="gw-chip">main</span> into <span class="gw-chip">main</span> at release</div>
-      </div>
-      <div class="gw-role" style="--c:#d63384">
-        <div class="gw-role-name">&lt;type&gt;/&lt;issue&gt;-&lt;slug&gt;</div>
-        <p>One piece of work for one Issue.</p>
-        <div class="gw-flow">from <span class="gw-chip">versionX.Y</span> into <span class="gw-chip">versionX.Y</span></div>
-      </div>
+    <div class="dg-rows gw-branches">
+      <div class="dg-row"><span class="gw-branch-name" style="color:#0f4c81">main</span><span>Released, stable code. Every release is tagged. Contains no coding-assistant config.</span><span class="dg-muted">receives only release merges from <code>release.sh</code></span></div>
+      <div class="dg-row"><span class="gw-branch-name" style="color:#1e7b3c">versionX.Y</span><span>Integration branch for the next release.</span><span class="dg-muted">from <code>main</code>, into <code>main</code> at release</span></div>
+      <div class="dg-row"><span class="gw-branch-name" style="color:#6f42c1">&lt;type&gt;/&lt;issue&gt;-&lt;slug&gt;</span><span>One piece of work for one Issue.</span><span class="dg-muted">from <code>versionX.Y</code>, into <code>versionX.Y</code></span></div>
     </div>
 
+    <!-- ===================== Branch names ===================== -->
     <h2 id="branch-names">Branch names</h2>
-    <p class="gw-pattern">Work branches are named <strong class="gw-mono">&lt;type&gt;/&lt;issue&gt;-&lt;slug&gt;</strong>:</p>
-    <div class="gw-anatomy" role="img" aria-label="feature/42-grid-forming-inverter: type feature, Issue number 42, slug grid-forming-inverter">
-      <span class="gw-part gw-c-type"><span class="gw-part-text">feature</span><span class="gw-part-label">type</span></span>
-      <span class="gw-sep">/</span>
-      <span class="gw-part gw-c-issue"><span class="gw-part-text">42</span><span class="gw-part-label">Issue #</span></span>
-      <span class="gw-sep">-</span>
-      <span class="gw-part gw-c-slug"><span class="gw-part-text">grid-forming-inverter</span><span class="gw-part-label">slug</span></span>
-    </div>
-    <ul class="gw-rules">
-      <li class="gw-rule"><span class="gw-rule-mark" style="background:#fff8e1;color:#8a6d00">#</span><span><code>&lt;issue&gt;</code> is the GitHub Issue number. Create the Issue first.</span></li>
-      <li class="gw-rule"><span class="gw-rule-mark" style="background:#e7f6ec;color:#1e7b3c">a-z</span><span><code>&lt;slug&gt;</code>: short English summary, lowercase words joined by hyphens (<code>a-z</code>, <code>0-9</code>, <code>-</code>).</span></li>
-      <li class="gw-rule"><span class="gw-rule-mark">≤50</span><span>Keep the whole name under about 50 characters.</span></li>
+    <p class="dg-lead-in">Work branches are named <strong class="dg-mono">&lt;type&gt;/&lt;issue&gt;-&lt;slug&gt;</strong>:</p>
+    <figure class="dg-figure">
+      <div class="dg-anatomy" role="img" aria-label="feature/42-grid-forming-inverter: type feature, Issue number 42, slug grid-forming-inverter">
+        <span class="dg-part is-accent"><span class="dg-tok">feature</span><span class="dg-kicker">type</span></span>
+        <span class="dg-sep">/</span>
+        <span class="dg-part is-warn"><span class="dg-tok">42</span><span class="dg-kicker">Issue #</span></span>
+        <span class="dg-sep">-</span>
+        <span class="dg-part is-ok"><span class="dg-tok">grid-forming-inverter</span><span class="dg-kicker">slug</span></span>
+      </div>
+    </figure>
+    <ul class="dg-list">
+      <li><span class="dg-mark is-warn">#</span><div><code>&lt;issue&gt;</code> is the GitHub Issue number. Create the Issue first.</div></li>
+      <li><span class="dg-mark is-ok">a-z</span><div><code>&lt;slug&gt;</code>: short English summary, lowercase words joined by hyphens (<code>a-z</code>, <code>0-9</code>, <code>-</code>).</div></li>
+      <li><span class="dg-mark">≤50</span><div>Keep the whole name under about 50 characters.</div></li>
     </ul>
 
-    <div class="gw-types">
-      <div class="gw-type gw-t-feature"><span class="gw-badge"><svg class="gw-icon" aria-hidden="true"><use href="#gw-i-feature"/></svg>feature</span><span class="gw-type-use">New functions, classes, or models</span><span class="gw-type-example">feature/42-grid-forming-inverter</span></div>
-      <div class="gw-type gw-t-fix"><span class="gw-badge"><svg class="gw-icon" aria-hidden="true"><use href="#gw-i-fix"/></svg>fix</span><span class="gw-type-use">Bug fixes</span><span class="gw-type-example">fix/51-opf-bus-index</span></div>
-      <div class="gw-type gw-t-refactor"><span class="gw-badge"><svg class="gw-icon" aria-hidden="true"><use href="#gw-i-refactor"/></svg>refactor</span><span class="gw-type-use">Restructuring without changing behavior</span><span class="gw-type-example">refactor/55-split-odesimulator</span></div>
-      <div class="gw-type gw-t-docs"><span class="gw-badge"><svg class="gw-icon" aria-hidden="true"><use href="#gw-i-docs"/></svg>docs</span><span class="gw-type-use">Help comments, documentation pages, tutorials</span><span class="gw-type-example">docs/60-folder-structure</span></div>
-      <div class="gw-type gw-t-test"><span class="gw-badge"><svg class="gw-icon" aria-hidden="true"><use href="#gw-i-test"/></svg>test</span><span class="gw-type-use">Test and debug scripts</span><span class="gw-type-example">test/63-two-machine-validation</span></div>
+    <h3>Types</h3>
+    <div class="dg-rows gw-types">
+      <div class="dg-row"><span><span class="dg-badge"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-feature"/></svg>feature</span></span><span>New functions, classes, or models</span><span class="gw-example">feature/42-grid-forming-inverter</span></div>
+      <div class="dg-row"><span><span class="dg-badge is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-fix"/></svg>fix</span></span><span>Bug fixes</span><span class="gw-example">fix/51-opf-bus-index</span></div>
+      <div class="dg-row"><span><span class="dg-badge is-muted"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-refactor"/></svg>refactor</span></span><span>Restructuring without changing behavior</span><span class="gw-example">refactor/55-split-odesimulator</span></div>
+      <div class="dg-row"><span><span class="dg-badge is-ok"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-docs"/></svg>docs</span></span><span>Help comments, documentation pages, tutorials</span><span class="gw-example">docs/60-folder-structure</span></div>
+      <div class="dg-row"><span><span class="dg-badge is-warn"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-test"/></svg>test</span></span><span>Test and debug scripts</span><span class="gw-example">test/63-two-machine-validation</span></div>
     </div>
 
     <section class="name-generator" aria-label="Branch Name Generator">
@@ -313,113 +225,137 @@
       </div>
     </section>
 
+    <!-- ===================== Commit messages ===================== -->
     <h2 id="commits">Commit messages</h2>
-    <p class="gw-pattern">The first line is <strong class="gw-mono">&lt;type&gt;: &lt;summary&gt;</strong>:</p>
-    <div class="gw-anatomy" role="img" aria-label="fix: use bus index instead of position in OPF constraints: type fix, colon and space, summary">
-      <span class="gw-part gw-c-type"><span class="gw-part-text">fix</span><span class="gw-part-label">type</span></span>
-      <span class="gw-sep">: </span>
-      <span class="gw-part gw-c-slug"><span class="gw-part-text">use bus index instead of position in OPF constraints</span><span class="gw-part-label">summary: lowercase imperative verb first, no trailing period</span></span>
-    </div>
+    <p class="dg-lead-in">The first line is <strong class="dg-mono">&lt;type&gt;: &lt;summary&gt;</strong>:</p>
+    <figure class="dg-figure">
+      <div class="dg-anatomy" role="img" aria-label="fix: use bus index instead of position in OPF constraints: type fix, colon and space, summary">
+        <span class="dg-part is-accent"><span class="dg-tok">fix</span><span class="dg-kicker">type</span></span>
+        <span class="dg-sep">: </span>
+        <span class="dg-part is-ok"><span class="dg-tok">use bus index instead of position in OPF constraints</span><span class="dg-kicker">summary: lowercase imperative verb first, no trailing period</span></span>
+      </div>
+    </figure>
 
-    <div class="gw-msg" id="gw-msg" role="group" aria-label="Example commit message">
+    <div class="dg-gh" role="group" aria-label="Example commit message">
+      <div class="dg-gh-chrome"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-commit"/></svg>GUILDA / <b>Commit</b> <span class="dg-gh-mono">3f9c2a1</span></div>
       <div class="gw-msg-row">
-        <div class="gw-msg-tag">first line<small>≤ 72 chars</small></div>
-        <div class="gw-msg-text">fix: use bus index instead of position in OPF constraints<div class="gw-meter"><div class="gw-meter-bar"><span></span></div>57 / 72</div></div>
-      </div>
-      <div class="gw-msg-row gw-msg-blank">
-        <div class="gw-msg-tag">blank line</div>
-        <div class="gw-msg-text">(empty)</div>
+        <div class="gw-msg-tag"><b>first line</b>≤ 72 chars</div>
+        <div class="gw-msg-text is-title">fix: use bus index instead of position in OPF constraints<div class="gw-meter"><div class="gw-meter-bar"><span></span></div>57 / 72</div></div>
       </div>
       <div class="gw-msg-row">
-        <div class="gw-msg-tag">body<small>when the reason is not obvious</small></div>
+        <div class="gw-msg-tag"><b>blank line</b></div>
+        <div class="gw-msg-text is-blank">(empty)</div>
+      </div>
+      <div class="gw-msg-row">
+        <div class="gw-msg-tag"><b>body</b>when the reason is not obvious</div>
         <div class="gw-msg-text">The constraint matrix was built from the position in a_Bus, which
 breaks after a bus is removed. Refs #51.</div>
       </div>
+      <div class="dg-gh-legend"><span><b style="color:#e6edf3">contributor</b>&nbsp;committed on <span class="dg-gh-branch">fix/51-opf-bus-index</span></span></div>
     </div>
 
-    <ul class="gw-rules">
-      <li class="gw-rule"><span class="gw-rule-mark">EN</span><span>The summary is in English.</span></li>
-      <li class="gw-rule"><span class="gw-rule-mark" style="background:#e7f6ec;color:#1e7b3c">add</span><span>Starts with a lowercase verb in the imperative (<em>add</em>, <em>fix</em>, <em>remove</em>).</span></li>
-      <li class="gw-rule"><span class="gw-rule-mark" style="background:#fdeeee;color:#b02a37">no .</span><span>No trailing period.</span></li>
-      <li class="gw-rule"><span class="gw-rule-mark">≤72</span><span>Keep the first line within 72 characters.</span></li>
-      <li class="gw-rule"><span class="gw-rule-mark">↵</span><span>Add a body after a blank line when the reason for the change is not obvious.</span></li>
-      <li class="gw-rule"><span class="gw-rule-mark">1</span><span>One commit contains one logical change.</span></li>
+    <ul class="dg-list is-cols">
+      <li><span class="dg-mark">EN</span><div>The summary is in English.</div></li>
+      <li><span class="dg-mark is-ok">add</span><div>Starts with a lowercase verb in the imperative (<em>add</em>, <em>fix</em>, <em>remove</em>).</div></li>
+      <li><span class="dg-mark is-err">no .</span><div>No trailing period.</div></li>
+      <li><span class="dg-mark">≤72</span><div>Keep the first line within 72 characters.</div></li>
+      <li><span class="dg-mark">↵</span><div>Add a body after a blank line when the reason for the change is not obvious.</div></li>
+      <li><span class="dg-mark">1</span><div>One commit contains one logical change.</div></li>
     </ul>
 
-    <div class="gw-map" role="table" aria-label="Commit types and matching branch types">
-      <div class="gw-map-row gw-map-head" role="row"><span role="columnheader">commit type</span><span></span><span role="columnheader">branch type</span><span role="columnheader">use for</span></div>
-      <div class="gw-map-row" role="row"><span role="cell" class="gw-badge gw-t-feature"><svg class="gw-icon" aria-hidden="true"><use href="#gw-i-feature"/></svg>feat</span><span class="gw-map-link" aria-hidden="true"></span><span role="cell" class="gw-badge gw-t-feature">feature</span><span role="cell" class="gw-map-use">New functions, classes, or models</span></div>
-      <div class="gw-map-row" role="row"><span role="cell" class="gw-badge gw-t-fix"><svg class="gw-icon" aria-hidden="true"><use href="#gw-i-fix"/></svg>fix</span><span class="gw-map-link" aria-hidden="true"></span><span role="cell" class="gw-badge gw-t-fix">fix</span><span role="cell" class="gw-map-use">Bug fixes</span></div>
-      <div class="gw-map-row" role="row"><span role="cell" class="gw-badge gw-t-refactor"><svg class="gw-icon" aria-hidden="true"><use href="#gw-i-refactor"/></svg>refactor</span><span class="gw-map-link" aria-hidden="true"></span><span role="cell" class="gw-badge gw-t-refactor">refactor</span><span role="cell" class="gw-map-use">Restructuring without changing behavior</span></div>
-      <div class="gw-map-row" role="row"><span role="cell" class="gw-badge gw-t-docs"><svg class="gw-icon" aria-hidden="true"><use href="#gw-i-docs"/></svg>docs</span><span class="gw-map-link" aria-hidden="true"></span><span role="cell" class="gw-badge gw-t-docs">docs</span><span role="cell" class="gw-map-use">Help comments, documentation pages, tutorials</span></div>
-      <div class="gw-map-row" role="row"><span role="cell" class="gw-badge gw-t-test"><svg class="gw-icon" aria-hidden="true"><use href="#gw-i-test"/></svg>test</span><span class="gw-map-link" aria-hidden="true"></span><span role="cell" class="gw-badge gw-t-test">test</span><span role="cell" class="gw-map-use">Test and debug scripts</span></div>
-      <div class="gw-map-row" role="row"><span role="cell" class="gw-badge gw-t-chore"><svg class="gw-icon" aria-hidden="true"><use href="#gw-i-chore"/></svg>chore</span><span class="gw-map-link" aria-hidden="true"></span><span role="cell" class="gw-badge gw-t-chore">any</span><span role="cell" class="gw-map-use">Settings, <code>.gitignore</code>, file moves, and other maintenance</span></div>
+    <h3>Commit type and branch type</h3>
+    <div class="dg-rows gw-map" role="table" aria-label="Commit types and matching branch types">
+      <div class="dg-row dg-rows-head" role="row"><span class="dg-kicker" role="columnheader">commit type</span><span></span><span class="dg-kicker" role="columnheader">branch type</span><span class="dg-kicker" role="columnheader">use for</span></div>
+      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge">feat</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-outline">feature</span></span><span role="cell">New functions, classes, or models</span></div>
+      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge is-err">fix</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-err is-outline">fix</span></span><span role="cell">Bug fixes</span></div>
+      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge is-muted">refactor</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-muted is-outline">refactor</span></span><span role="cell">Restructuring without changing behavior</span></div>
+      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge is-ok">docs</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-ok is-outline">docs</span></span><span role="cell">Help comments, documentation pages, tutorials</span></div>
+      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge is-warn">test</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-warn is-outline">test</span></span><span role="cell">Test and debug scripts</span></div>
+      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge is-muted"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-chore"/></svg>chore</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell" class="dg-muted">any</span><span role="cell">Settings, <code>.gitignore</code>, file moves, and other maintenance</span></div>
     </div>
 
-    <svg class="gw-mix" viewBox="0 0 420 70" role="img" aria-label="A feature branch with feat, docs and feat commits">
-      <text x="4" y="56" font-size="14" font-weight="bold" fill="#d63384" font-family="ui-monospace, Menlo, Consolas, monospace">feature/42-…</text>
-      <path d="M118 51 H414" stroke="#d63384" stroke-width="4" stroke-linecap="round"/>
-      <circle cx="175" cy="51" r="8" fill="#d63384"/>
-      <circle cx="265" cy="51" r="8" fill="#d63384"/>
-      <circle cx="355" cy="51" r="8" fill="#d63384"/>
-      <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="15" font-weight="bold" text-anchor="middle">
-        <rect x="143" y="8" width="64" height="24" rx="12" fill="#e8f0f8"/><text x="175" y="25" fill="#0f4c81">feat:</text>
-        <rect x="233" y="8" width="64" height="24" rx="12" fill="#e7f6ec"/><text x="265" y="25" fill="#1e7b3c">docs:</text>
-        <rect x="323" y="8" width="64" height="24" rx="12" fill="#e8f0f8"/><text x="355" y="25" fill="#0f4c81">feat:</text>
-      </g>
-    </svg>
-    <p class="gw-caption">A branch may mix types, for example <code>feat:</code> and <code>docs:</code> commits on a <code>feature/</code> branch.</p>
+    <div class="dg-gh">
+      <svg viewBox="0 0 620 90" role="img" aria-label="A feature branch with feat, docs and feat commits">
+        <text x="20" y="62" font-size="14" font-weight="bold" fill="#a371f7">feature/42-…</text>
+        <path d="M140 57 H600" stroke="#a371f7" stroke-width="4" stroke-linecap="round"/>
+        <g stroke="#0d1117" stroke-width="3" fill="#a371f7"><circle cx="230" cy="57" r="8"/><circle cx="360" cy="57" r="8"/><circle cx="490" cy="57" r="8"/></g>
+        <g font-size="14" font-weight="bold" text-anchor="middle">
+          <rect x="196" y="14" width="68" height="24" rx="12" fill="rgba(88,166,255,.15)" stroke="#58a6ff"/><text x="230" y="31" fill="#58a6ff">feat:</text>
+          <rect x="326" y="14" width="68" height="24" rx="12" fill="rgba(63,185,80,.15)" stroke="#3fb950"/><text x="360" y="31" fill="#3fb950">docs:</text>
+          <rect x="456" y="14" width="68" height="24" rx="12" fill="rgba(88,166,255,.15)" stroke="#58a6ff"/><text x="490" y="31" fill="#58a6ff">feat:</text>
+        </g>
+      </svg>
+    </div>
+    <p class="dg-caption">A branch may mix types, for example <code>feat:</code> and <code>docs:</code> commits on a <code>feature/</code> branch.</p>
 
+    <!-- ===================== Pull requests ===================== -->
     <h2 id="pull-requests">Pull requests</h2>
-    <ol class="gw-steps" style="--n:5">
-      <li><svg class="gw-icon gw-step-icon" aria-hidden="true"><use href="#gw-i-sync"/></svg><span class="gw-step-title">Sync</span><span>Keep the work branch up to date by merging the integration branch into it.</span></li>
-      <li><svg class="gw-icon gw-step-icon" aria-hidden="true"><use href="#gw-i-pr"/></svg><span class="gw-step-title">Open PR</span><span>Into the integration branch. Title uses the same <code>&lt;type&gt;: &lt;summary&gt;</code> format.</span></li>
-      <li><svg class="gw-icon gw-step-icon" aria-hidden="true"><use href="#gw-i-hash"/></svg><span class="gw-step-title">Link Issue</span><span>Write <code>Closes #&lt;issue&gt;</code> in the description so the Issue is closed on merge.</span></li>
-      <li><svg class="gw-icon gw-step-icon" aria-hidden="true"><use href="#gw-i-check"/></svg><span class="gw-step-title">Check</span><span>Check the items in <a href="project-management.html#done">Definition of Done</a>.</span></li>
-      <li><svg class="gw-icon gw-step-icon" aria-hidden="true"><use href="#gw-i-merge"/></svg><span class="gw-step-title">Merge &amp; delete</span><span>After review, merge the pull request and delete the work branch.</span></li>
+    <div class="dg-gh" role="img" aria-label="Example pull request into versionX.Y from feature/42-grid-forming-inverter, titled feat: add grid-forming inverter model, with Closes #42 and the Definition of Done in the description.">
+      <div class="dg-gh-chrome"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-pr"/></svg>GUILDA / <b>Pull requests</b></div>
+      <div class="dg-gh-body">
+        <div class="dg-gh-title">feat: add grid-forming inverter model <span class="dg-gh-num">#57</span></div>
+        <div class="dg-gh-meta"><span class="dg-gh-state"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-pr"/></svg>Open</span><span><b>contributor</b> wants to merge 3 commits into <span class="dg-gh-branch">versionX.Y</span> from <span class="dg-gh-branch">feature/42-grid-forming-inverter</span></span></div>
+        <div class="dg-gh-box">
+          <div class="dg-gh-box-head">Description</div>
+          <div class="dg-gh-box-body">
+            <span class="dg-gh-skel"></span><span class="dg-gh-skel is-short"></span>
+            <p class="dg-gh-h"><span class="dg-gh-link">Closes #42</span></p>
+            <div class="gw-task"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-check"/></svg>Definition of Done checked</div>
+          </div>
+        </div>
+        <div class="dg-gh-box">
+          <div class="dg-gh-check"><svg class="dg-icon dg-gh-ok" aria-hidden="true"><use href="#dg-i-check"/></svg><span>This branch has no conflicts with the base branch</span></div>
+          <div class="dg-gh-check gw-merge"><span class="gw-merge-btn">Merge pull request</span><span class="gw-merge-btn is-secondary">Delete branch</span></div>
+        </div>
+      </div>
+    </div>
+    <ol class="dg-steps" style="--n:5">
+      <li><span class="dg-step-title">Sync</span>Keep the work branch up to date by merging the integration branch into it.</li>
+      <li><span class="dg-step-title">Open PR</span>Into the integration branch. Title uses the same <code>&lt;type&gt;: &lt;summary&gt;</code> format.</li>
+      <li><span class="dg-step-title">Link Issue</span>Write <code>Closes #&lt;issue&gt;</code> in the description so the Issue is closed on merge.</li>
+      <li><span class="dg-step-title">Check</span>Check the items in <a href="project-management.html#done">Definition of Done</a>.</li>
+      <li><span class="dg-step-title">Merge &amp; delete</span>After review, merge the pull request and delete the work branch.</li>
     </ol>
 
+    <!-- ===================== Release ===================== -->
     <h2 id="release">Release</h2>
-    <ol class="gw-steps" style="--n:4">
-      <li><svg class="gw-icon gw-step-icon" aria-hidden="true"><use href="#gw-i-pr"/></svg><span class="gw-step-title">Review PR</span><span>Open a pull request from the integration branch into <code>main</code> for review. Do not merge it on GitHub.</span></li>
-      <li><svg class="gw-icon gw-step-icon" aria-hidden="true"><use href="#gw-i-merge"/></svg><span class="gw-step-title">release.sh</span><span>From a clean <code>versionX.Y</code>, run <code>bash .claude/release/release.sh X.Y</code>. It merges into <code>main</code> with <code>--no-ff</code>, removes the assistant config, commits <code>chore: release vX.Y</code>, and tags the merge commit <code>vX.Y</code>. Existing tags:</span><span class="gw-tags"><span class="gw-tag">v1.0</span><span class="gw-tag">v1.1</span><span class="gw-tag">v2.0</span><span class="gw-tag">v2.1</span></span></li>
-      <li><svg class="gw-icon gw-step-icon" aria-hidden="true"><use href="#gw-i-tag"/></svg><span class="gw-step-title">Push</span><span>Check the result, then run the printed <code>git push origin main vX.Y</code>. GitHub marks the pull request as merged.</span></li>
-      <li><svg class="gw-icon gw-step-icon" aria-hidden="true"><use href="#gw-i-branch"/></svg><span class="gw-step-title">Next branch</span><span>Run <code>bash .claude/release/start-version.sh X.Y PREV</code>: it creates the next <code>versionX.Y</code> from <code>main</code> and restores the assistant config from <code>versionPREV</code>.</span></li>
+    <ol class="dg-steps" style="--n:4">
+      <li><span class="dg-step-title">Review PR</span>Open a pull request from the integration branch into <code>main</code> for review. Do not merge it on GitHub.</li>
+      <li><span class="dg-step-title">release.sh</span>From a clean <code>versionX.Y</code>, run <code>bash .claude/release/release.sh X.Y</code>. It merges into <code>main</code> with <code>--no-ff</code>, removes the assistant config, commits <code>chore: release vX.Y</code>, and tags the merge commit <code>vX.Y</code>.</li>
+      <li><span class="dg-step-title">Push</span>Check the result, then run the printed <code>git push origin main vX.Y</code>. GitHub marks the pull request as merged.</li>
+      <li><span class="dg-step-title">Next branch</span>Run <code>bash .claude/release/start-version.sh X.Y PREV</code>: it creates the next <code>versionX.Y</code> from <code>main</code> and restores the assistant config from <code>versionPREV</code>.</li>
     </ol>
-    <p><strong>Assistant config never lands in <code>main</code>.</strong> <code>.claude/</code>, <code>.codex/</code> and <code>.github/copilot-instructions.md</code> are tracked on the integration and work branches only, so users who clone <code>main</code> or run <code>GUILDA.gitpull</code> never get them. <code>release.sh</code> removes them from the release merge and checks that <code>main</code> has none; <code>start-version.sh</code> brings them back. If the merge conflicts, the script aborts: merge <code>main</code> into <code>versionX.Y</code>, resolve the conflicts there, and run it again.</p>
+    <div class="dg-callout">
+      <svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
+      <div>
+        <p><strong>Assistant config never lands in <code>main</code>.</strong> <code>.claude/</code>, <code>.codex/</code> and <code>.github/copilot-instructions.md</code> are tracked on the integration and work branches only, so users who clone <code>main</code> or run <code>GUILDA.gitpull</code> never get them.</p>
+        <p><code>release.sh</code> removes them from the release merge and checks that <code>main</code> has none; <code>start-version.sh</code> brings them back. If the merge conflicts, the script aborts: merge <code>main</code> into <code>versionX.Y</code>, resolve the conflicts there, and run it again.</p>
+      </div>
+    </div>
 
+    <!-- ===================== Do not ===================== -->
     <h2 id="dont">Do not</h2>
-    <ul class="gw-dont">
-      <li><svg class="gw-icon gw-dont-icon" aria-hidden="true"><use href="#gw-i-no"/></svg><span><strong>Direct commits</strong>Commit directly to <code>main</code>.</span></li>
-      <li><svg class="gw-icon gw-dont-icon" aria-hidden="true"><use href="#gw-i-no"/></svg><span><strong>Manual merges into main</strong>Merge or cherry-pick into <code>main</code> by hand or on GitHub; release with <code>release.sh</code>.</span></li>
-      <li><svg class="gw-icon gw-dont-icon" aria-hidden="true"><use href="#gw-i-no"/></svg><span><strong>Force-push</strong>Force-push to <code>main</code> or the integration branch.</span></li>
-      <li><svg class="gw-icon gw-dont-icon" aria-hidden="true"><use href="#gw-i-no"/></svg><span><strong>Generated / personal files</strong>Commit generated files or personal settings (see <a href="folder-structure.html#generated">Generated files</a>).</span></li>
-      <li><svg class="gw-icon gw-dont-icon" aria-hidden="true"><use href="#gw-i-no"/></svg><span><strong>Other prefixes</strong>Create work branches with other prefixes such as <code>dev/</code> or <code>develop/</code>.</span></li>
+    <ul class="dg-list">
+      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title">Direct commits</span>Commit directly to <code>main</code>.</div></li>
+      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title">Manual merges into main</span>Merge or cherry-pick into <code>main</code> by hand or on GitHub; release with <code>release.sh</code>.</div></li>
+      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title">Force-push</span>Force-push to <code>main</code> or the integration branch.</div></li>
+      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title">Generated / personal files</span>Commit generated files or personal settings (see <a href="folder-structure.html#generated">Generated files</a>).</div></li>
+      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title">Other prefixes</span>Create work branches with other prefixes such as <code>dev/</code> or <code>develop/</code>.</div></li>
     </ul>
-    <p><strong>Enforced by Claude Code hooks</strong> (<code>.claude/settings.json</code>, <code>.claude/hooks/</code>): Claude Code sessions in this repository are blocked from creating branches with other names, committing on <code>main</code>, <code>versionX.Y</code> or non-work branches, force-pushing or deleting <code>main</code> / <code>versionX.Y</code>, running <code>git merge</code> or <code>git cherry-pick</code> on <code>main</code> (use <code>release.sh</code>), and editing generated files; a commit message that breaks the format is sent back for <code>git commit --amend</code>.</p>
+    <div class="dg-callout is-warn">
+      <svg class="dg-icon" aria-hidden="true"><use href="#dg-i-shield"/></svg>
+      <p><strong>Enforced by Claude Code hooks</strong> (<code>.claude/settings.json</code>, <code>.claude/hooks/</code>): Claude Code sessions in this repository are blocked from creating branches with other names, committing on <code>main</code>, <code>versionX.Y</code> or non-work branches, force-pushing or deleting <code>main</code> / <code>versionX.Y</code>, running <code>git merge</code> or <code>git cherry-pick</code> on <code>main</code> (use <code>release.sh</code>), and editing generated files; a commit message that breaks the format is sent back for <code>git commit --amend</code>.</p>
+    </div>
   </main>
 
   <script>
     (function () {
       var graph = document.getElementById('gw-graph');
-      var msg = document.getElementById('gw-msg');
       document.getElementById('gw-replay').addEventListener('click', function () {
         graph.classList.remove('gw-play');
-        msg.classList.remove('gw-play-meter');
         void graph.getBoundingClientRect();
         graph.classList.add('gw-play');
-        msg.classList.add('gw-play-meter');
       });
-      if ('IntersectionObserver' in window) {
-        var io = new IntersectionObserver(function (entries) {
-          entries.forEach(function (e) {
-            if (e.isIntersecting) { msg.classList.add('gw-play-meter'); io.disconnect(); }
-          });
-        });
-        io.observe(msg);
-      } else {
-        msg.classList.add('gw-play-meter');
-      }
     })();
   </script>
 

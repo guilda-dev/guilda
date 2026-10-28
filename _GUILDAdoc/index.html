@@ -369,7 +369,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
       <h1>For Developer</h1>
       <p class="developer-intro">Guides for contributors and maintainers of GUILDA. Select a topic to open its dedicated page.</p>
 
-      <div id="developer-link-container" class="developer-link-grid"></div>
+      <div id="developer-link-container" class="developer-groups"></div>
     </div>
   </main>
 
@@ -497,15 +497,33 @@ sol = net.simulate([0, 50], fault);</code></pre>
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
 
-      container.innerHTML = data.map((item, index) => `
-        <a class="developer-link-card" href="${escapeHtml(item.link)}">
-          <span class="developer-link-number">${String(index + 1).padStart(2, '0')}</span>
-          <span class="developer-link-content">
-            <span class="developer-link-title">${escapeHtml(item.title)}</span>
-            <span class="developer-link-description">${escapeHtml(item.description)}</span>
-          </span>
-          <span class="developer-link-action">View guide <span aria-hidden="true">→</span></span>
-        </a>
+      // "Process: Git Workflow" -> group "Process", title "Git Workflow"
+      const groups = [];
+      data.forEach((item, index) => {
+        const match = /^([^:]+):\s*(.*)$/.exec(item.title || '');
+        const label = match ? match[1].trim() : 'Guides';
+        const title = match ? match[2] : item.title;
+        let group = groups.find((g) => g.label === label);
+        if (!group) { group = { label, items: [] }; groups.push(group); }
+        group.items.push({ ...item, title, number: index + 1 });
+      });
+
+      container.innerHTML = groups.map((group) => `
+        <section class="developer-group is-${escapeHtml(group.label.toLowerCase().replace(/[^a-z0-9]+/g, '-'))}" aria-label="${escapeHtml(group.label)}">
+          <h2 class="developer-group-label"><span>${escapeHtml(group.label)}</span></h2>
+          <div class="developer-link-grid">
+            ${group.items.map((item) => `
+              <a class="developer-link-card" href="${escapeHtml(item.link)}">
+                <span class="developer-link-number">${String(item.number).padStart(2, '0')}</span>
+                <span class="developer-link-content">
+                  <span class="developer-link-title">${escapeHtml(item.title)}</span>
+                  <span class="developer-link-description">${escapeHtml(item.description)}</span>
+                </span>
+                <span class="developer-link-action">View guide <span aria-hidden="true">→</span></span>
+              </a>
+            `).join('')}
+          </div>
+        </section>
       `).join('');
     }
 

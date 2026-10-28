@@ -6,96 +6,36 @@
   <title>GUILDA Developer Guide - Folder Structure</title>
   <link rel="stylesheet" href="../style.css">
   <style>
-    /* ---- folder colors (one per top-level folder) ---- */
-    .fs-c-guilda  { --fs-c: #0f4c81; --fs-bg: #e6eef6; }
-    .fs-c-system  { --fs-c: #0f4c81; --fs-bg: #f8fbff; }
-    .fs-c-object  { --fs-c: #1e7b3c; --fs-bg: #e7f6ec; }
-    .fs-c-tutorial{ --fs-c: #8a6d00; --fs-bg: #fff8e1; }
-    .fs-c-doc     { --fs-c: #d63384; --fs-bg: #fcebf3; }
-    .fs-c-other   { --fs-c: #5f6b7a; --fs-bg: #f4f7f6; }
-
-    .fs-figure { margin: 18px 0 22px; }
-    .fs-figure svg { display: block; width: 100%; height: auto; }
-    .fs-figure svg.fs-narrow { max-width: 540px; margin: 0 auto; }
-    .fs-figure figcaption { color: #5f6b7a; font-size: 0.88rem; margin-top: 6px; }
-    .fs-mono, .fs-figure text.fs-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-    .developer-layout .fs-code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; background: #f0f0f0; padding: 1px 5px; border-radius: 4px; color: #d63384; overflow-wrap: anywhere; }
-    .fs-hidden { position: absolute; width: 0; height: 0; overflow: hidden; }
-    .fs-i { width: 1.05em; height: 1.05em; vertical-align: -0.15em; flex: none; }
-    .fs-note { color: #5f6b7a; font-size: 0.85rem; }
-
-    /* tags */
-    .fs-tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: bold; white-space: nowrap; background: #f4f7f6; color: #5f6b7a; border: 1px solid #dee2e6; }
-    .fs-tag-path { background: #e7f6ec; color: #1e7b3c; border-color: #b9e1c6; }
-    .fs-tag-ign  { background: #fdeeee; color: #b02a37; border-color: #f2c1c6; }
-
-    /* animated arrows */
-    .fs-flowline { stroke-dasharray: 7 5; animation: fs-dash 1.1s linear infinite; }
-    @keyframes fs-dash { to { stroke-dashoffset: -12; } }
-
-    /* folder cards */
-    .fs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin: 14px 0 20px; }
-    .fs-card { background: #fff; border: 1px solid #dee2e6; border-top: 4px solid var(--fs-c, #0f4c81); border-radius: 8px; padding: 12px 14px; font-size: 0.92rem; min-width: 0; }
-    .fs-card h4 { margin: 0 0 4px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 1rem; color: var(--fs-c, #0f4c81); }
-    .fs-card h4 code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; overflow-wrap: anywhere; }
-    .developer-layout .fs-card h4 code { background: none; padding: 0; color: var(--fs-c, #0f4c81); }
-    .fs-card p { margin: 4px 0; }
-    .fs-card dl { margin: 8px 0 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; }
-    .fs-card dt { font-size: 0.78rem; font-weight: bold; color: var(--fs-c, #0f4c81); padding-top: 2px; }
-    .fs-card dd { margin: 0; }
-
-    /* placement flowchart */
-    .fs-start { display: inline-block; padding: 10px 18px; border-radius: 22px; background: #0f4c81; color: #fff; font-weight: bold; }
-    .fs-flow { list-style: none; margin: 0 0 0 22px; padding: 10px 0 4px 0; border-left: 3px solid #0f4c81; }
-    .fs-flow > li { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 34px minmax(0, 1.15fr); align-items: center; margin: 0 0 10px 0; padding-left: 22px; }
-    .fs-flow > li::before { content: ""; position: absolute; left: 0; top: 50%; width: 18px; border-top: 3px solid #0f4c81; }
-    .fs-q { padding: 8px 12px; background: #f8fbff; border: 1px solid #dce4ec; border-radius: 8px; font-size: 0.9rem; }
-    .fs-to { text-align: center; color: #0f4c81; font-weight: bold; font-size: 1.2rem; }
-    .fs-dest { padding: 8px 12px; border-radius: 8px; border: 1.5px solid var(--fs-c); background: var(--fs-bg); font-size: 0.85rem; min-width: 0; }
-    .fs-dest > code { display: block; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: bold; color: var(--fs-c); overflow-wrap: anywhere; }
-    .developer-layout .fs-dest > code { background: none; padding: 0; border-radius: 0; color: var(--fs-c); }
-    .fs-dest small { color: #5f6b7a; }
-    .fs-split { display: grid; gap: 6px; }
-    .fs-split .fs-dest { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; }
-    .fs-yn { font-weight: bold; font-size: 0.75rem; padding: 1px 7px; border-radius: 9px; background: #fff; border: 1px solid var(--fs-c); color: var(--fs-c); }
-
-    /* generated-file pipelines */
-    .fs-pipe { display: grid; grid-template-columns: minmax(0, 1.4fr) 40px minmax(0, 0.95fr) 40px minmax(0, 1.3fr); align-items: center; margin: 0 0 14px; }
-    .fs-pipe-box { padding: 10px 12px; border-radius: 8px; font-size: 0.82rem; min-width: 0; }
-    .fs-pipe-box code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.74rem; overflow-wrap: anywhere; }
-    .fs-pipe-src { background: #e7f6ec; border: 1.5px solid #1e7b3c; }
-    .fs-pipe-run { background: #fff; border: 1.5px dashed #0f4c81; text-align: center; }
-    .fs-pipe-out { background: #fdeeee; border: 1.5px solid #b02a37; position: relative; }
-    .fs-pipe-box .fs-lbl { display: block; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; }
-    .fs-pipe-src .fs-lbl { color: #1e7b3c; }
-    .fs-pipe-run .fs-lbl { color: #0f4c81; }
-    .fs-pipe-out .fs-lbl { color: #b02a37; }
-    .fs-pipe-run .fs-i { width: 22px; height: 22px; color: #0f4c81; animation: fs-spin 6s linear infinite; }
-    @keyframes fs-spin { to { transform: rotate(360deg); } }
-    .fs-pipe-arrow { display: block; width: 40px; height: 18px; overflow: visible; }
-    .fs-pipe-arrow .fs-dot { animation: fs-move 1.6s ease-in-out infinite; }
-    @keyframes fs-move { from { transform: translateX(0); opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } to { transform: translateX(28px); opacity: 0; } }
-
-    /* archive naming */
-    .fs-names { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0; }
-    .fs-good, .fs-bad { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
-    .fs-good { background: #e7f6ec; color: #1e7b3c; border: 1.5px solid #1e7b3c; }
-    .fs-bad { background: #fdeeee; color: #b02a37; border: 1.5px solid #f2c1c6; text-decoration: line-through; }
-
+    /* Folder Structure page only (fs-*); shared parts are dg-* in style.css */
+    .fs-c-guilda { --fs-c: #0f4c81; }
+    .fs-c-system { --fs-c: #0f4c81; }
+    .fs-c-object { --fs-c: #1e7b3c; }
+    .fs-c-tutorial { --fs-c: #7a5c00; }
+    .fs-c-doc { --fs-c: #5f6b7a; }
+    .fs-c-other { --fs-c: #5f6b7a; }
+    .fs-figure svg { max-width: 540px; margin: 0 auto; }
+    .fs-name { display: block; color: var(--fs-c); font: bold 1.05rem/1.4 var(--dg-mono); overflow-wrap: anywhere; }
+    .fs-name + .dg-badge, .fs-name ~ .dg-badge { margin: 6px 6px 0 0; }
+    .fs-folders .dg-row { grid-template-columns: minmax(0, 13rem) minmax(0, 1fr); }
+    .fs-folders dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; margin: var(--dg-s2) 0 0; }
+    .fs-folders dt { padding-top: 2px; color: var(--fs-c); font-size: 0.75rem; font-weight: bold; letter-spacing: 0.04em; text-transform: uppercase; }
+    .fs-folders dd { margin: 0; }
+    .fs-dest { display: block; color: var(--fs-c); font: bold 0.95rem/1.5 var(--dg-mono); overflow-wrap: anywhere; }
+    .fs-dest-note { display: block; color: var(--dg-muted); font-size: 0.88rem; }
+    .fs-yn { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 10px; align-items: baseline; }
+    .fs-gen { margin: var(--dg-s4) 0; }
+    .fs-gen + .fs-gen { padding-top: var(--dg-s4); border-top: 1px solid var(--dg-line); }
     @media (max-width: 640px) {
-      .fs-flow > li { grid-template-columns: minmax(0, 1fr); }
-      .fs-to { transform: rotate(90deg); line-height: 1; }
-      .fs-pipe { grid-template-columns: minmax(0, 1fr); justify-items: stretch; }
-      .fs-pipe-arrow { transform: rotate(90deg); margin: 6px auto; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .fs-flowline, .fs-pipe-arrow .fs-dot, .fs-pipe-run .fs-i { animation: none !important; }
+      .fs-folders .dg-row { grid-template-columns: minmax(0, 1fr); }
+      .fs-folders dl { grid-template-columns: minmax(0, 1fr); }
     }
   </style>
 </head>
-<body class="developer-layout">
+<body class="developer-layout dg">
   <!-- shared icons -->
-  <svg class="fs-hidden" aria-hidden="true">
+  <svg class="dg-sprite" aria-hidden="true" focusable="false">
+    <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+    <symbol id="dg-i-warn" viewBox="0 0 24 24"><path d="M12 3 2 20h20z"/><path d="M12 10v4.5M12 17.5v.5"/></symbol>
     <symbol id="fs-gear" viewBox="0 0 24 24"><path fill="currentColor" d="M10.3 2h3.4l.5 2.6 1.9.8 2.2-1.5 2.4 2.4-1.5 2.2.8 1.9 2.6.5v3.4l-2.6.5-.8 1.9 1.5 2.2-2.4 2.4-2.2-1.5-1.9.8-.5 2.6h-3.4l-.5-2.6-1.9-.8-2.2 1.5-2.4-2.4 1.5-2.2-.8-1.9L2 13.7v-3.4l2.6-.5.8-1.9-1.5-2.2 2.4-2.4 2.2 1.5 1.9-.8zM12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/></symbol>
   </svg>
 
@@ -114,8 +54,8 @@
 
     <!-- ============================== OVERVIEW ============================== -->
     <h2 id="overview">Overview</h2>
-    <figure class="fs-figure">
-      <svg class="fs-narrow" viewBox="0 0 480 524" role="img" aria-labelledby="fs-map-title">
+    <figure class="dg-figure fs-figure">
+      <svg class="dg-svg" viewBox="0 0 480 524" role="img" aria-labelledby="fs-map-title">
         <title id="fs-map-title">Map of the GUILDA top-level folders and how they depend on each other</title>
         <defs>
           <marker id="fs-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#5f6b7a"/></marker>
@@ -124,17 +64,17 @@
 
         <!-- @GUILDA -->
         <rect x="140" y="10" width="200" height="64" rx="10" fill="#0f4c81"/>
-        <text x="240" y="38" text-anchor="middle" font-size="18" font-weight="bold" fill="#fff" class="fs-mono">@GUILDA</text>
+        <text x="240" y="38" text-anchor="middle" font-size="18" font-weight="bold" fill="#fff" class="dg-mono">@GUILDA</text>
         <text x="240" y="60" text-anchor="middle" font-size="12" fill="#dce8f3">entry point · environment</text>
 
         <!-- @GUILDA opens tutorial / doc -->
-        <path class="fs-flowline" d="M340 42H366V144" fill="none" stroke="#8a6d00" stroke-width="1.6" marker-end="url(#fs-ah)"/>
-        <text x="372" y="100" font-size="11" fill="#8a6d00">opens</text>
-        <path class="fs-flowline" d="M140 42H12V476H42" fill="none" stroke="#d63384" stroke-width="1.6" marker-end="url(#fs-ah)"/>
-        <text x="18" y="34" font-size="11" fill="#d63384">opens</text>
+        <path class="dg-anim-dash" d="M340 42H366V144" fill="none" stroke="#7a5c00" stroke-width="1.6" marker-end="url(#fs-ah)"/>
+        <text x="372" y="100" font-size="11" fill="#7a5c00">opens</text>
+        <path class="dg-anim-dash" d="M140 42H12V476H42" fill="none" stroke="#5f6b7a" stroke-width="1.6" marker-end="url(#fs-ah)"/>
+        <text x="18" y="34" font-size="11" fill="#5f6b7a">opens</text>
 
         <!-- path setup -->
-        <path class="fs-flowline" d="M240 74V118" fill="none" stroke="#0f4c81" stroke-width="2" marker-end="url(#fs-ah-p)"/>
+        <path class="dg-anim-dash" d="M240 74V118" fill="none" stroke="#0f4c81" stroke-width="2" marker-end="url(#fs-ah-p)"/>
         <text x="232" y="100" text-anchor="end" font-size="12" fill="#0f4c81" font-weight="bold">sets up the path</text>
 
         <!-- MATLAB path region -->
@@ -143,146 +83,163 @@
         <text x="38" y="129" font-size="12" font-weight="bold" fill="#0f4c81">MATLAB path</text>
 
         <rect x="44" y="148" width="206" height="72" rx="9" fill="#e7f6ec" stroke="#1e7b3c" stroke-width="1.5"/>
-        <text x="147" y="178" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e7b3c" class="fs-mono">_GUILDAobject</text>
+        <text x="147" y="178" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e7b3c" class="dg-mono">_GUILDAobject</text>
         <text x="147" y="200" text-anchor="middle" font-size="12" fill="#333">concrete models</text>
 
         <rect x="44" y="290" width="206" height="72" rx="9" fill="#f8fbff" stroke="#0f4c81" stroke-width="1.5"/>
-        <text x="147" y="320" text-anchor="middle" font-size="16" font-weight="bold" fill="#0f4c81" class="fs-mono">_GUILDAsystem</text>
+        <text x="147" y="320" text-anchor="middle" font-size="16" font-weight="bold" fill="#0f4c81" class="dg-mono">_GUILDAsystem</text>
         <text x="147" y="342" text-anchor="middle" font-size="12" fill="#333">framework + analysis</text>
 
-        <path class="fs-flowline" d="M147 220V286" fill="none" stroke="#1e7b3c" stroke-width="2" marker-end="url(#fs-ah)"/>
+        <path class="dg-anim-dash" d="M147 220V286" fill="none" stroke="#1e7b3c" stroke-width="2" marker-end="url(#fs-ah)"/>
         <text x="156" y="250" font-size="12" font-weight="bold" fill="#1e7b3c">builds on</text>
         <text x="156" y="266" font-size="11" fill="#b02a37">never the reverse</text>
 
         <rect x="276" y="148" width="180" height="72" rx="9" fill="#fff8e1" stroke="#e0a800" stroke-width="1.5"/>
-        <text x="366" y="178" text-anchor="middle" font-size="15" font-weight="bold" fill="#8a6d00" class="fs-mono">_GUILDAtutorial</text>
+        <text x="366" y="178" text-anchor="middle" font-size="15" font-weight="bold" fill="#7a5c00" class="dg-mono">_GUILDAtutorial</text>
         <text x="366" y="200" text-anchor="middle" font-size="12" fill="#333">learning material</text>
 
         <!-- tutorials use the models -->
-        <path class="fs-flowline" d="M366 220V326H254" fill="none" stroke="#8a6d00" stroke-width="1.6" marker-end="url(#fs-ah)"/>
-        <text x="358" y="276" text-anchor="end" font-size="11" fill="#8a6d00">uses the public API</text>
+        <path class="dg-anim-dash" d="M366 220V326H254" fill="none" stroke="#7a5c00" stroke-width="1.6" marker-end="url(#fs-ah)"/>
+        <text x="358" y="276" text-anchor="end" font-size="11" fill="#7a5c00">uses the public API</text>
 
         <!-- doc generation -->
-        <path class="fs-flowline" d="M147 362V436" fill="none" stroke="#d63384" stroke-width="1.6" marker-end="url(#fs-ah)"/>
-        <text x="156" y="404" font-size="11" fill="#d63384">help comments in source</text>
-        <text x="156" y="420" font-size="11" fill="#d63384">→ generated class reference</text>
+        <path class="dg-anim-dash" d="M147 362V436" fill="none" stroke="#5f6b7a" stroke-width="1.6" marker-end="url(#fs-ah)"/>
+        <text x="156" y="404" font-size="11" fill="#5f6b7a">help comments in source</text>
+        <text x="156" y="420" font-size="11" fill="#5f6b7a">→ generated class reference</text>
 
-        <rect x="44" y="440" width="206" height="72" rx="9" fill="#fcebf3" stroke="#d63384" stroke-width="1.5"/>
-        <text x="147" y="470" text-anchor="middle" font-size="16" font-weight="bold" fill="#d63384" class="fs-mono">_GUILDAdoc</text>
+        <rect x="44" y="440" width="206" height="72" rx="9" fill="#eef1f4" stroke="#5f6b7a" stroke-width="1.5"/>
+        <text x="147" y="470" text-anchor="middle" font-size="16" font-weight="bold" fill="#5f6b7a" class="dg-mono">_GUILDAdoc</text>
         <text x="147" y="492" text-anchor="middle" font-size="12" fill="#333">HTML docs · not on path</text>
 
         <rect x="276" y="440" width="180" height="72" rx="9" fill="#f4f7f6" stroke="#5f6b7a" stroke-width="1.5" stroke-dasharray="5 4"/>
-        <text x="366" y="470" text-anchor="middle" font-size="15" font-weight="bold" fill="#5f6b7a" class="fs-mono">_GUILDAexport</text>
+        <text x="366" y="470" text-anchor="middle" font-size="15" font-weight="bold" fill="#5f6b7a" class="dg-mono">_GUILDAexport</text>
         <text x="366" y="492" text-anchor="middle" font-size="12" fill="#333">output · created on demand</text>
       </svg>
-      <figcaption>Arrows show which folder uses or produces another. Only folders on the MATLAB path can be called from user scripts; <code class="fs-code">@GUILDA</code> puts them there at startup.</figcaption>
+      <figcaption>Arrows show which folder uses or produces another. Only folders on the MATLAB path can be called from user scripts; <code>@GUILDA</code> puts them there at startup.</figcaption>
     </figure>
 
     <!-- ============================== TOP-LEVEL FOLDERS ============================== -->
     <h2 id="folders">Top-level folders</h2>
-    <div class="fs-grid">
-      <div class="fs-card fs-c-guilda">
-        <h4><code>@GUILDA/</code><span class="fs-tag fs-tag-path">via repository root</span></h4>
-        <p>Entry point of the toolbox. Running <code class="fs-code">&gt;&gt; GUILDA</code> prepares the environment.</p>
-        <dl>
-          <dt>Belongs here</dt><dd>Environment setup, user settings and their shipped defaults, and commands that open the tutorials and this documentation.</dd>
-          <dt>Relation</dt><dd>Puts the other code folders on the MATLAB path. Contains no power system modeling or analysis.</dd>
-        </dl>
+    <div class="dg-rows fs-folders">
+      <div class="dg-row fs-c-guilda">
+        <div><code class="fs-name">@GUILDA/</code><span class="dg-badge is-ok">via repository root</span></div>
+        <div>
+          <p>Entry point of the toolbox. Running <code>&gt;&gt; GUILDA</code> prepares the environment.</p>
+          <dl>
+            <dt>Belongs here</dt><dd>Environment setup, user settings and their shipped defaults, and commands that open the tutorials and this documentation.</dd>
+            <dt>Relation</dt><dd>Puts the other code folders on the MATLAB path. Contains no power system modeling or analysis.</dd>
+          </dl>
+        </div>
       </div>
-      <div class="fs-card fs-c-system">
-        <h4><code>_GUILDAsystem/</code><span class="fs-tag fs-tag-path">on path</span></h4>
-        <p>The modeling framework.</p>
-        <dl>
-          <dt>Belongs here</dt><dd>Base classes that define what a network, bus, branch, component, and controller are; the classes that perform analysis; general helper functions; compatibility wrappers for old names.</dd>
-          <dt>Relation</dt><dd>Depends on no concrete model in <code class="fs-code">_GUILDAobject</code>, so models can be added or removed without touching the framework.</dd>
-        </dl>
+      <div class="dg-row fs-c-system">
+        <div><code class="fs-name">_GUILDAsystem/</code><span class="dg-badge is-ok">on path</span></div>
+        <div>
+          <p>The modeling framework.</p>
+          <dl>
+            <dt>Belongs here</dt><dd>Base classes that define what a network, bus, branch, component, and controller are; the classes that perform analysis; general helper functions; compatibility wrappers for old names.</dd>
+            <dt>Relation</dt><dd>Depends on no concrete model in <code>_GUILDAobject</code>, so models can be added or removed without touching the framework.</dd>
+          </dl>
+        </div>
       </div>
-      <div class="fs-card fs-c-object">
-        <h4><code>_GUILDAobject/</code><span class="fs-tag fs-tag-path">on path</span></h4>
-        <p>Concrete models that users put into a network.</p>
-        <dl>
-          <dt>Belongs here</dt><dd>Model classes, grouped into packages by kind (branch / component / controller / network), with sub-packages for model families that share a base class. A network template is a class folder with data subfolders per element type.</dd>
-          <dt>Relation</dt><dd>Every model inherits from a base class in <code class="fs-code">_GUILDAsystem</code>.</dd>
-        </dl>
+      <div class="dg-row fs-c-object">
+        <div><code class="fs-name">_GUILDAobject/</code><span class="dg-badge is-ok">on path</span></div>
+        <div>
+          <p>Concrete models that users put into a network.</p>
+          <dl>
+            <dt>Belongs here</dt><dd>Model classes, grouped into packages by kind (branch / component / controller / network), with sub-packages for model families that share a base class. A network template is a class folder with data subfolders per element type.</dd>
+            <dt>Relation</dt><dd>Every model inherits from a base class in <code>_GUILDAsystem</code>.</dd>
+          </dl>
+        </div>
       </div>
-      <div class="fs-card fs-c-tutorial">
-        <h4><code>_GUILDAtutorial/</code><span class="fs-tag fs-tag-path">on path</span></h4>
-        <p>Learning material for users.</p>
-        <dl>
-          <dt>Belongs here</dt><dd>Live scripts that walk through using GUILDA, and reference scripts per model family.</dd>
-          <dt>Relation</dt><dd>Uses only the public API of <code class="fs-code">_GUILDAsystem</code> and <code class="fs-code">_GUILDAobject</code>; opened from <code class="fs-code">@GUILDA</code>. Each tutorial is listed in the documentation.</dd>
-        </dl>
+      <div class="dg-row fs-c-tutorial">
+        <div><code class="fs-name">_GUILDAtutorial/</code><span class="dg-badge is-ok">on path</span></div>
+        <div>
+          <p>Learning material for users.</p>
+          <dl>
+            <dt>Belongs here</dt><dd>Live scripts that walk through using GUILDA, and reference scripts per model family.</dd>
+            <dt>Relation</dt><dd>Uses only the public API of <code>_GUILDAsystem</code> and <code>_GUILDAobject</code>; opened from <code>@GUILDA</code>. Each tutorial is listed in the documentation.</dd>
+          </dl>
+        </div>
       </div>
-      <div class="fs-card fs-c-doc">
-        <h4><code>_GUILDAdoc/</code><span class="fs-tag">not on path</span></h4>
-        <p>This documentation site, viewed in a browser.</p>
-        <dl>
-          <dt>Belongs here</dt><dd>Hand-written pages, styles, and lists, plus a class reference generated from the help comments in the MATLAB source.</dd>
-          <dt>Relation</dt><dd>Reads the code folders but is never called by them. Opened from <code class="fs-code">@GUILDA</code>.</dd>
-        </dl>
+      <div class="dg-row fs-c-doc">
+        <div><code class="fs-name">_GUILDAdoc/</code><span class="dg-badge is-muted">not on path</span></div>
+        <div>
+          <p>This documentation site, viewed in a browser.</p>
+          <dl>
+            <dt>Belongs here</dt><dd>Hand-written pages, styles, and lists, plus a class reference generated from the help comments in the MATLAB source.</dd>
+            <dt>Relation</dt><dd>Reads the code folders but is never called by them. Opened from <code>@GUILDA</code>.</dd>
+          </dl>
+        </div>
       </div>
-      <div class="fs-card fs-c-other">
-        <h4><code>_GUILDAexport/</code><span class="fs-tag">not on path</span><span class="fs-tag fs-tag-ign">Git-ignored</span></h4>
-        <p>Default output folder for exported data.</p>
-        <dl>
-          <dt>Belongs here</dt><dd>Files written by GUILDA's export functions. Nothing hand-written.</dd>
-          <dt>Relation</dt><dd>Created on demand; safe to delete.</dd>
-        </dl>
+      <div class="dg-row fs-c-other">
+        <div><code class="fs-name">_GUILDAexport/</code><span class="dg-badge is-muted">not on path</span><span class="dg-badge is-err">Git-ignored</span></div>
+        <div>
+          <p>Default output folder for exported data.</p>
+          <dl>
+            <dt>Belongs here</dt><dd>Files written by GUILDA's export functions. Nothing hand-written.</dd>
+            <dt>Relation</dt><dd>Created on demand; safe to delete.</dd>
+          </dl>
+        </div>
       </div>
     </div>
-    <p class="fs-note">Inside a class or package folder, a subfolder without an <code class="fs-code">@</code> or <code class="fs-code">+</code> prefix is not on the path: use it for data or archived code only. A class folder keeps one method per file; a small model may be a single <code class="fs-code">classdef</code> file instead.</p>
+    <div class="dg-callout">
+      <svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
+      <p>Inside a class or package folder, a subfolder without an <code>@</code> or <code>+</code> prefix is not on the path: use it for data or archived code only. A class folder keeps one method per file; a small model may be a single <code>classdef</code> file instead.</p>
+    </div>
 
     <!-- ============================== PLACEMENT ============================== -->
     <h2 id="placement">Placement rules for new files</h2>
-    <div class="fs-start">What are you adding?</div>
-    <ol class="fs-flow">
-      <li><div class="fs-q">A new generator, load, branch, or controller model</div><div class="fs-to">→</div><div class="fs-dest fs-c-object"><code>_GUILDAobject/+&lt;package&gt;/</code><small>the matching package; make a sub-package when a family of models shares a base class</small></div></li>
-      <li><div class="fs-q">A new network template</div><div class="fs-to">→</div><div class="fs-dest fs-c-object"><code>_GUILDAobject/+network/@Name/</code><small>with <code class="fs-code">bus/</code>, <code class="fs-code">branch/</code>, <code class="fs-code">component/&lt;key&gt;/</code> data folders</small></div></li>
-      <li><div class="fs-q">A change to the model framework</div><div class="fs-to">→</div><div class="fs-dest fs-c-system"><code>_GUILDAsystem/@&lt;CoreClass&gt;/</code><small>the base class folder being changed</small></div></li>
-      <li><div class="fs-q">A new analysis or support class</div><div class="fs-to">→</div><div class="fs-dest fs-c-system"><code>_GUILDAsystem/_auxiliary/@Name/</code><small>inheriting from the common analysis-support base class</small></div></li>
-      <li><div class="fs-q">A helper function<br><strong>used by one class only?</strong></div><div class="fs-to">→</div>
-        <div class="fs-split">
-          <div class="fs-dest fs-c-tutorial"><span class="fs-yn">yes</span><code>&lt;that class&gt;/private/</code></div>
-          <div class="fs-dest fs-c-system"><span class="fs-yn">no</span><code>_GUILDAsystem/+tools/</code></div>
-        </div></li>
-      <li><div class="fs-q">A renamed or removed public API</div><div class="fs-to">→</div><div class="fs-dest fs-c-system"><code>_GUILDAsystem/_VersionSupport/</code><small>a wrapper under the old name</small></div></li>
-      <li><div class="fs-q">A new tutorial</div><div class="fs-to">→</div><div class="fs-dest fs-c-tutorial"><code>_GUILDAtutorial/</code><small>and register it in <code class="fs-code">_GUILDAdoc/database/list_Tutorials.js</code></small></div></li>
-      <li><div class="fs-q">Retired code kept for reference</div><div class="fs-to">→</div><div class="fs-dest fs-c-other"><code>archive/</code><small>next to the original location (see <a href="#legacy">Legacy</a>)</small></div></li>
-    </ol>
+    <div class="dg-rows is-arrow">
+      <div class="dg-row dg-rows-head"><span class="dg-kicker">What are you adding?</span><span></span><span class="dg-kicker">Put it in</span></div>
+      <div class="dg-row"><span class="dg-row-head">A new generator, load, branch, or controller model</span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-object"><code class="fs-dest">_GUILDAobject/+&lt;package&gt;/</code><span class="fs-dest-note">the matching package; make a sub-package when a family of models shares a base class</span></span></div>
+      <div class="dg-row"><span class="dg-row-head">A new network template</span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-object"><code class="fs-dest">_GUILDAobject/+network/@Name/</code><span class="fs-dest-note">with <code>bus/</code>, <code>branch/</code>, <code>component/&lt;key&gt;/</code> data folders</span></span></div>
+      <div class="dg-row"><span class="dg-row-head">A change to the model framework</span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-system"><code class="fs-dest">_GUILDAsystem/@&lt;CoreClass&gt;/</code><span class="fs-dest-note">the base class folder being changed</span></span></div>
+      <div class="dg-row"><span class="dg-row-head">A new analysis or support class</span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-system"><code class="fs-dest">_GUILDAsystem/_auxiliary/@Name/</code><span class="fs-dest-note">inheriting from the common analysis-support base class</span></span></div>
+      <div class="dg-row"><span class="dg-row-head">A helper function — used by one class only?</span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-yn"><span class="dg-badge is-ok">yes</span><code class="fs-dest fs-c-tutorial">&lt;that class&gt;/private/</code><span class="dg-badge is-muted">no</span><code class="fs-dest fs-c-system">_GUILDAsystem/+tools/</code></span></div>
+      <div class="dg-row"><span class="dg-row-head">A renamed or removed public API</span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-system"><code class="fs-dest">_GUILDAsystem/_VersionSupport/</code><span class="fs-dest-note">a wrapper under the old name</span></span></div>
+      <div class="dg-row"><span class="dg-row-head">A new tutorial</span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-tutorial"><code class="fs-dest">_GUILDAtutorial/</code><span class="fs-dest-note">and register it in <code>_GUILDAdoc/database/list_Tutorials.js</code></span></span></div>
+      <div class="dg-row"><span class="dg-row-head">Retired code kept for reference</span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-other"><code class="fs-dest">archive/</code><span class="fs-dest-note">next to the original location (see <a href="#legacy">Legacy</a>)</span></span></div>
+    </div>
 
     <!-- ============================== GENERATED ============================== -->
     <h2 id="generated">Generated files — do not edit</h2>
     <p>These are rewritten by the system. <strong>Edit the green source</strong>, never the red output.</p>
-    <div class="fs-pipe">
-      <div class="fs-pipe-box fs-pipe-src"><span class="fs-lbl">✎ edit</span><span class="fs-note">in <code>_GUILDAsystem/</code></span><br><code>@Bus/add_component.template</code><br><code>@Bus/replace_component.template</code><br><code>@PowerNetwork/add_branch.template</code></div>
-      <svg class="fs-pipe-arrow" viewBox="0 0 44 18" aria-hidden="true"><path d="M2 9H38" stroke="#5f6b7a" stroke-width="2"/><path d="M36 4L42 9L36 14z" fill="#5f6b7a"/><circle class="fs-dot" cx="6" cy="9" r="4" fill="#0f4c81"/></svg>
-      <div class="fs-pipe-box fs-pipe-run"><svg class="fs-i"><use href="#fs-gear"/></svg><span class="fs-lbl">runs</span>at startup</div>
-      <svg class="fs-pipe-arrow" viewBox="0 0 44 18" aria-hidden="true"><path d="M2 9H38" stroke="#5f6b7a" stroke-width="2"/><path d="M36 4L42 9L36 14z" fill="#5f6b7a"/><circle class="fs-dot" cx="6" cy="9" r="4" fill="#b02a37"/></svg>
-      <div class="fs-pipe-box fs-pipe-out"><span class="fs-lbl">✕ do not edit</span><span class="fs-note">in <code>_GUILDAsystem/</code></span><br><code>@Bus/add_component.m</code><br><code>@Bus/replace_component.m</code><br><code>@PowerNetwork/add_branch.m</code></div>
+    <div class="fs-gen">
+      <div class="dg-chain">
+        <div class="dg-chain-node is-ok"><span class="dg-kicker">✎ edit</span><span class="fs-dest-note">in <code>_GUILDAsystem/</code></span><code>@Bus/add_component.template</code><br><code>@Bus/replace_component.template</code><br><code>@PowerNetwork/add_branch.template</code></div>
+        <div class="dg-chain-arrow" aria-hidden="true"></div>
+        <div class="dg-chain-node is-step"><span class="dg-kicker">runs</span>at startup</div>
+        <div class="dg-chain-arrow" aria-hidden="true"></div>
+        <div class="dg-chain-node is-err"><span class="dg-kicker">✕ do not edit</span><span class="fs-dest-note">in <code>_GUILDAsystem/</code></span><code>@Bus/add_component.m</code><br><code>@Bus/replace_component.m</code><br><code>@PowerNetwork/add_branch.m</code></div>
+      </div>
     </div>
-    <div class="fs-pipe">
-      <div class="fs-pipe-box fs-pipe-src"><span class="fs-lbl">✎ edit</span>help comments in the MATLAB source</div>
-      <svg class="fs-pipe-arrow" viewBox="0 0 44 18" aria-hidden="true"><path d="M2 9H38" stroke="#5f6b7a" stroke-width="2"/><path d="M36 4L42 9L36 14z" fill="#5f6b7a"/><circle class="fs-dot" cx="6" cy="9" r="4" fill="#0f4c81"/></svg>
-      <div class="fs-pipe-box fs-pipe-run"><svg class="fs-i"><use href="#fs-gear"/></svg><span class="fs-lbl">runs</span><code>GUILDA.doc("update", true)</code></div>
-      <svg class="fs-pipe-arrow" viewBox="0 0 44 18" aria-hidden="true"><path d="M2 9H38" stroke="#5f6b7a" stroke-width="2"/><path d="M36 4L42 9L36 14z" fill="#5f6b7a"/><circle class="fs-dot" cx="6" cy="9" r="4" fill="#b02a37"/></svg>
-      <div class="fs-pipe-box fs-pipe-out"><span class="fs-lbl">✕ do not edit</span><span class="fs-note">in <code>_GUILDAdoc/database/</code></span><br><code>list_Classes.js</code><br><code>GUILDAsystem/</code><br><code>GUILDAobject/</code></div>
+    <div class="fs-gen">
+      <div class="dg-chain">
+        <div class="dg-chain-node is-ok"><span class="dg-kicker">✎ edit</span>help comments in the MATLAB source</div>
+        <div class="dg-chain-arrow" aria-hidden="true"></div>
+        <div class="dg-chain-node is-step"><span class="dg-kicker">runs</span><code>GUILDA.doc("update", true)</code></div>
+        <div class="dg-chain-arrow" aria-hidden="true"></div>
+        <div class="dg-chain-node is-err"><span class="dg-kicker">✕ do not edit</span><span class="fs-dest-note">in <code>_GUILDAdoc/database/</code></span><code>list_Classes.js</code><br><code>GUILDAsystem/</code><br><code>GUILDAobject/</code></div>
+      </div>
     </div>
-    <div class="fs-pipe">
-      <div class="fs-pipe-box fs-pipe-src"><span class="fs-lbl">✎ change</span>settings changed by the user</div>
-      <svg class="fs-pipe-arrow" viewBox="0 0 44 18" aria-hidden="true"><path d="M2 9H38" stroke="#5f6b7a" stroke-width="2"/><path d="M36 4L42 9L36 14z" fill="#5f6b7a"/><circle class="fs-dot" cx="6" cy="9" r="4" fill="#0f4c81"/></svg>
-      <div class="fs-pipe-box fs-pipe-run"><svg class="fs-i"><use href="#fs-gear"/></svg><span class="fs-lbl">runs</span><code>GUILDA.setting</code></div>
-      <svg class="fs-pipe-arrow" viewBox="0 0 44 18" aria-hidden="true"><path d="M2 9H38" stroke="#5f6b7a" stroke-width="2"/><path d="M36 4L42 9L36 14z" fill="#5f6b7a"/><circle class="fs-dot" cx="6" cy="9" r="4" fill="#b02a37"/></svg>
-      <div class="fs-pipe-box fs-pipe-out"><span class="fs-lbl">✕ do not edit or commit</span><code>@GUILDA/user/</code></div>
+    <div class="fs-gen">
+      <div class="dg-chain">
+        <div class="dg-chain-node is-ok"><span class="dg-kicker">✎ change</span>settings changed by the user</div>
+        <div class="dg-chain-arrow" aria-hidden="true"></div>
+        <div class="dg-chain-node is-step"><span class="dg-kicker">runs</span><code>GUILDA.setting</code></div>
+        <div class="dg-chain-arrow" aria-hidden="true"></div>
+        <div class="dg-chain-node is-err"><span class="dg-kicker">✕ do not edit or commit</span><code>@GUILDA/user/</code></div>
+      </div>
     </div>
-    <p class="fs-note">All outputs above are listed in <code class="fs-code">.gitignore</code>.</p>
+    <p class="dg-caption">All outputs above are listed in <code>.gitignore</code>.</p>
 
     <!-- ============================== LEGACY ============================== -->
     <h2 id="legacy">Legacy and archived folders</h2>
-    <p>Retired code kept for reference goes into a folder named <code class="fs-code">archive/</code> next to its original location. Having no <code class="fs-code">@</code> or <code class="fs-code">+</code> prefix, it stays off the MATLAB path inside class and package folders. Do not use any other name or marker for retired or unfinished code.</p>
-    <div class="fs-names">
-      <span class="fs-good">✓ archive/</span>
-      <span class="fs-bad">history</span><span class="fs-bad">_past</span><span class="fs-bad">_origin</span><span class="fs-bad">未 prefix</span>
-    </div>
+    <p>Retired code kept for reference goes into a folder named <code>archive/</code> next to its original location. Having no <code>@</code> or <code>+</code> prefix, it stays off the MATLAB path inside class and package folders. Do not use any other name or marker for retired or unfinished code.</p>
+    <p class="fs-legacy">
+      <span class="dg-badge is-ok">✓ archive/</span>
+      <span class="dg-badge is-strike">history</span> <span class="dg-badge is-strike">_past</span> <span class="dg-badge is-strike">_origin</span> <span class="dg-badge is-strike">未 prefix</span>
+    </p>
   </main>
 </body>
 </html>

@@ -6,187 +6,53 @@
   <title>GUILDA Developer Guide - Project Management</title>
   <link rel="stylesheet" href="../style.css">
   <style>
-    /* ---- Shared ---- */
-    .pm-figure { margin: 16px 0 12px; padding: 16px; background: #f8fbff; border: 1px solid #dce4ec; border-radius: 10px; }
-    .pm-figure svg.pm-svg { display: block; width: 100%; height: auto; }
-    .pm-figure figcaption, .pm-caption { margin-top: 10px; color: #5f6b7a; font-size: 0.9rem; }
-    .pm-svg text { font-family: inherit; fill: #333; }
-    .pm-svg .pm-mono { font-family: Consolas, Monaco, monospace; }
-    .pm-svg .pm-muted { fill: #5f6b7a; }
-    .pm-icon { width: 1.25em; height: 1.25em; flex: none; vertical-align: -0.25em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    .pm-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
-    .developer-layout main code { overflow-wrap: anywhere; }
-    .pm-num { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 24px; height: 24px; border-radius: 50%; background: #0f4c81; color: #fff; font-size: 0.8rem; font-weight: bold; line-height: 1; }
+    /* Project Management page only (pm-*); shared parts are dg-* in style.css */
+    .pm-labels .dg-gh-label { min-width: 72px; text-align: center; }
+    .pm-labels .dg-gh-check { gap: 14px; }
+    .pm-xy { display: flex; align-items: baseline; gap: 4px; margin: 4px 0 var(--dg-s3); font: bold 3.4rem/1 var(--dg-mono); }
+    .pm-xy .is-x { color: var(--dg-err); }
+    .pm-xy .is-y { color: var(--dg-ok); }
+    .pm-xy .is-dot { color: var(--dg-muted); }
 
-    /* ---- Workflow ---- */
-    .pm-figure svg.pm-flow-v, .pm-figure svg.pm-tl-v { display: none; }
-    .pm-token, .pm-halo, .pm-dash { animation-iteration-count: infinite; }
-    .pm-token-h { animation: pm-move-h 10s ease-in-out infinite; }
-    .pm-token-v { animation: pm-move-v 10s ease-in-out infinite; }
-    .pm-halo { opacity: 0; animation: pm-halo 10s linear infinite; }
-    .pm-dash { stroke-dasharray: 6 5; animation: pm-dash 0.9s linear infinite; }
-    @keyframes pm-move-h {
-      0%, 12% { transform: translateX(0); opacity: 1; }
-      20%, 32% { transform: translateX(172px); }
-      40%, 52% { transform: translateX(344px); }
-      60%, 72% { transform: translateX(516px); }
-      80%, 94% { transform: translateX(688px); opacity: 1; }
-      100% { transform: translateX(688px); opacity: 0; }
-    }
-    @keyframes pm-move-v {
-      0%, 12% { transform: translateY(0); opacity: 1; }
-      20%, 32% { transform: translateY(112px); }
-      40%, 52% { transform: translateY(224px); }
-      60%, 72% { transform: translateY(336px); }
-      80%, 94% { transform: translateY(448px); opacity: 1; }
-      100% { transform: translateY(448px); opacity: 0; }
-    }
-    @keyframes pm-halo { 0%, 14% { opacity: 1; } 18%, 100% { opacity: 0; } }
-    @keyframes pm-dash { to { stroke-dashoffset: -11; } }
-
-    .pm-steps { list-style: none; padding: 0; margin: 14px 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; counter-reset: pm-step; }
-    .pm-steps li { counter-increment: pm-step; display: block; padding: 12px; background: #fff; border: 1px solid #dee2e6; border-top: 3px solid #0f4c81; border-radius: 8px; font-size: 0.92rem; line-height: 1.45; }
-    .pm-steps li::before { content: counter(pm-step); display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #0f4c81; color: #fff; font-size: 0.8rem; font-weight: bold; margin-bottom: 6px; }
-
-    /* ---- Issues ---- */
-    .pm-issue { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
-    .pm-issue-mock { position: relative; background: #fff; border: 1px solid #dee2e6; border-radius: 10px; box-shadow: 0 2px 8px rgba(15, 76, 129, 0.08); overflow: hidden; }
-    .pm-issue-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid #dee2e6; font-weight: bold; font-size: 1.02rem; color: #333; }
-    .pm-issue-head .pm-icon { color: #1e7b3c; }
-    .pm-issue-head .pm-issue-no { color: #5f6b7a; font-weight: normal; }
-    .pm-issue-labels { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-bottom: 1px solid #dee2e6; background: #f8fbff; font-size: 0.85rem; color: #5f6b7a; }
-    .pm-issue-body { padding: 10px 14px 14px; display: grid; gap: 10px; font-size: 0.88rem; }
-    .pm-field { display: grid; gap: 4px; }
-    .pm-field b { display: flex; align-items: center; gap: 6px; color: #0f4c81; }
-    .pm-skel { display: block; height: 7px; border-radius: 4px; background: #e8eef5; }
-    .pm-skel.is-short { width: 60%; }
-    .pm-bug { padding: 0 6px; border-radius: 8px; background: #fdeeee; color: #b02a37; font-size: 0.75rem; font-weight: bold; }
-    .pm-label { display: inline-block; padding: 1px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; font-family: Consolas, Monaco, monospace; border: 1px solid currentColor; }
-    .pm-label[data-type="feature"] { color: #1e7b3c; background: #e7f6ec; }
-    .pm-label[data-type="fix"] { color: #b02a37; background: #fdeeee; }
-    .pm-label[data-type="refactor"] { color: #0f4c81; background: #f8fbff; }
-    .pm-label[data-type="docs"] { color: #7a5c00; background: #fff8e1; border-color: #e0a800; }
-    .pm-label[data-type="test"] { color: #5f6b7a; background: #f4f7f6; }
-    .pm-mark { position: absolute; right: 10px; }
-    .pm-issue-head, .pm-issue-labels, .pm-issue-body { position: relative; padding-right: 44px; }
-    .pm-callouts { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-    .pm-callouts li { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; background: #fff; border: 1px solid #dee2e6; border-radius: 8px; font-size: 0.93rem; line-height: 1.5; }
-    .pm-label-map { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 10px; font-size: 0.85rem; }
-    .pm-label-map span.pm-pair { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
-    .pm-label-map .pm-arrow { color: #5f6b7a; }
-    .pm-split { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
-    .pm-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; background: #fff; border: 1px solid #dee2e6; font-size: 0.9rem; white-space: nowrap; }
-    .pm-chip.is-big { padding: 14px 18px; border: 2px dashed #b02a37; color: #b02a37; background: #fdeeee; font-weight: bold; }
-    .pm-chip.is-issue .pm-icon { color: #1e7b3c; }
-    .pm-chip.is-pr .pm-icon { color: #0f4c81; }
-    .pm-split-arrow { font-size: 1.4rem; color: #5f6b7a; }
-    .pm-split-pairs { display: grid; gap: 8px; }
-    .pm-split-pairs div { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-
-    /* ---- Versions ---- */
-    .pm-ver-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
-    .pm-ver-card { padding: 14px; background: #fff; border: 1px solid #dee2e6; border-radius: 10px; }
-    .pm-ver-card h3 { margin: 0 0 10px; font-size: 1rem; }
-    .pm-xy { display: flex; justify-content: center; align-items: baseline; gap: 4px; font: bold 3.2rem/1 Consolas, Monaco, monospace; margin: 6px 0 12px; }
-    .pm-xy .pm-x { color: #b02a37; }
-    .pm-xy .pm-y { color: #1e7b3c; }
-    .pm-xy .pm-dot { color: #5f6b7a; }
-    .pm-xy-rules { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.88rem; line-height: 1.45; }
-    .pm-xy-rules div { padding: 8px 10px; border-radius: 6px; }
-    .pm-xy-rules .is-x { background: #fdeeee; border-left: 4px solid #b02a37; }
-    .pm-xy-rules .is-y { background: #e7f6ec; border-left: 4px solid #1e7b3c; }
-    .pm-names { display: grid; gap: 10px; font-size: 0.9rem; line-height: 1.45; }
-    .pm-names div { display: flex; gap: 10px; align-items: flex-start; }
-    .pm-names .pm-icon { color: #0f4c81; margin-top: 2px; }
-    .pm-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 8px; font-size: 0.85rem; color: #5f6b7a; }
-    .pm-legend span { display: inline-flex; align-items: center; gap: 6px; }
-    .pm-swatch { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
-    .pm-wrap { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
-    .pm-wrap > div { flex: 1 1 160px; display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 8px; background: #fff; border: 1px solid #dee2e6; font-size: 0.88rem; }
-    .pm-wrap > div.is-wrapper { flex: 1.6 1 240px; border: 2px solid #e0a800; background: #fff8e1; }
-    .pm-wrap > div small { color: #5f6b7a; }
-    .pm-wrap .pm-step-arrow { flex: 0 0 auto; align-self: center; padding: 0; border: 0; background: none; color: #5f6b7a; font-size: 1.3rem; }
-    .pm-life { margin-top: 12px; }
-    .pm-life-bar { position: relative; height: 26px; border-radius: 13px; background: linear-gradient(90deg, #e0a800 0%, #f2cf63 100%); color: #333; font-size: 0.82rem; font-weight: bold; display: flex; align-items: center; justify-content: center; text-align: center; padding: 0 12px; }
-    .pm-life-ends { display: flex; justify-content: space-between; gap: 10px; margin-top: 4px; font-size: 0.8rem; color: #5f6b7a; }
-
-    /* ---- Documentation map ---- */
-    .pm-map { display: grid; gap: 10px; }
-    .pm-map-head, .pm-map-row { display: grid; grid-template-columns: minmax(0, 1fr) 56px minmax(0, 1.25fr); align-items: center; }
-    .pm-map-head { font-size: 0.8rem; font-weight: bold; color: #5f6b7a; text-transform: uppercase; letter-spacing: 0.04em; }
-    .pm-map-head span:last-child { grid-column: 3; }
-    .pm-map-from, .pm-map-to { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 10px; font-size: 0.93rem; line-height: 1.45; min-height: 100%; box-sizing: border-box; }
-    .pm-map-from { background: #fff; border: 1px solid #dee2e6; font-weight: bold; color: #333; }
-    .pm-map-from .pm-icon { width: 1.6em; height: 1.6em; color: #0f4c81; }
-    .pm-map-to { background: #f8fbff; border: 1px solid #dce4ec; border-left: 4px solid #0f4c81; display: block; }
-    .pm-map-to small { display: flex; align-items: center; gap: 6px; margin-top: 4px; color: #1e7b3c; }
-    .pm-map-arrow { display: block; width: 56px; height: 24px; }
-    .pm-map-arrow line { stroke: #0f4c81; stroke-width: 2.5; }
-    .pm-map-arrow path { fill: #0f4c81; }
-
-    /* ---- Definition of Done ---- */
-    .pm-dod-top { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin: 14px 0; padding: 12px 16px; background: #f8fbff; border: 1px solid #dce4ec; border-radius: 10px; }
-    .pm-ring { width: 64px; height: 64px; flex: none; }
+    /* Definition of Done checklist */
+    .pm-dod-top { display: flex; flex-wrap: wrap; align-items: center; gap: var(--dg-s4); margin: var(--dg-s4) 0 var(--dg-s2); }
+    .pm-dod-top p { flex: 1 1 200px; margin: 0; }
+    .pm-ring { flex: none; width: 64px; height: 64px; }
     .pm-ring circle { fill: none; stroke-width: 7; }
-    .pm-ring .pm-ring-bg { stroke: #dce4ec; }
-    .pm-ring .pm-ring-fg { stroke: #1e7b3c; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 32px 32px; transition: stroke-dashoffset 0.4s ease; }
-    .pm-ring text { font: bold 15px Consolas, Monaco, monospace; fill: #333; }
-    .pm-dod-top p { margin: 0; flex: 1 1 200px; }
-    .pm-dod { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-    .pm-dod li { position: relative; }
-    .pm-dod label { display: flex; align-items: flex-start; gap: 12px; height: 100%; box-sizing: border-box; padding: 12px 14px; background: #fff; border: 1px solid #dee2e6; border-radius: 10px; cursor: pointer; line-height: 1.5; font-size: 0.93rem; transition: background 0.2s, border-color 0.2s; }
-    .pm-dod input { position: absolute; opacity: 0; width: 1px; height: 1px; }
-    .pm-dod .pm-kind { color: #0f4c81; display: flex; }
-    .pm-dod .pm-kind .pm-icon { width: 1.5em; height: 1.5em; }
-    .pm-dod .pm-text { flex: 1; min-width: 0; }
-    .pm-box { flex: none; width: 24px; height: 24px; margin-top: 1px; }
+    .pm-ring .pm-ring-bg { stroke: var(--dg-line); }
+    .pm-ring .pm-ring-fg { stroke: var(--dg-ok); stroke-linecap: round; transform: rotate(-90deg); transform-origin: 32px 32px; transition: stroke-dashoffset 0.4s ease; }
+    .pm-ring text { fill: var(--dg-ink); font: bold 15px var(--dg-mono); }
+    .pm-dod > li { position: relative; padding: 0; }
+    .pm-dod input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .pm-dod label { display: grid; grid-template-columns: 26px minmax(0, 1fr) 24px; gap: var(--dg-s4); align-items: start; padding: var(--dg-s4) var(--dg-s2); cursor: pointer; transition: background 0.2s; }
+    .pm-dod label:hover { background: var(--dg-panel); }
+    .pm-dod .pm-kind { color: var(--dg-muted); }
+    .pm-box { width: 24px; height: 24px; margin-top: 1px; }
     .pm-box rect { fill: #fff; stroke: #9fb3c8; stroke-width: 2; transition: fill 0.2s, stroke 0.2s; }
     .pm-box path { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 20; stroke-dashoffset: 20; transition: stroke-dashoffset 0.3s ease 0.05s; }
-    .pm-dod input:checked + label { background: #e7f6ec; border-color: #1e7b3c; }
-    .pm-dod input:checked + label .pm-box rect { fill: #1e7b3c; stroke: #1e7b3c; }
+    .pm-dod input:checked + label { background: var(--dg-ok-soft); }
+    .pm-dod input:checked + label .pm-box rect { fill: var(--dg-ok); stroke: var(--dg-ok); }
     .pm-dod input:checked + label .pm-box path { stroke-dashoffset: 0; }
-    .pm-dod input:focus-visible + label { outline: 3px solid #0f4c81; outline-offset: 2px; }
-
-    @media (max-width: 640px) {
-      .pm-figure { padding: 10px; }
-      .pm-figure svg.pm-flow-h { display: none; }
-      .pm-figure svg.pm-flow-v { display: block; max-width: 330px; margin: 0 auto; }
-      .pm-issue, .pm-ver-grid, .pm-dod { grid-template-columns: minmax(0, 1fr); }
-      .pm-map-head { display: none; }
-      .pm-map-row { grid-template-columns: minmax(0, 1fr); }
-      .pm-map-arrow { transform: rotate(90deg); margin: 2px auto; }
-      .pm-xy-rules { grid-template-columns: 1fr; }
-      .pm-wrap { flex-direction: column; }
-      .pm-wrap > div { flex: none; }
-      .pm-wrap .pm-step-arrow { transform: rotate(90deg); }
-      .pm-figure svg.pm-tl-h { display: none; }
-      .pm-figure svg.pm-tl-v { display: block; max-width: 340px; margin: 0 auto; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .pm-token, .pm-halo { display: none; }
-      .pm-dash { animation: none; }
-      .pm-ring .pm-ring-fg, .pm-box rect, .pm-box path, .pm-dod label { transition: none; }
-    }
+    .pm-dod input:focus-visible + label { outline: 3px solid var(--dg-accent); outline-offset: 2px; }
   </style>
 </head>
-<body class="developer-layout">
+<body class="developer-layout dg">
   <!-- Icon sprite (inline so the page works offline) -->
-  <svg class="pm-sprite" aria-hidden="true" focusable="false">
-    <symbol id="pm-i-issue" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2" fill="currentColor"/></symbol>
-    <symbol id="pm-i-branch" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="7" r="2.2"/><path d="M6 7.2v9.6M18 9.2c0 5-12 3-12 7.6"/></symbol>
-    <symbol id="pm-i-pr" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="19" r="2.2"/><path d="M6 7.2v9.6M18 16.8V9a3 3 0 0 0-3-3h-4M13 3.5 10.5 6 13 8.5"/></symbol>
-    <symbol id="pm-i-merge" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="12" r="2.2"/><path d="M6 7.2v9.6M6 7.2c0 4 5 4.8 9.8 4.8"/></symbol>
-    <symbol id="pm-i-tag" viewBox="0 0 24 24"><path d="M3 4h8l10 10-7 7L4 11z"/><circle cx="8" cy="8.5" r="1.6" fill="currentColor"/></symbol>
-    <symbol id="pm-i-class" viewBox="0 0 24 24"><path d="M8 4c-2 0-3 1-3 3v2.5c0 1.2-.8 2.5-2 2.5 1.2 0 2 1.3 2 2.5V17c0 2 1 3 3 3M16 4c2 0 3 1 3 3v2.5c0 1.2.8 2.5 2 2.5-1.2 0-2 1.3-2 2.5V17c0 2-1 3-3 3"/></symbol>
-    <symbol id="pm-i-folder" viewBox="0 0 24 24"><path d="M3 6h6l2 2.5h10V19H3z"/></symbol>
-    <symbol id="pm-i-book" viewBox="0 0 24 24"><path d="M3 5h6a3 3 0 0 1 3 3v12a2.5 2.5 0 0 0-2.5-2.5H3zM21 5h-6a3 3 0 0 0-3 3v12a2.5 2.5 0 0 1 2.5-2.5H21z"/></symbol>
-    <symbol id="pm-i-ruler" viewBox="0 0 24 24"><rect x="2.5" y="7.5" width="19" height="9" rx="1.5"/><path d="M6.5 7.5v3.5M10.5 7.5v2.5M14.5 7.5v3.5M18.5 7.5v2.5"/></symbol>
-    <symbol id="pm-i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v5h-5"/></symbol>
-    <symbol id="pm-i-term" viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="16" rx="2"/><path d="m6.5 9.5 3 2.5-3 2.5M12 15h5"/></symbol>
-    <symbol id="pm-i-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l5.5-3.5z" fill="currentColor"/></symbol>
-    <symbol id="pm-i-comment" viewBox="0 0 24 24"><path d="M4 4h16v12H10l-5 4v-4H4z"/><path d="M8 8.5h8M8 12h5"/></symbol>
-    <symbol id="pm-i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m5.7 5.7 12.6 12.6"/></symbol>
-    <symbol id="pm-i-scissors" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.2 8.2 20 18M8.2 15.8 20 6"/></symbol>
+  <svg class="dg-sprite" aria-hidden="true" focusable="false">
+    <symbol id="dg-i-issue" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2" fill="currentColor"/></symbol>
+    <symbol id="dg-i-pr" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="19" r="2.2"/><path d="M6 7.2v9.6M18 16.8V9a3 3 0 0 0-3-3h-4M13 3.5 10.5 6 13 8.5"/></symbol>
+    <symbol id="dg-i-branch" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="7" r="2.2"/><path d="M6 7.2v9.6M18 9.2c0 5-12 3-12 7.6"/></symbol>
+    <symbol id="dg-i-tag" viewBox="0 0 24 24"><path d="M3 4h8l10 10-7 7L4 11z"/><circle cx="8" cy="8.5" r="1.6" fill="currentColor"/></symbol>
+    <symbol id="dg-i-class" viewBox="0 0 24 24"><path d="M8 4c-2 0-3 1-3 3v2.5c0 1.2-.8 2.5-2 2.5 1.2 0 2 1.3 2 2.5V17c0 2 1 3 3 3M16 4c2 0 3 1 3 3v2.5c0 1.2.8 2.5 2 2.5-1.2 0-2 1.3-2 2.5V17c0 2-1 3-3 3"/></symbol>
+    <symbol id="dg-i-folder" viewBox="0 0 24 24"><path d="M3 6h6l2 2.5h10V19H3z"/></symbol>
+    <symbol id="dg-i-book" viewBox="0 0 24 24"><path d="M3 5h6a3 3 0 0 1 3 3v12a2.5 2.5 0 0 0-2.5-2.5H3zM21 5h-6a3 3 0 0 0-3 3v12a2.5 2.5 0 0 1 2.5-2.5H21z"/></symbol>
+    <symbol id="dg-i-ruler" viewBox="0 0 24 24"><rect x="2.5" y="7.5" width="19" height="9" rx="1.5"/><path d="M6.5 7.5v3.5M10.5 7.5v2.5M14.5 7.5v3.5M18.5 7.5v2.5"/></symbol>
+    <symbol id="dg-i-term" viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="16" rx="2"/><path d="m6.5 9.5 3 2.5-3 2.5M12 15h5"/></symbol>
+    <symbol id="dg-i-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l5.5-3.5z" fill="currentColor"/></symbol>
+    <symbol id="dg-i-comment" viewBox="0 0 24 24"><path d="M4 4h16v12H10l-5 4v-4H4z"/><path d="M8 8.5h8M8 12h5"/></symbol>
+    <symbol id="dg-i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m5.7 5.7 12.6 12.6"/></symbol>
+    <symbol id="dg-i-scissors" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.2 8.2 20 18M8.2 15.8 20 6"/></symbol>
+    <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
   </svg>
 
   <main>
@@ -204,347 +70,177 @@
 
     <!-- ===================== Workflow ===================== -->
     <h2 id="flow">Workflow</h2>
-    <figure class="pm-figure">
-      <!-- Wide layout -->
-      <svg class="pm-svg pm-flow-h" viewBox="0 0 820 190" role="img" aria-label="Issue #42 (what and why) goes to work branch feature/42-… (the work), then pull request &quot;feat: …&quot; (review + Closes #42), then integration branch version4.0, then main tagged v4.0 (release).">
-        <defs>
-          <marker id="pm-arr-h" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#0f4c81"/></marker>
-        </defs>
-        <!-- arrows -->
-        <g stroke="#0f4c81" stroke-width="2.5" fill="none" marker-end="url(#pm-arr-h)">
-          <line class="pm-dash" x1="137" y1="84" x2="165" y2="84"/>
-          <line class="pm-dash" x1="309" y1="84" x2="337" y2="84"/>
-          <line class="pm-dash" x1="481" y1="84" x2="509" y2="84"/>
-          <line class="pm-dash" x1="653" y1="84" x2="681" y2="84"/>
-        </g>
-        <!-- halos (highlight follows the token) -->
-        <g fill="none" stroke="#0f4c81" stroke-width="3" stroke-opacity="0.45">
-          <rect class="pm-halo" x="-0" y="30" width="132" height="108" rx="14" style="animation-delay:0s"/>
-          <rect class="pm-halo" x="168" y="30" width="140" height="108" rx="14" style="animation-delay:2s"/>
-          <rect class="pm-halo" x="340" y="30" width="140" height="108" rx="14" style="animation-delay:4s"/>
-          <rect class="pm-halo" x="512" y="30" width="140" height="108" rx="14" style="animation-delay:6s"/>
-          <rect class="pm-halo" x="684" y="30" width="136" height="108" rx="14" style="animation-delay:8s"/>
-        </g>
-        <!-- 1 Issue -->
-        <g>
-          <rect x="2" y="34" width="130" height="100" rx="10" fill="#e7f6ec" stroke="#1e7b3c" stroke-width="2"/>
-          <use href="#pm-i-issue" x="54" y="42" width="24" height="24" fill="none" stroke="#1e7b3c" stroke-width="2"/>
-          <text x="67" y="90" text-anchor="middle" font-size="14" font-weight="bold">Issue #42</text>
-          <text x="67" y="118" text-anchor="middle" font-size="12" class="pm-muted">what &amp; why</text>
-        </g>
-        <!-- 2 Work branch -->
-        <g>
-          <rect x="172" y="34" width="132" height="100" rx="10" fill="#fff" stroke="#0f4c81" stroke-width="2"/>
-          <use href="#pm-i-branch" x="226" y="42" width="24" height="24" fill="none" stroke="#0f4c81" stroke-width="2"/>
-          <text x="238" y="90" text-anchor="middle" font-size="13" font-weight="bold" class="pm-mono">feature/42-…</text>
-          <text x="238" y="118" text-anchor="middle" font-size="12" class="pm-muted">the work</text>
-        </g>
-        <!-- 3 Pull request -->
-        <g>
-          <rect x="344" y="34" width="132" height="100" rx="10" fill="#fff8e1" stroke="#e0a800" stroke-width="2"/>
-          <use href="#pm-i-pr" x="398" y="42" width="24" height="24" fill="none" stroke="#7a5c00" stroke-width="2"/>
-          <text x="410" y="84" text-anchor="middle" font-size="14" font-weight="bold">Pull request</text>
-          <text x="410" y="101" text-anchor="middle" font-size="12.5" class="pm-mono">"feat: …"</text>
-          <text x="410" y="122" text-anchor="middle" font-size="12" class="pm-muted">review + Closes #42</text>
-        </g>
-        <!-- 4 Integration branch -->
-        <g>
-          <rect x="516" y="34" width="132" height="100" rx="10" fill="#f8fbff" stroke="#0f4c81" stroke-width="2"/>
-          <use href="#pm-i-merge" x="570" y="42" width="24" height="24" fill="none" stroke="#0f4c81" stroke-width="2"/>
-          <text x="582" y="90" text-anchor="middle" font-size="13" font-weight="bold" class="pm-mono">version4.0</text>
-          <text x="582" y="118" text-anchor="middle" font-size="12" class="pm-muted">integration</text>
-        </g>
-        <!-- 5 Release -->
-        <g>
-          <rect x="688" y="34" width="130" height="100" rx="10" fill="#0f4c81" stroke="#0f4c81" stroke-width="2"/>
-          <use href="#pm-i-tag" x="742" y="42" width="24" height="24" fill="none" stroke="#fff" stroke-width="2"/>
-          <text x="753" y="84" text-anchor="middle" font-size="13" font-weight="bold" class="pm-mono" style="fill:#fff">main</text>
-          <text x="753" y="101" text-anchor="middle" font-size="12.5" class="pm-mono" style="fill:#fff">(v4.0)</text>
-          <text x="753" y="122" text-anchor="middle" font-size="12" style="fill:#dce4ec">release</text>
-        </g>
-        <!-- step badges (match the numbered steps below) -->
-        <g font-size="12" font-weight="bold" text-anchor="middle">
-          <circle cx="14" cy="34" r="11" fill="#0f4c81"/><text x="14" y="38" style="fill:#fff">1</text>
-          <circle cx="184" cy="34" r="11" fill="#0f4c81"/><text x="184" y="38" style="fill:#fff">2</text>
-          <circle cx="210" cy="34" r="11" fill="#0f4c81"/><text x="210" y="38" style="fill:#fff">3</text>
-          <circle cx="356" cy="34" r="11" fill="#0f4c81"/><text x="356" y="38" style="fill:#fff">4</text>
-          <circle cx="528" cy="34" r="11" fill="#0f4c81"/><text x="528" y="38" style="fill:#fff">5</text>
-        </g>
-        <!-- rail + travelling Issue token -->
-        <line x1="67" y1="166" x2="753" y2="166" stroke="#dce4ec" stroke-width="4" stroke-linecap="round"/>
-        <g fill="#fff" stroke="#9fb3c8" stroke-width="2">
-          <circle cx="67" cy="166" r="5"/><circle cx="238" cy="166" r="5"/><circle cx="410" cy="166" r="5"/><circle cx="582" cy="166" r="5"/><circle cx="753" cy="166" r="5"/>
-        </g>
-        <g class="pm-token pm-token-h">
-          <rect x="45" y="155" width="44" height="22" rx="11" fill="#1e7b3c"/>
-          <text x="67" y="170.5" text-anchor="middle" font-size="12" font-weight="bold" style="fill:#fff">#42</text>
-        </g>
-      </svg>
-
-      <!-- Narrow layout -->
-      <svg class="pm-svg pm-flow-v" viewBox="0 0 330 556" role="img" aria-label="Issue #42 (what and why) goes to work branch feature/42-… (the work), then pull request &quot;feat: …&quot; (review + Closes #42), then integration branch version4.0, then main tagged v4.0 (release).">
-        <defs>
-          <marker id="pm-arr-v" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#0f4c81"/></marker>
-        </defs>
-        <g stroke="#0f4c81" stroke-width="2.5" fill="none" marker-end="url(#pm-arr-v)">
-          <line class="pm-dash" x1="185" y1="101" x2="185" y2="121"/>
-          <line class="pm-dash" x1="185" y1="213" x2="185" y2="233"/>
-          <line class="pm-dash" x1="185" y1="325" x2="185" y2="345"/>
-          <line class="pm-dash" x1="185" y1="437" x2="185" y2="457"/>
-        </g>
-        <g fill="none" stroke="#0f4c81" stroke-width="3" stroke-opacity="0.45">
-          <rect class="pm-halo" x="46" y="10" width="278" height="92" rx="14" style="animation-delay:0s"/>
-          <rect class="pm-halo" x="46" y="122" width="278" height="92" rx="14" style="animation-delay:2s"/>
-          <rect class="pm-halo" x="46" y="234" width="278" height="92" rx="14" style="animation-delay:4s"/>
-          <rect class="pm-halo" x="46" y="346" width="278" height="92" rx="14" style="animation-delay:6s"/>
-          <rect class="pm-halo" x="46" y="458" width="278" height="92" rx="14" style="animation-delay:8s"/>
-        </g>
-        <g>
-          <rect x="50" y="14" width="270" height="84" rx="10" fill="#e7f6ec" stroke="#1e7b3c" stroke-width="2"/>
-          <use href="#pm-i-issue" x="66" y="42" width="26" height="26" fill="none" stroke="#1e7b3c" stroke-width="2"/>
-          <text x="106" y="51" font-size="15" font-weight="bold">Issue #42</text>
-          <text x="106" y="72" font-size="13" class="pm-muted">what &amp; why</text>
-        </g>
-        <g>
-          <rect x="50" y="126" width="270" height="84" rx="10" fill="#fff" stroke="#0f4c81" stroke-width="2"/>
-          <use href="#pm-i-branch" x="66" y="154" width="26" height="26" fill="none" stroke="#0f4c81" stroke-width="2"/>
-          <text x="106" y="163" font-size="14" font-weight="bold" class="pm-mono">feature/42-…</text>
-          <text x="106" y="184" font-size="13" class="pm-muted">the work</text>
-        </g>
-        <g>
-          <rect x="50" y="238" width="270" height="84" rx="10" fill="#fff8e1" stroke="#e0a800" stroke-width="2"/>
-          <use href="#pm-i-pr" x="66" y="266" width="26" height="26" fill="none" stroke="#7a5c00" stroke-width="2"/>
-          <text x="106" y="266" font-size="15" font-weight="bold">Pull request</text>
-          <text x="106" y="285" font-size="13" class="pm-mono">"feat: …"</text>
-          <text x="106" y="306" font-size="13" class="pm-muted">review + Closes #42</text>
-        </g>
-        <g>
-          <rect x="50" y="350" width="270" height="84" rx="10" fill="#f8fbff" stroke="#0f4c81" stroke-width="2"/>
-          <use href="#pm-i-merge" x="66" y="378" width="26" height="26" fill="none" stroke="#0f4c81" stroke-width="2"/>
-          <text x="106" y="387" font-size="14" font-weight="bold" class="pm-mono">version4.0</text>
-          <text x="106" y="408" font-size="13" class="pm-muted">integration</text>
-        </g>
-        <g>
-          <rect x="50" y="462" width="270" height="84" rx="10" fill="#0f4c81" stroke="#0f4c81" stroke-width="2"/>
-          <use href="#pm-i-tag" x="66" y="490" width="26" height="26" fill="none" stroke="#fff" stroke-width="2"/>
-          <text x="106" y="499" font-size="14" font-weight="bold" class="pm-mono" style="fill:#fff">main (v4.0)</text>
-          <text x="106" y="520" font-size="13" style="fill:#dce4ec">release</text>
-        </g>
-        <g font-size="12" font-weight="bold" text-anchor="middle">
-          <circle cx="62" cy="14" r="11" fill="#0f4c81"/><text x="62" y="18" style="fill:#fff">1</text>
-          <circle cx="62" cy="126" r="11" fill="#0f4c81"/><text x="62" y="130" style="fill:#fff">2</text>
-          <circle cx="88" cy="126" r="11" fill="#0f4c81"/><text x="88" y="130" style="fill:#fff">3</text>
-          <circle cx="62" cy="238" r="11" fill="#0f4c81"/><text x="62" y="242" style="fill:#fff">4</text>
-          <circle cx="62" cy="350" r="11" fill="#0f4c81"/><text x="62" y="354" style="fill:#fff">5</text>
-        </g>
-        <line x1="22" y1="56" x2="22" y2="504" stroke="#dce4ec" stroke-width="4" stroke-linecap="round"/>
-        <g fill="#fff" stroke="#9fb3c8" stroke-width="2">
-          <circle cx="22" cy="56" r="5"/><circle cx="22" cy="168" r="5"/><circle cx="22" cy="280" r="5"/><circle cx="22" cy="392" r="5"/><circle cx="22" cy="504" r="5"/>
-        </g>
-        <g class="pm-token pm-token-v">
-          <rect x="1" y="45" width="42" height="22" rx="11" fill="#1e7b3c"/>
-          <text x="22" y="60.5" text-anchor="middle" font-size="12" font-weight="bold" style="fill:#fff">#42</text>
-        </g>
-      </svg>
-
-      <ol class="pm-steps">
-        <li>Open an Issue that describes the problem or the goal.</li>
-        <li>Create a work branch from the integration branch, following the <a href="git-workflow.html#branch-names">branch naming rule</a>.</li>
-        <li>Commit with <a href="git-workflow.html#commits"><code>&lt;type&gt;: &lt;summary&gt;</code></a> messages.</li>
-        <li>Open a pull request into the integration branch and complete the <a href="#done">Definition of Done</a>.</li>
-        <li>Merge, delete the branch, and let <code>Closes #&lt;issue&gt;</code> close the Issue.</li>
+    <figure class="dg-figure">
+      <ol class="dg-steps" style="--n:5">
+        <li><span class="dg-step-title">Issue</span>Open an Issue that describes the problem or the goal.</li>
+        <li><span class="dg-step-title">Work branch</span>Create a work branch from the integration branch, following the <a href="git-workflow.html#branch-names">branch naming rule</a>.</li>
+        <li><span class="dg-step-title">Commits</span>Commit with <a href="git-workflow.html#commits"><code>&lt;type&gt;: &lt;summary&gt;</code></a> messages.</li>
+        <li><span class="dg-step-title">Pull request</span>Open a pull request into the integration branch and complete the <a href="#done">Definition of Done</a>.</li>
+        <li><span class="dg-step-title">Merge</span>Merge, delete the branch, and let <code>Closes #&lt;issue&gt;</code> close the Issue.</li>
       </ol>
+      <figcaption>The work collects in the integration branch <code>versionX.Y</code>, which is released into <code>main</code> as <code>vX.Y</code> (see <a href="#versions">Versions</a>).</figcaption>
     </figure>
 
     <!-- ===================== Issues ===================== -->
     <h2 id="issues">Issues</h2>
-    <div class="pm-figure">
-      <div class="pm-issue">
-        <div class="pm-issue-mock" role="img" aria-label="Example Issue: title Add grid-forming inverter model, label feature, body with Background, Expected result, and Steps to reproduce for bugs.">
-          <div class="pm-issue-head">
-            <svg class="pm-icon" aria-hidden="true"><use href="#pm-i-issue"/></svg>
-            <span>Add grid-forming inverter model <span class="pm-issue-no">#42</span></span>
-            <span class="pm-num pm-mark">1</span>
+    <div class="dg-gh" role="img" aria-label="Example GitHub Issue #42, Add grid-forming inverter model, open, with a description that has Background, Expected result, and Steps to reproduce for bugs, and the label feature.">
+      <div class="dg-gh-chrome"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-issue"/></svg>GUILDA / <b>Issues</b></div>
+      <div class="dg-gh-body">
+        <div class="dg-gh-title">Add grid-forming inverter model <span class="dg-gh-num">#42</span> <span class="dg-gh-pin">1</span></div>
+        <div class="dg-gh-meta"><span class="dg-gh-state"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-issue"/></svg>Open</span><span><b>contributor</b> opened this issue</span></div>
+        <div class="dg-gh-layout">
+          <div class="dg-gh-box">
+            <div class="dg-gh-box-head">Description <span class="dg-gh-pin" style="margin-left:auto">2</span></div>
+            <div class="dg-gh-box-body">
+              <p class="dg-gh-h">Background</p><span class="dg-gh-skel"></span><span class="dg-gh-skel is-short"></span>
+              <p class="dg-gh-h">Expected result</p><span class="dg-gh-skel is-short"></span>
+              <p class="dg-gh-h">Steps to reproduce <span class="dg-gh-label is-fix">bugs only</span></p><span class="dg-gh-skel"></span>
+            </div>
           </div>
-          <div class="pm-issue-body">
-            <div class="pm-field"><b>Background</b><span class="pm-skel"></span><span class="pm-skel is-short"></span></div>
-            <div class="pm-field"><b>Expected result</b><span class="pm-skel is-short"></span></div>
-            <div class="pm-field"><b>Steps to reproduce <span class="pm-bug">bugs</span></b><span class="pm-skel"></span></div>
-            <span class="pm-num pm-mark" style="top:10px">2</span>
-          </div>
-          <div class="pm-issue-labels">
-            Labels <span class="pm-label" data-type="feature">feature</span>
-            <span class="pm-num pm-mark">3</span>
+          <div class="dg-gh-side">
+            <div><p class="dg-gh-side-h">Labels <span class="dg-gh-pin">3</span></p><span class="dg-gh-label is-feature">feature</span></div>
+            <div><p class="dg-gh-side-h">Development</p><span class="dg-gh-branch">feature/42-…</span></div>
           </div>
         </div>
-        <ol class="pm-callouts">
-          <li><span class="pm-num">1</span><span>Write the title in English as a short statement of the goal, e.g. <em>Add grid-forming inverter model</em>.</span></li>
-          <li><span class="pm-num">2</span><span>Describe the background, the expected result, and, for bugs, the steps to reproduce.</span></li>
-          <li><span class="pm-num">3</span><span>Add one type label that matches the branch type: <code>feature</code>, <code>fix</code>, <code>refactor</code>, <code>docs</code>, or <code>test</code>.</span></li>
-        </ol>
       </div>
-      <div class="pm-label-map" aria-label="Label to branch type">
-        <span class="pm-pair"><span class="pm-label" data-type="feature">feature</span><span class="pm-arrow">→</span><code>feature/…</code></span>
-        <span class="pm-pair"><span class="pm-label" data-type="fix">fix</span><span class="pm-arrow">→</span><code>fix/…</code></span>
-        <span class="pm-pair"><span class="pm-label" data-type="refactor">refactor</span><span class="pm-arrow">→</span><code>refactor/…</code></span>
-        <span class="pm-pair"><span class="pm-label" data-type="docs">docs</span><span class="pm-arrow">→</span><code>docs/…</code></span>
-        <span class="pm-pair"><span class="pm-label" data-type="test">test</span><span class="pm-arrow">→</span><code>test/…</code></span>
-      </div>
+    </div>
+    <ol class="dg-list">
+      <li><span class="dg-mark is-warn">1</span><div><span class="dg-item-title">Title</span>Write the title in English as a short statement of the goal, e.g. <em>Add grid-forming inverter model</em>.</div></li>
+      <li><span class="dg-mark is-warn">2</span><div><span class="dg-item-title">Description</span>Describe the background, the expected result, and, for bugs, the steps to reproduce.</div></li>
+      <li><span class="dg-mark is-warn">3</span><div><span class="dg-item-title">Label</span>Add one type label that matches the branch type: <code>feature</code>, <code>fix</code>, <code>refactor</code>, <code>docs</code>, or <code>test</code>.</div></li>
+    </ol>
+
+    <h3>Label → branch type</h3>
+    <div class="dg-gh pm-labels" role="table" aria-label="Issue label and matching branch type">
+      <div class="dg-gh-chrome"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-tag"/></svg>GUILDA / <b>Labels</b></div>
+      <div role="row" class="dg-gh-check"><span role="cell" class="dg-gh-label is-feature">feature</span><span aria-hidden="true">→</span><span role="cell" class="dg-gh-branch">feature/…</span></div>
+      <div role="row" class="dg-gh-check"><span role="cell" class="dg-gh-label is-fix">fix</span><span aria-hidden="true">→</span><span role="cell" class="dg-gh-branch">fix/…</span></div>
+      <div role="row" class="dg-gh-check"><span role="cell" class="dg-gh-label is-refactor">refactor</span><span aria-hidden="true">→</span><span role="cell" class="dg-gh-branch">refactor/…</span></div>
+      <div role="row" class="dg-gh-check"><span role="cell" class="dg-gh-label is-docs">docs</span><span aria-hidden="true">→</span><span role="cell" class="dg-gh-branch">docs/…</span></div>
+      <div role="row" class="dg-gh-check"><span role="cell" class="dg-gh-label is-test">test</span><span aria-hidden="true">→</span><span role="cell" class="dg-gh-branch">test/…</span></div>
     </div>
 
-    <div class="pm-figure">
-      <div class="pm-split" role="img" aria-label="An Issue too big for one pull request is split into two Issues, each with its own pull request.">
-        <span class="pm-chip is-big"><svg class="pm-icon" aria-hidden="true"><use href="#pm-i-issue"/></svg>Issue: too big for one PR</span>
-        <span class="pm-split-arrow" aria-hidden="true"><svg class="pm-icon" aria-hidden="true"><use href="#pm-i-scissors"/></svg> →</span>
-        <span class="pm-split-pairs">
-          <span style="display:flex;align-items:center;gap:8px"><span class="pm-chip is-issue"><svg class="pm-icon" aria-hidden="true"><use href="#pm-i-issue"/></svg>Issue A</span>→<span class="pm-chip is-pr"><svg class="pm-icon" aria-hidden="true"><use href="#pm-i-pr"/></svg>PR</span></span>
-          <span style="display:flex;align-items:center;gap:8px"><span class="pm-chip is-issue"><svg class="pm-icon" aria-hidden="true"><use href="#pm-i-issue"/></svg>Issue B</span>→<span class="pm-chip is-pr"><svg class="pm-icon" aria-hidden="true"><use href="#pm-i-pr"/></svg>PR</span></span>
-        </span>
-      </div>
-      <p class="pm-caption">Split an Issue when it cannot be finished in one pull request.</p>
-    </div>
+    <h3>Splitting an Issue</h3>
+    <figure class="dg-figure">
+      <svg class="dg-svg dg-only-wide" viewBox="0 0 600 150" role="img" aria-label="An Issue too big for one pull request is split into Issue A and Issue B, each with its own pull request.">
+        <rect x="4" y="45" width="190" height="60" rx="10" fill="#fdeeee" stroke="#b02a37" stroke-width="2" stroke-dasharray="6 4"/>
+        <text x="99" y="71" text-anchor="middle" font-size="15" font-weight="bold" fill="#b02a37">Issue</text>
+        <text x="99" y="91" text-anchor="middle" font-size="13" fill="#b02a37">too big for one PR</text>
+        <use href="#dg-i-scissors" x="222" y="63" width="24" height="24" fill="none" stroke="#5f6b7a" stroke-width="2"/>
+        <path d="M200 75H214M254 75H270M270 40V110M270 40H292M270 110H292" fill="none" stroke="#5f6b7a" stroke-width="2"/>
+        <g font-size="14" font-weight="bold">
+          <rect x="296" y="20" width="120" height="40" rx="8" fill="#e7f6ec" stroke="#1e7b3c" stroke-width="1.5"/><text x="356" y="45" text-anchor="middle" fill="#1e7b3c">Issue A</text>
+          <rect x="296" y="90" width="120" height="40" rx="8" fill="#e7f6ec" stroke="#1e7b3c" stroke-width="1.5"/><text x="356" y="115" text-anchor="middle" fill="#1e7b3c">Issue B</text>
+          <path d="M420 40H462M420 110H462" stroke="#0f4c81" stroke-width="2"/><path d="M458 34 468 40 458 46zM458 104 468 110 458 116z" fill="#0f4c81"/>
+          <rect x="472" y="20" width="120" height="40" rx="8" fill="#e8f0f8" stroke="#0f4c81" stroke-width="1.5"/><text x="532" y="45" text-anchor="middle" fill="#0f4c81">pull request</text>
+          <rect x="472" y="90" width="120" height="40" rx="8" fill="#e8f0f8" stroke="#0f4c81" stroke-width="1.5"/><text x="532" y="115" text-anchor="middle" fill="#0f4c81">pull request</text>
+        </g>
+      </svg>
+      <svg class="dg-svg dg-only-narrow" viewBox="0 0 300 250" role="img" aria-label="An Issue too big for one pull request is split into Issue A and Issue B, each with its own pull request.">
+        <rect x="50" y="4" width="200" height="56" rx="10" fill="#fdeeee" stroke="#b02a37" stroke-width="2" stroke-dasharray="6 4"/>
+        <text x="150" y="28" text-anchor="middle" font-size="15" font-weight="bold" fill="#b02a37">Issue</text>
+        <text x="150" y="47" text-anchor="middle" font-size="13" fill="#b02a37">too big for one PR</text>
+        <use href="#dg-i-scissors" x="160" y="70" width="22" height="22" fill="none" stroke="#5f6b7a" stroke-width="2"/>
+        <path d="M150 62V98M75 98H225M75 98V112M225 98V112" fill="none" stroke="#5f6b7a" stroke-width="2"/>
+        <g font-size="14" font-weight="bold" text-anchor="middle">
+          <rect x="10" y="114" width="130" height="40" rx="8" fill="#e7f6ec" stroke="#1e7b3c" stroke-width="1.5"/><text x="75" y="139" fill="#1e7b3c">Issue A</text>
+          <rect x="160" y="114" width="130" height="40" rx="8" fill="#e7f6ec" stroke="#1e7b3c" stroke-width="1.5"/><text x="225" y="139" fill="#1e7b3c">Issue B</text>
+          <path d="M75 156V188M225 156V188" stroke="#0f4c81" stroke-width="2"/><path d="M69 186 75 196 81 186zM219 186 225 196 231 186z" fill="#0f4c81"/>
+          <rect x="10" y="200" width="130" height="40" rx="8" fill="#e8f0f8" stroke="#0f4c81" stroke-width="1.5"/><text x="75" y="225" fill="#0f4c81">pull request</text>
+          <rect x="160" y="200" width="130" height="40" rx="8" fill="#e8f0f8" stroke="#0f4c81" stroke-width="1.5"/><text x="225" y="225" fill="#0f4c81">pull request</text>
+        </g>
+      </svg>
+      <figcaption>Split an Issue when it cannot be finished in one pull request.</figcaption>
+    </figure>
 
     <!-- ===================== Versions ===================== -->
     <h2 id="versions">Versions</h2>
-    <figure class="pm-figure">
-      <svg class="pm-svg pm-tl-h" viewBox="0 0 560 225" role="img" aria-label="Timeline of main with existing tags v1.0, v1.1, v2.0, v2.1. The integration branch version4.0 branches from main, collects work branches, and is merged back into main, where the merge commit is tagged v4.0.">
-        <!-- main line -->
-        <text x="6" y="75" font-size="15" font-weight="bold" class="pm-mono" style="fill:#0f4c81">main</text>
-        <line x1="56" y1="70" x2="304" y2="70" stroke="#0f4c81" stroke-width="4" stroke-linecap="round"/>
-        <line x1="304" y1="70" x2="344" y2="70" stroke="#0f4c81" stroke-width="4" stroke-dasharray="3 6" stroke-linecap="round"/>
-        <line x1="344" y1="70" x2="548" y2="70" stroke="#0f4c81" stroke-width="4" stroke-linecap="round"/>
-        <!-- existing tags -->
-        <g font-size="13" font-weight="bold" text-anchor="middle" class="pm-mono">
-          <g><rect x="68" y="26" width="44" height="22" rx="5" fill="#0f4c81"/><text x="90" y="41" style="fill:#fff">v1.0</text><line x1="90" y1="48" x2="90" y2="62" stroke="#0f4c81" stroke-width="2"/></g>
-          <g><rect x="128" y="26" width="44" height="22" rx="5" fill="#0f4c81"/><text x="150" y="41" style="fill:#fff">v1.1</text><line x1="150" y1="48" x2="150" y2="62" stroke="#0f4c81" stroke-width="2"/></g>
-          <g><rect x="203" y="26" width="44" height="22" rx="5" fill="#0f4c81"/><text x="225" y="41" style="fill:#fff">v2.0</text><line x1="225" y1="48" x2="225" y2="62" stroke="#0f4c81" stroke-width="2"/></g>
-          <g><rect x="263" y="26" width="44" height="22" rx="5" fill="#0f4c81"/><text x="285" y="41" style="fill:#fff">v2.1</text><line x1="285" y1="48" x2="285" y2="62" stroke="#0f4c81" stroke-width="2"/></g>
-          <g><rect x="491" y="26" width="48" height="22" rx="5" fill="#fff" stroke="#0f4c81" stroke-width="2" stroke-dasharray="4 3"/><text x="515" y="41" style="fill:#0f4c81">v4.0</text><line x1="515" y1="48" x2="515" y2="62" stroke="#0f4c81" stroke-width="2" stroke-dasharray="3 2"/></g>
-        </g>
-        <g fill="#fff" stroke="#0f4c81" stroke-width="3">
-          <circle cx="90" cy="70" r="7"/><circle cx="150" cy="70" r="7"/><circle cx="225" cy="70" r="7"/><circle cx="285" cy="70" r="7"/><circle cx="350" cy="70" r="6"/>
-        </g>
-        <!-- X / Y bumps -->
-        <g font-size="12.5" font-weight="bold" text-anchor="middle">
-          <text x="120" y="99" style="fill:#1e7b3c">Y+1</text>
-          <text x="187" y="99" style="fill:#b02a37">X+1</text>
-          <text x="255" y="99" style="fill:#1e7b3c">Y+1</text>
-        </g>
-        <!-- integration branch version4.0 -->
-        <path d="M350 70 C 366 70 360 170 382 170 L 482 170 C 504 170 498 70 515 70" fill="none" stroke="#5f6b7a" stroke-width="3.5"/>
-        <path class="pm-dash" d="M382 170 L 482 170" fill="none" stroke="#f8fbff" stroke-width="1.5"/>
-        <!-- work branch -->
-        <path d="M398 170 C 408 170 404 128 418 128 L 446 128 C 460 128 456 170 466 170" fill="none" stroke="#1e7b3c" stroke-width="3"/>
-        <g fill="#fff" stroke="#1e7b3c" stroke-width="2.5"><circle cx="425" cy="128" r="5"/><circle cx="440" cy="128" r="5"/></g>
-        <text x="432" y="118" font-size="12" text-anchor="middle" class="pm-mono" style="fill:#1e7b3c">feature/42-…</text>
-        <g fill="#fff" stroke="#5f6b7a" stroke-width="2.5"><circle cx="398" cy="170" r="5"/><circle cx="466" cy="170" r="5"/></g>
-        <circle cx="515" cy="70" r="8" fill="#0f4c81" stroke="#fff" stroke-width="2"/>
-        <text x="382" y="195" font-size="14" font-weight="bold" class="pm-mono" style="fill:#5f6b7a">version4.0</text>
-        <text x="382" y="212" font-size="12" class="pm-muted">integration branch</text>
-        <!-- annotations -->
-        <text x="515" y="17" font-size="12" text-anchor="middle" class="pm-muted">merge commit</text>
-      </svg>
-        <svg class="pm-svg pm-tl-v" viewBox="0 0 340 490" role="img" aria-label="Timeline of main with existing tags v1.0, v1.1, v2.0, v2.1. The integration branch version4.0 branches from main, collects work branches, and is merged back into main, where the merge commit is tagged v4.0.">
-          <text x="110" y="16" font-size="15" font-weight="bold" text-anchor="middle" class="pm-mono" style="fill:#0f4c81">main</text>
-          <line x1="110" y1="26" x2="110" y2="232" stroke="#0f4c81" stroke-width="4" stroke-linecap="round"/>
-          <line x1="110" y1="232" x2="110" y2="264" stroke="#0f4c81" stroke-width="4" stroke-dasharray="3 6" stroke-linecap="round"/>
-          <line x1="110" y1="264" x2="110" y2="470" stroke="#0f4c81" stroke-width="4" stroke-linecap="round"/>
-          <g font-size="13" font-weight="bold" text-anchor="middle" class="pm-mono">
-            <rect x="44" y="34" width="46" height="22" rx="5" fill="#0f4c81"/><text x="67" y="49" style="fill:#fff">v1.0</text><line x1="90" y1="45" x2="102" y2="45" stroke="#0f4c81" stroke-width="2"/>
-            <rect x="44" y="84" width="46" height="22" rx="5" fill="#0f4c81"/><text x="67" y="99" style="fill:#fff">v1.1</text><line x1="90" y1="95" x2="102" y2="95" stroke="#0f4c81" stroke-width="2"/>
-            <rect x="44" y="154" width="46" height="22" rx="5" fill="#0f4c81"/><text x="67" y="169" style="fill:#fff">v2.0</text><line x1="90" y1="165" x2="102" y2="165" stroke="#0f4c81" stroke-width="2"/>
-            <rect x="44" y="204" width="46" height="22" rx="5" fill="#0f4c81"/><text x="67" y="219" style="fill:#fff">v2.1</text><line x1="90" y1="215" x2="102" y2="215" stroke="#0f4c81" stroke-width="2"/>
-            <rect x="42" y="434" width="48" height="22" rx="5" fill="#fff" stroke="#0f4c81" stroke-width="2" stroke-dasharray="4 3"/><text x="66" y="449" style="fill:#0f4c81">v4.0</text><line x1="90" y1="445" x2="102" y2="445" stroke="#0f4c81" stroke-width="2" stroke-dasharray="3 2"/>
+    <div class="dg-gh">
+      <div class="dg-gh-chrome"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-branch"/></svg>GUILDA / <b>Network graph</b></div>
+      <div class="dg-gh-scroll">
+        <svg viewBox="0 0 820 250" style="min-width:620px" role="img" aria-label="Release cycle: the integration branch versionX.Y is cut from main, collects work branches such as feature/42 through pull requests, and is merged back into main, where the merge commit is tagged vX.Y.">
+          <g font-size="14" font-weight="bold">
+            <text x="16" y="66" fill="#58a6ff">main</text>
+            <text x="16" y="146" fill="#3fb950">versionX.Y</text>
+            <text x="16" y="216" fill="#a371f7">feature/42-…</text>
           </g>
-          <g fill="#fff" stroke="#0f4c81" stroke-width="3">
-            <circle cx="110" cy="45" r="7"/><circle cx="110" cy="95" r="7"/><circle cx="110" cy="165" r="7"/><circle cx="110" cy="215" r="7"/><circle cx="110" cy="270" r="6"/>
+          <g font-size="11" fill="#8b949e">
+            <text x="16" y="82">releases</text>
+            <text x="16" y="162">integration</text>
+            <text x="16" y="232">work branch</text>
           </g>
-          <g font-size="12.5" font-weight="bold">
-            <text x="124" y="74" style="fill:#1e7b3c">Y+1</text>
-            <text x="124" y="134" style="fill:#b02a37">X+1</text>
-            <text x="124" y="194" style="fill:#1e7b3c">Y+1</text>
+          <!-- lanes -->
+          <path d="M150 60H800" stroke="#58a6ff" stroke-width="4" stroke-linecap="round"/>
+          <path d="M230 60C260 60 255 140 285 140H650C680 140 675 60 705 60" fill="none" stroke="#3fb950" stroke-width="4"/>
+          <path d="M340 140C370 140 365 210 395 210H470C500 210 495 140 525 140" fill="none" stroke="#a371f7" stroke-width="4"/>
+          <path class="dg-anim-dash" d="M560 140C575 140 575 190 590 190H612" fill="none" stroke="#8b949e" stroke-width="2"/>
+          <text x="618" y="194" font-size="11" fill="#8b949e">more work branches</text>
+          <!-- commits -->
+          <g stroke="#0d1117" stroke-width="3">
+            <circle cx="180" cy="60" r="8" fill="#58a6ff"/>
+            <circle cx="230" cy="60" r="8" fill="#58a6ff"/>
+            <circle cx="285" cy="140" r="8" fill="#3fb950"/>
+            <circle cx="410" cy="210" r="8" fill="#a371f7"/>
+            <circle cx="455" cy="210" r="8" fill="#a371f7"/>
           </g>
-          <path d="M110 270 C 110 290 200 285 200 305 L 200 405 C 200 425 110 420 110 445" fill="none" stroke="#5f6b7a" stroke-width="3.5"/>
-          <path class="pm-dash" d="M200 305 L 200 405" fill="none" stroke="#f8fbff" stroke-width="1.5"/>
-          <path d="M200 320 C 200 330 240 326 240 340 L 240 368 C 240 382 200 378 200 390" fill="none" stroke="#1e7b3c" stroke-width="3"/>
-          <g fill="#fff" stroke="#1e7b3c" stroke-width="2.5"><circle cx="240" cy="346" r="5"/><circle cx="240" cy="362" r="5"/></g>
-          <text x="250" y="358" font-size="11.5" class="pm-mono" style="fill:#1e7b3c">feature/42-…</text>
-          <g fill="#fff" stroke="#5f6b7a" stroke-width="2.5"><circle cx="200" cy="320" r="5"/><circle cx="200" cy="390" r="5"/></g>
-          <circle cx="110" cy="445" r="8" fill="#0f4c81" stroke="#fff" stroke-width="2"/>
-          <text x="212" y="426" font-size="14" font-weight="bold" class="pm-mono" style="fill:#5f6b7a">version4.0</text>
-          <text x="212" y="443" font-size="12" class="pm-muted">integration branch</text>
-          <text x="20" y="478" font-size="12" class="pm-muted">merge commit</text>
+          <circle cx="525" cy="140" r="8" fill="#0d1117" stroke="#3fb950" stroke-width="3"/>
+          <circle cx="705" cy="60" r="10" fill="#0d1117" stroke="#58a6ff" stroke-width="4"/>
+          <!-- tags and notes -->
+          <g font-size="12">
+            <path d="M154 16H200L208 26L200 36H154Z" fill="#161b22" stroke="#8b949e"/><text x="179" y="30" text-anchor="middle" fill="#8b949e">older</text>
+            <line x1="180" y1="36" x2="180" y2="50" stroke="#8b949e" stroke-dasharray="2 2"/>
+            <path d="M674 16H730L738 26L730 36H674Z" fill="#161b22" stroke="#d29922" stroke-width="1.5"/><text x="704" y="30" text-anchor="middle" font-weight="bold" fill="#d29922">vX.Y</text>
+            <line x1="705" y1="36" x2="705" y2="48" stroke="#d29922" stroke-width="1.5"/>
+            <text x="250" y="102" fill="#8b949e">cut</text>
+            <rect x="495" y="160" width="34" height="20" rx="10" fill="#161b22" stroke="#a371f7"/><text x="512" y="174" text-anchor="middle" font-weight="bold" fill="#a371f7">PR</text>
+            <text x="705" y="92" text-anchor="middle" fill="#8b949e">release merge</text>
+          </g>
         </svg>
-      <div class="pm-legend"><span><span class="pm-swatch" style="background:#b02a37"></span>X+1: breaks existing scripts</span><span><span class="pm-swatch" style="background:#1e7b3c"></span>Y+1: otherwise</span><span><span class="pm-swatch" style="border:2px dashed #0f4c81;box-sizing:border-box"></span>release under development</span></div>
-      <figcaption>Existing tags: <code>v1.0</code>, <code>v1.1</code>, <code>v2.0</code>, <code>v2.1</code>.</figcaption>
-    </figure>
+      </div>
+      <div class="dg-gh-legend">
+        <span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="#8b949e"/></svg>commit</span>
+        <span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="none" stroke="#8b949e" stroke-width="2.5"/></svg>merge commit</span>
+        <span><svg viewBox="0 0 14 14"><path d="M1 3H9L13 7L9 11H1Z" fill="none" stroke="#d29922" stroke-width="1.5"/></svg>release tag</span>
+      </div>
+    </div>
 
-    <div class="pm-ver-grid">
-      <div class="pm-ver-card">
+    <div class="dg-two">
+      <div>
         <h3>Version number</h3>
-        <div class="pm-xy" aria-label="X.Y"><span class="pm-x">X</span><span class="pm-dot">.</span><span class="pm-y">Y</span></div>
-        <div class="pm-xy-rules">
-          <div class="is-x">Increase <code>X</code> for changes that break existing scripts.</div>
-          <div class="is-y">Increase <code>Y</code> otherwise.</div>
-        </div>
+        <div class="pm-xy" aria-label="X.Y"><span class="is-x">X</span><span class="is-dot">.</span><span class="is-y">Y</span></div>
+        <ul class="dg-list">
+          <li><span class="dg-mark is-err">X+1</span><div>Increase <code>X</code> for changes that break existing scripts: <code>X.Y</code> → <code>(X+1).0</code>.</div></li>
+          <li><span class="dg-mark is-ok">Y+1</span><div>Increase <code>Y</code> otherwise: <code>X.Y</code> → <code>X.(Y+1)</code>.</div></li>
+        </ul>
       </div>
-      <div class="pm-ver-card">
+      <div>
         <h3>Names built from <code>X.Y</code></h3>
-        <div class="pm-names">
-          <div><svg class="pm-icon" aria-hidden="true"><use href="#pm-i-branch"/></svg><span><strong>Integration branch</strong> <code>versionX.Y</code>, one per release under development.</span></div>
-          <div><svg class="pm-icon" aria-hidden="true"><use href="#pm-i-tag"/></svg><span><strong>Release tag</strong> <code>vX.Y</code> on the merge commit in <code>main</code>.</span></div>
-        </div>
+        <ul class="dg-list">
+          <li><span class="dg-mark"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-branch"/></svg></span><div><span class="dg-item-title">Integration branch <code>versionX.Y</code></span>One per release under development.</div></li>
+          <li><span class="dg-mark"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-tag"/></svg></span><div><span class="dg-item-title">Release tag <code>vX.Y</code></span>On the merge commit in <code>main</code>.</div></li>
+        </ul>
       </div>
     </div>
 
-    <div class="pm-figure">
-      <div class="pm-ver-card" style="border:0;padding:0;background:none">
-        <h3>Breaking changes</h3>
-        <div class="pm-wrap" role="img" aria-label="An old script calls the old name, a wrapper in _GUILDAsystem/_VersionSupport/ forwards it to the new name.">
-          <div><small>existing script</small><code>oldName(…)</code></div>
-          <div class="pm-step-arrow" aria-hidden="true">→</div>
-          <div class="is-wrapper"><small>wrapper</small><code>_GUILDAsystem/_VersionSupport/</code></div>
-          <div class="pm-step-arrow" aria-hidden="true">→</div>
-          <div><small>renamed public name</small><code>newName(…)</code></div>
-        </div>
-        <div class="pm-life" aria-hidden="true">
-          <div class="pm-life-bar">old name keeps working: ≥ 1 major version</div>
-          <div class="pm-life-ends"><span>name changes</span><span>X → X+1 → …</span></div>
-        </div>
-        <p class="pm-caption">When a public name changes, keep the old name working through a wrapper in <code>_GUILDAsystem/_VersionSupport/</code> for at least one major version.</p>
-      </div>
+    <h3>Breaking changes</h3>
+    <div class="dg-chain" role="img" aria-label="An existing script calls the old name, a wrapper in _GUILDAsystem/_VersionSupport/ forwards it to the renamed public name.">
+      <div class="dg-chain-node"><span class="dg-kicker">existing script</span><code>oldName(…)</code></div>
+      <div class="dg-chain-arrow" aria-hidden="true"></div>
+      <div class="dg-chain-node is-warn"><span class="dg-kicker">wrapper</span><code>_GUILDAsystem/_VersionSupport/</code></div>
+      <div class="dg-chain-arrow" aria-hidden="true"></div>
+      <div class="dg-chain-node is-ok"><span class="dg-kicker">renamed public name</span><code>newName(…)</code></div>
     </div>
+    <p>When a public name changes, keep the old name working through a wrapper in <code>_GUILDAsystem/_VersionSupport/</code> for at least one major version (<code>X</code> → <code>X+1</code>).</p>
 
     <!-- ===================== Documentation ===================== -->
     <h2 id="documentation">Keeping documentation current</h2>
-    <div class="pm-map">
-      <div class="pm-map-head"><span>When you change…</span><span>Also update</span></div>
-      <div class="pm-map-row">
-        <div class="pm-map-from"><svg class="pm-icon" aria-hidden="true"><use href="#pm-i-class"/></svg>A public class, property, or method</div>
-        <svg class="pm-map-arrow" viewBox="0 0 56 24" aria-hidden="true"><line class="pm-dash" x1="6" y1="12" x2="42" y2="12"/><path d="M40 5 50 12 40 19z"/></svg>
-        <div class="pm-map-to">Its help comment tags (<a href="class-documentation.html">How to Define Class Documentation</a>).
-          <small><svg class="pm-icon" aria-hidden="true"><use href="#pm-i-refresh"/></svg>The class reference is regenerated from them.</small></div>
-      </div>
-      <div class="pm-map-row">
-        <div class="pm-map-from"><svg class="pm-icon" aria-hidden="true"><use href="#pm-i-folder"/></svg>The folder layout</div>
-        <svg class="pm-map-arrow" viewBox="0 0 56 24" aria-hidden="true"><line class="pm-dash" x1="6" y1="12" x2="42" y2="12"/><path d="M40 5 50 12 40 19z"/></svg>
-        <div class="pm-map-to"><a href="folder-structure.html">Folder Structure</a></div>
-      </div>
-      <div class="pm-map-row">
-        <div class="pm-map-from"><svg class="pm-icon" aria-hidden="true"><use href="#pm-i-book"/></svg>A tutorial</div>
-        <svg class="pm-map-arrow" viewBox="0 0 56 24" aria-hidden="true"><line class="pm-dash" x1="6" y1="12" x2="42" y2="12"/><path d="M40 5 50 12 40 19z"/></svg>
-        <div class="pm-map-to"><code>_GUILDAdoc/database/list_Tutorials.js</code></div>
-      </div>
-      <div class="pm-map-row">
-        <div class="pm-map-from"><svg class="pm-icon" aria-hidden="true"><use href="#pm-i-tag"/></svg>A user-visible feature in a release</div>
-        <svg class="pm-map-arrow" viewBox="0 0 56 24" aria-hidden="true"><line class="pm-dash" x1="6" y1="12" x2="42" y2="12"/><path d="M40 5 50 12 40 19z"/></svg>
-        <div class="pm-map-to"><code>_GUILDAdoc/database/list_UpdateLog.js</code></div>
-      </div>
-      <div class="pm-map-row">
-        <div class="pm-map-from"><svg class="pm-icon" aria-hidden="true"><use href="#pm-i-ruler"/></svg>A developer rule</div>
-        <svg class="pm-map-arrow" viewBox="0 0 56 24" aria-hidden="true"><line class="pm-dash" x1="6" y1="12" x2="42" y2="12"/><path d="M40 5 50 12 40 19z"/></svg>
-        <div class="pm-map-to">The matching page in this For Developer tab</div>
-      </div>
+    <div class="dg-rows is-arrow">
+      <div class="dg-row dg-rows-head"><span class="dg-kicker">When you change…</span><span></span><span class="dg-kicker">Also update</span></div>
+      <div class="dg-row"><span class="dg-row-head"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-class"/></svg> A public class, property, or method</span><span class="dg-row-arrow" aria-hidden="true">→</span><span>Its help comment tags (<a href="class-documentation.html">How to Define Class Documentation</a>). The class reference is regenerated from them.</span></div>
+      <div class="dg-row"><span class="dg-row-head"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-folder"/></svg> The folder layout</span><span class="dg-row-arrow" aria-hidden="true">→</span><span><a href="folder-structure.html">Folder Structure</a></span></div>
+      <div class="dg-row"><span class="dg-row-head"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-book"/></svg> A tutorial</span><span class="dg-row-arrow" aria-hidden="true">→</span><span><code>_GUILDAdoc/database/list_Tutorials.js</code></span></div>
+      <div class="dg-row"><span class="dg-row-head"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-tag"/></svg> A user-visible feature in a release</span><span class="dg-row-arrow" aria-hidden="true">→</span><span><code>_GUILDAdoc/database/list_UpdateLog.js</code></span></div>
+      <div class="dg-row"><span class="dg-row-head"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-ruler"/></svg> A developer rule</span><span class="dg-row-arrow" aria-hidden="true">→</span><span>The matching page in this For Developer tab</span></div>
     </div>
 
     <!-- ===================== Definition of Done ===================== -->
@@ -558,31 +254,31 @@
       <p>Check these items before requesting a review.</p>
       <span class="dev-status" id="pm-dod-status" aria-live="polite">Not ready</span>
     </div>
-    <ul class="pm-dod" id="pm-dod">
+    <ul class="dg-list is-plain pm-dod" id="pm-dod">
       <li><input type="checkbox" id="pm-dod-1"><label for="pm-dod-1">
         <svg class="pm-box" viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="1.5" width="21" height="21" rx="5"/><path d="m6.5 12.5 3.5 3.5 7.5-8"/></svg>
-        <span class="pm-text"><code>&gt;&gt; GUILDA</code> starts without errors.</span>
-        <span class="pm-kind"><svg class="pm-icon" aria-hidden="true"><use href="#pm-i-term"/></svg></span></label></li>
+        <span><code>&gt;&gt; GUILDA</code> starts without errors.</span>
+        <svg class="dg-icon pm-kind" aria-hidden="true"><use href="#dg-i-term"/></svg></label></li>
       <li><input type="checkbox" id="pm-dod-2"><label for="pm-dod-2">
         <svg class="pm-box" viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="1.5" width="21" height="21" rx="5"/><path d="m6.5 12.5 3.5 3.5 7.5-8"/></svg>
-        <span class="pm-text">The affected tutorials or <code>+DebugScript</code> tasks run.</span>
-        <span class="pm-kind"><svg class="pm-icon" aria-hidden="true"><use href="#pm-i-play"/></svg></span></label></li>
+        <span>The affected tutorials or <code>+DebugScript</code> tasks run.</span>
+        <svg class="dg-icon pm-kind" aria-hidden="true"><use href="#dg-i-play"/></svg></label></li>
       <li><input type="checkbox" id="pm-dod-3"><label for="pm-dod-3">
         <svg class="pm-box" viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="1.5" width="21" height="21" rx="5"/><path d="m6.5 12.5 3.5 3.5 7.5-8"/></svg>
-        <span class="pm-text">New and changed code follows the <a href="naming-conventions.html">naming conventions</a> and the <a href="folder-structure.html#placement">placement rules</a>.</span>
-        <span class="pm-kind"><svg class="pm-icon" aria-hidden="true"><use href="#pm-i-folder"/></svg></span></label></li>
+        <span>New and changed code follows the <a href="naming-conventions.html">naming conventions</a> and the <a href="folder-structure.html#placement">placement rules</a>.</span>
+        <svg class="dg-icon pm-kind" aria-hidden="true"><use href="#dg-i-folder"/></svg></label></li>
       <li><input type="checkbox" id="pm-dod-4"><label for="pm-dod-4">
         <svg class="pm-box" viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="1.5" width="21" height="21" rx="5"/><path d="m6.5 12.5 3.5 3.5 7.5-8"/></svg>
-        <span class="pm-text">Public members have help comment tags, and <code>GUILDA.doc("update", true, "strict", true)</code> reports no errors.</span>
-        <span class="pm-kind"><svg class="pm-icon" aria-hidden="true"><use href="#pm-i-comment"/></svg></span></label></li>
+        <span>Public members have help comment tags, and <code>GUILDA.doc("update", true, "strict", true)</code> reports no errors.</span>
+        <svg class="dg-icon pm-kind" aria-hidden="true"><use href="#dg-i-comment"/></svg></label></li>
       <li><input type="checkbox" id="pm-dod-5"><label for="pm-dod-5">
         <svg class="pm-box" viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="1.5" width="21" height="21" rx="5"/><path d="m6.5 12.5 3.5 3.5 7.5-8"/></svg>
-        <span class="pm-text">No generated files or personal settings are committed.</span>
-        <span class="pm-kind"><svg class="pm-icon" aria-hidden="true"><use href="#pm-i-ban"/></svg></span></label></li>
+        <span>No generated files or personal settings are committed.</span>
+        <svg class="dg-icon pm-kind" aria-hidden="true"><use href="#dg-i-ban"/></svg></label></li>
       <li><input type="checkbox" id="pm-dod-6"><label for="pm-dod-6">
         <svg class="pm-box" viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="1.5" width="21" height="21" rx="5"/><path d="m6.5 12.5 3.5 3.5 7.5-8"/></svg>
-        <span class="pm-text">The pull request title follows <code>&lt;type&gt;: &lt;summary&gt;</code> and the description contains <code>Closes #&lt;issue&gt;</code>.</span>
-        <span class="pm-kind"><svg class="pm-icon" aria-hidden="true"><use href="#pm-i-pr"/></svg></span></label></li>
+        <span>The pull request title follows <code>&lt;type&gt;: &lt;summary&gt;</code> and the description contains <code>Closes #&lt;issue&gt;</code>.</span>
+        <svg class="dg-icon pm-kind" aria-hidden="true"><use href="#dg-i-pr"/></svg></label></li>
     </ul>
   </main>
   <script>
