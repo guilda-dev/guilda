@@ -136,7 +136,7 @@ classdef GlobalController < PowerSystemModel
             obj.set_odefcn(obj.r_omega0);
         end
     end
-    methods (Access={?Component,?LocalController})        
+    methods (Access={?Component,?LocalController,?PowerNetwork})        
         function set_parent(obj,net)
             obj.PowerNetwork = {net}; 
         end
@@ -144,6 +144,9 @@ classdef GlobalController < PowerSystemModel
     methods        
         function p = get.parent(obj)
             p = obj.PowerNetwork;
+            if iscell(p) && ~isempty(p)
+                p = p{1};    % stored in a cell; edits are logged to this network
+            end
         end
         function p = get.children(~) 
             p = {};

@@ -45,10 +45,11 @@ ___KEY_CASES___
     Iequilibrium = obj.a_Component{lv_rmcub}.c_Iequilibrium;
     Vequilibrium = obj.c_Vequilibrium;
 
-    omega0 = obj.parent.tab_parameter.base.Hz;
-    
     obj.a_Component{lv_rmcub} = comp;   
     
+    % The constructor already built the f_* handles. The equilibrium is a
+    % placeholder: the topology change below makes simulate/get_sys require
+    % net.initialize() first.
     comp.set_equilibrium(Vequilibrium, Iequilibrium);
-    comp.set_odefcn(omega0);
+    obj.log_edit(obj.str_tag+" <<-replace--- "+str_tag+" -> "+comp.str_tag,"Topology")
 end

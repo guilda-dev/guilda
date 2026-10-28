@@ -50,6 +50,7 @@ function add_local_controller(obj, varargin)
 
             if strcmp(new_con.key, "avr")
                 obj.a_LocalController{1} = new_con;            
+                new_con.set_parent(obj)    % so that AVR parameter edits reach the edit log
             end
             % obj.a_LocalController(str_setKeys==new_con.key) = {new_con};            
 
