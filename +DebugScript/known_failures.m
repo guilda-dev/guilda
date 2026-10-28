@@ -52,8 +52,6 @@ function tab = known_failures()
     "test_F7_linearization/odeLinearizerDirectUse",              "Component.get_sys が削除済みの JacobiAxx 等 (旧 API) を呼ぶ"
     % ---- F8 utilities ---------------------------------------------------------------------------
     "test_F8_utilities/IEEE14busGeneratorLimitsAreNumbers",     "IEEE14bus の CSV で Pmin/Qmin が ""#NAME?"" (Excel で -Inf が壊れた値) になっており NaN として読まれる"
-    % ---- F9 environment -------------------------------------------------------------------------
-    "test_F9_environment/GUILDAStartsInBatchMode",               "起動時に Tutorial 設定が true だと Main.mlx を open し、デスクトップの無いバッチ実行ではエラーになる"
     ];
     tab = table(list(:,1), list(:,2), 'VariableNames', ["Test","Reason"]);
 end
