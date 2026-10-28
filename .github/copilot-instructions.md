@@ -80,166 +80,115 @@ Check before requesting a review:
 - The pull request title follows `<type>: <summary>` and the description contains `Closes #<issue>`.
 
 # Coding Convention (Naming Convention)
+Source of truth: `_GUILDAdoc/developer/naming-conventions.html`.
 
-## 1. Classes and Methods
-- **Class names**: UpperCamelCase
-  - Example: `Component`, `SimulationResult`
-- **Method names**: snake_case
-  - Example: `calculate_power_flow`, `on_edit`
-
-## 2. Property and Variable Naming Rules
-Variables should generally follow **`[type][size]_[name]`** in snake_case.
+## Variable Names
+Variable names follow **`[variableType][size]_[variableDescription]`**.
 
 ### Variable Type (First Prefix)
 - `c`: complex
 - `r`: real
 - `l`: logical
-- `s`: symbolic variable (sym)
-- `f`: symbolic function
+- `s`: string
+- `f`: function handle (cell array if the variable itself is an array)
 - `i`: index
-- `n`: count/number
-- `str`: string
+- `n`: count
 
 ### Size (Second Prefix)
-- *(none)*: scalar (do not add a size prefix for scalars)
+- *(none)*: scalar
 - `v`: column vector
 - `r`: row vector
 - `m`: matrix
 
+### Description
+- Only letters (`a-z`, `A-Z`): no numbers or symbols.
+
 ### Naming Examples
-- **`cv_Vequilibrium`**: [c: complex] + [v: column vector] + [_Vequilibrium]
-- **`im_solution`**: [i: index] + [m: matrix] + [_solution]
+- **`cv_Vequilibrium`**: [c: complex] + [v: column vector] + [_Vequilibrium], a complex-valued vector of equilibrium voltages
+- **`lv_faultflag`**: [l: logical] + [v: column vector] + [_faultflag]
+- **`cv_SGvoltage`**: [c: complex] + [v: column vector] + [_SGvoltage]
+- **`im_solution`**: [i: index] + [m: matrix] + [_solution], a matrix of indices for an analysis result
+- **`lm_xresponse`**: [l: logical] + [m: matrix] + [_xresponse]
 - **`r_gain`**: [r: real] + [none: scalar] + [_gain]
-- **`str_message`**: [str: string] + [none: scalar] + [_message]
 
----
+## Exception Rules (Fixed Prefixes)
+- **Table type**: `tab_` + [variable description], e.g. `tab_bus_data`. Regardless of argument or output count.
+- **GUILDA-specific class (cell array)**: `a_` + [ClassName], e.g. `a_Controller`. A cell array of GUILDA class objects, named after the class.
+- **Parameter class**: `para_` + [data description], e.g. `para_generator`. Only for properties holding GUILDA's `Parameter` class.
 
-## 3. Exception Rules (Fixed Prefixes)
-For the following data types, use the fixed prefixes regardless of size.
+# How to Document Classes
+Source of truth: `_GUILDAdoc/developer/class-documentation.html`.
+`GUILDA.doc("update", true)` reads `% <@TagName>` comments and MATLAB reflection metadata and writes the documentation database.
 
-- **Dictionary type**: `dict_` + [name]
-  - Example: `dict_params`
-- **Function handle**: `fcn_` + [name]
-  - Example: `fcn_objective`
-- **Table type**: `tab_` + [name]
-  - Example: `tab_bus_data`
-- **Struct type**: `sct_` + [name]
-  - Example: `sct_results`
-- **GUILDA-specific class (cell array)**: `a_` + **[ClassName]**
-  - Used for cell arrays that store GUILDA class objects.
-  - Example: `a_Controller` (stores `Controller` class objects)
-- **Parameter class**: `params_` + [data name]
-  - Used when storing GUILDA's `Parameter` class.
-  - Example: `params_generator`
+## Writing Tags
+- Tag names are exact and case-sensitive: `<@Summary>` is a tag; `<Summary>` and `<@ Summary>` are plain text; `<@summary>` is an unknown tag.
+- A tag's value runs until the next tag or the end of the comment block. After `%` and one space are removed, the rest of each line is kept (leading spaces, blank lines, text-art alignment).
+- Where the comment block is read from:
+  - Class: the lines right after `classdef`.
+  - Property: the lines right above the declaration.
+  - Method: the lines after `function`, in a separate method file `<method>.m` next to the class file. A method written inside the `classdef` file has no such file and falls back to MATLAB help, then reflection.
 
-## 4. How to Document Class Definitions
+## Tags per Target
+- Class (8): `Summary`, `Desc`, `Role`, `Constructor`, `Notes`, `SeeAlso`, `Since`, `Deprecated`
+- Property (12): `Summary`, `Desc`, `Role`, `Type`, `Size`, `Unit`, `Default`, `Constraints`, `Notes`, `SeeAlso`, `Since`, `Deprecated`
+- Method (13): `Summary`, `Desc`, `Role`, `Signatures`, `Parameters`, `Returns`, `Calls`, `Examples`, `Notes`, `Throws`, `SeeAlso`, `Since`, `Deprecated`
+- Legacy aliases are still read, but use the canonical name in new code: `Abst` → `Summary`, `Description` → `Desc`, `varargin` → `Parameters`, `varargout` → `Returns`, `DetailsCode` → `Notes`, `Example` → `Examples`, `Seealso` → `SeeAlso`.
 
-#### Help Comments for Class Definition
+## Value Shapes
+- `Summary`, `Desc`, `Notes`, and other text tags: free text; newlines, spaces, and indentation are kept.
+- `Signatures`, `Examples`, `SeeAlso`: JSON array of strings.
+- `Parameters`, `Returns`: JSON object or array of objects. `Parameters` fields: `Name`, `Kind`, `Type`, `Unit`, `Description`, `Required`, `Default`, `Constraints`; name-value options use `"Kind": "NameValue"`. `Returns` fields: `Name`, `Type`, `Unit`, `Description`.
+- `Calls`: JSON array of `{Class, Method, Condition}` objects; must start with `[`. Use the fully qualified MATLAB class name in `Class` and leave `Condition` empty for an unconditional call.
+- `Summary` is one sentence for reference tables; `Desc` is the full text for the detail page and does not replace a missing `Summary`.
+- Leave an optional tag empty when it does not apply. Structured JSON must begin with `[` or `{`: no MATLAB arrays or cell arrays.
 
-Write class-level tags directly below `classdef`, then keep constructor usage examples concrete:
-
+## Examples
 ```matlab
 classdef MyClass
-    % <@Desc> Handles state updates and utility calculations for a subsystem.
+    % <@Summary> Updates subsystem states and evaluates utility signals.
+    % <@Desc> Long-form explanation of responsibilities and intended use.
     % <@Role> CoreComponent
-    % <@Constructor> Create class instance with optional gain and label.
-    %  i.e.
-    %  >> obj = MyClass(r_gain, str_label)
-    %      - r_gain: scalar gain value (default: 1.0)
-    %      - str_label: display name (default: "default")
+    % <@Constructor> obj = MyClass(r_gain, s_label)
+    % <@SeeAlso> ["PowerNetwork", "Component"]
+    % <@Since> 4.2
 
     properties
+        % <@Summary> Gain applied to input/output calculations.
+        % <@Role> simulate
+        % <@Type> double
+        % <@Size> 1x1
+        % <@Unit> pu
+        % <@Default> 1.0
         r_gain
-        str_label
-    end
-
-    methods
-        function obj = MyClass(r_gain, str_label)
-            arguments
-                r_gain (1,1) double = 1.0
-                str_label (1,1) string = "default"
-            end
-            obj.r_gain = r_gain;
-            obj.str_label = str_label;
-        end
     end
 end
 ```
-
-#### Help Comments for Methods
-
-Add method tags immediately above each method body. Structured tags are parsed as JSON only.
-- **Text tags:** `Desc`, `Role`, `Abst`, `DetailsCode`, `Argin`, `Argout`, `Option`
-- **Structured tags (JSON only):** `Signatures`, `varargin`, `varargout`, `Examples`
- **Structured schema:** `varargin` = `Name`, `Type`, `Description`, `Required`, `Default` / `varargout` = `Name`, `Type`, `Description`
 
 ```matlab
-methods
-    function rv_y = calculate_output(obj, rv_u, r_gain)
-    % <@Desc>
-    % Computes an output vector from input data using a configurable gain.
-    % <@Abst>
-    % Typical example of method tags with parameters, return values, and examples.
-    % <@Signatures>
-    % [
-    %   "rv_y = obj.calculate_output(rv_u, r_gain)",
-    %   "rv_y = obj.calculate_output(rv_u)"
-    % ]
-    % <@varargin>
-    % [
-    %   {
-    %     "Name": "rv_u",
-    %     "Type": "double vector",
-    %     "Description": "Input signal vector.",
-    %     "Required": true,
-    %     "Default": "-"
-    %   },
-    %   {
-    %     "Name": "r_gain",
-    %     "Type": "double scalar",
-    %     "Description": "Scaling gain applied to the input.",
-    %     "Required": false,
-    %     "Default": "1.0"
-    %   }
-    % ]
-    % <@varargout>
-    % [
-    %   {
-    %     "Name": "rv_y",
-    %     "Type": "double vector",
-    %     "Description": "Scaled output vector."
-    %   }
-    % ]
-    % <@Examples>
-    % [
-    %   "```matlab\nrv_y = obj.calculate_output(rv_u, 2.0);\n```",
-    %   "```matlab\nrv_y = obj.calculate_output(randn(5,1));\n```"
-    % ]
-    end
+function rv_y = calculate_output(obj, rv_u, r_gain)
+% <@Summary> Scale an input vector.
+% <@Desc> Computes an output vector using a configurable scalar gain.
+% <@Signatures>
+% ["rv_y = obj.calculate_output(rv_u, r_gain)"]
+% <@Parameters>
+% [
+%   {"Name": "rv_u", "Kind": "Positional", "Type": "double vector", "Unit": "pu",
+%    "Description": "Input signal vector.", "Required": true, "Default": "-",
+%    "Constraints": "finite column vector"}
+% ]
+% <@Returns>
+% [{"Name": "rv_y", "Type": "double vector", "Unit": "pu", "Description": "Scaled output."}]
+% <@Examples>
+% ["```matlab\nrv_y = obj.calculate_output(rv_u, 2.0);\n```"]
+% <@Throws> Errors when the input and gain dimensions are incompatible.
+    rv_y = r_gain * rv_u;
 end
 ```
 
-Notes: If a structured tag is omitted or invalid JSON, exporter writes an empty default value.
-
-#### Help Comments for Properties
-
-Document each property right above its declaration. This helps readers understand data intent quickly:
-
-```matlab
-properties
-    % <@Desc> Gain applied to input/output calculations.
-    % <@Role> simulate
-    % <@Type> double
-    % <@Size> 1x1
-    r_gain
-
-    % <@Desc> Last computed output cached for diagnostics.
-    % <@Role> linearize
-    % <@Type> double
-    % <@Size> Nx1
-    rv_last_output
-end
-```
+## Validation
+- Warnings: unknown or duplicate tag (the last duplicate wins); class with neither `Summary` nor `Desc`; public, non-hidden method defined by the class with neither `Summary` nor `Desc`.
+- Errors: malformed structured JSON; class reflection or file export failure.
+- Check with `GUILDA.doc("update", true, "open", false, "strict", true)`; strict mode fails on errors.
 
 ---
 
@@ -257,3 +206,4 @@ methods
         obj.r_value = arg1;
     end
 end
+```
