@@ -69,11 +69,12 @@
         <p>Every analysis and IO feature is called as a method of <code>PowerNetwork</code>, named <code>verb_noun</code> in snake_case. Auxiliary classes such as <code>ContinuationPowerFlow</code>, <code>CsvNetHandler</code>, and <code>odeSimulator</code> are the implementation behind these methods. Using them directly is for advanced users only.</p>
       </div></li>
       <li><div>
-        <h3 class="dg-item-title">Inputs: system data beforehand, analysis conditions at run time</h3>
+        <h3 class="dg-item-title">Inputs: system data beforehand, analysis settings as defaults with run-time overrides</h3>
         <div class="ad-split">
           <div class="is-before"><span class="dg-kicker">Set beforehand (properties / <code>tab_parameter</code>)</span>Data that describes the system itself: line constants, power-flow specifications (V, P, Q), operating limits.</div>
-          <div class="is-runtime"><span class="dg-kicker">Pass at run time (Name-Value)</span>Conditions of one analysis: method, tolerance, time span, events.</div>
+          <div class="is-runtime"><span class="dg-kicker">Defaults in <code>net.solver_*</code>, overridden at run time (Name-Value)</span>Settings of an analysis: method, tolerance, time span, events. <code>net.solver_PF</code> / <code>solver_OPF</code> / <code>solver_CPF</code> / <code>solver_ODE</code> keep persistent defaults, so repeated runs keep the last settings. A Name-Value option overrides a default for that call only and does not change the stored default.</div>
         </div>
+        <p>See <a href="class-design.html#solvers">Class Design: Solver settings</a>.</p>
       </div></li>
       <li><div>
         <h3 class="dg-item-title">Output type: result classes for main analyses</h3>
@@ -188,6 +189,7 @@
       <li>These changes break existing scripts, so they belong to the <strong>next major version</strong> (<code>X+1</code>, see <a href="project-management.html#versions">Versions</a>).</li>
       <li>Old names and signatures keep working through wrappers in <code>_GUILDAsystem/_VersionSupport/</code> for at least one major version. This includes <code>Continuation_Power_Flow</code>, <code>CsvNetHandler.import</code> / <code>CsvNetHandler.export</code>, <code>[sys, lin] = get_sys(...)</code>, and the <code>"methods"</code> argument.</li>
       <li>New result classes (<code>PowerFlowResult</code>, <code>OPFResult</code>, <code>CPFResult</code>, ...) go in <code>_GUILDAsystem/_auxiliary/@&lt;Name&gt;/</code> and inherit from <code>auxiliary</code> (see <a href="folder-structure.html">Folder Structure</a>).</li>
+      <li>Where data lives, how edits mark results as stale, and the unit conventions are described in <a href="class-design.html">Class Design</a>.</li>
       <li>Name the options and properties of new code with the <a href="naming-conventions.html">Naming Conventions</a>, and document them with <a href="class-documentation.html">Class Documentation</a> tags.</li>
     </ul>
   </main>
