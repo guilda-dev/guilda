@@ -28,7 +28,7 @@ classdef (Sealed = true) AVR_ST1 < controller.avr.abstract
             obj.sv_y    = "Vfield";
             obj.sv_para = ["ttr"; "Vap_max"; "Vap_min"; "kap"; "tap"; "kst"; "tst"];  
 
-            obj.set_odefcn(60)
+            obj.set_odefcn(obj.r_Hz)
         end        
         
         function get_equilibrium(obj, V, u)                   
@@ -51,9 +51,6 @@ classdef (Sealed = true) AVR_ST1 < controller.avr.abstract
 
             obj.rv_Xequilibrium = [Vtr_st; Vap_st; Vst_st];
             obj.rv_Uequilibrium = [Vref_st;Vpss_st];            
-
-            obj.c_Vequilibrium = V;
-            obj.c_Iequilibrium = [];
 
             cellfun(@(c) c.get_equilibrium(V,u), obj.a_LocalController);
         end

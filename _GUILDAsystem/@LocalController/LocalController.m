@@ -30,9 +30,6 @@ classdef LocalController < PowerSystemModel
         f_JacobiDx        
         f_JacobiY        
     end    
-    properties(SetAccess=protected, Hidden)
-        r_omega0                               % omega0 last passed to set_odefcn (reused by rebuild_odefcn)
-    end
     properties (SetAccess={?odeSimulator, ?odeEventSet}, Hidden)
         iv_odeX  = zeros(0,1);
         iv_odeU  = zeros(0,1);
@@ -49,9 +46,9 @@ classdef LocalController < PowerSystemModel
         rv_Uequilibrium (:,1) double = zeros(0,1)   
     end    
 
-    properties(SetAccess=protected)
-        c_Vequilibrium (:,1) double = zeros(0,1)   
-        c_Iequilibrium (:,1) double = zeros(0,1)   
+    properties(Dependent)
+        c_Vequilibrium                         % parent's c_Vequilibrium (zeros(0,1) without a parent)
+        c_Iequilibrium                         % parent's c_Iequilibrium (zeros(0,1) without a parent)
     end    
     
     properties(SetAccess=protected)
@@ -82,6 +79,7 @@ classdef LocalController < PowerSystemModel
 
         function set_parent(obj,a_Component)
             obj.a_Component = a_Component; 
+            obj.rebuild_odefcn_tree();    % use the frequency of the parent's network
         end
 
         % get dx and y
@@ -101,19 +99,36 @@ classdef LocalController < PowerSystemModel
 
             obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
             obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
-            obj.r_omega0   = omega0;
             obj.l_staleOdefcn = false;
         end
 
         function rebuild_odefcn(obj)
-            % Called by check_edit after a dynamics parameter edit.
-            obj.set_odefcn(obj.r_omega0);
+            % Called by check_edit after a dynamics edit or a network Hz edit.
+            obj.set_odefcn(obj.r_Hz);
+        end
+    end
+    methods (Access=private)
+        function val = parent_equilibrium(obj, str_prop)
+            % Read the parent's (a Component, or an AVR for a PSS) equilibrium.
+            % Kept out of the get methods: MATLAB reads the stored value when a
+            % get method refers to its own property, even on another object.
+            if isempty(obj.a_Component)
+                val = zeros(0,1);
+            else
+                val = obj.a_Component.(str_prop);
+            end
         end
     end
 
 
 %% Get Methods    
     methods        
+        function V = get.c_Vequilibrium(obj)
+            V = obj.parent_equilibrium("c_Vequilibrium");
+        end
+        function I = get.c_Iequilibrium(obj)
+            I = obj.parent_equilibrium("c_Iequilibrium");
+        end
         function p = get.parent(obj)
             p = obj.a_Component;
         end

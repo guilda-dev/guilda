@@ -40,6 +40,26 @@ assert(tp.powerflow.V == 1.05 && tp.powerflow.Varg == 0.1)
 assert(tp.dynamics.Bshunt == 0.2 && tp.operation.baseKV == 154)
 
 
+%% Add bus with deprecated baseMVA option
+% 母線の baseMVA は廃止: 値は無視して警告 (系統の baseMVA と違えばその旨も出す)、1セッション1回
+net = PowerNetwork();
+clear Deprecated
+lastwarn("");
+evalc('bus = net.add_bus("baseMVA", 100);');
+[~, id] = lastwarn();
+assert(string(id) == "GUILDA:Deprecated:BusBaseMVA")
+assert(~ismember("baseMVA", string(bus.tab_parameter.operation.Properties.VariableNames)))
+lastwarn("");
+evalc('net.add_bus("baseMVA", 50);');
+[str_warn, id] = lastwarn();
+assert(string(id) == "GUILDA:Deprecated:BusBaseMVAMismatch" && contains(str_warn, "50") && contains(str_warn, "100"))
+assert(net.tab_parameter.base.baseMVA == 100 && numel(net.a_Bus) == 2)
+lastwarn("");
+evalc('net.add_bus("baseMVA", 50);');
+[~, id] = lastwarn();
+assert(isempty(id), "警告は1セッションに1回")
+
+
 %% Add branch by bus index
 net = PowerNetwork();
 for i = 1:4

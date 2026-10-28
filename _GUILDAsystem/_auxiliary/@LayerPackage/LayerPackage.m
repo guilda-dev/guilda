@@ -48,8 +48,9 @@ classdef LayerPackage < handle
     end
     properties(SetAccess=protected, Hidden)
         % <@Desc> True when the cached f_* function handles built by set_odefcn no longer
-        % match the parameters. Set by log_edit on the owner of an edited "dynamics" or
-        % "base" (Hz) parameter; cleared when set_odefcn rebuilds the handles. check_edit
+        % match the parameters. Set by log_edit on the owner of an edited "dynamics"
+        % parameter, and on every layer of the network when its "base" parameter (Hz)
+        % is edited; cleared when set_odefcn rebuilds the handles. check_edit
         % rebuilds the handles of every layer with this flag at the start of an analysis.
         % Only Component, LocalController and GlobalController own handles.
         % <@Role> Edit Log
@@ -96,6 +97,31 @@ classdef LayerPackage < handle
         reset_edit(obj)
         flag = check_edit(obj)
 
+        function Hz = get_Hz(obj)
+        % Nominal frequency [Hz] of the network this layer belongs to (walks up
+        % the parents; PowerNetwork overrides this). A layer not attached to a
+        % network uses GUILDA.config("Model","Hz").
+            p = obj.parent;
+            if isa(p, "LayerPackage")
+                Hz = p.get_Hz();
+            else
+                Hz = GUILDA.config("Model","Hz");
+            end
+        end
+
+        function mark_stale_odefcn(obj)
+        % Mark the f_* handles of this layer and all its descendants stale.
+            obj.l_staleOdefcn = true;
+            cellfun(@(c) c.mark_stale_odefcn, obj.children);
+        end
+
+        function rebuild_odefcn_tree(obj)
+        % Rebuild the f_* handles of this layer and all its descendants now,
+        % e.g. after attaching it to a parent whose network frequency may differ.
+            obj.rebuild_odefcn();
+            cellfun(@(c) c.rebuild_odefcn_tree, obj.children);
+        end
+
         function rebuild_odefcn(obj)
         % Rebuild the f_* handle cache from the current parameters.
         % Layers that own handles (Component, LocalController, GlobalController)
@@ -108,7 +134,8 @@ classdef LayerPackage < handle
         % What an edit makes stale, from the "tag" column of tab_editLog.
         %   tag                    f_* handles   equilibrium
         %   Parameter(dynamics)    stale         stale
-        %   Parameter(Parameter)   stale         stale     (para_base: Hz)
+        %   Parameter(base)        stale         stale     (PowerNetwork para_base: Hz, baseMVA;
+        %                                                   marks every layer of the network)
         %   Parameter(powerflow)   -             stale
         %   Topology               -             stale     (add_/remove_/replace_)
         %   Slack                  -             stale
@@ -116,7 +143,7 @@ classdef LayerPackage < handle
         %   Parameter(OPF)         -             -
         %   Parameter(graph)       -             -
             switch str_logtag
-                case {'Parameter(dynamics)', 'Parameter(Parameter)'}
+                case {'Parameter(dynamics)', 'Parameter(base)'}
                     l_odefcn = true;  l_equilibrium = true;
                 case {'Parameter(powerflow)', 'Topology', 'Slack'}
                     l_odefcn = false; l_equilibrium = true;

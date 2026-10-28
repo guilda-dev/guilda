@@ -243,7 +243,39 @@ DebugScript.helper.quiet(@() net.initialize);
 V = comp.c_Vequilibrium;  I = comp.c_Iequilibrium;
 x = comp.rv_Xequilibrium;  x(comp.sv_x == "omega") = 0.01;
 para = comp.tab_parameter.dynamics{:, comp.sv_para};
-Hz   = comp.tab_parameter.base.Hz;
+Hz   = comp.r_Hz;
 dx_used = comp.f_dx(0, x, [real(V);imag(V)], [real(I);imag(I)], comp.rv_Uequilibrium);
 dx_new  = comp.fcn_dx(0, x, [real(V);imag(V)], [real(I);imag(I)], comp.rv_Uequilibrium, para, Hz);
 assert(norm(dx_used - dx_new) < 1e-12, "f_dx が変更前の定数 D を使っている")
+
+
+%% Equilibrium voltage and current have a single owner
+% 母線が V を、機器が I を持つ。機器・制御器の V と母線の I は持ち主から読む (Dependent)
+net = DebugScript.helper.build_ieee14();
+net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
+DebugScript.helper.quiet(@() net.initialize);
+assert(findprop(net.a_Bus{1}, "c_Iequilibrium").Dependent && ~findprop(net.a_Bus{1}, "c_Vequilibrium").Dependent)
+assert(findprop(net.a_Bus{1}.a_Component{1}, "c_Vequilibrium").Dependent)
+
+% 平衡点を計算し直して母線の V が変わると、機器・制御器もその値を返す
+bus  = net.a_Bus{1};
+comp = bus.a_Component{1};
+avr  = comp.a_LocalController{1};
+pss  = avr.a_LocalController{1};
+V_before = bus.c_Vequilibrium;
+bus.tab_parameter.powerflow.V = 1.03;
+DebugScript.helper.quiet(@() net.initialize);
+assert(abs(abs(bus.c_Vequilibrium) - 1.03) < 1e-8 && abs(bus.c_Vequilibrium - V_before) > 1e-3)
+assert(comp.c_Vequilibrium == bus.c_Vequilibrium)
+assert(avr.c_Vequilibrium == bus.c_Vequilibrium && pss.c_Vequilibrium == bus.c_Vequilibrium)
+assert(avr.c_Iequilibrium == comp.c_Iequilibrium)
+
+% 母線の電流 = 接続機器の電流の和 (機器が無い母線は 0)
+for i = 1:numel(net.a_Bus)
+    b = net.a_Bus{i};
+    I_comp = sum(cellfun(@(c) c.c_Iequilibrium, b.a_Component));
+    assert(b.c_Iequilibrium == I_comp, string(b))
+end
+net9 = DebugScript.helper.build_9bus();
+DebugScript.helper.quiet(@() net9.initialize);
+assert(isempty(net9.a_Bus{4}.a_Component) && net9.a_Bus{4}.c_Iequilibrium == 0)

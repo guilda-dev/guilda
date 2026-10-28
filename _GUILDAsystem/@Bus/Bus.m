@@ -4,6 +4,7 @@ classdef Bus < PowerSystemModel
     properties (Dependent)
         str_bustype              % PowerFlow
         tab_parameter            % Parameter
+        c_Iequilibrium           % Steady State: sum of the c_Iequilibrium of a_Component (0 without components)
     end
     properties
         l_isSlack      (1,1) logical = false;   % Flag if bus is Slack Bus
@@ -18,8 +19,7 @@ classdef Bus < PowerSystemModel
     properties (SetAccess=protected)
         a_PowerNetwork                          % Layer Structure
         a_Component                             % Layer Structure
-        c_Vequilibrium      = 1;                % Steady State
-        c_Iequilibrium      = 0;                % Steady State
+        c_Vequilibrium      = 1;                % Steady State (owner; components read it)
     end
     properties (Hidden,SetAccess=protected)
         para_dynamics                           % Parameter
@@ -35,10 +35,6 @@ classdef Bus < PowerSystemModel
         iv_odeX  = zeros(0,1);
         iv_odeI  = zeros(0,1);
         iv_odeU  = zeros(0,1);
-        rv_odeX0 = zeros(2,1);
-    end
-    properties (Access=public)
-        rv_odeInit
     end
     properties (SetAccess={?ContinuationPowerFlow})
         iv_CPFV = zeros(0,1)        
@@ -57,7 +53,6 @@ classdef Bus < PowerSystemModel
             obj.para_dynamics.add_entry(  "Gshunt", opt.Gshunt   , "double",...
                                           "Bshunt", opt.Bshunt   , "double");
             obj.para_operation.add_entry( "baseKV", opt.baseKV   , "double",...
-                                         "baseMVA", opt.baseMVA  , "double",...
                                             "Vmin", opt.Vmin     , "double",...
                                             "Vmax", opt.Vmax     , "double");
             obj.para_powerflow.add_entry(      "V", opt.V        , "double",...
@@ -101,6 +96,14 @@ classdef Bus < PowerSystemModel
             powerflow =  obj.para_powerflow.tab_parameter;
             graph     =  obj.para_graph.tab_parameter;
             tp        =  table(dynamics,operation,powerflow,graph);
+        end
+        function I = get.c_Iequilibrium(obj)
+            % Components without an equilibrium yet (c_Iequilibrium = []) add nothing.
+            if isempty(obj.a_Component)
+                I = 0;
+            else
+                I = sum(tools.vcellfun(@(c) c.c_Iequilibrium, obj.a_Component));
+            end
         end
         function p = get.parent(obj)
             p = obj.a_PowerNetwork; 

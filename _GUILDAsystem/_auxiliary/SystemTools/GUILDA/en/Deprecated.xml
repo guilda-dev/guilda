@@ -1,0 +1,10 @@
+<!--This is an XML file containing warnings for deprecated forms of the public API (shown once per session, see Deprecated.m).-->
+<rsccat version="2" locale="en" product="GUILDA">
+    <message>
+        <entry key="ComponentBaseHz">comp.tab_parameter.base and comp.para_base are deprecated: the nominal frequency is held by the network. Read it with comp.r_Hz, or read and set it with net.tab_parameter.base.Hz.</entry>
+        <entry key="ComponentBaseHzSet">Setting comp.tab_parameter.base.Hz or comp.para_base.Hz is deprecated: it now sets the frequency of the whole network {0} to {1} Hz. Use net.tab_parameter.base.Hz = value.</entry>
+        <entry key="ComponentBaseHzNoNetwork">Component {0} is not attached to a network, so its frequency cannot be set. The frequency is held by the network: use net.tab_parameter.base.Hz = value.</entry>
+        <entry key="BusBaseMVA">The add_bus option baseMVA is deprecated and ignored: the system base is net.tab_parameter.base.baseMVA ({0} MVA).</entry>
+        <entry key="BusBaseMVAMismatch">The add_bus option baseMVA is deprecated and ignored: the given {0} MVA differs from the system base net.tab_parameter.base.baseMVA = {1} MVA, which is used. Set net.tab_parameter.base.baseMVA instead.</entry>
+    </message>
+</rsccat>

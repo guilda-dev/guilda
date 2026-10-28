@@ -35,7 +35,7 @@ classdef broadcast_PI_AGC < GlobalController
                                          "beta", opt.beta              , "double", ...
                                            "kP", repmat(opt.kP, [na,1]), "double", ...
                                            "kI", repmat(opt.kI, [na,1]), "double");                        
-            obj.set_odefcn(60);
+            obj.set_odefcn(obj.r_Hz);
         end
 
         function [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj)
