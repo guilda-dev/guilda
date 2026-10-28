@@ -168,6 +168,10 @@ assert(gen.a_LocalController{1} == avr)
 assert(numel(avr.a_LocalController) == 1 && avr.a_LocalController{1} == pss)
 assert(avr.key == "avr" && pss.key == "pss")
 
+% 親への参照は追加した側が設定する (PSS の親は AVR、AVR の親は発電機)
+assert(gen.a_Bus == net.a_Bus{1})
+assert(avr.a_Component == gen && pss.a_Component == avr)
+
 % 平衡点の計算で制御器の平衡点も設定される
 DebugScript.helper.quiet(@() net.initialize);
 assert(numel(avr.rv_Xequilibrium) == numel(avr.sv_x))
@@ -221,6 +225,7 @@ agc  = controller.agc.broadcast_PI_AGC(net, "agc", c{:}, alpha=[1;1], beta=[1;1]
 net.add_global_controller(agc);
 
 assert(numel(net.a_GlobalController) == 1 && net.a_GlobalController{1} == agc)
+assert(agc.PowerNetwork{1} == net)                   % 親への参照は add_global_controller が設定する
 assert(isequal(string(agc.controlledUnits)', ["SG1B001","SG1B002"]))
 assert(isequal(agc.tab_parameter.dynamics.kI, [500;500]))
 
@@ -262,13 +267,25 @@ assert(isa(comp, "component.load.impedance"))
 assert(numel(net.a_Bus{5}.a_Component) == 1)
 assert(comp.tab_parameter.powerflow.P == -1.0)       % 潮流設定は引き継がれる
 
+% 置き換えられた機器は母線への参照を持たない
+assert(comp.a_Bus == net.a_Bus{5})
+comp_old = net.a_Bus{5}.a_Component{1};
+net.a_Bus{5}.replace_component(string(comp_old), "load-power");
+assert(isempty(comp_old.a_Bus) && isempty(comp_old.c_Vequilibrium))
+
 
 %% Remove component
 net = DebugScript.helper.build_9bus();
+DebugScript.helper.quiet(@() net.initialize);
 str_tag = string(net.a_Bus{5}.a_Component{1});
 
+comp = net.a_Bus{5}.a_Component{1};
 net.a_Bus{5}.remove_component(str_tag);
 assert(isempty(net.a_Bus{5}.a_Component))
+
+% 削除した機器は母線への参照を持たない (元の母線の電圧に追従しない)
+assert(isempty(comp.a_Bus))
+assert(isempty(comp.c_Vequilibrium))
 
 % 存在しないタグはエラー
 try
@@ -291,6 +308,11 @@ assert(~ismember(str_tag, string(net.a_Branch)))
 % 削除した送電線 (B008-B009) の分だけアドミタンス行列が変わる
 Y_after = net.get_admittance_matrix;
 assert(Y_after{"B008","B009"} == 0 && Y_before{"B008","B009"} ~= 0)
+
+% 削除した送電線は系統・母線への参照を持たない
+br = net.a_Branch{1};
+net.remove_branch(string(br));
+assert(isempty(br.a_PowerNetwork) && isempty(br.a_Bus))
 
 
 %% Remove bus

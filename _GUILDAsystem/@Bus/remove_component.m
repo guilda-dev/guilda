@@ -8,6 +8,8 @@ function remove_component(obj, str_tag)
     if ~any(lv_rmcub)
         error("No component with '"+str_tag+"' was found.")
     end
+    comp = obj.a_Component{lv_rmcub};
     obj.a_Component(lv_rmcub) = [];
     obj.log_edit(obj.str_tag+" ---remove->> "+str_tag,"Topology")
+    comp.set_bus([])    % the removed component no longer reads this bus (c_Vequilibrium = [])
 end
