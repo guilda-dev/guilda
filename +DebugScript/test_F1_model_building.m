@@ -240,6 +240,20 @@ net = DebugScript.helper.build_ieee14();
 agc = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002");
 tp  = agc.tab_parameter.dynamics;
 assert(height(tp) == 2 && isequal(tp.kP, [100;100]))
+assert(isequal(tp.alpha, [1;1]) && isequal(tp.beta, [1;1]))
+
+% スカラーで与えた alpha, beta も全台に適用される
+agc = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002", "SG1B003", alpha=2, beta=0.5);
+tp  = agc.tab_parameter.dynamics;
+assert(isequal(tp.alpha, [2;2;2]) && isequal(tp.beta, [0.5;0.5;0.5]))
+
+% 台数と合わない長さはエラー
+try
+    controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002", alpha=[1;1;1]);
+    error("DebugScript:noError", "台数と合わない alpha がエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:broadcast_PI_AGC:InvalidSize", ME.message)
+end
 
 
 %% Two global controllers are initialized

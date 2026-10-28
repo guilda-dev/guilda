@@ -25,10 +25,16 @@ classdef broadcast_PI_AGC < GlobalController
             end 
             obj@GlobalController(net, tag, varargin{:})            
 
+            % A scalar alpha or beta (e.g. the default) applies to every controlled unit
+            nCU = max(numel(obj.controlledUnits), 1);
+            if isscalar(opt.alpha); opt.alpha = repmat(opt.alpha, [nCU,1]); end
+            if isscalar(opt.beta);  opt.beta  = repmat(opt.beta,  [nCU,1]); end
+
             na = numel(opt.alpha);
             nb = numel(opt.beta);
-            if na ~= nb
-                error(msg('GUILDA:broadcast_PI_AGC:InvalidSize'))
+            if na ~= nCU || nb ~= nCU
+                error("GUILDA:broadcast_PI_AGC:InvalidSize", ...
+                      "alpha and beta must be scalars or have one element per controlled unit (%d).", nCU)
             end            
 
             obj.para_dynamics.add_entry("alpha", opt.alpha             , "double", ...
