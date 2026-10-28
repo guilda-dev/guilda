@@ -7,10 +7,9 @@ Its functions include power system modeling, power flow analysis, OPF,
 approximate linearization, eigenvalue analysis, and time-domain simulation.
 
 # Project Rules
-The For Developer pages in `_GUILDAdoc/developer/` are the source of truth
-(`project-management.html`, `git-workflow.html`, `folder-structure.html`,
-`naming-conventions.html`, `class-documentation.html`).
-If this file disagrees with them, follow the pages.
+This section summarizes the For Developer pages in `_GUILDAdoc/developer/`,
+which are the source of truth (`project-management.html`, `git-workflow.html`,
+`folder-structure.html`, `naming-conventions.html`, `class-documentation.html`).
 
 ## Branch Model
 - `main`: released, stable code. Every release is tagged `vX.Y` on the merge commit.
