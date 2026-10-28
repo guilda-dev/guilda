@@ -21,11 +21,8 @@ function tab = known_failures()
     "test_F1_model_building/AGCDefaultParametersCoverAllControlledUnits", "broadcast_PI_AGC の alpha/beta 既定値がスカラーで、複数台制御時にパラメータ行数 (1) と制御対象数が合わず tab_parameter がエラー"
     "test_F1_model_building/TwoGlobalControllersAreInitialized", "initialize / odeSimulator / odeEventSet が a_GlobalController{1} しか扱わない"
     % ---- F2 power flow --------------------------------------------------------------------------
-    "test_F2_powerflow/DynamicModeReachesTheAlgebraicSolution",  "solve_dynamic が PV 母線の電圧を V ではなく V0 (初期値) に固定する"
     % ---- F3 initialize --------------------------------------------------------------------------
-    "test_F3_initialize/InitializeReturnsFlagTableOutput",       "initialize.m が calculate_powerflow の出力を [tab, output, flag] の順で受けている (flag と output が逆)"
-    "test_F3_initialize/InitializeWithOptimalPowerflow",         "optimize_powerflow が失敗 (F4 参照)。さらに initialize は戻り値の順序も誤っている"
-    "test_F3_initialize/InitializeFromXequilibrium",             "initialize.m に ""calculate from Xequilibrium"" の分岐が無く tab_PFsol が未定義"
+    "test_F3_initialize/InitializeWithOptimalPowerflow",         "optimize_powerflow が失敗 (F4 参照)"
     "test_F3_initialize/EquilibriumOfGen1axis",                  "gen-1axis: Jacobi 関数の引数の数が合わず simulate が ""入力引数が多すぎます"" で失敗"
     "test_F3_initialize/EquilibriumOfGen2axis",                  "gen-2axis: get_equilibrium の呼び出しで ""入力引数が多すぎます"" (initialize で失敗)"
     "test_F3_initialize/EquilibriumOfGenDroop",                  "gen-droop: Jacobi 関数の引数の数が合わず simulate が ""入力引数が多すぎます"" で失敗"
@@ -36,7 +33,6 @@ function tab = known_failures()
     "test_F4_opf/DCOptimalPowerFlow",                            "build_opf_problem が tab_parameter.OPF 列を参照するが存在しない。結果整形も削除済み Cubicle を参照"
     "test_F4_opf/ACOptimalPowerFlow",                            "build_opf_problem が tab_parameter.OPF 列を参照するが存在しない。結果整形・@Branch/build_opf_problem も削除済み Cubicle を参照"
     % ---- F5 CPF ---------------------------------------------------------------------------------
-    "test_F5_cpf/LegacyEntryContinuation_Power_Flow",            "Continuation_Power_Flow(net,opt) が opt を名前-値引数の関数へ位置引数で渡すため必ずエラー"
     % ---- F6 time simulation ---------------------------------------------------------------------
     "test_F6_simulation/SimulateWithoutEvents",                  "イベント無しの simulate で odeEventSet.table ではなく組み込みの table が呼ばれエラー"
     "test_F6_simulation/OffsetStateAfterTimeZero",               "OffsetState は最初の区間 (TimeSpan 0) でしか初期値に反映されず、t>0 のオフセットは無視される"

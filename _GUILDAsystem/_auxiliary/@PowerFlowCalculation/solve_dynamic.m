@@ -12,6 +12,7 @@ function [cv_Vbus,flag,output] = solve_dynamic(obj, cm_Y, tab_PFset)
     % Initial State
     Tinit = tab_PFset.Varg0;
     Vinit = tab_PFset.V0;
+    Vinit(idx_PV) = tab_PFset.V(idx_PV); % PV bus voltage is fixed at the specified value
 
     if M == 0
         Vc_0  = Vinit .* exp(1j * Tinit);
