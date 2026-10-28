@@ -155,6 +155,42 @@ assert(max(abs(U.Pload(lv) - (P0 + 0.1*(r.t(lv) - 1)))) < 1e-8)
 assert(max(abs(U.Pload(r.t > 3.01) - P0)) < 1e-8)
 
 
+%% Offset and input names in any order
+% OffsetState / InputName は sv_x / sv_u と違う順に並べても名前で対応する
+gen = net.a_Bus{1}.a_Component{1};
+g2  = net.a_Bus{2}.a_Component{1};
+os  = odeEventSet("offset", net, "TimeSpan", 0, "OffsetUnit", "SG1B001", "OffsetState", ["omega";"delta"], "OffsetValue", [0.01;0.1]);
+in  = odeEventSet("input", net, "TimeSpan", [1,2], "InputUnit", "SG1B002", "InputName", ["Vfield";"Pmech"], "InputValue", [0.02;0.1]);
+r   = net.simulate([0,2], os, in).odeResults;
+
+X = r.Bus(1).Component(1).X;
+assert(abs(X.delta(1) - (gen.rv_Xequilibrium(gen.sv_x == "delta") + 0.1)) < 1e-8)
+assert(abs(X.omega(1) - (gen.rv_Xequilibrium(gen.sv_x == "omega") + 0.01)) < 1e-8)
+U  = r.Bus(2).Component(1).U;
+lv = inwin(r.t, 1, 2);
+assert(max(abs(U.Pmech(lv)  - (g2.rv_Uequilibrium(g2.sv_u == "Pmech")  + 0.1)))  < 1e-8)
+assert(max(abs(U.Vfield(lv) - (g2.rv_Uequilibrium(g2.sv_u == "Vfield") + 0.02))) < 1e-8)
+
+
+%% Several events on the same unit
+% 同じ機器への複数のオフセット・入力は足し合わされる
+gen = net.a_Bus{1}.a_Component{1};
+g2  = net.a_Bus{2}.a_Component{1};
+o = cell(4,1);
+o{1} = odeEventSet("os1", net, "TimeSpan", 0,     "OffsetUnit", "SG1B001", "OffsetState", "delta", "OffsetValue", 0.05);
+o{2} = odeEventSet("os2", net, "TimeSpan", 0,     "OffsetUnit", "SG1B001", "OffsetState", "delta", "OffsetValue", 0.05);
+o{3} = odeEventSet("in1", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", 0.1);
+o{4} = odeEventSet("in2", net, "TimeSpan", [2,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) 0.05);
+r = net.simulate([0,4], o{:}).odeResults;
+
+assert(abs(r.Bus(1).Component(1).X.delta(1) - (gen.rv_Xequilibrium(gen.sv_x == "delta") + 0.1)) < 1e-8)
+Pm  = r.Bus(2).Component(1).U.Pmech;
+Pm0 = g2.rv_Uequilibrium(g2.sv_u == "Pmech");
+assert(max(abs(Pm(inwin(r.t,1,2)) - (Pm0 + 0.1)))  < 1e-8)
+assert(max(abs(Pm(inwin(r.t,2,3)) - (Pm0 + 0.15))) < 1e-8)
+assert(max(abs(Pm(r.t > 3.01) - Pm0)) < 1e-8)
+
+
 %% Multiple events in one simulation
 % 複数のイベントをまとめて渡す (旧 Task10 の構成を短縮)
 o = cell(4,1);
