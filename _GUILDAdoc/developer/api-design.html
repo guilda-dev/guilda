@@ -6,70 +6,39 @@
   <title>GUILDA Developer Guide - API Design</title>
   <link rel="stylesheet" href="../style.css">
   <style>
-    /* API Design page only (ad-*) */
-    .ad-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-    .developer-layout main code { overflow-wrap: anywhere; }
-
-    /* Call anatomy */
-    .ad-anatomy { margin: 16px 0 22px; padding: 20px 16px; background: #f8fbff; border: 1px solid #dce4ec; border-radius: 12px; text-align: center; }
-    .ad-call { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 8px 6px; }
-    .ad-part { display: flex; flex-direction: column; align-items: center; }
-    .ad-tok { padding: 6px 10px; border-radius: 8px; border: 2px solid; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: bold; font-size: clamp(0.85rem, 3.2vw, 1.1rem); white-space: nowrap; }
-    .ad-lab { margin-top: 5px; font-size: 0.72rem; color: #5f6b7a; text-transform: uppercase; letter-spacing: 0.04em; }
-    .ad-op { align-self: center; margin-bottom: 18px; color: #5f6b7a; font-weight: bold; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-    .ad-p-out .ad-tok { color: #1e7b3c; background: #e7f6ec; border-color: #1e7b3c; }
-    .ad-p-net .ad-tok { color: #0f4c81; background: #e8f0f8; border-color: #0f4c81; }
-    .ad-p-verb .ad-tok { color: #9a6b00; background: #fff8e1; border-color: #e0a800; }
-    .ad-p-opt .ad-tok { color: #5f6b7a; background: #f0f2f4; border-color: #b8c1cb; }
-    .ad-anatomy figcaption { margin-top: 12px; color: #5f6b7a; font-size: 0.88rem; }
-
-    /* Rule cards */
-    .ad-rules { list-style: none; padding: 0; margin: 14px 0 26px; display: grid; gap: 12px; counter-reset: ad-rule; }
-    .ad-rules > li { counter-increment: ad-rule; position: relative; padding: 14px 16px 14px 54px; background: #fff; border: 1px solid #dee2e6; border-left: 4px solid #0f4c81; border-radius: 8px; line-height: 1.55; }
-    .ad-rules > li::before { content: counter(ad-rule); position: absolute; left: 14px; top: 14px; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #0f4c81; color: #fff; font-size: 0.85rem; font-weight: bold; }
-    .ad-rules h3 { margin: 0 0 6px; font-size: 1.02rem; color: #333; }
-    .ad-rules p { margin: 6px 0; }
-    .ad-rules ul { margin: 6px 0; padding-left: 20px; }
-
-    /* Two-column split (inputs, side effects) */
-    .ad-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin: 8px 0 4px; }
-    .ad-split > div { padding: 10px 12px; border-radius: 8px; font-size: 0.9rem; }
-    .ad-split b { display: block; margin-bottom: 4px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
-    .ad-split .is-before { background: #f8fbff; border: 1px solid #dce4ec; }
-    .ad-split .is-before b { color: #0f4c81; }
-    .ad-split .is-runtime { background: #f0f2f4; border: 1px solid #dce4ec; }
-    .ad-split .is-runtime b { color: #5f6b7a; }
-    .ad-split .is-mod { background: #fdeeee; border: 1px solid #f2c1c6; }
-    .ad-split .is-mod b { color: #b02a37; }
-    .ad-split .is-pure { background: #e7f6ec; border: 1px solid #b9e1c6; }
-    .ad-split .is-pure b { color: #1e7b3c; }
+    /* API Design page only (ad-*); shared parts are dg-* in style.css */
+    .ad-anatomy .dg-op { align-self: flex-start; padding: 6px 2px; color: var(--dg-muted); font: bold 1.2rem/1.3 var(--dg-mono); }
+    .ad-anatomy .dg-tok { white-space: nowrap; }
+    .ad-rules h3.dg-item-title { margin: 0 0 4px; }
+    .ad-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--dg-s5); margin: var(--dg-s3) 0 var(--dg-s1); }
+    .ad-split > div { padding-left: var(--dg-s3); border-left: 3px solid var(--c, var(--dg-accent)); font-size: 0.93rem; }
+    .ad-split .dg-kicker { margin-bottom: 4px; font-size: 0.82rem; letter-spacing: 0; text-transform: none; color: var(--c, var(--dg-accent)); }
+    .ad-split .is-runtime { --c: var(--dg-muted); }
+    .ad-split .is-mod { --c: var(--dg-err); }
+    .ad-split .is-pure { --c: var(--dg-ok); }
     .ad-verbs { display: flex; flex-wrap: wrap; gap: 6px; }
-    .ad-verbs code { font-weight: bold; }
-
-    /* Option chips */
-    .ad-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; margin: 8px 0 4px; }
-    .ad-opt { padding: 8px 10px; background: #f8fbff; border: 1px solid #dce4ec; border-radius: 8px; font-size: 0.85rem; line-height: 1.4; }
-    .ad-opt > span:first-child { display: block; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: bold; color: #0f4c81; font-size: 0.95rem; }
-    .ad-opt small { color: #5f6b7a; }
-
-    /* Feature table */
+    .ad-opts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0 var(--dg-s4); margin: var(--dg-s3) 0 0; }
+    .ad-opts dt, .ad-opts dd { margin: 0; padding: 6px 0; border-bottom: 1px solid var(--dg-line); }
+    .ad-opts dt { color: var(--dg-accent); font: bold 0.92rem/1.6 var(--dg-mono); }
+    .ad-opts dd small { color: var(--dg-muted); }
     .ad-table td { vertical-align: top; font-size: 0.9rem; }
     .ad-table td:first-child { font-weight: bold; white-space: nowrap; }
-    .ad-table td small { display: block; margin-top: 4px; color: #5f6b7a; }
-
+    .ad-table td small { display: block; margin-top: 4px; color: var(--dg-muted); }
     @media (max-width: 640px) {
-      .ad-split { grid-template-columns: minmax(0, 1fr); }
-      .ad-rules > li { padding-left: 16px; padding-top: 48px; }
+      .ad-split { grid-template-columns: minmax(0, 1fr); gap: var(--dg-s3); }
+      .ad-anatomy .dg-tok { white-space: normal; }
     }
   </style>
 </head>
-<body class="developer-layout">
+<body class="developer-layout dg">
+  <svg class="dg-sprite" aria-hidden="true" focusable="false">
+    <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+    <symbol id="dg-i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
+  </svg>
   <main>
     <button type="button" class="developer-back-button" onclick="window.history.back()">← Back to For Developer</button>
     <h1>API Design for Analysis Features</h1>
     <p class="page-lead">Power flow, OPF, CPF, time simulation, linearization, and import/export are all called the same way: as a method of <code>PowerNetwork</code>, with Name-Value options, returning <code>[result, flag, output]</code>.</p>
-
-    <p class="dev-note"><strong>Target rules for version 4.0.</strong> These rules were decided for version 4.0. Existing code does not follow all of them yet and is being migrated. Write new code to these rules, and move existing code toward them when you touch it.</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#rules">Cross-cutting rules</a>
@@ -77,71 +46,76 @@
       <a href="#compatibility">Compatibility</a>
     </nav>
 
-    <figure class="ad-anatomy" aria-label="Example call: [result, flag, output] = net.calculate_powerflow(Method=&quot;algebraic&quot;)">
-      <div class="ad-call">
-        <span class="ad-part ad-p-out"><span class="ad-tok">[result, flag, output]</span><span class="ad-lab">rule 3 · 4</span></span>
-        <span class="ad-op">=</span>
-        <span class="ad-part ad-p-net"><span class="ad-tok">net.</span><span class="ad-lab">rule 1</span></span>
-        <span class="ad-part ad-p-verb"><span class="ad-tok">calculate_powerflow</span><span class="ad-lab">rule 1 · 6</span></span>
-        <span class="ad-part ad-p-opt"><span class="ad-tok">(Method="algebraic")</span><span class="ad-lab">rule 2 · 7</span></span>
+    <div class="dg-callout is-warn">
+      <svg class="dg-icon" aria-hidden="true"><use href="#dg-i-flag"/></svg>
+      <p><strong>Target rules for the next major version.</strong> These rules were decided for the next major version (<code>X+1</code>, see <a href="project-management.html#versions">Versions</a>). Existing code does not follow all of them yet and is being migrated. Write new code to these rules, and move existing code toward them when you touch it.</p>
+    </div>
+
+    <figure class="dg-figure ad-anatomy" aria-label="Example call: [result, flag, output] = net.calculate_powerflow(Method=&quot;algebraic&quot;)">
+      <div class="dg-anatomy">
+        <span class="dg-part is-ok"><span class="dg-tok">[result, flag, output]</span><span class="dg-kicker">rule 3 · 4</span></span>
+        <span class="dg-op">=</span>
+        <span class="dg-part is-accent"><span class="dg-tok">net.</span><span class="dg-kicker">rule 1</span></span>
+        <span class="dg-part is-warn"><span class="dg-tok">calculate_powerflow</span><span class="dg-kicker">rule 1 · 6</span></span>
+        <span class="dg-part is-muted"><span class="dg-tok">(Method="algebraic")</span><span class="dg-kicker">rule 2 · 7</span></span>
       </div>
       <figcaption>Every part of a call is fixed by one of the rules below.</figcaption>
     </figure>
 
     <h2 id="rules">Cross-cutting rules</h2>
-    <ol class="ad-rules">
-      <li>
-        <h3>Entry point: <code>net.verb_noun()</code></h3>
+    <ol class="dg-list is-numbered ad-rules">
+      <li><div>
+        <h3 class="dg-item-title">Entry point: <code>net.verb_noun()</code></h3>
         <p>Every analysis and IO feature is called as a method of <code>PowerNetwork</code>, named <code>verb_noun</code> in snake_case. Auxiliary classes such as <code>ContinuationPowerFlow</code>, <code>CsvNetHandler</code>, and <code>odeSimulator</code> are the implementation behind these methods. Using them directly is for advanced users only.</p>
-      </li>
-      <li>
-        <h3>Inputs: system data beforehand, analysis conditions at run time</h3>
+      </div></li>
+      <li><div>
+        <h3 class="dg-item-title">Inputs: system data beforehand, analysis conditions at run time</h3>
         <div class="ad-split">
-          <div class="is-before"><b>Set beforehand (properties / <code>tab_parameter</code>)</b>Data that describes the system itself: line constants, power-flow specifications (V, P, Q), operating limits.</div>
-          <div class="is-runtime"><b>Pass at run time (Name-Value)</b>Conditions of one analysis: method, tolerance, time span, events.</div>
+          <div class="is-before"><span class="dg-kicker">Set beforehand (properties / <code>tab_parameter</code>)</span>Data that describes the system itself: line constants, power-flow specifications (V, P, Q), operating limits.</div>
+          <div class="is-runtime"><span class="dg-kicker">Pass at run time (Name-Value)</span>Conditions of one analysis: method, tolerance, time span, events.</div>
         </div>
-      </li>
-      <li>
-        <h3>Output type: result classes for main analyses</h3>
+      </div></li>
+      <li><div>
+        <h3 class="dg-item-title">Output type: result classes for main analyses</h3>
         <p>Power flow, OPF, CPF, and time simulation return a dedicated result class, like the existing <code>odeSimulationResult</code>. Simple getters keep standard MATLAB types: <code>get_sys</code> returns an <code>ss</code>, <code>get_admittance_matrix</code> returns a <code>table</code>.</p>
-      </li>
-      <li>
-        <h3>Output order: <code>[result, flag, output]</code></h3>
+      </div></li>
+      <li><div>
+        <h3 class="dg-item-title">Output order: <code>[result, flag, output]</code></h3>
         <ul>
           <li><code>result</code>: the result object (or standard MATLAB type).</li>
           <li><code>flag</code>: success or convergence.</li>
           <li><code>output</code>: solver details.</li>
         </ul>
         <p>Result classes also hold <code>flag</code> and <code>output</code> as properties, so <code>result</code> alone is enough to check the outcome.</p>
-      </li>
-      <li>
-        <h3>Preconditions: stop with an error that says how to fix it</h3>
+      </div></li>
+      <li><div>
+        <h3 class="dg-item-title">Preconditions: stop with an error that says how to fix it</h3>
         <p>When a precondition is not met, stop with an explicit error that tells the user what to do. For example, the edit state in <code>str_editFlag</code> (<code>unset</code> / <code>initialized</code> / <code>editted</code>) must be <code>initialized</code> before a simulation; otherwise the error says "run <code>net.initialize()</code> first".</p>
         <p>Only a harmless default that does not change the meaning of the result may continue, and it prints an INFO message.</p>
-      </li>
-      <li>
-        <h3>Side effects follow the verb</h3>
+      </div></li>
+      <li><div>
+        <h3 class="dg-item-title">Side effects follow the verb</h3>
         <div class="ad-split">
-          <div class="is-mod"><b>May modify the model</b><span class="ad-verbs"><code>add_</code><code>remove_</code><code>replace_</code><code>set_</code><code>initialize</code></span></div>
-          <div class="is-pure"><b>Must not change model values</b><span class="ad-verbs"><code>calculate_</code><code>optimize_</code><code>simulate</code><code>get_</code><code>draw_</code><code>export_</code></span></div>
+          <div class="is-mod"><span class="dg-kicker">May modify the model</span><span class="ad-verbs"><code>add_</code><code>remove_</code><code>replace_</code><code>set_</code><code>initialize</code></span></div>
+          <div class="is-pure"><span class="dg-kicker">Must not change model values</span><span class="ad-verbs"><code>calculate_</code><code>optimize_</code><code>simulate</code><code>get_</code><code>draw_</code><code>export_</code></span></div>
         </div>
         <p>Internal analysis caches are the only exception.</p>
-      </li>
-      <li>
-        <h3>Common Name-Value options in UpperCamelCase</h3>
+      </div></li>
+      <li><div>
+        <h3 class="dg-item-title">Common Name-Value options in UpperCamelCase</h3>
         <p>Option names follow the MATLAB style. Each analysis supports the options that apply to it, with the same name and meaning everywhere.</p>
-        <div class="ad-opts">
-          <div class="ad-opt"><span>Method</span>Calculation method. <small>Replaces <code>mode</code>, <code>methods</code>, <code>Algorithm</code>.</small></div>
-          <div class="ad-opt"><span>Tolerance</span>Convergence tolerance.</div>
-          <div class="ad-opt"><span>MaxIteration</span>Maximum number of iterations.</div>
-          <div class="ad-opt"><span>Solver</span>Numerical solver.</div>
-          <div class="ad-opt"><span>TimeLimit</span>Limit on computation time.</div>
-          <div class="ad-opt"><span>Verbose</span>Print progress messages.</div>
-          <div class="ad-opt"><span>Progress</span>Show a progress display.</div>
-          <div class="ad-opt"><span>Plot</span>Plot the result.</div>
-          <div class="ad-opt"><span>Export</span>Write the result to a file.</div>
-        </div>
-      </li>
+        <dl class="ad-opts">
+          <dt>Method</dt><dd>Calculation method. <small>Replaces <code>mode</code>, <code>methods</code>, <code>Algorithm</code>.</small></dd>
+          <dt>Tolerance</dt><dd>Convergence tolerance.</dd>
+          <dt>MaxIteration</dt><dd>Maximum number of iterations.</dd>
+          <dt>Solver</dt><dd>Numerical solver.</dd>
+          <dt>TimeLimit</dt><dd>Limit on computation time.</dd>
+          <dt>Verbose</dt><dd>Print progress messages.</dd>
+          <dt>Progress</dt><dd>Show a progress display.</dd>
+          <dt>Plot</dt><dd>Plot the result.</dd>
+          <dt>Export</dt><dd>Write the result to a file.</dd>
+        </dl>
+      </div></li>
     </ol>
 
     <h2 id="features">Per-feature API</h2>
@@ -207,11 +181,11 @@
         </tr>
       </tbody>
     </table>
-    <p class="dev-note">Not yet implemented: Direct Methods and the energy-function Hessian. Their API will be defined later, following the rules above.</p>
+    <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg><p>Not yet implemented: Direct Methods and the energy-function Hessian. Their API will be defined later, following the rules above.</p></div>
 
     <h2 id="compatibility">Compatibility</h2>
     <ul>
-      <li>These changes break existing scripts, so they belong to <strong>version 4.0</strong> (see <a href="project-management.html#versions">Versions</a>).</li>
+      <li>These changes break existing scripts, so they belong to the <strong>next major version</strong> (<code>X+1</code>, see <a href="project-management.html#versions">Versions</a>).</li>
       <li>Old names and signatures keep working through wrappers in <code>_GUILDAsystem/_VersionSupport/</code> for at least one major version. This includes <code>Continuation_Power_Flow</code>, <code>CsvNetHandler.import</code> / <code>CsvNetHandler.export</code>, <code>[sys, lin] = get_sys(...)</code>, and the <code>"methods"</code> argument.</li>
       <li>New result classes (<code>PowerFlowResult</code>, <code>OPFResult</code>, <code>CPFResult</code>, ...) go in <code>_GUILDAsystem/_auxiliary/@&lt;Name&gt;/</code> and inherit from <code>auxiliary</code> (see <a href="folder-structure.html">Folder Structure</a>).</li>
       <li>Name the options and properties of new code with the <a href="naming-conventions.html">Naming Conventions</a>, and document them with <a href="class-documentation.html">Class Documentation</a> tags.</li>
