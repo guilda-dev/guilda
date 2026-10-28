@@ -5,13 +5,308 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GUILDA Developer Guide - Naming Conventions</title>
   <link rel="stylesheet" href="../style.css">
+  <style>
+    /* Naming Conventions page only (nc-*) */
+    .nc-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .nc-c-t { color: #0f4c81; }
+    .nc-c-s { color: #1e7b3c; }
+    .nc-c-u { color: #5f6b7a; }
+    .nc-c-d { color: #9a6b00; }
+
+    /* Format formula */
+    .nc-formula { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 0 22px; }
+    .nc-pill { display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 999px; font-weight: bold; font-size: 0.95rem; border: 2px solid; }
+    .nc-pill-t { color: #0f4c81; background: #e8f0f8; border-color: #0f4c81; }
+    .nc-pill-s { color: #1e7b3c; background: #e7f6ec; border-color: #1e7b3c; }
+    .nc-pill-u { color: #5f6b7a; background: #f0f2f4; border-color: #b8c1cb; }
+    .nc-pill-d { color: #9a6b00; background: #fff8e1; border-color: #e0a800; }
+
+    /* Anatomy (cycling examples) */
+    .nc-anatomy { background: #f8fbff; border: 1px solid #dce4ec; border-radius: 12px; padding: 22px 18px 16px; margin: 0 0 8px; }
+    .nc-stage { display: grid; }
+    .nc-frame { grid-area: 1 / 1; opacity: 0; animation: nc-cycle 21s infinite; display: flex; flex-direction: column; align-items: center; text-align: center; }
+    .nc-frame:nth-child(1) { animation-delay: 0s; }
+    .nc-frame:nth-child(2) { animation-delay: 3.5s; }
+    .nc-frame:nth-child(3) { animation-delay: 7s; }
+    .nc-frame:nth-child(4) { animation-delay: 10.5s; }
+    .nc-frame:nth-child(5) { animation-delay: 14s; }
+    .nc-frame:nth-child(6) { animation-delay: 17.5s; }
+    .nc-anatomy:hover .nc-frame, .nc-anatomy:hover .nc-dot { animation-play-state: paused; }
+    @keyframes nc-cycle {
+      0% { opacity: 0; transform: translateY(8px); }
+      3% { opacity: 1; transform: none; }
+      14% { opacity: 1; transform: none; }
+      16.6% { opacity: 0; transform: translateY(-8px); }
+      100% { opacity: 0; }
+    }
+    .nc-fullname { font-size: clamp(1.5rem, 6vw, 2.3rem); font-weight: bold; letter-spacing: 0.02em; line-height: 1.2; }
+    .nc-arrow { color: #b8c1cb; margin: 4px 0 6px; line-height: 1; }
+    .nc-arrow svg { display: block; width: 60px; height: 16px; }
+    .nc-parts { display: flex; justify-content: center; align-items: flex-start; flex-wrap: wrap; gap: 8px 6px; }
+    .nc-part { display: flex; flex-direction: column; align-items: center; min-width: 44px; }
+    .nc-tok { display: flex; align-items: center; justify-content: center; min-width: 30px; min-height: 40px; box-sizing: border-box; padding: 4px 10px; border-radius: 8px; border: 2px solid; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: bold; font-size: clamp(1rem, 4vw, 1.3rem); }
+    .nc-lab { margin-top: 5px; font-size: 0.72rem; line-height: 1.25; color: #5f6b7a; text-transform: uppercase; letter-spacing: 0.04em; }
+    .nc-lab b { display: block; text-transform: none; letter-spacing: 0; font-size: 0.8rem; }
+    .nc-part-t .nc-tok { color: #0f4c81; background: #e8f0f8; border-color: #0f4c81; }
+    .nc-part-t .nc-lab b { color: #0f4c81; }
+    .nc-part-s .nc-tok { color: #1e7b3c; background: #e7f6ec; border-color: #1e7b3c; }
+    .nc-part-s .nc-lab b { color: #1e7b3c; }
+    .nc-part-s.is-none .nc-tok { background: #fff; border-style: dashed; color: #1e7b3c; font-size: 0.7rem; font-weight: normal; }
+    .nc-part-u .nc-tok { color: #5f6b7a; background: #f0f2f4; border-color: #b8c1cb; }
+    .nc-part-d .nc-tok { color: #9a6b00; background: #fff8e1; border-color: #e0a800; }
+    .nc-part-d .nc-lab b { color: #9a6b00; }
+    .nc-dots { display: flex; justify-content: center; gap: 8px; margin-top: 16px; }
+    .nc-dot { width: 8px; height: 8px; border-radius: 50%; background: #dce4ec; animation: nc-dot 21s infinite; }
+    .nc-dot:nth-child(2) { animation-delay: 3.5s; }
+    .nc-dot:nth-child(3) { animation-delay: 7s; }
+    .nc-dot:nth-child(4) { animation-delay: 10.5s; }
+    .nc-dot:nth-child(5) { animation-delay: 14s; }
+    .nc-dot:nth-child(6) { animation-delay: 17.5s; }
+    @keyframes nc-dot { 0%, 16% { background: #0f4c81; } 16.7%, 100% { background: #dce4ec; } }
+    .nc-hint { text-align: center; color: #5f6b7a; font-size: 0.8rem; margin: 6px 0 0; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .nc-stage { gap: 22px; }
+      .nc-frame { grid-area: auto; opacity: 1; animation: none; }
+      .nc-frame + .nc-frame { border-top: 1px dashed #dce4ec; padding-top: 18px; }
+      .nc-dots, .nc-hint { display: none; }
+    }
+
+    /* Type x Size grid */
+    .nc-grid { display: grid; grid-template-columns: minmax(78px, 1.4fr) repeat(4, minmax(0, 1fr)); gap: 6px; margin: 8px 0 6px; }
+    .nc-gh { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px; padding: 6px 2px; text-align: center; color: #1e7b3c; }
+    .nc-gh svg { width: 30px; height: 30px; }
+    .nc-gh-tok { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: bold; font-size: 0.95rem; }
+    .nc-gh-lab { font-size: 0.68rem; color: #5f6b7a; line-height: 1.2; }
+    .nc-gcorner { display: flex; align-items: flex-end; justify-content: flex-start; padding: 6px 4px; font-size: 0.68rem; color: #5f6b7a; line-height: 1.3; }
+    .nc-gcorner .nc-c-s, .nc-gcorner .nc-c-t { font-weight: bold; }
+    .nc-gr { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; background: #e8f0f8; min-width: 0; }
+    .nc-gr-tok { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; background: #0f4c81; color: #fff; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: bold; }
+    .nc-gr-txt { min-width: 0; font-size: 0.78rem; line-height: 1.2; color: #0f4c81; font-weight: bold; }
+    .nc-gr-txt small { display: block; font-weight: normal; color: #5f6b7a; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.68rem; }
+    .nc-cell { display: flex; align-items: center; justify-content: center; min-width: 0; padding: 8px 2px; border: 1px solid #dce4ec; border-radius: 8px; background: #fff; cursor: pointer; font: inherit; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: bold; font-size: clamp(0.8rem, 3vw, 1rem); transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s; }
+    .nc-cell:hover, .nc-cell:focus-visible { border-color: #0f4c81; box-shadow: 0 3px 10px rgba(15, 76, 129, 0.15); transform: translateY(-1px); outline: none; }
+    .nc-cell .nc-c-u { font-weight: normal; }
+    .nc-note { color: #5f6b7a; font-size: 0.85rem; margin: 6px 0 0; }
+    .nc-note code { font-size: 0.85em; }
+    @media (prefers-reduced-motion: reduce) { .nc-cell { transition: none; } .nc-cell:hover { transform: none; } }
+
+    /* Composition examples */
+    .nc-eqs { display: grid; gap: 10px; margin: 8px 0; }
+    .nc-eq { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 12px 14px; border: 1px solid #dce4ec; border-radius: 10px; background: #fff; }
+    .nc-eq .nc-tok { min-height: 32px; font-size: 0.95rem; padding: 2px 8px; }
+    .nc-eq .nc-part { flex-direction: row; min-width: 0; }
+    .nc-op { color: #5f6b7a; font-weight: bold; }
+    .nc-eq-result { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: bold; font-size: 1.1rem; color: #0f4c81; }
+    .nc-eq-desc { flex-basis: 100%; color: #5f6b7a; font-size: 0.85rem; }
+    .nc-eq-tag { font-size: 0.7rem; margin-left: 2px; color: #5f6b7a; }
+
+    /* Fixed prefix cards */
+    .nc-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin: 10px 0 30px; }
+    .nc-card { display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px solid #dce4ec; border-top: 4px solid #0f4c81; border-radius: 10px; background: #f8fbff; }
+    .nc-card svg { width: 64px; height: 48px; }
+    .nc-card-head { display: flex; align-items: center; gap: 12px; }
+    .nc-card-title { font-weight: bold; color: #333; line-height: 1.3; }
+    .nc-card-formula { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 1rem; }
+    .nc-card-formula b { color: #d63384; font-size: 1.15rem; }
+    .nc-card-formula i { font-style: normal; color: #5f6b7a; }
+    .nc-card-ex { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: bold; color: #0f4c81; background: #eef3f7; border: 1px solid #d3dde6; border-radius: 6px; padding: 4px 10px; align-self: flex-start; overflow-wrap: anywhere; }
+    .nc-card-note { font-size: 0.82rem; color: #5f6b7a; line-height: 1.4; }
+    .nc-card-note code { font-size: 0.9em; }
+
+    .nc-flash { animation: nc-flash 1.2s ease-out; }
+    @keyframes nc-flash { 0% { box-shadow: 0 0 0 4px rgba(15, 76, 129, 0.35); } 100% { box-shadow: 0 0 0 0 rgba(15, 76, 129, 0); } }
+    @media (prefers-reduced-motion: reduce) { .nc-flash { animation: none; } }
+
+    @media (max-width: 480px) {
+      .nc-anatomy { padding: 18px 10px 14px; }
+      .nc-grid { gap: 4px; grid-template-columns: 104px repeat(4, minmax(0, 1fr)); }
+      .nc-gr-txt { font-size: 0.72rem; }
+      .nc-gr { padding: 5px; gap: 5px; }
+      .nc-gr-tok { width: 22px; height: 22px; }
+      .nc-gh svg { width: 24px; height: 24px; }
+    }
+  </style>
 </head>
 <body class="developer-layout">
   <main>
     <button type="button" class="developer-back-button" onclick="window.history.back()">← Back to For Developer</button>
     <h1>Naming Conventions in GUILDA</h1>
     <p class="page-lead">Variable naming follows <strong><code>[variableType][size]_[variableDescription]</code></strong>.</p>
-    <p class="page-lead">Example: <code>lv_faultflag</code>, <code>cv_SGvoltage</code>, <code>lm_xresponse</code></p>
+
+    <div class="nc-formula" aria-hidden="true">
+      <span class="nc-pill nc-pill-t">variableType</span>
+      <span class="nc-pill nc-pill-s">size</span>
+      <span class="nc-pill nc-pill-u">_</span>
+      <span class="nc-pill nc-pill-d">variableDescription</span>
+    </div>
+
+    <figure class="nc-anatomy" aria-label="Examples: lv_faultflag, cv_SGvoltage, lm_xresponse, cv_Vequilibrium, im_solution, r_gain">
+      <div class="nc-stage">
+        <div class="nc-frame">
+          <div class="nc-fullname nc-mono"><span class="nc-c-t">c</span><span class="nc-c-s">v</span><span class="nc-c-u">_</span><span class="nc-c-d">Vequilibrium</span></div>
+          <div class="nc-arrow" aria-hidden="true"><svg viewBox="0 0 60 16"><path d="M30 1v12M24 8l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="nc-parts">
+            <span class="nc-part nc-part-t"><span class="nc-tok">c</span><span class="nc-lab">type<b>complex</b></span></span>
+            <span class="nc-part nc-part-s"><span class="nc-tok">v</span><span class="nc-lab">size<b>column vector</b></span></span>
+            <span class="nc-part nc-part-u"><span class="nc-tok">_</span><span class="nc-lab">separator</span></span>
+            <span class="nc-part nc-part-d"><span class="nc-tok">Vequilibrium</span><span class="nc-lab">description</span></span>
+          </div>
+        </div>
+        <div class="nc-frame">
+          <div class="nc-fullname nc-mono"><span class="nc-c-t">l</span><span class="nc-c-s">v</span><span class="nc-c-u">_</span><span class="nc-c-d">faultflag</span></div>
+          <div class="nc-arrow" aria-hidden="true"><svg viewBox="0 0 60 16"><path d="M30 1v12M24 8l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="nc-parts">
+            <span class="nc-part nc-part-t"><span class="nc-tok">l</span><span class="nc-lab">type<b>logical</b></span></span>
+            <span class="nc-part nc-part-s"><span class="nc-tok">v</span><span class="nc-lab">size<b>column vector</b></span></span>
+            <span class="nc-part nc-part-u"><span class="nc-tok">_</span><span class="nc-lab">separator</span></span>
+            <span class="nc-part nc-part-d"><span class="nc-tok">faultflag</span><span class="nc-lab">description</span></span>
+          </div>
+        </div>
+        <div class="nc-frame">
+          <div class="nc-fullname nc-mono"><span class="nc-c-t">c</span><span class="nc-c-s">v</span><span class="nc-c-u">_</span><span class="nc-c-d">SGvoltage</span></div>
+          <div class="nc-arrow" aria-hidden="true"><svg viewBox="0 0 60 16"><path d="M30 1v12M24 8l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="nc-parts">
+            <span class="nc-part nc-part-t"><span class="nc-tok">c</span><span class="nc-lab">type<b>complex</b></span></span>
+            <span class="nc-part nc-part-s"><span class="nc-tok">v</span><span class="nc-lab">size<b>column vector</b></span></span>
+            <span class="nc-part nc-part-u"><span class="nc-tok">_</span><span class="nc-lab">separator</span></span>
+            <span class="nc-part nc-part-d"><span class="nc-tok">SGvoltage</span><span class="nc-lab">description</span></span>
+          </div>
+        </div>
+        <div class="nc-frame">
+          <div class="nc-fullname nc-mono"><span class="nc-c-t">i</span><span class="nc-c-s">m</span><span class="nc-c-u">_</span><span class="nc-c-d">solution</span></div>
+          <div class="nc-arrow" aria-hidden="true"><svg viewBox="0 0 60 16"><path d="M30 1v12M24 8l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="nc-parts">
+            <span class="nc-part nc-part-t"><span class="nc-tok">i</span><span class="nc-lab">type<b>index</b></span></span>
+            <span class="nc-part nc-part-s"><span class="nc-tok">m</span><span class="nc-lab">size<b>matrix</b></span></span>
+            <span class="nc-part nc-part-u"><span class="nc-tok">_</span><span class="nc-lab">separator</span></span>
+            <span class="nc-part nc-part-d"><span class="nc-tok">solution</span><span class="nc-lab">description</span></span>
+          </div>
+        </div>
+        <div class="nc-frame">
+          <div class="nc-fullname nc-mono"><span class="nc-c-t">l</span><span class="nc-c-s">m</span><span class="nc-c-u">_</span><span class="nc-c-d">xresponse</span></div>
+          <div class="nc-arrow" aria-hidden="true"><svg viewBox="0 0 60 16"><path d="M30 1v12M24 8l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="nc-parts">
+            <span class="nc-part nc-part-t"><span class="nc-tok">l</span><span class="nc-lab">type<b>logical</b></span></span>
+            <span class="nc-part nc-part-s"><span class="nc-tok">m</span><span class="nc-lab">size<b>matrix</b></span></span>
+            <span class="nc-part nc-part-u"><span class="nc-tok">_</span><span class="nc-lab">separator</span></span>
+            <span class="nc-part nc-part-d"><span class="nc-tok">xresponse</span><span class="nc-lab">description</span></span>
+          </div>
+        </div>
+        <div class="nc-frame">
+          <div class="nc-fullname nc-mono"><span class="nc-c-t">r</span><span class="nc-c-u">_</span><span class="nc-c-d">gain</span></div>
+          <div class="nc-arrow" aria-hidden="true"><svg viewBox="0 0 60 16"><path d="M30 1v12M24 8l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="nc-parts">
+            <span class="nc-part nc-part-t"><span class="nc-tok">r</span><span class="nc-lab">type<b>real</b></span></span>
+            <span class="nc-part nc-part-s is-none"><span class="nc-tok">(none)</span><span class="nc-lab">size<b>scalar</b></span></span>
+            <span class="nc-part nc-part-u"><span class="nc-tok">_</span><span class="nc-lab">separator</span></span>
+            <span class="nc-part nc-part-d"><span class="nc-tok">gain</span><span class="nc-lab">description</span></span>
+          </div>
+        </div>
+      </div>
+      <div class="nc-dots" aria-hidden="true"><span class="nc-dot"></span><span class="nc-dot"></span><span class="nc-dot"></span><span class="nc-dot"></span><span class="nc-dot"></span><span class="nc-dot"></span></div>
+      <p class="nc-hint">Hover to pause</p>
+    </figure>
+
+    <h2>Variable Type × Size</h2>
+    <div class="nc-grid" role="group" aria-label="Prefix for each variable type and size. Click a cell to fill the generator.">
+      <div class="nc-gcorner"><span><span class="nc-c-t">type</span> ↓<br><span class="nc-c-s">size</span> →</span></div>
+      <div class="nc-gh">
+        <svg viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="5" fill="#1e7b3c"/></svg>
+        <span class="nc-gh-tok">(none)</span><span class="nc-gh-lab">scalar</span>
+      </div>
+      <div class="nc-gh">
+        <svg viewBox="0 0 30 30" aria-hidden="true"><g fill="#1e7b3c"><rect x="11" y="2" width="8" height="8" rx="1.5"/><rect x="11" y="11" width="8" height="8" rx="1.5"/><rect x="11" y="20" width="8" height="8" rx="1.5"/></g></svg>
+        <span class="nc-gh-tok">v</span><span class="nc-gh-lab">column vector</span>
+      </div>
+      <div class="nc-gh">
+        <svg viewBox="0 0 30 30" aria-hidden="true"><g fill="#1e7b3c"><rect x="2" y="11" width="8" height="8" rx="1.5"/><rect x="11" y="11" width="8" height="8" rx="1.5"/><rect x="20" y="11" width="8" height="8" rx="1.5"/></g></svg>
+        <span class="nc-gh-tok">r</span><span class="nc-gh-lab">row vector</span>
+      </div>
+      <div class="nc-gh">
+        <svg viewBox="0 0 30 30" aria-hidden="true"><g fill="#1e7b3c"><rect x="2" y="2" width="8" height="8" rx="1.5"/><rect x="11" y="2" width="8" height="8" rx="1.5"/><rect x="20" y="2" width="8" height="8" rx="1.5"/><rect x="2" y="11" width="8" height="8" rx="1.5"/><rect x="11" y="11" width="8" height="8" rx="1.5"/><rect x="20" y="11" width="8" height="8" rx="1.5"/><rect x="2" y="20" width="8" height="8" rx="1.5"/><rect x="11" y="20" width="8" height="8" rx="1.5"/><rect x="20" y="20" width="8" height="8" rx="1.5"/></g></svg>
+        <span class="nc-gh-tok">m</span><span class="nc-gh-lab">matrix</span>
+      </div>
+      <!-- rows are generated from NC_TYPES below -->
+    </div>
+    <p class="nc-note"><code>f</code>: function handle (cell array if the variable itself is an array). Click any cell to load it into the generator below.</p>
+
+    <h2>Naming Composition Examples</h2>
+    <div class="nc-eqs">
+      <div class="nc-eq">
+        <span class="nc-part nc-part-t"><span class="nc-tok">c</span></span><span class="nc-eq-tag">complex</span>
+        <span class="nc-op">+</span>
+        <span class="nc-part nc-part-s"><span class="nc-tok">v</span></span><span class="nc-eq-tag">column vector</span>
+        <span class="nc-op">+</span>
+        <span class="nc-part nc-part-d"><span class="nc-tok">_Vequilibrium</span></span>
+        <span class="nc-op">=</span>
+        <span class="nc-eq-result">cv_Vequilibrium</span>
+        <span class="nc-eq-desc">a complex-valued vector of equilibrium voltages</span>
+      </div>
+      <div class="nc-eq">
+        <span class="nc-part nc-part-t"><span class="nc-tok">i</span></span><span class="nc-eq-tag">index</span>
+        <span class="nc-op">+</span>
+        <span class="nc-part nc-part-s"><span class="nc-tok">m</span></span><span class="nc-eq-tag">matrix</span>
+        <span class="nc-op">+</span>
+        <span class="nc-part nc-part-d"><span class="nc-tok">_solution</span></span>
+        <span class="nc-op">=</span>
+        <span class="nc-eq-result">im_solution</span>
+        <span class="nc-eq-desc">a matrix of indices for an analysis result</span>
+      </div>
+      <div class="nc-eq">
+        <span class="nc-part nc-part-t"><span class="nc-tok">r</span></span><span class="nc-eq-tag">real</span>
+        <span class="nc-op">+</span>
+        <span class="nc-part nc-part-s is-none"><span class="nc-tok">(none)</span></span><span class="nc-eq-tag">scalar</span>
+        <span class="nc-op">+</span>
+        <span class="nc-part nc-part-d"><span class="nc-tok">_gain</span></span>
+        <span class="nc-op">=</span>
+        <span class="nc-eq-result">r_gain</span>
+      </div>
+    </div>
+
+    <h2>Exceptional Naming Rules (Fixed Prefixes)</h2>
+    <div class="nc-cards">
+      <div class="nc-card">
+        <div class="nc-card-head">
+          <svg viewBox="0 0 64 48" aria-hidden="true">
+            <rect x="4" y="4" width="56" height="40" rx="4" fill="#fff" stroke="#0f4c81" stroke-width="2"/>
+            <path d="M4 8a4 4 0 0 1 4-4h48a4 4 0 0 1 4 4v6H4z" fill="#0f4c81"/>
+            <path d="M4 24h56M4 34h56M22 4v40M42 4v40" stroke="#9fb6cc" stroke-width="1.5"/>
+          </svg>
+          <span class="nc-card-title">Table type</span>
+        </div>
+        <div class="nc-card-formula"><b>tab_</b> + <i>[variable description]</i></div>
+        <div class="nc-card-ex">tab_bus_data</div>
+        <div class="nc-card-note">Regardless of argument or output count.</div>
+      </div>
+      <div class="nc-card">
+        <div class="nc-card-head">
+          <svg viewBox="0 0 64 48" aria-hidden="true">
+            <path d="M10 6c-4 0-4 3-4 7v6c0 3-2 5-4 5 2 0 4 2 4 5v6c0 4 0 7 4 7M54 6c4 0 4 3 4 7v6c0 3 2 5 4 5-2 0-4 2-4 5v6c0 4 0 7-4 7" fill="none" stroke="#0f4c81" stroke-width="2.5" stroke-linecap="round"/>
+            <g fill="#e8f0f8" stroke="#0f4c81" stroke-width="1.5"><rect x="13" y="16" width="11" height="16" rx="2"/><rect x="27" y="16" width="11" height="16" rx="2"/><rect x="41" y="16" width="11" height="16" rx="2"/></g>
+            <g fill="#0f4c81"><circle cx="18.5" cy="21" r="2"/><circle cx="32.5" cy="21" r="2"/><circle cx="46.5" cy="21" r="2"/></g>
+            <g stroke="#0f4c81" stroke-width="1.5"><path d="M16 27h5M30 27h5M44 27h5"/></g>
+          </svg>
+          <span class="nc-card-title">GUILDA-specific class (cell array)</span>
+        </div>
+        <div class="nc-card-formula"><b>a_</b> + <i>[ClassName]</i></div>
+        <div class="nc-card-ex">a_Controller</div>
+        <div class="nc-card-note">A cell array of GUILDA class objects, named after the class.</div>
+      </div>
+      <div class="nc-card">
+        <div class="nc-card-head">
+          <svg viewBox="0 0 64 48" aria-hidden="true">
+            <rect x="8" y="4" width="48" height="40" rx="5" fill="#fff" stroke="#0f4c81" stroke-width="2"/>
+            <g stroke="#9fb6cc" stroke-width="2" stroke-linecap="round"><path d="M16 15h32M16 24h32M16 33h32"/></g>
+            <g fill="#0f4c81"><circle cx="38" cy="15" r="3.5"/><circle cx="24" cy="24" r="3.5"/><circle cx="42" cy="33" r="3.5"/></g>
+          </svg>
+          <span class="nc-card-title">Parameter class</span>
+        </div>
+        <div class="nc-card-formula"><b>para_</b> + <i>[data description]</i></div>
+        <div class="nc-card-ex">para_generator</div>
+        <div class="nc-card-note">Only for properties holding GUILDA's <code>Parameter</code> class.</div>
+      </div>
+    </div>
 
     <section class="name-generator" aria-label="Variable Name Generator">
       <h2>Variable Name Generator</h2>
@@ -51,33 +346,6 @@
         <button type="button" class="btn name-generator-copy-btn" id="ng-copy-btn" disabled>Copy</button>
       </div>
     </section>
-
-    <h2>Variable Type (1st Prefix Token)</h2>
-    <ul>
-      <li><code>c</code>: complex</li><li><code>r</code>: real</li><li><code>l</code>: logical</li>
-      <li><code>s</code>: string</li><li><code>f</code>: function handle (cell array if the variable itself is an array)</li>
-      <li><code>i</code>: index</li><li><code>n</code>: count</li>
-    </ul>
-
-    <h2>Size (2nd Prefix Token)</h2>
-    <ul>
-      <li><em>(none)</em>: scalar</li><li><code>v</code>: column vector</li>
-      <li><code>r</code>: row vector</li><li><code>m</code>: matrix</li>
-    </ul>
-
-    <h2>Naming Composition Examples</h2>
-    <ul>
-      <li><strong><code>cv_Vequilibrium</code></strong>: [c: complex] + [v: column vector] + [_Vequilibrium] — a complex-valued vector of equilibrium voltages</li>
-      <li><strong><code>im_solution</code></strong>: [i: index] + [m: matrix] + [_solution] — a matrix of indices for an analysis result</li>
-      <li><strong><code>r_gain</code></strong>: [r: real] + [(none): scalar] + [_gain]</li>
-    </ul>
-
-    <h2>Exceptional Naming Rules (Fixed Prefixes)</h2>
-    <ul>
-      <li><strong>Table type</strong>: <code>tab_</code> + [variable description], regardless of argument or output count (e.g., <code>tab_bus_data</code>)</li>
-      <li><strong>GUILDA-specific class (cell array)</strong>: <code>a_</code> + <strong>[ClassName]</strong> (e.g., <code>a_Controller</code>)</li>
-      <li><strong>Parameter class</strong>: <code>para_</code> + [data description], only for properties holding GUILDA's <code>Parameter</code> class (e.g., <code>para_generator</code>)</li>
-    </ul>
   </main>
 
   <script>
@@ -166,6 +434,53 @@
       });
 
       update();
+    })();
+  </script>
+  <script>
+    (function () {
+      var NC_TYPES = [
+        ['c', 'complex', '1+2j'], ['r', 'real', '3.14'], ['l', 'logical', 'true'], ['s', 'string', '"abc"'],
+        ['f', 'function handle', '@(x)'], ['i', 'index', 'x(k)'], ['n', 'count', 'N']
+      ];
+      var NC_SIZES = ['', 'v', 'r', 'm'];
+      var grid = document.querySelector('.nc-grid');
+      var generator = document.querySelector('.name-generator');
+
+      function el(tag, cls, text) {
+        var node = document.createElement(tag);
+        if (cls) node.className = cls;
+        if (text) node.textContent = text;
+        return node;
+      }
+
+      NC_TYPES.forEach(function (t) {
+        var head = el('div', 'nc-gr');
+        head.appendChild(el('span', 'nc-gr-tok', t[0]));
+        var txt = el('span', 'nc-gr-txt', t[1]);
+        txt.appendChild(el('small', '', t[2]));
+        head.appendChild(txt);
+        grid.appendChild(head);
+
+        NC_SIZES.forEach(function (s) {
+          var cell = el('button', 'nc-cell');
+          cell.type = 'button';
+          cell.setAttribute('aria-label', t[1] + ', ' + (s || 'scalar') + ': ' + t[0] + s + '_');
+          cell.appendChild(el('span', 'nc-c-t', t[0]));
+          if (s) cell.appendChild(el('span', 'nc-c-s', s));
+          cell.appendChild(el('span', 'nc-c-u', '_'));
+          cell.addEventListener('click', function () {
+            document.querySelector('#ng-type-options [data-var-type="' + t[0] + '"]').click();
+            document.querySelector('#ng-size-options [data-var-size="' + s + '"]').click();
+            var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            generator.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+            generator.classList.remove('nc-flash');
+            void generator.offsetWidth;
+            generator.classList.add('nc-flash');
+            document.getElementById('ng-content-input').focus({ preventScroll: true });
+          });
+          grid.appendChild(cell);
+        });
+      });
     })();
   </script>
 </body>
