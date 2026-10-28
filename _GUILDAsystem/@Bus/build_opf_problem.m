@@ -14,7 +14,7 @@ function [prob, x0, const, Vvar] = build_opf_problem(obj, prob, x0, const, Vvar,
     str = string(obj);
     switch option.methods
         case "AC OPF"
-            opf  = obj.para_OPF;
+            opf  = obj.para_powerflow;   % initial point (Varg0, V0)
             ope  = obj.para_operation;
             var  = optimvar(str, {'Varg','V'}, 1,     "Type",    "continuous" ,...
                                                 "LowerBound", [-inf;ope.Vmin] ,...
@@ -40,7 +40,7 @@ function [prob, x0, const, Vvar] = build_opf_problem(obj, prob, x0, const, Vvar,
         case "DC OPF"
             var  = optimvar(str, {'Varg'}, 1, "Type","continuous");
             Vvar.(str) = var;
-            x0.(str) = obj.para_OPF.Varg0;
+            x0.(str) = obj.para_powerflow.Varg0;
             
             % If |V|=1, Ishunt = (G+jB) * e^(jθ)
             % Then, Pshunt+jQshunt = e^(jθ) * conj((G+jB) * e^(jθ))

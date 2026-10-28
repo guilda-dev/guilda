@@ -7,11 +7,12 @@ end
     
     % make model description
     tab_OPF.Bus       = tools.vcellfun(@(b) b.tab_parameter, obj.a_Bus);
-    tab_OPF.Bus       = tab_OPF.Bus(:,["OPF","operation"]);
+    tab_OPF.Bus       = tab_OPF.Bus(:,["operation","powerflow"]);
     tab_OPF.Bus.Properties.RowNames = string(obj.a_Bus);
 
-    tab_OPF.Component = tools.vcellfun(@(b) tools.vcellfun(@(c) c.tab_parameter(:,["OPF","operation"]), b.a_Component), obj.a_Bus);
-    tab_OPF.Component.Properties.RowNames = tools.vcellfun(@(b) string(b.a_Component), obj.a_Bus);
+    a_Com             = tools.vcellfun(@(b) b.a_Component, obj.a_Bus);
+    tab_OPF.Component = tools.vcellfun(@(c) c.tab_parameter(:,["OPF","operation"]), a_Com);
+    tab_OPF.Component.Properties.RowNames = string(a_Com);
 
     tab_OPF.Branch    = tools.vcellfun(@(b) b.tab_parameter, obj.a_Branch);
     tab_OPF.Branch    = tab_OPF.Branch(:,"operation");
@@ -45,6 +46,16 @@ end
 
     for i = 1:numel(a_Bus)
         [prob, x0, const, Vvar] = a_Bus{i}.build_opf_problem(prob,x0,const,Vvar,"methods",options.methods);
+    end
+
+    % Reference angle: the slack bus (the first bus if none is set) keeps its power-flow Varg.
+    if options.methods ~= "ELD"
+        i_ref = find(cellfun(@(b) b.l_isSlack, a_Bus), 1);
+        if isempty(i_ref); i_ref = 1; end
+        Varg_ref = a_Bus{i_ref}.para_powerflow.Varg;
+        if isnan(Varg_ref); Varg_ref = 0; end
+        Vref = Vvar.(string(a_Bus{i_ref}));
+        prob.Constraints.VargRef = Vref("Varg") == Varg_ref;
     end
     for i = 1:numel(a_Branch)
         [prob, x0, const] = a_Branch{i}.build_opf_problem(prob,x0,const,Vvar,"methods",options.methods);
