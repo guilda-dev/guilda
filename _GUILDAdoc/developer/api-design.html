@@ -33,7 +33,6 @@
 <body class="developer-layout dg">
   <svg class="dg-sprite" aria-hidden="true" focusable="false">
     <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
-    <symbol id="dg-i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
   </svg>
   <main>
     <button type="button" class="developer-back-button" onclick="window.history.back()">← Back to For Developer</button>
@@ -44,12 +43,8 @@
       <a href="#rules">Cross-cutting rules</a>
       <a href="#features">Per-feature API</a>
       <a href="#compatibility">Compatibility</a>
+      <a href="#related">Related rules</a>
     </nav>
-
-    <div class="dg-callout is-warn">
-      <svg class="dg-icon" aria-hidden="true"><use href="#dg-i-flag"/></svg>
-      <p><strong>Target rules for the next major version.</strong> These rules were decided for the next major version (<code>X+1</code>, see <a href="project-management.html#versions">Versions</a>). Existing code does not follow all of them yet and is being migrated. Write new code to these rules, and move existing code toward them when you touch it.</p>
-    </div>
 
     <figure class="dg-figure ad-anatomy" aria-label="Example call: [result, flag, output] = net.calculate_powerflow(Method=&quot;algebraic&quot;)">
       <div class="dg-anatomy">
@@ -78,7 +73,7 @@
       </div></li>
       <li><div>
         <h3 class="dg-item-title">Output type: result classes for main analyses</h3>
-        <p>Power flow, OPF, CPF, and time simulation return a dedicated result class, like the existing <code>odeSimulationResult</code>. Simple getters keep standard MATLAB types: <code>get_sys</code> returns an <code>ss</code>, <code>get_admittance_matrix</code> returns a <code>table</code>.</p>
+        <p>Power flow, OPF, CPF, and time simulation return a dedicated result class, like <code>odeSimulationResult</code>. Simple getters keep standard MATLAB types: <code>get_sys</code> returns an <code>ss</code>, <code>get_admittance_matrix</code> returns a <code>table</code>.</p>
       </div></li>
       <li><div>
         <h3 class="dg-item-title">Output order: <code>[result, flag, output]</code></h3>
@@ -106,7 +101,7 @@
         <h3 class="dg-item-title">Common Name-Value options in UpperCamelCase</h3>
         <p>Option names follow the MATLAB style. Each analysis supports the options that apply to it, with the same name and meaning everywhere.</p>
         <dl class="ad-opts">
-          <dt>Method</dt><dd>Calculation method. <small>Replaces <code>mode</code>, <code>methods</code>, <code>Algorithm</code>.</small></dd>
+          <dt>Method</dt><dd>Calculation method.</dd>
           <dt>Tolerance</dt><dd>Convergence tolerance.</dd>
           <dt>MaxIteration</dt><dd>Maximum number of iterations.</dd>
           <dt>Solver</dt><dd>Numerical solver.</dd>
@@ -120,7 +115,7 @@
     </ol>
 
     <h2 id="features">Per-feature API</h2>
-    <p>The target call for each feature. "Modifies net" follows rule 6.</p>
+    <p>The call for each feature. "Modifies net" follows rule 6.</p>
     <table class="ad-table">
       <thead>
         <tr><th>Feature</th><th>Call</th><th>Output</th><th>Modifies net</th></tr>
@@ -182,13 +177,14 @@
         </tr>
       </tbody>
     </table>
-    <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg><p>Not yet implemented: Direct Methods and the energy-function Hessian. Their API will be defined later, following the rules above.</p></div>
+    <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg><p>A new analysis feature follows the same rules: a <code>net.verb_noun()</code> method with Name-Value options that returns <code>[result, flag, output]</code>.</p></div>
 
     <h2 id="compatibility">Compatibility</h2>
+    <p>When a public name or signature is renamed or removed, the old form keeps working through a wrapper in <code>_GUILDAsystem/_VersionSupport/</code> for at least one major version, with a deprecation warning (see <a href="project-management.html#versions">Versions</a>).</p>
+
+    <h2 id="related">Related rules</h2>
     <ul>
-      <li>These changes break existing scripts, so they belong to the <strong>next major version</strong> (<code>X+1</code>, see <a href="project-management.html#versions">Versions</a>).</li>
-      <li>Old names and signatures keep working through wrappers in <code>_GUILDAsystem/_VersionSupport/</code> for at least one major version. This includes <code>Continuation_Power_Flow</code>, <code>CsvNetHandler.import</code> / <code>CsvNetHandler.export</code>, <code>[sys, lin] = get_sys(...)</code>, and the <code>"methods"</code> argument.</li>
-      <li>New result classes (<code>PowerFlowResult</code>, <code>OPFResult</code>, <code>CPFResult</code>, ...) go in <code>_GUILDAsystem/_auxiliary/@&lt;Name&gt;/</code> and inherit from <code>auxiliary</code> (see <a href="folder-structure.html">Folder Structure</a>).</li>
+      <li>Result classes (<code>PowerFlowResult</code>, <code>OPFResult</code>, <code>CPFResult</code>, ...) go in <code>_GUILDAsystem/_auxiliary/@&lt;Name&gt;/</code> and inherit from <code>auxiliary</code> (see <a href="folder-structure.html">Folder Structure</a>).</li>
       <li>Where data lives, how edits mark results as stale, and the unit conventions are described in <a href="class-design.html">Class Design</a>.</li>
       <li>Name the options and properties of new code with the <a href="naming-conventions.html">Naming Conventions</a>, and document them with <a href="class-documentation.html">Class Documentation</a> tags.</li>
     </ul>

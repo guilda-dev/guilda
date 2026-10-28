@@ -26,7 +26,7 @@ const developerData = [
     },
 {
     title: "Coding: API Design",
-    description: "Follow the target rules for analysis APIs: net.verb_noun() entry points, [result, flag, output] outputs, side effects by verb, and common Name-Value options.",
+    description: "Follow the rules for analysis APIs: net.verb_noun() entry points, [result, flag, output] outputs, side effects by verb, and common Name-Value options.",
     link: "developer/api-design.html"
     },
 {
