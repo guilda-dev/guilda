@@ -62,7 +62,7 @@ classdef GUILDA < handle
             end
             % update documentation database
             if cf.UpdateDoc.Value
-                obj.doc('update',true);
+                obj.doc('update',"auto",'open',false);
             end
             % update key map
             if cf.UpdateKeyMap.Value
@@ -106,7 +106,6 @@ classdef GUILDA < handle
         gitpull()
         addpath()
         rmpath() 
-        document()
-        doc()
+        doc(option)
     end
 end

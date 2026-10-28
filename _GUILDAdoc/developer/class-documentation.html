@@ -8,431 +8,299 @@
   <script src="../database/list_Classes.js"></script>
   <script src="../doc-loader.js"></script>
   <style>
-    /* ---- shared ---- */
-    .cd-nav { display: flex; flex-wrap: wrap; gap: 6px; margin: 18px 0 8px; padding: 0; list-style: none; }
-    .cd-nav a { display: inline-block; padding: 4px 10px; border: 1px solid #dce4ec; border-radius: 999px; background: #f8fbff; font-size: 0.85rem; }
-    .cd-nav a:hover { border-color: #0f4c81; text-decoration: none; }
-    .cd-caption { color: #5f6b7a; font-size: 0.9rem; margin: 8px 0 0; }
-    .cd-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-    .cd-num { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; background: #0f4c81; color: #fff; font-size: 0.75rem; font-weight: bold; }
-    .cd-panel-box { border: 1px solid #dce4ec; border-radius: 8px; background: #f8fbff; padding: 14px 16px; min-width: 0; }
-    .cd-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-    .cd-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-    .developer-layout .cd-panel-box code, .developer-layout .cd-flow code { overflow-wrap: anywhere; }
-    @media (max-width: 720px) {
-      .cd-grid-3, .cd-grid-2 { grid-template-columns: minmax(0, 1fr); }
-    }
-
-    /* ---- pipeline ---- */
-    .cd-trigger { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 18px 0 10px; }
-    .cd-trigger code { font-size: 0.95rem; }
-    .cd-flow { display: flex; align-items: stretch; margin: 0; padding: 0; list-style: none; }
-    .cd-node { flex: 1 1 0; min-width: 0; border: 2px solid #dce4ec; border-radius: 10px; background: #f8fbff; padding: 10px 7px; font-size: 0.8rem; animation: cd-pulse 10s ease-in-out infinite; }
-    .cd-node:nth-child(1) { flex-grow: 1.2; }
-    .cd-node:nth-child(3) { animation-delay: 2s; flex-grow: 1.25; }
-    .cd-node:nth-child(5) { animation-delay: 4s; flex-grow: 1.3; }
-    .cd-node:nth-child(7) { animation-delay: 6s; flex-grow: 1; }
-    .cd-node:nth-child(9) { animation-delay: 8s; flex-grow: 0.95; }
-    .developer-layout .cd-node li code, .developer-layout .cd-node .cd-node-sub { font-size: 0.7rem; padding: 1px 3px; }
-    .cd-node-sub { display: inline-block; margin: -2px 0 6px; overflow-wrap: anywhere; }
-    .cd-node-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; color: #0f4c81; font-weight: bold; font-size: 0.9rem; }
-    .cd-node ul { margin: 0; padding-left: 16px; color: #5f6b7a; }
-    .cd-node li { margin: 2px 0; }
-    .cd-file { display: block; margin-top: 6px; padding: 5px 6px; border: 1px solid #dee2e6; border-left: 4px solid #0f4c81; border-radius: 4px; background: #fff; font-size: 0.74rem; overflow-wrap: anywhere; }
-    .cd-file small { display: block; color: #5f6b7a; font-family: inherit; }
-    .cd-file.is-lazy { border-left-style: dashed; }
-    .cd-arrow { position: relative; flex: 0 0 20px; }
-    .cd-arrow::before { content: ""; position: absolute; left: 3px; right: 9px; top: 50%; height: 3px; margin-top: -1.5px; background: repeating-linear-gradient(90deg, #0f4c81 0 6px, transparent 6px 10px); background-size: 20px 3px; animation: cd-flow-x 0.8s linear infinite; }
-    .cd-arrow::after { content: ""; position: absolute; right: 2px; top: 50%; margin-top: -6px; border-left: 8px solid #0f4c81; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
-    @keyframes cd-flow-x { from { background-position: 0 0; } to { background-position: 20px 0; } }
-    @keyframes cd-flow-y { from { background-position: 0 0; } to { background-position: 0 20px; } }
-    @keyframes cd-pulse { 0%, 22%, 100% { border-color: #dce4ec; box-shadow: none; } 8%, 14% { border-color: #0f4c81; box-shadow: 0 4px 12px rgba(15, 76, 129, 0.18); } }
-    @media (max-width: 720px) {
-      .cd-flow { flex-direction: column; }
-      .cd-arrow { flex-basis: 26px; }
-      .cd-arrow::before { left: 50%; right: auto; top: 3px; bottom: 9px; width: 3px; height: auto; margin: 0 0 0 -1.5px; background: repeating-linear-gradient(180deg, #0f4c81 0 6px, transparent 6px 10px); background-size: 3px 20px; animation-name: cd-flow-y; }
-      .cd-arrow::after { left: 50%; right: auto; top: auto; bottom: 2px; margin: 0 0 0 -6px; border-top: 8px solid #0f4c81; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 0; }
-    }
-
-    /* ---- tag anatomy ---- */
-    .cd-anatomy { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px; margin: 6px 0 14px; }
-    .cd-seg { display: flex; flex-direction: column; align-items: stretch; min-width: 0; }
-    .cd-seg > code { display: block; padding: 8px 10px; border-radius: 6px 6px 0 0; background: #2d2d2d; color: #f8f8f2; font-size: 1rem; white-space: pre; }
-    .cd-seg > span { padding: 4px 8px; border-top: 3px solid; font-size: 0.78rem; color: #5f6b7a; max-width: 220px; }
-    .cd-seg.is-prefix > span { border-color: #5f6b7a; }
-    .cd-seg.is-tag > code { color: #ffcc4d; }
-    .cd-seg.is-tag > span { border-color: #e0a800; }
-    .cd-seg.is-value > span { border-color: #1e7b3c; }
-    .cd-checks { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
-    .cd-checks li { display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 6px; font-size: 0.85rem; }
-    .cd-ok { background: #e7f6ec; color: #1e7b3c; }
-    .cd-ng { background: #fdeeee; color: #b02a37; }
-    .cd-warn { background: #fff8e1; color: #8a6400; }
-    .cd-checks code { background: transparent !important; color: inherit !important; font-weight: bold; }
-
-    /* ---- comment sources ---- */
-    .cd-src-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 8px; margin-bottom: 8px; }
-    .cd-src-head b { color: #0f4c81; }
-    .cd-src-head span { color: #5f6b7a; font-size: 0.78rem; }
-    .cd-lines { margin: 0; padding: 6px 0; border-radius: 6px; background: #fff; border: 1px solid #dee2e6; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.76rem; overflow-x: auto; }
-    .cd-lines > span { display: block; padding: 1px 8px; white-space: pre-wrap; overflow-wrap: anywhere; border-left: 4px solid transparent; }
-    .cd-lines .is-anchor { font-weight: bold; color: #0f4c81; background: #eef4fa; }
-    .cd-lines .is-hit { background: #e7f6ec; border-left-color: #1e7b3c; color: #1d4d2c; }
-    .cd-lines .is-stop { color: #b02a37; }
-    .cd-lines .is-dim { color: #9aa5b1; }
-    .cd-dir { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 0.8rem; color: #1e7b3c; font-weight: bold; }
-    .cd-dir svg { flex: 0 0 auto; }
-    .cd-dir-arrow { animation: cd-nudge 1.6s ease-in-out infinite; }
-    .cd-dir-arrow.is-up { animation-name: cd-nudge-up; }
-    @keyframes cd-nudge { 0%, 100% { transform: translateY(-2px); } 50% { transform: translateY(3px); } }
-    @keyframes cd-nudge-up { 0%, 100% { transform: translateY(2px); } 50% { transform: translateY(-3px); } }
-    .cd-chain { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 14px 0 0; padding: 0; list-style: none; }
-    .cd-chain li { padding: 6px 10px; border-radius: 6px; border: 1px solid #dce4ec; background: #fff; font-size: 0.85rem; }
-    .cd-chain li.is-first { border-color: #1e7b3c; background: #e7f6ec; }
-    .cd-chain li.cd-chain-sep { border: 0; background: transparent; padding: 0; color: #5f6b7a; font-size: 0.78rem; }
-
-    /* ---- tag sets ---- */
-    .cd-badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
-    .cd-tag { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border: 1px solid #dee2e6; border-radius: 999px; background: #fff; color: #333; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.8rem; }
-    .cd-tag.is-own { background: #0f4c81; border-color: #0f4c81; color: #fff; }
-    .cd-tag.is-json { border-style: dashed; border-color: #0f4c81; }
-    .cd-tag.is-json::after { content: "{ }"; font-size: 0.7rem; opacity: 0.75; }
-    .cd-tag.is-own.is-json { border-style: dashed; border-color: #8fb3d6; }
-    .cd-set h3 { display: flex; align-items: baseline; justify-content: space-between; margin: 0 0 10px; font-size: 1rem; }
-    .cd-set h3 small { color: #5f6b7a; font-weight: normal; font-size: 0.78rem; }
-    .cd-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin: 10px 0 0; font-size: 0.82rem; color: #5f6b7a; }
-    .cd-alias { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
-    .cd-alias li { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid #dce4ec; border-radius: 6px; background: #fff; }
-    .cd-alias s { color: #9aa5b1; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.82rem; }
-    .cd-alias b { color: #0f4c81; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.82rem; }
-    .cd-shapes { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
-    .cd-shape { border: 1px solid #dce4ec; border-radius: 8px; background: #fff; padding: 10px 12px; }
-    .cd-shape-glyph { display: block; margin-bottom: 6px; color: #0f4c81; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 1.05rem; font-weight: bold; }
-    .cd-shape p { margin: 6px 0 0; font-size: 0.82rem; color: #5f6b7a; }
-    .cd-rules { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; margin: 14px 0 0; padding: 0; list-style: none; }
-    .cd-rules li { display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: 6px; font-size: 0.86rem; }
-    .cd-rules li > b { flex: 0 0 auto; }
-
-    /* ---- tag → page mapping ---- */
-    .cd-tabs { position: relative; }
-    .cd-tabs > input { position: absolute; opacity: 0; pointer-events: none; }
-    .cd-tabs > label { display: inline-block; margin: 0 4px 8px 0; padding: 7px 16px; border: 1px solid #0f4c81; border-radius: 6px; background: #fff; color: #0f4c81; font-weight: bold; cursor: pointer; }
-    .cd-tabs > input:checked + label { background: #0f4c81; color: #fff; }
-    .cd-tabs > input:focus-visible + label { outline: 2px solid #e0a800; outline-offset: 2px; }
-    .cd-map { display: none; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
-    #cd-map-method:checked ~ .cd-map-method,
-    #cd-map-class:checked ~ .cd-map-class,
-    #cd-map-prop:checked ~ .cd-map-prop { display: grid; }
-    @media (max-width: 720px) { .cd-map { grid-template-columns: minmax(0, 1fr); } }
-    .cd-code { margin: 0; padding: 10px 0; border-radius: 8px; background: #2d2d2d; color: #f8f8f2; font-family: Consolas, Monaco, monospace; font-size: 0.78rem; line-height: 1.45; overflow-x: auto; }
-    .cd-code > span { display: block; padding: 0 12px 0 34px; white-space: pre-wrap; overflow-wrap: anywhere; position: relative; border-left: 3px solid transparent; }
-    .cd-code > span[data-k] { cursor: default; }
-    .cd-code > span[data-k]::before { content: attr(data-k); position: absolute; left: 6px; top: 1px; width: 18px; height: 16px; border-radius: 8px; background: #0f4c81; color: #fff; font-size: 0.65rem; line-height: 16px; text-align: center; font-family: "Helvetica Neue", Arial, sans-serif; }
-    .cd-code > span.cd-on { background: rgba(224, 168, 0, 0.22); border-left-color: #e0a800; }
-    .cd-code i { font-style: normal; color: #ffcc4d; }
-    .cd-code em { font-style: normal; color: #9aa5b1; }
-    .cd-page { border: 1px solid #dee2e6; border-radius: 8px; background: #fff; overflow: hidden; font-size: 0.8rem; }
-    .cd-page-bar { display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: #f4f7f6; border-bottom: 1px solid #dee2e6; color: #5f6b7a; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.75rem; overflow-wrap: anywhere; }
-    .cd-page-bar::before { content: ""; flex: 0 0 auto; width: 30px; height: 8px; background: radial-gradient(circle, #b02a37 3px, transparent 3.5px) 0 0 / 10px 8px repeat-x; opacity: 0.45; }
-    .cd-page-body { padding: 10px; }
-    .cd-page-title { margin: 0 0 8px; color: #0f4c81; font-size: 1.05rem; font-weight: bold; border-bottom: 2px solid #0f4c81; padding-bottom: 4px; overflow-wrap: anywhere; }
-    .cd-sec { position: relative; margin: 0 0 6px; padding: 6px 8px 6px 32px; border: 1px solid #dce4ec; border-radius: 6px; background: #f8fbff; transition: background 0.15s, border-color 0.15s; }
-    .cd-sec b { display: block; color: #0f4c81; font-size: 0.82rem; }
-    .cd-sec small { display: block; color: #5f6b7a; font-size: 0.74rem; overflow-wrap: anywhere; }
-    .cd-sec .cd-ks { position: absolute; left: 6px; top: 6px; display: flex; flex-direction: column; gap: 2px; }
-    .cd-sec .cd-ks span, .cd-col-k { display: inline-block; min-width: 18px; height: 16px; border-radius: 8px; background: #0f4c81; color: #fff; font-size: 0.65rem; line-height: 16px; text-align: center; }
-    .cd-sec.is-reflect { border-style: dashed; background: #fff; padding-left: 8px; }
-    .cd-sec.is-reflect b { color: #5f6b7a; }
-    .cd-sec.cd-on, .cd-mini-table th.cd-on, .cd-stored.cd-on { background: #fff8e1; border-color: #e0a800; }
-    .cd-mini-wrap { overflow-x: auto; margin: 4px 0 8px; }
-    .cd-mini-table { width: 100%; min-width: 0; border-collapse: collapse; font-size: 0.72rem; margin: 0; display: table; }
-    .cd-mini-table th { min-width: 0; padding: 4px 5px; background: #0f4c81; color: #fff; border: 1px solid #fff; vertical-align: top; }
-    .cd-mini-table th.is-reflect { background: #8fa3b8; }
-    .cd-mini-table td { padding: 4px 5px; border-bottom: 1px solid #dee2e6; color: #9aa5b1; }
-    .cd-mini-table .cd-col-k { margin-right: 3px; background: #fff; color: #0f4c81; }
-    .cd-mini-label { margin: 6px 0 2px; color: #5f6b7a; font-size: 0.74rem; font-weight: bold; }
-    .cd-stored { margin-top: 8px; padding: 6px 8px; border: 1px dashed #9aa5b1; border-radius: 6px; color: #5f6b7a; font-size: 0.75rem; }
-
-    /* ---- generated data ---- */
-    .cd-files { display: grid; grid-template-columns: minmax(0, 1fr) 46px minmax(0, 1fr); align-items: start; gap: 0; }
-    .cd-files > .cd-arrow { align-self: center; }
-    .cd-files .cd-arrow { height: 26px; }
-    @media (max-width: 720px) {
-      .cd-files { grid-template-columns: minmax(0, 1fr); }
-      .cd-files .cd-arrow { height: 30px; }
-    }
-    .cd-filecard { border: 1px solid #dce4ec; border-radius: 8px; background: #fff; overflow: hidden; min-width: 0; }
-    .cd-filecard-head { padding: 8px 12px; background: #0f4c81; color: #fff; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.8rem; overflow-wrap: anywhere; }
-    .cd-filecard-head small { display: block; opacity: 0.8; font-family: "Helvetica Neue", Arial, sans-serif; }
-    .cd-tree { margin: 0; padding: 8px 12px 10px; list-style: none; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.78rem; }
-    .cd-tree ul { margin: 0; padding-left: 16px; list-style: none; border-left: 1px dashed #dce4ec; }
-    .cd-tree li { margin: 3px 0; overflow-wrap: anywhere; }
-    .cd-tree .is-hl { padding: 0 4px; border-radius: 3px; background: #fff8e1; color: #8a6400; font-weight: bold; }
-    .cd-tree em { font-style: normal; color: #5f6b7a; font-family: "Helvetica Neue", Arial, sans-serif; }
-    .cd-record { margin-top: 14px; }
-    .cd-record-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; }
-    .cd-record-row > b { flex: 0 0 82px; color: #0f4c81; font-size: 0.88rem; }
-    .cd-tag.is-reflect { background: #eef1f4; border-color: #c7d0d9; color: #4c5866; }
-    .cd-tag.is-tagfield { background: #e7f6ec; border-color: #9dd0ad; color: #1e7b3c; }
-    .cd-plus { color: #5f6b7a; font-weight: bold; }
-    details.cd-more { margin: 12px 0 0; border: 1px solid #dce4ec; border-radius: 8px; background: #fff; }
-    details.cd-more > summary { padding: 9px 14px; cursor: pointer; color: #0f4c81; font-weight: bold; }
-    details.cd-more[open] > summary { border-bottom: 1px solid #dce4ec; }
-    details.cd-more > div { padding: 4px 14px 12px; min-width: 0; }
-    details.cd-more table { margin: 8px 0; }
-
-    /* ---- validation ---- */
-    .cd-verdict { border-radius: 8px; padding: 12px 14px; }
-    .cd-verdict h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 1rem; color: inherit; }
-    .cd-verdict ul { margin: 0; padding-left: 18px; color: #333; font-size: 0.88rem; }
-    .cd-verdict li { margin: 4px 0; }
-    .cd-verdict.is-warn { background: #fff8e1; border: 1px solid #e0a800; color: #8a6400; }
-    .cd-verdict.is-error { background: #fdeeee; border: 1px solid #b02a37; color: #b02a37; }
-    .cd-strict { margin-top: 14px; }
-    .cd-strict svg { display: block; width: 100%; height: auto; }
-    .cd-strict text { font-family: "Helvetica Neue", Arial, sans-serif; }
-    .cd-strict .cd-svg-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-    .cd-strict .cd-strict-narrow { display: none; }
-    @media (max-width: 560px) {
-      .cd-strict .cd-strict-wide { display: none; }
-      .cd-strict .cd-strict-narrow { display: block; }
-    }
-    .cd-svg-dash { stroke-dasharray: 6 4; animation: cd-dash 1s linear infinite; }
-    @keyframes cd-dash { to { stroke-dashoffset: -10; } }
-
-    /* ---- regenerate ---- */
-    .cd-steps { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; counter-reset: cd-step; }
-    .cd-steps > li { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; align-items: start; }
-    .cd-steps pre { margin: 0; }
-    .developer-layout .cd-steps pre code { background: transparent; padding: 0; color: inherit; }
-    .cd-steps p { margin: 2px 0 6px; }
-    .cd-checklist { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 0; padding: 0; list-style: none; }
-    .cd-checklist li { padding: 4px 10px; border-radius: 999px; background: #e7f6ec; color: #1e7b3c; font-size: 0.82rem; }
-    .cd-checklist li::before { content: "✓ "; font-weight: bold; }
-
-    @media (prefers-reduced-motion: reduce) {
-      .cd-node, .cd-arrow::before, .cd-dir-arrow, .cd-svg-dash { animation: none !important; }
+    /* Class Documentation page only (cd-*); shared parts are dg-* in style.css */
+    .cd-code { margin: 0; padding: var(--dg-s4); overflow-x: auto; border: 1px solid var(--dg-line); border-radius: 10px; background: #fff; color: var(--dg-ink); font: 0.8rem/1.65 var(--dg-mono); white-space: pre; }
+    .cd-code .cd-c { color: #1e7b3c; }
+    .cd-code .cd-k { color: var(--dg-accent); font-weight: bold; }
+    .cd-code .cd-bad { background: var(--dg-err-soft); text-decoration: line-through; text-decoration-color: var(--dg-err); }
+    .cd-pin { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; margin: 0 2px; border-radius: 50%; background: var(--dg-warn); color: #24303d; font: bold 0.68rem/1 var(--dg-mono); vertical-align: 1px; white-space: normal; }
+    .cd-page { overflow: hidden; border: 1px solid var(--dg-line); border-radius: 10px; background: #fff; font-size: 0.82rem; line-height: 1.5; }
+    .cd-page-bar { padding: 6px var(--dg-s3); border-bottom: 1px solid var(--dg-line); background: #eef1f4; color: var(--dg-muted); font: 0.72rem var(--dg-mono); }
+    .cd-page-body { padding: var(--dg-s3) var(--dg-s4) var(--dg-s4); }
+    .cd-page h4 { margin: 0 0 2px; color: var(--dg-accent); font: bold 1.2rem/1.3 var(--dg-mono); }
+    .cd-page-label { display: block; margin: var(--dg-s3) 0 4px; color: var(--dg-muted); font-size: 0.68rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+    .cd-page table { width: 100%; margin: 0; border-collapse: collapse; table-layout: fixed; font-size: 0.78rem; box-shadow: none; }
+    .cd-page th, .cd-page td { padding: 4px 6px; border-bottom: 1px solid var(--dg-line); text-align: left; vertical-align: top; white-space: normal; overflow-wrap: anywhere; }
+    .cd-page th { min-width: 0; background: var(--dg-accent); color: #fff; font-weight: normal; }
+    .cd-page table, .cd-level { display: table; }
+    .cd-level th { min-width: 0; }
+    .cd-page .dg-mono { font-size: 0.95em; overflow-wrap: anywhere; }
+    .cd-level { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .cd-level th, .cd-level td { padding: var(--dg-s3); border-bottom: 1px solid var(--dg-line); text-align: left; vertical-align: top; }
+    .cd-level thead th { background: none; color: var(--dg-muted); font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase; }
+    .cd-level tbody th { width: 9rem; background: none; color: var(--dg-ink); font-weight: bold; }
+    .cd-level .dg-badge { margin: 0 4px 6px 0; }
+    .cd-scroll { overflow-x: auto; }
+    .tag-generator-field-label .dg-badge { margin-left: 8px; font-size: 0.7rem; vertical-align: 1px; }
+    .tg-switch { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 0.9rem; cursor: pointer; }
+    @media (max-width: 640px) {
+      .cd-level, .cd-level tbody, .cd-level tr, .cd-level th, .cd-level td { display: block; width: auto; }
+      .cd-level thead { display: none; }
+      .cd-level tbody th { padding-bottom: 0; border-bottom: 0; }
+      .cd-level td::before { content: attr(data-level); display: block; margin-bottom: 4px; color: var(--dg-muted); font-size: 0.7rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
     }
   </style>
 </head>
-<body class="developer-layout">
+<body class="developer-layout dg">
+  <svg class="dg-sprite" aria-hidden="true" focusable="false">
+    <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+    <symbol id="dg-i-warn" viewBox="0 0 24 24"><path d="M12 3 2 20h20z"/><path d="M12 10v4.5M12 17.5v.5"/></symbol>
+    <symbol id="dg-i-x" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></symbol>
+    <symbol id="dg-i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
+    <symbol id="dg-i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  </svg>
+
   <main>
     <button type="button" class="developer-back-button" onclick="window.history.back()">← Back to For Developer</button>
-    <h1>How to Define Class Documentation</h1>
-    <p class="page-lead">Write <code>&lt;@TagName&gt;</code> comments next to the MATLAB code. <code>GUILDA.doc</code> turns them, together with MATLAB reflection metadata, into the JavaScript database behind the Reference pages.</p>
+    <h1>Class Documentation</h1>
+    <p class="page-lead">Write <code>&lt;@Tag&gt;</code> comments next to the MATLAB code. <code>GUILDA.doc</code> combines them with what the code itself declares and builds the Reference pages.</p>
 
-    <ul class="cd-nav" aria-label="On this page">
-      <li><a href="#cd-pipeline">Pipeline</a></li>
-      <li><a href="#cd-write">Write tags</a></li>
-      <li><a href="#cd-tags">Tag sets</a></li>
-      <li><a href="#cd-generator">Tag Generator</a></li>
-      <li><a href="#cd-mapping">Where tags appear</a></li>
-      <li><a href="#cd-data">Generated data</a></li>
-      <li><a href="#cd-validation">Validation</a></li>
-      <li><a href="#cd-regenerate">Regenerate</a></li>
-    </ul>
+    <nav class="dev-toc" aria-label="Contents">
+      <a href="#pipeline">How it works</a>
+      <a href="#where">Where comments go</a>
+      <a href="#tags">Which tags</a>
+      <a href="#formats">Value formats</a>
+      <a href="#declaration">Don't repeat the code</a>
+      <a href="#generator">Tag Generator</a>
+      <a href="#checks">What the exporter checks</a>
+      <a href="#update">Keeping it up to date</a>
+    </nav>
 
-    <!-- ================= Pipeline ================= -->
-    <h2 id="cd-pipeline">Collection Pipeline</h2>
-    <div class="cd-trigger">
-      <span class="cd-num" aria-hidden="true">▶</span>
-      <code>GUILDA.doc("update", true)</code>
-      <span class="cd-caption" style="margin:0;">runs the whole chain below</span>
-    </div>
-    <ol class="cd-flow" aria-label="Documentation pipeline">
-      <li class="cd-node">
-        <div class="cd-node-head"><span class="cd-num">1</span>Class list</div>
-        <ul>
-          <li><code>LayerPackage</code></li>
-          <li>dictionary <code>"auxiliary"</code></li>
-          <li>dictionary <code>"PowerSystemModel"</code></li>
-        </ul>
-      </li>
-      <li class="cd-arrow" aria-hidden="true"></li>
-      <li class="cd-node">
-        <div class="cd-node-head"><span class="cd-num">2</span>Export</div>
-        <code class="cd-node-sub">export_class_database</code>
-        <ul>
-          <li><code>meta.class.fromName</code> → attributes</li>
-          <li>read source comments</li>
-          <li>parse <code>&lt;@Tag&gt;</code></li>
-          <li>validate JSON tags</li>
-        </ul>
-      </li>
-      <li class="cd-arrow" aria-hidden="true"></li>
-      <li class="cd-node">
-        <div class="cd-node-head"><span class="cd-num">3</span>database/</div>
-        <span class="cd-file cd-mono">list_Classes.js<small>index · schema v3 · one file</small></span>
-        <span class="cd-file cd-mono is-lazy">GUILDAsystem/<wbr>&lt;Class&gt;.js<br>GUILDAobject/<wbr>&lt;Class&gt;.js<small>one per class</small></span>
-      </li>
-      <li class="cd-arrow" aria-hidden="true"></li>
-      <li class="cd-node">
-        <div class="cd-node-head"><span class="cd-num">4</span>Loader</div>
-        <code class="cd-node-sub">doc-loader.js</code>
-        <ul>
-          <li>index loaded first</li>
-          <li><code>loadClass()</code> adds the class file on demand</li>
-        </ul>
-      </li>
-      <li class="cd-arrow" aria-hidden="true"></li>
-      <li class="cd-node">
-        <div class="cd-node-head"><span class="cd-num">5</span>Pages</div>
-        <span class="cd-file cd-mono">index.html<small>Reference tab (index only)</small></span>
-        <span class="cd-file cd-mono">class.html<br>method.html<small>index + class file</small></span>
-      </li>
-    </ol>
-    <p class="cd-caption">A class file goes to <code>GUILDAsystem/</code> when <code>which(Class)</code> is under <code>_GUILDAsystem</code>, otherwise to <code>GUILDAobject/</code>.</p>
+    <!-- ============================== PIPELINE ============================== -->
+    <h2 id="pipeline">How it works</h2>
+    <p class="dg-lead-in">Nobody edits the Reference by hand. It is rebuilt from the source every time the source changes.</p>
+    <figure class="dg-figure">
+      <svg class="dg-svg dg-only-wide" viewBox="0 0 800 210" role="img" aria-labelledby="cd-pipe-title">
+        <title id="cd-pipe-title">Pipeline from MATLAB source to the Reference pages</title>
+        <defs>
+          <marker id="cd-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#0f4c81"/></marker>
+          <marker id="cd-ah-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#5f6b7a"/></marker>
+        </defs>
+        <!-- source -->
+        <rect x="6" y="40" width="150" height="110" rx="10" fill="#fff" stroke="#0f4c81" stroke-width="1.5"/>
+        <text x="81" y="66" text-anchor="middle" font-size="11" font-weight="bold" fill="#5f6b7a" letter-spacing="1">SOURCE</text>
+        <text x="81" y="90" text-anchor="middle" font-size="13" class="dg-mono" fill="#24303d">_GUILDAsystem</text>
+        <text x="81" y="108" text-anchor="middle" font-size="13" class="dg-mono" fill="#24303d">_GUILDAobject</text>
+        <text x="81" y="132" text-anchor="middle" font-size="11" fill="#1e7b3c">code + &lt;@Tag&gt; comments</text>
+        <path class="dg-anim-dash" d="M158 95H196" fill="none" stroke="#0f4c81" stroke-width="2" marker-end="url(#cd-ah)"/>
+        <!-- auto check -->
+        <path d="M268 40 330 95 268 150 206 95z" fill="#fff8e1" stroke="#e0a800" stroke-width="1.5"/>
+        <text x="268" y="88" text-anchor="middle" font-size="12" font-weight="bold" class="dg-mono" fill="#7a5c00">GUILDA.doc</text>
+        <text x="268" y="105" text-anchor="middle" font-size="11" fill="#7a5c00">source newer?</text>
+        <text x="268" y="30" text-anchor="middle" font-size="11" fill="#5f6b7a">update = "auto"</text>
+        <path d="M268 150V186H700V178" fill="none" stroke="#5f6b7a" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#cd-ah-m)"/>
+        <text x="380" y="180" font-size="11" fill="#5f6b7a">no: open the pages as they are</text>
+        <path class="dg-anim-dash" d="M332 95H368" fill="none" stroke="#0f4c81" stroke-width="2" marker-end="url(#cd-ah)"/>
+        <text x="350" y="86" text-anchor="middle" font-size="11" fill="#0f4c81">yes</text>
+        <!-- exporter -->
+        <rect x="372" y="55" width="140" height="80" rx="10" fill="#0f4c81"/>
+        <text x="442" y="84" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff" class="dg-mono">exporter</text>
+        <text x="442" y="103" text-anchor="middle" font-size="11" fill="#dce8f3">reflection + parser</text>
+        <text x="442" y="119" text-anchor="middle" font-size="11" fill="#dce8f3">+ validation</text>
+        <path class="dg-anim-dash" d="M514 80H548" fill="none" stroke="#0f4c81" stroke-width="2" marker-end="url(#cd-ah)"/>
+        <path class="dg-anim-dash" d="M514 112H548" fill="none" stroke="#0f4c81" stroke-width="2" marker-end="url(#cd-ah)"/>
+        <!-- database -->
+        <rect x="552" y="58" width="128" height="40" rx="8" fill="#e8f0f8" stroke="#0f4c81"/>
+        <text x="616" y="76" text-anchor="middle" font-size="11" class="dg-mono" fill="#0f4c81">list_Classes.js</text>
+        <text x="616" y="91" text-anchor="middle" font-size="10" fill="#5f6b7a">index · schema 4</text>
+        <rect x="552" y="104" width="128" height="40" rx="8" fill="#e8f0f8" stroke="#0f4c81"/>
+        <text x="616" y="122" text-anchor="middle" font-size="11" class="dg-mono" fill="#0f4c81">&lt;Class&gt;.js</text>
+        <text x="616" y="137" text-anchor="middle" font-size="10" fill="#5f6b7a">one file per class</text>
+        <path class="dg-anim-dash" d="M682 100H712" fill="none" stroke="#0f4c81" stroke-width="2" marker-end="url(#cd-ah)"/>
+        <!-- pages -->
+        <rect x="716" y="58" width="78" height="86" rx="8" fill="#fff" stroke="#1e7b3c" stroke-width="1.5"/>
+        <text x="755" y="84" text-anchor="middle" font-size="11" font-weight="bold" fill="#1e7b3c">Reference</text>
+        <text x="755" y="104" text-anchor="middle" font-size="10" class="dg-mono" fill="#24303d">index</text>
+        <text x="755" y="119" text-anchor="middle" font-size="10" class="dg-mono" fill="#24303d">class</text>
+        <text x="755" y="134" text-anchor="middle" font-size="10" class="dg-mono" fill="#24303d">method</text>
+      </svg>
+      <div class="dg-only-narrow"><div class="dg-chain">
+        <div class="dg-chain-node"><span class="dg-kicker">Source</span><code>_GUILDAsystem</code>, <code>_GUILDAobject</code>: code and <code>&lt;@Tag&gt;</code> comments</div>
+        <div class="dg-chain-arrow"></div>
+        <div class="dg-chain-node is-warn"><span class="dg-kicker"><code>GUILDA.doc</code></span>Rebuild only if a source file is newer than the database</div>
+        <div class="dg-chain-arrow"></div>
+        <div class="dg-chain-node is-step"><span class="dg-kicker">Exporter</span>Reflection, source parser, validation</div>
+        <div class="dg-chain-arrow"></div>
+        <div class="dg-chain-node"><span class="dg-kicker">Database</span><code>list_Classes.js</code> + one <code>&lt;Class&gt;.js</code> per class</div>
+        <div class="dg-chain-arrow"></div>
+        <div class="dg-chain-node is-ok"><span class="dg-kicker">Pages</span>Reference tab, class page, method page</div>
+      </div></div>
+      <figcaption>Every class MATLAB can reach under <code>_GUILDAsystem</code> and <code>_GUILDAobject</code> is exported, documented or not. Your comments add the meaning; the code already provides the structure.</figcaption>
+    </figure>
 
-    <!-- ================= Write tags ================= -->
-    <h2 id="cd-write">Write Tags in Source Comments</h2>
-    <div class="cd-anatomy" aria-label="Anatomy of a tag line">
-      <div class="cd-seg is-prefix"><code>% </code><span>comment prefix: removed</span></div>
-      <div class="cd-seg is-tag"><code>&lt;@Summary&gt;</code><span>exact tag name, case-sensitive</span></div>
-      <div class="cd-seg is-value"><code> Scale an input vector.</code><span>value: runs until the next tag or the end of the block</span></div>
-    </div>
-    <ul class="cd-checks">
-      <li class="cd-ok">✓ <code>&lt;@Summary&gt;</code> tag</li>
-      <li class="cd-ng">✗ <code>&lt;Summary&gt;</code> plain text</li>
-      <li class="cd-ng">✗ <code>&lt;@ Summary&gt;</code> plain text</li>
-      <li class="cd-warn">⚠ <code>&lt;@summary&gt;</code> unknown tag</li>
-    </ul>
-    <p class="cd-caption">After the <code>%</code> and one space are removed, the rest of each line is kept: leading spaces, blank lines and text-art alignment survive. Source comments are read first because MATLAB's <code>help</code> renderer can change indentation.</p>
+    <!-- ============================== WHERE ============================== -->
+    <h2 id="where">Where comments go</h2>
+    <p class="dg-lead-in">Each numbered comment ends up in the matching place on the class page. Everything without a number is read from the code.</p>
+    <figure class="dg-figure">
+      <div class="dg-two">
+        <div>
+          <span class="dg-kicker">Source · Bus.m</span>
+<pre class="cd-code"><span class="cd-k">classdef</span> Bus &lt; PowerSystemModel
+<span class="cd-c">% &lt;@Summary&gt; Node that connects components.</span><span class="cd-pin">1</span>
+<span class="cd-c">% &lt;@Desc&gt;</span><span class="cd-pin">2</span>
+<span class="cd-c">% Holds the bus voltage and the components</span>
+<span class="cd-c">% attached to it.</span>
 
-    <h3>Where each comment block is read from</h3>
-    <div class="cd-grid-3">
-      <div class="cd-panel-box">
-        <div class="cd-src-head"><b>Class</b><span class="cd-mono">MyClass.m</span></div>
-        <div class="cd-lines">
-          <span class="is-anchor">classdef MyClass &lt; Component</span>
-          <span class="is-hit">    % &lt;@Summary&gt; ...</span>
-          <span class="is-hit">    % &lt;@Desc&gt; ...</span>
-          <span class="is-hit"> </span>
-          <span class="is-hit">    % &lt;@Since&gt; 4.2</span>
-          <span class="is-stop">    properties</span>
-        </div>
-        <div class="cd-dir">
-          <svg class="cd-dir-arrow" width="14" height="16" viewBox="0 0 14 16" aria-hidden="true"><path d="M7 1v12M2 9l5 5 5-5" fill="none" stroke="#1e7b3c" stroke-width="2"/></svg>
-          <span>lines right after <code>classdef</code></span>
-        </div>
-      </div>
-      <div class="cd-panel-box">
-        <div class="cd-src-head"><b>Property</b><span class="cd-mono">MyClass.m</span></div>
-        <div class="cd-lines">
-          <span class="is-dim">    properties</span>
-          <span class="is-hit">        % &lt;@Summary&gt; ...</span>
-          <span class="is-hit">        % &lt;@Unit&gt; pu</span>
-          <span class="is-hit">        % &lt;@Default&gt; 1.0</span>
-          <span class="is-anchor">        r_gain</span>
-          <span class="is-dim">    end</span>
-        </div>
-        <div class="cd-dir">
-          <svg class="cd-dir-arrow is-up" width="14" height="16" viewBox="0 0 14 16" aria-hidden="true"><path d="M7 15V3M2 7l5-5 5 5" fill="none" stroke="#1e7b3c" stroke-width="2"/></svg>
-          lines right above the declaration
-        </div>
-      </div>
-      <div class="cd-panel-box">
-        <div class="cd-src-head"><b>Method</b><span class="cd-mono">calculate_output.m</span></div>
-        <div class="cd-lines">
-          <span class="is-anchor">function rv_y = calculate_output(obj, rv_u)</span>
-          <span class="is-hit">% &lt;@Summary&gt; ...</span>
-          <span class="is-hit">% &lt;@Signatures&gt;</span>
-          <span class="is-hit">% ["rv_y = obj.calculate_output(rv_u)"]</span>
-          <span class="is-stop">rv_y = ...</span>
-        </div>
-        <div class="cd-dir">
-          <svg class="cd-dir-arrow" width="14" height="16" viewBox="0 0 14 16" aria-hidden="true"><path d="M7 1v12M2 9l5 5 5-5" fill="none" stroke="#1e7b3c" stroke-width="2"/></svg>
-          <span>lines after <code>function</code>, in a separate method file</span>
-        </div>
-      </div>
-    </div>
-    <p class="cd-caption"><span style="color:#1e7b3c;font-weight:bold;">Green</span> = collected (blank lines inside the block are kept); <span style="color:#b02a37;font-weight:bold;">red</span> = first code line, the block ends. A method file is looked up next to the class file as <code>&lt;method&gt;.m</code>; a method written inside the <code>classdef</code> file has no such file and uses the fallback.</p>
-    <ol class="cd-chain" aria-label="Fallback order">
-      <li class="is-first">① Source comments</li>
-      <li class="cd-chain-sep">empty →</li>
-      <li>② MATLAB <code>help</code></li>
-      <li class="cd-chain-sep">empty →</li>
-      <li>③ reflection <code>Description</code> + <code>DetailedDescription</code></li>
-    </ol>
+    <span class="cd-k">properties</span>
+        <span class="cd-c">% &lt;@Summary&gt; Components on this bus.</span><span class="cd-pin">3</span>
+        a_Component (:,1) cell = cell(0,1)
+    <span class="cd-k">end</span>
 
-    <!-- ================= Tag sets ================= -->
-    <h2 id="cd-tags">Tag Schema</h2>
-    <div class="cd-grid-3">
-      <div class="cd-panel-box cd-set">
-        <h3>Class <small>8 tags</small></h3>
-        <ul class="cd-badges">
-          <li class="cd-tag">Summary</li><li class="cd-tag">Desc</li><li class="cd-tag">Role</li>
-          <li class="cd-tag is-own">Constructor</li>
-          <li class="cd-tag">Notes</li><li class="cd-tag is-json">SeeAlso</li><li class="cd-tag">Since</li><li class="cd-tag">Deprecated</li>
-        </ul>
+    <span class="cd-k">methods</span>
+        <span class="cd-k">function</span> comp = add_component(obj, comp, opt)
+        <span class="cd-c">% &lt;@Summary&gt; Connect a component.</span><span class="cd-pin">4</span>
+            <span class="cd-k">arguments</span>
+                obj
+                comp Component <span class="cd-c">% Component to add.</span><span class="cd-pin">5</span>
+                opt.Check (1,1) logical = true
+            <span class="cd-k">end</span>
+            ...
+</pre>
+        </div>
+        <div>
+          <span class="dg-kicker">Reference · class.html</span>
+          <div class="cd-page">
+            <div class="cd-page-bar">class.html#class=Bus</div>
+            <div class="cd-page-body">
+              <h4>Bus</h4>
+              <span class="cd-page-label">Summary <span class="cd-pin">1</span></span>
+              Node that connects components.
+              <span class="cd-page-label">Description <span class="cd-pin">2</span></span>
+              Holds the bus voltage and the components attached to it.
+              <span class="cd-page-label">Properties</span>
+              <table>
+                <tr><th>Name</th><th>Type · Size · Default</th><th>Description</th></tr>
+                <tr><td class="dg-mono">a_Component</td><td class="dg-mono">cell (:,1) cell(0,1)</td><td>Components on this bus. <span class="cd-pin">3</span></td></tr>
+              </table>
+              <span class="cd-page-label">Methods</span>
+              <table>
+                <tr><th>Signature</th><th>Summary</th></tr>
+                <tr><td class="dg-mono">comp = add_component(obj, comp, Name=Value)</td><td>Connect a component. <span class="cd-pin">4</span></td></tr>
+              </table>
+              <span class="cd-page-label">Arguments (method page)</span>
+              <table>
+                <tr><th>Name</th><th>Kind · Class</th><th>Description</th></tr>
+                <tr><td class="dg-mono">comp</td><td>Positional · Component</td><td>Component to add. <span class="cd-pin">5</span></td></tr>
+                <tr><td class="dg-mono">Check</td><td>Name-Value · (1,1) logical = true</td><td class="dg-muted">-</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="cd-panel-box cd-set">
-        <h3>Property <small>12 tags</small></h3>
-        <ul class="cd-badges">
-          <li class="cd-tag">Summary</li><li class="cd-tag">Desc</li><li class="cd-tag">Role</li>
-          <li class="cd-tag is-own">Type</li><li class="cd-tag is-own">Size</li><li class="cd-tag is-own">Unit</li><li class="cd-tag is-own">Default</li><li class="cd-tag is-own">Constraints</li>
-          <li class="cd-tag">Notes</li><li class="cd-tag is-json">SeeAlso</li><li class="cd-tag">Since</li><li class="cd-tag">Deprecated</li>
-        </ul>
-      </div>
-      <div class="cd-panel-box cd-set">
-        <h3>Method <small>13 tags</small></h3>
-        <ul class="cd-badges">
-          <li class="cd-tag">Summary</li><li class="cd-tag">Desc</li><li class="cd-tag">Role</li>
-          <li class="cd-tag is-own is-json">Signatures</li><li class="cd-tag is-own is-json">Parameters</li><li class="cd-tag is-own is-json">Returns</li><li class="cd-tag is-own is-json">Calls</li><li class="cd-tag is-own is-json">Examples</li>
-          <li class="cd-tag">Notes</li><li class="cd-tag is-own">Throws</li><li class="cd-tag is-json">SeeAlso</li><li class="cd-tag">Since</li><li class="cd-tag">Deprecated</li>
-        </ul>
-      </div>
-    </div>
-    <div class="cd-legend">
-      <span><span class="cd-tag">Summary</span> shared by all targets</span>
-      <span><span class="cd-tag is-own">Unit</span> only this target</span>
-      <span><span class="cd-tag is-json">SeeAlso</span> JSON value</span>
+    </figure>
+    <div class="dg-rows">
+      <div class="dg-row"><span class="dg-row-head">Class</span><p><code>%</code> lines directly below <code>classdef</code>. A blank line or a <code>%%</code> section line ends the block.</p></div>
+      <div class="dg-row"><span class="dg-row-head">Property</span><p><code>%</code> lines directly above the declaration. A trailing <code>% text</code> on the same line is used only when there is no block above.</p></div>
+      <div class="dg-row"><span class="dg-row-head">Method</span><p><code>%</code> lines directly after the <code>function</code> line: in <code>@Class/&lt;method&gt;.m</code>, in a function inside the classdef, or in <code>@Class/private/&lt;method&gt;.m</code>. For an abstract method or a signature-only declaration, put the block above the signature in the <code>methods</code> block.</p></div>
+      <div class="dg-row"><span class="dg-row-head">Argument</span><p>A trailing <code>% text</code> (or a comment line above it) inside the <code>arguments</code> block becomes that argument's description.</p></div>
     </div>
 
-    <h3>Legacy aliases <small style="color:#5f6b7a;font-weight:normal;">still read, but use the canonical name in new code</small></h3>
-    <ul class="cd-alias">
-      <li><s>Abst</s> → <b>Summary</b></li>
-      <li><s>Description</s> → <b>Desc</b></li>
-      <li><s>varargin</s> → <b>Parameters</b></li>
-      <li><s>varargout</s> → <b>Returns</b></li>
-      <li><s>DetailsCode</s> → <b>Notes</b></li>
-      <li><s>Example</s> → <b>Examples</b></li>
-      <li><s>Seealso</s> → <b>SeeAlso</b></li>
-    </ul>
-
-    <h3>Value shapes</h3>
-    <div class="cd-shapes">
-      <div class="cd-shape">
-        <span class="cd-shape-glyph">Aa ¶</span>
-        <span class="cd-tag">Summary</span> <span class="cd-tag">Desc</span> <span class="cd-tag">Notes</span> …
-        <p>Free text. Newlines, spaces and indentation are kept; ASCII diagrams render as monospace.</p>
-      </div>
-      <div class="cd-shape">
-        <span class="cd-shape-glyph">["…", "…"]</span>
-        <span class="cd-tag is-json">Signatures</span> <span class="cd-tag is-json">Examples</span> <span class="cd-tag is-json">SeeAlso</span>
-        <p>JSON array of strings.</p>
-      </div>
-      <div class="cd-shape">
-        <span class="cd-shape-glyph">{…} or [{…}]</span>
-        <span class="cd-tag is-json">Parameters</span> <span class="cd-tag is-json">Returns</span>
-        <p>JSON object or array of objects.</p>
-      </div>
-      <div class="cd-shape">
-        <span class="cd-shape-glyph">[{Class, Method, Condition}]</span>
-        <span class="cd-tag is-json">Calls</span>
-        <p>JSON array of objects; must start with <code>[</code>.</p>
+    <!-- ============================== TAGS ============================== -->
+    <h2 id="tags">Which tags</h2>
+    <p class="dg-lead-in">Write one tag per line as <code>% &lt;@Tag&gt; value</code>. A value can continue on the following <code>%</code> lines until the next tag.</p>
+    <div class="cd-scroll">
+      <table class="cd-level">
+        <thead><tr><th></th><th><span class="dg-badge is-err">Required</span></th><th><span class="dg-badge">Recommended</span></th><th><span class="dg-badge is-muted">Optional</span></th></tr></thead>
+        <tbody>
+          <tr>
+            <th>Class</th>
+            <td data-level="Required"><span class="dg-badge is-err">Summary</span></td>
+            <td data-level="Recommended"><span class="dg-badge">Desc</span><span class="dg-badge">Role</span><span class="dg-badge">Constructor</span></td>
+            <td data-level="Optional"><span class="dg-badge is-muted">Notes</span><span class="dg-badge is-muted">SeeAlso</span><span class="dg-badge is-muted">Since</span><span class="dg-badge is-muted">Deprecated</span></td>
+          </tr>
+          <tr>
+            <th>Public property</th>
+            <td data-level="Required"><span class="dg-badge is-err">Summary</span></td>
+            <td data-level="Recommended"><span class="dg-badge">Unit</span> <span class="dg-muted">(physical quantities)</span><br><span class="dg-badge">Role</span></td>
+            <td data-level="Optional"><span class="dg-badge is-muted">Desc</span><span class="dg-badge is-muted">Type</span><span class="dg-badge is-muted">Size</span><span class="dg-badge is-muted">Default</span><span class="dg-badge is-muted">Constraints</span><span class="dg-badge is-muted">Notes</span><span class="dg-badge is-muted">SeeAlso</span><span class="dg-badge is-muted">Since</span><span class="dg-badge is-muted">Deprecated</span></td>
+          </tr>
+          <tr>
+            <th>Public method</th>
+            <td data-level="Required"><span class="dg-badge is-err">Summary</span></td>
+            <td data-level="Recommended"><span class="dg-badge">Desc</span><span class="dg-badge">Parameters</span><span class="dg-badge">Returns</span></td>
+            <td data-level="Optional"><span class="dg-badge is-muted">Signatures</span><span class="dg-badge is-muted">Calls</span><span class="dg-badge is-muted">Examples</span><span class="dg-badge is-muted">Notes</span><span class="dg-badge is-muted">Throws</span><span class="dg-badge is-muted">SeeAlso</span><span class="dg-badge is-muted">Since</span><span class="dg-badge is-muted">Deprecated</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="dg-callout">
+      <svg class="dg-icon"><use href="#dg-i-info"/></svg>
+      <div>
+        <p>Private, protected and hidden members do not need tags. Write them when they help the next developer.</p>
+        <p>Older names are still read: <code>Abst</code> → Summary, <code>Description</code> → Desc, <code>varargin</code> → Parameters, <code>varargout</code> → Returns, <code>DetailsCode</code> → Notes, <code>Example</code> → Examples, <code>Seealso</code> → SeeAlso. Use the new names in new code.</p>
       </div>
     </div>
-    <ul class="cd-rules">
-      <li class="cd-ok"><b>✓</b><span><code>Summary</code> = one sentence for reference tables.</span></li>
-      <li class="cd-ok"><b>✓</b><span><code>Desc</code> = full text for the detail page. It does not replace a missing <code>Summary</code> in reference tables.</span></li>
-      <li class="cd-ok"><b>✓</b><span>Leave an optional tag empty when it does not apply; the exporter fills the type-appropriate empty value.</span></li>
-      <li class="cd-ng"><b>✗</b><span>Structured JSON must begin with <code>[</code> or <code>{</code>: no MATLAB arrays or cell arrays.</span></li>
-    </ul>
 
-    <!-- ================= Generator ================= -->
-    <section class="tag-generator" id="cd-generator" aria-label="Documentation Tag Generator" style="margin-top: 30px;">
-      <h2>Documentation Tag Generator</h2>
-      <p class="tag-generator-desc">Pick what you're documenting, fill in the tags you need, then copy the generated comment block into your MATLAB source.</p>
+    <!-- ============================== FORMATS ============================== -->
+    <h2 id="formats">Value formats</h2>
+    <div class="dg-rows">
+      <div class="dg-row">
+        <span class="dg-row-head">Summary</span>
+        <div><p>One line, one English sentence. For a method, start with a verb: <code>Calculate the power flow.</code> It is what the tables and search show.</p></div>
+      </div>
+      <div class="dg-row">
+        <span class="dg-row-head">Plain text<br><span class="dg-muted" style="font-weight:normal">Desc, Role, Constructor, Unit, Notes, Throws, Since, Deprecated …</span></span>
+        <div>
+          <p>Free text. Desc, Constructor and Notes support Markdown: <code>- lists</code>, <code>1. lists</code>, <code>`code`</code>, <code>**bold**</code>, <code># headings</code>, <code>[links](url)</code> and fenced code blocks. Text art drawn with box characters is kept exactly as written.</p>
+        </div>
+      </div>
+      <div class="dg-row">
+        <span class="dg-row-head">JSON lists<br><span class="dg-muted" style="font-weight:normal">Signatures, Examples, SeeAlso</span></span>
+        <div><p>A JSON string or an array of strings: <code>["PowerNetwork", "Bus"]</code>. SeeAlso entries that name a class become links.</p></div>
+      </div>
+      <div class="dg-row">
+        <span class="dg-row-head">JSON objects<br><span class="dg-muted" style="font-weight:normal">Parameters, Returns, Calls</span></span>
+        <div>
+          <p>A JSON array of objects. It must start with <code>[</code>; MATLAB arrays and cell arrays are not accepted.</p>
+<pre class="cd-code"><span class="cd-c">% &lt;@Parameters&gt;</span>
+<span class="cd-c">% [{"Name": "r_gain", "Unit": "pu", "Description": "Controller gain."}]</span>
+<span class="cd-c">% &lt;@Returns&gt;</span>
+<span class="cd-c">% [{"Name": "flag", "Description": "true when the solver converged."}]</span>
+<span class="cd-c">% &lt;@Calls&gt;</span>
+<span class="cd-c">% [{"Class": "PowerFlowCalculation", "Method": "solve", "Condition": ""}]</span></pre>
+          <p>Parameters fields: <code>Name</code>, <code>Type</code>, <code>Unit</code>, <code>Description</code>, <code>Required</code>, <code>Default</code>, <code>Constraints</code>. Returns fields: <code>Name</code>, <code>Type</code>, <code>Unit</code>, <code>Description</code>. Calls fields: <code>Class</code>, <code>Method</code> (both required), <code>Condition</code> (blank means always).</p>
+        </div>
+      </div>
+      <div class="dg-row">
+        <span class="dg-row-head">Untagged text</span>
+        <div><p>Text before the first tag is not lost: its first line is used as Summary and the rest as Desc, unless those tags exist. Prefer writing the tags.</p></div>
+      </div>
+    </div>
+
+    <!-- ============================== DECLARATION ============================== -->
+    <h2 id="declaration">Don't repeat the code</h2>
+    <p class="dg-lead-in">The exporter reads property declarations and <code>arguments</code> blocks. Write the fact once, in the code, where MATLAB also checks it.</p>
+    <div class="dg-two">
+      <div>
+        <span class="dg-badge is-err"><svg class="dg-icon"><use href="#dg-i-x"/></svg>Duplicated</span>
+<pre class="cd-code" style="margin-top:8px"><span class="cd-c">% &lt;@Summary&gt; Base power.</span>
+<span class="cd-bad"><span class="cd-c">% &lt;@Type&gt; double</span></span>
+<span class="cd-bad"><span class="cd-c">% &lt;@Size&gt; 1x1</span></span>
+<span class="cd-bad"><span class="cd-c">% &lt;@Default&gt; 100</span></span>
+<span class="cd-c">% &lt;@Unit&gt; MVA</span>
+r_Sbase (1,1) double = 100</pre>
+      </div>
+      <div>
+        <span class="dg-badge is-ok"><svg class="dg-icon"><use href="#dg-i-check"/></svg>Written once</span>
+<pre class="cd-code" style="margin-top:8px"><span class="cd-c">% &lt;@Summary&gt; Base power.</span>
+<span class="cd-c">% &lt;@Unit&gt; MVA</span>
+r_Sbase (1,1) double = 100
+
+
+
+</pre>
+      </div>
+    </div>
+    <div class="dg-rows">
+      <div class="dg-row"><span class="dg-row-head">Properties</span><p>Use <code>&lt;@Type&gt;</code>, <code>&lt;@Size&gt;</code>, <code>&lt;@Default&gt;</code> and <code>&lt;@Constraints&gt;</code> only when the declaration cannot say it, for example an untyped property that holds a <code>PowerFlowCalculation</code>. A tag wins over the declaration on the page.</p></div>
+      <div class="dg-row"><span class="dg-row-head">Methods</span><p>Give inputs an <code>arguments</code> block with size, class, validators and defaults. In <code>&lt;@Parameters&gt;</code>, write only what the block cannot say (Description, Unit). Entries are matched by <code>Name</code>.</p></div>
+      <div class="dg-row"><span class="dg-row-head">Signatures</span><p>Built automatically from the function line and the <code>arguments</code> block, e.g. <code>[tab_PFsol, flag, output] = calculate_powerflow(obj, mode, Name=Value)</code>. Add <code>&lt;@Signatures&gt;</code> only for extra call forms.</p></div>
+    </div>
+
+    <!-- ============================== GENERATOR ============================== -->
+    <section class="tag-generator" id="generator" aria-label="Documentation Tag Generator">
+      <h2>Tag Generator</h2>
+      <p class="tag-generator-desc">Pick what you are documenting, fill in the fields, and copy the comment block into the source. <span class="dg-badge is-err">Required</span> and <span class="dg-badge">Recommended</span> fields come first.</p>
 
       <div class="tag-generator-row">
         <span class="tag-generator-label">Target</span>
@@ -441,6 +309,7 @@
           <button type="button" class="tg-target-btn" data-target="method">Method</button>
           <button type="button" class="tg-target-btn" data-target="property">Property</button>
         </div>
+        <label class="tg-switch" id="tg-declared-switch" hidden><input type="checkbox" id="tg-declared" checked> <span id="tg-declared-label"></span></label>
       </div>
 
       <div class="tag-generator-fields" id="tg-fields"></div>
@@ -453,380 +322,115 @@
       </div>
     </section>
 
-    <!-- ================= Mapping ================= -->
-    <h2 id="cd-mapping">Where Each Tag Appears</h2>
-    <p class="cd-caption" style="margin-bottom:12px;">Matching numbers link a source tag (left) to its place on the generated page (right). Point at either side to highlight the pair. Dashed boxes come from reflection, not from tags.</p>
-    <div class="cd-tabs">
-      <input type="radio" name="cd-map" id="cd-map-method" checked><label for="cd-map-method">Method</label>
-      <input type="radio" name="cd-map" id="cd-map-class"><label for="cd-map-class">Class</label>
-      <input type="radio" name="cd-map" id="cd-map-prop"><label for="cd-map-prop">Property</label>
-
-      <!-- Method -->
-      <div class="cd-map cd-map-method" data-cd-map>
-        <div class="cd-code" aria-label="Method documentation example">
-          <span>function rv_y = calculate_output(obj, rv_u, r_gain)</span>
-          <span data-k="1">% <i>&lt;@Summary&gt;</i> Scale an input vector.</span>
-          <span data-k="2">% <i>&lt;@Desc&gt;</i> Computes an output vector using a configurable scalar gain.</span>
-          <span data-k="3">% <i>&lt;@Signatures&gt;</i>
-% ["rv_y = obj.calculate_output(rv_u, r_gain)"]</span>
-          <span data-k="4">% <i>&lt;@Parameters&gt;</i>
-% [
-%   {
-%     "Name": "rv_u",
-%     "Kind": "Positional",
-%     "Type": "double vector",
-%     "Unit": "pu",
-%     "Description": "Input signal vector.",
-%     "Required": true,
-%     "Default": "-",
-%     "Constraints": "finite column vector"
-%   }
-% ]</span>
-          <span data-k="5">% <i>&lt;@Returns&gt;</i>
-% [{"Name":"rv_y","Type":"double vector","Unit":"pu","Description":"Scaled output."}]</span>
-          <span data-k="6">% <i>&lt;@Calls&gt;</i>
-% [
-%   {"Class":"MyClass","Method":"validate_input","Condition":""},
-%   {"Class":"PowerNetwork","Method":"initialize","Condition":"obj.is_ready"}
-% ]</span>
-          <span data-k="7">% <i>&lt;@Examples&gt;</i>
-% ["```matlab\nrv_y = obj.calculate_output(rv_u, 2.0);\n```"]</span>
-          <span data-k="8">% <i>&lt;@Notes&gt;</i> This method does not modify the object state.</span>
-          <span data-k="9">% <i>&lt;@Throws&gt;</i> Errors when the input and gain dimensions are incompatible.</span>
-          <span data-k="10">% <i>&lt;@SeeAlso&gt;</i> ["simulate", "get_sys"]</span>
-          <span>end</span>
+    <!-- ============================== CHECKS ============================== -->
+    <h2 id="checks">What the exporter checks</h2>
+    <p class="dg-lead-in">Every run prints a line per class and a summary. Problems are reported where the member is defined, not again for each subclass.</p>
+    <ul class="dg-list">
+      <li>
+        <span class="dg-mark is-err"><svg class="dg-icon"><use href="#dg-i-x"/></svg></span>
+        <div>
+          <span class="dg-item-title">Errors</span>
+          <ul>
+            <li>Invalid JSON in a structured tag (Signatures, Examples, SeeAlso, Parameters, Returns, Calls).</li>
+            <li>A Calls entry without both <code>Class</code> and <code>Method</code>.</li>
+          </ul>
+          <p class="dg-muted">With <code>GUILDA.doc("strict", true)</code> the run fails when there are errors.</p>
         </div>
-        <div class="cd-page" aria-label="method.html layout">
-          <div class="cd-page-bar">method.html#class=MyClass&amp;method=…</div>
-          <div class="cd-page-body">
-            <div class="cd-page-title">calculate_output</div>
-            <div class="cd-sec" data-k="1"><span class="cd-ks"><span>1</span></span><b>Overview</b><small>Summary</small></div>
-            <div class="cd-sec is-reflect"><b>Method Metadata</b><small>Defining class, Access, Static, Abstract, Hidden + Role, Since, Deprecated tags</small></div>
-            <div class="cd-sec" data-k="3"><span class="cd-ks"><span>3</span></span><b>Signatures</b><small>one code line per string</small></div>
-            <div class="cd-sec" data-k="2 8"><span class="cd-ks"><span>2</span><span>8</span></span><b>Description</b><small>Desc, with a Notes box below</small></div>
-            <div class="cd-sec" data-k="9"><span class="cd-ks"><span>9</span></span><b>Errors</b><small>Throws</small></div>
-            <div class="cd-sec" data-k="4"><span class="cd-ks"><span>4</span></span><b>Arguments / Parameters</b><small>Name · Kind · Type · Unit · Description · Required · Default · Constraints</small></div>
-            <div class="cd-sec" data-k="5"><span class="cd-ks"><span>5</span></span><b>Return Values</b><small>Name · Type · Unit · Description</small></div>
-            <div class="cd-sec" data-k="6"><span class="cd-ks"><span>6</span></span><b>Method Calls</b><small>call tree resolved recursively; shows each Condition, stops cycles, links every node</small></div>
-            <div class="cd-sec" data-k="7"><span class="cd-ks"><span>7</span></span><b>Examples</b><small>each string rendered as Markdown</small></div>
-            <div class="cd-sec" data-k="10"><span class="cd-ks"><span>10</span></span><b>See Also</b></div>
-          </div>
+      </li>
+      <li>
+        <span class="dg-mark is-warn"><svg class="dg-icon"><use href="#dg-i-warn"/></svg></span>
+        <div>
+          <span class="dg-item-title">Warnings</span>
+          <ul>
+            <li>A class, or its own public non-hidden method, has no Summary or Desc.</li>
+            <li>An unknown tag, or the same tag twice (the last value is used).</li>
+            <li>A <code>&lt;@Parameters&gt;</code> name that is not an input of the method.</li>
+            <li>A method declared in the classdef with no implementation file.</li>
+          </ul>
         </div>
-      </div>
-
-      <!-- Class -->
-      <div class="cd-map cd-map-class" data-cd-map>
-        <div class="cd-code" aria-label="Class documentation example">
-          <span>classdef MyClass</span>
-          <span data-k="1">    % <i>&lt;@Summary&gt;</i> Updates subsystem states and evaluates utility signals.</span>
-          <span data-k="2">    % <i>&lt;@Desc&gt;</i> Long-form explanation of responsibilities and intended use.</span>
-          <span data-k="3">    % <i>&lt;@Role&gt;</i> CoreComponent</span>
-          <span data-k="4">    % <i>&lt;@Constructor&gt;</i> obj = MyClass(r_gain, str_label)</span>
-          <span data-k="5">    % <i>&lt;@Notes&gt;</i> Call initialize after changing topology-related settings.</span>
-          <span data-k="6">    % <i>&lt;@SeeAlso&gt;</i> ["PowerNetwork", "Component"]</span>
-          <span data-k="7">    % <i>&lt;@Since&gt;</i> 4.2</span>
-          <span data-k="8">    % <i>&lt;@Deprecated&gt;</i></span>
-          <span>    ...</span>
-          <span>end</span>
+      </li>
+      <li>
+        <span class="dg-mark"><svg class="dg-icon"><use href="#dg-i-chart"/></svg></span>
+        <div>
+          <span class="dg-item-title">Coverage</span>
+          <p>Documented / total for classes, public methods and public properties. It is shown at the top of the Reference tab, and undocumented classes get a <span class="dg-badge is-warn">no docs</span> marker there.</p>
         </div>
-        <div class="cd-page" aria-label="class.html layout">
-          <div class="cd-page-bar">class.html?class=MyClass</div>
-          <div class="cd-page-body">
-            <div class="cd-page-title">MyClass</div>
-            <div class="cd-sec" data-k="1"><span class="cd-ks"><span>1</span></span><b>Summary</b><small>also shown in the Reference tab list</small></div>
-            <div class="cd-sec" data-k="7 8"><span class="cd-ks"><span>7</span><span>8</span></span><b>Overview table</b><small>Type, Model, Parent, Abstract, Hidden (reflection) + Since, Deprecated</small></div>
-            <div class="cd-sec" data-k="3"><span class="cd-ks"><span>3</span></span><b>Role</b></div>
-            <div class="cd-sec" data-k="2"><span class="cd-ks"><span>2</span></span><b>Description</b></div>
-            <div class="cd-sec" data-k="4"><span class="cd-ks"><span>4</span></span><b>Constructor</b></div>
-            <div class="cd-sec" data-k="5"><span class="cd-ks"><span>5</span></span><b>Notes</b><small>only when set</small></div>
-            <div class="cd-sec" data-k="6"><span class="cd-ks"><span>6</span></span><b>See Also</b><small>class links; only when set</small></div>
-            <div class="cd-sec is-reflect"><b>Properties · Methods</b><small>tables built from member records</small></div>
-          </div>
-        </div>
-      </div>
+      </li>
+    </ul>
 
-      <!-- Property -->
-      <div class="cd-map cd-map-prop" data-cd-map>
-        <div class="cd-code" aria-label="Property documentation example">
-          <span>properties</span>
-          <span data-k="1">    % <i>&lt;@Summary&gt;</i> Gain applied to input/output calculations.</span>
-          <span data-k="2">    % <i>&lt;@Desc&gt;</i> Scalar gain used by calculate_output.</span>
-          <span data-k="3">    % <i>&lt;@Role&gt;</i> simulate</span>
-          <span data-k="4">    % <i>&lt;@Type&gt;</i> double</span>
-          <span data-k="5">    % <i>&lt;@Size&gt;</i> 1x1</span>
-          <span data-k="6">    % <i>&lt;@Unit&gt;</i> pu</span>
-          <span data-k="7">    % <i>&lt;@Default&gt;</i> 1.0</span>
-          <span data-k="8">    % <i>&lt;@Constraints&gt;</i> finite and positive</span>
-          <span data-k="9">    % <i>&lt;@Notes&gt;</i> Applied during output evaluation.</span>
-          <span data-k="9">    % <i>&lt;@SeeAlso&gt;</i> ["calculate_output"]</span>
-          <span data-k="9">    % <i>&lt;@Since&gt;</i> 4.2</span>
-          <span data-k="9">    % <i>&lt;@Deprecated&gt;</i></span>
-          <span>    r_gain</span>
-          <span>end</span>
-        </div>
-        <div class="cd-page" aria-label="class.html Properties table">
-          <div class="cd-page-bar">class.html → Properties</div>
-          <div class="cd-page-body">
-            <div class="cd-page-title">Properties</div>
-            <p class="cd-mini-label">Description view</p>
-            <div class="cd-mini-wrap"><table class="cd-mini-table">
-              <tr><th class="is-reflect">Name</th><th data-k="3"><span class="cd-col-k">3</span>Role</th><th data-k="2 1"><span class="cd-col-k">2</span><span class="cd-col-k">1</span>Description</th></tr>
-              <tr><td>r_gain</td><td>simulate</td><td>Scalar gain…</td></tr>
-            </table></div>
-            <p class="cd-mini-label">Details view</p>
-            <div class="cd-mini-wrap"><table class="cd-mini-table">
-              <tr><th class="is-reflect">Name</th><th data-k="4"><span class="cd-col-k">4</span>Type</th><th data-k="5"><span class="cd-col-k">5</span>Size</th><th data-k="6"><span class="cd-col-k">6</span>Unit</th><th data-k="7"><span class="cd-col-k">7</span>Default</th><th data-k="8"><span class="cd-col-k">8</span>Constr.</th></tr>
-              <tr><td>r_gain</td><td>double</td><td>1x1</td><td>pu</td><td>1.0</td><td>finite…</td></tr>
-            </table></div>
-            <p class="cd-mini-label">Meta Data view (reflection)</p>
-            <div class="cd-sec is-reflect"><small>GetAccess · SetAccess · Dependent · Constant · Abstract · Hidden</small></div>
-            <div class="cd-stored" data-k="9"><span class="cd-col-k">9</span> Notes, SeeAlso, Since, Deprecated are stored in the class file; Notes and Deprecated are used by the table search only.</div>
-            <p class="cd-caption" style="font-size:0.74rem;">Description column = <code>Desc</code>, or <code>Summary</code> when <code>Desc</code> is empty.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-    <p class="cd-caption">Name-value options go in <code>Parameters</code> with <code>Kind: "NameValue"</code>. In <code>Calls</code>, use the fully qualified MATLAB class name in <code>Class</code> and leave <code>Condition</code> empty for an unconditional call.</p>
-
-    <!-- ================= Generated data ================= -->
-    <h2 id="cd-data">Generated Data Structure</h2>
-    <div class="cd-files">
-      <div class="cd-filecard">
-        <div class="cd-filecard-head">database/list_Classes.js<small>window.GUILDA_DOC_INDEX · loaded by every page</small></div>
-        <ul class="cd-tree">
-          <li>schema <em>· version 3</em>
-            <ul>
-              <li>name, version: 3, classDocumentVersion: 3, pathBase</li>
-              <li>modelCategories, coreClasses</li>
-              <li>tags <em>· class / property / method / structured</em></li>
-              <li>legacyAliases</li>
-            </ul>
-          </li>
-          <li>classes[ ]
-            <ul>
-              <li>Name, Type, Model, Parent, Abstract, Hidden</li>
-              <li>Summary, Desc, Role, Constructor, …</li>
-              <li><span class="is-hl">path</span> <em>→ class file</em></li>
-            </ul>
-          </li>
-          <li>validation <em>· warningCount, errorCount, classes[ ]</em></li>
-        </ul>
-      </div>
-      <div class="cd-arrow" aria-hidden="true"></div>
-      <div class="cd-filecard">
-        <div class="cd-filecard-head">database/GUILDA…/&lt;Class&gt;.js<small>window.GUILDA_DOC_CLASSES[ClassName] · loaded on demand</small></div>
-        <ul class="cd-tree">
-          <li>schema <em>· { name: "GUILDA class document", version: 3 }</em></li>
-          <li>ClassName <em>· "component.generator.park"</em></li>
-          <li>properties[ ] <em>· one record per property</em></li>
-          <li>methods[ ] <em>· one record per method</em></li>
-          <li>validation <em>· { Warnings, Errors }</em></li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="cd-record">
-      <div class="cd-record-row"><b>Property</b>
-        <span class="cd-tag is-reflect">Name</span><span class="cd-tag is-reflect">Defining</span><span class="cd-tag is-reflect">GetAccess</span><span class="cd-tag is-reflect">SetAccess</span><span class="cd-tag is-reflect">Dependent</span><span class="cd-tag is-reflect">Constant</span><span class="cd-tag is-reflect">Abstract</span><span class="cd-tag is-reflect">Hidden</span>
-        <span class="cd-plus">+</span><span class="cd-tag is-tagfield">12 property tags</span>
-      </div>
-      <div class="cd-record-row"><b>Method</b>
-        <span class="cd-tag is-reflect">Name</span><span class="cd-tag is-reflect">Defining</span><span class="cd-tag is-reflect">Access</span><span class="cd-tag is-reflect">Static</span><span class="cd-tag is-reflect">Abstract</span><span class="cd-tag is-reflect">Hidden</span>
-        <span class="cd-plus">+</span><span class="cd-tag is-tagfield">13 method tags</span>
-      </div>
-      <div class="cd-legend"><span><span class="cd-tag is-reflect">Access</span> from reflection</span><span><span class="cd-tag is-tagfield">tags</span> from comments</span></div>
-    </div>
-
-    <details class="cd-more">
-      <summary>Class index fields (<code>classes[ ]</code> entry)</summary>
-      <div>
-        <table>
-          <tr><th>Field</th><th>Source / purpose</th></tr>
-          <tr><td><code>Name</code></td><td>Fully qualified MATLAB class name.</td></tr>
-          <tr><td><code>Type</code></td><td>Derived category: <code>PowerSystemModel</code>, <code>auxiliary</code>, or <code>other</code>.</td></tr>
-          <tr><td><code>Model</code></td><td>Nearest system-model category, such as <code>PowerNetwork</code>, <code>Bus</code>, or <code>Component</code>.</td></tr>
-          <tr><td><code>Parent</code></td><td>Superclass names obtained from reflection.</td></tr>
-          <tr><td><code>Abstract</code>, <code>Hidden</code></td><td>Class attributes obtained from reflection.</td></tr>
-          <tr><td><code>Summary</code>, <code>Desc</code>, <code>Role</code>, <code>Constructor</code>, <code>Notes</code>, <code>SeeAlso</code>, <code>Since</code>, <code>Deprecated</code></td><td>Canonical class tags.</td></tr>
-          <tr><td><code>path</code></td><td>Internal path used to lazily load the detailed class document. It is required but is not displayed as documentation.</td></tr>
-        </table>
-        <p>Validation is stored centrally under <code>validation.classes</code>. The redundant per-index-entry fields <code>DocumentationStatus</code>, <code>DocumentationWarnings</code>, and <code>DocumentationErrors</code> are not generated.</p>
-      </div>
-    </details>
-    <details class="cd-more">
-      <summary>Raw outline of both files</summary>
-      <div>
-<pre><code>window.GUILDA_DOC_INDEX = {
-  schema: {
-    version: 3,
-    classDocumentVersion: 3,
-    modelCategories: [...],
-    coreClasses: [...],
-    tags: {...},
-    legacyAliases: {...}
-  },
-  classes: [...],
-  validation: {
-    warningCount: 0,
-    errorCount: 0,
-    classes: [...]
-  }
-};</code></pre>
-<pre><code>{
-  schema: { name: "GUILDA class document", version: 3 },
-  ClassName: "component.generator.park",
-  properties: [...],
-  methods: [...],
-  validation: { Warnings: [...], Errors: [...] }
-}</code></pre>
-      </div>
-    </details>
-
-    <!-- ================= Validation ================= -->
-    <h2 id="cd-validation">Validation</h2>
-    <div class="cd-grid-2">
-      <div class="cd-verdict is-warn">
-        <h3>⚠ Warning</h3>
-        <ul>
-          <li>Unknown or duplicate tag (the last duplicate wins)</li>
-          <li>Class has neither <code>Summary</code> nor <code>Desc</code></li>
-          <li>Public, non-hidden method defined by the class has neither <code>Summary</code> nor <code>Desc</code></li>
-        </ul>
-      </div>
-      <div class="cd-verdict is-error">
-        <h3>✗ Error</h3>
-        <ul>
-          <li>Malformed structured JSON</li>
-          <li>Class reflection or file export failure</li>
-        </ul>
-      </div>
-    </div>
-    <p class="cd-caption">Diagnostics are stored in each class file and summarized in <code>validation</code> of the index. A tag that belongs to another target (for example <code>&lt;@Constructor&gt;</code> on a method) is not reported; it is simply not stored.</p>
-
-    <div class="cd-strict" aria-label="Strict mode">
-      <svg class="cd-strict-wide" viewBox="0 0 820 150" role="img" aria-label="Strict mode decision flow">
-        <rect x="2" y="45" width="190" height="60" rx="8" fill="#f8fbff" stroke="#dce4ec" stroke-width="2"/>
-        <text x="97" y="72" text-anchor="middle" font-size="14" fill="#0f4c81" font-weight="bold">Export all classes</text>
-        <text x="97" y="92" text-anchor="middle" font-size="12" fill="#5f6b7a">write index + class files</text>
-        <path class="cd-svg-dash" d="M194 75 H262" stroke="#0f4c81" stroke-width="2.5" fill="none"/>
-        <path d="M262 69 L272 75 L262 81 Z" fill="#0f4c81"/>
-        <path d="M374 20 L474 75 L374 130 L274 75 Z" fill="#fff" stroke="#0f4c81" stroke-width="2"/>
-        <text x="374" y="71" text-anchor="middle" font-size="13" fill="#333">strict = true</text>
-        <text x="374" y="89" text-anchor="middle" font-size="13" fill="#333">and errors &gt; 0 ?</text>
-        <path class="cd-svg-dash" d="M474 75 C 520 75 520 32 556 32" stroke="#b02a37" stroke-width="2.5" fill="none"/>
-        <path d="M556 26 L566 32 L556 38 Z" fill="#b02a37"/>
-        <text x="512" y="40" text-anchor="middle" font-size="12" fill="#b02a37" font-weight="bold">yes</text>
-        <rect x="562" y="6" width="256" height="52" rx="8" fill="#fdeeee" stroke="#b02a37" stroke-width="1.5"/>
-        <text x="693" y="28" text-anchor="middle" font-size="13" fill="#b02a37" font-weight="bold">✗ MATLAB error</text>
-        <text class="cd-svg-mono" x="690" y="47" text-anchor="middle" font-size="10" fill="#b02a37">export_class_database:ValidationFailed</text>
-        <path class="cd-svg-dash" d="M474 75 C 520 75 520 118 556 118" stroke="#1e7b3c" stroke-width="2.5" fill="none"/>
-        <path d="M556 112 L566 118 L556 124 Z" fill="#1e7b3c"/>
-        <text x="512" y="134" text-anchor="middle" font-size="12" fill="#1e7b3c" font-weight="bold">no</text>
-        <rect x="568" y="92" width="250" height="52" rx="8" fill="#e7f6ec" stroke="#1e7b3c" stroke-width="1.5"/>
-        <text x="693" y="114" text-anchor="middle" font-size="13" fill="#1e7b3c" font-weight="bold">✓ Finished</text>
-        <text x="693" y="133" text-anchor="middle" font-size="11.5" fill="#1e7b3c">problems listed in the console</text>
-      </svg>
-      <svg class="cd-strict-narrow" viewBox="0 0 340 330" role="img" aria-label="Strict mode decision flow">
-        <rect x="70" y="2" width="200" height="54" rx="8" fill="#f8fbff" stroke="#dce4ec" stroke-width="2"/>
-        <text x="170" y="25" text-anchor="middle" font-size="14" fill="#0f4c81" font-weight="bold">Export all classes</text>
-        <text x="170" y="44" text-anchor="middle" font-size="12" fill="#5f6b7a">write index + class files</text>
-        <path class="cd-svg-dash" d="M170 58 V84" stroke="#0f4c81" stroke-width="2.5" fill="none"/>
-        <path d="M164 84 L170 94 L176 84 Z" fill="#0f4c81"/>
-        <path d="M170 96 L270 146 L170 196 L70 146 Z" fill="#fff" stroke="#0f4c81" stroke-width="2"/>
-        <text x="170" y="142" text-anchor="middle" font-size="13" fill="#333">strict = true</text>
-        <text x="170" y="160" text-anchor="middle" font-size="13" fill="#333">and errors &gt; 0 ?</text>
-        <path class="cd-svg-dash" d="M120 171 V240" stroke="#b02a37" stroke-width="2.5" fill="none"/>
-        <path d="M114 240 L120 250 L126 240 Z" fill="#b02a37"/>
-        <text x="106" y="222" text-anchor="end" font-size="12" fill="#b02a37" font-weight="bold">yes</text>
-        <path class="cd-svg-dash" d="M220 171 V240" stroke="#1e7b3c" stroke-width="2.5" fill="none"/>
-        <path d="M214 240 L220 250 L226 240 Z" fill="#1e7b3c"/>
-        <text x="234" y="222" font-size="12" fill="#1e7b3c" font-weight="bold">no</text>
-        <rect x="2" y="252" width="164" height="74" rx="8" fill="#fdeeee" stroke="#b02a37" stroke-width="1.5"/>
-        <text x="84" y="276" text-anchor="middle" font-size="13" fill="#b02a37" font-weight="bold">✗ MATLAB error</text>
-        <text class="cd-svg-mono" x="84" y="296" text-anchor="middle" font-size="9.5" fill="#b02a37">export_class_database:</text>
-        <text class="cd-svg-mono" x="84" y="312" text-anchor="middle" font-size="9.5" fill="#b02a37">ValidationFailed</text>
-        <rect x="174" y="252" width="164" height="74" rx="8" fill="#e7f6ec" stroke="#1e7b3c" stroke-width="1.5"/>
-        <text x="256" y="282" text-anchor="middle" font-size="13" fill="#1e7b3c" font-weight="bold">✓ Finished</text>
-        <text x="256" y="302" text-anchor="middle" font-size="11.5" fill="#1e7b3c">problems listed</text>
-        <text x="256" y="317" text-anchor="middle" font-size="11.5" fill="#1e7b3c">in the console</text>
-      </svg>
-    </div>
-    <p class="cd-caption">Use strict mode in automated checks. Warnings never fail the run; in strict mode they are also printed.</p>
-<pre><code>&gt;&gt; GUILDA.doc("update", true, "open", false, "strict", true);</code></pre>
-
-    <!-- ================= Regenerate ================= -->
-    <h2 id="cd-regenerate">Regenerating and Reviewing Documentation</h2>
-    <ol class="cd-steps">
-      <li><span class="cd-num">1</span><div><p>Add GUILDA to the path and rebuild the database.</p>
-<pre><code>&gt;&gt; GUILDA.addpath();
-&gt;&gt; GUILDA.doc("update", true, "open", false);</code></pre></div></li>
-      <li><span class="cd-num">2</span><div><p>Open the documentation.</p>
-<pre><code>&gt;&gt; web(fullfile(GUILDA.pwd(), "_GUILDAdoc", "index.html"));</code></pre></div></li>
-      <li><span class="cd-num">3</span><div><p>Check <code>database/list_Classes.js</code> for the index summary, then in the Reference tab verify:</p>
-        <ul class="cd-checklist">
-          <li>class links</li><li>summaries</li><li>inheritance markers</li><li>class pages</li><li>method pages</li>
-        </ul></div></li>
+    <!-- ============================== UPDATE ============================== -->
+    <h2 id="update">Keeping it up to date</h2>
+    <ol class="dg-steps" style="--n: 3">
+      <li><span class="dg-step-title">Edit the source</span>Add or change classes and comments under <code>_GUILDAsystem</code> or <code>_GUILDAobject</code>.</li>
+      <li><span class="dg-step-title">Run <code>GUILDA.doc</code></span>It rebuilds the database only when needed, then opens the pages. A rebuild takes seconds.</li>
+      <li><span class="dg-step-title">Check the output</span>Read the warnings in the Command Window and look at your class page.</li>
     </ol>
+    <div class="dg-rows">
+      <div class="dg-row"><span class="dg-row-head"><code>update="auto"</code> <span class="dg-muted" style="font-weight:normal">(default)</span></span><p>Rebuild when the database is missing, or when any file or folder under the two source folders, or the exporter itself, is newer than <code>database/list_Classes.js</code>. Folder times also catch deleted and renamed files.</p></div>
+      <div class="dg-row"><span class="dg-row-head"><code>update=true</code> / <code>false</code></span><p>Always or never rebuild. <code>"always"</code> and <code>"never"</code> work too.</p></div>
+      <div class="dg-row"><span class="dg-row-head">Generated files</span><p><code>_GUILDAdoc/database/list_Classes.js</code> (index with the schema, coverage and validation results) and one <code>database/GUILDAsystem|GUILDAobject/&lt;Class&gt;.js</code> per class, loaded on demand. Both use schema version 4. They are generated, not tracked by git: never edit them, rebuild instead.</p></div>
+      <div class="dg-row"><span class="dg-row-head">Other options</span><p><code>GUILDA.doc("class", "PowerNetwork")</code> opens one class page. <code>"open", false</code> only rebuilds.</p></div>
+    </div>
   </main>
 
   <script>
     (function () {
+      // level: required / recommended / optional (see "Which tags").
+      // declared: hidden while the "declared in code" switch is on, because the
+      // exporter reads it from the declaration or the arguments block.
       var TAG_SETS = {
         class: {
           pasteHint: 'Paste this directly under the "classdef ClassName" line, before any properties or methods blocks.',
           fields: [
-            { tag: 'Summary', rows: 2, placeholder: 'One concise sentence shown in reference tables.' },
-            { tag: 'Desc', rows: 3, placeholder: 'Full explanation shown on the class detail page.' },
-            { tag: 'Role', rows: 1, placeholder: 'e.g. CoreComponent' },
-            { tag: 'Constructor', rows: 1, placeholder: 'e.g. obj = MyClass(r_gain, str_label)' },
-            { tag: 'Notes', rows: 2, placeholder: 'Implementation notes, caveats, usage order.' },
-            { tag: 'SeeAlso', rows: 1, placeholder: 'JSON array, e.g. ["PowerNetwork", "Component"]' },
-            { tag: 'Since', rows: 1, placeholder: 'e.g. 4.2' },
-            { tag: 'Deprecated', rows: 1, placeholder: 'Leave empty unless deprecated.' }
+            { tag: 'Summary', level: 'required', rows: 1, placeholder: 'One sentence shown in tables and search.' },
+            { tag: 'Desc', level: 'recommended', rows: 3, placeholder: 'Full explanation for the class page. Markdown is supported.' },
+            { tag: 'Role', level: 'recommended', rows: 1, placeholder: 'e.g. Bus model' },
+            { tag: 'Constructor', level: 'recommended', rows: 2, placeholder: 'e.g. obj = MyClass(r_gain, str_label)' },
+            { tag: 'Notes', level: 'optional', rows: 2, placeholder: 'Implementation notes, caveats, usage order.' },
+            { tag: 'SeeAlso', level: 'optional', rows: 1, placeholder: 'JSON array, e.g. ["PowerNetwork", "Component"]' },
+            { tag: 'Since', level: 'optional', rows: 1, placeholder: 'Version that added the class.' },
+            { tag: 'Deprecated', level: 'optional', rows: 1, placeholder: 'Leave empty unless deprecated.' }
           ]
         },
         property: {
           pasteHint: 'Paste this directly above the property declaration, inside the "properties" block.',
+          declaredLabel: 'The declaration states type, size and default, e.g. r_Sbase (1,1) double = 100',
           fields: [
-            { tag: 'Summary', rows: 2, placeholder: 'One concise sentence shown in reference tables.' },
-            { tag: 'Desc', rows: 3, placeholder: 'Full explanation shown on the class detail page.' },
-            { tag: 'Role', rows: 1, placeholder: 'e.g. simulate' },
-            { tag: 'Type', rows: 1, placeholder: 'e.g. double' },
-            { tag: 'Size', rows: 1, placeholder: 'e.g. 1x1' },
-            { tag: 'Unit', rows: 1, placeholder: 'e.g. pu' },
-            { tag: 'Default', rows: 1, placeholder: 'e.g. 1.0' },
-            { tag: 'Constraints', rows: 1, placeholder: 'e.g. finite and positive' },
-            { tag: 'Notes', rows: 2, placeholder: 'Implementation notes, caveats.' },
-            { tag: 'SeeAlso', rows: 1, placeholder: 'JSON array, e.g. ["calculate_output"]' },
-            { tag: 'Since', rows: 1, placeholder: 'e.g. 4.2' },
-            { tag: 'Deprecated', rows: 1, placeholder: 'Leave empty unless deprecated.' }
+            { tag: 'Summary', level: 'required', rows: 1, placeholder: 'One sentence shown in tables and search.' },
+            { tag: 'Unit', level: 'recommended', rows: 1, placeholder: 'e.g. pu, MVA, rad/s' },
+            { tag: 'Role', level: 'recommended', rows: 1, placeholder: 'e.g. Parameter' },
+            { tag: 'Desc', level: 'optional', rows: 3, placeholder: 'Longer explanation.' },
+            { tag: 'Type', level: 'optional', declared: true, rows: 1, placeholder: 'e.g. PowerFlowCalculation' },
+            { tag: 'Size', level: 'optional', declared: true, rows: 1, placeholder: 'e.g. 1x1' },
+            { tag: 'Default', level: 'optional', declared: true, rows: 1, placeholder: 'e.g. PowerFlowCalculation()' },
+            { tag: 'Constraints', level: 'optional', declared: true, rows: 1, placeholder: 'e.g. finite and positive' },
+            { tag: 'Notes', level: 'optional', rows: 2, placeholder: 'Implementation notes, caveats.' },
+            { tag: 'SeeAlso', level: 'optional', rows: 1, placeholder: 'JSON array, e.g. ["calculate_output"]' },
+            { tag: 'Since', level: 'optional', rows: 1, placeholder: 'Version that added the property.' },
+            { tag: 'Deprecated', level: 'optional', rows: 1, placeholder: 'Leave empty unless deprecated.' }
           ]
         },
         method: {
-          pasteHint: 'Paste this directly after the "function ..." line, before the method body.',
+          pasteHint: 'Paste this directly after the "function ..." line, before the arguments block.',
+          declaredLabel: 'The method has an arguments block (kind, type, default and constraints come from it)',
           fields: [
-            { tag: 'Summary', rows: 2, placeholder: 'One concise sentence shown in reference tables.' },
-            { tag: 'Desc', rows: 3, placeholder: 'Full explanation shown on the class detail page.' },
-            { tag: 'Role', rows: 1, placeholder: 'e.g. simulate' },
+            { tag: 'Summary', level: 'required', rows: 1, placeholder: 'One sentence starting with a verb, e.g. Calculate the power flow.' },
+            { tag: 'Desc', level: 'recommended', rows: 3, placeholder: 'Full explanation for the method page. Markdown is supported.' },
             {
-              tag: 'Signatures', type: 'table', mode: 'list',
-              columns: [{ key: 'value', label: 'Signature', placeholder: 'e.g. rv_y = obj.calculate_output(rv_u, r_gain)' }]
-            },
-            {
-              tag: 'Parameters', type: 'table', mode: 'object',
+              tag: 'Parameters', level: 'recommended', type: 'table', mode: 'object',
               columns: [
                 { key: 'Name', label: 'Name', placeholder: 'rv_u' },
-                { key: 'Kind', label: 'Kind', type: 'select', options: ['Positional', 'NameValue'] },
-                { key: 'Type', label: 'Type', placeholder: 'double vector' },
+                { key: 'Kind', label: 'Kind', type: 'select', options: ['Positional', 'NameValue'], declared: true },
+                { key: 'Type', label: 'Type', placeholder: 'double vector', declared: true },
                 { key: 'Unit', label: 'Unit', placeholder: 'pu' },
                 { key: 'Description', label: 'Description', placeholder: 'Input signal vector.' },
-                { key: 'Required', label: 'Required', type: 'checkbox' },
-                { key: 'Default', label: 'Default', placeholder: '-' },
-                { key: 'Constraints', label: 'Constraints', placeholder: 'finite column vector' }
+                { key: 'Required', label: 'Required', type: 'checkbox', declared: true },
+                { key: 'Default', label: 'Default', placeholder: '-', declared: true },
+                { key: 'Constraints', label: 'Constraints', placeholder: 'finite column vector', declared: true }
               ]
             },
             {
-              tag: 'Returns', type: 'table', mode: 'object',
+              tag: 'Returns', level: 'recommended', type: 'table', mode: 'object',
               columns: [
                 { key: 'Name', label: 'Name', placeholder: 'rv_y' },
                 { key: 'Type', label: 'Type', placeholder: 'double vector' },
@@ -834,23 +438,42 @@
                 { key: 'Description', label: 'Description', placeholder: 'Scaled output.' }
               ]
             },
+            { tag: 'Role', level: 'optional', rows: 1, placeholder: 'e.g. simulate' },
             {
-              tag: 'Calls', type: 'table', mode: 'calls',
+              tag: 'Signatures', level: 'optional', type: 'table', mode: 'list',
+              columns: [{ key: 'value', label: 'Extra call form (the main one is generated)', placeholder: 'e.g. obj.calculate_output(rv_u)' }]
+            },
+            {
+              tag: 'Calls', level: 'optional', type: 'table', mode: 'calls',
               columns: [
                 { key: 'Class', label: 'Class', type: 'class-select' },
                 { key: 'Method', label: 'Method', type: 'method-select' },
                 { key: 'Condition', label: 'Condition', placeholder: 'Blank means always; e.g. obj.is_ready' }
               ]
             },
-            { tag: 'Examples', rows: 3, placeholder: 'JSON array of example code strings.' },
-            { tag: 'Notes', rows: 2, placeholder: 'Implementation notes, caveats.' },
-            { tag: 'Throws', rows: 2, placeholder: 'Conditions under which this method errors.' },
-            { tag: 'SeeAlso', rows: 1, placeholder: 'JSON array, e.g. ["simulate", "get_sys"]' },
-            { tag: 'Since', rows: 1, placeholder: 'e.g. 4.2' },
-            { tag: 'Deprecated', rows: 1, placeholder: 'Leave empty unless deprecated.' }
+            { tag: 'Examples', level: 'optional', rows: 3, placeholder: 'JSON array of example code strings.' },
+            { tag: 'Notes', level: 'optional', rows: 2, placeholder: 'Implementation notes, caveats.' },
+            { tag: 'Throws', level: 'optional', rows: 2, placeholder: 'Conditions under which this method errors.' },
+            { tag: 'SeeAlso', level: 'optional', rows: 1, placeholder: 'JSON array, e.g. ["simulate", "get_sys"]' },
+            { tag: 'Since', level: 'optional', rows: 1, placeholder: 'Version that added the method.' },
+            { tag: 'Deprecated', level: 'optional', rows: 1, placeholder: 'Leave empty unless deprecated.' }
           ]
         }
       };
+
+      var LEVEL_BADGES = {
+        required: '<span class="dg-badge is-err">Required</span>',
+        recommended: '<span class="dg-badge">Recommended</span>',
+        optional: ''
+      };
+      var declaredSwitch = document.getElementById('tg-declared-switch');
+      var declaredInput = document.getElementById('tg-declared');
+      var declaredLabel = document.getElementById('tg-declared-label');
+      function hideDeclared() { return !declaredSwitch.hidden && declaredInput.checked; }
+      declaredInput.addEventListener('change', function () {
+        renderFields();
+        update();
+      });
 
       var targetButtons = Array.prototype.slice.call(document.querySelectorAll('#tg-target-options .tg-target-btn'));
       var fieldsContainer = document.getElementById('tg-fields');
@@ -868,6 +491,9 @@
         btn.addEventListener('click', function () {
           currentTarget = btn.getAttribute('data-target');
           targetButtons.forEach(function (b) { b.classList.toggle('active', b === btn); });
+          var declaredText = TAG_SETS[currentTarget].declaredLabel;
+          declaredSwitch.hidden = !declaredText;
+          declaredLabel.textContent = declaredText || '';
           renderFields();
           update();
         });
@@ -883,7 +509,11 @@
         }
         emptyMsg.style.display = 'none';
         set.fields.forEach(function (f) {
+          if (f.declared && hideDeclared()) return;
           if (f.type === 'table') {
+            f = Object.assign({}, f, {
+              columns: f.columns.filter(function (col) { return !(col.declared && hideDeclared()); })
+            });
             var wrap = createTableField(f);
             fieldsContainer.appendChild(wrap);
             currentFieldEntries.push({ tag: f.tag, kind: 'table', wrap: wrap, config: f });
@@ -895,7 +525,7 @@
 
           var label = document.createElement('label');
           label.className = 'tag-generator-field-label';
-          label.textContent = f.tag;
+          label.innerHTML = f.tag + LEVEL_BADGES[f.level || 'optional'];
           label.setAttribute('for', 'tg-input-' + f.tag);
 
           var control = document.createElement('textarea');
@@ -919,7 +549,7 @@
 
         var label = document.createElement('span');
         label.className = 'tag-generator-field-label';
-        label.textContent = f.tag;
+        label.innerHTML = f.tag + LEVEL_BADGES[f.level || 'optional'];
         wrap.appendChild(label);
 
         var tableScroll = document.createElement('div');
@@ -1217,28 +847,6 @@
       });
 
       update();
-    })();
-  </script>
-
-  <script>
-    (function () {
-      // Highlight a source tag and its place on the page mock that share a number.
-      Array.prototype.forEach.call(document.querySelectorAll('[data-cd-map]'), function (map) {
-        var items = Array.prototype.slice.call(map.querySelectorAll('[data-k]'));
-        function keys(el) { return el.getAttribute('data-k').split(' '); }
-        function setActive(source) {
-          var active = source ? keys(source) : [];
-          items.forEach(function (el) {
-            var on = keys(el).some(function (k) { return active.indexOf(k) >= 0; });
-            el.classList.toggle('cd-on', on);
-          });
-        }
-        items.forEach(function (el) {
-          el.addEventListener('mouseenter', function () { setActive(el); });
-          el.addEventListener('mouseleave', function () { setActive(null); });
-          el.addEventListener('click', function () { setActive(el); });
-        });
-      });
     })();
   </script>
 </body>

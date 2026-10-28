@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GUILDA Documentation - Home</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="reference.css">
   
   <script src="./database/list_UpdateLog.js"></script>
   <script src="./database/list_Classes.js"></script>
@@ -227,6 +228,11 @@ sol = net.simulate([0, 50], fault);</code></pre>
 
     <div id="tab-reference" class="tab-content">
       <h1>Class Reference</h1>
+      <p class="ref-status" id="reference-status"></p>
+      <div id="reference-empty" class="ref-empty" hidden>
+        <p><strong>The class reference has not been generated yet.</strong></p>
+        <p>Run <code>GUILDA.doc</code> in MATLAB. It builds <code>_GUILDAdoc/database</code> from the source code and opens this page again.</p>
+      </div>
 
       <div class="reference-section">
         <h2>Core Components of the System Model</h2>
@@ -327,31 +333,34 @@ sol = net.simulate([0, 50], fault);</code></pre>
           </div>
         </div>
 
-        <input type="search" id="class-search" class="search-box" placeholder="Search for a class, role, or summary..." autocomplete="off">
+        <div class="ref-toolbar">
+          <input type="search" id="class-search" class="search-box" placeholder="Search all classes by name, package, role, or summary..." autocomplete="off">
+          <label class="ref-check"><input type="checkbox" id="class-undocumented-only"> Not documented only</label>
+        </div>
         <div class="inheritance-legend" aria-label="Class marker legend">
           <span class="inheritance-legend-item"><span class="tree-node-marker" aria-hidden="true"></span>Concrete class</span>
           <span class="inheritance-legend-item"><span class="tree-node-marker is-abstract" aria-hidden="true"></span>Abstract class</span>
+          <span class="inheritance-legend-item"><span class="ref-badge is-undocumented is-small">no docs</span>No documentation comments yet</span>
         </div>
 
-        <table class="compact-table inheritance-table" aria-live="polite">
-          <thead id="inherited-list-thead"></thead>
-          <tbody id="class-list-tbody"></tbody>
-        </table>
+        <div class="ref-table-scroll">
+          <table class="compact-table inheritance-table" aria-live="polite">
+            <thead id="inherited-list-thead"></thead>
+            <tbody id="class-list-tbody"></tbody>
+          </table>
+        </div>
       </div>
 
       <div class="reference-section">
         <h2>Auxiliary Classes</h2>
-        <p>Although these classes do not directly correspond to the physical components of the power system model, they are essential for various analyses and data management within GUILDA.</p>
+        <p>Although these classes do not directly correspond to the physical components of the power system model, they are essential for various analyses and data management within GUILDA. Base classes shared by both trees (such as <code>LayerPackage</code>) are listed here too. The search box and the filter above apply to this table as well.</p>
 
-        <table class="compact-table auxiliary-table">
-          <thead id="auxiliary-list-thead">
-            <tr>
-              <th>Class Name</th>
-              <th>Summary</th>
-            </tr>
-          </thead>
-          <tbody id="auxiliary-list-tbody"></tbody>
-        </table>
+        <div class="ref-table-scroll">
+          <table class="compact-table inheritance-table auxiliary-table">
+            <thead id="auxiliary-list-thead"></thead>
+            <tbody id="auxiliary-list-tbody"></tbody>
+          </table>
+        </div>
       </div>
 
     </div>
@@ -575,7 +584,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
     }
 
     function classSearchText(classData) {
-      return `${classData.Name || ''} ${classData.Parent || ''} ${classData.Model || ''} ${classData.Role || ''} ${classData.Summary || ''} ${classData.Desc || ''} ${classData.Notes || ''}`.toLowerCase();
+      return `${classData.Name || ''} ${classData.Package || ''} ${classData.Parent || ''} ${classData.Model || ''} ${classData.Role || ''} ${classData.Summary || ''} ${classData.Desc || ''} ${classData.Notes || ''}`.toLowerCase();
     }
 
     function escapeHtml(value) {
@@ -587,143 +596,153 @@ sol = net.simulate([0, 50], fault);</code></pre>
         .replace(/'/g, '&#039;');
     }
 
-    function renderInheritanceTree() {
-      const thead = document.getElementById('inherited-list-thead');
-      const tbody = document.getElementById('class-list-tbody');
+    function isDocumented(classData) {
+      return classData.Documented ?? Boolean(firstLineText(classData.Summary || classData.Desc));
+    }
+
+    function renderReferenceStatus() {
+      const status = document.getElementById('reference-status');
+      const empty = document.getElementById('reference-empty');
+      const loader = window.GuildaDocLoader;
+      if (!loader?.hasIndex()) {
+        if (empty) empty.hidden = false;
+        if (status) status.textContent = '';
+        return;
+      }
+      const classes = getClassReferenceData();
+      const coverage = loader.getCoverage();
+      const validation = loader.getValidation();
+      const generatedAt = loader.getSchema()?.generatedAt;
+      const parts = [`${classes.length} classes`];
+      if (coverage) {
+        parts.push(`documented: ${coverage.Classes.Documented}/${coverage.Classes.Total} classes, ${coverage.Methods.Documented}/${coverage.Methods.Total} public methods, ${coverage.Properties.Documented}/${coverage.Properties.Total} public properties`);
+      }
+      parts.push(`${validation.warningCount || 0} warnings, ${validation.errorCount || 0} errors`);
+      if (generatedAt) parts.push(`generated ${generatedAt.replace('T', ' ').slice(0, 16)}`);
+      if (status) status.textContent = parts.join(' · ');
+    }
+
+    // Draw one inheritance tree into a table. `classes` is the set to show;
+    // a class whose parents are not in the set becomes a top-level row.
+    function renderClassTree({ thead, tbody, classes, subtreeRootName, emptyText }) {
       if (!thead || !tbody) return;
-
       thead.innerHTML = '<tr><th>Class Hierarchy</th><th>Summary</th></tr>';
-
-      const classes = getClassReferenceData().filter(c => c.Type === 'PowerSystemModel');
       if (!classes.length) {
-        tbody.innerHTML = '<tr><td colspan="2" class="tree-empty">No class reference data found.</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="2" class="tree-empty">${emptyText}</td></tr>`;
         return;
       }
 
-      const root = { Name: 'PowerSystemModel', Synthetic: true, Children: [] };
       const nodes = new Map(classes.map(c => [c.Name, { ...c, Children: [] }]));
+      const root = { Name: '', Synthetic: true, Children: [] };
       const parentOf = new Map();
-
       nodes.forEach(node => {
-        const parentNames = (node.Parent || '').split(',').map(name => name.trim()).filter(Boolean);
-        const parentName = parentNames.find(name => nodes.has(name)) || 'PowerSystemModel';
-        const parent = parentName === 'PowerSystemModel' ? root : nodes.get(parentName);
+        const parentName = window.GuildaDocLoader.parentNames(node).find(name => nodes.has(name));
+        const parent = parentName ? nodes.get(parentName) : root;
         parent.Children.push(node);
         parentOf.set(node.Name, parent);
       });
+      const byName = (a, b) => a.Name.localeCompare(b.Name);
+      nodes.forEach(node => node.Children.sort(byName));
+      root.Children.sort(byName);
 
-      const subtreeRoot = activeFilter === 'All' ? root : nodes.get(activeFilter);
+      const subtreeRoot = subtreeRootName ? nodes.get(subtreeRootName) : root;
       if (!subtreeRoot) {
         tbody.innerHTML = '<tr><td colspan="2" class="tree-empty">No classes were found for this category.</td></tr>';
         return;
       }
 
-      const subtreeNames = new Set();
-      const collectSubtree = node => {
-        subtreeNames.add(node.Name);
-        node.Children.forEach(collectSubtree);
-      };
-      collectSubtree(subtreeRoot);
-
       const searchBox = document.getElementById('class-search');
       const term = (searchBox?.value || '').trim().toLowerCase();
+      const undocumentedOnly = document.getElementById('class-undocumented-only')?.checked;
       let visibleNames = null;
-
-      if (term) {
+      if (term || undocumentedOnly) {
         visibleNames = new Set();
-        if (subtreeRoot.Name.toLowerCase().includes(term)) visibleNames.add(subtreeRoot.Name);
+        const inSubtree = node => {
+          for (let current = node; current; current = parentOf.get(current.Name)) {
+            if (current === subtreeRoot) return true;
+          }
+          return false;
+        };
         nodes.forEach(node => {
-          if (!subtreeNames.has(node.Name)) return;
-          if (!classSearchText(node).includes(term)) return;
-          let current = node;
-          while (current) {
+          if (!inSubtree(node)) return;
+          if (term && !classSearchText(node).includes(term)) return;
+          if (undocumentedOnly && isDocumented(node)) return;
+          for (let current = node; current && current !== root; current = parentOf.get(current.Name)) {
             visibleNames.add(current.Name);
             if (current === subtreeRoot) break;
-            current = parentOf.get(current.Name);
           }
         });
-      }
-
-      if (visibleNames && !visibleNames.size) {
-        tbody.innerHTML = '<tr><td colspan="2" class="tree-empty">No matching classes found.</td></tr>';
-        return;
+        if (!visibleNames.size) {
+          tbody.innerHTML = '<tr><td colspan="2" class="tree-empty">No matching classes found.</td></tr>';
+          return;
+        }
       }
 
       const rows = [];
-      const flattenTree = (node, guides = []) => {
-        if (visibleNames && !visibleNames.has(node.Name)) return;
-        rows.push({ node, guides });
+      const flattenTree = (node, guides) => {
+        if (visibleNames && !node.Synthetic && !visibleNames.has(node.Name)) return;
+        if (!node.Synthetic) rows.push({ node, guides });
         const children = node.Children.filter(child => !visibleNames || visibleNames.has(child.Name));
         children.forEach((child, index) => {
-          flattenTree(child, [...guides, index < children.length - 1]);
+          flattenTree(child, node.Synthetic ? [] : [...guides, index < children.length - 1]);
         });
       };
-      flattenTree(subtreeRoot);
+      flattenTree(subtreeRoot, []);
 
       const renderGuides = guides => guides.map((hasNext, index) => {
         const isBranch = index === guides.length - 1;
-        const classes = [
+        const guideClasses = [
           'tree-guide',
           isBranch ? 'tree-branch' : 'tree-ancestor',
           hasNext ? 'has-next' : 'is-last'
         ];
-        return `<span class="${classes.join(' ')}" style="--tree-level:${index}" aria-hidden="true"></span>`;
+        return `<span class="${guideClasses.join(' ')}" style="--tree-level:${index}" aria-hidden="true"></span>`;
       }).join('');
 
       tbody.innerHTML = rows.map(({ node, guides }) => {
-        const summary = firstLineText(node.Summary) || '';
-        const isCategoryRoot = !node.Synthetic && (
-          (activeFilter === 'All' && guides.length === 1) ||
-          (activeFilter !== 'All' && guides.length === 0)
-        );
+        const summary = firstLineText(node.Summary || node.Desc) || '';
         const rowClasses = [
-          node.Synthetic ? 'tree-root-row' : '',
-          isCategoryRoot ? 'tree-category-row' : ''
+          guides.length === 0 ? 'tree-root-row' : '',
+          guides.length === 1 ? 'tree-category-row' : ''
         ].filter(Boolean).join(' ');
         const rowAttributes = `${rowClasses ? ` class="${rowClasses}"` : ''} data-tree-depth="${guides.length}"`;
-        const classLabel = node.Synthetic
-          ? '<span class="tree-root-label">PowerSystemModel</span>'
-          : `<a class="tree-class-link${node.Abstract ? ' is-abstract' : ''}" href="${window.GuildaDocLoader.pageUrl('class.html', { class: node.Name })}" title="${escapeHtml(summary || node.Role || '')}">${escapeHtml(node.Name)}</a>`;
-        const nodeMarker = `<span class="tree-node-marker${node.Abstract ? ' is-abstract' : ''}${node.Synthetic ? ' is-root' : ''}" aria-hidden="true"></span>`;
+        const classLabel = `<a class="tree-class-link${node.Abstract ? ' is-abstract' : ''}" href="${window.GuildaDocLoader.pageUrl('class.html', { class: node.Name })}" title="${escapeHtml(summary || node.Role || '')}">${escapeHtml(node.Name)}</a>`;
+        const nodeMarker = `<span class="tree-node-marker${node.Abstract ? ' is-abstract' : ''}${guides.length === 0 ? ' is-root' : ''}" aria-hidden="true"></span>`;
         const hierarchyCell = `<div class="tree-table-name" style="--tree-depth:${guides.length}">${renderGuides(guides)}${nodeMarker}${classLabel}</div>`;
+        const summaryCell = isDocumented(node)
+          ? escapeHtml(summary)
+          : '<span class="ref-badge is-undocumented is-small">no docs</span>';
 
         return `<tr${rowAttributes}>
           <td>${hierarchyCell}</td>
-          <td>${node.Synthetic ? 'Root of the power-system model class hierarchy.' : escapeHtml(summary)}</td>
+          <td>${summaryCell}</td>
         </tr>`;
       }).join('');
     }
 
-    function renderAuxiliaryClassList() {
-      const auxTbody = document.getElementById('auxiliary-list-tbody');
-      const auxThead = document.getElementById('auxiliary-list-thead');
-      if (!auxTbody) return;
-
+    function renderInheritanceTree() {
       const data = getClassReferenceData();
-      if (!data || !Array.isArray(data)) return;
+      const modelClasses = data.filter(c => c.Type === 'PowerSystemModel');
+      const hasRealRoot = modelClasses.some(c => c.Name === 'PowerSystemModel');
+      renderClassTree({
+        thead: document.getElementById('inherited-list-thead'),
+        tbody: document.getElementById('class-list-tbody'),
+        classes: modelClasses,
+        subtreeRootName: activeFilter !== 'All' ? activeFilter : (hasRealRoot ? 'PowerSystemModel' : ''),
+        emptyText: 'No class reference data found.'
+      });
+      renderAuxiliaryClassList();
+    }
 
-      const auxData = data.filter(c => c.Type === 'auxiliary');
-
-      if (auxData.length === 0) {
-        if (auxThead) auxThead.innerHTML = '';
-        auxTbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#888;">No auxiliary classes found.</td></tr>';
-        return;
-      }
-
-      if (auxThead) {
-        auxThead.innerHTML = `
-          <tr>
-            <th>Class Name</th>
-            <th>Summary</th>
-          </tr>
-        `;
-      }
-      auxTbody.innerHTML = auxData.map(c => `
-        <tr class="clickable-row" onclick="window.GuildaDocLoader.navigate('class.html', { class: '${c.Name || ''}' })" title="View details for ${c.Name || ''}">
-          <td><span class="row-link">${c.Name || ''}</span></td>
-          <td>${firstLineText(c.Summary || '')}</td>
-        </tr>
-      `).join('');
+    function renderAuxiliaryClassList() {
+      const data = getClassReferenceData();
+      renderClassTree({
+        thead: document.getElementById('auxiliary-list-thead'),
+        tbody: document.getElementById('auxiliary-list-tbody'),
+        classes: data.filter(c => c.Type !== 'PowerSystemModel'),
+        subtreeRootName: '',
+        emptyText: 'No auxiliary classes found.'
+      });
     }
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -735,15 +754,12 @@ sol = net.simulate([0, 50], fault);</code></pre>
       renderUpdateLog(); 
       renderTutorials(); 
       renderDeveloperLinks();
+      renderReferenceStatus();
       renderReferenceNavigation();
-      
       renderInheritanceTree();
-      renderAuxiliaryClassList();
 
-      const searchBox = document.getElementById('class-search');
-      if(searchBox) {
-        searchBox.addEventListener('input', renderInheritanceTree);
-      }
+      document.getElementById('class-search')?.addEventListener('input', renderInheritanceTree);
+      document.getElementById('class-undocumented-only')?.addEventListener('change', renderInheritanceTree);
     });
   </script>
 </body>
