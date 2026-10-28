@@ -4,7 +4,7 @@ function [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj,c_V,c_I,r_P,r_
         c_V 
         c_I 
         r_P = real(c_V*conj(c_I)) %#ok
-        r_Q = real(c_V*conj(c_I)) %#ok
+        r_Q = imag(c_V*conj(c_I)) %#ok
     end
     
     obj.Z = -c_V/c_I;
