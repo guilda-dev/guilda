@@ -21,11 +21,8 @@ function bus = add_bus(obj, opt)
     str_Bus = opt.Tag+num2str(n_Bus+1,"%.3d");
 
     opt = rmfield(opt,"Tag");
-    % opt = namedargs2cell(opt);
-    % bus = Bus(str_Bus, opt{:});
-    bus = Bus(str_Bus, opt);
-    bus.set_network(obj)
-
+    bus = Bus(obj, str_Bus, opt);
+    
     obj.a_Bus = [obj.a_Bus;{bus}];
     obj.log_edit(obj.str_tag+" <<-Add--- "+bus.str_tag,"Topology");
 end
