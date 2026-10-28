@@ -20,6 +20,11 @@ const developerData = [
     link: "developer/naming-conventions.html"
     },
 {
+    title: "Coding: API Design",
+    description: "Follow the version 4.0 rules for analysis APIs: net.verb_noun() entry points, [result, flag, output] outputs, side effects by verb, and common Name-Value options.",
+    link: "developer/api-design.html"
+    },
+{
     title: "Coding: Class Documentation",
     description: "Use canonical help-comment tags to document MATLAB classes, properties, and methods and validate generated documentation.",
     link: "developer/class-documentation.html"
