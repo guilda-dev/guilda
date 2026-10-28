@@ -393,6 +393,7 @@ breaks after a bus is removed. Refs #51.</div>
       <li><svg class="gw-icon gw-dont-icon" aria-hidden="true"><use href="#gw-i-no"/></svg><span><strong>Generated / personal files</strong>Commit generated files or personal settings (see <a href="folder-structure.html#generated">Generated files</a>).</span></li>
       <li><svg class="gw-icon gw-dont-icon" aria-hidden="true"><use href="#gw-i-no"/></svg><span><strong>Other prefixes</strong>Create work branches with other prefixes such as <code>dev/</code> or <code>develop/</code>.</span></li>
     </ul>
+    <p><strong>Enforced by Claude Code hooks</strong> (<code>.claude/settings.json</code>, <code>.claude/hooks/</code>): Claude Code sessions in this repository are blocked from creating branches with other names, committing on <code>main</code>, <code>versionX.Y</code> or non-work branches, force-pushing or deleting <code>main</code> / <code>versionX.Y</code>, and editing generated files; a commit message that breaks the format is sent back for <code>git commit --amend</code>.</p>
   </main>
 
   <script>
