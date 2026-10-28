@@ -191,6 +191,21 @@ assert(max(abs(Pm(inwin(r.t,2,3)) - (Pm0 + 0.15))) < 1e-8)
 assert(max(abs(Pm(r.t > 3.01) - Pm0)) < 1e-8)
 
 
+%% Events beyond the simulation time
+% 計算時間の外にはみ出すイベントで計算時間は変わらない。関数の引数はイベント開始からの経過時間のまま
+g2  = net.a_Bus{2}.a_Component{1};
+Pm0 = g2.rv_Uequilibrium(g2.sv_u == "Pmech");
+ev  = odeEventSet("input", net, "TimeSpan", [1,5], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) 0.1*t);
+
+r = net.simulate([0,2], ev).odeResults;
+assert(r.t(1) == 0 && r.t(end) == 2)
+
+r = net.simulate([2,4], ev).odeResults;
+assert(r.t(1) == 2 && r.t(end) == 4)
+Pm = r.Bus(2).Component(1).U.Pmech;
+assert(max(abs(Pm - (Pm0 + 0.1*(r.t - 1)))) < 1e-8)
+
+
 %% Multiple events in one simulation
 % 複数のイベントをまとめて渡す (旧 Task10 の構成を短縮)
 o = cell(4,1);

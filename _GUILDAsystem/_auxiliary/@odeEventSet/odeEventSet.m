@@ -283,10 +283,9 @@ classdef (Sealed = true) odeEventSet < auxiliary
                         error(msg('GUILDA:odeEventSet:InvalidNargin'))
                     end
 
+                    % t of each phase starts at 0; the function takes the time since the event start.
                     ts = opt.TimePhase(1) - oev.TimeSpan(1);
-                    if oev.odeIteration+1 == opt.Iteration
-                        exV = @(t) exV(t+ts);
-                    end
+                    exV = @(t) exV(t+ts);
                 else
                     error(msg('GUILDA:odeEventSet:InvalidInputType'))
                 end
