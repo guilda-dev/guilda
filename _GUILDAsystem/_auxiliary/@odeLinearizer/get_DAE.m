@@ -20,6 +20,8 @@ function [A_dae, B_dae, C_dae, D_dae, E_dae] = get_DAE(obj,opt)
     Ymat = tools.complex2matrix( Y.Variables );
 
     x = tools.cellfun(@(s) string(s.StateName),  ssFromBus);        
+    % state names come from the bus models, so that controller states are included
+    output = vertcat(x{:});
 
     Ex = tools.dcellfun(@(SS) SS.E, ssFromBus);
 
@@ -43,7 +45,7 @@ function [A_dae, B_dae, C_dae, D_dae, E_dae] = get_DAE(obj,opt)
 
         Ex = blkdiag(sysAGC.E,Ex);
 
-        output = [sysAGC.StateName;output];
+        output = [string(sysAGC.StateName);output];
     end    
 
     Ev = zeros(size(Avv));
