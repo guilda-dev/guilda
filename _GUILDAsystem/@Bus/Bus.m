@@ -67,6 +67,12 @@ classdef Bus < PowerSystemModel
         % Set equilibrium
         set_equilibrium(obj, c_V, c_I, r_P, r_Q, opt)
     end
+    methods (Access={?PowerNetwork})
+        function set_network(obj, net)
+            % net = [] detaches the bus (PowerNetwork.remove_bus)
+            obj.a_PowerNetwork = net;
+        end
+    end
     
     methods
         % Layer Structure

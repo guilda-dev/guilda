@@ -17,8 +17,13 @@ function bus = add_bus(obj, opt)
         opt.Marker            (1,1) string = "s";
     end
 
+    % next number not used yet (after remove_bus, numel+1 may already be taken)
     n_Bus   = numel(obj.a_Bus);
     str_Bus = opt.Tag+num2str(n_Bus+1,"%.3d");
+    while ismember(str_Bus, string(obj.a_Bus))
+        n_Bus   = n_Bus + 1;
+        str_Bus = opt.Tag+num2str(n_Bus+1,"%.3d");
+    end
 
     if ~isnan(opt.baseMVA)
         r_base = obj.para_base.baseMVA;

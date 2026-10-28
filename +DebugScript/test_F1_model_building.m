@@ -317,18 +317,74 @@ assert(isempty(br.a_PowerNetwork) && isempty(br.a_Bus))
 
 %% Remove bus
 net = DebugScript.helper.build_9bus();
+DebugScript.helper.quiet(@() net.initialize);    % 編集ログは initialize 後に記録される
 net.add_bus();                               % 何もつながっていない母線 B010
+bus = net.a_Bus{10};
 net.remove_bus("B010");
 assert(numel(net.a_Bus) == 9)
 assert(~ismember("B010", string(net.a_Bus)))
+assert(isempty(bus.a_PowerNetwork))                 % 削除した母線は系統への参照を持たない
+assert(net.tab_editLog.tag(end) == "Topology")
+
+% 存在しないタグはエラー
+try
+    net.remove_bus("B099");
+    error("DebugScript:noError", "存在しない母線の削除がエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:PowerNetwork:BusNotFound", ME.message)
+end
+
+% 送電線がつながった母線は、既定ではエラー (系統は変わらない)
+n_branch = numel(net.a_Branch);
+try
+    net.remove_bus("B005");
+    error("DebugScript:noError", "送電線がつながった母線の削除がエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:PowerNetwork:BusHasBranches", ME.message)
+end
+assert(numel(net.a_Bus) == 9 && numel(net.a_Branch) == n_branch)
+
+% RemoveBranches=true なら、つながった送電線も一緒に削除する
+lv_conn = cellfun(@(br) any(string(br.a_Bus) == "B005"), net.a_Branch);
+a_conn  = net.a_Branch(lv_conn);
+net.remove_bus("B005", "RemoveBranches", true);
+assert(numel(net.a_Bus) == 8 && numel(net.a_Branch) == n_branch - nnz(lv_conn))
+assert(all(cellfun(@(br) isempty(br.a_PowerNetwork), a_conn)))
+
+% 新しい母線のタグは既存のタグと重ならない
+bus = net.add_bus();
+assert(numel(unique(string(net.a_Bus))) == 9 && bus.str_tag == "B010")
+
+% 大域制御器が制御している機器のある母線は削除できない
+net = DebugScript.helper.build_ieee14();
+agc = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001");
+net.add_global_controller(agc);
+try
+    net.remove_bus("B001", "RemoveBranches", true);
+    error("DebugScript:noError", "大域制御器が制御する機器のある母線の削除がエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:PowerNetwork:BusHasControlledUnits", ME.message)
+end
+assert(numel(net.a_Bus) == 14)
 
 
 %% Remove global controller
 net = DebugScript.helper.build_ieee14();
 agc = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001");
 net.add_global_controller(agc);
+DebugScript.helper.quiet(@() net.initialize);
 net.remove_global_controller("agc");
 assert(isempty(net.a_GlobalController))
+assert(isempty(agc.PowerNetwork))                   % 削除した制御器は系統への参照を持たない
+assert(net.tab_editLog.tag(end) == "Topology")
+
+% 存在しないタグはエラー
+try
+    net.remove_global_controller("agc");
+    error("DebugScript:noError", "存在しない大域制御器の削除がエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:PowerNetwork:GconNotFound", ME.message)
+end
 
 
 %% Edit tab_parameter of bus component and branch
