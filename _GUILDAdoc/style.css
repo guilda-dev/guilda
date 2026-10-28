@@ -1075,6 +1075,7 @@ body.doc-layout .meta-box table th {
 .dg main h2 { margin: var(--dg-s7) 0 var(--dg-s4); padding: var(--dg-s5) 0 0; border-bottom: 0; border-top: 1px solid var(--dg-line); font-size: 1.45rem; }
 .dg main h3 { margin: var(--dg-s5) 0 var(--dg-s2); color: var(--dg-ink); font-size: 1.05rem; }
 .dg main code { overflow-wrap: anywhere; }
+.dg main h3 code, .dg .dg-item-title code, .dg .dg-row-head code { background: var(--dg-accent-soft); color: inherit; }
 .dg .dev-toc { margin: var(--dg-s5) 0 0; padding: 0 0 var(--dg-s3); gap: var(--dg-s2) var(--dg-s5); background: none; border: 0; border-bottom: 1px solid var(--dg-line); border-radius: 0; }
 .dg .dev-toc + h2, .dg .dev-toc + .dg-callout + h2 { border-top: 0; }
 .dg .name-generator { margin-top: var(--dg-s5); }
@@ -1266,11 +1267,11 @@ body.doc-layout .meta-box table th {
 .dg-gh-check .dg-icon { width: 18px; height: 18px; }
 .dg-gh-pin { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--gh-attn); color: var(--gh-canvas); font: bold 0.75rem/1 var(--dg-mono); vertical-align: middle; }
 .dg-gh-pin.is-light { background: var(--dg-warn); color: #24303d; }
-.dg-gh svg { display: block; width: 100%; height: auto; }
+.dg-gh svg:not(.dg-icon) { display: block; width: 100%; height: auto; }
 .dg-gh svg text { font-family: var(--dg-mono); }
 .dg-gh-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px var(--dg-s4); padding: 10px var(--dg-s4); border-top: 1px solid var(--gh-border); background: var(--gh-panel); color: var(--gh-muted); font-size: 0.82rem; }
 .dg-gh-legend span { display: inline-flex; align-items: center; gap: 6px; }
-.dg-gh-legend svg { display: inline; width: 14px; height: 14px; }
+.dg-gh .dg-gh-legend svg { display: inline; width: 14px; height: 14px; }
 .dg-gh-btn { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; padding: 3px 12px; border: 1px solid var(--gh-border); border-radius: 6px; background: #21262d; color: var(--gh-text); font: inherit; font-size: 0.82rem; cursor: pointer; }
 .dg-gh-btn:hover { border-color: var(--gh-muted); }
 .dg-gh-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
