@@ -33,7 +33,6 @@ function tab = known_failures()
     "test_F4_opf/DCOptimalPowerFlow",                            "build_opf_problem が tab_parameter.OPF 列を参照するが存在しない。結果整形も削除済み Cubicle を参照"
     "test_F4_opf/ACOptimalPowerFlow",                            "build_opf_problem が tab_parameter.OPF 列を参照するが存在しない。結果整形・@Branch/build_opf_problem も削除済み Cubicle を参照"
     % ---- F5 CPF ---------------------------------------------------------------------------------
-    "test_F5_cpf/LegacyEntryContinuation_Power_Flow",            "Continuation_Power_Flow(net,opt) が opt を名前-値引数の関数へ位置引数で渡すため必ずエラー"
     % ---- F6 time simulation ---------------------------------------------------------------------
     "test_F6_simulation/SimulateWithoutEvents",                  "イベント無しの simulate で odeEventSet.table ではなく組み込みの table が呼ばれエラー"
     "test_F6_simulation/OffsetStateAfterTimeZero",               "OffsetState は最初の区間 (TimeSpan 0) でしか初期値に反映されず、t>0 のオフセットは無視される"
