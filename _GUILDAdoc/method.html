@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GUILDA Reference - Method</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="reference.css">
   
   <script src="./database/list_Classes.js"></script>
   <script src="./doc-loader.js"></script>
@@ -29,6 +30,7 @@
       <li><a href="#calls" onclick="document.getElementById('calls')?.scrollIntoView(); return false;">Method Calls</a></li>
       <li><a href="#examples" onclick="document.getElementById('examples')?.scrollIntoView(); return false;">Examples</a></li>
     </ul>
+    <div id="sidebar-method-nav"></div>
   </nav>
 
   <main id="main-content" style="flex: 1; min-width: 0;">
@@ -42,19 +44,41 @@
     const className = routeParams.get('class');
     const methodName = routeParams.get('method');
 
+    const escapeText = (text) => (text ?? '').toString()
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
     if (!className || !methodName) {
       document.getElementById('dynamic-content').innerHTML = "<h1 style='color:red;'>Error: Missing Parameters</h1>";
+    } else if (!window.GuildaDocLoader.hasIndex()) {
+      document.getElementById('dynamic-content').innerHTML = `
+        <h1>${escapeText(methodName)}</h1>
+        <div class="ref-empty"><p>The class reference has not been generated yet.</p><p>Run <code>GUILDA.doc</code> in MATLAB to build it.</p></div>`;
     } else {
-      // 戻るボタンの設定
       document.getElementById('sidebar-back-btn').innerHTML = `
-        <a href="index.html#tab-reference" onclick="window.GuildaDocLoader.navigate('index.html', 'tab-reference'); return false;" class="btn" style="width: 100%; text-align: center; margin-bottom: 20px; box-sizing: border-box;">← Back to Home</a>
+        <a href="${window.GuildaDocLoader.pageUrl('class.html', { class: className })}" class="btn" style="width: 100%; text-align: center; margin-bottom: 20px; box-sizing: border-box;">← Back to ${escapeText(className)}</a>
       `;
 
       window.GuildaDocLoader.loadClass(className)
-        .then(({ data }) => renderMethodPage(className, methodName, data))
+        .then(({ data }) => {
+          renderMethodNav(className, methodName, data);
+          return renderMethodPage(className, methodName, data);
+        })
         .catch((err) => {
-          document.getElementById('dynamic-content').innerHTML = `<h1 style="color:red;">Load Error</h1><p>${(err && err.message) ? err.message : err}</p>`;
+          document.getElementById('dynamic-content').innerHTML = `<h1 style="color:red;">Load Error</h1><p>${escapeText((err && err.message) ? err.message : err)}</p>`;
         });
+    }
+
+    // Sidebar list of the other methods of the class, own methods first.
+    function renderMethodNav(className, methodName, classDoc) {
+      const methods = (Array.isArray(classDoc?.methods) ? classDoc.methods : [])
+        .slice()
+        .sort((a, b) => ((a.Defining !== className) - (b.Defining !== className)) || a.Name.localeCompare(b.Name));
+      if (!methods.length) return;
+      document.getElementById('sidebar-method-nav').innerHTML = `
+        <h3 class="ref-nav-title">Methods of ${escapeText(className)}</h3>
+        <ul class="ref-method-nav">
+          ${methods.map((m) => `<li><a class="${m.Name === methodName ? 'is-current' : ''}${m.Defining !== className ? ' ref-muted' : ''}" href="${window.GuildaDocLoader.pageUrl('method.html', { class: className, method: m.Name })}">${escapeText(m.Name)}</a></li>`).join('')}
+        </ul>`;
     }
 
     async function renderMethodPage(className, methodName, classDoc) {
@@ -288,6 +312,13 @@
       };
 
       const normalizeMethod = (m) => ({
+        signature: m?.Signature || '',
+        sealed: m?.Sealed ?? false,
+        constructor: m?.IsConstructor ?? false,
+        file: m?.File || '',
+        sourceArguments: Array.isArray(m?.Arguments) ? m.Arguments : [],
+        inputNames: Array.isArray(m?.InputNames) ? m.InputNames : [],
+        outputNames: Array.isArray(m?.OutputNames) ? m.OutputNames : [],
         name: m?.Name || '',
         summary: m?.Summary || m?.Abst || '',
         description: m?.Desc || m?.Summary || m?.Abst || '',
@@ -321,7 +352,7 @@
         .find(m => m?.Name === methodName);
       const methodData = rawMethodData ? normalizeMethod(rawMethodData) : null;
       if (!methodData) {
-        document.getElementById('dynamic-content').innerHTML = `<h1 style="color:red;">Method not found</h1><p>${methodName} does not exist in ${className}.</p>`;
+        document.getElementById('dynamic-content').innerHTML = `<h1 style="color:red;">Method not found</h1><p>${escapeHtml(methodName)} does not exist in ${escapeHtml(className)}.</p>`;
         return;
       }
 
@@ -404,19 +435,45 @@
       const normalizedDescription = extracted.description || methodData.description;
 
       const signatures = normalizeSignatureList(methodData.signatures);
-      if (!signatures.length) signatures.push(`${methodName}()`);
+      if (!signatures.length) signatures.push(methodData.signature || `${methodName}()`);
 
       const overviewText = (methodData.overview || normalizedDescription || '').toString().trim();
 
-      let parameterRows = methodData.parameters;
+      // Arguments: the arguments block in the source gives names, kinds,
+      // sizes, classes and defaults; <@Parameters> adds descriptions and units.
+      // Without either, fall back to the names on the function line.
+      const taggedByName = new Map(methodData.parameters.map((p) => [p.name, p]));
+      const describeValidation = (arg) => [arg.Size, arg.Class].filter(Boolean).join(' ');
+      let parameterRows = methodData.sourceArguments.map((arg) => {
+        const tagged = taggedByName.get(arg.Name) || {};
+        taggedByName.delete(arg.Name);
+        return {
+          name: arg.Kind === 'NameValue' ? `${arg.Name}` : arg.Name,
+          kind: { Positional: 'Positional', NameValue: 'Name-Value', Repeating: 'Repeating' }[arg.Kind] || arg.Kind,
+          type: tagged.type || describeValidation(arg),
+          unit: tagged.unit || '',
+          description: tagged.description || arg.Description || '',
+          required: tagged.required !== undefined && tagged.required !== '' ? tagged.required : Boolean(arg.Required),
+          default: tagged.default || arg.Default || '',
+          constraints: tagged.constraints || (Array.isArray(arg.Validators) ? arg.Validators.join(', ') : '')
+        };
+      });
+      parameterRows = parameterRows.concat([...taggedByName.values()]);
       if (!parameterRows.length && methodData.arginText) {
         parameterRows = parseSimpleEntries(methodData.arginText, 'param');
+      }
+      if (!parameterRows.length) {
+        parameterRows = methodData.inputNames.map((name) => ({ name, kind: name === 'varargin' ? 'Repeating' : '', type: '', unit: '', description: '', required: '', default: '', constraints: '' }));
       }
 
       let returnRows = methodData.returns;
       if (!returnRows.length && methodData.argoutText && methodData.argoutText.trim().toLowerCase() !== 'none') {
         returnRows = parseSimpleEntries(methodData.argoutText, 'return');
       }
+      if (!returnRows.length) {
+        returnRows = methodData.outputNames.map((name) => ({ name, type: '', unit: '', description: '' }));
+      }
+      const hasDocs = Boolean(methodData.summary || methodData.description);
 
       const examplesList = [];
       if (Array.isArray(methodData.examples)) {
@@ -437,8 +494,12 @@
         </div>
         <h1 style="font-size: 2.5rem; margin-bottom: 10px;">${methodName}</h1>
         <div style="margin: -4px 0 10px 0; color: #666; font-size: 0.95rem;">
-          ${methodData.defining ? `Method defined in the ${renderClassLink(methodData.defining)} class.` : ''}
+          ${methodData.defining && methodData.defining !== className
+            ? `Inherited from ${renderClassLink(methodData.defining)}.`
+            : (methodData.defining ? `Method defined in the ${renderClassLink(methodData.defining)} class.` : '')}
         </div>
+        ${methodData.file ? `<p class="ref-source">Source: <code>${escapeHtml(methodData.file)}</code></p>` : ''}
+        ${hasDocs ? '' : `<div class="ref-notice">This method has no documentation comments yet. Signature and arguments below are read from the source code. See <a href="developer/class-documentation.html">Class Documentation</a> for the comment rules.</div>`}
         <hr style="margin: 0 0 18px 0; border: 0; border-top: 1px solid #dee2e6;">
 
         <h2 id="overview">Overview</h2>
@@ -455,6 +516,8 @@
               <tr><th>Access</th><td>${normalizeCell(methodData.access)}</td></tr>
               <tr><th>Static</th><td>${toBoolText(methodData.static)}</td></tr>
               <tr><th>Abstract</th><td>${toBoolText(methodData.abstract)}</td></tr>
+              <tr><th>Sealed</th><td>${toBoolText(methodData.sealed)}</td></tr>
+              <tr><th>Constructor</th><td>${toBoolText(methodData.constructor)}</td></tr>
               <tr><th>Hidden</th><td>${toBoolText(methodData.hidden)}</td></tr>
               <tr><th>Role</th><td>${normalizeCell(methodData.role)}</td></tr>
               <tr><th>Since</th><td>${normalizeCell(methodData.since)}</td></tr>
@@ -487,7 +550,7 @@
       html += `<h2 id="arguments">Arguments / Parameters</h2>`;
       if (parameterRows.length > 0) {
         html += `
-          <table class="compact-table description-table">
+          <div class="ref-table-scroll"><table class="compact-table description-table">
             <thead>
               <tr>
                 <th style="width: 20%;">Name</th>
@@ -520,7 +583,7 @@
                 `;
               }).join('')}
             </tbody>
-          </table>
+          </table></div>
         `;
       } else {
         html += `<p>None</p>`;
@@ -529,7 +592,7 @@
       html += `<h2 id="returns">Return Values</h2>`;
       if (returnRows.length > 0) {
         html += `
-          <table class="compact-table">
+          <div class="ref-table-scroll"><table class="compact-table">
             <thead>
               <tr>
                 <th style="width: 22%;">Name</th>
@@ -548,7 +611,7 @@
                 </tr>
               `).join('')}
             </tbody>
-          </table>
+          </table></div>
         `;
       } else {
         html += `<p>None</p>`;

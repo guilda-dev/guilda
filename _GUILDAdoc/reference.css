@@ -1,0 +1,137 @@
+@charset "UTF-8";
+
+/* Class reference (index.html#tab-reference, class.html, method.html).
+   Shared tokens come from style.css; only reference-specific rules live here. */
+
+.ref-status {
+  margin: 0 0 14px;
+  font-size: 0.85rem;
+  color: #5f6b7a;
+}
+
+.ref-empty {
+  padding: 16px 18px;
+  border: 1px dashed #b8c1cb;
+  border-radius: 8px;
+  background: #fff;
+}
+.ref-empty p { margin: 0 0 8px; }
+.ref-empty p:last-child { margin-bottom: 0; }
+
+.ref-notice {
+  margin: 12px 0 20px;
+  padding: 10px 14px;
+  border-left: 4px solid #e0a800;
+  border-radius: 6px;
+  background: #fff8e1;
+  font-size: 0.9rem;
+}
+
+.ref-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+
+.ref-badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: #fff;
+  color: #4a5563;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.ref-badge.is-abstract { border-color: #8ea6bd; color: var(--primary-color); }
+.ref-badge.is-sealed { border-color: #9a6b00; color: #9a6b00; }
+.ref-badge.is-undocumented { border-color: #e0a800; background: #fff8e1; color: #7a5600; }
+.ref-badge.is-small { padding: 0 6px; font-size: 0.7rem; }
+
+.ref-chain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+.ref-chain-sep { color: #9aa5b1; }
+.ref-chain-external { color: #5f6b7a; }
+
+.ref-source {
+  color: #5f6b7a;
+  font-size: 0.8rem;
+  word-break: break-all;
+}
+.ref-source code { white-space: normal; word-break: break-all; }
+
+/* Long code-like lines in comments must wrap instead of widening the page. */
+.doc-layout .markdown-content { overflow-wrap: anywhere; }
+
+.ref-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 8px 0 12px;
+}
+.ref-toolbar .search-box {
+  flex: 1 1 220px;
+  margin: 0;
+}
+.ref-toolbar .view-switcher { margin: 0; }
+
+.ref-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ref-table-scroll {
+  overflow-x: auto;
+  margin-bottom: 20px;
+  -webkit-overflow-scrolling: touch;
+}
+.ref-table-scroll > table { margin: 0; }
+
+.ref-count {
+  margin: -4px 0 8px;
+  color: #5f6b7a;
+  font-size: 0.8rem;
+}
+
+tr.ref-inherited td { color: #6b7785; }
+tr.ref-inherited td strong,
+tr.ref-inherited td .row-link { font-weight: normal; }
+
+.ref-defined-in { white-space: nowrap; }
+
+.ref-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85em;
+}
+
+.ref-muted { color: #8a96a3; }
+
+.ref-method-nav {
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+.ref-method-nav a.is-current { font-weight: bold; }
+.ref-method-nav .ref-muted { font-size: 0.75rem; }
+
+.ref-nav-title { margin: 18px 0 6px; }
+
+/* Narrow screens: the sidebar stacks above the content. */
+@media (max-width: 899px) {
+  body.doc-layout #sidebar img { max-width: 180px; }
+  body.doc-layout #main-content { padding: 16px; }
+  .ref-method-nav { columns: 2; }
+}
