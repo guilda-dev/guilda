@@ -19,35 +19,49 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Busvar, opt
         opf  = obj.para_OPF;
         ope  = obj.para_operation;
         str  = string(obj);
+
+        % Output limits [P;Q] and initial point.
+        % A load is not dispatched: its P/Q are fixed to the power-flow setting.
+        lb = [ope.Pmin; ope.Qmin];
+        ub = [ope.Pmax; ope.Qmax];
+        PQ0 = [opf.P0; opf.Q0];
+        if isa(obj,"component.load.abstract")
+            pf  = obj.para_powerflow;
+            PQ  = [pf.P; pf.Q];
+            l_fix = ~isnan(PQ);
+            lb(l_fix)  = PQ(l_fix);
+            ub(l_fix)  = PQ(l_fix);
+            PQ0(l_fix) = PQ(l_fix);
+        end
     
         switch option.methods
             case "AC OPF"
                 var  = optimvar(str, {'P','Q'}, 1,      "Type", "continuous"       ,...
-                                                  "LowerBound",[ope.Pmin;ope.Qmin] ,...
-                                                  "UpperBound",[ope.Pmax;ope.Qmax] );
+                                                  "LowerBound",lb ,...
+                                                  "UpperBound",ub );
                 Convar  = ["P","Q"] + "_" + string(obj.a_Bus);
                 const.(Convar(1)) = const.(Convar(1)) + var("P");
                 const.(Convar(2)) = const.(Convar(2)) + var("Q");
-                x0.(str) = [opf.P0;opf.Q0];
+                x0.(str) = PQ0;
                 prob.Objective.GenCost = prob.Objective.GenCost...
                                   + opf.HP * var("P")^2 + opf.fP * var("P") ...
                                   + opf.HQ * var("Q")^2 + opf.fQ * var("Q");
                 
             case "DC OPF"
                 var  = optimvar(str, {'P'}, 1, "Type"      ,"continuous" ,...
-                                               "LowerBound",ope.Pmin     ,...
-                                               "UpperBound",ope.Pmax     );
+                                               "LowerBound",lb(1)        ,...
+                                               "UpperBound",ub(1)        );
                 Convar  = "P_" + string(obj.a_Bus);
                 const.(Convar) = const.(Convar) + var;
-                x0.(str)       = opf.P0;
+                x0.(str)       = PQ0(1);
                 prob.Objective.GenCost = prob.Objective.GenCost + opf.HP * var^2 + opf.fP * var;
     
             case "ELD"
                 var  = optimvar(str, {'P'}, 1, "Type"      ,"continuous" ,...
-                                               "LowerBound",ope.Pmin     ,...
-                                               "UpperBound",ope.Pmax     );
+                                               "LowerBound",lb(1)        ,...
+                                               "UpperBound",ub(1)        );
                 const.P = const.P + var;
-                x0.(str) = opf.P0;
+                x0.(str) = PQ0(1);
                 prob.Objective.GenCost = prob.Objective.GenCost + opf.HP * var^2 + opf.fP * var;
         end
 
