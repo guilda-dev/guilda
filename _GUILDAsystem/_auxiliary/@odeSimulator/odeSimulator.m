@@ -365,6 +365,16 @@ classdef (Sealed = true) odeSimulator < auxiliary
 
         function [out,flag] = simulate(obj, net, time, varargin)
             obj.odeNetwork = net;
+            obj.odeResult  = {};
+
+            % Without events, add an empty event so that odeEventSet.table is dispatched.
+            if isempty(varargin)
+                t0 = 0;
+                if ~isempty(time)
+                    t0 = time(1);
+                end
+                varargin = {odeEventSet("NoAction", net, "TimeSpan", t0)};
+            end
 
             [obj.odeTimeTable, obj.ODEvnt] = table(varargin{:}, "time", time);
             obj.initialize_odeSimulator;

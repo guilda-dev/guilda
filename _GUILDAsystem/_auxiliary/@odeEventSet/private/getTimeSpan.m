@@ -11,6 +11,8 @@ function TimeSpan = getTimeSpan(times, option)
         end
     end
     time = unique([t0te(1); tcat; t0te(2)], "sorted", "first");
+    % Events outside the simulation time do not extend it
+    time = time(time >= t0te(1) & time <= t0te(2));
 
     TimeSpan = [time(1:end-1), time(2:end)];
 end

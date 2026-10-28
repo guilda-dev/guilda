@@ -23,8 +23,6 @@ function tab = known_failures()
     % ---- F4 OPF ---------------------------------------------------------------------------------
     % ---- F5 CPF ---------------------------------------------------------------------------------
     % ---- F6 time simulation ---------------------------------------------------------------------
-    "test_F6_simulation/SimulateWithoutEvents",                  "イベント無しの simulate で odeEventSet.table ではなく組み込みの table が呼ばれエラー"
-    "test_F6_simulation/OffsetStateAfterTimeZero",               "OffsetState は最初の区間 (TimeSpan 0) でしか初期値に反映されず、t>0 のオフセットは無視される"
     % ---- F8 utilities ---------------------------------------------------------------------------
     % ---- F9 environment -------------------------------------------------------------------------
     "test_F9_environment/GUILDAStartsInBatchMode",               "起動時に Tutorial 設定が true だと Main.mlx を open し、デスクトップの無いバッチ実行ではエラーになる"

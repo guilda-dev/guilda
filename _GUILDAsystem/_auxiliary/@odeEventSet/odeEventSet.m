@@ -212,6 +212,9 @@ classdef (Sealed = true) odeEventSet < auxiliary
             odeEvents = [{obj},varargin]';            
 
             osU = cellfun(@(c) c.OffsetUnit,  odeEvents);
+            % An offset is applied only once, in the phase where its event starts.
+            lv_osStart = cellfun(@(c) c.TimeSpan(1) == opt.TimePhase(1), odeEvents) | opt.Iteration == 1;
+            osU(~lv_osStart) = "";
             osX = cellfun(@(c) c.OffsetState, odeEvents, 'UniformOutput', false);
             osV = cellfun(@(c) c.OffsetValue, odeEvents, 'UniformOutput', false);            
 
@@ -228,28 +231,40 @@ classdef (Sealed = true) odeEventSet < auxiliary
                     
                     comp{j}.rv_Xoffset = zeros(size(comp{j}.sv_x(:)));                                       
 
-                    if any(l_osU)
-                        lv_X = ismember(comp{j}.sv_x, osX{l_osU});                        
-                        comp{j}.rv_Xoffset(lv_X) = comp{j}.rv_Xoffset(lv_X) + osV{l_osU};
-                    end                    
+                    % Offsets and inputs are matched by name and summed over the events.
+                    for k = find(l_osU(:))'
+                        [lv_X, loc] = ismember(osX{k}, comp{j}.sv_x);
+                        osVk = osV{k} .* ones(size(osX{k}));
+                        comp{j}.rv_Xoffset(loc(lv_X)) = comp{j}.rv_Xoffset(loc(lv_X)) + osVk(lv_X);
+                    end
 
                     ini = repmat({@(t) 0}, size(comp{j}.sv_u(:)));
-                    if any(l_inU)
-                        l_inN = ismember(comp{j}.sv_u, inN{l_inU});                                                
-                        
-                        exV = inV{l_inU};                                                                                                
+                    lv_set = false(size(ini));
+                    for k = find(l_inU(:))'
+                        [lv_N, loc] = ismember(inN{k}, comp{j}.sv_u);
+
+                        exV = inV{k};
                         if ~iscell(exV)
                             if isa(exV, 'function_handle')
                                 exV = {exV};
                             else
-                                exV = arrayfun(@(exv) {exv}, exV);                            
-                            end                            
+                                exV = num2cell(exV);
+                            end
+                        end
+                        if isscalar(exV)
+                            exV = repmat(exV, size(inN{k}));
                         end
 
-                        for ni = 1:numel(exV)                                
-                            exV{ni} = event2fhandle(exV{ni});
+                        for ni = find(lv_N(:))'
+                            f1 = event2fhandle(exV{ni}, odeEvents{k});
+                            if lv_set(loc(ni))
+                                f0 = ini{loc(ni)};
+                                ini{loc(ni)} = @(t) f0(t) + f1(t);
+                            else
+                                ini{loc(ni)} = f1;
+                                lv_set(loc(ni)) = true;
+                            end
                         end
-                        ini(l_inN) = exV;
                     end
                     comp{j}.rv_Uoffset = @(t) cellfun(@(f) f(t), ini);
                 end
@@ -259,7 +274,7 @@ classdef (Sealed = true) odeEventSet < auxiliary
                 odeEvents{ev}.odeIteration = opt.Iteration; 
             end
 
-            function exV = event2fhandle(exV)
+            function exV = event2fhandle(exV, oev)
                 if isa(exV, 'double')
                     exV = @(t) exV;
 
@@ -268,10 +283,9 @@ classdef (Sealed = true) odeEventSet < auxiliary
                         error(msg('GUILDA:odeEventSet:InvalidNargin'))
                     end
 
-                    ts = opt.TimePhase(1) - odeEvents{l_inU}.TimeSpan(1);
-                    if odeEvents{l_inU}.odeIteration+1 == opt.Iteration
-                        exV = @(t) exV(t+ts);
-                    end
+                    % t of each phase starts at 0; the function takes the time since the event start.
+                    ts = opt.TimePhase(1) - oev.TimeSpan(1);
+                    exV = @(t) exV(t+ts);
                 else
                     error(msg('GUILDA:odeEventSet:InvalidInputType'))
                 end
@@ -336,6 +350,15 @@ classdef (Sealed = true) odeEventSet < auxiliary
             x0 = opt.x0;
             if isempty(x0)
                 x0 = [vertcat(rv_X{:}); vertcat(rv_V{:})];
+            else
+                % Offsets of the events starting in this phase (see setEventCondition)
+                for i=1:numel(a_bus)
+                    a_Comp = a_bus{i}.a_Component;
+                    for j=1:numel(a_Comp)
+                        idx = a_Comp{j}.iv_odeX;
+                        x0(idx) = x0(idx) + a_Comp{j}.rv_Xoffset;
+                    end
+                end
             end
             varargout{1} = RM * x0;                        
             
