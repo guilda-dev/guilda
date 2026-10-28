@@ -12,7 +12,9 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         opt.rec  (1,1) logical = true
     end        
 
-    [sysCON,x_tag,~,~] = tools.cellfun(@(d) d.get_sys("full",false,"tag",false), obj.a_LocalController);        
+    % All controllers in the tree (e.g. PSS attached under AVR) are separate blocks connected by signal names
+    a_LC = all_controllers(obj);
+    [sysCON,x_tag,~,~] = tools.cellfun(@(d) d.get_sys("full",false,"tag",false), a_LC);
     if ~isempty(sysCON) && opt.rec
         [SYS,xSYS,uSYS,ySYS] = obj.get_sys("full",false,"port",opt.port,"tag",false,"con",opt.con,"rec",false);        
 
@@ -41,19 +43,30 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     Vport  = {["Vre";"Vim"]; obj.attach_tag(["Vre";"Vim"])};
     Iport  = {["Ire";"Iim"]; obj.attach_tag(["Ire";"Iim"])};    
 
-    Mass = obj.f_Mass([],x,V,I,u);
+    nx = numel(obj.sv_x);
+    nu = numel(obj.sv_u);
+    ny = numel(obj.sv_y);
 
-    Axx = obj.JacobiAxx([],x,V,I,u);
-    Bxv = obj.JacobiBxv([],x,V,I,u);    
-    Bxu = obj.JacobiBxu([],x,V,I,u);        
+    Mass = shape(obj.f_Mass(0,x,V,I,u), nx, nx);
 
-    Cix = obj.JacobiCix([],x,V,I,u);
-    Div = obj.JacobiDiv([],x,V,I,u);
-    Diu = obj.JacobiDiu([],x,V,I,u);                  
+    % Same Jacobian contract as odeSimulator: f_JacobiDx/I/Y(t,x,V,I,u)
+    [Axx,Bxv,Bxi,Bxu] = obj.f_JacobiDx(0,x,V,I,u);
+    [Cix,Div,Dii,Diu] = obj.f_JacobiI( 0,x,V,I,u);
+    [Cyx,Dyv,Dyi,Dyu] = obj.f_JacobiY( 0,x,V,I,u);
 
-    Cyx = {[],obj.JacobiCyx([],x,V,I,u)};
-    Dyv = {[],obj.JacobiDyv([],x,V,I,u)};
-    Dyu = {[],obj.JacobiDyu([],x,V,I,u)};
+    Axx = shape(Axx, nx, nx);  Bxv = shape(Bxv, nx, 2);  Bxi = shape(Bxi, nx, 2);  Bxu = shape(Bxu, nx, nu);
+    Cix = shape(Cix,  2, nx);  Div = shape(Div,  2, 2);  Dii = shape(Dii,  2, 2);  Diu = shape(Diu,  2, nu);
+    Cyx = shape(Cyx, ny, nx);  Dyv = shape(Dyv, ny, 2);  Dyi = shape(Dyi, ny, 2);  Dyu = shape(Dyu, ny, nu);
+
+    % The ports are V (input) and I (output), so a model whose equations depend on I cannot be linearized here
+    if any([Bxi(:); Dii(:); Dyi(:)] ~= 0)
+        error("GUILDA:Component:get_sys:CurrentDependence", ...
+              "get_sys does not support models whose fcn_dx, fcn_I or fcn_Y depend on the current I (%s).", obj.str_tag)
+    end
+
+    Cyx = {[],Cyx};
+    Dyv = {[],Dyv};
+    Dyu = {[],Dyu};
 
     Cvx = {[],zeros(size(Cix),'like',Cix)};
     Dvv = {[],  eye(size(Div),'like',Div)};
@@ -134,7 +147,24 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     varargout{3} = tools.arrayfun(@(s) char(s), OutputNames{opt.full+1}); 
 
 
-    function Connect = connectCondition(in,out) 
+    function list = all_controllers(parent)
+        list = cell(0,1);
+        for k = 1:numel(parent.a_LocalController)
+            con  = parent.a_LocalController{k};
+            list = [list; {con}; all_controllers(con)]; %#ok<AGROW>
+        end
+    end
+
+    function M = shape(M,r,c)
+        % Models may return [] for an empty or all-zero block
+        if isempty(M)
+            M = zeros(r,c);
+        else
+            M = reshape(full(M),r,c);
+        end
+    end
+
+    function Connect = connectCondition(in,out)
         Connect = zeros(0,2);
 
         fi = fieldnames(in);

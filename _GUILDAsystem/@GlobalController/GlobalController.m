@@ -87,11 +87,18 @@ classdef GlobalController < PowerSystemModel
                 opt.full (1,1) logical = true 
             end
 
-            A = obj.JacobiAxx(0,x,V,I,u);
-            B = [obj.JacobiBxv(0,x,V,I,u),obj.JacobiBxu(0,x,V,I,u)];            
+            % Same Jacobian contract as odeSimulator: f_JacobiDx/Y(t,x,V,I,u).
+            % A global controller has no V port, so only the u columns are used.
+            nx = numel(x);
+            nu = numel(u);
+            [Axx,~,~,Bxu] = obj.f_JacobiDx(0,x,V,I,u);
+            [Cyx,~,~,Dyu] = obj.f_JacobiY( 0,x,V,I,u);
+            ny = size(Cyx,1);
 
-            C = obj.JacobiCyx(0,x,V,I,u);
-            D = [obj.JacobiDyv(0,x,V,I,u),obj.JacobiDyu(0,x,V,I,u)];            
+            A = reshape(Axx,nx,nx);
+            B = reshape(Bxu,nx,nu);
+            C = reshape(Cyx,ny,nx);
+            D = reshape(Dyu,ny,nu);
 
             E = obj.f_Mass(0,x,V,I,u);
 

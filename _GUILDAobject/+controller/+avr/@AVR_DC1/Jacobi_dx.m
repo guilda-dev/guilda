@@ -1,4 +1,4 @@
-function [Axx,Bxv,Bxi,Bxu] = Jaocbi_dx(t,x,V,I,u,param,omega0) %#ok
+function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0) %#ok
     Vtr  = x(1);
     Vap  = x(2);
     Vfld = x(3);

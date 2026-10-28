@@ -18,7 +18,7 @@ classdef one_axis < component.generator.abstract
     end
     methods (Static)        
         [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0);
-        [Cyx,Dyv,Dyi,Dyu] = Jacobi_y(t,x,V,I,u,param,omega0);
+        [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t,x,V,I,u,param,omega0);
         [Cix,Div,Dii,Diu] = Jacobi_I(t,x,V,I,u,param,omega0);
     end
 

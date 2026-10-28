@@ -24,9 +24,11 @@ classdef odeLinearizer < auxiliary
            obj.odeNetwork = net;
            bus = obj.odeNetwork.a_Bus;
 
+           % A bus without components is always a non-unit bus. The flag is reset on
+           % every call so that a previous NonUnit choice does not remain on the bus.
            for i=1:numel(bus)                              
-               if ismember(i,NonUnit)
-                   bus{i}.l_isNonUnit = true;
+               bus{i}.l_isNonUnit = ismember(i,NonUnit) || isempty(bus{i}.a_Component);
+               if bus{i}.l_isNonUnit
                    obj.odeNonUnitBus = [obj.odeNonUnitBus; i];
                end
            end

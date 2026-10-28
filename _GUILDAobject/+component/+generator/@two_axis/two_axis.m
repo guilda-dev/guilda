@@ -8,14 +8,14 @@ classdef two_axis < component.generator.abstract
     end        
        
     methods        
-        [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj, c_V, c_I)        
+        [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj, c_V, c_I, r_P, r_Q)        
 
         function PQ = getCompPQ(obj,x,V,u,para) %#ok
 
             c_V = [1,1j]*V;
        
-            Xdp  = param(4);
-            Xqp  = param(6);
+            Xdp  = para(4);
+            Xqp  = para(6);
            
             delta = x(1);
             Eq    = x(3);
@@ -39,6 +39,12 @@ classdef two_axis < component.generator.abstract
         I  = fcn_I(obj, t, x, V, I, u, para, omega0)
         y  = fcn_Y(obj, t, x, V, I, u, para, omega0)
         M  = fcn_Mass(obj, t, x, V, I, u, para, omega0)        
+    end
+
+    methods (Static)        
+        [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0);
+        [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t,x,V,I,u,param,omega0);
+        [Cix,Div,Dii,Diu] = Jacobi_I(t,x,V,I,u,param,omega0);
     end
 
 end

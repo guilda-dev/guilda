@@ -22,24 +22,15 @@ classdef impedance < component.load.abstract
     end
 
     methods
-        dx = fcn_dx(obj,t,x,V,I,u,param);
-        I  = fcn_I(obj,t,x,V,I,u,param);
-        y  = fcn_Y(obj,t,x,V,I,u,param);
-        M  = fcn_Mass(obj,t,x,V,I,u,param);
+        dx = fcn_dx(obj,t,x,V,I,u,param,omega0);
+        I  = fcn_I(obj,t,x,V,I,u,param,omega0);
+        y  = fcn_Y(obj,t,x,V,I,u,param,omega0);
+        M  = fcn_Mass(obj,t,x,V,I,u,param,omega0);
     end
 
     methods (Static)
-        Axx = getJacobiAxx(t, x, V, I, u, param, omega0)
-        Bxv = getJacobiBxv(t, x, V, I, u, param, omega0)
-        Bxi = getJacobiBxi(t, x, V, I, u, param, omega0)
-        Bxu = getJacobiBxu(t, x, V, I, u, param, omega0)
-        Cyx = getJacobiCyx(t, x, V, I, u, param, omega0)
-        Dyv = getJacobiDyv(t, x, V, I, u, param, omega0)
-        Dyi = getJacobiDyi(t, x, V, I, u, param, omega0)
-        Dyu = getJacobiDyu(t, x, V, I, u, param, omega0)
-        Cix = getJacobiCix(t, x, V, I, u, param, omega0)
-        Div = getJacobiDiv(t, x, V, I, u, param, omega0)
-        Dii = getJacobiDii(t, x, V, I, u, param, omega0)
-        Diu = getJacobiDiu(t, x, V, I, u, param, omega0)
+        [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0);
+        [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t,x,V,I,u,param,omega0);
+        [Cix,Div,Dii,Diu] = Jacobi_I(t,x,V,I,u,param,omega0);
     end
 end
