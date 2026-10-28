@@ -3,9 +3,11 @@
 - New branch names must be <type>/<issue>-<slug>       (git-workflow.html#branch-names)
 - No commits on main, version*, or non-work branches   (git-workflow.html#branches, #dont)
 - No force-push or deletion of main or version*         (git-workflow.html#dont)
+- No `git merge` / `git cherry-pick` on main: releases go through
+  .claude/release/release.sh, which keeps assistant config out of main (git-workflow.html#release)
 
 Rules are documented in _GUILDAdoc/developer/git-workflow.html.
-Merging (`git merge`) is not checked: integrating branches is the coordinator's job.
+Other merges are not checked: integrating branches is the coordinator's job.
 """
 import re
 
@@ -116,6 +118,14 @@ def check_push(args, branch):
                   "Fix: push without --force/-f/--force-with-lease/'+'; integrate changes by merging.")
 
 
+def check_main_merge(sub, args, branch):
+    if branch != "main" or any(a in ("--abort", "--quit") for a in args):
+        return
+    block(f"Blocked: do not run `git {sub}` on main (_GUILDAdoc/developer/git-workflow.html#release).\n"
+          "A merge into main would bring .claude/, .codex/ and .github/copilot-instructions.md with it.\n"
+          "Fix: release from a clean versionX.Y with `bash .claude/release/release.sh X.Y`.")
+
+
 def main():
     data = read_input()
     command = (data.get("tool_input") or {}).get("command") or ""
@@ -138,6 +148,8 @@ def main():
             check_commit(branch, cwd)
         elif sub == "push":
             check_push(args, branch)
+        elif sub in ("merge", "cherry-pick"):
+            check_main_merge(sub, args, branch)
 
 
 if __name__ == "__main__":
