@@ -57,3 +57,5 @@ _GUILDAexport
 _GUILDAdoc/database/list_Classes.js
 _GUILDAdoc/database/GUILDAsystem
 _GUILDAdoc/database/GUILDAobject
+# Claude Code session worktrees
+.claude/
