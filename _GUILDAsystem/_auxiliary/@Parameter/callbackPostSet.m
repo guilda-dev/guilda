@@ -48,7 +48,7 @@ function callbackPostSet(obj,name,cls,event)
     if ~isa(val_post,cls)
         obj.(name) = val_pre;
         error(msg('GUILDA:Parameter:ClassNameMismatch', name, cls))                
-    elseif val_pre ~= val_post
+    elseif ~isequaln(val_pre, val_post)    % NaN -> NaN is not a change
         obj.log_edit("edit "+name, "Parameter("+obj.str_tag+")", val_pre, val_post);
         obj.CallbackChanged();
     end

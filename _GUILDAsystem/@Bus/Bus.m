@@ -140,6 +140,9 @@ classdef Bus < PowerSystemModel
                         busi{1}.l_isSlack = false; %#ok % Change l_isSlack to false for other buses
                     end
                 end
+                if ~obj.l_isSlack
+                    obj.log_edit("slack bus -> "+obj.str_tag,"Slack");
+                end
                 obj.l_isSlack = true;
             end
         end

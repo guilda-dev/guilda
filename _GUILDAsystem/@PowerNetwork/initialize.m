@@ -5,6 +5,8 @@ function [flag,tab_PFsol,output] = initialize(obj, options)
     end
 
     % Steady-State Power Flow Calculation
+    obj.check_edit();    % rebuild f_* handles made stale by edits
+
     switch options.methods
         case "powerflow calculation"
             [tab_PFsol, flag, output] = obj.calculate_powerflow;

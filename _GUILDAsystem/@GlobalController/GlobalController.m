@@ -19,6 +19,9 @@ classdef GlobalController < PowerSystemModel
         f_JacobiDx
         f_JacobiY                
     end    
+    properties(SetAccess=protected, Hidden)
+        r_omega0                               % omega0 last passed to set_odefcn (reused by rebuild_odefcn)
+    end
     properties (SetAccess=protected)
         PowerNetwork        
     end
@@ -124,9 +127,16 @@ classdef GlobalController < PowerSystemModel
             
             obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
             obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
+            obj.r_omega0   = omega0;
+            obj.l_staleOdefcn = false;
+        end
+
+        function rebuild_odefcn(obj)
+            % Called by check_edit after a dynamics parameter edit.
+            obj.set_odefcn(obj.r_omega0);
         end
     end
-    methods (Access={?Component,?LocalController})        
+    methods (Access={?Component,?LocalController,?PowerNetwork})        
         function set_parent(obj,net)
             obj.PowerNetwork = {net}; 
         end
@@ -134,6 +144,9 @@ classdef GlobalController < PowerSystemModel
     methods        
         function p = get.parent(obj)
             p = obj.PowerNetwork;
+            if iscell(p) && ~isempty(p)
+                p = p{1};    % stored in a cell; edits are logged to this network
+            end
         end
         function p = get.children(~) 
             p = {};

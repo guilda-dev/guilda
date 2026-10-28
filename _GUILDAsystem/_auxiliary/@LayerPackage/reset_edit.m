@@ -22,6 +22,7 @@ function reset_edit(obj)
     % <@Returns>
     % []
     obj.str_editFlag = "initialized";
+    obj.l_staleEquilibrium = false;
     obj.tab_editLog  = array2table(zeros(0,6),'VariableNames',{'timestamp','ID','log','tag','before','after'});
     cellfun(@(c) c.reset_edit, obj.children);
 end

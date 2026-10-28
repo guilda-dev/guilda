@@ -46,6 +46,27 @@ classdef LayerPackage < handle
         % <@Size> Nx6
         tab_editLog = array2table(zeros(0,6),'VariableNames',{'timestamp','ID','log','tag','before','after'});
     end
+    properties(SetAccess=protected, Hidden)
+        % <@Desc> True when the cached f_* function handles built by set_odefcn no longer
+        % match the parameters. Set by log_edit on the owner of an edited "dynamics" or
+        % "base" (Hz) parameter; cleared when set_odefcn rebuilds the handles. check_edit
+        % rebuilds the handles of every layer with this flag at the start of an analysis.
+        % Only Component, LocalController and GlobalController own handles.
+        % <@Role> Edit Log
+        % <@Type> logical
+        % <@Size> 1x1
+        l_staleOdefcn (1,1) logical = false
+
+        % <@Desc> True when the equilibrium set by initialize no longer matches the model.
+        % Kept on PowerNetwork only. Set by log_edit for edits of "dynamics", "base" and
+        % "powerflow" parameters, topology changes and slack-bus changes; edits of
+        % "operation", "OPF" and "graph" parameters leave it unchanged. Cleared by
+        % reset_edit (end of initialize). See edit_effect for the mapping.
+        % <@Role> Edit Log
+        % <@Type> logical
+        % <@Size> 1x1
+        l_staleEquilibrium (1,1) logical = false
+    end
     
     %% Tag
     properties(Access=protected)
@@ -74,6 +95,35 @@ classdef LayerPackage < handle
         log_edit(obj, log, time, tab)
         reset_edit(obj)
         flag = check_edit(obj)
+
+        function rebuild_odefcn(obj)
+        % Rebuild the f_* handle cache from the current parameters.
+        % Layers that own handles (Component, LocalController, GlobalController)
+        % override this; other layers have nothing to rebuild.
+            obj.l_staleOdefcn = false;
+        end
+    end
+    methods(Static, Hidden)
+        function [l_odefcn, l_equilibrium] = edit_effect(str_logtag)
+        % What an edit makes stale, from the "tag" column of tab_editLog.
+        %   tag                    f_* handles   equilibrium
+        %   Parameter(dynamics)    stale         stale
+        %   Parameter(Parameter)   stale         stale     (para_base: Hz)
+        %   Parameter(powerflow)   -             stale
+        %   Topology               -             stale     (add_/remove_/replace_)
+        %   Slack                  -             stale
+        %   Parameter(operation)   -             -
+        %   Parameter(OPF)         -             -
+        %   Parameter(graph)       -             -
+            switch str_logtag
+                case {'Parameter(dynamics)', 'Parameter(Parameter)'}
+                    l_odefcn = true;  l_equilibrium = true;
+                case {'Parameter(powerflow)', 'Topology', 'Slack'}
+                    l_odefcn = false; l_equilibrium = true;
+                otherwise
+                    l_odefcn = false; l_equilibrium = false;
+            end
+        end
     end
     methods
         varargout = disp_tree(obj,str_space,str_ignore,l_isfirst)

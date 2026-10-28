@@ -1,10 +1,14 @@
 function flag = check_edit(obj)
 % <@Desc>
-% Checks the layer edit state and warns when edits remain unapplied.
+% Brings the layer and its descendants up to date before an analysis.
+% Rebuilds the f_* handle cache of every layer whose l_staleOdefcn is set
+% (only those layers), and reports whether the equilibrium set by
+% initialize is still valid. Called at the start of initialize, simulate
+% and get_sys (see PowerNetwork.check_edit).
 % <@Role>
 % Edit Log
 % <@Summary>
-% Validate whether the layer has an initialized edit state.
+% Rebuild stale handles and report whether the equilibrium is up to date.
 % <@Signatures>
 % [
 %   "flag = check_edit(obj)"
@@ -24,18 +28,12 @@ function flag = check_edit(obj)
 %   {
 %     "Name": "flag",
 %     "Type": "logical scalar",
-%     "Description": "True when state is initialized."
+%     "Description": "True when initialize has run and nothing that changes the equilibrium was edited since (meaningful on PowerNetwork)."
 %   }
 % ]
-    flag = false; 
-    switch obj.str_editFlag
-        case "initialized"
-            flag = true;
-        case "editted"
-            disp('Edit Log')
-            disp(obj.tab_editLog)         
-            warning('Some changes have been done to this class. This may cause them to be inconsistent when set up.')
-        case "unset"
-            error('Initialisation method has not been executed.')
+    if obj.l_staleOdefcn
+        obj.rebuild_odefcn();
     end
+    cellfun(@(c) c.check_edit, obj.children);
+    flag = obj.str_editFlag ~= "unset" && ~obj.l_staleEquilibrium;
 end

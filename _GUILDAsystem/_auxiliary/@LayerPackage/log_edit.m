@@ -73,11 +73,19 @@ function log_edit(obj, log, tag, before, after, time, tab)
         time   = string(datetime('now','Format','uuuu/MM/dd HH:mm:ss'));            %#ok
         tab    = table(time, obj.get_tag(true,"/"), log, tag, {before}, {after})
     end
+    % Record what the edit made stale (see LayerPackage.edit_effect):
+    % the handle cache of the parameter's owner, and the network equilibrium.
+    [l_odefcn, l_equilibrium] = LayerPackage.edit_effect(string(tab{1,4}));
+    if l_odefcn && isa(obj,"Parameter") && isa(obj.parent,"LayerPackage")
+        obj.parent.l_staleOdefcn = true;
+    end
+
     if isa(obj,"PowerNetwork")
         if obj.str_editFlag == "unset"
             return
         else
             obj.str_editFlag = "editted";
+            obj.l_staleEquilibrium = obj.l_staleEquilibrium || l_equilibrium;
             tab.Properties.VariableNames = {'timestamp','ID','log','tag','before','after'};
             obj.tab_editLog  = [obj.tab_editLog; tab];
         end
