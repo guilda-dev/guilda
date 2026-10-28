@@ -15,6 +15,11 @@ const developerData = [
     link: "developer/folder-structure.html"
     },
 {
+    title: "Codebase: Class Design",
+    description: "See which class owns which data, the responsibilities of each model class, parent references, solver defaults, edit handling, and unit conventions.",
+    link: "developer/class-design.html"
+    },
+{
     title: "Coding: Naming Conventions",
     description: "Review variable prefixes, size notation, composition examples, and fixed prefixes for special data types.",
     link: "developer/naming-conventions.html"
