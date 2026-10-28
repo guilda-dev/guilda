@@ -1169,7 +1169,7 @@ body.doc-layout .meta-box table th {
 .dg-chain-node.is-ok { border-color: var(--dg-ok); background: var(--dg-ok-soft); }
 .dg-chain-node.is-warn { border-color: var(--dg-warn); background: var(--dg-warn-soft); }
 .dg-chain-node.is-err { border-color: var(--dg-err); background: var(--dg-err-soft); }
-.dg-chain-node.is-step { border-style: dashed; border-color: var(--dg-accent); text-align: center; }
+.dg-chain-node.is-step { flex: 0.6 1 0; border-style: dashed; border-color: var(--dg-accent); text-align: center; }
 .dg-chain-node .dg-kicker { margin-bottom: 2px; }
 .dg-chain-node.is-ok .dg-kicker { color: var(--dg-ok); }
 .dg-chain-node.is-warn .dg-kicker { color: var(--dg-warn-ink); }
