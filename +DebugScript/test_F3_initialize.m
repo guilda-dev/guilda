@@ -201,6 +201,37 @@ assert(istable(tab))
 assert(norm(net.cv_Vequilibrium - V_before) < 1e-8)
 
 
+%% Initialize from Xequilibrium solves buses without components
+% 9 母線系統の B004, B007, B009 は機器が無い (注入電流 0) → 電圧は Y*V = I から求める
+net = DebugScript.helper.build_9bus();
+DebugScript.helper.quiet(@() net.initialize);
+V_before = net.cv_Vequilibrium;
+I_before = net.cv_Iequilibrium;
+X_before = cellfun(@(b) b.a_Component{1}.rv_Xequilibrium, net.a_Bus([1,2,3,5,6,8]), "UniformOutput", false);
+[flag, tab, output] = DebugScript.helper.quiet(@() net.initialize("methods","calculate from Xequilibrium"));
+assert(isscalar(flag) && flag > 0, output.message)
+assert(istable(tab) && height(tab) == numel(net.a_Bus))
+assert(norm(net.cv_Vequilibrium - V_before) < 1e-8)
+assert(norm(net.cv_Iequilibrium - I_before) < 1e-8)
+assert(norm(tab.Vphasor - V_before) < 1e-8)
+% 機器の平衡点は変わらない
+X_after = cellfun(@(b) b.a_Component{1}.rv_Xequilibrium, net.a_Bus([1,2,3,5,6,8]), "UniformOutput", false);
+for k = 1:numel(X_after)
+    assert(norm(X_after{k} - X_before{k}) < 1e-8)
+end
+
+
+%% Initialize from Xequilibrium requires stored equilibria
+% 平衡点を一度も計算していない機器があればエラー
+net = DebugScript.helper.build_9bus();
+try
+    DebugScript.helper.quiet(@() net.initialize("methods","calculate from Xequilibrium"));
+    error("DebugScript:noError", "エラーにならなかった")
+catch ME
+    assert(ME.identifier ~= "DebugScript:noError", ME.message)
+end
+
+
 %% Dynamics parameter edit is used after initialize
 % tab_parameter で発電機定数を変えたら、シミュレーションの式 (f_dx) にも反映されるべき
 net  = DebugScript.helper.build_ieee14();
