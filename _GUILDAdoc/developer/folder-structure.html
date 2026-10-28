@@ -194,7 +194,7 @@
     <!-- ============================== OVERVIEW ============================== -->
     <h2 id="overview">Overview</h2>
     <figure class="fs-figure">
-      <svg class="fs-narrow" viewBox="0 0 480 590" role="img" aria-labelledby="fs-map-title">
+      <svg class="fs-narrow" viewBox="0 0 480 524" role="img" aria-labelledby="fs-map-title">
         <title id="fs-map-title">Map of the GUILDA top-level folders and how they depend on each other</title>
         <defs>
           <marker id="fs-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#5f6b7a"/></marker>
@@ -253,15 +253,11 @@
         <text x="147" y="470" text-anchor="middle" font-size="16" font-weight="bold" fill="#d63384" class="fs-mono">_GUILDAdoc</text>
         <text x="147" y="492" text-anchor="middle" font-size="12" fill="#333">HTML docs · not on path</text>
 
-        <rect x="276" y="440" width="180" height="72" rx="9" fill="#f4f7f6" stroke="#5f6b7a" stroke-width="1.5"/>
-        <text x="366" y="470" text-anchor="middle" font-size="15" font-weight="bold" fill="#5f6b7a" class="fs-mono">+DebugScript</text>
-        <text x="366" y="492" text-anchor="middle" font-size="12" fill="#333">dev checks · via repo root</text>
-
-        <rect x="44" y="532" width="412" height="44" rx="8" fill="#fff" stroke="#dee2e6"/>
-        <text x="250" y="551" text-anchor="middle" font-size="12" fill="#5f6b7a"><tspan class="fs-mono" font-weight="bold">.github/</tspan>  settings &amp; assistant instructions</text>
-        <text x="250" y="567" text-anchor="middle" font-size="12" fill="#5f6b7a" class="fs-mono">README.md · LICENSE</text>
+        <rect x="276" y="440" width="180" height="72" rx="9" fill="#f4f7f6" stroke="#5f6b7a" stroke-width="1.5" stroke-dasharray="5 4"/>
+        <text x="366" y="470" text-anchor="middle" font-size="15" font-weight="bold" fill="#5f6b7a" class="fs-mono">_GUILDAexport</text>
+        <text x="366" y="492" text-anchor="middle" font-size="12" fill="#333">CSV export · on demand</text>
       </svg>
-      <figcaption>The repository root is on the path, so <code class="fs-code">@GUILDA</code> and <code class="fs-code">+DebugScript</code> are reachable from it. <code class="fs-code">GUILDA.addpath</code> adds the folders listed in <code class="fs-code">@GUILDA/config/ListPath.txt</code>; any other subfolder is reachable only as a class (<code class="fs-code">@</code>) or package (<code class="fs-code">+</code>) folder.</figcaption>
+      <figcaption>The repository root is on the path, so <code class="fs-code">@GUILDA</code> is reachable from it. <code class="fs-code">GUILDA.addpath</code> adds the folders listed in <code class="fs-code">@GUILDA/config/ListPath.txt</code>; any other subfolder is reachable only as a class (<code class="fs-code">@</code>) or package (<code class="fs-code">+</code>) folder.</figcaption>
     </figure>
 
     <details class="fs-more">
@@ -273,8 +269,7 @@
         <tr><td><code>_GUILDAobject/</code></td><td>Concrete models built on <code>_GUILDAsystem</code>, organized as MATLAB packages.</td><td>Yes</td></tr>
         <tr><td><code>_GUILDAtutorial/</code></td><td>Tutorials opened by <code>GUILDA.tutorial</code>.</td><td>Yes</td></tr>
         <tr><td><code>_GUILDAdoc/</code></td><td>Static HTML documentation and the generated class database.</td><td>No</td></tr>
-        <tr><td><code>+DebugScript/</code></td><td>Scripts used by developers to reproduce and check features.</td><td>Via repository root (package <code>DebugScript</code>)</td></tr>
-        <tr><td><code>.github/</code></td><td>GitHub settings and coding-assistant instructions.</td><td>No</td></tr>
+        <tr><td><code>_GUILDAexport/</code></td><td>Default output folder of <code>CsvNetHandler.export</code>, created on demand.</td><td>No</td></tr>
       </table>
     </details>
 
@@ -581,8 +576,6 @@
     <!-- ============================== OTHERS ============================== -->
     <h2 id="others" class="fs-h fs-c-other">Other folders</h2>
     <div class="fs-grid fs-c-other">
-      <div class="fs-card"><h4>+DebugScript/</h4><p>Numbered task scripts and <code class="fs-code">samplemodel</code> for checking features during development.</p><div class="fs-chips"><span class="fs-chip">Task1_NetBuild</span><span class="fs-chip">Task7_simulate</span><span class="fs-chip">…</span></div><p><span class="fs-tag fs-tag-ign">not public API</span></p></div>
-      <div class="fs-card"><h4>.github/</h4><p>Repository settings and instructions for coding assistants.</p></div>
       <div class="fs-card"><h4>_GUILDAexport/</h4><p>Default output folder of <code class="fs-code">CsvNetHandler.export</code>.</p><p><span class="fs-tag">created on demand</span> <span class="fs-tag fs-tag-ign">Git-ignored</span></p></div>
     </div>
 
