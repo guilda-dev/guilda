@@ -16,7 +16,7 @@ function tab = known_failures()
     "test_F1_model_building/ReplaceComponent",                   "replace_component が PowerNetwork.tab_parameter.base.Hz を参照するが base 列が無い"
     "test_F1_model_building/RemoveBus",                          "remove_bus は PowerNetwork.m で宣言のみで実装ファイルが無い"
     "test_F1_model_building/RemoveGlobalController",             "remove_global_controller は PowerNetwork.m で宣言のみで実装ファイルが無い"
-    "test_F1_model_building/AddLocalControllerLQR",              "controller.local_LQR は v3 の LocalController API のままで抽象クラス扱い (インスタンス化不可)"
+    "test_F1_model_building/AddLocalControllerLQR",              "controller.local_LQR は v3 の LocalController API のまま (抽象クラス扱い)。v4 では制御器の入力は機器の出力 Y (発電機は omega のみ) で、add_local_controller も key が avr/pss の制御器しか保持しないため、状態フィードバックの LQR を移植するには契約の決定が必要"
     "test_F1_model_building/EditLogRecordsOnlyChangedParameters","Parameter.callbackPostSet が NaN~=NaN を変更とみなし、未変更の NaN パラメータ (Xaxis 等) も編集ログに残る"
     "test_F1_model_building/AGCDefaultParametersCoverAllControlledUnits", "broadcast_PI_AGC の alpha/beta 既定値がスカラーで、複数台制御時にパラメータ行数 (1) と制御対象数が合わず tab_parameter がエラー"
     "test_F1_model_building/TwoGlobalControllersAreInitialized", "initialize / odeSimulator / odeEventSet が a_GlobalController{1} しか扱わない"
@@ -26,10 +26,6 @@ function tab = known_failures()
     "test_F3_initialize/InitializeReturnsFlagTableOutput",       "initialize.m が calculate_powerflow の出力を [tab, output, flag] の順で受けている (flag と output が逆)"
     "test_F3_initialize/InitializeWithOptimalPowerflow",         "optimize_powerflow が失敗 (F4 参照)。さらに initialize は戻り値の順序も誤っている"
     "test_F3_initialize/InitializeFromXequilibrium",             "initialize.m に ""calculate from Xequilibrium"" の分岐が無く tab_PFsol が未定義"
-    "test_F3_initialize/EquilibriumOfGen1axis",                  "gen-1axis: Jacobi 関数の引数の数が合わず simulate が ""入力引数が多すぎます"" で失敗"
-    "test_F3_initialize/EquilibriumOfGen2axis",                  "gen-2axis: get_equilibrium の呼び出しで ""入力引数が多すぎます"" (initialize で失敗)"
-    "test_F3_initialize/EquilibriumOfGenDroop",                  "gen-droop: Jacobi 関数の引数の数が合わず simulate が ""入力引数が多すぎます"" で失敗"
-    "test_F3_initialize/EquilibriumOfLoadImpedance",             "load-impedance: fcn_dx の宣言に omega0 が無く f_dx 呼び出しが ""入力引数が多すぎます"""
     "test_F3_initialize/DynamicsParameterEditIsUsedAfterInitialize", "Component.set_odefcn がコンストラクタ時のパラメータを関数ハンドルに固定し、tab_parameter の変更が f_dx に反映されない"
     % ---- F4 OPF ---------------------------------------------------------------------------------
     "test_F4_opf/EconomicLoadDispatch",                          "build_opf_problem が tab_parameter.OPF 列を参照するが存在しない。結果整形も削除済み Cubicle (a_Cubicle, str_ConnectType) を参照"
@@ -40,16 +36,6 @@ function tab = known_failures()
     % ---- F6 time simulation ---------------------------------------------------------------------
     "test_F6_simulation/SimulateWithoutEvents",                  "イベント無しの simulate で odeEventSet.table ではなく組み込みの table が呼ばれエラー"
     "test_F6_simulation/OffsetStateAfterTimeZero",               "OffsetState は最初の区間 (TimeSpan 0) でしか初期値に反映されず、t>0 のオフセットは無視される"
-    % ---- F7 linearization -----------------------------------------------------------------------
-    "test_F7_linearization/GetSysKron",                          "Component.get_sys が削除済みの JacobiAxx 等 (旧 API) を呼ぶ"
-    "test_F7_linearization/GetSysFeedback",                      "Component.get_sys が削除済みの JacobiAxx 等 (旧 API) を呼ぶ"
-    "test_F7_linearization/GetSysDAE",                           "Component.get_sys が削除済みの JacobiAxx 等 (旧 API) を呼ぶ"
-    "test_F7_linearization/ThreeAlgorithmsGiveSameEigenvalues",  "Component.get_sys が削除済みの JacobiAxx 等 (旧 API) を呼ぶ"
-    "test_F7_linearization/NonUnitBus",                          "Component.get_sys が削除済みの JacobiAxx 等 (旧 API) を呼ぶ"
-    "test_F7_linearization/WithLocalControllers",                "Component.get_sys が削除済みの JacobiAxx 等 (旧 API) を呼ぶ"
-    "test_F7_linearization/WithGlobalController",                "Component.get_sys が削除済みの JacobiAxx 等 (旧 API) を呼ぶ"
-    "test_F7_linearization/IEEE14EquilibriumIsStable",           "Component.get_sys が削除済みの JacobiAxx 等 (旧 API) を呼ぶ"
-    "test_F7_linearization/odeLinearizerDirectUse",              "Component.get_sys が削除済みの JacobiAxx 等 (旧 API) を呼ぶ"
     % ---- F8 utilities ---------------------------------------------------------------------------
     "test_F8_utilities/IEEE14busGeneratorLimitsAreNumbers",     "IEEE14bus の CSV で Pmin/Qmin が ""#NAME?"" (Excel で -Inf が壊れた値) になっており NaN として読まれる"
     % ---- F9 environment -------------------------------------------------------------------------
