@@ -1,4 +1,4 @@
-function replace_component(obj, str_tag, Type, parameter)
+function comp = replace_component(obj, str_tag, Type, parameter)
 
     arguments
         obj

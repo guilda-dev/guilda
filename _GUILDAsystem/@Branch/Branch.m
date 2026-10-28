@@ -139,9 +139,6 @@ classdef Branch < PowerSystemModel
     methods
         % OPF
         [prob, x0, const] = build_opf_problem(obj, prob, x0, const, rm_V, option)
-        
-        % ode setting
-        [n_odeX, n_odeU, Mass, x0] = reset_odeset(~, n_odeX, n_odeU, omega0)
     end
 
 %% Get Methods
