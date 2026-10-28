@@ -17,7 +17,6 @@ function tab = known_failures()
     "test_F1_model_building/RemoveBus",                          "remove_bus は PowerNetwork.m で宣言のみで実装ファイルが無い"
     "test_F1_model_building/RemoveGlobalController",             "remove_global_controller は PowerNetwork.m で宣言のみで実装ファイルが無い"
     "test_F1_model_building/AddLocalControllerLQR",              "controller.local_LQR は v3 の LocalController API のまま (抽象クラス扱い)。v4 では制御器の入力は機器の出力 Y (発電機は omega のみ) で、add_local_controller も key が avr/pss の制御器しか保持しないため、状態フィードバックの LQR を移植するには契約の決定が必要"
-    "test_F1_model_building/EditLogRecordsOnlyChangedParameters","Parameter.callbackPostSet が NaN~=NaN を変更とみなし、未変更の NaN パラメータ (Xaxis 等) も編集ログに残る"
     "test_F1_model_building/AGCDefaultParametersCoverAllControlledUnits", "broadcast_PI_AGC の alpha/beta 既定値がスカラーで、複数台制御時にパラメータ行数 (1) と制御対象数が合わず tab_parameter がエラー"
     "test_F1_model_building/TwoGlobalControllersAreInitialized", "initialize / odeSimulator / odeEventSet が a_GlobalController{1} しか扱わない"
     % ---- F2 power flow --------------------------------------------------------------------------
