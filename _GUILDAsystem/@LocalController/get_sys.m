@@ -9,7 +9,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         opt.tag  (1,1) logical = true
     end
 
-    % I is not a port of a controller; controllers do not keep it (c_Iequilibrium = [])
+    % I is not a port of a controller (c_Iequilibrium is the parent's, [] without a parent)
     if isempty(I)
         I = zeros(2,1);
     end

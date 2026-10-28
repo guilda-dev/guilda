@@ -49,9 +49,9 @@ classdef LocalController < PowerSystemModel
         rv_Uequilibrium (:,1) double = zeros(0,1)   
     end    
 
-    properties(SetAccess=protected)
-        c_Vequilibrium (:,1) double = zeros(0,1)   
-        c_Iequilibrium (:,1) double = zeros(0,1)   
+    properties(Dependent)
+        c_Vequilibrium                         % parent's c_Vequilibrium (zeros(0,1) without a parent)
+        c_Iequilibrium                         % parent's c_Iequilibrium (zeros(0,1) without a parent)
     end    
     
     properties(SetAccess=protected)
@@ -110,10 +110,28 @@ classdef LocalController < PowerSystemModel
             obj.set_odefcn(obj.r_omega0);
         end
     end
+    methods (Access=private)
+        function val = parent_equilibrium(obj, str_prop)
+            % Read the parent's (a Component, or an AVR for a PSS) equilibrium.
+            % Kept out of the get methods: MATLAB reads the stored value when a
+            % get method refers to its own property, even on another object.
+            if isempty(obj.a_Component)
+                val = zeros(0,1);
+            else
+                val = obj.a_Component.(str_prop);
+            end
+        end
+    end
 
 
 %% Get Methods    
     methods        
+        function V = get.c_Vequilibrium(obj)
+            V = obj.parent_equilibrium("c_Vequilibrium");
+        end
+        function I = get.c_Iequilibrium(obj)
+            I = obj.parent_equilibrium("c_Iequilibrium");
+        end
         function p = get.parent(obj)
             p = obj.a_Component;
         end

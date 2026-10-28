@@ -43,7 +43,6 @@ classdef Component < PowerSystemModel
         rv_Xequilibrium = zeros(0,1)           % [SteadyState] 状態の平衡点
         rv_Uequilibrium = zeros(0,1)           % [SteadyState] 定常入力
         c_Iequilibrium                         % [SteadyState] 定常潮流状態での機器の注入電流
-        c_Vequilibrium                         % [SteadyState] 定常潮流状態での機器の注入電圧
     end
     properties (SetAccess={?odeSimulator, ?Component}, Hidden)
         iv_odeX  = [];
@@ -51,6 +50,7 @@ classdef Component < PowerSystemModel
         iv_odeY  = [];        
     end    
     properties(Dependent)
+        c_Vequilibrium                         % [SteadyState] 定常潮流状態での機器の端子電圧 (= a_Bus.c_Vequilibrium, バス未接続なら [])
         rv_Xequilibrium_all                    % [SteadyState] 制御器の状態も含めた平衡点
         tab_parameter                          % [ Parameter ] ハイパーパラメータの設定値
     end
@@ -182,6 +182,14 @@ classdef Component < PowerSystemModel
         function x = get.rv_Xequilibrium_all(obj)
             x_con = tools.vcellfun(@(comp) comp.rv_Xequilibrium, obj.a_LocalController);
             x     = [obj.rv_Xequilibrium; x_con];
+        end
+        function V = get.c_Vequilibrium(obj)
+            % The bus owns the voltage; a component not attached to a bus has none.
+            if isempty(obj.a_Bus)
+                V = [];
+            else
+                V = obj.a_Bus.c_Vequilibrium;
+            end
         end
         function p = get.parent(obj)
             p = obj.a_Bus;

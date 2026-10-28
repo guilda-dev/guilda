@@ -63,9 +63,6 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.abstract
             obj.rv_Xequilibrium = [Vtr_st; Vap_st; Vfld_st; Vst_st];
             obj.rv_Uequilibrium = [Vref_st;Vpss_st];            
 
-            obj.c_Vequilibrium = V;
-            obj.c_Iequilibrium = [];
-
             cellfun(@(c) c.get_equilibrium(V,u), obj.a_LocalController);
         end
         function set_PSS(obj, cls)

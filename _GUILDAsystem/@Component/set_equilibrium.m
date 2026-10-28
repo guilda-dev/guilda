@@ -8,7 +8,7 @@ function set_equilibrium(obj,c_V,c_I,r_P,r_Q)
     end
     [cv_Xst,cv_Ust] = obj.get_equilibrium(c_V,c_I,r_P,r_Q);
     
-    obj.c_Vequilibrium  = c_V;
+    % c_V is the voltage of the bus (its owner); c_Vequilibrium reads it from there.
     obj.c_Iequilibrium  = c_I;
     obj.rv_Xequilibrium = cv_Xst;
     obj.rv_Uequilibrium = cv_Ust;
