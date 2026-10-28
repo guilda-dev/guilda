@@ -22,16 +22,12 @@ function tab = known_failures()
     "test_F1_model_building/TwoGlobalControllersAreInitialized", "initialize / odeSimulator / odeEventSet が a_GlobalController{1} しか扱わない"
     % ---- F2 power flow --------------------------------------------------------------------------
     % ---- F3 initialize --------------------------------------------------------------------------
-    "test_F3_initialize/InitializeWithOptimalPowerflow",         "optimize_powerflow が失敗 (F4 参照)"
     "test_F3_initialize/EquilibriumOfGen1axis",                  "gen-1axis: Jacobi 関数の引数の数が合わず simulate が ""入力引数が多すぎます"" で失敗"
     "test_F3_initialize/EquilibriumOfGen2axis",                  "gen-2axis: get_equilibrium の呼び出しで ""入力引数が多すぎます"" (initialize で失敗)"
     "test_F3_initialize/EquilibriumOfGenDroop",                  "gen-droop: Jacobi 関数の引数の数が合わず simulate が ""入力引数が多すぎます"" で失敗"
     "test_F3_initialize/EquilibriumOfLoadImpedance",             "load-impedance: fcn_dx の宣言に omega0 が無く f_dx 呼び出しが ""入力引数が多すぎます"""
     "test_F3_initialize/DynamicsParameterEditIsUsedAfterInitialize", "Component.set_odefcn がコンストラクタ時のパラメータを関数ハンドルに固定し、tab_parameter の変更が f_dx に反映されない"
     % ---- F4 OPF ---------------------------------------------------------------------------------
-    "test_F4_opf/EconomicLoadDispatch",                          "build_opf_problem が tab_parameter.OPF 列を参照するが存在しない。結果整形も削除済み Cubicle (a_Cubicle, str_ConnectType) を参照"
-    "test_F4_opf/DCOptimalPowerFlow",                            "build_opf_problem が tab_parameter.OPF 列を参照するが存在しない。結果整形も削除済み Cubicle を参照"
-    "test_F4_opf/ACOptimalPowerFlow",                            "build_opf_problem が tab_parameter.OPF 列を参照するが存在しない。結果整形・@Branch/build_opf_problem も削除済み Cubicle を参照"
     % ---- F5 CPF ---------------------------------------------------------------------------------
     % ---- F6 time simulation ---------------------------------------------------------------------
     "test_F6_simulation/SimulateWithoutEvents",                  "イベント無しの simulate で odeEventSet.table ではなく組み込みの table が呼ばれエラー"
@@ -47,7 +43,6 @@ function tab = known_failures()
     "test_F7_linearization/IEEE14EquilibriumIsStable",           "Component.get_sys が削除済みの JacobiAxx 等 (旧 API) を呼ぶ"
     "test_F7_linearization/odeLinearizerDirectUse",              "Component.get_sys が削除済みの JacobiAxx 等 (旧 API) を呼ぶ"
     % ---- F8 utilities ---------------------------------------------------------------------------
-    "test_F8_utilities/IEEE14busGeneratorLimitsAreNumbers",     "IEEE14bus の CSV で Pmin/Qmin が ""#NAME?"" (Excel で -Inf が壊れた値) になっており NaN として読まれる"
     % ---- F9 environment -------------------------------------------------------------------------
     "test_F9_environment/GUILDAStartsInBatchMode",               "起動時に Tutorial 設定が true だと Main.mlx を open し、デスクトップの無いバッチ実行ではエラーになる"
     ];
