@@ -85,19 +85,21 @@ classdef (Sealed = true) odeSimulator < auxiliary
                 end
             end
 
-            idx = 1;
-            if ~isempty(obj.odeNetwork.a_GlobalController)
-                gcon = obj.odeNetwork.a_GlobalController{1};
+            % Global controllers: states after the components, in the order of a_GlobalController.
+            % Their inputs are states of the controlled units and their outputs are inputs of them.
+            a_gcon = obj.odeNetwork.a_GlobalController;
+            for k = 1:numel(a_gcon)
+                gcon = a_gcon{k};
                 nxgc = length(gcon.sv_x);
                 gcon.iv_odeX = idx_TGT + (1:nxgc)';
                 idx_TGT = idx_TGT + nxgc;
 
                 nConUnit = gcon.controlledUnits;
-                while idx <= numel(nConUnit)
+                gcon.iv_odeU = zeros(numel(nConUnit),1);
+                gcon.iv_odeY = zeros(numel(nConUnit),1);
+                for idx = 1:numel(nConUnit)
                     gcon.iv_odeU(idx) = nConUnit{idx}.iv_odeX( nConUnit{idx}.sv_x==gcon.sv_u );
                     gcon.iv_odeY(idx) = nConUnit{idx}.iv_odeU( nConUnit{idx}.sv_u==gcon.sv_y );
-
-                    idx = idx + 1;
                 end
             end
 
@@ -138,10 +140,11 @@ classdef (Sealed = true) odeSimulator < auxiliary
             
             a_bus = obj.odeNetwork.a_Bus;
 
+            % Outputs of all global controllers, at the indices of the component inputs they drive
             y_GC = zeros(size(x), 'like', x);
-            a_GC.sv_y = "Pmech";
-            if ~isempty(obj.odeNetwork.a_GlobalController)
-                a_GC = obj.odeNetwork.a_GlobalController{1};
+            a_GCs = obj.odeNetwork.a_GlobalController;
+            for k = 1:numel(a_GCs)
+                a_GC = a_GCs{k};
 
                 x_GC = x(a_GC.iv_odeX);
                 u_GC = x(a_GC.iv_odeU);
@@ -149,7 +152,7 @@ classdef (Sealed = true) odeSimulator < auxiliary
                 u_connect = tools.dcellfun(@(CU) CU.l_isConnect, a_GC.controlledUnits);
 
                 odeX(a_GC.iv_odeX) = a_GC.f_dx(t,x_GC,[],[],u_connect*u_GC);                
-                y_GC(a_GC.iv_odeY) = a_GC.f_Y(t,x_GC,[],[],u_connect*u_GC);
+                y_GC(a_GC.iv_odeY) = y_GC(a_GC.iv_odeY) + a_GC.f_Y(t,x_GC,[],[],u_connect*u_GC);
             end
 
             for i=1:numel(a_bus)
@@ -164,8 +167,7 @@ classdef (Sealed = true) odeSimulator < auxiliary
                 for j=1:numel(a_comp)
                     cj = a_comp{j};
                     ue = cj.rv_Uequilibrium;       
-                    uy = cj.sv_u==a_GC.sv_y;
-                    ue( uy ) = ue( uy ) + y_GC( cj.iv_odeU( uy ) ); 
+                    ue = ue + y_GC( cj.iv_odeU );     % zero for inputs no global controller drives
                     ue = ue + cj.rv_Uoffset(t);
                     
                     odeX = get_dx_algebraic(cj, t, x, Vi, Ii, ue, odeX);
@@ -191,8 +193,9 @@ classdef (Sealed = true) odeSimulator < auxiliary
             rv_Bus_V = zeros(0,1);
             rv_Bus_I = zeros(0,1);
 
-            if ~isempty(obj.odeNetwork.a_GlobalController)
-                a_GC = obj.odeNetwork.a_GlobalController{1};
+            a_GCs = obj.odeNetwork.a_GlobalController;
+            for k = 1:numel(a_GCs)
+                a_GC = a_GCs{k};
                 
                 lh_GC = [a_GC.iv_odeX; a_GC.iv_odeU];
                 lv_GC = [a_GC.iv_odeX; a_GC.iv_odeY];

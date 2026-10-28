@@ -303,6 +303,42 @@ r0   = net0.simulate([0,20], ev0).odeResults;
 assert(abs(r0.Bus(1).Component(1).X.omega(end)) > 10*abs(omega(end)))
 
 
+%% Two global controllers act together
+% 大域制御器は何台でも扱える。同じ発電機を alpha を半分ずつにした 2 台の AGC で制御すると、
+% 出力の和が 1 台の AGC と等しいので、同じ応答になる
+net1 = DebugScript.helper.build_ieee14();
+net1.add_global_controller(controller.agc.broadcast_PI_AGC(net1, "agc", "SG1B001", "SG1B002", alpha=[1;1], kP=100, kI=500));
+net2 = DebugScript.helper.build_ieee14();
+agcA = controller.agc.broadcast_PI_AGC(net2, "agcA", "SG1B001", "SG1B002", alpha=[0.5;0.5], kP=100, kI=500);
+agcB = controller.agc.broadcast_PI_AGC(net2, "agcB", "SG1B001", "SG1B002", alpha=[0.5;0.5], kP=100, kI=500);
+net2.add_global_controller(agcA);
+net2.add_global_controller(agcB);
+DebugScript.helper.quiet(@() net1.initialize);
+DebugScript.helper.quiet(@() net2.initialize);
+
+% 外乱なしでは平衡点に留まる
+sol = net2.simulate([0,2], DebugScript.helper.noop_event(net2,[0,2]));
+assert(DebugScript.helper.max_state_drift(sol) < 1e-6)
+
+% 負荷を増やしたときの応答が 1 台の場合と一致し、周波数偏差が 0 に戻る
+r1 = net1.simulate([0,20], odeEventSet("step", net1, "TimeSpan", [1,20], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", -0.1)).odeResults;
+r2 = net2.simulate([0,20], odeEventSet("step", net2, "TimeSpan", [1,20], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", -0.1)).odeResults;
+t  = linspace(0, 20, 401)';
+[t1, i1] = unique(r1.t);
+[t2, i2] = unique(r2.t);
+for name = ["omega", "Pmech"]
+    if name == "omega"
+        y1 = r1.Bus(1).Component(1).X.omega;  y2 = r2.Bus(1).Component(1).X.omega;
+    else
+        y1 = r1.Bus(1).Component(1).U.Pmech;  y2 = r2.Bus(1).Component(1).U.Pmech;
+    end
+    y1 = interp1(t1, y1(i1), t);
+    y2 = interp1(t2, y2(i2), t);
+    assert(max(abs(y1 - y2)) < 1e-2 * max(abs(y1 - y1(1))), name + ": 2 台の AGC の応答が 1 台の場合と一致しない")
+end
+assert(abs(r2.Bus(1).Component(1).X.omega(end)) < 1e-4)
+
+
 %% Network Hz sets the rotor angle dynamics
 % 系統の周波数 (net.tab_parameter.base.Hz) が発電機の d(delta)/dt = 2*pi*Hz*omega に使われる。
 % omega をずらして始めると、短時間の delta の変化は Hz に比例する (50 Hz / 60 Hz)

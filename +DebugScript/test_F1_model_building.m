@@ -267,6 +267,8 @@ DebugScript.helper.quiet(@() net.initialize);
 % すべての大域制御器に平衡点が設定されるべき
 assert(numel(agc1.rv_Uequilibrium) == 1, "1台目の AGC の平衡点が未設定")
 assert(numel(agc2.rv_Uequilibrium) == 1, "2台目の AGC の平衡点が未設定")
+assert(agc1.PowerNetwork{1} == net && agc2.PowerNetwork{1} == net)
+assert(isequal(agc1.rv_Xequilibrium, 0) && isequal(agc2.rv_Xequilibrium, 0))
 
 
 %% Replace component
