@@ -113,6 +113,16 @@ i1 = find(r.t > 1, 1);                         % 1 秒の直後の点
 assert(abs(delta(i1) - (gen.rv_Xequilibrium(1) + 0.1)) < 1e-2, "t = 1 のオフセットが反映されていない")
 
 
+%% Offset state during a trip
+% 他の機器の解列中 (区間の初期値の再計算が必要な場合) にもオフセットが残る
+os = odeEventSet("offset", net, "TimeSpan", 1.5, "OffsetUnit", "SG1B001", "OffsetState", "delta", "OffsetValue", 0.1);
+tr = odeEventSet("trip", net, "TimeSpan", [1,2], "TripUnit", "SG1B002");
+r  = net.simulate([0,3], os, tr).odeResults;
+d  = r.Bus(1).Component(1).X.delta;
+k  = find(abs(r.t - 1.5) < 1e-9);              % 1.5 秒の前後の区間の境界点 (2 点)
+assert(numel(k) == 2 && abs(d(k(2)) - d(k(1)) - 0.1) < 1e-8, "解列中の t = 1.5 のオフセットが反映されていない")
+
+
 %% Offset state is applied only once
 % オフセットの期間が他のイベントで分割されても、オフセットは開始時刻に 1 回だけ加わる
 % (分割用のイベントは入力 0 で、応答には影響しない)
