@@ -23,8 +23,7 @@ function tab = known_failures()
     % ---- F2 power flow --------------------------------------------------------------------------
     "test_F2_powerflow/DynamicModeReachesTheAlgebraicSolution",  "solve_dynamic が PV 母線の電圧を V ではなく V0 (初期値) に固定する"
     % ---- F3 initialize --------------------------------------------------------------------------
-    "test_F3_initialize/InitializeReturnsFlagTableOutput",       "initialize.m が calculate_powerflow の出力を [tab, output, flag] の順で受けている (flag と output が逆)"
-    "test_F3_initialize/InitializeWithOptimalPowerflow",         "optimize_powerflow が失敗 (F4 参照)。さらに initialize は戻り値の順序も誤っている"
+    "test_F3_initialize/InitializeWithOptimalPowerflow",         "optimize_powerflow が失敗 (F4 参照)"
     "test_F3_initialize/InitializeFromXequilibrium",             "initialize.m に ""calculate from Xequilibrium"" の分岐が無く tab_PFsol が未定義"
     "test_F3_initialize/EquilibriumOfGen1axis",                  "gen-1axis: Jacobi 関数の引数の数が合わず simulate が ""入力引数が多すぎます"" で失敗"
     "test_F3_initialize/EquilibriumOfGen2axis",                  "gen-2axis: get_equilibrium の呼び出しで ""入力引数が多すぎます"" (initialize で失敗)"

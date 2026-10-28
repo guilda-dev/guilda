@@ -7,9 +7,9 @@ function [flag,tab_PFsol,output] = initialize(obj, options)
     % Steady-State Power Flow Calculation
     switch options.methods
         case "powerflow calculation"
-            [tab_PFsol, output, flag] = obj.calculate_powerflow;
+            [tab_PFsol, flag, output] = obj.calculate_powerflow;
         case "optimal powerflow"
-            [tab_PFsol, output, flag] = optimize_powerflow(obj,"methods","AC OPF");
+            [tab_PFsol, ~, flag, output] = optimize_powerflow(obj,"methods","AC OPF");
     end
 
     if ~isempty(obj.a_GlobalController)        
