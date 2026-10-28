@@ -301,3 +301,24 @@ DebugScript.helper.quiet(@() net0.initialize);
 ev0  = odeEventSet("step", net0, "TimeSpan", [1,20], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", -0.1);
 r0   = net0.simulate([0,20], ev0).odeResults;
 assert(abs(r0.Bus(1).Component(1).X.omega(end)) > 10*abs(omega(end)))
+
+
+%% Network Hz sets the rotor angle dynamics
+% 系統の周波数 (net.tab_parameter.base.Hz) が発電機の d(delta)/dt = 2*pi*Hz*omega に使われる。
+% omega をずらして始めると、短時間の delta の変化は Hz に比例する (50 Hz / 60 Hz)
+ddelta = zeros(1,2);
+sv_Hz  = [50, 60];
+for k = 1:2
+    [net, gen] = DebugScript.helper.build_3bus("gen-classical");
+    net.tab_parameter.base.Hz = sv_Hz(k);
+    DebugScript.helper.quiet(@() net.initialize);
+    i_bus = find(cellfun(@(b) b == gen.a_Bus, net.a_Bus));
+    ev  = odeEventSet("offset", net, "TimeSpan", 0, "OffsetUnit", string(gen), "OffsetState", "omega", "OffsetValue", 1e-3);
+    r   = net.simulate([0,0.02], ev).odeResults;
+    X   = r.Bus(i_bus).Component(1).X;
+    ddelta(k) = interp1(r.t, X.delta, 0.01) - X.delta(1);
+end
+assert(all(ddelta > 0))
+assert(abs(ddelta(1)/ddelta(2) - 50/60) < 1e-2, "delta の変化の比 " + ddelta(1)/ddelta(2) + " が 50/60 にならない")
+% 1e-3 の omega で 0.01 秒 → 2*pi*60*1e-3*0.01 ≈ 3.8e-3 rad
+assert(abs(ddelta(2) - 2*pi*60*1e-3*0.01) < 0.1 * 2*pi*60*1e-3*0.01)

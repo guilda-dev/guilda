@@ -30,9 +30,6 @@ classdef LocalController < PowerSystemModel
         f_JacobiDx        
         f_JacobiY        
     end    
-    properties(SetAccess=protected, Hidden)
-        r_omega0                               % omega0 last passed to set_odefcn (reused by rebuild_odefcn)
-    end
     properties (SetAccess={?odeSimulator, ?odeEventSet}, Hidden)
         iv_odeX  = zeros(0,1);
         iv_odeU  = zeros(0,1);
@@ -82,6 +79,7 @@ classdef LocalController < PowerSystemModel
 
         function set_parent(obj,a_Component)
             obj.a_Component = a_Component; 
+            obj.rebuild_odefcn_tree();    % use the frequency of the parent's network
         end
 
         % get dx and y
@@ -101,13 +99,12 @@ classdef LocalController < PowerSystemModel
 
             obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
             obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
-            obj.r_omega0   = omega0;
             obj.l_staleOdefcn = false;
         end
 
         function rebuild_odefcn(obj)
-            % Called by check_edit after a dynamics parameter edit.
-            obj.set_odefcn(obj.r_omega0);
+            % Called by check_edit after a dynamics edit or a network Hz edit.
+            obj.set_odefcn(obj.r_Hz);
         end
     end
     methods (Access=private)

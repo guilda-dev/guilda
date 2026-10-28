@@ -21,7 +21,7 @@ function flag = validate(obj, l_message)
     end
 
     
-    r_omega0 = 2*pi*60;
+    r_omega0 = obj.r_Hz;    % omega0 is the nominal frequency in Hz (models multiply by 2*pi)
     r_t      = 0;
     rr_param = obj.para_dynamics.tab_parameter{:,obj.sv_para};
     

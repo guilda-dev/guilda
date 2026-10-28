@@ -121,7 +121,7 @@ classdef PowerNetwork < PowerSystemModel
         tab_parameter           % Parameter
     end
     properties(Hidden,SetAccess=protected)
-        para_base               % Parameter
+        para_base               % Parameter: Hz (nominal frequency) and baseMVA (system base) of the whole network
     end
     properties(Dependent, Access=protected)
         parent                  % Layer Structure
@@ -138,7 +138,9 @@ classdef PowerNetwork < PowerSystemModel
                 tag (1,1) string = "PowerNetwork";
             end
             obj.str_tag   = tag;
-            obj.para_base = Parameter(obj);
+            obj.para_base = Parameter(obj,"base");
+            obj.para_base.add_entry(     "Hz", GUILDA.config("Model","Hz"), "double",...
+                                    "baseMVA", 100                        , "double");
             obj.reset_solver;
         end
     end
@@ -178,6 +180,11 @@ classdef PowerNetwork < PowerSystemModel
     methods(Access=protected)
         % Edit handling: rebuild stale f_* handles, check the equilibrium
         flag = check_edit(obj, opt)
+
+        function Hz = get_Hz(obj)
+            % The network owns the nominal frequency of all its layers
+            Hz = obj.para_base.Hz;
+        end
     end
 
 %% Get Method

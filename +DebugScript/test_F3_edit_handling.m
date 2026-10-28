@@ -39,10 +39,12 @@ net.get_sys();
 
 
 %% Base Hz edit makes handles and equilibrium stale
+% 周波数は PowerNetwork が持つ (net.tab_parameter.base.Hz)。変えると全機器のハンドルが古くなる
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);
-comp.tab_parameter.base.Hz = 50;
+net.tab_parameter.base.Hz = 50;
 assert(comp.l_staleOdefcn && net.l_staleEquilibrium)
+assert(comp.r_Hz == 50)
 
 DebugScript.helper.quiet(@() net.initialize);
 x = comp.rv_Xequilibrium;  x(comp.sv_x == "omega") = 0.01;
@@ -202,6 +204,52 @@ para = agc.tab_parameter.dynamics{:, agc.sv_para};
 x = 0.1;  u = [0.01; 0.02];
 assert(norm(agc.f_dx(0,x,[],[],u) - agc.fcn_dx(0,x,[],[],u,para,60)) < 1e-12, ...
        "AGC の f_dx が変更前の定数を使っている")
+
+
+%% Network Hz edit makes every handle stale
+% 周波数は PowerNetwork だけが持つ。変えると機器・制御器 (AVR, PSS, AGC) のハンドルがすべて古くなる
+net = DebugScript.helper.build_ieee14();
+c{1} = net.a_Bus{1}.a_Component{1};
+c{2} = net.a_Bus{2}.a_Component{1};
+c{1}.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
+agc  = controller.agc.broadcast_PI_AGC(net, "agc", c{:}, alpha=[1;1], beta=[1;1], kP=100, kI=500);
+net.add_global_controller(agc);
+DebugScript.helper.quiet(@() net.initialize);
+avr = c{1}.a_LocalController{1};
+pss = avr.a_LocalController{1};
+ld  = net.a_Bus{5}.a_Component{1};
+a_model = {c{1}, c{2}, ld, avr, pss, agc};
+assert(~any(cellfun(@(m) m.l_staleOdefcn, a_model)))
+assert(~ismember("base", string(c{1}.tab_parameter.Properties.VariableNames)))   % 機器は Hz を持たない
+
+net.tab_parameter.base.Hz = 50;
+assert(all(cellfun(@(m) m.l_staleOdefcn, a_model)) && net.l_staleEquilibrium)
+assert(all(cellfun(@(m) m.r_Hz, a_model) == 50))
+assert_stale_error(@() net.get_sys(), str_staleID)
+
+DebugScript.helper.quiet(@() net.initialize);
+assert(~any(cellfun(@(m) m.l_staleOdefcn, a_model)))
+x = avr.rv_Xequilibrium + 0.01;  u = avr.rv_Uequilibrium;
+V = [real(c{1}.c_Vequilibrium); imag(c{1}.c_Vequilibrium)];
+para = avr.tab_parameter.dynamics{:, avr.sv_para}.';
+assert(norm(avr.f_dx(0,x,V,[0;0],u) - avr.fcn_dx(0,x,V,[0;0],u,para,50)) < 1e-12)
+
+
+%% Components and controllers use the network Hz when attached
+% 系統の外で作った制御器は GUILDA.config の Hz、系統に付けると系統の Hz になる
+net = PowerNetwork();
+net.tab_parameter.base.Hz = 50;
+net.add_bus("V",1.0);
+gen = net.a_Bus{1}.add_component("gen-1axis");
+assert(gen.r_Hz == 50)
+avr = controller.avr.AVR_ST1("avr1");
+assert(avr.r_Hz == GUILDA.config("Model","Hz"))
+gen.add_local_controller(avr);
+assert(avr.r_Hz == 50 && ~avr.l_staleOdefcn)
+x = zeros(numel(gen.sv_x),1);  x(gen.sv_x == "omega") = 0.01;
+para = gen.tab_parameter.dynamics{:, gen.sv_para};
+V = [1;0];  I = [0.5;0];  u = zeros(numel(gen.sv_u),1);
+assert(norm(gen.f_dx(0,x,V,I,u) - gen.fcn_dx(0,x,V,I,u,para,50)) < 1e-12)
 
 
 % ---- local functions ----

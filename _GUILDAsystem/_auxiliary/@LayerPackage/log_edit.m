@@ -74,10 +74,16 @@ function log_edit(obj, log, tag, before, after, time, tab)
         tab    = table(time, obj.get_tag(true,"/"), log, tag, {before}, {after})
     end
     % Record what the edit made stale (see LayerPackage.edit_effect):
-    % the handle cache of the parameter's owner, and the network equilibrium.
-    [l_odefcn, l_equilibrium] = LayerPackage.edit_effect(string(tab{1,4}));
+    % the handle cache of the parameter's owner (of the owner and all its
+    % descendants for a "base" parameter such as Hz), and the network equilibrium.
+    str_logtag = string(tab{1,4});
+    [l_odefcn, l_equilibrium] = LayerPackage.edit_effect(str_logtag);
     if l_odefcn && isa(obj,"Parameter") && isa(obj.parent,"LayerPackage")
-        obj.parent.l_staleOdefcn = true;
+        if str_logtag == "Parameter(base)"
+            obj.parent.mark_stale_odefcn();
+        else
+            obj.parent.l_staleOdefcn = true;
+        end
     end
 
     if isa(obj,"PowerNetwork")

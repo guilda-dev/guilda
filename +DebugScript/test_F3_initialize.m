@@ -243,7 +243,8 @@ DebugScript.helper.quiet(@() net.initialize);
 V = comp.c_Vequilibrium;  I = comp.c_Iequilibrium;
 x = comp.rv_Xequilibrium;  x(comp.sv_x == "omega") = 0.01;
 para = comp.tab_parameter.dynamics{:, comp.sv_para};
-Hz   = comp.tab_parameter.base.Hz;
+Hz   = comp.r_Hz;
 dx_used = comp.f_dx(0, x, [real(V);imag(V)], [real(I);imag(I)], comp.rv_Uequilibrium);
 dx_new  = comp.fcn_dx(0, x, [real(V);imag(V)], [real(I);imag(I)], comp.rv_Uequilibrium, para, Hz);
 assert(norm(dx_used - dx_new) < 1e-12, "f_dx が変更前の定数 D を使っている")
+

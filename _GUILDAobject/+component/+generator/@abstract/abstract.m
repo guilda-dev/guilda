@@ -25,8 +25,7 @@ classdef abstract < Component
             % obj.set_avr( component.generator.avr.base() );
             % obj.set_governor( component.generator.governor.base() );
             % obj.set_pss( component.generator.pss.base() );
-            Hz = obj.para_base.Hz;
-            obj.set_odefcn(Hz)            
+            obj.set_odefcn(obj.r_Hz)    % network Hz once attached (set_bus rebuilds)
         end
     end    
 

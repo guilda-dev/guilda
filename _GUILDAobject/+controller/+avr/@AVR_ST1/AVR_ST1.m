@@ -28,7 +28,7 @@ classdef (Sealed = true) AVR_ST1 < controller.avr.abstract
             obj.sv_y    = "Vfield";
             obj.sv_para = ["ttr"; "Vap_max"; "Vap_min"; "kap"; "tap"; "kst"; "tst"];  
 
-            obj.set_odefcn(60)
+            obj.set_odefcn(obj.r_Hz)
         end        
         
         function get_equilibrium(obj, V, u)                   
