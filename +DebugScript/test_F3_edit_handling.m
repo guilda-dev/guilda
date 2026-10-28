@@ -220,7 +220,7 @@ pss = avr.a_LocalController{1};
 ld  = net.a_Bus{5}.a_Component{1};
 a_model = {c{1}, c{2}, ld, avr, pss, agc};
 assert(~any(cellfun(@(m) m.l_staleOdefcn, a_model)))
-assert(~ismember("base", string(c{1}.tab_parameter.Properties.VariableNames)))   % 機器は Hz を持たない
+assert(isa(c{1}.tab_parameter.base, "ComponentBaseView"))   % 機器は Hz を持たない (旧形式の互換ビューだけ)
 
 net.tab_parameter.base.Hz = 50;
 assert(all(cellfun(@(m) m.l_staleOdefcn, a_model)) && net.l_staleEquilibrium)
@@ -252,6 +252,39 @@ V = [1;0];  I = [0.5;0];  u = zeros(numel(gen.sv_u),1);
 assert(norm(gen.f_dx(0,x,V,I,u) - gen.fcn_dx(0,x,V,I,u,para,50)) < 1e-12)
 
 
+%% Deprecated component Hz forms still work and warn once
+% 旧形式 comp.tab_parameter.base.Hz / comp.para_base.Hz は系統の Hz を返し、警告を1回だけ出す
+str_id = "GUILDA:Deprecated:ComponentBaseHz";
+[net, comp] = DebugScript.helper.build_3bus("gen-1axis");
+net.tab_parameter.base.Hz = 50;
+clear Deprecated
+assert(warn_id(@() comp.tab_parameter.base.Hz) == str_id)
+assert(comp.tab_parameter.base.Hz == 50 && comp.para_base.Hz == 50)
+assert(comp.para_base.tab_parameter.Hz == 50)
+assert(warn_id(@() comp.para_base.Hz) == "", "警告は1セッションに1回")
+clear Deprecated
+assert(warn_id(@() comp.para_base.Hz) == str_id)
+% 他の列の編集は今まで通り (base は無視される)
+comp.tab_parameter.dynamics.D = 3;
+assert(comp.para_dynamics.D == 3 && net.para_base.Hz == 50)
+
+
+%% Deprecated component Hz write sets the network Hz
+% 旧形式で Hz を書くと系統全体の Hz を変え (警告)、全機器のハンドルが古くなる
+[net, comp] = DebugScript.helper.build_3bus("gen-1axis");
+DebugScript.helper.quiet(@() net.initialize);
+other = net.a_Bus{1}.a_Component{1};
+clear Deprecated
+lastwarn("");
+evalc("comp.tab_parameter.base.Hz = 50;");
+[~, id] = lastwarn();
+assert(string(id) == "GUILDA:Deprecated:ComponentBaseHzSet")
+assert(net.tab_parameter.base.Hz == 50 && other.r_Hz == 50)
+assert(comp.l_staleOdefcn && other.l_staleOdefcn && net.l_staleEquilibrium)
+evalc("comp.para_base.Hz = 55;");
+assert(net.tab_parameter.base.Hz == 55)
+
+
 % ---- local functions ----
 function assert_stale_error(fcn, str_id)
 % fcn が平衡点の古さを知らせるエラー (net.initialize() を促す) になることを確認する
@@ -263,4 +296,13 @@ function assert_stale_error(fcn, str_id)
         return
     end
     error("DebugScript:noError", "平衡点が古いのにエラーにならない")
+end
+
+
+function id = warn_id(fcn)
+% fcn を実行し、出た警告の ID を返す (警告なしは "")
+    lastwarn("");
+    evalc("fcn();");
+    [~, id] = lastwarn();
+    id = string(id);
 end
