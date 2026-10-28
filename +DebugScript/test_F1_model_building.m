@@ -93,6 +93,24 @@ net.add_bus();
 % 接続先は母線のタグでも指定できる
 br = net.add_branch("pi", ["B001","B002"], "X", 0.1);
 assert(isequal(string(br.a_Bus)', ["B001","B002"]))
+assert(br.a_PowerNetwork == net)
+
+% タグ指定と番号指定は同じ系統になる (逆向き [to, from] も同じ)
+net2 = PowerNetwork();
+net2.add_bus();
+net2.add_bus();
+net2.add_branch("pi", [1,2], "X", 0.1);
+assert(isequal(net.get_admittance_matrix, net2.get_admittance_matrix))
+br = net.add_branch("pi", ["B002","B001"], "X", 0.2);
+assert(isequal(string(br.a_Bus)', ["B002","B001"]))
+
+% 存在しないタグはエラー
+try
+    net.add_branch("pi", ["B001","B099"]);
+    error("DebugScript:noError", "存在しない母線タグがエラーにならない")
+catch ME
+    assert(ME.identifier ~= "DebugScript:noError", ME.message)
+end
 
 
 %% Add every component type
@@ -150,6 +168,10 @@ assert(gen.a_LocalController{1} == avr)
 assert(numel(avr.a_LocalController) == 1 && avr.a_LocalController{1} == pss)
 assert(avr.key == "avr" && pss.key == "pss")
 
+% 親への参照は追加した側が設定する (PSS の親は AVR、AVR の親は発電機)
+assert(gen.a_Bus == net.a_Bus{1})
+assert(avr.a_Component == gen && pss.a_Component == avr)
+
 % 平衡点の計算で制御器の平衡点も設定される
 DebugScript.helper.quiet(@() net.initialize);
 assert(numel(avr.rv_Xequilibrium) == numel(avr.sv_x))
@@ -203,6 +225,7 @@ agc  = controller.agc.broadcast_PI_AGC(net, "agc", c{:}, alpha=[1;1], beta=[1;1]
 net.add_global_controller(agc);
 
 assert(numel(net.a_GlobalController) == 1 && net.a_GlobalController{1} == agc)
+assert(agc.PowerNetwork{1} == net)                   % 親への参照は add_global_controller が設定する
 assert(isequal(string(agc.controlledUnits)', ["SG1B001","SG1B002"]))
 assert(isequal(agc.tab_parameter.dynamics.kI, [500;500]))
 
@@ -217,6 +240,20 @@ net = DebugScript.helper.build_ieee14();
 agc = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002");
 tp  = agc.tab_parameter.dynamics;
 assert(height(tp) == 2 && isequal(tp.kP, [100;100]))
+assert(isequal(tp.alpha, [1;1]) && isequal(tp.beta, [1;1]))
+
+% スカラーで与えた alpha, beta も全台に適用される
+agc = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002", "SG1B003", alpha=2, beta=0.5);
+tp  = agc.tab_parameter.dynamics;
+assert(isequal(tp.alpha, [2;2;2]) && isequal(tp.beta, [0.5;0.5;0.5]))
+
+% 台数と合わない長さはエラー
+try
+    controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002", alpha=[1;1;1]);
+    error("DebugScript:noError", "台数と合わない alpha がエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:broadcast_PI_AGC:InvalidSize", ME.message)
+end
 
 
 %% Two global controllers are initialized
@@ -230,6 +267,8 @@ DebugScript.helper.quiet(@() net.initialize);
 % すべての大域制御器に平衡点が設定されるべき
 assert(numel(agc1.rv_Uequilibrium) == 1, "1台目の AGC の平衡点が未設定")
 assert(numel(agc2.rv_Uequilibrium) == 1, "2台目の AGC の平衡点が未設定")
+assert(agc1.PowerNetwork{1} == net && agc2.PowerNetwork{1} == net)
+assert(isequal(agc1.rv_Xequilibrium, 0) && isequal(agc2.rv_Xequilibrium, 0))
 
 
 %% Replace component
@@ -244,13 +283,25 @@ assert(isa(comp, "component.load.impedance"))
 assert(numel(net.a_Bus{5}.a_Component) == 1)
 assert(comp.tab_parameter.powerflow.P == -1.0)       % 潮流設定は引き継がれる
 
+% 置き換えられた機器は母線への参照を持たない
+assert(comp.a_Bus == net.a_Bus{5})
+comp_old = net.a_Bus{5}.a_Component{1};
+net.a_Bus{5}.replace_component(string(comp_old), "load-power");
+assert(isempty(comp_old.a_Bus) && isempty(comp_old.c_Vequilibrium))
+
 
 %% Remove component
 net = DebugScript.helper.build_9bus();
+DebugScript.helper.quiet(@() net.initialize);
 str_tag = string(net.a_Bus{5}.a_Component{1});
 
+comp = net.a_Bus{5}.a_Component{1};
 net.a_Bus{5}.remove_component(str_tag);
 assert(isempty(net.a_Bus{5}.a_Component))
+
+% 削除した機器は母線への参照を持たない (元の母線の電圧に追従しない)
+assert(isempty(comp.a_Bus))
+assert(isempty(comp.c_Vequilibrium))
 
 % 存在しないタグはエラー
 try
@@ -274,21 +325,82 @@ assert(~ismember(str_tag, string(net.a_Branch)))
 Y_after = net.get_admittance_matrix;
 assert(Y_after{"B008","B009"} == 0 && Y_before{"B008","B009"} ~= 0)
 
+% 削除した送電線は系統・母線への参照を持たない
+br = net.a_Branch{1};
+net.remove_branch(string(br));
+assert(isempty(br.a_PowerNetwork) && isempty(br.a_Bus))
+
 
 %% Remove bus
 net = DebugScript.helper.build_9bus();
+DebugScript.helper.quiet(@() net.initialize);    % 編集ログは initialize 後に記録される
 net.add_bus();                               % 何もつながっていない母線 B010
+bus = net.a_Bus{10};
 net.remove_bus("B010");
 assert(numel(net.a_Bus) == 9)
 assert(~ismember("B010", string(net.a_Bus)))
+assert(isempty(bus.a_PowerNetwork))                 % 削除した母線は系統への参照を持たない
+assert(net.tab_editLog.tag(end) == "Topology")
+
+% 存在しないタグはエラー
+try
+    net.remove_bus("B099");
+    error("DebugScript:noError", "存在しない母線の削除がエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:PowerNetwork:BusNotFound", ME.message)
+end
+
+% 送電線がつながった母線は、既定ではエラー (系統は変わらない)
+n_branch = numel(net.a_Branch);
+try
+    net.remove_bus("B005");
+    error("DebugScript:noError", "送電線がつながった母線の削除がエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:PowerNetwork:BusHasBranches", ME.message)
+end
+assert(numel(net.a_Bus) == 9 && numel(net.a_Branch) == n_branch)
+
+% RemoveBranches=true なら、つながった送電線も一緒に削除する
+lv_conn = cellfun(@(br) any(string(br.a_Bus) == "B005"), net.a_Branch);
+a_conn  = net.a_Branch(lv_conn);
+net.remove_bus("B005", "RemoveBranches", true);
+assert(numel(net.a_Bus) == 8 && numel(net.a_Branch) == n_branch - nnz(lv_conn))
+assert(all(cellfun(@(br) isempty(br.a_PowerNetwork), a_conn)))
+
+% 新しい母線のタグは既存のタグと重ならない
+bus = net.add_bus();
+assert(numel(unique(string(net.a_Bus))) == 9 && bus.str_tag == "B010")
+
+% 大域制御器が制御している機器のある母線は削除できない
+net = DebugScript.helper.build_ieee14();
+agc = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001");
+net.add_global_controller(agc);
+try
+    net.remove_bus("B001", "RemoveBranches", true);
+    error("DebugScript:noError", "大域制御器が制御する機器のある母線の削除がエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:PowerNetwork:BusHasControlledUnits", ME.message)
+end
+assert(numel(net.a_Bus) == 14)
 
 
 %% Remove global controller
 net = DebugScript.helper.build_ieee14();
 agc = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001");
 net.add_global_controller(agc);
+DebugScript.helper.quiet(@() net.initialize);
 net.remove_global_controller("agc");
 assert(isempty(net.a_GlobalController))
+assert(isempty(agc.PowerNetwork))                   % 削除した制御器は系統への参照を持たない
+assert(net.tab_editLog.tag(end) == "Topology")
+
+% 存在しないタグはエラー
+try
+    net.remove_global_controller("agc");
+    error("DebugScript:noError", "存在しない大域制御器の削除がエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:PowerNetwork:GconNotFound", ME.message)
+end
 
 
 %% Edit tab_parameter of bus component and branch

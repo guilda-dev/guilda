@@ -148,7 +148,7 @@ classdef PowerNetwork < PowerSystemModel
         bus    = add_bus(  obj,  str_Bus,    opt)
         branch = add_branch(obj, str_Branch, from_to, opt)
         add_global_controller(obj, a_Gcon)
-        remove_bus( obj, str_BusTag)
+        remove_bus( obj, str_BusTag, opt)
         remove_branch( obj, tag)
         remove_global_controller( obj, str_GconTag)
         
@@ -181,6 +181,25 @@ classdef PowerNetwork < PowerSystemModel
         function Hz = get_Hz(obj)
             % The network owns the nominal frequency of all its layers
             Hz = obj.para_base.Hz;
+        end
+
+        function handle_edit(obj, tab)
+            % At most one slack bus: a bus reports bus.l_isSlack = true as a
+            % "Slack" edit (ID starts with its tag); the network releases the others.
+            if string(tab{1,4}) ~= "Slack"
+                return
+            end
+            str_id  = split(string(tab{1,2}), "/");
+            lv_this = string(obj.a_Bus) == str_id(1);
+            if ~any(lv_this) || ~obj.a_Bus{lv_this}.l_isSlack
+                return
+            end
+            for i = find(~lv_this(:)')
+                bus = obj.a_Bus{i};
+                if bus.l_isSlack
+                    bus.l_isSlack = false;
+                end
+            end
         end
     end
 

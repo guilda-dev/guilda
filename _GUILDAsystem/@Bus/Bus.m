@@ -67,6 +67,12 @@ classdef Bus < PowerSystemModel
         % Set equilibrium
         set_equilibrium(obj, c_V, c_I, r_P, r_Q, opt)
     end
+    methods (Access={?PowerNetwork})
+        function set_network(obj, net)
+            % net = [] detaches the bus (PowerNetwork.remove_bus)
+            obj.a_PowerNetwork = net;
+        end
+    end
     
     methods
         % Layer Structure
@@ -131,6 +137,9 @@ classdef Bus < PowerSystemModel
             end
         end
         function set.l_isSlack(obj,val)
+            if val == obj.l_isSlack
+                return
+            end
             if val
                 a_com = obj.a_Component;%#ok
                 if isempty(a_com)
@@ -138,15 +147,14 @@ classdef Bus < PowerSystemModel
                 else
                     disp(msg('GUILDA:Bus:SetSlack' ,string(obj),string(a_com{1})))
                 end
-                for busi = obj.a_PowerNetwork.a_Bus'%#ok
-                    if busi{1}~=obj
-                        busi{1}.l_isSlack = false; %#ok % Change l_isSlack to false for other buses
-                    end
-                end
-                if ~obj.l_isSlack
-                    obj.log_edit("slack bus -> "+obj.str_tag,"Slack");
-                end
-                obj.l_isSlack = true;
+            end
+            obj.l_isSlack = val;
+            % Reported to the network, which keeps at most one slack bus by
+            % releasing the other buses (PowerNetwork.handle_edit).
+            if val
+                obj.log_edit("slack bus -> "+obj.str_tag,"Slack");
+            else
+                obj.log_edit("slack bus released: "+obj.str_tag,"Slack");
             end
         end
     end

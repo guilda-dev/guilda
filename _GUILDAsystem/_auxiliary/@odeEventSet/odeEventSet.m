@@ -106,10 +106,11 @@ classdef (Sealed = true) odeEventSet < auxiliary
                 [sv_tag{i}, rv_rep{i}] = getTM(a_Comp);                                
             end
 
-            if ~isempty(obj.odeNetwork.a_GlobalController)
-                a_GC = obj.odeNetwork.a_GlobalController{1};                
-                sv_tag = [sv_tag; {a_GC.str_tag}];
-                rv_rep = [rv_rep; {numel(a_GC.sv_x)}];
+            % global controllers follow the components in the state vector (see odeSimulator)
+            a_GCs = obj.odeNetwork.a_GlobalController;
+            for k = 1:numel(a_GCs)
+                sv_tag = [sv_tag; {a_GCs{k}.str_tag}]; %#ok
+                rv_rep = [rv_rep; {numel(a_GCs{k}.sv_x)}]; %#ok
             end
 
             obj.sv_Btag = string(net.a_Bus);
@@ -328,11 +329,12 @@ classdef (Sealed = true) odeEventSet < auxiliary
                 [rv_X{i}, rm_M, CompTrip] = getXM(a_Comp, rv_X{i}, rm_M, CompTrip);                
             end
 
-            if ~isempty(obj.odeNetwork.a_GlobalController)
-                a_GC = obj.odeNetwork.a_GlobalController{1};
+            a_GCs = obj.odeNetwork.a_GlobalController;
+            for k = 1:numel(a_GCs)
+                a_GC = a_GCs{k};
 
                 rm_M(a_GC.iv_odeX, a_GC.iv_odeX) = a_GC.f_Mass([], [], [], [], []);
-                rv_X = [rv_X; {a_GC.rv_Xequilibrium}];                
+                rv_X = [rv_X; {a_GC.rv_Xequilibrium}]; %#ok
             end            
 
             Btag_all  = repelem(obj.sv_Btag, obj.rv_Brep);

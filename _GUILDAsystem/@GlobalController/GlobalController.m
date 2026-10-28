@@ -134,7 +134,12 @@ classdef GlobalController < PowerSystemModel
     end
     methods (Access={?Component,?LocalController,?PowerNetwork})        
         function set_parent(obj,net)
-            obj.PowerNetwork = {net}; 
+            % net = [] detaches the controller (PowerNetwork.remove_global_controller)
+            if isempty(net)
+                obj.PowerNetwork = [];
+            else
+                obj.PowerNetwork = {net}; 
+            end
             obj.rebuild_odefcn_tree();    % use the frequency of the network
         end
     end

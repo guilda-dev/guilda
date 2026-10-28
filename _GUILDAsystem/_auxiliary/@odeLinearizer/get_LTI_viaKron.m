@@ -31,32 +31,17 @@ function [Ax_ode, Bx_ode, Cx_ode, Dx_ode, E_ode] = get_LTI_viaKron(obj)
     Bu_dae = blkdiag(Bu{:});
     Cx_dae = blkdiag(Cx{:});
     
-    SN = string.empty(0,1);
-    if ~isempty(obj.odeNetwork.a_GlobalController)
-        sysAGC = obj.odeNetwork.a_GlobalController{1}.get_sys("full",true);
-        nx = size(Ax_dae,1);
-        nv = size(Bv_dae,2);
-        nu = size(Bu_dae,2);
+    Du_dae = blkdiag(Du{:});
+    E_dae  = blkdiag(E{:});
 
-        Ax_dae = [zeros(1,nx+1);[zeros(nx,1),Ax_dae]];        
-        Bv_dae = [zeros(1,nv);Bv_dae];        
-        Bu_dae = [zeros(1,nu);Bu_dae];
-        Cx_dae = [zeros(size(Cx_dae,1),1),Cx_dae];        
-
-        SN = tools.vcellfun(@(s) string(s), sysAGC.StateName);
-        IN = tools.vcellfun(@(s) string(s), sysAGC.InputName);        
-
-        lv_GC = ismember([SN;vertcat(x{:})],[SN;IN]);
-
-        Ax_dae(lv_GC,lv_GC) = Ax_dae(lv_GC,lv_GC) + [sysAGC.A, sysAGC.B;sysAGC.C, sysAGC.D];
-
-        E = [{sysAGC.E};E];
-    end    
+    % global controllers (all of them; their states come first)
+    str_u = tools.cellfun(@(s) s(3:end), i);    % component inputs (the columns of Bu)
+    [Ax_dae, Bv_dae, Bu_dae, Cx_dae, E_dae, SN] = add_global_controllers( ...
+        obj.odeNetwork, vertcat(x{:}), vertcat(str_u{:}), Ax_dae, Bv_dae, Bu_dae, Cx_dae, Du_dae, E_dae);
     
     lv_input  = ismember(input, busVnames);
     lv_output = ismember(output,busInames);
 
-    Du_dae = blkdiag(Du{:});
     Dv_dae = blkdiag(Dv{:}) - Ymat;
     
     mat_v2x = Bv_dae / Dv_dae;
@@ -68,7 +53,7 @@ function [Ax_ode, Bx_ode, Cx_ode, Dx_ode, E_ode] = get_LTI_viaKron(obj)
     Bx_ode = Bu_dae - mat_v2x * Du_dae;
     Cx_ode = eye(n_x);
     Dx_ode = zeros(n_x,n_u);
-    E_ode  = blkdiag(E{:});
+    E_ode  = E_dae;
 
 
     sys = dss(Ax_ode, Bx_ode, Cx_ode, Dx_ode, E_ode);

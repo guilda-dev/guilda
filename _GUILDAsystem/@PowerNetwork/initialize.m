@@ -16,8 +16,8 @@ function [flag,tab_PFsol,output] = initialize(obj, options)
             [tab_PFsol, flag, output] = calculate_from_equilibrium(obj);
     end
 
-    if ~isempty(obj.a_GlobalController)
-        a_GC = obj.a_GlobalController{1};
+    for i_gc = 1:numel(obj.a_GlobalController)
+        a_GC = obj.a_GlobalController{i_gc};
         [a_GC.rv_Xequilibrium, a_GC.rv_Uequilibrium] = a_GC.get_equilibrium();
     end
 

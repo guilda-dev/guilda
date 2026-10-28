@@ -122,6 +122,13 @@ classdef LayerPackage < handle
             cellfun(@(c) c.rebuild_odefcn_tree, obj.children);
         end
 
+        function handle_edit(obj, tab) %#ok
+        % Called by log_edit on the top layer (PowerNetwork) with every edit
+        % reported by its layers (tab: the tab_editLog row), so that the
+        % network can keep network-wide rules; a child never writes its siblings.
+        % PowerNetwork overrides this; other layers do nothing.
+        end
+
         function rebuild_odefcn(obj)
         % Rebuild the f_* handle cache from the current parameters.
         % Layers that own handles (Component, LocalController, GlobalController)

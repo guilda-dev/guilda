@@ -87,14 +87,15 @@ function log_edit(obj, log, tag, before, after, time, tab)
     end
 
     if isa(obj,"PowerNetwork")
-        if obj.str_editFlag == "unset"
-            return
-        else
+        if obj.str_editFlag ~= "unset"
             obj.str_editFlag = "editted";
             obj.l_staleEquilibrium = obj.l_staleEquilibrium || l_equilibrium;
             tab.Properties.VariableNames = {'timestamp','ID','log','tag','before','after'};
             obj.tab_editLog  = [obj.tab_editLog; tab];
         end
+        % The network reacts to the reported edit (e.g. keeps a single slack bus),
+        % also before the first initialize.
+        obj.handle_edit(tab);
     elseif isa(obj.parent,"LayerPackage")
         obj.str_editFlag = "editted";
         obj.parent.log_edit("","",nan,nan,"",tab)

@@ -52,4 +52,5 @@ ___KEY_CASES___
     % net.initialize() first.
     comp.set_equilibrium(Vequilibrium, Iequilibrium);
     obj.log_edit(obj.str_tag+" <<-replace--- "+str_tag+" -> "+comp.str_tag,"Topology")
+    comp_pre.set_bus([])    % the replaced component no longer reads this bus
 end
