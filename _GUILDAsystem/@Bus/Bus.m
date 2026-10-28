@@ -1,18 +1,25 @@
 classdef Bus < PowerSystemModel
 
-%% Properties
+    %% Properties
+    properties (Dependent)
+        str_bustype              % PowerFlow
+        tab_parameter            % Parameter
+    end
     properties
         l_isSlack      (1,1) logical = false;   % Flag if bus is Slack Bus
     end
+    properties (Access={?odeSimulator, ?odeEventSet})
+        l_isFault (1,1) logical = false
+    end
+    properties (Access={?odeSimulator, ?odeLinearizer})
+        l_isNonUnit (1,1) logical = false
+    end
+
     properties (SetAccess=protected)
         a_PowerNetwork                          % Layer Structure
         a_Component                             % Layer Structure
         c_Vequilibrium      = 1;                % Steady State
         c_Iequilibrium      = 0;                % Steady State
-    end
-    properties (Dependent)
-        str_bustype                             % PowerFlow
-        tab_parameter                           % Parameter
     end
     properties (Hidden,SetAccess=protected)
         para_dynamics                           % Parameter
@@ -33,19 +40,14 @@ classdef Bus < PowerSystemModel
     properties (Access=public)
         rv_odeInit
     end
-    properties (Access={?odeSimulator, ?odeEventSet})
-        l_isFault (1,1) logical = false
-    end
-    properties (Access={?odeSimulator, ?odeLinearizer})
-        l_isNonUnit (1,1) logical = false
-    end
     properties (SetAccess={?ContinuationPowerFlow})
         iv_CPFV = zeros(0,1)        
     end
 
 %% Constructor
     methods (Access={?PowerNetwork ?Bus})
-        function obj = Bus(tag,opt)
+        function obj = Bus(net,tag,opt)
+            obj.a_PowerNetwork = net;
             obj.str_tag        = tag;
             obj.para_dynamics  = Parameter(obj,"dynamics");
             obj.para_operation = Parameter(obj,"operation");
@@ -66,9 +68,6 @@ classdef Bus < PowerSystemModel
                                            "Yaxis", opt.Yaxis    , "double",...
                                           "Marker", opt.Marker   , "string");
         end
-
-        % Layer Structure
-        set_network(obj,a_PowerNetwork)
         
         % Set equilibrium
         set_equilibrium(obj, c_V, c_I, r_P, r_Q, opt)
@@ -78,16 +77,13 @@ classdef Bus < PowerSystemModel
         % Layer Structure
         remove_component(obj,str_tag)
         comp = add_component(obj,Type,varargin)
-        replace_component(obj, str_tag, Type, parameter)
+        comp = replace_component(obj, str_tag, Type, parameter)
 
         % PF(powerflow) calculation
         tab_PFset    = get_pf_set(obj)
 
         % OPF
         [prob, x0, const, Vvar] = build_opf_problem(obj, prob, x0, const, Vvar, option)
-
-        % ODE
-        [n_odeX, n_odeU, Mass, x0] = reset_odeset(obj, n_odeX, n_odeU, omega0)
 
         %get_sys
         sys = get_sys(obj, opt)
