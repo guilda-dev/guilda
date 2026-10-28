@@ -1128,12 +1128,12 @@ body.doc-layout .meta-box table th {
 }
 
 /* Mark: square icon / short text at the start of a list item */
-.dg-mark { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 10px; background: var(--dg-accent-soft); color: var(--dg-accent); font: bold 0.9rem/1 var(--dg-mono); }
+.dg-mark { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 10px; background: var(--dg-accent-soft); color: var(--dg-accent); font: bold 0.9rem/1 var(--dg-mono); white-space: nowrap; }
 .dg-mark .dg-icon { width: 22px; height: 22px; }
 .dg-mark.is-ok { background: var(--dg-ok-soft); color: var(--dg-ok); }
 .dg-mark.is-warn { background: var(--dg-warn-soft); color: var(--dg-warn-ink); }
 .dg-mark.is-err { background: var(--dg-err-soft); color: var(--dg-err); }
-@media (max-width: 640px) { .dg-mark { width: 34px; height: 34px; } }
+@media (max-width: 640px) { .dg-mark { width: 34px; height: 34px; font-size: 0.75rem; } }
 
 /* Rows: term on the left, description on the right */
 .dg-rows { margin: var(--dg-s4) 0 var(--dg-s5); border-top: 1px solid var(--dg-line); }
