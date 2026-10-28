@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GUILDA Developer Guide - Git Workflow</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body class="developer-layout">
+  <main>
+    <button type="button" class="developer-back-button" onclick="window.history.back()">← Back to For Developer</button>
+    <h1>Git Workflow</h1>
+    <p class="page-lead">GUILDA uses three kinds of branches: <code>main</code> for releases, a version branch for integration, and short-lived work branches. Branch names and commit messages share the same set of change types.</p>
+
+    <nav class="dev-toc" aria-label="Contents">
+      <a href="#branches">Branch model</a>
+      <a href="#branch-names">Branch names</a>
+      <a href="#commits">Commit messages</a>
+      <a href="#pull-requests">Pull requests</a>
+      <a href="#release">Release</a>
+      <a href="#dont">Do not</a>
+    </nav>
+
+    <h2 id="branches">Branch model</h2>
+<pre class="dev-tree">main         o---------------------------o------->  releases (tagged vX.Y)
+              \                         /
+version4.0     o-----o-------o---------o--------->  integration of the next release
+                \   /         \       /
+feature/42-...   o-o           \     /
+fix/51-...                      o---o</pre>
+    <table>
+      <tr><th>Branch</th><th>Purpose</th><th>Created from</th><th>Merged into</th></tr>
+      <tr><td><code>main</code></td><td>Released, stable code. Every release is tagged.</td><td>—</td><td>—</td></tr>
+      <tr><td><code>versionX.Y</code></td><td>Integration branch for the next release (currently <code>version4.0</code>).</td><td><code>main</code></td><td><code>main</code> at release</td></tr>
+      <tr><td><code>&lt;type&gt;/&lt;issue&gt;-&lt;slug&gt;</code></td><td>One piece of work for one Issue.</td><td>The integration branch</td><td>The integration branch</td></tr>
+    </table>
+
+    <h2 id="branch-names">Branch names</h2>
+    <p>Work branches are named <strong><code>&lt;type&gt;/&lt;issue&gt;-&lt;slug&gt;</code></strong>.</p>
+    <table>
+      <tr><th>Type</th><th>Use for</th><th>Example</th></tr>
+      <tr><td><code>feature</code></td><td>New functions, classes, or models</td><td><code>feature/42-grid-forming-inverter</code></td></tr>
+      <tr><td><code>fix</code></td><td>Bug fixes</td><td><code>fix/51-opf-bus-index</code></td></tr>
+      <tr><td><code>refactor</code></td><td>Restructuring without changing behavior</td><td><code>refactor/55-split-odesimulator</code></td></tr>
+      <tr><td><code>docs</code></td><td>Help comments, documentation pages, tutorials</td><td><code>docs/60-folder-structure</code></td></tr>
+      <tr><td><code>test</code></td><td>Test and debug scripts</td><td><code>test/63-two-machine-validation</code></td></tr>
+    </table>
+    <ul>
+      <li><code>&lt;issue&gt;</code> is the GitHub Issue number. Create the Issue first.</li>
+      <li><code>&lt;slug&gt;</code> is a short English summary in lowercase words joined by hyphens (<code>a-z</code>, <code>0-9</code>, <code>-</code>).</li>
+      <li>Keep the whole name under about 50 characters.</li>
+    </ul>
+
+    <section class="name-generator" aria-label="Branch Name Generator">
+      <h2>Branch Name Generator</h2>
+      <p class="name-generator-desc">Pick a type, enter the Issue number and a short summary, then copy the generated <code>git switch</code> command.</p>
+
+      <div class="name-generator-row">
+        <span class="name-generator-label">Type</span>
+        <div class="name-generator-options" id="bg-type-options">
+          <button type="button" class="ng-btn" data-type="feature"><span class="ng-btn-code">feature</span><span class="ng-btn-label">new function</span></button>
+          <button type="button" class="ng-btn" data-type="fix"><span class="ng-btn-code">fix</span><span class="ng-btn-label">bug fix</span></button>
+          <button type="button" class="ng-btn" data-type="refactor"><span class="ng-btn-code">refactor</span><span class="ng-btn-label">restructure</span></button>
+          <button type="button" class="ng-btn" data-type="docs"><span class="ng-btn-code">docs</span><span class="ng-btn-label">documentation</span></button>
+          <button type="button" class="ng-btn" data-type="test"><span class="ng-btn-code">test</span><span class="ng-btn-label">test / debug</span></button>
+        </div>
+      </div>
+
+      <div class="name-generator-row">
+        <span class="name-generator-label">Issue number</span>
+        <input type="text" id="bg-issue-input" class="name-generator-input" placeholder="e.g. 42" inputmode="numeric" autocomplete="off">
+        <p class="name-generator-error" id="bg-issue-error">Enter digits only.</p>
+      </div>
+
+      <div class="name-generator-row">
+        <span class="name-generator-label">Summary</span>
+        <input type="text" id="bg-slug-input" class="name-generator-input" placeholder="e.g. Folder structure page" autocomplete="off" spellcheck="false">
+        <p class="name-generator-error" id="bg-slug-error">Use English letters, digits, spaces, or hyphens only.</p>
+      </div>
+
+      <div class="name-generator-result">
+        <code class="name-generator-output" id="bg-output">Select a type, then enter the Issue number and a summary.</code>
+        <button type="button" class="btn name-generator-copy-btn" id="bg-copy-btn" disabled>Copy</button>
+      </div>
+    </section>
+
+    <h2 id="commits">Commit messages</h2>
+    <p>Write the first line as <strong><code>&lt;type&gt;: &lt;summary&gt;</code></strong>.</p>
+    <table>
+      <tr><th>Type</th><th>Use for</th><th>Matching branch type</th></tr>
+      <tr><td><code>feat</code></td><td>New functions, classes, or models</td><td><code>feature</code></td></tr>
+      <tr><td><code>fix</code></td><td>Bug fixes</td><td><code>fix</code></td></tr>
+      <tr><td><code>refactor</code></td><td>Restructuring without changing behavior</td><td><code>refactor</code></td></tr>
+      <tr><td><code>docs</code></td><td>Help comments, documentation pages, tutorials</td><td><code>docs</code></td></tr>
+      <tr><td><code>test</code></td><td>Test and debug scripts</td><td><code>test</code></td></tr>
+      <tr><td><code>chore</code></td><td>Settings, <code>.gitignore</code>, file moves, and other maintenance</td><td>any</td></tr>
+    </table>
+    <ul>
+      <li>The summary is in English, starts with a lowercase verb in the imperative (<em>add</em>, <em>fix</em>, <em>remove</em>), and has no trailing period.</li>
+      <li>Keep the first line within 72 characters. Add a body after a blank line when the reason for the change is not obvious.</li>
+      <li>One commit contains one logical change. A branch may mix types, for example <code>feat:</code> and <code>docs:</code> commits on a <code>feature/</code> branch.</li>
+    </ul>
+<pre>fix: use bus index instead of position in OPF constraints
+
+The constraint matrix was built from the position in a_Bus, which
+breaks after a bus is removed. Refs #51.</pre>
+
+    <h2 id="pull-requests">Pull requests</h2>
+    <ol>
+      <li>Keep the work branch up to date by merging the integration branch into it.</li>
+      <li>Open a pull request into the integration branch. Use the same <code>&lt;type&gt;: &lt;summary&gt;</code> format for the title.</li>
+      <li>Write <code>Closes #&lt;issue&gt;</code> in the description so the Issue is closed on merge.</li>
+      <li>Check the items in <a href="project-management.html#done">Definition of Done</a>.</li>
+      <li>After review, merge the pull request and delete the work branch.</li>
+    </ol>
+
+    <h2 id="release">Release</h2>
+    <ol>
+      <li>Open a pull request from the integration branch into <code>main</code>.</li>
+      <li>After merging, tag the merge commit on <code>main</code> as <code>vX.Y</code> (existing tags: <code>v1.0</code>, <code>v1.1</code>, <code>v2.0</code>, <code>v2.1</code>).</li>
+      <li>Create the next integration branch from <code>main</code>.</li>
+    </ol>
+
+    <h2 id="dont">Do not</h2>
+    <ul>
+      <li>Commit directly to <code>main</code>.</li>
+      <li>Force-push to <code>main</code> or the integration branch.</li>
+      <li>Commit generated files or personal settings (see <a href="folder-structure.html#generated">Generated files</a>).</li>
+      <li>Create work branches with other prefixes such as <code>dev/</code> or <code>develop/</code>.</li>
+    </ul>
+  </main>
+
+  <script>
+    (function () {
+      var typeButtons = Array.prototype.slice.call(document.querySelectorAll('#bg-type-options .ng-btn'));
+      var issueInput = document.getElementById('bg-issue-input');
+      var slugInput = document.getElementById('bg-slug-input');
+      var issueError = document.getElementById('bg-issue-error');
+      var slugError = document.getElementById('bg-slug-error');
+      var output = document.getElementById('bg-output');
+      var copyBtn = document.getElementById('bg-copy-btn');
+      var selectedType = null;
+
+      typeButtons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          selectedType = btn.getAttribute('data-type');
+          typeButtons.forEach(function (b) { b.classList.toggle('active', b === btn); });
+          update();
+        });
+      });
+      issueInput.addEventListener('input', update);
+      slugInput.addEventListener('input', update);
+
+      function toSlug(text) {
+        return text.trim().toLowerCase().replace(/[\s_]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      }
+
+      function update() {
+        var issue = issueInput.value.trim();
+        var summary = slugInput.value;
+        var isValidIssue = /^\d*$/.test(issue);
+        var isValidSlug = /^[A-Za-z0-9\s_-]*$/.test(summary);
+        issueError.style.display = isValidIssue ? 'none' : 'block';
+        slugError.style.display = isValidSlug ? 'none' : 'block';
+        issueInput.classList.toggle('is-invalid', !isValidIssue);
+        slugInput.classList.toggle('is-invalid', !isValidSlug);
+
+        var slug = toSlug(summary);
+        var ready = selectedType !== null && issue.length > 0 && isValidIssue && isValidSlug && slug.length > 0;
+        if (ready) {
+          output.textContent = 'git switch -c ' + selectedType + '/' + issue + '-' + slug;
+        } else if (selectedType === null) {
+          output.textContent = 'Select a type, then enter the Issue number and a summary.';
+        } else if (!isValidIssue || !isValidSlug) {
+          output.textContent = 'Fix the input above to generate a name.';
+        } else {
+          output.textContent = 'Enter the Issue number and a summary.';
+        }
+        copyBtn.disabled = !ready;
+      }
+
+      function fallbackCopy(text) {
+        var temp = document.createElement('textarea');
+        temp.value = text;
+        temp.style.position = 'fixed';
+        temp.style.opacity = '0';
+        document.body.appendChild(temp);
+        temp.select();
+        try { document.execCommand('copy'); } catch (e) { /* ignore */ }
+        document.body.removeChild(temp);
+      }
+
+      copyBtn.addEventListener('click', function () {
+        if (copyBtn.disabled) return;
+        var text = output.textContent;
+        var flash = function () {
+          copyBtn.textContent = 'Copied!';
+          setTimeout(function () { copyBtn.textContent = 'Copy'; }, 1200);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(flash, function () { fallbackCopy(text); flash(); });
+        } else {
+          fallbackCopy(text);
+          flash();
+        }
+      });
+
+      update();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GUILDA Developer Guide - Project Management</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body class="developer-layout">
+  <main>
+    <button type="button" class="developer-back-button" onclick="window.history.back()">← Back to For Developer</button>
+    <h1>Project Management</h1>
+    <p class="page-lead">All work in GUILDA is tracked with GitHub Issues. One Issue corresponds to one work branch and one pull request.</p>
+
+    <nav class="dev-toc" aria-label="Contents">
+      <a href="#flow">Workflow</a>
+      <a href="#issues">Issues</a>
+      <a href="#versions">Versions</a>
+      <a href="#documentation">Keeping documentation current</a>
+      <a href="#done">Definition of Done</a>
+    </nav>
+
+    <h2 id="flow">Workflow</h2>
+<pre class="dev-tree">Issue #42  ──▶  feature/42-…  ──▶  Pull request "feat: …"  ──▶  version4.0  ──▶  main (v4.0)
+ what & why      the work          review + Closes #42          integration       release</pre>
+    <ol>
+      <li>Open an Issue that describes the problem or the goal.</li>
+      <li>Create a work branch from the integration branch, following the <a href="git-workflow.html#branch-names">branch naming rule</a>.</li>
+      <li>Commit with <a href="git-workflow.html#commits"><code>&lt;type&gt;: &lt;summary&gt;</code></a> messages.</li>
+      <li>Open a pull request into the integration branch and complete the <a href="#done">Definition of Done</a>.</li>
+      <li>Merge, delete the branch, and let <code>Closes #&lt;issue&gt;</code> close the Issue.</li>
+    </ol>
+
+    <h2 id="issues">Issues</h2>
+    <ul>
+      <li>Write the title in English as a short statement of the goal, e.g. <em>Add grid-forming inverter model</em>.</li>
+      <li>Describe the background, the expected result, and, for bugs, the steps to reproduce.</li>
+      <li>Add one type label that matches the branch type: <code>feature</code>, <code>fix</code>, <code>refactor</code>, <code>docs</code>, or <code>test</code>.</li>
+      <li>Split an Issue when it cannot be finished in one pull request.</li>
+    </ul>
+
+    <h2 id="versions">Versions</h2>
+    <table>
+      <tr><th>Item</th><th>Rule</th></tr>
+      <tr><td>Version number</td><td><code>X.Y</code>. Increase <code>X</code> for changes that break existing scripts, and <code>Y</code> otherwise.</td></tr>
+      <tr><td>Integration branch</td><td><code>versionX.Y</code>, one per release under development.</td></tr>
+      <tr><td>Release tag</td><td><code>vX.Y</code> on the merge commit in <code>main</code>.</td></tr>
+      <tr><td>Breaking changes</td><td>When a public name changes, keep the old name working through a wrapper in <code>_GUILDAsystem/_VersionSupport/</code> for at least one major version.</td></tr>
+    </table>
+
+    <h2 id="documentation">Keeping documentation current</h2>
+    <table>
+      <tr><th>When you change…</th><th>Also update</th></tr>
+      <tr><td>A public class, property, or method</td><td>Its help comment tags (<a href="class-documentation.html">How to Define Class Documentation</a>). The class reference is regenerated from them.</td></tr>
+      <tr><td>The folder layout</td><td><a href="folder-structure.html">Folder Structure</a></td></tr>
+      <tr><td>A tutorial</td><td><code>_GUILDAdoc/database/list_Tutorials.js</code></td></tr>
+      <tr><td>A user-visible feature in a release</td><td><code>_GUILDAdoc/database/list_UpdateLog.js</code></td></tr>
+      <tr><td>A developer rule</td><td>The matching page in this For Developer tab</td></tr>
+    </table>
+
+    <h2 id="done">Definition of Done</h2>
+    <p>Check these items before requesting a review.</p>
+    <ul class="dev-checklist">
+      <li><code>&gt;&gt; GUILDA</code> starts without errors.</li>
+      <li>The affected tutorials or <code>+DebugScript</code> tasks run.</li>
+      <li>New and changed code follows the <a href="naming-conventions.html">naming conventions</a> and the <a href="folder-structure.html#placement">placement rules</a>.</li>
+      <li>Public members have help comment tags, and <code>GUILDA.doc("update", true, "strict", true)</code> reports no errors.</li>
+      <li>No generated files or personal settings are committed.</li>
+      <li>The pull request title follows <code>&lt;type&gt;: &lt;summary&gt;</code> and the description contains <code>Closes #&lt;issue&gt;</code>.</li>
+    </ul>
+  </main>
+</body>
+</html>
