@@ -21,7 +21,6 @@ function tab = known_failures()
     "test_F1_model_building/AGCDefaultParametersCoverAllControlledUnits", "broadcast_PI_AGC の alpha/beta 既定値がスカラーで、複数台制御時にパラメータ行数 (1) と制御対象数が合わず tab_parameter がエラー"
     "test_F1_model_building/TwoGlobalControllersAreInitialized", "initialize / odeSimulator / odeEventSet が a_GlobalController{1} しか扱わない"
     % ---- F2 power flow --------------------------------------------------------------------------
-    "test_F2_powerflow/DynamicModeReachesTheAlgebraicSolution",  "solve_dynamic が PV 母線の電圧を V ではなく V0 (初期値) に固定する"
     % ---- F3 initialize --------------------------------------------------------------------------
     "test_F3_initialize/InitializeWithOptimalPowerflow",         "optimize_powerflow が失敗 (F4 参照)"
     "test_F3_initialize/EquilibriumOfGen1axis",                  "gen-1axis: Jacobi 関数の引数の数が合わず simulate が ""入力引数が多すぎます"" で失敗"
