@@ -25,7 +25,6 @@ function tab = known_failures()
     "test_F3_initialize/InitializeReturnsFlagTableOutput",       "initialize.m が calculate_powerflow の出力を [tab, output, flag] の順で受けている (flag と output が逆)"
     "test_F3_initialize/InitializeWithOptimalPowerflow",         "optimize_powerflow が失敗 (F4 参照)。さらに initialize は戻り値の順序も誤っている"
     "test_F3_initialize/InitializeFromXequilibrium",             "initialize.m に ""calculate from Xequilibrium"" の分岐が無く tab_PFsol が未定義"
-    "test_F3_initialize/DynamicsParameterEditIsUsedAfterInitialize", "Component.set_odefcn がコンストラクタ時のパラメータを関数ハンドルに固定し、tab_parameter の変更が f_dx に反映されない"
     % ---- F4 OPF ---------------------------------------------------------------------------------
     "test_F4_opf/EconomicLoadDispatch",                          "build_opf_problem が tab_parameter.OPF 列を参照するが存在しない。結果整形も削除済み Cubicle (a_Cubicle, str_ConnectType) を参照"
     "test_F4_opf/DCOptimalPowerFlow",                            "build_opf_problem が tab_parameter.OPF 列を参照するが存在しない。結果整形も削除済み Cubicle を参照"

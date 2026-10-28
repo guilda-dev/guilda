@@ -140,6 +140,12 @@ classdef Component < PowerSystemModel
             obj.f_dx   = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, array, omega0);
             obj.f_I    = @(t,x,V,I,u) obj.fcn_I(t, x, V, I, u, array, omega0);
             obj.f_Y    = @(t,x,V,I,u) obj.fcn_Y(t, x, V, I, u, array, omega0);
+            obj.l_staleOdefcn = false;
+        end
+
+        function rebuild_odefcn(obj)
+            % Called by check_edit after a dynamics/base parameter edit.
+            obj.set_odefcn(obj.para_base.Hz);
         end
     end
             

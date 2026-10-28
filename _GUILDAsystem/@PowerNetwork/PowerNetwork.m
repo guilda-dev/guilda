@@ -175,6 +175,10 @@ classdef PowerNetwork < PowerSystemModel
         info(obj, disp)
         G = draw_diagram(obj,ax)
     end
+    methods(Access=protected)
+        % Edit handling: rebuild stale f_* handles, check the equilibrium
+        flag = check_edit(obj, opt)
+    end
 
 %% Get Method
     methods

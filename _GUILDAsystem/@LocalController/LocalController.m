@@ -30,6 +30,9 @@ classdef LocalController < PowerSystemModel
         f_JacobiDx        
         f_JacobiY        
     end    
+    properties(SetAccess=protected, Hidden)
+        r_omega0                               % omega0 last passed to set_odefcn (reused by rebuild_odefcn)
+    end
     properties (SetAccess={?odeSimulator, ?odeEventSet}, Hidden)
         iv_odeX  = zeros(0,1);
         iv_odeU  = zeros(0,1);
@@ -98,6 +101,13 @@ classdef LocalController < PowerSystemModel
 
             obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
             obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
+            obj.r_omega0   = omega0;
+            obj.l_staleOdefcn = false;
+        end
+
+        function rebuild_odefcn(obj)
+            % Called by check_edit after a dynamics parameter edit.
+            obj.set_odefcn(obj.r_omega0);
         end
     end
 
