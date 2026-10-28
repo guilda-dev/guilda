@@ -18,6 +18,8 @@ which are the source of truth (`project-management.html`, `git-workflow.html`,
 - Version number `X.Y`: increase X for changes that break existing scripts, Y otherwise.
 - When a public name changes, keep the old name working through a wrapper in `_GUILDAsystem/_VersionSupport/` for at least one major version.
 - Do not commit directly to `main`, force-push to `main` or the integration branch, or use other branch prefixes such as `dev/` or `develop/`.
+- Release only with `bash .claude/release/release.sh X.Y` from a clean `versionX.Y`; never merge or cherry-pick into `main` by hand or on GitHub. Then start the next integration branch with `bash .claude/release/start-version.sh X.Y PREV`.
+- Assistant config (`.claude/`, `.codex/`, `.github/copilot-instructions.md`) is tracked on development branches only and never lands in `main`: `release.sh` removes it, `start-version.sh` restores it.
 
 ## Branch Names
 - Format: `<type>/<issue>-<slug>`, e.g. `feature/42-grid-forming-inverter`.
