@@ -93,6 +93,24 @@ net.add_bus();
 % 接続先は母線のタグでも指定できる
 br = net.add_branch("pi", ["B001","B002"], "X", 0.1);
 assert(isequal(string(br.a_Bus)', ["B001","B002"]))
+assert(br.a_PowerNetwork == net)
+
+% タグ指定と番号指定は同じ系統になる (逆向き [to, from] も同じ)
+net2 = PowerNetwork();
+net2.add_bus();
+net2.add_bus();
+net2.add_branch("pi", [1,2], "X", 0.1);
+assert(isequal(net.get_admittance_matrix, net2.get_admittance_matrix))
+br = net.add_branch("pi", ["B002","B001"], "X", 0.2);
+assert(isequal(string(br.a_Bus)', ["B002","B001"]))
+
+% 存在しないタグはエラー
+try
+    net.add_branch("pi", ["B001","B099"]);
+    error("DebugScript:noError", "存在しない母線タグがエラーにならない")
+catch ME
+    assert(ME.identifier ~= "DebugScript:noError", ME.message)
+end
 
 
 %% Add every component type

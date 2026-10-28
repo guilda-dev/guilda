@@ -12,7 +12,6 @@ function tab = known_failures()
 
     list = [
     % ---- F1 model building ----------------------------------------------------------------------
-    "test_F1_model_building/AddBranchByBusTag",                  "add_branch.m:31 が未定義の変数 net を参照 (obj.a_Bus であるべき)"
     "test_F1_model_building/RemoveBus",                          "remove_bus は PowerNetwork.m で宣言のみで実装ファイルが無い"
     "test_F1_model_building/RemoveGlobalController",             "remove_global_controller は PowerNetwork.m で宣言のみで実装ファイルが無い"
     "test_F1_model_building/AddLocalControllerLQR",              "controller.local_LQR は v3 の LocalController API のまま (抽象クラス扱い)。v4 では制御器の入力は機器の出力 Y (発電機は omega のみ) で、add_local_controller も key が avr/pss の制御器しか保持しないため、状態フィードバックの LQR を移植するには契約の決定が必要"
