@@ -113,6 +113,18 @@ i1 = find(r.t > 1, 1);                         % 1 秒の直後の点
 assert(abs(delta(i1) - (gen.rv_Xequilibrium(1) + 0.1)) < 1e-2, "t = 1 のオフセットが反映されていない")
 
 
+%% Offset state is applied only once
+% オフセットの期間が他のイベントで分割されても、オフセットは開始時刻に 1 回だけ加わる
+% (分割用のイベントは入力 0 で、応答には影響しない)
+os  = odeEventSet("offset", net, "TimeSpan", [1,3], "OffsetUnit", "SG1B001", "OffsetState", "delta", "OffsetValue", 0.1);
+cut = odeEventSet("cut", net, "TimeSpan", [2,2.5], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", 0);
+r1  = net.simulate([0,4], os).odeResults;
+r2  = net.simulate([0,4], os, cut).odeResults;
+d1  = r1.Bus(1).Component(1).X.delta;
+d2  = r2.Bus(1).Component(1).X.delta;
+assert(abs(d2(end) - d1(end)) < 1e-3, "オフセットが分割された区間ごとに重ねて加わっている")
+
+
 %% Input value numeric
 % SG1B002 の機械入力 Pmech に 1〜3 秒の間 0.1 を加える
 gen = net.a_Bus{2}.a_Component{1};

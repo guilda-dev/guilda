@@ -212,6 +212,9 @@ classdef (Sealed = true) odeEventSet < auxiliary
             odeEvents = [{obj},varargin]';            
 
             osU = cellfun(@(c) c.OffsetUnit,  odeEvents);
+            % An offset is applied only once, in the phase where its event starts.
+            lv_osStart = cellfun(@(c) c.TimeSpan(1) == opt.TimePhase(1), odeEvents) | opt.Iteration == 1;
+            osU(~lv_osStart) = "";
             osX = cellfun(@(c) c.OffsetState, odeEvents, 'UniformOutput', false);
             osV = cellfun(@(c) c.OffsetValue, odeEvents, 'UniformOutput', false);            
 
@@ -336,6 +339,15 @@ classdef (Sealed = true) odeEventSet < auxiliary
             x0 = opt.x0;
             if isempty(x0)
                 x0 = [vertcat(rv_X{:}); vertcat(rv_V{:})];
+            else
+                % Offsets of the events starting in this phase (see setEventCondition)
+                for i=1:numel(a_bus)
+                    a_Comp = a_bus{i}.a_Component;
+                    for j=1:numel(a_Comp)
+                        idx = a_Comp{j}.iv_odeX;
+                        x0(idx) = x0(idx) + a_Comp{j}.rv_Xoffset;
+                    end
+                end
             end
             varargout{1} = RM * x0;                        
             

@@ -38,7 +38,6 @@ function tab = known_failures()
     % ---- F5 CPF ---------------------------------------------------------------------------------
     "test_F5_cpf/LegacyEntryContinuation_Power_Flow",            "Continuation_Power_Flow(net,opt) が opt を名前-値引数の関数へ位置引数で渡すため必ずエラー"
     % ---- F6 time simulation ---------------------------------------------------------------------
-    "test_F6_simulation/OffsetStateAfterTimeZero",               "OffsetState は最初の区間 (TimeSpan 0) でしか初期値に反映されず、t>0 のオフセットは無視される"
     % ---- F7 linearization -----------------------------------------------------------------------
     "test_F7_linearization/GetSysKron",                          "Component.get_sys が削除済みの JacobiAxx 等 (旧 API) を呼ぶ"
     "test_F7_linearization/GetSysFeedback",                      "Component.get_sys が削除済みの JacobiAxx 等 (旧 API) を呼ぶ"
