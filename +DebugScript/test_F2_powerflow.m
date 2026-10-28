@@ -60,6 +60,48 @@ assert(abs(tab{"B002","Varg"}) < tol)
 assert(abs(tab{"B002","V"} - 1.00) < tol)
 
 
+%% Switching the slack bus leaves exactly one
+% スラック母線は系統に高々1つ。母線は兄弟の母線を書き換えず、変更を系統に通知し、系統が他を外す
+n_slack = @(net) sum(cellfun(@(b) b.l_isSlack, net.a_Bus));
+net = DebugScript.helper.build_9bus();
+net.a_Bus{1}.a_Component{1}.tab_parameter.powerflow.P = 0.7;    % B001 が PV 母線でも解けるように
+net.a_Bus{2}.tab_parameter.powerflow.Varg = 0;                   % スラックにする母線の位相
+net.a_Bus{3}.tab_parameter.powerflow.Varg = 0;
+
+% initialize 前 (編集ログが記録されない状態) でも1つだけ
+evalc("net.a_Bus{1}.l_isSlack = true;");
+evalc("net.a_Bus{3}.l_isSlack = true;");
+assert(n_slack(net) == 1 && net.a_Bus{3}.l_isSlack)
+
+% initialize 後の切り替えも1つだけで、スラックの編集として記録され平衡点が古くなる
+DebugScript.helper.quiet(@() net.initialize);
+assert(n_slack(net) == 1 && net.a_Bus{3}.l_isSlack)
+evalc("net.a_Bus{2}.l_isSlack = true;");
+assert(n_slack(net) == 1 && net.a_Bus{2}.l_isSlack)
+assert(net.l_staleEquilibrium && net.tab_editLog.tag(end) == "Slack")
+assert(any(contains(net.tab_editLog.log, "slack bus -> B002")))
+
+% 同じ値の再設定は何も記録しない
+n_log = height(net.tab_editLog);
+evalc("net.a_Bus{2}.l_isSlack = true;");
+assert(height(net.tab_editLog) == n_log && n_slack(net) == 1)
+
+% 切り替えた系統で潮流計算でき、指定した母線がスラックとして使われる
+[~, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
+assert(flag > 0 && n_slack(net) == 1 && net.a_Bus{2}.str_bustype == "slack")
+
+% スラック指定を外すこともできる (外すとスラックは0、潮流計算で先頭の母線が選ばれる)
+evalc("net.a_Bus{2}.l_isSlack = false;");
+assert(n_slack(net) == 0)
+DebugScript.helper.quiet(@() net.calculate_powerflow);
+assert(n_slack(net) == 1 && net.a_Bus{1}.l_isSlack)
+
+% 別の系統の母線には影響しない
+net2 = DebugScript.helper.build_9bus();
+evalc("net2.a_Bus{2}.l_isSlack = true;");
+assert(n_slack(net) == 1 && net.a_Bus{1}.l_isSlack && n_slack(net2) == 1)
+
+
 %% Bus types follow powerflow settings
 net = DebugScript.helper.build_9bus();
 DebugScript.helper.quiet(@() net.calculate_powerflow);

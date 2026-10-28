@@ -182,6 +182,25 @@ classdef PowerNetwork < PowerSystemModel
             % The network owns the nominal frequency of all its layers
             Hz = obj.para_base.Hz;
         end
+
+        function handle_edit(obj, tab)
+            % At most one slack bus: a bus reports bus.l_isSlack = true as a
+            % "Slack" edit (ID starts with its tag); the network releases the others.
+            if string(tab{1,4}) ~= "Slack"
+                return
+            end
+            str_id  = split(string(tab{1,2}), "/");
+            lv_this = string(obj.a_Bus) == str_id(1);
+            if ~any(lv_this) || ~obj.a_Bus{lv_this}.l_isSlack
+                return
+            end
+            for i = find(~lv_this(:)')
+                bus = obj.a_Bus{i};
+                if bus.l_isSlack
+                    bus.l_isSlack = false;
+                end
+            end
+        end
     end
 
 %% Get Method
