@@ -25,28 +25,9 @@ function [A_dae, B_dae, C_dae, D_dae, E_dae] = get_DAE(obj,opt)
 
     Ex = tools.dcellfun(@(SS) SS.E, ssFromBus);
 
-    if ~isempty(obj.odeNetwork.a_GlobalController)
-        sysAGC = obj.odeNetwork.a_GlobalController{1}.get_sys("full",true);
-        nx = size(Axx,1);
-        nv = size(Axv,2);
-        nu = size(Bxu,2);
-
-        Axx = [zeros(1,nx+1);[zeros(nx,1),Axx]];        
-        Axv = [zeros(1,nv);Axv];        
-        Bxu = [zeros(1,nu);Bxu];
-        Avx = [zeros(size(Avx,1),1),Avx];        
-
-        SN = tools.vcellfun(@(s) string(s), sysAGC.StateName);
-        IN = tools.vcellfun(@(s) string(s), sysAGC.InputName);        
-
-        lv_GC = ismember([SN;vertcat(x{:})],[SN;IN]);
-
-        Axx(lv_GC,lv_GC) = Axx(lv_GC,lv_GC) + [sysAGC.A, sysAGC.B;sysAGC.C, sysAGC.D];
-
-        Ex = blkdiag(sysAGC.E,Ex);
-
-        output = [string(sysAGC.StateName);output];
-    end    
+    % global controllers (all of them; their states come first)
+    [Axx, Axv, Bxu, Avx, Ex, SN] = add_global_controllers(obj.odeNetwork, output, input, Axx, Axv, Bxu, Avx, Bvu, Ex);
+    output = [SN; output];
 
     Ev = zeros(size(Avv));
 

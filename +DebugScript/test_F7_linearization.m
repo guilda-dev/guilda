@@ -151,6 +151,35 @@ sys = net.get_sys("Algorithm","DAE");
 assert(numel(sys.StateName) == size(sys.A,1))
 
 
+%% Two global controllers in three algorithms
+% 大域制御器が複数でも 3 方式の固有値が一致し、状態は制御器の数だけ増える
+net = new_net();
+net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc1", "SG1B001"));
+net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc2", "SG1B002", "SG1B003", kI=200));
+DebugScript.helper.quiet(@() net.initialize);
+sys = net.get_sys("Algorithm","Kron");
+assert(size(sys.A,1) == n_x + 2)
+str_x = string(sys.StateName);
+assert(numel(str_x) == size(sys.A,1) && any(contains(str_x,"agc1")) && any(contains(str_x,"agc2")))
+e = eig_finite(sys);
+assert(max(real(e)) < 1e-6)
+assert(same_eigs(e, eig_finite(net.get_sys("Algorithm","Feedback")), 1e-6))
+assert(same_eigs(e, eig_finite(net.get_sys("Algorithm","DAE")),      1e-6))
+
+% 制御対象を系統の順と逆に並べても同じ系になる (端子は名前で対応付ける)
+netA = new_net();
+netA.add_global_controller(controller.agc.broadcast_PI_AGC(netA, "agc", "SG1B001", "SG1B002", alpha=[2;1], beta=[1;3]));
+netB = new_net();
+netB.add_global_controller(controller.agc.broadcast_PI_AGC(netB, "agc", "SG1B002", "SG1B001", alpha=[1;2], beta=[3;1]));
+DebugScript.helper.quiet(@() netA.initialize);
+DebugScript.helper.quiet(@() netB.initialize);
+eA = eig_finite(netA.get_sys("Algorithm","Feedback"));
+for alg = ["Kron","Feedback","DAE"]
+    assert(same_eigs(eA, eig_finite(netB.get_sys("Algorithm",alg)), 1e-6), alg + ": 制御対象の順で固有値が変わる")
+end
+assert(same_eigs(eA, eig_finite(netA.get_sys("Algorithm","Kron")), 1e-6))
+
+
 %% Non unit choice does not remain on the bus
 % NonUnit を指定した後に指定なしで呼ぶと、元の結果に戻る
 net = new_net();

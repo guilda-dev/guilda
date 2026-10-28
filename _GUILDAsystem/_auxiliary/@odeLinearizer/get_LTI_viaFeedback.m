@@ -26,14 +26,15 @@ function [A, B, C, D, E] = get_LTI_viaFeedback(obj)
 
     sysODE = connect(ssG, ssN, input(~lv_input), output(~lv_output));
 
-    % Global controller (same as Kron and DAE: only the first one):
-    % its inputs are component outputs (e.g. omega) and its outputs add to component inputs (e.g. Pmech)
-    if ~isempty(net.a_GlobalController)
-        sysGC = net.a_GlobalController{1}.get_sys("full",true);
+    % Global controllers (all of them, one after another, as in Kron and DAE):
+    % their inputs are component outputs (e.g. omega) and their outputs add to component inputs (e.g. Pmech)
+    for k = 1:numel(net.a_GlobalController)
+        sysGC = net.a_GlobalController{k}.get_sys("full",true);
         [lv_out, feedout] = ismember(string(sysGC.InputName),  string(sysODE.OutputName));
         [lv_in,  feedin ] = ismember(string(sysGC.OutputName), string(sysODE.InputName));
         if ~all(lv_out) || ~all(lv_in)
-            error("GUILDA:odeLinearizer:GlobalControllerPort", "The ports of the global controller are not found in the linearized system.")
+            error("GUILDA:odeLinearizer:GlobalControllerPort", ...
+                  "The ports of the global controller '%s' are not found in the linearized system.", net.a_GlobalController{k}.str_tag)
         end
         sysODE = feedback(sysODE, sysGC, feedin, feedout, +1);
     end
