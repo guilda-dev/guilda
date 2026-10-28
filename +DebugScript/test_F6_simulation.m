@@ -175,6 +175,15 @@ o2 = s2.odeResults.Bus(1).Component(1).X.omega;
 assert(isequal(size(o1), size(o2)) && max(abs(o1 - o2)) < 1e-10)
 
 
+%% Shorter simulation after a longer one
+% 区間数の少ない計算を後から行っても、前の計算の区間が結果に残らない
+o1 = odeEventSet("f1", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+o2 = odeEventSet("f2", net, "TimeSpan", [2,2.05], "FaultBus", "B008");
+net.simulate([0,3], o1, o2);
+r = net.simulate([0,2], o1).odeResults;
+assert(r.t(end) == 2 && all(diff(r.t) >= 0))
+
+
 %% Fault with local controllers
 % AVR + PSS を付けた系統での地絡応答 (旧 Task11 + Task12)
 net = DebugScript.helper.build_ieee14();

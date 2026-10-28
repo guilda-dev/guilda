@@ -365,6 +365,7 @@ classdef (Sealed = true) odeSimulator < auxiliary
 
         function [out,flag] = simulate(obj, net, time, varargin)
             obj.odeNetwork = net;
+            obj.odeResult  = {};
 
             [obj.odeTimeTable, obj.ODEvnt] = table(varargin{:}, "time", time);
             obj.initialize_odeSimulator;
