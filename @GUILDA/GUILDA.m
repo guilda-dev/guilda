@@ -43,6 +43,7 @@ classdef GUILDA < handle
             % Only items marked with 'o' can be skipped. Items marked with 'x' cannot be skipped.
 
             GUILDApath = fullfile(obj.pwd,"@GUILDA","config");
+            has_desktop = usejava('desktop');   % false in -batch / -nodisplay
             cf_all     = get_config();
             cf         = cf_all.EnvStartup;
             set_config(cf_all);
@@ -62,7 +63,7 @@ classdef GUILDA < handle
             end
             % update documentation database
             if cf.UpdateDoc.Value
-                obj.doc('update',true);
+                obj.doc('update',true,'open',has_desktop);
             end
             % update key map
             if cf.UpdateKeyMap.Value
@@ -70,7 +71,11 @@ classdef GUILDA < handle
             end
             % open Tutorial (Mail.mlx)
             if cf.Tutorial.Value
-                obj.tutorial;
+                if has_desktop
+                    obj.tutorial;
+                else
+                    disp("INFO: no MATLAB desktop, skipped opening the tutorial (>> GUILDA.tutorial)")
+                end
             end
    
         end
