@@ -53,7 +53,7 @@ function results = run_all(opt)
         log = log + evalc("GUILDA;");
     catch ME
         log = log + newline + "GUILDA startup error (ignored): " + ME.message + newline;
-        fprintf("NOTE: GUILDA の起動処理でエラー (バッチではチュートリアルを開けないため): %s\n", strtok(ME.message, newline));
+        fprintf(2, "WARNING: GUILDA の起動処理でエラー: %s\n", strtok(ME.message, newline));
     end
 
     % 必要な Toolbox の確認 (無いと潮流計算・線形化のテストが失敗する)

@@ -25,7 +25,6 @@ function tab = known_failures()
     % ---- F6 time simulation ---------------------------------------------------------------------
     % ---- F8 utilities ---------------------------------------------------------------------------
     % ---- F9 environment -------------------------------------------------------------------------
-    "test_F9_environment/GUILDAStartsInBatchMode",               "起動時に Tutorial 設定が true だと Main.mlx を open し、デスクトップの無いバッチ実行ではエラーになる"
     ];
     tab = table(list(:,1), list(:,2), 'VariableNames', ["Test","Reason"]);
 end
