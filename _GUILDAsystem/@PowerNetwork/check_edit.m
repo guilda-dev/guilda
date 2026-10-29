@@ -4,7 +4,7 @@ function flag = check_edit(obj, opt)
 % Rebuilds the stale f_* handle caches (LayerPackage.check_edit) and, when
 % RequireEquilibrium is true, stops with an error if initialize has not run
 % or something that changes the equilibrium was edited since (dynamics,
-% base or powerflow parameters, topology, slack bus).
+% baseMVA or powerflow parameters, topology, slack bus; not the network Hz).
 % <@Role>
 % Edit Log
 % <@Summary>
@@ -49,7 +49,7 @@ function flag = check_edit(obj, opt)
             str_reason = "net.initialize() has not been run";
         else
             tab = obj.tab_editLog;
-            [~, lv] = arrayfun(@(t) LayerPackage.edit_effect(t), string(tab.tag));
+            [~, lv] = arrayfun(@(t, l) LayerPackage.edit_effect(t, l), string(tab.tag), string(tab.log));
             str_edit   = tab.ID(lv) + ": " + tab.log(lv);
             str_reason = "edited since the last initialize (" + join(str_edit(1:min(end,3)), ", ");
             if numel(str_edit) > 3

@@ -1,7 +1,8 @@
 % F3 編集後の解析 (編集の扱い)
 %
 % パラメータや構成を編集しても値が変わるだけで、何かが古くなったことを記録する。
-%   dynamics / base(Hz) の編集 → 関数ハンドル f_* と平衡点が古くなる
+%   dynamics / base(baseMVA) の編集 → 関数ハンドル f_* と平衡点が古くなる
+%   base(Hz) の編集 → 関数ハンドル f_* だけが古くなる (平衡点は定格周波数によらない)
 %   powerflow の編集・構成の変更 (add_/remove_/replace_)・スラック母線の変更 → 平衡点が古くなる
 %   operation / OPF / graph の編集 → 何も古くならない
 % 解析の開始時 (initialize / simulate / get_sys) に古いハンドルだけを作り直す。
@@ -56,21 +57,42 @@ assert(sol.odeResults.t(end) == 1)
 net.get_sys();
 
 
-%% Base Hz edit makes handles and equilibrium stale
-% 周波数は PowerNetwork が持つ (net.tab_parameter.base.Hz)。変えると全機器のハンドルが古くなる
+%% Base Hz edit makes only the handles stale
+% 周波数は PowerNetwork が持つ (net.tab_parameter.base.Hz)。変えると全機器のハンドルが古くなるが、
+% 平衡点は定格周波数によらないので initialize し直さなくてよい
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);
+x_eq = comp.rv_Xequilibrium;
 net.tab_parameter.base.Hz = 50;
-assert(comp.l_staleOdefcn && net.l_staleEquilibrium)
-assert(comp.r_Hz == 50)
+assert(comp.l_staleOdefcn && ~net.l_staleEquilibrium)
+assert(comp.r_Hz == 50 && net.tab_editLog.log(end) == "edit Hz")
 
+% simulate がハンドルを作り直し、平衡点に留まる
+sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
+assert(~comp.l_staleOdefcn && sol.odeResults.t(end) == 1)
+assert(DebugScript.helper.max_state_drift(sol) < 1e-6)
+
+% initialize し直しても平衡点は変わらない
 DebugScript.helper.quiet(@() net.initialize);
+assert(norm(comp.rv_Xequilibrium - x_eq) < 1e-10)
 x = comp.rv_Xequilibrium;  x(comp.sv_x == "omega") = 0.01;
 V = comp.c_Vequilibrium;  I = comp.c_Iequilibrium;
 para = comp.tab_parameter.dynamics{:, comp.sv_para};
 dx_used = comp.f_dx(0, x, [real(V);imag(V)], [real(I);imag(I)], comp.rv_Uequilibrium);
 dx_new  = comp.fcn_dx(0, x, [real(V);imag(V)], [real(I);imag(I)], comp.rv_Uequilibrium, para, 50);
 assert(norm(dx_used - dx_new) < 1e-12, "f_dx が変更前の Hz を使っている")
+
+
+%% Base baseMVA edit makes handles and equilibrium stale
+% baseMVA を変えると単位法の値が変わるので、平衡点も古くなる
+[net, comp] = DebugScript.helper.build_3bus("gen-1axis");
+DebugScript.helper.quiet(@() net.initialize);
+net.tab_parameter.base.baseMVA = 200;
+assert(comp.l_staleOdefcn && net.l_staleEquilibrium)
+assert_stale_error(@() net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1])), str_staleID)
+assert_stale_error(@() net.get_sys(), str_staleID)
+DebugScript.helper.quiet(@() net.initialize);
+assert(~comp.l_staleOdefcn && ~net.l_staleEquilibrium)
 
 
 %% Powerflow edit makes only the equilibrium stale
@@ -271,11 +293,11 @@ assert(~any(cellfun(@(m) m.l_staleOdefcn, a_model)))
 assert(isa(c{1}.tab_parameter.base, "ComponentBaseView"))   % 機器は Hz を持たない (旧形式の互換ビューだけ)
 
 net.tab_parameter.base.Hz = 50;
-assert(all(cellfun(@(m) m.l_staleOdefcn, a_model)) && net.l_staleEquilibrium)
+assert(all(cellfun(@(m) m.l_staleOdefcn, a_model)) && ~net.l_staleEquilibrium)
 assert(all(cellfun(@(m) m.r_Hz, a_model) == 50))
-assert_stale_error(@() net.get_sys(), str_staleID)
 
-DebugScript.helper.quiet(@() net.initialize);
+% get_sys がハンドルを作り直す (initialize は不要)
+net.get_sys();
 assert(~any(cellfun(@(m) m.l_staleOdefcn, a_model)))
 x = avr.rv_Xequilibrium + 0.01;  u = avr.rv_Uequilibrium;
 V = [real(c{1}.c_Vequilibrium); imag(c{1}.c_Vequilibrium)];
@@ -328,7 +350,7 @@ evalc("comp.tab_parameter.base.Hz = 50;");
 [~, id] = lastwarn();
 assert(string(id) == "GUILDA:Deprecated:ComponentBaseHzSet")
 assert(net.tab_parameter.base.Hz == 50 && other.r_Hz == 50)
-assert(comp.l_staleOdefcn && other.l_staleOdefcn && net.l_staleEquilibrium)
+assert(comp.l_staleOdefcn && other.l_staleOdefcn && ~net.l_staleEquilibrium)
 evalc("comp.para_base.Hz = 55;");
 assert(net.tab_parameter.base.Hz == 55)
 
