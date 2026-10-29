@@ -16,5 +16,6 @@
         <entry key="CsvNetHandlerExport">CsvNetHandler.export(net, ModelName, savepath=folder) is deprecated: use net.export_csv(fullfile(folder, "@"+ModelName)). The folder now also holds network/parameter.csv with Hz and baseMVA.</entry>
         <entry key="SimulatorReporter">net.solver_ODE.Reporter is deprecated: use net.solver_ODE.Progress ("none", "disp" or "dialog"), or net.simulate(..., Progress=value) for one call.</entry>
         <entry key="SimulateOptionName">The simulate option {0} is deprecated: use {1}.</entry>
+        <entry key="OdeLinearizerConstructor">odeLinearizer(net, NonUnit, Name, Value) is removed: the solver no longer holds the network or its matrices, and odeLinearizer() takes no arguments. Use result = net.linearize(NonUnit=..., Algorithm=...) and sys = result.get_ss() (defaults in net.solver_LIN), or sys = net.get_sys(...).</entry>
     </message>
 </rsccat>

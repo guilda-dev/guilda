@@ -1,4 +1,32 @@
 function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
+% <@Desc>
+% Linear model of the component with its local controllers, from the bus voltage V and
+% the inputs u to the current I (port "V2I") or from I to V (port "I2V").
+% The point of the linearization is x, V, I, u (default: the equilibrium; the local
+% controllers are then linearized at their equilibrium), or Point in the same form as
+% net.linearize: a vector in the order of comp.get_variable_map() (states of the
+% component and its controllers, Vre, Vim, inputs), or {sim, t}. With Point, I is
+% fcn_I at the point and the inputs of the controllers are the outputs they are
+% connected to (as in the simulation). The model is not changed.
+% <@Role> Static Analysis
+% <@Summary> Linear model of the component (V to I, or I to V).
+% <@Signatures>
+% [
+%   "sys = comp.get_sys()",
+%   "sys = comp.get_sys(x, V, I, u)",
+%   "sys = comp.get_sys(Point=rv, port=\"V2I\", full=true)"
+% ]
+% <@Parameters>
+% [
+%   {"Name": "x, V, I, u", "Type": "double column", "Description": "States, voltage [Vre; Vim], current [Ire; Iim] and inputs of the component.", "Required": false, "Default": "the equilibrium"},
+%   {"Name": "port", "Type": "\"V2I\" | \"I2V\"", "Description": "Input and output ports.", "Required": false, "Default": "\"V2I\""},
+%   {"Name": "full", "Type": "logical scalar", "Description": "Also output the states.", "Required": false, "Default": "true"},
+%   {"Name": "Point", "Type": "[] | double vector | cell {sim, t}", "Description": "Point of the linearization; overrides x, V, I, u.", "Required": false, "Default": "[]"}
+% ]
+% <@Returns>
+% [
+%   {"Name": "sys", "Type": "ss", "Description": "Descriptor state-space model with state, input and output names."}
+% ]
     arguments
         obj 
         x        (:,1) double = obj.rv_Xequilibrium
@@ -10,13 +38,19 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         opt.tag  (1,1) logical = true
         opt.con  (1,1) logical = obj.l_hasController
         opt.rec  (1,1) logical = true
+        opt.Point = []
     end        
 
     % All controllers in the tree (e.g. PSS attached under AVR) are separate blocks connected by signal names
     a_LC = all_controllers(obj);
-    [sysCON,x_tag,~,~] = tools.cellfun(@(d) d.get_sys("full",false,"tag",false), a_LC);
+    if isempty(opt.Point) && ~iscell(opt.Point)
+        [sysCON,x_tag,~,~] = tools.cellfun(@(d) d.get_sys("full",false,"tag",false), a_LC);
+    else
+        [x, V, I, u, c_con] = point_values(obj, a_LC, odeLinearizer.point_vector(obj, opt.Point));
+        [sysCON,x_tag,~,~] = tools.cellfun(@(d,p) d.get_sys(p{:},"full",false,"tag",false), a_LC, c_con);
+    end
     if ~isempty(sysCON) && opt.rec
-        [SYS,xSYS,uSYS,ySYS] = obj.get_sys("full",false,"port",opt.port,"tag",false,"con",opt.con,"rec",false);        
+        [SYS,xSYS,uSYS,ySYS] = obj.get_sys(x,V,I,u,"full",false,"port",opt.port,"tag",false,"con",opt.con,"rec",false);        
 
         blksys = append(SYS,sysCON{:});            
 

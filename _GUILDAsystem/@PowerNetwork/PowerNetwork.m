@@ -121,6 +121,17 @@ classdef PowerNetwork < PowerSystemModel
         % <@Default> odeSimulator()
         % <@Since> 4.0
         solver_ODE 
+
+        % <@Summary> "odeLinearizer" class
+        % <@Desc>
+        % Solver of net.linearize and net.get_sys (runs obj.solver_LIN.solve). Its
+        % properties are the stored defaults (Algorithm, NonUnit, Point) and are kept
+        % between runs; Name-Value options of a call override them for that call only.
+        % Results are returned as a LinearizationResult, never stored in the solver.
+        % <@Role> linearization
+        % <@Size> 1×1
+        % <@Default> odeLinearizer()
+        solver_LIN
     end
     properties(Dependent) 
         cv_Vequilibrium         % Steady State
@@ -175,7 +186,9 @@ classdef PowerNetwork < PowerSystemModel
         [result, flag, output] = calculate_continuation_powerflow(obj, varargin)
 
         % Static Analysis
-        [sys,lin] = get_sys(obj, opt)
+        [result, flag, output] = linearize(obj, varargin)
+        [sys, flag, output] = get_sys(obj, varargin)
+        [tab, c_idxBus, c_idxGC] = get_variable_map(obj)
         tab_Ybus2bus = get_admittance_matrix(obj)
         
         % Time simulation

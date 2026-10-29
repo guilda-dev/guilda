@@ -190,7 +190,8 @@ assert(sum(str_file == fullfile("_GUILDAsystem", "@PowerNetwork", "optimize_powe
 assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@ContinuationPowerFlow", "ContinuationPowerFlow.m")) == 1, join(str_hook, ", "))
 assert(sum(str_file == fullfile("_GUILDAsystem", "@PowerNetwork", "simulate.m")) == 1, join(str_hook, ", "))
 assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@odeSimulator", "odeSimulator.m")) == 3, join(str_hook, ", "))
-assert(numel(str_hook) == 15, join(str_hook, ", "))
+assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@odeLinearizer", "odeLinearizer.m")) == 1, join(str_hook, ", "))
+assert(numel(str_hook) == 16, join(str_hook, ", "))
 
 
 % ---- local functions ----
