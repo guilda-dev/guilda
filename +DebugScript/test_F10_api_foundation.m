@@ -14,7 +14,7 @@ s_mapPF = struct("MaxIteration", "MaxIterations", ...
                  "WhenFailed",   "WhenFailed");
 s_mapODE = struct("Tolerance", ["AbsoluteTolerance","RelativeTolerance"], ...
                   "TimeLimit", "TimeLimit", ...
-                  "Progress",  "Reporter");
+                  "Progress",  "Progress");
 
 
 %% Resolve options returns stored defaults without overrides
@@ -57,7 +57,7 @@ solver = odeSimulator();
 r_abs  = solver.AbsoluteTolerance;
 r_rel  = solver.RelativeTolerance;
 opt = tools.resolve_options(solver, s_mapODE, {"Tolerance", 1e-8, "Progress", "none"});
-assert(opt.AbsoluteTolerance == 1e-8 && opt.RelativeTolerance == 1e-8 && opt.Reporter == "none")
+assert(opt.AbsoluteTolerance == 1e-8 && opt.RelativeTolerance == 1e-8 && opt.Progress == "none")
 assert(opt.TimeLimit == solver.TimeLimit)
 assert(solver.AbsoluteTolerance == r_abs && solver.RelativeTolerance == r_rel)
 
@@ -188,7 +188,9 @@ assert(sum(str_file == fullfile("_GUILDAsystem", "@PowerNetwork", "add_bus.m")) 
 assert(sum(str_file == fullfile("_GUILDAsystem", "@PowerNetwork", "calculate_powerflow.m")) == 1, join(str_hook, ", "))
 assert(sum(str_file == fullfile("_GUILDAsystem", "@PowerNetwork", "optimize_powerflow.m")) == 2, join(str_hook, ", "))
 assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@ContinuationPowerFlow", "ContinuationPowerFlow.m")) == 1, join(str_hook, ", "))
-assert(numel(str_hook) == 11, join(str_hook, ", "))
+assert(sum(str_file == fullfile("_GUILDAsystem", "@PowerNetwork", "simulate.m")) == 1, join(str_hook, ", "))
+assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@odeSimulator", "odeSimulator.m")) == 3, join(str_hook, ", "))
+assert(numel(str_hook) == 15, join(str_hook, ", "))
 
 
 % ---- local functions ----
