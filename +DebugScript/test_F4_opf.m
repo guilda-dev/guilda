@@ -9,6 +9,11 @@
 %   - 負荷は潮流設定の値のまま、発電機出力・電圧は上下限の範囲内
 %   - ELD は等増分費用、DC OPF (送電制約なし) は ELD と同じ配分
 %   - AC OPF の費用は ELD 以上、潮流計算の解での費用以下
+%   - 手計算できる小さな系統: DC の混雑価格 (3 母線ループ)、AC の閉じた形と KKT 条件 (2 母線)
+%   - 送電線の Imax / Smax が効く AC OPF が解ける
+%   - ラグランジュ乗数 (節点価格) = 最適費用の負荷に関する感度 (差分で確認)
+%   - MATPOWER 形式への変換 (tools.network_to_mpc) と MATPOWER の case14 の最適解との一致
+%   - MATPOWER との直接比較 (MATPOWER がパスに無いときは SKIP)
 % 費用関数は機器の tab_parameter.OPF、制約は各クラスの tab_parameter.operation で設定する。
 %
 % 実行: runtests("DebugScript.test_F4_opf")  または  DebugScript.run_all("Features","F4")
@@ -202,6 +207,239 @@ tab_PF = DebugScript.helper.quiet(@() net.calculate_powerflow().tab_bus);
 assert(J_AC <= DebugScript.helper.opf_cost(net, DebugScript.helper.pf_component_power(net, tab_PF)) + 1e-6)
 
 
+%% DC OPF congestion prices on a 3-bus loop
+% 3 母線ループ (リアクタンスはすべて 0.1、損失なし)。B001 の発電機 (費用 P^2+P) と B002 の
+% 発電機 (P^2+2P) で B003 の負荷 1.0 を賄う。
+%   送電制約なし: 等増分費用 2*P1+1 = 2*P2+2 → P1 = 0.75, P2 = 0.25、全母線の価格 2.5
+%   B001-B003 の容量 0.5: 潮流 = 2/3*P1 + 1/3*P2 (PTDF) と P1 + P2 = 1 から P1 <= 0.5
+%     → P1 = P2 = 0.5、限界費用 2, 3。節点価格は π1 = π3 - 2/3*μ, π2 = π3 - 1/3*μ
+%     → 送電制約の乗数 μ = 3、負荷母線の価格 π3 = 4 (どちらの発電機の限界費用よりも高い)
+% 節点価格 (負荷 1 単位あたりの費用増) = -lambda.Constraints.balancedP_<母線>
+net = build_loop3();
+str_bus = string(net.a_Bus);
+str_gen = string(cellfun(@(b) b.a_Component{1}, net.a_Bus(1:2), "UniformOutput", false));
+price = @(r) -cellfun(@(s) r.lambda.Constraints.("balancedP_"+s), cellstr(str_bus));
+
+[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+assert(flag > 0)
+assert(max(abs(res.tab_cub{str_gen,"P"} - [0.75; 0.25])) < 1e-6)
+assert(max(abs(price(res) - 2.5)) < 1e-6)
+
+br13 = net.a_Branch{3};
+assert(isequal(string(br13.a_Bus(:)).', ["B001","B003"]))
+br13.tab_parameter.operation.Pmax = 0.5;
+[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+assert(flag > 0)
+assert(max(abs(res.tab_cub{str_gen,"P"} - [0.5; 0.5])) < 1e-6)
+assert(abs(res.tab_branch{string(br13),"Pfrom"} - 0.5) < 1e-6)
+assert(max(abs(price(res) - [2; 3; 4])) < 1e-6)
+assert(abs(res.r_cost - (0.5^2+0.5 + 0.5^2+2*0.5)) < 1e-6)
+% 送電制約の乗数: 両端の変数の上下限の乗数の合計 = μ = 3
+str_end = string(br13) + "_" + string(br13.a_Bus);
+mu = sum(cellfun(@(s) res.lambda.Variables.(s).Upper + res.lambda.Variables.(s).Lower, cellstr(str_end)));
+assert(abs(mu - 3) < 1e-6)
+
+
+%% AC OPF on a 2-bus system matches the closed form
+% B001 の発電機 (費用 = P) から送電線 R+jX を通して B002 の負荷 PL+jQL へ送る。
+% 負荷は固定なので、費用最小 = 損失最小 = B001 の電圧を上限 Vmax にする。
+% V1 を与えると受電端電圧は閉じた形で求まる:
+%   V2^2 = (a + sqrt(a^2 - 4(R^2+X^2)(PL^2+QL^2)))/2,  a = V1^2 - 2(R*PL + X*QL)
+%   P1 = PL + R(PL^2+QL^2)/V2^2,  Q1 = QL + X(PL^2+QL^2)/V2^2
+% KKT 条件: V1 の上限の乗数 = 費用の V1 に関する感度 -dP1/dV1 (V1 以外に自由度はない)
+[R, X, PL, QL, Vmax] = deal(0.02, 0.1, 0.8, 0.3, 1.05);
+net = PowerNetwork("OPF2Bus");
+net.add_bus("Vmin",0.95, "Vmax",Vmax);
+net.add_bus("Vmin",0.90, "Vmax",1.10);
+net.add_branch("pi", [1,2], "R",R, "X",X);
+gen = net.a_Bus{1}.add_component("gen-park");
+ld  = net.a_Bus{2}.add_component("load-power", "P",-PL, "Q",-QL);
+gen.tab_parameter.OPF{1,["HP","fP","HQ","fQ"]} = [0, 1, 0, 0];
+ld.tab_parameter.OPF{1,["HP","fP","HQ","fQ"]}  = [0, 0, 0, 0];
+
+[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", Tolerance=1e-10));
+assert(flag > 0)
+V2  = @(V1) sqrt(((V1^2-2*(R*PL+X*QL)) + sqrt((V1^2-2*(R*PL+X*QL))^2 - 4*(R^2+X^2)*(PL^2+QL^2)))/2);
+P1  = @(V1) PL + R*(PL^2+QL^2)/V2(V1)^2;
+Q1  = @(V1) QL + X*(PL^2+QL^2)/V2(V1)^2;
+assert(abs(res.tab_bus{"B001","V"} - Vmax) < 1e-6)
+assert(abs(res.tab_bus{"B002","V"} - V2(Vmax)) < 1e-6)
+assert(abs(res.tab_cub{string(gen),"P"} - P1(Vmax)) < 1e-6)
+assert(abs(res.tab_cub{string(gen),"Q"} - Q1(Vmax)) < 1e-6)
+assert(abs(res.r_cost - P1(Vmax)) < 1e-6)
+assert(res.tab_bus{"B002","Varg"} < 0)
+h  = 1e-6;
+dJ = (P1(Vmax+h) - P1(Vmax-h))/(2*h);
+mu = res.lambda.Variables.B001.Upper;                 % [Varg; V]
+assert(dJ < 0 && abs(mu(2) + dJ) < 1e-5 && abs(mu(1)) < 1e-8)
+
+
+%% AC OPF with active branch current and power limits
+% 9 母線系統で最大電流の送電線の Imax (または Smax) を制約なしの解の 80% にする。
+% 二乗の形 (|I|^2 <= Imax^2, P^2+Q^2 <= Smax^2) なので、電流 0 の初期点でも解ける。
+net = DebugScript.helper.build_9bus();
+res0 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
+[~, k] = max(abs(res0.tab_branch.Ifrom));
+br = net.a_Branch{k};
+str_end = string(br) + "_" + string(br.a_Bus);
+
+r_Imax = 0.8*max(abs(res0.tab_branch{k,["Ifrom","Ito"]}));
+br.tab_parameter.operation.Imax = r_Imax;
+[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
+assert(flag > 0)
+r_I = max(abs(res.tab_branch{k,["Ifrom","Ito"]}));
+assert(r_I <= r_Imax + 1e-6 && r_I >= r_Imax - 1e-4)
+assert(res.r_cost > res0.r_cost)
+assert(max(cellfun(@(s) res.lambda.Constraints.("Imax_"+s), cellstr(str_end))) > 0)
+
+br.tab_parameter.operation.Imax = inf;
+S0 = abs(res0.tab_branch{k,["Pfrom","Pto"]} + 1j*res0.tab_branch{k,["Qfrom","Qto"]});
+r_Smax = 0.8*max(S0);
+br.tab_parameter.operation.Smax = r_Smax;
+[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
+assert(flag > 0)
+r_S = max(abs(res.tab_branch{k,["Pfrom","Pto"]} + 1j*res.tab_branch{k,["Qfrom","Qto"]}));
+assert(r_S <= r_Smax + 1e-6 && r_S >= r_Smax - 1e-4)
+assert(res.r_cost > res0.r_cost)
+
+
+%% Duals match finite-difference sensitivities of the optimal cost
+% 節点価格 -lambda (balancedP_<母線>, balancedQ_<母線>) = 最適費用の負荷に関する感度。
+% 負荷の費用は 0 にする (負荷は固定なので、その費用は定数として費用に加わるだけ)。
+% DC: 送電制約が効いた 3 母線ループ、全母線に負荷を置いて中心差分で確認
+net = build_loop3();
+net.a_Branch{3}.tab_parameter.operation.Pmax = 0.5;
+res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+h = 1e-3;
+for i = 1:numel(net.a_Bus)
+    bus = net.a_Bus{i};
+    ld  = bus.a_Component{end};
+    fd  = fd_load(net, "DC OPF", ld, "P", h, {});
+    assert(abs(fd + res.lambda.Constraints.("balancedP_"+string(bus))) < 1e-6, string(bus))
+end
+% AC: 9 母線系統の 3 つの負荷の P と Q
+net = DebugScript.helper.build_9bus();
+a_Com  = tools.vcellfun(@(b) b.a_Component, net.a_Bus);
+a_Load = a_Com(cellfun(is_load, a_Com));
+for k = 1:numel(a_Load)
+    a_Load{k}.tab_parameter.OPF{1,["HP","fP","HQ","fQ"]} = [0, 0, 0, 0];
+end
+c_opt = {"Tolerance", 1e-10};
+res = DebugScript.helper.quiet(@() net.optimize_powerflow("Method", "AC OPF", c_opt{:}));
+assert(res.l_success)
+for k = 1:numel(a_Load)
+    str_bus = string(a_Load{k}.a_Bus);
+    for str_pq = ["P","Q"]
+        lam = res.lambda.Constraints.("balanced"+str_pq+"_"+str_bus);
+        fd  = fd_load(net, "AC OPF", a_Load{k}, str_pq, h, c_opt);
+        assert(abs(fd + lam) < 1e-4*max(1, abs(lam)), str_bus + " " + str_pq + sprintf(": FD %.6f, -lambda %.6f", fd, -lam))
+    end
+end
+
+
+%% Conversion to a MATPOWER case
+% tools.network_to_mpc は MATPOWER なしで動く。mpc から組み立てた Ybus (MATPOWER の
+% 送電線モデル) が GUILDA のアドミタンス行列と一致し、負荷・発電機・費用が対応することを確認する。
+net  = DebugScript.helper.build_ieee14();
+mpc  = tools.network_to_mpc(net);
+Y    = net.get_admittance_matrix.Variables;
+assert(norm(mpc_ybus(mpc) - Y) < 1e-10)
+assert(isequal(size(mpc.bus), [14 13]) && size(mpc.gen,1) == 5 && size(mpc.gencost,1) == 5)
+assert(isequal(mpc.bus_name(:).', cellstr(string(net.a_Bus)).'))
+assert(mpc.bus(cellfun(@(b) b.l_isSlack, net.a_Bus), 2) == 3)
+ld = net.a_Bus{3}.a_Component{end};
+assert(isa(ld, "component.load.abstract"))
+assert(max(abs(mpc.bus(3,3:4) + 100*ld.tab_parameter.powerflow{1,["P","Q"]})) < 1e-12)
+gen = net.a_Bus{1}.a_Component{1};
+assert(max(abs(mpc.gencost(1,5:6) - [gen.tab_parameter.OPF.HP/1e4, gen.tab_parameter.OPF.fP/100])) < 1e-15)
+
+% case14 に合わせた IEEE14 を変換すると、MATPOWER の case14 と同じ負荷・シャント・線路・発電機・費用になる
+mpc14 = DebugScript.helper.case14_data();
+DebugScript.helper.quiet(@() set_case14(net, mpc14));
+mpc = tools.network_to_mpc(net);
+assert(max(abs(mpc.bus(:,3:6) - mpc14.bus(:,3:6)), [], "all") < 1e-12)
+assert(max(abs(sortrows(mpc.branch(:,[1:5 9 10])) - sortrows(mpc14.branch(:,[1:5 9 10]))), [], "all") < 1e-12)
+assert(max(abs(mpc.gen(:,[1 4 5 9 10]) - mpc14.gen(:,[1 4 5 9 10])), [], "all") < 1e-12)
+assert(max(abs(mpc.gencost(:,4:7) - mpc14.gencost(:,4:7)), [], "all") < 1e-12)
+
+% 両端のシャントが非対称な変圧器 (two_winding_transformer の C) は母線のシャントへ移す
+net2 = PowerNetwork("Mpc2Bus");
+net2.add_bus();  net2.add_bus("Bshunt", 0.1);
+net2.add_branch("two_winding_transformer", [1,2], "R",0.01, "X",0.2, "C",0.05, "Tap",0.95);
+net2.a_Bus{1}.add_component("gen-park");
+net2.a_Bus{2}.add_component("load-power", "P",-0.5, "Q",-0.1);
+mpc2 = tools.network_to_mpc(net2);
+assert(norm(mpc_ybus(mpc2) - net2.get_admittance_matrix.Variables) < 1e-12)
+assert(abs(mpc2.bus(1,6) - 5) < 1e-12 && abs(mpc2.bus(2,6) - 10) < 1e-12 && mpc2.branch(1,9) == 0.95)
+% MATPOWER で表せない設定はエラー
+net2.a_Branch{1}.tab_parameter.operation.Imax = 1;
+assert(error_id(@() tools.network_to_mpc(net2)) == "GUILDA:network_to_mpc:Unsupported")
+
+
+%% AC and DC OPF reproduce the MATPOWER case14 optimum
+% network.IEEE14bus の線路定数・負荷・発電機の OPF 設定を MATPOWER の case14
+% (DebugScript.helper.case14_data) に合わせると、MATPOWER の最適解と一致する
+% (MATPOWER 不要。値は MATPOWER の runopf / rundcopf の結果)。
+%   AC: 費用 8081.53 $/hr、Pg = [194.33, 36.72, 28.74, 0.00, 8.50] MW
+%   DC: 費用 7642.59 $/hr、Pg = [220.97, 38.03, 0, 0, 0] MW
+% DC は MATPOWER と同じ b = 1/X になるよう R = 0 にする (GUILDA の DC は b = Im(Y_ij) を使う)。
+net = DebugScript.helper.build_ieee14();
+mpc = DebugScript.helper.case14_data();
+assert(DebugScript.helper.quiet(@() set_case14(net, mpc)) < 1e-12)
+str_gen = string(cellfun(@(b) b.a_Component{1}, net.a_Bus(mpc.gen(:,1)), "UniformOutput", false));
+[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", Tolerance=1e-10));
+assert(flag > 0)
+assert(abs(res.r_cost - 8081.53) < 0.01, sprintf("AC cost %.4f", res.r_cost))
+assert(max(abs(100*res.tab_cub{str_gen,"P"} - [194.33; 36.72; 28.74; 0; 8.50])) < 0.01)
+assert(all(res.tab_bus.V >= 0.94 - 1e-6 & res.tab_bus.V <= 1.06 + 1e-6))
+
+for k = 1:numel(net.a_Branch)
+    net.a_Branch{k}.tab_parameter.dynamics.R = 0;
+end
+[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+assert(flag > 0)
+assert(abs(res.r_cost - 7642.59) < 0.01, sprintf("DC cost %.4f", res.r_cost))
+assert(max(abs(100*res.tab_cub{str_gen,"P"} - [220.97; 38.03; 0; 0; 0])) < 0.01)
+
+
+%% AC and DC OPF agree with MATPOWER on IEEE 14-bus
+% MATPOWER (runopf) がパスに無いときは SKIP。
+% case14 に合わせた network.IEEE14bus を tools.network_to_mpc で変換し、MATPOWER で解いた
+% 結果と費用・電圧・出力を比べる。変換した mpc は MATPOWER の case14 と同じ問題になる。
+if ~exist("runopf", "file")
+    error("DebugScript:Skip", "MATPOWER (runopf) がパスに無い")
+end
+net = DebugScript.helper.build_ieee14();
+mpc14 = loadcase("case14");
+assert(DebugScript.helper.quiet(@() set_case14(net, mpc14)) < 1e-12)
+mpc = tools.network_to_mpc(net);
+str_gen = string(mpc.gen_name);
+mpc = rmfield(mpc, ["bus_name","gen_name","branch_name"]);
+mpopt = mpoption("verbose", 0, "out.all", 0, "opf.ac.solver", "MIPS", "mips.gradtol", 1e-10, "mips.comptol", 1e-10, "mips.costtol", 1e-10);
+r14 = runopf(mpc14, mpopt);
+rmp = runopf(mpc, mpopt);
+assert(r14.success && rmp.success)
+assert(abs(rmp.f - r14.f) < 1e-6*r14.f)
+[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", Tolerance=1e-10));
+assert(flag > 0)
+assert(abs(res.r_cost - rmp.f) < 1e-5*rmp.f, sprintf("AC cost: GUILDA %.6f, MATPOWER %.6f", res.r_cost, rmp.f))
+assert(max(abs(res.tab_bus.V - rmp.bus(:,8))) < 1e-4)
+assert(max(abs(res.tab_bus.Varg - rmp.bus(:,9)*pi/180)) < 1e-4)
+assert(max(abs(res.tab_cub{str_gen,"P"} - rmp.gen(:,2)/100)) < 1e-4)
+
+for k = 1:numel(net.a_Branch)
+    net.a_Branch{k}.tab_parameter.dynamics.R = 0;
+end
+mpc = rmfield(tools.network_to_mpc(net), ["bus_name","gen_name","branch_name"]);
+rdc = rundcopf(mpc, mpopt);
+assert(rdc.success)
+[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+assert(flag > 0)
+assert(abs(res.r_cost - rdc.f) < 1e-6*rdc.f, sprintf("DC cost: GUILDA %.6f, MATPOWER %.6f", res.r_cost, rdc.f))
+assert(max(abs(res.tab_bus.Varg - rdc.bus(:,9)*pi/180)) < 1e-5)
+assert(max(abs(res.tab_cub{str_gen,"P"} - rdc.gen(:,2)/100)) < 1e-5)
+
+
 %% Result class of all three methods
 % 結果は OPFResult。flag と output を持ち、費用・ラグランジュ乗数・最適化問題も保持する
 net = DebugScript.helper.build_9bus();
@@ -364,6 +602,92 @@ assert(net.solver_OPF.Method == "AC OPF")
 
 
 % ---- local functions ----
+function net = build_loop3()
+% 3 母線ループ: 送電線 B001-B002, B002-B003, B001-B003 (R = 0, X = 0.1)。
+% B001: 発電機 (P^2+P)、B002: 発電機 (P^2+2P)、B003: 負荷 1.0。全母線に負荷 (B001, B002 は 0) を置く。
+    net = PowerNetwork("OPFLoop3");
+    for i = 1:3
+        net.add_bus();
+    end
+    net.add_branch("pi", [1,2], "X",0.1);
+    net.add_branch("pi", [2,3], "X",0.1);
+    net.add_branch("pi", [1,3], "X",0.1);
+    g1 = net.a_Bus{1}.add_component("gen-park");
+    g2 = net.a_Bus{2}.add_component("gen-park");
+    g1.tab_parameter.OPF{1,["HP","fP"]} = [1, 1];
+    g2.tab_parameter.OPF{1,["HP","fP"]} = [1, 2];
+    rv_P = [0, 0, -1];
+    for i = 1:3
+        ld = net.a_Bus{i}.add_component("load-power", "P",rv_P(i), "Q",0);
+        ld.tab_parameter.OPF{1,["HP","fP","HQ","fQ"]} = [0, 0, 0, 0];
+    end
+end
+
+function fd = fd_load(net, str_method, ld, str_pq, h, c_opt)
+% 負荷 ld の P または Q (注入) を ±h 変えたときの最適費用の中心差分 (負荷 1 単位の増加あたり)
+    v0 = ld.tab_parameter.powerflow.(str_pq);
+    c_restore = onCleanup(@() set_pf(ld, str_pq, v0));
+    set_pf(ld, str_pq, v0 - h);
+    J_more = DebugScript.helper.quiet(@() net.optimize_powerflow("Method", str_method, c_opt{:})).r_cost;
+    set_pf(ld, str_pq, v0 + h);
+    J_less = DebugScript.helper.quiet(@() net.optimize_powerflow("Method", str_method, c_opt{:})).r_cost;
+    fd = (J_more - J_less)/(2*h);
+end
+
+function set_pf(ld, str_pq, v)
+    ld.tab_parameter.powerflow.(str_pq) = v;
+end
+
+function Y = mpc_ybus(mpc)
+% MATPOWER の送電線モデル (makeYbus と同じ式) で mpc から母線アドミタンス行列を組み立てる
+    n  = size(mpc.bus,1);
+    br = mpc.branch;
+    ys = 1./(br(:,3) + 1j*br(:,4));
+    t  = br(:,9);  t(t == 0) = 1;
+    t  = t .* exp(1j*br(:,10)*pi/180);
+    Ytt = ys + 1j*br(:,5)/2;
+    Yff = Ytt ./ (t.*conj(t));
+    Yft = -ys ./ conj(t);
+    Ytf = -ys ./ t;
+    f  = br(:,1);  tt = br(:,2);
+    Y  = sparse([f; f; tt; tt], [f; tt; f; tt], [Yff; Yft; Ytf; Ytt], n, n) ...
+       + sparse(1:n, 1:n, (mpc.bus(:,5) + 1j*mpc.bus(:,6))/mpc.baseMVA, n, n);
+    Y  = full(Y);
+end
+
+function err = set_case14(net, mpc)
+% network.IEEE14bus の線路定数 (タップを含む)・負荷・電圧上下限・発電機の制約と費用を
+% MATPOWER の case14 に合わせる。
+% 戻り値は合わせた後の Ybus と case14 の Ybus の差 (確認用)。
+    base = mpc.baseMVA;
+    for i = 1:numel(net.a_Bus)
+        bus = net.a_Bus{i};
+        bus.tab_parameter.operation{1,["Vmin","Vmax"]} = mpc.bus(i,[13 12]);
+        bus.tab_parameter.dynamics{1,["Gshunt","Bshunt"]} = mpc.bus(i,[5 6])/base;
+        for k = 1:numel(bus.a_Component)
+            c = bus.a_Component{k};
+            if isa(c, "component.load.abstract")
+                c.tab_parameter.powerflow{1,["P","Q"]} = -mpc.bus(i,[3 4])/base;
+                c.tab_parameter.OPF{1,["HP","fP","HQ","fQ"]} = [0, 0, 0, 0];
+            else
+                g = find(mpc.gen(:,1) == i, 1);
+                c.tab_parameter.operation{1,["Pmin","Pmax","Qmin","Qmax"]} = mpc.gen(g,[10 9 5 4])/base;
+                c.tab_parameter.OPF{1,["HP","fP","HQ","fQ"]} = [mpc.gencost(g,5)*base^2, mpc.gencost(g,6)*base, 0, 0];
+            end
+        end
+    end
+    str_bus = string(net.a_Bus);
+    for k = 1:numel(net.a_Branch)
+        br = net.a_Branch{k};
+        [~, iv] = ismember(string(br.a_Bus), str_bus);
+        j = find(mpc.branch(:,1) == iv(1) & mpc.branch(:,2) == iv(2), 1);
+        r_tap = mpc.branch(j,9);
+        if r_tap == 0; r_tap = 1; end
+        br.tab_parameter.dynamics{1,["R","X","C","tap","phase"]} = [mpc.branch(j,3:4), mpc.branch(j,5)/2, r_tap, mpc.branch(j,10)*pi/180];
+    end
+    err = norm(net.get_admittance_matrix.Variables - mpc_ybus(mpc));
+end
+
 function id = error_id(fcn)
 % fcn を実行し、エラーの ID を返す (エラーにならなければ "")
     id = "";
