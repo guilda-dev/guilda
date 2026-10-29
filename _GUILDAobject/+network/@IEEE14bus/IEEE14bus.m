@@ -30,8 +30,7 @@ classdef IEEE14bus < PowerNetwork
 %  ・Loads have no OPF cost (HP = fP = 0); a fixed load's cost would only add a
 %    constant.
 %  ・Branch 7-9 (a transformer winding in case14, tap 1) is a pi line.
-%   network.IEEE14bus_legacy keeps the earlier GUILDA data to reproduce older      
-%  results.                                                                        
+%   network.IEEE14bus_NoTap is the same network with every transformer tap 1.     
 %
 %==================================================================================
 % 

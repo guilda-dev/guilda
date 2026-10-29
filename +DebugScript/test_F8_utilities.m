@@ -3,7 +3,7 @@
 % 実行: runtests("DebugScript.test_F8_utilities")  または  DebugScript.run_all("Features","F8")
 
 % 共通設定 (各テストの前に毎回実行される)
-str_templates = ["IEEE14bus","IEEE14bus_legacy","IEEE14bus_lossless","Ishizaki6Bus","TEST31bus","Txt3Bus","Tutorial3bus"];
+str_templates = ["IEEE14bus","IEEE14bus_NoTap","IEEE14bus_lossless","Ishizaki6Bus","TEST31bus","Txt3Bus","Tutorial3bus"];
 
 
 %% Admittance matrix is symmetric and matches branch data
@@ -165,28 +165,47 @@ for i = 1:numel(net.a_Bus)
 end
 
 
-%% Template IEEE14bus_legacy reproduces the pre-case14 results
-% IEEE14bus_legacy は case14 への修正とタップ読み込みの修正より前の IEEE14bus と同じ結果になる。
-% 参照値は修正前のコード (refactor/design-alignment 63bc5a0) の network.IEEE14bus で計算した値。
-net = DebugScript.helper.quiet(@() network.IEEE14bus_legacy);
-net.solver_ODE.Reporter = "none";
+%% Template IEEE14bus_NoTap differs from IEEE14bus only in the taps
+% IEEE14bus_NoTap は IEEE14bus (case14) の変圧器 4-7, 4-9, 5-6 のタップを 1 にした系統
+net = DebugScript.helper.quiet(@() network.IEEE14bus_NoTap);
+ref = DebugScript.helper.quiet(@() network.IEEE14bus);
 assert(numel(net.a_Bus) == 14 && numel(net.a_Branch) == 20)
 assert(all(cellfun(@(b) b.tab_parameter.dynamics.tap, net.a_Branch) == 1))
+assert(all(cellfun(@(b) b.tab_parameter.dynamics.phase, net.a_Branch) == 0))
+
+% アドミタンス行列が変わるのは 3 台の変圧器の要素だけ: 非対角と、タップ側 (from) の対角
+% (two_winding_transformer のタップは from 側だけに掛かる)
+D = net.get_admittance_matrix.Variables - ref.get_admittance_matrix.Variables;
+l_tr = false(14);
+for ij = [4 7; 4 9; 5 6]'
+    l_tr(ij(1), ij(1)) = true;
+    l_tr(ij(1), ij(2)) = true;
+    l_tr(ij(2), ij(1)) = true;
+end
+assert(all(D(~l_tr) == 0))
+assert(all(abs(D(l_tr)) > 1e-3))
+
+% 母線・機器のデータは IEEE14bus と同じ (base は系統の値を見せるだけの view なので除く)
+data = @(o) o.tab_parameter(:, setdiff(string(o.tab_parameter.Properties.VariableNames), "base"));
+for i = 1:14
+    assert(isequaln(data(net.a_Bus{i}), data(ref.a_Bus{i})))
+    for j = 1:numel(ref.a_Bus{i}.a_Component)
+        assert(isequaln(data(net.a_Bus{i}.a_Component{j}), data(ref.a_Bus{i}.a_Component{j})))
+    end
+end
+
+% 参照値 (このブランチで計算した値)
+net.solver_ODE.Reporter = "none";
 [res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
 assert(flag > 0)
-V_ref = [1.06 1.045 1.01 1.0426136 1.0457498 1.07 1.0849696 1.09 1.1054373 1.1005697 1.0854939 1.0702996 1.0721834 1.0877128]';
+V_ref = [1.06 1.045 1.01 1.0294893 1.0348827 1.07 1.0558758 1.09 1.0496724 1.045822 1.0542952 1.0546926 1.0494854 1.0315436]';
 assert(max(abs(res.tab_bus.V - V_ref)) < 1e-6)
-% 全機器の費用が P^2 + P で制約なし → ELD は 5 台で等分 (費用 2.663374)
-str_gen = string(cellfun(@(b) b.a_Component{1}, net.a_Bus([1 2 3 6 8]), "UniformOutput", false));
-res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD"));
-assert(max(abs(res.tab_cub{str_gen,"P"} - 0.518)) < 1e-6 && abs(res.r_cost - 2.663374) < 1e-6)
 res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
-assert(abs(res.r_cost - 2.6822658) < 1e-5)
-% 最も遅い固有値 (回転不変性の 0 を除く)
+assert(abs(res.r_cost - 8079.9528) < 1e-2)
 DebugScript.helper.quiet(@() net.initialize);
 e = eig(net.get_sys("Algorithm","Kron").A);
 e = e(abs(e) > 1e-6);
-assert(abs(max(real(e)) - (-0.5351694)) < 1e-6)
+assert(abs(max(real(e)) - (-0.5297416)) < 1e-6)
 
 
 %% Template IEEE14bus_lossless

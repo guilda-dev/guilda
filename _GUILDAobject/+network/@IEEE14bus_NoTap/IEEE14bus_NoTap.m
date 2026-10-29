@@ -1,40 +1,36 @@
-classdef IEEE14bus_legacy < PowerNetwork
-% <@Desc> 
-% IEEE 14-bus network with the data GUILDA used before the case14 correction
+classdef IEEE14bus_NoTap < PowerNetwork
+% <@Desc>
+% IEEE 14-bus network (MATPOWER case14) with every transformer tap set to 1
 %==================================================================================
-%                          <<< IEEE 14-Bus System >>>                              
+%                          <<< IEEE 14-Bus System >>>
 %==================================================================================
-%                                                                                  
-%   The IEEE 14-bus system is a standard test case for power system analysis.      
-%  It represents a small part of the American Electric Power System and is         
-%  widely used to test power flow, stability, and contingency analysis.            
-%                                                                                  
-%                       =<< System Overview >>=                                    
-%                                                                                  
-%   The model includes 14 buses, 5 generators, 11 loads, 16                        
-%  transmission lines, and 2 transformers. Buses are classified as:                
-%                                                                                  
-%  ・Slack Bus (Bus 1)         : The reference bus with a fixed voltage and angle. 
-%  ・PV Buses  (Bus 2, 3, 6, 8): Have fixed voltage and real power.                
-%  ・PQ Buses  (The rest)      : Have fixed real and reactive power loads.         
-%                                                                                  
-%                       =<< Legacy Data >>=                                        
-%                                                                                  
-%   This network reproduces the results of network.IEEE14bus from before the       
-%  MATPOWER case14 correction and the CSV tap-import fix. Use it to compare with   
-%  or rerun earlier studies. For the standard case14 data use network.IEEE14bus.   
-%  Differences from case14: every transformer tap is 1 (the old importer ignored   
-%  the taps), line C is the total charging b (and b of 2-4, 2-5, 3-4, 4-5 is       
-%  shifted by one row), load Q has the opposite sign except at bus 4, generator    
-%  limits are +-Inf, bus voltage limits are 0.5-1.5, and every component,          
-%  loads included, has the OPF cost HP = fP = 1.                                   
-%                                                                                  
-%==================================================================================
-% 
-%                    =<< IEEE 14-Bus System Diagram >>=
-% 
+%                                                                                 
+%   The IEEE 14-bus system is a standard test case for power system analysis.
+%  It represents a small part of the American Electric Power System and is
+%  widely used to test power flow, stability, and contingency analysis.
 %
-%                             LL             LL             
+%                       =<< System Overview >>=
+%
+%   The model includes 14 buses, 5 generators, 12 loads, 16
+%  transmission lines, and 4 transformers. Buses are classified as:
+%
+%  ・Slack Bus (Bus 1)         : The reference bus with a fixed voltage and angle.
+%  ・PV Buses  (Bus 2, 3, 6, 8): Have fixed voltage and real power.
+%  ・PQ Buses  (The rest)      : Have fixed real and reactive power loads.
+%
+%                       =<< Data >>=
+%
+%   network.IEEE14bus with the transformers 4-7, 4-9 and 5-6 modeled at tap 1
+%  (plain series impedance, phase 0). All other data are those of IEEE14bus.
+%  For the full MATPOWER case14 data, including the off-nominal taps 0.978,
+%  0.969 and 0.932, use network.IEEE14bus.
+%
+%==================================================================================
+%
+%                    =<< IEEE 14-Bus System Diagram >>=
+%
+%
+%                             LL             LL
 %                             |              |
 %                   (13) ===========       ===== (14)
 %                         |   |   |         | |
@@ -51,7 +47,7 @@ classdef IEEE14bus_legacy < PowerNetwork
 %                         |   |   |                 |   |      | ┌-----------┐
 %                         SC  |   LL               ///  |      | |           |
 %                            ~~~                       ~~~    ~~~~~ (7)     === (8)
-%                             |                         |       |            |                                                                    
+%                             |                         |       |            |
 %     SG               LL --┐ |                         |       |            SC
 %     |                     | |                     ============== (4)
 %   ===== (1)              ======= (5)               |  |  |    |
@@ -60,9 +56,9 @@ classdef IEEE14bus_legacy < PowerNetwork
 %    └----------┐  ┌----------┘                         |  |
 %               |  |  ┌---------------------------------┘  |
 %               |  |  |                                    |
-%               |  |  |                       ┌------------┘ 
-%              ========= (2)                  |          
-%               |  |  |                       |          
+%               |  |  |                       ┌------------┘
+%              ========= (2)                  |
+%               |  |  |                       |
 %               SG LL |                       |
 %                     └-------------------┐   |
 %                                         |   |
@@ -90,18 +86,18 @@ classdef IEEE14bus_legacy < PowerNetwork
 %    > Load   : 12
 %    > Others : 0
 % ====================================================================================
-% <@Model> IEEE14bus_legacy
-% <@Summary> IEEE 14-bus network with the pre-case14 GUILDA data (reproduces earlier results)
+% <@Model> IEEE14bus_NoTap
+% <@Summary> IEEE 14-bus network (case14 data) with every transformer tap set to 1
 % <@Role> PowerNetwork Constructor
-% <@Constructor> 
-%  net = network.IEEE14bus_legacy()
- 
+% <@Constructor>
+%  net = network.IEEE14bus_NoTap()
+
     properties(Constant)
         ver = 1
     end
 
     methods
-        function obj = IEEE14bus_legacy()
+        function obj = IEEE14bus_NoTap()
             str_filepath = mfilename("fullpath");
             str_dirpath  = fileparts(str_filepath);
             CsvNetHandler.import(str_dirpath, obj);
