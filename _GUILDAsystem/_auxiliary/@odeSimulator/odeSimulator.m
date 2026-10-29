@@ -221,6 +221,7 @@ classdef (Sealed = true) odeSimulator < auxiliary
 
             [tab_phase, c_odeEvnt] = table(c_events{:}, "time", time);
             odeSimulator.initialize_index(net);
+            c_reconnect = onCleanup(@() odeSimulator.set_gc_connect(net, strings(0,1)));
 
             ctx = struct();
             ctx.net     = net;
@@ -253,6 +254,10 @@ classdef (Sealed = true) odeSimulator < auxiliary
                 TT = tab_phase(tp,:);
 
                 odeEvents = c_odeEvnt( TT{:,3:end} );
+
+                % A tripped global controller gives no output (TripUnit names it)
+                str_trip = cellfun(@(e) e.TripUnit, odeEvents, 'UniformOutput', false);
+                odeSimulator.set_gc_connect(net, vertcat(strings(0,1), str_trip{:}));
 
                 t1 = TT{1, 't1'};
                 t2 = TT{1, 't2'};
@@ -429,6 +434,15 @@ classdef (Sealed = true) odeSimulator < auxiliary
 
                 
 
+        function set_gc_connect(net, str_trip)
+            % Global controllers named in str_trip are tripped (l_isConnect = false),
+            % the others connected. Components are set by odeEventSet.
+            a_GCs = net.a_GlobalController;
+            for k = 1:numel(a_GCs)
+                a_GCs{k}.l_isConnect = ~ismember(a_GCs{k}.str_tag, str_trip);
+            end
+        end
+
         function odeX = getODEFunction(ctx, t, x, RM, EM, lg) %#ok
             % Method for retrieving the DAE system to be analyzed.            
             
@@ -446,6 +460,9 @@ classdef (Sealed = true) odeSimulator < auxiliary
             a_GCs = ctx.net.a_GlobalController;
             for k = 1:numel(a_GCs)
                 a_GC = a_GCs{k};
+                if ~a_GC.l_isConnect
+                    continue        % tripped: no output; its states are removed by EM
+                end
 
                 x_GC = x(a_GC.iv_odeX);
                 u_GC = x(a_GC.iv_odeU);
@@ -497,6 +514,9 @@ classdef (Sealed = true) odeSimulator < auxiliary
             a_GCs = ctx.net.a_GlobalController;
             for k = 1:numel(a_GCs)
                 a_GC = a_GCs{k};
+                if ~a_GC.l_isConnect
+                    continue        % tripped: no output (see getODEFunction)
+                end
                 
                 lh_GC = [a_GC.iv_odeX; a_GC.iv_odeU];
                 lv_GC = [a_GC.iv_odeX; a_GC.iv_odeY];
@@ -660,7 +680,18 @@ classdef (Sealed = true) odeSimulator < auxiliary
                                              real(a_bus{i}.c_Iequilibrium);
                                              imag(a_bus{i}.c_Iequilibrium)];
                 end
-            end            
+            end
+
+            % A global controller tripped in the phase just solved restarts from its
+            % equilibrium, like a tripped generator (EM left its states and mass at zero)
+            a_GCs = ctx.net.a_GlobalController;
+            for k = 1:numel(a_GCs)
+                if ~a_GCs{k}.l_isConnect
+                    idx_GC = a_GCs{k}.iv_odeX;
+                    x0(idx_GC) = a_GCs{k}.rv_Xequilibrium;
+                    M0(idx_GC, idx_GC) = a_GCs{k}.f_Mass([], [], [], [], []);
+                end
+            end
         end
     end
 end

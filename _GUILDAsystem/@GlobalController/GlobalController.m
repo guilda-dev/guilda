@@ -33,7 +33,7 @@ classdef GlobalController < PowerSystemModel
         rv_Xoffset = 0
         rv_Uoffset = @(t) 0
 
-        l_isConnect (1,1) logical = true
+        l_isConnect (1,1) logical = true       % false while a trip event names it (set by odeSimulator); its output is zero
     end        
     properties(SetAccess={?PowerNetwork})
         rv_Xequilibrium (:,1) double = zeros(0,1)   
