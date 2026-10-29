@@ -8,5 +8,7 @@
         <entry key="BusBaseMVAMismatch">The add_bus option baseMVA is deprecated and ignored: the given {0} MVA differs from the system base net.tab_parameter.base.baseMVA = {1} MVA, which is used. Set net.tab_parameter.base.baseMVA instead.</entry>
         <entry key="CalculatePowerflowMode">The positional mode argument of calculate_powerflow is deprecated: use net.calculate_powerflow(Method="{0}").</entry>
         <entry key="CalculatePowerflowExport">The calculate_powerflow options export and filename are deprecated: use net.calculate_powerflow(Export=filename) or result.Export(filename). A .json file holds the iteration history; a relative file name is now relative to the current folder.</entry>
+        <entry key="ContinuationPowerFlowFunction">Continuation_Power_Flow(net, opt) is deprecated: use [result, flag] = net.calculate_continuation_powerflow(LoadBus=opt.CPFBus). The v3 options map to LoadBus, InitialLambda, MaxIteration, StepSize, ArcLength and UseInternalState; result.rm_x is the old CPF_Result.x_sol.</entry>
+        <entry key="ContinuationPowerFlowConstructor">ContinuationPowerFlow(net, Name, Value) is removed: the solver no longer holds the network or its result, and ContinuationPowerFlow() takes no arguments. Use [result, flag] = net.calculate_continuation_powerflow(LoadBus=...) (defaults in net.solver_CPF), or the deprecated wrapper Continuation_Power_Flow(net, opt) for the v3 usage.</entry>
     </message>
 </rsccat>

@@ -88,7 +88,8 @@ classdef (Sealed = true) ContinuationPowerFlow < auxiliary
     end
 
     methods
-        function obj = ContinuationPowerFlow()
+        function obj = ContinuationPowerFlow(varargin)
+            v3_cpf_constructor(varargin);       % COMPAT(v3)
             sct = GUILDA.config("ContinuationPowerFlow");
             sv_bus = string(sct.LoadBus.Value);
             obj.LoadBus          = reshape(sv_bus(~ismissing(sv_bus) & sv_bus ~= ""), 1, []);
