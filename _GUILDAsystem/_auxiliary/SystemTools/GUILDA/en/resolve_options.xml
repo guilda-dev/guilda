@@ -1,0 +1,8 @@
+<!--This is an XML file containing error messages related to the function "tools.resolve_options".-->
+<rsccat version="2" locale="en" product="GUILDA">
+    <message>
+        <entry key="UnknownName">Unknown option ''{0}'' for {1}. Valid options: {2}.</entry>
+        <entry key="UnknownField">The option ''{0}'' refers to ''{1}'', which is not a setting of {2}.</entry>
+        <entry key="InvalidPairs">Options for {0} must be given as Name-Value pairs.</entry>
+    </message>
+</rsccat>
