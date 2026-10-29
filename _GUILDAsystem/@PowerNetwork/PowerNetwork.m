@@ -191,6 +191,7 @@ classdef PowerNetwork < PowerSystemModel
     methods(Static)
         % IO
         net = import_csv(path, opt)
+        net = import_matpower(mpc, opt)
     end
     methods(Access=protected)
         % Edit handling: rebuild stale f_* handles, check the equilibrium

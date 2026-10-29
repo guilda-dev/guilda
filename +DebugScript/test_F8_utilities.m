@@ -222,6 +222,98 @@ out  = DebugScript.helper.quiet(@() CsvNetHandler.import(str_path, net3, "Initia
 assert(out == net3 && numel(net3.a_Bus) == 14)
 
 
+%% MATPOWER import reproduces case14
+% import_matpower は tools.network_to_mpc の逆変換 (MATPOWER 不要)。
+% case14 を読み込んで mpc に戻すと元のデータになり、潮流計算・OPF は network.IEEE14bus と一致する。
+mpc14 = DebugScript.helper.case14_data();
+net   = DebugScript.helper.quiet(@() PowerNetwork.import_matpower(mpc14));
+assert(numel(net.a_Bus) == 14 && numel(net.a_Branch) == 20)
+assert(net.tab_parameter.base.baseMVA == 100 && net.tab_parameter.base.Hz == GUILDA.config("Model","Hz"))
+assert(net.a_Bus{1}.l_isSlack && sum(cellfun(@(b) b.l_isSlack, net.a_Bus)) == 1)
+assert(all(isfinite(net.cv_Vequilibrium)))                  % Initialize=true が既定
+
+mpc = tools.network_to_mpc(net);
+for str_f = ["bus","gen","branch","gencost"]
+    assert(isequal(size(mpc.(str_f)), size(mpc14.(str_f))), str_f)
+    assert(max(abs(mpc.(str_f) - mpc14.(str_f)), [], "all") < 1e-12, str_f)
+end
+
+% 機器: 発電機は gen-park (既定)、負荷は load-power で P, Q は消費が負
+gen = net.a_Bus{2}.a_Component{1};
+ld  = net.a_Bus{2}.a_Component{2};
+assert(isa(gen, "component.generator.park") && isa(ld, "component.load.power"))
+assert(isnan(gen.tab_parameter.powerflow.Q) && abs(gen.tab_parameter.powerflow.P - 0.4) < 1e-15)
+assert(max(abs(ld.tab_parameter.powerflow{1,["P","Q"]} - [-0.217, -0.127])) < 1e-15)
+assert(abs(net.a_Bus{9}.tab_parameter.dynamics.Bshunt - 0.19) < 1e-15)
+assert(isempty(net.a_Bus{7}.a_Component))                   % 負荷も発電機も無い母線
+str_type = string(cellfun(@(b) b.key, net.a_Branch, "UniformOutput", false));
+assert(sum(str_type == "pi_transformer") == 3 && sum(str_type == "pi") == 17)
+
+% 潮流計算は network.IEEE14bus と一致
+ref = DebugScript.helper.quiet(@() network.IEEE14bus);
+r1  = DebugScript.helper.quiet(@() ref.calculate_powerflow);
+[r2, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
+assert(flag > 0)
+assert(max(abs(r2.tab_bus.V - r1.tab_bus.V)) < 1e-8 && max(abs(r2.tab_bus.Varg - r1.tab_bus.Varg)) < 1e-8)
+% OPF は MATPOWER の case14 の最適値 (8081.53 $/hr)
+[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", Tolerance=1e-10));
+assert(flag > 0 && abs(res.r_cost - 8081.53) < 0.01, sprintf("AC cost %.4f", res.r_cost))
+
+% 入力の形: 関数ハンドル・ケースファイル・オプション
+net = DebugScript.helper.quiet(@() PowerNetwork.import_matpower(@DebugScript.helper.case14_data, ...
+          GeneratorModel="gen-classical", Hz=50, Tag="My14", Initialize=false));
+assert(string(net.str_tag) == "My14" && net.tab_parameter.base.Hz == 50)
+assert(isa(net.a_Bus{1}.a_Component{1}, "component.generator.classical"))
+str_dir = tempname;  mkdir(str_dir);
+c = onCleanup(@() rmdir(str_dir, "s"));
+writelines(["function mpc = mycase14()", "mpc = DebugScript.helper.case14_data();", "end"], fullfile(str_dir, "mycase14.m"));
+net = DebugScript.helper.quiet(@() PowerNetwork.import_matpower(fullfile(str_dir, "mycase14.m"), Initialize=false));
+assert(string(net.str_tag) == "mycase14" && numel(net.a_Bus) == 14)
+assert(~contains(path, str_dir))                            % 一時的に追加したパスは戻す
+assert(error_id(@() PowerNetwork.import_matpower("no_such_case_xyz")) == "GUILDA:import_matpower:CaseNotFound")
+
+% 停止中の発電機・送電線は読み込まない。CSV を経由しても同じ mpc に戻る
+mpc_off = mpc14;
+mpc_off.branch(16, 11) = 0;
+net = DebugScript.helper.quiet(@() PowerNetwork.import_matpower(mpc_off, Initialize=false));
+assert(numel(net.a_Branch) == 19)
+str_path = net.export_csv(fullfile(str_dir, "Csv14"));
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(str_path, Initialize=false));
+mpc2 = tools.network_to_mpc(net2);
+assert(max(abs(mpc2.bus - mpc14.bus), [], "all") < 1e-12 && max(abs(mpc2.gen - mpc14.gen), [], "all") < 1e-12)
+
+
+%% MATPOWER import rejects unsupported gencost
+mpc = DebugScript.helper.case14_data();
+% 区分線形の費用 (MODEL = 1) はエラー
+mpc_pw = mpc;
+mpc_pw.gencost(2,:) = [1 0 0 2 0 0 100];          % MODEL = 1 (区分線形)
+assert(error_id(@() PowerNetwork.import_matpower(mpc_pw, Initialize=false)) == "GUILDA:import_matpower:Unsupported")
+% 3 次以上の多項式もエラー
+mpc_cu = mpc;
+mpc_cu.gencost = [mpc_cu.gencost(:,1:3), 4*ones(5,1), [1; zeros(4,1)], mpc_cu.gencost(:,5:7)];
+assert(error_id(@() PowerNetwork.import_matpower(mpc_cu, Initialize=false)) == "GUILDA:import_matpower:Unsupported")
+% 定数項は落として警告 (最適解は同じ)
+mpc_c0 = mpc;
+mpc_c0.gencost(1,7) = 10;
+lastwarn("");
+net = DebugScript.helper.quiet(@() PowerNetwork.import_matpower(mpc_c0, Initialize=false));
+[~, id] = lastwarn();
+assert(id == "GUILDA:import_matpower:ConstantCost", id)
+assert(net.a_Bus{1}.a_Component{1}.tab_parameter.OPF.fP == 2000)
+% 1 次の費用 (NCOST = 2) と Q の費用の行 (2*ng 行)
+mpc_q = mpc;
+mpc_q.gencost = [mpc.gencost; repmat([2 0 0 2 3 0 0], 5, 1)];
+net = DebugScript.helper.quiet(@() PowerNetwork.import_matpower(mpc_q, Initialize=false));
+opf = net.a_Bus{1}.a_Component{1}.tab_parameter.OPF;
+assert(opf.HQ == 0 && opf.fQ == 300)
+% version 1 の mpc と孤立母線は対象外
+mpc_v1 = mpc;  mpc_v1.version = '1';
+assert(error_id(@() PowerNetwork.import_matpower(mpc_v1)) == "GUILDA:import_matpower:Unsupported")
+mpc_iso = mpc;  mpc_iso.bus(14,2) = 4;
+assert(error_id(@() PowerNetwork.import_matpower(mpc_iso)) == "GUILDA:import_matpower:Unsupported")
+
+
 %% Template IEEE14bus
 net = DebugScript.helper.quiet(@() network.IEEE14bus);
 [~, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
