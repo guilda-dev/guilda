@@ -21,13 +21,13 @@ function results = run_all(opt)
 % 対話操作が必要な機能 (GUILDA.setting など) は manual_F9_interactive.m で手動確認する。
 %
 % オプション
-%   Features         : 実行する機能 ("F1"〜"F9")
+%   Features         : 実行する機能 ("F1"〜"F10")
 %   Verbose          : true のとき GUILDA の表示をそのまま出す (既定 false: ログファイルへ保存)
 %   FailOnUnexpected : true のとき想定外の失敗があれば最後に error にする (バッチの終了コード用)
 %   LogFile          : 抑制した出力の保存先
 
     arguments
-        opt.Features         (1,:) string  = "F" + (1:9)
+        opt.Features         (1,:) string  = "F" + (1:10)
         opt.Verbose          (1,1) logical = false
         opt.FailOnUnexpected (1,1) logical = true
         opt.LogFile          (1,1) string  = fullfile(tempdir, "GUILDA_DebugScript_" + string(datetime("now","Format","uuuuMMdd_HHmmss")) + ".log")
