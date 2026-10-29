@@ -1,0 +1,8 @@
+<!--This is an XML file containing error messages related to the class "PowerFlowResult".-->
+<rsccat version="2" locale="en" product="GUILDA">
+    <message>
+        <entry key="ExportFormat">Export of PowerFlowResult does not support the extension ''{0}''. Use .csv, .txt, .xlsx, .xls (bus or branch table) or .json (iteration history).</entry>
+        <entry key="NoNetwork">The JSON export needs the analysed network, but this result has none. Use a result returned by net.calculate_powerflow.</entry>
+        <entry key="FileOpen">Cannot open ''{0}'' for writing. Check the folder and the file permissions.</entry>
+    </message>
+</rsccat>
