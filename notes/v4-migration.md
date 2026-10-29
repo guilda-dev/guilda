@@ -208,22 +208,139 @@ there.
 | `net.add_bus(..., "baseMVA", x)` with x ≠ system base | `GUILDA:Deprecated:BusBaseMVAMismatch` | warning; ignored, system base used |
 | `Continuation_Power_Flow(net, opt)` | – | wrapper for `ContinuationPowerFlow` (no warning) |
 
-### Current hooks (to be aligned)
+### Hooks
 
-The existing hooks do not yet follow the one-line `% COMPAT(v3)` rule:
+Core code reaches compatibility code only through single lines tagged
+`% COMPAT(v3)`. `grep -rn "COMPAT(v3)" _GUILDAsystem _GUILDAobject @GUILDA`
+lists all of them:
 
-- `_GUILDAsystem/@Component/Component.m`: `para_base` property, its get/set
-  methods and the `base` column of `tab_parameter` (`ComponentBaseView`).
-- `_GUILDAsystem/@PowerNetwork/add_bus.m`: the `baseMVA` option and the
-  `Deprecated("BusBaseMVA…")` calls.
+| File | Line | Hook |
+|------|------|------|
+| `@Component/Component.m` | `para_base` property | deprecated `ComponentBaseView` property |
+| `@Component/Component.m` | `get.para_base` | returns `ComponentBaseView(obj)` |
+| `@Component/Component.m` | `get.tab_parameter` | `ComponentBaseView.add_column`: adds the `base` column |
+| `@Component/Component.m` | `set.para_base` | `ComponentBaseView.check_assign`: accepts only the view |
+| `@Component/Component.m` | `set.tab_parameter` | `ComponentBaseView.remove_column`: drops the `base` column |
+| `@PowerNetwork/add_bus.m` | `opt.baseMVA` argument | accepts the old option |
+| `@PowerNetwork/add_bus.m` | `v3_bus_baseMVA(obj, opt)` | warns and removes the option |
 
-### Removing compat code later
+`DebugScript.test_F10_api_foundation` checks this list and that core code
+does not call `Deprecated` outside a hook line. Update both when a hook is
+added.
 
-1. Delete `_GUILDAsystem/_VersionSupport/` (or the files for the version
-   being dropped) and the `Deprecated` entries in `Deprecated.xml`.
-2. Search for `COMPAT(v3)` and delete every tagged line:
-   `grep -rn "COMPAT(v3)" _GUILDAsystem _GUILDAobject @GUILDA`.
-3. Remove `_VersionSupport` from `@GUILDA/config/ListPath.txt` if nothing is
-   left in it.
-4. Run `DebugScript.run_all`; tests that check deprecated forms are removed
-   with the compat code.
+`Continuation_Power_Flow` is a wrapper for an old function name; it lives
+entirely in `_VersionSupport/` and needs no hook. CSV import ignores a bus
+`baseMVA` column simply by not reading it (no compat code).
+
+### Contents of `_GUILDAsystem/_VersionSupport/`
+
+| File | Purpose |
+|------|---------|
+| `Deprecated.m` | warning once per session, `GUILDA:Deprecated:<Key>` (convention in its header) |
+| `legacy_output.m` | returns the old output tuple when `nargout` matches the old signature |
+| `ComponentBaseView.m` | deprecated `comp.para_base` / `comp.tab_parameter.base` view and its hook helpers |
+| `v3_bus_baseMVA.m` | `add_bus` `baseMVA` option |
+| `Continuation_Power_Flow.m` | old CPF entry point |
+
+### Adding a compat form (stages 2 and 3)
+
+1. Put the logic in a file in `_VersionSupport/` (a wrapper for an old name,
+   or a helper the hook calls). Name helpers `v3_<what>`.
+2. In core code add **one** line that calls it, tagged `% COMPAT(v3)`.
+   Deleting that line must leave working v4 code.
+3. Add a `<entry key="Key">` to `SystemTools/GUILDA/en/Deprecated.xml` and
+   call `Deprecated("Key", ...)` from the helper. Add a row to the table
+   above and a test in `+DebugScript`.
+
+Old output tuples: declare the method with `varargout` and end it with
+
+```matlab
+varargout = {result, flag, output};
+varargout = legacy_output(varargout, nargout, 4:6, @v3_optimize_powerflow, "OptimizePowerflowTuple"); % COMPAT(v3)
+```
+
+`v3_optimize_powerflow(result, flag, output)` (in `_VersionSupport/`)
+returns the old outputs as a cell row. Only output counts above 3 can select
+the old form: with 1–3 outputs the v4 form is returned.
+
+### Removing compat code in one step
+
+1. Delete every line tagged `COMPAT(v3)`:
+
+   ```bash
+   grep -rl "COMPAT(v3)" _GUILDAsystem _GUILDAobject @GUILDA | xargs sed -i '' '/COMPAT(v3)/d'
+   ```
+
+2. Delete `_GUILDAsystem/_VersionSupport/`, `Deprecated.xml`, and the
+   `_VersionSupport` line of `@GUILDA/config/ListPath.txt`.
+3. Delete the tests of deprecated forms (F1 `AddBusWithDeprecatedBaseMVAOption`,
+   F3 `Deprecated*` and the `ComponentBaseView` assert in
+   `NetworkHzEditMakesEveryHandleStale`, F5
+   `LegacyEntryContinuation_Power_Flow`, F10 `LegacyOutput*` / `COMPAT*`),
+   then run `DebugScript.run_all`.
+
+No other edit is needed: this procedure was checked on a copy of the code
+(only the tests listed in step 3 fail).
+
+---
+
+## 5. Notes for model and analysis authors (v4 analysis API)
+
+### Result classes
+
+A result of power flow, OPF, CPF or simulation is a subclass of
+`AnalysisResult` (`_GUILDAsystem/_auxiliary/@AnalysisResult/`), in
+`_auxiliary/@<Name>Result/`.
+
+```matlab
+classdef PowerFlowResult < AnalysisResult
+    properties (SetAccess=private)
+        tab_bus            % computed results only
+    end
+    methods
+        function obj = PowerFlowResult(net, solver, options, flag, output, t0, tab_bus)
+            obj@AnalysisResult(net, solver, options, flag, output, t0);
+            obj.tab_bus = tab_bus;
+        end
+        function h = Plot(obj, opt)     % override only what the class supports
+            ...
+        end
+    end
+end
+```
+
+- The base keeps `flag`, `output`, `options` (effective settings),
+  `str_solver`, `r_elapsed` (pass `tic` or seconds), `str_network` and a
+  reference `a_PowerNetwork`. `l_success` is true for a positive numeric or a
+  true logical flag; override `is_success` for another convention.
+- Store only computed values and the settings used. Never copy model data
+  (parameters, V/I owned by buses and components).
+- `Plot` and `Export` are the result's methods. One that a class does not
+  override stops with `GUILDA:AnalysisResult:Unsupported`.
+
+### Name-Value options
+
+Merge `net.solver_*` defaults with the call's overrides with
+`tools.resolve_options`; never write the overrides into the solver.
+
+```matlab
+function varargout = calculate_powerflow(obj, opt)
+    arguments
+        obj
+        opt.MaxIteration (1,1) double {mustBeNonnegative, mustBeInteger}   % no default
+        opt.Verbose      (1,1) logical
+    end
+    s_map = struct("MaxIteration", "MaxIterations", ...
+                   "Verbose", {{"Display", @(l) replace(string(l), ["true","false"], ["iter","none"])}});
+    options = tools.resolve_options(obj.solver_PF, s_map, opt);
+    ...
+end
+```
+
+- Declare the options in the `arguments` block **without defaults**, so
+  that only the given names are fields of `opt`; validate them there.
+- `s_map` maps each accepted name to a solver field: a name, a string array
+  (several fields), a dotted path into a struct property
+  (`"dynamic.t_span"`), or `{field, converter}`.
+- A name not in `s_map` gives `GUILDA:resolve_options:UnknownName` with the
+  list of accepted names.

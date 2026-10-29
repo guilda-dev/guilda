@@ -10,13 +10,14 @@ Branch: `refactor/design-alignment` (base: `version4.0`). Updated 2026-10-29.
 /Applications/MATLAB_R2026a.app/bin/matlab -batch "cd('<repo>'); DebugScript.run_all"
 ```
 
-Result on 2026-10-29 (commit `84d81bd`):
+Result on 2026-10-29 (branch `feature/api-foundation`):
 
 ```
-合計 131 件: PASS 130 / KNOWN 1 / FAIL 0 / FIXED? 0   (123 s)
+合計 141 件: PASS 140 / KNOWN 1 / FAIL 0 / FIXED? 0   (128 s)
   F1: PASS 21  KNOWN 1    F2: PASS 12    F3: PASS 34
   F4: PASS  7             F5: PASS  3    F6: PASS 21
   F7: PASS 14             F8: PASS 12    F9: PASS  6
+  F10: PASS 10
 ```
 
 Use R2026a: R2026b lacks the Optimization and Control toolboxes.
@@ -86,7 +87,18 @@ Checked against the code on 2026-10-29.
 
 ### Compatibility
 
-- The existing compat hooks in `@Component/Component.m` (`para_base`,
-  `ComponentBaseView`) and `@PowerNetwork/add_bus.m` (`baseMVA` option) are
-  not yet single lines tagged `% COMPAT(v3)` (see
+- Done: every compat hook in core code is a single line tagged
+  `% COMPAT(v3)`, with the logic in `_GUILDAsystem/_VersionSupport/`
+  (`grep -rn "COMPAT(v3)" _GUILDAsystem _GUILDAobject @GUILDA`; see
   [v4-migration.md](v4-migration.md#4-compatibility-policy)).
+
+### Analysis API foundation
+
+- Added `AnalysisResult` (result base class), `tools.resolve_options`
+  (solver defaults + Name-Value overrides) and `legacy_output` (old output
+  tuples). No analysis method uses them yet; power flow, OPF, CPF,
+  simulation, linearization and I/O move to the v4 API next.
+- `odeSimulationResult` does not inherit from `AnalysisResult` yet.
+- A result does not record whether the network was edited after the
+  analysis: `tab_editLog` is cleared by `initialize`, so it cannot serve as a
+  stamp.
