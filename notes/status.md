@@ -133,7 +133,8 @@ Open:
   `add_component` default is unchanged.
 - **`IEEE14bus_lossless` still has the old IEEE14 data** (load Q sign, line
   charging, the shifted B values, ±Inf generator limits, 0.5–1.5 voltage
-  limits, unit costs). Its transformer taps are read since the CSV fix.
+  limits, unit costs). Its transformer taps are read since the CSV fix
+  (effect below).
 
 ### IEEE14 data and CSV taps
 
@@ -158,15 +159,28 @@ Fixed on `fix/ieee14-data-and-tap-import`:
 - **Load cost decision:** loads in `IEEE14bus` have no OPF cost
   (`HP = HQ = fP = fQ = 0`). case14 has no load cost, a fixed load's cost is
   only a constant, and with 0 `r_cost` equals the MATPOWER objective.
-- Effects users see: different power-flow voltages (up to 0.056 pu at bus 9
-  before) and generator Q (e.g. bus 6: −32.2 → 12.7 MVAr); ELD/OPF results
-  follow the case14 costs and limits instead of an equal split; the
-  equilibrium and linear model change slightly (slowest mode −0.503 →
-  −0.540, smallest damping ratio 0.036 → 0.035; peak ω deviation after a
-  B008 fault 3.3e-3 → 4.1e-3). Bus 8 runs at 1.09 pu in power flow, above
-  its `Vmax` 1.06, as in case14 (power flow does not enforce limits).
+- **`IEEE14bus_legacy`** keeps the old data (taps set to 1, as the old
+  importer read them) and reproduces the old `IEEE14bus` results exactly:
+  power flow, ELD/DC/AC OPF, `get_sys` eigenvalues and a B008 fault
+  simulation agree with the code at `63bc5a0` to 0 difference. The F8 test
+  pins its bus voltages, ELD/AC OPF costs and slowest eigenvalue.
+- Effects users see (`IEEE14bus` now vs. `IEEE14bus_legacy`): bus voltages
+  differ by up to 0.052 pu (bus 14) and angles by 0.82°; slack P 232.86 →
+  232.39 MW; net reactive power at the generator buses
+  (−34.3, −8.7, −13.9, −12.0, 3.1) → (−16.6, 30.9, 6.1, 5.2, 17.6) MVAr;
+  ELD/DC OPF dispatch 51.8 MW each (cost 2.66) → 221.0 / 38.0 / 0 / 0 / 0 MW
+  (7642.59 $/hr); AC OPF cost 2.68 → 8081.52 $/hr; slowest mode −0.535 →
+  −0.540, smallest damping ratio 0.037 → 0.035. Bus 8 runs at 1.09 pu in
+  power flow, above its `Vmax` 1.06, as in case14 (power flow does not
+  enforce limits).
+- **`IEEE14bus_lossless` changed through the tap fix only** (data
+  untouched): bus voltages up to 0.016 pu (bus 5), angles 0.15°, bus
+  reactive power up to 27.9 MVAr, slowest mode −0.332 → −0.385 (smallest
+  damping ratio unchanged, 0.037); ω after a B008 fault differs by 1.5e-4
+  (peak 1.6e-3); OPF costs unchanged. Decide whether to give it the case14
+  data or a legacy copy.
 - `DebugScript.run_all` on `fix/ieee14-data-and-tap-import` (2026-10-29):
-  164 tests, PASS 162 / KNOWN 1 / FAIL 0 / SKIP 1 (the MATPOWER comparison).
+  165 tests, PASS 163 / KNOWN 1 / FAIL 0 / SKIP 1 (the MATPOWER comparison).
 
 ### Analysis API foundation
 

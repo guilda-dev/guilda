@@ -72,6 +72,6 @@ const updateLogData = [
   {
     "title": "IEEE14bus matches MATPOWER case14",
     "date": "2026-10-29",
-    "content": "network.IEEE14bus now has the MATPOWER case14 line charging, load reactive power, voltage limits 0.94-1.06, generator limits and generator costs; loads have no OPF cost. Power-flow, OPF, simulation and linearization results of IEEE14bus change. CSV import now reads the transformer tap and phase columns (tap/phase, as export writes them; Tap/Phase is also accepted), so imported transformers keep their taps."
+    "content": "network.IEEE14bus now has the MATPOWER case14 line charging, load reactive power, voltage limits 0.94-1.06, generator limits and generator costs; loads have no OPF cost. Power-flow, OPF, simulation and linearization results of IEEE14bus change. CSV import now reads the transformer tap and phase columns (tap/phase, as export writes them; Tap/Phase is also accepted), so imported transformers keep their taps; this also changes IEEE14bus_lossless. To reproduce earlier IEEE14bus results, use the new network.IEEE14bus_legacy."
   }
 ];
