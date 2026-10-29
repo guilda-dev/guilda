@@ -33,123 +33,118 @@
   <main>
     <div id="tab-home" class="tab-content active">
       <div class="hero">
-        <h1 class="hero-title">GUILDA<img src="./images/GUILDA-logo-square.png" alt="" class="hero-mark" width="96" height="96"></h1>
-        <h2 class="hero-subtitle">Grid & Utility Infrastructure Linkage Dynamics Analyzer</h2>
+        <div class="hero-text">
+          <h1 class="hero-title">GUILDA</h1>
+          <p class="hero-subtitle">Grid &amp; Utility Infrastructure Linkage Dynamics Analyzer</p>
+        </div>
+        <div class="hero-mark" aria-hidden="true"><img src="./images/GUILDA-logo-square.png" alt="" width="128" height="128"></div>
       </div>
 
-      <div style="height: 1px; background-color: var(--line); margin-top: 16px; margin-bottom: 32px;"></div>
-
-      <h2>Install Now</h2>
-      <div class="install-buttons">
-        <a href="https://github.com/guilda-dev/guilda" target="_blank" class="btn btn-github"><svg class="gh-mark" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg><span>From GitHub</span></a>
-        <a href="https://matlab.mathworks.com/open/github/v1?repo=guilda-dev/guilda&project=./GUILDA.prj" target="_blank" class="btn-badge"><img src="https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg" alt="Open in MATLAB Online" onerror="this.parentNode.classList.add('is-offline')"><span class="btn-badge-fallback">Open in MATLAB Online</span></a>
+      <p class="home-intro">A MATLAB power-system simulator for students and researchers in systems and control, built from blocks you combine, analyse and share.</p>
+      <div class="home-actions">
+        <a class="btn btn-primary" href="#tab-getting-started" onclick="openTab('tab-getting-started'); return false;">Get started</a>
+        <a class="btn" href="#tab-about" onclick="openTab('tab-about'); return false;">About GUILDA</a>
       </div>
-
-      <p class="home-intro">
-        GUILDA is a power-system simulator for students and researchers in systems and control.
-        It brings power-system knowledge into control engineering as building blocks you can combine, analyse and share.
-        <a href="#tab-about" onclick="openTab('tab-about'); return false;">Read about our vision&nbsp;→</a>
-      </p>
 
       <h2>Supported Analyses</h2>
-      <ol class="analysis-flow">
-        <li class="af-step">
-          <span class="af-kicker">Model</span>
-          <svg class="af-icon" viewBox="0 0 64 64" aria-hidden="true">
-            <circle class="px-soft" cx="32" cy="32" r="21"/>
-            <path class="px-grid" d="M6 32 H58 M32 6 V58"/>
-            <path class="px-accent-line" d="M47 32 A15 15 0 0 0 43 21"/>
-            <path class="px-main" d="M32 32 L46 14"/>
-            <path class="px-head" d="M40.2 15.6 L47.6 12 L46.4 20.2 Z"/>
-            <circle class="px-dot" cx="32" cy="32" r="3"/>
+      <ol class="analysis-list">
+        <li class="analysis-item">
+          <svg class="analysis-icon" viewBox="0 0 48 48" aria-hidden="true">
+            <path class="ai-axis" d="M6 40 H44 M10 44 V6"/>
+            <path class="ai-ink is-dashed" d="M24 40 A14 14 0 0 0 20.4 30.6"/>
+            <path class="ai-brand" d="M10 40 L36 14 M36 14 L29 15.6 M36 14 L34.4 21"/>
           </svg>
-          <h3>RMS phasor models</h3>
-          <p>Three-phase balanced networks described as phasors.</p>
+          <div class="analysis-body">
+            <h3>RMS phasor models</h3>
+            <p>Three-phase balanced networks described as phasors.</p>
+          </div>
+          <a class="analysis-link" data-tutorial="Tutorial1_1_NetBuild.mlx" href="#tab-tutorial">Tutorial <span aria-hidden="true">→</span></a>
         </li>
-        <li class="af-step">
-          <span class="af-kicker">Simulate</span>
-          <svg class="af-icon" viewBox="0 0 64 64" aria-hidden="true">
-            <path class="px-grid" d="M6 36 H58"/>
-            <path class="px-main" d="M6 36 H17 L20 14 C24 10 26 56 31 52 C35 49 36 25 40 28 C43 31 44 42 47 39 C50 37 51 34 58 36"/>
-            <path class="px-bolt" d="M18 4 L13 13 H18 L15 21 L23 10 H18 L21 4 Z"/>
+        <li class="analysis-item">
+          <svg class="analysis-icon" viewBox="0 0 48 48" aria-hidden="true">
+            <path class="ai-axis" d="M4 26 H44 M6 6 V44"/>
+            <path class="ai-axis is-dashed" d="M14 8 V42"/>
+            <path class="ai-brand" d="M6 26 H14 C17 26 17 10 21 10 C25 10 25 38 29 38 C32 38 32 18 35 18 C38 18 38 31 40.5 31 C42.5 31 43 26 44 26"/>
           </svg>
-          <h3>Time-domain simulation</h3>
-          <p>Responses to faults, load and input changes, and initial-value perturbations.</p>
+          <div class="analysis-body">
+            <h3>Time-domain simulation</h3>
+            <p>Responses to faults, load and input changes, and initial-value perturbations.</p>
+          </div>
+          <a class="analysis-link" data-tutorial="Tutorial3_1_Simulation.mlx" href="#tab-tutorial">Tutorial <span aria-hidden="true">→</span></a>
         </li>
-        <li class="af-step">
-          <span class="af-kicker">Linearize</span>
-          <svg class="af-icon" viewBox="0 0 64 64" aria-hidden="true">
-            <path class="px-grid" d="M8 54 H58 M8 54 V8"/>
-            <path class="px-soft-line" d="M10 50 C24 48 30 40 36 30 C42 20 48 14 58 12"/>
-            <path class="px-main" d="M16 50 L56 18"/>
-            <circle class="px-dot-accent" cx="36" cy="30" r="4.5"/>
+        <li class="analysis-item">
+          <svg class="analysis-icon" viewBox="0 0 48 48" aria-hidden="true">
+            <path class="ai-axis" d="M6 42 H44 M8 44 V6"/>
+            <path class="ai-ink" d="M8 38 C18 37 24 31 28 24 C32 17 37 11 44 9"/>
+            <path class="ai-brand" d="M14 39 L42 10"/>
+            <circle class="ai-dot" cx="28" cy="24" r="1.8"/>
           </svg>
-          <h3>Linearization</h3>
-          <p>Approximate linear models <span class="nowrap">ẋ = Ax + Bu</span>, <span class="nowrap">y = Cx + Du</span> and energy-function Hessians.</p>
+          <div class="analysis-body">
+            <h3>Linearization</h3>
+            <p>Approximate linear models <span class="nowrap">ẋ = Ax + Bu</span>, <span class="nowrap">y = Cx + Du</span> and energy-function Hessians.</p>
+          </div>
+          <a class="analysis-link" data-section="tutorial-linear-model" href="#tab-tutorial">Tutorial <span aria-hidden="true">→</span></a>
         </li>
-        <li class="af-step">
-          <span class="af-kicker">Optimize</span>
-          <svg class="af-icon" viewBox="0 0 64 64" aria-hidden="true">
-            <path class="px-soft-line" d="M12 46 L28 16 L52 22 L44 50 Z M28 16 L44 50"/>
-            <circle class="px-node" cx="12" cy="46" r="5"/>
-            <circle class="px-node" cx="28" cy="16" r="5"/>
-            <circle class="px-node" cx="44" cy="50" r="5"/>
-            <circle class="px-ring" cx="52" cy="22" r="9"/>
-            <circle class="px-dot-accent" cx="52" cy="22" r="4.5"/>
+        <li class="analysis-item">
+          <svg class="analysis-icon" viewBox="0 0 48 48" aria-hidden="true">
+            <ellipse class="ai-axis" cx="22" cy="26" rx="17" ry="12"/>
+            <ellipse class="ai-axis" cx="22" cy="26" rx="10.5" ry="7"/>
+            <ellipse class="ai-axis" cx="22" cy="26" rx="4" ry="2.6"/>
+            <path class="ai-ink" d="M30 4 L42 44"/>
+            <path class="ai-ink is-hatch" d="M33 14 L36.5 12.5 M35.4 22 L38.9 20.5 M37.8 30 L41.3 28.5"/>
+            <circle class="ai-brand-dot" cx="33" cy="26" r="2.6"/>
           </svg>
-          <h3>Optimal power flow</h3>
-          <p>General formulations of OPF problems on the same network.</p>
+          <div class="analysis-body">
+            <h3>Optimal power flow</h3>
+            <p>General formulations of OPF problems on the same network.</p>
+          </div>
+          <a class="analysis-link" data-tutorial="Tutorial5_1_OPF.mlx" href="#tab-tutorial">Tutorial <span aria-hidden="true">→</span></a>
         </li>
-        <li class="af-step">
-          <span class="af-kicker">Visualize</span>
-          <svg class="af-icon" viewBox="0 0 64 64" aria-hidden="true">
-            <path class="px-soft-line" d="M10 50 L26 56 L44 48 L56 54 M26 56 L30 42 M44 48 L30 42"/>
-            <path class="px-bar-main" d="M10 50 V26"/>
-            <path class="px-bar-accent" d="M26 56 V40"/>
-            <path class="px-bar-soft" d="M44 48 V14"/>
-            <path class="px-bar-main" d="M56 54 V34"/>
-            <path class="px-bar-accent" d="M30 42 V30"/>
+        <li class="analysis-item">
+          <svg class="analysis-icon" viewBox="0 0 48 48" aria-hidden="true">
+            <path class="ai-axis" d="M6 38 L18 44 L32 36 L42 41 M18 44 L22 33 M32 36 L22 33 M6 38 L22 33"/>
+            <path class="ai-ink" d="M6 38 V24 M18 44 V30 M32 36 V26 M42 41 V31"/>
+            <path class="ai-brand" d="M22 33 V8"/>
+            <circle class="ai-dot" cx="6" cy="24" r="1.8"/><circle class="ai-dot" cx="18" cy="30" r="1.8"/><circle class="ai-dot" cx="32" cy="26" r="1.8"/><circle class="ai-dot" cx="42" cy="31" r="1.8"/>
+            <circle class="ai-brand-dot" cx="22" cy="8" r="2.2"/>
           </svg>
-          <h3>Graph &amp; animation</h3>
-          <p>Network graphs whose node heights and colours follow the response.</p>
+          <div class="analysis-body">
+            <h3>Graph &amp; animation</h3>
+            <p>Network graphs whose node heights and colours follow the response.</p>
+          </div>
         </li>
       </ol>
 
       <h2>Update Log</h2>
+      <ul class="ulog-legend" aria-label="Update types">
+        <li class="is-added">Added</li>
+        <li class="is-changed">Changed</li>
+        <li class="is-deprecated">Deprecated</li>
+        <li class="is-removed">Removed</li>
+        <li class="is-fixed">Fixed</li>
+      </ul>
       <div id="update-log-container" class="ulog" tabindex="0" role="region" aria-label="Update log, newest first. Scroll sideways to see more."></div>
-
-      <h2>Related Book</h2>
-      <p>
-        GUILDA is closely linked with the textbook
-        <a href="https://lim.ishizaki-lab.jp/guilda#h.66rvn04iyvio" target="_blank">"Systems Control Engineering of Power Systems - System Mathematics and MATLAB Simulation -" (Published in November 2022)</a>,
-        which explains related concepts in the language of systems and control.
-      </p>
-      <p>
-        <a href="https://www.jstage.jst.go.jp/article/sicejl/62/10/62_640/_pdf/-char/ja" target="_blank">Introductory Article (Japanese)</a>
-      </p>
 
       <h2>License</h2>
       <p>
-        GUILDA is released under the MIT License. For more details, please refer to the 
+        GUILDA is released under the MIT License. For more details, please refer to the
         <a href="../LICENSE" target="_blank"><code>LICENSE</code></a> file located in the root directory of the repository.
       </p>
 
     </div>
 
     <div id="tab-about" class="tab-content about">
-      <header class="about-hero">
+      <div class="about-hero">
         <p class="about-eyebrow">About GUILDA</p>
         <h1 class="about-title">Power-system knowledge, in the language of systems and control.</h1>
         <p class="about-lead">
-          <strong>GUILDA (Grid &amp; Utility Infrastructure Linkage Dynamics Analyzer)</strong> is a numerical simulator for smart energy management,
-          developed by the Ishizaki Laboratory in collaboration with Takahiro Kawaguchi (Gunma University).
-          It gives students and researchers in systems and control an advanced simulation environment that they can use with only minimal background in power systems.
+          Why GUILDA exists and the ideas behind its design. GUILDA is developed by the Ishizaki Laboratory in collaboration with Takahiro Kawaguchi (Gunma University).
         </p>
         <figure class="about-demo">
           <img src="./images/movie.gif" alt="GUILDA animation: a network graph whose node heights and colours follow the simulated response" class="demo-gif">
           <figcaption>A simulated fault spreading through a network, drawn by GUILDA's animation tools.</figcaption>
         </figure>
-      </header>
+      </div>
 
       <section class="about-section">
         <div class="about-text">
@@ -297,29 +292,32 @@ sys = net.get_sys();                  % linearized model</code></pre>
       </section>
 
       <section class="about-reading">
-        <h2>Further reading</h2>
+        <h2>Books and articles</h2>
         <ul>
+          <li>
+            T. Ishizaki, T. Kawaguchi and K. Kawabe,
+            <a href="https://lim.ishizaki-lab.jp/guilda#h.66rvn04iyvio" target="_blank">「電力系統のシステム制御工学 – システム数理と MATLAB シミュレーション –」</a>, Corona Publishing (in Japanese).
+            The textbook explains power systems in the language of systems and control and uses GUILDA for its numerical examples.
+          </li>
           <li>
             T. Nishino, T. Kawaguchi and T. Ishizaki,
             <a href="https://www.jstage.jst.go.jp/article/sicejl/62/9/62_559/_article/-char/ja" target="_blank">「GUILDA：エネルギーナレッジマネジメントのはじめの一歩」</a>,
             <em>計測と制御</em>, Vol. 62, No. 9, pp. 559–563, 2023 (in Japanese).
           </li>
           <li>
-            T. Ishizaki, T. Kawaguchi and K. Kawabe,
-            <a href="https://lim.ishizaki-lab.jp/guilda#h.66rvn04iyvio" target="_blank">「電力系統のシステム制御工学 – システム数理と MATLAB シミュレーション –」</a>, Corona Publishing (in Japanese).
+            <a href="https://www.jstage.jst.go.jp/article/sicejl/62/10/62_640/_pdf/-char/ja" target="_blank">Introductory article</a>,
+            <em>計測と制御</em>, Vol. 62, No. 10 (in Japanese, PDF).
           </li>
         </ul>
+        <h2>How to cite</h2>
+        <p>If you use GUILDA in published work, please cite the article that introduces it:</p>
+<pre class="about-cite"><code>T. Nishino, T. Kawaguchi and T. Ishizaki, "GUILDA: エネルギーナレッジマネジメントのはじめの一歩,"
+計測と制御, Vol. 62, No. 9, pp. 559–563, 2023.</code></pre>
       </section>
     </div>
 
     <div id="tab-getting-started" class="tab-content">
       <h1>Getting Started</h1>
-
-      <h2>Install Now</h2>
-      <div class="install-buttons">
-        <a href="https://github.com/guilda-dev/guilda" target="_blank" class="btn btn-github"><svg class="gh-mark" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg><span>From GitHub</span></a>
-        <a href="https://matlab.mathworks.com/open/github/v1?repo=guilda-dev/guilda&project=./GUILDA.prj" target="_blank" class="btn-badge"><img src="https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg" alt="Open in MATLAB Online" onerror="this.parentNode.classList.add('is-offline')"><span class="btn-badge-fallback">Open in MATLAB Online</span></a>
-      </div>
 
       <h2>Requirements</h2>
       <p>GUILDA runs on MATLAB and requires the following products:</p>
@@ -329,6 +327,13 @@ sys = net.get_sys();                  % linearized model</code></pre>
         <li>Symbolic Math Toolbox</li>
         <li>Optimization Toolbox</li>
       </ul>
+
+      <h2>Install</h2>
+      <p>Clone or download the repository from GitHub, or open it directly in MATLAB Online.</p>
+      <div class="install-buttons">
+        <a href="https://github.com/guilda-dev/guilda" target="_blank" class="btn-github"><svg class="gh-mark" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg><span>From GitHub</span></a>
+        <a href="https://matlab.mathworks.com/open/github/v1?repo=guilda-dev/guilda&project=./GUILDA.prj" target="_blank" class="btn-badge"><img src="https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg" alt="Open in MATLAB Online" onerror="this.parentNode.classList.add('is-offline')"><span class="btn-badge-fallback">Open in MATLAB Online</span></a>
+      </div>
 
       <h2>Start GUILDA</h2>
       <p>Open the GUILDA repository folder in MATLAB and run the constructor at the beginning of a session.</p>
@@ -342,6 +347,18 @@ sys = net.get_sys();                  % linearized model</code></pre>
         <li>Update the generated documentation database and class signature map when enabled.</li>
         <li>Display the update log and open the tutorial when enabled.</li>
       </ul>
+
+      <h2>Your First Simulation</h2>
+      <p>Load a packaged network, apply a short fault at one bus and simulate the response. The plot shows the frequency deviation of several generators.</p>
+<pre><code>net = network.IEEE14bus;
+fault = odeEventSet("fault", net, "FaultBus", "B008", "TimeSpan", [3, 3.1]);
+sol = net.simulate([0, 50], fault);
+
+xsol = sol.odeResults;
+figure;
+hold on;
+arrayfun(@(i) plot(xsol.t, xsol.Bus(i).Component(1).X.omega), [1, 2, 3, 6, 8]);</code></pre>
+      <p>To build your own network, linearize it or add controllers, continue with the <a href="#tab-tutorial" onclick="openTab('tab-tutorial'); return false;">Tutorial</a>.</p>
 
       <h2>Startup Settings</h2>
       <p>Use the settings window to enable or disable optional startup tasks. Path setup cannot be disabled because it is required to use GUILDA.</p>
@@ -372,14 +389,10 @@ sys = net.get_sys();                  % linearized model</code></pre>
 
     <div id="tab-tutorial" class="tab-content">
       <h1>Basic Workflow</h1>
-      <p>A typical GUILDA analysis proceeds from environment setup and network construction to operating-point initialization, followed by simulation, linearization, or controller evaluation. The examples below follow the verification flow in <code>+DebugScript</code> and use the current API names.</p>
-      <p>For users who want to learn through hands-on experience, please refer to the <a href="#hands-on-tutorial" style="font-weight: bold;">Hands-on Tutorial</a> section below.</p>
-      
-      <h2>1. Prepare the Environment</h2>
-      <p>Run GUILDA once per MATLAB session. The constructor adds the required folders and performs the enabled startup checks.</p>
-<pre><code>&gt;&gt; GUILDA;</code></pre>
+      <p>A typical GUILDA analysis proceeds from network construction to operating-point initialization, followed by simulation, linearization, or controller evaluation. The examples below follow the verification flow in <code>+DebugScript</code>. They assume GUILDA has been started as described in <a href="#tab-getting-started" onclick="openTab('tab-getting-started'); return false;">Getting Started</a>.</p>
+      <p>For users who want to learn through hands-on experience, please refer to the <a href="#hands-on-tutorial" onclick="openTab('tab-tutorial', 'hands-on-tutorial'); return false;" style="font-weight: bold;">Hands-on Tutorial</a> section below.</p>
 
-      <h2>2. Build or Load a Network</h2>
+      <h2>1. Build or Load a Network</h2>
       <p>For a quick analysis, load one of the packaged networks. To build a model manually, create a <code>PowerNetwork</code> and add buses, branches, and components in that order.</p>
 <pre><code>% Load a packaged test network
 net = network.IEEE14bus;
@@ -392,7 +405,7 @@ net.add_branch("pi", [1, 2]);
 net.a_Bus{1}.add_component("gen-park");
 net.a_Bus{2}.add_component("load-power");</code></pre>
 
-      <h2>3. Set and Initialize the Operating Point</h2>
+      <h2>2. Set and Initialize the Operating Point</h2>
       <p>Set the power-flow parameters on buses and components, inspect the power-flow solution when needed, and then initialize the model. Initialization distributes the equilibrium voltage, current, active power, and reactive power to each object.</p>
 <pre><code>% Example power-flow settings
 net.a_Bus{1}.tab_parameter.powerflow{:, ["V", "Varg"]} = [1.05, 0.00];
@@ -401,7 +414,7 @@ net.a_Bus{1}.a_Component{1}.tab_parameter.powerflow{:, ["P", "Q"]} = [nan, nan];
 powerflow = net.calculate_powerflow();
 net.initialize();</code></pre>
 
-      <h2>4. Run a Time-Domain Simulation</h2>
+      <h2 id="tutorial-simulation">3. Run a Time-Domain Simulation</h2>
       <p>Use <code>odeEventSet</code> to describe disturbances. Events can represent state offsets, input changes, bus faults, and unit trips.</p>
 <pre><code>net = network.IEEE14bus;
 fault = odeEventSet("fault", net, ...
@@ -415,7 +428,7 @@ figure;
 hold on;
 arrayfun(@(i) plot(xsol.t, xsol.Bus(i).Component(1).X.omega), [1, 2, 3, 6, 8]);</code></pre>
 
-      <h2>5. Obtain a Linear Model</h2>
+      <h2 id="tutorial-linear-model">4. Obtain a Linear Model</h2>
       <p>After initialization, obtain the linearized interconnected model. Buses without dynamic units can be specified with the <code>NonUnit</code> option.</p>
 <pre><code>net = network.IEEE14bus;
 net.initialize();
@@ -424,7 +437,7 @@ sys = net.get_sys();
 sysReduced = net.get_sys("NonUnit", 7);
 eig(sys.A)</code></pre>
 
-      <h2>6. Add and Evaluate Controllers</h2>
+      <h2>5. Add and Evaluate Controllers</h2>
       <p>Local controllers are attached to components; global controllers are attached to the network. Reinitialize the network after changing its controller structure, then repeat the simulation or linearization.</p>
 <pre><code>avr = controller.avr.AVR_ST1("avr1");
 pss = controller.pss.PSS1("pss1");
@@ -592,12 +605,32 @@ sol = net.simulate([0, 50], fault);</code></pre>
   </main>
 
   <script>
-    function openTab(tabId) {
+    // Switch tabs without reloading. With targetId, scroll to that element inside the tab.
+    function openTab(tabId, targetId) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.tab-button').forEach(el => el.classList.remove('active'));
       document.getElementById(tabId).classList.add('active');
       const btn = document.querySelector(`button[onclick="openTab('${tabId}')"]`);
       if(btn) btn.classList.add('active');
+      const target = targetId ? document.getElementById(targetId) : null;
+      if (target) target.scrollIntoView({ block: 'start' });
+      else window.scrollTo(0, 0);
+    }
+
+    // Same id rule as the hands-on tutorial headings in renderTutorials()
+    function tutorialAnchorId(filename) {
+      return (filename || 'unknown').replace(/[^a-zA-Z0-9]/g,'_').toLowerCase();
+    }
+
+    // Supported Analyses rows link to a tutorial entry (data-tutorial) or a Basic Workflow step (data-section).
+    // A link whose target does not exist is removed.
+    function wireAnalysisLinks() {
+      document.querySelectorAll('.analysis-link').forEach(link => {
+        const targetId = link.dataset.tutorial ? tutorialAnchorId(link.dataset.tutorial) : link.dataset.section;
+        if (!targetId || !document.getElementById(targetId)) { link.remove(); return; }
+        link.href = `#${targetId}`;
+        link.addEventListener('click', (e) => { e.preventDefault(); openTab('tab-tutorial', targetId); });
+      });
     }
 
     function renderUpdateLog() {
@@ -614,12 +647,23 @@ sol = net.simulate([0, 50], fault);</code></pre>
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       // Newest first
       const items = [...data].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
-      const cards = (copy) => items.map(u => `
-        <article class="ulog-card"${copy ? ' aria-hidden="true"' : ''} title="${esc(u.content)}">
-          <time class="ulog-date" datetime="${esc(u.date)}">${esc(u.date)}</time>
+      // Keep a Changelog types; anything else renders neutral with no label
+      const types = { added: 'Added', changed: 'Changed', deprecated: 'Deprecated', removed: 'Removed', fixed: 'Fixed' };
+      items.forEach(u => {
+        if (u.type !== undefined && !Object.hasOwn(types, u.type)) console.warn(`Update log: unknown type "${u.type}" in "${u.title}"`);
+      });
+      const cards = (copy) => items.map(u => {
+        const type = Object.hasOwn(types, u.type) ? u.type : null;
+        return `
+        <article class="ulog-card${type ? ` is-${type}` : ''}"${copy ? ' aria-hidden="true"' : ''} title="${esc(u.content)}">
+          <div class="ulog-meta">
+            <time class="ulog-date" datetime="${esc(u.date)}">${esc(u.date)}</time>
+            ${type ? `<span class="ulog-type">${types[type]}</span>` : ''}
+          </div>
           <h3 class="ulog-title">${esc(u.title)}</h3>
           <p class="ulog-text">${esc(u.content)}</p>
-        </article>`).join('');
+        </article>`;
+      }).join('');
 
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       container.innerHTML = `<div class="ulog-track">${cards(false)}${reduceMotion ? '' : cards(true)}</div>`;
@@ -688,12 +732,12 @@ sol = net.simulate([0, 50], fault);</code></pre>
       if (data && Array.isArray(data) && data.length > 0) {
         toc.innerHTML = '<table><tr><th>File Name</th><th>Analysis Type</th></tr>' + 
           data.map(t => {
-            const safeId = (t.filename || 'unknown').replace(/[^a-zA-Z0-9]/g,'_').toLowerCase();
+            const safeId = tutorialAnchorId(t.filename);
             return `<tr><td><a href="#${safeId}"><code>${t.filename || ''}</code></a></td><td>${t.analysis || ''}</td></tr>`;
           }).join('') + '</table>';
           
         abs.innerHTML = data.map(t => {
-          const safeId = (t.filename || 'unknown').replace(/[^a-zA-Z0-9]/g,'_').toLowerCase();
+          const safeId = tutorialAnchorId(t.filename);
           return `
             <h3 id="${safeId}"><code>${t.filename || ''}</code></h3>
             <table><tr><th style="width:25%">Item</th><th>Description</th></tr>
@@ -978,6 +1022,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
       }
       renderUpdateLog();
       renderTutorials();
+      wireAnalysisLinks();
       renderDeveloperLinks();
       renderReferenceStatus();
       renderReferenceNavigation();
