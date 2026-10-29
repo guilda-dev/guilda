@@ -60,3 +60,67 @@ assert(ismember("branch.pi", tab{2}.filename))
 % 表示あり (クラスツリー) もエラーにならない
 txt = evalc("GUILDA.dictionary(""LocalController"");");
 assert(contains(txt, "LocalController"))
+
+
+%% Symbolic Math Toolbox is not a required toolbox
+% 必須は Control System / Optimization のみ。Symbolic Math は開発用スクリプト専用の任意 Toolbox
+sv_req = strtrim(readlines(fullfile(str_root, "@GUILDA", "config", "ListToolbox.txt")));
+sv_req = sv_req(sv_req ~= "");
+assert(isequal(sort(sv_req), ["Control System Toolbox"; "Optimization Toolbox"]))
+
+
+%% Runtime code makes no symbolic calls
+% 実行時のコードは Symbolic Math Toolbox を使わない。使ってよいのは次のファイルだけ:
+%   NewtonRaphsonMethod.m (sym 入力のときだけ。Toolbox が無ければエラーで代替手段を示す)
+%   validate.m (開発用スクリプト), 未+GFM (未完成モデル, パス外)
+sv_allowed = [fullfile("_GUILDAsystem", "_auxiliary", "@NewtonRaphsonMethod", "NewtonRaphsonMethod.m")
+              fullfile("_GUILDAobject", "+component", "+load", "validate.m")
+              fullfile("_GUILDAobject", "+controller", "validate.m")];
+str_pat = "(\<(sym|syms|symvar|jacobian|hessian|matlabFunction|vpa|subs|simplify)\s*\()|(^\s*syms\s)|(isa\s*\(.*'sym')";
+% パターンが実際に検出できることの確認 (許可されたファイルには呼び出しがある)
+sv_dev = readlines(fullfile(str_root, sv_allowed(3)));
+assert(any(contains(regexprep(sv_dev, "^\s*%.*", ""), regexpPattern(str_pat))))
+sv_hit = strings(0, 1);
+for str_dir = ["@GUILDA", "_GUILDAsystem", "_GUILDAobject"]
+    s_files = dir(fullfile(str_root, str_dir, "**", "*.m"));
+    for k = 1:numel(s_files)
+        str_rel = string(erase(fullfile(s_files(k).folder, s_files(k).name), string(str_root) + filesep));
+        if ismember(str_rel, sv_allowed) || contains(str_rel, ["archive", "未+GFM"])
+            continue
+        end
+        sv_line = readlines(fullfile(s_files(k).folder, s_files(k).name));
+        sv_code = regexprep(sv_line, "^\s*%.*", "");          % コメント行は除く
+        l_hit   = contains(sv_code, regexpPattern(str_pat));
+        sv_hit  = [sv_hit; str_rel + ":" + string(find(l_hit))]; %#ok<AGROW>
+    end
+end
+assert(isempty(sv_hit), "Symbolic Math の呼び出しがある: " + strjoin(sv_hit, ", "))
+
+
+%% NewtonRaphsonMethod rejects symbolic input without Symbolic Math Toolbox
+% Toolbox が無い環境を、偽の sym クラスと license の代わりで再現する
+str_tmp = tempname;  mkdir(str_tmp);
+writelines(["classdef sym", "methods", "function obj = sym(varargin), end", "end", "end"], ...
+    fullfile(str_tmp, "sym.m"));
+writelines(["function varargout = license(varargin)", ...
+    "if nargin >= 2 && strcmpi(varargin{1}, 'test') && strcmpi(varargin{2}, 'Symbolic_Toolbox')", ...
+    "    varargout = {false};  return", "end", ...
+    "[varargout{1:max(nargout,1)}] = builtin('license', varargin{:});", "end"], ...
+    fullfile(str_tmp, "license.m"));
+w = warning("off", "MATLAB:dispatcher:nameConflict");
+addpath(str_tmp);
+c_tmp = onCleanup(@() cellfun(@feval, {@() rmpath(str_tmp), @() rmdir(str_tmp, "s"), ...
+    @() clear("sym", "license"), @() warning(w)}));
+assert(isa(sym(), "sym") && ~license("test", "Symbolic_Toolbox"))
+try
+    NewtonRaphsonMethod(NRMFcn=sym(), InitVal=1);
+    error("DebugScript:NoError", "エラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:NewtonRaphsonMethod:SymbolicUnavailable", ME.message)
+    assert(contains(ME.message, "function handle") && contains(ME.message, "NRMJac"))
+end
+clear c_tmp
+
+% 数値の関数ハンドルなら Toolbox 無しで解ける
+nrm = NewtonRaphsonMethod(NRMFcn=@(x) x.^2 - 4, InitVal=1);
+assert(abs(nrm.solve() - 2) < 1e-6)
