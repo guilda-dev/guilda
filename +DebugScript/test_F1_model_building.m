@@ -265,7 +265,7 @@ agc  = controller.agc.broadcast_PI_AGC(net, "agc", c{:}, alpha=[1;1], beta=[1;1]
 net.add_global_controller(agc);
 
 assert(numel(net.a_GlobalController) == 1 && net.a_GlobalController{1} == agc)
-assert(agc.PowerNetwork{1} == net)                   % 親への参照は add_global_controller が設定する
+assert(agc.a_PowerNetwork == net)                   % 親への参照は add_global_controller が設定する
 assert(isequal(string(agc.controlledUnits)', ["SG1B001","SG1B002"]))
 assert(isequal(agc.tab_parameter.dynamics.kI, [500;500]))
 
@@ -307,7 +307,7 @@ DebugScript.helper.quiet(@() net.initialize);
 % すべての大域制御器に平衡点が設定されるべき
 assert(numel(agc1.rv_Uequilibrium) == 1, "1台目の AGC の平衡点が未設定")
 assert(numel(agc2.rv_Uequilibrium) == 1, "2台目の AGC の平衡点が未設定")
-assert(agc1.PowerNetwork{1} == net && agc2.PowerNetwork{1} == net)
+assert(agc1.a_PowerNetwork == net && agc2.a_PowerNetwork == net)
 assert(isequal(agc1.rv_Xequilibrium, 0) && isequal(agc2.rv_Xequilibrium, 0))
 
 
@@ -431,7 +431,7 @@ net.add_global_controller(agc);
 DebugScript.helper.quiet(@() net.initialize);
 net.remove_global_controller("agc");
 assert(isempty(net.a_GlobalController))
-assert(isempty(agc.PowerNetwork))                   % 削除した制御器は系統への参照を持たない
+assert(isempty(agc.a_PowerNetwork))                   % 削除した制御器は系統への参照を持たない
 assert(net.tab_editLog.tag(end) == "Topology")
 
 % 存在しないタグはエラー
