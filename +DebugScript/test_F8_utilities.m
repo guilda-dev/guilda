@@ -363,7 +363,7 @@ for i = 1:14
 end
 
 % 参照値 (このブランチで計算した値)
-net.solver_ODE.Reporter = "none";
+net.solver_ODE.Progress = "none";
 [res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
 assert(flag > 0)
 V_ref = [1.06 1.045 1.01 1.0294893 1.0348827 1.07 1.0558758 1.09 1.0496724 1.045822 1.0542952 1.0546926 1.0494854 1.0315436]';

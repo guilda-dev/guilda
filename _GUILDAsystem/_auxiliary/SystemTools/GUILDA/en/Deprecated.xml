@@ -14,5 +14,7 @@
         <entry key="ContinuationPowerFlowConstructor">ContinuationPowerFlow(net, Name, Value) is removed: the solver no longer holds the network or its result, and ContinuationPowerFlow() takes no arguments. Use [result, flag] = net.calculate_continuation_powerflow(LoadBus=...) (defaults in net.solver_CPF), or the deprecated wrapper Continuation_Power_Flow(net, opt) for the v3 usage.</entry>
         <entry key="CsvNetHandlerImport">CsvNetHandler.import(path, net) is deprecated: use net = PowerNetwork.import_csv(path) for a new network, or PowerNetwork.import_csv(path, Network=obj) to load into an existing one (e.g. in the constructor of a network class).</entry>
         <entry key="CsvNetHandlerExport">CsvNetHandler.export(net, ModelName, savepath=folder) is deprecated: use net.export_csv(fullfile(folder, "@"+ModelName)). The folder now also holds network/parameter.csv with Hz and baseMVA.</entry>
+        <entry key="SimulatorReporter">net.solver_ODE.Reporter is deprecated: use net.solver_ODE.Progress ("none", "disp" or "dialog"), or net.simulate(..., Progress=value) for one call.</entry>
+        <entry key="SimulateOptionName">The simulate option {0} is deprecated: use {1}.</entry>
     </message>
 </rsccat>

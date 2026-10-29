@@ -2,7 +2,7 @@
 %
 % イベントの種類ごとに IEEE14 母線系統の応答を計算し、結果を確認する。
 %   ev  = odeEventSet("名前", net, "TimeSpan", [t1,t2], <イベントの指定>);
-%   sol = net.simulate([t0,tend], ev1, ev2, ...);
+%   [sol, flag, output] = net.simulate([t0,tend], ev1, ev2, ..., Name, Value);
 %   r   = sol.odeResults;     % r.t, r.Bus(i).V / I / PQ, r.Bus(i).Component(j).X / U
 %
 %   FaultBus   : 母線の地絡 (電圧 0)
@@ -10,10 +10,14 @@
 %   OffsetState: 状態の初期値のずらし
 %   InputValue : 機器入力への加算 (数値 / 関数ハンドル)
 %
+%   flag: 1 = 終了時刻まで計算, 0 = TimeLimit で停止, -1 = ソルバーが途中で停止
+%   Name-Value (odeSimulator.OptionMap): Solver, SolverOptions, Tolerance, AbsoluteTolerance,
+%   SeparateComplexParts, TimeLimit, Progress, Verbose, Plot (+ Export)。その呼び出しだけ有効
+%
 % 実行: runtests("DebugScript.test_F6_simulation")  または  DebugScript.run_all("Features","F6")
 
 % 共通設定 (各テストの前に毎回実行される)
-net = DebugScript.helper.build_ieee14();       % 進捗表示なし (Reporter = "none")
+net = DebugScript.helper.build_ieee14();       % 進捗表示なし (Progress = "none")
 DebugScript.helper.quiet(@() net.initialize);
 inwin = @(t, t1, t2) t > t1 + 1e-3 & t < t2 - 1e-3;   % 区間の内側 (境界の重複点を除く)
 
@@ -44,6 +48,167 @@ assert(height(r.Bus(1).Component(1).X) == nt)
 assert(norm(r.Bus(1).Component(1).X{1,:}' - gen.rv_Xequilibrium) < 1e-8)
 V1 = r.Bus(1).V{1,:} * [1;1j];
 assert(abs(V1 - net.a_Bus{1}.c_Vequilibrium) < 1e-8)
+
+
+%% V4 call returns result flag and output
+% [result, flag, output] を返す。結果クラスは AnalysisResult を継承し、flag / output / 使った設定を持つ
+ev = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+[sol, flag, output] = net.simulate([0,3], ev);
+assert(isa(sol, "odeSimulationResult") && isa(sol, "AnalysisResult"))
+assert(flag == 1 && sol.flag == 1 && sol.l_success)
+assert(isequal(sol.output, output) && output.tEnd == 3 && output.nPhases == 3 && output.nPhasesDone == 3)
+assert(isstring(output.message) && contains(output.message, "t = 3"))
+assert(istable(output.phases) && height(output.phases) == 3)
+assert(sol.str_solver == "odeSimulator" && sol.str_network == string(net.str_tag) && sol.r_elapsed > 0)
+assert(sol.options.RelativeTolerance == net.solver_ODE.RelativeTolerance)
+assert(sol.options.Progress == "none" && sol.options.TimeLimit == net.solver_ODE.TimeLimit)
+assert(isequal(sol.sv_bus, string(net.a_Bus(:))) && numel(sol.c_component) == numel(net.a_Bus))
+assert(sol.c_component{1}(1) == string(net.a_Bus{1}.a_Component{1}))
+% モデルのデータは複製しない (未使用だった odeNetwork は廃止)
+assert(~isprop(sol, "odeNetwork"))
+% ソルバーは設定だけを持つ (系統・時間表・結果を保持しない)
+assert(~isprop(net.solver_ODE, "odeNetwork") && ~isprop(net.solver_ODE, "odeTimeTable") && ~isprop(net.solver_ODE, "odeResult"))
+
+
+%% Name-Value overrides leave solver_ODE unchanged
+% Name-Value はその呼び出しだけ有効。net.solver_ODE の値は変わらない
+ev  = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+s0  = net.solver_ODE;
+c0  = {s0.RelativeTolerance, s0.AbsoluteTolerance, s0.TimeLimit, s0.Progress, s0.Verbose, s0.Plot, string(s0.Solver)};
+sol = net.simulate([0,3], ev, Tolerance=1e-6, AbsoluteTolerance=1e-8, TimeLimit=Inf, Progress=false, Solver="ode23t");
+assert(sol.options.RelativeTolerance == 1e-6 && sol.options.AbsoluteTolerance == 1e-8)
+assert(isinf(sol.options.TimeLimit) && sol.options.Progress == "none" && string(sol.options.Solver) == "ode23t")
+assert(sol.flag == 1 && sol.odeResults.t(end) == 3)
+c1  = {s0.RelativeTolerance, s0.AbsoluteTolerance, s0.TimeLimit, s0.Progress, s0.Verbose, s0.Plot, string(s0.Solver)};
+assert(isequal(c0, c1), "Name-Value で net.solver_ODE が変わった")
+% 厳しい許容誤差では刻みが細かくなり、応答はほぼ同じ
+ref = net.simulate([0,3], ev);
+assert(numel(sol.odeResults.t) > numel(ref.odeResults.t))
+w1  = sol.odeResults.Bus(1).Component(1).X.omega;
+w0  = ref.odeResults.Bus(1).Component(1).X.omega;
+assert(abs(w1(end) - w0(end)) < 1e-4)
+% 保存された既定値の変更は次の呼び出しから使われる (net は他のテストと共有なので戻す)
+net.solver_ODE.RelativeTolerance = 1e-5;
+c_rel = onCleanup(@() set_property(net.solver_ODE, "RelativeTolerance", c0{1}));
+sol = net.simulate([0,1], ev);
+assert(sol.options.RelativeTolerance == 1e-5)
+% Verbose: 区間の一覧と結果を表示する
+str = evalc("net.simulate([0,3], ev, Verbose=true);");
+assert(contains(str, "phase  1") && contains(str, "fault") && contains(str, "reached t = 3"))
+
+
+%% TimeLimit stops the simulation with flag 0
+% 計算時間が TimeLimit を超えると、その時刻までの結果と flag = 0 を返す
+ev = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+[sol, flag, output] = net.simulate([0,5], ev, TimeLimit=1e-6);
+assert(flag == 0 && sol.flag == 0 && ~sol.l_success)
+assert(output.tEnd < 5 && sol.odeResults.t(end) == output.tEnd)
+assert(output.nPhasesDone < output.nPhases)
+assert(contains(output.message, "TimeLimit"))
+% 結果は途中までの軌道として使える
+assert(height(sol.odeResults.Bus(1).V) == numel(sol.odeResults.t))
+% 既定値 (net.solver_ODE.TimeLimit) は変わらず、次の計算は最後まで進む
+assert(net.solver_ODE.TimeLimit ~= 1e-6)
+[~, flag] = net.simulate([0,5], ev);
+assert(flag == 1)
+
+
+%% Deprecated Reporter and option names still work
+% COMPAT(v3): solver_ODE.Reporter は Progress、Name-Value の Reporter / RelativeTolerance は
+% Progress / Tolerance に読み替え、警告を1回出す
+clear Deprecated
+lastwarn("");
+evalc('net.solver_ODE.Reporter = "disp";');
+[~, id] = lastwarn;
+assert(id == "GUILDA:Deprecated:SimulatorReporter", id)
+assert(net.solver_ODE.Progress == "disp" && net.solver_ODE.Reporter == "disp")
+net.solver_ODE.Progress = "none";
+
+lastwarn("");
+ev  = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+evalc('sol = net.simulate([0,2], ev, Reporter="none", RelativeTolerance=1e-5);');
+[~, id] = lastwarn;
+assert(id == "GUILDA:Deprecated:SimulateOptionName", id)
+assert(sol.options.Progress == "none" && sol.options.RelativeTolerance == 1e-5)
+assert(net.solver_ODE.RelativeTolerance ~= 1e-5)
+
+
+%% Unknown option or misplaced argument stops with an error
+ev = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+try
+    net.simulate([0,1], ev, Tolerence=1e-6);
+    error("DebugScript:noError", "未知の名前でエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:resolve_options:UnknownName", ME.identifier)
+    assert(contains(ME.message, "Tolerence") && contains(ME.message, "TimeLimit"))   % 使える名前を示す
+end
+% 不正な値
+try
+    net.simulate([0,1], ev, Progress="loud");
+    error("DebugScript:noError", "不正な Progress でエラーにならない")
+catch ME
+    assert(ME.identifier ~= "DebugScript:noError", ME.message)
+end
+% イベントは Name-Value の前に置く
+try
+    net.simulate([0,1], "Verbose", false, ev);
+    error("DebugScript:noError", "Name-Value の後のイベントでエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:PowerNetwork:SimulateArguments", ME.identifier)
+end
+try
+    net.simulate([0,1], ev, 3);
+    error("DebugScript:noError", "イベントでも名前でもない引数でエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:PowerNetwork:SimulateArguments", ME.identifier)
+end
+
+
+%% Plot and Export of the simulation result
+ev  = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+sol = net.simulate([0,2], ev);
+c_fig = onCleanup(@() close(findall(0, "Type", "figure")));
+ax = sol.Plot();
+assert(isa(ax, "matlab.graphics.axis.Axes") && numel(ax.Children) == numel(net.a_Bus))
+ax = sol.Plot(Quantity="omega", Bus=["B001","B002"]);
+assert(numel(ax.Children) == 2)
+ax = sol.Plot(Quantity="P", Bus="B008");
+assert(numel(ax.Children) == 1)
+try
+    sol.Plot(Quantity="nosuchstate");
+    error("DebugScript:noError", "未知の量でエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:odeSimulationResult:UnknownQuantity", ME.identifier)
+end
+try
+    sol.Plot(Bus="B999");
+    error("DebugScript:noError", "未知の母線でエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:odeSimulationResult:UnknownBus", ME.identifier)
+end
+
+str_dir = tempname;  mkdir(str_dir);
+c_dir = onCleanup(@() rmdir(str_dir, "s"));
+str_csv = sol.Export(fullfile(str_dir, "sim.csv"));
+tab = readtable(str_csv, "VariableNamingRule", "preserve");
+assert(height(tab) == numel(sol.odeResults.t))
+sv  = string(tab.Properties.VariableNames);
+assert(sv(1) == "t" && any(sv == "B001_Vreal") && any(sv == "SG1B001_omega") && any(sv == "B008_Q"))
+assert(max(abs(tab.SG1B001_omega - sol.odeResults.Bus(1).Component(1).X.omega)) < 1e-10)
+str_mat = sol.Export(fullfile(str_dir, "sim.mat"));
+s = load(str_mat);
+assert(isequal(s.odeResults.t, sol.odeResults.t) && s.flag == sol.flag)
+try
+    sol.Export(fullfile(str_dir, "sim.json"));
+    error("DebugScript:noError", "未対応の拡張子でエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:odeSimulationResult:ExportFormat", ME.identifier)
+end
+% simulate(..., Plot=true, Export=file) は結果のメソッドを呼ぶ
+n_fig = numel(findall(0, "Type", "figure"));
+net.simulate([0,1], ev, Plot=true, Export=fullfile(str_dir, "sim2.csv"));
+assert(numel(findall(0, "Type", "figure")) == n_fig + 1)
+assert(isfile(fullfile(str_dir, "sim2.csv")))
 
 
 %% Fault bus
@@ -358,3 +523,9 @@ assert(all(ddelta > 0))
 assert(abs(ddelta(1)/ddelta(2) - 50/60) < 1e-2, "delta の変化の比 " + ddelta(1)/ddelta(2) + " が 50/60 にならない")
 % 1e-3 の omega で 0.01 秒 → 2*pi*60*1e-3*0.01 ≈ 3.8e-3 rad
 assert(abs(ddelta(2) - 2*pi*60*1e-3*0.01) < 0.1 * 2*pi*60*1e-3*0.01)
+
+
+% ---- local functions ----
+function set_property(obj, str_name, val)
+    obj.(str_name) = val;
+end

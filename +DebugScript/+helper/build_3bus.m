@@ -25,5 +25,5 @@ function [net, comp] = build_3bus(key)
         net.a_Bus{2}.add_component("gen-park", "P", 0.5, "Q", nan);
         comp = net.a_Bus{3}.add_component(key, "P",-1.0, "Q",-0.2);
     end
-    net.solver_ODE.Reporter = "none";
+    net.solver_ODE.Progress = "none";
 end

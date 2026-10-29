@@ -111,11 +111,11 @@ classdef PowerNetwork < PowerSystemModel
 
         % <@Summary> "odeSimulator" class
         % <@Desc>
-        % 時間応答シミュレーションに使用するodeSimulatorクラスを保存。
-        % >> obj.simulate
-        % 内部で使用
-        % 
-        % 時間応答シミュレーションのソルバーの設定内容を変更したい場合はobj.solver_ODE内のプロパティを編集。
+        % Solver of net.simulate (runs obj.solver_ODE.solve). Its properties are the stored
+        % defaults (Solver, RelativeTolerance, AbsoluteTolerance, Progress, TimeLimit, ...)
+        % and are kept between runs; Name-Value options of a call override them for that
+        % call only. Results are returned as an odeSimulationResult, never stored in the
+        % solver.
         % <@Role> time simulation
         % <@Size> 1×1
         % <@Default> odeSimulator()
@@ -179,7 +179,7 @@ classdef PowerNetwork < PowerSystemModel
         tab_Ybus2bus = get_admittance_matrix(obj)
         
         % Time simulation
-        [odeResult,varargout] = simulate(obj, time, varargin, option)        
+        [result, flag, output] = simulate(obj, time, varargin)
 
         % User Interface << Information >>
         info(obj, disp)
