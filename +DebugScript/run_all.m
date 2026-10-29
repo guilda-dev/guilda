@@ -17,6 +17,8 @@ function results = run_all(opt)
 %      KNOWN  : DebugScript.known_failures に登録済みの失敗 (理由を表示)
 %      FAIL   : 想定外の失敗 (要調査)
 %      FIXED? : 既知の不具合として登録されているのに成功したテスト (登録の見直しが必要)
+%      SKIP   : 前提 (任意のツールなど) が無いため実行しなかったテスト。テストの中で
+%               error("DebugScript:Skip", "理由") を投げると SKIP になる (失敗に数えない)
 %
 % 対話操作が必要な機能 (GUILDA.setting など) は manual_F9_interactive.m で手動確認する。
 %
@@ -128,11 +130,13 @@ function row = classify(res, str_feature, str_file, tab_known)
     lv_known = tab_known.Test == str_key;
 
     msg = "";
+    str_id = "";
     if res.Failed || res.Incomplete
         rec = res.Details.DiagnosticRecord;
         if ~isempty(rec)
             if isprop(rec(1), "Exception")
-                msg = string(rec(1).Exception.message);
+                msg    = string(rec(1).Exception.message);
+                str_id = string(rec(1).Exception.identifier);
             else
                 msg = string(rec(1).Report);
             end
@@ -140,7 +144,9 @@ function row = classify(res, str_feature, str_file, tab_known)
         msg = strtrim(strtok(msg, newline));
     end
 
-    if res.Passed
+    if ~res.Passed && str_id == "DebugScript:Skip"
+        str_result = "SKIP";
+    elseif res.Passed
         if any(lv_known)
             str_result = "FIXED?";
             msg = "既知の不具合として登録済みだが成功: " + tab_known.Reason(find(lv_known,1));
@@ -178,14 +184,14 @@ function print_summary(results, t_total, opt)
     disp(bar)
 
     n = @(s) sum(results.Result == s);
-    fprintf("  合計 %d 件: PASS %d / KNOWN %d / FAIL %d / FIXED? %d   (%.0f s)\n", ...
-            height(results), n("PASS"), n("KNOWN"), n("FAIL"), n("FIXED?"), t_total);
+    fprintf("  合計 %d 件: PASS %d / KNOWN %d / FAIL %d / FIXED? %d / SKIP %d   (%.0f s)\n", ...
+            height(results), n("PASS"), n("KNOWN"), n("FAIL"), n("FIXED?"), n("SKIP"), t_total);
 
     % 機能ごとの集計
     for f = unique(results.Feature)'
         r = results(results.Feature == f, :);
-        fprintf("    %s: PASS %2d  KNOWN %2d  FAIL %2d  FIXED? %d\n", f, ...
-                sum(r.Result=="PASS"), sum(r.Result=="KNOWN"), sum(r.Result=="FAIL"), sum(r.Result=="FIXED?"));
+        fprintf("    %s: PASS %2d  KNOWN %2d  FAIL %2d  FIXED? %d  SKIP %d\n", f, ...
+                sum(r.Result=="PASS"), sum(r.Result=="KNOWN"), sum(r.Result=="FAIL"), sum(r.Result=="FIXED?"), sum(r.Result=="SKIP"));
     end
 
     if n("FAIL") == 0 && n("FIXED?") == 0
