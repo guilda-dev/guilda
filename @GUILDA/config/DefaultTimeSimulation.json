@@ -18,7 +18,7 @@
         ],
         "Description": "'MaxStep' option @ode15s (If blank, use default value.)"
     },
-    "Reporter":{    
+    "Progress":{
         "Value": "dialog",
         "Type": "select",
         "options":[
@@ -26,7 +26,7 @@
             "disp",
             "dialog"
         ],
-        "Description": "'PlotFcn' option @fsolve"
+        "Description": "Progress display during the integration (odeSimulator.Progress)"
     },
     "TimeLimit":{
         "Value": 10,

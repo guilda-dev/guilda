@@ -114,7 +114,7 @@ classdef (Sealed = true) odeSimulator < auxiliary
             obj.AbsoluteTolerance   = sct.AbsoluteTolerance.Value;
             obj.RelativeTolerance   = sct.RelativeTolerance.Value;
             obj.SeparateComplexParts= sct.SeparateComplexParts.Value;
-            obj.Progress            = sct.Reporter.Value;
+            obj.Progress            = sct.Progress.Value;
             val = sct.TimeLimit.Value;
             if isnumeric(val) && val>0
                 obj.TimeLimit = val;

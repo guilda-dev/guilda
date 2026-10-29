@@ -33,7 +33,13 @@ end
 %% GUILDA config reads settings
 assert(GUILDA.config("Model", "Hz") == 60)
 cf = GUILDA.config("TimeSimulation");
-assert(isstruct(cf) && isfield(cf, "Reporter"))
+assert(isstruct(cf) && isfield(cf, "Progress") && ~isfield(cf, "Reporter"))
+% COMPAT(v3): 旧ユーザー設定のキー Reporter は Progress として読む
+s_old = v3_user_config("TimeSimulation", struct("Reporter", "disp", "TimeLimit", 5));
+assert(isequal(s_old, struct("TimeLimit", 5, "Progress", "disp")))
+s_both = v3_user_config("TimeSimulation", struct("Reporter", "disp", "Progress", "none"));
+assert(isequal(s_both, struct("Progress", "none")))
+assert(isequal(v3_user_config("Model", struct("Reporter", 1)), struct("Reporter", 1)))
 
 
 %% Component key map is generated at startup
