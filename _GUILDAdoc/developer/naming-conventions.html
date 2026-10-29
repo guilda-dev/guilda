@@ -12,7 +12,7 @@
     .nc-c-u { color: var(--dg-muted); }
     .nc-c-d { color: var(--dg-warn-ink); }
     .nc-formula { margin-bottom: var(--dg-s5); }
-    .dg-part.is-none .dg-tok { background: #fff; border: 1.5px dashed currentColor; border-radius: 8px; font-size: 0.8rem; font-weight: normal; }
+    .dg-part.is-none .dg-tok { background: var(--surface); border: 1.5px dashed currentColor; border-radius: var(--radius); font-size: 0.8rem; font-weight: normal; }
     .dg-part .dg-kicker b { display: block; font-size: 0.8rem; letter-spacing: 0; text-transform: none; }
 
     /* Anatomy: cycles through examples */
@@ -52,7 +52,7 @@
     .nc-gcorner { display: flex; align-items: flex-end; padding: var(--dg-s3) 4px; color: var(--dg-muted); font-size: 0.72rem; line-height: 1.3; }
     .nc-gcorner .nc-c-s, .nc-gcorner .nc-c-t { font-weight: bold; }
     .nc-gr { display: flex; align-items: center; gap: 10px; padding: 10px 4px; }
-    .nc-gr-tok { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; background: var(--dg-accent); color: #fff; font: bold 1rem var(--dg-mono); }
+    .nc-gr-tok { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: var(--radius); background: var(--dg-accent); color: var(--surface); font: bold 1rem var(--dg-mono); }
     .nc-gr-txt { color: var(--dg-accent); font-size: 0.82rem; font-weight: bold; line-height: 1.2; }
     .nc-gr-txt small { display: block; color: var(--dg-muted); font: normal 0.7rem var(--dg-mono); }
     .nc-cell { display: flex; align-items: center; justify-content: center; padding: 10px 2px; border: 0; border-bottom: 1px solid var(--dg-line); background: none; cursor: pointer; font: bold clamp(0.85rem, 3vw, 1.05rem) var(--dg-mono); transition: background 0.15s; }
@@ -72,7 +72,7 @@
     .nc-formula-line i { color: var(--dg-muted); font-style: normal; }
 
     .nc-flash { animation: nc-flash 1.2s ease-out; }
-    @keyframes nc-flash { 0% { box-shadow: 0 0 0 4px rgba(15, 76, 129, 0.35); } 100% { box-shadow: 0 0 0 0 rgba(15, 76, 129, 0); } }
+    @keyframes nc-flash { 0% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 35%, transparent); } 100% { box-shadow: 0 0 0 0 transparent; } }
     @media (prefers-reduced-motion: reduce) { .nc-flash { animation: none; } }
 
     @media (max-width: 480px) {
@@ -164,19 +164,19 @@
     <div class="nc-grid" role="group" aria-label="Prefix for each variable type and size. Click a cell to fill the generator.">
       <div class="nc-gcorner"><span><span class="nc-c-t">type</span> ↓<br><span class="nc-c-s">size</span> →</span></div>
       <div class="nc-gh">
-        <svg viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="5" fill="#1e7b3c"/></svg>
+        <svg viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="5" style="fill:var(--brand)"/></svg>
         <span class="nc-gh-tok">(none)</span><span class="nc-gh-lab">scalar</span>
       </div>
       <div class="nc-gh">
-        <svg viewBox="0 0 30 30" aria-hidden="true"><g fill="#1e7b3c"><rect x="11" y="2" width="8" height="8" rx="1.5"/><rect x="11" y="11" width="8" height="8" rx="1.5"/><rect x="11" y="20" width="8" height="8" rx="1.5"/></g></svg>
+        <svg viewBox="0 0 30 30" aria-hidden="true"><g style="fill:var(--brand)"><rect x="11" y="2" width="8" height="8" rx="1.5"/><rect x="11" y="11" width="8" height="8" rx="1.5"/><rect x="11" y="20" width="8" height="8" rx="1.5"/></g></svg>
         <span class="nc-gh-tok">v</span><span class="nc-gh-lab">column vector</span>
       </div>
       <div class="nc-gh">
-        <svg viewBox="0 0 30 30" aria-hidden="true"><g fill="#1e7b3c"><rect x="2" y="11" width="8" height="8" rx="1.5"/><rect x="11" y="11" width="8" height="8" rx="1.5"/><rect x="20" y="11" width="8" height="8" rx="1.5"/></g></svg>
+        <svg viewBox="0 0 30 30" aria-hidden="true"><g style="fill:var(--brand)"><rect x="2" y="11" width="8" height="8" rx="1.5"/><rect x="11" y="11" width="8" height="8" rx="1.5"/><rect x="20" y="11" width="8" height="8" rx="1.5"/></g></svg>
         <span class="nc-gh-tok">r</span><span class="nc-gh-lab">row vector</span>
       </div>
       <div class="nc-gh">
-        <svg viewBox="0 0 30 30" aria-hidden="true"><g fill="#1e7b3c"><rect x="2" y="2" width="8" height="8" rx="1.5"/><rect x="11" y="2" width="8" height="8" rx="1.5"/><rect x="20" y="2" width="8" height="8" rx="1.5"/><rect x="2" y="11" width="8" height="8" rx="1.5"/><rect x="11" y="11" width="8" height="8" rx="1.5"/><rect x="20" y="11" width="8" height="8" rx="1.5"/><rect x="2" y="20" width="8" height="8" rx="1.5"/><rect x="11" y="20" width="8" height="8" rx="1.5"/><rect x="20" y="20" width="8" height="8" rx="1.5"/></g></svg>
+        <svg viewBox="0 0 30 30" aria-hidden="true"><g style="fill:var(--brand)"><rect x="2" y="2" width="8" height="8" rx="1.5"/><rect x="11" y="2" width="8" height="8" rx="1.5"/><rect x="20" y="2" width="8" height="8" rx="1.5"/><rect x="2" y="11" width="8" height="8" rx="1.5"/><rect x="11" y="11" width="8" height="8" rx="1.5"/><rect x="20" y="11" width="8" height="8" rx="1.5"/><rect x="2" y="20" width="8" height="8" rx="1.5"/><rect x="11" y="20" width="8" height="8" rx="1.5"/><rect x="20" y="20" width="8" height="8" rx="1.5"/></g></svg>
         <span class="nc-gh-tok">m</span><span class="nc-gh-lab">matrix</span>
       </div>
       <!-- rows are generated from NC_TYPES below -->
@@ -211,9 +211,9 @@
     <ul class="dg-list nc-prefixes">
       <li>
         <svg viewBox="0 0 64 48" aria-hidden="true">
-          <rect x="4" y="4" width="56" height="40" rx="4" fill="#fff" stroke="#0f4c81" stroke-width="2"/>
-          <path d="M4 8a4 4 0 0 1 4-4h48a4 4 0 0 1 4 4v6H4z" fill="#0f4c81"/>
-          <path d="M4 24h56M4 34h56M22 4v40M42 4v40" stroke="#9fb6cc" stroke-width="1.5"/>
+          <rect x="4" y="4" width="56" height="40" rx="4" stroke-width="2" style="fill:var(--surface); stroke:var(--brand)"/>
+          <path d="M4 8a4 4 0 0 1 4-4h48a4 4 0 0 1 4 4v6H4z" style="fill:var(--brand)"/>
+          <path d="M4 24h56M4 34h56M22 4v40M42 4v40" stroke-width="1.5" style="stroke:var(--line-strong)"/>
         </svg>
         <div>
           <span class="dg-item-title">Table type</span>
@@ -223,10 +223,10 @@
       </li>
       <li>
         <svg viewBox="0 0 64 48" aria-hidden="true">
-          <path d="M10 6c-4 0-4 3-4 7v6c0 3-2 5-4 5 2 0 4 2 4 5v6c0 4 0 7 4 7M54 6c4 0 4 3 4 7v6c0 3 2 5 4 5-2 0-4 2-4 5v6c0 4 0 7-4 7" fill="none" stroke="#0f4c81" stroke-width="2.5" stroke-linecap="round"/>
-          <g fill="#e8f0f8" stroke="#0f4c81" stroke-width="1.5"><rect x="13" y="16" width="11" height="16" rx="2"/><rect x="27" y="16" width="11" height="16" rx="2"/><rect x="41" y="16" width="11" height="16" rx="2"/></g>
-          <g fill="#0f4c81"><circle cx="18.5" cy="21" r="2"/><circle cx="32.5" cy="21" r="2"/><circle cx="46.5" cy="21" r="2"/></g>
-          <g stroke="#0f4c81" stroke-width="1.5"><path d="M16 27h5M30 27h5M44 27h5"/></g>
+          <path d="M10 6c-4 0-4 3-4 7v6c0 3-2 5-4 5 2 0 4 2 4 5v6c0 4 0 7 4 7M54 6c4 0 4 3 4 7v6c0 3 2 5 4 5-2 0-4 2-4 5v6c0 4 0 7-4 7" fill="none" stroke-width="2.5" stroke-linecap="round" style="stroke:var(--brand)"/>
+          <g stroke-width="1.5" style="fill:var(--brand-tint); stroke:var(--brand)"><rect x="13" y="16" width="11" height="16" rx="2"/><rect x="27" y="16" width="11" height="16" rx="2"/><rect x="41" y="16" width="11" height="16" rx="2"/></g>
+          <g style="fill:var(--brand)"><circle cx="18.5" cy="21" r="2"/><circle cx="32.5" cy="21" r="2"/><circle cx="46.5" cy="21" r="2"/></g>
+          <g stroke-width="1.5" style="stroke:var(--brand)"><path d="M16 27h5M30 27h5M44 27h5"/></g>
         </svg>
         <div>
           <span class="dg-item-title">GUILDA-specific class (cell array)</span>
@@ -236,9 +236,9 @@
       </li>
       <li>
         <svg viewBox="0 0 64 48" aria-hidden="true">
-          <rect x="8" y="4" width="48" height="40" rx="5" fill="#fff" stroke="#0f4c81" stroke-width="2"/>
-          <g stroke="#9fb6cc" stroke-width="2" stroke-linecap="round"><path d="M16 15h32M16 24h32M16 33h32"/></g>
-          <g fill="#0f4c81"><circle cx="38" cy="15" r="3.5"/><circle cx="24" cy="24" r="3.5"/><circle cx="42" cy="33" r="3.5"/></g>
+          <rect x="8" y="4" width="48" height="40" rx="4" stroke-width="2" style="fill:var(--surface); stroke:var(--brand)"/>
+          <g stroke-width="2" stroke-linecap="round" style="stroke:var(--line-strong)"><path d="M16 15h32M16 24h32M16 33h32"/></g>
+          <g style="fill:var(--brand)"><circle cx="38" cy="15" r="3.5"/><circle cx="24" cy="24" r="3.5"/><circle cx="42" cy="33" r="3.5"/></g>
         </svg>
         <div>
           <span class="dg-item-title">Parameter class</span>

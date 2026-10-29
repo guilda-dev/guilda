@@ -24,7 +24,7 @@
 
   <main id="main-content" style="flex: 1; min-width: 0;">
     <div id="dynamic-content">
-      <h1 style="color: #888;">Loading...</h1>
+      <h1 style="color: var(--muted);">Loading...</h1>
     </div>
   </main>
 
@@ -262,7 +262,7 @@
         : `<th class="sortable-header" data-sort="${key}">${label} ↕</th>`)).join('');
       const body = rows.length
         ? rows.map((row) => `<tr${row.inherited ? ' class="ref-inherited"' : ''}>${view.cells(row).map((cell) => `<td>${cell}</td>`).join('')}</tr>`).join('')
-        : `<tr><td colspan="${view.columns.length}" style="text-align:center; color:#888;">No matching ${kind === 'property' ? 'properties' : 'methods'} found.</td></tr>`;
+        : `<tr><td colspan="${view.columns.length}" style="text-align:center; color: var(--muted);">No matching ${kind === 'property' ? 'properties' : 'methods'} found.</td></tr>`;
 
       const container = document.getElementById(`${kind}-table`);
       container.innerHTML = `
@@ -363,7 +363,7 @@
 
       const sections = [];
       let html = `
-        <div style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">
+        <div style="font-size: 0.9rem; color: var(--muted); margin-bottom: 10px;">
           <a href="${loader.pageUrl('index.html')}">Home</a> &gt; <a href="${loader.pageUrl('index.html', 'tab-reference')}">Reference</a> &gt; ${escapeHtml(name)}
         </div>
         <h1 style="font-size: 2.2rem; margin-bottom: 8px; word-break: break-word;">${escapeHtml(name)}</h1>
@@ -421,7 +421,7 @@
     }
 
     if (!className) {
-      document.getElementById('dynamic-content').innerHTML = "<h1 style='color:red;'>Error: Class not specified</h1><p>The URL must specify a class name.</p>";
+      document.getElementById('dynamic-content').innerHTML = "<h1 style='color: var(--err);'>Error: Class not specified</h1><p>The URL must specify a class name.</p>";
     } else if (!loader.hasIndex()) {
       document.getElementById('dynamic-content').innerHTML = `
         <h1>${escapeHtml(className)}</h1>
@@ -431,7 +431,7 @@
         .then(({ meta, data }) => renderClassPage(meta, data))
         .catch((err) => {
           document.getElementById('dynamic-content').innerHTML = `
-            <h1 style="color:red;">Load Error</h1>
+            <h1 style="color: var(--err);">Load Error</h1>
             <p>${escapeHtml((err && err.message) ? err.message : err)}</p>
           `;
         });

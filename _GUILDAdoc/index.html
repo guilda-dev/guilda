@@ -31,19 +31,15 @@
 
   <main>
     <div id="tab-home" class="tab-content active">
-      <div style="height: 8px; background-color: var(--primary-color); border-radius: 4px; margin-bottom: 25px;"></div>
-
       <div class="hero-section">
+        <img src="./images/GUILDA-logo-square.png" alt="GUILDA logo" class="hero-logo" width="200" height="200">
         <div class="hero-text">
           <h1 class="hero-title">GUILDA</h1>
           <h2 class="hero-subtitle">Grid & Utility Infrastructure Linkage Dynamics Analyzer</h2>
         </div>
-        <div class="hero-canvas-container">
-          <canvas id="power-grid-animation"></canvas>
-        </div>
       </div>
       
-      <div style="height: 8px; background-color: var(--primary-color); border-radius: 4px; margin-top: 15px; margin-bottom: 35px;"></div>
+      <div style="height: 1px; background-color: var(--line); margin-top: 16px; margin-bottom: 32px;"></div>
 
       <h2>Install Now</h2>
       <div class="install-buttons">
@@ -129,7 +125,7 @@
       <p>Use the settings window to enable or disable optional startup tasks. Path setup cannot be disabled because it is required to use GUILDA.</p>
 <pre><code>&gt;&gt; GUILDA.setting();</code></pre>
       
-      <img src="./images/setting_startup.png" alt="GUILDA Environment Settings" style="width: 50%; max-width: 100%; height: auto; display: block; margin: 20px 0; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+      <img src="./images/setting_startup.png" alt="GUILDA Environment Settings" style="width: 50%; max-width: 100%; height: auto; display: block; margin: 20px 0; border: 1px solid var(--line); border-radius: var(--radius);">
 
       <h2>Utility Functions</h2>
 <pre><code>&gt;&gt; GUILDA.pwd()         % Get the GUILDA repository path
@@ -216,7 +212,7 @@ net.initialize();
 fault = odeEventSet("fault", net, "FaultBus", "B008", "TimeSpan", [3, 3.01]);
 sol = net.simulate([0, 50], fault);</code></pre>
 
-      <hr style="margin: 50px 0; border: 0; border-top: 2px dashed #dee2e6;">
+      <hr style="margin: 50px 0; border: 0; border-top: 1px solid var(--line);">
       
       <h1 id="hands-on-tutorial">Hands-on Tutorial for GUILDA</h1>
       <p>Tutorials in Live Script format, which explain how to implement various analyses, are provided in the <code>_GUILDAtutorial</code> folder of the source files.</p>
@@ -261,7 +257,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
             <svg class="uml-links" viewBox="0 0 940 420" preserveAspectRatio="none">
               <defs>
                 <marker id="diamond" markerWidth="14" markerHeight="10" refX="0" refY="5" orient="auto">
-                  <polygon points="0,5 7,0 14,5 7,10" fill="#fff" stroke="#8ea6bd" stroke-width="1.5" />
+                  <polygon points="0,5 7,0 14,5 7,10" class="uml-diamond" />
                 </marker>
               </defs>
 
@@ -382,56 +378,6 @@ sol = net.simulate([0, 50], fault);</code></pre>
       if(btn) btn.classList.add('active');
     }
 
-    function renderPowerGridAnimation() {
-      const canvas = document.getElementById('power-grid-animation');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      const resize = () => { canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight; };
-      window.addEventListener('resize', resize); resize();
-
-      const buses = [
-        { x: 0.1, y: 0.2, type: 'gen', color: 'rgba(15, 76, 129, 0.8)' }, { x: 0.1, y: 0.8, type: 'gen', color: 'rgba(15, 76, 129, 0.8)' },
-        { x: 0.9, y: 0.15, type: 'gen', color: 'rgba(15, 76, 129, 0.8)' }, { x: 0.25, y: 0.5, type: 'hub', color: 'rgba(200, 200, 200, 0.6)' },
-        { x: 0.4, y: 0.2, type: 'hub', color: 'rgba(200, 200, 200, 0.6)' }, { x: 0.4, y: 0.8, type: 'hub', color: 'rgba(200, 200, 200, 0.6)' },
-        { x: 0.55, y: 0.5, type: 'hub', color: 'rgba(200, 200, 200, 0.6)' }, { x: 0.7, y: 0.3, type: 'hub', color: 'rgba(200, 200, 200, 0.6)' },
-        { x: 0.75, y: 0.7, type: 'hub', color: 'rgba(200, 200, 200, 0.6)' }, { x: 0.45, y: 0.45, type: 'load', color: 'rgba(51, 51, 51, 0.6)' },
-        { x: 0.6, y: 0.8, type: 'load', color: 'rgba(51, 51, 51, 0.6)' }, { x: 0.85, y: 0.45, type: 'load', color: 'rgba(51, 51, 51, 0.6)' },
-        { x: 0.9, y: 0.85, type: 'load', color: 'rgba(51, 51, 51, 0.6)' }
-      ];
-      const branches = [
-        { from: 0, to: 3 }, { from: 1, to: 3 }, { from: 3, to: 4 }, { from: 3, to: 5 }, { from: 4, to: 6 }, { from: 5, to: 6 }, 
-        { from: 4, to: 9 }, { from: 5, to: 9 }, { from: 6, to: 7 }, { from: 6, to: 8 }, { from: 7, to: 2 }, { from: 7, to: 11 },
-        { from: 8, to: 10 }, { from: 8, to: 12 }, { from: 2, to: 11 }, { from: 1, to: 5 }, { from: 0, to: 4 }, { from: 7, to: 8, opacity: 0.2 }
-      ];
-      const particles = [];
-      branches.forEach((b, i) => { for (let j=0; j<4; j++) particles.push({ bIdx: i, p: j/4, s: 0.0015 + Math.random()*0.002 }); });
-
-      function loop() {
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        const w = canvas.width, h = canvas.height;
-        ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(15,76,129,0.15)';
-        branches.forEach(b => {
-          const f = buses[b.from], t = buses[b.to];
-          ctx.beginPath(); ctx.moveTo(f.x*w, f.y*h); ctx.lineTo(t.x*w, t.y*h);
-          if (b.opacity) ctx.strokeStyle = `rgba(15,76,129,${b.opacity})`;
-          ctx.stroke();
-        });
-        particles.forEach(pt => {
-          const b = branches[pt.bIdx], f = buses[b.from], t = buses[b.to];
-          const x = (f.x + pt.p*(t.x-f.x))*w, y = (f.y + pt.p*(t.y-f.y))*h;
-          pt.p += pt.s; if(pt.p>1) pt.p=0;
-          ctx.beginPath(); ctx.arc(x,y,2.5,0,Math.PI*2); ctx.fillStyle="#fff";
-          ctx.shadowBlur=8; ctx.shadowColor="#fff"; ctx.fill(); ctx.shadowBlur=0;
-        });
-        buses.forEach(bus => {
-          ctx.beginPath(); ctx.arc(bus.x*w, bus.y*h, bus.type==='gen'?7:5, 0, Math.PI*2);
-          ctx.fillStyle = bus.color; ctx.fill();
-        });
-        requestAnimationFrame(loop);
-      }
-      loop();
-    }
-
     function renderUpdateLog() {
       const container = document.getElementById('update-log-container');
       if (!container) return;
@@ -447,7 +393,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
           </div>
         `).join('');
       } else {
-        container.innerHTML = '<p style="color:#888;">No update log data found.</p>';
+        container.innerHTML = '<p style="color: var(--muted);">No update log data found.</p>';
       }
     }
 
@@ -476,7 +422,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
           `;
         }).join('');
       } else {
-        toc.innerHTML = '<p style="color:#888;">No tutorial data found.</p>';
+        toc.innerHTML = '<p style="color: var(--muted);">No tutorial data found.</p>';
         abs.innerHTML = '';
       }
     }
@@ -487,7 +433,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
 
       const data = typeof developerData !== 'undefined' ? developerData : null;
       if (!Array.isArray(data) || data.length === 0) {
-        container.innerHTML = '<p style="color:#888;">No developer guides found.</p>';
+        container.innerHTML = '<p style="color: var(--muted);">No developer guides found.</p>';
         return;
       }
 
@@ -554,7 +500,6 @@ sol = net.simulate([0, 50], fault);</code></pre>
       if (cards) {
         cards.innerHTML = coreClassNames.map(name => data.find(c => c.Name === name)).filter(Boolean).map(c => `
           <a href="${window.GuildaDocLoader.pageUrl('class.html', { class: c.Name })}" class="core-class-card">
-            <span class="core-class-icon">📄</span>
             <h3>${c.Name}</h3>
             <p>${firstLineText(c.Summary || c.Desc) || c.Role || `Reference for ${c.Name}.`}</p>
           </a>
@@ -750,7 +695,6 @@ sol = net.simulate([0, 50], fault);</code></pre>
       if (requestedTab && document.getElementById(requestedTab)?.classList.contains('tab-content')) {
         openTab(requestedTab);
       }
-      renderPowerGridAnimation(); 
       renderUpdateLog(); 
       renderTutorials(); 
       renderDeveloperLinks();

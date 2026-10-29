@@ -160,9 +160,9 @@
     </div>
 
     <div class="dg-rows gw-branches">
-      <div class="dg-row"><span class="gw-branch-name" style="color:#0f4c81">main</span><span>Released, stable code. Every release is tagged. Contains no coding-assistant config.</span><span class="dg-muted">receives only release merges from <code>release.sh</code></span></div>
-      <div class="dg-row"><span class="gw-branch-name" style="color:#1e7b3c">versionX.Y</span><span>Integration branch for the next release.</span><span class="dg-muted">from <code>main</code>, into <code>main</code> at release</span></div>
-      <div class="dg-row"><span class="gw-branch-name" style="color:#6f42c1">&lt;type&gt;/&lt;issue&gt;-&lt;slug&gt;</span><span>One piece of work for one Issue.</span><span class="dg-muted">from <code>versionX.Y</code>, into <code>versionX.Y</code></span></div>
+      <div class="dg-row"><span class="gw-branch-name" style="color:var(--brand)">main</span><span>Released, stable code. Every release is tagged. Contains no coding-assistant config.</span><span class="dg-muted">receives only release merges from <code>release.sh</code></span></div>
+      <div class="dg-row"><span class="gw-branch-name" style="color:var(--ok)">versionX.Y</span><span>Integration branch for the next release.</span><span class="dg-muted">from <code>main</code>, into <code>main</code> at release</span></div>
+      <div class="dg-row"><span class="gw-branch-name" style="color:var(--ink)">&lt;type&gt;/&lt;issue&gt;-&lt;slug&gt;</span><span>One piece of work for one Issue.</span><span class="dg-muted">from <code>versionX.Y</code>, into <code>versionX.Y</code></span></div>
     </div>
 
     <!-- ===================== Branch names ===================== -->
@@ -186,10 +186,10 @@
     <h3>Types</h3>
     <div class="dg-rows gw-types">
       <div class="dg-row"><span><span class="dg-badge"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-feature"/></svg>feature</span></span><span>New functions, classes, or models</span><span class="gw-example">feature/42-grid-forming-inverter</span></div>
-      <div class="dg-row"><span><span class="dg-badge is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-fix"/></svg>fix</span></span><span>Bug fixes</span><span class="gw-example">fix/51-opf-bus-index</span></div>
-      <div class="dg-row"><span><span class="dg-badge is-muted"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-refactor"/></svg>refactor</span></span><span>Restructuring without changing behavior</span><span class="gw-example">refactor/55-split-odesimulator</span></div>
-      <div class="dg-row"><span><span class="dg-badge is-ok"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-docs"/></svg>docs</span></span><span>Help comments, documentation pages, tutorials</span><span class="gw-example">docs/60-folder-structure</span></div>
-      <div class="dg-row"><span><span class="dg-badge is-warn"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-test"/></svg>test</span></span><span>Test and debug scripts</span><span class="gw-example">test/63-two-machine-validation</span></div>
+      <div class="dg-row"><span><span class="dg-badge"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-fix"/></svg>fix</span></span><span>Bug fixes</span><span class="gw-example">fix/51-opf-bus-index</span></div>
+      <div class="dg-row"><span><span class="dg-badge"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-refactor"/></svg>refactor</span></span><span>Restructuring without changing behavior</span><span class="gw-example">refactor/55-split-odesimulator</span></div>
+      <div class="dg-row"><span><span class="dg-badge"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-docs"/></svg>docs</span></span><span>Help comments, documentation pages, tutorials</span><span class="gw-example">docs/60-folder-structure</span></div>
+      <div class="dg-row"><span><span class="dg-badge"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-test"/></svg>test</span></span><span>Test and debug scripts</span><span class="gw-example">test/63-two-machine-validation</span></div>
     </div>
 
     <section class="name-generator" aria-label="Branch Name Generator">
@@ -267,10 +267,10 @@ breaks after a bus is removed. Refs #51.</div>
     <div class="dg-rows gw-map" role="table" aria-label="Commit types and matching branch types">
       <div class="dg-row dg-rows-head" role="row"><span class="dg-kicker" role="columnheader">commit type</span><span></span><span class="dg-kicker" role="columnheader">branch type</span><span class="dg-kicker" role="columnheader">use for</span></div>
       <div class="dg-row" role="row"><span role="cell"><span class="dg-badge">feat</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-outline">feature</span></span><span role="cell">New functions, classes, or models</span></div>
-      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge is-err">fix</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-err is-outline">fix</span></span><span role="cell">Bug fixes</span></div>
-      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge is-muted">refactor</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-muted is-outline">refactor</span></span><span role="cell">Restructuring without changing behavior</span></div>
-      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge is-ok">docs</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-ok is-outline">docs</span></span><span role="cell">Help comments, documentation pages, tutorials</span></div>
-      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge is-warn">test</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-warn is-outline">test</span></span><span role="cell">Test and debug scripts</span></div>
+      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge">fix</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-outline">fix</span></span><span role="cell">Bug fixes</span></div>
+      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge">refactor</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-outline">refactor</span></span><span role="cell">Restructuring without changing behavior</span></div>
+      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge">docs</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-outline">docs</span></span><span role="cell">Help comments, documentation pages, tutorials</span></div>
+      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge">test</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-outline">test</span></span><span role="cell">Test and debug scripts</span></div>
       <div class="dg-row" role="row"><span role="cell"><span class="dg-badge is-muted"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-chore"/></svg>chore</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell" class="dg-muted">any</span><span role="cell">Settings, <code>.gitignore</code>, file moves, and other maintenance</span></div>
     </div>
 
