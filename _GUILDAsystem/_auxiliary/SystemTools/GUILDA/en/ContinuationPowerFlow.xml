@@ -1,6 +1,9 @@
-<!--This is an XML file containing error messages related to the class "Continuation_Power_Flow".-->
+<!--This is an XML file containing error messages related to the class "ContinuationPowerFlow".-->
 <rsccat version="2" locale="en" product="GUILDA">
-    <message>        
-        <entry key="EmptyBus">No bus name has been specified.</entry>         
+    <message>
+        <entry key="EmptyLoadBus">No load bus is specified for the continuation power flow. Give the tags of the buses whose loads are increased: net.calculate_continuation_powerflow(LoadBus=["B009","B010"]), or set net.solver_CPF.LoadBus.</entry>
+        <entry key="UnknownLoadBus">LoadBus names buses that are not in the network: {0}. Use the bus tags of the network (string(net.a_Bus)).</entry>
+        <entry key="NoEquilibrium">The continuation power flow starts from the equilibrium, but component {0} has none. Run net.initialize first.</entry>
+        <entry key="StaleEquilibrium">The network was edited after net.initialize, so its equilibrium is out of date. Run net.initialize again before the continuation power flow.</entry>
     </message>
 </rsccat>

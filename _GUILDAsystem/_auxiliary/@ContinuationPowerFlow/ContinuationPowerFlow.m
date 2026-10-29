@@ -1,257 +1,164 @@
 classdef (Sealed = true) ContinuationPowerFlow < auxiliary
+% <@Desc>
+% Solver of the continuation power flow (CPF). Starting from the equilibrium found by
+% net.initialize, it scales the loads of LoadBus by (1 + lambda) and traces the power flow
+% solution with a predictor-corrector method past the maximum loading point (the nose of
+% the PV curve). net.solver_CPF holds one; its properties are the stored defaults of
+% net.calculate_continuation_powerflow and are kept between runs. Name-Value options of a
+% call override them for that call only (see OptionMap and get_options). The solver holds
+% settings only: results are returned as a CPFResult.
+% <@Role> Class Category
+% <@Constructor>
+% obj = ContinuationPowerFlow()
+% Reads the defaults from GUILDA.config("ContinuationPowerFlow").
 
-% CONTINUATION_POWER_FLOW provides provides functions for continuation power flow.
-%    CONTINUATION_POWER_FLOW(Name1, Val1, Names2, Val2, ...) provides functions 
-%    for calculating continuous power flow.
-%    It is used for calculating load fluctuations and plotting PV curves, among other things.
-%
-% CONTINUATION_POWER_FLOW PROPERTIES
-%
-% CPFFcn - The Equation to Be Solved [ function handle or sym ]
-%    This is the equation to be solved, expressed in the form F(x) = b or F(x) = 0. 
-%    Specify it using a function handle or a symbolic expression. If the user 
-%    does not specify this variable, the solver automatically generates the 
-%    current equation based on the main line and the current conditions.
-%
-% CPFJac - Jacobian of NRMFcn [ function handle or sym ]
-%    This is the Jacobian of the current equation, either specified by the user 
-%    or constructed by this program. If the Jacobian is not specified, 
-%    it is calculated using numerical differentiation. 
-%    Generally, calculations are faster when the user specifies the Jacobian.
-%
-% CPFNet - Power System Under Analysis [ PowerNetwork class ]
-%    This is the power system to be analyzed. It must be an instance of the
-%    `PowerNetwork` class or an object with the same functionality.
-%
-% CPFBus - Bus Name [ string or Bus class ]
-%    Specify the name or class of the busbar that causes load fluctuations.
-%
-% CFPInitVal - Initial Value [ double vector ]
-%    Specify the initial values for the continuous tidal current calculation. 
-%    If no values are specified, the system will automatically calculate 
-%    the solution obtained from the tidal current equations and biogeochemical modeling.
-%
-% CPFInitLam - Initial Value of Load Variation [ scalar ]
-%    This is the initial value of the parameter when considering load fluctuations. 
-% 　　Typically, 0 is specified.
-%
-% CPFMaxIter - Max Iteration [ scalar, postive ]
-%    Specify the maximum number of times to repeat the sequence of steps for 
-%    calculating and adjusting the continuous current. Normally, 
-%    the calculation terminates when the load variation rate becomes less than 0
-%    or when the Newton method fails to converge; however, if the step size or 
-%    arc length is too small, satisfactory results may not be obtained even after 
-%    running the calculation up to the maximum number of iterations. 
-%    In such cases, take measures such as increasing the value of this parameter.
-%
-% CPFStepSize - Step Size [ scalar ]
-%    Specify the step size for updating the variable. 
-%    As a rule of thumb, specify a value larger than the position.
-%
-% CPFArcL - Arc Length [ double scalar ]
-%    Specify the radius of the arc length.
-%
-% CPFUseInternal - Input Value [ double \ scalar or vector, function_handle ]
-%    Specify whether to solve the power flow equations while taking into account 
-%    the internal state of the generator.
-%
     properties (Access=public)
-       CPFFcn
-       CPFJac
-       CPFNet
-       CPFBus         (:,1) string = ""
-       CPFInitVal     (:,1) double = []       
-       CPFInitLam     (1,1) double = 0
-       CPFMaxIter     (1,1) {mustBePositive} = 500
-       CPFStepSize    (1,1) {mustBePositive} = 0.5       
-       CPFArcL        (1,1) {mustBePositive} = 10^-3
-       CPFUseInternal (1,1) logical = false
+        % <@Desc> Tags of the buses whose loads are increased: the power the components of
+        % these buses draw is multiplied by (1 + lambda). Must not be empty when solving.
+        % <@Role> Settings
+        % <@Type> string
+        % <@Size> 1xn
+        LoadBus          (1,:) string = strings(1,0)
+
+        % <@Desc> Value of lambda at the starting point (the equilibrium).
+        % <@Role> Settings
+        % <@Type> double
+        % <@Size> 1x1
+        InitialLambda    (1,1) double = 0
+
+        % <@Desc> Maximum number of predictor-corrector steps. The trace stops earlier when
+        % lambda falls below 0 after the nose.
+        % <@Role> Settings
+        % <@Type> double
+        % <@Size> 1x1
+        MaxIterations    (1,1) double {mustBePositive,mustBeInteger} = 500
+
+        % <@Desc> Step size of the predictor (multiplies the tangent at the first step and
+        % the secant from the previous step afterwards).
+        % <@Role> Settings
+        % <@Type> double
+        % <@Size> 1x1
+        StepSize         (1,1) double {mustBePositive} = 0.5
+
+        % <@Desc> Arc length of the corrector: the corrected point satisfies
+        % |x - x_current|^2 = ArcLength.
+        % <@Role> Settings
+        % <@Type> double
+        % <@Size> 1x1
+        ArcLength        (1,1) double {mustBePositive} = 1e-3
+
+        % <@Desc> Convergence tolerance (ConvTol) of the Newton-Raphson corrector.
+        % <@Role> Settings
+        % <@Type> double
+        % <@Size> 1x1
+        Tolerance        (1,1) double {mustBePositive} = 1e-5
+
+        % <@Desc> Solve the power flow with the internal states of the generators: when true,
+        % the generator powers follow their state equations (getCompPQ) and all loads are
+        % scaled; when false, the components inject their equilibrium powers.
+        % <@Role> Settings
+        % <@Type> logical
+        % <@Size> 1x1
+        UseInternalState (1,1) logical = false
+
+        % <@Desc> Print lambda at each step.
+        % <@Role> Settings
+        % <@Type> logical
+        % <@Size> 1x1
+        Verbose          (1,1) logical = false
     end
 
-    properties (SetAccess=private)
-        CPF_NRM    (1,1) {mustBeA(CPF_NRM,'NewtonRaphsonMethod')} = NewtonRaphsonMethod();
-        CPF_Result 
+    properties (Constant)
+        % <@Desc> Name-Value options of net.calculate_continuation_powerflow and the solver
+        % property each one sets (input of tools.resolve_options). MaxIteration, Tolerance
+        % and Verbose are common names; LoadBus, InitialLambda, StepSize, ArcLength and
+        % UseInternalState have no common equivalent.
+        % <@Role> Settings
+        % <@Type> struct
+        % <@Size> 1x1
+        OptionMap = struct( ...
+            "LoadBus",          {{"LoadBus", @(b) reshape(string(b), 1, [])}}, ...
+            "MaxIteration",     "MaxIterations", ...
+            "Tolerance",        "Tolerance", ...
+            "StepSize",         "StepSize", ...
+            "ArcLength",        "ArcLength", ...
+            "InitialLambda",    "InitialLambda", ...
+            "UseInternalState", "UseInternalState", ...
+            "Verbose",          "Verbose")
     end
 
-    properties (Access = private)
-        rv_POLD  (:,1) double = []
-        CONSTANT (:,1) double = []
-        rm_BusRM (:,:) double
-        rm_BusEM (:,:) double
-        rv_BusVi (:,1) double
-    end
-    
     methods
-        function obj = ContinuationPowerFlow(net,opt)
-            arguments
-                net                                 
-                opt.?ContinuationPowerFlow 
-            end
-
-            obj.CPFNet = net; 
-
-            fnames = fieldnames(opt);
-            argi = 1;
-            while argi <= numel(fnames)
-                fname_i = fnames{argi};
-                obj.(fname_i) = opt.(fname_i);
-
-                argi = argi + 1;
-            end            
-
-            if isempty(obj.CPFFcn)
-                Ymat = net.get_admittance_matrix.Variables;                
-                obj.CPFFcn = @(x) obj.get_PFeq(x,Ymat);
-            end
-            obj.CPF_NRM = NewtonRaphsonMethod("NRMFcn",obj.CPFFcn,"NRMJac",[],"NRMVal",0);
-            obj.CPFJac  = obj.CPF_NRM.NRMJac;       
-
-            if isempty(obj.CPFBus)
-                warning(msg('GUILDA:ContinuationPowerFlow:EmptyBus'))
-            end                                                                                
-
-            useInt = obj.CPFUseInternal;
-            a_Bus = net.a_Bus;
-            n_Bus = numel(a_Bus);
-            id_VX = 0;
-            
-            R = cell(1,n_Bus);
-            E = cell(1,n_Bus);
-            C = cell(n_Bus,1);
-            I = cell(n_Bus,1);
-
-            for i=1:n_Bus
-                i_Bus = a_Bus{i};
-                a_Comp = i_Bus.a_Component;
-                n_Comp = numel(a_Comp);    
-            
-                tab_PF = i_Bus.get_pf_set();                
-                rv_Veq = [abs(i_Bus.c_Vequilibrium);angle(i_Bus.c_Vequilibrium)];                    
-            
-                Ci = cell(n_Comp,1);
-                Ri = cell(1,n_Comp);
-                Ei = cell(1,n_Comp);
-                Ii = cell(n_Comp,1);
-                
-                switch tab_PF{:,"Type"}
-                    case "slack"  
-                        i_Bus.iv_CPFV = id_VX + (1:2);            
-
-                        i_BusC = ~useInt * eye(2) * rv_Veq;
-                        i_BusR = id_VX + zeros(useInt,1) + (1:2);
-                        i_BusE = i_BusR;
-                        i_BusI = rv_Veq(repmat(useInt,2,1));
-
-                        id_VX = id_VX + 2;
-                                    
-                        for j=1:n_Comp
-                            i_Comp = a_Comp{j};        
-                            rv_Xeq = i_Comp.rv_Xequilibrium;
-                            r_Xlen = numel(rv_Xeq);
-                            
-                            if useInt                                                            
-                                i_Comp.iv_CPFX = id_VX + (1:r_Xlen);
-                                iv_CX = 3:r_Xlen;
-            
-                                Ci{j} = [rv_Xeq(1);zeros(r_Xlen-1,1)];
-                                Ri{j} = id_VX + iv_CX;
-                                Ei{j} = Ri{j};       
-                                Ii{j} = rv_Xeq(iv_CX);
-            
-                                id_VX = id_VX + r_Xlen;                                                                
-                            end
-                            setPQ2Bus(i_Comp);
-                              
-                        end            
-                    case "PV"            
-                        i_Bus.iv_CPFV = id_VX + (1:2);     
-
-                        i_BusC = diag([~useInt,0]) * rv_Veq;
-                        i_BusR = id_VX + [1,ones(useInt,1)*2];
-                        i_BusE = id_VX + [  ones(1,useInt),2];
-                        i_BusI = rv_Veq([useInt,true]);
-
-                        id_VX = id_VX + 2;
-                        
-                        for j=1:numel(a_Comp)
-                            i_Comp = a_Comp{j};        
-                            rv_Xeq = i_Comp.rv_Xequilibrium;
-                            r_Xlen = numel(rv_Xeq);
-            
-                            if useInt && ~isempty(rv_Xeq)
-                                i_Comp.iv_CPFX = id_VX + (1:r_Xlen);
-                                iv_CX = [1,3:r_Xlen];
-            
-                                Ci{j} = zeros(r_Xlen,1);
-                                Ri{j} = id_VX + iv_CX;
-                                Ei{j} = Ri{j};
-                                Ii{j} = rv_Xeq(iv_CX);
-            
-                                id_VX = id_VX + r_Xlen;                                                                   
-                            end
-                            setPQ2Bus(i_Comp);
-                        end        
-                    case "PQ"
-                        i_Bus.iv_CPFV = id_VX + (1:2);            
-
-                        i_BusC = zeros(2,1);
-                        i_BusR = id_VX + (1:2);
-                        i_BusE = i_BusR;
-                        i_BusI = rv_Veq;
-            
-                        id_VX = id_VX + 2;
-
-                        a_Comp = i_Bus.a_Component;
-                        for j=1:numel(a_Comp)
-                            i_Comp = a_Comp{j};                            
-                            setPQ2Bus(i_Comp);
-                        end
-                end
-            
-                R{i} = [i_BusR,Ri{:}];
-                E{i} = [i_BusE,Ri{:}];
-                C{i} = [i_BusC;Ci{:}];
-                I{i} = [i_BusI;Ii{:}];
-            end
-
-            iv_BRM_all = horzcat(R{:});
-            iv_BEM_all = horzcat(E{:});            
-
-            RM = eye(id_VX);
-            EM = eye(id_VX);            
-
-            iv_BusVi = cell2mat( cellfun(@(b) b.iv_CPFV, a_Bus', 'UniformOutput', false) );
-
-            obj.rv_BusVi = reshape(iv_BusVi,[],1);
-            obj.rm_BusRM = RM(ismember(1:id_VX,iv_BRM_all),:);
-            obj.rm_BusEM = EM(:,ismember(1:id_VX,iv_BEM_all));
-            obj.CONSTANT = vertcat(C{:});
-
-            obj.CPFInitVal = vertcat(I{:});
-
-            function setPQ2Bus(i_Comp)                
-                CompVeq = i_Comp.c_Vequilibrium;
-                CompIeq = i_Comp.c_Iequilibrium;
-                CompSeq = CompVeq * conj(CompIeq);
-                
-                params = i_Comp.tab_parameter.dynamics{:,i_Comp.sv_para};                
-                if useInt 
-                    i_Comp.f_PQ2Bus = @(x,V,u) i_Comp.getCompPQ(x,V,u,params);
-                else
-                    i_Comp.f_PQ2Bus = @(x,V,u) [real(CompSeq);imag(CompSeq)];
-                end                
-            end
+        function obj = ContinuationPowerFlow(varargin)
+            v3_cpf_constructor(varargin);       % COMPAT(v3)
+            sct = GUILDA.config("ContinuationPowerFlow");
+            sv_bus = string(sct.LoadBus.Value);
+            obj.LoadBus          = reshape(sv_bus(~ismissing(sv_bus) & sv_bus ~= ""), 1, []);
+            obj.InitialLambda    = sct.InitialLambda.Value;
+            obj.MaxIterations    = sct.MaxIterations.Value;
+            obj.StepSize         = sct.StepSize.Value;
+            obj.ArcLength        = sct.ArcLength.Value;
+            obj.Tolerance        = sct.Tolerance.Value;
+            obj.UseInternalState = sct.UseInternalState.Value;
+            obj.Verbose          = sct.Verbose.Value;
         end
 
-        [sol,sol_pred] = solve(obj);                               
-    end
+        function s_options = get_options(obj, nv)
+        % <@Desc>
+        % Effective settings of one run: every stored setting of the solver, with the
+        % Name-Value overrides of the call applied. The solver itself is not changed.
+        % A name that is not in OptionMap stops with GUILDA:resolve_options:UnknownName;
+        % an invalid value stops with the validation error of the option.
+        % <@Role> Settings
+        % <@Summary> Stored settings + call-time overrides, as a struct.
+        % <@Signatures>
+        % [
+        %   "s_options = get_options(obj)",
+        %   "s_options = get_options(obj, {Name1, Value1, ...})"
+        % ]
+        % <@Parameters>
+        % [
+        %   {"Name": "obj", "Type": "ContinuationPowerFlow", "Description": "Solver holding the defaults (net.solver_CPF).", "Required": true, "Default": "-"},
+        %   {"Name": "nv", "Type": "cell", "Description": "Name-Value overrides: LoadBus, MaxIteration, Tolerance, StepSize, ArcLength, InitialLambda, UseInternalState, Verbose.", "Required": false, "Default": "{}"}
+        % ]
+        % <@Returns>
+        % [
+        %   {"Name": "s_options", "Type": "struct", "Description": "One field per setting (LoadBus, InitialLambda, MaxIterations, StepSize, ArcLength, Tolerance, UseInternalState, Verbose)."}
+        % ]
+            arguments
+                obj
+                nv (1,:) cell = {}
+            end
+            s_given = tools.resolve_options(obj, ContinuationPowerFlow.OptionMap, nv);
+            validate_options(nv{:});
 
-    methods (Access = {?ContinuationPowerFlow})
-        func = get_PFeq(obj,x,Ymat);        
-    end
+            mc = metaclass(obj);
+            a_prop = mc.PropertyList(~[mc.PropertyList.Constant] & strcmp({mc.PropertyList.SetAccess}, 'public'));
+            s_options = struct();
+            for str_prop = string({a_prop.Name})
+                if isfield(s_given, str_prop)
+                    s_options.(str_prop) = s_given.(str_prop);
+                else
+                    s_options.(str_prop) = obj.(str_prop);
+                end
+            end
+            s_options.LoadBus = reshape(string(s_options.LoadBus), 1, []);
+        end
 
-    methods (Access=private, Hidden)
-        x_pred = Predict(obj,x_current,x_past);                        
-        [x_correct,x_current,N] = Correct(obj,x_current,x_pred);                              
+        [result,flag,output] = solve(obj, net, s_options)
+    end
+end
+
+
+function validate_options(opt)
+% Value checks of the Name-Value options (names are already checked by resolve_options)
+    arguments
+        opt.LoadBus          {mustBeText}
+        opt.MaxIteration     (1,1) double  {mustBePositive,mustBeInteger}
+        opt.Tolerance        (1,1) double  {mustBePositive}
+        opt.StepSize         (1,1) double  {mustBePositive}
+        opt.ArcLength        (1,1) double  {mustBePositive}
+        opt.InitialLambda    (1,1) double
+        opt.UseInternalState (1,1) logical
+        opt.Verbose          (1,1) logical
     end
 end

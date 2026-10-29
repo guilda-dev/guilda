@@ -10,5 +10,7 @@
         <entry key="CalculatePowerflowExport">The calculate_powerflow options export and filename are deprecated: use net.calculate_powerflow(Export=filename) or result.Export(filename). A .json file holds the iteration history; a relative file name is now relative to the current folder.</entry>
         <entry key="OptimizePowerflowMethods">The optimize_powerflow option methods is deprecated: use net.optimize_powerflow(Method="{0}").</entry>
         <entry key="OptimizePowerflowTuple">The 6-output form [powerflow_bus, powerflow_cub, flag, output, lambda, OPFprob] = net.optimize_powerflow(...) is deprecated: use [result, flag, output] = net.optimize_powerflow(...) and result.tab_bus, result.tab_cub, result.lambda, result.OPFprob.</entry>
+        <entry key="ContinuationPowerFlowFunction">Continuation_Power_Flow(net, opt) is deprecated: use [result, flag] = net.calculate_continuation_powerflow(LoadBus=opt.CPFBus). The v3 options map to LoadBus, InitialLambda, MaxIteration, StepSize, ArcLength and UseInternalState; result.rm_x is the old CPF_Result.x_sol.</entry>
+        <entry key="ContinuationPowerFlowConstructor">ContinuationPowerFlow(net, Name, Value) is removed: the solver no longer holds the network or its result, and ContinuationPowerFlow() takes no arguments. Use [result, flag] = net.calculate_continuation_powerflow(LoadBus=...) (defaults in net.solver_CPF), or the deprecated wrapper Continuation_Power_Flow(net, opt) for the v3 usage.</entry>
     </message>
 </rsccat>

@@ -187,7 +187,8 @@ assert(sum(str_file == fullfile("_GUILDAsystem", "@Component", "Component.m")) =
 assert(sum(str_file == fullfile("_GUILDAsystem", "@PowerNetwork", "add_bus.m")) == 2, join(str_hook, ", "))
 assert(sum(str_file == fullfile("_GUILDAsystem", "@PowerNetwork", "calculate_powerflow.m")) == 1, join(str_hook, ", "))
 assert(sum(str_file == fullfile("_GUILDAsystem", "@PowerNetwork", "optimize_powerflow.m")) == 2, join(str_hook, ", "))
-assert(numel(str_hook) == 10, join(str_hook, ", "))
+assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@ContinuationPowerFlow", "ContinuationPowerFlow.m")) == 1, join(str_hook, ", "))
+assert(numel(str_hook) == 11, join(str_hook, ", "))
 
 
 % ---- local functions ----
