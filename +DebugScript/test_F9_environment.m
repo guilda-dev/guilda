@@ -51,6 +51,15 @@ for key = ["gen-classical","gen-1axis","gen-2axis","gen-park","gen-droop","load-
     assert(contains(txt, "'" + key + "'"), key)
 end
 
+% 内容が同じなら書き直さない (起動のたびに add_branch.m などを更新しない)
+sv_file = fullfile(str_root, "_GUILDAsystem", ["@PowerNetwork","@Bus","@Bus"], ["add_branch.m","add_component.m","replace_component.m"]);
+evalc("GUILDA;");
+d0 = arrayfun(@(f) dir(f).datenum, sv_file);
+pause(1.1)
+evalc("GUILDA;");
+d1 = arrayfun(@(f) dir(f).datenum, sv_file);
+assert(isequal(d0, d1), "起動で生成ファイルが書き直された")
+
 
 %% GUILDA dictionary lists classes
 % dictionary は現在のフォルダによらず GUILDA のフォルダからクラスを探す
