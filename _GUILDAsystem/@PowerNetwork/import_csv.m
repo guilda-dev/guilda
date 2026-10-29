@@ -1,28 +1,88 @@
-function net = import(path, net, options)
-%IMPORT_CSV Build a PowerNetwork from CSV files.
-% Expected directory structure:
-%   @ModelName/
-%     bus/parameter.csv
-%     branch/parameter.csv
-%     component/<key>/option.csv
-%     component/<key>/dynamics.csv    (optional)
+function net = import_csv(path, opt)
+% <@Desc>
+% Builds a PowerNetwork from a CSV model folder (the layout written by net.export_csv):
+%   <path>/network/parameter.csv        Hz, baseMVA of the network (optional)
+%   <path>/bus/parameter.csv            one row per bus (V, Varg required)
+%   <path>/branch/parameter.csv         one row per branch (Type, From, To required)
+%   <path>/component/<key>/main.csv     one row per component of type <key> (Bus, P, Q required)
+%   <path>/component/<key>/dynamics.csv parameters referenced by the column ParameterID
+%   <path>/component/<key>/opf.csv      OPF settings referenced by the column OpfID
+% Buses are numbered by their row; From, To and Bus refer to these numbers.
+% A missing network/parameter.csv (folders written before v4) or a missing or NaN value
+% keeps the defaults Hz = GUILDA.config("Model","Hz") and baseMVA = 100.
+% The bus column Slack (optional) marks the slack bus; a bus column baseMVA (v3) is
+% accepted and ignored: the system base is net.tab_parameter.base.baseMVA.
+% With Network=obj the buses are added to the existing network obj instead of a new
+% one; this is how the network classes such as network.IEEE14bus load their folder in
+% their constructor.
+% <@Role> Constructor
+% <@Summary> Build a network from a CSV model folder.
+% <@Signatures>
+% [
+%   "net = PowerNetwork.import_csv(path)",
+%   "net = PowerNetwork.import_csv(path, Name, Value)"
+% ]
+% <@Parameters>
+% [
+%   {"Name": "path", "Type": "string scalar", "Description": "Model folder (e.g. the folder written by net.export_csv).", "Required": true, "Default": "-"},
+%   {"Name": "Initialize", "Type": "logical scalar", "Description": "Run net.initialize() after building the network.", "Required": false, "Default": "true"},
+%   {"Name": "Network", "Type": "PowerNetwork", "Description": "Existing network to add the buses, branches and components to (it is returned). Its Hz and baseMVA are overwritten by network/parameter.csv when the file gives them.", "Required": false, "Default": "a new PowerNetwork tagged with the folder name (without a leading @)"}
+% ]
+% <@Returns>
+% [
+%   {"Name": "net", "Type": "PowerNetwork", "Description": "The built network."}
+% ]
+% <@Examples>
+% [
+%   "```matlab\npath = net.export_csv(fullfile(tempdir, \"MyNet\"));\nnet2 = PowerNetwork.import_csv(path);\nnet2.tab_parameter.base      % Hz and baseMVA of net\n```",
+%   "```matlab\n% in the constructor of a network class next to its CSV folders\nPowerNetwork.import_csv(fileparts(mfilename(\"fullpath\")), Network=obj);\n```"
+% ]
+% <@Since> 4.0
 
     arguments
-        path           (1,1) string
-        net            (1,1) PowerNetwork = PowerNetwork()
-        options.Initialize (1,1) logical = true
+        path               (1,1) string
+        opt.Initialize     (1,1) logical = true
+        opt.Network                      = []
     end
-    
-% Bus 
+    if ~isfolder(path)
+        error("GUILDA:import_csv:NotFound", ...
+              "Model folder not found: %s. Give the folder that holds bus/, branch/ and component/ (e.g. the path returned by net.export_csv).", path);
+    end
+    if isempty(opt.Network)
+        [~, str_name] = fileparts(strip(path, "right", filesep));
+        str_name = strip(str_name, "left", "@");
+        if ~isvarname(str_name); str_name = "PowerNetwork"; end
+        net = PowerNetwork(str_name);
+    else
+        if ~isa(opt.Network, "PowerNetwork") || ~isscalar(opt.Network)
+            error("GUILDA:import_csv:InvalidNetwork", "Network must be a PowerNetwork object (got %s).", class(opt.Network));
+        end
+        net = opt.Network;
+    end
+
+% Network (Hz, baseMVA)
+    str_NetPath = fullfile(path, "network", "parameter.csv");
+    if isfile(str_NetPath)
+        tab_net    = readtable(str_NetPath, "TextType", "string");
+        str_NetOpt = check_cols(tab_net, strings(1,0), ["Hz", "baseMVA"], "network/parameter.csv");
+        for str_name = str_NetOpt
+            val = tab_net.(str_name)(1);
+            if ~isnan(val)
+                net.para_base.(str_name) = val;
+            end
+        end
+    end
+
+% Bus
     % Variable Names
     str_BusReq  = ["V", "Varg"];
     % (a "baseMVA" column is accepted and ignored: the system base is net.tab_parameter.base.baseMVA)
-    str_BusOpt  = ["Gshunt", "Bshunt", "Vmin", "Vmax", "baseKV", "Tag", "Xaxis","Yaxis","Marker"];
-    
+    str_BusOpt  = ["V0", "Varg0", "Gshunt", "Bshunt", "Vmin", "Vmax", "baseKV", "Tag", "Xaxis","Yaxis","Marker"];
+
     % validate table
     tab_bus    = readtable(fullfile(path, "bus", "parameter.csv"), "TextType", "string");
     str_BusOpt = check_cols(tab_bus, str_BusReq, str_BusOpt, "bus/parameter.csv");
-    
+
     % Add bus
     n_Bus = size(tab_bus,1);
     a_Bus = cell(n_Bus,1);
@@ -32,8 +92,8 @@ function net = import(path, net, options)
 
         tab_opt = tab_bus(i_bus,str_BusOpt);
         sct_opt = table2struct(tab_opt);
-        opt = namedargs2cell(sct_opt);
-        a_Bus{i_bus} = net.add_bus("V", r_V, "Varg", r_Varg, opt{:});
+        c_opt   = namedargs2cell(sct_opt);
+        a_Bus{i_bus} = net.add_bus("V", r_V, "Varg", r_Varg, c_opt{:});
     end
 
 
@@ -49,16 +109,16 @@ function net = import(path, net, options)
     tab_bra = rename_cols(tab_bra, ["tap","phase"], ["Tap","Phase"], "branch/parameter.csv");
     str_BraOpt = check_cols(tab_bra, str_BraReq, str_BraOpt, "branch/parameter.csv");
 
-    % Add branches
+    % Add branches (From/To are row numbers of bus/parameter.csv)
     for i_bra = 1:size(tab_bra,1)
         tab_brai  = tab_bra(i_bra,:);
         str_Type  = tab_brai.Type;
-        rs_fromto = tab_brai{1,["From", "To"]};
-        
+        str_fromto = [string(a_Bus{tab_brai.From}), string(a_Bus{tab_brai.To})];
+
         tab_opt = tab_brai(1,str_BraOpt);
         sct_opt = table2struct(tab_opt);
-        opt = namedargs2cell(sct_opt);
-        net.add_branch(str_Type, rs_fromto, opt{:});
+        c_opt   = namedargs2cell(sct_opt);
+        net.add_branch(str_Type, str_fromto, c_opt{:});
     end
 
 % Component
@@ -81,21 +141,21 @@ function net = import(path, net, options)
         end
         str_CompKey = str_CompDir(i_dir).name;
         str_KeyPath = fullfile(str_CompPath,str_CompKey);
-        
+
 
         tab_CompOpt  = readtable(fullfile(str_KeyPath, "main.csv"  ), "TextType", "string");
         str_CompDynPath  = fullfile(str_KeyPath, "dynamics.csv");
         str_CompOpfPath  = fullfile(str_KeyPath, "opf.csv");
-        
+
         l_hasDyn     = false;
-        if ismember("ParameterID",tab_CompOpt.Properties.VariableNames) 
+        if ismember("ParameterID",tab_CompOpt.Properties.VariableNames)
             assert(isfile(str_CompDynPath), "Not found Parameter table: %s", str_CompDynPath);
             l_hasDyn     = true;
             tab_CompDyn  = readtable(str_CompDynPath, "TextType", "string");
         end
 
         l_hasOPF     = false;
-        if ismember("OpfID",tab_CompOpt.Properties.VariableNames) 
+        if ismember("OpfID",tab_CompOpt.Properties.VariableNames)
             assert(isfile(str_CompOpfPath), "Not found OPF table: %s", str_CompOpfPath);
             l_hasOPF     = true;
             tab_CompOpf  = readtable(str_CompOpfPath, "TextType", "string");
@@ -110,7 +170,7 @@ function net = import(path, net, options)
             r_P   = tab_CompOpti.P;
             r_Q   = tab_CompOpti.Q;
             sct_opt = struct();
-    
+
             for i_opt = 1:length(str_CompOpt_)
                 str_opti = str_CompOpt_(i_opt);
                 val = tab_CompOpti.(str_opti);
@@ -137,14 +197,26 @@ function net = import(path, net, options)
                 sct_opt.parameter = tab_CompDyni;
                 sct_opt = rmfield(sct_opt, "ParameterID");
             end
-            
-            opt = namedargs2cell(sct_opt);
-            a_Bus{i_bus}.add_component(str_CompKey, "P", r_P, "Q", r_Q, opt{:});
+
+            c_opt = namedargs2cell(sct_opt);
+            a_Bus{i_bus}.add_component(str_CompKey, "P", r_P, "Q", r_Q, c_opt{:});
         end
     end
 
-    
-    if options.Initialize
+% Slack bus (needs the components)
+    if ismember("Slack", string(tab_bus.Properties.VariableNames))
+        lv_slack = tab_bus.Slack;
+        if isstring(lv_slack)
+            lv_slack = ismember(lower(strip(lv_slack)), ["1", "true"]);
+        end
+        i_slack = find(lv_slack == 1, 1);
+        if ~isempty(i_slack)
+            bus = a_Bus{i_slack};
+            evalc("bus.l_isSlack = true;");     % without the SetSlack message
+        end
+    end
+
+    if opt.Initialize
         net.initialize;
     end
 end

@@ -184,6 +184,13 @@ classdef PowerNetwork < PowerSystemModel
         % User Interface << Information >>
         info(obj, disp)
         G = draw_diagram(obj,ax)
+
+        % IO
+        path = export_csv(obj, path, opt)
+    end
+    methods(Static)
+        % IO
+        net = import_csv(path, opt)
     end
     methods(Access=protected)
         % Edit handling: rebuild stale f_* handles, check the equilibrium

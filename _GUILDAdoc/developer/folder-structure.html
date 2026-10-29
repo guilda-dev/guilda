@@ -91,7 +91,7 @@
       <tr><td>Parameters</td><td><code>@Parameter</code>: parameter tables of model objects.</td></tr>
       <tr><td>Power flow</td><td><code>@PowerFlowCalculation</code>, <code>@NewtonRaphsonMethod</code>, <code>@ContinuationPowerFlow</code>.</td></tr>
       <tr><td>Time simulation</td><td><code>@odeSimulator</code>, <code>@odeEventSet</code>, <code>@odeProgress</code>, <code>@odeSimulationResult</code>, <code>@odeLinearizer</code>.</td></tr>
-      <tr><td>I/O and drawing</td><td><code>@CsvNetHandler</code> (CSV import/export of networks), <code>@DrawerNetDiagram</code> (network diagrams).</td></tr>
+      <tr><td>Drawing</td><td><code>@DrawerNetDiagram</code> (network diagrams). Network import and export are methods of <code>PowerNetwork</code> (<code>import_csv</code>, <code>import_matpower</code>, <code>export_csv</code>).</td></tr>
       <tr><td><code>SystemTools/GUILDA/en/</code></td><td>Message catalogs (<code>*.xml</code>) for errors and information messages, one file per class.</td></tr>
     </table>
 
@@ -160,7 +160,7 @@
       <tr><th>Folder</th><th>Contents</th></tr>
       <tr><td><code>+DebugScript/</code></td><td>Numbered task scripts (<code>Task1_NetBuild</code>, <code>Task7_simulate</code>, …) and <code>samplemodel</code> used to check features during development. Not part of the public API.</td></tr>
       <tr><td><code>.github/</code></td><td>Repository settings and instructions for coding assistants.</td></tr>
-      <tr><td><code>_GUILDAexport/</code></td><td>Default output folder of <code>CsvNetHandler.export</code>. Created on demand and ignored by Git.</td></tr>
+      <tr><td><code>_GUILDAexport/</code></td><td>Default output folder of the deprecated <code>CsvNetHandler.export</code> dialog. Created on demand and ignored by Git.</td></tr>
     </table>
 
     <h2 id="placement">Placement rules for new files</h2>
