@@ -185,7 +185,7 @@ assert(max(abs(get_tp(net3) - [0.95, 5/180*pi])) < 1e-12)
 % 両方の綴りがあるとエラー
 tab_bra.Tap = tab_bra.tap;
 writetable(tab_bra, str_csv);
-assert(error_id(@() PowerNetwork.import_csv(str_path, Initialize=false)) == "network:import_csv:DuplicateColumns")
+assert(error_id(@() PowerNetwork.import_csv(str_path, Initialize=false)) == "GUILDA:import_csv:DuplicateColumns")
 
 % 同梱の IEEE14bus の変圧器タップが読み込まれる
 net = DebugScript.helper.quiet(@() network.IEEE14bus);

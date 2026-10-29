@@ -33,7 +33,13 @@ end
 %% GUILDA config reads settings
 assert(GUILDA.config("Model", "Hz") == 60)
 cf = GUILDA.config("TimeSimulation");
-assert(isstruct(cf) && isfield(cf, "Reporter"))
+assert(isstruct(cf) && isfield(cf, "Progress") && ~isfield(cf, "Reporter"))
+% COMPAT(v3): 旧ユーザー設定のキー Reporter は Progress として読む
+s_old = v3_user_config("TimeSimulation", struct("Reporter", "disp", "TimeLimit", 5));
+assert(isequal(s_old, struct("TimeLimit", 5, "Progress", "disp")))
+s_both = v3_user_config("TimeSimulation", struct("Reporter", "disp", "Progress", "none"));
+assert(isequal(s_both, struct("Progress", "none")))
+assert(isequal(v3_user_config("Model", struct("Reporter", 1)), struct("Reporter", 1)))
 
 
 %% Component key map is generated at startup
@@ -45,10 +51,19 @@ for key = ["gen-classical","gen-1axis","gen-2axis","gen-park","gen-droop","load-
     assert(contains(txt, "'" + key + "'"), key)
 end
 
+% 内容が同じなら書き直さない (起動のたびに add_branch.m などを更新しない)
+sv_file = fullfile(str_root, "_GUILDAsystem", ["@PowerNetwork","@Bus","@Bus"], ["add_branch.m","add_component.m","replace_component.m"]);
+evalc("GUILDA;");
+d0 = arrayfun(@(f) dir(f).datenum, sv_file);
+pause(1.1)
+evalc("GUILDA;");
+d1 = arrayfun(@(f) dir(f).datenum, sv_file);
+assert(isequal(d0, d1), "起動で生成ファイルが書き直された")
+
 
 %% GUILDA dictionary lists classes
-% dictionary は現在のフォルダからクラスを探すので GUILDA のフォルダで実行する
-str_cwd = pwd;  cd(str_root);  c = onCleanup(@() cd(str_cwd));
+% dictionary は現在のフォルダによらず GUILDA のフォルダからクラスを探す
+str_cwd = pwd;  cd(tempdir);  c = onCleanup(@() cd(str_cwd));
 tab = GUILDA.dictionary("Component", "disp", false);
 assert(istable(tab))
 assert(all(ismember(["component.generator.park","component.load.power"], tab.filename)))
@@ -60,6 +75,9 @@ assert(ismember("branch.pi", tab{2}.filename))
 % 表示あり (クラスツリー) もエラーにならない
 txt = evalc("GUILDA.dictionary(""LocalController"");");
 assert(contains(txt, "LocalController"))
+% 旧クラスの保管フォルダ (+component/+load/history) は探さない
+txt = evalc("GUILDA.dictionary(""Component"");");
+assert(~contains(txt, "same name"), txt)
 
 
 %% Symbolic Math Toolbox is not a required toolbox

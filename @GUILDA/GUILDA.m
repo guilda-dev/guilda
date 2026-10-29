@@ -44,6 +44,7 @@ classdef GUILDA < handle
 
             GUILDApath = fullfile(obj.pwd,"@GUILDA","config");
             has_desktop = usejava('desktop');   % false in -batch / -nodisplay
+            addpath(fullfile(obj.pwd,"_GUILDAsystem","_VersionSupport"))  % used by get_config before obj.addpath
             cf_all     = get_config();
             cf         = cf_all.EnvStartup;
             set_config(cf_all);
@@ -101,7 +102,6 @@ classdef GUILDA < handle
     methods(Static)
 
         class_list = dictionary(char_class,opt)
-        net        = import_MATPOWER(results)
         path       = pwd()
         data       = config(category,parameter,option)
 

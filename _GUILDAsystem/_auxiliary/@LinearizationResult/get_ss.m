@@ -2,7 +2,9 @@ function sys = get_ss(obj, Algorithm, opt)
 % <@Desc>
 % Reduced linear model of the result, as a descriptor state-space model (dss:
 % E dx/dt = A x + B u, y = C x + D u). The matrices are the same as those of net.get_sys
-% in v3 for each algorithm; the states of the global controllers come first.
+% in v3 for each algorithm, including the state order: "Kron" and "DAE" put the states of
+% the global controllers first, then the components; "Feedback" puts the components first,
+% then the global controllers (in the order they were added). Use StateName to find a state.
 %   "Kron"     : the bus voltages are eliminated from the DAE. States: all states.
 %                Inputs: the inputs u. Outputs: the states.
 %   "Feedback" : the bus models in I-to-V form are connected through the admittance
@@ -56,7 +58,8 @@ function str = default_algorithm(obj)
 end
 
 function [p, str_x, str_u] = legacy_order(obj)
-% State order of the reduced models: global controllers first, then the components
+% State order of Kron and DAE: global controllers first, then the components
+% (Feedback appends the global controllers after the components, as in v3)
     tab   = obj.tab_variable;
     tab_x = tab(tab.Kind == "x", :);
     p     = [find(tab_x.Bus == ""); find(tab_x.Bus ~= "")];

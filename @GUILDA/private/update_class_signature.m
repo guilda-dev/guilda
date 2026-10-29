@@ -23,6 +23,10 @@ end
 function update_signature(str_filepath, str_list, str_cases)
     str_json_template      = string(fileread(str_filepath+".template"));
     str_json = replace(str_json_template,["___KEY_LIST___","___KEY_CASES___"], [str_list,str_cases]); 
+    % Unchanged content is not written again (keeps the file and its time stamp as they are)
+    if isfile(str_filepath+".m") && string(fileread(str_filepath+".m", "Encoding", "UTF-8")) == str_json
+        return
+    end
     file_id = fopen(str_filepath+".m", 'w', 'n', 'UTF-8');
     fprintf(file_id, '%s', char(str_json));
     fclose(file_id);

@@ -525,7 +525,35 @@ assert(abs(ddelta(1)/ddelta(2) - 50/60) < 1e-2, "delta の変化の比 " + ddelt
 assert(abs(ddelta(2) - 2*pi*60*1e-3*0.01) < 0.1 * 2*pi*60*1e-3*0.01)
 
 
+%% Event input names are checked
+% 存在しない InputUnit / InputName、引数の数が違う関数ハンドルは計算前にエラー
+ev = odeEventSet("in", net, "TimeSpan", [1,2], "InputUnit", "LPQ2B002", "InputName", ["P";"Q"], "InputValue", 0.1);
+expect_error(@() net.simulate([0,3], ev), "GUILDA:odeEventSet:UnknownInputName")
+ev = odeEventSet("in", net, "TimeSpan", [1,2], "InputUnit", "NoSuchUnit", "InputName", "Pload", "InputValue", 0.1);
+expect_error(@() net.simulate([0,3], ev), "GUILDA:odeEventSet:UnknownInputUnit")
+ev = odeEventSet("in", net, "TimeSpan", [1,2], "InputUnit", "LPQ2B002", "InputName", "Pload", "InputValue", @(t,x) 0.1);
+expect_error(@() net.simulate([0,3], ev), "GUILDA:odeEventSet:InvalidNargin")
+
+
+%% Event outside the simulation time warns
+ev = odeEventSet("late", net, "TimeSpan", [5,6], "FaultBus", "B008");
+lastwarn("");
+[~, flag] = net.simulate([0,1], ev);
+[~, id] = lastwarn();
+assert(id == "GUILDA:odeEventSet:OutsideTimeSpan")
+assert(flag == 1)
+
+
 % ---- local functions ----
 function set_property(obj, str_name, val)
     obj.(str_name) = val;
+end
+
+function expect_error(f, str_id)
+    try
+        f();
+        error("DebugScript:noError", "エラーにならない (期待: " + str_id + ")")
+    catch ME
+        assert(ME.identifier == str_id, ME.identifier + ": " + ME.message)
+    end
 end

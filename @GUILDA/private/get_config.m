@@ -19,6 +19,7 @@ function out = get_config(varargin)
         field = replace(ele,["Default",".json"],["",""]);
         if isfile(path_def_user)
             env_user.(field) = readstruct(path_def_user);
+            env_user.(field) = v3_user_config(field, env_user.(field));   % COMPAT(v3)
         else
             env_user.(field) = struct();
         end

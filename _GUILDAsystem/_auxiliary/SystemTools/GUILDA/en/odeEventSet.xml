@@ -2,6 +2,9 @@
 <rsccat version="2" locale="en" product="GUILDA">
     <message>        
         <entry key="InvalidInputType">Input arguments must be function handles or of type double.</entry>       
-        <entry key="InvalidNargin">The number of input arguments for the function handle is invalid. Please specify two arguments.</entry>       
+        <entry key="InvalidNargin">The number of input arguments for the function handle is invalid. Specify a function of one argument, the time t since the event start, e.g. @(t) 0.1*t.</entry>
+        <entry key="UnknownInputUnit">Event "{0}": InputUnit "{1}" is not a component of the network. Specify the tag of a component connected to a bus (see string(net.a_Bus) and the component tags).</entry>
+        <entry key="UnknownInputName">Event "{0}": InputName {1} is not an input of "{2}". Available inputs: {3}.</entry>
+        <entry key="OutsideTimeSpan">Event "{0}" (TimeSpan {1}) lies entirely outside the simulation time {2} and has no effect. Change TimeSpan or the simulation time.</entry>
     </message>
 </rsccat>

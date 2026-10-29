@@ -57,7 +57,12 @@ end
 
 function data = make_classlist(data, cell_dirlist, l_disp)
 
-    list = dir(fullfile( pwd, cell_dirlist{:} ));
+    % Old load classes kept for reference only (same names as the current ones)
+    if isequal(cell_dirlist, {'_GUILDAobject','+component','+load','history'})
+        return
+    end
+
+    list = dir(fullfile( GUILDA.pwd, cell_dirlist{:} ));
     for idx = 1:numel(list)
         char_name = list(idx).name;
 
