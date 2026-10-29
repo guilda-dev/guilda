@@ -42,8 +42,6 @@
 <body class="developer-layout dg">
   <svg class="dg-sprite" aria-hidden="true" focusable="false">
     <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
-    <symbol id="dg-i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
-    <symbol id="dg-i-warn" viewBox="0 0 24 24"><path d="M12 3 2 20h20z"/><path d="M12 10v4.5M12 17.5v.5"/></symbol>
   </svg>
   <main>
     <button type="button" class="developer-back-button" onclick="window.history.back()">← Back to For Developer</button>
@@ -58,15 +56,11 @@
       <a href="#solvers">Solver settings</a>
       <a href="#edits">Edit handling</a>
       <a href="#conventions">Conventions</a>
-      <a href="#deviations">Current deviations</a>
     </nav>
 
-    <div class="dg-callout is-warn">
-      <svg class="dg-icon" aria-hidden="true"><use href="#dg-i-flag"/></svg>
-      <div>
-      <p><strong>Target rules for version 4.0.</strong> Existing code does not follow all of these rules yet and is being migrated; the known gaps are listed under <a href="#deviations">Current deviations</a>. Write new code to these rules, and move existing code toward them when you touch it.</p>
-      <p>The current class structure is <strong>kept on purpose</strong>: other developers build on it, so these rules decide where data and logic go inside the existing classes instead of introducing new ones.</p>
-      </div>
+    <div class="dg-callout">
+      <svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
+      <p>The class structure is <strong>stable on purpose</strong>: other developers build on it, so these rules decide where data and logic go inside the existing classes instead of introducing new ones. The rules apply to all code in GUILDA.</p>
     </div>
 
     <figure class="dg-figure cd-figure">
@@ -131,7 +125,7 @@
       <li><div>
         <span class="dg-item-title">No data is held by two classes</span>
         <p>Each value has a single owner. Anything that can be derived from it is a <code>Dependent</code> property that reads the owner when it is accessed. Code that copies a value and keeps the copies in sync is a source of bugs; do not write it.</p>
-        <p>Existing correct examples: <code>PowerNetwork.cv_Vequilibrium</code> / <code>cv_Iequilibrium</code> / <code>rv_Xequilibrium</code> (collected from the buses), <code>Branch.cv_Vequilibrium</code> / <code>cv_Iequilibrium</code> (from the end buses and its own admittance), <code>Component.tab_parameter</code> (assembled from the <code>Parameter</code> objects), and <code>Component.rv_Xequilibrium_all</code> (the component plus its controllers).</p>
+        <p>Examples: <code>PowerNetwork.cv_Vequilibrium</code> / <code>cv_Iequilibrium</code> / <code>rv_Xequilibrium</code> (collected from the buses), <code>Branch.cv_Vequilibrium</code> / <code>cv_Iequilibrium</code> (from the end buses and its own admittance), <code>Component.tab_parameter</code> (assembled from the <code>Parameter</code> objects), and <code>Component.rv_Xequilibrium_all</code> (the component plus its controllers).</p>
       </div></li>
       <li><div>
         <span class="dg-item-title">Data and functions follow real-world roles</span>
@@ -159,7 +153,7 @@
       <div class="dg-row cd-c-net">
         <div><code class="cd-name">PowerNetwork</code><span class="cd-role">The whole system and the entry point of every analysis.</span></div>
         <dl>
-          <dt>Owns</dt><dd><code>a_Bus</code>, <code>a_Branch</code>, <code>a_GlobalController</code>; the system base values: frequency (Hz) and system <code>baseMVA</code> <small>(moved here from where they are now, see <a href="#deviations">deviations</a>)</small>; the solver objects <code>solver_PF</code> / <code>solver_OPF</code> / <code>solver_CPF</code> / <code>solver_ODE</code> as persistent default analysis settings (see <a href="#solvers">Solver settings</a>).</dd>
+          <dt>Owns</dt><dd><code>a_Bus</code>, <code>a_Branch</code>, <code>a_GlobalController</code>; the system base values in <code>tab_parameter.base</code>: the network frequency <code>Hz</code> and the system <code>baseMVA</code> <small>(components and controllers read the frequency through <code>r_Hz</code>; they never keep a copy)</small>; the single slack bus <small>(the network keeps exactly one; a bus never changes the flag of another bus)</small>; the solver objects <code>solver_PF</code> / <code>solver_OPF</code> / <code>solver_CPF</code> / <code>solver_ODE</code> as persistent default analysis settings (see <a href="#solvers">Solver settings</a>).</dd>
           <dt>Derived</dt><dd>Equilibria of all buses (<code>cv_Vequilibrium</code>, <code>cv_Iequilibrium</code>, <code>rv_Xequilibrium</code>); the network admittance matrix.</dd>
           <dt>Methods</dt><dd><code>add_*</code> / <code>remove_*</code>; the analysis entry points (see <a href="api-design.html">API Design</a>); <code>get_admittance_matrix</code>; <code>get_sys</code>.</dd>
         </dl>
@@ -169,7 +163,7 @@
         <dl>
           <dt>Owns</dt><dd><code>a_Component</code>; <code>l_isSlack</code>; power-flow specifications (<code>V</code>, <code>Varg</code>, <code>V0</code>, <code>Varg0</code>); shunt (<code>Gshunt</code>, <code>Bshunt</code>); <code>Vmin</code> / <code>Vmax</code>; <code>baseKV</code>; drawing coordinates; the equilibrium voltage <code>c_Vequilibrium</code>.</dd>
           <dt>Derived</dt><dd><code>c_Iequilibrium</code> = sum of its components' currents; <code>str_bustype</code>.</dd>
-          <dt>Retired</dt><dd><code>baseMVA</code> on <code>Bus</code>: it is not used anywhere. CSV import still accepts the column for compatibility and ignores it.</dd>
+          <dt>Not owned</dt><dd>A bus has no <code>baseMVA</code>: the system base belongs to <code>PowerNetwork</code>. CSV import accepts a bus <code>baseMVA</code> column for compatibility and ignores it.</dd>
           <dt>Methods</dt><dd><code>add_component</code> / <code>remove_component</code> / <code>replace_component</code>; <code>set_equilibrium</code> (distributes P and Q to its components); <code>get_sys</code> (aggregate of its components); <code>build_opf_problem</code>.</dd>
         </dl>
       </div>
@@ -184,8 +178,8 @@
       <div class="dg-row cd-c-comp">
         <div><code class="cd-name">Component</code><span class="cd-role">A generator, load, or other device connected to one bus.</span></div>
         <dl>
-          <dt>Owns</dt><dd><code>a_LocalController</code>; dynamics parameters; power-flow settings (<code>P</code>, <code>Q</code>); operating limits; OPF cost; the machine rating <code>baseMVA</code> <small>(used to share reactive power between components on one bus; it is <strong>not</strong> the system base)</small>; the equilibrium <code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code>, and its injected current <code>c_Iequilibrium</code>.</dd>
-          <dt>Derived</dt><dd><code>c_Vequilibrium</code> (= the voltage of its bus); <code>omega0</code> (from the network frequency); <code>rv_Xequilibrium_all</code>; <code>tab_parameter</code>.</dd>
+          <dt>Owns</dt><dd><code>a_LocalController</code>; dynamics parameters <small>(per unit on the system base)</small>; power-flow settings (<code>P</code>, <code>Q</code>); operating limits; OPF cost; the machine rating <code>baseMVA</code> <small>(used to share reactive power between components on one bus; it is <strong>not</strong> the system base)</small>; the equilibrium <code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code>, and its injected current <code>c_Iequilibrium</code>.</dd>
+          <dt>Derived</dt><dd><code>c_Vequilibrium</code> (= the voltage of its bus); <code>omega0</code> (the network frequency in Hz, read through <code>r_Hz</code>); <code>rv_Xequilibrium_all</code>; <code>tab_parameter</code>.</dd>
           <dt>Cache</dt><dd>The function handles <code>f_dx</code>, <code>f_I</code>, <code>f_Y</code>, <code>f_Mass</code>, and <code>f_Jacobi*</code> are kept as a cache built by <code>set_odefcn</code>. They stay because a handle binds the class's own methods, and folding the constant parameters and <code>omega0</code> into the handle keeps the call signature short: <code>f_dx(t,x,V,I,u)</code>.</dd>
           <dt>Model contract</dt><dd>Static <code>fcn_dx</code>, <code>fcn_I</code>, <code>fcn_Y</code>, <code>fcn_Mass</code> with <code>(t, x, V, I, u, param, omega0)</code>; optional <code>Jacobi_dx</code> / <code>Jacobi_I</code> / <code>Jacobi_Y</code> (numerical differentiation is used otherwise); <code>get_equilibrium(V, I, P, Q)</code> → <code>[x, u]</code>.</dd>
           <dt>Methods</dt><dd><code>set_equilibrium</code>; <code>get_sys</code>; <code>add_local_controller</code>; <code>build_opf_problem</code>; <code>validate</code>.</dd>
@@ -196,8 +190,7 @@
         <dl>
           <dt>Contract</dt><dd>Controllers keep their own contract, different from <code>Component</code> on purpose: a component outputs the current <code>I</code> to the network and <code>Y</code> to its controllers, while a controller only outputs the input <code>u</code> to the component.</dd>
           <dt>Owns</dt><dd>Its parameters and its equilibrium (<code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code>).</dd>
-          <dt>Derived</dt><dd><code>LocalController.c_Vequilibrium</code> becomes a <code>Dependent</code> view of its component's voltage.</dd>
-          <dt>Open point</dt><dd><code>LocalController.fcn_dx</code> is declared as <code>(t, x, V, u, …)</code> without <code>I</code>, while <code>GlobalController.fcn_dx</code> has <code>(t, x, V, I, u, …)</code>. To be decided.</dd>
+          <dt>Derived</dt><dd><code>LocalController.c_Vequilibrium</code> is a <code>Dependent</code> view of its component's voltage.</dd>
         </dl>
       </div>
       <div class="dg-row cd-c-other">
@@ -212,23 +205,19 @@
         <div><code class="cd-name">Analysis and result classes</code><span class="cd-role"><code>auxiliary</code> subclasses</span></div>
         <dl>
           <dt>Does</dt><dd>Run analyses (power flow, CPF, simulation, linearization, IO, drawing) and hold their results.</dd>
-          <dt>Working data</dt><dd>Per-run working data that currently lives on the model classes (<code>iv_odeX</code> / <code>iv_odeI</code> / <code>iv_odeU</code> / <code>iv_odeY</code>, <code>rv_odeX0</code>, <code>l_isFault</code>, <code>l_isNonUnit</code>, <code>iv_CPFV</code>, <code>rv_Xoffset</code>, <code>l_isConnect</code>) stays on the model side, but only analysis classes may write it (restricted <code>SetAccess</code>). It is not model data.</dd>
+          <dt>Working data</dt><dd>Per-run working data (<code>iv_odeX</code> / <code>iv_odeI</code> / <code>iv_odeU</code> / <code>iv_odeY</code>, <code>rv_odeX0</code>, <code>l_isFault</code>, <code>l_isNonUnit</code>, <code>iv_CPFV</code>, <code>rv_Xoffset</code>, <code>l_isConnect</code>) lives on the model classes, but only analysis classes may write it (restricted <code>SetAccess</code>). It is not model data.</dd>
         </dl>
       </div>
     </div>
 
     <!-- ============================== PARENTS ============================== -->
     <h2 id="parents">Parent references</h2>
-    <p>Child-to-parent references are kept: <code>Bus.a_PowerNetwork</code>, <code>Branch.a_PowerNetwork</code>, <code>Component.a_Bus</code>, <code>LocalController.a_Component</code>, <code>GlobalController.PowerNetwork</code>, and the parent of each <code>Parameter</code>. They follow these rules:</p>
+    <p>Each child keeps a read-only reference to its parent: <code>Bus.a_PowerNetwork</code>, <code>Branch.a_PowerNetwork</code>, <code>Component.a_Bus</code>, <code>LocalController.a_Component</code>, <code>GlobalController.PowerNetwork</code>, and the parent of each <code>Parameter</code>. They follow these rules:</p>
     <ol class="dg-list is-numbered">
-      <li><div><span class="dg-item-title">Only the parent sets and clears it</span><p>The reference is set by the parent's constructor or <code>add_*</code> method and cleared by its <code>remove_*</code> method. No other code writes it.</p></div></li>
+      <li><div><span class="dg-item-title">Only the parent sets and clears it</span><p>The reference is set by the parent's constructor or <code>add_*</code> method and cleared by its <code>remove_*</code> method, so a removed object no longer points to its old parent. No other code writes it.</p></div></li>
       <li><div><span class="dg-item-title">A child only reads its parent</span><p>For the tag path, for edit notification, and for shared settings such as the frequency.</p></div></li>
       <li><div><span class="dg-item-title">A child never writes upward or sideways</span><p>It does not write to its parent or to its siblings, and it never stores a copy of its parent's data.</p></div></li>
     </ol>
-    <div class="dg-callout is-warn">
-      <svg class="dg-icon" aria-hidden="true"><use href="#dg-i-warn"/></svg>
-      <p>Currently <code>Bus.remove_component</code> does not clear <code>a_Bus</code> of the removed component, so the removed component still points to the bus.</p>
-    </div>
 
     <!-- ============================== IDENTITY ============================== -->
     <h2 id="identity">Identity: tags, not indices</h2>
@@ -247,7 +236,7 @@
 
     <!-- ============================== EDITS ============================== -->
     <h2 id="edits">Edit handling</h2>
-    <p>Edits are recorded with the existing <code>str_editFlag</code> (<code>unset</code> / <code>initialized</code> / <code>editted</code>) and the edit log <code>tab_editLog</code>, extended with the category of what became stale.</p>
+    <p>Edits are recorded with <code>str_editFlag</code> (<code>unset</code> / <code>initialized</code> / <code>editted</code>) and the edit log <code>tab_editLog</code>, which also records the category of what became stale.</p>
     <table class="cd-table">
       <thead>
         <tr><th>Edit</th><th>Becomes stale</th></tr>
@@ -268,16 +257,14 @@
 
     <!-- ============================== CONVENTIONS ============================== -->
     <h2 id="conventions">Conventions</h2>
-    <p>The current practice, read from the code. Items marked <span class="dg-badge is-warn">to be decided</span> are not settled yet.</p>
     <table class="cd-table">
       <thead>
-        <tr><th>Topic</th><th>Current practice</th></tr>
+        <tr><th>Topic</th><th>Convention</th></tr>
       </thead>
       <tbody>
         <tr>
           <td>Per-unit system</td>
-          <td>Voltages, currents, powers (<code>P</code>, <code>Q</code>), and branch constants (<code>R</code>, <code>X</code>, <code>C</code>) are per unit. No class converts physical units: <code>Bus.baseKV</code> is stored but not used in any calculation.
-            <small><span class="dg-badge is-warn">to be decided</span> The system base (system <code>baseMVA</code> on <code>PowerNetwork</code>) and whether component dynamics parameters are on the machine base or the system base.</small></td>
+          <td>Voltages, currents, powers (<code>P</code>, <code>Q</code>), and branch constants (<code>R</code>, <code>X</code>, <code>C</code>) are per unit on the system base (the system <code>baseMVA</code> on <code>PowerNetwork</code>). Component dynamics parameters are also per unit on the system base; <code>Component.baseMVA</code> is the machine rating, used only to share reactive power. No class converts physical units: <code>Bus.baseKV</code> is stored but not used in any calculation.</td>
         </tr>
         <tr>
           <td>Angles</td>
@@ -285,8 +272,7 @@
         </tr>
         <tr>
           <td>Time and frequency</td>
-          <td>Time <code>t</code> in seconds. The nominal frequency is in Hz (<code>GUILDA.config("Model","Hz")</code>, default 60). The argument named <code>omega0</code> currently receives this value in Hz, and models multiply by 2π themselves (e.g. <code>ddelta = 2*pi*omega0*omega</code>); the rotor speed <code>omega</code> is a per-unit deviation.
-            <small><span class="dg-badge is-warn">to be decided</span> Whether <code>omega0</code> should be Hz or rad/s, and its name.</small></td>
+          <td>Time <code>t</code> in seconds. The nominal frequency <code>Hz</code> is a system base value on <code>PowerNetwork</code>, and models read it through <code>r_Hz</code>. The argument <code>omega0</code> passed to models is this nominal frequency in Hz, and models multiply by 2π themselves (e.g. <code>ddelta = 2*pi*omega0*omega</code>); the rotor speed <code>omega</code> is a per-unit deviation.</td>
         </tr>
         <tr>
           <td>Current direction</td>
@@ -304,29 +290,6 @@
       </tbody>
     </table>
 
-    <!-- ============================== DEVIATIONS ============================== -->
-    <h2 id="deviations">Current deviations to fix</h2>
-    <p>Places where the code does not follow the rules above yet, checked against the code. Fix them in separate fix or refactor work.</p>
-    <table class="cd-table">
-      <thead>
-        <tr><th>Deviation</th><th>Where</th><th>Rule</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>V/I equilibria are stored in several classes</td><td><code>Bus.c_Iequilibrium</code>, <code>Component.c_Vequilibrium</code>, and <code>LocalController.c_Vequilibrium</code> / <code>c_Iequilibrium</code> are stored copies, set in <code>set_equilibrium</code> / <code>get_equilibrium</code>.</td><td><a href="#principles">Principle 1</a></td></tr>
-        <tr><td>The frequency is copied into every component</td><td>Each <code>Component</code> has its own <code>para_base.Hz</code>, while <code>PowerNetwork.para_base</code> is empty. Controllers call <code>set_odefcn(60)</code> with a fixed value.</td><td><a href="#classes">PowerNetwork owns</a></td></tr>
-        <tr><td><code>replace_component</code> reads a missing value</td><td><code>@Bus/replace_component.template</code> reads <code>obj.parent.tab_parameter.base.Hz</code>, which does not exist because <code>PowerNetwork.para_base</code> has no entries.</td><td><a href="#classes">PowerNetwork owns</a></td></tr>
-        <tr><td><code>validate</code> uses a fixed, inconsistent frequency</td><td><code>@Component/validate.m</code> sets <code>r_omega0 = 2*pi*60</code>: fixed at 60 Hz, and in rad/s while models expect Hz.</td><td><a href="#conventions">Time and frequency</a></td></tr>
-        <tr><td><code>Bus.baseMVA</code> is unused</td><td>Stored in <code>Bus.para_operation</code> but never read.</td><td><a href="#classes">Bus: retired</a></td></tr>
-        <tr><td>Edits are not reflected in the function handles</td><td><code>set_odefcn</code> runs only in the model constructors and in <code>replace_component</code>, so a later dynamics edit does not reach <code>f_dx</code> and the other handles.</td><td><a href="#edits">Edit handling</a></td></tr>
-        <tr><td>Edit state is never checked</td><td><code>LayerPackage.check_edit</code> is never called. Edits are logged, and <code>initialize</code> resets the log, but no analysis checks it.</td><td><a href="#edits">Edit handling</a></td></tr>
-        <tr><td>Some topology changes are not logged</td><td><code>replace_component</code> does not call <code>log_edit</code>.</td><td><a href="#edits">Edit handling</a></td></tr>
-        <tr><td>Removal does not clear the parent reference</td><td><code>remove_component</code> does not clear the removed component's <code>a_Bus</code>.</td><td><a href="#parents">Parent references, rule 1</a></td></tr>
-        <tr><td><code>GlobalController.PowerNetwork</code> is never set</td><td><code>add_global_controller</code> does not call <code>set_parent</code>, and <code>set_parent</code> is accessible only to <code>Component</code> and <code>LocalController</code>.</td><td><a href="#parents">Parent references, rule 1</a></td></tr>
-        <tr><td>A bus writes to its siblings</td><td><code>Bus.set.l_isSlack</code> sets <code>l_isSlack = false</code> on the other buses. <small>Also, the setter only assigns when the value is <code>true</code>, so this reset does not seem to take effect (read from the code, not checked at run time).</small></td><td><a href="#parents">Parent references, rule 3</a></td></tr>
-        <tr><td>Unused properties</td><td><code>rv_odeInit</code> on <code>PowerNetwork</code> and <code>Bus</code> is declared but never used.</td><td><a href="#principles">Principle 1</a></td></tr>
-        <tr><td>Declared but not implemented</td><td><code>PowerNetwork.remove_bus</code> and <code>remove_global_controller</code> are declared in the class definition but have no implementation file.</td><td><a href="#classes">PowerNetwork methods</a></td></tr>
-      </tbody>
-    </table>
     <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg><p>Name new properties with the <a href="naming-conventions.html">Naming Conventions</a>, place new classes as described in <a href="folder-structure.html">Folder Structure</a>, and document them with <a href="class-documentation.html">Class Documentation</a> tags.</p></div>
   </main>
 </body>
