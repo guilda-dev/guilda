@@ -174,8 +174,9 @@ classdef (Sealed = true) odeSimulator < auxiliary
         % effective settings s_options, and returns the trajectories as an
         % odeSimulationResult. The solver is only read: nothing is written back into it.
         % The simulation working data of the models (iv_odeX, iv_odeU, iv_odeY, iv_odeI) is
-        % rebuilt for this run. Called by net.simulate, which also checks that the
-        % equilibrium is up to date; calling it directly is for advanced use.
+        % rebuilt for this run. Called by net.simulate; calling it directly is for advanced
+        % use. Like net.simulate, it first rebuilds stale f_* handles and stops with the
+        % error GUILDA:PowerNetwork:EquilibriumStale when net.initialize() is needed.
         % flag is 1 when the simulation reached the end time, 0 when it stopped because a
         % phase exceeded TimeLimit, and -1 when the solver stopped before the end time
         % (output.message has the reason). In the last two cases the result holds the
@@ -209,6 +210,7 @@ classdef (Sealed = true) odeSimulator < auxiliary
                 s_options (1,1) struct = obj.get_options()
             end
             t0 = tic;
+            net.require_equilibrium();    % rebuild stale f_*; error if net.initialize() is needed
 
             % Without events, add an empty event so that odeEventSet.table is dispatched.
             if isempty(c_events)

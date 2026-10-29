@@ -20,6 +20,24 @@ assert_stale_error(@() net.simulate([0,1], DebugScript.helper.noop_event(net,[0,
 assert_stale_error(@() net.get_sys(), str_staleID)
 
 
+%% Solvers called directly check the equilibrium
+% net.solver_ODE.solve / net.solver_LIN.solve も simulate / linearize と同じ確認をする
+[net, comp] = DebugScript.helper.build_3bus("gen-1axis");
+assert_stale_error(@() net.solver_ODE.solve(net, [0,1]), str_staleID)
+assert_stale_error(@() net.solver_LIN.solve(net), str_staleID)
+
+DebugScript.helper.quiet(@() net.initialize);
+comp.tab_parameter.dynamics.D = 5;
+assert_stale_error(@() net.solver_ODE.solve(net, [0,1]), str_staleID)
+assert_stale_error(@() net.solver_LIN.solve(net), str_staleID)
+
+DebugScript.helper.quiet(@() net.initialize);
+sol = DebugScript.helper.quiet(@() net.solver_ODE.solve(net, [0,1]));
+assert(sol.odeResults.t(end) == 1)
+res = DebugScript.helper.quiet(@() net.solver_LIN.solve(net));
+assert(isa(res, "LinearizationResult"))
+
+
 %% Dynamics edit makes handles and equilibrium stale
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);

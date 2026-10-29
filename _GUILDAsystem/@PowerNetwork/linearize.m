@@ -37,7 +37,6 @@ function [result, flag, output] = linearize(obj, varargin)
     [c_nv, opt] = take_call_options(varargin);
     s_options   = obj.solver_LIN.get_options(c_nv);
 
-    obj.check_edit("RequireEquilibrium", true);    % rebuild stale f_*; error if net.initialize() is needed
     [result, flag, output] = obj.solver_LIN.solve(obj, s_options);
 
     if opt.Plot
