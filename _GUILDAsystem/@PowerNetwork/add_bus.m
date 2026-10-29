@@ -17,13 +17,8 @@ function bus = add_bus(obj, opt)
         opt.Marker            (1,1) string = "s";
     end
 
-    % next number not used yet (after remove_bus, numel+1 may already be taken)
-    n_Bus   = numel(obj.a_Bus);
-    str_Bus = opt.Tag+num2str(n_Bus+1,"%.3d");
-    while ismember(str_Bus, string(obj.a_Bus))
-        n_Bus   = n_Bus + 1;
-        str_Bus = opt.Tag+num2str(n_Bus+1,"%.3d");
-    end
+    % largest number in use + 1 (after remove_bus, numel+1 may already be taken)
+    str_Bus = opt.Tag+num2str(tools.next_tag_number(string(obj.a_Bus)),"%.3d");
 
     opt = v3_bus_baseMVA(obj, opt);                   % COMPAT(v3)
     opt = rmfield(opt,"Tag");

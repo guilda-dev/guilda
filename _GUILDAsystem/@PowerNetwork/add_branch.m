@@ -31,8 +31,8 @@ function bra = add_branch(obj, Type, from_to, opt)
         a_Bus = obj.a_Bus(ir_bus);
     end
 
-    n_Branch  = numel(obj.a_Branch);
-    str_Index = num2str(n_Branch+1,"%.3d");
+    % largest number in use + 1 (after remove_branch, numel+1 may already be taken)
+    str_Index = num2str(tools.next_tag_number(string(obj.a_Branch)),"%.3d");
 
     % Build Instance
     switch Type

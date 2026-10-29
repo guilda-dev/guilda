@@ -29,8 +29,9 @@ function comp = replace_component(obj, str_tag, Type, parameter)
     opt.OPFcost_startup  = tab_opf.startup;
     opt.OPFcost_shutdown = tab_opf.shutdown;
 
-    str_index = char(comp_pre.str_tag);
-    str_index = string( str_index(1:end-3) );
+    % keep the number of the replaced component: "<header><number><bus tag>"
+    str_num   = regexp(extractBefore(comp_pre.str_tag, strlength(comp_pre.str_tag)-strlength(obj.str_tag)+1), "\d+$", "match", "once");
+    str_index = string(str_num)+obj.str_tag;
 
     
     % get component function
