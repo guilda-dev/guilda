@@ -102,7 +102,6 @@ classdef GUILDA < handle
     methods(Static)
 
         class_list = dictionary(char_class,opt)
-        net        = import_MATPOWER(results)
         path       = pwd()
         data       = config(category,parameter,option)
 
