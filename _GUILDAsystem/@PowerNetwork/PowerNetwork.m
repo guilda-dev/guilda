@@ -97,8 +97,16 @@ classdef PowerNetwork < PowerSystemModel
         % <@Default> OptimalPowerFlow()
         solver_OPF 
 
-        % <@Summary> "ContinuousPowerFlow" class
-        solver_CPF 
+        % <@Summary> "ContinuationPowerFlow" class
+        % <@Desc>
+        % Solver of net.calculate_continuation_powerflow (runs obj.solver_CPF.solve). Its
+        % properties are the stored defaults (LoadBus, MaxIterations, StepSize, ...) and are
+        % kept between runs; Name-Value options of a call override them for that call only.
+        % Results are returned as a CPFResult, never stored in the solver.
+        % <@Role> continuation power-flow
+        % <@Size> 1×1
+        % <@Default> ContinuationPowerFlow()
+        solver_CPF
 
         % <@Summary> "odeSimulator" class
         % <@Desc>
@@ -161,7 +169,10 @@ classdef PowerNetwork < PowerSystemModel
 
         % PF(powerflow) calculations
         [result, flag, output] = calculate_powerflow(obj, varargin)
-    
+
+        % CPF(continuation power-flow)
+        [result, flag, output] = calculate_continuation_powerflow(obj, varargin)
+
         % Static Analysis
         [sys,lin] = get_sys(obj, opt)
         tab_Ybus2bus = get_admittance_matrix(obj)

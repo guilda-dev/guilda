@@ -1,7 +1,42 @@
 {
-    "None":{
-        "Value": true,
+    "LoadBus":{
+        "Value": "",
+        "Type": "string",
+        "Description": "Tags of the buses whose loads are scaled by (1 + lambda). Usually given per call (LoadBus=...)"
+    },
+    "InitialLambda":{
+        "Value": 0,
+        "Type": "double",
+        "Description": "lambda at the starting point (the equilibrium)"
+    },
+    "MaxIterations":{
+        "Value": 500,
+        "Type": "double",
+        "Description": "Maximum number of predictor-corrector steps"
+    },
+    "StepSize":{
+        "Value": 0.5,
+        "Type": "double",
+        "Description": "Step size of the predictor"
+    },
+    "ArcLength":{
+        "Value": 0.001,
+        "Type": "double",
+        "Description": "Arc length of the corrector"
+    },
+    "Tolerance":{
+        "Value": 1e-5,
+        "Type": "double",
+        "Description": "Convergence tolerance of the Newton-Raphson corrector"
+    },
+    "UseInternalState":{
+        "Value": false,
         "Type": "logical",
-        "Description": "未定義"
+        "Description": "Solve with the internal states of the generators"
+    },
+    "Verbose":{
+        "Value": false,
+        "Type": "logical",
+        "Description": "Print lambda at each step"
     }
 }
