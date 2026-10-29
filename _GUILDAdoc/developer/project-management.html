@@ -65,6 +65,7 @@
       <a href="#issues">Issues</a>
       <a href="#versions">Versions</a>
       <a href="#documentation">Keeping documentation current</a>
+      <a href="#update-log">Update Log entries</a>
       <a href="#done">Definition of Done</a>
     </nav>
 
@@ -242,6 +243,28 @@
       <div class="dg-row"><span class="dg-row-head"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-tag"/></svg> A user-visible feature in a release</span><span class="dg-row-arrow" aria-hidden="true">→</span><span><code>_GUILDAdoc/database/list_UpdateLog.js</code></span></div>
       <div class="dg-row"><span class="dg-row-head"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-ruler"/></svg> A developer rule</span><span class="dg-row-arrow" aria-hidden="true">→</span><span>The matching page in this For Developer tab</span></div>
     </div>
+
+    <!-- ===================== Update Log ===================== -->
+    <h2 id="update-log">Update Log entries</h2>
+    <p>Each entry in <code>_GUILDAdoc/database/list_UpdateLog.js</code> is one object. The Home tab shows the entries newest first and colours each card by its type.</p>
+<pre><code>{
+  "title": "Add grid-forming inverter model",
+  "date": "YYYY-MM-DD",
+  "type": "added",
+  "content": "One or two sentences on what changed for users."
+}</code></pre>
+    <p>The <code>type</code> field uses the <a href="https://keepachangelog.com/" target="_blank">Keep a Changelog</a> categories:</p>
+    <table class="dg-table">
+      <thead><tr><th>Type</th><th>Use it for</th></tr></thead>
+      <tbody>
+        <tr><td><span class="dg-badge is-ok">added</span></td><td data-label="Use it for">A new feature, class, method or option.</td></tr>
+        <tr><td><span class="dg-badge">changed</span></td><td data-label="Use it for">A change in the behaviour or interface of something that already exists.</td></tr>
+        <tr><td><span class="dg-badge is-warn">deprecated</span></td><td data-label="Use it for">Something that still works but will be removed; name its replacement.</td></tr>
+        <tr><td><span class="dg-badge is-err">removed</span></td><td data-label="Use it for">Something that no longer exists.</td></tr>
+        <tr><td><span class="dg-badge is-muted">fixed</span></td><td data-label="Use it for">A bug fix.</td></tr>
+      </tbody>
+    </table>
+    <p>An entry without <code>type</code> is shown in neutral grey without a label. An unknown value is shown the same way and logs a warning in the browser console.</p>
 
     <!-- ===================== Definition of Done ===================== -->
     <h2 id="done">Definition of Done</h2>
