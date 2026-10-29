@@ -1,4 +1,25 @@
 {
+    "Method":{
+        "Value": "AC OPF",
+        "Type": "select",
+        "options":[
+            "ELD",
+            "DC OPF",
+            "AC OPF"
+        ],
+        "Description": "Formulation: 'ELD' (economic load dispatch, branches ignored), 'DC OPF' (DC approximation) or 'AC OPF' (AC power flow equations)"
+    },
+    "Solver":{
+        "Value": "auto",
+        "Type": "select",
+        "options":[
+            "auto",
+            "linprog",
+            "quadprog",
+            "fmincon"
+        ],
+        "Description": "Optimization solver ('auto': the solver that 'solve' chooses for the problem)"
+    },
     "Algorithm_linprog":{
         "Value": "dual-simplex-highs",
         "Type": "select",
@@ -32,9 +53,10 @@
         "Description": "algorithm option @fmincon"
     },
     "Display":{
-        "Value": "iter-detailed",
+        "Value": "default",
         "Type": "select",
         "options": [
+            "default",
             "none",
             "iter",
             "iter-detailed",
@@ -43,27 +65,27 @@
             "notify",
             "notify-detailed"
         ],
-        "Description": "'Display' option of solver"
+        "Description": "'Display' option of solver ('default': the default of the solver)"
     },
     "MaxIteration":{
         "Value": NaN,
         "Type": "double",
-        "Description": "'MaxIteration' option of solver (If blank, use default value.)"
+        "Description": "'MaxIterations' option of solver (If NaN, use default value.)"
     },
     "OptimalityTolerance":{
         "Value": NaN,
         "Type": "double",
-        "Description": "'OptimalityTolerance' option of solver (If blank, use default value.)"
+        "Description": "'OptimalityTolerance' option of solver (If NaN, use default value.)"
     },
     "StepTolerance":{
         "Value": NaN,
         "Type": "double",
-        "Description": "'StepTolerance' option of solver (If blank, use default value.)"
+        "Description": "'StepTolerance' option of solver (If NaN, use default value.)"
     },
     "MaxFunctionEvaluations":{
         "Value": NaN,
         "Type": "double",
-        "Description": "'MaxFunctionEvaluations' option of solver (If blank, use default value.)"
+        "Description": "'MaxFunctionEvaluations' option of solver (If NaN, use default value.)"
     },
     "UseParallel":{
         "Value": false,

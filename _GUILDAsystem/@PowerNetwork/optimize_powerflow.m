@@ -1,87 +1,83 @@
-function [powerflow_bus, powerflow_cub, flag, output, lambda, OPFprob] = optimize_powerflow(obj,options)
+function varargout = optimize_powerflow(obj, varargin)
+% <@Desc>
+% Calculates the optimal power flow of the network: the operating point that minimizes
+% the generation cost (tab_parameter.OPF of the components) under the constraints in
+% tab_parameter.operation of the buses, components and branches. The settings are the
+% stored defaults of net.solver_OPF; Name-Value options override them for this call only
+% (net.solver_OPF is not changed). The network is not changed.
+% Accepted options are the names in OptimalPowerFlow.OptionMap plus Plot and Export;
+% any other name stops with GUILDA:resolve_options:UnknownName.
+% <@Role> Analysis
+% <@Summary> Calculate the optimal power flow; returns an OPFResult.
+% <@Signatures>
+% [
+%   "result = net.optimize_powerflow()",
+%   "[result, flag, output] = net.optimize_powerflow(Name, Value)"
+% ]
+% <@Parameters>
+% [
+%   {"Name": "Method", "Type": "\"ELD\" | \"DC OPF\" | \"AC OPF\"", "Description": "Formulation: economic load dispatch (branches ignored), DC approximation or AC power flow equations (net.solver_OPF.Method).", "Required": false, "Default": "net.solver_OPF.Method"},
+%   {"Name": "Solver", "Type": "\"auto\" | \"linprog\" | \"quadprog\" | \"fmincon\"", "Description": "Optimization solver; \"auto\" lets solve choose (net.solver_OPF.Solver).", "Required": false, "Default": "net.solver_OPF.Solver"},
+%   {"Name": "Tolerance", "Type": "positive double scalar", "Description": "OptimalityTolerance of the solver (net.solver_OPF.OptimalityTolerance; NaN = solver default).", "Required": false, "Default": "net.solver_OPF.OptimalityTolerance"},
+%   {"Name": "MaxIteration", "Type": "positive integer scalar", "Description": "MaxIterations of the solver (net.solver_OPF.MaxIteration; NaN = solver default).", "Required": false, "Default": "net.solver_OPF.MaxIteration"},
+%   {"Name": "Verbose", "Type": "logical scalar", "Description": "Print solver progress (sets Display to \"iter\" or \"none\").", "Required": false, "Default": "net.solver_OPF.Display"},
+%   {"Name": "Plot", "Type": "logical scalar", "Description": "Call result.Plot after the calculation.", "Required": false, "Default": "false"},
+%   {"Name": "Export", "Type": "logical scalar or string scalar", "Description": "Call result.Export after the calculation: true for the default file name, or the file name.", "Required": false, "Default": "false"}
+% ]
+% <@Returns>
+% [
+%   {"Name": "result", "Type": "OPFResult", "Description": "Bus values, connection injections, branch flows, cost and Lagrange multipliers of the solution."},
+%   {"Name": "flag", "Type": "optim.problemdef.ExitFlag", "Description": "exitflag of solve (positive = solved)."},
+%   {"Name": "output", "Type": "struct", "Description": "Solver details; output.message describes the outcome."}
+% ]
+% <@Examples>
+% [
+%   "```matlab\n[res, flag] = net.optimize_powerflow();            % AC OPF (net.solver_OPF.Method)\nres.tab_bus                                         % Varg, V, P, Q, Vphasor, Iphasor of each bus\nres.r_cost                                          % optimal cost\nres = net.optimize_powerflow(Method=\"ELD\", Verbose=false, Plot=true);\n```"
+% ]
+
+    varargin = v3_opf_args(varargin);                         % COMPAT(v3)
+    [c_nv, opt] = take_call_options(varargin);
+    s_options   = obj.solver_OPF.get_options(c_nv);
+
+    [result, flag, output] = obj.solver_OPF.solve(obj, s_options);
+
+    if opt.Plot
+        result.Plot();
+    end
+    if isstring(opt.Export)
+        result.Export(opt.Export);
+    elseif opt.Export
+        result.Export();
+    end
+
+    varargout = {result, flag, output};
+    varargout = legacy_output(varargout, nargout, 6, @v3_optimize_powerflow, "OptimizePowerflowTuple"); % COMPAT(v3)
+end
+
+
+function [c_nv, opt] = take_call_options(c_in)
+% Separates the options of this call (Plot, Export) from the solver options
+    c_nv = c_in;
+    opt  = call_options();
+    if mod(numel(c_in), 2) ~= 0
+        return              % not Name-Value pairs: tools.resolve_options reports it
+    end
+    lv_call = false(size(c_in));
+    for k = 1:2:numel(c_in)
+        lv_call(k:k+1) = (ischar(c_in{k}) || isstring(c_in{k})) && any(strcmpi(c_in{k}, ["Plot","Export"]));
+    end
+    c_call = c_in(lv_call);
+    c_nv   = c_in(~lv_call);
+    opt    = call_options(c_call{:});
+end
+
+function opt = call_options(opt)
     arguments
-        obj 
-        options.methods (1,1) string {mustBeMember(options.methods,["ELD","DC OPF","AC OPF"])} = "AC OPF";
+        opt.Plot   (1,1) logical = false
+        opt.Export {mustBeA(opt.Export, ["logical","string","char"])} = false
     end
-
-    % get OPF problem
-    [OPFprob,x0] = obj.build_opf_problem("methods",options.methods);
-
-    % solve OPF problem
-    [sol,~,flag,output,lambda] = solve(OPFprob,x0);
-    
-    a_Bus    = obj.a_Bus;
-    a_Branch = obj.a_Branch;
-    rm_bus   = [];
-    rm_cub   = [];
-    str_cub  = [];
-
-    % powerflow_cub has one row per connection to a bus, in bus order:
-    %   the bus's components ("<component>"), then the branch ends at the bus ("<branch>_<bus>").
-    % Each row is the injection into the bus (Iphasor, P, Q from the component / branch into the bus).
-    cv_strBranchBus = cellfun(@(br) string(br.a_Bus), a_Branch, "UniformOutput", false);
-        
-    % Format sol
-    for i_bus = 1:numel(a_Bus)
-        bus     = a_Bus{i_bus};
-        str_bus = string(bus);
-        a_com   = bus.a_Component;
-        if isempty(a_com); a_com = cell(0,1); end
-        str_bra = string.empty(0,1);
-        for i_bra = 1:numel(a_Branch)
-            if any(cv_strBranchBus{i_bra} == str_bus)
-                str_bra = [str_bra; string(a_Branch{i_bra})+"_"+str_bus];  %#ok
-            end
-        end
-        str_cub = [str_cub; string(a_com); str_bra];                       %#ok
-
-        switch options.methods
-            case "AC OPF"
-                sol_V = sol.(str_bus);
-                c_V   = sol_V(2) * exp(1j*sol_V(1));
-                r_P   = 0;
-                r_Q   = 0;
-                c_I   = 0;
-                for i_com = 1:numel(a_com)
-                    sol_com = sol.(string(a_com{i_com}));
-                    Pcub = sol_com(1);
-                    Qcub = sol_com(2);
-                    Icub = (Pcub-1j*Qcub)/conj(c_V);
-                    r_P  = r_P + Pcub;
-                    r_Q  = r_Q + Qcub;
-                    c_I  = c_I + Icub;
-                    rm_cub = [rm_cub; [Icub,Pcub,Qcub]];                    %#ok
-                end
-                for i_bra = 1:numel(str_bra)
-                    sol_bra = sol.(str_bra(i_bra));
-                    rm_cub  = [rm_cub; [sol_bra(3)+1j*sol_bra(4),sol_bra(1),sol_bra(2)]]; %#ok
-                end
-                rm_bus = [rm_bus; [sol_V(1),sol_V(2),r_P,r_Q,c_V,c_I]];    %#ok
-
-            case "DC OPF"
-                rv_P   = cellfun(@(c) sol.(string(c)), a_com);
-                rv_Pbr = arrayfun(@(s) sol.(s), str_bra);
-                rm_cub = [rm_cub; rv_P(:); rv_Pbr(:)];                      %#ok
-                rm_bus = [rm_bus; [sol.(str_bus), 1, sum(rv_P)]];           %#ok
-
-            case "ELD"
-                % Branches are ignored in ELD, so the branch rows are NaN.
-                rv_P   = cellfun(@(c) sol.(string(c)), a_com);
-                rm_cub = [rm_cub; rv_P(:); nan(numel(str_bra),1)];          %#ok
-                rm_bus = [rm_bus; sum(rv_P)];                               %#ok
-        end
+    if ischar(opt.Export)
+        opt.Export = string(opt.Export);
     end
-
-    switch options.methods
-        case "AC OPF"
-            powerflow_bus = array2table( rm_bus, "VariableNames",["Varg","V","P","Q","Vphasor","Iphasor"], "RowNames",string(a_Bus));
-            powerflow_cub = array2table( rm_cub, "VariableNames",["Iphasor","P","Q"], "RowNames",str_cub);
-        case "DC OPF"
-            powerflow_bus = array2table( rm_bus, "VariableNames",["Varg","V","P"], "RowNames",string(a_Bus));
-            powerflow_cub = array2table( rm_cub, "VariableNames","P", "RowNames",str_cub);
-        case "ELD"
-            powerflow_bus = array2table( rm_bus, "VariableNames","P", "RowNames",string(a_Bus));
-            powerflow_cub = array2table( rm_cub, "VariableNames","P", "RowNames",str_cub);
-    end
-
+    mustBeScalarOrEmpty(opt.Export);
 end

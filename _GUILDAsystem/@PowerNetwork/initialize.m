@@ -11,7 +11,7 @@ function [flag,tab_PFsol,output] = initialize(obj, options)
         case "powerflow calculation"
             [res_PF, flag, output] = obj.calculate_powerflow; tab_PFsol = res_PF.tab_bus;
         case "optimal powerflow"
-            [tab_PFsol, ~, flag, output] = optimize_powerflow(obj,"methods","AC OPF");
+            [res_OPF, flag, output] = obj.optimize_powerflow(Method="AC OPF"); tab_PFsol = res_OPF.tab_bus;
         case "calculate from Xequilibrium"
             [tab_PFsol, flag, output] = calculate_from_equilibrium(obj);
     end
