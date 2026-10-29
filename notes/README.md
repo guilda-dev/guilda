@@ -12,6 +12,8 @@ decided or fixed, and how to migrate scripts and models.
   compatibility policy.
 - [status.md](status.md) — current test results, known failures and open
   items.
+- [opf-requirements.md](opf-requirements.md) — agreed OPF requirements,
+  roadmap and open design questions.
 
 Where other kinds of content go:
 

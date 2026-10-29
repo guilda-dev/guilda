@@ -50,12 +50,18 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Vvar, optio
             varji = optimvar(str(1), var, 1, "LowerBound",lb, "UpperBound",ub);
             varij = optimvar(str(2), var, 1, "LowerBound",lb, "UpperBound",ub);
 
-            x0.(str(1)) = zeros(4,1);
-            x0.(str(2)) = zeros(4,1);
-
             % define Iij/Iji and Constraint
             rm_Yij  = - obj.get_admittance_matrix; % << The direction into the bus is positive, so it becomes subtraction.
             rm_Yex  = tools.complex2matrix(rm_Yij);
+
+            % Initial point: the end values at the initial bus voltages, so that the
+            % definitions below hold at x0 (a zero current is also a non-smooth point of |I|).
+            rv_x0V = [x0.(str_bus(1)), x0.(str_bus(2))];
+            cv_V0  = (rv_x0V(2,:) .* exp(1j*rv_x0V(1,:))).';
+            cv_I0  = rm_Yij * cv_V0;
+            cv_S0  = cv_V0 .* conj(cv_I0);
+            x0.(str(1)) = [real(cv_S0(1)); imag(cv_S0(1)); real(cv_I0(1)); imag(cv_I0(1))];
+            x0.(str(2)) = [real(cv_S0(2)); imag(cv_S0(2)); real(cv_I0(2)); imag(cv_I0(2))];
             
             prob.Constraints.("defIre_"+str(1)) = varji("Ireal") == rm_Yex(1,1) * Vbusi("V") * cos(Vbusi("Varg")) ...
                                                                   + rm_Yex(1,2) * Vbusi("V") * sin(Vbusi("Varg")) ...
@@ -90,14 +96,16 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Vvar, optio
             const.(Convar(2,1)) = const.(Convar(2,1)) + P_j;
             const.(Convar(2,2)) = const.(Convar(2,2)) + Q_j;
 
+            % Squared limits |I|^2 <= Imax^2 and |S|^2 = P^2+Q^2 <= Smax^2: smooth everywhere,
+            % unlike sqrt(), whose derivative is undefined at zero.
             if ~isnan(para_ope.Imax) && ~isinf(para_ope.Imax)
-                prob.Constraints.("Imax_"+str(1)) = sqrt( varji("Ireal")^2+varji("Iimag")^2 )<= para_ope.Imax;
-                prob.Constraints.("Imax_"+str(2)) = sqrt( varij("Ireal")^2+varij("Iimag")^2 )<= para_ope.Imax;
+                prob.Constraints.("Imax_"+str(1)) = varji("Ireal")^2 + varji("Iimag")^2 <= para_ope.Imax^2;
+                prob.Constraints.("Imax_"+str(2)) = varij("Ireal")^2 + varij("Iimag")^2 <= para_ope.Imax^2;
             end
 
             if ~isnan(para_ope.Smax) && ~isinf(para_ope.Smax)
-                prob.Constraints.("Smax_"+str(1)) = Vbusi("V") * sqrt( varji("Ireal")^2+varji("Iimag")^2 ) <= para_ope.Smax;
-                prob.Constraints.("Smax_"+str(2)) = Vbusj("V") * sqrt( varij("Ireal")^2+varij("Iimag")^2 ) <= para_ope.Smax;
+                prob.Constraints.("Smax_"+str(1)) = P_i^2 + Q_i^2 <= para_ope.Smax^2;
+                prob.Constraints.("Smax_"+str(2)) = P_j^2 + Q_j^2 <= para_ope.Smax^2;
             end
             
         case "DC OPF"
@@ -107,13 +115,14 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Vvar, optio
             P_i = optimvar(str(1), {'P'}, 1, "LowerBound",lb, "UpperBound",ub);
             P_j = optimvar(str(2), {'P'}, 1, "LowerBound",lb, "UpperBound",ub);
             
-            x0.(str(1)) = 0;
-            x0.(str(2)) = 0;
-
             % |V|=1, lossless: power into bus i is -b_ij*(θi-θj) with b_ij = imag(Y_ij) (= 1/X when R=0)
             rm_Y = obj.get_admittance_matrix;
             prob.Constraints.("defP_"+str(1)) = P_i == imag(rm_Y(1,2)) *(Vbusj("Varg")-Vbusi("Varg"));
             prob.Constraints.("defP_"+str(2)) = P_j == imag(rm_Y(2,1)) *(Vbusi("Varg")-Vbusj("Varg"));
+
+            % Initial point: the end values at the initial bus angles
+            x0.(str(1)) = imag(rm_Y(1,2)) *(x0.(str_bus(2))-x0.(str_bus(1)));
+            x0.(str(2)) = imag(rm_Y(2,1)) *(x0.(str_bus(1))-x0.(str_bus(2)));
 
             const.(Convar(1,1)) = const.(Convar(1,1)) + P_i;
             const.(Convar(2,1)) = const.(Convar(2,1)) + P_j;

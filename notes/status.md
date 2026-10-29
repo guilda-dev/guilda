@@ -92,6 +92,54 @@ Checked against the code on 2026-10-29.
   (`grep -rn "COMPAT(v3)" _GUILDAsystem _GUILDAobject @GUILDA`; see
   [v4-migration.md](v4-migration.md#4-compatibility-policy)).
 
+### OPF
+
+Requirements and roadmap: [opf-requirements.md](opf-requirements.md).
+Step 1 (correctness of ELD, DC OPF and AC OPF) is done on
+`fix/opf-correctness`:
+
+- Fixed: AC OPF with a branch `Imax` or `Smax` stopped in fmincon (NaN
+  derivative of `sqrt` at the zero start). The limits are now squared
+  (`|I|^2 <= Imax^2`, `P^2+Q^2 <= Smax^2`) and branch-end variables start at
+  the values of the initial bus voltages.
+- Fixed: AC OPF with linear-only costs (`HP = HQ = 0`) failed inside
+  fmincon; zero cost terms are no longer added to the objective.
+- Checked, no change: ELD balance includes the loads; DC sign convention
+  (power into a bus is `Im(Y_ij)*(θj-θi)`); slack-bus reference angle;
+  generator Q limits; duals are labeled by constraint name, and the nodal
+  price is `-lambda.Constraints.balancedP_<bus>` (verified against finite
+  differences).
+- Start point: bus `V0`/`Varg0` (flat by default). A power-flow warm start
+  was measured and not adopted: it did not reduce iterations (9-bus 43 → 43,
+  IEEE14 59 → 72) and `calculate_powerflow` may set the slack bus, which
+  would edit the network.
+- `DebugScript.run_all` on `fix/opf-correctness` (2026-10-29): 162 tests,
+  PASS 160 / KNOWN 1 / FAIL 0 / SKIP 1 (the MATPOWER comparison). `run_all`
+  reports a test as SKIP when it throws `DebugScript:Skip`.
+- `tools.network_to_mpc` converts a network into a MATPOWER case. The
+  MATPOWER comparison test reports SKIP when `runopf` is not on the path;
+  it has not been run against a real MATPOWER installation yet. The
+  case14 optimum (8081.53 / 7642.59 $/hr) is checked without MATPOWER.
+
+Open:
+
+- **DC susceptance convention.** GUILDA uses `b = Im(Y_ij)` (= `X/(R²+X²)`),
+  MATPOWER and most textbooks use `1/X`. Results differ when `R ≠ 0`.
+  Phase shifters are not modeled in DC OPF.
+- **Load cost defaults.** `add_component` gives every component, including
+  loads, `HP = fP = 1`. A fixed load's cost is a constant that is added to
+  `r_cost`; finite differences of `r_cost` with respect to a load include it.
+- **CSV import drops transformer taps.** `branch/parameter.csv` files use
+  the column names `tap`/`phase`, but `CsvNetHandler.import` reads only
+  `Tap`/`Phase`, so every imported tap is 1 (e.g. IEEE14 transformers
+  4-7, 4-9, 5-6).
+- **IEEE14 data differs from MATPOWER `case14`:** load Q has the wrong sign
+  on all loads except bus 4 (loads inject Q); branch `C` holds the total
+  line charging B instead of B/2, and B of branches 2-4, 2-5, 3-4, 4-5 is
+  shifted by one row; generator limits are ±Inf instead of the case14
+  values; bus voltage limits are 0.5–1.5 instead of 0.94–1.06; costs are
+  `HP = fP = 1` for all components instead of the case14 gencost.
+
 ### Analysis API foundation
 
 - Added `AnalysisResult` (result base class), `tools.resolve_options`

@@ -44,8 +44,8 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Busvar, opt
                 const.(Convar(2)) = const.(Convar(2)) + var("Q");
                 x0.(str) = PQ0;
                 prob.Objective.GenCost = prob.Objective.GenCost...
-                                  + opf.HP * var("P")^2 + opf.fP * var("P") ...
-                                  + opf.HQ * var("Q")^2 + opf.fQ * var("Q");
+                                  + cost_term(opf.HP, opf.fP, var("P")) ...
+                                  + cost_term(opf.HQ, opf.fQ, var("Q"));
                 
             case "DC OPF"
                 var  = optimvar(str, {'P'}, 1, "Type"      ,"continuous" ,...
@@ -54,7 +54,7 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Busvar, opt
                 Convar  = "P_" + string(obj.a_Bus);
                 const.(Convar) = const.(Convar) + var;
                 x0.(str)       = PQ0(1);
-                prob.Objective.GenCost = prob.Objective.GenCost + opf.HP * var^2 + opf.fP * var;
+                prob.Objective.GenCost = prob.Objective.GenCost + cost_term(opf.HP, opf.fP, var);
     
             case "ELD"
                 var  = optimvar(str, {'P'}, 1, "Type"      ,"continuous" ,...
@@ -62,10 +62,23 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Busvar, opt
                                                "UpperBound",ub(1)        );
                 const.P = const.P + var;
                 x0.(str) = PQ0(1);
-                prob.Objective.GenCost = prob.Objective.GenCost + opf.HP * var^2 + opf.fP * var;
+                prob.Objective.GenCost = prob.Objective.GenCost + cost_term(opf.HP, opf.fP, var);
         end
 
     % catch
     %     error("Error: This method must only be called internally by Bus.build_opf_problem/")
     % end
+end
+
+
+function expr = cost_term(H, f, var)
+% H*var^2 + f*var, leaving out zero coefficients: a zero quadratic term (0*var^2) makes
+% the objective generated for fmincon fail when the rest of the objective is linear.
+    expr = 0;
+    if H ~= 0
+        expr = expr + H * var^2;
+    end
+    if f ~= 0
+        expr = expr + f * var;
+    end
 end

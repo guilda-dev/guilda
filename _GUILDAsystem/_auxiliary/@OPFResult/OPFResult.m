@@ -50,8 +50,13 @@ classdef OPFResult < AnalysisResult
         r_cost (1,1) double = NaN
 
         % <@Desc> Lagrange multipliers of the solution (fifth output of solve of the
-        % Optimization Toolbox); e.g. lambda.Constraints.balancedP_<bus> is the marginal
-        % price of active power at the bus.
+        % Optimization Toolbox), labeled by constraint and variable name.
+        % lambda.Constraints.balancedP_<bus> (balancedP in "ELD") is the change of the
+        % optimal cost per unit of injection at the bus, so the nodal price of active
+        % power (cost per unit of load) is -lambda.Constraints.balancedP_<bus>;
+        % balancedQ_<bus> ("AC OPF") is the same for reactive power. Branch limits are in
+        % lambda.Constraints.Imax_<branch>_<bus> and Smax_<branch>_<bus>; bound
+        % multipliers (e.g. the branch Pmax) are in lambda.Variables.<name>.Lower/Upper.
         % <@Role> Result
         % <@Type> struct
         % <@Size> 1x1

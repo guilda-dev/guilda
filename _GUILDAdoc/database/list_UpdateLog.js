@@ -63,5 +63,10 @@ const updateLogData = [
     "title": "Start in batch mode",
     "date": "2026-10-29",
     "content": "GUILDA now starts in matlab -batch; the tutorial is opened only when the desktop is available."
+  },
+  {
+    "title": "Optimal power flow fixes",
+    "date": "2026-10-29",
+    "content": "AC OPF solves with branch Imax and Smax limits (they stopped fmincon before) and with linear-only costs (HP = HQ = 0). Branch flow variables start at the values of the initial bus voltages. OPFResult.lambda documents the nodal price as -lambda.Constraints.balancedP_<bus>. New tools.network_to_mpc converts a network into a MATPOWER case."
   }
 ];
