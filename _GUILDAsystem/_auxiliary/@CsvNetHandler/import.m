@@ -45,6 +45,8 @@ function net = import(path, net, options)
 
     % Validate table
     tab_bra = readtable(fullfile(path, "branch", "parameter.csv"), "TextType", "string");
+    % export writes "tap"/"phase" (the Branch parameter names); "Tap"/"Phase" (the add_branch names) are also accepted
+    tab_bra = rename_cols(tab_bra, ["tap","phase"], ["Tap","Phase"], "branch/parameter.csv");
     str_BraOpt = check_cols(tab_bra, str_BraReq, str_BraOpt, "branch/parameter.csv");
 
     % Add branches
@@ -144,6 +146,20 @@ function net = import(path, net, options)
     
     if options.Initialize
         net.initialize;
+    end
+end
+
+
+function tab = rename_cols(tab, old_cols, new_cols, relpath)
+    names = string(tab.Properties.VariableNames);
+    for i = 1:numel(old_cols)
+        if ~ismember(old_cols(i), names)
+            continue
+        end
+        assert(~ismember(new_cols(i), names), ...
+            "network:import_csv:DuplicateColumns", ...
+            "Both %s and %s are given in %s", old_cols(i), new_cols(i), relpath);
+        tab = renamevars(tab, old_cols(i), new_cols(i));
     end
 end
 

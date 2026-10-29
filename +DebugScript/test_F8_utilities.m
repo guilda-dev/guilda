@@ -105,6 +105,47 @@ catch ME
 end
 
 
+%% CSV round trip keeps transformer tap and phase
+% export は tap/phase の列名で書き出し、import はその列 (と Tap/Phase) を読む
+net = PowerNetwork("Tap2Bus");
+net.add_bus();  net.add_bus();
+net.add_branch("pi_transformer", [1,2], "X",0.2, "Tap",0.95, "Phase",5/180*pi);
+net.a_Bus{1}.add_component("gen-park");
+net.a_Bus{2}.add_component("load-power", "P",-0.5, "Q",-0.1);
+str_dir = tempname;  mkdir(str_dir);
+c = onCleanup(@() rmdir(str_dir, "s"));
+str_path = CsvNetHandler.export(net, "Tap2Bus", "savepath", str_dir);
+str_csv  = fullfile(str_path, "branch", "parameter.csv");
+tab_bra  = readtable(str_csv);
+assert(all(ismember(["tap","phase"], string(tab_bra.Properties.VariableNames))))
+
+get_tp = @(n) n.a_Branch{1}.tab_parameter.dynamics{1,["tap","phase"]};
+net2 = DebugScript.helper.quiet(@() CsvNetHandler.import(str_path, "Initialize", false));
+assert(max(abs(get_tp(net2) - [0.95, 5/180*pi])) < 1e-12)
+assert(norm(net2.get_admittance_matrix.Variables - net.get_admittance_matrix.Variables, "fro") < 1e-12)
+
+% 列名 Tap/Phase でも読める
+writetable(renamevars(tab_bra, ["tap","phase"], ["Tap","Phase"]), str_csv);
+net3 = DebugScript.helper.quiet(@() CsvNetHandler.import(str_path, "Initialize", false));
+assert(max(abs(get_tp(net3) - [0.95, 5/180*pi])) < 1e-12)
+
+% 両方の綴りがあるとエラー
+tab_bra.Tap = tab_bra.tap;
+writetable(tab_bra, str_csv);
+try
+    CsvNetHandler.import(str_path, "Initialize", false);
+    error("DebugScript:noError", "tap と Tap の両方があってもエラーにならない")
+catch ME
+    assert(ME.identifier == "network:import_csv:DuplicateColumns", ME.message)
+end
+
+% 同梱の IEEE14bus の変圧器タップが読み込まれる
+net = DebugScript.helper.quiet(@() network.IEEE14bus);
+str_bus = string(net.a_Bus(:)).';
+r_tap = @(f,t) net.a_Branch{cellfun(@(b) isequal(string(b.a_Bus(:)).', str_bus([f t])), net.a_Branch)}.tab_parameter.dynamics.tap;
+assert(isequal([r_tap(4,7), r_tap(4,9), r_tap(5,6)], [0.978, 0.969, 0.932]))
+
+
 %% Template IEEE14bus
 net = DebugScript.helper.quiet(@() network.IEEE14bus);
 [~, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
