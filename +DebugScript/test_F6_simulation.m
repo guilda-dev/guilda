@@ -468,6 +468,25 @@ r0   = net0.simulate([0,20], ev0).odeResults;
 assert(abs(r0.Bus(1).Component(1).X.omega(end)) > 10*abs(omega(end)))
 
 
+%% Tripped global controller gives no output
+% 大域制御器を解列すると、解列中の出力は 0 (機器の入力は定常値のまま)
+net = DebugScript.helper.build_ieee14();
+agc = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002", kP=100, kI=500);
+net.add_global_controller(agc);
+DebugScript.helper.quiet(@() net.initialize);
+
+ev1 = odeEventSet("step", net, "TimeSpan", [1,20], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", -0.1);
+ev2 = odeEventSet("trip", net, "TimeSpan", [5,10], "TripUnit", "agc");
+sol = net.simulate([0,20], ev1, ev2);
+r   = sol.odeResults;
+Pm  = r.Bus(1).Component(1).U.Pmech;
+lv  = inwin(r.t, 5, 10);
+assert(any(lv))
+assert(max(abs(Pm(lv) - Pm(1))) < 1e-8, "解列した AGC の出力 (比例項) が機器の入力に加わっている")
+assert(max(abs(Pm(inwin(r.t, 1, 5)) - Pm(1))) > 1e-3)    % 解列前は AGC が働く
+assert(agc.l_isConnect, "シミュレーション後は接続状態に戻る")
+
+
 %% Two global controllers act together
 % 大域制御器は何台でも扱える。同じ発電機を alpha を半分ずつにした 2 台の AGC で制御すると、
 % 出力の和が 1 台の AGC と等しいので、同じ応答になる

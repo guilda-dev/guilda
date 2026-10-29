@@ -179,6 +179,46 @@ assert(numel(pss.rv_Xequilibrium) == numel(pss.sv_x))
 assert(numel(gen.rv_Xequilibrium_all) == numel(gen.sv_x) + numel(avr.sv_x))
 
 
+%% Replace AVR keeps its PSS
+net = DebugScript.helper.build_ieee14();
+gen = net.a_Bus{1}.a_Component{1};
+avr1 = controller.avr.AVR_ST1("avr1");
+pss1 = controller.pss.PSS1("pss1");
+gen.add_local_controller(avr1, pss1)
+
+% 新しい AVR で置き換えると (警告が出る)、PSS は新しい AVR へ移る (PSS は AVR へ信号を送る)
+avr2 = controller.avr.AVR_DC1("avr2");
+lastwarn("");
+evalc("gen.add_local_controller(avr2)");
+[~, id] = lastwarn();
+assert(string(id) == "GUILDA:Component:ReplaceController")
+assert(numel(gen.a_LocalController) == 1 && gen.a_LocalController{1} == avr2)
+assert(numel(avr2.a_LocalController) == 1 && avr2.a_LocalController{1} == pss1)
+assert(avr2.a_Component == gen && pss1.a_Component == avr2)
+
+% 外した AVR は機器・PSS への参照を持たない
+assert(isempty(avr1.a_Component) && isempty(avr1.a_LocalController))
+
+% PSS の置き換え: 古い PSS は外れる
+pss2 = controller.pss.PSS1("pss2");
+evalc("gen.add_local_controller(pss2)");
+assert(numel(avr2.a_LocalController) == 1 && avr2.a_LocalController{1} == pss2)
+assert(pss2.a_Component == avr2 && isempty(pss1.a_Component))
+
+% AVR と PSS を同時に与えると、与えた PSS が新しい AVR に付く
+avr3 = controller.avr.AVR_ST1("avr3");
+pss3 = controller.pss.PSS1("pss3");
+evalc("gen.add_local_controller(avr3, pss3)");
+assert(gen.a_LocalController{1} == avr3 && avr3.a_LocalController{1} == pss3)
+assert(isempty(pss2.a_Component) && isempty(avr2.a_LocalController))
+
+% 置き換え後も平衡点を計算できる
+DebugScript.helper.quiet(@() net.initialize);
+assert(numel(pss3.rv_Xequilibrium) == numel(pss3.sv_x))
+sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
+assert(DebugScript.helper.max_state_drift(sol) < 1e-6)
+
+
 %% Add local controller AVR_DC1
 net = DebugScript.helper.build_ieee14();
 gen = net.a_Bus{2}.a_Component{1};
@@ -225,7 +265,7 @@ agc  = controller.agc.broadcast_PI_AGC(net, "agc", c{:}, alpha=[1;1], beta=[1;1]
 net.add_global_controller(agc);
 
 assert(numel(net.a_GlobalController) == 1 && net.a_GlobalController{1} == agc)
-assert(agc.PowerNetwork{1} == net)                   % 親への参照は add_global_controller が設定する
+assert(agc.a_PowerNetwork == net)                   % 親への参照は add_global_controller が設定する
 assert(isequal(string(agc.controlledUnits)', ["SG1B001","SG1B002"]))
 assert(isequal(agc.tab_parameter.dynamics.kI, [500;500]))
 
@@ -267,7 +307,7 @@ DebugScript.helper.quiet(@() net.initialize);
 % すべての大域制御器に平衡点が設定されるべき
 assert(numel(agc1.rv_Uequilibrium) == 1, "1台目の AGC の平衡点が未設定")
 assert(numel(agc2.rv_Uequilibrium) == 1, "2台目の AGC の平衡点が未設定")
-assert(agc1.PowerNetwork{1} == net && agc2.PowerNetwork{1} == net)
+assert(agc1.a_PowerNetwork == net && agc2.a_PowerNetwork == net)
 assert(isequal(agc1.rv_Xequilibrium, 0) && isequal(agc2.rv_Xequilibrium, 0))
 
 
@@ -453,7 +493,7 @@ net.add_global_controller(agc);
 DebugScript.helper.quiet(@() net.initialize);
 net.remove_global_controller("agc");
 assert(isempty(net.a_GlobalController))
-assert(isempty(agc.PowerNetwork))                   % 削除した制御器は系統への参照を持たない
+assert(isempty(agc.a_PowerNetwork))                   % 削除した制御器は系統への参照を持たない
 assert(net.tab_editLog.tag(end) == "Topology")
 
 % 存在しないタグはエラー

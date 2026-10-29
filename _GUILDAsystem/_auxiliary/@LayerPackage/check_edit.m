@@ -3,8 +3,9 @@ function flag = check_edit(obj)
 % Brings the layer and its descendants up to date before an analysis.
 % Rebuilds the f_* handle cache of every layer whose l_staleOdefcn is set
 % (only those layers), and reports whether the equilibrium set by
-% initialize is still valid. Called at the start of initialize, simulate
-% and get_sys (see PowerNetwork.check_edit).
+% initialize is still valid. Called at the start of initialize and, through
+% PowerNetwork.require_equilibrium, of solver_ODE.solve and solver_LIN.solve
+% (net.simulate, net.linearize, net.get_sys); see PowerNetwork.check_edit.
 % <@Role>
 % Edit Log
 % <@Summary>

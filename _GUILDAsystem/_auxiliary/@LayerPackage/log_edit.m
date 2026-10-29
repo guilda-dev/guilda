@@ -77,7 +77,7 @@ function log_edit(obj, log, tag, before, after, time, tab)
     % the handle cache of the parameter's owner (of the owner and all its
     % descendants for a "base" parameter such as Hz), and the network equilibrium.
     str_logtag = string(tab{1,4});
-    [l_odefcn, l_equilibrium] = LayerPackage.edit_effect(str_logtag);
+    [l_odefcn, l_equilibrium] = LayerPackage.edit_effect(str_logtag, string(tab{1,3}));
     if l_odefcn && isa(obj,"Parameter") && isa(obj.parent,"LayerPackage")
         if str_logtag == "Parameter(base)"
             obj.parent.mark_stale_odefcn();

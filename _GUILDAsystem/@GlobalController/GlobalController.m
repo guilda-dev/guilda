@@ -20,7 +20,7 @@ classdef GlobalController < PowerSystemModel
         f_JacobiY                
     end    
     properties (SetAccess=protected)
-        PowerNetwork        
+        a_PowerNetwork                         % [   Layer   ] 接続している PowerNetwork (add_global_controller が設定)
     end
     properties (SetAccess=protected, Hidden)
         controlledUnits
@@ -33,7 +33,7 @@ classdef GlobalController < PowerSystemModel
         rv_Xoffset = 0
         rv_Uoffset = @(t) 0
 
-        l_isConnect (1,1) logical = true
+        l_isConnect (1,1) logical = true       % false while a trip event names it (set by odeSimulator); its output is zero
     end        
     properties(SetAccess={?PowerNetwork})
         rv_Xequilibrium (:,1) double = zeros(0,1)   
@@ -135,20 +135,13 @@ classdef GlobalController < PowerSystemModel
     methods (Access={?Component,?LocalController,?PowerNetwork})        
         function set_parent(obj,net)
             % net = [] detaches the controller (PowerNetwork.remove_global_controller)
-            if isempty(net)
-                obj.PowerNetwork = [];
-            else
-                obj.PowerNetwork = {net}; 
-            end
+            obj.a_PowerNetwork = net;
             obj.rebuild_odefcn_tree();    % use the frequency of the network
         end
     end
     methods        
         function p = get.parent(obj)
-            p = obj.PowerNetwork;
-            if iscell(p) && ~isempty(p)
-                p = p{1};    % stored in a cell; edits are logged to this network
-            end
+            p = obj.a_PowerNetwork;
         end
         function p = get.children(~) 
             p = {};

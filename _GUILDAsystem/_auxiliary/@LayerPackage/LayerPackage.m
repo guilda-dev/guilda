@@ -59,9 +59,10 @@ classdef LayerPackage < handle
         l_staleOdefcn (1,1) logical = false
 
         % <@Desc> True when the equilibrium set by initialize no longer matches the model.
-        % Kept on PowerNetwork only. Set by log_edit for edits of "dynamics", "base" and
-        % "powerflow" parameters, topology changes and slack-bus changes; edits of
-        % "operation", "OPF" and "graph" parameters leave it unchanged. Cleared by
+        % Kept on PowerNetwork only. Set by log_edit for edits of "dynamics", "base"
+        % (baseMVA) and "powerflow" parameters, topology changes and slack-bus changes;
+        % edits of the network Hz and of "operation", "OPF" and "graph" parameters leave
+        % it unchanged. Cleared by
         % reset_edit (end of initialize). See edit_effect for the mapping.
         % <@Role> Edit Log
         % <@Type> logical
@@ -137,20 +138,28 @@ classdef LayerPackage < handle
         end
     end
     methods(Static, Hidden)
-        function [l_odefcn, l_equilibrium] = edit_effect(str_logtag)
-        % What an edit makes stale, from the "tag" column of tab_editLog.
+        function [l_odefcn, l_equilibrium] = edit_effect(str_logtag, str_log)
+        % What an edit makes stale, from the "tag" and "log" columns of tab_editLog.
         %   tag                    f_* handles   equilibrium
         %   Parameter(dynamics)    stale         stale
-        %   Parameter(base)        stale         stale     (PowerNetwork para_base: Hz, baseMVA;
+        %   Parameter(base)        stale         stale     (PowerNetwork para_base: baseMVA;
         %                                                   marks every layer of the network)
+        %   Parameter(base), Hz    stale         -         (log "edit Hz": the equilibrium does
+        %                                                   not depend on the nominal frequency)
         %   Parameter(powerflow)   -             stale
         %   Topology               -             stale     (add_/remove_/replace_)
         %   Slack                  -             stale
         %   Parameter(operation)   -             -
         %   Parameter(OPF)         -             -
         %   Parameter(graph)       -             -
+            arguments
+                str_logtag (1,1) string
+                str_log    (1,1) string = ""
+            end
             switch str_logtag
-                case {'Parameter(dynamics)', 'Parameter(base)'}
+                case "Parameter(base)"
+                    l_odefcn = true;  l_equilibrium = str_log ~= "edit Hz";
+                case "Parameter(dynamics)"
                     l_odefcn = true;  l_equilibrium = true;
                 case {'Parameter(powerflow)', 'Topology', 'Slack'}
                     l_odefcn = false; l_equilibrium = true;

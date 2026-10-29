@@ -234,6 +234,14 @@ classdef PowerNetwork < PowerSystemModel
             end
         end
     end
+    methods(Access={?odeSimulator, ?odeLinearizer})
+        function require_equilibrium(obj)
+            % Called at the start of solver_ODE.solve and solver_LIN.solve (the one place
+            % of this check for simulate, linearize and get_sys): rebuild stale f_*
+            % handles; error if net.initialize() is needed.
+            obj.check_edit("RequireEquilibrium", true);
+        end
+    end
 
 %% Get Method
     methods

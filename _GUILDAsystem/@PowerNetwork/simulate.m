@@ -57,7 +57,6 @@ function [result, flag, output] = simulate(obj, time, varargin)
     [c_nv, opt] = take_call_options(c_nv);
     s_options   = obj.solver_ODE.get_options(c_nv);
 
-    obj.check_edit("RequireEquilibrium", true);    % rebuild stale f_*; error if net.initialize() is needed
     [result, flag, output] = obj.solver_ODE.solve(obj, time, c_events, s_options);
 
     if s_options.Plot

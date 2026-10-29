@@ -4,7 +4,9 @@ function [result, flag, output] = solve(obj, net, s_options)
 % (the Jacobian blocks in the order of net.get_variable_map()) as a LinearizationResult.
 % The solver and the network are only read: nothing is written back into them (the
 % NonUnit choice is not stored on the buses). Called by net.linearize; calling it
-% directly is for advanced use.
+% directly is for advanced use. Like net.linearize, it first rebuilds stale f_* handles
+% and stops with the error GUILDA:PowerNetwork:EquilibriumStale when net.initialize()
+% is needed.
 % <@Role> Static Analysis
 % <@Summary> Linearize the network with the given settings.
 % <@Signatures>
@@ -30,6 +32,7 @@ function [result, flag, output] = solve(obj, net, s_options)
         s_options (1,1) struct = obj.get_options()
     end
     t0 = tic;
+    net.require_equilibrium();    % rebuild stale f_*; error if net.initialize() is needed
 
     a_bus = net.a_Bus;
     a_gc  = net.a_GlobalController;
