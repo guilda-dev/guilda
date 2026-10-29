@@ -8,6 +8,7 @@
         <entry key="BusNotFound">No bus with the tag ''{0}'' was found in ''{1}''.</entry> 
         <entry key="BusHasBranches">Bus ''{0}'' is connected to the branches {1}.&#xA;Remove them first with net.remove_branch(TAG), or remove them together with&#xA;  &gt;&gt; net.remove_bus(BUS_TAG, "RemoveBranches", true)</entry> 
         <entry key="BusHasControlledUnits">The components {0} on the removed bus are controlled by the global controller ''{1}''.&#xA;Remove the global controller first with net.remove_global_controller(TAG).</entry> 
+        <entry key="GconTagInUse">A global controller with the tag ''{0}'' is already in ''{1}''.&#xA;Give the new controller another tag, or remove the existing one first with net.remove_global_controller(TAG).</entry> 
         <entry key="GconNotFound">No global controller with the tag ''{0}'' was found in ''{1}''.</entry> 
         <entry key="SimulateArguments">net.simulate takes the time span, then the events (odeEventSet), then Name-Value options: net.simulate([t0, tend], ev1, ev2, ..., Name, Value). Argument {0} is a {1}.</entry>
     </message>

@@ -378,6 +378,21 @@ comp = bus.replace_component("LRX1B005", "load-power");
 assert(comp.str_tag == "LPQ1B005")
 
 
+%% Global controller tag in use is rejected
+% 大域制御器のタグは利用者が与えるので、使用中のタグはエラー (系統は変わらない)
+net = DebugScript.helper.build_ieee14();
+net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001"));
+agc2 = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B002");
+try
+    net.add_global_controller(agc2);
+    error("DebugScript:noError", "使用中のタグの大域制御器を追加できてしまう")
+catch ME
+    assert(ME.identifier == "GUILDA:PowerNetwork:GconTagInUse", ME.message)
+    assert(contains(ME.message, "'agc'"), ME.message)
+end
+assert(numel(net.a_GlobalController) == 1 && isempty(agc2.PowerNetwork))
+
+
 %% Remove bus
 net = DebugScript.helper.build_9bus();
 DebugScript.helper.quiet(@() net.initialize);    % 編集ログは initialize 後に記録される
