@@ -1,10 +1,16 @@
-function [cv_Vbus,flag,output] = solve_dynamic(obj, cm_Y, tab_PFset)
+function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_dynamic(~, cm_Y, tab_PFset, s_options)
+% Settles virtual bus dynamics at the power flow solution (ode15s). cm_Vhistory holds the
+% bus voltages at each output time (n_bus x n_step), rv_step the times [s].
 
     N   = size(tab_PFset,1);
-    M   = obj.dynamic.Mass;
-    D   = obj.dynamic.Damper;
-    foh = obj.dynamic.foh_PQ;
-    t_span = obj.dynamic.t_span;
+    M   = s_options.dynamic.Mass;
+    D   = s_options.dynamic.Damper;
+    foh = s_options.dynamic.foh_PQ;
+    t_span = s_options.dynamic.t_span;
+    tol = s_options.Tolerance;
+    if tol == 0
+        tol = 1e-5;
+    end
     
     idx_slack = (tab_PFset.Type == "slack");
     idx_PV    = (tab_PFset.Type == "PV");
@@ -53,7 +59,7 @@ function [cv_Vbus,flag,output] = solve_dynamic(obj, cm_Y, tab_PFset)
 
     % solve ODE
     ode_func   = @(t, Y) bus_dynamics(t, Y, cm_Y, tab_PFset, D, N, foh);
-    event_func = @(t, Y) convergence_events(t, Y, cm_Y, tab_PFset, N);
+    event_func = @(t, Y) convergence_events(t, Y, cm_Y, tab_PFset, N, tol);
     options = odeset('RelTol', 1e-4, 'AbsTol', 1e-5, ...
                      'Mass', MassMat, ...
                      'Events', event_func, ...
@@ -77,11 +83,9 @@ function [cv_Vbus,flag,output] = solve_dynamic(obj, cm_Y, tab_PFset)
         output.message = 'undefined error';
     end
 
-    % save step data
-    obj.rm_response = zeros(2*N, numel(t_out));
-    obj.rm_response(1:2:end) = Y_out(:, 1:N     ).';
-    obj.rm_response(2:2:end) = Y_out(:,(1:N)+2*N).';
-    obj.rr_step = t_out(:)';
+    % step data
+    cm_Vhistory = Y_out(:,(1:N)+2*N).' .* exp(1j*Y_out(:,1:N).');
+    rv_step     = t_out(:).';
 
     % Let the final value be the solution
     rv_Vsol = Y_out(end, (1:N)+2*N).';
@@ -152,7 +156,7 @@ end
 % =========================================================
 % イベント関数 (収束判定 & 異常停止)
 % =========================================================
-function [value, isterminal, direction] = convergence_events(~, Y, cm_Y, tab, N)
+function [value, isterminal, direction] = convergence_events(~, Y, cm_Y, tab, N, tol)
     theta = Y(1:N); V = Y(2*N+1:3*N);
     Vc = V .* exp(1j * theta);
     S = Vc .* conj(cm_Y * Vc);
@@ -164,7 +168,6 @@ function [value, isterminal, direction] = convergence_events(~, Y, cm_Y, tab, N)
     idx_PQ        = (tab.Type == "PQ");
 
     % ① 収束判定: 有効・無効電力のミスマッチの最大値が閾値以下か
-    tol = 1e-5;
     max_mismatch  = max([delta_P(idx_non_slack); delta_Q(idx_PQ); 0]);
     value(1)      = max_mismatch - tol; 
     isterminal(1) = 1; 

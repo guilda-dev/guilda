@@ -1,4 +1,18 @@
 {
+    "Method":{
+        "Value": "algebraic",
+        "Type": "select",
+        "options": [
+            "algebraic",
+            "dynamic"
+        ],
+        "Description": "Calculation method: 'algebraic' (fsolve) or 'dynamic' (virtual bus dynamics)"
+    },
+    "Tolerance":{
+        "Value": 0,
+        "Type": "double",
+        "Description": "Convergence tolerance ('FunctionTolerance' @fsolve, P/Q mismatch for 'dynamic'). 0 uses the solver default"
+    },
     "MaxIterations":{
         "Value": 0,
         "Type": "double",

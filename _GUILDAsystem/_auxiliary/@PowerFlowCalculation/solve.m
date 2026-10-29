@@ -1,129 +1,90 @@
-function [powerflow_bus,flag,output] = solve(obj, net, mode, opt)
+function [result,flag,output] = solve(obj, net, s_options)
+% <@Desc>
+% Runs the power flow calculation of net with the effective settings s_options and
+% returns the computed values as a PowerFlowResult. The solver is only read: nothing is
+% written back into it. Called by net.calculate_powerflow; calling it directly is for
+% advanced use.
+% <@Role> Analysis
+% <@Summary> Solve the power flow with the given settings.
+% <@Signatures>
+% [
+%   "[result, flag, output] = solve(obj, net)",
+%   "[result, flag, output] = solve(obj, net, s_options)"
+% ]
+% <@Parameters>
+% [
+%   {"Name": "obj", "Type": "PowerFlowCalculation", "Description": "Solver (net.solver_PF).", "Required": true, "Default": "-"},
+%   {"Name": "net", "Type": "PowerNetwork", "Description": "Network with a slack bus.", "Required": true, "Default": "-"},
+%   {"Name": "s_options", "Type": "struct", "Description": "Effective settings (output of get_options).", "Required": false, "Default": "obj.get_options()"}
+% ]
+% <@Returns>
+% [
+%   {"Name": "result", "Type": "PowerFlowResult", "Description": "Bus and branch values of the solution."},
+%   {"Name": "flag", "Type": "double or logical", "Description": "exitflag of fsolve (algebraic) or convergence (dynamic)."},
+%   {"Name": "output", "Type": "struct", "Description": "Solver details; output.message describes the outcome."}
+% ]
     arguments
         obj
-        net 
-        mode    (1,1) string {mustBeMember(mode,["algebraic","dynamic"])} = "algebraic"
-        opt.export  (1,1) logical = mode=="dynamic";
-        opt.filename(1,1) string  = string(datetime("now","Format","uuMMdd_HHmmss"))+"_PFcalculation.json"
+        net
+        s_options (1,1) struct = obj.get_options()
     end
- 
+    t0 = tic;
+
     tab_Ymat  = net.get_admittance_matrix;
     tab_PFset = tools.vcellfun(@(b) b.get_pf_set, net.a_Bus);
-    str_Bus   = tab_PFset.Properties.RowNames;
-    cm_Y      = tab_Ymat{str_Bus,str_Bus};
+    str_bus   = string(tab_PFset.Properties.RowNames);
+    cm_Y      = tab_Ymat{str_bus,str_bus};
 
-    switch mode
+    switch s_options.Method
         case "algebraic"
-            [cv_Vbus,flag,output] = obj.solve_algebraic(cm_Y, tab_PFset);
+            [cv_Vbus,flag,output,cm_Vhistory,rv_step] = obj.solve_algebraic(cm_Y, tab_PFset, s_options);
         case "dynamic"
-            [cv_Vbus,flag,output] = obj.solve_dynamic(cm_Y, tab_PFset);
+            [cv_Vbus,flag,output,cm_Vhistory,rv_step] = obj.solve_dynamic(cm_Y, tab_PFset, s_options);
     end
 
     % Vbus -> Ibus -> Pbus,Qbus
     cv_Ibus = cm_Y*cv_Vbus;
     cv_Sbus = cv_Vbus .* conj(cv_Ibus);
-        
+
     % convert double->table
-    str_bus = tab_PFset.Properties.RowNames;
-    powerflow_bus = array2table(...
+    tab_bus = array2table(...
         [angle(cv_Vbus),abs(cv_Vbus),real(cv_Sbus),imag(cv_Sbus),cv_Vbus,cv_Ibus], ...
         "VariableNames",["Varg","V","P","Q","Vphasor","Iphasor"],"RowNames",str_bus);
+    tab_branch = branch_flow(net, str_bus, cv_Vbus);
 
-
-    % export json each step value
-    if opt.export
-        n_Bus    = size(tab_PFset,1);
-
-        out = struct();
-    
-        l_slack = tab_PFset.Type'=="slack";
-        l_PV    = tab_PFset.Type'=="PV";
-        l_PQ    = tab_PFset.Type'=="PQ";
-
-        out.Text =   n_Bus+"Bus Model" +newline + ...
-                     " > slack : "              + mat2str(find(l_slack)) + newline + ...
-                     " > PV ("+sum(l_PV)+") : " + mat2str(find(l_PV))    + newline +...
-                     " > PQ ("+sum(l_PQ)+") : " + mat2str(find(l_PQ))    ;
-
-        out.nodes(n_Bus) = struct('Color',[], 'Label',[], 'Hover',[], ...
-                                  'Varg' ,[], 'Vabs' ,[] );
-
-
-        cr_Vbus = obj.rm_response(2:2:end,:) .* exp( 1j* obj.rm_response(1:2:end,:) );
-        cr_Ibus = cm_Y * cr_Vbus;
-        cr_Sbus = cr_Vbus .* conj(cr_Ibus);
-        rr_Pflow = -real(cr_Sbus);
-        rr_Iflow = -imag(cr_Sbus) ./ obj.rm_response(2:2:end,:);
-
-
-
-        for i_bus = 1:n_Bus
-            tab_i = tab_PFset(i_bus,:);
-    
-            type = tab_i.Type;
-            h = "Bus"+i_bus+" ("+type+")"+newline;
-            p = nan;
-            q = nan;
-            switch type
-                case "PV"
-                    c = [0,1,0,1];
-                    p = {tab_i.P};
-                    h = h+"P="+tab_i.P+", V="+tab_i.V;
-                case "PQ"
-                    c = [1,0,0,1];
-                    p = {tab_i.P};
-                    q = {tab_i.Q};
-                    h = h+"P="+tab_i.P+", Q="+tab_i.Q;
-                case "slack"
-                    c = [0,0,1,1];
-                    h = h+"Varg="+tab_i.Varg+", V="+tab_i.V;
-                otherwise
-                    c = [0,0,0,1];
-            end
-            l = num2str(i_bus);
-
-            if mode == "dynamic" && obj.dynamic.foh_PQ~=0
-                scale = min( obj.rr_step/obj.dynamic.foh_PQ, 1);
-                if iscell(p); p = p{1}*scale; end
-                if iscell(q); q = q{1}*scale; end
-            end
-
-            out.nodes(i_bus).Color = c;
-            out.nodes(i_bus).Label = l;
-            out.nodes(i_bus).Hover = h;
-            out.nodes(i_bus).Pset  = p;
-            out.nodes(i_bus).Qset  = q;
-            out.nodes(i_bus).Pflow = rr_Pflow(i_bus,:);
-            out.nodes(i_bus).Iflow = rr_Iflow(i_bus,:);
-            out.nodes(i_bus).Varg  = obj.rm_response(2*i_bus-1,:);
-            out.nodes(i_bus).Vabs  = obj.rm_response(2*i_bus  ,:);
-
-        end
-        g = graph(abs(cm_Y),'omitselfloops');
-        out.edges = reshape(g.Edges.EndNodes.', [], 1).';
-    
-        jsonStr = jsonencode(out,"PrettyPrint",true);
-        outFile = fullfile(GUILDA.pwd, opt.filename);
-        fid     = fopen(outFile, 'w'); 
-        fwrite(fid, jsonStr, 'char'); 
-        fclose(fid);
-
-        disp("<INFO>")
-        disp("  Exported json file: "+opt.filename);
-        disp("  You can upload this json file to the following link to visualize the calculation process.");
-        fprintf('  <a href="https://ta-nish18.github.io/GridSpring/">https://ta-nish18.github.io/GridSpring/</a>\n\n')
-    end
-
+    result = PowerFlowResult(net, obj, s_options, flag, output, t0, ...
+                             tab_bus, tab_branch, cm_Vhistory, rv_step);
 
     % Notify
     if flag<=0
-        str_warnFlag = obj.WhenFailed;
-        switch str_warnFlag
+        switch s_options.WhenFailed
         case "WARN" ; warning(output.message)
         case "ERROR"; error(output.message)
         case "DISP" ; disp(output.message)
-        case "NONE" ; return
         end
     end
+end
 
+
+function tab = branch_flow(net, str_bus, cv_Vbus)
+% Power and current at both ends of each branch (from = br.a_Bus{1}, to = br.a_Bus{2})
+    n_br  = numel(net.a_Branch);
+    cm_I  = zeros(n_br,2);
+    cm_S  = zeros(n_br,2);
+    for k = 1:n_br
+        br = net.a_Branch{k};
+        [~, idx] = ismember(string(br.a_Bus), str_bus);
+        cv_Vb = cv_Vbus(idx(:));
+        cv_Ib = br.get_admittance_matrix() * cv_Vb;
+        cm_I(k,:) = cv_Ib.';
+        cm_S(k,:) = (cv_Vb .* conj(cv_Ib)).';
+    end
+    str_branch = strings(n_br,1);
+    for k = 1:n_br
+        str_branch(k) = string(net.a_Branch{k});
+    end
+    tab = table(real(cm_S(:,1)), imag(cm_S(:,1)), real(cm_S(:,2)), imag(cm_S(:,2)), ...
+                cm_I(:,1), cm_I(:,2), real(sum(cm_S,2)), imag(sum(cm_S,2)), ...
+                'VariableNames', ["Pfrom","Qfrom","Pto","Qto","Ifrom","Ito","Ploss","Qloss"], ...
+                'RowNames', str_branch);
 end

@@ -126,7 +126,7 @@ end
 
 %% Template IEEE14bus_lossless
 net = DebugScript.helper.quiet(@() network.IEEE14bus_lossless);
-[tab, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow); tab = res.tab_bus;
 assert(numel(net.a_Bus) == 14 && flag > 0)
 % 抵抗 0 の系統なので有効電力の損失は 0
 assert(all(cellfun(@(b) b.tab_parameter.dynamics.R, net.a_Branch) == 0))
