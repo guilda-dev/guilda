@@ -1,12 +1,45 @@
 function sys = get_sys(obj, opt)
+% <@Desc>
+% Linear model of the bus: its components (with their local controllers) connected at
+% the bus, from the bus voltage V to the current I injected by the components
+% (port "V2I") or the inverse (port "I2V"). Point gives the point of the
+% linearization in the same form as net.linearize: [] for the equilibrium, a vector in
+% the order of bus.get_variable_map(), or {sim, t}. The model is not changed.
+% <@Role> Static Analysis
+% <@Summary> Linear model of the bus (V to I, or I to V).
+% <@Signatures>
+% [
+%   "sys = bus.get_sys()",
+%   "sys = bus.get_sys(port=\"I2V\", full=true, Point=x)"
+% ]
+% <@Parameters>
+% [
+%   {"Name": "port", "Type": "\"V2I\" | \"I2V\"", "Description": "Input and output ports.", "Required": false, "Default": "\"V2I\""},
+%   {"Name": "full", "Type": "logical scalar", "Description": "Also output the states.", "Required": false, "Default": "false"},
+%   {"Name": "Point", "Type": "[] | double vector | cell {sim, t}", "Description": "Point of the linearization.", "Required": false, "Default": "[] (the equilibrium)"}
+% ]
+% <@Returns>
+% [
+%   {"Name": "sys", "Type": "ss", "Description": "Descriptor state-space model with state, input and output names."}
+% ]
     arguments
         obj 
         opt.port (1,1) {mustBeMember(opt.port, ["V2I", "I2V"])} = "V2I"
         opt.full (1,1) logical = false
         opt.con  (1,1) logical = false
+        opt.Point = []
     end
 
-    sys = tools.cellfun(@(c) c.get_sys("port", "V2I", "full", opt.full), obj.a_Component);
+    if isempty(opt.Point) && ~iscell(opt.Point)
+        sys = tools.cellfun(@(c) c.get_sys("port", "V2I", "full", opt.full), obj.a_Component);
+    else
+        rv_point  = odeLinearizer.point_vector(obj, opt.Point);
+        [~, c_idx] = obj.get_variable_map();
+        sys = cell(size(obj.a_Component));
+        for j = 1:numel(obj.a_Component)
+            sys{j} = obj.a_Component{j}.get_sys("port", "V2I", "full", opt.full, "Point", rv_point(c_idx{j}));
+        end
+    end
 
     Ax = tools.cellfun(@(ss) ss.A                 , sys);
     Bv = tools.cellfun(@(ss) ss.B(:,1:2)          , sys);
