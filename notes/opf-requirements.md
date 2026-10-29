@@ -87,5 +87,10 @@ questions.
 - **Duals and sensitivities API.** How nodal prices, line-limit shadow
   prices and Hessians are exposed on `OPFResult` (names, units, sign
   convention per unit of load).
+- **Default cost of loads.** Every component, loads included, gets
+  `HP = fP = 1` by default. Should a load's default cost be zero, and should
+  a price-responsive load be a load with free P (bounds) and its own cost?
+- **DC susceptance.** DC OPF uses `b = Im(Y_ij)`; MATPOWER uses `1/X`. Keep,
+  switch, or make it an option (it matters for a MATPOWER backend).
 - **Warm start for `initialize`.** Whether `initialize` may use an OPF
   point, and what happens when the OPF does not converge.

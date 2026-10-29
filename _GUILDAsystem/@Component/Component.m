@@ -61,7 +61,7 @@ classdef Component < PowerSystemModel
         para_dynamics                          % [ Parameter ] tab_prameterの動特性の部分を管理するParameterクラス 
         para_powerflow                         % [ Parameter ] tab_prameterの潮流設定の部分を管理するParameterクラス
         para_operation                         % [ Parameter ] tab_prameterの運用基準の部分を管理するParameterクラス
-        para_OPF                               % [ Parameter ] tab_prameterのOPFの部分を管理するParameterクラス
+        para_OPF                               % [ Parameter ] tab_prameterのOPFの部分を管理するParameterクラス (startup/shutdown は予約: 未使用)
         para_graph                             % [ Parameter ] tab_prameterのグラフ描画の部分を管理するParameterクラス
     end  
     properties(Dependent, Access=protected)
