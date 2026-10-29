@@ -144,7 +144,7 @@ Source of truth: `_GUILDAdoc/developer/class-documentation.html`.
 - Class (8): `Summary`, `Desc`, `Role`, `Constructor`, `Notes`, `SeeAlso`, `Since`, `Deprecated`
 - Property (12): `Summary`, `Desc`, `Role`, `Type`, `Size`, `Unit`, `Default`, `Constraints`, `Notes`, `SeeAlso`, `Since`, `Deprecated`
 - Method (13): `Summary`, `Desc`, `Role`, `Signatures`, `Parameters`, `Returns`, `Calls`, `Examples`, `Notes`, `Throws`, `SeeAlso`, `Since`, `Deprecated`
-- Legacy aliases are still read, but use the canonical name in new code: `Abst` → `Summary`, `Description` → `Desc`, `varargin` → `Parameters`, `varargout` → `Returns`, `DetailsCode` → `Notes`, `Example` → `Examples`, `Seealso` → `SeeAlso`.
+- Old tag names are not read: `Abst`, `Description`, `varargin`, `varargout`, `DetailsCode`, `Example`, `Seealso`. The exporter reports each one with its replacement (`Summary`, `Desc`, `Parameters`, `Returns`, `Notes`, `Examples`, `SeeAlso`): an error under `"strict", true`, a warning otherwise.
 
 ## Value Shapes
 - `Summary`, `Desc`, `Notes`, and other text tags: free text; newlines, spaces, and indentation are kept.
