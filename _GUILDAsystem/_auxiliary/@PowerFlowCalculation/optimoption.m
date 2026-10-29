@@ -1,22 +1,24 @@
-function opt = optimoption(obj)
+function opt = optimoption(~, s_options)
+% fsolve options of the "algebraic" method from the effective settings s_options
+% (see get_options). 0 for MaxIterations, MaxFunEvals or Tolerance keeps the fsolve default.
 
-    if obj.PlotFcn=="none"
+    if s_options.PlotFcn=="none"
         str_PlotFcn = [];
     else
-        str_PlotFcn = obj.PlotFcn;
+        str_PlotFcn = s_options.PlotFcn;
     end
     opt = optimoptions("fsolve",...
-                       "UseParallel" , obj.UseParallel  ,...
-                       "Display"     , obj.Display      ,...
-                       "PlotFcn"     , str_PlotFcn      ,...
+                       "UseParallel" , s_options.UseParallel  ,...
+                       "Display"     , s_options.Display      ,...
+                       "PlotFcn"     , str_PlotFcn            ,...
                        'SpecifyObjectiveGradient', true );
-    if obj.MaxFunEvals ~= 0
-        opt = optimoptions(opt,"MaxFunctionEvaluations", obj.MaxFunEvals);
+    if s_options.MaxFunEvals ~= 0
+        opt = optimoptions(opt,"MaxFunctionEvaluations", s_options.MaxFunEvals);
     end
-    if obj.MaxIterations ~= 0
-        opt = optimoptions(opt, "MaxIterations", obj.MaxIterations);
+    if s_options.MaxIterations ~= 0
+        opt = optimoptions(opt, "MaxIterations", s_options.MaxIterations);
     end
-    if obj.ExportJSON
-        opt = optimoptions( opt, "OutputFcn", @obj.OutputFcn );
+    if s_options.Tolerance ~= 0
+        opt = optimoptions(opt, "FunctionTolerance", s_options.Tolerance);
     end
 end

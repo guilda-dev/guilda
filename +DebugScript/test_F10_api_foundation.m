@@ -185,7 +185,8 @@ assert(isempty(str_bad), "フック以外で Deprecated を使用: " + join(str_
 str_file = extractBefore(str_hook, ":");
 assert(sum(str_file == fullfile("_GUILDAsystem", "@Component", "Component.m")) == 5, join(str_hook, ", "))
 assert(sum(str_file == fullfile("_GUILDAsystem", "@PowerNetwork", "add_bus.m")) == 2, join(str_hook, ", "))
-assert(numel(str_hook) == 7, join(str_hook, ", "))
+assert(sum(str_file == fullfile("_GUILDAsystem", "@PowerNetwork", "calculate_powerflow.m")) == 1, join(str_hook, ", "))
+assert(numel(str_hook) == 8, join(str_hook, ", "))
 
 
 % ---- local functions ----

@@ -30,7 +30,7 @@ classdef PowerNetwork < PowerSystemModel
 %      >> obj.a_Bus{i}.a_Component{j}.tab_parameter.powerflow.Q = value
 %
 %   -> Method for obtaining tide calculation results
-%      >> [powerflow_bus, powerflow_cub] = obj.calculate_powerflow()
+%      >> [result, flag, output] = obj.calculate_powerflow(Name, Value)
 %
 %   -> By executing the following command, steady-state values will be set.
 %      ( The internal process executes obj.calculate_powerflow and then sets 
@@ -78,11 +78,10 @@ classdef PowerNetwork < PowerSystemModel
 
         % <@Summary> "PowerFlowCalculation" class
         % <@Desc>
-        % 潮流計算解析に使用するPowerFlowCalculationクラスを保存。
-        % >> obj.calculate_power_flow
-        % 内部で、obj.solver_PF.solveを実行する。
-        % 
-        % 潮流計算の設定内容を変更したい場合はobj.solver_PF内のプロパティを編集。
+        % Solver of net.calculate_powerflow (runs obj.solver_PF.solve). Its properties are
+        % the stored defaults (Method, Tolerance, MaxIterations, ...) and are kept between
+        % runs; Name-Value options of a call override them for that call only.
+        % Results are returned as a PowerFlowResult, never stored in the solver.
         % <@Role> calculate power-flow
         % <@Size> 1×1
         % <@Default> PowerFlowCalculation()
@@ -161,7 +160,7 @@ classdef PowerNetwork < PowerSystemModel
         varargout = build_opf_problem(obj,method)
 
         % PF(powerflow) calculations
-        [tab_PFsol, flag, output] = calculate_powerflow(obj,opt)
+        [result, flag, output] = calculate_powerflow(obj, varargin)
     
         % Static Analysis
         [sys,lin] = get_sys(obj, opt)

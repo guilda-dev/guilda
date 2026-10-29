@@ -6,5 +6,7 @@
         <entry key="ComponentBaseHzNoNetwork">Component {0} is not attached to a network, so its frequency cannot be set. The frequency is held by the network: use net.tab_parameter.base.Hz = value.</entry>
         <entry key="BusBaseMVA">The add_bus option baseMVA is deprecated and ignored: the system base is net.tab_parameter.base.baseMVA ({0} MVA).</entry>
         <entry key="BusBaseMVAMismatch">The add_bus option baseMVA is deprecated and ignored: the given {0} MVA differs from the system base net.tab_parameter.base.baseMVA = {1} MVA, which is used. Set net.tab_parameter.base.baseMVA instead.</entry>
+        <entry key="CalculatePowerflowMode">The positional mode argument of calculate_powerflow is deprecated: use net.calculate_powerflow(Method="{0}").</entry>
+        <entry key="CalculatePowerflowExport">The calculate_powerflow options export and filename are deprecated: use net.calculate_powerflow(Export=filename) or result.Export(filename). A .json file holds the iteration history; a relative file name is now relative to the current folder.</entry>
     </message>
 </rsccat>

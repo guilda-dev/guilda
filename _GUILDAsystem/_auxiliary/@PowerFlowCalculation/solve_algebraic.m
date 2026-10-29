@@ -1,4 +1,6 @@
-function [cv_Vbus,flag,output] = solve_algebraic(obj, cm_Y, tab_PFset)
+function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_algebraic(obj, cm_Y, tab_PFset, s_options)
+% Solves the power equations with fsolve. cm_Vhistory holds the bus voltages at each
+% iteration (n_bus x n_step), rv_step the iteration numbers.
 
     % Collect Info
     rm_Y  = sparse(tools.complex2matrix(cm_Y));
@@ -26,29 +28,17 @@ function [cv_Vbus,flag,output] = solve_algebraic(obj, cm_Y, tab_PFset)
     
     rv_V0 = reshape([V0.*cos(T0), V0.*sin(T0)].', [], 1);
 
-    % optimoptions
+    % optimoptions (the iterates are recorded by the nested function record)
+    opt = optimoptions(obj.optimoption(s_options), "OutputFcn", @record);
+    rm_hist = nan(2*n_Bus, 0);
+    n_iter  = 0;
 
-    if obj.PlotFcn=="none"
-        str_PlotFcn = [];
-    else
-        str_PlotFcn = obj.PlotFcn;
-    end
-    opt = optimoptions("fsolve",...
-                       "UseParallel" , obj.UseParallel  ,...
-                       "Display"     , obj.Display      ,...
-                       "PlotFcn"     , str_PlotFcn      ,...
-                       "OutputFcn"   , @obj.OutputFcn   ,...
-                       'SpecifyObjectiveGradient', true );
-    if obj.MaxFunEvals ~= 0
-        opt = optimoptions(opt,"MaxFunctionEvaluations", obj.MaxFunEvals);
-    end
-    if obj.MaxIterations ~= 0
-        opt = optimoptions(opt, "MaxIterations", obj.MaxIterations);
-    end
-    
     % solve
     [rv_Vsol,~,flag,output] = fsolve(@func, rv_V0, opt);
-    
+
+    cm_Vhistory = rm_hist(1:2:end,1:n_iter) + 1j*rm_hist(2:2:end,1:n_iter);
+    rv_step     = 0:n_iter-1;
+
     % sol -> Vbus -> Ibus -> Pbus,Qbus
     cv_Vbus = reshape(rv_Vsol,2,[]).' * [1;1j];
 
@@ -71,7 +61,15 @@ function [cv_Vbus,flag,output] = solve_algebraic(obj, cm_Y, tab_PFset)
         jacobi = sparse( jacobi_V+jacobi_I*rm_Y );
     end
 
+    function stop = record(x, ~, state)
+        stop = false;
+        if state == "iter"
+            n_iter = n_iter + 1;
+            if n_iter > size(rm_hist,2)
+                rm_hist = [rm_hist, nan(numel(x),1000)];
+            end
+            rm_hist(:,n_iter) = x;
+        end
+    end
+
 end
-
-
-
