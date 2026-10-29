@@ -89,8 +89,9 @@
       <tr><th>Group</th><th>Contents</th></tr>
       <tr><td>Class categories</td><td><code>LayerPackage</code>, <code>PowerSystemModel</code> (base of every model class), <code>auxiliary</code> (base of every analysis-support class).</td></tr>
       <tr><td>Parameters</td><td><code>@Parameter</code>: parameter tables of model objects.</td></tr>
-      <tr><td>Power flow</td><td><code>@PowerFlowCalculation</code>, <code>@NewtonRaphsonMethod</code>, <code>@ContinuationPowerFlow</code>.</td></tr>
-      <tr><td>Time simulation</td><td><code>@odeSimulator</code>, <code>@odeEventSet</code>, <code>@odeProgress</code>, <code>@odeSimulationResult</code>, <code>@odeLinearizer</code>.</td></tr>
+      <tr><td>Power flow</td><td><code>@PowerFlowCalculation</code>, <code>@NewtonRaphsonMethod</code>, <code>@ContinuationPowerFlow</code>, <code>@OptimalPowerFlow</code>.</td></tr>
+      <tr><td>Time simulation</td><td><code>@odeSimulator</code>, <code>@odeEventSet</code>, <code>@odeProgress</code>, <code>@odeLinearizer</code>.</td></tr>
+      <tr><td>Analysis results</td><td><code>@AnalysisResult</code> (base class) and its subclasses <code>@PowerFlowResult</code>, <code>@OPFResult</code>, <code>@CPFResult</code>, <code>@odeSimulationResult</code>, <code>@LinearizationResult</code>.</td></tr>
       <tr><td>Drawing</td><td><code>@DrawerNetDiagram</code> (network diagrams). Network import and export are methods of <code>PowerNetwork</code> (<code>import_csv</code>, <code>import_matpower</code>, <code>export_csv</code>).</td></tr>
       <tr><td><code>SystemTools/GUILDA/en/</code></td><td>Message catalogs (<code>*.xml</code>) for errors and information messages, one file per class.</td></tr>
     </table>
@@ -99,7 +100,7 @@
     <table>
       <tr><th>Folder</th><th>Contents</th></tr>
       <tr><td><code>+tools/</code></td><td>General utility functions called as <code>tools.xxx</code> (array/cell helpers, complex-vector conversion, <code>tools.FigureClass</code>). <code>+tools/+for_ss</code> holds state-space helpers.</td></tr>
-      <tr><td><code>_VersionSupport/</code></td><td>Compatibility wrappers that keep names from older GUILDA versions working (e.g. <code>Continuation_Power_Flow</code> → <code>ContinuationPowerFlow</code>).</td></tr>
+      <tr><td><code>_VersionSupport/</code></td><td>Compatibility wrappers that keep names from older GUILDA versions working (e.g. <code>Continuation_Power_Flow</code> → <code>net.calculate_continuation_powerflow</code>, <code>CsvNetHandler</code> → <code>PowerNetwork.import_csv</code> / <code>net.export_csv</code>).</td></tr>
     </table>
 
     <h2 id="object">_GUILDAobject/</h2>
