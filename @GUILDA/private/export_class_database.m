@@ -34,6 +34,7 @@ function sct_summary = export_class_database(sct_classes, option)
     sct_ctx.root    = str_GUILDApath;
     sct_ctx.files   = containers.Map({sct_classes.Name}, {sct_classes.File});
     sct_ctx.sources = containers.Map('KeyType', 'char', 'ValueType', 'any');
+    sct_ctx.strict  = option.strict;
 
     r_indent = max(strlength(string({sct_classes.Name}))) + 2;
     cell_class_info = cell(1, 0);
@@ -59,6 +60,10 @@ function sct_summary = export_class_database(sct_classes, option)
                 fprintf("ok (%d warning(s), %d error(s))\n", n_warning_i, n_error_i)
                 if option.strict
                     cellfun(@(msg) fprintf("    warning: %s\n", msg), sct_validation_i.Warnings);
+                else
+                    % Removed tag names are shown even without "strict".
+                    cellfun(@(msg) fprintf("    warning: %s\n", msg), ...
+                        sct_validation_i.Warnings(contains(sct_validation_i.Warnings, 'is no longer supported')));
                 end
                 cellfun(@(msg) fprintf("    error: %s\n", msg), sct_validation_i.Errors);
             end
@@ -90,15 +95,6 @@ function sct_summary = export_class_database(sct_classes, option)
     sct_schema.modelCategories = get_model_categories(cell_class_info);
     sct_schema.coreClasses = sct_schema.modelCategories;
     sct_schema.tags = get_tag_schema();
-    sct_schema.legacyAliases = struct( ...
-        'Abst', 'Summary', ...
-        'Description', 'Desc', ...
-        'varargin', 'Parameters', ...
-        'varargout', 'Returns', ...
-        'DetailsCode', 'Notes', ...
-        'Example', 'Examples', ...
-        'Seealso', 'SeeAlso' ...
-    );
     sct_database         = struct();
     sct_database.schema  = sct_schema;
     sct_database.classes = cell_class_info;
@@ -387,7 +383,7 @@ function [sct_info, cell_diagnostics] = build_meta_info(meta_item, str_class_nam
         str_raw_help = sanitize_help_text([meta_item.Description, newline, meta_item.DetailedDescription]);
     end
     str_context = char(str_class_name + "." + string(str_member));
-    [sct_info, cell_diagnostics] = apply_help_tags(sct_info, str_raw_help, cell_tags, str_kind, str_context);
+    [sct_info, cell_diagnostics] = apply_help_tags(sct_info, str_raw_help, cell_tags, str_kind, str_context, sct_ctx.strict);
 
     % Report problems only where the member is defined, so that an inherited
     % member is not reported again for every subclass.
@@ -654,7 +650,7 @@ function [sct_info, cell_diagnostics] = build_class_info(str_class_name, meta_cl
     if isempty(strtrim(str_help)) && ~sct_src.found
         str_help = sanitize_help_text([meta_class.Description, newline, meta_class.DetailedDescription]);
     end
-    [sct_info, cell_diagnostics] = apply_help_tags(sct_info, str_help, cell_tags, "class", str_class_name);
+    [sct_info, cell_diagnostics] = apply_help_tags(sct_info, str_help, cell_tags, "class", str_class_name, sct_ctx.strict);
     sct_info.Documented = ~isempty(strtrim(sct_info.Summary)) || ~isempty(strtrim(sct_info.Desc));
     if ~sct_info.Documented
         cell_diagnostics{end+1,1} = sprintf('WARNING: %s: class has no Summary or Desc.', str_class_name);
@@ -1213,12 +1209,27 @@ end
 
 
 %% Tags
-function [sct_info, cell_diagnostics] = apply_help_tags(sct_info, str_raw_help, cell_tags, str_kind, str_context)
+function [sct_info, cell_diagnostics] = apply_help_tags(sct_info, str_raw_help, cell_tags, str_kind, str_context, bln_strict)
     [sct_parsed_tags, cell_source_tags, str_preamble] = parse_tagged_help(str_raw_help);
     cell_diagnostics = cell(0,1);
 
+    % Removed tag names are not read. They are errors under "strict" and
+    % warnings otherwise, and name the tag that replaces them.
+    sct_removed = get_removed_tags();
+    if bln_strict
+        str_level = 'ERROR';
+    else
+        str_level = 'WARNING';
+    end
+    cell_removed_used = intersect(unique(cell_source_tags, 'stable'), fieldnames(sct_removed), 'stable');
+    for i_tag = 1:numel(cell_removed_used)
+        cell_diagnostics{end+1,1} = sprintf( ...
+            '%s: %s: <@%s> is no longer supported; use <@%s>.', ...
+            str_level, str_context, cell_removed_used{i_tag}, sct_removed.(cell_removed_used{i_tag})); %#ok<AGROW>
+    end
+
     cell_allowed_tags = get_allowed_source_tags(cell_tags);
-    cell_unknown_tags = setdiff(unique(cell_source_tags, 'stable'), cell_allowed_tags, 'stable');
+    cell_unknown_tags = setdiff(unique(cell_source_tags, 'stable'), [cell_allowed_tags; cell_removed_used(:)], 'stable');
     for i_tag = 1:numel(cell_unknown_tags)
         cell_diagnostics{end+1,1} = sprintf( ...
             'WARNING: %s: unknown %s tag <@%s>.', ...
@@ -1236,13 +1247,12 @@ function [sct_info, cell_diagnostics] = apply_help_tags(sct_info, str_raw_help, 
 
     for i_tag = 1:numel(cell_tags)
         str_tag_name = cell_tags{i_tag};
-        [bln_found, str_source_tag] = resolve_tag_alias(sct_parsed_tags, str_tag_name);
-        if bln_found
-            [sct_info.(str_tag_name), str_error] = parse_tag_value(str_tag_name, sct_parsed_tags.(str_source_tag));
+        if isfield(sct_parsed_tags, str_tag_name)
+            [sct_info.(str_tag_name), str_error] = parse_tag_value(str_tag_name, sct_parsed_tags.(str_tag_name));
             if ~isempty(str_error)
                 cell_diagnostics{end+1,1} = sprintf( ...
                     'ERROR: %s: invalid <@%s> value: %s', ...
-                    str_context, str_source_tag, str_error); %#ok<AGROW>
+                    str_context, str_tag_name, str_error); %#ok<AGROW>
             end
         else
             sct_info.(str_tag_name) = get_default_tag_value(str_tag_name);
@@ -1264,58 +1274,23 @@ function [sct_info, cell_diagnostics] = apply_help_tags(sct_info, str_raw_help, 
     end
 end
 
-function [bln_found, str_source_tag] = resolve_tag_alias(sct_parsed_tags, str_tag_name)
-    cell_candidates = {str_tag_name};
-    switch str_tag_name
-        case 'Summary'
-            cell_candidates = {'Summary', 'Abst'};
-        case 'Desc'
-            cell_candidates = {'Desc', 'Description'};
-        case 'Parameters'
-            cell_candidates = {'Parameters', 'varargin'};
-        case 'Returns'
-            cell_candidates = {'Returns', 'varargout'};
-        case 'Notes'
-            cell_candidates = {'Notes', 'DetailsCode'};
-        case 'Examples'
-            cell_candidates = {'Examples', 'Example'};
-        case 'SeeAlso'
-            cell_candidates = {'SeeAlso', 'Seealso'};
-    end
-
-    bln_found = false;
-    str_source_tag = '';
-    for i = 1:numel(cell_candidates)
-        str_candidate = cell_candidates{i};
-        if isfield(sct_parsed_tags, str_candidate)
-            bln_found = true;
-            str_source_tag = str_candidate;
-            return
-        end
-    end
-end
-
 function cell_allowed_tags = get_allowed_source_tags(cell_canonical_tags)
-    cell_allowed_tags = cell(0,1);
-    for i_tag = 1:numel(cell_canonical_tags)
-        str_tag_name = cell_canonical_tags{i_tag};
-        switch str_tag_name
-            case 'Summary';    cell_aliases = {'Summary', 'Abst'};
-            case 'Desc';       cell_aliases = {'Desc', 'Description'};
-            case 'Parameters'; cell_aliases = {'Parameters', 'varargin'};
-            case 'Returns';    cell_aliases = {'Returns', 'varargout'};
-            case 'Notes';      cell_aliases = {'Notes', 'DetailsCode'};
-            case 'Examples';   cell_aliases = {'Examples', 'Example'};
-            case 'SeeAlso';    cell_aliases = {'SeeAlso', 'Seealso'};
-            otherwise;        cell_aliases = {str_tag_name};
-        end
-        cell_allowed_tags = [cell_allowed_tags; cell_aliases(:)]; %#ok<AGROW>
-    end
     sct_all_tags = get_tag_schema();
     cell_all_canonical = [sct_all_tags.class(:); sct_all_tags.property(:); sct_all_tags.method(:)];
-    cell_all_aliases = {'Abst'; 'Description'; 'varargin'; 'varargout'; 'DetailsCode'; 'Example'; 'Seealso'};
-    cell_allowed_tags = [cell_allowed_tags; cell_all_canonical; cell_all_aliases];
-    cell_allowed_tags = unique(cell_allowed_tags, 'stable');
+    cell_allowed_tags = unique([cell_canonical_tags(:); cell_all_canonical], 'stable');
+end
+
+function sct_removed = get_removed_tags()
+    % Old tag name -> the tag that replaced it.
+    sct_removed = struct( ...
+        'Abst',        'Summary', ...
+        'Description', 'Desc', ...
+        'varargin',    'Parameters', ...
+        'varargout',   'Returns', ...
+        'DetailsCode', 'Notes', ...
+        'Example',     'Examples', ...
+        'Seealso',     'SeeAlso' ...
+    );
 end
 
 function [sct_tag_data, cell_tag_names, str_preamble] = parse_tagged_help(rawHelp)
