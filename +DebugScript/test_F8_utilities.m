@@ -3,7 +3,7 @@
 % 実行: runtests("DebugScript.test_F8_utilities")  または  DebugScript.run_all("Features","F8")
 
 % 共通設定 (各テストの前に毎回実行される)
-str_templates = ["IEEE14bus","IEEE14bus_lossless","Ishizaki6Bus","TEST31bus","Txt3Bus","Tutorial3bus"];
+str_templates = ["IEEE14bus","IEEE14bus_legacy","IEEE14bus_lossless","Ishizaki6Bus","TEST31bus","Txt3Bus","Tutorial3bus"];
 
 
 %% Admittance matrix is symmetric and matches branch data
@@ -163,6 +163,30 @@ for i = 1:numel(net.a_Bus)
         assert(~any(isnan(op{1,["Pmin","Pmax","Qmin","Qmax"]})), string(net.a_Bus{i}.a_Component{j}) + " の出力制限が NaN")
     end
 end
+
+
+%% Template IEEE14bus_legacy reproduces the pre-case14 results
+% IEEE14bus_legacy は case14 への修正とタップ読み込みの修正より前の IEEE14bus と同じ結果になる。
+% 参照値は修正前のコード (refactor/design-alignment 63bc5a0) の network.IEEE14bus で計算した値。
+net = DebugScript.helper.quiet(@() network.IEEE14bus_legacy);
+net.solver_ODE.Reporter = "none";
+assert(numel(net.a_Bus) == 14 && numel(net.a_Branch) == 20)
+assert(all(cellfun(@(b) b.tab_parameter.dynamics.tap, net.a_Branch) == 1))
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
+assert(flag > 0)
+V_ref = [1.06 1.045 1.01 1.0426136 1.0457498 1.07 1.0849696 1.09 1.1054373 1.1005697 1.0854939 1.0702996 1.0721834 1.0877128]';
+assert(max(abs(res.tab_bus.V - V_ref)) < 1e-6)
+% 全機器の費用が P^2 + P で制約なし → ELD は 5 台で等分 (費用 2.663374)
+str_gen = string(cellfun(@(b) b.a_Component{1}, net.a_Bus([1 2 3 6 8]), "UniformOutput", false));
+res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD"));
+assert(max(abs(res.tab_cub{str_gen,"P"} - 0.518)) < 1e-6 && abs(res.r_cost - 2.663374) < 1e-6)
+res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
+assert(abs(res.r_cost - 2.6822658) < 1e-5)
+% 最も遅い固有値 (回転不変性の 0 を除く)
+DebugScript.helper.quiet(@() net.initialize);
+e = eig(net.get_sys("Algorithm","Kron").A);
+e = e(abs(e) > 1e-6);
+assert(abs(max(real(e)) - (-0.5351694)) < 1e-6)
 
 
 %% Template IEEE14bus_lossless
