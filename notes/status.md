@@ -159,12 +159,15 @@ Fixed on `fix/ieee14-data-and-tap-import`:
 - **Load cost decision:** loads in `IEEE14bus` have no OPF cost
   (`HP = HQ = fP = fQ = 0`). case14 has no load cost, a fixed load's cost is
   only a constant, and with 0 `r_cost` equals the MATPOWER objective.
-- **`IEEE14bus_legacy`** keeps the old data (taps set to 1, as the old
-  importer read them) and reproduces the old `IEEE14bus` results exactly:
-  power flow, ELD/DC/AC OPF, `get_sys` eigenvalues and a B008 fault
-  simulation agree with the code at `63bc5a0` to 0 difference. The F8 test
-  pins its bus voltages, ELD/AC OPF costs and slowest eigenvalue.
-- Effects users see (`IEEE14bus` now vs. `IEEE14bus_legacy`): bus voltages
+- **`IEEE14bus_NoTap`** is `IEEE14bus` with the transformers 4-7, 4-9 and
+  5-6 at tap 1 (phase 0); all other data are the same. Only the transformer
+  entries of the admittance matrix differ (off-diagonals and the tap-side
+  diagonals). Against `IEEE14bus`: bus voltages differ by up to 0.015 pu
+  (bus 5) and angles by 0.45°; AC OPF cost 8079.95 vs 8081.52 $/hr; slowest
+  mode −0.530 vs −0.540. The F8 test checks the data against `IEEE14bus`
+  and pins its bus voltages, AC OPF cost and slowest eigenvalue.
+- Effects users see (`IEEE14bus` now vs. before the fix, computed with the
+  code at `63bc5a0`): bus voltages
   differ by up to 0.052 pu (bus 14) and angles by 0.82°; slack P 232.86 →
   232.39 MW; net reactive power at the generator buses
   (−34.3, −8.7, −13.9, −12.0, 3.1) → (−16.6, 30.9, 6.1, 5.2, 17.6) MVAr;
@@ -178,7 +181,7 @@ Fixed on `fix/ieee14-data-and-tap-import`:
   reactive power up to 27.9 MVAr, slowest mode −0.332 → −0.385 (smallest
   damping ratio unchanged, 0.037); ω after a B008 fault differs by 1.5e-4
   (peak 1.6e-3); OPF costs unchanged. Decide whether to give it the case14
-  data or a legacy copy.
+  data.
 - `DebugScript.run_all` on `fix/ieee14-data-and-tap-import` (2026-10-29):
   165 tests, PASS 163 / KNOWN 1 / FAIL 0 / SKIP 1 (the MATPOWER comparison).
 
