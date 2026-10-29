@@ -86,6 +86,15 @@ DebugScript.helper.quiet(@() net.initialize);
 sys = net.get_sys("Algorithm","Kron");
 assert(size(sys.A,1) == n_x + 1)
 assert(same_eigs(eig_finite(sys), eig_finite(net.get_sys("Algorithm","Feedback")), 1e-6))
+% 大域制御器の状態: Kron / DAE は先頭、Feedback は末尾 (v3 と同じ。get_ss の help)
+res = net.linearize();
+sv_K = string(res.get_ss("Kron").StateName);
+sv_D = string(res.get_ss("DAE").StateName);
+sv_F = string(res.get_ss("Feedback").StateName);
+n_gc = numel(net.a_GlobalController{1}.sv_x);
+assert(all(contains(sv_K(1:n_gc), net.a_GlobalController{1}.str_tag)), strjoin(sv_K(1:n_gc), ","))
+assert(isequal(sv_D(1:n_gc), sv_K(1:n_gc)))
+assert(isequal(sv_F(end-n_gc+1:end), sv_K(1:n_gc)), strjoin(sv_F(end-n_gc+1:end), ","))
 
 
 %% odeLinearizer constructor of v3 names the remedy
@@ -264,7 +273,7 @@ assert(sum(tab.Kind == "x") == n_x && sum(tab.Kind == "Vre" | tab.Kind == "Vim")
 assert(isequal(tab.Kind, [repmat("x",n_x,1); repmat(["Vre";"Vim"],n_v/2,1); repmat("u",n_u,1)]))
 assert(n_v == 2*numel(net.a_Bus) && numel(res.rv_point) == height(tab))
 assert(isequal(size(res.rm_Axv), [n_x n_v]) && isequal(size(res.rm_Avx), [n_v n_x]) && isequal(size(res.rm_Bv), [n_v n_u]) && isequal(size(res.rm_E), [n_x n_x]))
-% 状態と入力の名前は get_ss の StateName / InputName と同じもの (大域制御器の状態は get_ss では先頭)
+% 状態と入力の名前は get_ss の StateName / InputName と同じもの (大域制御器の状態は get_ss("Kron") では先頭)
 sK = res.get_ss("Kron");
 assert(isequal(sort(tab.Label(tab.Kind == "x")), sort(string(sK.StateName))))
 assert(isequal(tab.Label(tab.Kind == "u"), string(sK.InputName)))
