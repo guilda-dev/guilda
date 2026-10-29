@@ -172,7 +172,7 @@
       hidden: Boolean(m?.Hidden),
       constructor: Boolean(m?.IsConstructor),
       role: m?.Role || '',
-      summary: firstText(m?.Summary, m?.Abst, m?.Desc),
+      summary: firstText(m?.Summary, m?.Desc),
       signature: firstText(toList(m?.Signatures)[0], m?.Signature, `${m?.Name || ''}()`),
       deprecated: m?.Deprecated || ''
     });
