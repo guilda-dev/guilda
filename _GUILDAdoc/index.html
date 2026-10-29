@@ -21,6 +21,7 @@
       
       <div class="tabs">
         <button class="tab-button active" onclick="openTab('tab-home')">Home</button>
+        <button class="tab-button" onclick="openTab('tab-about')">About</button>
         <button class="tab-button" onclick="openTab('tab-getting-started')">Getting Started</button>
         <button class="tab-button" onclick="openTab('tab-tutorial')">Tutorial</button>
         <button class="tab-button" onclick="openTab('tab-reference')">Reference</button>
@@ -31,46 +32,91 @@
 
   <main>
     <div id="tab-home" class="tab-content active">
-      <div class="hero-section">
-        <img src="./images/GUILDA-logo-square.png" alt="GUILDA logo" class="hero-logo" width="200" height="200">
-        <div class="hero-text">
-          <h1 class="hero-title">GUILDA</h1>
-          <h2 class="hero-subtitle">Grid & Utility Infrastructure Linkage Dynamics Analyzer</h2>
-        </div>
+      <div class="hero">
+        <h1 class="hero-title">GUILDA<img src="./images/GUILDA-logo-square.png" alt="" class="hero-mark" width="96" height="96"></h1>
+        <h2 class="hero-subtitle">Grid & Utility Infrastructure Linkage Dynamics Analyzer</h2>
       </div>
-      
+
       <div style="height: 1px; background-color: var(--line); margin-top: 16px; margin-bottom: 32px;"></div>
 
       <h2>Install Now</h2>
       <div class="install-buttons">
-        <a href="https://github.com/guilda-dev/guilda" target="_blank" class="btn">From GitHub</a>
-        <a href="https://matlab.mathworks.com/open/github/v1?repo=guilda-dev/guilda&project=./GUILDA.prj" target="_blank" class="btn">Open in MATLAB Online</a>
+        <a href="https://github.com/guilda-dev/guilda" target="_blank" class="btn btn-github"><svg class="gh-mark" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg><span>From GitHub</span></a>
+        <a href="https://matlab.mathworks.com/open/github/v1?repo=guilda-dev/guilda&project=./GUILDA.prj" target="_blank" class="btn-badge"><img src="https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg" alt="Open in MATLAB Online" onerror="this.parentNode.classList.add('is-offline')"><span class="btn-badge-fallback">Open in MATLAB Online</span></a>
       </div>
 
-      <h2>About GUILDA</h2>
-      
-      <div class="demo-gif-container">
-        <img src="./images/movie.gif" alt="GUILDA Animation Demo" class="demo-gif">
-      </div>
-
-      <p>
-        <strong>GUILDA (Grid & Utility Infrastructure Linkage Dynamics Analyzer)</strong> is a numerical simulator for smart energy management, developed primarily by our laboratory in collaboration with Assistant Professor Takahiro Kawaguchi (Gunma University).
-      </p>
-      <p>
-        Its goal is to provide an advanced simulation environment that students and researchers in systems and control can use with only minimal background knowledge of power systems.
+      <p class="home-intro">
+        GUILDA is a power-system simulator for students and researchers in systems and control.
+        It brings power-system knowledge into control engineering as building blocks you can combine, analyse and share.
+        <a href="#tab-about" onclick="openTab('tab-about'); return false;">Read about our vision&nbsp;→</a>
       </p>
 
-      <h3>Supported Analyses</h3>
-      <ul class="feature-list">
-        <li><strong>RMS Analysis:</strong> Phasor models, three-phase balanced systems.</li>
-        <li><strong>Time-Domain Simulation:</strong> Initial value perturbations, load variations, input adjustments, ground faults, and controller design.</li>
-        <li><strong>Linearization:</strong> Derivation of approximate linear models, Hessian calculations of energy functions.</li>
-        <li><strong>Optimal Power Flow (OPF):</strong> General formulation of OPF problems.</li>
-        <li><strong>Graph Plotting:</strong> Animation generation using coupled oscillator systems.</li>
-      </ul>
+      <h2>Supported Analyses</h2>
+      <ol class="analysis-flow">
+        <li class="af-step">
+          <span class="af-kicker">Model</span>
+          <svg class="af-icon" viewBox="0 0 64 64" aria-hidden="true">
+            <circle class="px-soft" cx="32" cy="32" r="21"/>
+            <path class="px-grid" d="M6 32 H58 M32 6 V58"/>
+            <path class="px-accent-line" d="M47 32 A15 15 0 0 0 43 21"/>
+            <path class="px-main" d="M32 32 L46 14"/>
+            <path class="px-head" d="M40.2 15.6 L47.6 12 L46.4 20.2 Z"/>
+            <circle class="px-dot" cx="32" cy="32" r="3"/>
+          </svg>
+          <h3>RMS phasor models</h3>
+          <p>Three-phase balanced networks described as phasors.</p>
+        </li>
+        <li class="af-step">
+          <span class="af-kicker">Simulate</span>
+          <svg class="af-icon" viewBox="0 0 64 64" aria-hidden="true">
+            <path class="px-grid" d="M6 36 H58"/>
+            <path class="px-main" d="M6 36 H17 L20 14 C24 10 26 56 31 52 C35 49 36 25 40 28 C43 31 44 42 47 39 C50 37 51 34 58 36"/>
+            <path class="px-bolt" d="M18 4 L13 13 H18 L15 21 L23 10 H18 L21 4 Z"/>
+          </svg>
+          <h3>Time-domain simulation</h3>
+          <p>Responses to faults, load and input changes, and initial-value perturbations.</p>
+        </li>
+        <li class="af-step">
+          <span class="af-kicker">Linearize</span>
+          <svg class="af-icon" viewBox="0 0 64 64" aria-hidden="true">
+            <path class="px-grid" d="M8 54 H58 M8 54 V8"/>
+            <path class="px-soft-line" d="M10 50 C24 48 30 40 36 30 C42 20 48 14 58 12"/>
+            <path class="px-main" d="M16 50 L56 18"/>
+            <circle class="px-dot-accent" cx="36" cy="30" r="4.5"/>
+          </svg>
+          <h3>Linearization</h3>
+          <p>Approximate linear models <span class="nowrap">ẋ = Ax + Bu</span>, <span class="nowrap">y = Cx + Du</span> and energy-function Hessians.</p>
+        </li>
+        <li class="af-step">
+          <span class="af-kicker">Optimize</span>
+          <svg class="af-icon" viewBox="0 0 64 64" aria-hidden="true">
+            <path class="px-soft-line" d="M12 46 L28 16 L52 22 L44 50 Z M28 16 L44 50"/>
+            <circle class="px-node" cx="12" cy="46" r="5"/>
+            <circle class="px-node" cx="28" cy="16" r="5"/>
+            <circle class="px-node" cx="44" cy="50" r="5"/>
+            <circle class="px-ring" cx="52" cy="22" r="9"/>
+            <circle class="px-dot-accent" cx="52" cy="22" r="4.5"/>
+          </svg>
+          <h3>Optimal power flow</h3>
+          <p>General formulations of OPF problems on the same network.</p>
+        </li>
+        <li class="af-step">
+          <span class="af-kicker">Visualize</span>
+          <svg class="af-icon" viewBox="0 0 64 64" aria-hidden="true">
+            <path class="px-soft-line" d="M10 50 L26 56 L44 48 L56 54 M26 56 L30 42 M44 48 L30 42"/>
+            <path class="px-bar-main" d="M10 50 V26"/>
+            <path class="px-bar-accent" d="M26 56 V40"/>
+            <path class="px-bar-soft" d="M44 48 V14"/>
+            <path class="px-bar-main" d="M56 54 V34"/>
+            <path class="px-bar-accent" d="M30 42 V30"/>
+          </svg>
+          <h3>Graph &amp; animation</h3>
+          <p>Network graphs whose node heights and colours follow the response.</p>
+        </li>
+      </ol>
 
       <h2>Update Log</h2>
-      <div id="update-log-container"></div>
+      <div id="update-log-container" class="ulog" tabindex="0" role="region" aria-label="Update log, newest first. Scroll sideways to see more."></div>
 
       <h2>Related Book</h2>
       <p>
@@ -90,13 +136,189 @@
 
     </div>
 
+    <div id="tab-about" class="tab-content about">
+      <header class="about-hero">
+        <p class="about-eyebrow">About GUILDA</p>
+        <h1 class="about-title">Power-system knowledge, in the language of systems and control.</h1>
+        <p class="about-lead">
+          <strong>GUILDA (Grid &amp; Utility Infrastructure Linkage Dynamics Analyzer)</strong> is a numerical simulator for smart energy management,
+          developed by the Ishizaki Laboratory in collaboration with Takahiro Kawaguchi (Gunma University).
+          It gives students and researchers in systems and control an advanced simulation environment that they can use with only minimal background in power systems.
+        </p>
+        <figure class="about-demo">
+          <img src="./images/movie.gif" alt="GUILDA animation: a network graph whose node heights and colours follow the simulated response" class="demo-gif">
+          <figcaption>A simulated fault spreading through a network, drawn by GUILDA's animation tools.</figcaption>
+        </figure>
+      </header>
+
+      <section class="about-section">
+        <div class="about-text">
+          <p class="about-step"><span>01</span> Why</p>
+          <h2>Future grids are a control problem</h2>
+          <p>
+            Decarbonisation changes who takes part in the grid. Power once flowed one way, from large plants to consumers.
+            Now wind and solar plants, homes with rooftop PV, batteries and microgrids join in, and many of them can be controlled.
+            Keeping the supply stable means steering that flow, and that is where control engineering can help.
+          </p>
+          <p>
+            Yet the two fields frame problems differently. Power-system and power-electronics tools value detailed models, fast computation,
+            faithful reproduction of real events and one module per piece of equipment. Control engineering looks for models that capture the essential dynamics,
+            and for principles that follow from them. Learning the power domain well enough to bridge that gap takes a lot of time.
+          </p>
+        </div>
+        <figure class="about-figure">
+          <img src="./images/about/grid-past-future.svg" alt="Before: a power plant sends power one way to homes. Ahead: wind, homes with solar panels, a factory, a battery and a microgrid exchange power in both directions." width="720" height="300">
+        </figure>
+      </section>
+
+      <section class="about-section about-what">
+        <div class="about-text">
+          <p class="about-step"><span>02</span> What</p>
+          <h2>A simulator built for systems and control</h2>
+          <p>
+            GUILDA is a power-system simulator for students and researchers in systems and control. It brings power-system knowledge into control engineering,
+            so that you can study grids with the tools and questions of our own field.
+          </p>
+          <p>
+            It is closely linked with the textbook <a href="https://lim.ishizaki-lab.jp/guilda#h.66rvn04iyvio" target="_blank">「電力系統のシステム制御工学」</a>
+            (<em>Systems Control Engineering of Power Systems</em>), which explains power systems from the viewpoint of control and uses GUILDA for its numerical examples.
+          </p>
+        </div>
+        <div class="about-bridge" aria-hidden="true">
+          <span class="about-bridge-node">Power systems engineering</span>
+          <span class="about-bridge-arrow"><img src="./images/GUILDA-logo-square.png" alt=""></span>
+          <span class="about-bridge-node is-brand">Systems &amp; control</span>
+        </div>
+      </section>
+
+      <section class="about-goals">
+        <p class="about-step"><span>03</span> Design goals</p>
+        <h2>Three things GUILDA is designed to do</h2>
+        <ol class="goal-list">
+          <li>
+            <span class="goal-num">1</span>
+            <h3>Usable by power-system beginners</h3>
+            <p>Run real analyses without first deriving admittance matrices, operating points or the differential-algebraic equations of the whole grid.</p>
+          </li>
+          <li>
+            <span class="goal-num">2</span>
+            <h3>Reveal structure and properties</h3>
+            <p>Tutorials, graphs, animations and linearized models help you see why the system behaves as it does, not only what it does.</p>
+          </li>
+          <li>
+            <span class="goal-num">3</span>
+            <h3>Split models by signals</h3>
+            <p>Divide the system by physical signals such as frequency and power, not only by equipment, so that control-theoretic analyses fit naturally.</p>
+          </li>
+        </ol>
+        <figure class="about-figure about-figure-wide">
+          <img src="./images/about/signal-split.svg" alt="A synchronous generator has a turbine and an electromagnet. GUILDA lets you split the network into a mechanical subsystem F and an electrical subsystem G in negative feedback, exchanging frequency deviation and active power." width="720" height="280">
+          <figcaption>
+            Example: for passivity-based stability analysis, the always-passive mechanical parts become one subsystem <em>F</em> in feedback with the electrical subsystem <em>G</em>.
+            If <em>G</em> is passive, so is the whole system, and the analysis can focus on <em>G</em>. A tool that only offers one block per machine cannot express this split.
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="about-section">
+        <div class="about-text">
+          <p class="about-step"><span>04</span> How</p>
+          <h2>Building blocks that snap together</h2>
+          <p>
+            GUILDA is object-oriented. Buses, branches, generators, loads and controllers are classes, and they fit together like puzzle pieces into a
+            <code>PowerNetwork</code>. The network takes care of the electrical constraints and the interactions between devices, so you can go straight to simulating,
+            linearizing and plotting.
+          </p>
+        </div>
+        <figure class="about-figure">
+          <img src="./images/about/puzzle-network.svg" alt="Loose pieces labelled Generator, Bus, Branch, Load and Controller snap into one PowerNetwork, which is then simulated to give a time response." width="720" height="300">
+        </figure>
+<pre class="about-code"><code>% Snap the pieces together
+net = PowerNetwork("TestSystem");
+net.add_bus();
+net.add_bus();
+net.add_branch("pi", [1, 2]);
+net.a_Bus{1}.add_component("gen-park");
+net.a_Bus{2}.add_component("load-power");
+
+% Or start from a packaged network and analyse it
+net = network.IEEE14bus;
+fault = odeEventSet("fault", net, "FaultBus", "B008", "TimeSpan", [3, 3.1]);
+sol = net.simulate([0, 50], fault);   % time response
+sys = net.get_sys();                  % linearized model</code></pre>
+      </section>
+
+      <section class="about-section about-vision">
+        <div class="about-text">
+          <p class="about-step"><span>05</span> Vision</p>
+          <h2>A platform where knowledge keeps growing</h2>
+          <p>
+            Research know-how often lives in one person's head and leaves with them. GUILDA aims to be a knowledge platform built on the
+            SECI knowledge spiral of Ikujiro Nonaka, where tacit and explicit knowledge keep turning into each other:
+          </p>
+          <ul class="seci-list">
+            <li><strong>Socialization</strong> Share experience and progress in meetings and discussions.</li>
+            <li><strong>Externalization</strong> Write what you learned as models and analyses with clear interfaces.</li>
+            <li><strong>Combination</strong> Connect those objects on the platform into new analyses.</li>
+            <li><strong>Internalization</strong> Use the platform in your own research and gain new insight.</li>
+          </ul>
+          <p>
+            Each turn of the spiral leaves something reusable behind, so knowledge is not tied to individuals and keeps growing.
+            The name echoes a <em>guild</em>: a circle of researchers and engineers who learn from one another and build together.
+          </p>
+        </div>
+        <figure class="about-figure about-seci">
+          <img src="./images/about/seci-cycle.svg" alt="The SECI spiral turning clockwise: Socialization, Externalization, Combination, Internalization, with GUILDA at the centre." width="480" height="480">
+          <img src="./images/GUILDA-logo-square.png" alt="" class="about-seci-logo">
+        </figure>
+      </section>
+
+      <figure class="about-figure about-figure-wide about-guild">
+        <img src="./images/about/guild-platform.svg" alt="People around a shared platform each add a block, such as a new model or a new controller, and everyone reuses the growing structure." width="720" height="300">
+      </figure>
+
+      <section class="about-compare">
+        <p class="about-step"><span>06</span> Compared</p>
+        <h2>Where GUILDA stands</h2>
+        <div class="compare-scroll">
+          <table class="compare-table">
+            <thead>
+              <tr><th>Analysis</th><th>Conventional analysis package</th><th>GUILDA</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Power flow</td><td><span class="mark-yes">✓</span></td><td><span class="mark-yes">✓</span></td></tr>
+              <tr><td>Small-signal stability via linearization</td><td><span class="mark-yes">✓</span></td><td><span class="mark-yes">✓</span></td></tr>
+              <tr><td>Time-domain (transient) response</td><td><span class="mark-yes">✓</span></td><td><span class="mark-yes">✓</span></td></tr>
+              <tr><td>Interfaces for control engineering</td><td><span class="mark-part">Limited</span></td><td><span class="mark-core">Core focus</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="compare-note">Based on Table 1 of the article below, which compares GUILDA with CPAT, a power-system analysis package widely used in Japan. CPAT also offers fault and harmonic calculations, which GUILDA does not target.</p>
+      </section>
+
+      <section class="about-reading">
+        <h2>Further reading</h2>
+        <ul>
+          <li>
+            T. Nishino, T. Kawaguchi and T. Ishizaki,
+            <a href="https://www.jstage.jst.go.jp/article/sicejl/62/9/62_559/_article/-char/ja" target="_blank">「GUILDA：エネルギーナレッジマネジメントのはじめの一歩」</a>,
+            <em>計測と制御</em>, Vol. 62, No. 9, pp. 559–563, 2023 (in Japanese).
+          </li>
+          <li>
+            T. Ishizaki, T. Kawaguchi and K. Kawabe,
+            <a href="https://lim.ishizaki-lab.jp/guilda#h.66rvn04iyvio" target="_blank">「電力系統のシステム制御工学 – システム数理と MATLAB シミュレーション –」</a>, Corona Publishing (in Japanese).
+          </li>
+        </ul>
+      </section>
+    </div>
+
     <div id="tab-getting-started" class="tab-content">
       <h1>Getting Started</h1>
 
       <h2>Install Now</h2>
       <div class="install-buttons">
-        <a href="https://github.com/guilda-dev/guilda" target="_blank" class="btn">From GitHub</a>
-        <a href="https://matlab.mathworks.com/open/github/v1?repo=guilda-dev/guilda&project=./GUILDA.prj" target="_blank" class="btn">Open in MATLAB Online</a>
+        <a href="https://github.com/guilda-dev/guilda" target="_blank" class="btn btn-github"><svg class="gh-mark" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg><span>From GitHub</span></a>
+        <a href="https://matlab.mathworks.com/open/github/v1?repo=guilda-dev/guilda&project=./GUILDA.prj" target="_blank" class="btn-badge"><img src="https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg" alt="Open in MATLAB Online" onerror="this.parentNode.classList.add('is-offline')"><span class="btn-badge-fallback">Open in MATLAB Online</span></a>
       </div>
 
       <h2>Requirements</h2>
@@ -381,20 +603,79 @@ sol = net.simulate([0, 50], fault);</code></pre>
     function renderUpdateLog() {
       const container = document.getElementById('update-log-container');
       if (!container) return;
-      
+
       const data = typeof updateLogData !== 'undefined' ? updateLogData : (typeof update_log !== 'undefined' ? update_log : null);
-      
-      if (data && Array.isArray(data) && data.length > 0) {
-        container.innerHTML = data.map(u => `
-          <div class="update-log-item">
-            <div class="update-date">${u.date || ''}</div>
-            <h3 class="update-title">${u.title || ''}</h3>
-            <div class="update-text">${u.content || ''}</div>
-          </div>
-        `).join('');
-      } else {
+      if (!Array.isArray(data) || data.length === 0) {
         container.innerHTML = '<p style="color: var(--muted);">No update log data found.</p>';
+        return;
       }
+
+      const esc = (value) => String(value ?? '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      // Newest first
+      const items = [...data].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+      const cards = (copy) => items.map(u => `
+        <article class="ulog-card"${copy ? ' aria-hidden="true"' : ''} title="${esc(u.content)}">
+          <time class="ulog-date" datetime="${esc(u.date)}">${esc(u.date)}</time>
+          <h3 class="ulog-title">${esc(u.title)}</h3>
+          <p class="ulog-text">${esc(u.content)}</p>
+        </article>`).join('');
+
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      container.innerHTML = `<div class="ulog-track">${cards(false)}${reduceMotion ? '' : cards(true)}</div>`;
+      if (!reduceMotion) startUpdateLogMarquee(container);
+    }
+
+    // Slow, seamless marquee: the track holds the cards twice, and scrollLeft wraps
+    // by one copy's width. Hover, focus and drag pause it; manual scroll is kept.
+    function startUpdateLogMarquee(container) {
+      const track = container.querySelector('.ulog-track');
+      const speed = 28; // px per second
+      let pos = container.scrollLeft;
+      let paused = false;
+      let dragging = false;
+      let last = null;
+
+      const loopWidth = () => track.scrollWidth / 2;
+      const pause = (value) => { paused = value; };
+      container.addEventListener('mouseenter', () => pause(true));
+      container.addEventListener('mouseleave', () => { if (!dragging) pause(false); });
+      container.addEventListener('focusin', () => pause(true));
+      container.addEventListener('focusout', () => pause(false));
+      container.addEventListener('touchstart', () => pause(true), { passive: true });
+      container.addEventListener('touchend', () => setTimeout(() => pause(false), 1500), { passive: true });
+
+      // Mouse drag to scroll
+      let dragX = 0, dragStart = 0;
+      container.addEventListener('pointerdown', (e) => {
+        if (e.pointerType !== 'mouse') return;
+        dragging = true; dragX = e.clientX; dragStart = container.scrollLeft;
+        container.classList.add('is-dragging');
+        container.setPointerCapture(e.pointerId);
+      });
+      container.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        container.scrollLeft = dragStart - (e.clientX - dragX);
+      });
+      const endDrag = () => { dragging = false; container.classList.remove('is-dragging'); };
+      container.addEventListener('pointerup', endDrag);
+      container.addEventListener('pointercancel', endDrag);
+
+      const step = (now) => {
+        const dt = last === null ? 0 : Math.min((now - last) / 1000, 0.1);
+        last = now;
+        const width = loopWidth();
+        const visible = container.offsetParent !== null && width > container.clientWidth;
+        if (Math.abs(container.scrollLeft - pos) > 1) pos = container.scrollLeft; // user scrolled
+        if (visible && !paused && !dragging && !document.hidden) pos += speed * dt;
+        if (width > 0) {
+          if (pos >= width) pos -= width;
+          if (pos < 0) pos += width;
+        }
+        container.scrollLeft = pos;
+        requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
     }
 
     function renderTutorials() {
@@ -695,13 +976,17 @@ sol = net.simulate([0, 50], fault);</code></pre>
       if (requestedTab && document.getElementById(requestedTab)?.classList.contains('tab-content')) {
         openTab(requestedTab);
       }
-      renderUpdateLog(); 
-      renderTutorials(); 
+      renderUpdateLog();
+      renderTutorials();
       renderDeveloperLinks();
       renderReferenceStatus();
       renderReferenceNavigation();
       renderInheritanceTree();
 
+      window.addEventListener('hashchange', () => {
+        const tab = location.hash.replace(/^#/, '');
+        if (document.getElementById(tab)?.classList.contains('tab-content')) openTab(tab);
+      });
       document.getElementById('class-search')?.addEventListener('input', renderInheritanceTree);
       document.getElementById('class-undocumented-only')?.addEventListener('change', renderInheritanceTree);
     });
