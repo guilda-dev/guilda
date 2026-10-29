@@ -47,8 +47,8 @@ end
 
 
 %% GUILDA dictionary lists classes
-% dictionary は現在のフォルダからクラスを探すので GUILDA のフォルダで実行する
-str_cwd = pwd;  cd(str_root);  c = onCleanup(@() cd(str_cwd));
+% dictionary は現在のフォルダによらず GUILDA のフォルダからクラスを探す
+str_cwd = pwd;  cd(tempdir);  c = onCleanup(@() cd(str_cwd));
 tab = GUILDA.dictionary("Component", "disp", false);
 assert(istable(tab))
 assert(all(ismember(["component.generator.park","component.load.power"], tab.filename)))
@@ -60,6 +60,9 @@ assert(ismember("branch.pi", tab{2}.filename))
 % 表示あり (クラスツリー) もエラーにならない
 txt = evalc("GUILDA.dictionary(""LocalController"");");
 assert(contains(txt, "LocalController"))
+% 旧クラスの保管フォルダ (+component/+load/history) は探さない
+txt = evalc("GUILDA.dictionary(""Component"");");
+assert(~contains(txt, "same name"), txt)
 
 
 %% Symbolic Math Toolbox is not a required toolbox

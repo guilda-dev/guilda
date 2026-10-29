@@ -38,7 +38,7 @@ function results = run_all(opt)
     import matlab.unittest.TestRunner
     import matlab.unittest.plugins.DiagnosticsRecordingPlugin
 
-    % GUILDA のフォルダへ移動 (GUILDA.dictionary などは現在のフォルダを使う)
+    % GUILDA のフォルダへ移動
     str_root = fileparts(fileparts(mfilename("fullpath")));
     str_cwd  = pwd;
     cd(str_root);
