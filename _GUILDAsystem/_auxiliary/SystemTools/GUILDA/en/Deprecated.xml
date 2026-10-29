@@ -8,5 +8,7 @@
         <entry key="BusBaseMVAMismatch">The add_bus option baseMVA is deprecated and ignored: the given {0} MVA differs from the system base net.tab_parameter.base.baseMVA = {1} MVA, which is used. Set net.tab_parameter.base.baseMVA instead.</entry>
         <entry key="CalculatePowerflowMode">The positional mode argument of calculate_powerflow is deprecated: use net.calculate_powerflow(Method="{0}").</entry>
         <entry key="CalculatePowerflowExport">The calculate_powerflow options export and filename are deprecated: use net.calculate_powerflow(Export=filename) or result.Export(filename). A .json file holds the iteration history; a relative file name is now relative to the current folder.</entry>
+        <entry key="OptimizePowerflowMethods">The optimize_powerflow option methods is deprecated: use net.optimize_powerflow(Method="{0}").</entry>
+        <entry key="OptimizePowerflowTuple">The 6-output form [powerflow_bus, powerflow_cub, flag, output, lambda, OPFprob] = net.optimize_powerflow(...) is deprecated: use [result, flag, output] = net.optimize_powerflow(...) and result.tab_bus, result.tab_cub, result.lambda, result.OPFprob.</entry>
     </message>
 </rsccat>

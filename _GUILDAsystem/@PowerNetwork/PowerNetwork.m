@@ -89,9 +89,10 @@ classdef PowerNetwork < PowerSystemModel
 
         % <@Summary> "OptimalPowerFlow" class
         % <@Desc>
-        % 最適潮流計算に使用するOptimalPowerFlowクラスを保存
-        % >> obj.optimize_power_flow
-        % 内部で使用
+        % Solver of net.optimize_powerflow (runs obj.solver_OPF.solve). Its properties are
+        % the stored defaults (Method, Solver, Display, MaxIteration, ...) and are kept
+        % between runs; Name-Value options of a call override them for that call only.
+        % Results are returned as an OPFResult, never stored in the solver.
         % <@Role> optimal power-flow
         % <@Size> 1×1
         % <@Default> OptimalPowerFlow()
@@ -156,7 +157,7 @@ classdef PowerNetwork < PowerSystemModel
         reset_solver(obj);
 
         % OPF(optimal power-flow)
-        [powerflow_bus, powerflow_cub, flag, output, lambda, OPFprob] = optimize_powerflow(obj,options)
+        varargout = optimize_powerflow(obj, varargin)
         varargout = build_opf_problem(obj,method)
 
         % PF(powerflow) calculations
