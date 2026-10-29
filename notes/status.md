@@ -129,16 +129,44 @@ Open:
 - **Load cost defaults.** `add_component` gives every component, including
   loads, `HP = fP = 1`. A fixed load's cost is a constant that is added to
   `r_cost`; finite differences of `r_cost` with respect to a load include it.
-- **CSV import drops transformer taps.** `branch/parameter.csv` files use
-  the column names `tap`/`phase`, but `CsvNetHandler.import` reads only
-  `Tap`/`Phase`, so every imported tap is 1 (e.g. IEEE14 transformers
-  4-7, 4-9, 5-6).
-- **IEEE14 data differs from MATPOWER `case14`:** load Q has the wrong sign
-  on all loads except bus 4 (loads inject Q); branch `C` holds the total
-  line charging B instead of B/2, and B of branches 2-4, 2-5, 3-4, 4-5 is
-  shifted by one row; generator limits are ±Inf instead of the case14
-  values; bus voltage limits are 0.5–1.5 instead of 0.94–1.06; costs are
-  `HP = fP = 1` for all components instead of the case14 gencost.
+  `IEEE14bus` now gives its loads `HP = fP = 0` (see below); the
+  `add_component` default is unchanged.
+- **`IEEE14bus_lossless` still has the old IEEE14 data** (load Q sign, line
+  charging, the shifted B values, ±Inf generator limits, 0.5–1.5 voltage
+  limits, unit costs). Its transformer taps are read since the CSV fix.
+
+### IEEE14 data and CSV taps
+
+Fixed on `fix/ieee14-data-and-tap-import`:
+
+- **CSV import reads transformer taps.** `CsvNetHandler.import` now reads the
+  `tap`/`phase` columns that the bundled networks and `CsvNetHandler.export`
+  write, and still accepts `Tap`/`Phase`; both spellings in one file is an
+  error (`network:import_csv:DuplicateColumns`). Before, every imported tap
+  was 1 (IEEE14 4-7, 4-9, 5-6; `IEEE14bus_lossless` too). `TEST31bus`
+  already used `Tap`. `Ishizaki6Bus` and `Txt3Bus` have `tap = 0` on `pi`
+  lines, which `pi` ignores.
+- **`IEEE14bus` matches MATPOWER `case14`** (100 MVA base): `C` = b/2 with
+  the case14 b, load Q = −Qd, bus `Vmin`/`Vmax` = 0.94/1.06, generator
+  `Pmin`/`Pmax`/`Qmin`/`Qmax` and costs `HP = c2·100²`, `fP = c1·100`. The
+  Ybus equals the case14 Ybus (1e-14), power flow gives the `runpf(case14)`
+  generator Q (−16.55, 43.56, 25.08, 12.73, 17.62 MVAr), and AC/DC OPF give
+  8081.53 / 7642.59 $/hr without changing the network.
+- Kept on purpose: every generator (also the compensators at buses 3, 6, 8)
+  is `gen-park` with one dynamic parameter set; bus 7 has a zero load; branch
+  7-9 is a `pi` line (tap 1 in case14).
+- **Load cost decision:** loads in `IEEE14bus` have no OPF cost
+  (`HP = HQ = fP = fQ = 0`). case14 has no load cost, a fixed load's cost is
+  only a constant, and with 0 `r_cost` equals the MATPOWER objective.
+- Effects users see: different power-flow voltages (up to 0.056 pu at bus 9
+  before) and generator Q (e.g. bus 6: −32.2 → 12.7 MVAr); ELD/OPF results
+  follow the case14 costs and limits instead of an equal split; the
+  equilibrium and linear model change slightly (slowest mode −0.503 →
+  −0.540, smallest damping ratio 0.036 → 0.035; peak ω deviation after a
+  B008 fault 3.3e-3 → 4.1e-3). Bus 8 runs at 1.09 pu in power flow, above
+  its `Vmax` 1.06, as in case14 (power flow does not enforce limits).
+- `DebugScript.run_all` on `fix/ieee14-data-and-tap-import` (2026-10-29):
+  164 tests, PASS 162 / KNOWN 1 / FAIL 0 / SKIP 1 (the MATPOWER comparison).
 
 ### Analysis API foundation
 

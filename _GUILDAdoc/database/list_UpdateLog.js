@@ -68,5 +68,10 @@ const updateLogData = [
     "title": "Optimal power flow fixes",
     "date": "2026-10-29",
     "content": "AC OPF solves with branch Imax and Smax limits (they stopped fmincon before) and with linear-only costs (HP = HQ = 0). Branch flow variables start at the values of the initial bus voltages. OPFResult.lambda documents the nodal price as -lambda.Constraints.balancedP_<bus>. New tools.network_to_mpc converts a network into a MATPOWER case."
+  },
+  {
+    "title": "IEEE14bus matches MATPOWER case14",
+    "date": "2026-10-29",
+    "content": "network.IEEE14bus now has the MATPOWER case14 line charging, load reactive power, voltage limits 0.94-1.06, generator limits and generator costs; loads have no OPF cost. Power-flow, OPF, simulation and linearization results of IEEE14bus change. CSV import now reads the transformer tap and phase columns (tap/phase, as export writes them; Tap/Phase is also accepted), so imported transformers keep their taps."
   }
 ];
