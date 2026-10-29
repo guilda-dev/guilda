@@ -7,26 +7,17 @@
   <link rel="stylesheet" href="../style.css">
   <style>
     /* API Design page only (ad-*); shared parts are dg-* in style.css */
-    .ad-anatomy .dg-op { align-self: flex-start; padding: 6px 2px; color: var(--dg-muted); font: bold 1.2rem/1.3 var(--dg-mono); }
-    .ad-anatomy .dg-tok { white-space: nowrap; }
-    .ad-rules h3.dg-item-title { margin: 0 0 4px; }
-    .ad-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--dg-s5); margin: var(--dg-s3) 0 var(--dg-s1); }
-    .ad-split > div { padding-left: var(--dg-s3); border-left: 3px solid var(--c, var(--dg-accent)); font-size: 0.93rem; }
-    .ad-split .dg-kicker { margin-bottom: 4px; font-size: 0.82rem; letter-spacing: 0; text-transform: none; color: var(--c, var(--dg-accent)); }
-    .ad-split .is-runtime { --c: var(--dg-muted); }
-    .ad-split .is-mod { --c: var(--dg-err); }
-    .ad-split .is-pure { --c: var(--dg-ok); }
-    .ad-verbs { display: flex; flex-wrap: wrap; gap: 6px; }
-    .ad-opts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0 var(--dg-s4); margin: var(--dg-s3) 0 0; }
-    .ad-opts dt, .ad-opts dd { margin: 0; padding: 6px 0; border-bottom: 1px solid var(--dg-line); }
-    .ad-opts dt { color: var(--dg-accent); font: bold 0.92rem/1.6 var(--dg-mono); }
-    .ad-opts dd small { color: var(--dg-muted); }
-    .ad-table td { vertical-align: top; font-size: 0.9rem; }
-    .ad-table td:first-child { font-weight: bold; white-space: nowrap; }
-    .ad-table td small { display: block; margin-top: 4px; color: var(--dg-muted); }
+    .ad-rules td:first-child { width: 8.5rem; }
+    .ad-rules td:last-child { width: 15rem; }
+    .ad-num { display: inline-block; min-width: 1.6em; color: var(--dg-accent); font-family: var(--dg-mono); }
+    .ad-features td:nth-child(2) code:first-child { white-space: nowrap; }
+    .ad-features td:last-child { width: 6rem; }
+    .ad-opts { width: auto; }
+    .ad-opts td:first-child { padding-right: var(--dg-s7); }
+    .ad-features td:last-child small { min-width: 10rem; }
     @media (max-width: 640px) {
-      .ad-split { grid-template-columns: minmax(0, 1fr); gap: var(--dg-s3); }
-      .ad-anatomy .dg-tok { white-space: normal; }
+      .ad-rules td:first-child, .ad-rules td:last-child, .ad-features td:last-child { width: auto; }
+      .ad-features td:nth-child(2) code:first-child { white-space: normal; overflow-wrap: anywhere; }
     }
   </style>
 </head>
@@ -37,7 +28,7 @@
   <main>
     <button type="button" class="developer-back-button" onclick="window.history.back()">← Back to For Developer</button>
     <h1>API Design for Analysis Features</h1>
-    <p class="page-lead">Power flow, OPF, CPF, time simulation, linearization, and import/export are all called the same way: as a method of <code>PowerNetwork</code>, with Name-Value options, returning <code>[result, flag, output]</code>.</p>
+    <p class="page-lead">Every analysis and IO feature is called the same way. It is a <code>PowerNetwork</code> method. It takes Name-Value options. It returns <code>[result, flag, output]</code>.</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#rules">Cross-cutting rules</a>
@@ -46,141 +37,249 @@
       <a href="#related">Related rules</a>
     </nav>
 
-    <figure class="dg-figure ad-anatomy" aria-label="Example call: [result, flag, output] = net.calculate_powerflow(Method=&quot;algebraic&quot;)">
-      <div class="dg-anatomy">
-        <span class="dg-part is-ok"><span class="dg-tok">[result, flag, output]</span><span class="dg-kicker">rule 3 · 4</span></span>
-        <span class="dg-op">=</span>
-        <span class="dg-part is-accent"><span class="dg-tok">net.</span><span class="dg-kicker">rule 1</span></span>
-        <span class="dg-part is-warn"><span class="dg-tok">calculate_powerflow</span><span class="dg-kicker">rule 1 · 6</span></span>
-        <span class="dg-part is-muted"><span class="dg-tok">(Method="algebraic")</span><span class="dg-kicker">rule 2 · 7</span></span>
-      </div>
+    <figure class="dg-figure" aria-labelledby="ad-call-title">
+      <svg class="dg-svg dg-sv dg-only-wide" viewBox="0 0 760 170" role="img" aria-labelledby="ad-call-title">
+        <title id="ad-call-title">Call shape: Name-Value options go into net.verb_noun, which returns result, flag and output</title>
+        <defs>
+          <marker id="ad-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head" d="M0 0L10 5L0 10z"/></marker>
+        </defs>
+        <!-- inputs -->
+        <rect class="dg-sv-box" x="1" y="48" width="196" height="100" rx="10"/>
+        <text class="is-k" x="99" y="72" text-anchor="middle">NAME-VALUE OPTIONS</text>
+        <text class="dg-mono" x="99" y="97" text-anchor="middle">Method="algebraic"</text>
+        <text class="dg-mono" x="99" y="116" text-anchor="middle">Tolerance=1e-8</text>
+        <text class="is-sm is-muted" x="99" y="137" text-anchor="middle">rules 2 · 7</text>
+        <path class="dg-sv-line dg-anim-dash" d="M199 98H234" marker-end="url(#ad-ah)"/>
+        <!-- method -->
+        <rect class="dg-sv-box is-solid" x="238" y="38" width="226" height="120" rx="10"/>
+        <text class="is-k is-inv" x="351" y="66" text-anchor="middle">POWERNETWORK METHOD</text>
+        <text class="dg-mono is-b is-inv" x="351" y="96" text-anchor="middle" style="font-size:16px">net.verb_noun()</text>
+        <text class="is-sm is-inv" x="351" y="119" text-anchor="middle">e.g. net.calculate_powerflow</text>
+        <text class="is-sm is-inv" x="351" y="141" text-anchor="middle">rules 1 · 5 · 6</text>
+        <!-- outputs -->
+        <text class="is-k" x="500" y="20">OUTPUTS, IN THIS ORDER · RULES 3 · 4</text>
+        <path class="dg-sv-line" d="M466 98C484 98 484 52 496 52" marker-end="url(#ad-ah)"/>
+        <path class="dg-sv-line" d="M466 98H496" marker-end="url(#ad-ah)"/>
+        <path class="dg-sv-line" d="M466 98C484 98 484 144 496 144" marker-end="url(#ad-ah)"/>
+        <rect class="dg-sv-box is-ok" x="500" y="32" width="258" height="40" rx="8"/>
+        <text class="dg-mono is-b is-ok" x="514" y="57">result</text>
+        <text class="is-sm" x="572" y="57">result class or MATLAB type</text>
+        <rect class="dg-sv-box" x="500" y="78" width="258" height="40" rx="8"/>
+        <text class="dg-mono is-b is-accent" x="514" y="103">flag</text>
+        <text class="is-sm" x="572" y="103">success or convergence</text>
+        <rect class="dg-sv-box" x="500" y="124" width="258" height="40" rx="8"/>
+        <text class="dg-mono is-b is-accent" x="514" y="149">output</text>
+        <text class="is-sm" x="572" y="149">solver details</text>
+      </svg>
+      <div class="dg-only-narrow"><div class="dg-chain">
+        <div class="dg-chain-node"><span class="dg-kicker">Name-Value options</span><code>Method="algebraic"</code> <code>Tolerance=1e-8</code></div>
+        <div class="dg-chain-arrow"></div>
+        <div class="dg-chain-node is-step"><span class="dg-kicker">PowerNetwork method</span><code>net.verb_noun()</code></div>
+        <div class="dg-chain-arrow"></div>
+        <div class="dg-chain-node is-ok"><span class="dg-kicker">Outputs</span><code>result</code>: result class or MATLAB type<br><code>flag</code>: success or convergence<br><code>output</code>: solver details</div>
+      </div></div>
       <figcaption>Every part of a call is fixed by one of the rules below.</figcaption>
     </figure>
 
     <h2 id="rules">Cross-cutting rules</h2>
-    <ol class="dg-list is-numbered ad-rules">
-      <li><div>
-        <h3 class="dg-item-title">Entry point: <code>net.verb_noun()</code></h3>
-        <p>Every analysis and IO feature is called as a method of <code>PowerNetwork</code>, named <code>verb_noun</code> in snake_case. Auxiliary classes such as <code>ContinuationPowerFlow</code>, <code>CsvNetHandler</code>, and <code>odeSimulator</code> are the implementation behind these methods. Using them directly is for advanced users only.</p>
-      </div></li>
-      <li><div>
-        <h3 class="dg-item-title">Inputs: system data beforehand, analysis settings as defaults with run-time overrides</h3>
-        <div class="ad-split">
-          <div class="is-before"><span class="dg-kicker">Set beforehand (properties / <code>tab_parameter</code>)</span>Data that describes the system itself: line constants, power-flow specifications (V, P, Q), operating limits.</div>
-          <div class="is-runtime"><span class="dg-kicker">Defaults in <code>net.solver_*</code>, overridden at run time (Name-Value)</span>Settings of an analysis: method, tolerance, time span, events. <code>net.solver_PF</code> / <code>solver_OPF</code> / <code>solver_CPF</code> / <code>solver_ODE</code> keep persistent defaults, so repeated runs keep the last settings. A Name-Value option overrides a default for that call only and does not change the stored default.</div>
-        </div>
-        <p>See <a href="class-design.html#solvers">Class Design: Solver settings</a>.</p>
-      </div></li>
-      <li><div>
-        <h3 class="dg-item-title">Output type: result classes for main analyses</h3>
-        <p>Power flow, OPF, CPF, and time simulation return a dedicated result class, like <code>odeSimulationResult</code>. Simple getters keep standard MATLAB types: <code>get_sys</code> returns an <code>ss</code>, <code>get_admittance_matrix</code> returns a <code>table</code>.</p>
-      </div></li>
-      <li><div>
-        <h3 class="dg-item-title">Output order: <code>[result, flag, output]</code></h3>
-        <ul>
-          <li><code>result</code>: the result object (or standard MATLAB type).</li>
-          <li><code>flag</code>: success or convergence.</li>
-          <li><code>output</code>: solver details.</li>
-        </ul>
-        <p>Result classes also hold <code>flag</code> and <code>output</code> as properties, so <code>result</code> alone is enough to check the outcome.</p>
-      </div></li>
-      <li><div>
-        <h3 class="dg-item-title">Preconditions: stop with an error that says how to fix it</h3>
-        <p>When a precondition is not met, stop with an explicit error that tells the user what to do. For example, the edit state in <code>str_editFlag</code> (<code>unset</code> / <code>initialized</code> / <code>editted</code>) must be <code>initialized</code> before a simulation; otherwise the error says "run <code>net.initialize()</code> first".</p>
-        <p>Only a harmless default that does not change the meaning of the result may continue, and it prints an INFO message.</p>
-      </div></li>
-      <li><div>
-        <h3 class="dg-item-title">Side effects follow the verb</h3>
-        <div class="ad-split">
-          <div class="is-mod"><span class="dg-kicker">May modify the model</span><span class="ad-verbs"><code>add_</code><code>remove_</code><code>replace_</code><code>set_</code><code>initialize</code></span></div>
-          <div class="is-pure"><span class="dg-kicker">Must not change model values</span><span class="ad-verbs"><code>calculate_</code><code>optimize_</code><code>simulate</code><code>get_</code><code>draw_</code><code>export_</code></span></div>
-        </div>
-        <p>Internal analysis caches are the only exception.</p>
-      </div></li>
-      <li><div>
-        <h3 class="dg-item-title">Common Name-Value options in UpperCamelCase</h3>
-        <p>Option names follow the MATLAB style. Each analysis supports the options that apply to it, with the same name and meaning everywhere.</p>
-        <dl class="ad-opts">
-          <dt>Method</dt><dd>Calculation method.</dd>
-          <dt>Tolerance</dt><dd>Convergence tolerance.</dd>
-          <dt>MaxIteration</dt><dd>Maximum number of iterations.</dd>
-          <dt>Solver</dt><dd>Numerical solver.</dd>
-          <dt>TimeLimit</dt><dd>Limit on computation time.</dd>
-          <dt>Verbose</dt><dd>Print progress messages.</dd>
-          <dt>Progress</dt><dd>Show a progress display.</dd>
-          <dt>Plot</dt><dd>Plot the result.</dd>
-          <dt>Export</dt><dd>Write the result to a file.</dd>
-        </dl>
-      </div></li>
-    </ol>
+    <table class="dg-table ad-rules">
+      <thead><tr><th>Rule</th><th>Meaning</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td><span class="ad-num">1</span>Entry point</td><td data-label="Meaning">Each feature is a <code>PowerNetwork</code> method named <code>verb_noun</code> (snake_case).</td><td data-label="Example"><code>net.calculate_powerflow()</code></td></tr>
+        <tr><td><span class="ad-num">2</span>Inputs</td><td data-label="Meaning">System data is set beforehand. Analysis settings have defaults. Name-Value options override them for one call.</td><td data-label="Example"><code>Tolerance=1e-10</code></td></tr>
+        <tr><td><span class="ad-num">3</span>Output type</td><td data-label="Meaning">Main analyses return a result class. Simple getters return standard MATLAB types.</td><td data-label="Example"><code>odeSimulationResult</code>, <code>ss</code></td></tr>
+        <tr><td><span class="ad-num">4</span>Output order</td><td data-label="Meaning">Outputs are always <code>[result, flag, output]</code>.</td><td data-label="Example"><code>[res, flag] = net.simulate(...)</code></td></tr>
+        <tr><td><span class="ad-num">5</span>Preconditions</td><td data-label="Meaning">If a precondition fails, stop with an error that says how to fix it.</td><td data-label="Example">"run <code>net.initialize()</code> first"</td></tr>
+        <tr><td><span class="ad-num">6</span>Side effects</td><td data-label="Meaning">The verb tells whether the model may change.</td><td data-label="Example"><code>set_</code> may, <code>get_</code> must not</td></tr>
+        <tr><td><span class="ad-num">7</span>Options</td><td data-label="Meaning">Common options use UpperCamelCase. Same name, same meaning everywhere.</td><td data-label="Example"><code>MaxIteration=50</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="entry-point">1 · Entry point</h3>
+    <p>Classes such as <code>ContinuationPowerFlow</code>, <code>CsvNetHandler</code> and <code>odeSimulator</code> implement these methods.</p>
+    <p>Calling them directly is for advanced users only.</p>
+
+    <h3 id="inputs">2 · Inputs: defaults and overrides</h3>
+    <figure class="dg-figure" aria-labelledby="ad-in-title">
+      <svg class="dg-svg dg-sv dg-only-wide" viewBox="0 0 760 248" role="img" aria-labelledby="ad-in-title">
+        <title id="ad-in-title">Inputs of a call: system data set beforehand, defaults in net.solver_*, and Name-Value options that override the defaults for one call</title>
+        <defs>
+          <marker id="ad-ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head" d="M0 0L10 5L0 10z"/></marker>
+        </defs>
+        <!-- system data -->
+        <rect class="dg-sv-box" x="1" y="4" width="318" height="68" rx="10"/>
+        <text class="is-k" x="15" y="25">SYSTEM DATA · SET BEFOREHAND</text>
+        <text class="dg-mono is-sm" x="15" y="44">properties, tab_parameter</text>
+        <text class="is-sm is-muted" x="15" y="61">line constants · V, P, Q specs · operating limits</text>
+        <!-- defaults -->
+        <rect class="dg-sv-box is-soft" x="1" y="88" width="318" height="68" rx="10"/>
+        <text class="is-k" x="15" y="109">ANALYSIS SETTINGS · DEFAULTS</text>
+        <text class="dg-mono is-sm" x="15" y="128">net.solver_PF / _OPF / _CPF / _ODE</text>
+        <text class="is-sm is-muted" x="15" y="145">method · tolerance · time span · events</text>
+        <text class="is-sm is-muted" x="15" y="172">kept between runs; a call never changes them</text>
+        <!-- name-value -->
+        <rect class="dg-sv-box is-warn" x="1" y="180" width="318" height="64" rx="10"/>
+        <text class="is-k is-warn" x="15" y="201">NAME-VALUE OPTIONS · THIS CALL ONLY</text>
+        <text class="dg-mono is-sm" x="15" y="220">Tolerance=1e-10</text>
+        <text class="is-sm is-muted" x="15" y="236">replaces the default for this call</text>
+        <!-- merge -->
+        <path class="dg-sv-line" d="M321 122H350" marker-end="url(#ad-ah2)"/>
+        <path class="dg-sv-line" d="M321 212C340 212 340 186 350 186" marker-end="url(#ad-ah2)"/>
+        <rect class="dg-sv-box" x="354" y="104" width="180" height="100" rx="10"/>
+        <text class="is-k" x="444" y="127" text-anchor="middle">SETTINGS FOR THIS CALL</text>
+        <text class="is-sm" x="444" y="150" text-anchor="middle">the default,</text>
+        <text class="is-sm" x="444" y="167" text-anchor="middle">unless a Name-Value</text>
+        <text class="is-sm" x="444" y="184" text-anchor="middle">option replaces it</text>
+        <!-- call -->
+        <path class="dg-sv-line" d="M321 38H536C552 38 552 92 566 92" marker-end="url(#ad-ah2)"/>
+        <path class="dg-sv-line dg-anim-dash" d="M536 154C552 154 552 150 566 150" marker-end="url(#ad-ah2)"/>
+        <rect class="dg-sv-box is-solid" x="570" y="66" width="188" height="110" rx="10"/>
+        <text class="is-k is-inv" x="664" y="96" text-anchor="middle">THE CALL</text>
+        <text class="dg-mono is-b is-inv" x="664" y="124" text-anchor="middle" style="font-size:14px">net.verb_noun(...)</text>
+        <text class="is-sm is-inv" x="664" y="150" text-anchor="middle">runs with these inputs</text>
+      </svg>
+      <div class="dg-only-narrow">
+        <table class="dg-table">
+          <tbody>
+            <tr><td>System data</td><td data-label="Set in">properties, <code>tab_parameter</code>, before the call</td><td data-label="Examples">line constants, V/P/Q specs, operating limits</td></tr>
+            <tr><td>Analysis settings</td><td data-label="Defaults in"><code>net.solver_PF</code> / <code>_OPF</code> / <code>_CPF</code> / <code>_ODE</code>; kept between runs</td><td data-label="Examples">method, tolerance, time span, events</td></tr>
+            <tr><td>Name-Value options</td><td data-label="Set in">the call; this call only</td><td data-label="Effect">replaces the default for this call</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <figcaption>A Name-Value option changes a setting for one call. The default in <code>net.solver_*</code> stays as it was.</figcaption>
+    </figure>
+    <ul>
+      <li>System data describes the system itself. Set it before the call.</li>
+      <li>Defaults persist, so repeated runs keep the last settings.</li>
+      <li>See <a href="class-design.html#solvers">Class Design: Solver settings</a>.</li>
+    </ul>
+
+    <h3 id="outputs">3 · 4 · Outputs</h3>
+    <table class="dg-table">
+      <thead><tr><th>Feature kind</th><th>Returns</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td>Main analysis</td><td data-label="Returns">a dedicated result class</td><td data-label="Example">power flow, OPF, CPF, time simulation → <code>odeSimulationResult</code></td></tr>
+        <tr><td>Simple getter</td><td data-label="Returns">a standard MATLAB type</td><td data-label="Example"><code>get_sys</code> → <code>ss</code>, <code>get_admittance_matrix</code> → <code>table</code></td></tr>
+      </tbody>
+    </table>
+    <p>Result classes also hold <code>flag</code> and <code>output</code> as properties.</p>
+    <p>So <code>result</code> alone is enough to check the outcome.</p>
+
+    <h3 id="preconditions">5 · Preconditions</h3>
+    <table class="dg-table">
+      <thead><tr><th>Situation</th><th>Behavior</th></tr></thead>
+      <tbody>
+        <tr><td>Precondition met</td><td data-label="Behavior">Run.</td></tr>
+        <tr><td>Not met</td><td data-label="Behavior">Stop with an explicit error that tells the user what to do.</td></tr>
+        <tr><td>Not met, but a harmless default exists</td><td data-label="Behavior">Continue and print an INFO message. Only for a default that does not change the meaning of the result.</td></tr>
+      </tbody>
+    </table>
+    <p>Example: the edit state <code>str_editFlag</code> is <code>unset</code>, <code>initialized</code> or <code>editted</code>.</p>
+    <p>A simulation needs <code>initialized</code>. Otherwise the error says "run <code>net.initialize()</code> first".</p>
+
+    <h3 id="side-effects">6 · Side effects follow the verb</h3>
+    <table class="dg-table">
+      <thead><tr><th>Effect on the model</th><th>Verbs</th></tr></thead>
+      <tbody>
+        <tr><td><span class="dev-status">May modify</span></td><td data-label="Verbs"><span class="dg-badge is-err">add_</span><span class="dg-badge is-err">remove_</span><span class="dg-badge is-err">replace_</span><span class="dg-badge is-err">set_</span><span class="dg-badge is-err">initialize</span></td></tr>
+        <tr><td><span class="dev-status is-ok">Must not change values</span></td><td data-label="Verbs"><span class="dg-badge is-ok">calculate_</span><span class="dg-badge is-ok">optimize_</span><span class="dg-badge is-ok">simulate</span><span class="dg-badge is-ok">get_</span><span class="dg-badge is-ok">draw_</span><span class="dg-badge is-ok">export_</span></td></tr>
+      </tbody>
+    </table>
+    <p>Internal analysis caches are the only exception.</p>
+
+    <h3 id="options">7 · Common Name-Value options</h3>
+    <p>Option names follow the MATLAB style (UpperCamelCase).</p>
+    <p>Each analysis supports the options that apply to it.</p>
+    <table class="dg-table ad-opts">
+      <thead><tr><th>Option</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><code>Method</code></td><td data-label="Meaning">Calculation method</td></tr>
+        <tr><td><code>Tolerance</code></td><td data-label="Meaning">Convergence tolerance</td></tr>
+        <tr><td><code>MaxIteration</code></td><td data-label="Meaning">Maximum number of iterations</td></tr>
+        <tr><td><code>Solver</code></td><td data-label="Meaning">Numerical solver</td></tr>
+        <tr><td><code>TimeLimit</code></td><td data-label="Meaning">Limit on computation time</td></tr>
+        <tr><td><code>Verbose</code></td><td data-label="Meaning">Print progress messages</td></tr>
+        <tr><td><code>Progress</code></td><td data-label="Meaning">Show a progress display</td></tr>
+        <tr><td><code>Plot</code></td><td data-label="Meaning">Plot the result</td></tr>
+        <tr><td><code>Export</code></td><td data-label="Meaning">Write the result to a file</td></tr>
+      </tbody>
+    </table>
 
     <h2 id="features">Per-feature API</h2>
-    <p>The call for each feature. "Modifies net" follows rule 6.</p>
-    <table class="ad-table">
-      <thead>
-        <tr><th>Feature</th><th>Call</th><th>Output</th><th>Modifies net</th></tr>
-      </thead>
+    <p>Features with a result return <code>[result, flag, output]</code>.</p>
+    <p>"Changes net" follows rule 6.</p>
+    <table class="dg-table ad-features">
+      <thead><tr><th>Feature</th><th>Call and main options</th><th>First output</th><th>Changes net</th></tr></thead>
       <tbody>
         <tr>
           <td>Power flow</td>
-          <td><code>net.calculate_powerflow(Method="algebraic"|"dynamic", Tolerance, MaxIteration, ...)</code></td>
-          <td><code>[PowerFlowResult, flag, output]</code></td>
-          <td><span class="dev-status is-ok">No</span><small>The slack bus is chosen inside the calculation and not written to the net.</small></td>
+          <td data-label="Call"><code>net.calculate_powerflow(...)</code><small><code>Method="algebraic"|"dynamic"</code>, <code>Tolerance</code>, <code>MaxIteration</code>, ...</small></td>
+          <td data-label="First output"><code>PowerFlowResult</code></td>
+          <td data-label="Changes net"><span class="dev-status is-ok">No</span><small>The slack bus is chosen inside the calculation and not written to the net.</small></td>
         </tr>
         <tr>
           <td>Initialization</td>
-          <td><code>net.initialize(Method="powerflow"|"opf"|"xequilibrium")</code></td>
-          <td><code>[PowerFlowResult, flag, output]</code></td>
-          <td><span class="dev-status">Yes</span></td>
+          <td data-label="Call"><code>net.initialize(...)</code><small><code>Method="powerflow"|"opf"|"xequilibrium"</code></small></td>
+          <td data-label="First output"><code>PowerFlowResult</code></td>
+          <td data-label="Changes net"><span class="dev-status">Yes</span></td>
         </tr>
         <tr>
           <td>OPF</td>
-          <td><code>net.optimize_powerflow(Method="ELD"|"DC"|"AC")</code></td>
-          <td><code>[OPFResult, flag, output]</code><small>Lagrange multipliers and the problem object are in the result.</small></td>
-          <td><span class="dev-status is-ok">No</span></td>
+          <td data-label="Call"><code>net.optimize_powerflow(...)</code><small><code>Method="ELD"|"DC"|"AC"</code></small></td>
+          <td data-label="First output"><code>OPFResult</code><small>Holds the Lagrange multipliers and the problem object.</small></td>
+          <td data-label="Changes net"><span class="dev-status is-ok">No</span></td>
         </tr>
         <tr>
           <td>CPF</td>
-          <td><code>net.calculate_continuation_powerflow(...)</code></td>
-          <td><code>[CPFResult, flag, output]</code></td>
-          <td><span class="dev-status is-ok">No</span></td>
+          <td data-label="Call"><code>net.calculate_continuation_powerflow(...)</code></td>
+          <td data-label="First output"><code>CPFResult</code></td>
+          <td data-label="Changes net"><span class="dev-status is-ok">No</span></td>
         </tr>
         <tr>
           <td>Time simulation</td>
-          <td><code>net.simulate(time, events..., Solver, TimeLimit, Progress, ...)</code></td>
-          <td><code>[odeSimulationResult, flag, output]</code></td>
-          <td><span class="dev-status is-ok">No</span><small>Error if the net is not initialized.</small></td>
+          <td data-label="Call"><code>net.simulate(time, events..., ...)</code><small><code>Solver</code>, <code>TimeLimit</code>, <code>Progress</code>, ...</small></td>
+          <td data-label="First output"><code>odeSimulationResult</code></td>
+          <td data-label="Changes net"><span class="dev-status is-ok">No</span><small>Error if the net is not initialized.</small></td>
         </tr>
         <tr>
           <td>Linearization</td>
-          <td><code>net.get_sys(Method="Feedback"|"Kron"|"DAE", NonUnit)</code></td>
-          <td><code>[sys, flag, output]</code><small><code>sys</code> is an <code>ss</code>. The linearizer object and the DAE matrices are in <code>output</code>.</small></td>
-          <td><span class="dev-status is-ok">No</span></td>
+          <td data-label="Call"><code>net.get_sys(...)</code><small><code>Method="Feedback"|"Kron"|"DAE"</code>, <code>NonUnit</code></small></td>
+          <td data-label="First output"><code>sys</code> (an <code>ss</code>)<small>The linearizer object and the DAE matrices are in <code>output</code>.</small></td>
+          <td data-label="Changes net"><span class="dev-status is-ok">No</span></td>
         </tr>
         <tr>
           <td>Import</td>
-          <td><code>PowerNetwork.import_csv(path)</code><br><code>PowerNetwork.import_matpower(mpc)</code></td>
-          <td>new <code>net</code><small>Static methods.</small></td>
-          <td>—</td>
+          <td data-label="Call"><code>PowerNetwork.import_csv(path)</code><br><code>PowerNetwork.import_matpower(mpc)</code><small>Static methods.</small></td>
+          <td data-label="First output">new <code>net</code></td>
+          <td data-label="Changes net">—</td>
         </tr>
         <tr>
           <td>Export</td>
-          <td><code>net.export_csv(...)</code></td>
-          <td>—</td>
-          <td><span class="dev-status is-ok">No</span></td>
+          <td data-label="Call"><code>net.export_csv(...)</code></td>
+          <td data-label="First output">—</td>
+          <td data-label="Changes net"><span class="dev-status is-ok">No</span></td>
         </tr>
         <tr>
           <td>Getters / drawing</td>
-          <td><code>net.get_admittance_matrix()</code><br><code>net.draw_diagram(ax)</code></td>
-          <td>Unchanged</td>
-          <td><span class="dev-status is-ok">No</span></td>
+          <td data-label="Call"><code>net.get_admittance_matrix()</code><br><code>net.draw_diagram(ax)</code></td>
+          <td data-label="First output">Unchanged</td>
+          <td data-label="Changes net"><span class="dev-status is-ok">No</span></td>
         </tr>
       </tbody>
     </table>
     <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg><p>A new analysis feature follows the same rules: a <code>net.verb_noun()</code> method with Name-Value options that returns <code>[result, flag, output]</code>.</p></div>
 
     <h2 id="compatibility">Compatibility</h2>
-    <p>When a public name or signature is renamed or removed, the old form keeps working through a wrapper in <code>_GUILDAsystem/_VersionSupport/</code> for at least one major version, with a deprecation warning (see <a href="project-management.html#versions">Versions</a>).</p>
+    <div class="dg-chain">
+      <div class="dg-chain-node"><span class="dg-kicker">Old call</span>A public name or signature that was renamed or removed</div>
+      <div class="dg-chain-arrow"></div>
+      <div class="dg-chain-node is-warn"><span class="dg-kicker">Wrapper</span>In <code>_GUILDAsystem/_VersionSupport/</code>. Prints a deprecation warning.</div>
+      <div class="dg-chain-arrow"></div>
+      <div class="dg-chain-node is-ok"><span class="dg-kicker">New call</span>The current name and signature</div>
+    </div>
+    <p>The old form keeps working for at least one major version.</p>
+    <p>See <a href="project-management.html#versions">Versions</a>.</p>
 
     <h2 id="related">Related rules</h2>
     <ul>
