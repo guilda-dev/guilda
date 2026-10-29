@@ -9,7 +9,7 @@
   <script src="../doc-loader.js"></script>
   <style>
     /* Class Documentation page only (cd-*); shared parts are dg-* in style.css */
-    .cd-code { margin: 0; padding: var(--dg-s4); overflow-x: auto; border: 1px solid var(--dg-line); border-radius: 10px; background: var(--dg-card); color: var(--dg-ink); font: 0.8rem/1.65 var(--dg-mono); white-space: pre; }
+    .cd-code { margin: 0; padding: var(--dg-s4); overflow-x: auto; border: 1px solid var(--dg-line); border-radius: var(--radius); background: var(--dg-card); color: var(--dg-ink); font: 0.8rem/1.65 var(--dg-mono); white-space: pre; }
     .cd-code .cd-c { color: var(--dg-ok); }
     .cd-code .cd-k { color: var(--dg-accent); font-weight: bold; }
     .cd-code .cd-bad { background: var(--dg-err-soft); text-decoration: line-through; text-decoration-color: var(--dg-err); }
@@ -17,8 +17,8 @@
     .cd-where .cd-code { padding: var(--dg-s3); font-size: 0.74rem; }
     @media (max-width: 760px) { .cd-where { grid-template-columns: minmax(0, 1fr); gap: var(--dg-s5); } }
     .cd-pin { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; margin: 0 2px; border-radius: 50%; background: var(--dg-warn); color: var(--dg-ink); font: bold 0.68rem/1 var(--dg-mono); vertical-align: 1px; white-space: normal; }
-    .cd-page { overflow: hidden; border: 1px solid var(--dg-line); border-radius: 10px; background: var(--dg-card); font-size: 0.82rem; line-height: 1.5; }
-    .cd-page-bar { padding: 6px var(--dg-s3); border-bottom: 1px solid var(--dg-line); background: #eef1f4; color: var(--dg-muted); font: 0.72rem var(--dg-mono); }
+    .cd-page { overflow: hidden; border: 1px solid var(--dg-line); border-radius: var(--radius); background: var(--dg-card); font-size: 0.82rem; line-height: 1.5; }
+    .cd-page-bar { padding: 6px var(--dg-s3); border-bottom: 1px solid var(--dg-line); background: var(--surface-subtle); color: var(--dg-muted); font: 0.72rem var(--dg-mono); }
     .cd-page-body { padding: var(--dg-s3) var(--dg-s4) var(--dg-s4); }
     .cd-page h4 { margin: 0 0 2px; color: var(--dg-accent); font: bold 1.2rem/1.3 var(--dg-mono); }
     .cd-page-label { display: block; margin: var(--dg-s3) 0 4px; color: var(--dg-muted); font-size: 0.68rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }

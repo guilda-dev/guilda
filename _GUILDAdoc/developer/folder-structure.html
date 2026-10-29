@@ -7,12 +7,12 @@
   <link rel="stylesheet" href="../style.css">
   <style>
     /* Folder Structure page only (fs-*); shared parts are dg-* in style.css */
-    .fs-c-guilda { --fs-c: #0f4c81; }
-    .fs-c-system { --fs-c: #0f4c81; }
-    .fs-c-object { --fs-c: #1e7b3c; }
-    .fs-c-tutorial { --fs-c: #7a5c00; }
-    .fs-c-doc { --fs-c: #5f6b7a; }
-    .fs-c-other { --fs-c: #5f6b7a; }
+    .fs-c-guilda { --fs-c: var(--brand); }
+    .fs-c-system { --fs-c: var(--brand); }
+    .fs-c-object { --fs-c: var(--brand); }
+    .fs-c-tutorial { --fs-c: var(--ink); }
+    .fs-c-doc { --fs-c: var(--muted); }
+    .fs-c-other { --fs-c: var(--muted); }
     .fs-figure svg { max-width: 540px; margin: 0 auto; }
     .fs-name { display: block; color: var(--fs-c); font: bold 1.05rem/1.4 var(--dg-mono); overflow-wrap: anywhere; }
     .fs-name + .dg-badge, .fs-name ~ .dg-badge { margin: 6px 6px 0 0; }
@@ -58,62 +58,62 @@
       <svg class="dg-svg" viewBox="0 0 480 524" role="img" aria-labelledby="fs-map-title">
         <title id="fs-map-title">Map of the GUILDA top-level folders and how they depend on each other</title>
         <defs>
-          <marker id="fs-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#5f6b7a"/></marker>
-          <marker id="fs-ah-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#0f4c81"/></marker>
+          <marker id="fs-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--muted)"/></marker>
+          <marker id="fs-ah-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--brand)"/></marker>
         </defs>
 
         <!-- @GUILDA -->
-        <rect x="140" y="10" width="200" height="64" rx="10" fill="#0f4c81"/>
-        <text x="240" y="38" text-anchor="middle" font-size="18" font-weight="bold" fill="#fff" class="dg-mono">@GUILDA</text>
-        <text x="240" y="60" text-anchor="middle" font-size="12" fill="#dce8f3">entry point · environment</text>
+        <rect x="140" y="10" width="200" height="64" rx="4" style="fill:var(--brand)"/>
+        <text x="240" y="38" text-anchor="middle" font-size="18" font-weight="bold" class="dg-mono" style="fill:var(--surface)">@GUILDA</text>
+        <text x="240" y="60" text-anchor="middle" font-size="12" style="fill:var(--on-brand-muted)">entry point · environment</text>
 
         <!-- @GUILDA opens tutorial / doc -->
-        <path class="dg-anim-dash" d="M340 42H366V144" fill="none" stroke="#7a5c00" stroke-width="1.6" marker-end="url(#fs-ah)"/>
-        <text x="372" y="100" font-size="11" fill="#7a5c00">opens</text>
-        <path class="dg-anim-dash" d="M140 42H12V476H42" fill="none" stroke="#5f6b7a" stroke-width="1.6" marker-end="url(#fs-ah)"/>
-        <text x="18" y="34" font-size="11" fill="#5f6b7a">opens</text>
+        <path class="dg-anim-dash" d="M340 42H366V144" fill="none" stroke-width="1.6" marker-end="url(#fs-ah)" style="stroke:var(--muted)"/>
+        <text x="372" y="100" font-size="11" style="fill:var(--muted)">opens</text>
+        <path class="dg-anim-dash" d="M140 42H12V476H42" fill="none" stroke-width="1.6" marker-end="url(#fs-ah)" style="stroke:var(--muted)"/>
+        <text x="18" y="34" font-size="11" style="fill:var(--muted)">opens</text>
 
         <!-- path setup -->
-        <path class="dg-anim-dash" d="M240 74V118" fill="none" stroke="#0f4c81" stroke-width="2" marker-end="url(#fs-ah-p)"/>
-        <text x="232" y="100" text-anchor="end" font-size="12" fill="#0f4c81" font-weight="bold">sets up the path</text>
+        <path class="dg-anim-dash" d="M240 74V118" fill="none" stroke-width="2" marker-end="url(#fs-ah-p)" style="stroke:var(--brand)"/>
+        <text x="232" y="100" text-anchor="end" font-size="12" font-weight="bold" style="fill:var(--brand)">sets up the path</text>
 
         <!-- MATLAB path region -->
-        <rect x="24" y="124" width="446" height="262" rx="14" fill="#fbfdff" stroke="#0f4c81" stroke-width="1.5" stroke-dasharray="6 4"/>
-        <rect x="34" y="116" width="96" height="18" fill="#fff"/>
-        <text x="38" y="129" font-size="12" font-weight="bold" fill="#0f4c81">MATLAB path</text>
+        <rect x="24" y="124" width="446" height="262" rx="4" stroke-width="1.5" stroke-dasharray="6 4" style="fill:var(--surface); stroke:var(--brand)"/>
+        <rect x="34" y="116" width="96" height="18" style="fill:var(--surface-subtle)"/>
+        <text x="38" y="129" font-size="12" font-weight="bold" style="fill:var(--brand)">MATLAB path</text>
 
-        <rect x="44" y="148" width="206" height="72" rx="9" fill="#e7f6ec" stroke="#1e7b3c" stroke-width="1.5"/>
-        <text x="147" y="178" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e7b3c" class="dg-mono">_GUILDAobject</text>
-        <text x="147" y="200" text-anchor="middle" font-size="12" fill="#333">concrete models</text>
+        <rect x="44" y="148" width="206" height="72" rx="4" stroke-width="1.5" style="fill:var(--brand-tint); stroke:var(--brand)"/>
+        <text x="147" y="178" text-anchor="middle" font-size="16" font-weight="bold" class="dg-mono" style="fill:var(--brand)">_GUILDAobject</text>
+        <text x="147" y="200" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">concrete models</text>
 
-        <rect x="44" y="290" width="206" height="72" rx="9" fill="#f8fbff" stroke="#0f4c81" stroke-width="1.5"/>
-        <text x="147" y="320" text-anchor="middle" font-size="16" font-weight="bold" fill="#0f4c81" class="dg-mono">_GUILDAsystem</text>
-        <text x="147" y="342" text-anchor="middle" font-size="12" fill="#333">framework + analysis</text>
+        <rect x="44" y="290" width="206" height="72" rx="4" stroke-width="1.5" style="fill:var(--surface-subtle); stroke:var(--brand)"/>
+        <text x="147" y="320" text-anchor="middle" font-size="16" font-weight="bold" class="dg-mono" style="fill:var(--brand)">_GUILDAsystem</text>
+        <text x="147" y="342" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">framework + analysis</text>
 
-        <path class="dg-anim-dash" d="M147 220V286" fill="none" stroke="#1e7b3c" stroke-width="2" marker-end="url(#fs-ah)"/>
-        <text x="156" y="250" font-size="12" font-weight="bold" fill="#1e7b3c">builds on</text>
-        <text x="156" y="266" font-size="11" fill="#b02a37">never the reverse</text>
+        <path class="dg-anim-dash" d="M147 220V286" fill="none" stroke-width="2" marker-end="url(#fs-ah)" style="stroke:var(--brand)"/>
+        <text x="156" y="250" font-size="12" font-weight="bold" style="fill:var(--brand)">builds on</text>
+        <text x="156" y="266" font-size="11" style="fill:var(--err)">never the reverse</text>
 
-        <rect x="276" y="148" width="180" height="72" rx="9" fill="#fff8e1" stroke="#e0a800" stroke-width="1.5"/>
-        <text x="366" y="178" text-anchor="middle" font-size="15" font-weight="bold" fill="#7a5c00" class="dg-mono">_GUILDAtutorial</text>
-        <text x="366" y="200" text-anchor="middle" font-size="12" fill="#333">learning material</text>
+        <rect x="276" y="148" width="180" height="72" rx="4" stroke-width="1.5" style="fill:var(--surface); stroke:var(--ink)"/>
+        <text x="366" y="178" text-anchor="middle" font-size="15" font-weight="bold" class="dg-mono" style="fill:var(--ink)">_GUILDAtutorial</text>
+        <text x="366" y="200" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">learning material</text>
 
         <!-- tutorials use the models -->
-        <path class="dg-anim-dash" d="M366 220V326H254" fill="none" stroke="#7a5c00" stroke-width="1.6" marker-end="url(#fs-ah)"/>
-        <text x="358" y="276" text-anchor="end" font-size="11" fill="#7a5c00">uses the public API</text>
+        <path class="dg-anim-dash" d="M366 220V326H254" fill="none" stroke-width="1.6" marker-end="url(#fs-ah)" style="stroke:var(--muted)"/>
+        <text x="358" y="276" text-anchor="end" font-size="11" style="fill:var(--muted)">uses the public API</text>
 
         <!-- doc generation -->
-        <path class="dg-anim-dash" d="M147 362V436" fill="none" stroke="#5f6b7a" stroke-width="1.6" marker-end="url(#fs-ah)"/>
-        <text x="156" y="404" font-size="11" fill="#5f6b7a">help comments in source</text>
-        <text x="156" y="420" font-size="11" fill="#5f6b7a">→ generated class reference</text>
+        <path class="dg-anim-dash" d="M147 362V436" fill="none" stroke-width="1.6" marker-end="url(#fs-ah)" style="stroke:var(--muted)"/>
+        <text x="156" y="404" font-size="11" style="fill:var(--muted)">help comments in source</text>
+        <text x="156" y="420" font-size="11" style="fill:var(--muted)">→ generated class reference</text>
 
-        <rect x="44" y="440" width="206" height="72" rx="9" fill="#eef1f4" stroke="#5f6b7a" stroke-width="1.5"/>
-        <text x="147" y="470" text-anchor="middle" font-size="16" font-weight="bold" fill="#5f6b7a" class="dg-mono">_GUILDAdoc</text>
-        <text x="147" y="492" text-anchor="middle" font-size="12" fill="#333">HTML docs · not on path</text>
+        <rect x="44" y="440" width="206" height="72" rx="4" stroke-width="1.5" style="fill:var(--surface-subtle); stroke:var(--muted)"/>
+        <text x="147" y="470" text-anchor="middle" font-size="16" font-weight="bold" class="dg-mono" style="fill:var(--muted)">_GUILDAdoc</text>
+        <text x="147" y="492" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">HTML docs · not on path</text>
 
-        <rect x="276" y="440" width="180" height="72" rx="9" fill="#f4f7f6" stroke="#5f6b7a" stroke-width="1.5" stroke-dasharray="5 4"/>
-        <text x="366" y="470" text-anchor="middle" font-size="15" font-weight="bold" fill="#5f6b7a" class="dg-mono">_GUILDAexport</text>
-        <text x="366" y="492" text-anchor="middle" font-size="12" fill="#333">output · created on demand</text>
+        <rect x="276" y="440" width="180" height="72" rx="4" stroke-width="1.5" stroke-dasharray="5 4" style="fill:var(--surface-subtle); stroke:var(--muted)"/>
+        <text x="366" y="470" text-anchor="middle" font-size="15" font-weight="bold" class="dg-mono" style="fill:var(--muted)">_GUILDAexport</text>
+        <text x="366" y="492" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">output · created on demand</text>
       </svg>
       <figcaption>Arrows show which folder uses or produces another. Only folders on the MATLAB path can be called from user scripts; <code>@GUILDA</code> puts them there at startup.</figcaption>
     </figure>

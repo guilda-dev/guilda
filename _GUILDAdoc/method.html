@@ -35,7 +35,7 @@
 
   <main id="main-content" style="flex: 1; min-width: 0;">
     <div id="dynamic-content">
-      <h1 style="color: #888;">Loading...</h1>
+      <h1 style="color: var(--muted);">Loading...</h1>
     </div>
   </main>
 
@@ -48,7 +48,7 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
     if (!className || !methodName) {
-      document.getElementById('dynamic-content').innerHTML = "<h1 style='color:red;'>Error: Missing Parameters</h1>";
+      document.getElementById('dynamic-content').innerHTML = "<h1 style='color: var(--err);'>Error: Missing Parameters</h1>";
     } else if (!window.GuildaDocLoader.hasIndex()) {
       document.getElementById('dynamic-content').innerHTML = `
         <h1>${escapeText(methodName)}</h1>
@@ -64,7 +64,7 @@
           return renderMethodPage(className, methodName, data);
         })
         .catch((err) => {
-          document.getElementById('dynamic-content').innerHTML = `<h1 style="color:red;">Load Error</h1><p>${escapeText((err && err.message) ? err.message : err)}</p>`;
+          document.getElementById('dynamic-content').innerHTML = `<h1 style="color: var(--err);">Load Error</h1><p>${escapeText((err && err.message) ? err.message : err)}</p>`;
         });
     }
 
@@ -344,7 +344,7 @@
       });
 
       if (!classDoc) {
-        document.getElementById('dynamic-content').innerHTML = `<h1 style="color:red;">Error</h1><p><code>classData</code> could not be loaded.</p>`;
+        document.getElementById('dynamic-content').innerHTML = `<h1 style="color: var(--err);">Error</h1><p><code>classData</code> could not be loaded.</p>`;
         return;
       }
 
@@ -352,7 +352,7 @@
         .find(m => m?.Name === methodName);
       const methodData = rawMethodData ? normalizeMethod(rawMethodData) : null;
       if (!methodData) {
-        document.getElementById('dynamic-content').innerHTML = `<h1 style="color:red;">Method not found</h1><p>${escapeHtml(methodName)} does not exist in ${escapeHtml(className)}.</p>`;
+        document.getElementById('dynamic-content').innerHTML = `<h1 style="color: var(--err);">Method not found</h1><p>${escapeHtml(methodName)} does not exist in ${escapeHtml(className)}.</p>`;
         return;
       }
 
@@ -489,18 +489,18 @@
       }
 
       let html = `
-        <div style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">
+        <div style="font-size: 0.9rem; color: var(--muted); margin-bottom: 10px;">
           <a href="${window.GuildaDocLoader.pageUrl('index.html')}">Home</a> &gt; <a href="${window.GuildaDocLoader.pageUrl('class.html', { class: className })}">${className}</a> &gt; ${methodName}
         </div>
         <h1 style="font-size: 2.5rem; margin-bottom: 10px;">${methodName}</h1>
-        <div style="margin: -4px 0 10px 0; color: #666; font-size: 0.95rem;">
+        <div style="margin: -4px 0 10px 0; color: var(--muted); font-size: 0.95rem;">
           ${methodData.defining && methodData.defining !== className
             ? `Inherited from ${renderClassLink(methodData.defining)}.`
             : (methodData.defining ? `Method defined in the ${renderClassLink(methodData.defining)} class.` : '')}
         </div>
         ${methodData.file ? `<p class="ref-source">Source: <code>${escapeHtml(methodData.file)}</code></p>` : ''}
         ${hasDocs ? '' : `<div class="ref-notice">This method has no documentation comments yet. Signature and arguments below are read from the source code. See <a href="developer/class-documentation.html">Class Documentation</a> for the comment rules.</div>`}
-        <hr style="margin: 0 0 18px 0; border: 0; border-top: 1px solid #dee2e6;">
+        <hr style="margin: 0 0 18px 0; border: 0; border-top: 1px solid var(--line);">
 
         <h2 id="overview">Overview</h2>
         <div class="meta-box">
