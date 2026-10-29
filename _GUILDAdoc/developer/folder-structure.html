@@ -66,7 +66,7 @@
       <tr><td><code>GUILDA.m</code></td><td>Class definition and startup sequence.</td></tr>
       <tr><td><code>*.m</code></td><td>Static methods: <code>pwd</code>, <code>addpath</code>, <code>rmpath</code>, <code>gitpull</code>, <code>setting</code>, <code>config</code>, <code>tutorial</code>, <code>doc</code>, <code>dictionary</code>.</td></tr>
       <tr><td><code>private/</code></td><td>Internal functions: configuration I/O (<code>get_config</code>, <code>set_config</code>, <code>merge_config</code>), <code>check_requirement</code>, <code>export_class_database</code> (documentation database), <code>update_class_signature</code> (key map).</td></tr>
-      <tr><td><code>config/</code></td><td>System defaults shipped with GUILDA: <code>Default*.json</code> settings, <code>ListPath.txt</code>, <code>ListToolbox.txt</code>, logo text and image. <code>config/archive/</code> keeps retired settings files.</td></tr>
+      <tr><td><code>config/</code></td><td>System defaults shipped with GUILDA: <code>Default*.json</code> settings, <code>ListPath.txt</code>, <code>ListToolbox.txt</code> (the required toolboxes that startup checks), logo text and image. <code>config/archive/</code> keeps retired settings files.</td></tr>
       <tr><td><code>user/</code></td><td>Per-user overrides of <code>config/Default*.json</code>. Written by <code>GUILDA.setting</code> and merged over the defaults at startup. Ignored by Git.</td></tr>
     </table>
     <p class="dev-note"><strong>Note:</strong> Files in <code>private/</code>, <code>config/</code>, and <code>user/</code> are read and written by the system. Edit <code>config/</code> only when changing the shipped defaults, and never commit <code>user/</code>.</p>

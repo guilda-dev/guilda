@@ -2,6 +2,7 @@
 <rsccat version="2" locale="en" product="GUILDA">
     <message>        
         <entry key="InvalidInput">Invalid input argument. Input argument must be of type `double`, a function handle, or a symbolic expression.</entry> 
+        <entry key="SymbolicUnavailable">A symbolic expression was given as NRMFcn, but Symbolic Math Toolbox is not available. Pass NRMFcn as a numeric function handle instead, and optionally NRMJac as a function handle that returns the Jacobian (without NRMJac, the Jacobian is computed by numerical differentiation).</entry>
         <entry key="MaxIteration">The calculation was performed up to the maximum number of iterations, but it failed to converge.</entry>         
     </message>
 </rsccat>

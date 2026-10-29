@@ -7,7 +7,8 @@ classdef (Sealed = true) NewtonRaphsonMethod < auxiliary
 %
 % NRMFcn - The Equation to Be Solved [ function handle or sym ]
 %    This is the equation to be solved, expressed in the form F(x) = b or F(x) = 0. 
-%    Specify it using a function handle or a symbolic expression. If the user 
+%    Specify it using a function handle or a symbolic expression (the symbolic 
+%    form needs Symbolic Math Toolbox; GUILDA itself always passes function handles). If the user 
 %    does not specify this variable, the solver automatically generates the 
 %    current equation based on the main line and the current conditions.
 %
@@ -81,6 +82,11 @@ classdef (Sealed = true) NewtonRaphsonMethod < auxiliary
                     case {'function_handle','double'}                        
                         obj.NRMJac = @(x) obj.numerical_differentiation(x,func,delta);
                     case 'sym'
+                        % The symbolic path is optional and needs Symbolic Math Toolbox.
+                        if ~NewtonRaphsonMethod.has_symbolic()
+                            error('GUILDA:NewtonRaphsonMethod:SymbolicUnavailable', '%s', ...
+                                msg('GUILDA:NewtonRaphsonMethod:SymbolicUnavailable'));
+                        end
                         sv_x = symvar(func);
                         Jacobian = jacobian(func,sv_x);
         
@@ -95,6 +101,12 @@ classdef (Sealed = true) NewtonRaphsonMethod < auxiliary
                 obj.NRMVal = zeros(size(obj.InitVal));
             end
             
+        end
+    end
+
+    methods (Static,Access=private,Hidden)
+        function l = has_symbolic()
+            l = license('test','Symbolic_Toolbox') && ~isempty(ver('symbolic'));
         end
     end
 

@@ -203,9 +203,11 @@ classdef local_LQR < LocalController
 end
 
 function word = word_factory(obj)
-    Kword = evalc('vpa(obj.DX(obj.uidx,:),2)');
-    idx   = find(Kword == newline);
-    Kword =  Kword(idx(3)+1:end);
+    % Gain matrix with 2 significant digits, one "[a, b, ...]" row per line
+    K     = obj.DX(obj.uidx,:);
+    Krows = arrayfun(@(i) ['[',strjoin(compose('%.2g',K(i,:)),', '),']',newline], ...
+                     1:size(K,1), 'UniformOutput', false);
+    Kword = ['', Krows{:}];
     Kword = strrep(Kword,newline,[newline,repmat(sprintf('\t'),1,2)]);
     word  = ['>> Q = diag(',mat2str(diag(obj.Q)),')',newline,...
              '>> R = diag(',mat2str(diag(obj.R)),')',newline,...

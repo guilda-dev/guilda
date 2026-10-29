@@ -1,4 +1,6 @@
 classdef vsm1axis < component.GFM.ReferenceModel.AbstractClass
+% Unfinished model: needs Symbolic Math Toolbox (syms) and is not part of the GUILDA runtime
+% (the 未+GFM folder is not on the path).
     properties(SetAccess=protected)
         P_st
         Vabs_st
