@@ -50,7 +50,7 @@ classdef Component < PowerSystemModel
         iv_odeY  = [];        
     end    
     properties(Dependent, Hidden)
-        para_base                              % [ Deprecated] ComponentBaseView: Hz is held by the network (use r_Hz)
+        para_base                              % COMPAT(v3) ComponentBaseView: Hz is held by the network (use r_Hz)
     end
     properties(Dependent)
         c_Vequilibrium                         % [SteadyState] 定常潮流状態での機器の端子電圧 (= a_Bus.c_Vequilibrium, バス未接続なら [])
@@ -200,32 +200,24 @@ classdef Component < PowerSystemModel
                   obj.para_operation     ; obj.para_OPF           ;...
                   obj.para_graph         }];
         end
-        function v = get.para_base(obj)
-            v = ComponentBaseView(obj);
-        end
+        function v = get.para_base(obj), v = ComponentBaseView(obj); end                 % COMPAT(v3)
         function tp = get.tab_parameter(obj)
-            base      = ComponentBaseView(obj);    % deprecated: Hz is held by the network
             dynamics  = obj.para_dynamics.tab_parameter;
             powerflow = obj.para_powerflow.tab_parameter;
             OPF       = obj.para_OPF.tab_parameter;
             operation = obj.para_operation.tab_parameter;
             graph     = obj.para_graph.tab_parameter;
-            tp        = table(base,dynamics,operation,powerflow,OPF,graph);
+            tp        = table(dynamics,operation,powerflow,OPF,graph);
+            tp        = ComponentBaseView.add_column(obj, tp);   % COMPAT(v3)
         end
     end
 
 %% Set Methods
     methods
-        function set.para_base(~,val)
-            % comp.para_base.Hz = x is forwarded by the view itself (it is a handle)
-            if ~isa(val,"ComponentBaseView")
-                error('GUILDA:Deprecated:ComponentBaseHz', '%s', Deprecated("ComponentBaseHz"));
-            end
-        end
+        function set.para_base(~,val), ComponentBaseView.check_assign(val); end         % COMPAT(v3)
         function set.tab_parameter(obj,val)
-            % "base" is the deprecated ComponentBaseView (a handle): an edit of
-            % comp.tab_parameter.base.Hz has already been forwarded to the network.
-            fieldname = setdiff(val.Properties.VariableNames, "base", "stable");
+            val       = ComponentBaseView.remove_column(val);    % COMPAT(v3)
+            fieldname = val.Properties.VariableNames;
             for i = 1:numel(fieldname)
                 propname = "para_"+fieldname{i};
                 tabdata  = val.(fieldname{i});

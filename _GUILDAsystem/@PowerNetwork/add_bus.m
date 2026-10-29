@@ -8,7 +8,7 @@ function bus = add_bus(obj, opt)
         opt.Vmin              (1,1) double = 0.5;
         opt.Vmax              (1,1) double = 1.5;
         opt.baseKV            (1,1) double = 230;
-        opt.baseMVA           (1,1) double = nan;     % deprecated and ignored (net.tab_parameter.base.baseMVA)
+        opt.baseMVA           (1,1) double = nan;     % COMPAT(v3) deprecated and ignored (net.tab_parameter.base.baseMVA)
         opt.Varg0             (1,1) double = 0/180*pi;
         opt.V0                (1,1) double = 1;
         opt.Tag               (1,1) string = 'B';
@@ -25,15 +25,8 @@ function bus = add_bus(obj, opt)
         str_Bus = opt.Tag+num2str(n_Bus+1,"%.3d");
     end
 
-    if ~isnan(opt.baseMVA)
-        r_base = obj.para_base.baseMVA;
-        if opt.baseMVA == r_base
-            Deprecated("BusBaseMVA", r_base);
-        else
-            Deprecated("BusBaseMVAMismatch", opt.baseMVA, r_base);
-        end
-    end
-    opt = rmfield(opt,["Tag","baseMVA"]);
+    opt = v3_bus_baseMVA(obj, opt);                   % COMPAT(v3)
+    opt = rmfield(opt,"Tag");
     bus = Bus(obj, str_Bus, opt);
     
     obj.a_Bus = [obj.a_Bus;{bus}];

@@ -6,6 +6,10 @@ classdef ComponentBaseView < handle
 %      set   Hz -> sets net.tab_parameter.base.Hz of the component's network
 %                  (warning GUILDA:Deprecated:ComponentBaseHzSet); error when
 %                  the component is not attached to a network.
+%    The static methods hold the logic of the v3 compatibility hooks in Component.m:
+%      add_column    : adds the "base" column (this view) to comp.tab_parameter
+%      remove_column : drops it before comp.tab_parameter = tab is applied
+%      check_assign  : comp.para_base = value accepts only this view
     properties (Access=private)
         a_Comp
     end
@@ -38,6 +42,26 @@ classdef ComponentBaseView < handle
         end
         function set.tab_parameter(obj, val)
             obj.Hz = val.Hz;
+        end
+    end
+
+    methods (Static)
+        function tp = add_column(comp, tp)
+            % tab_parameter of a component, with the deprecated "base" column first
+            tp = [table(ComponentBaseView(comp), 'VariableNames', "base"), tp];
+        end
+        function tp = remove_column(tp)
+            % "base" is this view (a handle): an edit of comp.tab_parameter.base.Hz
+            % has already been forwarded to the network.
+            if ismember("base", string(tp.Properties.VariableNames))
+                tp = removevars(tp, "base");
+            end
+        end
+        function check_assign(val)
+            % comp.para_base.Hz = x is forwarded by the view itself (it is a handle)
+            if ~isa(val, "ComponentBaseView")
+                error('GUILDA:Deprecated:ComponentBaseHz', '%s', Deprecated("ComponentBaseHz"));
+            end
         end
     end
 end
