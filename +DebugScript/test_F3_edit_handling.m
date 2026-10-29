@@ -118,6 +118,36 @@ net.add_bus();
 assert(net.l_staleEquilibrium)
 
 
+%% Local controller add and replace make the equilibrium stale
+% AVR / PSS の追加・置き換えは構成の変更 (Topology) として記録される
+net  = DebugScript.helper.build_ieee14();
+comp = net.a_Bus{1}.a_Component{1};
+DebugScript.helper.quiet(@() net.initialize);
+comp.add_local_controller(controller.avr.AVR_ST1("avr1"));
+assert(net.l_staleEquilibrium)
+assert(net.tab_editLog.tag(end) == "Topology" && contains(net.tab_editLog.log(end), "avr1"))
+assert_stale_error(@() net.get_sys(), str_staleID)
+assert_stale_error(@() net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1])), str_staleID)
+
+% PSS の追加
+DebugScript.helper.quiet(@() net.initialize);
+comp.add_local_controller(controller.pss.PSS1("pss1"));
+assert(net.l_staleEquilibrium && contains(net.tab_editLog.log(end), "pss1"))
+
+% AVR の置き換え (警告が出る)
+DebugScript.helper.quiet(@() net.initialize);
+assert(warn_id(@() comp.add_local_controller(controller.avr.AVR_DC1("avr2"))) == "GUILDA:Component:ReplaceController")
+assert(net.l_staleEquilibrium && contains(net.tab_editLog.log(end), "replace"))
+assert(all(net.tab_editLog.tag == "Topology"))
+
+% 系統に属さない機器への追加は記録先がないだけでエラーにならない
+DebugScript.helper.quiet(@() net.initialize);
+net.a_Bus{1}.remove_component(string(comp));
+DebugScript.helper.quiet(@() net.initialize);
+comp.add_local_controller(controller.avr.AVR_ST1("avr3"));
+assert(~net.l_staleEquilibrium)
+
+
 %% Slack bus change makes the equilibrium stale
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);

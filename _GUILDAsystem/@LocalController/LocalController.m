@@ -77,7 +77,14 @@ classdef LocalController < PowerSystemModel
             obj.l_hasController = true;
         end
 
+        function remove_local_controller(obj)
+            % Detach the nested controller (Component.add_local_controller, when an AVR is replaced)
+            obj.a_LocalController = cell(0,1);
+            obj.l_hasController = false;
+        end
+
         function set_parent(obj,a_Component)
+            % a_Component = [] detaches the controller (Component.add_local_controller)
             obj.a_Component = a_Component; 
             obj.rebuild_odefcn_tree();    % use the frequency of the parent's network
         end
