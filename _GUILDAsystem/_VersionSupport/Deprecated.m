@@ -7,7 +7,8 @@ function txt = Deprecated(key, varargin)
 %    Turn a warning off : warning("off", "GUILDA:Deprecated:<KEY>")
 %    Show them again    : clear Deprecated
 %
-%    Keys: ComponentBaseHz, ComponentBaseHzSet, BusBaseMVA, BusBaseMVAMismatch
+%    Keys: ComponentBaseHz, ComponentBaseHzSet, BusBaseMVA, BusBaseMVAMismatch,
+%          CsvNetHandlerImport, CsvNetHandlerExport (see Deprecated.xml for all)
 %
 %    Convention for a new deprecated form:
 %      - KEY is UpperCamelCase, <Owner><What> (e.g. BusBaseMVA,

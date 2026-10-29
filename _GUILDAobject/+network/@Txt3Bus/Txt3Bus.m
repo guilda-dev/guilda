@@ -8,7 +8,7 @@ classdef Txt3Bus < PowerNetwork
         function obj = Txt3Bus()
             str_filepath = mfilename("fullpath");
             str_dirpath  = fileparts(str_filepath);
-            CsvNetHandler.import(str_dirpath, obj);
+            PowerNetwork.import_csv(str_dirpath, Network=obj);
         end
     end
 end

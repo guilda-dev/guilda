@@ -12,5 +12,7 @@
         <entry key="OptimizePowerflowTuple">The 6-output form [powerflow_bus, powerflow_cub, flag, output, lambda, OPFprob] = net.optimize_powerflow(...) is deprecated: use [result, flag, output] = net.optimize_powerflow(...) and result.tab_bus, result.tab_cub, result.lambda, result.OPFprob.</entry>
         <entry key="ContinuationPowerFlowFunction">Continuation_Power_Flow(net, opt) is deprecated: use [result, flag] = net.calculate_continuation_powerflow(LoadBus=opt.CPFBus). The v3 options map to LoadBus, InitialLambda, MaxIteration, StepSize, ArcLength and UseInternalState; result.rm_x is the old CPF_Result.x_sol.</entry>
         <entry key="ContinuationPowerFlowConstructor">ContinuationPowerFlow(net, Name, Value) is removed: the solver no longer holds the network or its result, and ContinuationPowerFlow() takes no arguments. Use [result, flag] = net.calculate_continuation_powerflow(LoadBus=...) (defaults in net.solver_CPF), or the deprecated wrapper Continuation_Power_Flow(net, opt) for the v3 usage.</entry>
+        <entry key="CsvNetHandlerImport">CsvNetHandler.import(path, net) is deprecated: use net = PowerNetwork.import_csv(path) for a new network, or PowerNetwork.import_csv(path, Network=obj) to load into an existing one (e.g. in the constructor of a network class).</entry>
+        <entry key="CsvNetHandlerExport">CsvNetHandler.export(net, ModelName, savepath=folder) is deprecated: use net.export_csv(fullfile(folder, "@"+ModelName)). The folder now also holds network/parameter.csv with Hz and baseMVA.</entry>
     </message>
 </rsccat>
