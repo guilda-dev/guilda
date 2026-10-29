@@ -3,7 +3,7 @@
 % 実行: runtests("DebugScript.test_F8_utilities")  または  DebugScript.run_all("Features","F8")
 
 % 共通設定 (各テストの前に毎回実行される)
-str_templates = ["IEEE14bus","IEEE14bus_lossless","Ishizaki6Bus","TEST31bus","Txt3Bus","Tutorial3bus"];
+str_templates = ["IEEE14bus","IEEE14bus_NoTap","IEEE14bus_lossless","Ishizaki6Bus","TEST31bus","Txt3Bus","Tutorial3bus"];
 
 
 %% Admittance matrix is symmetric and matches branch data
@@ -105,6 +105,47 @@ catch ME
 end
 
 
+%% CSV round trip keeps transformer tap and phase
+% export は tap/phase の列名で書き出し、import はその列 (と Tap/Phase) を読む
+net = PowerNetwork("Tap2Bus");
+net.add_bus();  net.add_bus();
+net.add_branch("pi_transformer", [1,2], "X",0.2, "Tap",0.95, "Phase",5/180*pi);
+net.a_Bus{1}.add_component("gen-park");
+net.a_Bus{2}.add_component("load-power", "P",-0.5, "Q",-0.1);
+str_dir = tempname;  mkdir(str_dir);
+c = onCleanup(@() rmdir(str_dir, "s"));
+str_path = CsvNetHandler.export(net, "Tap2Bus", "savepath", str_dir);
+str_csv  = fullfile(str_path, "branch", "parameter.csv");
+tab_bra  = readtable(str_csv);
+assert(all(ismember(["tap","phase"], string(tab_bra.Properties.VariableNames))))
+
+get_tp = @(n) n.a_Branch{1}.tab_parameter.dynamics{1,["tap","phase"]};
+net2 = DebugScript.helper.quiet(@() CsvNetHandler.import(str_path, "Initialize", false));
+assert(max(abs(get_tp(net2) - [0.95, 5/180*pi])) < 1e-12)
+assert(norm(net2.get_admittance_matrix.Variables - net.get_admittance_matrix.Variables, "fro") < 1e-12)
+
+% 列名 Tap/Phase でも読める
+writetable(renamevars(tab_bra, ["tap","phase"], ["Tap","Phase"]), str_csv);
+net3 = DebugScript.helper.quiet(@() CsvNetHandler.import(str_path, "Initialize", false));
+assert(max(abs(get_tp(net3) - [0.95, 5/180*pi])) < 1e-12)
+
+% 両方の綴りがあるとエラー
+tab_bra.Tap = tab_bra.tap;
+writetable(tab_bra, str_csv);
+try
+    CsvNetHandler.import(str_path, "Initialize", false);
+    error("DebugScript:noError", "tap と Tap の両方があってもエラーにならない")
+catch ME
+    assert(ME.identifier == "network:import_csv:DuplicateColumns", ME.message)
+end
+
+% 同梱の IEEE14bus の変圧器タップが読み込まれる
+net = DebugScript.helper.quiet(@() network.IEEE14bus);
+str_bus = string(net.a_Bus(:)).';
+r_tap = @(f,t) net.a_Branch{cellfun(@(b) isequal(string(b.a_Bus(:)).', str_bus([f t])), net.a_Branch)}.tab_parameter.dynamics.tap;
+assert(isequal([r_tap(4,7), r_tap(4,9), r_tap(5,6)], [0.978, 0.969, 0.932]))
+
+
 %% Template IEEE14bus
 net = DebugScript.helper.quiet(@() network.IEEE14bus);
 [~, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
@@ -122,6 +163,49 @@ for i = 1:numel(net.a_Bus)
         assert(~any(isnan(op{1,["Pmin","Pmax","Qmin","Qmax"]})), string(net.a_Bus{i}.a_Component{j}) + " の出力制限が NaN")
     end
 end
+
+
+%% Template IEEE14bus_NoTap differs from IEEE14bus only in the taps
+% IEEE14bus_NoTap は IEEE14bus (case14) の変圧器 4-7, 4-9, 5-6 のタップを 1 にした系統
+net = DebugScript.helper.quiet(@() network.IEEE14bus_NoTap);
+ref = DebugScript.helper.quiet(@() network.IEEE14bus);
+assert(numel(net.a_Bus) == 14 && numel(net.a_Branch) == 20)
+assert(all(cellfun(@(b) b.tab_parameter.dynamics.tap, net.a_Branch) == 1))
+assert(all(cellfun(@(b) b.tab_parameter.dynamics.phase, net.a_Branch) == 0))
+
+% アドミタンス行列が変わるのは 3 台の変圧器の要素だけ: 非対角と、タップ側 (from) の対角
+% (two_winding_transformer のタップは from 側だけに掛かる)
+D = net.get_admittance_matrix.Variables - ref.get_admittance_matrix.Variables;
+l_tr = false(14);
+for ij = [4 7; 4 9; 5 6]'
+    l_tr(ij(1), ij(1)) = true;
+    l_tr(ij(1), ij(2)) = true;
+    l_tr(ij(2), ij(1)) = true;
+end
+assert(all(D(~l_tr) == 0))
+assert(all(abs(D(l_tr)) > 1e-3))
+
+% 母線・機器のデータは IEEE14bus と同じ (base は系統の値を見せるだけの view なので除く)
+data = @(o) o.tab_parameter(:, setdiff(string(o.tab_parameter.Properties.VariableNames), "base"));
+for i = 1:14
+    assert(isequaln(data(net.a_Bus{i}), data(ref.a_Bus{i})))
+    for j = 1:numel(ref.a_Bus{i}.a_Component)
+        assert(isequaln(data(net.a_Bus{i}.a_Component{j}), data(ref.a_Bus{i}.a_Component{j})))
+    end
+end
+
+% 参照値 (このブランチで計算した値)
+net.solver_ODE.Reporter = "none";
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
+assert(flag > 0)
+V_ref = [1.06 1.045 1.01 1.0294893 1.0348827 1.07 1.0558758 1.09 1.0496724 1.045822 1.0542952 1.0546926 1.0494854 1.0315436]';
+assert(max(abs(res.tab_bus.V - V_ref)) < 1e-6)
+res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
+assert(abs(res.r_cost - 8079.9528) < 1e-2)
+DebugScript.helper.quiet(@() net.initialize);
+e = eig(net.get_sys("Algorithm","Kron").A);
+e = e(abs(e) > 1e-6);
+assert(abs(max(real(e)) - (-0.5297416)) < 1e-6)
 
 
 %% Template IEEE14bus_lossless

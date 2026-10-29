@@ -162,8 +162,10 @@
 
       <h2>2. Build or Load a Network</h2>
       <p>For a quick analysis, load one of the packaged networks. To build a model manually, create a <code>PowerNetwork</code> and add buses, branches, and components in that order.</p>
-<pre><code>% Load a packaged test network
+<pre><code>% Load a packaged test network (IEEE 14-bus, MATPOWER case14 data)
 net = network.IEEE14bus;
+% Same network with every transformer tap set to 1
+net = network.IEEE14bus_NoTap;
 
 % Minimal structure of a manually assembled network
 net = PowerNetwork("TestSystem");

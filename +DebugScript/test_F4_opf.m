@@ -160,7 +160,8 @@ assert(abs(tab_bus{"B001","P"} - P1) < tol)
 
 
 %% IEEE14 ELD and DC OPF
-% IEEE 14 母線系統。負荷はそのまま、ELD と DC OPF (送電制約なし) の配分は一致する
+% IEEE 14 母線系統 (MATPOWER case14 の費用と出力制限)。負荷はそのまま、ELD と DC OPF
+% (送電制約なし) の配分は一致する
 net = DebugScript.helper.build_ieee14();
 a_Com  = tools.vcellfun(@(b) b.a_Component, net.a_Bus);
 l_load = cellfun(is_load, a_Com);
@@ -171,9 +172,13 @@ P_load = cellfun(@(c) c.tab_parameter.powerflow.P, a_Com(l_load));
 assert(flag > 0)
 assert(abs(sum(tab_bus.P)) < tol)
 assert(max(abs(tab_cub{str_load,"P"} - P_load)) < tol)
-% 全発電機が同じ費用 P^2 + P で制約も無いので、等増分費用 = 等分
-P_gen = tab_cub{string(a_Com(~l_load)),"P"};
-assert(max(abs(P_gen - mean(P_gen))) < 1e-4)
+% 等増分費用: B001 (430.29 P^2 + 2000 P) と B002 (2500 P^2 + 2000 P) で負荷 2.59 を賄い、
+% 限界費用 2*430.29*P1 + 2000 = 2*2500*P2 + 2000 = 3901.6 < 4000 なので他の 3 台は Pmin = 0
+%   → P1 = 2.59*5000/(860.585+5000) = 2.2097, P2 = 0.3803 (rundcopf(case14) の 220.97, 38.03 MW)
+str_gen = string(cellfun(@(b) b.a_Component{1}, net.a_Bus([1 2 3 6 8]), "UniformOutput", false));
+r_HP1 = 2*430.292599;
+P1 = -sum(P_load)*5000/(r_HP1+5000);
+assert(max(abs(tab_cub{str_gen,"P"} - [P1; -sum(P_load)-P1; 0; 0; 0])) < 1e-4)
 
 [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF")); tab_DC = res.tab_bus; tab_cub_DC = res.tab_cub;
 assert(flag > 0)
@@ -353,10 +358,9 @@ assert(max(abs(mpc.bus(3,3:4) + 100*ld.tab_parameter.powerflow{1,["P","Q"]})) < 
 gen = net.a_Bus{1}.a_Component{1};
 assert(max(abs(mpc.gencost(1,5:6) - [gen.tab_parameter.OPF.HP/1e4, gen.tab_parameter.OPF.fP/100])) < 1e-15)
 
-% case14 に合わせた IEEE14 を変換すると、MATPOWER の case14 と同じ負荷・シャント・線路・発電機・費用になる
+% 同梱の IEEE14 を変換すると、MATPOWER の case14 と同じ負荷・シャント・電圧上下限・線路・発電機・費用になる
 mpc14 = DebugScript.helper.case14_data();
-DebugScript.helper.quiet(@() set_case14(net, mpc14));
-mpc = tools.network_to_mpc(net);
+assert(max(abs(mpc.bus(:,[3:6 12 13]) - mpc14.bus(:,[3:6 12 13])), [], "all") < 1e-12)
 assert(max(abs(mpc.bus(:,3:6) - mpc14.bus(:,3:6)), [], "all") < 1e-12)
 assert(max(abs(sortrows(mpc.branch(:,[1:5 9 10])) - sortrows(mpc14.branch(:,[1:5 9 10]))), [], "all") < 1e-12)
 assert(max(abs(mpc.gen(:,[1 4 5 9 10]) - mpc14.gen(:,[1 4 5 9 10])), [], "all") < 1e-12)
@@ -377,15 +381,15 @@ assert(error_id(@() tools.network_to_mpc(net2)) == "GUILDA:network_to_mpc:Unsupp
 
 
 %% AC and DC OPF reproduce the MATPOWER case14 optimum
-% network.IEEE14bus の線路定数・負荷・発電機の OPF 設定を MATPOWER の case14
-% (DebugScript.helper.case14_data) に合わせると、MATPOWER の最適解と一致する
+% network.IEEE14bus の線路定数・負荷・発電機の OPF 設定は MATPOWER の case14
+% (DebugScript.helper.case14_data) と同じなので、MATPOWER の最適解と一致する
 % (MATPOWER 不要。値は MATPOWER の runopf / rundcopf の結果)。
 %   AC: 費用 8081.53 $/hr、Pg = [194.33, 36.72, 28.74, 0.00, 8.50] MW
 %   DC: 費用 7642.59 $/hr、Pg = [220.97, 38.03, 0, 0, 0] MW
 % DC は MATPOWER と同じ b = 1/X になるよう R = 0 にする (GUILDA の DC は b = Im(Y_ij) を使う)。
 net = DebugScript.helper.build_ieee14();
 mpc = DebugScript.helper.case14_data();
-assert(DebugScript.helper.quiet(@() set_case14(net, mpc)) < 1e-12)
+assert(norm(net.get_admittance_matrix.Variables - mpc_ybus(mpc)) < 1e-12)
 str_gen = string(cellfun(@(b) b.a_Component{1}, net.a_Bus(mpc.gen(:,1)), "UniformOutput", false));
 [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", Tolerance=1e-10));
 assert(flag > 0)

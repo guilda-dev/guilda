@@ -178,6 +178,23 @@ end
 assert(abs(sum(tab.P)+1j*sum(tab.Q) - DebugScript.helper.branch_losses(net, tab.Vphasor)) < 1e-8)
 
 
+%% Power flow on IEEE14 matches MATPOWER case14
+% network.IEEE14bus は MATPOWER の case14 と同じアドミタンス行列・負荷・発電機設定。
+% 潮流解は runpf(case14) と一致する: 発電機の Q = [-16.55, 43.56, 25.08, 12.73, 17.62] MVAr、
+% B001 の P = 232.39 MW。case14 の母線データの Vm, Va (IEEE の元データの解、小数 3 桁 / 0.01 度)
+% とは 0.002 pu, 0.02 度以内で一致する。
+net = DebugScript.helper.build_ieee14();
+mpc = DebugScript.helper.case14_data();
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow); tab = res.tab_bus;
+assert(flag > 0)
+assert(max(abs(tab.V - mpc.bus(:,8))) < 2e-3)
+assert(max(abs(tab.Varg*180/pi - mpc.bus(:,9))) < 2e-2)
+i_gen = mpc.gen(:,1);
+Qg = 100*tab.Q(i_gen) + mpc.bus(i_gen,4);
+assert(max(abs(Qg - [-16.55; 43.56; 25.08; 12.73; 17.62])) < 0.01, mat2str(Qg.', 6))
+assert(abs(100*tab.P(1) + mpc.bus(1,3) - 232.39) < 0.01)
+
+
 %% Infeasible case reports non-convergence
 % Task1 の送電線既定値 (X = 1 pu) では負荷 3 pu を送れず、潮流解が存在しない
 net = DebugScript.helper.build_9bus("Feasible", false);

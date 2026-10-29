@@ -11,13 +11,27 @@ classdef IEEE14bus < PowerNetwork
 %                                                                                  
 %                       =<< System Overview >>=                                    
 %                                                                                  
-%   The model includes 14 buses, 5 generators, 11 loads, 16                        
-%  transmission lines, and 2 transformers. Buses are classified as:                
-%                                                                                  
-%  ・Slack Bus (Bus 1)         : The reference bus with a fixed voltage and angle. 
-%  ・PV Buses  (Bus 2, 3, 6, 8): Have fixed voltage and real power.                
-%  ・PQ Buses  (The rest)      : Have fixed real and reactive power loads.         
-%                                                                                  
+%   The model includes 14 buses, 5 generators, 12 loads, 16
+%  transmission lines, and 4 transformers. Buses are classified as:
+%
+%  ・Slack Bus (Bus 1)         : The reference bus with a fixed voltage and angle.
+%  ・PV Buses  (Bus 2, 3, 6, 8): Have fixed voltage and real power.
+%  ・PQ Buses  (The rest)      : Have fixed real and reactive power loads.
+%
+%                       =<< Data >>=
+%
+%   The power-flow and OPF data are those of MATPOWER case14 on a 100 MVA base:
+%  line constants (C = b/2 at each end), transformer taps, loads, the bus shunt,
+%  bus voltage limits 0.94-1.06, generator limits and the gencost
+%  (HP = c2*100^2, fP = c1*100). GUILDA-specific choices:
+%  ・Every generator (the compensators at buses 3, 6, 8 too) is a gen-park model
+%    with the same dynamic parameters; case14 has no dynamic data.
+%  ・Bus 7 has a load with zero power, so a load can be changed there.
+%  ・Loads have no OPF cost (HP = fP = 0); a fixed load's cost would only add a
+%    constant.
+%  ・Branch 7-9 (a transformer winding in case14, tap 1) is a pi line.
+%   network.IEEE14bus_NoTap is the same network with every transformer tap 1.     
+%
 %==================================================================================
 % 
 %                    =<< IEEE 14-Bus System Diagram >>=
