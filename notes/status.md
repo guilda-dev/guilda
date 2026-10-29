@@ -10,15 +10,19 @@ Branch: `refactor/design-alignment` (base: `version4.0`). Updated 2026-10-29.
 /Applications/MATLAB_R2026a.app/bin/matlab -batch "cd('<repo>'); DebugScript.run_all"
 ```
 
-Result on 2026-10-29 (branch `feature/api-foundation`):
+Result on 2026-10-29 (`refactor/design-alignment` at `be166af`, after
+stages 2 and 3):
 
 ```
-合計 141 件: PASS 140 / KNOWN 1 / FAIL 0 / FIXED? 0   (128 s)
-  F1: PASS 21  KNOWN 1    F2: PASS 12    F3: PASS 34
-  F4: PASS  7             F5: PASS  3    F6: PASS 21
-  F7: PASS 14             F8: PASS 12    F9: PASS  6
+合計 189 件: PASS 187 / KNOWN 1 / FAIL 0 / FIXED? 0 / SKIP 1   (248 s)
+  F1: PASS 21  KNOWN 1    F2: PASS 18    F3: PASS 34
+  F4: PASS 19  SKIP 1     F5: PASS  6    F6: PASS 27
+  F7: PASS 25             F8: PASS 18    F9: PASS  9
   F10: PASS 10
 ```
+
+- KNOWN: `AddLocalControllerLQR` (below).
+- SKIP: the MATPOWER comparison in F4 (`runopf` is not on the path).
 
 Use R2026a: R2026b lacks the Optimization and Control toolboxes.
 
@@ -79,12 +83,6 @@ Checked against the code on 2026-10-29.
   is issued. Events that start before `t0` and continue into the range are
   applied.
 
-### I/O
-
-- **CSV export does not save the network Hz and baseMVA**
-  (`net.tab_parameter.base`). A network exported and re-imported gets the
-  defaults (`GUILDA.config("Model","Hz")`, 100 MVA).
-
 ### Compatibility
 
 - Done: every compat hook in core code is a single line tagged
@@ -140,9 +138,9 @@ Open:
 
 Fixed on `fix/ieee14-data-and-tap-import`:
 
-- **CSV import reads transformer taps.** `CsvNetHandler.import` now reads the
-  `tap`/`phase` columns that the bundled networks and `CsvNetHandler.export`
-  write, and still accepts `Tap`/`Phase`; both spellings in one file is an
+- **CSV import reads transformer taps.** CSV import (now
+  `PowerNetwork.import_csv`) reads the `tap`/`phase` columns that the
+  bundled networks and the export write, and still accepts `Tap`/`Phase`; both spellings in one file is an
   error (`network:import_csv:DuplicateColumns`). Before, every imported tap
   was 1 (IEEE14 4-7, 4-9, 5-6; `IEEE14bus_lossless` too). `TEST31bus`
   already used `Tap`. `Ishizaki6Bus` and `Txt3Bus` have `tap = 0` on `pi`
@@ -185,13 +183,48 @@ Fixed on `fix/ieee14-data-and-tap-import`:
 - `DebugScript.run_all` on `fix/ieee14-data-and-tap-import` (2026-10-29):
   165 tests, PASS 163 / KNOWN 1 / FAIL 0 / SKIP 1 (the MATPOWER comparison).
 
-### Analysis API foundation
+### Analysis API (stages 2 and 3)
 
-- Added `AnalysisResult` (result base class), `tools.resolve_options`
-  (solver defaults + Name-Value overrides) and `legacy_output` (old output
-  tuples). No analysis method uses them yet; power flow, OPF, CPF,
-  simulation, linearization and I/O move to the v4 API next.
-- `odeSimulationResult` does not inherit from `AnalysisResult` yet.
+Done: power flow, OPF, CPF, simulation, linearization and I/O use the v4
+API (`AnalysisResult` subclasses, `[result, flag, output]`, Name-Value
+overrides of `net.solver_*`); Symbolic Math Toolbox is optional. Migration:
+[v4-migration.md](v4-migration.md) 1.7–1.15.
+
+Follow-ups found in stage 3:
+
+- **`Point={sim, t}` fails with controllers.** `odeSimulationResult` does
+  not store the states of local or global controllers, so
+  `net.linearize(Point={sim, t})` stops with
+  `GUILDA:odeLinearizer:PointUnavailable` for a layer that has controllers
+  (`_auxiliary/@odeLinearizer/point_vector.m`).
+- **Align simulation results with `get_variable_map`.** `odeResults` has
+  its own layout (per bus, per component, `X` / `U` tables); it should use
+  the variable map (order and `Label`) so that results, `Point` and
+  linear models share one indexing. This would also fix the item above.
+- **`TimeLimit` applies per phase.** `odeSimulator.TimeLimit` limits the
+  wall-clock time of each integration phase (between event times), not
+  the whole run; a run with many events can take many times `TimeLimit`.
+  Decide whether it should be a total limit.
+- **`Bus.l_isNonUnit` is unused.** `net.linearize` / `get_sys` no longer
+  write it (`NonUnit` is a per-call option) and nothing reads it
+  (`_GUILDAsystem/@Bus/Bus.m`). Remove it or make it the default of
+  `NonUnit`.
+- **`@GUILDA/未実装import_MATPOWER.m` is obsolete**: replaced by
+  `PowerNetwork.import_matpower`. Delete it.
+- **`IEEE14bus_lossless` still has the old IEEE14 data** (see
+  [OPF](#opf)): decide whether to give it the case14 data.
+
+Other items noticed while writing the migration notes (checked in the
+code at `be166af`):
+
+- `net.build_opf_problem` still takes the v3 option name `methods`
+  (`optimize_powerflow` uses `Method`).
+- The CSV import error for duplicate `tap`/`Tap` columns has the ID
+  `network:import_csv:DuplicateColumns`; the other import errors use
+  `GUILDA:import_csv:*`.
+- The tutorials in `_GUILDAtutorial/*.mlx` still use pre-v4 calls
+  (e.g. `net.simulate(t, 'fault', {...})`, `'report'`, `'time_limit'`,
+  `get_sys(true)`, `out.export_csv`); they need a rewrite in MATLAB.
 - A result does not record whether the network was edited after the
   analysis: `tab_editLog` is cleared by `initialize`, so it cannot serve as a
   stamp.
