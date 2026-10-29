@@ -33,6 +33,7 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
 %   "```matlab\n[res, flag] = net.calculate_powerflow();\nres.tab_bus            % Varg, V, P, Q, Vphasor, Iphasor of each bus\nres = net.calculate_powerflow(Method=\"dynamic\", Tolerance=1e-8, Plot=true);\n```"
 % ]
 
+    varargin = v3_powerflow_args(varargin);                   % COMPAT(v3)
     [c_nv, opt] = take_call_options(varargin);
     s_options   = obj.solver_PF.get_options(c_nv);
 

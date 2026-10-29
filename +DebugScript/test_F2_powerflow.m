@@ -346,6 +346,43 @@ res_empty = PowerFlowResult();
 assert(error_id(@() res_empty.Export(filepath)) == "GUILDA:PowerFlowResult:NoNetwork")
 
 
+%% COMPAT v3 positional mode and export options
+% 旧形式 calculate_powerflow(mode, "export", l, "filename", f) は警告して v4 に読み替える
+net = DebugScript.helper.build_ieee14();
+clear Deprecated
+lastwarn("");
+w = warning("off", "GUILDA:Deprecated:CalculatePowerflowMode"); c = onCleanup(@() warning(w));
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow("dynamic", "export", false));
+assert(isa(res, "PowerFlowResult") && logical(flag) && res.options.Method == "dynamic")
+[~, id] = lastwarn();
+assert(string(id) == "GUILDA:Deprecated:CalculatePowerflowExport")
+assert(net.solver_PF.Method == "algebraic")       % 既定値は変わらない
+warning(w);
+
+% 位置引数の mode だけ
+clear Deprecated
+lastwarn("");
+res = DebugScript.helper.quiet(@() net.calculate_powerflow("algebraic"));
+[~, id] = lastwarn();
+assert(string(id) == "GUILDA:Deprecated:CalculatePowerflowMode" && res.options.Method == "algebraic")
+
+% export=true の JSON は v3 と同じく GUILDA.pwd に書く
+filename = "DebugScript_test_F2_" + string(feature("getpid")) + ".json";
+filepath = fullfile(GUILDA.pwd, filename);
+c = onCleanup(@() delete(filepath));
+w = warning("off", "GUILDA:Deprecated:CalculatePowerflowMode");
+warning("off", "GUILDA:Deprecated:CalculatePowerflowExport");
+DebugScript.helper.quiet(@() net.calculate_powerflow("dynamic", "export", true, "filename", filename));
+warning(w);
+assert(isfile(filepath))
+data = jsondecode(fileread(filepath));
+assert(numel(data.nodes) == numel(net.a_Bus))
+
+% v4 の呼び出しは互換フックを素通りする
+assert(isequal(v3_powerflow_args({"Method", "dynamic", "Export", true}), {"Method", "dynamic", "Export", true}))
+assert(isequal(v3_powerflow_args({}), {}))
+
+
 % ---- local functions ----
 function id = error_id(fcn)
 % fcn を実行し、エラーの ID を返す (エラーにならなければ "")
