@@ -331,6 +331,68 @@ net.remove_branch(string(br));
 assert(isempty(br.a_PowerNetwork) && isempty(br.a_Bus))
 
 
+%% Automatic branch tags stay unique after remove_branch
+% 自動タグの番号は「使用中の最大番号 + 1」(種類 EL/ET をまたいだ通し番号)
+net = DebugScript.helper.build_9bus();
+net.remove_branch(string(net.a_Branch{3}));
+br = net.add_branch("pi", [1,2]);
+assert(br.str_tag == "EL010")
+assert(numel(unique(string(net.a_Branch))) == numel(net.a_Branch))
+
+% 途中の番号を消しても再利用しない
+net.remove_branch(["EL004","EL005"]);
+br = net.add_branch("two_winding_transformer", [1,2]);
+assert(br.str_tag == "ET011")
+assert(numel(unique(string(net.a_Branch))) == numel(net.a_Branch))
+
+
+%% Automatic component tags stay unique after remove_component
+% 番号は母線ごとの「使用中の最大番号 + 1」(機種をまたいだ通し番号)
+net = PowerNetwork();
+bus = net.add_bus();
+bus.add_component("load-power");
+bus.add_component("load-power");
+bus.remove_component("LPQ1B001");
+comp = bus.add_component("load-power");
+assert(comp.str_tag == "LPQ3B001")
+assert(isequal(string(bus.a_Component)', ["LPQ2B001","LPQ3B001"]))
+
+for i = 1:8
+    bus.add_component("gen-classical");
+end
+assert(bus.a_Component{end}.str_tag == "SG11B001")
+bus.remove_component("LPQ2B001");
+comp = bus.add_component("load-power");
+assert(comp.str_tag == "LPQ12B001")
+assert(numel(unique(string(bus.a_Component))) == numel(bus.a_Component))
+
+
+%% Replace component keeps the tag number
+net = DebugScript.helper.build_9bus();
+DebugScript.helper.quiet(@() net.initialize);
+bus = net.a_Bus{5};
+assert(string(bus.a_Component{1}) == "LPQ1B005")
+comp = bus.replace_component("LPQ1B005", "load-impedance");
+assert(comp.str_tag == "LRX1B005")
+comp = bus.replace_component("LRX1B005", "load-power");
+assert(comp.str_tag == "LPQ1B005")
+
+
+%% Global controller tag in use is rejected
+% 大域制御器のタグは利用者が与えるので、使用中のタグはエラー (系統は変わらない)
+net = DebugScript.helper.build_ieee14();
+net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001"));
+agc2 = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B002");
+try
+    net.add_global_controller(agc2);
+    error("DebugScript:noError", "使用中のタグの大域制御器を追加できてしまう")
+catch ME
+    assert(ME.identifier == "GUILDA:PowerNetwork:GconTagInUse", ME.message)
+    assert(contains(ME.message, "'agc'"), ME.message)
+end
+assert(numel(net.a_GlobalController) == 1 && isempty(agc2.PowerNetwork))
+
+
 %% Remove bus
 net = DebugScript.helper.build_9bus();
 DebugScript.helper.quiet(@() net.initialize);    % 編集ログは initialize 後に記録される
