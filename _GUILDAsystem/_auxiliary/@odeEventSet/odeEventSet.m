@@ -147,6 +147,7 @@ classdef (Sealed = true) odeEventSet < auxiliary
             end
 
             odeEvents = [{obj},varargin];
+            cellfun(@(o) o.validate_input(), odeEvents);
             
             times = zeros(nargin,2);
             for k=1:nargin
@@ -158,6 +159,15 @@ classdef (Sealed = true) odeEventSet < auxiliary
                 end
             end
                         
+            if numel(opt.time) >= 2
+                lv_out = times(:,2) < opt.time(1) | times(:,1) > opt.time(end);
+                for k = find(lv_out(:))'
+                    warning('GUILDA:odeEventSet:OutsideTimeSpan', '%s', ...
+                        msg('GUILDA:odeEventSet:OutsideTimeSpan', char(odeEvents{k}.str_tag), ...
+                            mat2str(odeEvents{k}.TimeSpan), mat2str(opt.time([1,end]).')));
+                end
+            end
+
             all_time = getTimeSpan(times, opt.time);                   
             
             vtab = size(all_time,1);
@@ -281,14 +291,14 @@ classdef (Sealed = true) odeEventSet < auxiliary
 
                 elseif isa(exV, 'function_handle')
                     if nargin(exV) ~= 1
-                        error(msg('GUILDA:odeEventSet:InvalidNargin'))
+                        error('GUILDA:odeEventSet:InvalidNargin', '%s', msg('GUILDA:odeEventSet:InvalidNargin'))
                     end
 
                     % t of each phase starts at 0; the function takes the time since the event start.
                     ts = opt.TimePhase(1) - oev.TimeSpan(1);
                     exV = @(t) exV(t+ts);
                 else
-                    error(msg('GUILDA:odeEventSet:InvalidInputType'))
+                    error('GUILDA:odeEventSet:InvalidInputType', '%s', msg('GUILDA:odeEventSet:InvalidInputType'))
                 end
 
             end
@@ -414,6 +424,39 @@ classdef (Sealed = true) odeEventSet < auxiliary
             EventSettings = table(t,x,I, 'VariableNames', {'t','x','i'});
         end
         
+    end
+
+    methods (Access=private)
+        function validate_input(obj)
+            % InputUnit, InputName and InputValue are checked before the integration starts.
+            if strlength(obj.InputUnit) == 0 && isempty(obj.InputName)
+                return
+            end
+            a_comp = cellfun(@(b) b.a_Component, obj.odeNetwork.a_Bus, 'UniformOutput', false);
+            a_comp = vertcat(a_comp{:});
+            sv_tag = string(cellfun(@(c) c.str_tag, a_comp, 'UniformOutput', false));
+            lv_cmp = sv_tag == obj.InputUnit;
+            if ~any(lv_cmp)
+                error('GUILDA:odeEventSet:UnknownInputUnit', '%s', ...
+                    msg('GUILDA:odeEventSet:UnknownInputUnit', char(obj.str_tag), char(obj.InputUnit)));
+            end
+            sv_u = string(a_comp{find(lv_cmp,1)}.sv_u(:));
+            lv_bad = ~ismember(obj.InputName, sv_u);
+            if any(lv_bad)
+                error('GUILDA:odeEventSet:UnknownInputName', '%s', ...
+                    msg('GUILDA:odeEventSet:UnknownInputName', char(obj.str_tag), ...
+                        char(join(obj.InputName(lv_bad), ", ")), char(obj.InputUnit), char(join(sv_u, ", "))));
+            end
+            exV = obj.InputValue;
+            if ~iscell(exV)
+                exV = {exV};
+            end
+            for k = 1:numel(exV)
+                if isa(exV{k}, 'function_handle') && nargin(exV{k}) ~= 1
+                    error('GUILDA:odeEventSet:InvalidNargin', '%s', msg('GUILDA:odeEventSet:InvalidNargin'));
+                end
+            end
+        end
     end
 
 end
