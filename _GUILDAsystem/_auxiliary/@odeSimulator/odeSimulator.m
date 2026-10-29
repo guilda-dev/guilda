@@ -1,64 +1,368 @@
 classdef (Sealed = true) odeSimulator < auxiliary
+% <@Desc>
+% Solver of the time simulation (net.simulate). net.solver_ODE holds one; its properties
+% are the stored defaults of net.simulate and are kept between runs. Name-Value options of
+% a call override them for that call only (see OptionMap and get_options). The solver holds
+% settings only: the network, the event time table and the trajectories of a run are local
+% to solve, and the result is returned as an odeSimulationResult.
+% The DAE of the network is integrated phase by phase: a phase is a time interval in which
+% the set of active events (odeEventSet) does not change. Each phase is solved with the
+% MATLAB ode object (Solver, SolverOptions, RelativeTolerance, AbsoluteTolerance).
+% <@Role> Class Category
+% <@Constructor>
+% obj = odeSimulator()
+% Reads the defaults from GUILDA.config("TimeSimulation").
 
-    properties        
-        ODEvnt        
-        MassMatrix     (1,1) {mustBeA( MassMatrix, ["odeMassMatrix" ,"function_handle" ])} = odeMassMatrix        
-        ODEFcn         (1,1) {mustBeA(     ODEFcn, [       "odeFcn" ,"function_handle" ])} = @(t,x)[]                   
-        Jacobian       (1,1) {mustBeA(   Jacobian, [  "odeJacobian" ,"function_handle" ])} = odeJacobian                        
-        InitialTime    (1,1) double {mustBeReal} = 0                         
-        InitialSlope   (:,1) double = []                        
-        InitialValue   (:,1) double = []                
-        EventDefinition = []
-        EquationType   (1,1) string {mustBeMember(EquationType, ["standard","fullyimplicit","delay"])} = "standard" 
+    properties (Access=public)
+        % <@Desc> Solver of the MATLAB ode object (Solver property of ode). The DAE of the
+        % network has a singular mass matrix, so it needs a solver for DAEs (ode15s, ode23t).
+        % <@Role> Settings
+        % <@Type> matlab.ode.SolverID
+        % <@Size> 1x1
         Solver         matlab.ode.SolverID = "ode15s"
-        SolverOptions  matlab.ode.Options  = matlab.ode.options.ODE15s  
-        
-        % set up GUILDA.setting
-        AbsoluteTolerance   (1,1) double {mustBePositive, mustBeBetween(AbsoluteTolerance,1e-15,1e-3, "closed")} = 1e-6        
+
+        % <@Desc> Options of the solver (SolverOptions property of ode), e.g. MaxStep or
+        % InitialStep. Its class must match Solver.
+        % <@Role> Settings
+        % <@Type> matlab.ode.Options
+        % <@Size> 1x1
+        SolverOptions  matlab.ode.Options  = matlab.ode.options.ODE15s
+
+        % <@Desc> Relative error tolerance of the integration (RelativeTolerance of ode,
+        % RelTol of odeset). Name-Value option Tolerance.
+        % <@Role> Settings
+        % <@Type> double
+        % <@Size> 1x1
         RelativeTolerance   (1,1) double {mustBePositive, mustBeBetween(RelativeTolerance,1e-15,1e-3, "closed")} = 1e-4
+
+        % <@Desc> Absolute error tolerance of the integration (AbsoluteTolerance of ode,
+        % AbsTol of odeset). Name-Value option AbsoluteTolerance.
+        % <@Role> Settings
+        % <@Type> double
+        % <@Size> 1x1
+        AbsoluteTolerance   (1,1) double {mustBePositive, mustBeBetween(AbsoluteTolerance,1e-15,1e-3, "closed")} = 1e-6
+
+        % <@Desc> SeparateComplexParts property of the ode object.
+        % <@Role> Settings
+        % <@Type> matlab.lang.OnOffSwitchState
+        % <@Size> 1x1
         SeparateComplexParts matlab.lang.OnOffSwitchState = "off"
-        Reporter            (1,1) string {mustBeMember(Reporter,["none","disp","dialog"])} = "dialog"
-        TimeLimit           (1,1) double = 10;
+
+        % <@Desc> Progress display during the integration: "dialog" (a waitbar), "disp"
+        % (a text bar in the Command Window) or "none". Name-Value option Progress, which
+        % also accepts true ("dialog") and false ("none").
+        % <@Role> Settings
+        % <@Type> string
+        % <@Size> 1x1
+        Progress            (1,1) string {mustBeMember(Progress,["none","disp","dialog"])} = "dialog"
+
+        % <@Desc> Limit of the computation (wall-clock) time [s] of each integration phase.
+        % When it is exceeded, the simulation stops at the time reached, and the result has
+        % flag = 0 ("stopped by TimeLimit"). Inf for no limit.
+        % <@Role> Settings
+        % <@Type> double
+        % <@Size> 1x1
+        TimeLimit           (1,1) double {mustBePositive} = 10
+
+        % <@Desc> Print the phases before the integration and the outcome (output.message)
+        % after it.
+        % <@Role> Settings
+        % <@Type> logical
+        % <@Size> 1x1
+        Verbose             (1,1) logical = false
+
+        % <@Desc> Call result.Plot() after each simulation.
+        % <@Role> Settings
+        % <@Type> logical
+        % <@Size> 1x1
+        Plot                (1,1) logical = false
     end
-    properties (SetAccess=private, Hidden)
-        odeNetwork 
-        odeTimeTable                
-        odeYmat
-        odeResult
+
+    properties (Constant)
+        % <@Desc> Name-Value options of net.simulate and the solver property each one sets
+        % (input of tools.resolve_options). Solver, Tolerance, TimeLimit, Progress, Verbose
+        % and Plot are common names; Tolerance is the relative tolerance.
+        % AbsoluteTolerance, SolverOptions and SeparateComplexParts keep the names of the
+        % MATLAB ode object.
+        % <@Role> Settings
+        % <@Type> struct
+        % <@Size> 1x1
+        OptionMap = struct( ...
+            "Solver",               "Solver", ...
+            "SolverOptions",        "SolverOptions", ...
+            "Tolerance",            "RelativeTolerance", ...
+            "AbsoluteTolerance",    "AbsoluteTolerance", ...
+            "SeparateComplexParts", "SeparateComplexParts", ...
+            "TimeLimit",            "TimeLimit", ...
+            "Progress",             {{"Progress", @(v) odeSimulator.progress_mode(v)}}, ...
+            "Verbose",              "Verbose", ...
+            "Plot",                 "Plot")
     end
-    properties %(Access=private)
-        rv_odeV
+
+    properties (Dependent, Hidden)
+        Reporter                                    % COMPAT(v3) old name of Progress (v3_ode_reporter)
     end
 
     properties (SetAccess=private, Hidden)
-        % Version of this class       
-        Ver (1,1) double = 1.1
+        % Version of this class
+        Ver (1,1) double = 2.0
     end
 
     methods
-        function obj = odeSimulator() 
+        function obj = odeSimulator()
             sct = GUILDA.config("TimeSimulation");
             obj.AbsoluteTolerance   = sct.AbsoluteTolerance.Value;
-            obj.RelativeTolerance   = sct.RelativeTolerance.Value; 
-            obj.SeparateComplexParts= sct.SeparateComplexParts.Value; 
-            obj.Reporter            = sct.Reporter.Value; 
+            obj.RelativeTolerance   = sct.RelativeTolerance.Value;
+            obj.SeparateComplexParts= sct.SeparateComplexParts.Value;
+            obj.Progress            = sct.Reporter.Value;
             val = sct.TimeLimit.Value;
             if isnumeric(val) && val>0
                 obj.TimeLimit = val;
             else
                 obj.TimeLimit = inf;
-            end                    
-        end        
-        
-    end
-    
-    methods (Access=private)                       
+            end
+        end
 
-        function initialize_odeSimulator(obj)            
+        function v = get.Reporter(obj), v = obj.Progress; end                              % COMPAT(v3)
+        function set.Reporter(obj, v), obj.Progress = v3_ode_reporter(v); end               % COMPAT(v3)
+
+        function s_options = get_options(obj, nv)
+        % <@Desc>
+        % Effective settings of one run: every stored setting of the solver, with the
+        % Name-Value overrides of the call applied. The solver itself is not changed.
+        % A name that is not in OptionMap stops with GUILDA:resolve_options:UnknownName;
+        % an invalid value stops with the validation error of the option.
+        % <@Role> Settings
+        % <@Summary> Stored settings + call-time overrides, as a struct.
+        % <@Signatures>
+        % [
+        %   "s_options = get_options(obj)",
+        %   "s_options = get_options(obj, {Name1, Value1, ...})"
+        % ]
+        % <@Parameters>
+        % [
+        %   {"Name": "obj", "Type": "odeSimulator", "Description": "Solver holding the defaults (net.solver_ODE).", "Required": true, "Default": "-"},
+        %   {"Name": "nv", "Type": "cell", "Description": "Name-Value overrides: Solver, SolverOptions, Tolerance, AbsoluteTolerance, SeparateComplexParts, TimeLimit, Progress, Verbose, Plot.", "Required": false, "Default": "{}"}
+        % ]
+        % <@Returns>
+        % [
+        %   {"Name": "s_options", "Type": "struct", "Description": "One field per setting (Solver, SolverOptions, RelativeTolerance, AbsoluteTolerance, SeparateComplexParts, Progress, TimeLimit, Verbose, Plot)."}
+        % ]
+            arguments
+                obj
+                nv (1,:) cell = {}
+            end
+            s_given = tools.resolve_options(obj, odeSimulator.OptionMap, nv);
+            validate_options(nv{:});
+
+            mc = metaclass(obj);
+            a_prop = mc.PropertyList(~[mc.PropertyList.Constant] & ~[mc.PropertyList.Dependent] & ...
+                                     ~[mc.PropertyList.Hidden] & strcmp({mc.PropertyList.SetAccess}, 'public'));
+            s_options = struct();
+            for str_prop = string({a_prop.Name})
+                if isfield(s_given, str_prop)
+                    s_options.(str_prop) = s_given.(str_prop);
+                else
+                    s_options.(str_prop) = obj.(str_prop);
+                end
+            end
+        end
+
+        function [result, flag, output] = solve(obj, net, time, c_events, s_options)
+        % <@Desc>
+        % Runs the time simulation of net over time with the events c_events and the
+        % effective settings s_options, and returns the trajectories as an
+        % odeSimulationResult. The solver is only read: nothing is written back into it.
+        % The simulation working data of the models (iv_odeX, iv_odeU, iv_odeY, iv_odeI) is
+        % rebuilt for this run. Called by net.simulate, which also checks that the
+        % equilibrium is up to date; calling it directly is for advanced use.
+        % flag is 1 when the simulation reached the end time, 0 when it stopped because a
+        % phase exceeded TimeLimit, and -1 when the solver stopped before the end time
+        % (output.message has the reason). In the last two cases the result holds the
+        % trajectories up to the time reached (output.tEnd).
+        % <@Role> Analysis
+        % <@Summary> Integrate the network DAE with the given settings.
+        % <@Signatures>
+        % [
+        %   "[result, flag, output] = solve(obj, net, time)",
+        %   "[result, flag, output] = solve(obj, net, time, c_events, s_options)"
+        % ]
+        % <@Parameters>
+        % [
+        %   {"Name": "obj", "Type": "odeSimulator", "Description": "Solver (net.solver_ODE).", "Required": true, "Default": "-"},
+        %   {"Name": "net", "Type": "PowerNetwork", "Description": "Network initialized by net.initialize.", "Required": true, "Default": "-"},
+        %   {"Name": "time", "Type": "double vector", "Description": "Simulation time [t0, tend] (or [] for the time span of the events).", "Required": true, "Default": "-"},
+        %   {"Name": "c_events", "Type": "cell of odeEventSet", "Description": "Events of the run.", "Required": false, "Default": "{}"},
+        %   {"Name": "s_options", "Type": "struct", "Description": "Effective settings (output of get_options).", "Required": false, "Default": "obj.get_options()"}
+        % ]
+        % <@Returns>
+        % [
+        %   {"Name": "result", "Type": "odeSimulationResult", "Description": "Trajectories of the buses and components."},
+        %   {"Name": "flag", "Type": "double", "Description": "1 completed, 0 stopped by TimeLimit, -1 stopped by the solver."},
+        %   {"Name": "output", "Type": "struct", "Description": "Details: message, tEnd, phases (time table of the phases), nPhases, nPhasesDone."}
+        % ]
+            arguments
+                obj
+                net
+                time      (:,1) double = []
+                c_events  cell = {}
+                s_options (1,1) struct = obj.get_options()
+            end
+            t0 = tic;
+
+            % Without events, add an empty event so that odeEventSet.table is dispatched.
+            if isempty(c_events)
+                t_start = 0;
+                if ~isempty(time)
+                    t_start = time(1);
+                end
+                c_events = {odeEventSet("NoAction", net, "TimeSpan", t_start)};
+            end
+
+            [tab_phase, c_odeEvnt] = table(c_events{:}, "time", time);
+            odeSimulator.initialize_index(net);
+
+            ctx = struct();
+            ctx.net     = net;
+            ctx.Ymat    = tools.complex2matrix(net.get_admittance_matrix.Variables);
+            ctx.rv_odeV = cell2mat(tools.cellfun(@(b) b.iv_odeX, net.a_Bus));
+
+            o = makeODE(s_options);
+            options = odeset("RelTol", o.RelativeTolerance, "AbsTol", o.AbsoluteTolerance);
+            np   = size(tab_phase,1);
+            x0   = [];
+            Mass = [];
+
+            % Set reporter
+            str_evt = string(tab_phase.Properties.VariableNames(3:end));
+            ts = tab_phase{  1,"t1"};
+            te = tab_phase{end,"t2"};
+            if s_options.Verbose
+                print_phases(tab_phase, str_evt);
+            end
+            odeProg  = odeProgress( s_options.Progress, [ts,te], s_options.TimeLimit);
+            o.SolverOptions.OutputFcn = odeProg.OutputFcn;
+            o.EventDefinition = odeEvent("EventFcn", @(t,x) odeProg.Events(), "Response", "stop");
+
+            c_phase = cell(1,0);
+            flag    = 1;
+            tp      = 1;
+            while tp <= np
+
+                % Retrieving events related to ground faults and circuit tripping.
+                TT = tab_phase(tp,:);
+
+                odeEvents = c_odeEvnt( TT{:,3:end} );
+
+                t1 = TT{1, 't1'};
+                t2 = TT{1, 't2'};
+
+                setEventCondition(odeEvents{:}, "TimePhase", [t1,t2], "Iteration", tp);
+
+                [EM, RM, lv_FBorTC, x0, Mass] = getInitialCondition(odeEvents{:}, "x0", x0, "M0", Mass);
+
+                o.InitialValue = x0;
+                o.MassMatrix   = Mass;
+                o.ODEFcn       = @(t,x) odeSimulator.getODEFunction(ctx,t,x,RM,EM,~lv_FBorTC);
+                o.Jacobian     = @(t,x) odeSimulator.getODEJacobian(ctx,t,x,RM,EM,~lv_FBorTC);
+
+                % update reporter
+                odeProg.timeoffset = t1;
+                odeProg.message  = "|";
+                if tp~=np
+                    str_evti = str_evt( tab_phase{tp+1,3:end} );
+                    str_evti = str_evti(~contains(str_evti,"NoAction"));
+                    if ~isempty(str_evti)
+                        odeProg.message  = "|("+join(str_evti,",")+": t="+t2+")";
+                    end
+                end
+
+                try
+                    % When solving the equation, specify [0, duration of each phase]
+                    sol = solve(o, 0, t2-t1);
+                catch me
+
+                    splitMSG = strsplit(me.identifier,':');
+
+                    if isequal(splitMSG{end},'NeedBetterY0')
+                        [ODEfcn, x0, ~, options] = CalculateInitialCondition(o, options);
+                    else
+                        odeProg.OutputFcn([],[],"break")
+                        throw(me)
+                    end
+
+
+                    % After performing error bundling, solve the DAE system again.
+                    try
+                        [t,y] = ode15s(ODEfcn, [0,t2-t1], x0, options);
+                        sol = struct('Time', t.', 'Solution', y.');
+
+                    catch
+                        odeProg.OutputFcn([],[],"break")
+                        error(msg('GUILDA:odeSimulator:UnfeasibleDAE'))
+                    end
+                end
+
+                c_phase{tp} = Event2State( odeEvents{:}, "ODEResults", struct('Time', (sol.Time + t1)', 'Solution', (EM * sol.Solution).'), "ODEYmatrix", ctx.Ymat );
+                if sol.Time(end) < (t2-t1)
+                    if odeProg.ToBeContinue
+                        flag = -1;
+                    else
+                        flag = 0;
+                    end
+                    break;
+                end
+
+                [x0, Mass] = odeSimulator.getNextPhase(ctx, reshape(sol.Solution(:,end),[],1), o.MassMatrix.MassMatrix, RM, EM);
+
+                tp = tp + 1;
+            end
+
+            output = struct();
+            output.tEnd        = c_phase{end}.t{end,1};
+            output.nPhases     = np;
+            output.nPhasesDone = numel(c_phase) - (flag ~= 1);
+            output.phases      = tab_phase;
+            switch flag
+                case 1
+                    output.message = sprintf("The simulation reached t = %g s (%d phases).", output.tEnd, np);
+                case 0
+                    output.message = sprintf("The simulation stopped at t = %g s of %g s: phase %d exceeded TimeLimit = %g s. " + ...
+                                             "Increase TimeLimit (Inf for no limit).", output.tEnd, te, tp, s_options.TimeLimit);
+                otherwise
+                    output.message = sprintf("The solver stopped at t = %g s of %g s in phase %d (see the warning of the solver). " + ...
+                                             "Try a smaller Tolerance, other SolverOptions, or check the model.", output.tEnd, te, tp);
+            end
+            if s_options.Verbose
+                disp(output.message)
+            end
+
+            result = odeSimulationResult(net, obj, s_options, flag, output, t0, c_phase);
+        end
+    end
+
+    methods (Static, Hidden)
+        function str = progress_mode(val)
+        % Value of the Name-Value option Progress: true -> "dialog", false -> "none"
+            if islogical(val) || isnumeric(val)
+                if val
+                    str = "dialog";
+                else
+                    str = "none";
+                end
+            else
+                str = string(val);
+            end
+        end
+    end
+
+    methods (Static, Access=private)
+
+        function initialize_index(net)
             % Method for assigning state variable numbers to each device and bus.
             % Execute this before performing analysis using the ODE solver.         
             
-            a_bus = obj.odeNetwork.a_Bus;
+            a_bus = net.a_Bus;
 
             idx_TGT = 0;                       
             
@@ -87,7 +391,7 @@ classdef (Sealed = true) odeSimulator < auxiliary
 
             % Global controllers: states after the components, in the order of a_GlobalController.
             % Their inputs are states of the controlled units and their outputs are inputs of them.
-            a_gcon = obj.odeNetwork.a_GlobalController;
+            a_gcon = net.a_GlobalController;
             for k = 1:numel(a_gcon)
                 gcon = a_gcon{k};
                 nxgc = length(gcon.sv_x);
@@ -122,27 +426,24 @@ classdef (Sealed = true) odeSimulator < auxiliary
             end
             
         end
-        
-    end
 
-    methods (Hidden=true, Access={?odeSimulator, ?PowerNetwork})
                 
 
-        function odeX = getODEFunction(obj, t, x, RM, EM, lg) %#ok 
+        function odeX = getODEFunction(ctx, t, x, RM, EM, lg) %#ok
             % Method for retrieving the DAE system to be analyzed.            
             
             x = EM*x; 
 
             odeX = zeros(size(x));
-            odeV = x(obj.rv_odeV);
+            odeV = x(ctx.rv_odeV);
 
-            I = obj.odeYmat*odeV;
+            I = ctx.Ymat*odeV;
             
-            a_bus = obj.odeNetwork.a_Bus;
+            a_bus = ctx.net.a_Bus;
 
             % Outputs of all global controllers, at the indices of the component inputs they drive
             y_GC = zeros(size(x), 'like', x);
-            a_GCs = obj.odeNetwork.a_GlobalController;
+            a_GCs = ctx.net.a_GlobalController;
             for k = 1:numel(a_GCs)
                 a_GC = a_GCs{k};
 
@@ -181,19 +482,19 @@ classdef (Sealed = true) odeSimulator < auxiliary
 
         end
 
-        function odeJac = getODEJacobian(obj, t, x, RM, EM, lg) %#ok    
+        function odeJac = getODEJacobian(ctx, t, x, RM, EM, lg) %#ok
             % Method for obtaining the Jacobian of the DAE system under analysis.
 
             x = EM*x;
             
-            a_bus = obj.odeNetwork.a_Bus;
+            a_bus = ctx.net.a_Bus;
 
             odeJac = zeros(numel(x), numel(x));
 
             rv_Bus_V = zeros(0,1);
             rv_Bus_I = zeros(0,1);
 
-            a_GCs = obj.odeNetwork.a_GlobalController;
+            a_GCs = ctx.net.a_GlobalController;
             for k = 1:numel(a_GCs)
                 a_GC = a_GCs{k};
                 
@@ -303,7 +604,7 @@ classdef (Sealed = true) odeSimulator < auxiliary
                 rv_Bus_I(2*i+[-1;0]) = idx_I; 
             end                               
                    
-            odeJac(rv_Bus_I,rv_Bus_V) = odeJac(rv_Bus_I,rv_Bus_V) - obj.odeYmat;
+            odeJac(rv_Bus_I,rv_Bus_V) = odeJac(rv_Bus_I,rv_Bus_V) - ctx.Ymat;
 
             odeJac([rv_Bus_V; rv_Bus_I], rv_Bus_I) = odeJac([rv_Bus_V; rv_Bus_I], rv_Bus_I) + [eye(2*i); eye(2*i)];
             
@@ -313,8 +614,8 @@ classdef (Sealed = true) odeSimulator < auxiliary
                 
         
 
-        function [x0, M0] = getNextPhase(obj, x0, M0, RM, EM) %#ok
-            a_bus  = obj.odeNetwork.a_Bus;            
+        function [x0, M0] = getNextPhase(ctx, x0, M0, RM, EM) %#ok
+            a_bus  = ctx.net.a_Bus;            
 
             x0 = EM * x0;
             M0 = EM * M0 * EM.';
@@ -361,116 +662,41 @@ classdef (Sealed = true) odeSimulator < auxiliary
                 end
             end            
         end
-
     end
+end
 
-    methods
+function validate_options(opt)
+% Value checks of the Name-Value options (names are already checked by resolve_options)
+    arguments
+        opt.Solver               (1,1) matlab.ode.SolverID
+        opt.SolverOptions        (1,1) matlab.ode.Options
+        opt.Tolerance            (1,1) double {mustBePositive, mustBeBetween(opt.Tolerance,1e-15,1e-3,"closed")}
+        opt.AbsoluteTolerance    (1,1) double {mustBePositive, mustBeBetween(opt.AbsoluteTolerance,1e-15,1e-3,"closed")}
+        opt.SeparateComplexParts (1,1) matlab.lang.OnOffSwitchState
+        opt.TimeLimit            (1,1) double {mustBePositive}
+        opt.Progress             {mustBeProgress}
+        opt.Verbose              (1,1) logical
+        opt.Plot                 (1,1) logical
+    end
+end
 
-        function [out,flag] = simulate(obj, net, time, varargin)
-            obj.odeNetwork = net;
-            obj.odeResult  = {};
+function mustBeProgress(val)
+    if (islogical(val) || isnumeric(val)) && isscalar(val)
+        return
+    end
+    mustBeMember(string(val), ["none","disp","dialog"]);
+end
 
-            % Without events, add an empty event so that odeEventSet.table is dispatched.
-            if isempty(varargin)
-                t0 = 0;
-                if ~isempty(time)
-                    t0 = time(1);
-                end
-                varargin = {odeEventSet("NoAction", net, "TimeSpan", t0)};
-            end
-
-            [obj.odeTimeTable, obj.ODEvnt] = table(varargin{:}, "time", time);
-            obj.initialize_odeSimulator;
-
-            rm_YMAT = tools.complex2matrix(net.get_admittance_matrix.Variables);
-            rv_ODEV = cell2mat(tools.cellfun(@(b) b.iv_odeX, net.a_Bus));
-
-            obj.odeYmat = rm_YMAT;
-            obj.rv_odeV = rv_ODEV;
-            
-            [o,x0,Mass,tp,np,flag,options] = makeODE(obj);            
-
-            % Set reporter
-            str_evt = string(obj.odeTimeTable.Properties.VariableNames(3:end));
-            ts = obj.odeTimeTable{  1,"t1"};
-            te = obj.odeTimeTable{end,"t2"};
-            odeProg  = odeProgress( obj.Reporter, [ts,te], obj.TimeLimit);
-            o.SolverOptions.OutputFcn = odeProg.OutputFcn;            
-            o.EventDefinition = odeEvent("EventFcn", @(t,x) odeProg.Events(), "Response", "stop");
-                
-            while tp <= np          
-
-                % Retrieving events related to ground faults and circuit tripping.                                               
-                TT = obj.odeTimeTable(tp,:); 
-
-                odeEvents = obj.ODEvnt( TT{:,3:end} );                
-
-                t1 = TT{1, 't1'};
-                t2 = TT{1, 't2'};
-
-                setEventCondition(odeEvents{:}, "TimePhase", [t1,t2], "Iteration", tp);
-
-                [EM, RM, lv_FBorTC, x0, Mass] = getInitialCondition(odeEvents{:}, "x0", x0, "M0", Mass);
-
-                o.InitialValue = x0;                
-                o.MassMatrix   = Mass;                
-                o.ODEFcn       = @(t,x) obj.getODEFunction(t,x,RM,EM,~lv_FBorTC);                                       
-                o.Jacobian     = @(t,x) obj.getODEJacobian(t,x,RM,EM,~lv_FBorTC);                
-            
-                % update reporter
-                odeProg.timeoffset = t1;
-                odeProg.message  = "|";
-                if tp~=np
-                    str_evti = str_evt( obj.odeTimeTable{tp+1,3:end} );
-                    str_evti = str_evti(~contains(str_evti,"NoAction"));
-                    if ~isempty(str_evti)
-                        odeProg.message  = "|("+join(str_evti,",")+": t="+t2+")";
-                    end
-                end
-                
-                try         
-                    % When solving the equation, specify [0, duration of each phase]                         
-                    sol = solve(o, 0, t2-t1); 
-                catch me                    
-
-                    splitMSG = strsplit(me.identifier,':');                                        
-
-                    if isequal(splitMSG{end},'NeedBetterY0')                    
-                        [ODEfcn, x0, FLAG, options] = CalculateInitialCondition(o, options);
-                        % if FLAG
-                        %     sol.Time = 0;
-                        %     break;
-                        % end
-                    else
-                        odeProg.OutputFcn([],[],"break")
-                        throw(me)                                                    
-                    end
-                   
-
-                    % After performing error bundling, solve the DAE system again.
-                    try
-                        [t,y] = ode15s(ODEfcn, [0,t2-t1], x0, options);
-                        sol = struct('Time', t.', 'Solution', y.');
-
-                    catch ME
-                        odeProg.OutputFcn([],[],"break")
-                        error(msg('GUILDA:odeSimulator:UnfeasibleDAE'))
-                    end
-                end
-                                   
-                obj.odeResult{tp} = Event2State( odeEvents{:}, "ODEResults", struct('Time', (sol.Time + t1)', 'Solution', (EM * sol.Solution).'), "ODEYmatrix", obj.odeYmat );                     
-                if sol.Time(end) < (t2-t1)
-                    flag = true;
-                    break;
-                end
-
-                [x0, Mass] = obj.getNextPhase(reshape(sol.Solution(:,end),[],1), o.MassMatrix.MassMatrix, RM, EM);
-
-                tp = tp + 1;
-            end        
-
-            out = odeSimulationResult(obj.odeNetwork, obj.odeResult);                        
+function print_phases(tab_phase, str_evt)
+% Verbose: one line per integration phase with its active events
+    fprintf("Time simulation: %d phase(s)\n", height(tab_phase));
+    for k = 1:height(tab_phase)
+        sv = str_evt(tab_phase{k,3:end});
+        sv = sv(~contains(sv,"NoAction"));
+        if isempty(sv)
+            sv = "-";
         end
+        fprintf("  phase %2d: t = [%g, %g]  events: %s\n", k, tab_phase{k,"t1"}, tab_phase{k,"t2"}, join(sv, ", "));
     end
 end
 

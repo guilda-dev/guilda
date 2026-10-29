@@ -1,0 +1,8 @@
+<!--This is an XML file containing error messages related to the class "odeSimulationResult".-->
+<rsccat version="2" locale="en" product="GUILDA">
+    <message>
+        <entry key="ExportFormat">Export of odeSimulationResult does not support the extension ''{0}''. Use .csv, .txt, .xlsx, .xls or .mat.</entry>
+        <entry key="UnknownBus">odeSimulationResult has no bus {0}. Use the tags in result.sv_bus.</entry>
+        <entry key="UnknownQuantity">No trajectory ''{0}'' on the selected buses. Use Vabs, Vangle, P, Q, or a state or input name of their components (result.odeResults.Bus(i).Component(j).X / U).</entry>
+    </message>
+</rsccat>
