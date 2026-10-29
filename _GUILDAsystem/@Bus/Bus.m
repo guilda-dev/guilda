@@ -12,9 +12,6 @@ classdef Bus < PowerSystemModel
     properties (Access={?odeSimulator, ?odeEventSet})
         l_isFault (1,1) logical = false
     end
-    properties (Access={?odeSimulator, ?odeLinearizer})
-        l_isNonUnit (1,1) logical = false
-    end
 
     properties (SetAccess=protected)
         a_PowerNetwork                          % Layer Structure
