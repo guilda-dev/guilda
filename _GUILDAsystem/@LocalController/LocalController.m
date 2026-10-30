@@ -160,8 +160,6 @@ classdef LocalController < PowerSystemModel
         % get dx and y
         [DAEvec, y, y_name] = get_dx_algebraic(obj, t, x, Vi, Ii, obs, DAEvec)
 
-        % get sys
-        [sys, varargout] = get_sys(obj,x,V,I,u,opt)        
     end
 
     methods (Access=protected)
@@ -223,6 +221,12 @@ classdef LocalController < PowerSystemModel
         end
     end
 
+
+%% Analysis
+    methods
+        % get sys (public: the linear model of the controller alone)
+        [sys, varargout] = get_sys(obj,x,V,I,u,opt)
+    end
 
 %% Get Methods    
     methods        

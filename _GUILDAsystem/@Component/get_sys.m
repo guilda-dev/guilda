@@ -1,7 +1,17 @@
 function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % <@Desc>
-% Linear model of the component with its local controllers, from the bus voltage V and
-% the inputs u to the current I (port "V2I") or from I to V (port "I2V").
+% Linear model of the component with its local controllers.
+%   inputs : the port (bus voltage [Vre; Vim] for port "V2I", current [Ire; Iim] for
+%            "I2V"), the inputs u of the component, then the inputs of its controllers
+%            (depth first)
+%   states : the states of the component, then the states of its controllers
+%   outputs: the other port (current for "V2I", voltage for "I2V"), the outputs of the
+%            component, then the outputs of its controllers
+% The states are not outputs, so that every name is unique: an output with the name
+% of a state of its owner is labelled "Y_" + name (e.g. Y_omega_SG1B001_B001).
+% An input of the component or of a controller that a controller also drives (e.g.
+% Vfield under an AVR) adds to that signal. The signals from the component to its
+% controllers (its outputs, its states read by "X", and the voltage) are connected inside.
 % The point of the linearization is x, V, I, u (default: the equilibrium; the local
 % controllers are then linearized at their equilibrium), or Point in the same form as
 % net.linearize: a vector in the order of comp.get_variable_map() (states of the
@@ -9,18 +19,17 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % fcn_I at the point and the inputs of the controllers are the outputs they are
 % connected to (as in the simulation). The model is not changed.
 % <@Role> Static Analysis
-% <@Summary> Linear model of the component (V to I, or I to V).
+% <@Summary> Linear model of the component and its controllers (V to I, or I to V).
 % <@Signatures>
 % [
 %   "sys = comp.get_sys()",
 %   "sys = comp.get_sys(x, V, I, u)",
-%   "sys = comp.get_sys(Point=rv, port=\"V2I\", full=true)"
+%   "sys = comp.get_sys(Point=rv, port=\"V2I\")"
 % ]
 % <@Parameters>
 % [
 %   {"Name": "x, V, I, u", "Type": "double column", "Description": "States, voltage [Vre; Vim], current [Ire; Iim] and inputs of the component.", "Required": false, "Default": "the equilibrium"},
 %   {"Name": "port", "Type": "\"V2I\" | \"I2V\"", "Description": "Input and output ports.", "Required": false, "Default": "\"V2I\""},
-%   {"Name": "full", "Type": "logical scalar", "Description": "Also output the states.", "Required": false, "Default": "true"},
 %   {"Name": "Point", "Type": "[] | double vector | cell {sim, t}", "Description": "Point of the linearization; overrides x, V, I, u.", "Required": false, "Default": "[]"}
 % ]
 % <@Returns>
@@ -34,7 +43,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         I        (:,1) double = [real(obj.c_Iequilibrium); imag(obj.c_Iequilibrium)]
         u        (:,1) double = obj.rv_Uequilibrium                        
         opt.port (1,1) {mustBeMember(opt.port, ["V2I", "I2V"])} = "V2I"
-        opt.full (1,1) logical = true
+        opt.full (1,1) logical = false     % states as outputs; only for the model without controllers (rec=false)
         opt.tag  (1,1) logical = true
         opt.con  (1,1) logical = obj.l_hasController
         opt.rec  (1,1) logical = true
@@ -44,33 +53,69 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     % All controllers in the tree (e.g. PSS attached under AVR) are separate blocks connected by signal names
     a_LC = all_controllers(obj);
     if isempty(opt.Point) && ~iscell(opt.Point)
-        [sysCON,x_tag,~,~] = tools.cellfun(@(d) d.get_sys("full",false,"tag",false), a_LC);
+        sysCON = tools.cellfun(@(d) d.get_sys("tag",false), a_LC);
     else
         [x, V, I, u, c_con] = point_values(obj, a_LC, odeLinearizer.point_vector(obj, opt.Point));
-        [sysCON,x_tag,~,~] = tools.cellfun(@(d,p) d.get_sys(p{:},"full",false,"tag",false), a_LC, c_con);
+        sysCON = tools.cellfun(@(d,p) d.get_sys(p{:},"tag",false), a_LC, c_con);
     end
-    if ~isempty(sysCON) && opt.rec
-        [SYS,xSYS,uSYS,ySYS] = obj.get_sys(x,V,I,u,"full",false,"port",opt.port,"tag",false,"con",opt.con,"rec",false);        
+    if opt.rec
+        % The component with the outputs and the voltage its controllers read
+        SYS = obj.get_sys(x,V,I,u,"full",false,"port",opt.port,"tag",false,"con",true,"rec",false);
 
         % Inputs of the controllers that read states of the component (iv_obsX) connect
         % to extra state outputs of SYS, named apart from the outputs of the same name
         [SYS, sysCON] = connect_states(SYS, sysCON, a_LC);
 
-        blksys = append(SYS,sysCON{:});            
+        % External inputs: the port and inputs of the component and the inputs of the
+        % controllers (not their voltage); outputs: the port and outputs of the component
+        % and the outputs of the controllers
+        iv_in  = 1:numel(SYS.InputName);
+        iv_out = 1:2+numel(obj.sv_y);
+        n_in   = numel(SYS.InputName);
+        n_out  = numel(SYS.OutputName);
+        for k = 1:numel(sysCON)
+            iv_in  = [iv_in,  n_in  + (3:numel(sysCON{k}.InputName))];   %#ok<AGROW>
+            iv_out = [iv_out, n_out + (1:numel(sysCON{k}.OutputName))];  %#ok<AGROW>
+            n_in   = n_in  + numel(sysCON{k}.InputName);
+            n_out  = n_out + numel(sysCON{k}.OutputName);
+        end
 
-        blkConnect = connectCondition(blksys.InputGroup,blksys.OutputGroup);
-        sysConnect = connectCondition(SYS.InputGroup,SYS.OutputGroup);
+        if isempty(sysCON)
+            sys = SYS(iv_out, iv_in);
+        else
+            blksys = append(SYS,sysCON{:});            
 
-        lv_connect = ismember(blkConnect,sysConnect,"rows");                        
+            blkConnect = connectCondition(blksys.InputGroup,blksys.OutputGroup);
+            sysConnect = connectCondition(SYS.InputGroup,SYS.OutputGroup);
 
-        opt = connectOptions("Simplify",false);
-        
-        sys = connect(blksys,blkConnect(~lv_connect,:),1:numel(uSYS),1:2,opt);                                    
+            lv_connect = ismember(blkConnect,sysConnect,"rows");                        
 
-        sys.StateName  = [xSYS; vertcat(x_tag{:})];
-        sys.InputName  = uSYS;
-        sys.OutputName = ySYS;
+            sys = connect(blksys,blkConnect(~lv_connect,:),iv_in,iv_out,connectOptions("Simplify",false));
+        end
 
+        % Names
+        if opt.port == "V2I"
+            sv_portIn = ["Vre";"Vim"];  sv_portOut = ["Ire";"Iim"];
+        else
+            sv_portIn = ["Ire";"Iim"];  sv_portOut = ["Vre";"Vim"];
+        end
+        a_all  = [{obj}; a_LC];
+        c_x    = cellfun(@(o) label(o, o.sv_x, opt.tag), a_all, 'UniformOutput', false);
+        c_u    = cellfun(@(o) label(o, o.sv_u, opt.tag), a_all, 'UniformOutput', false);
+        c_y    = cellfun(@(o) label(o, output_name(o), opt.tag), a_all, 'UniformOutput', false);
+        sv_x   = vertcat(strings(0,1), c_x{:});
+        sv_in  = [label(obj, sv_portIn, opt.tag);  vertcat(strings(0,1), c_u{:})];
+        sv_out = [label(obj, sv_portOut, opt.tag); vertcat(strings(0,1), c_y{:})];
+
+        sys.StateName  = cellstr(sv_x);
+        sys.InputName  = cellstr(sv_in);
+        sys.OutputName = cellstr(sv_out);
+        sys.InputGroup  = groups(sv_in);
+        sys.OutputGroup = groups(sv_out);
+
+        varargout{1} = cellstr(sv_x);
+        varargout{2} = cellstr(sv_in);
+        varargout{3} = cellstr(sv_out);
         return
     end
     
@@ -150,13 +195,18 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
             nx = size(A,1);
             nu = size(B,2);
 
+            % y = Cyx x + Dyv V + Dyu u with V the output: V = inv_Cix x + inv_Div I + inv_Diu u
+            Cyx_I = {[], Cyx{2} + Dyv{2}*inv_Cix};
+            Dyi_I = {[], Dyv{2}*inv_Div};
+            Dyu_I = {[], Dyu{2} + Dyv{2}*inv_Diu};
+
             C  = [  eye(opt.full*nx,nx); 
                                 inv_Cix; 
-                         Cyx{opt.con+1}];
+                       Cyx_I{opt.con+1}];
 
             D  = [           zeros(opt.full*nx,nu); 
                                 [inv_Div, inv_Diu]; 
-                  [Dyv{opt.con+1}, Dyu{opt.con+1}]];            
+                  [Dyi_I{opt.con+1}, Dyu_I{opt.con+1}]];            
                         
             InputNames  = [ Iport{opt.tag+1}; 
                            uNames{opt.tag+1}];
@@ -172,7 +222,8 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 
     sys.StateName  = xNames{opt.tag+1};
     sys.InputName  = InputNames;
-    sys.OutputName = [OutputNames{opt.full+1}; yNames{opt.tag+1}(opt.con); Vport_{isequal(opt.port,"V2I") + opt.con}];        
+    yNames_ = {strings(0,1); yNames{opt.tag+1}};
+    sys.OutputName = [OutputNames{opt.full+1}; yNames_{opt.con+1}; Vport_{isequal(opt.port,"V2I") + opt.con}];        
 
     rv_ue = numel(sys.InputName);
     rv_oe = numel(sys.OutputName);
@@ -214,6 +265,30 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         sys.OutputName  = cellstr(sv_out);
         sys.InputGroup  = cell2struct(arrayfun(@(n) {n}, (1:numel(sv_in))'), cellstr(sv_in));
         sys.OutputGroup = cell2struct(arrayfun(@(n) {n}, (1:numel(sv_out))'), cellstr(sv_out));
+    end
+
+    function sv = label(owner, sv_name, l_tag)
+        sv_name = reshape(string(sv_name), [], 1);
+        if l_tag && ~isempty(sv_name)
+            sv = reshape(string(owner.attach_tag(sv_name)), [], 1);
+        else
+            sv = sv_name;
+        end
+    end
+
+    function sv = output_name(owner)
+        % Outputs with the name of a state of their owner are labelled "Y_" + name
+        sv = reshape(string(owner.sv_y), [], 1);
+        lv = ismember(sv, owner.sv_x);
+        sv(lv) = "Y_" + sv(lv);
+    end
+
+    function s = groups(sv_name)
+        % One group per name (only when the names are unique valid identifiers)
+        s = struct();
+        if numel(unique(sv_name)) == numel(sv_name) && all(arrayfun(@isvarname, sv_name))
+            s = cell2struct(arrayfun(@(n) {n}, (1:numel(sv_name))'), cellstr(sv_name));
+        end
     end
 
     function list = all_controllers(parent)

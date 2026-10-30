@@ -32,7 +32,7 @@ function sys = get_DAE(obj,opt)
     end
 
     bus = obj.odeNetwork.a_Bus;
-    ssFromBus = tools.cellfun(@(bs) bs.get_sys("port", "V2I", "full", false), bus);    
+    ssFromBus = tools.cellfun(@(bs) v3_ports(bs), bus);    
 
     [input, output] = get_IO_port;
 
@@ -172,7 +172,7 @@ end
 function sys = get_LTI_viaKron(obj)                                     
 
     bus = obj.odeNetwork.a_Bus;
-    ssFromBus = tools.cellfun(@(bs) bs.get_sys("port", "V2I", "full", false), bus);       
+    ssFromBus = tools.cellfun(@(bs) v3_ports(bs), bus);       
 
     busInames = cell2mat( tools.cellfun(@(bi) bi.attach_tag(["Ire";"Iim"]), bus) );
     busVnames = cell2mat( tools.cellfun(@(bi) bi.attach_tag(["Vre";"Vim"]), bus) );
@@ -244,7 +244,7 @@ function sys = get_LTI_viaFeedback(obj)
     % with P = Q = 0) has no I-to-V form, so it is eliminated with the network like a non-unit bus
     l_isU = ~obj.lv_nonUnit & cellfun(@(b) has_I2V(b), bus);    
 
-    ssFromBus = tools.cellfun(@(bs) bs.get_sys("port","I2V","full",true), bus(l_isU));    
+    ssFromBus = tools.cellfun(@(bs) v3_ports(bs, "I2V"), bus(l_isU));    
     ssG = blkdiag(ssFromBus{:});
     
     busInames = cell2mat( tools.cellfun(@(bi) bi.attach_tag(["Ire";"Iim"]), bus(l_isU)) );
@@ -355,4 +355,27 @@ function [Axx, Bxv, Bxu, Cix, E, str_z] = add_global_controllers(net, str_x, str
     Bxu = [zeros(nz,nu); Bxu];
     Cix = [Diu*Cuz, Cix + Diu*Dux];
     E   = blkdiag(Ez{:}, E);
+end
+
+function sys = v3_ports(bus, str_port)
+% v4 の bus.get_sys には制御器の入出力と機器の出力があり、状態は出力に無いので、v3 と同じ
+% 入力 [ポート; 機器の入力 u] と出力 (V2I: I、I2V: [状態; V]) だけにする
+    arguments
+        bus
+        str_port = "V2I"
+    end
+    sys  = bus.get_sys("port", str_port);
+    sv_u = tools.cellfun(@(c) string(c.attach_tag(c.sv_u)), bus.a_Component);
+    [~, iv_u] = ismember(vertcat(strings(0,1), sv_u{:}), string(sys.InputName));
+    sys  = sys(1:2, [1, 2, reshape(iv_u, 1, [])]);
+    if str_port == "I2V"
+        nx = size(sys.A,1);
+        sv_out = [string(sys.StateName); string(sys.OutputName)];
+        sv_in  = string(sys.InputName);
+        sv_x   = sys.StateName;
+        sys = dss(sys.A, sys.B, [eye(nx); sys.C], [zeros(nx, size(sys.B,2)); sys.D], sys.E);
+        sys.StateName  = sv_x;
+        sys.InputName  = cellstr(sv_in);
+        sys.OutputName = cellstr(sv_out);
+    end
 end

@@ -224,6 +224,58 @@ assert(isequal(size(sys1.A), size(sys2.A)))
 assert(same_eigs(eig_finite(sys1), eig_finite(sys2), 1e-9))
 
 
+%% Inputs, states and outputs of get_sys on each layer
+% 制御器: 入力 [V; ucon]、状態 xcon、出力 ycon
+% 機器  : 入力 [V; umac; ucon]、状態 [xmac; xcon]、出力 [I; ymac; ycon]
+% 母線  : 入力 [V; 各機器の umac, ucon]、状態 [xmac; xcon]、出力 [I; 各機器の ymac, ycon]
+% 状態は出力に含めず、状態と同名の出力は "Y_" + 名前にして、すべての名前を一意にする
+net = new_net();
+gen = net.a_Bus{1}.a_Component{1};
+avr = controller.avr.AVR_ST1("avr1");
+pss = controller.pss.PSS1("pss1");
+gen.add_local_controller(avr, pss);
+DebugScript.helper.quiet(@() net.initialize);
+tg = @(o, s) reshape(string(o.attach_tag(s)), [], 1);
+
+sa = avr.get_sys();
+assert(isequal(string(sa.InputName), tg(avr, ["Vre";"Vim";avr.sv_u])))
+assert(isequal(string(sa.StateName), tg(avr, avr.sv_x)) && isequal(string(sa.OutputName), tg(avr, avr.sv_y)))
+
+sc = gen.get_sys();
+sv_in  = [tg(gen, ["Vre";"Vim";gen.sv_u]); tg(avr, avr.sv_u); tg(pss, pss.sv_u)];
+sv_x   = [tg(gen, gen.sv_x); tg(avr, avr.sv_x); tg(pss, pss.sv_x)];
+sv_out = [tg(gen, ["Ire";"Iim";"Y_omega"]); tg(avr, avr.sv_y); tg(pss, pss.sv_y)];
+assert(isequal(string(sc.InputName), sv_in) && isequal(string(sc.StateName), sv_x) && isequal(string(sc.OutputName), sv_out))
+sv_all = [sv_in; sv_x; sv_out];
+assert(numel(unique(sv_all)) == numel(sv_all), "名前が一意でない")
+
+% 出力の値: Y_omega は発電機の omega、AVR の出力 Vfield は AVR の状態 Vap
+iy = string(sc.OutputName) == tg(gen, "Y_omega");
+assert(isequal(sc.C(iy,:), double(string(sc.StateName) == tg(gen, "omega"))') && all(sc.D(iy,:) == 0))
+iy = string(sc.OutputName) == tg(avr, "Vfield");
+assert(isequal(sc.C(iy,:), double(string(sc.StateName) == tg(avr, "Vap"))'))
+
+% 制御器の入力 Vref は外部入力として AVR の状態に入る (AVR 単体の B と同じ)
+iu = string(sc.InputName) == tg(avr, "Vref");
+ix = ismember(string(sc.StateName), tg(avr, avr.sv_x));
+assert(norm(sc.B(ix,iu) - sa.B(:, string(sa.InputName) == tg(avr, "Vref"))) < 1e-12)
+assert(all(sc.B(~ix,iu) == 0))
+
+% 母線は機器の入出力を並べ、ポートを母線の名前にする
+bus = net.a_Bus{1};
+sb  = bus.get_sys();
+assert(isequal(string(sb.InputName),  [tg(bus, ["Vre";"Vim"]); sv_in(3:end)]))
+assert(isequal(string(sb.OutputName), [tg(bus, ["Ire";"Iim"]); sv_out(3:end)]))
+assert(isequal(string(sb.StateName), sv_x) && norm(sb.C - sc.C, 1) == 0 && norm(sb.D - sc.D, 1) == 0)
+sbI = bus.get_sys("port", "I2V");
+assert(isequal(string(sbI.InputName),  [tg(bus, ["Ire";"Iim"]); sv_in(3:end)]))
+assert(isequal(string(sbI.OutputName), [tg(bus, ["Vre";"Vim"]); sv_out(3:end)]))
+
+% 制御器の無い機器も出力に状態を含めない
+c3 = net.a_Bus{3}.a_Component{1}.get_sys();
+assert(isequal(string(c3.OutputName), tg(net.a_Bus{3}.a_Component{1}, ["Ire";"Iim";"Y_omega"])))
+
+
 %% Linearize matches v3 get_sys matrices for every algorithm
 % linearize + get_ss の行列と名前は v3 の odeLinearizer と同じ (helper.linearize_v3 に v3 のコードを保存)。
 % 違いは DAE の B の代数方程式の行の符号だけ (v3 は入力 u の符号が逆で、Kron と伝達関数が合わなかった)
