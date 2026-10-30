@@ -13,11 +13,19 @@ Branch: `refactor/design-alignment` (base: `version4.0`). Updated 2026-10-30.
 Result on 2026-10-30 (`refactor/design-alignment` at `b69e54b`, after the
 simulator/dictionary fix, OPF stage 2, the controller wiring and
 `local_LQR` port, simulation results in variable-map order and the v4
-`initialize`): **pending** (a full run is in progress).
+`initialize`):
 
-There are no known failures: `DebugScript.known_failures` is empty since
-`controller.local_LQR` was ported. The MATPOWER comparison in F4 reports
-SKIP when `runopf` is not on the path.
+```
+合計 234 件: PASS 233 / KNOWN 0 / FAIL 0 / FIXED? 0 / SKIP 1
+  F1: PASS 29    F2: PASS 18    F3: PASS 42
+  F4: PASS 30  SKIP 1     F5: PASS  6    F6: PASS 37
+  F7: PASS 31             F8: PASS 20    F9: PASS 10
+  F10: PASS 10
+```
+
+- No known failures: `DebugScript.known_failures` is empty since
+  `controller.local_LQR` was ported.
+- SKIP: the MATPOWER comparison in F4 (`runopf` is not on the path).
 
 Use R2026a: R2026b lacks the Optimization and Control toolboxes.
 
