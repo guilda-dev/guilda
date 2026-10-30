@@ -482,6 +482,30 @@ net = DebugScript.helper.quiet(@() network.IEEE9bus(LocalController=false));
 assert(all(cellfun(@(b) isempty(b.a_Component) || isempty(b.a_Component{1}.a_LocalController), net.a_Bus)))
 
 
+%% Template IEEE68bus keeps the v2 data
+% network.IEEE68bus は v2 の IEEE68bus (archive/IEEE68bus) の CSV を変換したもの
+% (B. Pal and B. Chaudhuri, Robust Control in Power Systems, pp. 171-178)
+net = DebugScript.helper.quiet(@() network.IEEE68bus);
+assert(numel(net.a_Bus) == 68 && numel(net.a_Branch) == 83)
+assert(net.tab_parameter.base.Hz == 60 && net.a_Bus{16}.l_isSlack)
+check_v2_network(net, fullfile(fileparts(which("network.IEEE68bus")), "..", "archive", "IEEE68bus"))
+
+% v2 の CSV には潮流解が無いので、参照値はこのブランチで計算した値
+net.solver_ODE.Progress = "none";
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);  tab = res.tab_bus;
+assert(flag > 0)
+assert(abs(tab.P(16) - 33.7953168) < 1e-6 && abs(sum(tab.P) - 1.6683168) < 1e-6)
+assert(abs(min(tab.V) - 0.8366601) < 1e-6 && abs(rad2deg(tab.Varg(39)) - (-39.290156)) < 1e-5)
+
+DebugScript.helper.quiet(@() net.initialize);
+e = DebugScript.helper.finite_eigs(net.get_sys("Algorithm","Kron"));
+e = e(abs(e) > 1e-6);
+assert(abs(max(real(e)) - (-0.0051275)) < 1e-6)     % AVR・PSS 付きで安定
+ev  = odeEventSet("fault", net, "TimeSpan", [0.2,0.25], "FaultBus", "B030");
+sol = DebugScript.helper.quiet(@() net.simulate([0,1], ev, TimeLimit=Inf));
+assert(sol.odeResults.t(end) == 1)
+
+
 % ---- local functions ----
 function check_v2_network(net, old_dir)
 % net のデータが v2 (network.build) の CSV フォルダ old_dir の値と同じかを調べる
