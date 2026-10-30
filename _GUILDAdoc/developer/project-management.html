@@ -5,8 +5,56 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GUILDA Developer Guide - Project Management</title>
   <link rel="stylesheet" href="../style.css">
+  <style>
+    /* Project Management page only (pm-*); shared parts are dg-* in style.css */
+    .pm-labels .dg-gh-label { min-width: 72px; text-align: center; }
+    .pm-labels .dg-gh-check { gap: 14px; }
+    .pm-xy { display: flex; align-items: baseline; gap: 4px; margin: 4px 0 var(--dg-s3); font: bold 3.4rem/1 var(--dg-mono); }
+    .pm-xy .is-x { color: var(--dg-err); }
+    .pm-xy .is-y { color: var(--dg-ok); }
+    .pm-xy .is-dot { color: var(--dg-muted); }
+
+    /* Definition of Done checklist */
+    .pm-dod-top { display: flex; flex-wrap: wrap; align-items: center; gap: var(--dg-s4); margin: var(--dg-s4) 0 var(--dg-s2); }
+    .pm-dod-top p { flex: 1 1 200px; margin: 0; }
+    .pm-ring { flex: none; width: 64px; height: 64px; }
+    .pm-ring circle { fill: none; stroke-width: 7; }
+    .pm-ring .pm-ring-bg { stroke: var(--dg-line); }
+    .pm-ring .pm-ring-fg { stroke: var(--dg-ok); stroke-linecap: round; transform: rotate(-90deg); transform-origin: 32px 32px; transition: stroke-dashoffset 0.4s ease; }
+    .pm-ring text { fill: var(--dg-ink); font: bold 15px var(--dg-mono); }
+    .pm-dod > li { position: relative; padding: 0; }
+    .pm-dod input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .pm-dod label { display: grid; grid-template-columns: 26px minmax(0, 1fr) 24px; gap: var(--dg-s4); align-items: start; padding: var(--dg-s4) var(--dg-s2); cursor: pointer; transition: background 0.2s; }
+    .pm-dod label:hover { background: var(--dg-panel); }
+    .pm-dod .pm-kind { color: var(--dg-muted); }
+    .pm-box { width: 24px; height: 24px; margin-top: 1px; }
+    .pm-box rect { fill: var(--surface); stroke: var(--line-strong); stroke-width: 2; transition: fill 0.2s, stroke 0.2s; }
+    .pm-box path { fill: none; stroke: var(--surface); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 20; stroke-dashoffset: 20; transition: stroke-dashoffset 0.3s ease 0.05s; }
+    .pm-dod input:checked + label { background: var(--dg-ok-soft); }
+    .pm-dod input:checked + label .pm-box rect { fill: var(--dg-ok); stroke: var(--dg-ok); }
+    .pm-dod input:checked + label .pm-box path { stroke-dashoffset: 0; }
+    .pm-dod input:focus-visible + label { outline: 3px solid var(--dg-accent); outline-offset: 2px; }
+  </style>
 </head>
-<body class="developer-layout">
+<body class="developer-layout dg">
+  <!-- Icon sprite (inline so the page works offline) -->
+  <svg class="dg-sprite" aria-hidden="true" focusable="false">
+    <symbol id="dg-i-issue" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2" fill="currentColor"/></symbol>
+    <symbol id="dg-i-pr" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="19" r="2.2"/><path d="M6 7.2v9.6M18 16.8V9a3 3 0 0 0-3-3h-4M13 3.5 10.5 6 13 8.5"/></symbol>
+    <symbol id="dg-i-branch" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="7" r="2.2"/><path d="M6 7.2v9.6M18 9.2c0 5-12 3-12 7.6"/></symbol>
+    <symbol id="dg-i-tag" viewBox="0 0 24 24"><path d="M3 4h8l10 10-7 7L4 11z"/><circle cx="8" cy="8.5" r="1.6" fill="currentColor"/></symbol>
+    <symbol id="dg-i-class" viewBox="0 0 24 24"><path d="M8 4c-2 0-3 1-3 3v2.5c0 1.2-.8 2.5-2 2.5 1.2 0 2 1.3 2 2.5V17c0 2 1 3 3 3M16 4c2 0 3 1 3 3v2.5c0 1.2.8 2.5 2 2.5-1.2 0-2 1.3-2 2.5V17c0 2-1 3-3 3"/></symbol>
+    <symbol id="dg-i-folder" viewBox="0 0 24 24"><path d="M3 6h6l2 2.5h10V19H3z"/></symbol>
+    <symbol id="dg-i-book" viewBox="0 0 24 24"><path d="M3 5h6a3 3 0 0 1 3 3v12a2.5 2.5 0 0 0-2.5-2.5H3zM21 5h-6a3 3 0 0 0-3 3v12a2.5 2.5 0 0 1 2.5-2.5H21z"/></symbol>
+    <symbol id="dg-i-ruler" viewBox="0 0 24 24"><rect x="2.5" y="7.5" width="19" height="9" rx="1.5"/><path d="M6.5 7.5v3.5M10.5 7.5v2.5M14.5 7.5v3.5M18.5 7.5v2.5"/></symbol>
+    <symbol id="dg-i-term" viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="16" rx="2"/><path d="m6.5 9.5 3 2.5-3 2.5M12 15h5"/></symbol>
+    <symbol id="dg-i-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l5.5-3.5z" fill="currentColor"/></symbol>
+    <symbol id="dg-i-comment" viewBox="0 0 24 24"><path d="M4 4h16v12H10l-5 4v-4H4z"/><path d="M8 8.5h8M8 12h5"/></symbol>
+    <symbol id="dg-i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m5.7 5.7 12.6 12.6"/></symbol>
+    <symbol id="dg-i-scissors" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.2 8.2 20 18M8.2 15.8 20 6"/></symbol>
+    <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+  </svg>
+
   <main>
     <button type="button" class="developer-back-button" onclick="window.history.back()">← Back to For Developer</button>
     <h1>Project Management</h1>
@@ -17,57 +65,265 @@
       <a href="#issues">Issues</a>
       <a href="#versions">Versions</a>
       <a href="#documentation">Keeping documentation current</a>
+      <a href="#update-log">Update Log entries</a>
       <a href="#done">Definition of Done</a>
     </nav>
 
+    <!-- ===================== Workflow ===================== -->
     <h2 id="flow">Workflow</h2>
-<pre class="dev-tree">Issue #42  ──▶  feature/42-…  ──▶  Pull request "feat: …"  ──▶  version4.0  ──▶  main (v4.0)
- what & why      the work          review + Closes #42          integration       release</pre>
-    <ol>
-      <li>Open an Issue that describes the problem or the goal.</li>
-      <li>Create a work branch from the integration branch, following the <a href="git-workflow.html#branch-names">branch naming rule</a>.</li>
-      <li>Commit with <a href="git-workflow.html#commits"><code>&lt;type&gt;: &lt;summary&gt;</code></a> messages.</li>
-      <li>Open a pull request into the integration branch and complete the <a href="#done">Definition of Done</a>.</li>
-      <li>Merge, delete the branch, and let <code>Closes #&lt;issue&gt;</code> close the Issue.</li>
+    <figure class="dg-figure">
+      <ol class="dg-steps" style="--n:5">
+        <li><span class="dg-step-title">Issue</span>Open an Issue that describes the problem or the goal.</li>
+        <li><span class="dg-step-title">Work branch</span>Create a work branch from the integration branch, following the <a href="git-workflow.html#branch-names">branch naming rule</a>.</li>
+        <li><span class="dg-step-title">Commits</span>Commit with <a href="git-workflow.html#commits"><code>&lt;type&gt;: &lt;summary&gt;</code></a> messages.</li>
+        <li><span class="dg-step-title">Pull request</span>Open a pull request into the integration branch and complete the <a href="#done">Definition of Done</a>.</li>
+        <li><span class="dg-step-title">Merge</span>Merge, delete the branch, and let <code>Closes #&lt;issue&gt;</code> close the Issue.</li>
+      </ol>
+      <figcaption>The work collects in the integration branch <code>versionX.Y</code>, which is released into <code>main</code> as <code>vX.Y</code> (see <a href="#versions">Versions</a>).</figcaption>
+    </figure>
+
+    <!-- ===================== Issues ===================== -->
+    <h2 id="issues">Issues</h2>
+    <div class="dg-gh" role="img" aria-label="Example GitHub Issue #42, Add grid-forming inverter model, open, with a description that has Background, Expected result, and Steps to reproduce for bugs, and the label feature.">
+      <div class="dg-gh-chrome"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-issue"/></svg>GUILDA / <b>Issues</b></div>
+      <div class="dg-gh-body">
+        <div class="dg-gh-title">Add grid-forming inverter model <span class="dg-gh-num">#42</span> <span class="dg-gh-pin">1</span></div>
+        <div class="dg-gh-meta"><span class="dg-gh-state"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-issue"/></svg>Open</span><span><b>contributor</b> opened this issue</span></div>
+        <div class="dg-gh-layout">
+          <div class="dg-gh-box">
+            <div class="dg-gh-box-head">Description <span class="dg-gh-pin" style="margin-left:auto">2</span></div>
+            <div class="dg-gh-box-body">
+              <p class="dg-gh-h">Background</p><span class="dg-gh-skel"></span><span class="dg-gh-skel is-short"></span>
+              <p class="dg-gh-h">Expected result</p><span class="dg-gh-skel is-short"></span>
+              <p class="dg-gh-h">Steps to reproduce <span class="dg-gh-label is-fix">bugs only</span></p><span class="dg-gh-skel"></span>
+            </div>
+          </div>
+          <div class="dg-gh-side">
+            <div><p class="dg-gh-side-h">Labels <span class="dg-gh-pin">3</span></p><span class="dg-gh-label is-feature">feature</span></div>
+            <div><p class="dg-gh-side-h">Development</p><span class="dg-gh-branch">feature/42-…</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <ol class="dg-list">
+      <li><span class="dg-mark is-warn">1</span><div><span class="dg-item-title">Title</span>Write the title in English as a short statement of the goal, e.g. <em>Add grid-forming inverter model</em>.</div></li>
+      <li><span class="dg-mark is-warn">2</span><div><span class="dg-item-title">Description</span>Describe the background, the expected result, and, for bugs, the steps to reproduce.</div></li>
+      <li><span class="dg-mark is-warn">3</span><div><span class="dg-item-title">Label</span>Add one type label that matches the branch type: <code>feature</code>, <code>fix</code>, <code>refactor</code>, <code>docs</code>, or <code>test</code>.</div></li>
     </ol>
 
-    <h2 id="issues">Issues</h2>
-    <ul>
-      <li>Write the title in English as a short statement of the goal, e.g. <em>Add grid-forming inverter model</em>.</li>
-      <li>Describe the background, the expected result, and, for bugs, the steps to reproduce.</li>
-      <li>Add one type label that matches the branch type: <code>feature</code>, <code>fix</code>, <code>refactor</code>, <code>docs</code>, or <code>test</code>.</li>
-      <li>Split an Issue when it cannot be finished in one pull request.</li>
-    </ul>
+    <h3>Label → branch type</h3>
+    <div class="dg-gh pm-labels" role="table" aria-label="Issue label and matching branch type">
+      <div class="dg-gh-chrome"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-tag"/></svg>GUILDA / <b>Labels</b></div>
+      <div role="row" class="dg-gh-check"><span role="cell" class="dg-gh-label is-feature">feature</span><span aria-hidden="true">→</span><span role="cell" class="dg-gh-branch">feature/…</span></div>
+      <div role="row" class="dg-gh-check"><span role="cell" class="dg-gh-label is-fix">fix</span><span aria-hidden="true">→</span><span role="cell" class="dg-gh-branch">fix/…</span></div>
+      <div role="row" class="dg-gh-check"><span role="cell" class="dg-gh-label is-refactor">refactor</span><span aria-hidden="true">→</span><span role="cell" class="dg-gh-branch">refactor/…</span></div>
+      <div role="row" class="dg-gh-check"><span role="cell" class="dg-gh-label is-docs">docs</span><span aria-hidden="true">→</span><span role="cell" class="dg-gh-branch">docs/…</span></div>
+      <div role="row" class="dg-gh-check"><span role="cell" class="dg-gh-label is-test">test</span><span aria-hidden="true">→</span><span role="cell" class="dg-gh-branch">test/…</span></div>
+    </div>
 
+    <h3>Splitting an Issue</h3>
+    <figure class="dg-figure">
+      <svg class="dg-svg dg-only-wide" viewBox="0 0 600 150" role="img" aria-label="An Issue too big for one pull request is split into Issue A and Issue B, each with its own pull request.">
+        <rect x="4" y="45" width="190" height="60" rx="4" stroke-width="2" stroke-dasharray="6 4" style="fill:var(--err-bg); stroke:var(--err)"/>
+        <text x="99" y="71" text-anchor="middle" font-size="15" font-weight="bold" style="fill:var(--err)">Issue</text>
+        <text x="99" y="91" text-anchor="middle" font-size="13" style="fill:var(--err)">too big for one PR</text>
+        <use href="#dg-i-scissors" x="222" y="63" width="24" height="24" fill="none" stroke="#5f6b7a" stroke-width="2"/>
+        <path d="M200 75H214M254 75H270M270 40V110M270 40H292M270 110H292" fill="none" stroke-width="2" style="stroke:var(--muted)"/>
+        <g font-size="14" font-weight="bold">
+          <rect x="296" y="20" width="120" height="40" rx="4" stroke-width="1.5" style="fill:var(--ok-bg); stroke:var(--ok)"/><text x="356" y="45" text-anchor="middle" style="fill:var(--ok)">Issue A</text>
+          <rect x="296" y="90" width="120" height="40" rx="4" stroke-width="1.5" style="fill:var(--ok-bg); stroke:var(--ok)"/><text x="356" y="115" text-anchor="middle" style="fill:var(--ok)">Issue B</text>
+          <path d="M420 40H462M420 110H462" stroke-width="2" style="stroke:var(--brand)"/><path d="M458 34 468 40 458 46zM458 104 468 110 458 116z" style="fill:var(--brand)"/>
+          <rect x="472" y="20" width="120" height="40" rx="4" stroke-width="1.5" style="fill:var(--brand-tint); stroke:var(--brand)"/><text x="532" y="45" text-anchor="middle" style="fill:var(--brand)">pull request</text>
+          <rect x="472" y="90" width="120" height="40" rx="4" stroke-width="1.5" style="fill:var(--brand-tint); stroke:var(--brand)"/><text x="532" y="115" text-anchor="middle" style="fill:var(--brand)">pull request</text>
+        </g>
+      </svg>
+      <svg class="dg-svg dg-only-narrow" viewBox="0 0 300 250" role="img" aria-label="An Issue too big for one pull request is split into Issue A and Issue B, each with its own pull request.">
+        <rect x="50" y="4" width="200" height="56" rx="4" stroke-width="2" stroke-dasharray="6 4" style="fill:var(--err-bg); stroke:var(--err)"/>
+        <text x="150" y="28" text-anchor="middle" font-size="15" font-weight="bold" style="fill:var(--err)">Issue</text>
+        <text x="150" y="47" text-anchor="middle" font-size="13" style="fill:var(--err)">too big for one PR</text>
+        <use href="#dg-i-scissors" x="160" y="70" width="22" height="22" fill="none" stroke="#5f6b7a" stroke-width="2"/>
+        <path d="M150 62V98M75 98H225M75 98V112M225 98V112" fill="none" stroke-width="2" style="stroke:var(--muted)"/>
+        <g font-size="14" font-weight="bold" text-anchor="middle">
+          <rect x="10" y="114" width="130" height="40" rx="4" stroke-width="1.5" style="fill:var(--ok-bg); stroke:var(--ok)"/><text x="75" y="139" style="fill:var(--ok)">Issue A</text>
+          <rect x="160" y="114" width="130" height="40" rx="4" stroke-width="1.5" style="fill:var(--ok-bg); stroke:var(--ok)"/><text x="225" y="139" style="fill:var(--ok)">Issue B</text>
+          <path d="M75 156V188M225 156V188" stroke-width="2" style="stroke:var(--brand)"/><path d="M69 186 75 196 81 186zM219 186 225 196 231 186z" style="fill:var(--brand)"/>
+          <rect x="10" y="200" width="130" height="40" rx="4" stroke-width="1.5" style="fill:var(--brand-tint); stroke:var(--brand)"/><text x="75" y="225" style="fill:var(--brand)">pull request</text>
+          <rect x="160" y="200" width="130" height="40" rx="4" stroke-width="1.5" style="fill:var(--brand-tint); stroke:var(--brand)"/><text x="225" y="225" style="fill:var(--brand)">pull request</text>
+        </g>
+      </svg>
+      <figcaption>Split an Issue when it cannot be finished in one pull request.</figcaption>
+    </figure>
+
+    <!-- ===================== Versions ===================== -->
     <h2 id="versions">Versions</h2>
-    <table>
-      <tr><th>Item</th><th>Rule</th></tr>
-      <tr><td>Version number</td><td><code>X.Y</code>. Increase <code>X</code> for changes that break existing scripts, and <code>Y</code> otherwise.</td></tr>
-      <tr><td>Integration branch</td><td><code>versionX.Y</code>, one per release under development.</td></tr>
-      <tr><td>Release tag</td><td><code>vX.Y</code> on the merge commit in <code>main</code>.</td></tr>
-      <tr><td>Breaking changes</td><td>When a public name changes, keep the old name working through a wrapper in <code>_GUILDAsystem/_VersionSupport/</code> for at least one major version.</td></tr>
-    </table>
+    <div class="dg-gh">
+      <div class="dg-gh-chrome"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-branch"/></svg>GUILDA / <b>Network graph</b></div>
+      <div class="dg-gh-scroll">
+        <svg viewBox="0 0 820 250" style="min-width:620px" role="img" aria-label="Release cycle: the integration branch versionX.Y is cut from main, collects work branches such as feature/42 through pull requests, and is merged back into main, where the merge commit is tagged vX.Y.">
+          <g font-size="14" font-weight="bold">
+            <text x="16" y="66" fill="#58a6ff">main</text>
+            <text x="16" y="146" fill="#3fb950">versionX.Y</text>
+            <text x="16" y="216" fill="#a371f7">feature/42-…</text>
+          </g>
+          <g font-size="11" fill="#8b949e">
+            <text x="16" y="82">releases</text>
+            <text x="16" y="162">integration</text>
+            <text x="16" y="232">work branch</text>
+          </g>
+          <!-- lanes -->
+          <path d="M150 60H800" stroke="#58a6ff" stroke-width="4" stroke-linecap="round"/>
+          <path d="M230 60C260 60 255 140 285 140H650C680 140 675 60 705 60" fill="none" stroke="#3fb950" stroke-width="4"/>
+          <path d="M340 140C370 140 365 210 395 210H470C500 210 495 140 525 140" fill="none" stroke="#a371f7" stroke-width="4"/>
+          <path class="dg-anim-dash" d="M560 140C575 140 575 190 590 190H612" fill="none" stroke="#8b949e" stroke-width="2"/>
+          <text x="618" y="194" font-size="11" fill="#8b949e">more work branches</text>
+          <!-- commits -->
+          <g stroke="#0d1117" stroke-width="3">
+            <circle cx="180" cy="60" r="8" fill="#58a6ff"/>
+            <circle cx="230" cy="60" r="8" fill="#58a6ff"/>
+            <circle cx="285" cy="140" r="8" fill="#3fb950"/>
+            <circle cx="410" cy="210" r="8" fill="#a371f7"/>
+            <circle cx="455" cy="210" r="8" fill="#a371f7"/>
+          </g>
+          <circle cx="525" cy="140" r="8" fill="#0d1117" stroke="#3fb950" stroke-width="3"/>
+          <circle cx="705" cy="60" r="10" fill="#0d1117" stroke="#58a6ff" stroke-width="4"/>
+          <!-- tags and notes -->
+          <g font-size="12">
+            <path d="M154 16H200L208 26L200 36H154Z" fill="#161b22" stroke="#8b949e"/><text x="179" y="30" text-anchor="middle" fill="#8b949e">older</text>
+            <line x1="180" y1="36" x2="180" y2="50" stroke="#8b949e" stroke-dasharray="2 2"/>
+            <path d="M674 16H730L738 26L730 36H674Z" fill="#161b22" stroke="#d29922" stroke-width="1.5"/><text x="704" y="30" text-anchor="middle" font-weight="bold" fill="#d29922">vX.Y</text>
+            <line x1="705" y1="36" x2="705" y2="48" stroke="#d29922" stroke-width="1.5"/>
+            <text x="250" y="102" fill="#8b949e">cut</text>
+            <rect x="495" y="160" width="34" height="20" rx="10" fill="#161b22" stroke="#a371f7"/><text x="512" y="174" text-anchor="middle" font-weight="bold" fill="#a371f7">PR</text>
+            <text x="705" y="92" text-anchor="middle" fill="#8b949e">release merge</text>
+          </g>
+        </svg>
+      </div>
+      <div class="dg-gh-legend">
+        <span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="#8b949e"/></svg>commit</span>
+        <span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="none" stroke="#8b949e" stroke-width="2.5"/></svg>merge commit</span>
+        <span><svg viewBox="0 0 14 14"><path d="M1 3H9L13 7L9 11H1Z" fill="none" stroke="#d29922" stroke-width="1.5"/></svg>release tag</span>
+      </div>
+    </div>
 
+    <div class="dg-two">
+      <div>
+        <h3>Version number</h3>
+        <div class="pm-xy" aria-label="X.Y"><span class="is-x">X</span><span class="is-dot">.</span><span class="is-y">Y</span></div>
+        <ul class="dg-list">
+          <li><span class="dg-mark is-err">X+1</span><div>Increase <code>X</code> for changes that break existing scripts: <code>X.Y</code> → <code>(X+1).0</code>.</div></li>
+          <li><span class="dg-mark is-ok">Y+1</span><div>Increase <code>Y</code> otherwise: <code>X.Y</code> → <code>X.(Y+1)</code>.</div></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Names built from <code>X.Y</code></h3>
+        <ul class="dg-list">
+          <li><span class="dg-mark"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-branch"/></svg></span><div><span class="dg-item-title">Integration branch <code>versionX.Y</code></span>One per release under development.</div></li>
+          <li><span class="dg-mark"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-tag"/></svg></span><div><span class="dg-item-title">Release tag <code>vX.Y</code></span>On the merge commit in <code>main</code>.</div></li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Breaking changes</h3>
+    <div class="dg-chain" role="img" aria-label="An existing script calls the old name, a wrapper in _GUILDAsystem/_VersionSupport/ forwards it to the renamed public name.">
+      <div class="dg-chain-node"><span class="dg-kicker">existing script</span><code>oldName(…)</code></div>
+      <div class="dg-chain-arrow" aria-hidden="true"></div>
+      <div class="dg-chain-node is-warn"><span class="dg-kicker">wrapper</span><code>_GUILDAsystem/_VersionSupport/</code></div>
+      <div class="dg-chain-arrow" aria-hidden="true"></div>
+      <div class="dg-chain-node is-ok"><span class="dg-kicker">renamed public name</span><code>newName(…)</code></div>
+    </div>
+    <p>When a public name changes, keep the old name working through a wrapper in <code>_GUILDAsystem/_VersionSupport/</code> for at least one major version (<code>X</code> → <code>X+1</code>).</p>
+
+    <!-- ===================== Documentation ===================== -->
     <h2 id="documentation">Keeping documentation current</h2>
-    <table>
-      <tr><th>When you change…</th><th>Also update</th></tr>
-      <tr><td>A public class, property, or method</td><td>Its help comment tags (<a href="class-documentation.html">How to Define Class Documentation</a>). The class reference is regenerated from them.</td></tr>
-      <tr><td>The folder layout</td><td><a href="folder-structure.html">Folder Structure</a></td></tr>
-      <tr><td>A tutorial</td><td><code>_GUILDAdoc/database/list_Tutorials.js</code></td></tr>
-      <tr><td>A user-visible feature in a release</td><td><code>_GUILDAdoc/database/list_UpdateLog.js</code></td></tr>
-      <tr><td>A developer rule</td><td>The matching page in this For Developer tab</td></tr>
-    </table>
+    <div class="dg-rows is-arrow">
+      <div class="dg-row dg-rows-head"><span class="dg-kicker">When you change…</span><span></span><span class="dg-kicker">Also update</span></div>
+      <div class="dg-row"><span class="dg-row-head"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-class"/></svg> A public class, property, or method</span><span class="dg-row-arrow" aria-hidden="true">→</span><span>Its help comment tags (<a href="class-documentation.html">How to Define Class Documentation</a>). The class reference is regenerated from them.</span></div>
+      <div class="dg-row"><span class="dg-row-head"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-folder"/></svg> The folder layout</span><span class="dg-row-arrow" aria-hidden="true">→</span><span><a href="folder-structure.html">Folder Structure</a></span></div>
+      <div class="dg-row"><span class="dg-row-head"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-book"/></svg> A tutorial</span><span class="dg-row-arrow" aria-hidden="true">→</span><span><code>_GUILDAdoc/database/list_Tutorials.js</code></span></div>
+      <div class="dg-row"><span class="dg-row-head"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-tag"/></svg> A user-visible feature in a release</span><span class="dg-row-arrow" aria-hidden="true">→</span><span><code>_GUILDAdoc/database/list_UpdateLog.js</code></span></div>
+      <div class="dg-row"><span class="dg-row-head"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-ruler"/></svg> A developer rule</span><span class="dg-row-arrow" aria-hidden="true">→</span><span>The matching page in this For Developer tab</span></div>
+    </div>
 
+    <!-- ===================== Update Log ===================== -->
+    <h2 id="update-log">Update Log entries</h2>
+    <p>Each entry in <code>_GUILDAdoc/database/list_UpdateLog.js</code> is one object. The Home tab shows the entries newest first and colours each card by its type.</p>
+<pre><code>{
+  "title": "Add grid-forming inverter model",
+  "date": "YYYY-MM-DD",
+  "type": "added",
+  "content": "One or two sentences on what changed for users."
+}</code></pre>
+    <p>The <code>type</code> field uses the <a href="https://keepachangelog.com/" target="_blank">Keep a Changelog</a> categories:</p>
+    <table class="dg-table">
+      <thead><tr><th>Type</th><th>Use it for</th></tr></thead>
+      <tbody>
+        <tr><td><span class="dg-badge is-ok">added</span></td><td data-label="Use it for">A new feature, class, method or option.</td></tr>
+        <tr><td><span class="dg-badge">changed</span></td><td data-label="Use it for">A change in the behaviour or interface of something that already exists.</td></tr>
+        <tr><td><span class="dg-badge is-warn">deprecated</span></td><td data-label="Use it for">Something that still works but will be removed; name its replacement.</td></tr>
+        <tr><td><span class="dg-badge is-err">removed</span></td><td data-label="Use it for">Something that no longer exists.</td></tr>
+        <tr><td><span class="dg-badge is-muted">fixed</span></td><td data-label="Use it for">A bug fix.</td></tr>
+      </tbody>
+    </table>
+    <p>An entry without <code>type</code> is shown in neutral grey without a label. An unknown value is shown the same way and logs a warning in the browser console.</p>
+
+    <!-- ===================== Definition of Done ===================== -->
     <h2 id="done">Definition of Done</h2>
-    <p>Check these items before requesting a review.</p>
-    <ul class="dev-checklist">
-      <li><code>&gt;&gt; GUILDA</code> starts without errors.</li>
-      <li>The affected tutorials or <code>+DebugScript</code> tasks run.</li>
-      <li>New and changed code follows the <a href="naming-conventions.html">naming conventions</a> and the <a href="folder-structure.html#placement">placement rules</a>.</li>
-      <li>Public members have help comment tags, and <code>GUILDA.doc("update", true, "strict", true)</code> reports no errors.</li>
-      <li>No generated files or personal settings are committed.</li>
-      <li>The pull request title follows <code>&lt;type&gt;: &lt;summary&gt;</code> and the description contains <code>Closes #&lt;issue&gt;</code>.</li>
+    <div class="pm-dod-top">
+      <svg class="pm-ring" viewBox="0 0 64 64" aria-hidden="true">
+        <circle class="pm-ring-bg" cx="32" cy="32" r="26"/>
+        <circle class="pm-ring-fg" id="pm-ring-fg" cx="32" cy="32" r="26" stroke-dasharray="163.4" stroke-dashoffset="163.4"/>
+        <text id="pm-ring-text" x="32" y="37" text-anchor="middle">0/6</text>
+      </svg>
+      <p>Check these items before requesting a review.</p>
+      <span class="dev-status" id="pm-dod-status" aria-live="polite">Not ready</span>
+    </div>
+    <ul class="dg-list is-plain pm-dod" id="pm-dod">
+      <li><input type="checkbox" id="pm-dod-1"><label for="pm-dod-1">
+        <svg class="pm-box" viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="1.5" width="21" height="21" rx="5"/><path d="m6.5 12.5 3.5 3.5 7.5-8"/></svg>
+        <span><code>&gt;&gt; GUILDA</code> starts without errors.</span>
+        <svg class="dg-icon pm-kind" aria-hidden="true"><use href="#dg-i-term"/></svg></label></li>
+      <li><input type="checkbox" id="pm-dod-2"><label for="pm-dod-2">
+        <svg class="pm-box" viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="1.5" width="21" height="21" rx="5"/><path d="m6.5 12.5 3.5 3.5 7.5-8"/></svg>
+        <span>The affected tutorials or <code>+DebugScript</code> tasks run.</span>
+        <svg class="dg-icon pm-kind" aria-hidden="true"><use href="#dg-i-play"/></svg></label></li>
+      <li><input type="checkbox" id="pm-dod-3"><label for="pm-dod-3">
+        <svg class="pm-box" viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="1.5" width="21" height="21" rx="5"/><path d="m6.5 12.5 3.5 3.5 7.5-8"/></svg>
+        <span>New and changed code follows the <a href="naming-conventions.html">naming conventions</a> and the <a href="folder-structure.html#placement">placement rules</a>.</span>
+        <svg class="dg-icon pm-kind" aria-hidden="true"><use href="#dg-i-folder"/></svg></label></li>
+      <li><input type="checkbox" id="pm-dod-4"><label for="pm-dod-4">
+        <svg class="pm-box" viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="1.5" width="21" height="21" rx="5"/><path d="m6.5 12.5 3.5 3.5 7.5-8"/></svg>
+        <span>Public members have help comment tags, and <code>GUILDA.doc("update", true, "strict", true)</code> reports no errors.</span>
+        <svg class="dg-icon pm-kind" aria-hidden="true"><use href="#dg-i-comment"/></svg></label></li>
+      <li><input type="checkbox" id="pm-dod-5"><label for="pm-dod-5">
+        <svg class="pm-box" viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="1.5" width="21" height="21" rx="5"/><path d="m6.5 12.5 3.5 3.5 7.5-8"/></svg>
+        <span>No generated files or personal settings are committed.</span>
+        <svg class="dg-icon pm-kind" aria-hidden="true"><use href="#dg-i-ban"/></svg></label></li>
+      <li><input type="checkbox" id="pm-dod-6"><label for="pm-dod-6">
+        <svg class="pm-box" viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="1.5" width="21" height="21" rx="5"/><path d="m6.5 12.5 3.5 3.5 7.5-8"/></svg>
+        <span>The pull request title follows <code>&lt;type&gt;: &lt;summary&gt;</code> and the description contains <code>Closes #&lt;issue&gt;</code>.</span>
+        <svg class="dg-icon pm-kind" aria-hidden="true"><use href="#dg-i-pr"/></svg></label></li>
     </ul>
   </main>
+  <script>
+    (function () {
+      var list = document.getElementById("pm-dod");
+      var boxes = list.querySelectorAll("input[type=checkbox]");
+      var ring = document.getElementById("pm-ring-fg");
+      var ringText = document.getElementById("pm-ring-text");
+      var status = document.getElementById("pm-dod-status");
+      var full = 163.4;
+      function update() {
+        var done = 0;
+        for (var i = 0; i < boxes.length; i++) { if (boxes[i].checked) { done++; } }
+        ring.setAttribute("stroke-dashoffset", String(full * (1 - done / boxes.length)));
+        ringText.textContent = done + "/" + boxes.length;
+        var ready = done === boxes.length;
+        status.textContent = ready ? "Ready for review" : "Not ready";
+        status.classList.toggle("is-ok", ready);
+      }
+      list.addEventListener("change", update);
+      update();
+    })();
+  </script>
 </body>
 </html>

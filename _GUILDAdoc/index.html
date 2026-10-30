@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GUILDA Documentation - Home</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="reference.css">
   
   <script src="./database/list_UpdateLog.js"></script>
   <script src="./database/list_Classes.js"></script>
@@ -20,6 +21,7 @@
       
       <div class="tabs">
         <button class="tab-button active" onclick="openTab('tab-home')">Home</button>
+        <button class="tab-button" onclick="openTab('tab-about')">About</button>
         <button class="tab-button" onclick="openTab('tab-getting-started')">Getting Started</button>
         <button class="tab-button" onclick="openTab('tab-tutorial')">Tutorial</button>
         <button class="tab-button" onclick="openTab('tab-reference')">Reference</button>
@@ -30,77 +32,292 @@
 
   <main>
     <div id="tab-home" class="tab-content active">
-      <div style="height: 8px; background-color: var(--primary-color); border-radius: 4px; margin-bottom: 25px;"></div>
-
-      <div class="hero-section">
+      <div class="hero">
         <div class="hero-text">
           <h1 class="hero-title">GUILDA</h1>
-          <h2 class="hero-subtitle">Grid & Utility Infrastructure Linkage Dynamics Analyzer</h2>
+          <p class="hero-subtitle">Grid &amp; Utility Infrastructure Linkage Dynamics Analyzer</p>
         </div>
-        <div class="hero-canvas-container">
-          <canvas id="power-grid-animation"></canvas>
-        </div>
-      </div>
-      
-      <div style="height: 8px; background-color: var(--primary-color); border-radius: 4px; margin-top: 15px; margin-bottom: 35px;"></div>
-
-      <h2>Install Now</h2>
-      <div class="install-buttons">
-        <a href="https://github.com/guilda-dev/guilda" target="_blank" class="btn">From GitHub</a>
-        <a href="https://matlab.mathworks.com/open/github/v1?repo=guilda-dev/guilda&project=./GUILDA.prj" target="_blank" class="btn">Open in MATLAB Online</a>
+        <div class="hero-mark" aria-hidden="true"><img src="./images/GUILDA-logo-square.png" alt="" width="128" height="128"></div>
       </div>
 
-      <h2>About GUILDA</h2>
-      
-      <div class="demo-gif-container">
-        <img src="./images/movie.gif" alt="GUILDA Animation Demo" class="demo-gif">
+      <p class="home-intro">A MATLAB power-system simulator for students and researchers in systems and control, built from blocks you combine, analyse and share.</p>
+      <div class="home-actions">
+        <a class="btn btn-primary" href="#tab-getting-started" onclick="openTab('tab-getting-started'); return false;">Get started</a>
+        <a class="btn" href="#tab-about" onclick="openTab('tab-about'); return false;">About GUILDA</a>
       </div>
 
-      <p>
-        <strong>GUILDA (Grid & Utility Infrastructure Linkage Dynamics Analyzer)</strong> is a numerical simulator for smart energy management, developed primarily by our laboratory in collaboration with Assistant Professor Takahiro Kawaguchi (Gunma University).
-      </p>
-      <p>
-        Its goal is to provide an advanced simulation environment that students and researchers in systems and control can use with only minimal background knowledge of power systems.
-      </p>
-
-      <h3>Supported Analyses</h3>
-      <ul class="feature-list">
-        <li><strong>RMS Analysis:</strong> Phasor models, three-phase balanced systems.</li>
-        <li><strong>Time-Domain Simulation:</strong> Initial value perturbations, load variations, input adjustments, ground faults, and controller design.</li>
-        <li><strong>Linearization:</strong> Derivation of approximate linear models, Hessian calculations of energy functions.</li>
-        <li><strong>Optimal Power Flow (OPF):</strong> General formulation of OPF problems.</li>
-        <li><strong>Graph Plotting:</strong> Animation generation using coupled oscillator systems.</li>
-      </ul>
+      <h2>Supported Analyses</h2>
+      <ol class="analysis-list">
+        <li class="analysis-item">
+          <svg class="analysis-icon" viewBox="0 0 48 48" aria-hidden="true">
+            <path class="ai-axis" d="M6 40 H44 M10 44 V6"/>
+            <path class="ai-ink is-dashed" d="M24 40 A14 14 0 0 0 20.4 30.6"/>
+            <path class="ai-brand" d="M10 40 L36 14 M36 14 L29 15.6 M36 14 L34.4 21"/>
+          </svg>
+          <div class="analysis-body">
+            <h3>RMS phasor models</h3>
+            <p>Three-phase balanced networks described as phasors.</p>
+          </div>
+          <a class="analysis-link" data-tutorial="Tutorial1_1_NetBuild.mlx" href="#tab-tutorial">Tutorial <span aria-hidden="true">→</span></a>
+        </li>
+        <li class="analysis-item">
+          <svg class="analysis-icon" viewBox="0 0 48 48" aria-hidden="true">
+            <path class="ai-axis" d="M4 26 H44 M6 6 V44"/>
+            <path class="ai-axis is-dashed" d="M14 8 V42"/>
+            <path class="ai-brand" d="M6 26 H14 C17 26 17 10 21 10 C25 10 25 38 29 38 C32 38 32 18 35 18 C38 18 38 31 40.5 31 C42.5 31 43 26 44 26"/>
+          </svg>
+          <div class="analysis-body">
+            <h3>Time-domain simulation</h3>
+            <p>Responses to faults, load and input changes, and initial-value perturbations.</p>
+          </div>
+          <a class="analysis-link" data-tutorial="Tutorial3_1_Simulation.mlx" href="#tab-tutorial">Tutorial <span aria-hidden="true">→</span></a>
+        </li>
+        <li class="analysis-item">
+          <svg class="analysis-icon" viewBox="0 0 48 48" aria-hidden="true">
+            <path class="ai-axis" d="M6 42 H44 M8 44 V6"/>
+            <path class="ai-ink" d="M8 38 C18 37 24 31 28 24 C32 17 37 11 44 9"/>
+            <path class="ai-brand" d="M14 39 L42 10"/>
+            <circle class="ai-dot" cx="28" cy="24" r="1.8"/>
+          </svg>
+          <div class="analysis-body">
+            <h3>Linearization</h3>
+            <p>Approximate linear models <span class="nowrap">ẋ = Ax + Bu</span>, <span class="nowrap">y = Cx + Du</span> and energy-function Hessians.</p>
+          </div>
+          <a class="analysis-link" data-section="tutorial-linear-model" href="#tab-tutorial">Tutorial <span aria-hidden="true">→</span></a>
+        </li>
+        <li class="analysis-item">
+          <svg class="analysis-icon" viewBox="0 0 48 48" aria-hidden="true">
+            <ellipse class="ai-axis" cx="22" cy="26" rx="17" ry="12"/>
+            <ellipse class="ai-axis" cx="22" cy="26" rx="10.5" ry="7"/>
+            <ellipse class="ai-axis" cx="22" cy="26" rx="4" ry="2.6"/>
+            <path class="ai-ink" d="M30 4 L42 44"/>
+            <path class="ai-ink is-hatch" d="M33 14 L36.5 12.5 M35.4 22 L38.9 20.5 M37.8 30 L41.3 28.5"/>
+            <circle class="ai-brand-dot" cx="33" cy="26" r="2.6"/>
+          </svg>
+          <div class="analysis-body">
+            <h3>Optimal power flow</h3>
+            <p>General formulations of OPF problems on the same network.</p>
+          </div>
+          <a class="analysis-link" data-tutorial="Tutorial5_1_OPF.mlx" href="#tab-tutorial">Tutorial <span aria-hidden="true">→</span></a>
+        </li>
+        <li class="analysis-item">
+          <svg class="analysis-icon" viewBox="0 0 48 48" aria-hidden="true">
+            <path class="ai-axis" d="M6 38 L18 44 L32 36 L42 41 M18 44 L22 33 M32 36 L22 33 M6 38 L22 33"/>
+            <path class="ai-ink" d="M6 38 V24 M18 44 V30 M32 36 V26 M42 41 V31"/>
+            <path class="ai-brand" d="M22 33 V8"/>
+            <circle class="ai-dot" cx="6" cy="24" r="1.8"/><circle class="ai-dot" cx="18" cy="30" r="1.8"/><circle class="ai-dot" cx="32" cy="26" r="1.8"/><circle class="ai-dot" cx="42" cy="31" r="1.8"/>
+            <circle class="ai-brand-dot" cx="22" cy="8" r="2.2"/>
+          </svg>
+          <div class="analysis-body">
+            <h3>Graph &amp; animation</h3>
+            <p>Network graphs whose node heights and colours follow the response.</p>
+          </div>
+        </li>
+      </ol>
 
       <h2>Update Log</h2>
-      <div id="update-log-container"></div>
-
-      <h2>Related Book</h2>
-      <p>
-        GUILDA is closely linked with the textbook
-        <a href="https://lim.ishizaki-lab.jp/guilda#h.66rvn04iyvio" target="_blank">"Systems Control Engineering of Power Systems - System Mathematics and MATLAB Simulation -" (Published in November 2022)</a>,
-        which explains related concepts in the language of systems and control.
-      </p>
-      <p>
-        <a href="https://www.jstage.jst.go.jp/article/sicejl/62/10/62_640/_pdf/-char/ja" target="_blank">Introductory Article (Japanese)</a>
-      </p>
+      <ul class="ulog-legend" aria-label="Update types">
+        <li class="is-added">Added</li>
+        <li class="is-changed">Changed</li>
+        <li class="is-deprecated">Deprecated</li>
+        <li class="is-removed">Removed</li>
+        <li class="is-fixed">Fixed</li>
+      </ul>
+      <div id="update-log-container" class="ulog" tabindex="0" role="region" aria-label="Update log, newest first. Scroll sideways to see more."></div>
 
       <h2>License</h2>
       <p>
-        GUILDA is released under the MIT License. For more details, please refer to the 
+        GUILDA is released under the MIT License. For more details, please refer to the
         <a href="../LICENSE" target="_blank"><code>LICENSE</code></a> file located in the root directory of the repository.
       </p>
 
     </div>
 
+    <div id="tab-about" class="tab-content about">
+      <div class="about-hero">
+        <p class="about-eyebrow">About GUILDA</p>
+        <h1 class="about-title">Power-system knowledge, in the language of systems and control.</h1>
+        <p class="about-lead">
+          Why GUILDA exists and the ideas behind its design. GUILDA is developed by the Ishizaki Laboratory in collaboration with Takahiro Kawaguchi (Gunma University).
+        </p>
+        <figure class="about-demo">
+          <img src="./images/movie.gif" alt="GUILDA animation: a network graph whose node heights and colours follow the simulated response" class="demo-gif">
+          <figcaption>A simulated fault spreading through a network, drawn by GUILDA's animation tools.</figcaption>
+        </figure>
+      </div>
+
+      <section class="about-section">
+        <div class="about-text">
+          <p class="about-step"><span>01</span> Why</p>
+          <h2>Future grids are a control problem</h2>
+          <p>
+            Decarbonisation changes who takes part in the grid. Power once flowed one way, from large plants to consumers.
+            Now wind and solar plants, homes with rooftop PV, batteries and microgrids join in, and many of them can be controlled.
+            Keeping the supply stable means steering that flow, and that is where control engineering can help.
+          </p>
+          <p>
+            Yet the two fields frame problems differently. Power-system and power-electronics tools value detailed models, fast computation,
+            faithful reproduction of real events and one module per piece of equipment. Control engineering looks for models that capture the essential dynamics,
+            and for principles that follow from them. Learning the power domain well enough to bridge that gap takes a lot of time.
+          </p>
+        </div>
+        <figure class="about-figure">
+          <img src="./images/about/grid-past-future.svg" alt="Before: a power plant sends power one way to homes. Ahead: wind, homes with solar panels, a factory, a battery and a microgrid exchange power in both directions." width="720" height="300">
+        </figure>
+      </section>
+
+      <section class="about-section about-what">
+        <div class="about-text">
+          <p class="about-step"><span>02</span> What</p>
+          <h2>A simulator built for systems and control</h2>
+          <p>
+            GUILDA is a power-system simulator for students and researchers in systems and control. It brings power-system knowledge into control engineering,
+            so that you can study grids with the tools and questions of our own field.
+          </p>
+          <p>
+            It is closely linked with the textbook <a href="https://lim.ishizaki-lab.jp/guilda#h.66rvn04iyvio" target="_blank">「電力系統のシステム制御工学」</a>
+            (<em>Systems Control Engineering of Power Systems</em>), which explains power systems from the viewpoint of control and uses GUILDA for its numerical examples.
+          </p>
+        </div>
+        <div class="about-bridge" aria-hidden="true">
+          <span class="about-bridge-node">Power systems engineering</span>
+          <span class="about-bridge-arrow"><img src="./images/GUILDA-logo-square.png" alt=""></span>
+          <span class="about-bridge-node is-brand">Systems &amp; control</span>
+        </div>
+      </section>
+
+      <section class="about-goals">
+        <p class="about-step"><span>03</span> Design goals</p>
+        <h2>Three things GUILDA is designed to do</h2>
+        <ol class="goal-list">
+          <li>
+            <span class="goal-num">1</span>
+            <h3>Usable by power-system beginners</h3>
+            <p>Run real analyses without first deriving admittance matrices, operating points or the differential-algebraic equations of the whole grid.</p>
+          </li>
+          <li>
+            <span class="goal-num">2</span>
+            <h3>Reveal structure and properties</h3>
+            <p>Tutorials, graphs, animations and linearized models help you see why the system behaves as it does, not only what it does.</p>
+          </li>
+          <li>
+            <span class="goal-num">3</span>
+            <h3>Split models by signals</h3>
+            <p>Divide the system by physical signals such as frequency and power, not only by equipment, so that control-theoretic analyses fit naturally.</p>
+          </li>
+        </ol>
+        <figure class="about-figure about-figure-wide">
+          <img src="./images/about/signal-split.svg" alt="A synchronous generator has a turbine and an electromagnet. GUILDA lets you split the network into a mechanical subsystem F and an electrical subsystem G in negative feedback, exchanging frequency deviation and active power." width="720" height="280">
+          <figcaption>
+            Example: for passivity-based stability analysis, the always-passive mechanical parts become one subsystem <em>F</em> in feedback with the electrical subsystem <em>G</em>.
+            If <em>G</em> is passive, so is the whole system, and the analysis can focus on <em>G</em>. A tool that only offers one block per machine cannot express this split.
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="about-section">
+        <div class="about-text">
+          <p class="about-step"><span>04</span> How</p>
+          <h2>Building blocks that snap together</h2>
+          <p>
+            GUILDA is object-oriented. Buses, branches, generators, loads and controllers are classes, and they fit together like puzzle pieces into a
+            <code>PowerNetwork</code>. The network takes care of the electrical constraints and the interactions between devices, so you can go straight to simulating,
+            linearizing and plotting.
+          </p>
+        </div>
+        <figure class="about-figure">
+          <img src="./images/about/puzzle-network.svg" alt="Loose pieces labelled Generator, Bus, Branch, Load and Controller snap into one PowerNetwork, which is then simulated to give a time response." width="720" height="300">
+        </figure>
+<pre class="about-code"><code>% Snap the pieces together
+net = PowerNetwork("TestSystem");
+net.add_bus();
+net.add_bus();
+net.add_branch("pi", [1, 2]);
+net.a_Bus{1}.add_component("gen-park");
+net.a_Bus{2}.add_component("load-power");
+
+% Or start from a packaged network and analyse it
+net = network.IEEE14bus;
+fault = odeEventSet("fault", net, "FaultBus", "B008", "TimeSpan", [3, 3.1]);
+sol = net.simulate([0, 50], fault);   % time response
+sys = net.get_sys();                  % linearized model</code></pre>
+      </section>
+
+      <section class="about-section about-vision">
+        <div class="about-text">
+          <p class="about-step"><span>05</span> Vision</p>
+          <h2>A platform where knowledge keeps growing</h2>
+          <p>
+            Research know-how often lives in one person's head and leaves with them. GUILDA aims to be a knowledge platform built on the
+            SECI knowledge spiral of Ikujiro Nonaka, where tacit and explicit knowledge keep turning into each other:
+          </p>
+          <ul class="seci-list">
+            <li><strong>Socialization</strong> Share experience and progress in meetings and discussions.</li>
+            <li><strong>Externalization</strong> Write what you learned as models and analyses with clear interfaces.</li>
+            <li><strong>Combination</strong> Connect those objects on the platform into new analyses.</li>
+            <li><strong>Internalization</strong> Use the platform in your own research and gain new insight.</li>
+          </ul>
+          <p>
+            Each turn of the spiral leaves something reusable behind, so knowledge is not tied to individuals and keeps growing.
+            The name echoes a <em>guild</em>: a circle of researchers and engineers who learn from one another and build together.
+          </p>
+        </div>
+        <figure class="about-figure about-seci">
+          <img src="./images/about/seci-cycle.svg" alt="The SECI spiral turning clockwise: Socialization, Externalization, Combination, Internalization, with GUILDA at the centre." width="480" height="480">
+          <img src="./images/GUILDA-logo-square.png" alt="" class="about-seci-logo">
+        </figure>
+      </section>
+
+      <figure class="about-figure about-figure-wide about-guild">
+        <img src="./images/about/guild-platform.svg" alt="People around a shared platform each add a block, such as a new model or a new controller, and everyone reuses the growing structure." width="720" height="300">
+      </figure>
+
+      <section class="about-compare">
+        <p class="about-step"><span>06</span> Compared</p>
+        <h2>Where GUILDA stands</h2>
+        <div class="compare-scroll">
+          <table class="compare-table">
+            <thead>
+              <tr><th>Analysis</th><th>Conventional analysis package</th><th>GUILDA</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Power flow</td><td><span class="mark-yes">✓</span></td><td><span class="mark-yes">✓</span></td></tr>
+              <tr><td>Small-signal stability via linearization</td><td><span class="mark-yes">✓</span></td><td><span class="mark-yes">✓</span></td></tr>
+              <tr><td>Time-domain (transient) response</td><td><span class="mark-yes">✓</span></td><td><span class="mark-yes">✓</span></td></tr>
+              <tr><td>Interfaces for control engineering</td><td><span class="mark-part">Limited</span></td><td><span class="mark-core">Core focus</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="compare-note">Based on Table 1 of the article below, which compares GUILDA with CPAT, a power-system analysis package widely used in Japan. CPAT also offers fault and harmonic calculations, which GUILDA does not target.</p>
+      </section>
+
+      <section class="about-reading">
+        <h2>Books and articles</h2>
+        <ul>
+          <li>
+            T. Ishizaki, T. Kawaguchi and K. Kawabe,
+            <a href="https://lim.ishizaki-lab.jp/guilda#h.66rvn04iyvio" target="_blank">「電力系統のシステム制御工学 – システム数理と MATLAB シミュレーション –」</a>, Corona Publishing (in Japanese).
+            The textbook explains power systems in the language of systems and control and uses GUILDA for its numerical examples.
+          </li>
+          <li>
+            T. Nishino, T. Kawaguchi and T. Ishizaki,
+            <a href="https://www.jstage.jst.go.jp/article/sicejl/62/9/62_559/_article/-char/ja" target="_blank">「GUILDA：エネルギーナレッジマネジメントのはじめの一歩」</a>,
+            <em>計測と制御</em>, Vol. 62, No. 9, pp. 559–563, 2023 (in Japanese).
+          </li>
+          <li>
+            <a href="https://www.jstage.jst.go.jp/article/sicejl/62/10/62_640/_pdf/-char/ja" target="_blank">Introductory article</a>,
+            <em>計測と制御</em>, Vol. 62, No. 10 (in Japanese, PDF).
+          </li>
+        </ul>
+        <h2>How to cite</h2>
+        <p>If you use GUILDA in published work, please cite the article that introduces it:</p>
+<pre class="about-cite"><code>T. Nishino, T. Kawaguchi and T. Ishizaki, "GUILDA: エネルギーナレッジマネジメントのはじめの一歩,"
+計測と制御, Vol. 62, No. 9, pp. 559–563, 2023.</code></pre>
+      </section>
+    </div>
+
     <div id="tab-getting-started" class="tab-content">
       <h1>Getting Started</h1>
-
-      <h2>Install Now</h2>
-      <div class="install-buttons">
-        <a href="https://github.com/guilda-dev/guilda" target="_blank" class="btn">From GitHub</a>
-        <a href="https://matlab.mathworks.com/open/github/v1?repo=guilda-dev/guilda&project=./GUILDA.prj" target="_blank" class="btn">Open in MATLAB Online</a>
-      </div>
 
       <h2>Requirements</h2>
       <p>GUILDA runs on MATLAB and requires the following products:</p>
@@ -110,6 +327,13 @@
         <li>Optimization Toolbox</li>
       </ul>
       <p>Symbolic Math Toolbox is optional. GUILDA never uses symbolic derivatives at run time; only a few developer scripts that check hand-written Jacobians need it.</p>
+
+      <h2>Install</h2>
+      <p>Clone or download the repository from GitHub, or open it directly in MATLAB Online.</p>
+      <div class="install-buttons">
+        <a href="https://github.com/guilda-dev/guilda" target="_blank" class="btn-github"><svg class="gh-mark" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg><span>From GitHub</span></a>
+        <a href="https://matlab.mathworks.com/open/github/v1?repo=guilda-dev/guilda&project=./GUILDA.prj" target="_blank" class="btn-badge"><img src="https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg" alt="Open in MATLAB Online" onerror="this.parentNode.classList.add('is-offline')"><span class="btn-badge-fallback">Open in MATLAB Online</span></a>
+      </div>
 
       <h2>Start GUILDA</h2>
       <p>Open the GUILDA repository folder in MATLAB and run the constructor at the beginning of a session.</p>
@@ -124,11 +348,23 @@
         <li>Display the update log and open the tutorial when enabled.</li>
       </ul>
 
+      <h2>Your First Simulation</h2>
+      <p>Load a packaged network, apply a short fault at one bus and simulate the response. The plot shows the frequency deviation of several generators.</p>
+<pre><code>net = network.IEEE14bus;
+fault = odeEventSet("fault", net, "FaultBus", "B008", "TimeSpan", [3, 3.1]);
+sol = net.simulate([0, 50], fault);
+
+xsol = sol.odeResults;
+figure;
+hold on;
+arrayfun(@(i) plot(xsol.t, xsol.Bus(i).Component(1).X.omega), [1, 2, 3, 6, 8]);</code></pre>
+      <p>To build your own network, linearize it or add controllers, continue with the <a href="#tab-tutorial" onclick="openTab('tab-tutorial'); return false;">Tutorial</a>.</p>
+
       <h2>Startup Settings</h2>
       <p>Use the settings window to enable or disable optional startup tasks. Path setup cannot be disabled because it is required to use GUILDA.</p>
 <pre><code>&gt;&gt; GUILDA.setting();</code></pre>
       
-      <img src="./images/setting_startup.png" alt="GUILDA Environment Settings" style="width: 50%; max-width: 100%; height: auto; display: block; margin: 20px 0; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+      <img src="./images/setting_startup.png" alt="GUILDA Environment Settings" style="width: 50%; max-width: 100%; height: auto; display: block; margin: 20px 0; border: 1px solid var(--line); border-radius: var(--radius);">
 
       <h2>Utility Functions</h2>
 <pre><code>&gt;&gt; GUILDA.pwd()         % Get the GUILDA repository path
@@ -153,14 +389,10 @@
 
     <div id="tab-tutorial" class="tab-content">
       <h1>Basic Workflow</h1>
-      <p>A typical GUILDA analysis proceeds from environment setup and network construction to operating-point initialization, followed by simulation, linearization, or controller evaluation. The examples below follow the verification flow in <code>+DebugScript</code> and use the current API names.</p>
-      <p>For users who want to learn through hands-on experience, please refer to the <a href="#hands-on-tutorial" style="font-weight: bold;">Hands-on Tutorial</a> section below.</p>
-      
-      <h2>1. Prepare the Environment</h2>
-      <p>Run GUILDA once per MATLAB session. The constructor adds the required folders and performs the enabled startup checks.</p>
-<pre><code>&gt;&gt; GUILDA;</code></pre>
+      <p>A typical GUILDA analysis proceeds from network construction to operating-point initialization, followed by simulation, linearization, or controller evaluation. The examples below follow the verification flow in <code>+DebugScript</code>. They assume GUILDA has been started as described in <a href="#tab-getting-started" onclick="openTab('tab-getting-started'); return false;">Getting Started</a>.</p>
+      <p>For users who want to learn through hands-on experience, please refer to the <a href="#hands-on-tutorial" onclick="openTab('tab-tutorial', 'hands-on-tutorial'); return false;" style="font-weight: bold;">Hands-on Tutorial</a> section below.</p>
 
-      <h2>2. Build or Load a Network</h2>
+      <h2>1. Build or Load a Network</h2>
       <p>For a quick analysis, load one of the packaged networks. To build a model manually, create a <code>PowerNetwork</code> and add buses, branches, and components in that order.</p>
 <pre><code>% Load a packaged test network (IEEE 14-bus, MATPOWER case14 data)
 net = network.IEEE14bus;
@@ -175,7 +407,7 @@ net.add_branch("pi", [1, 2]);
 net.a_Bus{1}.add_component("gen-park");
 net.a_Bus{2}.add_component("load-power");</code></pre>
 
-      <h2>3. Set and Initialize the Operating Point</h2>
+      <h2>2. Set and Initialize the Operating Point</h2>
       <p>Set the power-flow parameters on buses and components, inspect the power-flow solution when needed, and then initialize the model. Initialization distributes the equilibrium voltage, current, active power, and reactive power to each object.</p>
 <pre><code>% Example power-flow settings
 net.a_Bus{1}.tab_parameter.powerflow{:, ["V", "Varg"]} = [1.05, 0.00];
@@ -184,7 +416,7 @@ net.a_Bus{1}.a_Component{1}.tab_parameter.powerflow{:, ["P", "Q"]} = [nan, nan];
 powerflow = net.calculate_powerflow();
 net.initialize();</code></pre>
 
-      <h2>4. Run a Time-Domain Simulation</h2>
+      <h2 id="tutorial-simulation">3. Run a Time-Domain Simulation</h2>
       <p>Use <code>odeEventSet</code> to describe disturbances. Events can represent state offsets, input changes, bus faults, and unit trips.</p>
 <pre><code>net = network.IEEE14bus;
 fault = odeEventSet("fault", net, ...
@@ -198,7 +430,7 @@ figure;
 hold on;
 arrayfun(@(i) plot(xsol.t, xsol.Bus(i).Component(1).X.omega), [1, 2, 3, 6, 8]);</code></pre>
 
-      <h2>5. Obtain a Linear Model</h2>
+      <h2 id="tutorial-linear-model">4. Obtain a Linear Model</h2>
       <p>After initialization, obtain the linearized interconnected model. Buses without dynamic units can be specified with the <code>NonUnit</code> option.</p>
 <pre><code>net = network.IEEE14bus;
 net.initialize();
@@ -207,7 +439,7 @@ sys = net.get_sys();
 sysReduced = net.get_sys("NonUnit", 7);
 eig(sys.A)</code></pre>
 
-      <h2>6. Add and Evaluate Controllers</h2>
+      <h2>5. Add and Evaluate Controllers</h2>
       <p>Local controllers are attached to components; global controllers are attached to the network. Reinitialize the network after changing its controller structure, then repeat the simulation or linearization.</p>
 <pre><code>avr = controller.avr.AVR_ST1("avr1");
 pss = controller.pss.PSS1("pss1");
@@ -217,7 +449,7 @@ net.initialize();
 fault = odeEventSet("fault", net, "FaultBus", "B008", "TimeSpan", [3, 3.01]);
 sol = net.simulate([0, 50], fault);</code></pre>
 
-      <hr style="margin: 50px 0; border: 0; border-top: 2px dashed #dee2e6;">
+      <hr style="margin: 50px 0; border: 0; border-top: 1px solid var(--line);">
       
       <h1 id="hands-on-tutorial">Hands-on Tutorial for GUILDA</h1>
       <p>Tutorials in Live Script format, which explain how to implement various analyses, are provided in the <code>_GUILDAtutorial</code> folder of the source files.</p>
@@ -229,6 +461,11 @@ sol = net.simulate([0, 50], fault);</code></pre>
 
     <div id="tab-reference" class="tab-content">
       <h1>Class Reference</h1>
+      <p class="ref-status" id="reference-status"></p>
+      <div id="reference-empty" class="ref-empty" hidden>
+        <p><strong>The class reference has not been generated yet.</strong></p>
+        <p>Run <code>GUILDA.doc</code> in MATLAB. It builds <code>_GUILDAdoc/database</code> from the source code and opens this page again.</p>
+      </div>
 
       <div class="reference-section">
         <h2>Core Components of the System Model</h2>
@@ -257,7 +494,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
             <svg class="uml-links" viewBox="0 0 940 420" preserveAspectRatio="none">
               <defs>
                 <marker id="diamond" markerWidth="14" markerHeight="10" refX="0" refY="5" orient="auto">
-                  <polygon points="0,5 7,0 14,5 7,10" fill="#fff" stroke="#8ea6bd" stroke-width="1.5" />
+                  <polygon points="0,5 7,0 14,5 7,10" class="uml-diamond" />
                 </marker>
               </defs>
 
@@ -329,31 +566,34 @@ sol = net.simulate([0, 50], fault);</code></pre>
           </div>
         </div>
 
-        <input type="search" id="class-search" class="search-box" placeholder="Search for a class, role, or summary..." autocomplete="off">
+        <div class="ref-toolbar">
+          <input type="search" id="class-search" class="search-box" placeholder="Search all classes by name, package, role, or summary..." autocomplete="off">
+          <label class="ref-check"><input type="checkbox" id="class-undocumented-only"> Not documented only</label>
+        </div>
         <div class="inheritance-legend" aria-label="Class marker legend">
           <span class="inheritance-legend-item"><span class="tree-node-marker" aria-hidden="true"></span>Concrete class</span>
           <span class="inheritance-legend-item"><span class="tree-node-marker is-abstract" aria-hidden="true"></span>Abstract class</span>
+          <span class="inheritance-legend-item"><span class="ref-badge is-undocumented is-small">no docs</span>No documentation comments yet</span>
         </div>
 
-        <table class="compact-table inheritance-table" aria-live="polite">
-          <thead id="inherited-list-thead"></thead>
-          <tbody id="class-list-tbody"></tbody>
-        </table>
+        <div class="ref-table-scroll">
+          <table class="compact-table inheritance-table" aria-live="polite">
+            <thead id="inherited-list-thead"></thead>
+            <tbody id="class-list-tbody"></tbody>
+          </table>
+        </div>
       </div>
 
       <div class="reference-section">
         <h2>Auxiliary Classes</h2>
-        <p>Although these classes do not directly correspond to the physical components of the power system model, they are essential for various analyses and data management within GUILDA.</p>
+        <p>Although these classes do not directly correspond to the physical components of the power system model, they are essential for various analyses and data management within GUILDA. Base classes shared by both trees (such as <code>LayerPackage</code>) are listed here too. The search box and the filter above apply to this table as well.</p>
 
-        <table class="compact-table auxiliary-table">
-          <thead id="auxiliary-list-thead">
-            <tr>
-              <th>Class Name</th>
-              <th>Summary</th>
-            </tr>
-          </thead>
-          <tbody id="auxiliary-list-tbody"></tbody>
-        </table>
+        <div class="ref-table-scroll">
+          <table class="compact-table inheritance-table auxiliary-table">
+            <thead id="auxiliary-list-thead"></thead>
+            <tbody id="auxiliary-list-tbody"></tbody>
+          </table>
+        </div>
       </div>
 
     </div>
@@ -362,86 +602,126 @@ sol = net.simulate([0, 50], fault);</code></pre>
       <h1>For Developer</h1>
       <p class="developer-intro">Guides for contributors and maintainers of GUILDA. Select a topic to open its dedicated page.</p>
 
-      <div id="developer-link-container" class="developer-link-grid"></div>
+      <div id="developer-link-container" class="developer-groups"></div>
     </div>
   </main>
 
   <script>
-    function openTab(tabId) {
+    // Switch tabs without reloading. With targetId, scroll to that element inside the tab.
+    function openTab(tabId, targetId) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.tab-button').forEach(el => el.classList.remove('active'));
       document.getElementById(tabId).classList.add('active');
       const btn = document.querySelector(`button[onclick="openTab('${tabId}')"]`);
       if(btn) btn.classList.add('active');
+      const target = targetId ? document.getElementById(targetId) : null;
+      if (target) target.scrollIntoView({ block: 'start' });
+      else window.scrollTo(0, 0);
     }
 
-    function renderPowerGridAnimation() {
-      const canvas = document.getElementById('power-grid-animation');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      const resize = () => { canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight; };
-      window.addEventListener('resize', resize); resize();
+    // Same id rule as the hands-on tutorial headings in renderTutorials()
+    function tutorialAnchorId(filename) {
+      return (filename || 'unknown').replace(/[^a-zA-Z0-9]/g,'_').toLowerCase();
+    }
 
-      const buses = [
-        { x: 0.1, y: 0.2, type: 'gen', color: 'rgba(15, 76, 129, 0.8)' }, { x: 0.1, y: 0.8, type: 'gen', color: 'rgba(15, 76, 129, 0.8)' },
-        { x: 0.9, y: 0.15, type: 'gen', color: 'rgba(15, 76, 129, 0.8)' }, { x: 0.25, y: 0.5, type: 'hub', color: 'rgba(200, 200, 200, 0.6)' },
-        { x: 0.4, y: 0.2, type: 'hub', color: 'rgba(200, 200, 200, 0.6)' }, { x: 0.4, y: 0.8, type: 'hub', color: 'rgba(200, 200, 200, 0.6)' },
-        { x: 0.55, y: 0.5, type: 'hub', color: 'rgba(200, 200, 200, 0.6)' }, { x: 0.7, y: 0.3, type: 'hub', color: 'rgba(200, 200, 200, 0.6)' },
-        { x: 0.75, y: 0.7, type: 'hub', color: 'rgba(200, 200, 200, 0.6)' }, { x: 0.45, y: 0.45, type: 'load', color: 'rgba(51, 51, 51, 0.6)' },
-        { x: 0.6, y: 0.8, type: 'load', color: 'rgba(51, 51, 51, 0.6)' }, { x: 0.85, y: 0.45, type: 'load', color: 'rgba(51, 51, 51, 0.6)' },
-        { x: 0.9, y: 0.85, type: 'load', color: 'rgba(51, 51, 51, 0.6)' }
-      ];
-      const branches = [
-        { from: 0, to: 3 }, { from: 1, to: 3 }, { from: 3, to: 4 }, { from: 3, to: 5 }, { from: 4, to: 6 }, { from: 5, to: 6 }, 
-        { from: 4, to: 9 }, { from: 5, to: 9 }, { from: 6, to: 7 }, { from: 6, to: 8 }, { from: 7, to: 2 }, { from: 7, to: 11 },
-        { from: 8, to: 10 }, { from: 8, to: 12 }, { from: 2, to: 11 }, { from: 1, to: 5 }, { from: 0, to: 4 }, { from: 7, to: 8, opacity: 0.2 }
-      ];
-      const particles = [];
-      branches.forEach((b, i) => { for (let j=0; j<4; j++) particles.push({ bIdx: i, p: j/4, s: 0.0015 + Math.random()*0.002 }); });
-
-      function loop() {
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        const w = canvas.width, h = canvas.height;
-        ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(15,76,129,0.15)';
-        branches.forEach(b => {
-          const f = buses[b.from], t = buses[b.to];
-          ctx.beginPath(); ctx.moveTo(f.x*w, f.y*h); ctx.lineTo(t.x*w, t.y*h);
-          if (b.opacity) ctx.strokeStyle = `rgba(15,76,129,${b.opacity})`;
-          ctx.stroke();
-        });
-        particles.forEach(pt => {
-          const b = branches[pt.bIdx], f = buses[b.from], t = buses[b.to];
-          const x = (f.x + pt.p*(t.x-f.x))*w, y = (f.y + pt.p*(t.y-f.y))*h;
-          pt.p += pt.s; if(pt.p>1) pt.p=0;
-          ctx.beginPath(); ctx.arc(x,y,2.5,0,Math.PI*2); ctx.fillStyle="#fff";
-          ctx.shadowBlur=8; ctx.shadowColor="#fff"; ctx.fill(); ctx.shadowBlur=0;
-        });
-        buses.forEach(bus => {
-          ctx.beginPath(); ctx.arc(bus.x*w, bus.y*h, bus.type==='gen'?7:5, 0, Math.PI*2);
-          ctx.fillStyle = bus.color; ctx.fill();
-        });
-        requestAnimationFrame(loop);
-      }
-      loop();
+    // Supported Analyses rows link to a tutorial entry (data-tutorial) or a Basic Workflow step (data-section).
+    // A link whose target does not exist is removed.
+    function wireAnalysisLinks() {
+      document.querySelectorAll('.analysis-link').forEach(link => {
+        const targetId = link.dataset.tutorial ? tutorialAnchorId(link.dataset.tutorial) : link.dataset.section;
+        if (!targetId || !document.getElementById(targetId)) { link.remove(); return; }
+        link.href = `#${targetId}`;
+        link.addEventListener('click', (e) => { e.preventDefault(); openTab('tab-tutorial', targetId); });
+      });
     }
 
     function renderUpdateLog() {
       const container = document.getElementById('update-log-container');
       if (!container) return;
-      
+
       const data = typeof updateLogData !== 'undefined' ? updateLogData : (typeof update_log !== 'undefined' ? update_log : null);
-      
-      if (data && Array.isArray(data) && data.length > 0) {
-        container.innerHTML = data.map(u => `
-          <div class="update-log-item">
-            <div class="update-date">${u.date || ''}</div>
-            <h3 class="update-title">${u.title || ''}</h3>
-            <div class="update-text">${u.content || ''}</div>
-          </div>
-        `).join('');
-      } else {
-        container.innerHTML = '<p style="color:#888;">No update log data found.</p>';
+      if (!Array.isArray(data) || data.length === 0) {
+        container.innerHTML = '<p style="color: var(--muted);">No update log data found.</p>';
+        return;
       }
+
+      const esc = (value) => String(value ?? '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      // Newest first
+      const items = [...data].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+      // Keep a Changelog types; anything else renders neutral with no label
+      const types = { added: 'Added', changed: 'Changed', deprecated: 'Deprecated', removed: 'Removed', fixed: 'Fixed' };
+      items.forEach(u => {
+        if (u.type !== undefined && !Object.hasOwn(types, u.type)) console.warn(`Update log: unknown type "${u.type}" in "${u.title}"`);
+      });
+      const cards = (copy) => items.map(u => {
+        const type = Object.hasOwn(types, u.type) ? u.type : null;
+        return `
+        <article class="ulog-card${type ? ` is-${type}` : ''}"${copy ? ' aria-hidden="true"' : ''} title="${esc(u.content)}">
+          <div class="ulog-meta">
+            <time class="ulog-date" datetime="${esc(u.date)}">${esc(u.date)}</time>
+            ${type ? `<span class="ulog-type">${types[type]}</span>` : ''}
+          </div>
+          <h3 class="ulog-title">${esc(u.title)}</h3>
+          <p class="ulog-text">${esc(u.content)}</p>
+        </article>`;
+      }).join('');
+
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      container.innerHTML = `<div class="ulog-track">${cards(false)}${reduceMotion ? '' : cards(true)}</div>`;
+      if (!reduceMotion) startUpdateLogMarquee(container);
+    }
+
+    // Slow, seamless marquee: the track holds the cards twice, and scrollLeft wraps
+    // by one copy's width. Hover, focus and drag pause it; manual scroll is kept.
+    function startUpdateLogMarquee(container) {
+      const track = container.querySelector('.ulog-track');
+      const speed = 28; // px per second
+      let pos = container.scrollLeft;
+      let paused = false;
+      let dragging = false;
+      let last = null;
+
+      const loopWidth = () => track.scrollWidth / 2;
+      const pause = (value) => { paused = value; };
+      container.addEventListener('mouseenter', () => pause(true));
+      container.addEventListener('mouseleave', () => { if (!dragging) pause(false); });
+      container.addEventListener('focusin', () => pause(true));
+      container.addEventListener('focusout', () => pause(false));
+      container.addEventListener('touchstart', () => pause(true), { passive: true });
+      container.addEventListener('touchend', () => setTimeout(() => pause(false), 1500), { passive: true });
+
+      // Mouse drag to scroll
+      let dragX = 0, dragStart = 0;
+      container.addEventListener('pointerdown', (e) => {
+        if (e.pointerType !== 'mouse') return;
+        dragging = true; dragX = e.clientX; dragStart = container.scrollLeft;
+        container.classList.add('is-dragging');
+        container.setPointerCapture(e.pointerId);
+      });
+      container.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        container.scrollLeft = dragStart - (e.clientX - dragX);
+      });
+      const endDrag = () => { dragging = false; container.classList.remove('is-dragging'); };
+      container.addEventListener('pointerup', endDrag);
+      container.addEventListener('pointercancel', endDrag);
+
+      const step = (now) => {
+        const dt = last === null ? 0 : Math.min((now - last) / 1000, 0.1);
+        last = now;
+        const width = loopWidth();
+        const visible = container.offsetParent !== null && width > container.clientWidth;
+        if (Math.abs(container.scrollLeft - pos) > 1) pos = container.scrollLeft; // user scrolled
+        if (visible && !paused && !dragging && !document.hidden) pos += speed * dt;
+        if (width > 0) {
+          if (pos >= width) pos -= width;
+          if (pos < 0) pos += width;
+        }
+        container.scrollLeft = pos;
+        requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
     }
 
     function renderTutorials() {
@@ -454,12 +734,12 @@ sol = net.simulate([0, 50], fault);</code></pre>
       if (data && Array.isArray(data) && data.length > 0) {
         toc.innerHTML = '<table><tr><th>File Name</th><th>Analysis Type</th></tr>' + 
           data.map(t => {
-            const safeId = (t.filename || 'unknown').replace(/[^a-zA-Z0-9]/g,'_').toLowerCase();
+            const safeId = tutorialAnchorId(t.filename);
             return `<tr><td><a href="#${safeId}"><code>${t.filename || ''}</code></a></td><td>${t.analysis || ''}</td></tr>`;
           }).join('') + '</table>';
           
         abs.innerHTML = data.map(t => {
-          const safeId = (t.filename || 'unknown').replace(/[^a-zA-Z0-9]/g,'_').toLowerCase();
+          const safeId = tutorialAnchorId(t.filename);
           return `
             <h3 id="${safeId}"><code>${t.filename || ''}</code></h3>
             <table><tr><th style="width:25%">Item</th><th>Description</th></tr>
@@ -469,7 +749,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
           `;
         }).join('');
       } else {
-        toc.innerHTML = '<p style="color:#888;">No tutorial data found.</p>';
+        toc.innerHTML = '<p style="color: var(--muted);">No tutorial data found.</p>';
         abs.innerHTML = '';
       }
     }
@@ -480,7 +760,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
 
       const data = typeof developerData !== 'undefined' ? developerData : null;
       if (!Array.isArray(data) || data.length === 0) {
-        container.innerHTML = '<p style="color:#888;">No developer guides found.</p>';
+        container.innerHTML = '<p style="color: var(--muted);">No developer guides found.</p>';
         return;
       }
 
@@ -490,15 +770,33 @@ sol = net.simulate([0, 50], fault);</code></pre>
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
 
-      container.innerHTML = data.map((item, index) => `
-        <a class="developer-link-card" href="${escapeHtml(item.link)}">
-          <span class="developer-link-number">${String(index + 1).padStart(2, '0')}</span>
-          <span class="developer-link-content">
-            <span class="developer-link-title">${escapeHtml(item.title)}</span>
-            <span class="developer-link-description">${escapeHtml(item.description)}</span>
-          </span>
-          <span class="developer-link-action">View guide <span aria-hidden="true">→</span></span>
-        </a>
+      // "Process: Git Workflow" -> group "Process", title "Git Workflow"
+      const groups = [];
+      data.forEach((item, index) => {
+        const match = /^([^:]+):\s*(.*)$/.exec(item.title || '');
+        const label = match ? match[1].trim() : 'Guides';
+        const title = match ? match[2] : item.title;
+        let group = groups.find((g) => g.label === label);
+        if (!group) { group = { label, items: [] }; groups.push(group); }
+        group.items.push({ ...item, title, number: index + 1 });
+      });
+
+      container.innerHTML = groups.map((group) => `
+        <section class="developer-group is-${escapeHtml(group.label.toLowerCase().replace(/[^a-z0-9]+/g, '-'))}" aria-label="${escapeHtml(group.label)}">
+          <h2 class="developer-group-label"><span>${escapeHtml(group.label)}</span></h2>
+          <div class="developer-link-grid">
+            ${group.items.map((item) => `
+              <a class="developer-link-card" href="${escapeHtml(item.link)}">
+                <span class="developer-link-number">${String(item.number).padStart(2, '0')}</span>
+                <span class="developer-link-content">
+                  <span class="developer-link-title">${escapeHtml(item.title)}</span>
+                  <span class="developer-link-description">${escapeHtml(item.description)}</span>
+                </span>
+                <span class="developer-link-action">View guide <span aria-hidden="true">→</span></span>
+              </a>
+            `).join('')}
+          </div>
+        </section>
       `).join('');
     }
 
@@ -529,7 +827,6 @@ sol = net.simulate([0, 50], fault);</code></pre>
       if (cards) {
         cards.innerHTML = coreClassNames.map(name => data.find(c => c.Name === name)).filter(Boolean).map(c => `
           <a href="${window.GuildaDocLoader.pageUrl('class.html', { class: c.Name })}" class="core-class-card">
-            <span class="core-class-icon">📄</span>
             <h3>${c.Name}</h3>
             <p>${firstLineText(c.Summary || c.Desc) || c.Role || `Reference for ${c.Name}.`}</p>
           </a>
@@ -559,7 +856,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
     }
 
     function classSearchText(classData) {
-      return `${classData.Name || ''} ${classData.Parent || ''} ${classData.Model || ''} ${classData.Role || ''} ${classData.Summary || ''} ${classData.Desc || ''} ${classData.Notes || ''}`.toLowerCase();
+      return `${classData.Name || ''} ${classData.Package || ''} ${classData.Parent || ''} ${classData.Model || ''} ${classData.Role || ''} ${classData.Summary || ''} ${classData.Desc || ''} ${classData.Notes || ''}`.toLowerCase();
     }
 
     function escapeHtml(value) {
@@ -571,143 +868,153 @@ sol = net.simulate([0, 50], fault);</code></pre>
         .replace(/'/g, '&#039;');
     }
 
-    function renderInheritanceTree() {
-      const thead = document.getElementById('inherited-list-thead');
-      const tbody = document.getElementById('class-list-tbody');
+    function isDocumented(classData) {
+      return classData.Documented ?? Boolean(firstLineText(classData.Summary || classData.Desc));
+    }
+
+    function renderReferenceStatus() {
+      const status = document.getElementById('reference-status');
+      const empty = document.getElementById('reference-empty');
+      const loader = window.GuildaDocLoader;
+      if (!loader?.hasIndex()) {
+        if (empty) empty.hidden = false;
+        if (status) status.textContent = '';
+        return;
+      }
+      const classes = getClassReferenceData();
+      const coverage = loader.getCoverage();
+      const validation = loader.getValidation();
+      const generatedAt = loader.getSchema()?.generatedAt;
+      const parts = [`${classes.length} classes`];
+      if (coverage) {
+        parts.push(`documented: ${coverage.Classes.Documented}/${coverage.Classes.Total} classes, ${coverage.Methods.Documented}/${coverage.Methods.Total} public methods, ${coverage.Properties.Documented}/${coverage.Properties.Total} public properties`);
+      }
+      parts.push(`${validation.warningCount || 0} warnings, ${validation.errorCount || 0} errors`);
+      if (generatedAt) parts.push(`generated ${generatedAt.replace('T', ' ').slice(0, 16)}`);
+      if (status) status.textContent = parts.join(' · ');
+    }
+
+    // Draw one inheritance tree into a table. `classes` is the set to show;
+    // a class whose parents are not in the set becomes a top-level row.
+    function renderClassTree({ thead, tbody, classes, subtreeRootName, emptyText }) {
       if (!thead || !tbody) return;
-
       thead.innerHTML = '<tr><th>Class Hierarchy</th><th>Summary</th></tr>';
-
-      const classes = getClassReferenceData().filter(c => c.Type === 'PowerSystemModel');
       if (!classes.length) {
-        tbody.innerHTML = '<tr><td colspan="2" class="tree-empty">No class reference data found.</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="2" class="tree-empty">${emptyText}</td></tr>`;
         return;
       }
 
-      const root = { Name: 'PowerSystemModel', Synthetic: true, Children: [] };
       const nodes = new Map(classes.map(c => [c.Name, { ...c, Children: [] }]));
+      const root = { Name: '', Synthetic: true, Children: [] };
       const parentOf = new Map();
-
       nodes.forEach(node => {
-        const parentNames = (node.Parent || '').split(',').map(name => name.trim()).filter(Boolean);
-        const parentName = parentNames.find(name => nodes.has(name)) || 'PowerSystemModel';
-        const parent = parentName === 'PowerSystemModel' ? root : nodes.get(parentName);
+        const parentName = window.GuildaDocLoader.parentNames(node).find(name => nodes.has(name));
+        const parent = parentName ? nodes.get(parentName) : root;
         parent.Children.push(node);
         parentOf.set(node.Name, parent);
       });
+      const byName = (a, b) => a.Name.localeCompare(b.Name);
+      nodes.forEach(node => node.Children.sort(byName));
+      root.Children.sort(byName);
 
-      const subtreeRoot = activeFilter === 'All' ? root : nodes.get(activeFilter);
+      const subtreeRoot = subtreeRootName ? nodes.get(subtreeRootName) : root;
       if (!subtreeRoot) {
         tbody.innerHTML = '<tr><td colspan="2" class="tree-empty">No classes were found for this category.</td></tr>';
         return;
       }
 
-      const subtreeNames = new Set();
-      const collectSubtree = node => {
-        subtreeNames.add(node.Name);
-        node.Children.forEach(collectSubtree);
-      };
-      collectSubtree(subtreeRoot);
-
       const searchBox = document.getElementById('class-search');
       const term = (searchBox?.value || '').trim().toLowerCase();
+      const undocumentedOnly = document.getElementById('class-undocumented-only')?.checked;
       let visibleNames = null;
-
-      if (term) {
+      if (term || undocumentedOnly) {
         visibleNames = new Set();
-        if (subtreeRoot.Name.toLowerCase().includes(term)) visibleNames.add(subtreeRoot.Name);
+        const inSubtree = node => {
+          for (let current = node; current; current = parentOf.get(current.Name)) {
+            if (current === subtreeRoot) return true;
+          }
+          return false;
+        };
         nodes.forEach(node => {
-          if (!subtreeNames.has(node.Name)) return;
-          if (!classSearchText(node).includes(term)) return;
-          let current = node;
-          while (current) {
+          if (!inSubtree(node)) return;
+          if (term && !classSearchText(node).includes(term)) return;
+          if (undocumentedOnly && isDocumented(node)) return;
+          for (let current = node; current && current !== root; current = parentOf.get(current.Name)) {
             visibleNames.add(current.Name);
             if (current === subtreeRoot) break;
-            current = parentOf.get(current.Name);
           }
         });
-      }
-
-      if (visibleNames && !visibleNames.size) {
-        tbody.innerHTML = '<tr><td colspan="2" class="tree-empty">No matching classes found.</td></tr>';
-        return;
+        if (!visibleNames.size) {
+          tbody.innerHTML = '<tr><td colspan="2" class="tree-empty">No matching classes found.</td></tr>';
+          return;
+        }
       }
 
       const rows = [];
-      const flattenTree = (node, guides = []) => {
-        if (visibleNames && !visibleNames.has(node.Name)) return;
-        rows.push({ node, guides });
+      const flattenTree = (node, guides) => {
+        if (visibleNames && !node.Synthetic && !visibleNames.has(node.Name)) return;
+        if (!node.Synthetic) rows.push({ node, guides });
         const children = node.Children.filter(child => !visibleNames || visibleNames.has(child.Name));
         children.forEach((child, index) => {
-          flattenTree(child, [...guides, index < children.length - 1]);
+          flattenTree(child, node.Synthetic ? [] : [...guides, index < children.length - 1]);
         });
       };
-      flattenTree(subtreeRoot);
+      flattenTree(subtreeRoot, []);
 
       const renderGuides = guides => guides.map((hasNext, index) => {
         const isBranch = index === guides.length - 1;
-        const classes = [
+        const guideClasses = [
           'tree-guide',
           isBranch ? 'tree-branch' : 'tree-ancestor',
           hasNext ? 'has-next' : 'is-last'
         ];
-        return `<span class="${classes.join(' ')}" style="--tree-level:${index}" aria-hidden="true"></span>`;
+        return `<span class="${guideClasses.join(' ')}" style="--tree-level:${index}" aria-hidden="true"></span>`;
       }).join('');
 
       tbody.innerHTML = rows.map(({ node, guides }) => {
-        const summary = firstLineText(node.Summary) || '';
-        const isCategoryRoot = !node.Synthetic && (
-          (activeFilter === 'All' && guides.length === 1) ||
-          (activeFilter !== 'All' && guides.length === 0)
-        );
+        const summary = firstLineText(node.Summary || node.Desc) || '';
         const rowClasses = [
-          node.Synthetic ? 'tree-root-row' : '',
-          isCategoryRoot ? 'tree-category-row' : ''
+          guides.length === 0 ? 'tree-root-row' : '',
+          guides.length === 1 ? 'tree-category-row' : ''
         ].filter(Boolean).join(' ');
         const rowAttributes = `${rowClasses ? ` class="${rowClasses}"` : ''} data-tree-depth="${guides.length}"`;
-        const classLabel = node.Synthetic
-          ? '<span class="tree-root-label">PowerSystemModel</span>'
-          : `<a class="tree-class-link${node.Abstract ? ' is-abstract' : ''}" href="${window.GuildaDocLoader.pageUrl('class.html', { class: node.Name })}" title="${escapeHtml(summary || node.Role || '')}">${escapeHtml(node.Name)}</a>`;
-        const nodeMarker = `<span class="tree-node-marker${node.Abstract ? ' is-abstract' : ''}${node.Synthetic ? ' is-root' : ''}" aria-hidden="true"></span>`;
+        const classLabel = `<a class="tree-class-link${node.Abstract ? ' is-abstract' : ''}" href="${window.GuildaDocLoader.pageUrl('class.html', { class: node.Name })}" title="${escapeHtml(summary || node.Role || '')}">${escapeHtml(node.Name)}</a>`;
+        const nodeMarker = `<span class="tree-node-marker${node.Abstract ? ' is-abstract' : ''}${guides.length === 0 ? ' is-root' : ''}" aria-hidden="true"></span>`;
         const hierarchyCell = `<div class="tree-table-name" style="--tree-depth:${guides.length}">${renderGuides(guides)}${nodeMarker}${classLabel}</div>`;
+        const summaryCell = isDocumented(node)
+          ? escapeHtml(summary)
+          : '<span class="ref-badge is-undocumented is-small">no docs</span>';
 
         return `<tr${rowAttributes}>
           <td>${hierarchyCell}</td>
-          <td>${node.Synthetic ? 'Root of the power-system model class hierarchy.' : escapeHtml(summary)}</td>
+          <td>${summaryCell}</td>
         </tr>`;
       }).join('');
     }
 
-    function renderAuxiliaryClassList() {
-      const auxTbody = document.getElementById('auxiliary-list-tbody');
-      const auxThead = document.getElementById('auxiliary-list-thead');
-      if (!auxTbody) return;
-
+    function renderInheritanceTree() {
       const data = getClassReferenceData();
-      if (!data || !Array.isArray(data)) return;
+      const modelClasses = data.filter(c => c.Type === 'PowerSystemModel');
+      const hasRealRoot = modelClasses.some(c => c.Name === 'PowerSystemModel');
+      renderClassTree({
+        thead: document.getElementById('inherited-list-thead'),
+        tbody: document.getElementById('class-list-tbody'),
+        classes: modelClasses,
+        subtreeRootName: activeFilter !== 'All' ? activeFilter : (hasRealRoot ? 'PowerSystemModel' : ''),
+        emptyText: 'No class reference data found.'
+      });
+      renderAuxiliaryClassList();
+    }
 
-      const auxData = data.filter(c => c.Type === 'auxiliary');
-
-      if (auxData.length === 0) {
-        if (auxThead) auxThead.innerHTML = '';
-        auxTbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#888;">No auxiliary classes found.</td></tr>';
-        return;
-      }
-
-      if (auxThead) {
-        auxThead.innerHTML = `
-          <tr>
-            <th>Class Name</th>
-            <th>Summary</th>
-          </tr>
-        `;
-      }
-      auxTbody.innerHTML = auxData.map(c => `
-        <tr class="clickable-row" onclick="window.GuildaDocLoader.navigate('class.html', { class: '${c.Name || ''}' })" title="View details for ${c.Name || ''}">
-          <td><span class="row-link">${c.Name || ''}</span></td>
-          <td>${firstLineText(c.Summary || '')}</td>
-        </tr>
-      `).join('');
+    function renderAuxiliaryClassList() {
+      const data = getClassReferenceData();
+      renderClassTree({
+        thead: document.getElementById('auxiliary-list-thead'),
+        tbody: document.getElementById('auxiliary-list-tbody'),
+        classes: data.filter(c => c.Type !== 'PowerSystemModel'),
+        subtreeRootName: '',
+        emptyText: 'No auxiliary classes found.'
+      });
     }
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -715,19 +1022,20 @@ sol = net.simulate([0, 50], fault);</code></pre>
       if (requestedTab && document.getElementById(requestedTab)?.classList.contains('tab-content')) {
         openTab(requestedTab);
       }
-      renderPowerGridAnimation(); 
-      renderUpdateLog(); 
-      renderTutorials(); 
+      renderUpdateLog();
+      renderTutorials();
+      wireAnalysisLinks();
       renderDeveloperLinks();
+      renderReferenceStatus();
       renderReferenceNavigation();
-      
       renderInheritanceTree();
-      renderAuxiliaryClassList();
 
-      const searchBox = document.getElementById('class-search');
-      if(searchBox) {
-        searchBox.addEventListener('input', renderInheritanceTree);
-      }
+      window.addEventListener('hashchange', () => {
+        const tab = location.hash.replace(/^#/, '');
+        if (document.getElementById(tab)?.classList.contains('tab-content')) openTab(tab);
+      });
+      document.getElementById('class-search')?.addEventListener('input', renderInheritanceTree);
+      document.getElementById('class-undocumented-only')?.addEventListener('change', renderInheritanceTree);
     });
   </script>
 </body>

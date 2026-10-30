@@ -5,12 +5,80 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GUILDA Developer Guide - Git Workflow</title>
   <link rel="stylesheet" href="../style.css">
+  <style>
+    /* Git Workflow page only (gw-*); shared parts are dg-* in style.css */
+    .gw-graph { min-width: 620px; }
+    .gw-play .gw-pop { transform-box: fill-box; transform-origin: center; animation: gw-pop 0.4s ease-out var(--d, 0s) both; }
+    .gw-play .gw-draw { stroke-dasharray: 1; animation: gw-draw 0.5s ease-in-out var(--d, 0s) both; }
+    .gw-play .gw-fade { animation: gw-fade 0.4s ease-out var(--d, 0s) both; }
+    @keyframes gw-pop { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: scale(1); } }
+    @keyframes gw-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+    @keyframes gw-fade { from { opacity: 0; } to { opacity: 1; } }
+
+    .gw-branches .dg-row { grid-template-columns: minmax(0, 15rem) minmax(0, 1fr) minmax(0, 13rem); }
+    .gw-types .dg-row { grid-template-columns: 8rem minmax(0, 1fr) minmax(0, 1fr); align-items: center; }
+    .gw-map .dg-row { grid-template-columns: 7rem 1.5rem 7rem minmax(0, 1fr); align-items: center; }
+    .gw-branch-name { font-family: var(--dg-mono); font-weight: bold; }
+    .gw-example { color: var(--dg-muted); font-family: var(--dg-mono); font-size: 0.85rem; overflow-wrap: anywhere; }
+
+    /* Commit message mock */
+    .gw-msg-row { display: grid; grid-template-columns: 130px minmax(0, 1fr); border-top: 1px solid var(--gh-border); }
+    .gw-msg-row:first-child { border-top: 0; }
+    .gw-msg-tag { padding: 12px 14px; border-right: 1px solid var(--gh-border); background: var(--gh-panel); color: var(--gh-muted); font-size: 0.8rem; }
+    .gw-msg-tag b { display: block; color: var(--gh-text); font-weight: 600; }
+    .gw-msg-text { padding: 12px 14px; font-family: var(--dg-mono); font-size: 0.9rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .gw-msg-text.is-title { font-weight: 600; }
+    .gw-msg-text.is-blank { color: var(--gh-muted); font-family: inherit; font-style: italic; }
+    .gw-meter { display: flex; align-items: center; gap: 10px; margin-top: 8px; color: var(--gh-open); font: 600 0.78rem var(--dg-mono); }
+    .gw-meter-bar { position: relative; flex: 1; height: 6px; overflow: hidden; border-radius: 3px; background: #21262d; }
+    .gw-meter-bar span { position: absolute; inset: 0 auto 0 0; width: 79%; border-radius: 3px; background: var(--gh-open); }
+
+    /* Pull request mock */
+    .gw-merge { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .gw-merge-btn { padding: 5px 14px; border-radius: 6px; background: #238636; color: #fff; font-weight: 600; font-size: 0.85rem; }
+    .gw-merge-btn.is-secondary { background: #21262d; border: 1px solid var(--gh-border); color: var(--gh-text); }
+    .gw-task { display: flex; align-items: center; gap: 8px; margin-top: 6px; color: var(--gh-text); }
+    .gw-task .dg-icon { color: var(--gh-open); width: 16px; height: 16px; }
+
+    @media (max-width: 640px) {
+      .gw-branches .dg-row, .gw-types .dg-row { grid-template-columns: minmax(0, 1fr); }
+      .gw-map .dg-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+      .gw-map .dg-row > .dg-row-arrow { display: block; }
+      .gw-map .dg-rows-head { display: none; }
+      .gw-map .dg-row > :last-child { flex-basis: 100%; }
+      .gw-msg-row { grid-template-columns: minmax(0, 1fr); }
+      .gw-msg-tag { border-right: 0; border-bottom: 1px solid var(--gh-border); padding: 6px 14px; }
+      .gw-msg-tag b { display: inline; margin-right: 6px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .gw-play .gw-pop, .gw-play .gw-draw, .gw-play .gw-fade { animation: none; }
+      #gw-replay { display: none; }
+    }
+  </style>
 </head>
-<body class="developer-layout">
+<body class="developer-layout dg">
+  <!-- Icon sprite (stroke icons, 24x24) -->
+  <svg class="dg-sprite" aria-hidden="true" focusable="false">
+    <symbol id="dg-i-feature" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></symbol>
+    <symbol id="dg-i-fix" viewBox="0 0 24 24"><rect x="8" y="7" width="8" height="13" rx="4"/><path d="M12 11v9M4 11h4M16 11h4M4 16h4M16 16h4M9 3l2 4M15 3l-2 4"/></symbol>
+    <symbol id="dg-i-refactor" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></symbol>
+    <symbol id="dg-i-docs" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"/></symbol>
+    <symbol id="dg-i-test" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3M7.5 15h9"/></symbol>
+    <symbol id="dg-i-chore" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></symbol>
+    <symbol id="dg-i-pr" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/><path d="M6 8v8M18 16V9a3 3 0 0 0-3-3h-4M13 4l-2 2 2 2"/></symbol>
+    <symbol id="dg-i-commit" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M2 12h6M16 12h6"/></symbol>
+    <symbol id="dg-i-branch" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="7" r="2"/><path d="M6 7v10M18 9c0 5-12 3-12 8"/></symbol>
+    <symbol id="dg-i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="dg-i-no" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></symbol>
+    <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+    <symbol id="dg-i-shield" viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+    <symbol id="dg-i-replay" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.5M4 4v4.5h4.5"/></symbol>
+  </svg>
+
   <main>
     <button type="button" class="developer-back-button" onclick="window.history.back()">← Back to For Developer</button>
     <h1>Git Workflow</h1>
-    <p class="page-lead">GUILDA uses three kinds of branches: <code>main</code> for releases, a version branch for integration, and short-lived work branches. Branch names and commit messages share the same set of change types.</p>
+    <p class="page-lead">Three kinds of branches hold the source: <code>main</code> for releases, a version branch for integration, and short-lived work branches. A separate <code>gh-pages</code> branch holds the published documentation site. Branch names and commit messages share the same change types.</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#branches">Branch model</a>
@@ -18,38 +86,113 @@
       <a href="#commits">Commit messages</a>
       <a href="#pull-requests">Pull requests</a>
       <a href="#release">Release</a>
+      <a href="#publish-docs">Publishing the documentation</a>
       <a href="#dont">Do not</a>
     </nav>
 
+    <!-- ===================== Branch model ===================== -->
     <h2 id="branches">Branch model</h2>
-<pre class="dev-tree">main         o---------------------------o------->  releases (tagged vX.Y)
-              \                         /
-version4.0     o-----o-------o---------o--------->  integration of the next release
-                \   /         \       /
-feature/42-...   o-o           \     /
-fix/51-...                      o---o</pre>
-    <table>
-      <tr><th>Branch</th><th>Purpose</th><th>Created from</th><th>Merged into</th></tr>
-      <tr><td><code>main</code></td><td>Released, stable code. Every release is tagged.</td><td>—</td><td>—</td></tr>
-      <tr><td><code>versionX.Y</code></td><td>Integration branch for the next release (currently <code>version4.0</code>).</td><td><code>main</code></td><td><code>main</code> at release</td></tr>
-      <tr><td><code>&lt;type&gt;/&lt;issue&gt;-&lt;slug&gt;</code></td><td>One piece of work for one Issue.</td><td>The integration branch</td><td>The integration branch</td></tr>
-    </table>
+    <div class="dg-gh">
+      <div class="dg-gh-chrome"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-branch"/></svg>GUILDA / <b>Network graph</b></div>
+      <div class="dg-gh-scroll">
+        <svg class="gw-graph gw-play" id="gw-graph" viewBox="0 0 880 270" role="img" aria-labelledby="gw-graph-title gw-graph-desc">
+          <title id="gw-graph-title">Branch graph</title>
+          <desc id="gw-graph-desc">The integration branch versionX.Y is cut from main. Work branches feature/42 and fix/51 are cut from versionX.Y and merged back into it by pull requests. At release, versionX.Y is merged into main, the merge commit is tagged vX.Y, and the next integration branch is cut from main.</desc>
 
+          <!-- lane labels -->
+          <g font-size="14" font-weight="bold">
+            <text x="14" y="50" fill="#58a6ff">main</text>
+            <text x="14" y="115" fill="#3fb950">versionX.Y</text>
+            <text x="14" y="180" fill="#a371f7">feature/42-…</text>
+            <text x="14" y="240" fill="#d29922">fix/51-…</text>
+          </g>
+          <g font-size="11" fill="#8b949e">
+            <text x="14" y="66">releases · tag vX.Y</text>
+            <text x="14" y="131">integration</text>
+            <text x="14" y="196">work branch</text>
+            <text x="14" y="256">work branch</text>
+          </g>
+
+          <!-- main lane -->
+          <path d="M165 45 H870" stroke="#58a6ff" stroke-width="4" stroke-linecap="round" fill="none"/>
+          <!-- integration branch -->
+          <path class="gw-draw" style="--d:.4s" pathLength="1" d="M190 45 C220 45 220 110 250 110" stroke="#3fb950" stroke-width="4" fill="none"/>
+          <path class="gw-draw" style="--d:.8s" pathLength="1" d="M250 110 H430" stroke="#3fb950" stroke-width="4" fill="none"/>
+          <path class="gw-draw" style="--d:2s" pathLength="1" d="M430 110 H630" stroke="#3fb950" stroke-width="4" fill="none"/>
+          <!-- feature/42 -->
+          <path class="gw-draw" style="--d:.8s" pathLength="1" d="M250 110 C280 110 280 175 310 175 H370 C400 175 400 110 430 110" stroke="#a371f7" stroke-width="4" fill="none"/>
+          <!-- fix/51 -->
+          <path class="gw-draw" style="--d:2s" pathLength="1" d="M430 110 C465 110 455 235 490 235 H550 C590 235 590 110 630 110" stroke="#d29922" stroke-width="4" fill="none"/>
+          <!-- release: integration branch into main -->
+          <path class="gw-draw" style="--d:3s" pathLength="1" d="M630 110 H690 C715 110 715 45 740 45" stroke="#3fb950" stroke-width="4" fill="none"/>
+          <!-- next integration branch -->
+          <path class="gw-fade" style="--d:3.8s" d="M740 45 C770 45 770 110 800 110 H865" stroke="#3fb950" stroke-width="4" stroke-dasharray="8 6" fill="none" opacity="0.5"/>
+
+          <!-- commits -->
+          <g stroke="#0d1117" stroke-width="3">
+            <circle class="gw-pop" style="--d:.2s" cx="190" cy="45" r="8" fill="#58a6ff"/>
+            <circle class="gw-pop" style="--d:.7s" cx="250" cy="110" r="8" fill="#3fb950"/>
+            <circle class="gw-pop" style="--d:1.1s" cx="310" cy="175" r="8" fill="#a371f7"/>
+            <circle class="gw-pop" style="--d:1.3s" cx="370" cy="175" r="8" fill="#a371f7"/>
+            <circle class="gw-pop" style="--d:2.3s" cx="490" cy="235" r="8" fill="#d29922"/>
+            <circle class="gw-pop" style="--d:2.5s" cx="550" cy="235" r="8" fill="#d29922"/>
+          </g>
+          <circle class="gw-pop" style="--d:1.7s" cx="430" cy="110" r="8" fill="#0d1117" stroke="#3fb950" stroke-width="3"/>
+          <circle class="gw-pop" style="--d:2.8s" cx="630" cy="110" r="8" fill="#0d1117" stroke="#3fb950" stroke-width="3"/>
+          <circle class="gw-pop" style="--d:3.4s" cx="740" cy="45" r="10" fill="#0d1117" stroke="#58a6ff" stroke-width="4"/>
+
+          <!-- notes -->
+          <g font-size="12">
+            <g class="gw-fade" style="--d:.5s"><text x="232" y="74" fill="#8b949e">cut</text></g>
+            <g class="gw-fade" style="--d:1.7s"><rect x="384" y="132" width="34" height="20" rx="10" fill="#161b22" stroke="#a371f7"/><text x="401" y="146" text-anchor="middle" font-weight="bold" fill="#a371f7">PR</text></g>
+            <g class="gw-fade" style="--d:2.8s"><rect x="588" y="160" width="34" height="20" rx="10" fill="#161b22" stroke="#d29922"/><text x="605" y="174" text-anchor="middle" font-weight="bold" fill="#d29922">PR</text></g>
+            <g class="gw-fade" style="--d:3.4s"><text x="676" y="80" text-anchor="middle" fill="#8b949e">release</text></g>
+            <g class="gw-pop" style="--d:3.6s"><path d="M712 8 H764 L772 18 L764 28 H712 Z" fill="#161b22" stroke="#d29922" stroke-width="1.5"/><text x="740" y="23" text-anchor="middle" font-weight="bold" fill="#d29922">vX.Y</text></g>
+            <g class="gw-fade" style="--d:4s"><text x="820" y="134" text-anchor="middle" fill="#8b949e">next version</text></g>
+          </g>
+        </svg>
+      </div>
+      <div class="dg-gh-legend">
+        <span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="#8b949e"/></svg>commit</span>
+        <span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="none" stroke="#8b949e" stroke-width="2.5"/></svg>merge commit</span>
+        <span><svg viewBox="0 0 14 14"><path d="M1 3H9L13 7L9 11H1Z" fill="none" stroke="#d29922" stroke-width="1.5"/></svg>release tag</span>
+        <button type="button" class="dg-gh-btn" id="gw-replay"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-replay"/></svg>Replay</button>
+      </div>
+    </div>
+
+    <div class="dg-rows gw-branches">
+      <div class="dg-row"><span class="gw-branch-name" style="color:var(--brand)">main</span><span>Released, stable code. Every release is tagged. Contains no coding-assistant config.</span><span class="dg-muted">receives only release merges from <code>release.sh</code></span></div>
+      <div class="dg-row"><span class="gw-branch-name" style="color:var(--ok)">versionX.Y</span><span>Integration branch for the next release.</span><span class="dg-muted">from <code>main</code>, into <code>main</code> at release</span></div>
+      <div class="dg-row"><span class="gw-branch-name" style="color:var(--ink)">&lt;type&gt;/&lt;issue&gt;-&lt;slug&gt;</span><span>One piece of work for one Issue.</span><span class="dg-muted">from <code>versionX.Y</code>, into <code>versionX.Y</code></span></div>
+      <div class="dg-row"><span class="gw-branch-name" style="color:var(--muted)">gh-pages</span><span>Publish-only branch holding the built documentation site, served by GitHub Pages. Shares no history with the other branches and is never edited by hand.</span><span class="dg-muted">written only by <code>GUILDA.publish_doc</code>; never merged into or from other branches (see <a href="#publish-docs">Publishing</a>)</span></div>
+    </div>
+
+    <!-- ===================== Branch names ===================== -->
     <h2 id="branch-names">Branch names</h2>
-    <p>Work branches are named <strong><code>&lt;type&gt;/&lt;issue&gt;-&lt;slug&gt;</code></strong>.</p>
-    <table>
-      <tr><th>Type</th><th>Use for</th><th>Example</th></tr>
-      <tr><td><code>feature</code></td><td>New functions, classes, or models</td><td><code>feature/42-grid-forming-inverter</code></td></tr>
-      <tr><td><code>fix</code></td><td>Bug fixes</td><td><code>fix/51-opf-bus-index</code></td></tr>
-      <tr><td><code>refactor</code></td><td>Restructuring without changing behavior</td><td><code>refactor/55-split-odesimulator</code></td></tr>
-      <tr><td><code>docs</code></td><td>Help comments, documentation pages, tutorials</td><td><code>docs/60-folder-structure</code></td></tr>
-      <tr><td><code>test</code></td><td>Test and debug scripts</td><td><code>test/63-two-machine-validation</code></td></tr>
-    </table>
-    <ul>
-      <li><code>&lt;issue&gt;</code> is the GitHub Issue number. Create the Issue first.</li>
-      <li><code>&lt;slug&gt;</code> is a short English summary in lowercase words joined by hyphens (<code>a-z</code>, <code>0-9</code>, <code>-</code>).</li>
-      <li>Keep the whole name under about 50 characters.</li>
+    <p class="dg-lead-in">Work branches are named <strong class="dg-mono">&lt;type&gt;/&lt;issue&gt;-&lt;slug&gt;</strong>:</p>
+    <figure class="dg-figure">
+      <div class="dg-anatomy" role="img" aria-label="feature/42-grid-forming-inverter: type feature, Issue number 42, slug grid-forming-inverter">
+        <span class="dg-part is-accent"><span class="dg-tok">feature</span><span class="dg-kicker">type</span></span>
+        <span class="dg-sep">/</span>
+        <span class="dg-part is-warn"><span class="dg-tok">42</span><span class="dg-kicker">Issue #</span></span>
+        <span class="dg-sep">-</span>
+        <span class="dg-part is-ok"><span class="dg-tok">grid-forming-inverter</span><span class="dg-kicker">slug</span></span>
+      </div>
+    </figure>
+    <ul class="dg-list">
+      <li><span class="dg-mark is-warn">#</span><div><code>&lt;issue&gt;</code> is the GitHub Issue number. Create the Issue first.</div></li>
+      <li><span class="dg-mark is-ok">a-z</span><div><code>&lt;slug&gt;</code>: short English summary, lowercase words joined by hyphens (<code>a-z</code>, <code>0-9</code>, <code>-</code>).</div></li>
+      <li><span class="dg-mark">≤50</span><div>Keep the whole name under about 50 characters.</div></li>
     </ul>
+
+    <h3>Types</h3>
+    <div class="dg-rows gw-types">
+      <div class="dg-row"><span><span class="dg-badge"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-feature"/></svg>feature</span></span><span>New functions, classes, or models</span><span class="gw-example">feature/42-grid-forming-inverter</span></div>
+      <div class="dg-row"><span><span class="dg-badge"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-fix"/></svg>fix</span></span><span>Bug fixes</span><span class="gw-example">fix/51-opf-bus-index</span></div>
+      <div class="dg-row"><span><span class="dg-badge"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-refactor"/></svg>refactor</span></span><span>Restructuring without changing behavior</span><span class="gw-example">refactor/55-split-odesimulator</span></div>
+      <div class="dg-row"><span><span class="dg-badge"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-docs"/></svg>docs</span></span><span>Help comments, documentation pages, tutorials</span><span class="gw-example">docs/60-folder-structure</span></div>
+      <div class="dg-row"><span><span class="dg-badge"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-test"/></svg>test</span></span><span>Test and debug scripts</span><span class="gw-example">test/63-two-machine-validation</span></div>
+    </div>
 
     <section class="name-generator" aria-label="Branch Name Generator">
       <h2>Branch Name Generator</h2>
@@ -84,51 +227,177 @@ fix/51-...                      o---o</pre>
       </div>
     </section>
 
+    <!-- ===================== Commit messages ===================== -->
     <h2 id="commits">Commit messages</h2>
-    <p>Write the first line as <strong><code>&lt;type&gt;: &lt;summary&gt;</code></strong>.</p>
-    <table>
-      <tr><th>Type</th><th>Use for</th><th>Matching branch type</th></tr>
-      <tr><td><code>feat</code></td><td>New functions, classes, or models</td><td><code>feature</code></td></tr>
-      <tr><td><code>fix</code></td><td>Bug fixes</td><td><code>fix</code></td></tr>
-      <tr><td><code>refactor</code></td><td>Restructuring without changing behavior</td><td><code>refactor</code></td></tr>
-      <tr><td><code>docs</code></td><td>Help comments, documentation pages, tutorials</td><td><code>docs</code></td></tr>
-      <tr><td><code>test</code></td><td>Test and debug scripts</td><td><code>test</code></td></tr>
-      <tr><td><code>chore</code></td><td>Settings, <code>.gitignore</code>, file moves, and other maintenance</td><td>any</td></tr>
-    </table>
-    <ul>
-      <li>The summary is in English, starts with a lowercase verb in the imperative (<em>add</em>, <em>fix</em>, <em>remove</em>), and has no trailing period.</li>
-      <li>Keep the first line within 72 characters. Add a body after a blank line when the reason for the change is not obvious.</li>
-      <li>One commit contains one logical change. A branch may mix types, for example <code>feat:</code> and <code>docs:</code> commits on a <code>feature/</code> branch.</li>
+    <p class="dg-lead-in">The first line is <strong class="dg-mono">&lt;type&gt;: &lt;summary&gt;</strong>:</p>
+    <figure class="dg-figure">
+      <div class="dg-anatomy" role="img" aria-label="fix: use bus index instead of position in OPF constraints: type fix, colon and space, summary">
+        <span class="dg-part is-accent"><span class="dg-tok">fix</span><span class="dg-kicker">type</span></span>
+        <span class="dg-sep">: </span>
+        <span class="dg-part is-ok"><span class="dg-tok">use bus index instead of position in OPF constraints</span><span class="dg-kicker">summary: lowercase imperative verb first, no trailing period</span></span>
+      </div>
+    </figure>
+
+    <div class="dg-gh" role="group" aria-label="Example commit message">
+      <div class="dg-gh-chrome"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-commit"/></svg>GUILDA / <b>Commit</b> <span class="dg-gh-mono">3f9c2a1</span></div>
+      <div class="gw-msg-row">
+        <div class="gw-msg-tag"><b>first line</b>≤ 72 chars</div>
+        <div class="gw-msg-text is-title">fix: use bus index instead of position in OPF constraints<div class="gw-meter"><div class="gw-meter-bar"><span></span></div>57 / 72</div></div>
+      </div>
+      <div class="gw-msg-row">
+        <div class="gw-msg-tag"><b>blank line</b></div>
+        <div class="gw-msg-text is-blank">(empty)</div>
+      </div>
+      <div class="gw-msg-row">
+        <div class="gw-msg-tag"><b>body</b>when the reason is not obvious</div>
+        <div class="gw-msg-text">The constraint matrix was built from the position in a_Bus, which
+breaks after a bus is removed. Refs #51.</div>
+      </div>
+      <div class="dg-gh-legend"><span><b style="color:#e6edf3">contributor</b>&nbsp;committed on <span class="dg-gh-branch">fix/51-opf-bus-index</span></span></div>
+    </div>
+
+    <ul class="dg-list is-cols">
+      <li><span class="dg-mark">EN</span><div>The summary is in English.</div></li>
+      <li><span class="dg-mark is-ok">add</span><div>Starts with a lowercase verb in the imperative (<em>add</em>, <em>fix</em>, <em>remove</em>).</div></li>
+      <li><span class="dg-mark is-err">no .</span><div>No trailing period.</div></li>
+      <li><span class="dg-mark">≤72</span><div>Keep the first line within 72 characters.</div></li>
+      <li><span class="dg-mark">↵</span><div>Add a body after a blank line when the reason for the change is not obvious.</div></li>
+      <li><span class="dg-mark">1</span><div>One commit contains one logical change.</div></li>
     </ul>
-<pre>fix: use bus index instead of position in OPF constraints
 
-The constraint matrix was built from the position in a_Bus, which
-breaks after a bus is removed. Refs #51.</pre>
+    <h3>Commit type and branch type</h3>
+    <div class="dg-rows gw-map" role="table" aria-label="Commit types and matching branch types">
+      <div class="dg-row dg-rows-head" role="row"><span class="dg-kicker" role="columnheader">commit type</span><span></span><span class="dg-kicker" role="columnheader">branch type</span><span class="dg-kicker" role="columnheader">use for</span></div>
+      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge">feat</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-outline">feature</span></span><span role="cell">New functions, classes, or models</span></div>
+      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge">fix</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-outline">fix</span></span><span role="cell">Bug fixes</span></div>
+      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge">refactor</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-outline">refactor</span></span><span role="cell">Restructuring without changing behavior</span></div>
+      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge">docs</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-outline">docs</span></span><span role="cell">Help comments, documentation pages, tutorials</span></div>
+      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge">test</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-outline">test</span></span><span role="cell">Test and debug scripts</span></div>
+      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge is-muted"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-chore"/></svg>chore</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell" class="dg-muted">any</span><span role="cell">Settings, <code>.gitignore</code>, file moves, and other maintenance</span></div>
+    </div>
 
+    <div class="dg-gh">
+      <svg viewBox="0 0 620 90" role="img" aria-label="A feature branch with feat, docs and feat commits">
+        <text x="20" y="62" font-size="14" font-weight="bold" fill="#a371f7">feature/42-…</text>
+        <path d="M140 57 H600" stroke="#a371f7" stroke-width="4" stroke-linecap="round"/>
+        <g stroke="#0d1117" stroke-width="3" fill="#a371f7"><circle cx="230" cy="57" r="8"/><circle cx="360" cy="57" r="8"/><circle cx="490" cy="57" r="8"/></g>
+        <g font-size="14" font-weight="bold" text-anchor="middle">
+          <rect x="196" y="14" width="68" height="24" rx="12" fill="rgba(88,166,255,.15)" stroke="#58a6ff"/><text x="230" y="31" fill="#58a6ff">feat:</text>
+          <rect x="326" y="14" width="68" height="24" rx="12" fill="rgba(63,185,80,.15)" stroke="#3fb950"/><text x="360" y="31" fill="#3fb950">docs:</text>
+          <rect x="456" y="14" width="68" height="24" rx="12" fill="rgba(88,166,255,.15)" stroke="#58a6ff"/><text x="490" y="31" fill="#58a6ff">feat:</text>
+        </g>
+      </svg>
+    </div>
+    <p class="dg-caption">A branch may mix types, for example <code>feat:</code> and <code>docs:</code> commits on a <code>feature/</code> branch.</p>
+
+    <!-- ===================== Pull requests ===================== -->
     <h2 id="pull-requests">Pull requests</h2>
-    <ol>
-      <li>Keep the work branch up to date by merging the integration branch into it.</li>
-      <li>Open a pull request into the integration branch. Use the same <code>&lt;type&gt;: &lt;summary&gt;</code> format for the title.</li>
-      <li>Write <code>Closes #&lt;issue&gt;</code> in the description so the Issue is closed on merge.</li>
-      <li>Check the items in <a href="project-management.html#done">Definition of Done</a>.</li>
-      <li>After review, merge the pull request and delete the work branch.</li>
+    <div class="dg-gh" role="img" aria-label="Example pull request into versionX.Y from feature/42-grid-forming-inverter, titled feat: add grid-forming inverter model, with Closes #42 and the Definition of Done in the description.">
+      <div class="dg-gh-chrome"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-pr"/></svg>GUILDA / <b>Pull requests</b></div>
+      <div class="dg-gh-body">
+        <div class="dg-gh-title">feat: add grid-forming inverter model <span class="dg-gh-num">#57</span></div>
+        <div class="dg-gh-meta"><span class="dg-gh-state"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-pr"/></svg>Open</span><span><b>contributor</b> wants to merge 3 commits into <span class="dg-gh-branch">versionX.Y</span> from <span class="dg-gh-branch">feature/42-grid-forming-inverter</span></span></div>
+        <div class="dg-gh-box">
+          <div class="dg-gh-box-head">Description</div>
+          <div class="dg-gh-box-body">
+            <span class="dg-gh-skel"></span><span class="dg-gh-skel is-short"></span>
+            <p class="dg-gh-h"><span class="dg-gh-link">Closes #42</span></p>
+            <div class="gw-task"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-check"/></svg>Definition of Done checked</div>
+          </div>
+        </div>
+        <div class="dg-gh-box">
+          <div class="dg-gh-check"><svg class="dg-icon dg-gh-ok" aria-hidden="true"><use href="#dg-i-check"/></svg><span>This branch has no conflicts with the base branch</span></div>
+          <div class="dg-gh-check gw-merge"><span class="gw-merge-btn">Merge pull request</span><span class="gw-merge-btn is-secondary">Delete branch</span></div>
+        </div>
+      </div>
+    </div>
+    <ol class="dg-steps" style="--n:5">
+      <li><span class="dg-step-title">Sync</span>Keep the work branch up to date by merging the integration branch into it.</li>
+      <li><span class="dg-step-title">Open PR</span>Into the integration branch. Title uses the same <code>&lt;type&gt;: &lt;summary&gt;</code> format.</li>
+      <li><span class="dg-step-title">Link Issue</span>Write <code>Closes #&lt;issue&gt;</code> in the description so the Issue is closed on merge.</li>
+      <li><span class="dg-step-title">Check</span>Check the items in <a href="project-management.html#done">Definition of Done</a>.</li>
+      <li><span class="dg-step-title">Merge &amp; delete</span>After review, merge the pull request and delete the work branch.</li>
     </ol>
 
+    <!-- ===================== Release ===================== -->
     <h2 id="release">Release</h2>
-    <ol>
-      <li>Open a pull request from the integration branch into <code>main</code>.</li>
-      <li>After merging, tag the merge commit on <code>main</code> as <code>vX.Y</code> (existing tags: <code>v1.0</code>, <code>v1.1</code>, <code>v2.0</code>, <code>v2.1</code>).</li>
-      <li>Create the next integration branch from <code>main</code>.</li>
+    <ol class="dg-steps" style="--n:4">
+      <li><span class="dg-step-title">Review PR</span>Open a pull request from the integration branch into <code>main</code> for review. Do not merge it on GitHub.</li>
+      <li><span class="dg-step-title">release.sh</span>From a clean <code>versionX.Y</code>, run <code>bash .claude/release/release.sh X.Y</code>. It merges into <code>main</code> with <code>--no-ff</code>, removes the assistant config, commits <code>chore: release vX.Y</code>, and tags the merge commit <code>vX.Y</code>.</li>
+      <li><span class="dg-step-title">Push</span>Check the result, then run the printed <code>git push origin main vX.Y</code>. GitHub marks the pull request as merged.</li>
+      <li><span class="dg-step-title">Next branch</span>Run <code>bash .claude/release/start-version.sh X.Y PREV</code>: it creates the next <code>versionX.Y</code> from <code>main</code> and restores the assistant config from <code>versionPREV</code>.</li>
+    </ol>
+    <div class="dg-callout">
+      <svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
+      <div>
+        <p><strong>Assistant config never lands in <code>main</code>.</strong> <code>.claude/</code>, <code>.codex/</code> and <code>.github/copilot-instructions.md</code> are tracked on the integration and work branches only, so users who clone <code>main</code> or run <code>GUILDA.gitpull</code> never get them.</p>
+        <p><code>release.sh</code> removes them from the release merge and checks that <code>main</code> has none; <code>start-version.sh</code> brings them back. If the merge conflicts, the script aborts: merge <code>main</code> into <code>versionX.Y</code>, resolve the conflicts there, and run it again.</p>
+      </div>
+    </div>
+
+    <!-- ===================== Publishing the documentation ===================== -->
+    <h2 id="publish-docs">Publishing the documentation</h2>
+    <p>The documentation site is served by GitHub Pages at <a href="https://guilda-dev.github.io/guilda/"><code>https://guilda-dev.github.io/guilda/</code></a> from the <code>gh-pages</code> branch. The generated class reference is never committed to source branches, so the site is published by a MATLAB command that builds it and commits the result to <code>gh-pages</code>. Nothing else updates the site.</p>
+    <ol class="dg-steps" style="--n:4">
+      <li><span class="dg-step-title">Check out</span>Switch to <code>main</code> or <code>versionX.Y</code> with no uncommitted changes to tracked files.</li>
+      <li><span class="dg-step-title">Run</span>In MATLAB, run <code>GUILDA.publish_doc()</code>. It rebuilds the class reference and commits the site to <code>gh-pages</code>.</li>
+      <li><span class="dg-step-title">Confirm</span>Confirm the dialog to push <code>gh-pages</code> to <code>origin</code>.</li>
+      <li><span class="dg-step-title">Check</span>The site updates within a few minutes. Open it and check the changed pages.</li>
     </ol>
 
-    <h2 id="dont">Do not</h2>
-    <ul>
-      <li>Commit directly to <code>main</code>.</li>
-      <li>Force-push to <code>main</code> or the integration branch.</li>
-      <li>Commit generated files or personal settings (see <a href="folder-structure.html#generated">Generated files</a>).</li>
-      <li>Create work branches with other prefixes such as <code>dev/</code> or <code>develop/</code>.</li>
+    <h3>What the command does</h3>
+    <ul class="dg-list is-numbered">
+      <li><div><span class="dg-item-title">Checks the checkout</span>Refuses to run on any branch other than <code>main</code> or <code>versionX.Y</code>, or when tracked files have uncommitted changes.</div></li>
+      <li><div><span class="dg-item-title">Rebuilds the class reference</span>Regenerates <code>_GUILDAdoc/database/</code> from scratch and stops if any class export reports errors.</div></li>
+      <li><div><span class="dg-item-title">Writes the site</span>In a temporary Git worktree of <code>gh-pages</code> (created as an orphan branch the first time), writes <code>_GUILDAdoc/</code>, <code>LICENSE</code>, a root <code>index.html</code> that redirects to <code>_GUILDAdoc/index.html</code>, and an empty <code>.nojekyll</code>.</div></li>
+      <li><div><span class="dg-item-title">Commits</span>Commits <code>docs: publish &lt;branch&gt;@&lt;short-sha&gt;</code>, naming the source branch and commit. If nothing changed, it makes no commit.</div></li>
+      <li><div><span class="dg-item-title">Pushes</span>Asks for confirmation, then pushes <code>gh-pages</code> to <code>origin</code>.</div></li>
     </ul>
+
+    <h3>Options</h3>
+    <table class="dg-table">
+      <thead><tr><th>Call</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><code>GUILDA.publish_doc()</code></td><td data-label="Effect">Build, commit, ask for confirmation, and push.</td></tr>
+        <tr><td><code>GUILDA.publish_doc("confirm", false)</code></td><td data-label="Effect">Push without the confirmation dialog.</td></tr>
+        <tr><td><code>GUILDA.publish_doc("push", false)</code></td><td data-label="Effect">Build and commit to the local <code>gh-pages</code> only. Push it later with <code>git push origin gh-pages</code>.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="dg-callout">
+      <svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
+      <div>
+        <p><strong>One-time setup.</strong> A repository admin sets <em>Settings → Pages → Build and deployment</em> to <em>Deploy from a branch</em>, with branch <code>gh-pages</code> and folder <code>/ (root)</code>.</p>
+        <p>The site shows the branch that was published last; the latest commit message on <code>gh-pages</code> names it.</p>
+      </div>
+    </div>
+
+    <!-- ===================== Do not ===================== -->
+    <h2 id="dont">Do not</h2>
+    <ul class="dg-list">
+      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title">Direct commits</span>Commit directly to <code>main</code>.</div></li>
+      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title">Manual merges into main</span>Merge or cherry-pick into <code>main</code> by hand or on GitHub; release with <code>release.sh</code>.</div></li>
+      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title">Force-push</span>Force-push to <code>main</code> or the integration branch.</div></li>
+      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title">Generated / personal files</span>Commit generated files or personal settings (see <a href="folder-structure.html#generated">Generated files</a>).</div></li>
+      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title">Hand edits to gh-pages</span>Commit to, merge into, or merge from <code>gh-pages</code> by hand; publish with <code>GUILDA.publish_doc</code>.</div></li>
+      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title">Other prefixes</span>Create work branches with other prefixes such as <code>dev/</code> or <code>develop/</code>.</div></li>
+    </ul>
+    <div class="dg-callout is-warn">
+      <svg class="dg-icon" aria-hidden="true"><use href="#dg-i-shield"/></svg>
+      <p><strong>Enforced by Claude Code hooks</strong> (<code>.claude/settings.json</code>, <code>.claude/hooks/</code>): Claude Code sessions in this repository are blocked from creating branches with other names, committing on <code>main</code>, <code>versionX.Y</code> or non-work branches, force-pushing or deleting <code>main</code> / <code>versionX.Y</code>, running <code>git merge</code> or <code>git cherry-pick</code> on <code>main</code> (use <code>release.sh</code>), and editing generated files; a commit message that breaks the format is sent back for <code>git commit --amend</code>.</p>
+    </div>
   </main>
+
+  <script>
+    (function () {
+      var graph = document.getElementById('gw-graph');
+      document.getElementById('gw-replay').addEventListener('click', function () {
+        graph.classList.remove('gw-play');
+        void graph.getBoundingClientRect();
+        graph.classList.add('gw-play');
+      });
+    })();
+  </script>
 
   <script>
     (function () {

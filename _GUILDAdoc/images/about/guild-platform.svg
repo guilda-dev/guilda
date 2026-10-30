@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 300" role="img" aria-labelledby="t d">
+  <title id="t">A guild of researchers building on one platform</title>
+  <desc id="d">People around a shared platform each add a block: a new model, a controller, a reproduced study. The blocks stack into one structure that everyone can reuse.</desc>
+  <style>
+    .tag { font-family: Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 700; fill: #1B2127; text-anchor: middle; }
+  </style>
+  <defs>
+    <symbol id="p" viewBox="0 0 60 90">
+      <circle cx="30" cy="20" r="15" fill="#FFFFFF" stroke="#1B2127" stroke-width="2.5"/>
+      <path d="M24 22 q6 5 12 0" fill="none" stroke="#1B2127" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="24" cy="17" r="1.8" fill="#1B2127"/><circle cx="36" cy="17" r="1.8" fill="#1B2127"/>
+    </symbol>
+    <marker id="h" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M1 1 L9 5 L1 9 Z" fill="#0059A7"/></marker>
+  </defs>
+
+  <rect x="8" y="8" width="704" height="284" rx="22" fill="#EEF3F8"/>
+  <!-- confetti -->
+  <g stroke="#1B2127" stroke-width="1.5">
+    <circle cx="300" cy="40" r="5" fill="#D9E021"/><circle cx="452" cy="34" r="4" fill="#0059A7"/>
+    <rect x="236" y="70" width="8" height="8" rx="1.5" fill="#FFFFFF" transform="rotate(20 240 74)"/>
+    <rect x="490" y="72" width="8" height="8" rx="1.5" fill="#D9E021" transform="rotate(-15 494 76)"/>
+  </g>
+
+  <!-- platform -->
+  <ellipse cx="360" cy="246" rx="190" ry="26" fill="#00447F"/>
+  <path d="M170 236 V246 A190 26 0 0 0 550 246 V236 Z" fill="#00447F"/>
+  <ellipse cx="360" cy="236" rx="190" ry="26" fill="#0059A7" stroke="#1B2127" stroke-width="2.5"/>
+  <text x="360" y="242" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="800" letter-spacing="3" fill="#FFFFFF" text-anchor="middle">PLATFORM</text>
+
+  <!-- stacked blocks -->
+  <g stroke="#1B2127" stroke-width="2.5" stroke-linejoin="round">
+    <rect x="286" y="180" width="72" height="40" rx="6" fill="#FFFFFF"/>
+    <rect x="362" y="180" width="72" height="40" rx="6" fill="#D9E021"/>
+    <rect x="300" y="136" width="58" height="40" rx="6" fill="#C7D8EA"/>
+    <rect x="362" y="136" width="58" height="40" rx="6" fill="#FFFFFF"/>
+    <rect x="330" y="92" width="62" height="40" rx="6" fill="#0059A7"/>
+  </g>
+  <g stroke="#1B2127" stroke-width="2" stroke-linejoin="round">
+    <!-- generator glyph -->
+    <circle cx="322" cy="200" r="10" fill="none"/><path d="M314 200 q4 -7 8 0 q4 7 8 0" fill="none"/>
+    <!-- load arrow -->
+    <path d="M398 190 v18 M391 202 l7 7 l7 -7" fill="none"/>
+    <!-- branch -->
+    <path d="M312 156 h34" fill="none"/><circle cx="312" cy="156" r="3.5" fill="#1B2127"/><circle cx="346" cy="156" r="3.5" fill="#1B2127"/>
+    <!-- controller -->
+    <path d="M374 160 h10 l6 -10 l6 20 l6 -10 h6" fill="none"/>
+  </g>
+  <path d="M342 118 q8 -14 16 0 q8 14 16 0" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- people -->
+  <!-- left: hands in a model -->
+  <path d="M100 150 q-6 60 -2 92 h60 q4 -32 -2 -92 q-28 -14 -56 0 Z" fill="#0059A7" stroke="#1B2127" stroke-width="2.5" stroke-linejoin="round"/>
+  <use href="#p" x="98" y="98" width="60" height="90"/>
+  <path d="M150 178 q30 -6 44 -24" fill="none" stroke="#1B2127" stroke-width="2.5" stroke-linecap="round"/>
+  <rect x="190" y="132" width="40" height="28" rx="5" fill="#FFFFFF" stroke="#1B2127" stroke-width="2.5" transform="rotate(-12 210 146)"/>
+  <path d="M236 140 Q262 120 288 150" fill="none" stroke="#0059A7" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 6" marker-end="url(#h)"/>
+  <rect x="64" y="56" width="128" height="26" rx="13" fill="#FFFFFF" stroke="#1B2127" stroke-width="2"/>
+  <text x="128" y="74" class="tag">adds a model</text>
+
+  <!-- left 2: learner -->
+  <path d="M36 214 q-4 20 0 32 h44 q4 -12 0 -32 q-22 -10 -44 0 Z" fill="#D9E021" stroke="#1B2127" stroke-width="2.5" stroke-linejoin="round"/>
+  <use href="#p" x="34" y="172" width="44" height="66"/>
+
+  <!-- right: controller designer -->
+  <path d="M568 150 q-6 60 -2 92 h60 q4 -32 -2 -92 q-28 -14 -56 0 Z" fill="#D9E021" stroke="#1B2127" stroke-width="2.5" stroke-linejoin="round"/>
+  <use href="#p" x="566" y="98" width="60" height="90"/>
+  <path d="M574 178 q-30 -6 -44 -24" fill="none" stroke="#1B2127" stroke-width="2.5" stroke-linecap="round"/>
+  <rect x="494" y="128" width="40" height="28" rx="5" fill="#C7D8EA" stroke="#1B2127" stroke-width="2.5" transform="rotate(10 514 142)"/>
+  <path d="M488 136 Q462 112 436 140" fill="none" stroke="#0059A7" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 6" marker-end="url(#h)"/>
+  <rect x="526" y="56" width="148" height="26" rx="13" fill="#FFFFFF" stroke="#1B2127" stroke-width="2"/>
+  <text x="600" y="74" class="tag">tries a new controller</text>
+
+  <!-- right 2: reproduces a study -->
+  <path d="M642 214 q-4 20 0 32 h44 q4 -12 0 -32 q-22 -10 -44 0 Z" fill="#FFFFFF" stroke="#1B2127" stroke-width="2.5" stroke-linejoin="round"/>
+  <use href="#p" x="640" y="172" width="44" height="66"/>
+
+  <!-- top: reuse badge -->
+  <rect x="290" y="44" width="142" height="28" rx="14" fill="#D9E021" stroke="#1B2127" stroke-width="2"/>
+  <text x="361" y="63" class="tag">everyone reuses it</text>
+</svg>
