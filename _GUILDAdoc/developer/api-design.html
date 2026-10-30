@@ -15,9 +15,10 @@
     .ad-opts { width: auto; }
     .ad-opts td:first-child { padding-right: var(--dg-s7); }
     .ad-features td:last-child small { min-width: 10rem; }
+    .ad-features td:nth-child(3) > code:first-child { white-space: nowrap; }
     @media (max-width: 640px) {
       .ad-rules td:first-child, .ad-rules td:last-child, .ad-features td:last-child { width: auto; }
-      .ad-features td:nth-child(2) code:first-child { white-space: normal; overflow-wrap: anywhere; }
+      .ad-features td:nth-child(2) code:first-child, .ad-features td:nth-child(3) > code:first-child { white-space: normal; overflow-wrap: anywhere; }
     }
   </style>
 </head>
@@ -96,8 +97,8 @@
     </table>
 
     <h3 id="entry-point">1 · Entry point</h3>
-    <p>Classes such as <code>ContinuationPowerFlow</code>, <code>CsvNetHandler</code> and <code>odeSimulator</code> implement these methods.</p>
-    <p>Calling them directly is for advanced users only.</p>
+    <p>The solver classes implement these methods: <code>PowerFlowCalculation</code>, <code>OptimalPowerFlow</code>, <code>ContinuationPowerFlow</code>, <code>odeSimulator</code> and <code>odeLinearizer</code>, held as <code>net.solver_PF</code> / <code>_OPF</code> / <code>_CPF</code> / <code>_ODE</code> / <code>_LIN</code>.</p>
+    <p>Each solver holds defaults only, never a network or a result. Calling its <code>solve</code> directly is for advanced users only.</p>
 
     <h3 id="inputs">2 · Inputs: defaults and overrides</h3>
     <figure class="dg-figure" aria-labelledby="ad-in-title">
@@ -114,7 +115,7 @@
         <!-- defaults -->
         <rect class="dg-sv-box is-soft" x="1" y="88" width="318" height="68" rx="10"/>
         <text class="is-k" x="15" y="109">ANALYSIS SETTINGS · DEFAULTS</text>
-        <text class="dg-mono is-sm" x="15" y="128">net.solver_PF / _OPF / _CPF / _ODE</text>
+        <text class="dg-mono is-sm" x="15" y="128">net.solver_PF / _OPF / _CPF / _ODE / _LIN</text>
         <text class="is-sm is-muted" x="15" y="145">method · tolerance · time span · events</text>
         <text class="is-sm is-muted" x="15" y="172">kept between runs; a call never changes them</text>
         <!-- name-value -->
@@ -142,7 +143,7 @@
         <table class="dg-table">
           <tbody>
             <tr><td>System data</td><td data-label="Set in">properties, <code>tab_parameter</code>, before the call</td><td data-label="Examples">line constants, V/P/Q specs, operating limits</td></tr>
-            <tr><td>Analysis settings</td><td data-label="Defaults in"><code>net.solver_PF</code> / <code>_OPF</code> / <code>_CPF</code> / <code>_ODE</code>; kept between runs</td><td data-label="Examples">method, tolerance, time span, events</td></tr>
+            <tr><td>Analysis settings</td><td data-label="Defaults in"><code>net.solver_PF</code> / <code>_OPF</code> / <code>_CPF</code> / <code>_ODE</code> / <code>_LIN</code>; kept between runs</td><td data-label="Examples">method, tolerance, time span, events</td></tr>
             <tr><td>Name-Value options</td><td data-label="Set in">the call; this call only</td><td data-label="Effect">replaces the default for this call</td></tr>
           </tbody>
         </table>
@@ -152,6 +153,8 @@
     <ul>
       <li>System data describes the system itself. Set it before the call.</li>
       <li>Defaults persist, so repeated runs keep the last settings.</li>
+      <li>Each solver class has a constant <code>OptionMap</code>: the Name-Value names it accepts and the solver property each one sets (e.g. <code>MaxIteration</code> → <code>MaxIterations</code>).</li>
+      <li>A name that is not in <code>OptionMap</code> stops with <code>GUILDA:resolve_options:UnknownName</code>, which lists the accepted names.</li>
       <li>See <a href="class-design.html#solvers">Class Design: Solver settings</a>.</li>
     </ul>
 
@@ -159,12 +162,13 @@
     <table class="dg-table">
       <thead><tr><th>Feature kind</th><th>Returns</th><th>Example</th></tr></thead>
       <tbody>
-        <tr><td>Main analysis</td><td data-label="Returns">a dedicated result class</td><td data-label="Example">power flow, OPF, CPF, time simulation → <code>odeSimulationResult</code></td></tr>
-        <tr><td>Simple getter</td><td data-label="Returns">a standard MATLAB type</td><td data-label="Example"><code>get_sys</code> → <code>ss</code>, <code>get_admittance_matrix</code> → <code>table</code></td></tr>
+        <tr><td>Main analysis</td><td data-label="Returns">a dedicated result class</td><td data-label="Example">power flow, OPF, CPF, time simulation, linearization → a subclass of <code>AnalysisResult</code>, e.g. <code>odeSimulationResult</code></td></tr>
+        <tr><td>Simple getter</td><td data-label="Returns">a standard MATLAB type</td><td data-label="Example"><code>get_sys</code> → <code>ss</code>, <code>get_admittance_matrix</code> / <code>get_variable_map</code> → <code>table</code></td></tr>
       </tbody>
     </table>
-    <p>Result classes also hold <code>flag</code> and <code>output</code> as properties.</p>
+    <p>Result classes also hold <code>flag</code>, <code>output</code> and the effective <code>options</code> as properties.</p>
     <p>So <code>result</code> alone is enough to check the outcome.</p>
+    <p>Plotting and writing files are methods of the result: <code>result.Plot()</code> and <code>result.Export(filename)</code>. The options <code>Plot</code> and <code>Export</code> of a call run them.</p>
 
     <h3 id="preconditions">5 · Preconditions</h3>
     <table class="dg-table">
@@ -176,7 +180,7 @@
       </tbody>
     </table>
     <p>Example: the edit state <code>str_editFlag</code> is <code>unset</code>, <code>initialized</code> or <code>editted</code>.</p>
-    <p>A simulation needs <code>initialized</code>. Otherwise the error says "run <code>net.initialize()</code> first".</p>
+    <p>A simulation or a linearization needs an up-to-date equilibrium: <code>initialize</code> has run, and no edit since then made the equilibrium stale. Otherwise the error says "run <code>net.initialize()</code> first" (see <a href="class-design.html#edits">Class Design: Edit handling</a>).</p>
 
     <h3 id="side-effects">6 · Side effects follow the verb</h3>
     <table class="dg-table">
@@ -216,7 +220,7 @@
           <td>Power flow</td>
           <td data-label="Call"><code>net.calculate_powerflow(...)</code><small><code>Method="algebraic"|"dynamic"</code>, <code>Tolerance</code>, <code>MaxIteration</code>, ...</small></td>
           <td data-label="First output"><code>PowerFlowResult</code></td>
-          <td data-label="Changes net"><span class="dev-status is-ok">No</span><small>The slack bus is chosen inside the calculation and not written to the net.</small></td>
+          <td data-label="Changes net"><span class="dev-status is-ok">No</span><small>Only when no slack bus is set, the first bus becomes the slack bus (INFO message, rule 5).</small></td>
         </tr>
         <tr>
           <td>Initialization</td>
@@ -226,43 +230,43 @@
         </tr>
         <tr>
           <td>OPF</td>
-          <td data-label="Call"><code>net.optimize_powerflow(...)</code><small><code>Method="ELD"|"DC"|"AC"</code></small></td>
+          <td data-label="Call"><code>net.optimize_powerflow(...)</code><small><code>Method="ELD"|"DC OPF"|"AC OPF"</code>, <code>Solver</code>, <code>Tolerance</code>, <code>MaxIteration</code>, ... Costs and constraints: <code>set_opffcn</code> (see <a href="class-design.html#opf">Class Design</a>).</small></td>
           <td data-label="First output"><code>OPFResult</code><small>Holds the Lagrange multipliers and the problem object.</small></td>
           <td data-label="Changes net"><span class="dev-status is-ok">No</span></td>
         </tr>
         <tr>
           <td>CPF</td>
-          <td data-label="Call"><code>net.calculate_continuation_powerflow(...)</code></td>
-          <td data-label="First output"><code>CPFResult</code></td>
-          <td data-label="Changes net"><span class="dev-status is-ok">No</span></td>
+          <td data-label="Call"><code>net.calculate_continuation_powerflow(...)</code><small><code>LoadBus</code>, <code>StepSize</code>, <code>ArcLength</code>, <code>MaxIteration</code>, ...</small></td>
+          <td data-label="First output"><code>CPFResult</code><small><code>flag</code> is true when the path passed the nose.</small></td>
+          <td data-label="Changes net"><span class="dev-status is-ok">No</span><small>Error if the net is not initialized.</small></td>
         </tr>
         <tr>
           <td>Time simulation</td>
           <td data-label="Call"><code>net.simulate(time, events..., ...)</code><small><code>Solver</code>, <code>TimeLimit</code>, <code>Progress</code>, ...</small></td>
-          <td data-label="First output"><code>odeSimulationResult</code></td>
+          <td data-label="First output"><code>odeSimulationResult</code><small><code>flag</code>: <code>1</code> done, <code>0</code> time limit, <code>-1</code> solver stop.</small></td>
           <td data-label="Changes net"><span class="dev-status is-ok">No</span><small>Error if the net is not initialized.</small></td>
         </tr>
         <tr>
           <td>Linearization</td>
-          <td data-label="Call"><code>net.get_sys(...)</code><small><code>Method="Feedback"|"Kron"|"DAE"</code>, <code>NonUnit</code></small></td>
-          <td data-label="First output"><code>sys</code> (an <code>ss</code>)<small>The linearizer object and the DAE matrices are in <code>output</code>.</small></td>
-          <td data-label="Changes net"><span class="dev-status is-ok">No</span></td>
+          <td data-label="Call"><code>net.linearize(...)</code><br><code>net.get_sys(...)</code><small><code>Algorithm="Feedback"|"Kron"|"DAE"</code>, <code>NonUnit</code>, <code>Point</code>. The result holds the unreduced DAE in the order of <code>get_variable_map</code>.</small></td>
+          <td data-label="First output"><code>LinearizationResult</code><small><code>get_sys</code> returns <code>result.get_ss()</code>, an <code>ss</code>.</small></td>
+          <td data-label="Changes net"><span class="dev-status is-ok">No</span><small>Error if the net is not initialized.</small></td>
         </tr>
         <tr>
           <td>Import</td>
-          <td data-label="Call"><code>PowerNetwork.import_csv(path)</code><br><code>PowerNetwork.import_matpower(mpc)</code><small>Static methods.</small></td>
+          <td data-label="Call"><code>PowerNetwork.import_csv(path)</code><br><code>PowerNetwork.import_matpower(mpc)</code><small>Static methods. <code>import_csv(path, Network=obj)</code> fills an existing network, as the network classes do.</small></td>
           <td data-label="First output">new <code>net</code></td>
           <td data-label="Changes net">—</td>
         </tr>
         <tr>
           <td>Export</td>
-          <td data-label="Call"><code>net.export_csv(...)</code></td>
-          <td data-label="First output">—</td>
+          <td data-label="Call"><code>net.export_csv(path)</code><small><code>Overwrite</code>, <code>ClassFile</code></small></td>
+          <td data-label="First output">the folder path</td>
           <td data-label="Changes net"><span class="dev-status is-ok">No</span></td>
         </tr>
         <tr>
           <td>Getters / drawing</td>
-          <td data-label="Call"><code>net.get_admittance_matrix()</code><br><code>net.draw_diagram(ax)</code></td>
+          <td data-label="Call"><code>net.get_admittance_matrix()</code><br><code>net.get_variable_map()</code><br><code>net.draw_diagram(ax)</code></td>
           <td data-label="First output">Unchanged</td>
           <td data-label="Changes net"><span class="dev-status is-ok">No</span></td>
         </tr>
@@ -283,7 +287,7 @@
 
     <h2 id="related">Related rules</h2>
     <ul>
-      <li>Result classes (<code>PowerFlowResult</code>, <code>OPFResult</code>, <code>CPFResult</code>, ...) go in <code>_GUILDAsystem/_auxiliary/@&lt;Name&gt;/</code> and inherit from <code>auxiliary</code> (see <a href="folder-structure.html">Folder Structure</a>).</li>
+      <li>Result classes (<code>PowerFlowResult</code>, <code>OPFResult</code>, <code>CPFResult</code>, <code>odeSimulationResult</code>, <code>LinearizationResult</code>) go in <code>_GUILDAsystem/_auxiliary/@&lt;Name&gt;/</code> and inherit from <code>AnalysisResult</code> (see <a href="folder-structure.html#folders">Folder Structure</a>).</li>
       <li>Where data lives, how edits mark results as stale, and the unit conventions are described in <a href="class-design.html">Class Design</a>.</li>
       <li>Name the options and properties of new code with the <a href="naming-conventions.html">Naming Conventions</a>, and document them with <a href="class-documentation.html">Class Documentation</a> tags.</li>
     </ul>
