@@ -570,6 +570,47 @@ ev = odeEventSet("in", net, "TimeSpan", [1,2], "InputUnit", "LPQ2B002", "InputNa
 expect_error(@() net.simulate([0,3], ev), "GUILDA:odeEventSet:InvalidNargin")
 
 
+%% Phase that starts at rest in a large network
+% 平衡点から始まる区間で、ode15s のニュートン修正量が丸め誤差だけになると発散と誤判定され、
+% IEEE68bus (AVR/PSS なし) は t = 0 で止まっていた ([0,1] の区間で起きる)。
+% 何もしないイベントで区間を分けても最後まで進み、平衡点に留まる
+net = DebugScript.helper.quiet(@() network.IEEE68bus(LocalController=false));
+DebugScript.helper.quiet(@() net.initialize);
+net.solver_ODE.Progress = "none";
+[sol, flag, output] = net.simulate([0,5], odeEventSet("none", net, "TimeSpan", 1));
+assert(flag == 1, output.message)
+assert(output.nPhases == 2)
+assert(DebugScript.helper.max_state_drift(sol) < 1e-8)
+% 地絡の後の区間も計算できる
+ev = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B030");
+[~, flag, output] = net.simulate([0,2], ev, TimeLimit=Inf);
+assert(flag == 1, output.message)
+
+
+%% Solver stop reports the phase and the solver message
+% 入力が t = 2.5 (イベント開始から 1.5 s) で発散するとソルバーが止まる (flag = -1)。
+% output.message は止まった区間・時刻とソルバーの警告文を示す
+ev = odeEventSet("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) 1/(1.5-t));
+lastwarn("");
+[~, flag, output] = net.simulate([0,4], ev);
+str_warn = lastwarn();
+assert(flag == -1)
+assert(output.tEnd > 1 && output.tEnd < 2.5)
+assert(contains(output.message, "phase 2") && contains(output.message, "t = [1, 3]"), output.message)
+assert(strlength(str_warn) > 0 && contains(output.message, str_warn), output.message)
+
+% 計算中のエラーは区間を示す GUILDA のエラーになり、元のエラーは cause に残る
+ev = odeEventSet("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) boom(t));
+try
+    net.simulate([0,4], ev);
+    error("DebugScript:noError", "エラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:odeSimulator:PhaseFailed", ME.identifier + ": " + ME.message)
+    assert(contains(ME.message, "phase 2") && contains(ME.message, "t = [1, 3]") && contains(ME.message, "boom"), ME.message)
+    assert(ME.cause{1}.identifier == "DebugScript:boom")
+end
+
+
 %% Event outside the simulation time warns
 ev = odeEventSet("late", net, "TimeSpan", [5,6], "FaultBus", "B008");
 lastwarn("");
@@ -580,6 +621,13 @@ assert(flag == 1)
 
 
 % ---- local functions ----
+function u = boom(t)
+    if t > 0.5
+        error("DebugScript:boom", "boom at t = %g", t)
+    end
+    u = 0;
+end
+
 function set_property(obj, str_name, val)
     obj.(str_name) = val;
 end
