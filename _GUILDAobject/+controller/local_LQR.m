@@ -1,84 +1,89 @@
 classdef local_LQR < LocalController
-% <@Desc>
-% State-feedback LQR controller of one component. It observes all the states of the
-% component (the reserved input "Xall") and drives the inputs Input of the component:
-%   u = u* - K (x - x*)
-% where x*, u* are the equilibrium of the component. The gain K = lqr(A, B, Q, R) is
-% computed by net.initialize from the linear model of the component (comp.get_sys
-% without its controllers) connected to an infinite bus of voltage V0 through the
-% admittance that gives the equilibrium current (as in GUILDA v2).
-% Attach it with comp.add_local_controller(lqr); it takes the place of an AVR.
-% Its outputs replace the driven inputs, so a global controller (e.g. an AGC) must not
-% drive the same input (use Input="Vfield" with an AGC on Pmech).
-% <@Role> Controller
-% <@Summary> State-feedback LQR controller of a component.
-% <@Constructor>
-%  lqr = controller.local_LQR(tag)
-%  lqr = controller.local_LQR(tag, Q=Q, R=R, Input=["Vfield"], V0=1)
-% <@Parameters>
-% [
-%   {"Name": "tag", "Type": "string scalar", "Description": "Tag of the controller (\"CL\" + tag).", "Required": true, "Default": "-"},
-%   {"Name": "Q", "Type": "double vector | square matrix", "Description": "Weight of the states sv_x of the component (a vector is its diagonal).", "Required": false, "Default": "identity"},
-%   {"Name": "R", "Type": "double vector | square matrix", "Description": "Weight of the driven inputs Input (a vector is its diagonal).", "Required": false, "Default": "identity"},
-%   {"Name": "Input", "Type": "string vector", "Description": "Inputs sv_u of the component that the controller drives.", "Required": false, "Default": "all the inputs"},
-%   {"Name": "V0", "Type": "double scalar (complex)", "Description": "Voltage of the infinite bus of the design model.", "Required": false, "Default": "1"}
-% ]
+% State-feedback LQR controller of one component.
+% The controller observes all the states `x` of the component it is attached to
+% (the reserved input name "Xall") and drives the inputs `Input` of the component
+% (by name, e.g. "Vfield" [pu] or "Pmech" [pu]; all its inputs by default):
+%
+% ```
+% u = u* - K*(x - x*)
+% ```
+%
+% where `x*` and `u*` are the equilibrium of the component. It has no state of
+% its own. `net.initialize` computes the gain `K = lqr(A, B, Q, R)` from the
+% linear model of the component (`comp.get_sys` without its controllers)
+% connected to an infinite bus of voltage `V0` [pu] through the admittance that
+% gives the equilibrium current (as in GUILDA v2).
+%
+% Attach it with `comp.add_local_controller(lqr)`; it takes the place of an AVR
+% (and of the PSS attached to that AVR). Its outputs replace the driven inputs,
+% so a global controller (e.g. an AGC) must not drive the same input (use
+% `Input="Vfield"` with an AGC on Pmech).
+%
+% <@Examples>
+% Attach LQR controllers to two generators and simulate a fault:
+%
+% ```matlab
+% net = network.IEEE9bus(LocalController=false);
+% net.a_Bus{1}.a_Component{1}.add_local_controller(controller.local_LQR("lqr1"));
+% net.a_Bus{2}.a_Component{1}.add_local_controller(controller.local_LQR("lqr2", Input="Vfield", R=2));
+% net.initialize;
+% ev  = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B007");
+% sol = net.simulate([0,10], ev);
+% ```
+%
+% See also Component.add_local_controller, controller.avr.abstract, controller.local_LQR_retrofit
 
-    properties (SetAccess=protected, Hidden)
-        key     = "local"
-        sv_x    = strings(0,1)
-        sv_u    = "Xall"
-        sv_y    = strings(0,1)
-        sv_para = strings(0,1)
+    properties (SetAccess=protected, Hidden) % Signals
+        key     = "local"           % Controller kind ("local": in the place of an AVR).
+        sv_x    = strings(0,1)      % Names of the controller states (none).
+        sv_u    = "Xall"            % Names of the observed signals ("Xall": all the states of the component).
+        sv_y    = strings(0,1)      % Names of the driven inputs of the component.
+        sv_para = strings(0,1)      % Names of the parameters (none).
     end
 
-    properties
-        % <@Desc> Weight of the states of the component (a vector is the diagonal).
-        % Editing it makes the equilibrium stale; net.initialize recomputes K.
-        % <@Role> Parameter
-        % <@Type> double
-        % <@Size> nx x nx
+    properties % Design weights
+        % State weight of the LQR.
+        % An nx-by-nx matrix for the states of the component; a vector is its
+        % diagonal (empty: identity). Editing it makes the equilibrium stale;
+        % net.initialize recomputes K.
         Q = []
-        % <@Desc> Weight of the driven inputs (a vector is the diagonal).
-        % Editing it makes the equilibrium stale; net.initialize recomputes K.
-        % <@Role> Parameter
-        % <@Type> double
-        % <@Size> nu x nu
+        % Input weight of the LQR.
+        % An nu-by-nu matrix for the driven inputs; a vector is its diagonal
+        % (empty: identity). Editing it makes the equilibrium stale;
+        % net.initialize recomputes K.
         R = []
-        % <@Desc> Voltage of the infinite bus of the design model.
-        % <@Role> Parameter
-        % <@Type> double
-        % <@Size> 1x1
+        % [pu] Voltage of the infinite bus of the design model.
+        % A complex scalar.
         V0 = 1
     end
 
-    properties (SetAccess=private)
-        % <@Desc> Feedback gain (u = u* - K (x - x*)), computed by net.initialize.
-        % <@Role> SteadyState
-        % <@Type> double
-        % <@Size> nu x nx
+    properties (SetAccess=private) % Design results
+        % Feedback gain `K` in `u = u* - K*(x - x*)`.
+        % An nu-by-nx matrix computed by net.initialize.
         K = zeros(0,0)
-        % <@Desc> Linear model of the component and the infinite bus used to compute K
-        % (inputs: the driven inputs, outputs: the states).
-        % <@Role> SteadyState
-        % <@Type> ss
-        % <@Size> 1x1
+        % Linear model used to compute K (ss).
+        % The component connected to the infinite bus; its inputs are the driven
+        % inputs and its outputs the states.
         sys_design
     end
 
-    properties (Access=private)
+    properties (Access=private) % Internal
         sv_input (:,1) string = strings(0,1)   % Input as given (empty: all the inputs)
         rv_u0    (:,1) double = zeros(0,1)     % equilibrium of the driven inputs
     end
 
     methods
         function obj = local_LQR(tag, opt)
+        % Create a state-feedback LQR controller with the tag "CL" + tag.
             arguments
-                tag        (1,1) string
-                opt.Q      double = []
-                opt.R      double = []
-                opt.Input  (:,1) string = strings(0,1)
-                opt.V0     (1,1) double = 1
+                tag        (1,1) string                 % Tag suffix; the controller tag is "CL" + tag.
+                opt.Q      double = []                  % State weight: nx-by-nx matrix or its diagonal (default: identity).
+                opt.R      double = []                  % Input weight: nu-by-nu matrix or its diagonal (default: identity).
+                opt.Input  (:,1) string = strings(0,1)  % Names of the inputs of the component to drive (default: all).
+                opt.V0     (1,1) double = 1             % [pu] Infinite-bus voltage of the design model (complex).
+            end
+            arguments (Output)
+                obj % local_LQR object.
             end
             obj@LocalController("CL"+tag)
             obj.sv_input = opt.Input;
@@ -103,8 +108,14 @@ classdef local_LQR < LocalController
         end
 
         function get_equilibrium(obj, V, u)
-            % Called by the component after its equilibrium is set: the inputs of the
-            % controller are the states x* and its outputs the inputs u* of the component.
+            % Set the equilibrium of the controller and design the gain K.
+            % The component calls this after its equilibrium is set: the observed
+            % signals of the controller are the states `x*` and its outputs the
+            % driven inputs `u*` of the component.
+            %
+            % Inputs:
+            % - `V` [pu] Complex terminal voltage of the component at the equilibrium.
+            % - `u` Equilibrium input of the component (in the order of its sv_u).
             comp = obj.a_Component;
             if ~isa(comp, "Component")
                 error("GUILDA:local_LQR:NotOnComponent", "%s must be attached directly to a component.", obj.str_tag)
@@ -199,21 +210,47 @@ classdef local_LQR < LocalController
 
     methods (Static)
         function dx = fcn_dx(t, x, V, I, u, param, omega0) %#ok
+            % State equation of the controller (no state).
+            %
+            % Outputs:
+            % - `dx` Empty state derivative (0-by-1).
             dx = zeros(0,1);
         end
         function y = fcn_y(t, x, V, I, u, param, omega0) %#ok
+            % Output equation `y = u* - K*(u - x*)`, where `u` is the observed state of the component.
+            %
+            % Inputs:
+            % - `u` Observed states `x` of the component.
+            % - `param` Struct with the gain `K`, the equilibrium state `x0` and input `u0`.
+            %
+            % Outputs:
+            % - `y` Driven inputs of the component.
             y = param.u0 - param.K * (u - param.x0);
         end
         function M = fcn_Mass(t, x, V, I, u, param, omega0) %#ok
+            % Mass matrix of the controller (no state).
+            %
+            % Outputs:
+            % - `M` Empty mass matrix (0-by-0).
             M = zeros(0,0);
         end
         function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t, x, V, I, u, param, omega0) %#ok
+            % Jacobian of the state equation (empty: no state).
+            %
+            % Outputs:
+            % - `Axx`, `Bxv`, `Bxi`, `Bxu` Empty Jacobians with respect to x, V, I and u.
             Axx = zeros(0,0);
             Bxv = zeros(0,2);
             Bxi = zeros(0,2);
             Bxu = zeros(0,numel(u));
         end
         function [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t, x, V, I, u, param, omega0) %#ok
+            % Jacobian of the output equation.
+            %
+            % Outputs:
+            % - `Cyx` Jacobian with respect to x (ny-by-0).
+            % - `Dyv`, `Dyi` Jacobians with respect to V and I (zero).
+            % - `Dyu` Jacobian with respect to the observed states (`-K`).
             ny  = size(param.K,1);
             Cyx = zeros(ny,0);
             Dyv = zeros(ny,2);

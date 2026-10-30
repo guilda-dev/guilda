@@ -1,6 +1,22 @@
-% レトロフィット制御器(controller.local_LQR_retrofit)のための実装
-% 真の線形環境モデルを取得するための関数
 function [environment, subsystem] = get_environment(net, idx, do_check)
+% Return the linear environment model of a generator for the retrofit controller.
+% The environment is the rest of the network seen from the generator at bus `idx`,
+% as a model from its rotor angle and internal voltage `(delta, E)` to its
+% terminal voltage in polar coordinates `(angleV, absV)`. It is the `model` input
+% of controller.local_LQR_retrofit. This function uses the GUILDA v2 network
+% interface (`a_bus`, `get_sys_area`).
+%
+% Inputs:
+% - `net` Network in the GUILDA v2 format.
+% - `idx` Index of the bus of the generator.
+% - `do_check` true to compare the result with the full network in a Bode plot (default false).
+%
+% See also controller.local_LQR_retrofit
+
+arguments (Output)
+    environment % Environment model `(delta_m, E_m) -> (angleV_m, absV_m)` (ss).
+    subsystem   % Generator model `(Vin_polar, u) -> (delta, omega, E)` (ss).
+end
 
 if nargin<3
     do_check = false;
