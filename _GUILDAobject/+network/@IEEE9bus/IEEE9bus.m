@@ -35,7 +35,8 @@ classdef IEEE9bus < PowerNetwork
 %      which is controller.pss.PSS1 with kpss = Kpss/Tpss, tWS = Tpss, tn1 = TL1p,
 %      td1 = TL1, tn2 = TL2p, td2 = TL2.
 %  ・The v2 files have no voltage limits, base voltages or OPF data; these are the
-%    GUILDA defaults (Vmin 0.5, Vmax 1.5, baseKV 230, OPF cost HP = fP = 1).
+%    GUILDA defaults (Vmin 0.5, Vmax 1.5, baseKV 230, OPF cost HP = fP = 1 for
+%    generators and 0 for loads).
 %
 %==================================================================================
 %
