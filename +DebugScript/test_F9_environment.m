@@ -80,6 +80,21 @@ txt = evalc("GUILDA.dictionary(""Component"");");
 assert(~contains(txt, "same name"), txt)
 
 
+%% GUILDA dictionary skips archive folders
+% archive フォルダ (保管用の旧ファイル) はどこにあっても探さない。
+% 現行クラスと同名のファイルを一時的に archive に置いても、重複として検出されない
+str_dir = fullfile(str_root, "_GUILDAobject", "+component", "+load", "archive");
+assert(~isfolder(str_dir), str_dir + " が既にある")
+mkdir(str_dir);
+c_dir = onCleanup(@() rmdir(str_dir, "s"));
+writelines(["classdef power < handle", "end"], fullfile(str_dir, "power.m"));
+
+txt = evalc("tab = GUILDA.dictionary(""Component"");");
+assert(~contains(txt, "same name"), txt)
+assert(ismember("component.load.power", tab.filename))
+assert(string(which("component.load.power")) ~= fullfile(str_dir, "power.m"))
+
+
 %% Symbolic Math Toolbox is not a required toolbox
 % 必須は Control System / Optimization のみ。Symbolic Math は開発用スクリプト専用の任意 Toolbox
 sv_req = strtrim(readlines(fullfile(str_root, "@GUILDA", "config", "ListToolbox.txt")));
