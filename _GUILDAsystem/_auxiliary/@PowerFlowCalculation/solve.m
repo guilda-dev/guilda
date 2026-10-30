@@ -1,32 +1,19 @@
 function [result,flag,output] = solve(obj, net, s_options)
-% <@Desc>
+% Solve the power flow with the given settings.
+%
 % Runs the power flow calculation of net with the effective settings s_options and
 % returns the computed values as a PowerFlowResult. The solver is only read: nothing is
 % written back into it. Called by net.calculate_powerflow; calling it directly is for
 % advanced use.
-% <@Role> Analysis
-% <@Summary> Solve the power flow with the given settings.
-% <@Signatures>
-% [
-%   "[result, flag, output] = solve(obj, net)",
-%   "[result, flag, output] = solve(obj, net, s_options)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "obj", "Type": "PowerFlowCalculation", "Description": "Solver (net.solver_PF).", "Required": true, "Default": "-"},
-%   {"Name": "net", "Type": "PowerNetwork", "Description": "Network with a slack bus.", "Required": true, "Default": "-"},
-%   {"Name": "s_options", "Type": "struct", "Description": "Effective settings (output of get_options).", "Required": false, "Default": "obj.get_options()"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "result", "Type": "PowerFlowResult", "Description": "Bus and branch values of the solution."},
-%   {"Name": "flag", "Type": "double or logical", "Description": "exitflag of fsolve (algebraic) or convergence (dynamic)."},
-%   {"Name": "output", "Type": "struct", "Description": "Solver details; output.message describes the outcome."}
-% ]
     arguments
-        obj
-        net
-        s_options (1,1) struct = obj.get_options()
+        obj % Solver (net.solver_PF).
+        net % Network with a slack bus.
+        s_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
+    end
+    arguments (Output)
+        result % Bus and branch values of the solution.
+        flag % exitflag of fsolve (algebraic) or convergence (dynamic).
+        output % Solver details; output.message describes the outcome.
     end
     t0 = tic;
 

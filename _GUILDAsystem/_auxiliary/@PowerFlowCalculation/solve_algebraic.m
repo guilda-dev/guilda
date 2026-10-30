@@ -1,5 +1,5 @@
 function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_algebraic(obj, cm_Y, tab_PFset, s_options)
-% Solves the power equations with fsolve. cm_Vhistory holds the bus voltages at each
+% Solve the power equations with fsolve. cm_Vhistory holds the bus voltages at each
 % iteration (n_bus x n_step), rv_step the iteration numbers.
 
     % Collect Info

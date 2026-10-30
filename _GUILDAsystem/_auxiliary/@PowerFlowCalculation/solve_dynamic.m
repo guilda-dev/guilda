@@ -1,5 +1,5 @@
 function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_dynamic(~, cm_Y, tab_PFset, s_options)
-% Settles virtual bus dynamics at the power flow solution (ode15s). cm_Vhistory holds the
+% Settle virtual bus dynamics at the power flow solution (ode15s). cm_Vhistory holds the
 % bus voltages at each output time (n_bus x n_step), rv_step the times [s].
 
     N   = size(tab_PFset,1);

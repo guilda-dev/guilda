@@ -1,5 +1,5 @@
 function opt = optimoption(~, s_options)
-% fsolve options of the "algebraic" method from the effective settings s_options
+% Build the fsolve options of the "algebraic" method from the effective settings s_options
 % (see get_options). 0 for MaxIterations, MaxFunEvals or Tolerance keeps the fsolve default.
 
     if s_options.PlotFcn=="none"

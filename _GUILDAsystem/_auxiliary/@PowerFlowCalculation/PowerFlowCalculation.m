@@ -1,45 +1,63 @@
 classdef PowerFlowCalculation < auxiliary
-% <@Desc>
-% Solver of the power flow calculation. net.solver_PF holds one; its properties are the
-% stored defaults of net.calculate_powerflow and are kept between runs. Name-Value options
-% of a call override them for that call only (see OptionMap and get_options). The solver
-% holds settings only: results are returned as a PowerFlowResult.
-% <@Role> Class Category
-% <@Constructor>
-% obj = PowerFlowCalculation()
-% Reads the defaults from GUILDA.config("PowerFlowCalculation").
+% Solver of the power flow calculation (net.calculate_powerflow).
+%
+% net.solver_PF holds one; its properties are the stored defaults of
+% net.calculate_powerflow and are kept between runs. Name-Value options of a call override
+% them for that call only (see OptionMap and get_options). The solver holds settings only:
+% results are returned as a PowerFlowResult.
+%
+% <@Examples>
+% ```matlab
+% net = network.IEEE14bus();
+% net.solver_PF.WhenFailed = "WARN";            % stored default, kept between runs
+% result = net.calculate_powerflow();
+% result = net.calculate_powerflow(Method="dynamic", Verbose=true);   % this call only
+% ```
+%
+% See also PowerFlowResult, PowerNetwork.calculate_powerflow
 
-    properties(Access=public)
-        % <@Desc> Calculation method: "algebraic" (fsolve on the power equations) or
-        % "dynamic" (virtual bus dynamics that settle at the power flow solution).
-        % <@Role> Settings
-        % <@Type> string
-        % <@Size> 1x1
+    properties(Access=public) % Settings
+        % Calculation method.
+        % "algebraic" (fsolve on the power equations) or "dynamic" (virtual bus dynamics that
+        % settle at the power flow solution).
         Method        (1,1) string {mustBeMember(Method,["algebraic","dynamic"])} = "algebraic"
 
-        % <@Desc> Convergence tolerance. "algebraic": FunctionTolerance of fsolve;
-        % "dynamic": largest P/Q mismatch [pu]. 0 uses the solver default (1e-6 / 1e-5).
-        % <@Role> Settings
-        % <@Type> double
-        % <@Size> 1x1
+        % Convergence tolerance.
+        % "algebraic": FunctionTolerance of fsolve; "dynamic": largest P/Q mismatch [pu]. 0 uses
+        % the solver default (1e-6 / 1e-5).
         Tolerance     (1,1) double {mustBeNonnegative} = 0
 
+        % MaxIterations option of fsolve ("algebraic"); 0 keeps the fsolve default.
         MaxIterations (1,1) double {mustBeNonnegative,mustBeInteger}
+
+        % Display option of fsolve ("algebraic").
         Display       (1,1) string {mustBeMember(Display,["none","iter","iter-detailed","final","final-detailed"])}='none'
+
+        % MaxFunctionEvaluations option of fsolve ("algebraic"); 0 keeps the fsolve default.
         MaxFunEvals   (1,1) double {mustBeNonnegative,mustBeInteger}
+
+        % UseParallel option of fsolve ("algebraic").
         UseParallel   (1,1) logical
+
+        % PlotFcn option of fsolve ("algebraic"); "none" for no plot.
         PlotFcn       (1,1) string {mustBeMember(PlotFcn,["none","optimplotx","optimplotfunccount","optimplotfval","optimplotstepsize","optimplotfirstorderopt"])}="none"
+
+        % Reaction when the calculation does not converge.
+        % "WARN" issues a warning, "ERROR" an error, "DISP" prints output.message, "NONE" does
+        % nothing (check flag).
         WhenFailed    (1,1) string {mustBeMember(WhenFailed,["WARN","ERROR","DISP","NONE"])}="NONE"
+
+        % Settings of the "dynamic" method.
+        % Fields: Mass and Damper of the virtual bus dynamics, foh_PQ, and t_span (output
+        % times [s] of the integration).
         dynamic       (1,1) struct  = struct("Mass",0,"Damper",0.1,"foh_PQ",0,"t_span",0:1/120:50);
     end
 
-    properties(Constant)
-        % <@Desc> Name-Value options of net.calculate_powerflow and the solver property each
-        % one sets (input of tools.resolve_options). Only the common option names are used.
-        % Verbose=true sets Display="iter", Verbose=false sets Display="none".
-        % <@Role> Settings
+    properties(Constant) % Settings
+        % Name-Value options of net.calculate_powerflow and the solver property each one sets.
+        % Input of tools.resolve_options. Only the common option names are used. Verbose=true sets Display="iter", Verbose=false
+        % sets Display="none".
         % <@Type> struct
-        % <@Size> 1x1
         OptionMap = struct( ...
             "Method",       "Method", ...
             "Tolerance",    "Tolerance", ...
@@ -49,6 +67,10 @@ classdef PowerFlowCalculation < auxiliary
 
     methods
         function obj = PowerFlowCalculation()
+        % Create a power flow solver with the defaults of GUILDA.config("PowerFlowCalculation").
+        %
+        % A network creates its own (net.solver_PF); net.reset_solver() replaces it with a
+        % new one.
             sct = GUILDA.config("PowerFlowCalculation");
             obj.Method        = sct.Method.Value;
             obj.Tolerance     = sct.Tolerance.Value;
@@ -61,30 +83,17 @@ classdef PowerFlowCalculation < auxiliary
         end
 
         function s_options = get_options(obj, nv)
-        % <@Desc>
-        % Effective settings of one run: every stored setting of the solver, with the
-        % Name-Value overrides of the call applied. The solver itself is not changed.
+        % Get the effective settings of one run as a struct.
+        %
+        % Every stored setting of the solver, with the Name-Value overrides of the call applied. The solver itself is not changed.
         % A name that is not in OptionMap stops with GUILDA:resolve_options:UnknownName;
         % an invalid value stops with the validation error of the option.
-        % <@Role> Settings
-        % <@Summary> Stored settings + call-time overrides, as a struct.
-        % <@Signatures>
-        % [
-        %   "s_options = get_options(obj)",
-        %   "s_options = get_options(obj, {Name1, Value1, ...})"
-        % ]
-        % <@Parameters>
-        % [
-        %   {"Name": "obj", "Type": "PowerFlowCalculation", "Description": "Solver holding the defaults (net.solver_PF).", "Required": true, "Default": "-"},
-        %   {"Name": "nv", "Type": "cell", "Description": "Name-Value overrides: Method, Tolerance, MaxIteration, Verbose.", "Required": false, "Default": "{}"}
-        % ]
-        % <@Returns>
-        % [
-        %   {"Name": "s_options", "Type": "struct", "Description": "One field per setting (Method, Tolerance, MaxIterations, Display, ..., dynamic)."}
-        % ]
             arguments
-                obj
-                nv (1,:) cell = {}
+                obj % Solver holding the defaults (net.solver_PF).
+                nv (1,:) cell = {} % Name-Value overrides: Method, Tolerance, MaxIteration, Verbose.
+            end
+            arguments (Output)
+                s_options % One field per setting (Method, Tolerance, MaxIterations, Display, ..., dynamic).
             end
             s_given = tools.resolve_options(obj, PowerFlowCalculation.OptionMap, nv);
             validate_options(nv{:});
