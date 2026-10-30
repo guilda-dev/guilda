@@ -35,7 +35,7 @@ classdef PowerNetwork < PowerSystemModel
 %   -> By executing the following command, steady-state values will be set.
 %      ( The internal process executes obj.calculate_powerflow and then sets 
 % 　　　the steady-state values of the Bus class using the result. )
-%      >> net.initialize("methods","powerflow calculation")
+%      >> net.initialize(Method="powerflow")
 %
 %
 % << Optimal PowerFlow(OPF) >>
@@ -57,7 +57,7 @@ classdef PowerNetwork < PowerSystemModel
 %      >> obj.a_Branch{i}.tab_parameter.OPF
 %
 %  -> After modifying the hyperparameters, execute the following command to set the optimized power flow:
-%      >> net.initialize("methods","optimal powerflow")
+%      >> net.initialize(Method="OPF")
 %
 %
 % << Time Simulation >>
@@ -175,7 +175,7 @@ classdef PowerNetwork < PowerSystemModel
         remove_global_controller( obj, str_GconTag)
         
         % initialize
-        [flag,powerflow_bus,powerflow_cub] = initialize(obj,options)
+        [result, flag, output] = initialize(obj, varargin)
         reset_solver(obj);
 
         % OPF(optimal power-flow)
