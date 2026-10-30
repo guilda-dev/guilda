@@ -12,7 +12,7 @@ classdef OptimalPowerFlow < auxiliary
 
     properties(Access=public)
         % <@Desc> Formulation: "ELD" (economic load dispatch, branches ignored), "DC OPF"
-        % (DC approximation: |V| = 1, no losses, b_ij = Im(Y_ij)) or "AC OPF" (AC power
+        % (DC approximation: |V| = 1, no losses, b_ij = 1/(X*tap) as in MATPOWER) or "AC OPF" (AC power
         % flow equations).
         % <@Role> Settings
         % <@Type> string

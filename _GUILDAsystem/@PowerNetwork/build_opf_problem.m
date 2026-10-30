@@ -59,7 +59,8 @@ end
     end
 
     % Reference angle: the slack bus (the first bus if none is set) keeps its power-flow Varg.
-    if options.Method ~= "ELD"
+    % net.set_opffcn(DefaultConstraint=false) removes it.
+    if options.Method ~= "ELD" && obj.s_opffcn.DefaultConstraint
         i_ref = find(cellfun(@(b) b.l_isSlack, a_Bus), 1);
         if isempty(i_ref); i_ref = 1; end
         Varg_ref = a_Bus{i_ref}.para_powerflow.Varg;
@@ -76,6 +77,9 @@ end
         str_coni = str_const{i};
         prob.Constraints.("balanced"+str_coni) = const.(str_coni) == 0;
     end
+
+    % network-wide set_opffcn terms (variables of all objects, addressed by tag)
+    prob = opffcn.apply(obj, prob, options.Method, Vvar);
 
     switch nargout
         case 0; disp(prob);
