@@ -1,39 +1,54 @@
 classdef local_LQR_retrofit <  LocalController
-% モデル  ：内部制御器がLQRのレトロフィットコントローラ
-% 親クラス：controllerクラス
-% 実行方法：obj = local_LQR_retrofit(net, idx, Q, R, model, model_agc)
-% 　引数　：・net  ：networkクラスのインスタンス
-% 　　　　　・　idx  ： double配列。制御対象の母線番号
-% 　　　　　・　Q  ： double配列。状態量の重み行列
-% 　　　　　・　R  ： double配列。入力量の重み行列
-% 　　　　　・　model  ：ss型。環境モデルの一部 （(delta, E)->(angleV, absV)）。入出力は極座標表示。+controller/+modeling/get_environmentで取得
-% 　出力　：controllerクラスのインスタンス
+% Retrofit controller whose internal controller is an LQR.
+% The controller observes the state of the generator it is attached to (rotor
+% angle `delta` [rad] and internal voltage `E` [pu]) and its terminal voltage
+% (angle and magnitude [pu]), and drives the AVR input `u_avr` of the generator.
+% The LQR gain is designed for the generator connected to an environment model
+% (`(delta, E) -> (angleV, absV)`, in polar coordinates) that
+% controller.modeling.get_environment computes.
+%
+% This class uses the GUILDA v2 controller interface (`connected_index_*`,
+% `get_dx_u`, `get_linear_matrix`); it does not implement the abstract methods
+% of LocalController (`fcn_dx`, `fcn_y`, `fcn_Mass`, `Jacobi_dx`, `Jacobi_Y`).
+%
+% See also controller.modeling.get_environment, controller.local_LQR
 
-    properties(SetAccess=protected)
-        type = 'local';
-        port_input   = 'all';
-        port_observe = 'all'; % delta,omega,Ed,Vfieldだが、仮で設定
+    properties(SetAccess=protected) % Configuration
+        type = 'local'; % Controller type ('local').
+        port_input   = 'all'; % Input ports of the generator that the controller drives.
+        port_observe = 'all'; % Observed ports of the generator ('all'; the controller uses delta, omega, Ed and Vfield).
     end
 
-    properties
-        A
-        Bu
-        Bw
-        Bv
-        K
-        nx
-        X0
-        V0
-        I0
-        u0
-        delta0
-        E0
-        sys_design
-        sys_fb
+    properties % Design results
+        A          % State matrix of the internal model.
+        Bu         % Input matrix of the internal model for the LQR input.
+        Bw         % Input matrix of the internal model for the deviation of `[delta; E]`.
+        Bv         % Input matrix of the internal model for the deviation of `[angleV; absV]`.
+        K          % LQR gain.
+        nx         % Number of controller states.
+        X0         % Equilibrium state of the generator.
+        V0         % [pu] Equilibrium terminal voltage as `[real; imag]`.
+        I0         % [pu] Equilibrium terminal current as `[real; imag]`.
+        u0         % Equilibrium input of the generator.
+        delta0     % [rad] Equilibrium rotor angle.
+        E0         % [pu] Equilibrium internal voltage.
+        sys_design % Generator and environment model used for the design (ss).
+        sys_fb     % State-feedback model of the controller (ss).
     end
 
     methods
         function obj = local_LQR_retrofit(net, idx, Q, R, model)
+            % Create a retrofit controller for the generator at one bus.
+            %
+            % Inputs:
+            % - `net` Network in the GUILDA v2 format.
+            % - `idx` Index of the bus whose generator is controlled.
+            % - `Q` State weight matrix of the LQR (padded with zeros to the model size).
+            % - `R` Input weight of the LQR; `Inf` gives a zero gain.
+            % - `model` Environment model `(delta, E) -> (angleV, absV)` (ss); default: zero model.
+            arguments (Output)
+                obj % local_LQR_retrofit object.
+            end
             obj@LocalController(net, idx, idx);
             if nargin<5
                 model = [];
@@ -95,18 +110,41 @@ classdef local_LQR_retrofit <  LocalController
         end
 
         function nx = get_nx(obj)
+            % Return the number of controller states.
+            arguments (Output)
+                nx % Number of states.
+            end
             nx = obj.nx;
         end
 
         function nu = get_nu(obj)
+            % Return the number of controller outputs (2).
+            arguments (Output)
+                nu % Number of outputs.
+            end
             nu = 2;
         end
 
         function initialize(obj)
+            % Do nothing; the controller is set up by the constructor.
             % レトロフィット制御器導入時は解列シミュレーション不可
         end
 
         function [dx, u] = get_dx_u(obj, t, x, X, Vcell, Icell, U, is_linear)
+            % Return the state derivative and the input to the generator.
+            %
+            % Inputs:
+            % - `t` [s] Time (unused).
+            % - `x` Controller state.
+            % - `X` Cell array with the generator state.
+            % - `Vcell` [pu] Cell array with the terminal voltage `[real; imag]`.
+            % - `Icell` [pu] Cell array with the terminal current (unused).
+            % - `U` Global input (unused).
+            % - `is_linear` true to use the linearized polar transform (default false).
+            arguments (Output)
+                dx % Controller state derivative.
+                u  % Cell array with the input to the generator.
+            end
             if nargin < 8
                 is_linear = false;
             end
@@ -136,11 +174,30 @@ classdef local_LQR_retrofit <  LocalController
         end
 
         function [dx, u] = get_dx_u_linear(obj, t, x, X, Vcell, Icell, U)
+            % Return the state derivative and the input with the linearized polar transform.
+            % Same as get_dx_u with `is_linear = true`.
+            arguments (Output)
+                dx % Controller state derivative.
+                u  % Cell array with the input to the generator.
+            end
             [dx, u] = get_dx_u(obj, t, x, X, Vcell, Icell, U, true);
         end
 
         % シミュレーションを実行できるようにするための一時的な実装なので要修正
         function [A, BX, BV, BI, Bu, C, DX, DV, DI, Du] = get_linear_matrix(obj)
+            % Return empty state-space matrices so that a simulation can run.
+            arguments (Output)
+                A  % Empty matrix.
+                BX % Empty matrix.
+                BV % Empty matrix.
+                BI % Empty matrix.
+                Bu % Empty matrix.
+                C  % Empty matrix.
+                DX % Empty matrix.
+                DV % Empty matrix.
+                DI % Empty matrix.
+                Du % Empty matrix.
+            end
             A = [];
             BX = [];
             BV = [];

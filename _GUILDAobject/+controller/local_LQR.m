@@ -1,24 +1,35 @@
 classdef local_LQR < LocalController
-% 一つのcomponentクラスに付加することを想定
+% LQR state-feedback controller for one component.
+% The controller observes the state `X` of the component it is attached to and
+% feeds back `u = DX*(X - xss)` to the component's input ports, where `xss` is the
+% equilibrium state. The gain is designed with `lqr` on the component linearized
+% at its equilibrium and connected to an infinite bus of voltage `V0` [pu]. It has
+% no state of its own.
+%
+% This class uses the GUILDA v2 controller interface (`connected_index_*`,
+% `get_dx_u`, `get_linear_matrix`); it does not implement the abstract methods
+% of LocalController (`fcn_dx`, `fcn_y`, `fcn_Mass`, `Jacobi_dx`, `Jacobi_Y`).
+%
+% See also controller.local_LQR_retrofit
 
-    properties(SetAccess=protected)
-        type = 'local';
-        port_input   = 'all';
-        port_observe = 'all';
+    properties(SetAccess=protected) % Configuration
+        type = 'local'; % Controller type ('local').
+        port_input   = 'all'; % Input ports of the component that the controller drives.
+        port_observe = 'all'; % Observed ports of the component.
     end
 
-    properties
-        Q
-        R
-        V0 = 1; % 1 + 0j
+    properties % Design weights
+        Q % State weight matrix of the LQR.
+        R % Input weight matrix of the LQR.
+        V0 = 1; % [pu] Infinite-bus voltage used for the design (1 + 0j).
     end
 
-    properties(SetAccess = private)
-        sys
-        DX
+    properties(SetAccess = private) % Design results
+        sys % Reserved for the controller's state-space model; not set by this class.
+        DX % Feedback gain from the component state to its input.
     end
 
-    properties(Access = private)
+    properties(Access = private) % Internal
         xss
         uilab
         default_Q
@@ -28,6 +39,17 @@ classdef local_LQR < LocalController
     methods
 
         function obj = local_LQR(net, idx, default_Q, default_R, port_input)
+            % Create an LQR controller for the component at one bus.
+            %
+            % Inputs:
+            % - `net` Network in the GUILDA v2 format.
+            % - `idx` Index of the bus whose component is controlled (one bus only).
+            % - `default_Q` State weights, a vector (diagonal) or a square matrix (default []).
+            % - `default_R` Input weights, a vector (diagonal) or a square matrix (default []).
+            % - `port_input` Input ports to drive (default 'all').
+            arguments (Output)
+                obj % local_LQR object.
+            end
             obj@LocalController(net,idx,idx)
 
             obj.set_index(idx);
@@ -41,10 +63,15 @@ classdef local_LQR < LocalController
         end
 
         function nx = get_nx(~)
+            % Return the number of controller states (0).
+            arguments (Output)
+                nx % Number of states.
+            end
             nx = 0;
         end
 
         function initialize(obj)
+            % Set the weights Q and R and the equilibrium state of the controlled component.
             xidx = obj.idx_state{1};
             uidx = obj.idx_port{1};
             
@@ -58,11 +85,30 @@ classdef local_LQR < LocalController
         end
         
         function [dx, u] = get_dx_u(obj, ~, ~, X, ~, ~, ~)
+            % Return the feedback input `u = DX*(X - xss)` for the component state `X`.
+            arguments (Output)
+                dx % Empty state derivative (the controller has no state).
+                u  % Cell array with the input to the component.
+            end
             dx = [];
             u{1} = obj.system_matrix.DX * (X{1} - obj.xss); % + obj.Du*u_global;
         end
         
         function [A, BX, BV, BI,  Bu, C, DX, DV, DI, Du] = get_linear_matrix(obj)
+            % Design the LQR gain and return the state-space matrices of the controller.
+            % The controller has no state, so only `DX` (the feedback gain) is nonzero.
+            arguments (Output)
+                A  % State matrix (empty).
+                BX % Input matrix for the component state.
+                BV % Input matrix for the bus voltage.
+                BI % Input matrix for the bus current.
+                Bu % Input matrix for the global input.
+                C  % Output matrix.
+                DX % Feedback gain from the component state to its input.
+                DV % Feedthrough from the bus voltage.
+                DI % Feedthrough from the bus current.
+                Du % Feedthrough from the global input.
+            end
 
             idx =  obj.connected_index_observe;
 
@@ -105,6 +151,11 @@ classdef local_LQR < LocalController
     % インデックスの設定メソッド
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function set_index(obj,idx)
+            % Set the bus index of the controlled component.
+            % An error is raised when `idx` has more than one element.
+            %
+            % Inputs:
+            % - `idx` Index of the bus whose component is controlled.
             if isscalar(idx)
                 obj.connected_index_input = idx;
                 obj.connected_index_observe = idx;
@@ -140,6 +191,10 @@ classdef local_LQR < LocalController
     % parameterの設定をUIで行うためのメソッド(開発中)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function set_parameter(obj,fig)
+            % Open a UI to edit the weights Q and R and show the resulting gain.
+            %
+            % Inputs:
+            % - `fig` UI figure to draw in (default: a new uifigure).
             i = obj.connected_index_input;
             c = obj.network.a_bus{i}.component;
             port = c.get_port_name;
@@ -182,10 +237,12 @@ classdef local_LQR < LocalController
         end
 
         function refresh_xtab(obj, tab, ~)
+            % Update Q from the state weight table of set_parameter (UI callback).
             obj.set_Q(tab.Data{:,1})
             obj.uilab.Value = word_factory(obj);
         end
         function refresh_utab(obj, tab, data)
+            % Update R and the driven inputs from the input table of set_parameter (UI callback).
             if data.Indices(2)==1
                 idx = tab.Data{:,1};
                 k = uistyle('BackgroundColor',[0.7 0.7 0.7]);

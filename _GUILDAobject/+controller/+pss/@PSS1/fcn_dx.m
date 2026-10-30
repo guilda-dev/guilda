@@ -1,4 +1,20 @@
 function dx = fcn_dx(t, x, V, I, u, param, omega0) %#ok   
+    % Return the right-hand side of the PSS1 state equation.
+    % The state equation is `M*dx/dt = f(t, x, V, I, u)`, where `M` is given by fcn_Mass.
+    %
+    % Inputs:
+    % - `t` [s] Time (unused).
+    % - `x` [pu] State `[xiWS; xi1; xi2]` of the washout filter and the two lead-lag blocks.
+    % - `V` [pu] Terminal voltage as `[real; imag]` (unused).
+    % - `I` [pu] Terminal current as `[real; imag]` (unused).
+    % - `u` [pu] Frequency deviation `omega` of the generator.
+    % - `param` Parameter vector in the order of `sv_para`.
+    % - `omega0` [Hz] Nominal frequency (unused).
+    %
+    % See also controller.pss.PSS1.fcn_Mass, controller.pss.PSS1.fcn_y, controller.pss.PSS1.Jacobi_dx
+    arguments (Output)
+        dx % Right-hand side `f`, one row per state.
+    end
         
     % 一番最初についてるゲイン
     kpss = param(1);     

@@ -1,4 +1,24 @@
 function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0) %#ok
+    % Return the Jacobians of the AVR_DC1 state equation.
+    % The derivatives of the right-hand side `f` of fcn_dx are taken with respect to
+    % the state, the voltage, the current and the input.
+    %
+    % Inputs:
+    % - `t` [s] Time (unused).
+    % - `x` [pu] State `[Vtr; Vap; Vfld; Vst]`: transducer output, amplifier output, field voltage and stabilizer feedback.
+    % - `V` [pu] Terminal voltage of the generator as `[real; imag]`.
+    % - `I` [pu] Terminal current of the generator as `[real; imag]` (unused).
+    % - `u` [pu] Input `[Vref; Vpss]`: voltage reference and PSS output.
+    % - `param` Parameter vector in the order of `sv_para`.
+    % - `omega0` [Hz] Nominal frequency (unused).
+    %
+    % See also controller.avr.AVR_DC1.fcn_dx, controller.avr.AVR_DC1.Jacobi_Y
+    arguments (Output)
+        Axx % Derivative of `f` with respect to `x`.
+        Bxv % Derivative of `f` with respect to `V` (`[real; imag]`).
+        Bxi % Derivative of `f` with respect to `I` (`[real; imag]`).
+        Bxu % Derivative of `f` with respect to `u`.
+    end
     Vtr  = x(1);
     Vap  = x(2);
     Vfld = x(3);
