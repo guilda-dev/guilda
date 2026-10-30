@@ -1,4 +1,13 @@
 function [DAEvec, u, y_name] = get_dx_algebraic(obj, t, x, Vi, Ii, u, y_name, DAEvec) 
+% Add the equations of the controller (and its nested controller) to the DAE residual.
+%
+% Called by Component.get_dx_algebraic. `u` and `y_name` carry the outputs of the
+% parent; the controller returns its own outputs and their names for the parent inputs.
+    arguments (Output)
+        DAEvec   % Updated DAE residual of the network.
+        u        % Outputs of the controller, which are inputs of the parent.
+        y_name   % Names of those outputs.
+    end
 
     rv_U = obj.rv_Uequilibrium;
 

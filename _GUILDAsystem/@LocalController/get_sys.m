@@ -1,12 +1,22 @@
 function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
+% Linearize the local controller.
+%
+% Called by Component.get_sys, which connects the controller to the component. The
+% inputs are the voltage of the parent and the controller inputs; the outputs are the
+% controller outputs (with the states first when `full` is true).
+%
+% Outputs after `sys` (`varargout`): state names, input names and output names as cell
+% arrays of char.
+%
+% See also Component.get_sys
     arguments
         obj
-        x        (:,1) double  = obj.rv_Xequilibrium
-        V        (:,1) double  = [real(obj.c_Vequilibrium);imag(obj.c_Vequilibrium)]
-        I        (:,1) double  = [real(obj.c_Iequilibrium);imag(obj.c_Iequilibrium)]
-        u        (:,1) double  = obj.rv_Uequilibrium
-        opt.full (1,1) logical = true
-        opt.tag  (1,1) logical = true
+        x        (:,1) double  = obj.rv_Xequilibrium   % States (default: the equilibrium).
+        V        (:,1) double  = [real(obj.c_Vequilibrium);imag(obj.c_Vequilibrium)]   % [pu] Voltage [Vre; Vim] of the parent.
+        I        (:,1) double  = [real(obj.c_Iequilibrium);imag(obj.c_Iequilibrium)]   % [pu] Current [Ire; Iim] of the parent (not a port).
+        u        (:,1) double  = obj.rv_Uequilibrium   % Inputs (default: the equilibrium).
+        opt.full (1,1) logical = true   % Also output the states.
+        opt.tag  (1,1) logical = true   % Name the states, inputs and outputs with the controller tag.
     end
 
     % I is not a port of a controller (c_Iequilibrium is the parent's, [] without a parent)
