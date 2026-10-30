@@ -6,7 +6,7 @@ const developerData = [
     },
 {
     title: "Process: Git Workflow",
-    description: "Follow the branch model, name work branches as <type>/<issue>-<slug>, and write commit messages as <type>: <summary>.",
+    description: "Follow the branch model, name work branches as <type>/<issue>-<slug>, write commit messages as <type>: <summary>, and publish the documentation site.",
     link: "developer/git-workflow.html"
     },
 {
