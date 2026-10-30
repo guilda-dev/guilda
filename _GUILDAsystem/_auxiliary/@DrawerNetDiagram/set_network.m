@@ -1,4 +1,7 @@
 function set_network(obj, net)
+% Read the buses, branches, components and admittance matrix of a network.
+%
+% Input `net`: network to draw. Call set_powerflow afterwards to set the state shown.
     a_bus        = net.a_Bus;
     a_branch     = net.a_Branch;
     obj.n_bus    = numel(a_bus);
