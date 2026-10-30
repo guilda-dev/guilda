@@ -446,20 +446,92 @@ try
     net.linearize("Point", {sim, 10});
     error("DebugScript:NoError", "範囲外の時刻がエラーにならない")
 catch ME
-    assert(ME.identifier == "GUILDA:odeLinearizer:PointTime", ME.identifier)
+    assert(ME.identifier == "GUILDA:odeSimulationResult:PointTime", ME.identifier)
 end
-% odeSimulationResult は制御器の状態を持たないので、制御器のある系統は理由を示すエラー
-net = new_net();
-net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"));
-DebugScript.helper.quiet(@() net.initialize);
-sim = net.simulate([0,0.2]);
+% Point={sim, t, Side}: 第 3 要素は sim.get_point の Side
+assert(isequal(net.linearize("Point", {sim, t, "before"}).rv_point, res.rv_point))
 try
-    net.linearize("Point", {sim, 0.1});
-    error("DebugScript:NoError", "制御器の状態がないのにエラーにならない")
+    net.linearize("Point", {sim, t, "middle"});
+    error("DebugScript:NoError", "知らない Side がエラーにならない")
 catch ME
-    assert(ME.identifier == "GUILDA:odeLinearizer:PointUnavailable", ME.identifier)
-    assert(contains(ME.message, "avr1") || contains(ME.message, "SG1B001"))
+    assert(ME.identifier == "GUILDA:odeLinearizer:PointType", ME.identifier)
 end
+
+
+%% Point from a simulation with controllers at an equilibrium time
+% 局所制御器 (AVR + PSS, AVR) と大域制御器 (AGC) の状態も結果に入るので、外乱のない
+% シミュレーションの途中の時刻で線形化すると既定 (平衡点) と同じ行列になる
+net = new_net();
+net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
+net.a_Bus{2}.a_Component{1}.add_local_controller(controller.avr.AVR_DC1("avr2", kap=20));
+net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002"));
+DebugScript.helper.quiet(@() net.initialize);
+sim  = net.simulate([0,1]);
+res0 = net.linearize();
+res1 = net.linearize("Point", {sim, 0.5});
+tab  = res0.tab_variable;
+assert(~res1.output.l_equilibrium && height(res1.tab_variable) == height(tab))
+avr1 = net.a_Bus{1}.a_Component{1}.a_LocalController{1};
+sv_con = [avr1.str_tag, avr1.a_LocalController{1}.str_tag, net.a_Bus{2}.a_Component{1}.a_LocalController{1}.str_tag, ...
+          net.a_GlobalController{1}.str_tag];
+assert(all(ismember(sv_con, tab.Owner)))
+assert(norm(res1.rv_point - res0.rv_point, Inf) < 1e-6, "平衡点のシミュレーションの点が平衡点と違う")
+for str = ["rm_Axx","rm_Axv","rm_Bx","rm_Avx","rm_Avv","rm_Bv","rm_E"]
+    assert(norm(res1.(str) - res0.(str), 1) < 1e-5 * max(1, norm(res0.(str), 1)), str)
+end
+for alg = ["Kron","Feedback","DAE"]
+    assert(same_eigs(eig_finite(res0.get_ss(alg)), eig_finite(res1.get_ss(alg)), 1e-4), alg)
+end
+
+
+%% Point from a simulation with controllers at a perturbed time
+% 地絡後の時刻では、その時刻の機器・制御器の状態で各機器の Jacobian を評価する
+net = new_net();
+net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
+net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B002", "SG1B006", kP=100, kI=500));   % SG1B001, SG1B003 は AGC の外
+DebugScript.helper.quiet(@() net.initialize);
+ev  = odeEventSet("fault", net, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
+sim = net.simulate([0,1.5], ev);
+t   = 0.9;
+res0 = net.linearize();
+res  = net.linearize("Point", {sim, t});
+[tab, c_idxBus, c_idxGC] = net.get_variable_map();
+x   = sim.get_point(t);
+assert(isequal(res.rv_point, x))
+assert(all(isfinite(x)))
+% 制御器の状態も平衡点から動いている
+avr1 = net.a_Bus{1}.a_Component{1}.a_LocalController{1};
+for str = [avr1.str_tag, avr1.a_LocalController{1}.str_tag, net.a_GlobalController{1}.str_tag]
+    iv = tab.Owner == str;
+    assert(norm(x(iv) - res0.rv_point(iv)) > 1e-6, str + " の状態が平衡点のまま")
+end
+% 制御器のない発電機: その点での f_JacobiDx / f_JacobiI
+gen  = net.a_Bus{3}.a_Component{1};
+iv_x = find(tab.Owner == gen.str_tag & tab.Kind == "x");
+iv_V = find(tab.Bus == "B003" & (tab.Kind == "Vre" | tab.Kind == "Vim"));
+iv_u = find(tab.Owner == gen.str_tag & tab.Kind == "u");
+xg = x(iv_x);  Vg = x(iv_V);  ug = x(iv_u);
+Ig = gen.f_I(0, xg, Vg, zeros(2,1), ug);  Ig = [real(Ig); imag(Ig)];
+[Axx, Bxv, ~, Bxu] = gen.f_JacobiDx(0, xg, Vg, Ig, ug);
+[Cix, ~, ~, Diu]   = gen.f_JacobiI(0, xg, Vg, Ig, ug);
+iv_v = iv_V - sum(tab.Kind == "x");   iv_uu = iv_u - sum(tab.Kind ~= "u");
+assert(norm(res.rm_Axx(iv_x,iv_x) - Axx, 1) < 1e-10)
+assert(norm(res.rm_Axv(iv_x,iv_v) - Bxv, 1) < 1e-10)
+assert(norm(res.rm_Bx(iv_x,iv_uu) - Bxu, 1) < 1e-10)
+assert(norm(res.rm_Avx(iv_v,iv_x) + Cix, 1) < 1e-10)
+assert(norm(res.rm_Bv(iv_v,iv_uu) + Diu, 1) < 1e-10)
+% AVR + PSS 付きの発電機: 機器の get_sys(Point={sim, t}) と同じブロック (制御器の状態を含む)
+gen1 = net.a_Bus{1}.a_Component{1};
+[~, c_idxC] = net.a_Bus{1}.get_variable_map();
+iv_b = c_idxBus{1};
+iv_c = iv_b(c_idxC{1});
+iv_cx = iv_c(tab.Kind(iv_c) == "x");
+sc = gen1.get_sys("Point", {sim, t});
+assert(norm(sc.A - res.rm_Axx(iv_cx,iv_cx), 1) < 1e-10)
+assert(norm(sc.A - res0.rm_Axx(iv_cx,iv_cx), 1) > 1e-6, "制御器付きの機器の行列が平衡点のまま")
+assert(isequal(gen1.get_sys("Point", x(iv_c)).A, sc.A))
+% 大域制御器の状態は Point の値のまま
+assert(isequal(res.rv_point(c_idxGC{1}), x(c_idxGC{1})))
 
 
 %% Overrides apply to one call and leave the solver unchanged

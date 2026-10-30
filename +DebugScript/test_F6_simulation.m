@@ -50,6 +50,77 @@ V1 = r.Bus(1).V{1,:} * [1;1j];
 assert(abs(V1 - net.a_Bus{1}.c_Vequilibrium) < 1e-8)
 
 
+%% Trajectory follows the variable map
+% 結果は軌道を変数の表 (net.get_variable_map) の順に 1 回だけ持つ: rm_variable の列 = tab_variable の行。
+% 局所・大域制御器の状態も入り、odeResults はその見え方 (同じ値)
+net = DebugScript.helper.build_ieee14();
+net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
+net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002"));
+DebugScript.helper.quiet(@() net.initialize);
+ev  = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+sol = net.simulate([0,2], ev);
+[tab, c_idxBus, c_idxGC] = net.get_variable_map();
+nt  = numel(sol.rv_t);
+assert(isequal(sol.tab_variable, tab))
+assert(isequal(size(sol.rm_variable), [nt, height(tab)]))
+assert(isequal(size(sol.rm_I), [nt, 2*numel(net.a_Bus)]))
+r = sol.odeResults;
+assert(isequal(r.t, sol.rv_t) && height(r.Bus(1).V) == nt)
+avr = net.a_Bus{1}.a_Component{1}.a_LocalController{1};
+assert(all(ismember([avr.str_tag, avr.a_LocalController{1}.str_tag, net.a_GlobalController{1}.str_tag], tab.Owner)))
+for i = 1:numel(net.a_Bus)
+    bus = net.a_Bus{i};
+    assert(isequaln(r.Bus(i).V.Variables, sol.rm_variable(:, tab.Bus == bus.str_tag & (tab.Kind == "Vre" | tab.Kind == "Vim"))))
+    assert(isequaln(r.Bus(i).I.Variables, sol.rm_I(:, 2*i-1:2*i)))
+    for j = 1:numel(bus.a_Component)
+        c = bus.a_Component{j};
+        assert(isequaln(r.Bus(i).Component(j).X.Variables, sol.rm_variable(:, tab.Owner == c.str_tag & tab.Kind == "x")))
+        assert(isequaln(r.Bus(i).Component(j).U.Variables, sol.rm_variable(:, tab.Owner == c.str_tag & tab.Kind == "u")))
+    end
+end
+% 制御器の状態は地絡で動く
+X_avr = sol.rm_variable(:, tab.Owner == avr.str_tag);
+assert(norm(X_avr(1,:)' - avr.rv_Xequilibrium) < 1e-8 && max(abs(X_avr - X_avr(1,:)), [], "all") > 1e-4)
+assert(max(abs(sol.rm_variable(:, c_idxGC{1})), [], "all") > 1e-6)
+% get_point: 変数の表の順の列ベクトル。母線・機器の表を与えるとその行だけ
+x = sol.get_point(1.5);
+assert(isequal(size(x), [height(tab), 1]))
+assert(isequal(sol.get_point(1.5, net.a_Bus{1}.get_variable_map()), x(c_idxBus{1})))
+assert(isequal(sol.get_point(1.5, net.a_Bus{1}.a_Component{1}.get_variable_map()), ...
+               x(c_idxBus{1}(1:height(net.a_Bus{1}.a_Component{1}.get_variable_map())))))
+% 範囲外の時刻、結果にない変数はエラー
+expect_error(@() sol.get_point(3), "GUILDA:odeSimulationResult:PointTime")
+tab_bad = tab(1,:);  tab_bad.Owner = "nobody";
+expect_error(@() sol.get_point(1.5, tab_bad), "GUILDA:odeSimulationResult:UnknownVariable")
+% 空の結果
+sol0 = odeSimulationResult();
+assert(isequal(sol0.odeResults, struct()) && isempty(sol0.rm_variable) && isempty(sol0.rv_t))
+
+
+%% Point at a phase boundary
+% 区間の境界の時刻は 2 回出力される (前の区間の終わり, 次の区間の始まり)。
+% get_point は既定でイベントの後 (Side="after")、Side="before" でイベントの前の値を返す
+gen = net.a_Bus{1}.a_Component{1};
+ev  = odeEventSet("offset", net, "TimeSpan", 1, "OffsetUnit", "SG1B001", "OffsetState", "delta", "OffsetValue", 0.1);
+sol = net.simulate([0,2], ev);
+tab = sol.tab_variable;
+iv_d = find(tab.Owner == gen.str_tag & tab.Name == "delta");
+assert(nnz(sol.rv_t == 1) == 2, "境界の時刻が 2 回出力されていない")
+x_after  = sol.get_point(1);
+x_before = sol.get_point(1, Side="before");
+assert(isequal(x_after, sol.get_point(1, Side="after")))
+assert(abs(x_before(iv_d) - gen.rv_Xequilibrium(1)) < 1e-8)
+assert(abs(x_after(iv_d) - (gen.rv_Xequilibrium(1) + 0.1)) < 1e-8)
+% 境界でない出力時刻では Side は関係なく、その間は線形補間
+k = find(sol.rv_t > 1.2, 1);
+assert(isequal(sol.get_point(sol.rv_t(k), Side="before"), sol.get_point(sol.rv_t(k)), sol.rm_variable(k,:)'))
+tm = (sol.rv_t(k) + sol.rv_t(k+1)) / 2;
+assert(norm(sol.get_point(tm) - (sol.rm_variable(k,:) + sol.rm_variable(k+1,:))'/2) < 1e-12)
+% 線形化の Point={sim, t, Side} も同じ規則
+assert(isequal(net.linearize("Point", {sol, 1}).rv_point, x_after))
+assert(isequal(net.linearize("Point", {sol, 1, "before"}).rv_point, x_before))
+
+
 %% V4 call returns result flag and output
 % [result, flag, output] を返す。結果クラスは AnalysisResult を継承し、flag / output / 使った設定を持つ
 ev = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
