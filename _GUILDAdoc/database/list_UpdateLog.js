@@ -130,5 +130,53 @@ const updateLogData = [
     "date": "2026-10-29",
     "type": "changed",
     "content": "GUILDA no longer requires Symbolic Math Toolbox; only MATLAB, Control System Toolbox and Optimization Toolbox are required."
+  },
+  {
+    "title": "IEEE9bus and IEEE68bus networks",
+    "date": "2026-10-30",
+    "type": "added",
+    "content": "New network.IEEE9bus (WSCC 3-machine) and network.IEEE68bus (16-machine NETS-NYPS), ported from the GUILDA v2 data: gen-1axis generators, load-impedance loads, and an AVR_ST1 and a PSS1 on every generator. LocalController=false builds them without the AVRs and PSSs."
+  },
+  {
+    "title": "IEEE14bus_lossless uses the case14 data",
+    "date": "2026-10-30",
+    "type": "changed",
+    "content": "network.IEEE14bus_lossless is now network.IEEE14bus with the resistance R of every branch set to 0; line charging, the bus shunt and the transformer taps are kept. Its power-flow, OPF, simulation and linearization results change."
+  },
+  {
+    "title": "Unique automatic tags",
+    "date": "2026-10-30",
+    "type": "fixed",
+    "content": "add_bus, add_branch and add_component number a new tag after the largest number in use, so a tag is no longer repeated after remove_branch or remove_component. add_global_controller with a tag already in use is an error (GUILDA:PowerNetwork:GconTagInUse)."
+  },
+  {
+    "title": "Controller fixes",
+    "date": "2026-10-30",
+    "type": "fixed",
+    "content": "Adding or replacing an AVR or PSS is now an edit, so net.initialize() is required afterwards. Replacing an AVR keeps its PSS unless a new PSS is given in the same call. A global controller named in a trip event gives no output during the event. Trip events select the right states when they name a global controller or a component with local controllers. The network of a global controller is GlobalController.a_PowerNetwork (was PowerNetwork, a cell)."
+  },
+  {
+    "title": "Network frequency edits",
+    "date": "2026-10-30",
+    "type": "changed",
+    "content": "Editing net.tab_parameter.base.Hz now rebuilds only the model functions: simulate and get_sys run without net.initialize(). Editing baseMVA still requires net.initialize(). Calling solver_ODE.solve or solver_LIN.solve directly now also checks that the equilibrium is up to date."
+  },
+  {
+    "title": "Simulation event checks",
+    "date": "2026-10-30",
+    "type": "changed",
+    "content": "odeEventSet checks InputUnit, InputName and InputValue before the integration starts and stops with a GUILDA:odeEventSet:* error that lists the valid inputs. An event that lies entirely outside the simulation time warns (GUILDA:odeEventSet:OutsideTimeSpan) instead of being ignored silently."
+  },
+  {
+    "title": "Option and setting names",
+    "date": "2026-10-30",
+    "type": "changed",
+    "content": "net.build_opf_problem takes Method, like optimize_powerflow; the option methods is deprecated (GUILDA:Deprecated:BuildOpfProblemMethods). The progress setting in DefaultTimeSimulation.json is now Progress (was Reporter); an old user setting is converted at startup. CSV import errors use the IDs GUILDA:import_csv:*."
+  },
+  {
+    "title": "Smaller fixes and removals",
+    "date": "2026-10-30",
+    "type": "fixed",
+    "content": "net.linearize and get_sys work with buses that have no components. GUILDA.dictionary works from any current folder. The help of get_ss states the state order of each algorithm. The startup no longer rewrites unchanged generated files. Removed: the unused Bus.l_isNonUnit and the unimplemented GUILDA.import_MATPOWER (use PowerNetwork.import_matpower)."
   }
 ];

@@ -39,7 +39,8 @@ classdef IEEE68bus < PowerNetwork
 %      td1 = TL1, tn2 = TL2p, td2 = TL2.
 %  ・The bus coordinates Xaxis, Yaxis are the v2 GraphX, GraphY.
 %  ・The v2 files have no voltage limits, base voltages or OPF data; these are the
-%    GUILDA defaults (Vmin 0.5, Vmax 1.5, baseKV 230, OPF cost HP = fP = 1).
+%    GUILDA defaults (Vmin 0.5, Vmax 1.5, baseKV 230, OPF cost HP = fP = 1 for
+%    generators and 0 for loads).
 %  ・archive/IEEE68bus also has data that network.build did not use (generator_park,
 %    avr_IEEE_ST1, excitation); they are not part of this network.
 %

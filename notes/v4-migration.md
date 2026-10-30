@@ -1,7 +1,7 @@
 # Migrating to GUILDA v4
 
 Status: work in progress on `refactor/design-alignment` (base: `version4.0`),
-checked against the code at `be166af`. Breaking changes are allowed in v4.
+checked against the code at `2723422`. Breaking changes are allowed in v4.
 Section 1 lists what has changed for scripts (1.7–1.15: the v4 analysis API
 of stages 2 and 3); section 2 for models; section 3 what is still planned.
 
@@ -29,9 +29,17 @@ Reference designs: `_GUILDAdoc/developer/class-design.html` and
 >   balance). v3 had the wrong sign there, so its DAE model did not match
 >   Kron (1.12).
 > - **IEEE14bus numbers.** `network.IEEE14bus` now has the MATPOWER case14
->   data and CSV import reads transformer taps, so power flow, OPF,
->   simulation and linearization results of IEEE14bus (and, through the
->   taps, `IEEE14bus_lossless`) differ from v3 (1.15).
+>   data, `IEEE14bus_lossless` is that data with R = 0, and CSV import reads
+>   transformer taps, so power flow, OPF, simulation and linearization
+>   results of both networks differ from v3 (1.15).
+> - **A tripped global controller gives no output.** A trip event that
+>   names a global controller now also sets its output to zero (before: only
+>   its states were frozen, and a direct feed-through part kept acting)
+>   (1.6).
+> - **Automatic tag numbers.** After a removal, `add_bus`, `add_branch` and
+>   `add_component` number the new object after the largest number in use,
+>   not `numel + 1`; scripts that build tags by counting may name another
+>   object (1.4).
 
 ---
 
@@ -79,14 +87,24 @@ Every parameter or topology edit is logged and records what it made stale:
 | Edit                                   | f_* handles | equilibrium |
 |----------------------------------------|-------------|-------------|
 | `Parameter(dynamics)`                  | stale       | stale       |
-| `Parameter(base)` (network Hz, baseMVA)| stale (every layer) | stale |
+| `Parameter(base)`, network baseMVA     | stale (every layer) | stale |
+| `Parameter(base)`, network Hz          | stale (every layer) | –     |
 | `Parameter(powerflow)`, `Topology`, `Slack` | –      | stale       |
 | `Parameter(operation/OPF/graph)`       | –           | –           |
 
-`initialize`, `simulate` and `get_sys` rebuild stale `f_*` handles, so
-dynamics edits now take effect without rebuilding the model. When the
-equilibrium is stale, `simulate` and `get_sys` stop with
-`GUILDA:PowerNetwork:EquilibriumStale`:
+- A network **Hz** edit only rebuilds the handles: the equilibrium does not
+  depend on the nominal frequency, so `simulate` and `get_sys` run without
+  `initialize()`. A **baseMVA** edit changes the per-unit values and still
+  needs `net.initialize()`.
+- Adding or replacing an AVR or PSS (`add_local_controller`) is logged as a
+  `Topology` edit, so the equilibrium becomes stale.
+
+`initialize`, `simulate`, `linearize` and `get_sys` rebuild stale `f_*`
+handles, so dynamics edits now take effect without rebuilding the model.
+When the equilibrium is stale, `simulate`, `linearize` and `get_sys` stop
+with `GUILDA:PowerNetwork:EquilibriumStale`; the check is in
+`solver_ODE.solve` and `solver_LIN.solve`, so calling a solver directly
+checks it too:
 
 ```matlab
 net.a_Bus{2}.tab_parameter.powerflow.V = 1.02;
@@ -104,11 +122,18 @@ must now call `net.initialize()` after the edit.
 net.remove_bus("B003")                           % error if branches are connected
 net.remove_bus("B003", "RemoveBranches", true)   % also removes those branches
 net.remove_global_controller("agc")
-bus = net.add_bus(...)                           % skips tag numbers still in use
+bus = net.add_bus(...)                           % tag number: largest in use + 1
 new = bus.replace_component(...)                 % now returns the new component
 net.add_branch(Type, ["B001","B002"], ...)       % buses may be given by tag
 ```
 
+- **Automatic tags** of buses (`B###`), branches (`###`) and components
+  (`<n><bus tag>`, per bus) take the largest number in use + 1, so a new tag
+  never equals an existing one. A removed number is not reused while a
+  larger one remains (before: `numel + 1`, which could repeat a tag after
+  `remove_branch` / `remove_component`).
+- `add_global_controller` with a tag already in use is an error
+  (`GUILDA:PowerNetwork:GconTagInUse`); the tag is the user's choice.
 - `remove_bus` refuses a bus whose components a global controller controls.
 - `remove_component`, `replace_component`, `remove_branch`, `remove_bus`
   and `remove_global_controller` detach the removed object: it no longer
@@ -127,12 +152,28 @@ Setting it to `false` now releases the bus instead of being ignored.
 net.a_Bus{3}.l_isSlack = true;   % bus 1 is no longer slack
 ```
 
-### 1.6 Global controllers
+### 1.6 Global and local controllers
 
 Any number of global controllers is supported: `initialize`, `simulate` and
 all `get_sys` algorithms (Kron, DAE, Feedback) handle every controller.
 Outputs of several controllers on the same input add up. Scalar `alpha` /
 `beta` of the AGC are expanded to every controlled unit.
+
+| v3 | v4 |
+|----|----|
+| `gc.PowerNetwork{1}` (a cell) | `gc.a_PowerNetwork` (the network, or `[]` when detached) |
+
+- `gc.PowerNetwork` is removed without a compat form (reading it is an
+  error).
+- **Trip of a global controller** (`odeEventSet` naming it in the trip
+  units): its output is zero during the event (silent change, see the box
+  at the top), and after the event it restarts from its equilibrium, like
+  a tripped generator.
+- **Replacing an AVR keeps its PSS.** `gen.add_local_controller(new_avr)`
+  moves the PSS of the old AVR to the new one; `add_local_controller(avr,
+  pss)` replaces both. A replacement warns
+  `GUILDA:Component:ReplaceController` and detaches the replaced
+  controller. Before, the PSS was dropped. Adding or replacing is logged (1.3).
 
 ### 1.7 The v4 analysis API (common to 1.8–1.12)
 
@@ -221,8 +262,11 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   |----------|------------|
   | 6 outputs `[bus, cub, flag, output, lambda, prob] = ...` | `GUILDA:Deprecated:OptimizePowerflowTuple` |
   | option `"methods"` | `GUILDA:Deprecated:OptimizePowerflowMethods` |
+  | `net.build_opf_problem("methods", m)` | `GUILDA:Deprecated:BuildOpfProblemMethods` |
 
-- `net.build_opf_problem` keeps its option name `methods` (not renamed).
+- `net.build_opf_problem` takes the same option name as
+  `optimize_powerflow`: `[prob, x0] = net.build_opf_problem(Method="DC OPF",
+  validate=false)`.
 - Fixes (stage 1 and OPF step 1, see [status.md](status.md#opf)): ELD, DC
   and AC OPF run again; loads keep their power-flow P and Q (not
   dispatched); branch-end variables are `"<branch>_<bus>"`; branch limits
@@ -302,12 +346,30 @@ Option names:
   - `odeSimulator` no longer holds `odeNetwork`, `odeTimeTable`, `odeYmat`,
     `odeResult`, `rv_odeV`; `solver_ODE.simulate(net, ...)` is replaced by
     the internal `solve(net, time, events, options)`.
+  - **Event checks.** Before the integration, an event's `InputUnit` must
+    be a component of the network (`GUILDA:odeEventSet:UnknownInputUnit`),
+    each `InputName` an input of it (`GUILDA:odeEventSet:UnknownInputName`,
+    the message lists the inputs), and a function `InputValue` must take
+    one argument, the time since the event start
+    (`GUILDA:odeEventSet:InvalidNargin`). Errors that used to fail inside
+    the integration now stop at once.
+  - An event whose `TimeSpan` lies entirely outside the simulation time
+    has no effect and warns `GUILDA:odeEventSet:OutsideTimeSpan` (before:
+    ignored silently).
+  - Trip of a global controller: see 1.6.
+- **Settings key.** The default progress display is the key `Progress` of
+  `@GUILDA/config/DefaultTimeSimulation.json` (was `Reporter`, same values
+  `"none"` | `"disp"` | `"dialog"`). A user settings file
+  (`@GUILDA/user/DefaultTimeSimulation.json`) with the old key is read as
+  `Progress` and rewritten with the new key at startup, without a warning;
+  when it has both keys, `Progress` wins.
 - Deprecated, still working:
 
   | Old form | Warning ID |
   |----------|------------|
   | `net.solver_ODE.Reporter = v` (read returns `Progress`, no warning) | `GUILDA:Deprecated:SimulatorReporter` |
   | `simulate(..., "Reporter", v)` / `"RelativeTolerance", v` | `GUILDA:Deprecated:SimulateOptionName` |
+  | user settings key `Reporter` | (no warning; converted to `Progress`) |
 
 - Fixed earlier (stage 1): `simulate` works without events, clears previous
   phase results, keeps phases inside the requested time range, applies
@@ -337,8 +399,14 @@ Option names:
   model now equals that of Kron.
 - `flag` is true when all Jacobian entries are finite; `output` has
   `message`, `l_equilibrium`, `n_x`, `n_v`, `n_u`, `rcond_Avv`.
-- `NonUnit` is no longer written to `bus.l_isNonUnit`; the network is not
-  changed. `Point={sim, t}` stops with
+- State order of `get_ss` (as v3): `"Kron"` and `"DAE"` put the global
+  controllers' states first, then the components; `"Feedback"` puts the
+  components first, then the global controllers in the order they were
+  added. Find a state by `StateName`, not by position.
+- A bus without components (e.g. a pure junction bus) can be linearized: it
+  has no states and takes no current.
+- `NonUnit` is no longer written to the buses (`Bus.l_isNonUnit` is
+  removed); the network is not changed. `Point={sim, t}` stops with
   `GUILDA:odeLinearizer:PointUnavailable` when the layer has local or
   global controllers (the simulation result does not store their states).
 - Removed: `odeLinearizer(net, NonUnit, Name, Value)` stops with
@@ -366,6 +434,8 @@ Option names:
 - CSV import reads the branch columns `tap`/`phase` (as export writes
   them) and `Tap`/`Phase`; both in one file is an error. v3 read only
   `Tap`/`Phase`, so every imported transformer tap was 1.
+- CSV import errors have the IDs `GUILDA:import_csv:*` (e.g.
+  `DuplicateColumns`, `MissingColumns`); catch them by these IDs.
 - `import_matpower` is the inverse of `tools.network_to_mpc`; MATPOWER is
   not needed. Options `GeneratorModel`, `GeneratorParameter`, `LoadModel`,
   `Hz`, `Tag`, `Initialize`. Isolated buses, piecewise-linear and
@@ -403,15 +473,39 @@ Option names:
   [status.md](status.md#ieee14-data-and-csv-taps).
 - **New `network.IEEE14bus_NoTap`**: `IEEE14bus` with the transformers
   4-7, 4-9 and 5-6 at tap 1, phase 0.
-- **`IEEE14bus_lossless`** keeps the old data but its taps are now read,
-  so its results change too.
+- **`network.IEEE14bus_lossless` is `IEEE14bus` with R = 0** on every
+  branch. Line charging, the bus 9 shunt and the transformer taps stay
+  (they take no real power); bus, load and generator data, limits and costs
+  are those of `IEEE14bus`. All its results change; against the previous
+  `IEEE14bus_lossless` (old data, taps read): bus voltages up to 0.054 pu
+  (bus 14), angles 0.33°, slack P unchanged (219.0 MW, no loss), slowest
+  mode −0.385 → −0.595, smallest damping ratio 0.037 → 0.035, OPF cost
+  2.66 → 7642.59 $/hr (ELD, DC and AC OPF give the same cost).
+- **New `network.IEEE9bus`** (WSCC 3-machine) and **`network.IEEE68bus`**
+  (NETS-NYPS 16-machine), ported from the GUILDA v2 CSV data:
+  `gen-1axis` generators, `load-impedance` loads, and per generator an
+  `AVR_ST1` (v2 sadamoto2019: `kap = Ka`, `tap = Te`) and a `PSS1` with
+  `kpss = Kpss/Tpss` (the v2 PSS gain includes `1/Tpss`).
+  `network.IEEE9bus(LocalController=false)` /
+  `network.IEEE68bus(LocalController=false)` build them without AVRs and
+  PSSs. The v2 folders are kept for reference in `+network/archive/`
+  (the old 68-bus wrapper is `IEEE68bus_v2`). Known issues: see
+  [status.md](status.md#bundled-networks).
 - There is no network with the v3 IEEE14 data; keep a copy of a v3 export
   to reproduce old results.
 
-### 1.16 Startup
+### 1.16 Startup and utilities
 
 `GUILDA` starts in `matlab -batch` (no desktop); the tutorial is not opened
 there.
+
+- `GUILDA.dictionary` searches the GUILDA folder (`GUILDA.pwd`), not the
+  current folder, so it works from any folder; the old load classes in
+  `+component/+load/history` are not listed.
+- Removed: the unimplemented `GUILDA.import_MATPOWER` (use
+  `PowerNetwork.import_matpower`).
+- The startup no longer rewrites the generated signature files when their
+  content is unchanged (no spurious file changes in a git checkout).
 
 ---
 
@@ -501,11 +595,13 @@ simulation results with `get_variable_map`) are in
 | `calculate_powerflow(mode, ...)` (positional `"algebraic"` / `"dynamic"`) | `GUILDA:Deprecated:CalculatePowerflowMode` | warning; becomes `Method=mode` |
 | `calculate_powerflow(..., "export", l, "filename", f)` | `GUILDA:Deprecated:CalculatePowerflowExport` | warning; becomes `Export=fullfile(GUILDA.pwd, f)` |
 | `optimize_powerflow("methods", m)` | `GUILDA:Deprecated:OptimizePowerflowMethods` | warning; becomes `Method=m` |
+| `build_opf_problem("methods", m)` | `GUILDA:Deprecated:BuildOpfProblemMethods` | warning; becomes `Method=m` |
 | 6 outputs of `optimize_powerflow` | `GUILDA:Deprecated:OptimizePowerflowTuple` | warning; returns `{tab_bus, tab_cub, flag, output, lambda, OPFprob}` |
 | `Continuation_Power_Flow(net, opt)` | `GUILDA:Deprecated:ContinuationPowerFlowFunction` | warning; returns a `ContinuationPowerFlowV3` (v3 properties, `solve`, `CPF_Result`) |
 | `ContinuationPowerFlow(net, Name, Value)` | `GUILDA:Deprecated:ContinuationPowerFlowConstructor` | error |
 | set `net.solver_ODE.Reporter` | `GUILDA:Deprecated:SimulatorReporter` | warning; sets `Progress` (reading `Reporter` returns `Progress`, no warning) |
 | `simulate(..., "Reporter", v)` / `"RelativeTolerance", v` | `GUILDA:Deprecated:SimulateOptionName` | warning; becomes `Progress` / `Tolerance` |
+| user settings key `TimeSimulation.Reporter` (`@GUILDA/user/DefaultTimeSimulation.json`) | – | no warning; read as `Progress` (an existing `Progress` wins); the startup writes the file back with the new key |
 | `odeLinearizer(net, NonUnit, Name, Value)` | `GUILDA:Deprecated:OdeLinearizerConstructor` | error |
 | `CsvNetHandler.import(path, net, Initialize=tf)` | `GUILDA:Deprecated:CsvNetHandlerImport` | warning; calls `PowerNetwork.import_csv` |
 | `CsvNetHandler.export(net, ModelName, savepath=d)` | `GUILDA:Deprecated:CsvNetHandlerExport` | warning; calls `net.export_csv(fullfile(d, "@"+ModelName))` |
@@ -531,21 +627,25 @@ lists all of them:
 | `@PowerNetwork/calculate_powerflow.m` | `v3_powerflow_args(varargin)` | positional mode, `export` / `filename` |
 | `@PowerNetwork/optimize_powerflow.m` | `v3_opf_args(varargin)` | `methods` option |
 | `@PowerNetwork/optimize_powerflow.m` | `legacy_output(..., 6, @v3_optimize_powerflow, ...)` | 6-output tuple |
+| `@PowerNetwork/build_opf_problem.m` | `v3_opf_args(varargin, "BuildOpfProblemMethods")` | `methods` option |
 | `@PowerNetwork/simulate.m` | `v3_simulate_args(c_nv)` | option names `Reporter`, `RelativeTolerance` |
 | `_auxiliary/@odeSimulator/odeSimulator.m` | `Reporter` property (Dependent, Hidden) | old name of `Progress` |
 | `_auxiliary/@odeSimulator/odeSimulator.m` | `get.Reporter` | returns `Progress` |
 | `_auxiliary/@odeSimulator/odeSimulator.m` | `set.Reporter` | `v3_ode_reporter`: warns, sets `Progress` |
 | `_auxiliary/@ContinuationPowerFlow/ContinuationPowerFlow.m` | `v3_cpf_constructor(varargin)` | rejects v3 constructor arguments |
 | `_auxiliary/@odeLinearizer/odeLinearizer.m` | `v3_linearizer_constructor(varargin)` | rejects v3 constructor arguments |
+| `@GUILDA/private/get_config.m` | `v3_user_config(field, ...)` | user settings key `Reporter` → `Progress` |
 
 `DebugScript.test_F10_api_foundation` checks this list and that core code
 does not call `Deprecated` outside a hook line. Update both when a hook is
 added.
 
-That is 16 hooked lines (the F10 test checks the count per file).
+That is 18 hooked lines (the F10 test checks the count per file).
 `Continuation_Power_Flow` and `CsvNetHandler` are old names; they live
 entirely in `_VersionSupport/` and need no hook. CSV import ignores a bus
 `baseMVA` column simply by not reading it (no compat code).
+`@GUILDA/GUILDA.m` adds `_VersionSupport/` to the path before it reads the
+settings (an untagged line, needed by the `get_config` hook).
 
 ### Contents of `_GUILDAsystem/_VersionSupport/`
 
@@ -559,12 +659,13 @@ entirely in `_VersionSupport/` and need no hook. CSV import ignores a bus
 | `ContinuationPowerFlowV3.m` | v3 CPF object: `CPF*` properties, `solve`, `CPF_Result` |
 | `@CsvNetHandler/` | old CSV import / export, wrappers of `import_csv` / `export_csv` |
 | `v3_powerflow_args.m` | `calculate_powerflow` positional mode and `export` / `filename` |
-| `v3_opf_args.m` | `optimize_powerflow` `methods` option |
+| `v3_opf_args.m` | `methods` option of `optimize_powerflow` and `build_opf_problem` |
 | `v3_optimize_powerflow.m` | v4 outputs → the v3 6-output tuple |
 | `v3_cpf_constructor.m` | error for `ContinuationPowerFlow(net, ...)` |
 | `v3_simulate_args.m` | `simulate` option names `Reporter`, `RelativeTolerance` |
 | `v3_ode_reporter.m` | `solver_ODE.Reporter` setter |
 | `v3_linearizer_constructor.m` | error for `odeLinearizer(net, ...)` |
+| `v3_user_config.m` | user settings key `TimeSimulation.Reporter` → `Progress` |
 
 ### Adding a compat form (stages 2 and 3)
 
@@ -596,8 +697,9 @@ selects it only for 6 outputs, so 4 or 5 outputs are an error.
    grep -rl "COMPAT(v3)" _GUILDAsystem _GUILDAobject @GUILDA | xargs sed -i '' '/COMPAT(v3)/d'
    ```
 
-2. Delete `_GUILDAsystem/_VersionSupport/`, `Deprecated.xml`, and the
-   `_VersionSupport` line of `@GUILDA/config/ListPath.txt`.
+2. Delete `_GUILDAsystem/_VersionSupport/`, `Deprecated.xml`, the
+   `_VersionSupport` line of `@GUILDA/config/ListPath.txt`, and the
+   `addpath(... "_VersionSupport")` line in `@GUILDA/GUILDA.m`.
 3. Delete the tests of deprecated forms, then run `DebugScript.run_all`.
    By section title:
    - F1 "Add bus with deprecated baseMVA option"
@@ -605,14 +707,17 @@ selects it only for 6 outputs, so 4 or 5 outputs are an error.
    - F3 "Deprecated component Hz forms still work and warn once",
      "Deprecated component Hz write sets the network Hz", and the
      `ComponentBaseView` assert in the network Hz edit test
-   - F4 "Legacy six-output form", "Deprecated methods option"
+   - F4 "Legacy six-output form", "Deprecated methods option", and the
+     `methods` part of "Build OPF problem with Method and deprecated
+     methods option"
    - F5 "COMPAT v3 Continuation_Power_Flow and ContinuationPowerFlow constructor"
    - F6 "Deprecated Reporter and option names still work"
    - F7 "odeLinearizer constructor of v3 names the remedy"
    - F8 "Deprecated CsvNetHandler wrappers"
+   - F9 the `v3_user_config` asserts in "GUILDA config reads settings"
    - F10 "Legacy output …", "COMPAT hook helper for add_bus baseMVA",
      "COMPAT hooks are single tagged lines …"
-4. `odeSimulator` reads its default `Progress` from the `Reporter` key of
+4. `odeSimulator` reads its default `Progress` from the `Progress` key of
    `@GUILDA/config/DefaultTimeSimulation.json`; that is the config key,
    not compat code, and stays.
 

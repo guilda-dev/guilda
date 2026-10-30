@@ -73,6 +73,11 @@ function data = make_classlist(data, cell_dirlist, l_disp)
         end
         
 
+        % 保管用の archive フォルダ：スキップ (旧ファイルは現行クラスと同名のことがある)
+        if  list(idx).isdir && strcmp(char_name, 'archive')
+            continue
+        end
+
         % ディレクトリの場合：フォルダ内を探索
         if  list(idx).isdir
             data = make_classlist( data, [cell_dirlist, {char_name}], l_disp);

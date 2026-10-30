@@ -229,6 +229,7 @@ classdef (Sealed = true) odeSimulator < auxiliary
             ctx.net     = net;
             ctx.Ymat    = tools.complex2matrix(net.get_admittance_matrix.Variables);
             ctx.rv_odeV = cell2mat(tools.cellfun(@(b) b.iv_odeX, net.a_Bus));
+            ctx.absYmat = abs(ctx.Ymat);      % scale of the terms of I = Y*V (see getODEFunction)
 
             o = makeODE(s_options);
             options = odeset("RelTol", o.RelativeTolerance, "AbsTol", o.AbsoluteTolerance);
@@ -284,6 +285,10 @@ classdef (Sealed = true) odeSimulator < auxiliary
                     end
                 end
 
+                % The warning of the solver (e.g. why it stopped) goes into output.message
+                [str_warn0, id_warn0] = lastwarn();
+                lastwarn("");
+                str_phase = {num2str(tp), num2str(t1), num2str(t2)};
                 try
                     % When solving the equation, specify [0, duration of each phase]
                     sol = solve(o, 0, t2-t1);
@@ -295,7 +300,9 @@ classdef (Sealed = true) odeSimulator < auxiliary
                         [ODEfcn, x0, ~, options] = CalculateInitialCondition(o, options);
                     else
                         odeProg.OutputFcn([],[],"break")
-                        throw(me)
+                        ME = MException('GUILDA:odeSimulator:PhaseFailed', '%s', ...
+                                        msg('GUILDA:odeSimulator:PhaseFailed', str_phase{:}, me.message));
+                        throw(ME.addCause(me))
                     end
 
 
@@ -304,10 +311,16 @@ classdef (Sealed = true) odeSimulator < auxiliary
                         [t,y] = ode15s(ODEfcn, [0,t2-t1], x0, options);
                         sol = struct('Time', t.', 'Solution', y.');
 
-                    catch
+                    catch me
                         odeProg.OutputFcn([],[],"break")
-                        error(msg('GUILDA:odeSimulator:UnfeasibleDAE'))
+                        ME = MException('GUILDA:odeSimulator:UnfeasibleDAE', '%s', ...
+                                        msg('GUILDA:odeSimulator:UnfeasibleDAE', str_phase{:}, me.message));
+                        throw(ME.addCause(me))
                     end
+                end
+                str_warn = lastwarn();
+                if isempty(str_warn)
+                    lastwarn(str_warn0, id_warn0);
                 end
 
                 c_phase{tp} = Event2State( odeEvents{:}, "ODEResults", struct('Time', (sol.Time + t1)', 'Solution', (EM * sol.Solution).'), "ODEYmatrix", ctx.Ymat );
@@ -337,8 +350,13 @@ classdef (Sealed = true) odeSimulator < auxiliary
                     output.message = sprintf("The simulation stopped at t = %g s of %g s: phase %d exceeded TimeLimit = %g s. " + ...
                                              "Increase TimeLimit (Inf for no limit).", output.tEnd, te, tp, s_options.TimeLimit);
                 otherwise
-                    output.message = sprintf("The solver stopped at t = %g s of %g s in phase %d (see the warning of the solver). " + ...
-                                             "Try a smaller Tolerance, other SolverOptions, or check the model.", output.tEnd, te, tp);
+                    if isempty(str_warn)
+                        str_warn = "(no message from the solver)";
+                    end
+                    output.message = sprintf("The solver stopped at t = %g s of %g s in phase %d (t = [%g, %g] s). " + ...
+                                             "Solver (time from the start of the phase): %s\n" + ...
+                                             "Try a smaller Tolerance, other SolverOptions, or check the model.", ...
+                                             output.tEnd, te, tp, tab_phase{tp,"t1"}, tab_phase{tp,"t2"}, strtrim(str_warn));
             end
             if s_options.Verbose
                 disp(output.message)
@@ -455,8 +473,9 @@ classdef (Sealed = true) odeSimulator < auxiliary
             odeX = zeros(size(x));
             odeV = x(ctx.rv_odeV);
 
-            I = ctx.Ymat*odeV;
-            
+            I    = ctx.Ymat*odeV;
+            absI = ctx.absYmat*abs(odeV);
+
             a_bus = ctx.net.a_Bus;
 
             % Outputs of all global controllers, at the indices of the component inputs they drive
@@ -496,7 +515,16 @@ classdef (Sealed = true) odeSimulator < auxiliary
                 end                
 
                 odeX([idx_V;idx_I]) = odeX([idx_V;idx_I]) + [Ii;Ii - I([-1;0]+2*i)];
-                
+
+                % A current balance below the round-off level of its terms is zero. At rest
+                % (e.g. at the start of a phase) the Newton corrections of the solver are then
+                % zero instead of round-off noise, which ode15s can take for a diverging
+                % iteration and shrink the step until it fails (IEEE68bus without AVR/PSS
+                % stopped at t = 0)
+                tol = 16*eps*[abs(Ii); abs(Ii) + absI([-1;0]+2*i)];
+                idx = [idx_V;idx_I];
+                odeX(idx(abs(odeX(idx)) < tol)) = 0;
+
             end                    
 
             odeX = odeX(lg); 

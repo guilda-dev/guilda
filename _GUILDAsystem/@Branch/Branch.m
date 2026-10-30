@@ -40,6 +40,12 @@ classdef Branch < PowerSystemModel
         % <@Type> Bus objects cell array
         % <@Size> 2×1
         a_Bus
+
+        % <@Desc> OPF terms set by set_opffcn (Cost, Constraint, DefaultConstraint); reset_opffcn restores the defaults.
+        % <@Role> Parameter
+        % <@Type> struct
+        % <@Size> 1×1
+        s_opffcn = opffcn.default()
    end
     properties(Dependent)
 

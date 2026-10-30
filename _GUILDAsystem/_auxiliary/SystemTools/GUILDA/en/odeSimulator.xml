@@ -1,7 +1,8 @@
 <!--This is an XML file containing error messages related to the odeSimulator class.-->
 <rsccat version="2" locale="en" product="GUILDA">
     <message>
-        <entry key="UnfeasibleDAE">I couldn't solve this DAE system. Too bad !!</entry>
+        <entry key="UnfeasibleDAE">The DAE of phase {0} (t = [{1}, {2}] s) could not be solved after recomputing its initial condition: {3}</entry>
+        <entry key="PhaseFailed">The simulation failed in phase {0} (t = [{1}, {2}] s): {3}</entry>
         <entry key="NoPropName">This property does not exist.</entry>        
     </message>
 </rsccat>

@@ -142,6 +142,9 @@ classdef PowerNetwork < PowerSystemModel
     properties(Hidden,SetAccess=protected)
         para_base               % Parameter: Hz (nominal frequency) and baseMVA (system base) of the whole network
     end
+    properties(SetAccess=protected)
+        s_opffcn = opffcn.default()   % OPF: network-wide Cost, Constraint, DefaultConstraint set by set_opffcn
+    end
     properties(Dependent, Access=protected)
         parent                  % Layer Structure
         children                % Layer Structure
