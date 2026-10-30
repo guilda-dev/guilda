@@ -369,18 +369,17 @@ r_Sbase (1,1) double = 100</pre>
 
     <!-- ============================== CHECKS ============================== -->
     <h2 id="checks">What the exporter checks</h2>
-    <p class="dg-lead-in">Every run prints one line per class and a summary. A problem is reported where the member is defined, not again for each subclass.</p>
+    <p class="dg-lead-in">Every run prints one line per exported class and a summary. A problem is reported where the member is defined, not again for each subclass.</p>
     <table class="dg-table cd-checks">
       <thead><tr><th>Level</th><th>Check</th></tr></thead>
       <tbody>
-        <tr><td><span class="dg-badge is-err">Error</span></td><td data-label="Check">Invalid JSON in a structured tag (Signatures, Examples, SeeAlso, Parameters, Returns, Calls).</td></tr>
-        <tr><td><span class="dg-badge is-err">Error</span></td><td data-label="Check">A Calls entry without both <code>Class</code> and <code>Method</code>.</td></tr>
-        <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">An old tag name (see <a href="#tags">Which tags</a>).<small>An error with <code>"strict", true</code>.</small></td></tr>
-        <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">A class, or its own public non-hidden method, has no Summary or Desc.</td></tr>
+        <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">A removed tag, with its replacement (see <a href="#removed">Removed tags</a>).<small>An error with <code>"strict", true</code>.</small></td></tr>
+        <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">A class, or its own public non-hidden method or property, has no H1 line.</td></tr>
+        <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">A <code>&lt;@Deprecated&gt;</code> tag with no text.<small>Deprecated members are marked on their pages and counted in the run summary.</small></td></tr>
         <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">An unknown tag, or the same tag twice (the last value is used).</td></tr>
-        <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">A <code>&lt;@Parameters&gt;</code> name that is not an input of the method.</td></tr>
+        <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">A See also name that matches no exported class or method.</td></tr>
         <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">A method declared in the classdef with no implementation file.</td></tr>
-        <tr><td><span class="dg-badge">Coverage</span></td><td data-label="Check">Documented / total for classes, public methods and public properties.<small>Shown at the top of the Reference tab. Undocumented classes get a <span class="dg-badge is-warn">no docs</span> marker there.</small></td></tr>
+        <tr><td><span class="dg-badge">Coverage</span></td><td data-label="Check">Documented / total for classes, public methods and public properties. Documented means it has an H1 line.<small>Shown at the top of the Reference tab. Undocumented classes get a <span class="dg-badge is-warn">no docs</span> marker there.</small></td></tr>
       </tbody>
     </table>
     <p>With <code>GUILDA.doc("strict", true)</code> the run fails when there are errors.</p>
@@ -388,17 +387,27 @@ r_Sbase (1,1) double = 100</pre>
     <!-- ============================== UPDATE ============================== -->
     <h2 id="update">Keeping it up to date</h2>
     <ol class="dg-steps" style="--n: 3">
-      <li><span class="dg-step-title">Edit the source</span>Add or change classes and comments under <code>_GUILDAsystem</code> or <code>_GUILDAobject</code>.</li>
-      <li><span class="dg-step-title">Run <code>GUILDA.doc</code></span>It rebuilds the database only when needed, then opens the pages. A rebuild takes seconds.</li>
+      <li><span class="dg-step-title">Edit the source</span>Add or change classes and comments under <code>_GUILDAsystem</code> or <code>_GUILDAobject</code>, or in your own subclasses.</li>
+      <li><span class="dg-step-title">Run <code>GUILDA.doc</code></span>It re-exports what changed, then opens the pages.</li>
       <li><span class="dg-step-title">Check the output</span>Read the warnings in the Command Window and look at your class page.</li>
     </ol>
     <table class="dg-table cd-opts">
+      <thead><tr><th>Change</th><th>What is exported</th></tr></thead>
+      <tbody>
+        <tr><td>File time or size differs from <code>manifest.json</code></td><td data-label="What is exported">That class and all its subclasses.<small>Subclasses inherit members, so their pages change too.</small></td></tr>
+        <tr><td>File not in the manifest</td><td data-label="What is exported">The new class and its subclasses.</td></tr>
+        <tr><td>File in the manifest but gone</td><td data-label="What is exported">Its class file and index entry are removed; its subclasses are re-exported.</td></tr>
+        <tr><td>No manifest, or one from another schema or exporter</td><td data-label="What is exported">Everything.</td></tr>
+        <tr><td>Nothing changed</td><td data-label="What is exported">Nothing. The pages open as they are.</td></tr>
+      </tbody>
+    </table>
+    <table class="dg-table cd-opts">
       <thead><tr><th>Call</th><th>Effect</th></tr></thead>
       <tbody>
-        <tr><td><code>update="auto"</code> <span class="dg-muted">(default)</span></td><td data-label="Effect">Rebuild when the database is missing, or when something is newer than <code>database/list_Classes.js</code>: any file or folder under the two source folders, or the exporter itself.<small>Folder times also catch deleted and renamed files.</small></td></tr>
-        <tr><td><code>update=true</code> / <code>false</code></td><td data-label="Effect">Always or never rebuild. <code>"always"</code> and <code>"never"</code> work too.</td></tr>
+        <tr><td><code>update="auto"</code> <span class="dg-muted">(default)</span></td><td data-label="Effect">Export what changed, by the rules above.</td></tr>
+        <tr><td><code>update=true</code> / <code>false</code></td><td data-label="Effect">Always export everything, or never export. <code>"always"</code> and <code>"never"</code> work too.</td></tr>
         <tr><td><code>"class", "PowerNetwork"</code></td><td data-label="Effect">Open one class page.</td></tr>
-        <tr><td><code>"open", false</code></td><td data-label="Effect">Only rebuild.</td></tr>
+        <tr><td><code>"open", false</code></td><td data-label="Effect">Only export.</td></tr>
       </tbody>
     </table>
     <table class="dg-table">
@@ -406,10 +415,12 @@ r_Sbase (1,1) double = 100</pre>
       <tbody>
         <tr><td><code>_GUILDAdoc/database/list_Classes.js</code></td><td data-label="Content">Index with the schema, coverage and validation results.</td></tr>
         <tr><td><code>database/GUILDAsystem|GUILDAobject/&lt;Class&gt;.js</code></td><td data-label="Content">One file per class, loaded on demand.</td></tr>
+        <tr><td><code>database/User/&lt;Class&gt;.js</code></td><td data-label="Content">One file per user class. Never published.</td></tr>
+        <tr><td><code>database/manifest.json</code></td><td data-label="Content">Time and size of each source file, and the classes it defines.</td></tr>
       </tbody>
     </table>
-    <p>Both use schema version 4.</p>
-    <p>They are generated and not tracked by git. Never edit them; rebuild instead.</p>
+    <p>All use schema version 5.</p>
+    <p>They are generated and not tracked by git. Never edit them; delete <code>manifest.json</code> or run <code>GUILDA.doc("update", true)</code> to rebuild everything.</p>
   </main>
 
   <script>
