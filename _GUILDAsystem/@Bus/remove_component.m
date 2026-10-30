@@ -1,7 +1,13 @@
 function remove_component(obj, str_tag)
+% Remove a component from the bus by tag.
+%
+% The removed component no longer refers to this bus. The removal is logged as a
+% "Topology" edit.
+%
+% See also Bus.add_component
     arguments
         obj 
-        str_tag (1,1) string
+        str_tag (1,1) string   % Tag of the component to remove.
     end
     str_tagComp = string(obj.a_Component);
     lv_rmcub = str_tagComp==str_tag;

@@ -1,11 +1,15 @@
 function set_equilibrium(obj, c_V, c_I, r_P, r_Q, opt)
+% Set the bus voltage and distribute P and Q of the equilibrium to the components.
+%
+% Called by PowerNetwork.initialize. The slack bus gives the remaining P to its first
+% component; Q goes to the components whose Q is NaN, split by `QdistributionRule`.
     arguments
         obj 
-        c_V 
-        c_I 
-        r_P = real( c_V*conj(c_I) );
-        r_Q = imag( c_V*conj(c_I) ); 
-        opt.QdistributionRule (1,1) string {mustBeMember(opt.QdistributionRule,["baseMVA","Qmax"])} = "baseMVA";
+        c_V   % [pu] Bus voltage phasor.
+        c_I   % [pu] Bus current injection phasor.
+        r_P = real( c_V*conj(c_I) );   % [pu] Active power injection.
+        r_Q = imag( c_V*conj(c_I) );   % [pu] Reactive power injection.
+        opt.QdistributionRule (1,1) string {mustBeMember(opt.QdistributionRule,["baseMVA","Qmax"])} = "baseMVA";   % Split of Q: "baseMVA" (by rating) or "Qmax" (by the Q range).
     end
     
     % The bus owns V. Its current is the sum of the component currents

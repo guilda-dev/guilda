@@ -1,33 +1,22 @@
 function sys = get_sys(obj, opt)
-% <@Desc>
+% Linearize the bus with its components (V to I, or I to V).
+%
 % Linear model of the bus: its components (with their local controllers) connected at
 % the bus, from the bus voltage V to the current I injected by the components
 % (port "V2I") or the inverse (port "I2V"). Point gives the point of the
 % linearization in the same form as net.linearize: [] for the equilibrium, a vector in
 % the order of bus.get_variable_map(), or {sim, t}. The model is not changed.
-% <@Role> Static Analysis
-% <@Summary> Linear model of the bus (V to I, or I to V).
-% <@Signatures>
-% [
-%   "sys = bus.get_sys()",
-%   "sys = bus.get_sys(port=\"I2V\", full=true, Point=x)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "port", "Type": "\"V2I\" | \"I2V\"", "Description": "Input and output ports.", "Required": false, "Default": "\"V2I\""},
-%   {"Name": "full", "Type": "logical scalar", "Description": "Also output the states.", "Required": false, "Default": "false"},
-%   {"Name": "Point", "Type": "[] | double vector | cell {sim, t}", "Description": "Point of the linearization.", "Required": false, "Default": "[] (the equilibrium)"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "sys", "Type": "ss", "Description": "Descriptor state-space model with state, input and output names."}
-% ]
+%
+% See also Component.get_sys, Bus.get_variable_map, PowerNetwork.get_sys
     arguments
         obj 
-        opt.port (1,1) {mustBeMember(opt.port, ["V2I", "I2V"])} = "V2I"
-        opt.full (1,1) logical = false
-        opt.con  (1,1) logical = false
-        opt.Point = []
+        opt.port (1,1) {mustBeMember(opt.port, ["V2I", "I2V"])} = "V2I"   % Input and output ports.
+        opt.full (1,1) logical = false   % Also output the states.
+        opt.con  (1,1) logical = false   % Unused; kept for compatibility.
+        opt.Point = []   % Point of the linearization: [] (the equilibrium), a vector in the order of bus.get_variable_map(), or {sim, t}.
+    end
+    arguments (Output)
+        sys   % Descriptor state-space model with state, input and output names.
     end
 
     if isempty(opt.Point) && ~iscell(opt.Point)
