@@ -52,6 +52,10 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     if ~isempty(sysCON) && opt.rec
         [SYS,xSYS,uSYS,ySYS] = obj.get_sys(x,V,I,u,"full",false,"port",opt.port,"tag",false,"con",opt.con,"rec",false);        
 
+        % Inputs of the controllers that read states of the component (iv_obsX) connect
+        % to extra state outputs of SYS, named apart from the outputs of the same name
+        [SYS, sysCON] = connect_states(SYS, sysCON, a_LC);
+
         blksys = append(SYS,sysCON{:});            
 
         blkConnect = connectCondition(blksys.InputGroup,blksys.OutputGroup);
@@ -180,6 +184,37 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     varargout{2} = tools.arrayfun(@(s) char(s), [Vport{2};uNames{2}]); 
     varargout{3} = tools.arrayfun(@(s) char(s), OutputNames{opt.full+1}); 
 
+
+    function [SYS, sysCON] = connect_states(SYS, sysCON, a_LC)
+        iv_x = zeros(0,1);
+        for k = 1:numel(a_LC)
+            lv = a_LC{k}.iv_obsX > 0;
+            if any(lv)
+                sv_in = string(sysCON{k}.InputName);
+                iv_in = numel(sv_in) - numel(lv) + find(lv);    % the inputs sv_u come after Vre, Vim
+                sv_in(iv_in) = "X__" + obj.sv_x(a_LC{k}.iv_obsX(lv));
+                sysCON{k} = set_names(sysCON{k}, sv_in, string(sysCON{k}.OutputName));
+                iv_x = [iv_x; a_LC{k}.iv_obsX(lv)]; %#ok<AGROW>
+            end
+        end
+        if isempty(iv_x)
+            return
+        end
+        iv_x = unique(iv_x);
+        Ex   = eye(size(SYS.A,1));
+        Cx   = Ex(iv_x,:);
+        sv_y = [string(SYS.OutputName); "X__" + obj.sv_x(iv_x)];
+        SYS2 = dss(SYS.A, SYS.B, [SYS.C; Cx], [SYS.D; zeros(numel(iv_x), size(SYS.B,2))], SYS.E);
+        SYS2.StateName = SYS.StateName;
+        SYS = set_names(SYS2, string(SYS.InputName), sv_y);
+    end
+
+    function sys = set_names(sys, sv_in, sv_out)
+        sys.InputName   = cellstr(sv_in);
+        sys.OutputName  = cellstr(sv_out);
+        sys.InputGroup  = cell2struct(arrayfun(@(n) {n}, (1:numel(sv_in))'), cellstr(sv_in));
+        sys.OutputGroup = cell2struct(arrayfun(@(n) {n}, (1:numel(sv_out))'), cellstr(sv_out));
+    end
 
     function list = all_controllers(parent)
         list = cell(0,1);
