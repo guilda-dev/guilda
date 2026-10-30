@@ -6,9 +6,11 @@
   <title>GUILDA Reference - Method</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="reference.css">
-  
+
   <script src="./database/list_Classes.js"></script>
   <script src="./doc-loader.js"></script>
+  <script src="./doc-render.js"></script>
+  <script src="./doc-tree.js"></script>
 </head>
 <body class="doc-layout">
 
@@ -16,20 +18,13 @@
     <a href="index.html" onclick="window.GuildaDocLoader.navigate('index.html'); return false;" style="display: block; margin-bottom: 20px;">
       <img src="./images/GUILDAicon.png" alt="GUILDA Logo" style="width: 100%;">
     </a>
-    
+
     <div id="sidebar-back-btn"></div>
-    
+
+    <div id="source-tree"></div>
+
     <h3 style="margin-top: 0;">On this page</h3>
-    <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
-      <li><a href="#overview" onclick="document.getElementById('overview')?.scrollIntoView(); return false;">Overview</a></li>
-      <li><a href="#metadata" onclick="document.getElementById('metadata')?.scrollIntoView(); return false;">Metadata</a></li>
-      <li><a href="#signatures" onclick="document.getElementById('signatures')?.scrollIntoView(); return false;">Signatures</a></li>
-      <li><a href="#description" onclick="document.getElementById('description')?.scrollIntoView(); return false;">Description</a></li>
-      <li><a href="#arguments" onclick="document.getElementById('arguments')?.scrollIntoView(); return false;">Arguments</a></li>
-      <li><a href="#returns" onclick="document.getElementById('returns')?.scrollIntoView(); return false;">Return Values</a></li>
-      <li><a href="#calls" onclick="document.getElementById('calls')?.scrollIntoView(); return false;">Method Calls</a></li>
-      <li><a href="#examples" onclick="document.getElementById('examples')?.scrollIntoView(); return false;">Examples</a></li>
-    </ul>
+    <ul id="page-toc" style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;"></ul>
     <div id="sidebar-method-nav"></div>
   </nav>
 
@@ -40,688 +35,277 @@
   </main>
 
   <script>
-    const routeParams = window.GuildaDocLoader.getRouteParams();
+    const loader = window.GuildaDocLoader;
+    const {
+      escapeHtml, nl2br, firstText, toList, formatInlineMarkdown, renderMarkdown,
+      classLink, seeAlsoLink, sourceLocation, examplesText, groupRows
+    } = window.GuildaDocRender;
+    const routeParams = loader.getRouteParams();
     const className = routeParams.get('class');
     const methodName = routeParams.get('method');
 
-    const escapeText = (text) => (text ?? '').toString()
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const muted = (text) => `<span class="ref-muted">${text}</span>`;
+    const cell = (value, fallback = muted('-')) => {
+      const text = (value ?? '').toString().trim();
+      return text ? escapeHtml(text) : fallback;
+    };
+    const KIND_LABELS = { Positional: 'Positional', NameValue: 'Name-Value', Repeating: 'Repeating', Output: 'Output' };
+    const IMPLEMENTED_IN_LABELS = {
+      classdef: 'classdef file',
+      file: 'own file in the class folder',
+      private: 'private folder of the class'
+    };
 
     if (!className || !methodName) {
       document.getElementById('dynamic-content').innerHTML = "<h1 style='color: var(--err);'>Error: Missing Parameters</h1>";
-    } else if (!window.GuildaDocLoader.hasIndex()) {
+    } else if (!loader.hasIndex()) {
       document.getElementById('dynamic-content').innerHTML = `
-        <h1>${escapeText(methodName)}</h1>
+        <h1>${escapeHtml(methodName)}</h1>
         <div class="ref-empty"><p>The class reference has not been generated yet.</p><p>Run <code>GUILDA.doc</code> in MATLAB to build it.</p></div>`;
     } else {
       document.getElementById('sidebar-back-btn').innerHTML = `
-        <a href="${window.GuildaDocLoader.pageUrl('class.html', { class: className })}" class="btn" style="width: 100%; text-align: center; margin-bottom: 20px; box-sizing: border-box;">← Back to ${escapeText(className)}</a>
+        <a href="${loader.pageUrl('class.html', { class: className })}" class="btn" style="width: 100%; text-align: center; margin-bottom: 20px; box-sizing: border-box;">← Back to ${escapeHtml(className)}</a>
       `;
 
-      window.GuildaDocLoader.loadClass(className)
-        .then(({ data }) => {
-          renderMethodNav(className, methodName, data);
-          return renderMethodPage(className, methodName, data);
+      loader.loadClass(className)
+        .then(({ meta, data }) => {
+          const ownerName = meta?.Name || className;
+          const raw = findMethod(data, methodName);
+          window.GuildaDocTree.mount(document.getElementById('source-tree'), {
+            className: ownerName,
+            methodName: raw?.Name || methodName,
+            definingClass: raw?.Defining || ''
+          });
+          renderMethodNav(ownerName, raw?.Name || methodName, data);
+          renderMethodPage(ownerName, raw);
         })
         .catch((err) => {
-          document.getElementById('dynamic-content').innerHTML = `<h1 style="color: var(--err);">Load Error</h1><p>${escapeText((err && err.message) ? err.message : err)}</p>`;
+          document.getElementById('dynamic-content').innerHTML = `<h1 style="color: var(--err);">Load Error</h1><p>${escapeHtml((err && err.message) ? err.message : err)}</p>`;
         });
     }
 
-    // Sidebar list of the other methods of the class, own methods first.
-    function renderMethodNav(className, methodName, classDoc) {
+    function findMethod(classDoc, name) {
+      const methods = Array.isArray(classDoc?.methods) ? classDoc.methods : [];
+      return methods.find((method) => method?.Name === name)
+        || methods.find((method) => (method?.Name || '').toLowerCase() === name.toLowerCase())
+        || null;
+    }
+
+    // Sidebar list of the other methods of the class: by group when the
+    // data has groups, own methods first within each list.
+    function renderMethodNav(ownerName, currentName, classDoc) {
       const methods = (Array.isArray(classDoc?.methods) ? classDoc.methods : [])
         .slice()
-        .sort((a, b) => ((a.Defining !== className) - (b.Defining !== className)) || a.Name.localeCompare(b.Name));
+        .sort((a, b) => ((a.Defining !== ownerName) - (b.Defining !== ownerName)) || a.Name.localeCompare(b.Name))
+        .map((m) => ({ method: m, group: m.Group || (m.IsConstructor ? 'Constructor' : '') }));
       if (!methods.length) return;
+      const item = ({ method: m }) => `<li><a class="${m.Name === currentName ? 'is-current' : ''}${m.Defining !== ownerName ? ' ref-muted' : ''}"${m.Name === currentName ? ' aria-current="page"' : ''} href="${loader.pageUrl('method.html', { class: ownerName, method: m.Name })}">${escapeHtml(m.Name)}</a></li>`;
+      const grouped = methods.some((row) => row.group);
       document.getElementById('sidebar-method-nav').innerHTML = `
-        <h3 class="ref-nav-title">Methods of ${escapeText(className)}</h3>
-        <ul class="ref-method-nav">
-          ${methods.map((m) => `<li><a class="${m.Name === methodName ? 'is-current' : ''}${m.Defining !== className ? ' ref-muted' : ''}" href="${window.GuildaDocLoader.pageUrl('method.html', { class: className, method: m.Name })}">${escapeText(m.Name)}</a></li>`).join('')}
-        </ul>`;
+        <h3 class="ref-nav-title">Methods of ${escapeHtml(ownerName)}</h3>
+        ${grouped
+          ? groupRows(methods, 'Other').map((group) => `
+              <p class="ref-muted" style="margin: 8px 0 2px; font-size: 0.75rem;">${escapeHtml(group.name)}</p>
+              <ul class="ref-method-nav" style="margin-bottom: 6px;">${group.items.map(item).join('')}</ul>`).join('')
+          : `<ul class="ref-method-nav">${methods.map(item).join('')}</ul>`}`;
     }
 
-    async function renderMethodPage(className, methodName, classDoc) {
-      const nl2br = (text) => (text ?? '').toString().replace(/\n/g, '<br>');
-      const escapeHtml = (text) => (text ?? '').toString()
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-      const formatInlineMarkdown = (text) => {
-        let output = escapeHtml(text);
-        output = output.replace(/`([^`]+)`/g, '<code>$1</code>');
-        output = output.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-        output = output.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-        output = output.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-        return output;
-      };
-      const renderMarkdown = (input) => {
-        const rawText = (input ?? '').toString().replace(/\r\n?/g, '\n').trim();
-        if (!rawText) return '<p style="margin: 0;">N/A</p>';
-
-        const sourceLines = rawText.split('\n');
-        const textArtLineCount = sourceLines.filter((line) =>
-          /[┌┐└┘│─]/.test(line) || /(?:={6,}|-{6,}|~{3,}|\/{3,})/.test(line)
-        ).length;
-        if (textArtLineCount >= 2) {
-          return `<pre class="doc-text-art">${escapeHtml(rawText)}</pre>`;
-        }
-
-        const codeBlocks = [];
-        let text = rawText.replace(/```([\s\S]*?)```/g, (_, code) => {
-          const token = `@@CODEBLOCK_${codeBlocks.length}@@`;
-          codeBlocks.push(`<pre><code>${escapeHtml(code.trimEnd())}</code></pre>`);
-          return token;
-        });
-
-        const lines = text.split('\n');
-        const htmlParts = [];
-        let paragraphLines = [];
-        let listType = '';
-        let listItems = [];
-
-        const flushParagraph = () => {
-          if (!paragraphLines.length) return;
-          const paragraph = paragraphLines.map((line) => formatInlineMarkdown(line)).join('<br>');
-          if (paragraph) {
-            htmlParts.push(`<p>${paragraph}</p>`);
-          }
-          paragraphLines = [];
-        };
-
-        const flushList = () => {
-          if (!listType || !listItems.length) return;
-          htmlParts.push(`<${listType}>${listItems.map((item) => `<li>${formatInlineMarkdown(item)}</li>`).join('')}</${listType}>`);
-          listType = '';
-          listItems = [];
-        };
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          const unorderedMatch = trimmed.match(/^[-*+]\s+(.*)$/);
-          const orderedMatch = trimmed.match(/^\d+\.\s+(.*)$/);
-
-          if (!trimmed) {
-            flushParagraph();
-            flushList();
-            continue;
-          }
-
-          const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
-          if (headingMatch) {
-            flushParagraph();
-            flushList();
-            const headingLevel = headingMatch[1].length;
-            htmlParts.push(`<h${headingLevel}>${formatInlineMarkdown(headingMatch[2])}</h${headingLevel}>`);
-            continue;
-          }
-
-          if (unorderedMatch || orderedMatch) {
-            flushParagraph();
-            const nextListType = unorderedMatch ? 'ul' : 'ol';
-            if (listType && listType !== nextListType) {
-              flushList();
-            }
-            listType = nextListType;
-            listItems.push((unorderedMatch || orderedMatch)[1]);
-            continue;
-          }
-
-          flushList();
-          paragraphLines.push(line);
-        }
-
-        flushParagraph();
-        flushList();
-
-        let html = htmlParts.join('');
-        html = html.replace(/@@CODEBLOCK_(\d+)@@/g, (_, index) => codeBlocks[Number(index)] || '');
-        return html;
-      };
-      const renderClassLink = (name) => {
-        const classNameValue = (name ?? '').toString();
-        return classNameValue ? `<a href="${window.GuildaDocLoader.pageUrl('class.html', { class: classNameValue })}">${classNameValue}</a>` : '';
-      };
-      const splitLines = (text) => (text ?? '').toString().replace(/\r\n?/g, '\n').split('\n').map((line) => line.trim());
-      const normalizeCell = (value, fallback = 'N/A') => {
-        const text = (value ?? '').toString().trim();
-        return text ? escapeHtml(text) : fallback;
-      };
-      const toBoolText = (value) => (value ? 'true' : 'false');
-
-      const extractExampleFromDescription = (descriptionText) => {
-        const source = (descriptionText ?? '').toString().replace(/\r\n?/g, '\n');
-        const markerRegex = /(\n|^)(?:#+\s*)?(Example(?:s)?(?:\s+Usage)?|Usage|使用例)\s*:?\s*/i;
-        const markerMatch = source.match(markerRegex);
-        if (!markerMatch) {
-          return {
-            description: source.trim(),
-            examples: ''
-          };
-        }
-
-        const markerIndex = markerMatch.index ?? -1;
-        if (markerIndex < 0) {
-          return {
-            description: source.trim(),
-            examples: ''
-          };
-        }
-
-        const head = source.slice(0, markerIndex).trim();
-        const tailStart = markerIndex + markerMatch[0].length;
-        const tail = source.slice(tailStart).trim();
+    // Input rows come from the arguments block of the source (v5 adds the
+    // descriptions there). Schema v4 may also have <@Parameters> rows.
+    function inputRows(m) {
+      const sourceArguments = (Array.isArray(m.Arguments) ? m.Arguments : []).filter((arg) => arg?.Kind !== 'Output');
+      const tagged = new Map((Array.isArray(m.Parameters) ? m.Parameters : [])
+        .map((p) => [p?.Name || p?.name || '', p]).filter(([name]) => name));
+      const rows = sourceArguments.map((arg) => {
+        const tag = tagged.get(arg.Name) || {};
+        tagged.delete(arg.Name);
         return {
-          description: head,
-          examples: tail
+          name: arg.Name || '',
+          kind: KIND_LABELS[arg.Kind] || arg.Kind || '',
+          type: firstText(tag.Type, [arg.Size, arg.Class].filter(Boolean).join(' ')),
+          unit: firstText(arg.Unit, tag.Unit),
+          description: firstText(arg.Description, tag.Description),
+          required: arg.Required,
+          default: firstText(arg.Default, tag.Default),
+          validators: firstText(toList(arg.Validators).join(', '), tag.Constraints)
         };
-      };
-
-      const parseSimpleEntries = (text, kind) => {
-        const items = [];
-        const lines = splitLines(text);
-        for (const line of lines) {
-          if (!line) continue;
-          const m = line.match(/^[-*+]\s*([^:]+)\s*:\s*(.+)$/);
-          if (!m) continue;
-          const name = (m[1] || '').trim();
-          const desc = (m[2] || '').trim();
-          if (!name) continue;
-          if (kind === 'param') {
-            items.push({
-              name,
-              type: '',
-              description: desc,
-              required: '',
-              default: ''
-            });
-          } else {
-            items.push({
-              name,
-              type: '',
-              description: desc
-            });
-          }
-        }
-        return items;
-      };
-
-      const normalizeParamArray = (rawList) => {
-        if (!Array.isArray(rawList)) return [];
-        return rawList
-          .map((p) => ({
-            name: p?.name || p?.Name || '',
-            kind: p?.kind || p?.Kind || '',
-            type: p?.type || p?.Type || p?.class || p?.Class || '',
-            unit: p?.unit || p?.Unit || '',
-            description: p?.description || p?.Description || p?.desc || p?.Desc || '',
-            required: p?.required ?? p?.Required ?? '',
-            default: p?.default ?? p?.Default ?? '',
-            constraints: p?.constraints || p?.Constraints || p?.range || p?.Range || ''
-          }))
-          .filter((p) => (p.name || p.description || p.type));
-      };
-
-      const normalizeReturnArray = (rawList) => {
-        if (!Array.isArray(rawList)) return [];
-        return rawList
-          .map((r) => ({
-            name: r?.name || r?.Name || '',
-            type: r?.type || r?.Type || r?.class || r?.Class || '',
-            unit: r?.unit || r?.Unit || '',
-            description: r?.description || r?.Description || r?.desc || r?.Desc || ''
-          }))
-          .filter((r) => (r.name || r.description || r.type));
-      };
-
-      const normalizeSignatureList = (raw) => {
-        if (Array.isArray(raw)) {
-          return raw.map((v) => (v ?? '').toString().trim()).filter(Boolean);
-        }
-        if (typeof raw === 'string') {
-          const text = raw.trim();
-          if (!text) return [];
-          if (text.includes('\n')) {
-            return text.split('\n').map((line) => line.trim()).filter(Boolean);
-          }
-          return [text];
-        }
-        return [];
-      };
-
-      const normalizeCallArray = (raw) => {
-        if (!Array.isArray(raw)) return [];
-        return raw.map((call) => {
-          if (typeof call === 'string') {
-            const separatorIndex = call.lastIndexOf('.');
-            return separatorIndex > 0
-              ? {
-                  className: call.slice(0, separatorIndex).trim(),
-                  methodName: call.slice(separatorIndex + 1).trim(),
-                  condition: ''
-                }
-              : { className: '', methodName: call.trim(), condition: '' };
-          }
-          return {
-            className: (call?.Class || call?.class || '').toString().trim(),
-            methodName: (call?.Method || call?.method || '').toString().trim(),
-            condition: (call?.Condition || call?.condition || '').toString().trim()
-          };
-        }).filter((call) => call.methodName);
-      };
-
-      const normalizeMethod = (m) => ({
-        signature: m?.Signature || '',
-        sealed: m?.Sealed ?? false,
-        constructor: m?.IsConstructor ?? false,
-        file: m?.File || '',
-        sourceArguments: Array.isArray(m?.Arguments) ? m.Arguments : [],
-        inputNames: Array.isArray(m?.InputNames) ? m.InputNames : [],
-        outputNames: Array.isArray(m?.OutputNames) ? m.OutputNames : [],
-        name: m?.Name || '',
-        summary: m?.Summary || '',
-        description: m?.Desc || m?.Summary || '',
-        overview: m?.Summary || m?.Overview || m?.Desc || '',
-        role: m?.Role || '',
-        defining: m?.Defining || '',
-        abstract: m?.Abstract ?? false,
-        access: m?.Access || '',
-        static: m?.Static ?? false,
-        hidden: m?.Hidden ?? false,
-        signatures: m?.Signatures || [],
-        notes: m?.Notes || m?.Implementation || m?.DescriptionCode || '',
-        throws: m?.Throws || '',
-        seeAlso: m?.SeeAlso || [],
-        since: m?.Since || '',
-        deprecated: m?.Deprecated || '',
-        parameters: normalizeParamArray(m?.Parameters || m?.Arguments),
-        returns: normalizeReturnArray(m?.Returns || m?.ReturnValues),
-        calls: normalizeCallArray(m?.Calls),
-        examples: m?.Examples || '',
-        arginText: m?.Argin || '',
-        argoutText: m?.Argout || ''
       });
+      tagged.forEach((tag, name) => rows.push({
+        name, kind: '', type: tag.Type || '', unit: tag.Unit || '', description: tag.Description || '',
+        required: tag.Required, default: tag.Default || '', validators: tag.Constraints || ''
+      }));
+      if (rows.length) return rows;
+      return toList(m.InputNames).map((name) => ({
+        name, kind: name === 'varargin' ? 'Repeating' : '', type: '', unit: '', description: '', required: undefined, default: '', validators: ''
+      }));
+    }
 
-      if (!classDoc) {
-        document.getElementById('dynamic-content').innerHTML = `<h1 style="color: var(--err);">Error</h1><p><code>classData</code> could not be loaded.</p>`;
-        return;
+    // Output rows: Kind "Output" arguments (v5), then <@Returns> (v4), then
+    // the names on the function line.
+    function outputRows(m) {
+      const outputs = (Array.isArray(m.Arguments) ? m.Arguments : []).filter((arg) => arg?.Kind === 'Output');
+      const fromReturns = Array.isArray(m.Returns) ? m.Returns : [];
+      const source = outputs.length ? outputs : fromReturns;
+      const rows = source.map((r) => ({
+        name: r?.Name || r?.name || '',
+        type: firstText(r?.Type, [r?.Size, r?.Class].filter(Boolean).join(' ')),
+        unit: r?.Unit || '',
+        description: r?.Description || r?.description || ''
+      })).filter((r) => r.name || r.description);
+      if (rows.length) return rows;
+      return toList(m.OutputNames).map((name) => ({ name, type: '', unit: '', description: '' }));
+    }
+
+    function renderInputTable(rows) {
+      const withUnit = rows.some((p) => p.unit);
+      return `
+        <div class="ref-table-scroll"><table class="compact-table description-table">
+          <thead><tr>
+            <th>Name</th><th>Kind</th><th>Size / Class</th>${withUnit ? '<th>Unit</th>' : ''}
+            <th>Description</th><th>Required</th><th>Default</th><th>Validators</th>
+          </tr></thead>
+          <tbody>
+            ${rows.map((p) => `
+              <tr>
+                <td><strong>${cell(p.name)}</strong></td>
+                <td>${cell(p.kind, 'Positional')}</td>
+                <td>${cell(p.type)}</td>
+                ${withUnit ? `<td>${p.unit ? `<span class="ref-unit">${escapeHtml(p.unit)}</span>` : muted('-')}</td>` : ''}
+                <td>${p.description ? formatInlineMarkdown(p.description) : muted('-')}</td>
+                <td>${typeof p.required === 'boolean' ? (p.required ? 'Required' : 'Optional') : cell(p.required)}</td>
+                <td>${p.default ? `<span class="ref-code">${escapeHtml(p.default)}</span>` : muted('-')}</td>
+                <td>${cell(p.validators)}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table></div>`;
+    }
+
+    function renderOutputTable(rows) {
+      const withUnit = rows.some((r) => r.unit);
+      const withType = rows.some((r) => r.type);
+      return `
+        <div class="ref-table-scroll"><table class="compact-table description-table">
+          <thead><tr>
+            <th>Name</th>${withType ? '<th>Size / Class</th>' : ''}${withUnit ? '<th>Unit</th>' : ''}<th>Description</th>
+          </tr></thead>
+          <tbody>
+            ${rows.map((r) => `
+              <tr>
+                <td><strong>${cell(r.name)}</strong></td>
+                ${withType ? `<td>${cell(r.type)}</td>` : ''}
+                ${withUnit ? `<td>${r.unit ? `<span class="ref-unit">${escapeHtml(r.unit)}</span>` : muted('-')}</td>` : ''}
+                <td>${r.description ? formatInlineMarkdown(r.description) : muted('-')}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table></div>`;
+    }
+
+    // Throws is a list of error IDs in v5 and free text in v4.
+    function renderThrows(raw) {
+      if (Array.isArray(raw)) {
+        const ids = toList(raw);
+        return ids.length ? `<ul>${ids.map((id) => `<li><code>${escapeHtml(id)}</code></li>`).join('')}</ul>` : '';
       }
+      return firstText(raw) ? `<div class="markdown-content">${renderMarkdown(raw)}</div>` : '';
+    }
 
-      const rawMethodData = (Array.isArray(classDoc.methods) ? classDoc.methods : [])
-        .find(m => m?.Name === methodName);
-      const methodData = rawMethodData ? normalizeMethod(rawMethodData) : null;
-      if (!methodData) {
-        document.getElementById('dynamic-content').innerHTML = `<h1 style="color: var(--err);">Method not found</h1><p>${escapeHtml(methodName)} does not exist in ${escapeHtml(className)}.</p>`;
-        return;
-      }
-
-      const findMethod = (doc, name) => {
-        const methods = Array.isArray(doc?.methods) ? doc.methods : [];
-        return methods.find((method) => method?.Name === name)
-          || methods.find((method) => (method?.Name || '').toLowerCase() === name.toLowerCase());
-      };
-
-      const makeMethodKey = (targetClassName, targetMethodName) =>
-        `${targetClassName}.${targetMethodName}`.toLowerCase();
-
-      const loadCallTreeNode = async (targetClassName, targetMethodName, condition, ancestry, suppliedDoc = null) => {
-        const key = makeMethodKey(targetClassName, targetMethodName);
-        if (ancestry.has(key)) {
-          return {
-            className: targetClassName,
-            methodName: targetMethodName,
-            summary: '',
-            condition,
-            children: [],
-            cycle: true,
-            missing: false
-          };
-        }
-
-        try {
-          const targetDoc = suppliedDoc || (await window.GuildaDocLoader.loadClass(targetClassName)).data;
-          const targetRawMethod = findMethod(targetDoc, targetMethodName);
-          if (!targetRawMethod) {
-            return {
-              className: targetClassName,
-              methodName: targetMethodName,
-              summary: '',
-              condition,
-              children: [],
-              cycle: false,
-              missing: true
-            };
-          }
-
-          const targetMethod = normalizeMethod(targetRawMethod);
-          const nextAncestry = new Set(ancestry);
-          nextAncestry.add(key);
-          const childReferences = targetMethod.calls
-            .map((reference) => ({
-              className: reference.className || targetMethod.defining || targetClassName,
-              methodName: reference.methodName,
-              condition: reference.condition || ''
-            }))
-            .filter((reference) => reference.className && reference.methodName);
-          const children = await Promise.all(childReferences.map((reference) =>
-            loadCallTreeNode(reference.className, reference.methodName, reference.condition, nextAncestry)
-          ));
-
-          return {
-            className: targetClassName,
-            methodName: targetMethod.name || targetMethodName,
-            summary: targetMethod.summary || '',
-            condition,
-            children,
-            cycle: false,
-            missing: false
-          };
-        } catch (error) {
-          return {
-            className: targetClassName,
-            methodName: targetMethodName,
-            summary: '',
-            condition,
-            children: [],
-            cycle: false,
-            missing: true
-          };
-        }
-      };
-
+    function renderMethodPage(ownerName, m) {
       const container = document.getElementById('dynamic-content');
-      const extracted = extractExampleFromDescription(methodData.description);
-      const normalizedDescription = extracted.description || methodData.description;
+      if (!m) {
+        container.innerHTML = `<h1 style="color: var(--err);">Method not found</h1><p>${escapeHtml(methodName)} does not exist in ${escapeHtml(ownerName)}.</p>`;
+        return;
+      }
+      const name = m.Name;
+      const defining = m.Defining || '';
+      const group = m.Group || (m.IsConstructor ? 'Constructor' : '');
+      const deprecated = firstText(m.Deprecated);
+      const signatures = m.Signature ? [m.Signature] : toList(m.Signatures);
+      if (!signatures.length) signatures.push(`${name}()`);
+      const inputs = inputRows(m);
+      const outputs = outputRows(m);
+      const throwsHtml = renderThrows(m.Throws);
+      const examples = examplesText(m.Examples);
+      const seeAlso = toList(m.SeeAlso);
+      const source = sourceLocation(m.File, m.Line);
+      const hasDocs = Boolean(firstText(m.Summary, m.Desc));
+      document.title = `GUILDA Reference - ${ownerName}.${name}`;
 
-      const signatures = normalizeSignatureList(methodData.signatures);
-      if (!signatures.length) signatures.push(methodData.signature || `${methodName}()`);
+      const badges = [
+        group ? `<span class="ref-badge" title="Method group">${escapeHtml(group)}</span>` : '',
+        m.Access && m.Access !== 'public' ? `<span class="ref-badge">${escapeHtml(m.Access)}</span>` : '',
+        m.Static ? '<span class="ref-badge">Static</span>' : '',
+        m.Abstract ? '<span class="ref-badge is-abstract">Abstract</span>' : '',
+        m.Sealed ? '<span class="ref-badge is-sealed">Sealed</span>' : '',
+        m.Hidden ? '<span class="ref-badge">Hidden</span>' : '',
+        deprecated ? '<span class="ref-badge is-deprecated">Deprecated</span>' : ''
+      ].join('');
+      const origin = defining && defining !== ownerName
+        ? `Inherited from ${classLink(defining)}.`
+        : (defining ? `Method defined in the ${classLink(defining)} class.` : '');
+      const overrides = m.Overrides
+        ? ` Overrides <a href="${loader.pageUrl('method.html', { class: m.Overrides, method: name })}">${escapeHtml(m.Overrides)}.${escapeHtml(name)}</a>.`
+        : '';
 
-      const overviewText = (methodData.overview || normalizedDescription || '').toString().trim();
-
-      // Arguments: the arguments block in the source gives names, kinds,
-      // sizes, classes and defaults; <@Parameters> adds descriptions and units.
-      // Without either, fall back to the names on the function line.
-      const taggedByName = new Map(methodData.parameters.map((p) => [p.name, p]));
-      const describeValidation = (arg) => [arg.Size, arg.Class].filter(Boolean).join(' ');
-      let parameterRows = methodData.sourceArguments.map((arg) => {
-        const tagged = taggedByName.get(arg.Name) || {};
-        taggedByName.delete(arg.Name);
-        return {
-          name: arg.Kind === 'NameValue' ? `${arg.Name}` : arg.Name,
-          kind: { Positional: 'Positional', NameValue: 'Name-Value', Repeating: 'Repeating' }[arg.Kind] || arg.Kind,
-          type: tagged.type || describeValidation(arg),
-          unit: tagged.unit || '',
-          description: tagged.description || arg.Description || '',
-          required: tagged.required !== undefined && tagged.required !== '' ? tagged.required : Boolean(arg.Required),
-          default: tagged.default || arg.Default || '',
-          constraints: tagged.constraints || (Array.isArray(arg.Validators) ? arg.Validators.join(', ') : '')
-        };
-      });
-      parameterRows = parameterRows.concat([...taggedByName.values()]);
-      if (!parameterRows.length && methodData.arginText) {
-        parameterRows = parseSimpleEntries(methodData.arginText, 'param');
-      }
-      if (!parameterRows.length) {
-        parameterRows = methodData.inputNames.map((name) => ({ name, kind: name === 'varargin' ? 'Repeating' : '', type: '', unit: '', description: '', required: '', default: '', constraints: '' }));
-      }
-
-      let returnRows = methodData.returns;
-      if (!returnRows.length && methodData.argoutText && methodData.argoutText.trim().toLowerCase() !== 'none') {
-        returnRows = parseSimpleEntries(methodData.argoutText, 'return');
-      }
-      if (!returnRows.length) {
-        returnRows = methodData.outputNames.map((name) => ({ name, type: '', unit: '', description: '' }));
-      }
-      const hasDocs = Boolean(methodData.summary || methodData.description);
-
-      const examplesList = [];
-      if (Array.isArray(methodData.examples)) {
-        methodData.examples.forEach((item) => {
-          const value = (item ?? '').toString().trim();
-          if (value) examplesList.push(value);
-        });
-      } else if (typeof methodData.examples === 'string' && methodData.examples.trim()) {
-        examplesList.push(methodData.examples.trim());
-      }
-      if (!examplesList.length && extracted.examples) {
-        examplesList.push(extracted.examples);
-      }
+      const sections = [];
+      const section = (id, title, body) => {
+        sections.push([id, title]);
+        return `<h2 id="${id}">${title}</h2>${body}`;
+      };
 
       let html = `
         <div style="font-size: 0.9rem; color: var(--muted); margin-bottom: 10px;">
-          <a href="${window.GuildaDocLoader.pageUrl('index.html')}">Home</a> &gt; <a href="${window.GuildaDocLoader.pageUrl('class.html', { class: className })}">${className}</a> &gt; ${methodName}
+          <a href="${loader.pageUrl('index.html')}">Home</a> &gt; <a href="${loader.pageUrl('class.html', { class: ownerName })}">${escapeHtml(ownerName)}</a> &gt; ${escapeHtml(name)}
         </div>
-        <h1 style="font-size: 2.5rem; margin-bottom: 10px;">${methodName}</h1>
-        <div style="margin: -4px 0 10px 0; color: var(--muted); font-size: 0.95rem;">
-          ${methodData.defining && methodData.defining !== className
-            ? `Inherited from ${renderClassLink(methodData.defining)}.`
-            : (methodData.defining ? `Method defined in the ${renderClassLink(methodData.defining)} class.` : '')}
-        </div>
-        ${methodData.file ? `<p class="ref-source">Source: <code>${escapeHtml(methodData.file)}</code></p>` : ''}
+        <h1 style="font-size: 2.5rem; margin-bottom: 10px; word-break: break-word;">${escapeHtml(name)}</h1>
+        ${badges ? `<div class="ref-badges">${badges}</div>` : ''}
+        <div style="margin: -4px 0 10px 0; color: var(--muted); font-size: 0.95rem;">${origin}${overrides}</div>
+        ${source ? `<p class="ref-source">Source: <code>${escapeHtml(source)}</code></p>` : ''}
+        ${deprecated ? `<div class="ref-deprecated" role="note"><strong>Deprecated.</strong>${/^(true|1)$/i.test(deprecated) ? '' : `<p>${nl2br(deprecated)}</p>`}</div>` : ''}
         ${hasDocs ? '' : `<div class="ref-notice">This method has no documentation comments yet. Signature and arguments below are read from the source code. See <a href="developer/class-documentation.html">Class Documentation</a> for the comment rules.</div>`}
         <hr style="margin: 0 0 18px 0; border: 0; border-top: 1px solid var(--line);">
+      `;
 
-        <h2 id="overview">Overview</h2>
-        <div class="meta-box">
-          <div class="markdown-content">${renderMarkdown(overviewText || 'N/A')}</div>
-        </div>
+      if (firstText(m.Summary)) {
+        html += section('overview', 'Overview', `<div class="meta-box"><div class="markdown-content">${renderMarkdown(m.Summary)}</div></div>`);
+      }
+      html += section('signature', 'Signature', `<div class="syntax-box"><pre><code>${escapeHtml(signatures.join('\n'))}</code></pre></div>`);
+      if (firstText(m.Desc)) {
+        html += section('description', 'Description', `<div class="meta-box"><div class="markdown-content">${renderMarkdown(m.Desc)}</div></div>`);
+      }
+      html += section('inputs', 'Input Arguments', inputs.length ? renderInputTable(inputs) : '<p>None</p>');
+      html += section('outputs', 'Output Arguments', outputs.length ? renderOutputTable(outputs) : '<p>None</p>');
+      if (throwsHtml) {
+        html += section('throws', 'Errors', `<div class="meta-box">${throwsHtml}</div>`);
+      }
+      if (examples) {
+        html += section('examples', 'Examples', `<div class="meta-box"><div class="example-block markdown-content">${renderMarkdown(examples)}</div></div>`);
+      }
+      if (seeAlso.length) {
+        html += section('see-also', 'See also', `<p class="ref-see-also">${seeAlso.map((item) => seeAlsoLink(item, defining || ownerName)).join(', ')}</p>`);
+      }
 
-        <h2 id="metadata">Method Metadata</h2>
+      const yesNo = (value) => (value ? 'Yes' : 'No');
+      html += section('metadata', 'Method Metadata', `
         <div class="meta-box">
           <table class="meta-table">
             <tbody>
-              <tr><th style="width: 22%;">Name</th><td>${normalizeCell(methodData.name)}</td></tr>
-              <tr><th>Defining Class</th><td>${methodData.defining ? renderClassLink(methodData.defining) : 'N/A'}</td></tr>
-              <tr><th>Access</th><td>${normalizeCell(methodData.access)}</td></tr>
-              <tr><th>Static</th><td>${toBoolText(methodData.static)}</td></tr>
-              <tr><th>Abstract</th><td>${toBoolText(methodData.abstract)}</td></tr>
-              <tr><th>Sealed</th><td>${toBoolText(methodData.sealed)}</td></tr>
-              <tr><th>Constructor</th><td>${toBoolText(methodData.constructor)}</td></tr>
-              <tr><th>Hidden</th><td>${toBoolText(methodData.hidden)}</td></tr>
-              <tr><th>Role</th><td>${normalizeCell(methodData.role)}</td></tr>
-              <tr><th>Since</th><td>${normalizeCell(methodData.since)}</td></tr>
-              <tr><th>Deprecated</th><td>${normalizeCell(methodData.deprecated, 'No')}</td></tr>
+              <tr><th style="width: 22%;">Defining Class</th><td>${defining ? classLink(defining) : 'N/A'}</td></tr>
+              <tr><th>Overrides</th><td>${m.Overrides ? classLink(m.Overrides) : muted('-')}</td></tr>
+              <tr><th>Implemented in</th><td>${cell(IMPLEMENTED_IN_LABELS[m.ImplementedIn] || m.ImplementedIn)}</td></tr>
+              <tr><th>Group</th><td>${cell(group)}</td></tr>
+              <tr><th>Access</th><td>${cell(m.Access, 'N/A')}</td></tr>
+              <tr><th>Static</th><td>${yesNo(m.Static)}</td></tr>
+              <tr><th>Abstract</th><td>${yesNo(m.Abstract)}</td></tr>
+              <tr><th>Sealed</th><td>${yesNo(m.Sealed)}</td></tr>
+              <tr><th>Constructor</th><td>${yesNo(m.IsConstructor)}</td></tr>
+              <tr><th>Hidden</th><td>${yesNo(m.Hidden)}</td></tr>
             </tbody>
           </table>
-        </div>
-
-        <h2 id="signatures">Signatures</h2>
-        <div class="syntax-box">
-          <pre><code>${escapeHtml(signatures.join('\n'))}</code></pre>
-        </div>
-
-        <h2 id="description">Description</h2>
-        <div class="meta-box">
-          <div class="markdown-content">${renderMarkdown(normalizedDescription || 'N/A')}</div>
-        </div>
-        ${methodData.notes ? `
-          <div class="meta-box" style="margin-top: -8px;">
-            <h3 style="margin-top: 0;">Notes</h3>
-            <div class="markdown-content">${renderMarkdown(methodData.notes)}</div>
-          </div>
-        ` : ''}
-        ${methodData.throws ? `
-          <h2 id="errors">Errors</h2>
-          <div class="meta-box"><div class="markdown-content">${renderMarkdown(methodData.throws)}</div></div>
-        ` : ''}
-      `;
-
-      html += `<h2 id="arguments">Arguments / Parameters</h2>`;
-      if (parameterRows.length > 0) {
-        html += `
-          <div class="ref-table-scroll"><table class="compact-table description-table">
-            <thead>
-              <tr>
-                <th style="width: 20%;">Name</th>
-                <th style="width: 12%;">Kind</th>
-                <th style="width: 16%;">Type / Class</th>
-                <th style="width: 10%;">Unit</th>
-                <th style="width: auto;">Description</th>
-                <th style="width: 12%;">Required</th>
-                <th style="width: 14%;">Default</th>
-                <th style="width: 18%;">Constraints</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${parameterRows.map((p) => {
-                const requiredText = typeof p.required === 'boolean'
-                  ? (p.required ? 'Required' : 'Optional')
-                  : ((p.required ?? '').toString().trim() || 'N/A');
-                const defaultText = (p.default ?? '').toString().trim() || 'N/A';
-                return `
-                  <tr>
-                    <td><strong>${normalizeCell(p.name, '-')}</strong></td>
-                    <td>${normalizeCell(p.kind, 'Positional')}</td>
-                    <td>${normalizeCell(p.type, 'N/A')}</td>
-                    <td>${normalizeCell(p.unit, 'N/A')}</td>
-                    <td>${normalizeCell(p.description, '-')}</td>
-                    <td>${escapeHtml(requiredText)}</td>
-                    <td>${escapeHtml(defaultText)}</td>
-                    <td>${normalizeCell(p.constraints, 'N/A')}</td>
-                  </tr>
-                `;
-              }).join('')}
-            </tbody>
-          </table></div>
-        `;
-      } else {
-        html += `<p>None</p>`;
-      }
-
-      html += `<h2 id="returns">Return Values</h2>`;
-      if (returnRows.length > 0) {
-        html += `
-          <div class="ref-table-scroll"><table class="compact-table">
-            <thead>
-              <tr>
-                <th style="width: 22%;">Name</th>
-                <th style="width: 22%;">Type</th>
-                <th style="width: 14%;">Unit</th>
-                <th style="width: auto;">Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${returnRows.map((r) => `
-                <tr>
-                  <td><strong>${normalizeCell(r.name, '-')}</strong></td>
-                  <td>${normalizeCell(r.type, 'N/A')}</td>
-                  <td>${normalizeCell(r.unit, 'N/A')}</td>
-                  <td>${normalizeCell(r.description, '-')}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table></div>
-        `;
-      } else {
-        html += `<p>None</p>`;
-      }
-
-      html += `
-        <h2 id="calls">Method Calls</h2>
-        <div class="view-switcher method-call-view-switcher" role="group" aria-label="Call tree label">
-          <button type="button" class="view-btn active" data-call-tree-mode="name">Method Name</button>
-          <button type="button" class="view-btn" data-call-tree-mode="summary">Summary</button>
-        </div>
-        <table class="compact-table method-call-tree">
-          <thead>
-            <tr><th>Call Tree</th></tr>
-          </thead>
-          <tbody id="method-call-tree-body">
-            <tr><td class="tree-empty">Loading method calls...</td></tr>
-          </tbody>
-        </table>
-        <p id="method-call-tree-status" class="method-call-tree-status" aria-live="polite"></p>
-      `;
-
-      html += `<h2 id="examples">Examples</h2>`;
-      if (examplesList.length > 0) {
-        html += `<div class="meta-box">${examplesList.map((exampleText) => `<div class="example-block">${renderMarkdown(exampleText)}</div>`).join('')}</div>`;
-      } else {
-        html += `<p>No examples.</p>`;
-      }
-
-      const seeAlsoList = normalizeSignatureList(methodData.seeAlso);
-      if (seeAlsoList.length > 0) {
-        html += `<h2 id="see-also">See Also</h2><div class="meta-box"><p>${seeAlsoList.map((item) => `<code>${escapeHtml(item)}</code>`).join(', ')}</p></div>`;
-      }
+        </div>`);
 
       container.innerHTML = html;
-
-      const callTreeBody = document.getElementById('method-call-tree-body');
-      const callTreeStatus = document.getElementById('method-call-tree-status');
-      const modeButtons = Array.from(document.querySelectorAll('[data-call-tree-mode]'));
-      let callTreeMode = 'name';
-
-      const renderGuides = (guides) => guides.map((hasNext, index) => {
-        const isBranch = index === guides.length - 1;
-        const classes = [
-          'tree-guide',
-          isBranch ? 'tree-branch' : 'tree-ancestor',
-          hasNext ? 'has-next' : 'is-last'
-        ];
-        return `<span class="${classes.join(' ')}" style="--tree-level:${index}" aria-hidden="true"></span>`;
-      }).join('');
-
-      const renderCallTree = (rootNode) => {
-        const rows = [];
-        const flattenTree = (node, guides = []) => {
-          rows.push({ node, guides });
-          node.children.forEach((child, index) => {
-            flattenTree(child, [...guides, index < node.children.length - 1]);
-          });
-        };
-        flattenTree(rootNode);
-
-        callTreeBody.innerHTML = rows.map(({ node, guides }) => {
-          const fallbackSummary = node.missing
-            ? `[Unresolved: ${node.methodName}]`
-            : `[No summary: ${node.methodName}]`;
-          const label = callTreeMode === 'summary'
-            ? ((node.summary || '').toString().trim() || fallbackSummary)
-            : node.methodName;
-          const title = `${node.className}.${node.methodName}`;
-          const marker = `<span class="tree-node-marker${guides.length === 0 ? ' is-root' : ''}" aria-hidden="true"></span>`;
-          const suffix = node.cycle
-            ? '<span class="method-call-note"> (cycle)</span>'
-            : (node.missing ? '<span class="method-call-note"> (unresolved)</span>' : '');
-          const condition = guides.length > 0
-            ? `<span class="method-call-condition"><strong>Condition:</strong> ${escapeHtml(node.condition || 'Always')}</span>`
-            : '';
-          const content = node.missing
-            ? `<span class="method-call-missing" title="${escapeHtml(title)}">${escapeHtml(label)}</span>`
-            : `<a class="tree-class-link method-call-link" href="${window.GuildaDocLoader.pageUrl('method.html', { class: node.className, method: node.methodName })}" title="${escapeHtml(title)}">${escapeHtml(label)}</a>`;
-          const nodeContent = `<span class="method-call-node-content">${content}${suffix}${condition}</span>`;
-          const hierarchy = `<div class="tree-table-name" style="--tree-depth:${guides.length}">${renderGuides(guides)}${marker}${nodeContent}</div>`;
-          return `<tr data-tree-depth="${guides.length}"><td>${hierarchy}</td></tr>`;
-        }).join('');
-
-        callTreeStatus.textContent = rootNode.children.length
-          ? ''
-          : 'No called methods are documented in the Calls metadata.';
-      };
-
-      modeButtons.forEach((button) => {
-        button.addEventListener('click', () => {
-          callTreeMode = button.dataset.callTreeMode === 'summary' ? 'summary' : 'name';
-          modeButtons.forEach((candidate) => {
-            candidate.classList.toggle('active', candidate === button);
-          });
-          if (button.callTreeRoot) {
-            renderCallTree(button.callTreeRoot);
-          }
-        });
-      });
-
-      const rootAncestry = new Set();
-      if (methodData.defining && methodData.defining !== className) {
-        rootAncestry.add(makeMethodKey(methodData.defining, methodName));
-      }
-      const callTreeRoot = await loadCallTreeNode(className, methodName, '', rootAncestry, classDoc);
-      modeButtons.forEach((button) => {
-        button.callTreeRoot = callTreeRoot;
-      });
-      renderCallTree(callTreeRoot);
+      document.getElementById('page-toc').innerHTML = sections.map(([id, title]) =>
+        `<li><a href="#${id}" onclick="document.getElementById('${id}')?.scrollIntoView(); return false;">${title}</a></li>`).join('');
     }
   </script>
 </body>
