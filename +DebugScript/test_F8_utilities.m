@@ -377,13 +377,45 @@ assert(abs(max(real(e)) - (-0.5297416)) < 1e-6)
 
 
 %% Template IEEE14bus_lossless
+% IEEE14bus_lossless は IEEE14bus (case14) の全ブランチの抵抗 R を 0 にした系統
+% (線路の充電容量・母線シャント・変圧器タップはそのまま)
 net = DebugScript.helper.quiet(@() network.IEEE14bus_lossless);
-[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow); tab = res.tab_bus;
-assert(numel(net.a_Bus) == 14 && flag > 0)
-% 抵抗 0 の系統なので有効電力の損失は 0
+ref = DebugScript.helper.quiet(@() network.IEEE14bus);
+assert(numel(net.a_Bus) == 14 && numel(net.a_Branch) == 20)
 assert(all(cellfun(@(b) b.tab_parameter.dynamics.R, net.a_Branch) == 0))
+
+% R 以外のブランチのデータと、母線・機器のデータは IEEE14bus と同じ
+data = @(o) o.tab_parameter(:, setdiff(string(o.tab_parameter.Properties.VariableNames), "base"));
+for i = 1:20
+    d = net.a_Branch{i}.tab_parameter.dynamics;  dr = ref.a_Branch{i}.tab_parameter.dynamics;
+    assert(isequaln(removevars(d, "R"), removevars(dr, "R")))
+    assert(net.a_Branch{i}.key == ref.a_Branch{i}.key)
+end
+for i = 1:14
+    assert(isequaln(data(net.a_Bus{i}), data(ref.a_Bus{i})))
+    for j = 1:numel(ref.a_Bus{i}.a_Component)
+        assert(isequaln(data(net.a_Bus{i}.a_Component{j}), data(ref.a_Bus{i}.a_Component{j})))
+    end
+end
+
+% アドミタンス行列は純虚数、有効電力の損失は 0
+Y = net.get_admittance_matrix.Variables;
+assert(all(real(Y(:)) == 0))
+net.solver_ODE.Progress = "none";
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow); tab = res.tab_bus;
+assert(flag > 0)
 assert(abs(sum(tab.P)) < 1e-8)
+
+% 参照値 (このブランチで計算した値)
+V_ref = [1.06 1.045 1.01 1.0325439 1.031804 1.07 1.0695736 1.09 1.0652518 1.0616713 1.0640645 1.0636242 1.0617756 1.056307]';
+assert(max(abs(tab.V - V_ref)) < 1e-6)
 DebugScript.helper.quiet(@() net.initialize);
+e = eig(net.get_sys.A);
+e = e(abs(e) > 1e-6);
+assert(abs(max(real(e)) - (-0.594552)) < 1e-5)
+ev  = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+sol = DebugScript.helper.quiet(@() net.simulate([0,3], ev));
+assert(sol.odeResults.t(end) == 3)
 
 
 %% Template Ishizaki6Bus

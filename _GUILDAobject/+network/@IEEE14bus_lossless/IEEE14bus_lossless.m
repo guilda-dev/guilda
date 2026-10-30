@@ -1,6 +1,6 @@
 classdef IEEE14bus_lossless < PowerNetwork
 % <@Desc> 
-% test code of ieee-14bus system
+% test code of ieee-14bus system without transmission losses
 %==================================================================================
 %                          <<< IEEE 14-Bus System >>>                              
 %==================================================================================
@@ -11,13 +11,24 @@ classdef IEEE14bus_lossless < PowerNetwork
 %                                                                                  
 %                       =<< System Overview >>=                                    
 %                                                                                  
-%   The model includes 14 buses, 5 generators, 11 loads, 16                        
-%  transmission lines, and 2 transformers. Buses are classified as:                
-%                                                                                  
-%  ・Slack Bus (Bus 1)         : The reference bus with a fixed voltage and angle. 
-%  ・PV Buses  (Bus 2, 3, 6, 8): Have fixed voltage and real power.                
-%  ・PQ Buses  (The rest)      : Have fixed real and reactive power loads.         
-%                                                                                  
+%   The model includes 14 buses, 5 generators, 12 loads, 16
+%  transmission lines, and 4 transformers. Buses are classified as:
+%
+%  ・Slack Bus (Bus 1)         : The reference bus with a fixed voltage and angle.
+%  ・PV Buses  (Bus 2, 3, 6, 8): Have fixed voltage and real power.
+%  ・PQ Buses  (The rest)      : Have fixed real and reactive power loads.
+%
+%                       =<< Data >>=
+%
+%   The same data as network.IEEE14bus (MATPOWER case14 on a 100 MVA base) with the
+%  resistance R of every branch set to 0, so the network has no real-power loss.
+%  The other data are kept on purpose:
+%  ・Line charging C and the bus shunt (bus 9, Bshunt = 0.19) stay; they are pure
+%    susceptances and take no real power. Every bus has Gshunt = 0.
+%  ・The transformer taps (4-7, 4-9, 5-6) stay.
+%  ・Bus voltages, loads, generator limits and costs are those of network.IEEE14bus.
+%   With these data the generator outputs sum exactly to the loads.
+%
 %==================================================================================
 % 
 %                    =<< IEEE 14-Bus System Diagram >>=
