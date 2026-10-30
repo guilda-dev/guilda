@@ -74,10 +74,11 @@
           window.GuildaDocTree.mount(document.getElementById('source-tree'), {
             className: ownerName,
             methodName: raw?.Name || methodName,
-            definingClass: raw?.Defining || ''
+            definingClass: raw?.Defining || '',
+            file: raw?.File || ''
           });
           renderMethodNav(ownerName, raw?.Name || methodName, data);
-          renderMethodPage(ownerName, raw);
+          renderMethodPage(ownerName, raw, (data?.methods || []).map((method) => method.Name));
         })
         .catch((err) => {
           document.getElementById('dynamic-content').innerHTML = `<h1 style="color: var(--err);">Load Error</h1><p>${escapeHtml((err && err.message) ? err.message : err)}</p>`;
@@ -140,10 +141,12 @@
       }));
     }
 
-    // Output rows: Kind "Output" arguments (v5), then <@Returns> (v4), then
-    // the names on the function line.
+    // Output rows: Outputs (v5), Kind "Output" entries in Arguments, then
+    // <@Returns> (v4), then the names on the function line.
     function outputRows(m) {
-      const outputs = (Array.isArray(m.Arguments) ? m.Arguments : []).filter((arg) => arg?.Kind === 'Output');
+      const outputs = Array.isArray(m.Outputs) && m.Outputs.length
+        ? m.Outputs
+        : (Array.isArray(m.Arguments) ? m.Arguments : []).filter((arg) => arg?.Kind === 'Output');
       const fromReturns = Array.isArray(m.Returns) ? m.Returns : [];
       const source = outputs.length ? outputs : fromReturns;
       const rows = source.map((r) => ({
@@ -209,7 +212,7 @@
       return firstText(raw) ? `<div class="markdown-content">${renderMarkdown(raw)}</div>` : '';
     }
 
-    function renderMethodPage(ownerName, m) {
+    function renderMethodPage(ownerName, m, methodNames) {
       const container = document.getElementById('dynamic-content');
       if (!m) {
         container.innerHTML = `<h1 style="color: var(--err);">Method not found</h1><p>${escapeHtml(methodName)} does not exist in ${escapeHtml(ownerName)}.</p>`;
@@ -281,7 +284,7 @@
         html += section('examples', 'Examples', `<div class="meta-box"><div class="example-block markdown-content">${renderMarkdown(examples)}</div></div>`);
       }
       if (seeAlso.length) {
-        html += section('see-also', 'See also', `<p class="ref-see-also">${seeAlso.map((item) => seeAlsoLink(item, defining || ownerName)).join(', ')}</p>`);
+        html += section('see-also', 'See also', `<p class="ref-see-also">${seeAlso.map((item) => seeAlsoLink(item, ownerName, methodNames)).join(', ')}</p>`);
       }
 
       const yesNo = (value) => (value ? 'Yes' : 'No');

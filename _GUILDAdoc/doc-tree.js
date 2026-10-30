@@ -15,9 +15,12 @@
 
   const children = (node) => (Array.isArray(node?.Children) ? node.Children : []);
 
+  const samePath = (a, b) => Boolean(a && b) && a.replace(/\\/g, '/') === b.replace(/\\/g, '/');
+
   // Path from a root to the file of the page on screen, or [] when it is not in the tree.
-  // A method page prefers the method's own file, then the classdef file of the
-  // class that defines it, then the classdef file of the class on screen.
+  // Every file in an @Class folder carries Class, so files are matched by path:
+  // the method file (Method, then current.file, e.g. a private method), then
+  // the classdef file of the defining class, then that of the class on screen.
   function findCurrentPath(tree, current) {
     if (!current?.className) return [];
     const search = (nodes, matches) => {
@@ -28,15 +31,18 @@
       }
       return [];
     };
-    const owners = [current.definingClass, current.className].filter(Boolean);
-    if (current.methodName) {
-      for (const owner of owners) {
-        const path = search(tree, (node) => node.Class === owner && node.Method === current.methodName);
-        if (path.length) return path;
-      }
-    }
-    for (const owner of current.methodName ? owners : [current.className]) {
-      const path = search(tree, (node) => node.Class === owner && !node.Method);
+    const owners = current.methodName
+      ? [current.definingClass, current.className].filter(Boolean)
+      : [current.className];
+    const classFile = (owner) => root.GuildaDocLoader.findClass(owner)?.File || '';
+    const candidates = [
+      ...(current.methodName ? owners.map((owner) => (node) => node.Class === owner && node.Method === current.methodName) : []),
+      (node) => samePath(node.Path, current.file),
+      ...owners.map((owner) => (node) => node.Class === owner && samePath(node.Path, classFile(owner))),
+      ...owners.map((owner) => (node) => node.Class === owner && !node.Method)
+    ];
+    for (const matches of candidates) {
+      const path = search(tree, matches);
       if (path.length) return path;
     }
     return [];
@@ -132,7 +138,7 @@
   }
 
   // Render the tree into `container`. `current` names the page on screen:
-  // { className, methodName, definingClass }.
+  // { className, methodName, definingClass, file } (file: the method's File).
   function mount(container, current) {
     const loader = root.GuildaDocLoader;
     if (!container || !loader?.hasIndex()) return;

@@ -112,16 +112,16 @@
       : `<span class="ref-chain-external">${escapeHtml(value)}</span>`;
   };
 
-  // One "See also" entry: a class name, Class.method, or a method of `ownerClass`.
-  // Entries that match nothing in the reference stay plain code.
-  const seeAlsoLink = (entry, ownerClass) => {
+  // One "See also" entry: a class name, Class.method, or a method of `ownerClass`
+  // listed in `ownerMethods` (method names). Other entries stay plain code.
+  const seeAlsoLink = (entry, ownerClass, ownerMethods = []) => {
     const loader = root.GuildaDocLoader;
     const text = (entry ?? '').toString().trim();
     if (loader.findClass(text)) return classLink(text);
     const dot = text.lastIndexOf('.');
     const target = dot > 0 && loader.findClass(text.slice(0, dot))
       ? { class: loader.findClass(text.slice(0, dot)).Name, method: text.slice(dot + 1) }
-      : (ownerClass && /^[A-Za-z]\w*$/.test(text) ? { class: ownerClass, method: text } : null);
+      : (ownerClass && ownerMethods.includes(text) ? { class: ownerClass, method: text } : null);
     return target
       ? `<a href="${loader.pageUrl('method.html', target)}"><code>${escapeHtml(text)}</code></a>`
       : `<code>${escapeHtml(text)}</code>`;
