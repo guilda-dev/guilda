@@ -11,7 +11,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % of a state of its owner is labelled "Y_" + name (e.g. Y_omega_SG1B001_B001).
 % An input of the component or of a controller that a controller also drives (e.g.
 % Vfield under an AVR) adds to that signal. The signals from the component to its
-% controllers (its outputs, its states read by "X", and the voltage) are connected inside.
+% controllers (its outputs, its states read by name or "Xall", and the voltage) are connected inside.
 % The point of the linearization is x, V, I, u (default: the equilibrium; the local
 % controllers are then linearized at their equilibrium), or Point in the same form as
 % net.linearize: a vector in the order of comp.get_variable_map() (states of the

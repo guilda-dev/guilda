@@ -246,7 +246,7 @@ assert(isempty(gen.a_LocalController))
 
 
 %% Add local controller LQR
-% 状態フィードバックの LQR (key "local") は AVR の位置に付き、予約語 "X" で機器の全状態を観測する
+% 状態フィードバックの LQR (key "local") は AVR の位置に付き、予約語 "Xall" で機器の全状態を観測する
 net = DebugScript.helper.build_ieee14();
 gen = net.a_Bus{1}.a_Component{1};
 lqr = controller.local_LQR("lqr1");
@@ -254,7 +254,7 @@ gen.add_local_controller(lqr)
 assert(isa(gen.a_LocalController{1}, "controller.local_LQR"))
 assert(gen.a_LocalController{1} == lqr && lqr.a_Component == gen && lqr.key == "local")
 
-% 入力 "X" は発電機の状態名に展開され、出力 (駆動する入力) は既定で発電機の全入力
+% 入力 "Xall" は発電機の状態名に展開され、出力 (駆動する入力) は既定で発電機の全入力
 assert(isequal(lqr.sv_u, gen.sv_x))
 assert(isequal(lqr.iv_obsX, (1:numel(gen.sv_x))') && all(lqr.iv_obsY == 0))
 assert(isequal(lqr.sv_y, gen.sv_u))
@@ -279,6 +279,35 @@ try
     error("DebugScript:noError", "存在しない入力 Vref を駆動する LQR が付いてしまった")
 catch ME
     assert(ME.identifier == "GUILDA:local_LQR:UnknownInput", ME.message)
+end
+
+
+%% Controller inputs observe the component by name
+% 制御器の入力名は機器の出力 sv_y (優先) か状態 sv_x を指す。予約語 "Xall" / "Yall" は全状態 / 全出力
+net = DebugScript.helper.build_ieee14();
+gen = net.a_Bus{1}.a_Component{1};
+con = DebugScript.helper.ObserveStub("Xall");
+gen.add_local_controller(con)
+assert(isequal(con.sv_u, gen.sv_x) && isequal(con.iv_obsX, (1:numel(gen.sv_x))') && all(con.iv_obsY == 0))
+
+con = DebugScript.helper.ObserveStub("Yall");
+evalc("gen.add_local_controller(con)");
+assert(isequal(con.sv_u, gen.sv_y) && isequal(con.iv_obsY, (1:numel(gen.sv_y))') && all(con.iv_obsX == 0))
+
+% 名前で指定: omega は出力と状態の両方にあり出力から読む。delta は状態から読む。無い名前は観測しない
+con = DebugScript.helper.ObserveStub(["delta";"omega";"Vref"]);
+evalc("gen.add_local_controller(con)");
+assert(isequal(con.iv_obsY, [0;1;0]) && isequal(con.iv_obsX, [1;0;0]))
+
+% 旧い予約語 "X" / "Y" はエラーで "Xall" / "Yall" を案内する
+for str = ["X","Y"]
+    try
+        evalc("gen.add_local_controller(DebugScript.helper.ObserveStub(str))");
+        error("DebugScript:noError", "入力 " + str + " がエラーにならない")
+    catch ME
+        assert(ME.identifier == "GUILDA:LocalController:ReservedInput", ME.identifier)
+        assert(contains(ME.message, "Xall") && contains(ME.message, "Yall"))
+    end
 end
 
 

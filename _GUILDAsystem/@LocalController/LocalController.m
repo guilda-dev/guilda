@@ -1,5 +1,12 @@
 classdef LocalController < PowerSystemModel
-%% LOCALCONTROLLER is superclass for defining controllers that connect to devices    
+%% LOCALCONTROLLER is superclass for defining controllers that connect to devices
+% A controller observes the component it is attached to (directly, or through the
+% controllers above it) by the names of its inputs sv_u: a name in sv_y of the component
+% reads that output, otherwise a name in sv_x reads that state (an output is read when
+% both have the name). The reserved inputs "Xall" / "Yall" observe all the states / all
+% the outputs. An input of the name of an output of a nested controller (e.g. Vpss) reads
+% that output; other inputs stay at the equilibrium. The outputs sv_y of the controller
+% replace the inputs of the same name of the component (or of the controller above it).
 
 %% Abstract properties/methods    
     properties(Abstract, SetAccess=protected, Hidden)
@@ -54,15 +61,15 @@ classdef LocalController < PowerSystemModel
         iv_obsX (:,1) double = zeros(0,1)
     end
     properties (Access=private)
-        sv_uRequest (:,1) string = strings(0,1)   % sv_u as defined, before "X" / "Y" are expanded
+        sv_uRequest (:,1) string = strings(0,1)   % sv_u as defined, before "Xall" / "Yall" are expanded
     end
     properties (Constant, Hidden)
-        % <@Desc> Reserved input names: an input "X" observes all the states sv_x of the
-        % component and an input "Y" all its outputs sv_y (expanded when attached).
+        % <@Desc> Reserved input names: an input "Xall" observes all the states sv_x of
+        % the component and an input "Yall" all its outputs sv_y (expanded when attached).
         % <@Role> Layer
         % <@Type> string
         % <@Size> 1x2
-        sv_reserved = ["X","Y"]
+        sv_reserved = ["Xall","Yall"]
     end
     properties(SetAccess=protected)
         rv_Xequilibrium (:,1) double = zeros(0,1)   
@@ -114,12 +121,16 @@ classdef LocalController < PowerSystemModel
         end
 
         function resolve_observe(obj)
-            % Expand the reserved inputs "X" / "Y" and find where each input is read on
+            % Expand the reserved inputs "Xall" / "Yall" and find where each input is read on
             % the observed component (iv_obsY / iv_obsX), for this controller and the
             % controllers nested in it. An input name found in both sv_y and sv_x is read
             % from sv_y. Without a component, the inputs stay as defined.
             if isempty(obj.sv_uRequest)
                 obj.sv_uRequest = obj.sv_u;
+            end
+            if any(ismember(obj.sv_uRequest, ["X","Y"]))
+                error("GUILDA:LocalController:ReservedInput", ...
+                      "%s: the inputs ""X"" / ""Y"" are not reserved names; use ""Xall"" for all the states or ""Yall"" for all the outputs of the component.", class(obj))
             end
             comp = obj.observed_component();
             if isempty(comp)
@@ -134,9 +145,9 @@ classdef LocalController < PowerSystemModel
                 sv_name = strings(0,1);  sv_src = strings(0,1);
                 for k = 1:numel(obj.sv_uRequest)
                     switch obj.sv_uRequest(k)
-                        case "X"
+                        case "Xall"
                             sv_add = comp.sv_x;  str_src = "X";
-                        case "Y"
+                        case "Yall"
                             sv_add = comp.sv_y;  str_src = "Y";
                         otherwise
                             sv_add = obj.sv_uRequest(k);  str_src = "";
@@ -170,10 +181,10 @@ classdef LocalController < PowerSystemModel
         end
 
         function set_inputs(obj, sv_name)
-            % Set the input names sv_u after "X" / "Y" are expanded. A controller that
-            % uses "X" or "Y" in sv_u overrides this (sv_u is defined by the subclass).
+            % Set the input names sv_u after "Xall" / "Yall" are expanded. A controller that
+            % uses "Xall" or "Yall" in sv_u overrides this (sv_u is defined by the subclass).
             error("GUILDA:LocalController:ReservedInput", ...
-                  "%s uses the reserved input names ""X"" / ""Y"" but does not override set_inputs.", class(obj))
+                  "%s uses the reserved input names ""Xall"" / ""Yall"" but does not override set_inputs.", class(obj))
         end
 
         function comp = observed_component(obj)

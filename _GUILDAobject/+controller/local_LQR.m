@@ -1,7 +1,7 @@
 classdef local_LQR < LocalController
 % <@Desc>
 % State-feedback LQR controller of one component. It observes all the states of the
-% component (the reserved input "X") and drives the inputs Input of the component:
+% component (the reserved input "Xall") and drives the inputs Input of the component:
 %   u = u* - K (x - x*)
 % where x*, u* are the equilibrium of the component. The gain K = lqr(A, B, Q, R) is
 % computed by net.initialize from the linear model of the component (comp.get_sys
@@ -27,7 +27,7 @@ classdef local_LQR < LocalController
     properties (SetAccess=protected, Hidden)
         key     = "local"
         sv_x    = strings(0,1)
-        sv_u    = "X"
+        sv_u    = "Xall"
         sv_y    = strings(0,1)
         sv_para = strings(0,1)
     end

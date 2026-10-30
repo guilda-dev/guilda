@@ -6,7 +6,7 @@ function add_local_controller(obj, varargin)
 %   "pss"   : attached to the AVR of the component
 %   "local" : attached to the component in the place of an AVR (e.g. controller.local_LQR)
 % A controller reads the outputs and states of the component it observes by the names
-% of its inputs sv_u ("X" / "Y": all the states / all the outputs), and its outputs
+% of its inputs sv_u ("Xall" / "Yall": all the states / all the outputs), and its outputs
 % replace the inputs of the component of the same name.
 % A new AVR or "local" controller replaces the attached one. The PSS of an old AVR moves
 % to a new AVR unless a PSS is given in the same call, and is detached when the new
