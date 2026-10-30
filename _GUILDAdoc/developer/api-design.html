@@ -224,9 +224,9 @@
         </tr>
         <tr>
           <td>Initialization</td>
-          <td data-label="Call"><code>net.initialize(...)</code><small><code>Method="powerflow"|"opf"|"xequilibrium"</code></small></td>
-          <td data-label="First output"><code>PowerFlowResult</code></td>
-          <td data-label="Changes net"><span class="dev-status">Yes</span></td>
+          <td data-label="Call"><code>net.initialize(...)</code><small><code>Method="powerflow"|"OPF"|"equilibrium"</code>. The other options go to <code>calculate_powerflow</code> (<code>"powerflow"</code>) or <code>optimize_powerflow</code> with <code>Method="AC OPF"</code> (<code>"OPF"</code>). <code>"equilibrium"</code> reuses the equilibria the components hold and takes no other option. The old option <code>methods</code> is deprecated.</small></td>
+          <td data-label="First output"><code>PowerFlowResult</code><small><code>OPFResult</code> for <code>"OPF"</code>.</small></td>
+          <td data-label="Changes net"><span class="dev-status">Yes</span><small>Sets the equilibrium and resets the edit log. When the analysis does not succeed, it stops with an error and leaves the network unchanged.</small></td>
         </tr>
         <tr>
           <td>OPF</td>
