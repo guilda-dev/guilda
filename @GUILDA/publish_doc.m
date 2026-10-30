@@ -51,6 +51,9 @@ function publish_doc(option)
 
     % 4. Replace the contents
     write_site(str_root, str_tmp);
+    if ~bln_new
+        keep_published_index(str_tmp);
+    end
 
     % 5. Commit
     run_git(str_tmp, 'add -A');
@@ -204,6 +207,23 @@ function write_site(str_root, str_tmp)
         "</html>" + newline;
     write_text(fullfile(str_tmp, 'index.html'), str_index);
     write_text(fullfile(str_tmp, '.nojekyll'), "");
+end
+
+
+function keep_published_index(str_tmp)
+    % The exporter stamps generatedAt on every rebuild. Keep the published
+    % class index when nothing else in it changed, so an unchanged site
+    % makes no commit.
+    str_path = '_GUILDAdoc/database/list_Classes.js';
+    [r_status, str_old] = system(sprintf('git -C %s show HEAD:%s', quote(str_tmp), str_path));
+    if r_status ~= 0
+        return
+    end
+    str_new = fileread(fullfile(str_tmp, str_path), 'Encoding', 'UTF-8');
+    str_pattern = {'"generatedAt":\s*"[^"]*"', '\r'};
+    if strcmp(regexprep(strtrim(str_old), str_pattern, ''), regexprep(strtrim(str_new), str_pattern, ''))
+        run_git(str_tmp, sprintf('checkout HEAD -- %s', str_path));
+    end
 end
 
 
