@@ -138,7 +138,13 @@
         <span class="dg-item-title">Same method name, same meaning on every layer</span>
         <p>A method with the same name means the same thing on every class and has the same shape of inputs and outputs. A higher layer aggregates the lower ones.</p>
         <ul>
-          <li><code>get_sys</code>: on <code>Component</code>, the linearized model of the component and its controllers; on <code>Bus</code>, the aggregate of its components; on <code>PowerNetwork</code>, the whole system.</li>
+          <li><code>get_sys</code>: on <code>LocalController</code>, the linearized model of the controller alone; on <code>Component</code>, the model of the component and its controllers; on <code>Bus</code>, the aggregate of its components; on <code>PowerNetwork</code>, the whole system. On every layer the input, state, and output names are unique, and states are never outputs. An output with the name of a state of its owner is labelled <code>Y_</code> + name.
+            <ul>
+              <li><code>LocalController</code>: inputs <code>V</code>, <code>u<sub>con</sub></code>; states <code>x<sub>con</sub></code>; outputs <code>y<sub>con</sub></code>.</li>
+              <li><code>Component</code>: inputs the port (<code>V</code> for <code>"V2I"</code>, <code>I</code> for <code>"I2V"</code>), <code>u<sub>mac</sub></code>, <code>u<sub>con</sub></code>; states <code>x<sub>mac</sub></code>, <code>x<sub>con</sub></code>; outputs the other port, <code>y<sub>mac</sub></code>, <code>y<sub>con</sub></code>. The signals from the component to its controllers are connected inside.</li>
+              <li><code>Bus</code>: the same, aggregated over its components, with the bus port.</li>
+            </ul>
+          </li>
           <li><code>get_admittance_matrix</code>: on <code>Branch</code>, its 2×2 matrix; on <code>PowerNetwork</code>, the matrix of the whole network.</li>
           <li><code>get_variable_map</code>: on <code>Component</code> and <code>Bus</code>, the rows of the network map that belong to it, in the same relative order (see <a href="#variables">Variable order</a>).</li>
           <li><code>build_opf_problem</code> and <code>set_opffcn</code>: each class adds its own variables, cost, and constraints; <code>PowerNetwork</code> collects them.</li>
@@ -192,11 +198,12 @@
       <div class="dg-row cd-c-con">
         <div><code class="cd-name">LocalController</code><code class="cd-name">GlobalController</code><span class="cd-role">Controllers that compute an input for components.</span></div>
         <dl>
-          <dt>Contract</dt><dd>Controllers keep their own contract, different from <code>Component</code> on purpose: a component outputs the current <code>I</code> to the network and <code>Y</code> to its controllers, while a controller only outputs the input <code>u</code> to the component.</dd>
-          <dt>Observes</dt><dd>Only the outputs <code>Y</code> of the components it controls, never their state <code>x</code>. A controller that needs an internal quantity of a machine (for example <code>delta</code>, <code>omega</code>, or <code>E</code>) gets it because the component adds that quantity to its <code>Y</code>.</dd>
+          <dt>Contract</dt><dd>Controllers keep their own contract, different from <code>Component</code> on purpose: a component outputs the current <code>I</code> to the network and exposes its outputs <code>Y</code> and states <code>x</code> to its controllers, while a controller only outputs inputs <code>u</code> for the component. Every connection is made by name.</dd>
+          <dt>Observes</dt><dd>A local controller reads the component it is attached to (for a PSS under an AVR, the component above them) by the names of its inputs <code>sv_u</code>: a name in the component's <code>sv_y</code> reads that output; otherwise a name in its <code>sv_x</code> reads that state. When both have the name, the output wins. The reserved input names <code>Xall</code> and <code>Yall</code> observe all the states and all the outputs of the component <small>(<code>controller.local_LQR</code> uses <code>Xall</code>)</small>. The names <code>X</code> and <code>Y</code> are not reserved: an input with either name is an error. An input with the name of an output of a nested controller (for example <code>Vpss</code>) reads that output; any other input stays at its equilibrium. A global controller reads the outputs <code>Y</code> of the components it controls.</dd>
+          <dt>Drives</dt><dd>The outputs <code>sv_y</code> of a controller replace the inputs of the same name of the component, or of the controller above it.</dd>
           <dt>Owns</dt><dd>Its parameters and its equilibrium (<code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code>).</dd>
           <dt>Derived</dt><dd><code>LocalController.c_Vequilibrium</code> is a <code>Dependent</code> view of its component's voltage.</dd>
-          <dt>Methods</dt><dd><code>get_hessian</code> (see <a href="#optional">Optional analyses</a>).</dd>
+          <dt>Methods</dt><dd><code>get_sys</code> (the controller alone; see <a href="#principles">Same method name, same meaning</a>); <code>get_hessian</code> (see <a href="#optional">Optional analyses</a>).</dd>
         </dl>
       </div>
       <div class="dg-row cd-c-other">
