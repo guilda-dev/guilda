@@ -1,21 +1,64 @@
 classdef Component < PowerSystemModel
-% Class for managing equipment dynamics and power-flow settings 
+% Abstract class of the equipment connected to a bus, such as generators and loads.
+%
+% A component is a dynamic model with states x, inputs u and outputs y, connected to its
+% bus through the voltage V and the current I it injects:
+%
+% - `fcn_dx`, `fcn_Mass`: the state equation M*dx/dt = fcn_dx(t, x, V, I, u)
+% - `fcn_I`: the current injected into the bus
+% - `fcn_Y`: the outputs (inputs of the local controllers)
+%
+% Subclasses in the `component` package define these static methods, the names of the
+% variables (`sv_x`, `sv_u`, `sv_y`, `sv_para`) and the equilibrium (`get_equilibrium`).
+% Components are created by `Bus.add_component`. Their parameters are in
+% `tab_parameter`: dynamics, operation limits, power-flow settings (P, Q), OPF costs and
+% diagram settings. Analytic Jacobians (static methods Jacobi_dx, Jacobi_I, Jacobi_Y)
+% are optional; without them the Jacobians are computed numerically.
+%
+% <@Examples>
+% ```matlab
+% net = network.IEEE14bus();
+% gen = net.a_Bus{1}.a_Component{1};
+% gen.tab_parameter.powerflow                  % P, Q settings of the power flow
+% gen.add_local_controller(controller.avr.AVR_ST1("avr1"));
+% net.initialize();
+% gen.rv_Xequilibrium                          % state equilibrium
+% sys = gen.get_sys();                         % linear model from V to I
+% ```
+%
+% See also Bus.add_component, LocalController, component.generator.abstract
 
 %% Abstract properties/methods
     properties(Abstract,Constant)
-        key      (1,1) string
-        sv_x    (:,1) string
-        sv_u    (:,1) string 
-        sv_y    (:,1) string
-        sv_para (:,1) string
+        key      (1,1) string   % Key of the component type, used by Bus.add_component.
+        sv_x    (:,1) string    % Names of the states.
+        sv_u    (:,1) string    % Names of the inputs.
+        sv_y    (:,1) string    % Names of the outputs.
+        sv_para (:,1) string    % Names of the dynamic parameters passed to the model functions.
     end
     methods(Abstract)
+        % Return the state and input equilibria for a bus voltage and current.
+        %
+        % Called by set_equilibrium during PowerNetwork.initialize; c_V and c_I are the
+        % voltage and injected current phasors [pu], r_P and r_Q the injected power [pu].
         [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj,c_V,c_I,r_P,r_Q);
     end
     methods(Abstract, Static)      
+        % Return the state derivatives of the model.
+        %
+        % The arguments of all model functions are the time r_t [s], the states rv_x, the
+        % bus voltage rv_V = [Vre; Vim] [pu], the current rv_I = [Ire; Iim] [pu], the inputs
+        % rv_u, the dynamic parameters rr_param (in the order of sv_para) and the nominal
+        % frequency r_omega0 [Hz].
         rv_dx = fcn_dx(  obj, r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)
+
+        % Return the current injected into the bus as a complex number.
         c_I   = fcn_I(   obj, r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)        
+
+        % Return the outputs of the model.
         rv_y  = fcn_Y(   obj, r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)
+
+        % Return the mass matrix of the state equation.
         rm_M  = fcn_Mass(obj, r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)
     end
 
@@ -28,21 +71,23 @@ classdef Component < PowerSystemModel
     
 
 %% Parameter
-    properties(SetAccess=protected)
-        a_Bus                                  % [   Layer   ] 接続しているBusクラス(a_Cubicleから辿る)
-        a_LocalController (:,1) = cell(0,1)    % [   Layer   ] 接続されているControllerクラスのcell配列        
-
-        f_Mass                                 % [  Dynamics ] 数値積分の計算に使用する質量行列の関数ハンドル
-        f_dx                                   % [  Dynamics ] 数値積分の計算に使用する微分方程式の関数ハンドル
-        f_I                                    % [  Dynamics ] 数値積分の計算に使用する接続方程式の関数ハンドル
-        f_Y
-        f_JacobiDx
-        f_JacobiI        
-        f_JacobiY
-
-        rv_Xequilibrium = zeros(0,1)           % [SteadyState] 状態の平衡点
-        rv_Uequilibrium = zeros(0,1)           % [SteadyState] 定常入力
-        c_Iequilibrium                         % [SteadyState] 定常潮流状態での機器の注入電流
+    properties(SetAccess=protected) % Layer Structure
+        a_Bus                                  % Bus the component is connected to ([] when removed).
+        a_LocalController (:,1) = cell(0,1)    % Local controllers attached to the component (an AVR; a PSS hangs under it).
+    end
+    properties(SetAccess=protected) % Dynamics
+        f_Mass                                 % Mass matrix function @(t,x,V,I,u) with the parameters bound.
+        f_dx                                   % State equation function @(t,x,V,I,u) with the parameters bound.
+        f_I                                    % Current injection function @(t,x,V,I,u) with the parameters bound.
+        f_Y                                    % Output function @(t,x,V,I,u) with the parameters bound.
+        f_JacobiDx                             % Jacobian function of f_dx (analytic or numerical).
+        f_JacobiI                              % Jacobian function of f_I (analytic or numerical).
+        f_JacobiY                              % Jacobian function of f_Y (analytic or numerical).
+    end
+    properties(SetAccess=protected) % Steady State
+        rv_Xequilibrium = zeros(0,1)           % State equilibrium.
+        rv_Uequilibrium = zeros(0,1)           % Input equilibrium.
+        c_Iequilibrium                         % [pu] Current injected into the bus at the equilibrium.
     end
     properties (SetAccess={?odeSimulator, ?Component}, Hidden)
         iv_odeX  = [];
@@ -52,22 +97,22 @@ classdef Component < PowerSystemModel
     properties(Dependent, Hidden)
         para_base                              % COMPAT(v3) ComponentBaseView: Hz is held by the network (use r_Hz)
     end
-    properties(Dependent)
-        c_Vequilibrium                         % [SteadyState] 定常潮流状態での機器の端子電圧 (= a_Bus.c_Vequilibrium, バス未接続なら [])
-        rv_Xequilibrium_all                    % [SteadyState] 制御器の状態も含めた平衡点
-        tab_parameter                          % [ Parameter ] ハイパーパラメータの設定値
+    properties(Dependent) % Steady State
+        c_Vequilibrium                         % [pu] Terminal voltage at the equilibrium (= a_Bus.c_Vequilibrium; [] without a bus).
+        rv_Xequilibrium_all                    % State equilibrium including the local controllers.
+        tab_parameter                          % Parameter table: dynamics, operation, powerflow, OPF and graph.
     end
-    properties(SetAccess=protected)
-        para_dynamics                          % [ Parameter ] tab_prameterの動特性の部分を管理するParameterクラス 
-        para_powerflow                         % [ Parameter ] tab_prameterの潮流設定の部分を管理するParameterクラス
-        para_operation                         % [ Parameter ] tab_prameterの運用基準の部分を管理するParameterクラス
-        para_OPF                               % [ Parameter ] tab_prameterのOPFの部分を管理するParameterクラス (startup/shutdown は予約: 未使用)
-        para_graph                             % [ Parameter ] tab_prameterのグラフ描画の部分を管理するParameterクラス
-        s_opffcn = opffcn.default()            % [    OPF    ] set_opffcn で設定した OPF の費用・制約 (Cost, Constraint, DefaultConstraint)
+    properties(SetAccess=protected) % Parameter
+        para_dynamics                          % Parameter object of tab_parameter.dynamics.
+        para_powerflow                         % Parameter object of tab_parameter.powerflow (P, Q).
+        para_operation                         % Parameter object of tab_parameter.operation (baseMVA, Pmin, Pmax, Qmin, Qmax).
+        para_OPF                               % Parameter object of tab_parameter.OPF (P0, Q0, HP, HQ, fP, fQ; startup/shutdown are reserved).
+        para_graph                             % Parameter object of tab_parameter.graph.
+        s_opffcn = opffcn.default()            % OPF terms (Cost, Constraint, DefaultConstraint) set by set_opffcn.
     end  
-    properties(Dependent, Access=protected)
-        parent                                 % [   Layer   ] Layerの上位に当たるクラス
-        children                               % [   Layer   ] Layerの下位に当たるクラス群
+    properties(Dependent, Access=protected) % Layer Structure
+        parent                                 % Layer Structure: the bus.
+        children                               % Layer Structure: the local controllers and Parameter objects.
     end
     properties (Access={?odeSimulator, ?Component, ?odeEventSet})        
         l_hasController = false;
@@ -87,6 +132,7 @@ classdef Component < PowerSystemModel
 %% Constructor
     methods(Access=protected)
         function obj = Component(str_tag, opt)
+            % Create the parameters of a component (called by the subclass constructors).
             obj.str_tag        = str_tag;
             obj.para_dynamics  = Parameter(obj,"dynamics");
             obj.para_powerflow = Parameter(obj,"powerflow");

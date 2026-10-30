@@ -1,5 +1,6 @@
 function varargout = get_hessian(obj, x, V, I, u)
-% <@Desc>
+% Return the second derivatives of fcn_dx, fcn_I and fcn_Y at a point.
+%
 % Second derivatives of the model equations at a point: the optional Hessian analysis
 % of a component. It is available only for classes that define the static methods
 % below (the same pattern as Jacobi_dx / Jacobi_I / Jacobi_Y); for any other class it
@@ -14,32 +15,20 @@ function varargout = get_hessian(obj, x, V, I, u)
 % H(k,:,:) is the Hessian of the k-th equation with respect to z (symmetric in its last
 % two dimensions). A method may return [] for an all-zero Hessian. Hessian_dx is
 % required; Hessian_I and Hessian_Y are needed only when their output is requested.
-% <@Role> Static Analysis
-% <@Summary> Second derivatives of fcn_dx, fcn_I, fcn_Y (optional; per class).
-% <@Signatures>
-% [
-%   "H_dx = comp.get_hessian()",
-%   "[H_dx, H_I, H_Y] = comp.get_hessian(x, V, I, u)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "x", "Type": "double column", "Description": "States.", "Required": false, "Default": "comp.rv_Xequilibrium"},
-%   {"Name": "V", "Type": "double column", "Description": "Bus voltage [Vre; Vim].", "Required": false, "Default": "the equilibrium"},
-%   {"Name": "I", "Type": "double column", "Description": "Current [Ire; Iim].", "Required": false, "Default": "the equilibrium"},
-%   {"Name": "u", "Type": "double column", "Description": "Inputs.", "Required": false, "Default": "comp.rv_Uequilibrium"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "H_dx", "Type": "double", "Description": "Hessians of fcn_dx: n_x x n_z x n_z."},
-%   {"Name": "H_I", "Type": "double", "Description": "Hessians of [Ire; Iim] of fcn_I: 2 x n_z x n_z."},
-%   {"Name": "H_Y", "Type": "double", "Description": "Hessians of fcn_Y: n_y x n_z x n_z."}
-% ]
+%
+% Outputs (`varargout`, in this order):
+%
+% - `H_dx` — Hessians of fcn_dx: n_x x n_z x n_z.
+% - `H_I` — Hessians of [Ire; Iim] of fcn_I: 2 x n_z x n_z.
+% - `H_Y` — Hessians of fcn_Y: n_y x n_z x n_z.
+%
+% See also Component.get_sys
     arguments
         obj
-        x (:,1) double = obj.rv_Xequilibrium
-        V (:,1) double = [real(obj.c_Vequilibrium); imag(obj.c_Vequilibrium)]
-        I (:,1) double = [real(obj.c_Iequilibrium); imag(obj.c_Iequilibrium)]
-        u (:,1) double = obj.rv_Uequilibrium
+        x (:,1) double = obj.rv_Xequilibrium   % States (default: the equilibrium).
+        V (:,1) double = [real(obj.c_Vequilibrium); imag(obj.c_Vequilibrium)]   % [pu] Bus voltage [Vre; Vim] (default: the equilibrium).
+        I (:,1) double = [real(obj.c_Iequilibrium); imag(obj.c_Iequilibrium)]   % [pu] Current [Ire; Iim] (default: the equilibrium).
+        u (:,1) double = obj.rv_Uequilibrium   % Inputs (default: the equilibrium).
     end
     c_method = {"Hessian_dx", numel(obj.sv_x); "Hessian_I", 2; "Hessian_Y", numel(obj.sv_y)};
     param    = obj.para_dynamics.tab_parameter{:,obj.sv_para};

@@ -1,7 +1,15 @@
 function flag = validate(obj, l_message)
+% Check the analytic Jacobians of the component against numerical differentiation.
+%
+% Evaluates the Jacobi_* methods (or the numerical defaults) at the equilibrium, or at
+% a random point when the equilibrium is not set, and compares them with finite
+% differences of fcn_dx, fcn_I and fcn_Y.
     arguments
         obj 
-        l_message (1,1) logical = true
+        l_message (1,1) logical = true   % Print the comparison.
+    end
+    arguments (Output)
+        flag   % Struct of tables with the absolute differences of each Jacobian block.
     end
 
 

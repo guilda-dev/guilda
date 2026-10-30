@@ -1,5 +1,6 @@
 function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
-% <@Desc>
+% Linearize the component with its local controllers (V to I, or I to V).
+%
 % Linear model of the component with its local controllers, from the bus voltage V and
 % the inputs u to the current I (port "V2I") or from I to V (port "I2V").
 % The point of the linearization is x, V, I, u (default: the equilibrium; the local
@@ -8,37 +9,23 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % component and its controllers, Vre, Vim, inputs), or {sim, t}. With Point, I is
 % fcn_I at the point and the inputs of the controllers are the outputs they are
 % connected to (as in the simulation). The model is not changed.
-% <@Role> Static Analysis
-% <@Summary> Linear model of the component (V to I, or I to V).
-% <@Signatures>
-% [
-%   "sys = comp.get_sys()",
-%   "sys = comp.get_sys(x, V, I, u)",
-%   "sys = comp.get_sys(Point=rv, port=\"V2I\", full=true)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "x, V, I, u", "Type": "double column", "Description": "States, voltage [Vre; Vim], current [Ire; Iim] and inputs of the component.", "Required": false, "Default": "the equilibrium"},
-%   {"Name": "port", "Type": "\"V2I\" | \"I2V\"", "Description": "Input and output ports.", "Required": false, "Default": "\"V2I\""},
-%   {"Name": "full", "Type": "logical scalar", "Description": "Also output the states.", "Required": false, "Default": "true"},
-%   {"Name": "Point", "Type": "[] | double vector | cell {sim, t}", "Description": "Point of the linearization; overrides x, V, I, u.", "Required": false, "Default": "[]"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "sys", "Type": "ss", "Description": "Descriptor state-space model with state, input and output names."}
-% ]
+%
+% Outputs: `sys`, a descriptor state-space model with state, input and output names;
+% then (`varargout`) the state, input and output names as cell arrays of char.
+%
+% See also Component.get_variable_map, Bus.get_sys, PowerNetwork.get_sys
     arguments
         obj 
-        x        (:,1) double = obj.rv_Xequilibrium
-        V        (:,1) double = [real(obj.c_Vequilibrium); imag(obj.c_Vequilibrium)]
-        I        (:,1) double = [real(obj.c_Iequilibrium); imag(obj.c_Iequilibrium)]
-        u        (:,1) double = obj.rv_Uequilibrium                        
-        opt.port (1,1) {mustBeMember(opt.port, ["V2I", "I2V"])} = "V2I"
-        opt.full (1,1) logical = true
-        opt.tag  (1,1) logical = true
-        opt.con  (1,1) logical = obj.l_hasController
-        opt.rec  (1,1) logical = true
-        opt.Point = []
+        x        (:,1) double = obj.rv_Xequilibrium   % States (default: the equilibrium).
+        V        (:,1) double = [real(obj.c_Vequilibrium); imag(obj.c_Vequilibrium)]   % [pu] Bus voltage [Vre; Vim] (default: the equilibrium).
+        I        (:,1) double = [real(obj.c_Iequilibrium); imag(obj.c_Iequilibrium)]   % [pu] Current [Ire; Iim] (default: the equilibrium).
+        u        (:,1) double = obj.rv_Uequilibrium   % Inputs (default: the equilibrium).
+        opt.port (1,1) {mustBeMember(opt.port, ["V2I", "I2V"])} = "V2I"   % Input and output ports.
+        opt.full (1,1) logical = true   % Also output the states.
+        opt.tag  (1,1) logical = true   % Name the states, inputs and outputs with the component tag.
+        opt.con  (1,1) logical = obj.l_hasController   % Include the local controllers (default: true when one is attached).
+        opt.rec  (1,1) logical = true   % Internal: false for the inner call that linearizes the component alone.
+        opt.Point = []   % Point of the linearization; overrides x, V, I, u.
     end        
 
     % All controllers in the tree (e.g. PSS attached under AVR) are separate blocks connected by signal names

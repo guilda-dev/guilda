@@ -1,17 +1,23 @@
 function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Busvar, option)
-% This method is intended to be called internally from the "build_opf_problem" method of the Bus class.
+% Add the power variables, limits and cost of the component to an OPF problem.
 %
-% prob   @optimproblem
-% x0     @struct 
-% Busvar @optimvar 
+% Called by Bus.build_opf_problem for each component of the bus. The power of the
+% component is added to the power balance of its bus in `const`. A load keeps the P
+% (Q) of tab_parameter.powerflow while its Pmin/Pmax (Qmin/Qmax) are infinite.
 %
+% See also Bus.build_opf_problem, Component.set_opffcn
     arguments
         obj 
-        prob   = optimproblem();
-        x0     = struct();
-        const  = struct();
-        Busvar = zeros(2,0); %#ok
-        option.methods (1,1) string {mustBeMember(option.methods,["ELD","DC OPF","AC OPF"])} = "AC OPF";
+        prob   = optimproblem();   % optimproblem to extend.
+        x0     = struct();   % Struct of initial values, extended.
+        const  = struct();   % Struct of power-balance expressions, extended.
+        Busvar = zeros(2,0);   % Variables of the bus (unused).
+        option.methods (1,1) string {mustBeMember(option.methods,["ELD","DC OPF","AC OPF"])} = "AC OPF";   % OPF formulation: "ELD", "DC OPF" or "AC OPF".
+    end
+    arguments (Output)
+        prob    % Extended optimproblem.
+        x0      % Extended initial values.
+        const   % Extended power-balance expressions.
     end
 
     % try

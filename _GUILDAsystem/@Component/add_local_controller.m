@@ -1,17 +1,25 @@
 function add_local_controller(obj, varargin)
 % Attach local controllers (AVR, PSS) to the component, in the order given.
-%   gen.add_local_controller(avr)
-%   gen.add_local_controller(avr, pss)
+%
 % The AVR is attached to the component and the PSS to the AVR (the PSS feeds the AVR).
 % A new AVR replaces the attached one, and the PSS of the old AVR moves to the new AVR
 % unless a PSS is given in the same call. A new PSS replaces the attached one.
 % Replaced controllers are detached (they no longer refer to this component).
 % Each addition is logged as a "Topology" edit, so the equilibrium becomes stale.
+%
+% <@Examples>
+% ```matlab
+% gen = net.a_Bus{1}.a_Component{1};
+% gen.add_local_controller(controller.avr.AVR_ST1("avr1"));
+% gen.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
+% ```
+%
+% See also LocalController, controller.avr.AVR_ST1, controller.pss.PSS1
     arguments
         obj
     end
     arguments (Input,Repeating)
-        varargin (1,1) {mustBeA(varargin, 'LocalController')}
+        varargin (1,1) {mustBeA(varargin, 'LocalController')}   % Local controllers: an AVR, a PSS, or an AVR followed by a PSS.
     end
 
     l_givenPss = any(cellfun(@(con) con.key == "pss", varargin));
