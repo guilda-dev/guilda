@@ -1,5 +1,6 @@
 function [result, flag, output] = linearize(obj, varargin)
-% <@Desc>
+% Linearize the network and return a LinearizationResult.
+%
 % Linearizes the network and returns the unreduced linear DAE (the Jacobian blocks in
 % the order of net.get_variable_map()) as a LinearizationResult; result.get_ss(Algorithm)
 % gives a reduced state-space model. The settings are the stored defaults of
@@ -10,30 +11,30 @@ function [result, flag, output] = linearize(obj, varargin)
 % error of check_edit that asks for it.
 % Accepted options are the names in odeLinearizer.OptionMap plus Plot; any other name
 % stops with GUILDA:resolve_options:UnknownName.
-% <@Role> Static Analysis
-% <@Summary> Linearize the network; returns a LinearizationResult.
-% <@Signatures>
-% [
-%   "result = net.linearize()",
-%   "[result, flag, output] = net.linearize(Name, Value)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "Algorithm", "Type": "\"Kron\" | \"Feedback\" | \"DAE\"", "Description": "Default reduction of result.get_ss() (net.solver_LIN.Algorithm).", "Required": false, "Default": "net.solver_LIN.Algorithm"},
-%   {"Name": "NonUnit", "Type": "double row", "Description": "Indices of buses treated as non-unit buses by \"Feedback\" (net.solver_LIN.NonUnit).", "Required": false, "Default": "net.solver_LIN.NonUnit"},
-%   {"Name": "Point", "Type": "[] | double vector | cell {sim, t}", "Description": "Point of the linearization: [] for the equilibrium, the values in the order of net.get_variable_map(), or {sim, t} for the state of a simulation result at time t (net.solver_LIN.Point).", "Required": false, "Default": "net.solver_LIN.Point"},
-%   {"Name": "Plot", "Type": "logical scalar", "Description": "Call result.Plot (eigenvalue map) after the linearization.", "Required": false, "Default": "false"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "result", "Type": "LinearizationResult", "Description": "Jacobian blocks, variable map, point and settings."},
-%   {"Name": "flag", "Type": "logical", "Description": "True when all Jacobian entries are finite."},
-%   {"Name": "output", "Type": "struct", "Description": "output.message describes the outcome; l_equilibrium, n_x, n_v, n_u, rcond_Avv."}
-% ]
+%
+% Name-Value options:
+%
+% - `Algorithm` — Default reduction of result.get_ss() (net.solver_LIN.Algorithm).
+% - `NonUnit` — Indices of buses treated as non-unit buses by "Feedback" (net.solver_LIN.NonUnit).
+% - `Point` — Point of the linearization: [] for the equilibrium, the values in the order of net.get_variable_map(), or {sim, t} for the state of a simulation result at time t (net.solver_LIN.Point).
+% - `Plot` — Call result.Plot (eigenvalue map) after the linearization. Default: false.
+%
 % <@Examples>
-% [
-%   "```matlab\nres = net.linearize();\nsys = res.get_ss(\"Kron\");\ntab = res.tab_variable;           % order of res.rm_Axx, res.rm_Axv, ...\nx = res.rv_point;  x(1) = x(1) + 0.1;\nres2 = net.linearize(Point=x);      % at a perturbed state\nres3 = net.linearize(Point={sim, 1.5});\n```"
-% ]
+% ```matlab
+% res = net.linearize();
+% sys = res.get_ss("Kron");
+% tab = res.tab_variable;           % order of res.rm_Axx, res.rm_Axv, ...
+% x = res.rv_point;  x(1) = x(1) + 0.1;
+% res2 = net.linearize(Point=x);      % at a perturbed state
+% res3 = net.linearize(Point={sim, 1.5});
+% ```
+%
+% See also PowerNetwork.get_sys, PowerNetwork.get_variable_map, LinearizationResult, odeLinearizer
+    arguments (Output)
+        result   % Jacobian blocks, variable map, point and settings.
+        flag     % True when all Jacobian entries are finite.
+        output   % output.message describes the outcome; l_equilibrium, n_x, n_v, n_u, rcond_Avv.
+    end
     [c_nv, opt] = take_call_options(varargin);
     s_options   = obj.solver_LIN.get_options(c_nv);
 

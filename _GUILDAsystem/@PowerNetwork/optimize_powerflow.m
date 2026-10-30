@@ -1,5 +1,6 @@
 function varargout = optimize_powerflow(obj, varargin)
-% <@Desc>
+% Calculate the optimal power flow of the network and return an OPFResult.
+%
 % Calculates the optimal power flow of the network: the operating point that minimizes
 % the generation cost (tab_parameter.OPF of the components) under the constraints in
 % tab_parameter.operation of the buses, components and branches. The settings are the
@@ -19,33 +20,32 @@ function varargout = optimize_powerflow(obj, varargin)
 % P^2 + Q^2 <= Smax^2 at both ends.
 % Accepted options are the names in OptimalPowerFlow.OptionMap plus Plot and Export;
 % any other name stops with GUILDA:resolve_options:UnknownName.
-% <@Role> Analysis
-% <@Summary> Calculate the optimal power flow; returns an OPFResult.
-% <@Signatures>
-% [
-%   "result = net.optimize_powerflow()",
-%   "[result, flag, output] = net.optimize_powerflow(Name, Value)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "Method", "Type": "\"ELD\" | \"DC OPF\" | \"AC OPF\"", "Description": "Formulation: economic load dispatch (branches ignored), DC approximation or AC power flow equations (net.solver_OPF.Method).", "Required": false, "Default": "net.solver_OPF.Method"},
-%   {"Name": "Solver", "Type": "\"auto\" | \"linprog\" | \"quadprog\" | \"fmincon\"", "Description": "Optimization solver; \"auto\" lets solve choose (net.solver_OPF.Solver).", "Required": false, "Default": "net.solver_OPF.Solver"},
-%   {"Name": "Tolerance", "Type": "positive double scalar", "Description": "OptimalityTolerance of the solver (net.solver_OPF.OptimalityTolerance; NaN = solver default).", "Required": false, "Default": "net.solver_OPF.OptimalityTolerance"},
-%   {"Name": "MaxIteration", "Type": "positive integer scalar", "Description": "MaxIterations of the solver (net.solver_OPF.MaxIteration; NaN = solver default).", "Required": false, "Default": "net.solver_OPF.MaxIteration"},
-%   {"Name": "Verbose", "Type": "logical scalar", "Description": "Print solver progress (sets Display to \"iter\" or \"none\").", "Required": false, "Default": "net.solver_OPF.Display"},
-%   {"Name": "Plot", "Type": "logical scalar", "Description": "Call result.Plot after the calculation.", "Required": false, "Default": "false"},
-%   {"Name": "Export", "Type": "logical scalar or string scalar", "Description": "Call result.Export after the calculation: true for the default file name, or the file name.", "Required": false, "Default": "false"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "result", "Type": "OPFResult", "Description": "Bus values, connection injections, branch flows, cost and Lagrange multipliers of the solution."},
-%   {"Name": "flag", "Type": "optim.problemdef.ExitFlag", "Description": "exitflag of solve (positive = solved)."},
-%   {"Name": "output", "Type": "struct", "Description": "Solver details; output.message describes the outcome."}
-% ]
+%
+% Name-Value options:
+%
+% - `Method` — Formulation: economic load dispatch (branches ignored), DC approximation or AC power flow equations (net.solver_OPF.Method).
+% - `Solver` — Optimization solver; "auto" lets solve choose (net.solver_OPF.Solver).
+% - `Tolerance` — OptimalityTolerance of the solver (net.solver_OPF.OptimalityTolerance; NaN = solver default).
+% - `MaxIteration` — MaxIterations of the solver (net.solver_OPF.MaxIteration; NaN = solver default).
+% - `Verbose` — Print solver progress (sets Display to "iter" or "none"). Default: net.solver_OPF.Display.
+% - `Plot` — Call result.Plot after the calculation. Default: false.
+% - `Export` — Call result.Export after the calculation: true for the default file name, or the file name. Default: false.
+%
+% Outputs:
+%
+% - `result` — Bus values, connection injections, branch flows, cost and Lagrange multipliers of the solution.
+% - `flag` — exitflag of solve (positive = solved).
+% - `output` — Solver details; output.message describes the outcome.
+%
 % <@Examples>
-% [
-%   "```matlab\n[res, flag] = net.optimize_powerflow();            % AC OPF (net.solver_OPF.Method)\nres.tab_bus                                         % Varg, V, P, Q, Vphasor, Iphasor of each bus\nres.r_cost                                          % optimal cost\nres = net.optimize_powerflow(Method=\"ELD\", Verbose=false, Plot=true);\n```"
-% ]
+% ```matlab
+% [res, flag] = net.optimize_powerflow();            % AC OPF (net.solver_OPF.Method)
+% res.tab_bus                                         % Varg, V, P, Q, Vphasor, Iphasor of each bus
+% res.r_cost                                          % optimal cost
+% res = net.optimize_powerflow(Method="ELD", Verbose=false, Plot=true);
+% ```
+%
+% See also OPFResult, OptimalPowerFlow, PowerNetwork.set_opffcn, PowerNetwork.build_opf_problem
 
     varargin = v3_opf_args(varargin);                         % COMPAT(v3)
     [c_nv, opt] = take_call_options(varargin);

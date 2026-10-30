@@ -1,5 +1,6 @@
 function net = import_matpower(mpc, opt)
-% <@Desc>
+% Build a network from a MATPOWER case.
+%
 % Builds a PowerNetwork from a MATPOWER case (version 2); the inverse of
 % tools.network_to_mpc. MATPOWER itself is not needed.
 % Units are converted to per unit on mpc.baseMVA (net.tab_parameter.base.baseMVA) and
@@ -27,41 +28,27 @@ function net = import_matpower(mpc, opt)
 %             R, X, C = BR_B/2, tap = TAP, phase = SHIFT, Smax = RATE_A/baseMVA (0 = Inf),
 %             Vargmax = the tighter of |ANGMIN| and |ANGMAX| (Inf when both are 0 or
 %             reach 360 degrees). Imax, Pmax and Qmax are Inf.
-% <@Role> Constructor
-% <@Summary> Build a network from a MATPOWER case (mpc).
-% <@Signatures>
-% [
-%   "net = PowerNetwork.import_matpower(mpc)",
-%   "net = PowerNetwork.import_matpower(mpc, Name, Value)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "mpc", "Type": "struct | string scalar | function handle", "Description": "MATPOWER case: the struct (baseMVA, bus, gen, branch, optional gencost), the name of a case function on the path (\"case14\"), a .m or .mat case file, or a function handle that returns the struct.", "Required": true, "Default": "-"},
-%   {"Name": "GeneratorModel", "Type": "string scalar", "Description": "Component key of every generator (e.g. \"gen-park\", \"gen-classical\", \"gen-1axis\").", "Required": false, "Default": "\"gen-park\""},
-%   {"Name": "GeneratorParameter", "Type": "table | string scalar", "Description": "Dynamic parameters of every generator (the parameter argument of add_component); NaN uses the defaults of the model class (first row of its parameter.csv).", "Required": false, "Default": "NaN"},
-%   {"Name": "LoadModel", "Type": "string scalar", "Description": "Component key of every load.", "Required": false, "Default": "\"load-power\""},
-%   {"Name": "Hz", "Type": "double scalar", "Description": "Nominal frequency (MATPOWER has none).", "Required": false, "Default": "GUILDA.config(\"Model\",\"Hz\")"},
-%   {"Name": "Tag", "Type": "string scalar", "Description": "Tag of the network.", "Required": false, "Default": "the case name, or \"PowerNetwork\" for a struct"},
-%   {"Name": "Initialize", "Type": "logical scalar", "Description": "Run net.initialize() after building the network.", "Required": false, "Default": "true"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "net", "Type": "PowerNetwork", "Description": "The built network."}
-% ]
+%
 % <@Examples>
-% [
-%   "```matlab\nnet = PowerNetwork.import_matpower(\"case14\");              % needs case14.m on the path\nnet = PowerNetwork.import_matpower(mpc, GeneratorModel=\"gen-classical\", Initialize=false);\nmpc2 = tools.network_to_mpc(net);                              % back to MATPOWER\n```"
-% ]
-% <@Since> 4.0
+% ```matlab
+% net = PowerNetwork.import_matpower("case14");              % needs case14.m on the path
+% net = PowerNetwork.import_matpower(mpc, GeneratorModel="gen-classical", Initialize=false);
+% mpc2 = tools.network_to_mpc(net);                              % back to MATPOWER
+% ```
+%
+% See also PowerNetwork.import_csv, tools.network_to_mpc
 
     arguments
-        mpc
-        opt.GeneratorModel      (1,1) string  = "gen-park"
-        opt.GeneratorParameter                = nan
-        opt.LoadModel           (1,1) string  = "load-power"
-        opt.Hz                  (1,1) double {mustBePositive} = GUILDA.config("Model","Hz")
-        opt.Tag                 (1,1) string
-        opt.Initialize          (1,1) logical = true
+        mpc   % MATPOWER case: the struct (baseMVA, bus, gen, branch, optional gencost), the name of a case function on the path ("case14"), a .m or .mat case file, or a function handle that returns the struct.
+        opt.GeneratorModel      (1,1) string  = "gen-park"   % Component key of every generator (e.g. "gen-park", "gen-classical", "gen-1axis").
+        opt.GeneratorParameter                = nan   % Dynamic parameters of every generator (the parameter argument of add_component); NaN uses the defaults of the model class (first row of its parameter.csv).
+        opt.LoadModel           (1,1) string  = "load-power"   % Component key of every load.
+        opt.Hz                  (1,1) double {mustBePositive} = GUILDA.config("Model","Hz")   % [Hz] Nominal frequency (MATPOWER has none).
+        opt.Tag                 (1,1) string   % Tag of the network. Default: the case name, or "PowerNetwork" for a struct.
+        opt.Initialize          (1,1) logical = true   % Run net.initialize() after building the network.
+    end
+    arguments (Output)
+        net   % The built network.
     end
     unsupported = @(str) error("GUILDA:import_matpower:Unsupported", "import_matpower: %s", str);
 

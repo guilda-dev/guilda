@@ -1,151 +1,105 @@
 classdef PowerNetwork < PowerSystemModel
-% <@Desc>
-% A package for constructing a single electric power system (or power grid).
-% By storing classes corresponding to buses and transmission lines in this class's properties, 
-% various analyses can be performed. Component classes should be stored within the Bus class.
+% Power system model that holds the buses, branches and global controllers of one grid.
 %
+% A network is built by adding buses (`add_bus`) and branches (`add_branch`); the
+% components (generators, loads, ...) are added to the buses (`Bus.add_component`) and
+% local controllers to the components. The network runs the analyses:
 %
-% << This class primarily provides the following analyses >>
-%   * Power Flow Calculation (Load Flow)
-%   * Optimal Power Flow (OPF)
-%   * Time-Domain Simulation (Dynamic Simulation)
-%   * Construction of an Approximate Linearized Model
-%   * Eigenvalue Analysis
-%   * Others (e.g., Graph Plotting of the system structure)
+% - power flow (`calculate_powerflow`) and optimal power flow (`optimize_powerflow`)
+% - continuation power flow (`calculate_continuation_powerflow`)
+% - equilibrium (`initialize`), time simulation (`simulate`)
+% - linearization and eigenvalue analysis (`linearize`, `get_sys`)
+% - network diagrams (`draw_diagram`) and CSV / MATPOWER import and export
 %
+% Each analysis runs a solver object stored in a `solver_*` property. The properties of
+% that solver are the stored defaults; Name-Value options of a call override them for
+% that call only. Results are returned as result objects and never stored in the network.
 %
-% << Power Flow Setting >>
+% Power-flow settings are parameters of the buses (`tab_parameter.powerflow`: V, Varg)
+% and the components (`tab_parameter.powerflow`: P, Q). OPF limits and costs are in
+% `tab_parameter.operation` and `tab_parameter.OPF` of the buses, components and
+% branches; `set_opffcn` adds user-defined costs and constraints.
 %
-%  Changes to the powerflow settings should be made from the Bus/Component class.
+% <@Examples>
+% ```matlab
+% net = PowerNetwork("ThreeBus");
+% net.add_bus(V=1.0, Varg=0);
+% net.add_bus(V=1.0);
+% net.add_bus();
+% net.add_branch("pi", [1,2], R=0.010, X=0.085);
+% net.add_branch("pi", [2,3], R=0.017, X=0.092);
+% net.a_Bus{1}.add_component("gen-park", P=0.0);
+% net.a_Bus{2}.add_component("gen-park", P=0.5);
+% net.a_Bus{3}.add_component("load-power", P=-0.5, Q=0);
+% net.a_Bus{1}.l_isSlack = true;
 %
-%   -> To check power flow settings
-%      >> obj.disp_pf_set
+% res = net.calculate_powerflow();          % PowerFlowResult
+% net.initialize();                         % equilibrium for the dynamic analyses
+% ev  = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B003");
+% sim = net.simulate([0,10], ev);           % odeSimulationResult
+% sys = net.get_sys();                      % linear state-space model
+% ```
 %
-%   -> When changing the bus voltage settings
-%      >> obj.a_Bus{i}.tab_parameter.powerflow.Varg = value
-%      >> obj.a_Bus{i}.tab_parameter.powerflow.V    = value
-%
-%   -> When changing the P or Q settings
-%      >> obj.a_Bus{i}.a_Component{j}.tab_parameter.powerflow.P = value
-%      >> obj.a_Bus{i}.a_Component{j}.tab_parameter.powerflow.Q = value
-%
-%   -> Method for obtaining tide calculation results
-%      >> [result, flag, output] = obj.calculate_powerflow(Name, Value)
-%
-%   -> By executing the following command, steady-state values will be set.
-%      ( The internal process executes obj.calculate_powerflow and then sets 
-% 　　　the steady-state values of the Bus class using the result. )
-%      >> net.initialize("methods","powerflow calculation")
-%
-%
-% << Optimal PowerFlow(OPF) >>
-%
-%  If you intend to set the power flow based on the solution obtained from AC Optimal PowerFlow (AC OPF) calculation, 
-%  first, you adjust the hyperparameters used in the OPF calculation.
-%  Adjust the table data within the following properties, depending on the class:
-%
-%   -> Bus Class: Modify the following properties:
-%      >> obj.a_Bus{i}.tab_parameter.operation
-%      >> obj.a_Bus{i}.tab_parameter.OPF
-%
-%   -> Component Class: Modify the following properties:
-%      >> obj.a_Bus{i}.a_Component{j}.tab_parameter.operation
-%      >> obj.a_Bus{i}.a_Component{j}.tab_parameter.OPF
-%
-%  -> Branch Class: Modify the following properties:
-%      >> obj.a_Branch{i}.tab_parameter.operation
-%      >> obj.a_Branch{i}.tab_parameter.OPF
-%
-%  -> After modifying the hyperparameters, execute the following command to set the optimized power flow:
-%      >> net.initialize("methods","optimal powerflow")
-%
-%
-% << Time Simulation >>
-%    TBD
-% << Approximate Linearized Model >>
-%    TBD
-% << Eigenvalue Analysis >> 
-%    TBD
+% See also Bus, Branch, Component, GlobalController, network.IEEE9bus
 
 %% Properties
 
-    properties%(SetAccess=protected) 
-       a_Bus              (:,1) cell = cell(0,1);   % Layer Structure
-       a_Branch           (:,1) cell = cell(0,1);   % Layer Structure
-       a_GlobalController (:,1) cell = cell(0,1);   % Layer Structure       
+    properties % Layer Structure
+       a_Bus              (:,1) cell = cell(0,1);   % Buses of the network, in the order of the bus index.
+       a_Branch           (:,1) cell = cell(0,1);   % Branches of the network.
+       a_GlobalController (:,1) cell = cell(0,1);   % Global controllers of the network.
     end
-    properties(SetAccess=protected)
+    properties(SetAccess=protected) % Solvers
 
-        % <@Summary> "PowerFlowCalculation" class
-        % <@Desc>
-        % Solver of net.calculate_powerflow (runs obj.solver_PF.solve). Its properties are
-        % the stored defaults (Method, Tolerance, MaxIterations, ...) and are kept between
-        % runs; Name-Value options of a call override them for that call only.
-        % Results are returned as a PowerFlowResult, never stored in the solver.
-        % <@Role> calculate power-flow
-        % <@Size> 1×1
-        % <@Default> PowerFlowCalculation()
+        % PowerFlowCalculation solver of net.calculate_powerflow.
+        % Its properties are the stored defaults (Method, Tolerance, MaxIterations, ...),
+        % kept between runs; Name-Value options of a call override them for that call
+        % only. Results are returned as a PowerFlowResult, never stored in the solver.
+        % <@Type> PowerFlowCalculation
         solver_PF  
 
-        % <@Summary> "OptimalPowerFlow" class
-        % <@Desc>
-        % Solver of net.optimize_powerflow (runs obj.solver_OPF.solve). Its properties are
-        % the stored defaults (Method, Solver, Display, MaxIteration, ...) and are kept
-        % between runs; Name-Value options of a call override them for that call only.
-        % Results are returned as an OPFResult, never stored in the solver.
-        % <@Role> optimal power-flow
-        % <@Size> 1×1
-        % <@Default> OptimalPowerFlow()
+        % OptimalPowerFlow solver of net.optimize_powerflow.
+        % Its properties are the stored defaults (Method, Solver, Display, MaxIteration,
+        % ...), kept between runs; Name-Value options of a call override them for that
+        % call only. Results are returned as an OPFResult, never stored in the solver.
+        % <@Type> OptimalPowerFlow
         solver_OPF 
 
-        % <@Summary> "ContinuationPowerFlow" class
-        % <@Desc>
-        % Solver of net.calculate_continuation_powerflow (runs obj.solver_CPF.solve). Its
-        % properties are the stored defaults (LoadBus, MaxIterations, StepSize, ...) and are
-        % kept between runs; Name-Value options of a call override them for that call only.
-        % Results are returned as a CPFResult, never stored in the solver.
-        % <@Role> continuation power-flow
-        % <@Size> 1×1
-        % <@Default> ContinuationPowerFlow()
+        % ContinuationPowerFlow solver of net.calculate_continuation_powerflow.
+        % Its properties are the stored defaults (LoadBus, MaxIterations, StepSize, ...),
+        % kept between runs; Name-Value options of a call override them for that call
+        % only. Results are returned as a CPFResult, never stored in the solver.
+        % <@Type> ContinuationPowerFlow
         solver_CPF
 
-        % <@Summary> "odeSimulator" class
-        % <@Desc>
-        % Solver of net.simulate (runs obj.solver_ODE.solve). Its properties are the stored
-        % defaults (Solver, RelativeTolerance, AbsoluteTolerance, Progress, TimeLimit, ...)
-        % and are kept between runs; Name-Value options of a call override them for that
-        % call only. Results are returned as an odeSimulationResult, never stored in the
-        % solver.
-        % <@Role> time simulation
-        % <@Size> 1×1
-        % <@Default> odeSimulator()
-        % <@Since> 4.0
+        % odeSimulator solver of net.simulate.
+        % Its properties are the stored defaults (Solver, RelativeTolerance,
+        % AbsoluteTolerance, Progress, TimeLimit, ...), kept between runs; Name-Value
+        % options of a call override them for that call only. Results are returned as an
+        % odeSimulationResult, never stored in the solver.
+        % <@Type> odeSimulator
         solver_ODE 
 
-        % <@Summary> "odeLinearizer" class
-        % <@Desc>
-        % Solver of net.linearize and net.get_sys (runs obj.solver_LIN.solve). Its
-        % properties are the stored defaults (Algorithm, NonUnit, Point) and are kept
-        % between runs; Name-Value options of a call override them for that call only.
-        % Results are returned as a LinearizationResult, never stored in the solver.
-        % <@Role> linearization
-        % <@Size> 1×1
-        % <@Default> odeLinearizer()
+        % odeLinearizer solver of net.linearize and net.get_sys.
+        % Its properties are the stored defaults (Algorithm, NonUnit, Point), kept between
+        % runs; Name-Value options of a call override them for that call only. Results are
+        % returned as a LinearizationResult, never stored in the solver.
+        % <@Type> odeLinearizer
         solver_LIN
     end
-    properties(Dependent) 
-        cv_Vequilibrium         % Steady State
-        cv_Iequilibrium         % Steady State
-        rv_Xequilibrium         % Steady State
-        tab_parameter           % Parameter
+    properties(Dependent) % Steady State
+        cv_Vequilibrium         % [pu] Bus voltage phasors at the equilibrium, one per bus.
+        cv_Iequilibrium         % [pu] Bus current injections at the equilibrium, one per bus.
+        rv_Xequilibrium         % State equilibrium of the buses, branches and global controllers.
+        tab_parameter           % Parameter table of the network (base: Hz and baseMVA).
     end
-    properties(Hidden,SetAccess=protected)
+    properties(Hidden,SetAccess=protected) % Parameter
         para_base               % Parameter: Hz (nominal frequency) and baseMVA (system base) of the whole network
     end
-    properties(SetAccess=protected)
-        s_opffcn = opffcn.default()   % OPF: network-wide Cost, Constraint, DefaultConstraint set by set_opffcn
+    properties(SetAccess=protected) % OPF
+        s_opffcn = opffcn.default()   % Network-wide OPF terms (Cost, Constraint, DefaultConstraint) set by set_opffcn.
     end
-    properties(Dependent, Access=protected)
+    properties(Dependent, Access=protected) % Layer Structure
         parent                  % Layer Structure
         children                % Layer Structure
     end    
@@ -153,8 +107,15 @@ classdef PowerNetwork < PowerSystemModel
 %% Constructor
     methods
         function obj = PowerNetwork(tag)
+            % Create an empty network with the given tag.
+            %
+            % The nominal frequency is GUILDA.config("Model","Hz") and the system base is
+            % 100 MVA (net.tab_parameter.base).
             arguments
-                tag (1,1) string = "PowerNetwork";
+                tag (1,1) string = "PowerNetwork";   % Tag of the network.
+            end
+            arguments (Output)
+                obj   % New PowerNetwork without buses.
             end
             obj.str_tag   = tag;
             obj.para_base = Parameter(obj,"base");

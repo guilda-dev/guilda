@@ -1,11 +1,22 @@
 function info(obj, opt)
+% Display a summary of the buses, branches and components of the network.
+%
+% Each option switches a part of the printout on or off.
+%
+% <@Examples>
+% ```matlab
+% net.info()
+% net.info(parameter=false, equilibrium=false)
+% ```
+%
+% See also PowerNetwork.draw_diagram
     arguments
         obj 
-        opt.equilibrium(1,1) logical = true
-        opt.parameter  (1,1) logical = true
-        opt.bus        (1,1) logical = true
-        opt.branch     (1,1) logical = true
-        opt.component  (1,1) logical = true
+        opt.equilibrium(1,1) logical = true   % Show the equilibrium values.
+        opt.parameter  (1,1) logical = true   % Show the parameters.
+        opt.bus        (1,1) logical = true   % Show the bus table.
+        opt.branch     (1,1) logical = true   % Show the branch table.
+        opt.component  (1,1) logical = true   % Show the component tables.
     end
     net = obj.struct();
 

@@ -1,7 +1,28 @@
 function [flag,tab_PFsol,output] = initialize(obj, options)
+% Compute the equilibrium of the network and store it in its buses and components.
+%
+% The bus voltages and injections come from the method chosen by `methods`; the bus
+% then distributes P and Q to its components (Bus.set_equilibrium), which compute their
+% state and input equilibria. Global controllers get their equilibrium too. Afterwards
+% the edit log is cleared, so analyses that need the equilibrium (simulate, linearize)
+% can run.
+%
+% <@Examples>
+% ```matlab
+% net = network.IEEE9bus();
+% flag = net.initialize();
+% net.initialize(methods="optimal powerflow");
+% ```
+%
+% See also PowerNetwork.calculate_powerflow, PowerNetwork.optimize_powerflow, PowerNetwork.simulate
     arguments
         obj
-        options.methods (1,1) string {mustBeMember(options.methods,["powerflow calculation","optimal powerflow","calculate from Xequilibrium"])} = "powerflow calculation"
+        options.methods (1,1) string {mustBeMember(options.methods,["powerflow calculation","optimal powerflow","calculate from Xequilibrium"])} = "powerflow calculation"   % Source of the equilibrium: "powerflow calculation", "optimal powerflow" or "calculate from Xequilibrium" (the equilibria already stored in the components).
+    end
+    arguments (Output)
+        flag        % Exit flag of the method (positive = solved).
+        tab_PFsol   % Bus solution table: Varg, V, P, Q, Vphasor, Iphasor of each bus.
+        output      % Solver details; output.message describes the outcome.
     end
 
     % Steady-State Power Flow Calculation
