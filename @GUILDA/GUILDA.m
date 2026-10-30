@@ -12,6 +12,7 @@ classdef GUILDA < handle
 % >> GUILDA.setting()    : Launch settings window (GUI launches)
 % >> GUILDA.tutorial()   : open Tutorial
 % >> GUILDA.doc()        : open documentation on browser
+% >> GUILDA.publish_doc(): publish documentation to GitHub Pages (gh-pages)
 % >> GUILDA.newclass()   : Create a new class (GUI launches)
 % >> GUILDA.dictionary() : Search classes implemented in this software
 %
@@ -64,7 +65,7 @@ classdef GUILDA < handle
             end
             % update documentation database
             if cf.UpdateDoc.Value
-                obj.doc('update',true,'open',has_desktop);
+                obj.doc('update',"auto",'open',false);
             end
             % update key map
             if cf.UpdateKeyMap.Value
@@ -87,6 +88,7 @@ classdef GUILDA < handle
                      "  >> GUILDA.setting()    : Launch settings window (GUI launches)\n"+...
                      "  >> GUILDA.tutorial()   : open Tutorial\n"+...
                      "  >> GUILDA.doc()        : open documentation on browser\n"+...
+                     "  >> GUILDA.publish_doc(): publish documentation to GitHub Pages (gh-pages)\n"+...
                      "  >> GUILDA.newclass()   : Create a new class (GUI launches)\n"+...
                      "  >> GUILDA.dictionary() : Search classes implemented in this software"+...
                      "  >> GUILDA.rmpath()     : Remove paths for use of this software\n"+...
@@ -111,7 +113,7 @@ classdef GUILDA < handle
         gitpull()
         addpath()
         rmpath() 
-        document()
-        doc()
+        doc(option)
+        publish_doc(option)
     end
 end

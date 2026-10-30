@@ -5,11 +5,11 @@ function DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)
 % the input equations and the current injected into the bus are added to the entries
 % of `DAEvec` that belong to the component (iv_odeX, iv_odeU) and its bus.
 %
-% See also odeSimulator, Component.fcn_dx, Component.fcn_I
-%
 % Outputs:
 %
 % - `DAEvec` — Updated DAE residual of the network.
+%
+% See also odeSimulator, Component.fcn_dx, Component.fcn_I
 
     rv_x = obj.iv_odeX;
     rv_u = obj.iv_odeU;
@@ -19,13 +19,15 @@ function DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)
     x_comp = x(rv_x);
     u_comp = x(rv_u);    
     
-    y_comp = obj.f_Y(t,x_comp,Vi,Ii,u_comp);
-    y_name = obj.sv_y;
-
     if obj.l_hasController
+        % The controller reads the outputs and the states of the component by name,
+        % and its outputs replace the inputs of the same name
+        obs.y = obj.f_Y(t,x_comp,Vi,Ii,u_comp);
+        obs.x = x_comp;
         a_LC = obj.a_LocalController{1};
-        [DAEvec, y_avr, y_name] = get_dx_algebraic(a_LC, t, x, Vi, Ii, y_comp, y_name, DAEvec);
-        u(obj.sv_u==y_name) = y_avr;
+        [DAEvec, y_LC, y_name] = get_dx_algebraic(a_LC, t, x, Vi, Ii, obs, DAEvec);
+        [lv_U2Y, iv_Y] = ismember(obj.sv_u, y_name);
+        u(lv_U2Y) = y_LC(iv_Y(lv_U2Y));
     end
     
     X = obj.f_dx(t,x_comp,Vi,Ii,u_comp);

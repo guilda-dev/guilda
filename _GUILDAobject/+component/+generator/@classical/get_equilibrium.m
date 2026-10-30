@@ -1,10 +1,20 @@
 function [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj,c_V,c_I,r_P,r_Q) 
+% Calculate the equilibrium state and the steady inputs from the power flow.
+%
+% Called by `set_equilibrium` with the power-flow solution. The rotor angle comes
+% from the terminal voltage and the injected power; the speed deviation is 0.
+%
+% See also fcn_dx, Component.rv_Xequilibrium
 arguments
     obj 
-    c_V 
-    c_I 
-    r_P = real(c_V*conj(c_I))
-    r_Q = imag(c_V*conj(c_I))
+    c_V % [pu] Complex bus voltage of the power-flow solution.
+    c_I % [pu] Complex current injected into the bus.
+    r_P = real(c_V*conj(c_I)) % [pu] Active power injected into the bus.
+    r_Q = imag(c_V*conj(c_I)) % [pu] Reactive power injected into the bus.
+end
+arguments (Output)
+    rv_Xequilibrium % Equilibrium state in the order of `sv_x`.
+    rv_Uequilibrium % Steady input in the order of `sv_u`.
 end
 
     Vabs = abs(c_V);

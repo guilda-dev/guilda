@@ -10,9 +10,8 @@ function tab = known_failures()
 % テスト名は "<ファイル名>/<セクション名から作られる名前>"。
 % 名前は DebugScript.run_all の一覧、または {testsuite("DebugScript").Name} で確認できる。
 
-    list = [
+    list = [strings(0,2)     % 現在、既知の不具合はない
     % ---- F1 model building ----------------------------------------------------------------------
-    "test_F1_model_building/AddLocalControllerLQR",              "controller.local_LQR は v3 の LocalController API のまま (抽象クラス扱い)。v4 では制御器の入力は機器の出力 Y (発電機は omega のみ) で、add_local_controller も key が avr/pss の制御器しか保持しないため、状態フィードバックの LQR を移植するには契約の決定が必要"
     % ---- F2 power flow --------------------------------------------------------------------------
     % ---- F3 initialize --------------------------------------------------------------------------
     % ---- F4 OPF ---------------------------------------------------------------------------------

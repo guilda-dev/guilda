@@ -1,18 +1,59 @@
 classdef impedance < component.load.abstract
-    properties
+% Constant-impedance load model.
+%
+% The load draws the current of a fixed impedance `Z = R + jX` from the bus. The
+% impedance is set from the power-flow solution (`get_equilibrium`), so the load
+% consumes the specified `P` and `Q` at the power-flow voltage and less or more
+% power when the voltage changes.
+%
+% **States** (`sv_x`)
+% - none
+%
+% **Inputs** (`sv_u`, the ports for local controllers and events)
+% - `R` [pu]: resistance of the load.
+% - `X` [pu]: reactance of the load.
+%
+% **Outputs** (`sv_y`)
+% - none
+%
+% **Parameters** (`sv_para`)
+% - none
+%
+% **Equation**
+% ```
+% I = -V/(R + jX)
+% ```
+%
+% <@Examples>
+% ```matlab
+% net = PowerNetwork();
+% bus = net.add_bus();
+% ld  = bus.add_component("load-impedance", "P", -0.8, "Q", -0.3);
+% ld.str_tag                        % "LRX1B001"
+% ld.sv_u                           % R, X
+% ```
+%
+% See also component.load.abstract, component.load.power, Bus.add_component
+    properties % Steady state
+        % [pu] Complex impedance `R + jX`, set by `get_equilibrium`.
         Z
     end
 
-    properties(Constant)
-        key      = "load-impedance";
-        sv_x    = [];
-        sv_u    = ["R";"X"];
-        sv_y    = [];
-        sv_para = [];
+    properties(Constant) % Model definition
+        key      = "load-impedance";   % Model key that selects this class in `Bus.add_component`.
+        sv_x    = [];                 % State names (none).
+        sv_u    = ["R";"X"];          % Input port names.
+        sv_y    = [];                 % Output names (none).
+        sv_para = [];                 % Dynamic parameter names (none).
     end
 
     methods(Access={?Bus})
         function obj = impedance(index, ~, varargin)
+            % Create the load; called through `Bus.add_component`.
+            %
+            % `index` is the tag suffix (the tag is `"LRX"+index`). The
+            % `parameter` argument is ignored, and `varargin` holds the
+            % name-value options of `add_component`.
             obj@component.load.abstract("RX"+index, varargin{:})
         end
     end

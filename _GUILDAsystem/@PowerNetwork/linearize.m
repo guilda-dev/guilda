@@ -16,7 +16,10 @@ function [result, flag, output] = linearize(obj, varargin)
 %
 % - `Algorithm` — Default reduction of result.get_ss() (net.solver_LIN.Algorithm).
 % - `NonUnit` — Indices of buses treated as non-unit buses by "Feedback" (net.solver_LIN.NonUnit).
-% - `Point` — Point of the linearization: [] for the equilibrium, the values in the order of net.get_variable_map(), or {sim, t} for the state of a simulation result at time t (net.solver_LIN.Point).
+% - `Point` — Point of the linearization: [] for the equilibrium, the values in the order
+%   of net.get_variable_map(), or {sim, t} for the state of a simulation result at time t
+%   (sim.get_point(t); {sim, t, "before"} at a phase boundary takes the value before the
+%   event) (net.solver_LIN.Point).
 % - `Plot` — Call result.Plot (eigenvalue map) after the linearization. Default: false.
 %
 % <@Examples>

@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 280" role="img" aria-labelledby="t d">
+  <title id="t">Splitting a model by physical signals</title>
+  <desc id="d">A synchronous generator has a turbine and an electromagnet. Instead of one block per machine, the system is split into a mechanical subsystem F and an electrical subsystem G in negative feedback, exchanging frequency deviation and active power.</desc>
+  <style>
+    .lb { font-family: Helvetica, Arial, sans-serif; font-weight: 700; font-size: 14px; }
+    .sm { font-family: Helvetica, Arial, sans-serif; font-size: 12.5px; fill: #5A6570; }
+    .big { font-family: Georgia, "Times New Roman", serif; font-style: italic; font-weight: 700; font-size: 30px; text-anchor: middle; }
+    .sig { font-family: Georgia, "Times New Roman", serif; font-style: italic; font-size: 17px; fill: #1B2127; }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1 L9 5 L1 9 Z" fill="#1B2127"/></marker>
+  </defs>
+
+  <!-- equipment view -->
+  <rect x="8" y="8" width="250" height="264" rx="22" fill="#F5F6F7"/>
+  <text x="30" y="42" class="lb" fill="#5A6570" letter-spacing="1.2">BY EQUIPMENT</text>
+  <text x="30" y="62" class="sm">one block per machine</text>
+  <rect x="38" y="90" width="190" height="140" rx="16" fill="#FFFFFF" stroke="#1B2127" stroke-width="2.5"/>
+  <text x="133" y="252" class="sm" text-anchor="middle">Synchronous generator</text>
+  <!-- turbine -->
+  <circle cx="88" cy="160" r="30" fill="#EEF3F8" stroke="#1B2127" stroke-width="2.5"/>
+  <g fill="#0059A7" stroke="#1B2127" stroke-width="1.5" stroke-linejoin="round">
+    <path d="M88 160 C80 146 84 136 92 134 C94 144 94 152 88 160 Z"/>
+    <path d="M88 160 C104 158 110 166 108 174 C98 172 92 168 88 160 Z"/>
+    <path d="M88 160 C84 174 74 178 68 172 C74 164 80 162 88 160 Z"/>
+  </g>
+  <circle cx="88" cy="160" r="4" fill="#D9E021" stroke="#1B2127" stroke-width="1.5"/>
+  <path d="M118 160 H144" stroke="#1B2127" stroke-width="5" stroke-linecap="round"/>
+  <!-- magnet -->
+  <path d="M150 132 h28 a26 26 0 0 1 0 56 h-28 v-16 h28 a10 10 0 0 0 0 -24 h-28 Z" fill="#FFFFFF" stroke="#1B2127" stroke-width="2.5" stroke-linejoin="round"/>
+  <rect x="150" y="132" width="16" height="16" fill="#0059A7" stroke="#1B2127" stroke-width="2"/>
+  <rect x="150" y="172" width="16" height="16" fill="#D9E021" stroke="#1B2127" stroke-width="2"/>
+  <text x="158" y="145" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#FFFFFF" text-anchor="middle">N</text>
+  <text x="158" y="185" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#1B2127" text-anchor="middle">S</text>
+
+  <!-- arrow -->
+  <circle cx="290" cy="140" r="22" fill="#FFFFFF" stroke="#DADFE4" stroke-width="2"/>
+  <path d="M280 140 H298 M291 132 L299 140 L291 148" fill="none" stroke="#0059A7" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- signal view -->
+  <rect x="322" y="8" width="390" height="264" rx="22" fill="#EEF3F8"/>
+  <text x="344" y="42" class="lb" fill="#0059A7" letter-spacing="1.2">BY SIGNALS</text>
+  <text x="344" y="62" class="sm">mechanical and electrical subsystems</text>
+
+  <!-- F block -->
+  <rect x="470" y="82" width="110" height="64" rx="14" fill="#FFFFFF" stroke="#1B2127" stroke-width="2.5"/>
+  <text x="525" y="124" class="big" fill="#0059A7">F</text>
+  <text x="525" y="166" class="sm" text-anchor="middle">mechanical</text>
+  <!-- G block -->
+  <rect x="470" y="178" width="110" height="64" rx="14" fill="#0059A7" stroke="#1B2127" stroke-width="2.5"/>
+  <text x="525" y="220" class="big" fill="#FFFFFF">G</text>
+  <text x="525" y="260" class="sm" text-anchor="middle">electrical</text>
+  <!-- summing junction -->
+  <circle cx="400" cy="114" r="13" fill="#FFFFFF" stroke="#1B2127" stroke-width="2.5"/>
+  <text x="381" y="104" font-family="Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="#1B2127">−</text>
+  <!-- wires -->
+  <g fill="none" stroke="#1B2127" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M413 114 H468" marker-end="url(#a)"/>
+    <path d="M580 114 H640 V210 H582" marker-end="url(#a)"/>
+    <path d="M470 210 H400 V129" marker-end="url(#a)"/>
+  </g>
+  <circle cx="640" cy="160" r="5" fill="#D9E021" stroke="#1B2127" stroke-width="1.5"/>
+  <text x="650" y="150" class="sig">Δω</text>
+  <text x="420" y="232" class="sig">P</text>
+  <!-- passive tags -->
+  <rect x="590" y="74" width="66" height="22" rx="11" fill="#D9E021" stroke="#1B2127" stroke-width="1.5"/>
+  <text x="623" y="89" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#1B2127" text-anchor="middle">passive</text>
+</svg>

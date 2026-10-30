@@ -1,9 +1,9 @@
 # Migrating to GUILDA v4
 
 Status: work in progress on `refactor/design-alignment` (base: `version4.0`),
-checked against the code at `2723422`. Breaking changes are allowed in v4.
-Section 1 lists what has changed for scripts (1.7–1.15: the v4 analysis API
-of stages 2 and 3); section 2 for models; section 3 what is still planned.
+checked against the code at `b69e54b`. Breaking changes are allowed in v4.
+Section 1 lists what has changed for scripts (1.7–1.15 and 1.17: the v4
+analysis API); section 2 for models; section 3 what is still planned.
 
 Reference designs: `_GUILDAdoc/developer/class-design.html` and
 `api-design.html` on branch `docs/doc-refactoring`.
@@ -16,6 +16,19 @@ Reference designs: `_GUILDAdoc/developer/class-design.html` and
 >   stopped early. v4: `flag = 1` completed, `0` stopped by `TimeLimit`,
 >   `-1` stopped by the solver. `if flag` is now true for a completed run
 >   **and** for a solver stop; test `flag < 1` for "stopped early" (1.11).
+> - **`initialize`'s outputs are reordered.** v3: `[flag, tab, output]`.
+>   v4: `[result, flag, output]` with `result.tab_bus` the old `tab`.
+>   `[flag, tab] = net.initialize()` gives no error: `flag` is then a
+>   `PowerFlowResult` and `tab` the exit flag. `if flag` on the result
+>   object fails or means something else; test `result.l_success` (1.17).
+> - **Layout of `comp.get_sys` / `bus.get_sys`.** Inputs, states and
+>   outputs now have the same shape on every layer: inputs `[port; u of the
+>   component; u of its controllers]`, outputs `[port; y of the component;
+>   y of its controllers]`; states are never outputs. The option `full`
+>   (states as outputs) is accepted and **ignored**, so code that took the
+>   states from the outputs of a `full=true` model reads other rows. An
+>   output named like a state is labelled `Y_<name>`. `net.get_sys` and
+>   `net.linearize` are unchanged (1.12).
 > - **`get_sys`'s second output is no longer `lin`.** `[sys, flag, output]`:
 >   `flag` is a logical (all Jacobian entries finite) and
 >   `output.result` is the `LinearizationResult`. `[sys, lin] = net.get_sys()`
@@ -91,6 +104,7 @@ Every parameter or topology edit is logged and records what it made stale:
 | `Parameter(base)`, network Hz          | stale (every layer) | –     |
 | `Parameter(powerflow)`, `Topology`, `Slack` | –      | stale       |
 | `Parameter(operation/OPF/graph)`       | –           | –           |
+| `OPF` (`set_opffcn`, `reset_opffcn`)   | –           | –           |
 
 - A network **Hz** edit only rebuilds the handles: the equilibrium does not
   depend on the nominal frequency, so `simulate` and `get_sys` run without
@@ -169,6 +183,25 @@ Outputs of several controllers on the same input add up. Scalar `alpha` /
   units): its output is zero during the event (silent change, see the box
   at the top), and after the event it restarts from its equilibrium, like
   a tripped generator.
+- **Controller inputs are wired by name.** A local controller reads the
+  component it is attached to (directly, or through the controller above
+  it) by the names of its inputs `sv_u`: a name in the component's `sv_y`
+  reads that output, otherwise a name in `sv_x` reads that state (the
+  output wins when both exist). The reserved inputs `"Xall"` / `"Yall"`
+  read all states / all outputs; the old names `"X"` / `"Y"` stop with
+  `GUILDA:LocalController:ReservedInput`. An input named like an output of
+  a nested controller (e.g. `Vpss`) reads that output; the controller's
+  outputs replace the component inputs of the same name. AVR and PSS
+  responses are unchanged.
+- **`controller.local_LQR` works again** (v4 contract):
+  `comp.add_local_controller(controller.local_LQR(tag, Q=, R=, Input=,
+  V0=))`. It reads `"Xall"` and outputs `u = u* - K (x - x*)`;
+  `net.initialize` computes `K = lqr(A, B, Q, R)` from `comp.get_sys`
+  (without controllers) connected to an infinite bus of voltage `V0`.
+  `Q` / `R` default to identity; editing them makes the equilibrium stale.
+  Its key `"local"` takes the place of an AVR (the PSS of a replaced AVR is
+  detached). Its outputs replace the driven inputs, so a global controller
+  must not drive the same input.
 - **Replacing an AVR keeps its PSS.** `gen.add_local_controller(new_avr)`
   moves the PSS of the old AVR to the new one; `add_local_controller(avr,
   pss)` replaces both. A replacement warns
@@ -232,9 +265,9 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   The old export keeps the v3 default file name
   `<yyMMdd_HHmmss>_PFcalculation.json`, now in `GUILDA.pwd` explicitly.
   `"export"` alone is read as the v4 option `Export`.
-- Fixed earlier (stage 1): `net.initialize("methods", "calculate from
-  Xequilibrium")` works, and the dynamic power flow holds PV bus voltages at
-  their set values.
+- Fixed earlier (stage 1): initializing from the stored equilibria works
+  (now `net.initialize(Method="equilibrium")`, 1.17), and the dynamic power
+  flow holds PV bus voltages at their set values.
 
 ### 1.9 Optimal power flow
 
@@ -275,6 +308,43 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   variables start at the initial bus voltages. Shipped CSVs whose
   `Pmin`/`Qmin` were `#NAME?` (Excel's `-Inf`) are fixed; check your own.
 - New `tools.network_to_mpc(net)` converts a network into a MATPOWER case.
+- **Customizing the problem (`set_opffcn`).** Component, Bus, Branch and
+  PowerNetwork have `obj.set_opffcn("Cost", fcnCost, "Constraint", fcnCon,
+  "DefaultConstraint", tf)` and `obj.reset_opffcn()`:
+  - `fcnCost = @(v, p) <scalar>` **replaces** the object's default cost (on
+    PowerNetwork, which has none, it is added). `fcnCon = @(v, p)
+    struct(name, constraint, ...)` is **added**; each field becomes
+    `prob.Constraints.<name>_<tag>` (`<name>` on PowerNetwork), which is
+    also the label of its dual in `res.lambda.Constraints`.
+  - `v` holds the object's own variables (component `v.P`, `v.Q` in AC OPF;
+    bus `v.Varg`, `v.V`; branch `v.Pfrom`, `v.Pto`, `v.Vargfrom`, … ); `p`
+    its parameters (`p.Method`, `p.OPF`, `p.operation`, …). On PowerNetwork
+    `v.Component.(tag).P`, `v.Bus.(tag).V`, `v.Branch.(tag).Pfrom` address
+    every object.
+  - `"DefaultConstraint", false` removes the default limits (component
+    P/Q bounds and the fixed load P/Q, bus voltage bounds, branch limits,
+    the reference angle on PowerNetwork); the model equations and the bus
+    balance stay.
+  - Bad handles stop with `GUILDA:opffcn:InvalidCost`,
+    `InvalidConstraint`, `DuplicateName` or `HandleError`. Branch terms are
+    not used in ELD (no branch variables).
+  - An OPF edit: logged (tag `OPF`); it does not make the equilibrium stale.
+- **Default load cost is 0** (silent change in `r_cost`). `add_component`
+  gives loads `HP = fP = 0` and other components `HP = fP = 1` (before: 1
+  for every component, so a fixed load added a constant to `r_cost`). The
+  bundled `IEEE9bus`, `IEEE68bus`, `Ishizaki6Bus`, `TEST31bus` and
+  `Txt3Bus` now store 0 for their loads (`IEEE14bus*` already did). A load
+  whose Pmin/Pmax (Qmin/Qmax) are finite is dispatched within them
+  (price-responsive load, with a cost set explicitly); with infinite bounds
+  it keeps its power-flow P (Q) as before.
+- **DC OPF susceptance is MATPOWER's** `b = 1/(X·tap)`, with the phase
+  shift at the from end (`a_Bus{1}`): the flow from i to j is
+  `b·(θi − θj − phase)`. Before, `b = Im(Y_ij)` (`= X/(R²+X²)`), so DC OPF
+  results change for branches with `R ≠ 0`, taps or phase shifters.
+- **`Solver` must fit the problem.** A `Solver` that cannot express the
+  problem (e.g. `"linprog"` with a quadratic cost) stops with
+  `GUILDA:OptimalPowerFlow:UnsupportedSolver`, which lists the usable
+  names; there is no silent fallback.
 
 ### 1.10 Continuation power flow
 
@@ -332,8 +402,19 @@ Option names:
   (`"dialog"` | `"disp"` | `"none"`, or true/false), `Verbose`, `Plot`,
   `Export`. New solver properties `Solver`, `SolverOptions`, `Progress`,
   `Verbose`, `Plot`.
-- `odeSimulationResult`: `odeResults` keeps its layout
-  (`res.odeResults.Bus(i).Component(j).X.omega`, `.t`); new `sv_bus`,
+- `odeSimulationResult` stores the trajectory once, in the order of
+  `net.get_variable_map()`: `res.rv_t` (times), `res.tab_variable` (the
+  map at the time of the run) and `res.rm_variable` (row k at `rv_t(k)`,
+  one column per map row, **including the states of local and global
+  controllers**; states of a tripped unit are NaN), plus `res.rm_I` (bus
+  currents). `res.get_point(t, tab_map, Side=)` gives the values at a time
+  (linear interpolation; `tab_map` may be a bus or component map). At a
+  phase boundary the time appears twice; `Side="after"` (default) takes the
+  start of the later phase (after the event), `"before"` the end of the
+  earlier one.
+- `odeResults` is a view with the old layout
+  (`res.odeResults.Bus(i).Component(j).X.omega`, `.t`); controller states
+  are only in `rm_variable`. New `sv_bus`,
   `c_component`, `Plot(Quantity=...)`, `Export` (`.csv`/`.xlsx` table, or
   `.mat` with `odeResults`, `options`, `flag`, `output`); `odeNetwork` is
   removed. `output` has `message`, `tEnd`, `phases`, `nPhases`,
@@ -341,6 +422,15 @@ Option names:
 - Behavior:
   - **flag** (silent change, see the box at the top).
   - On a stop the result holds the trajectories up to `output.tEnd`.
+    `output.message` names the phase, its interval and the solver's
+    warning text. An error during a phase stops with
+    `GUILDA:odeSimulator:PhaseFailed` (phase and interval in the message,
+    the original error as its cause); `GUILDA:odeSimulator:UnfeasibleDAE`
+    names the phase too.
+  - Phases that start at rest no longer stop at t = 0 in large networks
+    (e.g. `IEEE68bus(LocalController=false)`): bus current residuals below
+    the round-off level of their terms are set to zero in the ODE function,
+    so ode15s does not read round-off noise as divergence.
   - `TimeLimit` is the wall-clock limit **of each phase** (between event
     times), not of the whole run.
   - `odeSimulator` no longer holds `odeNetwork`, `odeTimeTable`, `odeYmat`,
@@ -406,9 +496,26 @@ Option names:
 - A bus without components (e.g. a pure junction bus) can be linearized: it
   has no states and takes no current.
 - `NonUnit` is no longer written to the buses (`Bus.l_isNonUnit` is
-  removed); the network is not changed. `Point={sim, t}` stops with
-  `GUILDA:odeLinearizer:PointUnavailable` when the layer has local or
-  global controllers (the simulation result does not store their states).
+  removed); the network is not changed. `Point={sim, t}` reads
+  `sim.get_point(t)` and works with local and global controllers;
+  `Point={sim, t, "before"}` takes the value before the event at a phase
+  boundary (the default is after).
+- **`comp.get_sys` / `bus.get_sys` layout** (silent change, see the box at
+  the top), the same on each layer:
+
+  | Layer | Inputs | States | Outputs |
+  |-------|--------|--------|---------|
+  | controller (`con.get_sys`, now public) | `[V; u_con]` | `x_con` | `y_con` |
+  | component | `[port; u_mac; u_con]` | `[x_mac; x_con]` | `[port; y_mac; y_con]` |
+  | bus | `[port; u_mac, u_con of each component]` | `[x_mac; x_con]` | `[port; y_mac, y_con of each component]` |
+
+  `port` is `[Vre; Vim]` in and `[Ire; Iim]` out for `port="V2I"`, the
+  inverse for `"I2V"`. Controllers are listed depth first. States are
+  never outputs and every name is unique; an output named like a state of
+  its owner is `Y_<name>` (e.g. `Y_omega_SG1B001_B001`). A controller input
+  adds to the internal signal it drives (as `u_mac` does). `full` is
+  ignored. The `I2V` outputs `y` now account for V being an output, and
+  the outputs of a component with controllers keep their tags.
 - Removed: `odeLinearizer(net, NonUnit, Name, Value)` stops with
   `GUILDA:Deprecated:OdeLinearizerConstructor` (error); `odeLinearizer()`
   takes no arguments.
@@ -501,11 +608,46 @@ there.
 
 - `GUILDA.dictionary` searches the GUILDA folder (`GUILDA.pwd`), not the
   current folder, so it works from any folder; the old load classes in
-  `+component/+load/history` are not listed.
+  `+component/+load/history` and the folders named `archive` (e.g. the v2
+  networks in `+network/archive/`) are not listed.
 - Removed: the unimplemented `GUILDA.import_MATPOWER` (use
   `PowerNetwork.import_matpower`).
 - The startup no longer rewrites the generated signature files when their
   content is unchanged (no spurious file changes in a git checkout).
+
+### 1.17 Initialize
+
+| v3 | v4 |
+|----|----|
+| `[flag, tab, output] = net.initialize()` | `[result, flag, output] = net.initialize()`; `tab = result.tab_bus` |
+| `net.initialize("methods", "powerflow calculation")` | `net.initialize(Method="powerflow")` (default) |
+| `net.initialize("methods", "optimal powerflow")` | `net.initialize(Method="OPF")` |
+| `net.initialize("methods", "calculate from Xequilibrium")` | `net.initialize(Method="equilibrium")` |
+
+- `result` is a `PowerFlowResult` (`"powerflow"`, and `"equilibrium"` with
+  `str_solver = "equilibrium"` and no branch flows) or an `OPFResult`
+  (`"OPF"`, which runs AC OPF).
+- Other Name-Value options go unchanged to `calculate_powerflow` or
+  `optimize_powerflow` (e.g. `net.initialize(Method="OPF",
+  Solver="fmincon")`, `net.initialize(MaxIteration=50)`); unknown names stop
+  with `GUILDA:resolve_options:UnknownName`. `"equilibrium"` takes no other
+  option. The power-flow formulation is `net.solver_PF.Method`.
+- **Output order** (silent change, see the box at the top).
+- **Failure is an error.** A power flow that does not converge, an
+  infeasible OPF, or stored equilibria that do not satisfy the network
+  equations stop with `GUILDA:PowerNetwork:InitializePowerflowFailed`,
+  `InitializeOPFFailed`, `InitializeEquilibriumFailed` (or
+  `InitializeNoEquilibrium`); the network keeps its previous equilibrium
+  and edit log, and a slack bus that the power flow set is released again.
+  Before, a failed analysis was written into the network.
+- Deprecated, still working:
+
+  | Old form | Warning ID |
+  |----------|------------|
+  | option `"methods"` | `GUILDA:Deprecated:InitializeMethods` |
+  | old values `"powerflow calculation"`, `"optimal powerflow"`, `"calculate from Xequilibrium"` (with `methods` or `Method`) | `GUILDA:Deprecated:InitializeMethodValue` |
+
+  The old output order cannot be detected and is not converted.
 
 ---
 
@@ -539,7 +681,11 @@ there.
 - **Equilibrium:** `get_equilibrium(obj, c_V, c_I, r_P, r_Q)`; do not store
   copies of V or I (see 1.2).
 - **Controllers:** local controllers receive their parent through
-  `set_parent`; a PSS is attached to its AVR. Global controllers are
+  `set_parent`; a PSS is attached to its AVR. A local controller observes
+  its component by the names of its inputs (an output of that name, else a
+  state; `"Xall"` / `"Yall"` for all states / outputs, see 1.6); a class
+  that uses the reserved names overrides `set_inputs`, otherwise it stops
+  with `GUILDA:LocalController:ReservedInput`. Global controllers are
   coupled to components by port names (`sv_u` / `sv_y`).
 - **Variable map.** `net.get_variable_map()` (and `bus.` / `comp.`) is the
   single definition of the variable order: states (per bus, per component,
@@ -559,13 +705,13 @@ there.
 
 ## 3. Planned v4 API changes (not implemented yet)
 
-Everything that was listed here is implemented (sections 1.7–1.13): result
-classes, `[result, flag, output]`, UpperCamelCase Name-Value options over
-`net.solver_*` defaults, `net.calculate_continuation_powerflow`,
-`PowerNetwork.import_csv` / `import_matpower`, `net.export_csv`, and
-`Plot` / `Export` as result methods. Open follow-ups (e.g. aligning
-simulation results with `get_variable_map`) are in
-[status.md](status.md#open-items).
+Everything that was listed here is implemented (sections 1.7–1.13 and
+1.17): result classes, `[result, flag, output]` (also for `initialize`),
+UpperCamelCase Name-Value options over `net.solver_*` defaults,
+`net.calculate_continuation_powerflow`, `PowerNetwork.import_csv` /
+`import_matpower`, `net.export_csv`, `Plot` / `Export` as result methods,
+and simulation results in the order of `get_variable_map`. Open follow-ups
+(e.g. external OPF backends) are in [status.md](status.md#open-items).
 
 ---
 
@@ -603,11 +749,14 @@ simulation results with `get_variable_map`) are in
 | `simulate(..., "Reporter", v)` / `"RelativeTolerance", v` | `GUILDA:Deprecated:SimulateOptionName` | warning; becomes `Progress` / `Tolerance` |
 | user settings key `TimeSimulation.Reporter` (`@GUILDA/user/DefaultTimeSimulation.json`) | – | no warning; read as `Progress` (an existing `Progress` wins); the startup writes the file back with the new key |
 | `odeLinearizer(net, NonUnit, Name, Value)` | `GUILDA:Deprecated:OdeLinearizerConstructor` | error |
+| `initialize("methods", m)` | `GUILDA:Deprecated:InitializeMethods` | warning; becomes `Method=m` |
+| `initialize` values `"powerflow calculation"` / `"optimal powerflow"` / `"calculate from Xequilibrium"` | `GUILDA:Deprecated:InitializeMethodValue` | warning; become `"powerflow"` / `"OPF"` / `"equilibrium"` |
 | `CsvNetHandler.import(path, net, Initialize=tf)` | `GUILDA:Deprecated:CsvNetHandlerImport` | warning; calls `PowerNetwork.import_csv` |
 | `CsvNetHandler.export(net, ModelName, savepath=d)` | `GUILDA:Deprecated:CsvNetHandlerExport` | warning; calls `net.export_csv(fullfile(d, "@"+ModelName))` |
 
-Not kept: the v3 second output `lin` of `get_sys` and the v3 meaning of the
-second output of `simulate` (see the box at the top).
+Not kept: the v3 second output `lin` of `get_sys`, the v3 meaning of the
+second output of `simulate`, and the v3 output order of `initialize` (see the
+box at the top).
 
 ### Hooks
 
@@ -628,6 +777,7 @@ lists all of them:
 | `@PowerNetwork/optimize_powerflow.m` | `v3_opf_args(varargin)` | `methods` option |
 | `@PowerNetwork/optimize_powerflow.m` | `legacy_output(..., 6, @v3_optimize_powerflow, ...)` | 6-output tuple |
 | `@PowerNetwork/build_opf_problem.m` | `v3_opf_args(varargin, "BuildOpfProblemMethods")` | `methods` option |
+| `@PowerNetwork/initialize.m` | `v3_initialize_args(varargin)` | `methods` option and old values |
 | `@PowerNetwork/simulate.m` | `v3_simulate_args(c_nv)` | option names `Reporter`, `RelativeTolerance` |
 | `_auxiliary/@odeSimulator/odeSimulator.m` | `Reporter` property (Dependent, Hidden) | old name of `Progress` |
 | `_auxiliary/@odeSimulator/odeSimulator.m` | `get.Reporter` | returns `Progress` |
@@ -640,7 +790,7 @@ lists all of them:
 does not call `Deprecated` outside a hook line. Update both when a hook is
 added.
 
-That is 18 hooked lines (the F10 test checks the count per file).
+That is 19 hooked lines (the F10 test checks the count per file).
 `Continuation_Power_Flow` and `CsvNetHandler` are old names; they live
 entirely in `_VersionSupport/` and need no hook. CSV import ignores a bus
 `baseMVA` column simply by not reading it (no compat code).
@@ -666,6 +816,7 @@ settings (an untagged line, needed by the `get_config` hook).
 | `v3_ode_reporter.m` | `solver_ODE.Reporter` setter |
 | `v3_linearizer_constructor.m` | error for `odeLinearizer(net, ...)` |
 | `v3_user_config.m` | user settings key `TimeSimulation.Reporter` → `Progress` |
+| `v3_initialize_args.m` | `initialize` option `methods` and old method values |
 
 ### Adding a compat form (stages 2 and 3)
 
@@ -704,7 +855,8 @@ selects it only for 6 outputs, so 4 or 5 outputs are an error.
    By section title:
    - F1 "Add bus with deprecated baseMVA option"
    - F2 "COMPAT v3 positional mode and export options"
-   - F3 "Deprecated component Hz forms still work and warn once",
+   - F3 "Deprecated methods option and values warn" (`test_F3_initialize`),
+     "Deprecated component Hz forms still work and warn once",
      "Deprecated component Hz write sets the network Hz", and the
      `ComponentBaseView` assert in the network Hz edit test
    - F4 "Legacy six-output form", "Deprecated methods option", and the
@@ -722,8 +874,9 @@ selects it only for 6 outputs, so 4 or 5 outputs are an error.
    not compat code, and stays.
 
 This procedure was checked on a copy of the code after stage 1 (only the
-tests listed then failed). It has **not** been rechecked after stages 2
-and 3.
+tests listed then failed). It has **not** been rechecked since stage 2
+(the list above was extended by reading the tests, not by running the
+procedure).
 
 ---
 

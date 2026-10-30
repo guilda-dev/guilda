@@ -5,203 +5,249 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GUILDA Developer Guide - Folder Structure</title>
   <link rel="stylesheet" href="../style.css">
+  <style>
+    /* Folder Structure page only (fs-*); shared parts are dg-* in style.css */
+    .fs-c-guilda { --fs-c: var(--brand); }
+    .fs-c-system { --fs-c: var(--brand); }
+    .fs-c-object { --fs-c: var(--brand); }
+    .fs-c-tutorial { --fs-c: var(--ink); }
+    .fs-c-doc { --fs-c: var(--muted); }
+    .fs-c-other { --fs-c: var(--muted); }
+    .fs-figure svg { max-width: 540px; margin: 0 auto; }
+    .fs-name { display: block; color: var(--fs-c); font: bold 1.05rem/1.4 var(--dg-mono); overflow-wrap: anywhere; }
+    .fs-name + .dg-badge, .fs-name ~ .dg-badge { margin: 6px 6px 0 0; }
+    .fs-folders .dg-row { grid-template-columns: minmax(0, 13rem) minmax(0, 1fr); }
+    .fs-folders dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; margin: var(--dg-s2) 0 0; }
+    .fs-folders dt { padding-top: 2px; color: var(--fs-c); font-size: 0.75rem; font-weight: bold; letter-spacing: 0.04em; text-transform: uppercase; }
+    .fs-folders dd { margin: 0; }
+    .fs-dest { display: block; color: var(--fs-c); font: bold 0.95rem/1.5 var(--dg-mono); overflow-wrap: anywhere; }
+    .fs-dest-note { display: block; color: var(--dg-muted); font-size: 0.88rem; }
+    .fs-yn { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 10px; align-items: baseline; }
+    .fs-gen { margin: var(--dg-s4) 0; }
+    .fs-gen + .fs-gen { padding-top: var(--dg-s4); border-top: 1px solid var(--dg-line); }
+    @media (max-width: 640px) {
+      .fs-folders .dg-row { grid-template-columns: minmax(0, 1fr); }
+      .fs-folders dl { grid-template-columns: minmax(0, 1fr); }
+    }
+  </style>
 </head>
-<body class="developer-layout">
+<body class="developer-layout dg">
+  <!-- shared icons -->
+  <svg class="dg-sprite" aria-hidden="true" focusable="false">
+    <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+    <symbol id="dg-i-warn" viewBox="0 0 24 24"><path d="M12 3 2 20h20z"/><path d="M12 10v4.5M12 17.5v.5"/></symbol>
+    <symbol id="fs-gear" viewBox="0 0 24 24"><path fill="currentColor" d="M10.3 2h3.4l.5 2.6 1.9.8 2.2-1.5 2.4 2.4-1.5 2.2.8 1.9 2.6.5v3.4l-2.6.5-.8 1.9 1.5 2.2-2.4 2.4-2.2-1.5-1.9.8-.5 2.6h-3.4l-.5-2.6-1.9-.8-2.2 1.5-2.4-2.4 1.5-2.2-.8-1.9L2 13.7v-3.4l2.6-.5.8-1.9-1.5-2.2 2.4-2.4 2.2 1.5 1.9-.8zM12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/></symbol>
+  </svg>
+
   <main>
     <button type="button" class="developer-back-button" onclick="window.history.back()">← Back to For Developer</button>
     <h1>Folder Structure</h1>
-    <p class="page-lead">GUILDA separates the startup utility, the analysis framework, concrete models, tutorials, and documentation into top-level folders. This page describes what each folder contains, which folders are on the MATLAB path, and where new files should be placed.</p>
+    <p class="page-lead">The role of each top-level folder, how the folders depend on each other, and where a new file goes.</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#overview">Overview</a>
-      <a href="#matlab-rules">MATLAB folder rules</a>
-      <a href="#guilda">@GUILDA</a>
-      <a href="#system">_GUILDAsystem</a>
-      <a href="#object">_GUILDAobject</a>
-      <a href="#tutorial">_GUILDAtutorial</a>
-      <a href="#doc">_GUILDAdoc</a>
-      <a href="#others">Other folders</a>
+      <a href="#folders">Top-level folders</a>
       <a href="#placement">Placement rules</a>
       <a href="#generated">Generated files</a>
       <a href="#legacy">Legacy folders</a>
     </nav>
 
+    <!-- ============================== OVERVIEW ============================== -->
     <h2 id="overview">Overview</h2>
-<pre class="dev-tree">GUILDA/
-├── @GUILDA/            Startup utility class (>> GUILDA)
-├── _GUILDAsystem/      Analysis framework: core model classes and analysis classes
-├── _GUILDAobject/      Concrete models: branches, components, controllers, networks
-├── _GUILDAtutorial/    Tutorial live scripts (.mlx)
-├── _GUILDAdoc/         This documentation site
-├── +DebugScript/       Development scripts for manual checks
-├── .github/            GitHub settings and coding-assistant instructions
-├── README.md
-└── LICENSE</pre>
+    <figure class="dg-figure fs-figure">
+      <svg class="dg-svg" viewBox="0 0 480 524" role="img" aria-labelledby="fs-map-title">
+        <title id="fs-map-title">Map of the GUILDA top-level folders and how they depend on each other</title>
+        <defs>
+          <marker id="fs-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--muted)"/></marker>
+          <marker id="fs-ah-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--brand)"/></marker>
+        </defs>
 
-    <table>
-      <tr><th>Folder</th><th>Role</th><th>On MATLAB path</th></tr>
-      <tr><td><code>@GUILDA/</code></td><td>Utility class that prepares the environment, manages settings, and opens tutorials and documentation.</td><td>Via repository root</td></tr>
-      <tr><td><code>_GUILDAsystem/</code></td><td>Base classes of the power system model and the classes that perform analysis.</td><td>Yes</td></tr>
-      <tr><td><code>_GUILDAobject/</code></td><td>Concrete models built on <code>_GUILDAsystem</code>, organized as MATLAB packages.</td><td>Yes</td></tr>
-      <tr><td><code>_GUILDAtutorial/</code></td><td>Tutorials opened by <code>GUILDA.tutorial</code>.</td><td>Yes</td></tr>
-      <tr><td><code>_GUILDAdoc/</code></td><td>Static HTML documentation and the generated class database.</td><td>No</td></tr>
-      <tr><td><code>+DebugScript/</code></td><td>Scripts used by developers to reproduce and check features.</td><td>Via repository root (package <code>DebugScript</code>)</td></tr>
-    </table>
-    <p>The folders added to the path are listed in <code>@GUILDA/config/ListPath.txt</code> and are added by <code>GUILDA.addpath</code>. Subfolders that are not listed there are reachable only through MATLAB's class-folder and package mechanisms.</p>
+        <!-- @GUILDA -->
+        <rect x="140" y="10" width="200" height="64" rx="4" style="fill:var(--brand)"/>
+        <text x="240" y="38" text-anchor="middle" font-size="18" font-weight="bold" class="dg-mono" style="fill:var(--surface)">@GUILDA</text>
+        <text x="240" y="60" text-anchor="middle" font-size="12" style="fill:var(--on-brand-muted)">entry point · environment</text>
 
-    <h2 id="matlab-rules">MATLAB folder rules used in GUILDA</h2>
-    <table>
-      <tr><th>Prefix</th><th>Meaning</th><th>Example</th></tr>
-      <tr><td><code>@Name/</code></td><td>Class folder. <code>Name.m</code> holds the <code>classdef</code>; other files in the folder are methods of the class.</td><td><code>@Bus/add_component.m</code></td></tr>
-      <tr><td><code>+name/</code></td><td>Package folder. Its contents are called with a dotted name.</td><td><code>+component/+generator/@park</code> → <code>component.generator.park</code></td></tr>
-      <tr><td><code>private/</code></td><td>Functions visible only from the parent folder or class.</td><td><code>@GUILDA/private/get_config.m</code></td></tr>
-      <tr><td><code>_name/</code></td><td>Plain grouping folder added to the path explicitly by <code>ListPath.txt</code>.</td><td><code>_GUILDAsystem/_auxiliary</code></td></tr>
-      <tr><td>no prefix</td><td>Plain folder. Inside a package or class folder it is <strong>not</strong> on the path; use it only for data or archived code.</td><td><code>@IEEE14bus/bus/parameter.csv</code></td></tr>
-    </table>
+        <!-- @GUILDA opens tutorial / doc -->
+        <path class="dg-anim-dash" d="M340 42H366V144" fill="none" stroke-width="1.6" marker-end="url(#fs-ah)" style="stroke:var(--muted)"/>
+        <text x="372" y="100" font-size="11" style="fill:var(--muted)">opens</text>
+        <path class="dg-anim-dash" d="M140 42H12V476H42" fill="none" stroke-width="1.6" marker-end="url(#fs-ah)" style="stroke:var(--muted)"/>
+        <text x="18" y="34" font-size="11" style="fill:var(--muted)">opens</text>
 
-    <h2 id="guilda">@GUILDA/</h2>
-    <p>The <code>GUILDA</code> class. Its constructor runs the startup sequence (logo, git pull, <code>addpath</code>, toolbox check, documentation update, key-map update, tutorial). Each startup step can be switched in the <em>startup</em> settings.</p>
-    <table>
-      <tr><th>Path</th><th>Contents</th></tr>
-      <tr><td><code>GUILDA.m</code></td><td>Class definition and startup sequence.</td></tr>
-      <tr><td><code>*.m</code></td><td>Static methods: <code>pwd</code>, <code>addpath</code>, <code>rmpath</code>, <code>gitpull</code>, <code>setting</code>, <code>config</code>, <code>tutorial</code>, <code>doc</code>, <code>dictionary</code>.</td></tr>
-      <tr><td><code>private/</code></td><td>Internal functions: configuration I/O (<code>get_config</code>, <code>set_config</code>, <code>merge_config</code>), <code>check_requirement</code>, <code>export_class_database</code> (documentation database), <code>update_class_signature</code> (key map).</td></tr>
-      <tr><td><code>config/</code></td><td>System defaults shipped with GUILDA: <code>Default*.json</code> settings, <code>ListPath.txt</code>, <code>ListToolbox.txt</code> (the required toolboxes that startup checks), logo text and image. <code>config/archive/</code> keeps retired settings files.</td></tr>
-      <tr><td><code>user/</code></td><td>Per-user overrides of <code>config/Default*.json</code>. Written by <code>GUILDA.setting</code> and merged over the defaults at startup. Ignored by Git.</td></tr>
-    </table>
-    <p class="dev-note"><strong>Note:</strong> Files in <code>private/</code>, <code>config/</code>, and <code>user/</code> are read and written by the system. Edit <code>config/</code> only when changing the shipped defaults, and never commit <code>user/</code>.</p>
+        <!-- path setup -->
+        <path class="dg-anim-dash" d="M240 74V118" fill="none" stroke-width="2" marker-end="url(#fs-ah-p)" style="stroke:var(--brand)"/>
+        <text x="232" y="100" text-anchor="end" font-size="12" font-weight="bold" style="fill:var(--brand)">sets up the path</text>
 
-    <h2 id="system">_GUILDAsystem/</h2>
-    <p>The analysis framework. Code here should not depend on any concrete model in <code>_GUILDAobject</code>.</p>
-    <h3>Core model classes</h3>
-    <table>
-      <tr><th>Folder</th><th>Class</th><th>Role</th></tr>
-      <tr><td><code>@PowerNetwork/</code></td><td><code>PowerNetwork</code></td><td>Top-level model. Holds buses, branches, and global controllers; runs power flow, OPF, simulation, and linearization.</td></tr>
-      <tr><td><code>@Bus/</code></td><td><code>Bus</code></td><td>Node of the network. Holds components through cubicles.</td></tr>
-      <tr><td><code>@Branch/</code></td><td><code>Branch</code></td><td>Base class of transmission lines and transformers.</td></tr>
-      <tr><td><code>@Component/</code></td><td><code>Component</code></td><td>Base class of generators, loads, and other devices connected to a bus.</td></tr>
-      <tr><td><code>@LocalController/</code></td><td><code>LocalController</code></td><td>Base class of controllers attached to a single component.</td></tr>
-      <tr><td><code>@GlobalController/</code></td><td><code>GlobalController</code></td><td>Base class of controllers that observe and act on several components.</td></tr>
-    </table>
+        <!-- MATLAB path region -->
+        <rect x="24" y="124" width="446" height="262" rx="4" stroke-width="1.5" stroke-dasharray="6 4" style="fill:var(--surface); stroke:var(--brand)"/>
+        <rect x="34" y="116" width="96" height="18" style="fill:var(--surface-subtle)"/>
+        <text x="38" y="129" font-size="12" font-weight="bold" style="fill:var(--brand)">MATLAB path</text>
 
-    <h3>_auxiliary/</h3>
-    <table>
-      <tr><th>Group</th><th>Contents</th></tr>
-      <tr><td>Class categories</td><td><code>LayerPackage</code>, <code>PowerSystemModel</code> (base of every model class), <code>auxiliary</code> (base of every analysis-support class).</td></tr>
-      <tr><td>Parameters</td><td><code>@Parameter</code>: parameter tables of model objects.</td></tr>
-      <tr><td>Power flow</td><td><code>@PowerFlowCalculation</code>, <code>@NewtonRaphsonMethod</code>, <code>@ContinuationPowerFlow</code>, <code>@OptimalPowerFlow</code>.</td></tr>
-      <tr><td>Time simulation</td><td><code>@odeSimulator</code>, <code>@odeEventSet</code>, <code>@odeProgress</code>, <code>@odeLinearizer</code>.</td></tr>
-      <tr><td>Analysis results</td><td><code>@AnalysisResult</code> (base class) and its subclasses <code>@PowerFlowResult</code>, <code>@OPFResult</code>, <code>@CPFResult</code>, <code>@odeSimulationResult</code>, <code>@LinearizationResult</code>.</td></tr>
-      <tr><td>Drawing</td><td><code>@DrawerNetDiagram</code> (network diagrams). Network import and export are methods of <code>PowerNetwork</code> (<code>import_csv</code>, <code>import_matpower</code>, <code>export_csv</code>).</td></tr>
-      <tr><td><code>SystemTools/GUILDA/en/</code></td><td>Message catalogs (<code>*.xml</code>) for errors and information messages, one file per class.</td></tr>
-    </table>
+        <rect x="44" y="148" width="206" height="72" rx="4" stroke-width="1.5" style="fill:var(--brand-tint); stroke:var(--brand)"/>
+        <text x="147" y="178" text-anchor="middle" font-size="16" font-weight="bold" class="dg-mono" style="fill:var(--brand)">_GUILDAobject</text>
+        <text x="147" y="200" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">concrete models</text>
 
-    <h3>Other folders</h3>
-    <table>
-      <tr><th>Folder</th><th>Contents</th></tr>
-      <tr><td><code>+tools/</code></td><td>General utility functions called as <code>tools.xxx</code> (array/cell helpers, complex-vector conversion, <code>tools.FigureClass</code>). <code>+tools/+for_ss</code> holds state-space helpers.</td></tr>
-      <tr><td><code>_VersionSupport/</code></td><td>Compatibility wrappers that keep names from older GUILDA versions working (e.g. <code>Continuation_Power_Flow</code> → <code>net.calculate_continuation_powerflow</code>, <code>CsvNetHandler</code> → <code>PowerNetwork.import_csv</code> / <code>net.export_csv</code>).</td></tr>
-    </table>
+        <rect x="44" y="290" width="206" height="72" rx="4" stroke-width="1.5" style="fill:var(--surface-subtle); stroke:var(--brand)"/>
+        <text x="147" y="320" text-anchor="middle" font-size="16" font-weight="bold" class="dg-mono" style="fill:var(--brand)">_GUILDAsystem</text>
+        <text x="147" y="342" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">framework + analysis</text>
 
-    <h2 id="object">_GUILDAobject/</h2>
-    <p>Concrete models, organized as packages. Each model inherits from a core class in <code>_GUILDAsystem</code>.</p>
-    <table>
-      <tr><th>Package</th><th>Parent class</th><th>Contents</th></tr>
-      <tr><td><code>+branch/</code></td><td><code>Branch</code></td><td><code>pi</code>, <code>T</code>, <code>pi_transformer</code>, <code>two_winding_transformer</code></td></tr>
-      <tr><td><code>+component/+generator/</code></td><td><code>Component</code></td><td><code>classical</code>, <code>one_axis</code>, <code>two_axis</code>, <code>park</code>, <code>droop</code>, and the common base <code>abstract</code></td></tr>
-      <tr><td><code>+component/+load/</code></td><td><code>Component</code></td><td><code>impedance</code>, <code>power</code>, and the common base <code>abstract</code></td></tr>
-      <tr><td><code>+component/+ConstSource/</code></td><td><code>Component</code></td><td>Constant source models</td></tr>
-      <tr><td><code>+controller/</code></td><td><code>LocalController</code> / <code>GlobalController</code></td><td><code>+avr</code>, <code>+pss</code>, <code>+agc</code>, LQR-based controllers, and <code>+modeling</code> helpers</td></tr>
-      <tr><td><code>+network/</code></td><td><code>PowerNetwork</code></td><td>Network templates such as <code>IEEE14bus</code>, <code>Ishizaki6Bus</code>, <code>Txt3Bus</code></td></tr>
-    </table>
+        <path class="dg-anim-dash" d="M147 220V286" fill="none" stroke-width="2" marker-end="url(#fs-ah)" style="stroke:var(--brand)"/>
+        <text x="156" y="250" font-size="12" font-weight="bold" style="fill:var(--brand)">builds on</text>
+        <text x="156" y="266" font-size="11" style="fill:var(--err)">never the reverse</text>
 
-    <h3>Layout of a network template</h3>
-<pre class="dev-tree">+network/@IEEE14bus/
-├── IEEE14bus.m             classdef IEEE14bus &lt; PowerNetwork
-├── network/parameter.csv   Hz, baseMVA
-├── bus/parameter.csv
-├── branch/parameter.csv
-└── component/
-    ├── gen-park/           one folder per component key
-    │   ├── main.csv
-    │   ├── dynamics.csv
-    │   └── opf.csv
-    └── load-power/</pre>
-    <p>Component data folders are named after the <code>key</code> constant of the component class (e.g. <code>component.generator.park</code> has <code>key = "gen-park"</code>).</p>
-    <p>A template may also have a <code>controller/</code> folder with local controller data that its constructor adds after <code>PowerNetwork.import_csv</code>; for example <code>@IEEE68bus/controller/avr/parameter.csv</code> and <code>controller/pss/parameter.csv</code> hold one row per generator bus. <code>import_csv</code> and <code>export_csv</code> do not read or write this folder.</p>
+        <rect x="276" y="148" width="180" height="72" rx="4" stroke-width="1.5" style="fill:var(--surface); stroke:var(--ink)"/>
+        <text x="366" y="178" text-anchor="middle" font-size="15" font-weight="bold" class="dg-mono" style="fill:var(--ink)">_GUILDAtutorial</text>
+        <text x="366" y="200" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">learning material</text>
 
-    <h3>Layout of a model class</h3>
-    <p>A model with several methods uses a class folder, with one method per file. Small models may be a single <code>classdef</code> file.</p>
-<pre class="dev-tree">+component/+generator/@park/
-├── park.m                  classdef park &lt; component.generator.abstract
-├── fcn_dx.m  fcn_I.m  fcn_Y.m  fcn_Mass.m
-├── Jacobi_dx.m  Jacobi_I.m  Jacobi_Y.m
-└── get_equilibrium.m</pre>
+        <!-- tutorials use the models -->
+        <path class="dg-anim-dash" d="M366 220V326H254" fill="none" stroke-width="1.6" marker-end="url(#fs-ah)" style="stroke:var(--muted)"/>
+        <text x="358" y="276" text-anchor="end" font-size="11" style="fill:var(--muted)">uses the public API</text>
 
-    <h2 id="tutorial">_GUILDAtutorial/</h2>
-    <table>
-      <tr><th>Path</th><th>Contents</th></tr>
-      <tr><td><code>Main.mlx</code></td><td>Entry point opened by <code>GUILDA.tutorial</code>.</td></tr>
-      <tr><td><code>Step1_*.mlx</code> – <code>Step6_*.mlx</code></td><td>Step-by-step tutorials from network building to linearization.</td></tr>
-      <tr><td><code>Supplement_*.mlx</code></td><td>Cheat sheet and tool reference.</td></tr>
-      <tr><td><code>ClassManual/</code></td><td>Live scripts explaining individual model families (branches, buses, generators, loads, controllers).</td></tr>
-    </table>
+        <!-- doc generation -->
+        <path class="dg-anim-dash" d="M147 362V436" fill="none" stroke-width="1.6" marker-end="url(#fs-ah)" style="stroke:var(--muted)"/>
+        <text x="156" y="404" font-size="11" style="fill:var(--muted)">help comments in source</text>
+        <text x="156" y="420" font-size="11" style="fill:var(--muted)">→ generated class reference</text>
 
-    <h2 id="doc">_GUILDAdoc/</h2>
-    <table>
-      <tr><th>Path</th><th>Contents</th></tr>
-      <tr><td><code>index.html</code>, <code>class.html</code>, <code>method.html</code></td><td>Home page and the class / method reference pages.</td></tr>
-      <tr><td><code>doc-loader.js</code>, <code>style.css</code></td><td>Shared loader for the class database and the shared stylesheet.</td></tr>
-      <tr><td><code>developer/</code></td><td>Pages of the For Developer tab.</td></tr>
-      <tr><td><code>images/</code></td><td>Images used by the pages.</td></tr>
-      <tr><td><code>database/list_*.js</code></td><td>Hand-written lists for the Tutorial, Update Log, and For Developer tabs.</td></tr>
-      <tr><td><code>database/list_Classes.js</code>, <code>database/GUILDAsystem/</code>, <code>database/GUILDAobject/</code></td><td>Class database generated by <code>GUILDA.doc("update", true)</code>. Ignored by Git.</td></tr>
-    </table>
+        <rect x="44" y="440" width="206" height="72" rx="4" stroke-width="1.5" style="fill:var(--surface-subtle); stroke:var(--muted)"/>
+        <text x="147" y="470" text-anchor="middle" font-size="16" font-weight="bold" class="dg-mono" style="fill:var(--muted)">_GUILDAdoc</text>
+        <text x="147" y="492" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">HTML docs · not on path</text>
 
-    <h2 id="others">Other folders</h2>
-    <table>
-      <tr><th>Folder</th><th>Contents</th></tr>
-      <tr><td><code>+DebugScript/</code></td><td>Numbered task scripts (<code>Task1_NetBuild</code>, <code>Task7_simulate</code>, …) and <code>samplemodel</code> used to check features during development. Not part of the public API.</td></tr>
-      <tr><td><code>.github/</code></td><td>Repository settings and instructions for coding assistants.</td></tr>
-      <tr><td><code>_GUILDAexport/</code></td><td>Default output folder of the deprecated <code>CsvNetHandler.export</code> dialog. Created on demand and ignored by Git.</td></tr>
-    </table>
+        <rect x="276" y="440" width="180" height="72" rx="4" stroke-width="1.5" stroke-dasharray="5 4" style="fill:var(--surface-subtle); stroke:var(--muted)"/>
+        <text x="366" y="470" text-anchor="middle" font-size="15" font-weight="bold" class="dg-mono" style="fill:var(--muted)">_GUILDAexport</text>
+        <text x="366" y="492" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">output · created on demand</text>
+      </svg>
+      <figcaption>Arrows show which folder uses or produces another. Only folders on the MATLAB path can be called from user scripts; <code>@GUILDA</code> puts them there at startup.</figcaption>
+    </figure>
 
+    <!-- ============================== TOP-LEVEL FOLDERS ============================== -->
+    <h2 id="folders">Top-level folders</h2>
+    <div class="dg-rows fs-folders">
+      <div class="dg-row fs-c-guilda">
+        <div><code class="fs-name">@GUILDA/</code><span class="dg-badge is-ok">via repository root</span></div>
+        <div>
+          <p>Entry point of the toolbox. Running <code>&gt;&gt; GUILDA</code> prepares the environment.</p>
+          <dl>
+            <dt>Belongs here</dt><dd>Environment setup, user settings and their shipped defaults, and commands that open the tutorials and this documentation.</dd>
+            <dt>Relation</dt><dd>Puts the other code folders on the MATLAB path. Contains no power system modeling or analysis.</dd>
+          </dl>
+        </div>
+      </div>
+      <div class="dg-row fs-c-system">
+        <div><code class="fs-name">_GUILDAsystem/</code><span class="dg-badge is-ok">on path</span></div>
+        <div>
+          <p>The modeling framework.</p>
+          <dl>
+            <dt>Belongs here</dt><dd>Base classes that define what a network, bus, branch, component, and controller are; the classes that perform analysis; general helper functions; compatibility wrappers for old names.</dd>
+            <dt>Core classes</dt><dd><code>@PowerNetwork</code>, <code>@Bus</code>, <code>@Branch</code>, <code>@Component</code>, <code>@LocalController</code>, <code>@GlobalController</code>.</dd>
+            <dt>Support classes</dt><dd>In <code>_auxiliary/</code>: class categories (<code>LayerPackage</code>, <code>PowerSystemModel</code>, <code>auxiliary</code>) and <code>@Parameter</code>; solvers (<code>@PowerFlowCalculation</code>, <code>@NewtonRaphsonMethod</code>, <code>@OptimalPowerFlow</code>, <code>@ContinuationPowerFlow</code>, <code>@odeSimulator</code>, <code>@odeEventSet</code>, <code>@odeProgress</code>, <code>@odeLinearizer</code>); result classes (<code>@AnalysisResult</code> and its subclasses <code>@PowerFlowResult</code>, <code>@OPFResult</code>, <code>@CPFResult</code>, <code>@odeSimulationResult</code>, <code>@LinearizationResult</code>); drawing (<code>@DrawerNetDiagram</code>).</dd>
+            <dt>Other</dt><dd><code>+tools/</code> helpers; <code>_VersionSupport/</code> wrappers for old names (e.g. <code>Continuation_Power_Flow</code> → <code>net.calculate_continuation_powerflow</code>, <code>CsvNetHandler</code> → <code>PowerNetwork.import_csv</code> / <code>net.export_csv</code>).</dd>
+            <dt>Relation</dt><dd>Depends on no concrete model in <code>_GUILDAobject</code>, so models can be added or removed without touching the framework. Network import and export are methods of <code>PowerNetwork</code>, not separate classes.</dd>
+          </dl>
+        </div>
+      </div>
+      <div class="dg-row fs-c-object">
+        <div><code class="fs-name">_GUILDAobject/</code><span class="dg-badge is-ok">on path</span></div>
+        <div>
+          <p>Concrete models that users put into a network.</p>
+          <dl>
+            <dt>Belongs here</dt><dd>Model classes, grouped into packages by kind (branch / component / controller / network), with sub-packages for model families that share a base class. A network template is a class folder with data subfolders per element type.</dd>
+            <dt>Networks</dt><dd>Bundled templates include <code>IEEE9bus</code>, <code>IEEE14bus</code> (the MATPOWER <code>case14</code> data), <code>IEEE14bus_NoTap</code> (transformer taps at 1), <code>IEEE14bus_lossless</code> (<code>R = 0</code>), and <code>IEEE68bus</code>. Each constructor loads its own folder with <code>PowerNetwork.import_csv(dir, Network=obj)</code>.</dd>
+            <dt>Relation</dt><dd>Every model inherits from a base class in <code>_GUILDAsystem</code>.</dd>
+          </dl>
+        </div>
+      </div>
+      <div class="dg-row fs-c-tutorial">
+        <div><code class="fs-name">_GUILDAtutorial/</code><span class="dg-badge is-ok">on path</span></div>
+        <div>
+          <p>Learning material for users.</p>
+          <dl>
+            <dt>Belongs here</dt><dd>Live scripts that walk through using GUILDA, and reference scripts per model family.</dd>
+            <dt>Relation</dt><dd>Uses only the public API of <code>_GUILDAsystem</code> and <code>_GUILDAobject</code>; opened from <code>@GUILDA</code>. Each tutorial is listed in the documentation.</dd>
+          </dl>
+        </div>
+      </div>
+      <div class="dg-row fs-c-doc">
+        <div><code class="fs-name">_GUILDAdoc/</code><span class="dg-badge is-muted">not on path</span></div>
+        <div>
+          <p>This documentation site, viewed in a browser.</p>
+          <dl>
+            <dt>Belongs here</dt><dd>Hand-written pages, styles, and lists, plus a class reference generated from the help comments in the MATLAB source.</dd>
+            <dt>Relation</dt><dd>Reads the code folders but is never called by them. Opened from <code>@GUILDA</code>.</dd>
+          </dl>
+        </div>
+      </div>
+      <div class="dg-row fs-c-other">
+        <div><code class="fs-name">_GUILDAexport/</code><span class="dg-badge is-muted">not on path</span><span class="dg-badge is-err">Git-ignored</span></div>
+        <div>
+          <p>Default output folder for exported data.</p>
+          <dl>
+            <dt>Belongs here</dt><dd>Files written by GUILDA's export functions. Nothing hand-written.</dd>
+            <dt>Relation</dt><dd>Created on demand; safe to delete.</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+    <div class="dg-callout">
+      <svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
+      <p>Inside a class or package folder, a subfolder without an <code>@</code> or <code>+</code> prefix is not on the path: use it for data or archived code only. A class folder keeps one method per file; a small model may be a single <code>classdef</code> file instead.</p>
+    </div>
+
+    <!-- ============================== PLACEMENT ============================== -->
     <h2 id="placement">Placement rules for new files</h2>
-    <table>
-      <tr><th>What you add</th><th>Where</th></tr>
-      <tr><td>A new generator, load, branch, or controller model</td><td>The matching package in <code>_GUILDAobject/</code>. Create a sub-package when a family of models shares a base class.</td></tr>
-      <tr><td>A new network template</td><td><code>_GUILDAobject/+network/@Name/</code> with <code>bus/</code>, <code>branch/</code>, and <code>component/&lt;key&gt;/</code> data folders.</td></tr>
-      <tr><td>A change to the model framework</td><td>The core class folder in <code>_GUILDAsystem/</code>.</td></tr>
-      <tr><td>A new analysis or support class</td><td><code>_GUILDAsystem/_auxiliary/@Name/</code>, inheriting from <code>auxiliary</code>.</td></tr>
-      <tr><td>A general-purpose helper function</td><td><code>_GUILDAsystem/+tools/</code>.</td></tr>
-      <tr><td>A helper used by one class only</td><td>That class's <code>private/</code> folder.</td></tr>
-      <tr><td>A renamed or removed public API</td><td>A wrapper in <code>_GUILDAsystem/_VersionSupport/</code>.</td></tr>
-      <tr><td>A new tutorial</td><td><code>_GUILDAtutorial/</code>, and register it in <code>_GUILDAdoc/database/list_Tutorials.js</code>.</td></tr>
-      <tr><td>Retired code kept for reference</td><td>An <code>archive/</code> folder next to the original location (see below).</td></tr>
-    </table>
+    <div class="dg-rows is-arrow">
+      <div class="dg-row dg-rows-head"><span class="dg-kicker">What are you adding?</span><span></span><span class="dg-kicker">Put it in</span></div>
+      <div class="dg-row"><span class="dg-row-head">A new generator, load, branch, or controller model</span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-object"><code class="fs-dest">_GUILDAobject/+&lt;package&gt;/</code><span class="fs-dest-note">the matching package; make a sub-package when a family of models shares a base class</span></span></div>
+      <div class="dg-row"><span class="dg-row-head">A new network template</span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-object"><code class="fs-dest">_GUILDAobject/+network/@Name/</code><span class="fs-dest-note">with <code>network/</code> (base values <code>Hz</code>, <code>baseMVA</code> in <code>parameter.csv</code>), <code>bus/</code>, <code>branch/</code>, <code>component/&lt;key&gt;/</code> data folders, loaded by <code>PowerNetwork.import_csv(dir, Network=obj)</code></span></span></div>
+      <div class="dg-row"><span class="dg-row-head">A change to the model framework</span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-system"><code class="fs-dest">_GUILDAsystem/@&lt;CoreClass&gt;/</code><span class="fs-dest-note">the base class folder being changed</span></span></div>
+      <div class="dg-row"><span class="dg-row-head">A new analysis or support class</span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-system"><code class="fs-dest">_GUILDAsystem/_auxiliary/@Name/</code><span class="fs-dest-note">inheriting from <code>auxiliary</code>; a result class inherits from <code>AnalysisResult</code></span></span></div>
+      <div class="dg-row"><span class="dg-row-head">A helper function — used by one class only?</span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-yn"><span class="dg-badge is-ok">yes</span><code class="fs-dest fs-c-tutorial">&lt;that class&gt;/private/</code><span class="dg-badge is-muted">no</span><code class="fs-dest fs-c-system">_GUILDAsystem/+tools/</code></span></div>
+      <div class="dg-row"><span class="dg-row-head">A renamed or removed public API</span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-system"><code class="fs-dest">_GUILDAsystem/_VersionSupport/</code><span class="fs-dest-note">a wrapper under the old name</span></span></div>
+      <div class="dg-row"><span class="dg-row-head">A new tutorial</span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-tutorial"><code class="fs-dest">_GUILDAtutorial/</code><span class="fs-dest-note">and register it in <code>_GUILDAdoc/database/list_Tutorials.js</code></span></span></div>
+      <div class="dg-row"><span class="dg-row-head">Retired code kept for reference</span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-other"><code class="fs-dest">archive/</code><span class="fs-dest-note">next to the original location (see <a href="#legacy">Legacy</a>)</span></span></div>
+    </div>
 
+    <!-- ============================== GENERATED ============================== -->
     <h2 id="generated">Generated files — do not edit</h2>
-    <p>The following files are rewritten by the system. Edit their source instead.</p>
-    <table>
-      <tr><th>Generated file</th><th>Source</th><th>Generated by</th></tr>
-      <tr><td><code>_GUILDAsystem/@Bus/add_component.m</code></td><td><code>add_component.template</code></td><td rowspan="3"><code>update_class_signature</code> (startup: <em>UpdateKeyMap</em>)</td></tr>
-      <tr><td><code>_GUILDAsystem/@Bus/replace_component.m</code></td><td><code>replace_component.template</code></td></tr>
-      <tr><td><code>_GUILDAsystem/@PowerNetwork/add_branch.m</code></td><td><code>add_branch.template</code></td></tr>
-      <tr><td><code>_GUILDAdoc/database/list_Classes.js</code> and class files</td><td>Help comments in the MATLAB source</td><td><code>GUILDA.doc("update", true)</code> (startup: <em>UpdateDoc</em>)</td></tr>
-      <tr><td><code>@GUILDA/user/*.json</code></td><td>Settings changed by the user</td><td><code>GUILDA.setting</code></td></tr>
-    </table>
+    <p>These are rewritten by the system. <strong>Edit the green source</strong>, never the red output.</p>
+    <div class="fs-gen">
+      <div class="dg-chain">
+        <div class="dg-chain-node is-ok"><span class="dg-kicker">✎ edit</span><span class="fs-dest-note">in <code>_GUILDAsystem/</code></span><code>@Bus/add_component.template</code><br><code>@Bus/replace_component.template</code><br><code>@PowerNetwork/add_branch.template</code></div>
+        <div class="dg-chain-arrow" aria-hidden="true"></div>
+        <div class="dg-chain-node is-step"><span class="dg-kicker">runs</span>at startup</div>
+        <div class="dg-chain-arrow" aria-hidden="true"></div>
+        <div class="dg-chain-node is-err"><span class="dg-kicker">✕ do not edit</span><span class="fs-dest-note">in <code>_GUILDAsystem/</code></span><code>@Bus/add_component.m</code><br><code>@Bus/replace_component.m</code><br><code>@PowerNetwork/add_branch.m</code></div>
+      </div>
+    </div>
+    <div class="fs-gen">
+      <div class="dg-chain">
+        <div class="dg-chain-node is-ok"><span class="dg-kicker">✎ edit</span>help comments in the MATLAB source</div>
+        <div class="dg-chain-arrow" aria-hidden="true"></div>
+        <div class="dg-chain-node is-step"><span class="dg-kicker">runs</span><code>GUILDA.doc("update", true)</code></div>
+        <div class="dg-chain-arrow" aria-hidden="true"></div>
+        <div class="dg-chain-node is-err"><span class="dg-kicker">✕ do not edit</span><span class="fs-dest-note">in <code>_GUILDAdoc/database/</code></span><code>list_Classes.js</code><br><code>GUILDAsystem/</code><br><code>GUILDAobject/</code></div>
+      </div>
+    </div>
+    <div class="fs-gen">
+      <div class="dg-chain">
+        <div class="dg-chain-node is-ok"><span class="dg-kicker">✎ change</span>settings changed by the user</div>
+        <div class="dg-chain-arrow" aria-hidden="true"></div>
+        <div class="dg-chain-node is-step"><span class="dg-kicker">runs</span><code>GUILDA.setting</code></div>
+        <div class="dg-chain-arrow" aria-hidden="true"></div>
+        <div class="dg-chain-node is-err"><span class="dg-kicker">✕ do not edit or commit</span><code>@GUILDA/user/</code></div>
+      </div>
+    </div>
+    <p class="dg-caption">All outputs above are listed in <code>.gitignore</code>.</p>
+    <div class="dg-callout">
+      <svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
+      <p>The generated class reference in <code>_GUILDAdoc/database/</code> is never committed to source branches. It reaches the web only through the <code>gh-pages</code> branch, which <code>GUILDA.publish_doc</code> builds and pushes (see <a href="git-workflow.html#publish-docs">Publishing the documentation</a>).</p>
+    </div>
 
+    <!-- ============================== LEGACY ============================== -->
     <h2 id="legacy">Legacy and archived folders</h2>
-    <p>Code that is no longer used but kept for reference goes into a folder named <code>archive/</code> placed next to its original location. Because <code>archive/</code> has no <code>@</code> or <code>+</code> prefix, it is not on the MATLAB path inside class and package folders. Do not use other names such as <code>history</code>, <code>_past</code>, <code>_origin</code>, or a <code>未</code> prefix.</p>
-    <p>The following folders do not follow this rule yet and are scheduled to be organized.</p>
-    <table>
-      <tr><th>Folder</th><th>Current state</th><th>Status</th></tr>
-      <tr><td><code>_GUILDAobject/+component/未+GFM/</code></td><td>Grid-forming inverter models under development</td><td><span class="dev-status">To be organized</span></td></tr>
-      <tr><td><code>_GUILDAobject/+component/未+farm/</code></td><td>Solar and wind farm models under development</td><td><span class="dev-status">To be organized</span></td></tr>
-      <tr><td><code>_GUILDAobject/+component/+load/history/</code></td><td>Older load models</td><td><span class="dev-status">To be organized</span></td></tr>
-      <tr><td><code>_GUILDAobject/+network/@Ishizaki6Bus/branch_origin/</code></td><td>Original branch data</td><td><span class="dev-status">To be organized</span></td></tr>
-      <tr><td><code>@GUILDA/config/archive/</code>, <code>@DrawerNetDiagram/archive/</code>, <code>+network/archive/</code></td><td>Already follow the rule</td><td><span class="dev-status is-ok">OK</span></td></tr>
-    </table>
+    <p>Retired code kept for reference goes into a folder named <code>archive/</code> next to its original location. Having no <code>@</code> or <code>+</code> prefix, it stays off the MATLAB path inside class and package folders. Do not use any other name or marker for retired or unfinished code.</p>
+    <p class="fs-legacy">
+      <span class="dg-badge is-ok">✓ archive/</span>
+      <span class="dg-badge is-strike">history</span> <span class="dg-badge is-strike">_past</span> <span class="dg-badge is-strike">_origin</span> <span class="dg-badge is-strike">未 prefix</span>
+    </p>
   </main>
 </body>
 </html>

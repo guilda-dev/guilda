@@ -136,7 +136,7 @@ classdef PowerNetwork < PowerSystemModel
         remove_global_controller( obj, str_GconTag)
         
         % initialize
-        [flag,powerflow_bus,powerflow_cub] = initialize(obj,options)
+        [result, flag, output] = initialize(obj, varargin)
         reset_solver(obj);
 
         % OPF(optimal power-flow)

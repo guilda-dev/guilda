@@ -1,9 +1,10 @@
 function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
-% Linearize the local controller.
+% Linearize the local controller alone.
 %
-% Called by Component.get_sys, which connects the controller to the component. The
-% inputs are the voltage of the parent and the controller inputs; the outputs are the
-% controller outputs (with the states first when `full` is true).
+% Linear model of the controller alone: inputs are the bus voltage [Vre; Vim] and the
+% inputs sv_u, states are sv_x and outputs are sv_y (an output with the name of a state
+% is labelled "Y_" + name). The point is x, V, u (default: the equilibrium).
+% Component.get_sys connects it to the component. The model is not changed.
 %
 % Outputs after `sys` (`varargout`): state names, input names and output names as cell
 % arrays of char.
@@ -13,9 +14,9 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         obj
         x        (:,1) double  = obj.rv_Xequilibrium   % States (default: the equilibrium).
         V        (:,1) double  = [real(obj.c_Vequilibrium);imag(obj.c_Vequilibrium)]   % [pu] Voltage [Vre; Vim] of the parent.
-        I        (:,1) double  = [real(obj.c_Iequilibrium);imag(obj.c_Iequilibrium)]   % [pu] Current [Ire; Iim] of the parent (not a port).
+        I        (:,1) double  = [real(obj.c_Iequilibrium);imag(obj.c_Iequilibrium)]   % [pu] Current [Ire; Iim] of the parent (unused; not a port).
         u        (:,1) double  = obj.rv_Uequilibrium   % Inputs (default: the equilibrium).
-        opt.full (1,1) logical = true   % Also output the states.
+        opt.full (1,1) logical = false     % Also output the states.
         opt.tag  (1,1) logical = true   % Name the states, inputs and outputs with the controller tag.
     end
 
@@ -39,7 +40,10 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 
     sv_xNames = {obj.sv_x; obj.attach_tag(obj.sv_x)};
     sv_uNames = {obj.sv_u; obj.attach_tag(obj.sv_u)};
-    sv_yNames = {obj.sv_y; obj.attach_tag(obj.sv_y)};
+    sv_yLabel = obj.sv_y;
+    lv_yx     = ismember(sv_yLabel, obj.sv_x);
+    sv_yLabel(lv_yx) = "Y_" + sv_yLabel(lv_yx);       % unique names (for tagged labels)
+    sv_yNames = {obj.sv_y; obj.attach_tag(sv_yLabel)};
 
     Vport = {["Vre";"Vim"]; obj.attach_tag(["Vre";"Vim"])};
 
