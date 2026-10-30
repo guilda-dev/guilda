@@ -177,7 +177,7 @@ classdef PowerNetwork < PowerSystemModel
 
         % OPF(optimal power-flow)
         varargout = optimize_powerflow(obj, varargin)
-        varargout = build_opf_problem(obj,method)
+        varargout = build_opf_problem(obj, varargin)
 
         % PF(powerflow) calculations
         [result, flag, output] = calculate_powerflow(obj, varargin)

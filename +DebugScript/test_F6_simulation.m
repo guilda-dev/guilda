@@ -241,6 +241,22 @@ assert(all(isfinite(X(r.t > 1.1,:)), "all"))
 assert(all(isfinite(X(r.t < 1,:)), "all"))
 
 
+%% Trip generator in a network with local controllers
+% 局所制御器 (AVR) が付いた系統でも、解列した機器だけの状態が NaN になる
+net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"));
+DebugScript.helper.quiet(@() net.initialize);
+ev  = odeEventSet("trip", net, "TimeSpan", [1,1.05], "TripUnit", "SG1B002");
+sol = net.simulate([0,5], ev);
+r   = sol.odeResults;
+lv  = inwin(r.t, 1, 1.05);
+X2 = r.Bus(2).Component(1).X.Variables;
+assert(all(isnan(X2(lv,:)), "all"))
+for i = [1, 3, 6]
+    Xi = r.Bus(i).Component(1).X.Variables;
+    assert(all(isfinite(Xi), "all"), "解列していない機器 (母線 " + i + ") の状態が NaN")
+end
+
+
 %% Trip load
 % 負荷 LPQ2B003 を 1.00〜1.05 秒に解列 → 母線 B003 の消費電力が減る
 ev  = odeEventSet("trip", net, "TimeSpan", [1,1.05], "TripUnit", "LPQ2B003");

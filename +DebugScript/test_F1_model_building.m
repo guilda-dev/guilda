@@ -430,7 +430,7 @@ catch ME
     assert(ME.identifier == "GUILDA:PowerNetwork:GconTagInUse", ME.message)
     assert(contains(ME.message, "'agc'"), ME.message)
 end
-assert(numel(net.a_GlobalController) == 1 && isempty(agc2.PowerNetwork))
+assert(numel(net.a_GlobalController) == 1 && isempty(agc2.a_PowerNetwork))
 
 
 %% Remove bus

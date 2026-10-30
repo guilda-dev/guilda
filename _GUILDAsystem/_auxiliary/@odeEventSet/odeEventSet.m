@@ -402,10 +402,13 @@ classdef (Sealed = true) odeEventSet < auxiliary
                                 
             CompTrip = cell2mat( cellfun(@(B) B.TripUnit, odeEvents, 'UniformOutput', false) );                                    
             
-            lv_Ctagi = ismember(obj.sv_Ctag, CompTrip);            
+            % Tripped units by tag (sv_Ctag also lists local and global controllers, so its
+            % positions do not match a_cmp); a tripped global controller is marked too
+            a_unit   = [a_cmp; obj.odeNetwork.a_GlobalController];
+            lv_Ctagi = ismember(string(a_unit), CompTrip);
             
             B_sti = cell2mat( cellfun(@(bi) bi.iv_odeX, a_bus, 'UniformOutput', false) );
-            C_sti = cell2mat( cellfun(@(ci) ci.iv_odeX, a_cmp(lv_Ctagi), 'UniformOutput', false) );                        
+            C_sti = cell2mat( cellfun(@(ci) ci.iv_odeX, a_unit(lv_Ctagi), 'UniformOutput', false) );                        
 
             Time = opt.ODEResults.Time;
             xsol = opt.ODEResults.Solution;

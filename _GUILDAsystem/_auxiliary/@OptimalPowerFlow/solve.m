@@ -32,7 +32,7 @@ function [result,flag,output] = solve(obj, net, s_options)
     str_method = s_options.Method;
 
     % get OPF problem
-    [OPFprob,x0] = net.build_opf_problem("methods",str_method);
+    [OPFprob,x0] = net.build_opf_problem("Method",str_method);
 
     % solve OPF problem
     [~, c_nv] = obj.optimoption(OPFprob, s_options);

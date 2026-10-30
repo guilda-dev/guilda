@@ -1,7 +1,17 @@
-function varargout = build_opf_problem(obj,options)
+function varargout = build_opf_problem(obj, varargin)
+% Build the OPF problem of the network (net.optimize_powerflow solves it).
+%   prob = net.build_opf_problem(Method="DC OPF")
+%   [prob, x0] = net.build_opf_problem(Method="AC OPF", validate=true)
+% Method is "ELD", "DC OPF" or "AC OPF" (default); with no output the problem is displayed.
+    varargin = v3_opf_args(varargin, "BuildOpfProblemMethods");    % COMPAT(v3)
+    [varargout{1:nargout}] = build_problem(obj, varargin{:});
+end
+
+
+function varargout = build_problem(obj,options)
 arguments
     obj 
-    options.methods  (1,1) string {mustBeMember(options.methods,["ELD","DC OPF","AC OPF"])} = "AC OPF";
+    options.Method   (1,1) string {mustBeMember(options.Method,["ELD","DC OPF","AC OPF"])} = "AC OPF";
     options.validate (1,1) logical = false;
 end
     
@@ -18,7 +28,7 @@ end
     tab_OPF.Branch    = tab_OPF.Branch(:,"operation");
     tab_OPF.Branch.Properties.RowNames = string(obj.a_Branch);
     
-    str_text = newline+"Optimal Poer Flow ("+options.methods+")"+newline...
+    str_text = newline+"Optimal Poer Flow ("+options.Method+")"+newline...
              + string(repmat('=',1,100))+newline+newline;
     for str_tag = ["Bus","Component","Branch"]
         str_text = str_text...
@@ -37,7 +47,7 @@ end
     prob = optimproblem("ObjectiveSense","minimize",...
                         "Objective"     ,struct("GenCost",0),...
                         "Description"   ,str_text);
-    if options.methods=="ELD"
+    if options.Method=="ELD"
         const.P = 0;
     end
 
@@ -45,11 +55,11 @@ end
     a_Branch = obj.a_Branch;
 
     for i = 1:numel(a_Bus)
-        [prob, x0, const, Vvar] = a_Bus{i}.build_opf_problem(prob,x0,const,Vvar,"methods",options.methods);
+        [prob, x0, const, Vvar] = a_Bus{i}.build_opf_problem(prob,x0,const,Vvar,"methods",options.Method);
     end
 
     % Reference angle: the slack bus (the first bus if none is set) keeps its power-flow Varg.
-    if options.methods ~= "ELD"
+    if options.Method ~= "ELD"
         i_ref = find(cellfun(@(b) b.l_isSlack, a_Bus), 1);
         if isempty(i_ref); i_ref = 1; end
         Varg_ref = a_Bus{i_ref}.para_powerflow.Varg;
@@ -58,7 +68,7 @@ end
         prob.Constraints.VargRef = Vref("Varg") == Varg_ref;
     end
     for i = 1:numel(a_Branch)
-        [prob, x0, const] = a_Branch{i}.build_opf_problem(prob,x0,const,Vvar,"methods",options.methods);
+        [prob, x0, const] = a_Branch{i}.build_opf_problem(prob,x0,const,Vvar,"methods",options.Method);
     end
 
     str_const = fieldnames(const);

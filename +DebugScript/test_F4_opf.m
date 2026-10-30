@@ -586,6 +586,21 @@ assert(isstruct(lambda) && isa(OPFprob, "optim.problemdef.OptimizationProblem"))
 assert(isa(DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD")), "OPFResult"))
 
 
+%% Build OPF problem with Method and deprecated methods option
+% net.build_opf_problem も optimize_powerflow と同じオプション名 Method を使う。v3 の methods は警告付きで同じ
+net = DebugScript.helper.build_9bus();
+[prob, x0] = net.build_opf_problem(Method="DC OPF");
+assert(isa(prob, "optim.problemdef.OptimizationProblem") && isstruct(x0))
+assert(contains(prob.Description, "DC OPF"))
+clear Deprecated
+lastwarn("");
+w = warning("off", "GUILDA:Deprecated:BuildOpfProblemMethods"); c = onCleanup(@() warning(w));
+prob = net.build_opf_problem("methods", "ELD");
+[~, id] = lastwarn();
+assert(string(id) == "GUILDA:Deprecated:BuildOpfProblemMethods")
+assert(contains(prob.Description, "ELD"))
+
+
 %% Deprecated methods option
 % v3 のオプション名 "methods" は Method と同じ (警告付き)
 net = DebugScript.helper.build_9bus();
