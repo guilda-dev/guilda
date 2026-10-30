@@ -1,43 +1,37 @@
 function sys = get_ss(obj, Algorithm, opt)
-% <@Desc>
-% Reduced linear model of the result, as a descriptor state-space model (dss:
+% Get a reduced state-space model (Kron / Feedback / DAE).
+%
+% Returns the reduced linear model of the result, as a descriptor state-space model (dss:
 % E dx/dt = A x + B u, y = C x + D u). The matrices are the same as those of net.get_sys
 % in v3 for each algorithm, including the state order: "Kron" and "DAE" put the states of
 % the global controllers first, then the components; "Feedback" puts the components first,
 % then the global controllers (in the order they were added). Use StateName to find a state.
-%   "Kron"     : the bus voltages are eliminated from the DAE. States: all states.
-%                Inputs: the inputs u. Outputs: the states.
-%   "Feedback" : the bus models in I-to-V form are connected through the admittance
-%                matrix (non-unit buses, options.NonUnit, are eliminated with the network
-%                and their components left out), then the global controllers are closed.
-%                Inputs: the inputs u. Outputs: the states.
-%   "DAE"      : the bus voltages are kept as algebraic states (E is singular), in the
-%                coordinates given by Coordinate. Outputs: the dynamic states.
-% <@Role> Static Analysis
-% <@Summary> Reduced state-space model (Kron / Feedback / DAE).
-% <@Signatures>
-% [
-%   "sys = result.get_ss()",
-%   "sys = result.get_ss(Algorithm)",
-%   "sys = result.get_ss(\"DAE\", Coordinate=\"Vre&Vim\")"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "Algorithm", "Type": "\"Kron\" | \"Feedback\" | \"DAE\"", "Description": "Reduction.", "Required": false, "Default": "result.options.Algorithm"},
-%   {"Name": "Coordinate", "Type": "\"theta&rho\" | \"theta&V\" | \"Vre&Vim\"", "Description": "Bus variables of \"DAE\": angle and log magnitude (rho), angle and magnitude, or real and imaginary parts.", "Required": false, "Default": "\"theta&rho\""}
-% ]
-% <@Returns>
-% [
-%   {"Name": "sys", "Type": "ss", "Description": "Descriptor state-space model with StateName, InputName and OutputName."}
-% ]
+%
+% - "Kron": the bus voltages are eliminated from the DAE. States: all states.
+%   Inputs: the inputs u. Outputs: the states.
+% - "Feedback": the bus models in I-to-V form are connected through the admittance
+%   matrix (non-unit buses, options.NonUnit, are eliminated with the network
+%   and their components left out), then the global controllers are closed.
+%   Inputs: the inputs u. Outputs: the states.
+% - "DAE": the bus voltages are kept as algebraic states (E is singular), in the
+%   coordinates given by Coordinate. Outputs: the dynamic states.
+%
 % <@Examples>
-% [
-%   "```matlab\nres = net.linearize();\nsysK = res.get_ss(\"Kron\");\nsysD = res.get_ss(\"DAE\");\neig(sysK.A, sysK.E)\n```"
-% ]
+% ```matlab
+% res = net.linearize();
+% sysK = res.get_ss("Kron");
+% sysD = res.get_ss("DAE");
+% eig(sysK.A, sysK.E)
+% ```
+%
+% See also PowerNetwork.get_sys, LinearizationResult.Plot
     arguments
         obj
-        Algorithm (1,1) string {mustBeMember(Algorithm, ["Kron","Feedback","DAE"])} = default_algorithm(obj)
-        opt.Coordinate (1,1) string {mustBeMember(opt.Coordinate, ["theta&V","theta&rho","Vre&Vim"])} = "theta&rho"
+        Algorithm (1,1) string {mustBeMember(Algorithm, ["Kron","Feedback","DAE"])} = default_algorithm(obj) % Reduction.
+        opt.Coordinate (1,1) string {mustBeMember(opt.Coordinate, ["theta&V","theta&rho","Vre&Vim"])} = "theta&rho" % Bus variables of "DAE": angle and log magnitude (rho), angle and magnitude, or real and imaginary parts.
+    end
+    arguments (Output)
+        sys % Descriptor state-space model with StateName, InputName and OutputName.
     end
     switch Algorithm
         case "Kron"
