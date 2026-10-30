@@ -78,7 +78,7 @@
   <main>
     <button type="button" class="developer-back-button" onclick="window.history.back()">← Back to For Developer</button>
     <h1>Git Workflow</h1>
-    <p class="page-lead">Three kinds of branches: <code>main</code> for releases, a version branch for integration, and short-lived work branches. Branch names and commit messages share the same change types.</p>
+    <p class="page-lead">Three kinds of branches hold the source: <code>main</code> for releases, a version branch for integration, and short-lived work branches. A separate <code>gh-pages</code> branch holds the published documentation site. Branch names and commit messages share the same change types.</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#branches">Branch model</a>
@@ -86,6 +86,7 @@
       <a href="#commits">Commit messages</a>
       <a href="#pull-requests">Pull requests</a>
       <a href="#release">Release</a>
+      <a href="#publish-docs">Publishing the documentation</a>
       <a href="#dont">Do not</a>
     </nav>
 
@@ -163,6 +164,7 @@
       <div class="dg-row"><span class="gw-branch-name" style="color:var(--brand)">main</span><span>Released, stable code. Every release is tagged. Contains no coding-assistant config.</span><span class="dg-muted">receives only release merges from <code>release.sh</code></span></div>
       <div class="dg-row"><span class="gw-branch-name" style="color:var(--ok)">versionX.Y</span><span>Integration branch for the next release.</span><span class="dg-muted">from <code>main</code>, into <code>main</code> at release</span></div>
       <div class="dg-row"><span class="gw-branch-name" style="color:var(--ink)">&lt;type&gt;/&lt;issue&gt;-&lt;slug&gt;</span><span>One piece of work for one Issue.</span><span class="dg-muted">from <code>versionX.Y</code>, into <code>versionX.Y</code></span></div>
+      <div class="dg-row"><span class="gw-branch-name" style="color:var(--muted)">gh-pages</span><span>Publish-only branch holding the built documentation site, served by GitHub Pages. Shares no history with the other branches and is never edited by hand.</span><span class="dg-muted">written only by <code>GUILDA.publish_doc</code>; never merged into or from other branches (see <a href="#publish-docs">Publishing</a>)</span></div>
     </div>
 
     <!-- ===================== Branch names ===================== -->
@@ -333,6 +335,43 @@ breaks after a bus is removed. Refs #51.</div>
       </div>
     </div>
 
+    <!-- ===================== Publishing the documentation ===================== -->
+    <h2 id="publish-docs">Publishing the documentation</h2>
+    <p>The documentation site is served by GitHub Pages at <a href="https://guilda-dev.github.io/guilda/"><code>https://guilda-dev.github.io/guilda/</code></a> from the <code>gh-pages</code> branch. The generated class reference is never committed to source branches, so the site is published by a MATLAB command that builds it and commits the result to <code>gh-pages</code>. Nothing else updates the site.</p>
+    <ol class="dg-steps" style="--n:4">
+      <li><span class="dg-step-title">Check out</span>Switch to <code>main</code> or <code>versionX.Y</code> with no uncommitted changes to tracked files.</li>
+      <li><span class="dg-step-title">Run</span>In MATLAB, run <code>GUILDA.publish_doc()</code>. It rebuilds the class reference and commits the site to <code>gh-pages</code>.</li>
+      <li><span class="dg-step-title">Confirm</span>Confirm the dialog to push <code>gh-pages</code> to <code>origin</code>.</li>
+      <li><span class="dg-step-title">Check</span>The site updates within a few minutes. Open it and check the changed pages.</li>
+    </ol>
+
+    <h3>What the command does</h3>
+    <ul class="dg-list is-numbered">
+      <li><div><span class="dg-item-title">Checks the checkout</span>Refuses to run on any branch other than <code>main</code> or <code>versionX.Y</code>, or when tracked files have uncommitted changes.</div></li>
+      <li><div><span class="dg-item-title">Rebuilds the class reference</span>Regenerates <code>_GUILDAdoc/database/</code> from scratch and stops if any class export reports errors.</div></li>
+      <li><div><span class="dg-item-title">Writes the site</span>In a temporary Git worktree of <code>gh-pages</code> (created as an orphan branch the first time), writes <code>_GUILDAdoc/</code>, <code>LICENSE</code>, a root <code>index.html</code> that redirects to <code>_GUILDAdoc/index.html</code>, and an empty <code>.nojekyll</code>.</div></li>
+      <li><div><span class="dg-item-title">Commits</span>Commits <code>docs: publish &lt;branch&gt;@&lt;short-sha&gt;</code>, naming the source branch and commit. If nothing changed, it makes no commit.</div></li>
+      <li><div><span class="dg-item-title">Pushes</span>Asks for confirmation, then pushes <code>gh-pages</code> to <code>origin</code>.</div></li>
+    </ul>
+
+    <h3>Options</h3>
+    <table class="dg-table">
+      <thead><tr><th>Call</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><code>GUILDA.publish_doc()</code></td><td data-label="Effect">Build, commit, ask for confirmation, and push.</td></tr>
+        <tr><td><code>GUILDA.publish_doc("confirm", false)</code></td><td data-label="Effect">Push without the confirmation dialog.</td></tr>
+        <tr><td><code>GUILDA.publish_doc("push", false)</code></td><td data-label="Effect">Build and commit to the local <code>gh-pages</code> only. Push it later with <code>git push origin gh-pages</code>.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="dg-callout">
+      <svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
+      <div>
+        <p><strong>One-time setup.</strong> A repository admin sets <em>Settings → Pages → Build and deployment</em> to <em>Deploy from a branch</em>, with branch <code>gh-pages</code> and folder <code>/ (root)</code>.</p>
+        <p>The site shows the branch that was published last; the latest commit message on <code>gh-pages</code> names it.</p>
+      </div>
+    </div>
+
     <!-- ===================== Do not ===================== -->
     <h2 id="dont">Do not</h2>
     <ul class="dg-list">
@@ -340,6 +379,7 @@ breaks after a bus is removed. Refs #51.</div>
       <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title">Manual merges into main</span>Merge or cherry-pick into <code>main</code> by hand or on GitHub; release with <code>release.sh</code>.</div></li>
       <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title">Force-push</span>Force-push to <code>main</code> or the integration branch.</div></li>
       <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title">Generated / personal files</span>Commit generated files or personal settings (see <a href="folder-structure.html#generated">Generated files</a>).</div></li>
+      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title">Hand edits to gh-pages</span>Commit to, merge into, or merge from <code>gh-pages</code> by hand; publish with <code>GUILDA.publish_doc</code>.</div></li>
       <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title">Other prefixes</span>Create work branches with other prefixes such as <code>dev/</code> or <code>develop/</code>.</div></li>
     </ul>
     <div class="dg-callout is-warn">
