@@ -1,4 +1,15 @@
 function DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec) 
+% Add the equations of the component and its local controllers to the DAE residual.
+%
+% Called by odeSimulator at each evaluation of the network DAE: the state derivatives,
+% the input equations and the current injected into the bus are added to the entries
+% of `DAEvec` that belong to the component (iv_odeX, iv_odeU) and its bus.
+%
+% Outputs:
+%
+% - `DAEvec` — Updated DAE residual of the network.
+%
+% See also odeSimulator, Component.fcn_dx, Component.fcn_I
 
     rv_x = obj.iv_odeX;
     rv_u = obj.iv_odeU;

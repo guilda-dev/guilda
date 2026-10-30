@@ -1,37 +1,35 @@
 function [result, flag, output] = calculate_powerflow(obj, varargin)
-% <@Desc>
+% Calculate the power flow of the network and return a PowerFlowResult.
+%
 % Calculates the power flow of the network. The settings are the stored defaults of
 % net.solver_PF; Name-Value options override them for this call only (net.solver_PF is
 % not changed). The network is not changed either, except that the first bus is made the
 % slack bus when none is set (with an INFO message).
 % Accepted options are the names in PowerFlowCalculation.OptionMap plus Plot and Export;
 % any other name stops with GUILDA:resolve_options:UnknownName.
-% <@Role> Analysis
-% <@Summary> Calculate the power flow; returns a PowerFlowResult.
-% <@Signatures>
-% [
-%   "result = net.calculate_powerflow()",
-%   "[result, flag, output] = net.calculate_powerflow(Name, Value)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "Method", "Type": "\"algebraic\" | \"dynamic\"", "Description": "Calculation method (net.solver_PF.Method).", "Required": false, "Default": "net.solver_PF.Method"},
-%   {"Name": "Tolerance", "Type": "double scalar", "Description": "Convergence tolerance; 0 for the solver default (net.solver_PF.Tolerance).", "Required": false, "Default": "net.solver_PF.Tolerance"},
-%   {"Name": "MaxIteration", "Type": "integer scalar", "Description": "Maximum number of fsolve iterations; 0 for the fsolve default (net.solver_PF.MaxIterations).", "Required": false, "Default": "net.solver_PF.MaxIterations"},
-%   {"Name": "Verbose", "Type": "logical scalar", "Description": "Print fsolve progress (sets Display to \"iter\" or \"none\").", "Required": false, "Default": "net.solver_PF.Display ~= \"none\""},
-%   {"Name": "Plot", "Type": "logical scalar", "Description": "Call result.Plot after the calculation.", "Required": false, "Default": "false"},
-%   {"Name": "Export", "Type": "logical scalar or string scalar", "Description": "Call result.Export after the calculation: true for the default file name, or the file name.", "Required": false, "Default": "false"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "result", "Type": "PowerFlowResult", "Description": "Bus voltages, injections and branch flows of the solution."},
-%   {"Name": "flag", "Type": "double or logical", "Description": "exitflag of fsolve (\"algebraic\", positive = converged) or convergence (\"dynamic\")."},
-%   {"Name": "output", "Type": "struct", "Description": "Solver details; output.message describes the outcome."}
-% ]
+%
+% Name-Value options:
+%
+% - `Method` — Calculation method (net.solver_PF.Method).
+% - `Tolerance` — Convergence tolerance; 0 for the solver default (net.solver_PF.Tolerance).
+% - `MaxIteration` — Maximum number of fsolve iterations; 0 for the fsolve default (net.solver_PF.MaxIterations).
+% - `Verbose` — Print fsolve progress (sets Display to "iter" or "none"). Default: net.solver_PF.Display ~= "none".
+% - `Plot` — Call result.Plot after the calculation. Default: false.
+% - `Export` — Call result.Export after the calculation: true for the default file name, or the file name. Default: false.
+%
 % <@Examples>
-% [
-%   "```matlab\n[res, flag] = net.calculate_powerflow();\nres.tab_bus            % Varg, V, P, Q, Vphasor, Iphasor of each bus\nres = net.calculate_powerflow(Method=\"dynamic\", Tolerance=1e-8, Plot=true);\n```"
-% ]
+% ```matlab
+% [res, flag] = net.calculate_powerflow();
+% res.tab_bus            % Varg, V, P, Q, Vphasor, Iphasor of each bus
+% res = net.calculate_powerflow(Method="dynamic", Tolerance=1e-8, Plot=true);
+% ```
+%
+% See also PowerFlowResult, PowerFlowCalculation, PowerNetwork.initialize
+    arguments (Output)
+        result   % Bus voltages, injections and branch flows of the solution.
+        flag     % exitflag of fsolve ("algebraic", positive = converged) or convergence ("dynamic").
+        output   % Solver details; output.message describes the outcome.
+    end
 
     varargin = v3_powerflow_args(varargin);                   % COMPAT(v3)
     [c_nv, opt] = take_call_options(varargin);

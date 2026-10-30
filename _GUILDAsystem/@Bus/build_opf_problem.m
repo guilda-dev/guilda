@@ -1,12 +1,24 @@
 function [prob, x0, const, Vvar] = build_opf_problem(obj, prob, x0, const, Vvar, option)
+% Add the variables and constraints of the bus to an OPF problem.
+%
+% Called by PowerNetwork.build_opf_problem for each bus; the bus also adds its
+% components unless `l_includeComponent` is false.
+%
+% See also PowerNetwork.build_opf_problem, Component.build_opf_problem
     arguments
         obj 
-        prob  = optimproblem("Objective",struct("GenCost",0));
-        x0    = struct();
-        const = struct();
-        Vvar  = struct(); 
-        option.methods            (1,1) string {mustBeMember(option.methods,["ELD","DC OPF","AC OPF"])} = "AC OPF";
-        option.l_includeComponent (1,1) logical = true;
+        prob  = optimproblem("Objective",struct("GenCost",0));   % optimproblem to extend.
+        x0    = struct();   % Struct of initial values, extended.
+        const = struct();   % Struct of power-balance expressions, extended.
+        Vvar  = struct();   % Struct of bus variables, extended.
+        option.methods            (1,1) string {mustBeMember(option.methods,["ELD","DC OPF","AC OPF"])} = "AC OPF";   % OPF formulation: "ELD", "DC OPF" or "AC OPF".
+        option.l_includeComponent (1,1) logical = true;   % Also add the components of the bus.
+    end
+    arguments (Output)
+        prob    % Extended optimproblem.
+        x0      % Extended initial values.
+        const   % Extended power-balance expressions.
+        Vvar    % Extended bus variables.
     end
 
     Convar = [   "P","Q"] + "_" + string(obj);

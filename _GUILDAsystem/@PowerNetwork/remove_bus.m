@@ -1,16 +1,23 @@
 function remove_bus(obj, str_BusTag, opt)
-% Remove buses by tag. The components on a removed bus go with it.
-%   net.remove_bus("B010")
-%   net.remove_bus("B003", "RemoveBranches", true)
-% A branch connected to a removed bus would be left with a dangling end, so
-% removing such a bus is an error unless RemoveBranches is true, which removes
-% those branches too. A bus whose components are controlled by a global
-% controller cannot be removed until that controller is removed.
-% The removed buses (and branches) no longer refer to this network.
+% Remove buses by tag, together with their components.
+%
+% A branch connected to a removed bus would be left with a dangling end, so removing
+% such a bus is an error unless `RemoveBranches` is true, which removes those branches
+% too. A bus whose components are controlled by a global controller cannot be removed
+% until that controller is removed. The removed buses (and branches) no longer refer to
+% this network.
+%
+% <@Examples>
+% ```matlab
+% net.remove_bus("B010")
+% net.remove_bus("B003", RemoveBranches=true)
+% ```
+%
+% See also PowerNetwork.add_bus, PowerNetwork.remove_branch
     arguments
         obj
-        str_BusTag (1,:) string
-        opt.RemoveBranches (1,1) logical = false
+        str_BusTag (1,:) string   % Tags of the buses to remove.
+        opt.RemoveBranches (1,1) logical = false   % Also remove the branches connected to the removed buses.
     end
     str_tagBus  = string(obj.a_Bus);
     str_missing = str_BusTag(~ismember(str_BusTag, str_tagBus));

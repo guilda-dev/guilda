@@ -1,28 +1,44 @@
 function comp = add_component(obj,Type,opt)
+% Add a component to the bus and return it.
+%
+% `Type` is the key of a component class (the list is generated from the classes on
+% the path). The component tag is the class header, a number and the bus tag, e.g.
+% "SG1B001". The addition is logged as a "Topology" edit.
+%
+% <@Examples>
+% ```matlab
+% gen  = net.a_Bus{1}.add_component("gen-park", P=0.5);
+% ld   = net.a_Bus{3}.add_component("load-power", P=-0.8, Q=-0.2);
+% ```
+%
+% See also Bus.remove_component, Bus.replace_component, Component
     arguments
         obj
-        Type                 (1,:) char {mustBeMember(Type,{___KEY_LIST___})} % Component type
-        opt.parameter                     = nan;
-        opt.P                (1,1) double = 0;
-        opt.Q                (1,1) double = 0;
-        opt.baseMVA          (1,1) double = 100;
-        opt.Pmin             (1,1) double = -inf;
-        opt.Pmax             (1,1) double =  inf;
-        opt.Qmin             (1,1) double = -inf;
-        opt.Qmax             (1,1) double =  inf;
-        opt.OPFinit_P0       (1,1) double = 0;
-        opt.OPFinit_Q0       (1,1) double = 0;
-        opt.OPFcost_HP       (1,1) double = nan;  % NaN: class default (0 for loads, 1 otherwise)
-        opt.OPFcost_HQ       (1,1) double = 0;
-        opt.OPFcost_fP       (1,1) double = nan;  % NaN: class default (0 for loads, 1 otherwise)
-        opt.OPFcost_fQ       (1,1) double = 0;
-        opt.OPFcost_startup  (1,1) double = 0;
-        opt.OPFcost_shutdown (1,1) double = 0;
-        opt.Xaxis            (1,1) double = nan;
-        opt.Yaxis            (1,1) double = nan;
-        opt.Marker           (1,1) string = "o";
-        opt.MidXaxis         (1,1) string = "";
-        opt.MidYaxis         (1,1) string = "";
+        Type                 (1,:) char {mustBeMember(Type,{___KEY_LIST___})}   % Component type key, e.g. "gen-park" or "load-power".
+        opt.parameter                     = nan;   % Dynamic parameters (table or string); NaN uses the class defaults.
+        opt.P                (1,1) double = 0;   % [pu] Active power injection setting for the power flow (negative for a load).
+        opt.Q                (1,1) double = 0;   % [pu] Reactive power injection setting; NaN makes the bus a PV bus.
+        opt.baseMVA          (1,1) double = 100;   % [MVA] Rating of the component; distributes Q among the components of a bus.
+        opt.Pmin             (1,1) double = -inf;   % [pu] Lower active power limit for the OPF.
+        opt.Pmax             (1,1) double =  inf;   % [pu] Upper active power limit for the OPF.
+        opt.Qmin             (1,1) double = -inf;   % [pu] Lower reactive power limit for the OPF.
+        opt.Qmax             (1,1) double =  inf;   % [pu] Upper reactive power limit for the OPF.
+        opt.OPFinit_P0       (1,1) double = 0;   % [pu] Initial active power of the OPF solver.
+        opt.OPFinit_Q0       (1,1) double = 0;   % [pu] Initial reactive power of the OPF solver.
+        opt.OPFcost_HP       (1,1) double = nan;   % Quadratic cost coefficient of P; NaN: class default (0 for loads, 1 otherwise).
+        opt.OPFcost_HQ       (1,1) double = 0;   % Quadratic cost coefficient of Q (AC OPF).
+        opt.OPFcost_fP       (1,1) double = nan;   % Linear cost coefficient of P; NaN: class default (0 for loads, 1 otherwise).
+        opt.OPFcost_fQ       (1,1) double = 0;   % Linear cost coefficient of Q (AC OPF).
+        opt.OPFcost_startup  (1,1) double = 0;   % Startup cost (reserved; unit commitment is not part of the OPF).
+        opt.OPFcost_shutdown (1,1) double = 0;   % Shutdown cost (reserved; unit commitment is not part of the OPF).
+        opt.Xaxis            (1,1) double = nan;   % x coordinate in network diagrams (NaN = automatic layout).
+        opt.Yaxis            (1,1) double = nan;   % y coordinate in network diagrams (NaN = automatic layout).
+        opt.Marker           (1,1) string = "o";   % Marker of the component in network diagrams.
+        opt.MidXaxis         (1,1) string = "";   % x coordinates of intermediate points of the connection line in network diagrams.
+        opt.MidYaxis         (1,1) string = "";   % y coordinates of intermediate points of the connection line in network diagrams.
+    end
+    arguments (Output)
+        comp   % Added Component object.
     end
     % Build Instance
     % largest number on this bus + 1 (after remove_component, numel+1 may already be taken)

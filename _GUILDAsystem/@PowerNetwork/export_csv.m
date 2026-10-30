@@ -1,5 +1,6 @@
 function path = export_csv(obj, path, opt)
-% <@Desc>
+% Write the network to a CSV model folder.
+%
 % Writes the network to a CSV model folder that PowerNetwork.import_csv reads back:
 %   <path>/network/parameter.csv        Hz, baseMVA (net.tab_parameter.base)
 %   <path>/bus/parameter.csv            one row per bus, in the order of net.a_Bus
@@ -13,34 +14,24 @@ function path = export_csv(obj, path, opt)
 % is on the MATLAB path.
 % An existing folder is an error unless Overwrite=true, which first deletes the network,
 % bus, branch and component subfolders and the class file written by an earlier export.
-% <@Role> Export
-% <@Summary> Write the network to a CSV model folder.
-% <@Signatures>
-% [
-%   "path = net.export_csv(path)",
-%   "path = net.export_csv(path, Name, Value)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "path", "Type": "string scalar", "Description": "Model folder to write (created; its parent must exist).", "Required": true, "Default": "-"},
-%   {"Name": "Overwrite", "Type": "logical scalar", "Description": "Replace an existing folder.", "Required": false, "Default": "false"},
-%   {"Name": "ClassFile", "Type": "logical scalar", "Description": "Write the class file <name>.m (name = folder name without the leading @).", "Required": false, "Default": "true when the folder name starts with @"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "path", "Type": "string scalar", "Description": "The written model folder."}
-% ]
+%
 % <@Examples>
-% [
-%   "```matlab\nnet  = network.IEEE14bus;\npath = net.export_csv(fullfile(tempdir, \"@MyIEEE14\"), Overwrite=true);\nnet2 = PowerNetwork.import_csv(path);\n```"
-% ]
-% <@Since> 4.0
+% ```matlab
+% net  = network.IEEE14bus;
+% path = net.export_csv(fullfile(tempdir, "@MyIEEE14"), Overwrite=true);
+% net2 = PowerNetwork.import_csv(path);
+% ```
+%
+% See also PowerNetwork.import_csv
 
     arguments
         obj
-        path            (1,1) string
-        opt.Overwrite   (1,1) logical = false
-        opt.ClassFile   (1,1) logical
+        path            (1,1) string   % Model folder to write (created; its parent must exist).
+        opt.Overwrite   (1,1) logical = false   % Replace an existing folder.
+        opt.ClassFile   (1,1) logical   % Write the class file <name>.m (name = folder name without the leading @). Default: true when the folder name starts with @.
+    end
+    arguments (Output)
+        path   % The written model folder.
     end
     path = strip(path, "right", filesep);
     [str_parent, str_folder] = fileparts(path);

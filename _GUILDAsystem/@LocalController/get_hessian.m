@@ -1,5 +1,6 @@
 function varargout = get_hessian(obj, x, V, I, u)
-% <@Desc>
+% Return the second derivatives of fcn_dx and fcn_y at a point.
+%
 % Second derivatives of the model equations at a point: the optional Hessian analysis
 % of a local controller. It is available only for classes that define the static methods
 % below (the same pattern as Jacobi_dx / Jacobi_Y); for any other class it stops with
@@ -13,31 +14,19 @@ function varargout = get_hessian(obj, x, V, I, u)
 % H(k,:,:) is the Hessian of the k-th equation with respect to z (symmetric in its last
 % two dimensions). A method may return [] for an all-zero Hessian. Hessian_dx is
 % required; Hessian_Y is needed only when its output is requested.
-% <@Role> Static Analysis
-% <@Summary> Second derivatives of fcn_dx, fcn_y (optional; per class).
-% <@Signatures>
-% [
-%   "H_dx = con.get_hessian()",
-%   "[H_dx, H_Y] = con.get_hessian(x, V, I, u)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "x", "Type": "double column", "Description": "States.", "Required": false, "Default": "con.rv_Xequilibrium"},
-%   {"Name": "V", "Type": "double column", "Description": "Voltage [Vre; Vim] of the parent.", "Required": false, "Default": "the equilibrium"},
-%   {"Name": "I", "Type": "double column", "Description": "Current [Ire; Iim] of the parent.", "Required": false, "Default": "the equilibrium"},
-%   {"Name": "u", "Type": "double column", "Description": "Inputs.", "Required": false, "Default": "con.rv_Uequilibrium"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "H_dx", "Type": "double", "Description": "Hessians of fcn_dx: n_x x n_z x n_z."},
-%   {"Name": "H_Y", "Type": "double", "Description": "Hessians of fcn_y: n_y x n_z x n_z."}
-% ]
+%
+% Outputs (`varargout`, in this order):
+%
+% - `H_dx` — Hessians of fcn_dx: n_x x n_z x n_z.
+% - `H_Y` — Hessians of fcn_y: n_y x n_z x n_z.
+%
+% See also LocalController.get_sys
     arguments
         obj
-        x (:,1) double = obj.rv_Xequilibrium
-        V (:,1) double = [real(obj.c_Vequilibrium); imag(obj.c_Vequilibrium)]
-        I (:,1) double = [real(obj.c_Iequilibrium); imag(obj.c_Iequilibrium)]
-        u (:,1) double = obj.rv_Uequilibrium
+        x (:,1) double = obj.rv_Xequilibrium   % States (default: the equilibrium).
+        V (:,1) double = [real(obj.c_Vequilibrium); imag(obj.c_Vequilibrium)]   % [pu] Voltage [Vre; Vim] of the parent.
+        I (:,1) double = [real(obj.c_Iequilibrium); imag(obj.c_Iequilibrium)]   % [pu] Current [Ire; Iim] of the parent.
+        u (:,1) double = obj.rv_Uequilibrium   % Inputs (default: the equilibrium).
     end
     if isempty(V)
         V = zeros(2,1);

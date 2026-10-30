@@ -1,5 +1,6 @@
 function net = import_csv(path, opt)
-% <@Desc>
+% Build a network from a CSV model folder.
+%
 % Builds a PowerNetwork from a CSV model folder (the layout written by net.export_csv):
 %   <path>/network/parameter.csv        Hz, baseMVA of the network (optional)
 %   <path>/bus/parameter.csv            one row per bus (V, Varg required)
@@ -15,34 +16,28 @@ function net = import_csv(path, opt)
 % With Network=obj the buses are added to the existing network obj instead of a new
 % one; this is how the network classes such as network.IEEE14bus load their folder in
 % their constructor.
-% <@Role> Constructor
-% <@Summary> Build a network from a CSV model folder.
-% <@Signatures>
-% [
-%   "net = PowerNetwork.import_csv(path)",
-%   "net = PowerNetwork.import_csv(path, Name, Value)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "path", "Type": "string scalar", "Description": "Model folder (e.g. the folder written by net.export_csv).", "Required": true, "Default": "-"},
-%   {"Name": "Initialize", "Type": "logical scalar", "Description": "Run net.initialize() after building the network.", "Required": false, "Default": "true"},
-%   {"Name": "Network", "Type": "PowerNetwork", "Description": "Existing network to add the buses, branches and components to (it is returned). Its Hz and baseMVA are overwritten by network/parameter.csv when the file gives them.", "Required": false, "Default": "a new PowerNetwork tagged with the folder name (without a leading @)"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "net", "Type": "PowerNetwork", "Description": "The built network."}
-% ]
+%
 % <@Examples>
-% [
-%   "```matlab\npath = net.export_csv(fullfile(tempdir, \"MyNet\"));\nnet2 = PowerNetwork.import_csv(path);\nnet2.tab_parameter.base      % Hz and baseMVA of net\n```",
-%   "```matlab\n% in the constructor of a network class next to its CSV folders\nPowerNetwork.import_csv(fileparts(mfilename(\"fullpath\")), Network=obj);\n```"
-% ]
-% <@Since> 4.0
+% ```matlab
+% path = net.export_csv(fullfile(tempdir, "MyNet"));
+% net2 = PowerNetwork.import_csv(path);
+% net2.tab_parameter.base      % Hz and baseMVA of net
+% ```
+%
+% ```matlab
+% % in the constructor of a network class next to its CSV folders
+% PowerNetwork.import_csv(fileparts(mfilename("fullpath")), Network=obj);
+% ```
+%
+% See also PowerNetwork.export_csv, PowerNetwork.import_matpower
 
     arguments
-        path               (1,1) string
-        opt.Initialize     (1,1) logical = true
-        opt.Network                      = []
+        path               (1,1) string   % Model folder (e.g. the folder written by net.export_csv).
+        opt.Initialize     (1,1) logical = true   % Run net.initialize() after building the network.
+        opt.Network                      = []   % Existing network to add the buses, branches and components to (it is returned). Its Hz and baseMVA are overwritten by network/parameter.csv when the file gives them. Default: a new PowerNetwork tagged with the folder name (without a leading @).
+    end
+    arguments (Output)
+        net   % The built network.
     end
     if ~isfolder(path)
         error("GUILDA:import_csv:NotFound", ...

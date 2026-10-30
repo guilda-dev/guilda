@@ -1,8 +1,22 @@
 function varargout = build_opf_problem(obj, varargin)
-% Build the OPF problem of the network (net.optimize_powerflow solves it).
-%   prob = net.build_opf_problem(Method="DC OPF")
-%   [prob, x0] = net.build_opf_problem(Method="AC OPF", validate=true)
-% Method is "ELD", "DC OPF" or "AC OPF" (default); with no output the problem is displayed.
+% Build the optimization problem of the optimal power flow without solving it.
+%
+% `net.optimize_powerflow` solves the same problem. The options are passed as
+% Name-Value arguments (the input is `varargin`):
+%
+% - `Method` — "ELD", "DC OPF" or "AC OPF". Default: "AC OPF".
+% - `validate` — Check that the initial point x0 fits the problem. Default: false.
+%
+% Outputs (`varargout`): `prob`, the optimproblem, and `x0`, the initial point as a
+% struct of the variables. With no output the problem is displayed.
+%
+% <@Examples>
+% ```matlab
+% prob = net.build_opf_problem(Method="DC OPF");
+% [prob, x0] = net.build_opf_problem(Method="AC OPF", validate=true);
+% ```
+%
+% See also PowerNetwork.optimize_powerflow, Bus.build_opf_problem, Branch.build_opf_problem
     varargin = v3_opf_args(varargin, "BuildOpfProblemMethods");    % COMPAT(v3)
     [varargout{1:nargout}] = build_problem(obj, varargin{:});
 end

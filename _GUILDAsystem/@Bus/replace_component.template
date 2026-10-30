@@ -1,10 +1,25 @@
 function comp = replace_component(obj, str_tag, Type, parameter)
+% Replace a component of the bus by a component of another type.
+%
+% The new component keeps the power-flow, operation, OPF and graph settings and the
+% number of the replaced one. The replacement is logged as a "Topology" edit, so
+% `net.initialize()` is needed before the dynamic analyses.
+%
+% <@Examples>
+% ```matlab
+% net.a_Bus{1}.replace_component("SG1B001", "gen-classical");
+% ```
+%
+% See also Bus.add_component, Bus.remove_component
 
     arguments
         obj
-        str_tag              (1,1) string
-        Type                 (1,:) char {mustBeMember(Type,{___KEY_LIST___})} % Component type
-        parameter             = nan;
+        str_tag              (1,1) string   % Tag of the component to replace.
+        Type                 (1,:) char {mustBeMember(Type,{___KEY_LIST___})}   % Component type key, e.g. "gen-park" or "load-power".
+        parameter             = nan;   % Dynamic parameters (table or string); NaN uses the class defaults.
+    end
+    arguments (Output)
+        comp   % New Component object.
     end
 
     str_tagComp = string(obj.a_Component);

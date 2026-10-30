@@ -1,4 +1,20 @@
 function tab_Ybus2bus = get_admittance_matrix(obj)
+% Return the bus admittance matrix of the network as a table.
+%
+% Rows and columns are the bus tags in the order of `a_Bus`. The matrix sums the
+% admittance matrices of the branches and the shunt admittances Gshunt + j*Bshunt of
+% the buses, in per unit.
+%
+% <@Examples>
+% ```matlab
+% tab_Y = net.get_admittance_matrix();
+% Y = tab_Y.Variables;
+% ```
+%
+% See also Branch.get_admittance_matrix
+    arguments (Output)
+        tab_Ybus2bus   % [pu] Admittance matrix (complex) with bus tags as row and variable names.
+    end
 
     str_Bus = string(obj.a_Bus);
      

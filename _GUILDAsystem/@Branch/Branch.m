@@ -1,112 +1,84 @@
 classdef Branch < PowerSystemModel
-% <@Desc> 
-% Abstract class representing a branch in the power system, such as a transmission line or transformer.
-% It defines the structure and parameters of a branch, including its connection to buses and cubicles.
-% Main function
-% - build admittance matrix
-% - build OPF problem
-% - build ode function
-% <@Role> 
-% Power System Model
-% <@Constructor> 
-% Branch(tag, struct_default, opt)
+% Abstract class of a branch of a power network, such as a transmission line or transformer.
+%
+% A branch connects two buses (`a_Bus`, from and to). Its series and shunt parameters
+% (`tab_parameter.dynamics`: R, X, C, tap, phase) give the admittance matrix used by the
+% power flow, the OPF and the simulation; `tab_parameter.operation` holds the OPF limits
+% (Smax, Imax, Pmax, Qmax, Vargmax). Branches are created by `PowerNetwork.add_branch`;
+% subclasses in the `branch` package define the model (`get_admittance_matrix`).
+%
+% <@Examples>
+% ```matlab
+% net = network.IEEE9bus();
+% br  = net.a_Branch{1};               % or net.add_branch("pi", [1,2], R=0.01, X=0.085)
+% br.tab_parameter.dynamics            % R, X, C, tap, phase
+% Y   = br.get_admittance_matrix();    % 2x2 admittance matrix
+% br.set_opffcn("DefaultConstraint", false);
+% ```
+%
+% See also PowerNetwork.add_branch, branch.pi, Bus
 
 %% Abstract Methods/Properties
     properties(Abstract, Constant)
-        % <@Desc> Key Value to identify the type of branch (e.g., "pi", "pi_transformer").
-        % <@Role> Signature
-        % <@Type> string
-        % <@Size> 1x1
+        % Key that identifies the branch type, e.g. "pi" or "pi_transformer".
         key
 
+        % Prefix of the tags of branches of this type.
         header
     end
     methods(Abstract)
-        % Dynamics
+        % Return the 2x2 admittance matrix of the branch.
+        %
+        % The matrix maps the voltages of the end buses [V_from; V_to] to the currents
+        % injected into the branch at those ends, in per unit.
         Ymat = get_admittance_matrix(obj)
     end
 
 %% Properties
-   properties(SetAccess=protected)
+   properties(SetAccess=protected) % Layer Structure
 
-        % <@Desc> PoweNetwork object to which the branch belongs
-        % <@Role> Layer Structure
+        % PowerNetwork the branch belongs to ([] when removed).
         % <@Type> PowerNetwork
-        % <@Size> 1×1
         a_PowerNetwork 
 
-        % <@Desc> Bus objects connected by the branch
-        % <@Role> LayerStructure
-        % <@Type> Bus objects cell array
-        % <@Size> 2×1
+        % End buses of the branch {from; to}.
+        % <@Type> cell
         a_Bus
 
-        % <@Desc> OPF terms set by set_opffcn (Cost, Constraint, DefaultConstraint); reset_opffcn restores the defaults.
-        % <@Role> Parameter
+        % OPF terms (Cost, Constraint, DefaultConstraint) set by set_opffcn.
+        % reset_opffcn restores the defaults.
         % <@Type> struct
-        % <@Size> 1×1
         s_opffcn = opffcn.default()
    end
-    properties(Dependent)
+    properties(Dependent) % Parameter
 
-        % <@Desc> Parameter table of the branch
-        % <@Role> Parameter
+        % Parameter table of the branch: dynamics, operation and graph.
         % <@Type> table
-        % <@Size> 1xn
         tab_parameter
 
-        % <@Desc> Operating point of the Voltage at the branch terminals
-        % <@Role> Equilibrium
-        % <@Type> complex
-        % <@Size> 2×1
+        % [pu] Voltage phasors of the end buses at the equilibrium.
+        % <@Type> double
         cv_Vequilibrium
 
-        % <@Desc> Operating point of the Voltage at the branch terminals
-        % <@Role> Equilibrium
-        % <@Type> complex
-        % <@Size> 2×1
+        % [pu] Currents injected into the branch at its ends at the equilibrium.
+        % <@Type> double
         cv_Iequilibrium
     end
     
-    properties(Hidden,SetAccess=protected)
-
-        % <@Desc> Parameters related to the branch dynamics
-        % <@Role> Parameter
-        % <@Type> Parameter
-        % <@Size> 1×1
-        para_dynamics
-
-        % <@Desc> Parameters related to the branch operation
-        % <@Role> Parameter
-        % <@Type> Parameter
-        % <@Size> 1×1
-        para_operation    
-        
-        % <@Desc> Parameters related to the branch graph plot.
-        % <@Role> Parameter
-        % <@Type> Parameter
-        % <@Size> 1×1
-        para_graph
-
+    properties(Hidden,SetAccess=protected) % Parameter
+        para_dynamics       % Parameter: R, X, C, tap, phase
+        para_operation      % Parameter: Smax, Imax, Pmax, Qmax, Vargmax
+        para_graph          % Parameter: MidXaxis, MidYaxis, Marker
     end
-    properties(Dependent, Access=protected)
-
-        % <@Desc> manage hierarchical structure of layers.
-        % <@Role> Layer Structure
-        % <@Type> PowerNetwork(LayerPackage)
-        % <@Size> 1x1
-        parent
-
-        % <@Desc> manage hierarchical structure of layers.
-        % <@Role> Layer Structure
-        % <@Type> Cubicle(LayerPackage) cell array
-        % <@Size> Nx1
-        children
+    properties(Dependent, Access=protected) % Layer Structure
+        parent              % Layer Structure
+        children            % Layer Structure
     end
 
 %% Constructor
     methods(Access={?Branch, ?PowerNetwork})
         function obj = Branch(index, opt)
+            % Create a branch (called by PowerNetwork.add_branch through a subclass).
             obj.str_tag = obj.header+index;
             
             a_Pm = Parameter(obj,"dynamics");

@@ -1,7 +1,11 @@
 function flag = validate(obj, l_message)
+% Check the analytic Jacobians of the controller against numerical differentiation.
     arguments
         obj 
-        l_message (1,1) logical = true
+        l_message (1,1) logical = true   % Print the comparison.
+    end
+    arguments (Output)
+        flag   % Struct of tables with the absolute differences of each Jacobian block.
     end
 
 

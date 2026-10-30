@@ -1,5 +1,13 @@
 function tab_PFset = get_pf_set(obj)
-% get the settings for power-flow calculations
+% Return the power-flow settings of the bus.
+%
+% The bus type is "slack" for the slack bus, "PV" when the summed Q of its components
+% is NaN and "PQ" otherwise. P and Q are the sums over the components.
+%
+% See also Bus.str_bustype, PowerNetwork.calculate_powerflow
+    arguments (Output)
+        tab_PFset   % One-row table: Type, Varg, V, P, Q, Varg0, V0 (NaN where the type does not set the value).
+    end
 
     tab_V = obj.para_powerflow;
     a_com = obj.a_Component;

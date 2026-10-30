@@ -1,5 +1,6 @@
 function [tab, c_idxBus, c_idxGC] = get_variable_map(obj)
-% <@Desc>
+% Return the variable map: the order of the state, voltage and input variables.
+%
 % Variable map of the network: the single definition of the order of the variables of
 % the network model, used by net.linearize (LinearizationResult blocks and Point) and
 % shared by other analyses. The order is
@@ -18,23 +19,20 @@ function [tab, c_idxBus, c_idxGC] = get_variable_map(obj)
 % A table is used so that the map prints as is and can be filtered with the usual
 % table operations (tab(tab.Kind == "x", :)); the Label column is the key that links it
 % to state-space models and results.
-% <@Role> Static Analysis
-% <@Summary> Variable map: the order of the state, voltage and input variables.
-% <@Signatures>
-% [
-%   "tab = net.get_variable_map()",
-%   "[tab, c_idxBus, c_idxGC] = net.get_variable_map()"
-% ]
-% <@Returns>
-% [
-%   {"Name": "tab", "Type": "table", "Description": "One row per variable: Index, Kind, Owner, Name, Label, Bus."},
-%   {"Name": "c_idxBus", "Type": "cell column", "Description": "c_idxBus{i}: rows of tab that form a_Bus{i}.get_variable_map(), in its order."},
-%   {"Name": "c_idxGC", "Type": "cell column", "Description": "c_idxGC{k}: rows of tab with the states of a_GlobalController{k}."}
-% ]
+%
 % <@Examples>
-% [
-%   "```matlab\ntab = net.get_variable_map();\ntab(tab.Kind == \"x\", [\"Owner\",\"Name\"])\nx0 = net.linearize().rv_point;   % values in this order\n```"
-% ]
+% ```matlab
+% tab = net.get_variable_map();
+% tab(tab.Kind == "x", ["Owner","Name"])
+% x0 = net.linearize().rv_point;   % values in this order
+% ```
+%
+% See also PowerNetwork.linearize, Bus.get_variable_map, Component.get_variable_map
+    arguments (Output)
+        tab        % One row per variable: Index, Kind, Owner, Name, Label, Bus.
+        c_idxBus   % c_idxBus{i}: rows of tab that form a_Bus{i}.get_variable_map(), in its order.
+        c_idxGC    % c_idxGC{k}: rows of tab with the states of a_GlobalController{k}.
+    end
     a_bus = obj.a_Bus;
     a_gc  = obj.a_GlobalController;
     n_bus = numel(a_bus);

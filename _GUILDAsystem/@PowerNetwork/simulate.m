@@ -1,5 +1,6 @@
 function [result, flag, output] = simulate(obj, time, varargin)
-% <@Desc>
+% Simulate the network over time and return an odeSimulationResult.
+%
 % Time simulation of the network from its equilibrium: the DAE of the buses, components
 % and controllers is integrated over time, with the disturbances given as events
 % (odeEventSet: bus faults, unit trips, state offsets, input changes). The settings are
@@ -11,45 +12,42 @@ function [result, flag, output] = simulate(obj, time, varargin)
 % edited after net.initialize. flag is 1 when the simulation reached the end time, 0 when
 % it stopped by TimeLimit and -1 when the solver stopped early; then result holds the
 % trajectories up to output.tEnd.
-% <@Role> Analysis
-% <@Summary> Time simulation; returns an odeSimulationResult.
-% <@Signatures>
-% [
-%   "result = net.simulate(time)",
-%   "result = net.simulate(time, ev1, ev2, ...)",
-%   "[result, flag, output] = net.simulate(time, ev1, ..., Name, Value)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "time", "Type": "double vector", "Description": "Simulation time [t0, tend] [s].", "Required": true, "Default": "-"},
-%   {"Name": "ev1, ev2, ...", "Type": "odeEventSet", "Description": "Events of the simulation. None for the response without disturbance.", "Required": false, "Default": "-"},
-%   {"Name": "Solver", "Type": "string scalar", "Description": "Solver of the MATLAB ode object, e.g. \"ode15s\", \"ode23t\" (net.solver_ODE.Solver).", "Required": false, "Default": "net.solver_ODE.Solver"},
-%   {"Name": "SolverOptions", "Type": "matlab.ode.Options", "Description": "Options of the solver, matching Solver (net.solver_ODE.SolverOptions).", "Required": false, "Default": "net.solver_ODE.SolverOptions"},
-%   {"Name": "Tolerance", "Type": "double scalar", "Description": "Relative error tolerance (net.solver_ODE.RelativeTolerance).", "Required": false, "Default": "net.solver_ODE.RelativeTolerance"},
-%   {"Name": "AbsoluteTolerance", "Type": "double scalar", "Description": "Absolute error tolerance (net.solver_ODE.AbsoluteTolerance).", "Required": false, "Default": "net.solver_ODE.AbsoluteTolerance"},
-%   {"Name": "SeparateComplexParts", "Type": "on/off", "Description": "SeparateComplexParts of the ode object (net.solver_ODE.SeparateComplexParts).", "Required": false, "Default": "net.solver_ODE.SeparateComplexParts"},
-%   {"Name": "TimeLimit", "Type": "double scalar", "Description": "Limit of the computation time [s] of each phase; Inf for no limit (net.solver_ODE.TimeLimit).", "Required": false, "Default": "net.solver_ODE.TimeLimit"},
-%   {"Name": "Progress", "Type": "string scalar or logical", "Description": "\"dialog\", \"disp\" or \"none\"; true = \"dialog\", false = \"none\" (net.solver_ODE.Progress).", "Required": false, "Default": "net.solver_ODE.Progress"},
-%   {"Name": "Verbose", "Type": "logical scalar", "Description": "Print the phases and the outcome (net.solver_ODE.Verbose).", "Required": false, "Default": "net.solver_ODE.Verbose"},
-%   {"Name": "Plot", "Type": "logical scalar", "Description": "Call result.Plot after the simulation (net.solver_ODE.Plot).", "Required": false, "Default": "net.solver_ODE.Plot"},
-%   {"Name": "Export", "Type": "logical scalar or string scalar", "Description": "Call result.Export after the simulation: true for the default file name, or the file name.", "Required": false, "Default": "false"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "result", "Type": "odeSimulationResult", "Description": "Trajectories of the buses and components (result.odeResults)."},
-%   {"Name": "flag", "Type": "double", "Description": "1 completed, 0 stopped by TimeLimit, -1 stopped by the solver."},
-%   {"Name": "output", "Type": "struct", "Description": "Details: message, tEnd, phases, nPhases, nPhasesDone."}
-% ]
+%
+% The events (odeEventSet) come first in `varargin`; none gives the response without
+% disturbance. Name-Value options:
+%
+% - `Solver` — Solver of the MATLAB ode object, e.g. "ode15s", "ode23t" (net.solver_ODE.Solver).
+% - `SolverOptions` — Options of the solver, matching Solver (net.solver_ODE.SolverOptions).
+% - `Tolerance` — Relative error tolerance (net.solver_ODE.RelativeTolerance).
+% - `AbsoluteTolerance` — Absolute error tolerance (net.solver_ODE.AbsoluteTolerance).
+% - `SeparateComplexParts` — SeparateComplexParts of the ode object (net.solver_ODE.SeparateComplexParts).
+% - `TimeLimit` — Limit of the computation time [s] of each phase; Inf for no limit (net.solver_ODE.TimeLimit).
+% - `Progress` — "dialog", "disp" or "none"; true = "dialog", false = "none" (net.solver_ODE.Progress).
+% - `Verbose` — Print the phases and the outcome (net.solver_ODE.Verbose).
+% - `Plot` — Call result.Plot after the simulation (net.solver_ODE.Plot).
+% - `Export` — Call result.Export after the simulation: true for the default file name, or the file name. Default: false.
+%
 % <@Examples>
-% [
-%   "```matlab\nnet.initialize();\nev = odeEventSet(\"fault\", net, \"TimeSpan\", [1,1.05], \"FaultBus\", \"B008\");\n[res, flag] = net.simulate([0,10], ev, Progress=\"none\", TimeLimit=Inf);\nres.odeResults.Bus(1).Component(1).X.omega    % frequency deviation of a generator\nres.Plot(Quantity=\"omega\");\n```"
-% ]
+% ```matlab
+% net.initialize();
+% ev = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+% [res, flag] = net.simulate([0,10], ev, Progress="none", TimeLimit=Inf);
+% res.odeResults.Bus(1).Component(1).X.omega    % frequency deviation of a generator
+% res.Plot(Quantity="omega");
+% ```
+%
+% See also odeEventSet, odeSimulationResult, odeSimulator, PowerNetwork.initialize
     arguments
         obj
-        time (:,1) double = []
+        time (:,1) double = []   % [s] Simulation time [t0, tend].
     end
     arguments (Input, Repeating)
-        varargin
+        varargin   % Events (odeEventSet), then Name-Value options.
+    end
+    arguments (Output)
+        result   % Trajectories of the buses and components (result.odeResults).
+        flag     % 1 completed, 0 stopped by TimeLimit, -1 stopped by the solver.
+        output   % Details: message, tEnd, phases, nPhases, nPhasesDone.
     end
 
     [c_events, c_nv] = split_events(varargin);

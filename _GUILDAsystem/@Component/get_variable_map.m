@@ -1,5 +1,6 @@
 function tab = get_variable_map(obj)
-% <@Desc>
+% Return the variable map of the component: the order of its Point vector.
+%
 % Variable map of the component: the rows of net.get_variable_map() that belong to it,
 % in the same relative order. This order defines the Point vector of
 % comp.get_sys(Point=...):
@@ -8,20 +9,17 @@ function tab = get_variable_map(obj)
 %   2. Vre, Vim of its bus
 %   3. inputs u of the component
 % The columns are those of PowerNetwork.get_variable_map; Index counts from 1 here.
-% <@Role> Static Analysis
-% <@Summary> Variable map (order of the Point vector) of the component.
-% <@Signatures>
-% [
-%   "tab = comp.get_variable_map()"
-% ]
-% <@Returns>
-% [
-%   {"Name": "tab", "Type": "table", "Description": "One row per variable: Index, Kind (\"x\" | \"Vre\" | \"Vim\" | \"u\"), Owner, Name, Label, Bus."}
-% ]
+%
 % <@Examples>
-% [
-%   "```matlab\ntab = net.a_Bus{1}.a_Component{1}.get_variable_map();\ntab(tab.Kind == \"x\", :)\n```"
-% ]
+% ```matlab
+% tab = net.a_Bus{1}.a_Component{1}.get_variable_map();
+% tab(tab.Kind == "x", :)
+% ```
+%
+% See also PowerNetwork.get_variable_map, Component.get_sys
+    arguments (Output)
+        tab   % One row per variable: Index, Kind ("x" | "Vre" | "Vim" | "u"), Owner, Name, Label, Bus.
+    end
     str_bus = "";
     sv_V    = strings(2,1);
     if ~isempty(obj.a_Bus)

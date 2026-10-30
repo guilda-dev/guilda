@@ -1,10 +1,17 @@
 function remove_global_controller(obj, str_GconTag)
 % Remove global controllers by tag.
-%   net.remove_global_controller("agc")
+%
 % The removed controllers no longer refer to this network.
+%
+% <@Examples>
+% ```matlab
+% net.remove_global_controller("agc")
+% ```
+%
+% See also PowerNetwork.add_global_controller
     arguments
         obj
-        str_GconTag (1,:) string
+        str_GconTag (1,:) string   % Tags of the global controllers to remove.
     end
     str_tagGcon = string(obj.a_GlobalController);
     str_missing = str_GconTag(~ismember(str_GconTag, str_tagGcon));

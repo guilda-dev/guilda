@@ -1,5 +1,6 @@
 function [result, flag, output] = calculate_continuation_powerflow(obj, varargin)
-% <@Desc>
+% Trace the PV curve by the continuation power flow and return a CPFResult.
+%
 % Traces the PV curve of the network by the continuation power flow: starting from the
 % equilibrium of net.initialize, the loads of LoadBus are scaled by (1 + lambda) and the
 % power flow solution is followed past the maximum loading point (the nose). The
@@ -9,36 +10,34 @@ function [result, flag, output] = calculate_continuation_powerflow(obj, varargin
 % any other name stops with GUILDA:resolve_options:UnknownName.
 % It stops with an error naming the remedy when the network is not initialized (or was
 % edited after net.initialize) and when LoadBus is empty or names an unknown bus.
-% <@Role> Analysis
-% <@Summary> Continuation power flow (PV curve); returns a CPFResult.
-% <@Signatures>
-% [
-%   "result = net.calculate_continuation_powerflow(LoadBus=sv_bus)",
-%   "[result, flag, output] = net.calculate_continuation_powerflow(Name, Value)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "LoadBus", "Type": "string", "Description": "Tags of the buses whose loads are scaled by (1 + lambda) (net.solver_CPF.LoadBus).", "Required": false, "Default": "net.solver_CPF.LoadBus"},
-%   {"Name": "MaxIteration", "Type": "integer scalar", "Description": "Maximum number of predictor-corrector steps (net.solver_CPF.MaxIterations).", "Required": false, "Default": "net.solver_CPF.MaxIterations"},
-%   {"Name": "Tolerance", "Type": "double scalar", "Description": "Convergence tolerance of the Newton-Raphson corrector (net.solver_CPF.Tolerance).", "Required": false, "Default": "net.solver_CPF.Tolerance"},
-%   {"Name": "StepSize", "Type": "double scalar", "Description": "Step size of the predictor (net.solver_CPF.StepSize).", "Required": false, "Default": "net.solver_CPF.StepSize"},
-%   {"Name": "ArcLength", "Type": "double scalar", "Description": "Arc length of the corrector (net.solver_CPF.ArcLength).", "Required": false, "Default": "net.solver_CPF.ArcLength"},
-%   {"Name": "InitialLambda", "Type": "double scalar", "Description": "lambda at the starting point (net.solver_CPF.InitialLambda).", "Required": false, "Default": "net.solver_CPF.InitialLambda"},
-%   {"Name": "UseInternalState", "Type": "logical scalar", "Description": "Solve with the internal states of the generators (net.solver_CPF.UseInternalState).", "Required": false, "Default": "net.solver_CPF.UseInternalState"},
-%   {"Name": "Verbose", "Type": "logical scalar", "Description": "Print lambda at each step (net.solver_CPF.Verbose).", "Required": false, "Default": "net.solver_CPF.Verbose"},
-%   {"Name": "Plot", "Type": "logical scalar", "Description": "Call result.Plot after the calculation.", "Required": false, "Default": "false"},
-%   {"Name": "Export", "Type": "logical scalar or string scalar", "Description": "Call result.Export after the calculation: true for the default file name, or the file name.", "Required": false, "Default": "false"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "result", "Type": "CPFResult", "Description": "lambda and bus voltages along the path, and the nose point."},
-%   {"Name": "flag", "Type": "logical", "Description": "True when the path passed the nose."},
-%   {"Name": "output", "Type": "struct", "Description": "Details: message, iterations, correctorIterations."}
-% ]
+%
+% Name-Value options:
+%
+% - `LoadBus` — Tags of the buses whose loads are scaled by (1 + lambda) (net.solver_CPF.LoadBus).
+% - `MaxIteration` — Maximum number of predictor-corrector steps (net.solver_CPF.MaxIterations).
+% - `Tolerance` — Convergence tolerance of the Newton-Raphson corrector (net.solver_CPF.Tolerance).
+% - `StepSize` — Step size of the predictor (net.solver_CPF.StepSize).
+% - `ArcLength` — Arc length of the corrector (net.solver_CPF.ArcLength).
+% - `InitialLambda` — lambda at the starting point (net.solver_CPF.InitialLambda).
+% - `UseInternalState` — Solve with the internal states of the generators (net.solver_CPF.UseInternalState).
+% - `Verbose` — Print lambda at each step (net.solver_CPF.Verbose).
+% - `Plot` — Call result.Plot after the calculation. Default: false.
+% - `Export` — Call result.Export after the calculation: true for the default file name, or the file name. Default: false.
+%
 % <@Examples>
-% [
-%   "```matlab\nnet.initialize();\n[res, flag] = net.calculate_continuation_powerflow(LoadBus=[\"B009\",\"B010\"]);\nres.r_lambdaMax          % maximum loading\nres.Plot();              % PV curves of the load buses\n```"
-% ]
+% ```matlab
+% net.initialize();
+% [res, flag] = net.calculate_continuation_powerflow(LoadBus=["B009","B010"]);
+% res.r_lambdaMax          % maximum loading
+% res.Plot();              % PV curves of the load buses
+% ```
+%
+% See also CPFResult, ContinuationPowerFlow
+    arguments (Output)
+        result   % lambda and bus voltages along the path, and the nose point.
+        flag     % True when the path passed the nose.
+        output   % Details: message, iterations, correctorIterations.
+    end
 
     [c_nv, opt] = take_call_options(varargin);
     s_options   = obj.solver_CPF.get_options(c_nv);

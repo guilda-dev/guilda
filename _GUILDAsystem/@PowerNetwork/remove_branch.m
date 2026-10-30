@@ -1,4 +1,10 @@
 function remove_branch(obj,tag)
+% Remove branches by tag.
+%
+% `tag` is a string array of branch tags; tags that are not found are ignored. The
+% removed branches no longer refer to this network or its buses.
+%
+% See also PowerNetwork.add_branch, PowerNetwork.remove_bus
     branch_tag = string(obj.a_Branch);
     lv_branch  = ismember(branch_tag,tag);
 

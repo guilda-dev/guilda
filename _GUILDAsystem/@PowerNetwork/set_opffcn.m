@@ -1,5 +1,6 @@
 function set_opffcn(obj, varargin)
-% <@Desc>
+% Set network-wide OPF cost and constraints over several objects.
+%
 % Sets network-wide user terms of the optimal power flow (net.optimize_powerflow): terms
 % that need variables of several objects, such as a reserve requirement over several
 % generators. Each term is a function handle @(v, p). v holds the variables of every
@@ -20,26 +21,26 @@ function set_opffcn(obj, varargin)
 % clears that term. reset_opffcn restores all defaults. Per-object terms are set with
 % set_opffcn of the Component, Bus or Branch. The edit is logged in tab_editLog and
 % does not make the equilibrium stale.
-% <@Role> Settings
-% <@Summary> Set network-wide OPF cost and constraints over several objects.
-% <@Signatures>
-% [
-%   "net.set_opffcn(\"Cost\", fcnCost)",
-%   "net.set_opffcn(\"Constraint\", fcnCon)",
-%   "net.set_opffcn(\"Cost\", fcnCost, \"Constraint\", fcnCon, \"DefaultConstraint\", false)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "Cost", "Type": "function_handle @(v, p) or []", "Description": "Network-wide cost; added to the objective.", "Required": false, "Default": "[] (none)"},
-%   {"Name": "Constraint", "Type": "function_handle @(v, p) or []", "Description": "Returns struct(name1, constraint1, ...); added to the problem.", "Required": false, "Default": "[] (none)"},
-%   {"Name": "DefaultConstraint", "Type": "logical scalar", "Description": "false removes the fixed angle of the reference bus.", "Required": false, "Default": "true"}
-% ]
-% <@Returns>
-% []
+%
+% Name-Value options:
+%
+% - `Cost` — Network-wide cost; added to the objective. Default: [] (none).
+% - `Constraint` — Returns struct(name1, constraint1, ...); added to the problem. Default: [] (none).
+% - `DefaultConstraint` — false removes the fixed angle of the reference bus. Default: true.
+%
 % <@Examples>
-% [
-%   "```matlab\n% Spinning reserve: the headroom Pmax - P of two generators is at least 0.5 p.u.\ng1 = net.a_Bus{1}.a_Component{1};  g2 = net.a_Bus{2}.a_Component{1};\nPmax1 = g1.para_operation.Pmax;   Pmax2 = g2.para_operation.Pmax;\nnet.set_opffcn(\"Constraint\", @(v, p) struct(\"Reserve\", ...\n    (Pmax1 - v.Component.(string(g1)).P) + (Pmax2 - v.Component.(string(g2)).P) >= 0.5));\nres = net.optimize_powerflow(Method=\"DC OPF\");\nres.lambda.Constraints.Reserve                      % price of the reserve requirement\nnet.reset_opffcn();\n```"
-% ]
+% ```matlab
+% % Spinning reserve: the headroom Pmax - P of two generators is at least 0.5 p.u.
+% g1 = net.a_Bus{1}.a_Component{1};  g2 = net.a_Bus{2}.a_Component{1};
+% Pmax1 = g1.para_operation.Pmax;   Pmax2 = g2.para_operation.Pmax;
+% net.set_opffcn("Constraint", @(v, p) struct("Reserve", ...
+%     (Pmax1 - v.Component.(string(g1)).P) + (Pmax2 - v.Component.(string(g2)).P) >= 0.5));
+% res = net.optimize_powerflow(Method="DC OPF");
+% res.lambda.Constraints.Reserve                      % price of the reserve requirement
+% net.reset_opffcn();
+% ```
+%
+% See also PowerNetwork.reset_opffcn, Component.set_opffcn, Bus.set_opffcn, Branch.set_opffcn
     [obj.s_opffcn, str_log] = opffcn.update(obj.s_opffcn, varargin{:});
     obj.log_edit(str_log, "OPF");
 end

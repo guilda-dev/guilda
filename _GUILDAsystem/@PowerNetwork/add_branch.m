@@ -1,21 +1,37 @@
 function bra = add_branch(obj, Type, from_to, opt)
+% Add a branch between two buses and return it.
+%
+% `from_to` names the two end buses by their index in `a_Bus` or by their tags. The
+% branch tag is the class header followed by a three-digit number. The addition is
+% logged as a "Topology" edit.
+%
+% <@Examples>
+% ```matlab
+% net.add_branch("pi", [1,2], R=0.01, X=0.085, C=0.088);
+% net.add_branch("pi_transformer", ["B004","B007"], X=0.2091, Tap=0.978);
+% ```
+%
+% See also PowerNetwork.remove_branch, PowerNetwork.add_bus, Branch
     arguments
         obj 
-        Type         (1,:) char {mustBeMember(Type,{'T','pi','pi_transformer','two_winding_transformer'})}
-        from_to      (1,2) {string,double}   = [1,2]
-        opt.R        (1,1) double = 0;
-        opt.X        (1,1) double = 1;
-        opt.C        (1,1) double = 0;
-        opt.Tap      (1,1) double = 1;
-        opt.Phase    (1,1) double = 0 /180*pi;
-        opt.Smax     (1,1) double = inf;
-        opt.Imax     (1,1) double = inf;
-        opt.Pmax     (1,1) double = inf;
-        opt.Qmax     (1,1) double = inf;
-        opt.Vargmax  (1,1) double = 90/180*pi;
-        opt.MidXaxis     (1,:) string = [];
-        opt.MidYaxis     (1,:) string = [];
-        opt.Marker       (1,1) string = "-";
+        Type         (1,:) char {mustBeMember(Type,{'T','pi','pi_transformer','two_winding_transformer'})}   % Branch model key, e.g. "pi" or "pi_transformer".
+        from_to      (1,2) {string,double}   = [1,2]   % End buses [from, to], as indices of a_Bus or as bus tags.
+        opt.R        (1,1) double = 0;   % [pu] Series resistance.
+        opt.X        (1,1) double = 1;   % [pu] Series reactance.
+        opt.C        (1,1) double = 0;   % [pu] Shunt susceptance at each end (half of the line charging).
+        opt.Tap      (1,1) double = 1;   % Off-nominal tap ratio (1 for a line).
+        opt.Phase    (1,1) double = 0 /180*pi;   % [rad] Phase shift of the transformer.
+        opt.Smax     (1,1) double = inf;   % [pu] Apparent power limit for the OPF.
+        opt.Imax     (1,1) double = inf;   % [pu] Current limit for the OPF.
+        opt.Pmax     (1,1) double = inf;   % [pu] Active power limit for the OPF.
+        opt.Qmax     (1,1) double = inf;   % [pu] Reactive power limit for the OPF.
+        opt.Vargmax  (1,1) double = 90/180*pi;   % [rad] Limit of the angle difference between the end buses for the OPF.
+        opt.MidXaxis     (1,:) string = [];   % x coordinates of intermediate points in network diagrams.
+        opt.MidYaxis     (1,:) string = [];   % y coordinates of intermediate points in network diagrams.
+        opt.Marker       (1,1) string = "-";   % Line style of the branch in network diagrams.
+    end
+    arguments (Output)
+        bra   % Added Branch object.
     end
 
     % a_Busの番号で指定された場合

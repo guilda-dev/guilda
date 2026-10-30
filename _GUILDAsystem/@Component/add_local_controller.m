@@ -1,10 +1,12 @@
 function add_local_controller(obj, varargin)
-% <@Desc>
-% Attach local controllers to the component, in the order given. The key of a controller
-% says where it goes:
-%   "avr"   : attached to the component (the PSS feeds it)
-%   "pss"   : attached to the AVR of the component
-%   "local" : attached to the component in the place of an AVR (e.g. controller.local_LQR)
+% Attach local controllers (AVR, PSS, LQR, ...) to the component, in the order given.
+%
+% The key of a controller says where it goes:
+%
+% - "avr": attached to the component (the PSS feeds it)
+% - "pss": attached to the AVR of the component
+% - "local": attached to the component in the place of an AVR (e.g. controller.local_LQR)
+%
 % A controller reads the outputs and states of the component it observes by the names
 % of its inputs sv_u ("Xall" / "Yall": all the states / all the outputs), and its outputs
 % replace the inputs of the component of the same name.
@@ -13,25 +15,20 @@ function add_local_controller(obj, varargin)
 % controller is not an AVR. A new PSS replaces the attached one.
 % Replaced controllers are detached (they no longer refer to this component).
 % Each addition is logged as a "Topology" edit, so the equilibrium becomes stale.
-% <@Role> Layer
-% <@Summary> Attach local controllers (AVR, PSS, LQR, ...) to the component.
-% <@Signatures>
-% [
-%   "gen.add_local_controller(avr)",
-%   "gen.add_local_controller(avr, pss)",
-%   "gen.add_local_controller(controller.local_LQR(\"lqr1\"))"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "varargin", "Type": "LocalController", "Description": "Controllers with key \"avr\", \"pss\" or \"local\".", "Required": true, "Default": "-"}
-% ]
-% <@Returns>
-% []
+%
+% <@Examples>
+% ```matlab
+% gen = net.a_Bus{1}.a_Component{1};
+% gen.add_local_controller(controller.avr.AVR_ST1("avr1"));
+% gen.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
+% ```
+%
+% See also LocalController, controller.avr.AVR_ST1, controller.pss.PSS1, controller.local_LQR
     arguments
         obj
     end
     arguments (Input,Repeating)
-        varargin (1,1) {mustBeA(varargin, 'LocalController')}
+        varargin (1,1) {mustBeA(varargin, 'LocalController')}   % Local controllers with key "avr", "pss" or "local", e.g. an AVR followed by a PSS.
     end
 
     l_givenPss = any(cellfun(@(con) con.key == "pss", varargin));

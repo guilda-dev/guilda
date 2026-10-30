@@ -1,27 +1,24 @@
 function c_nv = v3_initialize_args(c_nv)
-% <@Desc>
-% v3 compatibility hook of PowerNetwork.initialize: rewrites the old option name and
-% values into the v4 ones.
-%   "methods", m                    -> Method=m  (GUILDA:Deprecated:InitializeMethods)
-%   "powerflow calculation"         -> "powerflow"    (GUILDA:Deprecated:InitializeMethodValue)
-%   "optimal powerflow"             -> "OPF"
-%   "calculate from Xequilibrium"   -> "equilibrium"
+% Convert the old methods option of initialize and its values to the v4 ones.
+%
+% v3 compatibility hook of PowerNetwork.initialize:
+%
+% - "methods", m -> Method=m (warning GUILDA:Deprecated:InitializeMethods)
+% - "powerflow calculation" -> "powerflow" (warning GUILDA:Deprecated:InitializeMethodValue)
+% - "optimal powerflow" -> "OPF"
+% - "calculate from Xequilibrium" -> "equilibrium"
+%
 % The old values are accepted under both names. The old output order [flag, tab, output]
 % cannot be detected and is not converted. A v4 argument list is returned unchanged.
-% <@Role> Compatibility
-% <@Summary> Convert the old methods option of initialize.
-% <@Signatures>
-% [
-%   "c_nv = v3_initialize_args(c_nv)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "c_nv", "Type": "cell row", "Description": "varargin of initialize.", "Required": true, "Default": "-"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "c_nv", "Type": "cell row", "Description": "Name-Value options of the v4 signature."}
-% ]
+%
+% Inputs:
+%
+% - `c_nv` — varargin of initialize.
+%
+% See also PowerNetwork.initialize, Deprecated
+    arguments (Output)
+        c_nv   % Name-Value options of the v4 signature.
+    end
     sv_old = ["powerflow calculation","optimal powerflow","calculate from Xequilibrium"];
     sv_new = ["powerflow","OPF","equilibrium"];
     if mod(numel(c_nv), 2) ~= 0

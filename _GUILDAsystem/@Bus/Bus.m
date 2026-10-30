@@ -1,31 +1,55 @@
 classdef Bus < PowerSystemModel
+% Node of a power network that connects branches and components.
+%
+% A bus holds its components (generators, loads, ...) and its own parameters: shunt
+% admittance (`tab_parameter.dynamics`), voltage limits and base voltage
+% (`tab_parameter.operation`), power-flow settings (`tab_parameter.powerflow`) and
+% diagram coordinates (`tab_parameter.graph`). Buses are created by
+% `PowerNetwork.add_bus`, not by their constructor.
+%
+% The bus type for the power flow follows from the settings: the slack bus
+% (`l_isSlack`) fixes V and Varg, a bus whose components leave Q as NaN is a PV bus, and
+% any other bus is a PQ bus.
+%
+% <@Examples>
+% ```matlab
+% net = network.IEEE9bus();
+% bus = net.a_Bus{1};
+% bus.tab_parameter.powerflow          % V, Varg, V0, Varg0
+% bus.str_bustype                      % "slack", "PV" or "PQ"
+% gen = bus.add_component("gen-park", P=0.5);
+% bus.remove_component(gen.str_tag);
+% sys = bus.get_sys();                 % linear model from V to I
+% ```
+%
+% See also PowerNetwork.add_bus, Component, Branch
 
     %% Properties
-    properties (Dependent)
-        str_bustype              % PowerFlow
-        tab_parameter            % Parameter
-        c_Iequilibrium           % Steady State: sum of the c_Iequilibrium of a_Component (0 without components)
+    properties (Dependent) % Power Flow
+        str_bustype              % Power-flow type of the bus: "slack", "PV" or "PQ".
+        tab_parameter            % Parameter table: dynamics, operation, powerflow and graph.
+        c_Iequilibrium           % [pu] Current injection at the equilibrium: sum of the component currents (0 without components).
     end
-    properties
-        l_isSlack      (1,1) logical = false;   % Flag if bus is Slack Bus
+    properties % Power Flow
+        l_isSlack      (1,1) logical = false;   % True for the slack bus (at most one per network).
     end
     properties (Access={?odeSimulator, ?odeEventSet})
         l_isFault (1,1) logical = false
     end
 
-    properties (SetAccess=protected)
-        a_PowerNetwork                          % Layer Structure
-        a_Component (:,1) = cell(0,1)           % Layer Structure
-        c_Vequilibrium      = 1;                % Steady State (owner; components read it)
-        s_opffcn = opffcn.default()             % OPF: Cost, Constraint, DefaultConstraint set by set_opffcn
+    properties (SetAccess=protected) % Layer Structure
+        a_PowerNetwork                          % PowerNetwork the bus belongs to ([] when removed).
+        a_Component (:,1) = cell(0,1)           % Components connected to the bus.
+        c_Vequilibrium      = 1;                % [pu] Voltage phasor at the equilibrium (the bus owns it; components read it).
+        s_opffcn = opffcn.default()             % OPF terms (Cost, Constraint, DefaultConstraint) set by set_opffcn.
     end
-    properties (Hidden,SetAccess=protected)
-        para_dynamics                           % Parameter
-        para_powerflow                          % Parameter
-        para_operation                          % Parameter
-        para_graph                              % Parameter
+    properties (Hidden,SetAccess=protected) % Parameter
+        para_dynamics                           % Parameter: Gshunt, Bshunt
+        para_powerflow                          % Parameter: V, Varg, V0, Varg0
+        para_operation                          % Parameter: baseKV, Vmin, Vmax
+        para_graph                              % Parameter: Xaxis, Yaxis, Marker
     end
-    properties (Dependent, Access=protected)
+    properties (Dependent, Access=protected) % Layer Structure
         parent                                  % Layer Structure
         children                                % Layer Structure
     end
@@ -34,13 +58,14 @@ classdef Bus < PowerSystemModel
         iv_odeI  = zeros(0,1);
         iv_odeU  = zeros(0,1);
     end
-    properties (SetAccess={?ContinuationPowerFlow})
-        iv_CPFV = zeros(0,1)        
+    properties (SetAccess={?ContinuationPowerFlow}) % Continuation Power Flow
+        iv_CPFV = zeros(0,1)        % Indices of the bus voltage in the CPF variable vector (working data of the CPF).
     end
 
 %% Constructor
     methods (Access={?PowerNetwork ?Bus})
         function obj = Bus(net,tag,opt)
+            % Create a bus of the network net (called by PowerNetwork.add_bus).
             obj.a_PowerNetwork = net;
             obj.str_tag        = tag;
             obj.para_dynamics  = Parameter(obj,"dynamics");

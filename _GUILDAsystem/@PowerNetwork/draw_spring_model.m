@@ -1,7 +1,16 @@
 function G = draw_spring_model(obj,mode)
+% Draw the network as an interactive mass-spring graph.
+%
+% Nodes are buses and edges are branches; hovering shows the branch admittance and
+% the bus data for the chosen mode.
+%
+% See also PowerNetwork.draw_diagram, GraphMassSpring
     arguments
         obj 
-        mode (1,1) string {mustBeMember(mode,["CalculatePowerFlow","DynamicSimulation"])}
+        mode (1,1) string {mustBeMember(mode,["CalculatePowerFlow","DynamicSimulation"])}   % Bus data to show: "CalculatePowerFlow" or "DynamicSimulation".
+    end
+    arguments (Output)
+        G   % GraphMassSpring object of the drawing.
     end
 
     a_Bus = obj.a_Bus;

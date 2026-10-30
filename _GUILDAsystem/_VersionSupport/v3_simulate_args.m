@@ -1,25 +1,21 @@
 function c_nv = v3_simulate_args(c_nv)
-% <@Desc>
+% Convert old option names of simulate.
+%
 % v3 compatibility hook of PowerNetwork.simulate: rewrites the old names of the solver
 % settings, given as Name-Value options, into the v4 option names.
 %   Reporter          -> Progress
 %   RelativeTolerance -> Tolerance
 % Each old name warns once (GUILDA:Deprecated:SimulateOptionName). Other arguments are
 % returned unchanged.
-% <@Role> Compatibility
-% <@Summary> Convert old option names of simulate.
-% <@Signatures>
-% [
-%   "c_nv = v3_simulate_args(c_nv)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "c_nv", "Type": "cell row", "Description": "Name-Value options of simulate (after the events).", "Required": true, "Default": "-"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "c_nv", "Type": "cell row", "Description": "Name-Value options with the v4 names."}
-% ]
+%
+% Name-Value options:
+%
+% - `c_nv` — Name-Value options of simulate (after the events).
+%
+% See also PowerNetwork.simulate
+    arguments (Output)
+        c_nv   % Name-Value options with the v4 names.
+    end
     sv_old = ["Reporter", "RelativeTolerance"];
     sv_new = ["Progress", "Tolerance"];
     for k = 1:2:numel(c_nv)

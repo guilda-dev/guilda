@@ -1,44 +1,45 @@
 function [result, flag, output] = initialize(obj, varargin)
-% <@Desc>
-% Calculates the operating point of the network and sets it as the equilibrium of the
-% buses, components, local controllers and global controllers; the edit log is then
-% reset. It is one of the few analysis verbs that change the model.
-% Method chooses how the operating point is obtained:
-%   "powerflow"   : net.calculate_powerflow (settings of net.solver_PF);
-%   "OPF"         : net.optimize_powerflow with Method="AC OPF" (settings of
-%                   net.solver_OPF; the AC formulation gives a complete AC operating point);
-%   "equilibrium" : the equilibria the components already hold (from an earlier
-%                   initialize); buses without components get the voltage of Y*V = I.
-% The other Name-Value options go unchanged to the analysis of "powerflow" or "OPF" and
-% are validated there (unknown names stop with GUILDA:resolve_options:UnknownName);
-% "equilibrium" takes no other option. The formulation of that analysis (its own Method)
-% is not set here: use net.solver_PF.Method for the power flow.
+% Compute the operating point of the network and set it as its equilibrium.
+%
+% The operating point is set as the equilibrium of the buses, components, local
+% controllers and global controllers, and the edit log is reset, so the analyses that
+% need the equilibrium (simulate, linearize, get_sys) can run. initialize is one of the
+% few analysis methods that change the model.
+%
+% Name-Value options:
+%
+% - `Method` — How the operating point is obtained. Default: "powerflow".
+%   - "powerflow": net.calculate_powerflow (settings of net.solver_PF).
+%   - "OPF": net.optimize_powerflow with Method="AC OPF" (settings of net.solver_OPF;
+%     the AC formulation gives a complete AC operating point).
+%   - "equilibrium": the equilibria the components already hold (from an earlier
+%     initialize); buses without components get the voltage of Y*V = I.
+% - Other options go unchanged to calculate_powerflow ("powerflow") or
+%   optimize_powerflow ("OPF") and are validated there (unknown names stop with
+%   GUILDA:resolve_options:UnknownName); "equilibrium" takes no other option. The
+%   formulation of that analysis (its own Method) is not set here: use
+%   net.solver_PF.Method for the power flow.
+%
 % When the analysis does not succeed (no convergence, an infeasible OPF, or stored
 % equilibria that do not satisfy the network equations), initialize stops with an error
-% naming the remedy and the network keeps its previous equilibrium and edit log (a slack
-% bus set by calculate_powerflow is released again).
-% <@Role> Analysis
-% <@Summary> Calculate the operating point and set it as the equilibrium of the network.
-% <@Signatures>
-% [
-%   "result = net.initialize()",
-%   "[result, flag, output] = net.initialize(Method=method, Name, Value)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "Method", "Type": "\"powerflow\" | \"OPF\" | \"equilibrium\"", "Description": "How the operating point is obtained (see the description).", "Required": false, "Default": "\"powerflow\""},
-%   {"Name": "Name, Value", "Type": "-", "Description": "Options of calculate_powerflow (\"powerflow\") or optimize_powerflow (\"OPF\") other than Method, e.g. Tolerance, MaxIteration, Verbose, Solver.", "Required": false, "Default": "-"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "result", "Type": "PowerFlowResult or OPFResult", "Description": "Result of the analysis: PowerFlowResult for \"powerflow\" and \"equilibrium\" (str_solver = \"equilibrium\", no branch flows), OPFResult for \"OPF\". result.tab_bus is the bus equilibrium."},
-%   {"Name": "flag", "Type": "double or optim.problemdef.ExitFlag", "Description": "Success flag of the analysis (positive; a failure stops with an error)."},
-%   {"Name": "output", "Type": "struct", "Description": "Details of the analysis; output.message describes the outcome."}
-% ]
+% naming the remedy, and the network keeps its previous equilibrium and edit log (a
+% slack bus set by calculate_powerflow is released again).
+%
 % <@Examples>
-% [
-%   "```matlab\nnet.initialize();                               % power flow\nres = net.initialize(Method=\"OPF\", Solver=\"fmincon\");\nres.r_cost                                      % cost of the OPF operating point\nnet.initialize(Method=\"equilibrium\");           % re-set the stored equilibria\n```"
-% ]
+% ```matlab
+% net = network.IEEE9bus();
+% net.initialize();                                % power flow
+% net.initialize(Method="equilibrium");            % re-set the stored equilibria
+% res = net.initialize(Method="OPF", Solver="fmincon");
+% res.r_cost                                       % cost of the OPF operating point
+% ```
+%
+% See also PowerNetwork.calculate_powerflow, PowerNetwork.optimize_powerflow, PowerNetwork.simulate
+    arguments (Output)
+        result   % PowerFlowResult for "powerflow" and "equilibrium" (str_solver = "equilibrium", no branch flows), OPFResult for "OPF"; result.tab_bus is the bus equilibrium.
+        flag     % Success flag of the analysis (positive; a failure stops with an error).
+        output   % Details of the analysis; output.message describes the outcome.
+    end
 
     varargin = v3_initialize_args(varargin);                  % COMPAT(v3)
     [str_method, c_nv] = take_method(varargin);

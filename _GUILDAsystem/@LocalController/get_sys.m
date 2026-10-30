@@ -1,32 +1,23 @@
 function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
-% <@Desc>
+% Linearize the local controller alone.
+%
 % Linear model of the controller alone: inputs are the bus voltage [Vre; Vim] and the
 % inputs sv_u, states are sv_x and outputs are sv_y (an output with the name of a state
-% is labelled "Y_" + name). The point is x, V, u (default: the equilibrium). Its
-% connection to the component is in comp.get_sys. The model is not changed.
-% <@Role> Static Analysis
-% <@Summary> Linear model of the controller (u to y).
-% <@Signatures>
-% [
-%   "sys = con.get_sys()",
-%   "sys = con.get_sys(x, V, I, u)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "x, V, I, u", "Type": "double column", "Description": "States, bus voltage [Vre; Vim], current (unused) and inputs of the controller.", "Required": false, "Default": "the equilibrium"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "sys", "Type": "ss", "Description": "Descriptor state-space model with state, input and output names."}
-% ]
+% is labelled "Y_" + name). The point is x, V, u (default: the equilibrium).
+% Component.get_sys connects it to the component. The model is not changed.
+%
+% Outputs after `sys` (`varargout`): state names, input names and output names as cell
+% arrays of char.
+%
+% See also Component.get_sys
     arguments
         obj
-        x        (:,1) double  = obj.rv_Xequilibrium
-        V        (:,1) double  = [real(obj.c_Vequilibrium);imag(obj.c_Vequilibrium)]
-        I        (:,1) double  = [real(obj.c_Iequilibrium);imag(obj.c_Iequilibrium)]
-        u        (:,1) double  = obj.rv_Uequilibrium
-        opt.full (1,1) logical = false     % also output the states
-        opt.tag  (1,1) logical = true
+        x        (:,1) double  = obj.rv_Xequilibrium   % States (default: the equilibrium).
+        V        (:,1) double  = [real(obj.c_Vequilibrium);imag(obj.c_Vequilibrium)]   % [pu] Voltage [Vre; Vim] of the parent.
+        I        (:,1) double  = [real(obj.c_Iequilibrium);imag(obj.c_Iequilibrium)]   % [pu] Current [Ire; Iim] of the parent (unused; not a port).
+        u        (:,1) double  = obj.rv_Uequilibrium   % Inputs (default: the equilibrium).
+        opt.full (1,1) logical = false     % Also output the states.
+        opt.tag  (1,1) logical = true   % Name the states, inputs and outputs with the controller tag.
     end
 
     % I is not a port of a controller (c_Iequilibrium is the parent's, [] without a parent)

@@ -1,9 +1,16 @@
 function [DAEvec, y, y_name] = get_dx_algebraic(obj, t, x, Vi, Ii, obs, DAEvec) 
-% Add the DAE residual of the controller (and of the controllers nested in it) to DAEvec
-% and return its outputs y (named y_name). obs.y / obs.x are the outputs and states of
-% the observed component: the inputs are read there (iv_obsY / iv_obsX), the outputs
-% of a nested controller replace the inputs of the same name, and the other inputs
-% stay at the equilibrium.
+% Add the DAE residual of the controller (and of its nested controllers) to DAEvec.
+%
+% Called by Component.get_dx_algebraic. obs.y / obs.x are the outputs and states of the
+% observed component: the inputs are read there (iv_obsY / iv_obsX), the outputs of a
+% nested controller replace the inputs of the same name, and the other inputs stay at
+% the equilibrium.
+%
+% Outputs:
+%
+% - `DAEvec` — Updated DAE residual of the network.
+% - `y` — Outputs of the controller, which replace the inputs of its parent of the same name.
+% - `y_name` — Names of those outputs (sv_y).
 
     rv_U = obj.rv_Uequilibrium;
 

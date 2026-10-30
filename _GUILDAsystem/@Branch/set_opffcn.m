@@ -1,5 +1,6 @@
 function set_opffcn(obj, varargin)
-% <@Desc>
+% Set the OPF cost and constraints of the branch.
+%
 % Sets user terms of the optimal power flow (net.optimize_powerflow) for this branch.
 % Each term is a function handle @(v, p): v holds the optimization variables at the two
 % ends of the branch (from = a_Bus{1}, to = a_Bus{2}) and p its parameters (p.Method,
@@ -19,26 +20,23 @@ function set_opffcn(obj, varargin)
 % Given names replace the stored ones, the others are kept; Cost=[] or Constraint=[]
 % clears that term. reset_opffcn restores all defaults. The edit is logged in
 % tab_editLog and does not make the equilibrium stale.
-% <@Role> Settings
-% <@Summary> Set the OPF cost and constraints of the branch.
-% <@Signatures>
-% [
-%   "obj.set_opffcn(\"Cost\", fcnCost)",
-%   "obj.set_opffcn(\"Constraint\", fcnCon)",
-%   "obj.set_opffcn(\"Cost\", fcnCost, \"Constraint\", fcnCon, \"DefaultConstraint\", false)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "Cost", "Type": "function_handle @(v, p) or []", "Description": "Cost of the branch; added to the objective.", "Required": false, "Default": "[] (none)"},
-%   {"Name": "Constraint", "Type": "function_handle @(v, p) or []", "Description": "Returns struct(name1, constraint1, ...); added to the default constraints.", "Required": false, "Default": "[] (none)"},
-%   {"Name": "DefaultConstraint", "Type": "logical scalar", "Description": "false removes the default limits Pmax, Vargmax, Imax and Smax.", "Required": false, "Default": "true"}
-% ]
-% <@Returns>
-% []
+%
+% Name-Value options:
+%
+% - `Cost` — Cost of the branch; added to the objective. Default: [] (none).
+% - `Constraint` — Returns struct(name1, constraint1, ...); added to the default constraints. Default: [] (none).
+% - `DefaultConstraint` — false removes the default limits Pmax, Vargmax, Imax and Smax. Default: true.
+%
 % <@Examples>
-% [
-%   "```matlab\n% One-directional limit: at most 0.5 p.u. from a_Bus{1} to a_Bus{2} (dual: lambda.Constraints.Pfwd_<tag>)\nbr = net.a_Branch{1};\nbr.set_opffcn(\"Constraint\", @(v, p) struct(\"Pfwd\", v.Pfrom <= 0.5));\nres = net.optimize_powerflow(Method=\"DC OPF\");\nbr.reset_opffcn();\n```"
-% ]
+% ```matlab
+% % One-directional limit: at most 0.5 p.u. from a_Bus{1} to a_Bus{2} (dual: lambda.Constraints.Pfwd_<tag>)
+% br = net.a_Branch{1};
+% br.set_opffcn("Constraint", @(v, p) struct("Pfwd", v.Pfrom <= 0.5));
+% res = net.optimize_powerflow(Method="DC OPF");
+% br.reset_opffcn();
+% ```
+%
+% See also Branch.reset_opffcn, PowerNetwork.set_opffcn
     [obj.s_opffcn, str_log] = opffcn.update(obj.s_opffcn, varargin{:});
     obj.log_edit(str_log, "OPF");
 end

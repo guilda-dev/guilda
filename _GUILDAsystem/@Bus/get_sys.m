@@ -1,38 +1,30 @@
 function sys = get_sys(obj, opt)
-% <@Desc>
+% Linearize the bus with its components (V to I, or I to V).
+%
 % Linear model of the bus: its components (with their local controllers) connected at
 % the bus.
-%   inputs : the port (bus voltage [Vre; Vim] for port "V2I", the current [Ire; Iim]
-%            injected by the components for "I2V"), then the inputs of each component
-%            and of its controllers (as comp.get_sys)
-%   states : the states of the components and their controllers
-%   outputs: the other port, then the outputs of each component and of its controllers
-% The states are not outputs, so that every name is unique (see comp.get_sys).
+%
+% - inputs: the port (bus voltage [Vre; Vim] for port "V2I", the current [Ire; Iim]
+%   injected by the components for "I2V"), then the inputs of each component and of its
+%   controllers (as Component.get_sys)
+% - states: the states of the components and their controllers
+% - outputs: the other port, then the outputs of each component and of its controllers
+%
+% The states are not outputs, so that every name is unique (see Component.get_sys).
 % Point gives the point of the linearization in the same form as net.linearize: [] for
 % the equilibrium, a vector in the order of bus.get_variable_map(), or {sim, t}.
 % The model is not changed.
-% <@Role> Static Analysis
-% <@Summary> Linear model of the bus (V to I, or I to V).
-% <@Signatures>
-% [
-%   "sys = bus.get_sys()",
-%   "sys = bus.get_sys(port=\"I2V\", Point=x)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "port", "Type": "\"V2I\" | \"I2V\"", "Description": "Input and output ports.", "Required": false, "Default": "\"V2I\""},
-%   {"Name": "Point", "Type": "[] | double vector | cell {sim, t}", "Description": "Point of the linearization.", "Required": false, "Default": "[] (the equilibrium)"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "sys", "Type": "ss", "Description": "Descriptor state-space model with state, input and output names."}
-% ]
+%
+% See also Component.get_sys, Bus.get_variable_map, PowerNetwork.get_sys
     arguments
         obj 
-        opt.port (1,1) {mustBeMember(opt.port, ["V2I", "I2V"])} = "V2I"
-        opt.full (1,1) logical = false     % ignored (kept for old calls): the states are not outputs
-        opt.con  (1,1) logical = false     % ignored (kept for old calls)
-        opt.Point = []
+        opt.port (1,1) {mustBeMember(opt.port, ["V2I", "I2V"])} = "V2I"   % Input and output ports.
+        opt.full (1,1) logical = false     % Ignored; kept for old calls (the states are not outputs).
+        opt.con  (1,1) logical = false     % Ignored; kept for old calls.
+        opt.Point = []   % Point of the linearization: [] (the equilibrium), a vector in the order of bus.get_variable_map(), or {sim, t}.
+    end
+    arguments (Output)
+        sys   % Descriptor state-space model with state, input and output names.
     end
 
     if isempty(opt.Point) && ~iscell(opt.Point)

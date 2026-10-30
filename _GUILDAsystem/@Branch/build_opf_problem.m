@@ -1,18 +1,23 @@
 function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Vvar, option)
-% This function requires an optimproblem class instance, which stores all "build_opf_problem" of the Bus class.
-% It is designed to be called internally from the "build_opf_problem" method of the @PowerNetwork class.
+% Add the flow variables and limits of the branch to an OPF problem.
 %
-% prob   @optimproblem
-% x0     @struct 
-% rm_V   @optimvar 
+% Called by PowerNetwork.build_opf_problem after the buses have added their variables
+% to `Vvar`. The power flowing from the branch into each end bus is added to the power
+% balance in `const`. "ELD" ignores branches and returns the inputs unchanged.
 %
+% See also PowerNetwork.build_opf_problem, Bus.build_opf_problem, Branch.set_opffcn
     arguments
         obj 
-        prob  = optimproblem();
-        x0    = struct()
-        const = struct()
-        Vvar  = struct()  
-        option.methods (1,1) string {mustBeMember(option.methods,["ELD","DC OPF","AC OPF"])} = "AC OPF";
+        prob  = optimproblem();   % optimproblem to extend.
+        x0    = struct()   % Struct of initial values, extended.
+        const = struct()   % Struct of power-balance expressions, extended.
+        Vvar  = struct()   % Struct of bus variables by bus tag (from Bus.build_opf_problem).
+        option.methods (1,1) string {mustBeMember(option.methods,["ELD","DC OPF","AC OPF"])} = "AC OPF";   % OPF formulation: "ELD", "DC OPF" or "AC OPF".
+    end
+    arguments (Output)
+        prob    % Extended optimproblem.
+        x0      % Extended initial values.
+        const   % Extended power-balance expressions.
     end
 
     % In case "ELD", Branch dynamics are ignored.

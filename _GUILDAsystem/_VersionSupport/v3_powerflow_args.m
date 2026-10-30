@@ -1,5 +1,6 @@
 function c_nv = v3_powerflow_args(c_nv)
-% <@Desc>
+% Convert the old mode argument and export options of calculate_powerflow.
+%
 % v3 compatibility hook of PowerNetwork.calculate_powerflow: rewrites the old arguments
 % into v4 Name-Value options.
 %   calculate_powerflow(mode, ...)     -> Method=mode  (GUILDA:Deprecated:CalculatePowerflowMode)
@@ -9,20 +10,15 @@ function c_nv = v3_powerflow_args(c_nv)
 % "export" alone is the v4 option Export. As in v3, mode "dynamic" exports the JSON
 % history by default, and the default file name is <yyMMdd_HHmmss>_PFcalculation.json
 % in GUILDA.pwd. A v4 argument list is returned unchanged.
-% <@Role> Compatibility
-% <@Summary> Convert the old mode argument and export options of calculate_powerflow.
-% <@Signatures>
-% [
-%   "c_nv = v3_powerflow_args(c_nv)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "c_nv", "Type": "cell row", "Description": "varargin of calculate_powerflow.", "Required": true, "Default": "-"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "c_nv", "Type": "cell row", "Description": "Name-Value options of the v4 signature."}
-% ]
+%
+% Name-Value options:
+%
+% - `c_nv` — varargin of calculate_powerflow.
+%
+% See also PowerNetwork.calculate_powerflow
+    arguments (Output)
+        c_nv   % Name-Value options of the v4 signature.
+    end
     l_mode = mod(numel(c_nv), 2) == 1 && is_text(c_nv{1}) ...
              && any(strcmpi(c_nv{1}, ["algebraic","dynamic"]));
     str_mode = "";
