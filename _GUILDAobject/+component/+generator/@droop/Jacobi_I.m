@@ -1,4 +1,24 @@
 function [Cix,Div,Dii,Diu] = Jacobi_I(t,x,V,I,u,param,omega0) %#ok
+% Calculate the Jacobians of the bus current.
+%
+% Analytic derivatives of `fcn_I`, with the current split as `[real; imag]`.
+%
+% Inputs:
+% - `t` [s]: time.
+% - `x`: state vector in the order of `sv_x`.
+% - `V` [pu]: bus voltage as `[real; imag]`.
+% - `I` [pu]: bus current as `[real; imag]`.
+% - `u`: input vector in the order of `sv_u`.
+% - `param`: dynamic parameters in the order of `sv_para`.
+% - `omega0` [Hz]: network frequency (`r_Hz`).
+%
+% See also fcn_I
+    arguments (Output)
+        Cix % Jacobian of the bus current `[real; imag]` with respect to `x`.
+        Div % Jacobian of the bus current `[real; imag]` with respect to `V` `[real; imag]`.
+        Dii % Jacobian of the bus current `[real; imag]` with respect to `I` `[real; imag]`.
+        Diu % Jacobian of the bus current `[real; imag]` with respect to `u`.
+    end
     delta = x(1);
     Vfd = u(2);
     Xd = param(2);
