@@ -17,6 +17,7 @@ classdef Bus < PowerSystemModel
         a_PowerNetwork                          % Layer Structure
         a_Component (:,1) = cell(0,1)           % Layer Structure
         c_Vequilibrium      = 1;                % Steady State (owner; components read it)
+        s_opffcn = opffcn.default()             % OPF: Cost, Constraint, DefaultConstraint set by set_opffcn
     end
     properties (Hidden,SetAccess=protected)
         para_dynamics                           % Parameter

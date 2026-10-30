@@ -24,6 +24,7 @@ function [str_solver, c_nv] = optimoption(obj, prob, s_options) %#ok<INUSL>
         str_solver = string(solvers(prob));
     else
         str_solver = s_options.Solver;
+        check_solver(prob, str_solver);
     end
 
     c_opt = {};
@@ -54,5 +55,19 @@ function [str_solver, c_nv] = optimoption(obj, prob, s_options) %#ok<INUSL>
     end
     if ~isempty(c_opt)
         c_nv = [c_nv, {"Options", optimoptions(str_solver, c_opt{:})}];
+    end
+end
+
+
+function check_solver(prob, str_solver)
+% Backend check: a Solver that cannot express the problem (e.g. linprog with a quadratic
+% cost or a nonlinear set_opffcn term) stops here with the Solver names that can.
+% External backends (stage 3) add their own capability check at this point.
+    [~, c_valid] = solvers(prob);
+    str_usable = intersect(["linprog","quadprog","fmincon"], string(c_valid), "stable");
+    if ~any(str_usable == str_solver)
+        error("GUILDA:OptimalPowerFlow:UnsupportedSolver", ...
+              "Solver ""%s"" cannot solve this OPF problem. Usable Solver names: ""auto"", %s.", ...
+              str_solver, join("""" + str_usable + """", ", "))
     end
 end

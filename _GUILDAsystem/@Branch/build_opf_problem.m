@@ -20,8 +20,11 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Vvar, optio
         return
     end
     
-    % get Parameter
+    % get Parameter (set_opffcn DefaultConstraint=false: no default limits)
     para_ope  = obj.para_operation;
+    if ~obj.s_opffcn.DefaultConstraint
+        para_ope = struct("Pmax",nan, "Qmax",nan, "Vargmax",nan, "Imax",nan, "Smax",nan);
+    end
     
     % Branch Variables : Current / Vbusi("Varg")-Vbusj("Varg")
     str_bus = string(obj.a_Bus);
@@ -115,18 +118,37 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Vvar, optio
             P_i = optimvar(str(1), {'P'}, 1, "LowerBound",lb, "UpperBound",ub);
             P_j = optimvar(str(2), {'P'}, 1, "LowerBound",lb, "UpperBound",ub);
             
-            % |V|=1, lossless: power into bus i is -b_ij*(θi-θj) with b_ij = imag(Y_ij) (= 1/X when R=0)
-            rm_Y = obj.get_admittance_matrix;
-            prob.Constraints.("defP_"+str(1)) = P_i == imag(rm_Y(1,2)) *(Vbusj("Varg")-Vbusi("Varg"));
-            prob.Constraints.("defP_"+str(2)) = P_j == imag(rm_Y(2,1)) *(Vbusi("Varg")-Vbusj("Varg"));
+            % |V|=1, lossless, MATPOWER convention (makeBdc): the flow from bus i to bus j is
+            % b*(θi - θj - phase) with b = 1/(X*tap); the power into bus i is its negative.
+            [b, phase] = dc_susceptance(obj.para_dynamics);
+            prob.Constraints.("defP_"+str(1)) = P_i == b *(Vbusj("Varg")-Vbusi("Varg")+phase);
+            prob.Constraints.("defP_"+str(2)) = P_j == b *(Vbusi("Varg")-Vbusj("Varg")-phase);
 
             % Initial point: the end values at the initial bus angles
-            x0.(str(1)) = imag(rm_Y(1,2)) *(x0.(str_bus(2))-x0.(str_bus(1)));
-            x0.(str(2)) = imag(rm_Y(2,1)) *(x0.(str_bus(1))-x0.(str_bus(2)));
+            x0.(str(1)) = b *(x0.(str_bus(2))-x0.(str_bus(1))+phase);
+            x0.(str(2)) = b *(x0.(str_bus(1))-x0.(str_bus(2))-phase);
 
             const.(Convar(1,1)) = const.(Convar(1,1)) + P_i;
             const.(Convar(2,1)) = const.(Convar(2,1)) + P_j;
             
     end
 
+    % set_opffcn terms of the branch
+    prob = opffcn.apply(obj, prob, option.methods);
+end
+
+
+function [b, phase] = dc_susceptance(para)
+% DC branch susceptance as in MATPOWER: b = 1/(X*tap), with the off-nominal tap ratio and
+% the phase shift [rad] at the from end (a_Bus{1}); tap = 1 and phase = 0 for lines.
+    s = table2struct(para.tab_parameter);
+    tap = 1;
+    phase = 0;
+    if isfield(s, "tap") && ~isnan(s.tap) && s.tap ~= 0
+        tap = s.tap;
+    end
+    if isfield(s, "phase") && ~isnan(s.phase)
+        phase = s.phase;
+    end
+    b = 1/(s.X*tap);
 end

@@ -63,6 +63,7 @@ classdef Component < PowerSystemModel
         para_operation                         % [ Parameter ] tab_prameterの運用基準の部分を管理するParameterクラス
         para_OPF                               % [ Parameter ] tab_prameterのOPFの部分を管理するParameterクラス (startup/shutdown は予約: 未使用)
         para_graph                             % [ Parameter ] tab_prameterのグラフ描画の部分を管理するParameterクラス
+        s_opffcn = opffcn.default()            % [    OPF    ] set_opffcn で設定した OPF の費用・制約 (Cost, Constraint, DefaultConstraint)
     end  
     properties(Dependent, Access=protected)
         parent                                 % [   Layer   ] Layerの上位に当たるクラス
@@ -92,6 +93,10 @@ classdef Component < PowerSystemModel
             obj.para_OPF       = Parameter(obj,"OPF");
             obj.para_graph     = Parameter(obj,"graph");
             obj.para_operation = Parameter(obj,"operation");
+            % Default cost (NaN): 0 for a load (a fixed load adds nothing to the cost), 1 otherwise
+            r_cost0 = double(~isa(obj,"component.load.abstract"));
+            if isnan(opt.OPFcost_HP); opt.OPFcost_HP = r_cost0; end
+            if isnan(opt.OPFcost_fP); opt.OPFcost_fP = r_cost0; end
 
             obj.para_operation.add_entry( "baseMVA", opt.baseMVA          , "double",...
                                              "Pmin", opt.Pmin             , "double",...

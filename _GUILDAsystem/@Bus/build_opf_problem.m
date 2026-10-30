@@ -16,9 +16,13 @@ function [prob, x0, const, Vvar] = build_opf_problem(obj, prob, x0, const, Vvar,
         case "AC OPF"
             opf  = obj.para_powerflow;   % initial point (Varg0, V0)
             ope  = obj.para_operation;
+            Vlim = [ope.Vmin; ope.Vmax];
+            if ~obj.s_opffcn.DefaultConstraint   % set_opffcn: no default voltage bounds
+                Vlim = [-inf; inf];
+            end
             var  = optimvar(str, {'Varg','V'}, 1,     "Type",    "continuous" ,...
-                                                "LowerBound", [-inf;ope.Vmin] ,...
-                                                "UpperBound", [ inf;ope.Vmax] );
+                                                "LowerBound", [-inf;Vlim(1)] ,...
+                                                "UpperBound", [ inf;Vlim(2)] );
             Vvar.(str) = var;
         
             x0.(str) = [opf.Varg0;opf.V0];
@@ -58,5 +62,10 @@ function [prob, x0, const, Vvar] = build_opf_problem(obj, prob, x0, const, Vvar,
         for i_Com = 1:numel(a_Com)
             [prob, x0, const] = a_Com{i_Com}.build_opf_problem(prob, x0, const, var,"methods",option.methods);
         end
+    end
+
+    % set_opffcn terms of the bus ("ELD" has no bus variables)
+    if option.methods ~= "ELD"
+        prob = opffcn.apply(obj, prob, option.methods, struct(str, var));
     end
 end

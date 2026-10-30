@@ -6,11 +6,14 @@ function varargout = optimize_powerflow(obj, varargin)
 % stored defaults of net.solver_OPF; Name-Value options override them for this call only
 % (net.solver_OPF is not changed). The network is not changed.
 % The cost of each component is HP*P^2 + fP*P + HQ*Q^2 + fQ*Q (tab_parameter.OPF; Q terms
-% in "AC OPF" only). Loads keep the P and Q of tab_parameter.powerflow, so their cost is
-% a constant in the optimal cost. The columns startup and shutdown of tab_parameter.OPF
+% in "AC OPF" only); the default cost of a load is 0. A load keeps the P and Q of
+% tab_parameter.powerflow while its Pmin/Pmax (Qmin/Qmax) are infinite; with finite
+% bounds it is dispatched within them. Costs and constraints of single objects are
+% customized with set_opffcn of the Component, Bus or Branch, network-wide terms with
+% net.set_opffcn. The columns startup and shutdown of tab_parameter.OPF
 % are reserved: unit commitment is not part of the problem. "DC OPF" uses |V| = 1 and
-% the branch susceptance b_ij = Im(Y_ij) of the branch admittance matrix (= 1/X when
-% R = 0). The angle of the slack bus (the first bus if none is set) is fixed. The solver
+% the MATPOWER branch susceptance b = 1/(X*tap) (tap ratio and phase shift at the from
+% end). The angle of the slack bus (the first bus if none is set) is fixed. The solver
 % starts from tab_parameter.powerflow V0 and Varg0 of the buses and P0, Q0 of the
 % components; branch current and power limits are applied as |I|^2 <= Imax^2 and
 % P^2 + Q^2 <= Smax^2 at both ends.

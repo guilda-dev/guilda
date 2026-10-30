@@ -21,18 +21,27 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Busvar, opt
         str  = string(obj);
 
         % Output limits [P;Q] and initial point.
-        % A load is not dispatched: its P/Q are fixed to the power-flow setting.
+        % A load is not dispatched: its P (Q) is fixed to the power-flow setting while both
+        % Pmin and Pmax (Qmin, Qmax) are infinite (the default). A load with finite bounds
+        % is dispatched within them (a price-responsive load, with a cost set explicitly).
+        % DefaultConstraint=false (set_opffcn) removes the bounds and the fixing.
         lb = [ope.Pmin; ope.Qmin];
         ub = [ope.Pmax; ope.Qmax];
         PQ0 = [opf.P0; opf.Q0];
-        if isa(obj,"component.load.abstract")
+        s_fcn = obj.s_opffcn;
+        if ~s_fcn.DefaultConstraint
+            lb(:) = -inf;
+            ub(:) =  inf;
+        elseif isa(obj,"component.load.abstract")
             pf  = obj.para_powerflow;
             PQ  = [pf.P; pf.Q];
-            l_fix = ~isnan(PQ);
+            l_fix = ~isnan(PQ) & isinf(lb) & isinf(ub);
             lb(l_fix)  = PQ(l_fix);
             ub(l_fix)  = PQ(l_fix);
             PQ0(l_fix) = PQ(l_fix);
         end
+        % set_opffcn Cost replaces the default cost
+        l_defCost = isempty(s_fcn.Cost);
     
         switch option.methods
             case "AC OPF"
@@ -43,9 +52,11 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Busvar, opt
                 const.(Convar(1)) = const.(Convar(1)) + var("P");
                 const.(Convar(2)) = const.(Convar(2)) + var("Q");
                 x0.(str) = PQ0;
-                prob.Objective.GenCost = prob.Objective.GenCost...
-                                  + cost_term(opf.HP, opf.fP, var("P")) ...
-                                  + cost_term(opf.HQ, opf.fQ, var("Q"));
+                if l_defCost
+                    prob.Objective.GenCost = prob.Objective.GenCost...
+                                      + cost_term(opf.HP, opf.fP, var("P")) ...
+                                      + cost_term(opf.HQ, opf.fQ, var("Q"));
+                end
                 
             case "DC OPF"
                 var  = optimvar(str, {'P'}, 1, "Type"      ,"continuous" ,...
@@ -54,7 +65,9 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Busvar, opt
                 Convar  = "P_" + string(obj.a_Bus);
                 const.(Convar) = const.(Convar) + var;
                 x0.(str)       = PQ0(1);
-                prob.Objective.GenCost = prob.Objective.GenCost + cost_term(opf.HP, opf.fP, var);
+                if l_defCost
+                    prob.Objective.GenCost = prob.Objective.GenCost + cost_term(opf.HP, opf.fP, var);
+                end
     
             case "ELD"
                 var  = optimvar(str, {'P'}, 1, "Type"      ,"continuous" ,...
@@ -62,8 +75,13 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Busvar, opt
                                                "UpperBound",ub(1)        );
                 const.P = const.P + var;
                 x0.(str) = PQ0(1);
-                prob.Objective.GenCost = prob.Objective.GenCost + cost_term(opf.HP, opf.fP, var);
+                if l_defCost
+                    prob.Objective.GenCost = prob.Objective.GenCost + cost_term(opf.HP, opf.fP, var);
+                end
         end
+
+        % set_opffcn terms (user cost, user constraints)
+        prob = opffcn.apply(obj, prob, option.methods, struct(str, var));
 
     % catch
     %     error("Error: This method must only be called internally by Bus.build_opf_problem/")

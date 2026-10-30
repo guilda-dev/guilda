@@ -152,6 +152,7 @@ classdef LayerPackage < handle
         %   Parameter(operation)   -             -
         %   Parameter(OPF)         -             -
         %   Parameter(graph)       -             -
+        %   OPF                    -             -         (set_opffcn / reset_opffcn)
             arguments
                 str_logtag (1,1) string
                 str_log    (1,1) string = ""

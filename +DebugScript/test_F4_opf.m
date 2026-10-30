@@ -14,7 +14,12 @@
 %   - ラグランジュ乗数 (節点価格) = 最適費用の負荷に関する感度 (差分で確認)
 %   - MATPOWER 形式への変換 (tools.network_to_mpc) と MATPOWER の case14 の最適解との一致
 %   - MATPOWER との直接比較 (MATPOWER がパスに無いときは SKIP)
+%   - DC OPF の送電線は MATPOWER と同じ b = 1/(X*tap) (case14 で MATPOWER の DC 定式化と一致)
+%   - 負荷の既定の費用は 0。上下限を与えた負荷は価格応答する負荷として配分される
+%   - set_opffcn / reset_opffcn (機器・母線・送電線・系統): 費用の置き換え、名前付き制約の追加と
+%     その乗数、DefaultConstraint=false、系統全体の制約 (予備力)、平衡点を古くしないこと
 % 費用関数は機器の tab_parameter.OPF、制約は各クラスの tab_parameter.operation で設定する。
+% 利用者の費用・制約は各オブジェクトの set_opffcn で追加する。
 %
 % 実行: runtests("DebugScript.test_F4_opf")  または  DebugScript.run_all("Features","F4")
 %
@@ -84,13 +89,13 @@ assert(all(tab_bus.V == 1))
 % 基準母線 (B001) の位相は 0
 assert(abs(tab_bus{"B001","Varg"}) < tol)
 
-% 送電線の端の P = 母線への流入 b_ij*(θj-θi)、両端の和 = 0 (損失なし)
+% 送電線の端の P = 母線への流入 b*(θj-θi+φ) (MATPOWER と同じ b = 1/(X*tap))、両端の和 = 0 (損失なし)
 for k = 1:numel(net.a_Branch)
     br  = net.a_Branch{k};
     str = string(br) + "_" + string(br.a_Bus);
-    Y   = br.get_admittance_matrix();
+    [b, phase] = dc_susceptance(br);
     th  = tab_bus{string(br.a_Bus),"Varg"};
-    assert(abs(tab_cub{str(1),"P"} - imag(Y(1,2))*(th(2)-th(1))) < tol)
+    assert(abs(tab_cub{str(1),"P"} - b*(th(2)-th(1)+phase)) < tol)
     assert(abs(tab_cub{str(1),"P"} + tab_cub{str(2),"P"}) < tol)
 end
 
@@ -386,7 +391,6 @@ assert(error_id(@() tools.network_to_mpc(net2)) == "GUILDA:network_to_mpc:Unsupp
 % (MATPOWER 不要。値は MATPOWER の runopf / rundcopf の結果)。
 %   AC: 費用 8081.53 $/hr、Pg = [194.33, 36.72, 28.74, 0.00, 8.50] MW
 %   DC: 費用 7642.59 $/hr、Pg = [220.97, 38.03, 0, 0, 0] MW
-% DC は MATPOWER と同じ b = 1/X になるよう R = 0 にする (GUILDA の DC は b = Im(Y_ij) を使う)。
 net = DebugScript.helper.build_ieee14();
 mpc = DebugScript.helper.case14_data();
 assert(norm(net.get_admittance_matrix.Variables - mpc_ybus(mpc)) < 1e-12)
@@ -397,9 +401,6 @@ assert(abs(res.r_cost - 8081.53) < 0.01, sprintf("AC cost %.4f", res.r_cost))
 assert(max(abs(100*res.tab_cub{str_gen,"P"} - [194.33; 36.72; 28.74; 0; 8.50])) < 0.01)
 assert(all(res.tab_bus.V >= 0.94 - 1e-6 & res.tab_bus.V <= 1.06 + 1e-6))
 
-for k = 1:numel(net.a_Branch)
-    net.a_Branch{k}.tab_parameter.dynamics.R = 0;
-end
 [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
 assert(flag > 0)
 assert(abs(res.r_cost - 7642.59) < 0.01, sprintf("DC cost %.4f", res.r_cost))
@@ -431,9 +432,6 @@ assert(max(abs(res.tab_bus.V - rmp.bus(:,8))) < 1e-4)
 assert(max(abs(res.tab_bus.Varg - rmp.bus(:,9)*pi/180)) < 1e-4)
 assert(max(abs(res.tab_cub{str_gen,"P"} - rmp.gen(:,2)/100)) < 1e-4)
 
-for k = 1:numel(net.a_Branch)
-    net.a_Branch{k}.tab_parameter.dynamics.R = 0;
-end
 mpc = rmfield(tools.network_to_mpc(net), ["bus_name","gen_name","branch_name"]);
 rdc = rundcopf(mpc, mpopt);
 assert(rdc.success)
@@ -619,6 +617,290 @@ assert(istable(tab_bus) && width(tab_bus) == 6)
 assert(isa(out1, "OPFResult") && isstruct(out3))          % 3 出力は v4 の形式 [result, flag, output]
 assert(net.solver_OPF.Method == "AC OPF")
 
+%% DC OPF uses the MATPOWER susceptance 1/X
+% DC OPF の送電線は MATPOWER (makeBdc) と同じ b = 1/(X*tap) (タップ比・移相は from 端)。
+% case14_data からこのテストの中で MATPOWER の DC 定式化 P = Bbus*θ + Pbusinj を組み立て、
+% GUILDA の DC OPF の発電量から求めた位相・潮流が GUILDA の解と一致することを確かめる。
+% 抵抗のある送電線では Im(Y_ij) = X/(R^2+X^2) と 1/X が違うので、旧定義とは位相が変わる。
+net = DebugScript.helper.build_ieee14();
+mpc = DebugScript.helper.case14_data();
+[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+assert(flag > 0)
+str_gen = string(cellfun(@(b) b.a_Component{1}, net.a_Bus(mpc.gen(:,1)), "UniformOutput", false));
+assert(abs(res.r_cost - 7642.59) < 0.01, sprintf("DC cost %.4f", res.r_cost))
+assert(max(abs(100*res.tab_cub{str_gen,"P"} - [220.97; 38.03; 0; 0; 0])) < 0.01)
+
+nb  = size(mpc.bus,1);
+br  = mpc.branch;
+tap = br(:,9);  tap(tap == 0) = 1;
+b   = 1./(br(:,4).*tap);
+shift = br(:,10)*pi/180;
+nl  = size(br,1);
+Cft = sparse([1:nl, 1:nl], [br(:,1); br(:,2)], [ones(nl,1); -ones(nl,1)], nl, nb);
+Bbus    = full(Cft.'*diag(b)*Cft);
+Pbusinj = Cft.'*(-b.*shift);
+Pg = zeros(nb,1);
+Pg(mpc.gen(:,1)) = res.tab_cub{str_gen,"P"};
+Pinj = Pg - mpc.bus(:,3)/mpc.baseMVA - mpc.bus(:,5)/mpc.baseMVA;
+th = zeros(nb,1);
+th(2:end) = Bbus(2:end,2:end) \ (Pinj(2:end) - Pbusinj(2:end));
+assert(max(abs(res.tab_bus.Varg - th)) < 1e-8)
+str_bus = string(net.a_Bus);
+for k = 1:numel(net.a_Branch)
+    brk = net.a_Branch{k};
+    [~, iv] = ismember(string(brk.a_Bus), str_bus);
+    j = find(br(:,1) == iv(1) & br(:,2) == iv(2), 1);
+    assert(abs(res.tab_branch{string(brk),"Pfrom"} - b(j)*(th(iv(1)) - th(iv(2)) - shift(j))) < 1e-8)
+end
+% 旧定義 b = Im(Y_ij) の位相とは 1e-3 rad 以上違う (このテストは定義の違いを見分けられる)
+b_old = zeros(nl,1);
+for k = 1:numel(net.a_Branch)
+    brk = net.a_Branch{k};
+    [~, iv] = ismember(string(brk.a_Bus), str_bus);
+    j = find(br(:,1) == iv(1) & br(:,2) == iv(2), 1);
+    Y = brk.get_admittance_matrix();
+    b_old(j) = -imag(Y(1,2));
+end
+B_old  = Cft.'*diag(b_old)*Cft;
+th_old = [0; B_old(2:end,2:end) \ Pinj(2:end)];
+assert(max(abs(th_old - th)) > 1e-3)
+
+
+%% Default OPF cost of a load is 0
+% add_component の既定の費用は発電機などが HP = fP = 1、負荷は 0 (固定の負荷は費用に効かない)。
+% 明示した値 (同梱の系統の opf.csv など) はそのまま
+net = PowerNetwork("CostDefault");
+bus = net.add_bus();
+ld  = bus.add_component("load-power");
+gen = bus.add_component("gen-park");
+ld2 = bus.add_component("load-power", "OPFcost_HP", 2, "OPFcost_fP", 5);
+assert(isequal(ld.tab_parameter.OPF{1,["HP","fP","HQ","fQ"]}, [0 0 0 0]))
+assert(isequal(gen.tab_parameter.OPF{1,["HP","fP","HQ","fQ"]}, [1 1 0 0]))
+assert(isequal(ld2.tab_parameter.OPF{1,["HP","fP"]}, [2 5]))
+% 9 母線系統: 最適費用は発電機の費用だけ (3 台とも P = 1 で 3*(1+1) = 6)
+net = DebugScript.helper.build_9bus();
+res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD"));
+assert(abs(res.r_cost - 6) < 1e-6)
+
+
+%% Price-responsive load: a load with P bounds and its own cost
+% 上下限が有限の負荷は潮流設定に固定されず、上下限の範囲で配分される。
+% B008 の負荷 (P = -1.2) を -3 <= P <= 0、費用 4*P (1 単位消費の便益 4) にする。
+% 発電機 3 台 (P^2+P) の限界費用 2*Pg+1 = 4 → Pg = 1.5、需要は 4.5 - 1.8 = 2.7 (範囲内)
+net = DebugScript.helper.build_9bus();
+ld8 = net.a_Bus{8}.a_Component{1};
+ld8.tab_parameter.operation{1,["Pmin","Pmax"]} = [-3, 0];
+ld8.set_opffcn("Cost", @(v, p) 4*v.P);
+res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD"));
+assert(abs(res.tab_cub{string(ld8),"P"} + 2.7) < 1e-5)
+assert(max(abs(res.tab_bus{["B001","B002","B003"],"P"} - 1.5)) < 1e-5)
+assert(abs(abs(res.lambda.Constraints.balancedP) - 4) < 1e-5)
+
+
+%% set_opffcn Cost replaces the default cost
+% 9 母線系統の発電機 3 台 (P^2+P) のうち SG1B001 の費用を 2*P^2 + P に置き換える。
+% 等増分費用 4*P1+1 = 2*P2+1 = 2*P3+1、P1+P2+P3 = 3 → P1 = 0.6, P2 = P3 = 1.2、
+% 費用 = 2*0.36+0.6 + 2*(1.44+1.2) = 6.6。DC OPF (送電制約なし) も同じ配分
+net = DebugScript.helper.build_9bus();
+g1 = net.a_Bus{1}.a_Component{1};
+g1.set_opffcn("Cost", @(v, p) 2*v.P^2 + p.OPF.fP*v.P);
+assert(isa(g1.s_opffcn.Cost, "function_handle") && g1.tab_parameter.OPF.HP == 1)
+for str_m = ["ELD","DC OPF"]
+    [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method=str_m));
+    assert(flag > 0)
+    assert(max(abs(res.tab_bus{["B001","B002","B003"],"P"} - [0.6; 1.2; 1.2])) < 1e-5)
+    assert(abs(res.r_cost - 6.6) < 1e-6)
+end
+% AC OPF では v.Q も使える
+g1.set_opffcn("Cost", @(v, p) 2*v.P^2 + v.P + 0.1*v.Q^2);
+[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
+assert(flag > 0)
+P1 = res.tab_cub{string(g1),"P"};  Q1 = res.tab_cub{string(g1),"Q"};
+assert(P1 < res.tab_cub{string(net.a_Bus{2}.a_Component{1}),"P"})
+assert(abs(res.r_cost - (2*P1^2 + P1 + 0.1*Q1^2 + DebugScript.helper.opf_cost(net, res.tab_cub) - (P1^2 + P1))) < 1e-6)
+
+
+%% set_opffcn Constraint binds and its dual has the user's name
+% 追加した制約の名前 <名前>_<タグ> が lambda.Constraints の名前になる
+%   機器 : SG1B001 に P <= 0.4 → P2 = P3 = 1.3、乗数 = (2*1.3+1) - (2*0.4+1) = 1.8
+%   送電線: ET001 (B001→B004、発電機 1 台だけの放射状) の Pfrom <= 0.1 → P1 = 0.1, P2 = P3 = 1.45、
+%          乗数 = (2*1.45+1) - (2*0.1+1) = 2.7
+%   母線 : AC OPF で B005 の電圧に V <= 1.0 (制約なしの解は 1.0 を超える) → 効いて乗数 > 0
+net = DebugScript.helper.build_9bus();
+g1 = net.a_Bus{1}.a_Component{1};
+g1.set_opffcn("Constraint", @(v, p) struct("Cap", v.P <= 0.4));
+for str_m = ["ELD","DC OPF"]
+    [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method=str_m));
+    assert(flag > 0)
+    assert(isfield(res.OPFprob.Constraints, "Cap_SG1B001"))
+    assert(max(abs(res.tab_bus{["B001","B002","B003"],"P"} - [0.4; 1.3; 1.3])) < 1e-5)
+    assert(abs(res.lambda.Constraints.Cap_SG1B001 - 1.8) < 1e-5)
+end
+g1.reset_opffcn();
+
+br1 = net.a_Branch{1};
+assert(string(br1) == "ET001" && isequal(string(br1.a_Bus(:)).', ["B001","B004"]))
+br1.set_opffcn("Constraint", @(v, p) struct("Pfwd", v.Pfrom <= 0.1));
+[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+assert(flag > 0)
+assert(abs(res.tab_branch{"ET001","Pfrom"} - 0.1) < 1e-6)
+assert(max(abs(res.tab_bus{["B001","B002","B003"],"P"} - [0.1; 1.45; 1.45])) < 1e-5)
+assert(abs(res.lambda.Constraints.Pfwd_ET001 - 2.7) < 1e-5)
+br1.reset_opffcn();
+
+res0 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
+assert(res0.tab_bus{"B005","V"} > 1.0 + 1e-3)
+b5 = net.a_Bus{5};
+b5.set_opffcn("Constraint", @(v, p) struct("Vhigh", v.V <= 1.0, "Vlow", v.V >= 0.98));
+[res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
+assert(flag > 0)
+assert(abs(res.tab_bus{"B005","V"} - 1.0) < 1e-5)
+assert(res.lambda.Constraints.Vhigh_B005 > 1e-4 && abs(res.lambda.Constraints.Vlow_B005) < 1e-4)
+assert(res.r_cost > res0.r_cost)
+
+
+%% DefaultConstraint=false removes the default constraints
+%   機器 : Pmax = 0.5 の上限が外れ、等分 (各 1.0) に戻る
+%   送電線: 3 母線ループの B001-B003 の容量 0.5 が外れ、送電制約なしの配分 (0.75, 0.25) に戻る
+%   母線 : 電圧の上下限 Vmin/Vmax が外れる (変数の上下限が ±Inf)
+%   系統 : 基準母線の位相の固定 (VargRef) が外れる
+% 物理的な式 (母線の電力収支、送電線の潮流の式) は残る
+net = DebugScript.helper.build_9bus();
+g1 = net.a_Bus{1}.a_Component{1};
+g1.tab_parameter.operation.Pmax = 0.5;
+res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD"));
+assert(abs(res.tab_bus{"B001","P"} - 0.5) < 1e-5)
+g1.set_opffcn("DefaultConstraint", false);
+res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD"));
+assert(max(abs(res.tab_bus{["B001","B002","B003"],"P"} - 1)) < 1e-5)
+assert(isfield(res.OPFprob.Constraints, "balancedP"))
+
+b5 = net.a_Bus{5};
+b5.tab_parameter.operation{1,["Vmin","Vmax"]} = [0.95, 1.05];
+prob = DebugScript.helper.quiet(@() net.build_opf_problem(Method="AC OPF"));
+assert(prob.Variables.B005.UpperBound(2) == 1.05 && prob.Variables.B005.LowerBound(2) == 0.95)
+b5.set_opffcn("DefaultConstraint", false);
+prob = DebugScript.helper.quiet(@() net.build_opf_problem(Method="AC OPF"));
+assert(isinf(prob.Variables.B005.UpperBound(2)) && isinf(prob.Variables.B005.LowerBound(2)))
+assert(isfield(prob.Constraints, "balancedP_B005") && isfield(prob.Constraints, "VargRef"))
+net.set_opffcn("DefaultConstraint", false);
+prob = DebugScript.helper.quiet(@() net.build_opf_problem(Method="DC OPF"));
+assert(~isfield(prob.Constraints, "VargRef"))
+
+net = build_loop3();
+br13 = net.a_Branch{3};
+br13.tab_parameter.operation.Pmax = 0.5;
+str_gen = string(cellfun(@(b) b.a_Component{1}, net.a_Bus(1:2), "UniformOutput", false));
+res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+assert(max(abs(res.tab_cub{str_gen,"P"} - [0.5; 0.5])) < 1e-6)
+br13.set_opffcn("DefaultConstraint", false);
+res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+assert(max(abs(res.tab_cub{str_gen,"P"} - [0.75; 0.25])) < 1e-6)
+assert(isfield(res.OPFprob.Constraints, "defP_EL003_B001"))
+
+
+%% reset_opffcn restores the defaults
+net = DebugScript.helper.build_9bus();
+res0 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+g1 = net.a_Bus{1}.a_Component{1};
+g1.set_opffcn("Cost", @(v, p) 5*v.P^2, "Constraint", @(v, p) struct("Cap", v.P <= 0.2), "DefaultConstraint", false);
+net.a_Bus{4}.set_opffcn("Constraint", @(v, p) struct("Flat", v.Varg == 0));
+net.a_Branch{1}.set_opffcn("Cost", @(v, p) v.Pfrom);
+net.set_opffcn("Constraint", @(v, p) struct("Sum", v.Component.SG1B001.P + v.Component.(string(net.a_Bus{2}.a_Component{1})).P <= 1));
+res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+assert(all(isfield(res.OPFprob.Constraints, ["Cap_SG1B001","Flat_B004","Sum"])))
+assert(abs(res.r_cost - res0.r_cost) > 1e-3)
+g1.reset_opffcn();
+net.a_Bus{4}.reset_opffcn();
+net.a_Branch{1}.reset_opffcn();
+net.reset_opffcn();
+assert(isequal(g1.s_opffcn, opffcn.default()) && isequal(net.s_opffcn, opffcn.default()))
+res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+assert(~any(isfield(res.OPFprob.Constraints, ["Cap_SG1B001","Flat_B004","Sum"])))
+assert(abs(res.r_cost - res0.r_cost) < 1e-9)
+assert(max(abs(res.tab_bus.P - res0.tab_bus.P)) < 1e-9)
+% 指定しなかった項は残る: Constraint だけを設定すると Cost はそのまま、[] で消える
+g1.set_opffcn("Cost", @(v, p) 2*v.P^2 + v.P);
+g1.set_opffcn("Constraint", @(v, p) struct("Cap", v.P <= 0.4));
+assert(~isempty(g1.s_opffcn.Cost) && ~isempty(g1.s_opffcn.Constraint))
+g1.set_opffcn("Cost", []);
+assert(isempty(g1.s_opffcn.Cost) && ~isempty(g1.s_opffcn.Constraint))
+
+
+%% Network-level reserve constraint and cost
+% net.set_opffcn の変数は v.Component.(タグ) / v.Bus.(タグ) / v.Branch.(タグ) で参照する。
+%   予備力: SG1B001, SG1B002 の余力 (2 - P) の合計 >= 2.5 → P1 + P2 <= 1.5
+%     → P1 = P2 = 0.75, P3 = 1.5、乗数 = (2*1.5+1) - (2*0.75+1) = 1.5 (名前は "Reserve")
+%   費用: SG1B003 に P3 を追加 → 2*P1+1 = 2*P2+1 = 2*P3+2、合計 3 → P3 = 2/3, P1 = P2 = 7/6
+net = DebugScript.helper.build_9bus();
+str_g = string(cellfun(@(b) b.a_Component{1}, net.a_Bus(1:3), "UniformOutput", false));
+net.set_opffcn("Constraint", @(v, p) struct("Reserve", ...
+    (2 - v.Component.(str_g(1)).P) + (2 - v.Component.(str_g(2)).P) >= 2.5));
+for str_m = ["ELD","DC OPF","AC OPF"]
+    [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method=str_m));
+    assert(flag > 0)
+    P = res.tab_cub{str_g,"P"};
+    assert(P(1) + P(2) <= 1.5 + 1e-6)
+    assert(res.lambda.Constraints.Reserve > 1e-3)
+    if str_m ~= "AC OPF"
+        assert(max(abs(P - [0.75; 0.75; 1.5])) < 1e-5)
+        assert(abs(res.lambda.Constraints.Reserve - 1.5) < 1e-5)
+    end
+end
+net.set_opffcn("Constraint", [], "Cost", @(v, p) v.Component.(str_g(3)).P);
+res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD"));
+assert(max(abs(res.tab_cub{str_g,"P"} - [7/6; 7/6; 2/3])) < 1e-5)
+assert(abs(res.r_cost - (DebugScript.helper.opf_cost(net, res.tab_cub) + 2/3)) < 1e-6)
+% 母線・送電線の変数も参照できる: B004 と B007 の位相差を 0 にする (DC OPF)
+net.set_opffcn("Cost", [], "Constraint", @(v, p) struct("SameAngle", v.Bus.B004.Varg == v.Bus.B007.Varg, ...
+                                                         "Flow", v.Branch.ET001.Pfrom >= 0));
+res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
+assert(abs(res.tab_bus{"B004","Varg"} - res.tab_bus{"B007","Varg"}) < 1e-6)
+
+
+%% set_opffcn does not make the equilibrium stale
+% OPF の設定は平衡点に影響しない: 編集ログ (tag "OPF") には残るが l_staleEquilibrium は変わらない
+net = DebugScript.helper.build_9bus();
+DebugScript.helper.quiet(@() net.initialize());
+assert(~net.l_staleEquilibrium)
+n0 = height(net.tab_editLog);
+g1 = net.a_Bus{1}.a_Component{1};
+g1.set_opffcn("Cost", @(v, p) 2*v.P^2 + v.P, "DefaultConstraint", false);
+net.a_Bus{5}.set_opffcn("Constraint", @(v, p) struct("Vhigh", v.V <= 1.02));
+net.a_Branch{1}.set_opffcn("Constraint", @(v, p) struct("Pfwd", v.Pfrom <= 2));
+net.set_opffcn("Constraint", @(v, p) struct("Reserve", v.Component.SG1B001.P <= 3));
+g1.reset_opffcn();
+net.reset_opffcn();
+assert(~net.l_staleEquilibrium)
+tab_log = net.tab_editLog(n0+1:end,:);
+assert(height(tab_log) == 6 && all(string(tab_log.tag) == "OPF"))
+assert(string(tab_log.log(1)) == "set_opffcn: Cost, DefaultConstraint" && string(tab_log.log(end)) == "reset_opffcn")
+assert(startsWith(string(tab_log.ID(1)), "SG1B001"))
+% 比較: 潮流設定の編集は平衡点を古くする
+net.a_Bus{5}.a_Component{1}.tab_parameter.powerflow.P = -1.1;
+assert(net.l_staleEquilibrium)
+
+
+%% Invalid set_opffcn input stops with an error
+net = DebugScript.helper.build_9bus();
+g1 = net.a_Bus{1}.a_Component{1};
+assert(error_id(@() g1.set_opffcn("Cost", 3)) == "GUILDA:opffcn:InvalidHandle")
+assert(error_id(@() g1.set_opffcn("Costs", @(v, p) v.P)) ~= "")
+g1.set_opffcn("Cost", @(v, p) [v.P, v.P]);
+assert(error_id(@() net.optimize_powerflow(Method="ELD")) == "GUILDA:opffcn:InvalidCost")
+g1.set_opffcn("Cost", @(v, p) v.Q);                     % v.Q は AC OPF だけ
+assert(error_id(@() net.optimize_powerflow(Method="DC OPF")) == "GUILDA:opffcn:HandleError")
+g1.set_opffcn("Cost", [], "Constraint", @(v, p) v.P <= 1);
+assert(error_id(@() net.optimize_powerflow(Method="ELD")) == "GUILDA:opffcn:InvalidConstraint")
+g1.set_opffcn("Constraint", @(v, p) struct("Cap", v.P));
+assert(error_id(@() net.optimize_powerflow(Method="ELD")) == "GUILDA:opffcn:InvalidConstraint")
+g1.reset_opffcn();
+net.set_opffcn("Constraint", @(v, p) struct("balancedP_B001", v.Component.SG1B001.P <= 1));
+assert(error_id(@() net.optimize_powerflow(Method="DC OPF")) == "GUILDA:opffcn:DuplicateName")
+net.reset_opffcn();
+% 問題を表せない Solver は使える Solver 名を示して止まる (2 次の費用に linprog)
+assert(error_id(@() net.optimize_powerflow(Method="DC OPF", Solver="linprog")) == "GUILDA:OptimalPowerFlow:UnsupportedSolver")
+
 
 % ---- local functions ----
 function net = build_loop3()
@@ -655,6 +937,19 @@ end
 
 function set_pf(ld, str_pq, v)
     ld.tab_parameter.powerflow.(str_pq) = v;
+end
+
+function [b, phase] = dc_susceptance(br)
+% DC OPF の送電線のサセプタンス (MATPOWER と同じ b = 1/(X*tap)、移相 phase [rad])
+    d = br.tab_parameter.dynamics;
+    tap = 1;  phase = 0;
+    if ismember("tap", d.Properties.VariableNames) && d.tap ~= 0
+        tap = d.tap;
+    end
+    if ismember("phase", d.Properties.VariableNames)
+        phase = d.phase;
+    end
+    b = 1/(d.X*tap);
 end
 
 function Y = mpc_ybus(mpc)
