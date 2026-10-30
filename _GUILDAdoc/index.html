@@ -10,6 +10,7 @@
   <script src="./database/list_UpdateLog.js"></script>
   <script src="./database/list_Classes.js"></script>
   <script src="./doc-loader.js"></script>
+  <script src="./doc-tree.js"></script>
   <script src="./database/list_Tutorials.js"></script>
   <script src="./database/list_developer.js"></script>
 </head>
@@ -458,6 +459,18 @@ sol = net.simulate([0, 50], fault);</code></pre>
     </div>
 
     <div id="tab-reference" class="tab-content">
+      <div class="ref-layout">
+      <aside class="ref-aside">
+        <div id="reference-source-tree"></div>
+        <h3>On this page</h3>
+        <ul class="ref-toc">
+          <li><a href="#ref-core" onclick="document.getElementById('ref-core')?.scrollIntoView(); return false;">Core Components</a></li>
+          <li><a href="#ref-diagram" onclick="document.getElementById('ref-diagram')?.scrollIntoView(); return false;">Class Diagram</a></li>
+          <li><a href="#ref-inherited" onclick="document.getElementById('ref-inherited')?.scrollIntoView(); return false;">Inherited Classes</a></li>
+          <li><a href="#ref-auxiliary" onclick="document.getElementById('ref-auxiliary')?.scrollIntoView(); return false;">Auxiliary Classes</a></li>
+        </ul>
+      </aside>
+      <div class="ref-main">
       <h1>Class Reference</h1>
       <p class="ref-status" id="reference-status"></p>
       <div id="reference-empty" class="ref-empty" hidden>
@@ -466,7 +479,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
       </div>
 
       <div class="reference-section">
-        <h2>Core Components of the System Model</h2>
+        <h2 id="ref-core">Core Components of the System Model</h2>
         <p>In GUILDA, the system model is primarily constructed using the following elements. The <code>PowerNetwork</code> class acts as a container, and by setting other classes within it, the system model is completed and ready for analysis.</p>
         
         <div class="intro-cards-wrapper">
@@ -476,7 +489,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
 
       <div class="reference-section">
         <div class="class-diagram-header" style="margin-top: 0;">
-          <h2 style="margin: 0; padding-bottom: 0; border: none;">Class Diagram</h2>
+          <h2 id="ref-diagram" style="margin: 0; padding-bottom: 0; border: none;">Class Diagram</h2>
           <div class="uml-notation-horizontal">
             <span class="notation-title">UML NOTATION</span>
             <span class="notation-item"><strong>◇──</strong> Composition (Has-a)</span>
@@ -552,7 +565,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
       </div>
 
       <div class="reference-section">
-        <h2>Inherited Classes</h2>
+        <h2 id="ref-inherited">Inherited Classes</h2>
         <p>The first column shows the inheritance hierarchy generated from each class's <code>Parent</code> metadata. Select a category to focus on one subtree, or select a class name to open its reference page.</p>
         
         <div class="view-panel">
@@ -565,7 +578,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
         </div>
 
         <div class="ref-toolbar">
-          <input type="search" id="class-search" class="search-box" placeholder="Search all classes by name, package, role, or summary..." autocomplete="off">
+          <input type="search" id="class-search" class="search-box" placeholder="Search all classes by name, package, or summary..." autocomplete="off">
           <label class="ref-check"><input type="checkbox" id="class-undocumented-only"> Not documented only</label>
         </div>
         <div class="inheritance-legend" aria-label="Class marker legend">
@@ -583,7 +596,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
       </div>
 
       <div class="reference-section">
-        <h2>Auxiliary Classes</h2>
+        <h2 id="ref-auxiliary">Auxiliary Classes</h2>
         <p>Although these classes do not directly correspond to the physical components of the power system model, they are essential for various analyses and data management within GUILDA. Base classes shared by both trees (such as <code>LayerPackage</code>) are listed here too. The search box and the filter above apply to this table as well.</p>
 
         <div class="ref-table-scroll">
@@ -594,6 +607,8 @@ sol = net.simulate([0, 50], fault);</code></pre>
         </div>
       </div>
 
+      </div>
+      </div>
     </div>
 
     <div id="tab-developer" class="tab-content">
@@ -807,10 +822,18 @@ sol = net.simulate([0, 50], fault);</code></pre>
       return window.GuildaDocLoader ? window.GuildaDocLoader.getClasses() : [];
     }
 
+    // A power system model class: Type in v4, the ancestor list otherwise.
+    function isModelClass(c) {
+      if (c.Type) return c.Type === 'PowerSystemModel';
+      return c.Name === 'PowerSystemModel' || (Array.isArray(c.Ancestors) && c.Ancestors.includes('PowerSystemModel'));
+    }
+
     function getModelCategories(data) {
       const configured = window.GuildaDocLoader?.getSchema()?.modelCategories;
       if (Array.isArray(configured) && configured.length) return configured;
-      return [...new Set(data.filter(c => c.Type === 'PowerSystemModel').map(c => c.Model).filter(Boolean))];
+      const fromModel = [...new Set(data.filter(isModelClass).map(c => c.Model).filter(Boolean))];
+      if (fromModel.length) return fromModel;
+      return data.filter(c => isModelClass(c) && window.GuildaDocLoader.parentNames(c).includes('PowerSystemModel')).map(c => c.Name);
     }
 
     function renderReferenceNavigation() {
@@ -826,7 +849,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
         cards.innerHTML = coreClassNames.map(name => data.find(c => c.Name === name)).filter(Boolean).map(c => `
           <a href="${window.GuildaDocLoader.pageUrl('class.html', { class: c.Name })}" class="core-class-card">
             <h3>${c.Name}</h3>
-            <p>${firstLineText(c.Summary || c.Desc) || c.Role || `Reference for ${c.Name}.`}</p>
+            <p>${escapeHtml(firstLineText(c.Summary || c.Desc)) || `Reference for ${c.Name}.`}</p>
           </a>
         `).join('');
       }
@@ -854,7 +877,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
     }
 
     function classSearchText(classData) {
-      return `${classData.Name || ''} ${classData.Package || ''} ${classData.Parent || ''} ${classData.Model || ''} ${classData.Role || ''} ${classData.Summary || ''} ${classData.Desc || ''} ${classData.Notes || ''}`.toLowerCase();
+      return `${classData.Name || ''} ${classData.Category || classData.Package || ''} ${classData.Origin || ''} ${classData.Parent || ''} ${classData.Model || ''} ${classData.Summary || ''} ${classData.Desc || ''}`.toLowerCase();
     }
 
     function escapeHtml(value) {
@@ -976,7 +999,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
           guides.length === 1 ? 'tree-category-row' : ''
         ].filter(Boolean).join(' ');
         const rowAttributes = `${rowClasses ? ` class="${rowClasses}"` : ''} data-tree-depth="${guides.length}"`;
-        const classLabel = `<a class="tree-class-link${node.Abstract ? ' is-abstract' : ''}" href="${window.GuildaDocLoader.pageUrl('class.html', { class: node.Name })}" title="${escapeHtml(summary || node.Role || '')}">${escapeHtml(node.Name)}</a>`;
+        const classLabel = `<a class="tree-class-link${node.Abstract ? ' is-abstract' : ''}" href="${window.GuildaDocLoader.pageUrl('class.html', { class: node.Name })}" title="${escapeHtml(summary)}">${escapeHtml(node.Name)}</a>`;
         const nodeMarker = `<span class="tree-node-marker${node.Abstract ? ' is-abstract' : ''}${guides.length === 0 ? ' is-root' : ''}" aria-hidden="true"></span>`;
         const hierarchyCell = `<div class="tree-table-name" style="--tree-depth:${guides.length}">${renderGuides(guides)}${nodeMarker}${classLabel}</div>`;
         const summaryCell = isDocumented(node)
@@ -992,7 +1015,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
 
     function renderInheritanceTree() {
       const data = getClassReferenceData();
-      const modelClasses = data.filter(c => c.Type === 'PowerSystemModel');
+      const modelClasses = data.filter(isModelClass);
       const hasRealRoot = modelClasses.some(c => c.Name === 'PowerSystemModel');
       renderClassTree({
         thead: document.getElementById('inherited-list-thead'),
@@ -1009,7 +1032,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
       renderClassTree({
         thead: document.getElementById('auxiliary-list-thead'),
         tbody: document.getElementById('auxiliary-list-tbody'),
-        classes: data.filter(c => c.Type !== 'PowerSystemModel'),
+        classes: data.filter(c => !isModelClass(c)),
         subtreeRootName: '',
         emptyText: 'No auxiliary classes found.'
       });
@@ -1026,6 +1049,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
       renderDeveloperLinks();
       renderReferenceStatus();
       renderReferenceNavigation();
+      window.GuildaDocTree?.mount(document.getElementById('reference-source-tree'), null);
       renderInheritanceTree();
 
       window.addEventListener('hashchange', () => {
