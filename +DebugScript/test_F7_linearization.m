@@ -342,6 +342,53 @@ s0 = bus.get_sys();  s1 = bus.get_sys("Point", res0.rv_point(c_idxBus{1}));
 assert(norm(s0.A - s1.A, 1) < 1e-8 * norm(s0.A, 1) && isequal(s0.StateName, s1.StateName))
 
 
+%% LQR closed loop matches its design model
+% 1機無限大母線系統では、系統の線形モデルが LQR の設計モデルと一致する
+% (開ループの固有値 = eig(A)、閉ループの固有値 = eig(A - B K)。無限大母線の近似による 0 付近の固有値は除く)
+[smib, gen] = DebugScript.helper.build_smib();
+DebugScript.helper.quiet(@() smib.initialize);
+e_open = eig_finite(smib.get_sys());
+lqr = controller.local_LQR("lqr1");
+gen.add_local_controller(lqr);
+DebugScript.helper.quiet(@() smib.initialize);
+for alg = ["Kron","Feedback","DAE"]
+    e_closed = eig_finite(smib.get_sys("Algorithm", alg));
+    e_closed = e_closed(abs(e_closed) > 1e-2);
+    assert(same_eigs(e_closed, eig(lqr.sys_design.A - lqr.sys_design.B*lqr.K), 1e-3), alg)
+end
+e_open = e_open(abs(e_open) > 1e-2);
+assert(same_eigs(e_open, eig(lqr.sys_design.A), 1e-3))
+
+% LQR は開ループより減衰を良くする (最も右の固有値が左へ動く)
+assert(max(real(e_closed)) < max(real(e_open)) - 0.5)
+
+
+%% LQR improves the damping of IEEE14
+% IEEE14 の発電機 1, 2 に既定の重み (Q = I, R = I) の LQR を付けると、
+% 最も右の固有値が左へ動き、振動モードの最小減衰比が大きくなる
+damping = @(e) min(-real(e(abs(imag(e)) > 1e-3)) ./ abs(e(abs(imag(e)) > 1e-3)));
+rightmost = @(e) max(real(e(abs(e) > 1e-6)));
+e0 = eig_finite(net.get_sys());
+netL = new_net();
+for b = 1:2
+    netL.a_Bus{b}.a_Component{1}.add_local_controller(controller.local_LQR("lqr" + b));
+end
+DebugScript.helper.quiet(@() netL.initialize);
+e1 = eig_finite(netL.get_sys());
+assert(rightmost(e1) < rightmost(e0) - 0.01, "rightmost " + rightmost(e0) + " -> " + rightmost(e1))
+assert(damping(e1) > damping(e0), "damping " + damping(e0) + " -> " + damping(e1))
+for alg = ["Kron","Feedback"]
+    assert(same_eigs(e1, eig_finite(netL.get_sys("Algorithm", alg)), 1e-6), alg)
+end
+
+% 平衡点の値を Point に与えると既定と同じ (LQR の入力は機器の状態から求め直す)
+res0 = netL.linearize();
+res1 = netL.linearize("Point", res0.rv_point);
+for str = ["rm_Axx","rm_Axv","rm_Bx","rm_Avx","rm_Avv","rm_Bv","rm_E"]
+    assert(norm(res1.(str) - res0.(str), 1) < 1e-8 * max(1, norm(res0.(str), 1)), str)
+end
+
+
 %% Point at a perturbed state
 % 平衡点からずらした点では、その点の x, V, u で各機器の Jacobian を評価する。モデルと解法は変わらない
 net = new_net();

@@ -246,13 +246,73 @@ assert(isempty(gen.a_LocalController))
 
 
 %% Add local controller LQR
+% 状態フィードバックの LQR (key "local") は AVR の位置に付き、予約語 "X" で機器の全状態を観測する
 net = DebugScript.helper.build_ieee14();
-DebugScript.helper.quiet(@() net.initialize);
+gen = net.a_Bus{1}.a_Component{1};
+lqr = controller.local_LQR("lqr1");
+gen.add_local_controller(lqr)
+assert(isa(gen.a_LocalController{1}, "controller.local_LQR"))
+assert(gen.a_LocalController{1} == lqr && lqr.a_Component == gen && lqr.key == "local")
 
-% LQR 制御器 (controller.local_LQR) を作成して発電機に付ける
-lqr = controller.local_LQR(net, 1);
-net.a_Bus{1}.a_Component{1}.add_local_controller(lqr)
-assert(isa(net.a_Bus{1}.a_Component{1}.a_LocalController{1}, "controller.local_LQR"))
+% 入力 "X" は発電機の状態名に展開され、出力 (駆動する入力) は既定で発電機の全入力
+assert(isequal(lqr.sv_u, gen.sv_x))
+assert(isequal(lqr.iv_obsX, (1:numel(gen.sv_x))') && all(lqr.iv_obsY == 0))
+assert(isequal(lqr.sv_y, gen.sv_u))
+
+% initialize でゲインが決まり、平衡点では u = u* を出力する (u = u* - K (x - x*))
+DebugScript.helper.quiet(@() net.initialize);
+assert(isequal(size(lqr.K), [numel(gen.sv_u), numel(gen.sv_x)]) && all(isfinite(lqr.K(:))))
+assert(isequal(lqr.rv_Uequilibrium, gen.rv_Xequilibrium) && isempty(lqr.rv_Xequilibrium))
+assert(norm(lqr.f_Y(0, [], [], [], gen.rv_Xequilibrium) - gen.rv_Uequilibrium) < 1e-12)
+
+% 駆動する入力を選べる。Q, R はベクトルなら対角行列
+lqr2 = controller.local_LQR("lqr2", Input="Vfield", Q=[1 10 1 1 1 1], R=2);
+evalc("gen.add_local_controller(lqr2)");      % 置き換え (警告)
+assert(gen.a_LocalController{1} == lqr2 && isempty(lqr.a_Component))
+assert(lqr2.sv_y == "Vfield" && isequal(lqr2.Q, diag([1 10 1 1 1 1])) && lqr2.R == 2)
+DebugScript.helper.quiet(@() net.initialize);
+assert(isequal(size(lqr2.K), [1, numel(gen.sv_x)]))
+
+% 機器にない入力を駆動しようとするとエラー
+try
+    evalc("net.a_Bus{2}.a_Component{1}.add_local_controller(controller.local_LQR(""lqr3"", Input=""Vref""))");
+    error("DebugScript:noError", "存在しない入力 Vref を駆動する LQR が付いてしまった")
+catch ME
+    assert(ME.identifier == "GUILDA:local_LQR:UnknownInput", ME.message)
+end
+
+
+%% LQR replaces an AVR and its PSS
+% LQR は AVR と同じ位置に付くので、AVR を置き換え、AVR に付いていた PSS は外れる
+net = DebugScript.helper.build_ieee14();
+gen = net.a_Bus{1}.a_Component{1};
+avr = controller.avr.AVR_ST1("avr1");
+pss = controller.pss.PSS1("pss1");
+gen.add_local_controller(avr, pss)
+
+% PSS は発電機の出力 omega を名前で観測する (状態にも omega があるが出力が優先)
+assert(pss.iv_obsY == 1 && pss.iv_obsX == 0)
+assert(all(avr.iv_obsY == 0) && all(avr.iv_obsX == 0))
+
+lqr = controller.local_LQR("lqr1");
+str = evalc("gen.add_local_controller(lqr)");
+assert(contains(str, "replaces"))
+assert(gen.a_LocalController{1} == lqr)
+assert(isempty(avr.a_Component) && isempty(pss.a_Component) && isempty(avr.a_LocalController))
+
+% LQR の下には PSS を付けられない
+try
+    gen.add_local_controller(controller.pss.PSS1("pss2"));
+    error("DebugScript:noError", "LQR の下に PSS が付いてしまった")
+catch ME
+    assert(ME.identifier ~= "DebugScript:noError", ME.message)
+end
+
+% AVR を付け直すと LQR が外れる
+avr2 = controller.avr.AVR_ST1("avr2");
+evalc("gen.add_local_controller(avr2)");
+assert(gen.a_LocalController{1} == avr2 && isempty(lqr.a_Component))
+DebugScript.helper.quiet(@() net.initialize);
 
 
 %% Add global controller AGC

@@ -478,6 +478,36 @@ assert(norm(r.Bus(1).Component(1).U{end,:}' - u_ref) < 1e-9)
 assert(norm(r.Bus(8).V{end,:}' - V_ref) < 1e-9)
 
 
+%% Fault with LQR
+% 状態フィードバックの LQR を付けた系統の地絡応答: 平衡点は保たれ、事故後の動揺は LQR 無しより小さい
+net = DebugScript.helper.build_ieee14();
+lqr1 = controller.local_LQR("lqr1");
+net.a_Bus{1}.a_Component{1}.add_local_controller(lqr1);
+net.a_Bus{6}.a_Component{1}.add_local_controller(controller.local_LQR("lqr6", Input="Vfield"));
+DebugScript.helper.quiet(@() net.initialize);
+
+sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
+assert(DebugScript.helper.max_state_drift(sol) < 1e-6)
+
+ev  = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+r   = net.simulate([0,10], ev).odeResults;
+assert(r.t(end) == 10)
+w   = r.Bus(1).Component(1).X.omega;
+
+% LQR の出力が発電機の入力 (Pmech, Vfield) になる
+U   = r.Bus(1).Component(1).U;
+x   = r.Bus(1).Component(1).X{:,:}';
+gen = net.a_Bus{1}.a_Component{1};
+u   = gen.rv_Uequilibrium - lqr1.K * (x - gen.rv_Xequilibrium);
+assert(max(abs(U{:,:}' - u), [], "all") < 1e-6)
+
+net0 = DebugScript.helper.build_ieee14();
+DebugScript.helper.quiet(@() net0.initialize);
+r0  = net0.simulate([0,10], odeEventSet("fault", net0, "TimeSpan", [1,1.05], "FaultBus", "B008")).odeResults;
+w0  = r0.Bus(1).Component(1).X.omega;
+assert(max(abs(w(r.t > 8))) < max(abs(w0(r0.t > 8))))
+
+
 %% Load step with global controller
 % AGC 付き系統で負荷を増やす (旧 Task13 + Task14)
 net = DebugScript.helper.build_ieee14();

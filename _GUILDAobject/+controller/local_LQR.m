@@ -1,218 +1,235 @@
 classdef local_LQR < LocalController
-% 一つのcomponentクラスに付加することを想定
+% <@Desc>
+% State-feedback LQR controller of one component. It observes all the states of the
+% component (the reserved input "X") and drives the inputs Input of the component:
+%   u = u* - K (x - x*)
+% where x*, u* are the equilibrium of the component. The gain K = lqr(A, B, Q, R) is
+% computed by net.initialize from the linear model of the component (comp.get_sys
+% without its controllers) connected to an infinite bus of voltage V0 through the
+% admittance that gives the equilibrium current (as in GUILDA v2).
+% Attach it with comp.add_local_controller(lqr); it takes the place of an AVR.
+% Its outputs replace the driven inputs, so a global controller (e.g. an AGC) must not
+% drive the same input (use Input="Vfield" with an AGC on Pmech).
+% <@Role> Controller
+% <@Summary> State-feedback LQR controller of a component.
+% <@Constructor>
+%  lqr = controller.local_LQR(tag)
+%  lqr = controller.local_LQR(tag, Q=Q, R=R, Input=["Vfield"], V0=1)
+% <@Parameters>
+% [
+%   {"Name": "tag", "Type": "string scalar", "Description": "Tag of the controller (\"CL\" + tag).", "Required": true, "Default": "-"},
+%   {"Name": "Q", "Type": "double vector | square matrix", "Description": "Weight of the states sv_x of the component (a vector is its diagonal).", "Required": false, "Default": "identity"},
+%   {"Name": "R", "Type": "double vector | square matrix", "Description": "Weight of the driven inputs Input (a vector is its diagonal).", "Required": false, "Default": "identity"},
+%   {"Name": "Input", "Type": "string vector", "Description": "Inputs sv_u of the component that the controller drives.", "Required": false, "Default": "all the inputs"},
+%   {"Name": "V0", "Type": "double scalar (complex)", "Description": "Voltage of the infinite bus of the design model.", "Required": false, "Default": "1"}
+% ]
 
-    properties(SetAccess=protected)
-        type = 'local';
-        port_input   = 'all';
-        port_observe = 'all';
+    properties (SetAccess=protected, Hidden)
+        key     = "local"
+        sv_x    = strings(0,1)
+        sv_u    = "X"
+        sv_y    = strings(0,1)
+        sv_para = strings(0,1)
     end
 
     properties
-        Q
-        R
-        V0 = 1; % 1 + 0j
+        % <@Desc> Weight of the states of the component (a vector is the diagonal).
+        % Editing it makes the equilibrium stale; net.initialize recomputes K.
+        % <@Role> Parameter
+        % <@Type> double
+        % <@Size> nx x nx
+        Q = []
+        % <@Desc> Weight of the driven inputs (a vector is the diagonal).
+        % Editing it makes the equilibrium stale; net.initialize recomputes K.
+        % <@Role> Parameter
+        % <@Type> double
+        % <@Size> nu x nu
+        R = []
+        % <@Desc> Voltage of the infinite bus of the design model.
+        % <@Role> Parameter
+        % <@Type> double
+        % <@Size> 1x1
+        V0 = 1
     end
 
-    properties(SetAccess = private)
-        sys
-        DX
+    properties (SetAccess=private)
+        % <@Desc> Feedback gain (u = u* - K (x - x*)), computed by net.initialize.
+        % <@Role> SteadyState
+        % <@Type> double
+        % <@Size> nu x nx
+        K = zeros(0,0)
+        % <@Desc> Linear model of the component and the infinite bus used to compute K
+        % (inputs: the driven inputs, outputs: the states).
+        % <@Role> SteadyState
+        % <@Type> ss
+        % <@Size> 1x1
+        sys_design
     end
 
-    properties(Access = private)
-        xss
-        uilab
-        default_Q
-        default_R
+    properties (Access=private)
+        sv_input (:,1) string = strings(0,1)   % Input as given (empty: all the inputs)
+        rv_u0    (:,1) double = zeros(0,1)     % equilibrium of the driven inputs
     end
-    
+
     methods
-
-        function obj = local_LQR(net, idx, default_Q, default_R, port_input)
-            obj@LocalController(net,idx,idx)
-
-            obj.set_index(idx);
-            
-            if nargin < 3; default_Q = []; end
-            if nargin < 4; default_R = []; end
-            if nargin ==5; obj.port_input = port_input; end
-
-            obj.default_Q = default_Q;
-            obj.default_R = default_R;
-        end
-
-        function nx = get_nx(~)
-            nx = 0;
-        end
-
-        function initialize(obj)
-            xidx = obj.idx_state{1};
-            uidx = obj.idx_port{1};
-            
-            obj.Q = xidx.'* obj.default_Q * xidx  ;
-            obj.R = uidx  * obj.default_R * uidx.';
-
-            if ~isempty(obj.Q) && ~isempty(obj.R)
-                i = obj.connected_index_observe;
-                obj.xss = obj.network.a_bus{i}.component.x_equilibrium;
+        function obj = local_LQR(tag, opt)
+            arguments
+                tag        (1,1) string
+                opt.Q      double = []
+                opt.R      double = []
+                opt.Input  (:,1) string = strings(0,1)
+                opt.V0     (1,1) double = 1
             end
-        end
-        
-        function [dx, u] = get_dx_u(obj, ~, ~, X, ~, ~, ~)
-            dx = [];
-            u{1} = obj.system_matrix.DX * (X{1} - obj.xss); % + obj.Du*u_global;
-        end
-        
-        function [A, BX, BV, BI,  Bu, C, DX, DV, DI, Du] = get_linear_matrix(obj)
-
-            idx =  obj.connected_index_observe;
-
-            c = obj.network.a_bus{idx}.component;
-            Vst = c.V_equilibrium;
-            Ist = c.I_equilibrium;
-            
-            [A, B, C, D, BV, DV, BI, DI, ~, ~] = c.get_linear_matrix;
-
-            y   = Ist / (Vst - obj.V0);
-            y   = tools.complex2matrix(y);
-            Bred  = BV + BI*y;
-            Dred  = DV + DI*y;
-            Acon = A - Bred / Dred * C;
-            Bcon = B - Bred / Dred * D;
-            Bcon = blkdiag( obj.idx_state{:} ) * Bcon;
-                
-            K = lqr(Acon, Bcon, obj.Q, obj.R);
-
-            DX = - blkdiag( obj.idx_port{:} ) * K;
-
-
-            nx = size(DX,2);
-            ny = size(DX,1);
-            nVI = 2 * numel(obj.connected_index_observe);
-            nu = sum(tools.varrayfun(@(i) obj.network.a_bus{i}.component.get_nu, obj.connected_index_input));
-
-            A  = [];
-            BX = zeros(0,nx);
-            BV = zeros(0,nVI);
-            BI = zeros(0,nVI);
-            Bu = zeros(0,nu);
-            C  = zeros(ny,obj.get_nx);
-            DV = zeros(ny,nVI);
-            DI = zeros(ny,nVI);
-            Du = zeros(ny,nu);
-
+            obj@LocalController("CL"+tag)
+            obj.sv_input = opt.Input;
+            obj.sv_y     = opt.Input;
+            obj.Q  = opt.Q;
+            obj.R  = opt.R;
+            obj.V0 = opt.V0;
+            obj.set_odefcn(obj.r_Hz)
         end
 
-    % インデックスの設定メソッド
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function set_index(obj,idx)
-            if isscalar(idx)
-                obj.connected_index_input = idx;
-                obj.connected_index_observe = idx;
-            else
-                error('This controller cannot be attached to more than one device.')
+        function set.Q(obj, val)
+            obj.Q = weight(val, "Q");
+            obj.log_change("Q");
+        end
+        function set.R(obj, val)
+            obj.R = weight(val, "R");
+            obj.log_change("R");
+        end
+        function set.V0(obj, val)
+            obj.V0 = val;
+            obj.log_change("V0");
+        end
+
+        function get_equilibrium(obj, V, u)
+            % Called by the component after its equilibrium is set: the inputs of the
+            % controller are the states x* and its outputs the inputs u* of the component.
+            comp = obj.a_Component;
+            if ~isa(comp, "Component")
+                error("GUILDA:local_LQR:NotOnComponent", "%s must be attached directly to a component.", obj.str_tag)
             end
-        end
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            x0 = comp.rv_Xequilibrium;
+            I0 = comp.c_Iequilibrium;
+            [~, iv_u] = ismember(obj.sv_y, comp.sv_u);
 
+            obj.rv_Xequilibrium = zeros(0,1);
+            obj.rv_Uequilibrium = x0;
+            obj.rv_u0 = u(iv_u);
 
-
-    % 行列Q,RのSetメソッド
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function set.default_Q(obj,Q)
-            s = size(Q);
-            if any(s==1); Q = diag(Q); 
-            elseif s(1)~=s(2); error('Q must be vector or square matrix');
+            % Design model: the component connected to the infinite bus V0 through the
+            % admittance y = I*/(V* - V0), so that dI = y dV
+            if abs(V - obj.V0) < 1e-9
+                error("GUILDA:local_LQR:DesignModel", ...
+                      "%s: the bus voltage equals V0 = %g; choose another V0 for the design model.", obj.str_tag, obj.V0)
             end
-            obj.default_Q = Q;
-        end
+            y_inf = tools.complex2matrix(I0 / (V - obj.V0));
+            sys   = comp.get_sys(x0, [real(V); imag(V)], [real(I0); imag(I0)], u, ...
+                                 "full", false, "tag", false, "con", false, "rec", false);
+            [A, B, C, D, E] = dssdata(sys);
+            Bv = B(:,1:2);   Bu = B(:,2+iv_u);
+            Dv = D(:,1:2);   Du = D(:,2+iv_u);
+            M  = y_inf - Dv;            % (y - Dv) dV = C dx + Du du
+            A  = E \ (A + Bv * (M \ C));
+            Bu = E \ (Bu + Bv * (M \ Du));
+            obj.sys_design = ss(A, Bu, eye(size(A)), 0, ...
+                                'StateName', cellstr(comp.sv_x), 'InputName', cellstr(obj.sv_y), 'OutputName', cellstr(comp.sv_x));
 
-        function set.default_R(obj,R)
-            s = size(R);
-            if any(s==1); R = diag(R); 
-            elseif s(1)~=s(2); error('R must be vector or square matrix');
+            nx = numel(x0);  nu = numel(iv_u);
+            Qw = obj.Q;  if isempty(Qw); Qw = eye(nx); end
+            Rw = obj.R;  if isempty(Rw); Rw = eye(nu); end
+            if ~isequal(size(Qw), [nx nx]) || ~isequal(size(Rw), [nu nu])
+                error("GUILDA:local_LQR:WeightSize", "%s: Q must be %dx%d (states %s) and R %dx%d (inputs %s).", ...
+                      obj.str_tag, nx, nx, join(comp.sv_x, ","), nu, nu, join(obj.sv_y, ","))
             end
-            obj.default_R = R;
+            obj.K = lqr(A, Bu, Qw, Rw);
+            obj.set_odefcn(obj.r_Hz)
         end
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-    % parameterの設定をUIで行うためのメソッド(開発中)
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function set_parameter(obj,fig)
-            i = obj.connected_index_input;
-            c = obj.network.a_bus{i}.component;
-            port = c.get_port_name;
-            state = c.get_state_name;
-
-            if nargin<2
-                fig = uifigure('Position',[200,200,400,300]);
-            end
-            uilabel(fig,'Position',[30 260 270 40], ...
-                        'Text',class(obj), ...
-                        'FontSize',20,...
-                        'FontWeight','bold');
-            uilabel(fig,'Position',[30 250 270 15], ...
-                        'Text',['  connect to 「', class(c),' @bus', num2str(i),'」'], ...
-                        'FontSize',12,...
-                        'FontWeight','bold');
-            obj.uilab = uitextarea(fig,...
-                        'Position'  , [50 120 300 120], ...
-                        'Value'     , word_factory(obj), ...
-                        'FontSize'  , 10,...
-                        'FontWeight', 'bold',...
-                        'Editable'  , 'on');
-            Q_val = diag(obj.Q);
-            xtab = table(Q_val);
-            xtab.Properties.RowNames = state;
-            xtab = uitable(fig, 'Data', xtab, 'Position',[20,10,120,100]);
-            xtab.ColumnEditable = true;
-            set(xtab, 'CellEditCallback', @obj.refresh_xtab);
-
-            R_val = zeros(numel(obj.uidx),1);
-            R_val(obj.uidx) = diag(obj.R);
-            check = obj.uidx(:);
-            utab = table(check,R_val);
-            utab.Properties.RowNames = port;
-            utab = uitable(fig, 'Data', utab, 'Position',[150,10,230,100]);
-            utab.ColumnEditable = [true,true];
-            s = uistyle('BackgroundColor',[0.8 0.8 0.8]);
-            addStyle(utab,s,'cell',[find(~obj.uidx(:)),2*ones(sum(~obj.uidx),1);find(~obj.uidx(:)),ones(sum(~obj.uidx),1)]);
-            set(utab, 'CellEditCallback', @obj.refresh_utab);
-        end
-
-        function refresh_xtab(obj, tab, ~)
-            obj.set_Q(tab.Data{:,1})
-            obj.uilab.Value = word_factory(obj);
-        end
-        function refresh_utab(obj, tab, data)
-            if data.Indices(2)==1
-                idx = tab.Data{:,1};
-                k = uistyle('BackgroundColor',[0.7 0.7 0.7]);
-                w = uistyle('BackgroundColor',[1 1 1]);
-                addStyle(tab,k,'cell',[find(~idx),2*ones(sum(~idx),1);find(~idx),ones(sum(~idx),1)]);
-                addStyle(tab,w,'cell',[find(idx) ,2*ones(sum(idx),1) ;find(idx) ,ones(sum(idx),1)]);
-                obj.uidx = idx;
-            end
-            obj.set_R(tab.Data{:,2}(obj.uidx));
-            obj.uilab.Value = word_factory(obj);
-        end
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     end
 
+    methods (Access=protected)
+        function resolve_ports(obj, comp)
+            % The driven inputs: Input, or all the inputs of the component
+            if isempty(obj.sv_input)
+                sv_in = comp.sv_u;
+            else
+                sv_in = obj.sv_input;
+                lv = ismember(sv_in, comp.sv_u);
+                if ~all(lv)
+                    error("GUILDA:local_LQR:UnknownInput", "%s: %s is not an input of %s (%s).", ...
+                          obj.str_tag, join(sv_in(~lv), ","), comp.str_tag, join(comp.sv_u, ","))
+                end
+            end
+            obj.sv_y = sv_in(:);
+        end
+
+        function set_inputs(obj, sv_name)
+            obj.sv_u = sv_name;
+        end
+
+        function set_odefcn(obj, omega0)
+            % u = u* - K (x - x*); before net.initialize the gain is zero
+            nu = numel(obj.sv_y);
+            nx = numel(obj.sv_u);
+            param.K  = zeros(nu, nx);
+            param.x0 = zeros(nx, 1);
+            param.u0 = zeros(nu, 1);
+            if isequal(size(obj.K), [nu nx]) && numel(obj.rv_Uequilibrium) == nx && numel(obj.rv_u0) == nu
+                param.K  = obj.K;
+                param.x0 = obj.rv_Uequilibrium;
+                param.u0 = obj.rv_u0;
+            end
+            obj.f_dx   = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, param, omega0);
+            obj.f_Mass = @(t,x,V,I,u) obj.fcn_Mass(t, x, V, I, u, param, omega0);
+            obj.f_Y    = @(t,x,V,I,u) obj.fcn_y(t, x, V, I, u, param, omega0);
+            obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
+            obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
+            obj.l_staleOdefcn = false;
+        end
+    end
+
+    methods (Access=private)
+        function log_change(obj, str_name)
+            % A weight edit changes K, which net.initialize recomputes
+            if ~isempty(obj.a_Component)
+                obj.log_edit(obj.str_tag + " edit " + str_name, "Parameter(dynamics)");
+            end
+        end
+    end
+
+    methods (Static)
+        function dx = fcn_dx(t, x, V, I, u, param, omega0) %#ok
+            dx = zeros(0,1);
+        end
+        function y = fcn_y(t, x, V, I, u, param, omega0) %#ok
+            y = param.u0 - param.K * (u - param.x0);
+        end
+        function M = fcn_Mass(t, x, V, I, u, param, omega0) %#ok
+            M = zeros(0,0);
+        end
+        function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t, x, V, I, u, param, omega0) %#ok
+            Axx = zeros(0,0);
+            Bxv = zeros(0,2);
+            Bxi = zeros(0,2);
+            Bxu = zeros(0,numel(u));
+        end
+        function [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t, x, V, I, u, param, omega0) %#ok
+            ny  = size(param.K,1);
+            Cyx = zeros(ny,0);
+            Dyv = zeros(ny,2);
+            Dyi = zeros(ny,2);
+            Dyu = -param.K;
+        end
+    end
 end
 
-function word = word_factory(obj)
-    % Gain matrix with 2 significant digits, one "[a, b, ...]" row per line
-    K     = obj.DX(obj.uidx,:);
-    Krows = arrayfun(@(i) ['[',strjoin(compose('%.2g',K(i,:)),', '),']',newline], ...
-                     1:size(K,1), 'UniformOutput', false);
-    Kword = ['', Krows{:}];
-    Kword = strrep(Kword,newline,[newline,repmat(sprintf('\t'),1,2)]);
-    word  = ['>> Q = diag(',mat2str(diag(obj.Q)),')',newline,...
-             '>> R = diag(',mat2str(diag(obj.R)),')',newline,...
-             newline,...
-             '%% Solve for LQR based on matrices Q and R %%', newline,...
-             newline,...
-             '>> K = ',Kword];
+function W = weight(W, str_name)
+    % A vector is the diagonal of the weight
+    if isempty(W)
+        W = [];
+    elseif isvector(W) && ~isscalar(W)
+        W = diag(W);
+    elseif size(W,1) ~= size(W,2)
+        error("GUILDA:local_LQR:WeightSize", "%s must be a vector or a square matrix.", str_name)
+    end
 end
