@@ -84,65 +84,82 @@
 
     <!-- ============================== PIPELINE ============================== -->
     <h2 id="pipeline">How it works</h2>
-    <p class="dg-lead-in">Nobody edits the Reference by hand. It is rebuilt from the source when the source changes.</p>
+    <p class="dg-lead-in">Nobody edits the Reference by hand. <code>GUILDA.doc</code> re-exports only the classes whose files changed.</p>
     <figure class="dg-figure">
-      <svg class="dg-svg dg-sv dg-only-wide" viewBox="0 0 800 200" role="img" aria-labelledby="cd-pipe-title">
+      <svg class="dg-svg dg-sv dg-only-wide" viewBox="0 0 800 224" role="img" aria-labelledby="cd-pipe-title">
         <title id="cd-pipe-title">Pipeline from MATLAB source to the Reference pages</title>
         <defs>
           <marker id="cd-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head" d="M0 0L10 5L0 10z"/></marker>
           <marker id="cd-ah-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head is-muted" d="M0 0L10 5L0 10z"/></marker>
         </defs>
         <!-- source -->
-        <rect class="dg-sv-box" x="2" y="40" width="154" height="110" rx="10"/>
-        <text class="is-k" x="79" y="64" text-anchor="middle">SOURCE</text>
-        <text class="dg-mono" x="79" y="88" text-anchor="middle">_GUILDAsystem</text>
-        <text class="dg-mono" x="79" y="106" text-anchor="middle">_GUILDAobject</text>
-        <text class="is-sm is-ok" x="79" y="132" text-anchor="middle">code + &lt;@Tag&gt; comments</text>
-        <path class="dg-sv-line dg-anim-dash" d="M158 95H196" marker-end="url(#cd-ah)"/>
-        <!-- auto check -->
-        <path class="dg-sv-box is-warn" d="M268 40 330 95 268 150 206 95z"/>
-        <text class="dg-mono is-b is-warn" x="268" y="90" text-anchor="middle">GUILDA.doc</text>
-        <text class="is-sm is-warn" x="268" y="107" text-anchor="middle">source newer?</text>
-        <text class="is-sm is-muted" x="268" y="28" text-anchor="middle">update = "auto"</text>
-        <path class="dg-sv-line is-muted" d="M268 150V184H755V148" marker-end="url(#cd-ah-m)"/>
-        <text class="is-sm is-muted" x="380" y="178">no: open the pages as they are</text>
-        <path class="dg-sv-line dg-anim-dash" d="M332 95H368" marker-end="url(#cd-ah)"/>
-        <text class="is-sm is-accent" x="350" y="86" text-anchor="middle">yes</text>
+        <rect class="dg-sv-box" x="2" y="36" width="154" height="128" rx="10"/>
+        <text class="is-k" x="79" y="60" text-anchor="middle">SOURCE</text>
+        <text class="dg-mono" x="79" y="84" text-anchor="middle">_GUILDAsystem</text>
+        <text class="dg-mono" x="79" y="102" text-anchor="middle">_GUILDAobject</text>
+        <text class="is-sm is-muted" x="79" y="122" text-anchor="middle">+ user classes</text>
+        <text class="is-sm is-muted" x="79" y="137" text-anchor="middle">on the MATLAB path</text>
+        <text class="is-sm is-ok" x="79" y="155" text-anchor="middle">code + help comments</text>
+        <path class="dg-sv-line dg-anim-dash" d="M158 100H196" marker-end="url(#cd-ah)"/>
+        <!-- change check -->
+        <path class="dg-sv-box is-warn" d="M268 45 330 100 268 155 206 100z"/>
+        <text class="dg-mono is-b is-warn" x="268" y="95" text-anchor="middle">GUILDA.doc</text>
+        <text class="is-sm is-warn" x="268" y="112" text-anchor="middle">files changed?</text>
+        <text class="is-sm is-muted" x="268" y="28" text-anchor="middle">time + size vs manifest.json</text>
+        <path class="dg-sv-line is-muted" d="M268 155V208H756V180" marker-end="url(#cd-ah-m)"/>
+        <text class="is-sm is-muted" x="380" y="202">no: open the pages as they are</text>
+        <path class="dg-sv-line dg-anim-dash" d="M332 100H368" marker-end="url(#cd-ah)"/>
+        <text class="is-sm is-accent" x="350" y="91" text-anchor="middle">yes</text>
         <!-- exporter -->
-        <rect class="dg-sv-box is-solid" x="372" y="55" width="140" height="80" rx="10"/>
-        <text class="dg-mono is-b is-inv" x="442" y="82" text-anchor="middle">exporter</text>
-        <text class="is-sm is-inv" x="442" y="102" text-anchor="middle">reflection + parser</text>
-        <text class="is-sm is-inv" x="442" y="119" text-anchor="middle">+ validation</text>
-        <path class="dg-sv-line dg-anim-dash" d="M514 78H548" marker-end="url(#cd-ah)"/>
-        <path class="dg-sv-line dg-anim-dash" d="M514 122H548" marker-end="url(#cd-ah)"/>
+        <rect class="dg-sv-box is-solid" x="372" y="60" width="140" height="80" rx="10"/>
+        <text class="dg-mono is-b is-inv" x="442" y="87" text-anchor="middle">exporter</text>
+        <text class="is-sm is-inv" x="442" y="107" text-anchor="middle">changed classes</text>
+        <text class="is-sm is-inv" x="442" y="124" text-anchor="middle">+ their subclasses</text>
+        <path class="dg-sv-line dg-anim-dash" d="M514 62H548" marker-end="url(#cd-ah)"/>
+        <path class="dg-sv-line dg-anim-dash" d="M514 100H548" marker-end="url(#cd-ah)"/>
+        <path class="dg-sv-line dg-anim-dash" d="M514 138H548" marker-end="url(#cd-ah)"/>
         <!-- database -->
-        <rect class="dg-sv-box is-soft" x="552" y="54" width="136" height="44" rx="8"/>
-        <text class="dg-mono is-sm is-accent" x="620" y="73" text-anchor="middle">list_Classes.js</text>
-        <text class="is-sm is-muted" x="620" y="89" text-anchor="middle">index · schema 4</text>
-        <rect class="dg-sv-box is-soft" x="552" y="102" width="136" height="44" rx="8"/>
-        <text class="dg-mono is-sm is-accent" x="620" y="121" text-anchor="middle">&lt;Class&gt;.js</text>
-        <text class="is-sm is-muted" x="620" y="137" text-anchor="middle">one file per class</text>
-        <path class="dg-sv-line dg-anim-dash" d="M690 100H712" marker-end="url(#cd-ah)"/>
+        <rect class="dg-sv-box is-soft" x="552" y="40" width="136" height="44" rx="8"/>
+        <text class="dg-mono is-sm is-accent" x="620" y="59" text-anchor="middle">list_Classes.js</text>
+        <text class="is-sm is-muted" x="620" y="75" text-anchor="middle">index · schema 5</text>
+        <rect class="dg-sv-box is-soft" x="552" y="88" width="136" height="44" rx="8"/>
+        <text class="dg-mono is-sm is-accent" x="620" y="107" text-anchor="middle">&lt;Class&gt;.js</text>
+        <text class="is-sm is-muted" x="620" y="123" text-anchor="middle">one file per class</text>
+        <rect class="dg-sv-box is-soft" x="552" y="136" width="136" height="44" rx="8"/>
+        <text class="dg-mono is-sm is-accent" x="620" y="155" text-anchor="middle">manifest.json</text>
+        <text class="is-sm is-muted" x="620" y="171" text-anchor="middle">time + size per file</text>
+        <path class="dg-sv-line dg-anim-dash" d="M690 110H712" marker-end="url(#cd-ah)"/>
         <!-- pages -->
-        <rect class="dg-sv-box is-ok" x="716" y="54" width="80" height="92" rx="8"/>
-        <text class="is-sm is-b is-ok" x="756" y="78" text-anchor="middle">Reference</text>
-        <text class="dg-mono is-sm" x="756" y="99" text-anchor="middle">index</text>
-        <text class="dg-mono is-sm" x="756" y="116" text-anchor="middle">class</text>
-        <text class="dg-mono is-sm" x="756" y="133" text-anchor="middle">method</text>
+        <rect class="dg-sv-box is-ok" x="716" y="40" width="80" height="140" rx="8"/>
+        <text class="is-sm is-b is-ok" x="756" y="64" text-anchor="middle">Reference</text>
+        <text class="dg-mono is-sm" x="756" y="88" text-anchor="middle">index</text>
+        <text class="dg-mono is-sm" x="756" y="105" text-anchor="middle">class</text>
+        <text class="dg-mono is-sm" x="756" y="122" text-anchor="middle">method</text>
+        <text class="is-sm is-muted" x="756" y="146" text-anchor="middle">+ folder</text>
+        <text class="is-sm is-muted" x="756" y="161" text-anchor="middle">tree</text>
       </svg>
       <div class="dg-only-narrow"><div class="dg-chain">
-        <div class="dg-chain-node"><span class="dg-kicker">Source</span><code>_GUILDAsystem</code>, <code>_GUILDAobject</code>: code and <code>&lt;@Tag&gt;</code> comments</div>
+        <div class="dg-chain-node"><span class="dg-kicker">Source</span><code>_GUILDAsystem</code>, <code>_GUILDAobject</code> and user classes on the MATLAB path: code and help comments</div>
         <div class="dg-chain-arrow"></div>
-        <div class="dg-chain-node is-warn"><span class="dg-kicker"><code>GUILDA.doc</code></span>Rebuild only if a source file is newer than the database</div>
+        <div class="dg-chain-node is-warn"><span class="dg-kicker"><code>GUILDA.doc</code></span>Compare file times and sizes with <code>manifest.json</code></div>
         <div class="dg-chain-arrow"></div>
-        <div class="dg-chain-node is-step"><span class="dg-kicker">Exporter</span>Reflection, source parser, validation</div>
+        <div class="dg-chain-node is-step"><span class="dg-kicker">Exporter</span>Changed classes and their subclasses only</div>
         <div class="dg-chain-arrow"></div>
-        <div class="dg-chain-node"><span class="dg-kicker">Database</span><code>list_Classes.js</code> + one <code>&lt;Class&gt;.js</code> per class</div>
+        <div class="dg-chain-node"><span class="dg-kicker">Database</span><code>list_Classes.js</code>, one <code>&lt;Class&gt;.js</code> per class, <code>manifest.json</code></div>
         <div class="dg-chain-arrow"></div>
-        <div class="dg-chain-node is-ok"><span class="dg-kicker">Pages</span>Reference tab, class page, method page</div>
+        <div class="dg-chain-node is-ok"><span class="dg-kicker">Pages</span>Reference tab, class page, method page, folder tree</div>
       </div></div>
       <figcaption>Every class MATLAB can reach under <code>_GUILDAsystem</code> and <code>_GUILDAobject</code> is exported, documented or not. The code gives the structure. Your comments add the meaning.</figcaption>
     </figure>
+    <table class="dg-table">
+      <thead><tr><th>Part</th><th>How it works</th></tr></thead>
+      <tbody>
+        <tr><td>Change check</td><td data-label="How it works"><code>GUILDA.doc</code> and startup compare each source file's modification time and size with <code>database/manifest.json</code>. Git is not used.<small>The rebuild rules are in <a href="#update">Keeping it up to date</a>.</small></td></tr>
+        <tr><td>Origin</td><td data-label="How it works">Each class gets a root by its folder: <b>System</b> (<code>_GUILDAsystem</code>), <b>Object</b> (<code>_GUILDAobject</code>) or <b>User</b>.</td></tr>
+        <tr><td>User classes</td><td data-label="How it works">A class anywhere on the MATLAB path that inherits from a GUILDA class is documented under the User root, with the same comment rules.<small>It stays on your machine. <code>GUILDA.publish_doc</code> never publishes it.</small></td></tr>
+        <tr><td>Pages</td><td data-label="How it works">The Reference keeps its index, class and method pages. A folder tree in the left sidebar shows the source folders and highlights the file on screen.</td></tr>
+      </tbody>
+    </table>
 
     <!-- ============================== WHERE ============================== -->
     <h2 id="where">Where comments go</h2>
