@@ -1,8 +1,8 @@
 # OPF requirements
 
 Requirements for optimal power flow (OPF) in GUILDA v4, as decided by the
-user on 2026-10-29. Undecided design details are listed at the end as open
-questions.
+user on 2026-10-29 and 2026-10-30. Undecided design details are listed at
+the end as open questions.
 
 ## Uses
 
@@ -31,6 +31,28 @@ questions.
   Branch; each object then adds its own terms to the problem.
 - Network-wide terms (e.g. a reserve requirement over many generators) go
   through the same method name on `PowerNetwork`.
+- Handles (decided 2026-10-30):
+  - `obj.set_opffcn("Cost", fcnCost, "Constraint", fcnCon)`, one handle per
+    term. `fcnCost = @(v, p) <scalar expression>`;
+    `fcnCon = @(v, p) struct(<name>, <constraint>, ...)`.
+  - `v` is the object's own optimization variables, `p` its parameters.
+    An object-level handle sees only its own variables.
+  - `Cost` replaces the default cost of that object. Constraints are added
+    to the defaults; their names become the dual labels.
+    `"DefaultConstraint", false` removes the object's default operating
+    limits (the model equations stay). `reset_opffcn()` restores the
+    defaults.
+  - A `PowerNetwork`-level handle receives the variables of every object,
+    addressed by tag: `v.Component.(tag).P`, `v.Bus.(tag).V`,
+    `v.Branch.(tag).Pfrom`.
+  - Single-snapshot handles stay scalar; multi-period OPF is a separate
+    method.
+  - `set_opffcn` is an OPF edit: logged in the edit log, it does not make
+    the equilibrium stale.
+- Default cost of loads is 0. A price-responsive load is a load with P
+  bounds and its own cost, set explicitly.
+- DC OPF uses the MATPOWER branch susceptance `1/X` (with the tap ratio as
+  MATPOWER does).
 - Rejected:
   - run-time arguments to `optimize_powerflow` that describe extra terms;
   - asking users to edit the returned `optimproblem` by hand.
@@ -39,6 +61,9 @@ questions.
   at the call site.
 
 ## Solvers
+
+- A backend that cannot express a problem stops with an error that lists
+  the usable `Solver` names (no silent fallback).
 
 - Default: the MATLAB Optimization Toolbox (`fmincon`, `quadprog`,
   `linprog` through `solve` on the `optimproblem`).
@@ -67,30 +92,12 @@ questions.
 
 ## Open questions
 
-- **Signature of the `set_opffcn` handles.** What does a handle receive and
-  return? Candidates: the object's own optimization variables (struct of
-  `optimvar` / `optimexpr`) and its parameters, returning cost terms and a
-  struct of constraints. Whether a handle may see other objects' variables
-  (e.g. neighbor bus voltages) is not decided.
-- **Combination with defaults.** Does a user handle replace the default
-  cost/constraints of that object, add to them, or choose per term?
 - **Multi-period variables in handles.** Is a handle called once per period
   with that period's variables, or once with variables that carry a time
   dimension (needed for ramp limits and storage energy balance)? How a
   timetable column is mapped to a handle argument is not decided.
-- **Backends that cannot express a problem.** When a user term is nonlinear
-  and the backend is linear/quadratic only (CPLEX/Gurobi via `prob2struct`,
-  or MATPOWER's fixed `mpc` model): error, warning with fallback to the
-  Toolbox, or silent fallback?
-- **Network-wide terms.** Which variables a `PowerNetwork`-level handle can
-  reference, and how it names them (by component tag, bus index, class).
 - **Duals and sensitivities API.** How nodal prices, line-limit shadow
   prices and Hessians are exposed on `OPFResult` (names, units, sign
   convention per unit of load).
-- **Default cost of loads.** Every component, loads included, gets
-  `HP = fP = 1` by default. Should a load's default cost be zero, and should
-  a price-responsive load be a load with free P (bounds) and its own cost?
-- **DC susceptance.** DC OPF uses `b = Im(Y_ij)`; MATPOWER uses `1/X`. Keep,
-  switch, or make it an option (it matters for a MATPOWER backend).
 - **Warm start for `initialize`.** Whether `initialize` may use an OPF
   point, and what happens when the OPF does not converge.
