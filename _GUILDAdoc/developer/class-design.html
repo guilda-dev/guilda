@@ -55,6 +55,9 @@
       <a href="#identity">Identity</a>
       <a href="#solvers">Solver settings</a>
       <a href="#edits">Edit handling</a>
+      <a href="#variables">Variable order</a>
+      <a href="#optional">Optional analyses</a>
+      <a href="#opf">OPF customization</a>
       <a href="#conventions">Conventions</a>
     </nav>
 
@@ -137,7 +140,8 @@
         <ul>
           <li><code>get_sys</code>: on <code>Component</code>, the linearized model of the component and its controllers; on <code>Bus</code>, the aggregate of its components; on <code>PowerNetwork</code>, the whole system.</li>
           <li><code>get_admittance_matrix</code>: on <code>Branch</code>, its 2×2 matrix; on <code>PowerNetwork</code>, the matrix of the whole network.</li>
-          <li><code>build_opf_problem</code>: each class adds its own variables and constraints; <code>PowerNetwork</code> collects them.</li>
+          <li><code>get_variable_map</code>: on <code>Component</code> and <code>Bus</code>, the rows of the network map that belong to it, in the same relative order (see <a href="#variables">Variable order</a>).</li>
+          <li><code>build_opf_problem</code> and <code>set_opffcn</code>: each class adds its own variables, cost, and constraints; <code>PowerNetwork</code> collects them.</li>
         </ul>
       </div></li>
       <li><div>
@@ -155,7 +159,7 @@
         <dl>
           <dt>Owns</dt><dd><code>a_Bus</code>, <code>a_Branch</code>, <code>a_GlobalController</code>; the system base values in <code>tab_parameter.base</code>: the network frequency <code>Hz</code> and the system <code>baseMVA</code> <small>(components and controllers read the frequency through <code>r_Hz</code>; they never keep a copy)</small>; the single slack bus <small>(the network keeps exactly one; a bus never changes the flag of another bus)</small>; the solver objects <code>solver_PF</code> / <code>solver_OPF</code> / <code>solver_CPF</code> / <code>solver_ODE</code> as persistent default analysis settings (see <a href="#solvers">Solver settings</a>).</dd>
           <dt>Derived</dt><dd>Equilibria of all buses (<code>cv_Vequilibrium</code>, <code>cv_Iequilibrium</code>, <code>rv_Xequilibrium</code>); the network admittance matrix.</dd>
-          <dt>Methods</dt><dd><code>add_*</code> / <code>remove_*</code>; the analysis entry points (see <a href="api-design.html">API Design</a>); <code>get_admittance_matrix</code>; <code>get_sys</code>.</dd>
+          <dt>Methods</dt><dd><code>add_*</code> / <code>remove_*</code>; the analysis entry points (see <a href="api-design.html">API Design</a>); <code>get_admittance_matrix</code>; <code>linearize</code> and its shortcut <code>get_sys</code>; <code>get_variable_map</code>; <code>set_opffcn</code> / <code>reset_opffcn</code> for network-wide OPF terms (see <a href="#opf">OPF customization</a>).</dd>
         </dl>
       </div>
       <div class="dg-row cd-c-bus">
@@ -164,7 +168,7 @@
           <dt>Owns</dt><dd><code>a_Component</code>; <code>l_isSlack</code>; power-flow specifications (<code>V</code>, <code>Varg</code>, <code>V0</code>, <code>Varg0</code>); shunt (<code>Gshunt</code>, <code>Bshunt</code>); <code>Vmin</code> / <code>Vmax</code>; <code>baseKV</code>; drawing coordinates; the equilibrium voltage <code>c_Vequilibrium</code>.</dd>
           <dt>Derived</dt><dd><code>c_Iequilibrium</code> = sum of its components' currents; <code>str_bustype</code>.</dd>
           <dt>Not owned</dt><dd>A bus has no <code>baseMVA</code>: the system base belongs to <code>PowerNetwork</code>. CSV import accepts a bus <code>baseMVA</code> column for compatibility and ignores it.</dd>
-          <dt>Methods</dt><dd><code>add_component</code> / <code>remove_component</code> / <code>replace_component</code>; <code>set_equilibrium</code> (distributes P and Q to its components); <code>get_sys</code> (aggregate of its components); <code>build_opf_problem</code>.</dd>
+          <dt>Methods</dt><dd><code>add_component</code> / <code>remove_component</code> / <code>replace_component</code>; <code>set_equilibrium</code> (distributes P and Q to its components); <code>get_sys</code> (aggregate of its components); <code>get_variable_map</code>; <code>build_opf_problem</code>; <code>set_opffcn</code> / <code>reset_opffcn</code>.</dd>
         </dl>
       </div>
       <div class="dg-row cd-c-branch">
@@ -172,25 +176,27 @@
         <dl>
           <dt>Owns</dt><dd>The references to its two end buses <small>(an association, not a parent)</small>; <code>R</code>, <code>X</code>, <code>C</code>, <code>tap</code>, <code>phase</code>; flow limits (<code>Smax</code>, <code>Imax</code>, <code>Pmax</code>, <code>Qmax</code>, <code>Vargmax</code>); drawing information.</dd>
           <dt>Derived</dt><dd>End voltages and currents (<code>cv_Vequilibrium</code>, <code>cv_Iequilibrium</code>).</dd>
-          <dt>Methods</dt><dd><code>get_admittance_matrix</code> (2×2); <code>build_opf_problem</code>.</dd>
+          <dt>Methods</dt><dd><code>get_admittance_matrix</code> (2×2); <code>build_opf_problem</code>; <code>set_opffcn</code> / <code>reset_opffcn</code>.</dd>
         </dl>
       </div>
       <div class="dg-row cd-c-comp">
         <div><code class="cd-name">Component</code><span class="cd-role">A generator, load, or other device connected to one bus.</span></div>
         <dl>
-          <dt>Owns</dt><dd><code>a_LocalController</code>; dynamics parameters <small>(per unit on the system base)</small>; power-flow settings (<code>P</code>, <code>Q</code>); operating limits; OPF cost; the machine rating <code>baseMVA</code> <small>(used to share reactive power between components on one bus; it is <strong>not</strong> the system base)</small>; the equilibrium <code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code>, and its injected current <code>c_Iequilibrium</code>.</dd>
+          <dt>Owns</dt><dd><code>a_LocalController</code>; dynamics parameters <small>(per unit on the system base)</small>; power-flow settings (<code>P</code>, <code>Q</code>); operating limits; OPF cost <small>(a load has no default cost)</small>; the machine rating <code>baseMVA</code> <small>(used to share reactive power between components on one bus; it is <strong>not</strong> the system base)</small>; the equilibrium <code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code>, and its injected current <code>c_Iequilibrium</code>.</dd>
           <dt>Derived</dt><dd><code>c_Vequilibrium</code> (= the voltage of its bus); <code>omega0</code> (the network frequency in Hz, read through <code>r_Hz</code>); <code>rv_Xequilibrium_all</code>; <code>tab_parameter</code>.</dd>
           <dt>Cache</dt><dd>The function handles <code>f_dx</code>, <code>f_I</code>, <code>f_Y</code>, <code>f_Mass</code>, and <code>f_Jacobi*</code> are kept as a cache built by <code>set_odefcn</code>. They stay because a handle binds the class's own methods, and folding the constant parameters and <code>omega0</code> into the handle keeps the call signature short: <code>f_dx(t,x,V,I,u)</code>.</dd>
-          <dt>Model contract</dt><dd>Static <code>fcn_dx</code>, <code>fcn_I</code>, <code>fcn_Y</code>, <code>fcn_Mass</code> with <code>(t, x, V, I, u, param, omega0)</code>; optional <code>Jacobi_dx</code> / <code>Jacobi_I</code> / <code>Jacobi_Y</code> (numerical differentiation is used otherwise); <code>get_equilibrium(V, I, P, Q)</code> → <code>[x, u]</code>.</dd>
-          <dt>Methods</dt><dd><code>set_equilibrium</code>; <code>get_sys</code>; <code>add_local_controller</code>; <code>build_opf_problem</code>; <code>validate</code>.</dd>
+          <dt>Model contract</dt><dd>Static <code>fcn_dx</code>, <code>fcn_I</code>, <code>fcn_Y</code>, <code>fcn_Mass</code> with <code>(t, x, V, I, u, param, omega0)</code>; optional <code>Jacobi_dx</code> / <code>Jacobi_I</code> / <code>Jacobi_Y</code> (numerical differentiation is used otherwise); <code>get_equilibrium(V, I, P, Q)</code> → <code>[x, u]</code>. Optional analyses such as Hessians have their own contract (see <a href="#optional">Optional analyses</a>).</dd>
+          <dt>Methods</dt><dd><code>set_equilibrium</code>; <code>get_sys</code>; <code>get_variable_map</code>; <code>get_hessian</code>; <code>add_local_controller</code>; <code>build_opf_problem</code>; <code>set_opffcn</code> / <code>reset_opffcn</code>; <code>validate</code>.</dd>
         </dl>
       </div>
       <div class="dg-row cd-c-con">
         <div><code class="cd-name">LocalController</code><code class="cd-name">GlobalController</code><span class="cd-role">Controllers that compute an input for components.</span></div>
         <dl>
           <dt>Contract</dt><dd>Controllers keep their own contract, different from <code>Component</code> on purpose: a component outputs the current <code>I</code> to the network and <code>Y</code> to its controllers, while a controller only outputs the input <code>u</code> to the component.</dd>
+          <dt>Observes</dt><dd>Only the outputs <code>Y</code> of the components it controls, never their state <code>x</code>. A controller that needs an internal quantity of a machine (for example <code>delta</code>, <code>omega</code>, or <code>E</code>) gets it because the component adds that quantity to its <code>Y</code>.</dd>
           <dt>Owns</dt><dd>Its parameters and its equilibrium (<code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code>).</dd>
           <dt>Derived</dt><dd><code>LocalController.c_Vequilibrium</code> is a <code>Dependent</code> view of its component's voltage.</dd>
+          <dt>Methods</dt><dd><code>get_hessian</code> (see <a href="#optional">Optional analyses</a>).</dd>
         </dl>
       </div>
       <div class="dg-row cd-c-other">
@@ -225,6 +231,7 @@
       <div class="is-ok"><span class="dg-kicker">Tag (e.g. <code>B001</code>)</span><p>The permanent ID of an object. Use it in saved data and in event definitions.</p></div>
       <div class="is-err"><span class="dg-kicker">Index (e.g. <code>net.a_Bus{3}</code>)</span><p>Only the current position. It shifts after <code>remove_*</code>, so never store it.</p></div>
     </div>
+    <p>An automatic tag takes the largest number in use plus one (buses <code>B###</code>, branches <code>###</code>, components per bus). A number is never reused while a larger one exists, so a new tag never names an existing or earlier object. A global controller's tag is chosen by the user and must be unique.</p>
 
     <!-- ============================== SOLVERS ============================== -->
     <h2 id="solvers">Solver settings</h2>
@@ -243,17 +250,61 @@
       </thead>
       <tbody>
         <tr><td>dynamics parameter</td><td><span class="dg-badge is-err">function-handle cache</span> <span class="dg-badge is-err">equilibrium</span><small>The function-handle cache applies to components and controllers only; a bus shunt or a branch constant changes the equilibrium.</small></td></tr>
+        <tr><td>network <code>baseMVA</code></td><td><span class="dg-badge is-err">function-handle cache</span> <span class="dg-badge is-err">equilibrium</span><small>Every layer of the network: the per-unit values change.</small></td></tr>
+        <tr><td>network <code>Hz</code></td><td><span class="dg-badge is-err">function-handle cache</span><small>Every layer of the network. The equilibrium does not depend on the nominal frequency, so no <code>initialize</code> is needed.</small></td></tr>
         <tr><td>powerflow parameter</td><td><span class="dg-badge is-err">equilibrium</span></td></tr>
-        <tr><td>topology change (<code>add_*</code> / <code>remove_*</code> / <code>replace_*</code>)</td><td><span class="dg-badge is-err">equilibrium</span></td></tr>
+        <tr><td>topology change (<code>add_*</code> / <code>remove_*</code> / <code>replace_*</code>)</td><td><span class="dg-badge is-err">equilibrium</span><small>Includes adding or replacing a controller, which changes the dynamics.</small></td></tr>
         <tr><td>slack bus change</td><td><span class="dg-badge is-err">equilibrium</span></td></tr>
         <tr><td>operation / OPF / graph parameter</td><td><span class="dg-badge is-ok">nothing</span></td></tr>
+        <tr><td>OPF terms (<code>set_opffcn</code> / <code>reset_opffcn</code>)</td><td><span class="dg-badge is-ok">nothing</span><small>Logged in the edit log.</small></td></tr>
       </tbody>
     </table>
     <p>When an analysis starts:</p>
     <ul>
       <li>Stale function handles are rebuilt automatically, for the affected components only.</li>
-      <li>If the equilibrium is stale, <code>simulate</code> and <code>get_sys</code> stop with an error that says to run <code>net.initialize()</code> first (see <a href="api-design.html#rules">API Design, rule 5</a>).</li>
+      <li>If the equilibrium is stale, <code>simulate</code>, <code>linearize</code>, and <code>get_sys</code> stop with <code>GUILDA:PowerNetwork:EquilibriumStale</code>, which names the edits and says to run <code>net.initialize()</code> first (see <a href="api-design.html#rules">API Design, rule 5</a>).</li>
+      <li>The check is part of each solver's <code>solve</code> (<code>solver_ODE</code>, <code>solver_LIN</code>), so calling a solver directly checks it too.</li>
     </ul>
+
+    <!-- ============================== VARIABLES ============================== -->
+    <h2 id="variables">Variable order</h2>
+    <p><code>net.get_variable_map()</code> is the single definition of the order of the model variables. Every analysis that lists variables uses it: the Jacobian blocks of a linearization, the <code>Point</code> option, and simulation results. Do not define another order.</p>
+    <table class="cd-table">
+      <thead>
+        <tr><th>Block</th><th>Order</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1. states <code>x</code></td><td>For each bus, for each component: the component's states, then its local controllers' states (depth first: an AVR, then the PSS under it). Then the states of each global controller.</td></tr>
+        <tr><td>2. bus voltages</td><td><code>Vre</code>, <code>Vim</code> of each bus, interleaved per bus.</td></tr>
+        <tr><td>3. inputs <code>u</code></td><td>For each bus, for each component: its inputs.</td></tr>
+      </tbody>
+    </table>
+    <p>The <code>Label</code> column of the map equals the state and input names of <code>get_sys</code>, so find a variable by its label, not by its position. <code>net.linearize(Point=x)</code> linearizes at any state <code>x</code> given in this order, or at a time of a simulation result (<code>Point={sim, t}</code>).</p>
+
+    <!-- ============================== OPTIONAL ============================== -->
+    <h2 id="optional">Optional analyses: Hessians</h2>
+    <p>An analysis that only some models support is a method on the base class with a per-class contract. <code>get_hessian</code> on <code>Component</code>, <code>LocalController</code>, and <code>GlobalController</code> works this way.</p>
+    <div class="cd-split">
+      <div class="is-ok"><span class="dg-kicker">The class supports it</span><p>It defines static <code>Hessian_dx</code> (required), <code>Hessian_I</code>, and <code>Hessian_Y</code> with the arguments of <code>Jacobi_*</code>. Each returns <code>n_eq × n_z × n_z</code> with <code>z = [x; V; I; u]</code>.</p></div>
+      <div class="is-err"><span class="dg-kicker">The class does not</span><p>The base method stops with <code>GUILDA:&lt;Layer&gt;:HessianNotSupported</code>, which names the class.</p></div>
+    </div>
+    <p>Each class supplies its own derivatives. No symbolic differentiation is used, so the Symbolic Math Toolbox is not required.</p>
+
+    <!-- ============================== OPF ============================== -->
+    <h2 id="opf">OPF customization</h2>
+    <p>Each object holds its own OPF terms, set with <code>obj.set_opffcn("Cost", @(v,p) ..., "Constraint", @(v,p) struct(...), "DefaultConstraint", false)</code> and restored with <code>obj.reset_opffcn()</code>. <code>v</code> holds the object's optimization variables and <code>p</code> its parameters.</p>
+    <table class="cd-table">
+      <thead>
+        <tr><th>Term</th><th>Effect</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>Cost</code></td><td>Replaces the default cost of the object. A load has no default cost.</td></tr>
+        <tr><td><code>Constraint</code></td><td>Added to the default constraints. Each field name labels the constraint and its dual in <code>result.lambda.Constraints</code>.</td></tr>
+        <tr><td><code>DefaultConstraint</code><small><code>false</code></small></td><td>Removes the object's default constraints (e.g. the bounds of a component). The bus power balance always stays.</td></tr>
+        <tr><td>network level</td><td><code>net.set_opffcn</code> takes terms over several objects; its <code>v</code> reaches each object's variables by tag (e.g. <code>v.Component.(tag).P</code>).</td></tr>
+      </tbody>
+    </table>
+    <p>DC OPF uses <code>|V| = 1</code> and the MATPOWER branch susceptance <code>b = 1/(X·tap)</code>.</p>
 
     <!-- ============================== CONVENTIONS ============================== -->
     <h2 id="conventions">Conventions</h2>
