@@ -1,29 +1,60 @@
 classdef GlobalController < PowerSystemModel
+% Abstract class of a controller that acts on several components of a network, such as an AGC.
+%
+% A global controller is a dynamic model with states x, inputs u and outputs y. Its
+% inputs are outputs of the controlled components (`controlledUnits`) and its outputs
+% are inputs of those components. Subclasses in the `controller` package define the
+% static model functions (`fcn_dx`, `fcn_y`, `fcn_Mass`), their Jacobians and the
+% variable names. A global controller is built for a network and added with
+% `PowerNetwork.add_global_controller`.
+%
+% <@Examples>
+% ```matlab
+% net = network.IEEE14bus();
+% g1  = net.a_Bus{1}.a_Component{1};
+% g2  = net.a_Bus{2}.a_Component{1};
+% agc = controller.agc.broadcast_PI_AGC(net, "agc", g1, g2, alpha=[1;1], beta=[1;1], kP=100, kI=500);
+% net.add_global_controller(agc);
+% net.initialize();
+% sys = agc.get_sys();
+% ```
+%
+% See also PowerNetwork.add_global_controller, controller.agc.broadcast_PI_AGC, LocalController
+
     properties(Abstract, Constant, Hidden=true)
-        key      (1,1) string 
-        sv_x    (:,1) string
-        sv_u    (:,1) string 
-        sv_y    (:,1) string
-        sv_para (:,1) string
+        key      (1,1) string   % Kind of controller.
+        sv_x    (:,1) string    % Names of the states.
+        sv_u    (:,1) string    % Names of the inputs (outputs of the controlled units).
+        sv_y    (:,1) string    % Names of the outputs (inputs of the controlled units).
+        sv_para (:,1) string    % Names of the dynamic parameters passed to the model functions.
     end
     methods (Abstract, Static)        
+        % Return the state derivatives of the controller.
+        %
+        % The arguments of all model functions are the time t [s], the states x, the
+        % ports V and I (zeros(2,1): a global controller has none), the inputs u, the
+        % dynamic parameters param and the nominal frequency omega0 [Hz].
         dx = fcn_dx(t, x, V, I, u, param, omega0)
+
+        % Return the outputs of the controller.
         y  = fcn_y(t, x, V, I, u, param, omega0)
+
+        % Return the mass matrix of the state equation.
         M  = fcn_Mass(t, x, V, I, u, param, omega0)
     end       
-    properties(SetAccess=protected)                   
-        f_Mass       
-        f_dx       
-        f_Y
+    properties(SetAccess=protected) % Dynamics
+        f_Mass                                 % Mass matrix function @(t,x,V,I,u) with the parameters bound.
+        f_dx                                   % State equation function @(t,x,V,I,u) with the parameters bound.
+        f_Y                                    % Output function @(t,x,V,I,u) with the parameters bound.
 
-        f_JacobiDx
-        f_JacobiY                
+        f_JacobiDx                             % Jacobian function of f_dx.
+        f_JacobiY                              % Jacobian function of f_Y.
     end    
-    properties (SetAccess=protected)
-        a_PowerNetwork                         % [   Layer   ] 接続している PowerNetwork (add_global_controller が設定)
+    properties (SetAccess=protected) % Layer Structure
+        a_PowerNetwork                         % PowerNetwork the controller belongs to (set by add_global_controller).
     end
     properties (SetAccess=protected, Hidden)
-        controlledUnits
+        controlledUnits                        % Controlled components, in the order given to the constructor.
     end
     properties (SetAccess={?odeSimulator, ?odeEventSet}, Hidden)
         iv_odeX (:,1) double = zeros(0,1);
@@ -35,23 +66,26 @@ classdef GlobalController < PowerSystemModel
 
         l_isConnect (1,1) logical = true       % false while a trip event names it (set by odeSimulator); its output is zero
     end        
-    properties(SetAccess={?PowerNetwork})
-        rv_Xequilibrium (:,1) double = zeros(0,1)   
-        rv_Uequilibrium (:,1) double = zeros(0,1)   
+    properties(SetAccess={?PowerNetwork}) % Steady State
+        rv_Xequilibrium (:,1) double = zeros(0,1)   % State equilibrium.
+        rv_Uequilibrium (:,1) double = zeros(0,1)   % Input equilibrium.
     end    
-    properties(SetAccess=protected)
-        para_dynamics
+    properties(SetAccess=protected) % Parameter
+        para_dynamics                          % Parameter object of tab_parameter.dynamics.
     end
-    properties(Dependent)
-        tab_parameter
+    properties(Dependent) % Parameter
+        tab_parameter                          % Parameter table; one row per controlled unit.
     end
-    properties(Dependent, Access=protected)
-        parent 
-        children
+    properties(Dependent, Access=protected) % Layer Structure
+        parent                                 % Layer Structure: the network.
+        children                               % Layer Structure: none.
     end
     
     methods
         function obj = GlobalController(net, tag, varargin)
+            % Create a global controller of the network net that controls the given components.
+            %
+            % `varargin` lists the controlled components, as Component objects or tags.
             obj.str_tag = tag;
             obj.para_dynamics = Parameter(obj,"dynamics");
 
@@ -78,13 +112,20 @@ classdef GlobalController < PowerSystemModel
 
         % get sys
         function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
+            % Linearize the global controller.
+            %
+            % The inputs are the outputs of the controlled units and the outputs are the
+            % controller outputs that feed them; the V and I ports are not used. The output
+            % sys is a descriptor state-space model (dss) with state, input and output names.
+            %
+            % See also GlobalController.get_hessian, PowerNetwork.get_sys
             arguments
                 obj                 
-                x        (:,1) double  = obj.rv_Xequilibrium
-                V        (:,1) double  = zeros(2,1)
-                I        (:,1) double  = zeros(2,1)
-                u        (:,1) double  = obj.rv_Uequilibrium
-                opt.full (1,1) logical = true 
+                x        (:,1) double  = obj.rv_Xequilibrium   % States (default: the equilibrium).
+                V        (:,1) double  = zeros(2,1)   % Not a port: zeros(2,1).
+                I        (:,1) double  = zeros(2,1)   % Not a port: zeros(2,1).
+                u        (:,1) double  = obj.rv_Uequilibrium   % Inputs (default: the equilibrium).
+                opt.full (1,1) logical = true   % Unused; kept for compatibility.
             end
 
             % Same Jacobian contract as odeSimulator: f_JacobiDx/Y(t,x,V,I,u).
