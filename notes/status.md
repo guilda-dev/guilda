@@ -1,6 +1,6 @@
 # Status of the redesign
 
-Branch: `refactor/design-alignment` (base: `version4.0`). Updated 2026-10-29.
+Branch: `refactor/design-alignment` (base: `version4.0`). Updated 2026-10-30.
 
 ## Tests
 
@@ -10,14 +10,14 @@ Branch: `refactor/design-alignment` (base: `version4.0`). Updated 2026-10-29.
 /Applications/MATLAB_R2026a.app/bin/matlab -batch "cd('<repo>'); DebugScript.run_all"
 ```
 
-Result on 2026-10-29 (`refactor/design-alignment` at `be166af`, after
-stages 2 and 3):
+Result on 2026-10-30 (`refactor/design-alignment` at `2723422`, after
+the topology, events, controller, follow-up and network-template fixes):
 
 ```
-合計 189 件: PASS 187 / KNOWN 1 / FAIL 0 / FIXED? 0 / SKIP 1   (248 s)
-  F1: PASS 21  KNOWN 1    F2: PASS 18    F3: PASS 34
-  F4: PASS 19  SKIP 1     F5: PASS  6    F6: PASS 27
-  F7: PASS 25             F8: PASS 18    F9: PASS  9
+合計 205 件: PASS 203 / KNOWN 1 / FAIL 0 / FIXED? 0 / SKIP 1   (371 s)
+  F1: PASS 26  KNOWN 1    F2: PASS 18    F3: PASS 37
+  F4: PASS 20  SKIP 1     F5: PASS  6    F6: PASS 31
+  F7: PASS 26             F8: PASS 20    F9: PASS  9
   F10: PASS 10
 ```
 
@@ -32,56 +32,45 @@ Use R2026a: R2026b lacks the Optimization and Control toolboxes.
   still uses the v3 LocalController API and is abstract under v4. In v4 a
   controller's input is the component's output `Y` (for generators only
   `omega`), and `add_local_controller` holds only controllers keyed `avr` /
-  `pss`. Porting a state-feedback LQR needs a decision on the controller
-  input contract (state access, and which keys a component may hold).
+  `pss`. Decided: the LQR reads widened component outputs `Y` (no direct
+  state access). The port is in progress in another session.
 
 ## Open items
 
-Checked against the code on 2026-10-29.
+Checked against the code on 2026-10-30 (`2723422`).
 
 ### Edit tracking
 
-- **`add_local_controller` logs no edit.** Adding or replacing an AVR/PSS
-  changes the dynamics but does not call `log_edit`, so neither the
-  equilibrium nor the handles are marked stale
-  (`_GUILDAsystem/@Component/add_local_controller.m`).
-- **Network Hz edit marks the equilibrium stale.** Confirmed by design:
-  `LayerPackage.edit_effect` maps `Parameter(base)` to "handles and
-  equilibrium stale". Decide whether a Hz (or baseMVA) edit should require
-  `initialize()` or only rebuild the handles.
-- **`odeLinearizer` / `solver_ODE` called directly skip the stale check.**
-  Only `PowerNetwork.initialize`, `simulate` and `get_sys` call
-  `check_edit`; the analysis classes do not.
+- Decided and implemented: a network **Hz** edit makes only the `f_*`
+  handles stale (the equilibrium does not depend on the nominal frequency);
+  a **baseMVA** edit makes the handles and the equilibrium stale, so it
+  needs `initialize()` (`LayerPackage.edit_effect`). The edit table in
+  `class-design.html` (Edit handling) on `docs/doc-refactoring` has no row
+  for these edits yet.
 
 ### Controllers
 
-- **Replacing an AVR drops its nested PSS.** `add_local_controller` with a
-  new AVR overwrites `a_LocalController{1}`; the PSS attached to the old AVR
-  is not moved to the new one.
-- **GlobalController parent property** is named `PowerNetwork` and holds
-  `{net}` (a cell), unlike `a_PowerNetwork` / `a_Component` elsewhere.
-- **A tripped global controller still acts.** A trip event naming a global
-  controller freezes its states, but `odeSimulator` still adds its `f_Y`
-  output to the controlled inputs, so a proportional (direct feed-through)
-  part keeps acting. `GlobalController.l_isConnect` is never set or read;
-  only the controlled units' `l_isConnect` masks the controller input.
+- **`controller.local_LQR` port in progress** (see the known failure
+  above): widened component outputs `Y`.
 
-### Topology
+### Bundled networks
 
-- **Branch tags can collide after `remove_branch`.** `add_branch` numbers
-  the new branch `numel(a_Branch)+1`, which may equal a remaining tag
-  (`add_bus` already skips used numbers).
-- **Component tags can collide after `remove_component`** (added after
-  checking the code). `add_component` uses `numel(a_Component)+1` in the
-  same way.
+- **`IEEE68bus` without controllers is unstable.**
+  `network.IEEE68bus(LocalController=false)` has an eigenvalue with real
+  part +0.128, and a multi-phase simulation (e.g. with a fault event)
+  fails at t = 0 (reported by the session that ported it; not rechecked
+  here). Another session is fixing it.
+- **`GUILDA.dictionary` scans `+network/archive/`**, so the archived v2
+  classes are listed (reported; not rechecked here). Another session is
+  fixing it.
 
-### Simulation
+### Tutorials
 
-- **Events outside the simulation time range are ignored silently.**
-  `odeEventSet/private/getTimeSpan.m` drops event times outside
-  `[t0, te]`; an event that ends before `t0` has no effect and no warning
-  is issued. Events that start before `t0` and continue into the range are
-  applied.
+- The tutorials are updated to v4 on three branches, **on hold** by the
+  user's decision until the specification settles:
+  `docs/tutorial-steps-1-3-v4`, `docs/tutorial-steps-4-6-v4`,
+  `docs/tutorial-classmanual-v4`. On `refactor/design-alignment` the
+  `_GUILDAtutorial/*.mlx` files still use pre-v4 calls.
 
 ### Compatibility
 
@@ -127,12 +116,8 @@ Open:
 - **Load cost defaults.** `add_component` gives every component, including
   loads, `HP = fP = 1`. A fixed load's cost is a constant that is added to
   `r_cost`; finite differences of `r_cost` with respect to a load include it.
-  `IEEE14bus` now gives its loads `HP = fP = 0` (see below); the
-  `add_component` default is unchanged.
-- **`IEEE14bus_lossless` still has the old IEEE14 data** (load Q sign, line
-  charging, the shifted B values, ±Inf generator limits, 0.5–1.5 voltage
-  limits, unit costs). Its transformer taps are read since the CSV fix
-  (effect below).
+  `IEEE14bus` and `IEEE14bus_lossless` give their loads `HP = fP = 0` (see
+  below); the `add_component` default is unchanged.
 
 ### IEEE14 data and CSV taps
 
@@ -141,7 +126,7 @@ Fixed on `fix/ieee14-data-and-tap-import`:
 - **CSV import reads transformer taps.** CSV import (now
   `PowerNetwork.import_csv`) reads the `tap`/`phase` columns that the
   bundled networks and the export write, and still accepts `Tap`/`Phase`; both spellings in one file is an
-  error (`network:import_csv:DuplicateColumns`). Before, every imported tap
+  error (`GUILDA:import_csv:DuplicateColumns`). Before, every imported tap
   was 1 (IEEE14 4-7, 4-9, 5-6; `IEEE14bus_lossless` too). `TEST31bus`
   already used `Tap`. `Ishizaki6Bus` and `Txt3Bus` have `tap = 0` on `pi`
   lines, which `pi` ignores.
@@ -174,12 +159,20 @@ Fixed on `fix/ieee14-data-and-tap-import`:
   −0.540, smallest damping ratio 0.037 → 0.035. Bus 8 runs at 1.09 pu in
   power flow, above its `Vmax` 1.06, as in case14 (power flow does not
   enforce limits).
-- **`IEEE14bus_lossless` changed through the tap fix only** (data
+- **`IEEE14bus_lossless` changed through the tap fix** first (data
   untouched): bus voltages up to 0.016 pu (bus 5), angles 0.15°, bus
   reactive power up to 27.9 MVAr, slowest mode −0.332 → −0.385 (smallest
   damping ratio unchanged, 0.037); ω after a B008 fault differs by 1.5e-4
-  (peak 1.6e-3); OPF costs unchanged. Decide whether to give it the case14
-  data.
+  (peak 1.6e-3); OPF costs unchanged.
+- **`IEEE14bus_lossless` is now `IEEE14bus` with R = 0** (decided and done
+  on `fix/network-templates-v4`): line charging, the bus 9 shunt and the
+  taps stay; bus, load and generator data, limits and costs are those of
+  `IEEE14bus`. Against the tap-fixed old data (computed with the code at
+  `2723422` and the `fe1e5c3` CSVs): bus voltages up to 0.054 pu (bus 14),
+  angles 0.33°, slack P unchanged (219.0 MW, no loss), slowest mode
+  −0.385 → −0.595, smallest damping ratio 0.037 → 0.035, ELD/DC/AC OPF cost
+  2.66 → 7642.59 $/hr (all three equal without loss). The F8 test pins its
+  bus voltages and slowest eigenvalue.
 - `DebugScript.run_all` on `fix/ieee14-data-and-tap-import` (2026-10-29):
   165 tests, PASS 163 / KNOWN 1 / FAIL 0 / SKIP 1 (the MATPOWER comparison).
 
@@ -205,26 +198,10 @@ Follow-ups found in stage 3:
   wall-clock time of each integration phase (between event times), not
   the whole run; a run with many events can take many times `TimeLimit`.
   Decide whether it should be a total limit.
-- **`Bus.l_isNonUnit` is unused.** `net.linearize` / `get_sys` no longer
-  write it (`NonUnit` is a per-call option) and nothing reads it
-  (`_GUILDAsystem/@Bus/Bus.m`). Remove it or make it the default of
-  `NonUnit`.
-- **`@GUILDA/未実装import_MATPOWER.m` is obsolete**: replaced by
-  `PowerNetwork.import_matpower`. Delete it.
-- **`IEEE14bus_lossless` still has the old IEEE14 data** (see
-  [OPF](#opf)): decide whether to give it the case14 data.
 
 Other items noticed while writing the migration notes (checked in the
-code at `be166af`):
+code at `2723422`):
 
-- `net.build_opf_problem` still takes the v3 option name `methods`
-  (`optimize_powerflow` uses `Method`).
-- The CSV import error for duplicate `tap`/`Tap` columns has the ID
-  `network:import_csv:DuplicateColumns`; the other import errors use
-  `GUILDA:import_csv:*`.
-- The tutorials in `_GUILDAtutorial/*.mlx` still use pre-v4 calls
-  (e.g. `net.simulate(t, 'fault', {...})`, `'report'`, `'time_limit'`,
-  `get_sys(true)`, `out.export_csv`); they need a rewrite in MATLAB.
 - A result does not record whether the network was edited after the
   analysis: `tab_editLog` is cleared by `initialize`, so it cannot serve as a
   stamp.
