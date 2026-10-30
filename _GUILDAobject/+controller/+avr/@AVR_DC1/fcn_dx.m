@@ -11,10 +11,10 @@ function dx = fcn_dx(t, x, V, I, u, param, omega0) %#ok
     % - `param` Parameter vector in the order of `sv_para`.
     % - `omega0` [Hz] Nominal frequency (unused).
     %
+    % Outputs:
+    % - `dx` Right-hand side `f`, one row per state.
+    %
     % See also controller.avr.AVR_DC1.fcn_Mass, controller.avr.AVR_DC1.fcn_y, controller.avr.AVR_DC1.Jacobi_dx
-    arguments (Output)
-        dx % Right-hand side `f`, one row per state.
-    end
                 
     % リファレンス値
     Vref = u(1);

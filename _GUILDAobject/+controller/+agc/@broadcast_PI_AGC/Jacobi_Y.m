@@ -11,13 +11,13 @@ function [Cyx, Dyv, Dyi, Dyu] = Jacobi_Y(t,x,V,I,u,param,omega0) %#ok
     % - `param` Parameter matrix, one row per controlled unit, with columns `[alpha, beta, kP, kI]`.
     % - `omega0` [Hz] Nominal frequency (unused).
     %
+    % Outputs:
+    % - `Cyx` Derivative of `y` with respect to `x`.
+    % - `Dyv` Derivative of `y` with respect to `V` (`[real; imag]`).
+    % - `Dyi` Derivative of `y` with respect to `I` (`[real; imag]`).
+    % - `Dyu` Derivative of `y` with respect to `u`.
+    %
     % See also controller.agc.broadcast_PI_AGC.fcn_y, controller.agc.broadcast_PI_AGC.Jacobi_dx
-    arguments (Output)
-        Cyx % Derivative of `y` with respect to `x`.
-        Dyv % Derivative of `y` with respect to `V` (`[real; imag]`).
-        Dyi % Derivative of `y` with respect to `I` (`[real; imag]`).
-        Dyu % Derivative of `y` with respect to `u`.
-    end
     
     alpha = param(:,1);
     kI    = param(1,4);

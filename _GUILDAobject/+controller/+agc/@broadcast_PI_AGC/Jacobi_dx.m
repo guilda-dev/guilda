@@ -11,13 +11,13 @@ function [Axx, Bxv, Bxi, Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0) %#ok
     % - `param` Parameter matrix, one row per controlled unit, with columns `[alpha, beta, kP, kI]`.
     % - `omega0` [Hz] Nominal frequency (unused).
     %
+    % Outputs:
+    % - `Axx` Derivative of `f` with respect to `x`.
+    % - `Bxv` Derivative of `f` with respect to `V` (`[real; imag]`).
+    % - `Bxi` Derivative of `f` with respect to `I` (`[real; imag]`).
+    % - `Bxu` Derivative of `f` with respect to `u`.
+    %
     % See also controller.agc.broadcast_PI_AGC.fcn_dx, controller.agc.broadcast_PI_AGC.Jacobi_Y
-    arguments (Output)
-        Axx % Derivative of `f` with respect to `x`.
-        Bxv % Derivative of `f` with respect to `V` (`[real; imag]`).
-        Bxi % Derivative of `f` with respect to `I` (`[real; imag]`).
-        Bxu % Derivative of `f` with respect to `u`.
-    end
     Axx = 0;
     Bxv = []; 
     Bxi = [];

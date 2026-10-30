@@ -18,9 +18,9 @@ classdef abstract < LocalController
             arguments                            
                 tag = "base" % Tag suffix; the controller tag is "CP" + tag.
             end            
-            arguments (Output)
-                obj % PSS object.
-            end
+            %
+            % Outputs:
+            % - `obj` PSS object.
             obj@LocalController("CP"+tag)                                                            
 
         end        
@@ -41,27 +41,27 @@ classdef abstract < LocalController
             % Return the empty right-hand side of the base PSS (it has no state).
             %
             % Inputs are those of controller.pss.PSS1.fcn_dx; the base PSS uses none of them.
-            arguments (Output)
-                dx % Empty right-hand side.
-            end
+            %
+            % Outputs:
+            % - `dx` Empty right-hand side.
             dx = [];
         end
         function y  = fcn_y(obj, t, x, V, u, para, omega0) %#ok
             % Return the output of the base PSS, which is always 0.
             %
             % Inputs are those of controller.pss.PSS1.fcn_dx; the base PSS uses none of them.
-            arguments (Output)
-                y % [pu] Stabilizing signal `Vpss` (0).
-            end
+            %
+            % Outputs:
+            % - `y` [pu] Stabilizing signal `Vpss` (0).
             y = 0;
         end
         function M  = fcn_Mass(obj, t, x, V, u, para, omega0) %#ok
             % Return the empty mass matrix of the base PSS (it has no state).
             %
             % Inputs are those of controller.pss.PSS1.fcn_dx; the base PSS uses none of them.
-            arguments (Output)
-                M % Empty mass matrix.
-            end
+            %
+            % Outputs:
+            % - `M` Empty mass matrix.
             M = [];
         end
     end

@@ -12,10 +12,10 @@ function Mass = fcn_Mass(t, x, V, I, u, param, omega0) %#ok
     % - `param` Parameter vector in the order of `sv_para`.
     % - `omega0` [Hz] Nominal frequency (unused).
     %
+    % Outputs:
+    % - `Mass` Mass matrix `M`, one row and column per state.
+    %
     % See also controller.pss.PSS1.fcn_dx
-    arguments (Output)
-        Mass % Mass matrix `M`, one row and column per state.
-    end
     
     tWS = param(2);
     % 位相進み補償器    

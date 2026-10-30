@@ -12,13 +12,13 @@ function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0) %#ok
     % - `param` Parameter vector in the order of `sv_para`.
     % - `omega0` [Hz] Nominal frequency (unused).
     %
+    % Outputs:
+    % - `Axx` Derivative of `f` with respect to `x`.
+    % - `Bxv` Derivative of `f` with respect to `V` (`[real; imag]`).
+    % - `Bxi` Derivative of `f` with respect to `I` (`[real; imag]`).
+    % - `Bxu` Derivative of `f` with respect to `u`.
+    %
     % See also controller.avr.AVR_DC1.fcn_dx, controller.avr.AVR_DC1.Jacobi_Y
-    arguments (Output)
-        Axx % Derivative of `f` with respect to `x`.
-        Bxv % Derivative of `f` with respect to `V` (`[real; imag]`).
-        Bxi % Derivative of `f` with respect to `I` (`[real; imag]`).
-        Bxu % Derivative of `f` with respect to `u`.
-    end
     Vtr  = x(1);
     Vap  = x(2);
     Vfld = x(3);

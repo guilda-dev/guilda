@@ -141,10 +141,10 @@ classdef local_LQR_retrofit <  LocalController
             % - `Icell` [pu] Cell array with the terminal current (unused).
             % - `U` Global input (unused).
             % - `is_linear` true to use the linearized polar transform (default false).
-            arguments (Output)
-                dx % Controller state derivative.
-                u  % Cell array with the input to the generator.
-            end
+            %
+            % Outputs:
+            % - `dx` Controller state derivative.
+            % - `u` Cell array with the input to the generator.
             if nargin < 8
                 is_linear = false;
             end
@@ -176,10 +176,10 @@ classdef local_LQR_retrofit <  LocalController
         function [dx, u] = get_dx_u_linear(obj, t, x, X, Vcell, Icell, U)
             % Return the state derivative and the input with the linearized polar transform.
             % Same as get_dx_u with `is_linear = true`.
-            arguments (Output)
-                dx % Controller state derivative.
-                u  % Cell array with the input to the generator.
-            end
+            %
+            % Outputs:
+            % - `dx` Controller state derivative.
+            % - `u` Cell array with the input to the generator.
             [dx, u] = get_dx_u(obj, t, x, X, Vcell, Icell, U, true);
         end
 

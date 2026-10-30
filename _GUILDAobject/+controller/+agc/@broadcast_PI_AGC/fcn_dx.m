@@ -10,10 +10,10 @@ function dx = fcn_dx(t, x, V, I, u, param, omega0) %#ok
     % - `param` Parameter matrix, one row per controlled unit, with columns `[alpha, beta, kP, kI]`.
     % - `omega0` [Hz] Nominal frequency (unused).
     %
+    % Outputs:
+    % - `dx` Right-hand side `f`, one row per state.
+    %
     % See also controller.agc.broadcast_PI_AGC.fcn_Mass, controller.agc.broadcast_PI_AGC.fcn_y, controller.agc.broadcast_PI_AGC.Jacobi_dx
-    arguments (Output)
-        dx % Right-hand side `f`, one row per state.
-    end
     beta  = param(:,2);
     
     dx = beta.' * u;

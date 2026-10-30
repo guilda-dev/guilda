@@ -9,10 +9,10 @@ function y = fcn_y(t, x, V, I, u, param, omega0) %#ok
     % - `param` Parameter matrix, one row per controlled unit, with columns `[alpha, beta, kP, kI]`.
     % - `omega0` [Hz] Nominal frequency (unused).
     %
+    % Outputs:
+    % - `y` [pu] Mechanical power commands `Pmech`, one row per controlled unit.
+    %
     % See also controller.agc.broadcast_PI_AGC.fcn_dx, controller.agc.broadcast_PI_AGC.Jacobi_Y
-    arguments (Output)
-        y % [pu] Mechanical power commands `Pmech`, one row per controlled unit.
-    end
     alpha = param(:,1);
     beta  = param(:,2);
     kP    = param(1,3);

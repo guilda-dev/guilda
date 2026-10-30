@@ -10,10 +10,10 @@ function y = fcn_y(t, x, V, I, u, param, omega0) %#ok
     % - `param` Parameter vector in the order of `sv_para`.
     % - `omega0` [Hz] Nominal frequency (unused).
     %
+    % Outputs:
+    % - `y` [pu] Field voltage `Vfield` applied to the generator (amplifier output limited to `[Vap_min, Vap_max]`).
+    %
     % See also controller.avr.AVR_ST1.fcn_dx, controller.avr.AVR_ST1.Jacobi_Y
-    arguments (Output)
-        y % [pu] Field voltage `Vfield` applied to the generator (amplifier output limited to `[Vap_min, Vap_max]`).
-    end
     
     Vap_max = param(2);
     Vap_min = param(3);

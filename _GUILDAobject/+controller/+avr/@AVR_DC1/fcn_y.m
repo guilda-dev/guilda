@@ -10,10 +10,10 @@ function y = fcn_y(t, x, V, I, u, param, omega0) %#ok
     % - `param` Parameter vector in the order of `sv_para`.
     % - `omega0` [Hz] Nominal frequency (unused).
     %
+    % Outputs:
+    % - `y` [pu] Field voltage `Vfield` applied to the generator.
+    %
     % See also controller.avr.AVR_DC1.fcn_dx, controller.avr.AVR_DC1.Jacobi_Y
-    arguments (Output)
-        y % [pu] Field voltage `Vfield` applied to the generator.
-    end
 
     y = x(3);
 end

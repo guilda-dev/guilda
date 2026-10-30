@@ -86,10 +86,10 @@ classdef local_LQR < LocalController
         
         function [dx, u] = get_dx_u(obj, ~, ~, X, ~, ~, ~)
             % Return the feedback input `u = DX*(X - xss)` for the component state `X`.
-            arguments (Output)
-                dx % Empty state derivative (the controller has no state).
-                u  % Cell array with the input to the component.
-            end
+            %
+            % Outputs:
+            % - `dx` Empty state derivative (the controller has no state).
+            % - `u` Cell array with the input to the component.
             dx = [];
             u{1} = obj.system_matrix.DX * (X{1} - obj.xss); % + obj.Du*u_global;
         end

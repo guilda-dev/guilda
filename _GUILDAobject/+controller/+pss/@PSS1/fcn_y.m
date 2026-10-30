@@ -10,10 +10,10 @@ function Vpss = fcn_y(t, x, V, I, u, param, omega0) %#ok
     % - `param` Parameter vector in the order of `sv_para`.
     % - `omega0` [Hz] Nominal frequency (unused).
     %
+    % Outputs:
+    % - `Vpss` [pu] Stabilizing signal `Vpss` to the AVR, limited to `[Vpss_min, Vpss_max]`.
+    %
     % See also controller.pss.PSS1.fcn_dx, controller.pss.PSS1.Jacobi_Y
-    arguments (Output)
-        Vpss % [pu] Stabilizing signal `Vpss` to the AVR, limited to `[Vpss_min, Vpss_max]`.
-    end
     % 一番最初についてるゲイン
     kpss = param(1);     
     % 位相進み補償器
