@@ -550,6 +550,8 @@ function cell_diagnostics = check_parameter_names(sct_info, str_context)
 end
 
 function str_access = organize_access(dat)
+    % MATLAB returns access lists in no fixed order, so the names are sorted
+    % to keep the export identical between runs.
     if isa(dat,"char") || isa(dat,"string")
         str_access = char(dat);
         return
@@ -558,12 +560,12 @@ function str_access = organize_access(dat)
     if iscell(dat)
         cell_access = cellfun(@organize_access, dat, 'UniformOutput', false);
         cell_access = cell_access(~cellfun(@isempty, cell_access));
-        str_access = strjoin(cell_access, ', ');
+        str_access = strjoin(sort(cell_access), ', ');
     elseif isscalar(dat)
         str_access = dat.Name;
     else
         cell_access = arrayfun(@(d) organize_access(d), dat, 'UniformOutput', false);
-        str_access = strjoin(cell_access, ', ');
+        str_access = strjoin(sort(cell_access), ', ');
     end
 end
 
