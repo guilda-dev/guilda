@@ -154,9 +154,10 @@
     if (relativePath) {
       return new URL(relativePath.replace(/^\.\//, ''), documentationRootUrl).href;
     }
-    // Schema v5 keeps each class in database/<Origin>/<Class>.js.
-    if (meta.Origin) {
-      return new URL(`database/${meta.Origin}/${meta.Name}.js`, documentationRootUrl).href;
+    // Fallback when the index has no path: database/<folder>/<Class>.js.
+    const originFolder = { System: 'GUILDAsystem', Object: 'GUILDAobject', User: 'User' }[meta.Origin];
+    if (originFolder) {
+      return new URL(`database/${originFolder}/${meta.Name}.js`, documentationRootUrl).href;
     }
     return '';
   }
