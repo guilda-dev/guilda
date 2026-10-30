@@ -1,59 +1,15 @@
 function varargout = disp_tree(obj,str_space,str_ignore,l_isfirst)
-% <@Desc>
-% Displays or returns a text tree of this layer and its descendants.
-% <@Role>
-% Layer Structure
-% <@Summary>
 % Render the hierarchy tree with optional filtering.
-% <@Signatures>
-% [
-%   "disp_tree(obj)",
-%   "text = disp_tree(obj, str_space, str_ignore, l_isfirst)"
-% ]
-% <@Parameters>
-% [
-%   {
-%     "Name": "obj",
-%     "Type": "LayerPackage",
-%     "Description": "Root layer object.",
-%     "Required": true,
-%     "Default": "-"
-%   },
-%   {
-%     "Name": "str_space",
-%     "Type": "string scalar",
-%     "Description": "Indentation prefix for recursive rendering.",
-%     "Required": false,
-%     "Default": "\"\""
-%   },
-%   {
-%     "Name": "str_ignore",
-%     "Type": "string array",
-%     "Description": "Class names to ignore in output.",
-%     "Required": false,
-%     "Default": "[\"Parameter\"]"
-%   },
-%   {
-%     "Name": "l_isfirst",
-%     "Type": "logical scalar",
-%     "Description": "Whether this call is the root invocation.",
-%     "Required": false,
-%     "Default": "true"
-%   }
-% ]
-% <@Returns>
-% [
-%   {
-%     "Name": "text",
-%     "Type": "string",
-%     "Description": "Hierarchy string when one output is requested."
-%   }
-% ]
+%
+% Displays or returns a text tree of this layer and its descendants.
+%
+% Outputs:
+% - `text`: Hierarchy string when one output is requested.
     arguments
-        obj 
-        str_space  (1,1) string  = ""
-        str_ignore (1,:) string  = ["Parameter"];
-        l_isfirst  (1,1) logical = true;
+        obj % Root layer object.
+        str_space  (1,1) string  = "" % Indentation prefix for recursive rendering.
+        str_ignore (1,:) string  = ["Parameter"]; % Class names to ignore in output.
+        l_isfirst  (1,1) logical = true; % Whether this call is the root invocation.
     end
     text = "";
     if l_isfirst

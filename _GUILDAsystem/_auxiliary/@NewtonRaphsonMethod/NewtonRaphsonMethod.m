@@ -1,67 +1,49 @@
 classdef (Sealed = true) NewtonRaphsonMethod < auxiliary
-% NEWTON_RAPHSON_METHOD provides functionality related to the Newton-Raphson method.
-%    NEWTON_RAPHSON_METHOD(Name1, Val1, Names2, Val2, ...) provides functions 
-% 　　related to the Newton-Raphson method. It solves the specified equation using the `solve` method.
+% Newton-Raphson solver of a nonlinear equation F(x) = b.
 %
-% ODEEVENTSET PROPERTIES
+% The continuation power flow uses it as its corrector. Give the equation and the options
+% as Name-Value arguments of the constructor (they are the public properties), then call
+% solve. Without NRMJac the Jacobian is computed by central differences with step
+% Increment.
 %
-% NRMFcn - The Equation to Be Solved [ function handle or sym ]
-%    This is the equation to be solved, expressed in the form F(x) = b or F(x) = 0. 
-%    Specify it using a function handle or a symbolic expression (the symbolic 
-%    form needs Symbolic Math Toolbox; GUILDA itself always passes function handles). If the user 
-%    does not specify this variable, the solver automatically generates the 
-%    current equation based on the main line and the current conditions.
+% <@Examples>
+% ```matlab
+% nrm = NewtonRaphsonMethod(NRMFcn=@(x) [x(1)^2 + x(2); x(2)^3], ...
+%                           NRMVal=[2; 1], InitVal=[0.5; 0.5]);
+% [x, n_iter] = nrm.solve();
+% ```
 %
-% NRMJac - Jacobian of NRMFcn [ function handle or sym ]
-%    This is the Jacobian of the current equation, either specified by the user 
-%    or constructed by this program. If the Jacobian is not specified, 
-%    it is calculated using numerical differentiation. 
-%    Generally, calculations are faster when the user specifies the Jacobian.
-%
-% NRMVal - Values of NRMFcn [ double vector ]
-%    Specify the values for the current equation. Specifically, 
-%    specify a double-precision numeric vector corresponding to 
-%    the value of b when F(x) = b. If this is not specified, 
-%    the equation will be solved assuming F(x) = 0.
-%
-% ConvTol - Convergence Tolerance [ double scalar ]
-%    This is the absolute tolerance used to determine convergence in the 
-% 　　Newton method. Specify it as a positive scalar value.
-%
-% MaxIter - Max Iteration [ double scalar ]
-%    Specify the maximum number of iterations for the Newton method. 
-%    If the calculation does not converge to the absolute tolerance 
-%    after the specified number of iterations, the solver will return an error.
-%
-% InitVal - Initial Values [ double scalar or vector ]
-%    This is the initial value used in the iterative calculations of Newton's method.
-%
-% Increment - Parameter for Numerical Differentiation [ double scalar ]
-%    This is a parameter used in numerical differentiation. 
-%    A smaller value allows you to calculate a gradient that is closer to the analytical solution.
-%
-% StepSize - Component Input [ string scalar or vector ]
-%    This parameter is used in the iterative calculations of the Newton method. 
-%    The state variables are updated based on this parameter. If the parameter is large, 
-%    fewer iterations are required, but the algorithm may fail to converge. 
-%    On the other hand, if the parameter is small, the number of iterations increases, 
-%    and the calculation takes longer.
-%
+% See also ContinuationPowerFlow
     
-    properties (Access=public)       
+    properties (Access=public) % Equation
+        % Function F of the equation F(x) = b.
+        % A function handle, or a symbolic expression (needs Symbolic Math Toolbox; GUILDA
+        % itself always passes function handles).
+        % <@Type> function_handle | sym
         NRMFcn 
+
+        % Jacobian of NRMFcn.
+        % Computed by numerical differentiation when not given; giving it is usually faster.
+        % <@Type> function_handle
         NRMJac          
+
+        % Right-hand side b of F(x) = b; zeros (F(x) = 0) when not given.
+        % <@Type> double (n x 1)
         NRMVal 
         
-        ConvTol   (1,1) double  = GUILDA.config("NewtonRaphsonMethod","ConvTol"  );
-        MaxIter   (1,1) double  = GUILDA.config("NewtonRaphsonMethod","MaxIter"  );
-        InitVal   (:,1) double  = GUILDA.config("NewtonRaphsonMethod","InitVal"  );
-        Increment (1,1) double  = GUILDA.config("NewtonRaphsonMethod","Increment");
-        StepSize  (1,1) double  = GUILDA.config("NewtonRaphsonMethod","StepSize" );
+        ConvTol   (1,1) double  = GUILDA.config("NewtonRaphsonMethod","ConvTol"  ); % Absolute tolerance of the step dx for convergence.
+        MaxIter   (1,1) double  = GUILDA.config("NewtonRaphsonMethod","MaxIter"  ); % Maximum number of iterations (a warning when reached).
+        InitVal   (:,1) double  = GUILDA.config("NewtonRaphsonMethod","InitVal"  ); % Initial value of x.
+        Increment (1,1) double  = GUILDA.config("NewtonRaphsonMethod","Increment"); % Step of the numerical differentiation.
+        StepSize  (1,1) double  = GUILDA.config("NewtonRaphsonMethod","StepSize" ); % Factor of the update x = x - StepSize*dx; large values may not converge.
     end
     
     methods
         function obj = NewtonRaphsonMethod(opt)            
+        % Create a Newton-Raphson solver.
+        %
+        % The Name-Value options are the public properties; the others keep the defaults of
+        % GUILDA.config("NewtonRaphsonMethod").
             arguments                
                 opt.?NewtonRaphsonMethod
             end            
@@ -124,6 +106,14 @@ classdef (Sealed = true) NewtonRaphsonMethod < auxiliary
     methods (Access=public)        
 
         function [xi,iteration] = solve(obj)            
+        % Solve F(x) = b from InitVal.
+        %
+        % Iterates x = x - StepSize * (J(x) \ (F(x) - b)) until every element of the step is
+        % smaller than ConvTol, or MaxIter iterations (then with a warning).
+        %
+        % Outputs:
+        % - `xi`: Solution x.
+        % - `iteration`: Number of iterations.
 
             AbsTol = obj.ConvTol;
             Gamma  = obj.StepSize;

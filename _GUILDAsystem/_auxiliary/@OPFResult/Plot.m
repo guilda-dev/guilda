@@ -1,28 +1,16 @@
 function fig = Plot(obj, opt)
-% <@Desc>
+% Plot the component outputs and the bus voltages.
+%
 % Draws the solution as bar charts: the active power P [pu] of each component (and the
 % reactive power Q for "AC OPF"), then for "DC OPF" and "AC OPF" the bus voltage angle
 % [deg], and for "AC OPF" the bus voltage magnitude [pu].
 % optimize_powerflow(..., Plot=true) calls it.
-% <@Role> Plot
-% <@Summary> Plot the component outputs and the bus voltages.
-% <@Signatures>
-% [
-%   "Plot(result)",
-%   "fig = Plot(result, Parent=container)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "result", "Type": "OPFResult", "Description": "Result to plot.", "Required": true, "Default": "-"},
-%   {"Name": "Parent", "Type": "figure, panel or tab", "Description": "Container to draw in. A new figure when empty.", "Required": false, "Default": "[]"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "fig", "Type": "matlab.graphics.layout.TiledChartLayout", "Description": "Layout holding the axes: component power, then the voltage angle (DC/AC OPF) and magnitude (AC OPF)."}
-% ]
     arguments
         obj
-        opt.Parent = []
+        opt.Parent = [] % Container to draw in. A new figure when empty.
+    end
+    arguments (Output)
+        fig % Layout holding the axes: component power, then the voltage angle (DC/AC OPF) and magnitude (AC OPF).
     end
     if isempty(opt.Parent)
         opt.Parent = figure();

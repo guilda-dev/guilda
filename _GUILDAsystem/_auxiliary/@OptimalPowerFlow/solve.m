@@ -1,32 +1,19 @@
 function [result,flag,output] = solve(obj, net, s_options)
-% <@Desc>
+% Build and solve the optimal power flow with the given settings.
+%
 % Builds the optimal power flow problem of net (net.build_opf_problem) for
 % s_options.Method, solves it with the effective settings s_options and returns the
 % solution as an OPFResult. The solver is only read: nothing is written back into it.
 % Called by net.optimize_powerflow; calling it directly is for advanced use.
-% <@Role> Analysis
-% <@Summary> Build and solve the optimal power flow with the given settings.
-% <@Signatures>
-% [
-%   "[result, flag, output] = solve(obj, net)",
-%   "[result, flag, output] = solve(obj, net, s_options)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "obj", "Type": "OptimalPowerFlow", "Description": "Solver (net.solver_OPF).", "Required": true, "Default": "-"},
-%   {"Name": "net", "Type": "PowerNetwork", "Description": "Network to optimize.", "Required": true, "Default": "-"},
-%   {"Name": "s_options", "Type": "struct", "Description": "Effective settings (output of get_options).", "Required": false, "Default": "obj.get_options()"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "result", "Type": "OPFResult", "Description": "Bus, connection and branch values of the solution."},
-%   {"Name": "flag", "Type": "optim.problemdef.ExitFlag", "Description": "exitflag of solve (positive = solved)."},
-%   {"Name": "output", "Type": "struct", "Description": "Solver details; output.message describes the outcome."}
-% ]
     arguments
-        obj
-        net
-        s_options (1,1) struct = obj.get_options()
+        obj % Solver (net.solver_OPF).
+        net % Network to optimize.
+        s_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
+    end
+    arguments (Output)
+        result % Bus, connection and branch values of the solution.
+        flag % exitflag of solve (positive = solved).
+        output % Solver details; output.message describes the outcome.
     end
     t0 = tic;
     str_method = s_options.Method;

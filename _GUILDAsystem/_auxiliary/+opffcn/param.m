@@ -1,5 +1,6 @@
 function p = param(obj, str_method)
-% Parameters that the set_opffcn handles of obj receive (second argument p):
+% Collect the parameters that the set_opffcn handles of obj receive (second argument p).
+%
 % p.Method ("ELD", "DC OPF" or "AC OPF") and one struct per parameter group of obj,
 % e.g. p.OPF.HP, p.operation.Pmax, p.powerflow.P (Component), p.operation.Vmax (Bus),
 % p.dynamics.X (Branch), p.base.baseMVA (PowerNetwork).

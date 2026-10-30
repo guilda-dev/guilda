@@ -1,5 +1,6 @@
 function [result,flag,output] = solve(obj, net, s_options)
-% <@Desc>
+% Trace the PV curve with the given settings.
+%
 % Runs the continuation power flow of net with the effective settings s_options and
 % returns the traced path as a CPFResult. The solver is only read: nothing is written
 % back into it. The CPF working data of the models (bus.iv_CPFV, comp.iv_CPFX,
@@ -8,29 +9,15 @@ function [result,flag,output] = solve(obj, net, s_options)
 % It stops with an error naming the remedy when the network has no equilibrium
 % (run net.initialize), when the equilibrium is stale, or when LoadBus is empty or names
 % a bus that is not in the network.
-% <@Role> Analysis
-% <@Summary> Trace the PV curve with the given settings.
-% <@Signatures>
-% [
-%   "[result, flag, output] = solve(obj, net)",
-%   "[result, flag, output] = solve(obj, net, s_options)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "obj", "Type": "ContinuationPowerFlow", "Description": "Solver (net.solver_CPF).", "Required": true, "Default": "-"},
-%   {"Name": "net", "Type": "PowerNetwork", "Description": "Network initialized by net.initialize.", "Required": true, "Default": "-"},
-%   {"Name": "s_options", "Type": "struct", "Description": "Effective settings (output of get_options).", "Required": false, "Default": "obj.get_options()"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "result", "Type": "CPFResult", "Description": "lambda and bus voltages along the path, and the nose point."},
-%   {"Name": "flag", "Type": "logical", "Description": "True when the path passed the nose (lambda reached its maximum and decreased)."},
-%   {"Name": "output", "Type": "struct", "Description": "Details: message, iterations, correctorIterations."}
-% ]
     arguments
-        obj
-        net
-        s_options (1,1) struct = obj.get_options()
+        obj % Solver (net.solver_CPF).
+        net % Network initialized by net.initialize.
+        s_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
+    end
+    arguments (Output)
+        result % lambda and bus voltages along the path, and the nose point.
+        flag % True when the path passed the nose (lambda reached its maximum and decreased).
+        output % Details: message, iterations, correctorIterations.
     end
     t0 = tic;
     check_network(net, s_options.LoadBus);

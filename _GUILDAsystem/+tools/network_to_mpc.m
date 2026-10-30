@@ -1,5 +1,6 @@
 function mpc = network_to_mpc(net)
-% <@Desc>
+% Convert a PowerNetwork to a MATPOWER case struct (mpc) for OPF.
+%
 % Converts a PowerNetwork into a MATPOWER case struct (mpc, version 2) for optimal
 % power flow, so that the same network can be solved by MATPOWER (runopf, rundcopf).
 % MATPOWER itself is not needed for the conversion.
@@ -16,24 +17,18 @@ function mpc = network_to_mpc(net)
 % MATPOWER model cannot express: a finite branch Imax, Pmax or Qmax, a load without
 % fixed P and Q, or a branch admittance matrix that does not fit the branch model.
 % mpc.bus_name, mpc.gen_name and mpc.branch_name hold the GUILDA tags.
-% <@Role> Converter
-% <@Summary> PowerNetwork -> MATPOWER case struct (mpc) for OPF.
-% <@Signatures>
-% [
-%   "mpc = tools.network_to_mpc(net)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "net", "Type": "PowerNetwork", "Description": "Network to convert. It is only read.", "Required": true, "Default": "-"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "mpc", "Type": "struct", "Description": "MATPOWER case (version 2): baseMVA, bus, gen, branch, gencost, plus bus_name, gen_name and branch_name."}
-% ]
+%
+% Inputs:
+% - `net`: Network to convert. It is only read.
+%
 % <@Examples>
-% [
-%   "```matlab\nmpc = tools.network_to_mpc(network.IEEE14bus);\nr   = runopf(mpc, mpoption(\"verbose\",0,\"out.all\",0));   % needs MATPOWER\n```"
-% ]
+% ```matlab
+% mpc = tools.network_to_mpc(network.IEEE14bus);
+% r   = runopf(mpc, mpoption("verbose",0,"out.all",0));   % needs MATPOWER
+% ```
+    arguments (Output)
+        mpc % MATPOWER case (version 2): baseMVA, bus, gen, branch, gencost, plus bus_name, gen_name and branch_name.
+    end
     base    = net.para_base.baseMVA;
     a_Bus   = net.a_Bus;
     n_bus   = numel(a_Bus);

@@ -1,5 +1,6 @@
 function str_file = Export(obj, filename, opt)
-% <@Desc>
+% Write the bus/branch table or the iteration history to a file.
+%
 % Writes the result to a file. The format follows the extension of filename:
 %   .csv / .txt / .xlsx / .xls : the bus table (tab_bus) or, with Table="branch", the
 %                                branch table (tab_branch); phasors as complex numbers.
@@ -8,28 +9,13 @@ function str_file = Export(obj, filename, opt)
 %                                bus types and the admittance matrix from the network.
 % A relative filename is relative to the current folder.
 % calculate_powerflow(..., Export=filename) calls it.
-% <@Role> Export
-% <@Summary> Write the bus/branch table or the iteration history to a file.
-% <@Signatures>
-% [
-%   "str_file = Export(result)",
-%   "str_file = Export(result, filename)",
-%   "str_file = Export(result, filename, Table=\"branch\")"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "result", "Type": "PowerFlowResult", "Description": "Result to write.", "Required": true, "Default": "-"},
-%   {"Name": "filename", "Type": "string scalar", "Description": "Output file; its extension selects the format.", "Required": false, "Default": "\"<yyMMdd_HHmmss>_PowerFlow.csv\""},
-%   {"Name": "Table", "Type": "\"bus\" | \"branch\"", "Description": "Table written to a CSV or Excel file.", "Required": false, "Default": "\"bus\""}
-% ]
-% <@Returns>
-% [
-%   {"Name": "str_file", "Type": "string scalar", "Description": "Path of the written file."}
-% ]
     arguments
         obj
-        filename  (1,1) string = string(datetime("now","Format","uuMMdd_HHmmss")) + "_PowerFlow.csv"
-        opt.Table (1,1) string {mustBeMember(opt.Table,["bus","branch"])} = "bus"
+        filename  (1,1) string = string(datetime("now","Format","uuMMdd_HHmmss")) + "_PowerFlow.csv" % Output file; its extension selects the format.
+        opt.Table (1,1) string {mustBeMember(opt.Table,["bus","branch"])} = "bus" % Table written to a CSV or Excel file.
+    end
+    arguments (Output)
+        str_file % Path of the written file.
     end
     str_file = filename;
     [~, ~, str_ext] = fileparts(str_file);

@@ -1,5 +1,6 @@
 function [result, flag, output] = solve(obj, net, s_options)
-% <@Desc>
+% Linearize the network with the given settings.
+%
 % Linearizes the network net at the point s_options.Point and returns the unreduced DAE
 % (the Jacobian blocks in the order of net.get_variable_map()) as a LinearizationResult.
 % The solver and the network are only read: nothing is written back into them (the
@@ -7,29 +8,15 @@ function [result, flag, output] = solve(obj, net, s_options)
 % directly is for advanced use. Like net.linearize, it first rebuilds stale f_* handles
 % and stops with the error GUILDA:PowerNetwork:EquilibriumStale when net.initialize()
 % is needed.
-% <@Role> Static Analysis
-% <@Summary> Linearize the network with the given settings.
-% <@Signatures>
-% [
-%   "[result, flag, output] = solve(obj, net)",
-%   "[result, flag, output] = solve(obj, net, s_options)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "obj", "Type": "odeLinearizer", "Description": "Solver (net.solver_LIN).", "Required": true, "Default": "-"},
-%   {"Name": "net", "Type": "PowerNetwork", "Description": "Initialized network.", "Required": true, "Default": "-"},
-%   {"Name": "s_options", "Type": "struct", "Description": "Effective settings (output of get_options).", "Required": false, "Default": "obj.get_options()"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "result", "Type": "LinearizationResult", "Description": "Jacobian blocks, variable map, point and settings."},
-%   {"Name": "flag", "Type": "logical", "Description": "True when all Jacobian entries are finite."},
-%   {"Name": "output", "Type": "struct", "Description": "message, l_equilibrium, n_x, n_v, n_u, rcond_Avv."}
-% ]
     arguments
-        obj
-        net
-        s_options (1,1) struct = obj.get_options()
+        obj % Solver (net.solver_LIN).
+        net % Initialized network.
+        s_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
+    end
+    arguments (Output)
+        result % Jacobian blocks, variable map, point and settings.
+        flag % True when all Jacobian entries are finite.
+        output % message, l_equilibrium, n_x, n_v, n_u, rcond_Avv.
     end
     t0 = tic;
     net.require_equilibrium();    % rebuild stale f_*; error if net.initialize() is needed

@@ -1,51 +1,14 @@
 function out = get_tag(obj,l_with_layer, str_split)
-    % <@Desc>
-    % Returns the layer tag, optionally including parent-layer tags.
-    % <@Role>
-    % Tag
-    % <@Summary>
     % Build tag string with optional hierarchy composition.
-    % <@Signatures>
-    % [
-    %   "out = get_tag(obj)",
-    %   "out = get_tag(obj, l_with_layer, str_split)"
-    % ]
-    % <@Parameters>
-    % [
-    %   {
-    %     "Name": "obj",
-    %     "Type": "LayerPackage",
-    %     "Description": "Target layer object.",
-    %     "Required": true,
-    %     "Default": "-"
-    %   },
-    %   {
-    %     "Name": "l_with_layer",
-    %     "Type": "logical scalar",
-    %     "Description": "Include parent-layer tags recursively.",
-    %     "Required": false,
-    %     "Default": "false"
-    %   },
-    %   {
-    %     "Name": "str_split",
-    %     "Type": "string scalar",
-    %     "Description": "Delimiter for composed tags.",
-    %     "Required": false,
-    %     "Default": "\"\""
-    %   }
-    % ]
-    % <@Returns>
-    % [
-    %   {
-    %     "Name": "out",
-    %     "Type": "string",
-    %     "Description": "Layer tag string."
-    %   }
-    % ]
+    %
+    % Returns the layer tag, optionally including parent-layer tags.
     arguments
-        obj 
-        l_with_layer (1,1) logical = false;
-        str_split    (1,1) string  = "";
+        obj % Target layer object.
+        l_with_layer (1,1) logical = false; % Include parent-layer tags recursively.
+        str_split    (1,1) string  = ""; % Delimiter for composed tags.
+    end
+    arguments (Output)
+        out % Layer tag string.
     end
 
     if obj.l_managedTag

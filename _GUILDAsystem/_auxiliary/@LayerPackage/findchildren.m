@@ -1,32 +1,10 @@
 function c = findchildren(obj)
-    % <@Desc>
-    % Collects all descendant layers from the current layer.
-    % <@Role>
-    % Layer Structure
-    % <@Summary>
     % Retrieve child layers recursively.
-    % <@Signatures>
-    % [
-    %   "c = findchildren(obj)"
-    % ]
-    % <@Parameters>
-    % [
-    %   {
-    %     "Name": "obj",
-    %     "Type": "LayerPackage",
-    %     "Description": "Target layer object.",
-    %     "Required": true,
-    %     "Default": "-"
-    %   }
-    % ]
-    % <@Returns>
-    % [
-    %   {
-    %     "Name": "c",
-    %     "Type": "cell array",
-    %     "Description": "Flattened descendant list including self when managed."
-    %   }
-    % ]
+    %
+    % Collects all descendant layers from the current layer.
+    arguments (Output)
+        c % Flattened descendant list including self when managed.
+    end
     a_children = obj.children;
     n_children = numel(a_children);
     cc = cell(n_children,1);

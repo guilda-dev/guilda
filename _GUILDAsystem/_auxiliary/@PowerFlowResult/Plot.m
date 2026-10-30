@@ -1,27 +1,15 @@
 function fig = Plot(obj, opt)
-% <@Desc>
+% Plot the bus voltage profile.
+%
 % Draws the voltage profile of the solution: the voltage magnitude [pu] and the phase
 % angle [deg] of each bus, as bar charts in two tiles.
 % calculate_powerflow(..., Plot=true) calls it.
-% <@Role> Plot
-% <@Summary> Plot the bus voltage profile.
-% <@Signatures>
-% [
-%   "Plot(result)",
-%   "fig = Plot(result, Parent=container)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "result", "Type": "PowerFlowResult", "Description": "Result to plot.", "Required": true, "Default": "-"},
-%   {"Name": "Parent", "Type": "figure, panel or tab", "Description": "Container to draw in. A new figure when empty.", "Required": false, "Default": "[]"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "fig", "Type": "matlab.graphics.layout.TiledChartLayout", "Description": "Layout holding the two axes (magnitude, angle)."}
-% ]
     arguments
         obj
-        opt.Parent = []
+        opt.Parent = [] % Container to draw in. A new figure when empty.
+    end
+    arguments (Output)
+        fig % Layout holding the two axes (magnitude, angle).
     end
     if isempty(opt.Parent)
         opt.Parent = figure();

@@ -1,19 +1,21 @@
 function v = variables(obj, prob, str_method, s_var)
-% Optimization variables that the set_opffcn handles of obj receive (first argument v).
-% s_var: optimvars by name (e.g. those the caller just created); other names are taken
-% from prob.Variables, which lists only the variables already used in the problem.
-%   Component    : P (all methods), Q ("AC OPF")
-%   Bus          : Varg ("DC OPF", "AC OPF"), V ("AC OPF"); none in "ELD"
-%   Branch       : Pfrom, Pto, Vargfrom, Vargto ("DC OPF", "AC OPF"); Qfrom, Qto,
-%                  Ifrom_re, Ifrom_im, Ito_re, Ito_im, Vfrom, Vto ("AC OPF"); none in "ELD".
-%                  Flows go into the branch at each end (from = a_Bus{1}, to = a_Bus{2}),
-%                  with the signs of OPFResult.tab_branch.
-%   PowerNetwork : v.Component.(tag), v.Bus.(tag), v.Branch.(tag) holding the above
+% Collect the optimization variables that the set_opffcn handles of obj receive (first argument v).
+%
+% Names in s_var (e.g. the variables the caller just created) are taken from there, other
+% names from prob.Variables, which lists only the variables already used in the problem.
+%
+% - Component: P (all methods), Q ("AC OPF").
+% - Bus: Varg ("DC OPF", "AC OPF"), V ("AC OPF"); none in "ELD".
+% - Branch: Pfrom, Pto, Vargfrom, Vargto ("DC OPF", "AC OPF"); Qfrom, Qto,
+%   Ifrom_re, Ifrom_im, Ito_re, Ito_im, Vfrom, Vto ("AC OPF"); none in "ELD".
+%   Flows go into the branch at each end (from = a_Bus{1}, to = a_Bus{2}),
+%   with the signs of OPFResult.tab_branch.
+% - PowerNetwork: v.Component.(tag), v.Bus.(tag), v.Branch.(tag) holding the above.
     arguments
-        obj
-        prob
-        str_method (1,1) string
-        s_var      (1,1) struct = struct()
+        obj % Component, Bus, Branch or PowerNetwork.
+        prob % Optimization problem being built.
+        str_method (1,1) string % "ELD", "DC OPF" or "AC OPF".
+        s_var      (1,1) struct = struct() % Optimization variables of the caller by name.
     end
     get = @(str) lookup(prob, s_var, str);
     switch true

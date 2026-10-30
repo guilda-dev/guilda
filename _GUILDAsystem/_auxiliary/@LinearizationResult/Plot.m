@@ -1,32 +1,18 @@
 function fig = Plot(obj, opt)
-% <@Desc>
+% Plot the eigenvalue map.
+%
 % Draws the eigenvalue map of the linear model: the finite generalized eigenvalues of
 % (A, E) of get_ss(Algorithm) in the complex plane, with the imaginary axis.
 % Eigenvalues with a positive real part (larger than Tolerance) are drawn in red.
 % net.linearize(..., Plot=true) calls it.
-% <@Role> Plot
-% <@Summary> Plot the eigenvalue map.
-% <@Signatures>
-% [
-%   "Plot(result)",
-%   "ax = Plot(result, Algorithm=\"Kron\", Parent=container)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "result", "Type": "LinearizationResult", "Description": "Result to plot.", "Required": true, "Default": "-"},
-%   {"Name": "Algorithm", "Type": "\"Kron\" | \"Feedback\" | \"DAE\"", "Description": "Model whose eigenvalues are drawn (the finite ones are the same for all three).", "Required": false, "Default": "\"Kron\""},
-%   {"Name": "Tolerance", "Type": "double scalar", "Description": "Real part above which an eigenvalue is drawn as unstable.", "Required": false, "Default": "1e-6"},
-%   {"Name": "Parent", "Type": "figure, panel or tab", "Description": "Container to draw in. A new figure when empty.", "Required": false, "Default": "[]"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "fig", "Type": "matlab.graphics.axis.Axes", "Description": "Axes of the map."}
-% ]
     arguments
         obj
-        opt.Algorithm (1,1) string {mustBeMember(opt.Algorithm, ["Kron","Feedback","DAE"])} = "Kron"
-        opt.Tolerance (1,1) double {mustBeNonnegative} = 1e-6
-        opt.Parent = []
+        opt.Algorithm (1,1) string {mustBeMember(opt.Algorithm, ["Kron","Feedback","DAE"])} = "Kron" % Model whose eigenvalues are drawn (the finite ones are the same for all three).
+        opt.Tolerance (1,1) double {mustBeNonnegative} = 1e-6 % Real part above which an eigenvalue is drawn as unstable.
+        opt.Parent = [] % Container to draw in. A new figure when empty.
+    end
+    arguments (Output)
+        fig % Axes of the map.
     end
     if isempty(opt.Parent)
         opt.Parent = figure();

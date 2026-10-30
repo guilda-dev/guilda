@@ -1,4 +1,6 @@
 function sys = dae2ode(sys)
+% Eliminate the algebraic states of a descriptor model (rows and columns where E is 0).
+%
 % 微分方程式
 % Exx dx = Axx X + Axv V + Bxu U;
 %      y = Cyx X + Cyv V + D   U;

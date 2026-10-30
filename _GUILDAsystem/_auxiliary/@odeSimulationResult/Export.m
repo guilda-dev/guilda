@@ -1,29 +1,17 @@
 function str_file = Export(obj, filename)
-% <@Desc>
+% Write the trajectories to a table file or a MAT-file.
+%
 % Writes the trajectories to a file. The format follows the extension of filename:
 % .csv, .txt, .xlsx, .xls write one table (column t, then <bus>_Vreal, <bus>_Vimag,
 % <bus>_Ireal, <bus>_Iimag, <bus>_P, <bus>_Q of each bus and <component>_<name> of each
 % state and input); .mat saves odeResults, options, flag and output. A relative filename is
 % relative to the current folder. simulate(..., Export=filename) calls it.
-% <@Role> Export
-% <@Summary> Write the trajectories to a table file or a MAT-file.
-% <@Signatures>
-% [
-%   "str_file = Export(result)",
-%   "str_file = Export(result, filename)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "result", "Type": "odeSimulationResult", "Description": "Result to write.", "Required": true, "Default": "-"},
-%   {"Name": "filename", "Type": "string scalar", "Description": "Output file; its extension selects the format.", "Required": false, "Default": "\"<yyMMdd_HHmmss>_simulation.csv\""}
-% ]
-% <@Returns>
-% [
-%   {"Name": "str_file", "Type": "string scalar", "Description": "Path of the written file."}
-% ]
     arguments
         obj
-        filename (1,1) string = string(datetime("now","Format","uuMMdd_HHmmss")) + "_simulation.csv"
+        filename (1,1) string = string(datetime("now","Format","uuMMdd_HHmmss")) + "_simulation.csv" % Output file; its extension selects the format.
+    end
+    arguments (Output)
+        str_file % Path of the written file.
     end
     str_file = filename;
     [~, ~, str_ext] = fileparts(str_file);

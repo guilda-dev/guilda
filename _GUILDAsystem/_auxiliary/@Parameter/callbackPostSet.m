@@ -1,47 +1,12 @@
 function callbackPostSet(obj,name,cls,event)
-    % <@Desc>
-    % Validates a property after it is changed and logs edits.
-    % <@Role>
-    % Edit Log
-    % <@Summary>
     % Check type consistency and record changes when values differ.
-    % <@Signatures>
-    % [
-    %   "callbackPostSet(obj, name, cls, event)"
-    % ]
-    % <@Parameters>
-    % [
-    %   {
-    %     "Name": "obj",
-    %     "Type": "Parameter",
-    %     "Description": "Target parameter container.",
-    %     "Required": true,
-    %     "Default": "-"
-    %   },
-    %   {
-    %     "Name": "name",
-    %     "Type": "string scalar",
-    %     "Description": "Property name being updated.",
-    %     "Required": true,
-    %     "Default": "-"
-    %   },
-    %   {
-    %     "Name": "cls",
-    %     "Type": "string scalar",
-    %     "Description": "Expected class name.",
-    %     "Required": true,
-    %     "Default": "-"
-    %   },
-    %   {
-    %     "Name": "event",
-    %     "Type": "event data",
-    %     "Description": "Property set event data.",
-    %     "Required": true,
-    %     "Default": "-"
-    %   }
-    % ]
-    % <@Returns>
-    % []
+    %
+    % Validates a property after it is changed and logs edits.
+    %
+    % Inputs:
+    % - `name`: Property name being updated.
+    % - `cls`: Expected class name.
+    % - `event`: Property set event data.
     val_pre  = obj.val_stash;
     val_post = event.AffectedObject.(name);            
     

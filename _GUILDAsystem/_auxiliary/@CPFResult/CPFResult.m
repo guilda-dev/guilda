@@ -1,115 +1,83 @@
 classdef CPFResult < AnalysisResult
-% <@Desc>
-% Result of net.calculate_continuation_powerflow: the load parameter lambda and the bus
-% voltages at each point of the traced path, and the nose point (maximum loading). The
-% loads of options.LoadBus are scaled by (1 + lambda). It holds computed values only; the
-% settings of the buses and components stay with the network.
-% Plot draws the PV curves. Export writes the path as a table (CSV, Excel).
-% <@Role> Class Category
-% <@Constructor>
-% result = CPFResult(net, solver, options, flag, output, elapsed, sv_bus, rv_lambda, cm_Vbus, rm_x, rm_xPredicted)
-% Created by ContinuationPowerFlow.solve.
+% Result of net.calculate_continuation_powerflow.
+%
+% Holds the load parameter lambda and the bus voltages at each point of the traced path,
+% and the nose point (maximum loading). The loads of options.LoadBus are scaled by (1 + lambda). It holds computed values only;
+% the settings of the buses and components stay with the network. Plot draws the PV
+% curves. Export writes the path as a table (CSV, Excel).
+%
+% <@Examples>
+% ```matlab
+% net = network.IEEE14bus();
+% net.initialize();
+% [result, flag] = net.calculate_continuation_powerflow(LoadBus=["B009","B014"]);
+% result.r_lambdaMax       % maximum loading (nose of the PV curve)
+% result.tab_nose          % bus voltages at the nose
+% result.Plot(Bus="all");  % PV curves of every bus
+% result.Export("cpf.csv");
+% ```
+%
+% See also ContinuationPowerFlow, AnalysisResult
 
-    properties (SetAccess=private)
-        % <@Desc> Bus tags, in the order of the rows of cm_Vbus.
-        % <@Role> Result
-        % <@Type> string
-        % <@Size> n_bus x 1
+    properties (SetAccess=private) % Result
+        % Bus tags, in the order of the rows of cm_Vbus.
         sv_bus (:,1) string = strings(0,1)
 
-        % <@Desc> Load parameter lambda at each point of the path (the first point is the
-        % equilibrium).
-        % <@Role> Result
-        % <@Type> double
-        % <@Size> 1 x n_step
+        % Load parameter lambda at each point of the path (the first point is the equilibrium).
         rv_lambda double = zeros(1,0)
 
-        % <@Desc> Bus voltage phasors [pu] at each point of the path, one row per bus.
-        % <@Role> Result
-        % <@Type> complex double
-        % <@Size> n_bus x n_step
+        % [pu] Bus voltage phasors at each point of the path, one row per bus.
         cm_Vbus double = zeros(0,0)
 
-        % <@Desc> Largest lambda on the path (the nose of the PV curve: maximum loading).
-        % <@Role> Result
-        % <@Type> double
-        % <@Size> 1x1
+        % Largest lambda on the path (the nose of the PV curve: maximum loading).
         r_lambdaMax (1,1) double = NaN
 
-        % <@Desc> Index of the nose point in rv_lambda and the columns of cm_Vbus.
-        % <@Role> Result
-        % <@Type> double
-        % <@Size> 1x1
+        % Index of the nose point in rv_lambda and the columns of cm_Vbus.
         r_noseStep (1,1) double = NaN
 
-        % <@Desc> Full variable vector at each point of the path (the CPF_Result.x_sol of
-        % v3): [|V|; angle V] of each bus (followed by the component states when
+        % Full variable vector at each point of the path (the CPF_Result.x_sol of v3).
+        % Rows: [|V|; angle V] of each bus (followed by the component states when
         % options.UseInternalState is true), and lambda in the last row.
-        % <@Role> Result
-        % <@Type> double
-        % <@Size> n_var x n_step
         rm_x double = zeros(0,0)
 
-        % <@Desc> Predicted points of the predictor-corrector method, in the layout of rm_x
-        % (the CPF_Result.x_prd of v3). The first column is NaN.
-        % <@Role> Result
-        % <@Type> double
-        % <@Size> n_var x n_step
+        % Predicted points of the predictor-corrector method, in the layout of rm_x.
+        % The CPF_Result.x_prd of v3. The first column is NaN.
         rm_xPredicted double = zeros(0,0)
     end
 
-    properties (Dependent)
-        % <@Desc> Bus voltages at the nose point, one row per bus (row names = bus tags):
-        % V [pu], Varg [rad], Vphasor.
-        % <@Role> Result
-        % <@Type> table
-        % <@Size> n_bus x 3
+    properties (Dependent) % Result
+        % Bus voltages at the nose point, one row per bus (row names = bus tags).
+        % Columns: V [pu], Varg [rad], Vphasor [pu].
+        % <@Type> table (n_bus x 3)
         tab_nose
 
-        % <@Desc> The path as a table, one row per point: lambda, then V_<bus> [pu] and
-        % Varg_<bus> [rad] of each bus. Export writes this table.
-        % <@Role> Result
-        % <@Type> table
-        % <@Size> n_step x (1 + 2 n_bus)
+        % The path as a table, one row per point.
+        % Columns: lambda, then V_<bus> [pu] and Varg_<bus> [rad] of each bus. Export writes
+        % this table.
+        % <@Type> table (n_step x (1 + 2 n_bus))
         tab_path
     end
 
     methods
         function obj = CPFResult(net, solver, options, flag, output, elapsed, sv_bus, rv_lambda, cm_Vbus, rm_x, rm_xPredicted)
-        % <@Desc>
+        % Create a continuation power flow result.
+        %
         % Stores the computed values of a continuation power flow.
-        % <@Role> Constructor
-        % <@Summary> Create a continuation power flow result.
-        % <@Signatures>
-        % [
-        %   "result = CPFResult()",
-        %   "result = CPFResult(net, solver, options, flag, output, elapsed, sv_bus, rv_lambda, cm_Vbus, rm_x, rm_xPredicted)"
-        % ]
-        % <@Parameters>
-        % [
-        %   {"Name": "net, solver, options, flag, output, elapsed", "Type": "-", "Description": "Shared part, see AnalysisResult.", "Required": false, "Default": "-"},
-        %   {"Name": "sv_bus", "Type": "string", "Description": "Bus tags (rows of cm_Vbus).", "Required": false, "Default": "strings(0,1)"},
-        %   {"Name": "rv_lambda", "Type": "double", "Description": "lambda along the path.", "Required": false, "Default": "[]"},
-        %   {"Name": "cm_Vbus", "Type": "complex double", "Description": "Bus voltages along the path.", "Required": false, "Default": "[]"},
-        %   {"Name": "rm_x", "Type": "double", "Description": "Full variable vector along the path.", "Required": false, "Default": "[]"},
-        %   {"Name": "rm_xPredicted", "Type": "double", "Description": "Predicted points.", "Required": false, "Default": "[]"}
-        % ]
-        % <@Returns>
-        % [
-        %   {"Name": "result", "Type": "CPFResult", "Description": "The result object."}
-        % ]
             arguments
-                net                  = []
-                solver               = "ContinuationPowerFlow"
-                options       struct = struct()
-                flag                 = false
-                output        struct = struct()
-                elapsed              = NaN
-                sv_bus        string = strings(0,1)
-                rv_lambda     double = zeros(1,0)
-                cm_Vbus       double = zeros(0,0)
-                rm_x          double = zeros(0,0)
-                rm_xPredicted double = zeros(0,0)
+                net                  = [] % Analysed network; see AnalysisResult.
+                solver               = "ContinuationPowerFlow" % Solver object or its class name; see AnalysisResult.
+                options       struct = struct() % Effective settings; see AnalysisResult.
+                flag                 = false % Success or convergence flag; see AnalysisResult.
+                output        struct = struct() % Solver details; see AnalysisResult.
+                elapsed              = NaN % [s] Elapsed time or tic value; see AnalysisResult.
+                sv_bus        string = strings(0,1) % Bus tags (rows of cm_Vbus).
+                rv_lambda     double = zeros(1,0) % lambda along the path.
+                cm_Vbus       double = zeros(0,0) % [pu] Bus voltages along the path.
+                rm_x          double = zeros(0,0) % Full variable vector along the path.
+                rm_xPredicted double = zeros(0,0) % Predicted points.
+            end
+            arguments (Output)
+                obj % The result object.
             end
             obj@AnalysisResult(net, solver, options, flag, output, elapsed);
             obj.sv_bus        = sv_bus(:);

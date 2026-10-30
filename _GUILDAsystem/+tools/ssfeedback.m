@@ -1,4 +1,7 @@
 function sysout = ssfeedback(sys1,sys2)
+% Connect two state-space models in positive feedback by matching port names.
+%
+% Inputs of one model that have the name of an output of the other are connected to it.
     arguments
         sys1 ss
         sys2 ss

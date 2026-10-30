@@ -1,131 +1,109 @@
 classdef odeSimulationResult < AnalysisResult
-% <@Desc>
-% Result of net.simulate: the time response of the bus voltages, currents and powers and
-% of the states and inputs of the components and controllers. It holds computed values
-% only; the settings of the buses and components stay with the network (a hidden
-% reference, see AnalysisResult). flag is 1 when the simulation reached the end time, 0
-% when it stopped by TimeLimit and -1 when the solver stopped early; then the
-% trajectories end at output.tEnd.
+% Result of net.simulate.
+%
+% Holds the time response of the bus voltages, currents and powers and of the states and
+% inputs of the components and controllers. It holds computed values only; the settings of
+% the buses and components stay with the network (a hidden reference, see AnalysisResult).
+% flag is 1 when the simulation reached the end time, 0 when it stopped by TimeLimit and -1
+% when the solver stopped early; then the trajectories end at output.tEnd.
+%
 % The trajectory is stored once, in the order of the variable map of the network
 % (rm_variable, columns = rows of tab_variable): the states of the components with their
-% local controllers, the states of the global controllers, the bus voltages and the
-% inputs of the components. odeResults is a view of it per bus and component, and
-% get_point gives the values at a time, for example for net.linearize(Point={sim, t}).
-% Plot draws a trajectory of the buses or components. Export writes all trajectories as a
-% table (CSV, Excel) or as a MAT-file.
-% <@Role> Class Category
-% <@Constructor>
-% result = odeSimulationResult(net, solver, options, flag, output, elapsed, c_phase)
-% Created by odeSimulator.solve.
+% local controllers, the states of the global controllers, the bus voltages and the inputs
+% of the components. odeResults is a view of it per bus and component, and get_point gives
+% the values at a time, for example for net.linearize(Point={sim, t}). Plot draws a
+% trajectory of the buses or components. Export writes all trajectories as a table (CSV,
+% Excel) or as a MAT-file.
+%
+% <@Examples>
+% ```matlab
+% net = network.IEEE14bus();
+% net.initialize();
+% ev = odeEventSet("fault", net, "TimeSpan", [1, 1.05], "FaultBus", "B008");
+% [result, flag] = net.simulate([0, 10], ev);
+% r = result.odeResults;               % r.t, r.Bus(i).V, r.Bus(i).Component(j).X, ...
+% x = result.get_point(2);             % all variables at t = 2, in variable-map order
+% result.Plot(Quantity="omega");       % a state of the components
+% result.Export("sim.mat");
+% ```
+%
+% See also odeSimulator, odeEventSet, AnalysisResult, PowerNetwork.get_variable_map
 
-    properties (SetAccess=private)
-        % <@Desc> Output times [s], ascending. At a boundary between two phases the time
-        % appears twice: the end of one phase, then the start of the next (see get_point).
-        % <@Role> Result
-        % <@Type> double
-        % <@Size> n_t x 1
+    properties (SetAccess=private) % Result
+        % [s] Output times, ascending.
+        % At a boundary between two phases the time appears twice: the end of one phase, then
+        % the start of the next (see get_point).
         rv_t (:,1) double = zeros(0,1)
 
-        % <@Desc> Variable map at the time of the simulation (see
-        % PowerNetwork.get_variable_map): one row per variable with Index, Kind ("x" |
-        % "Vre" | "Vim" | "u"), Owner, Name, Label, Bus. Its rows are the columns of
-        % rm_variable.
-        % <@Role> Result
-        % <@Type> table
-        % <@Size> (n_x + n_v + n_u) x 6
+        % Variable map at the time of the simulation (see PowerNetwork.get_variable_map).
+        % One row per variable with Index, Kind ("x" | "Vre" | "Vim" | "u"), Owner, Name, Label,
+        % Bus. Its rows are the columns of rm_variable.
+        % <@Type> table ((n_x + n_v + n_u) x 6)
         tab_variable table = table()
 
-        % <@Desc> Trajectory of all variables: row k holds the values at rv_t(k), column m
-        % the variable tab_variable(m,:). The states of a tripped unit are NaN while it is
-        % tripped. The inputs u are the inputs applied to the components (steady value,
-        % outputs of the controllers and event inputs).
-        % <@Role> Result
-        % <@Type> double
-        % <@Size> n_t x (n_x + n_v + n_u)
+        % Trajectory of all variables, one row per output time.
+        % Row k holds the values at rv_t(k), column m the variable tab_variable(m,:). The states
+        % of a tripped unit are NaN while it is tripped. The inputs u are the inputs applied to
+        % the components (steady value, outputs of the controllers and event inputs).
+        % <@Type> double (n_t x (n_x + n_v + n_u))
         rm_variable double = zeros(0,0)
 
-        % <@Desc> Currents injected into the buses: columns Ireal, Iimag of each bus in
-        % the order of sv_bus (B1 Ireal, B1 Iimag, B2 Ireal, ...). They are not variables
-        % of the map; odeResults.Bus(i).I and .PQ are made from them.
-        % <@Role> Result
-        % <@Type> double
-        % <@Size> n_t x 2 n_bus
+        % [pu] Currents injected into the buses.
+        % Columns Ireal, Iimag of each bus in the order of sv_bus (B1 Ireal, B1 Iimag, B2 Ireal,
+        % ...). They are not variables of the map; odeResults.Bus(i).I and .PQ are made from them.
+        % <@Type> double (n_t x 2 n_bus)
         rm_I double = zeros(0,0)
 
-        % <@Desc> Bus tags, in the order of odeResults.Bus.
-        % <@Role> Result
-        % <@Type> string
-        % <@Size> n_bus x 1
+        % Bus tags, in the order of odeResults.Bus.
         sv_bus (:,1) string = strings(0,1)
 
-        % <@Desc> Component tags of each bus, in the order of odeResults.Bus(i).Component.
-        % <@Role> Result
-        % <@Type> cell of string
-        % <@Size> n_bus x 1
+        % Component tags of each bus, in the order of odeResults.Bus(i).Component.
         c_component (:,1) cell = cell(0,1)
     end
 
-    properties (Dependent)
-        % <@Desc> Trajectories per bus and component, as a struct (a view of rv_t,
-        % rm_variable and rm_I):
-        % t (time [s], column), Bus(i).V (table Vreal, Vimag), Bus(i).I (Ireal, Iimag),
+    properties (Dependent) % Result
+        % Trajectories per bus and component, as a struct (a view of rv_t, rm_variable and rm_I).
+        % Fields: t (time [s], column), Bus(i).V (table Vreal, Vimag), Bus(i).I (Ireal, Iimag),
         % Bus(i).PQ (P, Q), Bus(i).Component(j).X (states, columns named by sv_x) and
-        % Bus(i).Component(j).U (inputs, columns named by sv_u). Bus(i) follows net.a_Bus
-        % and Component(j) follows a_Component of the bus. The states of the local and
-        % global controllers are in rm_variable only. At a boundary between two phases
-        % the time appears twice (end of one phase, start of the next).
-        % <@Role> Result
-        % <@Type> struct
-        % <@Size> 1x1
+        % Bus(i).Component(j).U (inputs, columns named by sv_u). Bus(i) follows net.a_Bus and
+        % Component(j) follows a_Component of the bus. The states of the local and global
+        % controllers are in rm_variable only. At a boundary between two phases the time appears
+        % twice (end of one phase, start of the next).
+        % <@Type> struct (1x1)
         odeResults
     end
 
-    properties (Access=private, Hidden)
-        % <@Desc> Columns of rm_variable for the view odeResults: c_index{i}.iv_V (2 x 1)
-        % and c_index{i}.c_x{j}, c_index{i}.c_u{j} for component j of bus i.
-        % <@Role> Result
-        % <@Type> cell of struct
-        % <@Size> n_bus x 1
+    properties (Access=private, Hidden) % Internal state
+        % Columns of rm_variable for the view odeResults.
+        % c_index{i}.iv_V (2 x 1) and c_index{i}.c_x{j}, c_index{i}.c_u{j} for component j of
+        % bus i.
+        % <@Type> cell of struct (n_bus x 1)
         c_index (:,1) cell = cell(0,1)
 
-        % <@Desc> odeResults, built on first access.
-        % <@Role> Result
-        % <@Type> struct
-        % <@Size> 0x0 or 1x1
+        % odeResults, built on first access.
+        % <@Type> struct (0x0 or 1x1)
         s_view struct = struct([])
     end
 
     methods
         function obj = odeSimulationResult(net, solver, options, flag, output, elapsed, c_phase)
-        % <@Desc>
-        % Collects the trajectories of the integration phases and reorders the state of
-        % the simulator (odeSimulator order: each component with its inputs and local
-        % controllers, the global controllers, then the voltage and current of each bus)
-        % into the order of net.get_variable_map().
-        % <@Role> Constructor
-        % <@Summary> Create a time simulation result.
-        % <@Signatures>
-        % [
-        %   "result = odeSimulationResult()",
-        %   "result = odeSimulationResult(net, solver, options, flag, output, elapsed, c_phase)"
-        % ]
-        % <@Parameters>
-        % [
-        %   {"Name": "net, solver, options, flag, output, elapsed", "Type": "-", "Description": "Shared part, see AnalysisResult.", "Required": false, "Default": "-"},
-        %   {"Name": "c_phase", "Type": "cell of table", "Description": "Result of each phase (odeEventSet.Event2State: t, x, i).", "Required": false, "Default": "{}"}
-        % ]
-        % <@Returns>
-        % [
-        %   {"Name": "result", "Type": "odeSimulationResult", "Description": "The result object."}
-        % ]
+        % Create a time simulation result.
+        %
+        % Collects the trajectories of the integration phases and reorders the state of the
+        % simulator (odeSimulator order: each component with its inputs and local controllers,
+        % the global controllers, then the voltage and current of each bus) into the order of
+        % net.get_variable_map(). Created by odeSimulator.solve.
             arguments
-                net             = []
-                solver          = "odeSimulator"
-                options  struct = struct()
-                flag            = false
-                output   struct = struct()
-                elapsed         = NaN
-                c_phase  cell   = {}
+                net             = [] % Analysed network; see AnalysisResult.
+                solver          = "odeSimulator" % Solver object or its class name; see AnalysisResult.
+                options  struct = struct() % Effective settings; see AnalysisResult.
+                flag            = false % Success or convergence flag; see AnalysisResult.
+                output   struct = struct() % Solver details; see AnalysisResult.
+                elapsed         = NaN % [s] Elapsed time or tic value; see AnalysisResult.
+                c_phase  cell   = {} % Result of each phase (odeEventSet.Event2State: t, x, i).
+            end
+            arguments (Output)
+                obj % The result object.
             end
             obj@AnalysisResult(net, solver, options, flag, output, elapsed);
             if isempty(net) || isempty(c_phase)
@@ -154,44 +132,37 @@ classdef odeSimulationResult < AnalysisResult
         end
 
         function rv = get_point(obj, t, tab_map, opt)
-        % <@Desc>
-        % Values of the variables at time t, in the order of the rows of tab_map (by
-        % default the whole variable map tab_variable, so rv is a point for
-        % net.linearize(Point=rv)). tab_map may be the variable map of a bus or component
-        % of the simulated network (bus.get_variable_map(), comp.get_variable_map()); its
-        % rows are found by Kind, Owner, Name and Bus.
-        % Between two output times the values are interpolated linearly. At a phase
-        % boundary, where the time appears twice in rv_t, Side chooses the value:
-        % "after" (default) the start of the later phase, i.e. the state after the event
-        % (an offset applied, a fault cleared), "before" the end of the earlier phase.
-        % At any other output time Side has no effect.
-        % <@Role> Result
-        % <@Summary> Values of the variable map at a time of the simulation.
-        % <@Signatures>
-        % [
-        %   "rv = result.get_point(t)",
-        %   "rv = result.get_point(t, tab_map)",
-        %   "rv = result.get_point(t, tab_map, Side=\"before\")"
-        % ]
-        % <@Parameters>
-        % [
-        %   {"Name": "t", "Type": "double scalar", "Description": "Time [s] within [rv_t(1), rv_t(end)].", "Required": true, "Default": "-"},
-        %   {"Name": "tab_map", "Type": "table", "Description": "Rows to return (a variable map or a part of it).", "Required": false, "Default": "tab_variable"},
-        %   {"Name": "Side", "Type": "\"after\" | \"before\"", "Description": "Value at a phase boundary: after or before the event.", "Required": false, "Default": "\"after\""}
-        % ]
-        % <@Returns>
-        % [
-        %   {"Name": "rv", "Type": "double column", "Description": "Values in the order of the rows of tab_map."}
-        % ]
+        % Get the values of the variable map at a time of the simulation.
+        %
+        % Returns the values of the variables at time t, in the order of the rows of tab_map
+        % (by default the whole variable map tab_variable, so rv is a point for
+        % net.linearize(Point=rv)). tab_map may be the variable map of a bus or component of
+        % the simulated network (bus.get_variable_map(), comp.get_variable_map()); its rows are
+        % found by Kind, Owner, Name and Bus.
+        %
+        % Between two output times the values are interpolated linearly. At a phase boundary,
+        % where the time appears twice in rv_t, Side chooses the value: "after" (default) the
+        % start of the later phase, i.e. the state after the event (an offset applied, a fault
+        % cleared), "before" the end of the earlier phase. At any other output time Side has no
+        % effect.
+        %
         % <@Examples>
-        % [
-        %   "```matlab\nsim = net.simulate([0,5], odeEventSet(\"fault\", net, \"TimeSpan\", [1,1.05], \"FaultBus\", \"B008\"));\nx  = sim.get_point(2);                    % order of net.get_variable_map()\nx0 = sim.get_point(1.05, Side=\"before\");  % end of the fault\nres = net.linearize(Point={sim, 2});      % same point as Point=x\n```"
-        % ]
+        % ```matlab
+        % sim = net.simulate([0,5], odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008"));
+        % x  = sim.get_point(2);                    % order of net.get_variable_map()
+        % x0 = sim.get_point(1.05, Side="before");  % end of the fault
+        % res = net.linearize(Point={sim, 2});      % same point as Point=x
+        % ```
+        %
+        % See also PowerNetwork.get_variable_map, odeLinearizer
             arguments
                 obj
-                t        (1,1) double {mustBeReal}
-                tab_map  table = obj.tab_variable
-                opt.Side (1,1) string {mustBeMember(opt.Side, ["after","before"])} = "after"
+                t        (1,1) double {mustBeReal} % [s] Time within [rv_t(1), rv_t(end)].
+                tab_map  table = obj.tab_variable % Rows to return (a variable map or a part of it).
+                opt.Side (1,1) string {mustBeMember(opt.Side, ["after","before"])} = "after" % Value at a phase boundary: after or before the event.
+            end
+            arguments (Output)
+                rv % Values in the order of the rows of tab_map (column).
             end
             iv_col = obj.columns_of(tab_map);
 

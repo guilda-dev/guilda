@@ -1,8 +1,14 @@
 function out = reorder(sys,opt)
+% Sort the states, inputs and outputs of a state-space model by their names.
+%
+% A name has the form <variable>_<component>; method selects which part is sorted.
     arguments
-        sys ss
-        opt.method    (1,1) string {mustBeMember(opt.method,   ["VariableNames","ComponentNames"])} = "ComponentNames";
-        opt.direction (1,1) string {mustBeMember(opt.direction,[ "ascend" , "descend" , "stable"])} = "ascend";
+        sys ss % Model to reorder.
+        opt.method    (1,1) string {mustBeMember(opt.method,   ["VariableNames","ComponentNames"])} = "ComponentNames"; % Sort by the component part or the variable part of the names.
+        opt.direction (1,1) string {mustBeMember(opt.direction,[ "ascend" , "descend" , "stable"])} = "ascend"; % Sort order; "stable" groups equal names in their first order.
+    end
+    arguments (Output)
+        out % Reordered model.
     end
 
     switch opt.method

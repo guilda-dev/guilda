@@ -1,49 +1,9 @@
 function add_entry(obj,names,defaults,valids)
-    % <@Desc>
-    % Adds dynamic properties and attaches change listeners.
-    % <@Role>
-    % Parameter
-    % <@Summary>
     % Register parameter names, defaults, and validation classes.
-    % <@Signatures>
-    % [
-    %   "add_entry(obj, names, defaults, valids)"
-    % ]
-    % <@Parameters>
-    % [
-    %   {
-    %     "Name": "obj",
-    %     "Type": "Parameter",
-    %     "Description": "Target parameter container.",
-    %     "Required": true,
-    %     "Default": "-"
-    %   },
-    %   {
-    %     "Name": "names",
-    %     "Type": "string array | cellstr",
-    %     "Description": "Parameter names to register.",
-    %     "Required": true,
-    %     "Default": "-"
-    %   },
-    %   {
-    %     "Name": "defaults",
-    %     "Type": "cell array",
-    %     "Description": "Default values for each parameter.",
-    %     "Required": true,
-    %     "Default": "-"
-    %   },
-    %   {
-    %     "Name": "valids",
-    %     "Type": "string array | cellstr",
-    %     "Description": "Validation classes for each parameter.",
-    %     "Required": true,
-    %     "Default": "-"
-    %   }
-    % ]
-    % <@Returns>
-    % []
+    %
+    % Adds dynamic properties and attaches change listeners.
     arguments
-        obj 
+        obj % Target parameter container.
     end
     arguments(Input,Repeating)
         names    %(1,1) string {mustBeValidVariableName}

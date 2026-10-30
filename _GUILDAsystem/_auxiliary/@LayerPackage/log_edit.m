@@ -1,77 +1,15 @@
 function log_edit(obj, log, tag, before, after, time, tab)
-    % <@Desc>
-    % Records an edit event and propagates it to parent layers.
-    % <@Role>
-    % Edit Log
-    % <@Summary>
     % Append a new edit-log record.
-    % <@Signatures>
-    % [
-    %   "log_edit(obj)",
-    %   "log_edit(obj, log, tag, before, after, time, tab)"
-    % ]
-    % <@Parameters>
-    % [
-    %   {
-    %     "Name": "obj",
-    %     "Type": "LayerPackage",
-    %     "Description": "Target layer object.",
-    %     "Required": true,
-    %     "Default": "-"
-    %   },
-    %   {
-    %     "Name": "log",
-    %     "Type": "string scalar",
-    %     "Description": "Edit message.",
-    %     "Required": false,
-    %     "Default": "\"\""
-    %   },
-    %   {
-    %     "Name": "tag",
-    %     "Type": "string scalar",
-    %     "Description": "Edited field tag.",
-    %     "Required": false,
-    %     "Default": "\"\""
-    %   },
-    %   {
-    %     "Name": "before",
-    %     "Type": "double scalar",
-    %     "Description": "Value before edit.",
-    %     "Required": false,
-    %     "Default": "NaN"
-    %   },
-    %   {
-    %     "Name": "after",
-    %     "Type": "double scalar",
-    %     "Description": "Value after edit.",
-    %     "Required": false,
-    %     "Default": "NaN"
-    %   },
-    %   {
-    %     "Name": "time",
-    %     "Type": "string scalar",
-    %     "Description": "Timestamp for the event.",
-    %     "Required": false,
-    %     "Default": "current time"
-    %   },
-    %   {
-    %     "Name": "tab",
-    %     "Type": "table (1x6)",
-    %     "Description": "Prebuilt edit-log row.",
-    %     "Required": false,
-    %     "Default": "auto-generated"
-    %   }
-    % ]
-    % <@Returns>
-    % []
+    %
+    % Records an edit event and propagates it to parent layers.
     arguments
-        obj 
+        obj % Target layer object.
         log   (1,1) string = "";                                                    %#ok
         tag   (1,1) string = ""; %#ok
         before = nan;                                                               %#ok
         after  = nan;                                                               %#ok
         time   = string(datetime('now','Format','uuuu/MM/dd HH:mm:ss'));            %#ok
-        tab    = table(time, obj.get_tag(true,"/"), log, tag, {before}, {after})
+        tab    = table(time, obj.get_tag(true,"/"), log, tag, {before}, {after}) % Prebuilt edit-log row.
     end
     % Record what the edit made stale (see LayerPackage.edit_effect):
     % the handle cache of the parameter's owner (of the owner and all its

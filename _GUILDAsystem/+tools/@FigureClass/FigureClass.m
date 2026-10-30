@@ -1,19 +1,30 @@
 classdef FigureClass < auxiliary
-% 自作Figureクラス
-% 使い方: コード冒頭で本クラスのインスタンスを定義、figure作成時には本クラスのfigureメソッドを使う、コードの最後でsaveメソッドを使う
-% is_save: figureを保存するかどうか
-% filepath_save: 保存するファイルパス(".../figure/{filename}"を想定, {filename}はmfilename()で取得)
-% type_save: 保存するファイルの拡張子(png, fig, jpg, both: png&fig)
-    properties
-        fig
-        title
-        is_save
-        filepath_save
-        type_save
+% Collection of figures created by a script, saved together at the end.
+%
+% Create an instance at the start of the script, create each figure with its figure
+% method, and call save at the end.
+%
+% <@Examples>
+% ```matlab
+% F = tools.FigureClass(true, fullfile("figure", mfilename()), "both");
+% F.figure("response");
+% plot(t, y);
+% F.save();      % figure/<script>/1-response.png and fig/1-response.fig
+% ```
+    properties % Figures
+        fig            % Created figures, in order of creation.
+        title          % Titles of the figures, used in the file names.
+        is_save        % Save the figures when save is called.
+        filepath_save  % Folder to save to (e.g. ".../figure/<mfilename()>").
+        type_save      % File type: "png", "jpg" or "both" (png and fig).
     end
 
     methods
         function obj = FigureClass(is_save, filepath_save, type_save)
+        % Create an empty collection.
+        %
+        % Inputs: `is_save` (default false), `filepath_save` (default []) and `type_save`
+        % (default "both"); see the properties.
             if nargin < 1, is_save = false; end
             if nargin < 2, filepath_save = []; end
             if nargin < 3, type_save = "both"; end
@@ -25,6 +36,9 @@ classdef FigureClass < auxiliary
         end
 
         function figure(obj, title, is_fullscreen)
+        % Create a figure and add it to the collection.
+        %
+        % Inputs: `title` of the figure (default "") and `is_fullscreen` (default false).
             if nargin < 2, title = ""; end
             if nargin < 3, is_fullscreen = false; end
             obj.title = [obj.title, title];
@@ -36,6 +50,9 @@ classdef FigureClass < auxiliary
         end
 
         function save(obj, filepath)
+        % Save every figure of the collection when is_save is true.
+        %
+        % Input `filepath`: folder to save to (default filepath_save).
             if nargin < 2, filepath = obj.filepath_save; end
             if isempty(filepath)
                 error("filepath is empty");

@@ -1,25 +1,17 @@
 function [str_solver, c_nv] = optimoption(obj, prob, s_options) %#ok<INUSL>
-% <@Desc>
-% Name-Value arguments of solve (Optimization Toolbox) for the effective settings.
+% Get the solver name and the solve() options for the effective settings.
+%
+% Returns the Name-Value arguments of solve (Optimization Toolbox) for the effective settings.
 % Only settings that differ from the defaults of the solver are passed, so that the
 % stored defaults (Solver="auto", Display="default", NaN) call solve(prob, x0) as is.
-% <@Role> Settings
-% <@Summary> Solver name and solve() options for the effective settings.
-% <@Signatures>
-% [
-%   "[str_solver, c_nv] = optimoption(obj, prob, s_options)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "obj", "Type": "OptimalPowerFlow", "Description": "Solver (net.solver_OPF).", "Required": true, "Default": "-"},
-%   {"Name": "prob", "Type": "optim.problemdef.OptimizationProblem", "Description": "Problem built by build_opf_problem.", "Required": true, "Default": "-"},
-%   {"Name": "s_options", "Type": "struct", "Description": "Effective settings (output of get_options).", "Required": true, "Default": "-"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "str_solver", "Type": "string scalar", "Description": "Solver that runs the problem (linprog, quadprog or fmincon)."},
-%   {"Name": "c_nv", "Type": "cell", "Description": "Name-Value arguments of solve: Solver and Options when needed."}
-% ]
+%
+% Inputs:
+% - `prob`: Problem built by build_opf_problem.
+% - `s_options`: Effective settings (output of get_options).
+    arguments (Output)
+        str_solver % Solver that runs the problem (linprog, quadprog or fmincon).
+        c_nv % Name-Value arguments of solve: Solver and Options when needed.
+    end
     if s_options.Solver == "auto"
         str_solver = string(solvers(prob));
     else

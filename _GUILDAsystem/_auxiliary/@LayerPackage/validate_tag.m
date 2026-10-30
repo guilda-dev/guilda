@@ -1,39 +1,13 @@
 function str_newtag = validate_tag(obj,str_newtag)
-    % <@Desc>
-    % Validates tag uniqueness within sibling layers and renames on conflicts.
-    % <@Role>
-    % Tag
-    % <@Summary>
     % Ensure tag uniqueness among same-layer objects.
-    % <@Signatures>
-    % [
-    %   "str_newtag = validate_tag(obj, str_newtag)"
-    % ]
-    % <@Parameters>
-    % [
-    %   {
-    %     "Name": "obj",
-    %     "Type": "LayerPackage",
-    %     "Description": "Target layer object.",
-    %     "Required": true,
-    %     "Default": "-"
-    %   },
-    %   {
-    %     "Name": "str_newtag",
-    %     "Type": "string scalar",
-    %     "Description": "Candidate tag.",
-    %     "Required": true,
-    %     "Default": "-"
-    %   }
-    % ]
-    % <@Returns>
-    % [
-    %   {
-    %     "Name": "str_newtag",
-    %     "Type": "string scalar",
-    %     "Description": "Validated unique tag."
-    %   }
-    % ]
+    %
+    % Validates tag uniqueness within sibling layers and renames on conflicts.
+    %
+    % Inputs:
+    % - `str_newtag`: Candidate tag.
+    arguments (Output)
+        str_newtag % Validated unique tag.
+    end
     str_newtag = string(str_newtag);
 
     if ~obj.l_managedTag || isempty(obj.parent)

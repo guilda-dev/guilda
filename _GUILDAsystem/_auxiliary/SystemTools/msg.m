@@ -1,35 +1,24 @@
 function txt = msg(ID, varargin)
-% MSG generates a STRING based on the SPECIFIED ID.
-%    TXT = MSG(ID, ARG1, ARG2, ARG3, ...) reads XML files and outputs text 
-%    based on the specified ID. When additional input is required 
-%    during text output multiple arguments can be specified after the ID.
+% Return the message text of a GUILDA message ID.
 %
+% Reads SystemTools/GUILDA/en/<Object>.xml and returns the entry of the key, with the
+% placeholders {0}, {1}, ... replaced by the additional inputs.
 %
-% MSG INPUT AND OUTPUT ARGUMENTS
+% Inputs:
+% - `ID`: "GUILDA:<Object>:<Key>" (string or char). <Object> is the class or file that
+%   calls msg.
+% - `varargin`: values for the placeholders of the message (string, char or number); as
+%   many as the message has.
 %
-% ID - Error ID [ string or char ]
-%    The identifier consists of three elements. The first is the name of the software
-%    the second is the name of the object calling the msg function, and the third is a key
-%    for specifying the error message. These elements are specified as an ID 
-%    by separating them in the above order using colons (:).
+% Output `txt`: the message text (char).
 %
-% VARARGIN - Other Inputs [string, char, Integer or double]
-%    When outputting errors, additional arguments may be required. 
-%    For example, when outputting errors related to specific characters or values. 
-%    In such cases, specify as many additional inputs as needed. 
+% The caller must be the object named in the ID; otherwise msg stops with an error.
 %
-% TXT - Output Text [ char ]
-%    This is the text string output based on the specified ID. It is output as a char type.
-%
-%
-% Example
-%       1.  mg = msg('A:B:C')
-%       2.  mg = msg('A:B:C', val1, val2)
-%       3.  error(msg('A:B:C'))
-%    To output an error message triggered by key C within object B implemented in software A,
-%    use the syntax shown in steps 1 to 3 above. Steps 1 and 2 output text only,
-%    while step 3 outputs an error based on the outputted text.
-%
+% <@Examples>
+% Inside a method of CPFResult:
+% ```matlab
+% error('GUILDA:CPFResult:UnknownBus', '%s', msg('GUILDA:CPFResult:UnknownBus', "B099"));
+% ```
 
     
     import java.text.MessageFormat    

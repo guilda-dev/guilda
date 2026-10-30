@@ -1,16 +1,11 @@
 function check_point(Point)
-% <@Desc>
+% Check the form of the Point option.
+%
 % Checks the form of a Point option: [] (the equilibrium), a real vector (values in the
 % order of the variable map) or a cell {sim, t} or {sim, t, Side} (a simulation result, a
 % time, and "after" | "before" for a phase boundary).
 % The length of a vector is checked against the analysed layer by point_vector.
 % Any other form stops with GUILDA:odeLinearizer:PointType.
-% <@Role> Settings
-% <@Summary> Check the form of the Point option.
-% <@Signatures>
-% [
-%   "odeLinearizer.check_point(Point)"
-% ]
     if isempty(Point) && ~iscell(Point)
         return
     end

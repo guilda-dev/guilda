@@ -1,13 +1,22 @@
 function [s, str_log] = update(s, opt)
-% Shared part of set_opffcn of Component, Bus, Branch and PowerNetwork.
-%   [s, str_log] = opffcn.update(obj.s_opffcn, Cost=..., Constraint=..., DefaultConstraint=...)
-% Returns the new s_opffcn: the given fields replace the stored ones, the others are kept.
-% Cost=[] or Constraint=[] clears that handle. str_log is the edit-log message.
+% Update s_opffcn with the given handles (shared part of set_opffcn).
+%
+% Used by set_opffcn of Component, Bus, Branch and PowerNetwork. The given fields replace
+% the stored ones, the others are kept. Cost=[] or Constraint=[] clears that handle.
+%
+% <@Examples>
+% ```matlab
+% [s, str_log] = opffcn.update(obj.s_opffcn, Cost=@(v, p) 2*v.P, DefaultConstraint=true);
+% ```
     arguments
-        s (1,1) struct
-        opt.Cost       {mustBeHandleOrEmpty(opt.Cost)}
-        opt.Constraint {mustBeHandleOrEmpty(opt.Constraint)}
-        opt.DefaultConstraint (1,1) logical
+        s (1,1) struct % Stored s_opffcn.
+        opt.Cost       {mustBeHandleOrEmpty(opt.Cost)} % Cost handle @(v, p), or [] to clear.
+        opt.Constraint {mustBeHandleOrEmpty(opt.Constraint)} % Constraint handle @(v, p) returning a struct of named constraints, or [] to clear.
+        opt.DefaultConstraint (1,1) logical % Keep the default constraints of the object.
+    end
+    arguments (Output)
+        s % New s_opffcn.
+        str_log % Edit-log message.
     end
     str_name = string(fieldnames(opt)).';
     for str = str_name

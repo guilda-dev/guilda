@@ -1,88 +1,77 @@
 classdef LayerPackage < handle
-% <@Desc> 
 % Abstract base class for layer hierarchy management in GUILDA.
-% It centralizes parent/children relationships, tag handling, and edit logging.
-% <@Role> 
-% auxiliary
-% <@Constructor> 
-% This class is abstract and should not be instantiated directly.
+%
+% It centralizes parent/children relationships, tag handling, and edit logging. The
+% network, buses, branches, components, controllers (through PowerSystemModel) and
+% Parameter containers derive from it.
+%
+% <@Examples>
+% ```matlab
+% net = network.IEEE14bus();
+% net.disp_tree();            % hierarchy of the layers below the network
+% bus = net.a_Bus{1};
+% bus.get_tag(true, "/")      % tag including the parent layers
+% net.tab_editLog             % edits since the last net.initialize
+% ```
+%
+% See also PowerSystemModel, Parameter
 
     %% Abstract
-    properties(Abstract, Dependent)
-        % <@Desc> manage parameter related to any analyis.
-        % <@Role> Parameter
+    properties(Abstract, Dependent) % Parameters
+        % Parameters of the layer used by the analyses.
         % <@Type> Parameter
-        % <@Size> 1x1
         tab_parameter
     end
 
 
     %% Layer Structure
-    properties(Abstract, Dependent, Access=protected)
-        % <@Desc> manage hierarchical structure of layers.
-        % <@Role> Layer Structure
+    properties(Abstract, Dependent, Access=protected) % Layer structure
+        % Parent layer in the hierarchy.
         % <@Type> LayerPackage
-        % <@Size> 1x1
         parent
 
-        % <@Desc> manage hierarchical structure of layers.
-        % <@Role> Layer Structure
-        % <@Type> LayerPackage cell array
-        % <@Size> Nx1
+        % Child layers in the hierarchy.
+        % <@Type> LayerPackage cell array (Nx1)
         children
     end
     %% Edit log
-    properties(Access=protected)
-        % <@Desc> Flag to indicate if the layer has been edited.
-        % <@Role> Edit Log
-        % <@Type> string
-        % <@Size> 1x1
+    properties(Access=protected) % Edit log
+        % Edit state of the layer: "unset", "initialized" or "editted".
         str_editFlag (1,1) string {mustBeMember(str_editFlag,["unset","initialized","editted"])} = "unset"
     end
-    properties(SetAccess=private)
-        % <@Desc> Log of edits made to the layer, including timestamp, ID, log message, tag, and before/after states.
-        % <@Role> Edit Log
-        % <@Type> table
-        % <@Size> Nx6
+    properties(SetAccess=private) % Edit log
+        % Log of edits made to the layer since the last initialize.
+        % Columns: timestamp, ID, log message, tag, and the states before and after the edit.
+        % <@Type> table (Nx6)
         tab_editLog = array2table(zeros(0,6),'VariableNames',{'timestamp','ID','log','tag','before','after'});
     end
-    properties(SetAccess=protected, Hidden)
-        % <@Desc> True when the cached f_* function handles built by set_odefcn no longer
-        % match the parameters. Set by log_edit on the owner of an edited "dynamics"
-        % parameter, and on every layer of the network when its "base" parameter (Hz)
-        % is edited; cleared when set_odefcn rebuilds the handles. check_edit
-        % rebuilds the handles of every layer with this flag at the start of an analysis.
-        % Only Component, LocalController and GlobalController own handles.
-        % <@Role> Edit Log
-        % <@Type> logical
-        % <@Size> 1x1
+    properties(SetAccess=protected, Hidden) % Edit log
+        % True when the cached f_* function handles built by set_odefcn no longer match the parameters.
+        % Set by log_edit on the owner of an edited "dynamics" parameter, and on every layer of
+        % the network when its "base" parameter (Hz) is edited; cleared when set_odefcn rebuilds
+        % the handles. check_edit rebuilds the handles of every layer with this flag at the start
+        % of an analysis. Only Component, LocalController and GlobalController own handles.
         l_staleOdefcn (1,1) logical = false
 
-        % <@Desc> True when the equilibrium set by initialize no longer matches the model.
-        % Kept on PowerNetwork only. Set by log_edit for edits of "dynamics", "base"
-        % (baseMVA) and "powerflow" parameters, topology changes and slack-bus changes;
-        % edits of the network Hz and of "operation", "OPF" and "graph" parameters leave
-        % it unchanged. Cleared by
+        % True when the equilibrium set by initialize no longer matches the model.
+        % Kept on PowerNetwork only. Set by log_edit for edits of "dynamics", "base" (baseMVA) and
+        % "powerflow" parameters, topology changes and slack-bus changes; edits of the network Hz
+        % and of "operation", "OPF" and "graph" parameters leave it unchanged. Cleared by
         % reset_edit (end of initialize). See edit_effect for the mapping.
-        % <@Role> Edit Log
-        % <@Type> logical
-        % <@Size> 1x1
         l_staleEquilibrium (1,1) logical = false
     end
     
     %% Tag
-    properties(Access=protected)
-        % <@Desc> Flag to indicate if the layer is managed by the tag system.
-        % <@Role> Tag
+    properties(Access=protected) % Tag
+        % True when the layer is managed by the tag system.
         % <@Type> logical
-        % <@Size> 1x1
         l_managedTag = true;
     end
-    properties
-        % <@Desc> User-defined tag for the layer, used for identification and management within the layer structure.
-        % <@Role> Tag
+    properties % Tag
+        % User-defined tag of the layer.
+        % Used for identification within the layer structure; a tag that already exists among
+        % the siblings is renamed with a number suffix.
         % <@Type> string
-        % <@Size> 1x1
         str_tag
     end
 
@@ -182,70 +171,32 @@ classdef LayerPackage < handle
     end
     methods(Hidden)
         function tab = table(obj)
-        % <@Desc> 
+        % Convert layer parameters into table format.
+        %
         % Returns the parameter table associated with this layer object.
-        % <@Role> Parameter
-        % <@Summary> Convert layer parameters into table format.
-        % <@Signatures>
-        % [
-        %   "tab = table(obj)"
-        % ]
-        % <@Parameters>
-        % [
-        %   {
-        %     "Name": "obj",
-        %     "Type": "LayerPackage",
-        %     "Description": "Target layer object.",
-        %     "Required": true,
-        %     "Default": "-"
-        %   }
-        % ]
-        % <@Returns>
-        % [
-        %   {
-        %     "Name": "tab",
-        %     "Type": "table",
-        %     "Description": "Parameter table of the layer."
-        %   }
-        % ]
+        %
         % <@Examples>
-        % [
-        %   "```matlab\ntab = table(obj);\n```"
-        % ]
+        % ```matlab
+        % tab = table(obj);
+        % ```
+            arguments (Output)
+                tab % Parameter table of the layer.
+            end
             tab = obj.tab_parameter;
         end
         
         function str = string(obj)
-        % <@Desc> 
+        % Convert the layer object to a tag string.
+        %
         % Returns the tag string representation of this layer object.
-        % <@Role> Tag
-        % <@Summary> Convert the layer object to a tag string.
-        % <@Signatures>
-        % [
-        %   "str = string(obj)"
-        % ]
-        % <@Parameters>
-        % [
-        %   {
-        %     "Name": "obj",
-        %     "Type": "LayerPackage",
-        %     "Description": "Target layer object.",
-        %     "Required": true,
-        %     "Default": "-"
-        %   }
-        % ]
-        % <@Returns>
-        % [
-        %   {
-        %     "Name": "str",
-        %     "Type": "string",
-        %     "Description": "Tag string of the layer object."
-        %   }
-        % ]
+        %
         % <@Examples>
-        % [
-        %   "```matlab\nstr = string(obj);\n```"
-        % ]
+        % ```matlab
+        % str = string(obj);
+        % ```
+            arguments (Output)
+                str % Tag string of the layer object.
+            end
             str = obj.str_tag;
         end
     end

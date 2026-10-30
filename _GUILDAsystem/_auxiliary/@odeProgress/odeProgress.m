@@ -1,40 +1,50 @@
 classdef odeProgress < auxiliary
-    properties
-        message    (1,1) string = "|"
-        timeoffset (1,1) double = 0
+% Progress display and time keeper of a time simulation.
+%
+% odeSimulator.solve creates one per run and passes OutputFcn and Events to the MATLAB ode
+% object. It shows the progress as a waitbar ("dialog") or a text bar ("disp"), or nothing
+% ("none"), and stops an integration phase that runs longer than timelimit.
+%
+% See also odeSimulator
+    properties % Display
+        message    (1,1) string = "|" % Text printed at the end of the phase (the outcome of the phase).
+        timeoffset (1,1) double = 0   % [s] Start time of the current phase (ode times start at 0).
     end
     
-    properties(SetAccess=protected)
+    properties(SetAccess=protected) % Callbacks
+        % Output function given to the solver options (OutputFcn).
+        % <@Type> function_handle
         OutputFcn = @(t,x,flag) false;
     end
 
-    properties%(Access=protected)
-        mode
-        timelimit
+    properties%(Access=protected) % State
+        mode       % Display mode: "none", "disp" or "dialog".
+        timelimit  % [s] Limit of the wall-clock time of each phase.
 
-        tlim
-        tspan
-        tlast
+        tlim       % [s] Simulation time [t0, tend].
+        tspan      % [s] Length of the simulation time.
+        tlast      % [s] Time of the last update of the display.
 
-        phase = 0;
+        phase = 0; % Number of the current phase.
 
-        last_warn
+        last_warn  % Last warning when the display was drawn.
 
         % For Time keeper
-        start_time
-        ToBeContinue = true;
+        start_time          % Value of tic at the start of the phase.
+        ToBeContinue = true; % False when the phase exceeded timelimit.
 
         % For mode = "dialog"
-        dialog = nan;
+        dialog = nan;       % Waitbar figure.
     end
 
     methods
 
         function obj = odeProgress(mode, t_simulate, timelimit)
+        % Create the progress display of a simulation.
             arguments
-                mode       (1,1) string {mustBeMember(mode,["none","disp","dialog"])}  = 'disp';
-                t_simulate (1,:) double = [0,100]
-                timelimit  (1,1) double {mustBePositive}  = inf;
+                mode       (1,1) string {mustBeMember(mode,["none","disp","dialog"])}  = 'disp'; % Display mode.
+                t_simulate (1,:) double = [0,100] % [s] Simulation time [t0, tend].
+                timelimit  (1,1) double {mustBePositive}  = inf; % [s] Limit of the wall-clock time of each phase.
             end
             obj.mode      = mode;
             obj.timelimit = timelimit;
@@ -56,6 +66,7 @@ classdef odeProgress < auxiliary
 
 
         function f = dialogFcn(obj,t,x,flag)
+        % Update the waitbar (output function of mode "dialog").
             [f,t,flag] = obj.time_keeper(t,x,flag);
 
             switch char(flag)
@@ -75,12 +86,14 @@ classdef odeProgress < auxiliary
             end
         end
         function delete(obj)
+        % Close the waitbar.
             if isgraphics(obj.dialog)
                 delete(obj.dialog);
             end
         end
 
         function f = dispFcn(obj,t,x,flag)
+        % Update the text bar (output function of mode "disp").
             [f,t,flag] = obj.time_keeper(t,x,flag);
 
             switch char(flag)
@@ -110,6 +123,9 @@ classdef odeProgress < auxiliary
         end
 
         function [f,t,flag] = time_keeper(obj,t,~,flag)
+        % Stop the phase when it exceeds timelimit (output function of mode "none").
+        %
+        % Shifts t by timeoffset and records the reason of a stop in message.
             t = obj.timeoffset + t;
             f = 0;
             if isinf(obj.timelimit)
@@ -140,6 +156,7 @@ classdef odeProgress < auxiliary
 
 
         function [value,isterminal,direction] = Events(obj,~,~)
+        % Check whether the phase may continue (event function of the solver).
             value = obj.ToBeContinue;
             isterminal = 1;
             direction  = 0;

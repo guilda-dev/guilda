@@ -1,92 +1,70 @@
 classdef (Sealed = true) odeSimulator < auxiliary
-% <@Desc>
-% Solver of the time simulation (net.simulate). net.solver_ODE holds one; its properties
-% are the stored defaults of net.simulate and are kept between runs. Name-Value options of
-% a call override them for that call only (see OptionMap and get_options). The solver holds
-% settings only: the network, the event time table and the trajectories of a run are local
-% to solve, and the result is returned as an odeSimulationResult.
-% The DAE of the network is integrated phase by phase: a phase is a time interval in which
-% the set of active events (odeEventSet) does not change. Each phase is solved with the
-% MATLAB ode object (Solver, SolverOptions, RelativeTolerance, AbsoluteTolerance).
-% <@Role> Class Category
-% <@Constructor>
-% obj = odeSimulator()
-% Reads the defaults from GUILDA.config("TimeSimulation").
+% Solver of the time simulation (net.simulate).
+%
+% net.solver_ODE holds one; its properties are the stored defaults of net.simulate and are
+% kept between runs. Name-Value options of a call override them for that call only (see OptionMap and
+% get_options). The solver holds settings only: the network, the event time table and the
+% trajectories of a run are local to solve, and the result is returned as an
+% odeSimulationResult. The DAE of the network is integrated phase by phase: a phase is a
+% time interval in which the set of active events (odeEventSet) does not change. Each
+% phase is solved with the MATLAB ode object (Solver, SolverOptions, RelativeTolerance,
+% AbsoluteTolerance).
+%
+% <@Examples>
+% ```matlab
+% net = network.IEEE14bus();
+% net.initialize();
+% net.solver_ODE.TimeLimit = 60;          % stored default, kept between runs
+% ev = odeEventSet("fault", net, "TimeSpan", [1, 1.05], "FaultBus", "B008");
+% result = net.simulate([0, 10], ev, Solver="ode23t", Progress="none");  % this call only
+% ```
+%
+% See also odeSimulationResult, odeEventSet, PowerNetwork.simulate
 
-    properties (Access=public)
-        % <@Desc> Solver of the MATLAB ode object (Solver property of ode). The DAE of the
-        % network has a singular mass matrix, so it needs a solver for DAEs (ode15s, ode23t).
-        % <@Role> Settings
-        % <@Type> matlab.ode.SolverID
-        % <@Size> 1x1
+    properties (Access=public) % Settings
+        % Solver of the MATLAB ode object (Solver property of ode).
+        % The DAE of the network has a singular mass matrix, so it needs a solver for DAEs
+        % (ode15s, ode23t).
         Solver         matlab.ode.SolverID = "ode15s"
 
-        % <@Desc> Options of the solver (SolverOptions property of ode), e.g. MaxStep or
-        % InitialStep. Its class must match Solver.
-        % <@Role> Settings
-        % <@Type> matlab.ode.Options
-        % <@Size> 1x1
+        % Options of the solver (SolverOptions property of ode), e.g.
+        % MaxStep or InitialStep. Its class must match Solver.
         SolverOptions  matlab.ode.Options  = matlab.ode.options.ODE15s
 
-        % <@Desc> Relative error tolerance of the integration (RelativeTolerance of ode,
-        % RelTol of odeset). Name-Value option Tolerance.
-        % <@Role> Settings
-        % <@Type> double
-        % <@Size> 1x1
+        % Relative error tolerance of the integration (RelativeTolerance of ode, RelTol of odeset).
+        % Name-Value option Tolerance.
         RelativeTolerance   (1,1) double {mustBePositive, mustBeBetween(RelativeTolerance,1e-15,1e-3, "closed")} = 1e-4
 
-        % <@Desc> Absolute error tolerance of the integration (AbsoluteTolerance of ode,
-        % AbsTol of odeset). Name-Value option AbsoluteTolerance.
-        % <@Role> Settings
-        % <@Type> double
-        % <@Size> 1x1
+        % Absolute error tolerance of the integration (AbsoluteTolerance of ode, AbsTol of odeset).
+        % Name-Value option AbsoluteTolerance.
         AbsoluteTolerance   (1,1) double {mustBePositive, mustBeBetween(AbsoluteTolerance,1e-15,1e-3, "closed")} = 1e-6
 
-        % <@Desc> SeparateComplexParts property of the ode object.
-        % <@Role> Settings
-        % <@Type> matlab.lang.OnOffSwitchState
-        % <@Size> 1x1
+        % SeparateComplexParts property of the ode object.
         SeparateComplexParts matlab.lang.OnOffSwitchState = "off"
 
-        % <@Desc> Progress display during the integration: "dialog" (a waitbar), "disp"
-        % (a text bar in the Command Window) or "none". Name-Value option Progress, which
-        % also accepts true ("dialog") and false ("none").
-        % <@Role> Settings
-        % <@Type> string
-        % <@Size> 1x1
+        % Progress display during the integration.
+        % "dialog" (a waitbar), "disp" (a text bar in the Command Window) or "none". Name-Value
+        % option Progress, which also accepts true ("dialog") and false ("none").
         Progress            (1,1) string {mustBeMember(Progress,["none","disp","dialog"])} = "dialog"
 
-        % <@Desc> Limit of the computation (wall-clock) time [s] of each integration phase.
-        % When it is exceeded, the simulation stops at the time reached, and the result has
-        % flag = 0 ("stopped by TimeLimit"). Inf for no limit.
-        % <@Role> Settings
-        % <@Type> double
-        % <@Size> 1x1
+        % [s] Limit of the computation (wall-clock) time of each integration phase.
+        % When it is exceeded, the simulation stops at the time reached, and the result has flag =
+        % 0 ("stopped by TimeLimit"). Inf for no limit.
         TimeLimit           (1,1) double {mustBePositive} = 10
 
-        % <@Desc> Print the phases before the integration and the outcome (output.message)
-        % after it.
-        % <@Role> Settings
-        % <@Type> logical
-        % <@Size> 1x1
+        % Print the phases before the integration and the outcome (output.message) after it.
         Verbose             (1,1) logical = false
 
-        % <@Desc> Call result.Plot() after each simulation.
-        % <@Role> Settings
-        % <@Type> logical
-        % <@Size> 1x1
+        % Call result.Plot() after each simulation.
         Plot                (1,1) logical = false
     end
 
-    properties (Constant)
-        % <@Desc> Name-Value options of net.simulate and the solver property each one sets
-        % (input of tools.resolve_options). Solver, Tolerance, TimeLimit, Progress, Verbose
-        % and Plot are common names; Tolerance is the relative tolerance.
-        % AbsoluteTolerance, SolverOptions and SeparateComplexParts keep the names of the
-        % MATLAB ode object.
-        % <@Role> Settings
+    properties (Constant) % Settings
+        % Name-Value options of net.simulate and the solver property each one sets.
+        % Input of tools.resolve_options. Solver, Tolerance, TimeLimit, Progress, Verbose and Plot are common names; Tolerance is
+        % the relative tolerance. AbsoluteTolerance, SolverOptions and SeparateComplexParts keep
+        % the names of the MATLAB ode object.
         % <@Type> struct
-        % <@Size> 1x1
         OptionMap = struct( ...
             "Solver",               "Solver", ...
             "SolverOptions",        "SolverOptions", ...
@@ -99,17 +77,21 @@ classdef (Sealed = true) odeSimulator < auxiliary
             "Plot",                 "Plot")
     end
 
-    properties (Dependent, Hidden)
+    properties (Dependent, Hidden) % Compatibility
         Reporter                                    % COMPAT(v3) old name of Progress (v3_ode_reporter)
     end
 
-    properties (SetAccess=private, Hidden)
-        % Version of this class
+    properties (SetAccess=private, Hidden) % Version
+        % Version of this class.
         Ver (1,1) double = 2.0
     end
 
     methods
         function obj = odeSimulator()
+        % Create a time simulation solver with the defaults of GUILDA.config("TimeSimulation").
+        %
+        % A network creates its own (net.solver_ODE); net.reset_solver() replaces it with a
+        % new one.
             sct = GUILDA.config("TimeSimulation");
             obj.AbsoluteTolerance   = sct.AbsoluteTolerance.Value;
             obj.RelativeTolerance   = sct.RelativeTolerance.Value;
@@ -127,30 +109,17 @@ classdef (Sealed = true) odeSimulator < auxiliary
         function set.Reporter(obj, v), obj.Progress = v3_ode_reporter(v); end               % COMPAT(v3)
 
         function s_options = get_options(obj, nv)
-        % <@Desc>
-        % Effective settings of one run: every stored setting of the solver, with the
-        % Name-Value overrides of the call applied. The solver itself is not changed.
+        % Get the effective settings of one run as a struct.
+        %
+        % Every stored setting of the solver, with the Name-Value overrides of the call applied. The solver itself is not changed.
         % A name that is not in OptionMap stops with GUILDA:resolve_options:UnknownName;
         % an invalid value stops with the validation error of the option.
-        % <@Role> Settings
-        % <@Summary> Stored settings + call-time overrides, as a struct.
-        % <@Signatures>
-        % [
-        %   "s_options = get_options(obj)",
-        %   "s_options = get_options(obj, {Name1, Value1, ...})"
-        % ]
-        % <@Parameters>
-        % [
-        %   {"Name": "obj", "Type": "odeSimulator", "Description": "Solver holding the defaults (net.solver_ODE).", "Required": true, "Default": "-"},
-        %   {"Name": "nv", "Type": "cell", "Description": "Name-Value overrides: Solver, SolverOptions, Tolerance, AbsoluteTolerance, SeparateComplexParts, TimeLimit, Progress, Verbose, Plot.", "Required": false, "Default": "{}"}
-        % ]
-        % <@Returns>
-        % [
-        %   {"Name": "s_options", "Type": "struct", "Description": "One field per setting (Solver, SolverOptions, RelativeTolerance, AbsoluteTolerance, SeparateComplexParts, Progress, TimeLimit, Verbose, Plot)."}
-        % ]
             arguments
-                obj
-                nv (1,:) cell = {}
+                obj % Solver holding the defaults (net.solver_ODE).
+                nv (1,:) cell = {} % Name-Value overrides: Solver, SolverOptions, Tolerance, AbsoluteTolerance, SeparateComplexParts, TimeLimit, Progress, Verbose, Plot.
+            end
+            arguments (Output)
+                s_options % One field per setting (Solver, SolverOptions, RelativeTolerance, AbsoluteTolerance, SeparateComplexParts, Progress, TimeLimit, Verbose, Plot).
             end
             s_given = tools.resolve_options(obj, odeSimulator.OptionMap, nv);
             validate_options(nv{:});
@@ -169,7 +138,8 @@ classdef (Sealed = true) odeSimulator < auxiliary
         end
 
         function [result, flag, output] = solve(obj, net, time, c_events, s_options)
-        % <@Desc>
+        % Integrate the network DAE with the given settings.
+        %
         % Runs the time simulation of net over time with the events c_events and the
         % effective settings s_options, and returns the trajectories as an
         % odeSimulationResult. The solver is only read: nothing is written back into it.
@@ -181,33 +151,17 @@ classdef (Sealed = true) odeSimulator < auxiliary
         % phase exceeded TimeLimit, and -1 when the solver stopped before the end time
         % (output.message has the reason). In the last two cases the result holds the
         % trajectories up to the time reached (output.tEnd).
-        % <@Role> Analysis
-        % <@Summary> Integrate the network DAE with the given settings.
-        % <@Signatures>
-        % [
-        %   "[result, flag, output] = solve(obj, net, time)",
-        %   "[result, flag, output] = solve(obj, net, time, c_events, s_options)"
-        % ]
-        % <@Parameters>
-        % [
-        %   {"Name": "obj", "Type": "odeSimulator", "Description": "Solver (net.solver_ODE).", "Required": true, "Default": "-"},
-        %   {"Name": "net", "Type": "PowerNetwork", "Description": "Network initialized by net.initialize.", "Required": true, "Default": "-"},
-        %   {"Name": "time", "Type": "double vector", "Description": "Simulation time [t0, tend] (or [] for the time span of the events).", "Required": true, "Default": "-"},
-        %   {"Name": "c_events", "Type": "cell of odeEventSet", "Description": "Events of the run.", "Required": false, "Default": "{}"},
-        %   {"Name": "s_options", "Type": "struct", "Description": "Effective settings (output of get_options).", "Required": false, "Default": "obj.get_options()"}
-        % ]
-        % <@Returns>
-        % [
-        %   {"Name": "result", "Type": "odeSimulationResult", "Description": "Trajectories of the buses and components."},
-        %   {"Name": "flag", "Type": "double", "Description": "1 completed, 0 stopped by TimeLimit, -1 stopped by the solver."},
-        %   {"Name": "output", "Type": "struct", "Description": "Details: message, tEnd, phases (time table of the phases), nPhases, nPhasesDone."}
-        % ]
             arguments
-                obj
-                net
-                time      (:,1) double = []
-                c_events  cell = {}
-                s_options (1,1) struct = obj.get_options()
+                obj % Solver (net.solver_ODE).
+                net % Network initialized by net.initialize.
+                time      (:,1) double = [] % [s] Simulation time [t0, tend] (or [] for the time span of the events).
+                c_events  cell = {} % Events of the run.
+                s_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
+            end
+            arguments (Output)
+                result % Trajectories of the buses and components.
+                flag % 1 completed, 0 stopped by TimeLimit, -1 stopped by the solver.
+                output % Details: message, tEnd, phases (time table of the phases), nPhases, nPhasesDone.
             end
             t0 = tic;
             net.require_equilibrium();    % rebuild stale f_*; error if net.initialize() is needed

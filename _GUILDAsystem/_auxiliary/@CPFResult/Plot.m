@@ -1,30 +1,17 @@
 function ax = Plot(obj, opt)
-% <@Desc>
+% Plot the PV curves.
+%
 % Draws the PV curves: the voltage magnitude [pu] of each bus against the load parameter
 % lambda along the path. A dashed line marks the nose (maximum loading, r_lambdaMax).
 % By default it draws the load buses (options.LoadBus); Bus selects other buses.
 % calculate_continuation_powerflow(..., Plot=true) calls it.
-% <@Role> Plot
-% <@Summary> Plot the PV curves.
-% <@Signatures>
-% [
-%   "Plot(result)",
-%   "ax = Plot(result, Bus=sv_bus, Parent=container)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "result", "Type": "CPFResult", "Description": "Result to plot.", "Required": true, "Default": "-"},
-%   {"Name": "Bus", "Type": "string", "Description": "Tags of the buses to draw; \"all\" for every bus.", "Required": false, "Default": "result.options.LoadBus"},
-%   {"Name": "Parent", "Type": "figure, panel or tab", "Description": "Container to draw in. A new figure when empty.", "Required": false, "Default": "[]"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "ax", "Type": "matlab.graphics.axis.Axes", "Description": "Axes holding the PV curves."}
-% ]
     arguments
         obj
-        opt.Bus    {mustBeText} = default_bus(obj)
-        opt.Parent = []
+        opt.Bus    {mustBeText} = default_bus(obj) % Tags of the buses to draw; "all" for every bus.
+        opt.Parent = [] % Container to draw in. A new figure when empty.
+    end
+    arguments (Output)
+        ax % Axes holding the PV curves.
     end
     sv_plot = string(opt.Bus);
     if isequal(sv_plot, "all")

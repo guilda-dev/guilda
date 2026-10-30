@@ -1,9 +1,31 @@
 classdef DrawerNetDiagram < auxiliary
-    % 3D system diagram renderer implemented without digraph plot.
+% 3D diagram of a network: buses, components and branches drawn as solids.
+%
+% net.draw_diagram creates one. The diagram shows the power flow state of the network:
+% the colors of the branches and component connections follow ColorMode, the widths of the
+% branches follow EdgeWidthMode, and the heights of the buses follow NodeHeightMode.
+% Changing a property updates the drawing; hovering over an element shows its values. It
+% is implemented without the digraph plot.
+%
+% <@Examples>
+% ```matlab
+% net = network.IEEE14bus();
+% net.initialize();
+% G = net.draw_diagram();
+% G.ColorMode = "P (active power)";
+% G.NodeHeightMode = "Vmag";
+% G.NodeLabelMode = "info";
+% ```
+%
+% See also PowerNetwork.draw_diagram
 
-    properties
-        ColorLim       (1,2) double = [0,2];
-        ColorMap       (:,3) double = turbo;
+    properties % Appearance
+        ColorLim       (1,2) double = [0,2]; % Limits of the color scale (clim of the axes).
+        ColorMap       (:,3) double = turbo; % Colormap of the color values.
+
+        % Quantity that colors the branches and component connections.
+        % "Loss", "I (current)", "P (active power)", "Q (reactive power)", "none", or "User
+        % defined" (set NodeB_ColorVal, NodeC_ColorVal, EdgeB2B_ColorVal, EdgeB2C_ColorVal).
         ColorMode      (1,1) string {mustBeMember(ColorMode, [...
                                             "none",               ...
                                             "Loss",               ...
@@ -11,37 +33,50 @@ classdef DrawerNetDiagram < auxiliary
                                             "P (active power)",   ...
                                             "Q (reactive power)", ...
                                             "User defined"])} = "I (current)";
-        NodeFontSize      (1,1) double = 5;
-        NodeFontWeight    (1,1) string = "bold";
-        EdgeWidthSclae    (1,1) double = 0.15;
-        EdgeWidthOffset   (1,1) double = 1;
-        EdgeWidthMode     (1,1) string {mustBeMember(EdgeWidthMode, ["none","G", "B", "Y", "SvdMaxYmat"])} = "SvdMaxYmat";
-        MarkerSize        (1,1) double = 10;
-        NodeHeightMode    (1,1) string {mustBeMember(NodeHeightMode, ["none", "Vmag", "Varg", "Vsin", "P", "Q"])} = "none";
-        NodeB_ColorVal    (:,1) double = [];
-        NodeC_ColorVal    (:,1) double = [];
-        EdgeB2B_ColorVal  (:,1) double = [];
-        EdgeB2C_ColorVal  (:,1) double = [];
-        NodeLabelB        (:,1) string = [];
-        NodeLabelC        (:,1) string = [];
-        NodeLabelMode     (1,1) string {mustBeMember(NodeLabelMode, ["none", "name", "info"])} = "name"
+        NodeFontSize      (1,1) double = 5;      % Font size of the labels.
+        NodeFontWeight    (1,1) string = "bold"; % Font weight of the labels.
+        EdgeWidthSclae    (1,1) double = 0.15;   % Scale of the branch width per unit of the EdgeWidthMode value.
+        EdgeWidthOffset   (1,1) double = 1;      % Branch width added to the scaled value.
 
-        EdgeB2B_forward   (:,1) double = [];
-        EdgeB2C_forward   (:,1) double = [];
-        GridWidth         (1,1) double = 0.01;
+        % Quantity of the admittance that sets the branch widths.
+        % "G", "B", "Y" (conductance, susceptance, magnitude of the series admittance of the
+        % branch), "SvdMaxYmat" (the dynamics parameter SvdMaxYmat of the branch) or "none".
+        EdgeWidthMode     (1,1) string {mustBeMember(EdgeWidthMode, ["none","G", "B", "Y", "SvdMaxYmat"])} = "SvdMaxYmat";
+        MarkerSize        (1,1) double = 10;     % Size of the bus and component solids.
+
+        % Quantity that sets the height of each bus: "Vmag", "Varg", "Vsin", "P", "Q" or "none".
+        NodeHeightMode    (1,1) string {mustBeMember(NodeHeightMode, ["none", "Vmag", "Varg", "Vsin", "P", "Q"])} = "none";
+        NodeB_ColorVal    (:,1) double = [];     % Color values of the buses, one per bus.
+        NodeC_ColorVal    (:,1) double = [];     % Color values of the components, one per component.
+        EdgeB2B_ColorVal  (:,1) double = [];     % Color values of the branches, one per branch.
+        EdgeB2C_ColorVal  (:,1) double = [];     % Color values of the component connections, one per component.
+        NodeLabelB        (:,1) string = [];     % Labels of the buses, one per bus.
+        NodeLabelC        (:,1) string = [];     % Labels of the components, one per component.
+        NodeLabelMode     (1,1) string {mustBeMember(NodeLabelMode, ["none", "name", "info"])} = "name" % Labels shown: "name" (tags), "info" (values) or "none".
+
+        EdgeB2B_forward   (:,1) double = [];     % Arrow direction of each branch: 1 forward, -1 backward, 0 none.
+        EdgeB2C_forward   (:,1) double = [];     % Arrow direction of each component connection: 1, -1 or 0.
+        GridWidth         (1,1) double = 0.01;   % Spacing of the grid lines of the axes.
     end
 
     % Properties for storing graphics objects
-    properties
+    properties % Graphics
+        % Axes of the diagram.
+        % <@Type> matlab.graphics.axis.Axes
         ax
     end
-    properties(SetAccess = private)
+    properties(SetAccess = private) % Graphics
+        % Graphics objects of the diagram, as a struct of handle arrays.
+        % <@Type> struct
         plt
+
+        % True when the diagram must be drawn again (new axes).
+        % <@Type> logical
         flag_new
     end
 
     % Private properties for storing parameters of the system
-    properties(Access = private)
+    properties(Access = private) % Network data
         im_edge
         
         cm_Ymat
@@ -63,7 +98,7 @@ classdef DrawerNetDiagram < auxiliary
     end
 
     % Properties for storing values for current state
-    properties(Access = private)
+    properties(Access = private) % State
         cv_Vbus
         cv_Ibus
         rv_Pbus
@@ -83,9 +118,10 @@ classdef DrawerNetDiagram < auxiliary
 
     methods
         function obj = DrawerNetDiagram(net, ax, opt)
+        % Create the diagram of a network and draw its equilibrium.
             arguments
-                net (1,1) PowerNetwork
-                ax  (1,1) matlab.graphics.axis.Axes = axes('Parent',figure());
+                net (1,1) PowerNetwork % Network to draw.
+                ax  (1,1) matlab.graphics.axis.Axes = axes('Parent',figure()); % Axes to draw in.
                 opt.?odeSimulator
             end
             obj.ax = ax;
