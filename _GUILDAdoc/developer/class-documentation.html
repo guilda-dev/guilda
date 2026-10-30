@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GUILDA Developer Guide - Class Documentation</title>
   <link rel="stylesheet" href="../style.css">
-  <script src="../database/list_Classes.js"></script>
-  <script src="../doc-loader.js"></script>
   <style>
     /* Class Documentation page only (cd-*); shared parts are dg-* in style.css */
     .cd-code { margin: 0; padding: var(--dg-s4); overflow-x: auto; border: 1px solid var(--dg-line); border-radius: var(--radius); background: var(--dg-card); color: var(--dg-ink); font: 0.8rem/1.65 var(--dg-mono); white-space: pre; }
@@ -33,18 +31,16 @@
     .dg .cd-map td:first-child { font-family: var(--dg-mono); font-size: 0.88rem; }
     .dg .cd-map td:last-child { color: var(--dg-muted); font-size: 0.85rem; }
     .cd-m { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; }
-    .cd-m.is-req { background: var(--dg-err); }
-    .cd-m.is-rec { background: var(--dg-accent); }
-    .cd-m.is-opt { box-shadow: inset 0 0 0 2px var(--dg-muted); }
-    .cd-legend { display: flex; flex-wrap: wrap; gap: var(--dg-s1) var(--dg-s4); margin: 0 0 var(--dg-s2); color: var(--dg-muted); font-size: 0.85rem; }
-    .cd-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .cd-map .cd-m { background: var(--dg-accent); }
     .cd-checks td:first-child { width: 7rem; }
     .cd-opts td:first-child { width: 13rem; }
     .tag-generator-field-label .dg-badge { margin-left: 8px; font-size: 0.7rem; vertical-align: 1px; }
     .tg-switch { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 0.9rem; cursor: pointer; }
     .tg-switch[hidden] { display: none; }
     .dg .tag-generator h2 { margin-top: 0; padding-top: 0; border-top: 0; }
-    .cd-formats td:nth-child(2) { width: 12rem; }
+    .cd-removed td:first-child { width: 14rem; }
+    .cd-collected td:first-child { width: 6rem; }
+    .cd-collected td:nth-child(2) { width: 12rem; }
     @media (max-width: 640px) {
       .dg .cd-map thead { display: table-header-group; }
       .dg .cd-map tbody { display: table-row-group; }
@@ -53,7 +49,7 @@
       .dg .cd-map td:first-child { font-size: 0.8rem; }
       .dg .cd-map th:nth-child(n+2):nth-child(-n+4), .dg .cd-map td:nth-child(n+2):nth-child(-n+4) { width: 2.6rem; }
       .dg .cd-map th { font-size: 0.62rem; letter-spacing: 0; }
-      .cd-checks td:first-child, .cd-opts td:first-child, .cd-formats td:nth-child(2) { width: auto; }
+      .cd-checks td:first-child, .cd-opts td:first-child, .cd-removed td:first-child, .cd-collected td:first-child, .cd-collected td:nth-child(2) { width: auto; }
     }
   </style>
 </head>
@@ -69,14 +65,14 @@
   <main>
     <button type="button" class="developer-back-button" onclick="window.history.back()">← Back to For Developer</button>
     <h1>Class Documentation</h1>
-    <p class="page-lead">Write <code>&lt;@Tag&gt;</code> comments next to the MATLAB code. <code>GUILDA.doc</code> adds what the code declares and builds the Reference pages.</p>
+    <p class="page-lead">Write MATLAB help comments next to the code. <code>GUILDA.doc</code> adds what the code declares and builds the Reference pages. Three tags cover the rest.</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#pipeline">How it works</a>
       <a href="#where">Where comments go</a>
       <a href="#tags">Which tags</a>
-      <a href="#formats">Value formats</a>
-      <a href="#declaration">Don't repeat the code</a>
+      <a href="#removed">Removed tags</a>
+      <a href="#collected">Collected from the code</a>
       <a href="#generator">Tag Generator</a>
       <a href="#checks">What the exporter checks</a>
       <a href="#update">Keeping it up to date</a>
@@ -235,7 +231,7 @@
         <tr><td>Description <span class="cd-pin">2</span></td><td data-label="Write">The comment lines after the H1 line.</td><td data-label="Notes">Markdown: <code>- lists</code>, <code>1. lists</code>, <code>`code`</code>, <code>**bold**</code>, <code># headings</code>, <code>[links](url)</code> and fenced code blocks. A lone <code>%</code> line starts a new paragraph.<small>Text art drawn with box characters is kept exactly as written.</small></td></tr>
         <tr><td>See also <span class="cd-pin">3</span></td><td data-label="Write">A <code>% See also A, B</code> line.</td><td data-label="Notes">Names of classes and methods become links. MATLAB <code>help</code> links them too.</td></tr>
         <tr><td>Property group <span class="cd-pin">4</span></td><td data-label="Write">A trailing comment on the <code>properties (...)</code> line.</td><td data-label="Notes">Without it, properties are grouped by access.</td></tr>
-        <tr><td>Unit <span class="cd-pin">5</span></td><td data-label="Write">A leading <code>[unit]</code> in a property comment or an <code>arguments</code> comment.</td><td data-label="Notes"><code>% [MVA] Base power.</code> The rest of the line is the summary.<small>Write units as on the Naming Conventions page: <code>pu</code>, <code>MVA</code>, <code>rad/s</code>.</small></td></tr>
+        <tr><td>Unit <span class="cd-pin">5</span></td><td data-label="Write">A leading <code>[unit]</code> in a property comment or an <code>arguments</code> comment.</td><td data-label="Notes"><code>% [MVA] Base power.</code> The rest of the line is the summary.<small>Examples: <code>[pu]</code>, <code>[MVA]</code>, <code>[rad/s]</code>.</small></td></tr>
         <tr><td>Method group</td><td data-label="Write">Nothing: the verb prefix of the name.</td><td data-label="Notes"><code>set_</code>, <code>get_</code>, <code>add_</code>, <code>calculate_</code>, <code>simulate_</code>, <code>plot_</code>, <code>export_</code> and the other verbs each get a group. The constructor has its own. Anything else is in Other.</td></tr>
         <tr><td>Inputs <span class="cd-pin">7</span></td><td data-label="Write">A trailing <code>% text</code> in the <code>arguments</code> block, or a comment line above the argument.</td><td data-label="Notes">Size, class, validators and defaults come from the same line.</td></tr>
         <tr><td>Outputs <span class="cd-pin">8</span></td><td data-label="Write">The same, in an <code>arguments (Output)</code> block.</td><td data-label="Notes">Outputs without the block are listed by name only.</td></tr>
@@ -252,105 +248,99 @@
 
     <!-- ============================== TAGS ============================== -->
     <h2 id="tags">Which tags</h2>
-    <p class="dg-lead-in">Write one tag per line: <code>% &lt;@Tag&gt; value</code>. A value can continue on the next <code>%</code> lines, up to the next tag.</p>
-    <div class="cd-legend" aria-hidden="true">
-      <span><span class="cd-m is-req"></span>Required</span>
-      <span><span class="cd-m is-rec"></span>Recommended</span>
-      <span><span class="cd-m is-opt"></span>Optional</span>
-      <span>blank: not used</span>
-    </div>
-    <table class="dg-table cd-map" aria-label="Tags for public classes, properties and methods">
-      <thead><tr><th>Tag</th><th>Class</th><th>Property</th><th>Method</th><th>Format</th></tr></thead>
+    <p class="dg-lead-in">A tag is only for what neither the code nor the help conventions can say. There are three.</p>
+    <table class="dg-table cd-map" aria-label="Tags for classes, properties and methods">
+      <thead><tr><th>Tag</th><th>Class</th><th>Property</th><th>Method</th><th>Use when</th></tr></thead>
       <tbody>
-        <tr><td>Summary</td><td><span class="cd-m is-req" role="img" aria-label="Required"></span></td><td><span class="cd-m is-req" role="img" aria-label="Required"></span></td><td><span class="cd-m is-req" role="img" aria-label="Required"></span></td><td>sentence</td></tr>
-        <tr><td>Desc</td><td><span class="cd-m is-rec" role="img" aria-label="Recommended"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-rec" role="img" aria-label="Recommended"></span></td><td>Markdown</td></tr>
-        <tr><td>Role</td><td><span class="cd-m is-rec" role="img" aria-label="Recommended"></span></td><td><span class="cd-m is-rec" role="img" aria-label="Recommended"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>text</td></tr>
-        <tr><td>Constructor</td><td><span class="cd-m is-rec" role="img" aria-label="Recommended"></span></td><td></td><td></td><td>Markdown</td></tr>
-        <tr><td>Unit</td><td></td><td><span class="cd-m is-rec" role="img" aria-label="Recommended for physical quantities"></span>*</td><td></td><td>text</td></tr>
-        <tr><td>Type · Size · Default · Constraints</td><td></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span>†</td><td></td><td>text</td></tr>
-        <tr><td>Parameters</td><td></td><td></td><td><span class="cd-m is-rec" role="img" aria-label="Recommended"></span></td><td>JSON objects</td></tr>
-        <tr><td>Returns</td><td></td><td></td><td><span class="cd-m is-rec" role="img" aria-label="Recommended"></span></td><td>JSON objects</td></tr>
-        <tr><td>Signatures</td><td></td><td></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>JSON list</td></tr>
-        <tr><td>Calls</td><td></td><td></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>JSON objects</td></tr>
-        <tr><td>Examples</td><td></td><td></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>JSON list</td></tr>
-        <tr><td>Throws</td><td></td><td></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>text</td></tr>
-        <tr><td>Notes</td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>Markdown</td></tr>
-        <tr><td>SeeAlso</td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>JSON list</td></tr>
-        <tr><td>Since</td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>text</td></tr>
-        <tr><td>Deprecated</td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>text</td></tr>
+        <tr><td>Examples</td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td>A short usage example helps. Markdown with fenced code blocks.</td></tr>
+        <tr><td>Deprecated</td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td>The member will be removed. The text names the replacement.</td></tr>
+        <tr><td>Type</td><td></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td></td><td>The declaration cannot state the class, for example an untyped property that holds a <code>PowerFlowCalculation</code>.</td></tr>
       </tbody>
     </table>
-    <p class="dg-muted">* For physical quantities. † Only when the declaration cannot say it (see <a href="#declaration">Don't repeat the code</a>).</p>
-    <div class="dg-callout">
-      <svg class="dg-icon"><use href="#dg-i-info"/></svg>
+    <p>Put tags at the end of the comment block, after the description and the See also line. Write <code>% &lt;@Tag&gt; value</code>; a value can continue on the next <code>%</code> lines, up to the next tag or the end of the block.</p>
+    <div class="dg-two">
       <div>
-        <p>The levels apply to public members. Private, protected and hidden members do not need tags. Write them when they help the next developer.</p>
-        <p>Old names (<code>Abst</code>, <code>Description</code>, <code>varargin</code>, <code>varargout</code>, <code>DetailsCode</code>, <code>Example</code>, <code>Seealso</code>) are no longer supported. The exporter reports them: a warning, or an error with <code>"strict", true</code>.</p>
+        <span class="dg-kicker">Method</span>
+<pre class="cd-code" style="margin-top:8px"><span class="cd-c">% Calculate the power flow.</span>
+<span class="cd-c">%</span>
+<span class="cd-c">% &lt;@Examples&gt;</span>
+<span class="cd-c">% ```matlab</span>
+<span class="cd-c">% net = network_IEEE68bus();</span>
+<span class="cd-c">% net.calculate_powerflow();</span>
+<span class="cd-c">% ```</span>
+<span class="cd-c">% &lt;@Deprecated&gt; Use solve_powerflow.</span></pre>
+      </div>
+      <div>
+        <span class="dg-kicker">Property</span>
+<pre class="cd-code" style="margin-top:8px"><span class="cd-c">% Solver used by calculate_powerflow.</span>
+<span class="cd-c">% &lt;@Type&gt; PowerFlowCalculation</span>
+a_Solver</pre>
       </div>
     </div>
 
-    <!-- ============================== FORMATS ============================== -->
-    <h2 id="formats">Value formats</h2>
-    <table class="dg-table cd-formats">
-      <thead><tr><th>Format</th><th>Tags</th><th>Rule</th></tr></thead>
+    <h3 id="removed">Removed tags</h3>
+    <p>The exporter still reads these tags and warns with the replacement. With <code>"strict", true</code> they are errors.</p>
+    <table class="dg-table cd-removed">
+      <thead><tr><th>Removed tag</th><th>Write instead</th></tr></thead>
       <tbody>
-        <tr><td>Sentence</td><td data-label="Tags">Summary</td><td data-label="Rule">One line, one English sentence. A method summary starts with a verb: <code>Calculate the power flow.</code><small>Tables and search show it.</small></td></tr>
-        <tr><td>Text</td><td data-label="Tags">Role, Unit, Throws, Since, Deprecated, Type, Size, Default, Constraints</td><td data-label="Rule">Free text.</td></tr>
-        <tr><td>Markdown</td><td data-label="Tags">Desc, Constructor, Notes</td><td data-label="Rule">Free text with <code>- lists</code>, <code>1. lists</code>, <code>`code`</code>, <code>**bold**</code>, <code># headings</code>, <code>[links](url)</code> and fenced code blocks.<small>Text art drawn with box characters is kept exactly as written.</small></td></tr>
-        <tr><td>JSON list</td><td data-label="Tags">Signatures, Examples, SeeAlso</td><td data-label="Rule">A JSON string or an array of strings: <code>["PowerNetwork", "Bus"]</code>.<small>SeeAlso entries that name a class become links.</small></td></tr>
-        <tr><td>JSON objects</td><td data-label="Tags">Parameters, Returns, Calls</td><td data-label="Rule">A JSON array of objects. It must start with <code>[</code>.<small>MATLAB arrays and cell arrays are not accepted.</small></td></tr>
+        <tr><td><code>Summary</code></td><td data-label="Write instead">The first comment line.</td></tr>
+        <tr><td><code>Desc</code>, <code>Notes</code>, <code>Model</code></td><td data-label="Write instead">The description lines. Use a Markdown heading such as <code># Notes</code> for a part of it.</td></tr>
+        <tr><td><code>SeeAlso</code></td><td data-label="Write instead">A <code>% See also A, B</code> line.</td></tr>
+        <tr><td><code>Role</code></td><td data-label="Write instead">The group comment on the <code>properties</code> line. Methods are grouped by their verb prefix.</td></tr>
+        <tr><td><code>Category</code></td><td data-label="Write instead">Nothing: the package is the category.</td></tr>
+        <tr><td><code>Constructor</code></td><td data-label="Write instead">The constructor's own comment block and <code>arguments</code> block.</td></tr>
+        <tr><td><code>Signatures</code></td><td data-label="Write instead">Nothing: the <code>function</code> line and the <code>arguments</code> block. Show other call forms in <code>&lt;@Examples&gt;</code>.</td></tr>
+        <tr><td><code>Parameters</code></td><td data-label="Write instead">Comments in the <code>arguments</code> block.</td></tr>
+        <tr><td><code>Returns</code></td><td data-label="Write instead">Comments in the <code>arguments (Output)</code> block.</td></tr>
+        <tr><td><code>Calls</code></td><td data-label="Write instead">The See also line, or a sentence in the description.</td></tr>
+        <tr><td><code>Throws</code></td><td data-label="Write instead">Nothing: read from the error IDs in <code>error("GUILDA:...", ...)</code> calls.</td></tr>
+        <tr><td><code>Size</code>, <code>Default</code>, <code>Constraints</code></td><td data-label="Write instead">The property declaration: size, class, validators and default.</td></tr>
+        <tr><td><code>Unit</code></td><td data-label="Write instead">A leading <code>[unit]</code> in the comment.</td></tr>
+        <tr><td><code>Since</code></td><td data-label="Write instead">The Update log.</td></tr>
       </tbody>
     </table>
-<pre class="cd-code"><span class="cd-c">% &lt;@Parameters&gt;</span>
-<span class="cd-c">% [{"Name": "r_gain", "Unit": "pu", "Description": "Controller gain."}]</span>
-<span class="cd-c">% &lt;@Returns&gt;</span>
-<span class="cd-c">% [{"Name": "flag", "Description": "true when the solver converged."}]</span>
-<span class="cd-c">% &lt;@Calls&gt;</span>
-<span class="cd-c">% [{"Class": "PowerFlowCalculation", "Method": "solve", "Condition": ""}]</span></pre>
-    <table class="dg-table">
-      <thead><tr><th>JSON object tag</th><th>Fields</th></tr></thead>
-      <tbody>
-        <tr><td>Parameters</td><td data-label="Fields"><code>Name</code>, <code>Type</code>, <code>Unit</code>, <code>Description</code>, <code>Required</code>, <code>Default</code>, <code>Constraints</code></td></tr>
-        <tr><td>Returns</td><td data-label="Fields"><code>Name</code>, <code>Type</code>, <code>Unit</code>, <code>Description</code></td></tr>
-        <tr><td>Calls</td><td data-label="Fields"><code>Class</code> and <code>Method</code> (both required), <code>Condition</code> (blank means always)</td></tr>
-      </tbody>
-    </table>
-    <div class="dg-callout">
-      <svg class="dg-icon"><use href="#dg-i-info"/></svg>
-      <div>
-        <p>Text before the first tag is not lost. Its first line becomes Summary and the rest becomes Desc, unless those tags exist.</p>
-        <p>Prefer writing the tags.</p>
-      </div>
-    </div>
-
-    <!-- ============================== DECLARATION ============================== -->
-    <h2 id="declaration">Don't repeat the code</h2>
-    <p class="dg-lead-in">The exporter reads property declarations and <code>arguments</code> blocks. Write each fact once, in the code, where MATLAB also checks it.</p>
     <div class="dg-two">
       <div>
         <span class="dg-badge is-err"><svg class="dg-icon"><use href="#dg-i-x"/></svg>Duplicated</span>
-<pre class="cd-code" style="margin-top:8px"><span class="cd-c">% &lt;@Summary&gt; Base power.</span>
-<span class="cd-bad"><span class="cd-c">% &lt;@Type&gt; double</span></span>
+<pre class="cd-code" style="margin-top:8px"><span class="cd-bad"><span class="cd-c">% &lt;@Summary&gt; Base power.</span></span>
 <span class="cd-bad"><span class="cd-c">% &lt;@Size&gt; 1x1</span></span>
 <span class="cd-bad"><span class="cd-c">% &lt;@Default&gt; 100</span></span>
-<span class="cd-c">% &lt;@Unit&gt; MVA</span>
+<span class="cd-bad"><span class="cd-c">% &lt;@Unit&gt; MVA</span></span>
 r_Sbase (1,1) double = 100</pre>
       </div>
       <div>
         <span class="dg-badge is-ok"><svg class="dg-icon"><use href="#dg-i-check"/></svg>Written once</span>
-<pre class="cd-code" style="margin-top:8px"><span class="cd-c">% &lt;@Summary&gt; Base power.</span>
-<span class="cd-c">% &lt;@Unit&gt; MVA</span>
+<pre class="cd-code" style="margin-top:8px"><span class="cd-c">% [MVA] Base power.</span>
 r_Sbase (1,1) double = 100</pre>
       </div>
     </div>
-    <table class="dg-table">
-      <thead><tr><th>Member</th><th>Rule</th></tr></thead>
+
+    <h3 id="collected">Collected from the code</h3>
+    <p>Never write these. The exporter reads them on every export.</p>
+    <table class="dg-table cd-collected">
+      <thead><tr><th>Kind</th><th>Field</th><th>Read from</th></tr></thead>
       <tbody>
-        <tr><td>Properties</td><td data-label="Rule">Use <code>&lt;@Type&gt;</code>, <code>&lt;@Size&gt;</code>, <code>&lt;@Default&gt;</code> and <code>&lt;@Constraints&gt;</code> only when the declaration cannot say it.<small>Example: an untyped property that holds a <code>PowerFlowCalculation</code>. A tag wins over the declaration on the page.</small></td></tr>
-        <tr><td>Methods</td><td data-label="Rule">Give inputs an <code>arguments</code> block with size, class, validators and defaults.<small>In <code>&lt;@Parameters&gt;</code>, write only what the block cannot say (Description, Unit). Entries are matched by <code>Name</code>.</small></td></tr>
-        <tr><td>Signatures</td><td data-label="Rule">Built from the function line and the <code>arguments</code> block. Add <code>&lt;@Signatures&gt;</code> only for extra call forms.<small>Example: <code>[tab_PFsol, flag, output] = calculate_powerflow(obj, mode, Name=Value)</code></small></td></tr>
+        <tr><td>Class</td><td data-label="Field">Origin</td><td data-label="Read from">The root folder: System, Object or User.</td></tr>
+        <tr><td>Class</td><td data-label="Field">Folder</td><td data-label="Read from">The folder that holds the classdef file.</td></tr>
+        <tr><td>Class</td><td data-label="Field">Category</td><td data-label="Read from">The package (<code>+name</code> folder).</td></tr>
+        <tr><td>Class</td><td data-label="Field">Superclasses, Subclasses</td><td data-label="Read from">The <code>classdef</code> line of this class and of every exported class.</td></tr>
+        <tr><td>Class</td><td data-label="Field">Line</td><td data-label="Read from">The line of the <code>classdef</code> keyword.</td></tr>
+        <tr><td>Property</td><td data-label="Field">Access</td><td data-label="Read from">The <code>properties (...)</code> attributes.</td></tr>
+        <tr><td>Property</td><td data-label="Field">Validation, Default</td><td data-label="Read from">The declaration: size, class, validators and <code>= value</code>.</td></tr>
+        <tr><td>Property</td><td data-label="Field">Group, Unit</td><td data-label="Read from">The comments (see <a href="#where">Where comments go</a>).</td></tr>
+        <tr><td>Method</td><td data-label="Field">Signature, Arguments</td><td data-label="Read from">The <code>function</code> line and the <code>arguments</code> blocks.</td></tr>
+        <tr><td>Method</td><td data-label="Field">Overrides</td><td data-label="Read from">A superclass method with the same name.</td></tr>
+        <tr><td>Method</td><td data-label="Field">ImplementedIn</td><td data-label="Read from">The file that holds the <code>function</code>.</td></tr>
+        <tr><td>Method</td><td data-label="Field">Throws</td><td data-label="Read from">The error IDs in its <code>error</code> calls.</td></tr>
+        <tr><td>Method</td><td data-label="Field">Group</td><td data-label="Read from">The verb prefix of the name.</td></tr>
       </tbody>
     </table>
+    <div class="dg-callout">
+      <svg class="dg-icon"><use href="#dg-i-info"/></svg>
+      <div>
+        <p>Comments are needed on public members. Private, protected and hidden members need none. Write them when they help the next developer.</p>
+      </div>
+    </div>
 
     <!-- ============================== GENERATOR ============================== -->
     <section class="tag-generator" id="generator" aria-label="Documentation Tag Generator">
