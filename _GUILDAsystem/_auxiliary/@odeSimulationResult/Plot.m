@@ -1,33 +1,19 @@
 function ax = Plot(obj, opt)
-% <@Desc>
+% Plot a trajectory of the buses or components.
+%
 % Draws a trajectory against time [s]: for the buses, the voltage magnitude (Vabs), the
 % voltage angle (Vangle) or the power P / Q injected by the components; for the
 % components, a state or an input given by its name (e.g. omega, Pmech), with one line
 % per component of the selected buses that has it. By default it draws Vabs of every bus.
 % simulate(..., Plot=true) calls it.
-% <@Role> Plot
-% <@Summary> Plot a trajectory of the buses or components.
-% <@Signatures>
-% [
-%   "Plot(result)",
-%   "ax = Plot(result, Quantity=str, Bus=sv_bus, Parent=container)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "result", "Type": "odeSimulationResult", "Description": "Result to plot.", "Required": true, "Default": "-"},
-%   {"Name": "Quantity", "Type": "string scalar", "Description": "\"Vabs\", \"Vangle\", \"P\", \"Q\", or a state or input name of the components.", "Required": false, "Default": "\"Vabs\""},
-%   {"Name": "Bus", "Type": "string", "Description": "Tags of the buses to draw (for a component quantity: the buses of the components); \"all\" for every bus.", "Required": false, "Default": "\"all\""},
-%   {"Name": "Parent", "Type": "figure, panel or tab", "Description": "Container to draw in. A new figure when empty.", "Required": false, "Default": "[]"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "ax", "Type": "matlab.graphics.axis.Axes", "Description": "Axes holding the trajectories."}
-% ]
     arguments
         obj
-        opt.Quantity (1,1) string = "Vabs"
-        opt.Bus      {mustBeText} = "all"
-        opt.Parent = []
+        opt.Quantity (1,1) string = "Vabs" % "Vabs", "Vangle", "P", "Q", or a state or input name of the components.
+        opt.Bus      {mustBeText} = "all" % Tags of the buses to draw (for a component quantity: the buses of the components); "all" for every bus.
+        opt.Parent = [] % Container to draw in. A new figure when empty.
+    end
+    arguments (Output)
+        ax % Axes holding the trajectories.
     end
     sv_plot = string(opt.Bus);
     if isequal(sv_plot, "all")

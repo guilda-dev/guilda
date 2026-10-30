@@ -1,71 +1,57 @@
 classdef odeSimulationResult < AnalysisResult
-% <@Desc>
-% Result of net.simulate: the time response of the bus voltages, currents and powers and
-% of the states and inputs of the components. It holds computed values only; the settings
-% of the buses and components stay with the network (a hidden reference, see
-% AnalysisResult). flag is 1 when the simulation reached the end time, 0 when it stopped
-% by TimeLimit and -1 when the solver stopped early; then the trajectories end at
-% output.tEnd.
-% Plot draws a trajectory of the buses or components. Export writes all trajectories as a
-% table (CSV, Excel) or as a MAT-file.
-% <@Role> Class Category
-% <@Constructor>
-% result = odeSimulationResult(net, solver, options, flag, output, elapsed, c_phase)
-% Created by odeSimulator.solve.
+% Result of net.simulate.
+%
+% Holds the time response of the bus voltages, currents and powers and of the states and
+% inputs of the components. It holds computed values only; the settings of the buses and components stay with the
+% network (a hidden reference, see AnalysisResult). flag is 1 when the simulation reached
+% the end time, 0 when it stopped by TimeLimit and -1 when the solver stopped early; then
+% the trajectories end at output.tEnd. Plot draws a trajectory of the buses or components.
+% Export writes all trajectories as a table (CSV, Excel) or as a MAT-file.
+%
+% <@Examples>
+% ```matlab
+% net = network.IEEE14bus();
+% net.initialize();
+% ev = odeEventSet("fault", net, "TimeSpan", [1, 1.05], "FaultBus", "B008");
+% [result, flag] = net.simulate([0, 10], ev);
+% r = result.odeResults;               % r.t, r.Bus(i).V, r.Bus(i).Component(j).X, ...
+% result.Plot(Quantity="omega");       % a state of the components
+% result.Export("sim.mat");
+% ```
+%
+% See also odeSimulator, odeEventSet, AnalysisResult
 
-    properties (SetAccess=private)
-        % <@Desc> Trajectories, as a struct:
-        % t (time [s], column), Bus(i).V (table Vreal, Vimag), Bus(i).I (Ireal, Iimag),
+    properties (SetAccess=private) % Result
+        % Trajectories, as a struct.
+        % Fields: t (time [s], column), Bus(i).V (table Vreal, Vimag), Bus(i).I (Ireal, Iimag),
         % Bus(i).PQ (P, Q), Bus(i).Component(j).X (states, columns named by sv_x) and
-        % Bus(i).Component(j).U (inputs, columns named by sv_u). Bus(i) follows net.a_Bus
-        % and Component(j) follows a_Component of the bus. At a boundary between two phases
-        % the time appears twice (end of one phase, start of the next).
-        % <@Role> Result
-        % <@Type> struct
-        % <@Size> 1x1
+        % Bus(i).Component(j).U (inputs, columns named by sv_u). Bus(i) follows net.a_Bus and Component(j) follows a_Component of the bus. At a boundary
+        % between two phases the time appears twice (end of one phase, start of the next).
         odeResults struct = struct()
 
-        % <@Desc> Bus tags, in the order of odeResults.Bus.
-        % <@Role> Result
-        % <@Type> string
-        % <@Size> n_bus x 1
+        % Bus tags, in the order of odeResults.Bus.
         sv_bus (:,1) string = strings(0,1)
 
-        % <@Desc> Component tags of each bus, in the order of odeResults.Bus(i).Component.
-        % <@Role> Result
-        % <@Type> cell of string
-        % <@Size> n_bus x 1
+        % Component tags of each bus, in the order of odeResults.Bus(i).Component.
         c_component (:,1) cell = cell(0,1)
     end
 
     methods
         function obj = odeSimulationResult(net, solver, options, flag, output, elapsed, c_phase)
-        % <@Desc>
+        % Create a time simulation result.
+        %
         % Collects the trajectories of the integration phases into odeResults.
-        % <@Role> Constructor
-        % <@Summary> Create a time simulation result.
-        % <@Signatures>
-        % [
-        %   "result = odeSimulationResult()",
-        %   "result = odeSimulationResult(net, solver, options, flag, output, elapsed, c_phase)"
-        % ]
-        % <@Parameters>
-        % [
-        %   {"Name": "net, solver, options, flag, output, elapsed", "Type": "-", "Description": "Shared part, see AnalysisResult.", "Required": false, "Default": "-"},
-        %   {"Name": "c_phase", "Type": "cell of table", "Description": "Result of each phase (odeEventSet.Event2State: t, x, i).", "Required": false, "Default": "{}"}
-        % ]
-        % <@Returns>
-        % [
-        %   {"Name": "result", "Type": "odeSimulationResult", "Description": "The result object."}
-        % ]
             arguments
-                net             = []
-                solver          = "odeSimulator"
-                options  struct = struct()
-                flag            = false
-                output   struct = struct()
-                elapsed         = NaN
-                c_phase  cell   = {}
+                net             = [] % Analysed network; see AnalysisResult.
+                solver          = "odeSimulator" % Solver object or its class name; see AnalysisResult.
+                options  struct = struct() % Effective settings; see AnalysisResult.
+                flag            = false % Success or convergence flag; see AnalysisResult.
+                output   struct = struct() % Solver details; see AnalysisResult.
+                elapsed         = NaN % [s] Elapsed time or tic value; see AnalysisResult.
+                c_phase  cell   = {} % Result of each phase (odeEventSet.Event2State: t, x, i).
+            end
+            arguments (Output)
+                obj % The result object.
             end
             obj@AnalysisResult(net, solver, options, flag, output, elapsed);
             if isempty(net) || isempty(c_phase)
