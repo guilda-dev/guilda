@@ -1,8 +1,8 @@
 (function (root) {
   'use strict';
 
-  const SUPPORTED_INDEX_VERSION = 4;
-  const SUPPORTED_CLASS_VERSION = 4;
+  const SUPPORTED_INDEX_VERSION = 5;
+  const SUPPORTED_CLASS_VERSION = 5;
   const pendingLoads = new Map();
   const loaderScriptUrl = document.currentScript?.src || root.location.href;
   const documentationRootUrl = new URL('.', loaderScriptUrl);
@@ -87,8 +87,56 @@
     return (meta?.Parent || '').split(',').map((name) => name.trim()).filter(Boolean);
   }
 
+  // Schema v5 lists the direct subclasses; v4 derives them from the parents.
   function getSubclasses(className) {
+    const meta = findClass(className);
+    if (Array.isArray(meta?.Subclasses)) {
+      return meta.Subclasses.map((name) => findClass(name) || { Name: name });
+    }
     return getClasses().filter((item) => parentNames(item).includes(className));
+  }
+
+  // Root folders of the source tree and the name shown for each one.
+  const ROOT_NAMES = { _GUILDAsystem: 'System', _GUILDAobject: 'Object' };
+
+  // Schema v4 has no folder tree: build one from the class files. It holds
+  // the classdef files only, since v4 does not list method files.
+  function treeFromClassFiles(classes) {
+    const roots = [];
+    const folderOf = new Map();
+    const folder = (path, name, siblings) => {
+      if (!folderOf.has(path)) {
+        const node = { Name: name, Kind: 'folder', Path: path, Children: [] };
+        folderOf.set(path, node);
+        siblings.push(node);
+      }
+      return folderOf.get(path);
+    };
+    classes.forEach((meta) => {
+      const parts = (meta.File || '').replace(/\\/g, '/').split('/').filter(Boolean);
+      if (parts.length < 2) return;
+      let siblings = roots;
+      let path = '';
+      parts.slice(0, -1).forEach((part, index) => {
+        path = path ? `${path}/${part}` : part;
+        siblings = folder(path, index === 0 ? (ROOT_NAMES[part] || part) : part, siblings).Children;
+      });
+      siblings.push({ Name: parts[parts.length - 1], Kind: 'file', Path: parts.join('/'), Class: meta.Name, Children: [] });
+    });
+    const sortNodes = (nodes) => {
+      nodes.sort((a, b) => ((a.Kind === 'file') - (b.Kind === 'file')) || a.Name.localeCompare(b.Name));
+      nodes.forEach((node) => sortNodes(node.Children));
+    };
+    roots.forEach((root) => sortNodes(root.Children));
+    return roots;
+  }
+
+  let derivedTree = null;
+  function getTree() {
+    const index = getIndex();
+    if (Array.isArray(index.tree)) return index.tree;
+    if (!derivedTree) derivedTree = treeFromClassFiles(index.classes);
+    return derivedTree;
   }
 
   function normalizeClassPath(path) {
@@ -105,6 +153,11 @@
     const relativePath = normalizeClassPath(meta.path);
     if (relativePath) {
       return new URL(relativePath.replace(/^\.\//, ''), documentationRootUrl).href;
+    }
+    // Fallback when the index has no path: database/<folder>/<Class>.js.
+    const originFolder = { System: 'GUILDAsystem', Object: 'GUILDAobject', User: 'User' }[meta.Origin];
+    if (originFolder) {
+      return new URL(`database/${originFolder}/${meta.Name}.js`, documentationRootUrl).href;
     }
     return '';
   }
@@ -156,6 +209,7 @@
     getClasses,
     parentNames,
     getSubclasses,
+    getTree,
     getRouteParams,
     pageUrl,
     navigate,

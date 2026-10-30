@@ -129,6 +129,126 @@ tr.ref-inherited td .row-link { font-weight: normal; }
 
 .ref-nav-title { margin: 18px 0 6px; }
 
+/* Source folder tree (doc-tree.js) in the sidebar and the Reference tab. */
+.ref-tree-panel { margin: 0 0 18px; }
+.ref-tree-title {
+  margin: 0 0 6px;
+  color: var(--ink);
+  font-size: 1.0rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+.ref-tree-filter {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 6px;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+}
+.ref-tree-scroll {
+  position: relative;
+  max-height: 45vh;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 4px 0;
+  -webkit-overflow-scrolling: touch;
+}
+.ref-tree,
+.ref-tree ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ref-tree ul { padding-left: 12px; border-left: 1px solid var(--line); margin-left: 10px; }
+.ref-tree li { margin: 0; font-size: 0.82rem; line-height: 1.6; }
+.ref-tree li[hidden] { display: none; }
+.ref-tree summary,
+.ref-tree-file > a,
+.ref-tree-file > span {
+  display: block;
+  padding: 0 8px 0 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ref-tree summary {
+  display: list-item;
+  list-style-position: inside;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  cursor: pointer;
+}
+.ref-tree summary::marker { color: var(--muted); }
+.ref-tree-file > a,
+.ref-tree-file > span {
+  padding-left: 20px;
+  font-family: var(--font-mono);
+  text-decoration: none;
+}
+.ref-tree-file > a:hover { background: var(--surface-subtle); text-decoration: underline; }
+.ref-tree-file > a.is-current {
+  background: var(--brand-tint);
+  box-shadow: inset 2px 0 0 var(--brand);
+  color: var(--brand-strong);
+  font-weight: bold;
+}
+.ref-tree summary:focus-visible,
+.ref-tree-file > a:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+
+/* Reference tab: the tree sits in a left column next to the content. */
+.ref-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+}
+.ref-aside .ref-toc {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9rem;
+  line-height: 1.8;
+}
+.ref-aside h3 { margin: 0 0 6px; font-size: 1.0rem; }
+@media (min-width: 900px) {
+  .ref-layout { grid-template-columns: var(--sidebar-width) minmax(0, 1fr); }
+  /* Below the sticky page header of index.html. */
+  .ref-aside {
+    position: sticky;
+    top: 106px;
+    align-self: start;
+    max-height: calc(100vh - 122px);
+    overflow-y: auto;
+  }
+  .ref-aside .ref-tree-scroll { max-height: 55vh; }
+}
+
+/* Deprecated classes and methods. */
+.ref-deprecated {
+  margin: 12px 0 20px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--err);
+  background: var(--err-bg);
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+.ref-deprecated p { margin: 4px 0 0; }
+.ref-badge.is-deprecated { border-color: var(--err); color: var(--err); }
+.ref-badge.is-user { border-color: var(--brand); color: var(--brand); }
+
+/* Group heading rows inside the member tables. */
+tr.ref-group-row th {
+  background: var(--surface-subtle);
+  color: var(--ink);
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  text-align: left;
+}
+.ref-hints { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-left: 6px; vertical-align: middle; }
+.ref-see-also a > code { color: inherit; }
+.ref-unit { font-family: var(--font-mono); font-size: 0.85em; white-space: nowrap; }
+
 /* Narrow screens: the sidebar stacks above the content. */
 @media (max-width: 899px) {
   body.doc-layout #sidebar img { max-width: 180px; }

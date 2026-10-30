@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GUILDA Developer Guide - Class Documentation</title>
   <link rel="stylesheet" href="../style.css">
-  <script src="../database/list_Classes.js"></script>
-  <script src="../doc-loader.js"></script>
   <style>
     /* Class Documentation page only (cd-*); shared parts are dg-* in style.css */
     .cd-code { margin: 0; padding: var(--dg-s4); overflow-x: auto; border: 1px solid var(--dg-line); border-radius: var(--radius); background: var(--dg-card); color: var(--dg-ink); font: 0.8rem/1.65 var(--dg-mono); white-space: pre; }
@@ -33,18 +31,16 @@
     .dg .cd-map td:first-child { font-family: var(--dg-mono); font-size: 0.88rem; }
     .dg .cd-map td:last-child { color: var(--dg-muted); font-size: 0.85rem; }
     .cd-m { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; }
-    .cd-m.is-req { background: var(--dg-err); }
-    .cd-m.is-rec { background: var(--dg-accent); }
-    .cd-m.is-opt { box-shadow: inset 0 0 0 2px var(--dg-muted); }
-    .cd-legend { display: flex; flex-wrap: wrap; gap: var(--dg-s1) var(--dg-s4); margin: 0 0 var(--dg-s2); color: var(--dg-muted); font-size: 0.85rem; }
-    .cd-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .cd-map .cd-m { background: var(--dg-accent); }
     .cd-checks td:first-child { width: 7rem; }
     .cd-opts td:first-child { width: 13rem; }
     .tag-generator-field-label .dg-badge { margin-left: 8px; font-size: 0.7rem; vertical-align: 1px; }
     .tg-switch { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 0.9rem; cursor: pointer; }
     .tg-switch[hidden] { display: none; }
     .dg .tag-generator h2 { margin-top: 0; padding-top: 0; border-top: 0; }
-    .cd-formats td:nth-child(2) { width: 12rem; }
+    .cd-removed td:first-child { width: 14rem; }
+    .cd-collected td:first-child { width: 6rem; }
+    .cd-collected td:nth-child(2) { width: 12rem; }
     @media (max-width: 640px) {
       .dg .cd-map thead { display: table-header-group; }
       .dg .cd-map tbody { display: table-row-group; }
@@ -53,7 +49,7 @@
       .dg .cd-map td:first-child { font-size: 0.8rem; }
       .dg .cd-map th:nth-child(n+2):nth-child(-n+4), .dg .cd-map td:nth-child(n+2):nth-child(-n+4) { width: 2.6rem; }
       .dg .cd-map th { font-size: 0.62rem; letter-spacing: 0; }
-      .cd-checks td:first-child, .cd-opts td:first-child, .cd-formats td:nth-child(2) { width: auto; }
+      .cd-checks td:first-child, .cd-opts td:first-child, .cd-removed td:first-child, .cd-collected td:first-child, .cd-collected td:nth-child(2) { width: auto; }
     }
   </style>
 </head>
@@ -69,14 +65,14 @@
   <main>
     <button type="button" class="developer-back-button" onclick="window.history.back()">← Back to For Developer</button>
     <h1>Class Documentation</h1>
-    <p class="page-lead">Write <code>&lt;@Tag&gt;</code> comments next to the MATLAB code. <code>GUILDA.doc</code> adds what the code declares and builds the Reference pages.</p>
+    <p class="page-lead">Write MATLAB help comments next to the code. <code>GUILDA.doc</code> adds what the code declares and builds the Reference pages. Three tags cover the rest.</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#pipeline">How it works</a>
       <a href="#where">Where comments go</a>
       <a href="#tags">Which tags</a>
-      <a href="#formats">Value formats</a>
-      <a href="#declaration">Don't repeat the code</a>
+      <a href="#removed">Removed tags</a>
+      <a href="#collected">Collected from the code</a>
       <a href="#generator">Tag Generator</a>
       <a href="#checks">What the exporter checks</a>
       <a href="#update">Keeping it up to date</a>
@@ -84,91 +80,112 @@
 
     <!-- ============================== PIPELINE ============================== -->
     <h2 id="pipeline">How it works</h2>
-    <p class="dg-lead-in">Nobody edits the Reference by hand. It is rebuilt from the source when the source changes.</p>
+    <p class="dg-lead-in">Nobody edits the Reference by hand. <code>GUILDA.doc</code> re-exports only the classes whose files changed.</p>
     <figure class="dg-figure">
-      <svg class="dg-svg dg-sv dg-only-wide" viewBox="0 0 800 200" role="img" aria-labelledby="cd-pipe-title">
+      <svg class="dg-svg dg-sv dg-only-wide" viewBox="0 0 800 224" role="img" aria-labelledby="cd-pipe-title">
         <title id="cd-pipe-title">Pipeline from MATLAB source to the Reference pages</title>
         <defs>
           <marker id="cd-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head" d="M0 0L10 5L0 10z"/></marker>
           <marker id="cd-ah-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head is-muted" d="M0 0L10 5L0 10z"/></marker>
         </defs>
         <!-- source -->
-        <rect class="dg-sv-box" x="2" y="40" width="154" height="110" rx="10"/>
-        <text class="is-k" x="79" y="64" text-anchor="middle">SOURCE</text>
-        <text class="dg-mono" x="79" y="88" text-anchor="middle">_GUILDAsystem</text>
-        <text class="dg-mono" x="79" y="106" text-anchor="middle">_GUILDAobject</text>
-        <text class="is-sm is-ok" x="79" y="132" text-anchor="middle">code + &lt;@Tag&gt; comments</text>
-        <path class="dg-sv-line dg-anim-dash" d="M158 95H196" marker-end="url(#cd-ah)"/>
-        <!-- auto check -->
-        <path class="dg-sv-box is-warn" d="M268 40 330 95 268 150 206 95z"/>
-        <text class="dg-mono is-b is-warn" x="268" y="90" text-anchor="middle">GUILDA.doc</text>
-        <text class="is-sm is-warn" x="268" y="107" text-anchor="middle">source newer?</text>
-        <text class="is-sm is-muted" x="268" y="28" text-anchor="middle">update = "auto"</text>
-        <path class="dg-sv-line is-muted" d="M268 150V184H755V148" marker-end="url(#cd-ah-m)"/>
-        <text class="is-sm is-muted" x="380" y="178">no: open the pages as they are</text>
-        <path class="dg-sv-line dg-anim-dash" d="M332 95H368" marker-end="url(#cd-ah)"/>
-        <text class="is-sm is-accent" x="350" y="86" text-anchor="middle">yes</text>
+        <rect class="dg-sv-box" x="2" y="36" width="154" height="128" rx="10"/>
+        <text class="is-k" x="79" y="60" text-anchor="middle">SOURCE</text>
+        <text class="dg-mono" x="79" y="84" text-anchor="middle">_GUILDAsystem</text>
+        <text class="dg-mono" x="79" y="102" text-anchor="middle">_GUILDAobject</text>
+        <text class="is-sm is-muted" x="79" y="122" text-anchor="middle">+ user classes</text>
+        <text class="is-sm is-muted" x="79" y="137" text-anchor="middle">on the MATLAB path</text>
+        <text class="is-sm is-ok" x="79" y="155" text-anchor="middle">code + help comments</text>
+        <path class="dg-sv-line dg-anim-dash" d="M158 100H196" marker-end="url(#cd-ah)"/>
+        <!-- change check -->
+        <path class="dg-sv-box is-warn" d="M268 45 330 100 268 155 206 100z"/>
+        <text class="dg-mono is-b is-warn" x="268" y="95" text-anchor="middle">GUILDA.doc</text>
+        <text class="is-sm is-warn" x="268" y="112" text-anchor="middle">files changed?</text>
+        <text class="is-sm is-muted" x="268" y="28" text-anchor="middle">time + size vs manifest.json</text>
+        <path class="dg-sv-line is-muted" d="M268 155V208H756V180" marker-end="url(#cd-ah-m)"/>
+        <text class="is-sm is-muted" x="380" y="202">no: open the pages as they are</text>
+        <path class="dg-sv-line dg-anim-dash" d="M332 100H368" marker-end="url(#cd-ah)"/>
+        <text class="is-sm is-accent" x="350" y="91" text-anchor="middle">yes</text>
         <!-- exporter -->
-        <rect class="dg-sv-box is-solid" x="372" y="55" width="140" height="80" rx="10"/>
-        <text class="dg-mono is-b is-inv" x="442" y="82" text-anchor="middle">exporter</text>
-        <text class="is-sm is-inv" x="442" y="102" text-anchor="middle">reflection + parser</text>
-        <text class="is-sm is-inv" x="442" y="119" text-anchor="middle">+ validation</text>
-        <path class="dg-sv-line dg-anim-dash" d="M514 78H548" marker-end="url(#cd-ah)"/>
-        <path class="dg-sv-line dg-anim-dash" d="M514 122H548" marker-end="url(#cd-ah)"/>
+        <rect class="dg-sv-box is-solid" x="372" y="60" width="140" height="80" rx="10"/>
+        <text class="dg-mono is-b is-inv" x="442" y="87" text-anchor="middle">exporter</text>
+        <text class="is-sm is-inv" x="442" y="107" text-anchor="middle">changed classes</text>
+        <text class="is-sm is-inv" x="442" y="124" text-anchor="middle">+ their subclasses</text>
+        <path class="dg-sv-line dg-anim-dash" d="M514 62H548" marker-end="url(#cd-ah)"/>
+        <path class="dg-sv-line dg-anim-dash" d="M514 100H548" marker-end="url(#cd-ah)"/>
+        <path class="dg-sv-line dg-anim-dash" d="M514 138H548" marker-end="url(#cd-ah)"/>
         <!-- database -->
-        <rect class="dg-sv-box is-soft" x="552" y="54" width="136" height="44" rx="8"/>
-        <text class="dg-mono is-sm is-accent" x="620" y="73" text-anchor="middle">list_Classes.js</text>
-        <text class="is-sm is-muted" x="620" y="89" text-anchor="middle">index · schema 4</text>
-        <rect class="dg-sv-box is-soft" x="552" y="102" width="136" height="44" rx="8"/>
-        <text class="dg-mono is-sm is-accent" x="620" y="121" text-anchor="middle">&lt;Class&gt;.js</text>
-        <text class="is-sm is-muted" x="620" y="137" text-anchor="middle">one file per class</text>
-        <path class="dg-sv-line dg-anim-dash" d="M690 100H712" marker-end="url(#cd-ah)"/>
+        <rect class="dg-sv-box is-soft" x="552" y="40" width="136" height="44" rx="8"/>
+        <text class="dg-mono is-sm is-accent" x="620" y="59" text-anchor="middle">list_Classes.js</text>
+        <text class="is-sm is-muted" x="620" y="75" text-anchor="middle">index · schema 5</text>
+        <rect class="dg-sv-box is-soft" x="552" y="88" width="136" height="44" rx="8"/>
+        <text class="dg-mono is-sm is-accent" x="620" y="107" text-anchor="middle">&lt;Class&gt;.js</text>
+        <text class="is-sm is-muted" x="620" y="123" text-anchor="middle">one file per class</text>
+        <rect class="dg-sv-box is-soft" x="552" y="136" width="136" height="44" rx="8"/>
+        <text class="dg-mono is-sm is-accent" x="620" y="155" text-anchor="middle">manifest.json</text>
+        <text class="is-sm is-muted" x="620" y="171" text-anchor="middle">time + size per file</text>
+        <path class="dg-sv-line dg-anim-dash" d="M690 110H712" marker-end="url(#cd-ah)"/>
         <!-- pages -->
-        <rect class="dg-sv-box is-ok" x="716" y="54" width="80" height="92" rx="8"/>
-        <text class="is-sm is-b is-ok" x="756" y="78" text-anchor="middle">Reference</text>
-        <text class="dg-mono is-sm" x="756" y="99" text-anchor="middle">index</text>
-        <text class="dg-mono is-sm" x="756" y="116" text-anchor="middle">class</text>
-        <text class="dg-mono is-sm" x="756" y="133" text-anchor="middle">method</text>
+        <rect class="dg-sv-box is-ok" x="716" y="40" width="80" height="140" rx="8"/>
+        <text class="is-sm is-b is-ok" x="756" y="64" text-anchor="middle">Reference</text>
+        <text class="dg-mono is-sm" x="756" y="88" text-anchor="middle">index</text>
+        <text class="dg-mono is-sm" x="756" y="105" text-anchor="middle">class</text>
+        <text class="dg-mono is-sm" x="756" y="122" text-anchor="middle">method</text>
+        <text class="is-sm is-muted" x="756" y="146" text-anchor="middle">+ folder</text>
+        <text class="is-sm is-muted" x="756" y="161" text-anchor="middle">tree</text>
       </svg>
       <div class="dg-only-narrow"><div class="dg-chain">
-        <div class="dg-chain-node"><span class="dg-kicker">Source</span><code>_GUILDAsystem</code>, <code>_GUILDAobject</code>: code and <code>&lt;@Tag&gt;</code> comments</div>
+        <div class="dg-chain-node"><span class="dg-kicker">Source</span><code>_GUILDAsystem</code>, <code>_GUILDAobject</code> and user classes on the MATLAB path: code and help comments</div>
         <div class="dg-chain-arrow"></div>
-        <div class="dg-chain-node is-warn"><span class="dg-kicker"><code>GUILDA.doc</code></span>Rebuild only if a source file is newer than the database</div>
+        <div class="dg-chain-node is-warn"><span class="dg-kicker"><code>GUILDA.doc</code></span>Compare file times and sizes with <code>manifest.json</code></div>
         <div class="dg-chain-arrow"></div>
-        <div class="dg-chain-node is-step"><span class="dg-kicker">Exporter</span>Reflection, source parser, validation</div>
+        <div class="dg-chain-node is-step"><span class="dg-kicker">Exporter</span>Changed classes and their subclasses only</div>
         <div class="dg-chain-arrow"></div>
-        <div class="dg-chain-node"><span class="dg-kicker">Database</span><code>list_Classes.js</code> + one <code>&lt;Class&gt;.js</code> per class</div>
+        <div class="dg-chain-node"><span class="dg-kicker">Database</span><code>list_Classes.js</code>, one <code>&lt;Class&gt;.js</code> per class, <code>manifest.json</code></div>
         <div class="dg-chain-arrow"></div>
-        <div class="dg-chain-node is-ok"><span class="dg-kicker">Pages</span>Reference tab, class page, method page</div>
+        <div class="dg-chain-node is-ok"><span class="dg-kicker">Pages</span>Reference tab, class page, method page, folder tree</div>
       </div></div>
       <figcaption>Every class MATLAB can reach under <code>_GUILDAsystem</code> and <code>_GUILDAobject</code> is exported, documented or not. The code gives the structure. Your comments add the meaning.</figcaption>
     </figure>
+    <table class="dg-table">
+      <thead><tr><th>Part</th><th>How it works</th></tr></thead>
+      <tbody>
+        <tr><td>Change check</td><td data-label="How it works"><code>GUILDA.doc</code> and startup compare each source file's modification time and size with <code>database/manifest.json</code>. Git is not used.<small>The rebuild rules are in <a href="#update">Keeping it up to date</a>.</small></td></tr>
+        <tr><td>Origin</td><td data-label="How it works">Each class gets a root by its folder: <b>System</b> (<code>_GUILDAsystem</code>), <b>Object</b> (<code>_GUILDAobject</code>) or <b>User</b>.</td></tr>
+        <tr><td>User classes</td><td data-label="How it works">A class anywhere on the MATLAB path that inherits from a GUILDA class is documented under the User root, with the same comment rules.<small>It stays on your machine. <code>GUILDA.publish_doc</code> never publishes it.</small></td></tr>
+        <tr><td>Pages</td><td data-label="How it works">The Reference keeps its index, class and method pages. A folder tree in the left sidebar shows the source folders and highlights the file on screen.</td></tr>
+      </tbody>
+    </table>
 
     <!-- ============================== WHERE ============================== -->
     <h2 id="where">Where comments go</h2>
-    <p class="dg-lead-in">Each numbered comment lands in the matching place on the class page. Everything without a number is read from the code.</p>
+    <p class="dg-lead-in">Write ordinary MATLAB help comments. Each numbered comment lands in the matching place on the class page. Everything without a number is read from the code.</p>
     <figure class="dg-figure">
       <div class="dg-two cd-where">
         <div>
           <span class="dg-kicker">Source · Bus.m</span>
 <pre class="cd-code"><span class="cd-k">classdef</span> Bus &lt; PowerSystemModel
-<span class="cd-c">% &lt;@Summary&gt; Node that connects components.</span><span class="cd-pin">1</span>
-<span class="cd-c">% &lt;@Desc&gt;</span><span class="cd-pin">2</span>
-<span class="cd-c">% Holds the bus voltage and the components</span>
+<span class="cd-c">% Node that connects components.</span><span class="cd-pin">1</span>
+<span class="cd-c">% Holds the bus voltage and the components</span><span class="cd-pin">2</span>
 <span class="cd-c">% attached to it.</span>
+<span class="cd-c">%</span>
+<span class="cd-c">% See also PowerNetwork, Component</span><span class="cd-pin">3</span>
 
-  <span class="cd-k">properties</span>
-    <span class="cd-c">% &lt;@Summary&gt; Components on this bus.</span><span class="cd-pin">3</span>
-    a_Component (:,1) cell = cell(0,1)
+  <span class="cd-k">properties</span> (SetAccess = protected) <span class="cd-c">% Parameters</span><span class="cd-pin">4</span>
+    <span class="cd-c">% [MVA] Base power.</span><span class="cd-pin">5</span>
+    r_Sbase (1,1) double = 100
   <span class="cd-k">end</span>
 
   <span class="cd-k">methods</span>
-    <span class="cd-k">function</span> comp = add_component(obj, comp, opt)
-    <span class="cd-c">% &lt;@Summary&gt; Connect a component.</span><span class="cd-pin">4</span>
+    <span class="cd-k">function</span> idx = add_component(obj, comp, opt)
+    <span class="cd-c">% Connect a component.</span><span class="cd-pin">6</span>
       <span class="cd-k">arguments</span>
         obj
-        comp Component <span class="cd-c">% Component to add.</span><span class="cd-pin">5</span>
+        comp Component <span class="cd-c">% Component to add.</span><span class="cd-pin">7</span>
         opt.Check (1,1) logical = true
+      <span class="cd-k">end</span>
+      <span class="cd-k">arguments</span> (Output)
+        idx (1,1) double <span class="cd-c">% Its index on this bus.</span><span class="cd-pin">8</span>
       <span class="cd-k">end</span>
       ...
 </pre>
@@ -183,21 +200,24 @@
               Node that connects components.
               <span class="cd-page-label">Description <span class="cd-pin">2</span></span>
               Holds the bus voltage and the components attached to it.
-              <span class="cd-page-label">Properties</span>
+              <span class="cd-page-label">See also <span class="cd-pin">3</span></span>
+              <a href="#where">PowerNetwork</a>, <a href="#where">Component</a>
+              <span class="cd-page-label">Properties · Parameters <span class="cd-pin">4</span></span>
               <table>
-                <tr><th>Name</th><th>Type · Size · Default</th><th>Description</th></tr>
-                <tr><td class="dg-mono">a_Component</td><td class="dg-mono">cell (:,1) cell(0,1)</td><td>Components on this bus. <span class="cd-pin">3</span></td></tr>
+                <tr><th>Name</th><th>Type · Size · Default</th><th>Unit</th><th>Description</th></tr>
+                <tr><td class="dg-mono">r_Sbase</td><td class="dg-mono">double (1,1) 100</td><td>MVA <span class="cd-pin">5</span></td><td>Base power. <span class="cd-pin">5</span></td></tr>
               </table>
-              <span class="cd-page-label">Methods</span>
+              <span class="cd-page-label">Methods · Add</span>
               <table>
                 <tr><th>Signature</th><th>Summary</th></tr>
-                <tr><td class="dg-mono">comp = add_component(obj, comp, Name=Value)</td><td>Connect a component. <span class="cd-pin">4</span></td></tr>
+                <tr><td class="dg-mono">idx = add_component(obj, comp, Name=Value)</td><td>Connect a component. <span class="cd-pin">6</span></td></tr>
               </table>
               <span class="cd-page-label">Arguments (method page)</span>
               <table>
                 <tr><th>Name</th><th>Kind · Class</th><th>Description</th></tr>
-                <tr><td class="dg-mono">comp</td><td>Positional · Component</td><td>Component to add. <span class="cd-pin">5</span></td></tr>
+                <tr><td class="dg-mono">comp</td><td>Positional · Component</td><td>Component to add. <span class="cd-pin">7</span></td></tr>
                 <tr><td class="dg-mono">Check</td><td>Name-Value · (1,1) logical = true</td><td class="dg-muted">-</td></tr>
+                <tr><td class="dg-mono">idx</td><td>Output · (1,1) double</td><td>Its index on this bus. <span class="cd-pin">8</span></td></tr>
               </table>
             </div>
           </div>
@@ -205,121 +225,127 @@
       </div>
     </figure>
     <table class="dg-table">
+      <thead><tr><th>Page part</th><th>Write</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Summary <span class="cd-pin">1</span> <span class="cd-pin">6</span></td><td data-label="Write">The first comment line (the H1 line).</td><td data-label="Notes">One English sentence. A method summary starts with a verb: <code>Calculate the power flow.</code><small>MATLAB <code>help</code>, tables and search show it.</small></td></tr>
+        <tr><td>Description <span class="cd-pin">2</span></td><td data-label="Write">The comment lines after the H1 line.</td><td data-label="Notes">Markdown: <code>- lists</code>, <code>1. lists</code>, <code>`code`</code>, <code>**bold**</code>, <code># headings</code>, <code>[links](url)</code> and fenced code blocks. A lone <code>%</code> line starts a new paragraph.<small>Text art drawn with box characters is kept exactly as written.</small></td></tr>
+        <tr><td>See also <span class="cd-pin">3</span></td><td data-label="Write">A <code>% See also A, B</code> line.</td><td data-label="Notes">Names of classes and methods become links. MATLAB <code>help</code> links them too.</td></tr>
+        <tr><td>Property group <span class="cd-pin">4</span></td><td data-label="Write">A trailing comment on the <code>properties (...)</code> line.</td><td data-label="Notes">Without it, properties are grouped by access.</td></tr>
+        <tr><td>Unit <span class="cd-pin">5</span></td><td data-label="Write">A leading <code>[unit]</code> in a property comment or an <code>arguments</code> comment.</td><td data-label="Notes"><code>% [MVA] Base power.</code> The rest of the line is the summary.<small>Examples: <code>[pu]</code>, <code>[MVA]</code>, <code>[rad/s]</code>.</small></td></tr>
+        <tr><td>Method group</td><td data-label="Write">Nothing: the verb prefix of the name.</td><td data-label="Notes"><code>set_</code>, <code>get_</code>, <code>add_</code>, <code>calculate_</code>, <code>simulate_</code>, <code>plot_</code>, <code>export_</code> and the other verbs each get a group. The constructor has its own. Anything else is in Other.</td></tr>
+        <tr><td>Inputs <span class="cd-pin">7</span></td><td data-label="Write">A trailing <code>% text</code> in the <code>arguments</code> block, or a comment line above the argument.</td><td data-label="Notes">Size, class, validators and defaults come from the same line.</td></tr>
+        <tr><td>Outputs <span class="cd-pin">8</span></td><td data-label="Write">The same, in an <code>arguments (Output)</code> block.</td><td data-label="Notes">Outputs without the block are listed by name only.</td></tr>
+      </tbody>
+    </table>
+    <table class="dg-table">
       <thead><tr><th>Target</th><th>Put the <code>%</code> block</th><th>Notes</th></tr></thead>
       <tbody>
         <tr><td>Class</td><td data-label="Put the % block">Directly below <code>classdef</code>.</td><td data-label="Notes">A blank line or a <code>%%</code> section line ends the block.</td></tr>
         <tr><td>Property</td><td data-label="Put the % block">Directly above the declaration.</td><td data-label="Notes">A trailing <code>% text</code> on the same line is used only when there is no block above.</td></tr>
-        <tr><td>Method</td><td data-label="Put the % block">Directly after the <code>function</code> line.</td><td data-label="Notes">Works in <code>@Class/&lt;method&gt;.m</code>, in a function inside the classdef, and in <code>@Class/private/&lt;method&gt;.m</code>.<small>Abstract method or signature-only declaration: put the block above the signature in the <code>methods</code> block.</small></td></tr>
-        <tr><td>Argument</td><td data-label="Put the % block">A trailing <code>% text</code> in the <code>arguments</code> block, or a comment line above it.</td><td data-label="Notes">Becomes that argument's description.</td></tr>
+        <tr><td>Method</td><td data-label="Put the % block">Directly after the <code>function</code> line, before the <code>arguments</code> blocks.</td><td data-label="Notes">Works in <code>@Class/&lt;method&gt;.m</code>, in a function inside the classdef, and in <code>@Class/private/&lt;method&gt;.m</code>.<small>Abstract method or signature-only declaration: put the block above the signature in the <code>methods</code> block.</small></td></tr>
       </tbody>
     </table>
 
     <!-- ============================== TAGS ============================== -->
     <h2 id="tags">Which tags</h2>
-    <p class="dg-lead-in">Write one tag per line: <code>% &lt;@Tag&gt; value</code>. A value can continue on the next <code>%</code> lines, up to the next tag.</p>
-    <div class="cd-legend" aria-hidden="true">
-      <span><span class="cd-m is-req"></span>Required</span>
-      <span><span class="cd-m is-rec"></span>Recommended</span>
-      <span><span class="cd-m is-opt"></span>Optional</span>
-      <span>blank: not used</span>
-    </div>
-    <table class="dg-table cd-map" aria-label="Tags for public classes, properties and methods">
-      <thead><tr><th>Tag</th><th>Class</th><th>Property</th><th>Method</th><th>Format</th></tr></thead>
+    <p class="dg-lead-in">A tag is only for what neither the code nor the help conventions can say. There are three.</p>
+    <table class="dg-table cd-map" aria-label="Tags for classes, properties and methods">
+      <thead><tr><th>Tag</th><th>Class</th><th>Property</th><th>Method</th><th>Use when</th></tr></thead>
       <tbody>
-        <tr><td>Summary</td><td><span class="cd-m is-req" role="img" aria-label="Required"></span></td><td><span class="cd-m is-req" role="img" aria-label="Required"></span></td><td><span class="cd-m is-req" role="img" aria-label="Required"></span></td><td>sentence</td></tr>
-        <tr><td>Desc</td><td><span class="cd-m is-rec" role="img" aria-label="Recommended"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-rec" role="img" aria-label="Recommended"></span></td><td>Markdown</td></tr>
-        <tr><td>Role</td><td><span class="cd-m is-rec" role="img" aria-label="Recommended"></span></td><td><span class="cd-m is-rec" role="img" aria-label="Recommended"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>text</td></tr>
-        <tr><td>Constructor</td><td><span class="cd-m is-rec" role="img" aria-label="Recommended"></span></td><td></td><td></td><td>Markdown</td></tr>
-        <tr><td>Unit</td><td></td><td><span class="cd-m is-rec" role="img" aria-label="Recommended for physical quantities"></span>*</td><td></td><td>text</td></tr>
-        <tr><td>Type · Size · Default · Constraints</td><td></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span>†</td><td></td><td>text</td></tr>
-        <tr><td>Parameters</td><td></td><td></td><td><span class="cd-m is-rec" role="img" aria-label="Recommended"></span></td><td>JSON objects</td></tr>
-        <tr><td>Returns</td><td></td><td></td><td><span class="cd-m is-rec" role="img" aria-label="Recommended"></span></td><td>JSON objects</td></tr>
-        <tr><td>Signatures</td><td></td><td></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>JSON list</td></tr>
-        <tr><td>Calls</td><td></td><td></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>JSON objects</td></tr>
-        <tr><td>Examples</td><td></td><td></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>JSON list</td></tr>
-        <tr><td>Throws</td><td></td><td></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>text</td></tr>
-        <tr><td>Notes</td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>Markdown</td></tr>
-        <tr><td>SeeAlso</td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>JSON list</td></tr>
-        <tr><td>Since</td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>text</td></tr>
-        <tr><td>Deprecated</td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>text</td></tr>
+        <tr><td>Examples</td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td>A short usage example helps. Markdown with fenced code blocks.</td></tr>
+        <tr><td>Deprecated</td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td>The member will be removed. The text names the replacement.</td></tr>
+        <tr><td>Type</td><td></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td></td><td>The declaration cannot state the class, for example an untyped property that holds a <code>PowerFlowCalculation</code>.</td></tr>
       </tbody>
     </table>
-    <p class="dg-muted">* For physical quantities. † Only when the declaration cannot say it (see <a href="#declaration">Don't repeat the code</a>).</p>
-    <div class="dg-callout">
-      <svg class="dg-icon"><use href="#dg-i-info"/></svg>
+    <p>Put tags at the end of the comment block, after the description and the See also line. Write <code>% &lt;@Tag&gt; value</code>; a value can continue on the next <code>%</code> lines, up to the next tag or the end of the block.</p>
+    <div class="dg-two">
       <div>
-        <p>The levels apply to public members. Private, protected and hidden members do not need tags. Write them when they help the next developer.</p>
-        <p>Old names (<code>Abst</code>, <code>Description</code>, <code>varargin</code>, <code>varargout</code>, <code>DetailsCode</code>, <code>Example</code>, <code>Seealso</code>) are no longer supported. The exporter reports them: a warning, or an error with <code>"strict", true</code>.</p>
+        <span class="dg-kicker">Method</span>
+<pre class="cd-code" style="margin-top:8px"><span class="cd-c">% Calculate the power flow.</span>
+<span class="cd-c">%</span>
+<span class="cd-c">% &lt;@Examples&gt;</span>
+<span class="cd-c">% ```matlab</span>
+<span class="cd-c">% net = network_IEEE68bus();</span>
+<span class="cd-c">% net.calculate_powerflow();</span>
+<span class="cd-c">% ```</span>
+<span class="cd-c">% &lt;@Deprecated&gt; Use solve_powerflow.</span></pre>
+      </div>
+      <div>
+        <span class="dg-kicker">Property</span>
+<pre class="cd-code" style="margin-top:8px"><span class="cd-c">% Solver used by calculate_powerflow.</span>
+<span class="cd-c">% &lt;@Type&gt; PowerFlowCalculation</span>
+a_Solver</pre>
       </div>
     </div>
 
-    <!-- ============================== FORMATS ============================== -->
-    <h2 id="formats">Value formats</h2>
-    <table class="dg-table cd-formats">
-      <thead><tr><th>Format</th><th>Tags</th><th>Rule</th></tr></thead>
+    <h3 id="removed">Removed tags</h3>
+    <p>The exporter still reads these tags and warns with the replacement. With <code>"strict", true</code> they are errors.</p>
+    <table class="dg-table cd-removed">
+      <thead><tr><th>Removed tag</th><th>Write instead</th></tr></thead>
       <tbody>
-        <tr><td>Sentence</td><td data-label="Tags">Summary</td><td data-label="Rule">One line, one English sentence. A method summary starts with a verb: <code>Calculate the power flow.</code><small>Tables and search show it.</small></td></tr>
-        <tr><td>Text</td><td data-label="Tags">Role, Unit, Throws, Since, Deprecated, Type, Size, Default, Constraints</td><td data-label="Rule">Free text.</td></tr>
-        <tr><td>Markdown</td><td data-label="Tags">Desc, Constructor, Notes</td><td data-label="Rule">Free text with <code>- lists</code>, <code>1. lists</code>, <code>`code`</code>, <code>**bold**</code>, <code># headings</code>, <code>[links](url)</code> and fenced code blocks.<small>Text art drawn with box characters is kept exactly as written.</small></td></tr>
-        <tr><td>JSON list</td><td data-label="Tags">Signatures, Examples, SeeAlso</td><td data-label="Rule">A JSON string or an array of strings: <code>["PowerNetwork", "Bus"]</code>.<small>SeeAlso entries that name a class become links.</small></td></tr>
-        <tr><td>JSON objects</td><td data-label="Tags">Parameters, Returns, Calls</td><td data-label="Rule">A JSON array of objects. It must start with <code>[</code>.<small>MATLAB arrays and cell arrays are not accepted.</small></td></tr>
+        <tr><td><code>Summary</code></td><td data-label="Write instead">The first comment line.</td></tr>
+        <tr><td><code>Desc</code>, <code>Notes</code>, <code>Model</code></td><td data-label="Write instead">The description lines. Use a Markdown heading such as <code># Notes</code> for a part of it.</td></tr>
+        <tr><td><code>SeeAlso</code></td><td data-label="Write instead">A <code>% See also A, B</code> line.</td></tr>
+        <tr><td><code>Role</code></td><td data-label="Write instead">The group comment on the <code>properties</code> line. Methods are grouped by their verb prefix.</td></tr>
+        <tr><td><code>Category</code></td><td data-label="Write instead">Nothing: the package is the category.</td></tr>
+        <tr><td><code>Constructor</code></td><td data-label="Write instead">The constructor's own comment block and <code>arguments</code> block.</td></tr>
+        <tr><td><code>Signatures</code></td><td data-label="Write instead">Nothing: the <code>function</code> line and the <code>arguments</code> block. Show other call forms in <code>&lt;@Examples&gt;</code>.</td></tr>
+        <tr><td><code>Parameters</code></td><td data-label="Write instead">Comments in the <code>arguments</code> block.</td></tr>
+        <tr><td><code>Returns</code></td><td data-label="Write instead">Comments in the <code>arguments (Output)</code> block.</td></tr>
+        <tr><td><code>Calls</code></td><td data-label="Write instead">The See also line, or a sentence in the description.</td></tr>
+        <tr><td><code>Throws</code></td><td data-label="Write instead">Nothing: read from the error IDs in <code>error("GUILDA:...", ...)</code> calls.</td></tr>
+        <tr><td><code>Size</code>, <code>Default</code>, <code>Constraints</code></td><td data-label="Write instead">The property declaration: size, class, validators and default.</td></tr>
+        <tr><td><code>Unit</code></td><td data-label="Write instead">A leading <code>[unit]</code> in the comment.</td></tr>
+        <tr><td><code>Since</code></td><td data-label="Write instead">The Update log.</td></tr>
       </tbody>
     </table>
-<pre class="cd-code"><span class="cd-c">% &lt;@Parameters&gt;</span>
-<span class="cd-c">% [{"Name": "r_gain", "Unit": "pu", "Description": "Controller gain."}]</span>
-<span class="cd-c">% &lt;@Returns&gt;</span>
-<span class="cd-c">% [{"Name": "flag", "Description": "true when the solver converged."}]</span>
-<span class="cd-c">% &lt;@Calls&gt;</span>
-<span class="cd-c">% [{"Class": "PowerFlowCalculation", "Method": "solve", "Condition": ""}]</span></pre>
-    <table class="dg-table">
-      <thead><tr><th>JSON object tag</th><th>Fields</th></tr></thead>
-      <tbody>
-        <tr><td>Parameters</td><td data-label="Fields"><code>Name</code>, <code>Type</code>, <code>Unit</code>, <code>Description</code>, <code>Required</code>, <code>Default</code>, <code>Constraints</code></td></tr>
-        <tr><td>Returns</td><td data-label="Fields"><code>Name</code>, <code>Type</code>, <code>Unit</code>, <code>Description</code></td></tr>
-        <tr><td>Calls</td><td data-label="Fields"><code>Class</code> and <code>Method</code> (both required), <code>Condition</code> (blank means always)</td></tr>
-      </tbody>
-    </table>
-    <div class="dg-callout">
-      <svg class="dg-icon"><use href="#dg-i-info"/></svg>
-      <div>
-        <p>Text before the first tag is not lost. Its first line becomes Summary and the rest becomes Desc, unless those tags exist.</p>
-        <p>Prefer writing the tags.</p>
-      </div>
-    </div>
-
-    <!-- ============================== DECLARATION ============================== -->
-    <h2 id="declaration">Don't repeat the code</h2>
-    <p class="dg-lead-in">The exporter reads property declarations and <code>arguments</code> blocks. Write each fact once, in the code, where MATLAB also checks it.</p>
     <div class="dg-two">
       <div>
         <span class="dg-badge is-err"><svg class="dg-icon"><use href="#dg-i-x"/></svg>Duplicated</span>
-<pre class="cd-code" style="margin-top:8px"><span class="cd-c">% &lt;@Summary&gt; Base power.</span>
-<span class="cd-bad"><span class="cd-c">% &lt;@Type&gt; double</span></span>
+<pre class="cd-code" style="margin-top:8px"><span class="cd-bad"><span class="cd-c">% &lt;@Summary&gt; Base power.</span></span>
 <span class="cd-bad"><span class="cd-c">% &lt;@Size&gt; 1x1</span></span>
 <span class="cd-bad"><span class="cd-c">% &lt;@Default&gt; 100</span></span>
-<span class="cd-c">% &lt;@Unit&gt; MVA</span>
+<span class="cd-bad"><span class="cd-c">% &lt;@Unit&gt; MVA</span></span>
 r_Sbase (1,1) double = 100</pre>
       </div>
       <div>
         <span class="dg-badge is-ok"><svg class="dg-icon"><use href="#dg-i-check"/></svg>Written once</span>
-<pre class="cd-code" style="margin-top:8px"><span class="cd-c">% &lt;@Summary&gt; Base power.</span>
-<span class="cd-c">% &lt;@Unit&gt; MVA</span>
+<pre class="cd-code" style="margin-top:8px"><span class="cd-c">% [MVA] Base power.</span>
 r_Sbase (1,1) double = 100</pre>
       </div>
     </div>
-    <table class="dg-table">
-      <thead><tr><th>Member</th><th>Rule</th></tr></thead>
+
+    <h3 id="collected">Collected from the code</h3>
+    <p>Never write these. The exporter reads them on every export.</p>
+    <table class="dg-table cd-collected">
+      <thead><tr><th>Kind</th><th>Field</th><th>Read from</th></tr></thead>
       <tbody>
-        <tr><td>Properties</td><td data-label="Rule">Use <code>&lt;@Type&gt;</code>, <code>&lt;@Size&gt;</code>, <code>&lt;@Default&gt;</code> and <code>&lt;@Constraints&gt;</code> only when the declaration cannot say it.<small>Example: an untyped property that holds a <code>PowerFlowCalculation</code>. A tag wins over the declaration on the page.</small></td></tr>
-        <tr><td>Methods</td><td data-label="Rule">Give inputs an <code>arguments</code> block with size, class, validators and defaults.<small>In <code>&lt;@Parameters&gt;</code>, write only what the block cannot say (Description, Unit). Entries are matched by <code>Name</code>.</small></td></tr>
-        <tr><td>Signatures</td><td data-label="Rule">Built from the function line and the <code>arguments</code> block. Add <code>&lt;@Signatures&gt;</code> only for extra call forms.<small>Example: <code>[tab_PFsol, flag, output] = calculate_powerflow(obj, mode, Name=Value)</code></small></td></tr>
+        <tr><td>Class</td><td data-label="Field">Origin</td><td data-label="Read from">The root folder: System, Object or User.</td></tr>
+        <tr><td>Class</td><td data-label="Field">Folder</td><td data-label="Read from">The folder that holds the classdef file.</td></tr>
+        <tr><td>Class</td><td data-label="Field">Category</td><td data-label="Read from">The package (<code>+name</code> folder).</td></tr>
+        <tr><td>Class</td><td data-label="Field">Superclasses, Subclasses</td><td data-label="Read from">The <code>classdef</code> line of this class and of every exported class.</td></tr>
+        <tr><td>Class</td><td data-label="Field">Line</td><td data-label="Read from">The line of the <code>classdef</code> keyword.</td></tr>
+        <tr><td>Property</td><td data-label="Field">Access</td><td data-label="Read from">The <code>properties (...)</code> attributes.</td></tr>
+        <tr><td>Property</td><td data-label="Field">Validation, Default</td><td data-label="Read from">The declaration: size, class, validators and <code>= value</code>.</td></tr>
+        <tr><td>Property</td><td data-label="Field">Group, Unit</td><td data-label="Read from">The comments (see <a href="#where">Where comments go</a>).</td></tr>
+        <tr><td>Method</td><td data-label="Field">Signature, Arguments</td><td data-label="Read from">The <code>function</code> line and the <code>arguments</code> blocks.</td></tr>
+        <tr><td>Method</td><td data-label="Field">Overrides</td><td data-label="Read from">A superclass method with the same name.</td></tr>
+        <tr><td>Method</td><td data-label="Field">ImplementedIn</td><td data-label="Read from">The file that holds the <code>function</code>.</td></tr>
+        <tr><td>Method</td><td data-label="Field">Throws</td><td data-label="Read from">The error IDs in its <code>error</code> calls.</td></tr>
+        <tr><td>Method</td><td data-label="Field">Group</td><td data-label="Read from">The verb prefix of the name.</td></tr>
       </tbody>
     </table>
+    <div class="dg-callout">
+      <svg class="dg-icon"><use href="#dg-i-info"/></svg>
+      <div>
+        <p>Comments are needed on public members. Private, protected and hidden members need none. Write them when they help the next developer.</p>
+      </div>
+    </div>
 
     <!-- ============================== GENERATOR ============================== -->
     <section class="tag-generator" id="generator" aria-label="Documentation Tag Generator">
       <h2>Tag Generator</h2>
-      <p class="tag-generator-desc">Pick what you are documenting, fill in the fields, and copy the comment block into the source. <span class="dg-badge is-err">Required</span> and <span class="dg-badge">Recommended</span> fields come first.</p>
+      <p class="tag-generator-desc">Pick what you are documenting, fill in the fields, and copy the comment block into the source. Only the <span class="dg-badge is-err">Required</span> summary must be filled.</p>
 
       <div class="tag-generator-row">
         <span class="tag-generator-label">Target</span>
@@ -332,10 +358,10 @@ r_Sbase (1,1) double = 100</pre>
       </div>
 
       <div class="tag-generator-fields" id="tg-fields"></div>
-      <p class="tag-generator-empty" id="tg-empty">Select a target above to see its tag fields.</p>
+      <p class="tag-generator-empty" id="tg-empty">Select a target above to see its fields.</p>
 
       <div class="tag-generator-result">
-        <p class="tag-generator-hint" id="tg-hint">Fill in at least one tag to generate the comment block.</p>
+        <p class="tag-generator-hint" id="tg-hint">Select a target above to begin.</p>
         <pre class="tag-generator-output-wrap" id="tg-output-wrap" style="display: none;"><code class="tag-generator-output" id="tg-output"></code></pre>
         <button type="button" class="btn tag-generator-copy-btn" id="tg-copy-btn" disabled>Copy</button>
       </div>
@@ -343,18 +369,16 @@ r_Sbase (1,1) double = 100</pre>
 
     <!-- ============================== CHECKS ============================== -->
     <h2 id="checks">What the exporter checks</h2>
-    <p class="dg-lead-in">Every run prints one line per class and a summary. A problem is reported where the member is defined, not again for each subclass.</p>
+    <p class="dg-lead-in">Every run prints one line per exported class and a summary. A problem is reported where the member is defined, not again for each subclass.</p>
     <table class="dg-table cd-checks">
       <thead><tr><th>Level</th><th>Check</th></tr></thead>
       <tbody>
-        <tr><td><span class="dg-badge is-err">Error</span></td><td data-label="Check">Invalid JSON in a structured tag (Signatures, Examples, SeeAlso, Parameters, Returns, Calls).</td></tr>
-        <tr><td><span class="dg-badge is-err">Error</span></td><td data-label="Check">A Calls entry without both <code>Class</code> and <code>Method</code>.</td></tr>
-        <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">An old tag name (see <a href="#tags">Which tags</a>).<small>An error with <code>"strict", true</code>.</small></td></tr>
-        <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">A class, or its own public non-hidden method, has no Summary or Desc.</td></tr>
+        <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">A removed tag, with its replacement (see <a href="#removed">Removed tags</a>).<small>An error with <code>"strict", true</code>.</small></td></tr>
+        <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">A class, or its own public non-hidden method or property, has no H1 line.</td></tr>
+        <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">A <code>&lt;@Deprecated&gt;</code> tag with no text.<small>The text must name the replacement.</small></td></tr>
         <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">An unknown tag, or the same tag twice (the last value is used).</td></tr>
-        <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">A <code>&lt;@Parameters&gt;</code> name that is not an input of the method.</td></tr>
         <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">A method declared in the classdef with no implementation file.</td></tr>
-        <tr><td><span class="dg-badge">Coverage</span></td><td data-label="Check">Documented / total for classes, public methods and public properties.<small>Shown at the top of the Reference tab. Undocumented classes get a <span class="dg-badge is-warn">no docs</span> marker there.</small></td></tr>
+        <tr><td><span class="dg-badge">Coverage</span></td><td data-label="Check">Documented / total for classes, public methods and public properties. Documented means it has an H1 line.<small>Shown at the top of the Reference tab. Undocumented classes get a <span class="dg-badge is-warn">no docs</span> marker there.</small></td></tr>
       </tbody>
     </table>
     <p>With <code>GUILDA.doc("strict", true)</code> the run fails when there are errors.</p>
@@ -362,17 +386,27 @@ r_Sbase (1,1) double = 100</pre>
     <!-- ============================== UPDATE ============================== -->
     <h2 id="update">Keeping it up to date</h2>
     <ol class="dg-steps" style="--n: 3">
-      <li><span class="dg-step-title">Edit the source</span>Add or change classes and comments under <code>_GUILDAsystem</code> or <code>_GUILDAobject</code>.</li>
-      <li><span class="dg-step-title">Run <code>GUILDA.doc</code></span>It rebuilds the database only when needed, then opens the pages. A rebuild takes seconds.</li>
+      <li><span class="dg-step-title">Edit the source</span>Add or change classes and comments under <code>_GUILDAsystem</code> or <code>_GUILDAobject</code>, or in your own subclasses.</li>
+      <li><span class="dg-step-title">Run <code>GUILDA.doc</code></span>It re-exports what changed, then opens the pages.</li>
       <li><span class="dg-step-title">Check the output</span>Read the warnings in the Command Window and look at your class page.</li>
     </ol>
     <table class="dg-table cd-opts">
+      <thead><tr><th>Change</th><th>What is exported</th></tr></thead>
+      <tbody>
+        <tr><td>File time or size differs from <code>manifest.json</code></td><td data-label="What is exported">That class and all its subclasses.<small>Subclasses inherit members, so their pages change too.</small></td></tr>
+        <tr><td>File not in the manifest</td><td data-label="What is exported">The new class and its subclasses.</td></tr>
+        <tr><td>File in the manifest but gone</td><td data-label="What is exported">Its class file and index entry are removed; its subclasses are re-exported.</td></tr>
+        <tr><td>No manifest, or one from another schema or exporter</td><td data-label="What is exported">Everything.</td></tr>
+        <tr><td>Nothing changed</td><td data-label="What is exported">Nothing. The pages open as they are.</td></tr>
+      </tbody>
+    </table>
+    <table class="dg-table cd-opts">
       <thead><tr><th>Call</th><th>Effect</th></tr></thead>
       <tbody>
-        <tr><td><code>update="auto"</code> <span class="dg-muted">(default)</span></td><td data-label="Effect">Rebuild when the database is missing, or when something is newer than <code>database/list_Classes.js</code>: any file or folder under the two source folders, or the exporter itself.<small>Folder times also catch deleted and renamed files.</small></td></tr>
-        <tr><td><code>update=true</code> / <code>false</code></td><td data-label="Effect">Always or never rebuild. <code>"always"</code> and <code>"never"</code> work too.</td></tr>
+        <tr><td><code>update="auto"</code> <span class="dg-muted">(default)</span></td><td data-label="Effect">Export what changed, by the rules above.</td></tr>
+        <tr><td><code>update=true</code> / <code>false</code></td><td data-label="Effect">Always export everything, or never export. <code>"always"</code> and <code>"never"</code> work too.</td></tr>
         <tr><td><code>"class", "PowerNetwork"</code></td><td data-label="Effect">Open one class page.</td></tr>
-        <tr><td><code>"open", false</code></td><td data-label="Effect">Only rebuild.</td></tr>
+        <tr><td><code>"open", false</code></td><td data-label="Effect">Only export.</td></tr>
       </tbody>
     </table>
     <table class="dg-table">
@@ -380,114 +414,58 @@ r_Sbase (1,1) double = 100</pre>
       <tbody>
         <tr><td><code>_GUILDAdoc/database/list_Classes.js</code></td><td data-label="Content">Index with the schema, coverage and validation results.</td></tr>
         <tr><td><code>database/GUILDAsystem|GUILDAobject/&lt;Class&gt;.js</code></td><td data-label="Content">One file per class, loaded on demand.</td></tr>
+        <tr><td><code>database/User/&lt;Class&gt;.js</code></td><td data-label="Content">One file per user class. Never published.</td></tr>
+        <tr><td><code>database/manifest.json</code></td><td data-label="Content">Time and size of each source file, and the classes it defines.</td></tr>
       </tbody>
     </table>
-    <p>Both use schema version 4.</p>
-    <p>They are generated and not tracked by git. Never edit them; rebuild instead.</p>
+    <p>All use schema version 5.</p>
+    <p>They are generated and not tracked by git. Never edit them; delete <code>manifest.json</code> or run <code>GUILDA.doc("update", true)</code> to rebuild everything.</p>
   </main>
 
   <script>
     (function () {
-      // level: required / recommended / optional (see "Which tags").
-      // declared: hidden while the "declared in code" switch is on, because the
-      // exporter reads it from the declaration or the arguments block.
-      var TAG_SETS = {
+      // kind: text (one comment line per input line), code (Examples, fenced if
+      // not already), rows (an arguments block). declared: hidden while the
+      // "declaration states the class" switch is on.
+      var FIELD_SETS = {
         class: {
           pasteHint: 'Paste this directly under the "classdef ClassName" line, before any properties or methods blocks.',
           fields: [
-            { tag: 'Summary', level: 'required', rows: 1, placeholder: 'One sentence shown in tables and search.' },
-            { tag: 'Desc', level: 'recommended', rows: 3, placeholder: 'Full explanation for the class page. Markdown is supported.' },
-            { tag: 'Role', level: 'recommended', rows: 1, placeholder: 'e.g. Bus model' },
-            { tag: 'Constructor', level: 'recommended', rows: 2, placeholder: 'e.g. obj = MyClass(r_gain, str_label)' },
-            { tag: 'Notes', level: 'optional', rows: 2, placeholder: 'Implementation notes, caveats, usage order.' },
-            { tag: 'SeeAlso', level: 'optional', rows: 1, placeholder: 'JSON array, e.g. ["PowerNetwork", "Component"]' },
-            { tag: 'Since', level: 'optional', rows: 1, placeholder: 'Version that added the class.' },
-            { tag: 'Deprecated', level: 'optional', rows: 1, placeholder: 'Leave empty unless deprecated.' }
+            { key: 'summary', label: 'Summary (H1 line)', required: true, rows: 1, placeholder: 'One sentence, e.g. Node that connects components.' },
+            { key: 'desc', label: 'Description', rows: 3, placeholder: 'Following comment lines. Markdown is supported.' },
+            { key: 'seeAlso', label: 'See also', rows: 1, placeholder: 'e.g. PowerNetwork, Component' },
+            { key: 'examples', label: '<@Examples>', kind: 'code', rows: 3, placeholder: 'MATLAB code; it is put in a ```matlab block.' },
+            { key: 'deprecated', label: '<@Deprecated>', rows: 1, placeholder: 'Leave empty unless deprecated; name the replacement.' }
           ]
         },
         property: {
-          pasteHint: 'Paste this directly above the property declaration, inside the "properties" block.',
-          declaredLabel: 'The declaration states type, size and default, e.g. r_Sbase (1,1) double = 100',
+          pasteHint: 'Paste this directly above the property declaration. A group name goes as a trailing comment on the "properties (...)" line.',
+          declaredLabel: 'The declaration states the class, e.g. r_Sbase (1,1) double = 100',
           fields: [
-            { tag: 'Summary', level: 'required', rows: 1, placeholder: 'One sentence shown in tables and search.' },
-            { tag: 'Unit', level: 'recommended', rows: 1, placeholder: 'e.g. pu, MVA, rad/s' },
-            { tag: 'Role', level: 'recommended', rows: 1, placeholder: 'e.g. Parameter' },
-            { tag: 'Desc', level: 'optional', rows: 3, placeholder: 'Longer explanation.' },
-            { tag: 'Type', level: 'optional', declared: true, rows: 1, placeholder: 'e.g. PowerFlowCalculation' },
-            { tag: 'Size', level: 'optional', declared: true, rows: 1, placeholder: 'e.g. 1x1' },
-            { tag: 'Default', level: 'optional', declared: true, rows: 1, placeholder: 'e.g. PowerFlowCalculation()' },
-            { tag: 'Constraints', level: 'optional', declared: true, rows: 1, placeholder: 'e.g. finite and positive' },
-            { tag: 'Notes', level: 'optional', rows: 2, placeholder: 'Implementation notes, caveats.' },
-            { tag: 'SeeAlso', level: 'optional', rows: 1, placeholder: 'JSON array, e.g. ["calculate_output"]' },
-            { tag: 'Since', level: 'optional', rows: 1, placeholder: 'Version that added the property.' },
-            { tag: 'Deprecated', level: 'optional', rows: 1, placeholder: 'Leave empty unless deprecated.' }
+            { key: 'unit', label: 'Unit', rows: 1, placeholder: 'e.g. MVA, pu, rad/s' },
+            { key: 'summary', label: 'Summary (H1 line)', required: true, rows: 1, placeholder: 'e.g. Base power.' },
+            { key: 'desc', label: 'Description', rows: 2, placeholder: 'Following comment lines. Markdown is supported.' },
+            { key: 'type', label: '<@Type>', declared: true, rows: 1, placeholder: 'e.g. PowerFlowCalculation' },
+            { key: 'deprecated', label: '<@Deprecated>', rows: 1, placeholder: 'Leave empty unless deprecated; name the replacement.' }
           ]
         },
         method: {
-          pasteHint: 'Paste this directly after the "function ..." line, before the arguments block.',
-          declaredLabel: 'The method has an arguments block (kind, type, default and constraints come from it)',
+          pasteHint: 'Paste this directly after the "function ..." line. Merge the arguments lines into your arguments blocks.',
           fields: [
-            { tag: 'Summary', level: 'required', rows: 1, placeholder: 'One sentence starting with a verb, e.g. Calculate the power flow.' },
-            { tag: 'Desc', level: 'recommended', rows: 3, placeholder: 'Full explanation for the method page. Markdown is supported.' },
-            {
-              tag: 'Parameters', level: 'recommended', type: 'table', mode: 'object',
-              columns: [
-                { key: 'Name', label: 'Name', placeholder: 'rv_u' },
-                { key: 'Kind', label: 'Kind', type: 'select', options: ['Positional', 'NameValue'], declared: true },
-                { key: 'Type', label: 'Type', placeholder: 'double vector', declared: true },
-                { key: 'Unit', label: 'Unit', placeholder: 'pu' },
-                { key: 'Description', label: 'Description', placeholder: 'Input signal vector.' },
-                { key: 'Required', label: 'Required', type: 'checkbox', declared: true },
-                { key: 'Default', label: 'Default', placeholder: '-', declared: true },
-                { key: 'Constraints', label: 'Constraints', placeholder: 'finite column vector', declared: true }
-              ]
-            },
-            {
-              tag: 'Returns', level: 'recommended', type: 'table', mode: 'object',
-              columns: [
-                { key: 'Name', label: 'Name', placeholder: 'rv_y' },
-                { key: 'Type', label: 'Type', placeholder: 'double vector' },
-                { key: 'Unit', label: 'Unit', placeholder: 'pu' },
-                { key: 'Description', label: 'Description', placeholder: 'Scaled output.' }
-              ]
-            },
-            { tag: 'Role', level: 'optional', rows: 1, placeholder: 'e.g. simulate' },
-            {
-              tag: 'Signatures', level: 'optional', type: 'table', mode: 'list',
-              columns: [{ key: 'value', label: 'Extra call form (the main one is generated)', placeholder: 'e.g. obj.calculate_output(rv_u)' }]
-            },
-            {
-              tag: 'Calls', level: 'optional', type: 'table', mode: 'calls',
-              columns: [
-                { key: 'Class', label: 'Class', type: 'class-select' },
-                { key: 'Method', label: 'Method', type: 'method-select' },
-                { key: 'Condition', label: 'Condition', placeholder: 'Blank means always; e.g. obj.is_ready' }
-              ]
-            },
-            { tag: 'Examples', level: 'optional', rows: 3, placeholder: 'JSON array of example code strings.' },
-            { tag: 'Notes', level: 'optional', rows: 2, placeholder: 'Implementation notes, caveats.' },
-            { tag: 'Throws', level: 'optional', rows: 2, placeholder: 'Conditions under which this method errors.' },
-            { tag: 'SeeAlso', level: 'optional', rows: 1, placeholder: 'JSON array, e.g. ["simulate", "get_sys"]' },
-            { tag: 'Since', level: 'optional', rows: 1, placeholder: 'Version that added the method.' },
-            { tag: 'Deprecated', level: 'optional', rows: 1, placeholder: 'Leave empty unless deprecated.' }
+            { key: 'summary', label: 'Summary (H1 line)', required: true, rows: 1, placeholder: 'Starts with a verb, e.g. Connect a component.' },
+            { key: 'desc', label: 'Description', rows: 3, placeholder: 'Following comment lines. Markdown is supported.' },
+            { key: 'seeAlso', label: 'See also', rows: 1, placeholder: 'e.g. remove_component, Component' },
+            { key: 'inputs', label: 'Inputs (arguments block)', kind: 'rows', block: 'arguments', namePattern: /^[A-Za-z]\w*(\.[A-Za-z]\w*)?$/, namePlaceholder: 'comp or opt.Check' },
+            { key: 'outputs', label: 'Outputs (arguments (Output) block)', kind: 'rows', block: 'arguments (Output)', namePattern: /^[A-Za-z]\w*$/, namePlaceholder: 'idx' },
+            { key: 'examples', label: '<@Examples>', kind: 'code', rows: 3, placeholder: 'MATLAB code; it is put in a ```matlab block.' },
+            { key: 'deprecated', label: '<@Deprecated>', rows: 1, placeholder: 'Leave empty unless deprecated; name the replacement.' }
           ]
         }
       };
 
-      var LEVEL_BADGES = {
-        required: '<span class="dg-badge is-err">Required</span>',
-        recommended: '<span class="dg-badge">Recommended</span>',
-        optional: ''
-      };
       var declaredSwitch = document.getElementById('tg-declared-switch');
       var declaredInput = document.getElementById('tg-declared');
       var declaredLabel = document.getElementById('tg-declared-label');
-      function hideDeclared() { return !declaredSwitch.hidden && declaredInput.checked; }
-      declaredInput.addEventListener('change', function () {
-        renderFields();
-        update();
-      });
-
       var targetButtons = Array.prototype.slice.call(document.querySelectorAll('#tg-target-options .tg-target-btn'));
       var fieldsContainer = document.getElementById('tg-fields');
       var emptyMsg = document.getElementById('tg-empty');
@@ -497,14 +475,20 @@ r_Sbase (1,1) double = 100</pre>
       var copyBtn = document.getElementById('tg-copy-btn');
 
       var currentTarget = null;
-      var currentFieldEntries = [];
-      var tableValidationMessage = '';
+      var entries = {};
+
+      function hideDeclared() { return !declaredSwitch.hidden && declaredInput.checked; }
+
+      declaredInput.addEventListener('change', function () {
+        renderFields();
+        update();
+      });
 
       targetButtons.forEach(function (btn) {
         btn.addEventListener('click', function () {
           currentTarget = btn.getAttribute('data-target');
           targetButtons.forEach(function (b) { b.classList.toggle('active', b === btn); });
-          var declaredText = TAG_SETS[currentTarget].declaredLabel;
+          var declaredText = FIELD_SETS[currentTarget].declaredLabel;
           declaredSwitch.hidden = !declaredText;
           declaredLabel.textContent = declaredText || '';
           renderFields();
@@ -512,10 +496,19 @@ r_Sbase (1,1) double = 100</pre>
         });
       });
 
+      function fieldLabel(f, forId) {
+        var label = document.createElement(forId ? 'label' : 'span');
+        label.className = 'tag-generator-field-label';
+        label.textContent = f.label;
+        if (f.required) label.insertAdjacentHTML('beforeend', '<span class="dg-badge is-err">Required</span>');
+        if (forId) label.setAttribute('for', forId);
+        return label;
+      }
+
       function renderFields() {
-        var set = TAG_SETS[currentTarget];
+        var set = FIELD_SETS[currentTarget];
         fieldsContainer.innerHTML = '';
-        currentFieldEntries = [];
+        entries = {};
         if (!set) {
           emptyMsg.style.display = 'block';
           return;
@@ -523,65 +516,52 @@ r_Sbase (1,1) double = 100</pre>
         emptyMsg.style.display = 'none';
         set.fields.forEach(function (f) {
           if (f.declared && hideDeclared()) return;
-          if (f.type === 'table') {
-            f = Object.assign({}, f, {
-              columns: f.columns.filter(function (col) { return !(col.declared && hideDeclared()); })
-            });
-            var wrap = createTableField(f);
+          if (f.kind === 'rows') {
+            var wrap = createRowsField(f);
             fieldsContainer.appendChild(wrap);
-            currentFieldEntries.push({ tag: f.tag, kind: 'table', wrap: wrap, config: f });
+            entries[f.key] = { config: f, wrap: wrap };
             return;
           }
-
           var row = document.createElement('div');
           row.className = 'tag-generator-field';
-
-          var label = document.createElement('label');
-          label.className = 'tag-generator-field-label';
-          label.innerHTML = f.tag + LEVEL_BADGES[f.level || 'optional'];
-          label.setAttribute('for', 'tg-input-' + f.tag);
-
           var control = document.createElement('textarea');
           control.className = 'tag-generator-input';
-          control.id = 'tg-input-' + f.tag;
+          control.id = 'tg-input-' + f.key;
           control.rows = f.rows || 1;
           control.placeholder = f.placeholder || '';
-          control.dataset.tag = f.tag;
           control.addEventListener('input', update);
-
-          row.appendChild(label);
+          row.appendChild(fieldLabel(f, control.id));
           row.appendChild(control);
           fieldsContainer.appendChild(row);
-          currentFieldEntries.push({ tag: f.tag, kind: 'simple', control: control });
+          entries[f.key] = { config: f, control: control };
         });
       }
 
-      function createTableField(f) {
+      var ROW_COLUMNS = [
+        { key: 'name', label: 'Name' },
+        { key: 'unit', label: 'Unit', placeholder: 'pu' },
+        { key: 'desc', label: 'Description', placeholder: 'One sentence.' }
+      ];
+
+      function createRowsField(f) {
         var wrap = document.createElement('div');
         wrap.className = 'tag-generator-field tag-generator-field-table';
-
-        var label = document.createElement('span');
-        label.className = 'tag-generator-field-label';
-        label.innerHTML = f.tag + LEVEL_BADGES[f.level || 'optional'];
-        wrap.appendChild(label);
+        wrap.appendChild(fieldLabel(f));
 
         var tableScroll = document.createElement('div');
         tableScroll.className = 'tg-table-scroll';
-
         var table = document.createElement('table');
         table.className = 'tg-table';
-
-        var thead = document.createElement('thead');
         var headRow = document.createElement('tr');
-        f.columns.forEach(function (col) {
+        ROW_COLUMNS.forEach(function (col) {
           var th = document.createElement('th');
           th.textContent = col.label;
           headRow.appendChild(th);
         });
         headRow.appendChild(document.createElement('th'));
+        var thead = document.createElement('thead');
         thead.appendChild(headRow);
         table.appendChild(thead);
-
         var tbody = document.createElement('tbody');
         table.appendChild(tbody);
         tableScroll.appendChild(table);
@@ -592,72 +572,29 @@ r_Sbase (1,1) double = 100</pre>
         addBtn.className = 'tg-table-add-btn';
         addBtn.textContent = '+ Add row';
         addBtn.addEventListener('click', function () {
-          addTableRow(f, tbody);
+          addRow(f, tbody);
           update();
         });
         wrap.appendChild(addBtn);
 
         wrap._tbody = tbody;
-        addTableRow(f, tbody);
-
+        addRow(f, tbody);
         return wrap;
       }
 
-      function addTableRow(f, tbody) {
+      function addRow(f, tbody) {
         var tr = document.createElement('tr');
-        f.columns.forEach(function (col) {
+        ROW_COLUMNS.forEach(function (col) {
           var td = document.createElement('td');
-          var input;
-          if (col.type === 'class-select') {
-            input = document.createElement('select');
-            input.className = 'tg-table-select';
-            appendSelectOption(input, '', 'Select class');
-            var classes = window.GuildaDocLoader
-              ? window.GuildaDocLoader.getClasses().slice()
-              : [];
-            classes.sort(function (left, right) {
-              return (left.Name || '').localeCompare(right.Name || '');
-            }).forEach(function (classMeta) {
-              appendSelectOption(input, classMeta.Name, classMeta.Name);
-            });
-            input.addEventListener('change', function () {
-              var methodSelect = tr.querySelector('[data-col="Method"]');
-              if (methodSelect) populateMethodSelect(input.value, methodSelect);
-              update();
-            });
-          } else if (col.type === 'method-select') {
-            input = document.createElement('select');
-            input.className = 'tg-table-select';
-            input.disabled = true;
-            appendSelectOption(input, '', 'Select class first');
-            input.addEventListener('change', update);
-          } else if (col.type === 'checkbox') {
-            input = document.createElement('input');
-            input.type = 'checkbox';
-            input.className = 'tg-table-checkbox';
-            input.addEventListener('change', update);
-          } else if (col.type === 'select') {
-            input = document.createElement('select');
-            input.className = 'tg-table-select';
-            col.options.forEach(function (opt) {
-              var o = document.createElement('option');
-              o.value = opt;
-              o.textContent = opt;
-              input.appendChild(o);
-            });
-            input.addEventListener('change', update);
-          } else {
-            input = document.createElement('input');
-            input.type = 'text';
-            input.className = 'tg-table-input';
-            input.placeholder = col.placeholder || '';
-            input.addEventListener('input', update);
-          }
+          var input = document.createElement('input');
+          input.type = 'text';
+          input.className = 'tg-table-input';
+          input.placeholder = col.key === 'name' ? f.namePlaceholder : col.placeholder;
           input.dataset.col = col.key;
+          input.addEventListener('input', update);
           td.appendChild(input);
           tr.appendChild(td);
         });
-
         var tdAction = document.createElement('td');
         var removeBtn = document.createElement('button');
         removeBtn.type = 'button';
@@ -666,131 +603,106 @@ r_Sbase (1,1) double = 100</pre>
         removeBtn.setAttribute('aria-label', 'Remove row');
         removeBtn.addEventListener('click', function () {
           tbody.removeChild(tr);
-          if (tbody.children.length === 0) addTableRow(f, tbody);
+          if (tbody.children.length === 0) addRow(f, tbody);
           update();
         });
         tdAction.appendChild(removeBtn);
         tr.appendChild(tdAction);
-
         tbody.appendChild(tr);
       }
 
-      function appendSelectOption(select, value, label) {
-        var option = document.createElement('option');
-        option.value = value;
-        option.textContent = label;
-        select.appendChild(option);
+      function value(key) {
+        var entry = entries[key];
+        return entry && entry.control ? entry.control.value : '';
       }
 
-      function populateMethodSelect(className, methodSelect) {
-        methodSelect._loadRequest = (methodSelect._loadRequest || 0) + 1;
-        var requestId = methodSelect._loadRequest;
-        methodSelect.innerHTML = '';
-        methodSelect.disabled = true;
-
-        if (!className || !window.GuildaDocLoader) {
-          appendSelectOption(methodSelect, '', 'Select class first');
-          update();
-          return;
-        }
-
-        appendSelectOption(methodSelect, '', 'Loading methods...');
-        window.GuildaDocLoader.loadClass(className).then(function (result) {
-          if (methodSelect._loadRequest !== requestId) return;
-          var methods = Array.isArray(result.data && result.data.methods)
-            ? result.data.methods
-            : [];
-          var methodNames = methods.map(function (method) {
-            return (method && method.Name) || '';
-          }).filter(function (name, index, allNames) {
-            return name && allNames.indexOf(name) === index;
-          }).sort(function (left, right) {
-            return left.localeCompare(right);
-          });
-
-          methodSelect.innerHTML = '';
-          appendSelectOption(methodSelect, '', methodNames.length ? 'Select method' : 'No methods available');
-          methodNames.forEach(function (name) {
-            appendSelectOption(methodSelect, name, name);
-          });
-          methodSelect.disabled = methodNames.length === 0;
-          update();
-        }).catch(function () {
-          if (methodSelect._loadRequest !== requestId) return;
-          methodSelect.innerHTML = '';
-          appendSelectOption(methodSelect, '', 'Failed to load methods');
-          methodSelect.disabled = true;
-          update();
-        });
+      // Trimmed lines with leading and trailing blank lines removed.
+      function lines(text) {
+        var out = (text || '').replace(/\r\n/g, '\n').split('\n').map(function (l) { return l.replace(/\s+$/, ''); });
+        while (out.length && out[0].trim() === '') out.shift();
+        while (out.length && out[out.length - 1].trim() === '') out.pop();
+        return out;
       }
 
-      function tableFieldToJson(entry) {
+      function comment(l) { return l.trim() === '' ? '%' : '% ' + l; }
+
+      // One line per name: "A, B" and "A B" both become "A, B".
+      function seeAlsoLine(text) {
+        var names = text.split(/[\s,]+/).filter(function (n) { return n !== ''; });
+        return names.length ? '% See also ' + names.join(', ') : null;
+      }
+
+      function tagLines(tag, text) {
+        var body = lines(text);
+        if (!body.length) return [];
+        var out = ['% <@' + tag + '> ' + body[0]];
+        return out.concat(body.slice(1).map(comment));
+      }
+
+      function exampleLines(text) {
+        var body = lines(text);
+        if (!body.length) return [];
+        var fenced = body.some(function (l) { return /^\s*```/.test(l); });
+        if (!fenced) body = ['```matlab'].concat(body, ['```']);
+        return ['% <@Examples>'].concat(body.map(comment));
+      }
+
+      // Returns { lines, error } for an Inputs or Outputs table.
+      function argumentBlock(entry) {
         var f = entry.config;
-        var rows = Array.prototype.slice.call(entry.wrap._tbody.querySelectorAll('tr'));
-
-        if (f.mode === 'list') {
-          var items = rows.map(function (tr) {
-            return tr.querySelector('[data-col="value"]').value.trim();
-          }).filter(function (v) { return v !== ''; });
-          return items.length ? JSON.stringify(items) : '';
-        }
-
-        if (f.mode === 'calls') {
-          var hasInvalidRow = false;
-          var calls = rows.map(function (tr) {
-            var className = tr.querySelector('[data-col="Class"]').value.trim();
-            var methodName = tr.querySelector('[data-col="Method"]').value.trim();
-            var condition = tr.querySelector('[data-col="Condition"]').value.trim();
-            if (!className && !methodName && !condition) return null;
-            if (!className || !methodName) {
-              hasInvalidRow = true;
-              return null;
-            }
-            return {
-              Class: className,
-              Method: methodName,
-              Condition: condition
-            };
-          }).filter(function (call) { return call !== null; });
-          entry.wrap.classList.toggle('has-error', hasInvalidRow);
-          if (hasInvalidRow) {
-            tableValidationMessage = 'Complete both Class and Method for every Calls row.';
+        var rowLines = [];
+        var error = '';
+        Array.prototype.slice.call(entry.wrap._tbody.querySelectorAll('tr')).forEach(function (tr) {
+          var get = function (k) { return tr.querySelector('[data-col="' + k + '"]').value.trim(); };
+          var name = get('name'), unit = get('unit'), desc = get('desc');
+          if (!name && !unit && !desc) return;
+          if (!f.namePattern.test(name)) {
+            error = error || (f.label + ': "' + (name || '(empty)') + '" is not a valid argument name.');
+            return;
           }
-          return calls.length ? JSON.stringify(calls, null, 2) : '';
-        }
-
-        var objs = rows.map(function (tr) {
-          var obj = {};
-          f.columns.forEach(function (col) {
-            var input = tr.querySelector('[data-col="' + col.key + '"]');
-            if (col.type === 'checkbox') {
-              obj[col.key] = input.checked;
-            } else {
-              var v = input.value.trim();
-              if (v !== '') obj[col.key] = v;
-            }
-          });
-          var meaningfulKeys = Object.keys(obj).filter(function (k) { return k !== 'Required'; });
-          return meaningfulKeys.length ? obj : null;
-        }).filter(function (o) { return o !== null; });
-
-        return objs.length ? JSON.stringify(objs, null, 2) : '';
+          var text = (unit ? '[' + unit + '] ' : '') + desc;
+          rowLines.push('    ' + name + (text ? ' % ' + text : ''));
+        });
+        entry.wrap.classList.toggle('has-error', !!error);
+        if (!rowLines.length) return { lines: [], error: error };
+        return { lines: [f.block].concat(rowLines, ['end']), error: error };
       }
 
-      function formatTag(tagName, rawValue) {
-        var value = (rawValue || '').replace(/\r\n/g, '\n');
-        var lines = value.split('\n');
-        while (lines.length && lines[lines.length - 1].trim() === '') lines.pop();
-        while (lines.length && lines[0].trim() === '') lines.shift();
-        if (lines.length === 0) return null;
-        if (lines.length === 1) return '% <@' + tagName + '> ' + lines[0];
-        var out = ['% <@' + tagName + '>'];
-        lines.forEach(function (l) { out.push('% ' + l); });
-        return out.join('\n');
+      function build() {
+        var summary = lines(value('summary')).join(' ').trim();
+        var unit = value('unit').trim().replace(/^\[|\]$/g, '');
+        var head = [];
+        var tags = [];
+        var code = [];
+        var error = '';
+
+        if (summary) head.push('% ' + (unit ? '[' + unit + '] ' : '') + summary);
+        head = head.concat(lines(value('desc')).map(comment));
+        var see = seeAlsoLine(value('seeAlso'));
+        if (see) head.push('%', see);
+
+        tags = tags.concat(exampleLines(value('examples')));
+        tags = tags.concat(tagLines('Type', value('type')));
+        tags = tags.concat(tagLines('Deprecated', value('deprecated')));
+
+        ['inputs', 'outputs'].forEach(function (key) {
+          if (!entries[key]) return;
+          var block = argumentBlock(entries[key]);
+          error = error || block.error;
+          code = code.concat(block.lines);
+        });
+
+        var any = head.length || tags.length || code.length || unit;
+        if (any && !summary) error = error || 'Write the summary first. It is the H1 line that MATLAB help and the Reference show.';
+
+        var out = head.slice();
+        if (tags.length) out = out.concat(out.length > 1 ? ['%'] : [], tags);
+        if (code.length) out = out.concat(code);
+        return { text: out.join('\n'), any: any, error: error };
       }
 
       function update() {
-        var set = TAG_SETS[currentTarget];
+        var set = FIELD_SETS[currentTarget];
         if (!set) {
           hint.textContent = 'Select a target above to begin.';
           output.textContent = '';
@@ -798,35 +710,18 @@ r_Sbase (1,1) double = 100</pre>
           copyBtn.disabled = true;
           return;
         }
-
-        var blocks = [];
-        tableValidationMessage = '';
-        currentFieldEntries.forEach(function (entry) {
-          var raw = entry.kind === 'table' ? tableFieldToJson(entry) : entry.control.value;
-          var block = formatTag(entry.tag, raw);
-          if (block) blocks.push(block);
-        });
-
-        if (tableValidationMessage) {
-          output.textContent = blocks.join('\n');
-          outputWrap.style.display = blocks.length ? 'block' : 'none';
-          hint.textContent = tableValidationMessage;
-          copyBtn.disabled = true;
-          return;
-        }
-
-        if (blocks.length === 0) {
+        var result = build();
+        if (!result.any) {
           output.textContent = '';
           outputWrap.style.display = 'none';
-          hint.textContent = 'Fill in at least one tag to generate the comment block.';
+          hint.textContent = 'Fill in the summary to generate the comment block.';
           copyBtn.disabled = true;
           return;
         }
-
-        output.textContent = blocks.join('\n');
-        outputWrap.style.display = 'block';
-        hint.textContent = set.pasteHint;
-        copyBtn.disabled = false;
+        output.textContent = result.text;
+        outputWrap.style.display = result.text ? 'block' : 'none';
+        hint.textContent = result.error || set.pasteHint;
+        copyBtn.disabled = !!result.error;
       }
 
       function fallbackCopy(text) {
@@ -844,9 +739,8 @@ r_Sbase (1,1) double = 100</pre>
         if (copyBtn.disabled) return;
         var text = output.textContent;
         var flash = function () {
-          var original = 'Copy';
           copyBtn.textContent = 'Copied!';
-          setTimeout(function () { copyBtn.textContent = original; }, 1200);
+          setTimeout(function () { copyBtn.textContent = 'Copy'; }, 1200);
         };
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(text).then(flash, function () {
