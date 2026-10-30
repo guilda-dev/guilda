@@ -118,6 +118,7 @@
     <h3>Layout of a network template</h3>
 <pre class="dev-tree">+network/@IEEE14bus/
 ├── IEEE14bus.m             classdef IEEE14bus &lt; PowerNetwork
+├── network/parameter.csv   Hz, baseMVA
 ├── bus/parameter.csv
 ├── branch/parameter.csv
 └── component/
@@ -127,6 +128,7 @@
     │   └── opf.csv
     └── load-power/</pre>
     <p>Component data folders are named after the <code>key</code> constant of the component class (e.g. <code>component.generator.park</code> has <code>key = "gen-park"</code>).</p>
+    <p>A template may also have a <code>controller/</code> folder with local controller data that its constructor adds after <code>PowerNetwork.import_csv</code>; for example <code>@IEEE68bus/controller/avr/parameter.csv</code> and <code>controller/pss/parameter.csv</code> hold one row per generator bus. <code>import_csv</code> and <code>export_csv</code> do not read or write this folder.</p>
 
     <h3>Layout of a model class</h3>
     <p>A model with several methods uses a class folder, with one method per file. Small models may be a single <code>classdef</code> file.</p>
@@ -197,10 +199,8 @@
       <tr><td><code>_GUILDAobject/+component/未+GFM/</code></td><td>Grid-forming inverter models under development</td><td><span class="dev-status">To be organized</span></td></tr>
       <tr><td><code>_GUILDAobject/+component/未+farm/</code></td><td>Solar and wind farm models under development</td><td><span class="dev-status">To be organized</span></td></tr>
       <tr><td><code>_GUILDAobject/+component/+load/history/</code></td><td>Older load models</td><td><span class="dev-status">To be organized</span></td></tr>
-      <tr><td><code>_GUILDAobject/+network/IEEE68bus/</code></td><td>CSV-based network not converted to a class folder</td><td><span class="dev-status">To be organized</span></td></tr>
-      <tr><td><code>_GUILDAobject/+network/IEEE9bus_past/</code></td><td>Older 9-bus network</td><td><span class="dev-status">To be organized</span></td></tr>
       <tr><td><code>_GUILDAobject/+network/@Ishizaki6Bus/branch_origin/</code></td><td>Original branch data</td><td><span class="dev-status">To be organized</span></td></tr>
-      <tr><td><code>@GUILDA/config/archive/</code>, <code>@DrawerNetDiagram/archive/</code></td><td>Already follow the rule</td><td><span class="dev-status is-ok">OK</span></td></tr>
+      <tr><td><code>@GUILDA/config/archive/</code>, <code>@DrawerNetDiagram/archive/</code>, <code>+network/archive/</code></td><td>Already follow the rule</td><td><span class="dev-status is-ok">OK</span></td></tr>
     </table>
   </main>
 </body>

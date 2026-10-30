@@ -15,7 +15,7 @@ classdef Bus < PowerSystemModel
 
     properties (SetAccess=protected)
         a_PowerNetwork                          % Layer Structure
-        a_Component                             % Layer Structure
+        a_Component (:,1) = cell(0,1)           % Layer Structure
         c_Vequilibrium      = 1;                % Steady State (owner; components read it)
     end
     properties (Hidden,SetAccess=protected)

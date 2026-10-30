@@ -67,6 +67,23 @@ assert(size(sys_nu.A,1) <= size(sys_all.A,1))
 assert(same_eigs(eig_finite(sys_nu), eig_finite(net.get_sys("Algorithm","Feedback","NonUnit",7)), 1e-6))
 
 
+%% Bus without components
+% 機器の無い母線 (build_9bus の B004, B007, B009) があっても変数マップ・線形化ができる
+n9 = DebugScript.helper.build_9bus();
+DebugScript.helper.quiet(@() n9.initialize);
+assert(iscell(n9.a_Bus{4}.a_Component) && isempty(n9.a_Bus{4}.a_Component))
+tab = n9.a_Bus{4}.get_variable_map();
+assert(isequal(tab.Kind, ["Vre";"Vim"]))
+tab = n9.get_variable_map();
+assert(nnz(tab.Bus == string(n9.a_Bus{4}.str_tag)) == 2)
+res = DebugScript.helper.quiet(@() n9.linearize);
+assert(isa(res, "LinearizationResult"))
+n_x9 = sum(cellfun(@(b) sum(cellfun(@(c) numel(c.sv_x), b.a_Component)), n9.a_Bus));
+e_kron = eig_finite(n9.get_sys("Algorithm","Kron"));
+assert(size(n9.get_sys("Algorithm","Kron").A, 1) == n_x9)
+assert(same_eigs(e_kron, eig_finite(n9.get_sys("Algorithm","DAE")), 1e-6))
+
+
 %% With local controllers
 % AVR/PSS を付けると制御器の状態が加わる (旧 Task15)
 net = new_net();

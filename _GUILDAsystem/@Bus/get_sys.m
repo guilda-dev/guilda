@@ -40,6 +40,9 @@ function sys = get_sys(obj, opt)
             sys{j} = obj.a_Component{j}.get_sys("port", "V2I", "full", opt.full, "Point", rv_point(c_idx{j}));
         end
     end
+    if isempty(sys)     % no components: no states, and the bus takes no current (I = 0)
+        sys = {ss(zeros(0), zeros(0,2), zeros(2,0), zeros(2))};
+    end
 
     Ax = tools.cellfun(@(ss) ss.A                 , sys);
     Bv = tools.cellfun(@(ss) ss.B(:,1:2)          , sys);

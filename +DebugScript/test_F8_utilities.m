@@ -377,13 +377,45 @@ assert(abs(max(real(e)) - (-0.5297416)) < 1e-6)
 
 
 %% Template IEEE14bus_lossless
+% IEEE14bus_lossless は IEEE14bus (case14) の全ブランチの抵抗 R を 0 にした系統
+% (線路の充電容量・母線シャント・変圧器タップはそのまま)
 net = DebugScript.helper.quiet(@() network.IEEE14bus_lossless);
-[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow); tab = res.tab_bus;
-assert(numel(net.a_Bus) == 14 && flag > 0)
-% 抵抗 0 の系統なので有効電力の損失は 0
+ref = DebugScript.helper.quiet(@() network.IEEE14bus);
+assert(numel(net.a_Bus) == 14 && numel(net.a_Branch) == 20)
 assert(all(cellfun(@(b) b.tab_parameter.dynamics.R, net.a_Branch) == 0))
+
+% R 以外のブランチのデータと、母線・機器のデータは IEEE14bus と同じ
+data = @(o) o.tab_parameter(:, setdiff(string(o.tab_parameter.Properties.VariableNames), "base"));
+for i = 1:20
+    d = net.a_Branch{i}.tab_parameter.dynamics;  dr = ref.a_Branch{i}.tab_parameter.dynamics;
+    assert(isequaln(removevars(d, "R"), removevars(dr, "R")))
+    assert(net.a_Branch{i}.key == ref.a_Branch{i}.key)
+end
+for i = 1:14
+    assert(isequaln(data(net.a_Bus{i}), data(ref.a_Bus{i})))
+    for j = 1:numel(ref.a_Bus{i}.a_Component)
+        assert(isequaln(data(net.a_Bus{i}.a_Component{j}), data(ref.a_Bus{i}.a_Component{j})))
+    end
+end
+
+% アドミタンス行列は純虚数、有効電力の損失は 0
+Y = net.get_admittance_matrix.Variables;
+assert(all(real(Y(:)) == 0))
+net.solver_ODE.Progress = "none";
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow); tab = res.tab_bus;
+assert(flag > 0)
 assert(abs(sum(tab.P)) < 1e-8)
+
+% 参照値 (このブランチで計算した値)
+V_ref = [1.06 1.045 1.01 1.0325439 1.031804 1.07 1.0695736 1.09 1.0652518 1.0616713 1.0640645 1.0636242 1.0617756 1.056307]';
+assert(max(abs(tab.V - V_ref)) < 1e-6)
 DebugScript.helper.quiet(@() net.initialize);
+e = eig(net.get_sys.A);
+e = e(abs(e) > 1e-6);
+assert(abs(max(real(e)) - (-0.594552)) < 1e-5)
+ev  = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+sol = DebugScript.helper.quiet(@() net.simulate([0,3], ev));
+assert(sol.odeResults.t(end) == 3)
 
 
 %% Template Ishizaki6Bus
@@ -418,7 +450,119 @@ assert(numel(net.a_Bus) == 3)
 assert(all(isfinite(net.cv_Vequilibrium)) && abs(net.a_Bus{1}.c_Vequilibrium) > 0)
 
 
+%% Template IEEE9bus keeps the v2 data
+% network.IEEE9bus は v2 の IEEE9bus_past (archive/IEEE9bus_past) の CSV を変換したもの
+net = DebugScript.helper.quiet(@() network.IEEE9bus);
+assert(numel(net.a_Bus) == 9 && numel(net.a_Branch) == 9)
+assert(net.tab_parameter.base.Hz == 60 && net.a_Bus{1}.l_isSlack)
+check_v2_network(net, fullfile(fileparts(which("network.IEEE9bus")), "..", "archive", "IEEE9bus_past"))
+
+% 潮流計算は Anderson & Fouad (Fig. 2.18, 丸めた値) の WSCC 9 母線の潮流解と一致
+net.solver_ODE.Progress = "none";
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);  tab = res.tab_bus;
+assert(flag > 0)
+V_lit   = [1.04 1.025 1.025 1.026 0.996 1.013 1.026 1.016 1.032]';
+deg_lit = [0 9.3 4.7 -2.2 -4.0 -3.7 3.7 0.7 2.0]';
+assert(max(abs(tab.V - V_lit)) < 1e-3)
+assert(max(abs(rad2deg(tab.Varg) - deg_lit)) < 0.05)
+assert(abs(tab.P(1) - 0.716) < 1e-3)
+
+DebugScript.helper.quiet(@() net.initialize);
+e = DebugScript.helper.finite_eigs(net.get_sys("Algorithm","Kron"));
+e = e(abs(e) > 1e-6);
+assert(abs(max(real(e)) - (-0.0069046)) < 1e-6)     % AVR・PSS 付きで安定
+ev  = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+sol = DebugScript.helper.quiet(@() net.simulate([0,3], ev));
+assert(sol.odeResults.t(end) == 3)
+Vfd = sol.odeResults.Bus(1).Component(1).U.Vfield;     % AVR が動作する
+assert(max(Vfd) - min(Vfd) > 1e-3)
+
+% LocalController=false では AVR・PSS を付けない
+net = DebugScript.helper.quiet(@() network.IEEE9bus(LocalController=false));
+assert(all(cellfun(@(b) isempty(b.a_Component) || isempty(b.a_Component{1}.a_LocalController), net.a_Bus)))
+
+
+%% Template IEEE68bus keeps the v2 data
+% network.IEEE68bus は v2 の IEEE68bus (archive/IEEE68bus) の CSV を変換したもの
+% (B. Pal and B. Chaudhuri, Robust Control in Power Systems, pp. 171-178)
+net = DebugScript.helper.quiet(@() network.IEEE68bus);
+assert(numel(net.a_Bus) == 68 && numel(net.a_Branch) == 83)
+assert(net.tab_parameter.base.Hz == 60 && net.a_Bus{16}.l_isSlack)
+check_v2_network(net, fullfile(fileparts(which("network.IEEE68bus")), "..", "archive", "IEEE68bus"))
+
+% v2 の CSV には潮流解が無いので、参照値はこのブランチで計算した値
+net.solver_ODE.Progress = "none";
+[res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);  tab = res.tab_bus;
+assert(flag > 0)
+assert(abs(tab.P(16) - 33.7953168) < 1e-6 && abs(sum(tab.P) - 1.6683168) < 1e-6)
+assert(abs(min(tab.V) - 0.8366601) < 1e-6 && abs(rad2deg(tab.Varg(39)) - (-39.290156)) < 1e-5)
+
+DebugScript.helper.quiet(@() net.initialize);
+e = DebugScript.helper.finite_eigs(net.get_sys("Algorithm","Kron"));
+e = e(abs(e) > 1e-6);
+assert(abs(max(real(e)) - (-0.0051275)) < 1e-6)     % AVR・PSS 付きで安定
+ev  = odeEventSet("fault", net, "TimeSpan", [0.2,0.25], "FaultBus", "B030");
+sol = DebugScript.helper.quiet(@() net.simulate([0,1], ev, TimeLimit=Inf));
+assert(sol.odeResults.t(end) == 1)
+
+
 % ---- local functions ----
+function check_v2_network(net, old_dir)
+% net のデータが v2 (network.build) の CSV フォルダ old_dir の値と同じかを調べる
+    tb = readtable(fullfile(old_dir, "bus.csv"), "TextType", "string");
+    tr = readtable(fullfile(old_dir, "branch.csv"));
+    tg = readtable(fullfile(old_dir, "generator_1axis.csv"), "TextType", "string");
+    ta = readtable(fullfile(old_dir, "avr_sadamoto2019.csv"));
+    tp = readtable(fullfile(old_dir, "pss.csv"));
+
+    % 母線: 電圧の設定値とシャント
+    for i = 1:height(tb)
+        pf = net.a_Bus{i}.tab_parameter.powerflow;  dy = net.a_Bus{i}.tab_parameter.dynamics;
+        assert(pf.V == tb.V_abs(i) && dy.Gshunt == tb.G_shunt(i) && dy.Bshunt == tb.B_shunt(i))
+    end
+    % ブランチ: tap 0 は pi、それ以外は pi_transformer (v2 の y は片端の値 = C)
+    for k = 1:height(tr)
+        br = net.a_Branch{k};  d = br.tab_parameter.dynamics;
+        assert(isequal(string(br.a_Bus{1}), string(net.a_Bus{tr.bus_from(k)})) && ...
+               isequal(string(br.a_Bus{2}), string(net.a_Bus{tr.bus_to(k)})))
+        assert(d.R == tr.x_real(k) && d.X == tr.x_imag(k) && d.C == tr.y(k))
+        if tr.tap(k) == 0
+            assert(br.key == "pi")
+        else
+            assert(br.key == "pi_transformer" && d.tap == tr.tap(k) && d.phase == tr.phase(k))
+        end
+    end
+    % 機器: 発電機 (gen-1axis, AVR_ST1, PSS1) と負荷 (load-impedance)
+    for i = 1:height(tb)
+        a_comp = net.a_Bus{i}.a_Component;
+        switch string(tb.SetClass(i))
+            case "generator_1axis"
+                gen = a_comp{1};  g = tg(tg.ID == tb.ID(i), :);
+                assert(numel(a_comp) == 1 && gen.key == "gen-1axis")
+                p = gen.tab_parameter.dynamics;
+                assert(isequal(p{1,["M","D","Xd","Xq","Xd_p","Td_p"]}, g{1,["M","D","Xd","Xq","Xd_p","Td_p"]}))
+                if ~ismember(string(tb.type(i)), ["slack","1"])
+                    assert(gen.tab_parameter.powerflow.P == tb.P_gen(i))
+                end
+                avr = gen.a_LocalController{1};  pss = avr.a_LocalController{1};
+                assert(isa(avr, "controller.avr.AVR_ST1") && isa(pss, "controller.pss.PSS1"))
+                a  = ta(ta.ID == g.ID, :);   q  = tp(tp.ID == g.ID, :);
+                pa = avr.tab_parameter.dynamics;  pp = pss.tab_parameter.dynamics;
+                assert(pa.kap == a.Ka && pa.tap == a.Te && pa.ttr == 0 && pa.kst == 0 && pa.tst == 0)
+                % v2 の PSS は Kpss/Tpss * Tpss*s/(1+Tpss*s) * ... なので kpss = Kpss/Tpss
+                assert(abs(pp.kpss - q.Kpss/q.Tpss) < 1e-12 && pp.tWS == q.Tpss)
+                assert(pp.tn1 == q.TL1p && pp.td1 == q.TL1 && pp.tn2 == q.TL2p && pp.td2 == q.TL2)
+            case "load_impedance"
+                assert(numel(a_comp) == 1 && a_comp{1}.key == "load-impedance")
+                pf = a_comp{1}.tab_parameter.powerflow;
+                assert(pf.P == -tb.P_load(i) && pf.Q == -tb.Q_load(i))
+            otherwise
+                assert(isempty(a_comp))
+        end
+    end
+end
+
+
 function id = error_id(fcn)
 % fcn を実行し、エラーの ID を返す (エラーにならなければ "")
     id = "";
