@@ -1,88 +1,90 @@
 classdef (Sealed = true) odeEventSet < auxiliary
+% Disturbance event of a time simulation (net.simulate).
+%
+% An event names a time span and what happens during it: a bus fault, a unit trip, an
+% offset of the initial states, or an input added to a component. Give the events to
+% net.simulate; the simulation is split into phases where the set of active events does
+% not change. An event refers to the network it was created for.
+%
+% <@Examples>
+% ```matlab
+% net = network.IEEE14bus();
+% net.initialize();
+% fault  = odeEventSet("fault", net, "TimeSpan", [1, 1.05], "FaultBus", "B008");
+% trip   = odeEventSet("trip",  net, "TimeSpan", [1, 2], "TripUnit", "SG1B002");
+% offset = odeEventSet("offset", net, "TimeSpan", 0, "OffsetUnit", "SG1B001", ...
+%                      "OffsetState", "delta", "OffsetValue", 0.1);
+% input  = odeEventSet("input", net, "TimeSpan", [1, 1.5], "InputUnit", "SG1B002", ...
+%                      "InputName", ["Pmech"; "Vfield"], "InputValue", {0.05; @(t) 0.01*t});
+% result = net.simulate([0, 10], fault, input);
+% ```
+%
+% See also odeSimulator, odeSimulationResult, PowerNetwork.simulate
 
-% DODEEVENTSET provides options for dynamic simulation in the form of a structure.
-%    EVENTSET = (Name1, Val1, Names2, Val2, ...) is a function that outputs options 
-% 　　for dynamic mutation in the form of a structure. Options can be specified 
-% 　　by selecting properties and assigning values, or by passing other structures as arguments. 
-%
-% ODEEVENTSET PROPERTIES
-%
-% TimeSpan - Simulation Time Span [ scalar or 1x2 double vecator ]
-%    This two-dimensional vector of positive double constants represents the integration time for a phase. 
-%    Since eventset outputs events within a time phase in structured format, when multiple events exist, 
-%    you must create a struct corresponding to each time event from the eventset function.
-%
-% OffsetUnit - Generator with Perturbation Applied to State Variables [ string scalar ]
-%    Specify the generator that applies perturbations to the state variables.
-% 　　You can also specify an integer scalar or vector, or a device tag.
-%
-% OffsetState - Perturbation-induced state [ string scalar or vector ]
-%    Specify the state variables to which perturbations are applied. State variables can be specified 
-%    by number or by name. Both scalar and vector specifications are accepted.
-%
-% OffsetValue - Perturbation Applied to The State [ double scalar or vector ]
-%    This property specifies perturbations applied to the state of equipment such as generators. 
-%    Perturbations are specified as a scalar or a vector depending on the number of state variables 
-%    to which the perturbation is applied. The specific state variables to which the perturbation 
-%    applied are specified later using OffsetState.
-%
-% FaultBus - Fault Bus [ string scalar or vector ]
-%    Specify the busbar causing the ground fault. Specify either the busbar number or the busbar tag. 
-%    Accepts input as a scalar or vector.
-%
-% TripUnit - Trip Component [ string scalar or vector ]
-%    Specify the device to be disassembled. You can specify the device's tag or number using a scalar or vector.
-%
-% InputUnit - Component to which an input is applied [ string scalar  ]
-%    Specify which machine to apply the input to when requesting an input response. 
-%    The term "machine" here refers to synchronous generators or synchronous phase-shifting machines.
-%
-% InputName - Component Input [ string scalar or vector ]
-%    Specify which input to focus on when implementing the input response. 
-%    For example, in the case of a synchronous generator, 
-%    specify either the mechanical input from the turbine or the field voltage.
-%
-% InputValue - Input Value [ double \ scalar or vector, function_handle ]
-%    When requesting an input response, specify the magnitude of the input using a scalar or a vector.
-%
-    properties (Access=private,Hidden)
+    properties (Access=private,Hidden) % Tag
         str_tag 
     end
 
-    properties (Access=public)
+    properties (Access=public) % Event
+        % [s] Time span of the event: [t_start, t_end], or t_start alone.
+        % An offset (OffsetUnit) applies at t_start; a fault, trip or input lasts from t_start
+        % to t_end.
+        % <@Type> double (1x1 or 1x2)
         TimeSpan    {mustBeRow, validateTimeSpanSize} = [0,10]
+
+        % Tag of the component whose initial states are offset.
         OffsetUnit  (1,1) string 
+
+        % Names of the states to offset (e.g. "delta", "omega").
         OffsetState (:,1) string 
+
+        % Offsets added to the states of OffsetState, in the same order.
         OffsetValue (:,1) double 
+
+        % Tags of the buses with a ground fault (voltage 0) during the event.
         FaultBus    (:,1) string 
+
+        % Tags of the components or global controllers disconnected during the event.
         TripUnit    (:,1) string         
+
+        % Tag of the component to which an input is added.
         InputUnit   (1,1) string
+
+        % Names of the inputs of InputUnit (e.g. "Pmech", "Vfield").
         InputName   (:,1) string
+
+        % Values added to the inputs of InputName, in the same order.
+        % A number, or a cell of numbers and function handles f(t) of the time since t_start.
+        % <@Type> double | cell | function_handle (n x 1)
         InputValue  (:,1) {mustBeA(InputValue, {'double','cell','function_handle'})}
     end
 
-    properties (Access=private)
+    properties (Access=private) % Simulation data
         odeNetwork        
         odeTimeSpan
         odeIteration (1,1) double = nan
     end
 
-    properties (Access=private)
+    properties (Access=private) % Index data
         sv_Btag
         sv_Ctag
         rv_Brep
         rv_Crep
     end
 
-    properties (SetAccess=private, Hidden)        
-        Ver (1,1) double = 1.1
+    properties (SetAccess=private, Hidden) % Version
+        Ver (1,1) double = 1.1 % Version of this class.
     end
 
     methods
         function obj = odeEventSet(tag, net, opt)
+        % Create an event for net.simulate.
+        %
+        % The Name-Value options are the public properties (TimeSpan, FaultBus, TripUnit,
+        % OffsetUnit, OffsetState, OffsetValue, InputUnit, InputName, InputValue).
             arguments
-                tag (1,1) string
-                net {mustBeA(net, 'PowerNetwork')}
+                tag (1,1) string % Name of the event, shown in the phase table.
+                net {mustBeA(net, 'PowerNetwork')} % Network the event belongs to.
                 opt.?odeEventSet
             end   
             obj.str_tag = tag;
