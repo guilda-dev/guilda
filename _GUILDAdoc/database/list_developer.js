@@ -31,7 +31,7 @@ const developerData = [
     },
 {
     title: "Coding: Class Documentation",
-    description: "Use canonical help-comment tags to document MATLAB classes, properties, and methods and validate generated documentation.",
+    description: "Write MATLAB help comments and three tags to document classes, properties, and methods, and check the generated reference.",
     link: "developer/class-documentation.html"
     }
 ];
