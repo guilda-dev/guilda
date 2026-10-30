@@ -80,7 +80,7 @@ function publish_doc(option)
             return
         end
     end
-    [r_status, str_out] = system(sprintf('git -C %s push origin %s', quote(str_root), str_branch));
+    [r_status, str_out] = system(sprintf('git -C %s push --no-progress origin %s', quote(str_root), str_branch));
     fprintf('%s', str_out)
     if r_status ~= 0
         error('GUILDA:publish_doc:PushFailed', 'git push failed. The commit stays on the local %s branch.', str_branch);
