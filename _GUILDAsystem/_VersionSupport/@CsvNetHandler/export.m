@@ -1,33 +1,24 @@
 function path = export(net, ModelName, opt)
-% <@Desc>
+% Write a network to a CSV model folder (v3 wrapper of net.export_csv).
+%
 % v3 entry point of the CSV export (deprecated: warns GUILDA:Deprecated:CsvNetHandlerExport).
 % Writes the folder <savepath>/@<ModelName> with the class file <ModelName>.m by
 % net.export_csv(fullfile(savepath, "@"+ModelName), Overwrite=Overwrite). Without
 % savepath a folder dialog opens (as in v3); version is the constant ver of the class file.
-% <@Role> Compatibility
-% <@Summary> v3 wrapper of net.export_csv.
-% <@Signatures>
-% [
-%   "path = CsvNetHandler.export(net, ModelName, Name, Value)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "net", "Type": "PowerNetwork", "Description": "Network to write.", "Required": true, "Default": "-"},
-%   {"Name": "ModelName", "Type": "string scalar", "Description": "Class name of the model.", "Required": false, "Default": "\"PowerNetwork\" + date and time"},
-%   {"Name": "savepath", "Type": "string scalar", "Description": "Parent folder of @ModelName.", "Required": false, "Default": "folder dialog"},
-%   {"Name": "Overwrite", "Type": "logical scalar", "Description": "Replace an existing folder.", "Required": false, "Default": "false"},
-%   {"Name": "version", "Type": "double scalar", "Description": "Constant ver of the class file.", "Required": false, "Default": "1"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "path", "Type": "string scalar", "Description": "The written model folder."}
-% ]
+%
+% <@Deprecated>
+% Use net.export_csv(fullfile(savepath, "@"+ModelName)) instead.
+%
+% See also PowerNetwork.export_csv
     arguments
-        net               (1,1) PowerNetwork
-        ModelName         (1,1) string  {mustBeValidVariableName} = "PowerNetwork"+string(datetime("now","Format","uuuuMMdd_HHmmss"))
-        opt.version       (1,1) double  = 1
-        opt.savepath      (1,1) string  {mustBeFolder} = uigetdir(fullfile(GUILDA.pwd,"_GUILDAexport"), "Select folder to save CSV folder")
-        opt.Overwrite     (1,1) logical = false
+        net               (1,1) PowerNetwork   % Network to write.
+        ModelName         (1,1) string  {mustBeValidVariableName} = "PowerNetwork"+string(datetime("now","Format","uuuuMMdd_HHmmss"))   % Class name of the model.
+        opt.version       (1,1) double  = 1   % Constant ver of the class file.
+        opt.savepath      (1,1) string  {mustBeFolder} = uigetdir(fullfile(GUILDA.pwd,"_GUILDAexport"), "Select folder to save CSV folder")   % Parent folder of @ModelName.
+        opt.Overwrite     (1,1) logical = false   % Replace an existing folder.
+    end
+    arguments (Output)
+        path   % The written model folder.
     end
     Deprecated("CsvNetHandlerExport");
     path = net.export_csv(fullfile(opt.savepath, "@"+ModelName), Overwrite=opt.Overwrite, ClassFile=true);

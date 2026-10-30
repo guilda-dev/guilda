@@ -1,24 +1,20 @@
 function opt = v3_bus_baseMVA(net, opt)
-% <@Desc>
+% Ignore the deprecated add_bus option baseMVA with a warning.
+%
 % v3 compatibility hook of PowerNetwork.add_bus: handles the removed baseMVA option.
 % A given value is ignored with the warning GUILDA:Deprecated:BusBaseMVA, or
 % GUILDA:Deprecated:BusBaseMVAMismatch when it differs from the system base
 % net.tab_parameter.base.baseMVA. The field is removed from opt.
-% <@Role> Compatibility
-% <@Summary> Ignore the deprecated add_bus option baseMVA with a warning.
-% <@Signatures>
-% [
-%   "opt = v3_bus_baseMVA(net, opt)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "net", "Type": "PowerNetwork", "Description": "Network the bus is added to.", "Required": true, "Default": "-"},
-%   {"Name": "opt", "Type": "struct", "Description": "Options of add_bus.", "Required": true, "Default": "-"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "opt", "Type": "struct", "Description": "opt without the baseMVA field."}
-% ]
+%
+% Name-Value options:
+%
+% - `net` — Network the bus is added to.
+% - `opt` — Options of add_bus.
+%
+% See also PowerNetwork.add_bus
+    arguments (Output)
+        opt   % opt without the baseMVA field.
+    end
     if ~isfield(opt, "baseMVA")
         return
     end

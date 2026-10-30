@@ -1,25 +1,35 @@
 classdef ComponentBaseView < handle
-% COMPONENTBASEVIEW deprecated view of the removed Component para_base (Hz).
-%    comp.para_base and comp.tab_parameter.base return this view so that old
-%    scripts keep working. The frequency is held by the network:
-%      read  Hz -> comp.r_Hz (warning GUILDA:Deprecated:ComponentBaseHz)
-%      set   Hz -> sets net.tab_parameter.base.Hz of the component's network
-%                  (warning GUILDA:Deprecated:ComponentBaseHzSet); error when
-%                  the component is not attached to a network.
-%    The static methods hold the logic of the v3 compatibility hooks in Component.m:
-%      add_column    : adds the "base" column (this view) to comp.tab_parameter
-%      remove_column : drops it before comp.tab_parameter = tab is applied
-%      check_assign  : comp.para_base = value accepts only this view
+% Deprecated view of the removed Component property para_base (Hz).
+%
+% comp.para_base and comp.tab_parameter.base return this view so that old scripts keep
+% working. The frequency is held by the network:
+%
+% - reading Hz returns comp.r_Hz (warning GUILDA:Deprecated:ComponentBaseHz)
+% - setting Hz sets net.tab_parameter.base.Hz of the network of the component (warning
+%   GUILDA:Deprecated:ComponentBaseHzSet); it is an error when the component is not
+%   attached to a network.
+%
+% The static methods hold the logic of the v3 compatibility hooks in Component.m:
+% `add_column` adds the "base" column (this view) to comp.tab_parameter,
+% `remove_column` drops it before `comp.tab_parameter = tab` is applied, and
+% `check_assign` accepts only this view for `comp.para_base = value`.
+%
+% <@Deprecated>
+% Use comp.r_Hz to read the frequency and net.tab_parameter.base.Hz to set it.
+%
+% See also Component, PowerNetwork
+
     properties (Access=private)
         a_Comp
     end
-    properties (Dependent)
-        Hz
-        tab_parameter
+    properties (Dependent) % Parameter
+        Hz              % [Hz] Nominal frequency of the network of the component.
+        tab_parameter   % One-column table with Hz.
     end
 
     methods
         function obj = ComponentBaseView(comp)
+            % Create the view for the component comp.
             obj.a_Comp = comp;
         end
         function Hz = get.Hz(obj)
@@ -47,10 +57,12 @@ classdef ComponentBaseView < handle
 
     methods (Static)
         function tp = add_column(comp, tp)
-            % tab_parameter of a component, with the deprecated "base" column first
+            % Return the tab_parameter of a component with the deprecated "base" column first.
             tp = [table(ComponentBaseView(comp), 'VariableNames', "base"), tp];
         end
         function tp = remove_column(tp)
+            % Remove the "base" column from a tab_parameter table.
+            %
             % "base" is this view (a handle): an edit of comp.tab_parameter.base.Hz
             % has already been forwarded to the network.
             if ismember("base", string(tp.Properties.VariableNames))
@@ -58,7 +70,9 @@ classdef ComponentBaseView < handle
             end
         end
         function check_assign(val)
-            % comp.para_base.Hz = x is forwarded by the view itself (it is a handle)
+            % Accept only this view for comp.para_base = value.
+            %
+            % comp.para_base.Hz = x is forwarded by the view itself (it is a handle).
             if ~isa(val, "ComponentBaseView")
                 error('GUILDA:Deprecated:ComponentBaseHz', '%s', Deprecated("ComponentBaseHz"));
             end
