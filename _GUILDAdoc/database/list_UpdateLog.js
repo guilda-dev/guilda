@@ -178,5 +178,47 @@ const updateLogData = [
     "date": "2026-10-30",
     "type": "fixed",
     "content": "net.linearize and get_sys work with buses that have no components. GUILDA.dictionary works from any current folder. The help of get_ss states the state order of each algorithm. The startup no longer rewrites unchanged generated files. Removed: the unused Bus.l_isNonUnit and the unimplemented GUILDA.import_MATPOWER (use PowerNetwork.import_matpower)."
+  },
+  {
+    "title": "Simulation of phases at rest",
+    "date": "2026-10-30",
+    "type": "fixed",
+    "content": "Simulations whose phases start at rest no longer stop at t = 0 in large networks (e.g. network.IEEE68bus(LocalController=false)). When the solver stops, output.message names the phase, its time interval and the solver's message; an error during a phase stops with GUILDA:odeSimulator:PhaseFailed. GUILDA.dictionary no longer lists the classes in archive folders."
+  },
+  {
+    "title": "OPF customization with set_opffcn",
+    "date": "2026-10-30",
+    "type": "added",
+    "content": "Component, Bus, Branch and PowerNetwork have set_opffcn and reset_opffcn. Cost=@(v, p) replaces the default cost of the object, Constraint=@(v, p) struct(name, constraint) adds named constraints whose duals are in result.lambda.Constraints, and DefaultConstraint=false removes the default limits. On PowerNetwork the handles see the variables of every object by tag. These edits do not require net.initialize()."
+  },
+  {
+    "title": "OPF load cost and DC susceptance",
+    "date": "2026-10-30",
+    "type": "changed",
+    "content": "The default OPF cost of loads is now 0, also in the bundled networks, so r_cost is the generation cost only; a load with finite P/Q bounds is dispatched within them. DC OPF uses the MATPOWER branch susceptance 1/(X*tap) with the phase shift, so DC OPF results change for branches with resistance, taps or phase shifters. A Solver that cannot solve the problem stops with GUILDA:OptimalPowerFlow:UnsupportedSolver, which lists the usable solvers."
+  },
+  {
+    "title": "Controller inputs by name and local_LQR",
+    "date": "2026-10-30",
+    "type": "added",
+    "content": "A local controller reads its component by the names of its inputs: an output of that name, otherwise a state; the reserved inputs Xall and Yall read all states or all outputs. controller.local_LQR works again: it takes the place of an AVR, and net.initialize computes its gain from Q and R."
+  },
+  {
+    "title": "get_sys of components and buses",
+    "date": "2026-10-30",
+    "type": "changed",
+    "content": "comp.get_sys and bus.get_sys have the same layout on every layer: inputs [port; component inputs; controller inputs], outputs [port; component outputs; controller outputs]. States are no longer outputs, the option full is ignored, and an output named like a state is labelled Y_<name>. net.get_sys and net.linearize are unchanged."
+  },
+  {
+    "title": "Simulation results in variable-map order",
+    "date": "2026-10-30",
+    "type": "changed",
+    "content": "odeSimulationResult stores the trajectory in the order of net.get_variable_map() (rv_t, tab_variable, rm_variable), including the states of local and global controllers; odeResults keeps its layout. New result.get_point(t) gives the state at a time, and net.linearize(Point={sim, t}) now works with controllers."
+  },
+  {
+    "title": "net.initialize returns a result",
+    "date": "2026-10-30",
+    "type": "changed",
+    "content": "net.initialize now returns [result, flag, output] (was [flag, tab, output]; result.tab_bus is the old tab) and takes Method=\"powerflow\", \"OPF\" or \"equilibrium\". Other options go to the power flow or OPF. A power flow that does not converge or an infeasible OPF is an error, and the network is not changed. The option methods and its old values are deprecated (GUILDA:Deprecated:InitializeMethods, InitializeMethodValue)."
   }
 ];

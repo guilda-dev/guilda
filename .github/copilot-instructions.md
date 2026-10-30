@@ -1,0 +1,211 @@
+# japanese feedback
+Please provide your feedback in Japanese.
+
+# Project Overview
+This software is designed with object-oriented programming (OOP).
+Its functions include power system modeling, power flow analysis, OPF,
+approximate linearization, eigenvalue analysis, and time-domain simulation.
+
+# Project Rules
+This section summarizes the For Developer pages in `_GUILDAdoc/developer/`,
+which are the source of truth (`project-management.html`, `git-workflow.html`,
+`folder-structure.html`, `naming-conventions.html`, `class-documentation.html`).
+
+## Branch Model
+- `main`: released, stable code. Every release is tagged `vX.Y` on the merge commit.
+- `versionX.Y`: integration branch for the next release (currently `version4.0`), cut from `main` and merged into `main` at release.
+- Work branches: one per Issue, cut from the integration branch and merged back into it by pull request.
+- Version number `X.Y`: increase X for changes that break existing scripts, Y otherwise.
+- When a public name changes, keep the old name working through a wrapper in `_GUILDAsystem/_VersionSupport/` for at least one major version.
+- Do not commit directly to `main`, force-push to `main` or the integration branch, or use other branch prefixes such as `dev/` or `develop/`.
+- Release only with `bash .claude/release/release.sh X.Y` from a clean `versionX.Y`; never merge or cherry-pick into `main` by hand or on GitHub. Then start the next integration branch with `bash .claude/release/start-version.sh X.Y PREV`.
+- Assistant config (`.claude/`, `.codex/`, `.github/copilot-instructions.md`) is tracked on development branches only and never lands in `main`: `release.sh` removes it, `start-version.sh` restores it.
+
+## Branch Names
+- Format: `<type>/<issue>-<slug>`, e.g. `feature/42-grid-forming-inverter`.
+- `<type>`: `feature` (new functions, classes, models), `fix` (bug fixes), `refactor` (restructuring without changing behavior), `docs` (help comments, documentation pages, tutorials), `test` (test and debug scripts).
+- `<issue>`: GitHub Issue number. Create the Issue first.
+- `<slug>`: short English summary, lowercase words joined by hyphens (`a-z`, `0-9`, `-`).
+- Keep the whole name under about 50 characters.
+
+## Commit Messages
+- First line: `<type>: <summary>`, e.g. `fix: use bus index instead of position in OPF constraints`.
+- `<type>`: `feat`, `fix`, `refactor`, `docs`, `test`, or `chore` (settings, `.gitignore`, file moves, other maintenance).
+- Summary in English, starts with a lowercase imperative verb, no trailing period, first line ≤ 72 characters.
+- Add a body after a blank line when the reason is not obvious.
+- One commit contains one logical change. A branch may mix types (e.g. `feat:` and `docs:` on a `feature/` branch).
+
+## Issue → Branch → Pull Request
+1. Open an Issue: English title stating the goal; background, expected result, and steps to reproduce for bugs; one type label (`feature`, `fix`, `refactor`, `docs`, `test`). Split an Issue that cannot be finished in one pull request.
+2. Create the work branch from the integration branch.
+3. Commit with `<type>: <summary>` messages. Keep the branch up to date by merging the integration branch into it.
+4. Open a pull request into the integration branch. The title uses `<type>: <summary>`; the description contains `Closes #<issue>`.
+5. After review, merge and delete the work branch.
+
+## Folder Placement
+- MATLAB prefixes:
+  - `@Name/`: class folder; `Name.m` holds the `classdef`, every other file is a method.
+  - `+name/`: package; contents are called with a dotted name (`+component/+generator/@park` → `component.generator.park`).
+  - `private/`: visible only from the parent folder or class.
+  - `_name/`: plain grouping folder, put on the path explicitly by `@GUILDA/config/ListPath.txt`.
+  - No prefix inside a class or package folder: not on the path; data or archived code only.
+- `_GUILDAsystem/` must not depend on any concrete model in `_GUILDAobject/`.
+- Where new files go:
+  - New generator, load, branch, or controller model → `_GUILDAobject/+<package>/` (sub-package when a family shares a base class).
+  - New network template → `_GUILDAobject/+network/@Name/` with `bus/`, `branch/`, `component/<key>/` data folders.
+  - Change to the model framework → `_GUILDAsystem/@<CoreClass>/`.
+  - New analysis or support class → `_GUILDAsystem/_auxiliary/@Name/`, inheriting from `auxiliary`.
+  - Helper used by one class only → `<that class>/private/`; otherwise → `_GUILDAsystem/+tools/`.
+  - Renamed or removed public API → wrapper under the old name in `_GUILDAsystem/_VersionSupport/`.
+  - New tutorial → `_GUILDAtutorial/`, registered in `_GUILDAdoc/database/list_Tutorials.js`.
+  - Retired code kept for reference → `archive/` next to its original location.
+
+## Generated Files (Do Not Edit or Commit)
+- `_GUILDAsystem/@Bus/add_component.m`, `_GUILDAsystem/@Bus/replace_component.m`, `_GUILDAsystem/@PowerNetwork/add_branch.m`: generated from the `.template` files next to them. Edit the `.template`.
+- `_GUILDAdoc/database/list_Classes.js`, `_GUILDAdoc/database/GUILDAsystem/`, `_GUILDAdoc/database/GUILDAobject/`: generated by `GUILDA.doc("update", true)`. Edit the help comments in the MATLAB source.
+- `@GUILDA/user/`: per-user settings written by `GUILDA.setting`. Never commit.
+
+## Keeping Documentation Current
+- Public class, property, or method changed → update its help comment tags (see `class-documentation.html`).
+- Folder layout changed → update `folder-structure.html`.
+- Tutorial changed → update `_GUILDAdoc/database/list_Tutorials.js`.
+- User-visible feature in a release → update `_GUILDAdoc/database/list_UpdateLog.js`.
+- Developer rule changed → update the matching For Developer page.
+
+## Definition of Done
+Check before requesting a review:
+- `>> GUILDA` starts without errors.
+- The affected tutorials or `+DebugScript` tasks run.
+- New and changed code follows the naming conventions and the placement rules.
+- Public members have help comment tags, and `GUILDA.doc("update", true, "strict", true)` reports no errors.
+- No generated files or personal settings are committed.
+- The pull request title follows `<type>: <summary>` and the description contains `Closes #<issue>`.
+
+# Coding Convention (Naming Convention)
+Source of truth: `_GUILDAdoc/developer/naming-conventions.html`.
+
+## Variable Names
+Variable names follow **`[variableType][size]_[variableDescription]`**.
+
+### Variable Type (First Prefix)
+- `c`: complex
+- `r`: real
+- `l`: logical
+- `s`: string
+- `f`: function handle (cell array if the variable itself is an array)
+- `i`: index
+- `n`: count
+
+### Size (Second Prefix)
+- *(none)*: scalar
+- `v`: column vector
+- `r`: row vector
+- `m`: matrix
+
+### Description
+- Only letters (`a-z`, `A-Z`): no numbers or symbols.
+
+### Naming Examples
+- **`cv_Vequilibrium`**: [c: complex] + [v: column vector] + [_Vequilibrium], a complex-valued vector of equilibrium voltages
+- **`lv_faultflag`**: [l: logical] + [v: column vector] + [_faultflag]
+- **`cv_SGvoltage`**: [c: complex] + [v: column vector] + [_SGvoltage]
+- **`im_solution`**: [i: index] + [m: matrix] + [_solution], a matrix of indices for an analysis result
+- **`lm_xresponse`**: [l: logical] + [m: matrix] + [_xresponse]
+- **`r_gain`**: [r: real] + [none: scalar] + [_gain]
+
+## Exception Rules (Fixed Prefixes)
+- **Table type**: `tab_` + [variable description], e.g. `tab_bus_data`. Regardless of argument or output count.
+- **GUILDA-specific class (cell array)**: `a_` + [ClassName], e.g. `a_Controller`. A cell array of GUILDA class objects, named after the class.
+- **Parameter class**: `para_` + [data description], e.g. `para_generator`. Only for properties holding GUILDA's `Parameter` class.
+
+# How to Document Classes
+Source of truth: `_GUILDAdoc/developer/class-documentation.html`.
+`GUILDA.doc("update", true)` reads `% <@TagName>` comments and MATLAB reflection metadata and writes the documentation database.
+
+## Writing Tags
+- Tag names are exact and case-sensitive: `<@Summary>` is a tag; `<Summary>` and `<@ Summary>` are plain text; `<@summary>` is an unknown tag.
+- A tag's value runs until the next tag or the end of the comment block. After `%` and one space are removed, the rest of each line is kept (leading spaces, blank lines, text-art alignment).
+- Where the comment block is read from:
+  - Class: the lines right after `classdef`.
+  - Property: the lines right above the declaration.
+  - Method: the lines after `function`, in a separate method file `<method>.m` next to the class file. A method written inside the `classdef` file has no such file and falls back to MATLAB help, then reflection.
+
+## Tags per Target
+- Class (8): `Summary`, `Desc`, `Role`, `Constructor`, `Notes`, `SeeAlso`, `Since`, `Deprecated`
+- Property (12): `Summary`, `Desc`, `Role`, `Type`, `Size`, `Unit`, `Default`, `Constraints`, `Notes`, `SeeAlso`, `Since`, `Deprecated`
+- Method (13): `Summary`, `Desc`, `Role`, `Signatures`, `Parameters`, `Returns`, `Calls`, `Examples`, `Notes`, `Throws`, `SeeAlso`, `Since`, `Deprecated`
+- Old tag names are not read: `Abst`, `Description`, `varargin`, `varargout`, `DetailsCode`, `Example`, `Seealso`. The exporter reports each one with its replacement (`Summary`, `Desc`, `Parameters`, `Returns`, `Notes`, `Examples`, `SeeAlso`): an error under `"strict", true`, a warning otherwise.
+
+## Value Shapes
+- `Summary`, `Desc`, `Notes`, and other text tags: free text; newlines, spaces, and indentation are kept.
+- `Signatures`, `Examples`, `SeeAlso`: JSON array of strings.
+- `Parameters`, `Returns`: JSON object or array of objects. `Parameters` fields: `Name`, `Kind`, `Type`, `Unit`, `Description`, `Required`, `Default`, `Constraints`; name-value options use `"Kind": "NameValue"`. `Returns` fields: `Name`, `Type`, `Unit`, `Description`.
+- `Calls`: JSON array of `{Class, Method, Condition}` objects; must start with `[`. Use the fully qualified MATLAB class name in `Class` and leave `Condition` empty for an unconditional call.
+- `Summary` is one sentence for reference tables; `Desc` is the full text for the detail page and does not replace a missing `Summary`.
+- Leave an optional tag empty when it does not apply. Structured JSON must begin with `[` or `{`: no MATLAB arrays or cell arrays.
+
+## Examples
+```matlab
+classdef MyClass
+    % <@Summary> Updates subsystem states and evaluates utility signals.
+    % <@Desc> Long-form explanation of responsibilities and intended use.
+    % <@Role> CoreComponent
+    % <@Constructor> obj = MyClass(r_gain, s_label)
+    % <@SeeAlso> ["PowerNetwork", "Component"]
+    % <@Since> 4.2
+
+    properties
+        % <@Summary> Gain applied to input/output calculations.
+        % <@Role> simulate
+        % <@Type> double
+        % <@Size> 1x1
+        % <@Unit> pu
+        % <@Default> 1.0
+        r_gain
+    end
+end
+```
+
+```matlab
+function rv_y = calculate_output(obj, rv_u, r_gain)
+% <@Summary> Scale an input vector.
+% <@Desc> Computes an output vector using a configurable scalar gain.
+% <@Signatures>
+% ["rv_y = obj.calculate_output(rv_u, r_gain)"]
+% <@Parameters>
+% [
+%   {"Name": "rv_u", "Kind": "Positional", "Type": "double vector", "Unit": "pu",
+%    "Description": "Input signal vector.", "Required": true, "Default": "-",
+%    "Constraints": "finite column vector"}
+% ]
+% <@Returns>
+% [{"Name": "rv_y", "Type": "double vector", "Unit": "pu", "Description": "Scaled output."}]
+% <@Examples>
+% ["```matlab\nrv_y = obj.calculate_output(rv_u, 2.0);\n```"]
+% <@Throws> Errors when the input and gain dimensions are incompatible.
+    rv_y = r_gain * rv_u;
+end
+```
+
+## Validation
+- Warnings: unknown or duplicate tag (the last duplicate wins); class with neither `Summary` nor `Desc`; public, non-hidden method defined by the class with neither `Summary` nor `Desc`.
+- Errors: malformed structured JSON; class reflection or file export failure.
+- Check with `GUILDA.doc("update", true, "open", false, "strict", true)`; strict mode fails on errors.
+
+---
+
+# Design and Implementation Guidelines
+
+## Class Constructors
+- Even when called without arguments (`nargin == 0`), constructors must initialize instances with default values.
+
+```matlab
+methods
+    function obj = MyClass(arg1)
+        arguments
+            arg1 = 0
+        end
+        obj.r_value = arg1;
+    end
+end
+```

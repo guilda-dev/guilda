@@ -21,7 +21,7 @@ function [result, flag, output] = linearize(obj, varargin)
 % [
 %   {"Name": "Algorithm", "Type": "\"Kron\" | \"Feedback\" | \"DAE\"", "Description": "Default reduction of result.get_ss() (net.solver_LIN.Algorithm).", "Required": false, "Default": "net.solver_LIN.Algorithm"},
 %   {"Name": "NonUnit", "Type": "double row", "Description": "Indices of buses treated as non-unit buses by \"Feedback\" (net.solver_LIN.NonUnit).", "Required": false, "Default": "net.solver_LIN.NonUnit"},
-%   {"Name": "Point", "Type": "[] | double vector | cell {sim, t}", "Description": "Point of the linearization: [] for the equilibrium, the values in the order of net.get_variable_map(), or {sim, t} for the state of a simulation result at time t (net.solver_LIN.Point).", "Required": false, "Default": "net.solver_LIN.Point"},
+%   {"Name": "Point", "Type": "[] | double vector | cell {sim, t} or {sim, t, Side}", "Description": "Point of the linearization: [] for the equilibrium, the values in the order of net.get_variable_map(), or {sim, t} for the state of a simulation result at time t (sim.get_point(t); {sim, t, \"before\"} at a phase boundary takes the value before the event) (net.solver_LIN.Point).", "Required": false, "Default": "net.solver_LIN.Point"},
 %   {"Name": "Plot", "Type": "logical scalar", "Description": "Call result.Plot (eigenvalue map) after the linearization.", "Required": false, "Default": "false"}
 % ]
 % <@Returns>

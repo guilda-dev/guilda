@@ -355,14 +355,16 @@ classdef (Sealed = true) odeSimulator < auxiliary
                         a_LC1 = a_comp{j}.a_LocalController{1};
                         set_idx(a_LC1);                                                
 
-                        a_LC1.iv_odeY = a_comp{j}.iv_odeU( a_comp{j}.sv_u==a_LC1.sv_y );                        
+                        % iv_odeY(k): the input driven by the output sv_y(k), by name
+                        [~, iv_y] = ismember(a_LC1.sv_y, a_comp{j}.sv_u);
+                        a_LC1.iv_odeY = a_comp{j}.iv_odeU(iv_y);
 
                         if ~isempty(a_LC1.a_LocalController)
                             a_LC2 = a_LC1.a_LocalController{1};
                             set_idx(a_LC2);                                      
 
-                            a_LC2.iv_odeY = a_LC1.iv_odeU( a_LC1.sv_u==a_LC2.sv_y );
-                            a_comp{j}.iv_odeY = a_LC2.iv_odeU;
+                            [~, iv_y] = ismember(a_LC2.sv_y, a_LC1.sv_u);
+                            a_LC2.iv_odeY = a_LC1.iv_odeU(iv_y);
                         end
                     end                    
                 end
@@ -570,10 +572,26 @@ classdef (Sealed = true) odeSimulator < auxiliary
 
                             
                             odeJac(idx_U_LC2,idx_U_LC2) = odeJac(idx_U_LC2,idx_U_LC2) + eye(length(idx_U_LC2));
-
-                            odeJac(idx_Y, rh) = odeJac(idx_Y, rh) + [-Cyx, -Dyu, -Dyv, -Dyi];
                             
                         end 
+
+                        % Inputs of the controllers read on the component by name (iv_obsY:
+                        % its outputs, iv_obsX: its states)
+                        c_LC = [{a_LC1}; a_LC1.a_LocalController(1:min(1,end))];
+                        for k = 1:numel(c_LC)
+                            con = c_LC{k};
+                            lv_Y = con.iv_obsY > 0;
+                            if any(lv_Y)
+                                iv_y = con.iv_obsY(lv_Y);
+                                odeJac(con.iv_odeU(lv_Y), rh) = odeJac(con.iv_odeU(lv_Y), rh) ...
+                                                              + [-Cyx(iv_y,:), -Dyu(iv_y,:), -Dyv(iv_y,:), -Dyi(iv_y,:)];
+                            end
+                            for m = reshape(find(con.iv_obsX > 0), 1, [])
+                                idx_m = con.iv_odeU(m);
+                                idx_x = idx_X(con.iv_obsX(m));
+                                odeJac(idx_m, idx_x) = odeJac(idx_m, idx_x) - 1;
+                            end
+                        end
 
                         idx_X_LC1 = a_LC1.iv_odeX;
                         idx_U_LC1 = a_LC1.iv_odeU;

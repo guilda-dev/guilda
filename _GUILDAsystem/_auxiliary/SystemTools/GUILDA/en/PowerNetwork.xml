@@ -10,6 +10,13 @@
         <entry key="BusHasControlledUnits">The components {0} on the removed bus are controlled by the global controller ''{1}''.&#xA;Remove the global controller first with net.remove_global_controller(TAG).</entry> 
         <entry key="GconTagInUse">A global controller with the tag ''{0}'' is already in ''{1}''.&#xA;Give the new controller another tag, or remove the existing one first with net.remove_global_controller(TAG).</entry> 
         <entry key="GconNotFound">No global controller with the tag ''{0}'' was found in ''{1}''.</entry> 
+        <entry key="InitializeMethod">The Method of net.initialize must be one of {0}.</entry>
+        <entry key="InitializePairs">Options for net.initialize must be given as Name-Value pairs, e.g. net.initialize(Method="OPF").</entry>
+        <entry key="InitializeEquilibriumOption">Unknown option ''{0}'' for net.initialize(Method="equilibrium"). Valid options: Method.</entry>
+        <entry key="InitializePowerflowFailed">net.initialize(Method="powerflow") stopped: the power flow did not converge ({0}).&#xA;The network was not changed. Check tab_parameter.powerflow of the buses and components, or change the solver settings, e.g. net.initialize(MaxIteration=...) or net.solver_PF.Method = "dynamic".</entry>
+        <entry key="InitializeOPFFailed">net.initialize(Method="OPF") stopped: the AC optimal power flow was not solved ({0}).&#xA;The network was not changed. Relax the constraints (tab_parameter.operation of the buses, components and branches), change the solver settings (e.g. MaxIteration, Solver), or use net.initialize(Method="powerflow").</entry>
+        <entry key="InitializeEquilibriumFailed">net.initialize(Method="equilibrium") stopped: the equilibria of the components do not satisfy the network equations (max |Y*V-I| = {0}).&#xA;The network was not changed. Use net.initialize(Method="powerflow") or net.initialize(Method="OPF").</entry>
+        <entry key="InitializeNoEquilibrium">net.initialize(Method="equilibrium") stopped: the equilibrium of ''{0}'' is not set.&#xA;The network was not changed. Run net.initialize(Method="powerflow") or net.initialize(Method="OPF") first.</entry>
         <entry key="SimulateArguments">net.simulate takes the time span, then the events (odeEventSet), then Name-Value options: net.simulate([t0, tend], ev1, ev2, ..., Name, Value). Argument {0} is a {1}.</entry>
     </message>
 </rsccat>

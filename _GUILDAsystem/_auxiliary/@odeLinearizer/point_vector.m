@@ -8,14 +8,13 @@ function [rv_point, l_equilibrium] = point_vector(layer, Point)
 % - `[]`: the equilibrium (states, inputs and bus voltages set by net.initialize);
 %   l_equilibrium is true.
 % - vector: used as it is; its length must be the height of the variable map.
-% - `{sim, t}`: the values of the simulation result sim at time t (linear interpolation
-%   between output times; at an event time, the value after the event).
-%   A result class with a method rv = get_point(sim, t, tab_map), which returns
-%   the values of the rows of tab_map, is read through that method; an
-%   odeSimulationResult is read directly (see below).
+% - `{sim, t}`: the values of the simulation result sim at time t, read through its method
+%   rv = sim.get_point(t, tab_map), which returns the values of the rows of tab_map
+%   (odeSimulationResult.get_point: linear interpolation between output times; at a phase
+%   boundary, the value after the event).
+% - `{sim, t, Side}`: the same, with sim.get_point(t, tab_map, Side=Side); Side "before"
+%   takes the value before the event at a phase boundary.
 %
-% An odeSimulationResult does not store the states of local or global controllers, so a
-% layer that has controllers stops with GUILDA:odeLinearizer:PointUnavailable.
 % The model is not changed.
 %
 % Inputs:
@@ -43,19 +42,20 @@ function [rv_point, l_equilibrium] = point_vector(layer, Point)
     else
         sim = Point{1};
         t   = Point{2};
-        if ismethod(sim, "get_point")
-            rv_point = sim.get_point(t, tab_map);
-            rv_point = double(rv_point(:));
-            if numel(rv_point) ~= n_var
-                error("GUILDA:odeLinearizer:PointSize", ...
-                      "%s.get_point returned %d values for %d rows of the variable map.", ...
-                      class(sim), numel(rv_point), n_var)
-            end
-        elseif isa(sim, "odeSimulationResult")
-            rv_point = assemble(layer, @(c) simulation_comp(c, sim, t), @(b) simulation_bus(b, sim, t), @simulation_gc);
-        else
+        if ~ismethod(sim, "get_point")
             error("GUILDA:odeLinearizer:PointType", ...
-                  "Point={sim, t} needs a simulation result (odeSimulationResult), not a %s.", class(sim))
+                  "Point={sim, t} needs a simulation result with a get_point method (odeSimulationResult), not a %s.", class(sim))
+        end
+        if numel(Point) == 3
+            rv_point = sim.get_point(t, tab_map, Side=Point{3});
+        else
+            rv_point = sim.get_point(t, tab_map);
+        end
+        rv_point = double(rv_point(:));
+        if numel(rv_point) ~= n_var
+            error("GUILDA:odeLinearizer:PointSize", ...
+                  "%s.get_point returned %d values for %d rows of the variable map.", ...
+                  class(sim), numel(rv_point), n_var)
         end
     end
 end
@@ -104,62 +104,6 @@ end
 
 function rv = equilibrium_gc(gc)
     rv = reshape(gc.rv_Xequilibrium, [], 1);
-end
-
-
-% ---- odeSimulationResult ----
-function rv = simulation_comp(comp, sim, t)
-    if ~isempty(comp.a_LocalController)
-        error("GUILDA:odeLinearizer:PointUnavailable", ...
-              "odeSimulationResult does not store the states of the local controllers of '%s'. " + ...
-              "Give Point as a vector in the order of get_variable_map().", string(comp.str_tag))
-    end
-    [i, j] = indices(comp.a_Bus, comp);
-    s_comp = sim.odeResults.Bus(i).Component(j);
-    rv = [value_at(sim, s_comp.X{:,:}, t).'; simulation_bus(comp.a_Bus, sim, t); value_at(sim, s_comp.U{:,:}, t).'];
-end
-
-function V = simulation_bus(bus, sim, t)
-    i = indices(bus, []);
-    V = value_at(sim, sim.odeResults.Bus(i).V{:,:}, t).';
-end
-
-function rv = simulation_gc(gc)
-    error("GUILDA:odeLinearizer:PointUnavailable", ...
-          "odeSimulationResult does not store the states of the global controller '%s'. " + ...
-          "Give Point as a vector in the order of net.get_variable_map().", string(gc.str_tag))
-    rv = []; %#ok<UNRCH>
-end
-
-function [i, j] = indices(bus, comp)
-% Position of the bus in its network and of comp in the bus (the result is indexed so)
-    net = bus.a_PowerNetwork;
-    if isempty(net)
-        error("GUILDA:odeLinearizer:PointUnavailable", ...
-              "Bus '%s' is not in a network, so it cannot be found in the simulation result.", string(bus.str_tag))
-    end
-    i = find(cellfun(@(b) b == bus, net.a_Bus), 1);
-    j = [];
-    if ~isempty(comp)
-        j = find(cellfun(@(c) c == comp, bus.a_Component), 1);
-    end
-end
-
-function rv = value_at(sim, M, t)
-% Row of M at time t (linear interpolation; at a repeated time, the last row)
-    tv = sim.odeResults.t(:);
-    if isempty(tv) || t < tv(1) || t > tv(end)
-        error("GUILDA:odeLinearizer:PointTime", ...
-              "t = %g is outside the simulated time [%g, %g].", t, tv(1), tv(end))
-    end
-    k = find(tv == t, 1, "last");
-    if ~isempty(k)
-        rv = M(k,:);
-        return
-    end
-    k = find(tv < t, 1, "last");
-    w = (t - tv(k)) / (tv(k+1) - tv(k));
-    rv = (1-w) * M(k,:) + w * M(k+1,:);
 end
 
 
