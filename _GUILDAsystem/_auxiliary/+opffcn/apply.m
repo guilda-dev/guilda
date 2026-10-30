@@ -1,16 +1,23 @@
 function prob = apply(obj, prob, str_method, s_var)
-% Adds the set_opffcn terms of obj to prob (called by build_opf_problem of each class).
-%   Cost       : fcnCost(v, p) is added to the objective. The caller leaves out its default
-%                cost when obj.s_opffcn.Cost is set, so the handle replaces the default.
-%   Constraint : each field <name> of fcnCon(v, p) becomes prob.Constraints.<name>_<tag>
-%                (prob.Constraints.<name> for PowerNetwork); its dual has the same label.
-% v: opffcn.variables(obj, prob, str_method, s_var) (s_var: optimvars of the caller by
-% name); p: opffcn.param(obj, str_method).
+% Add the set_opffcn terms of obj to the OPF problem.
+%
+% Called by build_opf_problem of each class.
+%
+% - Cost: fcnCost(v, p) is added to the objective. The caller leaves out its default
+%   cost when obj.s_opffcn.Cost is set, so the handle replaces the default.
+% - Constraint: each field <name> of fcnCon(v, p) becomes prob.Constraints.<name>_<tag>
+%   (prob.Constraints.<name> for PowerNetwork); its dual has the same label.
+%
+% v is opffcn.variables(obj, prob, str_method, s_var); p is opffcn.param(obj, str_method).
+%
+% Output `prob`: the problem with the terms added.
+%
+% See also opffcn.variables, opffcn.param, opffcn.update
     arguments
-        obj
-        prob
-        str_method (1,1) string
-        s_var      (1,1) struct = struct()
+        obj % Component, Bus, Branch or PowerNetwork whose s_opffcn is applied.
+        prob % Optimization problem being built.
+        str_method (1,1) string % "ELD", "DC OPF" or "AC OPF".
+        s_var      (1,1) struct = struct() % Optimization variables of the caller by name.
     end
     s = obj.s_opffcn;
     if isempty(s.Cost) && isempty(s.Constraint)
