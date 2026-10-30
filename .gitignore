@@ -57,6 +57,8 @@ _GUILDAexport
 _GUILDAdoc/database/list_Classes.js
 _GUILDAdoc/database/GUILDAsystem
 _GUILDAdoc/database/GUILDAobject
+_GUILDAdoc/database/User
+_GUILDAdoc/database/manifest.json
 # Claude Code: session worktrees and personal settings
 # (.claude/settings.json and .claude/hooks/ are shared and committed)
 .claude/worktrees/

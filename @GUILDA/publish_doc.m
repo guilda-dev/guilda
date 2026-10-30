@@ -9,6 +9,8 @@ function publish_doc(option)
 % rebuilds the class reference, writes the site into gh-pages through a
 % temporary git worktree, and commits "docs: publish <branch>@<sha>".
 % gh-pages layout: _GUILDAdoc/, LICENSE, index.html (redirect), .nojekyll.
+% User classes (database/User) and database/manifest.json are local data and
+% are never published.
 %
 % confirm : ask with a dialog before "git push origin gh-pages" (default true).
 % push    : false builds and commits locally without pushing (default true).
@@ -27,8 +29,8 @@ function publish_doc(option)
     [str_source, str_sha] = check_source_repository(str_root, option.push);
     fprintf('  Source : %s@%s\n', str_source, str_sha)
 
-    % 2. Rebuild the class reference
-    sct_summary = export_class_database(find_doc_classes(), "strict", false);
+    % 2. Rebuild the class reference (without user classes)
+    sct_summary = export_class_database(find_doc_classes("user", false), "strict", false, "full", true);
     if sct_summary.ErrorCount > 0
         error('GUILDA:publish_doc:ExportErrors', ...
             'The class reference has %d error(s). Fix them before publishing.', sct_summary.ErrorCount);
@@ -201,6 +203,15 @@ function write_site(str_root, str_tmp)
 
     copy_or_error(fullfile(str_root, '_GUILDAdoc'), fullfile(str_tmp, '_GUILDAdoc'));
     copy_or_error(fullfile(str_root, 'LICENSE'), fullfile(str_tmp, 'LICENSE'));
+
+    % Local export data: user classes and the incremental-export manifest.
+    str_db = fullfile(str_tmp, '_GUILDAdoc', 'database');
+    if isfolder(fullfile(str_db, 'User'))
+        rmdir(fullfile(str_db, 'User'), 's');
+    end
+    if isfile(fullfile(str_db, 'manifest.json'))
+        delete(fullfile(str_db, 'manifest.json'));
+    end
 
     % OS files are ignored in the source branch, but gh-pages has no .gitignore.
     for str_pattern = ["**/.DS_Store", "**/._*", "**/Thumbs.db", "**/ehthumbs.db", "**/Desktop.ini", "**/*.asv"]
