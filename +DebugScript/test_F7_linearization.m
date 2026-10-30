@@ -224,6 +224,58 @@ assert(isequal(size(sys1.A), size(sys2.A)))
 assert(same_eigs(eig_finite(sys1), eig_finite(sys2), 1e-9))
 
 
+%% Inputs, states and outputs of get_sys on each layer
+% 制御器: 入力 [V; ucon]、状態 xcon、出力 ycon
+% 機器  : 入力 [V; umac; ucon]、状態 [xmac; xcon]、出力 [I; ymac; ycon]
+% 母線  : 入力 [V; 各機器の umac, ucon]、状態 [xmac; xcon]、出力 [I; 各機器の ymac, ycon]
+% 状態は出力に含めず、状態と同名の出力は "Y_" + 名前にして、すべての名前を一意にする
+net = new_net();
+gen = net.a_Bus{1}.a_Component{1};
+avr = controller.avr.AVR_ST1("avr1");
+pss = controller.pss.PSS1("pss1");
+gen.add_local_controller(avr, pss);
+DebugScript.helper.quiet(@() net.initialize);
+tg = @(o, s) reshape(string(o.attach_tag(s)), [], 1);
+
+sa = avr.get_sys();
+assert(isequal(string(sa.InputName), tg(avr, ["Vre";"Vim";avr.sv_u])))
+assert(isequal(string(sa.StateName), tg(avr, avr.sv_x)) && isequal(string(sa.OutputName), tg(avr, avr.sv_y)))
+
+sc = gen.get_sys();
+sv_in  = [tg(gen, ["Vre";"Vim";gen.sv_u]); tg(avr, avr.sv_u); tg(pss, pss.sv_u)];
+sv_x   = [tg(gen, gen.sv_x); tg(avr, avr.sv_x); tg(pss, pss.sv_x)];
+sv_out = [tg(gen, ["Ire";"Iim";"Y_omega"]); tg(avr, avr.sv_y); tg(pss, pss.sv_y)];
+assert(isequal(string(sc.InputName), sv_in) && isequal(string(sc.StateName), sv_x) && isequal(string(sc.OutputName), sv_out))
+sv_all = [sv_in; sv_x; sv_out];
+assert(numel(unique(sv_all)) == numel(sv_all), "名前が一意でない")
+
+% 出力の値: Y_omega は発電機の omega、AVR の出力 Vfield は AVR の状態 Vap
+iy = string(sc.OutputName) == tg(gen, "Y_omega");
+assert(isequal(sc.C(iy,:), double(string(sc.StateName) == tg(gen, "omega"))') && all(sc.D(iy,:) == 0))
+iy = string(sc.OutputName) == tg(avr, "Vfield");
+assert(isequal(sc.C(iy,:), double(string(sc.StateName) == tg(avr, "Vap"))'))
+
+% 制御器の入力 Vref は外部入力として AVR の状態に入る (AVR 単体の B と同じ)
+iu = string(sc.InputName) == tg(avr, "Vref");
+ix = ismember(string(sc.StateName), tg(avr, avr.sv_x));
+assert(norm(sc.B(ix,iu) - sa.B(:, string(sa.InputName) == tg(avr, "Vref"))) < 1e-12)
+assert(all(sc.B(~ix,iu) == 0))
+
+% 母線は機器の入出力を並べ、ポートを母線の名前にする
+bus = net.a_Bus{1};
+sb  = bus.get_sys();
+assert(isequal(string(sb.InputName),  [tg(bus, ["Vre";"Vim"]); sv_in(3:end)]))
+assert(isequal(string(sb.OutputName), [tg(bus, ["Ire";"Iim"]); sv_out(3:end)]))
+assert(isequal(string(sb.StateName), sv_x) && norm(sb.C - sc.C, 1) == 0 && norm(sb.D - sc.D, 1) == 0)
+sbI = bus.get_sys("port", "I2V");
+assert(isequal(string(sbI.InputName),  [tg(bus, ["Ire";"Iim"]); sv_in(3:end)]))
+assert(isequal(string(sbI.OutputName), [tg(bus, ["Vre";"Vim"]); sv_out(3:end)]))
+
+% 制御器の無い機器も出力に状態を含めない
+c3 = net.a_Bus{3}.a_Component{1}.get_sys();
+assert(isequal(string(c3.OutputName), tg(net.a_Bus{3}.a_Component{1}, ["Ire";"Iim";"Y_omega"])))
+
+
 %% Linearize matches v3 get_sys matrices for every algorithm
 % linearize + get_ss の行列と名前は v3 の odeLinearizer と同じ (helper.linearize_v3 に v3 のコードを保存)。
 % 違いは DAE の B の代数方程式の行の符号だけ (v3 は入力 u の符号が逆で、Kron と伝達関数が合わなかった)
@@ -340,6 +392,53 @@ end
 bus = net.a_Bus{1};
 s0 = bus.get_sys();  s1 = bus.get_sys("Point", res0.rv_point(c_idxBus{1}));
 assert(norm(s0.A - s1.A, 1) < 1e-8 * norm(s0.A, 1) && isequal(s0.StateName, s1.StateName))
+
+
+%% LQR closed loop matches its design model
+% 1機無限大母線系統では、系統の線形モデルが LQR の設計モデルと一致する
+% (開ループの固有値 = eig(A)、閉ループの固有値 = eig(A - B K)。無限大母線の近似による 0 付近の固有値は除く)
+[smib, gen] = DebugScript.helper.build_smib();
+DebugScript.helper.quiet(@() smib.initialize);
+e_open = eig_finite(smib.get_sys());
+lqr = controller.local_LQR("lqr1");
+gen.add_local_controller(lqr);
+DebugScript.helper.quiet(@() smib.initialize);
+for alg = ["Kron","Feedback","DAE"]
+    e_closed = eig_finite(smib.get_sys("Algorithm", alg));
+    e_closed = e_closed(abs(e_closed) > 1e-2);
+    assert(same_eigs(e_closed, eig(lqr.sys_design.A - lqr.sys_design.B*lqr.K), 1e-3), alg)
+end
+e_open = e_open(abs(e_open) > 1e-2);
+assert(same_eigs(e_open, eig(lqr.sys_design.A), 1e-3))
+
+% LQR は開ループより減衰を良くする (最も右の固有値が左へ動く)
+assert(max(real(e_closed)) < max(real(e_open)) - 0.5)
+
+
+%% LQR improves the damping of IEEE14
+% IEEE14 の発電機 1, 2 に既定の重み (Q = I, R = I) の LQR を付けると、
+% 最も右の固有値が左へ動き、振動モードの最小減衰比が大きくなる
+damping = @(e) min(-real(e(abs(imag(e)) > 1e-3)) ./ abs(e(abs(imag(e)) > 1e-3)));
+rightmost = @(e) max(real(e(abs(e) > 1e-6)));
+e0 = eig_finite(net.get_sys());
+netL = new_net();
+for b = 1:2
+    netL.a_Bus{b}.a_Component{1}.add_local_controller(controller.local_LQR("lqr" + b));
+end
+DebugScript.helper.quiet(@() netL.initialize);
+e1 = eig_finite(netL.get_sys());
+assert(rightmost(e1) < rightmost(e0) - 0.01, "rightmost " + rightmost(e0) + " -> " + rightmost(e1))
+assert(damping(e1) > damping(e0), "damping " + damping(e0) + " -> " + damping(e1))
+for alg = ["Kron","Feedback"]
+    assert(same_eigs(e1, eig_finite(netL.get_sys("Algorithm", alg)), 1e-6), alg)
+end
+
+% 平衡点の値を Point に与えると既定と同じ (LQR の入力は機器の状態から求め直す)
+res0 = netL.linearize();
+res1 = netL.linearize("Point", res0.rv_point);
+for str = ["rm_Axx","rm_Axv","rm_Bx","rm_Avx","rm_Avv","rm_Bv","rm_E"]
+    assert(norm(res1.(str) - res0.(str), 1) < 1e-8 * max(1, norm(res0.(str), 1)), str)
+end
 
 
 %% Point at a perturbed state
