@@ -72,6 +72,7 @@
       unit: p?.Unit || '',
       defaultValue: firstText(p?.DefaultCode, p?.Default),
       constraints: firstText(toList(p?.Validation?.Validators).join(', '), p?.Constraints),
+      seeAlso: toList(p?.SeeAlso),
       deprecated: p?.Deprecated || ''
     });
     const normalizeMethod = (m) => ({
@@ -137,7 +138,8 @@
           cells: (p) => [
             propertyName(p),
             p.unit ? `<span class="ref-unit">${escapeHtml(p.unit)}</span>` : muted('-'),
-            p.description ? `<div class="markdown-content">${renderMarkdown(p.description)}</div>` : muted('No description.')
+            (p.description ? `<div class="markdown-content">${renderMarkdown(p.description)}</div>` : muted('No description.'))
+              + (p.seeAlso.length ? `<p class="ref-see-also ref-muted" style="margin: 4px 0 0;">See also ${p.seeAlso.map((item) => seeAlsoLink(item, className, pageData.methods.map((m) => m.name))).join(', ')}</p>` : '')
           ]
         }
       },
@@ -281,7 +283,7 @@
       const badges = [
         c.Origin ? `<span class="ref-badge${c.Origin === 'User' ? ' is-user' : ''}" title="Source root">${escapeHtml(c.Origin)}</span>` : '',
         category ? `<span class="ref-badge" title="Package">package ${escapeHtml(category)}</span>` : '',
-        c.Type && c.Type !== 'auxiliary' ? `<span class="ref-badge">${escapeHtml(c.Type === 'PowerSystemModel' && c.Model ? c.Model : c.Type)}</span>` : '',
+        c.Type && !['auxiliary', 'other'].includes(c.Type) ? `<span class="ref-badge">${escapeHtml(c.Type === 'PowerSystemModel' && c.Model ? c.Model : c.Type)}</span>` : '',
         c.Abstract ? '<span class="ref-badge is-abstract">Abstract</span>' : '',
         c.Sealed ? '<span class="ref-badge is-sealed">Sealed</span>' : '',
         c.Hidden ? '<span class="ref-badge">Hidden</span>' : '',
@@ -354,7 +356,7 @@
       }
       if (seeAlso.length) {
         sections.push(['see-also', 'See also']);
-        html += `<h2 id="see-also">See also</h2><p class="ref-see-also">${seeAlso.map((item) => seeAlsoLink(item, name)).join(', ')}</p>`;
+        html += `<h2 id="see-also">See also</h2><p class="ref-see-also">${seeAlso.map((item) => seeAlsoLink(item, name, pageData.methods.map((m) => m.name))).join(', ')}</p>`;
       }
 
       document.getElementById('dynamic-content').innerHTML = html;
