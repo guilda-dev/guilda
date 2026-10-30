@@ -725,7 +725,9 @@ function [sct_info, cell_diagnostics] = build_meta_info(meta_item, str_class_nam
         return
     end
     if str_kind == "method"
-        if is_public_access(sct_info.Access) && ~sct_info.Hidden ...
+        % An implicit constructor has no source to document.
+        bln_implicit = sct_info.IsConstructor && isempty(sct_info.ImplementedIn);
+        if is_public_access(sct_info.Access) && ~sct_info.Hidden && ~bln_implicit ...
                 && isempty(strtrim(sct_info.Summary)) && isempty(strtrim(sct_info.Desc))
             cell_diagnostics{end+1,1} = sprintf('WARNING: %s: public method has no Summary or Desc.', str_context);
         end
