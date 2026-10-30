@@ -1,0 +1,10 @@
+Type,From,To,R,X,C,tap,phase,Smax,Imax,Pmax,Qmax,Vargmax,MidXaxis,MidYaxis,Marker
+pi_transformer,1,4,0,0.0576,0,1,0,Inf,Inf,Inf,Inf,1.5707963267949,,,-
+pi_transformer,2,7,0,0.0625,0,1,0,Inf,Inf,Inf,Inf,1.5707963267949,,,-
+pi_transformer,3,9,0,0.0586,0,1,0,Inf,Inf,Inf,Inf,1.5707963267949,,,-
+pi,4,5,0.01,0.085,0.088,1,0,Inf,Inf,Inf,Inf,1.5707963267949,,,-
+pi,4,6,0.017,0.092,0.079,1,0,Inf,Inf,Inf,Inf,1.5707963267949,,,-
+pi,5,7,0.032,0.161,0.153,1,0,Inf,Inf,Inf,Inf,1.5707963267949,,,-
+pi,6,9,0.039,0.17,0.179,1,0,Inf,Inf,Inf,Inf,1.5707963267949,,,-
+pi,7,8,0.0085,0.072,0.0745,1,0,Inf,Inf,Inf,Inf,1.5707963267949,,,-
+pi,8,9,0.0119,0.1008,0.1045,1,0,Inf,Inf,Inf,Inf,1.5707963267949,,,-
