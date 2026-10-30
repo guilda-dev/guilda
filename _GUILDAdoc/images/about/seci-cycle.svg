@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 480" role="img" aria-labelledby="t d">
+  <title id="t">The SECI knowledge spiral around GUILDA</title>
+  <desc id="d">Four quadrants turn clockwise around the platform: Socialization, Externalization, Combination and Internalization.</desc>
+  <style>
+    .q { font-family: Helvetica, Arial, sans-serif; font-weight: 700; font-size: 16px; fill: #1B2127; text-anchor: middle; }
+    .s { font-family: Helvetica, Arial, sans-serif; font-size: 12px; fill: #5A6570; text-anchor: middle; }
+    .ax { font-family: Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; fill: #5A6570; text-anchor: middle; }
+    .l { font-family: Georgia, serif; font-size: 22px; fill: #0059A7; }
+  </style>
+  <defs>
+    <marker id="h" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M1 1 L9 5 L1 9 Z" fill="#0059A7"/></marker>
+  </defs>
+
+  <!-- quadrants -->
+  <path d="M240 240 V30 A210 210 0 0 0 30 240 Z" fill="#EEF3F8"/>
+  <path d="M240 240 H450 A210 210 0 0 0 240 30 Z" fill="#C7D8EA"/>
+  <path d="M240 240 V450 A210 210 0 0 0 450 240 Z" fill="#EEF3F8"/>
+  <path d="M240 240 H30 A210 210 0 0 0 240 450 Z" fill="#F4F6CC"/>
+  <circle cx="240" cy="240" r="210" fill="none" stroke="#1B2127" stroke-width="2.5"/>
+  <path d="M240 30 V450 M30 240 H450" stroke="#FFFFFF" stroke-width="6"/>
+
+  <!-- spiral arrows (clockwise) -->
+  <g fill="none" stroke="#0059A7" stroke-width="5" stroke-linecap="round" marker-end="url(#h)">
+    <path d="M176 104 A150 150 0 0 1 290 98"/>
+    <path d="M376 176 A150 150 0 0 1 382 290"/>
+    <path d="M304 376 A150 150 0 0 1 190 382"/>
+    <path d="M104 304 A150 150 0 0 1 98 190"/>
+  </g>
+
+  <!-- S: two speech bubbles -->
+  <g stroke="#1B2127" stroke-width="2" stroke-linejoin="round" transform="translate(0 10)">
+    <path d="M110 140 h40 a8 8 0 0 1 8 8 v18 a8 8 0 0 1 -8 8 h-24 l-10 9 v-9 h-6 a8 8 0 0 1 -8 -8 v-18 a8 8 0 0 1 8 -8 Z" fill="#FFFFFF"/>
+    <path d="M150 162 h34 a8 8 0 0 1 8 8 v16 a8 8 0 0 1 -8 8 h-4 v8 l-9 -8 h-21 a8 8 0 0 1 -8 -8 v-16 a8 8 0 0 1 8 -8 Z" fill="#D9E021"/>
+  </g>
+  <!-- E: code brackets on a sheet -->
+  <g stroke="#1B2127" stroke-width="2" stroke-linejoin="round">
+    <rect x="300" y="142" width="62" height="54" rx="8" fill="#FFFFFF"/>
+  </g>
+  <path d="M320 160 l-8 9 l8 9 M342 160 l8 9 l-8 9 M335 156 l-8 26" fill="none" stroke="#0059A7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- C: two joined pieces -->
+  <g stroke="#1B2127" stroke-width="2" stroke-linejoin="round">
+    <path d="M296 296 h32 v10 a7 7 0 0 1 0 14 v10 h-32 Z" fill="#0059A7"/>
+    <path d="M328 296 h32 v34 h-32 v-10 a7 7 0 0 0 0 -14 Z" fill="#D9E021"/>
+  </g>
+  <!-- I: light bulb -->
+  <g transform="translate(0 -22)">
+  <g stroke="#1B2127" stroke-width="2" stroke-linejoin="round">
+    <path d="M150 300 a22 22 0 0 1 12 40 v8 h-24 v-8 a22 22 0 0 1 12 -40 Z" fill="#D9E021"/>
+    <rect x="139" y="350" width="22" height="8" rx="3" fill="#FFFFFF"/>
+  </g>
+  <path d="M150 334 v-10 l-5 -5 M150 324 l5 -5" fill="none" stroke="#1B2127" stroke-width="1.8" stroke-linecap="round"/>
+  <g stroke="#0059A7" stroke-width="2.5" stroke-linecap="round"><path d="M118 312 l-8 -4 M182 312 l8 -4 M150 290 v-8"/></g>
+  </g>
+
+  <!-- labels -->
+  <text class="q" x="146" y="124">Socialization</text>
+  <text class="q" x="332" y="124">Externalization</text>
+  <text class="q" x="330" y="352">Combination</text>
+  <text class="q" x="150" y="356">Internalization</text>
+
+  <!-- centre plate for the logo (placed by HTML) -->
+  <circle cx="240" cy="240" r="54" fill="#FFFFFF" stroke="#1B2127" stroke-width="2.5"/>
+</svg>

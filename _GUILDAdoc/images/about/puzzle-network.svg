@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 300" role="img" aria-labelledby="t d">
+  <title id="t">Classes snap together like puzzle pieces</title>
+  <desc id="d">Loose pieces labelled Generator, Bus, Branch, Load and Controller are snapped into one PowerNetwork, which is then simulated to give a time response.</desc>
+  <defs>
+    <!-- 96 x 64 piece: notch on the left, tab on the right -->
+    <path id="pc" d="M0 6 Q0 0 6 0 H90 Q96 0 96 6 V20 A12 12 0 0 1 96 44 V58 Q96 64 90 64 H6 Q0 64 0 58 V44 A12 12 0 0 0 0 20 Z"/>
+  </defs>
+  <style>
+    .lb { font-family: Helvetica, Arial, sans-serif; font-weight: 700; font-size: 13px; text-anchor: middle; }
+    .sm { font-family: Helvetica, Arial, sans-serif; font-size: 12px; fill: #5A6570; }
+    .mono { font-family: Menlo, Consolas, monospace; font-size: 13px; font-weight: 700; }
+  </style>
+
+  <!-- loose pieces -->
+  <rect x="8" y="8" width="252" height="284" rx="22" fill="#F5F6F7"/>
+  <g transform="translate(26 40) rotate(-10)"><use href="#pc" fill="#0059A7" stroke="#1B2127" stroke-width="2.5"/><text x="52" y="37" class="lb" fill="#FFFFFF">Generator</text></g>
+  <g transform="translate(132 54) rotate(8)"><use href="#pc" fill="#FFFFFF" stroke="#1B2127" stroke-width="2.5"/><text x="52" y="37" class="lb" fill="#0059A7">Bus</text></g>
+  <g transform="translate(22 140) rotate(6)"><use href="#pc" fill="#DADFE4" stroke="#1B2127" stroke-width="2.5"/><text x="52" y="37" class="lb" fill="#1B2127">Branch</text></g>
+  <g transform="translate(132 152) rotate(-7)"><use href="#pc" fill="#D9E021" stroke="#1B2127" stroke-width="2.5"/><text x="52" y="37" class="lb" fill="#1B2127">Load</text></g>
+  <g transform="translate(66 212) rotate(-3)"><use href="#pc" fill="#C7D8EA" stroke="#1B2127" stroke-width="2.5"/><text x="52" y="37" class="lb" fill="#00447F">Controller</text></g>
+  <!-- motion ticks -->
+  <g stroke="#B5BEC7" stroke-width="2.5" stroke-linecap="round"><path d="M132 28 l6 -8 M142 32 l9 -5 M236 138 l9 -2 M232 150 l9 3"/></g>
+
+  <!-- snap arrow -->
+  <path d="M270 150 H302" stroke="#0059A7" stroke-width="4" stroke-linecap="round"/>
+  <path d="M296 141 L306 150 L296 159" fill="none" stroke="#0059A7" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- assembled network -->
+  <rect x="316" y="44" width="250" height="226" rx="18" fill="#EEF3F8" stroke="#0059A7" stroke-width="2" stroke-dasharray="6 6"/>
+  <rect x="330" y="30" width="122" height="26" rx="13" fill="#0059A7"/>
+  <text x="391" y="48" class="mono" fill="#FFFFFF" text-anchor="middle">PowerNetwork</text>
+  <g transform="translate(328 78)"><use href="#pc" fill="#C7D8EA" stroke="#1B2127" stroke-width="2.5"/><text x="52" y="37" class="lb" fill="#00447F">Controller</text></g>
+  <g transform="translate(328 142)"><use href="#pc" fill="#0059A7" stroke="#1B2127" stroke-width="2.5"/><text x="52" y="37" class="lb" fill="#FFFFFF">Generator</text></g>
+  <g transform="translate(424 142)"><use href="#pc" fill="#FFFFFF" stroke="#1B2127" stroke-width="2.5"/><text x="52" y="37" class="lb" fill="#0059A7">Bus</text></g>
+  <g transform="translate(424 78)"><use href="#pc" fill="#DADFE4" stroke="#1B2127" stroke-width="2.5"/><text x="52" y="37" class="lb" fill="#1B2127">Branch</text></g>
+  <g transform="translate(424 206)"><use href="#pc" fill="#D9E021" stroke="#1B2127" stroke-width="2.5"/><text x="52" y="37" class="lb" fill="#1B2127">Load</text></g>
+  <g transform="translate(328 206)"><use href="#pc" fill="#FFFFFF" stroke="#1B2127" stroke-width="2.5"/><text x="52" y="37" class="lb" fill="#0059A7">Bus</text></g>
+  <!-- sparkle -->
+  <g fill="#D9E021" stroke="#1B2127" stroke-width="1.5" stroke-linejoin="round">
+    <path d="M544 52 l4 10 l10 4 l-10 4 l-4 10 l-4 -10 l-10 -4 l10 -4 Z"/>
+  </g>
+
+  <!-- simulate -->
+  <path d="M574 160 H604" stroke="#0059A7" stroke-width="4" stroke-linecap="round"/>
+  <path d="M598 151 L608 160 L598 169" fill="none" stroke="#0059A7" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <rect x="614" y="100" width="98" height="120" rx="12" fill="#FFFFFF" stroke="#1B2127" stroke-width="2.5"/>
+  <rect x="622" y="88" width="82" height="22" rx="11" fill="#0059A7"/>
+  <text x="663" y="103" class="mono" fill="#FFFFFF" text-anchor="middle" font-size="11">simulate</text>
+  <path d="M626 196 H702 M626 124 V196" stroke="#B5BEC7" stroke-width="2" stroke-linecap="round"/>
+  <path d="M628 156 H640 L644 128 C650 120 652 186 660 182 C668 178 670 140 676 146 C682 152 684 166 690 160 C694 157 696 154 702 156" fill="none" stroke="#0059A7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="642" cy="140" r="4" fill="#D9E021" stroke="#1B2127" stroke-width="1.5"/>
+</svg>

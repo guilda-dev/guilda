@@ -46,14 +46,20 @@ function [result, flag, output] = solve(obj, net, s_options)
     [tab_map, c_idxBus, c_idxGC] = net.get_variable_map();
     [rv_point, l_eq] = odeLinearizer.point_vector(net, s_options.Point);
 
-    % Bus models (V -> I) and global controller models at the point
+    % Bus models (V -> I) and global controller models at the point. The network model
+    % has the bus voltages and the component inputs (Kind "u" of the variable map) as
+    % inputs, and the currents as outputs: the inputs and outputs of the controllers in
+    % the bus models are left out.
     c_sysBus = cell(n_bus,1);
     for i = 1:n_bus
         if l_eq
-            c_sysBus{i} = a_bus{i}.get_sys("port","V2I","full",false);
+            sys_i = a_bus{i}.get_sys("port","V2I");
         else
-            c_sysBus{i} = a_bus{i}.get_sys("port","V2I","full",false,"Point",rv_point(c_idxBus{i}));
+            sys_i = a_bus{i}.get_sys("port","V2I","Point",rv_point(c_idxBus{i}));
         end
+        sv_u = tab_map.Label(tab_map.Kind == "u" & tab_map.Bus == string(a_bus{i}.str_tag));
+        [~, iv_u] = ismember(sv_u, string(sys_i.InputName));
+        c_sysBus{i} = sys_i(1:2, [1, 2, reshape(iv_u, 1, [])]);
     end
     c_sysGC = cell(numel(a_gc),1);
     for k = 1:numel(a_gc)

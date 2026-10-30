@@ -32,9 +32,11 @@ classdef odeLinearizer < auxiliary
         % <@Desc> Point of the linearization. [] for the equilibrium (set by
         % net.initialize); a vector of the values in the order of the variable map of the
         % analysed layer (net / bus / comp .get_variable_map()); or {sim, t}: the state of
-        % the simulation result sim at time t. The model is not changed.
+        % the simulation result sim at time t (sim.get_point(t), including the states of
+        % the controllers; at a phase boundary the value after the event, or
+        % {sim, t, "before"} for the value before it). The model is not changed.
         % <@Role> Settings
-        % <@Type> [] | double vector | cell {simulation result, t}
+        % <@Type> [] | double vector | cell {simulation result, t} or {simulation result, t, Side}
         % <@Size> -
         Point = []
     end

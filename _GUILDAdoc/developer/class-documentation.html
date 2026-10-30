@@ -7,16 +7,319 @@
   <link rel="stylesheet" href="../style.css">
   <script src="../database/list_Classes.js"></script>
   <script src="../doc-loader.js"></script>
+  <style>
+    /* Class Documentation page only (cd-*); shared parts are dg-* in style.css */
+    .cd-code { margin: 0; padding: var(--dg-s4); overflow-x: auto; border: 1px solid var(--dg-line); border-radius: var(--radius); background: var(--dg-card); color: var(--dg-ink); font: 0.8rem/1.65 var(--dg-mono); white-space: pre; }
+    .cd-code .cd-c { color: var(--dg-ok); }
+    .cd-code .cd-k { color: var(--dg-accent); font-weight: bold; }
+    .cd-code .cd-bad { background: var(--dg-err-soft); text-decoration: line-through; text-decoration-color: var(--dg-err); }
+    .cd-where { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: var(--dg-s4); }
+    .cd-where .cd-code { padding: var(--dg-s3); font-size: 0.74rem; }
+    @media (max-width: 760px) { .cd-where { grid-template-columns: minmax(0, 1fr); gap: var(--dg-s5); } }
+    .cd-pin { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; margin: 0 2px; border-radius: 50%; background: var(--dg-warn); color: var(--dg-ink); font: bold 0.68rem/1 var(--dg-mono); vertical-align: 1px; white-space: normal; }
+    .cd-page { overflow: hidden; border: 1px solid var(--dg-line); border-radius: var(--radius); background: var(--dg-card); font-size: 0.82rem; line-height: 1.5; }
+    .cd-page-bar { padding: 6px var(--dg-s3); border-bottom: 1px solid var(--dg-line); background: var(--surface-subtle); color: var(--dg-muted); font: 0.72rem var(--dg-mono); }
+    .cd-page-body { padding: var(--dg-s3) var(--dg-s4) var(--dg-s4); }
+    .cd-page h4 { margin: 0 0 2px; color: var(--dg-accent); font: bold 1.2rem/1.3 var(--dg-mono); }
+    .cd-page-label { display: block; margin: var(--dg-s3) 0 4px; color: var(--dg-muted); font-size: 0.68rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+    .cd-page table { display: table; width: 100%; margin: 0; border-collapse: collapse; table-layout: fixed; font-size: 0.78rem; box-shadow: none; }
+    .cd-page th, .cd-page td { padding: 4px 6px; border-bottom: 1px solid var(--dg-line); text-align: left; vertical-align: top; white-space: normal; overflow-wrap: anywhere; }
+    .cd-page th { min-width: 0; background: var(--dg-accent); color: var(--dg-card); font-weight: normal; }
+    .cd-page .dg-mono { font-size: 0.95em; overflow-wrap: anywhere; }
+    /* Tag map: one row per tag, one column per target; stays a table at every width */
+    .dg .cd-map { display: table; width: 100%; }
+    .dg .cd-map th:nth-child(n+2):nth-child(-n+4), .dg .cd-map td:nth-child(n+2):nth-child(-n+4) { width: 5.5rem; text-align: center; }
+    .dg .cd-map td { padding-top: 7px; padding-bottom: 7px; }
+    .dg .cd-map td:first-child { font-family: var(--dg-mono); font-size: 0.88rem; }
+    .dg .cd-map td:last-child { color: var(--dg-muted); font-size: 0.85rem; }
+    .cd-m { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; }
+    .cd-m.is-req { background: var(--dg-err); }
+    .cd-m.is-rec { background: var(--dg-accent); }
+    .cd-m.is-opt { box-shadow: inset 0 0 0 2px var(--dg-muted); }
+    .cd-legend { display: flex; flex-wrap: wrap; gap: var(--dg-s1) var(--dg-s4); margin: 0 0 var(--dg-s2); color: var(--dg-muted); font-size: 0.85rem; }
+    .cd-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .cd-checks td:first-child { width: 7rem; }
+    .cd-opts td:first-child { width: 13rem; }
+    .tag-generator-field-label .dg-badge { margin-left: 8px; font-size: 0.7rem; vertical-align: 1px; }
+    .tg-switch { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 0.9rem; cursor: pointer; }
+    .tg-switch[hidden] { display: none; }
+    .dg .tag-generator h2 { margin-top: 0; padding-top: 0; border-top: 0; }
+    .cd-formats td:nth-child(2) { width: 12rem; }
+    @media (max-width: 640px) {
+      .dg .cd-map thead { display: table-header-group; }
+      .dg .cd-map tbody { display: table-row-group; }
+      .dg .cd-map tr { display: table-row; padding: 0; }
+      .dg .cd-map th, .dg .cd-map td { display: table-cell; padding: 6px 6px 6px 0; border-bottom: 1px solid var(--dg-line); }
+      .dg .cd-map td:first-child { font-size: 0.8rem; }
+      .dg .cd-map th:nth-child(n+2):nth-child(-n+4), .dg .cd-map td:nth-child(n+2):nth-child(-n+4) { width: 2.6rem; }
+      .dg .cd-map th { font-size: 0.62rem; letter-spacing: 0; }
+      .cd-checks td:first-child, .cd-opts td:first-child, .cd-formats td:nth-child(2) { width: auto; }
+    }
+  </style>
 </head>
-<body class="developer-layout">
+<body class="developer-layout dg">
+  <svg class="dg-sprite" aria-hidden="true" focusable="false">
+    <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+    <symbol id="dg-i-warn" viewBox="0 0 24 24"><path d="M12 3 2 20h20z"/><path d="M12 10v4.5M12 17.5v.5"/></symbol>
+    <symbol id="dg-i-x" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></symbol>
+    <symbol id="dg-i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
+    <symbol id="dg-i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  </svg>
+
   <main>
     <button type="button" class="developer-back-button" onclick="window.history.back()">← Back to For Developer</button>
-    <h1>How to Define Class Documentation</h1>
-    <p class="page-lead">GUILDA class documentation is generated from MATLAB reflection metadata and exact <code>&lt;@TagName&gt;</code> tags stored next to the implementation. The exporter writes a lightweight class index and one detailed JavaScript document per class under <code>_GUILDAdoc/database</code>.</p>
+    <h1>Class Documentation</h1>
+    <p class="page-lead">Write <code>&lt;@Tag&gt;</code> comments next to the MATLAB code. <code>GUILDA.doc</code> adds what the code declares and builds the Reference pages.</p>
 
-    <section class="tag-generator" aria-label="Documentation Tag Generator">
-      <h2>Documentation Tag Generator</h2>
-      <p class="tag-generator-desc">Pick what you're documenting, fill in the tags you need, then copy the generated comment block into your MATLAB source.</p>
+    <nav class="dev-toc" aria-label="Contents">
+      <a href="#pipeline">How it works</a>
+      <a href="#where">Where comments go</a>
+      <a href="#tags">Which tags</a>
+      <a href="#formats">Value formats</a>
+      <a href="#declaration">Don't repeat the code</a>
+      <a href="#generator">Tag Generator</a>
+      <a href="#checks">What the exporter checks</a>
+      <a href="#update">Keeping it up to date</a>
+    </nav>
+
+    <!-- ============================== PIPELINE ============================== -->
+    <h2 id="pipeline">How it works</h2>
+    <p class="dg-lead-in">Nobody edits the Reference by hand. It is rebuilt from the source when the source changes.</p>
+    <figure class="dg-figure">
+      <svg class="dg-svg dg-sv dg-only-wide" viewBox="0 0 800 200" role="img" aria-labelledby="cd-pipe-title">
+        <title id="cd-pipe-title">Pipeline from MATLAB source to the Reference pages</title>
+        <defs>
+          <marker id="cd-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head" d="M0 0L10 5L0 10z"/></marker>
+          <marker id="cd-ah-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head is-muted" d="M0 0L10 5L0 10z"/></marker>
+        </defs>
+        <!-- source -->
+        <rect class="dg-sv-box" x="2" y="40" width="154" height="110" rx="10"/>
+        <text class="is-k" x="79" y="64" text-anchor="middle">SOURCE</text>
+        <text class="dg-mono" x="79" y="88" text-anchor="middle">_GUILDAsystem</text>
+        <text class="dg-mono" x="79" y="106" text-anchor="middle">_GUILDAobject</text>
+        <text class="is-sm is-ok" x="79" y="132" text-anchor="middle">code + &lt;@Tag&gt; comments</text>
+        <path class="dg-sv-line dg-anim-dash" d="M158 95H196" marker-end="url(#cd-ah)"/>
+        <!-- auto check -->
+        <path class="dg-sv-box is-warn" d="M268 40 330 95 268 150 206 95z"/>
+        <text class="dg-mono is-b is-warn" x="268" y="90" text-anchor="middle">GUILDA.doc</text>
+        <text class="is-sm is-warn" x="268" y="107" text-anchor="middle">source newer?</text>
+        <text class="is-sm is-muted" x="268" y="28" text-anchor="middle">update = "auto"</text>
+        <path class="dg-sv-line is-muted" d="M268 150V184H755V148" marker-end="url(#cd-ah-m)"/>
+        <text class="is-sm is-muted" x="380" y="178">no: open the pages as they are</text>
+        <path class="dg-sv-line dg-anim-dash" d="M332 95H368" marker-end="url(#cd-ah)"/>
+        <text class="is-sm is-accent" x="350" y="86" text-anchor="middle">yes</text>
+        <!-- exporter -->
+        <rect class="dg-sv-box is-solid" x="372" y="55" width="140" height="80" rx="10"/>
+        <text class="dg-mono is-b is-inv" x="442" y="82" text-anchor="middle">exporter</text>
+        <text class="is-sm is-inv" x="442" y="102" text-anchor="middle">reflection + parser</text>
+        <text class="is-sm is-inv" x="442" y="119" text-anchor="middle">+ validation</text>
+        <path class="dg-sv-line dg-anim-dash" d="M514 78H548" marker-end="url(#cd-ah)"/>
+        <path class="dg-sv-line dg-anim-dash" d="M514 122H548" marker-end="url(#cd-ah)"/>
+        <!-- database -->
+        <rect class="dg-sv-box is-soft" x="552" y="54" width="136" height="44" rx="8"/>
+        <text class="dg-mono is-sm is-accent" x="620" y="73" text-anchor="middle">list_Classes.js</text>
+        <text class="is-sm is-muted" x="620" y="89" text-anchor="middle">index · schema 4</text>
+        <rect class="dg-sv-box is-soft" x="552" y="102" width="136" height="44" rx="8"/>
+        <text class="dg-mono is-sm is-accent" x="620" y="121" text-anchor="middle">&lt;Class&gt;.js</text>
+        <text class="is-sm is-muted" x="620" y="137" text-anchor="middle">one file per class</text>
+        <path class="dg-sv-line dg-anim-dash" d="M690 100H712" marker-end="url(#cd-ah)"/>
+        <!-- pages -->
+        <rect class="dg-sv-box is-ok" x="716" y="54" width="80" height="92" rx="8"/>
+        <text class="is-sm is-b is-ok" x="756" y="78" text-anchor="middle">Reference</text>
+        <text class="dg-mono is-sm" x="756" y="99" text-anchor="middle">index</text>
+        <text class="dg-mono is-sm" x="756" y="116" text-anchor="middle">class</text>
+        <text class="dg-mono is-sm" x="756" y="133" text-anchor="middle">method</text>
+      </svg>
+      <div class="dg-only-narrow"><div class="dg-chain">
+        <div class="dg-chain-node"><span class="dg-kicker">Source</span><code>_GUILDAsystem</code>, <code>_GUILDAobject</code>: code and <code>&lt;@Tag&gt;</code> comments</div>
+        <div class="dg-chain-arrow"></div>
+        <div class="dg-chain-node is-warn"><span class="dg-kicker"><code>GUILDA.doc</code></span>Rebuild only if a source file is newer than the database</div>
+        <div class="dg-chain-arrow"></div>
+        <div class="dg-chain-node is-step"><span class="dg-kicker">Exporter</span>Reflection, source parser, validation</div>
+        <div class="dg-chain-arrow"></div>
+        <div class="dg-chain-node"><span class="dg-kicker">Database</span><code>list_Classes.js</code> + one <code>&lt;Class&gt;.js</code> per class</div>
+        <div class="dg-chain-arrow"></div>
+        <div class="dg-chain-node is-ok"><span class="dg-kicker">Pages</span>Reference tab, class page, method page</div>
+      </div></div>
+      <figcaption>Every class MATLAB can reach under <code>_GUILDAsystem</code> and <code>_GUILDAobject</code> is exported, documented or not. The code gives the structure. Your comments add the meaning.</figcaption>
+    </figure>
+
+    <!-- ============================== WHERE ============================== -->
+    <h2 id="where">Where comments go</h2>
+    <p class="dg-lead-in">Each numbered comment lands in the matching place on the class page. Everything without a number is read from the code.</p>
+    <figure class="dg-figure">
+      <div class="dg-two cd-where">
+        <div>
+          <span class="dg-kicker">Source · Bus.m</span>
+<pre class="cd-code"><span class="cd-k">classdef</span> Bus &lt; PowerSystemModel
+<span class="cd-c">% &lt;@Summary&gt; Node that connects components.</span><span class="cd-pin">1</span>
+<span class="cd-c">% &lt;@Desc&gt;</span><span class="cd-pin">2</span>
+<span class="cd-c">% Holds the bus voltage and the components</span>
+<span class="cd-c">% attached to it.</span>
+
+  <span class="cd-k">properties</span>
+    <span class="cd-c">% &lt;@Summary&gt; Components on this bus.</span><span class="cd-pin">3</span>
+    a_Component (:,1) cell = cell(0,1)
+  <span class="cd-k">end</span>
+
+  <span class="cd-k">methods</span>
+    <span class="cd-k">function</span> comp = add_component(obj, comp, opt)
+    <span class="cd-c">% &lt;@Summary&gt; Connect a component.</span><span class="cd-pin">4</span>
+      <span class="cd-k">arguments</span>
+        obj
+        comp Component <span class="cd-c">% Component to add.</span><span class="cd-pin">5</span>
+        opt.Check (1,1) logical = true
+      <span class="cd-k">end</span>
+      ...
+</pre>
+        </div>
+        <div>
+          <span class="dg-kicker">Reference · class.html</span>
+          <div class="cd-page">
+            <div class="cd-page-bar">class.html#class=Bus</div>
+            <div class="cd-page-body">
+              <h4>Bus</h4>
+              <span class="cd-page-label">Summary <span class="cd-pin">1</span></span>
+              Node that connects components.
+              <span class="cd-page-label">Description <span class="cd-pin">2</span></span>
+              Holds the bus voltage and the components attached to it.
+              <span class="cd-page-label">Properties</span>
+              <table>
+                <tr><th>Name</th><th>Type · Size · Default</th><th>Description</th></tr>
+                <tr><td class="dg-mono">a_Component</td><td class="dg-mono">cell (:,1) cell(0,1)</td><td>Components on this bus. <span class="cd-pin">3</span></td></tr>
+              </table>
+              <span class="cd-page-label">Methods</span>
+              <table>
+                <tr><th>Signature</th><th>Summary</th></tr>
+                <tr><td class="dg-mono">comp = add_component(obj, comp, Name=Value)</td><td>Connect a component. <span class="cd-pin">4</span></td></tr>
+              </table>
+              <span class="cd-page-label">Arguments (method page)</span>
+              <table>
+                <tr><th>Name</th><th>Kind · Class</th><th>Description</th></tr>
+                <tr><td class="dg-mono">comp</td><td>Positional · Component</td><td>Component to add. <span class="cd-pin">5</span></td></tr>
+                <tr><td class="dg-mono">Check</td><td>Name-Value · (1,1) logical = true</td><td class="dg-muted">-</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+    <table class="dg-table">
+      <thead><tr><th>Target</th><th>Put the <code>%</code> block</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Class</td><td data-label="Put the % block">Directly below <code>classdef</code>.</td><td data-label="Notes">A blank line or a <code>%%</code> section line ends the block.</td></tr>
+        <tr><td>Property</td><td data-label="Put the % block">Directly above the declaration.</td><td data-label="Notes">A trailing <code>% text</code> on the same line is used only when there is no block above.</td></tr>
+        <tr><td>Method</td><td data-label="Put the % block">Directly after the <code>function</code> line.</td><td data-label="Notes">Works in <code>@Class/&lt;method&gt;.m</code>, in a function inside the classdef, and in <code>@Class/private/&lt;method&gt;.m</code>.<small>Abstract method or signature-only declaration: put the block above the signature in the <code>methods</code> block.</small></td></tr>
+        <tr><td>Argument</td><td data-label="Put the % block">A trailing <code>% text</code> in the <code>arguments</code> block, or a comment line above it.</td><td data-label="Notes">Becomes that argument's description.</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ============================== TAGS ============================== -->
+    <h2 id="tags">Which tags</h2>
+    <p class="dg-lead-in">Write one tag per line: <code>% &lt;@Tag&gt; value</code>. A value can continue on the next <code>%</code> lines, up to the next tag.</p>
+    <div class="cd-legend" aria-hidden="true">
+      <span><span class="cd-m is-req"></span>Required</span>
+      <span><span class="cd-m is-rec"></span>Recommended</span>
+      <span><span class="cd-m is-opt"></span>Optional</span>
+      <span>blank: not used</span>
+    </div>
+    <table class="dg-table cd-map" aria-label="Tags for public classes, properties and methods">
+      <thead><tr><th>Tag</th><th>Class</th><th>Property</th><th>Method</th><th>Format</th></tr></thead>
+      <tbody>
+        <tr><td>Summary</td><td><span class="cd-m is-req" role="img" aria-label="Required"></span></td><td><span class="cd-m is-req" role="img" aria-label="Required"></span></td><td><span class="cd-m is-req" role="img" aria-label="Required"></span></td><td>sentence</td></tr>
+        <tr><td>Desc</td><td><span class="cd-m is-rec" role="img" aria-label="Recommended"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-rec" role="img" aria-label="Recommended"></span></td><td>Markdown</td></tr>
+        <tr><td>Role</td><td><span class="cd-m is-rec" role="img" aria-label="Recommended"></span></td><td><span class="cd-m is-rec" role="img" aria-label="Recommended"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>text</td></tr>
+        <tr><td>Constructor</td><td><span class="cd-m is-rec" role="img" aria-label="Recommended"></span></td><td></td><td></td><td>Markdown</td></tr>
+        <tr><td>Unit</td><td></td><td><span class="cd-m is-rec" role="img" aria-label="Recommended for physical quantities"></span>*</td><td></td><td>text</td></tr>
+        <tr><td>Type · Size · Default · Constraints</td><td></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span>†</td><td></td><td>text</td></tr>
+        <tr><td>Parameters</td><td></td><td></td><td><span class="cd-m is-rec" role="img" aria-label="Recommended"></span></td><td>JSON objects</td></tr>
+        <tr><td>Returns</td><td></td><td></td><td><span class="cd-m is-rec" role="img" aria-label="Recommended"></span></td><td>JSON objects</td></tr>
+        <tr><td>Signatures</td><td></td><td></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>JSON list</td></tr>
+        <tr><td>Calls</td><td></td><td></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>JSON objects</td></tr>
+        <tr><td>Examples</td><td></td><td></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>JSON list</td></tr>
+        <tr><td>Throws</td><td></td><td></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>text</td></tr>
+        <tr><td>Notes</td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>Markdown</td></tr>
+        <tr><td>SeeAlso</td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>JSON list</td></tr>
+        <tr><td>Since</td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>text</td></tr>
+        <tr><td>Deprecated</td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td><span class="cd-m is-opt" role="img" aria-label="Optional"></span></td><td>text</td></tr>
+      </tbody>
+    </table>
+    <p class="dg-muted">* For physical quantities. † Only when the declaration cannot say it (see <a href="#declaration">Don't repeat the code</a>).</p>
+    <div class="dg-callout">
+      <svg class="dg-icon"><use href="#dg-i-info"/></svg>
+      <div>
+        <p>The levels apply to public members. Private, protected and hidden members do not need tags. Write them when they help the next developer.</p>
+        <p>Old names (<code>Abst</code>, <code>Description</code>, <code>varargin</code>, <code>varargout</code>, <code>DetailsCode</code>, <code>Example</code>, <code>Seealso</code>) are no longer supported. The exporter reports them: a warning, or an error with <code>"strict", true</code>.</p>
+      </div>
+    </div>
+
+    <!-- ============================== FORMATS ============================== -->
+    <h2 id="formats">Value formats</h2>
+    <table class="dg-table cd-formats">
+      <thead><tr><th>Format</th><th>Tags</th><th>Rule</th></tr></thead>
+      <tbody>
+        <tr><td>Sentence</td><td data-label="Tags">Summary</td><td data-label="Rule">One line, one English sentence. A method summary starts with a verb: <code>Calculate the power flow.</code><small>Tables and search show it.</small></td></tr>
+        <tr><td>Text</td><td data-label="Tags">Role, Unit, Throws, Since, Deprecated, Type, Size, Default, Constraints</td><td data-label="Rule">Free text.</td></tr>
+        <tr><td>Markdown</td><td data-label="Tags">Desc, Constructor, Notes</td><td data-label="Rule">Free text with <code>- lists</code>, <code>1. lists</code>, <code>`code`</code>, <code>**bold**</code>, <code># headings</code>, <code>[links](url)</code> and fenced code blocks.<small>Text art drawn with box characters is kept exactly as written.</small></td></tr>
+        <tr><td>JSON list</td><td data-label="Tags">Signatures, Examples, SeeAlso</td><td data-label="Rule">A JSON string or an array of strings: <code>["PowerNetwork", "Bus"]</code>.<small>SeeAlso entries that name a class become links.</small></td></tr>
+        <tr><td>JSON objects</td><td data-label="Tags">Parameters, Returns, Calls</td><td data-label="Rule">A JSON array of objects. It must start with <code>[</code>.<small>MATLAB arrays and cell arrays are not accepted.</small></td></tr>
+      </tbody>
+    </table>
+<pre class="cd-code"><span class="cd-c">% &lt;@Parameters&gt;</span>
+<span class="cd-c">% [{"Name": "r_gain", "Unit": "pu", "Description": "Controller gain."}]</span>
+<span class="cd-c">% &lt;@Returns&gt;</span>
+<span class="cd-c">% [{"Name": "flag", "Description": "true when the solver converged."}]</span>
+<span class="cd-c">% &lt;@Calls&gt;</span>
+<span class="cd-c">% [{"Class": "PowerFlowCalculation", "Method": "solve", "Condition": ""}]</span></pre>
+    <table class="dg-table">
+      <thead><tr><th>JSON object tag</th><th>Fields</th></tr></thead>
+      <tbody>
+        <tr><td>Parameters</td><td data-label="Fields"><code>Name</code>, <code>Type</code>, <code>Unit</code>, <code>Description</code>, <code>Required</code>, <code>Default</code>, <code>Constraints</code></td></tr>
+        <tr><td>Returns</td><td data-label="Fields"><code>Name</code>, <code>Type</code>, <code>Unit</code>, <code>Description</code></td></tr>
+        <tr><td>Calls</td><td data-label="Fields"><code>Class</code> and <code>Method</code> (both required), <code>Condition</code> (blank means always)</td></tr>
+      </tbody>
+    </table>
+    <div class="dg-callout">
+      <svg class="dg-icon"><use href="#dg-i-info"/></svg>
+      <div>
+        <p>Text before the first tag is not lost. Its first line becomes Summary and the rest becomes Desc, unless those tags exist.</p>
+        <p>Prefer writing the tags.</p>
+      </div>
+    </div>
+
+    <!-- ============================== DECLARATION ============================== -->
+    <h2 id="declaration">Don't repeat the code</h2>
+    <p class="dg-lead-in">The exporter reads property declarations and <code>arguments</code> blocks. Write each fact once, in the code, where MATLAB also checks it.</p>
+    <div class="dg-two">
+      <div>
+        <span class="dg-badge is-err"><svg class="dg-icon"><use href="#dg-i-x"/></svg>Duplicated</span>
+<pre class="cd-code" style="margin-top:8px"><span class="cd-c">% &lt;@Summary&gt; Base power.</span>
+<span class="cd-bad"><span class="cd-c">% &lt;@Type&gt; double</span></span>
+<span class="cd-bad"><span class="cd-c">% &lt;@Size&gt; 1x1</span></span>
+<span class="cd-bad"><span class="cd-c">% &lt;@Default&gt; 100</span></span>
+<span class="cd-c">% &lt;@Unit&gt; MVA</span>
+r_Sbase (1,1) double = 100</pre>
+      </div>
+      <div>
+        <span class="dg-badge is-ok"><svg class="dg-icon"><use href="#dg-i-check"/></svg>Written once</span>
+<pre class="cd-code" style="margin-top:8px"><span class="cd-c">% &lt;@Summary&gt; Base power.</span>
+<span class="cd-c">% &lt;@Unit&gt; MVA</span>
+r_Sbase (1,1) double = 100</pre>
+      </div>
+    </div>
+    <table class="dg-table">
+      <thead><tr><th>Member</th><th>Rule</th></tr></thead>
+      <tbody>
+        <tr><td>Properties</td><td data-label="Rule">Use <code>&lt;@Type&gt;</code>, <code>&lt;@Size&gt;</code>, <code>&lt;@Default&gt;</code> and <code>&lt;@Constraints&gt;</code> only when the declaration cannot say it.<small>Example: an untyped property that holds a <code>PowerFlowCalculation</code>. A tag wins over the declaration on the page.</small></td></tr>
+        <tr><td>Methods</td><td data-label="Rule">Give inputs an <code>arguments</code> block with size, class, validators and defaults.<small>In <code>&lt;@Parameters&gt;</code>, write only what the block cannot say (Description, Unit). Entries are matched by <code>Name</code>.</small></td></tr>
+        <tr><td>Signatures</td><td data-label="Rule">Built from the function line and the <code>arguments</code> block. Add <code>&lt;@Signatures&gt;</code> only for extra call forms.<small>Example: <code>[tab_PFsol, flag, output] = calculate_powerflow(obj, mode, Name=Value)</code></small></td></tr>
+      </tbody>
+    </table>
+
+    <!-- ============================== GENERATOR ============================== -->
+    <section class="tag-generator" id="generator" aria-label="Documentation Tag Generator">
+      <h2>Tag Generator</h2>
+      <p class="tag-generator-desc">Pick what you are documenting, fill in the fields, and copy the comment block into the source. <span class="dg-badge is-err">Required</span> and <span class="dg-badge">Recommended</span> fields come first.</p>
 
       <div class="tag-generator-row">
         <span class="tag-generator-label">Target</span>
@@ -25,6 +328,7 @@
           <button type="button" class="tg-target-btn" data-target="method">Method</button>
           <button type="button" class="tg-target-btn" data-target="property">Property</button>
         </div>
+        <label class="tg-switch" id="tg-declared-switch" hidden><input type="checkbox" id="tg-declared" checked> <span id="tg-declared-label"></span></label>
       </div>
 
       <div class="tag-generator-fields" id="tg-fields"></div>
@@ -37,242 +341,109 @@
       </div>
     </section>
 
-    <h2>Collection Pipeline</h2>
-    <ol>
-      <li><code>GUILDA.doc("update", true)</code> obtains the <code>PowerSystemModel</code> class list from <code>GUILDA.dictionary</code> and prepends <code>LayerPackage</code>.</li>
-      <li><code>export_class_database</code> resolves each class with <code>meta.class.fromName</code>.</li>
-      <li>Reflection supplies class, property, and method attributes; source comments supply the tagged documentation.</li>
-      <li>The exporter validates tags and structured JSON, then writes the index and class documents.</li>
-      <li><code>doc-loader.js</code> reads the index first and loads a class document only when its class or method page is opened.</li>
+    <!-- ============================== CHECKS ============================== -->
+    <h2 id="checks">What the exporter checks</h2>
+    <p class="dg-lead-in">Every run prints one line per class and a summary. A problem is reported where the member is defined, not again for each subclass.</p>
+    <table class="dg-table cd-checks">
+      <thead><tr><th>Level</th><th>Check</th></tr></thead>
+      <tbody>
+        <tr><td><span class="dg-badge is-err">Error</span></td><td data-label="Check">Invalid JSON in a structured tag (Signatures, Examples, SeeAlso, Parameters, Returns, Calls).</td></tr>
+        <tr><td><span class="dg-badge is-err">Error</span></td><td data-label="Check">A Calls entry without both <code>Class</code> and <code>Method</code>.</td></tr>
+        <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">An old tag name (see <a href="#tags">Which tags</a>).<small>An error with <code>"strict", true</code>.</small></td></tr>
+        <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">A class, or its own public non-hidden method, has no Summary or Desc.</td></tr>
+        <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">An unknown tag, or the same tag twice (the last value is used).</td></tr>
+        <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">A <code>&lt;@Parameters&gt;</code> name that is not an input of the method.</td></tr>
+        <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">A method declared in the classdef with no implementation file.</td></tr>
+        <tr><td><span class="dg-badge">Coverage</span></td><td data-label="Check">Documented / total for classes, public methods and public properties.<small>Shown at the top of the Reference tab. Undocumented classes get a <span class="dg-badge is-warn">no docs</span> marker there.</small></td></tr>
+      </tbody>
+    </table>
+    <p>With <code>GUILDA.doc("strict", true)</code> the run fails when there are errors.</p>
+
+    <!-- ============================== UPDATE ============================== -->
+    <h2 id="update">Keeping it up to date</h2>
+    <ol class="dg-steps" style="--n: 3">
+      <li><span class="dg-step-title">Edit the source</span>Add or change classes and comments under <code>_GUILDAsystem</code> or <code>_GUILDAobject</code>.</li>
+      <li><span class="dg-step-title">Run <code>GUILDA.doc</code></span>It rebuilds the database only when needed, then opens the pages. A rebuild takes seconds.</li>
+      <li><span class="dg-step-title">Check the output</span>Read the warnings in the Command Window and look at your class page.</li>
     </ol>
-
-    <h2>Sources and Precedence</h2>
-    <table>
-      <tr><th>Target</th><th>Primary source</th><th>Fallback</th></tr>
-      <tr><td>Class</td><td>Consecutive comment lines immediately after <code>classdef</code></td><td>MATLAB <code>help</code>, then reflection descriptions</td></tr>
-      <tr><td>Property</td><td>Consecutive comment lines immediately above the property declaration</td><td>MATLAB <code>help</code>, then reflection descriptions</td></tr>
-      <tr><td>Method</td><td>Consecutive comment lines after <code>function</code> in a separate method file</td><td>MATLAB <code>help</code>, then reflection descriptions</td></tr>
+    <table class="dg-table cd-opts">
+      <thead><tr><th>Call</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><code>update="auto"</code> <span class="dg-muted">(default)</span></td><td data-label="Effect">Rebuild when the database is missing, or when something is newer than <code>database/list_Classes.js</code>: any file or folder under the two source folders, or the exporter itself.<small>Folder times also catch deleted and renamed files.</small></td></tr>
+        <tr><td><code>update=true</code> / <code>false</code></td><td data-label="Effect">Always or never rebuild. <code>"always"</code> and <code>"never"</code> work too.</td></tr>
+        <tr><td><code>"class", "PowerNetwork"</code></td><td data-label="Effect">Open one class page.</td></tr>
+        <tr><td><code>"open", false</code></td><td data-label="Effect">Only rebuild.</td></tr>
+      </tbody>
     </table>
-    <p>Source comments are preferred because MATLAB's help renderer can change indentation. The exporter removes the MATLAB comment prefix but preserves meaningful leading spaces, blank lines, and text-art alignment inside tag values.</p>
-
-    <h2>Generated Data Structure</h2>
-    <h3>Class Index</h3>
-    <p><code>database/list_Classes.js</code> registers <code>window.GUILDA_DOC_INDEX</code>. Its schema version is currently <code>3</code>.</p>
-<pre><code>window.GUILDA_DOC_INDEX = {
-  schema: {
-    version: 3,
-    classDocumentVersion: 3,
-    modelCategories: [...],
-    coreClasses: [...],
-    tags: {...},
-    legacyAliases: {...}
-  },
-  classes: [...],
-  validation: {
-    warningCount: 0,
-    errorCount: 0,
-    classes: [...]
-  }
-};</code></pre>
-    <p>Each <code>classes</code> entry contains the fields below.</p>
-    <table>
-      <tr><th>Field</th><th>Source / purpose</th></tr>
-      <tr><td><code>Name</code></td><td>Fully qualified MATLAB class name.</td></tr>
-      <tr><td><code>Type</code></td><td>Derived category: <code>PowerSystemModel</code>, <code>auxiliary</code>, or <code>other</code>.</td></tr>
-      <tr><td><code>Model</code></td><td>Nearest system-model category, such as <code>PowerNetwork</code>, <code>Bus</code>, or <code>Component</code>.</td></tr>
-      <tr><td><code>Parent</code></td><td>Superclass names obtained from reflection.</td></tr>
-      <tr><td><code>Abstract</code>, <code>Hidden</code></td><td>Class attributes obtained from reflection.</td></tr>
-      <tr><td><code>Summary</code>, <code>Desc</code>, <code>Role</code>, <code>Constructor</code>, <code>Notes</code>, <code>SeeAlso</code>, <code>Since</code>, <code>Deprecated</code></td><td>Canonical class tags.</td></tr>
-      <tr><td><code>path</code></td><td>Internal path used to lazily load the detailed class document. It is required but is not displayed as documentation.</td></tr>
+    <table class="dg-table">
+      <thead><tr><th>Generated file</th><th>Content</th></tr></thead>
+      <tbody>
+        <tr><td><code>_GUILDAdoc/database/list_Classes.js</code></td><td data-label="Content">Index with the schema, coverage and validation results.</td></tr>
+        <tr><td><code>database/GUILDAsystem|GUILDAobject/&lt;Class&gt;.js</code></td><td data-label="Content">One file per class, loaded on demand.</td></tr>
+      </tbody>
     </table>
-    <p>Validation is stored centrally under <code>validation.classes</code>. The redundant per-index-entry fields <code>DocumentationStatus</code>, <code>DocumentationWarnings</code>, and <code>DocumentationErrors</code> are not generated.</p>
-
-    <h3>Detailed Class Documents</h3>
-    <p>Each class has a file in <code>database/GUILDAsystem</code> or <code>database/GUILDAobject</code>. It registers data under <code>window.GUILDA_DOC_CLASSES[ClassName]</code>.</p>
-<pre><code>{
-  schema: { name: "GUILDA class document", version: 3 },
-  ClassName: "component.generator.park",
-  properties: [...],
-  methods: [...],
-  validation: { Warnings: [...], Errors: [...] }
-}</code></pre>
-    <p>Property records combine reflection attributes such as <code>Defining</code>, <code>GetAccess</code>, <code>SetAccess</code>, <code>Dependent</code>, <code>Constant</code>, <code>Abstract</code>, and <code>Hidden</code> with property tags. Method records similarly combine <code>Defining</code>, <code>Access</code>, <code>Static</code>, <code>Abstract</code>, and <code>Hidden</code> with method tags.</p>
-
-    <h2>Tag Schema</h2>
-    <table>
-      <tr><th>Target</th><th>Canonical tags</th></tr>
-      <tr><td>Class</td><td><code>Summary</code>, <code>Desc</code>, <code>Role</code>, <code>Constructor</code>, <code>Notes</code>, <code>SeeAlso</code>, <code>Since</code>, <code>Deprecated</code></td></tr>
-      <tr><td>Property</td><td><code>Summary</code>, <code>Desc</code>, <code>Role</code>, <code>Type</code>, <code>Size</code>, <code>Unit</code>, <code>Default</code>, <code>Constraints</code>, <code>Notes</code>, <code>SeeAlso</code>, <code>Since</code>, <code>Deprecated</code></td></tr>
-      <tr><td>Method</td><td><code>Summary</code>, <code>Desc</code>, <code>Role</code>, <code>Signatures</code>, <code>Parameters</code>, <code>Returns</code>, <code>Calls</code>, <code>Examples</code>, <code>Notes</code>, <code>Throws</code>, <code>SeeAlso</code>, <code>Since</code>, <code>Deprecated</code></td></tr>
-    </table>
-    <p>Tags are case-sensitive field names and must use the exact form <code>&lt;@TagName&gt;</code>. For example, <code>&lt;Summary&gt;</code> is not a documentation tag. A tag value continues until the next valid tag or the end of the comment block.</p>
-    <p><strong>Use canonical names in new code.</strong> Existing documentation can also be read through these aliases:</p>
-    <table>
-      <tr><th>Legacy alias</th><th>Canonical tag</th></tr>
-      <tr><td><code>Abst</code></td><td><code>Summary</code></td></tr>
-      <tr><td><code>Description</code></td><td><code>Desc</code></td></tr>
-      <tr><td><code>varargin</code></td><td><code>Parameters</code></td></tr>
-      <tr><td><code>varargout</code></td><td><code>Returns</code></td></tr>
-      <tr><td><code>DetailsCode</code></td><td><code>Notes</code></td></tr>
-      <tr><td><code>Example</code></td><td><code>Examples</code></td></tr>
-      <tr><td><code>Seealso</code></td><td><code>SeeAlso</code></td></tr>
-    </table>
-
-    <h2>Authoring Rules</h2>
-    <ul>
-      <li>Use <code>Summary</code> for one concise sentence shown in reference tables.</li>
-      <li>Use <code>Desc</code> for the full explanation shown on the detail page. It does not replace a missing <code>Summary</code> in reference tables.</li>
-      <li>Single newlines, consecutive spaces, and indentation are preserved. ASCII diagrams are rendered as preformatted monospace text.</li>
-      <li><code>Signatures</code>, <code>Examples</code>, and <code>SeeAlso</code> must be JSON arrays of strings.</li>
-      <li><code>Parameters</code> and <code>Returns</code> must be JSON objects or arrays of objects.</li>
-      <li><code>Calls</code> must be a JSON array of objects with <code>Class</code>, <code>Method</code>, and <code>Condition</code>.</li>
-      <li>Structured JSON must begin with <code>[</code> or <code>{</code>. Do not use MATLAB arrays or cell-array syntax.</li>
-      <li>Leave an optional tag empty when it does not apply; the exporter supplies its type-appropriate empty value.</li>
-    </ul>
-
-    <h2>Class Documentation</h2>
-<pre><code>classdef MyClass
-    % &lt;@Summary&gt; Updates subsystem states and evaluates utility signals.
-    % &lt;@Desc&gt; Long-form explanation of responsibilities and intended use.
-    % &lt;@Role&gt; CoreComponent
-    % &lt;@Constructor&gt; obj = MyClass(r_gain, str_label)
-    % &lt;@Notes&gt; Call initialize after changing topology-related settings.
-    % &lt;@SeeAlso&gt; ["PowerNetwork", "Component"]
-    % &lt;@Since&gt; 4.2
-    % &lt;@Deprecated&gt;
-    ...
-end</code></pre>
-
-    <h2>Method Documentation</h2>
-    <p>Name-value options belong in <code>Parameters</code> with <code>Kind: "NameValue"</code>. The normalized parameter fields are <code>Name</code>, <code>Kind</code>, <code>Type</code>, <code>Unit</code>, <code>Description</code>, <code>Required</code>, <code>Default</code>, and <code>Constraints</code>.</p>
-    <p><code>Calls</code> lists methods called directly by the documented method. Every entry contains <code>Class</code>, <code>Method</code>, and <code>Condition</code>. Use the fully qualified MATLAB class name in <code>Class</code>. Leave <code>Condition</code> empty for an unconditional call. The method page resolves these entries recursively, displays each condition, stops cyclic paths, and links every resolved node to its method page.</p>
-<pre><code>function rv_y = calculate_output(obj, rv_u, r_gain)
-% &lt;@Summary&gt; Scale an input vector.
-% &lt;@Desc&gt; Computes an output vector using a configurable scalar gain.
-% &lt;@Signatures&gt;
-% ["rv_y = obj.calculate_output(rv_u, r_gain)"]
-% &lt;@Parameters&gt;
-% [
-%   {
-%     "Name": "rv_u",
-%     "Kind": "Positional",
-%     "Type": "double vector",
-%     "Unit": "pu",
-%     "Description": "Input signal vector.",
-%     "Required": true,
-%     "Default": "-",
-%     "Constraints": "finite column vector"
-%   }
-% ]
-% &lt;@Returns&gt;
-% [{"Name":"rv_y","Type":"double vector","Unit":"pu","Description":"Scaled output."}]
-% &lt;@Calls&gt;
-% [
-%   {"Class":"MyClass","Method":"validate_input","Condition":""},
-%   {"Class":"PowerNetwork","Method":"initialize","Condition":"obj.is_ready"}
-% ]
-% &lt;@Examples&gt;
-% ["```matlab\nrv_y = obj.calculate_output(rv_u, 2.0);\n```"]
-% &lt;@Notes&gt; This method does not modify the object state.
-% &lt;@Throws&gt; Errors when the input and gain dimensions are incompatible.
-% &lt;@SeeAlso&gt; ["simulate", "get_sys"]
-end</code></pre>
-
-    <h2>Property Documentation</h2>
-<pre><code>properties
-    % &lt;@Summary&gt; Gain applied to input/output calculations.
-    % &lt;@Desc&gt; Scalar gain used by calculate_output.
-    % &lt;@Role&gt; simulate
-    % &lt;@Type&gt; double
-    % &lt;@Size&gt; 1x1
-    % &lt;@Unit&gt; pu
-    % &lt;@Default&gt; 1.0
-    % &lt;@Constraints&gt; finite and positive
-    % &lt;@Notes&gt; Applied during output evaluation.
-    % &lt;@SeeAlso&gt; ["calculate_output"]
-    % &lt;@Since&gt; 4.2
-    % &lt;@Deprecated&gt;
-    r_gain
-end</code></pre>
-
-    <h2>Validation</h2>
-    <p>The exporter records unknown or duplicate tags, missing class descriptions, and undocumented public methods as warnings. Invalid structured JSON and failed class exports are recorded as errors. Diagnostics are available both in the generated class document and in the central index validation summary.</p>
-    <table>
-      <tr><th>Condition</th><th>Result</th></tr>
-      <tr><td>Unknown or duplicate tag</td><td>Warning</td></tr>
-      <tr><td>Class has neither <code>Summary</code> nor <code>Desc</code></td><td>Warning</td></tr>
-      <tr><td>Public, non-hidden method defined by the class has neither <code>Summary</code> nor <code>Desc</code></td><td>Warning</td></tr>
-      <tr><td>Malformed structured JSON</td><td>Error</td></tr>
-      <tr><td>Class reflection or file export failure</td><td>Error</td></tr>
-    </table>
-    <p>Use strict mode in automated checks to fail generation when one or more validation errors exist:</p>
-<pre><code>&gt;&gt; GUILDA.doc("update", true, "open", false, "strict", true);</code></pre>
-
-    <h2>Regenerating and Reviewing Documentation</h2>
-<pre><code>&gt;&gt; GUILDA.addpath();
-&gt;&gt; GUILDA.doc("update", true, "open", false);
-&gt;&gt; web(fullfile(GUILDA.pwd(), "_GUILDAdoc", "index.html"));</code></pre>
-    <p>After regeneration, review <code>database/list_Classes.js</code> for the index summary and open the Reference tab to verify class links, summaries, inheritance markers, and detailed class or method pages.</p>
+    <p>Both use schema version 4.</p>
+    <p>They are generated and not tracked by git. Never edit them; rebuild instead.</p>
   </main>
 
   <script>
     (function () {
+      // level: required / recommended / optional (see "Which tags").
+      // declared: hidden while the "declared in code" switch is on, because the
+      // exporter reads it from the declaration or the arguments block.
       var TAG_SETS = {
         class: {
           pasteHint: 'Paste this directly under the "classdef ClassName" line, before any properties or methods blocks.',
           fields: [
-            { tag: 'Summary', rows: 2, placeholder: 'One concise sentence shown in reference tables.' },
-            { tag: 'Desc', rows: 3, placeholder: 'Full explanation shown on the class detail page.' },
-            { tag: 'Role', rows: 1, placeholder: 'e.g. CoreComponent' },
-            { tag: 'Constructor', rows: 1, placeholder: 'e.g. obj = MyClass(r_gain, str_label)' },
-            { tag: 'Notes', rows: 2, placeholder: 'Implementation notes, caveats, usage order.' },
-            { tag: 'SeeAlso', rows: 1, placeholder: 'JSON array, e.g. ["PowerNetwork", "Component"]' },
-            { tag: 'Since', rows: 1, placeholder: 'e.g. 4.2' },
-            { tag: 'Deprecated', rows: 1, placeholder: 'Leave empty unless deprecated.' }
+            { tag: 'Summary', level: 'required', rows: 1, placeholder: 'One sentence shown in tables and search.' },
+            { tag: 'Desc', level: 'recommended', rows: 3, placeholder: 'Full explanation for the class page. Markdown is supported.' },
+            { tag: 'Role', level: 'recommended', rows: 1, placeholder: 'e.g. Bus model' },
+            { tag: 'Constructor', level: 'recommended', rows: 2, placeholder: 'e.g. obj = MyClass(r_gain, str_label)' },
+            { tag: 'Notes', level: 'optional', rows: 2, placeholder: 'Implementation notes, caveats, usage order.' },
+            { tag: 'SeeAlso', level: 'optional', rows: 1, placeholder: 'JSON array, e.g. ["PowerNetwork", "Component"]' },
+            { tag: 'Since', level: 'optional', rows: 1, placeholder: 'Version that added the class.' },
+            { tag: 'Deprecated', level: 'optional', rows: 1, placeholder: 'Leave empty unless deprecated.' }
           ]
         },
         property: {
           pasteHint: 'Paste this directly above the property declaration, inside the "properties" block.',
+          declaredLabel: 'The declaration states type, size and default, e.g. r_Sbase (1,1) double = 100',
           fields: [
-            { tag: 'Summary', rows: 2, placeholder: 'One concise sentence shown in reference tables.' },
-            { tag: 'Desc', rows: 3, placeholder: 'Full explanation shown on the class detail page.' },
-            { tag: 'Role', rows: 1, placeholder: 'e.g. simulate' },
-            { tag: 'Type', rows: 1, placeholder: 'e.g. double' },
-            { tag: 'Size', rows: 1, placeholder: 'e.g. 1x1' },
-            { tag: 'Unit', rows: 1, placeholder: 'e.g. pu' },
-            { tag: 'Default', rows: 1, placeholder: 'e.g. 1.0' },
-            { tag: 'Constraints', rows: 1, placeholder: 'e.g. finite and positive' },
-            { tag: 'Notes', rows: 2, placeholder: 'Implementation notes, caveats.' },
-            { tag: 'SeeAlso', rows: 1, placeholder: 'JSON array, e.g. ["calculate_output"]' },
-            { tag: 'Since', rows: 1, placeholder: 'e.g. 4.2' },
-            { tag: 'Deprecated', rows: 1, placeholder: 'Leave empty unless deprecated.' }
+            { tag: 'Summary', level: 'required', rows: 1, placeholder: 'One sentence shown in tables and search.' },
+            { tag: 'Unit', level: 'recommended', rows: 1, placeholder: 'e.g. pu, MVA, rad/s' },
+            { tag: 'Role', level: 'recommended', rows: 1, placeholder: 'e.g. Parameter' },
+            { tag: 'Desc', level: 'optional', rows: 3, placeholder: 'Longer explanation.' },
+            { tag: 'Type', level: 'optional', declared: true, rows: 1, placeholder: 'e.g. PowerFlowCalculation' },
+            { tag: 'Size', level: 'optional', declared: true, rows: 1, placeholder: 'e.g. 1x1' },
+            { tag: 'Default', level: 'optional', declared: true, rows: 1, placeholder: 'e.g. PowerFlowCalculation()' },
+            { tag: 'Constraints', level: 'optional', declared: true, rows: 1, placeholder: 'e.g. finite and positive' },
+            { tag: 'Notes', level: 'optional', rows: 2, placeholder: 'Implementation notes, caveats.' },
+            { tag: 'SeeAlso', level: 'optional', rows: 1, placeholder: 'JSON array, e.g. ["calculate_output"]' },
+            { tag: 'Since', level: 'optional', rows: 1, placeholder: 'Version that added the property.' },
+            { tag: 'Deprecated', level: 'optional', rows: 1, placeholder: 'Leave empty unless deprecated.' }
           ]
         },
         method: {
-          pasteHint: 'Paste this directly after the "function ..." line, before the method body.',
+          pasteHint: 'Paste this directly after the "function ..." line, before the arguments block.',
+          declaredLabel: 'The method has an arguments block (kind, type, default and constraints come from it)',
           fields: [
-            { tag: 'Summary', rows: 2, placeholder: 'One concise sentence shown in reference tables.' },
-            { tag: 'Desc', rows: 3, placeholder: 'Full explanation shown on the class detail page.' },
-            { tag: 'Role', rows: 1, placeholder: 'e.g. simulate' },
+            { tag: 'Summary', level: 'required', rows: 1, placeholder: 'One sentence starting with a verb, e.g. Calculate the power flow.' },
+            { tag: 'Desc', level: 'recommended', rows: 3, placeholder: 'Full explanation for the method page. Markdown is supported.' },
             {
-              tag: 'Signatures', type: 'table', mode: 'list',
-              columns: [{ key: 'value', label: 'Signature', placeholder: 'e.g. rv_y = obj.calculate_output(rv_u, r_gain)' }]
-            },
-            {
-              tag: 'Parameters', type: 'table', mode: 'object',
+              tag: 'Parameters', level: 'recommended', type: 'table', mode: 'object',
               columns: [
                 { key: 'Name', label: 'Name', placeholder: 'rv_u' },
-                { key: 'Kind', label: 'Kind', type: 'select', options: ['Positional', 'NameValue'] },
-                { key: 'Type', label: 'Type', placeholder: 'double vector' },
+                { key: 'Kind', label: 'Kind', type: 'select', options: ['Positional', 'NameValue'], declared: true },
+                { key: 'Type', label: 'Type', placeholder: 'double vector', declared: true },
                 { key: 'Unit', label: 'Unit', placeholder: 'pu' },
                 { key: 'Description', label: 'Description', placeholder: 'Input signal vector.' },
-                { key: 'Required', label: 'Required', type: 'checkbox' },
-                { key: 'Default', label: 'Default', placeholder: '-' },
-                { key: 'Constraints', label: 'Constraints', placeholder: 'finite column vector' }
+                { key: 'Required', label: 'Required', type: 'checkbox', declared: true },
+                { key: 'Default', label: 'Default', placeholder: '-', declared: true },
+                { key: 'Constraints', label: 'Constraints', placeholder: 'finite column vector', declared: true }
               ]
             },
             {
-              tag: 'Returns', type: 'table', mode: 'object',
+              tag: 'Returns', level: 'recommended', type: 'table', mode: 'object',
               columns: [
                 { key: 'Name', label: 'Name', placeholder: 'rv_y' },
                 { key: 'Type', label: 'Type', placeholder: 'double vector' },
@@ -280,23 +451,42 @@ end</code></pre>
                 { key: 'Description', label: 'Description', placeholder: 'Scaled output.' }
               ]
             },
+            { tag: 'Role', level: 'optional', rows: 1, placeholder: 'e.g. simulate' },
             {
-              tag: 'Calls', type: 'table', mode: 'calls',
+              tag: 'Signatures', level: 'optional', type: 'table', mode: 'list',
+              columns: [{ key: 'value', label: 'Extra call form (the main one is generated)', placeholder: 'e.g. obj.calculate_output(rv_u)' }]
+            },
+            {
+              tag: 'Calls', level: 'optional', type: 'table', mode: 'calls',
               columns: [
                 { key: 'Class', label: 'Class', type: 'class-select' },
                 { key: 'Method', label: 'Method', type: 'method-select' },
                 { key: 'Condition', label: 'Condition', placeholder: 'Blank means always; e.g. obj.is_ready' }
               ]
             },
-            { tag: 'Examples', rows: 3, placeholder: 'JSON array of example code strings.' },
-            { tag: 'Notes', rows: 2, placeholder: 'Implementation notes, caveats.' },
-            { tag: 'Throws', rows: 2, placeholder: 'Conditions under which this method errors.' },
-            { tag: 'SeeAlso', rows: 1, placeholder: 'JSON array, e.g. ["simulate", "get_sys"]' },
-            { tag: 'Since', rows: 1, placeholder: 'e.g. 4.2' },
-            { tag: 'Deprecated', rows: 1, placeholder: 'Leave empty unless deprecated.' }
+            { tag: 'Examples', level: 'optional', rows: 3, placeholder: 'JSON array of example code strings.' },
+            { tag: 'Notes', level: 'optional', rows: 2, placeholder: 'Implementation notes, caveats.' },
+            { tag: 'Throws', level: 'optional', rows: 2, placeholder: 'Conditions under which this method errors.' },
+            { tag: 'SeeAlso', level: 'optional', rows: 1, placeholder: 'JSON array, e.g. ["simulate", "get_sys"]' },
+            { tag: 'Since', level: 'optional', rows: 1, placeholder: 'Version that added the method.' },
+            { tag: 'Deprecated', level: 'optional', rows: 1, placeholder: 'Leave empty unless deprecated.' }
           ]
         }
       };
+
+      var LEVEL_BADGES = {
+        required: '<span class="dg-badge is-err">Required</span>',
+        recommended: '<span class="dg-badge">Recommended</span>',
+        optional: ''
+      };
+      var declaredSwitch = document.getElementById('tg-declared-switch');
+      var declaredInput = document.getElementById('tg-declared');
+      var declaredLabel = document.getElementById('tg-declared-label');
+      function hideDeclared() { return !declaredSwitch.hidden && declaredInput.checked; }
+      declaredInput.addEventListener('change', function () {
+        renderFields();
+        update();
+      });
 
       var targetButtons = Array.prototype.slice.call(document.querySelectorAll('#tg-target-options .tg-target-btn'));
       var fieldsContainer = document.getElementById('tg-fields');
@@ -314,6 +504,9 @@ end</code></pre>
         btn.addEventListener('click', function () {
           currentTarget = btn.getAttribute('data-target');
           targetButtons.forEach(function (b) { b.classList.toggle('active', b === btn); });
+          var declaredText = TAG_SETS[currentTarget].declaredLabel;
+          declaredSwitch.hidden = !declaredText;
+          declaredLabel.textContent = declaredText || '';
           renderFields();
           update();
         });
@@ -329,7 +522,11 @@ end</code></pre>
         }
         emptyMsg.style.display = 'none';
         set.fields.forEach(function (f) {
+          if (f.declared && hideDeclared()) return;
           if (f.type === 'table') {
+            f = Object.assign({}, f, {
+              columns: f.columns.filter(function (col) { return !(col.declared && hideDeclared()); })
+            });
             var wrap = createTableField(f);
             fieldsContainer.appendChild(wrap);
             currentFieldEntries.push({ tag: f.tag, kind: 'table', wrap: wrap, config: f });
@@ -341,7 +538,7 @@ end</code></pre>
 
           var label = document.createElement('label');
           label.className = 'tag-generator-field-label';
-          label.textContent = f.tag;
+          label.innerHTML = f.tag + LEVEL_BADGES[f.level || 'optional'];
           label.setAttribute('for', 'tg-input-' + f.tag);
 
           var control = document.createElement('textarea');
@@ -365,7 +562,7 @@ end</code></pre>
 
         var label = document.createElement('span');
         label.className = 'tag-generator-field-label';
-        label.textContent = f.tag;
+        label.innerHTML = f.tag + LEVEL_BADGES[f.level || 'optional'];
         wrap.appendChild(label);
 
         var tableScroll = document.createElement('div');

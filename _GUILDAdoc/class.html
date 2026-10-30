@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GUILDA Reference - Class</title>
   <link rel="stylesheet" href="style.css">
-  
+  <link rel="stylesheet" href="reference.css">
+
   <script src="./database/list_Classes.js"></script>
   <script src="./doc-loader.js"></script>
 </head>
@@ -15,545 +16,425 @@
     <a href="index.html" onclick="window.GuildaDocLoader.navigate('index.html'); return false;" style="display: block; margin-bottom: 20px;">
       <img src="./images/GUILDAicon.png" alt="GUILDA Logo" style="width: 100%;">
     </a>
-    <a href="index.html#tab-reference" onclick="window.GuildaDocLoader.navigate('index.html', 'tab-reference'); return false;" class="btn" style="width: 100%; text-align: center; margin-bottom: 20px; box-sizing: border-box;">← Back to Home</a>
-    
+    <a href="index.html#tab-reference" onclick="window.GuildaDocLoader.navigate('index.html', 'tab-reference'); return false;" class="btn" style="width: 100%; text-align: center; margin-bottom: 20px; box-sizing: border-box;">← Back to Reference</a>
+
     <h3 style="margin-top: 0;">On this page</h3>
-    <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
-      <li><a href="#description" onclick="document.getElementById('description')?.scrollIntoView(); return false;">Description</a></li>
-      <li><a href="#role" onclick="document.getElementById('role')?.scrollIntoView(); return false;">Role</a></li>
-      <li><a href="#constructor" onclick="document.getElementById('constructor')?.scrollIntoView(); return false;">Constructor</a></li>
-      <li><a href="#properties" onclick="document.getElementById('properties')?.scrollIntoView(); return false;">Properties</a></li>
-      <li><a href="#methods" onclick="document.getElementById('methods')?.scrollIntoView(); return false;">Methods</a></li>
-    </ul>
+    <ul id="page-toc" style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;"></ul>
   </nav>
 
   <main id="main-content" style="flex: 1; min-width: 0;">
     <div id="dynamic-content">
-      <h1 style="color: #888;">Loading...</h1>
+      <h1 style="color: var(--muted);">Loading...</h1>
     </div>
   </main>
 
   <script>
-    // Read URL parameters
-    const routeParams = window.GuildaDocLoader.getRouteParams();
+    const loader = window.GuildaDocLoader;
+    const routeParams = loader.getRouteParams();
     const className = routeParams.get('class');
-    let propertyViewMode = 'attributes';
-    let methodViewMode = 'attributes';
-    let propertySearchTerm = '';
-    let methodSearchTerm = '';
-    let propertySortColumn = 'name';
-    let propertySortOrder = 1;
-    let methodSortColumn = 'name';
-    let methodSortOrder = 1;
-    let metaDataCache = null;
-    let classDocCache = null;
 
-    window.setPropertyViewMode = (mode) => {
-      propertyViewMode = mode;
-      if (classDocCache) renderClassPage(className, metaDataCache, classDocCache);
+    // View state of the member tables. The tables are re-rendered on their
+    // own so that the search boxes keep focus while typing.
+    const memberState = {
+      property: { view: 'attributes', search: '', inherited: true, publicOnly: false, sort: 'name', order: 1 },
+      method:   { view: 'attributes', search: '', inherited: true, publicOnly: false, sort: 'name', order: 1 }
     };
+    let pageData = null;
 
-    window.setMethodViewMode = (mode) => {
-      methodViewMode = mode;
-      if (classDocCache) renderClassPage(className, metaDataCache, classDocCache);
+    const escapeHtml = (text) => (text ?? '').toString()
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+    const nl2br = (text) => escapeHtml(text).replace(/\n/g, '<br>');
+    const formatInlineMarkdown = (text) => {
+      let output = escapeHtml(text);
+      output = output.replace(/`([^`]+)`/g, '<code>$1</code>');
+      output = output.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      output = output.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+      output = output.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+      return output;
     };
+    const renderMarkdown = (input) => {
+      const rawText = (input ?? '').toString().replace(/\r\n?/g, '\n').trim();
+      if (!rawText) return '<p style="margin: 0;">N/A</p>';
 
-    window.setPropertySearchTerm = (value) => {
-      propertySearchTerm = (value || '').toLowerCase();
-      if (classDocCache) renderClassPage(className, metaDataCache, classDocCache);
-    };
-
-    window.setMethodSearchTerm = (value) => {
-      methodSearchTerm = (value || '').toLowerCase();
-      if (classDocCache) renderClassPage(className, metaDataCache, classDocCache);
-    };
-
-    window.sortPropertyTable = (column) => {
-      if (propertySortColumn === column) {
-        propertySortOrder *= -1;
-      } else {
-        propertySortColumn = column;
-        propertySortOrder = 1;
+      const sourceLines = rawText.split('\n');
+      const textArtLineCount = sourceLines.filter((line) =>
+        /[┌┐└┘│─]/.test(line) || /(?:={6,}|-{6,}|~{3,}|\/{3,})/.test(line)
+      ).length;
+      if (textArtLineCount >= 2) {
+        return `<pre class="doc-text-art">${escapeHtml(rawText)}</pre>`;
       }
-      if (classDocCache) renderClassPage(className, metaDataCache, classDocCache);
-    };
 
-    window.sortMethodTable = (column) => {
-      if (methodSortColumn === column) {
-        methodSortOrder *= -1;
-      } else {
-        methodSortColumn = column;
-        methodSortOrder = 1;
+      const codeBlocks = [];
+      const text = rawText.replace(/```([\s\S]*?)```/g, (_, code) => {
+        const token = `@@CODEBLOCK_${codeBlocks.length}@@`;
+        codeBlocks.push(`<pre><code>${escapeHtml(code.trimEnd())}</code></pre>`);
+        return token;
+      });
+
+      const htmlParts = [];
+      let paragraphLines = [];
+      let listType = '';
+      let listItems = [];
+      const flushParagraph = () => {
+        if (!paragraphLines.length) return;
+        const paragraph = paragraphLines.map((line) => formatInlineMarkdown(line)).join('<br>');
+        if (paragraph) htmlParts.push(`<p>${paragraph}</p>`);
+        paragraphLines = [];
+      };
+      const flushList = () => {
+        if (!listType || !listItems.length) return;
+        htmlParts.push(`<${listType}>${listItems.map((item) => `<li>${formatInlineMarkdown(item)}</li>`).join('')}</${listType}>`);
+        listType = '';
+        listItems = [];
+      };
+
+      for (const line of text.split('\n')) {
+        const trimmed = line.trim();
+        const unorderedMatch = trimmed.match(/^[-*+]\s+(.*)$/);
+        const orderedMatch = trimmed.match(/^\d+\.\s+(.*)$/);
+        if (!trimmed) {
+          flushParagraph();
+          flushList();
+          continue;
+        }
+        const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
+        if (headingMatch) {
+          flushParagraph();
+          flushList();
+          const headingLevel = headingMatch[1].length;
+          htmlParts.push(`<h${headingLevel}>${formatInlineMarkdown(headingMatch[2])}</h${headingLevel}>`);
+          continue;
+        }
+        if (unorderedMatch || orderedMatch) {
+          flushParagraph();
+          const nextListType = unorderedMatch ? 'ul' : 'ol';
+          if (listType && listType !== nextListType) flushList();
+          listType = nextListType;
+          listItems.push((unorderedMatch || orderedMatch)[1]);
+          continue;
+        }
+        flushList();
+        paragraphLines.push(line);
       }
-      if (classDocCache) renderClassPage(className, metaDataCache, classDocCache);
+      flushParagraph();
+      flushList();
+      return htmlParts.join('').replace(/@@CODEBLOCK_(\d+)@@/g, (_, index) => codeBlocks[Number(index)] || '');
     };
 
-    if (!className) {
-      document.getElementById('dynamic-content').innerHTML = "<h1 style='color:red;'>Error: Class not specified</h1><p>The URL must specify a class name.</p>";
-    } else {
-      window.GuildaDocLoader.loadClass(className)
-        .then(({ meta, data }) => {
-          metaDataCache = meta;
-          classDocCache = data;
-          renderClassPage(className, metaDataCache, classDocCache);
-        })
-        .catch((err) => {
-          document.getElementById('dynamic-content').innerHTML = `
-            <h1 style="color:red;">Load Error</h1>
-            <p>${(err && err.message) ? err.message : err}</p>
-          `;
+    // Link to a class page when the class is in the reference, plain text otherwise
+    // (e.g. MATLAB's handle class).
+    const renderClassLink = (name) => {
+      const value = (name ?? '').toString();
+      if (!value) return '';
+      return loader.findClass(value)
+        ? `<a href="${loader.pageUrl('class.html', { class: value })}">${escapeHtml(value)}</a>`
+        : `<span class="ref-chain-external">${escapeHtml(value)}</span>`;
+    };
+    const methodUrl = (method) => loader.pageUrl('method.html', { class: className, method });
+    const isPublic = (access) => !access || access === 'public';
+    const firstText = (...values) => values.map((v) => (v ?? '').toString().trim()).find(Boolean) || '';
+    const toList = (raw) => Array.isArray(raw)
+      ? raw.map((value) => (value ?? '').toString().trim()).filter(Boolean)
+      : ((raw ?? '').toString().trim() ? [(raw ?? '').toString().trim()] : []);
+
+    const normalizeProperty = (p) => ({
+      name: p?.Name || '',
+      defining: p?.Defining || '',
+      inherited: (p?.Defining || className) !== className,
+      getAccess: p?.GetAccess || '',
+      setAccess: p?.SetAccess || '',
+      dependent: Boolean(p?.Dependent),
+      constant: Boolean(p?.Constant),
+      abstract: Boolean(p?.Abstract),
+      hidden: Boolean(p?.Hidden),
+      role: p?.Role || '',
+      summary: firstText(p?.Summary, p?.Desc),
+      description: firstText(p?.Desc, p?.Summary),
+      // Tagged values win; otherwise show what the declaration itself says.
+      type: firstText(p?.Type, p?.Validation?.Class),
+      size: firstText(p?.Size, p?.Validation?.Size),
+      unit: p?.Unit || '',
+      defaultValue: firstText(p?.Default, p?.DefaultCode),
+      constraints: firstText(p?.Constraints, toList(p?.Validation?.Validators).join(', ')),
+      deprecated: p?.Deprecated || ''
+    });
+    const normalizeMethod = (m) => ({
+      name: m?.Name || '',
+      defining: m?.Defining || '',
+      inherited: (m?.Defining || className) !== className,
+      access: m?.Access || '',
+      static: Boolean(m?.Static),
+      abstract: Boolean(m?.Abstract),
+      sealed: Boolean(m?.Sealed),
+      hidden: Boolean(m?.Hidden),
+      constructor: Boolean(m?.IsConstructor),
+      role: m?.Role || '',
+      summary: firstText(m?.Summary, m?.Desc),
+      signature: firstText(toList(m?.Signatures)[0], m?.Signature, `${m?.Name || ''}()`),
+      deprecated: m?.Deprecated || ''
+    });
+
+    const flag = (value, label) => (value ? `<span class="ref-badge is-small">${label}</span>` : '');
+    const definedIn = (row) => `<span class="ref-defined-in">${row.inherited ? renderClassLink(row.defining) : '<span class="ref-muted">this class</span>'}</span>`;
+
+    const memberViews = {
+      property: {
+        attributes: {
+          columns: [['name', 'Name'], ['getAccess', 'GetAccess'], ['setAccess', 'SetAccess'], ['flags', 'Attributes'], ['defining', 'Defined in']],
+          cells: (p) => [
+            `<strong>${escapeHtml(p.name)}</strong>`,
+            escapeHtml(p.getAccess || 'N/A'),
+            escapeHtml(p.setAccess || 'N/A'),
+            [flag(p.dependent, 'Dependent'), flag(p.constant, 'Constant'), flag(p.abstract, 'Abstract'), flag(p.hidden, 'Hidden')].join(' '),
+            definedIn(p)
+          ]
+        },
+        type: {
+          columns: [['name', 'Name'], ['type', 'Type'], ['size', 'Size'], ['unit', 'Unit'], ['defaultValue', 'Default'], ['constraints', 'Constraints']],
+          cells: (p) => [
+            `<strong>${escapeHtml(p.name)}</strong>`,
+            nl2br(p.type) || '<span class="ref-muted">-</span>',
+            nl2br(p.size) || '<span class="ref-muted">-</span>',
+            nl2br(p.unit) || '<span class="ref-muted">-</span>',
+            p.defaultValue ? `<span class="ref-code">${nl2br(p.defaultValue)}</span>` : '<span class="ref-muted">-</span>',
+            nl2br(p.constraints) || '<span class="ref-muted">-</span>'
+          ]
+        },
+        description: {
+          columns: [['name', 'Name'], ['role', 'Role'], ['description', 'Description']],
+          cells: (p) => [
+            `<strong>${escapeHtml(p.name)}</strong>`,
+            nl2br(p.role),
+            p.description ? nl2br(p.description) : '<span class="ref-muted">No description.</span>'
+          ]
+        }
+      },
+      method: {
+        attributes: {
+          columns: [['name', 'Method'], ['access', 'Access'], ['flags', 'Attributes'], ['defining', 'Defined in']],
+          cells: (m) => [
+            `<a class="row-link" href="${methodUrl(m.name)}">${escapeHtml(m.name)}</a>`,
+            escapeHtml(m.access || 'N/A'),
+            [flag(m.constructor, 'Constructor'), flag(m.static, 'Static'), flag(m.abstract, 'Abstract'), flag(m.sealed, 'Sealed'), flag(m.hidden, 'Hidden')].join(' '),
+            definedIn(m)
+          ]
+        },
+        signature: {
+          columns: [['name', 'Method'], ['signature', 'Signature']],
+          cells: (m) => [
+            `<a class="row-link" href="${methodUrl(m.name)}">${escapeHtml(m.name)}</a>`,
+            `<span class="ref-code">${escapeHtml(m.signature)}</span>`
+          ]
+        },
+        description: {
+          columns: [['name', 'Method'], ['role', 'Role'], ['summary', 'Summary']],
+          cells: (m) => [
+            `<a class="row-link" href="${methodUrl(m.name)}">${escapeHtml(m.name)}</a>`,
+            nl2br(m.role),
+            m.summary ? nl2br(m.summary) : '<span class="ref-muted">No summary.</span>'
+          ]
+        }
+      }
+    };
+
+    function renderMemberTable(kind) {
+      const state = memberState[kind];
+      const allRows = kind === 'property' ? pageData.properties : pageData.methods;
+      const view = memberViews[kind][state.view];
+      const term = state.search.toLowerCase();
+      const accessOf = (row) => (kind === 'property' ? row.getAccess : row.access);
+
+      const rows = allRows
+        .filter((row) => state.inherited || !row.inherited)
+        .filter((row) => !state.publicOnly || (isPublic(accessOf(row)) && !row.hidden))
+        .filter((row) => !term || Object.values(row).join(' ').toLowerCase().includes(term))
+        .sort((left, right) => {
+          const a = (left[state.sort] ?? '').toString().toLowerCase();
+          const b = (right[state.sort] ?? '').toString().toLowerCase();
+          return a > b ? state.order : (a < b ? -state.order : 0);
         });
+
+      const header = view.columns.map(([key, label]) => (key === 'flags'
+        ? `<th>${label}</th>`
+        : `<th class="sortable-header" data-sort="${key}">${label} ↕</th>`)).join('');
+      const body = rows.length
+        ? rows.map((row) => `<tr${row.inherited ? ' class="ref-inherited"' : ''}>${view.cells(row).map((cell) => `<td>${cell}</td>`).join('')}</tr>`).join('')
+        : `<tr><td colspan="${view.columns.length}" style="text-align:center; color: var(--muted);">No matching ${kind === 'property' ? 'properties' : 'methods'} found.</td></tr>`;
+
+      const container = document.getElementById(`${kind}-table`);
+      container.innerHTML = `
+        <p class="ref-count">${rows.length} of ${allRows.length} shown</p>
+        <div class="ref-table-scroll">
+          <table class="compact-table ${kind === 'method' ? 'method-link-table' : 'description-table'}">
+            <thead><tr>${header}</tr></thead>
+            <tbody>${body}</tbody>
+          </table>
+        </div>`;
+      container.querySelectorAll('[data-sort]').forEach((th) => {
+        th.addEventListener('click', () => {
+          state.order = state.sort === th.dataset.sort ? -state.order : 1;
+          state.sort = th.dataset.sort;
+          renderMemberTable(kind);
+        });
+      });
     }
 
-    // 3. Render the page
-    function renderClassPage(className, meta, classData) {
-      const nl2br = (text) => (text ?? '').toString().replace(/\n/g, '<br>');
-      const escapeAttr = (text) => (text ?? '').toString()
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-      const escapeHtml = (text) => (text ?? '').toString()
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-      const renderMarkdown = (input) => {
-        const rawText = (input ?? '').toString().replace(/\r\n?/g, '\n').trim();
-        if (!rawText) return '<p style="margin: 0;">N/A</p>';
+    function renderMemberToolbar(kind) {
+      const state = memberState[kind];
+      const views = kind === 'property'
+        ? [['attributes', 'Meta Data'], ['type', 'Details'], ['description', 'Description']]
+        : [['attributes', 'Meta Data'], ['signature', 'Signature'], ['description', 'Description']];
+      return `
+        <div class="ref-toolbar" data-kind="${kind}">
+          <input type="search" class="search-box" placeholder="Search ${kind === 'property' ? 'properties' : 'methods'}..." autocomplete="off">
+          <label class="ref-check"><input type="checkbox" data-option="inherited"${state.inherited ? ' checked' : ''}> Inherited</label>
+          <label class="ref-check"><input type="checkbox" data-option="publicOnly"${state.publicOnly ? ' checked' : ''}> Public only</label>
+        </div>
+        <div class="view-switcher" data-kind="${kind}">
+          ${views.map(([value, label]) => `<button type="button" class="view-btn${state.view === value ? ' active' : ''}" data-view="${value}">${label}</button>`).join('')}
+        </div>
+        <div id="${kind}-table"></div>`;
+    }
 
-        const sourceLines = rawText.split('\n');
-        const textArtLineCount = sourceLines.filter((line) =>
-          /[┌┐└┘│─]/.test(line) || /(?:={6,}|-{6,}|~{3,}|\/{3,})/.test(line)
-        ).length;
-        if (textArtLineCount >= 2) {
-          return `<pre class="doc-text-art">${escapeHtml(rawText)}</pre>`;
-        }
-
-        const codeBlocks = [];
-        let text = rawText.replace(/```([\s\S]*?)```/g, (_, code) => {
-          const token = `@@CODEBLOCK_${codeBlocks.length}@@`;
-          codeBlocks.push(`<pre><code>${escapeHtml(code.trimEnd())}</code></pre>`);
-          return token;
+    function bindMemberToolbar(kind) {
+      const state = memberState[kind];
+      const toolbar = document.querySelector(`.ref-toolbar[data-kind="${kind}"]`);
+      const switcher = document.querySelector(`.view-switcher[data-kind="${kind}"]`);
+      toolbar.querySelector('input[type="search"]').addEventListener('input', (event) => {
+        state.search = event.target.value;
+        renderMemberTable(kind);
+      });
+      toolbar.querySelectorAll('input[data-option]').forEach((input) => {
+        input.addEventListener('change', () => {
+          state[input.dataset.option] = input.checked;
+          renderMemberTable(kind);
         });
-
-        const lines = text.split('\n');
-        const htmlParts = [];
-        let paragraphLines = [];
-        let listType = '';
-        let listItems = [];
-
-        const flushParagraph = () => {
-          if (!paragraphLines.length) return;
-          const paragraph = paragraphLines.map((line) => formatInlineMarkdown(line)).join('<br>');
-          if (paragraph) {
-            htmlParts.push(`<p>${paragraph}</p>`);
-          }
-          paragraphLines = [];
-        };
-
-        const flushList = () => {
-          if (!listType || !listItems.length) return;
-          htmlParts.push(`<${listType}>${listItems.map((item) => `<li>${formatInlineMarkdown(item)}</li>`).join('')}</${listType}>`);
-          listType = '';
-          listItems = [];
-        };
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          const unorderedMatch = trimmed.match(/^[-*+]\s+(.*)$/);
-          const orderedMatch = trimmed.match(/^\d+\.\s+(.*)$/);
-
-          if (!trimmed) {
-            flushParagraph();
-            flushList();
-            continue;
-          }
-
-          const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
-          if (headingMatch) {
-            flushParagraph();
-            flushList();
-            const headingLevel = headingMatch[1].length;
-            htmlParts.push(`<h${headingLevel}>${formatInlineMarkdown(headingMatch[2])}</h${headingLevel}>`);
-            continue;
-          }
-
-          if (unorderedMatch || orderedMatch) {
-            flushParagraph();
-            const nextListType = unorderedMatch ? 'ul' : 'ol';
-            if (listType && listType !== nextListType) {
-              flushList();
-            }
-            listType = nextListType;
-            listItems.push((unorderedMatch || orderedMatch)[1]);
-            continue;
-          }
-
-          flushList();
-          paragraphLines.push(line);
-        }
-
-        flushParagraph();
-        flushList();
-
-        let html = htmlParts.join('');
-        html = html.replace(/@@CODEBLOCK_(\d+)@@/g, (_, index) => codeBlocks[Number(index)] || '');
-        return html;
-      };
-      const formatInlineMarkdown = (text) => {
-        let output = escapeHtml(text);
-        output = output.replace(/`([^`]+)`/g, '<code>$1</code>');
-        output = output.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-        output = output.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-        output = output.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-        return output;
-      };
-      const normalizeStringList = (raw) => Array.isArray(raw)
-        ? raw.map((value) => (value ?? '').toString().trim()).filter(Boolean)
-        : ((raw ?? '').toString().trim() ? [(raw ?? '').toString().trim()] : []);
-      const normalizeClassMeta = (raw) => ({
-        name: raw?.Name || raw?.ClassName || className,
-        type: raw?.Type || '',
-        model: raw?.Model || '',
-        parent: raw?.Parent || '',
-        abstract: raw?.Abstract ?? false,
-        hidden: raw?.Hidden ?? false,
-        summary: raw?.Summary || '',
-        description: raw?.Desc || '',
-        role: raw?.Role || '',
-        constructor: raw?.Constructor || '',
-        notes: raw?.Notes || '',
-        seeAlso: normalizeStringList(raw?.SeeAlso),
-        since: raw?.Since || '',
-        deprecated: raw?.Deprecated || '',
-        path: raw?.path || ''
       });
-      const normalizeProperty = (p) => ({
-        name: p?.Name || '',
-        summary: p?.Summary || '',
-        role: p?.Role || '',
-        type: p?.Type || '',
-        size: p?.Size || '',
-        unit: p?.Unit || '',
-        defaultValue: p?.Default || '',
-        constraints: p?.Constraints || '',
-        notes: p?.Notes || '',
-        since: p?.Since || '',
-        deprecated: p?.Deprecated || '',
-        defining: p?.Defining || '',
-        getAccess: p?.GetAccess || '',
-        setAccess: p?.SetAccess || '',
-        accessText: [p?.GetAccess || '', p?.SetAccess || ''].filter(Boolean).join(' / '),
-        abstract: p?.Abstract ?? false,
-        dependent: p?.Dependent ?? false,
-        constant: p?.Constant ?? false,
-        hidden: p?.Hidden ?? false,
-        description: p?.Desc || p?.Summary || ''
+      switcher.querySelectorAll('[data-view]').forEach((button) => {
+        button.addEventListener('click', () => {
+          state.view = button.dataset.view;
+          switcher.querySelectorAll('[data-view]').forEach((b) => b.classList.toggle('active', b === button));
+          renderMemberTable(kind);
+        });
       });
-      const normalizeIoArray = (rawList) => {
-        if (!Array.isArray(rawList)) return [];
-        return rawList
-          .map((item) => ({
-            name: item?.Name || item?.name || '',
-            type: item?.Type || item?.type || item?.Class || item?.class || '',
-            description: item?.Description || item?.description || item?.Desc || item?.desc || ''
-          }))
-          .filter((item) => item.name || item.type || item.description);
+      renderMemberTable(kind);
+    }
+
+    function renderClassPage(meta, classDoc) {
+      const c = meta || {};
+      const name = c.Name || className;
+      pageData = {
+        properties: (Array.isArray(classDoc.properties) ? classDoc.properties : []).map(normalizeProperty),
+        methods: (Array.isArray(classDoc.methods) ? classDoc.methods : []).map(normalizeMethod)
       };
-      const ioSummaryFromArray = (list) => {
-        if (!Array.isArray(list) || list.length === 0) return '';
-        return list.map((item) => {
-          const parts = [];
-          if (item.name) parts.push(item.name);
-          if (item.type) parts.push(`(${item.type})`);
-          if (item.description) parts.push(`: ${item.description}`);
-          return parts.join(' ').replace(' :', ':');
-        }).join('\n');
-      };
-      const normalizeMethod = (m) => ({
-        name: m?.Name || '',
-        defining: m?.Defining || '',
-        access: m?.Access || '',
-        static: m?.Static ?? false,
-        abstract: m?.Abstract ?? false,
-        hidden: m?.Hidden ?? false,
-        role: m?.Role || '',
-        summary: m?.Summary || m?.Abst || '',
-        description: m?.Desc || m?.Summary || m?.Abst || '',
-        notes: m?.Notes || m?.DetailsCode || '',
-        throws: m?.Throws || '',
-        since: m?.Since || '',
-        deprecated: m?.Deprecated || '',
-        parameters: normalizeIoArray(m?.Parameters),
-        returns: normalizeIoArray(m?.Returns),
-        calls: Array.isArray(m?.Calls)
-          ? m.Calls.map((call) => {
-              if (typeof call === 'string') return call;
-              return `${call?.Class || call?.class || ''} ${call?.Method || call?.method || ''} ${call?.Condition || call?.condition || ''}`.trim();
-            }).filter(Boolean)
-          : [],
-        arginText: m?.Argin || '',
-        argoutText: m?.Argout || '',
-        vararginText: ioSummaryFromArray(normalizeIoArray(m?.Parameters)) || (m?.Argin || ''),
-        varargoutText: ioSummaryFromArray(normalizeIoArray(m?.Returns)) || (m?.Argout || '')
-      });
+      const events = toList(classDoc.events);
+      const enumeration = toList(classDoc.enumeration);
+      const subclasses = loader.getSubclasses(name).map((item) => item.Name).sort();
+      const ancestors = Array.isArray(c.Ancestors) ? c.Ancestors : loader.parentNames(c);
+      const documented = c.Documented ?? Boolean(firstText(c.Summary, c.Desc));
+      document.title = `GUILDA Reference - ${name}`;
 
-      const sortRows = (rows, column, order) => rows.slice().sort((left, right) => {
-        const valueLeft = (left?.[column] ?? '').toString().toLowerCase();
-        const valueRight = (right?.[column] ?? '').toString().toLowerCase();
-        if (valueLeft > valueRight) return order;
-        if (valueLeft < valueRight) return -order;
-        return 0;
-      });
+      const badges = [
+        c.Type ? `<span class="ref-badge">${escapeHtml(c.Type === 'PowerSystemModel' && c.Model ? c.Model : c.Type)}</span>` : '',
+        c.Package ? `<span class="ref-badge">package ${escapeHtml(c.Package)}</span>` : '',
+        c.Abstract ? '<span class="ref-badge is-abstract">Abstract</span>' : '',
+        c.Sealed ? '<span class="ref-badge is-sealed">Sealed</span>' : '',
+        c.Hidden ? '<span class="ref-badge">Hidden</span>' : '',
+        c.Deprecated ? '<span class="ref-badge is-undocumented">Deprecated</span>' : '',
+        documented ? '' : '<span class="ref-badge is-undocumented">Not documented yet</span>'
+      ].join('');
 
-      const normalizeSearch = (value) => (value ?? '').toString().toLowerCase();
-      const renderPropertyFlag = (value, label) => (value ? label : '');
-      const renderClassLink = (name) => {
-        const classNameValue = (name ?? '').toString();
-        return classNameValue ? `<a href="${window.GuildaDocLoader.pageUrl('class.html', { class: classNameValue })}">${classNameValue}</a>` : '';
-      };
+      const textSections = [
+        ['summary', 'Summary', c.Summary],
+        ['description', 'Description', c.Desc],
+        ['role', 'Role', c.Role],
+        ['constructor', 'Constructor', c.Constructor],
+        ['notes', 'Notes', c.Notes],
+        ['deprecated', 'Deprecated', c.Deprecated]
+      ].filter(([, , value]) => firstText(value));
 
-      const c = normalizeClassMeta(meta || classData || {});
-      const classDoc = classData || {};
-      const properties = Array.isArray(classDoc.properties) ? classDoc.properties : [];
-      const methods = Array.isArray(classDoc.methods) ? classDoc.methods : [];
+      const chain = [name, ...ancestors].map((item, index) => (index === 0
+        ? `<strong>${escapeHtml(item)}</strong>`
+        : renderClassLink(item))).join('<span class="ref-chain-sep" aria-hidden="true">←</span>');
+      const seeAlso = toList(c.SeeAlso);
 
-      const propertySearch = normalizeSearch(propertySearchTerm);
-      const methodSearch = normalizeSearch(methodSearchTerm);
-
-      const propertyRows = sortRows(
-        properties.map(normalizeProperty).filter((p) => {
-          const searchStr = `${p.name} ${p.summary} ${p.role} ${p.type} ${p.size} ${p.unit} ${p.defaultValue} ${p.constraints} ${p.defining} ${p.accessText} ${p.description} ${p.notes} ${p.deprecated}`.toLowerCase();
-          return searchStr.includes(propertySearch);
-        }),
-        propertySortColumn,
-        propertySortOrder
-      );
-
-      const methodRows = sortRows(
-        methods.map(normalizeMethod).filter((m) => {
-          const searchStr = `${m.name} ${m.defining} ${m.access} ${m.role} ${m.summary} ${m.description} ${m.notes} ${m.throws} ${m.calls.join(' ')} ${m.vararginText} ${m.varargoutText} ${m.deprecated}`.toLowerCase();
-          return searchStr.includes(methodSearch);
-        }),
-        methodSortColumn,
-        methodSortOrder
-      );
-
-      const propertyHeader = propertyViewMode === 'attributes'
-        ? `
-          <tr>
-            <th class="sortable-header" onclick="sortPropertyTable('name')">Name ↕</th>
-            <th class="sortable-header" onclick="sortPropertyTable('getAccess')">GetAccess ↕</th>
-            <th class="sortable-header" onclick="sortPropertyTable('setAccess')">SetAccess ↕</th>
-            <th class="sortable-header" onclick="sortPropertyTable('dependent')">Dependent ↕</th>
-            <th class="sortable-header" onclick="sortPropertyTable('constant')">Constant ↕</th>
-            <th class="sortable-header" onclick="sortPropertyTable('abstract')">Abstract ↕</th>
-            <th class="sortable-header" onclick="sortPropertyTable('hidden')">Hidden ↕</th>
-          </tr>`
-        : propertyViewMode === 'type'
-          ? `
-          <tr>
-            <th class="sortable-header" style="width: 20ch;" onclick="sortPropertyTable('name')">Name ↕</th>
-            <th class="sortable-header" style="width: 20ch;" onclick="sortPropertyTable('type')">Type ↕</th>
-            <th class="sortable-header" style="width: 12ch;" onclick="sortPropertyTable('size')">Size ↕</th>
-            <th class="sortable-header" style="width: 12ch;" onclick="sortPropertyTable('unit')">Unit ↕</th>
-            <th class="sortable-header" style="width: 16ch;" onclick="sortPropertyTable('defaultValue')">Default ↕</th>
-            <th class="sortable-header" style="width: auto;" onclick="sortPropertyTable('constraints')">Constraints ↕</th>
-            <th class="sortable-header" style="width: auto;" onclick="sortPropertyTable('defining')">Defining Class ↕</th>
-          </tr>`
-        : `
-          <tr>
-            <th class="sortable-header" style="width: 20ch;" onclick="sortPropertyTable('name')">Name ↕</th>
-            <th class="sortable-header" style="width: 20ch;" onclick="sortPropertyTable('role')">Role ↕</th>
-            <th class="sortable-header" style="width: auto;" onclick="sortPropertyTable('description')">Description ↕</th>
-          </tr>`;
-      const methodHeader = methodViewMode === 'attributes'
-        ? `
-          <tr>
-            <th class="sortable-header" onclick="sortMethodTable('name')">Method ↕</th>
-            <th class="sortable-header" onclick="sortMethodTable('access')">Access ↕</th>
-            <th class="sortable-header" onclick="sortMethodTable('static')">Static ↕</th>
-            <th class="sortable-header" onclick="sortMethodTable('abstract')">Abstract ↕</th>
-            <th class="sortable-header" onclick="sortMethodTable('hidden')">Hidden ↕</th>
-          </tr>`
-        : (methodViewMode === 'details'
-          ? `
-            <tr>
-              <th class="sortable-header" style="width: 18ch;" onclick="sortMethodTable('name')">Method ↕</th>
-              <th class="sortable-header" style="width: auto;" onclick="sortMethodTable('vararginText')">varargin ↕</th>
-              <th class="sortable-header" style="width: auto;" onclick="sortMethodTable('varargoutText')">varargout ↕</th>
-              <th class="sortable-header" style="width: 20ch;" onclick="sortMethodTable('defining')">Defining Class ↕</th>
-            </tr>`
-          : (methodViewMode === 'description'
-          ? `
-            <tr>
-              <th class="sortable-header" style="width: 20ch;" onclick="sortMethodTable('name')">Method ↕</th>
-              <th class="sortable-header" style="width: 20ch;" onclick="sortMethodTable('role')">Role ↕</th>
-              <th class="sortable-header" style="width: auto;" onclick="sortMethodTable('summary')">Summary ↕</th>
-            </tr>`
-          : ''));
-
-      const container = document.getElementById('dynamic-content');
+      const sections = [];
       let html = `
-        <div style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">
-          <a href="${window.GuildaDocLoader.pageUrl('index.html')}">Home</a> &gt; <a href="${window.GuildaDocLoader.pageUrl('index.html', 'tab-reference')}">Reference</a> &gt; ${className}
+        <div style="font-size: 0.9rem; color: var(--muted); margin-bottom: 10px;">
+          <a href="${loader.pageUrl('index.html')}">Home</a> &gt; <a href="${loader.pageUrl('index.html', 'tab-reference')}">Reference</a> &gt; ${escapeHtml(name)}
         </div>
-        <h1 style="font-size: 2.5rem; margin-bottom: 10px;">${c.name}</h1>
+        <h1 style="font-size: 2.2rem; margin-bottom: 8px; word-break: break-word;">${escapeHtml(name)}</h1>
+        <div class="ref-badges">${badges}</div>
+        ${c.File ? `<p class="ref-source">Source: <code>${escapeHtml(c.File)}</code></p>` : ''}
+      `;
+      if (!documented) {
+        html += `<div class="ref-notice">This class has no documentation comments yet. The tables below are generated from the source code. To add a description, follow the comment rules in <a href="developer/class-documentation.html">Class Documentation</a>.</div>`;
+      }
+      textSections.forEach(([id, title, value]) => {
+        sections.push([id, title]);
+        html += `
+          <div class="meta-box" style="margin-top: 16px;">
+            <h2 id="${id}" style="margin-top: 0;">${title}</h2>
+            <div class="markdown-content">${renderMarkdown(value)}</div>
+          </div>`;
+      });
 
-        <div class="meta-box" style="margin-top: 16px;">
-          <h2 id="summary" style="margin-top: 0;">Summary</h2>
-          <div class="markdown-content">${renderMarkdown(c.summary || 'N/A')}</div>
-        </div>
-        
-        <div class="meta-box" id="overview">
-          <table>
+      sections.push(['inheritance', 'Inheritance']);
+      html += `
+        <h2 id="inheritance">Inheritance</h2>
+        <div class="meta-box">
+          <table class="meta-table">
             <tbody>
-              <tr><th style="width: 18%;">Type</th><td>${c.type || 'N/A'}</td></tr>
-              <tr><th>Model</th><td>${c.model || 'N/A'}</td></tr>
-              <tr><th>Parent</th><td>${c.parent || 'N/A'}</td></tr>
-              <tr><th>Abstract</th><td>${c.abstract ? 'true' : 'false'}</td></tr>
-              <tr><th>Hidden</th><td>${c.hidden ? 'true' : 'false'}</td></tr>
-              <tr><th>Since</th><td>${c.since || 'N/A'}</td></tr>
-              <tr><th>Deprecated</th><td>${c.deprecated || 'No'}</td></tr>
+              <tr><th style="width: 22%;">Superclasses</th><td><div class="ref-chain">${chain}</div></td></tr>
+              <tr><th>Subclasses</th><td>${subclasses.length ? `<div class="ref-chain">${subclasses.map(renderClassLink).join('<span class="ref-chain-sep">,</span>')}</div>` : '<span class="ref-muted">None</span>'}</td></tr>
+              ${seeAlso.length ? `<tr><th>See Also</th><td>${seeAlso.map(renderClassLink).join(', ')}</td></tr>` : ''}
+              ${c.Since ? `<tr><th>Since</th><td>${escapeHtml(c.Since)}</td></tr>` : ''}
             </tbody>
           </table>
-        </div>
+        </div>`;
 
-        <div class="meta-box" style="margin-top: 16px;">
-          <h2 id="role" style="margin-top: 0;">Role</h2>
-          <div class="markdown-content">${renderMarkdown(c.role || 'N/A')}</div>
-        </div>
-
-        <div class="meta-box" style="margin-top: 16px;">
-          <h2 id="description" style="margin-top: 0;">Description</h2>
-          <div class="markdown-content">${renderMarkdown(c.description || 'N/A')}</div>
-        </div>
-
-        <div class="meta-box" style="margin-top: 16px;">
-          <h2 id="constructor" style="margin-top: 0;">Constructor</h2>
-          <div class="markdown-content">${renderMarkdown(c.constructor || 'N/A')}</div>
-        </div>
-
-        ${c.notes ? `<div class="meta-box" style="margin-top: 16px;"><h2 style="margin-top: 0;">Notes</h2><div class="markdown-content">${renderMarkdown(c.notes)}</div></div>` : ''}
-        ${c.seeAlso.length ? `<div class="meta-box" style="margin-top: 16px;"><h2 style="margin-top: 0;">See Also</h2><p>${c.seeAlso.map(renderClassLink).join(', ')}</p></div>` : ''}
-      `;
-
-      // Properties セクション
+      sections.push(['properties', 'Properties']);
       html += `<h2 id="properties">Properties</h2>`;
-      if (properties.length > 0) {
-        html += `<input type="text" class="search-box" placeholder="Search properties..." value="${escapeAttr(propertySearchTerm)}" oninput="setPropertySearchTerm(this.value)">`;
-        html += `
-          <div class="view-switcher">
-            <button class="view-btn ${propertyViewMode === 'attributes' ? 'active' : ''}" onclick="setPropertyViewMode('attributes')">Meta Data</button>
-            <button class="view-btn ${propertyViewMode === 'type' ? 'active' : ''}" onclick="setPropertyViewMode('type')">Details</button>
-            <button class="view-btn ${propertyViewMode === 'description' ? 'active' : ''}" onclick="setPropertyViewMode('description')">Description</button>
-          </div>
-        `;
-        html += `<table class="compact-table description-table">
-          <thead>${propertyHeader}</thead>
-          <tbody>
-            ${propertyRows.length > 0 ? propertyRows.map(p => {
-              if (propertyViewMode === 'attributes') {
-                return `
-                  <tr>
-                    <td><strong>${p.name}</strong></td>
-                    <td>${p.getAccess || 'N/A'}</td>
-                    <td>${p.setAccess || 'N/A'}</td>
-                    <td>${renderPropertyFlag(p.dependent, 'Dependent')}</td>
-                    <td>${renderPropertyFlag(p.constant, 'Constant')}</td>
-                    <td>${renderPropertyFlag(p.abstract, 'Abstract')}</td>
-                    <td>${renderPropertyFlag(p.hidden, 'Hidden')}</td>
-                  </tr>
-                `;
-              }
-              if (propertyViewMode === 'type') {
-                return `
-                  <tr>
-                    <td style="width: 20ch;"><strong>${p.name}</strong></td>
-                    <td style="width: 20ch;">${nl2br(p.type)}</td>
-                    <td style="width: 12ch;">${nl2br(p.size)}</td>
-                    <td style="width: 12ch;">${nl2br(p.unit) || 'N/A'}</td>
-                    <td style="width: 16ch;">${nl2br(p.defaultValue) || 'N/A'}</td>
-                    <td style="width: auto;">${nl2br(p.constraints) || 'N/A'}</td>
-                    <td style="width: auto;">${renderClassLink(p.defining)}</td>
-                  </tr>
-                `;
-              }
-              return `
-                <tr>
-                  <td style="width: 20ch;"><strong>${p.name}</strong></td>
-                  <td style="width: 20ch;">${nl2br(p.role)}</td>
-                  <td style="width: auto;">${nl2br(p.description)}</td>
-                </tr>
-              `;
-            }).join('') : `<tr><td colspan="${propertyViewMode === 'attributes' ? 7 : propertyViewMode === 'type' ? 7 : 3}" style="text-align:center; color:#888;">No matching properties found.</td></tr>`}
-          </tbody>
-        </table>`;
-      } else {
-        html += `<p>No public properties.</p>`;
-      }
+      html += pageData.properties.length ? renderMemberToolbar('property') : '<p>No properties.</p>';
 
-      // Methods セクション
+      sections.push(['methods', 'Methods']);
       html += `<h2 id="methods">Methods</h2>`;
-      if (methods.length > 0) {
-        html += `<input type="text" class="search-box" placeholder="Search methods..." value="${escapeAttr(methodSearchTerm)}" oninput="setMethodSearchTerm(this.value)">`;
-        html += `
-          <div class="view-switcher">
-            <button class="view-btn ${methodViewMode === 'attributes' ? 'active' : ''}" onclick="setMethodViewMode('attributes')">Meta Data</button>
-            <button class="view-btn ${methodViewMode === 'details' ? 'active' : ''}" onclick="setMethodViewMode('details')">Details</button>
-            <button class="view-btn ${methodViewMode === 'description' ? 'active' : ''}" onclick="setMethodViewMode('description')">Description</button>
-          </div>
-        `;
-        html += `<table class="method-link-table compact-table ${methodViewMode === 'description' ? 'description-table' : ''}">
-          <thead>${methodHeader}</thead>
-          <tbody>
-            ${methodRows.length > 0 ? methodRows.map(m => {
-              if (methodViewMode === 'attributes') {
-                return `
-                  <tr class="clickable-row" onclick="window.GuildaDocLoader.navigate('method.html', { class: '${className}', method: '${m.name}' })">
-                    <td><span class="row-link">${m.name}</span></td>
-                    <td>${m.access || ''}</td>
-                    <td>${m.static ? 'true' : 'false'}</td>
-                    <td>${m.abstract ? 'true' : 'false'}</td>
-                    <td>${m.hidden ? 'true' : 'false'}</td>
-                  </tr>
-                `;
-              }
-              if (methodViewMode === 'description') {
-                return `
-                  <tr class="clickable-row" onclick="window.GuildaDocLoader.navigate('method.html', { class: '${className}', method: '${m.name}' })">
-                    <td style="width: 20ch;"><span class="row-link">${m.name}</span></td>
-                    <td style="width: 20ch;">${nl2br(m.role)}</td>
-                    <td style="width: auto;">${nl2br(m.summary || m.description)}</td>
-                  </tr>
-                `;
-              }
-              if (methodViewMode === 'details') {
-                return `
-                  <tr class="clickable-row" onclick="window.GuildaDocLoader.navigate('method.html', { class: '${className}', method: '${m.name}' })">
-                    <td style="width: 18ch;"><span class="row-link">${m.name}</span></td>
-                    <td style="width: auto;">${nl2br(m.vararginText || 'N/A')}</td>
-                    <td style="width: auto;">${nl2br(m.varargoutText || 'N/A')}</td>
-                    <td style="width: 20ch;">${renderClassLink(m.defining) || 'N/A'}</td>
-                  </tr>
-                `;
-              }
-              return `
-                <tr class="clickable-row" onclick="window.GuildaDocLoader.navigate('method.html', { class: '${className}', method: '${m.name}' })">
-                  <td><span class="row-link">${m.name}</span></td>
-                  <td>${nl2br(m.arginText)}</td>
-                  <td>${nl2br(m.argoutText)}</td>
-                </tr>
-              `;
-              }).join('') : `<tr><td colspan="${methodViewMode === 'attributes' ? 5 : methodViewMode === 'details' ? 4 : 3}" style="text-align:center; color:#888;">No matching methods found.</td></tr>`}
-          </tbody>
-        </table>`;
-      } else {
-        html += `<p>No methods available.</p>`;
+      html += pageData.methods.length ? renderMemberToolbar('method') : '<p>No methods.</p>';
+
+      if (events.length) {
+        sections.push(['events', 'Events']);
+        html += `<h2 id="events">Events</h2><p>${events.map((item) => `<code>${escapeHtml(item)}</code>`).join(', ')}</p>`;
+      }
+      if (enumeration.length) {
+        sections.push(['enumeration', 'Enumeration']);
+        html += `<h2 id="enumeration">Enumeration</h2><p>${enumeration.map((item) => `<code>${escapeHtml(item)}</code>`).join(', ')}</p>`;
       }
 
-      container.innerHTML = html;
+      document.getElementById('dynamic-content').innerHTML = html;
+      document.getElementById('page-toc').innerHTML = sections.map(([id, title]) =>
+        `<li><a href="#${id}" onclick="document.getElementById('${id}')?.scrollIntoView(); return false;">${title}</a></li>`).join('');
+      if (pageData.properties.length) bindMemberToolbar('property');
+      if (pageData.methods.length) bindMemberToolbar('method');
+    }
+
+    if (!className) {
+      document.getElementById('dynamic-content').innerHTML = "<h1 style='color: var(--err);'>Error: Class not specified</h1><p>The URL must specify a class name.</p>";
+    } else if (!loader.hasIndex()) {
+      document.getElementById('dynamic-content').innerHTML = `
+        <h1>${escapeHtml(className)}</h1>
+        <div class="ref-empty"><p>The class reference has not been generated yet.</p><p>Run <code>GUILDA.doc</code> in MATLAB to build it.</p></div>`;
+    } else {
+      loader.loadClass(className)
+        .then(({ meta, data }) => renderClassPage(meta, data))
+        .catch((err) => {
+          document.getElementById('dynamic-content').innerHTML = `
+            <h1 style="color: var(--err);">Load Error</h1>
+            <p>${escapeHtml((err && err.message) ? err.message : err)}</p>
+          `;
+        });
     }
   </script>
 </body>

@@ -188,6 +188,27 @@ comp.add_local_controller(controller.avr.AVR_ST1("avr3"));
 assert(~net.l_staleEquilibrium)
 
 
+%% LQR add and weight edit make the equilibrium stale
+% LQR の追加は構成の変更、重み Q / R の変更はゲインが変わるので動特性の変更として記録される
+net  = DebugScript.helper.build_ieee14();
+comp = net.a_Bus{1}.a_Component{1};
+DebugScript.helper.quiet(@() net.initialize);
+lqr = controller.local_LQR("lqr1");
+comp.add_local_controller(lqr);
+assert(net.l_staleEquilibrium)
+assert(net.tab_editLog.tag(end) == "Topology" && contains(net.tab_editLog.log(end), "lqr1"))
+
+DebugScript.helper.quiet(@() net.initialize);
+K1 = lqr.K;
+lqr.Q = 10*ones(1, numel(comp.sv_x));
+assert(net.l_staleEquilibrium && net.tab_editLog.tag(end) == "Parameter(dynamics)")
+assert_stale_error(@() net.get_sys(), str_staleID)
+
+% initialize でゲインが計算し直される
+DebugScript.helper.quiet(@() net.initialize);
+assert(~net.l_staleEquilibrium && norm(lqr.K - K1) > 1e-6)
+
+
 %% Slack bus change makes the equilibrium stale
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);
