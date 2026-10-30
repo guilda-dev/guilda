@@ -1,6 +1,12 @@
 function address = DNS(domain)
+% Return the package path of a model from its v1 file name (e.g. 'bus_PQ' -> 'bus.PQ').
+%
+% Asks for the name at the Command Window when none is given.
     arguments
-        domain {mustBeA(domain,["cell","string","char"])} = '';
+        domain {mustBeA(domain,["cell","string","char"])} = ''; % v1 file name of the model (".m" optional), or a cell of names.
+    end
+    arguments (Output)
+        address % Package path of the model.
     end
     if isempty(domain)
         domain  = input('class name : ','s');

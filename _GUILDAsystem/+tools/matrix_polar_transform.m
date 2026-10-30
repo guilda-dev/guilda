@@ -1,7 +1,9 @@
-% 実部虚部表現から極座標表現への変換行列を求める
-% (real, imag) -> (arg, abs)
-% is_reverse=true : (arg, abs) -> (real, imag)
 function matrix = matrix_polar_transform(equilibrium, is_reverse)
+% Compute the matrix that converts (real, imag) deviations to (arg, abs) deviations.
+%
+% Linearized at the complex values `equilibrium`, one 2x2 block per value
+% (block-diagonal). With `is_reverse` true, the matrix converts (arg, abs) to
+% (real, imag) instead (default false).
     if nargin<2
         is_reverse = false;
     end

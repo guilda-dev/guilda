@@ -1,6 +1,6 @@
 function sys = collect(sys)
+% Combine the ports of a state-space model that share a name into a single port.
 %
-% Combine overlapping port names into a single port.
 %
 %  u1 --> ┌-----┐ --> y1
 %  u2 --> | SYS | --> y1

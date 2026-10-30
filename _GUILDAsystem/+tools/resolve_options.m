@@ -1,5 +1,6 @@
 function [s_options, sv_given] = resolve_options(solver, s_map, nv)
-% <@Desc>
+% Merge the stored solver defaults with the call-time overrides into the effective settings.
+%
 % Merges the stored defaults of a solver object (net.solver_*) with the Name-Value
 % overrides of one call and returns the effective settings. The solver object is only
 % read: the overrides apply to this call and never change the stored defaults.
@@ -10,58 +11,22 @@ function [s_options, sv_given] = resolve_options(solver, s_map, nv)
 % s_options has one field per solver field named in s_map (the top-level property for
 % a nested path such as "dynamic.t_span"); the stored value when the name was not
 % given, the override otherwise. Name matching is case-insensitive.
-% <@Role> Solver settings
-% <@Summary> Effective analysis settings: stored solver defaults + call-time overrides.
-% <@Signatures>
-% [
-%   "s_options = tools.resolve_options(solver, s_map, nv)",
-%   "[s_options, sv_given] = tools.resolve_options(solver, s_map, nv)"
-% ]
-% <@Parameters>
-% [
-%   {
-%     "Name": "solver",
-%     "Type": "object or struct",
-%     "Description": "Holder of the stored defaults, e.g. net.solver_PF. Only read.",
-%     "Required": true,
-%     "Default": "-"
-%   },
-%   {
-%     "Name": "s_map",
-%     "Type": "struct",
-%     "Description": "One field per accepted Name-Value name. The value is the solver field it sets: a string (\"MaxIterations\"), a string array to set several fields, a dotted path into a struct property (\"dynamic.t_span\"), or a cell {field, fcn} where fcn converts the given value (e.g. Verbose=true -> Display=\"iter\").",
-%     "Required": true,
-%     "Default": "-"
-%   },
-%   {
-%     "Name": "nv",
-%     "Type": "struct or cell",
-%     "Description": "Overrides of this call: the struct of an arguments block (opt.Name with no default, so only given names are fields) or a cell {Name1, Value1, ...}.",
-%     "Required": false,
-%     "Default": "struct()"
-%   }
-% ]
-% <@Returns>
-% [
-%   {
-%     "Name": "s_options",
-%     "Type": "struct",
-%     "Description": "Effective settings, keyed by solver field name."
-%   },
-%   {
-%     "Name": "sv_given",
-%     "Type": "string row vector",
-%     "Description": "Accepted names given in this call, in s_map spelling."
-%   }
-% ]
+%
 % <@Examples>
-% [
-%   "```matlab\ns_map = struct(\"MaxIteration\", \"MaxIterations\", ...\n               \"Verbose\",      {{\"Display\", @(l) replace(string(l), [\"true\",\"false\"], [\"iter\",\"none\"])}});\nopt = tools.resolve_options(net.solver_PF, s_map, {\"MaxIteration\", 50});\nopt.MaxIterations   % 50; net.solver_PF.MaxIterations is unchanged\n```"
-% ]
+% ```matlab
+% s_map = struct("MaxIteration", "MaxIterations", ...
+%                "Verbose",      {{"Display", @(l) replace(string(l), ["true","false"], ["iter","none"])}});
+% opt = tools.resolve_options(net.solver_PF, s_map, {"MaxIteration", 50});
+% opt.MaxIterations   % 50; net.solver_PF.MaxIterations is unchanged
+% ```
     arguments
-        solver
-        s_map (1,1) struct
-        nv          = struct()
+        solver % Holder of the stored defaults, e.g. net.solver_PF. Only read.
+        s_map (1,1) struct % One field per accepted Name-Value name. The value is the solver field it sets: a string ("MaxIterations"), a string array to set several fields, a dotted path into a struct property ("dynamic.t_span"), or a cell {field, fcn} where fcn converts the given value (e.g. Verbose=true -> Display="iter").
+        nv          = struct() % Overrides of this call: the struct of an arguments block (opt.Name with no default, so only given names are fields) or a cell {Name1, Value1, ...}.
+    end
+    arguments (Output)
+        s_options % Effective settings, keyed by solver field name.
+        sv_given % Accepted names given in this call, in s_map spelling.
     end
 
     str_solver = string(class(solver));

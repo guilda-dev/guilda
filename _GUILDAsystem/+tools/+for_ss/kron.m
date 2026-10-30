@@ -1,4 +1,8 @@
 function sysKron = kron(sys)
+% Eliminate the algebraic states of a descriptor model by Kron reduction.
+%
+% The states with a zero diagonal entry of E are eliminated; the port names and groups are
+% kept.
 
     idx = logical(diag(sys.E));
     if isempty(idx)
