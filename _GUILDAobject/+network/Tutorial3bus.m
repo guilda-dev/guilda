@@ -1,7 +1,28 @@
 classdef Tutorial3bus < PowerNetwork
+% 3-bus network for the GUILDA tutorial.
+% It has 3 buses, 2 pi lines (1-2 and 2-3), 2 generators (gen-park) at buses 1
+% and 2 and a constant-power load (load-power, 3 pu) at bus 3. The network is
+% built with add_bus, add_branch and add_component and is initialized by the
+% constructor.
+%
+% <@Examples>
+% Simulate a fault at bus 3:
+%
+% ```matlab
+% net = network.Tutorial3bus();
+% ev  = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B003");
+% sol = net.simulate([0,10], ev);
+% ```
+%
+% See also network.Txt3Bus, PowerNetwork.add_bus, PowerNetwork.add_branch
 
     methods
         function obj = Tutorial3bus()
+            % Create the network and initialize it.
+
+            arguments (Output)
+                obj % Tutorial3bus network.
+            end
 
             obj.add_bus("Varg",0, "V",2);
             obj.add_bus("Varg",0, "V",2);
