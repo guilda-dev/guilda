@@ -345,7 +345,7 @@ r_Sbase (1,1) double = 100</pre>
     <!-- ============================== GENERATOR ============================== -->
     <section class="tag-generator" id="generator" aria-label="Documentation Tag Generator">
       <h2>Tag Generator</h2>
-      <p class="tag-generator-desc">Pick what you are documenting, fill in the fields, and copy the comment block into the source. <span class="dg-badge is-err">Required</span> and <span class="dg-badge">Recommended</span> fields come first.</p>
+      <p class="tag-generator-desc">Pick what you are documenting, fill in the fields, and copy the comment block into the source. Only the <span class="dg-badge is-err">Required</span> summary must be filled.</p>
 
       <div class="tag-generator-row">
         <span class="tag-generator-label">Target</span>
@@ -358,10 +358,10 @@ r_Sbase (1,1) double = 100</pre>
       </div>
 
       <div class="tag-generator-fields" id="tg-fields"></div>
-      <p class="tag-generator-empty" id="tg-empty">Select a target above to see its tag fields.</p>
+      <p class="tag-generator-empty" id="tg-empty">Select a target above to see its fields.</p>
 
       <div class="tag-generator-result">
-        <p class="tag-generator-hint" id="tg-hint">Fill in at least one tag to generate the comment block.</p>
+        <p class="tag-generator-hint" id="tg-hint">Select a target above to begin.</p>
         <pre class="tag-generator-output-wrap" id="tg-output-wrap" style="display: none;"><code class="tag-generator-output" id="tg-output"></code></pre>
         <button type="button" class="btn tag-generator-copy-btn" id="tg-copy-btn" disabled>Copy</button>
       </div>
@@ -375,9 +375,8 @@ r_Sbase (1,1) double = 100</pre>
       <tbody>
         <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">A removed tag, with its replacement (see <a href="#removed">Removed tags</a>).<small>An error with <code>"strict", true</code>.</small></td></tr>
         <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">A class, or its own public non-hidden method or property, has no H1 line.</td></tr>
-        <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">A <code>&lt;@Deprecated&gt;</code> tag with no text.<small>Deprecated members are marked on their pages and counted in the run summary.</small></td></tr>
+        <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">A <code>&lt;@Deprecated&gt;</code> tag with no text.<small>The text must name the replacement.</small></td></tr>
         <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">An unknown tag, or the same tag twice (the last value is used).</td></tr>
-        <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">A See also name that matches no exported class or method.</td></tr>
         <tr><td><span class="dg-badge is-warn">Warning</span></td><td data-label="Check">A method declared in the classdef with no implementation file.</td></tr>
         <tr><td><span class="dg-badge">Coverage</span></td><td data-label="Check">Documented / total for classes, public methods and public properties. Documented means it has an H1 line.<small>Shown at the top of the Reference tab. Undocumented classes get a <span class="dg-badge is-warn">no docs</span> marker there.</small></td></tr>
       </tbody>
@@ -425,106 +424,48 @@ r_Sbase (1,1) double = 100</pre>
 
   <script>
     (function () {
-      // level: required / recommended / optional (see "Which tags").
-      // declared: hidden while the "declared in code" switch is on, because the
-      // exporter reads it from the declaration or the arguments block.
-      var TAG_SETS = {
+      // kind: text (one comment line per input line), code (Examples, fenced if
+      // not already), rows (an arguments block). declared: hidden while the
+      // "declaration states the class" switch is on.
+      var FIELD_SETS = {
         class: {
           pasteHint: 'Paste this directly under the "classdef ClassName" line, before any properties or methods blocks.',
           fields: [
-            { tag: 'Summary', level: 'required', rows: 1, placeholder: 'One sentence shown in tables and search.' },
-            { tag: 'Desc', level: 'recommended', rows: 3, placeholder: 'Full explanation for the class page. Markdown is supported.' },
-            { tag: 'Role', level: 'recommended', rows: 1, placeholder: 'e.g. Bus model' },
-            { tag: 'Constructor', level: 'recommended', rows: 2, placeholder: 'e.g. obj = MyClass(r_gain, str_label)' },
-            { tag: 'Notes', level: 'optional', rows: 2, placeholder: 'Implementation notes, caveats, usage order.' },
-            { tag: 'SeeAlso', level: 'optional', rows: 1, placeholder: 'JSON array, e.g. ["PowerNetwork", "Component"]' },
-            { tag: 'Since', level: 'optional', rows: 1, placeholder: 'Version that added the class.' },
-            { tag: 'Deprecated', level: 'optional', rows: 1, placeholder: 'Leave empty unless deprecated.' }
+            { key: 'summary', label: 'Summary (H1 line)', required: true, rows: 1, placeholder: 'One sentence, e.g. Node that connects components.' },
+            { key: 'desc', label: 'Description', rows: 3, placeholder: 'Following comment lines. Markdown is supported.' },
+            { key: 'seeAlso', label: 'See also', rows: 1, placeholder: 'e.g. PowerNetwork, Component' },
+            { key: 'examples', label: '<@Examples>', kind: 'code', rows: 3, placeholder: 'MATLAB code; it is put in a ```matlab block.' },
+            { key: 'deprecated', label: '<@Deprecated>', rows: 1, placeholder: 'Leave empty unless deprecated; name the replacement.' }
           ]
         },
         property: {
-          pasteHint: 'Paste this directly above the property declaration, inside the "properties" block.',
-          declaredLabel: 'The declaration states type, size and default, e.g. r_Sbase (1,1) double = 100',
+          pasteHint: 'Paste this directly above the property declaration. A group name goes as a trailing comment on the "properties (...)" line.',
+          declaredLabel: 'The declaration states the class, e.g. r_Sbase (1,1) double = 100',
           fields: [
-            { tag: 'Summary', level: 'required', rows: 1, placeholder: 'One sentence shown in tables and search.' },
-            { tag: 'Unit', level: 'recommended', rows: 1, placeholder: 'e.g. pu, MVA, rad/s' },
-            { tag: 'Role', level: 'recommended', rows: 1, placeholder: 'e.g. Parameter' },
-            { tag: 'Desc', level: 'optional', rows: 3, placeholder: 'Longer explanation.' },
-            { tag: 'Type', level: 'optional', declared: true, rows: 1, placeholder: 'e.g. PowerFlowCalculation' },
-            { tag: 'Size', level: 'optional', declared: true, rows: 1, placeholder: 'e.g. 1x1' },
-            { tag: 'Default', level: 'optional', declared: true, rows: 1, placeholder: 'e.g. PowerFlowCalculation()' },
-            { tag: 'Constraints', level: 'optional', declared: true, rows: 1, placeholder: 'e.g. finite and positive' },
-            { tag: 'Notes', level: 'optional', rows: 2, placeholder: 'Implementation notes, caveats.' },
-            { tag: 'SeeAlso', level: 'optional', rows: 1, placeholder: 'JSON array, e.g. ["calculate_output"]' },
-            { tag: 'Since', level: 'optional', rows: 1, placeholder: 'Version that added the property.' },
-            { tag: 'Deprecated', level: 'optional', rows: 1, placeholder: 'Leave empty unless deprecated.' }
+            { key: 'unit', label: 'Unit', rows: 1, placeholder: 'e.g. MVA, pu, rad/s' },
+            { key: 'summary', label: 'Summary (H1 line)', required: true, rows: 1, placeholder: 'e.g. Base power.' },
+            { key: 'desc', label: 'Description', rows: 2, placeholder: 'Following comment lines. Markdown is supported.' },
+            { key: 'type', label: '<@Type>', declared: true, rows: 1, placeholder: 'e.g. PowerFlowCalculation' },
+            { key: 'deprecated', label: '<@Deprecated>', rows: 1, placeholder: 'Leave empty unless deprecated; name the replacement.' }
           ]
         },
         method: {
-          pasteHint: 'Paste this directly after the "function ..." line, before the arguments block.',
-          declaredLabel: 'The method has an arguments block (kind, type, default and constraints come from it)',
+          pasteHint: 'Paste this directly after the "function ..." line. Merge the arguments lines into your arguments blocks.',
           fields: [
-            { tag: 'Summary', level: 'required', rows: 1, placeholder: 'One sentence starting with a verb, e.g. Calculate the power flow.' },
-            { tag: 'Desc', level: 'recommended', rows: 3, placeholder: 'Full explanation for the method page. Markdown is supported.' },
-            {
-              tag: 'Parameters', level: 'recommended', type: 'table', mode: 'object',
-              columns: [
-                { key: 'Name', label: 'Name', placeholder: 'rv_u' },
-                { key: 'Kind', label: 'Kind', type: 'select', options: ['Positional', 'NameValue'], declared: true },
-                { key: 'Type', label: 'Type', placeholder: 'double vector', declared: true },
-                { key: 'Unit', label: 'Unit', placeholder: 'pu' },
-                { key: 'Description', label: 'Description', placeholder: 'Input signal vector.' },
-                { key: 'Required', label: 'Required', type: 'checkbox', declared: true },
-                { key: 'Default', label: 'Default', placeholder: '-', declared: true },
-                { key: 'Constraints', label: 'Constraints', placeholder: 'finite column vector', declared: true }
-              ]
-            },
-            {
-              tag: 'Returns', level: 'recommended', type: 'table', mode: 'object',
-              columns: [
-                { key: 'Name', label: 'Name', placeholder: 'rv_y' },
-                { key: 'Type', label: 'Type', placeholder: 'double vector' },
-                { key: 'Unit', label: 'Unit', placeholder: 'pu' },
-                { key: 'Description', label: 'Description', placeholder: 'Scaled output.' }
-              ]
-            },
-            { tag: 'Role', level: 'optional', rows: 1, placeholder: 'e.g. simulate' },
-            {
-              tag: 'Signatures', level: 'optional', type: 'table', mode: 'list',
-              columns: [{ key: 'value', label: 'Extra call form (the main one is generated)', placeholder: 'e.g. obj.calculate_output(rv_u)' }]
-            },
-            {
-              tag: 'Calls', level: 'optional', type: 'table', mode: 'calls',
-              columns: [
-                { key: 'Class', label: 'Class', type: 'class-select' },
-                { key: 'Method', label: 'Method', type: 'method-select' },
-                { key: 'Condition', label: 'Condition', placeholder: 'Blank means always; e.g. obj.is_ready' }
-              ]
-            },
-            { tag: 'Examples', level: 'optional', rows: 3, placeholder: 'JSON array of example code strings.' },
-            { tag: 'Notes', level: 'optional', rows: 2, placeholder: 'Implementation notes, caveats.' },
-            { tag: 'Throws', level: 'optional', rows: 2, placeholder: 'Conditions under which this method errors.' },
-            { tag: 'SeeAlso', level: 'optional', rows: 1, placeholder: 'JSON array, e.g. ["simulate", "get_sys"]' },
-            { tag: 'Since', level: 'optional', rows: 1, placeholder: 'Version that added the method.' },
-            { tag: 'Deprecated', level: 'optional', rows: 1, placeholder: 'Leave empty unless deprecated.' }
+            { key: 'summary', label: 'Summary (H1 line)', required: true, rows: 1, placeholder: 'Starts with a verb, e.g. Connect a component.' },
+            { key: 'desc', label: 'Description', rows: 3, placeholder: 'Following comment lines. Markdown is supported.' },
+            { key: 'seeAlso', label: 'See also', rows: 1, placeholder: 'e.g. remove_component, Component' },
+            { key: 'inputs', label: 'Inputs (arguments block)', kind: 'rows', block: 'arguments', namePattern: /^[A-Za-z]\w*(\.[A-Za-z]\w*)?$/, namePlaceholder: 'comp or opt.Check' },
+            { key: 'outputs', label: 'Outputs (arguments (Output) block)', kind: 'rows', block: 'arguments (Output)', namePattern: /^[A-Za-z]\w*$/, namePlaceholder: 'idx' },
+            { key: 'examples', label: '<@Examples>', kind: 'code', rows: 3, placeholder: 'MATLAB code; it is put in a ```matlab block.' },
+            { key: 'deprecated', label: '<@Deprecated>', rows: 1, placeholder: 'Leave empty unless deprecated; name the replacement.' }
           ]
         }
       };
 
-      var LEVEL_BADGES = {
-        required: '<span class="dg-badge is-err">Required</span>',
-        recommended: '<span class="dg-badge">Recommended</span>',
-        optional: ''
-      };
       var declaredSwitch = document.getElementById('tg-declared-switch');
       var declaredInput = document.getElementById('tg-declared');
       var declaredLabel = document.getElementById('tg-declared-label');
-      function hideDeclared() { return !declaredSwitch.hidden && declaredInput.checked; }
-      declaredInput.addEventListener('change', function () {
-        renderFields();
-        update();
-      });
-
       var targetButtons = Array.prototype.slice.call(document.querySelectorAll('#tg-target-options .tg-target-btn'));
       var fieldsContainer = document.getElementById('tg-fields');
       var emptyMsg = document.getElementById('tg-empty');
@@ -534,14 +475,20 @@ r_Sbase (1,1) double = 100</pre>
       var copyBtn = document.getElementById('tg-copy-btn');
 
       var currentTarget = null;
-      var currentFieldEntries = [];
-      var tableValidationMessage = '';
+      var entries = {};
+
+      function hideDeclared() { return !declaredSwitch.hidden && declaredInput.checked; }
+
+      declaredInput.addEventListener('change', function () {
+        renderFields();
+        update();
+      });
 
       targetButtons.forEach(function (btn) {
         btn.addEventListener('click', function () {
           currentTarget = btn.getAttribute('data-target');
           targetButtons.forEach(function (b) { b.classList.toggle('active', b === btn); });
-          var declaredText = TAG_SETS[currentTarget].declaredLabel;
+          var declaredText = FIELD_SETS[currentTarget].declaredLabel;
           declaredSwitch.hidden = !declaredText;
           declaredLabel.textContent = declaredText || '';
           renderFields();
@@ -549,10 +496,19 @@ r_Sbase (1,1) double = 100</pre>
         });
       });
 
+      function fieldLabel(f, forId) {
+        var label = document.createElement(forId ? 'label' : 'span');
+        label.className = 'tag-generator-field-label';
+        label.textContent = f.label;
+        if (f.required) label.insertAdjacentHTML('beforeend', '<span class="dg-badge is-err">Required</span>');
+        if (forId) label.setAttribute('for', forId);
+        return label;
+      }
+
       function renderFields() {
-        var set = TAG_SETS[currentTarget];
+        var set = FIELD_SETS[currentTarget];
         fieldsContainer.innerHTML = '';
-        currentFieldEntries = [];
+        entries = {};
         if (!set) {
           emptyMsg.style.display = 'block';
           return;
@@ -560,65 +516,52 @@ r_Sbase (1,1) double = 100</pre>
         emptyMsg.style.display = 'none';
         set.fields.forEach(function (f) {
           if (f.declared && hideDeclared()) return;
-          if (f.type === 'table') {
-            f = Object.assign({}, f, {
-              columns: f.columns.filter(function (col) { return !(col.declared && hideDeclared()); })
-            });
-            var wrap = createTableField(f);
+          if (f.kind === 'rows') {
+            var wrap = createRowsField(f);
             fieldsContainer.appendChild(wrap);
-            currentFieldEntries.push({ tag: f.tag, kind: 'table', wrap: wrap, config: f });
+            entries[f.key] = { config: f, wrap: wrap };
             return;
           }
-
           var row = document.createElement('div');
           row.className = 'tag-generator-field';
-
-          var label = document.createElement('label');
-          label.className = 'tag-generator-field-label';
-          label.innerHTML = f.tag + LEVEL_BADGES[f.level || 'optional'];
-          label.setAttribute('for', 'tg-input-' + f.tag);
-
           var control = document.createElement('textarea');
           control.className = 'tag-generator-input';
-          control.id = 'tg-input-' + f.tag;
+          control.id = 'tg-input-' + f.key;
           control.rows = f.rows || 1;
           control.placeholder = f.placeholder || '';
-          control.dataset.tag = f.tag;
           control.addEventListener('input', update);
-
-          row.appendChild(label);
+          row.appendChild(fieldLabel(f, control.id));
           row.appendChild(control);
           fieldsContainer.appendChild(row);
-          currentFieldEntries.push({ tag: f.tag, kind: 'simple', control: control });
+          entries[f.key] = { config: f, control: control };
         });
       }
 
-      function createTableField(f) {
+      var ROW_COLUMNS = [
+        { key: 'name', label: 'Name' },
+        { key: 'unit', label: 'Unit', placeholder: 'pu' },
+        { key: 'desc', label: 'Description', placeholder: 'One sentence.' }
+      ];
+
+      function createRowsField(f) {
         var wrap = document.createElement('div');
         wrap.className = 'tag-generator-field tag-generator-field-table';
-
-        var label = document.createElement('span');
-        label.className = 'tag-generator-field-label';
-        label.innerHTML = f.tag + LEVEL_BADGES[f.level || 'optional'];
-        wrap.appendChild(label);
+        wrap.appendChild(fieldLabel(f));
 
         var tableScroll = document.createElement('div');
         tableScroll.className = 'tg-table-scroll';
-
         var table = document.createElement('table');
         table.className = 'tg-table';
-
-        var thead = document.createElement('thead');
         var headRow = document.createElement('tr');
-        f.columns.forEach(function (col) {
+        ROW_COLUMNS.forEach(function (col) {
           var th = document.createElement('th');
           th.textContent = col.label;
           headRow.appendChild(th);
         });
         headRow.appendChild(document.createElement('th'));
+        var thead = document.createElement('thead');
         thead.appendChild(headRow);
         table.appendChild(thead);
-
         var tbody = document.createElement('tbody');
         table.appendChild(tbody);
         tableScroll.appendChild(table);
@@ -629,72 +572,29 @@ r_Sbase (1,1) double = 100</pre>
         addBtn.className = 'tg-table-add-btn';
         addBtn.textContent = '+ Add row';
         addBtn.addEventListener('click', function () {
-          addTableRow(f, tbody);
+          addRow(f, tbody);
           update();
         });
         wrap.appendChild(addBtn);
 
         wrap._tbody = tbody;
-        addTableRow(f, tbody);
-
+        addRow(f, tbody);
         return wrap;
       }
 
-      function addTableRow(f, tbody) {
+      function addRow(f, tbody) {
         var tr = document.createElement('tr');
-        f.columns.forEach(function (col) {
+        ROW_COLUMNS.forEach(function (col) {
           var td = document.createElement('td');
-          var input;
-          if (col.type === 'class-select') {
-            input = document.createElement('select');
-            input.className = 'tg-table-select';
-            appendSelectOption(input, '', 'Select class');
-            var classes = window.GuildaDocLoader
-              ? window.GuildaDocLoader.getClasses().slice()
-              : [];
-            classes.sort(function (left, right) {
-              return (left.Name || '').localeCompare(right.Name || '');
-            }).forEach(function (classMeta) {
-              appendSelectOption(input, classMeta.Name, classMeta.Name);
-            });
-            input.addEventListener('change', function () {
-              var methodSelect = tr.querySelector('[data-col="Method"]');
-              if (methodSelect) populateMethodSelect(input.value, methodSelect);
-              update();
-            });
-          } else if (col.type === 'method-select') {
-            input = document.createElement('select');
-            input.className = 'tg-table-select';
-            input.disabled = true;
-            appendSelectOption(input, '', 'Select class first');
-            input.addEventListener('change', update);
-          } else if (col.type === 'checkbox') {
-            input = document.createElement('input');
-            input.type = 'checkbox';
-            input.className = 'tg-table-checkbox';
-            input.addEventListener('change', update);
-          } else if (col.type === 'select') {
-            input = document.createElement('select');
-            input.className = 'tg-table-select';
-            col.options.forEach(function (opt) {
-              var o = document.createElement('option');
-              o.value = opt;
-              o.textContent = opt;
-              input.appendChild(o);
-            });
-            input.addEventListener('change', update);
-          } else {
-            input = document.createElement('input');
-            input.type = 'text';
-            input.className = 'tg-table-input';
-            input.placeholder = col.placeholder || '';
-            input.addEventListener('input', update);
-          }
+          var input = document.createElement('input');
+          input.type = 'text';
+          input.className = 'tg-table-input';
+          input.placeholder = col.key === 'name' ? f.namePlaceholder : col.placeholder;
           input.dataset.col = col.key;
+          input.addEventListener('input', update);
           td.appendChild(input);
           tr.appendChild(td);
         });
-
         var tdAction = document.createElement('td');
         var removeBtn = document.createElement('button');
         removeBtn.type = 'button';
@@ -703,131 +603,106 @@ r_Sbase (1,1) double = 100</pre>
         removeBtn.setAttribute('aria-label', 'Remove row');
         removeBtn.addEventListener('click', function () {
           tbody.removeChild(tr);
-          if (tbody.children.length === 0) addTableRow(f, tbody);
+          if (tbody.children.length === 0) addRow(f, tbody);
           update();
         });
         tdAction.appendChild(removeBtn);
         tr.appendChild(tdAction);
-
         tbody.appendChild(tr);
       }
 
-      function appendSelectOption(select, value, label) {
-        var option = document.createElement('option');
-        option.value = value;
-        option.textContent = label;
-        select.appendChild(option);
+      function value(key) {
+        var entry = entries[key];
+        return entry && entry.control ? entry.control.value : '';
       }
 
-      function populateMethodSelect(className, methodSelect) {
-        methodSelect._loadRequest = (methodSelect._loadRequest || 0) + 1;
-        var requestId = methodSelect._loadRequest;
-        methodSelect.innerHTML = '';
-        methodSelect.disabled = true;
-
-        if (!className || !window.GuildaDocLoader) {
-          appendSelectOption(methodSelect, '', 'Select class first');
-          update();
-          return;
-        }
-
-        appendSelectOption(methodSelect, '', 'Loading methods...');
-        window.GuildaDocLoader.loadClass(className).then(function (result) {
-          if (methodSelect._loadRequest !== requestId) return;
-          var methods = Array.isArray(result.data && result.data.methods)
-            ? result.data.methods
-            : [];
-          var methodNames = methods.map(function (method) {
-            return (method && method.Name) || '';
-          }).filter(function (name, index, allNames) {
-            return name && allNames.indexOf(name) === index;
-          }).sort(function (left, right) {
-            return left.localeCompare(right);
-          });
-
-          methodSelect.innerHTML = '';
-          appendSelectOption(methodSelect, '', methodNames.length ? 'Select method' : 'No methods available');
-          methodNames.forEach(function (name) {
-            appendSelectOption(methodSelect, name, name);
-          });
-          methodSelect.disabled = methodNames.length === 0;
-          update();
-        }).catch(function () {
-          if (methodSelect._loadRequest !== requestId) return;
-          methodSelect.innerHTML = '';
-          appendSelectOption(methodSelect, '', 'Failed to load methods');
-          methodSelect.disabled = true;
-          update();
-        });
+      // Trimmed lines with leading and trailing blank lines removed.
+      function lines(text) {
+        var out = (text || '').replace(/\r\n/g, '\n').split('\n').map(function (l) { return l.replace(/\s+$/, ''); });
+        while (out.length && out[0].trim() === '') out.shift();
+        while (out.length && out[out.length - 1].trim() === '') out.pop();
+        return out;
       }
 
-      function tableFieldToJson(entry) {
+      function comment(l) { return l.trim() === '' ? '%' : '% ' + l; }
+
+      // One line per name: "A, B" and "A B" both become "A, B".
+      function seeAlsoLine(text) {
+        var names = text.split(/[\s,]+/).filter(function (n) { return n !== ''; });
+        return names.length ? '% See also ' + names.join(', ') : null;
+      }
+
+      function tagLines(tag, text) {
+        var body = lines(text);
+        if (!body.length) return [];
+        var out = ['% <@' + tag + '> ' + body[0]];
+        return out.concat(body.slice(1).map(comment));
+      }
+
+      function exampleLines(text) {
+        var body = lines(text);
+        if (!body.length) return [];
+        var fenced = body.some(function (l) { return /^\s*```/.test(l); });
+        if (!fenced) body = ['```matlab'].concat(body, ['```']);
+        return ['% <@Examples>'].concat(body.map(comment));
+      }
+
+      // Returns { lines, error } for an Inputs or Outputs table.
+      function argumentBlock(entry) {
         var f = entry.config;
-        var rows = Array.prototype.slice.call(entry.wrap._tbody.querySelectorAll('tr'));
-
-        if (f.mode === 'list') {
-          var items = rows.map(function (tr) {
-            return tr.querySelector('[data-col="value"]').value.trim();
-          }).filter(function (v) { return v !== ''; });
-          return items.length ? JSON.stringify(items) : '';
-        }
-
-        if (f.mode === 'calls') {
-          var hasInvalidRow = false;
-          var calls = rows.map(function (tr) {
-            var className = tr.querySelector('[data-col="Class"]').value.trim();
-            var methodName = tr.querySelector('[data-col="Method"]').value.trim();
-            var condition = tr.querySelector('[data-col="Condition"]').value.trim();
-            if (!className && !methodName && !condition) return null;
-            if (!className || !methodName) {
-              hasInvalidRow = true;
-              return null;
-            }
-            return {
-              Class: className,
-              Method: methodName,
-              Condition: condition
-            };
-          }).filter(function (call) { return call !== null; });
-          entry.wrap.classList.toggle('has-error', hasInvalidRow);
-          if (hasInvalidRow) {
-            tableValidationMessage = 'Complete both Class and Method for every Calls row.';
+        var rowLines = [];
+        var error = '';
+        Array.prototype.slice.call(entry.wrap._tbody.querySelectorAll('tr')).forEach(function (tr) {
+          var get = function (k) { return tr.querySelector('[data-col="' + k + '"]').value.trim(); };
+          var name = get('name'), unit = get('unit'), desc = get('desc');
+          if (!name && !unit && !desc) return;
+          if (!f.namePattern.test(name)) {
+            error = error || (f.label + ': "' + (name || '(empty)') + '" is not a valid argument name.');
+            return;
           }
-          return calls.length ? JSON.stringify(calls, null, 2) : '';
-        }
-
-        var objs = rows.map(function (tr) {
-          var obj = {};
-          f.columns.forEach(function (col) {
-            var input = tr.querySelector('[data-col="' + col.key + '"]');
-            if (col.type === 'checkbox') {
-              obj[col.key] = input.checked;
-            } else {
-              var v = input.value.trim();
-              if (v !== '') obj[col.key] = v;
-            }
-          });
-          var meaningfulKeys = Object.keys(obj).filter(function (k) { return k !== 'Required'; });
-          return meaningfulKeys.length ? obj : null;
-        }).filter(function (o) { return o !== null; });
-
-        return objs.length ? JSON.stringify(objs, null, 2) : '';
+          var text = (unit ? '[' + unit + '] ' : '') + desc;
+          rowLines.push('    ' + name + (text ? ' % ' + text : ''));
+        });
+        entry.wrap.classList.toggle('has-error', !!error);
+        if (!rowLines.length) return { lines: [], error: error };
+        return { lines: [f.block].concat(rowLines, ['end']), error: error };
       }
 
-      function formatTag(tagName, rawValue) {
-        var value = (rawValue || '').replace(/\r\n/g, '\n');
-        var lines = value.split('\n');
-        while (lines.length && lines[lines.length - 1].trim() === '') lines.pop();
-        while (lines.length && lines[0].trim() === '') lines.shift();
-        if (lines.length === 0) return null;
-        if (lines.length === 1) return '% <@' + tagName + '> ' + lines[0];
-        var out = ['% <@' + tagName + '>'];
-        lines.forEach(function (l) { out.push('% ' + l); });
-        return out.join('\n');
+      function build() {
+        var summary = lines(value('summary')).join(' ').trim();
+        var unit = value('unit').trim().replace(/^\[|\]$/g, '');
+        var head = [];
+        var tags = [];
+        var code = [];
+        var error = '';
+
+        if (summary) head.push('% ' + (unit ? '[' + unit + '] ' : '') + summary);
+        head = head.concat(lines(value('desc')).map(comment));
+        var see = seeAlsoLine(value('seeAlso'));
+        if (see) head.push('%', see);
+
+        tags = tags.concat(exampleLines(value('examples')));
+        tags = tags.concat(tagLines('Type', value('type')));
+        tags = tags.concat(tagLines('Deprecated', value('deprecated')));
+
+        ['inputs', 'outputs'].forEach(function (key) {
+          if (!entries[key]) return;
+          var block = argumentBlock(entries[key]);
+          error = error || block.error;
+          code = code.concat(block.lines);
+        });
+
+        var any = head.length || tags.length || code.length || unit;
+        if (any && !summary) error = error || 'Write the summary first. It is the H1 line that MATLAB help and the Reference show.';
+
+        var out = head.slice();
+        if (tags.length) out = out.concat(out.length > 1 ? ['%'] : [], tags);
+        if (code.length) out = out.concat(code);
+        return { text: out.join('\n'), any: any, error: error };
       }
 
       function update() {
-        var set = TAG_SETS[currentTarget];
+        var set = FIELD_SETS[currentTarget];
         if (!set) {
           hint.textContent = 'Select a target above to begin.';
           output.textContent = '';
@@ -835,35 +710,18 @@ r_Sbase (1,1) double = 100</pre>
           copyBtn.disabled = true;
           return;
         }
-
-        var blocks = [];
-        tableValidationMessage = '';
-        currentFieldEntries.forEach(function (entry) {
-          var raw = entry.kind === 'table' ? tableFieldToJson(entry) : entry.control.value;
-          var block = formatTag(entry.tag, raw);
-          if (block) blocks.push(block);
-        });
-
-        if (tableValidationMessage) {
-          output.textContent = blocks.join('\n');
-          outputWrap.style.display = blocks.length ? 'block' : 'none';
-          hint.textContent = tableValidationMessage;
-          copyBtn.disabled = true;
-          return;
-        }
-
-        if (blocks.length === 0) {
+        var result = build();
+        if (!result.any) {
           output.textContent = '';
           outputWrap.style.display = 'none';
-          hint.textContent = 'Fill in at least one tag to generate the comment block.';
+          hint.textContent = 'Fill in the summary to generate the comment block.';
           copyBtn.disabled = true;
           return;
         }
-
-        output.textContent = blocks.join('\n');
-        outputWrap.style.display = 'block';
-        hint.textContent = set.pasteHint;
-        copyBtn.disabled = false;
+        output.textContent = result.text;
+        outputWrap.style.display = result.text ? 'block' : 'none';
+        hint.textContent = result.error || set.pasteHint;
+        copyBtn.disabled = !!result.error;
       }
 
       function fallbackCopy(text) {
@@ -881,9 +739,8 @@ r_Sbase (1,1) double = 100</pre>
         if (copyBtn.disabled) return;
         var text = output.textContent;
         var flash = function () {
-          var original = 'Copy';
           copyBtn.textContent = 'Copied!';
-          setTimeout(function () { copyBtn.textContent = original; }, 1200);
+          setTimeout(function () { copyBtn.textContent = 'Copy'; }, 1200);
         };
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(text).then(flash, function () {
