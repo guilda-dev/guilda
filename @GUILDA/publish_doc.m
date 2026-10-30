@@ -37,6 +37,7 @@ function publish_doc(option)
     % 3. Check out gh-pages into a temporary worktree
     fprintf('  Preparing %s ...\n', str_branch)
     run_git(str_root, 'worktree prune');
+    check_branch_free(str_root, str_branch);
     bln_new = prepare_branch(str_root, str_branch, option.push);
     str_tmp = string(tempname);
     if bln_new
@@ -83,7 +84,7 @@ function publish_doc(option)
             return
         end
     end
-    [r_status, str_out] = system(sprintf('git -C %s push --no-progress origin %s', quote(str_root), str_branch));
+    [r_status, str_out] = system(sprintf('git --no-pager -C %s push --no-progress origin %s', quote(str_root), str_branch));
     fprintf('%s', str_out)
     if r_status ~= 0
         error('GUILDA:publish_doc:PushFailed', 'git push failed. The commit stays on the local %s branch.', str_branch);
@@ -97,7 +98,7 @@ function [str_source, str_sha] = check_source_repository(str_root, bln_push)
     if r_status ~= 0
         error('GUILDA:publish_doc:NoGit', 'git was not found. Install git and add it to the system path.');
     end
-    [r_status, str_out] = system(sprintf('git -C %s rev-parse --is-inside-work-tree', quote(str_root)));
+    [r_status, str_out] = system(sprintf('git --no-pager -C %s rev-parse --is-inside-work-tree', quote(str_root)));
     if r_status ~= 0 || ~strcmp(strtrim(str_out), 'true')
         error('GUILDA:publish_doc:NoRepository', '%s is not a git repository.', str_root);
     end
@@ -120,7 +121,7 @@ function [str_source, str_sha] = check_source_repository(str_root, bln_push)
     end
 
     if bln_push
-        [r_status, ~] = system(sprintf('git -C %s remote get-url origin', quote(str_root)));
+        [r_status, ~] = system(sprintf('git --no-pager -C %s remote get-url origin', quote(str_root)));
         if r_status ~= 0
             error('GUILDA:publish_doc:NoOrigin', 'The repository has no remote named origin.');
         end
@@ -133,9 +134,9 @@ function bln_new = prepare_branch(str_root, str_branch, bln_push)
     % Bring the local branch up to date with origin. Returns true when the
     % branch exists neither locally nor on origin.
     bln_remote = false;
-    [r_status, ~] = system(sprintf('git -C %s remote get-url origin', quote(str_root)));
+    [r_status, ~] = system(sprintf('git --no-pager -C %s remote get-url origin', quote(str_root)));
     if r_status == 0
-        [r_status, str_out] = system(sprintf('git -C %s ls-remote --exit-code --heads origin %s', quote(str_root), str_branch));
+        [r_status, str_out] = system(sprintf('git --no-pager -C %s ls-remote --exit-code --heads origin %s', quote(str_root), str_branch));
         if r_status == 0
             bln_remote = true;
         elseif r_status ~= 2 && bln_push
@@ -147,7 +148,7 @@ function bln_new = prepare_branch(str_root, str_branch, bln_push)
         run_git(str_root, sprintf('fetch -q origin +refs/heads/%s:%s', str_branch, str_remote_ref));
     end
 
-    [r_status, ~] = system(sprintf('git -C %s show-ref --verify --quiet refs/heads/%s', quote(str_root), str_branch));
+    [r_status, ~] = system(sprintf('git --no-pager -C %s show-ref --verify --quiet refs/heads/%s', quote(str_root), str_branch));
     bln_local = r_status == 0;
 
     bln_new = ~bln_local && ~bln_remote;
@@ -158,14 +159,29 @@ function bln_new = prepare_branch(str_root, str_branch, bln_push)
         run_git(str_root, sprintf('branch %s %s', str_branch, str_remote_ref));
         return
     end
-    [r_behind, ~] = system(sprintf('git -C %s merge-base --is-ancestor %s %s', quote(str_root), str_branch, str_remote_ref));
-    [r_ahead, ~]  = system(sprintf('git -C %s merge-base --is-ancestor %s %s', quote(str_root), str_remote_ref, str_branch));
+    [r_behind, ~] = system(sprintf('git --no-pager -C %s merge-base --is-ancestor %s %s', quote(str_root), str_branch, str_remote_ref));
+    [r_ahead, ~]  = system(sprintf('git --no-pager -C %s merge-base --is-ancestor %s %s', quote(str_root), str_remote_ref, str_branch));
     if r_behind == 0
         run_git(str_root, sprintf('branch -f %s %s', str_branch, str_remote_ref));
     elseif r_ahead ~= 0
         error('GUILDA:publish_doc:Diverged', ...
             'The local %s and origin/%s have diverged. Reset the local branch with "git branch -f %s origin/%s".', ...
             str_branch, str_branch, str_branch, str_branch);
+    end
+end
+
+
+function check_branch_free(str_root, str_branch)
+    % A worktree left by an interrupted run keeps the branch checked out.
+    str_list = run_git(str_root, 'worktree list --porcelain');
+    cell_blocks = strsplit(strrep(str_list, char(13), ''), [newline newline]);
+    for i_block = 1:numel(cell_blocks)
+        if contains(cell_blocks{i_block}, "branch refs/heads/" + str_branch)
+            str_path = regexp(cell_blocks{i_block}, '(?<=^worktree )[^\n]*', 'match', 'once', 'lineanchors');
+            error('GUILDA:publish_doc:BranchInUse', ...
+                '%s is checked out in %s, probably left by an interrupted run.\nRemove it with: git worktree remove --force "%s"', ...
+                str_branch, str_path, str_path);
+        end
     end
 end
 
@@ -215,7 +231,7 @@ function keep_published_index(str_tmp)
     % class index when nothing else in it changed, so an unchanged site
     % makes no commit.
     str_path = '_GUILDAdoc/database/list_Classes.js';
-    [r_status, str_old] = system(sprintf('git -C %s show HEAD:%s', quote(str_tmp), str_path));
+    [r_status, str_old] = system(sprintf('git --no-pager -C %s show HEAD:%s', quote(str_tmp), str_path));
     if r_status ~= 0
         return
     end
@@ -246,18 +262,18 @@ end
 
 
 function remove_worktree(str_root, str_tmp)
-    [r_status, ~] = system(sprintf('git -C %s worktree remove --force %s', quote(str_root), quote(str_tmp)));
+    [r_status, ~] = system(sprintf('git --no-pager -C %s worktree remove --force %s', quote(str_root), quote(str_tmp)));
     if r_status ~= 0
         if isfolder(str_tmp)
             rmdir(str_tmp, 's');
         end
-        system(sprintf('git -C %s worktree prune', quote(str_root)));
+        system(sprintf('git --no-pager -C %s worktree prune', quote(str_root)));
     end
 end
 
 
 function str_out = run_git(str_dir, str_args)
-    [r_status, str_out] = system(sprintf('git -C %s %s', quote(str_dir), str_args));
+    [r_status, str_out] = system(sprintf('git --no-pager -C %s %s', quote(str_dir), str_args));
     if r_status ~= 0
         error('GUILDA:publish_doc:GitFailed', 'git %s failed:\n%s', str_args, str_out);
     end
