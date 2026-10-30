@@ -1,34 +1,30 @@
 function [rv_point, l_equilibrium] = point_vector(layer, Point)
-% <@Desc>
-% Values of the variables of layer (a PowerNetwork, Bus or Component) at the point
-% given by the Point option, as a column vector in the order of layer.get_variable_map().
-%   []       : the equilibrium (states, inputs and bus voltages set by net.initialize);
-%              l_equilibrium is true
-%   vector   : used as it is; its length must be the height of the variable map
-%   {sim, t} : the values of the simulation result sim at time t (linear interpolation
-%              between output times; at an event time, the value after the event).
-%              A result class with a method rv = get_point(sim, t, tab_map), which returns
-%              the values of the rows of tab_map, is read through that method; an
-%              odeSimulationResult is read directly (see below).
+% Get the values of the variable map at the Point option.
+%
+% Returns the values of the variables of layer (a PowerNetwork, Bus or Component) at the
+% point given by the Point option, as a column vector in the order of
+% layer.get_variable_map().
+%
+% - `[]`: the equilibrium (states, inputs and bus voltages set by net.initialize);
+%   l_equilibrium is true.
+% - vector: used as it is; its length must be the height of the variable map.
+% - `{sim, t}`: the values of the simulation result sim at time t (linear interpolation
+%   between output times; at an event time, the value after the event).
+%   A result class with a method rv = get_point(sim, t, tab_map), which returns
+%   the values of the rows of tab_map, is read through that method; an
+%   odeSimulationResult is read directly (see below).
+%
 % An odeSimulationResult does not store the states of local or global controllers, so a
 % layer that has controllers stops with GUILDA:odeLinearizer:PointUnavailable.
 % The model is not changed.
-% <@Role> Static Analysis
-% <@Summary> Values of the variable map at the Point option.
-% <@Signatures>
-% [
-%   "[rv_point, l_equilibrium] = odeLinearizer.point_vector(layer, Point)"
-% ]
-% <@Parameters>
-% [
-%   {"Name": "layer", "Type": "PowerNetwork, Bus or Component", "Description": "Analysed layer.", "Required": true, "Default": "-"},
-%   {"Name": "Point", "Type": "[] | double vector | cell {sim, t}", "Description": "Point option.", "Required": true, "Default": "-"}
-% ]
-% <@Returns>
-% [
-%   {"Name": "rv_point", "Type": "double column", "Description": "Values in the order of layer.get_variable_map()."},
-%   {"Name": "l_equilibrium", "Type": "logical scalar", "Description": "True when Point is [] (the equilibrium)."}
-% ]
+%
+% Inputs:
+% - `layer`: Analysed layer.
+% - `Point`: Point option.
+    arguments (Output)
+        rv_point % Values in the order of layer.get_variable_map().
+        l_equilibrium % True when Point is [] (the equilibrium).
+    end
     odeLinearizer.check_point(Point);
     tab_map = layer.get_variable_map();
     n_var   = height(tab_map);
