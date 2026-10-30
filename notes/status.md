@@ -10,34 +10,20 @@ Branch: `refactor/design-alignment` (base: `version4.0`). Updated 2026-10-30.
 /Applications/MATLAB_R2026a.app/bin/matlab -batch "cd('<repo>'); DebugScript.run_all"
 ```
 
-Result on 2026-10-30 (`refactor/design-alignment` at `2723422`, after
-the topology, events, controller, follow-up and network-template fixes):
+Result on 2026-10-30 (`refactor/design-alignment` at `b69e54b`, after the
+simulator/dictionary fix, OPF stage 2, the controller wiring and
+`local_LQR` port, simulation results in variable-map order and the v4
+`initialize`): **pending** (a full run is in progress).
 
-```
-合計 205 件: PASS 203 / KNOWN 1 / FAIL 0 / FIXED? 0 / SKIP 1   (371 s)
-  F1: PASS 26  KNOWN 1    F2: PASS 18    F3: PASS 37
-  F4: PASS 20  SKIP 1     F5: PASS  6    F6: PASS 31
-  F7: PASS 26             F8: PASS 20    F9: PASS  9
-  F10: PASS 10
-```
-
-- KNOWN: `AddLocalControllerLQR` (below).
-- SKIP: the MATPOWER comparison in F4 (`runopf` is not on the path).
+There are no known failures: `DebugScript.known_failures` is empty since
+`controller.local_LQR` was ported. The MATPOWER comparison in F4 reports
+SKIP when `runopf` is not on the path.
 
 Use R2026a: R2026b lacks the Optimization and Control toolboxes.
 
-### Known failure
-
-- `test_F1_model_building/AddLocalControllerLQR` — `controller.local_LQR`
-  still uses the v3 LocalController API and is abstract under v4. In v4 a
-  controller's input is the component's output `Y` (for generators only
-  `omega`), and `add_local_controller` holds only controllers keyed `avr` /
-  `pss`. Decided: the LQR reads widened component outputs `Y` (no direct
-  state access). The port is in progress in another session.
-
 ## Open items
 
-Checked against the code on 2026-10-30 (`2723422`).
+Checked against the code on 2026-10-30 (`b69e54b`).
 
 ### Edit tracking
 
@@ -48,21 +34,12 @@ Checked against the code on 2026-10-30 (`2723422`).
   `class-design.html` (Edit handling) on `docs/doc-refactoring` has no row
   for these edits yet.
 
-### Controllers
-
-- **`controller.local_LQR` port in progress** (see the known failure
-  above): widened component outputs `Y`.
-
 ### Bundled networks
 
-- **`IEEE68bus` without controllers is unstable.**
-  `network.IEEE68bus(LocalController=false)` has an eigenvalue with real
-  part +0.128, and a multi-phase simulation (e.g. with a fault event)
-  fails at t = 0 (reported by the session that ported it; not rechecked
-  here). Another session is fixing it.
-- **`GUILDA.dictionary` scans `+network/archive/`**, so the archived v2
-  classes are listed (reported; not rechecked here). Another session is
-  fixing it.
+- `IEEE14bus`, `IEEE14bus_NoTap`, `IEEE14bus_lossless`, `Ishizaki6Bus`,
+  `TEST31bus` and `Txt3Bus` have no `network/parameter.csv`, so they import
+  with the default base values (`GUILDA.config("Model","Hz")`, 100 MVA).
+  `IEEE9bus` and `IEEE68bus` have the file.
 
 ### Tutorials
 
@@ -70,20 +47,34 @@ Checked against the code on 2026-10-30 (`2723422`).
   user's decision until the specification settles:
   `docs/tutorial-steps-1-3-v4`, `docs/tutorial-steps-4-6-v4`,
   `docs/tutorial-classmanual-v4`. On `refactor/design-alignment` the
-  `_GUILDAtutorial/*.mlx` files still use pre-v4 calls.
+  `_GUILDAtutorial/*.mlx` files still use pre-v4 calls. The three branches
+  predate two later changes, and must be checked against them before they
+  are merged: the `comp.get_sys` / `bus.get_sys` layout (inputs, states
+  and outputs per layer; `full` ignored) and `initialize`
+  (`[result, flag, output]`, `Method=`; see
+  [v4-migration.md](v4-migration.md) 1.12 and 1.17). A text search of
+  Step1, Step3 and Step6 found only `net.get_sys` and `net.initialize()`
+  without outputs, which these changes do not affect; the other files are
+  not checked.
 
 ### Compatibility
 
 - Done: every compat hook in core code is a single line tagged
   `% COMPAT(v3)`, with the logic in `_GUILDAsystem/_VersionSupport/`
   (`grep -rn "COMPAT(v3)" _GUILDAsystem _GUILDAobject @GUILDA`; see
-  [v4-migration.md](v4-migration.md#4-compatibility-policy)).
+  [v4-migration.md](v4-migration.md#4-compatibility-policy)). There are
+  19 hooks.
+- The one-step removal procedure (v4-migration.md, "Removing compat code
+  in one step") was run only after stage 1. It has not been re-verified
+  since stage 2; its test list was extended by reading the tests.
 
 ### OPF
 
 Requirements and roadmap: [opf-requirements.md](opf-requirements.md).
-Step 1 (correctness of ELD, DC OPF and AC OPF) is done on
-`fix/opf-correctness`:
+Steps 1 (correctness) and 2 (`set_opffcn`) are done; step 3 (external
+backends) is open.
+
+Step 1, on `fix/opf-correctness`:
 
 - Fixed: AC OPF with a branch `Imax` or `Smax` stopped in fmincon (NaN
   derivative of `sqrt` at the zero start). The limits are now squared
@@ -91,33 +82,40 @@ Step 1 (correctness of ELD, DC OPF and AC OPF) is done on
   the values of the initial bus voltages.
 - Fixed: AC OPF with linear-only costs (`HP = HQ = 0`) failed inside
   fmincon; zero cost terms are no longer added to the objective.
-- Checked, no change: ELD balance includes the loads; DC sign convention
-  (power into a bus is `Im(Y_ij)*(θj-θi)`); slack-bus reference angle;
-  generator Q limits; duals are labeled by constraint name, and the nodal
-  price is `-lambda.Constraints.balancedP_<bus>` (verified against finite
+- Checked, no change: ELD balance includes the loads; DC sign convention;
+  slack-bus reference angle; generator Q limits; duals are labeled by
+  constraint name, and the nodal price is
+  `-lambda.Constraints.balancedP_<bus>` (verified against finite
   differences).
 - Start point: bus `V0`/`Varg0` (flat by default). A power-flow warm start
   was measured and not adopted: it did not reduce iterations (9-bus 43 → 43,
   IEEE14 59 → 72) and `calculate_powerflow` may set the slack bus, which
   would edit the network.
-- `DebugScript.run_all` on `fix/opf-correctness` (2026-10-29): 162 tests,
-  PASS 160 / KNOWN 1 / FAIL 0 / SKIP 1 (the MATPOWER comparison). `run_all`
-  reports a test as SKIP when it throws `DebugScript:Skip`.
 - `tools.network_to_mpc` converts a network into a MATPOWER case. The
   MATPOWER comparison test reports SKIP when `runopf` is not on the path;
   it has not been run against a real MATPOWER installation yet. The
   case14 optimum (8081.53 / 7642.59 $/hr) is checked without MATPOWER.
 
+Step 2, on `feature/opf-set-opffcn` (F4 tests):
+
+- `set_opffcn` / `reset_opffcn` on Component, Bus, Branch and
+  PowerNetwork, as specified in opf-requirements.md; an OPF edit (tag
+  `OPF`) that does not make the equilibrium stale.
+- Default OPF cost of loads is 0 (`add_component`), and the bundled
+  networks store 0 for their loads, so `r_cost` is the generation cost
+  only. A load with finite P/Q bounds is dispatched within them.
+- DC OPF uses the MATPOWER susceptance `b = 1/(X·tap)` with the phase
+  shift (`makeBdc` convention); before, `Im(Y_ij)`.
+- `check_solver`: a `Solver` that cannot express the problem stops with
+  `GUILDA:OptimalPowerFlow:UnsupportedSolver` and the usable names. This is
+  the point where external backends add their own check.
+
 Open:
 
-- **DC susceptance convention.** GUILDA uses `b = Im(Y_ij)` (= `X/(R²+X²)`),
-  MATPOWER and most textbooks use `1/X`. Results differ when `R ≠ 0`.
-  Phase shifters are not modeled in DC OPF.
-- **Load cost defaults.** `add_component` gives every component, including
-  loads, `HP = fP = 1`. A fixed load's cost is a constant that is added to
-  `r_cost`; finite differences of `r_cost` with respect to a load include it.
-  `IEEE14bus` and `IEEE14bus_lossless` give their loads `HP = fP = 0` (see
-  below); the `add_component` default is unchanged.
+- **Step 3: external backends** (CPLEX / Gurobi via `prob2struct`,
+  MATPOWER via `tools.network_to_mpc`) behind `Solver`.
+- **Multi-period OPF** is deferred as a possible future extension; its
+  open design questions stay in opf-requirements.md.
 
 ### IEEE14 data and CSV taps
 
@@ -183,24 +181,21 @@ API (`AnalysisResult` subclasses, `[result, flag, output]`, Name-Value
 overrides of `net.solver_*`); Symbolic Math Toolbox is optional. Migration:
 [v4-migration.md](v4-migration.md) 1.7–1.15.
 
-Follow-ups found in stage 3:
+Done since stage 3: simulation results are stored in variable-map order
+(also the controller states), `sim.get_point(t)` reads them, and
+`net.linearize(Point={sim, t})` works with controllers; `initialize`
+returns `[result, flag, output]` with `Method="powerflow"|"OPF"|"equilibrium"`
+([v4-migration.md](v4-migration.md) 1.11, 1.12, 1.17).
 
-- **`Point={sim, t}` fails with controllers.** `odeSimulationResult` does
-  not store the states of local or global controllers, so
-  `net.linearize(Point={sim, t})` stops with
-  `GUILDA:odeLinearizer:PointUnavailable` for a layer that has controllers
-  (`_auxiliary/@odeLinearizer/point_vector.m`).
-- **Align simulation results with `get_variable_map`.** `odeResults` has
-  its own layout (per bus, per component, `X` / `U` tables); it should use
-  the variable map (order and `Label`) so that results, `Point` and
-  linear models share one indexing. This would also fix the item above.
+Open:
+
 - **`TimeLimit` applies per phase.** `odeSimulator.TimeLimit` limits the
   wall-clock time of each integration phase (between event times), not
   the whole run; a run with many events can take many times `TimeLimit`.
   Decide whether it should be a total limit.
 
 Other items noticed while writing the migration notes (checked in the
-code at `2723422`):
+code at `b69e54b`):
 
 - A result does not record whether the network was edited after the
   analysis: `tab_editLog` is cleared by `initialize`, so it cannot serve as a

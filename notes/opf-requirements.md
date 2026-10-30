@@ -15,7 +15,8 @@ the end as open questions.
 ## Problem types and scope
 
 - ELD (economic load dispatch), DC OPF and AC OPF.
-- Multi-period OPF. Time series are passed at call time, e.g. as a
+- Multi-period OPF, deferred as a possible future extension (not
+  scheduled). If added: time series are passed at call time, e.g. as a
   timetable keyed by component tag. Models stay single-snapshot: a
   component describes one operating point, not a time series.
 - Out of scope: unit commitment (UC) and security-constrained OPF (SCOPF).
@@ -85,19 +86,27 @@ the end as open questions.
 
 ## Roadmap
 
-1. Correctness of ELD, DC OPF and AC OPF.
-2. `set_opffcn` customization.
-3. External solver backends.
-4. Multi-period OPF.
+1. Correctness of ELD, DC OPF and AC OPF. Done.
+2. `set_opffcn` customization, load cost 0, DC susceptance `1/(X·tap)`,
+   backend check (`GUILDA:OptimalPowerFlow:UnsupportedSolver`). Done.
+3. External solver backends. Open.
+4. Multi-period OPF. Deferred (possible future extension).
+
+Progress details: [status.md](status.md#opf).
 
 ## Open questions
 
-- **Multi-period variables in handles.** Is a handle called once per period
+- **Multi-period variables in handles** (only if multi-period OPF is
+  taken up). Is a handle called once per period
   with that period's variables, or once with variables that carry a time
   dimension (needed for ramp limits and storage energy balance)? How a
   timetable column is mapped to a handle argument is not decided.
 - **Duals and sensitivities API.** How nodal prices, line-limit shadow
   prices and Hessians are exposed on `OPFResult` (names, units, sign
   convention per unit of load).
-- **Warm start for `initialize`.** Whether `initialize` may use an OPF
-  point, and what happens when the OPF does not converge.
+- **Warm start for `initialize`.** `net.initialize(Method="OPF")` sets the
+  equilibrium from an AC OPF point, and a failed OPF stops with
+  `GUILDA:PowerNetwork:InitializeOPFFailed` without changing the network
+  (decided and implemented). Open: whether the OPF itself should start from
+  a power-flow or an earlier OPF point (a power-flow start did not reduce
+  iterations, see status.md).
