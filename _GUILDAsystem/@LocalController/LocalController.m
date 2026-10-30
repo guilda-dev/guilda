@@ -110,6 +110,7 @@ classdef LocalController < PowerSystemModel
 %% Methods    
     methods (Access={?Component,?LocalController})
         function add_local_controller(obj,a_Controller)
+            % Attach a nested controller (the PSS under an AVR; Component.add_local_controller).
             obj.a_LocalController = {a_Controller};
             obj.l_hasController = true;
         end
@@ -135,6 +136,7 @@ classdef LocalController < PowerSystemModel
 
     methods (Access=protected)
         function set_odefcn(obj, omega0)            
+            % Bind the parameters and the frequency omega0 into the f_* function handles.
             param = obj.tab_parameter.dynamics{:,obj.sv_para}.';
 
             obj.f_dx   = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, param, omega0);            

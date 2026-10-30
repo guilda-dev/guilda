@@ -157,6 +157,7 @@ classdef GlobalController < PowerSystemModel
     end   
     methods (Access=protected)
         function set_odefcn(obj, omega0)
+            % Bind the parameters and the frequency omega0 into the f_* function handles.
             param = obj.tab_parameter.dynamics{:,obj.sv_para};
 
             obj.f_dx   = @(t,x,V,I,u) obj.fcn_dx(t,x,V,I,u,param,omega0);

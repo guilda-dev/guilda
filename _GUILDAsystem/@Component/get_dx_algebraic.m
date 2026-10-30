@@ -6,9 +6,10 @@ function DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)
 % of `DAEvec` that belong to the component (iv_odeX, iv_odeU) and its bus.
 %
 % See also odeSimulator, Component.fcn_dx, Component.fcn_I
-    arguments (Output)
-        DAEvec   % Updated DAE residual of the network.
-    end
+%
+% Outputs:
+%
+% - `DAEvec` — Updated DAE residual of the network.
 
     rv_x = obj.iv_odeX;
     rv_u = obj.iv_odeU;

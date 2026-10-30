@@ -58,8 +58,8 @@ classdef Bus < PowerSystemModel
         iv_odeI  = zeros(0,1);
         iv_odeU  = zeros(0,1);
     end
-    properties (SetAccess={?ContinuationPowerFlow})
-        iv_CPFV = zeros(0,1)        
+    properties (SetAccess={?ContinuationPowerFlow}) % Continuation Power Flow
+        iv_CPFV = zeros(0,1)        % Indices of the bus voltage in the CPF variable vector (working data of the CPF).
     end
 
 %% Constructor

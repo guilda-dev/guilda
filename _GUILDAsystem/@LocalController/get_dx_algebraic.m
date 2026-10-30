@@ -3,11 +3,12 @@ function [DAEvec, u, y_name] = get_dx_algebraic(obj, t, x, Vi, Ii, u, y_name, DA
 %
 % Called by Component.get_dx_algebraic. `u` and `y_name` carry the outputs of the
 % parent; the controller returns its own outputs and their names for the parent inputs.
-    arguments (Output)
-        DAEvec   % Updated DAE residual of the network.
-        u        % Outputs of the controller, which are inputs of the parent.
-        y_name   % Names of those outputs.
-    end
+%
+% Outputs:
+%
+% - `DAEvec` — Updated DAE residual of the network.
+% - `u` — Outputs of the controller, which are inputs of the parent.
+% - `y_name` — Names of those outputs.
 
     rv_U = obj.rv_Uequilibrium;
 

@@ -122,9 +122,9 @@ classdef Component < PowerSystemModel
         rv_Xoffset 
         rv_Uoffset 
     end
-    properties (SetAccess={?ContinuationPowerFlow})
-        iv_CPFX  = zeros(0,1)                
-        f_PQ2Bus = @(t,V,u) zeros(2,1)
+    properties (SetAccess={?ContinuationPowerFlow}) % Continuation Power Flow
+        iv_CPFX  = zeros(0,1)                  % Indices of the states in the CPF variable vector (working data of the CPF).
+        f_PQ2Bus = @(t,V,u) zeros(2,1)         % Function of the injected power [P; Q] [pu] used by the CPF (working data of the CPF).
     end
 
     
@@ -167,6 +167,7 @@ classdef Component < PowerSystemModel
         end        
 
         function set_odefcn(obj,omega0)
+            % Bind the parameters and the frequency omega0 into the f_* function handles.
             array = obj.para_dynamics.tab_parameter{:,obj.sv_para};
             
             if ismethod(obj, "Jacobi_dx")
