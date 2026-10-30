@@ -163,29 +163,33 @@
 
     <!-- ============================== WHERE ============================== -->
     <h2 id="where">Where comments go</h2>
-    <p class="dg-lead-in">Each numbered comment lands in the matching place on the class page. Everything without a number is read from the code.</p>
+    <p class="dg-lead-in">Write ordinary MATLAB help comments. Each numbered comment lands in the matching place on the class page. Everything without a number is read from the code.</p>
     <figure class="dg-figure">
       <div class="dg-two cd-where">
         <div>
           <span class="dg-kicker">Source · Bus.m</span>
 <pre class="cd-code"><span class="cd-k">classdef</span> Bus &lt; PowerSystemModel
-<span class="cd-c">% &lt;@Summary&gt; Node that connects components.</span><span class="cd-pin">1</span>
-<span class="cd-c">% &lt;@Desc&gt;</span><span class="cd-pin">2</span>
-<span class="cd-c">% Holds the bus voltage and the components</span>
+<span class="cd-c">% Node that connects components.</span><span class="cd-pin">1</span>
+<span class="cd-c">% Holds the bus voltage and the components</span><span class="cd-pin">2</span>
 <span class="cd-c">% attached to it.</span>
+<span class="cd-c">%</span>
+<span class="cd-c">% See also PowerNetwork, Component</span><span class="cd-pin">3</span>
 
-  <span class="cd-k">properties</span>
-    <span class="cd-c">% &lt;@Summary&gt; Components on this bus.</span><span class="cd-pin">3</span>
-    a_Component (:,1) cell = cell(0,1)
+  <span class="cd-k">properties</span> (SetAccess = protected) <span class="cd-c">% Parameters</span><span class="cd-pin">4</span>
+    <span class="cd-c">% [MVA] Base power.</span><span class="cd-pin">5</span>
+    r_Sbase (1,1) double = 100
   <span class="cd-k">end</span>
 
   <span class="cd-k">methods</span>
-    <span class="cd-k">function</span> comp = add_component(obj, comp, opt)
-    <span class="cd-c">% &lt;@Summary&gt; Connect a component.</span><span class="cd-pin">4</span>
+    <span class="cd-k">function</span> idx = add_component(obj, comp, opt)
+    <span class="cd-c">% Connect a component.</span><span class="cd-pin">6</span>
       <span class="cd-k">arguments</span>
         obj
-        comp Component <span class="cd-c">% Component to add.</span><span class="cd-pin">5</span>
+        comp Component <span class="cd-c">% Component to add.</span><span class="cd-pin">7</span>
         opt.Check (1,1) logical = true
+      <span class="cd-k">end</span>
+      <span class="cd-k">arguments</span> (Output)
+        idx (1,1) double <span class="cd-c">% Its index on this bus.</span><span class="cd-pin">8</span>
       <span class="cd-k">end</span>
       ...
 </pre>
@@ -200,21 +204,24 @@
               Node that connects components.
               <span class="cd-page-label">Description <span class="cd-pin">2</span></span>
               Holds the bus voltage and the components attached to it.
-              <span class="cd-page-label">Properties</span>
+              <span class="cd-page-label">See also <span class="cd-pin">3</span></span>
+              <a href="#where">PowerNetwork</a>, <a href="#where">Component</a>
+              <span class="cd-page-label">Properties · Parameters <span class="cd-pin">4</span></span>
               <table>
-                <tr><th>Name</th><th>Type · Size · Default</th><th>Description</th></tr>
-                <tr><td class="dg-mono">a_Component</td><td class="dg-mono">cell (:,1) cell(0,1)</td><td>Components on this bus. <span class="cd-pin">3</span></td></tr>
+                <tr><th>Name</th><th>Type · Size · Default</th><th>Unit</th><th>Description</th></tr>
+                <tr><td class="dg-mono">r_Sbase</td><td class="dg-mono">double (1,1) 100</td><td>MVA <span class="cd-pin">5</span></td><td>Base power. <span class="cd-pin">5</span></td></tr>
               </table>
-              <span class="cd-page-label">Methods</span>
+              <span class="cd-page-label">Methods · Add</span>
               <table>
                 <tr><th>Signature</th><th>Summary</th></tr>
-                <tr><td class="dg-mono">comp = add_component(obj, comp, Name=Value)</td><td>Connect a component. <span class="cd-pin">4</span></td></tr>
+                <tr><td class="dg-mono">idx = add_component(obj, comp, Name=Value)</td><td>Connect a component. <span class="cd-pin">6</span></td></tr>
               </table>
               <span class="cd-page-label">Arguments (method page)</span>
               <table>
                 <tr><th>Name</th><th>Kind · Class</th><th>Description</th></tr>
-                <tr><td class="dg-mono">comp</td><td>Positional · Component</td><td>Component to add. <span class="cd-pin">5</span></td></tr>
+                <tr><td class="dg-mono">comp</td><td>Positional · Component</td><td>Component to add. <span class="cd-pin">7</span></td></tr>
                 <tr><td class="dg-mono">Check</td><td>Name-Value · (1,1) logical = true</td><td class="dg-muted">-</td></tr>
+                <tr><td class="dg-mono">idx</td><td>Output · (1,1) double</td><td>Its index on this bus. <span class="cd-pin">8</span></td></tr>
               </table>
             </div>
           </div>
@@ -222,12 +229,24 @@
       </div>
     </figure>
     <table class="dg-table">
+      <thead><tr><th>Page part</th><th>Write</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Summary <span class="cd-pin">1</span> <span class="cd-pin">6</span></td><td data-label="Write">The first comment line (the H1 line).</td><td data-label="Notes">One English sentence. A method summary starts with a verb: <code>Calculate the power flow.</code><small>MATLAB <code>help</code>, tables and search show it.</small></td></tr>
+        <tr><td>Description <span class="cd-pin">2</span></td><td data-label="Write">The comment lines after the H1 line.</td><td data-label="Notes">Markdown: <code>- lists</code>, <code>1. lists</code>, <code>`code`</code>, <code>**bold**</code>, <code># headings</code>, <code>[links](url)</code> and fenced code blocks. A lone <code>%</code> line starts a new paragraph.<small>Text art drawn with box characters is kept exactly as written.</small></td></tr>
+        <tr><td>See also <span class="cd-pin">3</span></td><td data-label="Write">A <code>% See also A, B</code> line.</td><td data-label="Notes">Names of classes and methods become links. MATLAB <code>help</code> links them too.</td></tr>
+        <tr><td>Property group <span class="cd-pin">4</span></td><td data-label="Write">A trailing comment on the <code>properties (...)</code> line.</td><td data-label="Notes">Without it, properties are grouped by access.</td></tr>
+        <tr><td>Unit <span class="cd-pin">5</span></td><td data-label="Write">A leading <code>[unit]</code> in a property comment or an <code>arguments</code> comment.</td><td data-label="Notes"><code>% [MVA] Base power.</code> The rest of the line is the summary.<small>Write units as on the Naming Conventions page: <code>pu</code>, <code>MVA</code>, <code>rad/s</code>.</small></td></tr>
+        <tr><td>Method group</td><td data-label="Write">Nothing: the verb prefix of the name.</td><td data-label="Notes"><code>set_</code>, <code>get_</code>, <code>add_</code>, <code>calculate_</code>, <code>simulate_</code>, <code>plot_</code>, <code>export_</code> and the other verbs each get a group. The constructor has its own. Anything else is in Other.</td></tr>
+        <tr><td>Inputs <span class="cd-pin">7</span></td><td data-label="Write">A trailing <code>% text</code> in the <code>arguments</code> block, or a comment line above the argument.</td><td data-label="Notes">Size, class, validators and defaults come from the same line.</td></tr>
+        <tr><td>Outputs <span class="cd-pin">8</span></td><td data-label="Write">The same, in an <code>arguments (Output)</code> block.</td><td data-label="Notes">Outputs without the block are listed by name only.</td></tr>
+      </tbody>
+    </table>
+    <table class="dg-table">
       <thead><tr><th>Target</th><th>Put the <code>%</code> block</th><th>Notes</th></tr></thead>
       <tbody>
         <tr><td>Class</td><td data-label="Put the % block">Directly below <code>classdef</code>.</td><td data-label="Notes">A blank line or a <code>%%</code> section line ends the block.</td></tr>
         <tr><td>Property</td><td data-label="Put the % block">Directly above the declaration.</td><td data-label="Notes">A trailing <code>% text</code> on the same line is used only when there is no block above.</td></tr>
-        <tr><td>Method</td><td data-label="Put the % block">Directly after the <code>function</code> line.</td><td data-label="Notes">Works in <code>@Class/&lt;method&gt;.m</code>, in a function inside the classdef, and in <code>@Class/private/&lt;method&gt;.m</code>.<small>Abstract method or signature-only declaration: put the block above the signature in the <code>methods</code> block.</small></td></tr>
-        <tr><td>Argument</td><td data-label="Put the % block">A trailing <code>% text</code> in the <code>arguments</code> block, or a comment line above it.</td><td data-label="Notes">Becomes that argument's description.</td></tr>
+        <tr><td>Method</td><td data-label="Put the % block">Directly after the <code>function</code> line, before the <code>arguments</code> blocks.</td><td data-label="Notes">Works in <code>@Class/&lt;method&gt;.m</code>, in a function inside the classdef, and in <code>@Class/private/&lt;method&gt;.m</code>.<small>Abstract method or signature-only declaration: put the block above the signature in the <code>methods</code> block.</small></td></tr>
       </tbody>
     </table>
 
