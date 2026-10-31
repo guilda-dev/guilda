@@ -17,6 +17,10 @@ decided or fixed, and how to migrate scripts and models.
 - [get-sys-workflow.md](get-sys-workflow.md) — survey of the workflow, data, edits, arguments and working data around `get_sys`.
 - [get-sys-linearization.md](get-sys-linearization.md) — survey of the numerics and internals of `get_sys`.
 - [get-sys-improvements.md](get-sys-improvements.md) — improvement proposals for `get_sys`, with measurements, roadmap and open decisions.
+- [simulate-review-workflow.md](simulate-review-workflow.md) — survey of the workflow, data, edits and side effects around `simulate`.
+- [simulate-review-runtime.md](simulate-review-runtime.md) — survey of the arguments, events, phases and internals of `simulate`.
+- [simulate-review-measurements.md](simulate-review-measurements.md) — measurements of the behavior and performance of `simulate`.
+- [simulate-improvements.md](simulate-improvements.md) — improvement proposals for `simulate`, with prototypes, roadmap and open decisions.
 
 Where other kinds of content go:
 
