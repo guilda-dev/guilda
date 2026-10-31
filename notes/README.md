@@ -14,6 +14,9 @@ decided or fixed, and how to migrate scripts and models.
   items.
 - [opf-requirements.md](opf-requirements.md) — agreed OPF requirements,
   roadmap and open design questions.
+- [get-sys-workflow.md](get-sys-workflow.md) — survey of the workflow, data, edits, arguments and working data around `get_sys`.
+- [get-sys-linearization.md](get-sys-linearization.md) — survey of the numerics and internals of `get_sys`.
+- [get-sys-improvements.md](get-sys-improvements.md) — improvement proposals for `get_sys`, with measurements, roadmap and open decisions.
 
 Where other kinds of content go:
 
