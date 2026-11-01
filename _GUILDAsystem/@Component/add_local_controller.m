@@ -14,6 +14,8 @@ function add_local_controller(obj, varargin)
 % to a new AVR unless a PSS is given in the same call, and is detached when the new
 % controller is not an AVR. A new PSS replaces the attached one.
 % Replaced controllers are detached (they no longer refer to this component).
+% A controller still attached elsewhere is rejected with an error: each component needs
+% its own controller object.
 % Each addition is logged as a "Topology" edit, so the equilibrium becomes stale.
 %
 % <@Examples>
@@ -32,6 +34,9 @@ function add_local_controller(obj, varargin)
     end
 
     l_givenPss = any(cellfun(@(con) con.key == "pss", varargin));
+
+    % Checked before anything changes, so a rejected call leaves the component as it was
+    cellfun(@(con) check_parent(con, obj), varargin);
 
     for idx = 1:numel(varargin)
         new_con = varargin{idx};
@@ -88,11 +93,32 @@ function add_local_controller(obj, varargin)
     obj.l_hasController = ~isempty(obj.a_LocalController);
 end
 
-function str = label(con)
-    % Name of the controller kind in the ReplaceController warning
-    if con.key == "avr"
-        str = "AVR";
+function check_parent(con, comp)
+    % A controller has one parent: its parent must be none, or already on this component
+    % (the component itself, or for a PSS the AVR of the component)
+    parent = con.a_Component;
+    if isempty(parent)
+        return
+    end
+    if con.key == "pss"
+        l_same = ~isempty(comp.a_LocalController) && parent == comp.a_LocalController{1};
     else
-        str = "Local controller";
+        l_same = parent == comp;
+    end
+    if ~l_same
+        error('GUILDA:Component:SharedController', '%s', ...
+              msg('GUILDA:Component:SharedController', label(con), char(con.str_tag), char(parent.str_tag), char(comp.str_tag)))
+    end
+end
+
+function str = label(con)
+    % Name of the controller kind in the ReplaceController and SharedController messages
+    switch con.key
+        case "avr"
+            str = "AVR";
+        case "pss"
+            str = "PSS";
+        otherwise
+            str = "Local controller";
     end
 end
