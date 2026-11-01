@@ -299,6 +299,10 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   whose first bus has such a component is unchanged. Any other network gets
   another slack bus, so its results change; only the INFO message shows it. To
   keep the old choice, set `net.a_Bus{1}.l_isSlack = true`.
+  `net.optimize_powerflow` and `tools.network_to_mpc` use the same bus as their
+  reference when none is set, but do not set `l_isSlack`. They keep the first bus
+  when no bus has a component. The angles of their results are then relative to
+  the new reference bus. `tools.slack_bus_index(net)` returns this bus.
 - **Silent change: the component that takes the slack power.** v3 gave the
   remaining active power of the slack bus to its first component. Now it goes to
   the first component with `Q = NaN`, so a load added before a generator no longer

@@ -59,21 +59,15 @@ end
 
 
 function bus = select_slack_bus(obj)
-% The first bus with a component with Q = NaN, otherwise the first bus with a component
-    a_Bus = obj.a_Bus;
-    if isempty(a_Bus)
+% The bus of tools.slack_bus_index; stops when there is none
+    if isempty(obj.a_Bus)
         error('GUILDA:PowerNetwork:NoBus', '%s', msg('GUILDA:PowerNetwork:NoBus', string(obj)))
     end
-    lv_comp = cellfun(@(b) ~isempty(b.a_Component), a_Bus);
-    if ~any(lv_comp)
+    i_bus = tools.slack_bus_index(obj);
+    if isempty(i_bus)
         error('GUILDA:PowerNetwork:NoSlackCandidate', '%s', msg('GUILDA:PowerNetwork:NoSlackCandidate', string(obj)))
     end
-    lv_Qnan = cellfun(@(b) any(cellfun(@(c) isnan(c.para_powerflow.Q), b.a_Component)), a_Bus);
-    if any(lv_Qnan)
-        bus = a_Bus{find(lv_Qnan,1)};
-    else
-        bus = a_Bus{find(lv_comp,1)};
-    end
+    bus = obj.a_Bus{i_bus};
 end
 
 

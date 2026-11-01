@@ -72,10 +72,11 @@ end
         [prob, x0, const, Vvar] = a_Bus{i}.build_opf_problem(prob,x0,const,Vvar,"methods",options.Method);
     end
 
-    % Reference angle: the slack bus (the first bus if none is set) keeps its power-flow Varg.
+    % Reference angle: the bus of tools.slack_bus_index (the first bus if no bus has a
+    % component) keeps its power-flow Varg. l_isSlack is not set.
     % net.set_opffcn(DefaultConstraint=false) removes it.
     if options.Method ~= "ELD" && obj.s_opffcn.DefaultConstraint
-        i_ref = find(cellfun(@(b) b.l_isSlack, a_Bus), 1);
+        i_ref = tools.slack_bus_index(obj);
         if isempty(i_ref); i_ref = 1; end
         Varg_ref = a_Bus{i_ref}.para_powerflow.Varg;
         if isnan(Varg_ref); Varg_ref = 0; end
