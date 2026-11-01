@@ -21,6 +21,9 @@ Reference designs: `_GUILDAdoc/developer/class-design.html` and
 >   `[flag, tab] = net.initialize()` gives no error: `flag` is then a
 >   `PowerFlowResult` and `tab` the exit flag. `if flag` on the result
 >   object fails or means something else; test `result.l_success` (1.17).
+> - **The slack power goes to the first component with `Q = NaN`.** v3 gave it to
+>   the first component of the slack bus, so a load added before a generator
+>   generated power. Those networks now split the power differently (1.8).
 > - **Layout of `comp.get_sys` / `bus.get_sys`.** Inputs, states and
 >   outputs now have the same shape on every layer: inputs `[port; u of the
 >   component; u of its controllers]`, outputs `[port; y of the component;
@@ -296,6 +299,14 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   whose first bus has such a component is unchanged. Any other network gets
   another slack bus, so its results change; only the INFO message shows it. To
   keep the old choice, set `net.a_Bus{1}.l_isSlack = true`.
+- **Silent change: the component that takes the slack power.** v3 gave the
+  remaining active power of the slack bus to its first component. Now it goes to
+  the first component with `Q = NaN`, so a load added before a generator no longer
+  generates power and a CSV round trip keeps the operating point. A slack bus whose
+  first component has `Q = NaN` is unchanged, and so is one without such a component
+  (the first component still takes the remaining P and Q). Any other network changes
+  the power of the components of the slack bus; the bus power and voltages stay. To
+  keep the old split, add the components so that the one with `Q = NaN` comes first.
 - **Errors instead of the fixed `BUS001` message.** A network without buses stops
   with `GUILDA:PowerNetwork:NoBus`, and a network whose buses have no components
   with `GUILDA:PowerNetwork:NoSlackCandidate`.
