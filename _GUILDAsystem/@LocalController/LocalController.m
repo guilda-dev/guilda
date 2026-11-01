@@ -8,7 +8,8 @@ classdef LocalController < PowerSystemModel
 % the name). The reserved inputs "Xall" / "Yall" observe all the states / all the
 % outputs. An input of the name of an output of a nested controller (e.g. Vpss) reads
 % that output; other inputs stay at the equilibrium. The outputs sv_y of the controller
-% replace the inputs of the same name of the component (or of the controller above it).
+% drive the inputs of the same name of the component (or of the controller above it); an
+% input event or a global controller on such an input of the component adds to them.
 % The parent voltage V is available to it.
 %
 % Subclasses in the `controller` package define the static model functions (`fcn_dx`,

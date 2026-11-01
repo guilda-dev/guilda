@@ -9,7 +9,8 @@ function add_local_controller(obj, varargin)
 %
 % A controller reads the outputs and states of the component it observes by the names
 % of its inputs sv_u ("Xall" / "Yall": all the states / all the outputs), and its outputs
-% replace the inputs of the component of the same name.
+% drive the inputs of the component of the same name (an input event or a global
+% controller on such an input adds to them).
 % A new AVR or "local" controller replaces the attached one. The PSS of an old AVR moves
 % to a new AVR unless a PSS is given in the same call, and is detached when the new
 % controller is not an AVR. A new PSS replaces the attached one.

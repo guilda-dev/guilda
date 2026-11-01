@@ -9,7 +9,7 @@ function [DAEvec, y, y_name] = get_dx_algebraic(obj, t, x, Vi, Ii, obs, DAEvec)
 % Outputs:
 %
 % - `DAEvec` — Updated DAE residual of the network.
-% - `y` — Outputs of the controller, which replace the inputs of its parent of the same name.
+% - `y` — Outputs of the controller, which drive the inputs of its parent of the same name.
 % - `y_name` — Names of those outputs (sv_y).
 
     rv_U = obj.rv_Uequilibrium;
