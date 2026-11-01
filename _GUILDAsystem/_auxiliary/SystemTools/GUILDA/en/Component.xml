@@ -2,9 +2,13 @@
 <rsccat version="2" locale="en" product="GUILDA">
     <message>                        
         <entry key="ReplaceController">{0} ''{1}'' replaces ''{2}'' of ''{3}''.</entry>         
-        <entry key="NotExtAvr">Error: You are attempting to connect a PSS even though there is no AVR.</entry>         
+        <entry key="NotExtAvr">You are attempting to connect a PSS even though there is no AVR. Attach an AVR with add_local_controller first.</entry>         
+        <entry key="PssParentKey">PSS ''{0}'' cannot go under ''{1}'' of ''{3}'', whose key is ''{2}''. A PSS needs a parent with the key ''avr'': attach an AVR in its place first.</entry>
         <entry key="SharedController">{0} ''{1}'' is already attached to ''{2}'' and cannot also be attached to ''{3}''. Create a separate controller object for each component.</entry>
         <entry key="InvalidControllerKey">Local controller ''{0}'' has the key ''{1}''. The key must be ''avr'', ''pss'' or ''local''.</entry>
         <entry key="ControllerOutput">Output ''{0}'' of ''{1}'' matches no input of ''{2}'' (inputs: {3}).</entry>
+        <entry key="MissingParameter">Parameter ''{0}'' of ''{1}'' is missing from {2}. Pass a table with these columns as the parameter argument.</entry>
+        <entry key="UnknownParameter">Parameter name ''{0}'' of ''{1}'' is unknown. Use one of {2}, or pass a table.</entry>
+        <entry key="GeneratorQIgnored">Generator ''{0}'' ignores Q = {1}: a generator is a PV source, so the power flow decides its Q. Leave Q out or set it to NaN.</entry>
     </message>
 </rsccat>

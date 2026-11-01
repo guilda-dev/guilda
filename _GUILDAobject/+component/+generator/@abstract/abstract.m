@@ -9,12 +9,14 @@ classdef abstract < Component
 % Add a generator with `Bus.add_component` and a model key such as
 % `"gen-classical"`, `"gen-1axis"`, `"gen-2axis"`, `"gen-park"` or `"gen-droop"`.
 % In the power flow the generator is a PV source: `tab_parameter.powerflow.Q`
-% is `NaN` by default.
+% is always `NaN`. A `Q` other than `NaN` or 0 is ignored with a warning.
 %
 % The `parameter` argument of `add_component` sets the dynamic parameters:
 % - a table whose columns include the names in `sv_para`;
 % - `"NGT2"`, `"NGT6"` or `"NGT8"`, a row of the bundled `parameter.csv`;
-% - anything else (default `NaN`): the first row of `parameter.csv` (NGT2).
+% - anything else but text (default `NaN`): the first row of `parameter.csv` (NGT2).
+%
+% A missing column or another name stops with an error.
 %
 % <@Examples>
 % ```matlab
@@ -36,19 +38,38 @@ classdef abstract < Component
             % parameters (see the class description) and `varargin` holds
             % the name-value options of `add_component`.
             obj@Component("SG"+index, varargin{:})
+            r_Q = obj.para_powerflow.Q;
+            if ~isnan(r_Q) && r_Q ~= 0
+                obj.parameter_error("GeneratorQIgnored", char(obj.str_tag), char(string(r_Q)))
+            end
             obj.para_powerflow.Q = nan;
             
             if istable(parameter)
-                mp = parameter(:,obj.sv_para);             
+                mp = parameter;
+                str_source = "the given table";
             else 
                 datapath = fullfile(fileparts(mfilename("fullpath")), "parameter.csv");
                 dataset  = readtable(datapath);                
+                str_source = "parameter.csv";
                 if ischar(parameter) || isstring(parameter)                
-                    mp = dataset(string(parameter)==["NGT2";"NGT6";"NGT8"],obj.sv_para);
+                    sv_name = ["NGT2";"NGT6";"NGT8"];
+                    str_name = string(parameter);
+                    if ~isscalar(str_name) || ~ismember(str_name, sv_name)
+                        obj.parameter_error("UnknownParameter", char(strjoin(str_name(:)', ", ")), ...
+                                            char(obj.str_tag), char(strjoin(sv_name', ", ")))
+                    end
+                    mp = dataset(str_name==sv_name,:);
                 else
-                    mp = dataset(1,obj.sv_para);
+                    mp = dataset(1,:);
                 end
             end
+
+            sv_miss = setdiff(string(obj.sv_para), string(mp.Properties.VariableNames), "stable");
+            if ~isempty(sv_miss)
+                obj.parameter_error("MissingParameter", char(strjoin(sv_miss(:)', ", ")), ...
+                                    char(obj.str_tag), char(str_source))
+            end
+            mp = mp(:,obj.sv_para);
             
             name = cellfun(@(d) string(d), mp.Properties.VariableNames);
             for i=1:numel(name)
