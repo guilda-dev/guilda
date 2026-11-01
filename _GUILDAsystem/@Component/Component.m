@@ -118,7 +118,7 @@ classdef Component < PowerSystemModel
         l_hasController = false;
         l_isConnect     = true
     end
-    properties (Hidden)
+    properties (SetAccess={?odeSimulator, ?odeEventSet}, Hidden)
         rv_Xoffset 
         rv_Uoffset 
     end

@@ -78,7 +78,6 @@ classdef LocalController < PowerSystemModel
         rv_Xoffset = 0
         rv_Uoffset = @(t) 0
         
-        l_isConnect    (1,1) logical = true
         l_hasController (1,1) logical = false
     end    
     properties (SetAccess=private, Hidden) % Layer Structure
