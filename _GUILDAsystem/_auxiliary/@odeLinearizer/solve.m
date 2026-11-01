@@ -7,7 +7,8 @@ function [result, flag, output] = solve(obj, net, s_options)
 % NonUnit choice is not stored on the buses). Called by net.linearize; calling it
 % directly is for advanced use. Like net.linearize, it first rebuilds stale f_* handles
 % and stops with the error GUILDA:PowerNetwork:EquilibriumStale when net.initialize()
-% is needed.
+% is needed. A Point with NaN or Inf stops with GUILDA:odeLinearizer:PointNotFinite, and a
+% model that is not finite at the point with GUILDA:odeLinearizer:JacobianNotFinite.
     arguments
         obj % Solver (net.solver_LIN).
         net % Initialized network.
@@ -15,8 +16,8 @@ function [result, flag, output] = solve(obj, net, s_options)
     end
     arguments (Output)
         result % Jacobian blocks, variable map, point and settings.
-        flag % True when all Jacobian entries are finite.
-        output % message, l_equilibrium, n_x, n_v, n_u, rcond_Avv.
+        flag % True when the result is usable: all Jacobian entries are finite and Avv is invertible.
+        output % message, str_issue ("", "NotFinite" or "SingularAvv"), l_equilibrium, n_x, n_v, n_u, rcond_Avv.
     end
     t0 = tic;
     net.require_equilibrium();    % rebuild stale f_*; error if net.initialize() is needed
@@ -32,6 +33,12 @@ function [result, flag, output] = solve(obj, net, s_options)
 
     [tab_map, c_idxBus, c_idxGC] = net.get_variable_map();
     [rv_point, l_eq] = odeLinearizer.point_vector(net, s_options.Point);
+    lv_bad = ~isfinite(rv_point);
+    if any(lv_bad)
+        error("GUILDA:odeLinearizer:PointNotFinite", ...
+              "Point is not finite at %s. In Point={sim, t}, the states of a tripped unit are NaN during the trip.", ...
+              list_labels(tab_map.Label(lv_bad)))
+    end
 
     % Bus models (V -> I) and global controller models at the point. The network model
     % has the bus voltages and the component inputs (Kind "u" of the variable map) as
@@ -40,10 +47,11 @@ function [result, flag, output] = solve(obj, net, s_options)
     c_sysBus = cell(n_bus,1);
     for i = 1:n_bus
         if l_eq
-            sys_i = a_bus{i}.get_sys("port","V2I");
+            f_sys = @() a_bus{i}.get_sys("port","V2I");
         else
-            sys_i = a_bus{i}.get_sys("port","V2I","Point",rv_point(c_idxBus{i}));
+            f_sys = @() a_bus{i}.get_sys("port","V2I","Point",rv_point(c_idxBus{i}));
         end
+        sys_i = model_at_point(f_sys, "bus " + a_bus{i}.str_tag);
         sv_u = tab_map.Label(tab_map.Kind == "u" & tab_map.Bus == string(a_bus{i}.str_tag));
         [~, iv_u] = ismember(sv_u, string(sys_i.InputName));
         c_sysBus{i} = sys_i(1:2, [1, 2, reshape(iv_u, 1, [])]);
@@ -51,11 +59,12 @@ function [result, flag, output] = solve(obj, net, s_options)
     c_sysGC = cell(numel(a_gc),1);
     for k = 1:numel(a_gc)
         if l_eq
-            c_sysGC{k} = a_gc{k}.get_sys("full",true);
+            f_sys = @() a_gc{k}.get_sys("full",true);
         else
-            c_sysGC{k} = a_gc{k}.get_sys(rv_point(c_idxGC{k}), zeros(2,1), zeros(2,1), ...
-                                         gc_input(a_gc{k}, tab_map, rv_point), "full",true);
+            f_sys = @() a_gc{k}.get_sys(rv_point(c_idxGC{k}), zeros(2,1), zeros(2,1), ...
+                                        gc_input(a_gc{k}, tab_map, rv_point), "full",true);
         end
+        c_sysGC{k} = model_at_point(f_sys, "global controller " + a_gc{k}.str_tag);
     end
 
     cm_Y = net.get_admittance_matrix.Variables;
@@ -93,24 +102,67 @@ function [result, flag, output] = solve(obj, net, s_options)
                       tools.vcellfun(@(b) isempty(b.a_Component), a_bus), ...
         "cv_V", cv_V);
 
-    flag = all(cellfun(@(M) all(isfinite(M(:))), struct2cell(s_block)));
+    % An Avv below this reciprocal condition number has no usable inverse (the shipped
+    % networks are at 1e-4 or above)
+    r_rcondMin = 1e-14;
     output = struct();
     if l_eq
         output.message = "Linearized at the equilibrium.";
     else
         output.message = "Linearized at the given point.";
     end
-    if ~flag
+    output.str_issue = "";
+    output.rcond_Avv = rcond(s_block.Avv);
+    if ~all(cellfun(@(M) all(isfinite(M(:))), struct2cell(s_block)))
+        output.str_issue = "NotFinite";
         output.message = output.message + " Some Jacobian entries are not finite.";
+    elseif output.rcond_Avv < r_rcondMin
+        output.str_issue = "SingularAvv";
+        output.message = output.message + sprintf(" Avv is singular (rcond = %g): the current balance does not determine %s.", ...
+            output.rcond_Avv, list_labels(singular_voltages(s_block.Avv, tab_map)));
     end
+    flag = output.str_issue == "";
     output.l_equilibrium = l_eq;
     output.n_x = size(s_block.Axx,1);
     output.n_v = size(s_block.Avv,1);
     output.n_u = size(s_block.Bx,2);
-    output.rcond_Avv = rcond(s_block.Avv);
 
     result = LinearizationResult(net, obj, s_options, flag, output, t0, ...
                                  tab_map, rv_point, s_block, s_model);
+end
+
+
+function sys = model_at_point(f_sys, str_owner)
+% Model of a bus or global controller; dss stops on a non-finite matrix, so say whose it is
+    try
+        sys = f_sys();
+    catch ME
+        if startsWith(ME.identifier, "Control:ltiobject")
+            error("GUILDA:odeLinearizer:JacobianNotFinite", ...
+                  "The Jacobian of %s is not finite at the point, so it cannot be linearized there. Check the voltage and states of the point.", str_owner)
+        end
+        rethrow(ME)
+    end
+end
+
+
+function sv = singular_voltages(Avv, tab_map)
+% Bus voltages in the null space of Avv
+    [~, S, V] = svd(Avv);
+    rv_s = diag(S);
+    rv_w = vecnorm(V(:, rv_s <= max(rv_s(end), 1e-12*rv_s(1))), 2, 2);
+    sv_v = tab_map.Label(tab_map.Kind == "Vre" | tab_map.Kind == "Vim");
+    sv = sv_v(rv_w > 0.1*max(rv_w));
+end
+
+
+function str = list_labels(sv)
+% Labels for a message, at most 8
+    n = numel(sv);
+    str = join(sv(1:min(n,8)), ", ");
+    if n > 8
+        str = str + sprintf(" and %d more", n-8);
+    end
 end
 
 

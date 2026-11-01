@@ -789,6 +789,87 @@ assert(isa(output.result, "LinearizationResult") && isequal(output.result.get_ss
 assert(isstring(output.message))
 
 
+%% Flag reports a singular Avv
+% P=Q=0 の負荷だけの 2 母線は Y が特異で、出荷モデルだけで rcond(Avv)=0 になる (Issue #76)
+net_s = PowerNetwork("Floating");
+net_s.add_bus("V", 1);
+net_s.add_bus();
+net_s.add_branch("pi", [1,2], "R", 0.01, "X", 0.085);
+net_s.a_Bus{1}.add_component("load-power", "P", 0, "Q", 0);
+net_s.a_Bus{2}.add_component("load-power", "P", 0, "Q", 0);
+DebugScript.helper.quiet(@() net_s.initialize);
+[res, flag, output] = net_s.linearize();
+assert(islogical(flag) && ~flag && ~res.l_success)
+assert(output.str_issue == "SingularAvv" && output.rcond_Avv < 1e-14)
+assert(contains(output.message, "Avv") && contains(output.message, "B001"), output.message)
+for alg = ["Kron", "Feedback"]
+    try
+        net_s.get_sys("Algorithm", alg);
+        error("DebugScript:NoError", alg + ": エラーにならない")
+    catch ME
+        assert(ME.identifier == "GUILDA:LinearizationResult:SingularAvv", ME.identifier)
+        assert(contains(ME.message, "DAE") && contains(ME.message, "B001"), ME.message)
+    end
+end
+% DAE は電圧を消去しないので取り出せる
+[sys, flag, output] = net_s.get_sys("Algorithm", "DAE");
+assert(isa(sys, "ss") && ~flag && output.str_issue == "SingularAvv")
+% 使える結果は flag が true で str_issue は空
+[~, flag, output] = net.linearize();
+assert(flag && output.str_issue == "" && output.rcond_Avv > 1e-14)
+
+
+%% Point that is not finite names the variables
+% NaN の点は dss に届く前に、変数の名前を示すエラーで止まる (Issue #76)
+n14 = new_net();
+DebugScript.helper.quiet(@() n14.initialize);
+tab = n14.get_variable_map();
+x = n14.linearize().rv_point;
+x(5) = NaN;
+x(7) = Inf;
+try
+    n14.get_sys("Point", x);
+    error("DebugScript:NoError", "NaN の Point がエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:odeLinearizer:PointNotFinite", ME.identifier)
+    assert(contains(ME.message, tab.Label(5)) && contains(ME.message, tab.Label(7)), ME.message)
+    assert(~contains(ME.message, tab.Label(6) + ","), ME.message)
+end
+try
+    n14.linearize("Point", nan(height(tab),1));
+    error("DebugScript:NoError", "NaN の Point がエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:odeLinearizer:PointNotFinite", ME.identifier)
+    assert(contains(ME.message, "more"), ME.message)
+end
+% トリップ中の {sim, t}: 解列した機器の状態が NaN
+sim = n14.simulate([0,2], odeEventSet("trip", n14, "TimeSpan", [1,1.5], "TripUnit", "SG1B002"));
+try
+    n14.get_sys("Point", {sim, 1.2});
+    error("DebugScript:NoError", "トリップ中の Point がエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:odeLinearizer:PointNotFinite", ME.identifier)
+    assert(contains(ME.message, "SG1B002") && contains(ME.message, "trip"), ME.message)
+end
+assert(n14.linearize("Point", {sim, 0.5}).l_success)
+
+
+%% Jacobian that is not finite names the bus
+% 有限な点でも V=0 では定電力負荷の Jacobian が有限にならない (Issue #76)
+n14 = new_net();
+DebugScript.helper.quiet(@() n14.initialize);
+tab = n14.get_variable_map();
+x = n14.linearize().rv_point;
+x(tab.Kind == "Vre" | tab.Kind == "Vim") = 0;
+try
+    n14.linearize("Point", x);
+    error("DebugScript:NoError", "V=0 の Point がエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:odeLinearizer:JacobianNotFinite", ME.identifier)
+    assert(contains(ME.message, "bus B"), ME.message)
+end
+
+
 %% Linearization result Plot
 res = net.linearize();
 ax = res.Plot();
