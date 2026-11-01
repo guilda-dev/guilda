@@ -1,11 +1,10 @@
 % I71 層別 get_sys と連続型潮流計算の編集の検査
 %
-% comp / bus / con の get_sys と net.calculate_continuation_powerflow は、古いハンドルで結果を返さない。
+% comp / bus / con / gc の get_sys と net.calculate_continuation_powerflow は、古いハンドルで結果を返さない。
 %   - どの入口も最初に古い f_* を作り直す
 %   - 平衡点を使う get_sys は、平衡点が古い (または未設定) とき net.initialize() を促すエラーにする
 %   - Point を指定した comp / bus の get_sys は平衡点を使わないので、作り直しだけを行う
 %   - net に接続されていない層は平衡点の検査を省略する
-% gc.get_sys は検査していない (@GlobalController が対象外のため、ここでは試験しない)。
 %
 % 実行: runtests("DebugScript.test_I71_layer_get_sys")  または  DebugScript.run_all("Features","I71")
 
@@ -114,6 +113,41 @@ avr = controller.avr.AVR_ST1("avr1");
 assert(~isequal(error_id(@() avr.get_sys()), str_staleID))
 
 
+%% Global controller get_sys checks edits
+[net, gc] = build_with_agc();
+assert_stale_error(@() gc.get_sys(), str_staleID)
+
+DebugScript.helper.quiet(@() net.initialize);
+sys0 = gc.get_sys();
+gc.para_dynamics.kI = 2 * gc.para_dynamics.kI;
+assert(gc.l_staleOdefcn && net.l_staleEquilibrium)
+assert_stale_error(@() gc.get_sys(), str_staleID)
+assert_stale_error(@() gc.get_sys(gc.rv_Xequilibrium, zeros(2,1), zeros(2,1), gc.rv_Uequilibrium), str_staleID)
+assert(~gc.l_staleOdefcn)
+
+% 失敗した net.get_sys の後もエラーのまま
+assert_stale_error(@() net.get_sys(), str_staleID)
+assert_stale_error(@() gc.get_sys(), str_staleID)
+
+% initialize の後は編集後のモデルで、同じ kI で作った系統と一致する
+DebugScript.helper.quiet(@() net.initialize);
+sys1 = gc.get_sys();
+assert(~isequal(ssdata_all(sys1), ssdata_all(sys0)))
+[ref, gc_ref] = build_with_agc();
+gc_ref.para_dynamics.kI = gc.para_dynamics.kI;
+DebugScript.helper.quiet(@() ref.initialize);
+assert(norm(ssdata_all(sys1) - ssdata_all(gc_ref.get_sys())) < 1e-9)
+
+
+%% Global controller get_sys rebuilds the handles after a network Hz edit
+[net, gc] = build_with_agc();
+DebugScript.helper.quiet(@() net.initialize);
+net.para_base.Hz = 2 * net.para_base.Hz;
+assert(gc.l_staleOdefcn && ~net.l_staleEquilibrium)
+gc.get_sys();
+assert(~gc.l_staleOdefcn)
+
+
 %% Initialize of a controller that designs with get_sys still passes
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");     % B002 (1.02 pu): V0 = 1 と異なる母線
 gen.add_local_controller(controller.avr.AVR_ST1("avr1"));
@@ -149,6 +183,19 @@ function [net, gen] = build_with_controllers()
     [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
     gen = net.a_Bus{1}.a_Component{1};
     gen.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
+end
+
+function [net, gc] = build_with_agc()
+% B001 の発電機を制御する AGC を付けた 3 母線系統
+    [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
+    net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", string(net.a_Bus{1}.a_Component{1}), alpha=1, beta=1));
+    gc = net.a_GlobalController{1};
+end
+
+function v = ssdata_all(sys)
+% 状態方程式の行列をまとめた列ベクトル
+    [A, B, C, D, E] = dssdata(sys);
+    v = [A(:); B(:); C(:); D(:); E(:)];
 end
 
 function [gen, bus, avr, pss] = layers(net)
