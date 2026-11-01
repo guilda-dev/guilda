@@ -701,13 +701,13 @@ classdef (Sealed = true) odeSimulator < auxiliary
                     if isa(a_Comp{j}, 'component.generator.abstract') && ~a_Comp{j}.l_isConnect
                         c_idx = a_Comp{j}.iv_odeX;
                         b_idx = a_bus{i}.iv_odeX;
-                        [x0(c_idx), u_equilibrium] = a_Comp{j}.get_equilibrium([1,1j]*x0(b_idx), 0+1j*0);                         
+                        x0(c_idx) = a_Comp{j}.get_equilibrium([1,1j]*x0(b_idx), 0+1j*0);                         
                         
                         if ~isempty(a_Comp{j}.a_LocalController)
                             a_LC1 = a_Comp{j}.a_LocalController{1};
 
                             v_LC1 = a_LC1.iv_odeX;                            
-                            [x0(v_LC1), ~] = a_LC1.get_equilibrium([1,1j]*x0(b_idx), u_equilibrium);                         
+                            x0(v_LC1) = a_LC1.rv_Xequilibrium;                         
 
                             M0(v_LC1, v_LC1) = a_LC1.f_Mass([], [], [], [],[]);
                             
@@ -715,7 +715,7 @@ classdef (Sealed = true) odeSimulator < auxiliary
                                 a_LC2 = a_LC1.a_LocalController{1};
 
                                 v_LC2 = a_LC2.iv_odeX;                                
-                                [x0(v_LC2), ~] = a_LC2.get_equilibrium([1,1j]*x0(b_idx), []);                         
+                                x0(v_LC2) = a_LC2.rv_Xequilibrium;                         
 
                                 M0(v_LC2, v_LC2) = a_LC2.f_Mass([], [], [], [],[]);
                             end
