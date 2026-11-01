@@ -292,4 +292,19 @@ classdef LocalController < PowerSystemModel
             tab = table(tab_tab, 'VariableNames', tab_name);
         end
     end
+
+%% Set Methods
+    methods
+        function set.tab_parameter(obj,val)
+            fieldname = val.Properties.VariableNames;
+            for i = 1:numel(fieldname)
+                propname = "para_"+fieldname{i};
+                tabdata  = val.(fieldname{i});
+                paraname = tabdata.Properties.VariableNames;
+                for j = 1:numel(paraname)
+                    obj.(propname).(paraname{j}) = tabdata.(paraname{j});
+                end
+            end
+        end
+    end
 end
