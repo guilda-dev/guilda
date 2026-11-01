@@ -8,6 +8,8 @@ function [result, flag, output] = simulate(obj, time, varargin)
 % for this call only (net.solver_ODE is not changed).
 % Accepted options are the names in odeSimulator.OptionMap plus Export; any other name
 % stops with GUILDA:resolve_options:UnknownName.
+% time is [t0, tend] with finite t0 < tend, or [] for the time span of the events; any
+% other value stops with GUILDA:PowerNetwork:SimulateTime.
 % It stops with an error naming the remedy when the network is not initialized or was
 % edited after net.initialize. flag is 1 when the simulation reached the end time, 0 when
 % it stopped by TimeLimit and -1 when the solver stopped early; then result holds the
@@ -39,7 +41,7 @@ function [result, flag, output] = simulate(obj, time, varargin)
 % See also odeEventSet, odeSimulationResult, odeSimulator, PowerNetwork.initialize
     arguments
         obj
-        time (:,1) double = []   % [s] Simulation time [t0, tend].
+        time = []   % [s] Simulation time [t0, tend], or [] for the time span of the events.
     end
     arguments (Input, Repeating)
         varargin   % Events (odeEventSet), then Name-Value options.
@@ -50,6 +52,7 @@ function [result, flag, output] = simulate(obj, time, varargin)
         output   % Details: message, tEnd, phases, nPhases, nPhasesDone.
     end
 
+    check_time(time);
     [c_events, c_nv] = split_events(varargin);
     c_nv = v3_simulate_args(c_nv);                            % COMPAT(v3)
     [c_nv, opt] = take_call_options(c_nv);
@@ -67,6 +70,25 @@ function [result, flag, output] = simulate(obj, time, varargin)
     end
 end
 
+
+function check_time(time)
+% time must be [] or a real vector [t0, tend] with finite t0 < tend
+    if ~isnumeric(time) || ~isreal(time)
+        str_reason = "it is a non-real or non-numeric value of class " + class(time);
+    elseif isempty(time)
+        return
+    elseif ~isvector(time) || numel(time) ~= 2
+        str_reason = "it has the size " + join(string(size(time)), "x");
+    elseif ~all(isfinite(time))
+        str_reason = "it has a value that is not finite: " + mat2str(time);
+    elseif time(1) >= time(2)
+        str_reason = "t0 is not smaller than tend: " + mat2str(time);
+    else
+        return
+    end
+    error('GUILDA:PowerNetwork:SimulateTime', '%s', ...
+          msg('GUILDA:PowerNetwork:SimulateTime', str_reason));
+end
 
 function [c_events, c_nv] = split_events(c_in)
 % Leading odeEventSet arguments are the events; the rest are Name-Value options
