@@ -4,6 +4,8 @@
 %   組み込み系統の構築では警告を出さない
 %   母線、ブランチ、機器のタグは FullTag 列で往復し、FullTag の無い CSV は従来どおり読む (Issue #95)
 %   add_bus の FullTag は完全なタグを与え、読み込みは母線の改名を記録しない (Issue #95)
+%   未知の列は警告、行番号や ID の誤りはエラーで、ファイル、行、列を示す (Issue #96)
+%   表の誤りでは Network= の系統を変更しない (Issue #96)
 %
 % 実行: runtests("DebugScript.test_F16_csv_io")  または  DebugScript.run_all("Features","F16")
 
@@ -199,6 +201,176 @@ assert(~any(contains(str_log, "<<-Add--- B")), "自動のタグを経由しな�
 % 既存の系統ではブランチの自動番号がずれるので、ブランチの改名は記録されうる
 assert(~any(contains(str_log, "-> Sub7") | contains(str_log, "-> 1234")), "母線の読み込みは改名を記録しない")
 
+
+%% An unknown column warns with the file and column, and does not stop the import
+[str_path, c] = csv_folder(); %#ok<ASGLU>
+str_file = fullfile(str_path, "bus", "parameter.csv");
+tab = readtable(str_file, "TextType", "string");
+tab = renamevars(tab, "Bshunt", "Bshnt");
+tab.Bshnt(:) = 0.5;
+writetable(tab, str_file);
+[net2, str_msg, id] = import_with_warning(str_path);
+assert(id == "GUILDA:import_csv:UnknownColumn")
+assert(contains(str_msg, "bus/parameter.csv") && contains(str_msg, "Bshnt"))
+assert(numel(net2.a_Bus) == 3 && net2.a_Bus{1}.tab_parameter.dynamics.Bshunt == 0, "列は無視する")
+
+
+%% A memo column warns with its name as written in each table
+w = warning("off", "MATLAB:table:ModifiedAndSavedVarnames");
+c_w = onCleanup(@() warning(w));
+for str_rel = ["network/parameter.csv", "branch/parameter.csv", "component/load-power/main.csv", "component/load-power/opf.csv"]
+    [str_path, c] = csv_folder(); %#ok<ASGLU>
+    str_file = fullfile(str_path, str_rel);
+    str_line = readlines(str_file, "EmptyLineRule", "skip");
+    str_line(1) = str_line(1) + ",備考";
+    str_line(2:end) = str_line(2:end) + ",1";
+    writelines(str_line, str_file);
+    [~, str_msg, id] = import_with_warning(str_path);
+    assert(id == "GUILDA:import_csv:UnknownColumn", str_rel)
+    assert(contains(str_msg, str_rel) && contains(str_msg, "備考"), str_rel)
+end
+
+
+%% Exported columns are all known
+[str_path, c] = csv_folder(); %#ok<ASGLU>
+[~, ~, id] = import_with_warning(str_path);
+assert(id == "")
+
+
+%% A bad bus number names the file, row and column and leaves Network= unchanged
+for sct = [struct("rel", "branch/parameter.csv", "col", "To", "row", 2, "val", 99), ...
+           struct("rel", "branch/parameter.csv", "col", "From", "row", 1, "val", 0), ...
+           struct("rel", "branch/parameter.csv", "col", "To", "row", 1, "val", 1.5), ...
+           struct("rel", "component/load-power/main.csv", "col", "Bus", "row", 1, "val", 99)]
+    [str_path, c] = csv_folder(); %#ok<ASGLU>
+    str_file = fullfile(str_path, sct.rel);
+    tab = readtable(str_file, "TextType", "string");
+    tab.(sct.col)(sct.row) = sct.val;
+    writetable(tab, str_file);
+
+    net = PowerNetwork("Host");
+    r_Hz = net.tab_parameter.base.Hz;
+    str_file = fullfile(str_path, "network", "parameter.csv");
+    tab = readtable(str_file);
+    tab.Hz = r_Hz + 1;
+    writetable(tab, str_file);
+    ME = import_error(str_path, net);
+    assert(ME.identifier == "GUILDA:import_csv:BusRow", sct.rel)
+    str_want = sprintf("%s row %d: %s = %s", sct.rel, sct.row, sct.col, string(sct.val));
+    assert(contains(ME.message, str_want), ME.message)
+    assert(isempty(net.a_Bus) && isempty(net.a_Branch), "検査の前に追加しない")
+    assert(net.tab_parameter.base.Hz == r_Hz, "検査の前に基準値を変えない")
+end
+
+
+%% A text or empty value in a bus number column names the row
+for str_val = ["x", ""]
+    [str_path, c] = csv_folder(); %#ok<ASGLU>
+    str_file = fullfile(str_path, "branch", "parameter.csv");
+    tab = readtable(str_file, "TextType", "string");
+    tab.To = string(tab.To);
+    tab.To(2) = str_val;
+    writetable(tab, str_file);
+    ME = import_error(str_path, PowerNetwork("Host"));
+    assert(ME.identifier == "GUILDA:import_csv:BusRow", str_val)
+    assert(contains(ME.message, "branch/parameter.csv row 2: To = NaN"), ME.message)
+end
+
+
+%% An empty ParameterID names the row
+[str_path, c] = csv_folder(); %#ok<ASGLU>
+str_file = fullfile(str_path, "component", "load-power", "main.csv");
+tab = readtable(str_file, "TextType", "string");
+tab.ParameterID(1) = NaN;
+writetable(tab, str_file);
+ME = import_error(str_path, PowerNetwork("Host"));
+assert(ME.identifier == "GUILDA:import_csv:UnknownID")
+assert(contains(ME.message, "main.csv row 1: ParameterID = NaN"), ME.message)
+
+
+%% A folder without component/ warns
+[str_path, c] = csv_folder(); %#ok<ASGLU>
+rmdir(fullfile(str_path, "component"), "s");
+[net2, str_msg, id] = import_with_warning(str_path);
+assert(id == "GUILDA:import_csv:NoComponentFolder")
+assert(contains(str_msg, "component"))
+assert(numel(net2.a_Bus) == 3)
+
+
+%% A missing table names the file and leaves Network= unchanged
+for str_rel = ["bus/parameter.csv", "branch/parameter.csv", "component/load-power/main.csv", ...
+               "component/load-power/dynamics.csv", "component/load-power/opf.csv"]
+    [str_path, c] = csv_folder(); %#ok<ASGLU>
+    delete(fullfile(str_path, str_rel));
+    net = PowerNetwork("Host");
+    ME = import_error(str_path, net);
+    assert(ME.identifier == "GUILDA:import_csv:MissingFile", str_rel)
+    assert(contains(ME.message, str_rel), ME.message)
+    assert(isempty(net.a_Bus), str_rel)
+end
+
+
+%% An unknown ParameterID or OpfID names the row and leaves Network= unchanged
+for str_col = ["ParameterID", "OpfID"]
+    [str_path, c] = csv_folder(); %#ok<ASGLU>
+    str_file = fullfile(str_path, "component", "load-power", "main.csv");
+    tab = readtable(str_file, "TextType", "string");
+    tab.(str_col)(2) = 99;
+    writetable(tab, str_file);
+    net = PowerNetwork("Host");
+    ME = import_error(str_path, net);
+    assert(ME.identifier == "GUILDA:import_csv:UnknownID", str_col)
+    assert(contains(ME.message, "component/load-power/main.csv row 2: " + str_col + " = 99"), ME.message)
+    assert(isempty(net.a_Bus), str_col)
+end
+
+
+%% A number in the Q column of a generator warns through the component
+[str_path, c] = csv_folder(); %#ok<ASGLU>
+str_file = fullfile(str_path, "component", "gen-park", "main.csv");
+tab = readtable(str_file, "TextType", "string");
+tab.Q(1) = 0.3;
+writetable(tab, str_file);
+[~, str_msg, id] = import_with_warning(str_path);
+assert(id == "GUILDA:Component:GeneratorQIgnored")
+assert(contains(str_msg, "SG"))
+
+
+%% A failure after the checks can leave Network= partly built (see the help)
+[str_path, c] = csv_folder(); %#ok<ASGLU>
+str_file = fullfile(str_path, "branch", "parameter.csv");
+tab = readtable(str_file, "TextType", "string");
+tab.Type(2) = "nosuch";
+writetable(tab, str_file);
+net = PowerNetwork("Host");
+ME = import_error(str_path, net);
+assert(ME.identifier == "MATLAB:validators:mustBeMember")
+assert(numel(net.a_Bus) == 3 && numel(net.a_Branch) == 1)
+
+
+function [str_path, c] = csv_folder()
+    % Exported folder of tag_network
+    [str_dir, c] = temp_folder();
+    str_path = DebugScript.helper.quiet(@() tag_network().export_csv(fullfile(str_dir, "Net")));
+end
+
+function [net, str_msg, id] = import_with_warning(str_path)
+    % Import without initialize and return the last warning
+    lastwarn("");
+    net = DebugScript.helper.quiet(@() PowerNetwork.import_csv(str_path, Initialize=false));
+    [str_msg, id] = lastwarn();
+    str_msg = string(str_msg);
+    id      = string(id);
+end
+
+function ME = import_error(str_path, net)
+    ME = [];
+    try
+        DebugScript.helper.quiet(@() PowerNetwork.import_csv(str_path, Network=net, Initialize=false));
+    catch ME
+    end
+    assert(~isempty(ME), "エラーにならない")
+end
 
 function net = initialized_network()
     % Network whose edit log is active

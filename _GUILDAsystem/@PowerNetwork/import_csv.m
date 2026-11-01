@@ -19,6 +19,12 @@ function net = import_csv(path, opt)
 % With Network=obj the buses are added to the existing network obj instead of a new
 % one; this is how the network classes such as network.IEEE14bus load their folder in
 % their constructor.
+% Every table is read and checked before the network changes: a wrong file, column or row
+% number leaves obj unchanged. An unknown column gives the warning
+% GUILDA:import_csv:UnknownColumn and is ignored (a memo column does not stop the import);
+% the columns of dynamics.csv depend on the component class and are not checked. A later
+% failure, such as an unknown model key or a failing power flow, can leave obj partly
+% built, so build it again after an error.
 %
 % <@Examples>
 % ```matlab
@@ -58,33 +64,50 @@ function net = import_csv(path, opt)
         net = opt.Network;
     end
 
-% Network (Hz, baseMVA)
+% Read and check every table before the network changes
     str_NetPath = fullfile(path, "network", "parameter.csv");
+    str_NetOpt  = strings(1,0);
     if isfile(str_NetPath)
         tab_net    = readtable(str_NetPath, "TextType", "string");
         str_NetOpt = check_cols(tab_net, strings(1,0), ["Hz", "baseMVA"], "network/parameter.csv");
-        for str_name = str_NetOpt
-            val = tab_net.(str_name)(1);
-            if ~isnan(val)
-                net.para_base.(str_name) = val;
-            end
+    end
+
+    % Bus
+    str_BusReq  = ["V", "Varg"];
+    str_BusOpt  = ["V0", "Varg0", "Gshunt", "Bshunt", "Vmin", "Vmax", "baseKV", "Tag", "Xaxis","Yaxis","Marker"];
+    % (a "baseMVA" column is accepted and ignored: the system base is net.tab_parameter.base.baseMVA)
+    tab_bus    = read_csv(path, "bus/parameter.csv");
+    str_BusOpt = check_cols(tab_bus, str_BusReq, str_BusOpt, "bus/parameter.csv", ["FullTag", "Slack", "baseMVA"]);
+    str_BusTag = read_full_tag(fullfile(path, "bus", "parameter.csv"));
+    n_Bus      = size(tab_bus,1);
+
+    % Branch
+    str_BraReq   = ["Type", "From", "To"];
+    str_BraOpt   = ["R", "X", "C", "Tap", "Phase", "Smax", "Imax", "Pmax", "Qmax", "Vargmax", ...
+                    "MidXaxis","MidYaxis","Marker"];
+    tab_bra = read_csv(path, "branch/parameter.csv");
+    % export writes "tap"/"phase" (the Branch parameter names); "Tap"/"Phase" (the add_branch names) are also accepted
+    tab_bra = rename_cols(tab_bra, ["tap","phase"], ["Tap","Phase"], "branch/parameter.csv");
+    str_BraOpt = check_cols(tab_bra, str_BraReq, str_BraOpt, "branch/parameter.csv", "FullTag");
+    check_bus_rows(tab_bra, ["From", "To"], n_Bus, "branch/parameter.csv");
+    str_BraTag = read_full_tag(fullfile(path, "branch", "parameter.csv"));
+
+    % Component
+    str_CompOPF   = [ "OPFinit_P0", "OPFinit_Q0", ...
+                      "OPFcost_HP", "OPFcost_HQ", ...
+                      "OPFcost_fP", "OPFcost_fQ", ...
+                      "OPFcost_startup", "OPFcost_shutdown"];
+    c_Comp = read_components(path, n_Bus, str_CompOPF);
+
+% Network (Hz, baseMVA)
+    for str_name = str_NetOpt
+        val = tab_net.(str_name)(1);
+        if ~isnan(val)
+            net.para_base.(str_name) = val;
         end
     end
 
-% Bus
-    % Variable Names
-    str_BusReq  = ["V", "Varg"];
-    % (a "baseMVA" column is accepted and ignored: the system base is net.tab_parameter.base.baseMVA)
-    str_BusOpt  = ["V0", "Varg0", "Gshunt", "Bshunt", "Vmin", "Vmax", "baseKV", "Tag", "Xaxis","Yaxis","Marker"];
-
-    % validate table
-    tab_bus    = readtable(fullfile(path, "bus", "parameter.csv"), "TextType", "string");
-    str_BusOpt = check_cols(tab_bus, str_BusReq, str_BusOpt, "bus/parameter.csv");
-
-    str_BusTag = read_full_tag(fullfile(path, "bus", "parameter.csv"));
-
-    % Add bus
-    n_Bus = size(tab_bus,1);
+% Add buses
     a_Bus = cell(n_Bus,1);
     for i_bus = 1:n_Bus
         r_V    = tab_bus.V(i_bus);
@@ -98,20 +121,7 @@ function net = import_csv(path, opt)
     end
 
 
-% Branch
-    % Variable Names
-    str_BraReq   = ["Type", "From", "To"];
-    str_BraOpt   = ["R", "X", "C", "Tap", "Phase", "Smax", "Imax", "Pmax", "Qmax", "Vargmax", ...
-                    "MidXaxis","MidYaxis","Marker","BusFromPoint","BusToPoint"];
-
-    % Validate table
-    tab_bra = readtable(fullfile(path, "branch", "parameter.csv"), "TextType", "string");
-    % export writes "tap"/"phase" (the Branch parameter names); "Tap"/"Phase" (the add_branch names) are also accepted
-    tab_bra = rename_cols(tab_bra, ["tap","phase"], ["Tap","Phase"], "branch/parameter.csv");
-    str_BraOpt = check_cols(tab_bra, str_BraReq, str_BraOpt, "branch/parameter.csv");
-    str_BraTag = read_full_tag(fullfile(path, "branch", "parameter.csv"));
-
-    % Add branches (From/To are row numbers of bus/parameter.csv)
+% Add branches (From/To are row numbers of bus/parameter.csv)
     for i_bra = 1:size(tab_bra,1)
         tab_brai  = tab_bra(i_bra,:);
         str_Type  = tab_brai.Type;
@@ -123,48 +133,17 @@ function net = import_csv(path, opt)
         set_full_tag(net.add_branch(str_Type, str_fromto, c_opt{:}), str_BraTag(i_bra));
     end
 
-% Component
-    %Variable Names
-    str_CompReq   = [ "Bus", "P", "Q"];
-    str_CompOpt   = [ "baseMVA", "Pmin", "Pmax", "Qmin", "Qmax", "ParameterID", "OpfID", ...
-                      "Xaxis","Yaxis","Marker","BusPoint","MidXaxis","MidYaxis"];
-    str_CompOPF   = [ "OPFinit_P0", "OPFinit_Q0", ...
-                      "OPFcost_HP", "OPFcost_HQ", ...
-                      "OPFcost_fP", "OPFcost_fQ", ...
-                      "OPFcost_startup", "OPFcost_shutdown"];
-
-    str_CompPath = fullfile(path, "component");
-    str_CompDir  = dir(str_CompPath);
-
-    % Add components
-    for i_dir = 1:length(str_CompDir)
-        if ~str_CompDir(i_dir).isdir || startsWith(str_CompDir(i_dir).name, ".")
-            continue
-        end
-        str_CompKey = str_CompDir(i_dir).name;
-        str_KeyPath = fullfile(str_CompPath,str_CompKey);
-
-
-        tab_CompOpt  = readtable(fullfile(str_KeyPath, "main.csv"  ), "TextType", "string");
-        str_CompDynPath  = fullfile(str_KeyPath, "dynamics.csv");
-        str_CompOpfPath  = fullfile(str_KeyPath, "opf.csv");
-
-        l_hasDyn     = false;
-        if ismember("ParameterID",tab_CompOpt.Properties.VariableNames)
-            assert(isfile(str_CompDynPath), "Not found Parameter table: %s", str_CompDynPath);
-            l_hasDyn     = true;
-            tab_CompDyn  = readtable(str_CompDynPath, "TextType", "string");
-        end
-
-        l_hasOPF     = false;
-        if ismember("OpfID",tab_CompOpt.Properties.VariableNames)
-            assert(isfile(str_CompOpfPath), "Not found OPF table: %s", str_CompOpfPath);
-            l_hasOPF     = true;
-            tab_CompOpf  = readtable(str_CompOpfPath, "TextType", "string");
-        end
-
-        str_CompOpt_ = check_cols(tab_CompOpt, str_CompReq, str_CompOpt, "component/"+str_CompKey+"/main.csv");
-        str_CompTag  = read_full_tag(fullfile(str_KeyPath, "main.csv"));
+% Add components
+    for i_dir = 1:numel(c_Comp)
+        sct_comp     = c_Comp{i_dir};
+        str_CompKey  = sct_comp.key;
+        tab_CompOpt  = sct_comp.tab_main;
+        str_CompOpt_ = sct_comp.str_opt;
+        str_CompTag  = sct_comp.str_tag;
+        tab_CompDyn  = sct_comp.tab_dyn;
+        tab_CompOpf  = sct_comp.tab_opf;
+        l_hasDyn     = ~isempty(tab_CompDyn);
+        l_hasOPF     = ~isempty(tab_CompOpf);
 
         for i_comp = 1:size(tab_CompOpt,1)
             tab_CompOpti = tab_CompOpt(i_comp, :);
@@ -184,7 +163,6 @@ function net = import_csv(path, opt)
             if l_hasOPF
                 str_ID = tab_CompOpti.OpfID;
                 tab_CompOpfi = tab_CompOpf(tab_CompOpf.OpfID==str_ID, :);
-                assert(~isempty(tab_CompOpfi), "Not found OPF ID %s in %s", str_ID, str_CompOpfPath);
                 for i_opt = 1:length(str_CompOPF)
                     val = tab_CompOpfi{1, str_CompOPF(i_opt)};
                     sct_opt.(str_CompOPF(i_opt)) = val;
@@ -196,7 +174,6 @@ function net = import_csv(path, opt)
             if l_hasDyn
                 str_ID = tab_CompOpti.ParameterID;
                 tab_CompDyni = tab_CompDyn(tab_CompDyn.ParameterID==str_ID, :);
-                assert(~isempty(tab_CompDyni), "Not found parameter ID %s in %s", str_ID, str_CompDynPath);
                 sct_opt.parameter = tab_CompDyni;
                 sct_opt = rmfield(sct_opt, "ParameterID");
             end
@@ -221,6 +198,97 @@ function net = import_csv(path, opt)
 
     if opt.Initialize
         net.initialize;
+    end
+end
+
+
+function c_Comp = read_components(path, n_Bus, str_CompOPF)
+    % Read and check the tables of every folder component/<key>; nothing is added yet
+    str_CompReq  = [ "Bus", "P", "Q"];
+    str_CompOpt  = [ "baseMVA", "Pmin", "Pmax", "Qmin", "Qmax", "ParameterID", "OpfID", ...
+                     "Xaxis","Yaxis","Marker","MidXaxis","MidYaxis"];
+    str_CompPath = fullfile(path, "component");
+    c_Comp       = {};
+    if ~isfolder(str_CompPath)
+        warning("GUILDA:import_csv:NoComponentFolder", ...
+                "Folder not found: %s. The network is built without components. Give the folder that holds bus/, branch/ and component/.", str_CompPath);
+        return
+    end
+    str_CompDir = dir(str_CompPath);
+    for i_dir = 1:length(str_CompDir)
+        if ~str_CompDir(i_dir).isdir || startsWith(str_CompDir(i_dir).name, ".")
+            continue
+        end
+        str_key  = string(str_CompDir(i_dir).name);
+        str_rel  = "component/" + str_key + "/";
+        str_main = str_rel + "main.csv";
+
+        tab_main = read_csv(path, str_main);
+        str_opt  = check_cols(tab_main, str_CompReq, str_CompOpt, str_main, "FullTag");
+        check_bus_rows(tab_main, "Bus", n_Bus, str_main);
+
+        tab_dyn = [];
+        if ismember("ParameterID", str_opt)
+            tab_dyn = read_csv(path, str_rel + "dynamics.csv");
+            % The other columns depend on the component class
+            assert(ismember("ParameterID", string(tab_dyn.Properties.VariableNames)), ...
+                "GUILDA:import_csv:MissingColumns", ...
+                "Missing required columns in %s: ParameterID", str_rel + "dynamics.csv");
+            check_ids(tab_main, tab_dyn, "ParameterID", str_main, str_rel + "dynamics.csv");
+        end
+
+        tab_opf = [];
+        if ismember("OpfID", str_opt)
+            tab_opf = read_csv(path, str_rel + "opf.csv");
+            check_cols(tab_opf, ["OpfID", str_CompOPF], strings(1,0), str_rel + "opf.csv");
+            check_ids(tab_main, tab_opf, "OpfID", str_main, str_rel + "opf.csv");
+        end
+
+        c_Comp{end+1} = struct("key", str_key, "tab_main", tab_main, "str_opt", str_opt, ...
+                               "str_tag", read_full_tag(fullfile(str_CompPath, str_key, "main.csv")), ...
+                               "tab_dyn", tab_dyn, "tab_opf", tab_opf); %#ok<AGROW>
+    end
+end
+
+
+function tab = read_csv(path, relpath)
+    str_file = fullfile(path, relpath);
+    if ~isfile(str_file)
+        error("GUILDA:import_csv:MissingFile", "File not found: %s. Export the model again or add %s.", str_file, relpath);
+    end
+    tab = readtable(str_file, "TextType", "string");
+end
+
+
+function check_bus_rows(tab, cols, n_Bus, relpath)
+    % From, To and Bus are row numbers of bus/parameter.csv
+    for str_col = cols
+        val   = tab.(str_col);
+        r_val = double(val);
+        i_row = find(isnan(r_val) | r_val < 1 | r_val > n_Bus | r_val ~= fix(r_val), 1);
+        if ~isempty(i_row)
+            error("GUILDA:import_csv:BusRow", ...
+                  "%s row %d: %s = %s is not a bus number. bus/parameter.csv has %d rows, so give an integer from 1 to %d.", ...
+                  relpath, i_row, str_col, value_text(val(i_row)), n_Bus, n_Bus);
+        end
+    end
+end
+
+
+function check_ids(tab_main, tab_ref, str_col, relpath, relref)
+    i_row = find(~ismember(string(tab_main.(str_col)), string(tab_ref.(str_col))), 1);
+    if ~isempty(i_row)
+        error("GUILDA:import_csv:UnknownID", "%s row %d: %s = %s is not in %s.", ...
+              relpath, i_row, str_col, value_text(tab_main.(str_col)(i_row)), relref);
+    end
+end
+
+
+function str = value_text(val)
+    % readtable gives NaN or a missing string for an empty or non-numeric cell
+    str = string(val);
+    if ismissing(str)
+        str = "NaN";
     end
 end
 
@@ -262,12 +330,32 @@ function tab = rename_cols(tab, old_cols, new_cols, relpath)
 end
 
 
-function optional_cols = check_cols(tab, required_cols, optional_cols, relpath)
+function optional_cols = check_cols(tab, required_cols, optional_cols, relpath, other_cols)
+    % other_cols: known columns that the caller reads by itself or ignores
+    arguments
+        tab
+        required_cols
+        optional_cols
+        relpath
+        other_cols = strings(1,0)
+    end
     names   = string(tab.Properties.VariableNames);
     missing = required_cols(~ismember(required_cols, names));
     assert(isempty(missing), ...
         "GUILDA:import_csv:MissingColumns", ...
         "Missing required columns in %s: %s", relpath, strjoin(missing, ", "));
+    known = [required_cols, optional_cols, other_cols];
+    lv_unknown = ~ismember(names, known);
+    if any(lv_unknown)
+        % The column names as written: readtable changes the ones that are not MATLAB names
+        str_written = names;
+        if ~isempty(tab.Properties.VariableDescriptions)
+            str_written = string(tab.Properties.VariableDescriptions);
+        end
+        warning("GUILDA:import_csv:UnknownColumn", ...
+                "Ignored unknown columns in %s: %s. Known columns: %s.", ...
+                relpath, strjoin(str_written(lv_unknown), ", "), strjoin(known, ", "));
+    end
     if ~isempty(optional_cols)
         optional_cols = optional_cols(ismember(optional_cols, names));
     end
