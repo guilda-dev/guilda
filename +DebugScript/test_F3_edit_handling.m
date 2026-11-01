@@ -326,6 +326,64 @@ para = avr.tab_parameter.dynamics{:, avr.sv_para}.';
 assert(norm(avr.f_dx(0,x,V,[0;0],u) - avr.fcn_dx(0,x,V,[0;0],u,para,50)) < 1e-12)
 
 
+%% Network Hz edit redesigns the LQR gain
+% K は線形モデルの Hz に依存する。保持している平衡点で作り直し、再初期化と同じ値になる
+for str_call = ["get_sys", "simulate"]
+    [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
+    lqr = controller.local_LQR("lqr1");
+    gen.add_local_controller(lqr);
+    DebugScript.helper.quiet(@() net.initialize);
+    K60 = lqr.K;
+    net.tab_parameter.base.Hz = 50;
+    assert(isequal(lqr.K, K60) && ~net.l_staleEquilibrium)     % 編集しただけでは作り直さない
+    if str_call == "get_sys"
+        net.get_sys();
+    else
+        net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
+    end
+    K50 = lqr.K;
+    assert(norm(K50 - K60) > 1e-3, "K が古い Hz のまま")
+    assert(~net.l_staleEquilibrium && ~lqr.l_staleOdefcn)
+    u = ones(numel(gen.sv_x), 1);
+    y_expected = lqr.fcn_y(0, [], [], [], u, struct("K",K50, "x0",gen.rv_Xequilibrium, "u0",gen.rv_Uequilibrium), 50);
+    assert(norm(lqr.f_Y(0, [], [], [], u) - y_expected) < 1e-12, "f_Y が古い K を使っている")
+    DebugScript.helper.quiet(@() net.initialize);
+    assert(norm(lqr.K - K50) < 1e-6 * norm(K50), "再初期化の値と一致しない")
+end
+
+% Hz と動特性を両方編集すると initialize を促し、K は initialize まで変えない
+[net, gen] = DebugScript.helper.build_3bus("gen-1axis");
+lqr = controller.local_LQR("lqr1");
+gen.add_local_controller(lqr);
+DebugScript.helper.quiet(@() net.initialize);
+K60 = lqr.K;
+net.tab_parameter.base.Hz = 50;
+gen.tab_parameter.dynamics.D = 5;
+assert_stale_error(@() net.get_sys(), str_staleID)
+assert(isequal(lqr.K, K60))
+DebugScript.helper.quiet(@() net.initialize);
+assert(norm(lqr.K - K60) > 1e-3)
+
+% 未初期化なら設計しない
+[net, gen] = DebugScript.helper.build_3bus("gen-1axis");
+lqr = controller.local_LQR("lqr1");
+gen.add_local_controller(lqr);
+net.tab_parameter.base.Hz = 50;
+assert_stale_error(@() net.get_sys(), str_staleID)
+assert(isempty(lqr.K))
+
+% 同じ Hz に戻したときは設計し直さず、K はそのまま
+[net, gen] = DebugScript.helper.build_3bus("gen-1axis");
+lqr = controller.local_LQR("lqr1");
+gen.add_local_controller(lqr);
+DebugScript.helper.quiet(@() net.initialize);
+K60 = lqr.K;
+net.tab_parameter.base.Hz = 50;
+net.tab_parameter.base.Hz = 60;
+net.get_sys();
+assert(isequal(lqr.K, K60))
+
+
 %% Components and controllers use the network Hz when attached
 % 系統の外で作った制御器は GUILDA.config の Hz、系統に付けると系統の Hz になる
 net = PowerNetwork();
