@@ -649,11 +649,11 @@ there.
   `InitializeNoEquilibrium`); the network keeps its previous equilibrium
   and edit log, and a slack bus that the power flow set is released again.
   Before, a failed analysis was written into the network.
-- **The slack bus must be able to take the remaining power.** With
-  `"powerflow"`, a slack bus with no component whose `Q` is `NaN` stops with
-  `GUILDA:PowerNetwork:SlackCannotBalance`, under the same failure rules. Before,
-  this gave a wrong equilibrium with no error. If a custom component should
-  balance the network, set `Q = nan` on it.
+- **A slack bus should be able to take the remaining power.** Setting
+  `bus.l_isSlack = true` warns with `GUILDA:Bus:SlackWithoutQnan` when the bus has
+  components and none has `Q = NaN`. `net.initialize` still runs: the first
+  component of the bus takes the remaining power, so a load can generate power.
+  If a custom component should balance the network, set `Q = nan` on it.
 - Deprecated, still working:
 
   | Old form | Warning ID |

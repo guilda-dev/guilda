@@ -169,6 +169,10 @@ classdef Bus < PowerSystemModel
                     error(msg('GUILDA:Bus:NonUnitBus' ,string(obj)))
                 else
                     disp(msg('GUILDA:Bus:SetSlack' ,string(obj),string(a_com{1})))
+                    if ~any(cellfun(@(c) isnan(c.para_powerflow.Q), a_com))
+                        warning('GUILDA:Bus:SlackWithoutQnan', '%s', ...
+                                msg('GUILDA:Bus:SlackWithoutQnan', string(obj), string(a_com{1})))
+                    end
                 end
             end
             obj.l_isSlack = val;

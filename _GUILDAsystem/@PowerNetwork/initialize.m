@@ -23,9 +23,8 @@ function [result, flag, output] = initialize(obj, varargin)
 %   formulation of that analysis (its own Method) is not set here: use
 %   net.solver_PF.Method for the power flow.
 %
-% When the analysis does not succeed (no convergence, an infeasible OPF, stored
-% equilibria that do not satisfy the network equations, or with "powerflow" a slack bus
-% without a component whose Q is NaN to take the remaining power), initialize stops with an error
+% When the analysis does not succeed (no convergence, an infeasible OPF, or stored
+% equilibria that do not satisfy the network equations), initialize stops with an error
 % naming the remedy, and the network keeps its previous equilibrium and edit log (a
 % slack bus set by calculate_powerflow is released again). When setting the operating
 % point fails afterwards, or the point does not satisfy Y*V = I, the equilibrium is left
@@ -59,7 +58,6 @@ function [result, flag, output] = initialize(obj, varargin)
             try
                 [result, flag, output] = obj.calculate_powerflow(c_nv{:});
                 l_ok = result.l_success;
-                check_slack_balance(obj);
             catch ME
                 l_ok = false;
             end
@@ -151,17 +149,6 @@ function release_slack(obj)
 % Releases the slack bus that calculate_powerflow set because none was set
     for i_bus = 1:numel(obj.a_Bus)
         obj.a_Bus{i_bus}.l_isSlack = false;
-    end
-end
-
-
-function check_slack_balance(obj)
-% Stops when no component of the slack bus can take the remaining power (none has Q = NaN)
-    bus    = obj.a_Bus{tools.vcellfun(@(b) b.l_isSlack, obj.a_Bus)};
-    a_Comp = bus.a_Component;
-    if ~any(cellfun(@(c) isnan(c.para_powerflow.Q), a_Comp))
-        error('GUILDA:PowerNetwork:SlackCannotBalance', '%s', ...
-              msg('GUILDA:PowerNetwork:SlackCannotBalance', char(string(bus)), numel(a_Comp)))
     end
 end
 
