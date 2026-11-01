@@ -4,6 +4,7 @@ function comp = replace_component(obj, str_tag, Type, parameter)
 % The new component keeps the power-flow, operation, OPF and graph settings and the
 % number of the replaced one. The replacement is logged as a "Topology" edit, so
 % `net.initialize()` is needed before the dynamic analyses.
+% A component controlled by a global controller cannot be replaced.
 %
 % <@Examples>
 % ```matlab
@@ -29,6 +30,11 @@ function comp = replace_component(obj, str_tag, Type, parameter)
     end
 
     comp_pre = obj.a_Component{lv_rmcub};
+    str_gcon = controlling_gcon(obj, comp_pre);
+    if str_gcon ~= ""
+        error('GUILDA:Bus:ComponentControlled', '%s', ...
+              msg('GUILDA:Bus:ComponentControlled', char(comp_pre.str_tag), char(str_gcon)))
+    end
     tab_pre  = [comp_pre.para_powerflow.tab_parameter, ...
                 comp_pre.para_operation.tab_parameter, ...
                 comp_pre.para_graph.tab_parameter];
