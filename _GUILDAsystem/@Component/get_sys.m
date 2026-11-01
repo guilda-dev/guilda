@@ -120,8 +120,8 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         sys.StateName  = cellstr(sv_x);
         sys.InputName  = cellstr(sv_in);
         sys.OutputName = cellstr(sv_out);
-        sys.InputGroup  = groups(sv_in);
-        sys.OutputGroup = groups(sv_out);
+        sys.InputGroup  = struct();     % no groups, so that sys(outputName, inputName) works
+        sys.OutputGroup = struct();
 
         varargout{1} = cellstr(sv_x);
         varargout{2} = cellstr(sv_in);
@@ -295,14 +295,6 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         sv = reshape(string(owner.sv_y), [], 1);
         lv = ismember(sv, owner.sv_x);
         sv(lv) = "Y_" + sv(lv);
-    end
-
-    function s = groups(sv_name)
-        % One group per name (only when the names are unique valid identifiers)
-        s = struct();
-        if numel(unique(sv_name)) == numel(sv_name) && all(arrayfun(@isvarname, sv_name))
-            s = cell2struct(arrayfun(@(n) {n}, (1:numel(sv_name))'), cellstr(sv_name));
-        end
     end
 
     function list = all_controllers(parent)
