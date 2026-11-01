@@ -5,6 +5,9 @@ function bra = add_branch(obj, Type, from_to, opt)
 % branch tag is the class header followed by a three-digit number. The addition is
 % logged as a "Topology" edit.
 %
+% The end buses must exist and differ, and R and X must not both be 0; otherwise the
+% network stays unchanged and an error explains the fix.
+%
 % <@Examples>
 % ```matlab
 % net.add_branch("pi", [1,2], R=0.01, X=0.085, C=0.088);
@@ -36,15 +39,29 @@ function bra = add_branch(obj, Type, from_to, opt)
 
     % a_Busの番号で指定された場合
     if isnumeric(from_to)
-        a_Bus = obj.a_Bus(from_to);
+        ir_bus = from_to;
+        n_bus  = numel(obj.a_Bus);
+        if any(ir_bus < 1 | ir_bus > n_bus | ir_bus ~= fix(ir_bus))
+            error('GUILDA:PowerNetwork:BranchBusIndex', '%s', ...
+                  msg('GUILDA:PowerNetwork:BranchBusIndex', mat2str(from_to), char(obj.str_tag), char(string(n_bus))))
+        end
     else
         str_Bus = string(obj.a_Bus)';
         [~,ir_bus] = ismember(from_to, str_Bus);
-        
-        assert(ir_bus(1),"Bus class '"+from_to(1)+"' not found.")
-        assert(ir_bus(2),"Bus class '"+from_to(2)+"' not found.")
-        
-        a_Bus = obj.a_Bus(ir_bus);
+        if any(ir_bus == 0)
+            error('GUILDA:PowerNetwork:BusNotFound', '%s', ...
+                  msg('GUILDA:PowerNetwork:BusNotFound', char(from_to(find(ir_bus == 0, 1))), char(obj.str_tag)))
+        end
+    end
+    a_Bus = obj.a_Bus(ir_bus);
+
+    if ir_bus(1) == ir_bus(2)
+        error('GUILDA:PowerNetwork:BranchSelfLoop', '%s', ...
+              msg('GUILDA:PowerNetwork:BranchSelfLoop', char(a_Bus{1}.str_tag)))
+    end
+    if opt.R == 0 && opt.X == 0
+        error('GUILDA:PowerNetwork:BranchZeroImpedance', '%s', ...
+              msg('GUILDA:PowerNetwork:BranchZeroImpedance', char(a_Bus{1}.str_tag), char(a_Bus{2}.str_tag)))
     end
 
     % largest number in use + 1 (after remove_branch, numel+1 may already be taken)
