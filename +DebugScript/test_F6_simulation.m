@@ -715,7 +715,7 @@ assert(flag == 1, output.message)
 % output.message は止まった区間・時刻とソルバーの警告文を示す
 ev = odeEventSet("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) 1/(1.5-t));
 lastwarn("");
-[~, flag, output] = net.simulate([0,4], ev);
+[~, flag, output] = net.solver_ODE.solve(net, [0,4], {ev}, net.solver_ODE.get_options({}));   % net.simulate の警告で lastwarn が変わらない
 str_warn = lastwarn();
 assert(flag == -1)
 assert(output.tEnd > 1 && output.tEnd < 2.5)
