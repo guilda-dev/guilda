@@ -94,8 +94,7 @@ function net = import_csv(path, opt)
         tab_opt = tab_bus(i_bus, str_BusOpt(str_BusOpt ~= "Tag" | str_BusTag(i_bus) == ""));
         sct_opt = table2struct(tab_opt);
         c_opt   = namedargs2cell(sct_opt);
-        a_Bus{i_bus} = net.add_bus("V", r_V, "Varg", r_Varg, c_opt{:});
-        set_full_tag(a_Bus{i_bus}, str_BusTag(i_bus));
+        a_Bus{i_bus} = net.add_bus("V", r_V, "Varg", r_Varg, "FullTag", str_BusTag(i_bus), c_opt{:});
     end
 
 
@@ -241,6 +240,7 @@ end
 
 
 function set_full_tag(obj, str_tag)
+    % Branches and components have no tag argument, so this logs a rename when str_tag logs them.
     % Set right after the row is added: the automatic number of the next row cannot take this tag
     if str_tag ~= ""
         obj.str_tag = str_tag;

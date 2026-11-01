@@ -3,6 +3,7 @@
 %   export_csv は書き出さなかった局所制御器と広域制御器を警告で示す (Issue #94)
 %   組み込み系統の構築では警告を出さない
 %   母線、ブランチ、機器のタグは FullTag 列で往復し、FullTag の無い CSV は従来どおり読む (Issue #95)
+%   add_bus の FullTag は完全なタグを与え、読み込みは母線の改名を記録しない (Issue #95)
 %
 % 実行: runtests("DebugScript.test_F16_csv_io")  または  DebugScript.run_all("Features","F16")
 
@@ -160,6 +161,49 @@ net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(str_path, Initialize
 assert(numel(unique(string(net2.a_Bus))) == 3)
 assert(string(net2.a_Bus{2}) == "B001002")
 
+
+%% add_bus FullTag gives the complete tag without an automatic number
+net = PowerNetwork("TagNet");
+assert(string(net.add_bus(FullTag="Sub7", Tag="Ignored")) == "Sub7")
+assert(string(net.add_bus(FullTag="1234")) == "1234")
+assert(string(net.add_bus()) == "B1235", "次の番号は完全なタグの数字に続く")
+assert(string(net.add_bus(Tag="Bus", FullTag="")) == "Bus1236", "空なら従来どおり")
+
+
+%% add_bus FullTag already in use is renamed with an Info line
+net = initialized_network();
+str_out = evalc('bus = net.add_bus(FullTag="B001");');
+assert(string(bus) == "B001002")
+assert(contains(str_out, "Tag changed") && contains(str_out, "B001002"))
+assert(sum(string(net.a_Bus) == "B001") == 1)
+assert(endsWith(string(net.tab_editLog.log(end)), "<<-Add--- B001002"), "追加のログは確定したタグを示す")
+
+
+%% Importing a bus FullTag logs the addition with that tag and no rename
+net = PowerNetwork("TagNet");
+net.add_bus(FullTag="Sub7");
+net.add_bus(FullTag="1234");
+net.add_branch("pi", [1, 2], X=0.1);
+net.a_Bus{1}.add_component("load-power", P=-0.1);
+net.a_Bus{2}.add_component("load-power", P=-0.1);
+[str_dir, c] = temp_folder(); %#ok<ASGLU>
+str_path = DebugScript.helper.quiet(@() net.export_csv(fullfile(str_dir, "Net")));
+
+% 編集ログは初回の initialize の後から記録されるので、初期化済みの系統へ読み込む
+net2 = initialized_network();
+DebugScript.helper.quiet(@() PowerNetwork.import_csv(str_path, Network=net2, Initialize=false));
+assert(all(ismember(["Sub7"; "1234"], string(net2.a_Bus))))
+str_log = string(net2.tab_editLog.log);
+assert(any(endsWith(str_log, "<<-Add--- Sub7")) && any(endsWith(str_log, "<<-Add--- 1234")))
+assert(~any(contains(str_log, "<<-Add--- B")), "自動のタグを経由しない")
+assert(~any(contains(str_log, "rename")), "読み込みは改名を記録しない")
+
+
+function net = initialized_network()
+    % Network whose edit log is active
+    net = DebugScript.helper.build_ieee14();
+    evalc("net.initialize();");
+end
 
 function net = tag_network()
     % 3 buses, 2 branches, and a load and a generator on bus 1

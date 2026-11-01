@@ -2,7 +2,9 @@ function bus = add_bus(obj, opt)
 % Add a bus to the network and return it.
 %
 % The bus tag is `Tag` followed by a three-digit number (the largest number in use + 1),
-% e.g. "B001". The addition is logged as a "Topology" edit, so the equilibrium becomes
+% e.g. "B001". `FullTag` gives the complete tag instead, with no automatic number; a
+% tag already used in the network is renamed with a number suffix, as for `str_tag`, and
+% an Info line shows the change. The addition is logged as a "Topology" edit, so the equilibrium becomes
 % stale until `net.initialize()` runs again.
 %
 % <@Examples>
@@ -10,6 +12,7 @@ function bus = add_bus(obj, opt)
 % net = PowerNetwork();
 % b1  = net.add_bus(V=1.0, Varg=0);
 % b2  = net.add_bus(Bshunt=0.1, Vmin=0.9, Vmax=1.1);
+% b3  = net.add_bus(FullTag="Sub7");
 % ```
 %
 % See also PowerNetwork.remove_bus, PowerNetwork.add_branch, Bus
@@ -26,6 +29,7 @@ function bus = add_bus(obj, opt)
         opt.Varg0             (1,1) double = 0/180*pi;   % [rad] Initial voltage angle of the power-flow and OPF solvers.
         opt.V0                (1,1) double = 1;   % [pu] Initial voltage magnitude of the power-flow and OPF solvers.
         opt.Tag               (1,1) string = 'B';   % Prefix of the bus tag.
+        opt.FullTag           (1,1) string = "";   % Complete bus tag, used instead of Tag and the automatic number ("" = automatic).
         opt.Xaxis             (1,1) double = nan;   % x coordinate in network diagrams (NaN = automatic layout).
         opt.Yaxis             (1,1) double = nan;   % y coordinate in network diagrams (NaN = automatic layout).
         opt.Marker            (1,1) string = "s";   % Marker of the bus in network diagrams.
@@ -36,9 +40,12 @@ function bus = add_bus(obj, opt)
 
     % largest number in use + 1 (after remove_bus, numel+1 may already be taken)
     str_Bus = opt.Tag+num2str(tools.next_tag_number(string(obj.a_Bus)),"%.3d");
+    if opt.FullTag ~= ""
+        str_Bus = opt.FullTag;
+    end
 
     opt = v3_bus_baseMVA(obj, opt);                   % COMPAT(v3)
-    opt = rmfield(opt,"Tag");
+    opt = rmfield(opt,["Tag","FullTag"]);
     bus = Bus(obj, str_Bus, opt);
     
     obj.a_Bus = [obj.a_Bus;{bus}];
