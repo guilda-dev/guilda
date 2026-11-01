@@ -7,8 +7,9 @@ classdef Ishizaki6Bus < PowerNetwork
 % 4-5, 4-6 and 5-6 is set to `alpha` times their reactance. The `line` option
 % removes lines 2-3 and 4-6.
 %
-% The constructor writes the resulting branch table to `branch/parameter.csv`
-% in the class folder before it reads the network.
+% The constructor writes the resulting branch table to a temporary folder and
+% reads the network from there, so the class folder does not change. The tracked
+% `branch/parameter.csv` keeps the default setting as a reference.
 %
 % <@Examples>
 % Build the network with different line settings and simulate a rotor-angle offset
@@ -63,11 +64,14 @@ classdef Ishizaki6Bus < PowerNetwork
                 case 'None'
             end
             
-            bra_path = [new_path,[filesep,'branch',filesep,'parameter.csv']];
-            writetable(tab_branch,bra_path);
+            str_tmp = tempname;
+            mkdir(fullfile(str_tmp,'branch'));
+            c_tmp = onCleanup(@() rmdir(str_tmp,'s'));
+            copyfile(fullfile(new_path,'bus'),fullfile(str_tmp,'bus'));
+            copyfile(fullfile(new_path,'component'),fullfile(str_tmp,'component'));
+            writetable(tab_branch,fullfile(str_tmp,'branch','parameter.csv'));
 
-            str_dirpath  = fileparts(str_filepath);           
-            PowerNetwork.import_csv(str_dirpath, Network=obj);
+            PowerNetwork.import_csv(str_tmp, Network=obj);
         end
     end
 end
