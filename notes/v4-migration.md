@@ -49,6 +49,17 @@ Reference designs: `_GUILDAdoc/developer/class-design.html` and
 >   names a global controller now also sets its output to zero (before: only
 >   its states were frozen, and a direct feed-through part kept acting)
 >   (1.6).
+> - **An input under a local controller now acts.** An input event or a
+>   global controller on an input that a local controller drives adds to the
+>   controller's output in `simulate` (before: it was overwritten, so it had
+>   no effect) (1.6).
+> - **`TimeLimit` no longer stops a run by default.** The default is `Inf`
+>   (before: 10 s of each phase), so a run that used to stop early with
+>   `flag = 0` now continues to the end time (1.11).
+> - **`initialize(Method="OPF")` and `Method="equilibrium"` numbers.** The
+>   components now take the powers of the OPF solution or the ones they hold,
+>   not `para_powerflow`, so the stored equilibrium and later simulations
+>   differ where the old point violated Y*V = I (1.17).
 > - **Automatic tag numbers.** After a removal, `add_bus`, `add_branch` and
 >   `add_component` number the new object after the largest number in use,
 >   not `numel + 1`; scripts that build tags by counting may name another
@@ -183,6 +194,11 @@ Outputs of several controllers on the same input add up. Scalar `alpha` /
   units): its output is zero during the event (silent change, see the box
   at the top), and after the event it restarts from its equilibrium, like
   a tripped generator.
+- **Trip of a generator with a local controller** no longer fails with
+  `MATLAB:TooManyOutputs`. After the event, the states of its local
+  controller and of the controller nested in it restart from their
+  `rv_Xequilibrium`; the stored equilibrium does not change. Whether this
+  transient after reconnection is physically valid has not been evaluated.
 - **Controller inputs are wired by name.** A local controller reads the
   component it is attached to (directly, or through the controller above
   it) by the names of its inputs `sv_u`: a name in the component's `sv_y`
@@ -190,9 +206,14 @@ Outputs of several controllers on the same input add up. Scalar `alpha` /
   output wins when both exist). The reserved inputs `"Xall"` / `"Yall"`
   read all states / all outputs; the old names `"X"` / `"Y"` stop with
   `GUILDA:LocalController:ReservedInput`. An input named like an output of
-  a nested controller (e.g. `Vpss`) reads that output; the controller's
-  outputs replace the component inputs of the same name. AVR and PSS
-  responses are unchanged.
+  a nested controller (e.g. `Vpss`) reads that output. AVR and PSS responses
+  are unchanged.
+- **Inputs driven by a local controller** (silent change, see the box at the
+  top). The controller's outputs drive the component inputs of the same name.
+  In `simulate`, an input event or a global controller on such an input adds
+  to the output (`u = y + u - rv_Uequilibrium`), as `get_sys` already
+  assumed. Before, the output overwrote them, without a warning. Runs with
+  such inputs give other numbers.
 - **`controller.local_LQR` works again** (v4 contract):
   `comp.add_local_controller(controller.local_LQR(tag, Q=, R=, Input=,
   V0=))`. It reads `"Xall"` and outputs `u = u* - K (x - x*)`;
@@ -200,13 +221,27 @@ Outputs of several controllers on the same input add up. Scalar `alpha` /
   (without controllers) connected to an infinite bus of voltage `V0`.
   `Q` / `R` default to identity; editing them makes the equilibrium stale.
   Its key `"local"` takes the place of an AVR (the PSS of a replaced AVR is
-  detached). Its outputs replace the driven inputs, so a global controller
-  must not drive the same input.
+  detached). A global controller on a driven input adds to its output, and
+  the design of `K` does not take it into account (use `Input="Vfield"` with
+  an AGC on `Pmech` to keep them apart).
 - **Replacing an AVR keeps its PSS.** `gen.add_local_controller(new_avr)`
   moves the PSS of the old AVR to the new one; `add_local_controller(avr,
   pss)` replaces both. A replacement warns
   `GUILDA:Component:ReplaceController` and detaches the replaced
   controller. Before, the PSS was dropped. Adding or replacing is logged (1.3).
+- **`replace_component` and local controllers.** The new option
+  `Controllers` is `"drop"` (default) or `"keep"`:
+  `bus.replace_component(tag, Type, Controllers="keep")`.
+  - `"drop"`: the new component has no local controllers, as before, but now
+    the warning `GUILDA:Bus:ControllersDropped` names them. They stay on the
+    replaced component.
+  - `"keep"`: they move to the new component with the controllers nested in
+    them (a handle to one of them then refers to the new component), and
+    `net.initialize()` designs them again. If the new component lacks an
+    input they drive or a signal they observe, the error
+    `GUILDA:Bus:ControllersNotKept` stops the call and nothing changes. The
+    weights of `controller.local_LQR` are kept as given, so a `Q` of another
+    size stops `net.initialize()`.
 
 ### 1.7 The v4 analysis API (common to 1.8–1.12)
 
@@ -415,24 +450,63 @@ Option names:
 - `odeResults` is a view with the old layout
   (`res.odeResults.Bus(i).Component(j).X.omega`, `.t`); controller states
   are only in `rm_variable`. New `sv_bus`,
-  `c_component`, `Plot(Quantity=...)`, `Export` (`.csv`/`.xlsx` table, or
-  `.mat` with `odeResults`, `options`, `flag`, `output`); `odeNetwork` is
-  removed. `output` has `message`, `tEnd`, `phases`, `nPhases`,
-  `nPhasesDone`.
+  `c_component`, `Plot(Quantity=...)`, `Export` (`.csv`, `.txt`, `.xlsx`,
+  `.xls` table, or `.mat` with `odeResults`, `rm_variable`, `tab_variable`,
+  `options`, `flag`, `output`); `odeNetwork` is removed. The table also has
+  one column per state of a local or global controller, named by `Label` of
+  `tab_variable`, after the bus and component columns. `output` has
+  `message`, `tEnd`, `phases`, `nPhases`, `nPhasesDone`, `isSparse`,
+  `exception`.
 - Behavior:
   - **flag** (silent change, see the box at the top).
+  - **A run that does not reach the end time warns.** `net.simulate` always
+    warns `GUILDA:PowerNetwork:SimulationIncomplete` when `flag` is not 1,
+    also when `flag` is requested; check `flag` and silence this ID if you
+    handle the stop yourself. Calling `solver_ODE.solve` directly does not
+    warn.
   - On a stop the result holds the trajectories up to `output.tEnd`.
     `output.message` names the phase, its interval and the solver's
-    warning text. An error during a phase stops with
-    `GUILDA:odeSimulator:PhaseFailed` (phase and interval in the message,
-    the original error as its cause); `GUILDA:odeSimulator:UnfeasibleDAE`
-    names the phase too.
+    warning text.
+  - **A numerical failure keeps the completed phases.** When the solver gives
+    up on a phase, `simulate` no longer throws: it returns `flag = -1`, the
+    completed phases in the result, and in `output.exception` the
+    `MException` (`GUILDA:odeSimulator:PhaseFailed`, `InitialConditionFailed`
+    or `UnfeasibleDAE`, with the original as its cause); `output.exception`
+    is empty otherwise. When the first phase fails, the result has no time
+    points and `output.tEnd` is the start time, so check `flag` before reading
+    the trajectories. Scripts that caught these errors must test `flag`
+    instead.
+  - **Other errors during a phase still stop.** An error of an input function
+    or a model stops with `GUILDA:odeSimulator:PhaseFailed`, or with
+    `InitialConditionFailed` / `UnfeasibleDAE` during the retry from a
+    recomputed initial condition (phase and interval in the message, the
+    original error as its cause). Only the
+    solver's identifiers `MATLAB:daeic12:NeedBetterY0`,
+    `MATLAB:daeic12:IndexGTOne`, `MATLAB:decic:IndexGTOne`,
+    `MATLAB:decic:ConvergenceFail` and the all-zero mass matrix errors of
+    the phase count as numerical failures.
+  - **Working data is restored.** After every run, also after an error,
+    faults, connections and offsets are back at their initial values.
   - Phases that start at rest no longer stop at t = 0 in large networks
     (e.g. `IEEE68bus(LocalController=false)`): bus current residuals below
     the round-off level of their terms are set to zero in the ODE function,
     so ode15s does not read round-off noise as divergence.
-  - `TimeLimit` is the wall-clock limit **of each phase** (between event
-    times), not of the whole run.
+  - `TimeLimit` is the wall-clock limit **of the whole run**, checked at each
+    solver step, and its default is `Inf` (before: 10 s of each phase; silent
+    change, see the box at the top). `solver_ODE.TimeLimit` takes its default
+    from the key `TimeLimit` of `DefaultTimeSimulation.json`, so a user
+    settings file that sets this key keeps its value. Set `TimeLimit=...` if
+    a script relied on the old stop.
+  - **Sparse matrices.** `simulate` solves with sparse admittance, Jacobian
+    and mass matrices. When the solver's index check rejects them
+    (`IndexGTOne`), the phase is solved again and the later phases use dense
+    matrices; `output.isSparse` is then false. Step counts and values differ
+    from earlier versions within the tolerance, so compare results within it,
+    not exactly.
+  - **`Export` is checked before the run.** A file name whose extension is
+    not `.csv`, `.txt`, `.xlsx`, `.xls` or `.mat` stops at once with
+    `GUILDA:PowerNetwork:SimulateExport` (before: after the integration, and
+    the result was lost).
   - `odeSimulator` no longer holds `odeNetwork`, `odeTimeTable`, `odeYmat`,
     `odeResult`, `rv_odeV`; `solver_ODE.simulate(net, ...)` is replaced by
     the internal `solve(net, time, events, options)`.
@@ -446,7 +520,13 @@ Option names:
   - An event whose `TimeSpan` lies entirely outside the simulation time
     has no effect and warns `GUILDA:odeEventSet:OutsideTimeSpan` (before:
     ignored silently).
-  - Trip of a global controller: see 1.6.
+  - **A fault, trip or input needs a duration.** A scalar `TimeSpan` or
+    `[t, t]` stops with `GUILDA:odeEventSet:ZeroLengthTimeSpan` before the
+    integration (before: the event lasted until the next phase boundary, so
+    it depended on unrelated events). Give `[t_start, t_end]`. An offset alone
+    may still use one time.
+  - Trip of a global controller or of a generator with a local controller,
+    and inputs driven by a local controller: see 1.6.
 - **Settings key.** The default progress display is the key `Progress` of
   `@GUILDA/config/DefaultTimeSimulation.json` (was `Reporter`, same values
   `"none"` | `"disp"` | `"dialog"`). A user settings file
@@ -649,6 +729,23 @@ there.
   `InitializeNoEquilibrium`); the network keeps its previous equilibrium
   and edit log, and a slack bus that the power flow set is released again.
   Before, a failed analysis was written into the network.
+- **`"OPF"` and `"equilibrium"` set a real operating point** (silent change,
+  see the box at the top). With `"OPF"` the components take P and Q of the
+  solution (`result.tab_cub`); with `"equilibrium"` they keep the V and I they
+  hold, and their states and inputs are recomputed, so this follows edits of
+  dynamics parameters. Before, both used `para_powerflow`, and `simulate` then
+  returned `flag = 1` while the states drifted.
+- **`"equilibrium"` after other edits is an error.** An edit that makes the
+  equilibrium stale and is not a dynamics edit (e.g. P of a component, the
+  network `baseMVA`, topology, slack bus) stops with
+  `GUILDA:PowerNetwork:InitializeEquilibriumEdited`, and the network is not
+  changed. Run `net.initialize()` instead.
+- **The point that was set is checked.** With every `Method`, `max|Y*V-I|`
+  must be below 1e-6, otherwise `initialize` stops with
+  `GUILDA:PowerNetwork:InitializeNotEquilibrium`. Here, and when writing the
+  point fails, the network does not keep its previous equilibrium: it is out
+  of date, and analyses stop with `GUILDA:PowerNetwork:EquilibriumStale` until
+  `initialize` succeeds.
 - **A slack bus should be able to take the remaining power.** Setting
   `bus.l_isSlack = true` warns with `GUILDA:Bus:SlackWithoutQnan` when the bus has
   components and none has `Q = NaN`. `net.initialize` still runs: the first
@@ -701,6 +798,15 @@ there.
   that uses the reserved names overrides `set_inputs`, otherwise it stops
   with `GUILDA:LocalController:ReservedInput`. Global controllers are
   coupled to components by port names (`sv_u` / `sv_y`).
+- **Inputs driven by a controller.** A controller output does not overwrite
+  the component input in `simulate`: an input event or a global controller on
+  it adds (see 1.6). `LocalController.get_dx_algebraic` returns
+  `[DAEvec, y]`; the third output `y_name` is removed (the names are `sv_y`).
+- **Working data of a simulation.** `LocalController.l_isConnect` is removed.
+  `Component.rv_Xoffset` / `rv_Uoffset` can only be written by `odeSimulator`
+  and `odeEventSet`, and are empty after a run. `rv_Uoffset` is also empty
+  during a run for a component without an input event, so do not call it
+  from a model.
 - **Variable map.** `net.get_variable_map()` (and `bus.` / `comp.`) is the
   single definition of the variable order: states (per bus, per component,
   then its local controllers depth first; then the global controllers),
