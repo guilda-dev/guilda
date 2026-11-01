@@ -20,11 +20,13 @@ function str_file = Export(obj, filename)
         case {".csv", ".txt", ".xlsx", ".xls"}
             writetable(wide_table(obj), str_file);
         case ".mat"
-            odeResults = obj.odeResults; %#ok<PROPLC>
+            odeResults   = obj.odeResults; %#ok<PROPLC>
+            rm_variable  = obj.rm_variable;
+            tab_variable = obj.tab_variable;
             options    = obj.options;
             flag       = obj.flag;
             output     = obj.output;
-            save(str_file, "odeResults", "options", "flag", "output");
+            save(str_file, "odeResults", "rm_variable", "tab_variable", "options", "flag", "output");
         otherwise
             error('GUILDA:odeSimulationResult:ExportFormat', '%s', ...
                   msg('GUILDA:odeSimulationResult:ExportFormat', char(str_ext)));
@@ -46,6 +48,10 @@ function tab = wide_table(obj)
             tab = [tab, prefixed([c.X, c.U], obj.c_component{i}(j))]; %#ok<AGROW>
         end
     end
+    % The Label tells apart controllers with the same tag on different components
+    tab_map = obj.tab_variable;
+    lv_ctrl = tab_map.Kind == "x" & ~ismember(tab_map.Owner, vertcat(obj.c_component{:}));
+    tab = [tab, array2table(obj.rm_variable(:, lv_ctrl), 'VariableNames', tab_map.Label(lv_ctrl))];
 end
 
 function tab = prefixed(tab, str_tag)
