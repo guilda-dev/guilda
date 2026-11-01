@@ -798,6 +798,45 @@ ax = res.Plot("Algorithm", "Feedback");
 close(ancestor(ax, "figure"))
 
 
+%% Plot draws the algorithm of the options
+% 既定は options.Algorithm。Plot=true でも同じで、Algorithm を渡せばそちらを描く
+for alg = ["Feedback", "Kron", "DAE"]
+    DebugScript.helper.quiet(@() net.linearize("Algorithm", alg, "NonUnit", [7 9], "Plot", true));
+    ax = gca;
+    assert(ax.Title.String == "Eigenvalues (" + alg + ")", ax.Title.String)
+    close(ancestor(ax, "figure"))
+end
+res = net.linearize("Algorithm", "Kron");
+ax = res.Plot("Algorithm", "DAE");
+assert(ax.Title.String == "Eigenvalues (DAE)", ax.Title.String)
+close(ancestor(ax, "figure"))
+% Feedback で描けない NonUnit は get_ss と同じエラー
+try
+    net.linearize("Algorithm", "Feedback", "NonUnit", [7 2], "Plot", true);
+    error("DebugScript:NoError", "状態のある母線の NonUnit がエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:LinearizationResult:NonUnitDynamicBus", ME.identifier)
+    close(gcf)
+end
+
+
+%% Ignored NonUnit is reported
+% NonUnit を使うのは Feedback だけ。Kron, DAE は結果を変えず、無視したことを INFO で示す
+for alg = ["Kron", "DAE"]
+    sys_ref = net.get_sys("Algorithm", alg);
+    str = evalc('sys_nu = net.get_sys("Algorithm", alg, "NonUnit", [7 9]);');
+    assert(contains(str, "INFO") && contains(str, "NonUnit") && contains(str, alg), alg + ": INFO がない")
+    assert(contains(str, num2str([7 9])), alg + ": 母線番号がない")
+    assert(isequal(sys_nu.A, sys_ref.A))
+    assert(~contains(evalc('net.get_sys("Algorithm", alg);'), "NonUnit"))
+end
+assert(~contains(evalc('net.get_sys("Algorithm", "Feedback", "NonUnit", [7 9]);'), "NonUnit"))
+% 結果から取り出すときも同じ
+res = net.linearize("Algorithm", "Feedback", "NonUnit", [7 9]);
+assert(contains(evalc('res.get_ss("Kron");'), "NonUnit"))
+assert(~contains(evalc('res.get_ss();'), "NonUnit"))
+
+
 %% Hessian is not supported by default
 % Hessian は機器・制御器のクラスごとの任意の解析。定義していないクラスはクラス名を示すエラー
 net = new_net();

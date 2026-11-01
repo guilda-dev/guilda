@@ -7,7 +7,7 @@ function fig = Plot(obj, opt)
 % net.linearize(..., Plot=true) calls it.
     arguments
         obj
-        opt.Algorithm (1,1) string {mustBeMember(opt.Algorithm, ["Kron","Feedback","DAE"])} = "Kron" % Model whose eigenvalues are drawn (the finite ones are the same for all three).
+        opt.Algorithm (1,1) string {mustBeMember(opt.Algorithm, ["Kron","Feedback","DAE"])} = obj.options.Algorithm % Model whose eigenvalues are drawn. Default: the Algorithm of the linearization.
         opt.Tolerance (1,1) double {mustBeNonnegative} = 1e-6 % Real part above which an eigenvalue is drawn as unstable.
         opt.Parent = [] % Container to draw in. A new figure when empty.
     end

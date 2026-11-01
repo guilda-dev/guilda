@@ -21,6 +21,8 @@ function sys = get_ss(obj, Algorithm, opt)
 % - "DAE": the bus voltages are kept as algebraic states (E is singular), in the
 %   coordinates given by Coordinate. Outputs: the dynamic states.
 %
+% Only "Feedback" uses options.NonUnit: "Kron" and "DAE" ignore it and say so with an INFO message.
+%
 % <@Examples>
 % ```matlab
 % res = net.linearize();
@@ -37,6 +39,9 @@ function sys = get_ss(obj, Algorithm, opt)
     end
     arguments (Output)
         sys % Descriptor state-space model with StateName, InputName and OutputName.
+    end
+    if Algorithm ~= "Feedback" && any(obj.s_model.lv_nonUnit)
+        disp("INFO: NonUnit = [" + num2str(find(obj.s_model.lv_nonUnit(:)')) + "] is ignored by Algorithm """ + Algorithm + """. Only ""Feedback"" uses it.")
     end
     switch Algorithm
         case "Kron"
