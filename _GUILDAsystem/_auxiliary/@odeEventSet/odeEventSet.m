@@ -433,13 +433,55 @@ classdef (Sealed = true) odeEventSet < auxiliary
 
     methods (Access=private)
         function validate_input(obj)
-            % InputUnit, InputName and InputValue are checked before the integration starts.
-            if strlength(obj.InputUnit) == 0 && isempty(obj.InputName)
-                return
+            % The event is checked before the integration starts, against the network at that time.
+            ts = obj.TimeSpan;
+            if ~isnumeric(ts) || ~isreal(ts) || any(isnan(ts)) || (numel(ts) == 2 && ts(1) > ts(2))
+                str_ts = class(ts);
+                if isnumeric(ts)
+                    str_ts = mat2str(ts);
+                end
+                error('GUILDA:odeEventSet:InvalidTimeSpan', '%s', ...
+                    msg('GUILDA:odeEventSet:InvalidTimeSpan', char(obj.str_tag), str_ts));
             end
-            a_comp = cellfun(@(b) b.a_Component, obj.odeNetwork.a_Bus, 'UniformOutput', false);
+
+            a_bus  = obj.odeNetwork.a_Bus;
+            sv_bus = string(cellfun(@(b) b.str_tag, a_bus, 'UniformOutput', false));
+            lv_bad = ~ismember(obj.FaultBus, sv_bus);
+            if any(lv_bad)
+                error('GUILDA:odeEventSet:UnknownFaultBus', '%s', ...
+                    msg('GUILDA:odeEventSet:UnknownFaultBus', char(obj.str_tag), char(join(obj.FaultBus(lv_bad), ", "))));
+            end
+
+            a_comp = cellfun(@(b) b.a_Component, a_bus, 'UniformOutput', false);
             a_comp = vertcat(a_comp{:});
             sv_tag = string(cellfun(@(c) c.str_tag, a_comp, 'UniformOutput', false));
+
+            sv_gc  = string(cellfun(@(g) g.str_tag, obj.odeNetwork.a_GlobalController, 'UniformOutput', false));
+            lv_bad = ~ismember(obj.TripUnit, [sv_tag(:); sv_gc(:)]);
+            if any(lv_bad)
+                error('GUILDA:odeEventSet:UnknownTripUnit', '%s', ...
+                    msg('GUILDA:odeEventSet:UnknownTripUnit', char(obj.str_tag), char(join(obj.TripUnit(lv_bad), ", "))));
+            end
+
+            if strlength(obj.OffsetUnit) > 0 || ~isempty(obj.OffsetState) || ~isempty(obj.OffsetValue)
+                lv_cmp = sv_tag == obj.OffsetUnit;
+                if ~any(lv_cmp)
+                    error('GUILDA:odeEventSet:UnknownOffsetUnit', '%s', ...
+                        msg('GUILDA:odeEventSet:UnknownOffsetUnit', char(obj.str_tag), char(obj.OffsetUnit)));
+                end
+                sv_x = string(a_comp{find(lv_cmp,1)}.sv_x(:));
+                lv_bad = ~ismember(obj.OffsetState, sv_x);
+                if any(lv_bad)
+                    error('GUILDA:odeEventSet:UnknownOffsetState', '%s', ...
+                        msg('GUILDA:odeEventSet:UnknownOffsetState', char(obj.str_tag), ...
+                            char(join(obj.OffsetState(lv_bad), ", ")), char(obj.OffsetUnit), char(join(sv_x, ", "))));
+                end
+                checkValueCount(obj.str_tag, "OffsetValue", obj.OffsetValue, "OffsetState", obj.OffsetState);
+            end
+
+            if strlength(obj.InputUnit) == 0 && isempty(obj.InputName) && isempty(obj.InputValue)
+                return
+            end
             lv_cmp = sv_tag == obj.InputUnit;
             if ~any(lv_cmp)
                 error('GUILDA:odeEventSet:UnknownInputUnit', '%s', ...
@@ -452,6 +494,7 @@ classdef (Sealed = true) odeEventSet < auxiliary
                     msg('GUILDA:odeEventSet:UnknownInputName', char(obj.str_tag), ...
                         char(join(obj.InputName(lv_bad), ", ")), char(obj.InputUnit), char(join(sv_u, ", "))));
             end
+            checkValueCount(obj.str_tag, "InputValue", obj.InputValue, "InputName", obj.InputName);
             exV = obj.InputValue;
             if ~iscell(exV)
                 exV = {exV};
@@ -466,6 +509,15 @@ classdef (Sealed = true) odeEventSet < auxiliary
 
 end
 
+
+function checkValueCount(str_tag, str_value, values, str_name, names)
+    % One value per name, or a single value for all the names
+    if isempty(names) || ~(isscalar(values) || numel(values) == numel(names))
+        error('GUILDA:odeEventSet:ValueCountMismatch', '%s', ...
+            msg('GUILDA:odeEventSet:ValueCountMismatch', char(str_tag), char(str_value), ...
+                numel(values), numel(names), char(str_name)));
+    end
+end
 
 function [sv_tag, rv_rep] = getTM(OBJs, sv_tag, rv_rep)
     if nargin < 2
