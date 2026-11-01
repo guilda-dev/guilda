@@ -90,7 +90,7 @@ classdef PowerNetwork < PowerSystemModel
     properties(Dependent) % Steady State
         cv_Vequilibrium         % [pu] Bus voltage phasors at the equilibrium, one per bus.
         cv_Iequilibrium         % [pu] Bus current injections at the equilibrium, one per bus.
-        rv_Xequilibrium         % State equilibrium of the buses, branches and global controllers.
+        rv_Xequilibrium         % State equilibrium, in the order of the x rows of get_variable_map.
         tab_parameter           % Parameter table of the network (base: Hz and baseMVA).
     end
     properties(Hidden,SetAccess=protected) % Parameter
@@ -237,10 +237,10 @@ classdef PowerNetwork < PowerSystemModel
             I = tools.vcellfun(@(b) b.c_Iequilibrium, obj.a_Bus);
         end
         function x = get.rv_Xequilibrium(obj)
-            x_bus = tools.vcellfun(@(b) b.rv_Xequilibrium_all, obj.a_Bus);
-            x_bra = tools.vcellfun(@(b) b.rv_Xequilibrium, obj.a_Branch);
+            % Order of the x rows of get_variable_map
+            x_bus = tools.vcellfun(@(b) tools.vcellfun(@(c) c.rv_Xequilibrium_all, b.a_Component), obj.a_Bus);
             x_con = tools.vcellfun(@(c) c.rv_Xequilibrium, obj.a_GlobalController);
-            x = [x_bus; x_bra; x_con];
+            x = [zeros(0,1); x_bus; x_con];
         end
     end
 %% Get Method
