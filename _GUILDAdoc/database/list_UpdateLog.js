@@ -232,5 +232,17 @@ const updateLogData = [
     "date": "2026-11-02",
     "type": "changed",
     "content": "net.linearize, net.get_sys and net.solver_LIN no longer have a NonUnit setting: buses without states are detected automatically and give the same model. A call or setting that still uses it warns (GUILDA:Deprecated:LinearizeNonUnit, GUILDA:Deprecated:SolverLinNonUnit): a listed bus without states is ignored, and a listed bus with states stops Algorithm=\"Feedback\" with an error as before. get_ss no longer prints an INFO message about NonUnit, which also appeared wrongly for networks with buses without components."
+  },
+  {
+    "title": "Incomplete simulations are reported and kept",
+    "date": "2026-11-02",
+    "type": "changed",
+    "content": "net.simulate warns GUILDA:PowerNetwork:SimulationIncomplete whenever flag is not 1. A numerical failure in a phase returns flag = -1 with the completed phases and output.exception instead of an error; errors of input functions and models still stop the run. TimeLimit now covers the whole run and defaults to Inf. Simulation uses sparse matrices with a fallback to dense ones (output.isSparse). A fault, trip or input with a scalar or zero-length TimeSpan is an error (GUILDA:odeEventSet:ZeroLengthTimeSpan), and Export is checked before the run and includes controller states."
+  },
+  {
+    "title": "Simulation and initialize fixes",
+    "date": "2026-11-02",
+    "type": "fixed",
+    "content": "A generator with a local controller can trip. An input event or global controller on an input driven by a local controller now adds to its output, which changes the numbers of such runs. net.initialize with Method=\"OPF\" or \"equilibrium\" sets a point that satisfies Y*V = I or stops with an error, and Method=\"equilibrium\" stops after edits it would ignore. replace_component takes Controllers=\"drop\" (default, with a warning) or \"keep\". net.simulate restores its working data after every run."
   }
 ];

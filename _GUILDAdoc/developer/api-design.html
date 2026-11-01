@@ -190,7 +190,12 @@
         <tr><td><span class="dev-status is-ok">Must not change values</span></td><td data-label="Verbs"><span class="dg-badge is-ok">calculate_</span><span class="dg-badge is-ok">optimize_</span><span class="dg-badge is-ok">simulate</span><span class="dg-badge is-ok">get_</span><span class="dg-badge is-ok">draw_</span><span class="dg-badge is-ok">export_</span></td></tr>
       </tbody>
     </table>
-    <p>Internal analysis caches are the only exception.</p>
+    <p>Internal analysis caches and per-run working data are the only exceptions. <code>simulate</code> writes working data during a run (see <a href="class-design.html#classes">Class Design: Per-class responsibilities</a>). On every exit, also after an error, it sets <code>Bus.l_isFault</code> to false, <code>l_isConnect</code> of components and global controllers to true, and <code>Component.rv_Xoffset</code> / <code>rv_Uoffset</code> to empty. The index data (<code>iv_ode*</code>, <code>lv_odeUfromLC</code>) stays until the next run overwrites it.</p>
+    <p>A failed simulation ends in one of these ways, and neither changes model values:</p>
+    <ul>
+      <li><strong>Numerical failure in <code>simulate</code>.</strong> When the solver gives up on a phase, <code>simulate</code> returns <code>flag = -1</code>. <code>result</code> holds the completed phases up to <code>output.tEnd</code> (no time points when the first phase fails), <code>output.exception</code> holds the <code>MException</code>, and the warning <code>GUILDA:PowerNetwork:SimulationIncomplete</code> is issued. The same warning follows a solver stop (<code>flag = -1</code>) and <code>TimeLimit</code> (<code>flag = 0</code>).</li>
+      <li><strong>Any other error during a phase.</strong> An error of an input function or a model stops with <code>GUILDA:odeSimulator:PhaseFailed</code>, or with <code>InitialConditionFailed</code> / <code>UnfeasibleDAE</code> during the retry from a recomputed initial condition. The original error is its cause, and no result is returned.</li>
+    </ul>
 
     <h3 id="options">7 · Common Name-Value options</h3>
     <p>Option names follow the MATLAB style (UpperCamelCase).</p>
@@ -226,7 +231,7 @@
           <td>Initialization</td>
           <td data-label="Call"><code>net.initialize(...)</code><small><code>Method="powerflow"|"OPF"|"equilibrium"</code>. The other options go to <code>calculate_powerflow</code> (<code>"powerflow"</code>) or <code>optimize_powerflow</code> with <code>Method="AC OPF"</code> (<code>"OPF"</code>). <code>"equilibrium"</code> reuses the equilibria the components hold and takes no other option. The old option <code>methods</code> is deprecated.</small></td>
           <td data-label="First output"><code>PowerFlowResult</code><small><code>OPFResult</code> for <code>"OPF"</code>.</small></td>
-          <td data-label="Changes net"><span class="dev-status">Yes</span><small>Sets the equilibrium and resets the edit log. When the analysis does not succeed, it stops with an error and leaves the network unchanged.</small></td>
+          <td data-label="Changes net"><span class="dev-status">Yes</span><small>Sets the equilibrium and resets the edit log. When the analysis does not succeed, it stops with an error and leaves the equilibrium and the edit log unchanged, and releases a slack bus the power flow set. When writing the point fails or the point does not satisfy Y*V = I (<code>GUILDA:PowerNetwork:InitializeNotEquilibrium</code>), it stops with an error and the equilibrium stays stale until <code>initialize</code> succeeds.</small></td>
         </tr>
         <tr>
           <td>OPF</td>
@@ -243,8 +248,8 @@
         <tr>
           <td>Time simulation</td>
           <td data-label="Call"><code>net.simulate(time, events..., ...)</code><small><code>Solver</code>, <code>TimeLimit</code>, <code>Progress</code>, ...</small></td>
-          <td data-label="First output"><code>odeSimulationResult</code><small><code>flag</code>: <code>1</code> done, <code>0</code> time limit, <code>-1</code> solver stop.</small></td>
-          <td data-label="Changes net"><span class="dev-status is-ok">No</span><small>Error if the net is not initialized. Working data is written during a run, and the connection, fault, and offset data is restored when it ends.</small></td>
+          <td data-label="First output"><code>odeSimulationResult</code><small><code>flag</code>: <code>1</code> done, <code>0</code> time limit, <code>-1</code> solver stop or numerical failure of a phase.</small></td>
+          <td data-label="Changes net"><span class="dev-status is-ok">No</span><small>Error if the net is not initialized. Working data is written during a run, and the connection, fault, and offset data is restored on every exit (see <a href="#side-effects">rule 6</a>).</small></td>
         </tr>
         <tr>
           <td>Linearization</td>
