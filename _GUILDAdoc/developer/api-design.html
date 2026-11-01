@@ -220,7 +220,7 @@
           <td>Power flow</td>
           <td data-label="Call"><code>net.calculate_powerflow(...)</code><small><code>Method="algebraic"|"dynamic"</code>, <code>Tolerance</code>, <code>MaxIteration</code>, ...</small></td>
           <td data-label="First output"><code>PowerFlowResult</code></td>
-          <td data-label="Changes net"><span class="dev-status is-ok">No</span><small>Only when no slack bus is set, the first bus becomes the slack bus (INFO message, rule 5).</small></td>
+          <td data-label="Changes net"><span class="dev-status is-ok">No</span><small>Only when no slack bus is set, one is selected (INFO message, rule 5): the first bus with a component with <code>Q = NaN</code>, otherwise the first bus with a component.</small></td>
         </tr>
         <tr>
           <td>Initialization</td>
