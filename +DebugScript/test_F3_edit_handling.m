@@ -183,6 +183,7 @@ assert(all(net.tab_editLog.tag == "Topology"))
 % 系統に属さない機器への追加は記録先がないだけでエラーにならない
 DebugScript.helper.quiet(@() net.initialize);
 net.a_Bus{1}.remove_component(string(comp));
+evalc("net.a_Bus{2}.l_isSlack = true;");     % スラック母線に機器がないと平衡点にならない
 DebugScript.helper.quiet(@() net.initialize);
 comp.add_local_controller(controller.avr.AVR_ST1("avr3"));
 assert(~net.l_staleEquilibrium)

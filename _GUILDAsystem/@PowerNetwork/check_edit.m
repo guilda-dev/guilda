@@ -20,12 +20,16 @@ function flag = check_edit(obj, opt)
         else
             tab = obj.tab_editLog;
             [~, lv] = arrayfun(@(t, l) LayerPackage.edit_effect(t, l), string(tab.tag), string(tab.log));
-            str_edit   = tab.ID(lv) + ": " + tab.log(lv);
-            str_reason = "edited since the last initialize (" + join(str_edit(1:min(end,3)), ", ");
-            if numel(str_edit) > 3
-                str_reason = str_reason + ", ...";
+            if any(lv)
+                str_edit   = tab.ID(lv) + ": " + tab.log(lv);
+                str_reason = "edited since the last initialize (" + join(str_edit(1:min(end,3)), ", ");
+                if numel(str_edit) > 3
+                    str_reason = str_reason + ", ...";
+                end
+                str_reason = str_reason + ")";
+            else
+                str_reason = "the last net.initialize() stopped before it finished";
             end
-            str_reason = str_reason + ")";
         end
         error('GUILDA:PowerNetwork:EquilibriumStale', '%s', ...
               msg('GUILDA:PowerNetwork:EquilibriumStale', char(obj.str_tag), char(str_reason)))

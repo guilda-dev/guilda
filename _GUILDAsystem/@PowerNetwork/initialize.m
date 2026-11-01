@@ -13,7 +13,10 @@ function [result, flag, output] = initialize(obj, varargin)
 %   - "OPF": net.optimize_powerflow with Method="AC OPF" (settings of net.solver_OPF;
 %     the AC formulation gives a complete AC operating point).
 %   - "equilibrium": the equilibria the components already hold (from an earlier
-%     initialize); buses without components get the voltage of Y*V = I.
+%     initialize); buses without components get the voltage of Y*V = I. The states
+%     and inputs are recomputed from the held V and I, so this follows edits of
+%     dynamics parameters. Other edits that change the equilibrium (powerflow and
+%     base parameters, topology, slack bus) stop with an error: use net.initialize().
 % - Other options go unchanged to calculate_powerflow ("powerflow") or
 %   optimize_powerflow ("OPF") and are validated there (unknown names stop with
 %   GUILDA:resolve_options:UnknownName); "equilibrium" takes no other option. The
@@ -23,7 +26,10 @@ function [result, flag, output] = initialize(obj, varargin)
 % When the analysis does not succeed (no convergence, an infeasible OPF, or stored
 % equilibria that do not satisfy the network equations), initialize stops with an error
 % naming the remedy, and the network keeps its previous equilibrium and edit log (a
-% slack bus set by calculate_powerflow is released again).
+% slack bus set by calculate_powerflow is released again). When setting the operating
+% point fails afterwards, or the point does not satisfy Y*V = I, the equilibrium is left
+% out of date, and analyses stop with GUILDA:PowerNetwork:EquilibriumStale until
+% initialize succeeds.
 %
 % <@Examples>
 % ```matlab
@@ -76,9 +82,14 @@ function [result, flag, output] = initialize(obj, varargin)
                 error('GUILDA:resolve_options:UnknownName', '%s', ...
                       msg('GUILDA:PowerNetwork:InitializeEquilibriumOption', char(string(c_nv{1}))))
             end
+            check_edit_for_equilibrium(obj);
             [result, flag, output] = calculate_from_equilibrium(obj);
     end
     tab_PFsol = result.tab_bus;
+    c_PQ      = component_power(obj, str_method, result);
+
+    % stays set if a step below fails, so a partly written point is never used
+    obj.l_staleEquilibrium = true;
 
     for i_gc = 1:numel(obj.a_GlobalController)
         a_GC = obj.a_GlobalController{i_gc};
@@ -92,7 +103,16 @@ function [result, flag, output] = initialize(obj, varargin)
         c_Ibus = rr_PFsol(2);
         r_Pbus = rr_PFsol(3);
         r_Qbus = rr_PFsol(4);
-        obj.a_Bus{i_bus}.set_equilibrium(c_Vbus,c_Ibus,r_Pbus,r_Qbus)
+        obj.a_Bus{i_bus}.set_equilibrium(c_Vbus,c_Ibus,r_Pbus,r_Qbus,"rm_PQ",c_PQ{i_bus})
+    end
+
+    % the point that was set must satisfy Kirchhoff's current law at every bus
+    str_Bus = string(obj.a_Bus);
+    tab_Y   = obj.get_admittance_matrix;
+    r_resid = max(abs(tab_Y{str_Bus,str_Bus}*obj.cv_Vequilibrium - obj.cv_Iequilibrium), [], "includenan");
+    if ~(r_resid < equilibrium_tolerance())
+        error('GUILDA:PowerNetwork:InitializeNotEquilibrium', '%s', ...
+              msg('GUILDA:PowerNetwork:InitializeNotEquilibrium', char(str_method), char(string(r_resid))))
     end
 
     % reset log
@@ -133,6 +153,53 @@ function release_slack(obj)
 end
 
 
+function tol = equilibrium_tolerance()
+% Largest allowed max|Y*V-I| [pu] of an equilibrium
+    tol = 1e-6;
+end
+
+
+function c_PQ = component_power(obj, str_method, result)
+% [P Q] of the components of each bus when the analysis fixes them; [] lets Bus.set_equilibrium distribute
+    n_Bus = numel(obj.a_Bus);
+    c_PQ  = cell(n_Bus,1);
+    for i_bus = 1:n_Bus
+        a_Comp = obj.a_Bus{i_bus}.a_Component;
+        if isempty(a_Comp)
+            continue
+        end
+        switch str_method
+            case "OPF"
+                c_PQ{i_bus} = real(result.tab_cub{string(a_Comp),["P","Q"]});
+            case "equilibrium"
+                cv_S = cellfun(@(c) c.c_Vequilibrium*conj(c.c_Iequilibrium), a_Comp(:));
+                c_PQ{i_bus} = [real(cv_S), imag(cv_S)];
+        end
+    end
+end
+
+
+function check_edit_for_equilibrium(obj)
+% Stops when an edit since the last initialize would be lost by Method="equilibrium".
+% Dynamics edits are not lost: the states and inputs are recomputed from the held V and I.
+    if obj.str_editFlag == "unset"
+        return
+    end
+    tab = obj.tab_editLog;
+    [~, lv] = arrayfun(@(t, l) LayerPackage.edit_effect(t, l), string(tab.tag), string(tab.log));
+    lv = lv & string(tab.tag) ~= "Parameter(dynamics)";
+    if any(lv)
+        str_edit = tab.ID(lv) + ": " + tab.log(lv);
+        str_list = join(str_edit(1:min(end,3)), ", ");
+        if numel(str_edit) > 3
+            str_list = str_list + ", ...";
+        end
+        error('GUILDA:PowerNetwork:InitializeEquilibriumEdited', '%s', ...
+              msg('GUILDA:PowerNetwork:InitializeEquilibriumEdited', char(str_list)))
+    end
+end
+
+
 function [result, flag, output] = calculate_from_equilibrium(obj)
 % Build the bus equilibrium from the equilibria stored in the components
 %   Vbus : the voltage the components on the bus hold
@@ -168,7 +235,7 @@ function [result, flag, output] = calculate_from_equilibrium(obj)
     end
 
     % consistency check: Kirchhoff's current law at every bus
-    tol     = 1e-6;
+    tol     = equilibrium_tolerance();
     r_resid = max(abs(cm_Y*cv_Vbus - cv_Ibus));
     if r_resid >= tol
         error('GUILDA:PowerNetwork:InitializeEquilibriumFailed', '%s', ...
