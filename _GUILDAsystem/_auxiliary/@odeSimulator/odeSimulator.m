@@ -360,6 +360,18 @@ classdef (Sealed = true) odeSimulator < auxiliary
             % Method for assigning state variable numbers to each device and bus.
             % Execute this before performing analysis using the ODE solver.         
             
+            % Global controllers must not read the indices of a component outside the network.
+            for k = 1:numel(net.a_GlobalController)
+                gcon = net.a_GlobalController{k};
+                for idx = 1:numel(gcon.controlledUnits)
+                    unit = gcon.controlledUnits{idx};
+                    if isempty(unit.a_Bus) || ~isequal(unit.a_Bus.a_PowerNetwork, net)
+                        error('GUILDA:odeSimulator:ForeignControlledUnit', '%s', ...
+                              msg('GUILDA:odeSimulator:ForeignControlledUnit', char(gcon.str_tag), char(unit.str_tag), char(net.str_tag)))
+                    end
+                end
+            end
+
             a_bus = net.a_Bus;
 
             idx_TGT = 0;                       
