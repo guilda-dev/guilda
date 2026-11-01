@@ -766,6 +766,15 @@ there.
   point fails, the network does not keep its previous equilibrium: it is out
   of date, and analyses stop with `GUILDA:PowerNetwork:EquilibriumStale` until
   `initialize` succeeds.
+- **A split network is reported.** When branches do not connect all buses, a
+  successful `net.initialize` warns with `GUILDA:PowerNetwork:NetworkIsland` and
+  lists the islands: the point is valid when the power of each island balances, so
+  the analysis is not stopped. Turn it off with
+  `warning("off", "GUILDA:PowerNetwork:NetworkIsland")` if this is intended. A failed
+  power flow or OPF on such a network keeps `InitializePowerflowFailed` or
+  `InitializeOPFFailed`, and its message lists the islands instead of solver settings.
+  `net.calculate_powerflow` called alone does not check this: it warns about nothing,
+  and a failure only shows as `result.l_success = false`.
 - **A slack bus should be able to take the remaining power.** Setting
   `bus.l_isSlack = true` warns with `GUILDA:Bus:SlackWithoutQnan` when the bus has
   components and none has `Q = NaN`. `net.initialize` still runs: the first

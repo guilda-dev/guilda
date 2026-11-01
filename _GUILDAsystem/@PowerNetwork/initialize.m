@@ -31,6 +31,10 @@ function [result, flag, output] = initialize(obj, varargin)
 % out of date, and analyses stop with GUILDA:PowerNetwork:EquilibriumStale until
 % initialize succeeds.
 %
+% A network split into islands is a valid equilibrium when the power of each island
+% balances, so a successful initialize only warns (GUILDA:PowerNetwork:NetworkIsland). A
+% failed power flow or OPF on such a network names the islands in its error.
+%
 % <@Examples>
 % ```matlab
 % net = network.IEEE9bus();
@@ -69,13 +73,22 @@ function [result, flag, output] = initialize(obj, varargin)
             end
             if ~l_ok
                 error('GUILDA:PowerNetwork:InitializePowerflowFailed', '%s', ...
-                      msg('GUILDA:PowerNetwork:InitializePowerflowFailed', char(string(output.message))))
+                      failure_message(obj, "InitializePowerflowFailed", "InitializePowerflowIsland", output))
             end
         case "OPF"
-            [result, flag, output] = obj.optimize_powerflow(c_nv{:}, "Method", "AC OPF");
+            try
+                [result, flag, output] = obj.optimize_powerflow(c_nv{:}, "Method", "AC OPF");
+            catch ME
+                % building the OPF problem of a split network can stop with an internal error
+                if ~startsWith(ME.identifier, "GUILDA:") && network_islands(obj) > 1
+                    error('GUILDA:PowerNetwork:InitializeOPFFailed', '%s', ...
+                          failure_message(obj, "InitializeOPFFailed", "InitializeOPFIsland", struct("message", ME.message)))
+                end
+                rethrow(ME)
+            end
             if ~result.l_success
                 error('GUILDA:PowerNetwork:InitializeOPFFailed', '%s', ...
-                      msg('GUILDA:PowerNetwork:InitializeOPFFailed', char(string(output.message))))
+                      failure_message(obj, "InitializeOPFFailed", "InitializeOPFIsland", output))
             end
         case "equilibrium"
             if ~isempty(c_nv)
@@ -117,6 +130,12 @@ function [result, flag, output] = initialize(obj, varargin)
 
     % reset log
     obj.reset_edit()
+
+    [n_island, str_island] = network_islands(obj);
+    if n_island > 1
+        warning('GUILDA:PowerNetwork:NetworkIsland', '%s', ...
+                msg('GUILDA:PowerNetwork:NetworkIsland', string(obj), char(string(n_island)), char(str_island)))
+    end
 end
 
 
@@ -142,6 +161,46 @@ function [str_method, c_nv] = take_method(c_in)
         end
     end
     c_nv = c_in(~lv_method);
+end
+
+
+function str = failure_message(obj, str_connected, str_split, output)
+% Message of a failed analysis: names the islands of a split network instead of the solver settings
+    [n_island, str_island] = network_islands(obj);
+    str_reason = char(string(output.message));
+    if n_island > 1
+        str = msg("GUILDA:PowerNetwork:" + str_split, str_reason, string(obj), char(string(n_island)), char(str_island));
+    else
+        str = msg("GUILDA:PowerNetwork:" + str_connected, str_reason);
+    end
+end
+
+
+function [n_island, str_island] = network_islands(obj)
+% Number of the parts of the network that branches connect, and their bus tags as text
+    n_show  = 10;   % islands, and buses per island, that the text lists
+    str_Bus = string(obj.a_Bus);
+    str_Bus = str_Bus(:);
+    n_Br    = numel(obj.a_Branch);
+    im_edge = zeros(n_Br,2);
+    for i_br = 1:n_Br
+        [~, im_edge(i_br,:)] = ismember(string(obj.a_Branch{i_br}.a_Bus), str_Bus);
+    end
+    rv_bin   = conncomp(graph(im_edge(:,1), im_edge(:,2), [], numel(str_Bus)));
+    n_island = max([0, rv_bin]);
+
+    sv = strings(1, min(n_island, n_show));
+    for i_island = 1:numel(sv)
+        sv_bus = str_Bus(rv_bin == i_island);
+        if numel(sv_bus) > n_show
+            sv_bus = [sv_bus(1:n_show); "... (" + numel(sv_bus) + " buses)"];
+        end
+        sv(i_island) = "[" + join(sv_bus, ", ") + "]";
+    end
+    str_island = join(sv, ", ");
+    if n_island > n_show
+        str_island = str_island + ", ...";
+    end
 end
 
 
