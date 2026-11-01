@@ -5,6 +5,8 @@
         <entry key="SetAbranch">Use the method to add or remove Branch classes from a_Bus.&#xA;&#xA; &lt; When adding a Branch class &gt;&#xA;  &gt;&gt; obj.add_bus(BRANCH_INSTANCE,['BUSi_TAG','BUSj_TAG'])&#xA; &lt; When removing a Bus class &gt;&#xA;  &gt;&gt; obj.aremove_bus('BRANCH_TAG')</entry> 
         <entry key="SetGcon">Use the method to add or remove Global Controller classes from a_Bus.&#xA;&#xA; &lt; When adding a Global Controller class &gt;&#xA;  &gt;&gt; obj.add_bus(GlobalCon_INSTANCE,[ComponentTag])&#xA; &lt; When removing a Global Controller class &gt;&#xA;  &gt;&gt; obj.aremove_bus(GlobalCon_TAG)</entry> 
         <entry key="EquilibriumStale">The equilibrium of ''{0}'' is out of date: {1}.&#xA;Run net.initialize() first to recompute the equilibrium.</entry> 
+        <entry key="NoBus">''{0}'' has no buses, so the power flow has no slack bus.&#xA;Add buses with net.add_bus() and components with bus.add_component(...).</entry>
+        <entry key="NoSlackCandidate">No bus of ''{0}'' has a component, so the power flow cannot select a slack bus.&#xA;Add a generator to a bus with bus.add_component(...). A bus with a component that has Q = NaN is selected first.</entry>
         <entry key="BusNotFound">No bus with the tag ''{0}'' was found in ''{1}''.</entry> 
         <entry key="BranchNotFound">No branch with the tag ''{0}'' was found in ''{1}''.&#xA;List the tags of the network with string(net.a_Branch).</entry>
         <entry key="BranchBusIndex">Bus index {0} is out of range: ''{1}'' has {2} buses.&#xA;Add the buses first with net.add_bus(), or give the end buses as indices of net.a_Bus or as bus tags.</entry>

@@ -3,8 +3,11 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
 %
 % Calculates the power flow of the network. The settings are the stored defaults of
 % net.solver_PF; Name-Value options override them for this call only (net.solver_PF is
-% not changed). The network is not changed either, except that the first bus is made the
-% slack bus when none is set (with an INFO message).
+% not changed). The network is not changed either, except that a slack bus is selected
+% when none is set (with an INFO message): the first bus that has a component with
+% Q = NaN, otherwise the first bus that has a component (GUILDA:Bus:SlackWithoutQnan).
+% A network without buses stops with GUILDA:PowerNetwork:NoBus, and a network whose
+% buses have no components with GUILDA:PowerNetwork:NoSlackCandidate.
 % Accepted options are the names in PowerFlowCalculation.OptionMap plus Plot and Export;
 % any other name stops with GUILDA:resolve_options:UnknownName.
 %
@@ -37,14 +40,9 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
 
     lv_isSlack = tools.vcellfun(@(b) b.l_isSlack, obj.a_Bus);
     if ~any(lv_isSlack)
-        try
-            disp("INFO: Slack bus not found. Setting the first bus '"+string(obj.a_Bus{1})+"' as the slack bus.")
-            obj.a_Bus{1}.l_isSlack = true;
-        catch
-            error("ERROR: Failed to set BUS001 as the slack bus."+newline+...
-                  "       Please designate one Bus class as the slack bus from those that have at least one connected Component class."+newline+...
-                  "       To specify the slack bus, set the 'l_isSlack' property of the designated Bus class to true.")
-        end
+        bus = select_slack_bus(obj);
+        disp("INFO: Slack bus not found. Setting the bus '"+string(bus)+"' as the slack bus.")
+        bus.l_isSlack = true;
     end
 
     [result, flag, output] = obj.solver_PF.solve(obj, s_options);
@@ -56,6 +54,25 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
         result.Export(opt.Export);
     elseif opt.Export
         result.Export();
+    end
+end
+
+
+function bus = select_slack_bus(obj)
+% The first bus with a component with Q = NaN, otherwise the first bus with a component
+    a_Bus = obj.a_Bus;
+    if isempty(a_Bus)
+        error('GUILDA:PowerNetwork:NoBus', '%s', msg('GUILDA:PowerNetwork:NoBus', string(obj)))
+    end
+    lv_comp = cellfun(@(b) ~isempty(b.a_Component), a_Bus);
+    if ~any(lv_comp)
+        error('GUILDA:PowerNetwork:NoSlackCandidate', '%s', msg('GUILDA:PowerNetwork:NoSlackCandidate', string(obj)))
+    end
+    lv_Qnan = cellfun(@(b) any(cellfun(@(c) isnan(c.para_powerflow.Q), b.a_Component)), a_Bus);
+    if any(lv_Qnan)
+        bus = a_Bus{find(lv_Qnan,1)};
+    else
+        bus = a_Bus{find(lv_comp,1)};
     end
 end
 

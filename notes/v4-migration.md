@@ -253,8 +253,17 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   `rv_step`; `Plot` draws the voltage profile, `Export` writes the bus or
   branch table (`.csv`, Excel) or the history (`.json`, GridSpring viewer).
 - Behavior: `Method="dynamic"` no longer writes the JSON history by default
-  (v3 did). The network is not changed, except that the first bus becomes
-  the slack bus when none is set (as in v3).
+  (v3 did). The network is not changed, except that a slack bus is selected
+  when none is set.
+- **Silent change: the automatic slack bus.** v3 always took the first bus. Now
+  it takes the first bus with a component with `Q = NaN`, otherwise the first
+  bus with a component (then `GUILDA:Bus:SlackWithoutQnan` warns). A network
+  whose first bus has such a component is unchanged. Any other network gets
+  another slack bus, so its results change; only the INFO message shows it. To
+  keep the old choice, set `net.a_Bus{1}.l_isSlack = true`.
+- **Errors instead of the fixed `BUS001` message.** A network without buses stops
+  with `GUILDA:PowerNetwork:NoBus`, and a network whose buses have no components
+  with `GUILDA:PowerNetwork:NoSlackCandidate`.
 - Deprecated, still working:
 
   | Old form | Warning ID |
