@@ -13,6 +13,9 @@ function net = import_csv(path, opt)
 % keeps the defaults Hz = GUILDA.config("Model","Hz") and baseMVA = 100.
 % The bus column Slack (optional) marks the slack bus; a bus column baseMVA (v3) is
 % accepted and ignored: the system base is net.tab_parameter.base.baseMVA.
+% The column FullTag (optional) of the bus, branch and component tables gives the full
+% tag of a row, and the bus column Tag is then not used. A missing column or an empty value
+% keeps the automatic tag (folders written before FullTag), with Tag as the bus prefix.
 % With Network=obj the buses are added to the existing network obj instead of a new
 % one; this is how the network classes such as network.IEEE14bus load their folder in
 % their constructor.
@@ -78,6 +81,8 @@ function net = import_csv(path, opt)
     tab_bus    = readtable(fullfile(path, "bus", "parameter.csv"), "TextType", "string");
     str_BusOpt = check_cols(tab_bus, str_BusReq, str_BusOpt, "bus/parameter.csv");
 
+    str_BusTag = read_full_tag(fullfile(path, "bus", "parameter.csv"));
+
     % Add bus
     n_Bus = size(tab_bus,1);
     a_Bus = cell(n_Bus,1);
@@ -85,10 +90,12 @@ function net = import_csv(path, opt)
         r_V    = tab_bus.V(i_bus);
         r_Varg = tab_bus.Varg(i_bus);
 
-        tab_opt = tab_bus(i_bus,str_BusOpt);
+        % FullTag replaces the prefix, which is empty for an all-digit tag
+        tab_opt = tab_bus(i_bus, str_BusOpt(str_BusOpt ~= "Tag" | str_BusTag(i_bus) == ""));
         sct_opt = table2struct(tab_opt);
         c_opt   = namedargs2cell(sct_opt);
         a_Bus{i_bus} = net.add_bus("V", r_V, "Varg", r_Varg, c_opt{:});
+        set_full_tag(a_Bus{i_bus}, str_BusTag(i_bus));
     end
 
 
@@ -103,6 +110,7 @@ function net = import_csv(path, opt)
     % export writes "tap"/"phase" (the Branch parameter names); "Tap"/"Phase" (the add_branch names) are also accepted
     tab_bra = rename_cols(tab_bra, ["tap","phase"], ["Tap","Phase"], "branch/parameter.csv");
     str_BraOpt = check_cols(tab_bra, str_BraReq, str_BraOpt, "branch/parameter.csv");
+    str_BraTag = read_full_tag(fullfile(path, "branch", "parameter.csv"));
 
     % Add branches (From/To are row numbers of bus/parameter.csv)
     for i_bra = 1:size(tab_bra,1)
@@ -113,7 +121,7 @@ function net = import_csv(path, opt)
         tab_opt = tab_brai(1,str_BraOpt);
         sct_opt = table2struct(tab_opt);
         c_opt   = namedargs2cell(sct_opt);
-        net.add_branch(str_Type, str_fromto, c_opt{:});
+        set_full_tag(net.add_branch(str_Type, str_fromto, c_opt{:}), str_BraTag(i_bra));
     end
 
 % Component
@@ -157,6 +165,7 @@ function net = import_csv(path, opt)
         end
 
         str_CompOpt_ = check_cols(tab_CompOpt, str_CompReq, str_CompOpt, "component/"+str_CompKey+"/main.csv");
+        str_CompTag  = read_full_tag(fullfile(str_KeyPath, "main.csv"));
 
         for i_comp = 1:size(tab_CompOpt,1)
             tab_CompOpti = tab_CompOpt(i_comp, :);
@@ -194,7 +203,7 @@ function net = import_csv(path, opt)
             end
 
             c_opt = namedargs2cell(sct_opt);
-            a_Bus{i_bus}.add_component(str_CompKey, "P", r_P, "Q", r_Q, c_opt{:});
+            set_full_tag(a_Bus{i_bus}.add_component(str_CompKey, "P", r_P, "Q", r_Q, c_opt{:}), str_CompTag(i_comp));
         end
     end
 
@@ -213,6 +222,28 @@ function net = import_csv(path, opt)
 
     if opt.Initialize
         net.initialize;
+    end
+end
+
+
+function str_tag = read_full_tag(str_file)
+    % Column FullTag as text ("" for a missing column or value): an all-digit tag stays as written
+    opts = detectImportOptions(str_file);
+    if ~ismember("FullTag", string(opts.VariableNames))
+        n_row   = height(readtable(str_file, "TextType", "string"));
+        str_tag = strings(n_row, 1);
+        return
+    end
+    opts = setvartype(opts, "FullTag", "string");
+    opts.SelectedVariableNames = "FullTag";
+    str_tag = strip(fillmissing(readtable(str_file, opts).FullTag, "constant", ""));
+end
+
+
+function set_full_tag(obj, str_tag)
+    % Set right after the row is added: the automatic number of the next row cannot take this tag
+    if str_tag ~= ""
+        obj.str_tag = str_tag;
     end
 end
 
