@@ -33,7 +33,7 @@ assert(numel(sys.StateName) == size(sys.A,1))
 % 既定の方式は Feedback
 sys = net.get_sys();
 assert(isa(sys, "ss"))
-assert(size(sys.A,1) >= n_x)
+assert(size(sys.A,1) == n_x)
 
 
 %% Get sys DAE
@@ -42,6 +42,46 @@ sys = net.get_sys("Algorithm", "DAE");
 assert(isa(sys, "ss"))
 assert(size(sys.A,1) > n_x)
 assert(rank(sys.E) < size(sys.E,1))
+
+
+%% Model shape and names per algorithm
+% 固有値では分からない形を等式で確認する。n_x, n_v, n_u は変数の表の数
+% Feedback は connect が質量のない状態 (AVR の Vst) を消すので、その数だけ小さい
+n1 = new_net();
+n1.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
+n1.add_global_controller(controller.agc.broadcast_PI_AGC(n1, "agc", "SG1B001", "SG1B002"));
+c_net = {new_net(), n1, network.Ishizaki6Bus(), network.IEEE9bus()};
+n_removed = [0, 1, 0, 3];
+for k = 1:numel(c_net)
+    DebugScript.helper.quiet(@() c_net{k}.initialize);
+    res = c_net{k}.linearize();
+    tab = res.tab_variable;
+    sv_x = tab.Label(tab.Kind == "x");
+    sv_u = tab.Label(tab.Kind == "u");
+    nx = numel(sv_x);  nv = 2*numel(c_net{k}.a_Bus);  nu = numel(sv_u);
+    assert(res.output.r_residual < 1e-8, "net %d: 平衡点の残差 %g", k, res.output.r_residual)
+    assert(numel(res.rv_residual) == nx + nv, "net %d: 残差の長さ", k)
+    n_mass = nnz(diag(res.rm_E));
+    sK = DebugScript.helper.quiet(@() res.get_ss("Kron"));
+    sF = res.get_ss("Feedback");
+    sD = DebugScript.helper.quiet(@() res.get_ss("DAE"));
+
+    assert(isequal(size(sK.A), [nx nx]) && isequal(size(sK.B), [nx nu]) && isequal(sK.C, eye(nx)), "net %d: Kron", k)
+    assert(isequal(sort(string(sK.StateName)), sort(sv_x)), "net %d: Kron の状態", k)
+    nf = nx - n_removed(k);
+    assert(isequal(size(sF.A), [nf nf]) && isequal(size(sF.B), [nf nu]) && size(sF.C,2) == nf, "net %d: Feedback", k)
+    sv_gone = setdiff(sv_x, string(sF.StateName));
+    assert(numel(sv_gone) == n_removed(k) && all(contains(sv_gone, "Vst")), "net %d: Feedback が消す状態", k)
+    assert(all(diag(res.rm_E(ismember(sv_x, sv_gone), ismember(sv_x, sv_gone))) == 0), "net %d: 質量のある状態が消えた", k)
+    assert(isequal(size(sD.A), [nx+nv nx+nv]) && isequal(size(sD.B), [nx+nv nu]) && isequal(size(sD.C), [nx nx+nv]), "net %d: DAE", k)
+    assert(all(ismember(sv_x, string(sD.StateName))) && numel(unique(string(sD.StateName))) == nx+nv, "net %d: DAE の状態", k)
+
+    assert(rank(sK.E) == n_mass && rank(sF.E) == n_mass && rank(sD.E) == n_mass, "net %d: E の階数", k)
+    for s = {sK, sF, sD}
+        assert(isequal(string(s{1}.InputName), sv_u), "net %d: 入力の名前と順", k)
+        assert(numel(s{1}.StateName) == size(s{1}.A,1) && numel(s{1}.OutputName) == size(s{1}.C,1), "net %d: 名前の数", k)
+    end
+end
 
 
 %% Three algorithms give same eigenvalues
@@ -896,6 +936,44 @@ end
 assert(n14.linearize("Point", {sim, 0.5}).l_success)
 
 
+%% Point around a trip
+% トリップの区間だけ NaN の点で止まり、境界は Side に従う。復帰後は機器を含めた通常の点として線形化する
+n14 = new_net();
+DebugScript.helper.quiet(@() n14.initialize);
+sim = n14.simulate([0,2], odeEventSet("trip", n14, "TimeSpan", [1,1.5], "TripUnit", "SG1B002"), Progress="none");
+res0 = n14.linearize();
+tab  = res0.tab_variable;
+for c_point = {{sim,1}, {sim,1.2}, {sim,1.5,"before"}}
+    try
+        n14.linearize("Point", c_point{1});
+        error("DebugScript:NoError", "トリップ中の Point がエラーにならない")
+    catch ME
+        assert(ME.identifier == "GUILDA:odeLinearizer:PointNotFinite", ME.identifier)
+        assert(contains(ME.message, "SG1B002") && contains(ME.message, "trip"), ME.message)
+    end
+end
+for c_point = {{sim,1,"before"}, {sim,1.5}, {sim,1.8}}
+    [res, flag, output] = n14.linearize("Point", c_point{1});
+    assert(flag && all(isfinite(res.rv_point)) && all(isfinite(res.rv_residual)))
+    assert(isequal(res.tab_variable, tab))
+    assert(output.r_residual == max(abs(res.rv_residual)))
+    for alg = ["Kron","Feedback","DAE"]
+        s = DebugScript.helper.quiet(@() res.get_ss(alg, "Coordinate", "Vre&Vim"));
+        s0 = DebugScript.helper.quiet(@() res0.get_ss(alg, "Coordinate", "Vre&Vim"));
+        assert(isequal(size(s.A), size(s0.A)) && isequal(s.StateName, s0.StateName) && isequal(s.InputName, s0.InputName), alg)
+    end
+end
+assert(n14.linearize("Point", {sim,1,"before"}).output.r_residual < 1e-3, "トリップ前の点が平衡点から離れている")
+% トリップ中でも、トリップしていない機器は単独で線形化できる
+x = sim.get_point(1.2);
+gen3 = n14.a_Bus{3}.a_Component{1};
+[~, c_idxBus] = n14.get_variable_map();
+[~, c_idxC] = n14.a_Bus{3}.get_variable_map();
+iv = c_idxBus{3}(c_idxC{1});
+sc = gen3.get_sys("Point", {sim, 1.2});
+assert(all(isfinite(sc.A), "all") && isequal(sc.A, gen3.get_sys("Point", x(iv)).A))
+
+
 %% Point inside a fault is reported and keeps the model network
 % Point は変数の点で、網はモデルのもの: 故障中の {sim, t} でも Y は故障前のまま。呼び出しがそれを知らせる (Issue #82)
 n9 = network.IEEE9bus();
@@ -1217,6 +1295,11 @@ sK = res.get_ss("Kron", Output=["V","I","y"]);
 assert(all(sK.C(:, ismember(string(sK.StateName), sv_gone)) == 0, "all"))
 
 
+%% Canonical linearization demo runs
+% 正規デモ +DebugScript/Task_linearization.m が最後まで動く (run_all は test_F*, test_I* だけを読むのでここから呼ぶ)
+DebugScript.helper.quiet(@() run_task_linearization());
+
+
 %% Hessian is not supported by default
 % Hessian は機器・制御器のクラスごとの任意の解析。定義していないクラスはクラス名を示すエラー
 net = new_net();
@@ -1254,4 +1337,11 @@ try
     error("DebugScript:NoError", "Hessian_I が無いのにエラーにならない")
 catch ME
     assert(ME.identifier == "GUILDA:Component:HessianNotSupported" && contains(ME.message, "Hessian_I"), ME.identifier)
+end
+
+
+% ローカル関数
+function run_task_linearization()
+% スクリプトの変数がテストの変数と混ざらないように関数の中で実行する
+    DebugScript.Task_linearization
 end

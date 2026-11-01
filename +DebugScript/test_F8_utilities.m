@@ -329,6 +329,47 @@ assert(id == "GUILDA:PowerNetwork:IncompleteLoad", id)
 assert(s.comp == s.net.a_Bus{2}.a_Component{1})
 
 
+%% MAT file round trip keeps the linear models
+% 制御器 (AVR + PSS, LQR, AGC) 付きの系統で、線形モデルの行列と名前が読み込みの前後で一致する
+net = DebugScript.helper.build_ieee14();
+net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
+net.a_Bus{2}.a_Component{1}.add_local_controller(controller.local_LQR("lqr2"));
+net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B003"));
+DebugScript.helper.quiet(@() net.initialize);
+res = net.linearize();
+sim = net.simulate([0,1], Progress="none");
+str_mat = tempname + ".mat";
+c = onCleanup(@() delete(str_mat));
+save(str_mat, "net", "res", "sim");
+s = load(str_mat);
+same_ss = @(a, b) isequal(a.A, b.A) && isequal(a.B, b.B) && isequal(a.C, b.C) && isequal(a.D, b.D) && isequal(a.E, b.E) && ...
+                  isequal(a.StateName, b.StateName) && isequal(a.InputName, b.InputName) && isequal(a.OutputName, b.OutputName);
+for alg = ["Kron", "Feedback", "DAE"]
+    assert(same_ss(s.net.get_sys("Algorithm", alg), net.get_sys("Algorithm", alg)), alg + ": 読み込んだ系統")
+    assert(same_ss(s.res.get_ss(alg), res.get_ss(alg)), alg + ": 読み込んだ結果")
+end
+% 各層の get_sys も同じ。読み込んだ結果の点でも線形化できる
+gen  = @(n) n.a_Bus{1}.a_Component{1};
+lqr  = @(n) n.a_Bus{2}.a_Component{1}.a_LocalController{1};
+c_layer = {gen, @(n) n.a_Bus{1}, @(n) gen(n).a_LocalController{1}, lqr, @(n) n.a_GlobalController{1}};
+for k = 1:numel(c_layer)
+    assert(same_ss(c_layer{k}(s.net).get_sys(), c_layer{k}(net).get_sys()), "layer %d", k)
+end
+assert(isequal(s.net.linearize("Point", {s.sim, 0.5}).rm_Axx, net.linearize("Point", {sim, 0.5}).rm_Axx))
+
+% 読み込んだ系統でも、Hz の編集は K を作り直し、動特性の編集は各層で initialize を促す
+K = lqr(s.net).K;
+s.net.tab_parameter.base.Hz = 50;
+s.net.get_sys();
+assert(norm(lqr(s.net).K - K) > 1e-3, "K が古い Hz のまま")
+assert(isequal(lqr(net).K, K), "元の系統の K が変わった")
+g3 = s.net.a_Bus{3}.a_Component{1};
+g3.tab_parameter.dynamics.D = 2 * g3.tab_parameter.dynamics.D;
+assert(error_id(@() g3.get_sys()) == "GUILDA:PowerNetwork:EquilibriumStale")
+assert(error_id(@() s.net.a_Bus{3}.get_sys()) == "GUILDA:PowerNetwork:EquilibriumStale")
+assert(error_id(@() s.net.a_GlobalController{1}.get_sys()) == "GUILDA:PowerNetwork:EquilibriumStale")
+
+
 %% MATPOWER import reproduces case14
 % import_matpower は tools.network_to_mpc の逆変換 (MATPOWER 不要)。
 % case14 を読み込んで mpc に戻すと元のデータになり、潮流計算・OPF は network.IEEE14bus と一致する。
