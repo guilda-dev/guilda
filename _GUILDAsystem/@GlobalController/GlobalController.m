@@ -86,7 +86,8 @@ classdef GlobalController < PowerSystemModel
         function obj = GlobalController(net, tag, varargin)
             % Create a global controller of the network net that controls the given components.
             %
-            % `varargin` lists the controlled components, as Component objects or tags.
+            % `varargin` lists the controlled components of net, as Component objects or
+            % tags. Anything else stops with GUILDA:GlobalController:InvalidComponent.
             obj.str_tag = tag;
             obj.para_dynamics = Parameter(obj,"dynamics");
 
@@ -95,13 +96,21 @@ classdef GlobalController < PowerSystemModel
 
             idx = 1;
             while idx <= nargin-2
-                if isa(varargin{idx}, 'component.generator.abstract')
-                    varargin{idx} = varargin{idx}.str_tag;                    
+                arg = varargin{idx};
+                if isa(arg, 'Component')
+                    varargin{idx} = arg.str_tag;
                 end
 
                 lv_comp = strcmp(varargin{idx}, string(cls_comp));
-                if all(~lv_comp)
-                    error(msg('GUILDA:GlobalController:InvalidComponent'))
+                % A component of another network can have the same tag as one of net
+                if all(~lv_comp) || (isa(arg, 'Component') && cls_comp{lv_comp} ~= arg)
+                    if isa(arg, 'Component') || isstring(arg) || ischar(arg)
+                        str_arg = char(strjoin(string(varargin{idx})));
+                    else
+                        str_arg = class(arg);
+                    end
+                    error('GUILDA:GlobalController:InvalidComponent', '%s', ...
+                          msg('GUILDA:GlobalController:InvalidComponent', str_arg, char(tag), char(net.str_tag)))
                 end
 
                 obj.controlledUnits = [obj.controlledUnits; cls_comp(lv_comp)];
