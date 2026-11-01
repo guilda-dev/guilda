@@ -57,8 +57,7 @@ assert(height(net.tab_editLog) == 0)
 
 
 %% Local controller rejects a value of the wrong class
-% Component と同じく Parameter の型検査を通り、値は元に戻る。
-% 型検査のエラーはリスナーの中で出るので、MATLAB により警告へ変換される
+% Component と同じく Parameter の型検査を通り、エラーになって値は変わらない
 net = DebugScript.helper.build_ieee14();
 comp = net.a_Bus{1}.a_Component{1};
 comp.add_local_controller(controller.avr.AVR_ST1("avr1"));
@@ -66,9 +65,9 @@ avr = comp.a_LocalController{1};
 val_avr  = avr.para_dynamics.kap;
 val_comp = comp.para_dynamics.D;
 
-assert(class_warning(@() set_avr_kap(avr)), "AVR で型の違う値を拒否しない")
+assert(class_error(@() set_avr_kap(avr)), "AVR で型の違う値を拒否しない")
 assert(avr.para_dynamics.kap == val_avr)
-assert(class_warning(@() set_comp_D(comp)), "Component で型の違う値を拒否しない")
+assert(class_error(@() set_comp_D(comp)), "Component で型の違う値を拒否しない")
 assert(comp.para_dynamics.D == val_comp)
 
 
@@ -108,12 +107,14 @@ assert(~agc.l_staleOdefcn && ~net.l_staleEquilibrium)
 assert(height(net.tab_editLog) == 0)
 
 
-function tf = class_warning(fcn)
-% fcn を実行し、リスナーのエラーが変換された警告が出たかを返す
-    lastwarn("");
-    evalc("fcn();");
-    [~, id] = lastwarn();
-    tf = string(id) == "MATLAB:callback:DynamicPropertyEventError";
+function tf = class_error(fcn)
+% fcn を実行し、型検査のエラーが出たかを返す
+    tf = false;
+    try
+        fcn();
+    catch ME
+        tf = string(ME.identifier) == "GUILDA:Parameter:ClassNameMismatch";
+    end
 end
 
 

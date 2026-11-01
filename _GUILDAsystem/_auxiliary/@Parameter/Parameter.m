@@ -101,7 +101,8 @@ classdef Parameter < auxiliary & LayerPackage & dynamicprops
 
     methods(Hidden)
         add_entry(obj,names,defaults,valids)
+        attach_callbacks(obj,name,valid)
         callbackPreSet(obj,name,event)
-        callbackPostSet(obj,name,cls,event)
+        callbackPostSet(obj,name,event)
     end
 end
