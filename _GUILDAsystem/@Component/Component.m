@@ -93,6 +93,8 @@ classdef Component < PowerSystemModel
         iv_odeX  = [];
         iv_odeU  = [];        
         iv_odeY  = [];        
+        lv_odeUfromLC = false(0,1);            % Inputs driven by an output of the local controller.
+        iv_odeYtoU    = zeros(0,1);            % Index in sv_y of the local controller of each such input.
     end    
     properties(Dependent, Hidden)
         para_base                              % COMPAT(v3) ComponentBaseView: Hz is held by the network (use r_Hz)

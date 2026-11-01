@@ -184,6 +184,10 @@ classdef (Sealed = true) odeSimulator < auxiliary
             ctx.Ymat    = tools.complex2matrix(net.get_admittance_matrix.Variables);
             ctx.rv_odeV = cell2mat(tools.cellfun(@(b) b.iv_odeX, net.a_Bus));
             ctx.absYmat = abs(ctx.Ymat);      % scale of the terms of I = Y*V (see getODEFunction)
+            ctx.iv_busV = reshape(ctx.rv_odeV, [], 1);
+            ctx.iv_busI = reshape(cell2mat(tools.cellfun(@(b) b.iv_odeI, net.a_Bus)), [], 1);
+            ctx.l_GC    = ~isempty(net.a_GlobalController);
+            ctx.c_unit  = odeSimulator.get_units(net);
 
             o = makeODE(s_options);
             options = odeset("RelTol", o.RelativeTolerance, "AbsTol", o.AbsoluteTolerance);
@@ -312,7 +316,7 @@ classdef (Sealed = true) odeSimulator < auxiliary
             end
 
             output = struct();
-            output.tEnd        = c_phase{end}.t{end,1};
+            output.tEnd        = c_phase{end}.t(end);
             output.nPhases     = np;
             output.nPhasesDone = numel(c_phase) - (flag ~= 1);
             output.phases      = tab_phase;
@@ -427,6 +431,11 @@ classdef (Sealed = true) odeSimulator < auxiliary
             end
 
             function set_idx(OBJ)
+                % The inputs driven by the outputs of the nested controller, by name
+                if OBJ.l_hasController
+                    [OBJ.lv_odeUfromLC, OBJ.iv_odeYtoU] = ismember(OBJ.sv_u, OBJ.a_LocalController{1}.sv_y);
+                end
+
                 nx = length(OBJ.sv_x);
                 nu = length(OBJ.sv_u);
 
@@ -440,6 +449,19 @@ classdef (Sealed = true) odeSimulator < auxiliary
         end
 
                 
+
+        function c_unit = get_units(net)
+            % What getODEFunction reads for each component, fixed during a run
+            c_comp = tools.cellfun(@(b) b.a_Component, net.a_Bus);
+            c_comp = vertcat(cell(0,1), c_comp{:});
+            c_unit = cell(size(c_comp));
+            for i = 1:numel(c_comp)
+                cj = c_comp{i};
+                c_unit{i} = struct("ue", cj.rv_Uequilibrium, "idx_U", cj.iv_odeU, ...
+                                   "idx_V", cj.a_Bus.iv_odeX, "idx_I", cj.a_Bus.iv_odeI);
+                c_unit{i}.comp = cj;           % not an argument of struct: Component overloads it
+            end
+        end
 
         function restore_working_data(net)
             % Put the working data set during a run back to its initial values,
@@ -469,7 +491,9 @@ classdef (Sealed = true) odeSimulator < auxiliary
         function odeX = getODEFunction(ctx, t, x, RM, EM, lg) %#ok
             % Method for retrieving the DAE system to be analyzed.            
             
-            x = EM*x; 
+            x_lg = x;
+            x = zeros(size(lg), 'like', x_lg);
+            x(lg) = x_lg;
 
             odeX = zeros(size(x));
             odeV = x(ctx.rv_odeV);
@@ -477,11 +501,13 @@ classdef (Sealed = true) odeSimulator < auxiliary
             I    = ctx.Ymat*odeV;
             absI = ctx.absYmat*abs(odeV);
 
-            a_bus = ctx.net.a_Bus;
-
             % Outputs of all global controllers, at the indices of the component inputs they drive
-            y_GC = zeros(size(x), 'like', x);
-            a_GCs = ctx.net.a_GlobalController;
+            if ctx.l_GC
+                y_GC = zeros(size(x), 'like', x);
+                a_GCs = ctx.net.a_GlobalController;
+            else
+                a_GCs = {};
+            end
             for k = 1:numel(a_GCs)
                 a_GC = a_GCs{k};
                 if ~a_GC.l_isConnect
@@ -497,36 +523,33 @@ classdef (Sealed = true) odeSimulator < auxiliary
                 y_GC(a_GC.iv_odeY) = y_GC(a_GC.iv_odeY) + a_GC.f_Y(t,x_GC,[],[],u_connect*u_GC);
             end
 
-            for i=1:numel(a_bus)
-                a_comp = a_bus{i}.a_Component;
+            c_unit = ctx.c_unit;
+            for j = 1:numel(c_unit)
+                unit = c_unit{j};
+                ue = unit.ue;
+                if ctx.l_GC
+                    ue = ue + y_GC(unit.idx_U);    % zero for inputs no global controller drives
+                end
+                f_Uoffset = unit.comp.rv_Uoffset;
+                if ~isempty(f_Uoffset)             % empty without an input event in this phase
+                    ue = ue + f_Uoffset(t);
+                end
 
-                idx_V = a_bus{i}.iv_odeX;
-                idx_I = a_bus{i}.iv_odeI;
+                odeX = get_dx_algebraic(unit.comp, t, x, x(unit.idx_V), x(unit.idx_I), ue, odeX);
+            end
 
-                Vi = x(idx_V);                                                                                             
-                Ii = x(idx_I);                                                                                             
+            Ib = x(ctx.iv_busI);
+            odeX(ctx.iv_busV) = odeX(ctx.iv_busV) + Ib;
+            odeX(ctx.iv_busI) = odeX(ctx.iv_busI) + Ib - I;
 
-                for j=1:numel(a_comp)
-                    cj = a_comp{j};
-                    ue = cj.rv_Uequilibrium;       
-                    ue = ue + y_GC( cj.iv_odeU );     % zero for inputs no global controller drives
-                    ue = ue + cj.rv_Uoffset(t);
-                    
-                    odeX = get_dx_algebraic(cj, t, x, Vi, Ii, ue, odeX);
-                end                
-
-                odeX([idx_V;idx_I]) = odeX([idx_V;idx_I]) + [Ii;Ii - I([-1;0]+2*i)];
-
-                % A current balance below the round-off level of its terms is zero. At rest
-                % (e.g. at the start of a phase) the Newton corrections of the solver are then
-                % zero instead of round-off noise, which ode15s can take for a diverging
-                % iteration and shrink the step until it fails (IEEE68bus without AVR/PSS
-                % stopped at t = 0)
-                tol = 16*eps*[abs(Ii); abs(Ii) + absI([-1;0]+2*i)];
-                idx = [idx_V;idx_I];
-                odeX(idx(abs(odeX(idx)) < tol)) = 0;
-
-            end                    
+            % A current balance below the round-off level of its terms is zero. At rest
+            % (e.g. at the start of a phase) the Newton corrections of the solver are then
+            % zero instead of round-off noise, which ode15s can take for a diverging
+            % iteration and shrink the step until it fails (IEEE68bus without AVR/PSS
+            % stopped at t = 0)
+            tol = 16*eps*[abs(Ib); abs(Ib) + absI];
+            idx = [ctx.iv_busV; ctx.iv_busI];
+            odeX(idx(abs(odeX(idx)) < tol)) = 0;
 
             odeX = odeX(lg); 
 
@@ -535,7 +558,9 @@ classdef (Sealed = true) odeSimulator < auxiliary
         function odeJac = getODEJacobian(ctx, t, x, RM, EM, lg) %#ok
             % Method for obtaining the Jacobian of the DAE system under analysis.
 
-            x = EM*x;
+            x_lg = x;
+            x = zeros(size(lg), 'like', x_lg);
+            x(lg) = x_lg;
             
             a_bus = ctx.net.a_Bus;
 
