@@ -30,7 +30,7 @@ function add_local_controller(obj, varargin)
 % gen.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
 % ```
 %
-% See also LocalController, controller.avr.AVR_ST1, controller.pss.PSS1, controller.local_LQR
+% See also Component.remove_local_controller, LocalController, controller.avr.AVR_ST1, controller.pss.PSS1, controller.local_LQR
     arguments
         obj
     end
