@@ -27,8 +27,8 @@ classdef (Sealed = true) odeEventSet < auxiliary
 
     properties (Access=public) % Event
         % [s] Time span of the event: [t_start, t_end], or t_start alone.
-        % An offset (OffsetUnit) applies at t_start; a fault, trip or input lasts from t_start
-        % to t_end.
+        % An offset (OffsetUnit) applies at t_start. A fault, trip or input lasts from t_start
+        % to t_end and needs t_start < t_end; t_start alone or [t, t] is an error for them.
         % <@Type> double (1x1 or 1x2)
         TimeSpan    {mustBeRow, validateTimeSpanSize} = [0,10]
 
@@ -413,6 +413,14 @@ classdef (Sealed = true) odeEventSet < auxiliary
                 end
                 error('GUILDA:odeEventSet:InvalidTimeSpan', '%s', ...
                     msg('GUILDA:odeEventSet:InvalidTimeSpan', char(obj.str_tag), str_ts));
+            end
+
+            % A fault, trip or input needs its end time; only an offset acts at one instant.
+            l_lasting = ~isempty(obj.FaultBus) || ~isempty(obj.TripUnit) || strlength(obj.InputUnit) > 0 ...
+                || ~isempty(obj.InputName) || ~isempty(obj.InputValue);
+            if l_lasting && (isscalar(ts) || ts(1) == ts(2))
+                error('GUILDA:odeEventSet:ZeroLengthTimeSpan', '%s', ...
+                    msg('GUILDA:odeEventSet:ZeroLengthTimeSpan', char(obj.str_tag), mat2str(ts)));
             end
 
             a_bus  = obj.odeNetwork.a_Bus;
