@@ -1,11 +1,26 @@
 function remove_branch(obj,tag)
 % Remove branches by tag.
 %
-% `tag` is a string array of branch tags; tags that are not found are ignored. The
-% removed branches no longer refer to this network or its buses.
+% A tag that is not found is an error, and then nothing is removed. The removed branches
+% no longer refer to this network or its buses.
+%
+% <@Examples>
+% ```matlab
+% net.remove_branch("EL001")
+% net.remove_branch(["EL001","EL002"])
+% ```
 %
 % See also PowerNetwork.add_branch, PowerNetwork.remove_bus
+    arguments
+        obj
+        tag string   % Tags of the branches to remove.
+    end
     branch_tag = string(obj.a_Branch);
+    str_missing = tag(~ismember(tag, branch_tag));
+    if ~isempty(str_missing)
+        error('GUILDA:PowerNetwork:BranchNotFound', '%s', ...
+              msg('GUILDA:PowerNetwork:BranchNotFound', char(join(str_missing(:),"', '")), char(obj.str_tag)))
+    end
     lv_branch  = ismember(branch_tag,tag);
 
     % The removed branches no longer refer to this network or its buses

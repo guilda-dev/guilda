@@ -4,7 +4,8 @@ function comp = replace_component(obj, str_tag, Type, parameter, opt)
 % The new component keeps the power-flow, operation, OPF and graph settings and the
 % number of the replaced one. The replacement is logged as a "Topology" edit, so
 % `net.initialize()` is needed before the dynamic analyses.
-% A component controlled by a global controller cannot be replaced.
+% A tag that is not found is an error. A component controlled by a global controller
+% cannot be replaced.
 %
 % The local controllers are not carried over by default: they stay on the replaced
 % component and the warning GUILDA:Bus:ControllersDropped names them. With
@@ -36,7 +37,8 @@ function comp = replace_component(obj, str_tag, Type, parameter, opt)
     str_tagComp = string(obj.a_Component);
     lv_rmcub = str_tagComp==str_tag;
     if ~any(lv_rmcub)
-        error("No component with '"+str_tag+"' was found.")
+        error('GUILDA:Bus:ComponentNotFound', '%s', ...
+              msg('GUILDA:Bus:ComponentNotFound', char(str_tag), char(obj.str_tag)))
     end
 
     comp_pre = obj.a_Component{lv_rmcub};
