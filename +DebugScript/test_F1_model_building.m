@@ -278,7 +278,7 @@ try
     evalc("net.a_Bus{2}.a_Component{1}.add_local_controller(controller.local_LQR(""lqr3"", Input=""Vref""))");
     error("DebugScript:noError", "存在しない入力 Vref を駆動する LQR が付いてしまった")
 catch ME
-    assert(ME.identifier == "GUILDA:local_LQR:UnknownInput", ME.message)
+    assert(ME.identifier == "GUILDA:Component:ControllerOutput", ME.message)
 end
 
 

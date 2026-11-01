@@ -4,5 +4,7 @@
         <entry key="ReplaceController">{0} ''{1}'' replaces ''{2}'' of ''{3}''.</entry>         
         <entry key="NotExtAvr">Error: You are attempting to connect a PSS even though there is no AVR.</entry>         
         <entry key="SharedController">{0} ''{1}'' is already attached to ''{2}'' and cannot also be attached to ''{3}''. Create a separate controller object for each component.</entry>
+        <entry key="InvalidControllerKey">Local controller ''{0}'' has the key ''{1}''. The key must be ''avr'', ''pss'' or ''local''.</entry>
+        <entry key="ControllerOutput">Output ''{0}'' of ''{1}'' matches no input of ''{2}'' (inputs: {3}).</entry>
     </message>
 </rsccat>
