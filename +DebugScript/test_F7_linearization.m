@@ -837,6 +837,54 @@ assert(contains(evalc('res.get_ss("Kron");'), "NonUnit"))
 assert(~contains(evalc('res.get_ss();'), "NonUnit"))
 
 
+%% Configurations that cannot be linearized stop with a GUILDA error
+% 全母線を NonUnit にしても、状態のある母線があれば NonUnitDynamicBus
+net_14 = network.IEEE14bus();
+DebugScript.helper.quiet(@() net_14.initialize);
+try
+    net_14.get_sys("NonUnit", 1:14);
+    error("DebugScript:NoError", "エラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:LinearizationResult:NonUnitDynamicBus", ME.identifier)
+end
+% 状態のない系統は Feedback では扱えない (NonUnit の有無によらない)。Kron と DAE は使える
+net_load = PowerNetwork("LoadOnly");
+net_load.add_bus("V", 1);
+net_load.add_bus();
+net_load.add_branch("pi", [1,2], "R", 0.01, "X", 0.085);
+net_load.a_Bus{1}.add_component("load-impedance", "P", -0.5, "Q", -0.1);
+net_load.a_Bus{2}.add_component("load-impedance", "P", -0.5, "Q", -0.1);
+DebugScript.helper.quiet(@() net_load.initialize);
+for c_arg = {{}, {"NonUnit", 1:2}}
+    try
+        net_load.get_sys(c_arg{1}{:});
+        error("DebugScript:NoError", "エラーにならない")
+    catch ME
+        assert(ME.identifier == "GUILDA:LinearizationResult:NoUnitBus", ME.identifier)
+        assert(contains(ME.message, "Kron") && contains(ME.message, "DAE"), ME.message)
+    end
+end
+assert(isempty(net_load.get_sys("Algorithm", "Kron").A))
+assert(size(net_load.get_sys("Algorithm", "DAE").A, 1) == 4)
+% 出力のない機器の AGC は追加で止まる。追加前に get_sys しても同じ原因を示す
+net_droop = DebugScript.helper.build_3bus("gen-droop");
+gen_droop = net_droop.a_Bus{2}.a_Component{1};
+agc = controller.agc.broadcast_PI_AGC(net_droop, "agc", gen_droop);
+try
+    net_droop.add_global_controller(agc);
+    error("DebugScript:NoError", "エラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:PowerNetwork:GconPorts", ME.identifier)
+end
+try
+    agc.get_sys(0, zeros(2,1), zeros(2,1), 0);
+    error("DebugScript:NoError", "エラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:GlobalController:GlobalControllerPort", ME.identifier)
+    assert(contains(ME.message, gen_droop.str_tag) && contains(ME.message, "omega"), ME.message)
+end
+
+
 %% Hessian is not supported by default
 % Hessian は機器・制御器のクラスごとの任意の解析。定義していないクラスはクラス名を示すエラー
 net = new_net();
