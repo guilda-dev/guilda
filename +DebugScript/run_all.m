@@ -1,8 +1,8 @@
 function results = run_all(opt)
-% 機能別デバッグテスト (+DebugScript/test_F*.m) をまとめて実行し、結果を一覧表示する
+% 機能別・Issue 別のデバッグテスト (+DebugScript/test_F*.m, test_I*.m) をまとめて実行し、結果を一覧表示する
 %
 %   DebugScript.run_all
-%   DebugScript.run_all("Features", ["F2","F3"])
+%   DebugScript.run_all("Features", ["F2","I52"])
 %   results = DebugScript.run_all("FailOnUnexpected", false);
 %
 % バッチ実行:
@@ -12,7 +12,7 @@ function results = run_all(opt)
 %   1. GUILDA の起動処理 (パス追加・キーマップ生成) を行う
 %      ※ バッチ実行ではチュートリアル (Main.mlx) を開けずにエラーになるため、
 %        そのエラーは無視して続行する (test_F9_environment の既知の不具合)。
-%   2. testsuite("DebugScript") で test_F*.m の各 %% セクションをテストとして取得
+%   2. testsuite("DebugScript") で test_F*.m, test_I*.m の各 %% セクションをテストとして取得
 %   3. 機能ごとに実行し、PASS / FAIL / KNOWN (既知の不具合) / FIXED? を表示
 %      KNOWN  : DebugScript.known_failures に登録済みの失敗 (理由を表示)
 %      FAIL   : 想定外の失敗 (要調査)
@@ -23,13 +23,13 @@ function results = run_all(opt)
 % 対話操作が必要な機能 (GUILDA.setting など) は manual_F9_interactive.m で手動確認する。
 %
 % オプション
-%   Features         : 実行する機能 ("F1"〜"F10")
+%   Features         : 実行する機能や Issue ("F1", "I52" など。既定はすべての test_F*.m, test_I*.m)
 %   Verbose          : true のとき GUILDA の表示をそのまま出す (既定 false: ログファイルへ保存)
 %   FailOnUnexpected : true のとき想定外の失敗があれば最後に error にする (バッチの終了コード用)
 %   LogFile          : 抑制した出力の保存先
 
     arguments
-        opt.Features         (1,:) string  = "F" + (1:10)
+        opt.Features         (1,:) string  = string.empty(1,0)
         opt.Verbose          (1,1) logical = false
         opt.FailOnUnexpected (1,1) logical = true
         opt.LogFile          (1,1) string  = fullfile(tempdir, "GUILDA_DebugScript_" + string(datetime("now","Format","uuuuMMdd_HHmmss")) + ".log")
@@ -71,7 +71,11 @@ function results = run_all(opt)
     str_file    = string({suite.TestParentName});
     str_file    = erase(str_file, "DebugScript.");
     str_feature = extractBetween(str_file, "test_", "_");
-    lv_run      = ismember(str_feature, opt.Features);
+    if isempty(opt.Features)
+        lv_run = startsWith(str_feature, ["F","I"]);
+    else
+        lv_run = ismember(str_feature, opt.Features);
+    end
     suite = suite(lv_run);  str_file = str_file(lv_run);  str_feature = str_feature(lv_run);
     if isempty(suite)
         error("DebugScript:NoTests", "Features = [%s] に該当するテストがありません (例: [""F1"",""F2""])。", join(opt.Features, ","));
