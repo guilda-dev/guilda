@@ -78,6 +78,11 @@ function data = make_classlist(data, cell_dirlist, l_disp)
             continue
         end
 
+        % テスト用のパッケージ：スキップ (テスト用のスタブをモデルのキーとして出さない)
+        if  list(idx).isdir && strcmp(char_name, '+DebugScript')
+            continue
+        end
+
         % ディレクトリの場合：フォルダ内を探索
         if  list(idx).isdir
             data = make_classlist( data, [cell_dirlist, {char_name}], l_disp);
@@ -112,10 +117,9 @@ function data = make_classlist(data, cell_dirlist, l_disp)
         
         try
             superclass_list = superclasses(filename);
-        catch
-            if l_disp
-                disp("Unable to analyze parent class : "+filename)
-            end
+        catch ME
+            warning("GUILDA:dictionary:ClassNotLoaded", ...
+                "Class %s could not be loaded and is not in the key list: %s", filename, ME.message);
             superclass_list = {};
         end
 
