@@ -96,7 +96,7 @@ function check_network(net, sv_load)
             end
         end
     end
-    if net.l_staleEquilibrium
+    if net.s_edit.l_staleEquilibrium
         error('GUILDA:ContinuationPowerFlow:StaleEquilibrium', '%s', ...
               msg('GUILDA:ContinuationPowerFlow:StaleEquilibrium'));
     end

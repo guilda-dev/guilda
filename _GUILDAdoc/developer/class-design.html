@@ -230,7 +230,7 @@
     <ol class="dg-list is-numbered">
       <li><div><span class="dg-item-title">Only the parent sets and clears it</span><p>The reference is set by the parent's constructor or <code>add_*</code> method and cleared by its <code>remove_*</code> method, so a removed object no longer points to its old parent. No other code writes it.</p></div></li>
       <li><div><span class="dg-item-title">A child only reads its parent</span><p>For the tag path, for edit notification, and for shared settings such as the frequency.</p></div></li>
-      <li><div><span class="dg-item-title">A child never writes upward or sideways</span><p>It does not write to its parent or to its siblings, and it never stores a copy of its parent's data. The one exception is the edit notification: a <code>Parameter</code> sets the stale flag <code>l_staleOdefcn</code> of the object that owns it.</p></div></li>
+      <li><div><span class="dg-item-title">A child never writes upward or sideways</span><p>It does not write to its parent or to its siblings, and it never stores a copy of its parent's data. The one exception is the edit notification: a <code>Parameter</code> sets the stale flag <code>s_edit.l_staleOdefcn</code> of the object that owns it.</p></div></li>
     </ol>
 
     <!-- ============================== IDENTITY ============================== -->
@@ -251,7 +251,7 @@
 
     <!-- ============================== EDITS ============================== -->
     <h2 id="edits">Edit handling</h2>
-    <p>Edits are recorded with <code>str_editFlag</code> (<code>unset</code> / <code>initialized</code> / <code>editted</code>) and the edit log <code>tab_editLog</code>, which also records the category of what became stale.</p>
+    <p>Edits are recorded with <code>s_edit.str_flag</code> (<code>unset</code> / <code>initialized</code> / <code>editted</code>) and the edit log <code>tab_editLog</code>, which also records the category of what became stale.</p>
     <table class="cd-table">
       <thead>
         <tr><th>Edit</th><th>Becomes stale</th></tr>

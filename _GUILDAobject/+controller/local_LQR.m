@@ -139,7 +139,7 @@ classdef local_LQR < LocalController
             % keeps the equilibrium, so K is redesigned here (check_edit has already
             % rebuilt the component, the parent). When the equilibrium is stale,
             % net.initialize redesigns K instead.
-            if obj.l_staleOdefcn && ~isempty(obj.r_HzDesign) && obj.r_HzDesign ~= obj.r_Hz && obj.equilibrium_valid()
+            if obj.s_edit.l_staleOdefcn && ~isempty(obj.r_HzDesign) && obj.r_HzDesign ~= obj.r_Hz && obj.equilibrium_valid()
                 obj.design_gain(obj.a_Component.c_Vequilibrium, obj.a_Component.rv_Uequilibrium);
             else
                 obj.set_odefcn(obj.r_Hz);
@@ -177,7 +177,7 @@ classdef local_LQR < LocalController
             obj.f_Y    = @(t,x,V,I,u) obj.fcn_y(t, x, V, I, u, param, omega0);
             obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
             obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
-            obj.l_staleOdefcn = false;
+            obj.s_edit.l_staleOdefcn = false;
         end
     end
 
@@ -221,7 +221,7 @@ classdef local_LQR < LocalController
         function l = equilibrium_valid(obj)
             % True when the component is in a network whose equilibrium is up to date
             bus = obj.a_Component.a_Bus;
-            l = ~isempty(bus) && ~isempty(bus.a_PowerNetwork) && ~bus.a_PowerNetwork.l_staleEquilibrium;
+            l = ~isempty(bus) && ~isempty(bus.a_PowerNetwork) && ~bus.a_PowerNetwork.s_edit.l_staleEquilibrium;
         end
 
         function log_change(obj, str_name)

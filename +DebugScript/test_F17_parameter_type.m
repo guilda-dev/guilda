@@ -12,7 +12,7 @@ ME = assign_error(para, "V", "x");
 check_error(ME, "V", "double", "string");
 assert(para.V == V && isa(para.V, "double"))
 assert(height(net.tab_editLog) == 0)
-assert(~net.l_staleEquilibrium)
+assert(~net.s_edit.l_staleEquilibrium)
 
 %% Wrong type raises no warning
 [net, ~] = initialized_3bus();
@@ -30,7 +30,7 @@ para.V = V + 0.01;
 assert(para.V == V + 0.01)
 assert(height(net.tab_editLog) == 1 && net.tab_editLog.log == "edit V")
 assert(net.tab_editLog.before{1} == V && net.tab_editLog.after{1} == V + 0.01)
-assert(net.l_staleEquilibrium)
+assert(net.s_edit.l_staleEquilibrium)
 
 %% Same value is not an edit
 [net, ~] = initialized_3bus();

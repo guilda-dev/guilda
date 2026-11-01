@@ -247,14 +247,14 @@ sol = DebugScript.helper.quiet(@() n1.simulate([0,2], ev));
 assert(sol.odeResults.t(end) == 2)
 
 % 読み込んだ系統でも編集が記録され、平衡点が古くなる
-assert(height(n1.tab_editLog) == 0 && ~n1.l_staleEquilibrium)
+assert(height(n1.tab_editLog) == 0 && ~n1.s_edit.l_staleEquilibrium)
 comp.tab_parameter.dynamics.D = comp.tab_parameter.dynamics.D * 2;
 assert(height(n1.tab_editLog) == 1)                     % リスナーは 1 組だけ
-assert(comp.l_staleOdefcn && n1.l_staleEquilibrium)
+assert(comp.s_edit.l_staleOdefcn && n1.s_edit.l_staleEquilibrium)
 assert(error_id(@() n1.get_sys) == "GUILDA:PowerNetwork:EquilibriumStale")
-assert(height(net.tab_editLog) == 0 && ~net.l_staleEquilibrium)  % 元の系統は変わらない
+assert(height(net.tab_editLog) == 0 && ~net.s_edit.l_staleEquilibrium)  % 元の系統は変わらない
 DebugScript.helper.quiet(@() n1.initialize);
-assert(~comp.l_staleOdefcn && ~n1.l_staleEquilibrium)
+assert(~comp.s_edit.l_staleOdefcn && ~n1.s_edit.l_staleEquilibrium)
 
 % 型の検査も効く (読み込む前と同じく、エラーになり値は変わらない)
 r_D = comp.para_dynamics.D;
@@ -264,19 +264,19 @@ assert(isequal(comp.para_dynamics.D, r_D))
 % 母線・送電線・系統のパラメータと、読み込み後の構成の編集
 s = load(str_mat);  n2 = s.net;
 n2.a_Bus{3}.tab_parameter.powerflow.V = 1.01;
-assert(height(n2.tab_editLog) == 1 && n2.l_staleEquilibrium)
+assert(height(n2.tab_editLog) == 1 && n2.s_edit.l_staleEquilibrium)
 s = load(str_mat);  n3 = s.net;
 n3.a_Branch{1}.tab_parameter.dynamics.R = 0.02;
-assert(height(n3.tab_editLog) == 1 && n3.l_staleEquilibrium)
+assert(height(n3.tab_editLog) == 1 && n3.s_edit.l_staleEquilibrium)
 s = load(str_mat);  n4 = s.net;
 n4.tab_parameter.base.Hz = 50;
-assert(n4.a_Bus{2}.a_Component{1}.l_staleOdefcn && ~n4.l_staleEquilibrium)
+assert(n4.a_Bus{2}.a_Component{1}.s_edit.l_staleOdefcn && ~n4.s_edit.l_staleEquilibrium)
 s = load(str_mat);  n5 = s.net;
 DebugScript.helper.quiet(@() set_slack(n5.a_Bus{2}));
-assert(n5.a_Bus{2}.l_isSlack && n5.l_staleEquilibrium)
+assert(n5.a_Bus{2}.l_isSlack && n5.s_edit.l_staleEquilibrium)
 s = load(str_mat);  n6 = s.net;
 n6.add_bus();
-assert(numel(n6.a_Bus) == 4 && n6.l_staleEquilibrium && numel(net.a_Bus) == 3)
+assert(numel(n6.a_Bus) == 4 && n6.s_edit.l_staleEquilibrium && numel(net.a_Bus) == 3)
 
 % 直接は代入できない
 for str_prop = ["a_Bus","a_Branch","a_GlobalController"]
@@ -296,9 +296,9 @@ avr = s.net.a_Bus{1}.a_Component{1}.a_LocalController{1};
 pss = avr.a_LocalController{1};
 assert(isa(avr, "controller.avr.AVR_ST1") && isa(pss, "controller.pss.PSS1"))
 avr.para_dynamics.kap = avr.para_dynamics.kap * 1.1;
-assert(height(s.net.tab_editLog) == 1 && s.net.l_staleEquilibrium && avr.l_staleOdefcn)
+assert(height(s.net.tab_editLog) == 1 && s.net.s_edit.l_staleEquilibrium && avr.s_edit.l_staleOdefcn)
 pss.para_dynamics.kpss = pss.para_dynamics.kpss * 1.1;
-assert(height(s.net.tab_editLog) == 2 && pss.l_staleOdefcn)
+assert(height(s.net.tab_editLog) == 2 && pss.s_edit.l_staleOdefcn)
 
 % 結果オブジェクトが参照する系統も同じ
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");

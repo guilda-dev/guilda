@@ -15,7 +15,7 @@ function flag = check_edit(obj, opt)
     end
     flag = check_edit@LayerPackage(obj);
     if opt.RequireEquilibrium && ~flag
-        if obj.str_editFlag == "unset"
+        if obj.s_edit.str_flag == "unset"
             str_reason = "net.initialize() has not been run";
         else
             tab = obj.tab_editLog;

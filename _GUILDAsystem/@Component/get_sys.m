@@ -51,7 +51,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     obj.check_edit();
     if l_equilibrium && ~isempty(obj.a_Bus) && ~isempty(obj.a_Bus.a_PowerNetwork)
         net = obj.a_Bus.a_PowerNetwork;
-        if net.str_editFlag == "unset" || net.l_staleEquilibrium
+        if net.s_edit.str_flag == "unset" || net.s_edit.l_staleEquilibrium
             net.check_edit("RequireEquilibrium", true);
         end
     end

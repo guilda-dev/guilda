@@ -86,7 +86,7 @@ DebugScript.helper.quiet(@() net.initialize);
 assert(n_slack(net) == 1 && net.a_Bus{3}.l_isSlack)
 evalc("net.a_Bus{2}.l_isSlack = true;");
 assert(n_slack(net) == 1 && net.a_Bus{2}.l_isSlack)
-assert(net.l_staleEquilibrium && net.tab_editLog.tag(end) == "Slack")
+assert(net.s_edit.l_staleEquilibrium && net.tab_editLog.tag(end) == "Slack")
 assert(any(contains(net.tab_editLog.log, "slack bus -> B002")))
 
 % 同じ値の再設定は何も記録しない

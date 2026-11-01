@@ -24,7 +24,7 @@ function flag = validate(obj, l_message)
     end
     obj.check_edit();
     net = comp.a_Bus.a_PowerNetwork;
-    if net.str_editFlag == "unset" || net.l_staleEquilibrium
+    if net.s_edit.str_flag == "unset" || net.s_edit.l_staleEquilibrium
         net.check_edit("RequireEquilibrium", true);
     end
 

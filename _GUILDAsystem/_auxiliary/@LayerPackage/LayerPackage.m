@@ -35,10 +35,6 @@ classdef LayerPackage < handle
         children
     end
     %% Edit log
-    properties(Access=protected) % Edit log
-        % Edit state of the layer: "unset", "initialized" or "editted".
-        str_editFlag (1,1) string {mustBeMember(str_editFlag,["unset","initialized","editted"])} = "unset"
-    end
     properties(SetAccess=private) % Edit log
         % Log of edits made to the layer since the last initialize.
         % Columns: timestamp, ID, log message, tag, and the states before and after the edit.
@@ -46,19 +42,21 @@ classdef LayerPackage < handle
         tab_editLog = array2table(zeros(0,6),'VariableNames',{'timestamp','ID','log','tag','before','after'});
     end
     properties(SetAccess=protected, Hidden) % Edit log
-        % True when the cached f_* function handles built by set_odefcn no longer match the parameters.
-        % Set by log_edit on the owner of an edited "dynamics" parameter, and on every layer of
-        % the network when its "base" parameter (Hz) is edited; cleared when set_odefcn rebuilds
-        % the handles. check_edit rebuilds the handles of every layer with this flag at the start
-        % of an analysis. Only Component, LocalController and GlobalController own handles.
-        l_staleOdefcn (1,1) logical = false
-
-        % True when the equilibrium set by initialize no longer matches the model.
-        % Kept on PowerNetwork only. Set by log_edit for edits of "dynamics", "base" (baseMVA) and
-        % "powerflow" parameters, topology changes and slack-bus changes; edits of the network Hz
-        % and of "operation", "OPF" and "graph" parameters leave it unchanged. Cleared by
-        % reset_edit (end of initialize). See edit_effect for the mapping.
-        l_staleEquilibrium (1,1) logical = false
+        % Edit state of the layer, one struct with these fields (set.s_edit checks them):
+        %
+        % - str_flag: "unset", "initialized" or "editted".
+        % - l_staleOdefcn: True when the cached f_* function handles built by set_odefcn no longer
+        %   match the parameters. Set by log_edit on the owner of an edited "dynamics" parameter,
+        %   and on every layer of the network when its "base" parameter (Hz) is edited; cleared
+        %   when set_odefcn rebuilds the handles. check_edit rebuilds the handles of every layer
+        %   with this flag at the start of an analysis. Only Component, LocalController and
+        %   GlobalController own handles.
+        % - l_staleEquilibrium: True when the equilibrium set by initialize no longer matches the
+        %   model. Kept on PowerNetwork only. Set by log_edit for edits of "dynamics", "base"
+        %   (baseMVA) and "powerflow" parameters, topology changes and slack-bus changes; edits of
+        %   the network Hz and of "operation", "OPF" and "graph" parameters leave it unchanged.
+        %   Cleared by reset_edit (end of initialize). See edit_effect for the mapping.
+        s_edit (1,1) struct = struct("str_flag","unset", "l_staleOdefcn",false, "l_staleEquilibrium",false)
     end
     
     %% Tag
@@ -104,7 +102,7 @@ classdef LayerPackage < handle
 
         function mark_stale_odefcn(obj)
         % Mark the f_* handles of this layer and all its descendants stale.
-            obj.l_staleOdefcn = true;
+            obj.s_edit.l_staleOdefcn = true;
             cellfun(@(c) c.mark_stale_odefcn, obj.children);
         end
 
@@ -126,7 +124,7 @@ classdef LayerPackage < handle
         % Rebuild the f_* handle cache from the current parameters.
         % Layers that own handles (Component, LocalController, GlobalController)
         % override this; other layers have nothing to rebuild.
-            obj.l_staleOdefcn = false;
+            obj.s_edit.l_staleOdefcn = false;
         end
     end
     methods(Static, Hidden)
@@ -167,6 +165,13 @@ classdef LayerPackage < handle
         out = get_tag(obj,l_with_layer, str_split)
         out = attach_tag(obj,str_name_list)
         [out, dict_cls] = struct(obj, l_disp, str_header, dict_cls)
+
+        function set.s_edit(obj, s_edit)
+            % A field cannot have a validator, and assigning a misspelled field would add a new one
+            mustBeMember(s_edit.str_flag, ["unset","initialized","editted"]);
+            assert(numel(fieldnames(s_edit)) == 3, "GUILDA:LayerPackage:EditStateFields", "s_edit has exactly three fields.");
+            obj.s_edit = s_edit;
+        end
 
         function set.str_tag(obj,str_newtag)
             str_newtag = obj.validate_tag(str_newtag);

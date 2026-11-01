@@ -179,7 +179,7 @@
         <tr><td>Not met, but a harmless default exists</td><td data-label="Behavior">Continue and print an INFO message. Only for a default that does not change the meaning of the result.</td></tr>
       </tbody>
     </table>
-    <p>Example: the edit state <code>str_editFlag</code> is <code>unset</code>, <code>initialized</code> or <code>editted</code>.</p>
+    <p>Example: the edit state <code>s_edit.str_flag</code> is <code>unset</code>, <code>initialized</code> or <code>editted</code>.</p>
     <p>A simulation or a linearization needs an up-to-date equilibrium: <code>initialize</code> has run, and no edit since then made the equilibrium stale. Otherwise the error says "run <code>net.initialize()</code> first" (see <a href="class-design.html#edits">Class Design: Edit handling</a>).</p>
 
     <h3 id="side-effects">6 · Side effects follow the verb</h3>

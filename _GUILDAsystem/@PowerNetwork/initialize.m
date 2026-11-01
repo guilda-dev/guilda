@@ -109,7 +109,7 @@ function [result, flag, output] = initialize(obj, varargin)
     c_PQ      = component_power(obj, str_method, result);
 
     % stays set if a step below fails, so a partly written point is never used
-    obj.l_staleEquilibrium = true;
+    obj.s_edit.l_staleEquilibrium = true;
 
     for i_gc = 1:numel(obj.a_GlobalController)
         a_GC = obj.a_GlobalController{i_gc};
@@ -405,7 +405,7 @@ end
 function check_edit_for_equilibrium(obj)
 % Stops when an edit since the last initialize would be lost by Method="equilibrium".
 % Dynamics edits are not lost: the states and inputs are recomputed from the held V and I.
-    if obj.str_editFlag == "unset"
+    if obj.s_edit.str_flag == "unset"
         return
     end
     tab = obj.tab_editLog;
