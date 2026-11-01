@@ -21,6 +21,7 @@
         <entry key="InitializeEquilibriumFailed">net.initialize(Method="equilibrium") stopped: the equilibria of the components do not satisfy the network equations (max |Y*V-I| = {0}).&#xA;The network was not changed. Use net.initialize(Method="powerflow") or net.initialize(Method="OPF").</entry>
         <entry key="InitializeNoEquilibrium">net.initialize(Method="equilibrium") stopped: the equilibrium of ''{0}'' is not set.&#xA;The network was not changed. Run net.initialize(Method="powerflow") or net.initialize(Method="OPF") first.</entry>
         <entry key="SimulateArguments">net.simulate takes the time span, then the events (odeEventSet), then Name-Value options: net.simulate([t0, tend], ev1, ev2, ..., Name, Value). Argument {0} is a {1}.</entry>
+        <entry key="ControllersNotSaved">export_csv does not write controllers, so the CSV model of ''{0}'' does not include them.&#xA;Local ({1}): {2}&#xA;Global ({3}): {4}&#xA;Add them again after PowerNetwork.import_csv.</entry>
         <entry key="SimulateTime">The time of net.simulate must be [t0, tend] with finite values and t0 &lt; tend, or [] for the time span of the events: {0}.</entry>
     </message>
 </rsccat>
