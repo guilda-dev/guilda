@@ -2,7 +2,8 @@ function remove_component(obj, str_tag)
 % Remove a component from the bus by tag.
 %
 % The removed component no longer refers to this bus. The removal is logged as a
-% "Topology" edit. A component controlled by a global controller cannot be removed.
+% "Topology" edit. A tag that is not found is an error. A component controlled by a global
+% controller cannot be removed.
 %
 % See also Bus.add_component
     arguments
@@ -12,7 +13,8 @@ function remove_component(obj, str_tag)
     str_tagComp = string(obj.a_Component);
     lv_rmcub = str_tagComp==str_tag;
     if ~any(lv_rmcub)
-        error("No component with '"+str_tag+"' was found.")
+        error('GUILDA:Bus:ComponentNotFound', '%s', ...
+              msg('GUILDA:Bus:ComponentNotFound', char(str_tag), char(obj.str_tag)))
     end
     comp = obj.a_Component{lv_rmcub};
     str_gcon = controlling_gcon(obj, comp);

@@ -6,6 +6,7 @@
         <entry key="SetGcon">Use the method to add or remove Global Controller classes from a_Bus.&#xA;&#xA; &lt; When adding a Global Controller class &gt;&#xA;  &gt;&gt; obj.add_bus(GlobalCon_INSTANCE,[ComponentTag])&#xA; &lt; When removing a Global Controller class &gt;&#xA;  &gt;&gt; obj.aremove_bus(GlobalCon_TAG)</entry> 
         <entry key="EquilibriumStale">The equilibrium of ''{0}'' is out of date: {1}.&#xA;Run net.initialize() first to recompute the equilibrium.</entry> 
         <entry key="BusNotFound">No bus with the tag ''{0}'' was found in ''{1}''.</entry> 
+        <entry key="BranchNotFound">No branch with the tag ''{0}'' was found in ''{1}''.&#xA;List the tags of the network with string(net.a_Branch).</entry>
         <entry key="BranchBusIndex">Bus index {0} is out of range: ''{1}'' has {2} buses.&#xA;Add the buses first with net.add_bus(), or give the end buses as indices of net.a_Bus or as bus tags.</entry>
         <entry key="BranchSelfLoop">Both ends of the branch are bus ''{0}''. A branch must connect two different buses.&#xA;For a shunt at the bus, use net.add_bus(Gshunt=G, Bshunt=B) instead of a branch.</entry>
         <entry key="BranchZeroImpedance">The branch between ''{0}'' and ''{1}'' has R = X = 0, so its admittance is infinite.&#xA;Give a nonzero R or X, or merge the two buses into one.</entry>
