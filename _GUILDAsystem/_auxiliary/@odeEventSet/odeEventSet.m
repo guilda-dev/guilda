@@ -65,13 +65,6 @@ classdef (Sealed = true) odeEventSet < auxiliary
         odeIteration (1,1) double = nan
     end
 
-    properties (Access=private) % Index data
-        sv_Btag
-        sv_Ctag
-        rv_Brep
-        rv_Crep
-    end
-
     properties (SetAccess=private, Hidden) % Version
         Ver (1,1) double = 1.1 % Version of this class.
     end
@@ -97,30 +90,7 @@ classdef (Sealed = true) odeEventSet < auxiliary
                 idx_name = strNames{idx};                
                 obj.(idx_name) = opt.(idx_name);
                 idx = idx + 1;
-            end            
-
-            cv_bus = net.a_Bus;            
-            sv_tag = cell(size(cv_bus));                
-            rv_rep = cell(size(cv_bus));                          
-
-            for i=1:numel(cv_bus)                              
-                a_Comp = cv_bus{i}.a_Component;                                                   
-                [sv_tag{i}, rv_rep{i}] = getTM(a_Comp);                                
             end
-
-            % global controllers follow the components in the state vector (see odeSimulator)
-            a_GCs = obj.odeNetwork.a_GlobalController;
-            for k = 1:numel(a_GCs)
-                sv_tag = [sv_tag; {a_GCs{k}.str_tag}]; %#ok
-                rv_rep = [rv_rep; {numel(a_GCs{k}.sv_x)}]; %#ok
-            end
-
-            obj.sv_Btag = string(net.a_Bus);
-            obj.sv_Ctag = vertcat(sv_tag{:});
-
-            obj.rv_Brep = 4*ones(i,1);            
-            obj.rv_Crep = vertcat(rv_rep{:});
-            
         end
     end    
 
@@ -146,9 +116,11 @@ classdef (Sealed = true) odeEventSet < auxiliary
             end
             arguments
                 opt.time (:,1) double
+                opt.net % Network being simulated.
             end
 
             odeEvents = [{obj},varargin];
+            validate_set(odeEvents, opt.net);
             cellfun(@(o) o.validate_input(), odeEvents);
             
             times = zeros(nargin,2);
@@ -349,8 +321,7 @@ classdef (Sealed = true) odeEventSet < auxiliary
                 rv_X = [rv_X; {a_GC.rv_Xequilibrium}]; %#ok
             end            
 
-            Btag_all  = repelem(obj.sv_Btag, obj.rv_Brep);
-            Ctag_all  = repelem(obj.sv_Ctag, obj.rv_Crep);
+            [Btag_all, Ctag_all] = getStateTags(obj.odeNetwork);
             lv_FBorTC = ismember([Ctag_all; Btag_all], [CompTrip; BusFault]);
 
             nFBorTC = length(lv_FBorTC);
@@ -404,7 +375,7 @@ classdef (Sealed = true) odeEventSet < auxiliary
                                 
             CompTrip = cell2mat( cellfun(@(B) B.TripUnit, odeEvents, 'UniformOutput', false) );                                    
             
-            % Tripped units by tag (sv_Ctag also lists local and global controllers, so its
+            % Tripped units by tag (getStateTags also lists local controllers, so its
             % positions do not match a_cmp); a tripped global controller is marked too
             a_unit   = [a_cmp; obj.odeNetwork.a_GlobalController];
             lv_Ctagi = ismember(string(a_unit), CompTrip);
@@ -517,6 +488,58 @@ function checkValueCount(str_tag, str_value, values, str_name, names)
             msg('GUILDA:odeEventSet:ValueCountMismatch', char(str_tag), char(str_value), ...
                 numel(values), numel(names), char(str_name)));
     end
+end
+
+function validate_set(odeEvents, net)
+% Checks on the events of one run, before the phase table is built.
+    lv_scalar = cellfun(@isscalar, odeEvents);
+    if ~all(lv_scalar)
+        error('GUILDA:odeEventSet:EventArray', '%s', msg('GUILDA:odeEventSet:EventArray'));
+    end
+
+    sv_tag = string(cellfun(@(o) o.str_tag, odeEvents, 'UniformOutput', false));
+    for k = 1:numel(odeEvents)
+        if odeEvents{k}.odeNetwork ~= net
+            error('GUILDA:odeEventSet:OtherNetwork', '%s', ...
+                msg('GUILDA:odeEventSet:OtherNetwork', char(sv_tag(k))));
+        end
+    end
+
+    % These names label other columns of the phase table (see table) or are not allowed in a table.
+    lv_reserved = ismember(sv_tag, ["t1","t2","Properties","Row","Variables",""]) ...
+        | matches(sv_tag, "NoAction" + digitsPattern);
+    if any(lv_reserved)
+        error('GUILDA:odeEventSet:ReservedTag', '%s', ...
+            msg('GUILDA:odeEventSet:ReservedTag', char(sv_tag(find(lv_reserved,1)))));
+    end
+
+    [~, iv_first] = unique(sv_tag, 'stable');
+    if numel(iv_first) < numel(sv_tag)
+        i_dup = setdiff(1:numel(sv_tag), iv_first);
+        error('GUILDA:odeEventSet:DuplicateTag', '%s', ...
+            msg('GUILDA:odeEventSet:DuplicateTag', char(sv_tag(i_dup(1)))));
+    end
+end
+
+function [Btag_all, Ctag_all] = getStateTags(net)
+% Tag of each entry of the state vector, from the network as it is now.
+    a_bus  = net.a_Bus;
+    sv_tag = cell(size(a_bus));
+    rv_rep = cell(size(a_bus));
+
+    for i = 1:numel(a_bus)
+        [sv_tag{i}, rv_rep{i}] = getTM(a_bus{i}.a_Component);
+    end
+
+    % global controllers follow the components in the state vector (see odeSimulator)
+    a_GCs = net.a_GlobalController;
+    for k = 1:numel(a_GCs)
+        sv_tag = [sv_tag; {a_GCs{k}.str_tag}]; %#ok
+        rv_rep = [rv_rep; {numel(a_GCs{k}.sv_x)}]; %#ok
+    end
+
+    Btag_all = repelem(string(a_bus), 4*ones(numel(a_bus),1));
+    Ctag_all = repelem(vertcat(sv_tag{:}), vertcat(rv_rep{:}));
 end
 
 function [sv_tag, rv_rep] = getTM(OBJs, sv_tag, rv_rep)
