@@ -18,6 +18,9 @@ function update_class_signature()
     update_signature(str_path_add_component, str_comp_list  , str_comp_cases  )
     update_signature(str_path_rep_component, str_comp_list  , str_comp_cases  )
     update_signature(str_path_add_branch   , str_branch_list, str_branch_cases)
+
+    % A new copy's first session cannot see the files written above without this
+    rehash path
 end
 
 function update_signature(str_filepath, str_list, str_cases)

@@ -95,6 +95,42 @@ assert(ismember("component.load.power", tab.filename))
 assert(string(which("component.load.power")) ~= fullfile(str_dir, "power.m"))
 
 
+%% GUILDA dictionary warns about a class that cannot be loaded
+% 定義エラーのクラスは元の理由つきの警告を出し、キー一覧には入らない
+str_file = fullfile(str_root, "_GUILDAobject", "+component", "+generator", "broken_f9.m");
+assert(~isfile(str_file), str_file + " が既にある")
+writelines(["classdef broken_f9 < component.generator.no_such_parent_f9", "end"], str_file);
+c_file = onCleanup(@() delete_and_rehash(str_file));
+rehash path
+
+lastwarn("");
+txt = evalc("tab = GUILDA.dictionary(""Component"", ""disp"", false);");
+[str_msg, str_id] = lastwarn;
+assert(string(str_id) == "GUILDA:dictionary:ClassNotLoaded", txt)
+assert(contains(str_msg, "component.generator.broken_f9") && contains(str_msg, "no_such_parent_f9"), str_msg)
+assert(~ismember("component.generator.broken_f9", tab.filename))
+assert(ismember("component.generator.park", tab.filename))
+
+% 起動しても止まらず、壊れたクラスはキー一覧に出ない
+txt = evalc("GUILDA;");
+assert(contains(txt, "broken_f9"), txt)
+assert(~contains(fileread(fullfile(str_root, "_GUILDAsystem", "@Bus", "add_component.m")), "broken_f9"))
+
+
+%% GUILDA startup gives no class warning and lists no test stubs
+lastwarn("");
+txt = evalc("GUILDA;");
+[~, str_id] = lastwarn;
+assert(string(str_id) ~= "GUILDA:dictionary:ClassNotLoaded", txt)
+assert(~contains(txt, "could not be loaded"), txt)
+
+% +DebugScript のスタブはモデルのキーとして出さない
+tab = GUILDA.dictionary("Component", "disp", false);
+assert(~any(startsWith(tab.filename, "DebugScript.")))
+txt = fileread(fullfile(str_root, "_GUILDAsystem", "@Bus", "add_component.m"));
+assert(~contains(txt, "test-hessian-stub"))
+
+
 %% Symbolic Math Toolbox is not a required toolbox
 % 必須は Control System / Optimization のみ。Symbolic Math は開発用スクリプト専用の任意 Toolbox
 sv_req = strtrim(readlines(fullfile(str_root, "@GUILDA", "config", "ListToolbox.txt")));
@@ -157,3 +193,9 @@ clear c_tmp
 % 数値の関数ハンドルなら Toolbox 無しで解ける
 nrm = NewtonRaphsonMethod(NRMFcn=@(x) x.^2 - 4, InitVal=1);
 assert(abs(nrm.solve() - 2) < 1e-6)
+
+
+function delete_and_rehash(str_file)
+    delete(str_file)
+    rehash path
+end
