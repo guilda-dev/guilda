@@ -115,9 +115,9 @@ classdef odeSimulationResult < AnalysisResult
             obj.c_component = cellfun(@(b) string(b.a_Component(:)), a_bus(:), 'UniformOutput', false);
 
             sol = reshape(c_phase, [], 1);
-            obj.rv_t = cell2mat( cellfun(@(T) T.t{:,:}, sol, 'UniformOutput', false) );
-            X        = cell2mat( cellfun(@(T) T.x{:,:}, sol, 'UniformOutput', false) );
-            obj.rm_I = cell2mat( cellfun(@(T) T.i{:,:}, sol, 'UniformOutput', false) );
+            obj.rv_t = cell2mat( cellfun(@(T) T.t, sol, 'UniformOutput', false) );
+            X        = cell2mat( cellfun(@(T) T.x, sol, 'UniformOutput', false) );
+            obj.rm_I = cell2mat( cellfun(@(T) T.i, sol, 'UniformOutput', false) );
 
             obj.tab_variable = net.get_variable_map();
             [iv_sim, obj.c_index] = simulator_columns(net, obj.tab_variable);

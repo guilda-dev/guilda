@@ -1,4 +1,4 @@
-function [DAEvec, y, y_name] = get_dx_algebraic(obj, t, x, Vi, Ii, obs, DAEvec) 
+function [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, Ii, obs, DAEvec) 
 % Add the DAE residual of the controller (and of its nested controllers) to DAEvec.
 %
 % Called by Component.get_dx_algebraic. obs.y / obs.x are the outputs and states of the
@@ -10,7 +10,6 @@ function [DAEvec, y, y_name] = get_dx_algebraic(obj, t, x, Vi, Ii, obs, DAEvec)
 %
 % - `DAEvec` — Updated DAE residual of the network.
 % - `y` — Outputs of the controller, which drive the inputs of its parent of the same name.
-% - `y_name` — Names of those outputs (sv_y).
 
     rv_U = obj.rv_Uequilibrium;
 
@@ -22,10 +21,10 @@ function [DAEvec, y, y_name] = get_dx_algebraic(obj, t, x, Vi, Ii, obs, DAEvec)
     if obj.l_hasController
         a_LC = obj.a_LocalController{1};
 
-        [DAEvec, y_LC, y_LCname] = get_dx_algebraic(a_LC, t, x, Vi, Ii, obs, DAEvec);    
+        [DAEvec, y_LC] = get_dx_algebraic(a_LC, t, x, Vi, Ii, obs, DAEvec);    
         
-        [lv_U2Y, iv_Y] = ismember(obj.sv_u, y_LCname);
-        rv_U(lv_U2Y) = y_LC(iv_Y(lv_U2Y));        
+        lv_U2Y = obj.lv_odeUfromLC;
+        rv_U(lv_U2Y) = y_LC(obj.iv_odeYtoU(lv_U2Y));        
     end
 
     rv_x = obj.iv_odeX;
@@ -38,6 +37,5 @@ function [DAEvec, y, y_name] = get_dx_algebraic(obj, t, x, Vi, Ii, obs, DAEvec)
     
     DAEvec([rv_x;rv_u]) = DAEvec([rv_x;rv_u]) + [X; u_con - rv_U];        
     y = obj.f_Y(t, x_con, Vi, Ii, u_con);  
-    y_name = obj.sv_y;
     
 end

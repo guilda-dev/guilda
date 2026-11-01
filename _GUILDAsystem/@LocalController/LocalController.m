@@ -75,6 +75,8 @@ classdef LocalController < PowerSystemModel
         iv_odeX  = zeros(0,1);
         iv_odeU  = zeros(0,1);
         iv_odeY  = zeros(0,1);
+        lv_odeUfromLC = false(0,1);            % Inputs driven by an output of the nested controller.
+        iv_odeYtoU    = zeros(0,1);            % Index in sv_y of the nested controller of each such input.
 
         rv_Xoffset = 0
         rv_Uoffset = @(t) 0
@@ -201,7 +203,7 @@ classdef LocalController < PowerSystemModel
         end
 
         % get dx and y
-        [DAEvec, y, y_name] = get_dx_algebraic(obj, t, x, Vi, Ii, obs, DAEvec)
+        [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, Ii, obs, DAEvec)
 
     end
 

@@ -26,9 +26,9 @@ function DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)
         obs.y = obj.f_Y(t,x_comp,Vi,Ii,u_comp);
         obs.x = x_comp;
         a_LC = obj.a_LocalController{1};
-        [DAEvec, y_LC, y_name] = get_dx_algebraic(a_LC, t, x, Vi, Ii, obs, DAEvec);
-        [lv_U2Y, iv_Y] = ismember(obj.sv_u, y_name);
-        u(lv_U2Y) = y_LC(iv_Y(lv_U2Y)) + u(lv_U2Y) - obj.rv_Uequilibrium(lv_U2Y);
+        [DAEvec, y_LC] = get_dx_algebraic(a_LC, t, x, Vi, Ii, obs, DAEvec);
+        lv_U2Y = obj.lv_odeUfromLC;
+        u(lv_U2Y) = y_LC(obj.iv_odeYtoU(lv_U2Y)) + u(lv_U2Y) - obj.rv_Uequilibrium(lv_U2Y);
     end
     
     X = obj.f_dx(t,x_comp,Vi,Ii,u_comp);
