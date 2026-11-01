@@ -6,13 +6,18 @@ function sys = get_ss(obj, Algorithm, opt)
 % in v3 for each algorithm, including the state order: "Kron" and "DAE" put the states of
 % the global controllers first, then the components; "Feedback" puts the components first,
 % then the global controllers (in the order they were added). Use StateName to find a state.
+% The exception is "Feedback" with a non-unit bus that has components: v3 dropped them, here
+% they are absorbed into the admittance matrix, which changes the matrices and adds inputs.
 %
 % - "Kron": the bus voltages are eliminated from the DAE. States: all states.
 %   Inputs: the inputs u. Outputs: the states.
 % - "Feedback": the bus models in I-to-V form are connected through the admittance
-%   matrix (non-unit buses, options.NonUnit, are eliminated with the network
-%   and their components left out), then the global controllers are closed.
-%   Inputs: the inputs u. Outputs: the states.
+%   matrix, then the global controllers are closed. Non-unit buses (options.NonUnit, and
+%   buses without states that have no I-to-V form) are eliminated with the network: their
+%   linearized current is absorbed into the admittance matrix and their inputs are kept,
+%   so the model is equivalent to "Kron". options.NonUnit naming a bus with states is an
+%   error (GUILDA:LinearizationResult:NonUnitDynamicBus).
+%   Inputs: the inputs u, in the same order as "Kron". Outputs: the states.
 % - "DAE": the bus voltages are kept as algebraic states (E is singular), in the
 %   coordinates given by Coordinate. Outputs: the dynamic states.
 %
@@ -169,6 +174,13 @@ function sys = via_feedback(obj)
     s     = obj.s_model;
     n_bus = numel(s.c_sysBus);
 
+    lv_dynamic = s.lv_nonUnit & tools.vcellfun(@(S) ~isempty(S.A), s.c_sysBus);
+    if any(lv_dynamic)
+        error("GUILDA:LinearizationResult:NonUnitDynamicBus", ...
+              "NonUnit = [%s] names buses with states, which cannot be eliminated with the network: bus %s.", ...
+              num2str(obj.options.NonUnit), num2str(find(lv_dynamic(:)')))
+    end
+
     % A bus without states whose current does not depend on V in an invertible way (e.g. a load
     % with P = Q = 0) has no I-to-V form, so it is eliminated with the network like a non-unit bus
     l_isU = false(n_bus,1);
@@ -182,18 +194,24 @@ function sys = via_feedback(obj)
     busInames = tools.cellfun(@(S) string(S.InputName(1:2)),  ssFromBus);
     busVnames = tools.cellfun(@(S) string(S.OutputName(end-1:end)), ssFromBus);
 
-    input  = cellfun(@(c) string(c), ssG.InputName);
+    input  = obj.tab_variable.Label(obj.tab_variable.Kind == "u");
     output = cellfun(@(c) string(c), ssG.OutputName);
 
-    lv_input  = ismember(input, vertcat(strings(0,1), busInames{:}));
     lv_output = ismember(output,vertcat(strings(0,1), busVnames{:}));
 
-    Ymat = complex2matrix(s.cm_Y);
-    ssN  = ss(Ymat);
-    ssN.InputName  = vertcat(busVnames{:});
+    % Non-unit buses n have no states, so Div_n V_n + Diu_n u_n is their current and
+    % I_u = (Y_uu - Y_un Ybar_nn^-1 Y_nu) V_u + Y_un Ybar_nn^-1 Diu_n u_n, with Ybar_nn = Y_nn - Div_n
+    sysNon = s.c_sysBus(~l_isU);
+    Div = tools.dcellfun(@(S) S.D(:,1:2)  , sysNon);
+    Diu = tools.dcellfun(@(S) S.D(:,3:end), sysNon);
+    nonUnames = tools.cellfun(@(S) string(S.InputName(3:end)), sysNon);
+
+    [Ymat, Hmat] = complex2matrix(s.cm_Y, Div, Diu);
+    ssN  = ss([Ymat, Hmat]);
+    ssN.InputName  = [vertcat(busVnames{:}); vertcat(strings(0,1), nonUnames{:})];
     ssN.OutputName = vertcat(busInames{:});
 
-    sysODE = connect(ssG, ssN, input(~lv_input), output(~lv_output));
+    sysODE = connect(ssG, ssN, input, output(~lv_output));
 
     % Global controllers (all of them, one after another, as in Kron and DAE):
     % their inputs are component outputs (e.g. omega) and their outputs add to component inputs (e.g. Pmech)
@@ -210,10 +228,12 @@ function sys = via_feedback(obj)
     end
     sys = sysODE;
 
-    function rm_Ymat = complex2matrix(Ymat)
+    function [rm_Ymat, rm_Hmat] = complex2matrix(Ymat, Div, Diu)
         rm_Ymat = cell2mat( arrayfun(@(M) [real(M), -imag(M); imag(M), real(M)], Ymat, 'UniformOutput', false) );
         lv_Unit = logical( kron(l_isU,ones(2,1)) );
-        rm_Ymat = rm_Ymat(lv_Unit,lv_Unit) - rm_Ymat(lv_Unit,~lv_Unit) * rm_Ymat(~lv_Unit,~lv_Unit)^-1 * rm_Ymat(~lv_Unit,lv_Unit);
+        inv_Ynn = (rm_Ymat(~lv_Unit,~lv_Unit) - Div)^-1;
+        rm_Hmat = rm_Ymat(lv_Unit,~lv_Unit) * inv_Ynn * Diu;
+        rm_Ymat = rm_Ymat(lv_Unit,lv_Unit) - rm_Ymat(lv_Unit,~lv_Unit) * inv_Ynn * rm_Ymat(~lv_Unit,lv_Unit);
     end
 end
 
