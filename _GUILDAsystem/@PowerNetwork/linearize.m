@@ -6,7 +6,7 @@ function [result, flag, output] = linearize(obj, varargin)
 % gives a state-space model. The settings are the stored defaults of
 % net.solver_LIN; Name-Value options override them for this call only (net.solver_LIN is
 % not changed). Neither is the network: a Point away from the equilibrium is used only
-% for this call, and NonUnit is not stored on the buses.
+% for this call.
 % The network must be initialized (net.initialize()); otherwise this stops with the
 % error of check_edit that asks for it.
 % Accepted options are the names in odeLinearizer.OptionMap plus Plot; any other name
@@ -18,7 +18,6 @@ function [result, flag, output] = linearize(obj, varargin)
 % Name-Value options:
 %
 % - `Algorithm` — Default form of result.get_ss() (net.solver_LIN.Algorithm).
-% - `NonUnit` — Indices of buses treated as non-unit buses by "Feedback" (net.solver_LIN.NonUnit).
 % - `Point` — Point of the linearization: [] for the equilibrium, the values in the order
 %   of net.get_variable_map(), or {sim, t} for the state of a simulation result at time t
 %   (sim.get_point(t); {sim, t, "before"} at a phase boundary takes the value before the

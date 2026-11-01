@@ -1,7 +1,7 @@
 % F7 近似線形化 (linearize / get_sys / LinearizationResult / get_variable_map / get_hessian)
 %
 % 平衡点 (または指定した点) まわりの線形モデルを求める。
-%   res = net.linearize("Algorithm", ..., "NonUnit", 母線番号, "Point", 点);
+%   res = net.linearize("Algorithm", ..., "Point", 点);
 %   sys = res.get_ss("Kron" | "Feedback" | "DAE");
 %   sys = net.get_sys("Algorithm", ...);          % linearize + get_ss の近道
 %   sys = net.get_sys("Output", ["V","I","y"], "Input", 入力名);   % 入出力の選択 (既定は不変)
@@ -99,37 +99,87 @@ assert(max(real(e)) < 1e-6, "不安定な固有値がある: " + max(real(e)))
 assert(sum(abs(e) < 1e-6) <= 1)
 
 
-%% Non unit bus
-% B007 を機器のない母線として扱う (旧 Task9)
-sys_all = net.get_sys("Algorithm","Kron");
-sys_nu  = net.get_sys("Algorithm","Kron", "NonUnit", 7);
-assert(isa(sys_nu, "ss"))
-assert(size(sys_nu.A,1) <= size(sys_all.A,1))
-assert(same_eigs(eig_finite(sys_nu), eig_finite(net.get_sys("Algorithm","Feedback","NonUnit",7)), 1e-6))
-
-
-%% Non unit bus with a load is absorbed into Y
-% NonUnit の母線の静的機器は落とさず Y に吸収する: Kron と等価で、入力も同じ
-% (B009 は負荷があり、落とすと最大実部が +1.09 になる。B007 は P=Q=0)
+%% Bus without an I-to-V form is eliminated automatically
+% B007 は P=Q=0 の負荷で I2V 形式がないので、Feedback はネットワークと一緒に消去する (旧 Task9)
 res = net.linearize();
+sys_k = res.get_ss("Kron");
+sys_f = res.get_ss("Feedback");
+assert(same_eigs(eig_finite(sys_k), eig_finite(sys_f), 1e-6))
+% 消去しても入力は残す
+sv_u = res.tab_variable.Label(res.tab_variable.Kind == "u" & res.tab_variable.Bus == "B007");
+assert(~isempty(sv_u) && all(ismember(sv_u, sys_f.InputName)))
+assert(isequal(sys_f.InputName, sys_k.InputName))
+
+
+%% Non unit bus with a current is absorbed into Y
+% 定電力負荷と定インピーダンス負荷を同じ大きさで並べると、電流があるのに I2V 形式がない
+% (D の特異値の 1 つが 0)。Feedback はこの電流を Y に吸収し、Kron と等価で入力も同じ
+net_a = PowerNetwork("NoI2V");
+net_a.add_bus("V", 1);
+net_a.add_bus();
+net_a.add_bus();
+net_a.add_branch("pi", [1,2], "R", 0.01, "X", 0.085);
+net_a.add_branch("pi", [2,3], "R", 0.01, "X", 0.085);
+net_a.add_branch("pi", [1,3], "R", 0.01, "X", 0.085);
+net_a.a_Bus{1}.add_component("gen-1axis");
+net_a.a_Bus{3}.add_component("gen-1axis");
+net_a.a_Bus{2}.add_component("load-power", "P", -0.5, "Q", 0);
+net_a.a_Bus{2}.add_component("load-impedance", "P", -0.5, "Q", 0);
+DebugScript.helper.quiet(@() net_a.initialize);
+D = net_a.a_Bus{2}.get_sys("port","V2I").D(1:2,1:2);
+assert(rcond(D) < 1e-12 && norm(D) > 0.1, "電流があり I2V 形式がない母線になっていない")
+res = net_a.linearize();
 s_k = res.get_ss("Kron");
+s_f = res.get_ss("Feedback");
+assert(max(real(eig_finite(s_f))) < 1e-6, "不安定")
+assert(same_eigs(eig_finite(s_k), eig_finite(s_f), 1e-6), "固有値")
+assert(isequal(s_f.InputName, s_k.InputName), "入力の名前と順")
+[lv, ix] = ismember(s_k.StateName, s_f.StateName);
+assert(all(lv), "状態の名前")
+w = 1i;
+G_k = (w*s_k.E - s_k.A) \ s_k.B;
+G_f = (w*s_f.E - s_f.A) \ s_f.B;
+assert(norm(G_k - G_f(ix,:), "fro") < 1e-9, "入力から状態までの周波数応答")
+
+
+%% Deprecated NonUnit option warns and ignores buses without states
+str_id = "GUILDA:Deprecated:LinearizeNonUnit";
+clear Deprecated
+lastwarn("");
+sys_nu = net.get_sys("Algorithm", "Feedback", "NonUnit", 7);
+[~, id] = lastwarn;
+assert(string(id) == str_id, id)
+assert(isequal(sys_nu, net.get_sys("Algorithm", "Feedback")))
+% 1 セッションに 1 回。名前の大文字小文字は問わない
+lastwarn("");
+sys_nu = net.get_sys("Algorithm", "Feedback", "nonunit", 7);
+[~, id] = lastwarn;
+assert(string(id) == "", id)
+assert(isequal(sys_nu, net.get_sys("Algorithm", "Feedback")))
+% 状態のない母線の指定は、負荷があっても Algorithm によらず結果を変えない (B009 は負荷あり)
 lv_static = tools.vcellfun(@(b) sum(cellfun(@(c) numel(c.sv_x), b.a_Component)) == 0, net.a_Bus);
-for nu = {7, [7 9], find(lv_static(:)')}
-    s_f = net.get_sys("Algorithm","Feedback","NonUnit",nu{1});
-    str = "NonUnit=" + num2str(nu{1});
-    assert(max(real(eig_finite(s_f))) < 1e-6, str + ": 不安定")
-    assert(same_eigs(eig_finite(s_k), eig_finite(s_f), 1e-6), str + ": 固有値")
-    assert(isequal(s_f.InputName, s_k.InputName), str + ": 入力の名前と順")
-    [lv, ix] = ismember(s_k.StateName, s_f.StateName);
-    assert(all(lv), str + ": 状態の名前")
-    w = 1i;
-    G_k = (w*s_k.E - s_k.A) \ s_k.B;
-    G_f = (w*s_f.E - s_f.A) \ s_f.B;
-    assert(norm(G_k - G_f(ix,:), "fro") < 1e-9, str + ": 入力から状態までの周波数応答")
+for nu = {[], [7 9], find(lv_static(:)')}
+    for alg = ["Kron", "Feedback", "DAE"]
+        sys_ref = net.get_sys("Algorithm", alg);
+        assert(isequal(net.get_sys("Algorithm", alg, "NonUnit", nu{1}), sys_ref), alg)
+    end
+end
+% 結果の options には、指定したときだけ残る
+assert(isequal(net.linearize("NonUnit", [7 9]).options.NonUnit, [7 9]))
+assert(~isfield(net.linearize().options, "NonUnit"))
+assert(~isfield(net.linearize("NonUnit", []).options, "NonUnit"))
+% 値の検証と、受け付ける名前の一覧
+assert(~isfield(odeLinearizer.OptionMap, "NonUnit"))
+assert(~contains(strjoin(string(properties(net.solver_LIN))), "NonUnit"))
+try
+    net.linearize("NonUnit", 1.5);
+    error("DebugScript:NoError", "整数でない NonUnit がエラーにならない")
+catch ME
+    assert(ME.identifier ~= "DebugScript:NoError", ME.message)
 end
 
 
-%% Non unit bus with states is rejected
+%% Deprecated NonUnit naming a bus with states is rejected
 % 状態を持つ機器のある母線は Y に吸収できない。Feedback だけがエラーで、NonUnit を使わない Kron, DAE は動く
 res = net.linearize("NonUnit", [7 2]);
 try
@@ -141,6 +191,49 @@ catch ME
 end
 assert(size(res.get_ss("Kron").A,1) == n_x)
 assert(size(res.get_ss("DAE").A,1) > n_x)
+% 指定は呼び出しの間だけで、残らない
+assert(isequal(net.get_sys("Algorithm","Feedback"), net.linearize().get_ss("Feedback")))
+
+
+%% Deprecated NonUnit naming a missing bus is rejected
+try
+    net.linearize("NonUnit", 99);
+    error("DebugScript:NoError", "存在しない NonUnit がエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:odeLinearizer:NonUnit", ME.identifier)
+end
+
+
+%% Deprecated solver_LIN.NonUnit warns and acts as the option
+net_d = new_net();
+DebugScript.helper.quiet(@() net_d.initialize);
+sys_ref = net_d.get_sys("Algorithm", "Feedback");
+clear Deprecated
+lastwarn("");
+net_d.solver_LIN.NonUnit = [7 9];
+[~, id] = lastwarn;
+assert(string(id) == "GUILDA:Deprecated:SolverLinNonUnit", id)
+assert(isequal(net_d.solver_LIN.NonUnit, [7 9]))
+assert(isequal(net_d.get_sys("Algorithm", "Feedback"), sys_ref))
+% 状態のある母線と存在しない母線は、オプションと同じエラー
+for c = {{2, "GUILDA:LinearizationResult:NonUnitDynamicBus"}, {99, "GUILDA:odeLinearizer:NonUnit"}}
+    net_d.solver_LIN.NonUnit = c{1}{1};
+    try
+        net_d.get_sys("Algorithm", "Feedback");
+        error("DebugScript:NoError", "エラーにならない")
+    catch ME
+        assert(ME.identifier == c{1}{2}, ME.identifier)
+    end
+end
+% 呼び出しの指定が優先し、値は解法に保存しない
+assert(isequal(net_d.get_sys("Algorithm", "Feedback", "NonUnit", 7), sys_ref))
+assert(isequal(net_d.solver_LIN.NonUnit, 99))
+% 空の値は警告しない (.mat の読み込みでも代入される)
+clear Deprecated
+lastwarn("");
+net_d.solver_LIN.NonUnit = [];
+[~, id] = lastwarn;
+assert(string(id) == "", id)
 
 
 %% Feedback keeps the inputs of zero-power loads
@@ -345,17 +438,6 @@ end
 assert(same_eigs(eA, eig_finite(netA.get_sys("Algorithm","Kron")), 1e-6))
 
 
-%% Non unit choice does not remain on the bus
-% NonUnit を指定した後に指定なしで呼ぶと、元の結果に戻る
-net = new_net();
-DebugScript.helper.quiet(@() net.initialize);
-sys1 = net.get_sys("Algorithm","Feedback");
-net.get_sys("Algorithm","Feedback","NonUnit",[7,9]);
-sys2 = net.get_sys("Algorithm","Feedback");
-assert(isequal(size(sys1.A), size(sys2.A)))
-assert(same_eigs(eig_finite(sys1), eig_finite(sys2), 1e-9))
-
-
 %% Inputs, states and outputs of get_sys on each layer
 % 制御器: 入力 [V; ucon]、状態 xcon、出力 ycon
 % 機器  : 入力 [V; umac; ucon]、状態 [xmac; xcon]、出力 [I; ymac; ycon]
@@ -473,8 +555,8 @@ assert(sum(tab.NumCalls(lv)) == 2, "制御器 2 個に %d 回", sum(tab.NumCalls
 %% Linearize matches v3 get_sys matrices for every algorithm
 % linearize + get_ss の行列と名前は v3 の odeLinearizer と同じ (helper.linearize_v3 に v3 のコードを保存)。
 % 違いは DAE の B の代数方程式の行の符号 (v3 は入力 u の符号が逆で、Kron と伝達関数が合わなかった) と、
-% Feedback が P=Q=0 の負荷の入力を残すこと (v3 は落とした)。電流のある NonUnit は v3 と別の結果になる
-% (Non unit bus with a load is absorbed into Y) ので、ここでは比べない。
+% Feedback が P=Q=0 の負荷の入力を残すこと (v3 は落とした)。nonunit は v3 に渡す指定で、v4 は自動判定で同じ行列になる。
+% 電流のある母線の指定は v3 と別の結果になる (v3 は機器を落とした) ので、ここでは比べない。
 nets = {};  nonunit = {};
 nets{end+1} = new_net();  nonunit{end+1} = [];
 nets{end+1} = new_net();  nonunit{end+1} = 7;
@@ -489,7 +571,7 @@ for key = ["gen-1axis","gen-droop","load-impedance"]
 end
 for k = 1:numel(nets)
     DebugScript.helper.quiet(@() nets{k}.initialize);
-    res = nets{k}.linearize("NonUnit", nonunit{k});
+    res = nets{k}.linearize();
     for alg = ["Kron","Feedback","DAE"]
         s_ful = res.get_ss(alg);
         s_new = s_ful;
@@ -510,7 +592,7 @@ for k = 1:numel(nets)
         assert(isequal(s_new.StateName, s_old.StateName) && isequal(s_new.InputName, s_old.InputName) && ...
                isequal(s_new.OutputName, s_old.OutputName), str + ": names")
         % net.get_sys は linearize + get_ss と同じ
-        assert(isequal(nets{k}.get_sys("Algorithm", alg, "NonUnit", nonunit{k}), s_ful), str + ": get_sys")
+        assert(isequal(nets{k}.get_sys("Algorithm", alg), s_ful), str + ": get_sys")
     end
 end
 
@@ -837,9 +919,9 @@ assert(isequal(res.rv_point(c_idxGC{1}), x(c_idxGC{1})))
 net = new_net();
 DebugScript.helper.quiet(@() net.initialize);
 s_before = net.solver_LIN.get_options();
-res = net.linearize("Algorithm", "Kron", "NonUnit", 7);
+res = net.linearize("Algorithm", "Kron");
 assert(isequal(net.solver_LIN.get_options(), s_before))
-assert(res.options.Algorithm == "Kron" && isequal(res.options.NonUnit, 7))
+assert(res.options.Algorithm == "Kron")
 assert(isequal(res.get_ss(), res.get_ss("Kron")))
 % 既定値の変更は残る
 n_x = size(res.rm_Axx,1);
@@ -853,19 +935,11 @@ try
 catch ME
     assert(ME.identifier == "GUILDA:resolve_options:UnknownName", ME.identifier)
 end
-% 存在しない母線番号
-try
-    net.linearize("NonUnit", 99);
-    error("DebugScript:NoError", "存在しない NonUnit がエラーにならない")
-catch ME
-    assert(ME.identifier == "GUILDA:odeLinearizer:NonUnit", ME.identifier)
-end
 
 
 %% Get sys returns sys, flag and output
 % v4: [sys, flag, output] = net.get_sys(...) (v3 の 2 番目の出力 lin は flag になった)。
-% v3 と同じ名前の引数 (NonUnit, Algorithm) はそのまま使える
-[sys, flag, output] = net.get_sys("Algorithm", "Kron", "NonUnit", []);
+[sys, flag, output] = net.get_sys("Algorithm", "Kron");
 assert(isa(sys, "ss") && islogical(flag) && flag)
 assert(isa(output.result, "LinearizationResult") && isequal(output.result.get_ss(), sys))
 assert(isstring(output.message))
@@ -1068,7 +1142,7 @@ close(ancestor(ax, "figure"))
 %% Plot draws the algorithm of the options
 % 既定は options.Algorithm。Plot=true でも同じで、Algorithm を渡せばそちらを描く
 for alg = ["Feedback", "Kron", "DAE"]
-    DebugScript.helper.quiet(@() net.linearize("Algorithm", alg, "NonUnit", [7 9], "Plot", true));
+    DebugScript.helper.quiet(@() net.linearize("Algorithm", alg, "Plot", true));
     ax = gca;
     assert(ax.Title.String == "Eigenvalues (" + alg + ")", ax.Title.String)
     close(ancestor(ax, "figure"))
@@ -1087,21 +1161,16 @@ catch ME
 end
 
 
-%% Ignored NonUnit is reported
-% NonUnit を使うのは Feedback だけ。Kron, DAE は結果を変えず、無視したことを INFO で示す
-for alg = ["Kron", "DAE"]
-    sys_ref = net.get_sys("Algorithm", alg);
-    str = evalc('sys_nu = net.get_sys("Algorithm", alg, "NonUnit", [7 9]);');
-    assert(contains(str, "INFO") && contains(str, "NonUnit") && contains(str, alg), alg + ": INFO がない")
-    assert(contains(str, num2str([7 9])), alg + ": 母線番号がない")
-    assert(isequal(sys_nu.A, sys_ref.A))
-    assert(~contains(evalc('net.get_sys("Algorithm", alg);'), "NonUnit"))
+%% No message about NonUnit without the option
+% IEEE68 には機器のない母線がある。指定していない NonUnit について何も表示しない
+net_68 = network.IEEE68bus();
+DebugScript.helper.quiet(@() net_68.initialize);
+assert(any(tools.vcellfun(@(b) isempty(b.a_Component), net_68.a_Bus)))
+for alg = ["Kron", "Feedback", "DAE"]
+    assert(~contains(evalc('net_68.get_sys("Algorithm", alg);'), "NonUnit"), alg)
 end
-assert(~contains(evalc('net.get_sys("Algorithm", "Feedback", "NonUnit", [7 9]);'), "NonUnit"))
-% 結果から取り出すときも同じ
-res = net.linearize("Algorithm", "Feedback", "NonUnit", [7 9]);
-assert(contains(evalc('res.get_ss("Kron");'), "NonUnit"))
-assert(~contains(evalc('res.get_ss();'), "NonUnit"))
+res = net_68.linearize();
+assert(~contains(evalc('res.get_ss("Kron");'), "NonUnit"))
 
 
 %% Configurations that cannot be linearized stop with a GUILDA error
