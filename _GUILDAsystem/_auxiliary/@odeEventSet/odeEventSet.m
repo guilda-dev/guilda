@@ -546,7 +546,9 @@ function [rv_x0, rm_Mass, TC] = getXM(OBJs, rv_x0, rm_Mass, TC)
         rx_idx = [OBJ.iv_odeX; OBJ.iv_odeU]; 
         nu_idx = numel(OBJ.iv_odeU); 
         
-        OBJ.l_isConnect = ~ismember(OBJ.str_tag, TC);  
+        if isa(OBJ, 'Component')
+            OBJ.l_isConnect = ~ismember(OBJ.str_tag, TC);
+        end
         rv_x0 = [rv_x0; OBJ.rv_Xequilibrium + OBJ.rv_Xoffset; OBJ.rv_Uequilibrium + OBJ.rv_Uoffset(0)]; %#ok
         
         rm_Mass(rx_idx, rx_idx) = blkdiag(OBJ.f_Mass([],[],[],[],[]), zeros(nu_idx, nu_idx));
