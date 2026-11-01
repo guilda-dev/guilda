@@ -1,7 +1,7 @@
 function add_entry(obj,names,defaults,valids)
     % Register parameter names, defaults, and validation classes.
     %
-    % Adds dynamic properties and attaches change listeners.
+    % Adds dynamic properties and attaches the class check and the change listeners.
     arguments
         obj % Target parameter container.
     end
@@ -19,8 +19,6 @@ function add_entry(obj,names,defaults,valids)
         dprop               = obj.addprop( name );
         dprop.SetObservable = true;
         obj.(name)          = default;
-        
-        addlistener(obj,name,'PreSet', @(~,event) obj.callbackPreSet(name,event));             % Befor Change: Save unchanged data to val_stash
-        addlistener(obj,name,'PostSet', @(~,event) obj.callbackPostSet(name,valid,event));     % After Change: Validate / Compare changed data vs. val_stash / log 
+        obj.attach_callbacks(name,valid);
     end
 end

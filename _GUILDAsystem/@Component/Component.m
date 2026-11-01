@@ -199,6 +199,9 @@ classdef Component < PowerSystemModel
             % Called by check_edit after a dynamics edit or a network Hz edit.
             obj.set_odefcn(obj.r_Hz);
         end
+
+        % Raise a constructor message of Component.xml for a subclass in another folder.
+        parameter_error(obj, str_key, varargin)
     end
             
 
@@ -214,8 +217,12 @@ classdef Component < PowerSystemModel
         [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 
         % get dx, I and y
-        DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec) 
+        DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)
 
+    end
+    methods (Hidden)
+        % get_sys of the component alone
+        sys = get_sys_alone(obj, x, V, I, u, opt)
     end
 
     methods(Hidden)
@@ -223,9 +230,14 @@ classdef Component < PowerSystemModel
         flag = validate(obj)
     end
 
+    methods(Access={?odeLinearizer})
+        [rv_dx, rv_I] = point_residual(obj, rv_point)
+    end
+
     methods(Access={?Bus})
         set_bus(obj,bus)
         set_equilibrium(obj,c_V,c_I,r_P,r_Q)
+        move_local_controllers(obj,comp_new)
     end
 
 

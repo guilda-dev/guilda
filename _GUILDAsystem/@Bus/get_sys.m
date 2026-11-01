@@ -1,4 +1,4 @@
-function sys = get_sys(obj, opt)
+function [sys, varargout] = get_sys(obj, opt)
 % Linearize the bus with its components (V to I, or I to V).
 %
 % Linear model of the bus: its components (with their local controllers) connected at
@@ -19,16 +19,17 @@ function sys = get_sys(obj, opt)
 % Stale f_* handles are rebuilt first. Without Point, a bus on a network stops with the
 % error GUILDA:PowerNetwork:EquilibriumStale when net.initialize() is needed.
 %
+% Outputs: `sys`, a descriptor state-space model with state, input and output names;
+% then (`varargout`) sys.StateName, sys.InputName and sys.OutputName, kept as in
+% Component.get_sys.
+%
 % See also Component.get_sys, Bus.get_variable_map, PowerNetwork.get_sys
     arguments
-        obj 
+        obj
         opt.port (1,1) {mustBeMember(opt.port, ["V2I", "I2V"])} = "V2I"   % Input and output ports.
         opt.full (1,1) logical = false     % Ignored; kept for old calls (the states are not outputs).
         opt.con  (1,1) logical = false     % Ignored; kept for old calls.
         opt.Point = []   % Point of the linearization: [] (the equilibrium), a vector in the order of bus.get_variable_map(), or {sim, t}.
-    end
-    arguments (Output)
-        sys   % Descriptor state-space model with state, input and output names.
     end
 
     l_equilibrium = isempty(opt.Point) && ~iscell(opt.Point);
@@ -117,5 +118,9 @@ function sys = get_sys(obj, opt)
     sys.StateName  = cellstr(vertcat(strings(0,1), StateNames{:}));
     sys.InputName  = cellstr(InputNames);
     sys.OutputName = cellstr(OutputNames);
-    
+
+    varargout{1} = sys.StateName;
+    varargout{2} = sys.InputName;
+    varargout{3} = sys.OutputName;
+
 end

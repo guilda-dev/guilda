@@ -12,7 +12,9 @@ classdef LinearizationResult < AnalysisResult
 % all in the order of the variable map tab_variable (= net.get_variable_map() at the time
 % of the analysis). The algebraic equations are the current balance of each bus,
 % 0 = (Y v - I of the components), in the order of v. The values are deviations from the
-% point rv_point.
+% point rv_point. Away from an equilibrium the tangent of the nonlinear system also has the
+% constant rv_residual: its rows add to the right-hand sides above, and get_ss leaves it out.
+% Y is the admittance matrix of the model, also at a point inside a fault.
 % get_ss returns a reduced state-space model (Kron / Feedback / DAE); Plot draws the
 % eigenvalue map. The result holds computed values only; the network is not changed.
 %
@@ -59,16 +61,22 @@ classdef LinearizationResult < AnalysisResult
 
         % Mass matrix of the state equations (the algebraic equations have none).
         rm_E double = zeros(0,0)
+
+        % Residual of the nonlinear DAE at rv_point, in the order of the rows x and v of tab_variable.
+        % The right-hand sides of the state equations, then Y v - I of each bus. The inputs are
+        % the values of rv_point. Zero at an equilibrium.
+        rv_residual (:,1) double = zeros(0,1)
     end
     properties (SetAccess=private, Hidden) % Model data
         % Bus models (V2I, at the point), global controller models, admittance matrix,
         % non-unit buses and bus voltages at the point: used by get_ss("Feedback") and
-        % the coordinates of get_ss("DAE").
+        % the coordinates of get_ss("DAE"). The Output option of get_ss also uses the names of
+        % the bus currents (sv_I) and the outputs of the bus models (s_output).
         s_model struct = struct()
     end
 
     methods
-        function obj = LinearizationResult(net, solver, options, flag, output, elapsed, tab_variable, rv_point, s_block, s_model)
+        function obj = LinearizationResult(net, solver, options, flag, output, elapsed, tab_variable, rv_point, s_block, s_model, rv_residual)
         % Create a linearization result.
         %
         % Stores the computed values of a linearization.
@@ -83,6 +91,7 @@ classdef LinearizationResult < AnalysisResult
                 rv_point     double = zeros(0,1) % Point in the order of tab_variable.
                 s_block      struct = struct() % Fields Axx, Axv, Bx, Avx, Avv, Bv, E.
                 s_model      struct = struct() % Data for get_ss (bus and controller models, Y, non-unit buses, V).
+                rv_residual  double = zeros(0,1) % Residual at the point (rows x and v of tab_variable).
             end
             arguments (Output)
                 obj % The result object.
@@ -90,6 +99,7 @@ classdef LinearizationResult < AnalysisResult
             obj@AnalysisResult(net, solver, options, flag, output, elapsed);
             obj.tab_variable = tab_variable;
             obj.rv_point     = rv_point(:);
+            obj.rv_residual  = rv_residual(:);
             for str = ["Axx","Axv","Bx","Avx","Avv","Bv","E"]
                 if isfield(s_block, str)
                     obj.("rm_" + str) = s_block.(str);

@@ -1,7 +1,7 @@
 function sys = get_ss(obj, Algorithm, opt)
-% Get a reduced state-space model (Kron / Feedback / DAE).
+% Get a state-space model (Kron / Feedback / DAE).
 %
-% Returns the reduced linear model of the result, as a descriptor state-space model (dss:
+% Returns the linear model of the result, as a descriptor state-space model (dss:
 % E dx/dt = A x + B u, y = C x + D u). The matrices are the same as those of net.get_sys
 % in v3 for each algorithm, including the state order: "Kron" and "DAE" put the states of
 % the global controllers first, then the components; "Feedback" puts the components first,
@@ -10,16 +10,45 @@ function sys = get_ss(obj, Algorithm, opt)
 % they are absorbed into the admittance matrix, which changes the matrices and adds inputs.
 %
 % - "Kron": the bus voltages are eliminated from the DAE. States: all states.
-%   Inputs: the inputs u. Outputs: the states.
+%   Inputs: the inputs u. Outputs: the states, in their order, without output names.
 % - "Feedback": the bus models in I-to-V form are connected through the admittance
 %   matrix, then the global controllers are closed. Non-unit buses (options.NonUnit, and
 %   buses without states that have no I-to-V form) are eliminated with the network: their
 %   linearized current is absorbed into the admittance matrix and their inputs are kept,
 %   so the model is equivalent to "Kron". options.NonUnit naming a bus with states is an
-%   error (GUILDA:LinearizationResult:NonUnitDynamicBus).
-%   Inputs: the inputs u, in the same order as "Kron". Outputs: the states.
-% - "DAE": the bus voltages are kept as algebraic states (E is singular), in the
-%   coordinates given by Coordinate. Outputs: the dynamic states.
+%   error (GUILDA:LinearizationResult:NonUnitDynamicBus). A network without states has
+%   nothing to connect, which is also an error (GUILDA:LinearizationResult:NoUnitBus).
+%   Inputs: the inputs u, in the same order as "Kron". States: the connection (connect) can
+%   remove some, such as Vst of an AVR, so there can be fewer than in "Kron". Outputs: the
+%   states of the components and local controllers, including a row for each removed state
+%   and leaving out the states of the global controllers, so they differ from the states.
+% - "DAE": not reduced: the bus voltages are kept as algebraic states (E is singular), in
+%   the coordinates given by Coordinate. Outputs: the dynamic states.
+%
+% Input and Output select the channels of the model; without them the channels are the
+% ones above. The states and their order do not change. Output takes these kinds and
+% names, in any mix, and the outputs follow the given order (a repeated one is kept once):
+%
+% - "x": all states of the model, in the order of sys.StateName (for "DAE", the dynamic
+%   states). "Feedback" has no state that its connection removes;
+%   naming one stops with the error GUILDA:LinearizationResult:StateNotInModel, and
+%   "Kron" has them all. Its default outputs are not "x": they leave out the states of the
+%   global controllers and keep a row for a removed state.
+% - "V": the bus voltages Vre, Vim of each bus (also in "DAE", whatever the Coordinate).
+% - "I": the currents Ire, Iim that the components inject at each bus (Y v).
+% - "y": the outputs of the components and of their local controllers. An output with the
+%   name of a state of its owner is "Y_" + name, as in Bus.get_sys.
+% - a name: Label of net.get_variable_map() for x and V, or a name of the kinds "I" and "y"
+%   as in the OutputName of the kinds above.
+%
+% Input takes "u" (all inputs) or Labels of the inputs, and the inputs follow the given
+% order. An unknown name stops with GUILDA:LinearizationResult:UnknownChannel.
+%
+% Only "Feedback" uses options.NonUnit: "Kron" and "DAE" ignore it and say so with an INFO message.
+%
+% A result with flag false (output.str_issue) stops with an error that repeats output.message:
+% GUILDA:LinearizationResult:NotFinite for every algorithm, and GUILDA:LinearizationResult:SingularAvv
+% for "Kron" and "Feedback", which eliminate the bus voltages. "DAE" keeps them and still works.
 %
 % <@Examples>
 % ```matlab
@@ -27,16 +56,28 @@ function sys = get_ss(obj, Algorithm, opt)
 % sysK = res.get_ss("Kron");
 % sysD = res.get_ss("DAE");
 % eig(sysK.A, sysK.E)
+% sysV = res.get_ss("Kron", Output="V");   % bus voltages as outputs
 % ```
 %
 % See also PowerNetwork.get_sys, LinearizationResult.Plot
     arguments
         obj
-        Algorithm (1,1) string {mustBeMember(Algorithm, ["Kron","Feedback","DAE"])} = default_algorithm(obj) % Reduction.
-        opt.Coordinate (1,1) string {mustBeMember(opt.Coordinate, ["theta&V","theta&rho","Vre&Vim"])} = "theta&rho" % Bus variables of "DAE": angle and log magnitude (rho), angle and magnitude, or real and imaginary parts.
+        Algorithm (1,1) string {mustBeMember(Algorithm, ["Kron","Feedback","DAE"])} = default_algorithm(obj) % Form of the model.
+        opt.Coordinate (1,1) string {mustBeMember(opt.Coordinate, ["theta&V","theta&rho","Vre&Vim"])} = default_coordinate(obj) % Bus variables of "DAE": angle and log magnitude (rho), angle and magnitude, or real and imaginary parts. Default: options.Coordinate of the result.
+        opt.Input (1,:) string % Inputs of the model: "u" or Labels. Default: all inputs.
+        opt.Output (1,:) string % Outputs of the model: "x", "V", "I", "y" or names. Default: as described for each algorithm.
     end
     arguments (Output)
         sys % Descriptor state-space model with StateName, InputName and OutputName.
+    end
+    if obj.output.str_issue == "NotFinite"
+        error("GUILDA:LinearizationResult:NotFinite", "%s", obj.output.message)
+    elseif obj.output.str_issue == "SingularAvv" && Algorithm ~= "DAE"
+        error("GUILDA:LinearizationResult:SingularAvv", ...
+              "%s Algorithm ""%s"" eliminates the bus voltages; use ""DAE"" to keep them.", obj.output.message, Algorithm)
+    end
+    if Algorithm ~= "Feedback" && any(obj.s_model.lv_nonUnit)
+        disp("INFO: NonUnit = [" + num2str(find(obj.s_model.lv_nonUnit(:)')) + "] is ignored by Algorithm """ + Algorithm + """. Only ""Feedback"" uses it.")
     end
     switch Algorithm
         case "Kron"
@@ -46,6 +87,12 @@ function sys = get_ss(obj, Algorithm, opt)
         case "DAE"
             sys = via_dae(obj, opt.Coordinate);
     end
+    if isfield(opt, "Output")
+        sys = select_output(obj, sys, Algorithm, opt.Coordinate, opt.Output);
+    end
+    if isfield(opt, "Input")
+        sys = sys(:, input_index(sys, opt.Input));
+    end
 end
 
 
@@ -53,6 +100,13 @@ function str = default_algorithm(obj)
     str = "Feedback";
     if isfield(obj.options, "Algorithm")
         str = obj.options.Algorithm;
+    end
+end
+
+function str = default_coordinate(obj)
+    str = "theta&rho";
+    if isfield(obj.options, "Coordinate")
+        str = obj.options.Coordinate;
     end
 end
 
@@ -130,13 +184,32 @@ function sys = via_dae(obj, opt)
              -B_dae(ir_Vim,:);
               B_dae(ir_Vre,:)];
 
-    Vc_st = obj.s_model.cv_V;
+    [filt_o, filt_i, str_busvar] = coordinate_filter(obj.s_model.cv_V, opt);
+    A_dae = blkdiag(eye(n_x),filt_o)      ...
+            * A_dae                       ...
+            * blkdiag(eye(n_x),filt_i);
+    B_dae = blkdiag(eye(n_x),filt_o)      ...
+            * B_dae;
+
+    str_busvar = reshape(str_busvar+(1:n_b),2,[]);
+    str_busvar = reshape(str_busvar',1,[]);
+
+    sys = dss(A_dae, B_dae, C_dae, D_dae, E_dae);
+    sys.InputName  = input;
+    sys.StateName  = [output(:)',str_busvar];
+    sys.OutputName = output;
+end
+
+
+function [filt_o, filt_i, str_busvar] = coordinate_filter(Vc_st, str_coordinate)
+% Change of the bus variables of "DAE": [Vre...; Vim...] = filt_i * (bus variables)
+    n_v = 2*numel(Vc_st);
 
     rm_Vr = diag(real(Vc_st));
     rm_Vi = diag(imag(Vc_st));
     rm_V  = diag(abs( Vc_st));
 
-    switch opt
+    switch str_coordinate
         case "theta&V"
             filt_o = [-    rm_Vi,       rm_Vr ;
                        rm_V\rm_Vr, rm_V\rm_Vi];
@@ -154,19 +227,94 @@ function sys = via_dae(obj, opt)
             filt_i = eye(n_v);
             str_busvar = ["Vre";"Vim"];
     end
-    A_dae = blkdiag(eye(n_x),filt_o)      ...
-            * A_dae                       ...
-            * blkdiag(eye(n_x),filt_i);
-    B_dae = blkdiag(eye(n_x),filt_o)      ...
-            * B_dae;
+end
 
-    str_busvar = reshape(str_busvar+(1:n_b),2,[]);
-    str_busvar = reshape(str_busvar',1,[]);
 
-    sys = dss(A_dae, B_dae, C_dae, D_dae, E_dae);
-    sys.InputName  = input;
-    sys.StateName  = [output(:)',str_busvar];
-    sys.OutputName = output;
+function sys = select_output(obj, sys, Algorithm, str_coordinate, sv_select)
+% Replaces the outputs of the model by the selected ones: y = Cx x + Cv v + Du u of the
+% unreduced DAE, written with the states and inputs of the model
+    tab  = obj.tab_variable;
+    sv_x = tab.Label(tab.Kind == "x");
+    sv_v = tab.Label(tab.Kind == "Vre" | tab.Kind == "Vim");
+    sv_u = tab.Label(tab.Kind == "u");
+    n_x  = numel(sv_x);
+    n_v  = numel(sv_v);
+    n_u  = numel(sv_u);
+    s_y  = obj.s_model.s_output;
+    sv_model = string(sys.StateName);
+    sv_model = sv_model(ismember(sv_model, sv_x));
+
+    % Every output, in the order of the kinds x, V, I, y
+    c_kind = {["x";"V";"I";"y"], {sv_model; sv_v; obj.s_model.sv_I; s_y.sv_name}};
+    sv_all = [sv_x; sv_v; obj.s_model.sv_I; s_y.sv_name];
+    Cx = [eye(n_x); zeros(2*n_v, n_x); s_y.Cx];
+    Cv = [zeros(n_x, n_v); eye(n_v); tools.complex2matrix(obj.s_model.cm_Y); s_y.Cv];
+    Du = [zeros(n_x+2*n_v, n_u); s_y.Du];
+
+    sv_name = strings(0,1);
+    for str = sv_select(:)'
+        lv_kind = c_kind{1} == str;
+        if any(lv_kind)
+            sv_name = [sv_name; c_kind{2}{lv_kind}]; %#ok<AGROW>
+        else
+            sv_name = [sv_name; str]; %#ok<AGROW>
+        end
+    end
+    sv_name = unique(sv_name, "stable");
+
+    [lv_known, iv_all] = ismember(sv_name, sv_all);
+    if ~all(lv_known)
+        error("GUILDA:LinearizationResult:UnknownChannel", ...
+              "Output ""%s"" is not ""x"", ""V"", ""I"", ""y"" or a name of those outputs of this network.", sv_name(find(~lv_known,1)))
+    end
+    lv_missing = ismember(sv_name, sv_x) & ~ismember(sv_name, sv_model);
+    if any(lv_missing)
+        error("GUILDA:LinearizationResult:StateNotInModel", ...
+              "State ""%s"" is removed by Algorithm ""%s"", so it cannot be an output. Use ""Kron"" or ""DAE"".", sv_name(find(lv_missing,1)), Algorithm)
+    end
+    Cx = Cx(iv_all,:);
+    Cv = Cv(iv_all,:);
+    Du = Du(iv_all,:);
+
+    if Algorithm == "DAE"
+        [~, filt_i] = coordinate_filter(obj.s_model.cv_V, str_coordinate);
+        p = legacy_order(obj);
+        C = [Cx(:,p), Cv(:,[1:2:n_v, 2:2:n_v]) * filt_i];
+        D = Du;
+    else
+        % The voltages are eliminated; "Feedback" has the same states, except those it removes
+        [~, iv_x] = ismember(sv_model, sv_x);
+        C = Cx(:,iv_x) - Cv * (obj.rm_Avv \ obj.rm_Avx(:,iv_x));
+        D = Du - Cv * (obj.rm_Avv \ obj.rm_Bv);
+    end
+    [~, iv_u] = ismember(string(sys.InputName), sv_u);
+
+    sv_state = sys.StateName;
+    c_input  = sys.InputName;
+    sys = dss(sys.A, sys.B, C, D(:,iv_u), sys.E);
+    sys.StateName  = sv_state;
+    sys.InputName  = c_input;
+    sys.OutputName = sv_name;
+end
+
+
+function iv = input_index(sys, sv_select)
+% Positions of the selected inputs in the model
+    sv_u    = string(sys.InputName);
+    sv_name = strings(0,1);
+    for str = sv_select(:)'
+        if str == "u"
+            sv_name = [sv_name; sv_u]; %#ok<AGROW>
+        else
+            sv_name = [sv_name; str]; %#ok<AGROW>
+        end
+    end
+    sv_name = unique(sv_name, "stable");
+    [lv_known, iv] = ismember(sv_name, sv_u);
+    if ~all(lv_known)
+        error("GUILDA:LinearizationResult:UnknownChannel", ...
+              "Input ""%s"" is not ""u"" or a Label of an input of this network.", sv_name(find(~lv_known,1)))
+    end
 end
 
 
@@ -179,6 +327,17 @@ function sys = via_feedback(obj)
         error("GUILDA:LinearizationResult:NonUnitDynamicBus", ...
               "NonUnit = [%s] names buses with states, which cannot be eliminated with the network: bus %s.", ...
               num2str(obj.options.NonUnit), num2str(find(lv_dynamic(:)')))
+    end
+    if all(tools.vcellfun(@(S) isempty(S.A), s.c_sysBus))
+        error("GUILDA:LinearizationResult:NoUnitBus", ...
+              "Algorithm ""Feedback"" needs a bus with states, but no bus of the network has any. Use ""Kron"" or ""DAE"" for a network without states.")
+    end
+
+    lv_noI2V = tools.vcellfun(@(S) ~isempty(S.A) && ~is_invertible(S.D(:,1:2)), s.c_sysBus);
+    if any(lv_noI2V)
+        error("GUILDA:LinearizationResult:NoI2V", ...
+              "Algorithm ""Feedback"" needs the current of each bus with states to depend on its voltage, but it does not at bus %s. Use ""Kron"" or ""DAE"".", ...
+              num2str(find(lv_noI2V(:)')))
     end
 
     % A bus without states whose current does not depend on V in an invertible way (e.g. a load
@@ -238,7 +397,11 @@ function sys = via_feedback(obj)
 end
 
 function tf = has_I2V(sys)
-    tf = ~isempty(sys.A) || rcond(sys.D(:,1:2)) > 1e-12;
+    tf = ~isempty(sys.A) || is_invertible(sys.D(:,1:2));
+end
+
+function tf = is_invertible(D)
+    tf = rcond(D) > 1e-12;
 end
 
 function sys = i2v_full(sysV2I)

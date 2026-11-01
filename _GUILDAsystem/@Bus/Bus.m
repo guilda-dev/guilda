@@ -110,7 +110,7 @@ classdef Bus < PowerSystemModel
         [prob, x0, const, Vvar] = build_opf_problem(obj, prob, x0, const, Vvar, option)
 
         %get_sys
-        sys = get_sys(obj, opt)
+        [sys, varargout] = get_sys(obj, opt)
     end
 
 %% Get Methods

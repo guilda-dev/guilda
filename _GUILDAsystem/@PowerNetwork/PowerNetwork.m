@@ -128,8 +128,8 @@ classdef PowerNetwork < PowerSystemModel
 %% Methods
     methods
         % Layer Structure
-        bus    = add_bus(  obj,  str_Bus,    opt)
-        branch = add_branch(obj, str_Branch, from_to, opt)
+        bus = add_bus(   obj, opt)
+        bra = add_branch(obj, Type, from_to, opt)
         add_global_controller(obj, a_Gcon)
         remove_bus( obj, str_BusTag, opt)
         remove_branch( obj, tag)
@@ -266,8 +266,8 @@ end
 
 
 function l_complete = restore_parameter_listeners(layer)
-% Attach the listeners of Parameter.add_entry again on a layer and all layers below it.
-% The class a parameter must keep is taken from its value, which add_entry has validated.
+% Attach the class check and the listeners of Parameter.add_entry again on a layer and all
+% layers below it. The class a parameter must keep is taken from its value.
 % l_complete is false when a layer is still being loaded (the MAT file holds a variable
 % below the network, which loads the network from inside that layer): its parameters are
 % not available yet.
@@ -281,9 +281,7 @@ function l_complete = restore_parameter_listeners(layer)
             continue
         end
         for name = setdiff(string(properties(para)), string(properties("Parameter"))).'
-            valid = class(para.(name));
-            addlistener(para, name, 'PreSet',  @(~,event) para.callbackPreSet(name,event));
-            addlistener(para, name, 'PostSet', @(~,event) para.callbackPostSet(name,valid,event));
+            para.attach_callbacks(name, class(para.(name)));
         end
     end
     if isa(layer, "PowerNetwork")

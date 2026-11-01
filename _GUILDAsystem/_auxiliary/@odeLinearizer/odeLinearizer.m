@@ -33,9 +33,15 @@ classdef odeLinearizer < auxiliary
         % the variable map of the analysed layer (net / bus / comp .get_variable_map()); or {sim,
         % t}: the state of the simulation result sim at time t (sim.get_point(t), including the
         % states of the controllers; at a phase boundary the value after the event, or {sim, t,
-        % "before"} for the value before it). The model is not changed.
+        % "before"} for the value before it). It sets the variables only: the admittance matrix
+        % stays the one of the model, also at a time inside a fault. The model is not changed.
         % <@Type> [] | double vector | cell {simulation result, t} or {simulation result, t, Side}
         Point = []
+
+        % Bus variables of get_ss("DAE") and net.get_sys with Algorithm "DAE".
+        % "theta&rho" (angle and log magnitude), "theta&V" (angle and magnitude) or "Vre&Vim"
+        % (real and imaginary parts). "Kron" and "Feedback" do not use it.
+        Coordinate (1,1) string {mustBeMember(Coordinate, ["theta&V","theta&rho","Vre&Vim"])} = "theta&rho"
     end
 
     properties (Constant) % Settings
@@ -45,7 +51,8 @@ classdef odeLinearizer < auxiliary
         OptionMap = struct( ...
             "Algorithm", "Algorithm", ...
             "NonUnit",   "NonUnit", ...
-            "Point",     "Point")
+            "Point",     "Point", ...
+            "Coordinate", "Coordinate")
     end
 
     methods
@@ -72,15 +79,16 @@ classdef odeLinearizer < auxiliary
         % an invalid value stops with the validation error of the option.
             arguments
                 obj % Solver holding the defaults (net.solver_LIN).
-                nv (1,:) cell = {} % Name-Value overrides: Algorithm, NonUnit, Point.
+                nv (1,:) cell = {} % Name-Value overrides: Algorithm, NonUnit, Point, Coordinate.
             end
             arguments (Output)
-                s_options % Fields Algorithm, NonUnit, Point.
+                s_options % Fields Algorithm, NonUnit, Point, Coordinate.
             end
             s_options = tools.resolve_options(obj, odeLinearizer.OptionMap, nv);
             validate_options(nv{:});
             s_options.Algorithm = string(s_options.Algorithm);
             s_options.NonUnit   = reshape(double(s_options.NonUnit), 1, []);
+            s_options.Coordinate = string(s_options.Coordinate);
             odeLinearizer.check_point(s_options.Point);
         end
 
@@ -100,5 +108,6 @@ function validate_options(opt)
         opt.Algorithm (1,1) string {mustBeMember(opt.Algorithm, ["Kron","Feedback","DAE"])}
         opt.NonUnit   (1,:) double {mustBeInteger, mustBePositive}
         opt.Point
+        opt.Coordinate (1,1) string {mustBeMember(opt.Coordinate, ["theta&V","theta&rho","Vre&Vim"])}
     end
 end

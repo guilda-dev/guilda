@@ -384,6 +384,37 @@ net.get_sys();
 assert(isequal(lqr.K, K60))
 
 
+%% Network Hz edit redesigns the LQR gain through the layers
+% 機器・母線の get_sys でも net.get_sys と同じように K を作り直し、モデルは新しい Hz で作った系統と一致する
+build_lqr = @() DebugScript.helper.build_3bus("gen-1axis");
+[ref, gen_ref] = build_lqr();
+lqr_ref = controller.local_LQR("lqr1");
+gen_ref.add_local_controller(lqr_ref);
+ref.tab_parameter.base.Hz = 50;
+DebugScript.helper.quiet(@() ref.initialize);
+for str_layer = ["component", "bus", "network"]
+    [net, gen] = build_lqr();
+    lqr = controller.local_LQR("lqr1");
+    gen.add_local_controller(lqr);
+    DebugScript.helper.quiet(@() net.initialize);
+    net.tab_parameter.base.Hz = 50;
+    switch str_layer
+        case "component", gen.get_sys();
+        case "bus",       gen.a_Bus.get_sys();
+        case "network",   net.get_sys();
+    end
+    assert(norm(lqr.K - lqr_ref.K) < 1e-6 * norm(lqr_ref.K), str_layer + ": K")
+    assert(~lqr.l_staleOdefcn && ~net.l_staleEquilibrium, str_layer)
+    s = gen.get_sys();  s_ref = gen_ref.get_sys();
+    assert(norm(s.A - s_ref.A, 1) < 1e-6 * norm(s_ref.A, 1) && norm(s.B - s_ref.B, 1) < 1e-6 * norm(s_ref.B, 1), str_layer + ": 機器のモデル")
+    assert(isequal(s.StateName, s_ref.StateName) && isequal(s.InputName, s_ref.InputName), str_layer + ": 名前")
+    for alg = ["Kron", "Feedback", "DAE"]
+        s = net.get_sys("Algorithm", alg);  s_ref = ref.get_sys("Algorithm", alg);
+        assert(isequal(size(s.A), size(s_ref.A)) && norm(s.A - s_ref.A, 1) < 1e-6 * norm(s_ref.A, 1), str_layer + " " + alg)
+    end
+end
+
+
 %% Components and controllers use the network Hz when attached
 % 系統の外で作った制御器は GUILDA.config の Hz、系統に付けると系統の Hz になる
 net = PowerNetwork();

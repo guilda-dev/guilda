@@ -86,7 +86,8 @@ classdef GlobalController < PowerSystemModel
         function obj = GlobalController(net, tag, varargin)
             % Create a global controller of the network net that controls the given components.
             %
-            % `varargin` lists the controlled components, as Component objects or tags.
+            % `varargin` lists the controlled components of net, as Component objects or
+            % tags. Anything else stops with GUILDA:GlobalController:InvalidComponent.
             obj.str_tag = tag;
             obj.para_dynamics = Parameter(obj,"dynamics");
 
@@ -95,13 +96,21 @@ classdef GlobalController < PowerSystemModel
 
             idx = 1;
             while idx <= nargin-2
-                if isa(varargin{idx}, 'component.generator.abstract')
-                    varargin{idx} = varargin{idx}.str_tag;                    
+                arg = varargin{idx};
+                if isa(arg, 'Component')
+                    varargin{idx} = arg.str_tag;
                 end
 
                 lv_comp = strcmp(varargin{idx}, string(cls_comp));
-                if all(~lv_comp)
-                    error(msg('GUILDA:GlobalController:InvalidComponent'))
+                % A component of another network can have the same tag as one of net
+                if all(~lv_comp) || (isa(arg, 'Component') && cls_comp{lv_comp} ~= arg)
+                    if isa(arg, 'Component') || isstring(arg) || ischar(arg)
+                        str_arg = char(strjoin(string(varargin{idx})));
+                    else
+                        str_arg = class(arg);
+                    end
+                    error('GUILDA:GlobalController:InvalidComponent', '%s', ...
+                          msg('GUILDA:GlobalController:InvalidComponent', str_arg, char(tag), char(net.str_tag)))
                 end
 
                 obj.controlledUnits = [obj.controlledUnits; cls_comp(lv_comp)];
@@ -117,10 +126,14 @@ classdef GlobalController < PowerSystemModel
             %
             % The inputs are the outputs of the controlled units and the outputs are the
             % controller outputs that feed them; the V and I ports are not used. The output
-            % sys is a descriptor state-space model (dss) with state, input and output names.
+            % sys is a descriptor state-space model (dss) with state, input and output names;
+            % `varargout` gives sys.StateName, sys.InputName and sys.OutputName as on the
+            % other layers.
             %
             % Stale f_* handles are rebuilt first. A controller on a network stops with the
             % error GUILDA:PowerNetwork:EquilibriumStale when net.initialize() is needed.
+            % A controlled unit without the states sv_u or the inputs sv_y stops with the
+            % error GUILDA:GlobalController:GlobalControllerPort.
             %
             % See also GlobalController.get_hessian, PowerNetwork.get_sys
             arguments
@@ -129,7 +142,17 @@ classdef GlobalController < PowerSystemModel
                 V        (:,1) double  = zeros(2,1)   % Not a port: zeros(2,1).
                 I        (:,1) double  = zeros(2,1)   % Not a port: zeros(2,1).
                 u        (:,1) double  = obj.rv_Uequilibrium   % Inputs (default: the equilibrium).
-                opt.full (1,1) logical = true   % Unused; kept for compatibility.
+                opt.full (1,1) logical = false  % Ignored; kept for old calls.
+            end
+
+            a_Comp = obj.controlledUnits;
+            for k = 1:numel(a_Comp)
+                s = a_Comp{k};
+                if ~all(ismember(obj.sv_u, s.sv_x)) || ~all(ismember(obj.sv_y, s.sv_u))
+                    error("GUILDA:GlobalController:GlobalControllerPort", ...
+                          "The global controller '%s' needs the states [%s] and the inputs [%s] of its units, but '%s' (%s) has the states [%s] and the inputs [%s].", ...
+                          obj.str_tag, join(obj.sv_u, " "), join(obj.sv_y, " "), s.str_tag, class(s), join(s.sv_x, " "), join(s.sv_u, " "))
+                end
             end
 
             obj.check_edit();
@@ -157,14 +180,17 @@ classdef GlobalController < PowerSystemModel
 
             sys = dss(A,B,C,D,E);
 
-            a_Comp = obj.controlledUnits;            
             xNames = obj.attach_tag(obj.sv_x);
-            uNames = cellfun(@(s) s.attach_tag(s.sv_y), a_Comp);
-            yNames = cellfun(@(s) s.attach_tag(s.sv_u(s.sv_u==obj.sv_y)), a_Comp);
+            uNames = cellfun(@(s) s.attach_tag(obj.sv_u), a_Comp);
+            yNames = cellfun(@(s) s.attach_tag(obj.sv_y), a_Comp);
 
             sys.StateName  = xNames;
             sys.InputName  = uNames;
             sys.OutputName = yNames;
+
+            varargout{1} = sys.StateName;
+            varargout{2} = sys.InputName;
+            varargout{3} = sys.OutputName;
         end
     end   
     methods (Access=protected)

@@ -3,7 +3,7 @@ function [result, flag, output] = linearize(obj, varargin)
 %
 % Linearizes the network and returns the unreduced linear DAE (the Jacobian blocks in
 % the order of net.get_variable_map()) as a LinearizationResult; result.get_ss(Algorithm)
-% gives a reduced state-space model. The settings are the stored defaults of
+% gives a state-space model. The settings are the stored defaults of
 % net.solver_LIN; Name-Value options override them for this call only (net.solver_LIN is
 % not changed). Neither is the network: a Point away from the equilibrium is used only
 % for this call, and NonUnit is not stored on the buses.
@@ -11,15 +11,23 @@ function [result, flag, output] = linearize(obj, varargin)
 % error of check_edit that asks for it.
 % Accepted options are the names in odeLinearizer.OptionMap plus Plot; any other name
 % stops with GUILDA:resolve_options:UnknownName.
+% A Point with NaN or Inf (such as a tripped unit in {sim, t}) stops with
+% GUILDA:odeLinearizer:PointNotFinite, and a model that is not finite at the point with
+% GUILDA:odeLinearizer:JacobianNotFinite. They do not return flag false.
 %
 % Name-Value options:
 %
-% - `Algorithm` — Default reduction of result.get_ss() (net.solver_LIN.Algorithm).
+% - `Algorithm` — Default form of result.get_ss() (net.solver_LIN.Algorithm).
 % - `NonUnit` — Indices of buses treated as non-unit buses by "Feedback" (net.solver_LIN.NonUnit).
 % - `Point` — Point of the linearization: [] for the equilibrium, the values in the order
 %   of net.get_variable_map(), or {sim, t} for the state of a simulation result at time t
 %   (sim.get_point(t); {sim, t, "before"} at a phase boundary takes the value before the
-%   event) (net.solver_LIN.Point).
+%   event) (net.solver_LIN.Point). It sets the variables only: the admittance matrix stays
+%   the one of the model, also inside a fault. A zero bus voltage is reported with an INFO
+%   message and output.sv_faultBus, a point that is not an equilibrium in output.message,
+%   and result.rv_residual holds the residual.
+% - `Coordinate` — Default bus variables of result.get_ss("DAE"): "theta&rho", "theta&V" or
+%   "Vre&Vim" (net.solver_LIN.Coordinate).
 % - `Plot` — Call result.Plot (eigenvalue map) after the linearization. Default: false.
 %
 % <@Examples>
@@ -35,8 +43,8 @@ function [result, flag, output] = linearize(obj, varargin)
 % See also PowerNetwork.get_sys, PowerNetwork.get_variable_map, LinearizationResult, odeLinearizer
     arguments (Output)
         result   % Jacobian blocks, variable map, point and settings.
-        flag     % True when all Jacobian entries are finite.
-        output   % output.message describes the outcome; l_equilibrium, n_x, n_v, n_u, rcond_Avv.
+        flag     % True when the result is usable: all Jacobian entries are finite and Avv is invertible.
+        output   % output.message describes the outcome; str_issue is its reason when flag is false; l_equilibrium, n_x, n_v, n_u, rcond_Avv, r_residual (largest absolute value of result.rv_residual), sv_faultBus (buses with zero voltage at the point).
     end
     [c_nv, opt] = take_call_options(varargin);
     s_options   = obj.solver_LIN.get_options(c_nv);

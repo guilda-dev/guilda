@@ -449,6 +449,15 @@ end
 - `@Component/get_sys.m` と `test_F7_linearization.m` は段階 2-4 で共有するので、並行にしないでください。
 - `ED1` は `_GUILDAtutorial` の更新ブランチ(保留中)の確認項目になります。
 
+### 6.1 文書の反映状況(SH6, TS3, Issue #87)
+
+2026-11-01、`docs/87-get-sys-docs` で反映しました。R2026a で実測した内容に合わせています。
+
+- **反映済み:** `class-design.html`(各層の出力、変数順の例外、ポート、Hz の表)、`api-design.html`、`get_sys` / `linearize` / `get_ss` / `Component.get_sys` の help、`v4-migration.md`。
+- **修正不要:** `class-design.html` の `rv_Xequilibrium` の例、大域制御器が状態を読む記述、作業データの一覧(いずれも統合時点で正しい)。
+- **未反映:** `initialize` の help の OPF の記述。IEEE9bus の OPF 初期化で残差は 0.39 のままで、コードの修正(Issue #56)と合わせて直します。
+- **v3 互換で残したもの:** DAE の `theta1` などの番号付きの名前、Kron の空の `OutputName`、`Feedback` の `Vst` の出力行。
+
 ## 7. 利用者に判断をお願いする事項
 
 | # | 質問 | 推奨 | 理由 |

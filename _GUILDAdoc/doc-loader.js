@@ -200,6 +200,26 @@
     return promise;
   }
 
+  // database/list_CallGraph.js is optional: resolves to null when it is missing,
+  // of an unknown version, or does not define the graph.
+  const SUPPORTED_CALLGRAPH_VERSION = 1;
+  let callGraphLoad = null;
+  function loadCallGraph() {
+    if (!callGraphLoad) {
+      callGraphLoad = new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = new URL('database/list_CallGraph.js', documentationRootUrl).href;
+        script.onload = () => {
+          const graph = root.GUILDA_DOC_CALLGRAPH;
+          resolve(graph && Array.isArray(graph.edges) && schemaVersion(graph) <= SUPPORTED_CALLGRAPH_VERSION ? graph : null);
+        };
+        script.onerror = () => resolve(null);
+        document.head.appendChild(script);
+      });
+    }
+    return callGraphLoad;
+  }
+
   root.GuildaDocLoader = Object.freeze({
     hasIndex,
     getIndex,
@@ -215,6 +235,7 @@
     navigate,
     findClass,
     resolveClassPath,
-    loadClass
+    loadClass,
+    loadCallGraph
   });
 })(window);

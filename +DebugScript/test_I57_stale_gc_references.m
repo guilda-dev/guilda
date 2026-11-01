@@ -1,7 +1,7 @@
 % I57 大域制御器が参照する機器の削除と差し替え
 %
-% 制御対象の remove_component / replace_component が拒否され、古い参照を持つ大域制御器で
-% simulate が古い添字を読まずにエラーになることを確認する。
+% 制御対象の remove_component / replace_component が拒否され、古い参照を持つ大域制御器が
+% add_global_controller でエラーになることを確認する。
 %
 % 実行: runtests("DebugScript.test_I57_stale_gc_references")  または  DebugScript.run_all("Features","I57")
 
@@ -35,35 +35,28 @@ bus3.remove_component(str_tag);
 assert(~ismember(str_tag, string(bus3.a_Component)))
 
 
-%% simulate rejects a controller that kept a removed component, also after an earlier run
+%% add_global_controller rejects a controller that kept a removed component, also after an earlier run
 [net, agc, bus, comp] = build_controlled_network();
 DebugScript.helper.quiet(@() net.initialize);
 [~, flag] = DebugScript.helper.quiet(@() net.simulate([0,0.1]));
 assert(flag == 1)
 net.remove_global_controller("agc");
 bus.remove_component("SG1B002");
-net.add_global_controller(agc);
-DebugScript.helper.quiet(@() net.initialize);
-assert(error_id(@() net.simulate([0,0.1])) == "GUILDA:odeSimulator:ForeignControlledUnit")
+assert(error_id(@() net.add_global_controller(agc)) == "GUILDA:PowerNetwork:GconOtherNetwork")
 
 
-%% simulate rejects a controller that kept a replaced component with the same tag
+%% add_global_controller rejects a controller that kept a replaced component with the same tag
 [net, agc, bus, comp] = build_controlled_network();
 net.remove_global_controller("agc");
 new = bus.replace_component("SG1B002", "gen-classical");
 assert(string(new) == "SG1B002")
-net.add_global_controller(agc);
-DebugScript.helper.quiet(@() net.initialize);
-assert(error_id(@() net.simulate([0,0.1])) == "GUILDA:odeSimulator:ForeignControlledUnit")
+assert(error_id(@() net.add_global_controller(agc)) == "GUILDA:PowerNetwork:GconOtherNetwork")
 
 
-%% simulate rejects a controller built for another network
+%% add_global_controller rejects a controller built for another network
 [net, agc, bus, comp] = build_controlled_network();
 other = DebugScript.helper.build_ieee14();
-DebugScript.helper.quiet(@() other.initialize);
-other.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001"));
-DebugScript.helper.quiet(@() other.initialize);
-assert(error_id(@() other.simulate([0,0.1])) == "GUILDA:odeSimulator:ForeignControlledUnit")
+assert(error_id(@() other.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001"))) == "GUILDA:PowerNetwork:GconOtherNetwork")
 
 
 %% A correct controller still simulates

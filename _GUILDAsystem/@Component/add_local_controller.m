@@ -74,11 +74,12 @@ function add_local_controller(obj, varargin)
 
             case "pss"
                 if isempty(obj.a_LocalController)
-                    error(msg('GUILDA:Component:NotExtAvr'))
+                    error('GUILDA:Component:NotExtAvr', '%s', msg('GUILDA:Component:NotExtAvr'))
                 end
                 avr = obj.a_LocalController{1};
                 if avr.key ~= "avr"
-                    error(msg('GUILDA:Component:NotExtAvr'))
+                    error('GUILDA:Component:PssParentKey', '%s', ...
+                          msg('GUILDA:Component:PssParentKey', char(new_con.str_tag), char(avr.str_tag), char(avr.key), char(obj.str_tag)))
                 end
                 if isempty(avr.a_LocalController)
                     obj.log_edit(obj.str_tag+" <<-Add--- "+new_con.str_tag, "Topology");
