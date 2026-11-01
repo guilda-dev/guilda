@@ -69,7 +69,7 @@ function sct_ctx = build_context(sct_scan, str_root)
     sct_ctx.implementers = containers.Map('KeyType', 'char', 'ValueType', 'any');
     sct_ctx.props    = containers.Map('KeyType', 'char', 'ValueType', 'any');
     sct_ctx.outputs  = containers.Map('KeyType', 'char', 'ValueType', 'any');
-    sct_ctx.packages = package_names(sct_scan);
+    sct_ctx.packages = package_names(sct_scan, str_root);
     sct_ctx.system   = {sct_classes(bln_system).Name};
 
     cell_guilda = {sct_classes(bln_system | bln_object).Name};
@@ -108,9 +108,10 @@ function sct_ctx = build_context(sct_scan, str_root)
     end
 end
 
-function cell_names = package_names(sct_scan)
+function cell_names = package_names(sct_scan, str_root)
     cell_names = {'containers', 'matlab', 'java', 'py'};
-    cell_tokens = regexp({sct_scan.Files.Path}, '[/\\]\+(\w+)', 'tokens');
+    cell_rel = extractAfter({sct_scan.Files.Path}, [str_root, filesep]);
+    cell_tokens = regexp(cell_rel, '(?:^|[/\\])\+(\w+)', 'tokens');
     for i_file = 1:numel(cell_tokens)
         for i_token = 1:numel(cell_tokens{i_file})
             cell_names{end+1} = cell_tokens{i_file}{i_token}{1}; %#ok<AGROW>
