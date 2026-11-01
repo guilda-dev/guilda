@@ -2,8 +2,8 @@ function set_equilibrium(obj, c_V, c_I, r_P, r_Q, opt)
 % Set the bus voltage and distribute P and Q of the equilibrium to the components.
 %
 % Called by PowerNetwork.initialize. The slack bus gives the remaining P to its first
-% component; Q goes to the components whose Q is NaN, split by `QdistributionRule`, or
-% on a slack bus without such components, to its first component.
+% component whose Q is NaN; Q goes to the components whose Q is NaN, split by
+% `QdistributionRule`. A slack bus without such components gives both to its first component.
 % With `rm_PQ` the components take the given powers instead, and r_P and r_Q are not used.
     arguments
         obj 
@@ -49,12 +49,13 @@ function tab_PQcomp = distribute_power(obj, r_P, r_Q, str_rule)
     end
 
     % distrubute active power(P)
-    if obj.l_isSlack
-        if n_Comp == 1
-            tab_PQcomp{1,"P"} = r_P;
-        else
-            tab_PQcomp{1,"P"} = r_P - sum(tab_PQcomp{2:end,"P"});
+    if obj.l_isSlack && n_Comp > 0
+        i_rest = find(isnan(tab_PQcomp.Q), 1);
+        if isempty(i_rest)
+            i_rest = 1;
         end
+        lv_other = (1:n_Comp)' ~= i_rest;
+        tab_PQcomp{i_rest,"P"} = r_P - sum(tab_PQcomp{lv_other,"P"});
     end
 
     % distribute reactive power(Q)
