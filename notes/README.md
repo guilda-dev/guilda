@@ -21,6 +21,9 @@ decided or fixed, and how to migrate scripts and models.
 - [simulate-review-runtime.md](simulate-review-runtime.md) — survey of the arguments, events, phases and internals of `simulate`.
 - [simulate-review-measurements.md](simulate-review-measurements.md) — measurements of the behavior and performance of `simulate`.
 - [simulate-improvements.md](simulate-improvements.md) — improvement proposals for `simulate`, with prototypes, roadmap and open decisions.
+- [model-building-workflow.md](model-building-workflow.md) — survey of how systems are assembled from existing classes: routes, edits, tags, validation and failures.
+- [model-building-extension.md](model-building-extension.md) — survey of how new Component, controller, Branch and network classes are implemented.
+- [model-building-improvements.md](model-building-improvements.md) — improvement proposals for model building, with prototypes, roadmap and open decisions.
 
 Where other kinds of content go:
 
