@@ -10,6 +10,7 @@ function sys = get_sys(obj, opt)
 % - states: the states of the components and their controllers
 % - outputs: the other port, then the outputs of each component and of its controllers
 %
+% Port "I2V" stops with the error GUILDA:Bus:NoI2V when D of the "V2I" model is singular.
 % The states are not outputs, so that every name is unique (see Component.get_sys).
 % Point gives the point of the linearization in the same form as net.linearize: [] for
 % the equilibrium, a vector in the order of bus.get_variable_map(), or {sim, t}.
@@ -83,6 +84,12 @@ function sys = get_sys(obj, opt)
             OutputNames = [Iport; vertcat(strings(0,1), OutputNames{:})];
 
         case "I2V"
+            % A bus without components or with P = Q = 0 loads has no I-to-V form
+            if ~(rcond(Dv_sum) > 1e-12)
+                error("GUILDA:Bus:NoI2V", ...
+                      "Bus %s has no I2V form: D of its V2I model (dI/dV of its components) is singular. Use the port ""V2I"".", obj.str_tag)
+            end
+
             % V = inv_Dv (I - Cx x - Du u)
             inv_Dv = Dv_sum^-1;
             A = blkdiag(Ax{:}) - Bv_all * inv_Dv * Cx_all;                       
