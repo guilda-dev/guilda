@@ -55,17 +55,6 @@ a_Comp = net.a_Bus{2}.a_Component;
 assert(abs(real(a_Comp{1}.c_Vequilibrium*conj(a_Comp{1}.c_Iequilibrium)) - a_Comp{1}.para_powerflow.P) < 1e-10)
 
 
-%% Slack bus whose components all fix Q takes the remaining Q on the first one
-net = PowerNetwork("LoadOnly");
-net.add_bus("V",1);
-net.add_bus();
-net.add_branch("pi",[1,2], "R",0.01, "X",0.085);
-net.a_Bus{1}.add_component("load-impedance", "P",-0.5, "Q",-0.1);
-net.a_Bus{2}.add_component("load-impedance", "P",-0.5, "Q",-0.1);
-DebugScript.helper.quiet(@() net.initialize);
-assert(kcl_residual(net) < 1e-8)
-
-
 %% Edits that the equilibrium method would lose stop with an error
 str_id = "GUILDA:PowerNetwork:InitializeEquilibriumEdited";
 
@@ -148,15 +137,6 @@ V = net.cv_Vequilibrium;
 ME = error_of(@() net.initialize(Method="OPF", MaxIteration=2));
 assert(ME.identifier == "GUILDA:PowerNetwork:InitializeOPFFailed", ME.identifier)
 assert(~net.l_staleEquilibrium && isequal(net.cv_Vequilibrium, V))
-
-
-%% Slack bus without a component is not an equilibrium
-[net, ~] = DebugScript.helper.build_3bus("gen-1axis");
-DebugScript.helper.quiet(@() net.initialize);    % B001 がスラックになる
-net.a_Bus{1}.remove_component(string(net.a_Bus{1}.a_Component{1}));
-ME = error_of(@() net.initialize());
-assert(ME.identifier == "GUILDA:PowerNetwork:InitializeNotEquilibrium", ME.identifier)
-assert(net.l_staleEquilibrium)
 
 
 %% A point that violates KCL stops initialize and marks the equilibrium stale

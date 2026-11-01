@@ -873,11 +873,12 @@ assert(isstring(output.message))
 
 %% Flag reports a singular Avv
 % P=Q=0 の負荷だけの 2 母線は Y が特異で、出荷モデルだけで rcond(Avv)=0 になる (Issue #76)
+% スラック母線の負荷は Q=NaN で残りの電力を引き受ける (Issue #89)
 net_s = PowerNetwork("Floating");
 net_s.add_bus("V", 1);
 net_s.add_bus();
 net_s.add_branch("pi", [1,2], "R", 0.01, "X", 0.085);
-net_s.a_Bus{1}.add_component("load-power", "P", 0, "Q", 0);
+net_s.a_Bus{1}.add_component("load-power", "P", 0, "Q", nan);
 net_s.a_Bus{2}.add_component("load-power", "P", 0, "Q", 0);
 DebugScript.helper.quiet(@() net_s.initialize);
 [res, flag, output] = net_s.linearize();
@@ -1119,7 +1120,7 @@ net_load = PowerNetwork("LoadOnly");
 net_load.add_bus("V", 1);
 net_load.add_bus();
 net_load.add_branch("pi", [1,2], "R", 0.01, "X", 0.085);
-net_load.a_Bus{1}.add_component("load-impedance", "P", -0.5, "Q", -0.1);
+net_load.a_Bus{1}.add_component("load-impedance", "P", -0.5, "Q", nan);
 net_load.a_Bus{2}.add_component("load-impedance", "P", -0.5, "Q", -0.1);
 DebugScript.helper.quiet(@() net_load.initialize);
 for c_arg = {{}, {"NonUnit", 1:2}}
