@@ -10,6 +10,9 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % - outputs: the other port (current for "V2I", voltage for "I2V"), the outputs of the
 %   component, then the outputs of its controllers
 %
+% Port "I2V" stops with the error GUILDA:Component:NoI2V when D of the "V2I" model is
+% singular.
+%
 % The states are not outputs, so that every name is unique: an output with the name
 % of a state of its owner is labelled "Y_" + name (e.g. Y_omega_SG1B001_B001).
 % An input of the component or of a controller that a controller also drives (e.g.
@@ -173,6 +176,10 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
                              Iport{opt.tag+1}]};
 
         case "I2V"
+            if ~(rcond(Div) > 1e-12)
+                error("GUILDA:Component:NoI2V", ...
+                      "Component %s has no I2V form: D of its V2I model (dI/dV) is singular. Use the port ""V2I"".", obj.str_tag)
+            end
             inv_Div = Div^-1;
 
             inv_Axx =  Axx - Bxv * inv_Div * Cix;                       

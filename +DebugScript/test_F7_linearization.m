@@ -84,6 +84,47 @@ assert(size(n9.get_sys("Algorithm","Kron").A, 1) == n_x9)
 assert(same_eigs(e_kron, eig_finite(n9.get_sys("Algorithm","DAE")), 1e-6))
 
 
+%% I2V port stops when D is singular
+% I2V は V2I の D の逆行列を使うので、D が特異なら NaN を返さずにエラーで止まる
+% 機器の無い母線 (build_9bus の B004)
+n9 = DebugScript.helper.build_9bus();
+DebugScript.helper.quiet(@() n9.initialize);
+try
+    n9.a_Bus{4}.get_sys("port","I2V");
+    error("DebugScript:NoError", "機器の無い母線の I2V がエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:Bus:NoI2V", ME.identifier)
+    assert(contains(ME.message, n9.a_Bus{4}.str_tag) && contains(ME.message, "V2I"))
+end
+% P=Q=0 の load-power (IEEE14 の B007): 母線と機器のどちらも止まる
+n14 = new_net();
+DebugScript.helper.quiet(@() n14.initialize);
+bus = n14.a_Bus{7};
+assert(numel(bus.a_Component) == 1 && norm(bus.get_sys().D(1:2,1:2)) == 0)
+try
+    bus.get_sys("port","I2V");
+    error("DebugScript:NoError", "P=Q=0 の負荷の母線の I2V がエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:Bus:NoI2V", ME.identifier)
+end
+try
+    bus.a_Component{1}.get_sys("port","I2V");
+    error("DebugScript:NoError", "P=Q=0 の負荷の I2V がエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:Component:NoI2V", ME.identifier)
+    assert(contains(ME.message, bus.a_Component{1}.str_tag))
+end
+% V2I は従来どおり使え、3 方式の線形化もこれらの母線を含む系統で動く (既存の内部呼び出しは I2V を通らない)
+assert(isa(n9.a_Bus{4}.get_sys(), "ss"))
+assert(same_eigs(eig_finite(n14.get_sys("Algorithm","Feedback")), eig_finite(n14.get_sys("Algorithm","Kron")), 1e-6))
+% D が正則なら I2V の D は V2I の D の逆行列
+for obj = {n14.a_Bus{1}, n14.a_Bus{1}.a_Component{1}}
+    D_V = obj{1}.get_sys().D(1:2,1:2);
+    D_I = obj{1}.get_sys("port","I2V").D(1:2,1:2);
+    assert(all(isfinite(D_I(:))) && norm(D_I*D_V - eye(2)) < 1e-10)
+end
+
+
 %% With local controllers
 % AVR/PSS を付けると制御器の状態が加わる (旧 Task15)
 net = new_net();
