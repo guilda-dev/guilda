@@ -158,7 +158,7 @@ classdef GlobalController < PowerSystemModel
             obj.check_edit();
             if ~isempty(obj.a_PowerNetwork)
                 net = obj.a_PowerNetwork;
-                if net.str_editFlag == "unset" || net.l_staleEquilibrium
+                if net.s_edit.str_flag == "unset" || net.s_edit.l_staleEquilibrium
                     net.check_edit("RequireEquilibrium", true);
                 end
             end
@@ -204,7 +204,7 @@ classdef GlobalController < PowerSystemModel
             
             obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
             obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
-            obj.l_staleOdefcn = false;
+            obj.s_edit.l_staleOdefcn = false;
         end
 
         function rebuild_odefcn(obj)

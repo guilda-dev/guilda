@@ -56,7 +56,7 @@ avrIn = controller.avr.AVR_ST1("avrNew");
 ME = caught(@() gen.add_local_controller(avrIn, DebugScript.helper.OutputStub("pss", "Vfield")));
 assert(ME.identifier == str_out && contains(ME.message, avrIn.str_tag))
 assert(gen.a_LocalController{1} == old && isempty(avrIn.a_Component))
-assert(~net.l_staleEquilibrium && height(net.tab_editLog) == n_log)
+assert(~net.s_edit.l_staleEquilibrium && height(net.tab_editLog) == n_log)
 
 
 %% A PSS without an AVR keeps its own error
@@ -118,13 +118,13 @@ DebugScript.helper.quiet(@() net.initialize);
 assert(numel(gen.rv_Xequilibrium_all) == n0 + numel(avr.sv_x) + numel(pss.sv_x))
 
 gen.remove_local_controller(pss.str_tag);
-assert(net.l_staleEquilibrium && net.tab_editLog.tag(end) == "Topology")
+assert(net.s_edit.l_staleEquilibrium && net.tab_editLog.tag(end) == "Topology")
 assert(gen.a_LocalController{1} == avr && isempty(avr.a_LocalController) && isempty(pss.a_Component))
 DebugScript.helper.quiet(@() net.initialize);
 assert(numel(gen.rv_Xequilibrium_all) == n0 + numel(avr.sv_x))
 
 gen.remove_local_controller(avr.str_tag);
-assert(net.l_staleEquilibrium && net.tab_editLog.tag(end) == "Topology")
+assert(net.s_edit.l_staleEquilibrium && net.tab_editLog.tag(end) == "Topology")
 assert(isempty(gen.a_LocalController) && isempty(avr.a_Component))
 DebugScript.helper.quiet(@() net.initialize);
 assert(numel(gen.rv_Xequilibrium_all) == n0)
@@ -143,7 +143,7 @@ n_log = height(net.tab_editLog);
 ME = caught(@() gen.remove_local_controller(avr.str_tag));
 assert(ME.identifier == "GUILDA:Component:ControllerHasNested" && contains(ME.message, "pss1"))
 assert(gen.a_LocalController{1} == avr && avr.a_LocalController{1} == pss && pss.a_Component == avr)
-assert(~net.l_staleEquilibrium && height(net.tab_editLog) == n_log)
+assert(~net.s_edit.l_staleEquilibrium && height(net.tab_editLog) == n_log)
 
 gen.remove_local_controller(avr.str_tag, RemoveNested=true);
 assert(isempty(gen.a_LocalController) && isempty(avr.a_LocalController))
@@ -159,7 +159,7 @@ gen.add_local_controller(avr);
 DebugScript.helper.quiet(@() net.initialize);
 ME = caught(@() gen.remove_local_controller("none"));
 assert(ME.identifier == "GUILDA:Component:ControllerNotFound" && contains(ME.message, "none") && contains(ME.message, gen.str_tag))
-assert(gen.a_LocalController{1} == avr && ~net.l_staleEquilibrium)
+assert(gen.a_LocalController{1} == avr && ~net.s_edit.l_staleEquilibrium)
 
 
 %% remove_local_controller: removed controllers can be attached again, here or elsewhere

@@ -49,7 +49,7 @@ assert(new.a_LocalController{1} == avr)
 [net, bus, gen] = network_with_avr_pss();
 n_x = numel(gen.a_LocalController{1}.sv_x) + numel(gen.a_LocalController{1}.a_LocalController{1}.sv_x);
 new = bus.replace_component(gen.str_tag, "gen-1axis", Controllers="keep");
-assert(net.l_staleEquilibrium)
+assert(net.s_edit.l_staleEquilibrium)
 DebugScript.helper.quiet(@() net.initialize);
 assert(numel(new.rv_Xequilibrium_all) == numel(new.sv_x) + n_x)
 sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
@@ -117,7 +117,7 @@ function assert_unchanged(net, bus, gen, avr, pss, n_log)
     assert(bus.a_Component{1} == gen && gen.a_Bus == bus)
     assert(gen.a_LocalController{1} == avr && avr.a_Component == gen)
     assert(avr.a_LocalController{1} == pss && pss.a_Component == avr)
-    assert(~net.l_staleEquilibrium && height(net.tab_editLog) == n_log)
+    assert(~net.s_edit.l_staleEquilibrium && height(net.tab_editLog) == n_log)
 end
 
 function [new, id, str] = replace_warned(fcn)

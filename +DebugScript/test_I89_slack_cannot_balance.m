@@ -19,7 +19,7 @@ net = load_only_network();
 [str_id, ~] = set_slack(net.a_Bus{1});
 assert(str_id == "GUILDA:Bus:SlackWithoutQnan", str_id)
 DebugScript.helper.quiet(@() net.initialize);
-assert(~net.l_staleEquilibrium && kcl_residual(net) < 1e-8)
+assert(~net.s_edit.l_staleEquilibrium && kcl_residual(net) < 1e-8)
 
 
 %% A component with Q = NaN does not warn
@@ -69,7 +69,7 @@ evalc("net.a_Bus{1}.remove_component(string(net.a_Bus{1}.a_Component{1}));");
 [~, str_id] = lastwarn;
 assert(string(str_id) == "")
 DebugScript.helper.quiet(@() net.initialize);
-assert(~net.l_staleEquilibrium && kcl_residual(net) < 1e-8)
+assert(~net.s_edit.l_staleEquilibrium && kcl_residual(net) < 1e-8)
 load1 = net.a_Bus{1}.a_Component{1};
 assert(abs(real(load1.c_Vequilibrium*conj(load1.c_Iequilibrium)) - load1.para_powerflow.P) > 1e-3)
 
@@ -87,7 +87,7 @@ try
 catch ME
 end
 assert(~isempty(ME) && ME.identifier == "GUILDA:PowerNetwork:InitializeNotEquilibrium")
-assert(net.l_staleEquilibrium)
+assert(net.s_edit.l_staleEquilibrium)
 
 
 % ---- local functions ----

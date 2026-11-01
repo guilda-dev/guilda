@@ -24,7 +24,7 @@ DebugScript.helper.quiet(@() net.initialize);
 h_dx = comp.f_dx;
 net.a_Bus{2}.str_tag = "BX";
 
-assert(~comp.l_staleOdefcn && ~net.l_staleEquilibrium)
+assert(~comp.s_edit.l_staleOdefcn && ~net.s_edit.l_staleEquilibrium)
 sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
 assert(sol.odeResults.t(end) == 1)
 net.get_sys();
@@ -79,4 +79,4 @@ net.str_tag = "Renamed";
 net.a_Branch{1}.str_tag = "EL_X";
 comp.str_tag = "SG_X";
 assert(height(net.tab_editLog) == 3 && all(net.tab_editLog.tag == "Tag"))
-assert(~net.l_staleEquilibrium)
+assert(~net.s_edit.l_staleEquilibrium)

@@ -20,14 +20,14 @@ function log_edit(obj, log, tag, before, after, time, tab)
         if str_logtag == "Parameter(base)"
             obj.parent.mark_stale_odefcn();
         else
-            obj.parent.l_staleOdefcn = true;
+            obj.parent.s_edit.l_staleOdefcn = true;
         end
     end
 
     if isa(obj,"PowerNetwork")
-        if obj.str_editFlag ~= "unset"
-            obj.str_editFlag = "editted";
-            obj.l_staleEquilibrium = obj.l_staleEquilibrium || l_equilibrium;
+        if obj.s_edit.str_flag ~= "unset"
+            obj.s_edit.str_flag = "editted";
+            obj.s_edit.l_staleEquilibrium = obj.s_edit.l_staleEquilibrium || l_equilibrium;
             tab.Properties.VariableNames = {'timestamp','ID','log','tag','before','after'};
             obj.tab_editLog  = [obj.tab_editLog; tab];
         end
@@ -35,7 +35,7 @@ function log_edit(obj, log, tag, before, after, time, tab)
         % also before the first initialize.
         obj.handle_edit(tab);
     elseif isa(obj.parent,"LayerPackage")
-        obj.str_editFlag = "editted";
+        obj.s_edit.str_flag = "editted";
         obj.parent.log_edit("","",nan,nan,"",tab)
     else
         return

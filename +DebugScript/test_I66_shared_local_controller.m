@@ -61,7 +61,7 @@ gen1.add_local_controller(avr);
 DebugScript.helper.quiet(@() net.initialize);
 n_log = height(net.tab_editLog);
 assert(caught(@() gen2.add_local_controller(avr)).identifier == str_id)
-assert(~net.l_staleEquilibrium && height(net.tab_editLog) == n_log)
+assert(~net.s_edit.l_staleEquilibrium && height(net.tab_editLog) == n_log)
 
 
 %% A replaced AVR is detached and can be attached to another component
