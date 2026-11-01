@@ -2,9 +2,9 @@ classdef GlobalController < PowerSystemModel
 % Abstract class of a controller that acts on several components of a network, such as an AGC.
 %
 % A global controller is a dynamic model with states x, inputs u and outputs y. Its
-% inputs are outputs of the controlled components (`controlledUnits`) and its outputs
-% are inputs of those components. Subclasses in the `controller` package define the
-% static model functions (`fcn_dx`, `fcn_y`, `fcn_Mass`), their Jacobians and the
+% inputs are states of the controlled components (`controlledUnits`), read by the names
+% in `sv_u`, and its outputs are inputs of those components. Subclasses in the
+% `controller` package define the static model functions (`fcn_dx`, `fcn_y`, `fcn_Mass`), their Jacobians and the
 % variable names. A global controller is built for a network and added with
 % `PowerNetwork.add_global_controller`.
 %
@@ -24,7 +24,7 @@ classdef GlobalController < PowerSystemModel
     properties(Abstract, Constant, Hidden=true)
         key      (1,1) string   % Kind of controller.
         sv_x    (:,1) string    % Names of the states.
-        sv_u    (:,1) string    % Names of the inputs (outputs of the controlled units).
+        sv_u    (:,1) string    % Names of the inputs (states of the controlled units).
         sv_y    (:,1) string    % Names of the outputs (inputs of the controlled units).
         sv_para (:,1) string    % Names of the dynamic parameters passed to the model functions.
     end
@@ -32,8 +32,9 @@ classdef GlobalController < PowerSystemModel
         % Return the state derivatives of the controller.
         %
         % The arguments of all model functions are the time t [s], the states x, the
-        % ports V and I (zeros(2,1): a global controller has none), the inputs u, the
-        % dynamic parameters param and the nominal frequency omega0 [Hz].
+        % ports V and I (a global controller has none: [] in a simulation, zeros(2,1) in
+        % get_sys and get_hessian; do not use them), the inputs u, the dynamic parameters
+        % param and the nominal frequency omega0 [Hz].
         dx = fcn_dx(t, x, V, I, u, param, omega0)
 
         % Return the outputs of the controller.
