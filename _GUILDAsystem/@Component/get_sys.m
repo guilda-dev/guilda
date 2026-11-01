@@ -27,6 +27,9 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % fcn_I at the point and the inputs of the controllers are the outputs they are
 % connected to (as in the simulation). The model is not changed.
 %
+% Stale f_* handles are rebuilt first. Without Point, a component on a network stops
+% with the error GUILDA:PowerNetwork:EquilibriumStale when net.initialize() is needed.
+%
 % Outputs: `sys`, a descriptor state-space model with state, input and output names;
 % then (`varargout`) the state, input and output names as cell arrays of char.
 %
@@ -45,13 +48,25 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         opt.Point = []   % Point of the linearization; overrides x, V, I, u.
     end        
 
+    % The inner calls (rec=false) run inside this check or inside net.initialize
+    l_equilibrium = isempty(opt.Point) && ~iscell(opt.Point);
+    if opt.rec
+        obj.check_edit();
+        if l_equilibrium && ~isempty(obj.a_Bus) && ~isempty(obj.a_Bus.a_PowerNetwork)
+            net = obj.a_Bus.a_PowerNetwork;
+            if net.str_editFlag == "unset" || net.l_staleEquilibrium
+                net.check_edit("RequireEquilibrium", true);
+            end
+        end
+    end
+
     % All controllers in the tree (e.g. PSS attached under AVR) are separate blocks connected by signal names
     a_LC = all_controllers(obj);
-    if isempty(opt.Point) && ~iscell(opt.Point)
-        sysCON = tools.cellfun(@(d) d.get_sys("tag",false), a_LC);
+    if l_equilibrium
+        sysCON = tools.cellfun(@(d) d.get_sys("tag",false,"rec",false), a_LC);
     else
         [x, V, I, u, c_con] = point_values(obj, a_LC, odeLinearizer.point_vector(obj, opt.Point));
-        sysCON = tools.cellfun(@(d,p) d.get_sys(p{:},"tag",false), a_LC, c_con);
+        sysCON = tools.cellfun(@(d,p) d.get_sys(p{:},"tag",false,"rec",false), a_LC, c_con);
     end
     if opt.rec
         % The component with the outputs and the voltage its controllers read

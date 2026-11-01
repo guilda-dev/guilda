@@ -6,6 +6,9 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % is labelled "Y_" + name). The point is x, V, u (default: the equilibrium).
 % Component.get_sys connects it to the component. The model is not changed.
 %
+% Stale f_* handles are rebuilt first. A controller on a network stops with the error
+% GUILDA:PowerNetwork:EquilibriumStale when net.initialize() is needed.
+%
 % Outputs after `sys` (`varargout`): state names, input names and output names as cell
 % arrays of char.
 %
@@ -18,6 +21,21 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         u        (:,1) double  = obj.rv_Uequilibrium   % Inputs (default: the equilibrium).
         opt.full (1,1) logical = false     % Also output the states.
         opt.tag  (1,1) logical = true   % Name the states, inputs and outputs with the controller tag.
+        opt.rec  (1,1) logical = true   % Internal: false for the inner call of Component.get_sys.
+    end
+
+    if opt.rec
+        obj.check_edit();
+        owner = obj.a_Component;
+        while isa(owner, "LocalController")   % a controller may be attached under another one
+            owner = owner.a_Component;
+        end
+        if ~isempty(owner) && ~isempty(owner.a_Bus) && ~isempty(owner.a_Bus.a_PowerNetwork)
+            net = owner.a_Bus.a_PowerNetwork;
+            if net.str_editFlag == "unset" || net.l_staleEquilibrium
+                net.check_edit("RequireEquilibrium", true);
+            end
+        end
     end
 
     % I is not a port of a controller (c_Iequilibrium is the parent's, [] without a parent)

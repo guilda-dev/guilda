@@ -119,6 +119,9 @@ classdef GlobalController < PowerSystemModel
             % controller outputs that feed them; the V and I ports are not used. The output
             % sys is a descriptor state-space model (dss) with state, input and output names.
             %
+            % Stale f_* handles are rebuilt first. A controller on a network stops with the
+            % error GUILDA:PowerNetwork:EquilibriumStale when net.initialize() is needed.
+            %
             % See also GlobalController.get_hessian, PowerNetwork.get_sys
             arguments
                 obj                 
@@ -127,6 +130,14 @@ classdef GlobalController < PowerSystemModel
                 I        (:,1) double  = zeros(2,1)   % Not a port: zeros(2,1).
                 u        (:,1) double  = obj.rv_Uequilibrium   % Inputs (default: the equilibrium).
                 opt.full (1,1) logical = true   % Unused; kept for compatibility.
+            end
+
+            obj.check_edit();
+            if ~isempty(obj.a_PowerNetwork)
+                net = obj.a_PowerNetwork;
+                if net.str_editFlag == "unset" || net.l_staleEquilibrium
+                    net.check_edit("RequireEquilibrium", true);
+                end
             end
 
             % Same Jacobian contract as odeSimulator: f_JacobiDx/Y(t,x,V,I,u).

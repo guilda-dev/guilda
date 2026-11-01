@@ -39,6 +39,8 @@ function [result, flag, output] = calculate_continuation_powerflow(obj, varargin
         output   % Details: message, iterations, correctorIterations.
     end
 
+    obj.check_edit();    % rebuild f_* handles made stale by edits
+
     [c_nv, opt] = take_call_options(varargin);
     s_options   = obj.solver_CPF.get_options(c_nv);
 
