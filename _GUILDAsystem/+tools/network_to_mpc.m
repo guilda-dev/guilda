@@ -4,8 +4,8 @@ function mpc = network_to_mpc(net)
 % Converts a PowerNetwork into a MATPOWER case struct (mpc, version 2) for optimal
 % power flow, so that the same network can be solved by MATPOWER (runopf, rundcopf).
 % MATPOWER itself is not needed for the conversion.
-% Buses keep their order (bus i = net.a_Bus{i}); the slack bus (the first bus if none
-% is set) is the reference bus. Loads (component.load.abstract) become the fixed
+% Buses keep their order (bus i = net.a_Bus{i}); the bus of tools.slack_bus_index (the
+% first bus if no bus has a component) is the reference bus. Loads (component.load.abstract) become the fixed
 % demand of their bus, PD/QD = -(P,Q of tab_parameter.powerflow). Every other component
 % is a generator with the limits of tab_parameter.operation and the polynomial cost of
 % tab_parameter.OPF (c2 = HP/baseMVA^2, c1 = fP/baseMVA; Q costs as extra gencost rows
@@ -77,7 +77,7 @@ function mpc = network_to_mpc(net)
             rm_bus(i, 2) = 2;                                                   % PV
         end
     end
-    i_ref = find(cellfun(@(b) b.l_isSlack, a_Bus), 1);
+    i_ref = tools.slack_bus_index(net);
     if isempty(i_ref); i_ref = 1; end
     rm_bus(i_ref, 2) = 3;
     if isnan(a_Bus{i_ref}.para_powerflow.Varg)

@@ -109,6 +109,48 @@ assert(~isempty(ME) && ME.identifier == "GUILDA:PowerNetwork:InitializePowerflow
 assert(isempty(slack_index(net)))
 
 
+%% The power flow, OPF and network_to_mpc use the same bus when the first bus has no Q = NaN
+net = three_bus();
+net.a_Bus{1}.add_component("load-power", "P",-0.5, "Q",-0.1);
+net.a_Bus{2}.add_component("gen-1axis", "P",0.3, "Q",nan);
+net.a_Bus{3}.add_component("gen-1axis", "P",0.2, "Q",nan);
+assert(tools.slack_bus_index(net) == 2)
+
+% OPF と network_to_mpc は参照するだけで、スラックを設定しない
+mpc = tools.network_to_mpc(net);
+assert(find(mpc.bus(:,2) == 3) == 2)
+assert(isempty(slack_index(net)))
+for str_method = ["DC OPF", "AC OPF"]
+    res = net.optimize_powerflow(Method=str_method, Verbose=false);
+    assert(res.l_success && abs(res.tab_bus.Varg(2)) < 1e-9 && abs(res.tab_bus.Varg(1)) > 1e-3)
+    assert(isempty(slack_index(net)))
+end
+assert(quiet_powerflow(net) == "")
+assert(slack_index(net) == 2)
+
+
+%% The bus that is set stays the reference of OPF and network_to_mpc
+net = three_bus();
+net.a_Bus{1}.add_component("load-power", "P",-0.5, "Q",-0.1);
+net.a_Bus{2}.add_component("gen-1axis", "P",0.3, "Q",nan);
+net.a_Bus{3}.add_component("gen-1axis", "P",0.2, "Q",nan);
+evalc("net.a_Bus{3}.l_isSlack = true;");
+assert(tools.slack_bus_index(net) == 3)
+mpc = tools.network_to_mpc(net);
+assert(find(mpc.bus(:,2) == 3) == 3)
+res = net.optimize_powerflow(Method="DC OPF", Verbose=false);
+assert(abs(res.tab_bus.Varg(3)) < 1e-9 && abs(res.tab_bus.Varg(1)) > 1e-3)
+
+
+%% OPF and network_to_mpc keep the first bus when no bus has a component
+net = three_bus();
+assert(isempty(tools.slack_bus_index(net)))
+mpc = tools.network_to_mpc(net);
+assert(find(mpc.bus(:,2) == 3) == 1)
+res = net.optimize_powerflow(Method="DC OPF", Verbose=false);
+assert(res.l_success && isempty(slack_index(net)))
+
+
 % ---- local functions ----
 function net = three_bus()
     net = PowerNetwork("ThreeBus");

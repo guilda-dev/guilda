@@ -14,7 +14,8 @@ function varargout = optimize_powerflow(obj, varargin)
 % net.set_opffcn. The columns startup and shutdown of tab_parameter.OPF
 % are reserved: unit commitment is not part of the problem. "DC OPF" uses |V| = 1 and
 % the MATPOWER branch susceptance b = 1/(X*tap) (tap ratio and phase shift at the from
-% end). The angle of the slack bus (the first bus if none is set) is fixed. The solver
+% end). The angle of the bus of tools.slack_bus_index (the first bus if no bus has a
+% component) is fixed; l_isSlack is not set. The solver
 % starts from tab_parameter.powerflow V0 and Varg0 of the buses and P0, Q0 of the
 % components; branch current and power limits are applied as |I|^2 <= Imax^2 and
 % P^2 + Q^2 <= Smax^2 at both ends.
