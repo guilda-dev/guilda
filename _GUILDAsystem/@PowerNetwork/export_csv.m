@@ -8,7 +8,9 @@ function path = export_csv(obj, path, opt)
 %   <path>/component/<key>/main.csv     one row per component of type <key>
 %   <path>/component/<key>/dynamics.csv distinct parameter rows (column ParameterID)
 %   <path>/component/<key>/opf.csv      distinct OPF rows (column OpfID)
-% The bus column Slack is 1 for the slack bus. Equilibria and controllers are not saved;
+% The bus column Slack is 1 for the slack bus. The column FullTag of the bus, branch and
+% component tables holds the full tag; the bus column Tag holds its prefix (the tag
+% without its trailing digits). Equilibria and controllers are not saved;
 % the warning GUILDA:PowerNetwork:ControllersNotSaved lists the controllers left out.
 % When the folder name starts with "@" (e.g. "@MyNet"), a class file MyNet.m is also
 % written, so that the folder is a network class (net = MyNet()) when its parent folder
@@ -128,10 +130,11 @@ end
 function tab_pf = bus_table(net)
     n_bus = numel(net.a_Bus);
     Tag   = strings(n_bus,1);
+    FullTag = strings(n_bus,1);
     Slack = zeros(n_bus,1);
     for i = 1:n_bus
-        char_tag = char(string(net.a_Bus{i}.str_tag));
-        Tag(i)   = string(char_tag(1:end-3));
+        FullTag(i) = string(net.a_Bus{i}.str_tag);
+        Tag(i)   = regexprep(FullTag(i), '\d+$', '');
         Slack(i) = net.a_Bus{i}.l_isSlack;
     end
 
@@ -140,7 +143,7 @@ function tab_pf = bus_table(net)
                     b.para_dynamics.tab_parameter,...
                     b.para_graph.tab_parameter];
     tab_bus = tools.vcellfun(@(b) get_tab(b), net.a_Bus);
-    tab_pf  = [table(Tag), tab_bus, table(Slack)];
+    tab_pf  = [table(Tag, FullTag), tab_bus, table(Slack)];
 end
 
 function tab_para = branch_table(net, str_bus)
@@ -148,8 +151,10 @@ function tab_para = branch_table(net, str_bus)
     Type  = strings(n_bra,1);
     From  = nan(n_bra,1);
     To    = nan(n_bra,1);
+    FullTag = strings(n_bra,1);
     for i = 1:n_bra
         br = net.a_Branch{i};
+        FullTag(i) = string(br);
         Type(i) = br.key;
         From(i) = find(str_bus == string(br.a_Bus{1}));
         To(i)   = find(str_bus == string(br.a_Bus{2}));
@@ -159,13 +164,14 @@ function tab_para = branch_table(net, str_bus)
                     b.para_operation.tab_parameter,...
                     b.para_graph.tab_parameter];
     tab_bra  = tools.vcellfun(@(b) get_tab(b), net.a_Branch);
-    tab_para = [table(Type, From, To), tab_bra];
+    tab_para = [table(Type, From, To, FullTag), tab_bra];
 end
 
 function [tab_opt, tab_para, tab_opf] = component_table(a_Comp, str_Bus)
     n_comp = numel(a_Comp);
 
     Bus = nan(n_comp,1);
+    FullTag = strings(n_comp,1);
     OPFinit_P0 = nan(n_comp,1);
     OPFinit_Q0 = nan(n_comp,1);
     OPFcost_HP = nan(n_comp,1);
@@ -183,6 +189,7 @@ function [tab_opt, tab_para, tab_opf] = component_table(a_Comp, str_Bus)
 
         tab_OPF  = comp.para_OPF.tab_parameter;
         Bus(i) = find(str_Bus == string(comp.a_Bus));
+        FullTag(i) = string(comp);
         OPFinit_P0(i) = tab_OPF.P0;
         OPFinit_Q0(i) = tab_OPF.Q0;
         OPFcost_HP(i) = tab_OPF.HP;
@@ -204,7 +211,7 @@ function [tab_opt, tab_para, tab_opf] = component_table(a_Comp, str_Bus)
                     b.para_operation.tab_parameter,...
                     b.para_graph.tab_parameter];
     tab_comp  = tools.vcellfun(@(c) get_tab(c), a_Comp);
-    tab_opt   = [table(Bus), tab_comp, table(ParameterID,OpfID)];
+    tab_opt   = [table(Bus, FullTag), tab_comp, table(ParameterID,OpfID)];
 
     OpfID    = (1:size(tab_opf,1))';
     tab_opf  = [table(OpfID), tab_opf];
