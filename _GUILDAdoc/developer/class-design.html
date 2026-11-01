@@ -138,11 +138,12 @@
         <span class="dg-item-title">Same method name, same meaning on every layer</span>
         <p>A method with the same name means the same thing on every class and has the same shape of inputs and outputs. A higher layer aggregates the lower ones.</p>
         <ul>
-          <li><code>get_sys</code>: on <code>LocalController</code>, the linearized model of the controller alone; on <code>Component</code>, the model of the component and its controllers; on <code>Bus</code>, the aggregate of its components; on <code>PowerNetwork</code>, the whole system. On every layer the input, state, and output names are unique, and states are never outputs. An output with the name of a state of its owner is labelled <code>Y_</code> + name.
+          <li><code>get_sys</code>: on <code>LocalController</code>, the linearized model of the controller alone; on <code>Component</code>, the model of the component and its controllers; on <code>Bus</code>, the aggregate of its components; on <code>PowerNetwork</code>, the whole system. On <code>LocalController</code>, <code>Component</code>, and <code>Bus</code> the input, state, and output names are unique, and states are not outputs (<code>LocalController.get_sys</code> adds them only with <code>full=true</code>). An output with the name of a state of its owner is labelled <code>Y_</code> + name. <code>PowerNetwork.get_sys</code> keeps the shape of v3, described below.
             <ul>
               <li><code>LocalController</code>: inputs <code>V</code>, <code>u<sub>con</sub></code>; states <code>x<sub>con</sub></code>; outputs <code>y<sub>con</sub></code>.</li>
               <li><code>Component</code>: inputs the port (<code>V</code> for <code>"V2I"</code>, <code>I</code> for <code>"I2V"</code>), <code>u<sub>mac</sub></code>, <code>u<sub>con</sub></code>; states <code>x<sub>mac</sub></code>, <code>x<sub>con</sub></code>; outputs the other port, <code>y<sub>mac</sub></code>, <code>y<sub>con</sub></code>. The signals from the component to its controllers are connected inside.</li>
               <li><code>Bus</code>: the same, aggregated over its components, with the bus port.</li>
+              <li><code>PowerNetwork</code>: inputs <code>u</code>; no port, because the network closes the buses. By default the outputs follow the states, as in v3, and they depend on <code>Algorithm</code> (see <code>LinearizationResult.get_ss</code>); <code>Input</code> and <code>Output</code> select other channels.</li>
             </ul>
           </li>
           <li><code>get_admittance_matrix</code>: on <code>Branch</code>, its 2×2 matrix; on <code>PowerNetwork</code>, the matrix of the whole network.</li>
@@ -258,7 +259,7 @@
       <tbody>
         <tr><td>dynamics parameter</td><td><span class="dg-badge is-err">function-handle cache</span> <span class="dg-badge is-err">equilibrium</span><small>The function-handle cache applies to components and controllers only; a bus shunt or a branch constant changes the equilibrium.</small></td></tr>
         <tr><td>network <code>baseMVA</code></td><td><span class="dg-badge is-err">function-handle cache</span> <span class="dg-badge is-err">equilibrium</span><small>Every layer of the network. Stored per-unit values are not converted to the new base.</small></td></tr>
-        <tr><td>network <code>Hz</code></td><td><span class="dg-badge is-err">function-handle cache</span><small>Every layer of the network. The equilibrium does not depend on the nominal frequency, so no <code>initialize</code> is needed.</small></td></tr>
+        <tr><td>network <code>Hz</code></td><td><span class="dg-badge is-err">function-handle cache</span><small>Every layer of the network. The equilibrium does not depend on the nominal frequency, so no <code>initialize</code> is needed. <code>controller.local_LQR</code> redesigns its gain at the held equilibrium when its handles are rebuilt.</small></td></tr>
         <tr><td>powerflow parameter</td><td><span class="dg-badge is-err">equilibrium</span></td></tr>
         <tr><td>topology change (<code>add_*</code> / <code>remove_*</code> / <code>replace_*</code>)</td><td><span class="dg-badge is-err">equilibrium</span><small>Includes adding or replacing a controller, which changes the dynamics.</small></td></tr>
         <tr><td>slack bus change</td><td><span class="dg-badge is-err">equilibrium</span></td></tr>
@@ -275,7 +276,7 @@
 
     <!-- ============================== VARIABLES ============================== -->
     <h2 id="variables">Variable order</h2>
-    <p><code>net.get_variable_map()</code> is the single definition of the order of the model variables. Every analysis that lists variables uses it: the Jacobian blocks of a linearization, the <code>Point</code> option, and simulation results. Do not define another order.</p>
+    <p><code>net.get_variable_map()</code> is the single definition of the order of the model variables. Every analysis that lists variables uses it: the Jacobian blocks of a linearization, the <code>Point</code> option, and simulation results. Do not define another order. The one exception is the state order of <code>get_ss</code> and <code>get_sys</code>, kept from v3: <code>"Kron"</code> and <code>"DAE"</code> put the states of the global controllers first, and <code>"Feedback"</code> puts them last.</p>
     <table class="cd-table">
       <thead>
         <tr><th>Block</th><th>Order</th></tr>
@@ -286,7 +287,7 @@
         <tr><td>3. inputs <code>u</code></td><td>For each bus, for each component: its inputs.</td></tr>
       </tbody>
     </table>
-    <p>The <code>Label</code> column of the map equals the state and input names of <code>get_sys</code>, so find a variable by its label, not by its position. <code>net.linearize(Point=x)</code> linearizes at any state <code>x</code> given in this order, or at a time of a simulation result (<code>Point={sim, t}</code>).</p>
+    <p>The <code>Label</code> column of the map equals the state and input names of <code>get_sys</code>, so find a variable by its label, not by its position. The bus variables of <code>"DAE"</code> have their own numbered names (such as <code>theta1</code>), and <code>"Feedback"</code> can have fewer states because its connection removes some. <code>net.linearize(Point=x)</code> linearizes at any state <code>x</code> given in this order, or at a time of a simulation result (<code>Point={sim, t}</code>).</p>
 
     <!-- ============================== OPTIONAL ============================== -->
     <h2 id="optional">Optional analyses: Hessians</h2>
@@ -342,7 +343,7 @@
             Complex numbers: stored equilibria and power-flow results (<code>c_*</code>, <code>cv_*</code>), admittance matrices, and the inputs of <code>get_equilibrium(V, I, P, Q)</code>.<br>
             Real 2×1 vectors <code>[re; im]</code>: <code>V</code> and <code>I</code> passed to <code>fcn_*</code> and <code>Jacobi_*</code>, and the state vector of the simulator. Inside a model, convert with <code>[1, 1j]*V</code>.<br>
             <code>fcn_I</code> returns a complex scalar.
-            <small>The input/output ports of a linearized component are set by <code>GUILDA.config("Model","port_vw")</code> (default <code>[Vre,Vim] to [-Iim,Ire]</code>).</small>
+            <small>The ports of a linearized component or bus are <code>[Vre; Vim]</code> to <code>[Ire; Iim]</code> for <code>port="V2I"</code>, and the inverse for <code>port="I2V"</code>.</small>
           </td>
         </tr>
       </tbody>

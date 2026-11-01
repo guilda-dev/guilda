@@ -3,7 +3,7 @@ function [result, flag, output] = linearize(obj, varargin)
 %
 % Linearizes the network and returns the unreduced linear DAE (the Jacobian blocks in
 % the order of net.get_variable_map()) as a LinearizationResult; result.get_ss(Algorithm)
-% gives a reduced state-space model. The settings are the stored defaults of
+% gives a state-space model. The settings are the stored defaults of
 % net.solver_LIN; Name-Value options override them for this call only (net.solver_LIN is
 % not changed). Neither is the network: a Point away from the equilibrium is used only
 % for this call, and NonUnit is not stored on the buses.
@@ -11,10 +11,13 @@ function [result, flag, output] = linearize(obj, varargin)
 % error of check_edit that asks for it.
 % Accepted options are the names in odeLinearizer.OptionMap plus Plot; any other name
 % stops with GUILDA:resolve_options:UnknownName.
+% A Point with NaN or Inf (such as a tripped unit in {sim, t}) stops with
+% GUILDA:odeLinearizer:PointNotFinite, and a model that is not finite at the point with
+% GUILDA:odeLinearizer:JacobianNotFinite. They do not return flag false.
 %
 % Name-Value options:
 %
-% - `Algorithm` — Default reduction of result.get_ss() (net.solver_LIN.Algorithm).
+% - `Algorithm` — Default form of result.get_ss() (net.solver_LIN.Algorithm).
 % - `NonUnit` — Indices of buses treated as non-unit buses by "Feedback" (net.solver_LIN.NonUnit).
 % - `Point` — Point of the linearization: [] for the equilibrium, the values in the order
 %   of net.get_variable_map(), or {sim, t} for the state of a simulation result at time t

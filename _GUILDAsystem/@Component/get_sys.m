@@ -14,7 +14,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % singular.
 %
 % The states are not outputs, so that every name is unique: an output with the name
-% of a state of its owner is labelled "Y_" + name (e.g. Y_omega_SG1B001_B001).
+% of a state of its owner is labelled "Y_" + name (e.g. Y_omega_SG1B001_B001_PowerNetwork).
 % An input of the component or of a controller that a controller also drives (e.g.
 % Vfield under an AVR) adds to that signal. The signals from the component to its
 % controllers (its outputs, its states read by name or "Xall", and the voltage) are

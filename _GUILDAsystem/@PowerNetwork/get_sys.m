@@ -1,26 +1,28 @@
 function [sys, flag, output] = get_sys(obj, varargin)
-% Linearize the network and return the reduced state-space model.
+% Linearize the network and return a state-space model.
 %
 % Linear model of the network as a state-space model: a shortcut of
 % net.linearize(Name, Value) followed by result.get_ss(). It takes the same options as
 % net.linearize (Algorithm, NonUnit, Point, Coordinate, Plot) and the options Input and Output
-% of get_ss; Algorithm chooses the reduction
-% (default net.solver_LIN.Algorithm, "Feedback"). Use net.linearize to keep the
-% unreduced Jacobian blocks and the variable map.
+% of get_ss; Algorithm chooses the form of the model: "Kron" and "Feedback" eliminate the
+% bus voltages, "DAE" keeps them (default net.solver_LIN.Algorithm, "Feedback"). Use
+% net.linearize to keep the unreduced Jacobian blocks and the variable map.
 % v3 returned [sys, lin] with lin an odeLinearizer holding the network; the second
 % output is now flag.
-% When flag is false, "Kron" and "Feedback" stop with the error of LinearizationResult.get_ss;
-% net.linearize returns the result, whose output.str_issue and output.message give the reason.
+% When flag is false, this stops with the error of LinearizationResult.get_ss, except "DAE"
+% with a singular Avv, which returns the model and flag false; net.linearize returns the
+% result, whose output.str_issue and output.message give the reason. A Point or a model that
+% is not finite stops earlier, with the errors of net.linearize.
 %
 % Name-Value options:
 %
-% - `Algorithm` — Reduction (see LinearizationResult.get_ss). Default: net.solver_LIN.Algorithm.
+% - `Algorithm` — Form of the model (see LinearizationResult.get_ss). Default: net.solver_LIN.Algorithm.
 % - `NonUnit` — Indices of buses treated as non-unit buses by "Feedback". Default: net.solver_LIN.NonUnit.
 % - `Point` — Point of the linearization (see net.linearize). Default: net.solver_LIN.Point.
 % - `Coordinate` — Bus variables of "DAE" (see LinearizationResult.get_ss). Default: net.solver_LIN.Coordinate.
 % - `Plot` — Plot the eigenvalue map. Default: false.
 % - `Input` — Inputs of the model: "u" or Labels (see LinearizationResult.get_ss). Default: all inputs.
-% - `Output` — Outputs of the model: "x", "V", "I", "y" or names (see LinearizationResult.get_ss). Default: as in get_ss, so "Kron" has no output names.
+% - `Output` — Outputs of the model: "x", "V", "I", "y" or names (see LinearizationResult.get_ss). Default: as in get_ss, so the outputs follow the states and "Kron" has no output names.
 %
 % <@Examples>
 % ```matlab

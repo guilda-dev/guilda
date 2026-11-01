@@ -220,5 +220,11 @@ const updateLogData = [
     "date": "2026-10-30",
     "type": "changed",
     "content": "net.initialize now returns [result, flag, output] (was [flag, tab, output]; result.tab_bus is the old tab) and takes Method=\"powerflow\", \"OPF\" or \"equilibrium\". Other options go to the power flow or OPF. A power flow that does not converge or an infeasible OPF is an error, and the network is not changed. The option methods and its old values are deprecated (GUILDA:Deprecated:InitializeMethods, InitializeMethodValue)."
+  },
+  {
+    "title": "get_sys documentation",
+    "date": "2026-11-01",
+    "type": "changed",
+    "content": "The help of net.get_sys, net.linearize and get_ss and the developer pages now describe the actual model: DAE is not reduced, the default outputs differ by Algorithm (Feedback leaves out the global controller states and keeps rows for removed states), the v3 state order is an exception to the variable map, and non-finite points stop with an error instead of flag false. The ports of a linearized model are no longer described as set by GUILDA.config(\"Model\",\"port_vw\"), which has no effect."
   }
 ];

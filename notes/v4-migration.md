@@ -30,7 +30,7 @@ Reference designs: `_GUILDAdoc/developer/class-design.html` and
 >   output named like a state is labelled `Y_<name>`. `net.get_sys` and
 >   `net.linearize` are unchanged (1.12).
 > - **`get_sys`'s second output is no longer `lin`.** `[sys, flag, output]`:
->   `flag` is a logical (all Jacobian entries finite) and
+>   `flag` is a logical (all Jacobian entries finite and `Avv` invertible) and
 >   `output.result` is the `LinearizationResult`. `[sys, lin] = net.get_sys()`
 >   gives no error; using `lin` as an `odeLinearizer` fails later (1.12).
 > - **`optimize_powerflow` with 1–3 outputs has the v4 meaning.**
@@ -487,8 +487,16 @@ Option names:
 - **DAE `B` sign** (silent change): the rows of the algebraic equations
   have the opposite sign; the input-to-state transfer function of the DAE
   model now equals that of Kron.
-- `flag` is true when all Jacobian entries are finite; `output` has
-  `message`, `l_equilibrium`, `n_x`, `n_v`, `n_u`, `rcond_Avv`.
+- `flag` is true when all Jacobian entries are finite and `Avv` is
+  invertible; `output` has `message`, `str_issue`, `l_equilibrium`, `n_x`,
+  `n_v`, `n_u`, `rcond_Avv`, `r_residual`, `sv_faultBus`. A `Point` or a model
+  that is not finite stops with `GUILDA:odeLinearizer:PointNotFinite` or
+  `JacobianNotFinite`.
+- Default outputs of `get_ss` (as v3): `"Kron"` the states, without output
+  names; `"DAE"` the dynamic states; `"Feedback"` the states without those of
+  the global controllers, with rows for states its connection removes (IEEE68:
+  128 states and 144 outputs, 144 states in `"Kron"`). `Input` and `Output`
+  select other channels.
 - State order of `get_ss` (as v3): `"Kron"` and `"DAE"` put the global
   controllers' states first, then the components; `"Feedback"` puts the
   components first, then the global controllers in the order they were
@@ -512,7 +520,7 @@ Option names:
   `port` is `[Vre; Vim]` in and `[Ire; Iim]` out for `port="V2I"`, the
   inverse for `"I2V"`. Controllers are listed depth first. States are
   never outputs and every name is unique; an output named like a state of
-  its owner is `Y_<name>` (e.g. `Y_omega_SG1B001_B001`). A controller input
+  its owner is `Y_<name>` (e.g. `Y_omega_SG1B001_B001_PowerNetwork`). A controller input
   adds to the internal signal it drives (as `u_mac` does). `full` is
   ignored. The `I2V` outputs `y` now account for V being an output, and
   the outputs of a component with controllers keep their tags.
