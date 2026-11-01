@@ -16,7 +16,8 @@ function sys = get_ss(obj, Algorithm, opt)
 %   buses without states that have no I-to-V form) are eliminated with the network: their
 %   linearized current is absorbed into the admittance matrix and their inputs are kept,
 %   so the model is equivalent to "Kron". options.NonUnit naming a bus with states is an
-%   error (GUILDA:LinearizationResult:NonUnitDynamicBus).
+%   error (GUILDA:LinearizationResult:NonUnitDynamicBus). A network without states has
+%   nothing to connect, which is also an error (GUILDA:LinearizationResult:NoUnitBus).
 %   Inputs: the inputs u, in the same order as "Kron". Outputs: the states.
 % - "DAE": the bus voltages are kept as algebraic states (E is singular), in the
 %   coordinates given by Coordinate. Outputs: the dynamic states.
@@ -184,6 +185,10 @@ function sys = via_feedback(obj)
         error("GUILDA:LinearizationResult:NonUnitDynamicBus", ...
               "NonUnit = [%s] names buses with states, which cannot be eliminated with the network: bus %s.", ...
               num2str(obj.options.NonUnit), num2str(find(lv_dynamic(:)')))
+    end
+    if all(tools.vcellfun(@(S) isempty(S.A), s.c_sysBus))
+        error("GUILDA:LinearizationResult:NoUnitBus", ...
+              "Algorithm ""Feedback"" needs a bus with states, but no bus of the network has any. Use ""Kron"" or ""DAE"" for a network without states.")
     end
 
     % A bus without states whose current does not depend on V in an invertible way (e.g. a load
