@@ -11,6 +11,9 @@ classdef BadControllerStub < LocalController
 %   xsize      : 平衡点の x が 2 要素
 %   massx      : fcn_Mass が x を使う
 %   currentdep : fcn_dx が I に依存する
+%   residual   : fcn_dx が平衡点で 0 にならない
+%   output     : 出力が発電機の入力と合わない
+%   input      : 入力の平衡点が発電機の出力と合わない
     properties (SetAccess=protected, Hidden)
         key     = "local"
         sv_x    = "x1"
@@ -18,8 +21,11 @@ classdef BadControllerStub < LocalController
         sv_y    = "Vfield"
         sv_para = "bad"
     end
+    properties
+        l_xsizeLater (1,1) logical = false   % 次の get_equilibrium から xsize にする (initialize の後で validate を試す)
+    end
     properties (Constant, Hidden)
-        sv_bad = ["none","jacobian","jacsize","xsize","massx","currentdep"]
+        sv_bad = ["none","jacobian","jacsize","xsize","massx","currentdep","residual","output","input"]
     end
     methods
         function obj = BadControllerStub(str_bad)
@@ -29,10 +35,13 @@ classdef BadControllerStub < LocalController
         end
         function get_equilibrium(obj, ~, u)
             obj.rv_Xequilibrium = u(2);
-            if obj.sv_bad(obj.para_dynamics.bad) == "xsize"
+            if obj.sv_bad(obj.para_dynamics.bad) == "xsize" || obj.l_xsizeLater
                 obj.rv_Xequilibrium = [u(2); 0];
             end
             obj.rv_Uequilibrium = [0; 0];
+            if obj.sv_bad(obj.para_dynamics.bad) == "input"
+                obj.rv_Uequilibrium = [0.2; 0];
+            end
         end
     end
     methods (Static)
@@ -40,10 +49,15 @@ classdef BadControllerStub < LocalController
             dx = u(1);
             if DebugScript.helper.BadControllerStub.sv_bad(param) == "currentdep"
                 dx = dx + 1e-3*I(1);
+            elseif DebugScript.helper.BadControllerStub.sv_bad(param) == "residual"
+                dx = dx + 0.1;
             end
         end
-        function y = fcn_y(~, x, ~, ~, ~, ~, ~)
+        function y = fcn_y(~, x, ~, ~, ~, param, ~)
             y = x(1);
+            if DebugScript.helper.BadControllerStub.sv_bad(param) == "output"
+                y = y + 0.1;
+            end
         end
         function M = fcn_Mass(~, x, ~, ~, ~, param, ~)
             M = 1;

@@ -187,7 +187,7 @@ assert(flag.inputs{"delta","source"} == "state of " + comp.str_tag)
 
 
 %% Controller contract violations are detected
-c_case = ["jacsize","Jacobi_dx sizes"; "xsize","x, u sizes"; "massx","fcn_Mass constant and square"; "currentdep","no dependence on I"];
+c_case = ["jacsize","Jacobi_dx sizes"; "massx","fcn_Mass constant and square"; "currentdep","no dependence on I"];
 for k = 1:height(c_case)
     [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
     comp.add_local_controller(DebugScript.helper.BadControllerStub(c_case(k,1)));
@@ -195,6 +195,17 @@ for k = 1:height(c_case)
     flag = comp.a_LocalController{1}.validate(false);
     assert_only_fail(flag, c_case(k,2));
 end
+
+
+%% A wrong controller state size is detected (initialize stops on it, so it is set afterwards)
+[net, comp] = DebugScript.helper.build_3bus("gen-1axis");
+con = DebugScript.helper.BadControllerStub("none");
+comp.add_local_controller(con);
+DebugScript.helper.quiet(@() net.initialize);
+con.l_xsizeLater = true;
+con.get_equilibrium(comp.c_Vequilibrium, comp.rv_Uequilibrium);
+flag = con.validate(false);
+assert_only_fail(flag, "x, u sizes");
 
 
 %% Wrong controller Jacobian appears in the difference

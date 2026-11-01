@@ -35,6 +35,13 @@ function [result, flag, output] = initialize(obj, varargin)
 % balances, so a successful initialize only warns (GUILDA:PowerNetwork:NetworkIsland). A
 % failed power flow or OPF on such a network names the islands in its error.
 %
+% The models are evaluated at the point that was set, with every Method. A state or input
+% of the wrong size, a model function that returns the wrong size and a model function
+% that stops are errors naming the model, and the equilibrium is left out of date. A
+% residual of a component, local controller or global controller of 1e-6 or more only
+% warns (GUILDA:PowerNetwork:EquilibriumResidual), because such a model can still be run:
+% its states then move without a disturbance.
+%
 % <@Examples>
 % ```matlab
 % net = network.IEEE9bus();
@@ -128,8 +135,16 @@ function [result, flag, output] = initialize(obj, varargin)
               msg('GUILDA:PowerNetwork:InitializeNotEquilibrium', char(str_method), char(string(r_resid))))
     end
 
+    % the models must hold the point; sizes stop here, while the equilibrium is out of date
+    str_residual = large_model_residuals(obj);
+
     % reset log
     obj.reset_edit()
+
+    if str_residual ~= ""
+        warning('GUILDA:PowerNetwork:EquilibriumResidual', '%s', ...
+                msg('GUILDA:PowerNetwork:EquilibriumResidual', char(string(equilibrium_tolerance())), char(str_residual)))
+    end
 
     [n_island, str_island] = network_islands(obj);
     if n_island > 1
@@ -213,8 +228,157 @@ end
 
 
 function tol = equilibrium_tolerance()
-% Largest allowed max|Y*V-I| [pu] of an equilibrium
+% Largest allowed max|Y*V-I| [pu] of an equilibrium, and largest model residual that does not warn
     tol = 1e-6;
+end
+
+
+function str_list = large_model_residuals(obj)
+% The models above the tolerance and their residuals, as text ("" for none)
+    n_show = 10;   % models that the text lists
+    [sv_tag, rm_resid] = model_residuals(obj);
+    lv_large = ~(max(rm_resid, [], 2, "includenan") < equilibrium_tolerance());
+    str_list = "";
+    if any(lv_large)
+        rm_large = rm_resid(lv_large,:);
+        sv_line  = compose("'%s': |dx| = %.3g, |I - Iequilibrium| = %.3g, |u - source| = %.3g", ...
+                           sv_tag(lv_large), rm_large(:,1), rm_large(:,2), rm_large(:,3));
+        if numel(sv_line) > n_show
+            sv_line = [sv_line(1:n_show); "... (" + numel(sv_line) + " models)"];
+        end
+        str_list = join(sv_line, newline);
+    end
+end
+
+
+function [sv_tag, rm_resid] = model_residuals(obj)
+% Residual of each model at the point that was set: max|dx|, |I - Iequilibrium| and the
+% largest difference between an input and what drives it in a simulation
+    c_row = cell(0,1);
+    for i_bus = 1:numel(obj.a_Bus)
+        a_Comp = obj.a_Bus{i_bus}.a_Component;
+        for i_comp = 1:numel(a_Comp)
+            c_row = [c_row; component_residuals(a_Comp{i_comp})]; %#ok<AGROW>
+        end
+    end
+    for i_gc = 1:numel(obj.a_GlobalController)
+        c_row = [c_row; global_controller_residual(obj.a_GlobalController{i_gc})]; %#ok<AGROW>
+    end
+    sv_tag   = strings(numel(c_row),1);
+    rm_resid = zeros(numel(c_row),3);
+    for k = 1:numel(c_row)
+        sv_tag(k)     = c_row{k}{1};
+        rm_resid(k,:) = c_row{k}{2};
+    end
+end
+
+
+function c_row = component_residuals(comp)
+% Rows of the component and of its local controllers (depth first)
+    check_point_size(comp, numel(comp.sv_u));
+    x = comp.rv_Xequilibrium;
+    u = comp.rv_Uequilibrium;
+    c_I = comp.c_Iequilibrium;
+    V = [real(comp.c_Vequilibrium); imag(comp.c_Vequilibrium)];
+    I = [real(c_I); imag(c_I)];
+
+    dx  = model_value(comp, "fcn_dx", numel(comp.sv_x), @() comp.f_dx(0, x, V, I, u));
+    c_Ic = model_value(comp, "fcn_I", 1, @() comp.f_I(0, x, V, I, u));
+
+    c_row = cell(0,1);
+    rv_source = u;
+    if ~isempty(comp.a_LocalController)
+        y = model_value(comp, "fcn_Y", numel(comp.sv_y), @() comp.f_Y(0, x, V, I, u));
+        [rv_source, c_row] = nested_outputs(comp, rv_source, x, y, V, I);
+    end
+    c_row = [{{string(comp.str_tag), [largest(dx), abs(c_Ic - c_I), largest(u - rv_source)]}}; c_row];
+end
+
+
+function [rv_source, c_row] = nested_outputs(parent, rv_source, x_obs, y_obs, V, I)
+% Replaces the inputs of parent driven by its local controllers with their outputs, as in
+% get_dx_algebraic, and adds the rows of those controllers
+    c_row = cell(0,1);
+    for k = 1:numel(parent.a_LocalController)
+        con = parent.a_LocalController{k};
+        [y_con, c_con] = controller_residuals(con, x_obs, y_obs, V, I);
+        c_row = [c_row; c_con]; %#ok<AGROW>
+        [lv_u, iv_y] = ismember(reshape(string(parent.sv_u),[],1), reshape(string(con.sv_y),[],1));
+        rv_source(lv_u) = y_con(iv_y(lv_u));
+    end
+end
+
+
+function [y, c_row] = controller_residuals(con, x_obs, y_obs, V, I)
+% Rows of the local controller and of its nested controllers, and its outputs
+    check_point_size(con, numel(con.sv_u));
+    x = con.rv_Xequilibrium;
+    u = con.rv_Uequilibrium;
+
+    dx = model_value(con, "fcn_dx", numel(con.sv_x), @() con.f_dx(0, x, V, I, u));
+    y  = model_value(con, "fcn_y", numel(con.sv_y), @() con.f_Y(0, x, V, I, u));
+
+    rv_source = u;
+    lv_Y = con.iv_obsY > 0;
+    lv_X = con.iv_obsX > 0;
+    rv_source(lv_Y) = y_obs(con.iv_obsY(lv_Y));
+    rv_source(lv_X) = x_obs(con.iv_obsX(lv_X));
+    [rv_source, c_row] = nested_outputs(con, rv_source, x_obs, y_obs, V, I);
+    c_row = [{{string(con.str_tag), [largest(dx), 0, largest(u - rv_source)]}}; c_row];
+end
+
+
+function c_row = global_controller_residual(gc)
+% Row of the global controller. Its inputs are the states of its controlled units, and its
+% outputs add to their inputs, so an output other than zero moves them.
+    check_point_size(gc, numel(gc.controlledUnits)*numel(gc.sv_u));   % sv_u is read on each unit
+    x = gc.rv_Xequilibrium;
+    a_unit = gc.controlledUnits;
+    c_u = cell(numel(a_unit),1);
+    for k = 1:numel(a_unit)
+        c_u{k} = reshape(a_unit{k}.rv_Xequilibrium(ismember(a_unit{k}.sv_x, gc.sv_u)), [], 1);
+    end
+    u = vertcat(zeros(0,1), c_u{:});
+
+    dx = model_value(gc, "fcn_dx", numel(gc.sv_x), @() gc.f_dx(0, x, zeros(2,1), zeros(2,1), u));
+    y  = gc.f_Y(0, x, zeros(2,1), zeros(2,1), u);
+    c_row = {{string(gc.str_tag), [largest(dx), 0, largest(y)]}};
+end
+
+
+function check_point_size(model, n_uExpected)
+% A state or input of the wrong size fails later in simulate with a generic size error
+    n_x = numel(model.rv_Xequilibrium);
+    n_u = numel(model.rv_Uequilibrium);
+    if n_x ~= numel(model.sv_x) || n_u ~= n_uExpected
+        error('GUILDA:PowerNetwork:InitializeEquilibriumSize', '%s', ...
+              msg('GUILDA:PowerNetwork:InitializeEquilibriumSize', char(string(model.str_tag)), ...
+                  char(string(n_x)), char(string(numel(model.sv_x))), char(string(n_u)), char(string(n_uExpected))))
+    end
+end
+
+
+function val = model_value(model, str_fcn, n, f)
+% Value of a model function at the point, which must have n elements
+    str_tag = char(string(model.str_tag));
+    try
+        val = f();
+    catch ME
+        error('GUILDA:PowerNetwork:InitializeModelFailed', '%s', ...
+              msg('GUILDA:PowerNetwork:InitializeModelFailed', str_tag, char(str_fcn), ME.message))
+    end
+    if numel(val) ~= n
+        error('GUILDA:PowerNetwork:InitializeModelSize', '%s', ...
+              msg('GUILDA:PowerNetwork:InitializeModelSize', str_tag, char(str_fcn), ...
+                  char(join(string(size(val)), "x")), char(string(n))))
+    end
+    val = reshape(full(val), [], 1);
+end
+
+
+function r = largest(v)
+% Largest magnitude; 0 for no elements and NaN when an element is NaN
+    r = max([abs(v(:)); 0], [], "includenan");
 end
 
 

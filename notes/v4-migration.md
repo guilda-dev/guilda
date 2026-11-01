@@ -779,6 +779,21 @@ there.
   `InitializeOPFFailed`, and its message lists the islands instead of solver settings.
   `net.calculate_powerflow` called alone does not check this: it warns about nothing,
   and a failure only shows as `result.l_success = false`.
+- **The models are evaluated at the point that was set**, with every `Method`, for
+  components, local controllers and global controllers. Before, `initialize` passed
+  and the error appeared later in `simulate`.
+  - A state or input of the wrong size stops with
+    `GUILDA:PowerNetwork:InitializeEquilibriumSize`, a model function that returns the
+    wrong size (`fcn_I` must be one complex value, not `[re; im]`) with
+    `GUILDA:PowerNetwork:InitializeModelSize`, and a model function that stops with
+    `GUILDA:PowerNetwork:InitializeModelFailed`. Each names the tag, and the equilibrium
+    is left out of date.
+  - A residual of 1e-6 or more warns with `GUILDA:PowerNetwork:EquilibriumResidual`, and
+    the network stays usable: its states move without a disturbance. The warning lists
+    the tags with `|dx|`, `|I - Iequilibrium|` and `|u - source|` (the input against the
+    output or state that drives it; for a global controller, its output, which adds to
+    the inputs of its units). It can become an error once external models are checked.
+    The bundled networks stay below 2e-13.
 - **A slack bus should be able to take the remaining power.** Setting
   `bus.l_isSlack = true` warns with `GUILDA:Bus:SlackWithoutQnan` when the bus has
   components and none has `Q = NaN`. `net.initialize` still runs: the first
