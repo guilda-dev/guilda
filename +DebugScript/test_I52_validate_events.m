@@ -1,0 +1,96 @@
+% I52 イベントの検証 (odeEventSet)
+%
+% 打ち間違いが無外乱の flag=1 にならず、計算前に原因を示すエラーになることを確認する。
+%
+% 実行: runtests("DebugScript.test_I52_validate_events")  または  DebugScript.run_all("Features","I52")
+
+% 共通設定 (各テストの前に毎回実行される)
+net = DebugScript.helper.build_ieee14();
+DebugScript.helper.quiet(@() net.initialize);
+
+
+%% Unknown FaultBus
+expect_event_error(net, "UnknownFaultBus", "B999", "TimeSpan", [1,1.05], "FaultBus", "B999");
+% 正しいタグが混ざっていても、誤ったものだけを示す
+expect_event_error(net, "UnknownFaultBus", "B999", "TimeSpan", [1,1.05], "FaultBus", ["B008";"B999"]);
+
+
+%% Unknown TripUnit
+expect_event_error(net, "UnknownTripUnit", "NOPE", "TimeSpan", [1,2], "TripUnit", "NOPE");
+
+
+%% TripUnit does not accept a local controller
+net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"));
+DebugScript.helper.quiet(@() net.initialize);
+expect_event_error(net, "UnknownTripUnit", "avr1", "TimeSpan", [1,1.2], "TripUnit", "avr1");
+
+
+%% TripUnit accepts components and global controllers
+net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002"));
+DebugScript.helper.quiet(@() net.initialize);
+[~, flag] = net.simulate([0,2], odeEventSet("ev", net, "TimeSpan", [1,1.2], "TripUnit", ["LPQ2B003";"agc"]));
+assert(flag == 1)
+
+
+%% Unknown OffsetUnit
+expect_event_error(net, "UnknownOffsetUnit", "NOPE", "TimeSpan", 0, "OffsetUnit", "NOPE", "OffsetState", "delta", "OffsetValue", 0.1);
+% OffsetUnit を書き忘れた指定も無視しない
+expect_event_error(net, "UnknownOffsetUnit", "OffsetUnit", "TimeSpan", 0, "OffsetState", "delta", "OffsetValue", 0.1);
+
+
+%% Unknown OffsetState
+expect_event_error(net, "UnknownOffsetState", ["delt", "delta"], "TimeSpan", 0, "OffsetUnit", "SG1B001", "OffsetState", "delt", "OffsetValue", 0.1);
+
+
+%% OffsetValue count
+expect_event_error(net, "ValueCountMismatch", "OffsetValue", "TimeSpan", 0, "OffsetUnit", "SG1B001", "OffsetState", "delta", "OffsetValue", [0.1;0.2]);
+expect_event_error(net, "ValueCountMismatch", "OffsetValue", "TimeSpan", 0, "OffsetUnit", "SG1B001", "OffsetState", ["delta";"omega"]);
+expect_event_error(net, "ValueCountMismatch", "OffsetState", "TimeSpan", 0, "OffsetUnit", "SG1B001");
+
+
+%% Reversed or NaN TimeSpan
+expect_event_error(net, "InvalidTimeSpan", "1.5 1", "TimeSpan", [1.5,1], "FaultBus", "B008");
+expect_event_error(net, "InvalidTimeSpan", "NaN",   "TimeSpan", [NaN,1], "FaultBus", "B008");
+expect_event_error(net, "InvalidTimeSpan", "NaN",   "TimeSpan", [1,NaN], "FaultBus", "B008");
+expect_event_error(net, "InvalidTimeSpan", "NaN",   "TimeSpan", NaN,     "OffsetUnit", "SG1B001", "OffsetState", "delta", "OffsetValue", 0.1);
+% 外乱のないイベントでも同じ
+expect_event_error(net, "InvalidTimeSpan", "1.5 1", "TimeSpan", [1.5,1]);
+
+
+%% Extra or missing InputValue
+base = {"TimeSpan", [1,2], "InputUnit", "SG1B002"};
+expect_event_error(net, "ValueCountMismatch", "InputValue", base{:}, "InputName", "Pmech", "InputValue", [0.1;0.2]);
+expect_event_error(net, "ValueCountMismatch", "InputValue", base{:}, "InputName", ["Pmech";"Vfield"], "InputValue", [0.1;0.2;0.3]);
+expect_event_error(net, "ValueCountMismatch", "InputValue", base{:}, "InputName", "Pmech", "InputValue", {0.1; @(t) t});
+expect_event_error(net, "ValueCountMismatch", "InputValue", base{:}, "InputName", "Pmech");
+% 名前なしの値も無視しない
+expect_event_error(net, "ValueCountMismatch", "InputName", base{:}, "InputValue", 0.1);
+expect_event_error(net, "UnknownInputUnit", "InputUnit", "TimeSpan", [1,2], "InputValue", 0.1);
+
+
+%% Valid events still run
+% 値が 1 つなら全ての名前に使い、イベントの種類ごとに正しい指定は計算できる
+o = { ...
+    odeEventSet("os", net, "TimeSpan", 0,        "OffsetUnit", "SG1B001", "OffsetState", ["delta";"omega"], "OffsetValue", 1e-3); ...
+    odeEventSet("in", net, "TimeSpan", [1,1.5],  "InputUnit", "SG1B002", "InputName", ["Pmech";"Vfield"], "InputValue", 0.01); ...
+    odeEventSet("fl", net, "TimeSpan", [2,2.02], "FaultBus", "B008"); ...
+    odeEventSet("tr", net, "TimeSpan", [2.5,2.6], "TripUnit", "LPQ2B003"); ...
+    odeEventSet("no", net, "TimeSpan", 1)};
+[sol, flag] = net.simulate([0,3], o{:});
+assert(flag == 1 && sol.odeResults.t(end) == 3)
+
+
+function expect_event_error(net, str_key, str_text, varargin)
+    % エラーの ID と、メッセージが原因を示すこと (str_text を全て含む) を確認する
+    ev = odeEventSet("ev", net, varargin{:});
+    str_id = "GUILDA:odeEventSet:" + str_key;
+    try
+        net.simulate([0,3], ev);
+    catch ME
+        assert(ME.identifier == str_id, ME.identifier + ": " + ME.message)
+        assert(all(contains(ME.message, str_text)), "原因が示されない: " + ME.message)
+        assert(contains(ME.message, '"ev"'), "イベント名が示されない: " + ME.message)
+        return
+    end
+    error("DebugScript:noError", "エラーにならない (期待: " + str_id + ")")
+end
