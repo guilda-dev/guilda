@@ -22,6 +22,8 @@ function sct_summary = export_class_database(sct_scan, option)
 %   _GUILDAdoc/database/GUILDAobject/*.js   one file per Object class
 %   _GUILDAdoc/database/User/*.js           one file per User class (never published)
 %   _GUILDAdoc/database/manifest.json       export state for the next run
+%   _GUILDAdoc/database/list_CallGraph.js   call graph of the System methods,
+%                                           rebuilt in full on every export
 %
 % Schema version 5
 % ----------------
@@ -73,6 +75,18 @@ function sct_summary = export_class_database(sct_scan, option)
 %   Throws     error IDs in error(...) and MException(...) calls of the
 %              method body (with the local functions of a method file)
 % Tags: <@Examples> (class, method), <@Deprecated> (all), <@Type> (property).
+%
+% list_CallGraph.js: window.GUILDA_DOC_CALLGRAPH = {
+%   schema: {name, version: 1},
+%   kinds, confidences, rules, files, nodes: lists the edges index into (from 0)
+%   edges: [[from, to, kind, confidence, rule, file, line]]; to is a node, or a
+%          list of nodes when the class is not determinable
+%   dynamic: [[from, file, line]] obj.(name), feval, str2func and eval uses
+%   implementers: [[node, count]] subclasses that implement a member
+% }
+% node: "Class.member" or "Class.get.prop" (a property accessor).
+% kind: "method"|"property"|"parameter" (a dynamic Parameter property)|"subclass".
+% confidence: "certain"|"inferred"|"candidates". See collect_call_graph.m.
     arguments
         sct_scan (1,1) struct
         option.strict (1,1) logical = false
@@ -261,6 +275,7 @@ function sct_summary = export_class_database(sct_scan, option)
         'files',    rmfield(sct_scan.Files, 'Changed'), ...
         'classes',  {cell_entries(bln_ok)});
     write_text_file(str_manifest, jsonencode(sct_manifest));
+    write_call_graph(sct_scan, fullfile(str_db_path, 'list_CallGraph.js'));
 
     sct_summary = struct( ...
         'ClassCount',    numel(cell_class_info), ...
@@ -278,6 +293,62 @@ function sct_summary = export_class_database(sct_scan, option)
         error('export_class_database:ValidationFailed', ...
             'Documentation validation failed with %d error(s).', sct_summary.ErrorCount);
     end
+end
+
+function write_call_graph(sct_scan, str_file_name)
+    % The chart is optional: without this file method.html renders without it.
+    % Each export rebuilds it, since one edited class changes the callers of others.
+    if isfile(str_file_name)
+        delete(str_file_name);
+    end
+    try
+        sct_graph = collect_call_graph(sct_scan);
+        str_json = jsonencode(encode_call_graph(sct_graph));
+        write_text_file(str_file_name, sprintf('window.GUILDA_DOC_CALLGRAPH = %s;\n', str_json));
+        fprintf("  Call graph: %d edges between %d members.\n", numel(sct_graph.Edges), numel(sct_graph.Nodes));
+    catch ME
+        warning('export_class_database:CallGraphFailed', ...
+            'The call graph was not generated: %s', ME.message);
+    end
+end
+
+function sct_out = encode_call_graph(sct_graph)
+    cell_kinds = {'method', 'property', 'parameter', 'subclass'};
+    cell_confidences = {'certain', 'inferred', 'candidates'};
+    cell_rules = {'self', 'declared', 'constructor', 'assignment', 'argument', 'name', 'unique', 'candidates'};
+    sct_edges = sct_graph.Edges;
+    sct_dynamic = sct_graph.Dynamic;
+    cell_files = unique([{sct_edges.File}, {sct_dynamic.File}]);
+    cell_nodes = sct_graph.Nodes;
+    index_of = @(cell_list, str) find(strcmp(cell_list, str), 1) - 1;
+
+    cell_edges = cell(1, numel(sct_edges));
+    for i = 1:numel(sct_edges)
+        sct_e = sct_edges(i);
+        val_to = cellfun(@(n) index_of(cell_nodes, n), sct_e.To);
+        cell_edges{i} = {index_of(cell_nodes, sct_e.From), val_to, index_of(cell_kinds, sct_e.Kind), ...
+            index_of(cell_confidences, sct_e.Confidence), index_of(cell_rules, sct_e.Rule), ...
+            index_of(cell_files, sct_e.File), sct_e.Line};
+    end
+    cell_dyn = cell(1, numel(sct_dynamic));
+    for i = 1:numel(sct_dynamic)
+        i_from = index_of(cell_nodes, sct_dynamic(i).From);
+        if isempty(i_from)
+            % A method with dynamic access and no other edge.
+            cell_nodes{end+1} = sct_dynamic(i).From; %#ok<AGROW>
+            i_from = numel(cell_nodes) - 1;
+        end
+        cell_dyn{i} = {i_from, index_of(cell_files, sct_dynamic(i).File), sct_dynamic(i).Line};
+    end
+    cell_keys = keys(sct_graph.Implementers);
+    cell_impl = cell(1, numel(cell_keys));
+    for i = 1:numel(cell_keys)
+        cell_impl{i} = {index_of(cell_nodes, cell_keys{i}), sct_graph.Implementers(cell_keys{i})};
+    end
+    sct_out = struct('schema', struct('name', 'GUILDA call graph', 'version', 1), ...
+        'kinds', {cell_kinds}, 'confidences', {cell_confidences}, 'rules', {cell_rules}, ...
+        'files', {cell_files}, 'nodes', {cell_nodes}, 'edges', {cell_edges}, ...
+        'dynamic', {cell_dyn}, 'implementers', {cell_impl});
 end
 
 function sct_entries = empty_entry_struct()
