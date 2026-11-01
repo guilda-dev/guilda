@@ -17,9 +17,9 @@ classdef local_LQR < LocalController
 % `net.initialize`.
 %
 % Attach it with `comp.add_local_controller(lqr)`; it takes the place of an AVR
-% (and of the PSS attached to that AVR). Its outputs replace the driven inputs,
-% so a global controller (e.g. an AGC) must not drive the same input (use
-% `Input="Vfield"` with an AGC on Pmech).
+% (and of the PSS attached to that AVR). The output of a global controller (e.g. an
+% AGC) on a driven input adds to its output, and the design of `K` does not take it
+% into account (use `Input="Vfield"` with an AGC on Pmech to keep them apart).
 %
 % <@Examples>
 % Attach LQR controllers to two generators and simulate a fault:

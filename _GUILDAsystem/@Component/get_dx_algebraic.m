@@ -21,13 +21,14 @@ function DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)
     
     if obj.l_hasController
         % The controller reads the outputs and the states of the component by name,
-        % and its outputs replace the inputs of the same name
+        % and its outputs drive the inputs of the same name. An input event or a global
+        % controller on such an input adds to the output, as in get_sys
         obs.y = obj.f_Y(t,x_comp,Vi,Ii,u_comp);
         obs.x = x_comp;
         a_LC = obj.a_LocalController{1};
         [DAEvec, y_LC, y_name] = get_dx_algebraic(a_LC, t, x, Vi, Ii, obs, DAEvec);
         [lv_U2Y, iv_Y] = ismember(obj.sv_u, y_name);
-        u(lv_U2Y) = y_LC(iv_Y(lv_U2Y));
+        u(lv_U2Y) = y_LC(iv_Y(lv_U2Y)) + u(lv_U2Y) - obj.rv_Uequilibrium(lv_U2Y);
     end
     
     X = obj.f_dx(t,x_comp,Vi,Ii,u_comp);
