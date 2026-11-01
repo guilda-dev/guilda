@@ -227,6 +227,9 @@ classdef (Sealed = true) odeSimulator < auxiliary
                 o.MassMatrix   = Mass;
                 o.ODEFcn       = @(t,x) odeSimulator.getODEFunction(ctx,t,x,RM,EM,~lv_FBorTC);
                 o.Jacobian     = @(t,x) odeSimulator.getODEJacobian(ctx,t,x,RM,EM,~lv_FBorTC);
+                if isfield(s_options, "PhaseProbe")     % test hook: compare Jacobian and right-hand side
+                    s_options.PhaseProbe(o);
+                end
 
                 % update reporter
                 odeProg.timeoffset = t1;
@@ -250,27 +253,43 @@ classdef (Sealed = true) odeSimulator < auxiliary
 
                     splitMSG = strsplit(me.identifier,':');
 
-                    if isequal(splitMSG{end},'NeedBetterY0')
-                        [ODEfcn, x0, ~, options] = CalculateInitialCondition(o, options);
-                    else
-                        odeProg.OutputFcn([],[],"break")
+                    if ~isequal(splitMSG{end},'NeedBetterY0')
+                        odeProg.OutputFcn([],[],"break");
                         ME = MException('GUILDA:odeSimulator:PhaseFailed', '%s', ...
                                         msg('GUILDA:odeSimulator:PhaseFailed', str_phase{:}, me.message));
                         throw(ME.addCause(me))
                     end
 
+                    % The solver found x0 inconsistent: compute a consistent one
+                    [x0_ic, xp0_ic, l_failed, l_relaxed, str_why] = CalculateInitialCondition(o, options);
+                    if l_failed
+                        odeProg.OutputFcn([],[],"break");
+                        ME = MException('GUILDA:odeSimulator:InitialConditionFailed', '%s', ...
+                                        msg('GUILDA:odeSimulator:InitialConditionFailed', str_phase{:}, str_why));
+                        throw(ME.addCause(me))
+                    end
+                    if l_relaxed
+                        lv_diff = any(o.MassMatrix.MassMatrix ~= 0, 2);
+                        warning('GUILDA:odeSimulator:InitialConditionRelaxed', '%s', ...
+                                msg('GUILDA:odeSimulator:InitialConditionRelaxed', str_phase{:}, ...
+                                    num2str(max(abs(x0_ic(lv_diff) - x0(lv_diff)))), str_why));
+                        % Not a warning of the solver (see output.message)
+                        [str_warn0, id_warn0] = lastwarn();
+                        lastwarn("");
+                    end
 
-                    % After performing error bundling, solve the DAE system again.
+                    % Solve again with the same ode object: all the settings still apply
+                    o.InitialValue = x0_ic;
+                    o.InitialSlope = xp0_ic;
                     try
-                        [t,y] = ode15s(ODEfcn, [0,t2-t1], x0, options);
-                        sol = struct('Time', t.', 'Solution', y.');
-
+                        sol = solve(o, 0, t2-t1);
                     catch me
-                        odeProg.OutputFcn([],[],"break")
+                        odeProg.OutputFcn([],[],"break");
                         ME = MException('GUILDA:odeSimulator:UnfeasibleDAE', '%s', ...
                                         msg('GUILDA:odeSimulator:UnfeasibleDAE', str_phase{:}, me.message));
                         throw(ME.addCause(me))
                     end
+                    o.InitialSlope = zeros(0,1);
                 end
                 str_warn = lastwarn();
                 if isempty(str_warn)
@@ -615,8 +634,10 @@ classdef (Sealed = true) odeSimulator < auxiliary
                         
                     end                                                                                                                                    
             
+                    % A tripped unit gives no current (see get_dx_algebraic)
+                    l_c = double(cj.l_isConnect);
                     odeJac(rv,rh) = odeJac(rv,rh) + [ Axx,  Bxu,  Bxv,  Bxi;...                                                     
-                                                     -Cix, -Diu, -Div, -Dii]; 
+                                                     -l_c*Cix, -l_c*Diu, -l_c*Div, -l_c*Dii]; 
 
                     odeJac(idx_U,idx_U) = odeJac(idx_U,idx_U) + eye(length(idx_U));
 
