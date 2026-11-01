@@ -342,6 +342,23 @@ r_Sbase (1,1) double = 100</pre>
       </div>
     </div>
 
+    <h3 id="call-graph">Call graph on the method page</h3>
+    <p>For the methods of the classes under <code>_GUILDAsystem</code>, the exporter reads the source with <code>mtree</code>, without running it, and stores in <code>database/list_CallGraph.js</code> which properties and methods each one uses. The file is rebuilt on every export. Local functions and <code>private/</code> helpers have no node: what they use counts for the method that calls them.</p>
+    <table class="dg-table cd-opts">
+      <thead><tr><th>Line</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td>Solid</td><td data-label="Meaning">Certain: the object itself, a declared class (property validator or <code>arguments</code> block), a constructor or a <code>Class.member</code> reference.</td></tr>
+        <tr><td>Dashed</td><td data-label="Meaning">Inferred, in this order: assignments and <code>obj.p = value</code>, the argument of a helper, the <a href="naming-conventions.html">naming rule</a>, or the only class with a member of that name.</td></tr>
+        <tr><td>Dotted, with branches</td><td data-label="Meaning">The class is not determinable from the source. Every class with that member is listed; none is chosen.</td></tr>
+      </tbody>
+    </table>
+    <div class="dg-callout">
+      <svg class="dg-icon"><use href="#dg-i-warn"/></svg>
+      <div>
+        <p>The chart is a reading aid, not a proof. A link shows the class the code names, not the subclass that runs: a call through <code>Component</code> does not list the override in <code>Bus</code> or in a model. An inferred link can be wrong, and calls through function handles held in properties, <code>obj.(name)</code>, <code>feval</code> and <code>eval</code> have no target (the page says when a method uses the last three). Implicit calls, such as a conversion in <code>"text" + obj</code> or a destructor, do not appear. Functions outside a class are not followed.</p>
+      </div>
+    </div>
+
     <!-- ============================== GENERATOR ============================== -->
     <section class="tag-generator" id="generator" aria-label="Documentation Tag Generator">
       <h2>Tag Generator</h2>
