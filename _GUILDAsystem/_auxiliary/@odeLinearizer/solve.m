@@ -65,10 +65,10 @@ function [result, flag, output] = solve(obj, net, s_options)
     c_sysGC = cell(numel(a_gc),1);
     for k = 1:numel(a_gc)
         if l_eq
-            f_sys = @() a_gc{k}.get_sys("full",true);
+            f_sys = @() a_gc{k}.get_sys();
         else
             f_sys = @() a_gc{k}.get_sys(rv_point(c_idxGC{k}), zeros(2,1), zeros(2,1), ...
-                                        gc_input(a_gc{k}, tab_map, rv_point), "full",true);
+                                        gc_input(a_gc{k}, tab_map, rv_point));
         end
         c_sysGC{k} = model_at_point(f_sys, "global controller " + a_gc{k}.str_tag);
     end
