@@ -27,7 +27,7 @@ function ax = Plot(obj, opt)
 
     r = obj.odeResults;
     [Y, sv_legend, str_label] = trajectory(r, obj.sv_bus, obj.c_component, iv_bus, opt.Quantity);
-    if isempty(Y)
+    if width(Y) == 0
         error('GUILDA:odeSimulationResult:UnknownQuantity', '%s', ...
               msg('GUILDA:odeSimulationResult:UnknownQuantity', char(opt.Quantity)));
     end
@@ -80,7 +80,7 @@ function [Y, sv_legend, str_label] = trajectory(r, sv_tag, c_component, iv_bus, 
                             continue
                         end
                         tab = r.Bus(i).Component(j).(str_part);
-                        if ~isempty(tab) && any(string(tab.Properties.VariableNames) == str_q)
+                        if width(tab) > 0 && any(string(tab.Properties.VariableNames) == str_q)
                             Y(:,end+1) = tab.(str_q);                  %#ok<AGROW>
                             sv_legend(end+1) = c_component{i}(j);      %#ok<AGROW>
                         end
