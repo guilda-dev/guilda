@@ -1,7 +1,8 @@
-% F21 LocalController の接続時の検査 (Issue #98)
+% F21 LocalController の接続時の検査 (Issue #98) と取り外し (Issue #103)
 %
 %   未知の key と、接続先の入力に一致しない出力名は add_local_controller で止まり、機器は変わらない
 %   入力名の誤りは検出しない (意図した未接続と同じ形。validate で確認する)
+%   remove_local_controller はタグで外す。PSS の残った AVR は RemoveNested=true がなければエラー
 %
 % 実行: runtests("DebugScript.test_F21_controller_editing")  または  DebugScript.run_all("Features","F21")
 
@@ -103,6 +104,78 @@ assert(lqr.sv_y == "Vfield")
 con = DebugScript.helper.ObserveStub("omegaa");
 gen.add_local_controller(con);
 assert(con.iv_obsY == 0 && con.iv_obsX == 0)
+
+
+%% remove_local_controller: the PSS alone, then the AVR, each logged and leaving a working model
+[net, gen] = fresh_network();
+DebugScript.helper.quiet(@() net.initialize);
+n0 = numel(gen.rv_Xequilibrium_all);
+nx0 = size(net.get_sys().A,1);
+avr = controller.avr.AVR_ST1("avr1");
+pss = controller.pss.PSS1("pss1");
+gen.add_local_controller(avr, pss);
+DebugScript.helper.quiet(@() net.initialize);
+assert(numel(gen.rv_Xequilibrium_all) == n0 + numel(avr.sv_x) + numel(pss.sv_x))
+
+gen.remove_local_controller(pss.str_tag);
+assert(net.l_staleEquilibrium && net.tab_editLog.tag(end) == "Topology")
+assert(gen.a_LocalController{1} == avr && isempty(avr.a_LocalController) && isempty(pss.a_Component))
+DebugScript.helper.quiet(@() net.initialize);
+assert(numel(gen.rv_Xequilibrium_all) == n0 + numel(avr.sv_x))
+
+gen.remove_local_controller(avr.str_tag);
+assert(net.l_staleEquilibrium && net.tab_editLog.tag(end) == "Topology")
+assert(isempty(gen.a_LocalController) && isempty(avr.a_Component))
+DebugScript.helper.quiet(@() net.initialize);
+assert(numel(gen.rv_Xequilibrium_all) == n0)
+assert(size(net.get_sys().A,1) == nx0)
+sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
+assert(sol.flag == 1)
+
+
+%% remove_local_controller: an AVR that has a PSS is rejected unless RemoveNested is true
+[net, gen] = fresh_network();
+avr = controller.avr.AVR_ST1("avr1");
+pss = controller.pss.PSS1("pss1");
+gen.add_local_controller(avr, pss);
+DebugScript.helper.quiet(@() net.initialize);
+n_log = height(net.tab_editLog);
+ME = caught(@() gen.remove_local_controller(avr.str_tag));
+assert(ME.identifier == "GUILDA:Component:ControllerHasNested" && contains(ME.message, "pss1"))
+assert(gen.a_LocalController{1} == avr && avr.a_LocalController{1} == pss && pss.a_Component == avr)
+assert(~net.l_staleEquilibrium && height(net.tab_editLog) == n_log)
+
+gen.remove_local_controller(avr.str_tag, RemoveNested=true);
+assert(isempty(gen.a_LocalController) && isempty(avr.a_LocalController))
+assert(isempty(avr.a_Component) && isempty(pss.a_Component))
+assert(height(net.tab_editLog) == n_log + 1 && contains(net.tab_editLog.log(end), "pss1"))
+
+
+%% remove_local_controller: an unknown tag changes nothing
+[net, gen] = fresh_network();
+assert(caught(@() gen.remove_local_controller("none")).identifier == "GUILDA:Component:ControllerNotFound")
+avr = controller.avr.AVR_ST1("avr1");
+gen.add_local_controller(avr);
+DebugScript.helper.quiet(@() net.initialize);
+ME = caught(@() gen.remove_local_controller("none"));
+assert(ME.identifier == "GUILDA:Component:ControllerNotFound" && contains(ME.message, "none") && contains(ME.message, gen.str_tag))
+assert(gen.a_LocalController{1} == avr && ~net.l_staleEquilibrium)
+
+
+%% remove_local_controller: removed controllers can be attached again, here or elsewhere
+[net, gen] = fresh_network();
+avr = controller.avr.AVR_ST1("avr1");
+pss = controller.pss.PSS1("pss1");
+gen.add_local_controller(avr, pss);
+gen.remove_local_controller(avr.str_tag, RemoveNested=true);
+gen2 = net.a_Bus{2}.a_Component{1};
+gen2.add_local_controller(avr, pss);
+assert(gen2.a_LocalController{1} == avr && avr.a_LocalController{1} == pss && pss.a_Component == avr)
+lqr = controller.local_LQR("lqr1");
+gen.add_local_controller(lqr);
+DebugScript.helper.quiet(@() net.initialize);
+gen.remove_local_controller(lqr.str_tag);
+assert(isempty(gen.a_LocalController) && isempty(lqr.a_Component))
 
 
 function [net, gen] = fresh_network()

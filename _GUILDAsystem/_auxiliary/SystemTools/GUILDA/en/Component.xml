@@ -7,6 +7,8 @@
         <entry key="SharedController">{0} ''{1}'' is already attached to ''{2}'' and cannot also be attached to ''{3}''. Create a separate controller object for each component.</entry>
         <entry key="InvalidControllerKey">Local controller ''{0}'' has the key ''{1}''. The key must be ''avr'', ''pss'' or ''local''.</entry>
         <entry key="ControllerOutput">Output ''{0}'' of ''{1}'' matches no input of ''{2}'' (inputs: {3}).</entry>
+        <entry key="ControllerNotFound">No local controller with the tag ''{0}'' was found in ''{1}''.</entry>
+        <entry key="ControllerHasNested">Local controller ''{0}'' still has ''{1}'' under it.&#xA;Remove it first with comp.remove_local_controller(TAG), or remove them together with&#xA;  &gt;&gt; comp.remove_local_controller(CONTROLLER_TAG, "RemoveNested", true)</entry>
         <entry key="MissingParameter">Parameter ''{0}'' of ''{1}'' is missing from {2}. Pass a table with these columns as the parameter argument.</entry>
         <entry key="UnknownParameter">Parameter name ''{0}'' of ''{1}'' is unknown. Use one of {2}, or pass a table.</entry>
         <entry key="GeneratorQIgnored">Generator ''{0}'' ignores Q = {1}: a generator is a PV source, so the power flow decides its Q. Leave Q out or set it to NaN.</entry>
