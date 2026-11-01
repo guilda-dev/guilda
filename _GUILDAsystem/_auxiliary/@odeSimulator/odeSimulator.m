@@ -161,7 +161,7 @@ classdef (Sealed = true) odeSimulator < auxiliary
             arguments (Output)
                 result % Trajectories of the buses and components.
                 flag % 1 completed, 0 stopped by TimeLimit, -1 stopped by the solver.
-                output % Details: message, tEnd, phases (time table of the phases), nPhases, nPhasesDone.
+                output % Details: message, tEnd, phases (time table of the phases), nPhases, nPhasesDone, isSparse (false when the run fell back to dense matrices).
             end
             t0 = tic;
             net.require_equilibrium();    % rebuild stale f_*; error if net.initialize() is needed
@@ -181,7 +181,8 @@ classdef (Sealed = true) odeSimulator < auxiliary
 
             ctx = struct();
             ctx.net     = net;
-            ctx.Ymat    = tools.complex2matrix(net.get_admittance_matrix.Variables);
+            ctx.l_sparse = true;              % until the solver rejects the sparse matrices (see use_dense)
+            ctx.Ymat    = sparse(tools.complex2matrix(net.get_admittance_matrix.Variables));
             ctx.rv_odeV = cell2mat(tools.cellfun(@(b) b.iv_odeX, net.a_Bus));
             ctx.absYmat = abs(ctx.Ymat);      % scale of the terms of I = Y*V (see getODEFunction)
             ctx.iv_busV = reshape(ctx.rv_odeV, [], 1);
@@ -227,10 +228,13 @@ classdef (Sealed = true) odeSimulator < auxiliary
 
                 [EM, RM, lv_FBorTC, x0, Mass] = getInitialCondition(odeEvents{:}, "x0", x0, "M0", Mass);
 
+                if ~ctx.l_sparse
+                    Mass = full(Mass);
+                end
+
                 o.InitialValue = x0;
                 o.MassMatrix   = Mass;
-                o.ODEFcn       = @(t,x) odeSimulator.getODEFunction(ctx,t,x,RM,EM,~lv_FBorTC);
-                o.Jacobian     = @(t,x) odeSimulator.getODEJacobian(ctx,t,x,RM,EM,~lv_FBorTC);
+                o = odeSimulator.set_equations(o, ctx, RM, EM, ~lv_FBorTC);
                 if isfield(s_options, "PhaseProbe")     % test hook: compare Jacobian and right-hand side
                     s_options.PhaseProbe(o);
                 end
@@ -250,50 +254,64 @@ classdef (Sealed = true) odeSimulator < auxiliary
                 [str_warn0, id_warn0] = lastwarn();
                 lastwarn("");
                 str_phase = {num2str(tp), num2str(t1), num2str(t2)};
-                try
-                    % When solving the equation, specify [0, duration of each phase]
-                    sol = solve(o, 0, t2-t1);
-                catch me
-
-                    splitMSG = strsplit(me.identifier,':');
-
-                    if ~isequal(splitMSG{end},'NeedBetterY0')
-                        odeProg.OutputFcn([],[],"break");
-                        ME = MException('GUILDA:odeSimulator:PhaseFailed', '%s', ...
-                                        msg('GUILDA:odeSimulator:PhaseFailed', str_phase{:}, me.message));
-                        throw(ME.addCause(me))
-                    end
-
-                    % The solver found x0 inconsistent: compute a consistent one
-                    [x0_ic, xp0_ic, l_failed, l_relaxed, str_why] = CalculateInitialCondition(o, options);
-                    if l_failed
-                        odeProg.OutputFcn([],[],"break");
-                        ME = MException('GUILDA:odeSimulator:InitialConditionFailed', '%s', ...
-                                        msg('GUILDA:odeSimulator:InitialConditionFailed', str_phase{:}, str_why));
-                        throw(ME.addCause(me))
-                    end
-                    if l_relaxed
-                        lv_diff = any(o.MassMatrix.MassMatrix ~= 0, 2);
-                        warning('GUILDA:odeSimulator:InitialConditionRelaxed', '%s', ...
-                                msg('GUILDA:odeSimulator:InitialConditionRelaxed', str_phase{:}, ...
-                                    num2str(max(abs(x0_ic(lv_diff) - x0(lv_diff)))), str_why));
-                        % Not a warning of the solver (see output.message)
-                        [str_warn0, id_warn0] = lastwarn();
-                        lastwarn("");
-                    end
-
-                    % Solve again with the same ode object: all the settings still apply
-                    o.InitialValue = x0_ic;
-                    o.InitialSlope = xp0_ic;
+                l_solved = false;
+                while ~l_solved
                     try
+                        % When solving the equation, specify [0, duration of each phase]
                         sol = solve(o, 0, t2-t1);
                     catch me
-                        odeProg.OutputFcn([],[],"break");
-                        ME = MException('GUILDA:odeSimulator:UnfeasibleDAE', '%s', ...
-                                        msg('GUILDA:odeSimulator:UnfeasibleDAE', str_phase{:}, me.message));
-                        throw(ME.addCause(me))
+
+                        if odeSimulator.is_false_index_error(ctx, me)
+                            [ctx, o] = odeSimulator.use_dense(ctx, o, x0, RM, EM, ~lv_FBorTC, s_options.Verbose);
+                            continue
+                        end
+
+                        splitMSG = strsplit(me.identifier,':');
+
+                        if ~isequal(splitMSG{end},'NeedBetterY0')
+                            odeProg.OutputFcn([],[],"break");
+                            ME = MException('GUILDA:odeSimulator:PhaseFailed', '%s', ...
+                                            msg('GUILDA:odeSimulator:PhaseFailed', str_phase{:}, me.message));
+                            throw(ME.addCause(me))
+                        end
+
+                        % The solver found x0 inconsistent: compute a consistent one
+                        [x0_ic, xp0_ic, l_failed, l_relaxed, str_why] = CalculateInitialCondition(o, options);
+                        if l_failed
+                            odeProg.OutputFcn([],[],"break");
+                            ME = MException('GUILDA:odeSimulator:InitialConditionFailed', '%s', ...
+                                            msg('GUILDA:odeSimulator:InitialConditionFailed', str_phase{:}, str_why));
+                            throw(ME.addCause(me))
+                        end
+                        if l_relaxed
+                            lv_diff = any(o.MassMatrix.MassMatrix ~= 0, 2);
+                            warning('GUILDA:odeSimulator:InitialConditionRelaxed', '%s', ...
+                                    msg('GUILDA:odeSimulator:InitialConditionRelaxed', str_phase{:}, ...
+                                        num2str(max(abs(x0_ic(lv_diff) - x0(lv_diff)))), str_why));
+                            % Not a warning of the solver (see output.message)
+                            [str_warn0, id_warn0] = lastwarn();
+                            lastwarn("");
+                        end
+
+                        % Solve again with the same ode object: all the settings still apply
+                        o.InitialValue = x0_ic;
+                        o.InitialSlope = xp0_ic;
+                        try
+                            sol = solve(o, 0, t2-t1);
+                        catch me
+                            if odeSimulator.is_false_index_error(ctx, me)
+                                [ctx, o] = odeSimulator.use_dense(ctx, o, x0, RM, EM, ~lv_FBorTC, s_options.Verbose);
+                                continue
+                            end
+
+                            odeProg.OutputFcn([],[],"break");
+                            ME = MException('GUILDA:odeSimulator:UnfeasibleDAE', '%s', ...
+                                            msg('GUILDA:odeSimulator:UnfeasibleDAE', str_phase{:}, me.message));
+                            throw(ME.addCause(me))
+                        end
+                        o.InitialSlope = zeros(0,1);
                     end
-                    o.InitialSlope = zeros(0,1);
+                    l_solved = true;
                 end
                 str_warn = lastwarn();
                 if isempty(str_warn)
@@ -320,6 +338,7 @@ classdef (Sealed = true) odeSimulator < auxiliary
             output.nPhases     = np;
             output.nPhasesDone = numel(c_phase) - (flag ~= 1);
             output.phases      = tab_phase;
+            output.isSparse    = ctx.l_sparse;
             switch flag
                 case 1
                     output.message = sprintf("The simulation reached t = %g s (%d phases).", output.tEnd, np);
@@ -449,6 +468,35 @@ classdef (Sealed = true) odeSimulator < auxiliary
         end
 
                 
+
+        function o = set_equations(o, ctx, RM, EM, lg)
+            % The right-hand side and Jacobian of a phase. They hold a copy of ctx.
+            o.ODEFcn   = @(t,x) odeSimulator.getODEFunction(ctx,t,x,RM,EM,lg);
+            o.Jacobian = @(t,x) odeSimulator.getODEJacobian(ctx,t,x,RM,EM,lg);
+        end
+
+        function l = is_false_index_error(ctx, me)
+            % With sparse matrices, the index check of the solver can fail for a DAE of index 1:
+            % condest of the sparse algebraic block can be far above the true condition number
+            % (daeic12 tests eps*nnz(J)*condest(J) > 1). A DAE of a higher index fails with
+            % dense matrices too, and that error is reported.
+            l = ctx.l_sparse && endsWith(string(me.identifier), ":IndexGTOne");
+        end
+
+        function [ctx, o] = use_dense(ctx, o, x0, RM, EM, lg, l_verbose)
+            % Solve the current phase again and the next phases with dense matrices.
+            ctx.l_sparse = false;
+            ctx.Ymat     = full(ctx.Ymat);
+            ctx.absYmat  = full(ctx.absYmat);
+            o.MassMatrix   = full(o.MassMatrix.MassMatrix);
+            o.InitialValue = x0;
+            o.InitialSlope = zeros(0,1);
+            o = odeSimulator.set_equations(o, ctx, RM, EM, lg);
+            lastwarn("");
+            if l_verbose
+                disp("The solver rejected the sparse matrices: using dense matrices.")
+            end
+        end
 
         function c_unit = get_units(net)
             % What getODEFunction reads for each component, fixed during a run
@@ -704,7 +752,10 @@ classdef (Sealed = true) odeSimulator < auxiliary
 
             odeJac([rv_Bus_V; rv_Bus_I], rv_Bus_I) = odeJac([rv_Bus_V; rv_Bus_I], rv_Bus_I) + [eye(2*i); eye(2*i)];
             
-            odeJac = odeJac(lg,lg);            
+            odeJac = odeJac(lg,lg);
+            if ctx.l_sparse
+                odeJac = sparse(odeJac);        % ode15s uses a sparse LU only if the mass matrix is sparse too
+            end
 
         end       
                 

@@ -331,8 +331,8 @@ classdef (Sealed = true) odeEventSet < auxiliary
 
             nFBorTC = length(lv_FBorTC);
 
-            EM = eye(nFBorTC);
-            RM = eye(nFBorTC);
+            EM = speye(nFBorTC);
+            RM = speye(nFBorTC);
 
             EM = EM(:, ~lv_FBorTC);
             RM = RM(~lv_FBorTC, :);
@@ -355,7 +355,7 @@ classdef (Sealed = true) odeEventSet < auxiliary
             M0 = opt.M0;
             if isempty(M0)
                 nB = numel(a_bus);
-                M0 = blkdiag(rm_M, zeros(nB*4, nB*4));
+                M0 = sparse(blkdiag(rm_M, zeros(nB*4, nB*4)));
             end
             varargout{2} = RM * M0 * RM.';                    
                                     
