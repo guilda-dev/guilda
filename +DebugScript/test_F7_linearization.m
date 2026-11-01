@@ -4,6 +4,7 @@
 %   res = net.linearize("Algorithm", ..., "NonUnit", 母線番号, "Point", 点);
 %   sys = res.get_ss("Kron" | "Feedback" | "DAE");
 %   sys = net.get_sys("Algorithm", ...);          % linearize + get_ss の近道
+%   sys = net.get_sys("Output", ["V","I","y"], "Input", 入力名);   % 入出力の選択 (既定は不変)
 %   tab = net.get_variable_map();                 % 変数の順 (res.rm_Axx などの行と列)
 % sys は記述子形式の状態空間モデル (dss: E dx = A x + B u)。
 % 3 方式の有限固有値が一致すること、IEEE14 の平衡点が安定であること、v3 の行列と同じであること、
@@ -1071,6 +1072,149 @@ catch ME
     assert(ME.identifier == "GUILDA:GlobalController:GlobalControllerPort", ME.identifier)
     assert(contains(ME.message, gen_droop.str_tag) && contains(ME.message, "omega"), ME.message)
 end
+
+
+%% Coordinate is an option of linearize and get_sys
+% Coordinate は solver_LIN の設定で、呼び出しごとに上書きできる。保存された既定は変わらない
+net = new_net();
+DebugScript.helper.quiet(@() net.initialize);
+assert(net.solver_LIN.Coordinate == "theta&rho")
+sD0 = net.get_sys(Algorithm="DAE");
+assert(any(string(sD0.StateName) == "rho1"))
+sD = net.get_sys(Algorithm="DAE", Coordinate="theta&V");
+assert(any(string(sD.StateName) == "V1") && net.solver_LIN.Coordinate == "theta&rho")
+assert(isequal(sD, net.linearize(Coordinate="theta&V").get_ss("DAE")))
+assert(isequal(sD0, net.linearize(Coordinate="theta&V").get_ss("DAE", Coordinate="theta&rho")))
+net.solver_LIN.Coordinate = "Vre&Vim";
+assert(any(string(net.get_sys(Algorithm="DAE").StateName) == "Vre1"))
+net.solver_LIN.Coordinate = "theta&rho";
+try
+    net.get_sys(Coordinate="polar");
+    error("DebugScript:NoError", "不正な Coordinate がエラーにならない")
+catch ME
+    assert(ME.identifier ~= "DebugScript:NoError", ME.identifier)
+end
+
+
+%% Default channels of get_sys do not change
+% Input, Output を与えなければ v3 互換の既定のまま。Kron の出力名は空
+net = new_net();
+DebugScript.helper.quiet(@() net.initialize);
+res = net.linearize();
+sK = net.get_sys(Algorithm="Kron");
+assert(all(cellfun(@isempty, sK.OutputName)) && isequal(sK.C, eye(size(sK.A,1))))
+for alg = ["Kron","Feedback","DAE"]
+    assert(isequal(net.get_sys(Algorithm=alg), res.get_ss(alg)), alg)
+end
+
+
+%% Output and Input select the channels
+% 3 方式の V, I, y の伝達関数が一致する (global controller, 制御器, 非ユニット母線の負荷あり)
+net = new_net();
+net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
+net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002"));
+DebugScript.helper.quiet(@() net.initialize);
+res = net.linearize();
+tab = res.tab_variable;
+sv_v = tab.Label(tab.Kind == "Vre" | tab.Kind == "Vim");
+sK = res.get_ss("Kron", Output=["V","I","y"]);
+s0 = 0.3 + 1i;
+GK = freqresp(sK, s0);
+for s = {res.get_ss("Feedback", Output=["V","I","y"]), ...
+         res.get_ss("DAE", Output=["V","I","y"]), ...
+         res.get_ss("DAE", Output=["V","I","y"], Coordinate="theta&V"), ...
+         res.get_ss("DAE", Output=["V","I","y"], Coordinate="Vre&Vim")}
+    assert(isequal(s{1}.OutputName, sK.OutputName) && isequal(s{1}.InputName, sK.InputName))
+    assert(norm(freqresp(s{1}, s0) - GK) < 1e-8 * norm(GK))
+end
+n_b = numel(net.a_Bus);
+sv_out = string(sK.OutputName);
+assert(isequal(sv_out(1:2*n_b), sv_v) && numel(unique(sv_out)) == numel(sv_out))
+assert(startsWith(sv_out(2*n_b+1), "Ire") && startsWith(sv_out(2*n_b+2), "Iim"))
+
+% V は電圧を消去した式と同じ。I は機器の注入電流 (-Avx x + (Y - Avv) v - Bv u) と同じ
+n_v = 2*n_b;
+sV = res.get_ss("Kron", Output="V");
+[~, ix] = ismember(string(sV.StateName), tab.Label(tab.Kind == "x"));
+assert(norm(sV.C + res.rm_Avv \ res.rm_Avx(:,ix), 1) < 1e-10 && norm(sV.D + res.rm_Avv \ res.rm_Bv, 1) < 1e-10)
+sI = res.get_ss("Kron", Output="I");
+rm_Y = tools.complex2matrix(net.get_admittance_matrix.Variables);
+assert(norm(sI.C - (-res.rm_Avx(:,ix) + (rm_Y - res.rm_Avv)*sV.C), 1) < 1e-8)
+assert(norm(sI.D - (-res.rm_Bv + (rm_Y - res.rm_Avv)*sV.D), 1) < 1e-8)
+
+% y: 状態と同名の出力は Y_ 付きで、状態そのもの。AVR の出力 Vfield は状態 Vap
+gen = net.a_Bus{1}.a_Component{1};
+avr = gen.a_LocalController{1};
+str_y = string(gen.attach_tag("Y_omega"));
+sy = res.get_ss("Kron", Output=[str_y, string(avr.attach_tag("Vfield"))]);
+assert(isequal(string(sy.OutputName), [str_y; string(avr.attach_tag("Vfield"))]))
+assert(isequal(sy.C(1,:), double(string(sy.StateName) == string(gen.attach_tag("omega")))'))
+assert(isequal(sy.C(2,:), double(string(sy.StateName) == string(avr.attach_tag("Vap")))'))
+assert(all(sy.D == 0, "all"))
+
+% 種類と名前の混在は指定の順で、重複は 1 つ。x はモデルのすべての状態を StateName の順に出す
+str_w = string(gen.attach_tag("omega"));
+sM = net.get_sys(Algorithm="Kron", output=[sv_v(3), str_w, sv_v(3)]);
+assert(isequal(string(sM.OutputName), [sv_v(3); str_w]))
+for alg = ["Kron","Feedback","DAE"]
+    s_def = res.get_ss(alg);
+    s_x   = res.get_ss(alg, Output="x");
+    assert(isequal(s_x.A, s_def.A) && isequal(s_x.E, s_def.E) && isequal(s_x.B, s_def.B) && all(s_x.D == 0, "all"), alg)
+    sv_state = string(s_x.StateName);
+    assert(isequal(string(s_x.OutputName), sv_state(ismember(sv_state, tab.Label(tab.Kind == "x")))), alg)
+    assert(isequal(s_x.C, eye(size(s_x.C,1), size(s_x.A,1))), alg)
+end
+% Feedback の既定の出力は v3 と同じで、global controller の状態を含まない。消えた Vst の行を持つ
+s_def = res.get_ss("Feedback");
+assert(~any(string(s_def.OutputName) == string(net.a_GlobalController{1}.attach_tag("xi"))))
+
+% Input: 指定の順。状態は変わらない。Output と併用できる。列ベクトルも受ける
+sv_u = tab.Label(tab.Kind == "u");
+for alg = ["Kron","Feedback","DAE"]
+    s_all = net.get_sys(Algorithm=alg, Output="V");
+    s_sel = net.get_sys(Algorithm=alg, Output="V", Input=sv_u([3;1]));
+    assert(isequal(string(s_sel.InputName), sv_u([3;1])), alg)
+    assert(isequal(s_sel.A, s_all.A) && isequal(s_sel.StateName, s_all.StateName), alg)
+    [~, iu] = ismember(sv_u([3;1]), string(s_all.InputName));
+    assert(isequal(s_sel.D, s_all.D(:,iu)) && isequal(s_sel.B, s_all.B(:,iu)), alg)
+    assert(isequal(net.get_sys(Algorithm=alg, Input="u").InputName, net.get_sys(Algorithm=alg).InputName), alg)
+end
+
+% 不明な名前。net.linearize は Input, Output を受けない
+for c = {{"Output","nope"}, {"Input","nope"}, {"Input","V"}}
+    try
+        net.get_sys("Algorithm", "Kron", c{1}{:});
+        error("DebugScript:NoError", "不明な名前がエラーにならない")
+    catch ME
+        assert(ME.identifier == "GUILDA:LinearizationResult:UnknownChannel", ME.identifier)
+    end
+end
+try
+    net.linearize(Output="V");
+    error("DebugScript:NoError", "linearize が Output を受けた")
+catch ME
+    assert(ME.identifier == "GUILDA:resolve_options:UnknownName", ME.identifier)
+end
+
+
+%% Feedback cannot output a state it removes
+% connect が消す状態は名前で指定するとエラー。Kron なら取れる。消える状態は V, I, y に効かない
+net = new_net();
+net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"));
+DebugScript.helper.quiet(@() net.initialize);
+res = net.linearize();
+sv_x  = res.tab_variable.Label(res.tab_variable.Kind == "x");
+sv_gone = setdiff(sv_x, string(res.get_ss("Feedback").StateName));
+assert(~isempty(sv_gone))
+try
+    res.get_ss("Feedback", Output=sv_gone(1));
+    error("DebugScript:NoError", "消えた状態がエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:LinearizationResult:StateNotInModel", ME.identifier)
+end
+assert(string(res.get_ss("Kron", Output=sv_gone(1)).OutputName) == sv_gone(1))
+sK = res.get_ss("Kron", Output=["V","I","y"]);
+assert(all(sK.C(:, ismember(string(sK.StateName), sv_gone)) == 0, "all"))
 
 
 %% Hessian is not supported by default
