@@ -1,7 +1,7 @@
-function [x0, xp0, l_failed, l_relaxed, str_why] = CalculateInitialCondition(o, options)
+function [x0, xp0, l_failed, l_relaxed, str_why, me_why] = CalculateInitialCondition(o, options)
 % Consistent initial condition of a phase, for the ode object o.
 % l_failed: none was found (x0, xp0 are empty). l_relaxed: the differential states had to
-% move too. str_why: the reason of either.
+% move too. str_why: the reason of either. me_why: the error when l_failed.
 
     Mass = @(t,y) o.MassMatrix.MassMatrix;
     Func = o.ODEFcn;
@@ -16,6 +16,7 @@ function [x0, xp0, l_failed, l_relaxed, str_why] = CalculateInitialCondition(o, 
     l_failed  = false;
     l_relaxed = false;
     str_why   = "";
+    me_why    = [];
     dae = @(t,y,yp) Mass(t,y)*yp-Func(t,y);                        
     % Keep the differential states (e.g. offsets of events) and solve only the algebraic ones;
     % if that fails, let decic change all of them.
@@ -30,6 +31,7 @@ function [x0, xp0, l_failed, l_relaxed, str_why] = CalculateInitialCondition(o, 
         catch me
             l_failed = true;
             str_why  = string(me.message);
+            me_why   = me;
         end
     end
 end

@@ -148,9 +148,12 @@ classdef (Sealed = true) odeSimulator < auxiliary
         % use. Like net.simulate, it first rebuilds stale f_* handles and stops with the
         % error GUILDA:PowerNetwork:EquilibriumStale when net.initialize() is needed.
         % flag is 1 when the simulation reached the end time, 0 when it stopped because the
-        % run exceeded TimeLimit, and -1 when the solver stopped before the end time
-        % (output.message has the reason). In the last two cases the result holds the
-        % trajectories up to the time reached (output.tEnd).
+        % run exceeded TimeLimit, and -1 when the solver stopped before the end time or could
+        % not solve a phase (output.message has the reason; output.exception has the error
+        % when there was one). In the last two cases the result holds the trajectories up to
+        % the time reached (output.tEnd), with no time points when the first phase could not
+        % be solved. An error of other code during a phase, such as an input function or a
+        % model, stops with an error (GUILDA:odeSimulator:PhaseFailed, the original as cause).
             arguments
                 obj % Solver (net.solver_ODE).
                 net % Network initialized by net.initialize.
@@ -161,7 +164,7 @@ classdef (Sealed = true) odeSimulator < auxiliary
             arguments (Output)
                 result % Trajectories of the buses and components.
                 flag % 1 completed, 0 stopped by TimeLimit, -1 stopped by the solver.
-                output % Details: message, tEnd, phases (time table of the phases), nPhases, nPhasesDone, isSparse (false when the run fell back to dense matrices).
+                output % Details: message, tEnd, phases (time table of the phases), nPhases, nPhasesDone, isSparse (false when the run fell back to dense matrices), exception (MException of a phase that could not be solved, with the original as cause; otherwise empty).
             end
             t0 = tic;
             net.require_equilibrium();    % rebuild stale f_*; error if net.initialize() is needed
@@ -209,6 +212,7 @@ classdef (Sealed = true) odeSimulator < auxiliary
 
             c_phase = cell(1,0);
             flag    = 1;
+            me_stop = [];       % error of a phase that could not be solved
             tp      = 1;
             while tp <= np
 
@@ -272,16 +276,26 @@ classdef (Sealed = true) odeSimulator < auxiliary
                             odeProg.OutputFcn([],[],"break");
                             ME = MException('GUILDA:odeSimulator:PhaseFailed', '%s', ...
                                             msg('GUILDA:odeSimulator:PhaseFailed', str_phase{:}, me.message));
-                            throw(ME.addCause(me))
+                            ME = ME.addCause(me);
+                            if ~odeSimulator.is_numerical_failure(me, o)
+                                throw(ME)
+                            end
+                            me_stop = ME;
+                            break
                         end
 
                         % The solver found x0 inconsistent: compute a consistent one
-                        [x0_ic, xp0_ic, l_failed, l_relaxed, str_why] = CalculateInitialCondition(o, options);
+                        [x0_ic, xp0_ic, l_failed, l_relaxed, str_why, me_ic] = CalculateInitialCondition(o, options);
                         if l_failed
                             odeProg.OutputFcn([],[],"break");
                             ME = MException('GUILDA:odeSimulator:InitialConditionFailed', '%s', ...
                                             msg('GUILDA:odeSimulator:InitialConditionFailed', str_phase{:}, str_why));
-                            throw(ME.addCause(me))
+                            ME = ME.addCause(me).addCause(me_ic);
+                            if ~odeSimulator.is_numerical_failure(me_ic, o)
+                                throw(ME)
+                            end
+                            me_stop = ME;
+                            break
                         end
                         if l_relaxed
                             lv_diff = any(o.MassMatrix.MassMatrix ~= 0, 2);
@@ -307,11 +321,20 @@ classdef (Sealed = true) odeSimulator < auxiliary
                             odeProg.OutputFcn([],[],"break");
                             ME = MException('GUILDA:odeSimulator:UnfeasibleDAE', '%s', ...
                                             msg('GUILDA:odeSimulator:UnfeasibleDAE', str_phase{:}, me.message));
-                            throw(ME.addCause(me))
+                            ME = ME.addCause(me);
+                            if ~odeSimulator.is_numerical_failure(me, o)
+                                throw(ME)
+                            end
+                            me_stop = ME;
+                            break
                         end
                         o.InitialSlope = zeros(0,1);
                     end
                     l_solved = true;
+                end
+                if ~isempty(me_stop)
+                    flag = -1;
+                    break
                 end
                 str_warn = lastwarn();
                 if isempty(str_warn)
@@ -334,11 +357,16 @@ classdef (Sealed = true) odeSimulator < auxiliary
             end
 
             output = struct();
-            output.tEnd        = c_phase{end}.t(end);
+            if isempty(c_phase)
+                output.tEnd    = ts;
+            else
+                output.tEnd    = c_phase{end}.t(end);
+            end
             output.nPhases     = np;
-            output.nPhasesDone = numel(c_phase) - (flag ~= 1);
+            output.nPhasesDone = numel(c_phase) - (flag ~= 1 && isempty(me_stop));
             output.phases      = tab_phase;
             output.isSparse    = ctx.l_sparse;
+            output.exception   = me_stop;
             switch flag
                 case 1
                     output.message = sprintf("The simulation reached t = %g s (%d phases).", output.tEnd, np);
@@ -346,13 +374,19 @@ classdef (Sealed = true) odeSimulator < auxiliary
                     output.message = sprintf("The simulation stopped at t = %g s of %g s in phase %d: the computation time exceeded TimeLimit = %g s. " + ...
                                              "Increase TimeLimit (Inf for no limit).", output.tEnd, te, tp, s_options.TimeLimit);
                 otherwise
-                    if isempty(str_warn)
+                    if ~isempty(me_stop)
+                        output.message = sprintf("The simulation stopped at t = %g s of %g s. %s\n" + ...
+                                                 "Try a smaller Tolerance, other SolverOptions, or check the model and the events.", ...
+                                                 output.tEnd, te, me_stop.message);
+                    elseif isempty(str_warn)
                         str_warn = "(no message from the solver)";
                     end
-                    output.message = sprintf("The solver stopped at t = %g s of %g s in phase %d (t = [%g, %g] s). " + ...
-                                             "Solver (time from the start of the phase): %s\n" + ...
-                                             "Try a smaller Tolerance, other SolverOptions, or check the model.", ...
-                                             output.tEnd, te, tp, tab_phase{tp,"t1"}, tab_phase{tp,"t2"}, strtrim(str_warn));
+                    if isempty(me_stop)
+                        output.message = sprintf("The solver stopped at t = %g s of %g s in phase %d (t = [%g, %g] s). " + ...
+                                                 "Solver (time from the start of the phase): %s\n" + ...
+                                                 "Try a smaller Tolerance, other SolverOptions, or check the model.", ...
+                                                 output.tEnd, te, tp, tab_phase{tp,"t1"}, tab_phase{tp,"t2"}, strtrim(str_warn));
+                    end
             end
             if s_options.Verbose
                 disp(output.message)
@@ -481,6 +515,19 @@ classdef (Sealed = true) odeSimulator < auxiliary
             % (daeic12 tests eps*nnz(J)*condest(J) > 1). A DAE of a higher index fails with
             % dense matrices too, and that error is reported.
             l = ctx.l_sparse && endsWith(string(me.identifier), ":IndexGTOne");
+        end
+
+        function l = is_numerical_failure(me, o)
+            % The errors with which the solver gives up on a phase. ode.solve rethrows the errors
+            % of the right-hand side without its stack, so only the identifier tells them from
+            % the errors of input functions and models: any other identifier is not one of these.
+            % The mass matrix error is checked against the phase, as an input function may
+            % call an ode solver of its own.
+            str_id = string(me.identifier);
+            l = ismember(str_id, ["MATLAB:daeic12:NeedBetterY0", "MATLAB:daeic12:IndexGTOne", ...
+                                  "MATLAB:decic:IndexGTOne", "MATLAB:decic:ConvergenceFail"]) ...
+                || (ismember(str_id, ["MATLAB:ode15s:MassMatrixAllZero", "MATLAB:ode23t:MassMatrixAllZero"]) ...
+                    && nnz(o.MassMatrix.MassMatrix) == 0);
         end
 
         function [ctx, o] = use_dense(ctx, o, x0, RM, EM, lg, l_verbose)
