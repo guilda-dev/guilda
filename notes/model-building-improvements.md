@@ -87,7 +87,8 @@
 | 4 | `get-sys-improvements.md` の段階 1D が `@Bus/replace_component.template`, `@Bus/remove_component.m`, `@Component/Component.m` を触ります | 本案の 2B はその後に行う |
 | 5 | MC2 の `SIM:655` の変更は `SIM` に触ります | simulate の `fix/simulate-phase` に含める(§7) |
 | 6 | `api-design.html` の Power flow は「first bus becomes the slack bus」です。IN2 はこの定義を変えます | Q2 で判断。採るなら文書も直す |
-| 7 | `class-design.html:166` の「exactly one」と実装の「at most one」(WF 問題 28) | IN1 で「`initialize` の後は exactly one」になるよう文書を直す(DC4) |
+| 7 | **テストファイル名:** `get-sys-improvements.md` の段階 1A は `test_F3_initialize.m`、本案の 2A は `test_F3_edit_handling.m` を挙げます。**両方とも実在する別のファイルで、矛盾ではありません。** 前者は OPF と KCL の試験、後者は 2A で直す `LocalControllerAddAndReplaceMakeTheEquilibriumStale` を含みます | 名前はこのまま。2A は `test_F3_initialize.m` を変更しない |
+| 8 | `class-design.html:166` の「exactly one」と実装の「at most one」(WF 問題 28) | IN1 で「`initialize` の後は exactly one」になるよう文書を直す(DC4) |
 
 ## 4. 提案一覧
 
@@ -566,7 +567,7 @@ Tag(i) = regexprep(string(char_tag), '\d+$', '');
 
 - **TS1:** `+DebugScript/+helper/check_model_contract.m` を作り、`GUILDA.dictionary` の全キーで `validate` を実行します。手書きのキー一覧(`test_F1_model_building.m:11-12`, `test_F7_linearization.m:132`)に頼らずに新しいクラスが試験されます(EX 27)。`build_3bus` に `parameter` 引数を足します(EX 28)。
 - 不正モデルのスタブは `+DebugScript/+helper/` に置き、`dictionary` の対象外なので(RG3)キー一覧に出ません。登録を要する試験は `test_F23` だけにします。
-- `run_all` の既定は `"F"+(1:10)`(`+DebugScript/run_all.m:32`)なので、新しいファイルは統合時にコーディネーターが登録します。
+- `refactor/design-alignment` の `run_all` は `opt.Features` の既定が空です(`+DebugScript/run_all.m:32`)。空のときは `testsuite("DebugScript")` が見つけた `test_F*.m` と `test_I*.m` をすべて実行するので(`:74-75`)、`test_F15` 以降の登録は不要です。`simulate-improvements.md` §7.2 の登録の記述はこの変更より前のものです。
 
 ## 6. 既存テストへの影響
 
@@ -611,15 +612,16 @@ flowchart LR
 | 段階 | ブランチ | 案 | 触るファイル | 前提 |
 |---|---|---|---|---|
 | 0 | — | §8 の判断 | なし | — |
-| 1A | `fix/network-build-checks` | TP2, CT4(GC), ER1(`remove_branch`) | `@PowerNetwork/add_branch.template`, `@PowerNetwork/remove_branch.m`, `@PowerNetwork/add_global_controller.m`, `@GlobalController/GlobalController.m`, `_auxiliary/SystemTools/GUILDA/en/PowerNetwork.xml`, `_auxiliary/SystemTools/GUILDA/en/GlobalController.xml`, `+DebugScript/test_F15_build_checks.m`, `+DebugScript/test_F18_global_controller.m` | なし |
+| 1A | `fix/network-build-checks` | TP2, CT4(GC), ER1(`remove_branch`) | `@PowerNetwork/add_branch.template`, `@PowerNetwork/add_branch.m`(追跡中の生成物。再生成の結果をコミットする), `@PowerNetwork/remove_branch.m`, `@PowerNetwork/add_global_controller.m`, `@GlobalController/GlobalController.m`, `_auxiliary/SystemTools/GUILDA/en/PowerNetwork.xml`, `_auxiliary/SystemTools/GUILDA/en/GlobalController.xml`, `+DebugScript/test_F15_build_checks.m`, `+DebugScript/test_F18_global_controller.m` | なし |
 | 1B | `fix/csv-io-checks` | TP3, CT3, TG1(母線) | `@PowerNetwork/import_csv.m`, `@PowerNetwork/export_csv.m`, `+DebugScript/test_F16_csv_io.m` | Q8 |
 | 1C | `fix/parameter-type-error` | TP5 | `_auxiliary/@Parameter/add_entry.m`, `_auxiliary/@Parameter/callbackPostSet.m`, `_auxiliary/SystemTools/GUILDA/en/Parameter.xml`, `+DebugScript/test_F17_parameter_type.m` | なし |
 | 1D | `fix/model-constructor-errors` | TP4, ER1(パラメータ、負荷、AVR) | `_GUILDAobject/+component/+generator/@abstract/abstract.m`, `_GUILDAobject/+component/+load/@abstract/abstract.m`, `_GUILDAobject/+controller/+avr/@AVR_ST1/AVR_ST1.m`, `_auxiliary/SystemTools/GUILDA/en/AVR_ST1.xml`, `_auxiliary/SystemTools/GUILDA/en/Component.xml`, `+DebugScript/test_F19_model_constructor.m` | なし |
 | 1E | `fix/class-registration` | RG2, RG3 | `@GUILDA/dictionary.m`, `@GUILDA/private/update_class_signature.m` | なし(F9 で確認) |
-| 1F | `refactor/generated-and-source-files` | CL1, CL2 | `@PowerNetwork/add_branch.m`(追跡の解除), `_GUILDAobject/+network/@Ishizaki6Bus/Ishizaki6Bus.m` | なし |
+| 1F | `fix/ishizaki-source-csv` | CL2 | `_GUILDAobject/+network/@Ishizaki6Bus/Ishizaki6Bus.m` | なし |
 | 2A | `fix/slack-balance` | IN1, IN2, IN3, IN5, TP1, ER1(`BUS001`) | `@PowerNetwork/initialize.m`, `@PowerNetwork/calculate_powerflow.m`, `@Bus/set_equilibrium.m`, `@Component/set_equilibrium.m`, `_auxiliary/SystemTools/GUILDA/en/PowerNetwork.xml`, `+DebugScript/test_F3_edit_handling.m`, `+DebugScript/test_F20_initialize_checks.m` | `fix/initialize-equilibrium`, Q1-Q3, Q5 |
 | 2B | `feature/local-controller-removal` | CT1, CT2, CT4(二重接続), MC3, ER1(`remove_component`, PSS) | `@Component/Component.m`, `@Component/add_local_controller.m`, `@Component/remove_local_controller.m`(新規), `@Bus/replace_component.template`, `@Bus/remove_component.m`, `_auxiliary/SystemTools/GUILDA/en/Component.xml`, `_auxiliary/SystemTools/GUILDA/en/Bus.xml`, `+DebugScript/test_F1_model_building.m`, `+DebugScript/test_F21_controller_editing.m` | get_sys 1D, Q4 |
 | 2C | `feature/model-validate` | MC1, MC4, TS1, MC2(文書と宣言の一部) | `@Component/validate.m`, `@LocalController/validate.m`, `@LocalController/LocalController.m`, `+DebugScript/+helper/check_model_contract.m`, `+DebugScript/+helper/build_3bus.m`, `+DebugScript/test_F22_model_contract.m` | `fix/simulate-phase`, Q6, Q7 |
+| 2D | `refactor/untrack-generated-add-branch` | CL1 | `@PowerNetwork/add_branch.m`(追跡の解除) | 1A の統合後 |
 | 3A | `feature/external-model-path` | RG1 | `@GUILDA/private/update_class_signature.m`, `+DebugScript/test_F23_external_model.m` | 1E, Q11 |
 | 3B | `docs/model-implementation` | DC1, DC4 | `_GUILDAdoc/developer/`(新ページ, `class-design.html`, `api-design.html`, `folder-structure.html`), `_GUILDAdoc/database/list_UpdateLog.js`, `notes/status.md` | 2A-2C, CR8 |
 | 3C | `refactor/csv-tags-and-rename` | TG1(機器とブランチ), TG2, TG3 | `@PowerNetwork/export_csv.m`, `@PowerNetwork/import_csv.m`, `_auxiliary/@LayerPackage/LayerPackage.m`, `+DebugScript/test_F24_tags.m` | 1B, Q9, Q10 |
@@ -628,8 +630,8 @@ flowchart LR
 
 **並行の条件**
 
-- 段階 1 の 6 本は共有ファイルがなく、同時に進められます。
-- 段階 2 の 3 本も共有ファイルがありません。`@Component/Component.m` と `Bus.xml` は 2B だけ(IN3 に伴う `SetSlack` の文の変更も 2B で行います)、`@LocalController/LocalController.m` は 2C だけ、`test_F3_edit_handling.m` は 2A だけ、`test_F1_model_building.m` は 2B だけが触ります。
+- 段階 1 の 6 本は共有ファイルがなく、同時に進められます。**CL1 は段階 1 に置きません。** `add_branch.m` は追跡中の生成物で、1A が `add_branch.template` を変えると `GUILDA` の実行で再生成されて変更になります。同時に追跡を解除すると変更と削除の衝突になるので、CL1 は 1A の統合後に行います(2D)。
+- 段階 2 の 4 本も共有ファイルがありません。2D が触るのは `add_branch.m` だけで、段階 2 の他のブランチは `add_branch.template` を変えません。`@Component/Component.m` と `Bus.xml` は 2B だけ(IN3 に伴う `SetSlack` の文の変更も 2B で行います)、`@LocalController/LocalController.m` は 2C だけ、`test_F3_edit_handling.m` は 2A だけ、`test_F1_model_building.m` は 2B だけが触ります。
 - 段階 3 の 4 本も共有ファイルがありません。3A は 1E の後、3C は 1B の後です。
 
 **他のノートとの統合の注意**
