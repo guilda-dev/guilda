@@ -71,6 +71,9 @@ classdef LayerPackage < handle
         % User-defined tag of the layer.
         % Used for identification within the layer structure; a tag that already exists among
         % the siblings is renamed with a number suffix.
+        % A rename is recorded in tab_editLog (tag "Tag") and makes nothing stale. Tags are permanent
+        % IDs, so the tags of existing child layers do not follow: after renaming bus B002 to BX, its
+        % component SG1B002 keeps its tag and a component added later is SG2BX.
         % <@Type> string
         str_tag
     end
@@ -142,6 +145,7 @@ classdef LayerPackage < handle
         %   Parameter(OPF)         -             -
         %   Parameter(graph)       -             -
         %   OPF                    -             -         (set_opffcn / reset_opffcn)
+        %   Tag                    -             -         (rename through str_tag)
             arguments
                 str_logtag (1,1) string
                 str_log    (1,1) string = ""
@@ -166,7 +170,12 @@ classdef LayerPackage < handle
 
         function set.str_tag(obj,str_newtag)
             str_newtag = obj.validate_tag(str_newtag);
+            str_oldtag = obj.str_tag;
             obj.str_tag = str_newtag;
+            % The first assignment (constructor) is not a rename.
+            if ~isempty(str_oldtag) && str_oldtag ~= str_newtag
+                obj.log_edit("rename " + str_oldtag + " -> " + str_newtag, "Tag", str_oldtag, str_newtag);
+            end
         end
     end
     methods(Hidden)
