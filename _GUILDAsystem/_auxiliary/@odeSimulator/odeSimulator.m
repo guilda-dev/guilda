@@ -175,7 +175,7 @@ classdef (Sealed = true) odeSimulator < auxiliary
                 c_events = {odeEventSet("NoAction", net, "TimeSpan", t_start)};
             end
 
-            [tab_phase, c_odeEvnt] = table(c_events{:}, "time", time);
+            [tab_phase, c_odeEvnt] = table(c_events{:}, "time", time, "net", net);
             odeSimulator.initialize_index(net);
             c_restore = onCleanup(@() odeSimulator.restore_working_data(net));
 

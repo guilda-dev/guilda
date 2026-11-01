@@ -12,5 +12,9 @@
         <entry key="InvalidTimeSpan">Event "{0}": TimeSpan {1} is invalid. Specify real numbers without NaN, with t_start not later than t_end.</entry>
         <entry key="ValueCountMismatch">Event "{0}": {1} has {2} element(s) for {3} element(s) of {4}. Give at least one name, and one value per name or a single value for all names.</entry>
         <entry key="OutsideTimeSpan">Event "{0}" (TimeSpan {1}) lies entirely outside the simulation time {2} and has no effect. Change TimeSpan or the simulation time.</entry>
+        <entry key="OtherNetwork">Event "{0}" belongs to another network. Create the event with the network being simulated.</entry>
+        <entry key="DuplicateTag">Several events have the tag "{0}". Give each event its own tag.</entry>
+        <entry key="ReservedTag">The event tag "{0}" is reserved for the phase table. Use another tag; t1, t2, Properties, Row, Variables, an empty tag, and NoAction followed by digits are not available.</entry>
+        <entry key="EventArray">Give events as separate arguments, e.g. net.simulate(time, ev1, ev2), not as an array.</entry>
     </message>
 </rsccat>
