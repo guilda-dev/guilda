@@ -196,7 +196,8 @@ assert(all(ismember(["Sub7"; "1234"], string(net2.a_Bus))))
 str_log = string(net2.tab_editLog.log);
 assert(any(endsWith(str_log, "<<-Add--- Sub7")) && any(endsWith(str_log, "<<-Add--- 1234")))
 assert(~any(contains(str_log, "<<-Add--- B")), "自動のタグを経由しない")
-assert(~any(contains(str_log, "rename")), "読み込みは改名を記録しない")
+% 既存の系統ではブランチの自動番号がずれるので、ブランチの改名は記録されうる
+assert(~any(contains(str_log, "-> Sub7") | contains(str_log, "-> 1234")), "母線の読み込みは改名を記録しない")
 
 
 function net = initialized_network()
