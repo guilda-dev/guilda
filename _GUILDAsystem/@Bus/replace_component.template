@@ -1,4 +1,4 @@
-function comp = replace_component(obj, str_tag, Type, parameter)
+function comp = replace_component(obj, str_tag, Type, parameter, opt)
 % Replace a component of the bus by a component of another type.
 %
 % The new component keeps the power-flow, operation, OPF and graph settings and the
@@ -6,9 +6,18 @@ function comp = replace_component(obj, str_tag, Type, parameter)
 % `net.initialize()` is needed before the dynamic analyses.
 % A component controlled by a global controller cannot be replaced.
 %
+% The local controllers are not carried over by default: they stay on the replaced
+% component and the warning GUILDA:Bus:ControllersDropped names them. With
+% `Controllers="keep"` they move to the new component (a handle to one of them then refers
+% to the new component), and `net.initialize()` designs them again. If the new component
+% lacks an input they drive or a signal they observe, the error
+% GUILDA:Bus:ControllersNotKept stops the call and nothing changes. The weights of
+% `controller.local_LQR` are kept as given, so a `Q` of another size stops `net.initialize()`.
+%
 % <@Examples>
 % ```matlab
 % net.a_Bus{1}.replace_component("SG1B001", "gen-classical");
+% net.a_Bus{1}.replace_component("SG1B001", "gen-1axis", Controllers="keep");
 % ```
 %
 % See also Bus.add_component, Bus.remove_component
@@ -18,6 +27,7 @@ function comp = replace_component(obj, str_tag, Type, parameter)
         str_tag              (1,1) string   % Tag of the component to replace.
         Type                 (1,:) char {mustBeMember(Type,{___KEY_LIST___})}   % Component type key, e.g. "gen-park" or "load-power".
         parameter             = nan;   % Dynamic parameters (table or string); NaN uses the class defaults.
+        opt.Controllers      (1,1) string {mustBeMember(opt.Controllers,["drop","keep"])} = "drop";   % Local controllers of the replaced component: "drop" leaves them on it with a warning, "keep" moves them to the new one.
     end
     arguments (Output)
         comp   % New Component object.
@@ -38,17 +48,17 @@ function comp = replace_component(obj, str_tag, Type, parameter)
     tab_pre  = [comp_pre.para_powerflow.tab_parameter, ...
                 comp_pre.para_operation.tab_parameter, ...
                 comp_pre.para_graph.tab_parameter];
-    opt      = table2struct(tab_pre);
+    opt_comp = table2struct(tab_pre);
 
     tab_opf  = comp_pre.para_OPF;
-    opt.OPFinit_P0       = tab_opf.P0;
-    opt.OPFinit_Q0       = tab_opf.Q0;
-    opt.OPFcost_HP       = tab_opf.HP;
-    opt.OPFcost_HQ       = tab_opf.HQ;
-    opt.OPFcost_fP       = tab_opf.fP;
-    opt.OPFcost_fQ       = tab_opf.fQ;
-    opt.OPFcost_startup  = tab_opf.startup;
-    opt.OPFcost_shutdown = tab_opf.shutdown;
+    opt_comp.OPFinit_P0       = tab_opf.P0;
+    opt_comp.OPFinit_Q0       = tab_opf.Q0;
+    opt_comp.OPFcost_HP       = tab_opf.HP;
+    opt_comp.OPFcost_HQ       = tab_opf.HQ;
+    opt_comp.OPFcost_fP       = tab_opf.fP;
+    opt_comp.OPFcost_fQ       = tab_opf.fQ;
+    opt_comp.OPFcost_startup  = tab_opf.startup;
+    opt_comp.OPFcost_shutdown = tab_opf.shutdown;
 
     % keep the number of the replaced component: "<header><number><bus tag>"
     str_num   = regexp(extractBefore(comp_pre.str_tag, strlength(comp_pre.str_tag)-strlength(obj.str_tag)+1), "\d+$", "match", "once");
@@ -59,7 +69,12 @@ function comp = replace_component(obj, str_tag, Type, parameter)
     switch Type
 ___KEY_CASES___
     end
-    comp = mkInst(str_index, parameter, opt);
+    str_controllers = opt.Controllers;
+    comp = mkInst(str_index, parameter, opt_comp);
+    a_con = controllers_of(comp_pre);
+    if str_controllers == "keep"
+        check_keep(comp_pre, comp);    % before anything changes
+    end
 
     % register
     comp.set_bus(obj)        
@@ -74,5 +89,57 @@ ___KEY_CASES___
     % net.initialize() first.
     comp.set_equilibrium(Vequilibrium, Iequilibrium);
     obj.log_edit(obj.str_tag+" <<-replace--- "+str_tag+" -> "+comp.str_tag,"Topology")
+    if ~isempty(a_con)
+        if str_controllers == "keep"
+            % After the placeholder equilibrium, on which a controller must not be designed
+            comp_pre.move_local_controllers(comp);
+        else
+            warning('GUILDA:Bus:ControllersDropped', '%s', ...
+                    msg('GUILDA:Bus:ControllersDropped', tag_list(a_con), char(comp_pre.str_tag), char(comp.str_tag)))
+        end
+    end
     comp_pre.set_bus([])    % the replaced component no longer reads this bus
+end
+
+function a_con = controllers_of(comp)
+    % The local controllers of the component and the controllers nested in them
+    a_con = cell(0,1);
+    for k = 1:numel(comp.a_LocalController)
+        con   = comp.a_LocalController{k};
+        a_con = [a_con; {con}; con.a_LocalController(:)];    %#ok<AGROW>
+    end
+end
+
+function check_keep(comp_pre, comp)
+    % Stop if the new component lacks an input driven or a signal observed by a controller
+    sv_why  = strings(0,1);
+    for k = 1:numel(comp_pre.a_LocalController)
+        con     = comp_pre.a_LocalController{k};
+        sv_miss = setdiff(string(con.sv_y(:)), string(comp.sv_u(:)), "stable");
+        if ~isempty(sv_miss)
+            sv_why(end+1,1) = con.str_tag + " drives " + join(sv_miss, ", ");    %#ok<AGROW>
+        end
+    end
+    a_con = controllers_of(comp_pre);
+    for k = 1:numel(a_con)
+        % An input that covers all the states is "Xall", which follows any component
+        con    = a_con{k};
+        sv_obs = con.sv_u(con.iv_obsY > 0);
+        sv_x   = con.sv_u(con.iv_obsX > 0);
+        if ~all(ismember(comp_pre.sv_x, sv_x))
+            sv_obs = [sv_obs(:); sv_x(:)];
+        end
+        sv_miss = setdiff(sv_obs, [string(comp.sv_y(:)); string(comp.sv_x(:))], "stable");
+        if ~isempty(sv_miss)
+            sv_why(end+1,1) = a_con{k}.str_tag + " observes " + join(sv_miss, ", ");    %#ok<AGROW>
+        end
+    end
+    if ~isempty(sv_why)
+        error('GUILDA:Bus:ControllersNotKept', '%s', ...
+              msg('GUILDA:Bus:ControllersNotKept', char(comp_pre.str_tag), char(comp.str_tag), char(join(sv_why, "; "))))
+    end
+end
+
+function str = tag_list(a_con)
+    str = char(join(cellfun(@(con) con.str_tag, a_con), ", "));
 end

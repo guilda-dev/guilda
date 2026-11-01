@@ -237,6 +237,7 @@ classdef Component < PowerSystemModel
     methods(Access={?Bus})
         set_bus(obj,bus)
         set_equilibrium(obj,c_V,c_I,r_P,r_Q)
+        move_local_controllers(obj,comp_new)
     end
 
 
