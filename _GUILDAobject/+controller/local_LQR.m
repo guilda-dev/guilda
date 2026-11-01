@@ -151,12 +151,7 @@ classdef local_LQR < LocalController
             if isempty(obj.sv_input)
                 sv_in = comp.sv_u;
             else
-                sv_in = obj.sv_input;
-                lv = ismember(sv_in, comp.sv_u);
-                if ~all(lv)
-                    error("GUILDA:local_LQR:UnknownInput", "%s: %s is not an input of %s (%s).", ...
-                          obj.str_tag, join(sv_in(~lv), ","), comp.str_tag, join(comp.sv_u, ","))
-                end
+                sv_in = obj.sv_input;   % checked by Component.add_local_controller
             end
             obj.sv_y = sv_in(:);
         end

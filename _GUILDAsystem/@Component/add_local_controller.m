@@ -16,6 +16,10 @@ function add_local_controller(obj, varargin)
 % Replaced controllers are detached (they no longer refer to this component).
 % A controller still attached elsewhere is rejected with an error: each component needs
 % its own controller object.
+% A key other than "avr", "pss" or "local" is rejected with an error, and so is an output
+% that matches no input of the component (for a PSS, of its AVR), e.g. an AVR on a load.
+% A misspelled input is not an error, because it has the same form as an input left
+% unconnected on purpose.
 % Each addition is logged as a "Topology" edit, so the equilibrium becomes stale.
 %
 % <@Examples>
@@ -36,7 +40,9 @@ function add_local_controller(obj, varargin)
     l_givenPss = any(cellfun(@(con) con.key == "pss", varargin));
 
     % Checked before anything changes, so a rejected call leaves the component as it was
+    cellfun(@check_key, varargin);
     cellfun(@(con) check_parent(con, obj), varargin);
+    check_outputs(obj, varargin);
 
     for idx = 1:numel(varargin)
         new_con = varargin{idx};
@@ -108,6 +114,42 @@ function check_parent(con, comp)
     if ~l_same
         error('GUILDA:Component:SharedController', '%s', ...
               msg('GUILDA:Component:SharedController', label(con), char(con.str_tag), char(parent.str_tag), char(comp.str_tag)))
+    end
+end
+
+function check_key(con)
+    if ~ismember(con.key, ["avr", "pss", "local"])
+        error('GUILDA:Component:InvalidControllerKey', '%s', ...
+              msg('GUILDA:Component:InvalidControllerKey', char(con.str_tag), char(con.key)))
+    end
+end
+
+function check_outputs(comp, a_con)
+    % Follow the call in order, so that a PSS is checked against the AVR it will go under.
+    % A PSS without an AVR is left to the NotExtAvr error of the attachment.
+    if isempty(comp.a_LocalController)
+        upper = [];
+    else
+        upper = comp.a_LocalController{1};
+    end
+    for idx = 1:numel(a_con)
+        con = a_con{idx};
+        if con.key ~= "pss"
+            check_output(con, comp);
+            upper = con;
+        elseif ~isempty(upper) && upper.key == "avr"
+            check_output(con, upper);
+        end
+    end
+end
+
+function check_output(con, target)
+    % target: the object whose inputs sv_u the outputs of the controller replace
+    sv_miss = setdiff(string(con.sv_y), string(target.sv_u), "stable");
+    if ~isempty(sv_miss)
+        error('GUILDA:Component:ControllerOutput', '%s', ...
+              msg('GUILDA:Component:ControllerOutput', strjoin(cellstr(sv_miss(:)'), ', '), char(con.str_tag), ...
+                  char(target.str_tag), strjoin(cellstr(string(target.sv_u(:)')), ', ')))
     end
 end
 
