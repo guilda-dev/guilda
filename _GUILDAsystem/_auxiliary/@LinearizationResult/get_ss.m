@@ -7,17 +7,16 @@ function sys = get_ss(obj, Algorithm, opt)
 % the global controllers first, then the components; "Feedback" puts the components first,
 % then the global controllers (in the order they were added). Use StateName to find a state.
 % The exception is "Feedback" with a non-unit bus that has components: v3 dropped them, here
-% they are absorbed into the admittance matrix, which changes the matrices and adds inputs.
+% they are absorbed into the admittance matrix, which can change the matrices and adds inputs.
 %
 % - "Kron": the bus voltages are eliminated from the DAE. States: all states.
 %   Inputs: the inputs u. Outputs: the states, in their order, without output names.
 % - "Feedback": the bus models in I-to-V form are connected through the admittance
-%   matrix, then the global controllers are closed. Non-unit buses (options.NonUnit, and
-%   buses without states that have no I-to-V form) are eliminated with the network: their
-%   linearized current is absorbed into the admittance matrix and their inputs are kept,
-%   so the model is equivalent to "Kron". options.NonUnit naming a bus with states is an
-%   error (GUILDA:LinearizationResult:NonUnitDynamicBus). A network without states has
-%   nothing to connect, which is also an error (GUILDA:LinearizationResult:NoUnitBus).
+%   matrix, then the global controllers are closed. Non-unit buses (buses without
+%   components, and buses without states that have no I-to-V form) are detected automatically
+%   and eliminated with the network: their linearized current is absorbed into the admittance
+%   matrix and their inputs are kept, so the model is equivalent to "Kron". A network without
+%   states has nothing to connect, which is an error (GUILDA:LinearizationResult:NoUnitBus).
 %   Inputs: the inputs u, in the same order as "Kron". States: the connection (connect) can
 %   remove some, such as Vst of an AVR, so there can be fewer than in "Kron". Outputs: the
 %   states of the components and local controllers, including a row for each removed state
@@ -43,8 +42,6 @@ function sys = get_ss(obj, Algorithm, opt)
 %
 % Input takes "u" (all inputs) or Labels of the inputs, and the inputs follow the given
 % order. An unknown name stops with GUILDA:LinearizationResult:UnknownChannel.
-%
-% Only "Feedback" uses options.NonUnit: "Kron" and "DAE" ignore it and say so with an INFO message.
 %
 % A result with flag false (output.str_issue) stops with an error that repeats output.message:
 % GUILDA:LinearizationResult:NotFinite for every algorithm, and GUILDA:LinearizationResult:SingularAvv
@@ -75,9 +72,6 @@ function sys = get_ss(obj, Algorithm, opt)
     elseif obj.output.str_issue == "SingularAvv" && Algorithm ~= "DAE"
         error("GUILDA:LinearizationResult:SingularAvv", ...
               "%s Algorithm ""%s"" eliminates the bus voltages; use ""DAE"" to keep them.", obj.output.message, Algorithm)
-    end
-    if Algorithm ~= "Feedback" && any(obj.s_model.lv_nonUnit)
-        disp("INFO: NonUnit = [" + num2str(find(obj.s_model.lv_nonUnit(:)')) + "] is ignored by Algorithm """ + Algorithm + """. Only ""Feedback"" uses it.")
     end
     switch Algorithm
         case "Kron"
@@ -322,12 +316,7 @@ function sys = via_feedback(obj)
     s     = obj.s_model;
     n_bus = numel(s.c_sysBus);
 
-    lv_dynamic = s.lv_nonUnit & tools.vcellfun(@(S) ~isempty(S.A), s.c_sysBus);
-    if any(lv_dynamic)
-        error("GUILDA:LinearizationResult:NonUnitDynamicBus", ...
-              "NonUnit = [%s] names buses with states, which cannot be eliminated with the network: bus %s.", ...
-              num2str(obj.options.NonUnit), num2str(find(lv_dynamic(:)')))
-    end
+    v3_nonunit_dynamic(obj.options, s.c_sysBus);    % COMPAT(v3)
     if all(tools.vcellfun(@(S) isempty(S.A), s.c_sysBus))
         error("GUILDA:LinearizationResult:NoUnitBus", ...
               "Algorithm ""Feedback"" needs a bus with states, but no bus of the network has any. Use ""Kron"" or ""DAE"" for a network without states.")

@@ -432,12 +432,11 @@ hold on;
 arrayfun(@(i) plot(xsol.t, xsol.Bus(i).Component(1).X.omega), [1, 2, 3, 6, 8]);</code></pre>
 
       <h2 id="tutorial-linear-model">4. Obtain a Linear Model</h2>
-      <p>After initialization, obtain the linearized interconnected model. Buses without dynamic units can be specified with the <code>NonUnit</code> option.</p>
+      <p>After initialization, obtain the linearized interconnected model. Buses without dynamic units are detected automatically.</p>
 <pre><code>net = network.IEEE14bus;
 net.initialize();
 
 sys = net.get_sys();
-sysReduced = net.get_sys("NonUnit", 7);
 eig(sys.A)</code></pre>
 
       <h2>5. Add and Evaluate Controllers</h2>

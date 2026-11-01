@@ -5,7 +5,7 @@ function [net, comp] = build_3bus(key)
 %
 %   B001: gen-park (slack)  --  B002: 発電機 (key が gen-* のとき)  --  B003: 負荷
 % key が load-* のときは B002 を gen-park、B003 を key の負荷にする。
-% comp は key で追加した機器。全母線に機器があるので odeLinearizer の NonUnit も発生しない。
+% comp は key で追加した機器。全母線に機器があるので、機器のない母線の消去も発生しない。
     arguments
         key (1,1) string
     end

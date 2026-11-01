@@ -192,9 +192,11 @@ assert(sum(str_file == fullfile("_GUILDAsystem", "@PowerNetwork", "initialize.m"
 assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@ContinuationPowerFlow", "ContinuationPowerFlow.m")) == 1, join(str_hook, ", "))
 assert(sum(str_file == fullfile("_GUILDAsystem", "@PowerNetwork", "simulate.m")) == 1, join(str_hook, ", "))
 assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@odeSimulator", "odeSimulator.m")) == 3, join(str_hook, ", "))
-assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@odeLinearizer", "odeLinearizer.m")) == 1, join(str_hook, ", "))
+assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@odeLinearizer", "odeLinearizer.m")) == 5, join(str_hook, ", "))
+assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@odeLinearizer", "solve.m")) == 1, join(str_hook, ", "))
+assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@LinearizationResult", "get_ss.m")) == 1, join(str_hook, ", "))
 assert(sum(str_file == fullfile("@GUILDA", "private", "get_config.m")) == 1, join(str_hook, ", "))
-assert(numel(str_hook) == 19, join(str_hook, ", "))
+assert(numel(str_hook) == 25, join(str_hook, ", "))
 
 
 % ---- local functions ----

@@ -248,6 +248,8 @@ end
 
 ### 5.3 `NonUnit` と `Point` の意味
 
+> **決定(Issue #118):** `NonUnit` は案 C のとおり廃止し、自動判定だけを残しました。以下の NU1〜NU3 は検討時の記録です。`#74` の INFO は削除し、NU3 は実施しません。現在の互換の扱いは `v4-migration.md` の 4 章にあります。
+
 #### NU1, SH2: `NonUnit` の意味(`v3` 互換と衝突)
 
 **問題 [再現]:** `NonUnit` は電流が流れている機器も落とします。IEEE14 の `NonUnit=[7 9]` で最大実部 +1.09、警告なしです。一方、利用者向けの説明は「Buses without dynamic units can be specified」です(`_GUILDAdoc/index.html:435`)。この説明の意図と実装が合っていません。

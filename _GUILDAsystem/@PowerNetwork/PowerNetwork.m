@@ -81,7 +81,7 @@ classdef PowerNetwork < PowerSystemModel
         solver_ODE 
 
         % odeLinearizer solver of net.linearize and net.get_sys.
-        % Its properties are the stored defaults (Algorithm, NonUnit, Point), kept between
+        % Its properties are the stored defaults (Algorithm, Point, Coordinate), kept between
         % runs; Name-Value options of a call override them for that call only. Results are
         % returned as a LinearizationResult, never stored in the solver.
         % <@Type> odeLinearizer
