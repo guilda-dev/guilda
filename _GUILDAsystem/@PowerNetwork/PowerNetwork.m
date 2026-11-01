@@ -44,7 +44,7 @@ classdef PowerNetwork < PowerSystemModel
 
 %% Properties
 
-    properties % Layer Structure
+    properties(SetAccess=private) % Layer Structure
        a_Bus              (:,1) cell = cell(0,1);   % Buses of the network, in the order of the bus index.
        a_Branch           (:,1) cell = cell(0,1);   % Branches of the network.
        a_GlobalController (:,1) cell = cell(0,1);   % Global controllers of the network.
@@ -169,6 +169,17 @@ classdef PowerNetwork < PowerSystemModel
         % IO
         net = import_csv(path, opt)
         net = import_matpower(mpc, opt)
+
+        function obj = loadobj(obj)
+            % A MAT file does not hold listeners: restore those of the parameters so that
+            % edits of a loaded network are checked and logged. MATLAB turns an error here
+            % into a warning, so an incomplete restore is reported as a warning.
+            if ~restore_parameter_listeners(obj)
+                warning('GUILDA:PowerNetwork:IncompleteLoad', ...
+                        "Edits of the object saved below network '%s' are not logged after loading. Save the network itself.", ...
+                        obj.str_tag)
+            end
+        end
     end
     methods(Access=protected)
         % Edit handling: rebuild stale f_* handles, check the equilibrium
@@ -245,31 +256,44 @@ classdef PowerNetwork < PowerSystemModel
                 end
             end
         end
-        function set.a_Bus(obj,val)
-            stack = dbstack('-completenames');            
-            if ~isempty(stack) && ~contains(stack(2).file, "_GUILDAsystem"+filesep+"@PowerNetwork")                 
-                error(msg('GUILDA:PowerNetwork:SetAbus'))
-            end
-            obj.a_Bus = val;
-        end
-        function set.a_Branch(obj,val)
-            stack = dbstack('-completenames');            
-            if ~isempty(stack) && ~contains(stack(2).file, "_GUILDAsystem"+filesep+"@PowerNetwork")                 
-                error(msg('GUILDA:PowerNetwork:SetAbranch'))
-            end
-            obj.a_Branch = val;
-        end
-        function set.a_GlobalController(obj,val)
-            stack = dbstack('-completenames');            
-            if ~isempty(stack) && ~contains(stack(2).file, "_GUILDAsystem"+filesep+"@PowerNetwork")                 
-                error(msg('GUILDA:PowerNetwork:SetGcon'))
-            end
-            obj.a_GlobalController = val;
-        end
         
         % function set.str_methodPF(~,~)
         %     error("Property: Records the power flow calculation method used by obj.initialize()."+newline+...
         %           " Update : Automatically refreshes based on the method used upon each execution of obj.initialize().")
         % end
     end
+end
+
+
+function l_complete = restore_parameter_listeners(layer)
+% Attach the listeners of Parameter.add_entry again on a layer and all layers below it.
+% The class a parameter must keep is taken from its value, which add_entry has validated.
+% l_complete is false when a layer is still being loaded (the MAT file holds a variable
+% below the network, which loads the network from inside that layer): its parameters are
+% not available yet.
+    l_complete = true;
+    mc = metaclass(layer);
+    lv = startsWith(string({mc.PropertyList.Name}), "para_") & ~[mc.PropertyList.Dependent];
+    for str_para = string({mc.PropertyList(lv).Name})
+        para = layer.(str_para);
+        if ~isa(para, "Parameter")
+            l_complete = false;
+            continue
+        end
+        for name = setdiff(string(properties(para)), string(properties("Parameter"))).'
+            valid = class(para.(name));
+            addlistener(para, name, 'PreSet',  @(~,event) para.callbackPreSet(name,event));
+            addlistener(para, name, 'PostSet', @(~,event) para.callbackPostSet(name,valid,event));
+        end
+    end
+    if isa(layer, "PowerNetwork")
+        a_lower = [layer.a_Bus; layer.a_Branch; layer.a_GlobalController];
+    elseif isa(layer, "Bus")
+        a_lower = layer.a_Component;
+    elseif isprop(layer, "a_LocalController")
+        a_lower = layer.a_LocalController;
+    else
+        a_lower = {};
+    end
+    l_complete = all([l_complete, cellfun(@restore_parameter_listeners, a_lower(:).')]);
 end

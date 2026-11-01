@@ -222,6 +222,114 @@ out  = DebugScript.helper.quiet(@() CsvNetHandler.import(str_path, net3, "Initia
 assert(out == net3 && numel(net3.a_Bus) == 14)
 
 
+%% MAT file round trip keeps a usable network
+% save / load で構成が戻り、解析の結果も同じ
+[net, ~] = DebugScript.helper.build_3bus("gen-1axis");
+DebugScript.helper.quiet(@() net.initialize);
+str_mat = tempname + ".mat";
+c = onCleanup(@() delete(str_mat));
+save(str_mat, "net");
+
+lastwarn("");
+s = load(str_mat);  n1 = s.net;
+assert(isempty(lastwarn), lastwarn)
+assert(n1 ~= net)
+assert(isequal(string(n1.a_Bus), string(net.a_Bus)) && isequal(string(n1.a_Branch), string(net.a_Branch)))
+comp = n1.a_Bus{2}.a_Component{1};
+assert(comp.a_Bus == n1.a_Bus{2})                       % 親への参照は読み込んだ系統を指す
+assert(n1.a_Bus{2}.a_PowerNetwork == n1)
+assert(norm(n1.cv_Vequilibrium - net.cv_Vequilibrium) == 0)
+assert(norm(sort(abs(eig(n1.get_sys.A))) - sort(abs(eig(net.get_sys.A)))) < 1e-10)
+f = functions(comp.f_dx);
+assert(f.workspace{1}.obj == comp)                      % f_* も読み込んだ機器を指す
+ev  = odeEventSet("fault", n1, "TimeSpan", [1,1.05], "FaultBus", "B003");
+sol = DebugScript.helper.quiet(@() n1.simulate([0,2], ev));
+assert(sol.odeResults.t(end) == 2)
+
+% 読み込んだ系統でも編集が記録され、平衡点が古くなる
+assert(height(n1.tab_editLog) == 0 && ~n1.l_staleEquilibrium)
+comp.tab_parameter.dynamics.D = comp.tab_parameter.dynamics.D * 2;
+assert(height(n1.tab_editLog) == 1)                     % リスナーは 1 組だけ
+assert(comp.l_staleOdefcn && n1.l_staleEquilibrium)
+assert(error_id(@() n1.get_sys) == "GUILDA:PowerNetwork:EquilibriumStale")
+assert(height(net.tab_editLog) == 0 && ~net.l_staleEquilibrium)  % 元の系統は変わらない
+DebugScript.helper.quiet(@() n1.initialize);
+assert(~comp.l_staleOdefcn && ~n1.l_staleEquilibrium)
+
+% 型の検査も効く (読み込む前と同じく、リスナーのエラーは警告になり値が戻る)
+r_D = comp.para_dynamics.D;
+lastwarn("");
+DebugScript.helper.quiet(@() set_dynamics_D(comp, "abc"));
+assert(contains(lastwarn, "must be double") && isequal(comp.para_dynamics.D, r_D))
+
+% 母線・送電線・系統のパラメータと、読み込み後の構成の編集
+s = load(str_mat);  n2 = s.net;
+n2.a_Bus{3}.tab_parameter.powerflow.V = 1.01;
+assert(height(n2.tab_editLog) == 1 && n2.l_staleEquilibrium)
+s = load(str_mat);  n3 = s.net;
+n3.a_Branch{1}.tab_parameter.dynamics.R = 0.02;
+assert(height(n3.tab_editLog) == 1 && n3.l_staleEquilibrium)
+s = load(str_mat);  n4 = s.net;
+n4.tab_parameter.base.Hz = 50;
+assert(n4.a_Bus{2}.a_Component{1}.l_staleOdefcn && ~n4.l_staleEquilibrium)
+s = load(str_mat);  n5 = s.net;
+DebugScript.helper.quiet(@() set_slack(n5.a_Bus{2}));
+assert(n5.a_Bus{2}.l_isSlack && n5.l_staleEquilibrium)
+s = load(str_mat);  n6 = s.net;
+n6.add_bus();
+assert(numel(n6.a_Bus) == 4 && n6.l_staleEquilibrium && numel(net.a_Bus) == 3)
+
+% 直接は代入できない
+for str_prop = ["a_Bus","a_Branch","a_GlobalController"]
+    assert(error_id(@() set_prop(net, str_prop, cell(0,1))) == "MATLAB:class:SetProhibited", str_prop)
+end
+
+
+%% MAT file round trip keeps controllers and lower layers
+% 制御器のパラメータの編集も記録される
+net = DebugScript.helper.quiet(@() network.IEEE9bus);
+DebugScript.helper.quiet(@() net.initialize);
+str_mat = tempname + ".mat";
+c = onCleanup(@() delete(str_mat));
+save(str_mat, "net");
+s   = load(str_mat);
+avr = s.net.a_Bus{1}.a_Component{1}.a_LocalController{1};
+pss = avr.a_LocalController{1};
+assert(isa(avr, "controller.avr.AVR_ST1") && isa(pss, "controller.pss.PSS1"))
+avr.para_dynamics.kap = avr.para_dynamics.kap * 1.1;
+assert(height(s.net.tab_editLog) == 1 && s.net.l_staleEquilibrium && avr.l_staleOdefcn)
+pss.para_dynamics.kpss = pss.para_dynamics.kpss * 1.1;
+assert(height(s.net.tab_editLog) == 2 && pss.l_staleOdefcn)
+
+% 結果オブジェクトが参照する系統も同じ
+[net, ~] = DebugScript.helper.build_3bus("gen-1axis");
+DebugScript.helper.quiet(@() net.initialize);
+res = DebugScript.helper.quiet(@() net.calculate_powerflow);
+save(str_mat, "res");
+lastwarn("");
+s = load(str_mat);
+assert(isempty(lastwarn), lastwarn)
+assert(numel(s.res.a_PowerNetwork.a_Bus) == 3)
+s.res.a_PowerNetwork.a_Bus{2}.a_Component{1}.para_dynamics.D = 1;
+assert(height(s.res.a_PowerNetwork.tab_editLog) == 1)
+
+% 系統の下の層だけを保存すると、その層の編集は記録できないので警告する
+gen = net.a_Bus{2}.a_Component{1};
+save(str_mat, "gen");
+lastwarn("");
+s = load(str_mat);
+[~, id] = lastwarn();
+assert(id == "GUILDA:PowerNetwork:IncompleteLoad", id)
+assert(numel(s.gen.a_Bus.a_PowerNetwork.a_Bus) == 3)     % 構成は戻る
+comp = gen;                                              % 系統と一緒に保存しても同じ
+save(str_mat, "net", "comp");
+lastwarn("");
+s = load(str_mat);
+[~, id] = lastwarn();
+assert(id == "GUILDA:PowerNetwork:IncompleteLoad", id)
+assert(s.comp == s.net.a_Bus{2}.a_Component{1})
+
+
 %% MATPOWER import reproduces case14
 % import_matpower は tools.network_to_mpc の逆変換 (MATPOWER 不要)。
 % case14 を読み込んで mpc に戻すと元のデータになり、潮流計算・OPF は network.IEEE14bus と一致する。
@@ -575,4 +683,12 @@ end
 
 function set_slack(bus)
     bus.l_isSlack = true;
+end
+
+function set_dynamics_D(comp, val)
+    comp.para_dynamics.D = val;
+end
+
+function set_prop(obj, str_prop, val)
+    obj.(str_prop) = val;
 end
