@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the class "GlobalController".-->
+<rsccat version="2" locale="en" product="GUILDA">
+    <message>
+        <entry key="InvalidComponent">''{0}'' given to the global controller ''{1}'' is not a component of the network ''{2}''.&#xA;Give a Component object or the tag of a component of this network. Add the components to the network before building the controller.</entry>
+    </message>
+</rsccat>

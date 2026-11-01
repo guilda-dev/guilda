@@ -12,6 +12,8 @@
         <entry key="BusHasBranches">Bus ''{0}'' is connected to the branches {1}.&#xA;Remove them first with net.remove_branch(TAG), or remove them together with&#xA;  &gt;&gt; net.remove_bus(BUS_TAG, "RemoveBranches", true)</entry> 
         <entry key="BusHasControlledUnits">The components {0} on the removed bus are controlled by the global controller ''{1}''.&#xA;Remove the global controller first with net.remove_global_controller(TAG).</entry> 
         <entry key="GconTagInUse">A global controller with the tag ''{0}'' is already in ''{1}''.&#xA;Give the new controller another tag, or remove the existing one first with net.remove_global_controller(TAG).</entry> 
+        <entry key="GconOtherNetwork">The global controller ''{0}'' controls ''{1}'', which is not a component of the network ''{2}''.&#xA;Build the controller again with this network as its first argument.</entry>
+        <entry key="GconPorts">The global controller ''{0}'' cannot control ''{1}'': the class {2} has no {3}.&#xA;Choose a component that has them.</entry>
         <entry key="GconNotFound">No global controller with the tag ''{0}'' was found in ''{1}''.</entry> 
         <entry key="InitializeMethod">The Method of net.initialize must be one of {0}.</entry>
         <entry key="InitializePairs">Options for net.initialize must be given as Name-Value pairs, e.g. net.initialize(Method="OPF").</entry>
