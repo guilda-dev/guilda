@@ -176,7 +176,7 @@ assert(avr.a_Component == gen && pss.a_Component == avr)
 DebugScript.helper.quiet(@() net.initialize);
 assert(numel(avr.rv_Xequilibrium) == numel(avr.sv_x))
 assert(numel(pss.rv_Xequilibrium) == numel(pss.sv_x))
-assert(numel(gen.rv_Xequilibrium_all) == numel(gen.sv_x) + numel(avr.sv_x))
+assert(numel(gen.rv_Xequilibrium_all) == numel(gen.sv_x) + numel(avr.sv_x) + numel(pss.sv_x))
 
 
 %% Replace AVR keeps its PSS

@@ -232,8 +232,7 @@ classdef Component < PowerSystemModel
 %% Get Methods
     methods
         function x = get.rv_Xequilibrium_all(obj)
-            x_con = tools.vcellfun(@(comp) comp.rv_Xequilibrium, obj.a_LocalController);
-            x     = [obj.rv_Xequilibrium; x_con];
+            x = equilibrium_depth_first(obj);
         end
         function V = get.c_Vequilibrium(obj)
             % The bus owns the voltage; a component not attached to a bus has none.
@@ -286,3 +285,10 @@ end
 
 
 
+
+
+function x = equilibrium_depth_first(parent)
+% States of parent and then of its local controllers, depth first (the order of get_variable_map)
+    x_con = tools.vcellfun(@equilibrium_depth_first, parent.a_LocalController);
+    x     = [reshape(parent.rv_Xequilibrium, [], 1); x_con];
+end
