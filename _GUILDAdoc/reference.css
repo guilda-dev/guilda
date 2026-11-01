@@ -249,6 +249,53 @@ tr.ref-group-row th {
 .ref-see-also a > code { color: inherit; }
 .ref-unit { font-family: var(--font-mono); font-size: 0.85em; white-space: nowrap; }
 
+/* Call graph on the method page (inline SVG drawn by method.html). */
+.cg-lead { margin: 0 0 10px; color: var(--muted); font-size: 0.9rem; }
+.cg-chart { width: 100%; overflow: hidden; margin: 0 0 10px; }
+.cg-svg { display: block; max-width: 100%; font-family: var(--font-mono); font-size: 12px; }
+.cg-box { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1; }
+.cg-box.is-property { fill: var(--surface-subtle); stroke: var(--line); }
+.cg-box.is-parameter { fill: var(--brand-tint); stroke: var(--line); }
+.cg-bar { fill: var(--brand); }
+.cg-text { fill: var(--ink); }
+.cg-text.is-parameter { font-style: italic; }
+.cg-prefix { fill: var(--muted); }
+.cg-node a:hover .cg-box { stroke: var(--brand); }
+.cg-node a:hover .cg-text { fill: var(--brand-strong); }
+.cg-node a:focus-visible .cg-box { stroke: var(--brand); stroke-width: 2; }
+.cg-node a { text-decoration: none; }
+.cg-link { fill: none; stroke: var(--muted); stroke-width: 1.1; }
+.cg-link.is-inferred { stroke-dasharray: 5 3; }
+.cg-link.is-candidates { stroke-dasharray: 1.5 3; stroke-linecap: round; }
+.cg-trunk { fill: none; stroke: var(--line-strong); stroke-width: 1.1; }
+.cg-arrow { fill: var(--muted); }
+.cg-head { fill: var(--muted); font-family: var(--font-sans); font-size: 12px; font-weight: 600; }
+.cg-none { fill: var(--muted); font-family: var(--font-sans); font-size: 12px; }
+.cg-more { fill: var(--brand); font-family: var(--font-sans); font-size: 12px; cursor: pointer; }
+.cg-more:hover { text-decoration: underline; }
+.cg-more:focus-visible { outline: 2px solid var(--brand); }
+.cg-toggle { cursor: pointer; }
+.cg-toggle rect { fill: var(--surface-subtle); stroke: var(--line); }
+.cg-toggle text { fill: var(--ink-2); font-size: 13px; }
+.cg-toggle:hover rect, .cg-toggle:focus-visible rect { stroke: var(--brand); }
+.cg-toggle:focus { outline: none; }
+.cg-current rect { fill: var(--brand); }
+.cg-current-class { fill: var(--on-brand-muted); font-size: 11px; }
+.cg-current-member { fill: var(--surface); font-weight: 600; }
+.cg-note { margin: 0 0 10px; font-size: 0.85rem; color: var(--ink-2); overflow-wrap: anywhere; }
+.cg-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0 0 20px;
+  padding: 8px 0 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.cg-legend li { display: inline-flex; align-items: center; gap: 6px; }
+
 /* Narrow screens: the sidebar stacks above the content. */
 @media (max-width: 899px) {
   body.doc-layout #sidebar img { max-width: 180px; }

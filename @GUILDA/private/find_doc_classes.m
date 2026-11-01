@@ -408,8 +408,8 @@ function [bln_classdef, str_name, cell_supers] = parse_classdef_line(str_text)
 end
 
 function str_signature = get_tool_signature(str_root)
-    % Content checksums of the exporter and this file.
-    cell_files = {'export_class_database.m', 'find_doc_classes.m'};
+    % Content checksums of the exporter, the call graph collector and this file.
+    cell_files = {'export_class_database.m', 'collect_call_graph.m', 'find_doc_classes.m'};
     cell_hash = cellfun(@(f) file_hash(read_bytes(fullfile(str_root, '@GUILDA', 'private', f))), ...
         cell_files, 'UniformOutput', false);
     str_signature = strjoin(cell_hash, '|');

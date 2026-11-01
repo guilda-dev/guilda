@@ -309,6 +309,401 @@
       container.innerHTML = html;
       document.getElementById('page-toc').innerHTML = sections.map(([id, title]) =>
         `<li><a href="#${id}" onclick="document.getElementById('${id}')?.scrollIntoView(); return false;">${title}</a></li>`).join('');
+      mountCallGraph(ownerName, m);
+    }
+
+    // ---- Call graph: who uses this method and what it uses --------------------
+    // Reads database/list_CallGraph.js (see export_class_database.m). Without the
+    // file, or without an entry for this method, the page stays as it is.
+    const CG = {
+      limits: { callers: 10, method: 8, subclass: 6, candidates: 4, property: 6, parameter: 4, child: 6 },
+      row: 30, box: 26, head: 24, wide: 700, charWidth: 7.3,
+      ruleText: {
+        self: 'the object itself', declared: 'declared class', constructor: 'constructor or class reference',
+        assignment: 'assignment tracking', argument: 'argument of a helper', name: 'naming rule',
+        unique: 'the only class with this member', candidates: 'class not determinable'
+      }
+    };
+
+    function mountCallGraph(ownerName, m) {
+      loader.loadCallGraph().then((graph) => {
+        if (!graph) return;
+        const model = indexCallGraph(graph);
+        const current = model.nodeIndex.get(`${m.Defining || ownerName}.${m.Name}`);
+        if (current === undefined) return;
+        const hasEdges = model.from.has(current) || model.to.has(current) || model.dynamic.has(current);
+        const anchor = document.getElementById('metadata');
+        if (!hasEdges || !anchor) return;
+
+        anchor.insertAdjacentHTML('beforebegin', `
+          <h2 id="call-graph">Call Graph</h2>
+          <p class="cg-lead">Read from the source without running it, for the System classes. Line style shows how sure each link is; see <a href="developer/class-documentation.html#call-graph">Class Documentation</a> for the limits.</p>
+          <div class="cg-chart" id="cg-chart"></div>
+          ${renderCallGraphDynamic(model, current)}
+          ${renderCallGraphLegend()}`);
+        const metadataItem = document.querySelector('#page-toc a[href="#metadata"]')?.parentElement;
+        metadataItem?.insertAdjacentHTML('beforebegin',
+          `<li><a href="#call-graph" onclick="document.getElementById('call-graph')?.scrollIntoView(); return false;">Call Graph</a></li>`);
+
+        const chart = document.getElementById('cg-chart');
+        const state = { expanded: new Set(), showAll: new Set(), width: 0 };
+        const draw = () => {
+          state.width = chart.clientWidth;
+          chart.innerHTML = renderCallGraph(model, current, state);
+        };
+        chart.addEventListener('click', (event) => {
+          const target = event.target.closest('[data-cg-toggle], [data-cg-more]');
+          if (!target) return;
+          event.preventDefault();
+          toggleCallGraph(state, target);
+          draw();
+        });
+        chart.addEventListener('keydown', (event) => {
+          const target = event.target.closest('[data-cg-toggle], [data-cg-more]');
+          if (!target || (event.key !== 'Enter' && event.key !== ' ')) return;
+          event.preventDefault();
+          const selector = target.dataset.cgToggle ? `[data-cg-toggle="${target.dataset.cgToggle}"]` : `[data-cg-more="${target.dataset.cgMore}"]`;
+          toggleCallGraph(state, target);
+          draw();
+          chart.querySelector(selector)?.focus();
+        });
+        draw();
+        if (window.ResizeObserver) {
+          new ResizeObserver(() => { if (chart.clientWidth !== state.width) draw(); }).observe(chart);
+        }
+      });
+    }
+
+    function toggleCallGraph(state, target) {
+      const [set, key] = target.dataset.cgToggle ? [state.expanded, target.dataset.cgToggle] : [state.showAll, target.dataset.cgMore];
+      if (set.has(key)) set.delete(key); else set.add(key);
+    }
+
+    function indexCallGraph(graph) {
+      const model = { graph, nodeIndex: new Map(), from: new Map(), to: new Map(), dynamic: new Map(), implementers: new Map() };
+      graph.nodes.forEach((name, index) => model.nodeIndex.set(name, index));
+      const push = (map, key, value) => { if (!map.has(key)) map.set(key, []); map.get(key).push(value); };
+      graph.edges.forEach((edge) => {
+        push(model.from, edge[0], edge);
+        (Array.isArray(edge[1]) ? edge[1] : [edge[1]]).forEach((to) => push(model.to, to, edge));
+      });
+      (graph.dynamic || []).forEach((row) => push(model.dynamic, row[0], row));
+      (graph.implementers || []).forEach(([node, count]) => model.implementers.set(node, count));
+      return model;
+    }
+
+    // "Class.member", "pkg.Class.member", or "Class.get.prop" for an accessor.
+    function callGraphNodeParts(name) {
+      const accessor = name.match(/^(.*)\.((?:get|set)\.[^.]+)$/);
+      if (accessor) return { className: accessor[1], member: accessor[2], accessor: true };
+      const dot = name.lastIndexOf('.');
+      return { className: name.slice(0, dot), member: name.slice(dot + 1), accessor: false };
+    }
+
+    function callGraphHref(name, kind) {
+      const parts = callGraphNodeParts(name);
+      return kind === 'method' && !parts.accessor
+        ? loader.pageUrl('method.html', { class: parts.className, method: parts.member })
+        : loader.pageUrl('class.html', { class: parts.className });
+    }
+
+    function callGraphSource(model, edge) {
+      return `${model.graph.files[edge[5]]}:${edge[6]}`;
+    }
+
+    function callGraphRow(model, name, kind, edge, extra) {
+      const confidence = model.graph.confidences[edge[3]];
+      const rule = model.graph.rules[edge[4]];
+      const count = model.implementers.get(model.nodeIndex.get(name));
+      const kindText = kind === 'subclass'
+        ? `implemented in ${count ? `${count} ` : ''}subclasses`
+        : (kind === 'parameter' ? 'Parameter value' : kind);
+      return {
+        name, kind, confidence, parts: callGraphNodeParts(name), href: callGraphHref(name, kind),
+        title: `${name} (${kindText})\n${confidence}: ${CG.ruleText[rule] || rule}\n${callGraphSource(model, edge)}`,
+        ...extra
+      };
+    }
+
+    // What a node uses, in groups. A property with a get. accessor uses what the accessor uses.
+    function callGraphUses(model, node) {
+      const name = model.graph.nodes[node];
+      const parts = callGraphNodeParts(name);
+      const accessor = model.nodeIndex.get(`${parts.className}.get.${parts.member}`);
+      const edges = [...(model.from.get(node) || []), ...(accessor !== undefined ? (model.from.get(accessor) || []) : [])];
+      const groups = { method: [], subclass: [], candidates: [], property: [], parameter: [] };
+      edges.forEach((edge) => {
+        const kind = model.graph.kinds[edge[2]];
+        if (Array.isArray(edge[1])) {
+          const names = edge[1].map((to) => model.graph.nodes[to]);
+          const member = callGraphNodeParts(names[0]).member;
+          groups.candidates.push({
+            kind: 'candidates', confidence: 'candidates', member, memberKind: kind, parts: { className: '', member },
+            title: `${member}: class not determinable\n${callGraphSource(model, edge)}`,
+            branches: names.map((to) => callGraphRow(model, to, kind, edge))
+          });
+        } else if (edge[1] !== node && edge[1] !== accessor) {
+          groups[kind].push(callGraphRow(model, model.graph.nodes[edge[1]], kind, edge, { node: edge[1] }));
+        }
+      });
+      return groups;
+    }
+
+    function callGraphCallers(model, node) {
+      const seen = new Map();
+      (model.to.get(node) || []).forEach((edge) => {
+        const old = seen.get(edge[0]);
+        if (edge[0] !== node && (!old || edge[3] < old[3])) seen.set(edge[0], edge);
+      });
+      return [...seen.values()].map((edge) => callGraphRow(model, model.graph.nodes[edge[0]], 'method', edge, { node: edge[0] }));
+    }
+
+    function callGraphSort(rows) {
+      const rank = { certain: 0, inferred: 1, candidates: 2 };
+      return rows.sort((a, b) => (rank[a.confidence] - rank[b.confidence]) || a.parts.member.localeCompare(b.parts.member));
+    }
+
+    // Rows of one column: group headings, nodes, branches of candidates, one level of expansion.
+    function callGraphColumn(model, state, side, current) {
+      const lines = [];
+      const addRows = (rows, limit, moreKey, depth, parent) => {
+        const shown = state.showAll.has(moreKey) ? rows : rows.slice(0, limit);
+        shown.forEach((row) => {
+          const key = `${side}:${depth}:${row.name || row.member}:${parent ? parent.name : ''}`;
+          const nested = depth === 0 && row.node !== undefined ? callGraphChildren(model, side, row.node) : null;
+          const line = { type: 'node', row, depth, parent, key, expandable: Boolean(nested && nested.length), open: state.expanded.has(key) };
+          lines.push(line);
+          if (row.branches) {
+            row.branches.forEach((branch) => lines.push({ type: 'branch', row: branch, depth: depth + 1, parent: row, key: `${key}:${branch.name}` }));
+          }
+          if (line.expandable && line.open) {
+            addRows(nested, CG.limits.child, `${key}:more`, depth + 1, row);
+          }
+        });
+        if (rows.length > limit) {
+          lines.push({ type: 'more', key: moreKey, depth, open: state.showAll.has(moreKey), count: rows.length - limit });
+        }
+      };
+      if (side === 'callers') {
+        const rows = callGraphSort(callGraphCallers(model, current));
+        lines.push({ type: 'head', text: `Called by (${rows.length})` });
+        if (!rows.length) lines.push({ type: 'none', text: 'No caller in the System classes' });
+        addRows(rows, CG.limits.callers, 'callers', 0);
+      } else {
+        const groups = callGraphUses(model, current);
+        const titles = { method: 'Methods', subclass: 'In subclasses', property: 'Properties', parameter: 'Parameter values', candidates: 'Class not determinable' };
+        let any = false;
+        Object.keys(titles).forEach((group) => {
+          if (!groups[group].length) return;
+          any = true;
+          lines.push({ type: 'head', text: `${titles[group]} (${groups[group].length})` });
+          addRows(callGraphSort(groups[group]), CG.limits[group], group, 0);
+        });
+        if (!any) {
+          lines.push({ type: 'head', text: 'Uses' });
+          lines.push({ type: 'none', text: 'No member of the System classes' });
+        }
+      }
+      return lines;
+    }
+
+    function callGraphChildren(model, side, node) {
+      if (side === 'callers') return callGraphSort(callGraphCallers(model, node));
+      const groups = callGraphUses(model, node);
+      return [...groups.method, ...groups.subclass, ...groups.property, ...groups.parameter, ...groups.candidates.map((row) => ({ ...row, branches: null }))];
+    }
+
+    function callGraphLabel(row, currentClass, width) {
+      const capacity = Math.max(4, Math.floor(width / CG.charWidth));
+      const member = row.parts.member;
+      const prefix = row.parts.className && row.parts.className !== currentClass ? `${row.parts.className}.` : '';
+      if (prefix.length + member.length <= capacity) return { prefix, member };
+      if (member.length <= capacity) {
+        const room = capacity - member.length - 1;
+        return { prefix: room >= 3 ? `${prefix.slice(0, room)}…` : '', member };
+      }
+      return { prefix: '', member: `${member.slice(0, capacity - 1)}…` };
+    }
+
+    function callGraphNodeSvg(line, x, y, width, currentClass) {
+      const row = line.row;
+      const h = CG.box;
+      const textWidth = width - 18 - (line.expandable ? 20 : 0);
+      if (line.type === 'node' && row.kind === 'candidates') {
+        return `<g class="cg-node is-candidates"><title>${escapeHtml(row.title)}</title><text class="cg-text" x="${x + 8}" y="${y + 17}">${escapeHtml(callGraphLabel(row, currentClass, width).member)}<tspan class="cg-prefix"> ?</tspan></text></g>`;
+      }
+      const label = callGraphLabel(row, currentClass, textWidth);
+      const pill = row.kind === 'property' || row.kind === 'parameter';
+      const shapes = {
+        method: `<rect class="cg-box" x="${x}" y="${y}" width="${width}" height="${h}" rx="2"/><rect class="cg-bar" x="${x}" y="${y}" width="3" height="${h}"/>`,
+        property: `<rect class="cg-box is-property" x="${x}" y="${y}" width="${width}" height="${h}" rx="${h / 2}"/>`,
+        parameter: `<rect class="cg-box is-parameter" x="${x}" y="${y}" width="${width}" height="${h}" rx="${h / 2}"/>`,
+        subclass: `<rect class="cg-box" x="${x + 3}" y="${y - 3}" width="${width - 3}" height="${h}" rx="2"/><rect class="cg-box" x="${x}" y="${y}" width="${width - 3}" height="${h}" rx="2"/>`
+      };
+      const toggle = line.expandable
+        ? `<g class="cg-toggle" role="button" tabindex="0" aria-expanded="${line.open}" aria-label="${line.open ? 'Collapse' : 'Expand'} ${escapeHtml(row.name)}" data-cg-toggle="${escapeHtml(line.key)}"><rect x="${x + width - 22}" y="${y + 3}" width="18" height="${h - 6}" rx="2"/><text x="${x + width - 13}" y="${y + 18}" text-anchor="middle">${line.open ? '−' : '+'}</text></g>`
+        : '';
+      return `<g class="cg-node"><a href="${escapeHtml(row.href)}"><title>${escapeHtml(row.title)}</title>${shapes[row.kind] || shapes.method}<text class="cg-text${row.kind === 'parameter' ? ' is-parameter' : ''}" x="${x + (pill ? 12 : 9)}" y="${y + 17}"><tspan class="cg-prefix">${escapeHtml(label.prefix)}</tspan>${escapeHtml(label.member)}</text></a>${toggle}</g>`;
+    }
+
+    function callGraphLinkClass(confidence) {
+      return `cg-link is-${confidence}`;
+    }
+
+    function renderCallGraph(model, current, state) {
+      const width = Math.max(state.width, 280);
+      const name = model.graph.nodes[current];
+      const parts = callGraphNodeParts(name);
+      const callers = callGraphColumn(model, state, 'callers', current);
+      const uses = callGraphColumn(model, state, 'uses', current);
+      return width >= CG.wide
+        ? renderCallGraphWide(callers, uses, parts, width)
+        : renderCallGraphNarrow(callers, uses, parts, width);
+    }
+
+    function callGraphLineHeight(line) {
+      return line.type === 'head' ? CG.head : CG.row;
+    }
+
+    function callGraphOtherLineSvg(line, x, y, width, anchor) {
+      const tx = anchor === 'end' ? x + width : x;
+      if (line.type === 'head') {
+        return `<text class="cg-head" x="${tx}" y="${y + 16}" text-anchor="${anchor}">${escapeHtml(line.text)}</text>`;
+      }
+      if (line.type === 'none') {
+        return `<text class="cg-none" x="${tx}" y="${y + 18}" text-anchor="${anchor}">${escapeHtml(line.text)}</text>`;
+      }
+      const text = line.open ? 'Show fewer' : `+${line.count} more`;
+      return `<text class="cg-more" role="button" tabindex="0" data-cg-more="${escapeHtml(line.key)}" x="${tx}" y="${y + 18}" text-anchor="${anchor}">${text}</text>`;
+    }
+
+    // Wide: callers, the method, then what it uses, from left to right.
+    function renderCallGraphWide(callers, uses, parts, width) {
+      const gap = 56;
+      const centerWidth = Math.min(230, Math.max(150, parts.member.length * CG.charWidth + 28));
+      const colWidth = (width - centerWidth - 2 * gap) / 2;
+      const heightOf = (lines) => lines.reduce((sum, line) => sum + callGraphLineHeight(line), 0);
+      const height = Math.max(heightOf(callers), heightOf(uses), CG.box + 14) + 8;
+      const centerX = colWidth + gap;
+      const centerY = height / 2;
+      let links = '';
+      let nodes = '';
+      const place = (lines, side) => {
+        let y = (height - heightOf(lines)) / 2;
+        const indent = 16;
+        const centers = new Map();
+        lines.forEach((line) => {
+          const h = callGraphLineHeight(line);
+          if (line.type === 'node' || line.type === 'branch') {
+            const inset = line.depth * indent;
+            const boxWidth = colWidth - inset;
+            const x = side === 'callers' ? 0 : colWidth + 2 * gap + centerWidth + inset;
+            const midY = y + CG.box / 2 + 2;
+            const inner = side === 'callers' ? x + boxWidth : x;
+            if (line.depth === 0) {
+              const [x1, y1, x2, y2] = side === 'callers'
+                ? [inner, midY, centerX, centerY]
+                : [centerX + centerWidth, centerY, inner, midY];
+              const bend = gap * 0.55;
+              links += `<path class="${callGraphLinkClass(line.row.confidence)}" d="M${x1} ${y1}C${x1 + bend} ${y1} ${x2 - bend} ${y2} ${x2} ${y2}" marker-end="url(#cg-arrow)"/>`;
+            } else if (line.parent) {
+              const from = centers.get(line.parent);
+              if (from !== undefined) {
+                const px = side === 'callers' ? x + boxWidth + indent - 6 : x - indent + 6;
+                links += `<path class="${callGraphLinkClass(line.row.confidence)}" d="M${px} ${from + CG.box / 2}V${midY}H${inner}"/>`;
+              }
+            }
+            centers.set(line.row, y + 2);
+            nodes += callGraphNodeSvg(line, x, y + 2, boxWidth, parts.className);
+          } else {
+            const inset = (line.depth || 0) * indent;
+            const x = side === 'callers' ? 0 : colWidth + 2 * gap + centerWidth + inset;
+            nodes += callGraphOtherLineSvg(line, x, y, colWidth - inset, 'start');
+          }
+          y += h;
+        });
+      };
+      place(callers, 'callers');
+      place(uses, 'uses');
+      const current = `<g class="cg-current"><title>${escapeHtml(parts.className)}.${escapeHtml(parts.member)}</title><rect x="${centerX}" y="${centerY - 19}" width="${centerWidth}" height="38" rx="2"/><text class="cg-current-class" x="${centerX + centerWidth / 2}" y="${centerY - 4}" text-anchor="middle">${escapeHtml(callGraphTruncate(parts.className, centerWidth - 16))}</text><text class="cg-current-member" x="${centerX + centerWidth / 2}" y="${centerY + 12}" text-anchor="middle">${escapeHtml(callGraphTruncate(parts.member, centerWidth - 16))}</text></g>`;
+      return callGraphSvg(width, height, links + nodes + current);
+    }
+
+    function callGraphTruncate(text, width) {
+      const capacity = Math.floor(width / CG.charWidth);
+      return text.length <= capacity ? text : `${text.slice(0, capacity - 1)}…`;
+    }
+
+    // Narrow: one column with callers above and uses below, joined by a line on the left.
+    function renderCallGraphNarrow(callers, uses, parts, width) {
+      const trunk = 6;
+      const indent = 22;
+      const inner = width - indent;
+      let y = 0;
+      let links = '';
+      let nodes = '';
+      const place = (lines, arrowToRow) => {
+        const centers = new Map();
+        const stubs = [];
+        lines.forEach((line) => {
+          if (line.type === 'node' || line.type === 'branch') {
+            const inset = line.depth * 14;
+            const midY = y + 2 + CG.box / 2;
+            if (line.depth === 0) {
+              stubs.push(midY);
+              links += arrowToRow
+                ? `<path class="${callGraphLinkClass(line.row.confidence)}" d="M${trunk} ${midY}H${indent}" marker-end="url(#cg-arrow)"/>`
+                : `<path class="${callGraphLinkClass(line.row.confidence)}" d="M${indent} ${midY}H${trunk}"/>`;
+            } else if (centers.has(line.parent)) {
+              links += `<path class="${callGraphLinkClass(line.row.confidence)}" d="M${indent + inset - 8} ${centers.get(line.parent) + CG.box / 2}V${midY}H${indent + inset}"/>`;
+            }
+            centers.set(line.row, y + 2);
+            nodes += callGraphNodeSvg(line, indent + inset, y + 2, inner - inset, parts.className);
+          } else {
+            nodes += callGraphOtherLineSvg(line, indent + (line.depth || 0) * 14, y, inner, 'start');
+          }
+          y += callGraphLineHeight(line);
+        });
+        return stubs;
+      };
+      const callerStubs = place(callers, false);
+      y += 6;
+      const centerTop = y;
+      nodes += `<g class="cg-current"><title>${escapeHtml(parts.className)}.${escapeHtml(parts.member)}</title><rect x="${indent}" y="${centerTop}" width="${inner}" height="38" rx="2"/><text class="cg-current-class" x="${indent + 10}" y="${centerTop + 15}">${escapeHtml(callGraphTruncate(parts.className, inner - 20))}</text><text class="cg-current-member" x="${indent + 10}" y="${centerTop + 31}">${escapeHtml(callGraphTruncate(parts.member, inner - 20))}</text></g>`;
+      const centerMid = centerTop + 19;
+      y += 44;
+      const useStubs = place(uses, true);
+      const top = callerStubs.length ? callerStubs[0] : centerMid;
+      const bottom = useStubs.length ? useStubs[useStubs.length - 1] : centerMid;
+      links += `<path class="cg-trunk" d="M${trunk} ${top}V${bottom}"/>`;
+      links += `<path class="cg-trunk" d="M${trunk} ${centerMid}H${indent}"${callerStubs.length ? ' marker-end="url(#cg-arrow)"' : ''}/>`;
+      return callGraphSvg(width, y + 8, links + nodes);
+    }
+
+    function callGraphSvg(width, height, body) {
+      return `<svg class="cg-svg" role="img" aria-label="Callers and uses of this method" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><defs><marker id="cg-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path class="cg-arrow" d="M0 0.8L7 4L0 7.2z"/></marker></defs>${body}</svg>`;
+    }
+
+    function renderCallGraphDynamic(model, current) {
+      const rows = model.dynamic.get(current);
+      if (!rows) return '';
+      const places = [...new Set(rows.map((row) => `${model.graph.files[row[1]]}:${row[2]}`))];
+      return `<p class="cg-note">Uses dynamic access (<code>obj.(name)</code>, <code>feval</code>, <code>eval</code>) whose targets are not shown: ${places.slice(0, 4).map((place) => `<code>${escapeHtml(place)}</code>`).join(', ')}${places.length > 4 ? ` and ${places.length - 4} more` : ''}.</p>`;
+    }
+
+    function renderCallGraphLegend() {
+      const link = (confidence, text) => `<li><svg width="34" height="10" aria-hidden="true"><path class="cg-link is-${confidence}" d="M1 5H33"/></svg>${text}</li>`;
+      const node = (shape, text) => `<li><svg width="34" height="18" aria-hidden="true">${shape}</svg>${text}</li>`;
+      return `
+        <ul class="cg-legend">
+          ${link('certain', 'Certain')}
+          ${link('inferred', 'Inferred')}
+          ${link('candidates', 'Class not determinable: every candidate is listed')}
+          ${node('<rect class="cg-box" x="1" y="2" width="32" height="14" rx="2"/><rect class="cg-bar" x="1" y="2" width="3" height="14"/>', 'Method')}
+          ${node('<rect class="cg-box is-property" x="1" y="2" width="32" height="14" rx="7"/>', 'Property')}
+          ${node('<rect class="cg-box is-parameter" x="1" y="2" width="32" height="14" rx="7"/>', 'Parameter value')}
+          ${node('<rect class="cg-box" x="4" y="1" width="29" height="13" rx="2"/><rect class="cg-box" x="1" y="4" width="29" height="13" rx="2"/>', 'Implemented in subclasses')}
+        </ul>`;
     }
   </script>
 </body>
