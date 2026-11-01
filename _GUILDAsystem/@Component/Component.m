@@ -217,8 +217,12 @@ classdef Component < PowerSystemModel
         [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 
         % get dx, I and y
-        DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec) 
+        DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)
 
+    end
+    methods (Hidden)
+        % get_sys of the component alone
+        sys = get_sys_alone(obj, x, V, I, u, opt)
     end
 
     methods(Hidden)

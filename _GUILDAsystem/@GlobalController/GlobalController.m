@@ -126,7 +126,9 @@ classdef GlobalController < PowerSystemModel
             %
             % The inputs are the outputs of the controlled units and the outputs are the
             % controller outputs that feed them; the V and I ports are not used. The output
-            % sys is a descriptor state-space model (dss) with state, input and output names.
+            % sys is a descriptor state-space model (dss) with state, input and output names;
+            % `varargout` gives sys.StateName, sys.InputName and sys.OutputName as on the
+            % other layers.
             %
             % Stale f_* handles are rebuilt first. A controller on a network stops with the
             % error GUILDA:PowerNetwork:EquilibriumStale when net.initialize() is needed.
@@ -140,7 +142,7 @@ classdef GlobalController < PowerSystemModel
                 V        (:,1) double  = zeros(2,1)   % Not a port: zeros(2,1).
                 I        (:,1) double  = zeros(2,1)   % Not a port: zeros(2,1).
                 u        (:,1) double  = obj.rv_Uequilibrium   % Inputs (default: the equilibrium).
-                opt.full (1,1) logical = true   % Unused; kept for compatibility.
+                opt.full (1,1) logical = false  % Ignored; kept for old calls.
             end
 
             a_Comp = obj.controlledUnits;
@@ -185,6 +187,10 @@ classdef GlobalController < PowerSystemModel
             sys.StateName  = xNames;
             sys.InputName  = uNames;
             sys.OutputName = yNames;
+
+            varargout{1} = sys.StateName;
+            varargout{2} = sys.InputName;
+            varargout{3} = sys.OutputName;
         end
     end   
     methods (Access=protected)

@@ -388,6 +388,47 @@ for k = 1:numel(c_sys)
 end
 
 
+%% Layer get_sys: ignored arguments, no internal arguments, names and single computation (#83)
+net = network.IEEE9bus();
+gen = net.a_Bus{1}.a_Component{1};
+avr = controller.avr.AVR_ST1("avr1");
+pss = controller.pss.PSS1("pss1");
+gen.add_local_controller(avr, pss);
+agc = controller.agc.broadcast_PI_AGC(net, "agc", gen, net.a_Bus{2}.a_Component{1}, alpha=[1;1], beta=[1;1], kP=100, kI=500);
+net.add_global_controller(agc);
+DebugScript.helper.quiet(@() net.initialize);
+
+% 無視すると文書にある引数はモデルを変えず、rec は公開の引数ではない
+s0 = gen.get_sys();
+assert(isequal(gen.get_sys("con",false), s0) && isequal(gen.get_sys("full",true), s0))
+l_accepted = true;
+try
+    gen.get_sys("rec",false);
+catch
+    l_accepted = false;
+end
+assert(~l_accepted, "rec が受け付けられた")
+assert(~ismember("get_sys_alone", methods(gen)) && ~ismember("get_sys_alone", methods(avr)))
+
+% どの層でも 2 番目以降の出力は sys の名前と同じ
+c_call = {@() gen.get_sys(), @() gen.get_sys("port","I2V"), @() gen.get_sys("tag",false), @() net.a_Bus{1}.get_sys(), ...
+          @() net.a_Bus{1}.get_sys("port","I2V"), @() avr.get_sys(), @() avr.get_sys("full",true), @() avr.get_sys("tag",false), @() agc.get_sys()};
+for k = 1:numel(c_call)
+    [s, c_x, c_u, c_y] = c_call{k}();
+    assert(iscellstr(c_x) && isequal(c_x(:), s.StateName(:)), "call %d: states", k) %#ok<ISCLSTR>
+    assert(iscellstr(c_u) && isequal(c_u(:), s.InputName(:)), "call %d: inputs", k) %#ok<ISCLSTR>
+    assert(iscellstr(c_y) && isequal(c_y(:), s.OutputName(:)), "call %d: outputs", k) %#ok<ISCLSTR>
+end
+
+% 制御器のモデルは 1 回の gen.get_sys() で 1 個につき 1 回だけ計算する
+profile("on");
+gen.get_sys();
+profile("off");
+tab = struct2table(profile("info").FunctionTable);
+lv  = contains(string(tab.FunctionName), "LocalController") & endsWith(string(tab.FunctionName), "get_sys_alone");
+assert(sum(tab.NumCalls(lv)) == 2, "制御器 2 個に %d 回", sum(tab.NumCalls(lv)))
+
+
 %% Linearize matches v3 get_sys matrices for every algorithm
 % linearize + get_ss の行列と名前は v3 の odeLinearizer と同じ (helper.linearize_v3 に v3 のコードを保存)。
 % 違いは DAE の B の代数方程式の行の符号 (v3 は入力 u の符号が逆で、Kron と伝達関数が合わなかった) と、
