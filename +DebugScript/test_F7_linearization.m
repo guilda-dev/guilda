@@ -317,6 +317,27 @@ c3 = net.a_Bus{3}.a_Component{1}.get_sys();
 assert(isequal(string(c3.OutputName), tg(net.a_Bus{3}.a_Component{1}, ["Ire";"Iim";"Y_omega"])))
 
 
+%% Index a model of each layer by full channel name
+% sys(出力名, 入力名) は sys(行, 列) と同じ。同名のグループがあると曖昧でエラーになる (Issue #79)
+net = new_net();
+gen = net.a_Bus{1}.a_Component{1};
+avr = controller.avr.AVR_ST1("avr1");
+pss = controller.pss.PSS1("pss1");
+gen.add_local_controller(avr, pss);
+DebugScript.helper.quiet(@() net.initialize);
+c_sys = {avr.get_sys(), pss.get_sys(), gen.get_sys(), gen.get_sys("port","I2V"), gen.get_sys("tag",false), ...
+         net.a_Bus{3}.a_Component{1}.get_sys(), net.a_Bus{1}.get_sys()};
+for k = 1:numel(c_sys)
+    s = c_sys{k};
+    for iy = 1:numel(s.OutputName)
+        for iu = 1:numel(s.InputName)
+            s1 = s(s.OutputName{iy}, s.InputName{iu});
+            assert(isequal(s1.D, s.D(iy,iu)) && isequal(s1.C, s.C(iy,:)) && isequal(s1.B, s.B(:,iu)), "model %d: %s, %s", k, s.OutputName{iy}, s.InputName{iu})
+        end
+    end
+end
+
+
 %% Linearize matches v3 get_sys matrices for every algorithm
 % linearize + get_ss の行列と名前は v3 の odeLinearizer と同じ (helper.linearize_v3 に v3 のコードを保存)。
 % 違いは DAE の B の代数方程式の行の符号だけ (v3 は入力 u の符号が逆で、Kron と伝達関数が合わなかった)

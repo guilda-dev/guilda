@@ -61,11 +61,15 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     sys.InputName = [Vport{opt.tag+1}; sv_uNames{opt.tag+1}];
     sys.OutputName = OutputNames{opt.full+1};
 
-    rv_ue = numel(sys.InputName);
-    rv_oe = numel(sys.OutputName);
+    % Component.get_sys connects the untagged model by these groups. A group with the name
+    % of a channel makes sys(outputName, inputName) ambiguous, so the tagged model has none.
+    if ~opt.tag
+        rv_ue = numel(sys.InputName);
+        rv_oe = numel(sys.OutputName);
 
-    sys.InputGroup  = cell2struct(arrayfun(@(n) {n}, (1:rv_ue)'), sys.InputName);
-    sys.OutputGroup = cell2struct(arrayfun(@(n) {n}, (1:rv_oe)'), sys.OutputName);
+        sys.InputGroup  = cell2struct(arrayfun(@(n) {n}, (1:rv_ue)'), sys.InputName);
+        sys.OutputGroup = cell2struct(arrayfun(@(n) {n}, (1:rv_oe)'), sys.OutputName);
+    end
 
     varargout{1} = cellfun(@(s) char(s), cellstr(sv_xNames{end}), 'UniformOutput', false);
     varargout{2} = cellfun(@(s) char(s), cellstr(sv_uNames{end}), 'UniformOutput', false);
