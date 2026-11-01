@@ -1,4 +1,4 @@
-function tab = get_variable_map(obj)
+function tab = get_variable_map(obj, str_form)
 % Return the variable map of the component: the order of its Point vector.
 %
 % Variable map of the component: the rows of net.get_variable_map() that belong to it,
@@ -9,6 +9,7 @@ function tab = get_variable_map(obj)
 %   2. Vre, Vim of its bus
 %   3. inputs u of the component
 % The columns are those of PowerNetwork.get_variable_map; Index counts from 1 here.
+% get_variable_map("rows") is the form used inside the map: see PowerNetwork.get_variable_map.
 %
 % <@Examples>
 % ```matlab
@@ -17,6 +18,10 @@ function tab = get_variable_map(obj)
 % ```
 %
 % See also PowerNetwork.get_variable_map, Component.get_sys
+    arguments
+        obj
+        str_form (1,1) string {mustBeMember(str_form, ["table","rows"])} = "table" % "rows" (internal): return the rows without the table.
+    end
     arguments (Output)
         tab   % One row per variable: Index, Kind ("x" | "Vre" | "Vim" | "u"), Owner, Name, Label, Bus.
     end
@@ -32,21 +37,25 @@ function tab = get_variable_map(obj)
     for k = 1:numel(a_obj)
         c_x{k} = rows(a_obj{k}, "x", a_obj{k}.sv_x, str_bus);
     end
-    tab_V = table(["Vre";"Vim"], repmat(str_bus,2,1), ["Vre";"Vim"], sv_V, repmat(str_bus,2,1), ...
-                  'VariableNames', ["Kind","Owner","Name","Label","Bus"]);
-    tab_u = rows(obj, "u", obj.sv_u, str_bus);
+    sm_V   = [["Vre";"Vim"], repmat(str_bus,2,1), ["Vre";"Vim"], sv_V, repmat(str_bus,2,1)];
+    c_rows = {vertcat(c_x{:}); sm_V; rows(obj, "u", obj.sv_u, str_bus)};
+    if str_form == "rows"
+        tab = c_rows;
+        return
+    end
 
-    tab = [vertcat(c_x{:}); tab_V; tab_u];
-    tab = [table((1:height(tab))', 'VariableNames', "Index"), tab];
+    sm  = vertcat(c_rows{:});
+    tab = table((1:size(sm,1))', sm(:,1), sm(:,2), sm(:,3), sm(:,4), sm(:,5), ...
+                'VariableNames', ["Index","Kind","Owner","Name","Label","Bus"]);
 end
 
 
-function tab = rows(owner, str_kind, sv_name, str_bus)
+function sm = rows(owner, str_kind, sv_name, str_bus)
+    % Columns Kind, Owner, Name, Label, Bus of the variables of owner
     sv_name = reshape(string(sv_name), [], 1);
     n = numel(sv_name);
-    tab = table(repmat(str_kind,n,1), repmat(string(owner.str_tag),n,1), sv_name, ...
-                label(owner, sv_name), repmat(str_bus,n,1), ...
-                'VariableNames', ["Kind","Owner","Name","Label","Bus"]);
+    sm = [repmat(str_kind,n,1), repmat(string(owner.str_tag),n,1), sv_name, ...
+          label(owner, sv_name), repmat(str_bus,n,1)];
 end
 
 function sv = label(owner, sv_name)
