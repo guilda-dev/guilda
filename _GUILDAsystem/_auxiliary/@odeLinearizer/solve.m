@@ -9,6 +9,12 @@ function [result, flag, output] = solve(obj, net, s_options)
 % and stops with the error GUILDA:PowerNetwork:EquilibriumStale when net.initialize()
 % is needed. A Point with NaN or Inf stops with GUILDA:odeLinearizer:PointNotFinite, and a
 % model that is not finite at the point with GUILDA:odeLinearizer:JacobianNotFinite.
+%
+% Point sets the variables only: the network is the one of the model, so a point inside a
+% fault is combined with the admittance matrix without the fault. The call reports such a
+% point (zero bus voltage) with an INFO message and in output.message, and a point that is
+% not an equilibrium in output.message; result.rv_residual holds the residual. flag does
+% not depend on them.
     arguments
         obj % Solver (net.solver_LIN).
         net % Initialized network.
@@ -17,7 +23,7 @@ function [result, flag, output] = solve(obj, net, s_options)
     arguments (Output)
         result % Jacobian blocks, variable map, point and settings.
         flag % True when the result is usable: all Jacobian entries are finite and Avv is invertible.
-        output % message, str_issue ("", "NotFinite" or "SingularAvv"), l_equilibrium, n_x, n_v, n_u, rcond_Avv.
+        output % message, str_issue ("", "NotFinite" or "SingularAvv"), l_equilibrium, n_x, n_v, n_u, rcond_Avv, r_residual, sv_faultBus.
     end
     t0 = tic;
     net.require_equilibrium();    % rebuild stale f_*; error if net.initialize() is needed
@@ -101,6 +107,7 @@ function [result, flag, output] = solve(obj, net, s_options)
         "lv_nonUnit", reshape(ismember(1:n_bus, s_options.NonUnit), [], 1) | ...
                       tools.vcellfun(@(b) isempty(b.a_Component), a_bus), ...
         "cv_V", cv_V);
+    rv_residual = residual_at_point(a_bus, a_gc, tab_map, c_idxBus, c_idxGC, rv_point, Ymat);
 
     % An Avv below this reciprocal condition number has no usable inverse (the shipped
     % networks are at 1e-4 or above)
@@ -122,13 +129,36 @@ function [result, flag, output] = solve(obj, net, s_options)
             output.rcond_Avv, list_labels(singular_voltages(s_block.Avv, tab_map)));
     end
     flag = output.str_issue == "";
+
+    % A residual above this is not an equilibrium, and a voltage below this is zero (a
+    % ground fault sets it to exactly 0; the shipped networks are at 1e-10 or below at
+    % their equilibrium)
+    r_residualMax = 1e-6;
+    r_voltageMin  = 1e-8;
+    [output.r_residual, i_max] = max(abs(rv_residual));
+    if isempty(rv_residual)
+        output.r_residual = 0;
+    end
+    output.sv_faultBus = reshape(string(tools.vcellfun(@(b) string(b.str_tag), a_bus)), [], 1);
+    output.sv_faultBus = output.sv_faultBus(abs(cv_V) < r_voltageMin);
+    if ~isempty(output.sv_faultBus)
+        str_fault = sprintf("The voltage of %s is zero at the point, as in a ground fault: the admittance matrix does not include the fault, and get_ss(""DAE"") needs Coordinate=""Vre&Vim"" there.", ...
+                            list_labels(output.sv_faultBus));
+        output.message = output.message + " " + str_fault;
+        disp("INFO: " + str_fault)
+    end
+    if ~l_eq && output.r_residual > r_residualMax
+        sv_row = tab_map.Label(tab_map.Kind ~= "u");
+        output.message = output.message + sprintf(" The point is not an equilibrium: the largest residual is %g at %s (result.rv_residual).", ...
+                                                  output.r_residual, sv_row(i_max));
+    end
     output.l_equilibrium = l_eq;
     output.n_x = size(s_block.Axx,1);
     output.n_v = size(s_block.Avv,1);
     output.n_u = size(s_block.Bx,2);
 
     result = LinearizationResult(net, obj, s_options, flag, output, t0, ...
-                                 tab_map, rv_point, s_block, s_model);
+                                 tab_map, rv_point, s_block, s_model, rv_residual);
 end
 
 
@@ -143,6 +173,28 @@ function sys = model_at_point(f_sys, str_owner)
         end
         rethrow(ME)
     end
+end
+
+
+function rv_residual = residual_at_point(a_bus, a_gc, tab_map, c_idxBus, c_idxGC, rv_point, Ymat)
+% Right-hand sides of the DAE at the point: the state equations, then Y v - I of each bus
+    lv_x = tab_map.Kind == "x";
+    lv_v = tab_map.Kind == "Vre" | tab_map.Kind == "Vim";
+    rv_f = zeros(height(tab_map),1);
+    rv_I = zeros(nnz(lv_v),1);
+    for i = 1:numel(a_bus)
+        [~, c_idxC] = a_bus{i}.get_variable_map();
+        for j = 1:numel(c_idxC)
+            iv_c = c_idxBus{i}(c_idxC{j});
+            [rv_dx, rv_Ic] = a_bus{i}.a_Component{j}.point_residual(rv_point(iv_c));
+            rv_f(iv_c(lv_x(iv_c))) = rv_dx;
+            rv_I(2*i-1:2*i) = rv_I(2*i-1:2*i) + rv_Ic;
+        end
+    end
+    for k = 1:numel(a_gc)
+        rv_f(c_idxGC{k}) = a_gc{k}.f_dx(0, rv_point(c_idxGC{k}), zeros(2,1), zeros(2,1), gc_input(a_gc{k}, tab_map, rv_point));
+    end
+    rv_residual = [rv_f(lv_x); Ymat*rv_point(lv_v) - rv_I];
 end
 
 

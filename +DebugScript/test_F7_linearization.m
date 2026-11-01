@@ -854,6 +854,72 @@ end
 assert(n14.linearize("Point", {sim, 0.5}).l_success)
 
 
+%% Point inside a fault is reported and keeps the model network
+% Point は変数の点で、網はモデルのもの: 故障中の {sim, t} でも Y は故障前のまま。呼び出しがそれを知らせる (Issue #82)
+n9 = network.IEEE9bus();
+DebugScript.helper.quiet(@() n9.initialize);
+ev  = odeEventSet("short", n9, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
+sim = n9.simulate([0,1], ev, Progress="none", TimeLimit=120);
+str = evalc('[res, flag, output] = n9.linearize("Point", {sim, 0.52});');
+assert(contains(str, "INFO") && contains(str, "B008"), str)
+assert(flag && output.str_issue == "" && isequal(output.sv_faultBus, "B008"))
+assert(contains(output.message, "B008") && contains(output.message, "not an equilibrium"), output.message)
+assert(norm(res.s_model.cm_Y - n9.get_admittance_matrix.Variables, 1) == 0)
+% 故障母線の電圧は 0 で、Y に故障がないのでその母線の電流の収支が残る
+assert(output.r_residual > 0.1 && output.r_residual == max(abs(res.rv_residual)))
+% 極座標の DAE はここでは使えないが、Vre&Vim は Kron, Feedback と同じ固有値になる
+e_k = eig_finite(res.get_ss("Kron"));
+assert(max(real(e_k)) > 1, "故障中の点の固有値が変わった")
+assert(same_eigs(e_k, eig_finite(res.get_ss("Feedback")), 1e-6))
+assert(same_eigs(e_k, eig_finite(DebugScript.helper.quiet(@() res.get_ss("DAE", "Coordinate", "Vre&Vim"))), 1e-6))
+% 故障の前後は故障として扱わない。境界では Side に従う
+[~, ~, out_b] = n9.linearize("Point", {sim, 0.5, "before"});
+[~, ~, out_a] = n9.linearize("Point", {sim, 0.5});
+assert(isempty(out_b.sv_faultBus) && isequal(out_a.sv_faultBus, "B008"))
+str = evalc('[~, ~, out_p] = n9.linearize("Point", {sim, 0.8});');
+assert(isempty(out_p.sv_faultBus) && ~contains(str, "INFO") && ~contains(out_p.message, "ground fault"))
+
+
+%% Residual at the point
+% result.rv_residual は点での非線形 DAE の右辺 (Issue #82)
+n14 = new_net();
+DebugScript.helper.quiet(@() n14.initialize);
+res0 = n14.linearize();
+assert(numel(res0.rv_residual) == size(res0.rm_Axx,1) + size(res0.rm_Avv,1))
+assert(res0.output.r_residual < 1e-6 && res0.output.message == "Linearized at the equilibrium.")
+assert(n14.linearize("Point", res0.rv_point).output.message == "Linearized at the given point.")
+% 非線形 DAE の接線: ずらしたときの残差の変化は Jacobian ブロックと一致する
+rng(82);
+d = randn(size(res0.rv_point));
+x = res0.rv_point + 0.02*d;
+res = n14.linearize("Point", x);
+assert(contains(res.output.message, "not an equilibrium"), res.output.message)
+h = 1e-6;
+res_h = n14.linearize("Point", x + h*d);
+lv_x = res.tab_variable.Kind == "x";  lv_u = res.tab_variable.Kind == "u";  lv_v = ~lv_x & ~lv_u;
+J = [res.rm_Axx, res.rm_Axv, res.rm_Bx; res.rm_Avx, res.rm_Avv, res.rm_Bv];
+assert(norm((res_h.rv_residual - res.rv_residual)/h - J*d([find(lv_x); find(lv_v); find(lv_u)])) < 1e-4)
+% 制御器付きの網: 故障後の軌道では、残差が状態の時間微分と一致し、母線の電流の収支は 0
+n14 = new_net();
+n14.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
+n14.add_global_controller(controller.agc.broadcast_PI_AGC(n14, "agc", "SG1B002", "SG1B006", kP=100, kI=500));
+DebugScript.helper.quiet(@() n14.initialize);
+ev  = odeEventSet("short", n14, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
+sim = n14.simulate([0,1.5], ev, Progress="none", RelativeTolerance=1e-8, AbsoluteTolerance=1e-8);
+k = find(sim.rv_t > 0.9, 1);
+t = sim.rv_t(k);
+res = n14.linearize("Point", {sim, t});
+lv_x = res.tab_variable.Kind == "x";
+n_x  = nnz(lv_x);
+% 出力時刻の差分 (不等間隔の中心差分)。E は特異なことがあるので E dx/dt と比べる
+h0 = t - sim.rv_t(k-1);  h1 = sim.rv_t(k+1) - t;
+X  = sim.rm_variable(:, lv_x);
+dx = ((X(k+1,:) - X(k,:))/h1*h0 + (X(k,:) - X(k-1,:))/h0*h1).' / (h0 + h1);
+assert(norm(res.rm_E*dx - res.rv_residual(1:n_x), Inf) < 1e-2 * max(1, norm(dx, Inf)), "状態の残差が時間微分と違う")
+assert(norm(res.rv_residual(n_x+1:end), Inf) < 1e-4, "母線の電流の収支が 0 でない")
+assert(contains(res.output.message, "not an equilibrium"), res.output.message)
+
+
 %% Jacobian that is not finite names the bus
 % 有限な点でも V=0 では定電力負荷の Jacobian が有限にならない (Issue #76)
 n14 = new_net();

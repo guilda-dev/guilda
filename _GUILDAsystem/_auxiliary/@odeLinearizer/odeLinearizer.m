@@ -33,7 +33,8 @@ classdef odeLinearizer < auxiliary
         % the variable map of the analysed layer (net / bus / comp .get_variable_map()); or {sim,
         % t}: the state of the simulation result sim at time t (sim.get_point(t), including the
         % states of the controllers; at a phase boundary the value after the event, or {sim, t,
-        % "before"} for the value before it). The model is not changed.
+        % "before"} for the value before it). It sets the variables only: the admittance matrix
+        % stays the one of the model, also at a time inside a fault. The model is not changed.
         % <@Type> [] | double vector | cell {simulation result, t} or {simulation result, t, Side}
         Point = []
     end

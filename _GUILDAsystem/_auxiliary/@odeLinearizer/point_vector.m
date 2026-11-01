@@ -15,7 +15,9 @@ function [rv_point, l_equilibrium] = point_vector(layer, Point)
 % - `{sim, t, Side}`: the same, with sim.get_point(t, tab_map, Side=Side); Side "before"
 %   takes the value before the event at a phase boundary.
 %
-% The model is not changed.
+% Point is a point of the variables, and the network stays the one of the model: at a time
+% inside a fault of {sim, t} the states are those of the fault, but the admittance matrix
+% does not include the fault. The model is not changed.
 %
 % Inputs:
 % - `layer`: Analysed layer.
