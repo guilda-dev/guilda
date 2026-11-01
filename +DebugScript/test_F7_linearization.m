@@ -67,6 +67,56 @@ assert(size(sys_nu.A,1) <= size(sys_all.A,1))
 assert(same_eigs(eig_finite(sys_nu), eig_finite(net.get_sys("Algorithm","Feedback","NonUnit",7)), 1e-6))
 
 
+%% Non unit bus with a load is absorbed into Y
+% NonUnit の母線の静的機器は落とさず Y に吸収する: Kron と等価で、入力も同じ
+% (B009 は負荷があり、落とすと最大実部が +1.09 になる。B007 は P=Q=0)
+res = net.linearize();
+s_k = res.get_ss("Kron");
+lv_static = tools.vcellfun(@(b) sum(cellfun(@(c) numel(c.sv_x), b.a_Component)) == 0, net.a_Bus);
+for nu = {7, [7 9], find(lv_static(:)')}
+    s_f = net.get_sys("Algorithm","Feedback","NonUnit",nu{1});
+    str = "NonUnit=" + num2str(nu{1});
+    assert(max(real(eig_finite(s_f))) < 1e-6, str + ": 不安定")
+    assert(same_eigs(eig_finite(s_k), eig_finite(s_f), 1e-6), str + ": 固有値")
+    assert(isequal(s_f.InputName, s_k.InputName), str + ": 入力の名前と順")
+    [lv, ix] = ismember(s_k.StateName, s_f.StateName);
+    assert(all(lv), str + ": 状態の名前")
+    w = 1i;
+    G_k = (w*s_k.E - s_k.A) \ s_k.B;
+    G_f = (w*s_f.E - s_f.A) \ s_f.B;
+    assert(norm(G_k - G_f(ix,:), "fro") < 1e-9, str + ": 入力から状態までの周波数応答")
+end
+
+
+%% Non unit bus with states is rejected
+% 状態を持つ機器のある母線は Y に吸収できない。Feedback だけがエラーで、NonUnit を使わない Kron, DAE は動く
+res = net.linearize("NonUnit", [7 2]);
+try
+    res.get_ss("Feedback");
+    error("DebugScript:NoError", "状態のある母線の NonUnit がエラーにならない")
+catch ME
+    assert(ME.identifier == "GUILDA:LinearizationResult:NonUnitDynamicBus", ME.identifier)
+    assert(contains(ME.message, "bus 2"), ME.message)
+end
+assert(size(res.get_ss("Kron").A,1) == n_x)
+assert(size(res.get_ss("DAE").A,1) > n_x)
+
+
+%% Feedback keeps the inputs of zero-power loads
+% P=Q=0 の負荷の入力も Kron と同じように残り、同じ応答を持つ
+n6 = network.Ishizaki6Bus();
+DebugScript.helper.quiet(@() n6.initialize);
+res = n6.linearize();
+s_k = res.get_ss("Kron");
+s_f = res.get_ss("Feedback");
+assert(isequal(s_f.InputName, s_k.InputName))
+assert(same_eigs(eig_finite(s_k), eig_finite(s_f), 1e-6))
+[~, ix] = ismember(s_k.StateName, s_f.StateName);
+G_k = (1i*s_k.E - s_k.A) \ s_k.B;
+G_f = (1i*s_f.E - s_f.A) \ s_f.B;
+assert(norm(G_k - G_f(ix,:), "fro") < 1e-9)
+
+
 %% Bus without components
 % 機器の無い母線 (build_9bus の B004, B007, B009) があっても変数マップ・線形化ができる
 n9 = DebugScript.helper.build_9bus();
@@ -319,10 +369,12 @@ assert(isequal(string(c3.OutputName), tg(net.a_Bus{3}.a_Component{1}, ["Ire";"Ii
 
 %% Linearize matches v3 get_sys matrices for every algorithm
 % linearize + get_ss の行列と名前は v3 の odeLinearizer と同じ (helper.linearize_v3 に v3 のコードを保存)。
-% 違いは DAE の B の代数方程式の行の符号だけ (v3 は入力 u の符号が逆で、Kron と伝達関数が合わなかった)
+% 違いは DAE の B の代数方程式の行の符号 (v3 は入力 u の符号が逆で、Kron と伝達関数が合わなかった) と、
+% Feedback が P=Q=0 の負荷の入力を残すこと (v3 は落とした)。電流のある NonUnit は v3 と別の結果になる
+% (Non unit bus with a load is absorbed into Y) ので、ここでは比べない。
 nets = {};  nonunit = {};
 nets{end+1} = new_net();  nonunit{end+1} = [];
-nets{end+1} = new_net();  nonunit{end+1} = [7, 9];
+nets{end+1} = new_net();  nonunit{end+1} = 7;
 n4 = new_net();
 n4.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
 n4.a_Bus{2}.a_Component{1}.add_local_controller(controller.avr.AVR_DC1("avr2", kap=20));
@@ -336,9 +388,13 @@ for k = 1:numel(nets)
     DebugScript.helper.quiet(@() nets{k}.initialize);
     res = nets{k}.linearize("NonUnit", nonunit{k});
     for alg = ["Kron","Feedback","DAE"]
-        s_new = res.get_ss(alg);
+        s_ful = res.get_ss(alg);
+        s_new = s_ful;
         s_old = DebugScript.helper.linearize_v3(nets{k}, nonunit{k}, alg);
         str = nets{k}.str_tag + " " + alg;
+        if alg == "Feedback"
+            s_new = s_ful(:, ismember(s_ful.InputName, s_old.InputName));
+        end
         B_old = s_old.B;
         if alg == "DAE"
             n_x = size(res.rm_Axx,1);
@@ -351,7 +407,7 @@ for k = 1:numel(nets)
         assert(isequal(s_new.StateName, s_old.StateName) && isequal(s_new.InputName, s_old.InputName) && ...
                isequal(s_new.OutputName, s_old.OutputName), str + ": names")
         % net.get_sys は linearize + get_ss と同じ
-        assert(isequal(nets{k}.get_sys("Algorithm", alg, "NonUnit", nonunit{k}), s_new), str + ": get_sys")
+        assert(isequal(nets{k}.get_sys("Algorithm", alg, "NonUnit", nonunit{k}), s_ful), str + ": get_sys")
     end
 end
 
