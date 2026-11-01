@@ -14,23 +14,27 @@ classdef BadComponentStub < Component
 %   dxsize      : fcn_dx が 3 要素を返す
 %   ysize       : fcn_Y が 2 要素を返す
 %   masssize    : fcn_Mass が正方でない
+%   dxerror     : fcn_dx がエラーで止まる
     properties (Constant)
         key     = "test-bad-stub"
         sv_x    = ["x1";"x2"]
         sv_u    = ["u1";"u2"]
         sv_y    = "x1"
         sv_para = "bad"
-        sv_bad  = ["none","equilibrium","xsize","currentreal","massx","needpq","currentdep","dxsize","ysize","masssize"]
+        sv_bad  = ["none","equilibrium","xsize","currentreal","massx","needpq","currentdep","dxsize","ysize","masssize","dxerror"]
     end
 
     methods
-        function obj = BadComponentStub(str_bad)
-            opt = struct("baseMVA",100, "Pmin",-inf, "Pmax",inf, "Qmin",-inf, "Qmax",inf, ...
+        function obj = BadComponentStub(str_bad, str_tag, opt)
+            if nargin < 3   % 系統につなぐときは add_component が渡す
+                str_tag = "1";
+                opt = struct("baseMVA",100, "Pmin",-inf, "Pmax",inf, "Qmin",-inf, "Qmax",inf, ...
                          "P",0, "Q",0, "OPFinit_P0",0, "OPFinit_Q0",0, "OPFcost_HP",1, ...
                          "OPFcost_HQ",0, "OPFcost_fP",1, "OPFcost_fQ",0, "OPFcost_startup",0, ...
                          "OPFcost_shutdown",0, "Xaxis",nan, "Yaxis",nan, "Marker","o", ...
                          "MidXaxis","", "MidYaxis","");
-            obj@Component("BS1", opt);
+            end
+            obj@Component("BS" + str_tag, opt);
             obj.para_dynamics.add_entry("bad", find(obj.sv_bad == str_bad), "double");
             obj.set_odefcn(obj.r_Hz);
         end
@@ -57,6 +61,8 @@ classdef BadComponentStub < Component
                 dx = dx + 1e-3*I(1);
             elseif DebugScript.helper.BadComponentStub.sv_bad(param) == "dxsize"
                 dx = [dx; 0];
+            elseif DebugScript.helper.BadComponentStub.sv_bad(param) == "dxerror"
+                error("test:BadComponentStub", "stub stopped")
             end
         end
         function I = fcn_I(~, x, ~, ~, ~, param, ~)
