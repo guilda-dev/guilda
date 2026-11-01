@@ -199,6 +199,9 @@ classdef Component < PowerSystemModel
             % Called by check_edit after a dynamics edit or a network Hz edit.
             obj.set_odefcn(obj.r_Hz);
         end
+
+        % Raise a constructor message of Component.xml for a subclass in another folder.
+        parameter_error(obj, str_key, varargin)
     end
             
 
