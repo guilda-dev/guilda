@@ -51,6 +51,7 @@ function [result, flag, output] = solve(obj, net, s_options)
     % inputs, and the currents as outputs: the inputs and outputs of the controllers in
     % the bus models are left out.
     c_sysBus = cell(n_bus,1);
+    c_sysY   = cell(n_bus,1);
     for i = 1:n_bus
         if l_eq
             f_sys = @() a_bus{i}.get_sys("port","V2I");
@@ -61,6 +62,7 @@ function [result, flag, output] = solve(obj, net, s_options)
         sv_u = tab_map.Label(tab_map.Kind == "u" & tab_map.Bus == string(a_bus{i}.str_tag));
         [~, iv_u] = ismember(sv_u, string(sys_i.InputName));
         c_sysBus{i} = sys_i(1:2, [1, 2, reshape(iv_u, 1, [])]);
+        c_sysY{i}   = sys_i(3:end, [1, 2, reshape(iv_u, 1, [])]);
     end
     c_sysGC = cell(numel(a_gc),1);
     for k = 1:numel(a_gc)
@@ -90,7 +92,13 @@ function [result, flag, output] = solve(obj, net, s_options)
     str_x = tools.cellfun(@(S) string(S.StateName), c_sysBus);
     str_x = vertcat(strings(0,1), str_x{:});
     str_u = tab_map.Label(tab_map.Kind == "u");
-    [Axx, Axv, Bxu, Cix, Ex, str_z] = add_global_controllers(c_sysGC, a_gc, str_x, str_u, Axx, Axv, Bxu, Cix, Diu, Ex);
+    % The outputs of the bus models depend on the global controllers as the currents do
+    Cyx = tools.dcellfun(@(S) S.C         , c_sysY);
+    Dyu = tools.dcellfun(@(S) S.D(:,3:end), c_sysY);
+    n_i = size(Cix,1);
+    [Axx, Axv, Bxu, Cix, Ex, str_z] = add_global_controllers(c_sysGC, a_gc, str_x, str_u, Axx, Axv, Bxu, [Cix; Cyx], [Diu; Dyu], Ex);
+    Cyx = Cix(n_i+1:end,:);
+    Cix = Cix(1:n_i,:);
 
     if ~isequal([str_x; str_z], tab_map.Label(tab_map.Kind == "x"))
         error("GUILDA:odeLinearizer:VariableMap", ...
@@ -102,7 +110,13 @@ function [result, flag, output] = solve(obj, net, s_options)
         "Axx", Axx, "Axv", Axv, "Bx", Bxu, ...
         "Avx", -Cix, "Avv", Ymat - Div, "Bv", -Diu, ...
         "E", Ex);
+    sv_I = tools.cellfun(@(S) string(S.OutputName), c_sysBus);
+    sv_y = tools.cellfun(@(S) string(S.OutputName), c_sysY);
+    s_output = struct( ...
+        "Cx", Cyx, "Cv", tools.dcellfun(@(S) S.D(:,1:2), c_sysY), "Du", Dyu, ...
+        "sv_name", vertcat(strings(0,1), sv_y{:}));
     s_model = struct( ...
+        "s_output", s_output, "sv_I", vertcat(sv_I{:}), ...
         "c_sysBus", {c_sysBus}, "c_sysGC", {c_sysGC}, "cm_Y", cm_Y, ...
         "lv_nonUnit", reshape(ismember(1:n_bus, s_options.NonUnit), [], 1) | ...
                       tools.vcellfun(@(b) isempty(b.a_Component), a_bus), ...

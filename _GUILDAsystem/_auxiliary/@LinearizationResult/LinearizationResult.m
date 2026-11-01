@@ -70,7 +70,8 @@ classdef LinearizationResult < AnalysisResult
     properties (SetAccess=private, Hidden) % Model data
         % Bus models (V2I, at the point), global controller models, admittance matrix,
         % non-unit buses and bus voltages at the point: used by get_ss("Feedback") and
-        % the coordinates of get_ss("DAE").
+        % the coordinates of get_ss("DAE"). The Output option of get_ss also uses the names of
+        % the bus currents (sv_I) and the outputs of the bus models (s_output).
         s_model struct = struct()
     end
 

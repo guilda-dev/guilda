@@ -23,6 +23,8 @@ function [result, flag, output] = linearize(obj, varargin)
 %   the one of the model, also inside a fault. A zero bus voltage is reported with an INFO
 %   message and output.sv_faultBus, a point that is not an equilibrium in output.message,
 %   and result.rv_residual holds the residual.
+% - `Coordinate` — Default bus variables of result.get_ss("DAE"): "theta&rho", "theta&V" or
+%   "Vre&Vim" (net.solver_LIN.Coordinate).
 % - `Plot` — Call result.Plot (eigenvalue map) after the linearization. Default: false.
 %
 % <@Examples>
