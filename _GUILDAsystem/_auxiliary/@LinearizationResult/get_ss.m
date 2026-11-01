@@ -24,6 +24,10 @@ function sys = get_ss(obj, Algorithm, opt)
 %
 % Only "Feedback" uses options.NonUnit: "Kron" and "DAE" ignore it and say so with an INFO message.
 %
+% A result with flag false (output.str_issue) stops with an error that repeats output.message:
+% GUILDA:LinearizationResult:NotFinite for every algorithm, and GUILDA:LinearizationResult:SingularAvv
+% for "Kron" and "Feedback", which eliminate the bus voltages. "DAE" keeps them and still works.
+%
 % <@Examples>
 % ```matlab
 % res = net.linearize();
@@ -40,6 +44,12 @@ function sys = get_ss(obj, Algorithm, opt)
     end
     arguments (Output)
         sys % Descriptor state-space model with StateName, InputName and OutputName.
+    end
+    if obj.output.str_issue == "NotFinite"
+        error("GUILDA:LinearizationResult:NotFinite", "%s", obj.output.message)
+    elseif obj.output.str_issue == "SingularAvv" && Algorithm ~= "DAE"
+        error("GUILDA:LinearizationResult:SingularAvv", ...
+              "%s Algorithm ""%s"" eliminates the bus voltages; use ""DAE"" to keep them.", obj.output.message, Algorithm)
     end
     if Algorithm ~= "Feedback" && any(obj.s_model.lv_nonUnit)
         disp("INFO: NonUnit = [" + num2str(find(obj.s_model.lv_nonUnit(:)')) + "] is ignored by Algorithm """ + Algorithm + """. Only ""Feedback"" uses it.")
@@ -191,6 +201,13 @@ function sys = via_feedback(obj)
               "Algorithm ""Feedback"" needs a bus with states, but no bus of the network has any. Use ""Kron"" or ""DAE"" for a network without states.")
     end
 
+    lv_noI2V = tools.vcellfun(@(S) ~isempty(S.A) && ~is_invertible(S.D(:,1:2)), s.c_sysBus);
+    if any(lv_noI2V)
+        error("GUILDA:LinearizationResult:NoI2V", ...
+              "Algorithm ""Feedback"" needs the current of each bus with states to depend on its voltage, but it does not at bus %s. Use ""Kron"" or ""DAE"".", ...
+              num2str(find(lv_noI2V(:)')))
+    end
+
     % A bus without states whose current does not depend on V in an invertible way (e.g. a load
     % with P = Q = 0) has no I-to-V form, so it is eliminated with the network like a non-unit bus
     l_isU = false(n_bus,1);
@@ -248,7 +265,11 @@ function sys = via_feedback(obj)
 end
 
 function tf = has_I2V(sys)
-    tf = ~isempty(sys.A) || rcond(sys.D(:,1:2)) > 1e-12;
+    tf = ~isempty(sys.A) || is_invertible(sys.D(:,1:2));
+end
+
+function tf = is_invertible(D)
+    tf = rcond(D) > 1e-12;
 end
 
 function sys = i2v_full(sysV2I)

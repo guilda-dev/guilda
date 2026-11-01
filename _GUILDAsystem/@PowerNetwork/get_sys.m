@@ -8,6 +8,8 @@ function [sys, flag, output] = get_sys(obj, varargin)
 % unreduced Jacobian blocks and the variable map.
 % v3 returned [sys, lin] with lin an odeLinearizer holding the network; the second
 % output is now flag.
+% When flag is false, "Kron" and "Feedback" stop with the error of LinearizationResult.get_ss;
+% net.linearize returns the result, whose output.str_issue and output.message give the reason.
 %
 % Name-Value options:
 %
@@ -25,7 +27,7 @@ function [sys, flag, output] = get_sys(obj, varargin)
 % See also PowerNetwork.linearize, LinearizationResult.get_ss
     arguments (Output)
         sys      % Descriptor state-space model (dss) with state, input and output names.
-        flag     % True when all Jacobian entries are finite.
+        flag     % True when the result is usable: all Jacobian entries are finite and Avv is invertible.
         output   % As net.linearize; output.result is the LinearizationResult.
     end
     [result, flag, output] = obj.linearize(varargin{:});

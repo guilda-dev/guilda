@@ -35,8 +35,8 @@ function [result, flag, output] = linearize(obj, varargin)
 % See also PowerNetwork.get_sys, PowerNetwork.get_variable_map, LinearizationResult, odeLinearizer
     arguments (Output)
         result   % Jacobian blocks, variable map, point and settings.
-        flag     % True when all Jacobian entries are finite.
-        output   % output.message describes the outcome; l_equilibrium, n_x, n_v, n_u, rcond_Avv.
+        flag     % True when the result is usable: all Jacobian entries are finite and Avv is invertible.
+        output   % output.message describes the outcome; str_issue is its reason when flag is false; l_equilibrium, n_x, n_v, n_u, rcond_Avv.
     end
     [c_nv, opt] = take_call_options(varargin);
     s_options   = obj.solver_LIN.get_options(c_nv);
