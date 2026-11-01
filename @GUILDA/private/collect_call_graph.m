@@ -233,7 +233,7 @@ function sct_found = read_file_units(str_file, str_class, str_classdef_file, sct
     end
     sct_info = sct_ctx.info(str_class);
     str_rel = strrep(extractAfter(str_file, [str_root, filesep]), '\', '/');
-    bln_private = contains(str_file, [filesep, 'private', filesep]);
+    bln_private = contains(str_rel, '/private/');
     bln_classdef = strcmp(str_file, str_classdef_file);
 
     iv_in_methods = [];
