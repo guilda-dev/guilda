@@ -1,7 +1,7 @@
 function sys = get_ss(obj, Algorithm, opt)
-% Get a reduced state-space model (Kron / Feedback / DAE).
+% Get a state-space model (Kron / Feedback / DAE).
 %
-% Returns the reduced linear model of the result, as a descriptor state-space model (dss:
+% Returns the linear model of the result, as a descriptor state-space model (dss:
 % E dx/dt = A x + B u, y = C x + D u). The matrices are the same as those of net.get_sys
 % in v3 for each algorithm, including the state order: "Kron" and "DAE" put the states of
 % the global controllers first, then the components; "Feedback" puts the components first,
@@ -10,7 +10,7 @@ function sys = get_ss(obj, Algorithm, opt)
 % they are absorbed into the admittance matrix, which changes the matrices and adds inputs.
 %
 % - "Kron": the bus voltages are eliminated from the DAE. States: all states.
-%   Inputs: the inputs u. Outputs: the states.
+%   Inputs: the inputs u. Outputs: the states, in their order, without output names.
 % - "Feedback": the bus models in I-to-V form are connected through the admittance
 %   matrix, then the global controllers are closed. Non-unit buses (options.NonUnit, and
 %   buses without states that have no I-to-V form) are eliminated with the network: their
@@ -18,9 +18,12 @@ function sys = get_ss(obj, Algorithm, opt)
 %   so the model is equivalent to "Kron". options.NonUnit naming a bus with states is an
 %   error (GUILDA:LinearizationResult:NonUnitDynamicBus). A network without states has
 %   nothing to connect, which is also an error (GUILDA:LinearizationResult:NoUnitBus).
-%   Inputs: the inputs u, in the same order as "Kron". Outputs: the states.
-% - "DAE": the bus voltages are kept as algebraic states (E is singular), in the
-%   coordinates given by Coordinate. Outputs: the dynamic states.
+%   Inputs: the inputs u, in the same order as "Kron". States: the connection (connect) can
+%   remove some, such as Vst of an AVR, so there can be fewer than in "Kron". Outputs: the
+%   states of the components and local controllers, including a row for each removed state
+%   and leaving out the states of the global controllers, so they differ from the states.
+% - "DAE": not reduced: the bus voltages are kept as algebraic states (E is singular), in
+%   the coordinates given by Coordinate. Outputs: the dynamic states.
 %
 % Input and Output select the channels of the model; without them the channels are the
 % ones above. The states and their order do not change. Output takes these kinds and
@@ -59,7 +62,7 @@ function sys = get_ss(obj, Algorithm, opt)
 % See also PowerNetwork.get_sys, LinearizationResult.Plot
     arguments
         obj
-        Algorithm (1,1) string {mustBeMember(Algorithm, ["Kron","Feedback","DAE"])} = default_algorithm(obj) % Reduction.
+        Algorithm (1,1) string {mustBeMember(Algorithm, ["Kron","Feedback","DAE"])} = default_algorithm(obj) % Form of the model.
         opt.Coordinate (1,1) string {mustBeMember(opt.Coordinate, ["theta&V","theta&rho","Vre&Vim"])} = default_coordinate(obj) % Bus variables of "DAE": angle and log magnitude (rho), angle and magnitude, or real and imaginary parts. Default: options.Coordinate of the result.
         opt.Input (1,:) string % Inputs of the model: "u" or Labels. Default: all inputs.
         opt.Output (1,:) string % Outputs of the model: "x", "V", "I", "y" or names. Default: as described for each algorithm.
