@@ -256,11 +256,10 @@ assert(height(net.tab_editLog) == 0 && ~net.l_staleEquilibrium)  % 元の系統�
 DebugScript.helper.quiet(@() n1.initialize);
 assert(~comp.l_staleOdefcn && ~n1.l_staleEquilibrium)
 
-% 型の検査も効く (読み込む前と同じく、リスナーのエラーは警告になり値が戻る)
+% 型の検査も効く (読み込む前と同じく、エラーになり値は変わらない)
 r_D = comp.para_dynamics.D;
-lastwarn("");
-DebugScript.helper.quiet(@() set_dynamics_D(comp, "abc"));
-assert(contains(lastwarn, "must be double") && isequal(comp.para_dynamics.D, r_D))
+assert(error_id(@() set_dynamics_D(comp, "abc")) == "GUILDA:Parameter:ClassNameMismatch")
+assert(isequal(comp.para_dynamics.D, r_D))
 
 % 母線・送電線・系統のパラメータと、読み込み後の構成の編集
 s = load(str_mat);  n2 = s.net;
