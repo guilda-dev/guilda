@@ -27,7 +27,7 @@ function [result, flag, output] = simulate(obj, time, varargin)
 % - `Progress` — "dialog", "disp" or "none"; true = "dialog", false = "none" (net.solver_ODE.Progress).
 % - `Verbose` — Print the phases and the outcome (net.solver_ODE.Verbose).
 % - `Plot` — Call result.Plot after the simulation (net.solver_ODE.Plot).
-% - `Export` — Call result.Export after the simulation: true for the default file name, or the file name. Default: false.
+% - `Export` — Call result.Export after the simulation: true for the default file name, or the file name, whose extension is checked before the integration. Default: false.
 %
 % <@Examples>
 % ```matlab
@@ -56,6 +56,7 @@ function [result, flag, output] = simulate(obj, time, varargin)
     [c_events, c_nv] = split_events(varargin);
     c_nv = v3_simulate_args(c_nv);                            % COMPAT(v3)
     [c_nv, opt] = take_call_options(c_nv);
+    check_export(opt.Export);
     s_options   = obj.solver_ODE.get_options(c_nv);
 
     [result, flag, output] = obj.solver_ODE.solve(obj, time, c_events, s_options);
@@ -70,6 +71,18 @@ function [result, flag, output] = simulate(obj, time, varargin)
     end
 end
 
+
+function check_export(export)
+% A file name must have an extension that result.Export writes, known before the integration
+    if ~isstring(export)
+        return
+    end
+    [~, ~, str_ext] = fileparts(export);
+    if ~isscalar(export) || ~ismember(lower(str_ext), [".csv", ".txt", ".xlsx", ".xls", ".mat"])
+        error('GUILDA:PowerNetwork:SimulateExport', '%s', ...
+              msg('GUILDA:PowerNetwork:SimulateExport', char(str_ext)));
+    end
+end
 
 function check_time(time)
 % time must be [] or a real vector [t0, tend] with finite t0 < tend
