@@ -25,8 +25,8 @@ function [rv_point, l_equilibrium] = point_vector(layer, Point)
         l_equilibrium % True when Point is [] (the equilibrium).
     end
     odeLinearizer.check_point(Point);
-    tab_map = layer.get_variable_map();
-    n_var   = height(tab_map);
+    c_rows  = layer.get_variable_map("rows");
+    n_var   = n_rows(c_rows);
     l_equilibrium = isempty(Point) && ~iscell(Point);
 
     if l_equilibrium
@@ -41,6 +41,7 @@ function [rv_point, l_equilibrium] = point_vector(layer, Point)
         rv_point = double(Point(:));
     else
         sim = Point{1};
+        tab_map = layer.get_variable_map();
         t   = Point{2};
         if ~ismethod(sim, "get_point")
             error("GUILDA:odeLinearizer:PointType", ...
@@ -66,17 +67,17 @@ function rv = assemble(layer, f_comp, f_bus, f_gc)
     if isa(layer, "Component")
         rv = f_comp(layer);
     elseif isa(layer, "Bus")
-        [tab, c_idx] = layer.get_variable_map();
-        rv = zeros(height(tab),1);
+        [c_rows, c_idx] = layer.get_variable_map("rows");
+        rv = zeros(n_rows(c_rows),1);
         for j = 1:numel(c_idx)
             rv(c_idx{j}) = f_comp(layer.a_Component{j});
         end
         if isempty(c_idx)
-            rv(tab.Kind == "Vre" | tab.Kind == "Vim") = f_bus(layer);
+            rv(size(c_rows{1},1) + (1:2)) = f_bus(layer);
         end
     elseif isa(layer, "PowerNetwork")
-        [tab, c_idxBus, c_idxGC] = layer.get_variable_map();
-        rv = zeros(height(tab),1);
+        [c_rows, c_idxBus, c_idxGC] = layer.get_variable_map("rows");
+        rv = zeros(n_rows(c_rows),1);
         for i = 1:numel(c_idxBus)
             rv(c_idxBus{i}) = assemble(layer.a_Bus{i}, f_comp, f_bus, f_gc);
         end
@@ -87,6 +88,10 @@ function rv = assemble(layer, f_comp, f_bus, f_gc)
         error("GUILDA:odeLinearizer:PointLayer", ...
               "Point is defined for a PowerNetwork, Bus or Component, not a %s.", class(layer))
     end
+end
+
+function n = n_rows(c_rows)
+    n = sum(cellfun(@(m) size(m,1), c_rows));
 end
 
 % ---- equilibrium ----
