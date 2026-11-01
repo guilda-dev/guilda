@@ -251,7 +251,12 @@ classdef (Sealed = true) odeEventSet < auxiliary
                             end
                         end
                     end
-                    comp{j}.rv_Uoffset = @(t) cellfun(@(f) f(t), ini);
+                    % Without an input event, empty: the right-hand side skips it
+                    if any(lv_set)
+                        comp{j}.rv_Uoffset = @(t) cellfun(@(f) f(t), ini);
+                    else
+                        comp{j}.rv_Uoffset = [];
+                    end
                 end
             end            
 
@@ -326,8 +331,8 @@ classdef (Sealed = true) odeEventSet < auxiliary
 
             nFBorTC = length(lv_FBorTC);
 
-            EM = eye(nFBorTC);
-            RM = eye(nFBorTC);
+            EM = speye(nFBorTC);
+            RM = speye(nFBorTC);
 
             EM = EM(:, ~lv_FBorTC);
             RM = RM(~lv_FBorTC, :);
@@ -350,7 +355,7 @@ classdef (Sealed = true) odeEventSet < auxiliary
             M0 = opt.M0;
             if isempty(M0)
                 nB = numel(a_bus);
-                M0 = blkdiag(rm_M, zeros(nB*4, nB*4));
+                M0 = sparse(blkdiag(rm_M, zeros(nB*4, nB*4)));
             end
             varargout{2} = RM * M0 * RM.';                    
                                     
@@ -393,11 +398,7 @@ classdef (Sealed = true) odeEventSet < auxiliary
             Vsol = xsol(:, B_sti);
             Isol = opt.ODEYmatrix * Vsol.';
             
-            t = array2table(Time);
-            x = array2table(xsol);
-            I = array2table(Isol.');
-
-            EventSettings = table(t,x,I, 'VariableNames', {'t','x','i'});
+            EventSettings = struct('t', Time, 'x', xsol, 'i', Isol.');
         end
         
     end
@@ -580,7 +581,11 @@ function [rv_x0, rm_Mass, TC] = getXM(OBJs, rv_x0, rm_Mass, TC)
         if isa(OBJ, 'Component')
             OBJ.l_isConnect = ~ismember(OBJ.str_tag, TC);
         end
-        rv_x0 = [rv_x0; OBJ.rv_Xequilibrium + OBJ.rv_Xoffset; OBJ.rv_Uequilibrium + OBJ.rv_Uoffset(0)]; %#ok
+        rv_u0 = OBJ.rv_Uequilibrium;
+        if ~isempty(OBJ.rv_Uoffset)     % empty without an input event (see setEventCondition)
+            rv_u0 = rv_u0 + OBJ.rv_Uoffset(0);
+        end
+        rv_x0 = [rv_x0; OBJ.rv_Xequilibrium + OBJ.rv_Xoffset; rv_u0]; %#ok
         
         rm_Mass(rx_idx, rx_idx) = blkdiag(OBJ.f_Mass([],[],[],[],[]), zeros(nu_idx, nu_idx));
 

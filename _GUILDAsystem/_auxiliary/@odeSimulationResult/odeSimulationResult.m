@@ -5,7 +5,8 @@ classdef odeSimulationResult < AnalysisResult
 % inputs of the components and controllers. It holds computed values only; the settings of
 % the buses and components stay with the network (a hidden reference, see AnalysisResult).
 % flag is 1 when the simulation reached the end time, 0 when it stopped by TimeLimit and -1
-% when the solver stopped early; then the trajectories end at output.tEnd.
+% when the solver stopped early; then the trajectories end at output.tEnd. When the first
+% phase could not be solved, they have no time points.
 %
 % The trajectory is stored once, in the order of the variable map of the network
 % (rm_variable, columns = rows of tab_variable): the states of the components with their
@@ -106,7 +107,7 @@ classdef odeSimulationResult < AnalysisResult
                 obj % The result object.
             end
             obj@AnalysisResult(net, solver, options, flag, output, elapsed);
-            if isempty(net) || isempty(c_phase)
+            if isempty(net)
                 return
             end
 
@@ -114,13 +115,19 @@ classdef odeSimulationResult < AnalysisResult
             obj.sv_bus      = string(a_bus(:));
             obj.c_component = cellfun(@(b) string(b.a_Component(:)), a_bus(:), 'UniformOutput', false);
 
-            sol = reshape(c_phase, [], 1);
-            obj.rv_t = cell2mat( cellfun(@(T) T.t{:,:}, sol, 'UniformOutput', false) );
-            X        = cell2mat( cellfun(@(T) T.x{:,:}, sol, 'UniformOutput', false) );
-            obj.rm_I = cell2mat( cellfun(@(T) T.i{:,:}, sol, 'UniformOutput', false) );
-
             obj.tab_variable = net.get_variable_map();
             [iv_sim, obj.c_index] = simulator_columns(net, obj.tab_variable);
+            if isempty(c_phase)
+                obj.rv_t = zeros(0,1);
+                obj.rm_I = zeros(0, 2*numel(a_bus));
+                obj.rm_variable = zeros(0, numel(iv_sim));
+                return
+            end
+
+            sol = reshape(c_phase, [], 1);
+            obj.rv_t = cell2mat( cellfun(@(T) T.t, sol, 'UniformOutput', false) );
+            X        = cell2mat( cellfun(@(T) T.x, sol, 'UniformOutput', false) );
+            obj.rm_I = cell2mat( cellfun(@(T) T.i, sol, 'UniformOutput', false) );
             obj.rm_variable = X(:, iv_sim);
         end
 

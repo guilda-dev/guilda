@@ -3,8 +3,8 @@ function [result, flag, output] = solve(obj, net, s_options)
 %
 % Linearizes the network net at the point s_options.Point and returns the unreduced DAE
 % (the Jacobian blocks in the order of net.get_variable_map()) as a LinearizationResult.
-% The solver and the network are only read: nothing is written back into them (the
-% NonUnit choice is not stored on the buses). Called by net.linearize; calling it
+% The solver and the network are only read: nothing is written back into them.
+% Called by net.linearize; calling it
 % directly is for advanced use. Like net.linearize, it first rebuilds stale f_* handles
 % and stops with the error GUILDA:PowerNetwork:EquilibriumStale when net.initialize()
 % is needed. A Point with NaN or Inf stops with GUILDA:odeLinearizer:PointNotFinite, and a
@@ -31,11 +31,7 @@ function [result, flag, output] = solve(obj, net, s_options)
     a_bus = net.a_Bus;
     a_gc  = net.a_GlobalController;
     n_bus = numel(a_bus);
-    if any(s_options.NonUnit > n_bus)
-        error("GUILDA:odeLinearizer:NonUnit", ...
-              "NonUnit = [%s] names a bus that does not exist; give indices of net.a_Bus (1 to %d).", ...
-              num2str(s_options.NonUnit), n_bus)
-    end
+    v3_nonunit_range(s_options, n_bus);        % COMPAT(v3)
 
     [tab_map, c_idxBus, c_idxGC] = net.get_variable_map();
     [rv_point, l_eq] = odeLinearizer.point_vector(net, s_options.Point);
@@ -118,8 +114,7 @@ function [result, flag, output] = solve(obj, net, s_options)
     s_model = struct( ...
         "s_output", s_output, "sv_I", vertcat(sv_I{:}), ...
         "c_sysBus", {c_sysBus}, "c_sysGC", {c_sysGC}, "cm_Y", cm_Y, ...
-        "lv_nonUnit", reshape(ismember(1:n_bus, s_options.NonUnit), [], 1) | ...
-                      tools.vcellfun(@(b) isempty(b.a_Component), a_bus), ...
+        "lv_nonUnit", tools.vcellfun(@(b) isempty(b.a_Component), a_bus), ...
         "cv_V", cv_V);
     rv_residual = residual_at_point(a_bus, a_gc, tab_map, c_idxBus, c_idxGC, rv_point, Ymat);
 

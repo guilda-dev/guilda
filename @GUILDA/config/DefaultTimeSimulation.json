@@ -29,8 +29,8 @@
         "Description": "Progress display during the integration (odeSimulator.Progress)"
     },
     "TimeLimit":{
-        "Value": 10,
+        "Value": Infinity,
         "Type": "double",
-        "Description": "[s] Limit of the computation time of each integration phase. When exceeded, the simulation stops and returns the result up to the time reached (flag = 0). A value that is not positive means no limit."
+        "Description": "[s] Limit of the computation time of the whole run. When exceeded, the simulation stops and returns the result up to the time reached (flag = 0). A value that is not positive means no limit."
     }
 }

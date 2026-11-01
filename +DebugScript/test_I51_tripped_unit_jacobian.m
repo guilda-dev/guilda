@@ -133,16 +133,16 @@ net.simulate([0,2], odeEventSet("trip", net, "TimeSpan", [1,1.2], "TripUnit", "S
 assert(id ~= "GUILDA:odeSimulator:InitialConditionRelaxed")
 
 
-%% Failed initial condition stops with an error naming the phase
+%% Failed initial condition stops with flag -1 naming the phase
 ev = odeEventSet("nan", net, "TimeSpan", [1,1.2], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", NaN);
-try
-    net.simulate([0,2], ev);
-    error("DebugScript:noError", "エラーにならない")
-catch ME
-    assert(ME.identifier == "GUILDA:odeSimulator:InitialConditionFailed", ME.identifier + ": " + ME.message)
-    assert(contains(ME.message, "phase 2") && contains(ME.message, "t = [1, 1.2]"), ME.message)
-    assert(endsWith(string(ME.cause{1}.identifier), "NeedBetterY0"), ME.cause{1}.identifier)
-end
+w = warning("off", "GUILDA:PowerNetwork:SimulationIncomplete");
+c_warn = onCleanup(@() warning(w));
+[~, flag, output] = net.simulate([0,2], ev);
+assert(flag == -1)
+ME = output.exception;
+assert(ME.identifier == "GUILDA:odeSimulator:InitialConditionFailed", ME.identifier + ": " + ME.message)
+assert(contains(ME.message, "phase 2") && contains(ME.message, "t = [1, 1.2]"), ME.message)
+assert(endsWith(string(ME.cause{1}.identifier), "NeedBetterY0"), ME.cause{1}.identifier)
 
 
 function err = jacobian_errors(net, tspan, c_events)

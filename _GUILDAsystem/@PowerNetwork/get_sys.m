@@ -3,7 +3,7 @@ function [sys, flag, output] = get_sys(obj, varargin)
 %
 % Linear model of the network as a state-space model: a shortcut of
 % net.linearize(Name, Value) followed by result.get_ss(). It takes the same options as
-% net.linearize (Algorithm, NonUnit, Point, Coordinate, Plot) and the options Input and Output
+% net.linearize (Algorithm, Point, Coordinate, Plot) and the options Input and Output
 % of get_ss; Algorithm chooses the form of the model: "Kron" and "Feedback" eliminate the
 % bus voltages, "DAE" keeps them (default net.solver_LIN.Algorithm, "Feedback"). Use
 % net.linearize to keep the unreduced Jacobian blocks and the variable map.
@@ -17,7 +17,6 @@ function [sys, flag, output] = get_sys(obj, varargin)
 % Name-Value options:
 %
 % - `Algorithm` — Form of the model (see LinearizationResult.get_ss). Default: net.solver_LIN.Algorithm.
-% - `NonUnit` — Indices of buses treated as non-unit buses by "Feedback". Default: net.solver_LIN.NonUnit.
 % - `Point` — Point of the linearization (see net.linearize). Default: net.solver_LIN.Point.
 % - `Coordinate` — Bus variables of "DAE" (see LinearizationResult.get_ss). Default: net.solver_LIN.Coordinate.
 % - `Plot` — Plot the eigenvalue map. Default: false.

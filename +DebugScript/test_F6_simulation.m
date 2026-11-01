@@ -529,7 +529,10 @@ assert(all(isfinite(Vfd)))
 
 %% AVR and PSS response is unchanged by name wiring
 % 制御器の入出力を名前で接続するようにした (local_LQR の移植) 前と同じ応答になる。
-% 値は変更前のコードで同じ条件のシミュレーションを実行して記録したもの
+% 値は変更前のコードで同じ条件のシミュレーションを実行して記録したもの (密行列の 189 点)。
+% 疎行列では丸めの差で刻みが変わる (184 点) ので、点数は 2 割、値は 1e-3 の幅で比べる。
+% 1e-3 は既定の許容誤差 (相対 1e-4) での誤差に対応する: 疎と記録値の差は最大 2.3e-4、
+% Tolerance=1e-10 の解に対する誤差は記録値で最大 2.5e-4、疎で最大 4.8e-4
 net = DebugScript.helper.build_ieee14();
 net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
 net.a_Bus{2}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr2"), controller.pss.PSS1("pss2"));
@@ -540,13 +543,13 @@ net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", c{:}, alph
 DebugScript.helper.quiet(@() net.initialize);
 sol = net.simulate([0,3], odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008"));
 r   = sol.odeResults;
-assert(numel(r.t) == 189, "steps: " + numel(r.t))
+assert(abs(numel(r.t) - 189) <= 0.2*189, "steps: " + numel(r.t))
 x_ref = [1.21546465440074; 0.000417344321429537; 0.894219545365634; 0.244739185785292; -0.982794522565431; 0.381301677046273];
 u_ref = [2.31453097771137; 1.17969105725771];
 V_ref = [1.06196892490977; -0.233592359118239];
-assert(norm(r.Bus(1).Component(1).X{end,:}' - x_ref) < 1e-9)
-assert(norm(r.Bus(1).Component(1).U{end,:}' - u_ref) < 1e-9)
-assert(norm(r.Bus(8).V{end,:}' - V_ref) < 1e-9)
+assert(norm(r.Bus(1).Component(1).X{end,:}' - x_ref) < 1e-3)
+assert(norm(r.Bus(1).Component(1).U{end,:}' - u_ref) < 1e-3)
+assert(norm(r.Bus(8).V{end,:}' - V_ref) < 1e-3)
 
 
 %% Fault with LQR
@@ -715,7 +718,7 @@ assert(flag == 1, output.message)
 % output.message は止まった区間・時刻とソルバーの警告文を示す
 ev = odeEventSet("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) 1/(1.5-t));
 lastwarn("");
-[~, flag, output] = net.simulate([0,4], ev);
+[~, flag, output] = net.solver_ODE.solve(net, [0,4], {ev}, net.solver_ODE.get_options({}));   % net.simulate の警告で lastwarn が変わらない
 str_warn = lastwarn();
 assert(flag == -1)
 assert(output.tEnd > 1 && output.tEnd < 2.5)

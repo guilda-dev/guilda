@@ -471,14 +471,14 @@ Option names:
 
 | v3 | v4 |
 |----|----|
-| `[sys, lin] = net.get_sys(NonUnit=n, Algorithm=a)` | `sys = net.get_sys(NonUnit=n, Algorithm=a)`; `[sys, flag, output] = ...`, `output.result` is the `LinearizationResult` |
-| `lin = odeLinearizer(net, n, Algorithm=a); sys = lin.get_sys` | `res = net.linearize(NonUnit=n); sys = res.get_ss(a)` |
+| `[sys, lin] = net.get_sys(NonUnit=n, Algorithm=a)` | `sys = net.get_sys(Algorithm=a)`; `[sys, flag, output] = ...`, `output.result` is the `LinearizationResult` |
+| `lin = odeLinearizer(net, n, Algorithm=a); sys = lin.get_sys` | `res = net.linearize(); sys = res.get_ss(a)` |
 | `lin.Kxx`, `lin.Kxv`, `lin.Kvx`, `lin.Kvv`, `lin.get_DAE` | `res.rm_Axx`, `rm_Axv`, `rm_Bx`, `rm_Avx`, `rm_Avv`, `rm_Bv`, `rm_E` (unreduced DAE in the order of `res.tab_variable`) |
 | – | `net.linearize(Point=x)` or `Point={sim, t}`: linearize away from the equilibrium |
 | – | `net.get_variable_map()`, `bus.get_variable_map()`, `comp.get_variable_map()` |
 
 - Options: `Algorithm` (`"Kron"` | `"Feedback"` | `"DAE"`, default
-  `"Feedback"` as in v3), `NonUnit`, `Point`, `Plot` (eigenvalue map).
+  `"Feedback"` as in v3), `Point`, `Plot` (eigenvalue map).
   Defaults in `net.solver_LIN`.
 - `res.get_ss(Algorithm)` gives the same A, E, C, D and names as v3
   `get_sys` for every algorithm (checked against a copy of the v3 code in
@@ -503,8 +503,9 @@ Option names:
   added. Find a state by `StateName`, not by position.
 - A bus without components (e.g. a pure junction bus) can be linearized: it
   has no states and takes no current.
-- `NonUnit` is no longer written to the buses (`Bus.l_isNonUnit` is
-  removed); the network is not changed. `Point={sim, t}` reads
+- `NonUnit` は廃止しました (Issue #118)。機器のない母線と、状態がなく I2V 形式を
+  持たない母線は自動で判定します。`Bus.l_isNonUnit` も削除しています。互換の扱いは
+  4 章の表のとおりです。`Point={sim, t}` reads
   `sim.get_point(t)` and works with local and global controllers;
   `Point={sim, t, "before"}` takes the value before the event at a phase
   boundary (the default is after).
@@ -762,6 +763,8 @@ and simulation results in the order of `get_variable_map`. Open follow-ups
 | `simulate(..., "Reporter", v)` / `"RelativeTolerance", v` | `GUILDA:Deprecated:SimulateOptionName` | warning; becomes `Progress` / `Tolerance` |
 | user settings key `TimeSimulation.Reporter` (`@GUILDA/user/DefaultTimeSimulation.json`) | – | no warning; read as `Progress` (an existing `Progress` wins); the startup writes the file back with the new key |
 | `odeLinearizer(net, NonUnit, Name, Value)` | `GUILDA:Deprecated:OdeLinearizerConstructor` | error |
+| `net.linearize` / `net.get_sys` の `NonUnit=n` | `GUILDA:Deprecated:LinearizeNonUnit` | 警告。状態のない母線は無視。状態のある母線は `Feedback` で `GUILDA:LinearizationResult:NonUnitDynamicBus`、存在しない母線は `GUILDA:odeLinearizer:NonUnit` のエラー |
+| `net.solver_LIN.NonUnit` への空でない値の代入 | `GUILDA:Deprecated:SolverLinNonUnit` | 警告(`.mat` の読み込みでも代入されるので、空の値では出さない)。値は Hidden のプロパティに残り、以後の実行で `NonUnit=n` と同じ扱い(呼び出しの指定が優先)。読み出しは保存した値を返し、警告なし |
 | `initialize("methods", m)` | `GUILDA:Deprecated:InitializeMethods` | warning; becomes `Method=m` |
 | `initialize` values `"powerflow calculation"` / `"optimal powerflow"` / `"calculate from Xequilibrium"` | `GUILDA:Deprecated:InitializeMethodValue` | warning; become `"powerflow"` / `"OPF"` / `"equilibrium"` |
 | `CsvNetHandler.import(path, net, Initialize=tf)` | `GUILDA:Deprecated:CsvNetHandlerImport` | warning; calls `PowerNetwork.import_csv` |
@@ -797,6 +800,12 @@ lists all of them:
 | `_auxiliary/@odeSimulator/odeSimulator.m` | `set.Reporter` | `v3_ode_reporter`: warns, sets `Progress` |
 | `_auxiliary/@ContinuationPowerFlow/ContinuationPowerFlow.m` | `v3_cpf_constructor(varargin)` | rejects v3 constructor arguments |
 | `_auxiliary/@odeLinearizer/odeLinearizer.m` | `v3_linearizer_constructor(varargin)` | rejects v3 constructor arguments |
+| `_auxiliary/@odeLinearizer/odeLinearizer.m` | `NonUnit` property (Hidden) | 廃止した設定の保存先 |
+| `_auxiliary/@odeLinearizer/odeLinearizer.m` | `set.NonUnit` | `v3_solver_nonunit`: 警告して保存 |
+| `_auxiliary/@odeLinearizer/odeLinearizer.m` | `get_options`: `v3_linearize_args(nv, obj.NonUnit)` | `NonUnit` を警告して取り除く |
+| `_auxiliary/@odeLinearizer/odeLinearizer.m` | `get_options`: `s_options.NonUnit = rv_nonUnit` | 指定があるときだけ結果の `options` に残す |
+| `_auxiliary/@odeLinearizer/solve.m` | `v3_nonunit_range(s_options, n_bus)` | 存在しない母線のエラー |
+| `_auxiliary/@LinearizationResult/get_ss.m` | `v3_nonunit_dynamic(obj.options, s.c_sysBus)` | 状態のある母線のエラー |
 | `@GUILDA/private/get_config.m` | `v3_user_config(field, ...)` | user settings key `Reporter` → `Progress` |
 
 `DebugScript.test_F10_api_foundation` checks this list and that core code
@@ -828,6 +837,10 @@ settings (an untagged line, needed by the `get_config` hook).
 | `v3_simulate_args.m` | `simulate` option names `Reporter`, `RelativeTolerance` |
 | `v3_ode_reporter.m` | `solver_ODE.Reporter` setter |
 | `v3_linearizer_constructor.m` | error for `odeLinearizer(net, ...)` |
+| `v3_linearize_args.m` | `linearize` / `get_sys` の `NonUnit` |
+| `v3_solver_nonunit.m` | `solver_LIN.NonUnit` の setter |
+| `v3_nonunit_range.m` | `NonUnit` の存在しない母線のエラー |
+| `v3_nonunit_dynamic.m` | `NonUnit` の状態のある母線のエラー |
 | `v3_user_config.m` | user settings key `TimeSimulation.Reporter` → `Progress` |
 | `v3_initialize_args.m` | `initialize` option `methods` and old method values |
 

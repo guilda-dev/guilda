@@ -226,5 +226,11 @@ const updateLogData = [
     "date": "2026-11-01",
     "type": "changed",
     "content": "The help of net.get_sys, net.linearize and get_ss and the developer pages now describe the actual model: DAE is not reduced, the default outputs differ by Algorithm (Feedback leaves out the global controller states and keeps rows for removed states), the v3 state order is an exception to the variable map, and non-finite points stop with an error instead of flag false. The ports of a linearized model are no longer described as set by GUILDA.config(\"Model\",\"port_vw\"), which has no effect."
+  },
+  {
+    "title": "NonUnit option retired",
+    "date": "2026-11-02",
+    "type": "changed",
+    "content": "net.linearize, net.get_sys and net.solver_LIN no longer have a NonUnit setting: buses without states are detected automatically and give the same model. A call or setting that still uses it warns (GUILDA:Deprecated:LinearizeNonUnit, GUILDA:Deprecated:SolverLinNonUnit): a listed bus without states is ignored, and a listed bus with states stops Algorithm=\"Feedback\" with an error as before. get_ss no longer prints an INFO message about NonUnit, which also appeared wrongly for networks with buses without components."
   }
 ];

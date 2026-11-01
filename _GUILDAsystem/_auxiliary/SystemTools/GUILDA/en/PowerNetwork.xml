@@ -29,5 +29,6 @@
         <entry key="ControllersNotSaved">export_csv does not write controllers, so the CSV model of ''{0}'' does not include them.&#xA;Local ({1}): {2}&#xA;Global ({3}): {4}&#xA;Add them again after PowerNetwork.import_csv.</entry>
         <entry key="SimulateExport">Export of net.simulate does not support the extension ''{0}''. Use a scalar file name with .csv, .txt, .xlsx, .xls or .mat.</entry>
         <entry key="SimulateTime">The time of net.simulate must be [t0, tend] with finite values and t0 &lt; tend, or [] for the time span of the events: {0}.</entry>
+        <entry key="SimulationIncomplete">net.simulate did not reach the end time (flag = {0}); the result holds the trajectories up to the time reached.&#xA;{1}</entry>
     </message>
 </rsccat>

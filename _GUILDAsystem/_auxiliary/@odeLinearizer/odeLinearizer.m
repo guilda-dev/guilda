@@ -12,7 +12,7 @@ classdef odeLinearizer < auxiliary
 % net.initialize();
 % net.solver_LIN.Algorithm = "Kron";              % stored default, kept between runs
 % sys = net.get_sys();                            % uses "Kron"
-% result = net.linearize(NonUnit=[7 9], Algorithm="Feedback");   % this call only
+% result = net.linearize(Algorithm="Feedback");   % this call only
 % ```
 %
 % See also LinearizationResult, PowerNetwork.linearize, PowerNetwork.get_sys
@@ -23,10 +23,6 @@ classdef odeLinearizer < auxiliary
         % I-to-V form through the admittance matrix) or "DAE" (keep the voltages as algebraic
         % states, descriptor form with a singular E).
         Algorithm (1,1) string {mustBeMember(Algorithm, ["Kron","Feedback","DAE"])} = "Feedback"
-
-        % Indices of buses (in a_Bus) treated as non-unit buses by "Feedback".
-        % They are eliminated with the network and their components are left out. A bus without components is always a non-unit bus. The buses are not changed.
-        NonUnit (1,:) double {mustBeInteger, mustBePositive} = zeros(1,0)
 
         % Point of the linearization.
         % [] for the equilibrium (set by net.initialize); a vector of the values in the order of
@@ -44,13 +40,16 @@ classdef odeLinearizer < auxiliary
         Coordinate (1,1) string {mustBeMember(Coordinate, ["theta&V","theta&rho","Vre&Vim"])} = "theta&rho"
     end
 
+    properties (Hidden) % Compatibility
+        NonUnit (1,:) double {mustBeInteger, mustBePositive} = zeros(1,0)   % COMPAT(v3) retired (v3_solver_nonunit)
+    end
+
     properties (Constant) % Settings
         % Name-Value options of net.linearize / net.get_sys and the solver property each one sets.
         % Input of tools.resolve_options.
         % <@Type> struct
         OptionMap = struct( ...
             "Algorithm", "Algorithm", ...
-            "NonUnit",   "NonUnit", ...
             "Point",     "Point", ...
             "Coordinate", "Coordinate")
     end
@@ -64,6 +63,8 @@ classdef odeLinearizer < auxiliary
         % argument stops with GUILDA:Deprecated:OdeLinearizerConstructor (use net.linearize).
             v3_linearizer_constructor(varargin);        % COMPAT(v3)
         end
+
+        function set.NonUnit(obj, val), obj.NonUnit = v3_solver_nonunit(val); end           % COMPAT(v3)
 
         function set.Point(obj, val)
             odeLinearizer.check_point(val);
@@ -79,17 +80,18 @@ classdef odeLinearizer < auxiliary
         % an invalid value stops with the validation error of the option.
             arguments
                 obj % Solver holding the defaults (net.solver_LIN).
-                nv (1,:) cell = {} % Name-Value overrides: Algorithm, NonUnit, Point, Coordinate.
+                nv (1,:) cell = {} % Name-Value overrides: Algorithm, Point, Coordinate.
             end
             arguments (Output)
-                s_options % Fields Algorithm, NonUnit, Point, Coordinate.
+                s_options % Fields Algorithm, Point, Coordinate.
             end
+            [nv, rv_nonUnit] = v3_linearize_args(nv, obj.NonUnit);              % COMPAT(v3)
             s_options = tools.resolve_options(obj, odeLinearizer.OptionMap, nv);
             validate_options(nv{:});
             s_options.Algorithm = string(s_options.Algorithm);
-            s_options.NonUnit   = reshape(double(s_options.NonUnit), 1, []);
             s_options.Coordinate = string(s_options.Coordinate);
             odeLinearizer.check_point(s_options.Point);
+            if ~isempty(rv_nonUnit), s_options.NonUnit = rv_nonUnit; end        % COMPAT(v3)
         end
 
         [result, flag, output] = solve(obj, net, s_options)
@@ -106,7 +108,6 @@ function validate_options(opt)
 % Value checks of the Name-Value options (names are already checked by resolve_options)
     arguments
         opt.Algorithm (1,1) string {mustBeMember(opt.Algorithm, ["Kron","Feedback","DAE"])}
-        opt.NonUnit   (1,:) double {mustBeInteger, mustBePositive}
         opt.Point
         opt.Coordinate (1,1) string {mustBeMember(opt.Coordinate, ["theta&V","theta&rho","Vre&Vim"])}
     end
