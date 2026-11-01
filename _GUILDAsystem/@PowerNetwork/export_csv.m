@@ -8,7 +8,8 @@ function path = export_csv(obj, path, opt)
 %   <path>/component/<key>/main.csv     one row per component of type <key>
 %   <path>/component/<key>/dynamics.csv distinct parameter rows (column ParameterID)
 %   <path>/component/<key>/opf.csv      distinct OPF rows (column OpfID)
-% The bus column Slack is 1 for the slack bus. Equilibria and controllers are not saved.
+% The bus column Slack is 1 for the slack bus. Equilibria and controllers are not saved;
+% the warning GUILDA:PowerNetwork:ControllersNotSaved lists the controllers left out.
 % When the folder name starts with "@" (e.g. "@MyNet"), a class file MyNet.m is also
 % written, so that the folder is a network class (net = MyNet()) when its parent folder
 % is on the MATLAB path.
@@ -91,8 +92,38 @@ function path = export_csv(obj, path, opt)
     if opt.ClassFile
         writelines(class_file(str_class, obj), fullfile(path, str_class + ".m"));
     end
+
+    warn_controllers_not_saved(obj, a_Comp);
 end
 
+
+function warn_controllers_not_saved(net, a_Comp)
+    str_local  = [strings(0,1); tools.vcellfun(@(comp) local_controller_paths(comp), a_Comp)];
+    str_global = [strings(0,1); tools.vcellfun(@string, net.a_GlobalController)];
+    if isempty(str_local) && isempty(str_global)
+        return
+    end
+    warning('GUILDA:PowerNetwork:ControllersNotSaved', '%s', ...
+            msg('GUILDA:PowerNetwork:ControllersNotSaved', char(net.str_tag), ...
+                char(string(numel(str_local))), char(tag_list(str_local)), ...
+                char(string(numel(str_global))), char(tag_list(str_global))))
+end
+
+function str_path = local_controller_paths(layer)
+    % "<component>/<AVR>" and "<component>/<AVR>/<PSS>": tags alone may repeat between components
+    str_path = strings(0,1);
+    for i = 1:numel(layer.a_LocalController)
+        con = layer.a_LocalController{i};
+        str_path = [str_path; string(layer) + "/" + [string(con); local_controller_paths(con)]]; %#ok<AGROW>
+    end
+end
+
+function str = tag_list(str_tag)
+    str = "none";
+    if ~isempty(str_tag)
+        str = join(str_tag, ", ");
+    end
+end
 
 function tab_pf = bus_table(net)
     n_bus = numel(net.a_Bus);
