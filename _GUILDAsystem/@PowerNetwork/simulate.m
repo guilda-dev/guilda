@@ -13,7 +13,8 @@ function [result, flag, output] = simulate(obj, time, varargin)
 % It stops with an error naming the remedy when the network is not initialized or was
 % edited after net.initialize. flag is 1 when the simulation reached the end time, 0 when
 % it stopped by TimeLimit and -1 when the solver stopped early; then result holds the
-% trajectories up to output.tEnd.
+% trajectories up to output.tEnd, and a warning GUILDA:PowerNetwork:SimulationIncomplete
+% tells it, whether or not flag is requested.
 %
 % The events (odeEventSet) come first in `varargin`; none gives the response without
 % disturbance. Name-Value options:
@@ -23,7 +24,7 @@ function [result, flag, output] = simulate(obj, time, varargin)
 % - `Tolerance` — Relative error tolerance (net.solver_ODE.RelativeTolerance).
 % - `AbsoluteTolerance` — Absolute error tolerance (net.solver_ODE.AbsoluteTolerance).
 % - `SeparateComplexParts` — SeparateComplexParts of the ode object (net.solver_ODE.SeparateComplexParts).
-% - `TimeLimit` — Limit of the computation time [s] of each phase; Inf for no limit (net.solver_ODE.TimeLimit).
+% - `TimeLimit` — Limit of the computation time [s] of the whole run; Inf for no limit (net.solver_ODE.TimeLimit).
 % - `Progress` — "dialog", "disp" or "none"; true = "dialog", false = "none" (net.solver_ODE.Progress).
 % - `Verbose` — Print the phases and the outcome (net.solver_ODE.Verbose).
 % - `Plot` — Call result.Plot after the simulation (net.solver_ODE.Plot).
@@ -60,6 +61,11 @@ function [result, flag, output] = simulate(obj, time, varargin)
     s_options   = obj.solver_ODE.get_options(c_nv);
 
     [result, flag, output] = obj.solver_ODE.solve(obj, time, c_events, s_options);
+
+    if flag ~= 1
+        warning('GUILDA:PowerNetwork:SimulationIncomplete', '%s', ...
+                msg('GUILDA:PowerNetwork:SimulationIncomplete', flag, output.message));
+    end
 
     if s_options.Plot
         result.Plot();

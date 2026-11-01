@@ -47,10 +47,10 @@ classdef (Sealed = true) odeSimulator < auxiliary
         % option Progress, which also accepts true ("dialog") and false ("none").
         Progress            (1,1) string {mustBeMember(Progress,["none","disp","dialog"])} = "dialog"
 
-        % [s] Limit of the computation (wall-clock) time of each integration phase.
+        % [s] Limit of the computation (wall-clock) time of the whole run, checked at each solver step.
         % When it is exceeded, the simulation stops at the time reached, and the result has flag =
         % 0 ("stopped by TimeLimit"). Inf for no limit.
-        TimeLimit           (1,1) double {mustBePositive} = 10
+        TimeLimit           (1,1) double {mustBePositive} = Inf
 
         % Print the phases before the integration and the outcome (output.message) after it.
         Verbose             (1,1) logical = false
@@ -147,8 +147,8 @@ classdef (Sealed = true) odeSimulator < auxiliary
         % rebuilt for this run. Called by net.simulate; calling it directly is for advanced
         % use. Like net.simulate, it first rebuilds stale f_* handles and stops with the
         % error GUILDA:PowerNetwork:EquilibriumStale when net.initialize() is needed.
-        % flag is 1 when the simulation reached the end time, 0 when it stopped because a
-        % phase exceeded TimeLimit, and -1 when the solver stopped before the end time
+        % flag is 1 when the simulation reached the end time, 0 when it stopped because the
+        % run exceeded TimeLimit, and -1 when the solver stopped before the end time
         % (output.message has the reason). In the last two cases the result holds the
         % trajectories up to the time reached (output.tEnd).
             arguments
@@ -320,7 +320,7 @@ classdef (Sealed = true) odeSimulator < auxiliary
                 case 1
                     output.message = sprintf("The simulation reached t = %g s (%d phases).", output.tEnd, np);
                 case 0
-                    output.message = sprintf("The simulation stopped at t = %g s of %g s: phase %d exceeded TimeLimit = %g s. " + ...
+                    output.message = sprintf("The simulation stopped at t = %g s of %g s in phase %d: the computation time exceeded TimeLimit = %g s. " + ...
                                              "Increase TimeLimit (Inf for no limit).", output.tEnd, te, tp, s_options.TimeLimit);
                 otherwise
                     if isempty(str_warn)

@@ -3,7 +3,7 @@ classdef odeProgress < auxiliary
 %
 % odeSimulator.solve creates one per run and passes OutputFcn and Events to the MATLAB ode
 % object. It shows the progress as a waitbar ("dialog") or a text bar ("disp"), or nothing
-% ("none"), and stops an integration phase that runs longer than timelimit.
+% ("none"), and stops the integration when the run takes longer than timelimit.
 %
 % See also odeSimulator
     properties % Display
@@ -19,7 +19,7 @@ classdef odeProgress < auxiliary
 
     properties%(Access=protected) % State
         mode       % Display mode: "none", "disp" or "dialog".
-        timelimit  % [s] Limit of the wall-clock time of each phase.
+        timelimit  % [s] Limit of the wall-clock time of the whole run.
 
         tlim       % [s] Simulation time [t0, tend].
         tspan      % [s] Length of the simulation time.
@@ -30,8 +30,8 @@ classdef odeProgress < auxiliary
         last_warn  % Last warning when the display was drawn.
 
         % For Time keeper
-        start_time          % Value of tic at the start of the phase.
-        ToBeContinue = true; % False when the phase exceeded timelimit.
+        start_time          % Value of tic at the start of the run.
+        ToBeContinue = true; % False when the run exceeded timelimit.
 
         % For mode = "dialog"
         dialog = nan;       % Waitbar figure.
@@ -44,12 +44,13 @@ classdef odeProgress < auxiliary
             arguments
                 mode       (1,1) string {mustBeMember(mode,["none","disp","dialog"])}  = 'disp'; % Display mode.
                 t_simulate (1,:) double = [0,100] % [s] Simulation time [t0, tend].
-                timelimit  (1,1) double {mustBePositive}  = inf; % [s] Limit of the wall-clock time of each phase.
+                timelimit  (1,1) double {mustBePositive}  = inf; % [s] Limit of the wall-clock time of the whole run.
             end
             obj.mode      = mode;
             obj.timelimit = timelimit;
             obj.tlim      = t_simulate;
             obj.tspan     = t_simulate(end)-t_simulate(1);
+            obj.start_time = tic;
         end
 
         function set.mode(obj,val)
@@ -123,18 +124,14 @@ classdef odeProgress < auxiliary
         end
 
         function [f,t,flag] = time_keeper(obj,t,~,flag)
-        % Stop the phase when it exceeds timelimit (output function of mode "none").
+        % Stop the integration when the run exceeds timelimit (output function of mode "none").
         %
         % Shifts t by timeoffset and records the reason of a stop in message.
             t = obj.timeoffset + t;
             f = 0;
-            if isinf(obj.timelimit)
-                return; 
-            end
             switch char(flag)
                 case 'init'
                     obj.ToBeContinue = true;
-                    obj.start_time = tic;
                 case 'done'
                     return
                 case 'break'
