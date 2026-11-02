@@ -70,7 +70,7 @@ classdef park < component.generator.abstract
     end        
         
     methods        
-        [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj, c_V, c_I)        
+        [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj, c_V, c_I, r_P, r_Q)        
 
         function PQ = getCompPQ(obj,x,V,u,para) %#ok
             % Calculate the power that the generator injects into the bus.

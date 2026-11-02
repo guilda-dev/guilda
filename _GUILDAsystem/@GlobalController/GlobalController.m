@@ -28,6 +28,12 @@ classdef GlobalController < PowerSystemModel
         sv_y    (:,1) string    % Names of the outputs (inputs of the controlled units).
         sv_para (:,1) string    % Names of the dynamic parameters passed to the model functions.
     end
+    methods (Abstract)
+        % Return the state and input equilibria of the controller.
+        %
+        % Called by PowerNetwork.initialize after the equilibria of the components are set.
+        [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj)
+    end
     methods (Abstract, Static)        
         % Return the state derivatives of the controller.
         %
@@ -41,6 +47,8 @@ classdef GlobalController < PowerSystemModel
         y  = fcn_y(t, x, V, I, u, param, omega0)
 
         % Return the mass matrix of the state equation.
+        %
+        % It must be constant: simulate calls it with empty t, x, V, I and u.
         M  = fcn_Mass(t, x, V, I, u, param, omega0)
     end       
     properties(SetAccess=protected) % Dynamics

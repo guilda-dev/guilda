@@ -42,7 +42,7 @@ classdef BadComponentStub < Component
         function [x, u] = get_equilibrium(obj, ~, c_I, r_P, ~)
             str_bad = obj.sv_bad(obj.para_dynamics.bad);
             if str_bad == "needpq"
-                r_P; %#ok<VUNUS> 2 引数の呼び出しで MATLAB:minrhs になる
+                r_P; %#ok<VUNUS> 2 引数で呼ぶと MATLAB:minrhs になる
             end
             u = [real(c_I); imag(c_I)];
             x = u;

@@ -76,9 +76,9 @@ classdef (Sealed = true) PSS1 < controller.pss.abstract
     end
 
     methods (Static)
-        dx = fcn_dx(obj, t, x, V, I, u, para, omega0)
-        y  = fcn_y(obj, t, x, V, I, u, para, omega0)
-        M  = fcn_Mass(obj, t, x, V, I, u, para, omega0)
+        dx = fcn_dx(t, x, V, I, u, para, omega0)
+        y  = fcn_y(t, x, V, I, u, para, omega0)
+        M  = fcn_Mass(t, x, V, I, u, para, omega0)
 
         [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0)
         [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t,x,V,I,u,param,omega0)

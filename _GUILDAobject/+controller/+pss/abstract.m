@@ -37,7 +37,7 @@ classdef abstract < LocalController
     end
 
     methods
-        function dx = fcn_dx(obj, t, x, V, u, para, omega0) %#ok
+        function dx = fcn_dx(obj, t, x, V, I, u, para, omega0) %#ok
             % Return the empty right-hand side of the base PSS (it has no state).
             %
             % Inputs are those of controller.pss.PSS1.fcn_dx; the base PSS uses none of them.
@@ -46,7 +46,7 @@ classdef abstract < LocalController
             % - `dx` Empty right-hand side.
             dx = [];
         end
-        function y  = fcn_y(obj, t, x, V, u, para, omega0) %#ok
+        function y  = fcn_y(obj, t, x, V, I, u, para, omega0) %#ok
             % Return the output of the base PSS, which is always 0.
             %
             % Inputs are those of controller.pss.PSS1.fcn_dx; the base PSS uses none of them.
@@ -55,7 +55,7 @@ classdef abstract < LocalController
             % - `y` [pu] Stabilizing signal `Vpss` (0).
             y = 0;
         end
-        function M  = fcn_Mass(obj, t, x, V, u, para, omega0) %#ok
+        function M  = fcn_Mass(obj, t, x, V, I, u, para, omega0) %#ok
             % Return the empty mass matrix of the base PSS (it has no state).
             %
             % Inputs are those of controller.pss.PSS1.fcn_dx; the base PSS uses none of them.

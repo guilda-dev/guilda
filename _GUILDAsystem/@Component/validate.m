@@ -69,10 +69,6 @@ function flag = validate(obj, l_message)
     rv_x = fit_size(rv_x, nx);
     rv_u = fit_size(rv_u, nu);
 
-    % r_P, r_Q are optional: the trip of odeSimulator calls get_equilibrium(V,I)
-    str_id = eval_error(@() equilibrium_without_power(obj, c_V, c_I));
-    contract = add_row(contract, "get_equilibrium(V,I) without P,Q", str_id == "", str_id);
-
     f_dx = @(I) obj.fcn_dx(r_t,rv_x,rv_V,I,rv_u,rr_param,r_omega0);
     f_I  = @(I) obj.fcn_I( r_t,rv_x,rv_V,I,rv_u,rr_param,r_omega0);
     f_Y  = @(I) obj.fcn_Y( r_t,rv_x,rv_V,I,rv_u,rr_param,r_omega0);
@@ -100,7 +96,7 @@ function flag = validate(obj, l_message)
     [l_ok, str_detail] = check_size(y_test, str_id, ny);
     contract = add_row(contract, "fcn_Y size", l_ok, str_detail);
 
-    % odeEventSet reads the mass matrix without a point
+    % simulate reads the mass matrix without a point (tools.read_mass)
     [M_test, str_id] = eval_value(@() obj.fcn_Mass([],[],[],[],[],rr_param,r_omega0));
     l_ok = str_id == "" && (isequal(size(M_test),[nx,nx]) || (nx == 0 && isempty(M_test)));
     contract = add_row(contract, "fcn_Mass constant and square", l_ok, ...
@@ -212,14 +208,6 @@ function [val, str_id] = eval_value(f)
             str_id = string(ME.message);
         end
     end
-end
-
-function str_id = eval_error(f)
-    [~, str_id] = eval_value(f);
-end
-
-function x = equilibrium_without_power(obj, c_V, c_I)
-    [x,~] = obj.get_equilibrium(c_V, c_I);
 end
 
 function [l_ok, str_detail] = check_size(val, str_id, n)

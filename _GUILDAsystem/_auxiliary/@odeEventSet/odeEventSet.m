@@ -322,7 +322,7 @@ classdef (Sealed = true) odeEventSet < auxiliary
             for k = 1:numel(a_GCs)
                 a_GC = a_GCs{k};
 
-                rm_M(a_GC.iv_odeX, a_GC.iv_odeX) = a_GC.f_Mass([], [], [], [], []);
+                rm_M(a_GC.iv_odeX, a_GC.iv_odeX) = tools.read_mass(a_GC);
                 rv_X = [rv_X; {a_GC.rv_Xequilibrium}]; %#ok
             end            
 
@@ -587,7 +587,7 @@ function [rv_x0, rm_Mass, TC] = getXM(OBJs, rv_x0, rm_Mass, TC)
         end
         rv_x0 = [rv_x0; OBJ.rv_Xequilibrium + OBJ.rv_Xoffset; rv_u0]; %#ok
         
-        rm_Mass(rx_idx, rx_idx) = blkdiag(OBJ.f_Mass([],[],[],[],[]), zeros(nu_idx, nu_idx));
+        rm_Mass(rx_idx, rx_idx) = blkdiag(tools.read_mass(OBJ), zeros(nu_idx, nu_idx));
 
         if ~isempty(OBJ.a_LocalController)
             a_LC = OBJ.a_LocalController(1);

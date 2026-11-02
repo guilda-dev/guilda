@@ -89,11 +89,11 @@ assert_only_fail(flag, "fcn_Mass constant and square");
 assert(contains(flag.contract{"fcn_Mass constant and square","detail"}, "badsubscript"))
 
 
-%% Required P, Q are detected
+%% Required P, Q are valid
+% 枠組みは常に get_equilibrium(V,I,P,Q) で呼ぶ
 flag = DebugScript.helper.BadComponentStub("needpq").validate(false);
-assert_only_fail(flag, "get_equilibrium(V,I) without P,Q");
-assert(contains(flag.contract{"get_equilibrium(V,I) without P,Q","detail"}, "minrhs"))
-assert(max(flag.dx.diff) < 1e-12)       % P, Q を渡した点では残差を調べられる
+assert(all(flag.contract.status ~= "FAIL"))
+assert(max(flag.dx.diff) < 1e-12)
 
 
 %% Dependence on I is detected
