@@ -26,7 +26,7 @@ assert(warning_of(@() net.initialize) == "")
 
 % 警告は止められる
 net = network_with("equilibrium");
-s_warn = warning("off", str_warn);
+s_warn = warning("off", "all");   % ID がないので個別には止められない
 c_warn = onCleanup(@() warning(s_warn));
 str_out = evalc("net.initialize;");
 assert(~contains(str_out, "do not hold"), str_out)
@@ -164,7 +164,7 @@ function check_stop(net, str_id, sv_text)
     catch ME
     end
     assert(~isempty(ME), "initialize did not stop")
-    assert(ME.identifier == "GUILDA:PowerNetwork:" + str_id, ME.identifier)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:" + str_id, DebugScript.helper.msg_id(ME))
     assert(all(contains(ME.message, sv_text)), ME.message)
     assert(net.s_edit.l_staleEquilibrium)
 end
@@ -173,7 +173,7 @@ function [str_id, str_msg] = warning_of(fcn)
 % 関数を実行し、最後の警告の ID と文を返す (なければ "")
     lastwarn("", "");
     evalc("fcn();");
-    [str_msg, str_id] = lastwarn;
+    [str_msg, str_id] = lastwarn(); str_id = DebugScript.helper.msg_id(str_msg, str_id);
     str_msg = string(str_msg);
     str_id  = string(str_id);
 end

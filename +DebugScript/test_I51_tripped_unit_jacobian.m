@@ -111,7 +111,7 @@ assert(flag == 1)
 warning("on", "GUILDA:odeSimulator:InitialConditionRelaxed");
 lastwarn("");
 [~, flag] = net.simulate([0,0.1], offset(net));
-[str, id] = lastwarn();
+[str, id] = lastwarn(); id = DebugScript.helper.msg_id(str, id);
 assert(flag == 1)
 assert(id == "GUILDA:odeSimulator:InitialConditionRelaxed", id)
 assert(contains(str, "phase 1") && contains(str, "moved by up to"), str)
@@ -129,7 +129,7 @@ assert(~contains(output.message, "moved by up to"), output.message)
 warning("on", "GUILDA:odeSimulator:InitialConditionRelaxed");
 lastwarn("");
 net.simulate([0,2], odeEventSet("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B003"));
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(id ~= "GUILDA:odeSimulator:InitialConditionRelaxed")
 
 
@@ -140,9 +140,9 @@ c_warn = onCleanup(@() warning(w));
 [~, flag, output] = net.simulate([0,2], ev);
 assert(flag == -1)
 ME = output.exception;
-assert(ME.identifier == "GUILDA:odeSimulator:InitialConditionFailed", ME.identifier + ": " + ME.message)
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:odeSimulator:InitialConditionFailed", DebugScript.helper.msg_id(ME) + ": " + ME.message)
 assert(contains(ME.message, "phase 2") && contains(ME.message, "t = [1, 1.2]"), ME.message)
-assert(endsWith(string(ME.cause{1}.identifier), "NeedBetterY0"), ME.cause{1}.identifier)
+assert(endsWith(string(DebugScript.helper.msg_id(ME.cause{1})), "NeedBetterY0"), DebugScript.helper.msg_id(ME.cause{1}))
 
 
 function err = jacobian_errors(net, tspan, c_events)

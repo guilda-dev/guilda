@@ -113,7 +113,7 @@ function tf = class_error(fcn)
     try
         fcn();
     catch ME
-        tf = string(ME.identifier) == "GUILDA:Parameter:ClassNameMismatch";
+        tf = string(DebugScript.helper.msg_id(ME)) == "GUILDA:Parameter:ClassNameMismatch";
     end
 end
 

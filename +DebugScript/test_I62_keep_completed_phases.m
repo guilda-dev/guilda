@@ -29,15 +29,15 @@ assert(isequaln(sol.rv_t, ref.rv_t) && isequaln(sol.rm_variable, ref.rm_variable
 %% Exception of the phase is kept in output
 [~, ~, output] = run(net, [0,2], ev_trip_later);
 ME = output.exception;
-assert(ME.identifier == "GUILDA:odeSimulator:PhaseFailed", ME.identifier)
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:odeSimulator:PhaseFailed", DebugScript.helper.msg_id(ME))
 assert(contains(ME.message, "phase 2") && contains(ME.message, "t = [1, 1.5]"), ME.message)
-assert(ME.cause{1}.identifier == "MATLAB:ode15s:MassMatrixAllZero", ME.cause{1}.identifier)
+assert(DebugScript.helper.msg_id(ME.cause{1}) == "MATLAB:ode15s:MassMatrixAllZero", DebugScript.helper.msg_id(ME.cause{1}))
 
 
 %% Warning and message name the reason
 lastwarn("");
 [~, ~, output] = run(net, [0,2], ev_trip_later);
-[str_msg, id] = lastwarn();
+[str_msg, id] = lastwarn(); id = DebugScript.helper.msg_id(str_msg, id);
 assert(id == str_warn, id)
 assert(contains(str_msg, output.message))
 assert(contains(output.message, "t = 1 s of 2 s") && contains(output.message, output.exception.message), output.message)
@@ -48,10 +48,10 @@ assert(contains(output.message, "t = 1 s of 2 s") && contains(output.message, ou
 assert(flag == -1)
 assert(output.tEnd == 1 && sol.rv_t(end) == 1 && output.nPhasesDone == 1)
 ME = output.exception;
-assert(ME.identifier == "GUILDA:odeSimulator:InitialConditionFailed", ME.identifier)
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:odeSimulator:InitialConditionFailed", DebugScript.helper.msg_id(ME))
 assert(contains(ME.message, "phase 2") && contains(ME.message, "t = [1, 1.2]"), ME.message)
-assert(ME.cause{1}.identifier == "MATLAB:daeic12:NeedBetterY0", ME.cause{1}.identifier)
-assert(ME.cause{2}.identifier == "MATLAB:decic:IndexGTOne", ME.cause{2}.identifier)
+assert(DebugScript.helper.msg_id(ME.cause{1}) == "MATLAB:daeic12:NeedBetterY0", DebugScript.helper.msg_id(ME.cause{1}))
+assert(DebugScript.helper.msg_id(ME.cause{2}) == "MATLAB:decic:IndexGTOne", DebugScript.helper.msg_id(ME.cause{2}))
 
 
 %% First phase failure returns an empty result
@@ -86,7 +86,7 @@ assert(height(tab) == 0 && any(string(tab.Properties.VariableNames) == "t"))
 str_mat = fullfile(str_dir, "empty.mat");
 sol.Export(str_mat);
 s = load(str_mat);
-assert(s.flag == -1 && s.output.exception.identifier == "GUILDA:odeSimulator:PhaseFailed")
+assert(s.flag == -1 && DebugScript.helper.msg_id(s.output.exception) == "GUILDA:odeSimulator:PhaseFailed")
 
 
 %% Plot and Export options work when the first phase fails
@@ -118,22 +118,22 @@ assert(isequaln(sol.rm_variable, sol_ref.rm_variable))
 %% Input function error is still raised
 ev = odeEventSet("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) boom(t));
 ME = catch_error(@() run(net, [0,4], ev));
-assert(ME.identifier == "GUILDA:odeSimulator:PhaseFailed", ME.identifier)
-assert(contains(ME.message, "phase 2") && ME.cause{1}.identifier == "DebugScript:boom")
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:odeSimulator:PhaseFailed", DebugScript.helper.msg_id(ME))
+assert(contains(ME.message, "phase 2") && DebugScript.helper.msg_id(ME.cause{1}) == "DebugScript:boom")
 
 
 %% Input function error with a MATLAB identifier is still raised
 ev = odeEventSet("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) bad_index(t));
 ME = catch_error(@() run(net, [0,4], ev));
-assert(ME.identifier == "GUILDA:odeSimulator:PhaseFailed", ME.identifier)
-assert(ME.cause{1}.identifier == "MATLAB:badsubscript", ME.cause{1}.identifier)
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:odeSimulator:PhaseFailed", DebugScript.helper.msg_id(ME))
+assert(DebugScript.helper.msg_id(ME.cause{1}) == "MATLAB:badsubscript", DebugScript.helper.msg_id(ME.cause{1}))
 
 
 %% Solver error of an input function is still raised
 ev = odeEventSet("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) own_solver(t));
 ME = catch_error(@() run(net, [0,4], ev));
-assert(ME.identifier == "GUILDA:odeSimulator:PhaseFailed", ME.identifier)
-assert(ME.cause{1}.identifier == "MATLAB:ode15s:MassMatrixAllZero", ME.cause{1}.identifier)
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:odeSimulator:PhaseFailed", DebugScript.helper.msg_id(ME))
+assert(DebugScript.helper.msg_id(ME.cause{1}) == "MATLAB:ode15s:MassMatrixAllZero", DebugScript.helper.msg_id(ME.cause{1}))
 
 
 %% Wrong solver settings are still raised
@@ -141,21 +141,21 @@ net2 = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net2.initialize);
 net2.solver_ODE.Progress = "none";
 ME = catch_error(@() run(net2, [0,1], "SolverOptions", matlab.ode.options.ODE45));
-assert(ME.identifier == "GUILDA:odeSimulator:PhaseFailed", ME.identifier)
-assert(ME.cause{1}.identifier == "MATLAB:ode45:MassSingularYes", ME.cause{1}.identifier)
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:odeSimulator:PhaseFailed", DebugScript.helper.msg_id(ME))
+assert(DebugScript.helper.msg_id(ME.cause{1}) == "MATLAB:ode45:MassSingularYes", DebugScript.helper.msg_id(ME.cause{1}))
 
 
 %% Convergence failure of the initial condition returns the completed phases
 ev = odeEventSet("huge", net, "TimeSpan", [1,1.2], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", 1e6);
 [~, flag, output] = run(net, [0,2], ev);
 assert(flag == -1 && output.tEnd == 1)
-assert(output.exception.cause{2}.identifier == "MATLAB:decic:ConvergenceFail", output.exception.cause{2}.identifier)
+assert(DebugScript.helper.msg_id(output.exception.cause{2}) == "MATLAB:decic:ConvergenceFail", DebugScript.helper.msg_id(output.exception.cause{2}))
 
 
 %% Solver error with ode23t returns the completed phases
 [~, flag, output] = run(net, [0,2], ev_trip_later, "SolverOptions", matlab.ode.options.ODE23t, "Solver", "ode23t");
 assert(flag == -1 && output.tEnd == 1)
-assert(output.exception.cause{1}.identifier == "MATLAB:ode23t:MassMatrixAllZero", output.exception.cause{1}.identifier)
+assert(DebugScript.helper.msg_id(output.exception.cause{1}) == "MATLAB:ode23t:MassMatrixAllZero", DebugScript.helper.msg_id(output.exception.cause{1}))
 
 
 function varargout = run(net, varargin)
@@ -175,7 +175,7 @@ end
 
 function expect_error(fcn, str_id)
     ME = catch_error(fcn);
-    assert(ME.identifier == str_id, ME.identifier)
+    assert(DebugScript.helper.msg_id(ME) == str_id, DebugScript.helper.msg_id(ME))
 end
 
 function sv = generators(net)

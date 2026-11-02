@@ -17,14 +17,14 @@ str_q    = "GUILDA:Component:GeneratorQIgnored";
 bus = PowerNetwork().add_bus();
 tab = table(1, 2, VariableNames=["M", "D"]);
 ME = caught(@() bus.add_component("gen-1axis", parameter=tab));
-assert(ME.identifier == str_miss)
+assert(DebugScript.helper.msg_id(ME) == str_miss)
 assert(contains(ME.message, "Xd") && ~contains(ME.message, "'M") && contains(ME.message, "table"))
 assert(isempty(bus.a_Component))
 
 
 %% A model column absent from parameter.csv names the column and the file
 ME = caught(@() DebugScript.helper.GeneratorStub("1B001", nan, default_opt()));
-assert(ME.identifier == str_miss)
+assert(DebugScript.helper.msg_id(ME) == str_miss)
 assert(contains(ME.message, "Zeta") && contains(ME.message, "parameter.csv"))
 
 
@@ -36,10 +36,10 @@ assert(gen.para_dynamics.tab_parameter.Zeta == 1 && gen.para_dynamics.tab_parame
 %% An unknown parameter name lists the allowed names
 bus = PowerNetwork().add_bus();
 ME = caught(@() bus.add_component("gen-park", parameter="NGT9"));
-assert(ME.identifier == str_name)
+assert(DebugScript.helper.msg_id(ME) == str_name)
 assert(contains(ME.message, "NGT9") && contains(ME.message, "NGT2") && contains(ME.message, "NGT8"))
 assert(isempty(bus.a_Component))
-assert(caught(@() bus.add_component("gen-park", parameter=["NGT2", "NGT6"])).identifier == str_name)
+assert(DebugScript.helper.msg_id(caught(@() bus.add_component("gen-park", parameter=["NGT2", "NGT6"]))) == str_name)
 
 
 %% Known parameter names select the row of parameter.csv
@@ -69,7 +69,7 @@ assert(startsWith(bus.add_component("load-impedance", P=-0.1).str_tag, "LRX2"))
 bus = PowerNetwork().add_bus();
 lastwarn("");
 gen = bus.add_component("gen-park", P=0.5, Q=0.3);
-[str_msg, str_id] = lastwarn;
+[str_msg, str_id] = lastwarn(); str_id = DebugScript.helper.msg_id(str_msg, str_id);
 assert(string(str_id) == str_q && contains(str_msg, "0.3") && contains(str_msg, gen.str_tag))
 assert(isnan(gen.para_powerflow.Q))
 
@@ -87,7 +87,7 @@ net = DebugScript.helper.build_ieee14();
 bus = net.a_Bus{1};
 lastwarn("");
 gen = bus.replace_component(bus.a_Component{1}.str_tag, "gen-classical");
-[~, str_id] = lastwarn;
+str_id = DebugScript.helper.msg_id();
 assert(string(str_id) ~= str_q && isnan(gen.para_powerflow.Q))
 
 
@@ -109,7 +109,7 @@ lqr = controller.local_LQR("lqr1", Input="Vfield");
 gen.add_local_controller(lqr);
 pss = controller.pss.PSS1("pss1");
 ME = caught(@() gen.add_local_controller(pss));
-assert(ME.identifier == "GUILDA:Component:PssParentKey")
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:Component:PssParentKey")
 assert(contains(ME.message, "'local'") && contains(ME.message, lqr.str_tag) && contains(ME.message, "'avr'"))
 assert(isempty(pss.a_Component))
 
@@ -118,7 +118,7 @@ assert(isempty(pss.a_Component))
 net = DebugScript.helper.build_ieee14();
 gen = net.a_Bus{1}.a_Component{1};
 ME = caught(@() gen.add_local_controller(controller.pss.PSS1("pss1")));
-assert(ME.identifier == "GUILDA:Component:NotExtAvr" && contains(ME.message, "Attach an AVR"))
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:Component:NotExtAvr" && contains(ME.message, "Attach an AVR"))
 
 
 function opt = default_opt()
@@ -137,5 +137,5 @@ function ME = caught(fcn)
     catch ME
     end
     assert(~isempty(ME), "No error was raised.")
-    ME = struct("identifier", string(ME.identifier), "message", string(ME.message));
+    ME = struct("identifier", string(DebugScript.helper.msg_id(ME)), "message", string(ME.message));
 end

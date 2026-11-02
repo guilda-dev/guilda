@@ -14,7 +14,7 @@ str_id = "GUILDA:Component:SharedController";
 avr = controller.avr.AVR_ST1("avrA");
 gen1.add_local_controller(avr);
 ME = caught(@() gen2.add_local_controller(avr));
-assert(ME.identifier == str_id)
+assert(DebugScript.helper.msg_id(ME) == str_id)
 assert(contains(ME.message, "avrA") && contains(ME.message, gen1.str_tag) && contains(ME.message, gen2.str_tag))
 assert(avr.a_Component == gen1 && gen1.a_LocalController{1} == avr)
 assert(isempty(gen2.a_LocalController))
@@ -24,7 +24,7 @@ assert(isempty(gen2.a_LocalController))
 [net, gen1, gen2] = fresh_network();
 lqr = controller.local_LQR("lqrA");
 gen1.add_local_controller(lqr);
-assert(caught(@() gen2.add_local_controller(lqr)).identifier == str_id)
+assert(DebugScript.helper.msg_id(caught(@() gen2.add_local_controller(lqr))) == str_id)
 assert(lqr.a_Component == gen1 && isempty(gen2.a_LocalController))
 
 
@@ -35,7 +35,7 @@ avr2 = controller.avr.AVR_ST1("avr2");
 pss  = controller.pss.PSS1("pss1");
 gen1.add_local_controller(avr1, pss);
 gen2.add_local_controller(avr2);
-assert(caught(@() gen2.add_local_controller(pss)).identifier == str_id)
+assert(DebugScript.helper.msg_id(caught(@() gen2.add_local_controller(pss))) == str_id)
 assert(pss.a_Component == avr1 && avr1.a_LocalController{1} == pss)
 assert(isempty(avr2.a_LocalController))
 
@@ -48,7 +48,7 @@ avrIn = controller.avr.AVR_ST1("avrNew");
 pss   = controller.pss.PSS1("pss1");
 gen1.add_local_controller(avr1, pss);
 gen2.add_local_controller(avr2);
-assert(caught(@() gen2.add_local_controller(avrIn, pss)).identifier == str_id)
+assert(DebugScript.helper.msg_id(caught(@() gen2.add_local_controller(avrIn, pss))) == str_id)
 assert(gen2.a_LocalController{1} == avr2 && avr2.a_Component == gen2)
 assert(isempty(avrIn.a_Component))
 assert(pss.a_Component == avr1)
@@ -60,7 +60,7 @@ avr = controller.avr.AVR_ST1("avrA");
 gen1.add_local_controller(avr);
 DebugScript.helper.quiet(@() net.initialize);
 n_log = height(net.tab_editLog);
-assert(caught(@() gen2.add_local_controller(avr)).identifier == str_id)
+assert(DebugScript.helper.msg_id(caught(@() gen2.add_local_controller(avr))) == str_id)
 assert(~net.s_edit.l_staleEquilibrium && height(net.tab_editLog) == n_log)
 
 
@@ -138,7 +138,7 @@ function ME = caught(fcn)
     catch ME
     end
     assert(~isempty(ME), "No error was raised.")
-    ME = struct("identifier", string(ME.identifier), "message", string(ME.message));
+    ME = struct("identifier", string(DebugScript.helper.msg_id(ME)), "message", string(ME.message));
 end
 
 function quiet_replace(fcn)

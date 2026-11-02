@@ -242,7 +242,7 @@ try
     DebugScript.helper.quiet(@() net.initialize(Method="equilibrium"));
     error("DebugScript:noError", "エラーにならなかった")
 catch ME
-    assert(ME.identifier == "GUILDA:PowerNetwork:InitializeNoEquilibrium", ME.identifier)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeNoEquilibrium", DebugScript.helper.msg_id(ME))
 end
 assert(DebugScript.helper.edit_flag(net) == "unset")
 
@@ -255,7 +255,7 @@ net.a_Bus{1}.a_Component{1}.tab_parameter.operation.Pmax = 1;    % 平衡点を�
 
 % MaxIteration=2 では AC OPF は解けない
 ME = error_of(@() net.initialize(Method="OPF", MaxIteration=2));
-assert(ME.identifier == "GUILDA:PowerNetwork:InitializeOPFFailed", ME.identifier)
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeOPFFailed", DebugScript.helper.msg_id(ME))
 assert(contains(ME.message, "Relax the constraints") && contains(ME.message, 'Method="powerflow"'))
 assert_unchanged(net, V0, I0, X0, log0, flag0)
 
@@ -265,7 +265,7 @@ for i = [1,2,3]
 end
 [V0, I0, X0, log0, flag0] = snapshot(net);
 ME = error_of(@() net.initialize(Method="OPF"));
-assert(ME.identifier == "GUILDA:PowerNetwork:InitializeOPFFailed", ME.identifier)
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeOPFFailed", DebugScript.helper.msg_id(ME))
 assert_unchanged(net, V0, I0, X0, log0, flag0)
 
 
@@ -274,17 +274,17 @@ net = DebugScript.helper.build_9bus();
 DebugScript.helper.quiet(@() net.initialize);
 [V0, I0, X0, log0, flag0] = snapshot(net);
 ME = error_of(@() net.initialize(Method="powerflow", MaxIteration=1, Tolerance=1e-14));
-assert(ME.identifier == "GUILDA:PowerNetwork:InitializePowerflowFailed", ME.identifier)
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializePowerflowFailed", DebugScript.helper.msg_id(ME))
 assert_unchanged(net, V0, I0, X0, log0, flag0)
 
 
 %% Initialize rejects unknown options
 net = DebugScript.helper.build_9bus();
-assert(error_of(@() net.initialize(Method="algebraic")).identifier == "GUILDA:PowerNetwork:InitializeMethod")
-assert(error_of(@() net.initialize(Method="powerflow", Foo=1)).identifier == "GUILDA:resolve_options:UnknownName")
-assert(error_of(@() net.initialize(Method="OPF", Foo=1)).identifier == "GUILDA:resolve_options:UnknownName")
-assert(error_of(@() net.initialize(Method="equilibrium", Foo=1)).identifier == "GUILDA:resolve_options:UnknownName")
-assert(error_of(@() net.initialize("Method")).identifier == "GUILDA:resolve_options:InvalidPairs")
+assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="algebraic"))) == "GUILDA:PowerNetwork:InitializeMethod")
+assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="powerflow", Foo=1))) == "GUILDA:resolve_options:UnknownName")
+assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="OPF", Foo=1))) == "GUILDA:resolve_options:UnknownName")
+assert(DebugScript.helper.msg_id(error_of(@() net.initialize(Method="equilibrium", Foo=1))) == "GUILDA:PowerNetwork:InitializeEquilibriumOption")
+assert(DebugScript.helper.msg_id(error_of(@() net.initialize("Method"))) == "GUILDA:PowerNetwork:InitializePairs")
 assert(DebugScript.helper.edit_flag(net) == "unset")
 
 
@@ -296,7 +296,7 @@ clear Deprecated
 lastwarn("");
 warning("off", "GUILDA:Deprecated:InitializeMethodValue");
 res = DebugScript.helper.quiet(@() net.initialize("methods", "powerflow calculation"));
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:Deprecated:InitializeMethods" && isa(res, "PowerFlowResult"))
 
 clear Deprecated
@@ -304,7 +304,7 @@ lastwarn("");
 warning("on", "GUILDA:Deprecated:InitializeMethodValue");
 warning("off", "GUILDA:Deprecated:InitializeMethods");
 res = DebugScript.helper.quiet(@() net.initialize(Method="calculate from Xequilibrium"));
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:Deprecated:InitializeMethodValue" && res.str_solver == "equilibrium")
 
 warning("off", "GUILDA:Deprecated:InitializeMethodValue");

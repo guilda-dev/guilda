@@ -123,7 +123,7 @@ lqr.Q = ones(1, numel(gen.sv_x) + 1);           % 重みのサイズが違うの
 error_of(@() net.initialize());
 assert(net.s_edit.l_staleEquilibrium)
 ME = error_of(@() net.simulate([0 1]));
-assert(ME.identifier == "GUILDA:PowerNetwork:EquilibriumStale", ME.identifier)
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:EquilibriumStale", DebugScript.helper.msg_id(ME))
 
 
 %% A failure without a stale edit is reported as an unfinished initialize
@@ -137,7 +137,7 @@ assert(~net.s_edit.l_staleEquilibrium)
 error_of(@() net.initialize());
 assert(net.s_edit.l_staleEquilibrium)
 ME = error_of(@() net.simulate([0 1]));
-assert(ME.identifier == "GUILDA:PowerNetwork:EquilibriumStale", ME.identifier)
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:EquilibriumStale", DebugScript.helper.msg_id(ME))
 assert(contains(ME.message, "stopped before it finished"), ME.message)
 
 
@@ -146,7 +146,7 @@ net = DebugScript.helper.build_9bus();
 DebugScript.helper.quiet(@() net.initialize);
 V = net.cv_Vequilibrium;
 ME = error_of(@() net.initialize(Method="OPF", MaxIteration=2));
-assert(ME.identifier == "GUILDA:PowerNetwork:InitializeOPFFailed", ME.identifier)
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeOPFFailed", DebugScript.helper.msg_id(ME))
 assert(~net.s_edit.l_staleEquilibrium && isequal(net.cv_Vequilibrium, V))
 
 
@@ -155,7 +155,7 @@ assert(~net.s_edit.l_staleEquilibrium && isequal(net.cv_Vequilibrium, V))
 DebugScript.helper.quiet(@() net.initialize);    % B001 がスラックになる
 net.a_Bus{1}.remove_component(string(net.a_Bus{1}.a_Component{1}));
 ME = error_of(@() net.initialize());
-assert(ME.identifier == "GUILDA:PowerNetwork:InitializeNotEquilibrium", ME.identifier)
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeNotEquilibrium", DebugScript.helper.msg_id(ME))
 assert(net.s_edit.l_staleEquilibrium)
 
 
@@ -163,9 +163,9 @@ assert(net.s_edit.l_staleEquilibrium)
 % 許容値を極端に緩めると潮流計算は反復せずに成功を返し、平衡でない点を渡す
 net = DebugScript.helper.build_9bus();
 ME  = error_of(@() net.initialize(Tolerance=1e3));
-assert(ME.identifier == "GUILDA:PowerNetwork:InitializeNotEquilibrium", ME.identifier)
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeNotEquilibrium", DebugScript.helper.msg_id(ME))
 assert(net.s_edit.l_staleEquilibrium)
-assert(error_of(@() net.simulate([0 1])).identifier == "GUILDA:PowerNetwork:EquilibriumStale")
+assert(DebugScript.helper.msg_id(error_of(@() net.simulate([0 1]))) == "GUILDA:PowerNetwork:EquilibriumStale")
 DebugScript.helper.quiet(@() net.initialize);
 assert(~net.s_edit.l_staleEquilibrium && kcl_residual(net) < 1e-8)
 
@@ -225,7 +225,7 @@ function assert_edit_stops(net, str_id, str_log)
     V   = net.cv_Vequilibrium;
     n   = height(net.tab_editLog);
     ME  = error_of(@() net.initialize(Method="equilibrium"));
-    assert(ME.identifier == str_id, ME.identifier)
+    assert(DebugScript.helper.msg_id(ME) == str_id, DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, str_log))
     assert(isequal(net.cv_Vequilibrium, V) && net.s_edit.l_staleEquilibrium && height(net.tab_editLog) == n)
 end

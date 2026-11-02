@@ -458,7 +458,7 @@ other = net.a_Bus{1}.a_Component{1};
 clear Deprecated
 lastwarn("");
 evalc("comp.tab_parameter.base.Hz = 50;");
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:Deprecated:ComponentBaseHzSet")
 assert(net.tab_parameter.base.Hz == 50 && other.r_Hz == 50)
 assert(comp.s_edit.l_staleOdefcn && other.s_edit.l_staleOdefcn && ~net.s_edit.l_staleEquilibrium)
@@ -472,7 +472,7 @@ function assert_stale_error(fcn, str_id)
     try
         DebugScript.helper.quiet(fcn);
     catch ME
-        assert(ME.identifier == str_id, "想定外のエラー: " + ME.identifier + " " + ME.message)
+        assert(DebugScript.helper.msg_id(ME) == str_id, "想定外のエラー: " + DebugScript.helper.msg_id(ME) + " " + ME.message)
         assert(contains(ME.message, "net.initialize()"))
         return
     end
@@ -484,6 +484,6 @@ function id = warn_id(fcn)
 % fcn を実行し、出た警告の ID を返す (警告なしは "")
     lastwarn("");
     evalc("fcn();");
-    [~, id] = lastwarn();
+    id = DebugScript.helper.msg_id();
     id = string(id);
 end

@@ -210,7 +210,7 @@ function assert_stale_error(fcn, str_id)
     try
         DebugScript.helper.quiet(fcn);
     catch ME
-        assert(ME.identifier == str_id, "想定外のエラー: " + ME.identifier + " " + ME.message)
+        assert(DebugScript.helper.msg_id(ME) == str_id, "想定外のエラー: " + DebugScript.helper.msg_id(ME) + " " + ME.message)
         assert(contains(ME.message, "net.initialize()"))
         return
     end
@@ -222,6 +222,6 @@ function id = error_id(fcn)
     try
         DebugScript.helper.quiet(fcn);
     catch ME
-        id = string(ME.identifier);
+        id = string(DebugScript.helper.msg_id(ME));
     end
 end
