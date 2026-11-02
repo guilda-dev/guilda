@@ -13,7 +13,6 @@ function v3_linearizer_constructor(c_args)
 %
 % See also LTIsolver
     if ~isempty(c_args)
-        error('GUILDA:Deprecated:OdeLinearizerConstructor', '%s', ...
-              Deprecated("OdeLinearizerConstructor"));
+        error(msg("GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor"));
     end
 end

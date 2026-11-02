@@ -1,5 +1,5 @@
 <!--This is an XML file containing error messages related to the class "OPFresult".-->
-<rsccat version="2" locale="en" product="GUILDA">
+<rsccat version="4.0" locale="en" product="GUILDA">
     <message>
         <entry key="ExportFormat">Export of OPFresult does not support the extension ''{0}''. Use .csv, .txt, .xlsx or .xls.</entry>
     </message>

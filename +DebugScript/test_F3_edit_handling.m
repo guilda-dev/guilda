@@ -396,7 +396,7 @@ DebugScript.helper.quiet(@() net.initialize);
 K60 = lqr.K;
 lastwarn("");
 evalc("net.tab_parameter.base.Hz = 0;");
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:local_LQR:RedesignFailed" && isequal(lqr.K, K60))
 assert(DebugScript.helper.handle_Hz(last) == 0 && net.s_edit.l_staleEquilibrium)
 assert(net.tab_editLog.log(1) == "edit Hz" && contains(net.tab_editLog.log(end), "redesign failed"))
@@ -492,7 +492,7 @@ other = net.a_Bus{1}.a_Component{1};
 clear Deprecated
 lastwarn("");
 evalc("comp.tab_parameter.base.Hz = 50;");
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:Deprecated:ComponentBaseHzSet")
 assert(net.tab_parameter.base.Hz == 50 && other.r_Hz == 50)
 assert(DebugScript.helper.handle_Hz(comp) == 50 && DebugScript.helper.handle_Hz(other) == 50 && ~net.s_edit.l_staleEquilibrium)
@@ -506,7 +506,7 @@ function assert_stale_error(fcn, str_id)
     try
         DebugScript.helper.quiet(fcn);
     catch ME
-        assert(ME.identifier == str_id, "想定外のエラー: " + ME.identifier + " " + ME.message)
+        assert(DebugScript.helper.msg_id(ME) == str_id, "想定外のエラー: " + DebugScript.helper.msg_id(ME) + " " + ME.message)
         assert(contains(ME.message, "net.initialize()"))
         return
     end
@@ -518,6 +518,6 @@ function id = warn_id(fcn)
 % fcn を実行し、出た警告の ID を返す (警告なしは "")
     lastwarn("");
     evalc("fcn();");
-    [~, id] = lastwarn();
+    id = DebugScript.helper.msg_id();
     id = string(id);
 end

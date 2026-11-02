@@ -93,7 +93,7 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.abstract
             Vap_st  = Vfld_st*(aex1 + aex2*exp(bex*Vfld_st));
             
             if Vap_st <= Vap_min || Vap_st >= Vap_max
-                error('GUILDA:AVR_DC1:InvalidValueRange', '%s', msg('GUILDA:AVR_DC1:InvalidValueRange', char(obj.str_tag), num2str(Vap_st), num2str(Vap_min), num2str(Vap_max)))
+                error(msg("GUILDA:AVR_DC1:InvalidValueRange", char(obj.str_tag), num2str(Vap_st), num2str(Vap_min), num2str(Vap_max)))
             end
             Vcom_st = Vap_st/kap;            
             Vref_st = abs(V) + Vcom_st;

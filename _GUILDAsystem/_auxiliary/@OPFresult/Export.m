@@ -22,7 +22,6 @@ function str_file = Export(obj, filename, opt)
             tab = obj.("tab_" + opt.Table);
             writetable(tab, str_file, "WriteRowNames", true);
         otherwise
-            error('GUILDA:OPFresult:ExportFormat', '%s', ...
-                  msg('GUILDA:OPFresult:ExportFormat', char(str_ext)));
+            error(msg("GUILDA:OPFresult:ExportFormat", char(str_ext)));
     end
 end

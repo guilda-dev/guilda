@@ -31,27 +31,23 @@ function varargout = get_hessian(obj, x, V, I, u)
     end
     c_method = {"Hessian_dx", numel(obj.sv_x); "Hessian_Y", numel(obj.sv_y)};
     param    = obj.tab_parameter.dynamics{:,obj.sv_para};
-    varargout = hessians(obj, "GlobalController", c_method(1:max(nargout,1),:), x, V, I, u, param);
+    varargout = hessians(obj, c_method(1:max(nargout,1),:), x, V, I, u, param);
 end
 
 
-function c_H = hessians(obj, str_layer, c_method, x, V, I, u, param)
+function c_H = hessians(obj, c_method, x, V, I, u, param)
     n_z = numel(x) + 2 + 2 + numel(u);
     c_H = cell(1, size(c_method,1));
     for k = 1:numel(c_H)
         [str_method, n_f] = c_method{k,:};
         if ~ismethod(obj, str_method)
-            error("GUILDA:" + str_layer + ":HessianNotSupported", ...
-                  "%s does not support Hessian computation: the class does not define the static method %s " + ...
-                  "(see %s.get_hessian for the contract).", class(obj), str_method, str_layer)
+            error(msg("GUILDA:GlobalController:HessianNotSupported", class(obj), str_method))
         end
         H = obj.(str_method)(0, x, V, I, u, param, obj.r_Hz);
         if isempty(H)
             H = zeros(n_f, n_z, n_z);
         elseif numel(H) ~= n_f*n_z*n_z
-            error("GUILDA:" + str_layer + ":HessianSize", ...
-                  "%s.%s returned %d values; expected %d x %d x %d (equations x [x; V; I; u] x [x; V; I; u]).", ...
-                  class(obj), str_method, numel(H), n_f, n_z, n_z)
+            error(msg("GUILDA:GlobalController:HessianSize", class(obj), str_method, string(numel(H)), string(n_f), string(n_z), string(n_z)))
         end
         c_H{k} = reshape(full(H), n_f, n_z, n_z);
     end

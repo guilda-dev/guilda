@@ -87,7 +87,7 @@ function expect_event_error(net, str_key, str_text, varargin)
     try
         net.simulate([0,3], ev);
     catch ME
-        assert(ME.identifier == str_id, ME.identifier + ": " + ME.message)
+        assert(DebugScript.helper.msg_id(ME) == str_id, DebugScript.helper.msg_id(ME) + ": " + ME.message)
         assert(all(contains(ME.message, str_text)), "原因が示されない: " + ME.message)
         assert(contains(ME.message, '"ev"'), "イベント名が示されない: " + ME.message)
         return

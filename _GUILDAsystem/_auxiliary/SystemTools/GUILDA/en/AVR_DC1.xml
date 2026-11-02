@@ -1,5 +1,5 @@
 <!--This is an XML file containing error messages related to the class "AVR_DC1".-->
-<rsccat version="2" locale="en" product="GUILDA">
+<rsccat version="4.0" locale="en" product="GUILDA">
     <message>
         <entry key="InvalidValueRange">AVR_DC1 ''{0}'': the amplifier output {1} pu required at the equilibrium is not within the limits ({2}, {3}) pu. Widen Vap_min and Vap_max, or change the operating point of the generator (for example its P or V) so that the required output falls within the limits.</entry>
     </message>

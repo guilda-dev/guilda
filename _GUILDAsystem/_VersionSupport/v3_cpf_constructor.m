@@ -13,7 +13,6 @@ function v3_cpf_constructor(c_args)
 %
 % See also CPFsolver
     if ~isempty(c_args)
-        error('GUILDA:Deprecated:ContinuationPowerFlowConstructor', '%s', ...
-              Deprecated("ContinuationPowerFlowConstructor"));
+        error(msg("GUILDA:v3_cpf_constructor:ContinuationPowerFlowConstructor"));
     end
 end

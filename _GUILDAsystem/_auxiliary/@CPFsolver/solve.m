@@ -91,23 +91,19 @@ function check_network(net, sv_load)
         a_Comp = net.a_Bus{i}.a_Component;
         for j = 1:numel(a_Comp)
             if isempty(a_Comp{j}.c_Iequilibrium)
-                error('GUILDA:CPFsolver:NoEquilibrium', '%s', ...
-                      msg('GUILDA:CPFsolver:NoEquilibrium', char(string(a_Comp{j}))));
+                error(msg("GUILDA:CPFsolver:NoEquilibrium", char(string(a_Comp{j}))));
             end
         end
     end
     if net.s_edit.l_staleEquilibrium
-        error('GUILDA:CPFsolver:StaleEquilibrium', '%s', ...
-              msg('GUILDA:CPFsolver:StaleEquilibrium'));
+        error(msg("GUILDA:CPFsolver:StaleEquilibrium"));
     end
     if isempty(sv_load)
-        error('GUILDA:CPFsolver:EmptyLoadBus', '%s', ...
-              msg('GUILDA:CPFsolver:EmptyLoadBus'));
+        error(msg("GUILDA:CPFsolver:EmptyLoadBus"));
     end
     sv_bus     = string(net.a_Bus(:));
     sv_unknown = sv_load(~ismember(sv_load, sv_bus));
     if ~isempty(sv_unknown)
-        error('GUILDA:CPFsolver:UnknownLoadBus', '%s', ...
-              msg('GUILDA:CPFsolver:UnknownLoadBus', char(join(sv_unknown, ", "))));
+        error(msg("GUILDA:CPFsolver:UnknownLoadBus", char(join(sv_unknown, ", "))));
     end
 end

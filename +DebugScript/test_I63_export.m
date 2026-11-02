@@ -25,7 +25,7 @@ for k = 1:numel(c_case)
         net.simulate([0,1e6], Export=c_case{k}, TimeLimit=Inf);
         error("DebugScript:noError", "エラーにならない: %d", k)
     catch ME
-        assert(ME.identifier == "GUILDA:PowerNetwork:SimulateExport", ME.message)
+        assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:SimulateExport", ME.message)
     end
     assert(toc(t_start) < 5, "計算前に止まっていない: %d", k)
 end

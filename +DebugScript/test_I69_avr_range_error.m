@@ -44,7 +44,7 @@ end
 
 function check_error(ME, str_class, str_tag, str_limits)
 % エラーの ID と、文言の機器名・上下限・対処を確認する
-    assert(ME.identifier == "GUILDA:" + str_class + ":InvalidValueRange", "ID が " + ME.identifier)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:" + str_class + ":InvalidValueRange", "ID が " + DebugScript.helper.msg_id(ME))
     str = string(ME.message);
     assert(~contains(str, "ID specification"), str)
     assert(contains(str, str_class + " '" + str_tag + "'"), str)

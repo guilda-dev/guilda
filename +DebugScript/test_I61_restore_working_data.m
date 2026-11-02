@@ -43,7 +43,7 @@ str_id = "";
 try
     DebugScript.helper.quiet(@() net.simulate([0,2], ev_fault, ev_trip, ev_error));
 catch me
-    str_id = me.identifier;
+    str_id = DebugScript.helper.msg_id(me);
 end
 assert(str_id == "GUILDA:ODEsolver:PhaseFailed", "入力関数のエラーで止まる: " + str_id)
 assert_restored(net)

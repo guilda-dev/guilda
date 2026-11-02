@@ -37,9 +37,7 @@ function [result, flag, output] = solve(obj, net, s_options)
     [rv_point, l_eq] = LTIsolver.point_vector(net, s_options.Point);
     lv_bad = ~isfinite(rv_point);
     if any(lv_bad)
-        error("GUILDA:LTIsolver:PointNotFinite", ...
-              "Point is not finite at %s. In Point={sim, t}, the states of a tripped unit are NaN during the trip.", ...
-              list_labels(tab_map.Label(lv_bad)))
+        error(msg("GUILDA:LTIsolver:PointNotFinite", list_labels(tab_map.Label(lv_bad))))
     end
 
     % Bus models (V -> I) and global controller models at the point. The network model
@@ -97,8 +95,7 @@ function [result, flag, output] = solve(obj, net, s_options)
     Cix = Cix(1:n_i,:);
 
     if ~isequal([str_x; str_z], tab_map.Label(tab_map.Kind == "x"))
-        error("GUILDA:LTIsolver:VariableMap", ...
-              "The states of the bus models do not follow net.get_variable_map(); report this as a bug.")
+        error(msg("GUILDA:LTIsolver:VariableMap"))
     end
 
     Ymat = tools.complex2matrix(cm_Y);
@@ -177,8 +174,7 @@ function sys = model_at_point(f_sys, str_owner)
         sys = f_sys();
     catch ME
         if startsWith(ME.identifier, "Control:ltiobject")
-            error("GUILDA:LTIsolver:JacobianNotFinite", ...
-                  "The Jacobian of %s is not finite at the point, so it cannot be linearized there. Check the voltage and states of the point.", str_owner)
+            error(msg("GUILDA:LTIsolver:JacobianNotFinite", str_owner))
         end
         rethrow(ME)
     end
@@ -273,8 +269,7 @@ function [Axx, Bxv, Bxu, Cix, E, str_z] = add_global_controllers(c_sysGC, a_GC, 
         [lv_w, iw] = ismember(string(sysGC.InputName),  str_x);
         [lv_y, iy] = ismember(string(sysGC.OutputName), str_u);
         if ~all(lv_w) || ~all(lv_y)
-            error("GUILDA:LTIsolver:GlobalControllerPort", ...
-                  "The ports of the global controller '%s' are not found in the linearized system.", a_GC{k}.str_tag)
+            error(msg("GUILDA:LTIsolver:GlobalControllerPort", a_GC{k}.str_tag))
         end
         S = zeros(numel(iw), nx);  S(sub2ind(size(S), 1:numel(iw), iw(:)')) = 1;
         T = zeros(nu, numel(iy));  T(sub2ind(size(T), iy(:)', 1:numel(iy))) = 1;

@@ -302,7 +302,7 @@ try
     DebugScript.helper.quiet(@() net.calculate_powerflow(Tolerence=1e-8));
     error("DebugScript:noError", "未知のオプションでエラーにならない")
 catch ME
-    assert(ME.identifier == "GUILDA:resolve_options:UnknownName", ME.identifier)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "Tolerence") && contains(ME.message, "Method, Tolerance, MaxIteration, Verbose"))
 end
 % 共通名以外 (ソルバー固有の名前) も受け付けない
@@ -371,7 +371,7 @@ lastwarn("");
 w = warning("off", "GUILDA:Deprecated:CalculatePowerflowMode"); c = onCleanup(@() warning(w));
 [res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow("dynamic", "export", false));
 assert(isa(res, "PFCresult") && logical(flag) && res.options.Method == "dynamic")
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:Deprecated:CalculatePowerflowExport")
 assert(net.solver_PF.Method == "algebraic")       % 既定値は変わらない
 warning(w);
@@ -380,7 +380,7 @@ warning(w);
 clear Deprecated
 lastwarn("");
 res = DebugScript.helper.quiet(@() net.calculate_powerflow("algebraic"));
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:Deprecated:CalculatePowerflowMode" && res.options.Method == "algebraic")
 
 % export=true の JSON は v3 と同じく GUILDA.pwd に書く
@@ -407,7 +407,7 @@ function id = error_id(fcn)
     try
         evalc("fcn();");
     catch ME
-        id = string(ME.identifier);
+        id = string(DebugScript.helper.msg_id(ME));
         if id == ""
             id = "(no id)";
         end

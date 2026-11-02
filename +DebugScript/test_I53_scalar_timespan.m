@@ -70,7 +70,7 @@ function [str_id, str_msg] = event_error(net, varargin)
     try
         net.simulate([0,3], varargin{:});
     catch ME
-        str_id  = string(ME.identifier);
+        str_id  = string(DebugScript.helper.msg_id(ME));
         str_msg = string(ME.message);
     end
 end

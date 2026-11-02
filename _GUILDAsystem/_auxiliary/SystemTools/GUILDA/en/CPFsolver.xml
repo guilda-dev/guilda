@@ -1,5 +1,5 @@
 <!--This is an XML file containing error messages related to the class "CPFsolver".-->
-<rsccat version="2" locale="en" product="GUILDA">
+<rsccat version="4.0" locale="en" product="GUILDA">
     <message>
         <entry key="EmptyLoadBus">No load bus is specified for the continuation power flow. Give the tags of the buses whose loads are increased: net.calculate_continuation_powerflow(LoadBus=["B009","B010"]), or set net.solver_CPF.LoadBus.</entry>
         <entry key="UnknownLoadBus">LoadBus names buses that are not in the network: {0}. Use the bus tags of the network (string(net.a_Bus)).</entry>

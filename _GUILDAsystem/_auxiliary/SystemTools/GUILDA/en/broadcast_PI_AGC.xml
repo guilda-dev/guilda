@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the class "broadcast_PI_AGC".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="InvalidSize">alpha and beta must be scalars or have one element per controlled unit ({0}).</entry>
+    </message>
+</rsccat>

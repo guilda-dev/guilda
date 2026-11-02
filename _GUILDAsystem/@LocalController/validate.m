@@ -19,8 +19,7 @@ function flag = validate(obj, l_message)
 
     comp = obj.observed_component();
     if isempty(comp) || isempty(comp.a_Bus) || isempty(comp.a_Bus.a_PowerNetwork)
-        error("GUILDA:LocalController:ValidateNotAttached", ...
-              "%s: attach the controller to a component on a network and run net.initialize before validate.", obj.str_tag)
+        error(msg("GUILDA:LocalController:ValidateNotAttached", obj.str_tag))
     end
     obj.check_edit();
     net = comp.a_Bus.a_PowerNetwork;
@@ -159,10 +158,15 @@ function [val, str_id] = eval_value(f)
     try
         val = f();
     catch ME
-        str_id = string(ME.identifier);
-        if str_id == ""
-            str_id = string(ME.message);
-        end
+        str_id = error_text(ME);
+    end
+end
+
+function str = error_text(ME)
+    % The identifier of the error, or its message when it has none (error(msg(...)) of GUILDA)
+    str = string(ME.identifier);
+    if str == ""
+        str = string(ME.message);
     end
 end
 
@@ -224,7 +228,7 @@ function [flag, contract] = compare_jacobian(flag, contract, str_method, f_valid
         c_num = f_num();
         [c_valid{:}] = f_valid(point{:});
     catch ME
-        str_detail = string(ME.identifier);
+        str_detail = error_text(ME);
     end
     for k = find(sv_name ~= "")
         nr = numel(sv_row);

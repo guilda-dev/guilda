@@ -15,7 +15,7 @@ for str_bus = ["B001","B002"]
     [net, ev] = build_case("load-power", str_bus);
     [sol, flag, output] = net.simulate([0,2], ev);
     assert(flag == -1 && sol.flag == -1)
-    assert(output.exception.identifier == "GUILDA:ODEsolver:InitialConditionFailed")
+    assert(DebugScript.helper.msg_id(output.exception) == "GUILDA:ODEsolver:InitialConditionFailed")
     assert(contains(output.message, "algebraic equations"))
     assert(contains(output.message, "load-impedance"))
     assert(~contains(output.message, "tspan") && ~contains(output.message, "y0"))

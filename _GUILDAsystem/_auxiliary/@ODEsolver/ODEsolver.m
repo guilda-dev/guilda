@@ -299,8 +299,7 @@ classdef (Sealed = true) ODEsolver < auxiliary
                         end
                         if l_relaxed
                             lv_diff = any(o.MassMatrix.MassMatrix ~= 0, 2);
-                            warning('GUILDA:ODEsolver:InitialConditionRelaxed', '%s', ...
-                                    msg('GUILDA:ODEsolver:InitialConditionRelaxed', str_phase{:}, ...
+                            warning(msg("GUILDA:ODEsolver:InitialConditionRelaxed", str_phase{:}, ...
                                         num2str(max(abs(x0_ic(lv_diff) - x0(lv_diff)))), str_why));
                             % Not a warning of the solver (see output.message)
                             [str_warn0, id_warn0] = lastwarn();
@@ -423,8 +422,7 @@ classdef (Sealed = true) ODEsolver < auxiliary
                 for idx = 1:numel(gcon.controlledUnits)
                     unit = gcon.controlledUnits{idx};
                     if isempty(unit.a_Bus) || ~isequal(unit.a_Bus.a_PowerNetwork, net)
-                        error('GUILDA:ODEsolver:ForeignControlledUnit', '%s', ...
-                              msg('GUILDA:ODEsolver:ForeignControlledUnit', char(gcon.str_tag), char(unit.str_tag), char(net.str_tag)))
+                        error(msg("GUILDA:ODEsolver:ForeignControlledUnit", char(gcon.str_tag), char(unit.str_tag), char(net.str_tag)))
                     end
                 end
             end

@@ -136,8 +136,7 @@ classdef (Sealed = true) ODEevent < auxiliary
             if numel(opt.time) >= 2
                 lv_out = times(:,2) < opt.time(1) | times(:,1) > opt.time(end);
                 for k = find(lv_out(:))'
-                    warning('GUILDA:ODEevent:OutsideTimeSpan', '%s', ...
-                        msg('GUILDA:ODEevent:OutsideTimeSpan', char(odeEvents{k}.str_tag), ...
+                    warning(msg("GUILDA:ODEevent:OutsideTimeSpan", char(odeEvents{k}.str_tag), ...
                             mat2str(odeEvents{k}.TimeSpan), mat2str(opt.time([1,end]).')));
                 end
             end
@@ -270,14 +269,14 @@ classdef (Sealed = true) ODEevent < auxiliary
 
                 elseif isa(exV, 'function_handle')
                     if nargin(exV) ~= 1
-                        error('GUILDA:ODEevent:InvalidNargin', '%s', msg('GUILDA:ODEevent:InvalidNargin'))
+                        error(msg("GUILDA:ODEevent:InvalidNargin"))
                     end
 
                     % t of each phase starts at 0; the function takes the time since the event start.
                     ts = opt.TimePhase(1) - oev.TimeSpan(1);
                     exV = @(t) exV(t+ts);
                 else
-                    error('GUILDA:ODEevent:InvalidInputType', '%s', msg('GUILDA:ODEevent:InvalidInputType'))
+                    error(msg("GUILDA:ODEevent:InvalidInputType"))
                 end
 
             end
@@ -412,24 +411,21 @@ classdef (Sealed = true) ODEevent < auxiliary
                 if isnumeric(ts)
                     str_ts = mat2str(ts);
                 end
-                error('GUILDA:ODEevent:InvalidTimeSpan', '%s', ...
-                    msg('GUILDA:ODEevent:InvalidTimeSpan', char(obj.str_tag), str_ts));
+                error(msg("GUILDA:ODEevent:InvalidTimeSpan", char(obj.str_tag), str_ts));
             end
 
             % A fault, trip or input needs its end time; only an offset acts at one instant.
             l_lasting = ~isempty(obj.FaultBus) || ~isempty(obj.TripUnit) || strlength(obj.InputUnit) > 0 ...
                 || ~isempty(obj.InputName) || ~isempty(obj.InputValue);
             if l_lasting && (isscalar(ts) || ts(1) == ts(2))
-                error('GUILDA:ODEevent:ZeroLengthTimeSpan', '%s', ...
-                    msg('GUILDA:ODEevent:ZeroLengthTimeSpan', char(obj.str_tag), mat2str(ts)));
+                error(msg("GUILDA:ODEevent:ZeroLengthTimeSpan", char(obj.str_tag), mat2str(ts)));
             end
 
             a_bus  = obj.odeNetwork.a_Bus;
             sv_bus = string(cellfun(@(b) b.str_tag, a_bus, 'UniformOutput', false));
             lv_bad = ~ismember(obj.FaultBus, sv_bus);
             if any(lv_bad)
-                error('GUILDA:ODEevent:UnknownFaultBus', '%s', ...
-                    msg('GUILDA:ODEevent:UnknownFaultBus', char(obj.str_tag), char(join(obj.FaultBus(lv_bad), ", "))));
+                error(msg("GUILDA:ODEevent:UnknownFaultBus", char(obj.str_tag), char(join(obj.FaultBus(lv_bad), ", "))));
             end
 
             a_comp = cellfun(@(b) b.a_Component, a_bus, 'UniformOutput', false);
@@ -439,21 +435,18 @@ classdef (Sealed = true) ODEevent < auxiliary
             sv_gc  = string(cellfun(@(g) g.str_tag, obj.odeNetwork.a_GlobalController, 'UniformOutput', false));
             lv_bad = ~ismember(obj.TripUnit, [sv_tag(:); sv_gc(:)]);
             if any(lv_bad)
-                error('GUILDA:ODEevent:UnknownTripUnit', '%s', ...
-                    msg('GUILDA:ODEevent:UnknownTripUnit', char(obj.str_tag), char(join(obj.TripUnit(lv_bad), ", "))));
+                error(msg("GUILDA:ODEevent:UnknownTripUnit", char(obj.str_tag), char(join(obj.TripUnit(lv_bad), ", "))));
             end
 
             if strlength(obj.OffsetUnit) > 0 || ~isempty(obj.OffsetState) || ~isempty(obj.OffsetValue)
                 lv_cmp = sv_tag == obj.OffsetUnit;
                 if ~any(lv_cmp)
-                    error('GUILDA:ODEevent:UnknownOffsetUnit', '%s', ...
-                        msg('GUILDA:ODEevent:UnknownOffsetUnit', char(obj.str_tag), char(obj.OffsetUnit)));
+                    error(msg("GUILDA:ODEevent:UnknownOffsetUnit", char(obj.str_tag), char(obj.OffsetUnit)));
                 end
                 sv_x = string(a_comp{find(lv_cmp,1)}.sv_x(:));
                 lv_bad = ~ismember(obj.OffsetState, sv_x);
                 if any(lv_bad)
-                    error('GUILDA:ODEevent:UnknownOffsetState', '%s', ...
-                        msg('GUILDA:ODEevent:UnknownOffsetState', char(obj.str_tag), ...
+                    error(msg("GUILDA:ODEevent:UnknownOffsetState", char(obj.str_tag), ...
                             char(join(obj.OffsetState(lv_bad), ", ")), char(obj.OffsetUnit), char(join(sv_x, ", "))));
                 end
                 checkValueCount(obj.str_tag, "OffsetValue", obj.OffsetValue, "OffsetState", obj.OffsetState);
@@ -464,14 +457,12 @@ classdef (Sealed = true) ODEevent < auxiliary
             end
             lv_cmp = sv_tag == obj.InputUnit;
             if ~any(lv_cmp)
-                error('GUILDA:ODEevent:UnknownInputUnit', '%s', ...
-                    msg('GUILDA:ODEevent:UnknownInputUnit', char(obj.str_tag), char(obj.InputUnit)));
+                error(msg("GUILDA:ODEevent:UnknownInputUnit", char(obj.str_tag), char(obj.InputUnit)));
             end
             sv_u = string(a_comp{find(lv_cmp,1)}.sv_u(:));
             lv_bad = ~ismember(obj.InputName, sv_u);
             if any(lv_bad)
-                error('GUILDA:ODEevent:UnknownInputName', '%s', ...
-                    msg('GUILDA:ODEevent:UnknownInputName', char(obj.str_tag), ...
+                error(msg("GUILDA:ODEevent:UnknownInputName", char(obj.str_tag), ...
                         char(join(obj.InputName(lv_bad), ", ")), char(obj.InputUnit), char(join(sv_u, ", "))));
             end
             checkValueCount(obj.str_tag, "InputValue", obj.InputValue, "InputName", obj.InputName);
@@ -481,7 +472,7 @@ classdef (Sealed = true) ODEevent < auxiliary
             end
             for k = 1:numel(exV)
                 if isa(exV{k}, 'function_handle') && nargin(exV{k}) ~= 1
-                    error('GUILDA:ODEevent:InvalidNargin', '%s', msg('GUILDA:ODEevent:InvalidNargin'));
+                    error(msg("GUILDA:ODEevent:InvalidNargin"));
                 end
             end
         end
@@ -493,9 +484,8 @@ end
 function checkValueCount(str_tag, str_value, values, str_name, names)
     % One value per name, or a single value for all the names
     if isempty(names) || ~(isscalar(values) || numel(values) == numel(names))
-        error('GUILDA:ODEevent:ValueCountMismatch', '%s', ...
-            msg('GUILDA:ODEevent:ValueCountMismatch', char(str_tag), char(str_value), ...
-                numel(values), numel(names), char(str_name)));
+        error(msg("GUILDA:ODEevent:ValueCountMismatch", char(str_tag), char(str_value), ...
+                string(numel(values)), string(numel(names)), char(str_name)));
     end
 end
 
@@ -503,14 +493,13 @@ function validate_set(odeEvents, net)
 % Checks on the events of one run, before the phase table is built.
     lv_scalar = cellfun(@isscalar, odeEvents);
     if ~all(lv_scalar)
-        error('GUILDA:ODEevent:EventArray', '%s', msg('GUILDA:ODEevent:EventArray'));
+        error(msg("GUILDA:ODEevent:EventArray"));
     end
 
     sv_tag = string(cellfun(@(o) o.str_tag, odeEvents, 'UniformOutput', false));
     for k = 1:numel(odeEvents)
         if odeEvents{k}.odeNetwork ~= net
-            error('GUILDA:ODEevent:OtherNetwork', '%s', ...
-                msg('GUILDA:ODEevent:OtherNetwork', char(sv_tag(k))));
+            error(msg("GUILDA:ODEevent:OtherNetwork", char(sv_tag(k))));
         end
     end
 
@@ -518,15 +507,13 @@ function validate_set(odeEvents, net)
     lv_reserved = ismember(sv_tag, ["t1","t2","Properties","Row","Variables",""]) ...
         | matches(sv_tag, "NoAction" + digitsPattern);
     if any(lv_reserved)
-        error('GUILDA:ODEevent:ReservedTag', '%s', ...
-            msg('GUILDA:ODEevent:ReservedTag', char(sv_tag(find(lv_reserved,1)))));
+        error(msg("GUILDA:ODEevent:ReservedTag", char(sv_tag(find(lv_reserved,1)))));
     end
 
     [~, iv_first] = unique(sv_tag, 'stable');
     if numel(iv_first) < numel(sv_tag)
         i_dup = setdiff(1:numel(sv_tag), iv_first);
-        error('GUILDA:ODEevent:DuplicateTag', '%s', ...
-            msg('GUILDA:ODEevent:DuplicateTag', char(sv_tag(i_dup(1)))));
+        error(msg("GUILDA:ODEevent:DuplicateTag", char(sv_tag(i_dup(1)))));
     end
 end
 

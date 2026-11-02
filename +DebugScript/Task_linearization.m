@@ -42,7 +42,7 @@ try
     net.get_sys();
     error("DebugScript:NoError", "編集後の get_sys がエラーにならない")
 catch ME
-    assert(ME.identifier == "GUILDA:PowerNetwork:EquilibriumStale", ME.identifier)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:EquilibriumStale", DebugScript.helper.msg_id(ME))
     disp(ME.message)
 end
 net.initialize();

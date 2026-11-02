@@ -19,8 +19,7 @@ function ax = Plot(obj, opt)
     end
     [lv_found, iv_bus] = ismember(sv_plot, obj.sv_bus);
     if ~all(lv_found)
-        error('GUILDA:CPFresult:UnknownBus', '%s', ...
-              msg('GUILDA:CPFresult:UnknownBus', char(join(sv_plot(~lv_found), ", "))));
+        error(msg("GUILDA:CPFresult:UnknownBus", char(join(sv_plot(~lv_found), ", "))));
     end
     if isempty(opt.Parent)
         opt.Parent = figure();

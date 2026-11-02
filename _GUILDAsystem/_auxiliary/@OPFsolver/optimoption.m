@@ -58,8 +58,6 @@ function check_solver(prob, str_solver)
     [~, c_valid] = solvers(prob);
     str_usable = intersect(["linprog","quadprog","fmincon"], string(c_valid), "stable");
     if ~any(str_usable == str_solver)
-        error("GUILDA:OPFsolver:UnsupportedSolver", ...
-              "Solver ""%s"" cannot solve this OPF problem. Usable Solver names: ""auto"", %s.", ...
-              str_solver, join("""" + str_usable + """", ", "))
+        error(msg("GUILDA:OPFsolver:UnsupportedSolver", str_solver, join("""" + str_usable + """", ", ")))
     end
 end

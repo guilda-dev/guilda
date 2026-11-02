@@ -16,8 +16,6 @@ function v3_nonunit_dynamic(s_options, c_sysBus)
     lv_dynamic = ismember(1:numel(c_sysBus), s_options.NonUnit) & ...
                  reshape(tools.vcellfun(@(S) ~isempty(S.A), c_sysBus), 1, []);
     if any(lv_dynamic)
-        error("GUILDA:LTIresult:NonUnitDynamicBus", ...
-              "NonUnit = [%s] names buses with states, which cannot be eliminated with the network: bus %s.", ...
-              num2str(s_options.NonUnit), num2str(find(lv_dynamic)))
+        error(msg("GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus", num2str(s_options.NonUnit), num2str(find(lv_dynamic))))
     end
 end

@@ -28,8 +28,7 @@ function str_file = Export(obj, filename)
             output     = obj.output;
             save(str_file, "odeResults", "rm_variable", "tab_variable", "options", "flag", "output");
         otherwise
-            error('GUILDA:ODEresult:ExportFormat', '%s', ...
-                  msg('GUILDA:ODEresult:ExportFormat', char(str_ext)));
+            error(msg("GUILDA:ODEresult:ExportFormat", char(str_ext)));
     end
 end
 

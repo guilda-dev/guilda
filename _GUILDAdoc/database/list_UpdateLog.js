@@ -255,6 +255,6 @@ const updateLogData = [
     "title": "Analysis classes renamed",
     "date": "2026-11-02",
     "type": "changed",
-    "content": "The solver, result and event classes have uniform names, with no aliases: PFCsolver, PFCresult, OPFsolver, OPFresult, CPFsolver, CPFresult, ODEsolver, ODEresult, ODEevent, ODEprogress, LTIsolver and LTIresult replace PowerFlowCalculation, PowerFlowResult, OptimalPowerFlow, OPFResult, ContinuationPowerFlow, CPFResult, odeSimulator, odeSimulationResult, odeEventSet, odeProgress, odeLinearizer and LinearizationResult. Error IDs follow the new names. net.solver_* properties and GUILDA.config section names do not change."
+    "content": "The solver, result and event classes have uniform names, with no aliases: PFCsolver, PFCresult, OPFsolver, OPFresult, CPFsolver, CPFresult, ODEsolver, ODEresult, ODEevent, ODEprogress, LTIsolver and LTIresult replace PowerFlowCalculation, PowerFlowResult, OptimalPowerFlow, OPFResult, ContinuationPowerFlow, CPFResult, odeSimulator, odeSimulationResult, odeEventSet, odeProgress, odeLinearizer and LinearizationResult. Message IDs follow the new names. net.solver_* properties and GUILDA.config section names do not change."
   }
 ];

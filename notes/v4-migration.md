@@ -73,28 +73,28 @@
 
 ## 解析クラスの名前の変更
 
-`_GUILDAsystem/_auxiliary` のソルバー、結果、イベントのクラス名を統一しました。別名は残していないので、旧名を呼ぶと未定義エラーになります。エラー ID も `GUILDA:<旧名>:*` から `GUILDA:<新名>:*` に変わりました。
+`_GUILDAsystem/_auxiliary` のソルバー、結果、イベントのクラス名を統一しました。別名は残していないので、旧名を呼ぶと未定義エラーになります。メッセージ ID も `GUILDA:<旧名>:*` から `GUILDA:<新名>:*` に、カタログも `SystemTools/GUILDA/en/<新名>.xml` に変わりました。
 
 | 旧名 | 新名 |
 |---|---|
-| `PowerFlowCalculation` | `PFCsolver` |
-| `PowerFlowResult` | `PFCresult` |
-| `OptimalPowerFlow` | `OPFsolver` |
-| `OPFResult` | `OPFresult` |
-| `ContinuationPowerFlow` | `CPFsolver` |
-| `CPFResult` | `CPFresult` |
-| `odeSimulator` | `ODEsolver` |
-| `odeSimulationResult` | `ODEresult` |
-| `odeEventSet` | `ODEevent` |
-| `odeProgress` | `ODEprogress` |
-| `odeLinearizer` | `LTIsolver` |
-| `LinearizationResult` | `LTIresult` |
+| `PFCsolver` | `PFCsolver` |
+| `PFCresult` | `PFCresult` |
+| `OPFsolver` | `OPFsolver` |
+| `OPFresult` | `OPFresult` |
+| `CPFsolver` | `CPFsolver` |
+| `CPFresult` | `CPFresult` |
+| `ODEsolver` | `ODEsolver` |
+| `ODEresult` | `ODEresult` |
+| `ODEevent` | `ODEevent` |
+| `ODEprogress` | `ODEprogress` |
+| `LTIsolver` | `LTIsolver` |
+| `LTIresult` | `LTIresult` |
 
 次の名前は変わりません。
 
 - 結果の `str_solver` の値は新しいクラス名になりますが、`net.solver_PF`、`net.solver_OPF`、`net.solver_CPF`、`net.solver_ODE`、`net.solver_LIN` のプロパティ名はそのままです。
-- 設定のセクション名とファイル名(`GUILDA.config("PowerFlowCalculation")`、`"OptimalPowerFlow"`、`"ContinuationPowerFlow"`、`Default<セクション名>.json`)はそのままなので、`@GUILDA/user` に保存した設定は引き続き読み込まれます。
-- `GUILDA:Deprecated:*` の ID(`ContinuationPowerFlowConstructor`、`OdeLinearizerConstructor` など)と `ContinuationPowerFlowV3`、`Continuation_Power_Flow` もそのままです。
+- 設定のセクション名とファイル名(`GUILDA.config("PowerFlowCalculation")`、`"OPFsolver"`、`"CPFsolver"`、`Default<セクション名>.json`)はそのままなので、`@GUILDA/user` に保存した設定は引き続き読み込まれます。
+- `GUILDA:Deprecated:*` と `GUILDA:v3_*` の ID(`ContinuationPowerFlowConstructor`、`OdeLinearizerConstructor` など)と `ContinuationPowerFlowV3`、`Continuation_Power_Flow` もそのままです。
 
 この文書の v3 の書き方を示す箇所では、旧クラス名を残しています。
 

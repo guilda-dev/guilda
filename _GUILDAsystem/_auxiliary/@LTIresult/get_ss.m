@@ -68,10 +68,9 @@ function sys = get_ss(obj, Algorithm, opt)
         sys % Descriptor state-space model with StateName, InputName and OutputName.
     end
     if obj.output.str_issue == "NotFinite"
-        error("GUILDA:LTIresult:NotFinite", "%s", obj.output.message)
+        error(msg("GUILDA:LTIresult:NotFinite", obj.output.message))
     elseif obj.output.str_issue == "SingularAvv" && Algorithm ~= "DAE"
-        error("GUILDA:LTIresult:SingularAvv", ...
-              "%s Algorithm ""%s"" eliminates the bus voltages; use ""DAE"" to keep them.", obj.output.message, Algorithm)
+        error(msg("GUILDA:LTIresult:SingularAvv", obj.output.message, Algorithm))
     end
     switch Algorithm
         case "Kron"
@@ -258,13 +257,11 @@ function sys = select_output(obj, sys, Algorithm, str_coordinate, sv_select)
 
     [lv_known, iv_all] = ismember(sv_name, sv_all);
     if ~all(lv_known)
-        error("GUILDA:LTIresult:UnknownChannel", ...
-              "Output ""%s"" is not ""x"", ""V"", ""I"", ""y"" or a name of those outputs of this network.", sv_name(find(~lv_known,1)))
+        error(msg("GUILDA:LTIresult:UnknownOutput", sv_name(find(~lv_known,1))))
     end
     lv_missing = ismember(sv_name, sv_x) & ~ismember(sv_name, sv_model);
     if any(lv_missing)
-        error("GUILDA:LTIresult:StateNotInModel", ...
-              "State ""%s"" is removed by Algorithm ""%s"", so it cannot be an output. Use ""Kron"" or ""DAE"".", sv_name(find(lv_missing,1)), Algorithm)
+        error(msg("GUILDA:LTIresult:StateNotInModel", sv_name(find(lv_missing,1)), Algorithm))
     end
     Cx = Cx(iv_all,:);
     Cv = Cv(iv_all,:);
@@ -306,8 +303,7 @@ function iv = input_index(sys, sv_select)
     sv_name = unique(sv_name, "stable");
     [lv_known, iv] = ismember(sv_name, sv_u);
     if ~all(lv_known)
-        error("GUILDA:LTIresult:UnknownChannel", ...
-              "Input ""%s"" is not ""u"" or a Label of an input of this network.", sv_name(find(~lv_known,1)))
+        error(msg("GUILDA:LTIresult:UnknownInput", sv_name(find(~lv_known,1))))
     end
 end
 
@@ -318,15 +314,12 @@ function sys = via_feedback(obj)
 
     v3_nonunit_dynamic(obj.options, s.c_sysBus);    % COMPAT(v3)
     if all(tools.vcellfun(@(S) isempty(S.A), s.c_sysBus))
-        error("GUILDA:LTIresult:NoUnitBus", ...
-              "Algorithm ""Feedback"" needs a bus with states, but no bus of the network has any. Use ""Kron"" or ""DAE"" for a network without states.")
+        error(msg("GUILDA:LTIresult:NoUnitBus"))
     end
 
     lv_noI2V = tools.vcellfun(@(S) ~isempty(S.A) && ~is_invertible(S.D(:,1:2)), s.c_sysBus);
     if any(lv_noI2V)
-        error("GUILDA:LTIresult:NoI2V", ...
-              "Algorithm ""Feedback"" needs the current of each bus with states to depend on its voltage, but it does not at bus %s. Use ""Kron"" or ""DAE"".", ...
-              num2str(find(lv_noI2V(:)')))
+        error(msg("GUILDA:LTIresult:NoI2V", num2str(find(lv_noI2V(:)'))))
     end
 
     % A bus without states whose current does not depend on V in an invertible way (e.g. a load
@@ -368,9 +361,7 @@ function sys = via_feedback(obj)
         [lv_out, feedout] = ismember(string(sysGC.InputName),  string(sysODE.OutputName));
         [lv_in,  feedin ] = ismember(string(sysGC.OutputName), string(sysODE.InputName));
         if ~all(lv_out) || ~all(lv_in)
-            error("GUILDA:LTIresult:GlobalControllerPort", ...
-                  "The ports of the global controller with states %s are not found in the linearized system.", ...
-                  join(string(sysGC.StateName), ", "))
+            error(msg("GUILDA:LTIresult:GlobalControllerPort", join(string(sysGC.StateName), ", ")))
         end
         sysODE = feedback(sysODE, sysGC, feedin, feedout, +1);
     end
