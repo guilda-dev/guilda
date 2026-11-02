@@ -21,7 +21,7 @@ classdef HessianStub < Component
                          "OPFcost_shutdown",0, "Xaxis",nan, "Yaxis",nan, "Marker","o", ...
                          "MidXaxis","", "MidYaxis","");
             obj@Component("HS1", opt);
-            obj.set_odefcn(obj.r_Hz);
+            obj.set_odefcn();
         end
 
         function [x, u] = get_equilibrium(~, ~, ~, ~, ~)

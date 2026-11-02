@@ -77,12 +77,6 @@ classdef LayerPackage < handle
     end
 
 
-    methods(Access=private)
-        p = findparent(obj) 
-        c = findchildren(obj)
-        str_newtag = validate_tag(obj,str_newtag)
-    end
-
     methods(Access=protected)
         log_edit(obj, log, time, tab)
         reset_edit(obj)
@@ -95,10 +89,10 @@ classdef LayerPackage < handle
         % PowerNetwork overrides this; other layers do nothing.
         end
 
-        function rebuild_odefcn(obj)
-        % Rebuild the f_* handle cache from the current parameters.
+        function set_odefcn(obj)
+        % Build the f_* handle cache from the current parameters and network frequency.
         % Layers that own handles (Component, LocalController, GlobalController)
-        % override this; other layers have nothing to rebuild.
+        % override this; other layers have nothing to build.
             obj.s_edit.l_staleOdefcn = false;
         end
     end
@@ -150,7 +144,24 @@ classdef LayerPackage < handle
         end
 
         function set.str_tag(obj,str_newtag)
-            str_newtag = obj.validate_tag(str_newtag);
+            % A tag that already exists among the siblings gets a number suffix
+            str_newtag = string(str_newtag);
+            if obj.l_managedTag && ~isempty(obj.parent)
+                a_sameLayer = obj.parent.children;
+                l_me  = tools.vcellfun(@(a) a==obj, a_sameLayer);
+                str_sameLayer = string( a_sameLayer(~l_me) );
+                if any(str_sameLayer==str_newtag)
+                    id = 2;
+                    str_modified = str_newtag+num2str(id,"%.3d");
+                    while ismember(str_modified, str_sameLayer)
+                        id = id+1;
+                        str_modified = str_newtag+num2str(id,"%.3d");
+                    end
+                    fprintf("Info : Tag changed due to overlaps detected")
+                    disp(['[ "',char(str_newtag),'" >> "',char(str_modified),'"]'])
+                    str_newtag = str_modified;
+                end
+            end
             str_oldtag = obj.str_tag;
             obj.str_tag = str_newtag;
             % The first assignment (constructor) is not a rename.
