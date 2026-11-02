@@ -665,7 +665,7 @@ flowchart LR
 | Q14 | `remove_branch` の不明なタグをエラーにしますか(ER1) | **はい** | 他の `remove_*` に揃う。help の記述の変更を伴う |
 | Q15 | 未知の CSV 列は警告にしますか、エラーにしますか(TP3) | **警告** | メモ列のある CSV を止めない |
 
-### 実装の状況(基準 `faa2d13`、2026-11-02)
+### 実装の状況(基準 `fe9aa3a`、2026-11-02)
 
 コードと git 履歴から確認できる範囲の記録です。上の表は提案時の質問と推奨としてそのまま残しています。
 
@@ -686,6 +686,8 @@ flowchart LR
 | Q13 | 未決 | `未+GFM`, `未+farm`, `+load/history`, `未実装newclass.m` などは残っています |
 | Q14 | 実装済み(推奨どおり) | `18ab896` の `GUILDA:PowerNetwork:BranchNotFound` |
 | Q15 | 実装済み(推奨どおり) | `e2be0d0` の `GUILDA:import_csv:UnknownColumn` |
+
+文書の案 DC1 は実装済みです。`4d1336e` で `_GUILDAdoc/developer/model-implementation.html` を追加しました。手順、契約と引数の規則、最小の発電機と制御器、`validate` と試験の方法を含みます。Issue #114 は開いています(2026-11-02 に確認)。
 
 提案との違いが 1 つあります。§3 の `SlackCannotBalance`(IN1)は `946ac79` で実装した後になくなり、現在のコードにはありません。現在は `GUILDA:Bus:SlackWithoutQnan` の警告で、残りの電力は第 1 の機器が受け持ちます(`b1131f5`, [v4-migration.md](v4-migration.md) 1.17)。
 

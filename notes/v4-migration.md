@@ -2,7 +2,7 @@
 
 状態: `refactor/design-alignment`(分岐元 `version4.0`)で作業中です。v4 では互換性を壊す変更を認めています。
 
-基準コミットは `faa2d13`(2026-11-02)です。`b69e54b` 以降のコミットを確認し、スクリプトやモデルの作者が対応を要する変更を追記しました。追記した項目は実装とテストで確認しています。それ以前からある記述をすべて再検証したわけではありません。
+基準コミットは `fe9aa3a`(2026-11-02)です。`b69e54b` 以降のコミットを確認し、スクリプトやモデルの作者が対応を要する変更を追記しました。追記した項目は実装とテストで確認しています。それ以前からある記述をすべて再検証したわけではありません。
 
 第 1 章はスクリプト作者向けの変更(1.7–1.15 と 1.17 は v4 の解析 API)、第 2 章はモデル作者向けの変更、第 3 章は計画中の変更、第 4 章は互換性の方針、第 5 章は解析クラスとモデルを書く人への注意です。
 
@@ -905,6 +905,8 @@ there.
 
 ## 2. Changes so far — model authors
 
+新しいモデルの実装手順は `_GUILDAdoc/developer/model-implementation.html` を見てください。
+
 - **Function signatures.** `fcn_dx`, `fcn_I`, `fcn_Y`, `fcn_Mass` take
   `(obj, t, x, V, I, u, param, omega0)`. Declare them with `omega0` in the
   `classdef` too.
@@ -1070,7 +1072,7 @@ lists all of them:
 does not call `Deprecated` outside a hook line. Update both when a hook is
 added.
 
-フックは `faa2d13` の時点で 25 行で、上の表の行数と一致します(`grep -rn "COMPAT(v3)" _GUILDAsystem _GUILDAobject @GUILDA` で数えました。ファイルごとの行数は F10 のテストが検査します)。
+フックは `fe9aa3a` の時点で 25 行で、上の表の行数と一致します(`grep -rn "COMPAT(v3)" _GUILDAsystem _GUILDAobject @GUILDA` で数えました。ファイルごとの行数は F10 のテストが検査します)。
 `Continuation_Power_Flow` and `CsvNetHandler` are old names; they live
 entirely in `_VersionSupport/` and need no hook. CSV import ignores a bus
 `baseMVA` column simply by not reading it (no compat code).

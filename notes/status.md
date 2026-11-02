@@ -1,12 +1,12 @@
 # 再設計の状況
 
-ブランチは `refactor/design-alignment`(分岐元 `version4.0`)です。この文書の基準コミットは `faa2d13`、日付は 2026-11-02 です。
+ブランチは `refactor/design-alignment`(分岐元 `version4.0`)です。この文書の基準コミットは `fe9aa3a`、日付は 2026-11-02 です。
 
 移行の方法は [v4-migration.md](v4-migration.md) にあります。この文書には、テスト結果、未決事項、数値の変化の記録を書きます。
 
 ## テスト
 
-**確認済み(`faa2d13`、2026-11-02、MATLAB R2026a):** 想定外の失敗はありません。
+**確認済み(`faa2d13` で実行、2026-11-02、MATLAB R2026a):** 想定外の失敗はありません。`faa2d13..fe9aa3a` は `_GUILDAdoc/` のみの変更でコードは同じなので、`fe9aa3a` では再実行していません。
 
 ```
 合計 613 件: PASS 612 / KNOWN 0 / FAIL 0 / FIXED? 0 / SKIP 1   (803 s)
@@ -57,7 +57,7 @@ matlab -batch "DebugScript.run_all"
 
 ## 未決事項
 
-状態は `faa2d13` のコードと履歴で確認しました。
+状態は `fe9aa3a` のコードと履歴で確認しました。
 
 ### チュートリアル
 
@@ -65,6 +65,11 @@ matlab -batch "DebugScript.run_all"
 - **実行での確認は古い基準のものです:** `df3f709` の調査で、`Step2` と早見表の呼び出しは実行すると失敗しました。`power_network`, `add_controller_global`, `set_component` などの旧 API です(詳細は [model-building-workflow.md](model-building-workflow.md))。`faa2d13` では再実行していません。
 - **更新の途中のブランチ:** `docs/tutorial-steps-1-3-v4`, `docs/tutorial-steps-4-6-v4`, `docs/tutorial-classmanual-v4` は仕様が固まるまで保留です。統合ブランチに対して大きく遅れており(`docs/tutorial-steps-1-3-v4` で 375 コミット)、リモートには公開されていません。再開するときは、[v4-migration.md](v4-migration.md) の 1.4, 1.6, 1.12, 1.17 と照合してください。
 - **読者への注意:** 現時点で、チュートリアルを v4 の使い方の手本にしないでください。
+
+### モデル実装の文書
+
+- **追加済み(確認済み):** `_GUILDAdoc/developer/model-implementation.html` は `4d1336e` で追加しました。新しいモデルの実装手順、契約、最小の発電機と制御器、`validate` による確認を説明しています。
+- Issue #114「Document how to implement new models」は開いています(2026-11-02 に確認)。
 
 ### 互換コードの一括削除
 

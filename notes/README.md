@@ -23,6 +23,8 @@
 | `simulate` | [simulate-review-workflow.md](simulate-review-workflow.md)(流れ、データ、編集、副作用)、[simulate-review-runtime.md](simulate-review-runtime.md)(引数、イベント、区間、内部構造)、[simulate-review-measurements.md](simulate-review-measurements.md)(挙動と性能の実測)、[simulate-review-measurements.m](simulate-review-measurements.m)(実測スクリプト) | [simulate-improvements.md](simulate-improvements.md) |
 | モデル構築 | [model-building-workflow.md](model-building-workflow.md)(既存クラスからの組み立て)、[model-building-extension.md](model-building-extension.md)(新しいクラスの実装) | [model-building-improvements.md](model-building-improvements.md) |
 
+調査文書が参照する `GUILDA_主機能UX定義シート.xlsx` はリポジトリに含まれていません。
+
 ## 他の内容の置き場所
 
 - `_GUILDAdoc/` の HTML: 利用者と将来の開発者向けの恒久的な文書です。GUILDA の仕組みを説明し、この作業の進捗は書きません。
