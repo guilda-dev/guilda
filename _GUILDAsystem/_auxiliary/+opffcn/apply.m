@@ -31,8 +31,7 @@ function prob = apply(obj, prob, str_method, s_var)
         cost = call(s.Cost, v, p, str_obj, "Cost");
         if ~(isscalar(cost) && (isa(cost, "optim.problemdef.OptimizationExpression") ...
                                 || (isnumeric(cost) && isreal(cost))))
-            error("GUILDA:opffcn:InvalidCost", ...
-                  "The Cost handle of %s must return a real scalar (an optimization expression or a number).", str_obj)
+            error(msg("GUILDA:apply:InvalidCost", str_obj))
         end
         prob.Objective.GenCost = prob.Objective.GenCost + cost;
     end
@@ -40,16 +39,14 @@ function prob = apply(obj, prob, str_method, s_var)
     if ~isempty(s.Constraint)
         con = call(s.Constraint, v, p, str_obj, "Constraint");
         if ~(isstruct(con) && isscalar(con))
-            error("GUILDA:opffcn:InvalidConstraint", ...
-                  "The Constraint handle of %s must return a struct of named constraints, e.g. struct(""Vband"", v.V <= 1.02).", str_obj)
+            error(msg("GUILDA:apply:InvalidConstraint", str_obj))
         end
         for str_name = string(fieldnames(con)).'
             c = con.(str_name);
             if ~isa(c, "optim.problemdef.OptimizationConstraint") ...
                     && ~isa(c, "optim.problemdef.OptimizationEquality") ...
                     && ~isa(c, "optim.problemdef.OptimizationInequality")
-                error("GUILDA:opffcn:InvalidConstraint", ...
-                      "Field ""%s"" of the Constraint handle of %s is not a constraint (use ==, <= or >=).", str_name, str_obj)
+                error(msg("GUILDA:apply:InvalidConstraintField", str_name, str_obj))
             end
             if isa(obj, "PowerNetwork")
                 str_label = str_name;
@@ -57,8 +54,7 @@ function prob = apply(obj, prob, str_method, s_var)
                 str_label = str_name + "_" + str_obj;
             end
             if isfield(prob.Constraints, str_label)
-                error("GUILDA:opffcn:DuplicateName", ...
-                      "Constraint name ""%s"" (from %s) is already used in the OPF problem.", str_label, str_obj)
+                error(msg("GUILDA:apply:DuplicateName", str_label, str_obj))
             end
             prob.Constraints.(str_label) = c;
         end

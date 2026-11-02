@@ -44,7 +44,7 @@ set_slack(net.a_Bus{1});
 assert(set_slack(net.a_Bus{1}) == "")
 lastwarn("", "");
 evalc("net.a_Bus{1}.l_isSlack = false;");
-[~, str_id] = lastwarn;
+str_id = DebugScript.helper.msg_id();
 assert(string(str_id) == "")
 
 
@@ -66,7 +66,7 @@ net.a_Bus{1}.add_component("load-power", "P",-0.1, "Q",-0.05);
 set_slack(net.a_Bus{1});
 lastwarn("", "");
 evalc("net.a_Bus{1}.remove_component(string(net.a_Bus{1}.a_Component{1}));");
-[~, str_id] = lastwarn;
+str_id = DebugScript.helper.msg_id();
 assert(string(str_id) == "")
 DebugScript.helper.quiet(@() net.initialize);
 assert(~net.s_edit.l_staleEquilibrium && kcl_residual(net) < 1e-8)
@@ -79,14 +79,14 @@ assert(abs(real(load1.c_Vequilibrium*conj(load1.c_Iequilibrium)) - load1.para_po
 set_slack(net.a_Bus{1});
 lastwarn("", "");
 evalc("net.a_Bus{1}.remove_component(string(net.a_Bus{1}.a_Component{1}));");
-[~, str_id] = lastwarn;
+str_id = DebugScript.helper.msg_id();
 assert(string(str_id) == "")
 ME = [];
 try
     DebugScript.helper.quiet(@() net.initialize);
 catch ME
 end
-assert(~isempty(ME) && ME.identifier == "GUILDA:PowerNetwork:InitializeNotEquilibrium")
+assert(~isempty(ME) && DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeNotEquilibrium")
 assert(net.s_edit.l_staleEquilibrium)
 
 
@@ -95,7 +95,7 @@ function [str_id, str_msg] = set_slack(bus)
 % スラックに指定し、出た警告の ID と文を返す (なければ "")
     lastwarn("", "");
     evalc("bus.l_isSlack = true;");
-    [str_msg, str_id] = lastwarn;
+    [str_msg, str_id] = lastwarn(); str_id = DebugScript.helper.msg_id(str_msg, str_id);
     str_msg = string(str_msg);
     str_id  = string(str_id);
 end

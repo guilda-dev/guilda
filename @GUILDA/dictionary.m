@@ -118,8 +118,7 @@ function data = make_classlist(data, cell_dirlist, l_disp)
         try
             superclass_list = superclasses(filename);
         catch ME
-            warning("GUILDA:dictionary:ClassNotLoaded", ...
-                "Class %s could not be loaded and is not in the key list: %s", filename, ME.message);
+            warning(msg("GUILDA:dictionary:ClassNotLoaded", filename, ME.message));
             superclass_list = {};
         end
 

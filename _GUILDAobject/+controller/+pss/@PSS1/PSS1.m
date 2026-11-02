@@ -19,7 +19,7 @@ classdef (Sealed = true) PSS1 < controller.pss.abstract
 % gen = net.a_Bus{1}.a_Component{1};
 % gen.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1", kpss=5));
 % net.initialize;
-% ev  = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B007");
+% ev  = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B007");
 % sol = net.simulate([0,10], ev);
 % ```
 %
@@ -60,7 +60,7 @@ classdef (Sealed = true) PSS1 < controller.pss.abstract
             obj.sv_y    = "Vpss";
             obj.sv_para = ["kpss"; "tWS"; "tn1"; "td1"; "tn2"; "td2"; "Vpss_min"; "Vpss_max"];
 
-            obj.set_odefcn(obj.r_Hz);
+            obj.set_odefcn();
 
         end        
         

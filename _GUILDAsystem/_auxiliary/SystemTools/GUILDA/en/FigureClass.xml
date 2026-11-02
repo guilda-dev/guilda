@@ -1,0 +1,7 @@
+<!--This is an XML file containing error messages related to the class "FigureClass".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="FilePathEmpty">filepath is empty</entry>
+        <entry key="InvalidTypeSave">type_save is invalid</entry>
+    </message>
+</rsccat>

@@ -1,0 +1,9 @@
+<!--This is an XML file containing error messages related to the file "network_to_mpc".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="LoadNoPQ">network_to_mpc: load {0} has no fixed P and Q (tab_parameter.powerflow).</entry>
+        <entry key="BranchLimit">network_to_mpc: branch {0} has a finite {1} (only Smax maps to RATE_A).</entry>
+        <entry key="BranchNoImpedance">network_to_mpc: branch {0} has a zero impedance or no coupling.</entry>
+        <entry key="BranchAdmittance">network_to_mpc: the admittance matrix of branch {0} does not fit the MATPOWER branch model.</entry>
+    </message>
+</rsccat>

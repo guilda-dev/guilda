@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the class "PFCsolver".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="NotConverged">{0}</entry>
+    </message>
+</rsccat>

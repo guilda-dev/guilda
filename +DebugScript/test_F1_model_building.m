@@ -42,17 +42,17 @@ net = PowerNetwork();
 clear Deprecated
 lastwarn("");
 evalc('bus = net.add_bus("baseMVA", 100);');
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:Deprecated:BusBaseMVA")
 assert(~ismember("baseMVA", string(bus.tab_parameter.operation.Properties.VariableNames)))
 lastwarn("");
 evalc('net.add_bus("baseMVA", 50);');
-[str_warn, id] = lastwarn();
+[str_warn, id] = lastwarn(); id = DebugScript.helper.msg_id(str_warn, id);
 assert(string(id) == "GUILDA:Deprecated:BusBaseMVAMismatch" && contains(str_warn, "50") && contains(str_warn, "100"))
 assert(net.tab_parameter.base.baseMVA == 100 && numel(net.a_Bus) == 2)
 lastwarn("");
 evalc('net.add_bus("baseMVA", 50);');
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(isempty(id), "警告は1セッションに1回")
 
 
@@ -105,7 +105,7 @@ try
     net.add_branch("pi", ["B001","B099"]);
     error("DebugScript:noError", "存在しない母線タグがエラーにならない")
 catch ME
-    assert(ME.identifier ~= "DebugScript:noError", ME.message)
+    assert(DebugScript.helper.msg_id(ME) ~= "DebugScript:noError", ME.message)
 end
 
 
@@ -188,7 +188,7 @@ gen.add_local_controller(avr1, pss1)
 avr2 = controller.avr.AVR_DC1("avr2");
 lastwarn("");
 evalc("gen.add_local_controller(avr2)");
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:Component:ReplaceController")
 assert(numel(gen.a_LocalController) == 1 && gen.a_LocalController{1} == avr2)
 assert(numel(avr2.a_LocalController) == 1 && avr2.a_LocalController{1} == pss1)
@@ -238,7 +238,7 @@ try
     gen.add_local_controller(controller.pss.PSS1("pss"));
     error("DebugScript:noError", "PSS が AVR 無しで追加できてしまった")
 catch ME
-    assert(ME.identifier ~= "DebugScript:noError", ME.message)
+    assert(DebugScript.helper.msg_id(ME) ~= "DebugScript:noError", ME.message)
 end
 assert(isempty(gen.a_LocalController))
 
@@ -276,7 +276,7 @@ try
     evalc("net.a_Bus{2}.a_Component{1}.add_local_controller(controller.local_LQR(""lqr3"", Input=""Vref""))");
     error("DebugScript:noError", "存在しない入力 Vref を駆動する LQR が付いてしまった")
 catch ME
-    assert(ME.identifier == "GUILDA:Component:ControllerOutput", ME.message)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:Component:ControllerOutput", ME.message)
 end
 
 
@@ -303,7 +303,7 @@ for str = ["X","Y"]
         evalc("gen.add_local_controller(DebugScript.helper.ObserveStub(str))");
         error("DebugScript:noError", "入力 " + str + " がエラーにならない")
     catch ME
-        assert(ME.identifier == "GUILDA:LocalController:ReservedInput", ME.identifier)
+        assert(DebugScript.helper.msg_id(ME) == "GUILDA:LocalController:ReservedInputNames", DebugScript.helper.msg_id(ME))
         assert(contains(ME.message, "Xall") && contains(ME.message, "Yall"))
     end
 end
@@ -332,7 +332,7 @@ try
     gen.add_local_controller(controller.pss.PSS1("pss2"));
     error("DebugScript:noError", "LQR の下に PSS が付いてしまった")
 catch ME
-    assert(ME.identifier ~= "DebugScript:noError", ME.message)
+    assert(DebugScript.helper.msg_id(ME) ~= "DebugScript:noError", ME.message)
 end
 
 % AVR を付け直すと LQR が外れる
@@ -379,7 +379,7 @@ try
     controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002", alpha=[1;1;1]);
     error("DebugScript:noError", "台数と合わない alpha がエラーにならない")
 catch ME
-    assert(ME.identifier == "GUILDA:broadcast_PI_AGC:InvalidSize", ME.message)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:broadcast_PI_AGC:InvalidSize", ME.message)
 end
 
 
@@ -435,7 +435,7 @@ try
     net.a_Bus{5}.remove_component("NoSuchTag");
     error("DebugScript:noError", "存在しないタグの削除がエラーにならない")
 catch ME
-    assert(ME.identifier ~= "DebugScript:noError", ME.message)
+    assert(DebugScript.helper.msg_id(ME) ~= "DebugScript:noError", ME.message)
 end
 
 
@@ -514,7 +514,7 @@ try
     net.add_global_controller(agc2);
     error("DebugScript:noError", "使用中のタグの大域制御器を追加できてしまう")
 catch ME
-    assert(ME.identifier == "GUILDA:PowerNetwork:GconTagInUse", ME.message)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:GconTagInUse", ME.message)
     assert(contains(ME.message, "'agc'"), ME.message)
 end
 assert(numel(net.a_GlobalController) == 1 && isempty(agc2.a_PowerNetwork))
@@ -536,7 +536,7 @@ try
     net.remove_bus("B099");
     error("DebugScript:noError", "存在しない母線の削除がエラーにならない")
 catch ME
-    assert(ME.identifier == "GUILDA:PowerNetwork:BusNotFound", ME.message)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:BusNotFound", ME.message)
 end
 
 % 送電線がつながった母線は、既定ではエラー (系統は変わらない)
@@ -545,7 +545,7 @@ try
     net.remove_bus("B005");
     error("DebugScript:noError", "送電線がつながった母線の削除がエラーにならない")
 catch ME
-    assert(ME.identifier == "GUILDA:PowerNetwork:BusHasBranches", ME.message)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:BusHasBranches", ME.message)
 end
 assert(numel(net.a_Bus) == 9 && numel(net.a_Branch) == n_branch)
 
@@ -568,7 +568,7 @@ try
     net.remove_bus("B001", "RemoveBranches", true);
     error("DebugScript:noError", "大域制御器が制御する機器のある母線の削除がエラーにならない")
 catch ME
-    assert(ME.identifier == "GUILDA:PowerNetwork:BusHasControlledUnits", ME.message)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:BusHasControlledUnits", ME.message)
 end
 assert(numel(net.a_Bus) == 14)
 
@@ -588,7 +588,7 @@ try
     net.remove_global_controller("agc");
     error("DebugScript:noError", "存在しない大域制御器の削除がエラーにならない")
 catch ME
-    assert(ME.identifier == "GUILDA:PowerNetwork:GconNotFound", ME.message)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:GconNotFound", ME.message)
 end
 
 

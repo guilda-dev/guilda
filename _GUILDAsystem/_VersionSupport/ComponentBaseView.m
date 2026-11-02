@@ -43,8 +43,7 @@ classdef ComponentBaseView < handle
         function set.Hz(obj, val)
             bus = obj.a_Comp.a_Bus;
             if isempty(bus) || isempty(bus.a_PowerNetwork)
-                error('GUILDA:Deprecated:ComponentBaseHzNoNetwork', '%s', ...
-                      Deprecated("ComponentBaseHzNoNetwork", obj.a_Comp.str_tag));
+                error(msg("GUILDA:ComponentBaseView:ComponentBaseHzNoNetwork", char(string(obj.a_Comp.str_tag))));
             end
             net = bus.a_PowerNetwork;
             Deprecated("ComponentBaseHzSet", net.str_tag, val);
@@ -74,7 +73,7 @@ classdef ComponentBaseView < handle
             %
             % comp.para_base.Hz = x is forwarded by the view itself (it is a handle).
             if ~isa(val, "ComponentBaseView")
-                error('GUILDA:Deprecated:ComponentBaseHz', '%s', Deprecated("ComponentBaseHz"));
+                error(msg("GUILDA:ComponentBaseView:ComponentBaseHz"));
             end
         end
     end

@@ -55,8 +55,7 @@ function add_local_controller(obj, varargin)
                     obj.log_edit(obj.str_tag+" <<-Add--- "+new_con.str_tag, "Topology");
                 else
                     old_avr = obj.a_LocalController{1};
-                    warning('GUILDA:Component:ReplaceController', '%s', ...
-                            msg('GUILDA:Component:ReplaceController', label(new_con), char(new_con.str_tag), char(old_avr.str_tag), char(obj.str_tag)))
+                    warning(msg("GUILDA:Component:ReplaceController", label(new_con), char(new_con.str_tag), char(old_avr.str_tag), char(obj.str_tag)))
                     a_pss = old_avr.a_LocalController;
                     old_avr.remove_local_controller();
                     old_avr.set_parent([])
@@ -75,20 +74,18 @@ function add_local_controller(obj, varargin)
 
             case "pss"
                 if isempty(obj.a_LocalController)
-                    error('GUILDA:Component:NotExtAvr', '%s', msg('GUILDA:Component:NotExtAvr'))
+                    error(msg("GUILDA:Component:NotExtAvr"))
                 end
                 avr = obj.a_LocalController{1};
                 if avr.key ~= "avr"
-                    error('GUILDA:Component:PssParentKey', '%s', ...
-                          msg('GUILDA:Component:PssParentKey', char(new_con.str_tag), char(avr.str_tag), char(avr.key), char(obj.str_tag)))
+                    error(msg("GUILDA:Component:PssParentKey", char(new_con.str_tag), char(avr.str_tag), char(avr.key), char(obj.str_tag)))
                 end
                 if isempty(avr.a_LocalController)
                     obj.log_edit(obj.str_tag+" <<-Add--- "+new_con.str_tag, "Topology");
                 else
                     old_pss = avr.a_LocalController{1};
                     if old_pss ~= new_con
-                        warning('GUILDA:Component:ReplaceController', '%s', ...
-                                msg('GUILDA:Component:ReplaceController', "PSS", char(new_con.str_tag), char(old_pss.str_tag), char(avr.str_tag)))
+                        warning(msg("GUILDA:Component:ReplaceController", "PSS", char(new_con.str_tag), char(old_pss.str_tag), char(avr.str_tag)))
                         old_pss.set_parent([])
                     end
                     obj.log_edit(obj.str_tag+" <<-replace--- "+new_con.str_tag+" (was "+old_pss.str_tag+")", "Topology");
@@ -114,15 +111,13 @@ function check_parent(con, comp)
         l_same = parent == comp;
     end
     if ~l_same
-        error('GUILDA:Component:SharedController', '%s', ...
-              msg('GUILDA:Component:SharedController', label(con), char(con.str_tag), char(parent.str_tag), char(comp.str_tag)))
+        error(msg("GUILDA:Component:SharedController", label(con), char(con.str_tag), char(parent.str_tag), char(comp.str_tag)))
     end
 end
 
 function check_key(con)
     if ~ismember(con.key, ["avr", "pss", "local"])
-        error('GUILDA:Component:InvalidControllerKey', '%s', ...
-              msg('GUILDA:Component:InvalidControllerKey', char(con.str_tag), char(con.key)))
+        error(msg("GUILDA:Component:InvalidControllerKey", char(con.str_tag), char(con.key)))
     end
 end
 
@@ -149,8 +144,7 @@ function check_output(con, target)
     % target: the object whose inputs sv_u the outputs of the controller replace
     sv_miss = setdiff(string(con.sv_y), string(target.sv_u), "stable");
     if ~isempty(sv_miss)
-        error('GUILDA:Component:ControllerOutput', '%s', ...
-              msg('GUILDA:Component:ControllerOutput', strjoin(cellstr(sv_miss(:)'), ', '), char(con.str_tag), ...
+        error(msg("GUILDA:Component:ControllerOutput", strjoin(cellstr(sv_miss(:)'), ', '), char(con.str_tag), ...
                   char(target.str_tag), strjoin(cellstr(string(target.sv_u(:)')), ', ')))
     end
 end

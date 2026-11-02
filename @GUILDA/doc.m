@@ -116,8 +116,7 @@ function open_class_page(str_doc_root, str_class_name)
 
     fid = fopen(str_redirect_path, 'w', 'n', 'UTF-8');
     if fid == -1
-        error('GUILDA:doc:RedirectFile', ...
-            'Unable to create the documentation redirect file.');
+        error(msg("GUILDA:doc:RedirectFile"));
     end
     file_cleanup = onCleanup(@() fclose(fid));
     fprintf(fid, '%s', str_redirect_html);

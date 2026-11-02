@@ -1,0 +1,10 @@
+<!--This is an XML file containing error messages related to the file "export_class_database".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="NoClassExported">No class documentation was exported.</entry>
+        <entry key="ValidationFailed">Documentation validation failed with {0} error(s).</entry>
+        <entry key="CallGraphFailed">The call graph was not generated: {0}</entry>
+        <entry key="FileOpenFailed">Failed to open output file: {0}</entry>
+        <entry key="ClassNotFound">Class not found on the MATLAB path: {0}</entry>
+    </message>
+</rsccat>

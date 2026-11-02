@@ -14,7 +14,7 @@ function sv_issue = check_model_contract(obj, opt)
     try
         flag = obj.validate(false);
     catch ME
-        sv_issue = "validate stopped: " + ME.identifier + " " + strtok(ME.message, newline);
+        sv_issue = "validate stopped: " + DebugScript.helper.msg_id(ME) + " " + strtok(ME.message, newline);
         return
     end
 

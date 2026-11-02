@@ -64,14 +64,14 @@ assert(max(abs(tab_Y{str_Bus,str_Bus}*net.cv_Vequilibrium - net.cv_Iequilibrium)
 %% A network without buses names the cause
 net = PowerNetwork("NoBuses");
 ME = powerflow_error(net);
-assert(ME.identifier == "GUILDA:PowerNetwork:NoBus", ME.identifier)
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:NoBus", DebugScript.helper.msg_id(ME))
 assert(contains(ME.message, "NoBuses") && ~contains(ME.message, "BUS001"), ME.message)
 
 
 %% A network without components names the cause
 net = three_bus();
 ME = powerflow_error(net);
-assert(ME.identifier == "GUILDA:PowerNetwork:NoSlackCandidate", ME.identifier)
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:NoSlackCandidate", DebugScript.helper.msg_id(ME))
 assert(contains(ME.message, "add_component") && ~contains(ME.message, "BUS001"), ME.message)
 assert(isempty(slack_index(net)))
 
@@ -83,7 +83,7 @@ try
     DebugScript.helper.quiet(@() net.initialize);
 catch ME
 end
-assert(~isempty(ME) && ME.identifier == "GUILDA:PowerNetwork:NoBus")
+assert(~isempty(ME) && DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:NoBus")
 
 net = three_bus();
 ME = [];
@@ -91,7 +91,7 @@ try
     DebugScript.helper.quiet(@() net.initialize);
 catch ME
 end
-assert(~isempty(ME) && ME.identifier == "GUILDA:PowerNetwork:NoSlackCandidate")
+assert(~isempty(ME) && DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:NoSlackCandidate")
 assert(isempty(slack_index(net)))
 
 
@@ -105,7 +105,7 @@ try
     DebugScript.helper.quiet(@() net.initialize(MaxIteration=1));
 catch ME
 end
-assert(~isempty(ME) && ME.identifier == "GUILDA:PowerNetwork:InitializePowerflowFailed")
+assert(~isempty(ME) && DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializePowerflowFailed")
 assert(isempty(slack_index(net)))
 
 
@@ -166,7 +166,7 @@ function str_id = quiet_powerflow(net)
     lastwarn("", "");
     [~, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
     assert(flag > 0)
-    [~, str_id] = lastwarn;
+    str_id = DebugScript.helper.msg_id();
     str_id = string(str_id);
 end
 

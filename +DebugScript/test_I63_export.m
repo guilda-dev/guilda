@@ -9,7 +9,7 @@ net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr"), 
 net.a_Bus{2}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr"));
 net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002"));
 DebugScript.helper.quiet(@() net.initialize);
-ev = odeEventSet("fault", net, "TimeSpan", [0.1,0.15], "FaultBus", "B008");
+ev = ODEevent("fault", net, "TimeSpan", [0.1,0.15], "FaultBus", "B008");
 str_dir = tempname;  mkdir(str_dir);
 c_dir = onCleanup(@() rmdir(str_dir, "s"));
 tab_ctrl = net.get_variable_map();
@@ -25,7 +25,7 @@ for k = 1:numel(c_case)
         net.simulate([0,1e6], Export=c_case{k}, TimeLimit=Inf);
         error("DebugScript:noError", "エラーにならない: %d", k)
     catch ME
-        assert(ME.identifier == "GUILDA:PowerNetwork:SimulateExport", ME.message)
+        assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:SimulateExport", ME.message)
     end
     assert(toc(t_start) < 5, "計算前に止まっていない: %d", k)
 end

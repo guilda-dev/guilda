@@ -18,10 +18,9 @@ function parameter_error(obj, str_key, varargin) %#ok<INUSD>
         varargin               % Values for the placeholders of the message.
     end
 
-    str_id = char("GUILDA:Component:"+str_key);
     if str_key == "GeneratorQIgnored"
-        warning(str_id, '%s', msg(str_id, varargin{:}))
+        warning(msg("GUILDA:Component:GeneratorQIgnored", varargin{:}))
     else
-        error(str_id, '%s', msg(str_id, varargin{:}))
+        error(msg("GUILDA:Component:" + str_key, varargin{:}))
     end
 end

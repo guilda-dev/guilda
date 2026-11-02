@@ -10,7 +10,7 @@ function tab = model_classes(group)
     end
     lastwarn("");
     list = GUILDA.dictionary("PowerSystemModel", "disp", false, "output", group);
-    [str_warn, str_id] = lastwarn();
+    [str_warn, str_id] = lastwarn(); str_id = DebugScript.helper.msg_id(str_warn, str_id);
     if str_id == "GUILDA:dictionary:ClassNotLoaded"
         error("DebugScript:ModelNotLoaded", "%s", str_warn);
     end

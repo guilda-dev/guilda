@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the file "v3_nonunit_range".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="NonUnit">NonUnit = [{0}] names a bus that does not exist; give indices of net.a_Bus (1 to {1}).</entry>
+    </message>
+</rsccat>

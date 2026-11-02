@@ -1,7 +1,7 @@
 function str_mode = v3_ode_reporter(val)
-% Convert a value set to the old odeSimulator property Reporter.
+% Convert a value set to the old ODEsolver property Reporter.
 %
-% v3 compatibility hook of odeSimulator.Reporter: the property was renamed Progress.
+% v3 compatibility hook of ODEsolver.Reporter: the property was renamed Progress.
 % Setting net.solver_ODE.Reporter warns once (GUILDA:Deprecated:SimulatorReporter) and
 % returns the value to store in Progress. Reading Reporter returns Progress (no warning).
 %
@@ -9,9 +9,9 @@ function str_mode = v3_ode_reporter(val)
 %
 % - `val` — Value set to Reporter: "none", "disp" or "dialog".
 %
-% See also odeSimulator
+% See also ODEsolver
     arguments (Output)
-        str_mode   % Value for odeSimulator.Progress.
+        str_mode   % Value for ODEsolver.Progress.
     end
     Deprecated("SimulatorReporter");
     str_mode = string(val);

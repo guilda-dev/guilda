@@ -4,10 +4,10 @@ function reset_solver(obj)
 % Replaces solver_PF, solver_OPF, solver_CPF, solver_ODE and solver_LIN with new
 % solver objects, which discards the stored defaults changed on them.
 %
-% See also PowerFlowCalculation, OptimalPowerFlow, ContinuationPowerFlow, odeSimulator, odeLinearizer
-    obj.solver_PF  = PowerFlowCalculation();
-    obj.solver_OPF = OptimalPowerFlow();
-    obj.solver_CPF = ContinuationPowerFlow();
-    obj.solver_ODE = odeSimulator();
-    obj.solver_LIN = odeLinearizer();
+% See also PFCsolver, OPFsolver, CPFsolver, ODEsolver, LTIsolver
+    obj.solver_PF  = PFCsolver();
+    obj.solver_OPF = OPFsolver();
+    obj.solver_CPF = CPFsolver();
+    obj.solver_ODE = ODEsolver();
+    obj.solver_LIN = LTIsolver();
 end

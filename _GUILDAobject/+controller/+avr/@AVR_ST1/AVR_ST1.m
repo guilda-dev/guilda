@@ -22,7 +22,7 @@ classdef (Sealed = true) AVR_ST1 < controller.avr.abstract
 % gen = net.a_Bus{1}.a_Component{1};
 % gen.add_local_controller(controller.avr.AVR_ST1("avr1", kap=30), controller.pss.PSS1("pss1"));
 % net.initialize;
-% ev  = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B007");
+% ev  = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B007");
 % sol = net.simulate([0,10], ev);
 % ```
 %
@@ -60,7 +60,7 @@ classdef (Sealed = true) AVR_ST1 < controller.avr.abstract
             obj.sv_y    = "Vfield";
             obj.sv_para = ["ttr"; "Vap_max"; "Vap_min"; "kap"; "tap"; "kst"; "tst"];  
 
-            obj.set_odefcn(obj.r_Hz)
+            obj.set_odefcn()
         end        
         
         function get_equilibrium(obj, V, u)                   
@@ -80,7 +80,7 @@ classdef (Sealed = true) AVR_ST1 < controller.avr.abstract
             Vap_st = u(2);            
             
             if Vap_st <= Vap_min || Vap_st >= Vap_max
-                error('GUILDA:AVR_ST1:InvalidValueRange', '%s', msg('GUILDA:AVR_ST1:InvalidValueRange', char(obj.str_tag), num2str(Vap_st), num2str(Vap_min), num2str(Vap_max)))
+                error(msg("GUILDA:AVR_ST1:InvalidValueRange", char(obj.str_tag), num2str(Vap_st), num2str(Vap_min), num2str(Vap_max)))
             end
 
             Vst_st  = 0;
