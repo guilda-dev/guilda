@@ -396,7 +396,7 @@ DebugScript.helper.quiet(@() net.initialize);
 K60 = lqr.K;
 lastwarn("");
 evalc("net.tab_parameter.base.Hz = 0;");
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:local_LQR:RedesignFailed" && isequal(lqr.K, K60))
 assert(DebugScript.helper.handle_Hz(last) == 0 && net.s_edit.l_staleEquilibrium)
 assert(net.tab_editLog.log(1) == "edit Hz" && contains(net.tab_editLog.log(end), "redesign failed"))

@@ -145,7 +145,7 @@ classdef local_LQR < LocalController
                     % A Hz edit runs in a listener, where an error is only a warning and would
                     % stop the rebuild of the other layers. K stays for the old frequency, so the
                     % record makes the equilibrium stale and analyses ask for net.initialize.
-                    warning("GUILDA:local_LQR:RedesignFailed", "%s: K was not redesigned for %g Hz: %s", obj.str_tag, obj.r_Hz, ME.message)
+                    warning(msg("GUILDA:local_LQR:RedesignFailed", obj.str_tag, sprintf("%g", obj.r_Hz), ME.message))
                     obj.set_odefcn(obj.r_Hz);
                     obj.log_edit(obj.str_tag + " redesign failed", "Parameter(dynamics)");
                 end
