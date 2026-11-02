@@ -35,9 +35,11 @@ classdef IEEJ_EAST10 < PowerNetwork
 %   - `D = 0`: the DG field of the source is blank.
 %   - The armature time constant `Ta` has no counterpart in gen-park and is not used.
 % - The AVR is the rotating-exciter model LAT=1 of appendix figure 1.1, as
-%   controller.avr.AVR_DC1 with `ttr = 0`, `tap = 0.2`, `kap = 100`, `tex = 2`,
-%   `aex1 = 1`, `aex2 = 0`, `tst = 0.5`, `kst = 0.1` and `Vap` limits of +-10000 (the
-%   +-100 limit of the first lag times `kap`). The linear part is the same.
+%   controller.avr.AVR_DC1 with `ttr = 0`, `kap = 1`, `tap = 0.2`, `Vap_max = 100`,
+%   `Vap_min = -100`, `tex = 0.02`, `aex1 = 0.01`, `aex2 = bex = 0`, `tst = 0.5`,
+%   `kst = 0.1`. `Vap` is the output of the first lag, with its +-100 limit, and
+%   `0.02*dVfld/dt = -0.01*Vfld + Vap` is the exciter `100/(1 + 2*s)`, so the linear part
+%   is the same. The field voltage setting EFS/100 of the figure is part of `Vref` here.
 %   The limit `0 <= EF <= 4` of LAT=1 is not modeled: AVR_DC1 has no limit on `Vfield`.
 %   In simulations of table 4.3 the unlimited EF reached 7.9.
 % - The source's PSS variant LAT=102 is not part of the base case and is not included.
@@ -62,7 +64,7 @@ classdef IEEJ_EAST10 < PowerNetwork
 % - The long-period oscillation is about 3.0 s (peak) and 2.1 s (night); the report
 %   states about 2 s and 3 s for its model.
 % - For the 44 cases of table 4.3 (70 ms three-phase fault at the From end, then opening
-%   the circuits), the stable or out-of-step result agreed in 35. odeEventSet cannot
+%   the circuits), the stable or out-of-step result agreed in 35. ODEevent cannot
 %   open a branch, so these used a separate integrator of the same equations outside
 %   this class; net.simulate gives only the bus fault.
 %
@@ -73,7 +75,7 @@ classdef IEEJ_EAST10 < PowerNetwork
 % net = network.IEEJ_EAST10(Section="night");
 % res = net.calculate_powerflow();
 % net = network.IEEJ_EAST10();
-% ev  = odeEventSet("fault", net, "TimeSpan", [1,1.07], "FaultBus", "B036");
+% ev  = ODEevent("fault", net, "TimeSpan", [1,1.07], "FaultBus", "B036");
 % sol = net.simulate([0,10], ev);
 % ```
 %
