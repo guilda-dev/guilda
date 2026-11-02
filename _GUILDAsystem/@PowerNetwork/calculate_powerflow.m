@@ -1,5 +1,5 @@
 function [result, flag, output] = calculate_powerflow(obj, varargin)
-% Calculate the power flow of the network and return a PowerFlowResult.
+% Calculate the power flow of the network and return a PFCresult.
 %
 % Calculates the power flow of the network. The settings are the stored defaults of
 % net.solver_PF; Name-Value options override them for this call only (net.solver_PF is
@@ -8,7 +8,7 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
 % Q = NaN, otherwise the first bus that has a component (GUILDA:Bus:SlackWithoutQnan).
 % A network without buses stops with GUILDA:PowerNetwork:NoBus, and a network whose
 % buses have no components with GUILDA:PowerNetwork:NoSlackCandidate.
-% Accepted options are the names in PowerFlowCalculation.OptionMap plus Plot and Export;
+% Accepted options are the names in PFCsolver.OptionMap plus Plot and Export;
 % any other name stops with GUILDA:resolve_options:UnknownName.
 %
 % Name-Value options:
@@ -27,7 +27,7 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
 % res = net.calculate_powerflow(Method="dynamic", Tolerance=1e-8, Plot=true);
 % ```
 %
-% See also PowerFlowResult, PowerFlowCalculation, PowerNetwork.initialize
+% See also PFCresult, PFCsolver, PowerNetwork.initialize
     arguments (Output)
         result   % Bus voltages, injections and branch flows of the solution.
         flag     % exitflag of fsolve ("algebraic", positive = converged) or convergence ("dynamic").
@@ -61,11 +61,11 @@ end
 function bus = select_slack_bus(obj)
 % The bus of tools.slack_bus_index; stops when there is none
     if isempty(obj.a_Bus)
-        error('GUILDA:PowerNetwork:NoBus', '%s', msg('GUILDA:PowerNetwork:NoBus', string(obj)))
+        error(msg("GUILDA:PowerNetwork:NoBus", string(obj)))
     end
     i_bus = tools.slack_bus_index(obj);
     if isempty(i_bus)
-        error('GUILDA:PowerNetwork:NoSlackCandidate', '%s', msg('GUILDA:PowerNetwork:NoSlackCandidate', string(obj)))
+        error(msg("GUILDA:PowerNetwork:NoSlackCandidate", string(obj)))
     end
     bus = obj.a_Bus{i_bus};
 end

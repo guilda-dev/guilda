@@ -65,7 +65,7 @@ classdef GlobalController < PowerSystemModel
     properties (SetAccess=protected, Hidden)
         controlledUnits                        % Controlled components, in the order given to the constructor.
     end
-    properties (SetAccess={?odeSimulator, ?odeEventSet}, Hidden)
+    properties (SetAccess={?ODEsolver, ?ODEevent}, Hidden)
         iv_odeX (:,1) double = zeros(0,1);
         iv_odeU (:,1) double = zeros(0,1);
         iv_odeY (:,1) double = zeros(0,1);        
@@ -73,7 +73,7 @@ classdef GlobalController < PowerSystemModel
         rv_Xoffset = 0
         rv_Uoffset = @(t) 0
 
-        l_isConnect (1,1) logical = true       % false while a trip event names it (set by odeSimulator); its output is zero
+        l_isConnect (1,1) logical = true       % false while a trip event names it (set by ODEsolver); its output is zero
     end        
     properties(SetAccess={?PowerNetwork}) % Steady State
         rv_Xequilibrium (:,1) double = zeros(0,1)   % State equilibrium.
@@ -117,8 +117,7 @@ classdef GlobalController < PowerSystemModel
                     else
                         str_arg = class(arg);
                     end
-                    error('GUILDA:GlobalController:InvalidComponent', '%s', ...
-                          msg('GUILDA:GlobalController:InvalidComponent', str_arg, char(tag), char(net.str_tag)))
+                    error(msg("GUILDA:GlobalController:InvalidComponent", str_arg, char(tag), char(net.str_tag)))
                 end
 
                 obj.controlledUnits = [obj.controlledUnits; cls_comp(lv_comp)];
@@ -157,9 +156,7 @@ classdef GlobalController < PowerSystemModel
             for k = 1:numel(a_Comp)
                 s = a_Comp{k};
                 if ~all(ismember(obj.sv_u, s.sv_x)) || ~all(ismember(obj.sv_y, s.sv_u))
-                    error("GUILDA:GlobalController:GlobalControllerPort", ...
-                          "The global controller '%s' needs the states [%s] and the inputs [%s] of its units, but '%s' (%s) has the states [%s] and the inputs [%s].", ...
-                          obj.str_tag, join(obj.sv_u, " "), join(obj.sv_y, " "), s.str_tag, class(s), join(s.sv_x, " "), join(s.sv_u, " "))
+                    error(msg("GUILDA:GlobalController:GlobalControllerPort", obj.str_tag, join(obj.sv_u, " "), join(obj.sv_y, " "), s.str_tag, class(s), join(s.sv_x, " "), join(s.sv_u, " ")))
                 end
             end
 
@@ -171,7 +168,7 @@ classdef GlobalController < PowerSystemModel
                 end
             end
 
-            % Same Jacobian contract as odeSimulator: f_JacobiDx/Y(t,x,V,I,u).
+            % Same Jacobian contract as ODEsolver: f_JacobiDx/Y(t,x,V,I,u).
             % A global controller has no V port, so only the u columns are used.
             nx = numel(x);
             nu = numel(u);
@@ -202,8 +199,10 @@ classdef GlobalController < PowerSystemModel
         end
     end   
     methods (Access=protected)
-        function set_odefcn(obj, omega0)
-            % Bind the parameters and the frequency omega0 into the f_* function handles.
+        function set_odefcn(obj)
+            % Bind the parameters and the network frequency into the f_* function handles.
+            % Called by check_edit after a dynamics edit, a network Hz edit or an attach.
+            omega0 = obj.r_Hz;
             param = obj.tab_parameter.dynamics{:,obj.sv_para};
 
             obj.f_dx   = @(t,x,V,I,u) obj.fcn_dx(t,x,V,I,u,param,omega0);
@@ -213,11 +212,6 @@ classdef GlobalController < PowerSystemModel
             obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
             obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
             obj.s_edit.l_staleOdefcn = false;
-        end
-
-        function rebuild_odefcn(obj)
-            % Called by check_edit after a dynamics edit or a network Hz edit.
-            obj.set_odefcn(obj.r_Hz);
         end
     end
     methods (Access={?Component,?LocalController,?PowerNetwork})        

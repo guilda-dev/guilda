@@ -83,6 +83,6 @@ function id = error_id(fh)
     try
         DebugScript.helper.quiet(fh);
     catch ME
-        id = string(ME.identifier);
+        id = string(DebugScript.helper.msg_id(ME));
     end
 end

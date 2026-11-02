@@ -72,7 +72,7 @@ function sct_summary = export_class_database(sct_scan, option)
 %            method: name prefix before the first "_", "Constructor",
 %            or "Other" without "_"
 %   Overrides  nearest GUILDA ancestor that defines the same method
-%   Throws     error IDs in error(...) and MException(...) calls of the
+%   Throws     error IDs in error(msg(...)) and MException(...) calls of the
 %              method body (with the local functions of a method file)
 % Tags: <@Examples> (class, method), <@Deprecated> (all), <@Type> (property).
 %
@@ -228,7 +228,7 @@ function sct_summary = export_class_database(sct_scan, option)
     cell_class_info = cellfun(@(e) e.Info, cell_entries(bln_ok), 'UniformOutput', false);
     cell_class_info = add_subclasses(cell_class_info);
     if isempty(cell_class_info)
-        warning('export_class_database:NoClassExported', 'No class documentation was exported.');
+        warning(msg("GUILDA:export_class_database:NoClassExported"));
     end
 
     sct_coverage = struct('Classes', [0 0], 'Properties', [0 0], 'Methods', [0 0]);
@@ -290,8 +290,7 @@ function sct_summary = export_class_database(sct_scan, option)
         sct_coverage.Methods(1), sct_coverage.Methods(2), ...
         sct_coverage.Properties(1), sct_coverage.Properties(2));
     if option.strict && sct_summary.ErrorCount > 0
-        error('export_class_database:ValidationFailed', ...
-            'Documentation validation failed with %d error(s).', sct_summary.ErrorCount);
+        error(msg("GUILDA:export_class_database:ValidationFailed", string(sct_summary.ErrorCount)));
     end
 end
 
@@ -307,8 +306,7 @@ function write_call_graph(sct_scan, str_file_name)
         write_text_file(str_file_name, sprintf('window.GUILDA_DOC_CALLGRAPH = %s;\n', str_json));
         fprintf("  Call graph: %d edges between %d members.\n", numel(sct_graph.Edges), numel(sct_graph.Nodes));
     catch ME
-        warning('export_class_database:CallGraphFailed', ...
-            'The call graph was not generated: %s', ME.message);
+        warning(msg("GUILDA:export_class_database:CallGraphFailed", ME.message));
     end
 end
 
@@ -464,7 +462,7 @@ function write_text_file(str_file_name, str_content)
     end
     file_id = fopen(str_file_name, 'w', 'n', 'UTF-8');
     if file_id < 0
-        error('export_class_database:FileOpenFailed', 'Failed to open output file: %s', str_file_name);
+        error(msg("GUILDA:export_class_database:FileOpenFailed", str_file_name));
     end
     fprintf(file_id, '%s', str_content);
     fclose(file_id);
@@ -546,7 +544,7 @@ function [sct_info, sct_validation, sct_coverage] = export_class_doc(str_class_n
     % source files and write one JavaScript file for the class.
     meta_class = get_meta_class(str_class_name, sct_ctx);
     if isempty(meta_class)
-        error('export_class_database:ClassNotFound', 'Class not found on the MATLAB path: %s', str_class_name);
+        error(msg("GUILDA:export_class_database:ClassNotFound", str_class_name));
     end
 
     sct_doc_data = struct( ...
@@ -1316,13 +1314,12 @@ function [sct_fn, i_next] = parse_function_at(cell_lines, i_function)
 end
 
 function cell_ids = find_error_ids(cell_lines)
-    % IDs of error('pkg:id', ...) and MException('pkg:id', ...); an
-    % error() with a single text argument has no ID.
+    % IDs of error(msg("GUILDA:Object:Key", ...)) and MException('pkg:id', ...).
     cell_ids = cell(1, 0);
     for i_line = find(contains(cell_lines, {'error', 'MException'}))
         str_code = split_code_comment(cell_lines{i_line});
         cell_tok = regexp(str_code, ...
-            '(?<![\w.])(?:error|MException)\s*\(\s*([''"])([A-Za-z][\w-]*(?::[\w-]+)+)\1\s*,', 'tokens');
+            '(?<![\w.])(?:error\s*\(\s*msg|MException)\s*\(\s*([''"])([A-Za-z][\w-]*(?::[\w-]+)+)\1', 'tokens');
         cell_ids = [cell_ids, cellfun(@(t) t{2}, cell_tok, 'UniformOutput', false)]; %#ok<AGROW>
     end
     if numel(cell_ids) > 1
@@ -1938,7 +1935,7 @@ function sct_schema = get_tag_schema()
         'Parameters',  'describe inputs with comments in an arguments block', ...
         'Returns',     'describe outputs with comments in an arguments (Output) block', ...
         'Calls',       'calls are no longer documented', ...
-        'Throws',      'error IDs are collected from error(...) and MException(...) calls', ...
+        'Throws',      'error IDs are collected from error(msg(...)) and MException(...) calls', ...
         'Size',        'state the size in the declaration', ...
         'Default',     'state the default value in the declaration', ...
         'Constraints', 'state constraints with validators in the declaration', ...

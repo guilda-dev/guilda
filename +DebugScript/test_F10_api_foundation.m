@@ -18,7 +18,7 @@ s_mapODE = struct("Tolerance", ["AbsoluteTolerance","RelativeTolerance"], ...
 
 
 %% Resolve options returns stored defaults without overrides
-solver = PowerFlowCalculation();
+solver = PFCsolver();
 solver.MaxIterations = 42;
 for nv = {{}, struct()}
     [opt, sv_given] = tools.resolve_options(solver, s_mapPF, nv{1});
@@ -53,7 +53,7 @@ assert(opt.MaxIterations == 5)
 
 
 %% Resolve options sets several solver fields from one name
-solver = odeSimulator();
+solver = ODEsolver();
 r_abs  = solver.AbsoluteTolerance;
 r_rel  = solver.RelativeTolerance;
 opt = tools.resolve_options(solver, s_mapODE, {"Tolerance", 1e-8, "Progress", "none"});
@@ -63,13 +63,13 @@ assert(solver.AbsoluteTolerance == r_abs && solver.RelativeTolerance == r_rel)
 
 
 %% Resolve options rejects an unknown name
-solver = PowerFlowCalculation();
+solver = PFCsolver();
 try
     tools.resolve_options(solver, s_mapPF, {"Tolerence", 1e-6});
     error("DebugScript:noError", "未知の名前でエラーにならない")
 catch ME
-    assert(ME.identifier == "GUILDA:resolve_options:UnknownName", ME.identifier)
-    assert(contains(ME.message, "Tolerence") && contains(ME.message, "PowerFlowCalculation"))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
+    assert(contains(ME.message, "Tolerence") && contains(ME.message, "PFCsolver"))
     assert(contains(ME.message, "MaxIteration, Verbose, TimeSpan, WhenFailed"))   % 使える名前を示す
 end
 % 名前と値の組になっていない
@@ -86,15 +86,15 @@ opt = tools.resolve_options(solver, s_mapPF, {"MaxIteration", 9});
 t0  = tic;
 res = DebugScript.helper.DummyResult(net, solver, opt, 1, struct("iterations", 4), t0, 1:3);
 assert(isa(res, "AnalysisResult") && isa(res, "auxiliary"))
-assert(res.str_solver == "PowerFlowCalculation" && res.options.MaxIterations == 9)
+assert(res.str_solver == "PFCsolver" && res.options.MaxIterations == 9)
 assert(res.flag == 1 && res.output.iterations == 4 && res.l_success)
 assert(res.r_elapsed >= 0 && res.r_elapsed < 60)     % tic の値から経過時間
 assert(res.str_network == "Grid")
 assert(res.a_PowerNetwork == net)                    % 系統は参照 (コピーではない)
 
 % 成否: 数値の flag は正なら成功、logical はそのまま
-res = DebugScript.helper.DummyResult([], "odeSimulator", struct(), -2, struct(), 0.5, []);
-assert(~res.l_success && res.r_elapsed == 0.5 && res.str_solver == "odeSimulator" && res.str_network == "")
+res = DebugScript.helper.DummyResult([], "ODEsolver", struct(), -2, struct(), 0.5, []);
+assert(~res.l_success && res.r_elapsed == 0.5 && res.str_solver == "ODEsolver" && res.str_network == "")
 res = DebugScript.helper.DummyResult([], "x", struct(), true, struct(), 0, []);
 assert(res.l_success)
 
@@ -113,7 +113,7 @@ try
     res.Export("result.csv");
     error("DebugScript:noError", "未対応の Export でエラーにならない")
 catch ME
-    assert(ME.identifier == "GUILDA:AnalysisResult:Unsupported", ME.identifier)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:AnalysisResult:Unsupported", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "Export") && contains(ME.message, "DebugScript.helper.DummyResult"))
 end
 
@@ -126,17 +126,17 @@ lastwarn("");
 for n = 0:3
     assert(isequal(legacy_output(c_new, n, 4:6, f_legacy, "BusBaseMVA"), c_new))
 end
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(isempty(id), "新形式では警告しない")
 c_out = legacy_output(c_new, 6, 4:6, f_legacy, "BusBaseMVA");
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(numel(c_out) == 6 && c_out{1} == "old1" && c_out{3} == true)
 assert(string(id) == "GUILDA:Deprecated:BusBaseMVA")
 % 警告は1セッションに1回、キーなしなら警告しない
 lastwarn("");
 legacy_output(c_new, 5, 4:6, f_legacy, "BusBaseMVA");
 legacy_output(c_new, 5, 4:6, f_legacy);
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(isempty(id))
 
 
@@ -156,7 +156,7 @@ opt = struct("V", 1, "Tag", "B");
 assert(isequal(v3_bus_baseMVA(net, opt), opt))                 % baseMVA なし: そのまま
 lastwarn("");
 opt = v3_bus_baseMVA(net, struct("V", 1, "baseMVA", nan));     % 既定値 (指定なし): 警告なしで削除
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(~isfield(opt, "baseMVA") && isempty(id))
 
 
@@ -189,12 +189,12 @@ assert(sum(str_file == fullfile("_GUILDAsystem", "@PowerNetwork", "calculate_pow
 assert(sum(str_file == fullfile("_GUILDAsystem", "@PowerNetwork", "optimize_powerflow.m")) == 2, join(str_hook, ", "))
 assert(sum(str_file == fullfile("_GUILDAsystem", "@PowerNetwork", "build_opf_problem.m")) == 1, join(str_hook, ", "))
 assert(sum(str_file == fullfile("_GUILDAsystem", "@PowerNetwork", "initialize.m")) == 1, join(str_hook, ", "))
-assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@ContinuationPowerFlow", "ContinuationPowerFlow.m")) == 1, join(str_hook, ", "))
+assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@CPFsolver", "CPFsolver.m")) == 1, join(str_hook, ", "))
 assert(sum(str_file == fullfile("_GUILDAsystem", "@PowerNetwork", "simulate.m")) == 1, join(str_hook, ", "))
-assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@odeSimulator", "odeSimulator.m")) == 3, join(str_hook, ", "))
-assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@odeLinearizer", "odeLinearizer.m")) == 5, join(str_hook, ", "))
-assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@odeLinearizer", "solve.m")) == 1, join(str_hook, ", "))
-assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@LinearizationResult", "get_ss.m")) == 1, join(str_hook, ", "))
+assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@ODEsolver", "ODEsolver.m")) == 3, join(str_hook, ", "))
+assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@LTIsolver", "LTIsolver.m")) == 5, join(str_hook, ", "))
+assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@LTIsolver", "solve.m")) == 1, join(str_hook, ", "))
+assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@LTIresult", "get_ss.m")) == 1, join(str_hook, ", "))
 assert(sum(str_file == fullfile("@GUILDA", "private", "get_config.m")) == 1, join(str_hook, ", "))
 assert(numel(str_hook) == 25, join(str_hook, ", "))
 
@@ -206,7 +206,7 @@ function id = error_id(fcn)
     try
         fcn();
     catch ME
-        id = string(ME.identifier);
+        id = string(DebugScript.helper.msg_id(ME));
         if id == ""
             id = "(no id)";
         end

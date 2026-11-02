@@ -143,7 +143,7 @@
               <li><code>LocalController</code>: inputs <code>V</code>, <code>u<sub>con</sub></code>; states <code>x<sub>con</sub></code>; outputs <code>y<sub>con</sub></code>.</li>
               <li><code>Component</code>: inputs the port (<code>V</code> for <code>"V2I"</code>, <code>I</code> for <code>"I2V"</code>), <code>u<sub>mac</sub></code>, <code>u<sub>con</sub></code>; states <code>x<sub>mac</sub></code>, <code>x<sub>con</sub></code>; outputs the other port, <code>y<sub>mac</sub></code>, <code>y<sub>con</sub></code>. The signals from the component to its controllers are connected inside.</li>
               <li><code>Bus</code>: the same, aggregated over its components, with the bus port.</li>
-              <li><code>PowerNetwork</code>: inputs <code>u</code>; no port, because the network closes the buses. By default the outputs follow the states, as in v3, and they depend on <code>Algorithm</code> (see <code>LinearizationResult.get_ss</code>); <code>Input</code> and <code>Output</code> select other channels.</li>
+              <li><code>PowerNetwork</code>: inputs <code>u</code>; no port, because the network closes the buses. By default the outputs follow the states, as in v3, and they depend on <code>Algorithm</code> (see <code>LTIresult.get_ss</code>); <code>Input</code> and <code>Output</code> select other channels.</li>
             </ul>
           </li>
           <li><code>get_admittance_matrix</code>: on <code>Branch</code>, its 2×2 matrix; on <code>PowerNetwork</code>, the matrix of the whole network.</li>
@@ -219,7 +219,7 @@
         <div><code class="cd-name">Analysis and result classes</code><span class="cd-role"><code>auxiliary</code> subclasses</span></div>
         <dl>
           <dt>Does</dt><dd>Run analyses (power flow, CPF, simulation, linearization, IO, drawing) and hold their results.</dd>
-          <dt>Working data</dt><dd>Per-run working data (<code>iv_odeX</code> / <code>iv_odeI</code> / <code>iv_odeU</code> / <code>iv_odeY</code>, <code>lv_odeUfromLC</code> / <code>iv_odeYtoU</code>, <code>l_isFault</code>, <code>rv_Xoffset</code> / <code>rv_Uoffset</code>, <code>l_isConnect</code> of components and global controllers, <code>iv_CPFV</code> / <code>iv_CPFX</code> / <code>f_PQ2Bus</code>) lives on the model classes and is written by the analysis classes. It is not model data. Write access is restricted to the analysis classes: <code>odeSimulator</code> and <code>odeEventSet</code> for the simulation data, and <code>ContinuationPowerFlow</code> for the CPF data. <code>iv_ode*</code> of buses and components and <code>Component.lv_odeUfromLC</code> are the exception: <code>odeSimulator</code> and <code>Component</code> may write them, not <code>odeEventSet</code>. <code>Component</code> may also write its own <code>l_isConnect</code>. <code>Bus.l_isFault</code> and <code>Component.l_isConnect</code> are also restricted for reading. See <a href="api-design.html#side-effects">API Design: Side effects</a> for what a simulation restores.</dd>
+          <dt>Working data</dt><dd>Per-run working data (<code>iv_odeX</code> / <code>iv_odeI</code> / <code>iv_odeU</code> / <code>iv_odeY</code>, <code>lv_odeUfromLC</code> / <code>iv_odeYtoU</code>, <code>l_isFault</code>, <code>rv_Xoffset</code> / <code>rv_Uoffset</code>, <code>l_isConnect</code> of components and global controllers, <code>iv_CPFV</code> / <code>iv_CPFX</code> / <code>f_PQ2Bus</code>) lives on the model classes and is written by the analysis classes. It is not model data. Write access is restricted to the analysis classes: <code>ODEsolver</code> and <code>ODEevent</code> for the simulation data, and <code>CPFsolver</code> for the CPF data. <code>iv_ode*</code> of buses and components and <code>Component.lv_odeUfromLC</code> are the exception: <code>ODEsolver</code> and <code>Component</code> may write them, not <code>ODEevent</code>. <code>Component</code> may also write its own <code>l_isConnect</code>. <code>Bus.l_isFault</code> and <code>Component.l_isConnect</code> are also restricted for reading. See <a href="api-design.html#side-effects">API Design: Side effects</a> for what a simulation restores.</dd>
         </dl>
       </div>
     </div>
@@ -321,6 +321,14 @@
         <tr><th>Topic</th><th>Convention</th></tr>
       </thead>
       <tbody>
+        <tr>
+          <td>Errors and warnings</td>
+          <td>
+            Write <code>error(msg("GUILDA:&lt;Object&gt;:&lt;Key&gt;", arg1, ...))</code> and <code>warning(msg("GUILDA:&lt;Object&gt;:&lt;Key&gt;", arg1, ...))</code>, with <code>msg</code> as the only argument. <code>&lt;Object&gt;</code> is the class folder or the file that calls <code>msg</code>; a function in <code>private/</code> or in a package uses its file name.<br>
+            The text is English and lives in <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code>, whose <code>&lt;rsccat version&gt;</code> is the current GUILDA version. Pass numbers as text (e.g. <code>string(n)</code>), give each placeholder its own number, and with placeholders write <code>''</code> for a single quote and <code>'{'</code> for a brace.<br>
+            These errors and warnings have no MATLAB identifier: <code>GUILDA:&lt;Object&gt;:&lt;Key&gt;</code> names the XML entry, so <code>ME.identifier</code> and <code>warning("off", id)</code> cannot select them. <code>MException</code> keeps its own identifier.
+          </td>
+        </tr>
         <tr>
           <td>Per-unit system</td>
           <td>Voltages, currents, powers (<code>P</code>, <code>Q</code>), and branch constants (<code>R</code>, <code>X</code>, <code>C</code>) are per unit on the system base (the system <code>baseMVA</code> on <code>PowerNetwork</code>). Component dynamics parameters are also per unit on the system base; <code>Component.baseMVA</code> is the machine rating, used only to share reactive power. No class converts physical units: <code>Bus.baseKV</code> is stored but not used in any calculation.</td>

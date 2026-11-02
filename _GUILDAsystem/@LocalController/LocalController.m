@@ -81,7 +81,7 @@ classdef LocalController < PowerSystemModel
         f_JacobiDx                             % Jacobian function of f_dx.
         f_JacobiY                              % Jacobian function of f_Y.
     end    
-    properties (SetAccess={?odeSimulator, ?odeEventSet}, Hidden)
+    properties (SetAccess={?ODEsolver, ?ODEevent}, Hidden)
         iv_odeX  = zeros(0,1);
         iv_odeU  = zeros(0,1);
         iv_odeY  = zeros(0,1);
@@ -173,8 +173,7 @@ classdef LocalController < PowerSystemModel
                 obj.sv_uRequest = obj.sv_u;
             end
             if any(ismember(obj.sv_uRequest, ["X","Y"]))
-                error("GUILDA:LocalController:ReservedInput", ...
-                      "%s: the inputs ""X"" / ""Y"" are not reserved names; use ""Xall"" for all the states or ""Yall"" for all the outputs of the component.", class(obj))
+                error(msg("GUILDA:LocalController:ReservedInputNames", class(obj)))
             end
             comp = obj.observed_component();
             if isempty(comp)
@@ -227,8 +226,7 @@ classdef LocalController < PowerSystemModel
         function set_inputs(obj, sv_name)
             % Set the input names sv_u after "Xall" / "Yall" are expanded. A controller that
             % uses "Xall" or "Yall" in sv_u overrides this (sv_u is defined by the subclass).
-            error("GUILDA:LocalController:ReservedInput", ...
-                  "%s uses the reserved input names ""Xall"" / ""Yall"" but does not override set_inputs.", class(obj))
+            error(msg("GUILDA:LocalController:ReservedInputNoOverride", class(obj)))
         end
 
         function comp = observed_component(obj)
@@ -246,8 +244,10 @@ classdef LocalController < PowerSystemModel
     end
 
     methods (Access=protected)
-        function set_odefcn(obj, omega0)            
-            % Bind the parameters and the frequency omega0 into the f_* function handles.
+        function set_odefcn(obj)
+            % Bind the parameters and the network frequency into the f_* function handles.
+            % Called by check_edit after a dynamics edit, a network Hz edit or an attach.
+            omega0 = obj.r_Hz;
             param = obj.tab_parameter.dynamics{:,obj.sv_para}.';
 
             obj.f_dx   = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, param, omega0);            
@@ -257,11 +257,6 @@ classdef LocalController < PowerSystemModel
             obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
             obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
             obj.s_edit.l_staleOdefcn = false;
-        end
-
-        function rebuild_odefcn(obj)
-            % Called by check_edit after a dynamics edit or a network Hz edit.
-            obj.set_odefcn(obj.r_Hz);
         end
     end
     methods (Access=private)

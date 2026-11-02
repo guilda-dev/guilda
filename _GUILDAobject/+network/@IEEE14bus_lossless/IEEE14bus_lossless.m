@@ -82,7 +82,7 @@ classdef IEEE14bus_lossless < PowerNetwork
 % ```matlab
 % net = network.IEEE14bus_lossless();
 % res = net.calculate_powerflow();
-% ev  = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+% ev  = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 % sol = net.simulate([0,10], ev);
 % ```
 %

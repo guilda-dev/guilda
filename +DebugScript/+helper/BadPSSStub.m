@@ -8,7 +8,7 @@ classdef BadPSSStub < controller.pss.abstract
             obj.key     = "pss";
             obj.sv_x    = strings(0,1);
             obj.sv_para = strings(0,1);
-            obj.set_odefcn(obj.r_Hz);
+            obj.set_odefcn();
         end
     end
     methods (Static)

@@ -33,7 +33,7 @@ classdef Bus < PowerSystemModel
     properties % Power Flow
         l_isSlack      (1,1) logical = false;   % True for the slack bus (at most one per network).
     end
-    properties (Access={?odeSimulator, ?odeEventSet})
+    properties (Access={?ODEsolver, ?ODEevent})
         l_isFault (1,1) logical = false
     end
 
@@ -53,12 +53,12 @@ classdef Bus < PowerSystemModel
         parent                                  % Layer Structure
         children                                % Layer Structure
     end
-    properties (SetAccess={?odeSimulator, ?Component}, Hidden)
+    properties (SetAccess={?ODEsolver, ?Component}, Hidden)
         iv_odeX  = zeros(0,1);
         iv_odeI  = zeros(0,1);
         iv_odeU  = zeros(0,1);
     end
-    properties (SetAccess={?ContinuationPowerFlow}) % Continuation Power Flow
+    properties (SetAccess={?CPFsolver}) % Continuation Power Flow
         iv_CPFV = zeros(0,1)        % Indices of the bus voltage in the CPF variable vector (working data of the CPF).
     end
 
@@ -166,14 +166,13 @@ classdef Bus < PowerSystemModel
             if val
                 a_com = obj.a_Component;%#ok
                 if isempty(a_com)
-                    error(msg('GUILDA:Bus:NonUnitBus' ,string(obj)))
+                    error(msg("GUILDA:Bus:NonUnitBus", string(obj)))
                 else
                     % the component that takes the remaining P (Bus.set_equilibrium)
                     i_rest = find(cellfun(@(c) isnan(c.para_powerflow.Q), a_com), 1);
                     disp(msg('GUILDA:Bus:SetSlack' ,string(obj),string(a_com{max([i_rest,1])})))
                     if isempty(i_rest)
-                        warning('GUILDA:Bus:SlackWithoutQnan', '%s', ...
-                                msg('GUILDA:Bus:SlackWithoutQnan', string(obj), string(a_com{1})))
+                        warning(msg("GUILDA:Bus:SlackWithoutQnan", string(obj), string(a_com{1})))
                     end
                 end
             end

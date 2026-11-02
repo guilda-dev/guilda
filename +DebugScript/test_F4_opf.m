@@ -1,7 +1,7 @@
 % F4 最適潮流計算 (optimize_powerflow)
 %
 % 3 つの方式 "ELD" / "DC OPF" / "AC OPF" で最適潮流を計算し、物理的な妥当性を確認する。
-%   - v4 の呼び出し形式 [result, flag, output] と結果クラス OPFResult
+%   - v4 の呼び出し形式 [result, flag, output] と結果クラス OPFresult
 %   - Name-Value による一時的な設定の上書き (net.solver_OPF は変わらない)
 %   - v3 の呼び出し形式 (6 出力、"methods" オプション) の互換
 %   - 解が得られる (flag > 0)
@@ -27,7 +27,7 @@
 %   result.tab_bus    : 母線ごとの解
 %   result.tab_cub    : 母線への接続 (機器 "<機器名>"、送電線の端 "<送電線名>_<母線名>") ごとの、母線への注入
 %   result.tab_branch : 送電線ごとの両端の潮流 (送電線へ流れ込む向き)
-% 設定の既定値は net.solver_OPF (OptimalPowerFlow)。Name-Value はその呼び出しだけ上書きする。
+% 設定の既定値は net.solver_OPF (OPFsolver)。Name-Value はその呼び出しだけ上書きする。
 % v3 の形式 (6 出力、"methods" オプション) は警告付きで使える。
 
 % 共通設定 (各テストの前に毎回実行される)
@@ -382,7 +382,7 @@ assert(norm(mpc_ybus(mpc2) - net2.get_admittance_matrix.Variables) < 1e-12)
 assert(abs(mpc2.bus(1,6) - 5) < 1e-12 && abs(mpc2.bus(2,6) - 10) < 1e-12 && mpc2.branch(1,9) == 0.95)
 % MATPOWER で表せない設定はエラー
 net2.a_Branch{1}.tab_parameter.operation.Imax = 1;
-assert(error_id(@() tools.network_to_mpc(net2)) == "GUILDA:network_to_mpc:Unsupported")
+assert(error_id(@() tools.network_to_mpc(net2)) == "GUILDA:network_to_mpc:BranchLimit")
 
 
 %% AC and DC OPF reproduce the MATPOWER case14 optimum
@@ -443,15 +443,15 @@ assert(max(abs(res.tab_cub{str_gen,"P"} - rdc.gen(:,2)/100)) < 1e-5)
 
 
 %% Result class of all three methods
-% 結果は OPFResult。flag と output を持ち、費用・ラグランジュ乗数・最適化問題も保持する
+% 結果は OPFresult。flag と output を持ち、費用・ラグランジュ乗数・最適化問題も保持する
 net = DebugScript.helper.build_9bus();
 s_col = struct("ELD", ["P"], "DC_OPF", ["Varg","V","P"], "AC_OPF", ["Varg","V","P","Q","Vphasor","Iphasor"]);
 for str_m = ["ELD","DC OPF","AC OPF"]
     [res, flag, output] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method=str_m));
-    assert(isa(res, "OPFResult") && isa(res, "AnalysisResult"))
+    assert(isa(res, "OPFresult") && isa(res, "AnalysisResult"))
     assert(isequal(res.flag, flag) && isequal(res.output, output) && res.l_success)
     assert(isstruct(output) && isfield(output, "message"))
-    assert(res.options.Method == str_m && res.str_solver == "OptimalPowerFlow" && res.str_network == string(net.str_tag))
+    assert(res.options.Method == str_m && res.str_solver == "OPFsolver" && res.str_network == string(net.str_tag))
     assert(isequal(string(res.tab_bus.Properties.VariableNames), s_col.(replace(str_m, " ", "_"))))
     assert(isequal(string(res.tab_bus.Properties.RowNames), string(net.a_Bus)))
     assert(isequal(string(res.tab_branch.Properties.RowNames), string(net.a_Branch)))
@@ -476,7 +476,7 @@ assert(all(res.tab_branch.Ploss > -1e-6))
 assert(abs(sum(res.tab_branch.Ploss) - sum(res.tab_bus.P)) < 1e-4)
 
 % 既定の方式は net.solver_OPF.Method ("AC OPF")
-assert(net.solver_OPF.Method == "AC OPF" && isa(net.solver_OPF, "OptimalPowerFlow"))
+assert(net.solver_OPF.Method == "AC OPF" && isa(net.solver_OPF, "OPFsolver"))
 res = DebugScript.helper.quiet(@() net.optimize_powerflow());
 assert(res.options.Method == "AC OPF")
 
@@ -515,7 +515,7 @@ try
     DebugScript.helper.quiet(@() net.optimize_powerflow(Methd="ELD"));
     error("DebugScript:noError", "未知のオプションでエラーにならない")
 catch ME
-    assert(ME.identifier == "GUILDA:resolve_options:UnknownName", ME.identifier)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "Methd") && contains(ME.message, "Method, Solver, Tolerance, MaxIteration, Verbose"))
 end
 % 共通名以外 (ソルバー固有の名前) も受け付けない
@@ -564,7 +564,7 @@ assert(max(abs(tab.Ploss - res.tab_branch.Ploss)) < 1e-12)
 f_opt = fullfile(str_dir, "opt.csv");
 DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF", Export=f_opt));
 assert(isfile(f_opt))
-assert(error_id(@() res.Export(fullfile(str_dir, "x.json"))) == "GUILDA:OPFResult:ExportFormat")
+assert(error_id(@() res.Export(fullfile(str_dir, "x.json"))) == "GUILDA:OPFresult:ExportFormat")
 
 
 %% Legacy six-output form
@@ -574,14 +574,14 @@ clear Deprecated
 lastwarn("");
 w = warning("off", "GUILDA:Deprecated:OptimizePowerflowTuple"); c = onCleanup(@() warning(w));
 [tab_bus, tab_cub, flag, output, lambda, OPFprob] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:Deprecated:OptimizePowerflowTuple")
 [res, flag4, output4] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
 assert(isequal(tab_bus, res.tab_bus) && isequal(tab_cub, res.tab_cub) && isequal(flag, flag4))
 assert(isstruct(output) && isfield(output, "message") && isequal(output.solver, output4.solver))
 assert(isstruct(lambda) && isa(OPFprob, "optim.problemdef.OptimizationProblem"))
 % 1-3 出力は v4 の形式
-assert(isa(DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD")), "OPFResult"))
+assert(isa(DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD")), "OPFresult"))
 
 
 %% Build OPF problem with Method and deprecated methods option
@@ -594,7 +594,7 @@ clear Deprecated
 lastwarn("");
 w = warning("off", "GUILDA:Deprecated:BuildOpfProblemMethods"); c = onCleanup(@() warning(w));
 prob = net.build_opf_problem("methods", "ELD");
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:Deprecated:BuildOpfProblemMethods")
 assert(contains(prob.Description, "ELD"))
 
@@ -606,7 +606,7 @@ clear Deprecated
 lastwarn("");
 w = warning("off", "GUILDA:Deprecated:OptimizePowerflowMethods"); c = onCleanup(@() warning(w));
 res = DebugScript.helper.quiet(@() net.optimize_powerflow("methods", "ELD"));
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:Deprecated:OptimizePowerflowMethods")
 assert(res.options.Method == "ELD" && width(res.tab_bus) == 1)
 % v3 の呼び出しをそのまま実行できる
@@ -614,7 +614,7 @@ w2 = warning("off", "GUILDA:Deprecated:OptimizePowerflowTuple"); c2 = onCleanup(
 [tab_bus, ~, ~, ~, ~, ~] = DebugScript.helper.quiet(@() net.optimize_powerflow("methods", "AC OPF"));
 assert(istable(tab_bus) && width(tab_bus) == 6)
 [out1, ~, out3] = DebugScript.helper.quiet(@() net.optimize_powerflow("methods", "AC OPF"));
-assert(isa(out1, "OPFResult") && isstruct(out3))          % 3 出力は v4 の形式 [result, flag, output]
+assert(isa(out1, "OPFresult") && isstruct(out3))          % 3 出力は v4 の形式 [result, flag, output]
 assert(net.solver_OPF.Method == "AC OPF")
 
 %% DC OPF uses the MATPOWER susceptance 1/X
@@ -884,22 +884,22 @@ assert(net.s_edit.l_staleEquilibrium)
 %% Invalid set_opffcn input stops with an error
 net = DebugScript.helper.build_9bus();
 g1 = net.a_Bus{1}.a_Component{1};
-assert(error_id(@() g1.set_opffcn("Cost", 3)) == "GUILDA:opffcn:InvalidHandle")
+assert(error_id(@() g1.set_opffcn("Cost", 3)) == "GUILDA:update:InvalidHandle")
 assert(error_id(@() g1.set_opffcn("Costs", @(v, p) v.P)) ~= "")
 g1.set_opffcn("Cost", @(v, p) [v.P, v.P]);
-assert(error_id(@() net.optimize_powerflow(Method="ELD")) == "GUILDA:opffcn:InvalidCost")
+assert(error_id(@() net.optimize_powerflow(Method="ELD")) == "GUILDA:apply:InvalidCost")
 g1.set_opffcn("Cost", @(v, p) v.Q);                     % v.Q は AC OPF だけ
 assert(error_id(@() net.optimize_powerflow(Method="DC OPF")) == "GUILDA:opffcn:HandleError")
 g1.set_opffcn("Cost", [], "Constraint", @(v, p) v.P <= 1);
-assert(error_id(@() net.optimize_powerflow(Method="ELD")) == "GUILDA:opffcn:InvalidConstraint")
+assert(error_id(@() net.optimize_powerflow(Method="ELD")) == "GUILDA:apply:InvalidConstraint")
 g1.set_opffcn("Constraint", @(v, p) struct("Cap", v.P));
-assert(error_id(@() net.optimize_powerflow(Method="ELD")) == "GUILDA:opffcn:InvalidConstraint")
+assert(error_id(@() net.optimize_powerflow(Method="ELD")) == "GUILDA:apply:InvalidConstraintField")
 g1.reset_opffcn();
 net.set_opffcn("Constraint", @(v, p) struct("balancedP_B001", v.Component.SG1B001.P <= 1));
-assert(error_id(@() net.optimize_powerflow(Method="DC OPF")) == "GUILDA:opffcn:DuplicateName")
+assert(error_id(@() net.optimize_powerflow(Method="DC OPF")) == "GUILDA:apply:DuplicateName")
 net.reset_opffcn();
 % 問題を表せない Solver は使える Solver 名を示して止まる (2 次の費用に linprog)
-assert(error_id(@() net.optimize_powerflow(Method="DC OPF", Solver="linprog")) == "GUILDA:OptimalPowerFlow:UnsupportedSolver")
+assert(error_id(@() net.optimize_powerflow(Method="DC OPF", Solver="linprog")) == "GUILDA:OPFsolver:UnsupportedSolver")
 
 
 % ---- local functions ----
@@ -1008,7 +1008,7 @@ function id = error_id(fcn)
     try
         DebugScript.helper.quiet(fcn);
     catch ME
-        id = string(ME.identifier);
+        id = string(DebugScript.helper.msg_id(ME));
         if id == ""
             id = "(no id)";
         end

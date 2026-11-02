@@ -16,7 +16,7 @@ function flag = check_edit(obj, l_force)
         flag % True when initialize has run and nothing that changes the equilibrium was edited since (meaningful on PowerNetwork).
     end
     if obj.s_edit.l_staleOdefcn || l_force
-        obj.rebuild_odefcn();
+        obj.set_odefcn();
     end
     cellfun(@(c) c.check_edit(l_force), obj.children);
     flag = obj.s_edit.str_flag ~= "unset" && ~obj.s_edit.l_staleEquilibrium;

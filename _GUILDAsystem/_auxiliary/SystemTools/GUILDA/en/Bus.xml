@@ -1,5 +1,5 @@
 <!--This is an XML file containing error messages related to the class "Bus".-->
-<rsccat version="2" locale="en" product="GUILDA">
+<rsccat version="4.0" locale="en" product="GUILDA">
     <message>        
         <entry key="SetXeq">ERROR: cv_Xequilibrium is a Dependent Property that returns the combined equilibrium points from both&#xA;       the Bus itself (obj.cv_Xequilibrium_bus) and the Component class objects located under the a_Cubicle structure.&#xA;       - To set the Bus equilibrium point:&#xA;         >> obj.cv_Xequilibrium_bus = val&#xA;       - To set the Component equilibrium point:&#xA;         >> obj.a_Component{i}.cv_Xequilibrium_comp = val</entry> 
         <entry key="NonUnitBus">Error: Non-unit bus '' {0} ''  cannot be assigned as the slack bus.</entry>         
@@ -9,5 +9,6 @@
         <entry key="ControllersNotKept">The controllers of ''{0}'' cannot be carried over to ''{1}'': the new component lacks a signal they use ({2}).&#xA;Nothing was changed.</entry>
         <entry key="SlackWithoutQnan">No component of slack bus ''{0}'' has Q = NaN, so ''{1}'' takes the remaining power in net.initialize, even if it is a load.&#xA;Add a generator to this bus, set l_isSlack = true on a bus that has one, or set Q = NaN on the component that should supply the power.</entry>
         <entry key="SetSlack">INFO: '' {0} ''  set as slack bus.&#xA;      P and Q specifications for '' {1} '' ignored in powerflow calculation.</entry>         
+        <entry key="NoI2V">Bus {0} has no I2V form: D of its V2I model (dI/dV of its components) is singular. Use the port "V2I".</entry>
     </message>
 </rsccat>

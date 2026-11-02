@@ -53,7 +53,7 @@ function [result, flag, output] = initialize(obj, varargin)
 %
 % See also PowerNetwork.calculate_powerflow, PowerNetwork.optimize_powerflow, PowerNetwork.simulate
     arguments (Output)
-        result   % PowerFlowResult for "powerflow" and "equilibrium" (str_solver = "equilibrium", no branch flows), OPFResult for "OPF"; result.tab_bus is the bus equilibrium.
+        result   % PFCresult for "powerflow" and "equilibrium" (str_solver = "equilibrium", no branch flows), OPFresult for "OPF"; result.tab_bus is the bus equilibrium.
         flag     % Success flag of the analysis (positive; a failure stops with an error).
         output   % Details of the analysis; output.message describes the outcome.
     end
@@ -79,28 +79,25 @@ function [result, flag, output] = initialize(obj, varargin)
                 rethrow(ME)
             end
             if ~l_ok
-                error('GUILDA:PowerNetwork:InitializePowerflowFailed', '%s', ...
-                      failure_message(obj, "InitializePowerflowFailed", "InitializePowerflowIsland", output))
+                stop_powerflow(obj, output)
             end
         case "OPF"
             try
                 [result, flag, output] = obj.optimize_powerflow(c_nv{:}, "Method", "AC OPF");
             catch ME
-                % building the OPF problem of a split network can stop with an internal error
-                if ~startsWith(ME.identifier, "GUILDA:") && network_islands(obj) > 1
-                    error('GUILDA:PowerNetwork:InitializeOPFFailed', '%s', ...
-                          failure_message(obj, "InitializeOPFFailed", "InitializeOPFIsland", struct("message", ME.message)))
+                % building the OPF problem of a split network can stop with an internal error:
+                % those have an identifier, while error(msg(...)) of GUILDA has none
+                if ~isempty(ME.identifier) && ~startsWith(ME.identifier, "GUILDA:") && network_islands(obj) > 1
+                    stop_opf(obj, struct("message", ME.message))
                 end
                 rethrow(ME)
             end
             if ~result.l_success
-                error('GUILDA:PowerNetwork:InitializeOPFFailed', '%s', ...
-                      failure_message(obj, "InitializeOPFFailed", "InitializeOPFIsland", output))
+                stop_opf(obj, output)
             end
         case "equilibrium"
             if ~isempty(c_nv)
-                error('GUILDA:resolve_options:UnknownName', '%s', ...
-                      msg('GUILDA:PowerNetwork:InitializeEquilibriumOption', char(string(c_nv{1}))))
+                error(msg("GUILDA:PowerNetwork:InitializeEquilibriumOption", char(string(c_nv{1}))))
             end
             check_edit_for_equilibrium(obj);
             [result, flag, output] = calculate_from_equilibrium(obj);
@@ -131,8 +128,7 @@ function [result, flag, output] = initialize(obj, varargin)
     tab_Y   = obj.get_admittance_matrix;
     r_resid = max(abs(tab_Y{str_Bus,str_Bus}*obj.cv_Vequilibrium - obj.cv_Iequilibrium), [], "includenan");
     if ~(r_resid < equilibrium_tolerance())
-        error('GUILDA:PowerNetwork:InitializeNotEquilibrium', '%s', ...
-              msg('GUILDA:PowerNetwork:InitializeNotEquilibrium', char(str_method), char(string(r_resid))))
+        error(msg("GUILDA:PowerNetwork:InitializeNotEquilibrium", char(str_method), char(string(r_resid))))
     end
 
     % the models must hold the point; sizes stop here, while the equilibrium is out of date
@@ -142,14 +138,12 @@ function [result, flag, output] = initialize(obj, varargin)
     obj.reset_edit()
 
     if str_residual ~= ""
-        warning('GUILDA:PowerNetwork:EquilibriumResidual', '%s', ...
-                msg('GUILDA:PowerNetwork:EquilibriumResidual', char(string(equilibrium_tolerance())), char(str_residual)))
+        warning(msg("GUILDA:PowerNetwork:EquilibriumResidual", char(string(equilibrium_tolerance())), char(str_residual)))
     end
 
     [n_island, str_island] = network_islands(obj);
     if n_island > 1
-        warning('GUILDA:PowerNetwork:NetworkIsland', '%s', ...
-                msg('GUILDA:PowerNetwork:NetworkIsland', string(obj), char(string(n_island)), char(str_island)))
+        warning(msg("GUILDA:PowerNetwork:NetworkIsland", string(obj), char(string(n_island)), char(str_island)))
     end
 end
 
@@ -158,7 +152,7 @@ function [str_method, c_nv] = take_method(c_in)
 % Separates Method (of initialize) from the options passed to the analysis
     sv_method = ["powerflow","OPF","equilibrium"];
     if mod(numel(c_in), 2) ~= 0
-        error('GUILDA:resolve_options:InvalidPairs', '%s', msg('GUILDA:PowerNetwork:InitializePairs'))
+        error(msg("GUILDA:PowerNetwork:InitializePairs"))
     end
     str_method = "powerflow";
     lv_method  = false(size(c_in));
@@ -169,8 +163,7 @@ function [str_method, c_nv] = take_method(c_in)
             v = c_in{k+1};
             l_text = (ischar(v) && isrow(v)) || (isstring(v) && isscalar(v));
             if ~l_text || ~any(strcmpi(v, sv_method))
-                error('GUILDA:PowerNetwork:InitializeMethod', '%s', ...
-                      msg('GUILDA:PowerNetwork:InitializeMethod', char(join('"' + sv_method + '"', ", "))))
+                error(msg("GUILDA:PowerNetwork:InitializeMethod", char(join('"' + sv_method + '"', ", "))))
             end
             str_method = sv_method(strcmpi(v, sv_method));
         end
@@ -179,15 +172,25 @@ function [str_method, c_nv] = take_method(c_in)
 end
 
 
-function str = failure_message(obj, str_connected, str_split, output)
-% Message of a failed analysis: names the islands of a split network instead of the solver settings
+function stop_powerflow(obj, output)
+% Error of a failed power flow: names the islands of a split network instead of the solver settings
     [n_island, str_island] = network_islands(obj);
     str_reason = char(string(output.message));
     if n_island > 1
-        str = msg("GUILDA:PowerNetwork:" + str_split, str_reason, string(obj), char(string(n_island)), char(str_island));
-    else
-        str = msg("GUILDA:PowerNetwork:" + str_connected, str_reason);
+        error(msg("GUILDA:PowerNetwork:InitializePowerflowIsland", str_reason, string(obj), char(string(n_island)), char(str_island)))
     end
+    error(msg("GUILDA:PowerNetwork:InitializePowerflowFailed", str_reason))
+end
+
+
+function stop_opf(obj, output)
+% Error of a failed OPF: names the islands of a split network instead of the solver settings
+    [n_island, str_island] = network_islands(obj);
+    str_reason = char(string(output.message));
+    if n_island > 1
+        error(msg("GUILDA:PowerNetwork:InitializeOPFIsland", str_reason, string(obj), char(string(n_island)), char(str_island)))
+    end
+    error(msg("GUILDA:PowerNetwork:InitializeOPFFailed", str_reason))
 end
 
 
@@ -351,8 +354,7 @@ function check_point_size(model, n_uExpected)
     n_x = numel(model.rv_Xequilibrium);
     n_u = numel(model.rv_Uequilibrium);
     if n_x ~= numel(model.sv_x) || n_u ~= n_uExpected
-        error('GUILDA:PowerNetwork:InitializeEquilibriumSize', '%s', ...
-              msg('GUILDA:PowerNetwork:InitializeEquilibriumSize', char(string(model.str_tag)), ...
+        error(msg("GUILDA:PowerNetwork:InitializeEquilibriumSize", char(string(model.str_tag)), ...
                   char(string(n_x)), char(string(numel(model.sv_x))), char(string(n_u)), char(string(n_uExpected))))
     end
 end
@@ -364,12 +366,10 @@ function val = model_value(model, str_fcn, n, f)
     try
         val = f();
     catch ME
-        error('GUILDA:PowerNetwork:InitializeModelFailed', '%s', ...
-              msg('GUILDA:PowerNetwork:InitializeModelFailed', str_tag, char(str_fcn), ME.message))
+        error(msg("GUILDA:PowerNetwork:InitializeModelFailed", str_tag, char(str_fcn), ME.message))
     end
     if numel(val) ~= n
-        error('GUILDA:PowerNetwork:InitializeModelSize', '%s', ...
-              msg('GUILDA:PowerNetwork:InitializeModelSize', str_tag, char(str_fcn), ...
+        error(msg("GUILDA:PowerNetwork:InitializeModelSize", str_tag, char(str_fcn), ...
                   char(join(string(size(val)), "x")), char(string(n))))
     end
     val = reshape(full(val), [], 1);
@@ -417,8 +417,7 @@ function check_edit_for_equilibrium(obj)
         if numel(str_edit) > 3
             str_list = str_list + ", ...";
         end
-        error('GUILDA:PowerNetwork:InitializeEquilibriumEdited', '%s', ...
-              msg('GUILDA:PowerNetwork:InitializeEquilibriumEdited', char(str_list)))
+        error(msg("GUILDA:PowerNetwork:InitializeEquilibriumEdited", char(str_list)))
     end
 end
 
@@ -443,8 +442,7 @@ function [result, flag, output] = calculate_from_equilibrium(obj)
         for i_comp = 1:numel(a_Comp)
             comp = a_Comp{i_comp};
             if isempty(comp.c_Vequilibrium) || isempty(comp.c_Iequilibrium)
-                error('GUILDA:PowerNetwork:InitializeNoEquilibrium', '%s', ...
-                      msg('GUILDA:PowerNetwork:InitializeNoEquilibrium', char(string(comp))))
+                error(msg("GUILDA:PowerNetwork:InitializeNoEquilibrium", char(string(comp))))
             end
             cv_Vbus(i_bus)  = comp.c_Vequilibrium;
             cv_Ibus(i_bus)  = cv_Ibus(i_bus) + comp.c_Iequilibrium;
@@ -461,8 +459,7 @@ function [result, flag, output] = calculate_from_equilibrium(obj)
     tol     = equilibrium_tolerance();
     r_resid = max(abs(cm_Y*cv_Vbus - cv_Ibus));
     if r_resid >= tol
-        error('GUILDA:PowerNetwork:InitializeEquilibriumFailed', '%s', ...
-              msg('GUILDA:PowerNetwork:InitializeEquilibriumFailed', char(string(r_resid))))
+        error(msg("GUILDA:PowerNetwork:InitializeEquilibriumFailed", char(string(r_resid))))
     end
     flag   = 1;
     output = struct("residual", r_resid, ...
@@ -472,6 +469,6 @@ function [result, flag, output] = calculate_from_equilibrium(obj)
     tab_bus = array2table(...
         [angle(cv_Vbus),abs(cv_Vbus),real(cv_Sbus),imag(cv_Sbus),cv_Vbus,cv_Ibus], ...
         "VariableNames",["Varg","V","P","Q","Vphasor","Iphasor"],"RowNames",str_Bus);
-    result  = PowerFlowResult(obj, "equilibrium", struct("Method","equilibrium","Tolerance",tol), ...
+    result  = PFCresult(obj, "equilibrium", struct("Method","equilibrium","Tolerance",tol), ...
                               flag, output, t0, tab_bus);
 end

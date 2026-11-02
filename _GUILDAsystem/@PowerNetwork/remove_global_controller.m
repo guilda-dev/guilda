@@ -16,8 +16,7 @@ function remove_global_controller(obj, str_GconTag)
     str_tagGcon = string(obj.a_GlobalController);
     str_missing = str_GconTag(~ismember(str_GconTag, str_tagGcon));
     if ~isempty(str_missing)
-        error('GUILDA:PowerNetwork:GconNotFound', '%s', ...
-              msg('GUILDA:PowerNetwork:GconNotFound', char(join(str_missing,"', '")), char(obj.str_tag)))
+        error(msg("GUILDA:PowerNetwork:GconNotFound", char(join(str_missing,"', '")), char(obj.str_tag)))
     end
     lv_rm   = ismember(str_tagGcon, str_GconTag);
     a_rmGC  = obj.a_GlobalController(lv_rm);

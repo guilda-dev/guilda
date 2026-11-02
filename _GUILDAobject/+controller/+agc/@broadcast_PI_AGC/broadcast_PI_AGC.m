@@ -21,7 +21,7 @@ classdef broadcast_PI_AGC < GlobalController
 % agc = controller.agc.broadcast_PI_AGC(net, "agc", g1, g2, kP=100, kI=500);
 % net.add_global_controller(agc);
 % net.initialize;
-% ev  = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B007");
+% ev  = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B007");
 % sol = net.simulate([0,10], ev);
 % ```
 %
@@ -64,15 +64,14 @@ classdef broadcast_PI_AGC < GlobalController
             na = numel(opt.alpha);
             nb = numel(opt.beta);
             if na ~= nCU || nb ~= nCU
-                error("GUILDA:broadcast_PI_AGC:InvalidSize", ...
-                      "alpha and beta must be scalars or have one element per controlled unit (%d).", nCU)
+                error(msg("GUILDA:broadcast_PI_AGC:InvalidSize", string(nCU)))
             end            
 
             obj.para_dynamics.add_entry("alpha", opt.alpha             , "double", ...
                                          "beta", opt.beta              , "double", ...
                                            "kP", repmat(opt.kP, [na,1]), "double", ...
                                            "kI", repmat(opt.kI, [na,1]), "double");                        
-            obj.set_odefcn(obj.r_Hz);
+            obj.set_odefcn();
         end
 
         function [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj)

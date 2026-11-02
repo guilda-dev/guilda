@@ -92,7 +92,7 @@ function draw_graph_network(obj)
         edge_marker = edge_para.Marker;
 
         if numel(edge_MidX) ~= numel(edge_MidY)
-            error("The number of elements in MidX and MidY differs. (branch"+i_edge+")")
+            error(msg("GUILDA:DrawerNetDiagram:MidPointsBranch", string(i_edge)))
         end
 
         p1 = 0.5 * (from_min + from_max);
@@ -136,7 +136,7 @@ function draw_graph_network(obj)
         bus_max = sct_nodelim(i_compbus).max;
         p_bus     = 0.5 * ( bus_min + bus_max );
         if numel(edge_MidY) ~= numel(edge_MidX)
-            error("The number of elements in MidX and MidY differs. (component"+i_comp+")")
+            error(msg("GUILDA:DrawerNetDiagram:MidPointsComponent", string(i_comp)))
         end
 
         path = [comp_pos; ...

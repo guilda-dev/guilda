@@ -38,14 +38,12 @@ function [s_options, sv_given] = resolve_options(solver, s_map, nv)
         c_in  = struct2cell(nv).';
     elseif iscell(nv)
         if mod(numel(nv), 2) ~= 0
-            error('GUILDA:resolve_options:InvalidPairs', '%s', ...
-                  msg('GUILDA:resolve_options:InvalidPairs', char(str_solver)));
+            error(msg("GUILDA:resolve_options:InvalidPairs", char(str_solver)));
         end
         sv_in = string(nv(1:2:end));
         c_in  = nv(2:2:end);
     else
-        error('GUILDA:resolve_options:InvalidPairs', '%s', ...
-              msg('GUILDA:resolve_options:InvalidPairs', char(str_solver)));
+        error(msg("GUILDA:resolve_options:InvalidPairs", char(str_solver)));
     end
 
     % Stored defaults of every field the map refers to
@@ -57,15 +55,13 @@ function [s_options, sv_given] = resolve_options(solver, s_map, nv)
         for path = sv_path
             sv_part = split(path, ".").';
             if ~has_field(solver, sv_part(1))
-                error('GUILDA:resolve_options:UnknownField', '%s', ...
-                      msg('GUILDA:resolve_options:UnknownField', char(sv_names(i)), char(path), char(str_solver)));
+                error(msg("GUILDA:resolve_options:UnknownField", char(sv_names(i)), char(path), char(str_solver)));
             end
             if ~isfield(s_options, sv_part(1))
                 s_options.(sv_part(1)) = solver.(sv_part(1));
             end
             if numel(sv_part) > 1 && ~has_path(s_options.(sv_part(1)), sv_part(2:end))
-                error('GUILDA:resolve_options:UnknownField', '%s', ...
-                      msg('GUILDA:resolve_options:UnknownField', char(sv_names(i)), char(path), char(str_solver)));
+                error(msg("GUILDA:resolve_options:UnknownField", char(sv_names(i)), char(path), char(str_solver)));
             end
         end
     end
@@ -75,8 +71,7 @@ function [s_options, sv_given] = resolve_options(solver, s_map, nv)
     for k = 1:numel(sv_in)
         idx = find(strcmpi(sv_in(k), sv_names), 1);
         if isempty(idx)
-            error('GUILDA:resolve_options:UnknownName', '%s', ...
-                  msg('GUILDA:resolve_options:UnknownName', char(sv_in(k)), char(str_solver), ...
+            error(msg("GUILDA:resolve_options:UnknownName", char(sv_in(k)), char(str_solver), ...
                       char(join(sv_names, ", "))));
         end
         [sv_path, f_convert] = c_target{idx}{:};

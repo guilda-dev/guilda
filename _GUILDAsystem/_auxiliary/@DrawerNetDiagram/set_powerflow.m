@@ -23,7 +23,7 @@ function set_powerflow(obj, net, opt)
             cv_Ic = tools.vcellfun(@(b) get_Icomp(b), net.a_Bus);
             cv_Vb = net.cv_Vequilibrium;
         else
-            error("Either pass a PowerNetwork class to `net` or define `Vbus` and `Ibus` options.")
+            error(msg("GUILDA:DrawerNetDiagram:NoPowerflowSource"))
         end
     end
 

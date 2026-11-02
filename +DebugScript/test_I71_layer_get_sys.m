@@ -96,7 +96,7 @@ assert(~avr.s_edit.l_staleOdefcn)
 DebugScript.helper.quiet(@() net.initialize);
 [gen, bus] = layers(net);
 [~, c_idx] = bus.get_variable_map();
-rv_point = odeLinearizer.point_vector(bus, []);
+rv_point = LTIsolver.point_vector(bus, []);
 A0 = gen.get_sys("Point", rv_point(c_idx{1})).A;
 A0_bus = bus.get_sys("Point", rv_point).A;
 
@@ -161,7 +161,7 @@ net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 gen = net.a_Bus{1}.a_Component{1};
 gen.tab_parameter.dynamics.D = 3 * gen.tab_parameter.dynamics.D;
-assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=str_load)) == "GUILDA:ContinuationPowerFlow:StaleEquilibrium")
+assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=str_load)) == "GUILDA:CPFsolver:StaleEquilibrium")
 assert(~gen.s_edit.l_staleOdefcn)
 
 
@@ -210,7 +210,7 @@ function assert_stale_error(fcn, str_id)
     try
         DebugScript.helper.quiet(fcn);
     catch ME
-        assert(ME.identifier == str_id, "想定外のエラー: " + ME.identifier + " " + ME.message)
+        assert(DebugScript.helper.msg_id(ME) == str_id, "想定外のエラー: " + DebugScript.helper.msg_id(ME) + " " + ME.message)
         assert(contains(ME.message, "net.initialize()"))
         return
     end
@@ -222,6 +222,6 @@ function id = error_id(fcn)
     try
         DebugScript.helper.quiet(fcn);
     catch ME
-        id = string(ME.identifier);
+        id = string(DebugScript.helper.msg_id(ME));
     end
 end

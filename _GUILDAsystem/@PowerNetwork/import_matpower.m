@@ -50,7 +50,6 @@ function net = import_matpower(mpc, opt)
     arguments (Output)
         net   % The built network.
     end
-    unsupported = @(str) error("GUILDA:import_matpower:Unsupported", "import_matpower: %s", str);
 
     [mpc, str_name] = load_case(mpc);
     if ~isfield(opt, "Tag")
@@ -71,19 +70,19 @@ function net = import_matpower(mpc, opt)
     n_gen  = size(rm_gen, 1);
     [l_ok, iv_genbus] = ismember(rm_gen(:,1), rm_bus(:,1));
     if ~all(l_ok)
-        unsupported(sprintf("gen row %d refers to bus %d, which is not in mpc.bus.", find(~l_ok,1), rm_gen(find(~l_ok,1),1)));
+        error(msg("GUILDA:import_matpower:GenBusMissing", string(find(~l_ok,1)), string(rm_gen(find(~l_ok,1),1))));
     end
     [l_ok, im_brbus] = ismember(rm_br(:,1:2), rm_bus(:,1));
     if ~all(l_ok, "all")
-        unsupported(sprintf("branch row %d refers to a bus that is not in mpc.bus.", find(~all(l_ok,2),1)));
+        error(msg("GUILDA:import_matpower:BranchBusMissing", string(find(~all(l_ok,2),1))));
     end
     if any(rm_bus(:,2) == 4)
-        unsupported(sprintf("bus %d is isolated (type 4). Remove isolated buses and their branches and generators first.", rm_bus(find(rm_bus(:,2)==4,1),1)));
+        error(msg("GUILDA:import_matpower:IsolatedBus", string(rm_bus(find(rm_bus(:,2)==4,1),1))));
     end
     lv_gen = rm_gen(:,8) > 0;
 
     % ---- generator costs -------------------------------------------------------------
-    rm_cost = gen_costs(mpc.gencost, n_gen, base, unsupported);   % [HP fP HQ fQ startup shutdown]
+    rm_cost = gen_costs(mpc.gencost, n_gen, base);   % [HP fP HQ fQ startup shutdown]
 
     % ---- buses, generators, loads ----------------------------------------------------
     a_Bus = cell(n_bus, 1);
@@ -120,7 +119,7 @@ function net = import_matpower(mpc, opt)
     if ~isempty(i_ref)
         bus = a_Bus{i_ref};
         if isempty(bus.a_Component)
-            unsupported(sprintf("the reference bus %d has no in-service generator or load.", rm_bus(i_ref,1)));
+            error(msg("GUILDA:import_matpower:ReferenceBusEmpty", string(rm_bus(i_ref,1))));
         end
         evalc("bus.l_isSlack = true;");         % without the SetSlack message
     end
@@ -180,13 +179,12 @@ function [mpc, str_name] = load_case(mpc)
         elseif any(exist(str_case) == [2 3 6])                     %#ok<EXIST>
             mpc = feval(str_case);
         else
-            error("GUILDA:import_matpower:CaseNotFound", ...
-                  "MATPOWER case not found: %s. Give an mpc struct, the name of a case function on the MATLAB path, or the path of a .m/.mat case file.", str_case);
+            error(msg("GUILDA:import_matpower:CaseNotFound", str_case));
         end
         if ~isvarname(str_name); str_name = "PowerNetwork"; end
     end
     if ~isstruct(mpc) || ~isscalar(mpc)
-        error("GUILDA:import_matpower:InvalidCase", "The MATPOWER case must be a struct with the fields baseMVA, bus, gen and branch (got %s).", class(mpc));
+        error(msg("GUILDA:import_matpower:InvalidCaseType", class(mpc)));
     end
 end
 
@@ -194,39 +192,37 @@ function check_case(mpc)
     str_need = ["baseMVA", "bus", "gen", "branch"];
     l_miss   = ~isfield(mpc, str_need);
     if any(l_miss)
-        error("GUILDA:import_matpower:InvalidCase", "The MATPOWER case has no field %s.", strjoin(str_need(l_miss), ", "));
+        error(msg("GUILDA:import_matpower:InvalidCaseField", strjoin(str_need(l_miss), ", ")));
     end
     if isfield(mpc, "version") && string(mpc.version) == "1"
-        error("GUILDA:import_matpower:Unsupported", ...
-              "import_matpower: MATPOWER case version 1 is not supported. Convert it to version 2 first (MATPOWER loadcase does this).");
+        error(msg("GUILDA:import_matpower:UnsupportedVersion"));
     end
     n_col = [size(mpc.bus,2), size(mpc.gen,2), size(mpc.branch,2)];
     if any(n_col < [13 10 13])
-        error("GUILDA:import_matpower:InvalidCase", ...
-              "The MATPOWER case needs at least 13 bus columns, 10 gen columns and 13 branch columns (got %d, %d, %d).", n_col);
+        error(msg("GUILDA:import_matpower:InvalidCaseColumns", string(n_col(1)), string(n_col(2)), string(n_col(3))));
     end
 end
 
-function rm_cost = gen_costs(rm_gc, n_gen, base, unsupported)
+function rm_cost = gen_costs(rm_gc, n_gen, base)
 % [HP fP HQ fQ startup shutdown] of each gen row; empty without gencost
     rm_cost = zeros(0, 6);
     if isempty(rm_gc)
         return
     end
     if ~ismember(size(rm_gc,1), [n_gen, 2*n_gen])
-        unsupported(sprintf("gencost has %d rows; it needs ng = %d (P costs) or 2*ng (P and Q costs).", size(rm_gc,1), n_gen));
+        error(msg("GUILDA:import_matpower:GencostRows", string(size(rm_gc,1)), string(n_gen)));
     end
     rm_cost = zeros(n_gen, 6);
     rm_cost(:, 5:6) = rm_gc(1:n_gen, 2:3);
     l_const = false;
     for r = 1:size(rm_gc, 1)
         if rm_gc(r,1) ~= 2
-            unsupported(sprintf("gencost row %d is piecewise linear (MODEL = %d). Only polynomial costs (MODEL = 2) are supported: fit it with a polynomial of degree 2 or less first.", r, rm_gc(r,1)));
+            error(msg("GUILDA:import_matpower:GencostPiecewise", string(r), string(rm_gc(r,1))));
         end
         n_c = rm_gc(r, 4);
         rv_c = rm_gc(r, 4 + (1:n_c));                 % highest degree first
         if n_c > 3 && any(rv_c(1:n_c-3) ~= 0)
-            unsupported(sprintf("gencost row %d is a polynomial of degree %d. Only costs up to quadratic are supported.", r, n_c-1));
+            error(msg("GUILDA:import_matpower:GencostDegree", string(r), string(n_c-1)));
         end
         rv_c = [zeros(1, 3), rv_c];
         rv_c = rv_c(end-2:end);                       % [c2 c1 c0]
@@ -236,7 +232,6 @@ function rm_cost = gen_costs(rm_gc, n_gen, base, unsupported)
         rm_cost(k, j:j+1) = [rv_c(1)*base^2, rv_c(2)*base];
     end
     if l_const
-        warning("GUILDA:import_matpower:ConstantCost", ...
-                "import_matpower: the constant terms c0 of gencost are dropped (GUILDA costs have no constant); the OPF solution is the same, its cost is lower by sum(c0).");
+        warning(msg("GUILDA:import_matpower:ConstantCost"));
     end
 end

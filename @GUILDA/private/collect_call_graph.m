@@ -77,7 +77,7 @@ function sct_ctx = build_context(sct_scan, str_root)
         str_name = sct_classes(i_class).Name;
         meta_class = meta.class.fromName(str_name);
         if isempty(meta_class)
-            warning('collect_call_graph:NoClass', 'Class not found on the MATLAB path: %s', str_name);
+            warning(msg("GUILDA:collect_call_graph:NoClass", str_name));
             continue
         end
         sct_info = read_members(str_name, meta_class, cell_guilda);
@@ -229,7 +229,7 @@ function sct_found = read_file_units(str_file, str_class, str_classdef_file, sct
         'Scope', {}, 'Calls', {}, 'ArgTypes', {}, 'Env', {});
     T = mtree(str_file, '-file');
     if T.count == 0 || any(strcmp(T.kinds, 'ERR'))
-        warning('collect_call_graph:ParseFailed', 'Skipped a file that could not be parsed: %s', str_file);
+        warning(msg("GUILDA:collect_call_graph:ParseFailed", str_file));
         return
     end
     sct_info = sct_ctx.info(str_class);

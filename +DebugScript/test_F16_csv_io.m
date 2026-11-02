@@ -52,7 +52,7 @@ for str_net = ["IEEE9bus", "IEEE14bus", "IEEE14bus_NoTap", "IEEE14bus_lossless",
                "IEEE68bus", "Ishizaki6Bus", "TEST31bus", "Txt3Bus"]
     lastwarn("");
     DebugScript.helper.quiet(@() feval("network." + str_net));
-    [~, id] = lastwarn();
+    id = DebugScript.helper.msg_id();
     assert(isempty(id), str_net + ": " + id)
 end
 
@@ -255,7 +255,7 @@ for sct = [struct("rel", "branch/parameter.csv", "col", "To", "row", 2, "val", 9
     tab.Hz = r_Hz + 1;
     writetable(tab, str_file);
     ME = import_error(str_path, net);
-    assert(ME.identifier == "GUILDA:import_csv:BusRow", sct.rel)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:import_csv:BusRow", sct.rel)
     str_want = sprintf("%s row %d: %s = %s", sct.rel, sct.row, sct.col, string(sct.val));
     assert(contains(ME.message, str_want), ME.message)
     assert(isempty(net.a_Bus) && isempty(net.a_Branch), "検査の前に追加しない")
@@ -272,7 +272,7 @@ for str_val = ["x", ""]
     tab.To(2) = str_val;
     writetable(tab, str_file);
     ME = import_error(str_path, PowerNetwork("Host"));
-    assert(ME.identifier == "GUILDA:import_csv:BusRow", str_val)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:import_csv:BusRow", str_val)
     assert(contains(ME.message, "branch/parameter.csv row 2: To = NaN"), ME.message)
 end
 
@@ -284,7 +284,7 @@ tab = readtable(str_file, "TextType", "string");
 tab.ParameterID(1) = NaN;
 writetable(tab, str_file);
 ME = import_error(str_path, PowerNetwork("Host"));
-assert(ME.identifier == "GUILDA:import_csv:UnknownID")
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:import_csv:UnknownID")
 assert(contains(ME.message, "main.csv row 1: ParameterID = NaN"), ME.message)
 
 
@@ -304,7 +304,7 @@ for str_rel = ["bus/parameter.csv", "branch/parameter.csv", "component/load-powe
     delete(fullfile(str_path, str_rel));
     net = PowerNetwork("Host");
     ME = import_error(str_path, net);
-    assert(ME.identifier == "GUILDA:import_csv:MissingFile", str_rel)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:import_csv:MissingFile", str_rel)
     assert(contains(ME.message, str_rel), ME.message)
     assert(isempty(net.a_Bus), str_rel)
 end
@@ -319,7 +319,7 @@ for str_col = ["ParameterID", "OpfID"]
     writetable(tab, str_file);
     net = PowerNetwork("Host");
     ME = import_error(str_path, net);
-    assert(ME.identifier == "GUILDA:import_csv:UnknownID", str_col)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:import_csv:UnknownID", str_col)
     assert(contains(ME.message, "component/load-power/main.csv row 2: " + str_col + " = 99"), ME.message)
     assert(isempty(net.a_Bus), str_col)
 end
@@ -344,7 +344,7 @@ tab.Type(2) = "nosuch";
 writetable(tab, str_file);
 net = PowerNetwork("Host");
 ME = import_error(str_path, net);
-assert(ME.identifier == "MATLAB:validators:mustBeMember")
+assert(DebugScript.helper.msg_id(ME) == "MATLAB:validators:mustBeMember")
 assert(numel(net.a_Bus) == 3 && numel(net.a_Branch) == 1)
 
 
@@ -358,7 +358,7 @@ function [net, str_msg, id] = import_with_warning(str_path)
     % Import without initialize and return the last warning
     lastwarn("");
     net = DebugScript.helper.quiet(@() PowerNetwork.import_csv(str_path, Initialize=false));
-    [str_msg, id] = lastwarn();
+    [str_msg, id] = lastwarn(); id = DebugScript.helper.msg_id(str_msg, id);
     str_msg = string(str_msg);
     id      = string(id);
 end
@@ -406,7 +406,7 @@ function [str_msg, id, str_path] = export_with_warning(net, str_path)
     % Run export_csv and return the last warning
     lastwarn("");
     str_path = DebugScript.helper.quiet(@() net.export_csv(str_path));
-    [str_msg, id] = lastwarn();
+    [str_msg, id] = lastwarn(); id = DebugScript.helper.msg_id(str_msg, id);
     str_msg = string(str_msg);
     id      = string(id);
 end
