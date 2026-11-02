@@ -12,16 +12,11 @@ function log_edit(obj, log, tag, before, after, time, tab)
         tab    = table(time, obj.get_tag(true,"/"), log, tag, {before}, {after}) % Prebuilt edit-log row.
     end
     % Record what the edit made stale (see LayerPackage.edit_effect):
-    % the handle cache of the parameter's owner (of the owner and all its
-    % descendants for a "base" parameter such as Hz), and the network equilibrium.
+    % the handle cache of the parameter's owner, and the network equilibrium.
     str_logtag = string(tab{1,4});
     [l_odefcn, l_equilibrium] = LayerPackage.edit_effect(str_logtag, string(tab{1,3}));
     if l_odefcn && isa(obj,"Parameter") && isa(obj.parent,"LayerPackage")
-        if str_logtag == "Parameter(base)"
-            obj.parent.mark_stale_odefcn();
-        else
-            obj.parent.s_edit.l_staleOdefcn = true;
-        end
+        obj.parent.s_edit.l_staleOdefcn = true;
     end
 
     if isa(obj,"PowerNetwork")
@@ -39,5 +34,11 @@ function log_edit(obj, log, tag, before, after, time, tab)
         obj.parent.log_edit("","",nan,nan,"",tab)
     else
         return
+    end
+
+    % A network Hz edit reaches every layer at once. After the record, so that a failure
+    % leaves the edit logged. The value is already set: this runs in its PostSet listener.
+    if isa(obj,"Parameter") && str_logtag == "Parameter(base)" && string(tab{1,3}) == "edit Hz"
+        obj.parent.check_edit(true);
     end
 end

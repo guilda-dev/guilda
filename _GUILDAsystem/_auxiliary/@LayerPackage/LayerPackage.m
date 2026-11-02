@@ -46,11 +46,11 @@ classdef LayerPackage < handle
         %
         % - str_flag: "unset", "initialized" or "editted".
         % - l_staleOdefcn: True when the cached f_* function handles built by set_odefcn no longer
-        %   match the parameters. Set by log_edit on the owner of an edited "dynamics" parameter,
-        %   and on every layer of the network when its "base" parameter (Hz) is edited; cleared
-        %   when set_odefcn rebuilds the handles. check_edit rebuilds the handles of every layer
-        %   with this flag at the start of an analysis. Only Component, LocalController and
-        %   GlobalController own handles.
+        %   match the parameters. Set by log_edit on the owner of an edited "dynamics" parameter;
+        %   cleared when set_odefcn rebuilds the handles. check_edit rebuilds the handles of every
+        %   layer with this flag at the start of an analysis. A network Hz edit does not set it:
+        %   it rebuilds every layer at once (check_edit with l_force). Only Component,
+        %   LocalController and GlobalController own handles.
         % - l_staleEquilibrium: True when the equilibrium set by initialize no longer matches the
         %   model. Kept on PowerNetwork only. Set by log_edit for edits of "dynamics", "base"
         %   (baseMVA) and "powerflow" parameters, topology changes and slack-bus changes; edits of
@@ -86,20 +86,7 @@ classdef LayerPackage < handle
     methods(Access=protected)
         log_edit(obj, log, time, tab)
         reset_edit(obj)
-        flag = check_edit(obj)
-
-        function mark_stale_odefcn(obj)
-        % Mark the f_* handles of this layer and all its descendants stale.
-            obj.s_edit.l_staleOdefcn = true;
-            cellfun(@(c) c.mark_stale_odefcn, obj.children);
-        end
-
-        function rebuild_odefcn_tree(obj)
-        % Rebuild the f_* handles of this layer and all its descendants now,
-        % e.g. after attaching it to a parent whose network frequency may differ.
-            obj.rebuild_odefcn();
-            cellfun(@(c) c.rebuild_odefcn_tree, obj.children);
-        end
+        flag = check_edit(obj, l_force)
 
         function handle_edit(obj, tab) %#ok
         % Called by log_edit on the top layer (PowerNetwork) with every edit
@@ -120,9 +107,10 @@ classdef LayerPackage < handle
         % What an edit makes stale, from the "tag" and "log" columns of tab_editLog.
         %   tag                    f_* handles   equilibrium
         %   Parameter(dynamics)    stale         stale
-        %   Parameter(base)        stale         stale     (PowerNetwork para_base: baseMVA;
-        %                                                   marks every layer of the network)
-        %   Parameter(base), Hz    stale         -         (log "edit Hz": the equilibrium does
+        %   Parameter(base)        -             stale     (PowerNetwork para_base: baseMVA;
+        %                                                   no model handle holds it)
+        %   Parameter(base), Hz    -             -         (log "edit Hz": log_edit rebuilds the
+        %                                                   handles at once; the equilibrium does
         %                                                   not depend on the nominal frequency)
         %   Parameter(powerflow)   -             stale
         %   Topology               -             stale     (add_/remove_/replace_)
@@ -138,7 +126,7 @@ classdef LayerPackage < handle
             end
             switch str_logtag
                 case "Parameter(base)"
-                    l_odefcn = true;  l_equilibrium = str_log ~= "edit Hz";
+                    l_odefcn = false; l_equilibrium = str_log ~= "edit Hz";
                 case "Parameter(dynamics)"
                     l_odefcn = true;  l_equilibrium = true;
                 case {'Parameter(powerflow)', 'Topology', 'Slack'}

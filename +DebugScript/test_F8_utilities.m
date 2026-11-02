@@ -270,7 +270,7 @@ n3.a_Branch{1}.tab_parameter.dynamics.R = 0.02;
 assert(height(n3.tab_editLog) == 1 && n3.s_edit.l_staleEquilibrium)
 s = load(str_mat);  n4 = s.net;
 n4.tab_parameter.base.Hz = 50;
-assert(n4.a_Bus{2}.a_Component{1}.s_edit.l_staleOdefcn && ~n4.s_edit.l_staleEquilibrium)
+assert(DebugScript.helper.handle_Hz(n4.a_Bus{2}.a_Component{1}) == 50 && ~n4.s_edit.l_staleEquilibrium)
 s = load(str_mat);  n5 = s.net;
 DebugScript.helper.quiet(@() set_slack(n5.a_Bus{2}));
 assert(n5.a_Bus{2}.l_isSlack && n5.s_edit.l_staleEquilibrium)

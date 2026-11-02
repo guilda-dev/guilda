@@ -13,8 +13,7 @@ classdef local_LQR < LocalController
 % linear model of the component (`comp.get_sys` without its controllers)
 % connected to an infinite bus of voltage `V0` [pu] through the admittance that
 % gives the equilibrium current (as in GUILDA v2). A network Hz edit keeps the
-% equilibrium, so the next analysis redesigns `K` at that equilibrium without
-% `net.initialize`.
+% equilibrium, so the edit redesigns `K` at that equilibrium without `net.initialize`.
 %
 % Attach it with `comp.add_local_controller(lqr)`; it takes the place of an AVR
 % (and of the PSS attached to that AVR). The output of a global controller (e.g. an
@@ -61,8 +60,8 @@ classdef local_LQR < LocalController
 
     properties (SetAccess=private) % Design results
         % Feedback gain `K` in `u = u* - K*(x - x*)`.
-        % An nu-by-nx matrix computed by net.initialize and, after a network Hz
-        % edit, by the next analysis.
+        % An nu-by-nx matrix computed by net.initialize and by a network Hz edit
+        % when the equilibrium is up to date.
         K = zeros(0,0)
         % Linear model used to compute K (ss).
         % The component connected to the infinite bus; its inputs are the driven
@@ -135,12 +134,21 @@ classdef local_LQR < LocalController
 
     methods (Access=protected)
         function rebuild_odefcn(obj)
-            % Called by check_edit after a dynamics edit or a network Hz edit. A Hz edit
-            % keeps the equilibrium, so K is redesigned here (check_edit has already
-            % rebuilt the component, the parent). When the equilibrium is stale,
-            % net.initialize redesigns K instead.
-            if obj.s_edit.l_staleOdefcn && ~isempty(obj.r_HzDesign) && obj.r_HzDesign ~= obj.r_Hz && obj.equilibrium_valid()
-                obj.design_gain(obj.a_Component.c_Vequilibrium, obj.a_Component.rv_Uequilibrium);
+            % Called by check_edit after a dynamics edit, a network Hz edit or an attach.
+            % A Hz edit keeps the equilibrium, so K is redesigned here (check_edit has
+            % already rebuilt the component, the parent). When the equilibrium is not up
+            % to date, net.initialize redesigns K instead.
+            if ~isempty(obj.r_HzDesign) && obj.r_HzDesign ~= obj.r_Hz && obj.equilibrium_valid()
+                try
+                    obj.design_gain(obj.a_Component.c_Vequilibrium, obj.a_Component.rv_Uequilibrium);
+                catch ME
+                    % A Hz edit runs in a listener, where an error is only a warning and would
+                    % stop the rebuild of the other layers. K stays for the old frequency, so the
+                    % record makes the equilibrium stale and analyses ask for net.initialize.
+                    warning("GUILDA:local_LQR:RedesignFailed", "%s: K was not redesigned for %g Hz: %s", obj.str_tag, obj.r_Hz, ME.message)
+                    obj.set_odefcn(obj.r_Hz);
+                    obj.log_edit(obj.str_tag + " redesign failed", "Parameter(dynamics)");
+                end
             else
                 obj.set_odefcn(obj.r_Hz);
             end
@@ -220,8 +228,13 @@ classdef local_LQR < LocalController
 
         function l = equilibrium_valid(obj)
             % True when the component is in a network whose equilibrium is up to date
-            bus = obj.a_Component.a_Bus;
-            l = ~isempty(bus) && ~isempty(bus.a_PowerNetwork) && ~bus.a_PowerNetwork.s_edit.l_staleEquilibrium;
+            comp = obj.a_Component;
+            if isempty(comp) || isempty(comp.a_Bus) || isempty(comp.a_Bus.a_PowerNetwork)
+                l = false;
+            else
+                s = comp.a_Bus.a_PowerNetwork.s_edit;
+                l = s.str_flag ~= "unset" && ~s.l_staleEquilibrium;
+            end
         end
 
         function log_change(obj, str_name)

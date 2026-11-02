@@ -1,4 +1,4 @@
-function flag = check_edit(obj, opt)
+function flag = check_edit(obj, l_force, opt)
 % Rebuild stale handles and optionally require an up-to-date equilibrium.
 %
 % Prepares the network for an analysis after edits.
@@ -8,12 +8,13 @@ function flag = check_edit(obj, opt)
 % baseMVA or powerflow parameters, topology, slack bus; not the network Hz).
     arguments
         obj   % Target network.
+        l_force (1,1) logical = false   % Rebuild the handles of every layer, stale or not.
         opt.RequireEquilibrium (1,1) logical = false   % Error with ID GUILDA:PowerNetwork:EquilibriumStale when the equilibrium is out of date.
     end
     arguments (Output)
         flag   % True when the equilibrium is up to date.
     end
-    flag = check_edit@LayerPackage(obj);
+    flag = check_edit@LayerPackage(obj, l_force);
     if opt.RequireEquilibrium && ~flag
         if obj.s_edit.str_flag == "unset"
             str_reason = "net.initialize() has not been run";
