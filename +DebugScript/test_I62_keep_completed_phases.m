@@ -10,9 +10,9 @@ net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 net.solver_ODE.Progress = "none";
 sv_gen = generators(net);
-ev_trip_later = odeEventSet("trip", net, "TimeSpan", [1,1.5], "TripUnit", sv_gen);
-ev_trip_first = odeEventSet("trip", net, "TimeSpan", [0,1.5], "TripUnit", sv_gen);
-ev_nan = odeEventSet("nan", net, "TimeSpan", [1,1.2], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", NaN);
+ev_trip_later = ODEevent("trip", net, "TimeSpan", [1,1.5], "TripUnit", sv_gen);
+ev_trip_first = ODEevent("trip", net, "TimeSpan", [0,1.5], "TripUnit", sv_gen);
+ev_nan = ODEevent("nan", net, "TimeSpan", [1,1.2], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", NaN);
 str_warn = "GUILDA:PowerNetwork:SimulationIncomplete";
 
 
@@ -29,7 +29,7 @@ assert(isequaln(sol.rv_t, ref.rv_t) && isequaln(sol.rm_variable, ref.rm_variable
 %% Exception of the phase is kept in output
 [~, ~, output] = run(net, [0,2], ev_trip_later);
 ME = output.exception;
-assert(ME.identifier == "GUILDA:odeSimulator:PhaseFailed", ME.identifier)
+assert(ME.identifier == "GUILDA:ODEsolver:PhaseFailed", ME.identifier)
 assert(contains(ME.message, "phase 2") && contains(ME.message, "t = [1, 1.5]"), ME.message)
 assert(ME.cause{1}.identifier == "MATLAB:ode15s:MassMatrixAllZero", ME.cause{1}.identifier)
 
@@ -48,7 +48,7 @@ assert(contains(output.message, "t = 1 s of 2 s") && contains(output.message, ou
 assert(flag == -1)
 assert(output.tEnd == 1 && sol.rv_t(end) == 1 && output.nPhasesDone == 1)
 ME = output.exception;
-assert(ME.identifier == "GUILDA:odeSimulator:InitialConditionFailed", ME.identifier)
+assert(ME.identifier == "GUILDA:ODEsolver:InitialConditionFailed", ME.identifier)
 assert(contains(ME.message, "phase 2") && contains(ME.message, "t = [1, 1.2]"), ME.message)
 assert(ME.cause{1}.identifier == "MATLAB:daeic12:NeedBetterY0", ME.cause{1}.identifier)
 assert(ME.cause{2}.identifier == "MATLAB:decic:IndexGTOne", ME.cause{2}.identifier)
@@ -61,7 +61,7 @@ assert(output.tEnd == 0 && output.nPhasesDone == 0)
 assert(isempty(sol.rv_t) && size(sol.rm_variable,1) == 0 && width(sol.rm_variable) == height(sol.tab_variable))
 assert(isempty(sol.odeResults.t) && height(sol.odeResults.Bus(1).V) == 0)
 assert(contains(output.message, "phase 1"), output.message)
-expect_error(@() sol.get_point(0), "GUILDA:odeSimulationResult:PointTime")
+expect_error(@() sol.get_point(0), "GUILDA:ODEresult:PointTime")
 
 
 %% Empty result can be plotted
@@ -86,7 +86,7 @@ assert(height(tab) == 0 && any(string(tab.Properties.VariableNames) == "t"))
 str_mat = fullfile(str_dir, "empty.mat");
 sol.Export(str_mat);
 s = load(str_mat);
-assert(s.flag == -1 && s.output.exception.identifier == "GUILDA:odeSimulator:PhaseFailed")
+assert(s.flag == -1 && s.output.exception.identifier == "GUILDA:ODEsolver:PhaseFailed")
 
 
 %% Plot and Export options work when the first phase fails
@@ -116,23 +116,23 @@ assert(isequaln(sol.rm_variable, sol_ref.rm_variable))
 
 
 %% Input function error is still raised
-ev = odeEventSet("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) boom(t));
+ev = ODEevent("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) boom(t));
 ME = catch_error(@() run(net, [0,4], ev));
-assert(ME.identifier == "GUILDA:odeSimulator:PhaseFailed", ME.identifier)
+assert(ME.identifier == "GUILDA:ODEsolver:PhaseFailed", ME.identifier)
 assert(contains(ME.message, "phase 2") && ME.cause{1}.identifier == "DebugScript:boom")
 
 
 %% Input function error with a MATLAB identifier is still raised
-ev = odeEventSet("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) bad_index(t));
+ev = ODEevent("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) bad_index(t));
 ME = catch_error(@() run(net, [0,4], ev));
-assert(ME.identifier == "GUILDA:odeSimulator:PhaseFailed", ME.identifier)
+assert(ME.identifier == "GUILDA:ODEsolver:PhaseFailed", ME.identifier)
 assert(ME.cause{1}.identifier == "MATLAB:badsubscript", ME.cause{1}.identifier)
 
 
 %% Solver error of an input function is still raised
-ev = odeEventSet("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) own_solver(t));
+ev = ODEevent("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) own_solver(t));
 ME = catch_error(@() run(net, [0,4], ev));
-assert(ME.identifier == "GUILDA:odeSimulator:PhaseFailed", ME.identifier)
+assert(ME.identifier == "GUILDA:ODEsolver:PhaseFailed", ME.identifier)
 assert(ME.cause{1}.identifier == "MATLAB:ode15s:MassMatrixAllZero", ME.cause{1}.identifier)
 
 
@@ -141,12 +141,12 @@ net2 = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net2.initialize);
 net2.solver_ODE.Progress = "none";
 ME = catch_error(@() run(net2, [0,1], "SolverOptions", matlab.ode.options.ODE45));
-assert(ME.identifier == "GUILDA:odeSimulator:PhaseFailed", ME.identifier)
+assert(ME.identifier == "GUILDA:ODEsolver:PhaseFailed", ME.identifier)
 assert(ME.cause{1}.identifier == "MATLAB:ode45:MassSingularYes", ME.cause{1}.identifier)
 
 
 %% Convergence failure of the initial condition returns the completed phases
-ev = odeEventSet("huge", net, "TimeSpan", [1,1.2], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", 1e6);
+ev = ODEevent("huge", net, "TimeSpan", [1,1.2], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", 1e6);
 [~, flag, output] = run(net, [0,2], ev);
 assert(flag == -1 && output.tEnd == 1)
 assert(output.exception.cause{2}.identifier == "MATLAB:decic:ConvergenceFail", output.exception.cause{2}.identifier)

@@ -15,7 +15,7 @@ for str_bus = ["B001","B002"]
     [net, ev] = build_case("load-power", str_bus);
     [sol, flag, output] = net.simulate([0,2], ev);
     assert(flag == -1 && sol.flag == -1)
-    assert(output.exception.identifier == "GUILDA:odeSimulator:InitialConditionFailed")
+    assert(output.exception.identifier == "GUILDA:ODEsolver:InitialConditionFailed")
     assert(contains(output.message, "algebraic equations"))
     assert(contains(output.message, "load-impedance"))
     assert(~contains(output.message, "tspan") && ~contains(output.message, "y0"))
@@ -49,5 +49,5 @@ function [net, ev] = build_case(str_load, str_bus)
     net.a_Bus{3}.add_component(str_load, "P",-1.0, "Q",-0.2);
     net.solver_ODE.Progress = "none";
     DebugScript.helper.quiet(@() net.initialize);
-    ev = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", str_bus);
+    ev = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", str_bus);
 end

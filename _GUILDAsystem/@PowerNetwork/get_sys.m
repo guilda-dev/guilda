@@ -7,21 +7,21 @@ function [sys, flag, output] = get_sys(obj, varargin)
 % of get_ss; Algorithm chooses the form of the model: "Kron" and "Feedback" eliminate the
 % bus voltages, "DAE" keeps them (default net.solver_LIN.Algorithm, "Feedback"). Use
 % net.linearize to keep the unreduced Jacobian blocks and the variable map.
-% v3 returned [sys, lin] with lin an odeLinearizer holding the network; the second
+% v3 returned [sys, lin] with lin an LTIsolver holding the network; the second
 % output is now flag.
-% When flag is false, this stops with the error of LinearizationResult.get_ss, except "DAE"
+% When flag is false, this stops with the error of LTIresult.get_ss, except "DAE"
 % with a singular Avv, which returns the model and flag false; net.linearize returns the
 % result, whose output.str_issue and output.message give the reason. A Point or a model that
 % is not finite stops earlier, with the errors of net.linearize.
 %
 % Name-Value options:
 %
-% - `Algorithm` — Form of the model (see LinearizationResult.get_ss). Default: net.solver_LIN.Algorithm.
+% - `Algorithm` — Form of the model (see LTIresult.get_ss). Default: net.solver_LIN.Algorithm.
 % - `Point` — Point of the linearization (see net.linearize). Default: net.solver_LIN.Point.
-% - `Coordinate` — Bus variables of "DAE" (see LinearizationResult.get_ss). Default: net.solver_LIN.Coordinate.
+% - `Coordinate` — Bus variables of "DAE" (see LTIresult.get_ss). Default: net.solver_LIN.Coordinate.
 % - `Plot` — Plot the eigenvalue map. Default: false.
-% - `Input` — Inputs of the model: "u" or Labels (see LinearizationResult.get_ss). Default: all inputs.
-% - `Output` — Outputs of the model: "x", "V", "I", "y" or names (see LinearizationResult.get_ss). Default: as in get_ss, so the outputs follow the states and "Kron" has no output names.
+% - `Input` — Inputs of the model: "u" or Labels (see LTIresult.get_ss). Default: all inputs.
+% - `Output` — Outputs of the model: "x", "V", "I", "y" or names (see LTIresult.get_ss). Default: as in get_ss, so the outputs follow the states and "Kron" has no output names.
 %
 % <@Examples>
 % ```matlab
@@ -30,11 +30,11 @@ function [sys, flag, output] = get_sys(obj, varargin)
 % sysV = net.get_sys(Algorithm="Kron", Output="V");
 % ```
 %
-% See also PowerNetwork.linearize, LinearizationResult.get_ss
+% See also PowerNetwork.linearize, LTIresult.get_ss
     arguments (Output)
         sys      % Descriptor state-space model (dss) with state, input and output names.
         flag     % True when the result is usable: all Jacobian entries are finite and Avv is invertible.
-        output   % As net.linearize; output.result is the LinearizationResult.
+        output   % As net.linearize; output.result is the LTIresult.
     end
     [c_nv, c_channel] = take_channel_options(varargin);
     [result, flag, output] = obj.linearize(c_nv{:});

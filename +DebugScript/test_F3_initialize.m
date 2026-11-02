@@ -21,8 +21,8 @@ tol_drift = 1e-6;      % 外乱なしシミュレーションでの状態変化�
 net = DebugScript.helper.build_9bus();
 [res, flag, output] = DebugScript.helper.quiet(@() net.initialize);
 
-% result: 潮流計算の結果 (PowerFlowResult)、flag: 収束フラグ、output: ソルバー出力 (構造体)
-assert(isa(res, "PowerFlowResult") && res.l_success)
+% result: 潮流計算の結果 (PFCresult)、flag: 収束フラグ、output: ソルバー出力 (構造体)
+assert(isa(res, "PFCresult") && res.l_success)
 assert((isnumeric(flag) || islogical(flag)) && isscalar(flag), "flag が " + class(flag) + " で返っている")
 assert(flag > 0 && isequal(res.flag, flag) && isstruct(output))
 assert(istable(res.tab_bus) && height(res.tab_bus) == numel(net.a_Bus))
@@ -30,7 +30,7 @@ assert(norm(net.cv_Vequilibrium - res.tab_bus.Vphasor) < 1e-8)
 
 % Method="powerflow" が既定。他の Name-Value は calculate_powerflow へそのまま渡る
 res = DebugScript.helper.quiet(@() net.initialize(Method="powerflow", Tolerance=1e-10));
-assert(isa(res, "PowerFlowResult") && res.options.Tolerance == 1e-10)
+assert(isa(res, "PFCresult") && res.options.Tolerance == 1e-10)
 assert(DebugScript.helper.edit_flag(net) == "initialized")
 
 
@@ -195,7 +195,7 @@ assert(DebugScript.helper.max_state_drift(sol) < tol_drift)
 net = DebugScript.helper.build_ieee14();
 net.solver_OPF.Method = "DC OPF";
 [res, flag] = DebugScript.helper.quiet(@() net.initialize(Method="OPF", Verbose=false));
-assert(isa(res, "OPFResult") && res.l_success && double(flag) > 0)
+assert(isa(res, "OPFresult") && res.l_success && double(flag) > 0)
 assert(res.options.Method == "AC OPF" && net.solver_OPF.Method == "DC OPF")
 assert(istable(res.tab_bus) && height(res.tab_bus) == numel(net.a_Bus))
 assert(norm(net.cv_Vequilibrium - res.tab_bus.Vphasor) < 1e-8)
@@ -208,7 +208,7 @@ net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 V_before = net.cv_Vequilibrium;
 [res, flag] = DebugScript.helper.quiet(@() net.initialize(Method="equilibrium"));
-assert(isa(res, "PowerFlowResult") && res.str_solver == "equilibrium" && res.l_success)
+assert(isa(res, "PFCresult") && res.str_solver == "equilibrium" && res.l_success)
 assert(isscalar(flag) && flag > 0)
 assert(istable(res.tab_bus))
 assert(norm(net.cv_Vequilibrium - V_before) < 1e-8)
@@ -297,7 +297,7 @@ lastwarn("");
 warning("off", "GUILDA:Deprecated:InitializeMethodValue");
 res = DebugScript.helper.quiet(@() net.initialize("methods", "powerflow calculation"));
 [~, id] = lastwarn();
-assert(string(id) == "GUILDA:Deprecated:InitializeMethods" && isa(res, "PowerFlowResult"))
+assert(string(id) == "GUILDA:Deprecated:InitializeMethods" && isa(res, "PFCresult"))
 
 clear Deprecated
 lastwarn("");
@@ -309,7 +309,7 @@ assert(string(id) == "GUILDA:Deprecated:InitializeMethodValue" && res.str_solver
 
 warning("off", "GUILDA:Deprecated:InitializeMethodValue");
 res = DebugScript.helper.quiet(@() net.initialize("methods", "optimal powerflow"));
-assert(isa(res, "OPFResult") && res.options.Method == "AC OPF")
+assert(isa(res, "OPFresult") && res.options.Method == "AC OPF")
 
 
 %% Dynamics parameter edit is used after initialize

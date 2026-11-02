@@ -21,7 +21,7 @@ classdef (Abstract) AnalysisResult < auxiliary
 % result.Plot();
 % ```
 %
-% See also PowerFlowResult, OPFResult, CPFResult, LinearizationResult, odeSimulationResult
+% See also PFCresult, OPFresult, CPFresult, LTIresult, ODEresult
 
     properties (SetAccess=protected) % Result
         % Success or convergence flag, as returned by the analysis (second output).

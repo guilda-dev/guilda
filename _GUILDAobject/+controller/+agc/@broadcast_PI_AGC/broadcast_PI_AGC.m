@@ -21,7 +21,7 @@ classdef broadcast_PI_AGC < GlobalController
 % agc = controller.agc.broadcast_PI_AGC(net, "agc", g1, g2, kP=100, kI=500);
 % net.add_global_controller(agc);
 % net.initialize;
-% ev  = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B007");
+% ev  = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B007");
 % sol = net.simulate([0,10], ev);
 % ```
 %

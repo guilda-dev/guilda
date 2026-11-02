@@ -23,7 +23,7 @@ function sys = get_sys_alone(obj, x, V, I, u, opt)
 
     Mass = shape(obj.f_Mass(0,x,V,I,u), nx, nx);
 
-    % Same Jacobian contract as odeSimulator: f_JacobiDx/I/Y(t,x,V,I,u)
+    % Same Jacobian contract as ODEsolver: f_JacobiDx/I/Y(t,x,V,I,u)
     [Axx,Bxv,Bxi,Bxu] = obj.f_JacobiDx(0,x,V,I,u);
     [Cix,Div,Dii,Diu] = obj.f_JacobiI( 0,x,V,I,u);
     [Cyx,Dyv,Dyi,Dyu] = obj.f_JacobiY( 0,x,V,I,u);

@@ -39,18 +39,18 @@ end
 
 
 %% Event as the first argument stops with the time error
-ev = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+ev = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 try
     net.simulate(ev);
     error("DebugScript:noError", "イベントを time に渡してもエラーにならない")
 catch ME
     assert(ME.identifier == str_id, ME.identifier)
-    assert(contains(ME.message, "class odeEventSet"), ME.message)
+    assert(contains(ME.message, "class ODEevent"), ME.message)
 end
 
 
 %% Several time points no longer drop a later event silently
-ev = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+ev = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 try
     net.simulate([0,0.5,1,2,3], ev);
     error("DebugScript:noError", "3 要素以上の time でエラーにならない")
@@ -74,7 +74,7 @@ assert(flag == 1 && sol.odeResults.t(end) == 1)
 
 
 %% Empty time takes the time span of the events
-ev = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+ev = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 [sol, flag] = net.simulate([], ev);
 assert(flag == 1 && sol.odeResults.t(end) >= 1.05)
 

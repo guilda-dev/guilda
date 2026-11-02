@@ -1,5 +1,5 @@
 function varargout = optimize_powerflow(obj, varargin)
-% Calculate the optimal power flow of the network and return an OPFResult.
+% Calculate the optimal power flow of the network and return an OPFresult.
 %
 % Calculates the optimal power flow of the network: the operating point that minimizes
 % the generation cost (tab_parameter.OPF of the components) under the constraints in
@@ -19,7 +19,7 @@ function varargout = optimize_powerflow(obj, varargin)
 % starts from tab_parameter.powerflow V0 and Varg0 of the buses and P0, Q0 of the
 % components; branch current and power limits are applied as |I|^2 <= Imax^2 and
 % P^2 + Q^2 <= Smax^2 at both ends.
-% Accepted options are the names in OptimalPowerFlow.OptionMap plus Plot and Export;
+% Accepted options are the names in OPFsolver.OptionMap plus Plot and Export;
 % any other name stops with GUILDA:resolve_options:UnknownName.
 %
 % Name-Value options:
@@ -46,7 +46,7 @@ function varargout = optimize_powerflow(obj, varargin)
 % res = net.optimize_powerflow(Method="ELD", Verbose=false, Plot=true);
 % ```
 %
-% See also OPFResult, OptimalPowerFlow, PowerNetwork.set_opffcn, PowerNetwork.build_opf_problem
+% See also OPFresult, OPFsolver, PowerNetwork.set_opffcn, PowerNetwork.build_opf_problem
 
     varargin = v3_opf_args(varargin);                         % COMPAT(v3)
     [c_nv, opt] = take_call_options(varargin);
