@@ -221,7 +221,7 @@ classdef GlobalController < PowerSystemModel
         function set_parent(obj,net)
             % net = [] detaches the controller (PowerNetwork.remove_global_controller)
             obj.a_PowerNetwork = net;
-            obj.rebuild_odefcn_tree();    % use the frequency of the network
+            obj.check_edit(true);        % use the frequency of the network
         end
     end
     methods        

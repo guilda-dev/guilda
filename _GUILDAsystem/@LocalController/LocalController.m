@@ -161,7 +161,7 @@ classdef LocalController < PowerSystemModel
             % a_Component = [] detaches the controller (Component.add_local_controller)
             obj.a_Component = a_Component; 
             obj.resolve_observe();        % inputs read on the component (also of nested controllers)
-            obj.rebuild_odefcn_tree();    % use the frequency of the parent's network
+            obj.check_edit(true);        % use the frequency of the parent's network
         end
 
         function resolve_observe(obj)

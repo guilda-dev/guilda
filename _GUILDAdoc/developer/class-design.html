@@ -258,8 +258,8 @@
       </thead>
       <tbody>
         <tr><td>dynamics parameter</td><td><span class="dg-badge is-err">function-handle cache</span> <span class="dg-badge is-err">equilibrium</span><small>The function-handle cache applies to components and controllers only; a bus shunt or a branch constant changes the equilibrium.</small></td></tr>
-        <tr><td>network <code>baseMVA</code></td><td><span class="dg-badge is-err">function-handle cache</span> <span class="dg-badge is-err">equilibrium</span><small>Every layer of the network. Stored per-unit values are not converted to the new base.</small></td></tr>
-        <tr><td>network <code>Hz</code></td><td><span class="dg-badge is-err">function-handle cache</span><small>Every layer of the network. The equilibrium does not depend on the nominal frequency, so no <code>initialize</code> is needed. <code>controller.local_LQR</code> redesigns its gain at the held equilibrium when its handles are rebuilt.</small></td></tr>
+        <tr><td>network <code>baseMVA</code></td><td><span class="dg-badge is-err">equilibrium</span><small>No model handle holds it. Stored per-unit values are not converted to the new base.</small></td></tr>
+        <tr><td>network <code>Hz</code></td><td><span class="dg-badge is-err">function-handle cache</span><small>Every layer of the network, rebuilt by the edit itself. The equilibrium does not depend on the nominal frequency, so no <code>initialize</code> is needed. <code>controller.local_LQR</code> redesigns its gain at the held equilibrium when its handles are rebuilt.</small></td></tr>
         <tr><td>powerflow parameter</td><td><span class="dg-badge is-err">equilibrium</span></td></tr>
         <tr><td>topology change (<code>add_*</code> / <code>remove_*</code> / <code>replace_*</code>)</td><td><span class="dg-badge is-err">equilibrium</span><small>Includes adding or replacing a controller, which changes the dynamics.</small></td></tr>
         <tr><td>slack bus change</td><td><span class="dg-badge is-err">equilibrium</span></td></tr>

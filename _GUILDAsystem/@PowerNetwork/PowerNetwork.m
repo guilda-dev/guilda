@@ -181,7 +181,7 @@ classdef PowerNetwork < PowerSystemModel
     end
     methods(Access=protected)
         % Edit handling: rebuild stale f_* handles, check the equilibrium
-        flag = check_edit(obj, opt)
+        flag = check_edit(obj, l_force, opt)
 
         function handle_edit(obj, tab)
             % At most one slack bus: a bus reports bus.l_isSlack = true as a
