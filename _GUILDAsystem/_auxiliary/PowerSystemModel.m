@@ -19,7 +19,17 @@ classdef PowerSystemModel < LayerPackage
     end
     methods
         function Hz = get.r_Hz(obj)
-            Hz = obj.get_Hz();
+            % Walk up in a loop: inside this method, r_Hz of a parent is a direct read of
+            % the Dependent property (MATLAB:class:DependentGet), not a call of this method.
+            p = obj;
+            while isa(p,"PowerSystemModel") && ~isa(p,"PowerNetwork")
+                p = p.parent;
+            end
+            if isa(p,"PowerNetwork")
+                Hz = p.para_base.Hz;
+            else
+                Hz = GUILDA.config("Model","Hz");
+            end
         end
     end
 end

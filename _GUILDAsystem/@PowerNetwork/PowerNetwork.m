@@ -185,11 +185,6 @@ classdef PowerNetwork < PowerSystemModel
         % Edit handling: rebuild stale f_* handles, check the equilibrium
         flag = check_edit(obj, opt)
 
-        function Hz = get_Hz(obj)
-            % The network owns the nominal frequency of all its layers
-            Hz = obj.para_base.Hz;
-        end
-
         function handle_edit(obj, tab)
             % At most one slack bus: a bus reports bus.l_isSlack = true as a
             % "Slack" edit (ID starts with its tag); the network releases the others.

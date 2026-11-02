@@ -88,18 +88,6 @@ classdef LayerPackage < handle
         reset_edit(obj)
         flag = check_edit(obj)
 
-        function Hz = get_Hz(obj)
-        % Nominal frequency [Hz] of the network this layer belongs to (walks up
-        % the parents; PowerNetwork overrides this). A layer not attached to a
-        % network uses GUILDA.config("Model","Hz").
-            p = obj.parent;
-            if isa(p, "LayerPackage")
-                Hz = p.get_Hz();
-            else
-                Hz = GUILDA.config("Model","Hz");
-            end
-        end
-
         function mark_stale_odefcn(obj)
         % Mark the f_* handles of this layer and all its descendants stale.
             obj.s_edit.l_staleOdefcn = true;
