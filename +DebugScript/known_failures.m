@@ -10,7 +10,9 @@ function tab = known_failures()
 % テスト名は "<ファイル名>/<セクション名から作られる名前>"。
 % 名前は DebugScript.run_all の一覧、または {testsuite("DebugScript").Name} で確認できる。
 
-    list = [strings(0,2)     % 現在、既知の不具合はない
+    list = [strings(0,2)
+    % ---- F22 model contract ----------------------------------------------------------------------
+    "test_F22_model_contract/AVR_DC1WithItsDefaultGainHasAFiniteEquilibrium", "AVR_DC1 の既定 kap = 0 では Vref = Inf になり simulate が MATLAB のエラーで止まる"
     % ---- F1 model building ----------------------------------------------------------------------
     % ---- F2 power flow --------------------------------------------------------------------------
     % ---- F3 initialize --------------------------------------------------------------------------

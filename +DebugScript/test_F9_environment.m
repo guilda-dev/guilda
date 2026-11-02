@@ -47,7 +47,7 @@ assert(isequal(v3_user_config("Model", struct("Reporter", 1)), struct("Reporter"
 assert(isfile(fullfile(str_root, "_GUILDAsystem", "@Bus", "add_component.m")))
 assert(isfile(fullfile(str_root, "_GUILDAsystem", "@Bus", "replace_component.m")))
 txt = fileread(fullfile(str_root, "_GUILDAsystem", "@Bus", "add_component.m"));
-for key = ["gen-classical","gen-1axis","gen-2axis","gen-park","gen-droop","load-impedance","load-power"]
+for key = DebugScript.helper.model_classes("Component").Key'
     assert(contains(txt, "'" + key + "'"), key)
 end
 

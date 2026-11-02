@@ -354,7 +354,7 @@ assert(isa(net.solver_LIN, "odeLinearizer"))
 
 %% Analytic jacobians match numerical differentiation
 % get_sys と odeSimulator が使う f_Jacobi* (Jacobi_dx / Jacobi_I / Jacobi_Y) が f_dx, f_I, f_Y の微分と一致する
-for key = ["gen-classical","gen-1axis","gen-2axis","gen-park","gen-droop","load-impedance","load-power"]
+for key = DebugScript.helper.model_classes("Component").Key'
     [net3, comp] = DebugScript.helper.build_3bus(key);
     DebugScript.helper.quiet(@() net3.initialize);
     err = DebugScript.helper.jacobian_error(comp);
@@ -378,7 +378,7 @@ end
 
 %% Each component type gives same eigenvalues in three algorithms
 % 3 母線系統で機器の種類ごとに get_sys を求める (B001: gen-park, B002 または B003: 指定した機器)
-for key = ["gen-classical","gen-1axis","gen-2axis","gen-park","gen-droop","load-impedance","load-power"]
+for key = DebugScript.helper.model_classes("Component").Key'
     [net3, comp] = DebugScript.helper.build_3bus(key);
     DebugScript.helper.quiet(@() net3.initialize);
     sys = net3.get_sys("Algorithm","Kron");
