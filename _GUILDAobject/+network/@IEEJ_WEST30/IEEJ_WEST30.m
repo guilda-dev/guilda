@@ -35,8 +35,8 @@ classdef IEEJ_WEST30 < PowerNetwork
 %   q-axis, with no `Xq'` or `Tq'`. Its machine table does not list them, and the values
 %   in those fields of the cards are unused by this model. gen-park reduces to it with
 %   `Xq_p = Xq`, which decouples `Ed`. Its equilibrium divides by `Xq - Xq_p`, so
-%   `Xq_p = Xq*(1 - 1e-6)`. `Tq_p` is the unused card value; it has no effect at this
-%   coupling.
+%   `Xq_p = Xq*(1 - 1e-6)` and `Tq_p = 1`. These two values are not report data, and
+%   `Tq_p` has no effect at this coupling.
 % - Armature resistance and air-gap saturation of the Y-method model are not modeled;
 %   the cards give `TA` and the negative- and zero-sequence reactances, which are unused.
 % - The AVR is the rotating-exciter model LAT = 1 of Fig. A1.1 with its constants, which
@@ -57,7 +57,7 @@ classdef IEEJ_WEST30 < PowerNetwork
 %   a PV bus here, so their bus `V` is the voltage of the solution with these nodes as PQ,
 %   which gives the same power flow with `Q` about 0.
 % - The data has no bus coordinates, voltage limits, base voltages or OPF data; these
-%   are the GUILDA defaults.
+%   are the GUILDA defaults (OPF cost `HP = fP = 1` for generators and 0 for loads).
 %
 % - The bus columns `V0`, `Varg0` hold the power-flow solution as the initial guess. From
 %   the flat start the bus current residual stays near 1e-9 at night, and simulate then
@@ -66,11 +66,13 @@ classdef IEEJ_WEST30 < PowerNetwork
 % The power flow gives the generation and load totals of table 4.10 of the report and
 % agrees with its flow diagrams within their rounding, in both sections.
 %
-% The dynamics differ from the report. The equilibrium with the AVRs is unstable in both
-% sections, with growing oscillations near 0.25 Hz, and every 70 ms bus fault of
-% the report's points A to F ends in loss of synchronism, where its table 4.13 has stable
-% cases. The missing constant-current load and governors change this result, and
-% net.simulate has no line opening, which those cases use.
+% The dynamics differ from the report because of the load and governor models. The
+% equilibrium with the AVRs is unstable in both sections, with growing oscillations of
+% about 0.25 Hz. Of the 12 cases of table 4.13, simulated with the line opening of the
+% report, this network agrees in 5. A test copy with constant-current P loads and the
+% report's governors is stable at night and has one mode near zero damping at peak, and
+% agrees in 11; either addition alone does not change the 5. GUILDA has neither model, and
+% net.simulate has no line opening.
 %
 % <@Examples>
 % Run the power flow of the night section and simulate a fault at node 1220:
@@ -78,7 +80,7 @@ classdef IEEJ_WEST30 < PowerNetwork
 % ```matlab
 % net = network.IEEJ_WEST30(Section="night");
 % res = net.calculate_powerflow();
-% ev  = odeEventSet("fault", net, "TimeSpan", [1,1.07], "FaultBus", "B1220");
+% ev  = ODEevent("fault", net, "TimeSpan", [1,1.07], "FaultBus", "B1220");
 % sol = net.simulate([0,5], ev);
 % ```
 %
