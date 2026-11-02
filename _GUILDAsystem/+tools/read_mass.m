@@ -21,7 +21,5 @@ function M = read_mass(model)
 end
 
 function throw_not_constant(model, nx, str_detail)
-    error('GUILDA:read_mass:NotConstant', ...
-        "fcn_Mass of %s must return a constant %dx%d matrix without using t, x, V, I or u (%s).", ...
-        model.str_tag, nx, nx, str_detail);
+    error(msg("GUILDA:read_mass:NotConstant", model.str_tag, string(nx), string(nx), str_detail));
 end

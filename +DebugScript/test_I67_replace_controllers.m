@@ -73,7 +73,7 @@ assert(isequal(size(lqr.K), [1, numel(new.sv_x)]))
 DebugScript.helper.quiet(@() net.initialize);
 n_log = height(net.tab_editLog);
 ME = caught(@() bus.replace_component(gen.str_tag, "load-power", Controllers="keep"));
-assert(ME.identifier == "GUILDA:Bus:ControllersNotKept")
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:Bus:ControllersNotKept")
 assert(contains(ME.message, "Vfield") && contains(ME.message, avr.str_tag))
 assert_unchanged(net, bus, gen, avr, pss, n_log)
 
@@ -83,7 +83,7 @@ assert_unchanged(net, bus, gen, avr, pss, n_log)
 DebugScript.helper.quiet(@() net.initialize);
 n_log = height(net.tab_editLog);
 ME = caught(@() bus.replace_component(gen.str_tag, "gen-droop", Controllers="keep"));
-assert(ME.identifier == "GUILDA:Bus:ControllersNotKept")
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:Bus:ControllersNotKept")
 assert(contains(ME.message, "omega") && contains(ME.message, pss.str_tag))
 assert_unchanged(net, bus, gen, avr, pss, n_log)
 
@@ -99,7 +99,7 @@ net  = DebugScript.helper.build_ieee14();
 comp = net.a_Bus{2}.a_Component{1};
 net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", comp.str_tag));
 ME = caught(@() net.a_Bus{2}.replace_component(comp.str_tag, "gen-1axis", Controllers="keep"));
-assert(ME.identifier == "GUILDA:Bus:ComponentControlled")
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:Bus:ComponentControlled")
 assert(net.a_Bus{2}.a_Component{1} == comp)
 
 
@@ -124,7 +124,7 @@ function [new, id, str] = replace_warned(fcn)
     % Run a replacement and return its last warning ("" without one)
     lastwarn("", "");
     new = fcn();
-    [str, id] = lastwarn();
+    [str, id] = lastwarn(); id = DebugScript.helper.msg_id(str, id);
     str = string(str);
     id  = string(id);
 end
@@ -137,5 +137,5 @@ function ME = caught(fcn)
     catch ME
     end
     assert(~isempty(ME), "No error was raised.")
-    ME = struct("identifier", string(ME.identifier), "message", string(ME.message));
+    ME = struct("identifier", string(DebugScript.helper.msg_id(ME)), "message", string(ME.message));
 end

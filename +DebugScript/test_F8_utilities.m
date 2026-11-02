@@ -203,7 +203,7 @@ c = onCleanup(@() rmdir(str_dir, "s"));
 clear Deprecated
 lastwarn("");
 str_path = DebugScript.helper.quiet(@() CsvNetHandler.export(net, "Old14", "savepath", str_dir, "version", 3));
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(id == "GUILDA:Deprecated:CsvNetHandlerExport", id)
 assert(str_path == fullfile(str_dir, "@Old14") && isfile(fullfile(str_path, "Old14.m")))
 assert(contains(fileread(fullfile(str_path, "Old14.m")), "ver = 3"))
@@ -213,7 +213,7 @@ assert(error_id(@() CsvNetHandler.export(net, "Old14", "savepath", str_dir)) == 
 
 lastwarn("");
 net2 = DebugScript.helper.quiet(@() CsvNetHandler.import(str_path));
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(id == "GUILDA:Deprecated:CsvNetHandlerImport", id)
 assert(norm(net2.cv_Vequilibrium - net.cv_Vequilibrium) < 1e-8)
 % 既存の系統へ読み込む v3 の形 (系統クラスのコンストラクタで使っていた形)
@@ -242,7 +242,7 @@ assert(norm(n1.cv_Vequilibrium - net.cv_Vequilibrium) == 0)
 assert(norm(sort(abs(eig(n1.get_sys.A))) - sort(abs(eig(net.get_sys.A)))) < 1e-10)
 f = functions(comp.f_dx);
 assert(f.workspace{1}.obj == comp)                      % f_* も読み込んだ機器を指す
-ev  = odeEventSet("fault", n1, "TimeSpan", [1,1.05], "FaultBus", "B003");
+ev  = ODEevent("fault", n1, "TimeSpan", [1,1.05], "FaultBus", "B003");
 sol = DebugScript.helper.quiet(@() n1.simulate([0,2], ev));
 assert(sol.odeResults.t(end) == 2)
 
@@ -317,14 +317,14 @@ gen = net.a_Bus{2}.a_Component{1};
 save(str_mat, "gen");
 lastwarn("");
 s = load(str_mat);
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(id == "GUILDA:PowerNetwork:IncompleteLoad", id)
 assert(numel(s.gen.a_Bus.a_PowerNetwork.a_Bus) == 3)     % 構成は戻る
 comp = gen;                                              % 系統と一緒に保存しても同じ
 save(str_mat, "net", "comp");
 lastwarn("");
 s = load(str_mat);
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(id == "GUILDA:PowerNetwork:IncompleteLoad", id)
 assert(s.comp == s.net.a_Bus{2}.a_Component{1})
 
@@ -436,17 +436,17 @@ mpc = DebugScript.helper.case14_data();
 % 区分線形の費用 (MODEL = 1) はエラー
 mpc_pw = mpc;
 mpc_pw.gencost(2,:) = [1 0 0 2 0 0 100];          % MODEL = 1 (区分線形)
-assert(error_id(@() PowerNetwork.import_matpower(mpc_pw, Initialize=false)) == "GUILDA:import_matpower:Unsupported")
+assert(error_id(@() PowerNetwork.import_matpower(mpc_pw, Initialize=false)) == "GUILDA:import_matpower:GencostPiecewise")
 % 3 次以上の多項式もエラー
 mpc_cu = mpc;
 mpc_cu.gencost = [mpc_cu.gencost(:,1:3), 4*ones(5,1), [1; zeros(4,1)], mpc_cu.gencost(:,5:7)];
-assert(error_id(@() PowerNetwork.import_matpower(mpc_cu, Initialize=false)) == "GUILDA:import_matpower:Unsupported")
+assert(error_id(@() PowerNetwork.import_matpower(mpc_cu, Initialize=false)) == "GUILDA:import_matpower:GencostDegree")
 % 定数項は落として警告 (最適解は同じ)
 mpc_c0 = mpc;
 mpc_c0.gencost(1,7) = 10;
 lastwarn("");
 net = DebugScript.helper.quiet(@() PowerNetwork.import_matpower(mpc_c0, Initialize=false));
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(id == "GUILDA:import_matpower:ConstantCost", id)
 assert(net.a_Bus{1}.a_Component{1}.tab_parameter.OPF.fP == 2000)
 % 1 次の費用 (NCOST = 2) と Q の費用の行 (2*ng 行)
@@ -457,9 +457,9 @@ opf = net.a_Bus{1}.a_Component{1}.tab_parameter.OPF;
 assert(opf.HQ == 0 && opf.fQ == 300)
 % version 1 の mpc と孤立母線は対象外
 mpc_v1 = mpc;  mpc_v1.version = '1';
-assert(error_id(@() PowerNetwork.import_matpower(mpc_v1)) == "GUILDA:import_matpower:Unsupported")
+assert(error_id(@() PowerNetwork.import_matpower(mpc_v1)) == "GUILDA:import_matpower:UnsupportedVersion")
 mpc_iso = mpc;  mpc_iso.bus(14,2) = 4;
-assert(error_id(@() PowerNetwork.import_matpower(mpc_iso)) == "GUILDA:import_matpower:Unsupported")
+assert(error_id(@() PowerNetwork.import_matpower(mpc_iso)) == "GUILDA:import_matpower:IsolatedBus")
 
 
 %% Template IEEE14bus
@@ -561,7 +561,7 @@ DebugScript.helper.quiet(@() net.initialize);
 e = eig(net.get_sys.A);
 e = e(abs(e) > 1e-6);
 assert(abs(max(real(e)) - (-0.594552)) < 1e-5)
-ev  = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+ev  = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 sol = DebugScript.helper.quiet(@() net.simulate([0,3], ev));
 assert(sol.odeResults.t(end) == 3)
 
@@ -619,7 +619,7 @@ DebugScript.helper.quiet(@() net.initialize);
 e = DebugScript.helper.finite_eigs(net.get_sys("Algorithm","Kron"));
 e = e(abs(e) > 1e-6);
 assert(abs(max(real(e)) - (-0.0069046)) < 1e-6)     % AVR・PSS 付きで安定
-ev  = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+ev  = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 sol = DebugScript.helper.quiet(@() net.simulate([0,3], ev));
 assert(sol.odeResults.t(end) == 3)
 Vfd = sol.odeResults.Bus(1).Component(1).U.Vfield;     % AVR が動作する
@@ -649,7 +649,7 @@ DebugScript.helper.quiet(@() net.initialize);
 e = DebugScript.helper.finite_eigs(net.get_sys("Algorithm","Kron"));
 e = e(abs(e) > 1e-6);
 assert(abs(max(real(e)) - (-0.0051275)) < 1e-6)     % AVR・PSS 付きで安定
-ev  = odeEventSet("fault", net, "TimeSpan", [0.2,0.25], "FaultBus", "B030");
+ev  = ODEevent("fault", net, "TimeSpan", [0.2,0.25], "FaultBus", "B030");
 sol = DebugScript.helper.quiet(@() net.simulate([0,1], ev, TimeLimit=Inf));
 assert(sol.odeResults.t(end) == 1)
 
@@ -717,7 +717,7 @@ function id = error_id(fcn)
     try
         DebugScript.helper.quiet(fcn);
     catch ME
-        id = string(ME.identifier);
+        id = string(DebugScript.helper.msg_id(ME));
     end
 end
 

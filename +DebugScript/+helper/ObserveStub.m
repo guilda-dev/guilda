@@ -16,7 +16,7 @@ classdef ObserveStub < LocalController
         function obj = ObserveStub(sv_u)
             obj@LocalController("CSstub")
             obj.sv_u = reshape(string(sv_u), [], 1);
-            obj.set_odefcn(obj.r_Hz)
+            obj.set_odefcn()
         end
         function get_equilibrium(obj, V, u) %#ok
             obj.rv_Xequilibrium = zeros(0,1);

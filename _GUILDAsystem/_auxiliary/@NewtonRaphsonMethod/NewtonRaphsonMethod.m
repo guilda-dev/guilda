@@ -13,7 +13,7 @@ classdef (Sealed = true) NewtonRaphsonMethod < auxiliary
 % [x, n_iter] = nrm.solve();
 % ```
 %
-% See also ContinuationPowerFlow
+% See also CPFsolver
     
     properties (Access=public) % Equation
         % Function F of the equation F(x) = b.
@@ -66,8 +66,7 @@ classdef (Sealed = true) NewtonRaphsonMethod < auxiliary
                     case 'sym'
                         % The symbolic path is optional and needs Symbolic Math Toolbox.
                         if ~NewtonRaphsonMethod.has_symbolic()
-                            error('GUILDA:NewtonRaphsonMethod:SymbolicUnavailable', '%s', ...
-                                msg('GUILDA:NewtonRaphsonMethod:SymbolicUnavailable'));
+                            error(msg("GUILDA:NewtonRaphsonMethod:SymbolicUnavailable"));
                         end
                         sv_x = symvar(func);
                         Jacobian = jacobian(func,sv_x);
@@ -75,7 +74,7 @@ classdef (Sealed = true) NewtonRaphsonMethod < auxiliary
                         obj.NRMFcn = matlabFunction(func    ,"Vars",sv_x);
                         obj.NRMJac = matlabFunction(Jacobian,"Vars",sv_x);                    
                     otherwise
-                        error(msg('GUILDA:NewtonRaphsonMethod:InvalidInput'))
+                        error(msg("GUILDA:NewtonRaphsonMethod:InvalidInput"))
                 end                
             end
 
@@ -141,7 +140,7 @@ classdef (Sealed = true) NewtonRaphsonMethod < auxiliary
             end
 
             if iteration >= MaxIt                
-                warning(msg('GUILDA:NewtonRaphsonMethod:MaxIteration'))            
+                warning(msg("GUILDA:NewtonRaphsonMethod:MaxIteration"))            
             end
         end        
     end

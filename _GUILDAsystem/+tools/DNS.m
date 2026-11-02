@@ -94,7 +94,7 @@ function address = DNS(domain)
         end
     end
     if isnan(address)
-        error('This class could not be identified.')
+        error(msg("GUILDA:DNS:UnknownClass"))
     end
 end
 

@@ -22,8 +22,7 @@ function remove_bus(obj, str_BusTag, opt)
     str_tagBus  = string(obj.a_Bus);
     str_missing = str_BusTag(~ismember(str_BusTag, str_tagBus));
     if ~isempty(str_missing)
-        error('GUILDA:PowerNetwork:BusNotFound', '%s', ...
-              msg('GUILDA:PowerNetwork:BusNotFound', char(join(str_missing,"', '")), char(obj.str_tag)))
+        error(msg("GUILDA:PowerNetwork:BusNotFound", char(join(str_missing,"', '")), char(obj.str_tag)))
     end
     lv_rmBus = ismember(str_tagBus, str_BusTag);
     a_rmBus  = obj.a_Bus(lv_rmBus);
@@ -36,8 +35,7 @@ function remove_bus(obj, str_BusTag, opt)
         lv_ctrl = ismember(string(gcon.controlledUnits), str_rmComp);
         if any(lv_ctrl)
             str_ctrl = string(gcon.controlledUnits);
-            error('GUILDA:PowerNetwork:BusHasControlledUnits', '%s', ...
-                  msg('GUILDA:PowerNetwork:BusHasControlledUnits', char(join(str_ctrl(lv_ctrl),", ")), char(gcon.str_tag)))
+            error(msg("GUILDA:PowerNetwork:BusHasControlledUnits", char(join(str_ctrl(lv_ctrl),", ")), char(gcon.str_tag)))
         end
     end
 
@@ -46,8 +44,7 @@ function remove_bus(obj, str_BusTag, opt)
     if any(lv_rmBranch)
         str_rmBranch = string(obj.a_Branch(lv_rmBranch));
         if ~opt.RemoveBranches
-            error('GUILDA:PowerNetwork:BusHasBranches', '%s', ...
-                  msg('GUILDA:PowerNetwork:BusHasBranches', char(join(str_BusTag,", ")), char(join(str_rmBranch,", "))))
+            error(msg("GUILDA:PowerNetwork:BusHasBranches", char(join(str_BusTag,", ")), char(join(str_rmBranch,", "))))
         end
         obj.remove_branch(str_rmBranch);
     end

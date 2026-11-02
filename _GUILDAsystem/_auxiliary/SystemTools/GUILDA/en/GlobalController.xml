@@ -1,6 +1,9 @@
 <!--This is an XML file containing error messages related to the class "GlobalController".-->
-<rsccat version="2" locale="en" product="GUILDA">
+<rsccat version="4.0" locale="en" product="GUILDA">
     <message>
         <entry key="InvalidComponent">''{0}'' given to the global controller ''{1}'' is not a component of the network ''{2}''.&#xA;Give a Component object or the tag of a component of this network. Add the components to the network before building the controller.</entry>
+        <entry key="GlobalControllerPort">The global controller ''{0}'' needs the states [{1}] and the inputs [{2}] of its units, but ''{3}'' ({4}) has the states [{5}] and the inputs [{6}].</entry>
+        <entry key="HessianNotSupported">{0} does not support Hessian computation: the class does not define the static method {1} (see GlobalController.get_hessian for the contract).</entry>
+        <entry key="HessianSize">{0}.{1} returned {2} values; expected {3} x {4} x {5} (equations x [x; V; I; u] x [x; V; I; u]).</entry>
     </message>
 </rsccat>

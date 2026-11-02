@@ -64,7 +64,7 @@ function [id, str_msg] = error_info(fh)
     try
         DebugScript.helper.quiet(fh);
     catch ME
-        id = string(ME.identifier);
+        id = string(DebugScript.helper.msg_id(ME));
         str_msg = string(ME.message);
     end
 end

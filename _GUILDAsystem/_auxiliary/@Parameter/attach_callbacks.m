@@ -21,8 +21,7 @@ function fcn = set_method(name,valid)
     fcn = @set_value;
     function set_value(obj,val)
         if ~isa(val,valid)
-            error('GUILDA:Parameter:ClassNameMismatch', '%s', ...
-                  msg('GUILDA:Parameter:ClassNameMismatch', name, valid, class(val)))
+            error(msg("GUILDA:Parameter:ClassNameMismatch", name, valid, class(val)))
         end
         obj.(name) = val;
     end

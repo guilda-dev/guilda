@@ -28,7 +28,7 @@ classdef local_LQR < LocalController
 % net.a_Bus{1}.a_Component{1}.add_local_controller(controller.local_LQR("lqr1"));
 % net.a_Bus{2}.a_Component{1}.add_local_controller(controller.local_LQR("lqr2", Input="Vfield", R=2));
 % net.initialize;
-% ev  = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B007");
+% ev  = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B007");
 % sol = net.simulate([0,10], ev);
 % ```
 %
@@ -94,7 +94,7 @@ classdef local_LQR < LocalController
             obj.Q  = opt.Q;
             obj.R  = opt.R;
             obj.V0 = opt.V0;
-            obj.set_odefcn(obj.r_Hz)
+            obj.set_odefcn()
         end
 
         function set.Q(obj, val)
@@ -121,7 +121,7 @@ classdef local_LQR < LocalController
             % - `u` Equilibrium input of the component (in the order of its sv_u).
             comp = obj.a_Component;
             if ~isa(comp, "Component")
-                error("GUILDA:local_LQR:NotOnComponent", "%s must be attached directly to a component.", obj.str_tag)
+                error(msg("GUILDA:local_LQR:NotOnComponent", obj.str_tag))
             end
             [~, iv_u] = ismember(obj.sv_y, comp.sv_u);
 
@@ -129,31 +129,11 @@ classdef local_LQR < LocalController
             obj.rv_Uequilibrium = comp.rv_Xequilibrium;
             obj.rv_u0 = u(iv_u);
             obj.design_gain(V, u);
+            obj.set_odefcn()
         end
     end
 
     methods (Access=protected)
-        function rebuild_odefcn(obj)
-            % Called by check_edit after a dynamics edit, a network Hz edit or an attach.
-            % A Hz edit keeps the equilibrium, so K is redesigned here (check_edit has
-            % already rebuilt the component, the parent). When the equilibrium is not up
-            % to date, net.initialize redesigns K instead.
-            if ~isempty(obj.r_HzDesign) && obj.r_HzDesign ~= obj.r_Hz && obj.equilibrium_valid()
-                try
-                    obj.design_gain(obj.a_Component.c_Vequilibrium, obj.a_Component.rv_Uequilibrium);
-                catch ME
-                    % A Hz edit runs in a listener, where an error is only a warning and would
-                    % stop the rebuild of the other layers. K stays for the old frequency, so the
-                    % record makes the equilibrium stale and analyses ask for net.initialize.
-                    warning("GUILDA:local_LQR:RedesignFailed", "%s: K was not redesigned for %g Hz: %s", obj.str_tag, obj.r_Hz, ME.message)
-                    obj.set_odefcn(obj.r_Hz);
-                    obj.log_edit(obj.str_tag + " redesign failed", "Parameter(dynamics)");
-                end
-            else
-                obj.set_odefcn(obj.r_Hz);
-            end
-        end
-
         function resolve_ports(obj, comp)
             % The driven inputs: Input, or all the inputs of the component
             if isempty(obj.sv_input)
@@ -168,7 +148,24 @@ classdef local_LQR < LocalController
             obj.sv_u = sv_name;
         end
 
-        function set_odefcn(obj, omega0)
+        function set_odefcn(obj)
+            % Called by check_edit after a dynamics edit, a network Hz edit or an attach.
+            % A Hz edit keeps the equilibrium, so K is redesigned here (check_edit has
+            % already rebuilt the component, the parent). When the equilibrium is not up
+            % to date, net.initialize redesigns K instead.
+            omega0 = obj.r_Hz;
+            if ~isempty(obj.r_HzDesign) && obj.r_HzDesign ~= omega0 && obj.equilibrium_valid()
+                try
+                    obj.design_gain(obj.a_Component.c_Vequilibrium, obj.a_Component.rv_Uequilibrium);
+                catch ME
+                    % A Hz edit runs in a listener, where an error is only a warning and would
+                    % stop the rebuild of the other layers. K stays for the old frequency, so the
+                    % record makes the equilibrium stale and analyses ask for net.initialize.
+                    warning(msg("GUILDA:local_LQR:RedesignFailed", obj.str_tag, sprintf("%g", omega0), ME.message))
+                    obj.log_edit(obj.str_tag + " redesign failed", "Parameter(dynamics)");
+                end
+            end
+
             % u = u* - K (x - x*); before net.initialize the gain is zero
             nu = numel(obj.sv_y);
             nx = numel(obj.sv_u);
@@ -191,7 +188,7 @@ classdef local_LQR < LocalController
 
     methods (Access=private)
         function design_gain(obj, V, u)
-            % Design K at the equilibrium of the component and rebuild the handles.
+            % Design K at the equilibrium of the component; the caller builds the handles.
             comp = obj.a_Component;
             x0 = comp.rv_Xequilibrium;
             I0 = comp.c_Iequilibrium;
@@ -200,8 +197,7 @@ classdef local_LQR < LocalController
             % Design model: the component connected to the infinite bus V0 through the
             % admittance y = I*/(V* - V0), so that dI = y dV
             if abs(V - obj.V0) < 1e-9
-                error("GUILDA:local_LQR:DesignModel", ...
-                      "%s: the bus voltage equals V0 = %g; choose another V0 for the design model.", obj.str_tag, obj.V0)
+                error(msg("GUILDA:local_LQR:DesignModel", obj.str_tag, sprintf("%g", obj.V0)))
             end
             y_inf = tools.complex2matrix(I0 / (V - obj.V0));
             sys   = comp.get_sys_alone(x0, [real(V); imag(V)], [real(I0); imag(I0)], u);
@@ -218,12 +214,10 @@ classdef local_LQR < LocalController
             Qw = obj.Q;  if isempty(Qw); Qw = eye(nx); end
             Rw = obj.R;  if isempty(Rw); Rw = eye(nu); end
             if ~isequal(size(Qw), [nx nx]) || ~isequal(size(Rw), [nu nu])
-                error("GUILDA:local_LQR:WeightSize", "%s: Q must be %dx%d (states %s) and R %dx%d (inputs %s).", ...
-                      obj.str_tag, nx, nx, join(comp.sv_x, ","), nu, nu, join(obj.sv_y, ","))
+                error(msg("GUILDA:local_LQR:WeightSize", obj.str_tag, string(nx), string(nx), join(comp.sv_x, ","), string(nu), string(nu), join(obj.sv_y, ",")))
             end
             obj.K = lqr(A, Bu, Qw, Rw);
             obj.r_HzDesign = obj.r_Hz;
-            obj.set_odefcn(obj.r_Hz)
         end
 
         function l = equilibrium_valid(obj)
@@ -304,6 +298,6 @@ function W = weight(W, str_name)
     elseif isvector(W) && ~isscalar(W)
         W = diag(W);
     elseif size(W,1) ~= size(W,2)
-        error("GUILDA:local_LQR:WeightSize", "%s must be a vector or a square matrix.", str_name)
+        error(msg("GUILDA:local_LQR:WeightShape", str_name))
     end
 end

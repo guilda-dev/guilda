@@ -11,7 +11,7 @@ classdef Txt3Bus < PowerNetwork
 % ```matlab
 % net = network.Txt3Bus();
 % res = net.calculate_powerflow();
-% ev  = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B002");
+% ev  = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B002");
 % sol = net.simulate([0,10], ev);
 % ```
 %

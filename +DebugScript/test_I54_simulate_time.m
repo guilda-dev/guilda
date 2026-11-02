@@ -32,30 +32,30 @@ for k = 1:height(c_case)
         net.simulate(c_case{k,1});
         error("DebugScript:noError", "エラーにならない: %s", str_case)
     catch ME
-        assert(ME.identifier == str_id, "%s: %s", str_case, ME.identifier)
+        assert(DebugScript.helper.msg_id(ME) == str_id, "%s: %s", str_case, DebugScript.helper.msg_id(ME))
         assert(contains(ME.message, c_case{k,2}), "%s: %s", str_case, ME.message)
     end
 end
 
 
 %% Event as the first argument stops with the time error
-ev = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+ev = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 try
     net.simulate(ev);
     error("DebugScript:noError", "イベントを time に渡してもエラーにならない")
 catch ME
-    assert(ME.identifier == str_id, ME.identifier)
-    assert(contains(ME.message, "class odeEventSet"), ME.message)
+    assert(DebugScript.helper.msg_id(ME) == str_id, DebugScript.helper.msg_id(ME))
+    assert(contains(ME.message, "class ODEevent"), ME.message)
 end
 
 
 %% Several time points no longer drop a later event silently
-ev = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+ev = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 try
     net.simulate([0,0.5,1,2,3], ev);
     error("DebugScript:noError", "3 要素以上の time でエラーにならない")
 catch ME
-    assert(ME.identifier == str_id, ME.identifier)
+    assert(DebugScript.helper.msg_id(ME) == str_id, DebugScript.helper.msg_id(ME))
 end
 
 
@@ -74,7 +74,7 @@ assert(flag == 1 && sol.odeResults.t(end) == 1)
 
 
 %% Empty time takes the time span of the events
-ev = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+ev = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 [sol, flag] = net.simulate([], ev);
 assert(flag == 1 && sol.odeResults.t(end) >= 1.05)
 
