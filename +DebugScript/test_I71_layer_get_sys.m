@@ -70,7 +70,7 @@ DebugScript.helper.quiet(@() net.initialize);
 [gen, bus, avr, pss] = layers(net);
 A_gen = gen.get_sys().A;  A_bus = bus.get_sys().A;
 net.para_base.Hz = 2 * net.para_base.Hz;
-assert(~net.s_edit.l_staleEquilibrium && gen.s_edit.l_staleOdefcn)
+assert(~net.s_edit.l_staleEquilibrium && DebugScript.helper.handle_Hz(gen) == net.para_base.Hz)
 
 A_gen2 = gen.get_sys().A;
 assert(~gen.s_edit.l_staleOdefcn && ~avr.s_edit.l_staleOdefcn && ~pss.s_edit.l_staleOdefcn)
@@ -84,9 +84,9 @@ DebugScript.helper.quiet(@() ref.initialize);
 assert(norm(A_gen2 - gen_ref.get_sys().A) < 1e-9)
 assert(norm(bus.get_sys().A - bus_ref.get_sys().A) < 1e-9)
 
-% 制御器を単独で呼んでも作り直す
+% 制御器のハンドルも編集の時点で新しい Hz になり、単独で呼べる
 net.para_base.Hz = 3 * net.para_base.Hz;
-assert(avr.s_edit.l_staleOdefcn)
+assert(DebugScript.helper.handle_Hz(avr) == net.para_base.Hz && DebugScript.helper.handle_Hz(pss) == net.para_base.Hz)
 avr.get_sys();
 assert(~avr.s_edit.l_staleOdefcn)
 
@@ -139,11 +139,11 @@ DebugScript.helper.quiet(@() ref.initialize);
 assert(norm(ssdata_all(sys1) - ssdata_all(gc_ref.get_sys())) < 1e-9)
 
 
-%% Global controller get_sys rebuilds the handles after a network Hz edit
+%% Global controller handles follow a network Hz edit
 [net, gc] = build_with_agc();
 DebugScript.helper.quiet(@() net.initialize);
 net.para_base.Hz = 2 * net.para_base.Hz;
-assert(gc.s_edit.l_staleOdefcn && ~net.s_edit.l_staleEquilibrium)
+assert(DebugScript.helper.handle_Hz(gc) == net.para_base.Hz && ~net.s_edit.l_staleEquilibrium)
 gc.get_sys();
 assert(~gc.s_edit.l_staleOdefcn)
 
@@ -165,13 +165,13 @@ assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=str_load)) == "
 assert(~gen.s_edit.l_staleOdefcn)
 
 
-%% CPF after a network Hz edit rebuilds the handles and keeps the path
+%% CPF after a network Hz edit keeps the path
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 gen = net.a_Bus{1}.a_Component{1};
 res0 = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=str_load));
 net.para_base.Hz = 2 * net.para_base.Hz;
-assert(gen.s_edit.l_staleOdefcn && ~net.s_edit.l_staleEquilibrium)
+assert(DebugScript.helper.handle_Hz(gen) == net.para_base.Hz && ~net.s_edit.l_staleEquilibrium)
 res1 = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=str_load));
 assert(~gen.s_edit.l_staleOdefcn)
 assert(isequal(res1.rv_lambda, res0.rv_lambda) && isequal(res1.cm_Vbus, res0.cm_Vbus))
