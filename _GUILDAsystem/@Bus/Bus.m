@@ -33,7 +33,7 @@ classdef Bus < PowerSystemModel
     properties % Power Flow
         l_isSlack      (1,1) logical = false;   % True for the slack bus (at most one per network).
     end
-    properties (Access={?odeSimulator, ?odeEventSet})
+    properties (Access={?ODEsolver, ?ODEevent})
         l_isFault (1,1) logical = false
     end
 
@@ -53,12 +53,12 @@ classdef Bus < PowerSystemModel
         parent                                  % Layer Structure
         children                                % Layer Structure
     end
-    properties (SetAccess={?odeSimulator, ?Component}, Hidden)
+    properties (SetAccess={?ODEsolver, ?Component}, Hidden)
         iv_odeX  = zeros(0,1);
         iv_odeI  = zeros(0,1);
         iv_odeU  = zeros(0,1);
     end
-    properties (SetAccess={?ContinuationPowerFlow}) % Continuation Power Flow
+    properties (SetAccess={?CPFsolver}) % Continuation Power Flow
         iv_CPFV = zeros(0,1)        % Indices of the bus voltage in the CPF variable vector (working data of the CPF).
     end
 

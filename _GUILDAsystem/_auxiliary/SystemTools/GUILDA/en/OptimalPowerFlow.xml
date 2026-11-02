@@ -1,6 +1,0 @@
-<!--This is an XML file containing error messages related to the class "OptimalPowerFlow".-->
-<rsccat version="4.0" locale="en" product="GUILDA">
-    <message>
-        <entry key="UnsupportedSolver">Solver "{0}" cannot solve this OPF problem. Usable Solver names: "auto", {1}.</entry>
-    </message>
-</rsccat>

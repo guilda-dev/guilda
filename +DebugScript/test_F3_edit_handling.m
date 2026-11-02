@@ -37,7 +37,7 @@ DebugScript.helper.quiet(@() net.initialize);
 sol = DebugScript.helper.quiet(@() net.solver_ODE.solve(net, [0,1]));
 assert(sol.odeResults.t(end) == 1)
 res = DebugScript.helper.quiet(@() net.solver_LIN.solve(net));
-assert(isa(res, "LinearizationResult"))
+assert(isa(res, "LTIresult"))
 
 
 %% Dynamics edit makes handles and equilibrium stale

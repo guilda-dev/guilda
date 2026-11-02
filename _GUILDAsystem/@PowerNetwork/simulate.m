@@ -1,12 +1,12 @@
 function [result, flag, output] = simulate(obj, time, varargin)
-% Simulate the network over time and return an odeSimulationResult.
+% Simulate the network over time and return an ODEresult.
 %
 % Time simulation of the network from its equilibrium: the DAE of the buses, components
 % and controllers is integrated over time, with the disturbances given as events
-% (odeEventSet: bus faults, unit trips, state offsets, input changes). The settings are
+% (ODEevent: bus faults, unit trips, state offsets, input changes). The settings are
 % the stored defaults of net.solver_ODE; Name-Value options after the events override them
 % for this call only (net.solver_ODE is not changed).
-% Accepted options are the names in odeSimulator.OptionMap plus Export; any other name
+% Accepted options are the names in ODEsolver.OptionMap plus Export; any other name
 % stops with GUILDA:resolve_options:UnknownName.
 % time is [t0, tend] with finite t0 < tend, or [] for the time span of the events; any
 % other value stops with GUILDA:PowerNetwork:SimulateTime.
@@ -16,7 +16,7 @@ function [result, flag, output] = simulate(obj, time, varargin)
 % trajectories up to output.tEnd, and a warning GUILDA:PowerNetwork:SimulationIncomplete
 % tells it, whether or not flag is requested.
 %
-% The events (odeEventSet) come first in `varargin`; none gives the response without
+% The events (ODEevent) come first in `varargin`; none gives the response without
 % disturbance. Name-Value options:
 %
 % - `Solver` — Solver of the MATLAB ode object, e.g. "ode15s", "ode23t" (net.solver_ODE.Solver).
@@ -33,19 +33,19 @@ function [result, flag, output] = simulate(obj, time, varargin)
 % <@Examples>
 % ```matlab
 % net.initialize();
-% ev = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+% ev = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 % [res, flag] = net.simulate([0,10], ev, Progress="none", TimeLimit=Inf);
 % res.odeResults.Bus(1).Component(1).X.omega    % frequency deviation of a generator
 % res.Plot(Quantity="omega");
 % ```
 %
-% See also odeEventSet, odeSimulationResult, odeSimulator, PowerNetwork.initialize
+% See also ODEevent, ODEresult, ODEsolver, PowerNetwork.initialize
     arguments
         obj
         time = []   % [s] Simulation time [t0, tend], or [] for the time span of the events.
     end
     arguments (Input, Repeating)
-        varargin   % Events (odeEventSet), then Name-Value options.
+        varargin   % Events (ODEevent), then Name-Value options.
     end
     arguments (Output)
         result   % Trajectories of the buses and components (result.odeResults).
@@ -107,10 +107,10 @@ function check_time(time)
 end
 
 function [c_events, c_nv] = split_events(c_in)
-% Leading odeEventSet arguments are the events; the rest are Name-Value options
+% Leading ODEevent arguments are the events; the rest are Name-Value options
     n_evt = numel(c_in);
     for k = 1:numel(c_in)
-        if ~isa(c_in{k}, "odeEventSet")
+        if ~isa(c_in{k}, "ODEevent")
             n_evt = k - 1;
             break
         end
@@ -120,7 +120,7 @@ function [c_events, c_nv] = split_events(c_in)
     for k = 1:numel(c_nv)
         x = c_nv{k};
         l_name = mod(k, 2) == 1;
-        if isa(x, "odeEventSet") || (l_name && ~((ischar(x) && isrow(x)) || (isstring(x) && isscalar(x))))
+        if isa(x, "ODEevent") || (l_name && ~((ischar(x) && isrow(x)) || (isstring(x) && isscalar(x))))
             error(msg("GUILDA:PowerNetwork:SimulateArguments", num2str(n_evt + k + 1), class(x)));
         end
     end

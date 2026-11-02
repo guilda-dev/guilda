@@ -1,6 +1,6 @@
 <!--This is an XML file containing error messages related to the file "v3_linearizer_constructor".-->
 <rsccat version="4.0" locale="en" product="GUILDA">
     <message>
-        <entry key="OdeLinearizerConstructor">odeLinearizer(net, NonUnit, Name, Value) is removed: the solver no longer holds the network or its matrices, and odeLinearizer() takes no arguments. Use result = net.linearize(Algorithm=...) and sys = result.get_ss() (defaults in net.solver_LIN), or sys = net.get_sys(...).</entry>
+        <entry key="OdeLinearizerConstructor">odeLinearizer(net, NonUnit, Name, Value) is removed: the solver no longer holds the network or its matrices, and LTIsolver() takes no arguments. Use result = net.linearize(Algorithm=...) and sys = result.get_ss() (defaults in net.solver_LIN), or sys = net.get_sys(...).</entry>
     </message>
 </rsccat>

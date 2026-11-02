@@ -1,7 +1,7 @@
 function [c_nv, rv_nonUnit] = v3_linearize_args(c_nv, rv_nonUnit)
 % Take the retired NonUnit option out of the options of net.linearize.
 %
-% v3 compatibility hook of odeLinearizer.get_options: "NonUnit", n warns once
+% v3 compatibility hook of LTIsolver.get_options: "NonUnit", n warns once
 % (GUILDA:Deprecated:LinearizeNonUnit) and is removed from the options. The buses are
 % detected automatically, so a listed bus without states changes nothing. rv_nonUnit is
 % kept in the options of the result only to report the listed buses that remain errors
@@ -12,7 +12,7 @@ function [c_nv, rv_nonUnit] = v3_linearize_args(c_nv, rv_nonUnit)
 % - `c_nv` — Name-Value options of the call.
 % - `rv_nonUnit` — Value stored in net.solver_LIN.NonUnit, used when the call gives none.
 %
-% See also odeLinearizer, Deprecated
+% See also LTIsolver, Deprecated
     arguments (Output)
         c_nv        % Name-Value options without NonUnit.
         rv_nonUnit  % Listed bus indices, as a row.

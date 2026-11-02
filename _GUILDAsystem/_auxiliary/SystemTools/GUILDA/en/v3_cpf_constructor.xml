@@ -1,6 +1,6 @@
 <!--This is an XML file containing error messages related to the file "v3_cpf_constructor".-->
 <rsccat version="4.0" locale="en" product="GUILDA">
     <message>
-        <entry key="ContinuationPowerFlowConstructor">ContinuationPowerFlow(net, Name, Value) is removed: the solver no longer holds the network or its result, and ContinuationPowerFlow() takes no arguments. Use [result, flag] = net.calculate_continuation_powerflow(LoadBus=...) (defaults in net.solver_CPF), or the deprecated wrapper Continuation_Power_Flow(net, opt) for the v3 usage.</entry>
+        <entry key="ContinuationPowerFlowConstructor">ContinuationPowerFlow(net, Name, Value) is removed: the solver no longer holds the network or its result, and CPFsolver() takes no arguments. Use [result, flag] = net.calculate_continuation_powerflow(LoadBus=...) (defaults in net.solver_CPF), or the deprecated wrapper Continuation_Power_Flow(net, opt) for the v3 usage.</entry>
     </message>
 </rsccat>

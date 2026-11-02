@@ -1,0 +1,21 @@
+<!--This is an XML file containing error messages related to the class 'ODEevent'.-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>        
+        <entry key="InvalidInputType">Input arguments must be function handles or of type double.</entry>       
+        <entry key="InvalidNargin">The number of input arguments for the function handle is invalid. Specify a function of one argument, the time t since the event start, e.g. @(t) 0.1*t.</entry>
+        <entry key="UnknownInputUnit">Event "{0}": InputUnit "{1}" is not a component of the network. Specify the tag of a component connected to a bus (see string(net.a_Bus) and the component tags).</entry>
+        <entry key="UnknownInputName">Event "{0}": InputName {1} is not an input of "{2}". Available inputs: {3}.</entry>
+        <entry key="UnknownFaultBus">Event "{0}": FaultBus {1} is not a bus of the network. Specify bus tags (see string(net.a_Bus)).</entry>
+        <entry key="UnknownTripUnit">Event "{0}": TripUnit {1} is not a component or global controller of the network. Specify the tag of a component connected to a bus or of a global controller; a local controller cannot be tripped.</entry>
+        <entry key="UnknownOffsetUnit">Event "{0}": OffsetUnit "{1}" is not a component of the network. Specify the tag of a component connected to a bus (see string(net.a_Bus) and the component tags).</entry>
+        <entry key="UnknownOffsetState">Event "{0}": OffsetState {1} is not a state of "{2}". Available states: {3}.</entry>
+        <entry key="InvalidTimeSpan">Event "{0}": TimeSpan {1} is invalid. Specify real numbers without NaN, with t_start not later than t_end.</entry>
+        <entry key="ZeroLengthTimeSpan">Event "{0}": TimeSpan {1} has no duration, but a fault, trip or input needs one. Specify [t_start, t_end] with t_start earlier than t_end, e.g. [1, 1.05]. Only an offset can use a single time.</entry>
+        <entry key="ValueCountMismatch">Event "{0}": {1} has {2} element(s) for {3} element(s) of {4}. Give at least one name, and one value per name or a single value for all names.</entry>
+        <entry key="OutsideTimeSpan">Event "{0}" (TimeSpan {1}) lies entirely outside the simulation time {2} and has no effect. Change TimeSpan or the simulation time.</entry>
+        <entry key="OtherNetwork">Event "{0}" belongs to another network. Create the event with the network being simulated.</entry>
+        <entry key="DuplicateTag">Several events have the tag "{0}". Give each event its own tag.</entry>
+        <entry key="ReservedTag">The event tag "{0}" is reserved for the phase table. Use another tag; t1, t2, Properties, Row, Variables, an empty tag, and NoAction followed by digits are not available.</entry>
+        <entry key="EventArray">Give events as separate arguments, e.g. net.simulate(time, ev1, ev2), not as an array.</entry>
+    </message>
+</rsccat>

@@ -101,7 +101,7 @@ classdef Component < PowerSystemModel
         rv_Uequilibrium = zeros(0,1)           % Input equilibrium.
         c_Iequilibrium                         % [pu] Current injected into the bus at the equilibrium.
     end
-    properties (SetAccess={?odeSimulator, ?Component}, Hidden)
+    properties (SetAccess={?ODEsolver, ?Component}, Hidden)
         iv_odeX  = [];
         iv_odeU  = [];        
         iv_odeY  = [];        
@@ -128,15 +128,15 @@ classdef Component < PowerSystemModel
         parent                                 % Layer Structure: the bus.
         children                               % Layer Structure: the local controllers and Parameter objects.
     end
-    properties (Access={?odeSimulator, ?Component, ?odeEventSet})        
+    properties (Access={?ODEsolver, ?Component, ?ODEevent})        
         l_hasController = false;
         l_isConnect     = true
     end
-    properties (SetAccess={?odeSimulator, ?odeEventSet}, Hidden)
+    properties (SetAccess={?ODEsolver, ?ODEevent}, Hidden)
         rv_Xoffset 
         rv_Uoffset 
     end
-    properties (SetAccess={?ContinuationPowerFlow}) % Continuation Power Flow
+    properties (SetAccess={?CPFsolver}) % Continuation Power Flow
         iv_CPFX  = zeros(0,1)                  % Indices of the states in the CPF variable vector (working data of the CPF).
         f_PQ2Bus = @(t,V,u) zeros(2,1)         % Function of the injected power [P; Q] [pu] used by the CPF (working data of the CPF).
     end
@@ -242,7 +242,7 @@ classdef Component < PowerSystemModel
         flag = validate(obj)
     end
 
-    methods(Access={?odeLinearizer})
+    methods(Access={?LTIsolver})
         [rv_dx, rv_I] = point_residual(obj, rv_point)
     end
 

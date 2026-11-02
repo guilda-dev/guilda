@@ -11,25 +11,25 @@ net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 inwin = @(t,a,b) t > a & t < b;
 % 第 1 区間 [0,1] からフォールバックに入る入力 (decic が微分状態を動かす)
-offset = @(n) odeEventSet("offset", n, "TimeSpan", 0, "OffsetUnit", "SG1B002", ...
+offset = @(n) ODEevent("offset", n, "TimeSpan", 0, "OffsetUnit", "SG1B002", ...
                           "OffsetState", "delta", "OffsetValue", 3);
-c_warn = {warning("off", "GUILDA:odeSimulator:InitialConditionRelaxed")};
+c_warn = {warning("off", "GUILDA:ODEsolver:InitialConditionRelaxed")};
 c_warn{2} = onCleanup(@() warning(c_warn{1}));
 
 
 %% Jacobian matches the right-hand side while a generator is tripped
-err = jacobian_errors(net, [0,2], {odeEventSet("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B003")});
+err = jacobian_errors(net, [0,2], {ODEevent("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B003")});
 assert(numel(err) == 3)
 assert(max(err) < 1e-5, "誤差 " + mat2str(err,3))
 
 
 %% Jacobian matches the right-hand side while a load is tripped
-err = jacobian_errors(net, [0,2], {odeEventSet("trip", net, "TimeSpan", [1,1.2], "TripUnit", "LPQ2B003")});
+err = jacobian_errors(net, [0,2], {ODEevent("trip", net, "TimeSpan", [1,1.2], "TripUnit", "LPQ2B003")});
 assert(max(err) < 1e-5, "誤差 " + mat2str(err,3))
 
 
 %% Jacobian matches the right-hand side during a fault
-err = jacobian_errors(net, [0,2], {odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008")});
+err = jacobian_errors(net, [0,2], {ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008")});
 assert(max(err) < 1e-5, "誤差 " + mat2str(err,3))
 
 
@@ -37,19 +37,19 @@ assert(max(err) < 1e-5, "誤差 " + mat2str(err,3))
 agc = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002", kP=100, kI=500);
 net.add_global_controller(agc);
 DebugScript.helper.quiet(@() net.initialize);
-err = jacobian_errors(net, [0,2], {odeEventSet("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B002")});
+err = jacobian_errors(net, [0,2], {ODEevent("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B002")});
 assert(max(err) < 1e-5, "誤差 " + mat2str(err,3))
 
 
 %% Jacobian matches the right-hand side with local controllers on other units
 net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"));
 DebugScript.helper.quiet(@() net.initialize);
-err = jacobian_errors(net, [0,2], {odeEventSet("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B002")});
+err = jacobian_errors(net, [0,2], {ODEevent("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B002")});
 assert(max(err) < 1e-5, "誤差 " + mat2str(err,3))
 
 
 %% Trip does not depend on the tolerance
-ev = odeEventSet("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B003");
+ev = ODEevent("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B003");
 r1 = net.simulate([0,2], ev).odeResults;
 r2 = net.simulate([0,2], ev, Tolerance=1e-8, AbsoluteTolerance=1e-8).odeResults;
 X1 = r1.Bus(3).Component(1).X;
@@ -61,7 +61,7 @@ assert(abs(d1 - d2) < 1e-3, "復帰時の delta: " + d1 + ", " + d2)
 
 
 %% MaxStep applies in the trip phase
-ev = odeEventSet("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B003");
+ev = ODEevent("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B003");
 opt = matlab.ode.options.ODE15s;
 opt.MaxStep = 1e-3;
 r = net.simulate([0,2], ev, SolverOptions=opt).odeResults;
@@ -102,45 +102,45 @@ assert(jacobian_calls(net, offset(net), 2) > jacobian_calls(net, offset(net), 0.
 
 %% Phases after a fallback start without its initial slope
 % 次の区間で状態の数が変わっても、前の区間の InitialSlope を持ち越さない
-tr = odeEventSet("trip", net, "TimeSpan", [0.5,0.6], "TripUnit", "SG1B003");
+tr = ODEevent("trip", net, "TimeSpan", [0.5,0.6], "TripUnit", "SG1B003");
 [~, flag] = net.simulate([0,1], offset(net), tr);
 assert(flag == 1)
 
 
 %% Relaxed initial condition warns with the distance moved
-warning("on", "GUILDA:odeSimulator:InitialConditionRelaxed");
+warning("on", "GUILDA:ODEsolver:InitialConditionRelaxed");
 lastwarn("");
 [~, flag] = net.simulate([0,0.1], offset(net));
 [str, id] = lastwarn(); id = DebugScript.helper.msg_id(str, id);
 assert(flag == 1)
-assert(id == "GUILDA:odeSimulator:InitialConditionRelaxed", id)
+assert(id == "GUILDA:ODEsolver:InitialConditionRelaxed", id)
 assert(contains(str, "phase 1") && contains(str, "moved by up to"), str)
 assert(~isempty(regexp(str, "up to [0-9.]+", "once")), str)
 
 
 %% Relaxed warning is not reported as a warning of the solver
-warning("on", "GUILDA:odeSimulator:InitialConditionRelaxed");
+warning("on", "GUILDA:ODEsolver:InitialConditionRelaxed");
 [~, flag, output] = net.simulate([0,0.1], offset(net));
 assert(flag == 1)
 assert(~contains(output.message, "moved by up to"), output.message)
 
 
 %% Trip does not warn about the initial condition
-warning("on", "GUILDA:odeSimulator:InitialConditionRelaxed");
+warning("on", "GUILDA:ODEsolver:InitialConditionRelaxed");
 lastwarn("");
-net.simulate([0,2], odeEventSet("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B003"));
+net.simulate([0,2], ODEevent("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B003"));
 id = DebugScript.helper.msg_id();
-assert(id ~= "GUILDA:odeSimulator:InitialConditionRelaxed")
+assert(id ~= "GUILDA:ODEsolver:InitialConditionRelaxed")
 
 
 %% Failed initial condition stops with flag -1 naming the phase
-ev = odeEventSet("nan", net, "TimeSpan", [1,1.2], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", NaN);
+ev = ODEevent("nan", net, "TimeSpan", [1,1.2], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", NaN);
 w = warning("off", "GUILDA:PowerNetwork:SimulationIncomplete");
 c_warn = onCleanup(@() warning(w));
 [~, flag, output] = net.simulate([0,2], ev);
 assert(flag == -1)
 ME = output.exception;
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:odeSimulator:InitialConditionFailed", DebugScript.helper.msg_id(ME) + ": " + ME.message)
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:ODEsolver:InitialConditionFailed", DebugScript.helper.msg_id(ME) + ": " + ME.message)
 assert(contains(ME.message, "phase 2") && contains(ME.message, "t = [1, 1.2]"), ME.message)
 assert(endsWith(string(DebugScript.helper.msg_id(ME.cause{1})), "NeedBetterY0"), DebugScript.helper.msg_id(ME.cause{1}))
 

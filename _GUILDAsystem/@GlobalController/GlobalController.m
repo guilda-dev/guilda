@@ -65,7 +65,7 @@ classdef GlobalController < PowerSystemModel
     properties (SetAccess=protected, Hidden)
         controlledUnits                        % Controlled components, in the order given to the constructor.
     end
-    properties (SetAccess={?odeSimulator, ?odeEventSet}, Hidden)
+    properties (SetAccess={?ODEsolver, ?ODEevent}, Hidden)
         iv_odeX (:,1) double = zeros(0,1);
         iv_odeU (:,1) double = zeros(0,1);
         iv_odeY (:,1) double = zeros(0,1);        
@@ -73,7 +73,7 @@ classdef GlobalController < PowerSystemModel
         rv_Xoffset = 0
         rv_Uoffset = @(t) 0
 
-        l_isConnect (1,1) logical = true       % false while a trip event names it (set by odeSimulator); its output is zero
+        l_isConnect (1,1) logical = true       % false while a trip event names it (set by ODEsolver); its output is zero
     end        
     properties(SetAccess={?PowerNetwork}) % Steady State
         rv_Xequilibrium (:,1) double = zeros(0,1)   % State equilibrium.
@@ -168,7 +168,7 @@ classdef GlobalController < PowerSystemModel
                 end
             end
 
-            % Same Jacobian contract as odeSimulator: f_JacobiDx/Y(t,x,V,I,u).
+            % Same Jacobian contract as ODEsolver: f_JacobiDx/Y(t,x,V,I,u).
             % A global controller has no V port, so only the u columns are used.
             nx = numel(x);
             nu = numel(u);
