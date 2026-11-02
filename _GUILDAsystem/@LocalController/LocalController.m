@@ -246,8 +246,10 @@ classdef LocalController < PowerSystemModel
     end
 
     methods (Access=protected)
-        function set_odefcn(obj, omega0)            
-            % Bind the parameters and the frequency omega0 into the f_* function handles.
+        function set_odefcn(obj)
+            % Bind the parameters and the network frequency into the f_* function handles.
+            % Called by check_edit after a dynamics edit, a network Hz edit or an attach.
+            omega0 = obj.r_Hz;
             param = obj.tab_parameter.dynamics{:,obj.sv_para}.';
 
             obj.f_dx   = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, param, omega0);            
@@ -257,11 +259,6 @@ classdef LocalController < PowerSystemModel
             obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
             obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
             obj.s_edit.l_staleOdefcn = false;
-        end
-
-        function rebuild_odefcn(obj)
-            % Called by check_edit after a dynamics edit or a network Hz edit.
-            obj.set_odefcn(obj.r_Hz);
         end
     end
     methods (Access=private)

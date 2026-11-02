@@ -94,7 +94,7 @@ classdef local_LQR < LocalController
             obj.Q  = opt.Q;
             obj.R  = opt.R;
             obj.V0 = opt.V0;
-            obj.set_odefcn(obj.r_Hz)
+            obj.set_odefcn()
         end
 
         function set.Q(obj, val)
@@ -129,31 +129,11 @@ classdef local_LQR < LocalController
             obj.rv_Uequilibrium = comp.rv_Xequilibrium;
             obj.rv_u0 = u(iv_u);
             obj.design_gain(V, u);
+            obj.set_odefcn()
         end
     end
 
     methods (Access=protected)
-        function rebuild_odefcn(obj)
-            % Called by check_edit after a dynamics edit, a network Hz edit or an attach.
-            % A Hz edit keeps the equilibrium, so K is redesigned here (check_edit has
-            % already rebuilt the component, the parent). When the equilibrium is not up
-            % to date, net.initialize redesigns K instead.
-            if ~isempty(obj.r_HzDesign) && obj.r_HzDesign ~= obj.r_Hz && obj.equilibrium_valid()
-                try
-                    obj.design_gain(obj.a_Component.c_Vequilibrium, obj.a_Component.rv_Uequilibrium);
-                catch ME
-                    % A Hz edit runs in a listener, where an error is only a warning and would
-                    % stop the rebuild of the other layers. K stays for the old frequency, so the
-                    % record makes the equilibrium stale and analyses ask for net.initialize.
-                    warning("GUILDA:local_LQR:RedesignFailed", "%s: K was not redesigned for %g Hz: %s", obj.str_tag, obj.r_Hz, ME.message)
-                    obj.set_odefcn(obj.r_Hz);
-                    obj.log_edit(obj.str_tag + " redesign failed", "Parameter(dynamics)");
-                end
-            else
-                obj.set_odefcn(obj.r_Hz);
-            end
-        end
-
         function resolve_ports(obj, comp)
             % The driven inputs: Input, or all the inputs of the component
             if isempty(obj.sv_input)
@@ -168,7 +148,24 @@ classdef local_LQR < LocalController
             obj.sv_u = sv_name;
         end
 
-        function set_odefcn(obj, omega0)
+        function set_odefcn(obj)
+            % Called by check_edit after a dynamics edit, a network Hz edit or an attach.
+            % A Hz edit keeps the equilibrium, so K is redesigned here (check_edit has
+            % already rebuilt the component, the parent). When the equilibrium is not up
+            % to date, net.initialize redesigns K instead.
+            omega0 = obj.r_Hz;
+            if ~isempty(obj.r_HzDesign) && obj.r_HzDesign ~= omega0 && obj.equilibrium_valid()
+                try
+                    obj.design_gain(obj.a_Component.c_Vequilibrium, obj.a_Component.rv_Uequilibrium);
+                catch ME
+                    % A Hz edit runs in a listener, where an error is only a warning and would
+                    % stop the rebuild of the other layers. K stays for the old frequency, so the
+                    % record makes the equilibrium stale and analyses ask for net.initialize.
+                    warning("GUILDA:local_LQR:RedesignFailed", "%s: K was not redesigned for %g Hz: %s", obj.str_tag, omega0, ME.message)
+                    obj.log_edit(obj.str_tag + " redesign failed", "Parameter(dynamics)");
+                end
+            end
+
             % u = u* - K (x - x*); before net.initialize the gain is zero
             nu = numel(obj.sv_y);
             nx = numel(obj.sv_u);
@@ -191,7 +188,7 @@ classdef local_LQR < LocalController
 
     methods (Access=private)
         function design_gain(obj, V, u)
-            % Design K at the equilibrium of the component and rebuild the handles.
+            % Design K at the equilibrium of the component; the caller builds the handles.
             comp = obj.a_Component;
             x0 = comp.rv_Xequilibrium;
             I0 = comp.c_Iequilibrium;
@@ -223,7 +220,6 @@ classdef local_LQR < LocalController
             end
             obj.K = lqr(A, Bu, Qw, Rw);
             obj.r_HzDesign = obj.r_Hz;
-            obj.set_odefcn(obj.r_Hz)
         end
 
         function l = equilibrium_valid(obj)
