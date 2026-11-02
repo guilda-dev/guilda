@@ -105,7 +105,7 @@ rehash path
 
 lastwarn("");
 txt = evalc("tab = GUILDA.dictionary(""Component"", ""disp"", false);");
-[str_msg, str_id] = lastwarn;
+[str_msg, str_id] = lastwarn(); str_id = DebugScript.helper.msg_id(str_msg, str_id);
 assert(string(str_id) == "GUILDA:dictionary:ClassNotLoaded", txt)
 assert(contains(str_msg, "component.generator.broken_f9") && contains(str_msg, "no_such_parent_f9"), str_msg)
 assert(~ismember("component.generator.broken_f9", tab.filename))
@@ -120,7 +120,7 @@ assert(~contains(fileread(fullfile(str_root, "_GUILDAsystem", "@Bus", "add_compo
 %% GUILDA startup gives no class warning and lists no test stubs
 lastwarn("");
 txt = evalc("GUILDA;");
-[~, str_id] = lastwarn;
+str_id = DebugScript.helper.msg_id();
 assert(string(str_id) ~= "GUILDA:dictionary:ClassNotLoaded", txt)
 assert(~contains(txt, "could not be loaded"), txt)
 
@@ -185,7 +185,7 @@ try
     NewtonRaphsonMethod(NRMFcn=sym(), InitVal=1);
     error("DebugScript:NoError", "エラーにならない")
 catch ME
-    assert(ME.identifier == "GUILDA:NewtonRaphsonMethod:SymbolicUnavailable", ME.message)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:NewtonRaphsonMethod:SymbolicUnavailable", ME.message)
     assert(contains(ME.message, "function handle") && contains(ME.message, "NRMJac"))
 end
 clear c_tmp

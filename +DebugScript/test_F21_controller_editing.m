@@ -14,7 +14,7 @@ str_out = "GUILDA:Component:ControllerOutput";
 %% An unknown key stops with an error instead of attaching nothing
 [net, gen] = fresh_network();
 ME = caught(@() gen.add_local_controller(DebugScript.helper.OutputStub("governor", "Pmech")));
-assert(ME.identifier == str_key)
+assert(DebugScript.helper.msg_id(ME) == str_key)
 assert(contains(ME.message, "governor") && contains(ME.message, "avr") && contains(ME.message, "local"))
 assert(isempty(gen.a_LocalController))
 
@@ -22,7 +22,7 @@ assert(isempty(gen.a_LocalController))
 %% An output matching no input stops with an error naming the output and the inputs
 [net, gen] = fresh_network();
 ME = caught(@() gen.add_local_controller(DebugScript.helper.OutputStub("avr", "Vfiled")));
-assert(ME.identifier == str_out)
+assert(DebugScript.helper.msg_id(ME) == str_out)
 assert(contains(ME.message, "Vfiled") && contains(ME.message, gen.str_tag))
 assert(contains(ME.message, "Pmech") && contains(ME.message, "Vfield"))
 assert(isempty(gen.a_LocalController))
@@ -33,7 +33,7 @@ net = DebugScript.helper.build_ieee14();
 comp = net.a_Bus{9}.a_Component{1};
 assert(isa(comp, "component.load.impedance") || isa(comp, "component.load.power"))
 avr = controller.avr.AVR_ST1("avr1");
-assert(caught(@() comp.add_local_controller(avr)).identifier == str_out)
+assert(DebugScript.helper.msg_id(caught(@() comp.add_local_controller(avr))) == str_out)
 assert(isempty(comp.a_LocalController) && isempty(avr.a_Component))
 
 
@@ -42,7 +42,7 @@ assert(isempty(comp.a_LocalController) && isempty(avr.a_Component))
 avr = controller.avr.AVR_ST1("avr1");
 gen.add_local_controller(avr);
 ME = caught(@() gen.add_local_controller(DebugScript.helper.OutputStub("pss", "Vpsss")));
-assert(ME.identifier == str_out && contains(ME.message, avr.str_tag) && contains(ME.message, "Vpss"))
+assert(DebugScript.helper.msg_id(ME) == str_out && contains(ME.message, avr.str_tag) && contains(ME.message, "Vpss"))
 assert(isempty(avr.a_LocalController))
 
 
@@ -54,7 +54,7 @@ DebugScript.helper.quiet(@() net.initialize);
 n_log = height(net.tab_editLog);
 avrIn = controller.avr.AVR_ST1("avrNew");
 ME = caught(@() gen.add_local_controller(avrIn, DebugScript.helper.OutputStub("pss", "Vfield")));
-assert(ME.identifier == str_out && contains(ME.message, avrIn.str_tag))
+assert(DebugScript.helper.msg_id(ME) == str_out && contains(ME.message, avrIn.str_tag))
 assert(gen.a_LocalController{1} == old && isempty(avrIn.a_Component))
 assert(~net.s_edit.l_staleEquilibrium && height(net.tab_editLog) == n_log)
 
@@ -63,13 +63,13 @@ assert(~net.s_edit.l_staleEquilibrium && height(net.tab_editLog) == n_log)
 [net, gen] = fresh_network();
 ME = caught(@() gen.add_local_controller(controller.pss.PSS1("pss1")));
 assert(contains(ME.message, "no AVR"))
-assert(ME.identifier ~= str_out)
+assert(DebugScript.helper.msg_id(ME) ~= str_out)
 
 
 %% An LQR driving an unknown input stops with the same error
 [net, gen] = fresh_network();
 lqr = controller.local_LQR("lqr1", Input="Vref");
-assert(caught(@() gen.add_local_controller(lqr)).identifier == str_out)
+assert(DebugScript.helper.msg_id(caught(@() gen.add_local_controller(lqr))) == str_out)
 assert(isempty(gen.a_LocalController) && isempty(lqr.a_Component))
 
 
@@ -141,7 +141,7 @@ gen.add_local_controller(avr, pss);
 DebugScript.helper.quiet(@() net.initialize);
 n_log = height(net.tab_editLog);
 ME = caught(@() gen.remove_local_controller(avr.str_tag));
-assert(ME.identifier == "GUILDA:Component:ControllerHasNested" && contains(ME.message, "pss1"))
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:Component:ControllerHasNested" && contains(ME.message, "pss1"))
 assert(gen.a_LocalController{1} == avr && avr.a_LocalController{1} == pss && pss.a_Component == avr)
 assert(~net.s_edit.l_staleEquilibrium && height(net.tab_editLog) == n_log)
 
@@ -153,12 +153,12 @@ assert(height(net.tab_editLog) == n_log + 1 && contains(net.tab_editLog.log(end)
 
 %% remove_local_controller: an unknown tag changes nothing
 [net, gen] = fresh_network();
-assert(caught(@() gen.remove_local_controller("none")).identifier == "GUILDA:Component:ControllerNotFound")
+assert(DebugScript.helper.msg_id(caught(@() gen.remove_local_controller("none"))) == "GUILDA:Component:ControllerNotFound")
 avr = controller.avr.AVR_ST1("avr1");
 gen.add_local_controller(avr);
 DebugScript.helper.quiet(@() net.initialize);
 ME = caught(@() gen.remove_local_controller("none"));
-assert(ME.identifier == "GUILDA:Component:ControllerNotFound" && contains(ME.message, "none") && contains(ME.message, gen.str_tag))
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:Component:ControllerNotFound" && contains(ME.message, "none") && contains(ME.message, gen.str_tag))
 assert(gen.a_LocalController{1} == avr && ~net.s_edit.l_staleEquilibrium)
 
 
@@ -192,5 +192,5 @@ function ME = caught(fcn)
     catch ME
     end
     assert(~isempty(ME), "No error was raised.")
-    ME = struct("identifier", string(ME.identifier), "message", string(ME.message));
+    ME = struct("identifier", string(DebugScript.helper.msg_id(ME)), "message", string(ME.message));
 end

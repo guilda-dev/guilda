@@ -122,7 +122,7 @@ classdef DrawerNetDiagram < auxiliary
             arguments
                 net (1,1) PowerNetwork % Network to draw.
                 ax  (1,1) matlab.graphics.axis.Axes = axes('Parent',figure()); % Axes to draw in.
-                opt.?odeSimulator
+                opt.?ODEsolver
             end
             obj.ax = ax;
             

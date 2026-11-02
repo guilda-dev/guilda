@@ -1,0 +1,18 @@
+<!--This is an XML file containing error messages related to the file "import_matpower".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="CaseNotFound">MATPOWER case not found: {0}. Give an mpc struct, the name of a case function on the MATLAB path, or the path of a .m/.mat case file.</entry>
+        <entry key="InvalidCaseType">The MATPOWER case must be a struct with the fields baseMVA, bus, gen and branch (got {0}).</entry>
+        <entry key="InvalidCaseField">The MATPOWER case has no field {0}.</entry>
+        <entry key="UnsupportedVersion">import_matpower: MATPOWER case version 1 is not supported. Convert it to version 2 first (MATPOWER loadcase does this).</entry>
+        <entry key="ConstantCost">import_matpower: the constant terms c0 of gencost are dropped (GUILDA costs have no constant); the OPF solution is the same, its cost is lower by sum(c0).</entry>
+        <entry key="GenBusMissing">import_matpower: gen row {0} refers to bus {1}, which is not in mpc.bus.</entry>
+        <entry key="BranchBusMissing">import_matpower: branch row {0} refers to a bus that is not in mpc.bus.</entry>
+        <entry key="IsolatedBus">import_matpower: bus {0} is isolated (type 4). Remove isolated buses and their branches and generators first.</entry>
+        <entry key="ReferenceBusEmpty">import_matpower: the reference bus {0} has no in-service generator or load.</entry>
+        <entry key="GencostRows">import_matpower: gencost has {0} rows; it needs ng = {1} (P costs) or 2*ng (P and Q costs).</entry>
+        <entry key="GencostPiecewise">import_matpower: gencost row {0} is piecewise linear (MODEL = {1}). Only polynomial costs (MODEL = 2) are supported: fit it with a polynomial of degree 2 or less first.</entry>
+        <entry key="GencostDegree">import_matpower: gencost row {0} is a polynomial of degree {1}. Only costs up to quadratic are supported.</entry>
+        <entry key="InvalidCaseColumns">The MATPOWER case needs at least 13 bus columns, 10 gen columns and 13 branch columns (got {0}, {1}, {2}).</entry>
+    </message>
+</rsccat>

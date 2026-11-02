@@ -254,7 +254,7 @@
       <tbody>
         <tr><td>Examples</td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td>A short usage example helps. Markdown with fenced code blocks.</td></tr>
         <tr><td>Deprecated</td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td>The member will be removed. The text names the replacement.</td></tr>
-        <tr><td>Type</td><td></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td></td><td>The declaration cannot state the class, for example an untyped property that holds a <code>PowerFlowCalculation</code>.</td></tr>
+        <tr><td>Type</td><td></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td></td><td>The declaration cannot state the class, for example an untyped property that holds a <code>PFCsolver</code>.</td></tr>
       </tbody>
     </table>
     <p>Put tags at the end of the comment block, after the description and the See also line. Write <code>% &lt;@Tag&gt; value</code>; a value can continue on the next <code>%</code> lines, up to the next tag or the end of the block.</p>
@@ -273,7 +273,7 @@
       <div>
         <span class="dg-kicker">Property</span>
 <pre class="cd-code" style="margin-top:8px"><span class="cd-c">% Solver used by calculate_powerflow.</span>
-<span class="cd-c">% &lt;@Type&gt; PowerFlowCalculation</span>
+<span class="cd-c">% &lt;@Type&gt; PFCsolver</span>
 a_Solver</pre>
       </div>
     </div>
@@ -293,7 +293,7 @@ a_Solver</pre>
         <tr><td><code>Parameters</code></td><td data-label="Write instead">Comments in the <code>arguments</code> block.</td></tr>
         <tr><td><code>Returns</code></td><td data-label="Write instead">Comments in the <code>arguments (Output)</code> block.</td></tr>
         <tr><td><code>Calls</code></td><td data-label="Write instead">The See also line, or a sentence in the description.</td></tr>
-        <tr><td><code>Throws</code></td><td data-label="Write instead">Nothing: read from the error IDs in <code>error("GUILDA:...", ...)</code> calls.</td></tr>
+        <tr><td><code>Throws</code></td><td data-label="Write instead">Nothing: read from the error IDs in <code>error(msg("GUILDA:..."))</code> calls.</td></tr>
         <tr><td><code>Size</code>, <code>Default</code>, <code>Constraints</code></td><td data-label="Write instead">The property declaration: size, class, validators and default.</td></tr>
         <tr><td><code>Unit</code></td><td data-label="Write instead">A leading <code>[unit]</code> in the comment.</td></tr>
         <tr><td><code>Since</code></td><td data-label="Write instead">The Update log.</td></tr>
@@ -331,7 +331,7 @@ r_Sbase (1,1) double = 100</pre>
         <tr><td>Method</td><td data-label="Field">Signature, Arguments</td><td data-label="Read from">The <code>function</code> line and the <code>arguments</code> blocks.</td></tr>
         <tr><td>Method</td><td data-label="Field">Overrides</td><td data-label="Read from">A superclass method with the same name.</td></tr>
         <tr><td>Method</td><td data-label="Field">ImplementedIn</td><td data-label="Read from">The file that holds the <code>function</code>.</td></tr>
-        <tr><td>Method</td><td data-label="Field">Throws</td><td data-label="Read from">The error IDs in its <code>error</code> calls.</td></tr>
+        <tr><td>Method</td><td data-label="Field">Throws</td><td data-label="Read from">The error IDs in its <code>error(msg(...))</code> calls.</td></tr>
         <tr><td>Method</td><td data-label="Field">Group</td><td data-label="Read from">The verb prefix of the name.</td></tr>
       </tbody>
     </table>
@@ -462,7 +462,7 @@ r_Sbase (1,1) double = 100</pre>
             { key: 'unit', label: 'Unit', rows: 1, placeholder: 'e.g. MVA, pu, rad/s' },
             { key: 'summary', label: 'Summary (H1 line)', required: true, rows: 1, placeholder: 'e.g. Base power.' },
             { key: 'desc', label: 'Description', rows: 2, placeholder: 'Following comment lines. Markdown is supported.' },
-            { key: 'type', label: '<@Type>', declared: true, rows: 1, placeholder: 'e.g. PowerFlowCalculation' },
+            { key: 'type', label: '<@Type>', declared: true, rows: 1, placeholder: 'e.g. PFCsolver' },
             { key: 'deprecated', label: '<@Deprecated>', rows: 1, placeholder: 'Leave empty unless deprecated; name the replacement.' }
           ]
         },

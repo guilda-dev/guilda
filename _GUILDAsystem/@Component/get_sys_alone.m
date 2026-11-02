@@ -23,7 +23,7 @@ function sys = get_sys_alone(obj, x, V, I, u, opt)
 
     Mass = shape(obj.f_Mass(0,x,V,I,u), nx, nx);
 
-    % Same Jacobian contract as odeSimulator: f_JacobiDx/I/Y(t,x,V,I,u)
+    % Same Jacobian contract as ODEsolver: f_JacobiDx/I/Y(t,x,V,I,u)
     [Axx,Bxv,Bxi,Bxu] = obj.f_JacobiDx(0,x,V,I,u);
     [Cix,Div,Dii,Diu] = obj.f_JacobiI( 0,x,V,I,u);
     [Cyx,Dyv,Dyi,Dyu] = obj.f_JacobiY( 0,x,V,I,u);
@@ -34,8 +34,7 @@ function sys = get_sys_alone(obj, x, V, I, u, opt)
 
     % The ports are V (input) and I (output), so a model whose equations depend on I cannot be linearized here
     if any([Bxi(:); Dii(:); Dyi(:)] ~= 0)
-        error("GUILDA:Component:get_sys:CurrentDependence", ...
-              "get_sys does not support models whose fcn_dx, fcn_I or fcn_Y depend on the current I (%s).", obj.str_tag)
+        error(msg("GUILDA:Component:CurrentDependence", obj.str_tag))
     end
 
     sv_V = ["Vre";"Vim"];
@@ -57,8 +56,7 @@ function sys = get_sys_alone(obj, x, V, I, u, opt)
 
         case "I2V"
             if ~(rcond(Div) > 1e-12)
-                error("GUILDA:Component:NoI2V", ...
-                      "Component %s has no I2V form: D of its V2I model (dI/dV) is singular. Use the port ""V2I"".", obj.str_tag)
+                error(msg("GUILDA:Component:NoI2V", obj.str_tag))
             end
             inv_Div = Div^-1;
 

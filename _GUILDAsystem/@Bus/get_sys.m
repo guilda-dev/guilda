@@ -44,7 +44,7 @@ function [sys, varargout] = get_sys(obj, opt)
     if l_equilibrium
         sys = tools.cellfun(@(c) c.get_sys("port", "V2I"), obj.a_Component);
     else
-        rv_point  = odeLinearizer.point_vector(obj, opt.Point);
+        rv_point  = LTIsolver.point_vector(obj, opt.Point);
         [~, c_idx] = obj.get_variable_map();
         sys = cell(size(obj.a_Component));
         for j = 1:numel(obj.a_Component)
@@ -99,8 +99,7 @@ function [sys, varargout] = get_sys(obj, opt)
         case "I2V"
             % A bus without components or with P = Q = 0 loads has no I-to-V form
             if ~(rcond(Dv_sum) > 1e-12)
-                error("GUILDA:Bus:NoI2V", ...
-                      "Bus %s has no I2V form: D of its V2I model (dI/dV of its components) is singular. Use the port ""V2I"".", obj.str_tag)
+                error(msg("GUILDA:Bus:NoI2V", obj.str_tag))
             end
 
             % V = inv_Dv (I - Cx x - Du u)

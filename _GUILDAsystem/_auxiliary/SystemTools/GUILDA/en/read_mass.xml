@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the file "read_mass".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="NotConstant">fcn_Mass of {0} must return a constant {1}x{2} matrix without using t, x, V, I or u ({3}).</entry>
+    </message>
+</rsccat>

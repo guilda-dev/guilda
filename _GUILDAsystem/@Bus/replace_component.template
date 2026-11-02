@@ -37,15 +37,13 @@ function comp = replace_component(obj, str_tag, Type, parameter, opt)
     str_tagComp = string(obj.a_Component);
     lv_rmcub = str_tagComp==str_tag;
     if ~any(lv_rmcub)
-        error('GUILDA:Bus:ComponentNotFound', '%s', ...
-              msg('GUILDA:Bus:ComponentNotFound', char(str_tag), char(obj.str_tag)))
+        error(msg("GUILDA:Bus:ComponentNotFound", char(str_tag), char(obj.str_tag)))
     end
 
     comp_pre = obj.a_Component{lv_rmcub};
     str_gcon = controlling_gcon(obj, comp_pre);
     if str_gcon ~= ""
-        error('GUILDA:Bus:ComponentControlled', '%s', ...
-              msg('GUILDA:Bus:ComponentControlled', char(comp_pre.str_tag), char(str_gcon)))
+        error(msg("GUILDA:Bus:ComponentControlled", char(comp_pre.str_tag), char(str_gcon)))
     end
     tab_pre  = [comp_pre.para_powerflow.tab_parameter, ...
                 comp_pre.para_operation.tab_parameter, ...
@@ -96,8 +94,7 @@ ___KEY_CASES___
             % After the placeholder equilibrium, on which a controller must not be designed
             comp_pre.move_local_controllers(comp);
         else
-            warning('GUILDA:Bus:ControllersDropped', '%s', ...
-                    msg('GUILDA:Bus:ControllersDropped', tag_list(a_con), char(comp_pre.str_tag), char(comp.str_tag)))
+            warning(msg("GUILDA:Bus:ControllersDropped", tag_list(a_con), char(comp_pre.str_tag), char(comp.str_tag)))
         end
     end
     comp_pre.set_bus([])    % the replaced component no longer reads this bus
@@ -137,8 +134,7 @@ function check_keep(comp_pre, comp)
         end
     end
     if ~isempty(sv_why)
-        error('GUILDA:Bus:ControllersNotKept', '%s', ...
-              msg('GUILDA:Bus:ControllersNotKept', char(comp_pre.str_tag), char(comp.str_tag), char(join(sv_why, "; "))))
+        error(msg("GUILDA:Bus:ControllersNotKept", char(comp_pre.str_tag), char(comp.str_tag), char(join(sv_why, "; "))))
     end
 end
 

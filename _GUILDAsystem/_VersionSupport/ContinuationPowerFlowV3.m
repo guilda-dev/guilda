@@ -6,7 +6,7 @@ classdef ContinuationPowerFlowV3 < handle
 % solve runs net.calculate_continuation_powerflow with these options; net.solver_CPF is
 % not changed. Differences from v3: sol and sol_pred are in the full variable layout
 % (the same as CPF_Result.x_sol / x_prd, lambda in the last row), CPF_Result.result holds
-% the CPFResult, and an empty CPFBus stops with an error instead of a warning. The v3
+% the CPFresult, and an empty CPFBus stops with an error instead of a warning. The v3
 % options CPFFcn, CPFJac and CPFInitVal are not supported.
 %
 % <@Examples>
@@ -16,9 +16,9 @@ classdef ContinuationPowerFlowV3 < handle
 % ```
 %
 % <@Deprecated>
-% Use net.calculate_continuation_powerflow(LoadBus=sv_bus), which returns a CPFResult.
+% Use net.calculate_continuation_powerflow(LoadBus=sv_bus), which returns a CPFresult.
 %
-% See also Continuation_Power_Flow, PowerNetwork.calculate_continuation_powerflow, CPFResult
+% See also Continuation_Power_Flow, PowerNetwork.calculate_continuation_powerflow, CPFresult
 
     properties (Access=public) % Options
         CPFBus         (:,1) string = strings(0,1)   % Tags of the buses whose loads are scaled (LoadBus).
@@ -30,7 +30,7 @@ classdef ContinuationPowerFlowV3 < handle
     end
     properties (SetAccess=private) % Result
         CPFNet                                       % Network to analyse.
-        CPF_Result = struct("x_sol", [], "x_prd", [], "result", [])   % Result of the last solve: x_sol, x_prd and the CPFResult.
+        CPF_Result = struct("x_sol", [], "x_prd", [], "result", [])   % Result of the last solve: x_sol, x_prd and the CPFresult.
     end
 
     methods

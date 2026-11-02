@@ -33,10 +33,10 @@ classdef PowerNetwork < PowerSystemModel
 % net.a_Bus{3}.add_component("load-power", P=-0.5, Q=0);
 % net.a_Bus{1}.l_isSlack = true;
 %
-% res = net.calculate_powerflow();          % PowerFlowResult
+% res = net.calculate_powerflow();          % PFCresult
 % net.initialize();                         % equilibrium for the dynamic analyses
-% ev  = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B003");
-% sim = net.simulate([0,10], ev);           % odeSimulationResult
+% ev  = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B003");
+% sim = net.simulate([0,10], ev);           % ODEresult
 % sys = net.get_sys();                      % linear state-space model
 % ```
 %
@@ -51,40 +51,40 @@ classdef PowerNetwork < PowerSystemModel
     end
     properties(SetAccess=protected) % Solvers
 
-        % PowerFlowCalculation solver of net.calculate_powerflow.
+        % PFCsolver solver of net.calculate_powerflow.
         % Its properties are the stored defaults (Method, Tolerance, MaxIterations, ...),
         % kept between runs; Name-Value options of a call override them for that call
-        % only. Results are returned as a PowerFlowResult, never stored in the solver.
-        % <@Type> PowerFlowCalculation
+        % only. Results are returned as a PFCresult, never stored in the solver.
+        % <@Type> PFCsolver
         solver_PF  
 
-        % OptimalPowerFlow solver of net.optimize_powerflow.
+        % OPFsolver solver of net.optimize_powerflow.
         % Its properties are the stored defaults (Method, Solver, Display, MaxIteration,
         % ...), kept between runs; Name-Value options of a call override them for that
-        % call only. Results are returned as an OPFResult, never stored in the solver.
-        % <@Type> OptimalPowerFlow
+        % call only. Results are returned as an OPFresult, never stored in the solver.
+        % <@Type> OPFsolver
         solver_OPF 
 
-        % ContinuationPowerFlow solver of net.calculate_continuation_powerflow.
+        % CPFsolver solver of net.calculate_continuation_powerflow.
         % Its properties are the stored defaults (LoadBus, MaxIterations, StepSize, ...),
         % kept between runs; Name-Value options of a call override them for that call
-        % only. Results are returned as a CPFResult, never stored in the solver.
-        % <@Type> ContinuationPowerFlow
+        % only. Results are returned as a CPFresult, never stored in the solver.
+        % <@Type> CPFsolver
         solver_CPF
 
-        % odeSimulator solver of net.simulate.
+        % ODEsolver solver of net.simulate.
         % Its properties are the stored defaults (Solver, RelativeTolerance,
         % AbsoluteTolerance, Progress, TimeLimit, ...), kept between runs; Name-Value
         % options of a call override them for that call only. Results are returned as an
-        % odeSimulationResult, never stored in the solver.
-        % <@Type> odeSimulator
+        % ODEresult, never stored in the solver.
+        % <@Type> ODEsolver
         solver_ODE 
 
-        % odeLinearizer solver of net.linearize and net.get_sys.
+        % LTIsolver solver of net.linearize and net.get_sys.
         % Its properties are the stored defaults (Algorithm, Point, Coordinate), kept between
         % runs; Name-Value options of a call override them for that call only. Results are
-        % returned as a LinearizationResult, never stored in the solver.
-        % <@Type> odeLinearizer
+        % returned as a LTIresult, never stored in the solver.
+        % <@Type> LTIsolver
         solver_LIN
     end
     properties(Dependent) % Steady State
@@ -175,9 +175,7 @@ classdef PowerNetwork < PowerSystemModel
             % edits of a loaded network are checked and logged. MATLAB turns an error here
             % into a warning, so an incomplete restore is reported as a warning.
             if ~restore_parameter_listeners(obj)
-                warning('GUILDA:PowerNetwork:IncompleteLoad', ...
-                        "Edits of the object saved below network '%s' are not logged after loading. Save the network itself.", ...
-                        obj.str_tag)
+                warning(msg("GUILDA:PowerNetwork:IncompleteLoad", obj.str_tag))
             end
         end
     end
@@ -204,7 +202,7 @@ classdef PowerNetwork < PowerSystemModel
             end
         end
     end
-    methods(Access={?odeSimulator, ?odeLinearizer})
+    methods(Access={?ODEsolver, ?LTIsolver})
         function require_equilibrium(obj)
             % Called at the start of solver_ODE.solve and solver_LIN.solve (the one place
             % of this check for simulate, linearize and get_sys): rebuild stale f_*

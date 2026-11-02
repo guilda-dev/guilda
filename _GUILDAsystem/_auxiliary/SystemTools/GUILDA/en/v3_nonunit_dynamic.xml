@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the file "v3_nonunit_dynamic".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="NonUnitDynamicBus">NonUnit = [{0}] names buses with states, which cannot be eliminated with the network: bus {1}.</entry>
+    </message>
+</rsccat>

@@ -76,7 +76,7 @@ classdef TEST31bus < PowerNetwork
 % ```matlab
 % net = network.TEST31bus();
 % res = net.calculate_powerflow();
-% ev  = odeEventSet("offset", net, "TimeSpan", 1, "OffsetUnit", "SG1B001", ...
+% ev  = ODEevent("offset", net, "TimeSpan", 1, "OffsetUnit", "SG1B001", ...
 %                   "OffsetState", "delta", "OffsetValue", 0.1);
 % sol = net.simulate([0,10], ev);
 % ```

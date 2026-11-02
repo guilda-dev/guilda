@@ -61,7 +61,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     if l_equilibrium
         sysCON = tools.cellfun(@(d) d.get_sys_alone("tag",false), a_LC);
     else
-        [x, V, I, u, c_con] = point_values(obj, a_LC, odeLinearizer.point_vector(obj, opt.Point));
+        [x, V, I, u, c_con] = point_values(obj, a_LC, LTIsolver.point_vector(obj, opt.Point));
         sysCON = tools.cellfun(@(d,p) d.get_sys_alone(p{:},"tag",false), a_LC, c_con);
     end
 

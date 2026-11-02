@@ -36,7 +36,7 @@ classdef BadComponentStub < Component
             end
             obj@Component("BS" + str_tag, opt);
             obj.para_dynamics.add_entry("bad", find(obj.sv_bad == str_bad), "double");
-            obj.set_odefcn(obj.r_Hz);
+            obj.set_odefcn();
         end
 
         function [x, u] = get_equilibrium(obj, ~, c_I, r_P, ~)
