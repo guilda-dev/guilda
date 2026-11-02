@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GUILDA Developer Guide - Model Implementation</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    /* Model Implementation page only (mi-*); shared parts are dg-* in style.css */
+    .mi-code { margin: var(--dg-s2) 0 var(--dg-s4); padding: var(--dg-s4); overflow-x: auto; border: 1px solid var(--dg-line); border-radius: var(--radius); background: var(--dg-card); color: var(--dg-ink); font: 0.8rem/1.6 var(--dg-mono); white-space: pre; }
+    .mi-file { display: block; margin-top: var(--dg-s4); color: var(--dg-muted); font: bold 0.8rem/1.4 var(--dg-mono); overflow-wrap: anywhere; }
+    .mi-table td { vertical-align: top; font-size: 0.9rem; }
+    .mi-table td:first-child { font-weight: bold; }
+    .mi-table td small { display: block; margin-top: 4px; color: var(--dg-muted); }
+  </style>
+</head>
+<body class="developer-layout dg">
+  <svg class="dg-sprite" aria-hidden="true" focusable="false">
+    <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+  </svg>
+  <main>
+    <button type="button" class="developer-back-button" onclick="window.history.back()">← Back to For Developer</button>
+    <h1>Model Implementation</h1>
+    <p class="page-lead">How to add a new generator, load, or controller: what the framework requires of the class, a minimal generator and AVR, and how to test them.</p>
+
+    <nav class="dev-toc" aria-label="Contents">
+      <a href="#steps">Steps</a>
+      <a href="#contracts">Contracts</a>
+      <a href="#generator">Minimal generator</a>
+      <a href="#network">Using the model</a>
+      <a href="#controller">Minimal controller</a>
+      <a href="#testing">Testing</a>
+      <a href="#other">Branches and networks</a>
+    </nav>
+
+    <!-- ============================== STEPS ============================== -->
+    <h2 id="steps">Steps</h2>
+    <ol class="dg-list is-numbered">
+      <li><div><span class="dg-item-title">Choose the base class and the place</span><p>Put the class in the matching package of <code>_GUILDAobject</code> (see <a href="folder-structure.html#placement">Folder Structure</a>). A small model can be one <code>classdef</code> file.</p></div></li>
+      <li><div><span class="dg-item-title">Implement the contract</span><p>Define the constants and methods in <a href="#contracts">Contracts</a>. Document the class with <a href="class-documentation.html">Class Documentation</a> and name new properties with the <a href="naming-conventions.html">Naming Conventions</a>.</p></div></li>
+      <li><div><span class="dg-item-title">Register a component or branch key</span><p>Run <code>GUILDA</code> again. It scans the repository, finds the <code>key</code> of each class, and generates <code>Bus.add_component</code> and <code>PowerNetwork.add_branch</code>. Until then the key is rejected. A class that does not load gives the warning <code>GUILDA:dictionary:ClassNotLoaded</code> with the reason. Controllers have no such step: you create them with their constructor.</p></div></li>
+      <li><div><span class="dg-item-title">Test it</span><p>Check the contract with <code>validate</code>, then run the checks in <a href="#testing">Testing</a>.</p></div></li>
+    </ol>
+
+    <!-- ============================== CONTRACTS ============================== -->
+    <h2 id="contracts">Contracts</h2>
+    <p>The three kinds of model have different contracts on purpose (see <a href="class-design.html#classes">Class Design</a>). The differences are easy to miss, so compare them here.</p>
+    <table class="mi-table">
+      <thead>
+        <tr><th></th><th>Component</th><th>LocalController</th><th>GlobalController</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Base class</td>
+          <td><code>component.generator.abstract</code>, <code>component.load.abstract</code>, or <code>Component</code></td>
+          <td><code>LocalController</code></td>
+          <td><code>GlobalController</code></td>
+        </tr>
+        <tr>
+          <td><code>key</code></td>
+          <td>The key of <code>add_component</code></td>
+          <td>Where it attaches: <code>"avr"</code>, <code>"pss"</code>, or <code>"local"</code></td>
+          <td>A description only</td>
+        </tr>
+        <tr>
+          <td><code>key</code>, <code>sv_*</code> attributes</td>
+          <td><code>Constant</code></td>
+          <td><code>SetAccess=protected, Hidden</code><small>Not <code>Constant</code>.</small></td>
+          <td><code>Constant, Hidden</code></td>
+        </tr>
+        <tr>
+          <td>Created by</td>
+          <td><code>bus.add_component(key, ...)</code></td>
+          <td>Its constructor, then <code>comp.add_local_controller</code></td>
+          <td>Its constructor <code>(net, tag, units...)</code>, then <code>net.add_global_controller</code></td>
+        </tr>
+        <tr>
+          <td>Output function</td>
+          <td><code>fcn_Y</code>, and <code>fcn_I</code> for the current</td>
+          <td><code>fcn_y</code></td>
+          <td><code>fcn_y</code></td>
+        </tr>
+        <tr>
+          <td>Mass matrix</td>
+          <td colspan="3"><code>fcn_Mass</code>: constant and square. <code>simulate</code> calls it with empty <code>t, x, V, I, u</code>; a matrix that uses them stops with <code>GUILDA:read_mass:NotConstant</code>.</td>
+        </tr>
+        <tr>
+          <td>Jacobians</td>
+          <td><code>Jacobi_dx</code>, <code>Jacobi_I</code>, <code>Jacobi_Y</code> are optional<small>Numerical differentiation is used without them.</small></td>
+          <td><code>Jacobi_dx</code>, <code>Jacobi_Y</code> are required</td>
+          <td><code>Jacobi_dx</code>, <code>Jacobi_Y</code> are required</td>
+        </tr>
+        <tr>
+          <td>Equilibrium</td>
+          <td><code>[x,u] = get_equilibrium(obj,V,I,P,Q)</code><small>Always called with the four arguments. A trip of <code>simulate</code> passes <code>I = P = Q = 0</code>.</small></td>
+          <td><code>get_equilibrium(obj,V,u)</code><small><code>u</code> is the equilibrium input of the component. No output: write <code>rv_Xequilibrium</code> and <code>rv_Uequilibrium</code>, and call the nested controller.</small></td>
+          <td><code>[x,u] = get_equilibrium(obj)</code><small>Called after the components are set.</small></td>
+        </tr>
+        <tr>
+          <td><code>V</code> in <code>get_equilibrium</code></td>
+          <td>Complex</td>
+          <td>Complex</td>
+          <td>No voltage</td>
+        </tr>
+        <tr>
+          <td><code>param</code> in the model functions</td>
+          <td>Row vector</td>
+          <td>Column vector</td>
+          <td>Matrix with one row per controlled unit</td>
+        </tr>
+        <tr>
+          <td>Inputs come from</td>
+          <td>Controllers and input events, by name</td>
+          <td>By name <code>sv_u</code>: an output of the component, then a state, then an output of the nested controller. Other names stay at the equilibrium.</td>
+          <td>The states named <code>sv_u</code> of each controlled unit</td>
+        </tr>
+        <tr>
+          <td>Outputs go to</td>
+          <td><code>I</code> to the bus; <code>y</code> to the controllers</td>
+          <td>The inputs named <code>sv_y</code> of the component, or of the AVR for a PSS</td>
+          <td>Added to the inputs named <code>sv_y</code> of each controlled unit</td>
+        </tr>
+        <tr>
+          <td>Check</td>
+          <td><code>comp.validate</code></td>
+          <td><code>con.validate</code></td>
+          <td>No <code>validate</code>; check with <code>agc.get_sys</code> and a simulation</td>
+        </tr>
+        <tr>
+          <td>Example</td>
+          <td><code>component.generator.classical</code></td>
+          <td><code>controller.avr.AVR_ST1</code>, <code>controller.local_LQR</code></td>
+          <td><code>controller.agc.broadcast_PI_AGC</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Arguments of the model functions</h3>
+    <p>Each model function has the arguments <code>(t, x, V, I, u, param, omega0)</code>.</p>
+    <table class="mi-table">
+      <thead>
+        <tr><th>Argument</th><th>Value</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>t</code></td><td>Time in seconds.</td></tr>
+        <tr><td><code>x</code>, <code>u</code></td><td>Column vectors in the order of <code>sv_x</code> and <code>sv_u</code>.</td></tr>
+        <tr><td><code>V</code>, <code>I</code></td><td><code>[re; im]</code> in per unit. <code>I</code> is the current injected into the bus. A global controller has no port: do not use them.</td></tr>
+        <tr><td><code>param</code></td><td>The dynamic parameters in the order of <code>sv_para</code>.</td></tr>
+        <tr><td><code>omega0</code></td><td>The nominal frequency in Hz. Multiply by <code>2*pi</code> in the model.</td></tr>
+      </tbody>
+    </table>
+    <p><code>fcn_dx</code> and <code>fcn_Y</code> return column vectors, <code>fcn_I</code> returns a complex scalar, and <code>fcn_Mass</code> returns <code>M</code> of <code>M*dx/dt = fcn_dx</code>. See <a href="class-design.html#conventions">Class Design: Conventions</a> for units and signs.</p>
+
+    <h3>Rules that apply to every model</h3>
+    <ul>
+      <li>The model functions must not depend on <code>I</code>: <code>simulate</code> accepts it, but the linearization does not.</li>
+      <li><code>sv_u</code> must not contain the port names <code>Vre</code>, <code>Vim</code>, <code>Ire</code>, <code>Iim</code>.</li>
+      <li><code>net.initialize</code> evaluates the point that <code>get_equilibrium</code> returns. A wrong size or an error in a model function stops it (<code>GUILDA:PowerNetwork:InitializeEquilibriumSize</code>, <code>InitializeModelSize</code>, <code>InitializeModelFailed</code>). A point where the state moves gives the warning <code>GUILDA:PowerNetwork:EquilibriumResidual</code>.</li>
+      <li>A controller can use the input names <code>"Xall"</code> and <code>"Yall"</code> to observe all the states or outputs of the component. It must then override <code>set_inputs</code>; see <code>controller.local_LQR</code>. The names <code>"X"</code> and <code>"Y"</code> are errors.</li>
+      <li>A component has one chain of local controllers: one <code>"avr"</code> or <code>"local"</code> controller, and a <code>"pss"</code> under an AVR. A new one replaces the old one with the warning <code>GUILDA:Component:ReplaceController</code>.</li>
+      <li><code>getCompPQ(obj, x, V, u, param)</code>, with <code>V</code> as <code>[abs; angle]</code>, is needed only by the continuation power flow with <code>UseInternalState=true</code>; without it, that analysis stops with <code>GUILDA:ContinuationPowerFlow:MissingGetCompPQ</code>.</li>
+    </ul>
+
+    <!-- ============================== GENERATOR ============================== -->
+    <h2 id="generator">Minimal generator</h2>
+    <p>A constant-magnitude source behind the reactance <code>Xs</code>, with the swing equation. It has the same dynamics as <code>gen-classical</code> with <code>Xd = Xq = Xs</code>, which makes a useful check. The base class <code>component.generator.abstract</code> provides the constructor and sets the tag to <code>"SG"</code> + index. A load inherits from <code>component.load.abstract</code> in the same way.</p>
+    <span class="mi-file">_GUILDAobject/+component/+generator/simple_sg.m</span>
+<pre class="mi-code" data-file="_GUILDAobject/+component/+generator/simple_sg.m">classdef simple_sg &lt; component.generator.abstract
+% Generator with a constant-magnitude source E behind the reactance Xs.
+%
+% See also component.generator.classical, Component
+    properties (Constant)
+        key     = "gen-simple"          % Model key used by Bus.add_component.
+        sv_x    = ["delta";"omega"]     % State names.
+        sv_u    = ["Pmech";"Vfield"]    % Input names.
+        sv_y    = "omega"               % Output names read by local controllers.
+        sv_para = ["M";"D";"Xs"]        % Dynamic parameter names, in the order of p.
+    end
+    methods
+        function [x, u] = get_equilibrium(obj, c_V, c_I, r_P, ~)
+            % Return the states and inputs at the bus voltage and current.
+            c_E = c_V + 1j*obj.para_dynamics.Xs*c_I;
+            x   = [angle(c_E); 0];
+            u   = [r_P; abs(c_E)];
+        end
+    end
+    methods (Static)
+        function dx = fcn_dx(~, x, V, ~, u, p, omega0)
+            % Return the state derivatives.
+            c_E = u(2)*exp(1j*x(1));
+            c_I = (c_E - [1,1j]*V)/(1j*p(3));
+            dx  = [2*pi*omega0*x(2); -p(2)*x(2) - real(c_E*conj(c_I)) + u(1)];
+        end
+        function c_I = fcn_I(~, x, V, ~, u, p, ~)
+            % Return the current injected into the bus as a complex number.
+            c_I = (u(2)*exp(1j*x(1)) - [1,1j]*V)/(1j*p(3));
+        end
+        function y = fcn_Y(~, x, ~, ~, ~, ~, ~)
+            % Return the outputs.
+            y = x(2);
+        end
+        function M = fcn_Mass(~, ~, ~, ~, ~, p, ~)
+            % Return the constant mass matrix.
+            M = diag([1, p(1)]);
+        end
+    end
+end
+</pre>
+    <p>A generator with parameters that are not in the bundled <code>parameter.csv</code>, like <code>Xs</code>, needs a table in the <code>parameter</code> option of <code>add_component</code>.</p>
+
+    <!-- ============================== NETWORK ============================== -->
+    <h2 id="network">Using the model</h2>
+    <p>After <code>GUILDA</code> has registered the key, the model works in every analysis. Keep the objects that <code>add_bus</code> returns and pass their tags to <code>add_branch</code>: a bus index shifts when a bus is removed, and a tag does not (see <a href="class-design.html#identity">Identity</a>).</p>
+<pre class="mi-code" data-run="network">para = table(100, 10, 0.3, VariableNames=["M","D","Xs"]);
+net  = PowerNetwork();
+b1   = net.add_bus(V=1.00);
+b2   = net.add_bus(V=1.02);
+b3   = net.add_bus();
+net.add_branch("pi", [b1.str_tag, b2.str_tag], R=0.010, X=0.085);
+net.add_branch("pi", [b2.str_tag, b3.str_tag], R=0.017, X=0.092);
+g1   = b1.add_component("gen-simple", "parameter",para);
+g2   = b2.add_component("gen-simple", "P",0.5, "parameter",para);
+b3.add_component("load-impedance", "P",-1.0, "Q",-0.2);
+net.initialize();
+
+ev  = odeEventSet("fault", net, "TimeSpan",[1,1.05], "FaultBus",b3.str_tag);
+sim = net.simulate([0,10], ev);
+sys = net.get_sys();
+</pre>
+
+    <!-- ============================== CONTROLLER ============================== -->
+    <h2 id="controller">Minimal controller</h2>
+    <p>A first-order AVR. Its output <code>Vfield</code> drives the input of that name of the generator. No output of the generator is called <code>Vref</code> or <code>Vpss</code>, so <code>Vref</code> stays at its equilibrium and <code>Vpss</code> reads a PSS when one is attached. The Jacobians must be written by hand. The constructor adds the parameters and builds the function handles, which are built again with the frequency of the network when the controller is attached.</p>
+    <span class="mi-file">_GUILDAobject/+controller/+avr/simple_avr.m</span>
+<pre class="mi-code" data-file="_GUILDAobject/+controller/+avr/simple_avr.m">classdef simple_avr &lt; LocalController
+% First-order AVR: Te*dVfd/dt = -Vfd + Ka*(Vref + Vpss - |V|), Vfield = Vfd.
+%
+% See also controller.avr.AVR_ST1, LocalController
+    properties (SetAccess=protected, Hidden)
+        key     = "avr"                 % Attached to the component; a PSS can hang under it.
+        sv_x    = "Vfd"                 % State names.
+        sv_u    = ["Vref";"Vpss"]       % Input names; no component output has these names.
+        sv_y    = "Vfield"              % Output names; drives the input Vfield of the component.
+        sv_para = ["Ka";"Te"]           % Dynamic parameter names, in the order of p.
+    end
+    methods
+        function obj = simple_avr(tag, opt)
+            % Create the controller with the tag "CA"+tag.
+            arguments
+                tag (1,1) string            % Tag suffix.
+                opt.Ka (1,1) double = 30    % [pu] Gain.
+                opt.Te (1,1) double = 0.05  % [s] Time constant.
+            end
+            obj@LocalController("CA"+tag)
+            obj.para_dynamics.add_entry("Ka", opt.Ka, "double", "Te", opt.Te, "double");
+            obj.set_odefcn(obj.r_Hz)
+        end
+        function get_equilibrium(obj, V, u)
+            % Set the equilibrium from the complex voltage V and the component inputs u.
+            Ka = obj.para_dynamics.Ka;
+            obj.rv_Xequilibrium = u(2);
+            obj.rv_Uequilibrium = [u(2)/Ka + abs(V); 0];
+            cellfun(@(c) c.get_equilibrium(V, u), obj.a_LocalController);
+        end
+    end
+    methods (Static)
+        function dx = fcn_dx(~, x, V, ~, u, p, ~)
+            % Return the state derivative.
+            dx = -x + p(1)*(u(1) + u(2) - norm(V));
+        end
+        function y = fcn_y(~, x, ~, ~, ~, ~, ~)
+            % Return the output.
+            y = x;
+        end
+        function M = fcn_Mass(~, ~, ~, ~, ~, p, ~)
+            % Return the constant mass matrix.
+            M = p(2);
+        end
+        function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(~, ~, V, ~, ~, p, ~)
+            % Return the Jacobians of fcn_dx with respect to x, V, I and u.
+            Axx = -1;
+            Bxv = -p(1)*V.'/norm(V);
+            Bxi = zeros(1,2);
+            Bxu = [p(1), p(1)];
+        end
+        function [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(~, ~, ~, ~, ~, ~, ~)
+            % Return the Jacobians of fcn_y with respect to x, V, I and u.
+            Cyx = 1;
+            Dyv = zeros(1,2);
+            Dyi = zeros(1,2);
+            Dyu = zeros(1,2);
+        end
+    end
+end
+</pre>
+    <p>Attaching a controller changes the dynamics, so run <code>initialize</code> again. Without it, <code>simulate</code> stops with <code>GUILDA:PowerNetwork:EquilibriumStale</code>.</p>
+<pre class="mi-code" data-run="controller">avr = controller.avr.simple_avr("a", Ka=30, Te=0.05);
+pss = controller.pss.PSS1("p");
+g2.add_local_controller(avr, pss);
+net.initialize();
+sim = net.simulate([0,10], ev);
+</pre>
+    <p>To detach it, call <code>g2.remove_local_controller(avr.str_tag, RemoveNested=true)</code>. The option also removes the PSS, and an AVR with a PSS cannot be removed without it.</p>
+
+    <!-- ============================== TESTING ============================== -->
+    <h2 id="testing">Testing</h2>
+    <h3>Check the contract with <code>validate</code></h3>
+    <p><code>comp.validate</code> and <code>con.validate</code> print the comparison and return a struct of tables. A broken model does not stop the check: it appears as <code>FAIL</code>. Pass <code>false</code> to skip the printing.</p>
+<pre class="mi-code" data-run="validate">s = g2.validate(false);
+s.contract        % status (PASS, FAIL, INFO) and detail of each check
+s.inputs          % where each input is read
+
+s = avr.validate(false);
+s.contract
+s.inputs          % Vref: "equilibrium (not connected)", Vpss: "output of CPp"
+</pre>
+    <table class="mi-table">
+      <thead>
+        <tr><th>Field</th><th>What to look for</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>contract</code></td><td>Sizes of <code>x</code>, <code>u</code>, and the model functions; <code>fcn_I</code> complex; <code>fcn_Mass</code> constant and square; no dependence on <code>I</code>; no port names in <code>sv_u</code>; whether <code>getCompPQ</code> is defined.</td></tr>
+        <tr><td><code>inputs</code></td><td>The source of each input. A misspelled input name is not an error when the controller is attached; it appears here as <code>equilibrium (not connected)</code>.</td></tr>
+        <tr><td><code>dx</code>, <code>I</code></td><td>The residuals at the point. They should be close to zero at an equilibrium.</td></tr>
+        <tr><td><code>Axx</code>, <code>Bxv</code>, ...</td><td>The absolute difference between each analytic Jacobian and finite differences. A component without <code>Jacobi_*</code> has nothing to compare.</td></tr>
+      </tbody>
+    </table>
+    <p>A component is checked at its equilibrium, or at a random point with unit <code>V</code> and <code>I</code> before <code>net.initialize</code>, where the residuals are not zero. A local controller must be attached to a component on an initialized network.</p>
+
+    <h3>Check the behavior</h3>
+    <ol class="dg-list is-numbered">
+      <li><div><span class="dg-item-title">Stay at the equilibrium</span><p><code>net.simulate</code> without events keeps the states at <code>rv_Xequilibrium</code>.</p></div></li>
+      <li><div><span class="dg-item-title">Survive a disturbance</span><p>Run a fault and a trip with <code>odeEventSet</code>. <code>flag</code> is <code>1</code> when the simulation completes. A trip calls <code>get_equilibrium</code> with <code>I = P = Q = 0</code>.</p></div></li>
+      <li><div><span class="dg-item-title">Look at the linear model</span><p><code>eig(net.get_sys())</code>. A network of synchronous machines has an eigenvalue near zero from the common rotation of the rotor angles. The other eigenvalues should be in the left half plane unless you expect otherwise. An unstable result can also come from the rest of the test network, so compare with an existing model on the same network.</p></div></li>
+      <li><div><span class="dg-item-title">Compare with a known model</span><p>When an existing class reduces to your model, the eigenvalues should agree, as below.</p></div></li>
+    </ol>
+
+    <h3>Add a test</h3>
+    <p>Add a <code>%%</code> section to the script of the feature in <code>+DebugScript</code>, or a new script <code>test_I&lt;issue&gt;_&lt;slug&gt;.m</code>, and run it with <code>DebugScript.run_all("Features","I&lt;issue&gt;")</code>. Each section runs as one test. Put local functions at the end of the script.</p>
+    <span class="mi-file">+DebugScript/test_I114_new_models.m</span>
+<pre class="mi-code" data-file="+DebugScript/test_I114_new_models.m">% New generator and AVR, on a small network built in the test.
+
+%% Generator: contract, equilibrium, comparison with gen-classical
+[net, g2] = make_network("gen-simple", table(100,10,0.3, VariableNames=["M","D","Xs"]));
+assert(~any(g2.validate(false).contract.status == "FAIL"))
+
+X = net.simulate([0,5]).odeResults.Bus(2).Component(1).X;
+assert(max(abs(X{:,:} - g2.rv_Xequilibrium.'), [], "all") &lt; 1e-9)
+
+eig_new = sort(eig(net.get_sys()));
+net = make_network("gen-classical", table(100,10,0.3,0.3, VariableNames=["M","D","Xd","Xq"]));
+assert(norm(eig_new - sort(eig(net.get_sys()))) &lt; 1e-6)
+
+%% AVR: contract, inputs, comparison with AVR_ST1
+[net, g2] = make_network("gen-simple", table(100,10,0.3, VariableNames=["M","D","Xs"]));
+avr = controller.avr.simple_avr("a", Ka=30, Te=0.05);
+g2.add_local_controller(avr);
+net.initialize();
+s = avr.validate(false);
+assert(~any(s.contract.status == "FAIL"))
+assert(s.inputs.source("Vref") == "equilibrium (not connected)")
+
+eig_new = sort(eig(net.get_sys()));
+g2.remove_local_controller(avr.str_tag);
+g2.add_local_controller(controller.avr.AVR_ST1("b", kap=30, tap=0.05));
+net.initialize();
+assert(norm(eig_new - sort(eig(net.get_sys()))) &lt; 1e-6)
+
+function [net, g2] = make_network(str_key, para)
+    net = PowerNetwork();
+    b1  = net.add_bus(V=1.00);
+    b2  = net.add_bus(V=1.02);
+    b3  = net.add_bus();
+    net.add_branch("pi", [b1.str_tag, b2.str_tag], R=0.010, X=0.085);
+    net.add_branch("pi", [b2.str_tag, b3.str_tag], R=0.017, X=0.092);
+    b1.add_component(str_key, "parameter",para);
+    g2  = b2.add_component(str_key, "P",0.5, "parameter",para);
+    b3.add_component("load-impedance", "P",-1.0, "Q",-0.2);
+    net.solver_ODE.Progress = "none";
+    net.initialize();
+end
+</pre>
+
+    <!-- ============================== OTHER ============================== -->
+    <h2 id="other">Branches and networks</h2>
+    <ul>
+      <li><strong>Branch.</strong> Inherit from <code>Branch</code> in <code>_GUILDAobject/+branch/</code> and define the constants <code>key</code> and <code>header</code> (the prefix of the tags), and the method <code>get_admittance_matrix</code>, which returns the 2×2 matrix from the parameters <code>R</code>, <code>X</code>, <code>C</code>, <code>tap</code>, and <code>phase</code>. Run <code>GUILDA</code> to register the key.</li>
+      <li><strong>Network.</strong> Inherit from <code>PowerNetwork</code> in <code>_GUILDAobject/+network/</code>, and build the network in the constructor from CSV folders or in code (see <a href="folder-structure.html#placement">Folder Structure</a>).</li>
+    </ul>
+  </main>
+</body>
+</html>

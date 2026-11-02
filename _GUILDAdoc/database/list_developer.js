@@ -33,5 +33,10 @@ const developerData = [
     title: "Coding: Class Documentation",
     description: "Write MATLAB help comments and three tags to document classes, properties, and methods, and check the generated reference.",
     link: "developer/class-documentation.html"
+    },
+{
+    title: "Coding: Model Implementation",
+    description: "Add a new generator, load, or controller: the contracts of each model kind, a minimal generator and AVR, and how to test them with validate.",
+    link: "developer/model-implementation.html"
     }
 ];
