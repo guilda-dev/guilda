@@ -1,12 +1,12 @@
 # Migrating to GUILDA v4
 
-Status: work in progress on `refactor/design-alignment` (base: `version4.0`),
-checked against the code at `b69e54b`. Breaking changes are allowed in v4.
-Section 1 lists what has changed for scripts (1.7–1.15 and 1.17: the v4
-analysis API); section 2 for models; section 3 what is still planned.
+状態: `refactor/design-alignment`(分岐元 `version4.0`)で作業中です。v4 では互換性を壊す変更を認めています。
 
-Reference designs: `_GUILDAdoc/developer/class-design.html` and
-`api-design.html` on branch `docs/doc-refactoring`.
+基準コミットは `fe9aa3a`(2026-11-02)です。`b69e54b` 以降のコミットを確認し、スクリプトやモデルの作者が対応を要する変更を追記しました。追記した項目は実装とテストで確認しています。それ以前からある記述をすべて再検証したわけではありません。
+
+第 1 章はスクリプト作者向けの変更(1.7–1.15 と 1.17 は v4 の解析 API)、第 2 章はモデル作者向けの変更、第 3 章は計画中の変更、第 4 章は互換性の方針、第 5 章は解析クラスとモデルを書く人への注意です。
+
+設計の参照先は、同じブランチの `_GUILDAdoc/developer/class-design.html` と `api-design.html` です。
 
 > **Silent breaking changes.** These run without an error or a warning but
 > give a different meaning or different numbers. Check every script that
@@ -67,6 +67,7 @@ Reference designs: `_GUILDAdoc/developer/class-design.html` and
 >   `add_component` number the new object after the largest number in use,
 >   not `numel + 1`; scripts that build tags by counting may name another
 >   object (1.4).
+> - **`local_LQR` のゲインは系統の Hz の編集に追従します。** Hz の編集後の `get_sys` や `simulate` で、保持している平衡点から `K` を設計し直します。以前は古い Hz の `K` のままだったので、Hz を編集するスクリプトでは数値が変わります(1.6)。
 
 ---
 
@@ -119,6 +120,7 @@ Every parameter or topology edit is logged and records what it made stale:
 | `Parameter(powerflow)`, `Topology`, `Slack` | –      | stale       |
 | `Parameter(operation/OPF/graph)`       | –           | –           |
 | `OPF` (`set_opffcn`, `reset_opffcn`)   | –           | –           |
+| `Tag`(`str_tag` による改名)          | –           | –           |
 
 - A network **Hz** edit only rebuilds the handles: the equilibrium does not
   depend on the nominal frequency, so `simulate` and `get_sys` run without
@@ -126,6 +128,8 @@ Every parameter or topology edit is logged and records what it made stale:
   needs `net.initialize()`.
 - Adding or replacing an AVR or PSS (`add_local_controller`) is logged as a
   `Topology` edit, so the equilibrium becomes stale.
+- **改名は記録だけです。** `str_tag` への代入は `tab_editLog` にタグ `Tag` で記録され、何も古くしません。母線を改名しても、その機器のタグは変わりません(タグは永続的な ID として扱います)。
+- **パラメータの型の誤りはエラーです。** 宣言と違うクラスの値を代入すると `GUILDA:Parameter:ClassNameMismatch` で止まり、値も編集履歴も変わりません。以前は MATLAB がリスナー内のエラーを警告に変えていたので、スクリプトは止まりませんでした。`try` / `catch` なしで型の違う値を代入しているスクリプトは、正しいクラスの値に直してください。
 
 `initialize`, `simulate`, `linearize` and `get_sys` rebuild stale `f_*`
 handles, so dynamics edits now take effect without rebuilding the model.
@@ -169,6 +173,20 @@ net.add_branch(Type, ["B001","B002"], ...)       % buses may be given by tag
 - Buses are created with their network: `Bus(net, tag, opt)`. The separate
   `set_network` step after construction and `reset_odeset` (Bus, Branch,
   PowerNetwork) are gone.
+- **存在しないタグの削除はエラーです。** `net.remove_branch` は `GUILDA:PowerNetwork:BranchNotFound` で止まります。複数のタグの一部だけが不明な場合も何も削除しません。以前は不明なタグを無視していました。`bus.remove_component` と `bus.replace_component` は `GUILDA:Bus:ComponentNotFound` で止まります。存在しないタグを渡して無視させていたスクリプトは、`string(net.a_Branch)` や `string(bus.a_Component)` で確かめてから呼んでください。
+- **大域制御器が制御する機器は削除も置換もできません。** `remove_component` と `replace_component` は `GUILDA:Bus:ComponentControlled` で止まり、何も変えません。先に `net.remove_global_controller(tag)` を呼び、機器を編集してから制御器を作り直してください。
+- **`add_branch` の検査。** 次の場合はエラーで止まり、系統は変わりません。
+
+  | ID | 条件 | 対応 |
+  |----|------|------|
+  | `GUILDA:PowerNetwork:BranchBusIndex` | 母線番号が範囲外 | 先に `add_bus` する。番号は `a_Bus` の添字 |
+  | `GUILDA:PowerNetwork:BusNotFound` | 母線タグが不明 | `string(net.a_Bus)` のタグを渡す |
+  | `GUILDA:PowerNetwork:BranchSelfLoop` | 両端が同じ母線 | 母線のシャントは `net.add_bus(Gshunt=G, Bshunt=B)` で与える |
+  | `GUILDA:PowerNetwork:BranchZeroImpedance` | `R = X = 0`(アドミタンスが無限大) | `R` か `X` を 0 以外にするか、2 つの母線を 1 つにまとめる |
+
+  同梱の系統はすべて通ります。
+- **`add_bus` の `FullTag`。** `net.add_bus(FullTag="Sub7")` は自動の番号を付けずにそのタグを使います。使用中のタグなら番号を付けて改名します。
+- `_GUILDAsystem/@PowerNetwork/add_branch.m` は `GUILDA` の起動時に生成する追跡対象外のファイルです。変更するときは `add_branch.template` を編集します。
 
 ### 1.5 Single slack bus
 
@@ -232,6 +250,36 @@ Outputs of several controllers on the same input add up. Scalar `alpha` /
   pss)` replaces both. A replacement warns
   `GUILDA:Component:ReplaceController` and detaches the replaced
   controller. Before, the PSS was dropped. Adding or replacing is logged (1.3).
+- **`local_LQR` と Hz の編集。** 系統の Hz を編集しても平衡点は古くならないので、`K` は編集の時点では変わらず、次の `get_sys`(機器、母線、系統のどの層でも)か `simulate` で保持している平衡点から設計し直します。値は同じ Hz で `net.initialize()` し直したときと一致します(許容差 `1e-6` の相対誤差で確認)。動特性も一緒に編集したときは `GUILDA:PowerNetwork:EquilibriumStale` で止まり、`K` は `initialize` まで変わりません。同じ Hz に戻したときは設計し直しません。
+- **ローカル制御器の削除。** `comp.remove_local_controller(tag)` を追加しました。タグは `str_tag` で指定します。
+
+  ```matlab
+  gen.remove_local_controller("CP1");                     % PSS だけ
+  gen.remove_local_controller("CA1", RemoveNested=true);  % AVR とその PSS
+  ```
+
+  PSS が残っている AVR は `RemoveNested=true` がないと `GUILDA:Component:ControllerHasNested` で止まり、不明なタグは `GUILDA:Component:ControllerNotFound` で止まります。どちらも何も変えません。削除は `Topology` の編集として記録されるので、`net.initialize()` が必要です。削除した制御器は親への参照を持たないので、同じ機器にも別の機器にも付け直せます。
+- **制御器の接続の検査。** `add_local_controller` は、何かを変える前に次を検査します。
+
+  | ID | 条件 | 対応 |
+  |----|------|------|
+  | `GUILDA:Component:SharedController` | 別の機器に付いている制御器を付けた(以前は接続でき、`simulate` が DAE の指数のエラーで失敗した) | 機器ごとに制御器のオブジェクトを作る。外した制御器や同じ機器への再接続は使える |
+  | `GUILDA:Component:InvalidControllerKey` | `key` が `"avr"`, `"pss"`, `"local"` のいずれでもない(以前は何も付かなかった) | `key` を直す |
+  | `GUILDA:Component:ControllerOutput` | 出力が機器や AVR のどの入力にも一致しない。負荷に AVR を付けた場合を含む。`GUILDA:local_LQR:UnknownInput` はこの ID に置き換わった | `sv_y` か `Input=` を直す。ID で捕まえていたコードも直す |
+  | `GUILDA:Component:PssParentKey` | `key` が `"avr"` でない制御器の下に PSS を付けた | 先に AVR を付ける |
+  | `GUILDA:Component:NotExtAvr` | AVR がないのに PSS を付けた | 先に AVR を付ける |
+
+  入力名の綴りの誤りはエラーになりません(平衡点の値を読みます)。`con.validate` の `flag.inputs` に `equilibrium (not connected)` と出るので確認できます(第 2 章)。
+- **大域制御器の検査。** `GlobalController` の作成時に、不明なタグや機器でない値、別の系統の機器は `GUILDA:GlobalController:InvalidComponent` で止まります。`net.add_global_controller` は、対象の機器がこの系統にないと `GUILDA:PowerNetwork:GconOtherNetwork` で、機器に制御器の `sv_u` の状態や `sv_y` の入力がないと `GUILDA:PowerNetwork:GconPorts` で止まります。後者は以前は `simulate` で初めて失敗していました。機器を削除や置換した後は、制御器を現在の機器で作り直してください。
+- **制御器の `tab_parameter` に代入できます。** 機器や送電線と同じ書き方で、編集が記録されます。
+
+  ```matlab
+  avr.tab_parameter.dynamics.kap = 200;
+  agc.tab_parameter.dynamics.kP  = [200; 300];   % 大域制御器は対象の機器ごとに 1 行
+  agc.tab_parameter.dynamics.kP(2) = 300;
+  ```
+
+  動特性の編集として `f_*` と平衡点が古くなるので、`net.initialize()` が必要です。同じ値の代入は編集に数えません。型が違う値は `GUILDA:Parameter:ClassNameMismatch` で止まります。
 - **`replace_component` and local controllers.** The new option
   `Controllers` is `"drop"` (default) or `"keep"`:
   `bus.replace_component(tag, Type, Controllers="keep")`.
@@ -541,6 +589,22 @@ Option names:
     one argument, the time since the event start
     (`GUILDA:odeEventSet:InvalidNargin`). Errors that used to fail inside
     the integration now stop at once.
+  - **イベントの検査の追加。** 次も積分の前に止まります。
+
+    | ID | 条件 |
+    |----|------|
+    | `GUILDA:odeEventSet:UnknownFaultBus` | `FaultBus` が系統の母線でない |
+    | `GUILDA:odeEventSet:UnknownTripUnit` | `TripUnit` が機器でも大域制御器でもない(ローカル制御器は解列できない) |
+    | `GUILDA:odeEventSet:UnknownOffsetUnit`, `UnknownOffsetState` | `OffsetUnit` が機器でない、`OffsetState` がその状態でない |
+    | `GUILDA:odeEventSet:InvalidTimeSpan` | `TimeSpan` に NaN がある、または順序が逆 |
+    | `GUILDA:odeEventSet:ValueCountMismatch` | 値の数が `OffsetState` や `InputName` の数と合わない(1 つの値は全部に共通) |
+    | `GUILDA:odeEventSet:OtherNetwork` | 別の系統で作ったイベント(構成が同じでも)。実行する系統で作り直す |
+    | `GUILDA:odeEventSet:DuplicateTag`, `ReservedTag` | タグの重複、または `t1`, `t2`, `Properties`, `Row`, `Variables`, 空, `NoAction<数字>` |
+    | `GUILDA:odeEventSet:EventArray` | イベントを配列で渡した。`net.simulate(time, ev1, ev2)` のように別の引数で渡す |
+
+    イベントは系統のタグや状態数の写しを持たなくなったので、作成後に大域制御器を足すなど構成を変えても、そのイベントは使えます。
+  - **`simulate` の時間の検査。** `time` は有限で `t0 < tend` の `[t0, tend]`、またはイベントの時間幅を使う `[]` だけです。他の値は `GUILDA:PowerNetwork:SimulateTime` で止まり、理由を示します。以前は 3 点以上の時間を渡すと無言で短い区間だけを計算することがありました。時刻の列が欲しいスクリプトは `res.get_point` で読み出してください。引数の順序(時間、イベント、Name-Value)の誤りは `GUILDA:PowerNetwork:SimulateArguments` で止まります。
+  - **初期条件の失敗の説明。** 区間の開始の初期条件が解けない場合は、これまでどおり `flag = -1` で `output.exception` が `GUILDA:odeSimulator:InitialConditionFailed` です。`decic` の収束失敗では、`output.message` が理由と対処を示すようになりました。よくある原因は、故障で供給できなくなる定電力負荷(`"load-power"`)です。その負荷を `"load-impedance"` にするか、別の母線を故障させてください。同じ故障が定インピーダンス負荷なら完走することをテストで確認しています。代数変数だけでは解けず微分状態も動かしたときは `GUILDA:odeSimulator:InitialConditionRelaxed` で警告します。
   - An event whose `TimeSpan` lies entirely outside the simulation time
     has no effect and warns `GUILDA:odeEventSet:OutsideTimeSpan` (before:
     ignored silently).
@@ -607,6 +671,17 @@ Option names:
   added. Find a state by `StateName`, not by position.
 - A bus without components (e.g. a pure junction bus) can be linearized: it
   has no states and takes no current.
+- **チャネル名で添字できます。** `sys(出力名, 入力名)` は `sys(行, 列)` と同じ結果です。`comp.get_sys`、`bus.get_sys`、制御器の `get_sys` が返すモデルで使えることをテストで確認しています。以前はチャネルと同じ名前のグループが曖昧さのエラーを起こしていました。そのため、`comp.get_sys` と `con.get_sys` が返すモデルの `InputGroup` と `OutputGroup` は空になりました(`con.get_sys` は `tag=false` のときだけ持ちます)。`sys.InputGroup.<名前>` を読むスクリプトは `sys(:, "<名前>")` に直してください。
+- **各層の `get_sys` も編集を検査します。** `comp.get_sys`、`bus.get_sys`、`con.get_sys`、`gc.get_sys` は古い `f_*` を作り直し、平衡点が古ければ `GUILDA:PowerNetwork:EquilibriumStale` で止まります。`comp` と `bus` で `Point` を渡したときは作り直しだけです。
+- **`net.rv_Xequilibrium`** は `get_variable_map` の状態の行の順で値を返します(以前は読むと常に失敗しました)。`comp.rv_Xequilibrium_all` は AVR の下の PSS も含みます。
+- **解けないモデルのエラー。**
+
+  | ID | 条件 | 対応 |
+  |----|------|------|
+  | `GUILDA:Bus:NoI2V`, `GUILDA:Component:NoI2V` | `port="I2V"` で `D` が正則でない(機器のない母線、`P = Q = 0` の負荷など。以前は NaN を返した) | `port="V2I"` を使う |
+  | `GUILDA:LinearizationResult:SingularAvv` | Kron / Feedback で `Avv` が正則でない(`rcond < 1e-14`)。`net.linearize` は止まらず `flag = false`、`output.str_issue = "SingularAvv"` | `output.message` が示す母線電圧を確認する。`DAE` は計算できる |
+  | `GUILDA:LinearizationResult:NoUnitBus` | Feedback で状態を持つ機器がない | Kron か DAE を使う |
+  | `GUILDA:GlobalController:GlobalControllerPort` | `gc.get_sys` で機器に制御器の入出力がない | 対象の機器を直す |
 - `NonUnit` は廃止しました (Issue #118)。機器のない母線と、状態がなく I2V 形式を
   持たない母線は自動で判定します。`Bus.l_isNonUnit` も削除しています。互換の扱いは
   4 章の表のとおりです。`Point={sim, t}` reads
@@ -651,6 +726,19 @@ Option names:
   `network/parameter.csv`) import with the defaults
   (`GUILDA.config("Model","Hz")`, 100 MVA); a bus column `baseMVA` is
   ignored. Equilibria and controllers are not saved.
+- **保存しない制御器を警告します。** `export_csv` は書き出しを終えた後、制御器が残っていると `GUILDA:PowerNetwork:ControllersNotSaved` で警告し、ローカル制御器(`<機器>/<AVR>/<PSS>`)と大域制御器を列挙します。読み込んだ系統には戻らないので、`import_csv` の後に付け直してください。
+- **往復でタグを保持します。** 母線、ブランチ、機器の表に `FullTag` 列を追加しました。欠番や改名を含めて保存時のタグが戻ります。`FullTag` のないフォルダや空の値は、これまでどおり自動のタグになります。母線の `Tag` 列は接頭辞(タグの末尾の数字を除いた部分)です。`FullTag` の重複は番号を付けて改名します。
+- **`import_csv` は系統を変える前に表を検査します。** 間違ったファイル、列、行番号では `Network=` の系統は変わりません(モデルのキーが不明な場合や潮流の失敗など、検査の後の失敗では途中まで作られることがあるので、作り直してください)。
+
+  | ID | 種類 | 条件 |
+  |----|------|------|
+  | `GUILDA:import_csv:UnknownColumn` | 警告 | 未知の列。列は無視する(メモの列で止めないため)。綴りの誤りはこの警告で分かる。`dynamics.csv` の列は機器のクラスによるので検査しない |
+  | `GUILDA:import_csv:UnknownID` | エラー | `ParameterID` や `OpfID` が参照先にない、または空 |
+  | `GUILDA:import_csv:BusRow` | エラー | `From`, `To`, `Bus` が 1 から行数までの整数でない |
+  | `GUILDA:import_csv:MissingFile` | エラー | 必要な表がない |
+  | `GUILDA:import_csv:NoComponentFolder` | 警告 | `component/` がない |
+
+  メッセージはファイル、行、列を示します。
 - CSV import reads the branch columns `tap`/`phase` (as export writes
   them) and `Tap`/`Phase`; both in one file is an error. v3 read only
   `Tap`/`Phase`, so every imported transformer tap was 1.
@@ -690,7 +778,7 @@ Option names:
   generator limits and costs; loads have no OPF cost. Its transformer taps
   are read (1.13). All IEEE14bus results change (power flow, OPF,
   simulation, eigenvalues); the measured differences are in
-  [status.md](status.md#ieee14-data-and-csv-taps).
+  [status.md](status.md#ieee14のデータとcsvのタップ).
 - **New `network.IEEE14bus_NoTap`**: `IEEE14bus` with the transformers
   4-7, 4-9 and 5-6 at tap 1, phase 0.
 - **`network.IEEE14bus_lossless` is `IEEE14bus` with R = 0** on every
@@ -710,7 +798,7 @@ Option names:
   `network.IEEE68bus(LocalController=false)` build them without AVRs and
   PSSs. The v2 folders are kept for reference in `+network/archive/`
   (the old 68-bus wrapper is `IEEE68bus_v2`). Known issues: see
-  [status.md](status.md#bundled-networks).
+  [status.md](status.md#同梱ネットワーク).
 - There is no network with the v3 IEEE14 data; keep a copy of a v3 export
   to reproduce old results.
 
@@ -727,6 +815,11 @@ there.
   `PowerNetwork.import_matpower`).
 - The startup no longer rewrites the generated signature files when their
   content is unchanged (no spurious file changes in a git checkout).
+- **読み込めないクラスの報告。** `GUILDA.dictionary` は読み込めないクラスを `GUILDA:dictionary:ClassNotLoaded` で警告し、元の理由を示します。そのクラスはキーの一覧に載りません。作ったクラスが `add_component` のキーに出ないときは、この警告を確認してください。`+DebugScript` のテスト用クラスは一覧に載らなくなりました。
+- **MAT ファイルから読み込んだ系統。** `save(f, "net")` と `load(f)` で、構成、親への参照、`f_*` が読み込んだ系統を指す状態で戻ります。読み込み後も編集の記録、古い平衡点の検出、パラメータの型の検査が働きます。以前は `load` が内部のエラーを無視して空の系統を返し、警告もありませんでした。
+  - **系統全体を保存してください。** 機器など下の層の変数を保存すると、構成は戻りますが、その編集は記録されないので `GUILDA:PowerNetwork:IncompleteLoad` で警告します。系統と一緒に保存しても同じです。
+  - `net.a_Bus`、`net.a_Branch`、`net.a_GlobalController` に直接は代入できません(`MATLAB:class:SetProhibited`)。`add_*` と `remove_*` を使います。
+- 開発者向けに `GUILDA.publish_doc` を追加しました。ドキュメントを `gh-pages` ブランチへ公開します。実行したときだけ公開サイトが変わります。
 
 ### 1.17 Initialize
 
@@ -812,6 +905,8 @@ there.
 
 ## 2. Changes so far — model authors
 
+新しいモデルの実装手順は `_GUILDAdoc/developer/model-implementation.html` を見てください。
+
 - **Function signatures.** `fcn_dx`, `fcn_I`, `fcn_Y`, `fcn_Mass` take
   `(obj, t, x, V, I, u, param, omega0)`. Declare them with `omega0` in the
   `classdef` too.
@@ -855,6 +950,17 @@ there.
   and `odeEventSet`, and are empty after a run. `rv_Uoffset` is also empty
   during a run for a component without an input event, so do not call it
   from a model.
+- **モデルへの要求の明文化。**
+  - `get_equilibrium` は常に `c_V`, `c_I`, `r_P`, `r_Q` の 4 引数で呼ばれます。解列のときは `c_I = r_P = r_Q = 0` です。`nargin` で分岐しているモデルは 4 引数で動くように直してください。`LocalController` と `GlobalController` でも `get_equilibrium` は `Abstract` として宣言されています。
+  - `fcn_Mass` は定数です。`simulate` は `t, x, V, I, u` を空にして呼びます。これらを使う `fcn_Mass` は `GUILDA:read_mass:NotConstant` で止まり、機器や制御器のタグを示します。
+  - `getCompPQ(obj, x, V, u, param)` は `UseInternalState=true` の連続潮流でだけ必要です。ない機器は `GUILDA:ContinuationPowerFlow:MissingGetCompPQ` で止まり、タグを示します。
+- **コンストラクタのエラー。** 発電機の基底クラスは次を検査します。表の列の不足は `GUILDA:Component:MissingParameter`(不足する列と参照先を示す)、不明なパラメータ名は `GUILDA:Component:UnknownParameter`(使える名前を示す)で止まります。発電機に与えた `Q` は潮流が決めるので無視され、`GUILDA:Component:GeneratorQIgnored` で警告します(`Q` を省略するか `NaN` にしてください)。追加の列は受け付けます。コンストラクタを持たない負荷のサブクラスも動きます。
+- **`validate` の修復。** `comp.validate` と `con.validate` は現行の API で動きます。従来の表に、次の 2 つが加わりました。
+  - `flag.contract`: 各検査の状態(`PASS`, `FAIL`, `INFO`)です。壊れたモデルでも止まらず `FAIL` として報告し、計算できない値は NaN にします。寸法、`fcn_I` が複素スカラーか、`fcn_Mass` が定数か、`I` に依存しないかなどを見ます。
+  - `flag.inputs`: 各入力の接続元です。綴りの誤りは `equilibrium (not connected)` と出ます。
+
+  `comp.validate` は平衡点で、未設定なら単位長の V と I の乱数点で評価します。乱数点では値を保持するモデル(負荷など)がその点の値を保持するので、後で `net.initialize()` を実行してください。`con.validate` は系統上の機器に付いて初期化された制御器が対象で、そうでなければ `GUILDA:LocalController:ValidateNotAttached` で止まります。
+- **AVR の範囲外のエラー。** `AVR_ST1` と `AVR_DC1` の平衡点が範囲外のときは `GUILDA:AVR_ST1:InvalidValueRange`、`GUILDA:AVR_DC1:InvalidValueRange` で止まり、必要な出力と上下限を示します。
 - **Variable map.** `net.get_variable_map()` (and `bus.` / `comp.`) is the
   single definition of the variable order: states (per bus, per component,
   then its local controllers depth first; then the global controllers),
@@ -879,7 +985,7 @@ UpperCamelCase Name-Value options over `net.solver_*` defaults,
 `net.calculate_continuation_powerflow`, `PowerNetwork.import_csv` /
 `import_matpower`, `net.export_csv`, `Plot` / `Export` as result methods,
 and simulation results in the order of `get_variable_map`. Open follow-ups
-(e.g. external OPF backends) are in [status.md](status.md#open-items).
+(e.g. external OPF backends) are in [status.md](status.md#未決事項).
 
 ---
 
@@ -966,7 +1072,7 @@ lists all of them:
 does not call `Deprecated` outside a hook line. Update both when a hook is
 added.
 
-That is 19 hooked lines (the F10 test checks the count per file).
+フックは `fe9aa3a` の時点で 25 行で、上の表の行数と一致します(`grep -rn "COMPAT(v3)" _GUILDAsystem _GUILDAobject @GUILDA` で数えました。ファイルごとの行数は F10 のテストが検査します)。
 `Continuation_Power_Flow` and `CsvNetHandler` are old names; they live
 entirely in `_VersionSupport/` and need no hook. CSV import ignores a bus
 `baseMVA` column simply by not reading it (no compat code).
@@ -1044,7 +1150,11 @@ selects it only for 6 outputs, so 4 or 5 outputs are an error.
      methods option"
    - F5 "COMPAT v3 Continuation_Power_Flow and ContinuationPowerFlow constructor"
    - F6 "Deprecated Reporter and option names still work"
-   - F7 "odeLinearizer constructor of v3 names the remedy"
+   - F7 "odeLinearizer constructor of v3 names the remedy",
+     "Deprecated NonUnit option warns and ignores buses without states",
+     "Deprecated NonUnit naming a bus with states is rejected",
+     "Deprecated NonUnit naming a missing bus is rejected",
+     "Deprecated solver_LIN.NonUnit warns and acts as the option"
    - F8 "Deprecated CsvNetHandler wrappers"
    - F9 the `v3_user_config` asserts in "GUILDA config reads settings"
    - F10 "Legacy output …", "COMPAT hook helper for add_bus baseMVA",
@@ -1053,10 +1163,7 @@ selects it only for 6 outputs, so 4 or 5 outputs are an error.
    `@GUILDA/config/DefaultTimeSimulation.json`; that is the config key,
    not compat code, and stays.
 
-This procedure was checked on a copy of the code after stage 1 (only the
-tests listed then failed). It has **not** been rechecked since stage 2
-(the list above was extended by reading the tests, not by running the
-procedure).
+この手順を確認したのは第 1 段階の後のコピーだけです(そのときは列挙したテストだけが失敗しました)。第 2 段階以降は **再検証しておらず**、`faa2d13` の時点でも未検証です。上のテストの一覧は、手順を実行せずテストを読んで増やしたものです。
 
 ---
 

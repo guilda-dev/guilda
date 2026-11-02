@@ -3,7 +3,7 @@
 % ファイル名に "-" を含むので run() では実行できない。リポジトリのルートで、
 % 有効な名前に複製してから実行する (リポジトリには何も書き込まない):
 %
-%   /Applications/MATLAB_R2026a.app/bin/matlab -batch "copyfile('notes/simulate-review-measurements.m', fullfile(tempdir,'simreview.m')); addpath(tempdir); simreview"
+%   matlab -batch "copyfile('notes/simulate-review-measurements.m', fullfile(tempdir,'simreview.m')); addpath(tempdir); simreview"
 %
 % 環境変数 SIMREVIEW_SECTIONS で節を選べる (例: "3,4"。既定は全節 1〜6)。
 % 全節で 30〜60 分かかる。結果は標準出力に "|" 区切りで表示する。

@@ -1,7 +1,9 @@
 # `net.simulate` 実行時内部構造の現状調査
 
+> 当時の調査記録です。調査の基準は `951800e` で、以後の変更は本文に反映していません。現状は [status.md](status.md) と [v4-migration.md](v4-migration.md) を見てください。
+
 対象コミット: `951800e`(ブランチ `docs/simulate-review-runtime`)。コア実装は変更していない。
-改善案の統合は後続セッションの担当で、ここでは問題点の方向性までを 1 行で示す。
+改善案の統合は後続の作業の担当で、ここでは問題点の方向性までを 1 行で示す。
 
 ## 0. 読み方
 
@@ -14,7 +16,7 @@
 | **[推測]** | コードからの推定で、動作は確認していない |
 | **[未確認]** | 確認できていない |
 
-`+DebugScript/test_F6_simulation.m` は R2026a で 37 件すべて PASS(47 s)**[実機]**。性能の実測は別セッションの担当で、ここでは行わない。
+`+DebugScript/test_F6_simulation.m` は R2026a で 37 件すべて PASS(47 s)**[実機]**。性能の実測は `simulate-review-measurements.md` の担当で、ここでは行わない。
 
 ### ファイルの略称(`略称:行`)
 
@@ -422,7 +424,7 @@
 - `RM` 引数(`odeSimulator.m:422,488,639`)
 - `odeProgress.Events` の第 2・3 出力(`odeProgress.m:158-163`)
 
-## 8. 非効率に見える箇所(実測は別セッション)
+## 8. 非効率に見える箇所(実測は `simulate-review-measurements.md`)
 
 ### 8.1 密行列(系統規模に効く)
 

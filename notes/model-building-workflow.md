@@ -1,6 +1,8 @@
 # モデル構築の現状調査: 既存クラスで系統モデルを組み立てる流れ
 
-利用者が既存クラスから `PowerNetwork` を作り、解析できる状態にするまでの現状調査です。改善案は後続セッションが作成するため、ここでは事実と問題の観察だけを記録します。新しい Component / Controller / Branch / ネットワーククラスの実装は、姉妹ノート `docs/model-building-extension` の範囲です。
+> 当時の調査記録です。調査の基準は `df3f709` で、以後の変更は本文に反映していません。現状は [status.md](status.md) と [v4-migration.md](v4-migration.md) を見てください。
+
+利用者が既存クラスから `PowerNetwork` を作り、解析できる状態にするまでの現状調査です。改善案は後続の作業で作成するため、ここでは事実と問題の観察だけを記録します。新しい Component / Controller / Branch / ネットワーククラスの実装は、姉妹ノート `docs/model-building-extension` の範囲です。
 
 ## 読み方
 
@@ -353,7 +355,7 @@ gen.para_powerflow.P = 0.6;                      % Parameter を直接
 
 ## 7. UX 定義シートとの差
 
-`GUILDA_主機能UX定義シート.xlsx`(未追跡、メインのチェックアウト)をデータとして読みました。シートは「A_横断ルール」「B_機能別UX定義」の2枚が中心です。
+`GUILDA_主機能UX定義シート.xlsx`(リポジトリには含まれていません)をデータとして読みました。シートは「A_横断ルール」「B_機能別UX定義」の2枚が中心です。
 
 - **モデル構築の行がありません。** `add_bus` / `add_branch` / `add_component` / 制御器 / 編集の定義はなく、関連は「平衡点設定/初期化」「CSVエクスポート」「CSVインポート」「アドミタンス行列取得」だけです。
 - **決定欄は空です。** 記入例を除き、横断ルールの決定と機能別の決定はどちらも未記入です。現在の決定は `_GUILDAdoc/developer/api-design.html` にあります。
@@ -443,5 +445,5 @@ end
 - 実際の MATPOWER ケースファイル(`case14` など)の取り込みと、`network.IEEE14bus` との数値比較
 - `.mlx` の全セルの実行。旧 API の確認は、該当する呼び出しを個別に実行したものです
 - GUI 経由の操作(`GUILDA.newclass`、`draw_diagram`)
-- `+DebugScript` がリリースに含まれるか(問題 25 の影響範囲)。`.claude/release/` のスクリプトに `DebugScript` の記述は見つかりませんでした
+- `+DebugScript` がリリースに含まれるか(問題 25 の影響範囲)。リリース用スクリプトに `DebugScript` の記述は見つかりませんでした
 - `Method="OPF"` の残差の原因(`notes/get-sys-workflow.md`, `notes/simulate-review-workflow.md` の結論を引用し、再分析はしていません)

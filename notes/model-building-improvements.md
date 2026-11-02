@@ -1,6 +1,8 @@
 # モデル構築の改善案
 
-調査ノート [model-building-workflow.md](model-building-workflow.md)(以下 **WF**)と [model-building-extension.md](model-building-extension.md)(以下 **EX**)を基にした提案です。採否は利用者が決めます。ソースと HTML ドキュメントは変更していません。問題番号は「WF 1」「EX 25」のように両ノートの番号で示します。
+> 当時の調査記録です。調査の基準は `86af385` で、以後の変更は本文に反映していません。採否は §8、現状は [status.md](status.md) と [v4-migration.md](v4-migration.md) を見てください。
+
+調査ノート [model-building-workflow.md](model-building-workflow.md)(以下 **WF**)と [model-building-extension.md](model-building-extension.md)(以下 **EX**)を基にした提案です。採否は保守者が決めます。ソースと HTML ドキュメントは変更していません。問題番号は「WF 1」「EX 25」のように両ノートの番号で示します。
 
 **根拠の区別**
 
@@ -92,7 +94,7 @@
 
 ## 4. 提案一覧
 
-**種別:** (a) 仕様判断が不要な修正、(b) 利用者の判断が必要な変更、(c) 整理。**工数**(S: 半日以内、M: 1〜2 日、L: 3 日以上)は [見積] です。**優先**は利用者への影響と、工数とリスクの比較で決めました。
+**種別:** (a) 仕様判断が不要な修正、(b) 保守者の判断が必要な変更、(c) 整理。**工数**(S: 半日以内、M: 1〜2 日、L: 3 日以上)は [見積] です。**優先**は利用者への影響と、工数とリスクの比較で決めました。
 
 ### 4.1 低リスクの修正(判断不要)
 
@@ -115,7 +117,7 @@
 | CL2 | `Ishizaki6Bus` がソースを書き換えない | WF 26, EX 35 | 低 | S | なし | 3 |
 | CL3 | 宣言と実装の不一致を直す | WF 27, EX 13 | 低 | S | なし | 3 |
 
-### 4.2 利用者の判断が必要な変更
+### 4.2 保守者の判断が必要な変更
 
 | ID | 内容 | 解決する問題 | 影響 | 工数 | 互換の影響 | 優先 | 質問 |
 |---|---|---|---|---|---|---|---|
@@ -553,7 +555,7 @@ Tag(i) = regexprep(string(char_tag), '\d+$', '');
 - **DC2:** `docs/tutorial-steps-1-3-v4`、`docs/tutorial-steps-4-6-v4`、`docs/tutorial-classmanual-v4` は保留中で、統合先より 226 コミット古いです。**WF 20, 21 と EX 30 は、これらで解決される可能性があるので、重複して直しません。** 再開時に確認する呼び出しは WF U01-U08、`Component_Load.mlx`、`Bus_variety.mlx`、`Controller_AGC.mlx` です。**[未確認]** 3 ブランチの `.mlx` の内容は開いていません(`.mlx` はバイナリで、差分は確認できません)。
 - **DC3:** `Step` に CSV、MATPOWER、編集(`remove_*`, `replace_component`, `remove_local_controller`)を足します。`Controller_Abstract` への参照(EX 29)は DC1 のページへ直します。
 - **DC4:** `class-design.html:166`(WF 28)、`folder-structure.html` の `network/` の規約(EX 37。必須でなく任意にする)、`api-design.html` の自動スラック。`@GUILDA/GUILDA.m:16` の `newclass` の記述は CL4 で消します。
-- **`notes/v4-migration.md`:** サブセッションでは編集せず、統合時に反映します。
+- **`notes/v4-migration.md`:** 各ブランチでは編集せず、統合時に反映します。
 
 ### 5.9 リポジトリの整理
 
@@ -607,7 +609,7 @@ flowchart LR
 
 ### 7.2 段階とブランチ
 
-`.claude/CLAUDE.md` のとおり、同じ段階の並行ブランチは同じファイルを触りません。テストは新しいファイルに分けます。
+同じ段階の並行ブランチは同じファイルを触りません。テストは新しいファイルに分けます。
 
 | 段階 | ブランチ | 案 | 触るファイル | 前提 |
 |---|---|---|---|---|
@@ -639,11 +641,11 @@ flowchart LR
 - **`fix/simulate-phase`(simulate 1A)に `SIM:655` の 4 引数化を 1 行足してください。** 本案で `SIM` を別に触ると衝突します。`@Component/validate.m` の同じ呼び出しは 2C で直します。
 - `get-sys-improvements.md` 段階 1D は `@Component/Component.m`, `@Bus/remove_component.m`, `@Bus/replace_component.template` を、段階 2 は `@GlobalController/GlobalController.m` を、5B は `@PowerNetwork/PowerNetwork.m` を触ります。本案の 2B、1A、3D とは同時に進めないでください。
 - `@PowerNetwork/initialize.m` と `@Bus/set_equilibrium.m` は `fix/initialize-equilibrium` と本案 2A で共有します。順序は §7.1 のとおりです。
-- CL1 は他のセッションのワークツリーで `add_branch.m` が削除に見えます。起動で再生成されるので害はありません。
+- CL1 は他の作業中のチェックアウトで `add_branch.m` が削除に見えます。起動で再生成されるので害はありません。
 
 **移行ガイドの silent change 欄に載せる項目:** IN3(スラック母線の機器の配分)。**エラーや警告で気づく変更の欄:** IN1, IN2, IN5, TP2, TP3, TP4, TP5, CT1, CT3, CT4, MC3, ER1(`remove_branch`)。
 
-## 8. 利用者に判断をお願いする事項
+## 8. 保守者の判断が必要な事項
 
 | # | 質問 | 推奨 | 理由 |
 |---|---|---|---|
@@ -663,6 +665,32 @@ flowchart LR
 | Q14 | `remove_branch` の不明なタグをエラーにしますか(ER1) | **はい** | 他の `remove_*` に揃う。help の記述の変更を伴う |
 | Q15 | 未知の CSV 列は警告にしますか、エラーにしますか(TP3) | **警告** | メモ列のある CSV を止めない |
 
+### 実装の状況(基準 `fe9aa3a`、2026-11-02)
+
+コードと git 履歴から確認できる範囲の記録です。上の表は提案時の質問と推奨としてそのまま残しています。
+
+| # | 状況 | 確認した内容 |
+|---|---|---|
+| Q1 | 実装済み(推奨どおり) | `59548f7`。`Q=NaN` の機器がある最初の母線、なければ機器のある最初の母線。`tools.slack_bus_index` |
+| Q2 | 実装済み(推奨どおり) | `c6674cf` |
+| Q3 | 警告で実装済み。エラーへの移行は未決 | `2abc579` の `GUILDA:PowerNetwork:EquilibriumResidual`。共同開発者のモデルの確認は記録がありません |
+| Q4 | 実装済み(推奨どおり。`simulate-improvements.md` §8 に案 A の決定の記録あり) | `12396ca`。`GUILDA:Bus:ControllersDropped`、`Controllers="keep"` |
+| Q5 | 実装済み(推奨どおり) | `172c787` の `GUILDA:PowerNetwork:NetworkIsland` |
+| Q6 | 実装済み(推奨どおり) | `8a6fceb` の `flag.contract`, `flag.inputs`。`I` への依存は `FAIL`(`test_F22_model_contract.m`) |
+| Q7 | 実装済み(推奨どおり) | `df151c4`。`test_I105_model_contracts.m` |
+| Q8 | 実装済み(推奨どおり) | `8bdc587` の `FullTag` 列 |
+| Q9 | 実装済み(推奨どおり) | `20acdb0`。改名は `Tag` で記録し、機器のタグは変えない |
+| Q10 | 未決 | 数値の添字を非推奨にするコードはありません。文書でタグを勧めるかは確認していません |
+| Q11 | 未決 | `ModelPath` はコードにありません(RG1 は未実装) |
+| Q12 | 未決 | 変更はありません。枠を変えない決定の記録はありません |
+| Q13 | 未決 | `未+GFM`, `未+farm`, `+load/history`, `未実装newclass.m` などは残っています |
+| Q14 | 実装済み(推奨どおり) | `18ab896` の `GUILDA:PowerNetwork:BranchNotFound` |
+| Q15 | 実装済み(推奨どおり) | `e2be0d0` の `GUILDA:import_csv:UnknownColumn` |
+
+文書の案 DC1 は実装済みです。`4d1336e` で `_GUILDAdoc/developer/model-implementation.html` を追加しました。手順、契約と引数の規則、最小の発電機と制御器、`validate` と試験の方法を含みます。Issue #114 は開いています(2026-11-02 に確認)。
+
+提案との違いが 1 つあります。§3 の `SlackCannotBalance`(IN1)は `946ac79` で実装した後になくなり、現在のコードにはありません。現在は `GUILDA:Bus:SlackWithoutQnan` の警告で、残りの電力は第 1 の機器が受け持ちます(`b1131f5`, [v4-migration.md](v4-migration.md) 1.17)。
+
 ## 9. 問題番号の対応
 
 **WF:** 1, 2: IN1(残差は EQ3) / 3: CT1 / 4: CT2 / 5: CT3 / 6: TP1 / 7: TP4 / 8: TG1 / 9, 10: TP3 / 11: ER1, CT4 / 12: CT4 / 13: TP5 / 14: IN2, ER1 / 15: ER1 / 16: ED4 / 17: TG3 / 18: TG2 / 19: TP2, CT4, MC3 / 20, 21: DC2 / 22: DC3 / 23: 変更なし / 24: CL1 / 25: RG3 / 26: CL2 / 27: CL3 / 28: IN1, DC4 / 29: TP2, TP3, ER1, ED1(F04) / 30: 変更なし
@@ -671,8 +699,8 @@ flowchart LR
 
 ## 10. 計測と試作の範囲
 
-- **環境:** MATLAB R2026a(`-batch`)、macOS。基準は `86af385`。`git archive` の展開をスクラッチパッドに置いて試作しました。ワークツリーのコードは変更しておらず、試作はコミットしていません。
+- **環境:** MATLAB R2026a(`-batch`)、macOS。基準は `86af385`。`git archive` の展開を一時フォルダに置いて試作しました。リポジトリのコードは変更しておらず、試作はコミットしていません。
 - **試作の限界:** エラー文は多くが直書きで、`msg` の辞書に載せていません。文言は仮です。`initialize` のモデル残差は機器のみで、制御器の残差は測定スクリプトでの確認です。
 - **試作していないもの:** EQ1, EQ2 との組み合わせ、TP3 の `Bus` 列、TG1 の機器とブランチ、TG2, TG3、ER1 の一部(表のとおり)、MC2 の `getCompPQ` と `Abstract` 宣言、DC, CL1 以外の整理。これらの効果は [見積] です。
-- **時間の値:** 他のセッションと並行した1回の測定で、目安です。
+- **時間の値:** 他の処理と並行した1回の測定で、目安です。
 - **未確認:** 共同開発者のモデルとスクリプトへの影響、実際の MATPOWER ケース(`case14` が環境にない)、保留中のチュートリアルブランチの `.mlx` の内容、`TP1` の文面の目視、読み取り専用の配置での RG1、再度の `.mat` 読み込み(ED4)、`+DebugScript` がリリースに含まれるか。

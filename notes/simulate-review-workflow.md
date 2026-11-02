@@ -1,6 +1,8 @@
 # simulate レビュー: ワークフロー・データ管理・編集時の対応(現状調査)
 
-`PowerNetwork.simulate` の精査に向けた現状把握です。改善案の統合は後続セッションが担当するため、
+> 当時の調査記録です。調査の基準は `951800e` で、以後の変更は本文に反映していません。現状は [status.md](status.md) と [v4-migration.md](v4-migration.md) を見てください。
+
+`PowerNetwork.simulate` の精査に向けた現状把握です。改善案の統合は後続の作業で担当するため、
 解決策は 1 行の方向性までにとどめています。
 
 - 基準コミット: `951800e`(`refactor/design-alignment` の先端)

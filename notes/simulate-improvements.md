@@ -1,6 +1,8 @@
 # `PowerNetwork.simulate` と周辺の改善案
 
-調査ノート [simulate-review-workflow.md](simulate-review-workflow.md)(以下 **WF**)、[simulate-review-runtime.md](simulate-review-runtime.md)(**RT**)、[simulate-review-measurements.md](simulate-review-measurements.md)(**MS**)を基にした提案です。採否は利用者が決めます。コア実装は変更していません。
+> 当時の調査記録です。調査の基準は 2026-11-01 に作成した時点のコード で、以後の変更は本文に反映していません。採否は §8、現状は [status.md](status.md) と [v4-migration.md](v4-migration.md) を見てください。
+
+調査ノート [simulate-review-workflow.md](simulate-review-workflow.md)(以下 **WF**)、[simulate-review-runtime.md](simulate-review-runtime.md)(**RT**)、[simulate-review-measurements.md](simulate-review-measurements.md)(**MS**)を基にした提案です。採否は保守者が決めます。コア実装は変更していません。
 
 **根拠の区別**
 
@@ -552,9 +554,9 @@ flowchart LR
     WK2 --> ST1["ST1 分割"]
 ```
 
-### 7.2 段階とサブセッション
+### 7.2 段階とブランチ
 
-`CLAUDE.md` の規則(並行するセッションは同じファイルを触らない)に従います。`odeSimulator.m` は多くの案で共有するので、**段階ごとに 1 ブランチだけが触ります。** テストは `F6` を共有せず、**ブランチごとに新しいファイル**を作ります。`run_all` の既定 `"F" + (1:10)`(`+DebugScript/run_all.m:32`)に載らない名前は統合時にコーディネーターが登録します。
+並行するブランチは同じファイルを触りません。`odeSimulator.m` は多くの案で共有するので、**段階ごとに 1 ブランチだけが触ります。** テストは `F6` を共有せず、**ブランチごとに新しいファイル**を作ります。`run_all` の既定 `"F" + (1:10)`(`+DebugScript/run_all.m:32`)に載らない名前は統合時に登録します。
 
 | 段階 | ブランチ案 | 案 | 触るファイル | 並行 | 前提 |
 |---|---|---|---|---|---|
@@ -579,11 +581,11 @@ flowchart LR
 
 - 段階 1 の 5 本は共有ファイルがなく、同時に進められます。1A と 1E は `set_equilibrium` と `odeSimulator` で分かれます。
 - `notes/get-sys-improvements.md` の段階 1B は EQ6, DF2 で `SIM` を触ります。**本案の 1A に統合してください。** 両方を進めると衝突します。
-- `v4-migration.md` はサブセッションで編集せず、文案を報告させて統合時に反映します。
+- `v4-migration.md` は各ブランチで編集せず、統合時に反映します。
 
 **移行ガイドの silent change 欄に載せる項目:** CR1(`Solver` の結果が変わる)、CR3(解列の数値がわずかに変わる)、CR6(OPF 初期化の数値)、CR8(LC 配下の入力が効くようになる)、NT2(既定で止まらなくなる)、PF2(許容誤差内で刻みが変わる)。
 
-## 8. 利用者に判断をお願いする事項
+## 8. 保守者の判断が必要な事項
 
 | # | 質問 | 推奨 | 理由 |
 |---|---|---|---|
@@ -598,10 +600,10 @@ flowchart LR
 | Q9 | `Export` の CSV に制御器の状態を加えるか(RS2) | **加える** | 説明と一致。列は名前で読む |
 | Q10 | 数値的な失敗を例外から `flag=-1` へ(RS3) | **`flag=-1` に統一、利用者関数の例外は例外のまま** | 完了済みの計算を失わない |
 | Q11 | 疎行列を既定にするか(PF2) | **案 A: 既定で疎、誤検知時は密で解き直し** | IEEE68 で 2 倍。数値差は許容誤差内 |
-| Q12 | UX シート「時間応答シミュレーション」行をどう埋めるか | 下の案 | シートは利用者のもの |
+| Q12 | UX シート「時間応答シミュレーション」行をどう埋めるか | 下の案 | シートは保守者が管理しているもの |
 | Q13 | ブランチ開放イベントをいつ入れるか(EV7) | **EV5 の後** | 試作は動くが、複数の種類が揃う時に内部表現を固めたい |
 
-### 利用者の決定（2026-11-02）
+### 保守者の決定（2026-11-02）
 
 - Q1 `Solver` の不一致(#49): 保留。`Solver` の実装は行わない
 - Q2 平衡点から再開(#50)
@@ -630,7 +632,7 @@ flowchart LR
 
 ## 9. 計測と試作の範囲
 
-- **環境:** MATLAB R2026a、`-batch`、macOS、論理 12 コア。依頼は作業ツリーでの試作でしたが、現行との交互測定のためスクラッチパッドのコピー(`git archive` の展開)に試作しました。ワークツリーのコードは変更していません。コピーは破棄済みです。
+- **環境:** MATLAB R2026a、`-batch`、macOS、論理 12 コア。現行との交互測定のため、一時コピー(`git archive` の展開)に試作しました。リポジトリのコードは変更していません。コピーは破棄済みです。
 - **基準コミット:** `5eba486`。調査の `951800e` から `_GUILDAsystem`, `_GUILDAobject`, `+DebugScript` に差分はありません。
 - **試作していないもの:** CR6(`get-sys-improvements.md` の試作を参照し、問題の再現のみ実施)、CR9、NT2, NT3, NT4、EV5, EV6、WK2, WK3、RS2-RS5、PF4、ST。これらの効果と工数は [見積] です。
 - **CR7:** `initialize_index` の検査のみ試作しました(`remove_component` の検査は ED3 に残ります)。
