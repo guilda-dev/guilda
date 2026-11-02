@@ -252,6 +252,12 @@ const updateLogData = [
     "content": "The For Developer tab has a new page, Model Implementation: the contracts of components and controllers, a minimal generator and AVR, and how to test a new model with validate."
   },
   {
+    "title": "set_odefcn takes no frequency argument",
+    "date": "2026-11-02",
+    "type": "changed",
+    "content": "For model authors: set_odefcn no longer takes omega0. It reads the network frequency itself, so write obj.set_odefcn() in a constructor; obj.set_odefcn(obj.r_Hz) now stops with a too-many-inputs error. A model that overrides set_odefcn must drop the argument too."
+  },
+  {
     "title": "Analysis classes renamed",
     "date": "2026-11-02",
     "type": "changed",

@@ -253,7 +253,7 @@ sys = net.get_sys();
             end
             obj@LocalController("CA"+tag)
             obj.para_dynamics.add_entry("Ka", opt.Ka, "double", "Te", opt.Te, "double");
-            obj.set_odefcn(obj.r_Hz)
+            obj.set_odefcn()
         end
         function get_equilibrium(obj, V, u)
             % Set the equilibrium from the complex voltage V and the component inputs u.
