@@ -178,8 +178,7 @@ classdef odeSimulationResult < AnalysisResult
                 if isempty(tv)
                     tv = NaN;
                 end
-                error("GUILDA:odeSimulationResult:PointTime", ...
-                      "t = %g is outside the simulated time [%g, %g].", t, tv(1), tv(end))
+                error(msg("GUILDA:odeSimulationResult:PointTime", sprintf("%g", t), sprintf("%g", tv(1)), sprintf("%g", tv(end))))
             end
             k = find(tv == t);
             if ~isempty(k)
@@ -209,16 +208,12 @@ classdef odeSimulationResult < AnalysisResult
                 return
             end
             if ~all(ismember(["Kind","Owner","Name","Bus"], string(tab_map.Properties.VariableNames)))
-                error("GUILDA:odeSimulationResult:UnknownVariable", ...
-                      "tab_map must be a variable map (columns Kind, Owner, Name, Bus), see get_variable_map.")
+                error(msg("GUILDA:odeSimulationResult:InvalidMap"))
             end
             [lv, iv] = ismember(str_key(tab_map), str_key(obj.tab_variable));
             if ~all(lv)
                 sv_label = string(tab_map.Label(~lv));
-                error("GUILDA:odeSimulationResult:UnknownVariable", ...
-                      "The simulation result has no values for %s. " + ...
-                      "Give rows of result.tab_variable (the network as it was simulated).", ...
-                      join(sv_label(1:min(end,5)), ", "))
+                error(msg("GUILDA:odeSimulationResult:UnknownVariable", join(sv_label(1:min(end,5)), ", ")))
             end
         end
 
@@ -306,8 +301,7 @@ function [iv_sim, c_index] = simulator_columns(net, tab)
     iv_sim   = vertcat(zeros(0,1), c_x{:}, c_gx{:}, c_V{:}, c_u{:});
     sv_label = vertcat(strings(0,1), c_lx{:}, c_gl{:}, c_lV{:}, c_lu{:});
     if numel(iv_sim) ~= height(tab) || ~isequal(sv_label, string(tab.Label))
-        error("GUILDA:odeSimulationResult:VariableMap", ...
-              "The state of the simulator does not match net.get_variable_map(); report this as a bug.")
+        error(msg("GUILDA:odeSimulationResult:VariableMap"))
     end
 
     % columns of the view: the component's own states (not its controllers) and inputs

@@ -31,7 +31,6 @@ function flag = check_edit(obj, opt)
                 str_reason = "the last net.initialize() stopped before it finished";
             end
         end
-        error('GUILDA:PowerNetwork:EquilibriumStale', '%s', ...
-              msg('GUILDA:PowerNetwork:EquilibriumStale', char(obj.str_tag), char(str_reason)))
+        error(msg("GUILDA:PowerNetwork:EquilibriumStale", char(obj.str_tag), char(str_reason)))
     end
 end

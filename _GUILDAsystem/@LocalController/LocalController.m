@@ -173,8 +173,7 @@ classdef LocalController < PowerSystemModel
                 obj.sv_uRequest = obj.sv_u;
             end
             if any(ismember(obj.sv_uRequest, ["X","Y"]))
-                error("GUILDA:LocalController:ReservedInput", ...
-                      "%s: the inputs ""X"" / ""Y"" are not reserved names; use ""Xall"" for all the states or ""Yall"" for all the outputs of the component.", class(obj))
+                error(msg("GUILDA:LocalController:ReservedInputNames", class(obj)))
             end
             comp = obj.observed_component();
             if isempty(comp)
@@ -227,8 +226,7 @@ classdef LocalController < PowerSystemModel
         function set_inputs(obj, sv_name)
             % Set the input names sv_u after "Xall" / "Yall" are expanded. A controller that
             % uses "Xall" or "Yall" in sv_u overrides this (sv_u is defined by the subclass).
-            error("GUILDA:LocalController:ReservedInput", ...
-                  "%s uses the reserved input names ""Xall"" / ""Yall"" but does not override set_inputs.", class(obj))
+            error(msg("GUILDA:LocalController:ReservedInputNoOverride", class(obj)))
         end
 
         function comp = observed_component(obj)

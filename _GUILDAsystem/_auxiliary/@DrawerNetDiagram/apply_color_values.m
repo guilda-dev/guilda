@@ -46,7 +46,7 @@ function rm_color = map_values_to_colors(rm_color, rr_clim, rv_value, n_target)
 
     rr_clim = double(rr_clim(:).');
     if numel(rr_clim) ~= 2 || any(~isfinite(rr_clim))
-        error('GraphSystemDiagram3d:InvalidColorLim', 'ColorLim must be a finite 1x2 numeric array.');
+        error(msg("GUILDA:DrawerNetDiagram:InvalidColorLim"));
     end
 
     if rr_clim(2) <= rr_clim(1)

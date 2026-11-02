@@ -31,8 +31,7 @@ function str_file = Export(obj, filename, opt)
         case ".json"
             export_json(obj, str_file);
         otherwise
-            error('GUILDA:PowerFlowResult:ExportFormat', '%s', ...
-                  msg('GUILDA:PowerFlowResult:ExportFormat', char(str_ext)));
+            error(msg("GUILDA:PowerFlowResult:ExportFormat", char(str_ext)));
     end
 end
 
@@ -41,7 +40,7 @@ function export_json(obj, str_file)
 % Iteration history in the format of the GridSpring viewer
     net = obj.a_PowerNetwork;
     if isempty(net)
-        error('GUILDA:PowerFlowResult:NoNetwork', '%s', msg('GUILDA:PowerFlowResult:NoNetwork'));
+        error(msg("GUILDA:PowerFlowResult:NoNetwork"));
     end
     tab_PFset = tools.vcellfun(@(b) b.get_pf_set, net.a_Bus);
     str_bus   = string(tab_PFset.Properties.RowNames);
@@ -121,7 +120,7 @@ function export_json(obj, str_file)
     jsonStr = jsonencode(out,"PrettyPrint",true);
     fid     = fopen(str_file, 'w');
     if fid < 0
-        error('GUILDA:PowerFlowResult:FileOpen', '%s', msg('GUILDA:PowerFlowResult:FileOpen', char(str_file)));
+        error(msg("GUILDA:PowerFlowResult:FileOpen", char(str_file)));
     end
     fwrite(fid, jsonStr, 'char');
     fclose(fid);

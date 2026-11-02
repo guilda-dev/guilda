@@ -166,14 +166,13 @@ classdef Bus < PowerSystemModel
             if val
                 a_com = obj.a_Component;%#ok
                 if isempty(a_com)
-                    error(msg('GUILDA:Bus:NonUnitBus' ,string(obj)))
+                    error(msg("GUILDA:Bus:NonUnitBus", string(obj)))
                 else
                     % the component that takes the remaining P (Bus.set_equilibrium)
                     i_rest = find(cellfun(@(c) isnan(c.para_powerflow.Q), a_com), 1);
                     disp(msg('GUILDA:Bus:SetSlack' ,string(obj),string(a_com{max([i_rest,1])})))
                     if isempty(i_rest)
-                        warning('GUILDA:Bus:SlackWithoutQnan', '%s', ...
-                                msg('GUILDA:Bus:SlackWithoutQnan', string(obj), string(a_com{1})))
+                        warning(msg("GUILDA:Bus:SlackWithoutQnan", string(obj), string(a_com{1})))
                     end
                 end
             end

@@ -175,9 +175,7 @@ classdef PowerNetwork < PowerSystemModel
             % edits of a loaded network are checked and logged. MATLAB turns an error here
             % into a warning, so an incomplete restore is reported as a warning.
             if ~restore_parameter_listeners(obj)
-                warning('GUILDA:PowerNetwork:IncompleteLoad', ...
-                        "Edits of the object saved below network '%s' are not logged after loading. Save the network itself.", ...
-                        obj.str_tag)
+                warning(msg("GUILDA:PowerNetwork:IncompleteLoad", obj.str_tag))
             end
         end
     end

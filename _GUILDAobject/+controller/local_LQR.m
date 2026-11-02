@@ -122,7 +122,7 @@ classdef local_LQR < LocalController
             % - `u` Equilibrium input of the component (in the order of its sv_u).
             comp = obj.a_Component;
             if ~isa(comp, "Component")
-                error("GUILDA:local_LQR:NotOnComponent", "%s must be attached directly to a component.", obj.str_tag)
+                error(msg("GUILDA:local_LQR:NotOnComponent", obj.str_tag))
             end
             [~, iv_u] = ismember(obj.sv_y, comp.sv_u);
 
@@ -192,8 +192,7 @@ classdef local_LQR < LocalController
             % Design model: the component connected to the infinite bus V0 through the
             % admittance y = I*/(V* - V0), so that dI = y dV
             if abs(V - obj.V0) < 1e-9
-                error("GUILDA:local_LQR:DesignModel", ...
-                      "%s: the bus voltage equals V0 = %g; choose another V0 for the design model.", obj.str_tag, obj.V0)
+                error(msg("GUILDA:local_LQR:DesignModel", obj.str_tag, sprintf("%g", obj.V0)))
             end
             y_inf = tools.complex2matrix(I0 / (V - obj.V0));
             sys   = comp.get_sys_alone(x0, [real(V); imag(V)], [real(I0); imag(I0)], u);
@@ -210,8 +209,7 @@ classdef local_LQR < LocalController
             Qw = obj.Q;  if isempty(Qw); Qw = eye(nx); end
             Rw = obj.R;  if isempty(Rw); Rw = eye(nu); end
             if ~isequal(size(Qw), [nx nx]) || ~isequal(size(Rw), [nu nu])
-                error("GUILDA:local_LQR:WeightSize", "%s: Q must be %dx%d (states %s) and R %dx%d (inputs %s).", ...
-                      obj.str_tag, nx, nx, join(comp.sv_x, ","), nu, nu, join(obj.sv_y, ","))
+                error(msg("GUILDA:local_LQR:WeightSize", obj.str_tag, string(nx), string(nx), join(comp.sv_x, ","), string(nu), string(nu), join(obj.sv_y, ",")))
             end
             obj.K = lqr(A, Bu, Qw, Rw);
             obj.r_HzDesign = obj.r_Hz;
@@ -291,6 +289,6 @@ function W = weight(W, str_name)
     elseif isvector(W) && ~isscalar(W)
         W = diag(W);
     elseif size(W,1) ~= size(W,2)
-        error("GUILDA:local_LQR:WeightSize", "%s must be a vector or a square matrix.", str_name)
+        error(msg("GUILDA:local_LQR:WeightShape", str_name))
     end
 end

@@ -63,8 +63,7 @@ function [result, flag, output] = simulate(obj, time, varargin)
     [result, flag, output] = obj.solver_ODE.solve(obj, time, c_events, s_options);
 
     if flag ~= 1
-        warning('GUILDA:PowerNetwork:SimulationIncomplete', '%s', ...
-                msg('GUILDA:PowerNetwork:SimulationIncomplete', flag, output.message));
+        warning(msg("GUILDA:PowerNetwork:SimulationIncomplete", string(flag), output.message));
     end
 
     if s_options.Plot
@@ -85,8 +84,7 @@ function check_export(export)
     end
     [~, ~, str_ext] = fileparts(export);
     if ~isscalar(export) || ~ismember(lower(str_ext), [".csv", ".txt", ".xlsx", ".xls", ".mat"])
-        error('GUILDA:PowerNetwork:SimulateExport', '%s', ...
-              msg('GUILDA:PowerNetwork:SimulateExport', char(str_ext)));
+        error(msg("GUILDA:PowerNetwork:SimulateExport", char(str_ext)));
     end
 end
 
@@ -105,8 +103,7 @@ function check_time(time)
     else
         return
     end
-    error('GUILDA:PowerNetwork:SimulateTime', '%s', ...
-          msg('GUILDA:PowerNetwork:SimulateTime', str_reason));
+    error(msg("GUILDA:PowerNetwork:SimulateTime", str_reason));
 end
 
 function [c_events, c_nv] = split_events(c_in)
@@ -124,8 +121,7 @@ function [c_events, c_nv] = split_events(c_in)
         x = c_nv{k};
         l_name = mod(k, 2) == 1;
         if isa(x, "odeEventSet") || (l_name && ~((ischar(x) && isrow(x)) || (isstring(x) && isscalar(x))))
-            error('GUILDA:PowerNetwork:SimulateArguments', '%s', ...
-                  msg('GUILDA:PowerNetwork:SimulateArguments', num2str(n_evt + k + 1), class(x)));
+            error(msg("GUILDA:PowerNetwork:SimulateArguments", num2str(n_evt + k + 1), class(x)));
         end
     end
 end
