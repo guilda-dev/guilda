@@ -64,14 +64,12 @@ classdef IEEJ_EAST30 < PowerNetwork
 % Exciters:
 %
 % `LocalController=true` adds the rotating-exciter model LAT=1 (report figure A1.1(a)),
-% used for all machines, as controller.avr.AVR_DC1 with `kap = 100`, `tap = 0.2`,
-% `tex = 2`, `aex1 = 1`, `aex2 = 0`, `kst = 0.1`, `tst = 0.5`. The linear blocks match;
-% `EFS` of the report is included in `Vref`. Differences from LAT=1:
-%
-% - `EF` has no limit 0 to 4 pu: AVR_DC1 limits only the amplifier output.
-% - `ttr = 0.01` (the AVR_DC1 default) replaces the report's no transducer lag, since
-%   simulate cannot start with `ttr` of 0.002 or less and `kst` not 0.
-% - The ±100 limit of the first lag is left out; it does not act in practice.
+% used for all machines, as controller.avr.AVR_DC1 with `ttr = 0`, `kap = 1`, `tap = 0.2`,
+% `Vap_max = 100`, `Vap_min = -100`, `tex = 0.02`, `aex1 = 0.01`, `aex2 = bex = 0`,
+% `tst = 0.5`, `kst = 0.1`. The exciter gain `100/(1 + 2s)` of the figure is
+% `1/(aex1 + tex*s)`, and the first lag with its limit is the amplifier. `EFS/100` of the
+% figure is the steady amplifier output, which AVR_DC1 includes in `Vref`. The one
+% difference from LAT=1 is that `EF` has no limit 0 to 4 pu: AVR_DC1 has no such limit.
 %
 % Not represented (differences from the report):
 %
@@ -96,7 +94,7 @@ classdef IEEJ_EAST30 < PowerNetwork
 % ```matlab
 % net = network.IEEJ_EAST30(Section="night");
 % res = net.calculate_powerflow();
-% ev  = odeEventSet("fault", net, "TimeSpan", [1,1.07], "FaultBus", "B3104");
+% ev  = ODEevent("fault", net, "TimeSpan", [1,1.07], "FaultBus", "B3104");
 % sol = net.simulate([0,5], ev);
 % ```
 %
