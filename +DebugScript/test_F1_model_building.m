@@ -7,10 +7,6 @@
 %
 % 実行: runtests("DebugScript.test_F1_model_building")  または  DebugScript.run_all("Features","F1")
 
-% 共通設定 (各テストの前に毎回実行される)
-str_genKeys  = ["gen-classical","gen-1axis","gen-2axis","gen-park","gen-droop"];
-str_loadKeys = ["load-impedance","load-power"];
-
 
 %% Add buses with default tags
 % ネットワーククラスの定義
@@ -114,15 +110,15 @@ end
 
 
 %% Add every component type
+tab_model = DebugScript.helper.model_classes("Component");
 net = PowerNetwork();
-for i = 1:numel(str_genKeys)+numel(str_loadKeys)
+for i = 1:height(tab_model)
     net.add_bus();
 end
 
 % Componentクラスは母線から key を指定して追加する
-str_keys = [str_genKeys, str_loadKeys];
-str_cls  = ["component.generator.classical","component.generator.one_axis","component.generator.two_axis", ...
-            "component.generator.park","component.generator.droop","component.load.impedance","component.load.power"];
+str_keys = tab_model.Key;
+str_cls  = tab_model.Class;
 for k = 1:numel(str_keys)
     comp = net.a_Bus{k}.add_component(str_keys(k), "P", 0.1);
     assert(isa(comp, str_cls(k)), str_keys(k))
@@ -133,11 +129,13 @@ for k = 1:numel(str_keys)
 end
 
 % タグ: 発電機は "SG", 負荷は "L" + 機種記号 + 母線内番号 + 母線タグ
-assert(net.a_Bus{4}.a_Component{1}.str_tag == "SG1B004")
-assert(startsWith(net.a_Bus{7}.a_Component{1}.str_tag, "L") && endsWith(net.a_Bus{7}.a_Component{1}.str_tag, "1B007"))
+i_gen  = find(startsWith(str_keys, "gen"), 1);
+i_load = find(startsWith(str_keys, "load"), 1);
+assert(net.a_Bus{i_gen}.a_Component{1}.str_tag == "SG1" + net.a_Bus{i_gen}.str_tag)
+assert(startsWith(net.a_Bus{i_load}.a_Component{1}.str_tag, "L") && endsWith(net.a_Bus{i_load}.a_Component{1}.str_tag, "1" + net.a_Bus{i_load}.str_tag))
 
 % 発電機の Q は既定で NaN (PV 母線)、負荷は指定値
-assert(isnan(net.a_Bus{4}.a_Component{1}.tab_parameter.powerflow.Q))
+assert(isnan(net.a_Bus{i_gen}.a_Component{1}.tab_parameter.powerflow.Q))
 
 
 %% Add component with parameter table
