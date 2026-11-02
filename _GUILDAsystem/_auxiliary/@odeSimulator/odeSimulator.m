@@ -824,7 +824,7 @@ classdef (Sealed = true) odeSimulator < auxiliary
                     if isa(a_Comp{j}, 'component.generator.abstract') && ~a_Comp{j}.l_isConnect
                         c_idx = a_Comp{j}.iv_odeX;
                         b_idx = a_bus{i}.iv_odeX;
-                        x0(c_idx) = a_Comp{j}.get_equilibrium([1,1j]*x0(b_idx), 0+1j*0);                         
+                        x0(c_idx) = a_Comp{j}.get_equilibrium([1,1j]*x0(b_idx), 0, 0, 0);                         
                         
                         if ~isempty(a_Comp{j}.a_LocalController)
                             a_LC1 = a_Comp{j}.a_LocalController{1};
@@ -832,7 +832,7 @@ classdef (Sealed = true) odeSimulator < auxiliary
                             v_LC1 = a_LC1.iv_odeX;                            
                             x0(v_LC1) = a_LC1.rv_Xequilibrium;                         
 
-                            M0(v_LC1, v_LC1) = a_LC1.f_Mass([], [], [], [],[]);
+                            M0(v_LC1, v_LC1) = tools.read_mass(a_LC1);
                             
                             if ~isempty(a_LC1.a_LocalController)
                                 a_LC2 = a_LC1.a_LocalController{1};
@@ -840,11 +840,11 @@ classdef (Sealed = true) odeSimulator < auxiliary
                                 v_LC2 = a_LC2.iv_odeX;                                
                                 x0(v_LC2) = a_LC2.rv_Xequilibrium;                         
 
-                                M0(v_LC2, v_LC2) = a_LC2.f_Mass([], [], [], [],[]);
+                                M0(v_LC2, v_LC2) = tools.read_mass(a_LC2);
                             end
                         end
 
-                        M0(c_idx, c_idx) = a_Comp{j}.f_Mass([], [], [], [], []);
+                        M0(c_idx, c_idx) = tools.read_mass(a_Comp{j});
                     end
                 end
 
@@ -863,7 +863,7 @@ classdef (Sealed = true) odeSimulator < auxiliary
                 if ~a_GCs{k}.l_isConnect
                     idx_GC = a_GCs{k}.iv_odeX;
                     x0(idx_GC) = a_GCs{k}.rv_Xequilibrium;
-                    M0(idx_GC, idx_GC) = a_GCs{k}.f_Mass([], [], [], [], []);
+                    M0(idx_GC, idx_GC) = tools.read_mass(a_GCs{k});
                 end
             end
         end

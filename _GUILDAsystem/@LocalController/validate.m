@@ -70,7 +70,7 @@ function flag = validate(obj, l_message)
     [l_ok, str_detail] = check_size(y_test, str_id, ny);
     contract = add_row(contract, "fcn_y size", l_ok, str_detail);
 
-    % odeEventSet reads the mass matrix without a point
+    % simulate reads the mass matrix without a point (tools.read_mass)
     [M_test, str_id] = eval_value(@() obj.f_Mass([],[],[],[],[]));
     l_ok = str_id == "" && (isequal(size(M_test),[nx,nx]) || (nx == 0 && isempty(M_test)));
     contract = add_row(contract, "fcn_Mass constant and square", l_ok, ...

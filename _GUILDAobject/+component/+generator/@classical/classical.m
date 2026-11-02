@@ -51,7 +51,7 @@ classdef classical < component.generator.abstract
     
 
     methods                
-        [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj, c_V, c_I)
+        [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj, c_V, c_I, r_P, r_Q)
     end        
 
     methods

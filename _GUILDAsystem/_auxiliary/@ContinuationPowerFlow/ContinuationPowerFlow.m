@@ -47,7 +47,8 @@ classdef (Sealed = true) ContinuationPowerFlow < auxiliary
 
         % Solve the power flow with the internal states of the generators.
         % When true, the generator powers follow their state equations (getCompPQ) and all loads
-        % are scaled; when false, the components inject their equilibrium powers.
+        % are scaled; when false, the components inject their equilibrium powers. True stops
+        % with GUILDA:ContinuationPowerFlow:MissingGetCompPQ if a component has no getCompPQ.
         UseInternalState (1,1) logical = false
 
         % Print lambda at each step.

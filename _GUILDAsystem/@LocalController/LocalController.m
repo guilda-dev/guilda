@@ -37,19 +37,29 @@ classdef LocalController < PowerSystemModel
         sv_y    (:,1) string    % Names of the outputs.
         sv_para (:,1) string    % Names of the dynamic parameters passed to the model functions.
     end
+    methods (Abstract)
+        % Set rv_Xequilibrium and rv_Uequilibrium of the controller and of its nested controllers.
+        %
+        % Called by Component.set_equilibrium during PowerNetwork.initialize; V is the voltage
+        % phasor of the parent [pu] and u the equilibrium input of the component.
+        get_equilibrium(obj, V, u)
+    end
     methods (Abstract, Static)        
         % Return the state derivatives of the controller.
         %
         % The arguments of all model functions are the time t [s], the states x, the
-        % parent voltage V = [Vre; Vim] [pu], the inputs u, the dynamic parameters param
-        % (in the order of sv_para) and the nominal frequency omega0 [Hz].
-        dx = fcn_dx(obj, t, x, V, u, param, omega0)
+        % parent voltage V = [Vre; Vim] [pu] and current I = [Ire; Iim] [pu], the inputs u,
+        % the dynamic parameters param (in the order of sv_para) and the nominal frequency
+        % omega0 [Hz]. A subclass may define them as ordinary methods instead, with obj before t.
+        dx = fcn_dx(t, x, V, I, u, param, omega0)
 
         % Return the outputs of the controller.
-        y  = fcn_y(obj, t, x, V, u, param, omega0)
+        y  = fcn_y(t, x, V, I, u, param, omega0)
 
         % Return the mass matrix of the state equation.
-        M  = fcn_Mass(obj, t, x, V, u, param, omega0)
+        %
+        % It must be constant: simulate calls it with empty t, x, V, I and u.
+        M  = fcn_Mass(t, x, V, I, u, param, omega0)
 
         % Return the Jacobians of fcn_dx with respect to x, V, I and u.
         [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0)        

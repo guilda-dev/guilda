@@ -1,0 +1,27 @@
+function M = read_mass(model)
+% Read the constant mass matrix of a component or a controller.
+%
+% simulate has no point at which to evaluate fcn_Mass, so it calls f_Mass with empty t, x,
+% V, I and u. A mass matrix that needs them stops with GUILDA:read_mass:NotConstant.
+    arguments
+        model % Component, LocalController or GlobalController with f_Mass.
+    end
+    arguments (Output)
+        M % Mass matrix, one row and column per state.
+    end
+    nx = numel(model.sv_x);
+    try
+        M = model.f_Mass([],[],[],[],[]);
+    catch ME
+        throw_not_constant(model, nx, ME.message);
+    end
+    if ~isequal(size(M),[nx,nx]) && ~(nx == 0 && isempty(M))
+        throw_not_constant(model, nx, "size " + join(string(size(M)),"x"));
+    end
+end
+
+function throw_not_constant(model, nx, str_detail)
+    error('GUILDA:read_mass:NotConstant', ...
+        "fcn_Mass of %s must return a constant %dx%d matrix without using t, x, V, I or u (%s).", ...
+        model.str_tag, nx, nx, str_detail);
+end

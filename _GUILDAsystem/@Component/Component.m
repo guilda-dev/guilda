@@ -15,6 +15,14 @@ classdef Component < PowerSystemModel
 % diagram settings. Analytic Jacobians (static methods Jacobi_dx, Jacobi_I, Jacobi_Y)
 % are optional; without them the Jacobians are computed numerically.
 %
+% The framework relies on three more rules:
+%
+% - `get_equilibrium` is always called with all of c_V, c_I, r_P and r_Q (a trip of
+%   `simulate` passes c_I = r_P = r_Q = 0).
+% - `fcn_Mass` is constant: `simulate` calls it with empty t, x, V, I and u.
+% - `getCompPQ(obj, x, V, u, param)`, which returns the injected power [P; Q], is needed only
+%   by the continuation power flow with `UseInternalState=true`.
+%
 % <@Examples>
 % ```matlab
 % net = network.IEEE14bus();
@@ -39,8 +47,9 @@ classdef Component < PowerSystemModel
     methods(Abstract)
         % Return the state and input equilibria for a bus voltage and current.
         %
-        % Called by set_equilibrium during PowerNetwork.initialize; c_V and c_I are the
-        % voltage and injected current phasors [pu], r_P and r_Q the injected power [pu].
+        % Called by set_equilibrium during PowerNetwork.initialize and by simulate for a
+        % tripped generator, always with four arguments; c_V and c_I are the voltage and
+        % injected current phasors [pu], r_P and r_Q the injected power [pu].
         [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj,c_V,c_I,r_P,r_Q);
     end
     methods(Abstract, Static)      
@@ -49,17 +58,20 @@ classdef Component < PowerSystemModel
         % The arguments of all model functions are the time r_t [s], the states rv_x, the
         % bus voltage rv_V = [Vre; Vim] [pu], the current rv_I = [Ire; Iim] [pu], the inputs
         % rv_u, the dynamic parameters rr_param (in the order of sv_para) and the nominal
-        % frequency r_omega0 [Hz].
-        rv_dx = fcn_dx(  obj, r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)
+        % frequency r_omega0 [Hz]. A subclass may define them as ordinary methods instead,
+        % with obj before r_t.
+        rv_dx = fcn_dx(  r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)
 
         % Return the current injected into the bus as a complex number.
-        c_I   = fcn_I(   obj, r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)        
+        c_I   = fcn_I(   r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)        
 
         % Return the outputs of the model.
-        rv_y  = fcn_Y(   obj, r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)
+        rv_y  = fcn_Y(   r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)
 
         % Return the mass matrix of the state equation.
-        rm_M  = fcn_Mass(obj, r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)
+        %
+        % It must be constant: simulate calls it with empty r_t, rv_x, rv_V, rv_I and rv_u.
+        rm_M  = fcn_Mass(r_t, rv_x, rv_V, rv_I, rv_u, rr_param, r_omega0)
     end
 
 %% override recommended
