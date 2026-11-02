@@ -117,8 +117,7 @@ classdef GlobalController < PowerSystemModel
                     else
                         str_arg = class(arg);
                     end
-                    error('GUILDA:GlobalController:InvalidComponent', '%s', ...
-                          msg('GUILDA:GlobalController:InvalidComponent', str_arg, char(tag), char(net.str_tag)))
+                    error(msg("GUILDA:GlobalController:InvalidComponent", str_arg, char(tag), char(net.str_tag)))
                 end
 
                 obj.controlledUnits = [obj.controlledUnits; cls_comp(lv_comp)];
@@ -157,9 +156,7 @@ classdef GlobalController < PowerSystemModel
             for k = 1:numel(a_Comp)
                 s = a_Comp{k};
                 if ~all(ismember(obj.sv_u, s.sv_x)) || ~all(ismember(obj.sv_y, s.sv_u))
-                    error("GUILDA:GlobalController:GlobalControllerPort", ...
-                          "The global controller '%s' needs the states [%s] and the inputs [%s] of its units, but '%s' (%s) has the states [%s] and the inputs [%s].", ...
-                          obj.str_tag, join(obj.sv_u, " "), join(obj.sv_y, " "), s.str_tag, class(s), join(s.sv_x, " "), join(s.sv_u, " "))
+                    error(msg("GUILDA:GlobalController:GlobalControllerPort", obj.str_tag, join(obj.sv_u, " "), join(obj.sv_y, " "), s.str_tag, class(s), join(s.sv_x, " "), join(s.sv_u, " ")))
                 end
             end
 

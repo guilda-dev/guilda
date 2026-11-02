@@ -32,8 +32,7 @@ function publish_doc(option)
     % 2. Rebuild the class reference (without user classes)
     sct_summary = export_class_database(find_doc_classes("user", false), "strict", false, "full", true);
     if sct_summary.ErrorCount > 0
-        error('GUILDA:publish_doc:ExportErrors', ...
-            'The class reference has %d error(s). Fix them before publishing.', sct_summary.ErrorCount);
+        error(msg("GUILDA:publish_doc:ExportErrors", string(sct_summary.ErrorCount)));
     end
 
     % 3. Check out gh-pages into a temporary worktree
@@ -89,7 +88,7 @@ function publish_doc(option)
     [r_status, str_out] = system(sprintf('git --no-pager -C %s push --no-progress origin %s', quote(str_root), str_branch));
     fprintf('%s', str_out)
     if r_status ~= 0
-        error('GUILDA:publish_doc:PushFailed', 'git push failed. The commit stays on the local %s branch.', str_branch);
+        error(msg("GUILDA:publish_doc:PushFailed", str_branch));
     end
     fprintf('  Published : %s\n\n', str_site)
 end
@@ -98,34 +97,31 @@ end
 function [str_source, str_sha] = check_source_repository(str_root, bln_push)
     [r_status, ~] = system('git --version');
     if r_status ~= 0
-        error('GUILDA:publish_doc:NoGit', 'git was not found. Install git and add it to the system path.');
+        error(msg("GUILDA:publish_doc:NoGit"));
     end
     [r_status, str_out] = system(sprintf('git --no-pager -C %s rev-parse --is-inside-work-tree', quote(str_root)));
     if r_status ~= 0 || ~strcmp(strtrim(str_out), 'true')
-        error('GUILDA:publish_doc:NoRepository', '%s is not a git repository.', str_root);
+        error(msg("GUILDA:publish_doc:NoRepository", str_root));
     end
 
     str_source = strtrim(run_git(str_root, 'rev-parse --abbrev-ref HEAD'));
     if ~(strcmp(str_source, 'main') || ~isempty(regexp(str_source, '^version\d+\.\d+$', 'once')))
-        error('GUILDA:publish_doc:WrongBranch', ...
-            'Publish from main or a versionX.Y branch. The current branch is "%s".', str_source);
+        error(msg("GUILDA:publish_doc:WrongBranch", str_source));
     end
 
     str_tracked = run_git(str_root, 'status --porcelain --untracked-files=no');
     if strlength(strtrim(str_tracked)) > 0
-        error('GUILDA:publish_doc:UncommittedChanges', ...
-            'Commit or discard the changes to tracked files first:\n%s', str_tracked);
+        error(msg("GUILDA:publish_doc:UncommittedChanges", str_tracked));
     end
     str_untracked = run_git(str_root, 'status --porcelain --untracked-files=all -- _GUILDAdoc');
     if strlength(strtrim(str_untracked)) > 0
-        error('GUILDA:publish_doc:UntrackedDocFiles', ...
-            'Commit or remove the untracked files under _GUILDAdoc first:\n%s', str_untracked);
+        error(msg("GUILDA:publish_doc:UntrackedDocFiles", str_untracked));
     end
 
     if bln_push
         [r_status, ~] = system(sprintf('git --no-pager -C %s remote get-url origin', quote(str_root)));
         if r_status ~= 0
-            error('GUILDA:publish_doc:NoOrigin', 'The repository has no remote named origin.');
+            error(msg("GUILDA:publish_doc:NoOrigin"));
         end
     end
     str_sha = strtrim(run_git(str_root, 'rev-parse --short HEAD'));
@@ -142,7 +138,7 @@ function bln_new = prepare_branch(str_root, str_branch, bln_push)
         if r_status == 0
             bln_remote = true;
         elseif r_status ~= 2 && bln_push
-            error('GUILDA:publish_doc:RemoteUnreachable', 'Unable to read origin:\n%s', str_out);
+            error(msg("GUILDA:publish_doc:RemoteUnreachable", string(str_out)));
         end
     end
     str_remote_ref = "refs/remotes/origin/" + str_branch;
@@ -166,9 +162,7 @@ function bln_new = prepare_branch(str_root, str_branch, bln_push)
     if r_behind == 0
         run_git(str_root, sprintf('branch -f %s %s', str_branch, str_remote_ref));
     elseif r_ahead ~= 0
-        error('GUILDA:publish_doc:Diverged', ...
-            'The local %s and origin/%s have diverged. Reset the local branch with "git branch -f %s origin/%s".', ...
-            str_branch, str_branch, str_branch, str_branch);
+        error(msg("GUILDA:publish_doc:Diverged", str_branch, str_branch, str_branch, str_branch));
     end
 end
 
@@ -180,9 +174,7 @@ function check_branch_free(str_root, str_branch)
     for i_block = 1:numel(cell_blocks)
         if contains(cell_blocks{i_block}, "branch refs/heads/" + str_branch)
             str_path = regexp(cell_blocks{i_block}, '(?<=^worktree )[^\n]*', 'match', 'once', 'lineanchors');
-            error('GUILDA:publish_doc:BranchInUse', ...
-                '%s is checked out in %s, probably left by an interrupted run.\nRemove it with: git worktree remove --force "%s"', ...
-                str_branch, str_path, str_path);
+            error(msg("GUILDA:publish_doc:BranchInUse", str_branch, str_path, str_path));
         end
     end
 end
@@ -257,7 +249,7 @@ end
 function copy_or_error(str_from, str_to)
     [bln_ok, str_msg] = copyfile(str_from, str_to);
     if ~bln_ok
-        error('GUILDA:publish_doc:CopyFailed', 'Unable to copy %s: %s', str_from, str_msg);
+        error(msg("GUILDA:publish_doc:CopyFailed", str_from, string(str_msg)));
     end
 end
 
@@ -265,7 +257,7 @@ end
 function write_text(str_file, str_content)
     fid = fopen(str_file, 'w', 'n', 'UTF-8');
     if fid == -1
-        error('GUILDA:publish_doc:WriteFailed', 'Unable to write %s.', str_file);
+        error(msg("GUILDA:publish_doc:WriteFailed", str_file));
     end
     fprintf(fid, '%s', str_content);
     fclose(fid);
@@ -286,7 +278,7 @@ end
 function str_out = run_git(str_dir, str_args)
     [r_status, str_out] = system(sprintf('git --no-pager -C %s %s', quote(str_dir), str_args));
     if r_status ~= 0
-        error('GUILDA:publish_doc:GitFailed', 'git %s failed:\n%s', str_args, str_out);
+        error(msg("GUILDA:publish_doc:GitFailed", str_args, string(str_out)));
     end
 end
 

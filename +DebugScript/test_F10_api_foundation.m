@@ -68,7 +68,7 @@ try
     tools.resolve_options(solver, s_mapPF, {"Tolerence", 1e-6});
     error("DebugScript:noError", "未知の名前でエラーにならない")
 catch ME
-    assert(ME.identifier == "GUILDA:resolve_options:UnknownName", ME.identifier)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "Tolerence") && contains(ME.message, "PowerFlowCalculation"))
     assert(contains(ME.message, "MaxIteration, Verbose, TimeSpan, WhenFailed"))   % 使える名前を示す
 end
@@ -113,7 +113,7 @@ try
     res.Export("result.csv");
     error("DebugScript:noError", "未対応の Export でエラーにならない")
 catch ME
-    assert(ME.identifier == "GUILDA:AnalysisResult:Unsupported", ME.identifier)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:AnalysisResult:Unsupported", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "Export") && contains(ME.message, "DebugScript.helper.DummyResult"))
 end
 
@@ -126,17 +126,17 @@ lastwarn("");
 for n = 0:3
     assert(isequal(legacy_output(c_new, n, 4:6, f_legacy, "BusBaseMVA"), c_new))
 end
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(isempty(id), "新形式では警告しない")
 c_out = legacy_output(c_new, 6, 4:6, f_legacy, "BusBaseMVA");
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(numel(c_out) == 6 && c_out{1} == "old1" && c_out{3} == true)
 assert(string(id) == "GUILDA:Deprecated:BusBaseMVA")
 % 警告は1セッションに1回、キーなしなら警告しない
 lastwarn("");
 legacy_output(c_new, 5, 4:6, f_legacy, "BusBaseMVA");
 legacy_output(c_new, 5, 4:6, f_legacy);
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(isempty(id))
 
 
@@ -156,7 +156,7 @@ opt = struct("V", 1, "Tag", "B");
 assert(isequal(v3_bus_baseMVA(net, opt), opt))                 % baseMVA なし: そのまま
 lastwarn("");
 opt = v3_bus_baseMVA(net, struct("V", 1, "baseMVA", nan));     % 既定値 (指定なし): 警告なしで削除
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(~isfield(opt, "baseMVA") && isempty(id))
 
 
@@ -206,7 +206,7 @@ function id = error_id(fcn)
     try
         fcn();
     catch ME
-        id = string(ME.identifier);
+        id = string(DebugScript.helper.msg_id(ME));
         if id == ""
             id = "(no id)";
         end

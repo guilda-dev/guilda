@@ -19,7 +19,7 @@ assert(~net.s_edit.l_staleEquilibrium)
 para = net.a_Bus{1}.para_powerflow;
 lastwarn("");
 assign_error(para, "V", "x");
-[~, id] = lastwarn;
+id = DebugScript.helper.msg_id();
 assert(id == "", "warning: " + id)
 
 %% Valid edit is logged once
@@ -110,7 +110,7 @@ end
 
 function check_error(ME, name, valid, cls)
 % エラーの ID と、文言のパラメータ名・クラスを確認する
-    assert(ME.identifier == "GUILDA:Parameter:ClassNameMismatch", "ID が " + ME.identifier)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:Parameter:ClassNameMismatch", "ID が " + DebugScript.helper.msg_id(ME))
     str = string(ME.message);
     assert(contains(str, "'" + name + "' must be " + valid), str)
     assert(contains(str, "class " + cls), str)

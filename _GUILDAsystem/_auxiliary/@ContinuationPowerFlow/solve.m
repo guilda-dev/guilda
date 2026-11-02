@@ -91,23 +91,19 @@ function check_network(net, sv_load)
         a_Comp = net.a_Bus{i}.a_Component;
         for j = 1:numel(a_Comp)
             if isempty(a_Comp{j}.c_Iequilibrium)
-                error('GUILDA:ContinuationPowerFlow:NoEquilibrium', '%s', ...
-                      msg('GUILDA:ContinuationPowerFlow:NoEquilibrium', char(string(a_Comp{j}))));
+                error(msg("GUILDA:ContinuationPowerFlow:NoEquilibrium", char(string(a_Comp{j}))));
             end
         end
     end
     if net.s_edit.l_staleEquilibrium
-        error('GUILDA:ContinuationPowerFlow:StaleEquilibrium', '%s', ...
-              msg('GUILDA:ContinuationPowerFlow:StaleEquilibrium'));
+        error(msg("GUILDA:ContinuationPowerFlow:StaleEquilibrium"));
     end
     if isempty(sv_load)
-        error('GUILDA:ContinuationPowerFlow:EmptyLoadBus', '%s', ...
-              msg('GUILDA:ContinuationPowerFlow:EmptyLoadBus'));
+        error(msg("GUILDA:ContinuationPowerFlow:EmptyLoadBus"));
     end
     sv_bus     = string(net.a_Bus(:));
     sv_unknown = sv_load(~ismember(sv_load, sv_bus));
     if ~isempty(sv_unknown)
-        error('GUILDA:ContinuationPowerFlow:UnknownLoadBus', '%s', ...
-              msg('GUILDA:ContinuationPowerFlow:UnknownLoadBus', char(join(sv_unknown, ", "))));
+        error(msg("GUILDA:ContinuationPowerFlow:UnknownLoadBus", char(join(sv_unknown, ", "))));
     end
 end

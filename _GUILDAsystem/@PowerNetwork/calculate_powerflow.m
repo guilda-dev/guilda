@@ -61,11 +61,11 @@ end
 function bus = select_slack_bus(obj)
 % The bus of tools.slack_bus_index; stops when there is none
     if isempty(obj.a_Bus)
-        error('GUILDA:PowerNetwork:NoBus', '%s', msg('GUILDA:PowerNetwork:NoBus', string(obj)))
+        error(msg("GUILDA:PowerNetwork:NoBus", string(obj)))
     end
     i_bus = tools.slack_bus_index(obj);
     if isempty(i_bus)
-        error('GUILDA:PowerNetwork:NoSlackCandidate', '%s', msg('GUILDA:PowerNetwork:NoSlackCandidate', string(obj)))
+        error(msg("GUILDA:PowerNetwork:NoSlackCandidate", string(obj)))
     end
     bus = obj.a_Bus{i_bus};
 end

@@ -1,0 +1,8 @@
+<!--This is an XML file containing error messages related to the file "export_csv".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="InvalidClassName">The class file needs a valid MATLAB name, but the folder name gives "{0}". Rename the folder or set ClassFile=false.</entry>
+        <entry key="NoParentFolder">Parent folder not found: {0}. Create it first.</entry>
+        <entry key="FolderExists">Output folder already exists: {0}. Set Overwrite=true to replace it, or choose another folder.</entry>
+    </message>
+</rsccat>

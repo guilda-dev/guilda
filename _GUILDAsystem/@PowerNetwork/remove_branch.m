@@ -18,8 +18,7 @@ function remove_branch(obj,tag)
     branch_tag = string(obj.a_Branch);
     str_missing = tag(~ismember(tag, branch_tag));
     if ~isempty(str_missing)
-        error('GUILDA:PowerNetwork:BranchNotFound', '%s', ...
-              msg('GUILDA:PowerNetwork:BranchNotFound', char(join(str_missing(:),"', '")), char(obj.str_tag)))
+        error(msg("GUILDA:PowerNetwork:BranchNotFound", char(join(str_missing(:),"', '")), char(obj.str_tag)))
     end
     lv_branch  = ismember(branch_tag,tag);
 

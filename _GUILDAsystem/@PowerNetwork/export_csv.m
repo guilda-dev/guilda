@@ -43,16 +43,14 @@ function path = export_csv(obj, path, opt)
     end
     str_class = strip(str_folder, "left", "@");
     if opt.ClassFile && ~isvarname(str_class)
-        error("GUILDA:export_csv:InvalidClassName", ...
-              "The class file needs a valid MATLAB name, but the folder name gives ""%s"". Rename the folder or set ClassFile=false.", str_class);
+        error(msg("GUILDA:export_csv:InvalidClassName", str_class));
     end
     if str_parent ~= "" && ~isfolder(str_parent)
-        error("GUILDA:export_csv:NoParentFolder", "Parent folder not found: %s. Create it first.", str_parent);
+        error(msg("GUILDA:export_csv:NoParentFolder", str_parent));
     end
     if isfolder(path)
         if ~opt.Overwrite
-            error("GUILDA:export_csv:FolderExists", ...
-                  "Output folder already exists: %s. Set Overwrite=true to replace it, or choose another folder.", path);
+            error(msg("GUILDA:export_csv:FolderExists", path));
         end
         for str_sub = ["network", "bus", "branch", "component"]
             if isfolder(fullfile(path, str_sub))
@@ -105,8 +103,7 @@ function warn_controllers_not_saved(net, a_Comp)
     if isempty(str_local) && isempty(str_global)
         return
     end
-    warning('GUILDA:PowerNetwork:ControllersNotSaved', '%s', ...
-            msg('GUILDA:PowerNetwork:ControllersNotSaved', char(net.str_tag), ...
+    warning(msg("GUILDA:PowerNetwork:ControllersNotSaved", char(net.str_tag), ...
                 char(string(numel(str_local))), char(tag_list(str_local)), ...
                 char(string(numel(str_global))), char(tag_list(str_global))))
 end

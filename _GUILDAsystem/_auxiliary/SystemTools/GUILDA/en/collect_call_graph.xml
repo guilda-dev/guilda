@@ -1,0 +1,7 @@
+<!--This is an XML file containing error messages related to the file "collect_call_graph".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="NoClass">Class not found on the MATLAB path: {0}</entry>
+        <entry key="ParseFailed">Skipped a file that could not be parsed: {0}</entry>
+    </message>
+</rsccat>

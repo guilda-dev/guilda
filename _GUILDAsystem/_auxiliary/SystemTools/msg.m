@@ -17,7 +17,7 @@ function txt = msg(ID, varargin)
 % <@Examples>
 % Inside a method of CPFResult:
 % ```matlab
-% error('GUILDA:CPFResult:UnknownBus', '%s', msg('GUILDA:CPFResult:UnknownBus', "B099"));
+% error(msg("GUILDA:CPFResult:UnknownBus", "B099"));
 % ```
 
     

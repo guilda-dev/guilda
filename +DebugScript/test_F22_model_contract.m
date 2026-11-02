@@ -126,7 +126,7 @@ for cls = DebugScript.helper.model_classes("GlobalController").Class'
         try
             net.add_global_controller(feval(cls, net, "gc", comp));   % (系統, タグ, 機器)
         catch ME
-            assert(ME.identifier == "GUILDA:PowerNetwork:GconPorts", "%s on %s: %s", cls, key, ME.message);
+            assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:GconPorts", "%s on %s: %s", cls, key, ME.message);
             continue
         end
         n_used = n_used + 1;
@@ -406,7 +406,7 @@ function assert_error(f, str_id)
     try
         f();
     catch ME
-        assert(ME.identifier == str_id, "%s", ME.identifier);
+        assert(DebugScript.helper.msg_id(ME) == str_id, "%s", DebugScript.helper.msg_id(ME));
         return
     end
     error("no error (expected %s)", str_id);

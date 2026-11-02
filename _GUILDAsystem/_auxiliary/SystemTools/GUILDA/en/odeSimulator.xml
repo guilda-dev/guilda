@@ -1,5 +1,5 @@
 <!--This is an XML file containing error messages related to the odeSimulator class.-->
-<rsccat version="2" locale="en" product="GUILDA">
+<rsccat version="4.0" locale="en" product="GUILDA">
     <message>
         <entry key="UnfeasibleDAE">The DAE of phase {0} (t = [{1}, {2}] s) could not be solved after recomputing its initial condition: {3}</entry>
         <entry key="InitialConditionFailed">No consistent initial condition was found for phase {0} (t = [{1}, {2}] s): {3}</entry>

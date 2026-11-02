@@ -17,8 +17,5 @@ function check_point(Point)
             && (numel(Point) == 2 || ((isstring(Point{3}) || ischar(Point{3})) && any(string(Point{3}) == ["after","before"])))
         return
     end
-    error("GUILDA:odeLinearizer:PointType", ...
-          "Point must be [] (the equilibrium), a real vector in the order of get_variable_map(), " + ...
-          "or {sim, t} with a simulation result sim and a time t (e.g. Point={sim, 1.5}); " + ...
-          "{sim, t, ""before""} takes the value before the event at a phase boundary.")
+    error(msg("GUILDA:odeLinearizer:PointType"))
 end

@@ -32,8 +32,7 @@ function remove_local_controller(obj, str_tag, opt)
     if ~isempty(top) && top.str_tag == str_tag
         % Checked before anything changes, so a rejected call leaves the component as it was
         if ~isempty(a_nested) && ~opt.RemoveNested
-            error('GUILDA:Component:ControllerHasNested', '%s', ...
-                  msg('GUILDA:Component:ControllerHasNested', char(str_tag), char(a_nested{1}.str_tag)))
+            error(msg("GUILDA:Component:ControllerHasNested", char(str_tag), char(a_nested{1}.str_tag)))
         end
         str_removed = str_tag;
         if ~isempty(a_nested)
@@ -50,7 +49,6 @@ function remove_local_controller(obj, str_tag, opt)
         top.remove_local_controller();
         a_nested{1}.set_parent([])
     else
-        error('GUILDA:Component:ControllerNotFound', '%s', ...
-              msg('GUILDA:Component:ControllerNotFound', char(str_tag), char(obj.str_tag)))
+        error(msg("GUILDA:Component:ControllerNotFound", char(str_tag), char(obj.str_tag)))
     end
 end

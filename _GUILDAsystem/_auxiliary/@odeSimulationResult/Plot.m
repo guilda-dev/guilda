@@ -21,15 +21,13 @@ function ax = Plot(obj, opt)
     end
     [lv_found, iv_bus] = ismember(sv_plot, obj.sv_bus);
     if ~all(lv_found)
-        error('GUILDA:odeSimulationResult:UnknownBus', '%s', ...
-              msg('GUILDA:odeSimulationResult:UnknownBus', char(join(sv_plot(~lv_found), ", "))));
+        error(msg("GUILDA:odeSimulationResult:UnknownBus", char(join(sv_plot(~lv_found), ", "))));
     end
 
     r = obj.odeResults;
     [Y, sv_legend, str_label] = trajectory(r, obj.sv_bus, obj.c_component, iv_bus, opt.Quantity);
     if width(Y) == 0
-        error('GUILDA:odeSimulationResult:UnknownQuantity', '%s', ...
-              msg('GUILDA:odeSimulationResult:UnknownQuantity', char(opt.Quantity)));
+        error(msg("GUILDA:odeSimulationResult:UnknownQuantity", char(opt.Quantity)));
     end
     if isempty(opt.Parent)
         opt.Parent = figure();

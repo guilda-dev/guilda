@@ -1,0 +1,19 @@
+<!--This is an XML file containing error messages related to the file "publish_doc".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="ExportErrors">The class reference has {0} error(s). Fix them before publishing.</entry>
+        <entry key="PushFailed">git push failed. The commit stays on the local {0} branch.</entry>
+        <entry key="NoGit">git was not found. Install git and add it to the system path.</entry>
+        <entry key="NoRepository">{0} is not a git repository.</entry>
+        <entry key="WrongBranch">Publish from main or a versionX.Y branch. The current branch is "{0}".</entry>
+        <entry key="UncommittedChanges">Commit or discard the changes to tracked files first:&#xA;{0}</entry>
+        <entry key="UntrackedDocFiles">Commit or remove the untracked files under _GUILDAdoc first:&#xA;{0}</entry>
+        <entry key="NoOrigin">The repository has no remote named origin.</entry>
+        <entry key="RemoteUnreachable">Unable to read origin:&#xA;{0}</entry>
+        <entry key="Diverged">The local {0} and origin/{1} have diverged. Reset the local branch with "git branch -f {2} origin/{3}".</entry>
+        <entry key="BranchInUse">{0} is checked out in {1}, probably left by an interrupted run.&#xA;Remove it with: git worktree remove --force "{2}"</entry>
+        <entry key="CopyFailed">Unable to copy {0}: {1}</entry>
+        <entry key="WriteFailed">Unable to write {0}.</entry>
+        <entry key="GitFailed">git {0} failed:&#xA;{1}</entry>
+    </message>
+</rsccat>
