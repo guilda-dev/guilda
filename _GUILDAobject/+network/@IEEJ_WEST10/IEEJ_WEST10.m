@@ -41,8 +41,8 @@ classdef IEEJ_WEST10 < PowerNetwork
 % - They are gen-park models. `LGT = 4` has a field circuit and one damper on each axis,
 %   and the standard constants have no q-axis transient values. The q-axis circuit of
 %   gen-park that is not in the source is removed with `Xq_p = Xq*(1 - 1e-6)`: exactly
-%   `Xq_p = Xq` leaves `Ed` constant at 0, but makes get_equilibrium singular. `Tq_p` has
-%   no physical value and is set equal to `Tq_pp`. The q-axis damper is `Xq_pp` with `Tq_pp`.
+%   `Xq_p = Xq` leaves `Ed` constant at 0, but makes get_equilibrium singular. `Tq_p = 1`
+%   is not a report value and has no effect. The q-axis damper is `Xq_pp` with `Tq_pp`.
 % - The source gives short-circuit time constants; gen-park uses open-circuit ones,
 %   converted by the usual approximations: `Td_p = Td'*Xd/Xd'`, `Td_pp = Td''*Xd'/Xd''`,
 %   `Tq_pp = Tq''*Xq/Xq''`.
@@ -52,11 +52,11 @@ classdef IEEJ_WEST10 < PowerNetwork
 %
 % AVRs (Y-method `LAT = 1`, appendix figure 1.1 (a), `LocalController=true`):
 %
-% - The block diagram is controller.avr.AVR_DC1 with `ttr = 0`, `kap = 100`, `tap = 0.2`,
-%   `tex = 2`, `aex1 = 1`, `aex2 = bex = 0`, `kst = 0.1`, `tst = 0.5`; `Vref` takes the
-%   place of the field setting `EFS`.
+% - The block diagram is controller.avr.AVR_DC1 with `ttr = 0`, `kap = 1`, `tap = 0.2` and
+%   the limit `Vap_max = 100`, `Vap_min = -100` on the first lag, then `tex = 0.02`,
+%   `aex1 = 0.01`, `aex2 = bex = 0`, which is the source's `100/(1 + 2s)`, and `kst = 0.1`,
+%   `tst = 0.5`. `Vref` takes the place of the field setting `EFS`.
 % - Difference: the field voltage limit of the source, `0 <= EF <= 4`, is not in AVR_DC1.
-%   The limit ±100 of the first lag is not modelled either.
 %
 % Differences from the report:
 %
@@ -76,18 +76,19 @@ classdef IEEJ_WEST10 < PowerNetwork
 %   part 0.055 at peak). With these constant-impedance loads the slowest swing mode at
 %   peak has a period of 4.79 s and a damping ratio of only 0.004. The report gives
 %   periods of about 3 s (peak) and 2.5 s (night).
-% - The stability results of table 4.5 of the report are not reproduced. Most of its
-%   70 ms faults are stable at peak; here they mostly lose synchronism. Simulate does
-%   not open a line, so a fault here is a bus fault that clears with the line in service.
+% - The stability results of table 4.5 of the report are not reproduced, and the cause is
+%   not identified. The report has 10 of its 13 peak cases stable. With a line opening
+%   added in a separate check, none is stable with this model, and one with the
+%   constant-current load, governors and load frequency characteristic of the report.
+%   These results depend strongly on `Tq_pp`. GUILDA's simulate has no line opening.
 %
 % Simulation:
 %
-% The constructor sets net.solver_ODE to `AbsoluteTolerance = 1e-8`, `InitialStep = 1e-4`,
-% with which most runs start. simulate can still stop at the initial condition
-% (GUILDA:odeSimulator:UnfeasibleDAE), and the warning
-% GUILDA:odeSimulator:InitialConditionRelaxed means that the rotor angles were moved
-% at the start of a phase, so that the result is wrong. Discard such a run and change
-% Tolerance or InitialStep.
+% With the default solver settings simulate can stop at the initial condition
+% (GUILDA:ODEsolver:UnfeasibleDAE): at peak, runs without an event over some time spans
+% do. The warning that the initial condition of a phase moved the differential states means
+% that the rotor angles have jumped and the result is wrong; Tolerance 1e-6 and
+% AbsoluteTolerance 1e-8 give it for a fault at `B003` at peak. Discard such a run.
 %
 % <@Examples>
 % Run the power flow of the night section and simulate a fault at bus 2:
@@ -95,7 +96,7 @@ classdef IEEJ_WEST10 < PowerNetwork
 % ```matlab
 % net = network.IEEJ_WEST10(Section="night");
 % res = net.calculate_powerflow();
-% ev  = odeEventSet("fault", net, "TimeSpan", [1,1.07], "FaultBus", "B002");
+% ev  = ODEevent("fault", net, "TimeSpan", [1,1.07], "FaultBus", "B002");
 % sol = net.simulate([0,20], ev);
 % ```
 %
@@ -120,9 +121,6 @@ classdef IEEJ_WEST10 < PowerNetwork
             if opt.LocalController
                 add_avr(obj, str_dirpath);
             end
-            % The default settings stop at the initial condition of the DAE (see the class help)
-            obj.solver_ODE.AbsoluteTolerance = 1e-8;
-            obj.solver_ODE.SolverOptions.InitialStep = 1e-4;
             obj.initialize;
         end
     end
