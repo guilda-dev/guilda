@@ -1,0 +1,13 @@
+Bus,P,Q,baseMVA,Pmin,Pmax,Qmin,Qmax,Xaxis,Yaxis,Marker,MidXaxis,MidYaxis,ParameterID,OpfID
+18,-2.475,-1.611,1000,-Inf,Inf,-Inf,Inf,NaN,NaN,o,,,1,1
+19,-2.475,-1.899,1000,-Inf,Inf,-Inf,Inf,NaN,NaN,o,,,2,1
+38,-2.25,-0.201,1000,-Inf,Inf,-Inf,Inf,NaN,NaN,o,,,3,1
+39,-4.5,-0.206,1000,-Inf,Inf,-Inf,Inf,NaN,NaN,o,,,4,1
+40,-4.5,-0.17,1000,-Inf,Inf,-Inf,Inf,NaN,NaN,o,,,5,1
+41,-4.5,0.326,1000,-Inf,Inf,-Inf,Inf,NaN,NaN,o,,,6,1
+42,-4.5,0.278,1000,-Inf,Inf,-Inf,Inf,NaN,NaN,o,,,7,1
+43,-2.25,-0.03,1000,-Inf,Inf,-Inf,Inf,NaN,NaN,o,,,8,1
+44,-2.25,0.507,1000,-Inf,Inf,-Inf,Inf,NaN,NaN,o,,,9,1
+45,-2.25,0.693,1000,-Inf,Inf,-Inf,Inf,NaN,NaN,o,,,10,1
+46,-2.25,1.681,1000,-Inf,Inf,-Inf,Inf,NaN,NaN,o,,,11,1
+47,-1.8,-1.497,1000,-Inf,Inf,-Inf,Inf,NaN,NaN,o,,,12,1
