@@ -244,5 +244,11 @@ const updateLogData = [
     "date": "2026-11-02",
     "type": "fixed",
     "content": "A generator with a local controller can trip. An input event or global controller on an input driven by a local controller now adds to its output, which changes the numbers of such runs. net.initialize with Method=\"OPF\" or \"equilibrium\" sets a point that satisfies Y*V = I or stops with an error, and Method=\"equilibrium\" stops after edits it would ignore. replace_component takes Controllers=\"drop\" (default, with a warning) or \"keep\". net.simulate restores its working data after every run."
+  },
+  {
+    "title": "Model Implementation guide",
+    "date": "2026-11-02",
+    "type": "added",
+    "content": "The For Developer tab has a new page, Model Implementation: the contracts of components and controllers, a minimal generator and AVR, and how to test a new model with validate."
   }
 ];
