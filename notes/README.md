@@ -1,37 +1,31 @@
 # notes/
 
-Work-in-progress notes for the GUILDA redesign on the integration branch
-`refactor/design-alignment`.
+統合ブランチ `refactor/design-alignment` で進めている GUILDA の再設計の作業ノートです。
 
-These files are **not user documentation**. They record the state of the
-work while it is in progress: what has changed, what still has to be
-decided or fixed, and how to migrate scripts and models.
+**利用者向けの文書ではありません。** 何が変わったか、何が未決か、スクリプトとモデルをどう移行するかを、開発の間だけ記録します。経緯を知らない共同開発者が単独で読めるように書きます。結果や状態には基準コミットと日付を添え、確認済み、未確認、未決を区別します。
 
-- [v4-migration.md](v4-migration.md) — migration guide for script authors
-  and model authors, deprecated forms, planned API changes and the
-  compatibility policy.
-- [status.md](status.md) — current test results, known failures and open
-  items.
-- [opf-requirements.md](opf-requirements.md) — agreed OPF requirements,
-  roadmap and open design questions.
-- [get-sys-workflow.md](get-sys-workflow.md) — survey of the workflow, data, edits, arguments and working data around `get_sys`.
-- [get-sys-linearization.md](get-sys-linearization.md) — survey of the numerics and internals of `get_sys`.
-- [get-sys-improvements.md](get-sys-improvements.md) — improvement proposals for `get_sys`, with measurements, roadmap and open decisions.
-- [simulate-review-workflow.md](simulate-review-workflow.md) — survey of the workflow, data, edits and side effects around `simulate`.
-- [simulate-review-runtime.md](simulate-review-runtime.md) — survey of the arguments, events, phases and internals of `simulate`.
-- [simulate-review-measurements.md](simulate-review-measurements.md) — measurements of the behavior and performance of `simulate`.
-- [simulate-improvements.md](simulate-improvements.md) — improvement proposals for `simulate`, with prototypes, roadmap and open decisions.
-- [model-building-workflow.md](model-building-workflow.md) — survey of how systems are assembled from existing classes: routes, edits, tags, validation and failures.
-- [model-building-extension.md](model-building-extension.md) — survey of how new Component, controller, Branch and network classes are implemented.
-- [model-building-improvements.md](model-building-improvements.md) — improvement proposals for model building, with prototypes, roadmap and open decisions.
+## 現在の状態と移行
 
-Where other kinds of content go:
+- [status.md](status.md): テスト結果と未決事項。
+- [v4-migration.md](v4-migration.md): スクリプト作者とモデル作者向けの移行ガイド、非推奨の形、互換性の方針。
 
-- `_GUILDAdoc/` HTML pages are timeless documentation for users and future
-  developers. They describe how GUILDA works, never the progress of this
-  work.
-- User-facing announcements of new classes, features and fixes go into the
-  Home tab's Update log, `_GUILDAdoc/database/list_UpdateLog.js`.
+## 要件
 
-This folder is removed, or condensed into release notes and the
-documentation, when the redesign is released.
+- [opf-requirements.md](opf-requirements.md): OPF の要件、ロードマップ、未決の設計事項。
+
+## 調査と改善案
+
+各ファイルは当時の基準コミットでの記録で、本文は更新しません。冒頭に基準を示しています。改善案のファイルには、質問への対応状況を判断の節に追記しています。
+
+| 対象 | 調査 | 改善案 |
+|---|---|---|
+| `get_sys` | [get-sys-workflow.md](get-sys-workflow.md)(流れ、データ、編集、引数)、[get-sys-linearization.md](get-sys-linearization.md)(数値計算と内部構造) | [get-sys-improvements.md](get-sys-improvements.md) |
+| `simulate` | [simulate-review-workflow.md](simulate-review-workflow.md)(流れ、データ、編集、副作用)、[simulate-review-runtime.md](simulate-review-runtime.md)(引数、イベント、区間、内部構造)、[simulate-review-measurements.md](simulate-review-measurements.md)(挙動と性能の実測)、[simulate-review-measurements.m](simulate-review-measurements.m)(実測スクリプト) | [simulate-improvements.md](simulate-improvements.md) |
+| モデル構築 | [model-building-workflow.md](model-building-workflow.md)(既存クラスからの組み立て)、[model-building-extension.md](model-building-extension.md)(新しいクラスの実装) | [model-building-improvements.md](model-building-improvements.md) |
+
+## 他の内容の置き場所
+
+- `_GUILDAdoc/` の HTML: 利用者と将来の開発者向けの恒久的な文書です。GUILDA の仕組みを説明し、この作業の進捗は書きません。
+- 新しいクラス、機能、修正の利用者向けのお知らせ: ホームタブの Update log(`_GUILDAdoc/database/list_UpdateLog.js`)。
+
+このフォルダは、再設計のリリース時に削除するか、リリースノートと文書へまとめます。

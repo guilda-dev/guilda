@@ -1,6 +1,8 @@
 # `PowerNetwork.get_sys` 調査: ワークフロー・データ・編集・引数・一時データ
 
-現行実装の調査メモです。改善案は後続セッションがこのノートを基に作成します。`odeLinearizer` 内部の数値計算(Kron / DAE / Feedback)は姉妹ノート `notes/get-sys-linearization.md`(ブランチ `docs/get-sys-linearization`)の範囲で、ここでは入出力だけを扱います。
+> 当時の調査記録です。調査の基準は `951800e` で、以後の変更は本文に反映していません。現状は [status.md](status.md) と [v4-migration.md](v4-migration.md) を見てください。
+
+現行実装の調査メモです。改善案は後続の作業でこのノートを基に作成します。`odeLinearizer` 内部の数値計算(Kron / DAE / Feedback)は姉妹ノート `notes/get-sys-linearization.md`(ブランチ `docs/get-sys-linearization`)の範囲で、ここでは入出力だけを扱います。
 
 ## 読み方
 
@@ -425,7 +427,7 @@ IEEE68bus の `linearize` のプロファイル(合計 4.9 s、プロファイ�
 
 ## 付録: 実行した検証
 
-環境: MATLAB R2026a(26.1.0)、`-batch`、macOS。リポジトリをセッションのスクラッチパッドへコピーして実行し、ワークツリーには何も生成していません。スクリプトはコミットしていません。
+環境: MATLAB R2026a(26.1.0)、`-batch`、macOS。リポジトリを一時フォルダへコピーして実行し、リポジトリには何も生成していません。スクリプトはコミットしていません。
 
 | 番号 | 系統 | 内容 |
 |---|---|---|

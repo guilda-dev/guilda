@@ -1,12 +1,14 @@
 # `PowerNetwork.get_sys` と周辺ワークフローの改善案
 
-調査ノート [get-sys-workflow.md](get-sys-workflow.md)(以下 **WF**)と [get-sys-linearization.md](get-sys-linearization.md)(以下 **LN**)を基にした提案です。採否は利用者が決めます。ソースは変更していません。
+> 当時の調査記録です。調査の基準は 2026-11-01 に作成した時点のコード で、以後の変更は本文に反映していません。採否は §7、現状は [status.md](status.md) と [v4-migration.md](v4-migration.md) を見てください。
+
+調査ノート [get-sys-workflow.md](get-sys-workflow.md)(以下 **WF**)と [get-sys-linearization.md](get-sys-linearization.md)(以下 **LN**)を基にした提案です。採否は保守者が決めます。ソースは変更していません。
 
 **ラベル**
 
 - **[事実]** コードを読んで確認
 - **[再現]** ベースのコピーで実行して確認
-- **[試作]** スクラッチのコピーに試作を当てて実行(コミットしていません)
+- **[試作]** 一時コピーに試作を当てて実行(コミットしていません)
 - **[見積]** 判断による推定で、計測していません
 - **[未確認]** 調べていません
 
@@ -66,7 +68,7 @@ EQ6(AVR 付き発電機のトリップで例外)も 1 行単位の修正で試�
 
 ## 4. 全提案の一覧
 
-**種別:** (a) 仕様判断が不要なバグ修正、(b) 利用者の判断が必要な設計変更、(c) 性能、(d) 整理。**工数**(S: 半日以内、M: 1〜2 日、L: 3 日以上)は [見積] です。
+**種別:** (a) 仕様判断が不要なバグ修正、(b) 保守者の判断が必要な設計変更、(c) 性能、(d) 整理。**工数**(S: 半日以内、M: 1〜2 日、L: 3 日以上)は [見積] です。
 
 | ID | カテゴリ | 種別 | 問題と根拠 | 影響 | 工数 | 互換リスク | 優先 |
 |---|---|---|---|---|---|---|---|
@@ -446,8 +448,8 @@ end
 
 **注意**
 
-- 段階 1 の 4 つは共有ファイルがなく、同時に進められます(`.claude/CLAUDE.md` の並行の条件を満たします)。
-- `notes/v4-migration.md` は全段階に関係するので、**サブセッションでは編集せず、各段階のブリーフで文案を報告させ、段階の統合時に 1 か所でまとめて反映**してください。
+- 段階 1 の 4 つは共有ファイルがなく、同時に進められます。
+- `notes/v4-migration.md` は全段階に関係するので、**各ブランチでは編集せず、段階の統合時に 1 か所でまとめて反映**してください。
 - `@Component/get_sys.m` と `test_F7_linearization.m` は段階 2-4 で共有するので、並行にしないでください。
 - `ED1` は `_GUILDAtutorial` の更新ブランチ(保留中)の確認項目になります。
 
@@ -460,7 +462,7 @@ end
 - **未反映:** `initialize` の help の OPF の記述。IEEE9bus の OPF 初期化で残差は 0.39 のままで、コードの修正(Issue #56)と合わせて直します。
 - **v3 互換で残したもの:** DAE の `theta1` などの番号付きの名前、Kron の空の `OutputName`、`Feedback` の `Vst` の出力行。
 
-## 7. 利用者に判断をお願いする事項
+## 7. 保守者の判断が必要な事項
 
 | # | 質問 | 推奨 | 理由 |
 |---|---|---|---|
@@ -474,7 +476,7 @@ end
 | Q8 | v2 の `local_LQR_retrofit`, `get_environment`、未使用の `tools.for_ss` を削除しますか(DU2) | **共同開発者に確認してから削除** | リポジトリの外の利用は分からない |
 | Q9 | 疎行列化は保留でよいですか(PF4) | **保留** | 全体の 2% で、`sparss` で戻り値の型が変わる |
 | Q10 | 結果に編集の刻印を入れますか(ED5) | **入れる(後回しで可)** | `status.md` の未解決事項を解決できる |
-| Q11 | UX シートの「近似線形化」行をどう埋めますか | 下の案 | シートは利用者のものなので変更していません |
+| Q11 | UX シートの「近似線形化」行をどう埋めますか | 下の案 | シートは保守者が管理しているので変更していません |
 
 **UX シート「近似線形化」の記入案**
 
@@ -487,9 +489,27 @@ end
 | 前提条件 | 平衡点が最新。そうでなければ `EquilibriumStale`(全層) |
 | 正規デモ | `Task_linearization.m` |
 
+### 実装の状況(基準 `faa2d13`、2026-11-02)
+
+コードと git 履歴から確認できる範囲の記録です。上の表は提案時の質問と推奨としてそのまま残しています。
+
+| # | 状況 | 確認した内容 |
+|---|---|---|
+| Q1 | 実装済み(推奨どおり) | `9a69e54`, `33712cb`。全層で `GUILDA:PowerNetwork:EquilibriumStale` |
+| Q2 | 実装済み(推奨どおり。`simulate-improvements.md` §8 に案 1 の決定の記録あり) | `06dfaa3` の `GUILDA:PowerNetwork:InitializeEquilibriumEdited`(`test_I56_initialize_equilibrium.m`) |
+| Q3 | 実装済み(吸収に加えて `NonUnit` を廃止) | `a7eba53` で静的な母線を吸収し、`231e595` で `NonUnit` を廃止。指定は `GUILDA:Deprecated:LinearizeNonUnit` |
+| Q4 | 実装済み(推奨どおり) | `c9e9214`。`flag` は logical で、理由は `output.str_issue` |
+| Q5 | 実装済み(推奨どおり) | `1fd838d`。`Input`, `Output`, `Coordinate` |
+| Q6 | 変更なし(推奨と同じ状態) | `test_F7_linearization.m` の "Default channels of get_sys do not change"。決定の記録はありません |
+| Q7 | 実装済み(推奨どおり) | `ce34199` の `GUILDA:Bus:ComponentControlled` |
+| Q8 | 未決 | `controller.local_LQR_retrofit`, `controller.modeling.get_environment`, `tools.for_ss`, `tools.ssfeedback` は残っています |
+| Q9 | 未決 | `odeLinearizer` と `LinearizationResult` に `sparse(` はなく、未実装です。保留の決定の記録はありません。`simulate` の疎行列(`simulate-improvements.md` Q11)とは別の話です |
+| Q10 | 未決 | `AnalysisResult` に編集の刻印はありません |
+| Q11 | 未決 | 記入の記録はありません。`+DebugScript/Task_linearization.m` は `8688a9c` で追加済みです |
+
 ## 8. 計測と試作の範囲
 
-- **環境:** MATLAB R2026a、`-batch`、macOS。スクラッチパッドのコピーで実行し、ワークツリーには何も生成していません。試作はコミットしていません。
+- **環境:** MATLAB R2026a、`-batch`、macOS。一時コピーで実行し、リポジトリには何も生成していません。試作はコミットしていません。
 - **試作に含めたもの:** EQ1, EQ2(案 A のみ), EQ3 の stale 部分のみ(KCL 検査は未実装), EQ6(案 A), ED1(`Component`, `Bus` のみ), PF1, PF2, Y のループ, NU1 / SH2(`LinearizationResult` を読むスクリプトとして)。
 - **回帰確認:** 上記のうち NU1 以外を適用したコピーで `DebugScript.run_all("Features",["F3","F6","F7"])` を実行し、110 件すべて合格でした。他の機能のテスト(特に F1, F4, F8, F10)は実行していません。テストの追加はしていないので、**合格は「既存の動作を壊していない」ことだけを示します。**
 - **試作していないもの:** EQ4, ED2-ED5, NU2, NU3, PT, FL, SH1, SH4, SH5, AR, DF, PF3, DU。これらの効果と工数は [見積] です。

@@ -1,7 +1,7 @@
 # OPF requirements
 
 Requirements for optimal power flow (OPF) in GUILDA v4, as decided by the
-user on 2026-10-29 and 2026-10-30. Undecided design details are listed at
+maintainer on 2026-10-29 and 2026-10-30. Undecided design details are listed at
 the end as open questions.
 
 ## Uses

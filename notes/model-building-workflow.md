@@ -1,6 +1,8 @@
 # モデル構築の現状調査: 既存クラスで系統モデルを組み立てる流れ
 
-利用者が既存クラスから `PowerNetwork` を作り、解析できる状態にするまでの現状調査です。改善案は後続セッションが作成するため、ここでは事実と問題の観察だけを記録します。新しい Component / Controller / Branch / ネットワーククラスの実装は、姉妹ノート `docs/model-building-extension` の範囲です。
+> 当時の調査記録です。調査の基準は `df3f709` で、以後の変更は本文に反映していません。現状は [status.md](status.md) と [v4-migration.md](v4-migration.md) を見てください。
+
+利用者が既存クラスから `PowerNetwork` を作り、解析できる状態にするまでの現状調査です。改善案は後続の作業で作成するため、ここでは事実と問題の観察だけを記録します。新しい Component / Controller / Branch / ネットワーククラスの実装は、姉妹ノート `docs/model-building-extension` の範囲です。
 
 ## 読み方
 
@@ -443,5 +445,5 @@ end
 - 実際の MATPOWER ケースファイル(`case14` など)の取り込みと、`network.IEEE14bus` との数値比較
 - `.mlx` の全セルの実行。旧 API の確認は、該当する呼び出しを個別に実行したものです
 - GUI 経由の操作(`GUILDA.newclass`、`draw_diagram`)
-- `+DebugScript` がリリースに含まれるか(問題 25 の影響範囲)。`.claude/release/` のスクリプトに `DebugScript` の記述は見つかりませんでした
+- `+DebugScript` がリリースに含まれるか(問題 25 の影響範囲)。リリース用スクリプトに `DebugScript` の記述は見つかりませんでした
 - `Method="OPF"` の残差の原因(`notes/get-sys-workflow.md`, `notes/simulate-review-workflow.md` の結論を引用し、再分析はしていません)

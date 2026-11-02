@@ -1,6 +1,8 @@
 # 新しいモデルクラスの実装方法(現状調査)
 
-`Component`、制御器、`Branch`、ネットワークテンプレートを新しく実装する手順と、実際に実装したときの摩擦の記録です。改善案は後続セッションが作成するので、ここには書きません。既存クラスから系統を組み立てる手順は姉妹ノート `notes/model-building-workflow.md`(ブランチ `docs/model-building-workflow`)の範囲です。
+> 当時の調査記録です。調査の基準は `df3f709` で、以後の変更は本文に反映していません。現状は [status.md](status.md) と [v4-migration.md](v4-migration.md) を見てください。
+
+`Component`、制御器、`Branch`、ネットワークテンプレートを新しく実装する手順と、実際に実装したときの摩擦の記録です。改善案は後続の作業で作成するので、ここには書きません。既存クラスから系統を組み立てる手順は姉妹ノート `notes/model-building-workflow.md`(ブランチ `docs/model-building-workflow`)の範囲です。
 
 ## 読み方
 
@@ -163,7 +165,7 @@ validate catches: dx=[0 0.405]
 
 ## 3. 最小の実装例
 
-すべて MATLAB R2026a で実行した本文そのものです。スクラッチのコピーに置き、リポジトリには入れていません。**[実行 M01-M03]**
+すべて MATLAB R2026a で実行した本文そのものです。一時コピーに置き、リポジトリには入れていません。**[実行 M01-M03]**
 
 配置規則は `_GUILDAobject/+<package>/` です。小さいモデルは classdef 1ファイルでも構いません(`_GUILDAdoc/developer/folder-structure.html:191`)。
 
@@ -736,7 +738,7 @@ simulate flag=1 drift=0.00e+00 | fault flag=1 | get_sys flag=1 n_x=5 maxRe=3.69e
 
 ## 付録: 実行した検証
 
-環境: MATLAB R2026a(26.1.0.3203278)、`-batch`、macOS。リポジトリをセッションのスクラッチパッドへコピーして実行し、ワークツリーには何も生成していません。例も試験用クラスもコミットしていません。
+環境: MATLAB R2026a(26.1.0.3203278)、`-batch`、macOS。リポジトリを一時フォルダへコピーして実行し、リポジトリには何も生成していません。例も試験用クラスもコミットしていません。
 
 | 番号 | 内容 | 結果 |
 |---|---|---|
