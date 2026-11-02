@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the file "dictionary".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="ClassNotLoaded">Class {0} could not be loaded and is not in the key list: {1}</entry>
+    </message>
+</rsccat>

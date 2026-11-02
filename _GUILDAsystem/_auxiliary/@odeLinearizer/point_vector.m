@@ -35,10 +35,7 @@ function [rv_point, l_equilibrium] = point_vector(layer, Point)
         rv_point = assemble(layer, @equilibrium_comp, @equilibrium_bus, @equilibrium_gc);
     elseif isnumeric(Point)
         if numel(Point) ~= n_var
-            error("GUILDA:odeLinearizer:PointSize", ...
-                  "Point has %d values, but the variable map of '%s' has %d rows. " + ...
-                  "Give the values in the order of %s.get_variable_map().", ...
-                  numel(Point), string(layer.str_tag), n_var, lower(class_name(layer)))
+            error(msg("GUILDA:odeLinearizer:PointSize", string(numel(Point)), string(layer.str_tag), string(n_var), lower(class_name(layer))))
         end
         rv_point = double(Point(:));
     else
@@ -46,8 +43,7 @@ function [rv_point, l_equilibrium] = point_vector(layer, Point)
         tab_map = layer.get_variable_map();
         t   = Point{2};
         if ~ismethod(sim, "get_point")
-            error("GUILDA:odeLinearizer:PointType", ...
-                  "Point={sim, t} needs a simulation result with a get_point method (odeSimulationResult), not a %s.", class(sim))
+            error(msg("GUILDA:odeLinearizer:PointSimType", class(sim)))
         end
         if numel(Point) == 3
             rv_point = sim.get_point(t, tab_map, Side=Point{3});
@@ -56,9 +52,7 @@ function [rv_point, l_equilibrium] = point_vector(layer, Point)
         end
         rv_point = double(rv_point(:));
         if numel(rv_point) ~= n_var
-            error("GUILDA:odeLinearizer:PointSize", ...
-                  "%s.get_point returned %d values for %d rows of the variable map.", ...
-                  class(sim), numel(rv_point), n_var)
+            error(msg("GUILDA:odeLinearizer:PointSimSize", class(sim), string(numel(rv_point)), string(n_var)))
         end
     end
 end
@@ -87,8 +81,7 @@ function rv = assemble(layer, f_comp, f_bus, f_gc)
             rv(c_idxGC{k}) = f_gc(layer.a_GlobalController{k});
         end
     else
-        error("GUILDA:odeLinearizer:PointLayer", ...
-              "Point is defined for a PowerNetwork, Bus or Component, not a %s.", class(layer))
+        error(msg("GUILDA:odeLinearizer:PointLayer", class(layer)))
     end
 end
 

@@ -10,8 +10,6 @@ function v3_nonunit_range(s_options, n_bus)
 %
 % See also v3_linearize_args, odeLinearizer.solve
     if isfield(s_options, "NonUnit") && any(s_options.NonUnit > n_bus)
-        error("GUILDA:odeLinearizer:NonUnit", ...
-              "NonUnit = [%s] names a bus that does not exist; give indices of net.a_Bus (1 to %d).", ...
-              num2str(s_options.NonUnit), n_bus)
+        error(msg("GUILDA:v3_nonunit_range:NonUnit", num2str(s_options.NonUnit), string(n_bus)))
     end
 end

@@ -104,7 +104,7 @@ try
     DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=str_load, CPFMaxIter=10));
     error("DebugScript:noError", "未知のオプションでエラーにならない")
 catch ME
-    assert(ME.identifier == "GUILDA:resolve_options:UnknownName", ME.identifier)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "CPFMaxIter") && contains(ME.message, "LoadBus, MaxIteration, Tolerance"))
 end
 assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=str_load, Method="x")) == "GUILDA:resolve_options:UnknownName")
@@ -159,7 +159,7 @@ clear Deprecated
 lastwarn("");
 opt = struct("CPFBus", str_load, "CPFMaxIter", 500);
 cpf = DebugScript.helper.quiet(@() Continuation_Power_Flow(net, opt));
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:Deprecated:ContinuationPowerFlowFunction")
 assert(isa(cpf, "ContinuationPowerFlowV3") && isequal(cpf.CPFBus(:)', str_load))
 [sol, sol_pred] = DebugScript.helper.quiet(@() cpf.solve);
@@ -169,7 +169,7 @@ assert(norm(sol - res.rm_x) < 1e-12 && isa(cpf.CPF_Result.result, "CPFResult"))
 assert(isempty(net.solver_CPF.LoadBus))      % 既定値は変わらない
 
 % 旧コンストラクタ ContinuationPowerFlow(net, ...) は v4 の呼び方を示すエラー
-assert(error_id(@() ContinuationPowerFlow(net, "CPFBus", str_load)) == "GUILDA:Deprecated:ContinuationPowerFlowConstructor")
+assert(error_id(@() ContinuationPowerFlow(net, "CPFBus", str_load)) == "GUILDA:v3_cpf_constructor:ContinuationPowerFlowConstructor")
 assert(isa(ContinuationPowerFlow(), "ContinuationPowerFlow"))
 
 
@@ -180,7 +180,7 @@ function id = error_id(fcn)
     try
         evalc("fcn();");
     catch ME
-        id = string(ME.identifier);
+        id = string(DebugScript.helper.msg_id(ME));
         if id == ""
             id = "(no id)";
         end

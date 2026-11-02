@@ -45,8 +45,8 @@ function [result,flag,output] = solve(obj, net, s_options)
     % Notify
     if flag<=0
         switch s_options.WhenFailed
-        case "WARN" ; warning(output.message)
-        case "ERROR"; error(output.message)
+        case "WARN" ; warning(msg("GUILDA:PowerFlowCalculation:NotConverged", output.message))
+        case "ERROR"; error(msg("GUILDA:PowerFlowCalculation:NotConverged", output.message))
         case "DISP" ; disp(output.message)
         end
     end

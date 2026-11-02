@@ -32,7 +32,6 @@ end
 
 function mustBeHandleOrEmpty(f)
     if ~(isempty(f) || isa(f, "function_handle"))
-        error("GUILDA:opffcn:InvalidHandle", ...
-              "Cost and Constraint must be function handles @(v, p) ... (or [] to clear).")
+        error(msg("GUILDA:update:InvalidHandle"))
     end
 end

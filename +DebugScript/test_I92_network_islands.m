@@ -15,8 +15,9 @@ assert(~net.s_edit.l_staleEquilibrium && kcl_residual(net) < 1e-6)
 
 
 %% The warning of a balanced island can be turned off
+% error(msg(...)) 系の警告には ID がないので、すべての警告を止める形でだけ止められる
 net = balanced_island();
-s_warn = warning("off", "GUILDA:PowerNetwork:NetworkIsland");
+s_warn = warning("off", "all");
 c_warn = onCleanup(@() warning(s_warn));
 str_out = evalc("net.initialize;");   % 無効な警告も lastwarn には残るので表示で確かめる
 assert(~contains(str_out, "split into"), str_out)
@@ -34,50 +35,50 @@ assert(warning_of(@() net.initialize(Method="equilibrium")) == "GUILDA:PowerNetw
 %% An isolated bus without components is named, and solver settings are not recommended
 net = connected_network();
 net.add_bus();
-check_failure(net, "powerflow", "InitializePowerflowFailed", "[B004]");
+check_failure(net, "powerflow", "InitializePowerflowIsland", "[B004]");
 
 
 %% An isolated load or generator is named
 net = connected_network();
 net.add_bus();
 net.a_Bus{4}.add_component("load-power", "P",-0.5, "Q",-0.1);
-check_failure(net, "powerflow", "InitializePowerflowFailed", "[B004]");
+check_failure(net, "powerflow", "InitializePowerflowIsland", "[B004]");
 
 net = connected_network();
 net.add_bus("V",1);
 net.a_Bus{4}.add_component("gen-park", "P",0.5, "Q",nan);
-check_failure(net, "powerflow", "InitializePowerflowFailed", "[B004]");
+check_failure(net, "powerflow", "InitializePowerflowIsland", "[B004]");
 
 
 %% An island without a generator is named
 net = no_generator_island();
-check_failure(net, "powerflow", "InitializePowerflowFailed", "[B004, B005]");
+check_failure(net, "powerflow", "InitializePowerflowIsland", "[B004, B005]");
 
 
 %% An island whose power does not balance is named
 net = balanced_island();
 net.a_Bus{5}.a_Component{1}.para_powerflow.P = -0.9;
-check_failure(net, "powerflow", "InitializePowerflowFailed", "[B004, B005]");
+check_failure(net, "powerflow", "InitializePowerflowIsland", "[B004, B005]");
 
 
 %% A network without branches is named
 net = no_branch_network();
-check_failure(net, "powerflow", "InitializePowerflowFailed", "[B001], [B002]");
+check_failure(net, "powerflow", "InitializePowerflowIsland", "[B001], [B002]");
 
 
 %% A failed OPF on a split network names the islands, also when the OPF stops with an internal error
-check_failure(no_generator_island(), "OPF", "InitializeOPFFailed", "[B004, B005]");
+check_failure(no_generator_island(), "OPF", "InitializeOPFIsland", "[B004, B005]");
 net = connected_network();
 net.add_bus();
-check_failure(net, "OPF", "InitializeOPFFailed", "[B004]");
-check_failure(no_branch_network(), "OPF", "InitializeOPFFailed", "[B001], [B002]");
+check_failure(net, "OPF", "InitializeOPFIsland", "[B004]");
+check_failure(no_branch_network(), "OPF", "InitializeOPFIsland", "[B001], [B002]");
 
 
 %% A failure releases the slack bus that the power flow set
 net = connected_network();
 net.add_bus();
 assert(~any(cellfun(@(b) b.l_isSlack, net.a_Bus)))
-check_failure(net, "powerflow", "InitializePowerflowFailed", "[B004]");
+check_failure(net, "powerflow", "InitializePowerflowIsland", "[B004]");
 assert(~any(cellfun(@(b) b.l_isSlack, net.a_Bus)))
 
 
@@ -88,7 +89,7 @@ try
     DebugScript.helper.quiet(@() net.initialize(MaxIteration=1));
 catch ME
 end
-assert(~isempty(ME) && ME.identifier == "GUILDA:PowerNetwork:InitializePowerflowFailed")
+assert(~isempty(ME) && DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializePowerflowFailed")
 assert(contains(ME.message, "MaxIteration") && ~contains(ME.message, "islands"), ME.message)
 
 
@@ -99,7 +100,7 @@ try
     DebugScript.helper.quiet(@() net.initialize(Method="OPF", NoSuchOption=1));
 catch ME
 end
-assert(~isempty(ME) && ME.identifier == "GUILDA:resolve_options:UnknownName", ME.identifier)
+assert(~isempty(ME) && DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
 
 net = PowerNetwork("Empty");
 ME = [];
@@ -107,7 +108,7 @@ try
     DebugScript.helper.quiet(@() net.initialize);
 catch ME
 end
-assert(~isempty(ME) && ME.identifier == "GUILDA:PowerNetwork:NoBus", ME.identifier)
+assert(~isempty(ME) && DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:NoBus", DebugScript.helper.msg_id(ME))
 
 
 %% Long lists are shortened
@@ -194,7 +195,7 @@ function check_failure(net, str_method, str_id, str_island)
     catch ME
     end
     assert(~isempty(ME), "initialize did not fail")
-    assert(ME.identifier == "GUILDA:PowerNetwork:" + str_id, ME.identifier)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:" + str_id, DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, str_island), ME.message)
     assert(~contains(ME.message, ["solver settings", "solver_PF"]), ME.message)
 end
@@ -220,7 +221,7 @@ function [str_id, str_msg, varargout] = warning_of(fcn)
     else
         evalc("fcn();");
     end
-    [str_msg, str_id] = lastwarn;
+    [str_msg, str_id] = lastwarn(); str_id = DebugScript.helper.msg_id(str_msg, str_id);
     str_msg = string(str_msg);
     str_id  = string(str_id);
 end

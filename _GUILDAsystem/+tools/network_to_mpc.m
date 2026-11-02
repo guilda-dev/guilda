@@ -33,7 +33,6 @@ function mpc = network_to_mpc(net)
     a_Bus   = net.a_Bus;
     n_bus   = numel(a_Bus);
     str_bus = string(a_Bus);
-    unsupported = @(str) error("GUILDA:network_to_mpc:Unsupported", "network_to_mpc: %s", str);
 
     % ---- buses -----------------------------------------------------------------------
     rm_bus = zeros(n_bus, 13);
@@ -59,7 +58,7 @@ function mpc = network_to_mpc(net)
             if isa(com, "component.load.abstract")
                 PQ = com.tab_parameter.powerflow{1, ["P","Q"]};
                 if any(isnan(PQ))
-                    unsupported("load " + string(com) + " has no fixed P and Q (tab_parameter.powerflow).");
+                    error(msg("GUILDA:network_to_mpc:LoadNoPQ", string(com)));
                 end
                 rm_bus(i, [3 4]) = rm_bus(i, [3 4]) - PQ * base;
                 continue
@@ -108,13 +107,13 @@ function mpc = network_to_mpc(net)
         [~, iv_bus] = ismember(string(br.a_Bus), str_bus);
         for str_lim = ["Imax","Pmax","Qmax"]
             if ~isnan(ope.(str_lim)) && ~isinf(ope.(str_lim))
-                unsupported("branch " + string(br) + " has a finite " + str_lim + " (only Smax maps to RATE_A).");
+                error(msg("GUILDA:network_to_mpc:BranchLimit", string(br), str_lim));
             end
         end
         Y  = br.get_admittance_matrix();
         ys = 1/(dyn.R + 1j*dyn.X);
         if ~isfinite(ys) || Y(1,2) == 0 || Y(2,1) == 0
-            unsupported("branch " + string(br) + " has a zero impedance or no coupling.");
+            error(msg("GUILDA:network_to_mpc:BranchNoImpedance", string(br)));
         end
         phi = angle(Y(1,2)/Y(2,1))/2;
         t   = abs(ys/Y(1,2));
@@ -133,7 +132,7 @@ function mpc = network_to_mpc(net)
             Y_fit = Y_fit + diag([r_f, r_t]);
         end
         if norm(Y_fit - Y) > 1e-9*max(1, norm(Y))
-            unsupported("the admittance matrix of branch " + string(br) + " does not fit the MATPOWER branch model.");
+            error(msg("GUILDA:network_to_mpc:BranchAdmittance", string(br)));
         end
         if abs(phi) < 1e-12
             phi = 0;

@@ -190,7 +190,7 @@ assert(flag == 1)
 clear Deprecated
 lastwarn("");
 evalc('net.solver_ODE.Reporter = "disp";');
-[~, id] = lastwarn;
+id = DebugScript.helper.msg_id();
 assert(id == "GUILDA:Deprecated:SimulatorReporter", id)
 assert(net.solver_ODE.Progress == "disp" && net.solver_ODE.Reporter == "disp")
 net.solver_ODE.Progress = "none";
@@ -198,7 +198,7 @@ net.solver_ODE.Progress = "none";
 lastwarn("");
 ev  = odeEventSet("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 evalc('sol = net.simulate([0,2], ev, Reporter="none", RelativeTolerance=1e-5);');
-[~, id] = lastwarn;
+id = DebugScript.helper.msg_id();
 assert(id == "GUILDA:Deprecated:SimulateOptionName", id)
 assert(sol.options.Progress == "none" && sol.options.RelativeTolerance == 1e-5)
 assert(net.solver_ODE.RelativeTolerance ~= 1e-5)
@@ -210,7 +210,7 @@ try
     net.simulate([0,1], ev, Tolerence=1e-6);
     error("DebugScript:noError", "未知の名前でエラーにならない")
 catch ME
-    assert(ME.identifier == "GUILDA:resolve_options:UnknownName", ME.identifier)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "Tolerence") && contains(ME.message, "TimeLimit"))   % 使える名前を示す
 end
 % 不正な値
@@ -218,20 +218,20 @@ try
     net.simulate([0,1], ev, Progress="loud");
     error("DebugScript:noError", "不正な Progress でエラーにならない")
 catch ME
-    assert(ME.identifier ~= "DebugScript:noError", ME.message)
+    assert(DebugScript.helper.msg_id(ME) ~= "DebugScript:noError", ME.message)
 end
 % イベントは Name-Value の前に置く
 try
     net.simulate([0,1], "Verbose", false, ev);
     error("DebugScript:noError", "Name-Value の後のイベントでエラーにならない")
 catch ME
-    assert(ME.identifier == "GUILDA:PowerNetwork:SimulateArguments", ME.identifier)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:SimulateArguments", DebugScript.helper.msg_id(ME))
 end
 try
     net.simulate([0,1], ev, 3);
     error("DebugScript:noError", "イベントでも名前でもない引数でエラーにならない")
 catch ME
-    assert(ME.identifier == "GUILDA:PowerNetwork:SimulateArguments", ME.identifier)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:SimulateArguments", DebugScript.helper.msg_id(ME))
 end
 
 
@@ -249,13 +249,13 @@ try
     sol.Plot(Quantity="nosuchstate");
     error("DebugScript:noError", "未知の量でエラーにならない")
 catch ME
-    assert(ME.identifier == "GUILDA:odeSimulationResult:UnknownQuantity", ME.identifier)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:odeSimulationResult:UnknownQuantity", DebugScript.helper.msg_id(ME))
 end
 try
     sol.Plot(Bus="B999");
     error("DebugScript:noError", "未知の母線でエラーにならない")
 catch ME
-    assert(ME.identifier == "GUILDA:odeSimulationResult:UnknownBus", ME.identifier)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:odeSimulationResult:UnknownBus", DebugScript.helper.msg_id(ME))
 end
 
 str_dir = tempname;  mkdir(str_dir);
@@ -273,7 +273,7 @@ try
     sol.Export(fullfile(str_dir, "sim.json"));
     error("DebugScript:noError", "未対応の拡張子でエラーにならない")
 catch ME
-    assert(ME.identifier == "GUILDA:odeSimulationResult:ExportFormat", ME.identifier)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:odeSimulationResult:ExportFormat", DebugScript.helper.msg_id(ME))
 end
 % simulate(..., Plot=true, Export=file) は結果のメソッドを呼ぶ
 n_fig = numel(findall(0, "Type", "figure"));
@@ -731,9 +731,9 @@ try
     net.simulate([0,4], ev);
     error("DebugScript:noError", "エラーにならない")
 catch ME
-    assert(ME.identifier == "GUILDA:odeSimulator:PhaseFailed", ME.identifier + ": " + ME.message)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:odeSimulator:PhaseFailed", DebugScript.helper.msg_id(ME) + ": " + ME.message)
     assert(contains(ME.message, "phase 2") && contains(ME.message, "t = [1, 3]") && contains(ME.message, "boom"), ME.message)
-    assert(ME.cause{1}.identifier == "DebugScript:boom")
+    assert(DebugScript.helper.msg_id(ME.cause{1}) == "DebugScript:boom")
 end
 
 
@@ -741,7 +741,7 @@ end
 ev = odeEventSet("late", net, "TimeSpan", [5,6], "FaultBus", "B008");
 lastwarn("");
 [~, flag] = net.simulate([0,1], ev);
-[~, id] = lastwarn();
+id = DebugScript.helper.msg_id();
 assert(id == "GUILDA:odeEventSet:OutsideTimeSpan")
 assert(flag == 1)
 
@@ -763,6 +763,6 @@ function expect_error(f, str_id)
         f();
         error("DebugScript:noError", "エラーにならない (期待: " + str_id + ")")
     catch ME
-        assert(ME.identifier == str_id, ME.identifier + ": " + ME.message)
+        assert(DebugScript.helper.msg_id(ME) == str_id, DebugScript.helper.msg_id(ME) + ": " + ME.message)
     end
 end

@@ -20,19 +20,19 @@ c_warn{2} = onCleanup(@() warning(c_warn{1}));
 %% Partial result warns with any number of outputs
 lastwarn("");
 sol = net.simulate([0,5], ev, TimeLimit=1e-6);
-[str_msg, str_got] = lastwarn();
+[str_msg, str_got] = lastwarn(); str_got = DebugScript.helper.msg_id(str_msg, str_got);
 assert(str_got == str_id)
 assert(contains(str_msg, "TimeLimit") && contains(str_msg, "flag = 0"))
 assert(sol.flag == 0)
 
 lastwarn("");
 [~, flag] = net.simulate([0,5], ev, TimeLimit=1e-6);
-[~, str_got] = lastwarn();
+str_got = DebugScript.helper.msg_id();
 assert(str_got == str_id && flag == 0)
 
 lastwarn("");
 [~, flag, output] = net.simulate([0,5], ev, TimeLimit=1e-6);
-[str_msg, str_got] = lastwarn();
+[str_msg, str_got] = lastwarn(); str_got = DebugScript.helper.msg_id(str_msg, str_got);
 assert(str_got == str_id && flag == 0)
 assert(contains(str_msg, output.message))
 
@@ -42,7 +42,7 @@ assert(contains(str_msg, output.message))
 ev_in = odeEventSet("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) 1/(1.5-t));
 lastwarn("");
 [~, flag, output] = net.simulate([0,4], ev_in);
-[str_msg, str_got] = lastwarn();
+[str_msg, str_got] = lastwarn(); str_got = DebugScript.helper.msg_id(str_msg, str_got);
 assert(flag == -1)
 assert(str_got == str_id && contains(str_msg, "flag = -1") && contains(str_msg, output.message))
 
@@ -50,7 +50,7 @@ assert(str_got == str_id && contains(str_msg, "flag = -1") && contains(str_msg, 
 %% Completed run does not warn
 lastwarn("");
 [~, flag] = net.simulate([0,2], ev);
-[~, str_got] = lastwarn();
+str_got = DebugScript.helper.msg_id();
 assert(flag == 1)
 assert(str_got ~= str_id)
 

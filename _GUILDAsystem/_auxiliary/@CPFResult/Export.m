@@ -19,7 +19,6 @@ function str_file = Export(obj, filename)
         case {".csv", ".txt", ".xlsx", ".xls"}
             writetable(obj.tab_path, str_file);
         otherwise
-            error('GUILDA:CPFResult:ExportFormat', '%s', ...
-                  msg('GUILDA:CPFResult:ExportFormat', char(str_ext)));
+            error(msg("GUILDA:CPFResult:ExportFormat", char(str_ext)));
     end
 end

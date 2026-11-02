@@ -49,7 +49,7 @@ function flag = validate(obj, l_message)
         try
             [rv_x,rv_u] = obj.get_equilibrium(c_V,c_I,real(c_V*conj(c_I)),imag(c_V*conj(c_I)));
         catch ME
-            contract = add_row(contract, "get_equilibrium(V,I,P,Q)", false, ME.identifier);
+            contract = add_row(contract, "get_equilibrium(V,I,P,Q)", false, error_text(ME));
             rv_x = nan(nx,1);
             rv_u = nan(nu,1);
         end
@@ -203,10 +203,15 @@ function [val, str_id] = eval_value(f)
     try
         val = f();
     catch ME
-        str_id = string(ME.identifier);
-        if str_id == ""
-            str_id = string(ME.message);
-        end
+        str_id = error_text(ME);
+    end
+end
+
+function str = error_text(ME)
+    % The identifier of the error, or its message when it has none (error(msg(...)) of GUILDA)
+    str = string(ME.identifier);
+    if str == ""
+        str = string(ME.message);
     end
 end
 
@@ -250,7 +255,7 @@ function [flag, contract] = compare_jacobian(flag, contract, str_method, f_num, 
         [c_num{:}]   = f_num();
         [c_valid{:}] = f_valid();
     catch ME
-        str_detail = string(ME.identifier);
+        str_detail = error_text(ME);
     end
     for k = 1:4
         nr = numel(c_row{k});

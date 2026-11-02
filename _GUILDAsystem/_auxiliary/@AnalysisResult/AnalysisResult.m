@@ -154,8 +154,7 @@ classdef (Abstract) AnalysisResult < auxiliary
         %
         % Stops with GUILDA:AnalysisResult:Unsupported for a method of the Plot / Export
         % contract that this result class does not provide.
-            error('GUILDA:AnalysisResult:Unsupported', '%s', ...
-                  msg('GUILDA:AnalysisResult:Unsupported', char(str_method), class(obj)));
+            error(msg("GUILDA:AnalysisResult:Unsupported", char(str_method), class(obj)));
         end
     end
 end

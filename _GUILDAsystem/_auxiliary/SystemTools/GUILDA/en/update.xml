@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the file "update".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="InvalidHandle">Cost and Constraint must be function handles @(v, p) ... (or [] to clear).</entry>
+    </message>
+</rsccat>

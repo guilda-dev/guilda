@@ -55,7 +55,7 @@ classdef FigureClass < auxiliary
         % Input `filepath`: folder to save to (default filepath_save).
             if nargin < 2, filepath = obj.filepath_save; end
             if isempty(filepath)
-                error("filepath is empty");
+                error(msg("GUILDA:FigureClass:FilePathEmpty"));
             end
             if obj.is_save
                 if ~exist(filepath, "dir")
@@ -69,7 +69,7 @@ classdef FigureClass < auxiliary
                     elseif obj.type_save == "jpg"
                         saveas(fig_, filename + ".jpg");
                     else
-                        error("type_save is invalid");
+                        error(msg("GUILDA:FigureClass:InvalidTypeSave"));
                     end
                     if ismember(obj.type_save, ["png", "both"])
                         filepath_fig = fullfile(filepath, "fig");

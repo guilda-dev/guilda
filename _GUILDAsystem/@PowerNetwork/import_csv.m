@@ -49,8 +49,7 @@ function net = import_csv(path, opt)
         net   % The built network.
     end
     if ~isfolder(path)
-        error("GUILDA:import_csv:NotFound", ...
-              "Model folder not found: %s. Give the folder that holds bus/, branch/ and component/ (e.g. the path returned by net.export_csv).", path);
+        error(msg("GUILDA:import_csv:NotFound", path));
     end
     if isempty(opt.Network)
         [~, str_name] = fileparts(strip(path, "right", filesep));
@@ -59,7 +58,7 @@ function net = import_csv(path, opt)
         net = PowerNetwork(str_name);
     else
         if ~isa(opt.Network, "PowerNetwork") || ~isscalar(opt.Network)
-            error("GUILDA:import_csv:InvalidNetwork", "Network must be a PowerNetwork object (got %s).", class(opt.Network));
+            error(msg("GUILDA:import_csv:InvalidNetwork", class(opt.Network)));
         end
         net = opt.Network;
     end
@@ -210,8 +209,7 @@ function c_Comp = read_components(path, n_Bus, str_CompOPF)
     str_CompPath = fullfile(path, "component");
     c_Comp       = {};
     if ~isfolder(str_CompPath)
-        warning("GUILDA:import_csv:NoComponentFolder", ...
-                "Folder not found: %s. The network is built without components. Give the folder that holds bus/, branch/ and component/.", str_CompPath);
+        warning(msg("GUILDA:import_csv:NoComponentFolder", str_CompPath));
         return
     end
     str_CompDir = dir(str_CompPath);
@@ -254,7 +252,7 @@ end
 function tab = read_csv(path, relpath)
     str_file = fullfile(path, relpath);
     if ~isfile(str_file)
-        error("GUILDA:import_csv:MissingFile", "File not found: %s. Export the model again or add %s.", str_file, relpath);
+        error(msg("GUILDA:import_csv:MissingFile", str_file, relpath));
     end
     tab = readtable(str_file, "TextType", "string");
 end
@@ -267,9 +265,7 @@ function check_bus_rows(tab, cols, n_Bus, relpath)
         r_val = double(val);
         i_row = find(isnan(r_val) | r_val < 1 | r_val > n_Bus | r_val ~= fix(r_val), 1);
         if ~isempty(i_row)
-            error("GUILDA:import_csv:BusRow", ...
-                  "%s row %d: %s = %s is not a bus number. bus/parameter.csv has %d rows, so give an integer from 1 to %d.", ...
-                  relpath, i_row, str_col, value_text(val(i_row)), n_Bus, n_Bus);
+            error(msg("GUILDA:import_csv:BusRow", relpath, string(i_row), str_col, value_text(val(i_row)), string(n_Bus), string(n_Bus)));
         end
     end
 end
@@ -278,8 +274,7 @@ end
 function check_ids(tab_main, tab_ref, str_col, relpath, relref)
     i_row = find(~ismember(string(tab_main.(str_col)), string(tab_ref.(str_col))), 1);
     if ~isempty(i_row)
-        error("GUILDA:import_csv:UnknownID", "%s row %d: %s = %s is not in %s.", ...
-              relpath, i_row, str_col, value_text(tab_main.(str_col)(i_row)), relref);
+        error(msg("GUILDA:import_csv:UnknownID", relpath, string(i_row), str_col, value_text(tab_main.(str_col)(i_row)), relref));
     end
 end
 
@@ -352,9 +347,7 @@ function optional_cols = check_cols(tab, required_cols, optional_cols, relpath, 
         if ~isempty(tab.Properties.VariableDescriptions)
             str_written = string(tab.Properties.VariableDescriptions);
         end
-        warning("GUILDA:import_csv:UnknownColumn", ...
-                "Ignored unknown columns in %s: %s. Known columns: %s.", ...
-                relpath, strjoin(str_written(lv_unknown), ", "), strjoin(known, ", "));
+        warning(msg("GUILDA:import_csv:UnknownColumn", relpath, strjoin(str_written(lv_unknown), ", "), strjoin(known, ", ")));
     end
     if ~isempty(optional_cols)
         optional_cols = optional_cols(ismember(optional_cols, names));
