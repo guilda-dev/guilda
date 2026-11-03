@@ -59,7 +59,7 @@
         <tr>
           <td><code>key</code></td>
           <td>The key of <code>add_component</code></td>
-          <td>Where it attaches: <code>"avr"</code>, <code>"pss"</code>, or <code>"local"</code></td>
+          <td>Where it attaches: <code>"avr"</code>, <code>"pss"</code>, <code>"local"</code>, or <code>"governor"</code></td>
           <td>A description only</td>
         </tr>
         <tr>
@@ -129,7 +129,7 @@
         <tr>
           <td>Example</td>
           <td><code>component.generator.classical</code></td>
-          <td><code>controller.avr.AVR_ST1</code>, <code>controller.local_LQR</code></td>
+          <td><code>controller.avr.AVR_ST1</code>, <code>controller.governor.IEEJ_LPT1</code>, <code>controller.local_LQR</code></td>
           <td><code>controller.agc.broadcast_PI_AGC</code></td>
         </tr>
       </tbody>
@@ -157,7 +157,8 @@
       <li><code>sv_u</code> must not contain the port names <code>Vre</code>, <code>Vim</code>, <code>Ire</code>, <code>Iim</code>.</li>
       <li><code>net.initialize</code> evaluates the point that <code>get_equilibrium</code> returns. A wrong size or an error in a model function stops it (<code>GUILDA:PowerNetwork:InitializeEquilibriumSize</code>, <code>InitializeModelSize</code>, <code>InitializeModelFailed</code>). A point where the state moves gives the warning <code>GUILDA:PowerNetwork:EquilibriumResidual</code>.</li>
       <li>A controller can use the input names <code>"Xall"</code> and <code>"Yall"</code> to observe all the states or outputs of the component. It must then override <code>set_inputs</code>; see <code>controller.local_LQR</code>. The names <code>"X"</code> and <code>"Y"</code> are errors.</li>
-      <li>A component has one chain of local controllers: one <code>"avr"</code> or <code>"local"</code> controller, and a <code>"pss"</code> under an AVR. A new one replaces the old one with the warning <code>GUILDA:Component:ReplaceController</code>.</li>
+      <li>A component has two slots for local controllers: one <code>"avr"</code> or <code>"local"</code> controller (with a <code>"pss"</code> under an AVR), and one <code>"governor"</code> beside it. <code>a_LocalController</code> and the variables list them in this order, whatever the order of attachment. A new controller replaces the one in its slot with the warning <code>GUILDA:Component:ReplaceController</code>.</li>
+      <li>The two top-level controllers of a component must drive different inputs. A governor and a <code>"local"</code> controller that both drive <code>Pmech</code> (such as <code>controller.local_LQR</code> on all the inputs) stop with <code>GUILDA:Component:ControllerOutputOverlap</code>. A controller whose outputs follow the component (as <code>local_LQR</code> does) overrides <code>driven_inputs</code>, so that the check runs before the attachment.</li>
       <li><code>getCompPQ(obj, x, V, u, param)</code>, with <code>V</code> as <code>[abs; angle]</code>, is needed only by the continuation power flow with <code>UseInternalState=true</code>; without it, that analysis stops with <code>GUILDA:build_layout:MissingGetCompPQ</code>.</li>
     </ul>
 
