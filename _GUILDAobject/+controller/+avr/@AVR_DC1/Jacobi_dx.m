@@ -30,6 +30,8 @@ function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0) %#ok
     aex1    = param(6);
     aex2    = param(7);
     bex     = param(9);
+    Vfld_max = param(12);
+    Vfld_min = param(13);
 
     Vref = u(1);
     Vpss = u(2);
@@ -48,6 +50,11 @@ function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0) %#ok
     
     exp_part = exp(bex * Vfld);
     Axx(3,[2,3]) = [1, -aex1 - aex2 * exp_part * (1 + bex * Vfld)];         
+    % 界磁電圧の制限で止まっている間は行が 0 (fcn_dx と同じ条件)
+    dx3 = -(aex1 + aex2 * exp_part) * Vfld + Vap;
+    if (Vfld >= Vfld_max && dx3 >= 0) || (Vfld <= Vfld_min && dx3 <= 0)
+        Axx(3,:) = 0;
+    end
     
     Axx(4,4) = -1; 
 
