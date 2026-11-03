@@ -1,8 +1,8 @@
 % I51 解列時のヤコビアンと、初期値を計算し直す経路 (フォールバック)
 %
 %   getODEJacobian     : 解列した機器の電流項は右辺と同じく母線の行に入らない
-%   フォールバック     : NeedBetterY0 の後も同じ ode オブジェクトで解き、全設定が有効
-%   CalculateInitialCondition : decic の失敗はエラー、微分状態の移動は警告で通知
+%   初期条件           : 微分状態を固定して代数変数を解き直した後も、全設定が有効
+%   CalculateInitialCondition : 代数変数を解けなければエラーで、微分状態は動かさない
 %
 % 実行: runtests("DebugScript.test_I51_tripped_unit_jacobian")  または  DebugScript.run_all("Features","I51")
 
@@ -10,11 +10,9 @@
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 inwin = @(t,a,b) t > a & t < b;
-% 第 1 区間 [0,1] からフォールバックに入る入力 (decic が微分状態を動かす)
-offset = @(n) ODEevent("offset", n, "TimeSpan", 0, "OffsetUnit", "SG1B002", ...
-                          "OffsetState", "delta", "OffsetValue", 3);
-c_warn = {warning("off", "GUILDA:ODEsolver:InitialConditionRelaxed")};
-c_warn{2} = onCleanup(@() warning(c_warn{1}));
+% 第 1 区間 [0,1] の代数変数を大きく解き直す入力
+offset = @(n, val) ODEevent("offset", n, "TimeSpan", 0, "OffsetUnit", "SG1B002", ...
+                               "OffsetState", "delta", "OffsetValue", val);
 
 
 %% Jacobian matches the right-hand side while a generator is tripped
@@ -68,69 +66,65 @@ r = net.simulate([0,2], ev, SolverOptions=opt).odeResults;
 assert(max(diff(r.t(inwin(r.t,1,1.2)))) < 1.1e-3)
 
 
-%% Fallback honors MaxStep
+%% Phase with a recomputed initial condition honors MaxStep
 opt = matlab.ode.options.ODE15s;
 opt.MaxStep = 1e-3;
-r = net.simulate([0,0.1], offset(net), SolverOptions=opt).odeResults;
+r = net.simulate([0,0.1], offset(net,1), SolverOptions=opt).odeResults;
 assert(max(diff(r.t)) < 1.1e-3, "最大刻み " + max(diff(r.t)))
 
 
-%% Fallback honors Solver
-r15 = net.simulate([0,0.1], offset(net)).odeResults;
-r23 = net.simulate([0,0.1], offset(net), Solver="ode23t", SolverOptions=matlab.ode.options.ODE23t).odeResults;
+%% Phase with a recomputed initial condition honors Solver
+r15 = net.simulate([0,0.1], offset(net,1)).odeResults;
+r23 = net.simulate([0,0.1], offset(net,1), Solver="ode23t", SolverOptions=matlab.ode.options.ODE23t).odeResults;
 assert(numel(r15.t) ~= numel(r23.t) || any(r15.t ~= r23.t))
 
 
-%% Fallback honors TimeLimit
+%% Phase with a recomputed initial condition honors TimeLimit
 opt = matlab.ode.options.ODE15s;
 opt.MaxStep = 1e-4;
-[~, flag, output] = net.simulate([0,10], offset(net), SolverOptions=opt, TimeLimit=0.2);
+[~, flag, output] = net.simulate([0,10], offset(net,1), SolverOptions=opt, TimeLimit=0.2);
 assert(flag == 0)
 assert(output.tEnd < 10)
 
 
-%% Fallback honors Progress
-str = evalc('net.simulate([0,0.1], offset(net), Progress="disp");');
+%% Phase with a recomputed initial condition honors Progress
+str = evalc('net.simulate([0,0.1], offset(net,1), Progress="disp");');
 assert(strlength(str) > 0)
 
 
-%% Fallback uses the analytic Jacobian
-% 最初の solve (NeedBetterY0 で止まる) の呼び出し回数は時間幅によらない。
-% 解き直しでも使っていれば、長い区間ほど回数が増える
-assert(jacobian_calls(net, offset(net), 2) > jacobian_calls(net, offset(net), 0.01))
-
-
-%% Phases after a fallback start without its initial slope
+%% Phases after an offset start without its initial slope
 % 次の区間で状態の数が変わっても、前の区間の InitialSlope を持ち越さない
 tr = ODEevent("trip", net, "TimeSpan", [0.5,0.6], "TripUnit", "SG1B003");
-[~, flag] = net.simulate([0,1], offset(net), tr);
+[~, flag] = net.simulate([0,1], offset(net,1), tr);
 assert(flag == 1)
 
 
-%% Relaxed initial condition warns with the distance moved
-warning("on", "GUILDA:ODEsolver:InitialConditionRelaxed");
-lastwarn("");
-[~, flag] = net.simulate([0,0.1], offset(net));
-[str, id] = lastwarn(); id = DebugScript.helper.msg_id(str, id);
+%% Offset keeps the differential states and solves the algebraic ones
+% ずらした delta はそのまま始まり (以前は decic が微分状態ごと動かし、警告だけだった)、
+% 母線電圧は新しい delta で解き直される
+[sol, flag] = net.simulate([0,0.1], offset(net,1));
 assert(flag == 1)
-assert(id == "GUILDA:ODEsolver:InitialConditionRelaxed", id)
-assert(contains(str, "phase 1") && contains(str, "moved by up to"), str)
-assert(~isempty(regexp(str, "up to [0-9.]+", "once")), str)
+r = sol.odeResults;
+X = r.Bus(2).Component(1).X;
+assert(X.delta(1) == net.a_Bus{2}.a_Component{1}.rv_Xequilibrium(1) + 1, "delta(0) " + X.delta(1))
+assert(abs(r.Bus(2).V.Vreal(1) - real(net.a_Bus{2}.c_Vequilibrium)) > 1e-2)
 
 
-%% Relaxed warning is not reported as a warning of the solver
-warning("on", "GUILDA:ODEsolver:InitialConditionRelaxed");
-[~, flag, output] = net.simulate([0,0.1], offset(net));
-assert(flag == 1)
-assert(~contains(output.message, "moved by up to"), output.message)
+%% Offset without consistent algebraic variables stops instead of moving the states
+% delta を 3 ずらすと、微分状態を固定した代数方程式に解が無い (定電力負荷)
+w = warning("off", "GUILDA:PowerNetwork:SimulationIncomplete");
+c_w = onCleanup(@() warning(w));
+[~, flag, output] = net.simulate([0,0.1], offset(net,3));
+assert(flag == -1)
+ME = output.exception;
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:ODEsolver:InitialConditionFailed", DebugScript.helper.msg_id(ME) + ": " + ME.message)
+assert(contains(ME.message, "phase 1") && contains(ME.message, "differential states kept"), ME.message)
 
 
 %% Trip does not warn about the initial condition
-warning("on", "GUILDA:ODEsolver:InitialConditionRelaxed");
 lastwarn("");
 net.simulate([0,2], ODEevent("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B003"));
-id = DebugScript.helper.msg_id();
-assert(id ~= "GUILDA:ODEsolver:InitialConditionRelaxed")
+assert(isempty(lastwarn()), lastwarn())
 
 
 %% Failed initial condition stops with flag -1 naming the phase
@@ -142,7 +136,7 @@ assert(flag == -1)
 ME = output.exception;
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:ODEsolver:InitialConditionFailed", DebugScript.helper.msg_id(ME) + ": " + ME.message)
 assert(contains(ME.message, "phase 2") && contains(ME.message, "t = [1, 1.2]"), ME.message)
-assert(endsWith(string(DebugScript.helper.msg_id(ME.cause{1})), "NeedBetterY0"), DebugScript.helper.msg_id(ME.cause{1}))
+assert(DebugScript.helper.msg_id(ME.cause{1}) == "GUILDA:ODEsolver:AlgebraicNotSolved", DebugScript.helper.msg_id(ME.cause{1}))
 
 
 function err = jacobian_errors(net, tspan, c_events)
@@ -152,15 +146,6 @@ function err = jacobian_errors(net, tspan, c_events)
     s_options.PhaseProbe = @(o) store(box, jacobian_error_ode(o));
     net.solver_ODE.solve(net, tspan, c_events, s_options);
     err = cell2mat(box.values);
-end
-
-function n = jacobian_calls(net, ev, t_end)
-    profile("clear"); profile("on");
-    c_prof = onCleanup(@() profile("off"));
-    net.simulate([0,t_end], ev);
-    profile("off");
-    tab = profile("info").FunctionTable;
-    n   = sum([tab(contains(string({tab.FunctionName}), "getODEJacobian")).NumCalls]);
 end
 
 function store(box, val)

@@ -1,7 +1,7 @@
 % Issue 55: 部分解の警告と、実行全体に対する TimeLimit (既定は Inf)
 %
 %   flag ~= 1 なら nargout によらず GUILDA:PowerNetwork:SimulationIncomplete を警告する
-%   TimeLimit は区間ごとではなく、フォールバックも含めた実行全体の上限
+%   TimeLimit は区間ごとではなく、初期条件の計算も含めた実行全体の上限
 %
 % 実行: runtests("DebugScript.test_I55_time_limit")  または  DebugScript.run_all("Features","I55")
 
@@ -10,11 +10,9 @@ net = DebugScript.helper.build_ieee14();       % 進捗表示なし (Progress = 
 DebugScript.helper.quiet(@() net.initialize);
 str_id = "GUILDA:PowerNetwork:SimulationIncomplete";
 ev  = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-% 第 1 区間 [0,1] からフォールバックに入る入力
+% 第 1 区間 [0,1] の代数変数を大きく解き直す入力
 offset = @(n) ODEevent("offset", n, "TimeSpan", 0, "OffsetUnit", "SG1B002", ...
-                          "OffsetState", "delta", "OffsetValue", 3);
-c_warn = {warning("off", "GUILDA:ODEsolver:InitialConditionRelaxed")};
-c_warn{2} = onCleanup(@() warning(c_warn{1}));
+                          "OffsetState", "delta", "OffsetValue", 1);
 
 
 %% Partial result warns with any number of outputs
@@ -94,8 +92,8 @@ assert(output.nPhasesDone >= 1 && output.nPhasesDone < output.nPhases, "phases "
 assert(output.tEnd < 5)
 
 
-%% Limit includes the time before the fallback
-% 第 1 区間の最初の solve は NeedBetterY0 で止まり、解き直す。解き直しで計時を始め直さない
+%% Limit includes the time of the initial condition
+% 区間ごとに初期条件を計算してから solve する。その後で計時を始め直さない
 c_ev = {offset(net), ODEevent("trip", net, "TimeSpan", [0.5,0.6], "TripUnit", "SG1B003")};
 assert(run_with_delay(net, [0,1], c_ev, 0, Inf) == 1)
 [flag, output] = run_with_delay(net, [0,1], c_ev, 1, 0.9);
