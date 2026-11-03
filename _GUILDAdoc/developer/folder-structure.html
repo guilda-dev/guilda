@@ -150,7 +150,7 @@
           <p>Concrete models that users put into a network.</p>
           <dl>
             <dt>Belongs here</dt><dd>Model classes, grouped into packages by kind (branch / component / controller / network), with sub-packages for model families that share a base class. A network template is a class that builds the network in its constructor, usually a class folder with data subfolders per element type.</dd>
-            <dt>Networks</dt><dd>Bundled templates include <code>IEEE9bus</code>, <code>IEEE14bus</code> (the MATPOWER <code>case14</code> data), <code>IEEE14bus_NoTap</code> (transformer taps at 1), <code>IEEE14bus_lossless</code> (<code>R = 0</code>), and <code>IEEE68bus</code>. Each constructor loads its own folder with <code>PowerNetwork.import_csv(dir, Network=obj)</code>.</dd>
+            <dt>Networks</dt><dd>Bundled templates include <code>IEEE9bus</code>, <code>IEEE14bus</code> (the MATPOWER <code>case14</code> data), <code>IEEE14bus_NoTap</code> (transformer taps at 1), <code>IEEE14bus_lossless</code> (<code>R = 0</code>), <code>IEEE68bus</code>, and the IEEJ standard models <code>IEEJ_EAST10</code>, <code>IEEJ_EAST30</code>, <code>IEEJ_WEST10</code>, <code>IEEJ_WEST30</code> (a <code>peak/</code> and a <code>night/</code> folder each, chosen with <code>Section</code>). Each constructor loads its own folder with <code>PowerNetwork.import_csv(dir, Network=obj)</code>.</dd>
             <dt>Relation</dt><dd>Every model inherits from a base class in <code>_GUILDAsystem</code>.</dd>
           </dl>
         </div>

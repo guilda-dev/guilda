@@ -49,7 +49,8 @@ assert(id == "")
 
 %% Building the built-in networks does not warn
 for str_net = ["IEEE9bus", "IEEE14bus", "IEEE14bus_NoTap", "IEEE14bus_lossless", ...
-               "IEEE68bus", "Ishizaki6Bus", "TEST31bus", "Txt3Bus"]
+               "IEEE68bus", "Ishizaki6Bus", "TEST31bus", "Txt3Bus", ...
+               "IEEJ_EAST10", "IEEJ_EAST30", "IEEJ_WEST10", "IEEJ_WEST30"]
     lastwarn("");
     DebugScript.helper.quiet(@() feval("network." + str_net));
     id = DebugScript.helper.msg_id();

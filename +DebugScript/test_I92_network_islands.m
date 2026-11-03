@@ -142,7 +142,8 @@ assert(str_id == "" && ~res.l_success)
 
 %% The built-in networks do not warn
 for str_net = ["IEEE9bus","IEEE14bus","IEEE14bus_lossless","IEEE14bus_NoTap","IEEE68bus", ...
-               "Ishizaki6Bus","TEST31bus","Txt3Bus","Tutorial3bus"]
+               "Ishizaki6Bus","TEST31bus","Txt3Bus","Tutorial3bus", ...
+               "IEEJ_EAST10","IEEJ_EAST30","IEEJ_WEST10","IEEJ_WEST30"]
     net = network.(str_net)();
     str_id = warning_of(@() net.initialize);
     assert(str_id ~= "GUILDA:PowerNetwork:NetworkIsland", str_net)

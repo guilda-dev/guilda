@@ -64,7 +64,8 @@ assert(numel(net.a_Branch) == 4)
 
 %% All built-in networks still build
 for str_net = ["IEEE9bus","IEEE14bus","IEEE14bus_NoTap","IEEE14bus_lossless", ...
-               "IEEE68bus","Ishizaki6Bus","TEST31bus","Txt3Bus","Tutorial3bus"]
+               "IEEE68bus","Ishizaki6Bus","TEST31bus","Txt3Bus","Tutorial3bus", ...
+               "IEEJ_EAST10","IEEJ_EAST30","IEEJ_WEST10","IEEJ_WEST30"]
     net = DebugScript.helper.quiet(@() feval("network."+str_net));
     assert(~isempty(net.a_Branch), str_net)
 end
