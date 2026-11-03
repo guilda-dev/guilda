@@ -571,9 +571,9 @@ function [sv_tag, rv_rep] = getTM(OBJs, sv_tag, rv_rep)
         sv_tag = [sv_tag; OBJ.str_tag]; %#ok
         rv_rep = [rv_rep; rs_idx];      %#ok  
 
+        % its local controllers, depth first (the order of ODEsolver.initialize_index)
         if ~isempty(OBJ.a_LocalController)
-            a_LC = OBJ.a_LocalController(1);
-            [sv_tag, rv_rep] = getTM(a_LC, sv_tag, rv_rep);
+            [sv_tag, rv_rep] = getTM(OBJ.a_LocalController, sv_tag, rv_rep);
         end
     end
 end
@@ -597,8 +597,7 @@ function [rv_x0, rm_Mass, TC] = getXM(OBJs, rv_x0, rm_Mass, TC)
         rm_Mass(rx_idx, rx_idx) = blkdiag(tools.read_mass(OBJ), zeros(nu_idx, nu_idx));
 
         if ~isempty(OBJ.a_LocalController)
-            a_LC = OBJ.a_LocalController(1);
-            [rv_x0, rm_Mass, TC] = getXM(a_LC, rv_x0, rm_Mass, TC);
+            [rv_x0, rm_Mass, TC] = getXM(OBJ.a_LocalController, rv_x0, rm_Mass, TC);
         end
     end
 end

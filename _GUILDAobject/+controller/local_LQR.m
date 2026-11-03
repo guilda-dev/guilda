@@ -133,15 +133,21 @@ classdef local_LQR < LocalController
         end
     end
 
-    methods (Access=protected)
-        function resolve_ports(obj, comp)
-            % The driven inputs: Input, or all the inputs of the component
+    methods (Hidden)
+        function sv_in = driven_inputs(obj, comp)
+            % The driven inputs on the component comp: Input, or all the inputs of comp
             if isempty(obj.sv_input)
-                sv_in = comp.sv_u;
+                sv_in = reshape(string(comp.sv_u), [], 1);
             else
                 sv_in = obj.sv_input;   % checked by Component.add_local_controller
             end
-            obj.sv_y = sv_in(:);
+        end
+    end
+
+    methods (Access=protected)
+        function resolve_ports(obj, comp)
+            % The driven inputs: Input, or all the inputs of the component
+            obj.sv_y = obj.driven_inputs(comp);
         end
 
         function set_inputs(obj, sv_name)

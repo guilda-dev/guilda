@@ -1,6 +1,9 @@
 function move_local_controllers(obj, comp_new)
 % Move the local controllers to another component, with the controllers nested in them.
 %
+% Each top-level controller (the AVR or "local" controller, and the governor) goes to the
+% same slot of the new component.
+%
 % Called by Bus.replace_component, which checks first that the new component suits them.
     a_con = obj.a_LocalController;
     obj.a_LocalController = cell(0,1);

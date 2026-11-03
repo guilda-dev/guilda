@@ -4,8 +4,8 @@ function tab = get_variable_map(obj, str_form)
 % Variable map of the component: the rows of net.get_variable_map() that belong to it,
 % in the same relative order. This order defines the Point vector of
 % comp.get_sys(Point=...):
-%   1. states x of the component, then of its local controllers (depth first: an AVR,
-%      then the PSS attached under it)
+%   1. states x of the component, then of its local controllers (depth first: the AVR
+%      or "local" controller, the PSS attached under the AVR, then the governor)
 %   2. Vre, Vim of its bus
 %   3. inputs u of the component
 % The columns are those of PowerNetwork.get_variable_map; Index counts from 1 here.
