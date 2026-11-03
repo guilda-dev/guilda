@@ -118,11 +118,11 @@ net.add_bus("baseMVA", 100, ...)
 net.tab_parameter.base.Hz           % read / write: whole network
 net.tab_parameter.base.Hz = 50;
 net.tab_parameter.base.baseMVA = 100;
-comp.r_Hz                           % read-only: frequency of the network the object belongs to
+comp.get_Hz()                       % read-only: frequency of the network the object belongs to
 net.add_bus(...)                    % no baseMVA option
 ```
 
-- `r_Hz` falls back to `GUILDA.config("Model","Hz")` for an object that is
+- `get_Hz()` falls back to `GUILDA.config("Model","Hz")` for an object that is
   not attached to a network.
 - CSV import accepts and ignores a `baseMVA` column; CSV export no longer
   writes it.
@@ -151,8 +151,9 @@ Every parameter or topology edit is logged and records what it made stale:
 | `OPF` (`set_opffcn`, `reset_opffcn`)   | –           | –           |
 | `Tag`(`str_tag` による改名)          | –           | –           |
 
-- A network **Hz** edit only rebuilds the handles: the equilibrium does not
-  depend on the nominal frequency, so `simulate` and `get_sys` run without
+- A network **Hz** edit only marks the handles of every layer stale, and the
+  next analysis rebuilds them: the equilibrium does not depend on the nominal
+  frequency, so `simulate` and `get_sys` run without
   `initialize()`. A **baseMVA** edit changes the per-unit values and still
   needs `net.initialize()`.
 - Adding or replacing an AVR or PSS (`add_local_controller`) is logged as a
@@ -940,7 +941,7 @@ there.
   `(obj, t, x, V, I, u, param, omega0)`. Declare them with `omega0` in the
   `classdef` too.
 - **`omega0` is the nominal frequency in Hz**, not rad/s. Multiply by
-  `2*pi` inside the model where needed. It is the network's `r_Hz`.
+  `2*pi` inside the model where needed. It is the network's `get_Hz()`.
 - **Parameters are on the system base** (`net.tab_parameter.base.baseMVA`).
   There is no per-bus or per-component base.
 - **Analytic Jacobians** are `Static` methods named exactly `Jacobi_dx`,
@@ -959,8 +960,14 @@ there.
   `get_sys` and `ODEsolver` use the same `f_Jacobi*` handles.
 - **The old `getJacobiAxx` / `getJacobiBxu` / … style is no longer used.**
   Per-matrix files are ignored; port them to the three `Jacobi_*` methods.
-- **Frequency inside a model:** read `obj.r_Hz`, never a fixed `60` or a
+- **Frequency inside a model:** read `obj.get_Hz()`, never a fixed `60` or a
   component `para_base`.
+- **No `set_odefcn` in the constructor.** The `f_*` handles are built when an
+  analysis first uses them (`s_edit.str_odefcn`: `"unset"`, `"editted"`,
+  `"updated"`), with the frequency of the network the model is attached to.
+  A constructor that still calls `obj.set_odefcn()` keeps working: the handles
+  are then built once with `GUILDA.config("Model","Hz")` and built again after
+  the model is attached.
 - **Equilibrium:** `get_equilibrium(obj, c_V, c_I, r_P, r_Q)`; do not store
   copies of V or I (see 1.2).
 - **Controllers:** local controllers receive their parent through

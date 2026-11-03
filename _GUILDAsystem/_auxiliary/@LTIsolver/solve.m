@@ -5,7 +5,7 @@ function [result, flag, output] = solve(obj, net, s_options)
 % (the Jacobian blocks in the order of net.get_variable_map()) as a LTIresult.
 % The solver and the network are only read: nothing is written back into them.
 % Called by net.linearize; calling it
-% directly is for advanced use. Like net.linearize, it first rebuilds stale f_* handles
+% directly is for advanced use. Like net.linearize, it first builds out-of-date f_* handles
 % and stops with the error GUILDA:PowerNetwork:EquilibriumStale when net.initialize()
 % is needed. A Point with NaN or Inf stops with GUILDA:LTIsolver:PointNotFinite, and a
 % model that is not finite at the point with GUILDA:LTIsolver:JacobianNotFinite.
@@ -26,7 +26,7 @@ function [result, flag, output] = solve(obj, net, s_options)
         output % message, str_issue ("", "NotFinite" or "SingularAvv"), l_equilibrium, n_x, n_v, n_u, rcond_Avv, r_residual, sv_faultBus.
     end
     t0 = tic;
-    net.require_equilibrium();    % rebuild stale f_*; error if net.initialize() is needed
+    net.require_equilibrium();    % build out-of-date f_*; error if net.initialize() is needed
 
     a_bus = net.a_Bus;
     a_gc  = net.a_GlobalController;

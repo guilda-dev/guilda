@@ -11,7 +11,7 @@ function M = fcn_Mass(obj, t, x, V, I, u, para, omega0) %#ok
 % - `I` [pu]: bus current as `[real; imag]`.
 % - `u`: input vector in the order of `sv_u`.
 % - `para`: dynamic parameters in the order of `sv_para`.
-% - `omega0` [Hz]: network frequency (`r_Hz`).
+% - `omega0` [Hz]: network frequency (`get_Hz`).
 %
 % See also fcn_dx
     arguments (Output)

@@ -27,7 +27,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % fcn_I at the point and the inputs of the controllers are the outputs they are
 % connected to (as in the simulation). The model is not changed.
 %
-% Stale f_* handles are rebuilt first. Without Point, a component on a network stops
+% Out-of-date f_* handles are built first. Without Point, a component on a network stops
 % with the error GUILDA:PowerNetwork:EquilibriumStale when net.initialize() is needed.
 %
 % Outputs: `sys`, a descriptor state-space model with state, input and output names;

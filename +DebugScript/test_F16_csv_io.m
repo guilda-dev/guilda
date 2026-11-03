@@ -249,17 +249,17 @@ for sct = [struct("rel", "branch/parameter.csv", "col", "To", "row", 2, "val", 9
     writetable(tab, str_file);
 
     net = PowerNetwork("Host");
-    r_Hz = net.tab_parameter.base.Hz;
+    r_baseHz = net.tab_parameter.base.Hz;
     str_file = fullfile(str_path, "network", "parameter.csv");
     tab = readtable(str_file);
-    tab.Hz = r_Hz + 1;
+    tab.Hz = r_baseHz + 1;
     writetable(tab, str_file);
     ME = import_error(str_path, net);
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:import_csv:BusRow", sct.rel)
     str_want = sprintf("%s row %d: %s = %s", sct.rel, sct.row, sct.col, string(sct.val));
     assert(contains(ME.message, str_want), ME.message)
     assert(isempty(net.a_Bus) && isempty(net.a_Branch), "検査の前に追加しない")
-    assert(net.tab_parameter.base.Hz == r_Hz, "検査の前に基準値を変えない")
+    assert(net.tab_parameter.base.Hz == r_baseHz, "検査の前に基準値を変えない")
 end
 
 

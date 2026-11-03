@@ -145,7 +145,7 @@ classdef (Sealed = true) ODEsolver < auxiliary
         % ODEresult. The solver is only read: nothing is written back into it.
         % The simulation working data of the models (iv_odeX, iv_odeU, iv_odeY, iv_odeI) is
         % rebuilt for this run. Called by net.simulate; calling it directly is for advanced
-        % use. Like net.simulate, it first rebuilds stale f_* handles and stops with the
+        % use. Like net.simulate, it first builds out-of-date f_* handles and stops with the
         % error GUILDA:PowerNetwork:EquilibriumStale when net.initialize() is needed.
         % flag is 1 when the simulation reached the end time, 0 when it stopped because the
         % run exceeded TimeLimit, and -1 when the solver stopped before the end time or could
@@ -167,7 +167,7 @@ classdef (Sealed = true) ODEsolver < auxiliary
                 output % Details: message, tEnd, phases (time table of the phases), nPhases, nPhasesDone, isSparse (false when the run fell back to dense matrices), exception (MException of a phase that could not be solved, with the original as cause; otherwise empty).
             end
             t0 = tic;
-            net.require_equilibrium();    % rebuild stale f_*; error if net.initialize() is needed
+            net.require_equilibrium();    % build out-of-date f_*; error if net.initialize() is needed
 
             % Without events, add an empty event so that ODEevent.table is dispatched.
             if isempty(c_events)

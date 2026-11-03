@@ -6,7 +6,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % is labelled "Y_" + name). The point is x, V, u (default: the equilibrium).
 % Component.get_sys connects it to the component. The model is not changed.
 %
-% Stale f_* handles are rebuilt first. A controller on a network stops with the error
+% Out-of-date f_* handles are built first. A controller on a network stops with the error
 % GUILDA:PowerNetwork:EquilibriumStale when net.initialize() is needed.
 %
 % Outputs after `sys` (`varargout`): sys.StateName, sys.InputName and sys.OutputName,

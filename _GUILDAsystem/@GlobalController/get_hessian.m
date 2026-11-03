@@ -43,7 +43,7 @@ function c_H = hessians(obj, c_method, x, V, I, u, param)
         if ~ismethod(obj, str_method)
             error(msg("GUILDA:GlobalController:HessianNotSupported", class(obj), str_method))
         end
-        H = obj.(str_method)(0, x, V, I, u, param, obj.r_Hz);
+        H = obj.(str_method)(0, x, V, I, u, param, obj.get_Hz());
         if isempty(H)
             H = zeros(n_f, n_z, n_z);
         elseif numel(H) ~= n_f*n_z*n_z

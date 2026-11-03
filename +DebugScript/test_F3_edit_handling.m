@@ -3,12 +3,14 @@
 % パラメータや構成を編集しても値が変わるだけで、何かが古くなったことを記録する。
 %   dynamics の編集 → 関数ハンドル f_* と平衡点が古くなる
 %   base(baseMVA) の編集 → 平衡点が古くなる (f_* は baseMVA を持たない)
-%   base(Hz) の編集 → その場で全層の f_* を作り直す (平衡点は定格周波数によらない)
+%   base(Hz) の編集 → 全層の f_* が古くなる (平衡点は定格周波数によらない)
 %   powerflow の編集・構成の変更 (add_/remove_/replace_)・スラック母線の変更 → 平衡点が古くなる
 %   operation / OPF / graph の編集 → 何も古くならない
-% 解析の開始時 (initialize / simulate / get_sys) に古いハンドルだけを作り直す。
+% ハンドルは使うときに作る: 解析の開始時 (initialize / simulate / get_sys) に最新でないハンドルだけを作る。
+% 取り付け (母線への追加・制御器の追加) もその部分木のハンドルを古くする (系統の Hz を読み直すため)。
 % 平衡点が古い (または未設定) とき simulate / get_sys は net.initialize() を促すエラーにする。
-% 状態は s_edit.l_staleOdefcn (ハンドルを持つ機器・制御器) と s_edit.l_staleEquilibrium (PowerNetwork) で確認する。
+% 状態は s_edit.str_odefcn (ハンドルを持つ機器・制御器; "unset" 未作成 / "editted" 古い / "updated" 最新) と
+% s_edit.l_staleEquilibrium (PowerNetwork) で確認する。
 %
 % 実行: runtests("DebugScript.test_F3_edit_handling")  または  DebugScript.run_all("Features","F3")
 
@@ -43,34 +45,37 @@ assert(isa(res, "LTIresult"))
 %% Dynamics edit makes handles and equilibrium stale
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);
-assert(~comp.s_edit.l_staleOdefcn && ~net.s_edit.l_staleEquilibrium)
+assert(comp.s_edit.str_odefcn == "updated" && ~net.s_edit.l_staleEquilibrium)
 
 comp.tab_parameter.dynamics.D = 5;
-assert(comp.s_edit.l_staleOdefcn && net.s_edit.l_staleEquilibrium)
+assert(comp.s_edit.str_odefcn == "editted" && net.s_edit.l_staleEquilibrium)
 assert_stale_error(@() net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1])), str_staleID)
 assert_stale_error(@() net.get_sys(), str_staleID)
 
 % initialize でハンドルが作り直され、平衡点も最新になる
 DebugScript.helper.quiet(@() net.initialize);
-assert(~comp.s_edit.l_staleOdefcn && ~net.s_edit.l_staleEquilibrium)
+assert(comp.s_edit.str_odefcn == "updated" && ~net.s_edit.l_staleEquilibrium)
 sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
 assert(sol.odeResults.t(end) == 1)
 net.get_sys();
 
 
-%% Base Hz edit rebuilds the handles at once
-% 周波数は PowerNetwork が持つ (net.tab_parameter.base.Hz)。変えるとその場で全機器のハンドルを作り直す。
+%% Base Hz edit marks the handles and the next analysis rebuilds them
+% 周波数は PowerNetwork が持つ (net.tab_parameter.base.Hz)。変えると全機器のハンドルが古くなり、次の解析で作り直す。
 % 平衡点は定格周波数によらないので initialize し直さなくてよい
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);
 x_eq = comp.rv_Xequilibrium;
+Hz0  = net.tab_parameter.base.Hz;
 net.tab_parameter.base.Hz = 50;
-assert(DebugScript.helper.handle_Hz(comp) == 50 && ~comp.s_edit.l_staleOdefcn && ~net.s_edit.l_staleEquilibrium)
-assert(comp.r_Hz == 50 && net.tab_editLog.log(end) == "edit Hz")
+assert(comp.s_edit.str_odefcn == "editted" && ~net.s_edit.l_staleEquilibrium)
+assert(DebugScript.helper.handle_Hz(comp) == Hz0, "編集しただけでは作り直さない")
+assert(comp.get_Hz() == 50 && net.tab_editLog.log(end) == "edit Hz")
 
-% initialize なしで simulate でき、平衡点に留まる
+% initialize なしで simulate でき (開始時に作り直す)、平衡点に留まる
 sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
-assert(~comp.s_edit.l_staleOdefcn && sol.odeResults.t(end) == 1)
+assert(comp.s_edit.str_odefcn == "updated" && DebugScript.helper.handle_Hz(comp) == 50)
+assert(sol.odeResults.t(end) == 1)
 assert(DebugScript.helper.max_state_drift(sol) < 1e-6)
 
 % initialize し直しても平衡点は変わらない
@@ -90,12 +95,12 @@ assert(norm(dx_used - dx_new) < 1e-12, "f_dx が変更前の Hz を使ってい�
 DebugScript.helper.quiet(@() net.initialize);
 f_dx = comp.f_dx;
 net.tab_parameter.base.baseMVA = 200;
-assert(~comp.s_edit.l_staleOdefcn && net.s_edit.l_staleEquilibrium)
+assert(comp.s_edit.str_odefcn == "updated" && net.s_edit.l_staleEquilibrium)
 assert(isequal(comp.f_dx, f_dx))
 assert_stale_error(@() net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1])), str_staleID)
 assert_stale_error(@() net.get_sys(), str_staleID)
 DebugScript.helper.quiet(@() net.initialize);
-assert(~comp.s_edit.l_staleOdefcn && ~net.s_edit.l_staleEquilibrium)
+assert(comp.s_edit.str_odefcn == "updated" && ~net.s_edit.l_staleEquilibrium)
 
 
 %% Powerflow edit makes only the equilibrium stale
@@ -104,7 +109,7 @@ DebugScript.helper.quiet(@() net.initialize);
 h_dx = comp.f_dx;
 
 comp.tab_parameter.powerflow.P = -1.1;
-assert(~comp.s_edit.l_staleOdefcn && net.s_edit.l_staleEquilibrium)
+assert(comp.s_edit.str_odefcn == "updated" && net.s_edit.l_staleEquilibrium)
 assert_stale_error(@() net.get_sys(), str_staleID)
 
 % 潮流設定の母線パラメータも同じ
@@ -235,7 +240,7 @@ net.a_Bus{2}.tab_parameter.graph.Xaxis = 1;
 
 % 編集は記録されるが、何も古くならない
 assert(DebugScript.helper.edit_flag(net) == "editted" && height(net.tab_editLog) == 5)
-assert(~comp.s_edit.l_staleOdefcn && ~net.s_edit.l_staleEquilibrium)
+assert(comp.s_edit.str_odefcn == "updated" && ~net.s_edit.l_staleEquilibrium)
 
 % initialize し直さなくても解析できる
 sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
@@ -252,11 +257,11 @@ DebugScript.helper.quiet(@() net.initialize);
 h1 = c1.f_dx;  h2 = c2.f_dx;
 
 c1.tab_parameter.dynamics.D = 50;
-assert(c1.s_edit.l_staleOdefcn && ~c2.s_edit.l_staleOdefcn)
+assert(c1.s_edit.str_odefcn == "editted" && c2.s_edit.str_odefcn == "updated")
 assert(isequal(h1, c1.f_dx))           % 編集しただけでは作り直さない
 
 DebugScript.helper.quiet(@() net.initialize);
-assert(~c1.s_edit.l_staleOdefcn)
+assert(c1.s_edit.str_odefcn == "updated")
 assert(~isequal(h1, c1.f_dx))          % 編集した機器だけ作り直す
 assert(isequal(h2, c2.f_dx))
 
@@ -269,11 +274,11 @@ avr = comp.a_LocalController{1};
 DebugScript.helper.quiet(@() net.initialize);
 
 avr.para_dynamics.kap = 2 * avr.para_dynamics.kap;
-assert(avr.s_edit.l_staleOdefcn && ~comp.s_edit.l_staleOdefcn && net.s_edit.l_staleEquilibrium)
+assert(avr.s_edit.str_odefcn == "editted" && comp.s_edit.str_odefcn == "updated" && net.s_edit.l_staleEquilibrium)
 assert_stale_error(@() net.get_sys(), str_staleID)
 
 DebugScript.helper.quiet(@() net.initialize);
-assert(~avr.s_edit.l_staleOdefcn)
+assert(avr.s_edit.str_odefcn == "updated")
 x = avr.rv_Xequilibrium + 0.01;  u = avr.rv_Uequilibrium;
 V = [real(comp.c_Vequilibrium); imag(comp.c_Vequilibrium)];
 para = avr.tab_parameter.dynamics{:, avr.sv_para}.';
@@ -290,18 +295,18 @@ net.add_global_controller(agc);
 DebugScript.helper.quiet(@() net.initialize);
 
 agc.para_dynamics.kP = [200; 200];
-assert(agc.s_edit.l_staleOdefcn && net.s_edit.l_staleEquilibrium)
+assert(agc.s_edit.str_odefcn == "editted" && net.s_edit.l_staleEquilibrium)
 assert(any(net.tab_editLog.log == "edit kP"))
 
 DebugScript.helper.quiet(@() net.initialize);
-assert(~agc.s_edit.l_staleOdefcn)
+assert(agc.s_edit.str_odefcn == "updated")
 para = agc.tab_parameter.dynamics{:, agc.sv_para};
 x = 0.1;  u = [0.01; 0.02];
 assert(norm(agc.f_dx(0,x,[],[],u) - agc.fcn_dx(0,x,[],[],u,para,60)) < 1e-12, ...
        "AGC の f_dx が変更前の定数を使っている")
 
 
-%% Network Hz edit rebuilds every handle
+%% Network Hz edit marks every handle
 % 周波数は PowerNetwork だけが持つ。変えると機器・制御器 (AVR, PSS, AGC) のハンドルがすべて古くなる
 net = DebugScript.helper.build_ieee14();
 c{1} = net.a_Bus{1}.a_Component{1};
@@ -314,15 +319,19 @@ avr = c{1}.a_LocalController{1};
 pss = avr.a_LocalController{1};
 ld  = net.a_Bus{5}.a_Component{1};
 a_model = {c{1}, c{2}, ld, avr, pss, agc};
-assert(~any(cellfun(@(m) m.s_edit.l_staleOdefcn, a_model)))
+assert(all(cellfun(@(m) m.s_edit.str_odefcn == "updated", a_model)))
 assert(isa(c{1}.tab_parameter.base, "ComponentBaseView"))   % 機器は Hz を持たない (旧形式の互換ビューだけ)
+Hz0 = net.tab_parameter.base.Hz;
 
 net.tab_parameter.base.Hz = 50;
-assert(all(cellfun(@DebugScript.helper.handle_Hz, a_model) == 50) && ~net.s_edit.l_staleEquilibrium)
-assert(all(cellfun(@(m) m.r_Hz, a_model) == 50))
-assert(~any(cellfun(@(m) m.s_edit.l_staleOdefcn, a_model)))
+assert(all(cellfun(@(m) m.s_edit.str_odefcn == "editted", a_model)) && ~net.s_edit.l_staleEquilibrium)
+assert(all(cellfun(@(m) m.get_Hz(), a_model) == 50))
+assert(all(cellfun(@DebugScript.helper.handle_Hz, a_model) == Hz0), "編集しただけでは作り直さない")
 
-% 編集の時点でハンドルは新しい Hz になっている (initialize は不要)
+% 次の解析 (initialize は不要) でハンドルは新しい Hz になる
+net.get_sys();
+assert(all(cellfun(@(m) m.s_edit.str_odefcn == "updated", a_model)))
+assert(all(cellfun(@DebugScript.helper.handle_Hz, a_model) == 50))
 x = avr.rv_Xequilibrium + 0.01;  u = avr.rv_Uequilibrium;
 V = [real(c{1}.c_Vequilibrium); imag(c{1}.c_Vequilibrium)];
 para = avr.tab_parameter.dynamics{:, avr.sv_para}.';
@@ -330,7 +339,7 @@ assert(norm(avr.f_dx(0,x,V,[0;0],u) - avr.fcn_dx(0,x,V,[0;0],u,para,50)) < 1e-12
 
 
 %% Network Hz edit redesigns the LQR gain
-% K は線形モデルの Hz に依存する。保持している平衡点で作り直し、再初期化と同じ値になる
+% K は線形モデルの Hz に依存する。Hz 編集後の最初の解析で、保持している平衡点で作り直し、再初期化と同じ値になる
 for str_call = ["get_sys", "simulate"]
     [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
     lqr = controller.local_LQR("lqr1");
@@ -338,15 +347,17 @@ for str_call = ["get_sys", "simulate"]
     DebugScript.helper.quiet(@() net.initialize);
     K60 = lqr.K;
     net.tab_parameter.base.Hz = 50;
-    K50 = lqr.K;
-    assert(norm(K50 - K60) > 1e-3 && ~net.s_edit.l_staleEquilibrium, "編集の時点で K を作り直す")
+    assert(isequal(lqr.K, K60) && lqr.s_edit.str_odefcn == "editted", "編集の時点では作り直さない")
     if str_call == "get_sys"
         net.get_sys();
     else
         net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
     end
-    assert(isequal(lqr.K, K50), "解析では作り直さない")
-    assert(~net.s_edit.l_staleEquilibrium && ~lqr.s_edit.l_staleOdefcn)
+    K50 = lqr.K;
+    assert(norm(K50 - K60) > 1e-3, "解析の開始時に K を作り直す")
+    assert(~net.s_edit.l_staleEquilibrium && lqr.s_edit.str_odefcn == "updated")
+    net.get_sys();
+    assert(isequal(lqr.K, K50), "最新のハンドルは作り直さない")
     u = ones(numel(gen.sv_x), 1);
     y_expected = lqr.fcn_y(0, [], [], [], u, struct("K",K50, "x0",gen.rv_Xequilibrium, "u0",gen.rv_Uequilibrium), 50);
     assert(norm(lqr.f_Y(0, [], [], [], u) - y_expected) < 1e-12, "f_Y が古い K を使っている")
@@ -387,15 +398,17 @@ net.tab_parameter.base.Hz = 60;
 net.get_sys();
 assert(norm(lqr.K - K60) < 1e-9 * norm(K60))
 
-% Hz を変えると設計できないときは警告し、他の層は新しい Hz にして、initialize を促す
+% Hz を変えると設計できないときは、解析の開始時に警告し、他の層は新しい Hz にして、initialize を促す
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
 last = net.a_Bus{end}.a_Component{1};
 lqr = controller.local_LQR("lqr1");
 gen.add_local_controller(lqr);
 DebugScript.helper.quiet(@() net.initialize);
 K60 = lqr.K;
+net.tab_parameter.base.Hz = 0;
+assert(~net.s_edit.l_staleEquilibrium, "編集の時点では設計しない")
 lastwarn("");
-evalc("net.tab_parameter.base.Hz = 0;");
+assert_stale_error(@() net.get_sys(), str_staleID)
 id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:local_LQR:RedesignFailed" && isequal(lqr.K, K60))
 assert(DebugScript.helper.handle_Hz(last) == 0 && net.s_edit.l_staleEquilibrium)
@@ -409,13 +422,14 @@ lqr = controller.local_LQR("lqr1");
 gen50.add_local_controller(lqr);
 DebugScript.helper.quiet(@() net50.initialize);
 gen50.remove_local_controller(lqr.str_tag);
-assert(lqr.r_Hz == GUILDA.config("Model","Hz"))
+assert(lqr.get_Hz() == GUILDA.config("Model","Hz") && lqr.s_edit.str_odefcn == "editted")
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
 gen.add_local_controller(lqr);          % 未初期化の系統: 設計しない
-assert(lqr.r_Hz == net.r_Hz && lqr.s_edit.l_staleOdefcn == false)
+assert(lqr.get_Hz() == net.get_Hz() && lqr.s_edit.str_odefcn == "editted")
 DebugScript.helper.quiet(@() net.initialize);
 K = lqr.K;
 net.tab_parameter.base.Hz = 50;
+net.get_sys();
 assert(norm(lqr.K - K) > 1e-3)
 
 
@@ -439,7 +453,7 @@ for str_layer = ["component", "bus", "network"]
         case "network",   net.get_sys();
     end
     assert(norm(lqr.K - lqr_ref.K) < 1e-6 * norm(lqr_ref.K), str_layer + ": K")
-    assert(~lqr.s_edit.l_staleOdefcn && ~net.s_edit.l_staleEquilibrium, str_layer)
+    assert(lqr.s_edit.str_odefcn == "updated" && ~net.s_edit.l_staleEquilibrium, str_layer)
     s = gen.get_sys();  s_ref = gen_ref.get_sys();
     assert(norm(s.A - s_ref.A, 1) < 1e-6 * norm(s_ref.A, 1) && norm(s.B - s_ref.B, 1) < 1e-6 * norm(s_ref.B, 1), str_layer + ": 機器のモデル")
     assert(isequal(s.StateName, s_ref.StateName) && isequal(s.InputName, s_ref.InputName), str_layer + ": 名前")
@@ -451,20 +465,61 @@ end
 
 
 %% Components and controllers use the network Hz when attached
-% 系統の外で作った制御器は GUILDA.config の Hz、系統に付けると系統の Hz になる
+% 系統の外で作った制御器は GUILDA.config の Hz、系統に付けると系統の Hz になる。
+% ハンドルは作った直後には無く ("unset")、最初の解析で系統の Hz で作る
 net = PowerNetwork();
 net.tab_parameter.base.Hz = 50;
 net.add_bus("V",1.0);
 gen = net.a_Bus{1}.add_component("gen-1axis");
-assert(gen.r_Hz == 50)
+assert(gen.get_Hz() == 50 && gen.s_edit.str_odefcn == "unset")
 avr = controller.avr.AVR_ST1("avr1");
-assert(avr.r_Hz == GUILDA.config("Model","Hz"))
+assert(avr.get_Hz() == GUILDA.config("Model","Hz") && avr.s_edit.str_odefcn == "unset")
 gen.add_local_controller(avr);
-assert(avr.r_Hz == 50 && ~avr.s_edit.l_staleOdefcn)
+assert(avr.get_Hz() == 50 && avr.s_edit.str_odefcn == "unset")
+assert_stale_error(@() gen.get_sys(), str_staleID)    % 未初期化でも、確認の前にハンドルを作る
+assert(gen.s_edit.str_odefcn == "updated" && avr.s_edit.str_odefcn == "updated")
+assert(DebugScript.helper.handle_Hz(avr) == 50)
 x = zeros(numel(gen.sv_x),1);  x(gen.sv_x == "omega") = 0.01;
 para = gen.tab_parameter.dynamics{:, gen.sv_para};
 V = [1;0];  I = [0.5;0];  u = zeros(numel(gen.sv_u),1);
 assert(norm(gen.f_dx(0,x,V,I,u) - gen.fcn_dx(0,x,V,I,u,para,50)) < 1e-12)
+
+
+%% Handles are built at the first analysis
+% 作った直後は "unset"、initialize の後は "updated"。取り付けると部分木 (機器と入れ子の制御器) が "editted" になる
+net  = DebugScript.helper.build_ieee14();
+comp = net.a_Bus{1}.a_Component{1};
+avr  = controller.avr.AVR_ST1("avr1");
+pss  = controller.pss.PSS1("pss1");
+assert(avr.s_edit.str_odefcn == "unset" && isempty(avr.f_dx))
+comp.add_local_controller(avr, pss);
+a_model = {comp, avr, pss};
+assert(avr.s_edit.str_odefcn == "unset" && pss.s_edit.str_odefcn == "unset")
+DebugScript.helper.quiet(@() net.initialize);
+assert(all(cellfun(@(m) m.s_edit.str_odefcn == "updated", a_model)))
+
+% 母線から外すと、機器と入れ子の制御器が古くなる (Hz を読み直すため)
+net.a_Bus{1}.remove_component(string(comp));
+assert(all(cellfun(@(m) m.s_edit.str_odefcn == "editted", a_model)))
+assert(net.a_Bus{2}.a_Component{1}.s_edit.str_odefcn == "updated", "他の機器は古くならない")
+% 制御器を付け替えると、その制御器 (と入れ子の制御器) が古くなり、付け先の系統の Hz で次の解析時に作る
+[net50, gen50] = DebugScript.helper.build_3bus("gen-1axis");
+net50.tab_parameter.base.Hz = 50;
+comp.remove_local_controller(avr.str_tag, RemoveNested=true);
+gen50.add_local_controller(avr);
+assert(avr.s_edit.str_odefcn == "editted" && gen50.s_edit.str_odefcn == "unset")
+assert_stale_error(@() gen50.get_sys(), str_staleID)
+assert(avr.s_edit.str_odefcn == "updated" && DebugScript.helper.handle_Hz(avr) == 50)
+
+% 系統に属さない機器を直接使う: get_sys と validate がハンドルを作る
+stub = DebugScript.helper.HessianStub();
+assert(stub.s_edit.str_odefcn == "unset")
+sys = stub.get_sys([1;2], [1;0], [0.5;0], 0);
+assert(stub.s_edit.str_odefcn == "updated" && isequal(size(sys.A), [2 2]))
+assert(DebugScript.helper.handle_Hz(stub) == GUILDA.config("Model","Hz"))
+stub = DebugScript.helper.HessianStub();
+flag = stub.validate(false);
+assert(isstruct(flag) && isfield(flag, "contract"))
 
 
 %% Deprecated component Hz forms still work and warn once
@@ -494,9 +549,12 @@ lastwarn("");
 evalc("comp.tab_parameter.base.Hz = 50;");
 id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:Deprecated:ComponentBaseHzSet")
-assert(net.tab_parameter.base.Hz == 50 && other.r_Hz == 50)
-assert(DebugScript.helper.handle_Hz(comp) == 50 && DebugScript.helper.handle_Hz(other) == 50 && ~net.s_edit.l_staleEquilibrium)
+assert(net.tab_parameter.base.Hz == 50 && other.get_Hz() == 50)
+assert(comp.s_edit.str_odefcn == "editted" && other.s_edit.str_odefcn == "editted" && ~net.s_edit.l_staleEquilibrium)
+net.get_sys();
+assert(DebugScript.helper.handle_Hz(comp) == 50 && DebugScript.helper.handle_Hz(other) == 50)
 evalc("comp.para_base.Hz = 55;");
+net.get_sys();
 assert(net.tab_parameter.base.Hz == 55 && DebugScript.helper.handle_Hz(comp) == 55)
 
 
