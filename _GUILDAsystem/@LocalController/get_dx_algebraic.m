@@ -19,9 +19,13 @@ function [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, Ii, obs, DAEvec)
     rv_U(lv_X) = obs.x(obj.iv_obsX(lv_X));
 
     if obj.l_hasController
-        a_LC = obj.a_LocalController{1};
-
-        [DAEvec, y_LC] = get_dx_algebraic(a_LC, t, x, Vi, Ii, obs, DAEvec);    
+        % y_LC: the outputs of the nested controllers, stacked in order (iv_odeYtoU)
+        a_LC = obj.a_LocalController;
+        [DAEvec, y_LC] = get_dx_algebraic(a_LC{1}, t, x, Vi, Ii, obs, DAEvec);
+        for k = 2:numel(a_LC)
+            [DAEvec, y_k] = get_dx_algebraic(a_LC{k}, t, x, Vi, Ii, obs, DAEvec);
+            y_LC = [y_LC; y_k]; %#ok<AGROW>
+        end
         
         lv_U2Y = obj.lv_odeUfromLC;
         rv_U(lv_U2Y) = y_LC(obj.iv_odeYtoU(lv_U2Y));        

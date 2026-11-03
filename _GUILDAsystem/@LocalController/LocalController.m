@@ -1,5 +1,5 @@
 classdef LocalController < PowerSystemModel
-% Abstract class of a controller attached to one component, such as an AVR, a PSS or an LQR.
+% Abstract class of a controller attached to one component, such as an AVR, a PSS, a governor or an LQR.
 %
 % A local controller is a dynamic model with states x, inputs u and outputs y.
 % It observes the component it is attached to (directly, or through the controllers
@@ -14,7 +14,9 @@ classdef LocalController < PowerSystemModel
 %
 % Subclasses in the `controller` package define the static model functions (`fcn_dx`,
 % `fcn_y`, `fcn_Mass`), their Jacobians and the variable names. Controllers are attached
-% with `Component.add_local_controller`.
+% with `Component.add_local_controller`: the key says where (an "avr" or "local"
+% controller and a "governor" on the component, a "pss" under the AVR).
+% The two top-level controllers of a component drive different inputs.
 %
 % <@Examples>
 % ```matlab
@@ -27,11 +29,11 @@ classdef LocalController < PowerSystemModel
 % avr.rv_Xequilibrium
 % ```
 %
-% See also Component.add_local_controller, controller.avr.AVR_ST1, controller.pss.PSS1, controller.local_LQR
+% See also Component.add_local_controller, controller.avr.AVR_ST1, controller.pss.PSS1, controller.governor.IEEJ_LPT1, controller.local_LQR
 
 %% Abstract properties/methods    
     properties(Abstract, SetAccess=protected, Hidden)
-        key      (1,1) string   % Kind of controller: "avr", "pss" or "local" (attached in the place of an AVR).
+        key      (1,1) string   % Kind of controller: "avr", "pss", "local" (attached in the place of an AVR) or "governor" (beside it).
         sv_x    (:,1) string    % Names of the states.
         sv_u    (:,1) string    % Names of the inputs.
         sv_y    (:,1) string    % Names of the outputs.
@@ -85,8 +87,8 @@ classdef LocalController < PowerSystemModel
         iv_odeX  = zeros(0,1);
         iv_odeU  = zeros(0,1);
         iv_odeY  = zeros(0,1);
-        lv_odeUfromLC = false(0,1);            % Inputs driven by an output of the nested controller.
-        iv_odeYtoU    = zeros(0,1);            % Index in sv_y of the nested controller of each such input.
+        lv_odeUfromLC = false(0,1);            % Inputs driven by an output of a nested controller.
+        iv_odeYtoU    = zeros(0,1);            % Index of each such input in the outputs of the nested controllers, stacked in order.
 
         rv_Xoffset = 0
         rv_Uoffset = @(t) 0
@@ -144,6 +146,16 @@ classdef LocalController < PowerSystemModel
     end    
 
 %% Methods    
+    methods (Hidden)
+        function sv = driven_inputs(obj, comp) %#ok<INUSD>
+            % Names of the inputs of the component comp that the controller drives once
+            % attached to it (Component.add_local_controller checks them before the
+            % attachment). sv_y by default; a controller whose outputs follow the component
+            % (e.g. controller.local_LQR) overrides this.
+            sv = obj.sv_y;
+        end
+    end
+
     methods (Access={?Component,?LocalController})
         function add_local_controller(obj,a_Controller)
             % Attach a nested controller (the PSS under an AVR; Component.add_local_controller).

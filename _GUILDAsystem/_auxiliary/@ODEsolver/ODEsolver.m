@@ -441,24 +441,9 @@ classdef (Sealed = true) ODEsolver < auxiliary
                 a_comp = a_bus{i}.a_Component;
 
                 for j=1:numel(a_comp)                    
+                    % The component, then its local controllers depth first (get_variable_map)
                     set_idx(a_comp{j});                                                                            
-
-                    if ~isempty(a_comp{j}.a_LocalController)
-                        a_LC1 = a_comp{j}.a_LocalController{1};
-                        set_idx(a_LC1);                                                
-
-                        % iv_odeY(k): the input driven by the output sv_y(k), by name
-                        [~, iv_y] = ismember(a_LC1.sv_y, a_comp{j}.sv_u);
-                        a_LC1.iv_odeY = a_comp{j}.iv_odeU(iv_y);
-
-                        if ~isempty(a_LC1.a_LocalController)
-                            a_LC2 = a_LC1.a_LocalController{1};
-                            set_idx(a_LC2);                                      
-
-                            [~, iv_y] = ismember(a_LC2.sv_y, a_LC1.sv_u);
-                            a_LC2.iv_odeY = a_LC1.iv_odeU(iv_y);
-                        end
-                    end                    
+                    set_idx_controllers(a_comp{j});
                 end
             end
 
@@ -487,10 +472,24 @@ classdef (Sealed = true) ODEsolver < auxiliary
                 idx_TGT = idx_TGT + 2;                
             end
 
+            function set_idx_controllers(parent)
+                % Each controller under parent and the controllers nested in it, depth first
+                for k_con = 1:numel(parent.a_LocalController)
+                    con = parent.a_LocalController{k_con};
+                    set_idx(con);
+                    % iv_odeY(k): the input of the parent driven by the output sv_y(k), by name
+                    [~, iv_y] = ismember(con.sv_y, parent.sv_u);
+                    con.iv_odeY = parent.iv_odeU(iv_y);
+                    set_idx_controllers(con);
+                end
+            end
+
             function set_idx(OBJ)
-                % The inputs driven by the outputs of the nested controller, by name
+                % The inputs driven by the outputs of the controllers under OBJ, by name
+                % (their outputs stacked in the order of a_LocalController; disjoint names)
                 if OBJ.l_hasController
-                    [OBJ.lv_odeUfromLC, OBJ.iv_odeYtoU] = ismember(OBJ.sv_u, OBJ.a_LocalController{1}.sv_y);
+                    c_y = cellfun(@(c) reshape(string(c.sv_y),[],1), OBJ.a_LocalController, 'UniformOutput', false);
+                    [OBJ.lv_odeUfromLC, OBJ.iv_odeYtoU] = ismember(OBJ.sv_u, vertcat(strings(0,1), c_y{:}));
                 end
 
                 nx = length(OBJ.sv_x);
@@ -751,74 +750,45 @@ classdef (Sealed = true) ODEsolver < auxiliary
                     rh = [idx_X; idx_U; idx_V; idx_I];
                     rv = [idx_X; idx_V];
                     
-                    if ~isempty(cj.a_LocalController)
-                        a_LC1 = cj.a_LocalController{1};                                            
+                    % The local controllers of the component, depth first (e.g. an AVR,
+                    % its PSS, then a governor)
+                    c_LC = controllers_depth_first(cj);
+                    for k = 1:numel(c_LC)
+                        con = c_LC{k};
 
-                        if ~isempty(a_LC1.a_LocalController)
-                            a_LC2 = a_LC1.a_LocalController{1};
-
-                            idx_X_LC2 = a_LC2.iv_odeX;
-                            idx_U_LC2 = a_LC2.iv_odeU;
-                            idx_Y_LC2 = a_LC2.iv_odeY;
-
-                            xi_LC2 = x(idx_X_LC2);                            
-                            ui_LC2 = x(idx_U_LC2);                                                        
-
-                            % [Axx_LC2, Bxu_LC2, Bxv_LC2, Bxi_LC2, Cyx_LC2, Dyu_LC2, Dyv_LC2, Dyi_LC2, ~, ~, ~, ~] = getSubJacobian(a_LC2, t, xi_LC2, Vi, Ii, ui_LC2);                                                                            
-                            % [Cix, Div, Dii, Diu] = cj.f_JacobiI(t,xi,Vi,Ii,ui);         
-                            [Axx_LC2, Bxv_LC2, Bxi_LC2, Bxu_LC2] = a_LC2.f_JacobiDx(t,xi_LC2,Vi,Ii,ui_LC2);
-                            [Cyx_LC2, Dyv_LC2, Dyi_LC2, Dyu_LC2] = a_LC2.f_JacobiY(t,xi_LC2,Vi,Ii,ui_LC2);                                              
-                            
-                            rh_LC2 = [idx_X_LC2; idx_U_LC2; idx_V; idx_I];
-                            rv_LC2 = [idx_X_LC2; idx_Y_LC2];
-
-                            odeJac(rv_LC2, rh_LC2) = odeJac(rv_LC2, rh_LC2) + [ Axx_LC2,  Bxu_LC2,  Bxv_LC2,  Bxi_LC2; ...
-                                                                               -Cyx_LC2, -Dyu_LC2, -Dyv_LC2, -Dyi_LC2];                            
-
-                            
-                            odeJac(idx_U_LC2,idx_U_LC2) = odeJac(idx_U_LC2,idx_U_LC2) + eye(length(idx_U_LC2));
-                            
-                        end 
-
-                        % Inputs of the controllers read on the component by name (iv_obsY:
+                        % Inputs of the controller read on the component by name (iv_obsY:
                         % its outputs, iv_obsX: its states)
-                        c_LC = [{a_LC1}; a_LC1.a_LocalController(1:min(1,end))];
-                        for k = 1:numel(c_LC)
-                            con = c_LC{k};
-                            lv_Y = con.iv_obsY > 0;
-                            if any(lv_Y)
-                                iv_y = con.iv_obsY(lv_Y);
-                                odeJac(con.iv_odeU(lv_Y), rh) = odeJac(con.iv_odeU(lv_Y), rh) ...
-                                                              + [-Cyx(iv_y,:), -Dyu(iv_y,:), -Dyv(iv_y,:), -Dyi(iv_y,:)];
-                            end
-                            for m = reshape(find(con.iv_obsX > 0), 1, [])
-                                idx_m = con.iv_odeU(m);
-                                idx_x = idx_X(con.iv_obsX(m));
-                                odeJac(idx_m, idx_x) = odeJac(idx_m, idx_x) - 1;
-                            end
+                        lv_Y = con.iv_obsY > 0;
+                        if any(lv_Y)
+                            iv_y = con.iv_obsY(lv_Y);
+                            odeJac(con.iv_odeU(lv_Y), rh) = odeJac(con.iv_odeU(lv_Y), rh) ...
+                                                          + [-Cyx(iv_y,:), -Dyu(iv_y,:), -Dyv(iv_y,:), -Dyi(iv_y,:)];
+                        end
+                        for m = reshape(find(con.iv_obsX > 0), 1, [])
+                            idx_m = con.iv_odeU(m);
+                            idx_x = idx_X(con.iv_obsX(m));
+                            odeJac(idx_m, idx_x) = odeJac(idx_m, idx_x) - 1;
                         end
 
-                        idx_X_LC1 = a_LC1.iv_odeX;
-                        idx_U_LC1 = a_LC1.iv_odeU;
-                        idx_Y_LC1 = a_LC1.iv_odeY;
+                        idx_X_LC = con.iv_odeX;
+                        idx_U_LC = con.iv_odeU;
+                        idx_Y_LC = con.iv_odeY;
 
+                        xi_LC = x(idx_X_LC);
+                        ui_LC = x(idx_U_LC);
 
-                        xi_LC1 = x(idx_X_LC1);
-                        ui_LC1 = x(idx_U_LC1);                                      
+                        [Axx_LC, Bxv_LC, Bxi_LC, Bxu_LC] = con.f_JacobiDx(t,xi_LC,Vi,Ii,ui_LC);
+                        [Cyx_LC, Dyv_LC, Dyi_LC, Dyu_LC] = con.f_JacobiY(t,xi_LC,Vi,Ii,ui_LC);
 
-                        % [Axx_LC1, Bxu_LC1, Bxv_LC1, Bxi_LC1, Cyx_LC1, Dyu_LC1, Dyv_LC1, Dyi_LC1, ~, ~, ~, ~] = getSubJacobian(a_LC1, t, xi_LC1, Vi, Ii, ui_LC1);                                                
-                        [Axx_LC1, Bxv_LC1, Bxi_LC1, Bxu_LC1] = a_LC1.f_JacobiDx(t,xi_LC1,Vi,Ii,ui_LC1);
-                        [Cyx_LC1, Dyv_LC1, Dyi_LC1, Dyu_LC1] = a_LC1.f_JacobiY(t,xi_LC1,Vi,Ii,ui_LC1);                                              
-                        
-                        rh_LC1 = [idx_X_LC1; idx_U_LC1; idx_V; idx_I];
-                        rv_LC1 = [idx_X_LC1; idx_Y_LC1];
+                        % Its outputs drive the inputs of its parent (rows idx_Y_LC)
+                        rh_LC = [idx_X_LC; idx_U_LC; idx_V; idx_I];
+                        rv_LC = [idx_X_LC; idx_Y_LC];
 
-                        odeJac(rv_LC1, rh_LC1) = odeJac(rv_LC1, rh_LC1) + [ Axx_LC1,  Bxu_LC1,  Bxv_LC1,  Bxi_LC1; ...                                                                                   
-                                                                           -Cyx_LC1, -Dyu_LC1, -Dyv_LC1, -Dyi_LC1];
+                        odeJac(rv_LC, rh_LC) = odeJac(rv_LC, rh_LC) + [ Axx_LC,  Bxu_LC,  Bxv_LC,  Bxi_LC; ...
+                                                                       -Cyx_LC, -Dyu_LC, -Dyv_LC, -Dyi_LC];
 
-                        odeJac(idx_U_LC1,idx_U_LC1) = odeJac(idx_U_LC1,idx_U_LC1) + eye(length(idx_U_LC1));
-                        
-                    end                                                                                                                                    
+                        odeJac(idx_U_LC,idx_U_LC) = odeJac(idx_U_LC,idx_U_LC) + eye(length(idx_U_LC));
+                    end
             
                     % A tripped unit gives no current (see get_dx_algebraic)
                     l_c = double(cj.l_isConnect);
@@ -864,22 +834,12 @@ classdef (Sealed = true) ODEsolver < auxiliary
                         b_idx = a_bus{i}.iv_odeX;
                         x0(c_idx) = a_Comp{j}.get_equilibrium([1,1j]*x0(b_idx), 0, 0, 0);                         
                         
-                        if ~isempty(a_Comp{j}.a_LocalController)
-                            a_LC1 = a_Comp{j}.a_LocalController{1};
-
-                            v_LC1 = a_LC1.iv_odeX;                            
-                            x0(v_LC1) = a_LC1.rv_Xequilibrium;                         
-
-                            M0(v_LC1, v_LC1) = tools.read_mass(a_LC1);
-                            
-                            if ~isempty(a_LC1.a_LocalController)
-                                a_LC2 = a_LC1.a_LocalController{1};
-
-                                v_LC2 = a_LC2.iv_odeX;                                
-                                x0(v_LC2) = a_LC2.rv_Xequilibrium;                         
-
-                                M0(v_LC2, v_LC2) = tools.read_mass(a_LC2);
-                            end
+                        % Its local controllers restart from their equilibrium too
+                        c_LC = controllers_depth_first(a_Comp{j});
+                        for k = 1:numel(c_LC)
+                            v_LC = c_LC{k}.iv_odeX;
+                            x0(v_LC) = c_LC{k}.rv_Xequilibrium;
+                            M0(v_LC, v_LC) = tools.read_mass(c_LC{k});
                         end
 
                         M0(c_idx, c_idx) = tools.read_mass(a_Comp{j});
@@ -905,6 +865,16 @@ classdef (Sealed = true) ODEsolver < auxiliary
                 end
             end
         end
+    end
+end
+
+function c_LC = controllers_depth_first(parent)
+% The local controllers under parent and the controllers nested in them, depth first
+% (the order of the state vector, see initialize_index)
+    c_LC = cell(0,1);
+    for k = 1:numel(parent.a_LocalController)
+        con  = parent.a_LocalController{k};
+        c_LC = [c_LC; {con}; controllers_depth_first(con)]; %#ok<AGROW>
     end
 end
 

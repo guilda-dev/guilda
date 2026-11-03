@@ -13,9 +13,9 @@ str_out = "GUILDA:Component:ControllerOutput";
 
 %% An unknown key stops with an error instead of attaching nothing
 [net, gen] = fresh_network();
-ME = caught(@() gen.add_local_controller(DebugScript.helper.OutputStub("governor", "Pmech")));
+ME = caught(@() gen.add_local_controller(DebugScript.helper.OutputStub("turbine", "Pmech")));
 assert(DebugScript.helper.msg_id(ME) == str_key)
-assert(contains(ME.message, "governor") && contains(ME.message, "avr") && contains(ME.message, "local"))
+assert(contains(ME.message, "turbine") && contains(ME.message, "avr") && contains(ME.message, "governor"))
 assert(isempty(gen.a_LocalController))
 
 
