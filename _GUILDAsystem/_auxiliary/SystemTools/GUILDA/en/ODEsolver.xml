@@ -6,6 +6,7 @@
         <entry key="InitialConditionRelaxed">The initial condition of phase {0} (t = [{1}, {2}] s) could not keep the differential states, which moved by up to {3}: {4}</entry>
         <entry key="PhaseFailed">The simulation failed in phase {0} (t = [{1}, {2}] s): {3}</entry>
         <entry key="ForeignControlledUnit">The global controller ''{0}'' controls ''{1}'', which is not a component of the network ''{2}''.&#xA;Remove it with net.remove_global_controller(TAG) and build it again for the current components.</entry>
+        <entry key="OpenBranchIsland">Phase {0} (t = [{1}, {2}] s): the open branches {3} leave the buses {4} connected to no component, so their voltages are undetermined. Open branches so that every bus stays connected to a component, or remove those buses from the network.</entry>
         <entry key="NoPropName">This property does not exist.</entry>        
     </message>
 </rsccat>

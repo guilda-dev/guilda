@@ -3,7 +3,7 @@ function [result, flag, output] = simulate(obj, time, varargin)
 %
 % Time simulation of the network from its equilibrium: the DAE of the buses, components
 % and controllers is integrated over time, with the disturbances given as events
-% (ODEevent: bus faults, unit trips, state offsets, input changes). The settings are
+% (ODEevent: bus faults, unit trips, branch openings, state offsets, input changes). The settings are
 % the stored defaults of net.solver_ODE; Name-Value options after the events override them
 % for this call only (net.solver_ODE is not changed).
 % Accepted options are the names in ODEsolver.OptionMap plus Export; any other name

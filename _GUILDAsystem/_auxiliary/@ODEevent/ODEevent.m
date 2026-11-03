@@ -1,10 +1,17 @@
 classdef (Sealed = true) ODEevent < auxiliary
 % Disturbance event of a time simulation (net.simulate).
 %
-% An event names a time span and what happens during it: a bus fault, a unit trip, an
-% offset of the initial states, or an input added to a component. Give the events to
-% net.simulate; the simulation is split into phases where the set of active events does
-% not change. An event refers to the network it was created for.
+% An event names a time span and what happens during it: a bus fault, a unit trip, a
+% branch opening, an offset of the initial states, or an input added to a component. Give
+% the events to net.simulate; the simulation is split into phases where the set of active
+% events does not change. An event refers to the network it was created for.
+%
+% An opened branch (OpenBranch) is left out of the bus admittance matrix during the
+% event and is reconnected at t_end; a t_end at or after the end of the simulation keeps
+% it open. Opening branches so that a part of the network is left without any component
+% is an error (GUILDA:ODEsolver:OpenBranchIsland), as nothing sets its voltages. A part with
+% components is simulated as an island; a constant-power load cut off from all generators
+% usually makes the phase fail (flag = -1).
 %
 % <@Examples>
 % ```matlab
@@ -12,11 +19,12 @@ classdef (Sealed = true) ODEevent < auxiliary
 % net.initialize();
 % fault  = ODEevent("fault", net, "TimeSpan", [1, 1.05], "FaultBus", "B008");
 % trip   = ODEevent("trip",  net, "TimeSpan", [1, 2], "TripUnit", "SG1B002");
+% line   = ODEevent("open",  net, "TimeSpan", [1.05, 10], "OpenBranch", "EL003");  % stays open
 % offset = ODEevent("offset", net, "TimeSpan", 0, "OffsetUnit", "SG1B001", ...
 %                      "OffsetState", "delta", "OffsetValue", 0.1);
 % input  = ODEevent("input", net, "TimeSpan", [1, 1.5], "InputUnit", "SG1B002", ...
 %                      "InputName", ["Pmech"; "Vfield"], "InputValue", {0.05; @(t) 0.01*t});
-% result = net.simulate([0, 10], fault, input);
+% result = net.simulate([0, 10], fault, line, input);
 % ```
 %
 % See also ODEsolver, ODEresult, PowerNetwork.simulate
@@ -27,8 +35,9 @@ classdef (Sealed = true) ODEevent < auxiliary
 
     properties (Access=public) % Event
         % [s] Time span of the event: [t_start, t_end], or t_start alone.
-        % An offset (OffsetUnit) applies at t_start. A fault, trip or input lasts from t_start
-        % to t_end and needs t_start < t_end; t_start alone or [t, t] is an error for them.
+        % An offset (OffsetUnit) applies at t_start. A fault, trip, branch opening or input
+        % lasts from t_start to t_end and needs t_start < t_end; t_start alone or [t, t] is an
+        % error for them.
         % <@Type> double (1x1 or 1x2)
         TimeSpan    {mustBeRow, validateTimeSpanSize} = [0,10]
 
@@ -46,6 +55,10 @@ classdef (Sealed = true) ODEevent < auxiliary
 
         % Tags of the components or global controllers disconnected during the event.
         TripUnit    (:,1) string         
+
+        % Tags of the branches disconnected during the event (e.g. "EL012"; see string(net.a_Branch)).
+        % They are reconnected at t_end; a t_end at or after the end of the simulation keeps them open.
+        OpenBranch  (:,1) string
 
         % Tag of the component to which an input is added.
         InputUnit   (1,1) string
@@ -74,7 +87,7 @@ classdef (Sealed = true) ODEevent < auxiliary
         % Create an event for net.simulate.
         %
         % The Name-Value options are the public properties (TimeSpan, FaultBus, TripUnit,
-        % OffsetUnit, OffsetState, OffsetValue, InputUnit, InputName, InputValue).
+        % OpenBranch, OffsetUnit, OffsetState, OffsetValue, InputUnit, InputName, InputValue).
             arguments
                 tag (1,1) string % Name of the event, shown in the phase table.
                 net {mustBeA(net, 'PowerNetwork')} % Network the event belongs to.
@@ -414,8 +427,9 @@ classdef (Sealed = true) ODEevent < auxiliary
                 error(msg("GUILDA:ODEevent:InvalidTimeSpan", char(obj.str_tag), str_ts));
             end
 
-            % A fault, trip or input needs its end time; only an offset acts at one instant.
-            l_lasting = ~isempty(obj.FaultBus) || ~isempty(obj.TripUnit) || strlength(obj.InputUnit) > 0 ...
+            % A fault, trip, opening or input needs its end time; only an offset acts at one instant.
+            l_lasting = ~isempty(obj.FaultBus) || ~isempty(obj.TripUnit) || ~isempty(obj.OpenBranch) ...
+                || strlength(obj.InputUnit) > 0 ...
                 || ~isempty(obj.InputName) || ~isempty(obj.InputValue);
             if l_lasting && (isscalar(ts) || ts(1) == ts(2))
                 error(msg("GUILDA:ODEevent:ZeroLengthTimeSpan", char(obj.str_tag), mat2str(ts)));
@@ -426,6 +440,12 @@ classdef (Sealed = true) ODEevent < auxiliary
             lv_bad = ~ismember(obj.FaultBus, sv_bus);
             if any(lv_bad)
                 error(msg("GUILDA:ODEevent:UnknownFaultBus", char(obj.str_tag), char(join(obj.FaultBus(lv_bad), ", "))));
+            end
+
+            sv_br  = string(obj.odeNetwork.a_Branch);
+            lv_bad = ~ismember(obj.OpenBranch, sv_br);
+            if any(lv_bad)
+                error(msg("GUILDA:ODEevent:UnknownOpenBranch", char(obj.str_tag), char(join(obj.OpenBranch(lv_bad), ", "))));
             end
 
             a_comp = cellfun(@(b) b.a_Component, a_bus, 'UniformOutput', false);
