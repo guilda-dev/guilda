@@ -1,0 +1,56 @@
+Section,Case,Card,ReportBranch,FaultBus,Circuits,OpenBranch,FaultStart,FaultDuration,Report,ReportGenerator,ReportVerdict
+peak,peak-1cct-2101,2101,2101 (point A),B2101,1,EL003,1,0.07,1-swing,G1,unstable
+peak,peak-1cct-2102,2102,2102 (point B),B2103,1,EL005,1,0.07,N-swing(7s),G1,unstable
+peak,peak-1cct-2103,2103,2103,B2104,1,EL007,1,0.07,N-swing(7s),G1,unstable
+peak,peak-1cct-2104,2104,2104-2105,B2105,1,EL009,1,0.07,stable,,stable
+peak,peak-1cct-2107,2107,2107-2108 (point C),B2108,1,EL015,1,0.07,stable,,stable
+peak,peak-1cct-3105,3105,3105,B3120,1,EL049,1,0.07,stable,,stable
+peak,peak-1cct-3108,3108,3108,B3105,1,EL055,1,0.07,stable,,stable
+peak,peak-1cct-3109,3109,3109,B3114,1,EL057,1,0.07,stable,,stable
+peak,peak-1cct-3110,3110,3110,B3111,1,EL059,1,0.07,stable,,stable
+peak,peak-1cct-3124,3124,3124,B3122,1,EL087,1,0.07,stable,,stable
+peak,peak-1cct-3128,3128,3128,B3126,1,EL095,1,0.07,stable,,stable
+peak,peak-1cct-3129,3129,3129,B3123,1,EL097,1,0.07,stable,,stable
+peak,peak-1cct-3133,3133,3133,B3125,1,EL105,1,0.07,stable,,stable
+peak,peak-1cct-3134,3134,3134,B3126,1,EL107,1,0.07,stable,,stable
+peak,peak-2cct-2102,2102,2102 (point B),B2103,2,EL005 EL006,1,0.07,1-swing,G1,unstable
+peak,peak-2cct-2103,2103,2103,B2104,2,EL007 EL008,1,0.07,1-swing,G1+,unstable
+peak,peak-2cct-2104,2104,2104-2105,B2105,2,EL009 EL010,1,0.07,1-swing,G6+,unstable
+peak,peak-2cct-2107,2107,2107-2108 (point C),B2108,2,EL015 EL016,1,0.07,1-swing,G7+,unstable
+peak,peak-2cct-3104,3104,3104 (point D),B3105,2,EL047 EL048,1,0.07,N-swing(9s),G9+,unstable
+peak,peak-2cct-3105,3105,3105,B3120,2,EL049 EL050,1,0.07,stable,,stable
+peak,peak-2cct-3108,3108,3108,B3105,2,EL055 EL056,1,0.07,stable,,stable
+peak,peak-2cct-3109,3109,3109,B3114,2,EL057 EL058,1,0.07,stable,,stable
+peak,peak-2cct-3110,3110,3110,B3111,2,EL059 EL060,1,0.07,stable,,stable
+peak,peak-2cct-3112,3112,3112,B3110,2,EL063 EL064,1,0.07,1-swing,G17+,unstable
+peak,peak-2cct-3124,3124,3124,B3122,2,EL087 EL088,1,0.07,stable,,stable
+peak,peak-2cct-3128,3128,3128,B3126,2,EL095 EL096,1,0.07,stable,,stable
+peak,peak-2cct-3129,3129,3129,B3123,2,EL097 EL098,1,0.07,stable,,stable
+peak,peak-2cct-3133,3133,3133,B3125,2,EL105 EL106,1,0.07,stable,,stable
+peak,peak-2cct-3134,3134,3134,B3126,2,EL107 EL108,1,0.07,stable,,stable
+night,night-1cct-2103,2103,2103,B2104,1,EL007,1,0.07,1-swing,G1,unstable
+night,night-1cct-2104,2104,2104-2105,B2105,1,EL009,1,0.07,N-swing(6s),G1+,unstable
+night,night-1cct-3105,3105,3105,B3120,1,EL049,1,0.07,stable,,stable
+night,night-1cct-3108,3108,3108,B3105,1,EL055,1,0.07,stable,,stable
+night,night-1cct-3109,3109,3109,B3114,1,EL057,1,0.07,stable,,stable
+night,night-1cct-3110,3110,3110,B3111,1,EL059,1,0.07,stable,,stable
+night,night-1cct-3124,3124,3124,B3122,1,EL087,1,0.07,stable,,stable
+night,night-1cct-3128,3128,3128,B3126,1,EL095,1,0.07,stable,,stable
+night,night-1cct-3129,3129,3129,B3123,1,EL097,1,0.07,stable,,stable
+night,night-1cct-3133,3133,3133,B3125,1,EL105,1,0.07,stable,,stable
+night,night-1cct-3134,3134,3134,B3126,1,EL107,1,0.07,stable,,stable
+night,night-2cct-2102,2102,2102 (point B),B2103,2,EL005 EL006,1,0.07,1-swing,G1,unstable
+night,night-2cct-2103,2103,2103,B2104,2,EL007 EL008,1,0.07,1-swing,G1+,unstable
+night,night-2cct-2104,2104,2104-2105,B2105,2,EL009 EL010,1,0.07,1-swing,G5+,unstable
+night,night-2cct-2107,2107,2107-2108 (point C),B2108,2,EL015 EL016,1,0.07,1-swing,G1+,unstable
+night,night-2cct-3104,3104,3104 (point D),B3105,2,EL047 EL048,1,0.07,stable,,stable
+night,night-2cct-3105,3105,3105,B3120,2,EL049 EL050,1,0.07,stable,,stable
+night,night-2cct-3108,3108,3108,B3105,2,EL055 EL056,1,0.07,stable,,stable
+night,night-2cct-3109,3109,3109,B3114,2,EL057 EL058,1,0.07,stable,,stable
+night,night-2cct-3110,3110,3110,B3111,2,EL059 EL060,1,0.07,stable,,stable
+night,night-2cct-3112,3112,3112,B3110,2,EL063 EL064,1,0.07,1-swing,G17+,unstable
+night,night-2cct-3124,3124,3124,B3122,2,EL087 EL088,1,0.07,stable,,stable
+night,night-2cct-3128,3128,3128,B3126,2,EL095 EL096,1,0.07,stable,,stable
+night,night-2cct-3129,3129,3129,B3123,2,EL097 EL098,1,0.07,stable,,stable
+night,night-2cct-3133,3133,3133,B3125,2,EL105 EL106,1,0.07,stable,,stable
+night,night-2cct-3134,3134,3134,B3126,2,EL107 EL108,1,0.07,stable,,stable
