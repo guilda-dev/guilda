@@ -107,7 +107,8 @@ check_stop(net, "InitializeEquilibriumSize", "'agc'");
 
 %% The built-in networks are far below the threshold, with their controllers
 for str_net = ["IEEE9bus","IEEE14bus","IEEE14bus_lossless","IEEE14bus_NoTap","IEEE68bus", ...
-               "Ishizaki6Bus","TEST31bus","Txt3Bus","Tutorial3bus"]
+               "Ishizaki6Bus","TEST31bus","Txt3Bus","Tutorial3bus", ...
+               "IEEJ_EAST10","IEEJ_EAST30","IEEJ_WEST10","IEEJ_WEST30"]
     net = network.(str_net)();
     str_out = evalc("net.initialize;");
     assert(~contains(str_out, "do not hold"), str_net)
