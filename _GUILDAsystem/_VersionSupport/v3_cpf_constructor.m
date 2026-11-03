@@ -4,7 +4,7 @@ function v3_cpf_constructor(c_args)
 % v3 compatibility hook of the CPFsolver constructor. In v3,
 % ContinuationPowerFlow(net, Name, Value) built a solver that held the network and its
 % result; in v4 the solver holds defaults only and is created as CPFsolver().
-% Any argument stops with GUILDA:Deprecated:ContinuationPowerFlowConstructor, which names
+% Any argument stops with GUILDA:v3_cpf_constructor:ContinuationPowerFlowConstructor, which names
 % net.calculate_continuation_powerflow and the wrapper Continuation_Power_Flow(net, opt).
 %
 % Name-Value options:

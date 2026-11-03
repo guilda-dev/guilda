@@ -41,7 +41,8 @@ function sys = get_ss(obj, Algorithm, opt)
 %   as in the OutputName of the kinds above.
 %
 % Input takes "u" (all inputs) or Labels of the inputs, and the inputs follow the given
-% order. An unknown name stops with GUILDA:LTIresult:UnknownChannel.
+% order. An unknown name stops with GUILDA:LTIresult:UnknownInput; an unknown Output name
+% stops with GUILDA:LTIresult:UnknownOutput.
 %
 % A result with flag false (output.str_issue) stops with an error that repeats output.message:
 % GUILDA:LTIresult:NotFinite for every algorithm, and GUILDA:LTIresult:SingularAvv

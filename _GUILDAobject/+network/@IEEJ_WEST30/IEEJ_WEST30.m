@@ -61,7 +61,7 @@ classdef IEEJ_WEST30 < PowerNetwork
 %
 % - The bus columns `V0`, `Varg0` hold the power-flow solution as the initial guess. From
 %   the flat start the bus current residual stays near 1e-9 at night, and simulate then
-%   stops at the first phase with GUILDA:odeSimulator:UnfeasibleDAE.
+%   stops at the first phase with GUILDA:ODEsolver:UnfeasibleDAE.
 %
 % The power flow gives the generation and load totals of table 4.10 of the report and
 % agrees with its flow diagrams within their rounding, in both sections.

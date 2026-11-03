@@ -21,7 +21,8 @@ function net = import_matpower(mpc, opt)
 %             HP = c2*baseMVA^2, fP = c1*baseMVA, startup/shutdown = STARTUP/SHUTDOWN;
 %             rows ng+1:2*ng give HQ and fQ. A constant c0 is dropped (warning
 %             GUILDA:import_matpower:ConstantCost). Piecewise-linear costs (MODEL = 1)
-%             and higher degrees stop with GUILDA:import_matpower:Unsupported.
+%             and higher degrees stop with GUILDA:import_matpower:GencostPiecewise and
+%             GencostDegree.
 %             Without gencost the costs are the add_component defaults.
 %   branch  : each in-service row (BR_STATUS > 0) is a "pi" line when TAP is 0 or 1 and
 %             SHIFT is 0, else a "pi_transformer" (tap on the from side, as in MATPOWER):

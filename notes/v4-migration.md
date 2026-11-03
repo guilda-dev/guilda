@@ -255,7 +255,7 @@ Outputs of several controllers on the same input add up. Scalar `alpha` /
   reads that output, otherwise a name in `sv_x` reads that state (the
   output wins when both exist). The reserved inputs `"Xall"` / `"Yall"`
   read all states / all outputs; the old names `"X"` / `"Y"` stop with
-  `GUILDA:LocalController:ReservedInput`. An input named like an output of
+  `GUILDA:LocalController:ReservedInputNames`. An input named like an output of
   a nested controller (e.g. `Vpss`) reads that output. AVR and PSS responses
   are unchanged.
 - **Inputs driven by a local controller** (silent change, see the box at the
@@ -461,8 +461,8 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
     P/Q bounds and the fixed load P/Q, bus voltage bounds, branch limits,
     the reference angle on PowerNetwork); the model equations and the bus
     balance stay.
-  - Bad handles stop with `GUILDA:opffcn:InvalidCost`,
-    `InvalidConstraint`, `DuplicateName` or `HandleError`. Branch terms are
+  - Bad handles stop with `GUILDA:apply:InvalidCost`,
+    `InvalidConstraint` or `DuplicateName`, or with `GUILDA:opffcn:HandleError`. Branch terms are
     not used in ELD (no branch variables).
   - An OPF edit: logged (tag `OPF`); it does not make the equilibrium stale.
 - **Default load cost is 0** (silent change in `r_cost`). `add_component`
@@ -517,7 +517,7 @@ Option names:
   | Old form | ID | Behavior |
   |----------|----|----------|
   | `Continuation_Power_Flow(net, opt)` | `GUILDA:Deprecated:ContinuationPowerFlowFunction` | warning; returns a `ContinuationPowerFlowV3` with the v3 properties, `solve` and `CPF_Result` (`.x_sol`, `.x_prd`, `.result` = the `CPFresult`); `net.solver_CPF` is not changed |
-  | `CPFsolver(net, Name, Value)` | `GUILDA:Deprecated:ContinuationPowerFlowConstructor` | **error** |
+  | `CPFsolver(net, Name, Value)` | `GUILDA:v3_cpf_constructor:ContinuationPowerFlowConstructor` | **error** |
 
   `sol` / `sol_pred` of the wrapper are in the full variable layout (as
   `CPF_Result.x_sol`).
@@ -734,7 +734,7 @@ Option names:
   ignored. The `I2V` outputs `y` now account for V being an output, and
   the outputs of a component with controllers keep their tags.
 - Removed: `LTIsolver(net, NonUnit, Name, Value)` stops with
-  `GUILDA:Deprecated:OdeLinearizerConstructor` (error); `LTIsolver()`
+  `GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor` (error); `LTIsolver()`
   takes no arguments.
 
 ### 1.13 Network files (CSV, MATPOWER)
@@ -968,7 +968,7 @@ there.
   its component by the names of its inputs (an output of that name, else a
   state; `"Xall"` / `"Yall"` for all states / outputs, see 1.6); a class
   that uses the reserved names overrides `set_inputs`, otherwise it stops
-  with `GUILDA:LocalController:ReservedInput`. Global controllers are
+  with `GUILDA:LocalController:ReservedInputNoOverride`. Global controllers are
   coupled to components by port names (`sv_u` / `sv_y`).
 - **Inputs driven by a controller.** A controller output does not overwrite
   the component input in `simulate`: an input event or a global controller on
@@ -982,7 +982,7 @@ there.
 - **モデルへの要求の明文化。**
   - `get_equilibrium` は常に `c_V`, `c_I`, `r_P`, `r_Q` の 4 引数で呼ばれます。解列のときは `c_I = r_P = r_Q = 0` です。`nargin` で分岐しているモデルは 4 引数で動くように直してください。`LocalController` と `GlobalController` でも `get_equilibrium` は `Abstract` として宣言されています。
   - `fcn_Mass` は定数です。`simulate` は `t, x, V, I, u` を空にして呼びます。これらを使う `fcn_Mass` は `GUILDA:read_mass:NotConstant` で止まり、機器や制御器のタグを示します。
-  - `getCompPQ(obj, x, V, u, param)` は `UseInternalState=true` の連続潮流でだけ必要です。ない機器は `GUILDA:CPFsolver:MissingGetCompPQ` で止まり、タグを示します。
+  - `getCompPQ(obj, x, V, u, param)` は `UseInternalState=true` の連続潮流でだけ必要です。ない機器は `GUILDA:build_layout:MissingGetCompPQ` で止まり、タグを示します。
 - **コンストラクタのエラー。** 発電機の基底クラスは次を検査します。表の列の不足は `GUILDA:Component:MissingParameter`(不足する列と参照先を示す)、不明なパラメータ名は `GUILDA:Component:UnknownParameter`(使える名前を示す)で止まります。発電機に与えた `Q` は潮流が決めるので無視され、`GUILDA:Component:GeneratorQIgnored` で警告します(`Q` を省略するか `NaN` にしてください)。追加の列は受け付けます。コンストラクタを持たない負荷のサブクラスも動きます。
 - **`validate` の修復。** `comp.validate` と `con.validate` は現行の API で動きます。従来の表に、次の 2 つが加わりました。
   - `flag.contract`: 各検査の状態(`PASS`, `FAIL`, `INFO`)です。壊れたモデルでも止まらず `FAIL` として報告し、計算できない値は NaN にします。寸法、`fcn_I` が複素スカラーか、`fcn_Mass` が定数か、`I` に依存しないかなどを見ます。
@@ -1037,7 +1037,7 @@ and simulation results in the order of `get_variable_map`. Open follow-ups
 |----------|----|----------|
 | read `comp.tab_parameter.base.Hz` / `comp.para_base.Hz` | `GUILDA:Deprecated:ComponentBaseHz` | warning; returns the network Hz (`ComponentBaseView`) |
 | set `comp.tab_parameter.base.Hz` / `comp.para_base.Hz` | `GUILDA:Deprecated:ComponentBaseHzSet` | warning; sets `net.tab_parameter.base.Hz` for the **whole network** |
-| set it on a component without a network | `GUILDA:Deprecated:ComponentBaseHzNoNetwork` | error |
+| set it on a component without a network | `GUILDA:ComponentBaseView:ComponentBaseHzNoNetwork` | error |
 | assign a non-view value to `comp.para_base` | `GUILDA:Deprecated:ComponentBaseHz` | error |
 | `net.add_bus(..., "baseMVA", x)` with x = system base | `GUILDA:Deprecated:BusBaseMVA` | warning; ignored |
 | `net.add_bus(..., "baseMVA", x)` with x ≠ system base | `GUILDA:Deprecated:BusBaseMVAMismatch` | warning; ignored, system base used |
@@ -1047,12 +1047,12 @@ and simulation results in the order of `get_variable_map`. Open follow-ups
 | `build_opf_problem("methods", m)` | `GUILDA:Deprecated:BuildOpfProblemMethods` | warning; becomes `Method=m` |
 | 6 outputs of `optimize_powerflow` | `GUILDA:Deprecated:OptimizePowerflowTuple` | warning; returns `{tab_bus, tab_cub, flag, output, lambda, OPFprob}` |
 | `Continuation_Power_Flow(net, opt)` | `GUILDA:Deprecated:ContinuationPowerFlowFunction` | warning; returns a `ContinuationPowerFlowV3` (v3 properties, `solve`, `CPF_Result`) |
-| `CPFsolver(net, Name, Value)` | `GUILDA:Deprecated:ContinuationPowerFlowConstructor` | error |
+| `CPFsolver(net, Name, Value)` | `GUILDA:v3_cpf_constructor:ContinuationPowerFlowConstructor` | error |
 | set `net.solver_ODE.Reporter` | `GUILDA:Deprecated:SimulatorReporter` | warning; sets `Progress` (reading `Reporter` returns `Progress`, no warning) |
 | `simulate(..., "Reporter", v)` / `"RelativeTolerance", v` | `GUILDA:Deprecated:SimulateOptionName` | warning; becomes `Progress` / `Tolerance` |
 | user settings key `TimeSimulation.Reporter` (`@GUILDA/user/DefaultTimeSimulation.json`) | – | no warning; read as `Progress` (an existing `Progress` wins); the startup writes the file back with the new key |
-| `LTIsolver(net, NonUnit, Name, Value)` | `GUILDA:Deprecated:OdeLinearizerConstructor` | error |
-| `net.linearize` / `net.get_sys` の `NonUnit=n` | `GUILDA:Deprecated:LinearizeNonUnit` | 警告。状態のない母線は無視。状態のある母線は `Feedback` で `GUILDA:LTIresult:NonUnitDynamicBus`、存在しない母線は `GUILDA:LTIsolver:NonUnit` のエラー |
+| `LTIsolver(net, NonUnit, Name, Value)` | `GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor` | error |
+| `net.linearize` / `net.get_sys` の `NonUnit=n` | `GUILDA:Deprecated:LinearizeNonUnit` | 警告。状態のない母線は無視。状態のある母線は `Feedback` で `GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus`、存在しない母線は `GUILDA:v3_nonunit_range:NonUnit` のエラー |
 | `net.solver_LIN.NonUnit` への空でない値の代入 | `GUILDA:Deprecated:SolverLinNonUnit` | 警告(`.mat` の読み込みでも代入されるので、空の値では出さない)。値は Hidden のプロパティに残り、以後の実行で `NonUnit=n` と同じ扱い(呼び出しの指定が優先)。読み出しは保存した値を返し、警告なし |
 | `initialize("methods", m)` | `GUILDA:Deprecated:InitializeMethods` | warning; becomes `Method=m` |
 | `initialize` values `"powerflow calculation"` / `"optimal powerflow"` / `"calculate from Xequilibrium"` | `GUILDA:Deprecated:InitializeMethodValue` | warning; become `"powerflow"` / `"OPF"` / `"equilibrium"` |

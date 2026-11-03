@@ -48,7 +48,7 @@ classdef (Sealed = true) CPFsolver < auxiliary
         % Solve the power flow with the internal states of the generators.
         % When true, the generator powers follow their state equations (getCompPQ) and all loads
         % are scaled; when false, the components inject their equilibrium powers. True stops
-        % with GUILDA:CPFsolver:MissingGetCompPQ if a component has no getCompPQ.
+        % with GUILDA:build_layout:MissingGetCompPQ if a component has no getCompPQ.
         UseInternalState (1,1) logical = false
 
         % Print lambda at each step.
@@ -78,7 +78,7 @@ classdef (Sealed = true) CPFsolver < auxiliary
         %
         % A network creates its own (net.solver_CPF); net.reset_solver() replaces it with a
         % new one. Any argument (the v3 form CPFsolver(net, Name, Value)) stops with
-        % GUILDA:Deprecated:ContinuationPowerFlowConstructor.
+        % GUILDA:v3_cpf_constructor:ContinuationPowerFlowConstructor.
             v3_cpf_constructor(varargin);       % COMPAT(v3)
             sct = GUILDA.config("ContinuationPowerFlow");
             sv_bus = string(sct.LoadBus.Value);
