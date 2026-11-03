@@ -179,15 +179,18 @@ classdef (Sealed = true) ODEsolver < auxiliary
             end
 
             [tab_phase, c_odeEvnt] = table(c_events{:}, "time", time, "net", net);
+            c_open = ODEsolver.get_open_branches(tab_phase, c_odeEvnt);
+            check_islands(net, c_open, tab_phase);
             ODEsolver.initialize_index(net);
             c_restore = onCleanup(@() ODEsolver.restore_working_data(net));
 
             ctx = struct();
             ctx.net     = net;
             ctx.l_sparse = true;              % until the solver rejects the sparse matrices (see use_dense)
-            ctx.Ymat    = sparse(tools.complex2matrix(net.get_admittance_matrix.Variables));
+            ctx.Ybus    = net.get_admittance_matrix.Variables;   % complex, all branches closed
+            ctx.sv_open = strings(0,1);       % open branches of ctx.Ymat (see set_admittance)
+            ctx         = ODEsolver.set_admittance(ctx, strings(0,1), true);
             ctx.rv_odeV = cell2mat(tools.cellfun(@(b) b.iv_odeX, net.a_Bus));
-            ctx.absYmat = abs(ctx.Ymat);      % scale of the terms of I = Y*V (see getODEFunction)
             ctx.iv_busV = reshape(ctx.rv_odeV, [], 1);
             ctx.iv_busI = reshape(cell2mat(tools.cellfun(@(b) b.iv_odeI, net.a_Bus)), [], 1);
             ctx.l_GC    = ~isempty(net.a_GlobalController);
@@ -227,6 +230,9 @@ classdef (Sealed = true) ODEsolver < auxiliary
 
                 t1 = TT{1, 't1'};
                 t2 = TT{1, 't2'};
+
+                % Y of the phase: without the branches opened in it (OpenBranch)
+                ctx = ODEsolver.set_admittance(ctx, c_open{tp}, false);
 
                 setEventCondition(odeEvents{:}, "TimePhase", [t1,t2], "Iteration", tp);
 
@@ -500,6 +506,40 @@ classdef (Sealed = true) ODEsolver < auxiliary
         end
 
                 
+
+        function c_open = get_open_branches(tab_phase, c_odeEvnt)
+            % Tags of the branches open in each phase (OpenBranch of its active events)
+            c_open = cell(height(tab_phase), 1);
+            for tp = 1:height(tab_phase)
+                c_ev = c_odeEvnt(tab_phase{tp,3:end});
+                c_br = cellfun(@(e) e.OpenBranch, c_ev, 'UniformOutput', false);
+                c_open{tp} = unique(vertcat(strings(0,1), c_br{:}));
+            end
+        end
+
+        function ctx = set_admittance(ctx, sv_open, l_force)
+            % ctx.Ymat (real 2n x 2n, I = Y*V) and ctx.absYmat with the branches sv_open
+            % left out of the bus admittance matrix. Rebuilt only when the set changes.
+            sv_open = reshape(sv_open, [], 1);
+            if ~l_force && isequal(sv_open, ctx.sv_open)
+                return
+            end
+            Yc = ctx.Ybus;
+            if ~isempty(sv_open)
+                a_br  = ctx.net.a_Branch(ismember(string(ctx.net.a_Branch), sv_open));
+                sv_bus = string(ctx.net.a_Bus);
+                for k = 1:numel(a_br)
+                    [~, iv] = ismember(string(a_br{k}.a_Bus), sv_bus);
+                    Yc(iv,iv) = Yc(iv,iv) - a_br{k}.get_admittance_matrix();
+                end
+            end
+            ctx.Ymat = tools.complex2matrix(Yc);
+            if ctx.l_sparse
+                ctx.Ymat = sparse(ctx.Ymat);
+            end
+            ctx.absYmat = abs(ctx.Ymat);      % scale of the terms of I = Y*V (see getODEFunction)
+            ctx.sv_open = sv_open;
+        end
 
         function o = set_equations(o, ctx, RM, EM, lg)
             % The right-hand side and Jacobian of a phase. They hold a copy of ctx.
@@ -888,6 +928,32 @@ function mustBeProgress(val)
         return
     end
     mustBeMember(string(val), ["none","disp","dialog"]);
+end
+
+function check_islands(net, c_open, tab_phase)
+% Each set of open branches must leave every bus connected to a component: nothing sets
+% the voltages of a part of the network without components (with no shunt either, the
+% DAE is singular). Checked for all phases before the integration starts.
+    sv_bus = string(net.a_Bus);
+    sv_br  = string(net.a_Branch);
+    iv_bus = zeros(numel(sv_br), 2);
+    for k = 1:numel(sv_br)
+        [~, iv_bus(k,:)] = ismember(string(net.a_Branch{k}.a_Bus), sv_bus);
+    end
+    lv_comp = cellfun(@(b) ~isempty(b.a_Component), net.a_Bus);
+    for tp = 1:numel(c_open)
+        if isempty(c_open{tp})
+            continue
+        end
+        lv_on   = ~ismember(sv_br, c_open{tp});
+        G       = graph(iv_bus(lv_on,1), iv_bus(lv_on,2), [], numel(sv_bus));
+        iv_part = conncomp(G);
+        lv_dead = ~ismember(iv_part, iv_part(lv_comp(:).'));
+        if any(lv_dead)
+            error(msg("GUILDA:ODEsolver:OpenBranchIsland", num2str(tp), num2str(tab_phase{tp,"t1"}), ...
+                      num2str(tab_phase{tp,"t2"}), char(join(c_open{tp}, ", ")), char(join(sv_bus(lv_dead), ", "))));
+        end
+    end
 end
 
 function print_phases(tab_phase, str_evt)
