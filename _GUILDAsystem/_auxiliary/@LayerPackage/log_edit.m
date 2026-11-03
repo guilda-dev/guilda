@@ -15,8 +15,8 @@ function log_edit(obj, log, tag, before, after, time, tab)
     % the handle cache of the parameter's owner, and the network equilibrium.
     str_logtag = string(tab{1,4});
     [l_odefcn, l_equilibrium] = LayerPackage.edit_effect(str_logtag, string(tab{1,3}));
-    if l_odefcn && isa(obj,"Parameter") && isa(obj.parent,"LayerPackage")
-        obj.parent.s_edit.l_staleOdefcn = true;
+    if l_odefcn && isa(obj,"Parameter") && isa(obj.parent,"LayerPackage") && obj.parent.s_edit.str_odefcn == "updated"
+        obj.parent.s_edit.str_odefcn = "editted";
     end
 
     if isa(obj,"PowerNetwork")
@@ -36,9 +36,9 @@ function log_edit(obj, log, tag, before, after, time, tab)
         return
     end
 
-    % A network Hz edit reaches every layer at once. After the record, so that a failure
-    % leaves the edit logged. The value is already set: this runs in its PostSet listener.
+    % A network Hz edit reaches the handles of every layer: the next analysis
+    % (check_edit) builds them with the new frequency.
     if isa(obj,"Parameter") && str_logtag == "Parameter(base)" && string(tab{1,3}) == "edit Hz"
-        obj.parent.check_edit(true);
+        obj.parent.mark_odefcn();
     end
 end

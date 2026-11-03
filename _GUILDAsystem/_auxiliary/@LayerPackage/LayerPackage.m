@@ -45,18 +45,21 @@ classdef LayerPackage < handle
         % Edit state of the layer, one struct with these fields (set.s_edit checks them):
         %
         % - str_flag: "unset", "initialized" or "editted".
-        % - l_staleOdefcn: True when the cached f_* function handles built by set_odefcn no longer
-        %   match the parameters. Set by log_edit on the owner of an edited "dynamics" parameter;
-        %   cleared when set_odefcn rebuilds the handles. check_edit rebuilds the handles of every
-        %   layer with this flag at the start of an analysis. A network Hz edit does not set it:
-        %   it rebuilds every layer at once (check_edit with l_force). Only Component,
-        %   LocalController and GlobalController own handles.
+        % - str_odefcn: State of the cached f_* function handles built by set_odefcn: "unset"
+        %   (never built), "editted" (built, but no longer matching the parameters or the
+        %   network frequency) or "updated" (built from the current values). An edit of a
+        %   "dynamics" parameter (log_edit, on its owner), a network Hz edit (log_edit, on every
+        %   layer of the network) and an attach (Component.set_bus, LocalController.set_parent,
+        %   GlobalController.set_parent, on the attached subtree) turn "updated" into "editted";
+        %   set_odefcn sets "updated". The handles are built when they are used: check_edit, at
+        %   the start of an analysis, calls set_odefcn on every layer that is not "updated".
+        %   Only Component, LocalController and GlobalController own handles.
         % - l_staleEquilibrium: True when the equilibrium set by initialize no longer matches the
         %   model. Kept on PowerNetwork only. Set by log_edit for edits of "dynamics", "base"
         %   (baseMVA) and "powerflow" parameters, topology changes and slack-bus changes; edits of
         %   the network Hz and of "operation", "OPF" and "graph" parameters leave it unchanged.
         %   Cleared by reset_edit (end of initialize). See edit_effect for the mapping.
-        s_edit (1,1) struct = struct("str_flag","unset", "l_staleOdefcn",false, "l_staleEquilibrium",false)
+        s_edit (1,1) struct = struct("str_flag","unset", "str_odefcn","unset", "l_staleEquilibrium",false)
     end
     
     %% Tag
@@ -80,7 +83,7 @@ classdef LayerPackage < handle
     methods(Access=protected)
         log_edit(obj, log, time, tab)
         reset_edit(obj)
-        flag = check_edit(obj, l_force)
+        flag = check_edit(obj)
 
         function handle_edit(obj, tab) %#ok
         % Called by log_edit on the top layer (PowerNetwork) with every edit
@@ -93,7 +96,21 @@ classdef LayerPackage < handle
         % Build the f_* handle cache from the current parameters and network frequency.
         % Layers that own handles (Component, LocalController, GlobalController)
         % override this; other layers have nothing to build.
-            obj.s_edit.l_staleOdefcn = false;
+            obj.s_edit.str_odefcn = "updated";
+        end
+
+        function mark_odefcn(obj)
+        % Mark the built handles of the layer and its descendants as "editted", for a change
+        % of the frequency they read: a network Hz edit (log_edit) and an attach
+        % (Component.set_bus, LocalController.set_parent, GlobalController.set_parent).
+        % check_edit builds them at the next analysis. Handles never built stay "unset".
+            a_layer = {obj};
+            while ~isempty(a_layer)
+                if a_layer{1}.s_edit.str_odefcn == "updated"
+                    a_layer{1}.s_edit.str_odefcn = "editted";
+                end
+                a_layer = [a_layer(2:end); reshape(a_layer{1}.children, [], 1)];
+            end
         end
     end
     methods(Static, Hidden)
@@ -103,9 +120,9 @@ classdef LayerPackage < handle
         %   Parameter(dynamics)    stale         stale
         %   Parameter(base)        -             stale     (PowerNetwork para_base: baseMVA;
         %                                                   no model handle holds it)
-        %   Parameter(base), Hz    -             -         (log "edit Hz": log_edit rebuilds the
-        %                                                   handles at once; the equilibrium does
-        %                                                   not depend on the nominal frequency)
+        %   Parameter(base), Hz    -             -         (log "edit Hz": log_edit marks the
+        %                                                   handles of every layer; the equilibrium
+        %                                                   does not depend on the nominal frequency)
         %   Parameter(powerflow)   -             stale
         %   Topology               -             stale     (add_/remove_/replace_)
         %   Slack                  -             stale
@@ -139,6 +156,7 @@ classdef LayerPackage < handle
         function set.s_edit(obj, s_edit)
             % A field cannot have a validator, and assigning a misspelled field would add a new one
             mustBeMember(s_edit.str_flag, ["unset","initialized","editted"]);
+            mustBeMember(s_edit.str_odefcn, ["unset","editted","updated"]);
             assert(numel(fieldnames(s_edit)) == 3, "GUILDA:LayerPackage:EditStateFields", "s_edit has exactly three fields.");
             obj.s_edit = s_edit;
         end

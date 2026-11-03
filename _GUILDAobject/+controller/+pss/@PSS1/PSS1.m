@@ -59,9 +59,6 @@ classdef (Sealed = true) PSS1 < controller.pss.abstract
             obj.sv_u    = "omega";   
             obj.sv_y    = "Vpss";
             obj.sv_para = ["kpss"; "tWS"; "tn1"; "td1"; "tn2"; "td2"; "Vpss_min"; "Vpss_max"];
-
-            obj.set_odefcn();
-
         end        
         
         function get_equilibrium(obj, V, u) %#ok

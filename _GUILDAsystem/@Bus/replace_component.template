@@ -84,9 +84,8 @@ ___KEY_CASES___
 
     obj.a_Component{lv_rmcub} = comp;   
     
-    % The constructor already built the f_* handles. The equilibrium is a
-    % placeholder: the topology change below makes simulate/get_sys require
-    % net.initialize() first.
+    % The equilibrium is a placeholder: the topology change below makes
+    % simulate/get_sys require net.initialize() first, which builds the f_* handles.
     comp.set_equilibrium(Vequilibrium, Iequilibrium);
     obj.log_edit(obj.str_tag+" <<-replace--- "+str_tag+" -> "+comp.str_tag,"Topology")
     if ~isempty(a_con)

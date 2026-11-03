@@ -180,8 +180,8 @@ classdef PowerNetwork < PowerSystemModel
         end
     end
     methods(Access=protected)
-        % Edit handling: rebuild stale f_* handles, check the equilibrium
-        flag = check_edit(obj, l_force, opt)
+        % Edit handling: build the f_* handles that are not up to date, check the equilibrium
+        flag = check_edit(obj, opt)
 
         function handle_edit(obj, tab)
             % At most one slack bus: a bus reports bus.l_isSlack = true as a
@@ -205,8 +205,8 @@ classdef PowerNetwork < PowerSystemModel
     methods(Access={?ODEsolver, ?LTIsolver})
         function require_equilibrium(obj)
             % Called at the start of solver_ODE.solve and solver_LIN.solve (the one place
-            % of this check for simulate, linearize and get_sys): rebuild stale f_*
-            % handles; error if net.initialize() is needed.
+            % of this check for simulate, linearize and get_sys): build the f_* handles
+            % that are not up to date; error if net.initialize() is needed.
             obj.check_edit("RequireEquilibrium", true);
         end
     end

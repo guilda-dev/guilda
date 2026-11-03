@@ -262,5 +262,11 @@ const updateLogData = [
     "date": "2026-11-02",
     "type": "changed",
     "content": "The solver, result and event classes have uniform names, with no aliases: PFCsolver, PFCresult, OPFsolver, OPFresult, CPFsolver, CPFresult, ODEsolver, ODEresult, ODEevent, ODEprogress, LTIsolver and LTIresult replace PowerFlowCalculation, PowerFlowResult, OptimalPowerFlow, OPFResult, ContinuationPowerFlow, CPFResult, odeSimulator, odeSimulationResult, odeEventSet, odeProgress, odeLinearizer and LinearizationResult. Message IDs follow the new names. net.solver_* properties and GUILDA.config section names do not change."
+  },
+  {
+    "title": "Model functions built at analysis time",
+    "date": "2026-11-03",
+    "type": "changed",
+    "content": "Read the nominal frequency of a model with the method comp.get_Hz(), which replaces the frequency property of v5 development builds. The f_* handles are no longer built by the constructors: an analysis builds the ones that are not up to date (initialize, simulate, linearize, get_sys and validate), so a network Hz edit or attaching a model takes effect at the next analysis. For model authors: a constructor does not need obj.set_odefcn(); one that still calls it keeps working."
   }
 ];

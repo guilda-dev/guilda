@@ -10,17 +10,14 @@ classdef PowerSystemModel < LayerPackage
 %
 % See also auxiliary, LayerPackage
 
-    properties (Dependent, SetAccess=private) % Parameters
-        % [Hz] Nominal frequency of the network the model belongs to.
-        % net.tab_parameter.base.Hz; GUILDA.config("Model","Hz") when not attached to a
-        % network. This is the omega0 passed to the model functions (models multiply it by 2*pi).
-        % <@Type> double
-        r_Hz
-    end
     methods
-        function Hz = get.r_Hz(obj)
-            % Walk up in a loop: inside this method, r_Hz of a parent is a direct read of
-            % the Dependent property (MATLAB:class:DependentGet), not a call of this method.
+        function Hz = get_Hz(obj)
+            % Nominal frequency [Hz] of the network the model belongs to.
+            % net.tab_parameter.base.Hz; GUILDA.config("Model","Hz") when not attached to a
+            % network. This is the omega0 passed to the model functions (models multiply it by 2*pi).
+            arguments (Output)
+                Hz (1,1) double % [Hz] Nominal frequency.
+            end
             p = obj;
             while isa(p,"PowerSystemModel") && ~isa(p,"PowerNetwork")
                 p = p.parent;

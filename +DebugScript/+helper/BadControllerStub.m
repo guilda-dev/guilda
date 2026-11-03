@@ -31,7 +31,6 @@ classdef BadControllerStub < LocalController
         function obj = BadControllerStub(str_bad)
             obj@LocalController("CLbad")
             obj.para_dynamics.add_entry("bad", find(obj.sv_bad == str_bad), "double");
-            obj.set_odefcn()
         end
         function get_equilibrium(obj, ~, u)
             obj.rv_Xequilibrium = u(2);

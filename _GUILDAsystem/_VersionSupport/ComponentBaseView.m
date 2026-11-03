@@ -4,7 +4,7 @@ classdef ComponentBaseView < handle
 % comp.para_base and comp.tab_parameter.base return this view so that old scripts keep
 % working. The frequency is held by the network:
 %
-% - reading Hz returns comp.r_Hz (warning GUILDA:Deprecated:ComponentBaseHz)
+% - reading Hz returns comp.get_Hz() (warning GUILDA:Deprecated:ComponentBaseHz)
 % - setting Hz sets net.tab_parameter.base.Hz of the network of the component (warning
 %   GUILDA:Deprecated:ComponentBaseHzSet); it is an error when the component is not
 %   attached to a network.
@@ -15,7 +15,7 @@ classdef ComponentBaseView < handle
 % `check_assign` accepts only this view for `comp.para_base = value`.
 %
 % <@Deprecated>
-% Use comp.r_Hz to read the frequency and net.tab_parameter.base.Hz to set it.
+% Use comp.get_Hz() to read the frequency and net.tab_parameter.base.Hz to set it.
 %
 % See also Component, PowerNetwork
 
@@ -34,11 +34,11 @@ classdef ComponentBaseView < handle
         end
         function Hz = get.Hz(obj)
             Deprecated("ComponentBaseHz");
-            Hz = obj.a_Comp.r_Hz;
+            Hz = obj.a_Comp.get_Hz();
         end
         function tab = get.tab_parameter(obj)
             Deprecated("ComponentBaseHz");
-            tab = table(obj.a_Comp.r_Hz, 'VariableNames', "Hz");
+            tab = table(obj.a_Comp.get_Hz(), 'VariableNames', "Hz");
         end
         function set.Hz(obj, val)
             bus = obj.a_Comp.a_Bus;

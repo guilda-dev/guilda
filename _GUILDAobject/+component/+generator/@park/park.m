@@ -35,7 +35,7 @@ classdef park < component.generator.abstract
 % - `Tq_pp` [s]: q-axis open-circuit subtransient time constant.
 % - `X_ls` [pu]: Armature leakage reactance.
 %
-% **Equations** (`omega0` is the network frequency `r_Hz`; `Vd`, `Vq`, `Id`, `Iq`
+% **Equations** (`omega0` is the network frequency `get_Hz()`; `Vd`, `Vq`, `Id`, `Iq`
 % are the bus voltage and current in the rotor dq frame)
 % ```
 % d(delta)/dt      = 2*pi*omega0*omega

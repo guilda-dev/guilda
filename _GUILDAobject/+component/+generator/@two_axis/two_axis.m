@@ -27,7 +27,7 @@ classdef two_axis < component.generator.abstract
 % - `Td_p` [s]: d-axis open-circuit transient time constant.
 % - `Tq_p` [s]: q-axis open-circuit transient time constant.
 %
-% **Equations** (`omega0` is the network frequency `r_Hz`; `Vd`, `Vq`, `Id`, `Iq`
+% **Equations** (`omega0` is the network frequency `get_Hz()`; `Vd`, `Vq`, `Id`, `Iq`
 % are the bus voltage and current in the rotor dq frame)
 % ```
 % d(delta)/dt   = 2*pi*omega0*omega
