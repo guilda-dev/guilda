@@ -7,8 +7,11 @@ function flag = check_edit(obj)
 % whether the equilibrium set by initialize is still valid. Called at the start of every
 % analysis that uses the f_* handles: initialize, calculate_continuation_powerflow and,
 % through PowerNetwork.require_equilibrium, solver_ODE.solve and solver_LIN.solve
-% (net.simulate, net.linearize, net.get_sys); the get_sys of each layer; validate; and
-% get_dx_algebraic and get_sys_alone of a model used on its own. See PowerNetwork.check_edit.
+% (net.simulate, net.linearize, net.get_sys); the get_sys of each layer;
+% LocalController.validate; and Component.get_dx_algebraic and
+% LocalController.get_dx_algebraic when the layer itself is not "updated" (a direct
+% call; in a simulation the solver has already checked every layer). See
+% PowerNetwork.check_edit.
     arguments (Output)
         flag % True when initialize has run and nothing that changes the equilibrium was edited since (meaningful on PowerNetwork).
     end

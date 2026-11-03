@@ -522,6 +522,22 @@ flag = stub.validate(false);
 assert(isstruct(flag) && isfield(flag, "contract"))
 
 
+%% Direct get_dx_algebraic builds the handles of the component
+% ODE の外から直接呼んでも、部品自身が最新でなければ先にハンドルを作る (編集後の値で評価する)
+[net, comp] = DebugScript.helper.build_3bus("gen-1axis");
+DebugScript.helper.quiet(@() net.initialize);
+DebugScript.helper.quiet(@() net.simulate([0,0.1], DebugScript.helper.noop_event(net,[0,0.1])));   % 変数の番号 iv_ode* を決める
+comp.tab_parameter.dynamics.D = 5;
+assert(comp.s_edit.str_odefcn == "editted")
+n = max([comp.iv_odeX; comp.iv_odeU; comp.a_Bus.iv_odeX]);
+x = rand(n,1);  V = [1;0.1];  I = [0.5;0.1];  u = x(comp.iv_odeU);
+DAEvec = comp.get_dx_algebraic(0, x, V, I, u, zeros(n,1));
+assert(comp.s_edit.str_odefcn == "updated")
+para = comp.tab_parameter.dynamics{:, comp.sv_para};
+dx = comp.fcn_dx(0, x(comp.iv_odeX), V, I, u, para, comp.get_Hz());
+assert(norm(DAEvec(comp.iv_odeX) - dx) < 1e-12, "get_dx_algebraic が編集前のハンドルを使っている")
+
+
 %% Deprecated component Hz forms still work and warn once
 % 旧形式 comp.tab_parameter.base.Hz / comp.para_base.Hz は系統の Hz を返し、警告を1回だけ出す
 str_id = "GUILDA:Deprecated:ComponentBaseHz";
