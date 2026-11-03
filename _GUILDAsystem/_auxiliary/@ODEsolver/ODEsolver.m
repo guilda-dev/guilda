@@ -145,7 +145,7 @@ classdef (Sealed = true) ODEsolver < auxiliary
         % ODEresult. The solver is only read: nothing is written back into it.
         % The simulation working data of the models (iv_odeX, iv_odeU, iv_odeY, iv_odeI) is
         % rebuilt for this run. Called by net.simulate; calling it directly is for advanced
-        % use. Like net.simulate, it first rebuilds stale f_* handles and stops with the
+        % use. Like net.simulate, it first builds out-of-date f_* handles and stops with the
         % error GUILDA:PowerNetwork:EquilibriumStale when net.initialize() is needed.
         % flag is 1 when the simulation reached the end time, 0 when it stopped because the
         % run exceeded TimeLimit, and -1 when the solver stopped before the end time or could
@@ -167,7 +167,7 @@ classdef (Sealed = true) ODEsolver < auxiliary
                 output % Details: message, tEnd, phases (time table of the phases), nPhases, nPhasesDone, isSparse (false when the run fell back to dense matrices), exception (MException of a phase that could not be solved, with the original as cause; otherwise empty).
             end
             t0 = tic;
-            net.require_equilibrium();    % rebuild stale f_*; error if net.initialize() is needed
+            net.require_equilibrium();    % build out-of-date f_*; error if net.initialize() is needed
 
             % Without events, add an empty event so that ODEevent.table is dispatched.
             if isempty(c_events)
@@ -243,8 +243,7 @@ classdef (Sealed = true) ODEsolver < auxiliary
                 end
 
                 o.InitialValue = x0;
-                o.MassMatrix   = Mass;
-                o = ODEsolver.set_equations(o, ctx, RM, EM, ~lv_FBorTC);
+                o = ODEsolver.set_equations(o, ctx, RM, EM, ~lv_FBorTC, Mass);
                 if isfield(s_options, "PhaseProbe")     % test hook: compare Jacobian and right-hand side
                     s_options.PhaseProbe(o);
                 end
@@ -264,78 +263,71 @@ classdef (Sealed = true) ODEsolver < auxiliary
                 [str_warn0, id_warn0] = lastwarn();
                 lastwarn("");
                 str_phase = {num2str(tp), num2str(t1), num2str(t2)};
+
+                % Consistent initial condition: the differential states keep their values at
+                % the start of the phase and only the algebraic variables are solved again.
+                % Without differential states the solver stops on the mass matrix.
+                try
+                    x0_ic = x0;  xp0_ic = zeros(0,1);  l_failed = false;
+                    if nnz(Mass) > 0
+                        [x0_ic, xp0_ic, l_failed, str_why, me_ic] = CalculateInitialCondition(o, options);
+                    end
+                catch me
+                    odeProg.OutputFcn([],[],"break");
+                    ME = MException('GUILDA:ODEsolver:PhaseFailed', '%s', ...
+                                    msg('GUILDA:ODEsolver:PhaseFailed', str_phase{:}, me.message));
+                    throw(ME.addCause(me))
+                end
+                if l_failed
+                    odeProg.OutputFcn([],[],"break");
+                    me_stop = MException('GUILDA:ODEsolver:InitialConditionFailed', '%s', ...
+                                         msg('GUILDA:ODEsolver:InitialConditionFailed', str_phase{:}, str_why));
+                    me_stop = me_stop.addCause(me_ic);
+                    flag = -1;
+                    break
+                end
+                lv_dif = full(any(o.MassMatrix.MassMatrix ~= 0, 1)).';
+
                 l_solved = false;
                 while ~l_solved
+                    % The solver takes them without its own consistency step, which could move
+                    % the differential states
+                    o.InitialValue = x0_ic;
+                    o.InitialSlope = xp0_ic;
                     try
                         % When solving the equation, specify [0, duration of each phase]
                         sol = solve(o, 0, t2-t1);
                     catch me
 
                         if ODEsolver.is_false_index_error(ctx, me)
-                            [ctx, o] = ODEsolver.use_dense(ctx, o, x0, RM, EM, ~lv_FBorTC, s_options.Verbose);
+                            [ctx, o] = ODEsolver.use_dense(ctx, o, x0, RM, EM, ~lv_FBorTC, s_options.Verbose, Mass);
                             continue
                         end
 
-                        splitMSG = strsplit(me.identifier,':');
-
-                        if ~isequal(splitMSG{end},'NeedBetterY0')
-                            odeProg.OutputFcn([],[],"break");
-                            ME = MException('GUILDA:ODEsolver:PhaseFailed', '%s', ...
-                                            msg('GUILDA:ODEsolver:PhaseFailed', str_phase{:}, me.message));
-                            ME = ME.addCause(me);
-                            if ~ODEsolver.is_numerical_failure(me, o)
-                                throw(ME)
-                            end
-                            me_stop = ME;
-                            break
+                        odeProg.OutputFcn([],[],"break");
+                        % NeedBetterY0: the solver did not accept the consistent initial condition
+                        str_id = 'GUILDA:ODEsolver:PhaseFailed';
+                        if endsWith(string(me.identifier), ":NeedBetterY0")
+                            str_id = 'GUILDA:ODEsolver:UnfeasibleDAE';
                         end
-
-                        % The solver found x0 inconsistent: compute a consistent one
-                        [x0_ic, xp0_ic, l_failed, l_relaxed, str_why, me_ic] = CalculateInitialCondition(o, options);
-                        if l_failed
-                            odeProg.OutputFcn([],[],"break");
-                            ME = MException('GUILDA:ODEsolver:InitialConditionFailed', '%s', ...
-                                            msg('GUILDA:ODEsolver:InitialConditionFailed', str_phase{:}, str_why));
-                            ME = ME.addCause(me).addCause(me_ic);
-                            if ~ODEsolver.is_numerical_failure(me_ic, o)
-                                throw(ME)
-                            end
-                            me_stop = ME;
-                            break
+                        ME = MException(str_id, '%s', msg(str_id, str_phase{:}, me.message));
+                        ME = ME.addCause(me);
+                        if ~ODEsolver.is_numerical_failure(me, o)
+                            throw(ME)
                         end
-                        if l_relaxed
-                            lv_diff = any(o.MassMatrix.MassMatrix ~= 0, 2);
-                            warning(msg("GUILDA:ODEsolver:InitialConditionRelaxed", str_phase{:}, ...
-                                        num2str(max(abs(x0_ic(lv_diff) - x0(lv_diff)))), str_why));
-                            % Not a warning of the solver (see output.message)
-                            [str_warn0, id_warn0] = lastwarn();
-                            lastwarn("");
-                        end
-
-                        % Solve again with the same ode object: all the settings still apply
-                        o.InitialValue = x0_ic;
-                        o.InitialSlope = xp0_ic;
-                        try
-                            sol = solve(o, 0, t2-t1);
-                        catch me
-                            if ODEsolver.is_false_index_error(ctx, me)
-                                [ctx, o] = ODEsolver.use_dense(ctx, o, x0, RM, EM, ~lv_FBorTC, s_options.Verbose);
-                                continue
-                            end
-
-                            odeProg.OutputFcn([],[],"break");
-                            ME = MException('GUILDA:ODEsolver:UnfeasibleDAE', '%s', ...
-                                            msg('GUILDA:ODEsolver:UnfeasibleDAE', str_phase{:}, me.message));
-                            ME = ME.addCause(me);
-                            if ~ODEsolver.is_numerical_failure(me, o)
-                                throw(ME)
-                            end
-                            me_stop = ME;
-                            break
-                        end
-                        o.InitialSlope = zeros(0,1);
+                        me_stop = ME;
+                        break
                     end
                     l_solved = true;
+                end
+                o.InitialSlope = zeros(0,1);
+                if isempty(me_stop) && ~isequal(sol.Solution(lv_dif,1), x0_ic(lv_dif))
+                    % Not expected: the solver changed the differential states at the start
+                    odeProg.OutputFcn([],[],"break");
+                    str_why = sprintf("the solver moved the differential states by up to %g at the start of the phase.", ...
+                                      max(abs(sol.Solution(lv_dif,1) - x0_ic(lv_dif))));
+                    me_stop = MException('GUILDA:ODEsolver:InitialConditionFailed', '%s', ...
+                                         msg('GUILDA:ODEsolver:InitialConditionFailed', str_phase{:}, str_why));
                 end
                 if ~isempty(me_stop)
                     flag = -1;
@@ -356,7 +348,7 @@ classdef (Sealed = true) ODEsolver < auxiliary
                     break;
                 end
 
-                [x0, Mass] = ODEsolver.getNextPhase(ctx, reshape(sol.Solution(:,end),[],1), o.MassMatrix.MassMatrix, RM, EM);
+                [x0, Mass] = ODEsolver.getNextPhase(ctx, reshape(sol.Solution(:,end),[],1), Mass, RM, EM);
 
                 tp = tp + 1;
             end
@@ -540,10 +532,37 @@ classdef (Sealed = true) ODEsolver < auxiliary
             ctx.sv_open = sv_open;
         end
 
-        function o = set_equations(o, ctx, RM, EM, lg)
-            % The right-hand side and Jacobian of a phase. They hold a copy of ctx.
-            o.ODEFcn   = @(t,x) ODEsolver.getODEFunction(ctx,t,x,RM,EM,lg);
-            o.Jacobian = @(t,x) ODEsolver.getODEJacobian(ctx,t,x,RM,EM,lg);
+        function o = set_equations(o, ctx, RM, EM, lg, Mass)
+            % The mass matrix, right-hand side and Jacobian of a phase. They hold a copy of ctx.
+            % A mass matrix that is not diagonal (e.g. of a controller) is made the identity on the
+            % differential variables, by solving the differential equations with its block:
+            % M*x' = f becomes x'(d) = M(rd,d) \ f(rd), 0 = f(ra). The solutions are the same, and
+            % for a diagonal mass matrix the consistency step of the solver changes only the
+            % algebraic variables, while for a sparse one that is not diagonal it moves all of
+            % them (see CalculateInitialCondition).
+            lv_dif = full(any(Mass ~= 0, 1)).';
+            lv_eqD = full(any(Mass ~= 0, 2));
+            if ~isdiag(Mass) && nnz(lv_dif) == nnz(lv_eqD)
+                dMd = decomposition(Mass(lv_eqD, lv_dif));
+                Mass = diag(double(lv_dif));
+                if ctx.l_sparse
+                    Mass = sparse(Mass);
+                end
+                to_dif = @(f) ODEsolver.solve_differential(f, dMd, lv_dif, lv_eqD);
+                o.ODEFcn   = @(t,x) to_dif(ODEsolver.getODEFunction(ctx,t,x,RM,EM,lg));
+                o.Jacobian = @(t,x) to_dif(ODEsolver.getODEJacobian(ctx,t,x,RM,EM,lg));
+            else
+                o.ODEFcn   = @(t,x) ODEsolver.getODEFunction(ctx,t,x,RM,EM,lg);
+                o.Jacobian = @(t,x) ODEsolver.getODEJacobian(ctx,t,x,RM,EM,lg);
+            end
+            o.MassMatrix = Mass;
+        end
+
+        function g = solve_differential(f, dMd, lv_dif, lv_eqD)
+            % Rows of f (a vector or a Jacobian) for the identity mass matrix (see set_equations)
+            g = f;
+            g(lv_dif,:)  = dMd \ f(lv_eqD,:);
+            g(~lv_dif,:) = f(~lv_eqD,:);
         end
 
         function l = is_false_index_error(ctx, me)
@@ -562,20 +581,20 @@ classdef (Sealed = true) ODEsolver < auxiliary
             % call an ode solver of its own.
             str_id = string(me.identifier);
             l = ismember(str_id, ["MATLAB:daeic12:NeedBetterY0", "MATLAB:daeic12:IndexGTOne", ...
+                                  "MATLAB:daeic3:NeedBetterY0", "MATLAB:daeic3:IndexGTOne", ...
                                   "MATLAB:decic:IndexGTOne", "MATLAB:decic:ConvergenceFail"]) ...
                 || (ismember(str_id, ["MATLAB:ode15s:MassMatrixAllZero", "MATLAB:ode23t:MassMatrixAllZero"]) ...
                     && nnz(o.MassMatrix.MassMatrix) == 0);
         end
 
-        function [ctx, o] = use_dense(ctx, o, x0, RM, EM, lg, l_verbose)
+        function [ctx, o] = use_dense(ctx, o, x0, RM, EM, lg, l_verbose, Mass)
             % Solve the current phase again and the next phases with dense matrices.
             ctx.l_sparse = false;
             ctx.Ymat     = full(ctx.Ymat);
             ctx.absYmat  = full(ctx.absYmat);
-            o.MassMatrix   = full(o.MassMatrix.MassMatrix);
             o.InitialValue = x0;
             o.InitialSlope = zeros(0,1);
-            o = ODEsolver.set_equations(o, ctx, RM, EM, lg);
+            o = ODEsolver.set_equations(o, ctx, RM, EM, lg, full(Mass));
             lastwarn("");
             if l_verbose
                 disp("The solver rejected the sparse matrices: using dense matrices.")

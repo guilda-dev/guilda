@@ -1,7 +1,7 @@
 <!--This is an XML file containing error messages related to the class "ComponentBaseView".-->
 <rsccat version="4.0" locale="en" product="GUILDA">
     <message>
-        <entry key="ComponentBaseHz">comp.tab_parameter.base and comp.para_base are deprecated: the nominal frequency is held by the network. Read it with comp.r_Hz, or read and set it with net.tab_parameter.base.Hz.</entry>
+        <entry key="ComponentBaseHz">comp.tab_parameter.base and comp.para_base are deprecated: the nominal frequency is held by the network. Read it with comp.get_Hz(), or read and set it with net.tab_parameter.base.Hz.</entry>
         <entry key="ComponentBaseHzNoNetwork">Component {0} is not attached to a network, so its frequency cannot be set. The frequency is held by the network: use net.tab_parameter.base.Hz = value.</entry>
     </message>
 </rsccat>

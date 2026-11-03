@@ -173,7 +173,7 @@ classdef LocalController < PowerSystemModel
             % a_Component = [] detaches the controller (Component.add_local_controller)
             obj.a_Component = a_Component; 
             obj.resolve_observe();        % inputs read on the component (also of nested controllers)
-            obj.check_edit(true);        % use the frequency of the parent's network
+            obj.mark_odefcn();        % the handles read the frequency of the parent's network
         end
 
         function resolve_observe(obj)
@@ -258,8 +258,9 @@ classdef LocalController < PowerSystemModel
     methods (Access=protected)
         function set_odefcn(obj)
             % Bind the parameters and the network frequency into the f_* function handles.
-            % Called by check_edit after a dynamics edit, a network Hz edit or an attach.
-            omega0 = obj.r_Hz;
+            % Called by check_edit when the handles are not up to date (str_odefcn "unset" or
+            % "editted": a dynamics edit, a network Hz edit or an attach since the last build).
+            omega0 = obj.get_Hz();
             param = obj.tab_parameter.dynamics{:,obj.sv_para}.';
 
             obj.f_dx   = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, param, omega0);            
@@ -268,7 +269,7 @@ classdef LocalController < PowerSystemModel
 
             obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
             obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
-            obj.s_edit.l_staleOdefcn = false;
+            obj.s_edit.str_odefcn = "updated";
         end
     end
     methods (Access=private)

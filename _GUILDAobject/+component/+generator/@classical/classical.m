@@ -21,7 +21,7 @@ classdef classical < component.generator.abstract
 % - `Xd` [pu]: d-axis synchronous reactance.
 % - `Xq` [pu]: q-axis synchronous reactance.
 %
-% **Equations** (`omega0` is the network frequency `r_Hz`; `Vd`, `Vq`, `Id`, `Iq`
+% **Equations** (`omega0` is the network frequency `get_Hz()`; `Vd`, `Vq`, `Id`, `Iq`
 % are the bus voltage and current in the rotor dq frame)
 % ```
 % d(delta)/dt   = 2*pi*omega0*omega

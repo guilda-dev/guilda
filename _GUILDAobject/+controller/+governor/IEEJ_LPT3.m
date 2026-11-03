@@ -59,8 +59,6 @@ classdef (Sealed = true) IEEJ_LPT3 < controller.governor.abstract
 
             obj.sv_x    = ["Pgov"; "Psv"];
             obj.sv_para = ["Prate"; "PLM"; "droop"; "Tg"; "Ts"; "rate_max"; "rate_min"; "pos_max"; "pos_min"];
-
-            obj.set_odefcn();
         end
 
         function get_equilibrium(obj, V, u) %#ok<INUSL>

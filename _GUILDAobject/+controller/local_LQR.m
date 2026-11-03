@@ -60,8 +60,8 @@ classdef local_LQR < LocalController
 
     properties (SetAccess=private) % Design results
         % Feedback gain `K` in `u = u* - K*(x - x*)`.
-        % An nu-by-nx matrix computed by net.initialize and by a network Hz edit
-        % when the equilibrium is up to date.
+        % An nu-by-nx matrix computed by net.initialize and, after a network Hz edit,
+        % by the next analysis when the equilibrium is up to date.
         K = zeros(0,0)
         % Linear model used to compute K (ss).
         % The component connected to the infinite bus; its inputs are the driven
@@ -72,7 +72,7 @@ classdef local_LQR < LocalController
     properties (Access=private) % Internal
         sv_input (:,1) string = strings(0,1)   % Input as given (empty: all the inputs)
         rv_u0    (:,1) double = zeros(0,1)     % equilibrium of the driven inputs
-        r_HzDesign double = []                 % [Hz] frequency K was designed for (empty: not designed)
+        r_designHz double = []                 % [Hz] frequency K was designed for (empty: not designed)
     end
 
     methods
@@ -94,7 +94,6 @@ classdef local_LQR < LocalController
             obj.Q  = opt.Q;
             obj.R  = opt.R;
             obj.V0 = opt.V0;
-            obj.set_odefcn()
         end
 
         function set.Q(obj, val)
@@ -155,18 +154,19 @@ classdef local_LQR < LocalController
         end
 
         function set_odefcn(obj)
-            % Called by check_edit after a dynamics edit, a network Hz edit or an attach.
-            % A Hz edit keeps the equilibrium, so K is redesigned here (check_edit has
-            % already rebuilt the component, the parent). When the equilibrium is not up
-            % to date, net.initialize redesigns K instead.
-            omega0 = obj.r_Hz;
-            if ~isempty(obj.r_HzDesign) && obj.r_HzDesign ~= omega0 && obj.equilibrium_valid()
+            % Called by check_edit when the handles are not up to date (str_odefcn "unset" or
+            % "editted": a dynamics edit, a network Hz edit or an attach since the last build).
+            % A Hz edit keeps the equilibrium, so K is redesigned here, at the first analysis
+            % after the edit (check_edit has already built the component, the parent). When
+            % the equilibrium is not up to date, net.initialize redesigns K instead.
+            omega0 = obj.get_Hz();
+            if ~isempty(obj.r_designHz) && obj.r_designHz ~= omega0 && obj.equilibrium_valid()
                 try
                     obj.design_gain(obj.a_Component.c_Vequilibrium, obj.a_Component.rv_Uequilibrium);
                 catch ME
-                    % A Hz edit runs in a listener, where an error is only a warning and would
-                    % stop the rebuild of the other layers. K stays for the old frequency, so the
-                    % record makes the equilibrium stale and analyses ask for net.initialize.
+                    % A warning, not an error: check_edit goes on to build the other layers.
+                    % K stays for the old frequency, so the record makes the equilibrium stale
+                    % and the analysis that runs check_edit asks for net.initialize.
                     warning(msg("GUILDA:local_LQR:RedesignFailed", obj.str_tag, sprintf("%g", omega0), ME.message))
                     obj.log_edit(obj.str_tag + " redesign failed", "Parameter(dynamics)");
                 end
@@ -188,7 +188,7 @@ classdef local_LQR < LocalController
             obj.f_Y    = @(t,x,V,I,u) obj.fcn_y(t, x, V, I, u, param, omega0);
             obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
             obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
-            obj.s_edit.l_staleOdefcn = false;
+            obj.s_edit.str_odefcn = "updated";
         end
     end
 
@@ -223,7 +223,7 @@ classdef local_LQR < LocalController
                 error(msg("GUILDA:local_LQR:WeightSize", obj.str_tag, string(nx), string(nx), join(comp.sv_x, ","), string(nu), string(nu), join(obj.sv_y, ",")))
             end
             obj.K = lqr(A, Bu, Qw, Rw);
-            obj.r_HzDesign = obj.r_Hz;
+            obj.r_designHz = obj.get_Hz();
         end
 
         function l = equilibrium_valid(obj)

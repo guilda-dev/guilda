@@ -1,6 +1,6 @@
 # 新しいモデルクラスの実装方法(現状調査)
 
-> 当時の調査記録です。調査の基準は `df3f709` で、以後の変更は本文に反映していません。現状は [status.md](status.md) と [v4-migration.md](v4-migration.md) を見てください。
+> 当時の調査記録です。調査の基準は `df3f709` で、以後の変更は本文に反映していません(周波数と `f_*` の状態の名前だけは、現在の `get_Hz()` と `s_edit.str_odefcn` に置き換えて書いています(当時は Dependent プロパティと論理値のフラグでした))。現状は [status.md](status.md) と [v4-migration.md](v4-migration.md) を見てください。
 
 `Component`、制御器、`Branch`、ネットワークテンプレートを新しく実装する手順と、実際に実装したときの摩擦の記録です。改善案は後続の作業で作成するので、ここには書きません。既存クラスから系統を組み立てる手順は姉妹ノート `notes/model-building-workflow.md`(ブランチ `docs/model-building-workflow`)の範囲です。
 
@@ -124,7 +124,7 @@ flowchart TD
 **[事実]**
 
 - `set_odefcn(obj, omega0)` がパラメータと周波数を**値で**閉じ込めます(`@Component/Component.m:169-196`)。
-- 再構築は `rebuild_odefcn` が `set_odefcn(obj.r_Hz)` を呼びます(`Component.m:198-201`)。`set_bus` と `LocalController.set_parent` が `rebuild_odefcn_tree` を呼ぶので(`@Component/set_bus.m:6`, `@LocalController/LocalController.m:152`)、接続時に作り直されます。
+- 再構築は `rebuild_odefcn` が `set_odefcn(obj.get_Hz())` を呼びます(`Component.m:198-201`)。`set_bus` と `LocalController.set_parent` が `rebuild_odefcn_tree` を呼ぶので(`@Component/set_bus.m:6`, `@LocalController/LocalController.m:152`)、接続時に作り直されます。
 - 制御器のコンストラクタの `set_odefcn` は、接続時に作り直されるので不要な可能性があります **[推測]**。
 - パラメータ以外の値に依存するクラスは自分で上書きします。`local_LQR` は `K` のために `set_odefcn` を上書きし、`get_equilibrium` の中で呼び直します(`_GUILDAobject/+controller/local_LQR.m:157,181-199`)。
 
@@ -352,7 +352,7 @@ classdef simple_avr < LocalController
             end
             obj@LocalController("CA"+tag)
             obj.para_dynamics.add_entry("Ka", opt.Ka, "double", "Te", opt.Te, "double");
-            obj.set_odefcn(obj.r_Hz)
+            obj.set_odefcn(obj.get_Hz())
         end
         function get_equilibrium(obj, V, u)
             Ka = obj.para_dynamics.Ka;
@@ -431,7 +431,7 @@ classdef simple_gov < LocalController
             end
             obj@LocalController("CG"+tag)
             obj.para_dynamics.add_entry("Kg", opt.Kg, "double", "Tg", opt.Tg, "double");
-            obj.set_odefcn(obj.r_Hz)
+            obj.set_odefcn(obj.get_Hz())
         end
         function get_equilibrium(obj, V, u) %#ok
             obj.rv_Xequilibrium = u(1);

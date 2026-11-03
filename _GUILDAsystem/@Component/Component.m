@@ -109,7 +109,7 @@ classdef Component < PowerSystemModel
         iv_odeYtoU    = zeros(0,1);            % Index of each such input in the outputs of the top-level controllers, stacked in order.
     end    
     properties(Dependent, Hidden)
-        para_base                              % COMPAT(v3) ComponentBaseView: Hz is held by the network (use r_Hz)
+        para_base                              % COMPAT(v3) ComponentBaseView: Hz is held by the network (use get_Hz)
     end
     properties(Dependent) % Steady State
         c_Vequilibrium                         % [pu] Terminal voltage at the equilibrium (= a_Bus.c_Vequilibrium; [] without a bus).
@@ -182,8 +182,9 @@ classdef Component < PowerSystemModel
 
         function set_odefcn(obj)
             % Bind the parameters and the network frequency into the f_* function handles.
-            % Called by check_edit after a dynamics edit, a network Hz edit or an attach.
-            omega0 = obj.r_Hz;
+            % Called by check_edit when the handles are not up to date (str_odefcn "unset" or
+            % "editted": a dynamics edit, a network Hz edit or an attach since the last build).
+            omega0 = obj.get_Hz();
             array = obj.para_dynamics.tab_parameter{:,obj.sv_para};
             
             if ismethod(obj, "Jacobi_dx")
@@ -208,7 +209,7 @@ classdef Component < PowerSystemModel
             obj.f_dx   = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, array, omega0);
             obj.f_I    = @(t,x,V,I,u) obj.fcn_I(t, x, V, I, u, array, omega0);
             obj.f_Y    = @(t,x,V,I,u) obj.fcn_Y(t, x, V, I, u, array, omega0);
-            obj.s_edit.l_staleOdefcn = false;
+            obj.s_edit.str_odefcn = "updated";
         end
 
         % Raise a constructor message of Component.xml for a subclass in another folder.

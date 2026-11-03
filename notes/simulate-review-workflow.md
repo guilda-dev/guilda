@@ -1,6 +1,6 @@
 # simulate レビュー: ワークフロー・データ管理・編集時の対応(現状調査)
 
-> 当時の調査記録です。調査の基準は `951800e` で、以後の変更は本文に反映していません。現状は [status.md](status.md) と [v4-migration.md](v4-migration.md) を見てください。
+> 当時の調査記録です。調査の基準は `951800e` で、以後の変更は本文に反映していません(周波数と `f_*` の状態の名前だけは、現在の `get_Hz()` と `s_edit.str_odefcn` に置き換えて書いています(当時は Dependent プロパティと論理値のフラグでした))。現状は [status.md](status.md) と [v4-migration.md](v4-migration.md) を見てください。
 
 `PowerNetwork.simulate` の精査に向けた現状把握です。改善案の統合は後続の作業で担当するため、
 解決策は 1 行の方向性までにとどめています。
@@ -138,7 +138,7 @@ LocalController を単に取り外す公開 API もありません。`remove_loc
 1. `Parameter` の値を変えると PostSet が新旧を比較し、変化があれば `log_edit("edit <name>", "Parameter(<group>)")` を呼びます
    (`_GUILDAsystem/_auxiliary/@Parameter/callbackPostSet.m:13-19`)。型違いは元に戻してエラーにします。この巻き戻しでログや stale は**残りません**(P は復元、ログ 0 行)。**[実測]**
 2. `log_edit` は `edit_effect` で影響を判定します(`LP/log_edit.m:17-18`, `LP/LayerPackage.m:130-159`)。
-   - `f_*` が stale になる編集は、所有者の `l_staleOdefcn` を立てます。`base` の場合は全子孫に立てます(`LP/log_edit.m:19-25`)。
+   - `f_*` が stale になる編集は、所有者の `str_odefcn` を立てます。`base` の場合は全子孫に立てます(`LP/log_edit.m:19-25`)。
    - ログ行は親へ順に伝わり、途中の層は `str_editFlag="editted"` になります(`:37-39`)。
    - `PowerNetwork` で `l_staleEquilibrium` とログを更新します。ただし `unset` の間は記録しません(`:27-33`)。
    - 最後に `handle_edit` がスラック母線を 1 つに保ちます(`:36`, `PN/PowerNetwork.m:182-199`)。
@@ -165,7 +165,7 @@ LocalController を単に取り外す公開 API もありません。`remove_loc
 | `local_LQR` の `Q`, `R`, `V0` | フラグなし | stale | 停止(`initialize` で再設計) | `_GUILDAobject/+controller/local_LQR.m:203-207` **[コード]** |
 | `solver_*`, `reset_solver` | なし | なし | 対象外 | **[コード]** |
 
-背景で示された設計表は `edit_effect` と**完全に一致**しています。Hz が stale にしないという判断も、`get_equilibrium` に `Hz` の参照がないことと整合します(`r_Hz` の全参照を grep で確認)。**[コード]**
+背景で示された設計表は `edit_effect` と**完全に一致**しています。Hz が stale にしないという判断も、`get_equilibrium` に `Hz` の参照がないことと整合します(`get_Hz()` の全参照を grep で確認)。**[コード]**
 
 ### 3.3 検知漏れの調査
 
@@ -230,7 +230,7 @@ GC だけ `onCleanup` で片付けており、Component の `l_isConnect` には
 | 7 | operation 編集は「nothing」(`DOC:265`) | 同じ文書が機器の `baseMVA` は Q 配分に使うと記載(`DOC:191`)。実際に Q が変わる | **[実測]** |
 | 8 | `baseMVA` 編集で「per-unit values change」(`DOC:260`) | 自動再換算はない。`para_base.baseMVA` の数値利用は MATPOWER 入出力などのみで、`f_*` の再構築に効果なし | **[コード: grep]** |
 | 9 | 解析は開始時にフラグを確認(`DOC:155,271-273`) | `simulate` / `linearize` / `get_sys` / `initialize` のみ。`comp.get_sys`、`bus.get_sys`、CPF は確認しない。`comp.get_sys` は `Component` のドキュメント例にある(`@Component/Component.m:26`) | **[実測]** |
-| 10 | 親参照は親だけが書く、子は上へ書かない(`DOC:230-232`) | `log_edit` は `Parameter` から親の `l_staleOdefcn` を書く(`LP/log_edit.m:21,23`)。通知の範囲とも読める | **[コード]** |
+| 10 | 親参照は親だけが書く、子は上へ書かない(`DOC:230-232`) | `log_edit` は `Parameter` から親の `str_odefcn` を書く(`LP/log_edit.m:21,23`)。通知の範囲とも読める | **[コード]** |
 | 11 | イベントはタグで識別(`DOC:238`) | `odeEventSet` はタグと状態数の表を作成時に固定(`EVT:118-122`)。後から変わると破綻 | **[実測]** |
 | 12 | `initialize`: `"OPF"` は完全な AC 動作点を与える(`PN/initialize.m:13-14`) | 平衡点は OPF の P を反映しない(H2) | **[実測]** |
 | 13 | `initialize`: `"equilibrium"` は保存値を再設定する(`PN/initialize.m:15-16`) | 検査は保存値で行うが、再設定は `para_powerflow` を使う(H2) | **[実測]** |

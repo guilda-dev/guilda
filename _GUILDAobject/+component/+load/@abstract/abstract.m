@@ -29,7 +29,6 @@ classdef abstract < Component
                 varargin(1) = [];
             end
             obj@Component("L"+tag, varargin{:})
-            obj.set_odefcn()    % network Hz once attached (set_bus rebuilds)
         end
     end
 end

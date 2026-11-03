@@ -64,17 +64,17 @@ assert(norm(gen.get_sys().A - gen_ref.get_sys().A) < 1e-9)
 
 
 %% A network Hz edit rebuilds the handles without initialize
-% Hz は平衡点を古くしないのでエラーにならず、新しい周波数の答えを返す
+% Hz は平衡点を古くしないのでエラーにならず、次の解析でハンドルを作り直して新しい周波数の答えを返す
 [net, ~] = build_with_controllers();
 DebugScript.helper.quiet(@() net.initialize);
 [gen, bus, avr, pss] = layers(net);
 A_gen = gen.get_sys().A;  A_bus = bus.get_sys().A;
 net.para_base.Hz = 2 * net.para_base.Hz;
-assert(~net.s_edit.l_staleEquilibrium && DebugScript.helper.handle_Hz(gen) == net.para_base.Hz)
+assert(~net.s_edit.l_staleEquilibrium && gen.s_edit.str_odefcn == "editted")
 
 A_gen2 = gen.get_sys().A;
-assert(~gen.s_edit.l_staleOdefcn && ~avr.s_edit.l_staleOdefcn && ~pss.s_edit.l_staleOdefcn)
-assert(~isequal(A_gen2, A_gen))
+assert(gen.s_edit.str_odefcn == "updated" && avr.s_edit.str_odefcn == "updated" && pss.s_edit.str_odefcn == "updated")
+assert(DebugScript.helper.handle_Hz(gen) == net.para_base.Hz && ~isequal(A_gen2, A_gen))
 assert(~isequal(bus.get_sys().A, A_bus))
 
 [ref, ~] = build_with_controllers();
@@ -84,11 +84,12 @@ DebugScript.helper.quiet(@() ref.initialize);
 assert(norm(A_gen2 - gen_ref.get_sys().A) < 1e-9)
 assert(norm(bus.get_sys().A - bus_ref.get_sys().A) < 1e-9)
 
-% 制御器のハンドルも編集の時点で新しい Hz になり、単独で呼べる
+% 制御器の get_sys も、その制御器 (と入れ子の制御器) のハンドルを新しい Hz で作り直す
 net.para_base.Hz = 3 * net.para_base.Hz;
-assert(DebugScript.helper.handle_Hz(avr) == net.para_base.Hz && DebugScript.helper.handle_Hz(pss) == net.para_base.Hz)
+assert(avr.s_edit.str_odefcn == "editted" && pss.s_edit.str_odefcn == "editted")
 avr.get_sys();
-assert(~avr.s_edit.l_staleOdefcn)
+assert(avr.s_edit.str_odefcn == "updated" && pss.s_edit.str_odefcn == "updated")
+assert(DebugScript.helper.handle_Hz(avr) == net.para_base.Hz && DebugScript.helper.handle_Hz(pss) == net.para_base.Hz)
 
 
 %% Point needs no equilibrium but uses the edited model
@@ -101,9 +102,9 @@ A0 = gen.get_sys("Point", rv_point(c_idx{1})).A;
 A0_bus = bus.get_sys("Point", rv_point).A;
 
 gen.tab_parameter.dynamics.D = 3 * gen.tab_parameter.dynamics.D;
-assert(net.s_edit.l_staleEquilibrium && gen.s_edit.l_staleOdefcn)
+assert(net.s_edit.l_staleEquilibrium && gen.s_edit.str_odefcn == "editted")
 A1 = gen.get_sys("Point", rv_point(c_idx{1})).A;
-assert(~gen.s_edit.l_staleOdefcn && ~isequal(A1, A0))
+assert(gen.s_edit.str_odefcn == "updated" && ~isequal(A1, A0))
 assert(~isequal(bus.get_sys("Point", rv_point).A, A0_bus))
 assert(net.s_edit.l_staleEquilibrium)      % 平衡点は古いまま
 
@@ -120,10 +121,10 @@ assert_stale_error(@() gc.get_sys(), str_staleID)
 DebugScript.helper.quiet(@() net.initialize);
 sys0 = gc.get_sys();
 gc.para_dynamics.kI = 2 * gc.para_dynamics.kI;
-assert(gc.s_edit.l_staleOdefcn && net.s_edit.l_staleEquilibrium)
+assert(gc.s_edit.str_odefcn == "editted" && net.s_edit.l_staleEquilibrium)
 assert_stale_error(@() gc.get_sys(), str_staleID)
 assert_stale_error(@() gc.get_sys(gc.rv_Xequilibrium, zeros(2,1), zeros(2,1), gc.rv_Uequilibrium), str_staleID)
-assert(~gc.s_edit.l_staleOdefcn)
+assert(gc.s_edit.str_odefcn == "updated")
 
 % 失敗した net.get_sys の後もエラーのまま
 assert_stale_error(@() net.get_sys(), str_staleID)
@@ -143,9 +144,9 @@ assert(norm(ssdata_all(sys1) - ssdata_all(gc_ref.get_sys())) < 1e-9)
 [net, gc] = build_with_agc();
 DebugScript.helper.quiet(@() net.initialize);
 net.para_base.Hz = 2 * net.para_base.Hz;
-assert(DebugScript.helper.handle_Hz(gc) == net.para_base.Hz && ~net.s_edit.l_staleEquilibrium)
+assert(gc.s_edit.str_odefcn == "editted" && ~net.s_edit.l_staleEquilibrium)
 gc.get_sys();
-assert(~gc.s_edit.l_staleOdefcn)
+assert(gc.s_edit.str_odefcn == "updated" && DebugScript.helper.handle_Hz(gc) == net.para_base.Hz)
 
 
 %% Initialize of a controller that designs with get_sys still passes
@@ -162,7 +163,7 @@ DebugScript.helper.quiet(@() net.initialize);
 gen = net.a_Bus{1}.a_Component{1};
 gen.tab_parameter.dynamics.D = 3 * gen.tab_parameter.dynamics.D;
 assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=str_load)) == "GUILDA:CPFsolver:StaleEquilibrium")
-assert(~gen.s_edit.l_staleOdefcn)
+assert(gen.s_edit.str_odefcn == "updated")
 
 
 %% CPF after a network Hz edit keeps the path
@@ -171,9 +172,9 @@ DebugScript.helper.quiet(@() net.initialize);
 gen = net.a_Bus{1}.a_Component{1};
 res0 = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=str_load));
 net.para_base.Hz = 2 * net.para_base.Hz;
-assert(DebugScript.helper.handle_Hz(gen) == net.para_base.Hz && ~net.s_edit.l_staleEquilibrium)
+assert(gen.s_edit.str_odefcn == "editted" && ~net.s_edit.l_staleEquilibrium)
 res1 = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=str_load));
-assert(~gen.s_edit.l_staleOdefcn)
+assert(gen.s_edit.str_odefcn == "updated" && DebugScript.helper.handle_Hz(gen) == net.para_base.Hz)
 assert(isequal(res1.rv_lambda, res0.rv_lambda) && isequal(res1.cm_Vbus, res0.cm_Vbus))
 
 

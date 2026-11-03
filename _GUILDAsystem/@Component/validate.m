@@ -31,7 +31,7 @@ function flag = validate(obj, l_message)
     nu = numel(sv_u);
     ny = numel(sv_y);
 
-    r_omega0 = obj.r_Hz;    % omega0 is the nominal frequency in Hz (models multiply by 2*pi)
+    r_omega0 = obj.get_Hz();    % omega0 is the nominal frequency in Hz (models multiply by 2*pi)
     r_t      = 0;
     rr_param = obj.para_dynamics.tab_parameter{:,obj.sv_para};
 

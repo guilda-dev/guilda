@@ -3,5 +3,5 @@ function set_bus(obj,bus)
 %
 % Called by Bus.add_component, replace_component and remove_component.
     obj.a_Bus = bus;
-    obj.check_edit(true);    % use the frequency of the network the bus belongs to
+    obj.mark_odefcn();    % the handles read the frequency of the network the bus belongs to
 end

@@ -24,7 +24,7 @@ DebugScript.helper.quiet(@() net.initialize);
 h_dx = comp.f_dx;
 net.a_Bus{2}.str_tag = "BX";
 
-assert(~comp.s_edit.l_staleOdefcn && ~net.s_edit.l_staleEquilibrium)
+assert(comp.s_edit.str_odefcn == "updated" && ~net.s_edit.l_staleEquilibrium)
 sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
 assert(sol.odeResults.t(end) == 1)
 net.get_sys();

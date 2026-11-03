@@ -139,7 +139,7 @@ assert(tab_net.Hz == 50 && tab_net.baseMVA == 250)
 net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(str_path, Initialize=false));
 assert(net2.tab_parameter.base.Hz == 50 && net2.tab_parameter.base.baseMVA == 250)
 assert(net2.a_Bus{2}.l_isSlack && ~net2.a_Bus{1}.l_isSlack)
-assert(net2.a_Bus{1}.a_Component{1}.r_Hz == 50)
+assert(net2.a_Bus{1}.a_Component{1}.get_Hz() == 50)
 
 % network/parameter.csv の無い古いフォルダ・値が NaN の列は既定値 (GUILDA.config の Hz, 100 MVA)
 writetable(table(nan, 300, 'VariableNames', ["Hz","baseMVA"]), fullfile(str_path, "network", "parameter.csv"));
@@ -250,11 +250,11 @@ assert(sol.odeResults.t(end) == 2)
 assert(height(n1.tab_editLog) == 0 && ~n1.s_edit.l_staleEquilibrium)
 comp.tab_parameter.dynamics.D = comp.tab_parameter.dynamics.D * 2;
 assert(height(n1.tab_editLog) == 1)                     % リスナーは 1 組だけ
-assert(comp.s_edit.l_staleOdefcn && n1.s_edit.l_staleEquilibrium)
+assert(comp.s_edit.str_odefcn == "editted" && n1.s_edit.l_staleEquilibrium)
 assert(error_id(@() n1.get_sys) == "GUILDA:PowerNetwork:EquilibriumStale")
 assert(height(net.tab_editLog) == 0 && ~net.s_edit.l_staleEquilibrium)  % 元の系統は変わらない
 DebugScript.helper.quiet(@() n1.initialize);
-assert(~comp.s_edit.l_staleOdefcn && ~n1.s_edit.l_staleEquilibrium)
+assert(comp.s_edit.str_odefcn == "updated" && ~n1.s_edit.l_staleEquilibrium)
 
 % 型の検査も効く (読み込む前と同じく、エラーになり値は変わらない)
 r_D = comp.para_dynamics.D;
@@ -270,7 +270,9 @@ n3.a_Branch{1}.tab_parameter.dynamics.R = 0.02;
 assert(height(n3.tab_editLog) == 1 && n3.s_edit.l_staleEquilibrium)
 s = load(str_mat);  n4 = s.net;
 n4.tab_parameter.base.Hz = 50;
-assert(DebugScript.helper.handle_Hz(n4.a_Bus{2}.a_Component{1}) == 50 && ~n4.s_edit.l_staleEquilibrium)
+assert(n4.a_Bus{2}.a_Component{1}.s_edit.str_odefcn == "editted" && ~n4.s_edit.l_staleEquilibrium)
+n4.get_sys();
+assert(DebugScript.helper.handle_Hz(n4.a_Bus{2}.a_Component{1}) == 50)
 s = load(str_mat);  n5 = s.net;
 DebugScript.helper.quiet(@() set_slack(n5.a_Bus{2}));
 assert(n5.a_Bus{2}.l_isSlack && n5.s_edit.l_staleEquilibrium)
@@ -296,9 +298,9 @@ avr = s.net.a_Bus{1}.a_Component{1}.a_LocalController{1};
 pss = avr.a_LocalController{1};
 assert(isa(avr, "controller.avr.AVR_ST1") && isa(pss, "controller.pss.PSS1"))
 avr.para_dynamics.kap = avr.para_dynamics.kap * 1.1;
-assert(height(s.net.tab_editLog) == 1 && s.net.s_edit.l_staleEquilibrium && avr.s_edit.l_staleOdefcn)
+assert(height(s.net.tab_editLog) == 1 && s.net.s_edit.l_staleEquilibrium && avr.s_edit.str_odefcn == "editted")
 pss.para_dynamics.kpss = pss.para_dynamics.kpss * 1.1;
-assert(height(s.net.tab_editLog) == 2 && pss.s_edit.l_staleOdefcn)
+assert(height(s.net.tab_editLog) == 2 && pss.s_edit.str_odefcn == "editted")
 
 % 結果オブジェクトが参照する系統も同じ
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");

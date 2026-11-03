@@ -93,7 +93,8 @@ assert(string(str_id) ~= str_q && isnan(gen.para_powerflow.Q))
 
 %% Built-in networks and the bundled CSV data do not warn about Q
 c_net = {@() network.IEEE9bus(), @() network.IEEE14bus(), @() network.IEEE14bus_NoTap(), @() network.IEEE14bus_lossless(), ...
-         @() network.IEEE68bus(), @() network.Ishizaki6Bus(), @() network.TEST31bus(), @() network.Txt3Bus(), @() network.Tutorial3bus()};
+         @() network.IEEE68bus(), @() network.Ishizaki6Bus(), @() network.TEST31bus(), @() network.Txt3Bus(), @() network.Tutorial3bus(), ...
+         @() network.IEEJ_EAST10(), @() network.IEEJ_EAST30(), @() network.IEEJ_WEST10(), @() network.IEEJ_WEST30()};
 for i = 1:numel(c_net)
     s = warning("error", str_q);    %#ok<CTPCT>
     c_warn = onCleanup(@() warning(s));

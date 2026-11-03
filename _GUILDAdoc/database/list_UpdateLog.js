@@ -262,5 +262,17 @@ const updateLogData = [
     "date": "2026-11-02",
     "type": "changed",
     "content": "The solver, result and event classes have uniform names, with no aliases: PFCsolver, PFCresult, OPFsolver, OPFresult, CPFsolver, CPFresult, ODEsolver, ODEresult, ODEevent, ODEprogress, LTIsolver and LTIresult replace PowerFlowCalculation, PowerFlowResult, OptimalPowerFlow, OPFResult, ContinuationPowerFlow, CPFResult, odeSimulator, odeSimulationResult, odeEventSet, odeProgress, odeLinearizer and LinearizationResult. Message IDs follow the new names. net.solver_* properties and GUILDA.config section names do not change."
+  },
+  {
+    "title": "Model functions built at analysis time",
+    "date": "2026-11-03",
+    "type": "changed",
+    "content": "Read the nominal frequency of a model with the method comp.get_Hz(), which replaces the frequency property of v5 development builds. The f_* handles are no longer built by the constructors: an analysis builds the ones that are not up to date (initialize, simulate, linearize, get_sys and validate), so a network Hz edit or attaching a model takes effect at the next analysis. For model authors: a constructor does not need obj.set_odefcn(); one that still calls it keeps working."
+  },
+  {
+    "title": "IEEJ standard networks",
+    "date": "2026-11-04",
+    "type": "added",
+    "content": "New network.IEEJ_EAST10, network.IEEJ_EAST30, network.IEEJ_WEST10 and network.IEEJ_WEST30, the IEEJ standard power system models converted from the report's Y-method data: gen-park generators, load-impedance loads, and the LAT=1 rotating exciter as an AVR_DC1 on every generator. Section=\"peak\" (default) or \"night\" selects the power-flow section, and LocalController=false builds them without the AVRs. Not modeled: governors (Pmech is constant), the constant-current part of the report's loads and their frequency dependence, and the 0 to 4 pu field voltage limit. The power flows agree with the report, but the dynamics differ: the WEST models do not reproduce the report's stability tables, and simulate has no line opening. See each class help for the conversions and the comparison."
   }
 ];

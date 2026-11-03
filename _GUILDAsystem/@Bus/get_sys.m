@@ -16,7 +16,7 @@ function [sys, varargout] = get_sys(obj, opt)
 % the equilibrium, a vector in the order of bus.get_variable_map(), or {sim, t}.
 % The model is not changed.
 %
-% Stale f_* handles are rebuilt first. Without Point, a bus on a network stops with the
+% Out-of-date f_* handles are built first. Without Point, a bus on a network stops with the
 % error GUILDA:PowerNetwork:EquilibriumStale when net.initialize() is needed.
 %
 % Outputs: `sys`, a descriptor state-space model with state, input and output names;

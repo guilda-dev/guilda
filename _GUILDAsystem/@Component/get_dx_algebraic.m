@@ -11,6 +11,12 @@ function DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)
 %
 % See also ODEsolver, Component.fcn_dx, Component.fcn_I
 
+    % Called directly, the handles may not be built yet. Only the own state is read here:
+    % in a simulation, the solver has already brought every layer up to date.
+    if obj.s_edit.str_odefcn ~= "updated"
+        obj.check_edit();
+    end
+
     rv_x = obj.iv_odeX;
     rv_u = obj.iv_odeU;
 

@@ -1,6 +1,6 @@
 # `PowerNetwork.get_sys` 調査: ワークフロー・データ・編集・引数・一時データ
 
-> 当時の調査記録です。調査の基準は `951800e` で、以後の変更は本文に反映していません。現状は [status.md](status.md) と [v4-migration.md](v4-migration.md) を見てください。
+> 当時の調査記録です。調査の基準は `951800e` で、以後の変更は本文に反映していません(周波数と `f_*` の状態の名前だけは、現在の `get_Hz()` と `s_edit.str_odefcn` に置き換えて書いています(当時は Dependent プロパティと論理値のフラグでした))。現状は [status.md](status.md) と [v4-migration.md](v4-migration.md) を見てください。
 
 現行実装の調査メモです。改善案は後続の作業でこのノートを基に作成します。`odeLinearizer` 内部の数値計算(Kron / DAE / Feedback)は姉妹ノート `notes/get-sys-linearization.md`(ブランチ `docs/get-sys-linearization`)の範囲で、ここでは入出力だけを扱います。
 
@@ -121,7 +121,7 @@ output.result = result                          @PowerNetwork/get_sys.m:33
 
 | データ | 所有者 | 性質 | 根拠 |
 |---|---|---|---|
-| Hz、baseMVA(系統) | `PowerNetwork.para_base` | 正本。`Component` の `r_Hz` は親をたどって読みます | `@PowerNetwork/PowerNetwork.m:97,177-180`, `_auxiliary/PowerSystemModel.m:21-23`, `_auxiliary/@LayerPackage/LayerPackage.m:90-100` |
+| Hz、baseMVA(系統) | `PowerNetwork.para_base` | 正本。`Component` の `get_Hz()` は親をたどって読みます | `@PowerNetwork/PowerNetwork.m:97,177-180`, `_auxiliary/PowerSystemModel.m:21-23`, `_auxiliary/@LayerPackage/LayerPackage.m:90-100` |
 | Y 行列 | どこにも保持しません | 呼び出しのたびに `Branch` と母線シャントから計算します | `@PowerNetwork/get_admittance_matrix.m:19-32` |
 | V の平衡点 | `Bus.c_Vequilibrium` | 正本。機器と制御器は Dependent で読みます | `@Bus/Bus.m:43`, `@Component/Component.m:238-245`, `@LocalController/LocalController.m:256-282` |
 | I の平衡点 | `Component.c_Iequilibrium` | 正本。`Bus.c_Iequilibrium` は Dependent の和です | `@Component/Component.m:90`, `@Bus/Bus.m:129-136` |
@@ -147,7 +147,7 @@ output.result = result                          @PowerNetwork/get_sys.m:33
 
 | 重複 | 同期の方法 | 問題の有無 |
 |---|---|---|
-| パラメータと `f_*` の中の値 | `l_staleOdefcn` と `check_edit` | 層別 `get_sys` では同期しません(E01) |
+| パラメータと `f_*` の中の値 | `str_odefcn` と `check_edit` | 層別 `get_sys` では同期しません(E01) |
 | Hz: `para_base` と `f_*` の中の値 | 全層に `mark_stale_odefcn` | `f_*` は同期しますが `local_LQR.K` は同期しません(E03) |
 | P, Q: `para_powerflow` と平衡点の電流 | `Bus.set_equilibrium` | OPF の解とは同期しません(E11) |
 | baseMVA: 系統の `para_base` と機器の `para_operation.baseMVA` | 同期しません。別の意味です(系統基準と機器定格) | 定格は Q 配分に使いますが、古くなる扱いではありません(E04) |
@@ -164,7 +164,7 @@ output.result = result                          @PowerNetwork/get_sys.m:33
 1. `Parameter` の各値に `PreSet` / `PostSet` リスナーがあります(`_auxiliary/@Parameter/add_entry.m:23-24`)。
 2. `PostSet` は型を確認し、値が変わっていれば `log_edit` を呼びます(`_auxiliary/@Parameter/callbackPostSet.m:13-19`)。同じ値の再代入は記録されません **[実行 E02]**。
 3. `log_edit` は `edit_effect` で影響を判定し(`_auxiliary/@LayerPackage/log_edit.m:17-18`、表は `_auxiliary/@LayerPackage/LayerPackage.m:130-159`)、次を行います。
-   - `l_staleOdefcn` を設定します。`base` のときは全層、それ以外は所有者だけです(`_auxiliary/@LayerPackage/log_edit.m:19-25`)。
+   - `str_odefcn` を設定します。`base` のときは全層、それ以外は所有者だけです(`_auxiliary/@LayerPackage/log_edit.m:19-25`)。
    - 親へ順に伝えます(`_auxiliary/@LayerPackage/log_edit.m:37-39`)。
    - `PowerNetwork` に届くと、`str_editFlag`、`l_staleEquilibrium`、`tab_editLog` を更新します。**未初期化(`"unset"`)の間は記録しません**(`_auxiliary/@LayerPackage/log_edit.m:27-33`)。
    - `handle_edit` でスラックの一意性を保ちます(`_auxiliary/@LayerPackage/log_edit.m:36`, `@PowerNetwork/PowerNetwork.m:182-199`)。
@@ -181,7 +181,7 @@ output.result = result                          @PowerNetwork/get_sys.m:33
 
 ### 3.2 編集の種類ごとの結果
 
-**[実行 E02]** 3母線系統(AVR と AGC 付き)で `initialize` 後に各編集を行い、確認しました。`fcn` 列は機器 / AVR / AGC の `l_staleOdefcn` です。
+**[実行 E02]** 3母線系統(AVR と AGC 付き)で `initialize` 後に各編集を行い、確認しました。`fcn` 列は機器 / AVR / AGC の `str_odefcn` です。
 
 | 編集 | fcn | 平衡点 stale | `log` 行数 | `net.get_sys` |
 |---|---|---|---|---|
@@ -205,7 +205,7 @@ output.result = result                          @PowerNetwork/get_sys.m:33
 
 - **[実行 E02]** `avr.tab_parameter = ...` と `agc.tab_parameter = ...` は `MATLAB:class:noSetMethod` で失敗します。`LocalController` と `GlobalController` には `set.tab_parameter` がありません(`Component`、`Bus`、`Branch`、`PowerNetwork` にはあります)。制御器の編集は `para_dynamics` を直接使います。
 - **[実行 exp3]** 型の違う値の代入は例外になりません。リスナー内のエラーは MATLAB の警告に変わり、値は元に戻され、記録もされません(`_auxiliary/@Parameter/callbackPostSet.m:13-15`)。
-- **[事実]** `local_LQR` の `Q`, `R`, `V0` は `Parameter` ではなく通常のプロパティで、`set` メソッドから `log_edit` を呼びます(`_GUILDAobject/+controller/local_LQR.m:97-108,203-208`)。`Parameter` ではないので `l_staleOdefcn` は立ちませんが、`initialize` で `K` と一緒に作り直されます(`:156-157`)。
+- **[事実]** `local_LQR` の `Q`, `R`, `V0` は `Parameter` ではなく通常のプロパティで、`set` メソッドから `log_edit` を呼びます(`_GUILDAobject/+controller/local_LQR.m:97-108,203-208`)。`Parameter` ではないので `str_odefcn` は立ちませんが、`initialize` で `K` と一緒に作り直されます(`:156-157`)。
 - **[実行 E22]** `calculate_powerflow`、`optimize_powerflow`、CPF は、初期化済みのネットワークの編集状態を変えず、その後の `get_sys` にも影響しません(`A` の差 0)。
 
 ### 3.3 すり抜ける経路
