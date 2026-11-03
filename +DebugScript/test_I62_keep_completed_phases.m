@@ -50,8 +50,7 @@ assert(output.tEnd == 1 && sol.rv_t(end) == 1 && output.nPhasesDone == 1)
 ME = output.exception;
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:ODEsolver:InitialConditionFailed", DebugScript.helper.msg_id(ME))
 assert(contains(ME.message, "phase 2") && contains(ME.message, "t = [1, 1.2]"), ME.message)
-assert(DebugScript.helper.msg_id(ME.cause{1}) == "MATLAB:daeic12:NeedBetterY0", DebugScript.helper.msg_id(ME.cause{1}))
-assert(DebugScript.helper.msg_id(ME.cause{2}) == "MATLAB:decic:IndexGTOne", DebugScript.helper.msg_id(ME.cause{2}))
+assert(DebugScript.helper.msg_id(ME.cause{1}) == "GUILDA:ODEsolver:AlgebraicNotSolved", DebugScript.helper.msg_id(ME.cause{1}))
 
 
 %% First phase failure returns an empty result
@@ -149,7 +148,7 @@ assert(DebugScript.helper.msg_id(ME.cause{1}) == "MATLAB:ode45:MassSingularYes",
 ev = ODEevent("huge", net, "TimeSpan", [1,1.2], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", 1e6);
 [~, flag, output] = run(net, [0,2], ev);
 assert(flag == -1 && output.tEnd == 1)
-assert(DebugScript.helper.msg_id(output.exception.cause{2}) == "MATLAB:decic:ConvergenceFail", DebugScript.helper.msg_id(output.exception.cause{2}))
+assert(DebugScript.helper.msg_id(output.exception.cause{1}) == "GUILDA:ODEsolver:AlgebraicNotSolved", DebugScript.helper.msg_id(output.exception.cause{1}))
 
 
 %% Solver error with ode23t returns the completed phases

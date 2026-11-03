@@ -737,6 +737,48 @@ catch ME
 end
 
 
+%% Differential states are continuous at the phase boundaries
+% 区間の境界で微分状態 (質量行列が掛かる状態) は直前の値のまま、代数変数 (母線電圧、
+% 代数状態、入力) だけを新しい区間の網で解き直す。地絡の始まりと終わり、負荷の解列を確かめる
+ev1 = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+ev2 = ODEevent("trip",  net, "TimeSpan", [1.5,1.7], "TripUnit", "LPQ2B003");
+[sol, flag, output] = net.simulate([0,2], ev1, ev2);
+assert(flag == 1, output.message)
+[d_x, d_v] = boundary_jumps(net, sol);
+assert(numel(d_x) == 4 && all(d_x == 0), "微分状態の跳び " + mat2str(d_x))
+assert(d_v(1) > 1e-2, "地絡の始まりで電圧が解き直されていない")
+
+
+%% Fault in IEEJ WEST10 keeps the rotor angles
+% IEEJ WEST10 (AVR の質量行列が対角でない) の B003 の地絡は、Tolerance 1e-6 では初期条件の
+% 計算が微分状態を固定できず、G1 の delta が地絡の直前に 1.5156 から 1.8073 へ跳んでいた
+% (警告 InitialConditionRelaxed のみで結果は誤り)。どの Tolerance でも跳ばない
+net = DebugScript.helper.quiet(@() network.IEEJ_WEST10(Section="peak"));
+ev  = ODEevent("fault", net, "TimeSpan", [0.1,0.17], "FaultBus", "B003");
+for tol = [1e-4, 1e-6]
+    lastwarn("");
+    [sol, flag, output] = net.simulate([0,1], ev, Progress="none", Tolerance=tol, AbsoluteTolerance=1e-8);
+    assert(flag == 1, output.message)
+    assert(isempty(lastwarn()), lastwarn())
+    [d_x, d_v] = boundary_jumps(net, sol);
+    assert(numel(d_x) == 2 && all(d_x == 0), "微分状態の跳び " + mat2str(d_x))
+    assert(all(d_v > 1e-2), "代数変数が解き直されていない " + mat2str(d_v))
+end
+
+
+%% IEEJ WEST10 starts from its equilibrium for any time span
+% 以前は ode15s 自身の初期条件の計算 (疎で対角でない質量行列の daeic3) が区間の長さに
+% よって失敗し、[0,5] や [0,10] が既定の許容誤差で t = 0 で止まった
+net = DebugScript.helper.quiet(@() network.IEEJ_WEST10(Section="peak"));
+for t_end = [1, 10]
+    for atol = [1e-4, 1e-6, 1e-8]
+        [sol, flag, output] = net.simulate([0,t_end], Progress="none", AbsoluteTolerance=atol);
+        assert(flag == 1, output.message)
+        assert(sol.rv_t(end) == t_end)
+    end
+end
+
+
 %% Event outside the simulation time warns
 ev = ODEevent("late", net, "TimeSpan", [5,6], "FaultBus", "B008");
 lastwarn("");
@@ -752,6 +794,41 @@ function u = boom(t)
         error("DebugScript:boom", "boom at t = %g", t)
     end
     u = 0;
+end
+
+function [d_x, d_v] = boundary_jumps(net, sol)
+% 区間の各境界 (時刻が 2 回現れる行) での、微分状態と母線電圧の最大の変化
+% 解列中の機器 (NaN) の状態は除く。微分状態は機器・制御器の質量行列の非零の列
+    lv_dif = false(height(sol.tab_variable), 1);
+    c_comp = tools.cellfun(@(b) b.a_Component, net.a_Bus);
+    c_model = {};
+    for i = 1:numel(c_comp)
+        for j = 1:numel(c_comp{i})
+            m = c_comp{i}{j};
+            while true
+                c_model{end+1} = m; %#ok<AGROW>
+                if isempty(m.a_LocalController); break; end
+                m = m.a_LocalController{1};
+            end
+        end
+    end
+    c_model = [c_model, reshape(net.a_GlobalController, 1, [])];
+    for k = 1:numel(c_model)
+        m = c_model{k};
+        if isempty(m.sv_x); continue; end
+        sv_dif = m.sv_x(any(tools.read_mass(m) ~= 0, 1));
+        lv_dif = lv_dif | (sol.tab_variable.Kind == "x" & sol.tab_variable.Owner == string(m) ...
+                           & ismember(sol.tab_variable.Name, sv_dif));
+    end
+    lv_v = ismember(sol.tab_variable.Kind, ["Vre","Vim"]);
+    iv_b = find(diff(sol.rv_t) == 0);
+    d_x = zeros(1, numel(iv_b));
+    d_v = zeros(1, numel(iv_b));
+    for k = 1:numel(iv_b)
+        X = sol.rm_variable(iv_b(k) + [0,1], :);
+        d_x(k) = max([0, abs(diff(X(:, lv_dif)))], [], "omitnan");
+        d_v(k) = max([0, abs(diff(X(:, lv_v)))], [], "omitnan");
+    end
 end
 
 function set_property(obj, str_name, val)
