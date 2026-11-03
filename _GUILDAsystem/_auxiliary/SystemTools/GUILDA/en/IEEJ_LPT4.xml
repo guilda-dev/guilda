@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the class "IEEJ_LPT4".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="OutputOutOfRange">IEEJ_LPT4 ''{0}'': the turbine output {1} pu of the rated MW (Pmech / Prate, Prate = {2}) required at the equilibrium needs the servo position {3} pu, which is not within the limits [{4}, {5}] pu. Check Prate (the rated MW of the machine divided by the system base), widen pos_min and pos_max, or change the operating point of the generator.</entry>
+    </message>
+</rsccat>
