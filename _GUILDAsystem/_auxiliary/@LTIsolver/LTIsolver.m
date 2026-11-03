@@ -60,7 +60,7 @@ classdef LTIsolver < auxiliary
         %
         % A network creates its own (net.solver_LIN); net.reset_solver() replaces it with a
         % new one. The v3 form LTIsolver(net, NonUnit, Algorithm=...) is removed: any
-        % argument stops with GUILDA:Deprecated:OdeLinearizerConstructor (use net.linearize).
+        % argument stops with GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor (use net.linearize).
             v3_linearizer_constructor(varargin);        % COMPAT(v3)
         end
 

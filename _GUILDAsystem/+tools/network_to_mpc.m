@@ -13,7 +13,8 @@ function mpc = network_to_mpc(net)
 % Each branch is fitted to the MATPOWER branch model from its 2x2 admittance matrix
 % (R, X, B, tap, shift); a shunt part that the model cannot hold is moved to the bus
 % shunts GS/BS. Smax becomes RATE_A and Vargmax becomes ANGMIN/ANGMAX.
-% Stops with GUILDA:network_to_mpc:Unsupported when the network uses something the
+% Stops with GUILDA:network_to_mpc:LoadNoPQ, BranchLimit, BranchNoImpedance or
+% BranchAdmittance when the network uses something the
 % MATPOWER model cannot express: a finite branch Imax, Pmax or Qmax, a load without
 % fixed P and Q, or a branch admittance matrix that does not fit the branch model.
 % mpc.bus_name, mpc.gen_name and mpc.branch_name hold the GUILDA tags.

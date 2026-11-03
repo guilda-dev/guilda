@@ -158,7 +158,7 @@
       <li><code>net.initialize</code> evaluates the point that <code>get_equilibrium</code> returns. A wrong size or an error in a model function stops it (<code>GUILDA:PowerNetwork:InitializeEquilibriumSize</code>, <code>InitializeModelSize</code>, <code>InitializeModelFailed</code>). A point where the state moves gives the warning <code>GUILDA:PowerNetwork:EquilibriumResidual</code>.</li>
       <li>A controller can use the input names <code>"Xall"</code> and <code>"Yall"</code> to observe all the states or outputs of the component. It must then override <code>set_inputs</code>; see <code>controller.local_LQR</code>. The names <code>"X"</code> and <code>"Y"</code> are errors.</li>
       <li>A component has one chain of local controllers: one <code>"avr"</code> or <code>"local"</code> controller, and a <code>"pss"</code> under an AVR. A new one replaces the old one with the warning <code>GUILDA:Component:ReplaceController</code>.</li>
-      <li><code>getCompPQ(obj, x, V, u, param)</code>, with <code>V</code> as <code>[abs; angle]</code>, is needed only by the continuation power flow with <code>UseInternalState=true</code>; without it, that analysis stops with <code>GUILDA:CPFsolver:MissingGetCompPQ</code>.</li>
+      <li><code>getCompPQ(obj, x, V, u, param)</code>, with <code>V</code> as <code>[abs; angle]</code>, is needed only by the continuation power flow with <code>UseInternalState=true</code>; without it, that analysis stops with <code>GUILDA:build_layout:MissingGetCompPQ</code>.</li>
     </ul>
 
     <!-- ============================== GENERATOR ============================== -->

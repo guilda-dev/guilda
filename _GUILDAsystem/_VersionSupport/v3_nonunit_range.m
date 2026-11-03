@@ -1,7 +1,7 @@
 function v3_nonunit_range(s_options, n_bus)
 % Reject a bus that does not exist in the retired option NonUnit.
 %
-% v3 compatibility hook of LTIsolver.solve: stops with GUILDA:LTIsolver:NonUnit.
+% v3 compatibility hook of LTIsolver.solve: stops with GUILDA:v3_nonunit_range:NonUnit.
 %
 % Inputs:
 %
