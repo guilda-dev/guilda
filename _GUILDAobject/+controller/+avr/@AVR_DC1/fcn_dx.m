@@ -26,6 +26,8 @@ function dx = fcn_dx(t, x, V, I, u, param, omega0) %#ok
     aex1 = param(6);
     aex2 = param(7);    
     bex  = param(9);    
+    Vfld_max = param(12);
+    Vfld_min = param(13);
 
     Vtr  = x(1);
     Vap  = x(2);
@@ -48,6 +50,10 @@ function dx = fcn_dx(t, x, V, I, u, param, omega0) %#ok
 
     % 励磁器
     dx3 = -( aex1 + aex2 * exp(bex*Vfld) ) * Vfld + Vap;
+    % 界磁電圧の制限 (non-windup): 制限に達し、さらに外へ向かう間は止める
+    if (Vfld >= Vfld_max && dx3 >= 0) || (Vfld <= Vfld_min && dx3 <= 0)
+        dx3 = 0;
+    end
     % 安定化回路
     dx4 = -Vst;    
 

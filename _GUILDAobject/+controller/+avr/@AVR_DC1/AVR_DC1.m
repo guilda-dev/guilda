@@ -10,7 +10,9 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.abstract
 % - transducer: `ttr*dVtr/dt = -Vtr + |V|`
 % - amplifier: `tap*dVap/dt = -Vap + kap*(Vref + Vpss - Vtr - Vst)`, frozen while
 %   `Vap` is outside `(Vap_min, Vap_max)` and the input drives it further out
-% - exciter: `tex*dVfld/dt = -(aex1 + aex2*exp(bex*Vfld))*Vfld + Vap`
+% - exciter: `tex*dVfld/dt = -(aex1 + aex2*exp(bex*Vfld))*Vfld + Vap`, frozen while
+%   `Vfld` is at or beyond `Vfld_max` or `Vfld_min` and the input drives it further out
+%   (a non-windup limit on the field voltage)
 % - stabilizing feedback: `tst*dVst/dt = -Vst + kst*dVfld/dt`
 %
 % The output is `Vfield = Vfld`.
@@ -45,6 +47,8 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.abstract
                 param.bex     (1,1) double = 1.555 % [1/pu] Exponent of the exciter saturation.
                 param.tst     (1,1) double = 0.35 % [s] Time constant of the stabilizing feedback.
                 param.kst     (1,1) double = 0.063 % [pu] Gain of the stabilizing feedback.
+                param.Vfld_max (1,1) double = Inf % [pu] Upper limit of the field voltage (exciter output).
+                param.Vfld_min (1,1) double = -Inf % [pu] Lower limit of the field voltage (exciter output).
             end            
             arguments (Output)
                 obj % AVR_DC1 object.
@@ -61,13 +65,15 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.abstract
                                             "tex", param.tex    , "double", ...
                                             "bex", param.bex    , "double", ...
                                             "kst", param.kst    , "double", ...
-                                            "tst", param.tst    , "double");                       
+                                            "tst", param.tst    , "double", ...
+                                       "Vfld_max", param.Vfld_max, "double", ...
+                                       "Vfld_min", param.Vfld_min, "double");                       
 
             obj.key     = "avr";
             obj.sv_x    = ["Vtr";"Vap"; "Vfld"; "Vst"];
             obj.sv_u    = ["Vref";"Vpss"];   
             obj.sv_y    = "Vfield";
-            obj.sv_para = ["ttr"; "Vap_max"; "Vap_min"; "kap"; "tap"; "aex1"; "aex2"; "tex"; "bex"; "kst"; "tst"];              
+            obj.sv_para = ["ttr"; "Vap_max"; "Vap_min"; "kap"; "tap"; "aex1"; "aex2"; "tex"; "bex"; "kst"; "tst"; "Vfld_max"; "Vfld_min"];              
 
             obj.set_odefcn();
         end        
@@ -76,7 +82,8 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.abstract
         % Set the equilibrium state and reference voltage of the AVR and of its PSS.
         % The reference `Vref` is chosen so that the field voltage equals the
         % generator's equilibrium field voltage `u(2)`; `Vpss` is 0 at the equilibrium.
-        % An error is raised when the required amplifier output is outside `[Vap_min, Vap_max]`.
+        % An error is raised when the required amplifier output is outside `(Vap_min, Vap_max)`
+        % or when `u(2)` is outside `[Vfld_min, Vfld_max]`.
         %
         % Inputs:
         % - `V` [pu] Complex terminal voltage of the generator at the equilibrium.
@@ -88,8 +95,13 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.abstract
             aex2    = tab{:, 'aex2'   };
             bex     = tab{:, 'bex'    };
             kap     = tab{:, 'kap'    };
+            Vfld_max = tab{:, 'Vfld_max'};
+            Vfld_min = tab{:, 'Vfld_min'};
 
             Vfld_st = u(2);
+            if Vfld_st < Vfld_min || Vfld_st > Vfld_max
+                error(msg("GUILDA:AVR_DC1:FieldOutOfRange", char(obj.str_tag), num2str(Vfld_st), num2str(Vfld_min), num2str(Vfld_max)))
+            end
             Vap_st  = Vfld_st*(aex1 + aex2*exp(bex*Vfld_st));
             
             if Vap_st <= Vap_min || Vap_st >= Vap_max
