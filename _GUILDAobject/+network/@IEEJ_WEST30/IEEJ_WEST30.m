@@ -81,14 +81,9 @@ classdef IEEJ_WEST30 < PowerNetwork
 % at night: the largest real part of the eigenvalues is 0.20 in both sections with the
 % governors, and 0.34 (peak) and 0.33 (night) without them.
 %
-% Scenario: the folder `scenario/` holds the 12 cases of table 4.13 (`table4_13.csv`)
-% and the script `run_table4_13`, which runs each case as a fault and the opening of
-% the faulted circuits and judges it out of step as the report does (see its help). This
-% network agrees with the report in 5 of the 12 cases with or without the governors
-% (3 of 6 at peak, 2 of 6 at night): every case is unstable here. A test copy with a
-% constant-current P load, which GUILDA does not have, and the governors has a stable
-% equilibrium at night and a mode near zero damping at peak (real part 0.005), and agrees
-% in 11 (5 of 6 at peak, where case D is unstable, and 6 of 6 at night).
+% The comparison with the transient stability cases of table 4.13 of the report, with
+% its reference, criterion and measured agreement, is in
+% `_GUILDAverification/IEEJ_WEST30/README.md` of the repository.
 %
 % <@Examples>
 % Run the power flow of the night section and simulate case B of table 4.13: a fault at
@@ -102,16 +97,6 @@ classdef IEEJ_WEST30 < PowerNetwork
 % sc.add_open_branch("EL042", [0.17,10]);
 % net.add_scenario(sc);
 % sol = net.simulate(sc);
-% ```
-%
-% Run the 12 cases of table 4.13 with the script of the folder `scenario/`, copied out of
-% the class folder because MATLAB does not run files inside it:
-%
-% ```matlab
-% str_dir = fullfile(tempdir, "IEEJ_WEST30_scenario");
-% copyfile(fullfile(fileparts(which("network.IEEJ_WEST30")), "scenario"), str_dir);
-% addpath(str_dir);
-% tab = run_table4_13(Governor=true);
 % ```
 %
 % See also controller.avr.AVR_DC1, controller.governor.IEEJ_LPT1, controller.governor.IEEJ_LPT3, component.generator.park, component.load.impedance, Scenario

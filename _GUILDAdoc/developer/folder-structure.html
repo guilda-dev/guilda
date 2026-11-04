@@ -55,7 +55,7 @@
     <!-- ============================== OVERVIEW ============================== -->
     <h2 id="overview">Overview</h2>
     <figure class="dg-figure fs-figure">
-      <svg class="dg-svg" viewBox="0 0 480 524" role="img" aria-labelledby="fs-map-title">
+      <svg class="dg-svg" viewBox="0 0 480 624" role="img" aria-labelledby="fs-map-title">
         <title id="fs-map-title">Map of the GUILDA top-level folders and how they depend on each other</title>
         <defs>
           <marker id="fs-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--muted)"/></marker>
@@ -111,9 +111,17 @@
         <text x="147" y="470" text-anchor="middle" font-size="16" font-weight="bold" class="dg-mono" style="fill:var(--muted)">_GUILDAdoc</text>
         <text x="147" y="492" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">HTML docs · not on path</text>
 
-        <rect x="276" y="440" width="180" height="72" rx="4" stroke-width="1.5" stroke-dasharray="5 4" style="fill:var(--surface-subtle); stroke:var(--muted)"/>
-        <text x="366" y="470" text-anchor="middle" font-size="15" font-weight="bold" class="dg-mono" style="fill:var(--muted)">_GUILDAexport</text>
-        <text x="366" y="492" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">output · created on demand</text>
+        <!-- verification runs the models -->
+        <path class="dg-anim-dash" d="M366 440V390" fill="none" stroke-width="1.6" marker-end="url(#fs-ah)" style="stroke:var(--muted)"/>
+        <text x="374" y="420" font-size="11" style="fill:var(--muted)">runs the models</text>
+
+        <rect x="276" y="440" width="180" height="72" rx="4" stroke-width="1.5" style="fill:var(--surface-subtle); stroke:var(--muted)"/>
+        <text x="366" y="470" text-anchor="middle" font-size="13" font-weight="bold" class="dg-mono" style="fill:var(--muted)">_GUILDAverification</text>
+        <text x="366" y="492" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">vs literature · not on path</text>
+
+        <rect x="276" y="540" width="180" height="72" rx="4" stroke-width="1.5" stroke-dasharray="5 4" style="fill:var(--surface-subtle); stroke:var(--muted)"/>
+        <text x="366" y="570" text-anchor="middle" font-size="15" font-weight="bold" class="dg-mono" style="fill:var(--muted)">_GUILDAexport</text>
+        <text x="366" y="592" text-anchor="middle" font-size="12" style="fill:var(--ink-2)">output · created on demand</text>
       </svg>
       <figcaption>Arrows show which folder uses or produces another. Only folders on the MATLAB path can be called from user scripts; <code>@GUILDA</code> puts them there at startup.</figcaption>
     </figure>
@@ -176,6 +184,16 @@
         </div>
       </div>
       <div class="dg-row fs-c-other">
+        <div><code class="fs-name">_GUILDAverification/</code><span class="dg-badge is-muted">not on path</span></div>
+        <div>
+          <p>Verification of the bundled models against published results, one subfolder per network.</p>
+          <dl>
+            <dt>Belongs here</dt><dd>For each network: a <code>README.md</code> with the literature reference (link and bibliographic data only, never a copy of the paper or its figures), the criterion, the modelling differences and the latest measured agreement; the cases as Scenario CSV files; the published verdicts as CSV; and a comparison function. See its <code>README.md</code>.</dd>
+            <dt>Relation</dt><dd>Uses the public API of <code>_GUILDAsystem</code> and <code>_GUILDAobject</code> and is never called by them. Kept in releases. Not on the path: run a comparison with <code>run(...)</code> or after <code>cd</code> into its subfolder.</dd>
+          </dl>
+        </div>
+      </div>
+      <div class="dg-row fs-c-other">
         <div><code class="fs-name">_GUILDAexport/</code><span class="dg-badge is-muted">not on path</span><span class="dg-badge is-err">Git-ignored</span></div>
         <div>
           <p>Default output folder for exported data.</p>
@@ -202,6 +220,7 @@
       <div class="dg-row"><span class="dg-row-head">A helper function — used by one class only?</span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-yn"><span class="dg-badge is-ok">yes</span><code class="fs-dest fs-c-tutorial">&lt;that class&gt;/private/</code><span class="dg-badge is-muted">no</span><code class="fs-dest fs-c-system">_GUILDAsystem/+tools/</code></span></div>
       <div class="dg-row"><span class="dg-row-head">A renamed or removed public API</span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-system"><code class="fs-dest">_GUILDAsystem/_VersionSupport/</code><span class="fs-dest-note">a wrapper under the old name</span></span></div>
       <div class="dg-row"><span class="dg-row-head">A new tutorial</span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-tutorial"><code class="fs-dest">_GUILDAtutorial/</code><span class="fs-dest-note">and register it in <code>_GUILDAdoc/database/list_Tutorials.js</code></span></span></div>
+      <div class="dg-row"><span class="dg-row-head">A comparison of a bundled network with published results</span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-other"><code class="fs-dest">_GUILDAverification/&lt;Network&gt;/</code><span class="fs-dest-note">named after the network class, with its <code>README.md</code>, Scenario CSV cases, verdict CSV and comparison function; never inside the class folder, where MATLAB does not run the files of a subfolder</span></span></div>
       <div class="dg-row"><span class="dg-row-head">Retired code kept for reference</span><span class="dg-row-arrow" aria-hidden="true">→</span><span class="fs-c-other"><code class="fs-dest">archive/</code><span class="fs-dest-note">next to the original location (see <a href="#legacy">Legacy</a>)</span></span></div>
     </div>
 
