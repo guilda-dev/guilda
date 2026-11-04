@@ -692,6 +692,10 @@ sol = net.simulate([0, 50], sc);</code></pre>
       document.getElementById(tabId).classList.add('active');
       const btn = document.querySelector(`button[onclick="openTab('${tabId}')"]`);
       if(btn) btn.classList.add('active');
+      // Keep the open tab in the fragment (and ?lang= in the query) so a reload on Back reopens it
+      if (location.hash !== `#${tabId}`) {
+        try { history.replaceState(history.state, '', `${location.pathname}${location.search}#${tabId}`); } catch (e) {}
+      }
       const target = targetId ? document.getElementById(targetId) : null;
       if (target) target.scrollIntoView({ block: 'start' });
       else window.scrollTo(0, 0);
