@@ -15,15 +15,28 @@
     .cpf-seq .dg-sv text { font-size: 15px; paint-order: stroke; stroke: var(--dg-panel); stroke-width: 5px; stroke-linejoin: round; }
     .cpf-seq .dg-sv text.cpf-box { font-size: 12px; stroke: none; }
     .cpf-seq tspan.cpf-num { fill: var(--dg-accent); font-weight: bold; font-family: var(--dg-mono); }
-    .cpf-steps, .cpf-layout { font-size: 0.86rem; }
-    .cpf-steps td, .cpf-layout td { overflow-wrap: break-word; }
-    .cpf-steps td:first-child, .cpf-opts td:first-child, .cpf-data td:first-child { white-space: nowrap; }
-    .cpf-steps td small { display: block; }
-    .cpf-steps td:nth-child(2) { min-width: 13rem; }
-    .cpf-steps td:nth-child(5), .cpf-steps td:nth-child(6) { min-width: 9rem; }
+    .cpf-layout { font-size: 0.86rem; }
+    .cpf-layout td { overflow-wrap: break-word; }
+    .cpf-opts td:first-child, .cpf-data td:first-child { white-space: nowrap; }
+    /* Step cards: ID + call on top, then Does / Reads / Returns as labelled rows */
+    .cpf-steps { list-style: none; margin: 16px 0 24px; padding: 0; font-size: 0.9rem; line-height: 1.55; }
+    .cpf-steps > li { margin: 0 0 10px; padding: 10px 14px; border: 1px solid var(--dg-line); border-radius: 8px; background: var(--dg-card); }
+    .cpf-steps > li.cpf-loop { border-left: 4px solid var(--dg-accent); }
+    .cpf-steps > li > p { margin: 0 0 8px; }
+    .cpf-steps > li > p > b { margin-right: 0.6em; color: var(--dg-accent); font-family: var(--dg-mono); }
+    .cpf-steps > li > p > small { display: block; color: var(--dg-muted); }
+    .cpf-steps dl { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 4px 14px; margin: 0; }
+    .cpf-steps dt { margin: 0; color: var(--dg-muted); font-size: 0.75rem; font-weight: bold; line-height: 2; }
+    .cpf-steps dd { margin: 0; }
+    .cpf-steps dd ul { margin: 2px 0 0; padding-left: 1.2em; list-style: disc; }
+    .cpf-steps dd li { margin: 0; }
+    .cpf-steps code { overflow-wrap: anywhere; }
     @media (max-width: 640px) {
-      .cpf-steps td:first-child, .cpf-opts td:first-child, .cpf-data td:first-child { white-space: normal; }
-      .cpf-steps td:nth-child(n) { min-width: 0; }
+      .cpf-opts td:first-child, .cpf-data td:first-child { white-space: normal; }
+      .cpf-steps > li { padding: 8px 10px; }
+      .cpf-steps dl { grid-template-columns: 1fr; gap: 0; }
+      .cpf-steps dt { line-height: 1.6; }
+      .cpf-steps dd { margin-bottom: 6px; }
     }
   </style>
 </head>
@@ -34,8 +47,8 @@
   <main>
     <button type="button" class="developer-back-button" onclick="window.history.back()"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></button>
     <h1><span lang="en">Continuation Power Flow</span><span lang="ja">連続潮流計算</span></h1>
-    <p class="page-lead" lang="en"><code>net.calculate_continuation_powerflow()</code> starts from the equilibrium of <code>net.initialize</code>, scales the power of the components on the load buses by <code>(1 + λ)</code>, and follows the power-flow solution with a predictor-corrector method past the maximum loading point (the nose of the PV curve). The path comes back as a <code>ResultCPF</code>.</p>
-    <p class="page-lead" lang="ja"><code>net.calculate_continuation_powerflow()</code> は <code>net.initialize</code> の平衡点から出発し、負荷母線の機器の電力を <code>(1 + λ)</code> 倍しながら、予測子・修正子法で最大負荷点（PV カーブの先端）を越えるまで潮流解を追跡します。追跡した経路は <code>ResultCPF</code> として返ります。</p>
+    <p class="page-lead" lang="en"><code>net.calculate_continuation_powerflow()</code> starts from the equilibrium of <code>net.initialize</code>, scales the power of the components on the load buses by <code>(1 + λ)</code>, and traces the power-flow solution with a predictor-corrector method past the maximum loading point (the nose of the PV curve). Output: the path as a <code>ResultCPF</code>.</p>
+    <p class="page-lead" lang="ja"><code>net.calculate_continuation_powerflow()</code>: <code>net.initialize</code> の平衡点から出発し、負荷母線の機器の電力を <code>(1 + λ)</code> 倍しながら、予測子・修正子法で最大負荷点（PV カーブの先端）の先まで潮流解を追跡する機能。出力は経路を持つ <code>ResultCPF</code>。</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#purpose"><span lang="en">Purpose and entry point</span><span lang="ja">目的と入口</span></a>
@@ -52,14 +65,22 @@
     <h2 id="purpose"><span lang="en">Purpose and entry point</span><span lang="ja">目的と入口</span></h2>
 <pre><code>net.initialize();
 [result, flag, output] = net.calculate_continuation_powerflow(LoadBus=["B009","B014"], Name=Value, ...)</code></pre>
-    <p lang="en">The defaults are the properties of <code>net.solver_CPF</code> (a <code>SolverCPF</code>). A new solver reads them from <code>GUILDA.config("ContinuationPowerFlow")</code>: <code>@GUILDA/config/DefaultContinuationPowerFlow.json</code>, overridden by a file of the same name in <code>@GUILDA/user/</code>. A Name-Value option changes the setting for this call only.</p>
-    <p lang="ja">既定値は <code>net.solver_CPF</code>（<code>SolverCPF</code>）のプロパティです。ソルバーは生成時にこれを <code>GUILDA.config("ContinuationPowerFlow")</code>、つまり <code>@GUILDA/config/DefaultContinuationPowerFlow.json</code>（<code>@GUILDA/user/</code> に同名のファイルがあればそれで上書き）から読みます。Name-Value オプションはその呼び出しに限って設定を変えます。</p>
+    <ul lang="en">
+      <li>Defaults: the properties of <code>net.solver_CPF</code> (a <code>SolverCPF</code>).</li>
+      <li>A new solver reads them from <code>GUILDA.config("ContinuationPowerFlow")</code>: <code>@GUILDA/config/DefaultContinuationPowerFlow.json</code>, overridden by a file of the same name in <code>@GUILDA/user/</code>.</li>
+      <li>A Name-Value option applies to this call only.</li>
+    </ul>
+    <ul lang="ja">
+      <li>既定値: <code>net.solver_CPF</code>（<code>SolverCPF</code>）のプロパティ</li>
+      <li>ソルバー生成時に <code>GUILDA.config("ContinuationPowerFlow")</code> から読み込み: <code>@GUILDA/config/DefaultContinuationPowerFlow.json</code>（<code>@GUILDA/user/</code> の同名ファイルで上書き）</li>
+      <li>Name-Value オプション: その呼び出しのみに適用</li>
+    </ul>
     <table class="dg-table cpf-opts">
       <thead><tr><th lang="en">Option</th><th lang="ja">オプション</th><th lang="en">Solver property and default</th><th lang="ja">ソルバーのプロパティと既定値</th></tr></thead>
       <tbody>
         <tr><td><code>LoadBus</code></td>
-          <td lang="en" data-label="Property and default"><code>LoadBus = strings(1,0)</code>: tags of the buses whose components are scaled by <code>(1 + λ)</code>. Must not be empty: give it per call or set it on the solver.</td>
-          <td lang="ja" data-label="プロパティと既定値"><code>LoadBus = strings(1,0)</code>: 機器を <code>(1 + λ)</code> 倍する母線のタグ。空ではいけないので、呼び出しごとに与えるかソルバーに設定します。</td></tr>
+          <td lang="en" data-label="Property and default"><code>LoadBus = strings(1,0)</code>: tags of the buses whose components are scaled by <code>(1 + λ)</code>. Required: per call or on the solver.</td>
+          <td lang="ja" data-label="プロパティと既定値"><code>LoadBus = strings(1,0)</code>: 機器を <code>(1 + λ)</code> 倍する母線のタグ。必須: 呼び出しごとに指定、またはソルバーに設定</td></tr>
         <tr><td><code>InitialLambda</code></td>
           <td lang="en" data-label="Property and default"><code>InitialLambda = 0</code>: λ at the starting point</td>
           <td lang="ja" data-label="プロパティと既定値"><code>InitialLambda = 0</code>: 出発点での λ</td></tr>
@@ -71,23 +92,33 @@
           <td lang="ja" data-label="プロパティと既定値"><code>StepSize = 0.5</code>: 予測子の係数（最初のステップは接線、以降は割線）</td></tr>
         <tr><td><code>ArcLength</code></td>
           <td lang="en" data-label="Property and default"><code>ArcLength = 1e-3</code>: the corrected point satisfies <code>|x − x_current|² = ArcLength</code></td>
-          <td lang="ja" data-label="プロパティと既定値"><code>ArcLength = 1e-3</code>: 修正後の点は <code>|x − x_current|² = ArcLength</code> を満たします。</td></tr>
+          <td lang="ja" data-label="プロパティと既定値"><code>ArcLength = 1e-3</code>: 修正後の点が満たす条件 <code>|x − x_current|² = ArcLength</code></td></tr>
         <tr><td><code>Tolerance</code></td>
           <td lang="en" data-label="Property and default"><code>Tolerance = 1e-5</code>: <code>ConvTol</code> of the Newton-Raphson corrector (every element of the step below it)</td>
           <td lang="ja" data-label="プロパティと既定値"><code>Tolerance = 1e-5</code>: ニュートン・ラフソン修正子の <code>ConvTol</code>（更新量のすべての要素がこれ未満）</td></tr>
         <tr><td><code>UseInternalState</code></td>
           <td lang="en" data-label="Property and default"><code>UseInternalState = false</code>: when true, the generator powers follow their state equations through <code>getCompPQ</code></td>
-          <td lang="ja" data-label="プロパティと既定値"><code>UseInternalState = false</code>: true では発電機の電力が <code>getCompPQ</code> を通じて状態方程式に従います。</td></tr>
+          <td lang="ja" data-label="プロパティと既定値"><code>UseInternalState = false</code>: true で発電機の電力が <code>getCompPQ</code> を通じて状態方程式に追従</td></tr>
         <tr><td><code>Verbose</code></td>
           <td lang="en" data-label="Property and default"><code>Verbose = false</code>: print λ at each step</td>
-          <td lang="ja" data-label="プロパティと既定値"><code>Verbose = false</code>: 各ステップの λ を表示します。</td></tr>
+          <td lang="ja" data-label="プロパティと既定値"><code>Verbose = false</code>: 各ステップの λ を表示</td></tr>
         <tr><td><code>Plot</code>, <code>Export</code></td>
           <td lang="en" data-label="Property and default"><code>false</code>: call <code>result.Plot()</code> / <code>result.Export(...)</code> afterwards</td>
-          <td lang="ja" data-label="プロパティと既定値"><code>false</code>: 実行後に <code>result.Plot()</code> / <code>result.Export(...)</code> を呼びます。</td></tr>
+          <td lang="ja" data-label="プロパティと既定値"><code>false</code>: 実行後に <code>result.Plot()</code> / <code>result.Export(...)</code> を呼び出し</td></tr>
       </tbody>
     </table>
-    <p lang="en">Preconditions: a successful <code>net.initialize()</code> and no edit since then that makes the equilibrium stale; the bus types come from <code>Bus.get_pf_set</code>, so the slack bus is the one <code>l_isSlack</code> marks. The corrector also uses <code>GUILDA.config("NewtonRaphsonMethod")</code> for its other settings (<code>MaxIter = 1000</code>, <code>Increment = 1e-4</code> of the numerical Jacobian, <code>StepSize = 1</code>).</p>
-    <p lang="ja">前提条件: <code>net.initialize()</code> が成功しており、その後に平衡点を古くする編集がないこと。母線の種別は <code>Bus.get_pf_set</code> から決まるので、スラック母線は <code>l_isSlack</code> が示す母線です。修正子はその他の設定に <code>GUILDA.config("NewtonRaphsonMethod")</code>（<code>MaxIter = 1000</code>、数値ヤコビアンの <code>Increment = 1e-4</code>、<code>StepSize = 1</code>）を使います。</p>
+    <p lang="en">Preconditions:</p>
+    <ul lang="en">
+      <li>a successful <code>net.initialize()</code>, with no edit since that makes the equilibrium stale;</li>
+      <li>bus types from <code>Bus.get_pf_set</code>: the slack bus is the one <code>l_isSlack</code> marks.</li>
+    </ul>
+    <p lang="en">Other settings of the corrector: <code>GUILDA.config("NewtonRaphsonMethod")</code> (<code>MaxIter = 1000</code>, <code>Increment = 1e-4</code> of the numerical Jacobian, <code>StepSize = 1</code>).</p>
+    <p lang="ja">前提条件:</p>
+    <ul lang="ja">
+      <li><code>net.initialize()</code> が成功済みで、その後に平衡点を古くする編集なし</li>
+      <li>母線の種別は <code>Bus.get_pf_set</code> で決定: スラック母線は <code>l_isSlack</code> が示す母線</li>
+    </ul>
+    <p lang="ja">修正子のその他の設定: <code>GUILDA.config("NewtonRaphsonMethod")</code>（<code>MaxIter = 1000</code>、数値ヤコビアンの <code>Increment = 1e-4</code>、<code>StepSize = 1</code>）。</p>
 
     <!-- ============================== SEQUENCE ============================== -->
     <h2 id="sequence"><span lang="en">Call sequence</span><span lang="ja">呼び出し順</span></h2>
@@ -159,157 +190,322 @@
         <path class="dg-sv-line is-muted" d="M160 652H54" marker-end="url(#cpf-ah-m)"/>
         <text x="166" y="656"><tspan class="cpf-num">15</tspan> <tspan class="dg-mono">result, flag, output</tspan></text>
       </svg>
-      <figcaption lang="en">The numbers are the step IDs below (CPF-01 to CPF-15). Steps 10 to 12 repeat for each point of the path; inside step 11 the Newton-Raphson method evaluates <code>pf_equation</code>, which reads the buses and components.</figcaption>
-      <figcaption lang="ja">番号は下の処理ステップの ID（CPF-01〜CPF-15）です。ステップ 10〜12 は経路の点ごとに繰り返します。ステップ 11 の中でニュートン・ラフソン法が <code>pf_equation</code> を評価し、母線と機器を読みます。</figcaption>
+      <figcaption lang="en">Numbers: the step IDs below (CPF-01 to CPF-15). Steps 10 to 12 repeat for each point of the path. Inside step 11 the Newton-Raphson method evaluates <code>pf_equation</code>, which reads the buses and components.</figcaption>
+      <figcaption lang="ja">番号は下の処理ステップの ID（CPF-01〜CPF-15）。ステップ 10〜12 は経路の点ごとに反復。ステップ 11 の中でニュートン・ラフソン法が <code>pf_equation</code> を評価し、母線と機器を参照。</figcaption>
     </figure>
 
     <!-- ============================== STEPS ============================== -->
     <h2 id="steps"><span lang="en">Steps</span><span lang="ja">処理ステップ</span></h2>
-    <p lang="en"><code>check_network</code> is a local function of <code>@SolverCPF/solve.m</code>; <code>build_layout</code>, <code>pf_equation</code>, <code>predict</code>, and <code>correct</code> are in <code>@SolverCPF/private/</code>.</p>
-    <p lang="ja"><code>check_network</code> は <code>@SolverCPF/solve.m</code> のローカル関数、<code>build_layout</code>、<code>pf_equation</code>、<code>predict</code>、<code>correct</code> は <code>@SolverCPF/private/</code> にあります。</p>
-    <table class="dg-table cpf-steps">
-      <thead><tr>
-        <th>ID</th>
-        <th lang="en">Caller → callee.method</th><th lang="ja">呼び出し元 → 呼び出し先.メソッド</th>
-        <th lang="en">What it does</th><th lang="ja">処理内容</th>
-        <th lang="en">Reads</th><th lang="ja">読むもの</th>
-        <th lang="en">Returns or changes</th><th lang="ja">返すもの・変更するもの</th>
-      </tr></thead>
-      <tbody>
-        <tr>
-          <td>CPF-01</td>
-          <td>user → <code>PowerNetwork.calculate_continuation_powerflow</code><small><code>take_call_options</code></small></td>
-          <td lang="en" data-label="What it does">Separates <code>Plot</code> and <code>Export</code> from the solver options.</td>
-          <td lang="ja" data-label="処理内容"><code>Plot</code> と <code>Export</code> をソルバーのオプションから分けます。</td>
-          <td lang="en" data-label="Reads"><code>varargin</code></td><td lang="ja" data-label="読むもの"><code>varargin</code></td>
-          <td lang="en" data-label="Returns or changes"><code>c_nv</code>, <code>opt</code></td><td lang="ja" data-label="返すもの・変更するもの"><code>c_nv</code>、<code>opt</code></td>
-        </tr>
-        <tr>
-          <td>CPF-02</td>
-          <td><code>calculate_continuation_powerflow</code> → <code>PowerNetwork.check_edit</code></td>
-          <td lang="en" data-label="What it does">Builds the <code>f_*</code> handles that are not up to date (the corrector calls <code>f_dx</code>). The equilibrium is checked later, in CPF-05.</td>
-          <td lang="ja" data-label="処理内容">最新でない <code>f_*</code> ハンドルを構築します（修正子が <code>f_dx</code> を呼ぶため）。平衡点は後の CPF-05 で確認します。</td>
-          <td lang="en" data-label="Reads"><code>s_edit.str_odefcn</code> of every layer</td><td lang="ja" data-label="読むもの">各レイヤーの <code>s_edit.str_odefcn</code></td>
-          <td lang="en" data-label="Returns or changes"><code>f_*</code> handles; <code>str_odefcn = "updated"</code></td><td lang="ja" data-label="返すもの・変更するもの"><code>f_*</code> ハンドル、<code>str_odefcn = "updated"</code></td>
-        </tr>
-        <tr>
-          <td>CPF-03</td>
-          <td><code>calculate_continuation_powerflow</code> → <code>SolverCPF.get_options</code><small>→ <code>tools.resolve_options</code>, <code>validate_options</code></small></td>
-          <td lang="en" data-label="What it does">Maps the Name-Value names through <code>OptionMap</code>, checks the values, and fills the other settings from the solver.</td>
-          <td lang="ja" data-label="処理内容">Name-Value の名前を <code>OptionMap</code> で対応づけて値を検査し、残りの設定をソルバーから補います。</td>
-          <td lang="en" data-label="Reads"><code>c_nv</code>; public properties of <code>net.solver_CPF</code></td><td lang="ja" data-label="読むもの"><code>c_nv</code>、<code>net.solver_CPF</code> の public プロパティ</td>
-          <td lang="en" data-label="Returns or changes"><code>s_options</code>: struct with 8 fields (<code>LoadBus</code> as a 1 × n string row). The solver is not changed.</td>
-          <td lang="ja" data-label="返すもの・変更するもの"><code>s_options</code>: 8 フィールドの構造体（<code>LoadBus</code> は 1 × n の string 行）。ソルバーは変更しません。</td>
-        </tr>
-        <tr>
-          <td>CPF-04</td>
-          <td><code>calculate_continuation_powerflow</code> → <code>SolverCPF.solve(net, s_options)</code></td>
-          <td lang="en" data-label="What it does">Starts the timer and runs CPF-05 to CPF-14.</td>
-          <td lang="ja" data-label="処理内容">タイマーを開始し、CPF-05〜CPF-14 を実行します。</td>
-          <td lang="en" data-label="Reads"><code>s_options</code></td><td lang="ja" data-label="読むもの"><code>s_options</code></td>
-          <td lang="en" data-label="Returns or changes"><code>[result, flag, output]</code></td><td lang="ja" data-label="返すもの・変更するもの"><code>[result, flag, output]</code></td>
-        </tr>
-        <tr>
-          <td>CPF-05</td>
-          <td><code>SolverCPF.solve</code> → <code>check_network</code></td>
-          <td lang="en" data-label="What it does">Stops when a component has no equilibrium, when the equilibrium is stale, or when <code>LoadBus</code> is empty or names a bus that is not in the network.</td>
-          <td lang="ja" data-label="処理内容">平衡点を持たない機器があるとき、平衡点が古いとき、<code>LoadBus</code> が空かネットワークにない母線を含むときに停止します。</td>
-          <td lang="en" data-label="Reads"><code>Component.c_Iequilibrium</code>, <code>net.s_edit.l_staleEquilibrium</code>, <code>LoadBus</code>, bus tags</td>
-          <td lang="ja" data-label="読むもの"><code>Component.c_Iequilibrium</code>、<code>net.s_edit.l_staleEquilibrium</code>、<code>LoadBus</code>、母線のタグ</td>
-          <td lang="en" data-label="Returns or changes">— (errors only)</td><td lang="ja" data-label="返すもの・変更するもの">—（エラーのみ）</td>
-        </tr>
-        <tr>
-          <td>CPF-06</td>
-          <td><code>SolverCPF.solve</code> → <code>build_layout(net, useInt)</code></td>
-          <td lang="en" data-label="What it does">Lays out the CPF variables bus by bus: which entries of the full vector are unknown, which are fixed at the equilibrium, and which equations are solved (see the table below).</td>
-          <td lang="ja" data-label="処理内容">母線ごとに CPF の変数を配置します。全体ベクトルのどの要素が未知数で、どれが平衡点の値に固定され、どの方程式を解くかを決めます（下の表を参照）。</td>
-          <td lang="en" data-label="Reads"><code>Bus.c_Vequilibrium</code>, <code>Component.rv_Xequilibrium</code></td><td lang="ja" data-label="読むもの"><code>Bus.c_Vequilibrium</code>、<code>Component.rv_Xequilibrium</code></td>
-          <td lang="en" data-label="Returns or changes"><code>w</code>: <code>rv_BusVi</code> (rows of <code>[|V|; ∠V]</code>), <code>rm_BusRM</code> (selects the equations), <code>rm_BusEM</code> (unknowns → full vector), <code>CONSTANT</code>, <code>InitVal</code> (unknowns at the equilibrium)</td>
-          <td lang="ja" data-label="返すもの・変更するもの"><code>w</code>: <code>rv_BusVi</code>（<code>[|V|; ∠V]</code> の行）、<code>rm_BusRM</code>（解く方程式の選択）、<code>rm_BusEM</code>（未知数 → 全体ベクトル）、<code>CONSTANT</code>、<code>InitVal</code>（平衡点での未知数）</td>
-        </tr>
-        <tr>
-          <td>CPF-07</td>
-          <td><code>build_layout</code> → <code>Bus.get_pf_set</code></td>
-          <td lang="en" data-label="What it does">Gets the bus type (<code>"slack"</code>, <code>"PV"</code> when the summed <code>Q</code> of the components is NaN, else <code>"PQ"</code>) and stores where the bus voltage is in the full vector.</td>
-          <td lang="ja" data-label="処理内容">母線の種別（<code>"slack"</code>、機器の <code>Q</code> の和が NaN なら <code>"PV"</code>、それ以外は <code>"PQ"</code>）を得て、全体ベクトルでの母線電圧の位置を保存します。</td>
-          <td lang="en" data-label="Reads"><code>l_isSlack</code>, <code>para_powerflow</code> of the bus and its components</td><td lang="ja" data-label="読むもの">母線とその機器の <code>l_isSlack</code>、<code>para_powerflow</code></td>
-          <td lang="en" data-label="Returns or changes"><code>Bus.iv_CPFV</code> (1 × 2 indices)</td><td lang="ja" data-label="返すもの・変更するもの"><code>Bus.iv_CPFV</code>（1 × 2 のインデックス）</td>
-        </tr>
-        <tr>
-          <td>CPF-08</td>
-          <td><code>build_layout</code> → <code>Component</code><small><code>setPQ2Bus</code>; <code>getCompPQ</code></small></td>
-          <td lang="en" data-label="What it does">Sets the power function of each component: the equilibrium power <code>V·conj(I)</code>, constant; or, with <code>UseInternalState</code>, <code>getCompPQ(x, V, u, param)</code> and the place of the states in the full vector (slack and PV buses only).</td>
-          <td lang="ja" data-label="処理内容">各機器の電力関数を設定します。一定値の平衡点電力 <code>V·conj(I)</code>、または <code>UseInternalState</code> では <code>getCompPQ(x, V, u, param)</code> と、全体ベクトルでの状態の位置（スラック母線と PV 母線のみ）です。</td>
-          <td lang="en" data-label="Reads"><code>c_Vequilibrium</code>, <code>c_Iequilibrium</code>, <code>tab_parameter.dynamics</code></td><td lang="ja" data-label="読むもの"><code>c_Vequilibrium</code>、<code>c_Iequilibrium</code>、<code>tab_parameter.dynamics</code></td>
-          <td lang="en" data-label="Returns or changes"><code>Component.f_PQ2Bus</code> (<code>@(x, V, u)</code> → <code>[P; Q]</code> [pu]); <code>Component.iv_CPFX</code> (with <code>UseInternalState</code>)</td>
-          <td lang="ja" data-label="返すもの・変更するもの"><code>Component.f_PQ2Bus</code>（<code>@(x, V, u)</code> → <code>[P; Q]</code> [pu]）、<code>Component.iv_CPFX</code>（<code>UseInternalState</code> のとき）</td>
-        </tr>
-        <tr>
-          <td>CPF-09</td>
-          <td><code>SolverCPF.solve</code> → <code>NewtonRaphsonMethod(NRMFcn=f_PF, NRMJac=[], NRMVal=0)</code></td>
-          <td lang="en" data-label="What it does">Creates the corrector. <code>f_PF</code> is <code>pf_equation</code> bound to the network, the layout, <code>LoadBus</code>, and the admittance matrix; without <code>NRMJac</code> its Jacobian is a central difference, which the predictor uses too. <code>ConvTol</code> is set to <code>Tolerance</code>.</td>
-          <td lang="ja" data-label="処理内容">修正子を作ります。<code>f_PF</code> はネットワーク、配置、<code>LoadBus</code>、アドミタンス行列を束縛した <code>pf_equation</code> です。<code>NRMJac</code> がないのでヤコビアンは中心差分で、予測子もこれを使います。<code>ConvTol</code> には <code>Tolerance</code> を設定します。</td>
-          <td lang="en" data-label="Reads"><code>get_admittance_matrix</code>, <code>w</code>, <code>s_options</code></td><td lang="ja" data-label="読むもの"><code>get_admittance_matrix</code>、<code>w</code>、<code>s_options</code></td>
-          <td lang="en" data-label="Returns or changes"><code>NRM</code>, <code>f_Jac</code>; <code>x_current = [w.InitVal; InitialLambda]</code></td>
-          <td lang="ja" data-label="返すもの・変更するもの"><code>NRM</code>、<code>f_Jac</code>、<code>x_current = [w.InitVal; InitialLambda]</code></td>
-        </tr>
-        <tr>
-          <td>CPF-10</td>
-          <td><code>SolverCPF.solve</code> → <code>predict(f_Jac, StepSize, x_current, x_past, t_old)</code></td>
-          <td lang="en" data-label="What it does">First step: the unit tangent of the solution curve, from the null space of the Jacobian (LU pivots), oriented so that λ increases; <code>x_pred = x_current + StepSize·t</code>. Later steps: the secant <code>x_pred = x_current + StepSize·(x_current − x_past)</code>.</td>
-          <td lang="ja" data-label="処理内容">最初のステップ: ヤコビアンの零空間（LU のピボット）から解曲線の単位接線を求め、λ が増える向きにそろえて <code>x_pred = x_current + StepSize·t</code> とします。以降のステップ: 割線 <code>x_pred = x_current + StepSize·(x_current − x_past)</code> です。</td>
-          <td lang="en" data-label="Reads"><code>x_current</code>, <code>x_past</code>, <code>f_Jac</code></td><td lang="ja" data-label="読むもの"><code>x_current</code>、<code>x_past</code>、<code>f_Jac</code></td>
-          <td lang="en" data-label="Returns or changes"><code>x_pred</code> ((n + 1) × 1, last entry λ), <code>t_old</code></td><td lang="ja" data-label="返すもの・変更するもの"><code>x_pred</code>（(n + 1) × 1、最後の要素が λ）、<code>t_old</code></td>
-        </tr>
-        <tr>
-          <td>CPF-11</td>
-          <td><code>SolverCPF.solve</code> → <code>correct</code> → <code>NewtonRaphsonMethod.solve</code><small>→ <code>pf_equation</code></small></td>
-          <td lang="en" data-label="What it does">Solves the power-flow equations plus the arc-length condition <code>|x − x_current|² − ArcLength = 0</code> from <code>x_pred</code>. <code>pf_equation</code> maps the unknowns into the full vector, computes <code>V·conj(Y·V)</code>, subtracts the component powers — multiplied by <code>(1 + λ)</code> on the buses of <code>LoadBus</code> (on every bus with <code>UseInternalState</code>) — adds the state equations <code>f_dx</code> (first one replaced by the active-power balance), and keeps the rows of <code>rm_BusRM</code>.</td>
-          <td lang="ja" data-label="処理内容"><code>x_pred</code> から、潮流方程式に弧長の条件 <code>|x − x_current|² − ArcLength = 0</code> を加えた式を解きます。<code>pf_equation</code> は未知数を全体ベクトルに戻し、<code>V·conj(Y·V)</code> を計算して機器の電力を差し引きます。機器の電力は <code>LoadBus</code> の母線（<code>UseInternalState</code> ではすべての母線）で <code>(1 + λ)</code> 倍します。さらに状態方程式 <code>f_dx</code>（最初の式は有効電力の釣り合いに置き換え）を加え、<code>rm_BusRM</code> の行を残します。</td>
-          <td lang="en" data-label="Reads"><code>Component.f_PQ2Bus</code>, <code>f_dx</code>, <code>rv_Uequilibrium</code>, <code>iv_CPFX</code>; <code>Bus.iv_CPFV</code>; <code>ArcLength</code></td>
-          <td lang="ja" data-label="読むもの"><code>Component.f_PQ2Bus</code>、<code>f_dx</code>、<code>rv_Uequilibrium</code>、<code>iv_CPFX</code>、<code>Bus.iv_CPFV</code>、<code>ArcLength</code></td>
-          <td lang="en" data-label="Returns or changes">the corrected point (new <code>x_current</code>), the previous point (new <code>x_past</code>), the number of Newton iterations <code>N</code></td>
-          <td lang="ja" data-label="返すもの・変更するもの">修正後の点（新しい <code>x_current</code>）、直前の点（新しい <code>x_past</code>）、ニュートン法の反復回数 <code>N</code></td>
-        </tr>
-        <tr>
-          <td>CPF-12</td>
-          <td><code>SolverCPF.solve</code></td>
-          <td lang="en" data-label="What it does">Appends the point, prints λ when <code>Verbose</code>, and stops the loop when λ of the corrected point is below 0 (the path has come back past the nose); otherwise continues until <code>MaxIterations</code> steps are done.</td>
-          <td lang="ja" data-label="処理内容">点を追加し、<code>Verbose</code> なら λ を表示します。修正後の点の λ が 0 未満になったら（先端を越えて戻ってきたら）ループを終え、そうでなければ <code>MaxIterations</code> ステップまで続けます。</td>
-          <td lang="en" data-label="Reads"><code>x_current(end)</code>, <code>MaxIterations</code></td><td lang="ja" data-label="読むもの"><code>x_current(end)</code>、<code>MaxIterations</code></td>
-          <td lang="en" data-label="Returns or changes"><code>sol</code>, <code>sol_pred</code> (first column NaN), <code>rv_N</code></td><td lang="ja" data-label="返すもの・変更するもの"><code>sol</code>、<code>sol_pred</code>（最初の列は NaN）、<code>rv_N</code></td>
-        </tr>
-        <tr>
-          <td>CPF-13</td>
-          <td><code>SolverCPF.solve</code></td>
-          <td lang="en" data-label="What it does">Maps the points back into the full vector, builds the bus phasors, and finds the nose (largest λ). The path passed the nose when the largest λ is neither the first nor the last point.</td>
-          <td lang="ja" data-label="処理内容">各点を全体ベクトルに戻して母線のフェーザを作り、先端（λ の最大値）を求めます。最大の λ が最初の点でも最後の点でもなければ、経路は先端を越えています。</td>
-          <td lang="en" data-label="Reads"><code>w.rm_BusEM</code>, <code>w.CONSTANT</code>, <code>w.rv_BusVi</code></td><td lang="ja" data-label="読むもの"><code>w.rm_BusEM</code>、<code>w.CONSTANT</code>、<code>w.rv_BusVi</code></td>
-          <td lang="en" data-label="Returns or changes"><code>rm_x</code>, <code>rm_xPrd</code>, <code>rv_lambda</code>, <code>cm_Vbus</code>; <code>flag</code> (logical); <code>output.iterations</code>, <code>.correctorIterations</code>, <code>.message</code></td>
-          <td lang="ja" data-label="返すもの・変更するもの"><code>rm_x</code>、<code>rm_xPrd</code>、<code>rv_lambda</code>、<code>cm_Vbus</code>、<code>flag</code>（logical）、<code>output.iterations</code>、<code>.correctorIterations</code>、<code>.message</code></td>
-        </tr>
-        <tr>
-          <td>CPF-14</td>
-          <td><code>SolverCPF.solve</code> → <code>ResultCPF(...)</code><small>→ <code>ResultBase</code></small></td>
-          <td lang="en" data-label="What it does">Stores the path and computes <code>r_lambdaMax</code> and <code>r_noseStep</code>.</td>
-          <td lang="ja" data-label="処理内容">経路を保存し、<code>r_lambdaMax</code> と <code>r_noseStep</code> を求めます。</td>
-          <td lang="en" data-label="Reads">the outputs of CPF-13; bus tags</td><td lang="ja" data-label="読むもの">CPF-13 の出力、母線のタグ</td>
-          <td lang="en" data-label="Returns or changes"><code>ResultCPF</code></td><td lang="ja" data-label="返すもの・変更するもの"><code>ResultCPF</code></td>
-        </tr>
-        <tr>
-          <td>CPF-15</td>
-          <td><code>calculate_continuation_powerflow</code> → user<small><code>result.Plot</code>, <code>result.Export</code></small></td>
-          <td lang="en" data-label="What it does">Runs <code>Plot</code> / <code>Export</code> when asked.</td>
-          <td lang="ja" data-label="処理内容">指定があれば <code>Plot</code> / <code>Export</code> を実行します。</td>
-          <td lang="en" data-label="Reads"><code>opt</code></td><td lang="ja" data-label="読むもの"><code>opt</code></td>
-          <td lang="en" data-label="Returns or changes"><code>[result, flag, output]</code></td><td lang="ja" data-label="返すもの・変更するもの"><code>[result, flag, output]</code></td>
-        </tr>
-      </tbody>
-    </table>
+    <p lang="en"><code>check_network</code>: local function of <code>@SolverCPF/solve.m</code>. <code>build_layout</code>, <code>pf_equation</code>, <code>predict</code>, <code>correct</code>: <code>@SolverCPF/private/</code>. Steps marked on the left repeat for each point of the path.</p>
+    <p lang="ja"><code>check_network</code>: <code>@SolverCPF/solve.m</code> のローカル関数。<code>build_layout</code>、<code>pf_equation</code>、<code>predict</code>、<code>correct</code>: <code>@SolverCPF/private/</code>。左に印のあるステップは経路の点ごとに反復。</p>
+    <ol class="cpf-steps">
+      <li>
+        <p><b>CPF-01</b> user → <code>PowerNetwork.calculate_continuation_powerflow</code><small><code>take_call_options</code></small></p>
+        <dl>
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd lang="en">Separates <code>Plot</code> and <code>Export</code> from the solver options.</dd>
+          <dd lang="ja"><code>Plot</code> と <code>Export</code> をソルバーのオプションから分離</dd>
+          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
+          <dd><code>varargin</code></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
+          <dd lang="en"><code>c_nv</code>, <code>opt</code></dd>
+          <dd lang="ja"><code>c_nv</code>、<code>opt</code></dd>
+        </dl>
+      </li>
+      <li>
+        <p><b>CPF-02</b> <code>calculate_continuation_powerflow</code> → <code>PowerNetwork.check_edit</code></p>
+        <dl>
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd lang="en">Builds the <code>f_*</code> handles that are not up to date (the corrector calls <code>f_dx</code>). Equilibrium check: later, in CPF-05.</dd>
+          <dd lang="ja">最新でない <code>f_*</code> ハンドルを構築（修正子が <code>f_dx</code> を呼ぶため）。平衡点の確認は後の CPF-05</dd>
+          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
+          <dd lang="en"><code>s_edit.str_odefcn</code> of every layer</dd>
+          <dd lang="ja">各レイヤーの <code>s_edit.str_odefcn</code></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
+          <dd lang="en"><code>f_*</code> handles; <code>str_odefcn = "updated"</code></dd>
+          <dd lang="ja"><code>f_*</code> ハンドル、<code>str_odefcn = "updated"</code></dd>
+        </dl>
+      </li>
+      <li>
+        <p><b>CPF-03</b> <code>calculate_continuation_powerflow</code> → <code>SolverCPF.get_options</code><small>→ <code>tools.resolve_options</code>, <code>validate_options</code></small></p>
+        <dl>
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd lang="en">Maps the Name-Value names through <code>OptionMap</code>, checks the values, fills the rest from the solver.</dd>
+          <dd lang="ja">Name-Value の名前を <code>OptionMap</code> で対応づけ、値を検査。残りの設定はソルバーから補完</dd>
+          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
+          <dd lang="en"><code>c_nv</code>; public properties of <code>net.solver_CPF</code></dd>
+          <dd lang="ja"><code>c_nv</code>、<code>net.solver_CPF</code> の public プロパティ</dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
+          <dd lang="en"><code>s_options</code>: struct with 8 fields (<code>LoadBus</code> as a 1 × n string row). Solver unchanged.</dd>
+          <dd lang="ja"><code>s_options</code>: 8 フィールドの構造体（<code>LoadBus</code> は 1 × n の string 行）。ソルバーは不変</dd>
+        </dl>
+      </li>
+      <li>
+        <p><b>CPF-04</b> <code>calculate_continuation_powerflow</code> → <code>SolverCPF.solve(net, s_options)</code></p>
+        <dl>
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd lang="en">Starts the timer; runs CPF-05 to CPF-14.</dd>
+          <dd lang="ja">タイマー開始。CPF-05〜CPF-14 を実行</dd>
+          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
+          <dd><code>s_options</code></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
+          <dd><code>[result, flag, output]</code></dd>
+        </dl>
+      </li>
+      <li>
+        <p><b>CPF-05</b> <code>SolverCPF.solve</code> → <code>check_network</code></p>
+        <dl>
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd lang="en">Stops when:
+            <ul>
+              <li>a component has no equilibrium;</li>
+              <li>the equilibrium is stale;</li>
+              <li><code>LoadBus</code> is empty or names a bus not in the network.</li>
+            </ul>
+          </dd>
+          <dd lang="ja">次の場合に停止:
+            <ul>
+              <li>平衡点を持たない機器がある</li>
+              <li>平衡点が古い</li>
+              <li><code>LoadBus</code> が空、またはネットワークにない母線を含む</li>
+            </ul>
+          </dd>
+          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
+          <dd lang="en"><code>Component.c_Iequilibrium</code>, <code>net.s_edit.l_staleEquilibrium</code>, <code>LoadBus</code>, bus tags</dd>
+          <dd lang="ja"><code>Component.c_Iequilibrium</code>、<code>net.s_edit.l_staleEquilibrium</code>、<code>LoadBus</code>、母線のタグ</dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
+          <dd lang="en">— (errors only)</dd>
+          <dd lang="ja">—（エラーのみ）</dd>
+        </dl>
+      </li>
+      <li>
+        <p><b>CPF-06</b> <code>SolverCPF.solve</code> → <code>build_layout(net, useInt)</code></p>
+        <dl>
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd lang="en">Lays out the CPF variables bus by bus (see the table below):
+            <ul>
+              <li>which entries of the full vector are unknown;</li>
+              <li>which are fixed at the equilibrium;</li>
+              <li>which equations are solved.</li>
+            </ul>
+          </dd>
+          <dd lang="ja">母線ごとに CPF の変数を配置（下の表を参照）
+            <ul>
+              <li>全体ベクトルのどの要素が未知数か</li>
+              <li>どの要素を平衡点の値に固定するか</li>
+              <li>どの方程式を解くか</li>
+            </ul>
+          </dd>
+          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
+          <dd lang="en"><code>Bus.c_Vequilibrium</code>, <code>Component.rv_Xequilibrium</code></dd>
+          <dd lang="ja"><code>Bus.c_Vequilibrium</code>、<code>Component.rv_Xequilibrium</code></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
+          <dd lang="en"><code>w</code>: <code>rv_BusVi</code> (rows of <code>[|V|; ∠V]</code>), <code>rm_BusRM</code> (selects the equations), <code>rm_BusEM</code> (unknowns → full vector), <code>CONSTANT</code>, <code>InitVal</code> (unknowns at the equilibrium)</dd>
+          <dd lang="ja"><code>w</code>: <code>rv_BusVi</code>（<code>[|V|; ∠V]</code> の行）、<code>rm_BusRM</code>（解く方程式の選択）、<code>rm_BusEM</code>（未知数 → 全体ベクトル）、<code>CONSTANT</code>、<code>InitVal</code>（平衡点での未知数）</dd>
+        </dl>
+      </li>
+      <li>
+        <p><b>CPF-07</b> <code>build_layout</code> → <code>Bus.get_pf_set</code></p>
+        <dl>
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd lang="en">Gets the bus type and stores where the bus voltage is in the full vector. Type: <code>"slack"</code>; <code>"PV"</code> when the summed <code>Q</code> of the components is NaN; else <code>"PQ"</code>.</dd>
+          <dd lang="ja">母線の種別を取得し、全体ベクトルでの母線電圧の位置を保存。種別: <code>"slack"</code>、機器の <code>Q</code> の和が NaN なら <code>"PV"</code>、それ以外は <code>"PQ"</code></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
+          <dd lang="en"><code>l_isSlack</code>, <code>para_powerflow</code> of the bus and its components</dd>
+          <dd lang="ja">母線とその機器の <code>l_isSlack</code>、<code>para_powerflow</code></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
+          <dd lang="en"><code>Bus.iv_CPFV</code> (1 × 2 indices)</dd>
+          <dd lang="ja"><code>Bus.iv_CPFV</code>（1 × 2 のインデックス）</dd>
+        </dl>
+      </li>
+      <li>
+        <p><b>CPF-08</b> <code>build_layout</code> → <code>Component</code><small><code>setPQ2Bus</code>; <code>getCompPQ</code></small></p>
+        <dl>
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd lang="en">Sets the power function of each component:
+            <ul>
+              <li>default: the equilibrium power <code>V·conj(I)</code>, constant;</li>
+              <li>with <code>UseInternalState</code>: <code>getCompPQ(x, V, u, param)</code> and the place of the states in the full vector (slack and PV buses only).</li>
+            </ul>
+          </dd>
+          <dd lang="ja">各機器の電力関数を設定
+            <ul>
+              <li>既定: 一定値の平衡点電力 <code>V·conj(I)</code></li>
+              <li><code>UseInternalState</code>: <code>getCompPQ(x, V, u, param)</code> と全体ベクトルでの状態の位置（スラック母線と PV 母線のみ）</li>
+            </ul>
+          </dd>
+          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
+          <dd lang="en"><code>c_Vequilibrium</code>, <code>c_Iequilibrium</code>, <code>tab_parameter.dynamics</code></dd>
+          <dd lang="ja"><code>c_Vequilibrium</code>、<code>c_Iequilibrium</code>、<code>tab_parameter.dynamics</code></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
+          <dd lang="en"><code>Component.f_PQ2Bus</code> (<code>@(x, V, u)</code> → <code>[P; Q]</code> [pu]); <code>Component.iv_CPFX</code> (with <code>UseInternalState</code>)</dd>
+          <dd lang="ja"><code>Component.f_PQ2Bus</code>（<code>@(x, V, u)</code> → <code>[P; Q]</code> [pu]）、<code>Component.iv_CPFX</code>（<code>UseInternalState</code> のとき）</dd>
+        </dl>
+      </li>
+      <li>
+        <p><b>CPF-09</b> <code>SolverCPF.solve</code> → <code>NewtonRaphsonMethod(NRMFcn=f_PF, NRMJac=[], NRMVal=0)</code></p>
+        <dl>
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd lang="en">Creates the corrector.
+            <ul>
+              <li><code>f_PF</code>: <code>pf_equation</code> bound to the network, the layout, <code>LoadBus</code>, and the admittance matrix.</li>
+              <li>Jacobian: central difference (no <code>NRMJac</code>); the predictor uses it too.</li>
+              <li><code>ConvTol</code> = <code>Tolerance</code>.</li>
+            </ul>
+          </dd>
+          <dd lang="ja">修正子を作成
+            <ul>
+              <li><code>f_PF</code>: ネットワーク、配置、<code>LoadBus</code>、アドミタンス行列を束縛した <code>pf_equation</code></li>
+              <li>ヤコビアン: 中心差分（<code>NRMJac</code> なし）。予測子も使用</li>
+              <li><code>ConvTol</code> = <code>Tolerance</code></li>
+            </ul>
+          </dd>
+          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
+          <dd lang="en"><code>get_admittance_matrix</code>, <code>w</code>, <code>s_options</code></dd>
+          <dd lang="ja"><code>get_admittance_matrix</code>、<code>w</code>、<code>s_options</code></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
+          <dd lang="en"><code>NRM</code>, <code>f_Jac</code>; <code>x_current = [w.InitVal; InitialLambda]</code></dd>
+          <dd lang="ja"><code>NRM</code>、<code>f_Jac</code>、<code>x_current = [w.InitVal; InitialLambda]</code></dd>
+        </dl>
+      </li>
+      <li class="cpf-loop">
+        <p><b>CPF-10</b> <code>SolverCPF.solve</code> → <code>predict(f_Jac, StepSize, x_current, x_past, t_old)</code></p>
+        <dl>
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd lang="en">
+            <ul>
+              <li>First step: the unit tangent of the solution curve, from the null space of the Jacobian (LU pivots), oriented so that λ increases; <code>x_pred = x_current + StepSize·t</code>.</li>
+              <li>Later steps: the secant <code>x_pred = x_current + StepSize·(x_current − x_past)</code>.</li>
+            </ul>
+          </dd>
+          <dd lang="ja">
+            <ul>
+              <li>最初のステップ: ヤコビアンの零空間（LU のピボット）による解曲線の単位接線。λ が増える向き。<code>x_pred = x_current + StepSize·t</code></li>
+              <li>以降のステップ: 割線 <code>x_pred = x_current + StepSize·(x_current − x_past)</code></li>
+            </ul>
+          </dd>
+          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
+          <dd lang="en"><code>x_current</code>, <code>x_past</code>, <code>f_Jac</code></dd>
+          <dd lang="ja"><code>x_current</code>、<code>x_past</code>、<code>f_Jac</code></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
+          <dd lang="en"><code>x_pred</code> ((n + 1) × 1, last entry λ), <code>t_old</code></dd>
+          <dd lang="ja"><code>x_pred</code>（(n + 1) × 1、最後の要素が λ）、<code>t_old</code></dd>
+        </dl>
+      </li>
+      <li class="cpf-loop">
+        <p><b>CPF-11</b> <code>SolverCPF.solve</code> → <code>correct</code> → <code>NewtonRaphsonMethod.solve</code><small>→ <code>pf_equation</code></small></p>
+        <dl>
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd lang="en">From <code>x_pred</code>, solves the power-flow equations plus the arc-length condition <code>|x − x_current|² − ArcLength = 0</code>. <code>pf_equation</code>:
+            <ul>
+              <li>maps the unknowns into the full vector and computes <code>V·conj(Y·V)</code>;</li>
+              <li>subtracts the component powers, multiplied by <code>(1 + λ)</code> on the buses of <code>LoadBus</code> (on every bus with <code>UseInternalState</code>);</li>
+              <li>adds the state equations <code>f_dx</code> (first one replaced by the active-power balance);</li>
+              <li>keeps the rows of <code>rm_BusRM</code>.</li>
+            </ul>
+          </dd>
+          <dd lang="ja"><code>x_pred</code> から、潮流方程式に弧長の条件 <code>|x − x_current|² − ArcLength = 0</code> を加えた式を求解。<code>pf_equation</code> の処理:
+            <ul>
+              <li>未知数を全体ベクトルに戻し、<code>V·conj(Y·V)</code> を計算</li>
+              <li>機器の電力を減算。<code>LoadBus</code> の母線（<code>UseInternalState</code> ではすべての母線）では <code>(1 + λ)</code> 倍</li>
+              <li>状態方程式 <code>f_dx</code> を追加（最初の式は有効電力の釣り合いに置換）</li>
+              <li><code>rm_BusRM</code> の行を抽出</li>
+            </ul>
+          </dd>
+          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
+          <dd lang="en"><code>Component.f_PQ2Bus</code>, <code>f_dx</code>, <code>rv_Uequilibrium</code>, <code>iv_CPFX</code>; <code>Bus.iv_CPFV</code>; <code>ArcLength</code></dd>
+          <dd lang="ja"><code>Component.f_PQ2Bus</code>、<code>f_dx</code>、<code>rv_Uequilibrium</code>、<code>iv_CPFX</code>、<code>Bus.iv_CPFV</code>、<code>ArcLength</code></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
+          <dd lang="en">the corrected point (new <code>x_current</code>), the previous point (new <code>x_past</code>), the number of Newton iterations <code>N</code></dd>
+          <dd lang="ja">修正後の点（新しい <code>x_current</code>）、直前の点（新しい <code>x_past</code>）、ニュートン法の反復回数 <code>N</code></dd>
+        </dl>
+      </li>
+      <li class="cpf-loop">
+        <p><b>CPF-12</b> <code>SolverCPF.solve</code></p>
+        <dl>
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd lang="en">
+            <ul>
+              <li>Appends the point; prints λ when <code>Verbose</code>.</li>
+              <li>Ends the loop when λ of the corrected point is below 0 (the path came back past the nose); otherwise continues up to <code>MaxIterations</code> steps.</li>
+            </ul>
+          </dd>
+          <dd lang="ja">
+            <ul>
+              <li>点を追加。<code>Verbose</code> なら λ を表示</li>
+              <li>修正後の点の λ が 0 未満（先端を越えて戻った）ならループ終了。それ以外は <code>MaxIterations</code> ステップまで継続</li>
+            </ul>
+          </dd>
+          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
+          <dd lang="en"><code>x_current(end)</code>, <code>MaxIterations</code></dd>
+          <dd lang="ja"><code>x_current(end)</code>、<code>MaxIterations</code></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
+          <dd lang="en"><code>sol</code>, <code>sol_pred</code> (first column NaN), <code>rv_N</code></dd>
+          <dd lang="ja"><code>sol</code>、<code>sol_pred</code>（最初の列は NaN）、<code>rv_N</code></dd>
+        </dl>
+      </li>
+      <li>
+        <p><b>CPF-13</b> <code>SolverCPF.solve</code></p>
+        <dl>
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd lang="en">
+            <ul>
+              <li>Maps the points back into the full vector and builds the bus phasors.</li>
+              <li>Finds the nose (largest λ). The path passed the nose when the largest λ is neither the first nor the last point.</li>
+            </ul>
+          </dd>
+          <dd lang="ja">
+            <ul>
+              <li>各点を全体ベクトルに戻し、母線のフェーザを作成</li>
+              <li>先端（λ の最大値）を探索。最大の λ が最初の点でも最後の点でもなければ、先端を通過済み</li>
+            </ul>
+          </dd>
+          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
+          <dd lang="en"><code>w.rm_BusEM</code>, <code>w.CONSTANT</code>, <code>w.rv_BusVi</code></dd>
+          <dd lang="ja"><code>w.rm_BusEM</code>、<code>w.CONSTANT</code>、<code>w.rv_BusVi</code></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
+          <dd lang="en"><code>rm_x</code>, <code>rm_xPrd</code>, <code>rv_lambda</code>, <code>cm_Vbus</code>; <code>flag</code> (logical); <code>output.iterations</code>, <code>.correctorIterations</code>, <code>.message</code></dd>
+          <dd lang="ja"><code>rm_x</code>、<code>rm_xPrd</code>、<code>rv_lambda</code>、<code>cm_Vbus</code>、<code>flag</code>（logical）、<code>output.iterations</code>、<code>.correctorIterations</code>、<code>.message</code></dd>
+        </dl>
+      </li>
+      <li>
+        <p><b>CPF-14</b> <code>SolverCPF.solve</code> → <code>ResultCPF(...)</code><small>→ <code>ResultBase</code></small></p>
+        <dl>
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd lang="en">Stores the path; computes <code>r_lambdaMax</code> and <code>r_noseStep</code>.</dd>
+          <dd lang="ja">経路を保存し、<code>r_lambdaMax</code> と <code>r_noseStep</code> を算出</dd>
+          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
+          <dd lang="en">the outputs of CPF-13; bus tags</dd>
+          <dd lang="ja">CPF-13 の出力、母線のタグ</dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
+          <dd><code>ResultCPF</code></dd>
+        </dl>
+      </li>
+      <li>
+        <p><b>CPF-15</b> <code>calculate_continuation_powerflow</code> → user<small><code>result.Plot</code>, <code>result.Export</code></small></p>
+        <dl>
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd lang="en">Runs <code>Plot</code> / <code>Export</code> when asked.</dd>
+          <dd lang="ja">指定があれば <code>Plot</code> / <code>Export</code> を実行</dd>
+          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
+          <dd><code>opt</code></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
+          <dd><code>[result, flag, output]</code></dd>
+        </dl>
+      </li>
+    </ol>
 
     <h3><span lang="en">Unknowns and equations by bus type</span><span lang="ja">母線種別ごとの未知数と方程式</span></h3>
-    <p lang="en">Set by <code>build_layout</code>. The full vector holds <code>[|V|; ∠V]</code> of every bus (and, with <code>UseInternalState</code>, the states of the components on slack and PV buses); entries that are not unknown stay at their equilibrium values. λ is one more unknown, and the arc-length condition one more equation.</p>
-    <p lang="ja"><code>build_layout</code> が決めます。全体ベクトルはすべての母線の <code>[|V|; ∠V]</code>（<code>UseInternalState</code> ではスラック母線と PV 母線の機器の状態も）を持ち、未知数でない要素は平衡点の値に固定されます。λ が未知数に、弧長の条件が方程式に 1 つずつ加わります。</p>
+    <ul lang="en">
+      <li>Set by <code>build_layout</code>.</li>
+      <li>Full vector: <code>[|V|; ∠V]</code> of every bus (with <code>UseInternalState</code>, also the states of the components on slack and PV buses); entries that are not unknown stay at their equilibrium values.</li>
+      <li>Plus one unknown λ and one equation, the arc-length condition.</li>
+    </ul>
+    <ul lang="ja">
+      <li><code>build_layout</code> が決定</li>
+      <li>全体ベクトル: すべての母線の <code>[|V|; ∠V]</code>（<code>UseInternalState</code> ではスラック母線と PV 母線の機器の状態も）。未知数でない要素は平衡点の値に固定</li>
+      <li>追加: 未知数 λ と、方程式として弧長の条件を 1 つずつ</li>
+    </ul>
     <table class="dg-table cpf-layout">
       <thead><tr><th lang="en">Bus type</th><th lang="ja">母線種別</th><th><code>UseInternalState = false</code></th><th><code>UseInternalState = true</code></th></tr></thead>
       <tbody>
@@ -321,14 +517,14 @@
           <td data-label="true"><span lang="en">unknowns</span><span lang="ja">未知数</span> <code>|V|</code>, <code>∠V</code>, <span lang="en">states 1 and 3…n</span><span lang="ja">状態 1 と 3…n</span>; <span lang="en">equations</span><span lang="ja">方程式</span> <code>P</code>, <code>Q</code>, <code>f_dx</code> 1 <span lang="en">(as the active-power balance)</span><span lang="ja">（有効電力の釣り合いとして）</span> <span lang="en">and</span><span lang="ja">と</span> 3…n</td></tr>
         <tr><td>PQ</td>
           <td data-label="false"><span lang="en">unknowns</span><span lang="ja">未知数</span> <code>|V|</code>, <code>∠V</code>; <span lang="en">equations</span><span lang="ja">方程式</span> <code>P</code>, <code>Q</code></td>
-          <td data-label="true"><span lang="en">the same; the states of components on PQ buses are not variables</span><span lang="ja">同じ。PQ 母線の機器の状態は変数に含めません。</span></td></tr>
+          <td data-label="true"><span lang="en">the same; the states of components on PQ buses are not variables</span><span lang="ja">同じ。PQ 母線の機器の状態は変数に含めない</span></td></tr>
       </tbody>
     </table>
 
     <!-- ============================== DATA ============================== -->
     <h2 id="data"><span lang="en">Data produced</span><span lang="ja">生成されるデータ</span></h2>
-    <p lang="en"><code>ResultCPF</code> (subclass of <code>ResultBase</code>) holds the traced path. Sizes are for <code>network.IEEE14bus</code> with <code>LoadBus=["B009","B014"]</code> and the defaults: 361 steps, so 362 points, with the nose at point 186 (λ ≈ 5.21).</p>
-    <p lang="ja"><code>ResultCPF</code>（<code>ResultBase</code> のサブクラス）は追跡した経路を持ちます。サイズは <code>network.IEEE14bus</code> で <code>LoadBus=["B009","B014"]</code>、既定の設定の場合です。361 ステップ、つまり 362 点で、先端は 186 点目（λ ≈ 5.21）です。</p>
+    <p lang="en"><code>ResultCPF</code> (subclass of <code>ResultBase</code>): the traced path. Sizes for <code>network.IEEE14bus</code> with <code>LoadBus=["B009","B014"]</code> and the defaults: 361 steps, so 362 points; nose at point 186 (λ ≈ 5.21).</p>
+    <p lang="ja"><code>ResultCPF</code>（<code>ResultBase</code> のサブクラス）: 追跡した経路。サイズは <code>network.IEEE14bus</code>、<code>LoadBus=["B009","B014"]</code>、既定の設定の場合: 361 ステップ（362 点）、先端は 186 点目（λ ≈ 5.21）。</p>
     <table class="dg-table cpf-data">
       <thead><tr><th lang="en">Property</th><th lang="ja">プロパティ</th><th lang="en">Contents and unit</th><th lang="ja">内容と単位</th><th lang="en">Size</th><th lang="ja">サイズ</th></tr></thead>
       <tbody>
@@ -343,28 +539,38 @@
         <tr><td><code>flag</code>, <code>output</code>, <code>options</code>, <code>str_solver</code>, <code>r_elapsed</code>, <code>l_success</code></td><td lang="en" data-label="Contents">from <code>ResultBase</code>: <code>flag</code> is true when the path passed the nose; <code>output.iterations</code> (number of steps), <code>output.correctorIterations</code> (1 × steps), <code>output.message</code>; <code>s_options</code>; <code>"SolverCPF"</code>; time [s]</td><td lang="ja" data-label="内容"><code>ResultBase</code> から: <code>flag</code> は経路が先端を越えたとき true。<code>output.iterations</code>（ステップ数）、<code>output.correctorIterations</code>（1 × ステップ数）、<code>output.message</code>、<code>s_options</code>、<code>"SolverCPF"</code>、経過時間 [s]</td><td data-label="Size" data-label-ja="サイズ">—</td></tr>
       </tbody>
     </table>
-    <p lang="en">No result is written back to the model: the equilibrium, the parameters, and the edit log stay as they were.</p>
-    <p lang="ja">結果はモデルに書き戻しません。平衡点、パラメータ、編集ログは元のままです。</p>
+    <p lang="en">Nothing is written back to the model: equilibrium, parameters, and edit log unchanged.</p>
+    <p lang="ja">モデルへの書き戻しなし。平衡点、パラメータ、編集ログは不変。</p>
 
     <!-- ============================== SIDE EFFECTS ============================== -->
     <h2 id="side-effects"><span lang="en">Side effects and caches</span><span lang="ja">副作用とキャッシュ</span></h2>
     <ul lang="en">
       <li><strong>Handles:</strong> CPF-02 builds the <code>f_*</code> handles that are not up to date, as every analysis does.</li>
-      <li><strong>Working data of the run:</strong> <code>Bus.iv_CPFV</code>, <code>Component.f_PQ2Bus</code>, and, with <code>UseInternalState</code>, <code>Component.iv_CPFX</code> are written by <code>build_layout</code> (only <code>SolverCPF</code> can set them). They stay on the objects after the run and are overwritten by the next one; nothing else reads them.</li>
-      <li><strong>Edit state:</strong> only <code>l_staleEquilibrium</code> is read. Any edit that makes the equilibrium stale (see <a href="class-design.html#edits">Class Design: Edit handling</a>) stops the next call until <code>net.initialize()</code> runs again; edits of <code>operation</code>, <code>OPF</code>, and <code>graph</code> parameters and of the network <code>Hz</code> do not.</li>
-      <li>The solver settings are not changed; the result keeps a reference to the network.</li>
+      <li><strong>Working data of the run:</strong> <code>Bus.iv_CPFV</code>, <code>Component.f_PQ2Bus</code>, and with <code>UseInternalState</code> <code>Component.iv_CPFX</code>, written by <code>build_layout</code> (settable by <code>SolverCPF</code> only). Kept on the objects after the run, overwritten by the next one, read by nothing else.</li>
+      <li><strong>Edit state:</strong> only <code>l_staleEquilibrium</code> is read. An edit that makes the equilibrium stale (see <a href="class-design.html#edits">Class Design: Edit handling</a>) stops the next call until <code>net.initialize()</code> runs again. Edits of <code>operation</code>, <code>OPF</code>, <code>graph</code> parameters and of the network <code>Hz</code> do not.</li>
+      <li>Solver settings unchanged; the result keeps a reference to the network.</li>
     </ul>
     <ul lang="ja">
-      <li><strong>ハンドル:</strong> CPF-02 は他の解析と同じく、最新でない <code>f_*</code> ハンドルを構築します。</li>
-      <li><strong>実行中の作業データ:</strong> <code>Bus.iv_CPFV</code>、<code>Component.f_PQ2Bus</code>、<code>UseInternalState</code> では <code>Component.iv_CPFX</code> を <code>build_layout</code> が書き込みます（設定できるのは <code>SolverCPF</code> だけです）。実行後もオブジェクトに残り、次の実行で上書きされます。他からは読まれません。</li>
-      <li><strong>編集状態:</strong> 読むのは <code>l_staleEquilibrium</code> だけです。平衡点を古くする編集（<a href="class-design.html#edits">クラス設計: 編集の扱い</a> を参照）があると、<code>net.initialize()</code> をやり直すまで次の呼び出しは停止します。<code>operation</code>、<code>OPF</code>、<code>graph</code> のパラメータとネットワークの <code>Hz</code> の編集では停止しません。</li>
-      <li>ソルバーの設定は変更しません。結果はネットワークへの参照を持ちます。</li>
+      <li><strong>ハンドル:</strong> CPF-02 が他の解析と同じく、最新でない <code>f_*</code> ハンドルを構築</li>
+      <li><strong>実行中の作業データ:</strong> <code>Bus.iv_CPFV</code>、<code>Component.f_PQ2Bus</code>、<code>UseInternalState</code> では <code>Component.iv_CPFX</code>。<code>build_layout</code> が書き込み（設定は <code>SolverCPF</code> のみ可能）。実行後もオブジェクトに残り、次の実行で上書き。他からの参照なし</li>
+      <li><strong>編集状態:</strong> 参照は <code>l_staleEquilibrium</code> のみ。平衡点を古くする編集（<a href="class-design.html#edits">クラス設計: 編集の扱い</a> を参照）の後は、<code>net.initialize()</code> を再実行するまで次の呼び出しが停止。<code>operation</code>、<code>OPF</code>、<code>graph</code> のパラメータとネットワークの <code>Hz</code> の編集では停止しない</li>
+      <li>ソルバーの設定は不変。結果はネットワークへの参照を保持</li>
     </ul>
 
     <!-- ============================== FAILURE ============================== -->
     <h2 id="failure"><span lang="en">Failure and flags</span><span lang="ja">失敗とフラグ</span></h2>
-    <p lang="en"><code>flag</code> is logical: <code>true</code> when the largest λ lies strictly inside the path, i.e. the trace passed the nose. When it did not within <code>MaxIterations</code> steps, <code>flag = false</code> and <code>output.message</code> suggests a larger <code>MaxIteration</code> or <code>StepSize</code>; the partial path is still returned. A corrector that does not converge only warns, and the trace continues from the point it reached. The IDs name message entries in <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> and are not MATLAB identifiers (see <a href="class-design.html#conventions">Class Design: Conventions</a>).</p>
-    <p lang="ja"><code>flag</code> は logical で、λ の最大値が経路の内側にあるとき、つまり先端を越えたときに <code>true</code> です。<code>MaxIterations</code> ステップ以内に越えなければ <code>flag = false</code> となり、<code>output.message</code> が <code>MaxIteration</code> または <code>StepSize</code> を大きくするよう示します。途中までの経路は返ります。修正子が収束しなくても警告だけで、到達した点から追跡を続けます。ID は <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> のメッセージ項目の名前で、MATLAB の識別子ではありません（<a href="class-design.html#conventions">クラス設計: 規約</a> を参照）。</p>
+    <ul lang="en">
+      <li><code>flag</code> (logical): <code>true</code> when the largest λ lies strictly inside the path, i.e. the trace passed the nose.</li>
+      <li>Nose not passed within <code>MaxIterations</code> steps: <code>flag = false</code>; <code>output.message</code> suggests a larger <code>MaxIteration</code> or <code>StepSize</code>; the partial path is still returned.</li>
+      <li>Corrector not converged: a warning only; the trace continues from the point reached.</li>
+      <li>The IDs name message entries in <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code>, not MATLAB identifiers (see <a href="class-design.html#conventions">Class Design: Conventions</a>).</li>
+    </ul>
+    <ul lang="ja">
+      <li><code>flag</code>（logical）: λ の最大値が経路の内側にあるとき、つまり先端を越えたときに <code>true</code></li>
+      <li><code>MaxIterations</code> ステップ以内に先端を越えない場合: <code>flag = false</code>。<code>output.message</code> が <code>MaxIteration</code> または <code>StepSize</code> の拡大を提案。途中までの経路は返却</li>
+      <li>修正子の非収束: 警告のみ。到達した点から追跡を継続</li>
+      <li>ID: <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> のメッセージ項目の名前。MATLAB の識別子ではない（<a href="class-design.html#conventions">クラス設計: 規約</a> を参照）</li>
+    </ul>
     <table class="dg-table">
       <thead><tr><th lang="en">When</th><th lang="ja">発生する時点</th><th lang="en">Error or warning</th><th lang="ja">エラー・警告</th></tr></thead>
       <tbody>
@@ -378,17 +584,17 @@
     <!-- ============================== EXTENSION ============================== -->
     <h2 id="extension"><span lang="en">Extension points</span><span lang="ja">拡張ポイント</span></h2>
     <ul lang="en">
-      <li><strong>Every component</strong> takes part through its equilibrium only (<code>c_Vequilibrium</code>, <code>c_Iequilibrium</code>, from <code>get_equilibrium</code>; see <a href="feature-initialize.html">Initialization</a>). Its power is held constant, scaled by <code>(1 + λ)</code> on the buses of <code>LoadBus</code>.</li>
-      <li><strong>With <code>UseInternalState=true</code></strong>, every component needs <code>getCompPQ(obj, x, V, u, param)</code>, with <code>V</code> as <code>[|V|; ∠V]</code> and <code>param</code> the dynamics parameters in the order of <code>sv_para</code>, returning the injected <code>[P; Q]</code> [pu]. The layout treats the states of a component on a slack or PV bus like a generator: state 1 is the rotor angle (fixed on the slack bus), state 2 the speed deviation (fixed at 0), and <code>f_dx</code> gives the remaining equations.</li>
-      <li>Branches enter only through <code>get_admittance_matrix</code>; controllers are not part of the CPF.</li>
+      <li><strong>Every component</strong>: takes part through its equilibrium only (<code>c_Vequilibrium</code>, <code>c_Iequilibrium</code>, from <code>get_equilibrium</code>; see <a href="feature-initialize.html">Initialization</a>). Power held constant, scaled by <code>(1 + λ)</code> on the buses of <code>LoadBus</code>.</li>
+      <li><strong>With <code>UseInternalState=true</code></strong>: every component needs <code>getCompPQ(obj, x, V, u, param)</code> returning the injected <code>[P; Q]</code> [pu]; <code>V</code> is <code>[|V|; ∠V]</code>, <code>param</code> the dynamics parameters in the order of <code>sv_para</code>. A component on a slack or PV bus is laid out like a generator: state 1 the rotor angle (fixed on the slack bus), state 2 the speed deviation (fixed at 0), <code>f_dx</code> the remaining equations.</li>
+      <li>Branches: only through <code>get_admittance_matrix</code>. Controllers: not part of the CPF.</li>
     </ul>
     <ul lang="ja">
-      <li><strong>すべての機器</strong>は平衡点（<code>get_equilibrium</code> による <code>c_Vequilibrium</code>、<code>c_Iequilibrium</code>。<a href="feature-initialize.html">初期化</a>を参照）だけで参加します。電力は一定に保たれ、<code>LoadBus</code> の母線では <code>(1 + λ)</code> 倍されます。</li>
-      <li><strong><code>UseInternalState=true</code> では</strong>、すべての機器に <code>getCompPQ(obj, x, V, u, param)</code> が必要です。<code>V</code> は <code>[|V|; ∠V]</code>、<code>param</code> は <code>sv_para</code> の順の動特性パラメータで、注入する <code>[P; Q]</code> [pu] を返します。スラック母線と PV 母線の機器の状態は発電機として扱われます。状態 1 は回転子角（スラック母線では固定）、状態 2 は速度偏差（0 に固定）で、残りの方程式は <code>f_dx</code> が与えます。</li>
-      <li>ブランチは <code>get_admittance_matrix</code> を通じてのみ関与し、制御器は CPF に関与しません。</li>
+      <li><strong>すべての機器</strong>: 平衡点（<code>get_equilibrium</code> による <code>c_Vequilibrium</code>、<code>c_Iequilibrium</code>。<a href="feature-initialize.html">初期化</a>を参照）のみで参加。電力は一定、<code>LoadBus</code> の母線では <code>(1 + λ)</code> 倍</li>
+      <li><strong><code>UseInternalState=true</code></strong>: すべての機器に <code>getCompPQ(obj, x, V, u, param)</code> が必要。注入する <code>[P; Q]</code> [pu] を返却。<code>V</code> は <code>[|V|; ∠V]</code>、<code>param</code> は <code>sv_para</code> の順の動特性パラメータ。スラック母線と PV 母線の機器は発電機として配置: 状態 1 は回転子角（スラック母線では固定）、状態 2 は速度偏差（0 に固定）、残りの方程式は <code>f_dx</code></li>
+      <li>ブランチ: <code>get_admittance_matrix</code> を通じてのみ関与。制御器: CPF に関与しない</li>
     </ul>
     <p lang="en">See <a href="model-implementation.html#contracts">Model Implementation: Contracts</a>.</p>
-    <p lang="ja"><a href="model-implementation.html#contracts">モデルの実装: 契約</a> を参照してください。</p>
+    <p lang="ja">参照: <a href="model-implementation.html#contracts">モデルの実装: 契約</a>。</p>
 
     <!-- ============================== RELATED ============================== -->
     <h2 id="related"><span lang="en">Related pages</span><span lang="ja">関連ページ</span></h2>
