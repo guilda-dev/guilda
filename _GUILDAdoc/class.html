@@ -141,7 +141,7 @@
           cells: (p) => [
             propertyName(p),
             p.unit ? `<span class="ref-unit">${escapeHtml(p.unit)}</span>` : muted('-'),
-            (p.description ? `<div class="markdown-content">${renderMarkdown(p.description)}</div>` : muted(tr('No description.', '説明はありません。')))
+            (p.description ? `<div class="markdown-content">${renderMarkdown(p.description)}</div>` : muted(tr('No description.', '説明なし。')))
               + (p.seeAlso.length ? `<p class="ref-see-also ref-muted" style="margin: 4px 0 0;">${tr('See also', '関連項目:')} ${p.seeAlso.map((item) => seeAlsoLink(item, className, pageData.methods.map((m) => m.name))).join(', ')}</p>` : '')
           ]
         }
@@ -167,7 +167,7 @@
           columns: () => [['name', tr('Method', 'メソッド')], ['summary', tr('Summary', '概要')]],
           cells: (m) => [
             methodName(m),
-            m.summary ? nl2br(m.summary) : muted(tr('No summary.', '概要はありません。'))
+            m.summary ? nl2br(m.summary) : muted(tr('No summary.', '概要なし。'))
           ]
         }
       }
@@ -199,7 +199,7 @@
       const renderRow = (row) => `<tr${row.inherited ? ' class="ref-inherited"' : ''}>${view.cells(row).map((cell) => `<td>${cell}</td>`).join('')}</tr>`;
       let body;
       if (!rows.length) {
-        body = `<tr><td colspan="${columns.length}" style="text-align:center; color: var(--muted);">${kind === 'property' ? tr('No matching properties found.', '該当するプロパティはありません。') : tr('No matching methods found.', '該当するメソッドはありません。')}</td></tr>`;
+        body = `<tr><td colspan="${columns.length}" style="text-align:center; color: var(--muted);">${kind === 'property' ? tr('No matching properties found.', '該当するプロパティなし。') : tr('No matching methods found.', '該当するメソッドなし。')}</td></tr>`;
       } else if (state.grouped && hasGroups(kind)) {
         body = groupRows(rows, 'Other', allRows).map((group) => `
           <tr class="ref-group-row"><th colspan="${columns.length}">${escapeHtml(groupLabel(group.name))} <span class="ref-muted">(${group.items.length})</span></th></tr>
@@ -312,10 +312,10 @@
         ${source ? `<p class="ref-source">${tr('Source:', 'ソース:')} <code>${escapeHtml(source)}</code></p>` : ''}
       `;
       if (deprecated) {
-        html += `<div class="ref-deprecated" role="note"><strong>${tr('Deprecated.', '非推奨です。')}</strong>${/^(true|1)$/i.test(deprecated) ? '' : `<p>${nl2br(deprecated)}</p>`}</div>`;
+        html += `<div class="ref-deprecated" role="note"><strong>${tr('Deprecated.', '非推奨。')}</strong>${/^(true|1)$/i.test(deprecated) ? '' : `<p>${nl2br(deprecated)}</p>`}</div>`;
       }
       if (!documented) {
-        html += `<div class="ref-notice">${tr('This class has no documentation comments yet. The tables below are generated from the source code. To add a description, follow the comment rules in <a href="developer/class-documentation.html">Class Documentation</a>.', 'このクラスにはまだドキュメントコメントがありません。以下の表はソースコードから生成しています。説明を追加するときは <a href="developer/class-documentation.html">Class Documentation</a> のコメント規約に従ってください。')}</div>`;
+        html += `<div class="ref-notice">${tr('This class has no documentation comments yet. The tables below are generated from the source code. To add a description, follow the comment rules in <a href="developer/class-documentation.html">Class Documentation</a>.', 'このクラスのドキュメントコメントは未記入。以下の表はソースコードから生成。説明の追加時は <a href="developer/class-documentation.html">Class Documentation</a> のコメント規約に準拠。')}</div>`;
       }
       [
         ['summary', tr('Summary', '概要'), c.Summary],
@@ -344,11 +344,11 @@
 
       sections.push(['properties', tr('Properties', 'プロパティ')]);
       html += `<h2 id="properties">${tr('Properties', 'プロパティ')}</h2>`;
-      html += pageData.properties.length ? renderMemberToolbar('property') : `<p>${tr('No properties.', 'プロパティはありません。')}</p>`;
+      html += pageData.properties.length ? renderMemberToolbar('property') : `<p>${tr('No properties.', 'プロパティなし。')}</p>`;
 
       sections.push(['methods', tr('Methods', 'メソッド')]);
       html += `<h2 id="methods">${tr('Methods', 'メソッド')}</h2>`;
-      html += pageData.methods.length ? renderMemberToolbar('method') : `<p>${tr('No methods.', 'メソッドはありません。')}</p>`;
+      html += pageData.methods.length ? renderMemberToolbar('method') : `<p>${tr('No methods.', 'メソッドなし。')}</p>`;
 
       if (events.length) {
         sections.push(['events', tr('Events', 'イベント')]);
@@ -371,11 +371,11 @@
     }
 
     if (!className) {
-      document.getElementById('dynamic-content').innerHTML = `<h1 style="color: var(--err);">${tr('Error: Class not specified', 'エラー: クラスが指定されていません')}</h1><p>${tr('The URL must specify a class name.', 'URL でクラス名を指定してください。')}</p>`;
+      document.getElementById('dynamic-content').innerHTML = `<h1 style="color: var(--err);">${tr('Error: Class not specified', 'エラー: クラス未指定')}</h1><p>${tr('The URL must specify a class name.', 'URL にクラス名の指定が必要。')}</p>`;
     } else if (!loader.hasIndex()) {
       document.getElementById('dynamic-content').innerHTML = `
         <h1>${escapeHtml(className)}</h1>
-        <div class="ref-empty"><p>${tr('The class reference has not been generated yet.', 'クラスリファレンスはまだ生成されていません。')}</p><p>${tr('Run <code>GUILDA.doc</code> in MATLAB to build it.', 'MATLAB で <code>GUILDA.doc</code> を実行すると生成されます。')}</p></div>`;
+        <div class="ref-empty"><p>${tr('The class reference has not been generated yet.', 'クラスリファレンスは未生成。')}</p><p>${tr('Run <code>GUILDA.doc</code> in MATLAB to build it.', 'MATLAB で <code>GUILDA.doc</code> を実行して生成。')}</p></div>`;
     } else {
       window.GuildaDocTree.mount(document.getElementById('source-tree'), {
         className: loader.findClass(className)?.Name || className

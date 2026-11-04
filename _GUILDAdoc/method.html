@@ -64,11 +64,11 @@
     const groupLabel = (name) => ({ Constructor: tr('Constructor', 'コンストラクタ'), Other: tr('Other', 'その他') })[name] || name;
 
     if (!className || !methodName) {
-      document.getElementById('dynamic-content').innerHTML = `<h1 style="color: var(--err);">${tr('Error: Missing Parameters', 'エラー: パラメーターが不足しています')}</h1>`;
+      document.getElementById('dynamic-content').innerHTML = `<h1 style="color: var(--err);">${tr('Error: Missing Parameters', 'エラー: パラメーター不足')}</h1>`;
     } else if (!loader.hasIndex()) {
       document.getElementById('dynamic-content').innerHTML = `
         <h1>${escapeHtml(methodName)}</h1>
-        <div class="ref-empty"><p>${tr('The class reference has not been generated yet.', 'クラスリファレンスはまだ生成されていません。')}</p><p>${tr('Run <code>GUILDA.doc</code> in MATLAB to build it.', 'MATLAB で <code>GUILDA.doc</code> を実行すると生成されます。')}</p></div>`;
+        <div class="ref-empty"><p>${tr('The class reference has not been generated yet.', 'クラスリファレンスは未生成。')}</p><p>${tr('Run <code>GUILDA.doc</code> in MATLAB to build it.', 'MATLAB で <code>GUILDA.doc</code> を実行して生成。')}</p></div>`;
     } else {
       document.getElementById('sidebar-back-btn').innerHTML = `
         <a href="${loader.pageUrl('class.html', { class: className })}" class="btn" style="width: 100%; text-align: center; margin-bottom: 20px; box-sizing: border-box;"><span lang="en">← Back to ${escapeHtml(className)}</span><span lang="ja">← ${escapeHtml(className)} に戻る</span></a>
@@ -122,8 +122,8 @@
           : `<ul class="ref-method-nav">${methods.map(item).join('')}</ul>`}`;
     }
 
-    // Input rows come from the arguments block of the source (v5 adds the
-    // descriptions there). Schema v4 may also have <@Parameters> rows.
+    // Input rows come from the arguments block of the source (schema v5 adds
+    // the descriptions there). Schema v4 may also have <@Parameters> rows.
     function inputRows(m) {
       const sourceArguments = (Array.isArray(m.Arguments) ? m.Arguments : []).filter((arg) => arg?.Kind !== 'Output');
       const tagged = new Map((Array.isArray(m.Parameters) ? m.Parameters : [])
@@ -152,8 +152,8 @@
       }));
     }
 
-    // Output rows: Outputs (v5), Kind "Output" entries in Arguments, then
-    // <@Returns> (v4), then the names on the function line.
+    // Output rows: Outputs (schema v5), Kind "Output" entries in Arguments, then
+    // <@Returns> (schema v4), then the names on the function line.
     function outputRows(m) {
       const outputs = Array.isArray(m.Outputs) && m.Outputs.length
         ? m.Outputs
@@ -214,7 +214,7 @@
         </table></div>`;
     }
 
-    // Throws is a list of error IDs in v5 and free text in v4.
+    // Throws is a list of error IDs in schema v5 and free text in schema v4.
     function renderThrows(raw) {
       if (Array.isArray(raw)) {
         const ids = toList(raw);
@@ -226,7 +226,7 @@
     function renderMethodPage(ownerName, m, methodNames) {
       const container = document.getElementById('dynamic-content');
       if (!m) {
-        container.innerHTML = `<h1 style="color: var(--err);">${tr('Method not found', 'メソッドが見つかりません')}</h1><p>${tr(`${escapeHtml(methodName)} does not exist in ${escapeHtml(ownerName)}.`, `${escapeHtml(ownerName)} に ${escapeHtml(methodName)} はありません。`)}</p>`;
+        container.innerHTML = `<h1 style="color: var(--err);">${tr('Method not found', '該当するメソッドなし')}</h1><p>${tr(`${escapeHtml(methodName)} does not exist in ${escapeHtml(ownerName)}.`, `${escapeHtml(ownerName)} に ${escapeHtml(methodName)} の定義なし。`)}</p>`;
         return;
       }
       const name = m.Name;
@@ -254,11 +254,11 @@
         deprecated ? `<span class="ref-badge is-deprecated">${tr('Deprecated', '非推奨')}</span>` : ''
       ].join('');
       const origin = defining && defining !== ownerName
-        ? tr(`Inherited from ${classLink(defining)}.`, `${classLink(defining)} から継承しています。`)
-        : (defining ? tr(`Method defined in the ${classLink(defining)} class.`, `${classLink(defining)} クラスで定義されたメソッドです。`) : '');
+        ? tr(`Inherited from ${classLink(defining)}.`, `${classLink(defining)} から継承。`)
+        : (defining ? tr(`Method defined in the ${classLink(defining)} class.`, `${classLink(defining)} クラスで定義されたメソッド。`) : '');
       const overrides = m.Overrides
         ? tr(` Overrides <a href="${loader.pageUrl('method.html', { class: m.Overrides, method: name })}">${escapeHtml(m.Overrides)}.${escapeHtml(name)}</a>.`,
-          ` <a href="${loader.pageUrl('method.html', { class: m.Overrides, method: name })}">${escapeHtml(m.Overrides)}.${escapeHtml(name)}</a> をオーバーライドしています。`)
+          ` <a href="${loader.pageUrl('method.html', { class: m.Overrides, method: name })}">${escapeHtml(m.Overrides)}.${escapeHtml(name)}</a> をオーバーライド。`)
         : '';
 
       const sections = [];
@@ -275,8 +275,8 @@
         ${badges ? `<div class="ref-badges">${badges}</div>` : ''}
         <div style="margin: -4px 0 10px 0; color: var(--muted); font-size: 0.95rem;">${origin}${overrides}</div>
         ${source ? `<p class="ref-source">${tr('Source:', 'ソース:')} <code>${escapeHtml(source)}</code></p>` : ''}
-        ${deprecated ? `<div class="ref-deprecated" role="note"><strong>${tr('Deprecated.', '非推奨です。')}</strong>${/^(true|1)$/i.test(deprecated) ? '' : `<p>${nl2br(deprecated)}</p>`}</div>` : ''}
-        ${hasDocs ? '' : `<div class="ref-notice">${tr('This method has no documentation comments yet. Signature and arguments below are read from the source code. See <a href="developer/class-documentation.html">Class Documentation</a> for the comment rules.', 'このメソッドにはまだドキュメントコメントがありません。以下のシグネチャと引数はソースコードから読み取っています。コメント規約は <a href="developer/class-documentation.html">Class Documentation</a> を参照してください。')}</div>`}
+        ${deprecated ? `<div class="ref-deprecated" role="note"><strong>${tr('Deprecated.', '非推奨。')}</strong>${/^(true|1)$/i.test(deprecated) ? '' : `<p>${nl2br(deprecated)}</p>`}</div>` : ''}
+        ${hasDocs ? '' : `<div class="ref-notice">${tr('This method has no documentation comments yet. Signature and arguments below are read from the source code. See <a href="developer/class-documentation.html">Class Documentation</a> for the comment rules.', 'このメソッドのドキュメントコメントは未記入。以下のシグネチャと引数はソースコードから読み取り。コメント規約は <a href="developer/class-documentation.html">Class Documentation</a> を参照。')}</div>`}
         <hr style="margin: 0 0 18px 0; border: 0; border-top: 1px solid var(--line);">
       `;
 
@@ -352,7 +352,7 @@
 
         anchor.insertAdjacentHTML('beforebegin', `
           <h2 id="call-graph">${tr('Call Graph', '呼び出しグラフ')}</h2>
-          <p class="cg-lead">${tr('Read from the source without running it, for the System classes. Line style shows how sure each link is; see <a href="developer/class-documentation.html#call-graph">Class Documentation</a> for the limits.', 'System クラスについて、ソースを実行せずに読み取った結果です。線の種類はリンクの確からしさを表します。限界については <a href="developer/class-documentation.html#call-graph">Class Documentation</a> を参照してください。')}</p>
+          <p class="cg-lead">${tr('Read from the source without running it, for the System classes. Line style shows how sure each link is; see <a href="developer/class-documentation.html#call-graph">Class Documentation</a> for the limits.', 'System クラスについて、ソースを実行せずに読み取った結果。線の種類はリンクの確からしさ。限界は <a href="developer/class-documentation.html#call-graph">Class Documentation</a> を参照。')}</p>
           <div class="cg-chart" id="cg-chart"></div>
           ${renderCallGraphDynamic(model, current)}
           ${renderCallGraphLegend()}`);
@@ -504,7 +504,7 @@
       if (side === 'callers') {
         const rows = callGraphSort(callGraphCallers(model, current));
         lines.push({ type: 'head', text: `${tr('Called by', '呼び出し元')} (${rows.length})` });
-        if (!rows.length) lines.push({ type: 'none', text: tr('No caller in the System classes', 'System クラス内に呼び出し元はありません') });
+        if (!rows.length) lines.push({ type: 'none', text: tr('No caller in the System classes', 'System クラス内の呼び出し元なし') });
         addRows(rows, CG.limits.callers, 'callers', 0);
       } else {
         const groups = callGraphUses(model, current);
@@ -521,7 +521,7 @@
         });
         if (!any) {
           lines.push({ type: 'head', text: tr('Uses', '使用先') });
-          lines.push({ type: 'none', text: tr('No member of the System classes', 'System クラスのメンバーは使用していません') });
+          lines.push({ type: 'none', text: tr('No member of the System classes', 'System クラスのメンバーの使用なし') });
         }
       }
       return lines;
