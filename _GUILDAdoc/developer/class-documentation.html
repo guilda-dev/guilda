@@ -692,7 +692,7 @@ r_Sbase (1,1) double = 100</pre>
       }
 
       function addRow(f, tbody) {
-        var tr = document.createElement('tr');
+        var row = document.createElement('tr');
         ROW_COLUMNS.forEach(function (col) {
           var td = document.createElement('td');
           var input = document.createElement('input');
@@ -704,7 +704,7 @@ r_Sbase (1,1) double = 100</pre>
           input.dataset.col = col.key;
           input.addEventListener('input', update);
           td.appendChild(input);
-          tr.appendChild(td);
+          row.appendChild(td);
         });
         var tdAction = document.createElement('td');
         var removeBtn = document.createElement('button');
@@ -713,13 +713,13 @@ r_Sbase (1,1) double = 100</pre>
         removeBtn.textContent = '×';
         removeBtn.setAttribute('aria-label', 'Remove row');
         removeBtn.addEventListener('click', function () {
-          tbody.removeChild(tr);
+          tbody.removeChild(row);
           if (tbody.children.length === 0) addRow(f, tbody);
           update();
         });
         tdAction.appendChild(removeBtn);
-        tr.appendChild(tdAction);
-        tbody.appendChild(tr);
+        row.appendChild(tdAction);
+        tbody.appendChild(row);
       }
 
       function value(key) {
