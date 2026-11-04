@@ -40,22 +40,22 @@
     <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
   </svg>
   <main>
-    <button type="button" class="developer-back-button" onclick="window.history.back()"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></button>
-    <h1><span lang="en">Class: </span><span lang="ja">クラス: </span><code>GlobalController</code></h1>
+    <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
+    <h1><span lang="en"><code>GlobalController</code> Class Design</span><span lang="ja"><code>GlobalController</code> クラスの設計</span></h1>
     <p class="page-lead" lang="en">Abstract base of controllers that act on several components of one network, such as an AGC. Reads states of its controlled components and drives inputs of the same components.</p>
     <p class="page-lead" lang="ja">1 つのネットワークの複数の機器に作用する制御器（AGC など）の抽象基底クラス。制御対象の機器の状態を読み、同じ機器の入力を駆動。</p>
 
     <nav class="dev-toc" aria-label="Contents">
-      <a href="#role"><span lang="en">Role</span><span lang="ja">役割</span></a>
-      <a href="#data"><span lang="en">Owned data</span><span lang="ja">保持するデータ</span></a>
-      <a href="#references"><span lang="en">References</span><span lang="ja">参照</span></a>
-      <a href="#methods"><span lang="en">Methods</span><span lang="ja">メソッド</span></a>
-      <a href="#used-by"><span lang="en">Used by</span><span lang="ja">利用する機能</span></a>
-      <a href="#subclasses"><span lang="en">Subclasses</span><span lang="ja">サブクラス</span></a>
+      <a href="#role"><span lang="en">Role of GlobalController</span><span lang="ja">GlobalController の役割</span></a>
+      <a href="#data"><span lang="en">Data owned by GlobalController</span><span lang="ja">GlobalController が保持するデータ</span></a>
+      <a href="#references"><span lang="en">References held by GlobalController</span><span lang="ja">GlobalController が持つ参照</span></a>
+      <a href="#methods"><span lang="en">Methods of GlobalController</span><span lang="ja">GlobalController のメソッド</span></a>
+      <a href="#used-by"><span lang="en">Features that use GlobalController</span><span lang="ja">GlobalController を使う機能</span></a>
+      <a href="#subclasses"><span lang="en">Subclasses of GlobalController</span><span lang="ja">GlobalController のサブクラス</span></a>
     </nav>
 
     <!-- ============================== ROLE ============================== -->
-    <h2 id="role"><span lang="en">Role</span><span lang="ja">役割</span></h2>
+    <h2 id="role"><span lang="en">Role of GlobalController</span><span lang="ja">GlobalController の役割</span></h2>
     <ul>
       <li><span lang="en">Owns its parameters (one row per controlled unit), its equations (through its subclass), and its equilibrium.</span><span lang="ja">パラメータ（制御対象ごとに 1 行）、方程式（サブクラス経由）、平衡点を保持</span></li>
       <li><span lang="en">Parent: the network. The components it acts on, <code>controlledUnits</code>, are associations fixed by its constructor.</span><span lang="ja">親はネットワーク。作用する機器 <code>controlledUnits</code> はコンストラクタが決める関連</span></li>
@@ -99,12 +99,12 @@
     </figure>
 
     <!-- ============================== DATA ============================== -->
-    <h2 id="data"><span lang="en">Owned data</span><span lang="ja">保持するデータ</span></h2>
-    <p class="dg-lead-in" lang="en"><strong>Stale</strong>: what an edit makes out of date (see <a href="class-design.html#edits">Class Design: Edit handling</a>).</p>
-    <p class="dg-lead-in" lang="ja"><strong>無効化</strong>: 編集で古くなるもの（<a href="class-design.html#edits">クラス設計: 編集の扱い</a>を参照）。</p>
+    <h2 id="data"><span lang="en">Data owned by GlobalController</span><span lang="ja">GlobalController が保持するデータ</span></h2>
+    <p class="dg-lead-in" lang="en"><strong>Becomes stale on edit</strong>: what an edit makes out of date (see <a href="class-design.html#edits">Class Design: Handling of model edits</a>).</p>
+    <p class="dg-lead-in" lang="ja"><strong>編集で古くなるもの</strong>: 編集で古くなるもの（<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>を参照）。</p>
     <table class="dg-table cl-table cl-stack">
       <thead>
-        <tr><th><span lang="en">Property</span><span lang="ja">プロパティ</span></th><th><span lang="en">Meaning</span><span lang="ja">意味</span></th><th><span lang="en">Unit / size</span><span lang="ja">単位・サイズ</span></th><th><span lang="en">Set by</span><span lang="ja">設定元</span></th><th><span lang="en">Stale</span><span lang="ja">無効化</span></th></tr>
+        <tr><th><span lang="en">Property</span><span lang="ja">プロパティ</span></th><th><span lang="en">Meaning</span><span lang="ja">意味</span></th><th><span lang="en">Unit / size</span><span lang="ja">単位・サイズ</span></th><th><span lang="en">Set by</span><span lang="ja">設定元</span></th><th><span lang="en">Becomes stale on edit</span><span lang="ja">編集で古くなるもの</span></th></tr>
       </thead>
       <tbody>
         <tr>
@@ -112,39 +112,39 @@
           <td data-label="Meaning" data-label-ja="意味"><span lang="en">Model parameters, one row per controlled unit (row names: the unit tags); the columns <code>sv_para</code> are passed as <code>param</code>.</span><span lang="ja">モデルのパラメータ。制御対象ごとに 1 行（行名は機器のタグ）。<code>sv_para</code> の列が <code>param</code> として渡る。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ"><span lang="en">per class, rows = units</span><span lang="ja">クラスごと、行数 = 制御対象数</span></td>
           <td data-label="Set by" data-label-ja="設定元"><span lang="en">subclass constructor, setter</span><span lang="ja">サブクラスのコンストラクタ、セッター</span></td>
-          <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-err"><span lang="en">handles</span><span lang="ja">ハンドル</span></span> <span class="dg-badge is-err"><span lang="en">equilibrium</span><span lang="ja">平衡点</span></span></td>
+          <td data-label="Becomes stale on edit" data-label-ja="編集で古くなるもの"><span class="dg-badge is-err"><span lang="en">handles</span><span lang="ja">ハンドル</span></span> <span class="dg-badge is-err"><span lang="en">equilibrium</span><span lang="ja">平衡点</span></span></td>
         </tr>
         <tr>
           <td><code>controlledUnits</code> <small>Hidden</small></td>
           <td data-label="Meaning" data-label-ja="意味"><span lang="en">Controlled components of the network, in the order given to the constructor.</span><span lang="ja">ネットワークの制御対象機器。コンストラクタに与えた順。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">cell</td>
           <td data-label="Set by" data-label-ja="設定元"><span lang="en">constructor only</span><span lang="ja">コンストラクタのみ</span></td>
-          <td data-label="Stale" data-label-ja="無効化">—</td>
+          <td data-label="Becomes stale on edit" data-label-ja="編集で古くなるもの">—</td>
         </tr>
         <tr>
           <td><code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code></td>
           <td data-label="Meaning" data-label-ja="意味"><span lang="en">State equilibrium, and the equilibrium of the observed states (one entry per input of each unit).</span><span lang="ja">状態の平衡点と、観測する状態の平衡値（各制御対象の入力ごとに 1 要素）。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">n<sub>x</sub>×1, n<sub>u</sub>×1</td>
           <td data-label="Set by" data-label-ja="設定元"><span lang="en"><code>PowerNetwork.initialize</code> (from <code>get_equilibrium</code>)</span><span lang="ja"><code>PowerNetwork.initialize</code>（<code>get_equilibrium</code> の値）</span></td>
-          <td data-label="Stale" data-label-ja="無効化">—</td>
+          <td data-label="Becomes stale on edit" data-label-ja="編集で古くなるもの">—</td>
         </tr>
         <tr>
           <td><code>f_dx</code>, <code>f_Y</code>, <code>f_Mass</code>, <code>f_JacobiDx</code>, <code>f_JacobiY</code></td>
           <td data-label="Meaning" data-label-ja="意味"><span lang="en">Handle cache <code>@(t,x,V,I,u)</code> with <code>param</code> and <code>omega0</code> bound.</span><span lang="ja"><code>param</code> と <code>omega0</code> を束縛したハンドル <code>@(t,x,V,I,u)</code> のキャッシュ。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">function_handle</td>
           <td data-label="Set by" data-label-ja="設定元"><span lang="en"><code>set_odefcn</code>, from <code>check_edit</code></span><span lang="ja"><code>set_odefcn</code>（<code>check_edit</code> から）</span></td>
-          <td data-label="Stale" data-label-ja="無効化">—</td>
+          <td data-label="Becomes stale on edit" data-label-ja="編集で古くなるもの">—</td>
         </tr>
         <tr>
           <td><code>str_tag</code></td>
           <td data-label="Meaning" data-label-ja="意味"><span lang="en">Tag chosen by the user; unique among the global controllers of the network.</span><span lang="ja">利用者が選ぶタグ。ネットワークの広域制御器の中で一意。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">string</td>
           <td data-label="Set by" data-label-ja="設定元"><span lang="en">constructor</span><span lang="ja">コンストラクタ</span></td>
-          <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-ok"><span lang="en">nothing (logged)</span><span lang="ja">なし（記録のみ）</span></span></td>
+          <td data-label="Becomes stale on edit" data-label-ja="編集で古くなるもの"><span class="dg-badge is-ok"><span lang="en">nothing (logged)</span><span lang="ja">なし（記録のみ）</span></span></td>
         </tr>
       </tbody>
     </table>
-    <h3><span lang="en">Working data</span><span lang="ja">作業データ</span></h3>
+    <h3><span lang="en">Working data written by analyses</span><span lang="ja">解析が書き込む作業データ</span></h3>
     <table class="dg-table cl-table">
       <thead>
         <tr><th><span lang="en">Property</span><span lang="ja">プロパティ</span></th><th><span lang="en">Meaning</span><span lang="ja">意味</span></th><th><span lang="en">Written by</span><span lang="ja">書き込み元</span></th></tr>
@@ -157,109 +157,109 @@
     </table>
 
     <!-- ============================== REFERENCES ============================== -->
-    <h2 id="references"><span lang="en">References</span><span lang="ja">参照</span></h2>
+    <h2 id="references"><span lang="en">References held by GlobalController</span><span lang="ja">GlobalController が持つ参照</span></h2>
     <ul>
       <li><span lang="en">Only the network sets and clears the parent reference (see <a href="class-design.html#parents">Class Design: Parent references</a>).</span><span lang="ja">親参照の設定・解除はネットワークのみ（<a href="class-design.html#parents">クラス設計: 親への参照</a>を参照）</span></li>
       <li><span lang="en">The constructor receives the network only to look up the controlled components.</span><span lang="ja">コンストラクタがネットワークを受け取る目的は制御対象の機器の検索のみ</span></li>
     </ul>
     <table class="dg-table cl-table">
       <thead>
-        <tr><th><span lang="en">Reference</span><span lang="ja">参照</span></th><th><span lang="en">Set by</span><span lang="ja">設定</span></th><th><span lang="en">Cleared by</span><span lang="ja">解除</span></th></tr>
+        <tr><th><span lang="en">Reference</span><span lang="ja">参照</span></th><th><span lang="en">Set by</span><span lang="ja">設定する処理</span></th><th><span lang="en">Cleared by</span><span lang="ja">解除する処理</span></th></tr>
       </thead>
       <tbody>
         <tr>
           <td><code>a_PowerNetwork</code> <small><span lang="en">parent</span><span lang="ja">親</span></small></td>
-          <td data-label="Set by" data-label-ja="設定"><span lang="en"><code>PowerNetwork.add_global_controller</code> → <code>set_parent(net)</code>, which marks the handles stale</span><span lang="ja"><code>PowerNetwork.add_global_controller</code> → <code>set_parent(net)</code>（ハンドルを古いと記録）</span></td>
-          <td data-label="Cleared by" data-label-ja="解除"><code>PowerNetwork.remove_global_controller</code> → <code>set_parent([])</code></td>
+          <td data-label="Set by" data-label-ja="設定する処理"><span lang="en"><code>PowerNetwork.add_global_controller</code> → <code>set_parent(net)</code>, which marks the handles stale</span><span lang="ja"><code>PowerNetwork.add_global_controller</code> → <code>set_parent(net)</code>（ハンドルを古いと記録）</span></td>
+          <td data-label="Cleared by" data-label-ja="解除する処理"><code>PowerNetwork.remove_global_controller</code> → <code>set_parent([])</code></td>
         </tr>
         <tr>
           <td><code>controlledUnits</code> <small><span lang="en">association</span><span lang="ja">関連</span></small></td>
-          <td data-label="Set by" data-label-ja="設定"><span lang="en">constructor, from components or tags of the network (anything else: <code>GUILDA:GlobalController:InvalidComponent</code>)</span><span lang="ja">コンストラクタ。ネットワークの機器またはタグから（それ以外は <code>GUILDA:GlobalController:InvalidComponent</code>）</span></td>
-          <td data-label="Cleared by" data-label-ja="解除"><span lang="en">never; while the controller is on the network, its units cannot be removed or replaced, nor their buses removed</span><span lang="ja">解除なし。制御器がネットワークにある間、制御対象の削除・置き換えやその母線の削除は不可</span></td>
+          <td data-label="Set by" data-label-ja="設定する処理"><span lang="en">constructor, from components or tags of the network (anything else: <code>GUILDA:GlobalController:InvalidComponent</code>)</span><span lang="ja">コンストラクタ。ネットワークの機器またはタグから（それ以外は <code>GUILDA:GlobalController:InvalidComponent</code>）</span></td>
+          <td data-label="Cleared by" data-label-ja="解除する処理"><span lang="en">never; while the controller is on the network, its units cannot be removed or replaced, nor their buses removed</span><span lang="ja">解除なし。制御器がネットワークにある間、制御対象の削除・置き換えやその母線の削除は不可</span></td>
         </tr>
       </tbody>
     </table>
 
     <!-- ============================== METHODS ============================== -->
-    <h2 id="methods"><span lang="en">Methods</span><span lang="ja">メソッド</span></h2>
+    <h2 id="methods"><span lang="en">Methods of GlobalController</span><span lang="ja">GlobalController のメソッド</span></h2>
 
-    <h3 id="contract"><span lang="en">Subclass contract</span><span lang="ja">サブクラスの契約</span></h3>
+    <h3 id="contract"><span lang="en">Members a subclass implements</span><span lang="ja">サブクラスが実装するメンバー</span></h3>
     <ul>
       <li><span lang="en">In every model function, <code>u</code>: the observed state of each unit (n<sub>u</sub> = number of units × entries of <code>sv_u</code>).</span><span lang="ja">全モデル関数で <code>u</code> は各制御対象の観測する状態の並び（n<sub>u</sub> = 制御対象数 × <code>sv_u</code> の要素数）</span></li>
       <li><span lang="en"><code>V</code>, <code>I</code>: not ports.</span><span lang="ja"><code>V</code>・<code>I</code> はポートではない</span></li>
-      <li><span lang="en">Details: <a href="model-implementation.html#contracts">Model Implementation: Contracts</a>.</span><span lang="ja">詳細は<a href="model-implementation.html#contracts">モデル実装: 契約</a></span></li>
+      <li><span lang="en">Details: <a href="model-implementation.html#contracts">Model Implementation: Contracts a model implements</a>.</span><span lang="ja">詳細は<a href="model-implementation.html#contracts">モデル実装: 契約</a></span></li>
     </ul>
     <table class="dg-table cl-table cl-stack">
       <thead>
-        <tr><th><span lang="en">Member</span><span lang="ja">メンバー</span></th><th><span lang="en">Contract</span><span lang="ja">契約</span></th><th><span lang="en">Called by</span><span lang="ja">呼び出し元</span></th></tr>
+        <tr><th><span lang="en">Member</span><span lang="ja">メンバー</span></th><th><span lang="en">Required behavior</span><span lang="ja">実装の要件</span></th><th><span lang="en">Called by</span><span lang="ja">呼び出し元</span></th></tr>
       </thead>
       <tbody>
-        <tr><td><code>key</code>, <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code>, <code>sv_para</code> <small>Constant, Hidden</small></td><td data-label="Contract" data-label-ja="契約"><span lang="en"><code>sv_u</code> must name states (<code>sv_x</code>) and <code>sv_y</code> inputs (<code>sv_u</code>) of every controlled unit; <code>add_global_controller</code> and <code>get_sys</code> check it.</span><span lang="ja"><code>sv_u</code> は全制御対象の状態（<code>sv_x</code>）、<code>sv_y</code> は入力（<code>sv_u</code>）の名前であること。<code>add_global_controller</code> と <code>get_sys</code> が確認。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>add_global_controller</code>, <code>SolverODE</code>, <code>get_sys</code></td></tr>
-        <tr><td><code>get_equilibrium(obj)</code> <small>Abstract</small></td><td data-label="Contract" data-label-ja="契約"><span lang="en">Returns <code>[x, u]</code>, n<sub>x</sub>×1 and n<sub>u</sub>×1. Takes no network values: <code>initialize</code> calls it before setting the equilibria of the buses and components.</span><span lang="ja"><code>[x, u]</code>（n<sub>x</sub>×1、n<sub>u</sub>×1）を返す。ネットワークの値は受け取らない。<code>initialize</code> が母線と機器の平衡点の設定前に呼び出し。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>PowerNetwork.initialize</code></td></tr>
-        <tr><td><code>fcn_dx(t, x, V, I, u, param, omega0)</code> <small>Abstract</small></td><td data-label="Contract" data-label-ja="契約">n<sub>x</sub>×1</td><td data-label="Called by" data-label-ja="呼び出し元"><code>f_dx</code></td></tr>
-        <tr><td><code>fcn_y(…)</code> <small>Abstract</small></td><td data-label="Contract" data-label-ja="契約"><span lang="en">One value per driven unit input, added to that input.</span><span lang="ja">駆動する機器入力ごとに 1 つの値。その入力に加算。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>f_Y</code></td></tr>
-        <tr><td><code>fcn_Mass(…)</code> <small>Abstract</small></td><td data-label="Contract" data-label-ja="契約"><span lang="en">Constant n<sub>x</sub>×n<sub>x</sub>; called with empty <code>t, x, V, I, u</code>.</span><span lang="ja">定数の n<sub>x</sub>×n<sub>x</sub>。空の <code>t, x, V, I, u</code> で呼び出し。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>f_Mass</code></td></tr>
-        <tr><td><code>Jacobi_dx(…)</code>, <code>Jacobi_Y(…)</code></td><td data-label="Contract" data-label-ja="契約"><span lang="en">Required by <code>set_odefcn</code>: <code>[Axx, Bxv, Bxi, Bxu]</code> and <code>[Cyx, Dyv, Dyi, Dyu]</code>; only the <code>x</code> and <code>u</code> blocks are used.</span><span lang="ja"><code>set_odefcn</code> で必須: <code>[Axx, Bxv, Bxi, Bxu]</code> と <code>[Cyx, Dyv, Dyi, Dyu]</code>。使用するのは <code>x</code> と <code>u</code> のブロックのみ。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>f_JacobiDx</code>, <code>f_JacobiY</code></td></tr>
-        <tr><td><code>Hessian_dx</code>, <code>Hessian_Y</code> <small><span lang="en">optional</span><span lang="ja">任意</span></small></td><td data-label="Contract" data-label-ja="契約"><span lang="en">n<sub>eq</sub>×n<sub>z</sub>×n<sub>z</sub> with <code>z = [x; V; I; u]</code> (see <a href="class-design.html#optional">Optional analyses</a>).</span><span lang="ja"><code>z = [x; V; I; u]</code> として n<sub>eq</sub>×n<sub>z</sub>×n<sub>z</sub>（<a href="class-design.html#optional">任意の解析</a>を参照）。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>get_hessian</code></td></tr>
+        <tr><td><code>key</code>, <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code>, <code>sv_para</code> <small>Constant, Hidden</small></td><td data-label="Required behavior" data-label-ja="実装の要件"><span lang="en"><code>sv_u</code> must name states (<code>sv_x</code>) and <code>sv_y</code> inputs (<code>sv_u</code>) of every controlled unit; <code>add_global_controller</code> and <code>get_sys</code> check it.</span><span lang="ja"><code>sv_u</code> は全制御対象の状態（<code>sv_x</code>）、<code>sv_y</code> は入力（<code>sv_u</code>）の名前であること。<code>add_global_controller</code> と <code>get_sys</code> が確認。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>add_global_controller</code>, <code>SolverODE</code>, <code>get_sys</code></td></tr>
+        <tr><td><code>get_equilibrium(obj)</code> <small>Abstract</small></td><td data-label="Required behavior" data-label-ja="実装の要件"><span lang="en">Returns <code>[x, u]</code>, n<sub>x</sub>×1 and n<sub>u</sub>×1. Takes no network values: <code>initialize</code> calls it before setting the equilibria of the buses and components.</span><span lang="ja"><code>[x, u]</code>（n<sub>x</sub>×1、n<sub>u</sub>×1）を返す。ネットワークの値は受け取らない。<code>initialize</code> が母線と機器の平衡点の設定前に呼び出し。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>PowerNetwork.initialize</code></td></tr>
+        <tr><td><code>fcn_dx(t, x, V, I, u, param, omega0)</code> <small>Abstract</small></td><td data-label="Required behavior" data-label-ja="実装の要件">n<sub>x</sub>×1</td><td data-label="Called by" data-label-ja="呼び出し元"><code>f_dx</code></td></tr>
+        <tr><td><code>fcn_y(…)</code> <small>Abstract</small></td><td data-label="Required behavior" data-label-ja="実装の要件"><span lang="en">One value per driven unit input, added to that input.</span><span lang="ja">駆動する機器入力ごとに 1 つの値。その入力に加算。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>f_Y</code></td></tr>
+        <tr><td><code>fcn_Mass(…)</code> <small>Abstract</small></td><td data-label="Required behavior" data-label-ja="実装の要件"><span lang="en">Constant n<sub>x</sub>×n<sub>x</sub>; called with empty <code>t, x, V, I, u</code>.</span><span lang="ja">定数の n<sub>x</sub>×n<sub>x</sub>。空の <code>t, x, V, I, u</code> で呼び出し。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>f_Mass</code></td></tr>
+        <tr><td><code>Jacobi_dx(…)</code>, <code>Jacobi_Y(…)</code></td><td data-label="Required behavior" data-label-ja="実装の要件"><span lang="en">Required by <code>set_odefcn</code>: <code>[Axx, Bxv, Bxi, Bxu]</code> and <code>[Cyx, Dyv, Dyi, Dyu]</code>; only the <code>x</code> and <code>u</code> blocks are used.</span><span lang="ja"><code>set_odefcn</code> で必須: <code>[Axx, Bxv, Bxi, Bxu]</code> と <code>[Cyx, Dyv, Dyi, Dyu]</code>。使用するのは <code>x</code> と <code>u</code> のブロックのみ。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>f_JacobiDx</code>, <code>f_JacobiY</code></td></tr>
+        <tr><td><code>Hessian_dx</code>, <code>Hessian_Y</code> <small><span lang="en">optional</span><span lang="ja">任意</span></small></td><td data-label="Required behavior" data-label-ja="実装の要件"><span lang="en">n<sub>eq</sub>×n<sub>z</sub>×n<sub>z</sub> with <code>z = [x; V; I; u]</code> (see <a href="class-design.html#optional">Optional analyses</a>).</span><span lang="ja"><code>z = [x; V; I; u]</code> として n<sub>eq</sub>×n<sub>z</sub>×n<sub>z</sub>（<a href="class-design.html#optional">任意の解析</a>を参照）。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>get_hessian</code></td></tr>
       </tbody>
     </table>
 
-    <h3><span lang="en">Construction and attachment</span><span lang="ja">構築と接続</span></h3>
+    <h3><span lang="en">Methods for construction and attachment</span><span lang="ja">構築と接続のメソッド</span></h3>
     <table class="dg-table cl-table cl-stack">
       <thead>
-        <tr><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">内容</span></th><th><span lang="en">Called by</span><span lang="ja">呼び出し元</span></th></tr>
+        <tr><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">処理内容</span></th><th><span lang="en">Called by</span><span lang="ja">呼び出し元</span></th></tr>
       </thead>
       <tbody>
         <tr>
           <td><code>GlobalController(net, tag, units…)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Sets the tag, creates <code>para_dynamics</code>, and resolves each unit (a <code>Component</code> or a tag) among the components of <code>net</code>. Compares objects, so a component of another network with the same tag is rejected. Does not add the controller to <code>net</code>.</span><span lang="ja">タグを設定し、<code>para_dynamics</code> を作成、各制御対象（<code>Component</code> またはタグ）を <code>net</code> の機器から解決。オブジェクトで比較するため、同じタグを持つ他のネットワークの機器は拒否。<code>net</code> への追加はしない。</span></td>
+          <td data-label="What it does" data-label-ja="処理内容"><span lang="en">Sets the tag, creates <code>para_dynamics</code>, and resolves each unit (a <code>Component</code> or a tag) among the components of <code>net</code>. Compares objects, so a component of another network with the same tag is rejected. Does not add the controller to <code>net</code>.</span><span lang="ja">タグを設定し、<code>para_dynamics</code> を作成、各制御対象（<code>Component</code> またはタグ）を <code>net</code> の機器から解決。オブジェクトで比較するため、同じタグを持つ他のネットワークの機器は拒否。<code>net</code> への追加はしない。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">subclass constructors</span><span lang="ja">サブクラスのコンストラクタ</span></td>
         </tr>
         <tr>
           <td><code>set_parent(net)</code> <small><span lang="en">restricted</span><span lang="ja">アクセス制限</span></small></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Sets or clears <code>a_PowerNetwork</code> and marks the handles stale.</span><span lang="ja"><code>a_PowerNetwork</code> を設定・解除し、ハンドルを古いと記録。</span></td>
+          <td data-label="What it does" data-label-ja="処理内容"><span lang="en">Sets or clears <code>a_PowerNetwork</code> and marks the handles stale.</span><span lang="ja"><code>a_PowerNetwork</code> を設定・解除し、ハンドルを古いと記録。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><code>add_global_controller</code>, <code>remove_global_controller</code></td>
         </tr>
       </tbody>
     </table>
 
-    <h3><span lang="en">Called by analyses</span><span lang="ja">解析から呼ばれるメソッド</span></h3>
+    <h3><span lang="en">Methods called by analyses</span><span lang="ja">解析から呼ばれるメソッド</span></h3>
     <table class="dg-table cl-table cl-stack">
       <thead>
-        <tr><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">内容</span></th><th><span lang="en">Called by</span><span lang="ja">呼び出し元</span></th></tr>
+        <tr><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">処理内容</span></th><th><span lang="en">Called by</span><span lang="ja">呼び出し元</span></th></tr>
       </thead>
       <tbody>
         <tr>
           <td><code>set_odefcn()</code> <small>protected</small></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Binds <code>param</code> and <code>get_Hz()</code> into <code>f_*</code>.</span><span lang="ja"><code>param</code> と <code>get_Hz()</code> を <code>f_*</code> に束縛。</span></td>
+          <td data-label="What it does" data-label-ja="処理内容"><span lang="en">Binds <code>param</code> and <code>get_Hz()</code> into <code>f_*</code>.</span><span lang="ja"><code>param</code> と <code>get_Hz()</code> を <code>f_*</code> に束縛。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><code>check_edit</code></td>
         </tr>
         <tr>
           <td><code>f_dx</code>, <code>f_Y</code> <small><span lang="en">(handles)</span><span lang="ja">（ハンドル）</span></small></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">In a simulation, the solver evaluates them directly with <code>V = I = []</code> and the observed unit states (zero for a tripped unit), and adds <code>f_Y</code> to the unit inputs at <code>iv_odeY</code>. No <code>get_dx_algebraic</code>.</span><span lang="ja">シミュレーションでは、ソルバーが <code>V = I = []</code> と観測する機器の状態（解列した機器は 0）でこれらを直接評価し、<code>f_Y</code> を <code>iv_odeY</code> の機器入力に加算。<code>get_dx_algebraic</code> なし。</span></td>
+          <td data-label="What it does" data-label-ja="処理内容"><span lang="en">In a simulation, the solver evaluates them directly with <code>V = I = []</code> and the observed unit states (zero for a tripped unit), and adds <code>f_Y</code> to the unit inputs at <code>iv_odeY</code>. No <code>get_dx_algebraic</code>.</span><span lang="ja">シミュレーションでは、ソルバーが <code>V = I = []</code> と観測する機器の状態（解列した機器は 0）でこれらを直接評価し、<code>f_Y</code> を <code>iv_odeY</code> の機器入力に加算。<code>get_dx_algebraic</code> なし。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><code>SolverODE</code></td>
         </tr>
         <tr>
           <td><code>get_sys(x, V, I, u)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Checks the ports of every unit (<code>GUILDA:GlobalController:GlobalControllerPort</code>), builds out-of-date handles, and on a network requires an up-to-date equilibrium. The model uses only the <code>x</code> and <code>u</code> blocks of the Jacobians: inputs are the observed unit states, outputs the driven unit inputs, both named with the unit tags.</span><span lang="ja">全制御対象のポートを確認し（<code>GUILDA:GlobalController:GlobalControllerPort</code>）、古いハンドルを作り直し、ネットワーク上では最新の平衡点を要求。モデルが使うのはヤコビアンの <code>x</code> と <code>u</code> のブロックのみ。入力は観測する機器の状態、出力は駆動する機器の入力で、いずれも機器のタグ付きの名前。</span>
+          <td data-label="What it does" data-label-ja="処理内容"><span lang="en">Checks the ports of every unit (<code>GUILDA:GlobalController:GlobalControllerPort</code>), builds out-of-date handles, and on a network requires an up-to-date equilibrium. The model uses only the <code>x</code> and <code>u</code> blocks of the Jacobians: inputs are the observed unit states, outputs the driven unit inputs, both named with the unit tags.</span><span lang="ja">全制御対象のポートを確認し（<code>GUILDA:GlobalController:GlobalControllerPort</code>）、古いハンドルを作り直し、ネットワーク上では最新の平衡点を要求。モデルが使うのはヤコビアンの <code>x</code> と <code>u</code> のブロックのみ。入力は観測する機器の状態、出力は駆動する機器の入力で、いずれも機器のタグ付きの名前。</span>
             <small><span lang="en">Returns: a named descriptor state-space model, then its names.</span><span lang="ja">返り値: 名前付きのディスクリプタ状態空間モデルと、その名前。</span></small></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en"><code>SolverLIN.solve</code> (at the equilibrium or a <code>Point</code>), user</span><span lang="ja"><code>SolverLIN.solve</code>（平衡点または <code>Point</code>）、利用者</span></td>
         </tr>
       </tbody>
     </table>
 
-    <h3><span lang="en">Queries</span><span lang="ja">照会</span></h3>
+    <h3><span lang="en">Query methods</span><span lang="ja">照会のメソッド</span></h3>
     <table class="dg-table cl-table">
       <thead>
-        <tr><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">内容</span></th></tr>
+        <tr><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">処理内容</span></th></tr>
       </thead>
       <tbody>
-        <tr><td><code>get_hessian(x, V, I, u)</code></td><td data-label="What it does" data-label-ja="内容"><span lang="en">Returns <code>H_dx</code>, <code>H_Y</code> from the subclass's <code>Hessian_*</code>; stops with <code>GUILDA:GlobalController:HessianNotSupported</code> otherwise.</span><span lang="ja">サブクラスの <code>Hessian_*</code> から <code>H_dx</code>、<code>H_Y</code> を返す。なければ <code>GUILDA:GlobalController:HessianNotSupported</code> で停止。</span></td></tr>
+        <tr><td><code>get_hessian(x, V, I, u)</code></td><td data-label="What it does" data-label-ja="処理内容"><span lang="en">Returns <code>H_dx</code>, <code>H_Y</code> from the subclass's <code>Hessian_*</code>; stops with <code>GUILDA:GlobalController:HessianNotSupported</code> otherwise.</span><span lang="ja">サブクラスの <code>Hessian_*</code> から <code>H_dx</code>、<code>H_Y</code> を返す。なければ <code>GUILDA:GlobalController:HessianNotSupported</code> で停止。</span></td></tr>
       </tbody>
     </table>
 
     <!-- ============================== USED BY ============================== -->
-    <h2 id="used-by"><span lang="en">Used by</span><span lang="ja">利用する機能</span></h2>
+    <h2 id="used-by"><span lang="en">Features that use GlobalController</span><span lang="ja">GlobalController を使う機能</span></h2>
     <ul class="cl-used">
       <li><a href="feature-model-building.html"><span lang="en">Model building</span><span lang="ja">モデル構築</span><small>add_global_controller</small></a></li>
       <li><a href="feature-initialize.html"><span lang="en">Initialize</span><span lang="ja">平衡点の計算</span><small>get_equilibrium</small></a></li>
@@ -268,7 +268,7 @@
     </ul>
 
     <!-- ============================== SUBCLASSES ============================== -->
-    <h2 id="subclasses"><span lang="en">Subclasses</span><span lang="ja">サブクラス</span></h2>
+    <h2 id="subclasses"><span lang="en">Subclasses of GlobalController</span><span lang="ja">GlobalController のサブクラス</span></h2>
     <table class="dg-table cl-table">
       <thead>
         <tr><th><span lang="en">Class</span><span lang="ja">クラス</span></th><th><code>key</code></th><th><span lang="en">Model</span><span lang="ja">モデル</span></th></tr>

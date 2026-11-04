@@ -155,7 +155,7 @@
 
       <section class="about-section index-stacked">
         <div class="about-text">
-          <p class="about-step"><span>01</span> <span lang="en">Why</span><span lang="ja">なぜ</span></p>
+          <p class="about-step"><span>01</span> <span lang="en">Why it matters</span><span lang="ja">なぜ必要か</span></p>
           <h2><span lang="en">Future grids are a control problem</span><span lang="ja">これからの電力系統は制御の問題</span></h2>
           <p><span lang="en">Decarbonisation changes who takes part in the grid.</span><span lang="ja">脱炭素化で変わる、電力系統に参加する主体。</span></p>
           <ul>
@@ -177,7 +177,7 @@
 
       <section class="about-section about-what">
         <div class="about-text">
-          <p class="about-step"><span>02</span> <span lang="en">What</span><span lang="ja">何を</span></p>
+          <p class="about-step"><span>02</span> <span lang="en">What GUILDA is</span><span lang="ja">GUILDA とは</span></p>
           <h2><span lang="en">A simulator built for systems and control</span><span lang="ja">システム制御のためのシミュレータ</span></h2>
           <ul>
             <li><span lang="en">A power-system simulator for students and researchers in systems and control.</span><span lang="ja">システム制御を学ぶ学生・研究者のための電力系統シミュレータ。</span></li>
@@ -227,7 +227,7 @@
 
       <section class="about-section">
         <div class="about-text">
-          <p class="about-step"><span>04</span> <span lang="en">How</span><span lang="ja">どのように</span></p>
+          <p class="about-step"><span>04</span> <span lang="en">How it works</span><span lang="ja">仕組み</span></p>
           <h2><span lang="en">Building blocks that snap together</span><span lang="ja">組み合わせて使える部品</span></h2>
           <ul>
             <li><span lang="en">Object-oriented: buses, branches, generators, loads and controllers are classes that fit together like puzzle pieces into a <code>PowerNetwork</code>.</span><span lang="ja">オブジェクト指向の設計。母線、ブランチ、発電機、負荷、制御器はそれぞれクラスで、パズルのピースのように組み合わせて <code>PowerNetwork</code> を構成。</span></li>
@@ -255,7 +255,7 @@ sys = net.get_sys();                  % linearized model</code></pre>
 
       <section class="about-section about-vision">
         <div class="about-text">
-          <p class="about-step"><span>05</span> <span lang="en">Vision</span><span lang="ja">ビジョン</span></p>
+          <p class="about-step"><span>05</span> <span lang="en">Vision for the future</span><span lang="ja">将来のビジョン</span></p>
           <h2><span lang="en">A platform where knowledge keeps growing</span><span lang="ja">知識が育ち続けるプラットフォーム</span></h2>
           <p lang="en">
             Research know-how often lives in one person's head and leaves with them. GUILDA aims to be a knowledge platform built on the
@@ -287,12 +287,12 @@ sys = net.get_sys();                  % linearized model</code></pre>
       </figure>
 
       <section class="about-compare">
-        <p class="about-step"><span>06</span> <span lang="en">Compared</span><span lang="ja">比較</span></p>
+        <p class="about-step"><span>06</span> <span lang="en">Compared with others</span><span lang="ja">他ツールとの比較</span></p>
         <h2><span lang="en">Where GUILDA stands</span><span lang="ja">GUILDA の位置づけ</span></h2>
         <div class="compare-scroll">
           <table class="compare-table">
             <thead>
-              <tr><th><span lang="en">Analysis</span><span lang="ja">解析</span></th><th><span lang="en">Typical analysis package</span><span lang="ja">一般的な解析パッケージ</span></th><th>GUILDA</th></tr>
+              <tr><th><span lang="en">Analysis</span><span lang="ja">解析の種類</span></th><th><span lang="en">Typical analysis package</span><span lang="ja">一般的な解析パッケージ</span></th><th>GUILDA</th></tr>
             </thead>
             <tbody>
               <tr><td><span lang="en">Power flow</span><span lang="ja">潮流計算</span></td><td><span class="mark-yes">✓</span></td><td><span class="mark-yes">✓</span></td></tr>
@@ -347,7 +347,7 @@ sys = net.get_sys();                  % linearized model</code></pre>
       <p lang="en">Symbolic Math Toolbox is optional: GUILDA never uses symbolic derivatives at run time. Only a few developer scripts that check hand-written Jacobians need it.</p>
       <p lang="ja">Symbolic Math Toolbox は任意。実行時の記号微分は不使用。必要とするのは、手書きのヤコビ行列を検証する一部の開発者向けスクリプトのみ。</p>
 
-      <h2><span lang="en">Install</span><span lang="ja">インストール</span></h2>
+      <h2><span lang="en">Install GUILDA</span><span lang="ja">GUILDA のインストール</span></h2>
       <p lang="en">Clone or download the repository from GitHub, or open it directly in MATLAB Online.</p>
       <p lang="ja">GitHub からリポジトリをクローン・ダウンロード、または MATLAB Online で直接開く。</p>
       <div class="install-buttons">
@@ -494,7 +494,7 @@ sol = net.simulate([0, 50], sc);</code></pre>
       <p lang="ja">さまざまな解析の実装方法を解説したライブスクリプト形式のチュートリアル。ソースの <code>_GUILDAtutorial</code> フォルダに収録。</p>
       
       <div id="tutorial-toc-container"></div>
-      <h2><span lang="en">Abstract</span><span lang="ja">各チュートリアルの概要</span></h2>
+      <h2><span lang="en">Overview of each tutorial</span><span lang="ja">各チュートリアルの概要</span></h2>
       <div id="tutorial-abstract-container"></div>
     </div>
 
@@ -502,7 +502,7 @@ sol = net.simulate([0, 50], sc);</code></pre>
       <div class="ref-layout">
       <aside class="ref-aside">
         <div id="reference-source-tree"></div>
-        <h3><span lang="en">On this page</span><span lang="ja">このページの内容</span></h3>
+        <h3><span lang="en">Tutorials on this page</span><span lang="ja">このページのチュートリアル</span></h3>
         <ul class="ref-toc">
           <li><a href="#ref-core" onclick="document.getElementById('ref-core')?.scrollIntoView(); return false;"><span lang="en">Core Components</span><span lang="ja">主要な構成要素</span></a></li>
           <li><a href="#ref-diagram" onclick="document.getElementById('ref-diagram')?.scrollIntoView(); return false;"><span lang="en">Class Diagram</span><span lang="ja">クラス図</span></a></li>

@@ -307,8 +307,8 @@ body.home-layout main { max-width: 1050px; width: 95%; margin: 32px auto; backgr
 }
 
 body.developer-layout main { max-width: 900px; width: 95%; margin: 32px auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); min-height: 60vh; box-sizing: border-box; padding: clamp(20px, 5vw, 40px); }
-.developer-back-button { margin: 0 0 22px; padding: 6px 12px; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface); color: var(--ink-2); cursor: pointer; font: inherit; font-size: 0.9rem; font-weight: 600; }
-.developer-back-button:hover { border-color: var(--brand); color: var(--brand); }
+.developer-back-button { display: inline-block; margin: 0 0 22px; padding: 6px 12px; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface); color: var(--ink-2); cursor: pointer; font: inherit; font-size: 0.9rem; font-weight: 600; }
+.developer-back-button:hover { border-color: var(--brand); color: var(--brand); text-decoration: none; }
 .developer-layout .page-lead { color: var(--muted); font-size: 1.05rem; }
 
 /* Japanese/English switch (doc-lang.js). Translatable content is written as sibling
