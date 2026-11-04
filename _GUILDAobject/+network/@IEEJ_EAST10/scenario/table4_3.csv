@@ -1,0 +1,45 @@
+Section,Card,From,To,FaultBus,Circuits,OpenBranch,FaultDuration,Report,ReportVerdict
+peak,11,11,21,B011,1,EL001,0.07,first-swing out-of-step [G1],out-of-step
+peak,12,21,22,B021,1,EL003,0.07,stable,stable
+peak,12,21,22,B021,2,EL003 EL004,0.07,first-swing out-of-step [G1],out-of-step
+peak,15,23,24,B023,2,EL009 EL010,0.07,multi-swing out-of-step (3 s) [G7],out-of-step
+peak,18,13,25,B013,1,EL017,0.07,multi-swing out-of-step (5 s) [G10 and others],out-of-step
+peak,18,13,25,B013,2,EL017 EL018,0.07,first-swing out-of-step [G10 and others],out-of-step
+peak,19,25,26,B025,1,EL021,0.07,multi-swing out-of-step (5 s) [G10 and others],out-of-step
+peak,19,25,26,B025,2,EL021 EL022,0.07,first-swing out-of-step [G10 and others],out-of-step
+peak,20,26,27,B026,1,EL023,0.07,stable,stable
+peak,20,26,27,B026,2,EL023 EL024,0.07,stable,stable
+peak,22,28,26,B028,2,EL029 EL030,0.07,multi-swing out-of-step (7 s) [G4 and others],out-of-step
+peak,24,15,28,B015,1,EL035,0.07,stable,stable
+peak,24,15,28,B015,2,EL035 EL036,0.07,multi-swing out-of-step (3 s) [G7 and others],out-of-step
+peak,28,31,29,B031,2,EL047 EL048,0.07,multi-swing out-of-step (3 s) [G6],out-of-step
+peak,30,31,32,B031,2,EL051 EL052,0.07,stable,stable
+peak,31,32,33,B032,2,EL053 EL054,0.07,stable,stable
+peak,33,35,34,B035,1,EL057,0.07,multi-swing out-of-step (6 s) [G6],out-of-step
+peak,33,35,34,B035,2,EL057 EL058,0.07,first-swing out-of-step [G6],out-of-step
+peak,35,17,31,B017,1,EL061,0.07,stable,stable
+peak,35,17,31,B017,2,EL061 EL062,0.07,multi-swing out-of-step (7 s) [G7 and others],out-of-step
+peak,36,36,17,B036,1,EL065,0.07,sustained oscillation,stable
+night,11,11,21,B011,1,EL001,0.07,stable,stable
+night,12,21,22,B021,1,EL003,0.07,stable,stable
+night,12,21,22,B021,2,EL003 EL004,0.07,stable,stable
+night,15,23,24,B023,2,EL009 EL010,0.07,stable,stable
+night,18,13,25,B013,1,EL017,0.07,stable,stable
+night,18,13,25,B013,2,EL017 EL018,0.07,stable,stable
+night,19,25,26,B025,1,EL021,0.07,stable,stable
+night,19,25,26,B025,2,EL021 EL022,0.07,stable,stable
+night,20,26,27,B026,1,EL023,0.07,stable,stable
+night,20,26,27,B026,2,EL023 EL024,0.07,stable,stable
+night,22,28,26,B028,2,EL029 EL030,0.07,stable,stable
+night,24,15,28,B015,1,EL035,0.07,stable,stable
+night,24,15,28,B015,2,EL035 EL036,0.07,stable,stable
+night,28,31,29,B031,1,EL047,0.07,first-swing out-of-step [G7 and others],out-of-step
+night,28,31,29,B031,2,EL047 EL048,0.07,first-swing out-of-step [G7 and others],out-of-step
+night,30,31,32,B031,1,EL051,0.07,multi-swing out-of-step (4 s) [G7 and others],out-of-step
+night,30,31,32,B031,2,EL051 EL052,0.07,first-swing out-of-step [G7 and others],out-of-step
+night,31,32,33,B032,2,EL053 EL054,0.07,stable,stable
+night,33,35,34,B035,1,EL057,0.07,stable,stable
+night,33,35,34,B035,2,EL057 EL058,0.07,multi-swing out-of-step (2 s) [G7 and others],out-of-step
+night,35,17,31,B017,1,EL061,0.07,first-swing out-of-step [G7 and others],out-of-step
+night,35,17,31,B017,2,EL061 EL062,0.07,first-swing out-of-step [G7 and others],out-of-step
+night,36,36,17,B036,1,EL065,0.07,stable,stable
