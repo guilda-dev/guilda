@@ -67,12 +67,15 @@
   <main>
     <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
     <h1><span lang="en">Class Documentation</span><span lang="ja">クラスのドキュメント</span></h1>
-    <p class="page-lead" lang="en">Write MATLAB help comments next to the code. <code>GUILDA.doc</code> adds what the code declares and builds the Reference pages. Three tags cover the rest.</p>
-    <p class="page-lead" lang="ja">MATLAB のヘルプコメントをコードのすぐそばに記述。<code>GUILDA.doc</code> がコードの宣言から読み取れる情報を加えて Reference のページを生成。残りは 3 つのタグで補足。</p>
+    <p class="page-lead" lang="en">Write MATLAB help comments next to the code. <code>GUILDA.doc</code> adds what the code declares and builds the Reference pages. Five tags cover the rest.</p>
+    <p class="page-lead" lang="ja">MATLAB のヘルプコメントをコードのすぐそばに記述。<code>GUILDA.doc</code> がコードの宣言から読み取れる情報を加えて Reference のページを生成。残りは 5 つのタグで補足。</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#pipeline"><span lang="en">How the reference is generated</span><span lang="ja">リファレンス生成のしくみ</span></a>
       <a href="#where"><span lang="en">Where help comments go</span><span lang="ja">ヘルプコメントを書く場所</span></a>
+      <a href="#class-page"><span lang="en">Class page sections</span><span lang="ja">クラスのページの構成</span></a>
+      <a href="#image"><span lang="en">Figure</span><span lang="ja">図</span></a>
+      <a href="#math"><span lang="en">Math</span><span lang="ja">数式</span></a>
       <a href="#tags"><span lang="en">Tags to use</span><span lang="ja">使うタグ</span></a>
       <a href="#removed"><span lang="en">Unsupported tags</span><span lang="ja">使わないタグ</span></a>
       <a href="#collected"><span lang="en">Information collected from the code</span><span lang="ja">コードから集める情報</span></a>
@@ -249,11 +252,11 @@
       <thead><tr><th><span lang="en">Page part</span><span lang="ja">ページの部分</span></th><th><span lang="en">What to write</span><span lang="ja">書くもの</span></th><th><span lang="en">Notes</span><span lang="ja">補足</span></th></tr></thead>
       <tbody>
         <tr><td><span lang="en">Summary</span><span lang="ja">概要</span> <span class="cd-pin">1</span> <span class="cd-pin">6</span></td><td data-label="What to write" data-label-ja="書くもの"><span lang="en">The first comment line (the H1 line).</span><span lang="ja">コメントの 1 行目（H1 行）。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">One English sentence. A method summary starts with a verb: <code>Calculate the power flow.</code><small>MATLAB <code>help</code>, tables and search show it.</small></span><span lang="ja">英語で 1 文。メソッドの概要は動詞で開始: <code>Calculate the power flow.</code><small>MATLAB の <code>help</code>、表、検索に表示。</small></span></td></tr>
-        <tr><td><span lang="en">Description</span><span lang="ja">説明</span> <span class="cd-pin">2</span></td><td data-label="What to write" data-label-ja="書くもの"><span lang="en">The comment lines after the H1 line.</span><span lang="ja">H1 行に続くコメント行。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">Markdown: <code>- lists</code>, <code>1. lists</code>, <code>`code`</code>, <code>**bold**</code>, <code># headings</code>, <code>[links](url)</code> and fenced code blocks. A lone <code>%</code> line starts a new paragraph.<small>Text art drawn with box characters is kept exactly as written.</small></span><span lang="ja">Markdown: <code>- lists</code>、<code>1. lists</code>、<code>`code`</code>、<code>**bold**</code>、<code># headings</code>、<code>[links](url)</code>、フェンス付きコードブロック。<code>%</code> だけの行で段落の区切り。<small>罫線文字で描いたテキストアートは書いたとおりに保持。</small></span></td></tr>
+        <tr><td><span lang="en">Description</span><span lang="ja">説明</span> <span class="cd-pin">2</span></td><td data-label="What to write" data-label-ja="書くもの"><span lang="en">The comment lines after the H1 line.</span><span lang="ja">H1 行に続くコメント行。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">Markdown: <code>- lists</code>, <code>1. lists</code>, <code>`code`</code>, <code>**bold**</code>, <code># headings</code>, <code>[links](url)</code> and fenced code blocks. A lone <code>%</code> line starts a new paragraph. An indented line continues a list item. LaTeX math: <code>$...$</code> inline, a <code>```math</code> block on its own lines (see <a href="#math">Math</a>).<small>Text art drawn with box characters is kept exactly as written.</small></span><span lang="ja">Markdown: <code>- lists</code>、<code>1. lists</code>、<code>`code`</code>、<code>**bold**</code>、<code># headings</code>、<code>[links](url)</code>、フェンス付きコードブロック。<code>%</code> だけの行で段落の区切り。字下げした行はリスト項目の続き。LaTeX の数式: 行内は <code>$...$</code>、独立した行は <code>```math</code> ブロック（<a href="#math">数式</a>を参照）。<small>罫線文字で描いたテキストアートは書いたとおりに保持。</small></span></td></tr>
         <tr><td><span lang="en">See also</span><span lang="ja">関連項目</span> <span class="cd-pin">3</span></td><td data-label="What to write" data-label-ja="書くもの"><span lang="en">A <code>% See also A, B</code> line.</span><span lang="ja"><code>% See also A, B</code> の行。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">Names of classes and methods become links. MATLAB <code>help</code> links them too.</span><span lang="ja">クラス名とメソッド名がリンクに。MATLAB の <code>help</code> でもリンク。</span></td></tr>
         <tr><td><span lang="en">Property group</span><span lang="ja">プロパティのグループ</span> <span class="cd-pin">4</span></td><td data-label="What to write" data-label-ja="書くもの"><span lang="en">A trailing comment on the <code>properties (...)</code> line.</span><span lang="ja"><code>properties (...)</code> 行の行末コメント。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">Without it, properties are grouped by access.</span><span lang="ja">ない場合はアクセス属性でグループ分け。</span></td></tr>
         <tr><td><span lang="en">Unit</span><span lang="ja">単位</span> <span class="cd-pin">5</span></td><td data-label="What to write" data-label-ja="書くもの"><span lang="en">A leading <code>[unit]</code> in a property comment or an <code>arguments</code> comment.</span><span lang="ja">プロパティのコメントまたは <code>arguments</code> のコメントの先頭に書く <code>[unit]</code>。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en"><code>% [MVA] Base power.</code> The rest of the line is the summary.<small>Examples: <code>[pu]</code>, <code>[MVA]</code>, <code>[rad/s]</code>.</small></span><span lang="ja"><code>% [MVA] Base power.</code> 行の残りが概要。<small>例: <code>[pu]</code>、<code>[MVA]</code>、<code>[rad/s]</code>。</small></span></td></tr>
-        <tr><td><span lang="en">Method group</span><span lang="ja">メソッドのグループ</span></td><td data-label="What to write" data-label-ja="書くもの"><span lang="en">Nothing: the verb prefix of the name.</span><span lang="ja">不要: 名前の動詞接頭辞で決定。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en"><code>set_</code>, <code>get_</code>, <code>add_</code>, <code>calculate_</code>, <code>simulate_</code>, <code>plot_</code>, <code>export_</code> and the other verbs each get a group. The constructor has its own. Anything else is in Other.</span><span lang="ja"><code>set_</code>、<code>get_</code>、<code>add_</code>、<code>calculate_</code>、<code>simulate_</code>、<code>plot_</code>、<code>export_</code> などの動詞ごとにグループ。コンストラクターは専用のグループ。それ以外は Other。</span></td></tr>
+        <tr><td><span lang="en">Method group</span><span lang="ja">メソッドのグループ</span></td><td data-label="What to write" data-label-ja="書くもの"><span lang="en">The purpose group, e.g. <code>Called by analyses</code>. The first of these wins:<small>1. <code>% &lt;@Group&gt; name</code> in the method's help.</small><small>2. <code>% &lt;@Group&gt; name</code> directly above its declaration in the <code>methods</code> block of the classdef (for a method whose file is generated from a template).</small><small>3. A trailing comment on the <code>methods (...)</code> line that declares or defines it.</small><small>4. The verb prefix of the name.</small></span><span lang="ja">目的のグループ。例: <code>Called by analyses</code>。次の順で先にあるものを採用:<small>1. メソッドのヘルプ内の <code>% &lt;@Group&gt; name</code>。</small><small>2. classdef の <code>methods</code> ブロックで宣言の直上に書く <code>% &lt;@Group&gt; name</code>（テンプレートから生成されるファイルのメソッド用）。</small><small>3. 宣言・定義している <code>methods (...)</code> 行の行末コメント。</small><small>4. 名前の動詞接頭辞。</small></span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">Verb prefix: <code>set_</code>, <code>get_</code>, <code>add_</code>, <code>calculate_</code> and the other verbs each get a group; the constructor has its own; anything else is in Other.<small>The groups of <code>PowerNetwork</code> methods (Power flow, Simulation, ...) also label the Used by section of other classes.</small></span><span lang="ja">動詞接頭辞: <code>set_</code>、<code>get_</code>、<code>add_</code>、<code>calculate_</code> などの動詞ごとにグループ。コンストラクターは専用のグループ。それ以外は Other。<small><code>PowerNetwork</code> のメソッドのグループ（Power flow、Simulation など）は、他クラスの利用元の見出しにも使用。</small></span></td></tr>
         <tr><td><span lang="en">Inputs</span><span lang="ja">入力</span> <span class="cd-pin">7</span></td><td data-label="What to write" data-label-ja="書くもの"><span lang="en">A trailing <code>% text</code> in the <code>arguments</code> block, or a comment line above the argument.</span><span lang="ja"><code>arguments</code> ブロック内の行末の <code>% text</code>、または引数の上のコメント行。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">Size, class, validators and defaults come from the same line.</span><span lang="ja">サイズ、クラス、検証関数、既定値は同じ行から読み取り。</span></td></tr>
         <tr><td><span lang="en">Outputs</span><span lang="ja">出力</span> <span class="cd-pin">8</span></td><td data-label="What to write" data-label-ja="書くもの"><span lang="en">The same, in an <code>arguments (Output)</code> block.</span><span lang="ja">同じ書き方を <code>arguments (Output)</code> ブロックで。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">Outputs without the block are listed by name only.</span><span lang="ja">このブロックがない出力は名前だけを掲載。</span></td></tr>
       </tbody>
@@ -267,16 +270,60 @@
       </tbody>
     </table>
 
+    <!-- ============================== CLASS PAGE ============================== -->
+    <h2 id="class-page"><span lang="en">Class page sections</span><span lang="ja">クラスのページの構成</span></h2>
+    <p class="dg-lead-in" lang="en">The class page of the Reference (<code>class.html#class=&lt;Class&gt;</code>) shows these sections in this order, then Inheritance and the full member tables. A section without data is hidden. Collected text is English; the labels follow the page language.</p>
+    <p class="dg-lead-in" lang="ja">Reference のクラスのページ（<code>class.html#class=&lt;Class&gt;</code>）はこの順で表示し、続けて継承と全メンバーの表。データのない部分は非表示。集めた本文は英語、見出しはページの言語。</p>
+    <table class="dg-table">
+      <thead><tr><th><span lang="en">Section</span><span lang="ja">部分</span></th><th><span lang="en">Built from</span><span lang="ja">作成元</span></th></tr></thead>
+      <tbody>
+        <tr><td><span lang="en">Role</span><span lang="ja">役割</span></td><td data-label="Built from" data-label-ja="作成元"><span lang="en">The H1 line as the lead, the description, then the figure (see <a href="#image">Figure</a>).</span><span lang="ja">H1 行を冒頭に、続いて説明、最後に図（<a href="#image">図</a>を参照）。</span></td></tr>
+        <tr><td><span lang="en">Examples</span><span lang="ja">使用例</span></td><td data-label="Built from" data-label-ja="作成元"><span lang="en"><code>&lt;@Examples&gt;</code>.</span><span lang="ja"><code>&lt;@Examples&gt;</code>。</span></td></tr>
+        <tr><td><span lang="en">Owned data</span><span lang="ja">保持データ</span></td><td data-label="Built from" data-label-ja="作成元"><span lang="en">Own properties, except hidden, abstract and <code>a_*</code> ones, by property group. Meaning: the comment. Unit / size: <code>[unit]</code> and the declaration. Set by: the methods that assign it (call graph) and its SetAccess. Edit makes stale: <code>&lt;@Stale&gt;</code>.</span><span lang="ja">自身のプロパティ（hidden、abstract、<code>a_*</code> を除く）をプロパティのグループ別に。意味: コメント。単位 / サイズ: <code>[unit]</code> と宣言。設定元: 代入するメソッド（呼び出しグラフ）と SetAccess。編集で無効化: <code>&lt;@Stale&gt;</code>。</span></td></tr>
+        <tr><td><span lang="en">References</span><span lang="ja">参照</span></td><td data-label="Built from" data-label-ja="作成元"><span lang="en">Own <code>a_*</code> properties with their class, and the <code>a_*</code> properties of other classes that point to this class.</span><span lang="ja">自身の <code>a_*</code> プロパティとそのクラス、このクラスを指す他クラスの <code>a_*</code> プロパティ。</span></td></tr>
+        <tr><td><span lang="en">Methods by purpose</span><span lang="ja">目的別メソッド</span></td><td data-label="Built from" data-label-ja="作成元"><span lang="en">Subclass contract first (abstract properties and methods), then own methods by group. Called by: the call graph.</span><span lang="ja">先頭にサブクラスの契約（抽象プロパティ・抽象メソッド）、続いて自身のメソッドをグループ別に。呼び出し元: 呼び出しグラフ。</span></td></tr>
+        <tr><td><span lang="en">Used by</span><span lang="ja">利用元</span></td><td data-label="Built from" data-label-ja="作成元"><span lang="en">Public methods of <code>PowerNetwork</code> whose calls reach this class, by their group, with the members they reach first (call graph without candidate links).</span><span lang="ja">呼び出しがこのクラスに届く <code>PowerNetwork</code> の public メソッドをグループ別に、最初に届くメンバーとともに（候補リンクを除く呼び出しグラフ）。</span></td></tr>
+        <tr><td><span lang="en">Subclasses</span><span lang="ja">サブクラス</span></td><td data-label="Built from" data-label-ja="作成元"><span lang="en">All descendants, indented, with their H1 line.</span><span lang="ja">すべての子孫クラスを字下げして、H1 行とともに。</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="image"><span lang="en">Figure</span><span lang="ja">図</span></h3>
+    <ul>
+      <li><span lang="en">Put <code>image.svg</code> in the class folder <code>@Class/</code>, next to the classdef file.</span><span lang="ja">クラスフォルダ <code>@Class/</code> の classdef ファイルの隣に <code>image.svg</code> を配置。</span></li>
+      <li><span lang="en"><code>GUILDA.doc</code> copies it to <code>database/images/&lt;Class&gt;.svg</code> (user classes: <code>database/User/images/</code>, never published) and shows it at the end of Role. No file: no figure.</span><span lang="ja"><code>GUILDA.doc</code> が <code>database/images/&lt;Class&gt;.svg</code> にコピー（ユーザークラスは <code>database/User/images/</code>、公開しない）し、役割の最後に表示。ファイルがなければ図なし。</span></li>
+      <li><span lang="en">The copies are generated files, not in git; a removed <code>image.svg</code> removes its copy at the next export.</span><span lang="ja">コピーは生成ファイルで git の対象外。<code>image.svg</code> を削除すると次のエクスポートでコピーも削除。</span></li>
+      <li><span lang="en">A standalone SVG: <code>viewBox</code>, fixed colors (no CSS variables of the site), English text. It is shown on a white panel, at most 640 px wide.</span><span lang="ja">単独の SVG: <code>viewBox</code>、固定の色（サイトの CSS 変数は不可）、英語の文字。白いパネル上に最大幅 640 px で表示。</span></li>
+      <li><span lang="en">Example: <code>_GUILDAsystem/@Component/image.svg</code>.</span><span lang="ja">例: <code>_GUILDAsystem/@Component/image.svg</code>。</span></li>
+    </ul>
+
+    <h3 id="math"><span lang="en">Math</span><span lang="ja">数式</span></h3>
+    <ul>
+      <li><span lang="en">Inline: <code>$...$</code>, with no space just inside the dollars (so <code>$5 and $6</code> stays text).</span><span lang="ja">行内: <code>$...$</code>。ドル記号のすぐ内側に空白は不可（<code>$5 and $6</code> は文字のまま）。</span></li>
+      <li><span lang="en">Display: a fenced block with the info string <code>math</code>.</span><span lang="ja">別行: 情報文字列 <code>math</code> のフェンス付きブロック。</span></li>
+      <li><span lang="en">MATLAB <code>help</code> shows the LaTeX source: keep it short and readable.</span><span lang="ja">MATLAB の <code>help</code> は LaTeX のソースを表示: 短く読みやすく。</span></li>
+      <li><span lang="en">Rendered with KaTeX 0.19.1, bundled in <code>_GUILDAdoc/vendor/katex/</code> (no CDN, so offline and <code>file://</code> work). Without it the source shows as code.</span><span lang="ja">表示は <code>_GUILDAdoc/vendor/katex/</code> に同梱の KaTeX 0.19.1（CDN なし、オフラインと <code>file://</code> で動作）。ない場合はソースをコードとして表示。</span></li>
+      <li><span lang="en">Licenses: MIT for KaTeX (<code>vendor/katex/LICENSE</code>), SIL Open Font License 1.1 for its fonts (<code>vendor/katex/fonts/OFL.txt</code>); the notice is <code>_GUILDAdoc/vendor/README.md</code>. Keep them with the files when KaTeX is updated.</span><span lang="ja">ライセンス: KaTeX は MIT（<code>vendor/katex/LICENSE</code>）、フォントは SIL Open Font License 1.1（<code>vendor/katex/fonts/OFL.txt</code>）。告知は <code>_GUILDAdoc/vendor/README.md</code>。KaTeX の更新時もファイルと一緒に維持。</span></li>
+    </ul>
+<pre class="cd-code"><span class="cd-c">% **Equations** (swing equation; $\omega_0$ is the network frequency)</span>
+<span class="cd-c">% ```math</span>
+<span class="cd-c">% \begin{aligned}</span>
+<span class="cd-c">% \dot{\delta} &amp;= 2\pi\omega_0\,\omega \\</span>
+<span class="cd-c">% M\dot{\omega} &amp;= -D\,\omega - P + P_\mathrm{mech}</span>
+<span class="cd-c">% \end{aligned}</span>
+<span class="cd-c">% ```</span></pre>
+
     <!-- ============================== TAGS ============================== -->
     <h2 id="tags"><span lang="en">Tags to use</span><span lang="ja">使うタグ</span></h2>
-    <p class="dg-lead-in" lang="en">A tag is only for what neither the code nor the help conventions can say. There are three.</p>
-    <p class="dg-lead-in" lang="ja">タグはコードからもヘルプの慣例からも表せない情報専用。全 3 種。</p>
+    <p class="dg-lead-in" lang="en">A tag is only for what neither the code nor the help conventions can say. There are five.</p>
+    <p class="dg-lead-in" lang="ja">タグはコードからもヘルプの慣例からも表せない情報専用。全 5 種。</p>
     <table class="dg-table cd-map" aria-label="Tags for classes, properties and methods">
       <thead><tr><th><span lang="en">Tag</span><span lang="ja">タグ</span></th><th><span lang="en">Class</span><span lang="ja">クラス</span></th><th><span lang="en">Property</span><span lang="ja">プロパティ</span></th><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">Use when</span><span lang="ja">使う場面</span></th></tr></thead>
       <tbody>
         <tr><td>Examples</td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td><span lang="en">A short usage example helps. Markdown with fenced code blocks.</span><span lang="ja">短い使用例が役立つとき。フェンス付きコードブロックを含む Markdown。</span></td></tr>
         <tr><td>Deprecated</td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td><span lang="en">The member will be removed. The text names the replacement.</span><span lang="ja">そのメンバーが削除予定のとき。本文で代替を明示。</span></td></tr>
         <tr><td>Type</td><td></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td></td><td><span lang="en">The declaration cannot state the class, for example an untyped property that holds a <code>SolverPF</code>.</span><span lang="ja">宣言でクラスを示せないとき。例: <code>SolverPF</code> を保持する型指定のないプロパティ。</span></td></tr>
+        <tr><td>Stale</td><td></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td></td><td><span lang="en">An edit of the property makes something out of date, e.g. <code>equilibrium</code>, <code>handles equilibrium</code>, <code>nothing (logged)</code>. Shown as "Edit makes stale" in Owned data.</span><span lang="ja">プロパティの編集で古くなるものがあるとき。例: <code>equilibrium</code>、<code>handles equilibrium</code>、<code>nothing (logged)</code>。保持データの「編集で無効化」に表示。</span></td></tr>
+        <tr><td>Group</td><td></td><td></td><td><span class="cd-m" role="img" aria-label="Used"></span></td><td><span lang="en">The method belongs to a purpose group (see Method group in <a href="#where">Where help comments go</a> for the order).</span><span lang="ja">メソッドを目的のグループに入れるとき（優先順位は<a href="#where">ヘルプコメントを書く場所</a>のメソッドのグループを参照）。</span></td></tr>
       </tbody>
     </table>
     <ul>
@@ -293,12 +340,14 @@
 <span class="cd-c">% net = network_IEEE68bus();</span>
 <span class="cd-c">% net.calculate_powerflow();</span>
 <span class="cd-c">% ```</span>
+<span class="cd-c">% &lt;@Group&gt; Power flow</span>
 <span class="cd-c">% &lt;@Deprecated&gt; Use solve_powerflow.</span></pre>
       </div>
       <div>
         <span class="dg-kicker"><span lang="en">Property comment</span><span lang="ja">プロパティのコメント</span></span>
 <pre class="cd-code" style="margin-top:8px"><span class="cd-c">% Solver used by calculate_powerflow.</span>
 <span class="cd-c">% &lt;@Type&gt; SolverPF</span>
+<span class="cd-c">% &lt;@Stale&gt; nothing</span>
 a_Solver</pre>
       </div>
     </div>
@@ -312,7 +361,7 @@ a_Solver</pre>
         <tr><td><code>Summary</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">The first comment line.</span><span lang="ja">コメントの 1 行目。</span></td></tr>
         <tr><td><code>Desc</code>, <code>Notes</code>, <code>Model</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">The description lines. Use a Markdown heading such as <code># Notes</code> for a part of it.</span><span lang="ja">説明の行。一部の区切りには <code># Notes</code> のような Markdown の見出し。</span></td></tr>
         <tr><td><code>SeeAlso</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">A <code>% See also A, B</code> line.</span><span lang="ja"><code>% See also A, B</code> の行。</span></td></tr>
-        <tr><td><code>Role</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">The group comment on the <code>properties</code> line. Methods are grouped by their verb prefix.</span><span lang="ja"><code>properties</code> 行のグループコメント。メソッドは動詞接頭辞でグループ分け。</span></td></tr>
+        <tr><td><code>Role</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">The group comment on the <code>properties</code> line. Methods: <code>&lt;@Group&gt;</code> or the verb prefix.</span><span lang="ja"><code>properties</code> 行のグループコメント。メソッドは <code>&lt;@Group&gt;</code> または動詞接頭辞。</span></td></tr>
         <tr><td><code>Category</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">Nothing: the package is the category.</span><span lang="ja">不要: パッケージがカテゴリ。</span></td></tr>
         <tr><td><code>Constructor</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">The constructor's own comment block and <code>arguments</code> block.</span><span lang="ja">コンストラクター自身のコメントブロックと <code>arguments</code> ブロック。</span></td></tr>
         <tr><td><code>Signatures</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">Nothing: the <code>function</code> line and the <code>arguments</code> block. Show other call forms in <code>&lt;@Examples&gt;</code>.</span><span lang="ja">不要: <code>function</code> 行と <code>arguments</code> ブロックから読み取り。別の呼び出し方は <code>&lt;@Examples&gt;</code> で。</span></td></tr>
@@ -359,7 +408,9 @@ r_Sbase (1,1) double = 100</pre>
         <tr><td><span lang="en">Method</span><span lang="ja">メソッド</span></td><td data-label="Field" data-label-ja="項目"><span lang="en">Overrides</span><span lang="ja">オーバーライド</span></td><td data-label="Read from" data-label-ja="読み取り元"><span lang="en">A superclass method with the same name.</span><span lang="ja">スーパークラスにある同名のメソッド。</span></td></tr>
         <tr><td><span lang="en">Method</span><span lang="ja">メソッド</span></td><td data-label="Field" data-label-ja="項目">ImplementedIn</td><td data-label="Read from" data-label-ja="読み取り元"><span lang="en">The file that holds the <code>function</code>.</span><span lang="ja"><code>function</code> があるファイル。</span></td></tr>
         <tr><td><span lang="en">Method</span><span lang="ja">メソッド</span></td><td data-label="Field" data-label-ja="項目"><span lang="en">Throws</span><span lang="ja">スローするエラー</span></td><td data-label="Read from" data-label-ja="読み取り元"><span lang="en">The error IDs in its <code>error(msg(...))</code> calls.</span><span lang="ja">その中の <code>error(msg(...))</code> 呼び出しのエラー ID。</span></td></tr>
-        <tr><td><span lang="en">Method</span><span lang="ja">メソッド</span></td><td data-label="Field" data-label-ja="項目"><span lang="en">Group</span><span lang="ja">グループ</span></td><td data-label="Read from" data-label-ja="読み取り元"><span lang="en">The verb prefix of the name.</span><span lang="ja">名前の動詞接頭辞。</span></td></tr>
+        <tr><td><span lang="en">Method</span><span lang="ja">メソッド</span></td><td data-label="Field" data-label-ja="項目"><span lang="en">Group</span><span lang="ja">グループ</span></td><td data-label="Read from" data-label-ja="読み取り元"><span lang="en"><code>&lt;@Group&gt;</code> or the comments, else the verb prefix (see <a href="#where">Where help comments go</a>).</span><span lang="ja"><code>&lt;@Group&gt;</code> またはコメント、なければ動詞接頭辞（<a href="#where">ヘルプコメントを書く場所</a>を参照）。</span></td></tr>
+        <tr><td><span lang="en">Class</span><span lang="ja">クラス</span></td><td data-label="Field" data-label-ja="項目">References</td><td data-label="Read from" data-label-ja="読み取り元"><span lang="en">Its own <code>a_*</code> properties; the class from <code>&lt;@Type&gt;</code>, else the name (<code>a_Bus</code> → <code>Bus</code>).</span><span lang="ja">自身の <code>a_*</code> プロパティ。クラスは <code>&lt;@Type&gt;</code>、なければ名前から（<code>a_Bus</code> → <code>Bus</code>）。</span></td></tr>
+        <tr><td><span lang="en">Class</span><span lang="ja">クラス</span></td><td data-label="Field" data-label-ja="項目">Image</td><td data-label="Read from" data-label-ja="読み取り元"><span lang="en"><code>@Class/image.svg</code> (see <a href="#image">Figure</a>).</span><span lang="ja"><code>@Class/image.svg</code>（<a href="#image">図</a>を参照）。</span></td></tr>
       </tbody>
     </table>
     <div class="dg-callout">
@@ -375,6 +426,7 @@ r_Sbase (1,1) double = 100</pre>
       <li><span lang="en">Scope: methods of the classes under <code>_GUILDAsystem</code>.</span><span lang="ja">対象: <code>_GUILDAsystem</code> の下のクラスのメソッド。</span></li>
       <li><span lang="en">The exporter reads the source with <code>mtree</code>, without running it, and stores which properties and methods each method uses in <code>database/list_CallGraph.js</code>, rebuilt on every export.</span><span lang="ja">エクスポーターがソースを実行せずに <code>mtree</code> で読み、各メソッドが使うプロパティとメソッドを <code>database/list_CallGraph.js</code> に保存。エクスポートのたびに再作成。</span></li>
       <li><span lang="en">Local functions and <code>private/</code> helpers have no node: what they use counts for the method that calls them.</span><span lang="ja">ローカル関数と <code>private/</code> のヘルパーはノードなし。それらが使うものは呼び出し元のメソッドの分として集計。</span></li>
+      <li><span lang="en">Assignments <code>obj.prop = value</code> with a known class are kept apart as writes: the "Set by" of the class page.</span><span lang="ja">クラスが分かる代入 <code>obj.prop = value</code> は書き込みとして別に保存: クラスのページの「設定元」。</span></li>
     </ul>
     <table class="dg-table cd-opts">
       <thead><tr><th><span lang="en">Line style</span><span lang="ja">線の種類</span></th><th><span lang="en">Meaning</span><span lang="ja">意味</span></th></tr></thead>
@@ -455,6 +507,7 @@ r_Sbase (1,1) double = 100</pre>
         <tr><td><span lang="en">File time or size differs from <code>manifest.json</code></span><span lang="ja">ファイルの時刻かサイズが <code>manifest.json</code> と異なる</span></td><td data-label="What is exported" data-label-ja="エクスポートされるもの"><span lang="en">That class and all its subclasses.<small>Subclasses inherit members, so their pages change too.</small></span><span lang="ja">そのクラスとすべてのサブクラス。<small>サブクラスはメンバーを継承するため、そのページも変化。</small></span></td></tr>
         <tr><td><span lang="en">File not in the manifest</span><span lang="ja">マニフェストにないファイル</span></td><td data-label="What is exported" data-label-ja="エクスポートされるもの"><span lang="en">The new class and its subclasses.</span><span lang="ja">新しいクラスとそのサブクラス。</span></td></tr>
         <tr><td><span lang="en">File in the manifest but gone</span><span lang="ja">マニフェストにあるが消えたファイル</span></td><td data-label="What is exported" data-label-ja="エクスポートされるもの"><span lang="en">Its class file and index entry are removed; its subclasses are re-exported.</span><span lang="ja">そのクラスのファイルと索引の項目を削除、サブクラスを再エクスポート。</span></td></tr>
+        <tr><td><span lang="en">An <code>image.svg</code> added, edited or removed</span><span lang="ja"><code>image.svg</code> の追加・編集・削除</span></td><td data-label="What is exported" data-label-ja="エクスポートされるもの"><span lang="en">No class; the copies in <code>database/images/</code> and the class index are updated.</span><span lang="ja">クラスはなし。<code>database/images/</code> のコピーとクラス索引を更新。</span></td></tr>
         <tr><td><span lang="en">No manifest, or one from another schema or exporter</span><span lang="ja">マニフェストがない、またはスキーマかエクスポーターが異なる</span></td><td data-label="What is exported" data-label-ja="エクスポートされるもの"><span lang="en">Everything.</span><span lang="ja">すべて。</span></td></tr>
         <tr><td><span lang="en">Nothing changed</span><span lang="ja">変更なし</span></td><td data-label="What is exported" data-label-ja="エクスポートされるもの"><span lang="en">Nothing. The pages open as they are.</span><span lang="ja">なし。ページをそのまま表示。</span></td></tr>
       </tbody>
@@ -511,6 +564,7 @@ r_Sbase (1,1) double = 100</pre>
             { key: 'summary', label: 'Summary (H1 line)', required: true, rows: 1, placeholder: 'e.g. Base power.', label_ja: '概要（H1 行）', placeholder_ja: '例: Base power.' },
             { key: 'desc', label: 'Description', rows: 2, placeholder: 'Following comment lines. Markdown is supported.', label_ja: '説明', placeholder_ja: '続くコメント行。Markdown 可。' },
             { key: 'type', label: '<@Type>', declared: true, rows: 1, placeholder: 'e.g. SolverPF', placeholder_ja: '例: SolverPF' },
+            { key: 'stale', label: '<@Stale>', rows: 1, placeholder: 'What an edit makes out of date, e.g. equilibrium', placeholder_ja: '編集で古くなるもの。例: equilibrium' },
             { key: 'deprecated', label: '<@Deprecated>', rows: 1, placeholder: 'Leave empty unless deprecated; name the replacement.', placeholder_ja: '非推奨でなければ空欄。非推奨なら代替を記入。' }
           ]
         },
@@ -523,6 +577,7 @@ r_Sbase (1,1) double = 100</pre>
             { key: 'seeAlso', label: 'See also', rows: 1, placeholder: 'e.g. remove_component, Component', label_ja: '関連項目（See also）', placeholder_ja: '例: remove_component, Component' },
             { key: 'inputs', label: 'Inputs (arguments block)', kind: 'rows', block: 'arguments', namePattern: /^[A-Za-z]\w*(\.[A-Za-z]\w*)?$/, namePlaceholder: 'comp or opt.Check', label_ja: '入力（arguments ブロック）', namePlaceholder_ja: 'comp または opt.Check' },
             { key: 'outputs', label: 'Outputs (arguments (Output) block)', kind: 'rows', block: 'arguments (Output)', namePattern: /^[A-Za-z]\w*$/, namePlaceholder: 'idx', label_ja: '出力（arguments (Output) ブロック）' },
+            { key: 'group', label: '<@Group>', rows: 1, placeholder: 'Purpose group, e.g. Called by analyses', placeholder_ja: '目的のグループ。例: Called by analyses' },
             { key: 'examples', label: '<@Examples>', kind: 'code', rows: 3, placeholder: 'MATLAB code; it is put in a ```matlab block.', placeholder_ja: 'MATLAB コード。```matlab ブロックに挿入。' },
             { key: 'deprecated', label: '<@Deprecated>', rows: 1, placeholder: 'Leave empty unless deprecated; name the replacement.', placeholder_ja: '非推奨でなければ空欄。非推奨なら代替を記入。' }
           ]
@@ -794,6 +849,8 @@ r_Sbase (1,1) double = 100</pre>
 
         tags = tags.concat(exampleLines(value('examples')));
         tags = tags.concat(tagLines('Type', value('type')));
+        tags = tags.concat(tagLines('Stale', value('stale')));
+        tags = tags.concat(tagLines('Group', value('group')));
         tags = tags.concat(tagLines('Deprecated', value('deprecated')));
 
         ['inputs', 'outputs'].forEach(function (key) {
