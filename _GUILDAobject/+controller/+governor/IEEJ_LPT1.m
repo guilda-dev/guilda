@@ -27,8 +27,10 @@ classdef (Sealed = true) IEEJ_LPT1 < controller.governor.abstract
 % gen = net.a_Bus{1}.a_Component{1};
 % gen.add_local_controller(controller.governor.IEEJ_LPT1("gov1", Prate=2.5, PLM=5));
 % net.initialize;
-% ev  = ODEevent("trip", net, "TimeSpan", [1,Inf], "TripUnit", net.a_Bus{5}.a_Component{1}.str_tag);
-% sol = net.simulate([0,30], ev);
+% sc  = Scenario("trip");
+% sc.add_trip(net.a_Bus{5}.a_Component{1}.str_tag, [1,Inf]);
+% net.add_scenario(sc);
+% sol = net.simulate([0,30], sc);
 % ```
 %
 % See also controller.governor.IEEJ_LPT3, controller.governor.IEEJ_LPT4, controller.governor.abstract, controller.avr.AVR_DC1

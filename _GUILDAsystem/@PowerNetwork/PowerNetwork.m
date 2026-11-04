@@ -7,7 +7,8 @@ classdef PowerNetwork < PowerSystemModel
 %
 % - power flow (`calculate_powerflow`) and optimal power flow (`optimize_powerflow`)
 % - continuation power flow (`calculate_continuation_powerflow`)
-% - equilibrium (`initialize`), time simulation (`simulate`)
+% - equilibrium (`initialize`), time simulation (`simulate`) of the scenarios it holds
+%   (`add_scenario`, `remove_scenario`, `a_Scenario`)
 % - linearization and eigenvalue analysis (`linearize`, `get_sys`)
 % - network diagrams (`draw_diagram`) and CSV / MATPOWER import and export
 %
@@ -35,12 +36,14 @@ classdef PowerNetwork < PowerSystemModel
 %
 % res = net.calculate_powerflow();          % PFCresult
 % net.initialize();                         % equilibrium for the dynamic analyses
-% ev  = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B003");
-% sim = net.simulate([0,10], ev);           % ODEresult
+% sc  = Scenario("fault", Time=[0,10]);
+% sc.add_fault("B003", [1,1.05]);
+% net.add_scenario(sc);
+% sim = net.simulate(sc);                   % ODEresult
 % sys = net.get_sys();                      % linear state-space model
 % ```
 %
-% See also Bus, Branch, Component, GlobalController, network.IEEE9bus
+% See also Bus, Branch, Component, GlobalController, Scenario, network.IEEE9bus
 
 %% Properties
 
@@ -48,6 +51,12 @@ classdef PowerNetwork < PowerSystemModel
        a_Bus              (:,1) cell = cell(0,1);   % Buses of the network, in the order of the bus index.
        a_Branch           (:,1) cell = cell(0,1);   % Branches of the network.
        a_GlobalController (:,1) cell = cell(0,1);   % Global controllers of the network.
+    end
+    properties(SetAccess=private) % Scenarios
+       % Simulation scenarios of the network (Scenario objects), in the order they were added.
+       % Added by add_scenario and removed by remove_scenario; not model data (they do not make
+       % the equilibrium stale).
+       a_Scenario (:,1) cell = cell(0,1);
     end
     properties(SetAccess=protected) % Solvers
 
@@ -134,6 +143,10 @@ classdef PowerNetwork < PowerSystemModel
         remove_bus( obj, str_BusTag, opt)
         remove_branch( obj, tag)
         remove_global_controller( obj, str_GconTag)
+
+        % Scenarios of the time simulation
+        add_scenario(obj, sc)
+        remove_scenario(obj, str_tag)
         
         % initialize
         [result, flag, output] = initialize(obj, varargin)

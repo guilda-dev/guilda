@@ -128,11 +128,11 @@ classdef Component < PowerSystemModel
         parent                                 % Layer Structure: the bus.
         children                               % Layer Structure: the local controllers and Parameter objects.
     end
-    properties (Access={?ODEsolver, ?Component, ?ODEevent})        
+    properties (Access={?ODEsolver, ?Component})        
         l_hasController = false;
         l_isConnect     = true
     end
-    properties (SetAccess={?ODEsolver, ?ODEevent}, Hidden)
+    properties (SetAccess={?ODEsolver}, Hidden)
         rv_Xoffset 
         rv_Uoffset 
     end

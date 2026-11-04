@@ -324,7 +324,7 @@ gov = controller.governor.IEEJ_LPT1("g3", Prate=2, PLM=5);
 gen.add_local_controller(controller.avr.AVR_ST1("a3"), controller.pss.PSS1("p3"), gov);
 DebugScript.helper.quiet(@() net.initialize);
 rv_eq = net.rv_Xequilibrium;
-ev  = ODEevent("trip", net, "TimeSpan", [1,1.2], "TripUnit", gen.str_tag);
+ev  = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", gen.str_tag);
 sol = net.simulate([0,2], ev, Progress="none", TimeLimit=120);
 assert(sol.flag == 1, sol.output.message)
 assert(isequal(net.rv_Xequilibrium, rv_eq))
@@ -382,7 +382,7 @@ end
 function [sol, comp] = simulate_step(gov, r_step, rv_span, t_end)
 % 調速機を付けた SG1B002 の系統で、SG1B001 の Pmech に r_step を加える
     [net, comp] = build_gov(gov);
-    ev  = ODEevent("step", net, "TimeSpan", rv_span, "InputUnit", "SG1B001", "InputName", "Pmech", "InputValue", r_step);
+    ev  = DebugScript.helper.scenario("step", net, "TimeSpan", rv_span, "InputUnit", "SG1B001", "InputName", "Pmech", "InputValue", r_step);
     sol = DebugScript.helper.quiet(@() net.simulate([0,t_end], ev));
 end
 
@@ -461,7 +461,7 @@ function [r_err, r_max] = error_to_linear(net, str_unit, comp, r_step)
     rv_time = [0,10];
     net.solver_ODE.RelativeTolerance = 1e-8;
     net.solver_ODE.AbsoluteTolerance = 1e-10;
-    ev  = ODEevent("step", net, "TimeSpan", rv_time, "InputUnit", str_unit, "InputName", "Pmech", "InputValue", r_step);
+    ev  = DebugScript.helper.scenario("step", net, "TimeSpan", rv_time, "InputUnit", str_unit, "InputName", "Pmech", "InputValue", r_step);
     sol = DebugScript.helper.quiet(@() net.simulate(rv_time, ev));
 
     unit = [];

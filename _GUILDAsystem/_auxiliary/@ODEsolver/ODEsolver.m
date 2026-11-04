@@ -6,7 +6,7 @@ classdef (Sealed = true) ODEsolver < auxiliary
 % get_options). The solver holds settings only: the network, the event time table and the
 % trajectories of a run are local to solve, and the result is returned as an
 % ODEresult. The DAE of the network is integrated phase by phase: a phase is a
-% time interval in which the set of active events (ODEevent) does not change. Each
+% time interval in which the set of active disturbances (Scenario) does not change. Each
 % phase is solved with the MATLAB ode object (Solver, SolverOptions, RelativeTolerance,
 % AbsoluteTolerance).
 %
@@ -15,11 +15,13 @@ classdef (Sealed = true) ODEsolver < auxiliary
 % net = network.IEEE14bus();
 % net.initialize();
 % net.solver_ODE.TimeLimit = 60;          % stored default, kept between runs
-% ev = ODEevent("fault", net, "TimeSpan", [1, 1.05], "FaultBus", "B008");
-% result = net.simulate([0, 10], ev, Solver="ode23t", Progress="none");  % this call only
+% sc = Scenario("fault");
+% sc.add_fault("B008", [1, 1.05]);
+% net.add_scenario(sc);
+% result = net.simulate([0, 10], sc, Solver="ode23t", Progress="none");  % this call only
 % ```
 %
-% See also ODEresult, ODEevent, PowerNetwork.simulate
+% See also ODEresult, Scenario, PowerNetwork.simulate
 
     properties (Access=public) % Settings
         % Solver of the MATLAB ode object (Solver property of ode).
@@ -140,7 +142,7 @@ classdef (Sealed = true) ODEsolver < auxiliary
         function [result, flag, output] = solve(obj, net, time, c_events, s_options)
         % Integrate the network DAE with the given settings.
         %
-        % Runs the time simulation of net over time with the events c_events and the
+        % Runs the time simulation of net over time with the scenarios c_events and the
         % effective settings s_options, and returns the trajectories as an
         % ODEresult. The solver is only read: nothing is written back into it.
         % The simulation working data of the models (iv_odeX, iv_odeU, iv_odeY, iv_odeI) is
@@ -158,7 +160,7 @@ classdef (Sealed = true) ODEsolver < auxiliary
                 obj % Solver (net.solver_ODE).
                 net % Network initialized by net.initialize.
                 time      (:,1) double = [] % [s] Simulation time [t0, tend] (or [] for the time span of the events).
-                c_events  cell = {} % Events of the run.
+                c_events  cell = {} % Scenarios of the run (each attached to net; see Scenario).
                 s_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
             end
             arguments (Output)
@@ -169,18 +171,9 @@ classdef (Sealed = true) ODEsolver < auxiliary
             t0 = tic;
             net.require_equilibrium();    % build out-of-date f_*; error if net.initialize() is needed
 
-            % Without events, add an empty event so that ODEevent.table is dispatched.
-            if isempty(c_events)
-                t_start = 0;
-                if ~isempty(time)
-                    t_start = time(1);
-                end
-                c_events = {ODEevent("NoAction", net, "TimeSpan", t_start)};
-            end
-
-            [tab_phase, c_odeEvnt] = table(c_events{:}, "time", time, "net", net);
-            c_open = ODEsolver.get_open_branches(tab_phase, c_odeEvnt);
-            check_islands(net, c_open, tab_phase);
+            % Phases of the run: checks the scenarios, builds the data of each phase once
+            [tab_phase, s_phase] = Scenario.compile(c_events, net, time);
+            check_islands(net, {s_phase.sv_open}.', tab_phase);
             ODEsolver.initialize_index(net);
             c_restore = onCleanup(@() ODEsolver.restore_working_data(net));
 
@@ -219,24 +212,21 @@ classdef (Sealed = true) ODEsolver < auxiliary
             tp      = 1;
             while tp <= np
 
-                % Retrieving events related to ground faults and circuit tripping.
-                TT = tab_phase(tp,:);
-
-                odeEvents = c_odeEvnt( TT{:,3:end} );
+                % Faults, trips, open branches, offsets and inputs of the phase (Scenario.compile)
+                ph = s_phase(tp);
 
                 % A tripped global controller gives no output (TripUnit names it)
-                str_trip = cellfun(@(e) e.TripUnit, odeEvents, 'UniformOutput', false);
-                ODEsolver.set_gc_connect(net, vertcat(strings(0,1), str_trip{:}));
+                ODEsolver.set_gc_connect(net, ph.sv_trip);
 
-                t1 = TT{1, 't1'};
-                t2 = TT{1, 't2'};
+                t1 = ph.t1;
+                t2 = ph.t2;
 
                 % Y of the phase: without the branches opened in it (OpenBranch)
-                ctx = ODEsolver.set_admittance(ctx, c_open{tp}, false);
+                ctx = ODEsolver.set_admittance(ctx, ph.sv_open, false);
 
-                setEventCondition(odeEvents{:}, "TimePhase", [t1,t2], "Iteration", tp);
+                ODEsolver.set_offsets(net, ph);
 
-                [EM, RM, lv_FBorTC, x0, Mass] = getInitialCondition(odeEvents{:}, "x0", x0, "M0", Mass);
+                [EM, RM, lv_FBorTC, x0, Mass] = ODEsolver.initial_condition(net, ph, x0, Mass);
 
                 if ~ctx.l_sparse
                     Mass = full(Mass);
@@ -338,7 +328,7 @@ classdef (Sealed = true) ODEsolver < auxiliary
                     lastwarn(str_warn0, id_warn0);
                 end
 
-                c_phase{tp} = Event2State( odeEvents{:}, "ODEResults", struct('Time', (sol.Time + t1)', 'Solution', (EM * sol.Solution).'), "ODEYmatrix", ctx.Ymat );
+                c_phase{tp} = ODEsolver.phase_result(net, ph, struct('Time', (sol.Time + t1)', 'Solution', (EM * sol.Solution).'), ctx.Ymat);
                 if sol.Time(end) < (t2-t1)
                     if odeProg.ToBeContinue
                         flag = -1;
@@ -498,14 +488,107 @@ classdef (Sealed = true) ODEsolver < auxiliary
 
                 
 
-        function c_open = get_open_branches(tab_phase, c_odeEvnt)
-            % Tags of the branches open in each phase (OpenBranch of its active events)
-            c_open = cell(height(tab_phase), 1);
-            for tp = 1:height(tab_phase)
-                c_ev = c_odeEvnt(tab_phase{tp,3:end});
-                c_br = cellfun(@(e) e.OpenBranch, c_ev, 'UniformOutput', false);
-                c_open{tp} = unique(vertcat(strings(0,1), c_br{:}));
+        function set_offsets(net, ph)
+            % State offsets and input functions of the phase on the components (Scenario.compile)
+            c_comp = tools.cellfun(@(b) b.a_Component, net.a_Bus);
+            c_comp = vertcat(cell(0,1), c_comp{:});
+            for j = 1:numel(c_comp)
+                c_comp{j}.rv_Xoffset = ph.c_Xoffset{j};
+                c_comp{j}.rv_Uoffset = ph.c_Uoffset{j};
             end
+        end
+
+        function [EM, RM, lv_FBorTC, x0, M0] = initial_condition(net, ph, x0, M0)
+            % Fault and trip flags of the phase, the reduction of the state vector (without the
+            % faulted buses and tripped units) and the initial value and mass matrix of the
+            % phase. x0 and M0 are those at the end of the last phase ([] for the first one).
+            a_bus = net.a_Bus;
+            BusFault = ph.sv_fault;
+            CompTrip = ph.sv_trip;
+
+            rm_M = zeros(0,0);
+            rv_V = cell(size(a_bus));
+            rv_X = cell(size(a_bus));
+
+            for i=1:numel(a_bus)
+                iBus = a_bus{i};
+                iBus.l_isFault = ismember(iBus.str_tag, BusFault);
+
+                Ieq = iBus.c_Iequilibrium;
+                Veq = iBus.c_Vequilibrium;
+
+                rv_V{i} = [real(Veq); imag(Veq); real(Ieq); imag(Ieq)];
+
+                a_Comp = iBus.a_Component;
+                [rv_X{i}, rm_M, CompTrip] = getXM(a_Comp, rv_X{i}, rm_M, CompTrip);
+            end
+
+            a_GCs = net.a_GlobalController;
+            for k = 1:numel(a_GCs)
+                a_GC = a_GCs{k};
+
+                rm_M(a_GC.iv_odeX, a_GC.iv_odeX) = tools.read_mass(a_GC);
+                rv_X = [rv_X; {a_GC.rv_Xequilibrium}]; %#ok
+            end
+
+            [Btag_all, Ctag_all] = getStateTags(net);
+            lv_FBorTC = ismember([Ctag_all; Btag_all], [CompTrip; BusFault]);
+
+            nFBorTC = length(lv_FBorTC);
+
+            EM = speye(nFBorTC);
+            RM = speye(nFBorTC);
+
+            EM = EM(:, ~lv_FBorTC);
+            RM = RM(~lv_FBorTC, :);
+
+            if isempty(x0)
+                x0 = [vertcat(rv_X{:}); vertcat(rv_V{:})];
+            else
+                % Offsets of the disturbances starting in this phase (see set_offsets)
+                for i=1:numel(a_bus)
+                    a_Comp = a_bus{i}.a_Component;
+                    for j=1:numel(a_Comp)
+                        idx = a_Comp{j}.iv_odeX;
+                        x0(idx) = x0(idx) + a_Comp{j}.rv_Xoffset;
+                    end
+                end
+            end
+            x0 = RM * x0;
+
+            if isempty(M0)
+                nB = numel(a_bus);
+                M0 = sparse(blkdiag(rm_M, zeros(nB*4, nB*4)));
+            end
+            M0 = RM * M0 * RM.';
+        end
+
+        function s_out = phase_result(net, ph, s_sol, Ymat)
+            % Trajectory of one phase (t, x, bus currents i) for ODEresult; the states of the
+            % tripped units are NaN.
+            a_bus = net.a_Bus;
+            a_cmp = cellfun(@(bi) bi.a_Component, a_bus, 'UniformOutput', false);
+            a_cmp = vertcat(a_cmp{:});
+
+            % Tripped units by tag (getStateTags also lists local controllers, so its
+            % positions do not match a_cmp); a tripped global controller is marked too
+            a_unit   = [a_cmp; net.a_GlobalController];
+            lv_Ctagi = ismember(string(a_unit), ph.sv_trip);
+
+            B_sti = cell2mat( cellfun(@(bi) bi.iv_odeX, a_bus, 'UniformOutput', false) );
+            C_sti = cell2mat( cellfun(@(ci) ci.iv_odeX, a_unit(lv_Ctagi), 'UniformOutput', false) );
+
+            Time = s_sol.Time;
+            xsol = s_sol.Solution;
+
+            if any(lv_Ctagi)
+                xsol(:, C_sti) = NaN;
+            end
+
+            Vsol = xsol(:, B_sti);
+            Isol = Ymat * Vsol.';
+
+            s_out = struct('t', Time, 'x', xsol, 'i', Isol.');
         end
 
         function ctx = set_admittance(ctx, sv_open, l_force)
@@ -632,7 +715,7 @@ classdef (Sealed = true) ODEsolver < auxiliary
 
         function set_gc_connect(net, str_trip)
             % Global controllers named in str_trip are tripped (l_isConnect = false),
-            % the others connected. Components are set by ODEevent.
+            % the others connected. Components are set by initial_condition.
             a_GCs = net.a_GlobalController;
             for k = 1:numel(a_GCs)
                 a_GCs{k}.l_isConnect = ~ismember(a_GCs{k}.str_tag, str_trip);
@@ -974,4 +1057,69 @@ function [Axx, Bxu, Bxv, Bxi, Cyx, Dyu, Dyv, Dyi, Cix, Diu, Div, Dii] = getSubJa
     Div = OBJ.JacobiDiv(t,xi,Vi,Ii,ui);
     Dii = OBJ.JacobiDii(t,xi,Vi,Ii,ui);
     Diu = OBJ.JacobiDiu(t,xi,Vi,Ii,ui);
+end
+
+function [Btag_all, Ctag_all] = getStateTags(net)
+% Tag of each entry of the state vector, from the network as it is now.
+    a_bus  = net.a_Bus;
+    sv_tag = cell(size(a_bus));
+    rv_rep = cell(size(a_bus));
+
+    for i = 1:numel(a_bus)
+        [sv_tag{i}, rv_rep{i}] = getTM(a_bus{i}.a_Component);
+    end
+
+    % global controllers follow the components in the state vector (see initialize_index)
+    a_GCs = net.a_GlobalController;
+    for k = 1:numel(a_GCs)
+        sv_tag = [sv_tag; {a_GCs{k}.str_tag}]; %#ok
+        rv_rep = [rv_rep; {numel(a_GCs{k}.sv_x)}]; %#ok
+    end
+
+    Btag_all = repelem(string(a_bus), 4*ones(numel(a_bus),1));
+    Ctag_all = repelem(vertcat(sv_tag{:}), vertcat(rv_rep{:}));
+end
+
+function [sv_tag, rv_rep] = getTM(OBJs, sv_tag, rv_rep)
+    if nargin < 2
+        sv_tag = [];
+        rv_rep = [];
+    end
+
+    for no = 1:numel(OBJs)
+        OBJ = OBJs{no};
+        rs_idx = numel([OBJ.sv_x; OBJ.sv_u]);
+
+        sv_tag = [sv_tag; OBJ.str_tag]; %#ok
+        rv_rep = [rv_rep; rs_idx];      %#ok
+
+        % its local controllers, depth first (the order of ODEsolver.initialize_index)
+        if ~isempty(OBJ.a_LocalController)
+            [sv_tag, rv_rep] = getTM(OBJ.a_LocalController, sv_tag, rv_rep);
+        end
+    end
+end
+
+function [rv_x0, rm_Mass, TC] = getXM(OBJs, rv_x0, rm_Mass, TC)
+
+    for no = 1:numel(OBJs)
+        OBJ = OBJs{no};
+        rx_idx = [OBJ.iv_odeX; OBJ.iv_odeU];
+        nu_idx = numel(OBJ.iv_odeU);
+
+        if isa(OBJ, 'Component')
+            OBJ.l_isConnect = ~ismember(OBJ.str_tag, TC);
+        end
+        rv_u0 = OBJ.rv_Uequilibrium;
+        if ~isempty(OBJ.rv_Uoffset)     % empty without an input (see Scenario.compile)
+            rv_u0 = rv_u0 + OBJ.rv_Uoffset(0);
+        end
+        rv_x0 = [rv_x0; OBJ.rv_Xequilibrium + OBJ.rv_Xoffset; rv_u0]; %#ok
+
+        rm_Mass(rx_idx, rx_idx) = blkdiag(tools.read_mass(OBJ), zeros(nu_idx, nu_idx));
+
+        if ~isempty(OBJ.a_LocalController)
+            [rv_x0, rm_Mass, TC] = getXM(OBJ.a_LocalController, rv_x0, rm_Mass, TC);
+        end
+    end
 end

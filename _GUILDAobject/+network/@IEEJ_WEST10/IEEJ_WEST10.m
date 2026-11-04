@@ -24,7 +24,7 @@ classdef IEEJ_WEST10 < PowerNetwork
 % - Lines are pi branches with the per-circuit `R`, `X` of the input data and `C = YC`
 %   (the input data give the charging at each end, `YC = Y/2`). A card with two circuits
 %   is two branches, named with `-1` and `-2`, so that one circuit can be opened
-%   (ODEevent OpenBranch). The bus voltages and angles are the same as with one branch of
+%   (Scenario.add_open_branch). The bus voltages and angles are the same as with one branch of
 %   `R/2`, `X/2`, `2*C` per card (within 1e-14).
 % - Transformers are pi_transformer branches with the input `X` (0.14 pu on the machine
 %   rating), `R = 0`, `C = 0`, `tap = 1`, `phase = 0`.
@@ -112,12 +112,14 @@ classdef IEEJ_WEST10 < PowerNetwork
 % ```matlab
 % net   = network.IEEJ_WEST10(Section="night");
 % res   = net.calculate_powerflow();
-% fault = ODEevent("fault", net, "TimeSpan", [0.1,0.17], "FaultBus", "B004");
-% line  = ODEevent("open",  net, "TimeSpan", [0.17,20], "OpenBranch", "LINE50-1");
-% sol   = net.simulate([0,20], fault, line);
+% sc    = Scenario("fault-open", Time=[0,20]);
+% sc.add_fault("B004", [0.1,0.17]);
+% sc.add_open_branch("LINE50-1", [0.17,20]);
+% net.add_scenario(sc);
+% sol   = net.simulate(sc);
 % ```
 %
-% See also controller.avr.AVR_DC1, controller.governor.IEEJ_LPT1, component.generator.park, ODEevent
+% See also controller.avr.AVR_DC1, controller.governor.IEEJ_LPT1, component.generator.park, Scenario
 
     properties(Constant) % Data
         ver = 2 % Version of the bundled network data.

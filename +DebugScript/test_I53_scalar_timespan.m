@@ -1,4 +1,4 @@
-% I53 長さのない TimeSpan (ODEevent)
+% I53 長さのない TimeSpan (Scenario)
 %
 % fault, trip, input のスカラーや [t,t] は、無関係なイベントで継続時間が変わらないようエラーにする。
 % offset と効果のないイベントは、これまでどおり 1 つの時刻で指定できることを確認する。
@@ -22,53 +22,58 @@ end
 
 
 %% Unrelated event does not decide the duration (Issue の再現手順)
-ev_fault = ODEevent("fault", net, "TimeSpan", 1, c_fault{:});
-ev_other = ODEevent("other", net, "TimeSpan", [1.5,2], c_trip{:});
-assert(event_error(net, ev_fault) == "GUILDA:ODEevent:ZeroLengthTimeSpan")
-assert(event_error(net, ev_fault, ev_other) == "GUILDA:ODEevent:ZeroLengthTimeSpan")
+% 長さのない地絡は、他の外乱があってもなくても追加の時点でエラー
+ev_other = DebugScript.helper.scenario("other", net, "TimeSpan", [1.5,2], c_trip{:});
+assert(event_error(@() DebugScript.helper.scenario("fault", net, "TimeSpan", 1, c_fault{:})) == "GUILDA:Scenario:ZeroLengthTimeSpan")
+sc = Scenario("both");
+sc.add_trip("LPQ2B003", [1.5,2]);
+assert(event_error(@() sc.add_disturbance("fault", "TimeSpan", 1, c_fault{:})) == "GUILDA:Scenario:ZeroLengthTimeSpan")
+assert(height(sc.tab_disturbance) == 1)
+[~, flag] = net.simulate([0,3], ev_other);
+assert(flag == 1)
 
 
 %% An offset with a fault in one event still needs a duration
 expect_zero_length(net, "1", "TimeSpan", 1, c_os{:}, c_fault{:});
 
 
-%% TimeSpan changed after the event was created
-ev = ODEevent("ev", net, "TimeSpan", [1,1.05], c_fault{:});
-ev.TimeSpan = 1;
-assert(event_error(net, ev) == "GUILDA:ODEevent:ZeroLengthTimeSpan")
+%% A scenario without network checks the duration when the disturbance is added
+sc = Scenario("loose");
+assert(event_error(@() sc.add_disturbance("ev", "TimeSpan", 1, c_fault{:})) == "GUILDA:Scenario:ZeroLengthTimeSpan")
+assert(event_error(@() sc.add_fault("B008", [1,1])) == "GUILDA:Scenario:ZeroLengthTimeSpan")
+assert(height(sc.tab_disturbance) == 0)
 
 
 %% Offset and an event without effect keep a single time
 for ts = {0, 1, [1,1], [1,2]}
-    [sol, flag] = net.simulate([0,3], ODEevent("os", net, "TimeSpan", ts{1}, c_os{:}));
+    [sol, flag] = net.simulate([0,3], DebugScript.helper.scenario("os", net, "TimeSpan", ts{1}, c_os{:}));
     assert(flag == 1 && sol.odeResults.t(end) == 3)
 end
 for ts = {1, [1,1]}
-    [sol, flag] = net.simulate([0,3], ODEevent("none", net, "TimeSpan", ts{1}));
+    [sol, flag] = net.simulate([0,3], DebugScript.helper.scenario("none", net, "TimeSpan", ts{1}));
     assert(flag == 1 && sol.odeResults.t(end) == 3)
 end
 
 
 %% Events with a duration still run
 for c_kind = {c_fault, c_trip, c_input}
-    [sol, flag] = net.simulate([0,2], ODEevent("ev", net, "TimeSpan", [1,1.05], c_kind{1}{:}));
+    [sol, flag] = net.simulate([0,2], DebugScript.helper.scenario("ev", net, "TimeSpan", [1,1.05], c_kind{1}{:}));
     assert(flag == 1 && sol.odeResults.t(end) == 2)
 end
 
 
 function expect_zero_length(net, str_ts, varargin)
     % エラーの ID と、メッセージが原因と対処を示すことを確認する
-    ev = ODEevent("ev", net, varargin{:});
-    [str_id, str_msg] = event_error(net, ev);
-    assert(str_id == "GUILDA:ODEevent:ZeroLengthTimeSpan", str_id + ": " + str_msg)
+    [str_id, str_msg] = event_error(@() net.simulate([0,3], DebugScript.helper.scenario("ev", net, varargin{:})));
+    assert(str_id == "GUILDA:Scenario:ZeroLengthTimeSpan", str_id + ": " + str_msg)
     assert(all(contains(str_msg, ['"ev"', str_ts, "[t_start, t_end]"])), "原因が示されない: " + str_msg)
 end
 
-function [str_id, str_msg] = event_error(net, varargin)
+function [str_id, str_msg] = event_error(f)
     str_id  = "";
     str_msg = "";
     try
-        net.simulate([0,3], varargin{:});
+        f();
     catch ME
         str_id  = string(DebugScript.helper.msg_id(ME));
         str_msg = string(ME.message);

@@ -19,7 +19,7 @@ classdef IEEJ_EAST10 < PowerNetwork
 % - A line card has 2 circuits; each circuit is a branch.pi with the per-circuit `r`,
 %   `x` and `C = y = Y/2` of the card. The circuits of the `k`-th line card (in the order
 %   of the data) are the branches `EL(2k-1)` and `EL(2k)`, so one circuit can be opened
-%   with ODEevent. Parallel cards stay separate (for example cards 17 and 117 from bus
+%   with a Scenario (add_open_branch). Parallel cards stay separate (for example cards 17 and 117 from bus
 %   12 to 13 are EL013 to EL016). The bus voltages and angles are the same as with one
 %   branch of `r/2`, `x/2`, `2*y` per card (difference below 1e-14).
 % - A transformer card is a branch.pi_transformer with `tap = 1/t`, `t` being TAPR.
@@ -95,8 +95,10 @@ classdef IEEJ_EAST10 < PowerNetwork
 % net = network.IEEJ_EAST10(Section="night");
 % res = net.calculate_powerflow();
 % net = network.IEEJ_EAST10();
-% ev  = ODEevent("fault", net, "TimeSpan", [1,1.07], "FaultBus", "B036");
-% sol = net.simulate([0,10], ev);
+% sc  = Scenario("fault");
+% sc.add_fault("B036", [1,1.07]);
+% net.add_scenario(sc);
+% sol = net.simulate([0,10], sc);
 % ```
 %
 % Fault at bus 36 for 70 ms, then open one circuit of the line from bus 36 to 17
@@ -104,9 +106,11 @@ classdef IEEJ_EAST10 < PowerNetwork
 %
 % ```matlab
 % net  = network.IEEJ_EAST10(Governor=false);
-% ev_f = ODEevent("fault", net, "TimeSpan", [0,0.07], "FaultBus", "B036");
-% ev_o = ODEevent("open",  net, "TimeSpan", [0.07,20], "OpenBranch", "EL065");
-% sol  = net.simulate([0,20], ev_f, ev_o, Tolerance=1e-6, AbsoluteTolerance=1e-6);
+% sc   = Scenario("fault-open", Time=[0,20]);
+% sc.add_fault("B036", [0,0.07]);
+% sc.add_open_branch("EL065", [0.07,20]);
+% net.add_scenario(sc);
+% sol  = net.simulate(sc, Tolerance=1e-6, AbsoluteTolerance=1e-6);
 % ```
 %
 % See also controller.avr.AVR_DC1, controller.governor.IEEJ_LPT1, controller.governor.IEEJ_LPT4, component.generator.park, network.IEEE68bus

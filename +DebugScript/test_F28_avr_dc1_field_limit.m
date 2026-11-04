@@ -110,7 +110,7 @@ function [sol, avr] = simulate_fault(avr)
     [net, comp] = DebugScript.helper.build_3bus("gen-park");
     comp.add_local_controller(avr);
     DebugScript.helper.quiet(@() net.initialize);
-    ev  = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B003");
+    ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B003");
     sol = DebugScript.helper.quiet(@() net.simulate([0,5], ev));
 end
 
@@ -119,7 +119,7 @@ function [sol, avr] = simulate_offset(avr)
     [net, comp] = DebugScript.helper.build_3bus("gen-park");
     comp.add_local_controller(avr);
     DebugScript.helper.quiet(@() net.initialize);
-    ev  = ODEevent("offset", net, "TimeSpan", 0, "OffsetUnit", comp.str_tag, "OffsetState", "Eq", "OffsetValue", 1);
+    ev  = DebugScript.helper.scenario("offset", net, "TimeSpan", 0, "OffsetUnit", comp.str_tag, "OffsetState", "Eq", "OffsetValue", 1);
     sol = DebugScript.helper.quiet(@() net.simulate([0,5], ev));
 end
 

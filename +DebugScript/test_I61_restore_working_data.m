@@ -12,20 +12,20 @@ gen = net.a_Bus{2}.a_Component{1};
 
 
 %% Unit stays connected after a trip lasting to the end time
-ev = ODEevent("trip", net, "TimeSpan", [1,5], "TripUnit", "SG1B002");
+ev = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,5], "TripUnit", "SG1B002");
 DebugScript.helper.quiet(@() net.simulate([0,2], ev));
 assert_restored(net)
 
 
 %% Bus has no fault after a fault lasting to the end time
-ev = ODEevent("fault", net, "TimeSpan", [1,5], "FaultBus", "B008");
+ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,5], "FaultBus", "B008");
 DebugScript.helper.quiet(@() net.simulate([0,2], ev));
 assert_restored(net)
 
 
 %% Offsets are cleared after an input and an offset
-ev_os = ODEevent("offset", net, "TimeSpan", 1, "OffsetUnit", "SG1B002", "OffsetState", "delta", "OffsetValue", 0.01);
-ev_in = ODEevent("input", net, "TimeSpan", [1,2], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", 0.01);
+ev_os = DebugScript.helper.scenario("offset", net, "TimeSpan", 1, "OffsetUnit", "SG1B002", "OffsetState", "delta", "OffsetValue", 0.01);
+ev_in = DebugScript.helper.scenario("input", net, "TimeSpan", [1,2], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", 0.01);
 DebugScript.helper.quiet(@() net.simulate([0,2], ev_os, ev_in));
 assert_restored(net)
 
@@ -35,9 +35,9 @@ net = DebugScript.helper.build_ieee14();
 agc = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002", kP=100, kI=500);
 net.add_global_controller(agc);
 DebugScript.helper.quiet(@() net.initialize);
-ev_fault = ODEevent("fault", net, "TimeSpan", [0.4,5], "FaultBus", "B008");
-ev_trip  = ODEevent("trip", net, "TimeSpan", [0.4,5], "TripUnit", ["SG1B003";"agc"]);
-ev_error = ODEevent("input", net, "TimeSpan", [0.4,5], "InputUnit", "SG1B002", "InputName", "Pmech", ...
+ev_fault = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.4,5], "FaultBus", "B008");
+ev_trip  = DebugScript.helper.scenario("trip", net, "TimeSpan", [0.4,5], "TripUnit", ["SG1B003";"agc"]);
+ev_error = DebugScript.helper.scenario("input", net, "TimeSpan", [0.4,5], "InputUnit", "SG1B002", "InputName", "Pmech", ...
                        "InputValue", @bad_input);
 str_id = "";
 try
@@ -50,7 +50,7 @@ assert_restored(net)
 
 
 %% Rerun after a trip matches a run on a fresh network
-ev = ODEevent("trip", net, "TimeSpan", [1,5], "TripUnit", "SG1B002");
+ev = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,5], "TripUnit", "SG1B002");
 DebugScript.helper.quiet(@() net.simulate([0,2], ev));
 sol = DebugScript.helper.quiet(@() net.simulate([0,2]));
 
