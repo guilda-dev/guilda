@@ -1,0 +1,56 @@
+Scenario,Section,Card,ReportBranch,Circuits,Report,ReportGenerator,ReportVerdict
+peak-1cct-2101,peak,2101,2101 (point A),1,1-swing,G1,out-of-step
+peak-1cct-2102,peak,2102,2102 (point B),1,N-swing(7s),G1,out-of-step
+peak-1cct-2103,peak,2103,2103,1,N-swing(7s),G1,out-of-step
+peak-1cct-2104,peak,2104,2104-2105,1,stable,,stable
+peak-1cct-2107,peak,2107,2107-2108 (point C),1,stable,,stable
+peak-1cct-3105,peak,3105,3105,1,stable,,stable
+peak-1cct-3108,peak,3108,3108,1,stable,,stable
+peak-1cct-3109,peak,3109,3109,1,stable,,stable
+peak-1cct-3110,peak,3110,3110,1,stable,,stable
+peak-1cct-3124,peak,3124,3124,1,stable,,stable
+peak-1cct-3128,peak,3128,3128,1,stable,,stable
+peak-1cct-3129,peak,3129,3129,1,stable,,stable
+peak-1cct-3133,peak,3133,3133,1,stable,,stable
+peak-1cct-3134,peak,3134,3134,1,stable,,stable
+peak-2cct-2102,peak,2102,2102 (point B),2,1-swing,G1,out-of-step
+peak-2cct-2103,peak,2103,2103,2,1-swing,G1+,out-of-step
+peak-2cct-2104,peak,2104,2104-2105,2,1-swing,G6+,out-of-step
+peak-2cct-2107,peak,2107,2107-2108 (point C),2,1-swing,G7+,out-of-step
+peak-2cct-3104,peak,3104,3104 (point D),2,N-swing(9s),G9+,out-of-step
+peak-2cct-3105,peak,3105,3105,2,stable,,stable
+peak-2cct-3108,peak,3108,3108,2,stable,,stable
+peak-2cct-3109,peak,3109,3109,2,stable,,stable
+peak-2cct-3110,peak,3110,3110,2,stable,,stable
+peak-2cct-3112,peak,3112,3112,2,1-swing,G17+,out-of-step
+peak-2cct-3124,peak,3124,3124,2,stable,,stable
+peak-2cct-3128,peak,3128,3128,2,stable,,stable
+peak-2cct-3129,peak,3129,3129,2,stable,,stable
+peak-2cct-3133,peak,3133,3133,2,stable,,stable
+peak-2cct-3134,peak,3134,3134,2,stable,,stable
+night-1cct-2103,night,2103,2103,1,1-swing,G1,out-of-step
+night-1cct-2104,night,2104,2104-2105,1,N-swing(6s),G1+,out-of-step
+night-1cct-3105,night,3105,3105,1,stable,,stable
+night-1cct-3108,night,3108,3108,1,stable,,stable
+night-1cct-3109,night,3109,3109,1,stable,,stable
+night-1cct-3110,night,3110,3110,1,stable,,stable
+night-1cct-3124,night,3124,3124,1,stable,,stable
+night-1cct-3128,night,3128,3128,1,stable,,stable
+night-1cct-3129,night,3129,3129,1,stable,,stable
+night-1cct-3133,night,3133,3133,1,stable,,stable
+night-1cct-3134,night,3134,3134,1,stable,,stable
+night-2cct-2102,night,2102,2102 (point B),2,1-swing,G1,out-of-step
+night-2cct-2103,night,2103,2103,2,1-swing,G1+,out-of-step
+night-2cct-2104,night,2104,2104-2105,2,1-swing,G5+,out-of-step
+night-2cct-2107,night,2107,2107-2108 (point C),2,1-swing,G1+,out-of-step
+night-2cct-3104,night,3104,3104 (point D),2,stable,,stable
+night-2cct-3105,night,3105,3105,2,stable,,stable
+night-2cct-3108,night,3108,3108,2,stable,,stable
+night-2cct-3109,night,3109,3109,2,stable,,stable
+night-2cct-3110,night,3110,3110,2,stable,,stable
+night-2cct-3112,night,3112,3112,2,1-swing,G17+,out-of-step
+night-2cct-3124,night,3124,3124,2,stable,,stable
+night-2cct-3128,night,3128,3128,2,stable,,stable
+night-2cct-3129,night,3129,3129,2,stable,,stable
+night-2cct-3133,night,3133,3133,2,stable,,stable
+night-2cct-3134,night,3134,3134,2,stable,,stable

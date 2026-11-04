@@ -104,21 +104,10 @@ classdef IEEJ_EAST30 < PowerNetwork
 % without them. Without local controllers (`LocalController=false`) one real eigenvalue
 % is unstable: about +0.057 1/s at peak and +0.029 1/s at night.
 %
-% Scenario:
+% Verification:
 %
-% The folder `scenario` of the class folder holds the report's transient stability
-% table 4.9 (`table4_9.csv`: 55 cases of a 70 ms three-phase fault on one or two circuits
-% of a line, cleared by opening them, 3LG-O) and `run_table4_9`, which runs the cases with
-% a fault and an `OpenBranch` event and compares the out-of-step verdict with the
-% report's (its help gives the criterion and how to run it). The stable or out-of-step
-% verdicts agree in all 55 cases, with the governors and without them (one case without
-% them, peak, two circuits of card 3105, needs the rerun at the tolerance 1e-5). The
-% out-of-step generator is the first one of the report's group in all cases but one
-% (night, two circuits of card 2104: G1, the report G5 and others). With the governors
-% the multi-swing cases step out at about the report's times: 5.9 to 6.1 s after the
-% fault for the report's 6 to 7 s, and 6.0 s for its 9 s; without them the peak cases of
-% cards 2103 (one circuit) and 3104 (two circuits) step out earlier, 2.6 s and 3.3 s
-% after the fault.
+% The comparison with the report's transient stability table 4.9 (3LG-O faults) is in
+% `_GUILDAverification/IEEJ_EAST30/README.md`, with its scenarios and script.
 %
 % <@Examples>
 % Run the power flow of the night section and simulate a fault at node 3105 cleared by
