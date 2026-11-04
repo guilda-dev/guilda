@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GUILDA Reference - Class</title>
+  <title data-title-ja="GUILDA リファレンス - クラス">GUILDA Reference - Class</title>
+  <script src="doc-lang.js"></script>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="reference.css">
 
@@ -18,24 +19,24 @@
     <a href="index.html" onclick="window.GuildaDocLoader.navigate('index.html'); return false;" style="display: block; margin-bottom: 20px;">
       <img src="./images/GUILDAicon.png" alt="GUILDA Logo" style="width: 100%;">
     </a>
-    <a href="index.html#tab-reference" onclick="window.GuildaDocLoader.navigate('index.html', 'tab-reference'); return false;" class="btn" style="width: 100%; text-align: center; margin-bottom: 20px; box-sizing: border-box;">← Back to Reference</a>
+    <a href="index.html#tab-reference" onclick="window.GuildaDocLoader.navigate('index.html', 'tab-reference'); return false;" class="btn" style="width: 100%; text-align: center; margin-bottom: 20px; box-sizing: border-box;"><span lang="en">← Back to Reference</span><span lang="ja">← リファレンスに戻る</span></a>
 
     <div id="source-tree"></div>
 
-    <h3 style="margin-top: 0;">On this page</h3>
+    <h3 style="margin-top: 0;"><span lang="en">On this page</span><span lang="ja">このページの内容</span></h3>
     <ul id="page-toc" style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;"></ul>
   </nav>
 
   <main id="main-content" style="flex: 1; min-width: 0;">
     <div id="dynamic-content">
-      <h1 style="color: var(--muted);">Loading...</h1>
+      <h1 style="color: var(--muted);"><span lang="en">Loading...</span><span lang="ja">読み込み中...</span></h1>
     </div>
   </main>
 
   <script>
     const loader = window.GuildaDocLoader;
     const {
-      escapeHtml, nl2br, firstText, toList, renderMarkdown,
+      tr, setPageTitle, escapeHtml, nl2br, firstText, toList, renderMarkdown,
       classLink: renderClassLink, seeAlsoLink, sourceLocation, examplesText, groupRows
     } = window.GuildaDocRender;
     const routeParams = loader.getRouteParams();
@@ -94,16 +95,18 @@
     });
 
     const flag = (value, label) => (value ? `<span class="ref-badge is-small">${label}</span>` : '');
-    const definedIn = (row) => `<span class="ref-defined-in">${row.inherited ? renderClassLink(row.defining) : muted('this class')}</span>`;
+    const definedIn = (row) => `<span class="ref-defined-in">${row.inherited ? renderClassLink(row.defining) : muted(tr('this class', 'このクラス'))}</span>`;
     const IMPLEMENTED_IN_TITLES = {
-      file: 'Defined in its own file in the class folder',
-      private: 'Defined in the private folder of the class'
+      file: ['Defined in its own file in the class folder', 'クラスフォルダ内の個別ファイルで定義'],
+      private: ['Defined in the private folder of the class', 'クラスの private フォルダで定義']
     };
+    // Group names written by the generator; other group names come from the source comments.
+    const groupLabel = (name) => ({ Constructor: tr('Constructor', 'コンストラクタ'), Other: tr('Other', 'その他') })[name] || name;
     const memberHints = (row) => {
       const hints = [
-        row.deprecated ? '<span class="ref-badge is-small is-deprecated">Deprecated</span>' : '',
-        row.overrides ? `<span class="ref-badge is-small" title="Overrides ${escapeHtml(row.overrides)}.${escapeHtml(row.name)}">overrides <a href="${loader.pageUrl('method.html', { class: row.overrides, method: row.name })}">${escapeHtml(row.overrides)}</a></span>` : '',
-        IMPLEMENTED_IN_TITLES[row.implementedIn] ? `<span class="ref-badge is-small" title="${IMPLEMENTED_IN_TITLES[row.implementedIn]}">${escapeHtml(row.implementedIn)}</span>` : ''
+        row.deprecated ? `<span class="ref-badge is-small is-deprecated">${tr('Deprecated', '非推奨')}</span>` : '',
+        row.overrides ? `<span class="ref-badge is-small" title="${tr('Overrides', 'オーバーライド元:')} ${escapeHtml(row.overrides)}.${escapeHtml(row.name)}">${tr('overrides', 'オーバーライド元')} <a href="${loader.pageUrl('method.html', { class: row.overrides, method: row.name })}">${escapeHtml(row.overrides)}</a></span>` : '',
+        IMPLEMENTED_IN_TITLES[row.implementedIn] ? `<span class="ref-badge is-small" title="${tr(...IMPLEMENTED_IN_TITLES[row.implementedIn])}">${escapeHtml(row.implementedIn)}</span>` : ''
       ].join('');
       return hints ? `<span class="ref-hints">${hints}</span>` : '';
     };
@@ -113,7 +116,7 @@
     const memberViews = {
       property: {
         attributes: {
-          columns: [['name', 'Name'], ['getAccess', 'GetAccess'], ['setAccess', 'SetAccess'], ['flags', 'Attributes'], ['defining', 'Defined in']],
+          columns: () => [['name', tr('Name', '名前')], ['getAccess', 'GetAccess'], ['setAccess', 'SetAccess'], ['flags', tr('Attributes', '属性')], ['defining', tr('Defined in', '定義元')]],
           cells: (p) => [
             propertyName(p),
             escapeHtml(p.getAccess || 'N/A'),
@@ -123,7 +126,7 @@
           ]
         },
         type: {
-          columns: [['name', 'Name'], ['type', 'Type'], ['size', 'Size'], ['unit', 'Unit'], ['defaultValue', 'Default'], ['constraints', 'Validators']],
+          columns: () => [['name', tr('Name', '名前')], ['type', tr('Type', '型')], ['size', tr('Size', 'サイズ')], ['unit', tr('Unit', '単位')], ['defaultValue', tr('Default', '既定値')], ['constraints', tr('Validators', '検証関数')]],
           cells: (p) => [
             propertyName(p),
             nl2br(p.type) || muted('-'),
@@ -134,18 +137,18 @@
           ]
         },
         description: {
-          columns: [['name', 'Name'], ['unit', 'Unit'], ['description', 'Description']],
+          columns: () => [['name', tr('Name', '名前')], ['unit', tr('Unit', '単位')], ['description', tr('Description', '説明')]],
           cells: (p) => [
             propertyName(p),
             p.unit ? `<span class="ref-unit">${escapeHtml(p.unit)}</span>` : muted('-'),
-            (p.description ? `<div class="markdown-content">${renderMarkdown(p.description)}</div>` : muted('No description.'))
-              + (p.seeAlso.length ? `<p class="ref-see-also ref-muted" style="margin: 4px 0 0;">See also ${p.seeAlso.map((item) => seeAlsoLink(item, className, pageData.methods.map((m) => m.name))).join(', ')}</p>` : '')
+            (p.description ? `<div class="markdown-content">${renderMarkdown(p.description)}</div>` : muted(tr('No description.', '説明はありません。')))
+              + (p.seeAlso.length ? `<p class="ref-see-also ref-muted" style="margin: 4px 0 0;">${tr('See also', '関連項目:')} ${p.seeAlso.map((item) => seeAlsoLink(item, className, pageData.methods.map((m) => m.name))).join(', ')}</p>` : '')
           ]
         }
       },
       method: {
         attributes: {
-          columns: [['name', 'Method'], ['access', 'Access'], ['flags', 'Attributes'], ['defining', 'Defined in']],
+          columns: () => [['name', tr('Method', 'メソッド')], ['access', tr('Access', 'アクセス')], ['flags', tr('Attributes', '属性')], ['defining', tr('Defined in', '定義元')]],
           cells: (m) => [
             methodName(m),
             escapeHtml(m.access || 'N/A'),
@@ -154,17 +157,17 @@
           ]
         },
         signature: {
-          columns: [['name', 'Method'], ['signature', 'Signature']],
+          columns: () => [['name', tr('Method', 'メソッド')], ['signature', tr('Signature', 'シグネチャ')]],
           cells: (m) => [
             methodName(m),
             `<span class="ref-code">${escapeHtml(m.signature)}</span>`
           ]
         },
         description: {
-          columns: [['name', 'Method'], ['summary', 'Summary']],
+          columns: () => [['name', tr('Method', 'メソッド')], ['summary', tr('Summary', '概要')]],
           cells: (m) => [
             methodName(m),
-            m.summary ? nl2br(m.summary) : muted('No summary.')
+            m.summary ? nl2br(m.summary) : muted(tr('No summary.', '概要はありません。'))
           ]
         }
       }
@@ -176,6 +179,7 @@
       const state = memberState[kind];
       const allRows = kind === 'property' ? pageData.properties : pageData.methods;
       const view = memberViews[kind][state.view];
+      const columns = view.columns();
       const term = state.search.toLowerCase();
       const accessOf = (row) => (kind === 'property' ? row.getAccess : row.access);
 
@@ -189,16 +193,16 @@
           return a > b ? state.order : (a < b ? -state.order : 0);
         });
 
-      const header = view.columns.map(([key, label]) => (key === 'flags'
+      const header = columns.map(([key, label]) => (key === 'flags'
         ? `<th>${label}</th>`
         : `<th class="sortable-header" data-sort="${key}">${label} ↕</th>`)).join('');
       const renderRow = (row) => `<tr${row.inherited ? ' class="ref-inherited"' : ''}>${view.cells(row).map((cell) => `<td>${cell}</td>`).join('')}</tr>`;
       let body;
       if (!rows.length) {
-        body = `<tr><td colspan="${view.columns.length}" style="text-align:center; color: var(--muted);">No matching ${kind === 'property' ? 'properties' : 'methods'} found.</td></tr>`;
+        body = `<tr><td colspan="${columns.length}" style="text-align:center; color: var(--muted);">${kind === 'property' ? tr('No matching properties found.', '該当するプロパティはありません。') : tr('No matching methods found.', '該当するメソッドはありません。')}</td></tr>`;
       } else if (state.grouped && hasGroups(kind)) {
         body = groupRows(rows, 'Other', allRows).map((group) => `
-          <tr class="ref-group-row"><th colspan="${view.columns.length}">${escapeHtml(group.name)} <span class="ref-muted">(${group.items.length})</span></th></tr>
+          <tr class="ref-group-row"><th colspan="${columns.length}">${escapeHtml(groupLabel(group.name))} <span class="ref-muted">(${group.items.length})</span></th></tr>
           ${group.items.map(renderRow).join('')}`).join('');
       } else {
         body = rows.map(renderRow).join('');
@@ -206,7 +210,7 @@
 
       const container = document.getElementById(`${kind}-table`);
       container.innerHTML = `
-        <p class="ref-count">${rows.length} of ${allRows.length} shown</p>
+        <p class="ref-count">${tr(`${rows.length} of ${allRows.length} shown`, `${allRows.length} 件中 ${rows.length} 件を表示`)}</p>
         <div class="ref-table-scroll">
           <table class="compact-table ${kind === 'method' ? 'method-link-table' : 'description-table'}">
             <thead><tr>${header}</tr></thead>
@@ -225,14 +229,14 @@
     function renderMemberToolbar(kind) {
       const state = memberState[kind];
       const views = kind === 'property'
-        ? [['description', 'Description'], ['type', 'Details'], ['attributes', 'Meta Data']]
-        : [['description', 'Description'], ['signature', 'Signature'], ['attributes', 'Meta Data']];
+        ? [['description', tr('Description', '説明')], ['type', tr('Details', '詳細')], ['attributes', tr('Meta Data', 'メタデータ')]]
+        : [['description', tr('Description', '説明')], ['signature', tr('Signature', 'シグネチャ')], ['attributes', tr('Meta Data', 'メタデータ')]];
       return `
         <div class="ref-toolbar" data-kind="${kind}">
-          <input type="search" class="search-box" placeholder="Search ${kind === 'property' ? 'properties' : 'methods'}..." autocomplete="off">
-          ${hasGroups(kind) ? `<label class="ref-check"><input type="checkbox" data-option="grouped"${state.grouped ? ' checked' : ''}> Group</label>` : ''}
-          <label class="ref-check"><input type="checkbox" data-option="inherited"${state.inherited ? ' checked' : ''}> Inherited</label>
-          <label class="ref-check"><input type="checkbox" data-option="publicOnly"${state.publicOnly ? ' checked' : ''}> Public only</label>
+          <input type="search" class="search-box" placeholder="${kind === 'property' ? tr('Search properties...', 'プロパティを検索...') : tr('Search methods...', 'メソッドを検索...')}" value="${escapeHtml(state.search)}" autocomplete="off">
+          ${hasGroups(kind) ? `<label class="ref-check"><input type="checkbox" data-option="grouped"${state.grouped ? ' checked' : ''}> ${tr('Group', 'グループ表示')}</label>` : ''}
+          <label class="ref-check"><input type="checkbox" data-option="inherited"${state.inherited ? ' checked' : ''}> ${tr('Inherited', '継承メンバー')}</label>
+          <label class="ref-check"><input type="checkbox" data-option="publicOnly"${state.publicOnly ? ' checked' : ''}> ${tr('Public only', 'public のみ')}</label>
         </div>
         <div class="view-switcher" data-kind="${kind}">
           ${views.map(([value, label]) => `<button type="button" class="view-btn${state.view === value ? ' active' : ''}" data-view="${value}">${label}</button>`).join('')}
@@ -278,17 +282,17 @@
       const documented = c.Documented ?? Boolean(firstText(c.Summary, c.Desc));
       const category = firstText(c.Category, c.Package);
       const deprecated = firstText(c.Deprecated);
-      document.title = `GUILDA Reference - ${name}`;
+      setPageTitle(`GUILDA Reference - ${name}`, `GUILDA リファレンス - ${name}`);
 
       const badges = [
-        c.Origin ? `<span class="ref-badge${c.Origin === 'User' ? ' is-user' : ''}" title="Source root">${escapeHtml(c.Origin)}</span>` : '',
-        category ? `<span class="ref-badge" title="Package">package ${escapeHtml(category)}</span>` : '',
+        c.Origin ? `<span class="ref-badge${c.Origin === 'User' ? ' is-user' : ''}" title="${tr('Source root', 'ソースのルート')}">${escapeHtml(c.Origin)}</span>` : '',
+        category ? `<span class="ref-badge" title="${tr('Package', 'パッケージ')}">${tr('package', 'パッケージ')} ${escapeHtml(category)}</span>` : '',
         c.Type && !['auxiliary', 'other'].includes(c.Type) ? `<span class="ref-badge">${escapeHtml(c.Type === 'PowerSystemModel' && c.Model ? c.Model : c.Type)}</span>` : '',
-        c.Abstract ? '<span class="ref-badge is-abstract">Abstract</span>' : '',
+        c.Abstract ? `<span class="ref-badge is-abstract">${tr('Abstract', '抽象クラス')}</span>` : '',
         c.Sealed ? '<span class="ref-badge is-sealed">Sealed</span>' : '',
         c.Hidden ? '<span class="ref-badge">Hidden</span>' : '',
-        deprecated ? '<span class="ref-badge is-deprecated">Deprecated</span>' : '',
-        documented ? '' : '<span class="ref-badge is-undocumented">Not documented yet</span>'
+        deprecated ? `<span class="ref-badge is-deprecated">${tr('Deprecated', '非推奨')}</span>` : '',
+        documented ? '' : `<span class="ref-badge is-undocumented">${tr('Not documented yet', 'ドキュメント未整備')}</span>`
       ].join('');
 
       const chain = [name, ...ancestors].map((item, index) => (index === 0
@@ -301,22 +305,22 @@
       const sections = [];
       let html = `
         <div style="font-size: 0.9rem; color: var(--muted); margin-bottom: 10px;">
-          <a href="${loader.pageUrl('index.html')}">Home</a> &gt; <a href="${loader.pageUrl('index.html', 'tab-reference')}">Reference</a> &gt; ${escapeHtml(name)}
+          <a href="${loader.pageUrl('index.html')}">${tr('Home', 'ホーム')}</a> &gt; <a href="${loader.pageUrl('index.html', 'tab-reference')}">${tr('Reference', 'リファレンス')}</a> &gt; ${escapeHtml(name)}
         </div>
         <h1 style="font-size: 2.2rem; margin-bottom: 8px; word-break: break-word;">${escapeHtml(name)}</h1>
         <div class="ref-badges">${badges}</div>
-        ${source ? `<p class="ref-source">Source: <code>${escapeHtml(source)}</code></p>` : ''}
+        ${source ? `<p class="ref-source">${tr('Source:', 'ソース:')} <code>${escapeHtml(source)}</code></p>` : ''}
       `;
       if (deprecated) {
-        html += `<div class="ref-deprecated" role="note"><strong>Deprecated.</strong>${/^(true|1)$/i.test(deprecated) ? '' : `<p>${nl2br(deprecated)}</p>`}</div>`;
+        html += `<div class="ref-deprecated" role="note"><strong>${tr('Deprecated.', '非推奨です。')}</strong>${/^(true|1)$/i.test(deprecated) ? '' : `<p>${nl2br(deprecated)}</p>`}</div>`;
       }
       if (!documented) {
-        html += `<div class="ref-notice">This class has no documentation comments yet. The tables below are generated from the source code. To add a description, follow the comment rules in <a href="developer/class-documentation.html">Class Documentation</a>.</div>`;
+        html += `<div class="ref-notice">${tr('This class has no documentation comments yet. The tables below are generated from the source code. To add a description, follow the comment rules in <a href="developer/class-documentation.html">Class Documentation</a>.', 'このクラスにはまだドキュメントコメントがありません。以下の表はソースコードから生成しています。説明を追加するときは <a href="developer/class-documentation.html">Class Documentation</a> のコメント規約に従ってください。')}</div>`;
       }
       [
-        ['summary', 'Summary', c.Summary],
-        ['description', 'Description', c.Desc],
-        ['examples', 'Examples', examples]
+        ['summary', tr('Summary', '概要'), c.Summary],
+        ['description', tr('Description', '説明'), c.Desc],
+        ['examples', tr('Examples', '使用例'), examples]
       ].filter(([, , value]) => firstText(value)).forEach(([id, title, value]) => {
         sections.push([id, title]);
         html += `
@@ -326,37 +330,37 @@
           </div>`;
       });
 
-      sections.push(['inheritance', 'Inheritance']);
+      sections.push(['inheritance', tr('Inheritance', '継承')]);
       html += `
-        <h2 id="inheritance">Inheritance</h2>
+        <h2 id="inheritance">${tr('Inheritance', '継承')}</h2>
         <div class="meta-box">
           <table class="meta-table">
             <tbody>
-              <tr><th style="width: 22%;">Superclasses</th><td><div class="ref-chain">${chain}</div></td></tr>
-              <tr><th>Subclasses</th><td>${subclasses.length ? `<div class="ref-chain">${subclasses.map(renderClassLink).join('<span class="ref-chain-sep">,</span>')}</div>` : muted('None')}</td></tr>
+              <tr><th style="width: 22%;">${tr('Superclasses', 'スーパークラス')}</th><td><div class="ref-chain">${chain}</div></td></tr>
+              <tr><th>${tr('Subclasses', 'サブクラス')}</th><td>${subclasses.length ? `<div class="ref-chain">${subclasses.map(renderClassLink).join('<span class="ref-chain-sep">,</span>')}</div>` : muted(tr('None', 'なし'))}</td></tr>
             </tbody>
           </table>
         </div>`;
 
-      sections.push(['properties', 'Properties']);
-      html += `<h2 id="properties">Properties</h2>`;
-      html += pageData.properties.length ? renderMemberToolbar('property') : '<p>No properties.</p>';
+      sections.push(['properties', tr('Properties', 'プロパティ')]);
+      html += `<h2 id="properties">${tr('Properties', 'プロパティ')}</h2>`;
+      html += pageData.properties.length ? renderMemberToolbar('property') : `<p>${tr('No properties.', 'プロパティはありません。')}</p>`;
 
-      sections.push(['methods', 'Methods']);
-      html += `<h2 id="methods">Methods</h2>`;
-      html += pageData.methods.length ? renderMemberToolbar('method') : '<p>No methods.</p>';
+      sections.push(['methods', tr('Methods', 'メソッド')]);
+      html += `<h2 id="methods">${tr('Methods', 'メソッド')}</h2>`;
+      html += pageData.methods.length ? renderMemberToolbar('method') : `<p>${tr('No methods.', 'メソッドはありません。')}</p>`;
 
       if (events.length) {
-        sections.push(['events', 'Events']);
-        html += `<h2 id="events">Events</h2><p>${events.map((item) => `<code>${escapeHtml(item)}</code>`).join(', ')}</p>`;
+        sections.push(['events', tr('Events', 'イベント')]);
+        html += `<h2 id="events">${tr('Events', 'イベント')}</h2><p>${events.map((item) => `<code>${escapeHtml(item)}</code>`).join(', ')}</p>`;
       }
       if (enumeration.length) {
-        sections.push(['enumeration', 'Enumeration']);
-        html += `<h2 id="enumeration">Enumeration</h2><p>${enumeration.map((item) => `<code>${escapeHtml(item)}</code>`).join(', ')}</p>`;
+        sections.push(['enumeration', tr('Enumeration', '列挙')]);
+        html += `<h2 id="enumeration">${tr('Enumeration', '列挙')}</h2><p>${enumeration.map((item) => `<code>${escapeHtml(item)}</code>`).join(', ')}</p>`;
       }
       if (seeAlso.length) {
-        sections.push(['see-also', 'See also']);
-        html += `<h2 id="see-also">See also</h2><p class="ref-see-also">${seeAlso.map((item) => seeAlsoLink(item, name, pageData.methods.map((m) => m.name))).join(', ')}</p>`;
+        sections.push(['see-also', tr('See also', '関連項目')]);
+        html += `<h2 id="see-also">${tr('See also', '関連項目')}</h2><p class="ref-see-also">${seeAlso.map((item) => seeAlsoLink(item, name, pageData.methods.map((m) => m.name))).join(', ')}</p>`;
       }
 
       document.getElementById('dynamic-content').innerHTML = html;
@@ -367,20 +371,23 @@
     }
 
     if (!className) {
-      document.getElementById('dynamic-content').innerHTML = "<h1 style='color: var(--err);'>Error: Class not specified</h1><p>The URL must specify a class name.</p>";
+      document.getElementById('dynamic-content').innerHTML = `<h1 style="color: var(--err);">${tr('Error: Class not specified', 'エラー: クラスが指定されていません')}</h1><p>${tr('The URL must specify a class name.', 'URL でクラス名を指定してください。')}</p>`;
     } else if (!loader.hasIndex()) {
       document.getElementById('dynamic-content').innerHTML = `
         <h1>${escapeHtml(className)}</h1>
-        <div class="ref-empty"><p>The class reference has not been generated yet.</p><p>Run <code>GUILDA.doc</code> in MATLAB to build it.</p></div>`;
+        <div class="ref-empty"><p>${tr('The class reference has not been generated yet.', 'クラスリファレンスはまだ生成されていません。')}</p><p>${tr('Run <code>GUILDA.doc</code> in MATLAB to build it.', 'MATLAB で <code>GUILDA.doc</code> を実行すると生成されます。')}</p></div>`;
     } else {
       window.GuildaDocTree.mount(document.getElementById('source-tree'), {
         className: loader.findClass(className)?.Name || className
       });
       loader.loadClass(className)
-        .then(({ meta, data }) => renderClassPage(meta, data))
+        .then(({ meta, data }) => {
+          renderClassPage(meta, data);
+          document.addEventListener('guilda-langchange', () => renderClassPage(meta, data));
+        })
         .catch((err) => {
           document.getElementById('dynamic-content').innerHTML = `
-            <h1 style="color: var(--err);">Load Error</h1>
+            <h1 style="color: var(--err);">${tr('Load Error', '読み込みエラー')}</h1>
             <p>${escapeHtml((err && err.message) ? err.message : err)}</p>
           `;
         });

@@ -27,12 +27,14 @@
   }
 
   // <title data-title-ja="..."> gives the Japanese title; the original text is the English one.
+  // A page that sets its title from data also sets data-title-en.
   function applyTitle(lang) {
     const titleEl = document.querySelector('head > title');
     if (!titleEl) return;
     if (englishTitle === null) englishTitle = titleEl.textContent;
+    const en = titleEl.getAttribute('data-title-en') || englishTitle;
     const ja = titleEl.getAttribute('data-title-ja');
-    document.title = lang === 'ja' && ja ? ja : englishTitle;
+    document.title = lang === 'ja' && ja ? ja : en;
   }
 
   function syncToggle(lang) {
