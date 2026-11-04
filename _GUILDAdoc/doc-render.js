@@ -11,6 +11,17 @@
 
   const nl2br = (text) => escapeHtml(text).replace(/\n/g, '<br>');
 
+  // A fixed UI string in the language chosen by doc-lang.js. Pages that use it
+  // render again on the guilda-langchange event.
+  const tr = (en, ja) => (root.GUILDA_LANG?.get() === 'ja' ? ja : en);
+
+  // Title of a page whose name comes from data (see applyTitle in doc-lang.js).
+  const setPageTitle = (en, ja) => {
+    const titleEl = document.querySelector('head > title');
+    if (titleEl) Object.assign(titleEl.dataset, { titleEn: en, titleJa: ja });
+    document.title = tr(en, ja);
+  };
+
   const firstText = (...values) => values.map((v) => (v ?? '').toString().trim()).find(Boolean) || '';
 
   const toList = (raw) => Array.isArray(raw)
@@ -156,6 +167,8 @@
   };
 
   root.GuildaDocRender = Object.freeze({
+    tr,
+    setPageTitle,
     escapeHtml,
     nl2br,
     firstText,
