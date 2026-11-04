@@ -11,15 +11,14 @@
     .ad-rules td:first-child { width: 8.5rem; }
     .ad-rules td:last-child { width: 15rem; }
     .ad-num { display: inline-block; min-width: 1.6em; color: var(--dg-accent); font-family: var(--dg-mono); }
-    .ad-features td:nth-child(2) code:first-child { white-space: nowrap; }
-    .ad-features td:last-child { width: 6rem; }
     .ad-opts { width: auto; }
+    .ad-feature-rows small { display: block; margin-top: 2px; color: var(--dg-muted); font-size: 0.88em; }
+    .ad-facts { margin: var(--dg-s2) 0 0; padding-left: 20px; }
+    .ad-facts li + li { margin-top: var(--dg-s1); }
+    .ad-facts .dev-status { margin-right: 4px; }
     .ad-opts td:first-child { padding-right: var(--dg-s7); }
-    .ad-features td:last-child small { min-width: 10rem; }
-    .ad-features td:nth-child(3) > code:first-child { white-space: nowrap; }
     @media (max-width: 640px) {
-      .ad-rules td:first-child, .ad-rules td:last-child, .ad-features td:last-child { width: auto; }
-      .ad-features td:nth-child(2) code:first-child, .ad-features td:nth-child(3) > code:first-child { white-space: normal; overflow-wrap: anywhere; }
+      .ad-rules td:first-child, .ad-rules td:last-child { width: auto; }
       html[data-lang="ja"] .dg .dg-table td[data-label-ja]::before { content: attr(data-label-ja); }
     }
   </style>
@@ -243,65 +242,98 @@
       <li><span lang="en">Features with a result return <code>[result, flag, output]</code>.</span><span lang="ja">結果を持つ機能は <code>[result, flag, output]</code> を返す。</span></li>
       <li><span lang="en">"Changes net" follows rule 6.</span><span lang="ja">「net の変更」はルール 6 に従う。</span></li>
     </ul>
-    <table class="dg-table ad-features">
-      <thead><tr><th><span lang="en">Feature</span><span lang="ja">機能</span></th><th><span lang="en">Call and main options</span><span lang="ja">呼び出しと主なオプション</span></th><th><span lang="en">First output</span><span lang="ja">第 1 出力</span></th><th><span lang="en">Changes net</span><span lang="ja">net の変更</span></th></tr></thead>
-      <tbody>
-        <tr>
-          <td><span lang="en">Power flow</span><span lang="ja">潮流計算</span></td>
-          <td data-label="Call" data-label-ja="呼び出し"><code>net.calculate_powerflow(...)</code><small><code>Method="algebraic"|"dynamic"</code>, <code>Tolerance</code>, <code>MaxIteration</code>, ...</small></td>
-          <td data-label="First output" data-label-ja="第 1 出力"><code>ResultPF</code></td>
-          <td data-label="Changes net" data-label-ja="net の変更"><span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span><small><span lang="en">Only when no slack bus is set, one is selected (INFO message, rule 5): the first bus with a component with <code>Q = NaN</code>, otherwise the first bus with a component.</span><span lang="ja">スラック母線が未設定のときに限り 1 つを選択（INFO メッセージ、ルール 5）。<code>Q = NaN</code> の機器を持つ最初の母線、なければ機器を持つ最初の母線。</span></small></td>
-        </tr>
-        <tr>
-          <td><span lang="en">Initialization</span><span lang="ja">初期化</span></td>
-          <td data-label="Call" data-label-ja="呼び出し"><code>net.initialize(...)</code><small><span lang="en"><code>Method="powerflow"|"OPF"|"equilibrium"</code>. The other options go to <code>calculate_powerflow</code> (<code>"powerflow"</code>) or <code>optimize_powerflow</code> with <code>Method="AC OPF"</code> (<code>"OPF"</code>). <code>"equilibrium"</code> reuses the equilibria the components hold and takes no other option. <code>methods</code> is a deprecated alias of <code>Method</code>.</span><span lang="ja"><code>Method="powerflow"|"OPF"|"equilibrium"</code>。ほかのオプションは <code>calculate_powerflow</code>（<code>"powerflow"</code>）または <code>Method="AC OPF"</code> の <code>optimize_powerflow</code>（<code>"OPF"</code>）に渡す。<code>"equilibrium"</code> は機器が保持する平衡点をそのまま使い、ほかのオプションは受け付けない。<code>methods</code> は <code>Method</code> の非推奨の別名。</span></small></td>
-          <td data-label="First output" data-label-ja="第 1 出力"><code>ResultPF</code><small><span lang="en"><code>ResultOPF</code> for <code>"OPF"</code>.</span><span lang="ja"><code>"OPF"</code> のときは <code>ResultOPF</code>。</span></small></td>
-          <td data-label="Changes net" data-label-ja="net の変更"><span class="dev-status"><span lang="en">Yes</span><span lang="ja">あり</span></span><small><span lang="en">Sets the equilibrium and resets the edit log. Analysis fails: error; equilibrium and edit log unchanged; a slack bus the power flow set is released. Writing the point fails, or the point does not satisfy Y*V = I (<code>GUILDA:PowerNetwork:InitializeNotEquilibrium</code>): error; the equilibrium stays stale until <code>initialize</code> succeeds.</span><span lang="ja">平衡点を設定し、編集履歴をリセット。解析が失敗: エラーで停止、平衡点と編集履歴は不変、潮流計算が設定したスラック母線を解除。点の書き込みに失敗、または点が Y*V = I を満たさない（<code>GUILDA:PowerNetwork:InitializeNotEquilibrium</code>）: エラーで停止、<code>initialize</code> が成功するまで平衡点は古いまま。</span></small></td>
-        </tr>
-        <tr>
-          <td><span lang="en">OPF</span><span lang="ja">最適潮流計算</span></td>
-          <td data-label="Call" data-label-ja="呼び出し"><code>net.optimize_powerflow(...)</code><small><span lang="en"><code>Method="ELD"|"DC OPF"|"AC OPF"</code>, <code>Solver</code>, <code>Tolerance</code>, <code>MaxIteration</code>, ... Costs and constraints: <code>set_opffcn</code> (see <a href="class-design.html#opf">Class Design</a>).</span><span lang="ja"><code>Method="ELD"|"DC OPF"|"AC OPF"</code>、<code>Solver</code>、<code>Tolerance</code>、<code>MaxIteration</code> など。コストと制約は <code>set_opffcn</code> で設定（<a href="class-design.html#opf">クラス設計</a> を参照）。</span></small></td>
-          <td data-label="First output" data-label-ja="第 1 出力"><code>ResultOPF</code><small><span lang="en">Holds the Lagrange multipliers and the problem object.</span><span lang="ja">ラグランジュ乗数と問題オブジェクトを保持。</span></small></td>
-          <td data-label="Changes net" data-label-ja="net の変更"><span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span></td>
-        </tr>
-        <tr>
-          <td><span lang="en">CPF</span><span lang="ja">連続潮流計算</span></td>
-          <td data-label="Call" data-label-ja="呼び出し"><code>net.calculate_continuation_powerflow(...)</code><small><code>LoadBus</code>, <code>StepSize</code>, <code>ArcLength</code>, <code>MaxIteration</code>, ...</small></td>
-          <td data-label="First output" data-label-ja="第 1 出力"><code>ResultCPF</code><small><span lang="en"><code>flag</code> is true when the path passed the nose.</span><span lang="ja">解曲線がノーズを越えたとき <code>flag</code> は true。</span></small></td>
-          <td data-label="Changes net" data-label-ja="net の変更"><span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span><small><span lang="en">Error if the net is not initialized.</span><span lang="ja">net が未初期化ならエラー。</span></small></td>
-        </tr>
-        <tr>
-          <td><span lang="en">Time simulation</span><span lang="ja">時間応答シミュレーション</span></td>
-          <td data-label="Call" data-label-ja="呼び出し"><code>net.simulate(time, sc1, sc2, ..., ...)</code><br><code>net.simulate(sc, ...)</code><small><span lang="en">The scenarios (<code>Scenario</code>) belong to <code>net</code> (<code>net.add_scenario</code>) and are combined. <code>net.simulate(sc)</code> uses the stored <code>sc.Time</code> and <code>sc.Options</code>; a time and options in the call replace them. <code>Solver</code>, <code>TimeLimit</code>, <code>Progress</code>, ... The verdict is <code>sc.judge(result)</code>, not an output of <code>simulate</code>.</span><span lang="ja">シナリオ（<code>Scenario</code>）は <code>net</code> に属し（<code>net.add_scenario</code>）、複数なら合成。<code>net.simulate(sc)</code> は保存された <code>sc.Time</code> と <code>sc.Options</code> を使用、呼び出しで渡した時間やオプションが優先。<code>Solver</code>、<code>TimeLimit</code>、<code>Progress</code>、... 判定は <code>simulate</code> の出力ではなく <code>sc.judge(result)</code>。</span></small></td>
-          <td data-label="First output" data-label-ja="第 1 出力"><code>ResultODE</code><small><span lang="en"><code>flag</code>: <code>1</code> done, <code>0</code> time limit, <code>-1</code> solver stop or numerical failure of a phase.</span><span lang="ja"><code>flag</code>: <code>1</code> 完了、<code>0</code> 時間制限、<code>-1</code> ソルバーの停止またはフェーズの数値的な失敗。</span></small></td>
-          <td data-label="Changes net" data-label-ja="net の変更"><span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span><small><span lang="en">Error if the net is not initialized. Working data is written during a run, and the connection, fault, and offset data is restored on every exit (see <a href="#side-effects">rule 6</a>).</span><span lang="ja">net が未初期化ならエラー。実行中は作業データを書き込み、接続・故障・オフセットのデータは終了時に必ず復元（<a href="#side-effects">ルール 6</a> を参照）。</span></small></td>
-        </tr>
-        <tr>
-          <td><span lang="en">Linearization</span><span lang="ja">近似線形化</span></td>
-          <td data-label="Call" data-label-ja="呼び出し"><code>net.linearize(...)</code><br><code>net.get_sys(...)</code><small><span lang="en"><code>Algorithm="Feedback"|"Kron"|"DAE"</code>, <code>Point</code>, <code>Coordinate</code>, <code>Plot</code>; <code>get_sys</code> also takes <code>Input</code> and <code>Output</code>. The result holds the unreduced DAE in the order of <code>get_variable_map</code>.</span><span lang="ja"><code>Algorithm="Feedback"|"Kron"|"DAE"</code>、<code>Point</code>、<code>Coordinate</code>、<code>Plot</code>。<code>get_sys</code> は <code>Input</code>、<code>Output</code> も受け付け。結果は縮約前の DAE を <code>get_variable_map</code> の順で保持。</span></small></td>
-          <td data-label="First output" data-label-ja="第 1 出力"><code>ResultLIN</code><small><span lang="en"><code>get_sys</code> returns <code>result.get_ss()</code>, an <code>ss</code>.</span><span lang="ja"><code>get_sys</code> は <code>result.get_ss()</code>（<code>ss</code>）を返す。</span></small></td>
-          <td data-label="Changes net" data-label-ja="net の変更"><span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span><small><span lang="en">Error if the net is not initialized.</span><span lang="ja">net が未初期化ならエラー。</span></small></td>
-        </tr>
-        <tr>
-          <td><span lang="en">Import</span><span lang="ja">インポート</span></td>
-          <td data-label="Call" data-label-ja="呼び出し"><code>PowerNetwork.import_csv(path)</code><br><code>PowerNetwork.import_matpower(mpc)</code><small><span lang="en">Static methods. <code>import_csv(path, Network=obj)</code> fills an existing network, as the network classes do.</span><span lang="ja">静的メソッド。<code>import_csv(path, Network=obj)</code> はネットワーククラスと同じく既存のネットワークにデータを入れる。</span></small></td>
-          <td data-label="First output" data-label-ja="第 1 出力"><span lang="en">new <code>net</code></span><span lang="ja">新しい <code>net</code></span></td>
-          <td data-label="Changes net" data-label-ja="net の変更">—</td>
-        </tr>
-        <tr>
-          <td><span lang="en">Export</span><span lang="ja">エクスポート</span></td>
-          <td data-label="Call" data-label-ja="呼び出し"><code>net.export_csv(path)</code><small><code>Overwrite</code>, <code>ClassFile</code></small></td>
-          <td data-label="First output" data-label-ja="第 1 出力"><span lang="en">the folder path</span><span lang="ja">フォルダのパス</span></td>
-          <td data-label="Changes net" data-label-ja="net の変更"><span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span></td>
-        </tr>
-        <tr>
-          <td><span lang="en">Getters / drawing</span><span lang="ja">取得 / 描画</span></td>
-          <td data-label="Call" data-label-ja="呼び出し"><code>net.get_admittance_matrix()</code><br><code>net.get_variable_map()</code><br><code>net.draw_diagram(ax)</code></td>
-          <td data-label="First output" data-label-ja="第 1 出力"><span lang="en">A standard MATLAB type (rule 3)</span><span lang="ja">MATLAB の標準の型（ルール 3）</span></td>
-          <td data-label="Changes net" data-label-ja="net の変更"><span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span></td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="dg-rows ad-feature-rows">
+      <div class="dg-row">
+        <span class="dg-row-head"><span lang="en">Power flow</span><span lang="ja">潮流計算</span></span>
+        <div>
+          <div class="ad-call"><code>net.calculate_powerflow(...)</code><small><code>Method="algebraic"|"dynamic"</code>, <code>Tolerance</code>, <code>MaxIteration</code>, ...</small></div>
+          <ul class="ad-facts">
+            <li><b><span lang="en">First output</span><span lang="ja">第 1 出力</span>:</b> <code>ResultPF</code></li>
+            <li><b><span lang="en">Changes net</span><span lang="ja">net の変更</span>:</b> <span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span><small><span lang="en">Only when no slack bus is set, one is selected (INFO message, rule 5): the first bus with a component with <code>Q = NaN</code>, otherwise the first bus with a component.</span><span lang="ja">スラック母線が未設定のときに限り 1 つを選択（INFO メッセージ、ルール 5）。<code>Q = NaN</code> の機器を持つ最初の母線、なければ機器を持つ最初の母線。</span></small></li>
+          </ul>
+        </div>
+      </div>
+      <div class="dg-row">
+        <span class="dg-row-head"><span lang="en">Initialization</span><span lang="ja">初期化</span></span>
+        <div>
+          <div class="ad-call"><code>net.initialize(...)</code><small><span lang="en"><code>Method="powerflow"|"OPF"|"equilibrium"</code>. The other options go to <code>calculate_powerflow</code> (<code>"powerflow"</code>) or <code>optimize_powerflow</code> with <code>Method="AC OPF"</code> (<code>"OPF"</code>). <code>"equilibrium"</code> reuses the equilibria the components hold and takes no other option. <code>methods</code> is a deprecated alias of <code>Method</code>.</span><span lang="ja"><code>Method="powerflow"|"OPF"|"equilibrium"</code>。ほかのオプションは <code>calculate_powerflow</code>（<code>"powerflow"</code>）または <code>Method="AC OPF"</code> の <code>optimize_powerflow</code>（<code>"OPF"</code>）に渡す。<code>"equilibrium"</code> は機器が保持する平衡点をそのまま使い、ほかのオプションは受け付けない。<code>methods</code> は <code>Method</code> の非推奨の別名。</span></small></div>
+          <ul class="ad-facts">
+            <li><b><span lang="en">First output</span><span lang="ja">第 1 出力</span>:</b> <code>ResultPF</code><small><span lang="en"><code>ResultOPF</code> for <code>"OPF"</code>.</span><span lang="ja"><code>"OPF"</code> のときは <code>ResultOPF</code>。</span></small></li>
+            <li><b><span lang="en">Changes net</span><span lang="ja">net の変更</span>:</b> <span class="dev-status"><span lang="en">Yes</span><span lang="ja">あり</span></span><small><span lang="en">Sets the equilibrium and resets the edit log. Analysis fails: error; equilibrium and edit log unchanged; a slack bus the power flow set is released. Writing the point fails, or the point does not satisfy Y*V = I (<code>GUILDA:PowerNetwork:InitializeNotEquilibrium</code>): error; the equilibrium stays stale until <code>initialize</code> succeeds.</span><span lang="ja">平衡点を設定し、編集履歴をリセット。解析が失敗: エラーで停止、平衡点と編集履歴は不変、潮流計算が設定したスラック母線を解除。点の書き込みに失敗、または点が Y*V = I を満たさない（<code>GUILDA:PowerNetwork:InitializeNotEquilibrium</code>）: エラーで停止、<code>initialize</code> が成功するまで平衡点は古いまま。</span></small></li>
+          </ul>
+        </div>
+      </div>
+      <div class="dg-row">
+        <span class="dg-row-head"><span lang="en">OPF</span><span lang="ja">最適潮流計算</span></span>
+        <div>
+          <div class="ad-call"><code>net.optimize_powerflow(...)</code><small><span lang="en"><code>Method="ELD"|"DC OPF"|"AC OPF"</code>, <code>Solver</code>, <code>Tolerance</code>, <code>MaxIteration</code>, ... Costs and constraints: <code>set_opffcn</code> (see <a href="class-design.html#opf">Class Design</a>).</span><span lang="ja"><code>Method="ELD"|"DC OPF"|"AC OPF"</code>、<code>Solver</code>、<code>Tolerance</code>、<code>MaxIteration</code> など。コストと制約は <code>set_opffcn</code> で設定（<a href="class-design.html#opf">クラス設計</a> を参照）。</span></small></div>
+          <ul class="ad-facts">
+            <li><b><span lang="en">First output</span><span lang="ja">第 1 出力</span>:</b> <code>ResultOPF</code><small><span lang="en">Holds the Lagrange multipliers and the problem object.</span><span lang="ja">ラグランジュ乗数と問題オブジェクトを保持。</span></small></li>
+            <li><b><span lang="en">Changes net</span><span lang="ja">net の変更</span>:</b> <span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="dg-row">
+        <span class="dg-row-head"><span lang="en">CPF</span><span lang="ja">連続潮流計算</span></span>
+        <div>
+          <div class="ad-call"><code>net.calculate_continuation_powerflow(...)</code><small><code>LoadBus</code>, <code>StepSize</code>, <code>ArcLength</code>, <code>MaxIteration</code>, ...</small></div>
+          <ul class="ad-facts">
+            <li><b><span lang="en">First output</span><span lang="ja">第 1 出力</span>:</b> <code>ResultCPF</code><small><span lang="en"><code>flag</code> is true when the path passed the nose.</span><span lang="ja">解曲線がノーズを越えたとき <code>flag</code> は true。</span></small></li>
+            <li><b><span lang="en">Changes net</span><span lang="ja">net の変更</span>:</b> <span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span><small><span lang="en">Error if the net is not initialized.</span><span lang="ja">net が未初期化ならエラー。</span></small></li>
+          </ul>
+        </div>
+      </div>
+      <div class="dg-row">
+        <span class="dg-row-head"><span lang="en">Time simulation</span><span lang="ja">時間応答シミュレーション</span></span>
+        <div>
+          <div class="ad-call"><code>net.simulate(time, sc1, sc2, ..., ...)</code><br><code>net.simulate(sc, ...)</code><small><span lang="en">The scenarios (<code>Scenario</code>) belong to <code>net</code> (<code>net.add_scenario</code>) and are combined. <code>net.simulate(sc)</code> uses the stored <code>sc.Time</code> and <code>sc.Options</code>; a time and options in the call replace them. <code>Solver</code>, <code>TimeLimit</code>, <code>Progress</code>, ... The verdict is <code>sc.judge(result)</code>, not an output of <code>simulate</code>.</span><span lang="ja">シナリオ（<code>Scenario</code>）は <code>net</code> に属し（<code>net.add_scenario</code>）、複数なら合成。<code>net.simulate(sc)</code> は保存された <code>sc.Time</code> と <code>sc.Options</code> を使用、呼び出しで渡した時間やオプションが優先。<code>Solver</code>、<code>TimeLimit</code>、<code>Progress</code>、... 判定は <code>simulate</code> の出力ではなく <code>sc.judge(result)</code>。</span></small></div>
+          <ul class="ad-facts">
+            <li><b><span lang="en">First output</span><span lang="ja">第 1 出力</span>:</b> <code>ResultODE</code><small><span lang="en"><code>flag</code>: <code>1</code> done, <code>0</code> time limit, <code>-1</code> solver stop or numerical failure of a phase.</span><span lang="ja"><code>flag</code>: <code>1</code> 完了、<code>0</code> 時間制限、<code>-1</code> ソルバーの停止またはフェーズの数値的な失敗。</span></small></li>
+            <li><b><span lang="en">Changes net</span><span lang="ja">net の変更</span>:</b> <span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span><small><span lang="en">Error if the net is not initialized. Working data is written during a run, and the connection, fault, and offset data is restored on every exit (see <a href="#side-effects">rule 6</a>).</span><span lang="ja">net が未初期化ならエラー。実行中は作業データを書き込み、接続・故障・オフセットのデータは終了時に必ず復元（<a href="#side-effects">ルール 6</a> を参照）。</span></small></li>
+          </ul>
+        </div>
+      </div>
+      <div class="dg-row">
+        <span class="dg-row-head"><span lang="en">Linearization</span><span lang="ja">近似線形化</span></span>
+        <div>
+          <div class="ad-call"><code>net.linearize(...)</code><br><code>net.get_sys(...)</code><small><span lang="en"><code>Algorithm="Feedback"|"Kron"|"DAE"</code>, <code>Point</code>, <code>Coordinate</code>, <code>Plot</code>; <code>get_sys</code> also takes <code>Input</code> and <code>Output</code>. The result holds the unreduced DAE in the order of <code>get_variable_map</code>.</span><span lang="ja"><code>Algorithm="Feedback"|"Kron"|"DAE"</code>、<code>Point</code>、<code>Coordinate</code>、<code>Plot</code>。<code>get_sys</code> は <code>Input</code>、<code>Output</code> も受け付け。結果は縮約前の DAE を <code>get_variable_map</code> の順で保持。</span></small></div>
+          <ul class="ad-facts">
+            <li><b><span lang="en">First output</span><span lang="ja">第 1 出力</span>:</b> <code>ResultLIN</code><small><span lang="en"><code>get_sys</code> returns <code>result.get_ss()</code>, an <code>ss</code>.</span><span lang="ja"><code>get_sys</code> は <code>result.get_ss()</code>（<code>ss</code>）を返す。</span></small></li>
+            <li><b><span lang="en">Changes net</span><span lang="ja">net の変更</span>:</b> <span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span><small><span lang="en">Error if the net is not initialized.</span><span lang="ja">net が未初期化ならエラー。</span></small></li>
+          </ul>
+        </div>
+      </div>
+      <div class="dg-row">
+        <span class="dg-row-head"><span lang="en">Import</span><span lang="ja">インポート</span></span>
+        <div>
+          <div class="ad-call"><code>PowerNetwork.import_csv(path)</code><br><code>PowerNetwork.import_matpower(mpc)</code><small><span lang="en">Static methods. <code>import_csv(path, Network=obj)</code> fills an existing network, as the network classes do.</span><span lang="ja">静的メソッド。<code>import_csv(path, Network=obj)</code> はネットワーククラスと同じく既存のネットワークにデータを入れる。</span></small></div>
+          <ul class="ad-facts">
+            <li><b><span lang="en">First output</span><span lang="ja">第 1 出力</span>:</b> <span lang="en">new <code>net</code></span><span lang="ja">新しい <code>net</code></span></li>
+            <li><b><span lang="en">Changes net</span><span lang="ja">net の変更</span>:</b> —</li>
+          </ul>
+        </div>
+      </div>
+      <div class="dg-row">
+        <span class="dg-row-head"><span lang="en">Export</span><span lang="ja">エクスポート</span></span>
+        <div>
+          <div class="ad-call"><code>net.export_csv(path)</code><small><code>Overwrite</code>, <code>ClassFile</code></small></div>
+          <ul class="ad-facts">
+            <li><b><span lang="en">First output</span><span lang="ja">第 1 出力</span>:</b> <span lang="en">the folder path</span><span lang="ja">フォルダのパス</span></li>
+            <li><b><span lang="en">Changes net</span><span lang="ja">net の変更</span>:</b> <span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="dg-row">
+        <span class="dg-row-head"><span lang="en">Getters / drawing</span><span lang="ja">取得 / 描画</span></span>
+        <div>
+          <div class="ad-call"><code>net.get_admittance_matrix()</code><br><code>net.get_variable_map()</code><br><code>net.draw_diagram(ax)</code></div>
+          <ul class="ad-facts">
+            <li><b><span lang="en">First output</span><span lang="ja">第 1 出力</span>:</b> <span lang="en">A standard MATLAB type (rule 3)</span><span lang="ja">MATLAB の標準の型（ルール 3）</span></li>
+            <li><b><span lang="en">Changes net</span><span lang="ja">net の変更</span>:</b> <span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
     <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg><p><span lang="en">A new analysis feature follows the same rules: a <code>net.verb_noun()</code> method with Name-Value options that returns <code>[result, flag, output]</code>.</span><span lang="ja">新しい解析機能も同じルール。Name-Value オプションを受け取り <code>[result, flag, output]</code> を返す <code>net.verb_noun()</code> メソッド。</span></p></div>
 
     <h2 id="compatibility"><span lang="en">Compatibility</span><span lang="ja">互換性</span></h2>
