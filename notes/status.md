@@ -1,6 +1,9 @@
 # 再設計の状況
 
-この文書の基準は `feature/ieej-report-models` の `a9afe24`、日付は 2026-11-04 です。このブランチは統合ブランチ `refactor/design-alignment`(分岐元 `version4.0`)を `bf7512b` まで取り込み、IEEJ の報告書モデルの作業を加えたものです。`refactor/design-alignment` のその後の 4 コミット(`c51e1ea` の解析クラスの改名、`cf42421` の開発者向け文書の日英切り替えと、それぞれのマージ)は含みません。
+この文書の基準は `feature/ieej-report-models` の `301b5d0`、日付は 2026-11-04 です。このブランチは統合ブランチ `refactor/design-alignment`(分岐元 `version4.0`)を `1223c6a` まで取り込み、IEEJ の報告書モデルの作業を加えたものです。`refactor/design-alignment` は 2 回に分けて取り込みました。
+
+- **`8bbd9a0` まで(マージ `b2a46e8`):** 解析クラスの役割を先にした名前(`c51e1ea`、`SolverPF`、`ResultODE` など)と、開発者向け文書の日英切り替え(`cf42421`)です。イベントのクラスはこのブランチの `Scenario` を残し、`c51e1ea` の `EventODE` は取り込んでいません。
+- **`1223c6a` まで(マージ `301b5d0`):** 開発者ページの日本語訳と、新しい `feature-*.html`・`class-*.html` のページ(約 36 コミット)です。下の「開発者ページの統合」を参照してください。
 
 移行の方法は [v4-migration.md](v4-migration.md) にあります。この文書には、テスト結果、未決事項、数値の変化の記録を書きます。
 
@@ -8,6 +11,7 @@
 
 **確認済み(2026-11-04、MATLAB R2026a):** 想定外の失敗はありません。
 
+- `301b5d0`(`refactor/design-alignment` の `1223c6a` のマージ)での `DebugScript.run_all`: 684 件、PASS 682 / KNOWN 1 / FAIL 0 / FIXED? 0 / SKIP 1、960 s。機能別の件数は下の表と同じです。このマージとその後の 3 つの `docs:` コミットは文書とノートだけを変え、コードとテストは `b2a46e8` と同じです。
 - `a9afe24` での `DebugScript.run_all`: 684 件、PASS 682 / KNOWN 1 / FAIL 0 / FIXED? 0 / SKIP 1、851 s(コーディネータの実行。機能別の内訳はこの記録にありません)。
 - 下の機能別の表は、`a9afe24` に `docs/ieej-report-models-notes` の変更(F6 のコメント、`_GUILDAverification/` の比較関数と README、notes)を加えた作業ツリーでの再実行です。合計は上と同じです。時間は他の MATLAB 3 つと並行したためで、目安になりません。
 
@@ -72,6 +76,16 @@ matlab -batch "DebugScript.run_all"
 - **区間の開始の初期条件:** 微分状態を固定して代数変数だけを解きます。警告 `InitialConditionRelaxed` と緩めた再計算はなくなりました(`8bd906c`、統合は `bf7512b`)。
 - **`_GUILDAverification/`:** 同梱ネットワークと文献の比較の置き場所(パスに入れない)。ネットワークごとに `README.md`、シナリオの CSV、報告書の判定の CSV、比較関数があります(`_GUILDAdoc/developer/folder-structure.html`)。
 
+## 開発者ページの統合(2026-11-04)
+
+`301b5d0`(マージ)、`f7c7aa5`、`81caa5f` と、この文書の更新のコミットです。
+
+- **マージの衝突:** `api-design.html`、`class-design.html`、`folder-structure.html`、`model-implementation.html`、`index.html` は、取り込み側の日英の構造と訳を残し、このブランチの変更(`Scenario`、調速機の枠、ブランチ開放、`_GUILDAverification` と全体図)に日本語の兄弟要素を加えて入れ直しました。
+- **新しいページの修正:** `feature-simulation.html` は `EventODE` を前提にしていたので、現在の `Scenario` と `SolverODE`(`Scenario.compile`、`check_islands`、`set_admittance`、`set_offsets`、`initial_condition`、`phase_result`)に合わせて書き直しました。`class-powernetwork.html`(`a_Scenario`、`add_scenario`)、`class-component.html`・`class-localcontroller.html`・`feature-model-building.html`(調速機の枠、`ControllerOutputOverlap`、`AVR_DC1` の上下限、`controller.governor`)、`class-bus.html`・`class-globalcontroller.html`(書き込み元から `EventODE` を削除)も直しました。両言語とも直しています。
+- **Update log:** 2026-11-02 の「Analysis classes renamed」を決定に合わせました(イベントのクラスは `Scenario`、`ODEevent` は非推奨のラッパー、`EventODE` は公開していない)。2026-11-04 の IEEJ の項目の古い制限(調速機なし、線路開放なしなど)を直し、`Scenario`、ブランチ開放、`AVR_DC1` の上下限、park の `Xq_p = Xq`、調速機、IEEJ の既定、`_GUILDAverification` の項目を加えました。旧 ID `GUILDA:odeEventSet:*` を書いた 2 つの項目には、現在の ID を補いました。
+- **確認:** 変更したページは Python の `html.parser` で開き、閉じていないタグがないことを確認しました。ブラウザでの表示は確認していません(未確認)。`list_UpdateLog.js` は Node で読み込めることを確認しました。
+- **`dev-pages-code-findings.md`:** 基準 `765663b` のまま `EventODE` の行番号を参照しているので、冒頭に `Scenario` への置き換えの注を加えました。SIM-3 が現在のコードでも成り立つかは未確認です。
+
 ## IEEJ のネットワーク
 
 `network.IEEJ_EAST10`, `IEEJ_EAST30`, `IEEJ_WEST10`, `IEEJ_WEST30` は、電気学会の報告書のモデルを既定にしました。調速機あり(`Governor=true`)、励磁の界磁電圧 `EF` は 0〜4 pu(`Vfld_min = 0`, `Vfld_max = 4`)、q 軸は `Xq_p = Xq` です。`Governor=false` で調速機なしにできます。
@@ -93,7 +107,7 @@ matlab -batch "DebugScript.run_all"
 
 ## 未決事項
 
-状態は `a9afe24` のコードと履歴で確認しました(下で日付や基準を別に示した項目を除く)。
+状態は `a9afe24` のコードと履歴で確認しました(`301b5d0` までの統合はコードを変えていません)(下で日付や基準を別に示した項目を除く)。
 
 ### チュートリアル
 
