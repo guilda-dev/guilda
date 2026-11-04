@@ -85,7 +85,7 @@ classdef Component < PowerSystemModel
 %% Parameter
     properties(SetAccess=protected) % Layer Structure
         a_Bus                                  % Bus the component is connected to ([] when removed).
-        a_LocalController (:,1) = cell(0,1)    % Local controllers attached to the component (an AVR; a PSS hangs under it).
+        a_LocalController (:,1) = cell(0,1)    % Top-level local controllers, in this order: the AVR or "local" controller (a PSS hangs under an AVR), then the governor.
     end
     properties(SetAccess=protected) % Dynamics
         f_Mass                                 % Mass matrix function @(t,x,V,I,u) with the parameters bound.
@@ -105,8 +105,8 @@ classdef Component < PowerSystemModel
         iv_odeX  = [];
         iv_odeU  = [];        
         iv_odeY  = [];        
-        lv_odeUfromLC = false(0,1);            % Inputs driven by an output of the local controller.
-        iv_odeYtoU    = zeros(0,1);            % Index in sv_y of the local controller of each such input.
+        lv_odeUfromLC = false(0,1);            % Inputs driven by an output of a top-level local controller.
+        iv_odeYtoU    = zeros(0,1);            % Index of each such input in the outputs of the top-level controllers, stacked in order.
     end    
     properties(Dependent, Hidden)
         para_base                              % COMPAT(v3) ComponentBaseView: Hz is held by the network (use get_Hz)
@@ -128,11 +128,11 @@ classdef Component < PowerSystemModel
         parent                                 % Layer Structure: the bus.
         children                               % Layer Structure: the local controllers and Parameter objects.
     end
-    properties (Access={?SolverODE, ?Component, ?EventODE})        
+    properties (Access={?SolverODE, ?Component})        
         l_hasController = false;
         l_isConnect     = true
     end
-    properties (SetAccess={?SolverODE, ?EventODE}, Hidden)
+    properties (SetAccess={?SolverODE}, Hidden)
         rv_Xoffset 
         rv_Uoffset 
     end

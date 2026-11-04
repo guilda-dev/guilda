@@ -33,7 +33,7 @@ classdef Bus < PowerSystemModel
     properties % Power Flow
         l_isSlack      (1,1) logical = false;   % True for the slack bus (at most one per network).
     end
-    properties (Access={?SolverODE, ?EventODE})
+    properties (Access={?SolverODE})
         l_isFault (1,1) logical = false
     end
 

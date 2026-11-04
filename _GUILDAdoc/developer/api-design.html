@@ -123,7 +123,7 @@
         <rect class="dg-sv-box is-soft" x="1" y="88" width="318" height="68" rx="10"/>
         <text class="is-k" x="15" y="109" lang="en">ANALYSIS SETTINGS · DEFAULTS</text><text class="is-k" x="15" y="109" lang="ja">解析設定 · 既定値</text>
         <text class="dg-mono is-sm" x="15" y="128">net.solver_PF / _OPF / _CPF / _ODE / _LIN</text>
-        <text class="is-sm is-muted" x="15" y="145" lang="en">method · tolerance · time span · events</text><text class="is-sm is-muted" x="15" y="145" lang="ja">手法 · 許容誤差 · 時間範囲 · イベント</text>
+        <text class="is-sm is-muted" x="15" y="145" lang="en">method · tolerance · time span</text><text class="is-sm is-muted" x="15" y="145" lang="ja">手法 · 許容誤差 · 時間範囲</text>
         <text class="is-sm is-muted" x="15" y="172" lang="en">kept between runs; a call never changes them</text><text class="is-sm is-muted" x="15" y="172" lang="ja">実行をまたいで保持され、呼び出しでは変わりません</text>
         <!-- name-value -->
         <rect class="dg-sv-box is-warn" x="1" y="180" width="318" height="64" rx="10"/>
@@ -150,7 +150,7 @@
         <table class="dg-table">
           <tbody>
             <tr><td><span lang="en">System data</span><span lang="ja">系統データ</span></td><td data-label="Set in" data-label-ja="設定場所"><span lang="en">properties, <code>tab_parameter</code>, before the call</span><span lang="ja">呼び出しの前に、プロパティと <code>tab_parameter</code> で設定</span></td><td data-label="Examples" data-label-ja="例"><span lang="en">line constants, V/P/Q specs, operating limits</span><span lang="ja">線路定数、V/P/Q の指定値、運転制約</span></td></tr>
-            <tr><td><span lang="en">Analysis settings</span><span lang="ja">解析設定</span></td><td data-label="Defaults in" data-label-ja="既定値の場所"><code>net.solver_PF</code> / <code>_OPF</code> / <code>_CPF</code> / <code>_ODE</code> / <code>_LIN</code><span lang="en">; kept between runs</span><span lang="ja">。実行をまたいで保持</span></td><td data-label="Examples" data-label-ja="例"><span lang="en">method, tolerance, time span, events</span><span lang="ja">手法、許容誤差、時間範囲、イベント</span></td></tr>
+            <tr><td><span lang="en">Analysis settings</span><span lang="ja">解析設定</span></td><td data-label="Defaults in" data-label-ja="既定値の場所"><code>net.solver_PF</code> / <code>_OPF</code> / <code>_CPF</code> / <code>_ODE</code> / <code>_LIN</code><span lang="en">; kept between runs</span><span lang="ja">。実行をまたいで保持</span></td><td data-label="Examples" data-label-ja="例"><span lang="en">method, tolerance, time span</span><span lang="ja">手法、許容誤差、時間範囲</span></td></tr>
             <tr><td><span lang="en">Name-Value options</span><span lang="ja">Name-Value オプション</span></td><td data-label="Set in" data-label-ja="設定場所"><span lang="en">the call; this call only</span><span lang="ja">呼び出し。その呼び出しのみ</span></td><td data-label="Effect" data-label-ja="効果"><span lang="en">replaces the default for this call</span><span lang="ja">この呼び出しに限り既定値を置き換え</span></td></tr>
           </tbody>
         </table>
@@ -265,7 +265,7 @@
         </tr>
         <tr>
           <td><span lang="en">Time simulation</span><span lang="ja">時間応答シミュレーション</span></td>
-          <td data-label="Call" data-label-ja="呼び出し"><code>net.simulate(time, events..., ...)</code><small><code>Solver</code>, <code>TimeLimit</code>, <code>Progress</code>, ...</small></td>
+          <td data-label="Call" data-label-ja="呼び出し"><code>net.simulate(time, sc1, sc2, ..., ...)</code><br><code>net.simulate(sc, ...)</code><small><span lang="en">The scenarios (<code>Scenario</code>) belong to <code>net</code> (<code>net.add_scenario</code>) and are combined. <code>net.simulate(sc)</code> uses the stored <code>sc.Time</code> and <code>sc.Options</code>; a time and options in the call replace them. <code>Solver</code>, <code>TimeLimit</code>, <code>Progress</code>, ... The verdict is <code>sc.judge(result)</code>, not an output of <code>simulate</code>.</span><span lang="ja">シナリオ（<code>Scenario</code>）は <code>net</code> に属し（<code>net.add_scenario</code>）、複数を渡すと合成されます。<code>net.simulate(sc)</code> は保存された <code>sc.Time</code> と <code>sc.Options</code> を使い、呼び出しで時間やオプションを渡すとそれらを置き換えます。<code>Solver</code>、<code>TimeLimit</code>、<code>Progress</code>、... 判定は <code>simulate</code> の出力ではなく <code>sc.judge(result)</code> で得ます。</span></small></td>
           <td data-label="First output" data-label-ja="第 1 出力"><code>ResultODE</code><small><span lang="en"><code>flag</code>: <code>1</code> done, <code>0</code> time limit, <code>-1</code> solver stop or numerical failure of a phase.</span><span lang="ja"><code>flag</code>: <code>1</code> 完了、<code>0</code> 時間制限、<code>-1</code> ソルバーの停止またはフェーズの数値的な失敗。</span></small></td>
           <td data-label="Changes net" data-label-ja="net の変更"><span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span><small><span lang="en">Error if the net is not initialized. Working data is written during a run, and the connection, fault, and offset data is restored on every exit (see <a href="#side-effects">rule 6</a>).</span><span lang="ja">net が初期化されていなければエラーになります。実行中は作業データが書き込まれ、接続・故障・オフセットのデータは終了時に必ず元に戻ります（<a href="#side-effects">ルール 6</a> を参照）。</span></small></td>
         </tr>

@@ -29,7 +29,7 @@ s_io = net.get_sys("Output", ["V", "I"], "Input", sv_u(1:2));
 assert(numel(s_io.InputName) == 2 && numel(s_io.OutputName) == 4*numel(net.a_Bus))
 
 % 5. シミュレーションの途中の点で線形化する。平衡点でない点は output.message と result.rv_residual に現れる
-ev  = EventODE("fault", net, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
+ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
 sim = net.simulate([0,1.5], ev, Progress="none");
 [res_t, flag, output] = net.linearize("Point", {sim, 1});
 disp(output.message)

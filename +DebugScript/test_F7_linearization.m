@@ -789,7 +789,7 @@ end
 % Point={sim, t}: 時刻 t の機器の状態・入力と母線電圧 (ResultODE の値) で線形化する
 net = new_net();
 DebugScript.helper.quiet(@() net.initialize);
-ev  = EventODE("fault", net, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
+ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
 sim = net.simulate([0,1.5], ev);
 r   = sim.odeResults;
 tab = net.get_variable_map();
@@ -871,7 +871,7 @@ net = new_net();
 net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
 net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B002", "SG1B006", kP=100, kI=500));   % SG1B001, SG1B003 は AGC の外
 DebugScript.helper.quiet(@() net.initialize);
-ev  = EventODE("fault", net, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
+ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
 sim = net.simulate([0,1.5], ev);
 t   = 0.9;
 res0 = net.linearize();
@@ -999,7 +999,7 @@ catch ME
     assert(contains(ME.message, "more"), ME.message)
 end
 % トリップ中の {sim, t}: 解列した機器の状態が NaN
-sim = n14.simulate([0,2], EventODE("trip", n14, "TimeSpan", [1,1.5], "TripUnit", "SG1B002"));
+sim = n14.simulate([0,2], DebugScript.helper.scenario("trip", n14, "TimeSpan", [1,1.5], "TripUnit", "SG1B002"));
 try
     n14.get_sys("Point", {sim, 1.2});
     error("DebugScript:NoError", "トリップ中の Point がエラーにならない")
@@ -1014,7 +1014,7 @@ assert(n14.linearize("Point", {sim, 0.5}).l_success)
 % トリップの区間だけ NaN の点で止まり、境界は Side に従う。復帰後は機器を含めた通常の点として線形化する
 n14 = new_net();
 DebugScript.helper.quiet(@() n14.initialize);
-sim = n14.simulate([0,2], EventODE("trip", n14, "TimeSpan", [1,1.5], "TripUnit", "SG1B002"), Progress="none");
+sim = n14.simulate([0,2], DebugScript.helper.scenario("trip", n14, "TimeSpan", [1,1.5], "TripUnit", "SG1B002"), Progress="none");
 res0 = n14.linearize();
 tab  = res0.tab_variable;
 for c_point = {{sim,1}, {sim,1.2}, {sim,1.5,"before"}}
@@ -1052,7 +1052,7 @@ assert(all(isfinite(sc.A), "all") && isequal(sc.A, gen3.get_sys("Point", x(iv)).
 % Point は変数の点で、網はモデルのもの: 故障中の {sim, t} でも Y は故障前のまま。呼び出しがそれを知らせる (Issue #82)
 n9 = network.IEEE9bus();
 DebugScript.helper.quiet(@() n9.initialize);
-ev  = EventODE("short", n9, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
+ev  = DebugScript.helper.scenario("short", n9, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
 sim = n9.simulate([0,1], ev, Progress="none", TimeLimit=120);
 str = evalc('[res, flag, output] = n9.linearize("Point", {sim, 0.52});');
 assert(contains(str, "INFO") && contains(str, "B008"), str)
@@ -1098,7 +1098,7 @@ n14 = new_net();
 n14.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
 n14.add_global_controller(controller.agc.broadcast_PI_AGC(n14, "agc", "SG1B002", "SG1B006", kP=100, kI=500));
 DebugScript.helper.quiet(@() n14.initialize);
-ev  = EventODE("short", n14, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
+ev  = DebugScript.helper.scenario("short", n14, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
 sim = n14.simulate([0,1.5], ev, Progress="none", RelativeTolerance=1e-8, AbsoluteTolerance=1e-8);
 k = find(sim.rv_t > 0.9, 1);
 t = sim.rv_t(k);

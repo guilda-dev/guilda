@@ -49,5 +49,5 @@ function [net, ev] = build_case(str_load, str_bus)
     net.a_Bus{3}.add_component(str_load, "P",-1.0, "Q",-0.2);
     net.solver_ODE.Progress = "none";
     DebugScript.helper.quiet(@() net.initialize);
-    ev = EventODE("fault", net, "TimeSpan", [1,1.05], "FaultBus", str_bus);
+    ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", str_bus);
 end

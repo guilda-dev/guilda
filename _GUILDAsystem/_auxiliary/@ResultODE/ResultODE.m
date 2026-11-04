@@ -20,15 +20,17 @@ classdef ResultODE < ResultBase
 % ```matlab
 % net = network.IEEE14bus();
 % net.initialize();
-% ev = EventODE("fault", net, "TimeSpan", [1, 1.05], "FaultBus", "B008");
-% [result, flag] = net.simulate([0, 10], ev);
+% sc = Scenario("fault");
+% sc.add_fault("B008", [1, 1.05]);
+% net.add_scenario(sc);
+% [result, flag] = net.simulate([0, 10], sc);
 % r = result.odeResults;               % r.t, r.Bus(i).V, r.Bus(i).Component(j).X, ...
 % x = result.get_point(2);             % all variables at t = 2, in variable-map order
 % result.Plot(Quantity="omega");       % a state of the components
 % result.Export("sim.mat");
 % ```
 %
-% See also SolverODE, EventODE, ResultBase, PowerNetwork.get_variable_map
+% See also SolverODE, Scenario, ResultBase, PowerNetwork.get_variable_map
 
     properties (SetAccess=private) % Result
         % [s] Output times, ascending.
@@ -101,7 +103,7 @@ classdef ResultODE < ResultBase
                 flag            = false % Success or convergence flag; see ResultBase.
                 output   struct = struct() % Solver details; see ResultBase.
                 elapsed         = NaN % [s] Elapsed time or tic value; see ResultBase.
-                c_phase  cell   = {} % Result of each phase (EventODE.Event2State: t, x, i).
+                c_phase  cell   = {} % Result of each phase (SolverODE.phase_result: t, x, i).
             end
             arguments (Output)
                 obj % The result object.
@@ -155,7 +157,8 @@ classdef ResultODE < ResultBase
         %
         % <@Examples>
         % ```matlab
-        % sim = net.simulate([0,5], EventODE("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008"));
+        % sc = Scenario("fault");  sc.add_fault("B008", [1,1.05]);  net.add_scenario(sc);
+        % sim = net.simulate([0,5], sc);
         % x  = sim.get_point(2);                    % order of net.get_variable_map()
         % x0 = sim.get_point(1.05, Side="before");  % end of the fault
         % res = net.linearize(Point={sim, 2});      % same point as Point=x

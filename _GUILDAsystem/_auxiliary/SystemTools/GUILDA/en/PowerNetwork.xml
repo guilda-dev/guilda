@@ -34,11 +34,16 @@
         <entry key="InitializeModelFailed">net.initialize stopped: {1} of ''{0}'' failed at the equilibrium: {2}&#xA;The equilibrium is out of date. Fix the model.</entry>
         <entry key="EquilibriumResidual">The models do not hold the operating point (residuals of {0} or more), so their states move without a disturbance:&#xA;{1}&#xA;Check get_equilibrium and the model functions, e.g. with comp.validate().</entry>
         <entry key="InitializeNoEquilibrium">net.initialize(Method="equilibrium") stopped: the equilibrium of ''{0}'' is not set.&#xA;The network was not changed. Run net.initialize(Method="powerflow") or net.initialize(Method="OPF") first.</entry>
-        <entry key="SimulateArguments">net.simulate takes the time span, then the events (EventODE), then Name-Value options: net.simulate([t0, tend], ev1, ev2, ..., Name, Value). Argument {0} is a {1}.</entry>
+        <entry key="SimulateArguments">net.simulate takes the time span, then the scenarios (Scenario), then Name-Value options: net.simulate([t0, tend], sc1, sc2, ..., Name, Value) or net.simulate(sc, Name, Value). Argument {0} is a {1}.</entry>
         <entry key="ControllersNotSaved">export_csv does not write controllers, so the CSV model of ''{0}'' does not include them.&#xA;Local ({1}): {2}&#xA;Global ({3}): {4}&#xA;Add them again after PowerNetwork.import_csv.</entry>
         <entry key="SimulateExport">Export of net.simulate does not support the extension ''{0}''. Use a scalar file name with .csv, .txt, .xlsx, .xls or .mat.</entry>
-        <entry key="SimulateTime">The time of net.simulate must be [t0, tend] with finite values and t0 &lt; tend, or [] for the time span of the events: {0}.</entry>
+        <entry key="SimulateTime">The time of net.simulate must be [t0, tend] with finite values and t0 &lt; tend, or [] for the Time of the scenarios or the time span of their disturbances: {0}.</entry>
         <entry key="SimulationIncomplete">net.simulate did not reach the end time (flag = {0}); the result holds the trajectories up to the time reached.&#xA;{1}</entry>
         <entry key="IncompleteLoad">Edits of the object saved below network ''{0}'' are not logged after loading. Save the network itself.</entry>
+        <entry key="NotScenario">net.add_scenario takes a Scenario or a cell of Scenario objects, e.g. net.add_scenario(sc) or net.add_scenario(Scenario.import_csv(path)).</entry>
+        <entry key="ScenarioTagInUse">A scenario with the tag ''{0}'' is already in ''{1}''.&#xA;Give the scenario another tag, or remove the existing one first with net.remove_scenario(TAG).</entry>
+        <entry key="ScenarioNotFound">No scenario with the tag ''{0}'' was found in ''{1}''.</entry>
+        <entry key="ScenarioTimeConflict">The scenarios {0} have different Time ({1}). Give the time to the call, net.simulate([t0, tend], ...), or set the same Time.</entry>
+        <entry key="ScenarioOptionConflict">The scenarios {1} store different values of the option {0} in Options. Give the option in the call to net.simulate.</entry>
     </message>
 </rsccat>

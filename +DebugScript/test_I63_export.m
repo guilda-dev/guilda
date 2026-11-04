@@ -9,7 +9,7 @@ net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr"), 
 net.a_Bus{2}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr"));
 net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002"));
 DebugScript.helper.quiet(@() net.initialize);
-ev = EventODE("fault", net, "TimeSpan", [0.1,0.15], "FaultBus", "B008");
+ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.1,0.15], "FaultBus", "B008");
 str_dir = tempname;  mkdir(str_dir);
 c_dir = onCleanup(@() rmdir(str_dir, "s"));
 tab_ctrl = net.get_variable_map();

@@ -5,8 +5,9 @@ function [tab, c_idxBus, c_idxGC] = get_variable_map(obj, str_form)
 % the network model, used by net.linearize (ResultLIN blocks and Point) and
 % shared by other analyses. The order is
 %   1. states x: for each bus in a_Bus, for each component in a_Component, the states
-%      of the component and then of its local controllers (depth first: an AVR, then
-%      the PSS attached under it); then the states of each global controller in
+%      of the component and then of its local controllers (depth first: the AVR or
+%      "local" controller, the PSS attached under the AVR, then the governor, whatever
+%      the order of attachment); then the states of each global controller in
 %      a_GlobalController
 %   2. bus voltages: Vre, Vim of each bus in a_Bus (interleaved: B1 Vre, B1 Vim, B2 Vre, ...)
 %   3. inputs u: for each bus, for each component, the inputs sv_u of the component

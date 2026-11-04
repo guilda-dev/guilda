@@ -65,7 +65,7 @@ classdef GlobalController < PowerSystemModel
     properties (SetAccess=protected, Hidden)
         controlledUnits                        % Controlled components, in the order given to the constructor.
     end
-    properties (SetAccess={?SolverODE, ?EventODE}, Hidden)
+    properties (SetAccess={?SolverODE}, Hidden)
         iv_odeX (:,1) double = zeros(0,1);
         iv_odeU (:,1) double = zeros(0,1);
         iv_odeY (:,1) double = zeros(0,1);        

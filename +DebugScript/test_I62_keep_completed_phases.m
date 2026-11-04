@@ -10,9 +10,9 @@ net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 net.solver_ODE.Progress = "none";
 sv_gen = generators(net);
-ev_trip_later = EventODE("trip", net, "TimeSpan", [1,1.5], "TripUnit", sv_gen);
-ev_trip_first = EventODE("trip", net, "TimeSpan", [0,1.5], "TripUnit", sv_gen);
-ev_nan = EventODE("nan", net, "TimeSpan", [1,1.2], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", NaN);
+ev_trip_later = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.5], "TripUnit", sv_gen);
+ev_trip_first = DebugScript.helper.scenario("trip", net, "TimeSpan", [0,1.5], "TripUnit", sv_gen);
+ev_nan = DebugScript.helper.scenario("nan", net, "TimeSpan", [1,1.2], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", NaN);
 str_warn = "GUILDA:PowerNetwork:SimulationIncomplete";
 
 
@@ -115,21 +115,21 @@ assert(isequaln(sol.rm_variable, sol_ref.rm_variable))
 
 
 %% Input function error is still raised
-ev = EventODE("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) boom(t));
+ev = DebugScript.helper.scenario("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) boom(t));
 ME = catch_error(@() run(net, [0,4], ev));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:PhaseFailed", DebugScript.helper.msg_id(ME))
 assert(contains(ME.message, "phase 2") && DebugScript.helper.msg_id(ME.cause{1}) == "DebugScript:boom")
 
 
 %% Input function error with a MATLAB identifier is still raised
-ev = EventODE("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) bad_index(t));
+ev = DebugScript.helper.scenario("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) bad_index(t));
 ME = catch_error(@() run(net, [0,4], ev));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:PhaseFailed", DebugScript.helper.msg_id(ME))
 assert(DebugScript.helper.msg_id(ME.cause{1}) == "MATLAB:badsubscript", DebugScript.helper.msg_id(ME.cause{1}))
 
 
 %% Solver error of an input function is still raised
-ev = EventODE("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) own_solver(t));
+ev = DebugScript.helper.scenario("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) own_solver(t));
 ME = catch_error(@() run(net, [0,4], ev));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:PhaseFailed", DebugScript.helper.msg_id(ME))
 assert(DebugScript.helper.msg_id(ME.cause{1}) == "MATLAB:ode15s:MassMatrixAllZero", DebugScript.helper.msg_id(ME.cause{1}))
@@ -145,7 +145,7 @@ assert(DebugScript.helper.msg_id(ME.cause{1}) == "MATLAB:ode45:MassSingularYes",
 
 
 %% Convergence failure of the initial condition returns the completed phases
-ev = EventODE("huge", net, "TimeSpan", [1,1.2], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", 1e6);
+ev = DebugScript.helper.scenario("huge", net, "TimeSpan", [1,1.2], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", 1e6);
 [~, flag, output] = run(net, [0,2], ev);
 assert(flag == -1 && output.tEnd == 1)
 assert(DebugScript.helper.msg_id(output.exception.cause{1}) == "GUILDA:SolverODE:AlgebraicNotSolved", DebugScript.helper.msg_id(output.exception.cause{1}))

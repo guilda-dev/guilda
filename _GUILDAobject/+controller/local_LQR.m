@@ -28,8 +28,10 @@ classdef local_LQR < LocalController
 % net.a_Bus{1}.a_Component{1}.add_local_controller(controller.local_LQR("lqr1"));
 % net.a_Bus{2}.a_Component{1}.add_local_controller(controller.local_LQR("lqr2", Input="Vfield", R=2));
 % net.initialize;
-% ev  = EventODE("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B007");
-% sol = net.simulate([0,10], ev);
+% sc  = Scenario("fault");
+% sc.add_fault("B007", [1,1.05]);
+% net.add_scenario(sc);
+% sol = net.simulate([0,10], sc);
 % ```
 %
 % See also Component.add_local_controller, controller.avr.abstract, controller.local_LQR_retrofit
@@ -132,15 +134,21 @@ classdef local_LQR < LocalController
         end
     end
 
-    methods (Access=protected)
-        function resolve_ports(obj, comp)
-            % The driven inputs: Input, or all the inputs of the component
+    methods (Hidden)
+        function sv_in = driven_inputs(obj, comp)
+            % The driven inputs on the component comp: Input, or all the inputs of comp
             if isempty(obj.sv_input)
-                sv_in = comp.sv_u;
+                sv_in = reshape(string(comp.sv_u), [], 1);
             else
                 sv_in = obj.sv_input;   % checked by Component.add_local_controller
             end
-            obj.sv_y = sv_in(:);
+        end
+    end
+
+    methods (Access=protected)
+        function resolve_ports(obj, comp)
+            % The driven inputs: Input, or all the inputs of the component
+            obj.sv_y = obj.driven_inputs(comp);
         end
 
         function set_inputs(obj, sv_name)

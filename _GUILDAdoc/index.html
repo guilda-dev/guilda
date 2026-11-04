@@ -272,8 +272,9 @@ net.a_Bus{2}.add_component("load-power");
 
 % Or start from a packaged network and analyse it
 net = network.IEEE14bus;
-fault = EventODE("fault", net, "FaultBus", "B008", "TimeSpan", [3, 3.1]);
-sol = net.simulate([0, 50], fault);   % time response
+sc = Scenario("fault");  sc.add_fault("B008", [3, 3.1]);
+net.add_scenario(sc);
+sol = net.simulate([0, 50], sc);      % time response
 sys = net.get_sys();                  % linearized model</code></pre>
       </section>
 
@@ -402,8 +403,10 @@ sys = net.get_sys();                  % linearized model</code></pre>
       <p lang="en">Load a packaged network, apply a short fault at one bus and simulate the response. The plot shows the frequency deviation of several generators.</p>
       <p lang="ja">同梱の系統モデルを読み込み、ある母線で短時間の地絡を起こして応答をシミュレーションします。プロットにはいくつかの発電機の周波数偏差が表示されます。</p>
 <pre><code>net = network.IEEE14bus;
-fault = EventODE("fault", net, "FaultBus", "B008", "TimeSpan", [3, 3.1]);
-sol = net.simulate([0, 50], fault);
+sc = Scenario("fault");
+sc.add_fault("B008", [3, 3.1]);       % ground fault on bus B008 from 3 s to 3.1 s
+net.add_scenario(sc);
+sol = net.simulate([0, 50], sc);
 
 xsol = sol.odeResults;
 figure;
@@ -475,14 +478,16 @@ powerflow = net.calculate_powerflow();
 net.initialize();</code></pre>
 
       <h2 id="tutorial-simulation"><span lang="en">3. Run a Time-Domain Simulation</span><span lang="ja">3. 時間応答シミュレーションを実行する</span></h2>
-      <p lang="en">Use <code>EventODE</code> to describe disturbances. Events can represent state offsets, input changes, bus faults, and unit trips.</p>
-      <p lang="ja">外乱は <code>EventODE</code> で記述します。イベントでは、状態のオフセット、入力の変化、母線の地絡、機器の解列を表せます。</p>
+      <p lang="en">Use a <code>Scenario</code> to describe disturbances. A scenario holds timed disturbances: state offsets, input changes, bus faults, unit trips, and branch openings. Add it to the network, then simulate it.</p>
+      <p lang="ja">外乱は <code>Scenario</code> で記述します。1つのシナリオは、時刻を指定した外乱（状態のオフセット、入力の変化、母線の地絡、機器の解列、ブランチの開放）を保持します。シナリオをネットワークに追加してから、シミュレーションします。</p>
 <pre><code>net = network.IEEE14bus;
-fault = EventODE("fault", net, ...
-    "FaultBus", "B008", ...
-    "TimeSpan", [3, 3.1]);
+sc = Scenario("fault", Time=[0, 50]);
+sc.add_fault("B008", [3, 3.1]);           % ground fault from 3 s to 3.1 s
+sc.add_open_branch("EL013", [3.1, 50]);   % then a line opened until the end
+net.add_scenario(sc);
 
-sol = net.simulate([0, 50], fault);
+sol = net.simulate(sc);                   % the Time of the scenario
+verdict = sc.judge(sol);                  % "stable", "out-of-step" or "incomplete"
 xsol = sol.odeResults;
 
 figure;
@@ -506,8 +511,10 @@ pss = controller.pss.PSS1("pss1");
 net.a_Bus{1}.a_Component{1}.add_local_controller(avr, pss);
 net.initialize();
 
-fault = EventODE("fault", net, "FaultBus", "B008", "TimeSpan", [3, 3.01]);
-sol = net.simulate([0, 50], fault);</code></pre>
+sc = Scenario("fault");
+sc.add_fault("B008", [3, 3.01]);
+net.add_scenario(sc);
+sol = net.simulate([0, 50], sc);</code></pre>
 
       <hr style="margin: 50px 0; border: 0; border-top: 1px solid var(--line);">
       

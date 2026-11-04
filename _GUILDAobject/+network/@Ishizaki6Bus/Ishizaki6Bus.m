@@ -19,9 +19,10 @@ classdef Ishizaki6Bus < PowerNetwork
 % net = network.Ishizaki6Bus();                % R = X on lines 4-5, 5-6; no 2-3, 4-6
 % net = network.Ishizaki6Bus(0.1, line="None"); % R = 0.1*X; all 7 lines
 % res = net.calculate_powerflow();
-% ev  = EventODE("offset", net, "TimeSpan", 1, "OffsetUnit", "SG1B001", ...
-%                   "OffsetState", "delta", "OffsetValue", 0.1);
-% sol = net.simulate([0,10], ev);
+% sc  = Scenario("offset");
+% sc.add_offset("SG1B001", "delta", 0.1, 1);
+% net.add_scenario(sc);
+% sol = net.simulate([0,10], sc);
 % ```
 %
 % See also network.Txt3Bus

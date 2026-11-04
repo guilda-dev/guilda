@@ -1,0 +1,13 @@
+Section,Scenario,Fault,FaultBus,Card,OpenBranch,FromBus,ToBus,Circuits,ReportStable,Report
+peak,A,1-circuit 3LG-O,B1040,1100,EL010,B1060,B1040,1,0,3-swing out of step (9.0 s) [G1 and others]
+peak,B,1-circuit 3LG-O,B1220,1420,EL042,B1220,B1240,1,0,divergent oscillation
+peak,C,1-circuit 3LG-O,B1460,1790,EL079,B1450,B1460,1,1,stable
+peak,D,1-circuit 3LG-O,B1340,1610,EL061,B1340,B1360,1,1,stable
+peak,E,2-circuit 3LG-O,B1130,1270,EL027,B1130,B1220,2,0,5-swing out of step (18.5 s) [G1 and others]
+peak,F,2-circuit 3LG-O,B1490,1890,EL089,B1490,B1530,2,1,stable
+night,A,1-circuit 3LG-O,B1040,1100,EL010,B1060,B1040,1,0,2-swing out of step (4.7 s) [G1 and others]
+night,B,1-circuit 3LG-O,B1220,1420,EL042,B1220,B1240,1,1,stable
+night,C,1-circuit 3LG-O,B1460,1790,EL079,B1450,B1460,1,1,stable
+night,D,1-circuit 3LG-O,B1340,1610,EL061,B1340,B1360,1,0,2-swing out of step (7.0 s) [G1 and others]
+night,E,2-circuit 3LG-O,B1130,1270,EL027,B1130,B1220,2,1,stable
+night,F,2-circuit 3LG-O,B1490,1890,EL089,B1490,B1530,2,1,stable

@@ -1,0 +1,40 @@
+<!--This is an XML file containing error messages related to the class 'Scenario'.-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="InvalidInputType">Disturbance "{0}" of scenario "{1}": an InputValue is of class {2}. Give numbers or function handles f(t).</entry>
+        <entry key="InvalidNargin">Disturbance "{0}" of scenario "{1}": the number of input arguments of an InputValue function is invalid. Specify a function of one argument, the time t since the disturbance start, e.g. @(t) 0.1*t.</entry>
+        <entry key="UnknownInputUnit">Disturbance "{0}" of scenario "{1}": InputUnit "{2}" is not a component of network "{3}". Specify the tag of a component connected to a bus (see string(net.a_Bus) and the component tags).</entry>
+        <entry key="UnknownInputName">Disturbance "{0}" of scenario "{1}": InputName {2} is not an input of "{3}". Available inputs: {4}.</entry>
+        <entry key="UnknownFaultBus">Disturbance "{0}" of scenario "{1}": FaultBus {2} is not a bus of network "{3}". Specify bus tags (see string(net.a_Bus)).</entry>
+        <entry key="UnknownTripUnit">Disturbance "{0}" of scenario "{1}": TripUnit {2} is not a component or global controller of network "{3}". Specify the tag of a component connected to a bus or of a global controller; a local controller cannot be tripped.</entry>
+        <entry key="UnknownOpenBranch">Disturbance "{0}" of scenario "{1}": OpenBranch {2} is not a branch of network "{3}". Specify branch tags (see string(net.a_Branch)).</entry>
+        <entry key="UnknownOffsetUnit">Disturbance "{0}" of scenario "{1}": OffsetUnit "{2}" is not a component of network "{3}". Specify the tag of a component connected to a bus (see string(net.a_Bus) and the component tags).</entry>
+        <entry key="UnknownOffsetState">Disturbance "{0}" of scenario "{1}": OffsetState {2} is not a state of "{3}". Available states: {4}.</entry>
+        <entry key="InvalidTimeSpan">Disturbance "{0}" of scenario "{1}": TimeSpan {2} is invalid. Specify real numbers without NaN, with t_start not later than t_end.</entry>
+        <entry key="ZeroLengthTimeSpan">Disturbance "{0}" of scenario "{1}": TimeSpan {2} has no duration, but a fault, trip, branch opening or input needs one. Specify [t_start, t_end] with t_start earlier than t_end, e.g. [1, 1.05]. Only an offset can use a single time.</entry>
+        <entry key="ValueCountMismatch">Disturbance "{0}" of scenario "{1}": {2} has {3} element(s) for {4} element(s) of {5}. Give at least one name, and one value per name or a single value for all names.</entry>
+        <entry key="OutsideTimeSpan">Disturbance "{0}" of scenario "{1}" (TimeSpan {2}) lies entirely outside the simulation time {3} and has no effect. Change TimeSpan or the simulation time.</entry>
+        <entry key="OtherNetwork">Scenario "{0}" does not belong to network "{1}" (it belongs to {2}). Add it with net.add_scenario(sc), or add a copy with net.add_scenario(sc.copy()).</entry>
+        <entry key="DuplicateTag">Scenario "{1}" already has a disturbance with the tag "{0}". Give each disturbance its own tag.</entry>
+        <entry key="DuplicateRunTag">Several disturbances of this run have the tag "{0}" (scenarios {1}). The tags name the columns of output.phases: give the disturbances of scenarios simulated together different tags.</entry>
+        <entry key="ReservedTag">The disturbance tag "{0}" of scenario "{1}" is reserved for the phase table. Use another tag; t1, t2, Properties, Row, Variables, an empty tag, and NoAction followed by digits are not available.</entry>
+        <entry key="ScenarioArray">Give scenarios as separate arguments, e.g. net.simulate(time, sc1, sc2), not as an array.</entry>
+        <entry key="UnknownOption">Scenario "{0}": {1} is not an option of net.simulate. Options: {2}.</entry>
+        <entry key="InvalidTime">The Time of a scenario must be [] or [t0, tend] with finite values and t0 &lt; tend: {0}.</entry>
+        <entry key="DisturbanceNotFound">Scenario "{1}" has no disturbance with the tag {0}.</entry>
+        <entry key="NoRotorAngle">The result has no component with the state delta, so no rotor angle can be judged. Give a Judge of your own (sc.Judge = @(result) ...).</entry>
+        <entry key="UnknownReference">Reference "{0}" of out_of_step is not "slack", "COI" or a component of the result with the state delta ({1}).</entry>
+        <entry key="NoSlackGenerator">Reference "slack": the slack bus {0} of network "{1}" has no component with the state delta. Give Reference="COI" or the tag of a generator.</entry>
+        <entry key="NoInertia">Reference "COI": the component "{0}" has no dynamics parameter M (inertia) to weight its rotor angle. Give Reference="slack" or the tag of a generator.</entry>
+        <entry key="CsvNotFound">The scenario file "{0}" does not exist.</entry>
+        <entry key="CsvMissingColumn">The scenario file "{0}" has no column Scenario. The columns are Scenario, Description, ScenarioTimeStart, ScenarioTimeEnd, Tag, TimeStart, TimeEnd, FaultBus, TripUnit, OpenBranch, OffsetUnit, OffsetState, OffsetValue, InputUnit, InputName, InputValue.</entry>
+        <entry key="CsvUnknownColumn">The scenario file "{0}" has the unknown column(s) {1}; they are ignored.</entry>
+        <entry key="CsvConflict">Scenario "{0}" of "{1}": the rows give different values of {2}. Give it on one row, or the same value on every row of the scenario.</entry>
+        <entry key="CsvInvalidValue">Row {0} of "{1}": {2} = "{3}" is not a number or a list of numbers separated by ";".</entry>
+        <entry key="CsvFileExists">The file "{0}" already exists. Give Overwrite=true to replace it.</entry>
+        <entry key="CsvFunctionHandle">Disturbance "{0}" of scenario "{1}": an InputValue is a function handle, which a CSV file cannot hold. Use numbers, or keep the scenario in a MAT-file.</entry>
+        <entry key="CsvNotScenario">Scenario.export_csv takes a Scenario or a cell of Scenario objects (e.g. net.a_Scenario).</entry>
+        <entry key="CsvNotSaved">Scenario "{0}": {1} cannot be written to a CSV file and is not saved.</entry>
+        <entry key="CsvInvalidNetwork">Network must be a PowerNetwork, not a {0}.</entry>
+    </message>
+</rsccat>

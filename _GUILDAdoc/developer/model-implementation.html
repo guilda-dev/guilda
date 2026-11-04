@@ -61,7 +61,7 @@
         <tr>
           <td><code>key</code></td>
           <td><span lang="en">The key of <code>add_component</code></span><span lang="ja"><code>add_component</code> のキー</span></td>
-          <td><span lang="en">Where it attaches: <code>"avr"</code>, <code>"pss"</code>, or <code>"local"</code></span><span lang="ja">接続先: <code>"avr"</code>、<code>"pss"</code>、または <code>"local"</code></span></td>
+          <td><span lang="en">Where it attaches: <code>"avr"</code>, <code>"pss"</code>, <code>"local"</code>, or <code>"governor"</code></span><span lang="ja">接続先: <code>"avr"</code>、<code>"pss"</code>、<code>"local"</code>、または <code>"governor"</code></span></td>
           <td><span lang="en">A description only</span><span lang="ja">説明のみ</span></td>
         </tr>
         <tr>
@@ -112,7 +112,7 @@
         </tr>
         <tr>
           <td><span lang="en">Inputs come from</span><span lang="ja">入力の取得元</span></td>
-          <td><span lang="en">Controllers and input events, by name</span><span lang="ja">制御器と入力イベント（名前で接続）</span></td>
+          <td><span lang="en">Controllers and input disturbances, by name</span><span lang="ja">制御器と入力外乱（名前で接続）</span></td>
           <td><span lang="en">By name <code>sv_u</code>: an output of the component, then a state, then an output of the nested controller. Other names stay at the equilibrium.</span><span lang="ja">名前 <code>sv_u</code> によって、機器の出力、次に状態、次に入れ子の制御器の出力の順に探します。それ以外の名前は平衡点の値のままです。</span></td>
           <td><span lang="en">The states named <code>sv_u</code> of each controlled unit</span><span lang="ja">各制御対象の、<code>sv_u</code> という名前の状態</span></td>
         </tr>
@@ -131,7 +131,7 @@
         <tr>
           <td><span lang="en">Example</span><span lang="ja">例</span></td>
           <td><code>component.generator.classical</code></td>
-          <td><code>controller.avr.AVR_ST1</code>, <code>controller.local_LQR</code></td>
+          <td><code>controller.avr.AVR_ST1</code>, <code>controller.governor.IEEJ_LPT1</code>, <code>controller.local_LQR</code></td>
           <td><code>controller.agc.broadcast_PI_AGC</code></td>
         </tr>
       </tbody>
@@ -161,7 +161,8 @@
       <li><span lang="en"><code>sv_u</code> must not contain the port names <code>Vre</code>, <code>Vim</code>, <code>Ire</code>, <code>Iim</code>.</span><span lang="ja"><code>sv_u</code> にポート名 <code>Vre</code>、<code>Vim</code>、<code>Ire</code>、<code>Iim</code> を含めてはいけません。</span></li>
       <li><span lang="en"><code>net.initialize</code> evaluates the point that <code>get_equilibrium</code> returns. A wrong size or an error in a model function stops it (<code>GUILDA:PowerNetwork:InitializeEquilibriumSize</code>, <code>InitializeModelSize</code>, <code>InitializeModelFailed</code>). A point where the state moves gives the warning <code>GUILDA:PowerNetwork:EquilibriumResidual</code>.</span><span lang="ja"><code>net.initialize</code> は <code>get_equilibrium</code> が返す点を評価します。サイズの誤りやモデル関数のエラーがあると停止します（<code>GUILDA:PowerNetwork:InitializeEquilibriumSize</code>、<code>InitializeModelSize</code>、<code>InitializeModelFailed</code>）。状態が動く点では警告 <code>GUILDA:PowerNetwork:EquilibriumResidual</code> が出ます。</span></li>
       <li><span lang="en">A controller can use the input names <code>"Xall"</code> and <code>"Yall"</code> to observe all the states or outputs of the component. It must then override <code>set_inputs</code>; see <code>controller.local_LQR</code>. The names <code>"X"</code> and <code>"Y"</code> are errors.</span><span lang="ja">制御器は入力名 <code>"Xall"</code> と <code>"Yall"</code> を使って、機器のすべての状態またはすべての出力を観測できます。その場合は <code>set_inputs</code> をオーバーライドする必要があります（<code>controller.local_LQR</code> を参照）。<code>"X"</code> と <code>"Y"</code> という名前はエラーになります。</span></li>
-      <li><span lang="en">A component has one chain of local controllers: one <code>"avr"</code> or <code>"local"</code> controller, and a <code>"pss"</code> under an AVR. A new one replaces the old one with the warning <code>GUILDA:Component:ReplaceController</code>.</span><span lang="ja">機器が持つローカル制御器の連なりは1つで、<code>"avr"</code> または <code>"local"</code> の制御器が1つと、AVR の下の <code>"pss"</code> です。新しく接続すると、警告 <code>GUILDA:Component:ReplaceController</code> とともに古いものが置き換えられます。</span></li>
+      <li><span lang="en">A component has two slots for local controllers: one <code>"avr"</code> or <code>"local"</code> controller (with a <code>"pss"</code> under an AVR), and one <code>"governor"</code> beside it. <code>a_LocalController</code> and the variables list them in this order, whatever the order of attachment. A new controller replaces the one in its slot with the warning <code>GUILDA:Component:ReplaceController</code>.</span><span lang="ja">機器にはローカル制御器の枠が2つあります。<code>"avr"</code> または <code>"local"</code> の制御器1つ（AVR の下には <code>"pss"</code>）と、その横の <code>"governor"</code> 1つです。<code>a_LocalController</code> と変数の並びは、接続した順序によらずこの順になります。新しく接続すると、警告 <code>GUILDA:Component:ReplaceController</code> とともに同じ枠の制御器が置き換えられます。</span></li>
+      <li><span lang="en">The two top-level controllers of a component must drive different inputs. A governor and a <code>"local"</code> controller that both drive <code>Pmech</code> (such as <code>controller.local_LQR</code> on all the inputs) stop with <code>GUILDA:Component:ControllerOutputOverlap</code>. A controller whose outputs follow the component (as <code>local_LQR</code> does) overrides <code>driven_inputs</code>, so that the check runs before the attachment.</span><span lang="ja">機器の最上位の2つの制御器は、異なる入力を駆動しなければなりません。ガバナと、どちらも <code>Pmech</code> を駆動する <code>"local"</code> 制御器（すべての入力に対する <code>controller.local_LQR</code> など）を組み合わせると、<code>GUILDA:Component:ControllerOutputOverlap</code> で停止します。出力が機器に合わせて決まる制御器（<code>local_LQR</code> など）は <code>driven_inputs</code> をオーバーライドし、接続の前にこの確認が行われるようにします。</span></li>
       <li><span lang="en"><code>getCompPQ(obj, x, V, u, param)</code>, with <code>V</code> as <code>[abs; angle]</code>, is needed only by the continuation power flow with <code>UseInternalState=true</code>; without it, that analysis stops with <code>GUILDA:build_layout:MissingGetCompPQ</code>.</span><span lang="ja"><code>V</code> を <code>[abs; angle]</code> として受け取る <code>getCompPQ(obj, x, V, u, param)</code> は、<code>UseInternalState=true</code> の連続潮流計算でだけ必要です。ない場合、その解析は <code>GUILDA:build_layout:MissingGetCompPQ</code> で停止します。</span></li>
     </ul>
 
@@ -230,8 +231,10 @@ g2   = b2.add_component("gen-simple", "P",0.5, "parameter",para);
 b3.add_component("load-impedance", "P",-1.0, "Q",-0.2);
 net.initialize();
 
-ev  = EventODE("fault", net, "TimeSpan",[1,1.05], "FaultBus",b3.str_tag);
-sim = net.simulate([0,10], ev);
+sc  = Scenario("fault");
+sc.add_fault(b3.str_tag, [1,1.05]);
+net.add_scenario(sc);
+sim = net.simulate([0,10], sc);
 sys = net.get_sys();
 </pre>
 
@@ -306,7 +309,7 @@ end
 pss = controller.pss.PSS1("p");
 g2.add_local_controller(avr, pss);
 net.initialize();
-sim = net.simulate([0,10], ev);
+sim = net.simulate([0,10], sc);
 </pre>
     <p lang="en">To detach it, call <code>g2.remove_local_controller(avr.str_tag, RemoveNested=true)</code>. The option also removes the PSS, and an AVR with a PSS cannot be removed without it.</p>
     <p lang="ja">取り外すには <code>g2.remove_local_controller(avr.str_tag, RemoveNested=true)</code> を呼びます。このオプションは PSS も取り外します。PSS の付いた AVR は、このオプションなしでは取り外せません。</p>
@@ -340,8 +343,8 @@ s.inputs          % Vref: "equilibrium (not connected)", Vpss: "output of CPp"
 
     <h3><span lang="en">Check the behavior</span><span lang="ja">挙動を確認する</span></h3>
     <ol class="dg-list is-numbered">
-      <li><div><span class="dg-item-title"><span lang="en">Stay at the equilibrium</span><span lang="ja">平衡点にとどまる</span></span><p lang="en"><code>net.simulate</code> without events keeps the states at <code>rv_Xequilibrium</code>.</p><p lang="ja">イベントなしの <code>net.simulate</code> で、状態が <code>rv_Xequilibrium</code> にとどまります。</p></div></li>
-      <li><div><span class="dg-item-title"><span lang="en">Survive a disturbance</span><span lang="ja">外乱に耐える</span></span><p lang="en">Run a fault and a trip with <code>EventODE</code>. <code>flag</code> is <code>1</code> when the simulation completes. A trip calls <code>get_equilibrium</code> with <code>I = P = Q = 0</code>.</p><p lang="ja"><code>EventODE</code> で地絡と解列（トリップ）を実行します。シミュレーションが完了すると <code>flag</code> は <code>1</code> になります。解列では <code>I = P = Q = 0</code> で <code>get_equilibrium</code> が呼ばれます。</p></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Stay at the equilibrium</span><span lang="ja">平衡点にとどまる</span></span><p lang="en"><code>net.simulate</code> without scenarios keeps the states at <code>rv_Xequilibrium</code>.</p><p lang="ja">シナリオなしの <code>net.simulate</code> で、状態が <code>rv_Xequilibrium</code> にとどまります。</p></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Survive a disturbance</span><span lang="ja">外乱に耐える</span></span><p lang="en">Run a fault and a trip with a <code>Scenario</code> (<code>add_fault</code>, <code>add_trip</code>). <code>flag</code> is <code>1</code> when the simulation completes. A trip calls <code>get_equilibrium</code> with <code>I = P = Q = 0</code>.</p><p lang="ja"><code>Scenario</code>（<code>add_fault</code>、<code>add_trip</code>）で地絡と解列（トリップ）を実行します。シミュレーションが完了すると <code>flag</code> は <code>1</code> になります。解列では <code>I = P = Q = 0</code> で <code>get_equilibrium</code> が呼ばれます。</p></div></li>
       <li><div><span class="dg-item-title"><span lang="en">Look at the linear model</span><span lang="ja">線形モデルを調べる</span></span><p lang="en"><code>eig(net.get_sys())</code>. A network of synchronous machines has an eigenvalue near zero from the common rotation of the rotor angles. The other eigenvalues should be in the left half plane unless you expect otherwise. An unstable result can also come from the rest of the test network, so compare with an existing model on the same network.</p><p lang="ja"><code>eig(net.get_sys())</code> を調べます。同期機からなるネットワークには、回転子角が一斉に回転することによる0付近の固有値があります。それ以外の固有値は、意図した場合を除いて左半平面にあるはずです。不安定な結果はテスト用ネットワークのほかの部分から生じることもあるため、同じネットワーク上の既存のモデルと比較してください。</p></div></li>
       <li><div><span class="dg-item-title"><span lang="en">Compare with a known model</span><span lang="ja">既知のモデルと比較する</span></span><p lang="en">When an existing class reduces to your model, the eigenvalues should agree, as below.</p><p lang="ja">既存のクラスが新しいモデルに帰着する場合は、以下のように固有値が一致するはずです。</p></div></li>
     </ol>

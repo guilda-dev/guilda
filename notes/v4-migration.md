@@ -85,10 +85,12 @@
 | `CPFResult` | `ResultCPF` |
 | `odeSimulator` | `SolverODE` |
 | `odeSimulationResult` | `ResultODE` |
-| `odeEventSet` | `EventODE` |
+| `odeEventSet` | `Scenario`(1.18) |
 | `odeProgress` | `ProgressODE` |
 | `odeLinearizer` | `SolverLIN` |
 | `LinearizationResult` | `ResultLIN` |
+
+イベントのクラスは、v3 の `odeEventSet` も v4 の開発途中の名前 `ODEevent` も `Scenario` に対応します。`ODEevent(tag, net, ...)` は互換の関数として残しています(1.18)。`EventODE` という名前は公開されておらず、別名もありません。
 
 次の名前は変わりません。
 
@@ -241,8 +243,8 @@ Outputs of several controllers on the same input add up. Scalar `alpha` /
 
 - `gc.PowerNetwork` is removed without a compat form (reading it is an
   error).
-- **Trip of a global controller** (`EventODE` naming it in the trip
-  units): its output is zero during the event (silent change, see the box
+- **Trip of a global controller** (a `Scenario` trip naming the
+  controller): its output is zero during the event (silent change, see the box
   at the top), and after the event it restarts from its equilibrium, like
   a tripped generator.
 - **Trip of a generator with a local controller** no longer fails with
@@ -613,33 +615,34 @@ Option names:
     `odeResult`, `rv_odeV`; `solver_ODE.simulate(net, ...)` is replaced by
     the internal `solve(net, time, events, options)`.
   - **Event checks.** Before the integration, an event's `InputUnit` must
-    be a component of the network (`GUILDA:EventODE:UnknownInputUnit`),
-    each `InputName` an input of it (`GUILDA:EventODE:UnknownInputName`,
+    be a component of the network (`GUILDA:Scenario:UnknownInputUnit`),
+    each `InputName` an input of it (`GUILDA:Scenario:UnknownInputName`,
     the message lists the inputs), and a function `InputValue` must take
     one argument, the time since the event start
-    (`GUILDA:EventODE:InvalidNargin`). Errors that used to fail inside
+    (`GUILDA:Scenario:InvalidNargin`). Errors that used to fail inside
     the integration now stop at once.
   - **イベントの検査の追加。** 次も積分の前に止まります。
 
     | ID | 条件 |
     |----|------|
-    | `GUILDA:EventODE:UnknownFaultBus` | `FaultBus` が系統の母線でない |
-    | `GUILDA:EventODE:UnknownTripUnit` | `TripUnit` が機器でも大域制御器でもない(ローカル制御器は解列できない) |
-    | `GUILDA:EventODE:UnknownOffsetUnit`, `UnknownOffsetState` | `OffsetUnit` が機器でない、`OffsetState` がその状態でない |
-    | `GUILDA:EventODE:InvalidTimeSpan` | `TimeSpan` に NaN がある、または順序が逆 |
-    | `GUILDA:EventODE:ValueCountMismatch` | 値の数が `OffsetState` や `InputName` の数と合わない(1 つの値は全部に共通) |
-    | `GUILDA:EventODE:OtherNetwork` | 別の系統で作ったイベント(構成が同じでも)。実行する系統で作り直す |
-    | `GUILDA:EventODE:DuplicateTag`, `ReservedTag` | タグの重複、または `t1`, `t2`, `Properties`, `Row`, `Variables`, 空, `NoAction<数字>` |
-    | `GUILDA:EventODE:EventArray` | イベントを配列で渡した。`net.simulate(time, ev1, ev2)` のように別の引数で渡す |
+    | `GUILDA:Scenario:UnknownFaultBus` | `FaultBus` が系統の母線でない |
+    | `GUILDA:Scenario:UnknownTripUnit` | `TripUnit` が機器でも大域制御器でもない(ローカル制御器は解列できない) |
+    | `GUILDA:Scenario:UnknownOffsetUnit`, `UnknownOffsetState` | `OffsetUnit` が機器でない、`OffsetState` がその状態でない |
+    | `GUILDA:Scenario:InvalidTimeSpan` | `TimeSpan` に NaN がある、または順序が逆 |
+    | `GUILDA:Scenario:ValueCountMismatch` | 値の数が `OffsetState` や `InputName` の数と合わない(1 つの値は全部に共通) |
+    | `GUILDA:Scenario:OtherNetwork` | 別の系統で作ったイベント(構成が同じでも)。実行する系統で作り直す |
+    | `GUILDA:Scenario:DuplicateTag`, `ReservedTag` | タグの重複、または `t1`, `t2`, `Properties`, `Row`, `Variables`, 空, `NoAction<数字>` |
+    | `GUILDA:Scenario:ScenarioArray` | シナリオを配列で渡した。`net.simulate(time, sc1, sc2)` のように別の引数で渡す |
 
     イベントは系統のタグや状態数の写しを持たなくなったので、作成後に大域制御器を足すなど構成を変えても、そのイベントは使えます。
   - **`simulate` の時間の検査。** `time` は有限で `t0 < tend` の `[t0, tend]`、またはイベントの時間幅を使う `[]` だけです。他の値は `GUILDA:PowerNetwork:SimulateTime` で止まり、理由を示します。以前は 3 点以上の時間を渡すと無言で短い区間だけを計算することがありました。時刻の列が欲しいスクリプトは `res.get_point` で読み出してください。引数の順序(時間、イベント、Name-Value)の誤りは `GUILDA:PowerNetwork:SimulateArguments` で止まります。
-  - **初期条件の失敗の説明。** 区間の開始の初期条件が解けない場合は、これまでどおり `flag = -1` で `output.exception` が `GUILDA:SolverODE:InitialConditionFailed` です。`decic` の収束失敗では、`output.message` が理由と対処を示すようになりました。よくある原因は、故障で供給できなくなる定電力負荷(`"load-power"`)です。その負荷を `"load-impedance"` にするか、別の母線を故障させてください。同じ故障が定インピーダンス負荷なら完走することをテストで確認しています。代数変数だけでは解けず微分状態も動かしたときは `GUILDA:SolverODE:InitialConditionRelaxed` で警告します。
+  - **初期条件の失敗の説明。** 区間の開始の初期条件が解けない場合は、これまでどおり `flag = -1` で `output.exception` が `GUILDA:SolverODE:InitialConditionFailed` です。`output.message` が理由と対処を示すようになりました。よくある原因は、故障で供給できなくなる定電力負荷(`"load-power"`)です。その負荷を `"load-impedance"` にするか、別の母線を故障させてください。同じ故障が定インピーダンス負荷なら完走することをテストで確認しています。
+  - **区間の開始では微分状態を動かしません。** 区間の境界で微分状態はそのまま引き継ぎ、代数変数だけを新しい区間の網で解き直します(解析的なヤコビアンによるニュートン法。`decic` とソルバ自身の初期条件の計算は使いません)。解けなければ `InitialConditionFailed` で止まり、ソルバが微分状態を動かした場合も止まります。以前は、解けないと微分状態も動かして続け、`GUILDA:SolverODE:InitialConditionRelaxed` を警告するだけでした(IEEJ WEST10 の B003 の地絡で回転子角が最大 2.16 rad 跳んでいました)。この警告と緩めた再計算は `8bd906c`(`fix/ode-initial-condition-jump`、統合は `bf7512b`)で削除しました。
   - An event whose `TimeSpan` lies entirely outside the simulation time
-    has no effect and warns `GUILDA:EventODE:OutsideTimeSpan` (before:
+    has no effect and warns `GUILDA:Scenario:OutsideTimeSpan` (before:
     ignored silently).
   - **A fault, trip or input needs a duration.** A scalar `TimeSpan` or
-    `[t, t]` stops with `GUILDA:EventODE:ZeroLengthTimeSpan` before the
+    `[t, t]` stops with `GUILDA:Scenario:ZeroLengthTimeSpan` before the
     integration (before: the event lasted until the next phase boundary, so
     it depended on unrelated events). Give `[t_start, t_end]`. An offset alone
     may still use one time.
@@ -931,6 +934,32 @@ there.
 
   The old output order cannot be detected and is not converted.
 
+### 1.18 シナリオ(`ODEevent` → `Scenario`)
+
+外乱のイベント `ODEevent` は `Scenario` に置き換わりました。1 つのシナリオが 1 回のシミュレーションの外乱の一覧(外乱ごとに時間区間)を持ち、シミュレーション時間 `Time`、`simulate` のオプション `Options`、説明 `Description`、判定関数 `Judge` も保存できます。シナリオは系統が所有します(`net.a_Scenario`、親の参照 `sc.a_PowerNetwork`)。
+
+| v3 / 旧 v4 | v4 |
+|----|----|
+| `ev = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008")` | `sc = Scenario("fault"); sc.add_fault("B008", [1,1.05]); net.add_scenario(sc)` |
+| `ODEevent(..., "TripUnit", u)` / `"OpenBranch", b` | `sc.add_trip(u, [t1,t2])` / `sc.add_open_branch(b, [t1,t2])` |
+| `ODEevent(..., "OffsetUnit", c, "OffsetState", x, "OffsetValue", v)` | `sc.add_offset(c, x, v, t)` |
+| `ODEevent(..., "InputUnit", c, "InputName", n, "InputValue", v)` | `sc.add_input(c, n, v, [t1,t2])` |
+| 複数の種類を 1 つのイベントに | `sc.add_disturbance(tag, TimeSpan=..., FaultBus=..., OpenBranch=..., ...)`(旧 `ODEevent` と同じ Name-Value) |
+| `net.simulate([0,20], ev_fault, ev_open)` | 1 つのシナリオに 2 つの外乱を入れて `net.simulate(sc)`(`sc.Time` を使う)。`net.simulate(time, sc1, sc2, ...)` も使えます |
+| 安定判別のスクリプト | `verdict = sc.judge(result)`(既定は `Scenario.out_of_step`) |
+
+- **所有。** `net.add_scenario(sc)` で追加、`net.remove_scenario(tag)` で外します(親の参照も消えます)。タグは系統の中で一意です。他の系統のシナリオを追加すると移動します(親は 1 つ)。別の系統でも使うときは `sc.copy()`(親のない複製)を追加します。シナリオの追加や編集は平衡点を古くしません(編集履歴にも記録しません)。
+- **タグの検査。** 外乱は母線、ブランチ、機器を(番号ではなく)タグで指します。系統に属するシナリオへ外乱を足すとき、シナリオを系統へ追加するとき、シミュレーションの開始時(そのときの系統で)に検査します。検査に失敗すると何も追加しません。属していないシナリオの `simulate` は `GUILDA:Scenario:OtherNetwork` で止まります。
+- **時間と設定。** `net.simulate(sc)` または `time = []` は `sc.Time`、なければ外乱の時間幅を使います。オプションの優先順位は `net.solver_ODE` < `sc.Options` < 呼び出しの Name-Value です。一緒に実行するシナリオの `Time` や `Options` が食い違うときは、呼び出しで与えないと `GUILDA:PowerNetwork:ScenarioTimeConflict` / `ScenarioOptionConflict` で止まります。
+- **判定。** `sc.judge(result)` は `sc.Judge(result)` を返します。既定の `Scenario.out_of_step` は、状態 `delta` を持つ機器(同期発電機)の回転子角の基準からの差の絶対値が `Threshold`(既定 360 度)を超えたら `"out-of-step"`、超えずに `flag ~= 1` なら `"incomplete"`、それ以外は `"stable"` を返します。基準 `Reference` は既定がスラック母線の発電機で、`"COI"`(慣性 `M` の重み付き重心)や機器のタグも指定できます。結果は構造体(`Verdict`, `Time`, `Units`, `MaxAngle`, `Reference`, `Threshold`)です。`net.simulate` の `output` には判定を入れません(複数のシナリオを一緒に実行できるため)。文献との比較や一致数の集計は GUILDA には入れず、検証用スクリプトで行います。
+- **CSV。** `Scenario.import_csv(path, Network=net)` が 1 つのファイルの複数のシナリオを読み(`Scenario` 列が同じ行が 1 つのシナリオ、1 行が 1 つの外乱)、`Scenario.export_csv(path, net.a_Scenario)` が同じ形式で書きます。列は `Scenario`, `Description`, `ScenarioTimeStart`, `ScenarioTimeEnd`, `Tag`, `TimeStart`, `TimeEnd`, `FaultBus`, `TripUnit`, `OpenBranch`, `OffsetUnit`, `OffsetState`, `OffsetValue`, `InputUnit`, `InputName`, `InputValue` で、リストは `;` 区切りです。`InputValue` の関数ハンドルは CSV に書けず `GUILDA:Scenario:CsvFunctionHandle` で止まります(MAT ファイルに保存してください)。`Options` と既定以外の `Judge` は保存せず、`GUILDA:Scenario:CsvNotSaved` で警告します。
+- **メッセージ ID。** `GUILDA:ODEevent:*` は `GUILDA:Scenario:*` になりました(キーは同じ)。`EventArray` は `ScenarioArray` に、一緒に実行するシナリオ間のタグの重複は `DuplicateRunTag` に、シナリオ内のタグの重複は追加の時点の `DuplicateTag` になりました。`add_scenario` / `remove_scenario` の誤りは `GUILDA:PowerNetwork:ScenarioTagInUse`, `ScenarioNotFound`, `NotScenario` です。
+- **互換。** `ODEevent(tag, net, Name=Value)` は `_VersionSupport/ODEevent.m` で動き続けます(1 セッションに 1 回 `GUILDA:Deprecated:ODEevent` を警告)。タグ `tag` のシナリオに同じタグの外乱を 1 つ入れて `net` に追加し、それを返します。旧版との違い:
+  - 返り値は `Scenario` です。`ev.TimeSpan` などの旧プロパティはなく、`ev.tab_disturbance` の列として読めます(変更はできません)。
+  - タグ、状態、入力の検査は作成の時点で行います(以前は `simulate` の時点)。
+  - 同じ系統で同じタグの `ODEevent` を作り直すと、前のもの(`ODEevent` で作ったもの)は系統から外れ、その系統で実行できなくなります(ループでシナリオが溜まらないため)。`add_scenario` で追加した同じタグのシナリオがあるときは `GUILDA:PowerNetwork:ScenarioTagInUse` で止まります。
+- **内部。** 区間ごとのデータ(有効な外乱、地絡、解列、開放ブランチ、オフセット、入力関数)は `solve` の冒頭で `Scenario.compile` が 1 回だけ作ります(EV5)。モデルの作業データを書くのは `SolverODE` だけです。結果は以前の `ODEevent` と同じ(`rv_t`, `rm_variable`, `rm_I`, `output.phases` が代表的な地絡、解列、オフセット、入力、開放の例でビット単位で一致)です。
+
 ---
 
 ## 2. Changes so far — model authors
@@ -982,8 +1011,8 @@ there.
   it adds (see 1.6). `LocalController.get_dx_algebraic` returns
   `[DAEvec, y]`; the third output `y_name` is removed (the names are `sv_y`).
 - **Working data of a simulation.** `LocalController.l_isConnect` is removed.
-  `Component.rv_Xoffset` / `rv_Uoffset` can only be written by `SolverODE`
-  and `EventODE`, and are empty after a run. `rv_Uoffset` is also empty
+  `Component.rv_Xoffset` / `rv_Uoffset` can only be written by `SolverODE`,
+  and are empty after a run. `rv_Uoffset` is also empty
   during a run for a component without an input event, so do not call it
   from a model.
 - **モデルへの要求の明文化。**
@@ -1065,6 +1094,7 @@ and simulation results in the order of `get_variable_map`. Open follow-ups
 | `initialize` values `"powerflow calculation"` / `"optimal powerflow"` / `"calculate from Xequilibrium"` | `GUILDA:Deprecated:InitializeMethodValue` | warning; become `"powerflow"` / `"OPF"` / `"equilibrium"` |
 | `CsvNetHandler.import(path, net, Initialize=tf)` | `GUILDA:Deprecated:CsvNetHandlerImport` | warning; calls `PowerNetwork.import_csv` |
 | `CsvNetHandler.export(net, ModelName, savepath=d)` | `GUILDA:Deprecated:CsvNetHandlerExport` | warning; calls `net.export_csv(fullfile(d, "@"+ModelName))` |
+| `ODEevent(tag, net, Name=Value)` | `GUILDA:Deprecated:ODEevent` | 警告。外乱 1 つの `Scenario` を作って `net` に追加して返す(1.18) |
 
 Not kept: the v3 second output `lin` of `get_sys`, the v3 meaning of the
 second output of `simulate`, and the v3 output order of `initialize` (see the
@@ -1139,6 +1169,7 @@ settings (an untagged line, needed by the `get_config` hook).
 | `v3_nonunit_dynamic.m` | `NonUnit` の状態のある母線のエラー |
 | `v3_user_config.m` | user settings key `TimeSimulation.Reporter` → `Progress` |
 | `v3_initialize_args.m` | `initialize` option `methods` and old method values |
+| `ODEevent.m` | 旧イベント `ODEevent(tag, net, ...)`。外乱 1 つの `Scenario` を `net` に追加して返す |
 
 ### Adding a compat form (stages 2 and 3)
 

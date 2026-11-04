@@ -1,6 +1,8 @@
 # For Developer のページ作成で見つかったコードの問題
 
 > 基準コミットは `765663b`(統合ブランチ `refactor/design-alignment`、2026-11-04)です。For Developer の「クラス」(`_GUILDAdoc/developer/class-*.html`)と「機能」(`_GUILDAdoc/developer/feature-*.html`)のページを書く途中で、コードを追って見つかった点を集めました。HTML のページは時点に依存しない説明にするので、ここに分けて記録します。このノートではコードを変更していません。修正するかどうかは保守者が決めます。
+>
+> **追記(2026-11-04、`feature/ieej-report-models` への統合時):** このブランチでは `EventODE` は `Scenario`(`_auxiliary/@Scenario/`)に置き換わり、`EventODE` クラスはありません。SIM-3 と「確認して外した項目」の `EventODE` の行番号は基準コミットのものです。現在のコードでは、解列の状態の除外は `SolverODE.initial_condition`(`_auxiliary/@SolverODE/SolverODE.m`)、オフセットの組み立ては `Scenario/compile.m` の `phase_offsets` にあります。SIM-3 の内容が現在のコードでも成り立つかは[未確認]です。
 
 **ラベル**
 

@@ -32,6 +32,7 @@
 ## 他の内容の置き場所
 
 - `_GUILDAdoc/` の HTML: 利用者と将来の開発者向けの恒久的な文書です。GUILDA の仕組みを説明し、この作業の進捗は書きません。
+- 同梱ネットワークと文献の結果の比較: `_GUILDAverification/<network>/`(条件、モデルの違い、一致数の日付つきの記録は各 `README.md`)。
 - 新しいクラス、機能、修正の利用者向けのお知らせ: ホームタブの Update log(`_GUILDAdoc/database/list_UpdateLog.js`)。
 
 このフォルダは、再設計のリリース時に削除するか、リリースノートと文書へまとめます。
