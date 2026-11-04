@@ -1,0 +1,45 @@
+Scenario,Section,Card,From,To,Circuits,Report,ReportVerdict
+peak_card11_1cct,peak,11,11,21,1,first-swing out-of-step [G1],out-of-step
+peak_card12_1cct,peak,12,21,22,1,stable,stable
+peak_card12_2cct,peak,12,21,22,2,first-swing out-of-step [G1],out-of-step
+peak_card15_2cct,peak,15,23,24,2,multi-swing out-of-step (3 s) [G7],out-of-step
+peak_card18_1cct,peak,18,13,25,1,multi-swing out-of-step (5 s) [G10 and others],out-of-step
+peak_card18_2cct,peak,18,13,25,2,first-swing out-of-step [G10 and others],out-of-step
+peak_card19_1cct,peak,19,25,26,1,multi-swing out-of-step (5 s) [G10 and others],out-of-step
+peak_card19_2cct,peak,19,25,26,2,first-swing out-of-step [G10 and others],out-of-step
+peak_card20_1cct,peak,20,26,27,1,stable,stable
+peak_card20_2cct,peak,20,26,27,2,stable,stable
+peak_card22_2cct,peak,22,28,26,2,multi-swing out-of-step (7 s) [G4 and others],out-of-step
+peak_card24_1cct,peak,24,15,28,1,stable,stable
+peak_card24_2cct,peak,24,15,28,2,multi-swing out-of-step (3 s) [G7 and others],out-of-step
+peak_card28_2cct,peak,28,31,29,2,multi-swing out-of-step (3 s) [G6],out-of-step
+peak_card30_2cct,peak,30,31,32,2,stable,stable
+peak_card31_2cct,peak,31,32,33,2,stable,stable
+peak_card33_1cct,peak,33,35,34,1,multi-swing out-of-step (6 s) [G6],out-of-step
+peak_card33_2cct,peak,33,35,34,2,first-swing out-of-step [G6],out-of-step
+peak_card35_1cct,peak,35,17,31,1,stable,stable
+peak_card35_2cct,peak,35,17,31,2,multi-swing out-of-step (7 s) [G7 and others],out-of-step
+peak_card36_1cct,peak,36,36,17,1,sustained oscillation,stable
+night_card11_1cct,night,11,11,21,1,stable,stable
+night_card12_1cct,night,12,21,22,1,stable,stable
+night_card12_2cct,night,12,21,22,2,stable,stable
+night_card15_2cct,night,15,23,24,2,stable,stable
+night_card18_1cct,night,18,13,25,1,stable,stable
+night_card18_2cct,night,18,13,25,2,stable,stable
+night_card19_1cct,night,19,25,26,1,stable,stable
+night_card19_2cct,night,19,25,26,2,stable,stable
+night_card20_1cct,night,20,26,27,1,stable,stable
+night_card20_2cct,night,20,26,27,2,stable,stable
+night_card22_2cct,night,22,28,26,2,stable,stable
+night_card24_1cct,night,24,15,28,1,stable,stable
+night_card24_2cct,night,24,15,28,2,stable,stable
+night_card28_1cct,night,28,31,29,1,first-swing out-of-step [G7 and others],out-of-step
+night_card28_2cct,night,28,31,29,2,first-swing out-of-step [G7 and others],out-of-step
+night_card30_1cct,night,30,31,32,1,multi-swing out-of-step (4 s) [G7 and others],out-of-step
+night_card30_2cct,night,30,31,32,2,first-swing out-of-step [G7 and others],out-of-step
+night_card31_2cct,night,31,32,33,2,stable,stable
+night_card33_1cct,night,33,35,34,1,stable,stable
+night_card33_2cct,night,33,35,34,2,multi-swing out-of-step (2 s) [G7 and others],out-of-step
+night_card35_1cct,night,35,17,31,1,first-swing out-of-step [G7 and others],out-of-step
+night_card35_2cct,night,35,17,31,2,first-swing out-of-step [G7 and others],out-of-step
+night_card36_1cct,night,36,36,17,1,stable,stable
