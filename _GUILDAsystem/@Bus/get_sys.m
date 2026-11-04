@@ -44,7 +44,7 @@ function [sys, varargout] = get_sys(obj, opt)
     if l_equilibrium
         sys = tools.cellfun(@(c) c.get_sys("port", "V2I"), obj.a_Component);
     else
-        rv_point  = LTIsolver.point_vector(obj, opt.Point);
+        rv_point  = SolverLIN.point_vector(obj, opt.Point);
         [~, c_idx] = obj.get_variable_map();
         sys = cell(size(obj.a_Component));
         for j = 1:numel(obj.a_Component)

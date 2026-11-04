@@ -1,7 +1,7 @@
 % F10 解析 API の基盤 (結果クラスの基底 / Name-Value オプションの解決 / v3 互換の仕組み)
 %
 %   tools.resolve_options : net.solver_* の既定値 + 呼び出し時の Name-Value 上書き
-%   AnalysisResult        : 解析結果クラスの基底 (Plot / Export の契約)
+%   ResultBase        : 解析結果クラスの基底 (Plot / Export の契約)
 %   legacy_output         : nargout が旧シグネチャと一致するとき旧形式の出力を返す
 %   COMPAT(v3) フック     : 互換コードは _VersionSupport/ に集め、本体は1行のフックだけ
 %
@@ -18,7 +18,7 @@ s_mapODE = struct("Tolerance", ["AbsoluteTolerance","RelativeTolerance"], ...
 
 
 %% Resolve options returns stored defaults without overrides
-solver = PFCsolver();
+solver = SolverPF();
 solver.MaxIterations = 42;
 for nv = {{}, struct()}
     [opt, sv_given] = tools.resolve_options(solver, s_mapPF, nv{1});
@@ -53,7 +53,7 @@ assert(opt.MaxIterations == 5)
 
 
 %% Resolve options sets several solver fields from one name
-solver = ODEsolver();
+solver = SolverODE();
 r_abs  = solver.AbsoluteTolerance;
 r_rel  = solver.RelativeTolerance;
 opt = tools.resolve_options(solver, s_mapODE, {"Tolerance", 1e-8, "Progress", "none"});
@@ -63,13 +63,13 @@ assert(solver.AbsoluteTolerance == r_abs && solver.RelativeTolerance == r_rel)
 
 
 %% Resolve options rejects an unknown name
-solver = PFCsolver();
+solver = SolverPF();
 try
     tools.resolve_options(solver, s_mapPF, {"Tolerence", 1e-6});
     error("DebugScript:noError", "未知の名前でエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
-    assert(contains(ME.message, "Tolerence") && contains(ME.message, "PFCsolver"))
+    assert(contains(ME.message, "Tolerence") && contains(ME.message, "SolverPF"))
     assert(contains(ME.message, "MaxIteration, Verbose, TimeSpan, WhenFailed"))   % 使える名前を示す
 end
 % 名前と値の組になっていない
@@ -85,21 +85,21 @@ solver = net.solver_PF;
 opt = tools.resolve_options(solver, s_mapPF, {"MaxIteration", 9});
 t0  = tic;
 res = DebugScript.helper.DummyResult(net, solver, opt, 1, struct("iterations", 4), t0, 1:3);
-assert(isa(res, "AnalysisResult") && isa(res, "auxiliary"))
-assert(res.str_solver == "PFCsolver" && res.options.MaxIterations == 9)
+assert(isa(res, "ResultBase") && isa(res, "auxiliary"))
+assert(res.str_solver == "SolverPF" && res.options.MaxIterations == 9)
 assert(res.flag == 1 && res.output.iterations == 4 && res.l_success)
 assert(res.r_elapsed >= 0 && res.r_elapsed < 60)     % tic の値から経過時間
 assert(res.str_network == "Grid")
 assert(res.a_PowerNetwork == net)                    % 系統は参照 (コピーではない)
 
 % 成否: 数値の flag は正なら成功、logical はそのまま
-res = DebugScript.helper.DummyResult([], "ODEsolver", struct(), -2, struct(), 0.5, []);
-assert(~res.l_success && res.r_elapsed == 0.5 && res.str_solver == "ODEsolver" && res.str_network == "")
+res = DebugScript.helper.DummyResult([], "SolverODE", struct(), -2, struct(), 0.5, []);
+assert(~res.l_success && res.r_elapsed == 0.5 && res.str_solver == "SolverODE" && res.str_network == "")
 res = DebugScript.helper.DummyResult([], "x", struct(), true, struct(), 0, []);
 assert(res.l_success)
 
 % 基底クラスは抽象クラス
-assert(error_id(@() AnalysisResult()) ~= "")
+assert(error_id(@() ResultBase()) ~= "")
 
 
 %% Analysis result Plot and Export contract
@@ -113,7 +113,7 @@ try
     res.Export("result.csv");
     error("DebugScript:noError", "未対応の Export でエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:AnalysisResult:Unsupported", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultBase:Unsupported", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "Export") && contains(ME.message, "DebugScript.helper.DummyResult"))
 end
 
@@ -189,12 +189,12 @@ assert(sum(str_file == fullfile("_GUILDAsystem", "@PowerNetwork", "calculate_pow
 assert(sum(str_file == fullfile("_GUILDAsystem", "@PowerNetwork", "optimize_powerflow.m")) == 2, join(str_hook, ", "))
 assert(sum(str_file == fullfile("_GUILDAsystem", "@PowerNetwork", "build_opf_problem.m")) == 1, join(str_hook, ", "))
 assert(sum(str_file == fullfile("_GUILDAsystem", "@PowerNetwork", "initialize.m")) == 1, join(str_hook, ", "))
-assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@CPFsolver", "CPFsolver.m")) == 1, join(str_hook, ", "))
+assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverCPF", "SolverCPF.m")) == 1, join(str_hook, ", "))
 assert(sum(str_file == fullfile("_GUILDAsystem", "@PowerNetwork", "simulate.m")) == 1, join(str_hook, ", "))
-assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@ODEsolver", "ODEsolver.m")) == 3, join(str_hook, ", "))
-assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@LTIsolver", "LTIsolver.m")) == 5, join(str_hook, ", "))
-assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@LTIsolver", "solve.m")) == 1, join(str_hook, ", "))
-assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@LTIresult", "get_ss.m")) == 1, join(str_hook, ", "))
+assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverODE", "SolverODE.m")) == 3, join(str_hook, ", "))
+assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "SolverLIN.m")) == 5, join(str_hook, ", "))
+assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "solve.m")) == 1, join(str_hook, ", "))
+assert(sum(str_file == fullfile("_GUILDAsystem", "_auxiliary", "@ResultLIN", "get_ss.m")) == 1, join(str_hook, ", "))
 assert(sum(str_file == fullfile("@GUILDA", "private", "get_config.m")) == 1, join(str_hook, ", "))
 assert(numel(str_hook) == 25, join(str_hook, ", "))
 

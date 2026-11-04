@@ -94,7 +94,7 @@ classdef IEEJ_EAST30 < PowerNetwork
 % ```matlab
 % net = network.IEEJ_EAST30(Section="night");
 % res = net.calculate_powerflow();
-% ev  = ODEevent("fault", net, "TimeSpan", [1,1.07], "FaultBus", "B3104");
+% ev  = EventODE("fault", net, "TimeSpan", [1,1.07], "FaultBus", "B3104");
 % sol = net.simulate([0,5], ev);
 % ```
 %

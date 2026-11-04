@@ -1,12 +1,12 @@
 function [result, flag, output] = calculate_continuation_powerflow(obj, varargin)
-% Trace the PV curve by the continuation power flow and return a CPFresult.
+% Trace the PV curve by the continuation power flow and return a ResultCPF.
 %
 % Traces the PV curve of the network by the continuation power flow: starting from the
 % equilibrium of net.initialize, the loads of LoadBus are scaled by (1 + lambda) and the
 % power flow solution is followed past the maximum loading point (the nose). The
 % settings are the stored defaults of net.solver_CPF; Name-Value options override them
 % for this call only (net.solver_CPF is not changed).
-% Accepted options are the names in CPFsolver.OptionMap plus Plot and Export;
+% Accepted options are the names in SolverCPF.OptionMap plus Plot and Export;
 % any other name stops with GUILDA:resolve_options:UnknownName.
 % It stops with an error naming the remedy when the network is not initialized (or was
 % edited after net.initialize) and when LoadBus is empty or names an unknown bus.
@@ -32,7 +32,7 @@ function [result, flag, output] = calculate_continuation_powerflow(obj, varargin
 % res.Plot();              % PV curves of the load buses
 % ```
 %
-% See also CPFresult, CPFsolver
+% See also ResultCPF, SolverCPF
     arguments (Output)
         result   % lambda and bus voltages along the path, and the nose point.
         flag     % True when the path passed the nose.

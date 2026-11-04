@@ -1,7 +1,7 @@
 function v3_nonunit_dynamic(s_options, c_sysBus)
 % Reject a bus with states in the retired option NonUnit.
 %
-% v3 compatibility hook of LTIresult.get_ss with "Feedback": stops with
+% v3 compatibility hook of ResultLIN.get_ss with "Feedback": stops with
 % GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus. "Kron" and "DAE" never used the option.
 %
 % Inputs:
@@ -9,7 +9,7 @@ function v3_nonunit_dynamic(s_options, c_sysBus)
 % - `s_options` — Options of the result; the field NonUnit exists only when buses are listed.
 % - `c_sysBus` — Bus models, in the order of net.a_Bus.
 %
-% See also v3_linearize_args, LTIresult.get_ss
+% See also v3_linearize_args, ResultLIN.get_ss
     if ~isfield(s_options, "NonUnit")
         return
     end

@@ -4,7 +4,7 @@ function err = jacobian_error(obj)
 %   err = DebugScript.helper.jacobian_error(comp)
 %
 % obj は Component / LocalController / GlobalController (平衡点を設定済みのもの)。
-% ODEsolver と同じ呼び出し方 f_Jacobi*(t,x,V,I,u) で得た行列を、
+% SolverODE と同じ呼び出し方 f_Jacobi*(t,x,V,I,u) で得た行列を、
 % f_dx / f_I / f_Y (Component) または f_dx / f_Y (制御器) の中心差分と比べる。
 % 平衡点でだけ 0 になる項も確かめるため、平衡点から少しずらした点で比べる。
     if isa(obj, "Component")

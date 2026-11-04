@@ -10,7 +10,7 @@ classdef Tutorial3bus < PowerNetwork
 %
 % ```matlab
 % net = network.Tutorial3bus();
-% ev  = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B003");
+% ev  = EventODE("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B003");
 % sol = net.simulate([0,10], ev);
 % ```
 %

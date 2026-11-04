@@ -1,19 +1,19 @@
 function [result, flag, output] = linearize(obj, varargin)
-% Linearize the network and return a LTIresult.
+% Linearize the network and return a ResultLIN.
 %
 % Linearizes the network and returns the unreduced linear DAE (the Jacobian blocks in
-% the order of net.get_variable_map()) as a LTIresult; result.get_ss(Algorithm)
+% the order of net.get_variable_map()) as a ResultLIN; result.get_ss(Algorithm)
 % gives a state-space model. The settings are the stored defaults of
 % net.solver_LIN; Name-Value options override them for this call only (net.solver_LIN is
 % not changed). Neither is the network: a Point away from the equilibrium is used only
 % for this call.
 % The network must be initialized (net.initialize()); otherwise this stops with the
 % error of check_edit that asks for it.
-% Accepted options are the names in LTIsolver.OptionMap plus Plot; any other name
+% Accepted options are the names in SolverLIN.OptionMap plus Plot; any other name
 % stops with GUILDA:resolve_options:UnknownName.
 % A Point with NaN or Inf (such as a tripped unit in {sim, t}) stops with
-% GUILDA:LTIsolver:PointNotFinite, and a model that is not finite at the point with
-% GUILDA:LTIsolver:JacobianNotFinite. They do not return flag false.
+% GUILDA:SolverLIN:PointNotFinite, and a model that is not finite at the point with
+% GUILDA:SolverLIN:JacobianNotFinite. They do not return flag false.
 %
 % Name-Value options:
 %
@@ -39,7 +39,7 @@ function [result, flag, output] = linearize(obj, varargin)
 % res3 = net.linearize(Point={sim, 1.5});
 % ```
 %
-% See also PowerNetwork.get_sys, PowerNetwork.get_variable_map, LTIresult, LTIsolver
+% See also PowerNetwork.get_sys, PowerNetwork.get_variable_map, ResultLIN, SolverLIN
     arguments (Output)
         result   % Jacobian blocks, variable map, point and settings.
         flag     % True when the result is usable: all Jacobian entries are finite and Avv is invertible.

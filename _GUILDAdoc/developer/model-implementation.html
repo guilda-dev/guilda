@@ -223,7 +223,7 @@ g2   = b2.add_component("gen-simple", "P",0.5, "parameter",para);
 b3.add_component("load-impedance", "P",-1.0, "Q",-0.2);
 net.initialize();
 
-ev  = ODEevent("fault", net, "TimeSpan",[1,1.05], "FaultBus",b3.str_tag);
+ev  = EventODE("fault", net, "TimeSpan",[1,1.05], "FaultBus",b3.str_tag);
 sim = net.simulate([0,10], ev);
 sys = net.get_sys();
 </pre>
@@ -329,7 +329,7 @@ s.inputs          % Vref: "equilibrium (not connected)", Vpss: "output of CPp"
     <h3>Check the behavior</h3>
     <ol class="dg-list is-numbered">
       <li><div><span class="dg-item-title">Stay at the equilibrium</span><p><code>net.simulate</code> without events keeps the states at <code>rv_Xequilibrium</code>.</p></div></li>
-      <li><div><span class="dg-item-title">Survive a disturbance</span><p>Run a fault and a trip with <code>ODEevent</code>. <code>flag</code> is <code>1</code> when the simulation completes. A trip calls <code>get_equilibrium</code> with <code>I = P = Q = 0</code>.</p></div></li>
+      <li><div><span class="dg-item-title">Survive a disturbance</span><p>Run a fault and a trip with <code>EventODE</code>. <code>flag</code> is <code>1</code> when the simulation completes. A trip calls <code>get_equilibrium</code> with <code>I = P = Q = 0</code>.</p></div></li>
       <li><div><span class="dg-item-title">Look at the linear model</span><p><code>eig(net.get_sys())</code>. A network of synchronous machines has an eigenvalue near zero from the common rotation of the rotor angles. The other eigenvalues should be in the left half plane unless you expect otherwise. An unstable result can also come from the rest of the test network, so compare with an existing model on the same network.</p></div></li>
       <li><div><span class="dg-item-title">Compare with a known model</span><p>When an existing class reduces to your model, the eigenvalues should agree, as below.</p></div></li>
     </ol>

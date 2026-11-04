@@ -9,7 +9,7 @@ function v = variables(obj, prob, str_method, s_var)
 % - Branch: Pfrom, Pto, Vargfrom, Vargto ("DC OPF", "AC OPF"); Qfrom, Qto,
 %   Ifrom_re, Ifrom_im, Ito_re, Ito_im, Vfrom, Vto ("AC OPF"); none in "ELD".
 %   Flows go into the branch at each end (from = a_Bus{1}, to = a_Bus{2}),
-%   with the signs of OPFresult.tab_branch.
+%   with the signs of ResultOPF.tab_branch.
 % - PowerNetwork: v.Component.(tag), v.Bus.(tag), v.Branch.(tag) holding the above.
     arguments
         obj % Component, Bus, Branch or PowerNetwork.

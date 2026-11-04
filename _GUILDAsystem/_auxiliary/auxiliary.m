@@ -7,5 +7,5 @@ classdef auxiliary < handle
 % - Classes that constitute the power system model inherit from PowerSystemModel.
 % - Classes intended for analysis assistance inherit from auxiliary.
 %
-% See also PowerSystemModel, AnalysisResult
+% See also PowerSystemModel, ResultBase
 end

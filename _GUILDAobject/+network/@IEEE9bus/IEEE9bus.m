@@ -67,7 +67,7 @@ classdef IEEE9bus < PowerNetwork
 % ```matlab
 % net = network.IEEE9bus();
 % res = net.calculate_powerflow();
-% ev  = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B007");
+% ev  = EventODE("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B007");
 % sol = net.simulate([0,10], ev);
 %
 % % Without the AVRs and PSSs

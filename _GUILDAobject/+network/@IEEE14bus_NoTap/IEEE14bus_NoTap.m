@@ -76,7 +76,7 @@ classdef IEEE14bus_NoTap < PowerNetwork
 % ```matlab
 % net = network.IEEE14bus_NoTap();
 % res = net.calculate_powerflow();
-% ev  = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+% ev  = EventODE("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 % sol = net.simulate([0,10], ev);
 % ```
 %

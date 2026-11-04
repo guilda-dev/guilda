@@ -13,7 +13,7 @@ box = containers.Map("KeyType", "double", "ValueType", "logical");
 s_options = net.solver_ODE.get_options({"Progress", "none"});
 s_options.PhaseProbe = @(o) store(box, issparse(o.MassMatrix.MassMatrix) && ...
                                        issparse(o.Jacobian.Jacobian(0, o.InitialValue)));
-ev = ODEevent("fault", net, "TimeSpan", [0.5,0.6], "FaultBus", "B008");
+ev = EventODE("fault", net, "TimeSpan", [0.5,0.6], "FaultBus", "B008");
 [~, flag, output] = net.solver_ODE.solve(net, [0,1], {ev}, s_options);
 assert(flag == 1 && output.isSparse)
 assert(all(cell2mat(box.values)))
@@ -22,7 +22,7 @@ assert(all(cell2mat(box.values)))
 %% Sparse run agrees with the tight solution within the tolerance
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
-ev  = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+ev  = EventODE("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 sol = net.simulate([0,3], ev);
 ref = net.simulate([0,3], ev, Tolerance=1e-10, AbsoluteTolerance=1e-10);
 assert(max(abs(sol.rm_variable(end,:) - ref.rm_variable(end,:))) < 1e-2)
@@ -39,7 +39,7 @@ net = ring(136);
 box = containers.Map("KeyType", "double", "ValueType", "logical");
 s_options = net.solver_ODE.get_options({"Progress", "none"});
 s_options.PhaseProbe = @(o) store(box, issparse(o.MassMatrix.MassMatrix));
-ev = ODEevent("fault", net, "TimeSpan", [0.05,0.06], "FaultBus", string(net.a_Bus{1}));
+ev = EventODE("fault", net, "TimeSpan", [0.05,0.06], "FaultBus", string(net.a_Bus{1}));
 [res, flag, output] = net.solver_ODE.solve(net, [0,0.1], {ev}, s_options);
 assert(flag == 1 && ~output.isSparse)
 assert(all(~cell2mat(box.values(num2cell(2:box.Count)))), "2 番目以降の区間は密")
@@ -58,7 +58,7 @@ assert(sol.rv_t(end) < 1)
 % 入力イベントのない区間は rv_Uoffset が空で、イベントのある区間だけ入力が効く
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
-ev  = ODEevent("input", net, "TimeSpan", [0.5,1], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", 0.05);
+ev  = EventODE("input", net, "TimeSpan", [0.5,1], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", 0.05);
 sol = net.simulate([0,1.5], ev, Progress="none");
 ref = net.simulate([0,1.5], Progress="none");
 assert(max(abs(sol.rm_variable(end,:) - ref.rm_variable(end,:))) > 1e-4)

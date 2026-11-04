@@ -277,7 +277,7 @@ function [flag, contract] = compare_jacobian(flag, contract, str_method, f_num, 
 end
 
 function sv_src = input_sources(obj)
-    % Who drives each input, as in ODEsolver: the outputs of the local controller and of
+    % Who drives each input, as in SolverODE: the outputs of the local controller and of
     % the global controllers of the same name; the other inputs stay at the equilibrium.
     a_con = obj.a_LocalController(:).';
     if ~isempty(obj.a_Bus) && ~isempty(obj.a_Bus.a_PowerNetwork)

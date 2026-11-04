@@ -97,7 +97,7 @@ assert(DebugScript.helper.handle_Hz(avr) == net.para_base.Hz && DebugScript.help
 DebugScript.helper.quiet(@() net.initialize);
 [gen, bus] = layers(net);
 [~, c_idx] = bus.get_variable_map();
-rv_point = LTIsolver.point_vector(bus, []);
+rv_point = SolverLIN.point_vector(bus, []);
 A0 = gen.get_sys("Point", rv_point(c_idx{1})).A;
 A0_bus = bus.get_sys("Point", rv_point).A;
 
@@ -162,7 +162,7 @@ net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 gen = net.a_Bus{1}.a_Component{1};
 gen.tab_parameter.dynamics.D = 3 * gen.tab_parameter.dynamics.D;
-assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=str_load)) == "GUILDA:CPFsolver:StaleEquilibrium")
+assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=str_load)) == "GUILDA:SolverCPF:StaleEquilibrium")
 assert(gen.s_edit.str_odefcn == "updated")
 
 

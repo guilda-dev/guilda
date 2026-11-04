@@ -81,7 +81,7 @@ classdef LocalController < PowerSystemModel
         f_JacobiDx                             % Jacobian function of f_dx.
         f_JacobiY                              % Jacobian function of f_Y.
     end    
-    properties (SetAccess={?ODEsolver, ?ODEevent}, Hidden)
+    properties (SetAccess={?SolverODE, ?EventODE}, Hidden)
         iv_odeX  = zeros(0,1);
         iv_odeU  = zeros(0,1);
         iv_odeY  = zeros(0,1);

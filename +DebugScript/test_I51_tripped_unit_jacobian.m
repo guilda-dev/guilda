@@ -11,23 +11,23 @@ net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 inwin = @(t,a,b) t > a & t < b;
 % 第 1 区間 [0,1] の代数変数を大きく解き直す入力
-offset = @(n, val) ODEevent("offset", n, "TimeSpan", 0, "OffsetUnit", "SG1B002", ...
+offset = @(n, val) EventODE("offset", n, "TimeSpan", 0, "OffsetUnit", "SG1B002", ...
                                "OffsetState", "delta", "OffsetValue", val);
 
 
 %% Jacobian matches the right-hand side while a generator is tripped
-err = jacobian_errors(net, [0,2], {ODEevent("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B003")});
+err = jacobian_errors(net, [0,2], {EventODE("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B003")});
 assert(numel(err) == 3)
 assert(max(err) < 1e-5, "誤差 " + mat2str(err,3))
 
 
 %% Jacobian matches the right-hand side while a load is tripped
-err = jacobian_errors(net, [0,2], {ODEevent("trip", net, "TimeSpan", [1,1.2], "TripUnit", "LPQ2B003")});
+err = jacobian_errors(net, [0,2], {EventODE("trip", net, "TimeSpan", [1,1.2], "TripUnit", "LPQ2B003")});
 assert(max(err) < 1e-5, "誤差 " + mat2str(err,3))
 
 
 %% Jacobian matches the right-hand side during a fault
-err = jacobian_errors(net, [0,2], {ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008")});
+err = jacobian_errors(net, [0,2], {EventODE("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008")});
 assert(max(err) < 1e-5, "誤差 " + mat2str(err,3))
 
 
@@ -35,19 +35,19 @@ assert(max(err) < 1e-5, "誤差 " + mat2str(err,3))
 agc = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002", kP=100, kI=500);
 net.add_global_controller(agc);
 DebugScript.helper.quiet(@() net.initialize);
-err = jacobian_errors(net, [0,2], {ODEevent("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B002")});
+err = jacobian_errors(net, [0,2], {EventODE("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B002")});
 assert(max(err) < 1e-5, "誤差 " + mat2str(err,3))
 
 
 %% Jacobian matches the right-hand side with local controllers on other units
 net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"));
 DebugScript.helper.quiet(@() net.initialize);
-err = jacobian_errors(net, [0,2], {ODEevent("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B002")});
+err = jacobian_errors(net, [0,2], {EventODE("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B002")});
 assert(max(err) < 1e-5, "誤差 " + mat2str(err,3))
 
 
 %% Trip does not depend on the tolerance
-ev = ODEevent("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B003");
+ev = EventODE("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B003");
 r1 = net.simulate([0,2], ev).odeResults;
 r2 = net.simulate([0,2], ev, Tolerance=1e-8, AbsoluteTolerance=1e-8).odeResults;
 X1 = r1.Bus(3).Component(1).X;
@@ -59,7 +59,7 @@ assert(abs(d1 - d2) < 1e-3, "復帰時の delta: " + d1 + ", " + d2)
 
 
 %% MaxStep applies in the trip phase
-ev = ODEevent("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B003");
+ev = EventODE("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B003");
 opt = matlab.ode.options.ODE15s;
 opt.MaxStep = 1e-3;
 r = net.simulate([0,2], ev, SolverOptions=opt).odeResults;
@@ -94,7 +94,7 @@ assert(strlength(str) > 0)
 
 %% Phases after an offset start without its initial slope
 % 次の区間で状態の数が変わっても、前の区間の InitialSlope を持ち越さない
-tr = ODEevent("trip", net, "TimeSpan", [0.5,0.6], "TripUnit", "SG1B003");
+tr = EventODE("trip", net, "TimeSpan", [0.5,0.6], "TripUnit", "SG1B003");
 [~, flag] = net.simulate([0,1], offset(net,1), tr);
 assert(flag == 1)
 
@@ -117,26 +117,26 @@ c_w = onCleanup(@() warning(w));
 [~, flag, output] = net.simulate([0,0.1], offset(net,3));
 assert(flag == -1)
 ME = output.exception;
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:ODEsolver:InitialConditionFailed", DebugScript.helper.msg_id(ME) + ": " + ME.message)
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:InitialConditionFailed", DebugScript.helper.msg_id(ME) + ": " + ME.message)
 assert(contains(ME.message, "phase 1") && contains(ME.message, "differential states kept"), ME.message)
 
 
 %% Trip does not warn about the initial condition
 lastwarn("");
-net.simulate([0,2], ODEevent("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B003"));
+net.simulate([0,2], EventODE("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B003"));
 assert(isempty(lastwarn()), lastwarn())
 
 
 %% Failed initial condition stops with flag -1 naming the phase
-ev = ODEevent("nan", net, "TimeSpan", [1,1.2], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", NaN);
+ev = EventODE("nan", net, "TimeSpan", [1,1.2], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", NaN);
 w = warning("off", "GUILDA:PowerNetwork:SimulationIncomplete");
 c_warn = onCleanup(@() warning(w));
 [~, flag, output] = net.simulate([0,2], ev);
 assert(flag == -1)
 ME = output.exception;
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:ODEsolver:InitialConditionFailed", DebugScript.helper.msg_id(ME) + ": " + ME.message)
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:InitialConditionFailed", DebugScript.helper.msg_id(ME) + ": " + ME.message)
 assert(contains(ME.message, "phase 2") && contains(ME.message, "t = [1, 1.2]"), ME.message)
-assert(DebugScript.helper.msg_id(ME.cause{1}) == "GUILDA:ODEsolver:AlgebraicNotSolved", DebugScript.helper.msg_id(ME.cause{1}))
+assert(DebugScript.helper.msg_id(ME.cause{1}) == "GUILDA:SolverODE:AlgebraicNotSolved", DebugScript.helper.msg_id(ME.cause{1}))
 
 
 function err = jacobian_errors(net, tspan, c_events)

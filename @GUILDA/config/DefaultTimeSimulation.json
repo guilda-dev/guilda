@@ -26,7 +26,7 @@
             "disp",
             "dialog"
         ],
-        "Description": "Progress display during the integration (ODEsolver.Progress)"
+        "Description": "Progress display during the integration (SolverODE.Progress)"
     },
     "TimeLimit":{
         "Value": Infinity,
