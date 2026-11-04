@@ -31,8 +31,8 @@
   <main>
     <button type="button" class="developer-back-button" onclick="window.history.back()"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></button>
     <h1><span lang="en">API Design for Analysis Features</span><span lang="ja">解析機能の API 設計</span></h1>
-    <p class="page-lead" lang="en">Every analysis and IO feature is called the same way. It is a <code>PowerNetwork</code> method. It takes Name-Value options. It returns <code>[result, flag, output]</code>.</p>
-    <p class="page-lead" lang="ja">解析機能と入出力機能は、すべて同じ形で呼び出します。どれも <code>PowerNetwork</code> のメソッドで、Name-Value オプションを受け取り、<code>[result, flag, output]</code> を返します。</p>
+    <p class="page-lead" lang="en">Every analysis and IO feature has the same call shape: a <code>PowerNetwork</code> method, Name-Value options in, <code>[result, flag, output]</code> out.</p>
+    <p class="page-lead" lang="ja">解析機能と入出力機能はすべて同じ呼び出しの形。<code>PowerNetwork</code> のメソッド、入力は Name-Value オプション、出力は <code>[result, flag, output]</code>。</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#rules"><span lang="en">Cross-cutting rules</span><span lang="ja">横断ルール</span></a>
@@ -83,28 +83,29 @@
         <div class="dg-chain-arrow"></div>
         <div class="dg-chain-node is-ok"><span class="dg-kicker"><span lang="en">Outputs</span><span lang="ja">出力</span></span><code>result</code>: <span lang="en">result class or MATLAB type</span><span lang="ja">結果クラスまたは MATLAB の型</span><br><code>flag</code>: <span lang="en">success or convergence</span><span lang="ja">成功・収束の判定</span><br><code>output</code>: <span lang="en">solver details</span><span lang="ja">ソルバーの詳細</span></div>
       </div></div>
-      <figcaption><span lang="en">Every part of a call is fixed by one of the rules below.</span><span lang="ja">呼び出しの各部分は、下のいずれかのルールで決まります。</span></figcaption>
+      <figcaption><span lang="en">Every part of a call is fixed by one of the rules below.</span><span lang="ja">呼び出しの各部分は下のいずれかのルールで決定。</span></figcaption>
     </figure>
 
     <h2 id="rules"><span lang="en">Cross-cutting rules</span><span lang="ja">横断ルール</span></h2>
     <table class="dg-table ad-rules">
       <thead><tr><th><span lang="en">Rule</span><span lang="ja">ルール</span></th><th><span lang="en">Meaning</span><span lang="ja">内容</span></th><th><span lang="en">Example</span><span lang="ja">例</span></th></tr></thead>
       <tbody>
-        <tr><td><span class="ad-num">1</span><span lang="en">Entry point</span><span lang="ja">入口</span></td><td data-label="Meaning" data-label-ja="内容"><span lang="en">Each feature is a <code>PowerNetwork</code> method named <code>verb_noun</code> (snake_case).</span><span lang="ja">各機能は <code>verb_noun</code>（snake_case）という名前の <code>PowerNetwork</code> のメソッドです。</span></td><td data-label="Example" data-label-ja="例"><code>net.calculate_powerflow()</code></td></tr>
-        <tr><td><span class="ad-num">2</span><span lang="en">Inputs</span><span lang="ja">入力</span></td><td data-label="Meaning" data-label-ja="内容"><span lang="en">System data is set beforehand. Analysis settings have defaults. Name-Value options override them for one call.</span><span lang="ja">系統データは事前に設定します。解析設定には既定値があり、Name-Value オプションはその呼び出しに限り既定値を上書きします。</span></td><td data-label="Example" data-label-ja="例"><code>Tolerance=1e-10</code></td></tr>
-        <tr><td><span class="ad-num">3</span><span lang="en">Output type</span><span lang="ja">出力の型</span></td><td data-label="Meaning" data-label-ja="内容"><span lang="en">Main analyses return a result class. Simple getters return standard MATLAB types.</span><span lang="ja">主要な解析は結果クラスを返します。単純な取得メソッドは MATLAB の標準の型を返します。</span></td><td data-label="Example" data-label-ja="例"><code>ResultODE</code>, <code>ss</code></td></tr>
-        <tr><td><span class="ad-num">4</span><span lang="en">Output order</span><span lang="ja">出力の順序</span></td><td data-label="Meaning" data-label-ja="内容"><span lang="en">Outputs are always <code>[result, flag, output]</code>.</span><span lang="ja">出力は常に <code>[result, flag, output]</code> です。</span></td><td data-label="Example" data-label-ja="例"><code>[res, flag] = net.simulate(...)</code></td></tr>
-        <tr><td><span class="ad-num">5</span><span lang="en">Preconditions</span><span lang="ja">前提条件</span></td><td data-label="Meaning" data-label-ja="内容"><span lang="en">If a precondition fails, stop with an error that says how to fix it.</span><span lang="ja">前提条件を満たさない場合は、直し方を示すエラーで停止します。</span></td><td data-label="Example" data-label-ja="例"><span lang="en">"run <code>net.initialize()</code> first"</span><span lang="ja">「先に <code>net.initialize()</code> を実行してください」</span></td></tr>
-        <tr><td><span class="ad-num">6</span><span lang="en">Side effects</span><span lang="ja">副作用</span></td><td data-label="Meaning" data-label-ja="内容"><span lang="en">The verb tells whether the model may change.</span><span lang="ja">モデルを変更してよいかは動詞で表します。</span></td><td data-label="Example" data-label-ja="例"><span lang="en"><code>set_</code> may, <code>get_</code> must not</span><span lang="ja"><code>set_</code> は変更可、<code>get_</code> は変更不可</span></td></tr>
-        <tr><td><span class="ad-num">7</span><span lang="en">Options</span><span lang="ja">オプション</span></td><td data-label="Meaning" data-label-ja="内容"><span lang="en">Common options use UpperCamelCase. Same name, same meaning everywhere.</span><span lang="ja">共通オプションは UpperCamelCase にします。同じ名前はどこでも同じ意味です。</span></td><td data-label="Example" data-label-ja="例"><code>MaxIteration=50</code></td></tr>
+        <tr><td><span class="ad-num">1</span><span lang="en">Entry point</span><span lang="ja">入口</span></td><td data-label="Meaning" data-label-ja="内容"><span lang="en">Each feature is a <code>PowerNetwork</code> method named <code>verb_noun</code> (snake_case).</span><span lang="ja">各機能は <code>verb_noun</code>（snake_case）という名前の <code>PowerNetwork</code> のメソッド。</span></td><td data-label="Example" data-label-ja="例"><code>net.calculate_powerflow()</code></td></tr>
+        <tr><td><span class="ad-num">2</span><span lang="en">Inputs</span><span lang="ja">入力</span></td><td data-label="Meaning" data-label-ja="内容"><span lang="en">System data is set beforehand. Analysis settings have defaults. Name-Value options override them for one call.</span><span lang="ja">系統データは事前に設定。解析設定には既定値。Name-Value オプションはその呼び出しに限り既定値を上書き。</span></td><td data-label="Example" data-label-ja="例"><code>Tolerance=1e-10</code></td></tr>
+        <tr><td><span class="ad-num">3</span><span lang="en">Output type</span><span lang="ja">出力の型</span></td><td data-label="Meaning" data-label-ja="内容"><span lang="en">Main analyses return a result class. Simple getters return standard MATLAB types.</span><span lang="ja">主要な解析は結果クラス、単純な取得メソッドは MATLAB の標準の型を返す。</span></td><td data-label="Example" data-label-ja="例"><code>ResultODE</code>, <code>ss</code></td></tr>
+        <tr><td><span class="ad-num">4</span><span lang="en">Output order</span><span lang="ja">出力の順序</span></td><td data-label="Meaning" data-label-ja="内容"><span lang="en">Outputs are always <code>[result, flag, output]</code>.</span><span lang="ja">出力は常に <code>[result, flag, output]</code>。</span></td><td data-label="Example" data-label-ja="例"><code>[res, flag] = net.simulate(...)</code></td></tr>
+        <tr><td><span class="ad-num">5</span><span lang="en">Preconditions</span><span lang="ja">前提条件</span></td><td data-label="Meaning" data-label-ja="内容"><span lang="en">If a precondition fails, stop with an error that says how to fix it.</span><span lang="ja">前提条件を満たさない場合は、直し方を示すエラーで停止。</span></td><td data-label="Example" data-label-ja="例"><span lang="en">"run <code>net.initialize()</code> first"</span><span lang="ja">「先に <code>net.initialize()</code> を実行してください」</span></td></tr>
+        <tr><td><span class="ad-num">6</span><span lang="en">Side effects</span><span lang="ja">副作用</span></td><td data-label="Meaning" data-label-ja="内容"><span lang="en">The verb tells whether the model may change.</span><span lang="ja">モデルを変更してよいかを動詞で表す。</span></td><td data-label="Example" data-label-ja="例"><span lang="en"><code>set_</code> may, <code>get_</code> must not</span><span lang="ja"><code>set_</code> は変更可、<code>get_</code> は変更不可</span></td></tr>
+        <tr><td><span class="ad-num">7</span><span lang="en">Options</span><span lang="ja">オプション</span></td><td data-label="Meaning" data-label-ja="内容"><span lang="en">Common options use UpperCamelCase. Same name, same meaning everywhere.</span><span lang="ja">共通オプションは UpperCamelCase。同じ名前はどこでも同じ意味。</span></td><td data-label="Example" data-label-ja="例"><code>MaxIteration=50</code></td></tr>
       </tbody>
     </table>
 
     <h3 id="entry-point"><span lang="en">1 · Entry point</span><span lang="ja">1 · 入口</span></h3>
-    <p lang="en">The solver classes implement these methods: <code>SolverPF</code>, <code>SolverOPF</code>, <code>SolverCPF</code>, <code>SolverODE</code> and <code>SolverLIN</code>, held as <code>net.solver_PF</code> / <code>_OPF</code> / <code>_CPF</code> / <code>_ODE</code> / <code>_LIN</code>.</p>
-    <p lang="ja">これらのメソッドの処理はソルバークラス <code>SolverPF</code>、<code>SolverOPF</code>、<code>SolverCPF</code>、<code>SolverODE</code>、<code>SolverLIN</code> が実装しています。各ソルバーは <code>net.solver_PF</code> / <code>_OPF</code> / <code>_CPF</code> / <code>_ODE</code> / <code>_LIN</code> として保持されます。</p>
-    <p lang="en">Each solver holds defaults only, never a network or a result. Calling its <code>solve</code> directly is for advanced users only.</p>
-    <p lang="ja">各ソルバーが保持するのは既定値だけで、ネットワークや結果は保持しません。<code>solve</code> を直接呼ぶのは上級者向けです。</p>
+    <ul>
+      <li><span lang="en">The solver classes implement these methods: <code>SolverPF</code>, <code>SolverOPF</code>, <code>SolverCPF</code>, <code>SolverODE</code>, <code>SolverLIN</code>, held as <code>net.solver_PF</code> / <code>_OPF</code> / <code>_CPF</code> / <code>_ODE</code> / <code>_LIN</code>.</span><span lang="ja">メソッドの処理はソルバークラス <code>SolverPF</code>、<code>SolverOPF</code>、<code>SolverCPF</code>、<code>SolverODE</code>、<code>SolverLIN</code> が実装。<code>net.solver_PF</code> / <code>_OPF</code> / <code>_CPF</code> / <code>_ODE</code> / <code>_LIN</code> として保持。</span></li>
+      <li><span lang="en">A solver holds defaults only, never a network or a result.</span><span lang="ja">ソルバーが保持するのは既定値だけ。ネットワークや結果は保持しない。</span></li>
+      <li><span lang="en">Calling its <code>solve</code> directly: advanced users only.</span><span lang="ja"><code>solve</code> の直接呼び出しは上級者向け。</span></li>
+    </ul>
 
     <h3 id="inputs"><span lang="en">2 · Inputs: defaults and overrides</span><span lang="ja">2 · 入力: 既定値と上書き</span></h3>
     <figure class="dg-figure" aria-labelledby="ad-in-title">
@@ -124,12 +125,12 @@
         <text class="is-k" x="15" y="109" lang="en">ANALYSIS SETTINGS · DEFAULTS</text><text class="is-k" x="15" y="109" lang="ja">解析設定 · 既定値</text>
         <text class="dg-mono is-sm" x="15" y="128">net.solver_PF / _OPF / _CPF / _ODE / _LIN</text>
         <text class="is-sm is-muted" x="15" y="145" lang="en">method · tolerance · time span</text><text class="is-sm is-muted" x="15" y="145" lang="ja">手法 · 許容誤差 · 時間範囲</text>
-        <text class="is-sm is-muted" x="15" y="172" lang="en">kept between runs; a call never changes them</text><text class="is-sm is-muted" x="15" y="172" lang="ja">実行をまたいで保持され、呼び出しでは変わりません</text>
+        <text class="is-sm is-muted" x="15" y="172" lang="en">kept between runs; a call never changes them</text><text class="is-sm is-muted" x="15" y="172" lang="ja">実行をまたいで保持、呼び出しでは不変</text>
         <!-- name-value -->
         <rect class="dg-sv-box is-warn" x="1" y="180" width="318" height="64" rx="10"/>
         <text class="is-k is-warn" x="15" y="201" lang="en">NAME-VALUE OPTIONS · THIS CALL ONLY</text><text class="is-k is-warn" x="15" y="201" lang="ja">Name-Value オプション · この呼び出しのみ</text>
         <text class="dg-mono is-sm" x="15" y="220">Tolerance=1e-10</text>
-        <text class="is-sm is-muted" x="15" y="236" lang="en">replaces the default for this call</text><text class="is-sm is-muted" x="15" y="236" lang="ja">この呼び出しに限り既定値を置き換えます</text>
+        <text class="is-sm is-muted" x="15" y="236" lang="en">replaces the default for this call</text><text class="is-sm is-muted" x="15" y="236" lang="ja">この呼び出しに限り既定値を置き換え</text>
         <!-- merge -->
         <path class="dg-sv-line" d="M321 122H350" marker-end="url(#ad-ah2)"/>
         <path class="dg-sv-line" d="M321 212C340 212 340 186 350 186" marker-end="url(#ad-ah2)"/>
@@ -155,14 +156,14 @@
           </tbody>
         </table>
       </div>
-      <figcaption><span lang="en">A Name-Value option changes a setting for one call. The default in <code>net.solver_*</code> stays as it was.</span><span lang="ja">Name-Value オプションは、その呼び出しに限り設定を変えます。<code>net.solver_*</code> の既定値はそのまま残ります。</span></figcaption>
+      <figcaption><span lang="en">A Name-Value option changes a setting for one call; the default in <code>net.solver_*</code> stays.</span><span lang="ja">Name-Value オプションはその呼び出しに限り設定を変更。<code>net.solver_*</code> の既定値はそのまま。</span></figcaption>
     </figure>
     <ul>
-      <li><span lang="en">System data describes the system itself. Set it before the call.</span><span lang="ja">系統データは系統そのものを表します。呼び出しの前に設定します。</span></li>
-      <li><span lang="en">Defaults persist, so repeated runs keep the last settings.</span><span lang="ja">既定値は保持されるので、繰り返し実行しても最後の設定が使われます。</span></li>
-      <li><span lang="en">Each solver class has a constant <code>OptionMap</code>: the Name-Value names it accepts and the solver property each one sets (e.g. <code>MaxIteration</code> → <code>MaxIterations</code>).</span><span lang="ja">各ソルバークラスは定数 <code>OptionMap</code> を持ちます。受け付ける Name-Value の名前と、それぞれが設定するソルバーのプロパティの対応です（例: <code>MaxIteration</code> → <code>MaxIterations</code>）。</span></li>
-      <li><span lang="en">A name that is not in <code>OptionMap</code> stops with <code>GUILDA:resolve_options:UnknownName</code>, which lists the accepted names.</span><span lang="ja"><code>OptionMap</code> にない名前を渡すと <code>GUILDA:resolve_options:UnknownName</code> で停止し、受け付ける名前の一覧が表示されます。</span></li>
-      <li><span lang="en">See <a href="class-design.html#solvers">Class Design: Solver settings</a>.</span><span lang="ja"><a href="class-design.html#solvers">クラス設計: ソルバーの設定</a> を参照してください。</span></li>
+      <li><span lang="en">System data describes the system itself; set it before the call.</span><span lang="ja">系統データは系統そのもの。呼び出しの前に設定。</span></li>
+      <li><span lang="en">Defaults persist, so repeated runs keep the last settings.</span><span lang="ja">既定値は保持。繰り返し実行では最後の設定を使用。</span></li>
+      <li><span lang="en">Each solver class has a constant <code>OptionMap</code>: the Name-Value names it accepts and the solver property each one sets (e.g. <code>MaxIteration</code> → <code>MaxIterations</code>).</span><span lang="ja">各ソルバークラスに定数 <code>OptionMap</code>。受け付ける Name-Value の名前と、それぞれが設定するソルバーのプロパティの対応（例: <code>MaxIteration</code> → <code>MaxIterations</code>）。</span></li>
+      <li><span lang="en">A name that is not in <code>OptionMap</code> stops with <code>GUILDA:resolve_options:UnknownName</code>, which lists the accepted names.</span><span lang="ja"><code>OptionMap</code> にない名前を渡すと <code>GUILDA:resolve_options:UnknownName</code> で停止し、受け付ける名前の一覧を表示。</span></li>
+      <li><span lang="en">See <a href="class-design.html#solvers">Class Design: Solver settings</a>.</span><span lang="ja"><a href="class-design.html#solvers">クラス設計: ソルバーの設定</a> を参照。</span></li>
     </ul>
 
     <h3 id="outputs"><span lang="en">3 · 4 · Outputs</span><span lang="ja">3 · 4 · 出力</span></h3>
@@ -173,26 +174,27 @@
         <tr><td><span lang="en">Simple getter</span><span lang="ja">単純な取得メソッド</span></td><td data-label="Returns" data-label-ja="戻り値"><span lang="en">a standard MATLAB type</span><span lang="ja">MATLAB の標準の型</span></td><td data-label="Example" data-label-ja="例"><code>get_sys</code> → <code>ss</code>, <code>get_admittance_matrix</code> / <code>get_variable_map</code> → <code>table</code></td></tr>
       </tbody>
     </table>
-    <p lang="en">Result classes also hold <code>flag</code>, <code>output</code> and the effective <code>options</code> as properties.</p>
-    <p lang="ja">結果クラスは <code>flag</code>、<code>output</code>、実際に使われた <code>options</code> もプロパティとして保持します。</p>
-    <p lang="en">So <code>result</code> alone is enough to check the outcome.</p>
-    <p lang="ja">そのため、<code>result</code> だけで結果を確認できます。</p>
-    <p lang="en">Plotting and writing files are methods of the result: <code>result.Plot()</code> and <code>result.Export(filename)</code>. The options <code>Plot</code> and <code>Export</code> of a call run them.</p>
-    <p lang="ja">描画とファイル出力は結果のメソッド <code>result.Plot()</code> と <code>result.Export(filename)</code> で行います。呼び出しのオプション <code>Plot</code> と <code>Export</code> を指定すると、これらが実行されます。</p>
+    <ul>
+      <li><span lang="en">Result classes also hold <code>flag</code>, <code>output</code> and the effective <code>options</code> as properties, so <code>result</code> alone is enough to check the outcome.</span><span lang="ja">結果クラスは <code>flag</code>、<code>output</code>、実際に使われた <code>options</code> もプロパティとして保持。<code>result</code> だけで結果を確認可能。</span></li>
+      <li><span lang="en">Plotting and writing files are methods of the result: <code>result.Plot()</code>, <code>result.Export(filename)</code>. The call options <code>Plot</code> and <code>Export</code> run them.</span><span lang="ja">描画とファイル出力は結果のメソッド <code>result.Plot()</code>、<code>result.Export(filename)</code>。呼び出しのオプション <code>Plot</code>、<code>Export</code> でこれらを実行。</span></li>
+    </ul>
 
     <h3 id="preconditions"><span lang="en">5 · Preconditions</span><span lang="ja">5 · 前提条件</span></h3>
     <table class="dg-table">
       <thead><tr><th><span lang="en">Situation</span><span lang="ja">状況</span></th><th><span lang="en">Behavior</span><span lang="ja">動作</span></th></tr></thead>
       <tbody>
-        <tr><td><span lang="en">Precondition met</span><span lang="ja">前提条件を満たす</span></td><td data-label="Behavior" data-label-ja="動作"><span lang="en">Run.</span><span lang="ja">実行します。</span></td></tr>
-        <tr><td><span lang="en">Not met</span><span lang="ja">満たさない</span></td><td data-label="Behavior" data-label-ja="動作"><span lang="en">Stop with an explicit error that tells the user what to do.</span><span lang="ja">どうすればよいかを示す明示的なエラーで停止します。</span></td></tr>
-        <tr><td><span lang="en">Not met, but a harmless default exists</span><span lang="ja">満たさないが、無害な既定値がある</span></td><td data-label="Behavior" data-label-ja="動作"><span lang="en">Continue and print an INFO message. Only for a default that does not change the meaning of the result.</span><span lang="ja">INFO メッセージを表示して続行します。結果の意味を変えない既定値に限ります。</span></td></tr>
+        <tr><td><span lang="en">Precondition met</span><span lang="ja">前提条件を満たす</span></td><td data-label="Behavior" data-label-ja="動作"><span lang="en">Run.</span><span lang="ja">実行。</span></td></tr>
+        <tr><td><span lang="en">Not met</span><span lang="ja">満たさない</span></td><td data-label="Behavior" data-label-ja="動作"><span lang="en">Stop with an explicit error that tells the user what to do.</span><span lang="ja">どうすればよいかを示す明示的なエラーで停止。</span></td></tr>
+        <tr><td><span lang="en">Not met, but a harmless default exists</span><span lang="ja">満たさないが、無害な既定値がある</span></td><td data-label="Behavior" data-label-ja="動作"><span lang="en">Continue and print an INFO message. Only for a default that does not change the meaning of the result.</span><span lang="ja">INFO メッセージを表示して続行。結果の意味を変えない既定値に限定。</span></td></tr>
       </tbody>
     </table>
-    <p lang="en">Example: the edit state <code>s_edit.str_flag</code> is <code>unset</code>, <code>initialized</code> or <code>editted</code>.</p>
-    <p lang="ja">例: 編集状態 <code>s_edit.str_flag</code> は <code>unset</code>、<code>initialized</code>、<code>editted</code> のいずれかです。</p>
-    <p lang="en">A simulation or a linearization needs an up-to-date equilibrium: <code>initialize</code> has run, and no edit since then made the equilibrium stale. Otherwise the error says "run <code>net.initialize()</code> first" (see <a href="class-design.html#edits">Class Design: Edit handling</a>).</p>
-    <p lang="ja">シミュレーションと近似線形化には最新の平衡点が必要です。つまり <code>initialize</code> が実行済みで、その後の編集で平衡点が古くなっていないことです。そうでなければ「先に <code>net.initialize()</code> を実行してください」というエラーになります（<a href="class-design.html#edits">クラス設計: 編集の扱い</a> を参照）。</p>
+    <p lang="en">Example:</p>
+    <p lang="ja">例:</p>
+    <ul>
+      <li><span lang="en">Edit state <code>s_edit.str_flag</code>: <code>unset</code>, <code>initialized</code> or <code>editted</code>.</span><span lang="ja">編集状態 <code>s_edit.str_flag</code>: <code>unset</code>、<code>initialized</code>、<code>editted</code> のいずれか。</span></li>
+      <li><span lang="en">A simulation or a linearization needs an up-to-date equilibrium: <code>initialize</code> has run, and no edit since then made the equilibrium stale.</span><span lang="ja">シミュレーションと近似線形化には最新の平衡点が必要。<code>initialize</code> が実行済みで、その後の編集で平衡点が古くなっていないこと。</span></li>
+      <li><span lang="en">Otherwise: the error "run <code>net.initialize()</code> first" (see <a href="class-design.html#edits">Class Design: Edit handling</a>).</span><span lang="ja">満たさなければ「先に <code>net.initialize()</code> を実行してください」のエラー（<a href="class-design.html#edits">クラス設計: 編集の扱い</a> を参照）。</span></li>
+    </ul>
 
     <h3 id="side-effects"><span lang="en">6 · Side effects follow the verb</span><span lang="ja">6 · 副作用は動詞で決まる</span></h3>
     <table class="dg-table">
@@ -202,20 +204,25 @@
         <tr><td><span class="dev-status is-ok"><span lang="en">Must not change values</span><span lang="ja">値を変えてはならない</span></span></td><td data-label="Verbs" data-label-ja="動詞"><span class="dg-badge is-ok">calculate_</span><span class="dg-badge is-ok">optimize_</span><span class="dg-badge is-ok">simulate</span><span class="dg-badge is-ok">get_</span><span class="dg-badge is-ok">draw_</span><span class="dg-badge is-ok">export_</span></td></tr>
       </tbody>
     </table>
-    <p lang="en">Internal analysis caches and per-run working data are the only exceptions. <code>simulate</code> writes working data during a run (see <a href="class-design.html#classes">Class Design: Per-class responsibilities</a>). On every exit, also after an error, it sets <code>Bus.l_isFault</code> to false, <code>l_isConnect</code> of components and global controllers to true, and <code>Component.rv_Xoffset</code> / <code>rv_Uoffset</code> to empty. The index data (<code>iv_ode*</code>, <code>lv_odeUfromLC</code>) stays until the next run overwrites it.</p>
-    <p lang="ja">例外は、解析の内部キャッシュと実行ごとの作業データだけです。<code>simulate</code> は実行中に作業データを書き込みます（<a href="class-design.html#classes">クラス設計: クラスごとの責務</a> を参照）。終了時には、エラーで終わった場合も含めて必ず、<code>Bus.l_isFault</code> を false に、機器と大域制御器の <code>l_isConnect</code> を true に、<code>Component.rv_Xoffset</code> / <code>rv_Uoffset</code> を空に戻します。インデックスのデータ（<code>iv_ode*</code>、<code>lv_odeUfromLC</code>）は、次の実行で上書きされるまで残ります。</p>
-    <p lang="en">A failed simulation ends in one of these ways, and neither changes model values:</p>
-    <p lang="ja">失敗したシミュレーションは次のどちらかで終わり、いずれもモデルの値を変えません。</p>
+    <p lang="en">The only exceptions: internal analysis caches and per-run working data.</p>
+    <p lang="ja">例外は解析の内部キャッシュと実行ごとの作業データだけ。</p>
     <ul>
-      <li><span lang="en"><strong>Numerical failure in <code>simulate</code>.</strong> When the solver gives up on a phase, <code>simulate</code> returns <code>flag = -1</code>. <code>result</code> holds the completed phases up to <code>output.tEnd</code> (no time points when the first phase fails), <code>output.exception</code> holds the <code>MException</code>, and the warning <code>GUILDA:PowerNetwork:SimulationIncomplete</code> is issued. The same warning follows a solver stop (<code>flag = -1</code>) and <code>TimeLimit</code> (<code>flag = 0</code>).</span><span lang="ja"><strong><code>simulate</code> での数値的な失敗。</strong>ソルバーがあるフェーズで解けなくなると、<code>simulate</code> は <code>flag = -1</code> を返します。<code>result</code> には <code>output.tEnd</code> までに完了したフェーズが入り（最初のフェーズで失敗した場合は時刻点なし）、<code>output.exception</code> には <code>MException</code> が入り、警告 <code>GUILDA:PowerNetwork:SimulationIncomplete</code> が出ます。ソルバーの停止（<code>flag = -1</code>）と <code>TimeLimit</code>（<code>flag = 0</code>）の場合も同じ警告が出ます。</span></li>
-      <li><span lang="en"><strong>Any other error during a phase.</strong> An error of an input function or a model stops with <code>GUILDA:SolverODE:PhaseFailed</code>, or with <code>InitialConditionFailed</code> / <code>UnfeasibleDAE</code> during the retry from a recomputed initial condition. The original error is its cause, and no result is returned.</span><span lang="ja"><strong>フェーズ中のその他のエラー。</strong>入力関数やモデルのエラーは <code>GUILDA:SolverODE:PhaseFailed</code> で停止します。初期条件を計算し直して再試行している間であれば、<code>InitialConditionFailed</code> / <code>UnfeasibleDAE</code> で停止します。元のエラーが原因（cause）として付き、結果は返りません。</span></li>
+      <li><span lang="en"><code>simulate</code> writes working data during a run (see <a href="class-design.html#classes">Class Design: Per-class responsibilities</a>).</span><span lang="ja"><code>simulate</code> は実行中に作業データを書き込み（<a href="class-design.html#classes">クラス設計: クラスごとの責務</a> を参照）。</span></li>
+      <li><span lang="en">On every exit, also after an error: <code>Bus.l_isFault</code> → false, <code>l_isConnect</code> of components and global controllers → true, <code>Component.rv_Xoffset</code> / <code>rv_Uoffset</code> → empty.</span><span lang="ja">終了時は、エラーで終わった場合も含めて必ず: <code>Bus.l_isFault</code> → false、機器と大域制御器の <code>l_isConnect</code> → true、<code>Component.rv_Xoffset</code> / <code>rv_Uoffset</code> → 空。</span></li>
+      <li><span lang="en">The index data (<code>iv_ode*</code>, <code>lv_odeUfromLC</code>) stays until the next run overwrites it.</span><span lang="ja">インデックスのデータ（<code>iv_ode*</code>、<code>lv_odeUfromLC</code>）は次の実行で上書きされるまで残る。</span></li>
+    </ul>
+    <p lang="en">A failed simulation ends in one of these ways, and neither changes model values:</p>
+    <p lang="ja">失敗したシミュレーションの終わり方は次の 2 つ。いずれもモデルの値は不変。</p>
+    <ul>
+      <li><span lang="en"><strong>Numerical failure in <code>simulate</code>.</strong> When the solver gives up on a phase, <code>simulate</code> returns <code>flag = -1</code>. <code>result</code> holds the completed phases up to <code>output.tEnd</code> (no time points when the first phase fails), <code>output.exception</code> holds the <code>MException</code>, and the warning <code>GUILDA:PowerNetwork:SimulationIncomplete</code> is issued. The same warning follows a solver stop (<code>flag = -1</code>) and <code>TimeLimit</code> (<code>flag = 0</code>).</span><span lang="ja"><strong><code>simulate</code> での数値的な失敗。</strong>ソルバーがあるフェーズで解けなくなると、<code>simulate</code> は <code>flag = -1</code> を返す。<code>result</code> は <code>output.tEnd</code> までに完了したフェーズ（最初のフェーズで失敗した場合は時刻点なし）、<code>output.exception</code> は <code>MException</code>。警告 <code>GUILDA:PowerNetwork:SimulationIncomplete</code>。ソルバーの停止（<code>flag = -1</code>）と <code>TimeLimit</code>（<code>flag = 0</code>）でも同じ警告。</span></li>
+      <li><span lang="en"><strong>Any other error during a phase.</strong> An error of an input function or a model stops with <code>GUILDA:SolverODE:PhaseFailed</code>, or with <code>InitialConditionFailed</code> / <code>UnfeasibleDAE</code> during the retry from a recomputed initial condition. The original error is its cause, and no result is returned.</span><span lang="ja"><strong>フェーズ中のその他のエラー。</strong>入力関数やモデルのエラーは <code>GUILDA:SolverODE:PhaseFailed</code> で停止。初期条件を計算し直して再試行している間は <code>InitialConditionFailed</code> / <code>UnfeasibleDAE</code> で停止。元のエラーが原因（cause）として付き、結果は返らない。</span></li>
     </ul>
 
     <h3 id="options"><span lang="en">7 · Common Name-Value options</span><span lang="ja">7 · 共通の Name-Value オプション</span></h3>
-    <p lang="en">Option names follow the MATLAB style (UpperCamelCase).</p>
-    <p lang="ja">オプション名は MATLAB の流儀（UpperCamelCase）に従います。</p>
-    <p lang="en">Each analysis supports the options that apply to it.</p>
-    <p lang="ja">各解析は、その解析に当てはまるオプションに対応します。</p>
+    <ul>
+      <li><span lang="en">Option names follow the MATLAB style (UpperCamelCase).</span><span lang="ja">オプション名は MATLAB の流儀（UpperCamelCase）。</span></li>
+      <li><span lang="en">Each analysis supports the options that apply to it.</span><span lang="ja">各解析は、その解析に当てはまるオプションに対応。</span></li>
+    </ul>
     <table class="dg-table ad-opts">
       <thead><tr><th><span lang="en">Option</span><span lang="ja">オプション</span></th><th><span lang="en">Meaning</span><span lang="ja">内容</span></th></tr></thead>
       <tbody>
@@ -232,10 +239,10 @@
     </table>
 
     <h2 id="features"><span lang="en">Per-feature API</span><span lang="ja">機能ごとの API</span></h2>
-    <p lang="en">Features with a result return <code>[result, flag, output]</code>.</p>
-    <p lang="ja">結果を持つ機能は <code>[result, flag, output]</code> を返します。</p>
-    <p lang="en">"Changes net" follows rule 6.</p>
-    <p lang="ja">「net の変更」はルール 6 に従います。</p>
+    <ul>
+      <li><span lang="en">Features with a result return <code>[result, flag, output]</code>.</span><span lang="ja">結果を持つ機能は <code>[result, flag, output]</code> を返す。</span></li>
+      <li><span lang="en">"Changes net" follows rule 6.</span><span lang="ja">「net の変更」はルール 6 に従う。</span></li>
+    </ul>
     <table class="dg-table ad-features">
       <thead><tr><th><span lang="en">Feature</span><span lang="ja">機能</span></th><th><span lang="en">Call and main options</span><span lang="ja">呼び出しと主なオプション</span></th><th><span lang="en">First output</span><span lang="ja">第 1 出力</span></th><th><span lang="en">Changes net</span><span lang="ja">net の変更</span></th></tr></thead>
       <tbody>
@@ -243,41 +250,41 @@
           <td><span lang="en">Power flow</span><span lang="ja">潮流計算</span></td>
           <td data-label="Call" data-label-ja="呼び出し"><code>net.calculate_powerflow(...)</code><small><code>Method="algebraic"|"dynamic"</code>, <code>Tolerance</code>, <code>MaxIteration</code>, ...</small></td>
           <td data-label="First output" data-label-ja="第 1 出力"><code>ResultPF</code></td>
-          <td data-label="Changes net" data-label-ja="net の変更"><span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span><small><span lang="en">Only when no slack bus is set, one is selected (INFO message, rule 5): the first bus with a component with <code>Q = NaN</code>, otherwise the first bus with a component.</span><span lang="ja">スラック母線が未設定のときに限り、1 つを選びます（INFO メッセージ、ルール 5）。<code>Q = NaN</code> の機器を持つ最初の母線、なければ機器を持つ最初の母線です。</span></small></td>
+          <td data-label="Changes net" data-label-ja="net の変更"><span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span><small><span lang="en">Only when no slack bus is set, one is selected (INFO message, rule 5): the first bus with a component with <code>Q = NaN</code>, otherwise the first bus with a component.</span><span lang="ja">スラック母線が未設定のときに限り 1 つを選択（INFO メッセージ、ルール 5）。<code>Q = NaN</code> の機器を持つ最初の母線、なければ機器を持つ最初の母線。</span></small></td>
         </tr>
         <tr>
           <td><span lang="en">Initialization</span><span lang="ja">初期化</span></td>
-          <td data-label="Call" data-label-ja="呼び出し"><code>net.initialize(...)</code><small><span lang="en"><code>Method="powerflow"|"OPF"|"equilibrium"</code>. The other options go to <code>calculate_powerflow</code> (<code>"powerflow"</code>) or <code>optimize_powerflow</code> with <code>Method="AC OPF"</code> (<code>"OPF"</code>). <code>"equilibrium"</code> reuses the equilibria the components hold and takes no other option. The old option <code>methods</code> is deprecated.</span><span lang="ja"><code>Method="powerflow"|"OPF"|"equilibrium"</code>。ほかのオプションは <code>calculate_powerflow</code>（<code>"powerflow"</code>）または <code>Method="AC OPF"</code> の <code>optimize_powerflow</code>（<code>"OPF"</code>）に渡されます。<code>"equilibrium"</code> は機器が保持する平衡点をそのまま使い、ほかのオプションは受け付けません。旧オプション <code>methods</code> は非推奨です。</span></small></td>
+          <td data-label="Call" data-label-ja="呼び出し"><code>net.initialize(...)</code><small><span lang="en"><code>Method="powerflow"|"OPF"|"equilibrium"</code>. The other options go to <code>calculate_powerflow</code> (<code>"powerflow"</code>) or <code>optimize_powerflow</code> with <code>Method="AC OPF"</code> (<code>"OPF"</code>). <code>"equilibrium"</code> reuses the equilibria the components hold and takes no other option. <code>methods</code> is a deprecated alias of <code>Method</code>.</span><span lang="ja"><code>Method="powerflow"|"OPF"|"equilibrium"</code>。ほかのオプションは <code>calculate_powerflow</code>（<code>"powerflow"</code>）または <code>Method="AC OPF"</code> の <code>optimize_powerflow</code>（<code>"OPF"</code>）に渡す。<code>"equilibrium"</code> は機器が保持する平衡点をそのまま使い、ほかのオプションは受け付けない。<code>methods</code> は <code>Method</code> の非推奨の別名。</span></small></td>
           <td data-label="First output" data-label-ja="第 1 出力"><code>ResultPF</code><small><span lang="en"><code>ResultOPF</code> for <code>"OPF"</code>.</span><span lang="ja"><code>"OPF"</code> のときは <code>ResultOPF</code>。</span></small></td>
-          <td data-label="Changes net" data-label-ja="net の変更"><span class="dev-status"><span lang="en">Yes</span><span lang="ja">あり</span></span><small><span lang="en">Sets the equilibrium and resets the edit log. When the analysis does not succeed, it stops with an error and leaves the equilibrium and the edit log unchanged, and releases a slack bus the power flow set. When writing the point fails or the point does not satisfy Y*V = I (<code>GUILDA:PowerNetwork:InitializeNotEquilibrium</code>), it stops with an error and the equilibrium stays stale until <code>initialize</code> succeeds.</span><span lang="ja">平衡点を設定し、編集履歴をリセットします。解析が成功しなかった場合はエラーで停止し、平衡点と編集履歴は変えず、潮流計算が設定したスラック母線を解除します。点の書き込みに失敗した場合や、点が Y*V = I を満たさない場合（<code>GUILDA:PowerNetwork:InitializeNotEquilibrium</code>）はエラーで停止し、<code>initialize</code> が成功するまで平衡点は古いままです。</span></small></td>
+          <td data-label="Changes net" data-label-ja="net の変更"><span class="dev-status"><span lang="en">Yes</span><span lang="ja">あり</span></span><small><span lang="en">Sets the equilibrium and resets the edit log. Analysis fails: error; equilibrium and edit log unchanged; a slack bus the power flow set is released. Writing the point fails, or the point does not satisfy Y*V = I (<code>GUILDA:PowerNetwork:InitializeNotEquilibrium</code>): error; the equilibrium stays stale until <code>initialize</code> succeeds.</span><span lang="ja">平衡点を設定し、編集履歴をリセット。解析が失敗: エラーで停止、平衡点と編集履歴は不変、潮流計算が設定したスラック母線を解除。点の書き込みに失敗、または点が Y*V = I を満たさない（<code>GUILDA:PowerNetwork:InitializeNotEquilibrium</code>）: エラーで停止、<code>initialize</code> が成功するまで平衡点は古いまま。</span></small></td>
         </tr>
         <tr>
           <td><span lang="en">OPF</span><span lang="ja">最適潮流計算</span></td>
-          <td data-label="Call" data-label-ja="呼び出し"><code>net.optimize_powerflow(...)</code><small><span lang="en"><code>Method="ELD"|"DC OPF"|"AC OPF"</code>, <code>Solver</code>, <code>Tolerance</code>, <code>MaxIteration</code>, ... Costs and constraints: <code>set_opffcn</code> (see <a href="class-design.html#opf">Class Design</a>).</span><span lang="ja"><code>Method="ELD"|"DC OPF"|"AC OPF"</code>、<code>Solver</code>、<code>Tolerance</code>、<code>MaxIteration</code> など。コストと制約は <code>set_opffcn</code> で設定します（<a href="class-design.html#opf">クラス設計</a> を参照）。</span></small></td>
-          <td data-label="First output" data-label-ja="第 1 出力"><code>ResultOPF</code><small><span lang="en">Holds the Lagrange multipliers and the problem object.</span><span lang="ja">ラグランジュ乗数と問題オブジェクトを保持します。</span></small></td>
+          <td data-label="Call" data-label-ja="呼び出し"><code>net.optimize_powerflow(...)</code><small><span lang="en"><code>Method="ELD"|"DC OPF"|"AC OPF"</code>, <code>Solver</code>, <code>Tolerance</code>, <code>MaxIteration</code>, ... Costs and constraints: <code>set_opffcn</code> (see <a href="class-design.html#opf">Class Design</a>).</span><span lang="ja"><code>Method="ELD"|"DC OPF"|"AC OPF"</code>、<code>Solver</code>、<code>Tolerance</code>、<code>MaxIteration</code> など。コストと制約は <code>set_opffcn</code> で設定（<a href="class-design.html#opf">クラス設計</a> を参照）。</span></small></td>
+          <td data-label="First output" data-label-ja="第 1 出力"><code>ResultOPF</code><small><span lang="en">Holds the Lagrange multipliers and the problem object.</span><span lang="ja">ラグランジュ乗数と問題オブジェクトを保持。</span></small></td>
           <td data-label="Changes net" data-label-ja="net の変更"><span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span></td>
         </tr>
         <tr>
           <td><span lang="en">CPF</span><span lang="ja">連続潮流計算</span></td>
           <td data-label="Call" data-label-ja="呼び出し"><code>net.calculate_continuation_powerflow(...)</code><small><code>LoadBus</code>, <code>StepSize</code>, <code>ArcLength</code>, <code>MaxIteration</code>, ...</small></td>
-          <td data-label="First output" data-label-ja="第 1 出力"><code>ResultCPF</code><small><span lang="en"><code>flag</code> is true when the path passed the nose.</span><span lang="ja">解曲線がノーズを越えたとき <code>flag</code> は true です。</span></small></td>
-          <td data-label="Changes net" data-label-ja="net の変更"><span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span><small><span lang="en">Error if the net is not initialized.</span><span lang="ja">net が初期化されていなければエラーになります。</span></small></td>
+          <td data-label="First output" data-label-ja="第 1 出力"><code>ResultCPF</code><small><span lang="en"><code>flag</code> is true when the path passed the nose.</span><span lang="ja">解曲線がノーズを越えたとき <code>flag</code> は true。</span></small></td>
+          <td data-label="Changes net" data-label-ja="net の変更"><span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span><small><span lang="en">Error if the net is not initialized.</span><span lang="ja">net が未初期化ならエラー。</span></small></td>
         </tr>
         <tr>
           <td><span lang="en">Time simulation</span><span lang="ja">時間応答シミュレーション</span></td>
-          <td data-label="Call" data-label-ja="呼び出し"><code>net.simulate(time, sc1, sc2, ..., ...)</code><br><code>net.simulate(sc, ...)</code><small><span lang="en">The scenarios (<code>Scenario</code>) belong to <code>net</code> (<code>net.add_scenario</code>) and are combined. <code>net.simulate(sc)</code> uses the stored <code>sc.Time</code> and <code>sc.Options</code>; a time and options in the call replace them. <code>Solver</code>, <code>TimeLimit</code>, <code>Progress</code>, ... The verdict is <code>sc.judge(result)</code>, not an output of <code>simulate</code>.</span><span lang="ja">シナリオ（<code>Scenario</code>）は <code>net</code> に属し（<code>net.add_scenario</code>）、複数を渡すと合成されます。<code>net.simulate(sc)</code> は保存された <code>sc.Time</code> と <code>sc.Options</code> を使い、呼び出しで時間やオプションを渡すとそれらを置き換えます。<code>Solver</code>、<code>TimeLimit</code>、<code>Progress</code>、... 判定は <code>simulate</code> の出力ではなく <code>sc.judge(result)</code> で得ます。</span></small></td>
+          <td data-label="Call" data-label-ja="呼び出し"><code>net.simulate(time, sc1, sc2, ..., ...)</code><br><code>net.simulate(sc, ...)</code><small><span lang="en">The scenarios (<code>Scenario</code>) belong to <code>net</code> (<code>net.add_scenario</code>) and are combined. <code>net.simulate(sc)</code> uses the stored <code>sc.Time</code> and <code>sc.Options</code>; a time and options in the call replace them. <code>Solver</code>, <code>TimeLimit</code>, <code>Progress</code>, ... The verdict is <code>sc.judge(result)</code>, not an output of <code>simulate</code>.</span><span lang="ja">シナリオ（<code>Scenario</code>）は <code>net</code> に属し（<code>net.add_scenario</code>）、複数なら合成。<code>net.simulate(sc)</code> は保存された <code>sc.Time</code> と <code>sc.Options</code> を使用、呼び出しで渡した時間やオプションが優先。<code>Solver</code>、<code>TimeLimit</code>、<code>Progress</code>、... 判定は <code>simulate</code> の出力ではなく <code>sc.judge(result)</code>。</span></small></td>
           <td data-label="First output" data-label-ja="第 1 出力"><code>ResultODE</code><small><span lang="en"><code>flag</code>: <code>1</code> done, <code>0</code> time limit, <code>-1</code> solver stop or numerical failure of a phase.</span><span lang="ja"><code>flag</code>: <code>1</code> 完了、<code>0</code> 時間制限、<code>-1</code> ソルバーの停止またはフェーズの数値的な失敗。</span></small></td>
-          <td data-label="Changes net" data-label-ja="net の変更"><span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span><small><span lang="en">Error if the net is not initialized. Working data is written during a run, and the connection, fault, and offset data is restored on every exit (see <a href="#side-effects">rule 6</a>).</span><span lang="ja">net が初期化されていなければエラーになります。実行中は作業データが書き込まれ、接続・故障・オフセットのデータは終了時に必ず元に戻ります（<a href="#side-effects">ルール 6</a> を参照）。</span></small></td>
+          <td data-label="Changes net" data-label-ja="net の変更"><span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span><small><span lang="en">Error if the net is not initialized. Working data is written during a run, and the connection, fault, and offset data is restored on every exit (see <a href="#side-effects">rule 6</a>).</span><span lang="ja">net が未初期化ならエラー。実行中は作業データを書き込み、接続・故障・オフセットのデータは終了時に必ず復元（<a href="#side-effects">ルール 6</a> を参照）。</span></small></td>
         </tr>
         <tr>
           <td><span lang="en">Linearization</span><span lang="ja">近似線形化</span></td>
-          <td data-label="Call" data-label-ja="呼び出し"><code>net.linearize(...)</code><br><code>net.get_sys(...)</code><small><span lang="en"><code>Algorithm="Feedback"|"Kron"|"DAE"</code>, <code>Point</code>, <code>Coordinate</code>, <code>Plot</code>; <code>get_sys</code> also takes <code>Input</code> and <code>Output</code>. The result holds the unreduced DAE in the order of <code>get_variable_map</code>.</span><span lang="ja"><code>Algorithm="Feedback"|"Kron"|"DAE"</code>、<code>Point</code>、<code>Coordinate</code>、<code>Plot</code>。<code>get_sys</code> は <code>Input</code> と <code>Output</code> も受け付けます。結果は縮約前の DAE を <code>get_variable_map</code> の順で保持します。</span></small></td>
-          <td data-label="First output" data-label-ja="第 1 出力"><code>ResultLIN</code><small><span lang="en"><code>get_sys</code> returns <code>result.get_ss()</code>, an <code>ss</code>.</span><span lang="ja"><code>get_sys</code> は <code>result.get_ss()</code>（<code>ss</code>）を返します。</span></small></td>
-          <td data-label="Changes net" data-label-ja="net の変更"><span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span><small><span lang="en">Error if the net is not initialized.</span><span lang="ja">net が初期化されていなければエラーになります。</span></small></td>
+          <td data-label="Call" data-label-ja="呼び出し"><code>net.linearize(...)</code><br><code>net.get_sys(...)</code><small><span lang="en"><code>Algorithm="Feedback"|"Kron"|"DAE"</code>, <code>Point</code>, <code>Coordinate</code>, <code>Plot</code>; <code>get_sys</code> also takes <code>Input</code> and <code>Output</code>. The result holds the unreduced DAE in the order of <code>get_variable_map</code>.</span><span lang="ja"><code>Algorithm="Feedback"|"Kron"|"DAE"</code>、<code>Point</code>、<code>Coordinate</code>、<code>Plot</code>。<code>get_sys</code> は <code>Input</code>、<code>Output</code> も受け付け。結果は縮約前の DAE を <code>get_variable_map</code> の順で保持。</span></small></td>
+          <td data-label="First output" data-label-ja="第 1 出力"><code>ResultLIN</code><small><span lang="en"><code>get_sys</code> returns <code>result.get_ss()</code>, an <code>ss</code>.</span><span lang="ja"><code>get_sys</code> は <code>result.get_ss()</code>（<code>ss</code>）を返す。</span></small></td>
+          <td data-label="Changes net" data-label-ja="net の変更"><span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span><small><span lang="en">Error if the net is not initialized.</span><span lang="ja">net が未初期化ならエラー。</span></small></td>
         </tr>
         <tr>
           <td><span lang="en">Import</span><span lang="ja">インポート</span></td>
-          <td data-label="Call" data-label-ja="呼び出し"><code>PowerNetwork.import_csv(path)</code><br><code>PowerNetwork.import_matpower(mpc)</code><small><span lang="en">Static methods. <code>import_csv(path, Network=obj)</code> fills an existing network, as the network classes do.</span><span lang="ja">静的メソッドです。<code>import_csv(path, Network=obj)</code> は、ネットワーククラスと同じように既存のネットワークにデータを入れます。</span></small></td>
+          <td data-label="Call" data-label-ja="呼び出し"><code>PowerNetwork.import_csv(path)</code><br><code>PowerNetwork.import_matpower(mpc)</code><small><span lang="en">Static methods. <code>import_csv(path, Network=obj)</code> fills an existing network, as the network classes do.</span><span lang="ja">静的メソッド。<code>import_csv(path, Network=obj)</code> はネットワーククラスと同じく既存のネットワークにデータを入れる。</span></small></td>
           <td data-label="First output" data-label-ja="第 1 出力"><span lang="en">new <code>net</code></span><span lang="ja">新しい <code>net</code></span></td>
           <td data-label="Changes net" data-label-ja="net の変更">—</td>
         </tr>
@@ -290,31 +297,29 @@
         <tr>
           <td><span lang="en">Getters / drawing</span><span lang="ja">取得 / 描画</span></td>
           <td data-label="Call" data-label-ja="呼び出し"><code>net.get_admittance_matrix()</code><br><code>net.get_variable_map()</code><br><code>net.draw_diagram(ax)</code></td>
-          <td data-label="First output" data-label-ja="第 1 出力"><span lang="en">Unchanged</span><span lang="ja">従来どおり</span></td>
+          <td data-label="First output" data-label-ja="第 1 出力"><span lang="en">A standard MATLAB type (rule 3)</span><span lang="ja">MATLAB の標準の型（ルール 3）</span></td>
           <td data-label="Changes net" data-label-ja="net の変更"><span class="dev-status is-ok"><span lang="en">No</span><span lang="ja">なし</span></span></td>
         </tr>
       </tbody>
     </table>
-    <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg><p><span lang="en">A new analysis feature follows the same rules: a <code>net.verb_noun()</code> method with Name-Value options that returns <code>[result, flag, output]</code>.</span><span lang="ja">新しい解析機能も同じルールに従います。Name-Value オプションを受け取り <code>[result, flag, output]</code> を返す <code>net.verb_noun()</code> メソッドにします。</span></p></div>
+    <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg><p><span lang="en">A new analysis feature follows the same rules: a <code>net.verb_noun()</code> method with Name-Value options that returns <code>[result, flag, output]</code>.</span><span lang="ja">新しい解析機能も同じルール。Name-Value オプションを受け取り <code>[result, flag, output]</code> を返す <code>net.verb_noun()</code> メソッド。</span></p></div>
 
     <h2 id="compatibility"><span lang="en">Compatibility</span><span lang="ja">互換性</span></h2>
     <div class="dg-chain">
-      <div class="dg-chain-node"><span class="dg-kicker"><span lang="en">Old call</span><span lang="ja">古い呼び出し</span></span><span lang="en">A public name or signature that was renamed or removed</span><span lang="ja">名前の変更または削除が行われた公開の名前やシグネチャ</span></div>
+      <div class="dg-chain-node"><span class="dg-kicker"><span lang="en">Deprecated call</span><span lang="ja">非推奨の呼び出し</span></span><span lang="en">A deprecated public name or signature</span><span lang="ja">非推奨の公開の名前・シグネチャ</span></div>
       <div class="dg-chain-arrow"></div>
-      <div class="dg-chain-node is-warn"><span class="dg-kicker"><span lang="en">Wrapper</span><span lang="ja">ラッパー</span></span><span lang="en">In <code>_GUILDAsystem/_VersionSupport/</code>. Prints a deprecation warning.</span><span lang="ja"><code>_GUILDAsystem/_VersionSupport/</code> に置きます。非推奨の警告を表示します。</span></div>
+      <div class="dg-chain-node is-warn"><span class="dg-kicker"><span lang="en">Wrapper</span><span lang="ja">ラッパー</span></span><span lang="en">In <code>_GUILDAsystem/_VersionSupport/</code>. Prints a deprecation warning.</span><span lang="ja"><code>_GUILDAsystem/_VersionSupport/</code> に配置。非推奨の警告を表示。</span></div>
       <div class="dg-chain-arrow"></div>
-      <div class="dg-chain-node is-ok"><span class="dg-kicker"><span lang="en">New call</span><span lang="ja">新しい呼び出し</span></span><span lang="en">The current name and signature</span><span lang="ja">現在の名前とシグネチャ</span></div>
+      <div class="dg-chain-node is-ok"><span class="dg-kicker"><span lang="en">Current call</span><span lang="ja">現在の呼び出し</span></span><span lang="en">The current name and signature</span><span lang="ja">現在の名前とシグネチャ</span></div>
     </div>
-    <p lang="en">The old form keeps working for at least one major version.</p>
-    <p lang="ja">古い形式は、少なくとも 1 つのメジャーバージョンの間は動作し続けます。</p>
-    <p lang="en">See <a href="project-management.html#versions">Versions</a>.</p>
-    <p lang="ja"><a href="project-management.html#versions">バージョン</a> を参照してください。</p>
+    <p lang="en">A deprecated form keeps working for at least one major version (see <a href="project-management.html#versions">Versions</a>).</p>
+    <p lang="ja">非推奨の形式は少なくとも 1 メジャーバージョンの間は動作（<a href="project-management.html#versions">バージョン</a> を参照）。</p>
 
     <h2 id="related"><span lang="en">Related rules</span><span lang="ja">関連するルール</span></h2>
     <ul>
-      <li><span lang="en">Result classes (<code>ResultPF</code>, <code>ResultOPF</code>, <code>ResultCPF</code>, <code>ResultODE</code>, <code>ResultLIN</code>) go in <code>_GUILDAsystem/_auxiliary/@&lt;Name&gt;/</code> and inherit from <code>ResultBase</code> (see <a href="folder-structure.html#folders">Folder Structure</a>).</span><span lang="ja">結果クラス（<code>ResultPF</code>、<code>ResultOPF</code>、<code>ResultCPF</code>、<code>ResultODE</code>、<code>ResultLIN</code>）は <code>_GUILDAsystem/_auxiliary/@&lt;Name&gt;/</code> に置き、<code>ResultBase</code> を継承します（<a href="folder-structure.html#folders">フォルダ構成</a> を参照）。</span></li>
-      <li><span lang="en">Where data lives, how edits mark results as stale, and the unit conventions are described in <a href="class-design.html">Class Design</a>.</span><span lang="ja">データの置き場所、編集によって結果が古いと判定される仕組み、単位の規約は <a href="class-design.html">クラス設計</a> で説明しています。</span></li>
-      <li><span lang="en">Name the options and properties of new code with the <a href="naming-conventions.html">Naming Conventions</a>, and document them with <a href="class-documentation.html">Class Documentation</a> tags.</span><span lang="ja">新しいコードのオプションとプロパティは <a href="naming-conventions.html">命名規則</a> に従って名前を付け、<a href="class-documentation.html">クラスのドキュメント</a> のタグで説明を書きます。</span></li>
+      <li><span lang="en">Result classes (<code>ResultPF</code>, <code>ResultOPF</code>, <code>ResultCPF</code>, <code>ResultODE</code>, <code>ResultLIN</code>) go in <code>_GUILDAsystem/_auxiliary/@&lt;Name&gt;/</code> and inherit from <code>ResultBase</code> (see <a href="folder-structure.html#folders">Folder Structure</a>).</span><span lang="ja">結果クラス（<code>ResultPF</code>、<code>ResultOPF</code>、<code>ResultCPF</code>、<code>ResultODE</code>、<code>ResultLIN</code>）は <code>_GUILDAsystem/_auxiliary/@&lt;Name&gt;/</code> に配置、<code>ResultBase</code> を継承（<a href="folder-structure.html#folders">フォルダ構成</a> を参照）。</span></li>
+      <li><span lang="en">Where data lives, how edits mark results as stale, unit conventions: <a href="class-design.html">Class Design</a>.</span><span lang="ja">データの置き場所、編集で結果が古いと判定される仕組み、単位の規約: <a href="class-design.html">クラス設計</a>。</span></li>
+      <li><span lang="en">Name the options and properties of new code with the <a href="naming-conventions.html">Naming Conventions</a>, and document them with <a href="class-documentation.html">Class Documentation</a> tags.</span><span lang="ja">新しいコードのオプションとプロパティの名前は <a href="naming-conventions.html">命名規則</a> に従い、説明は <a href="class-documentation.html">クラスのドキュメント</a> のタグで記述。</span></li>
     </ul>
   </main>
 </body>
