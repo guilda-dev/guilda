@@ -28,13 +28,35 @@
     ? raw.map((value) => (value ?? '').toString().trim()).filter(Boolean)
     : ((raw ?? '').toString().trim() ? [(raw ?? '').toString().trim()] : []);
 
+  // LaTeX math through KaTeX (vendor/katex, loaded by the page). Without it
+  // the source is shown as code. Errors in the source show in red.
+  const renderMath = (tex, displayMode) => {
+    if (root.katex?.renderToString) {
+      try {
+        return root.katex.renderToString(tex, { displayMode, throwOnError: false, output: 'htmlAndMathml' });
+      } catch (error) {
+        // Fall through to the source.
+      }
+    }
+    return `<code class="doc-math-source">${escapeHtml(tex)}</code>`;
+  };
+
+  // $...$ outside code spans: no space just inside the dollars, so that
+  // "$5 and $6" stays text. Returns the text with placeholders.
+  const takeInlineMath = (text, store) => text.replace(/`[^`]*`|\$(?=\S)([^$\n]*?\S)\$/g, (match, tex) => {
+    if (tex === undefined) return match;
+    store.push(renderMath(tex, false));
+    return `@@MATH${store.length - 1}@@`;
+  });
+
   const formatInlineMarkdown = (text) => {
-    let output = escapeHtml(text);
+    const math = [];
+    let output = escapeHtml(takeInlineMath((text ?? '').toString(), math));
     output = output.replace(/`([^`]+)`/g, '<code>$1</code>');
     output = output.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     output = output.replace(/\*([^*]+)\*/g, '<em>$1</em>');
     output = output.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-    return output;
+    return output.replace(/@@MATH(\d+)@@/g, (_, index) => math[Number(index)] || '');
   };
 
   const renderMarkdown = (input) => {
@@ -49,10 +71,13 @@
       return `<pre class="doc-text-art">${escapeHtml(rawText)}</pre>`;
     }
 
+    // ```math blocks are display math; other fenced blocks are code.
     const codeBlocks = [];
-    const text = rawText.replace(/```[^\n]*\n?([\s\S]*?)```/g, (_, code) => {
+    const text = rawText.replace(/```([^\n]*)\n?([\s\S]*?)```/g, (_, info, code) => {
       const token = `@@CODEBLOCK_${codeBlocks.length}@@`;
-      codeBlocks.push(`<pre><code>${escapeHtml(code.trimEnd())}</code></pre>`);
+      codeBlocks.push(info.trim() === 'math'
+        ? `<div class="doc-math">${renderMath(code.trim(), true)}</div>`
+        : `<pre><code>${escapeHtml(code.trimEnd())}</code></pre>`);
       return token;
     });
 
@@ -94,6 +119,11 @@
         flushList();
         const headingLevel = headingMatch[1].length;
         htmlParts.push(`<h${headingLevel}>${formatInlineMarkdown(headingMatch[2])}</h${headingLevel}>`);
+        continue;
+      }
+      // An indented line inside a list continues the last item.
+      if (listType && listItems.length && /^\s+\S/.test(line) && !unorderedMatch && !orderedMatch) {
+        listItems[listItems.length - 1] += ` ${trimmed}`;
         continue;
       }
       if (unorderedMatch || orderedMatch) {
@@ -175,6 +205,7 @@
     toList,
     formatInlineMarkdown,
     renderMarkdown,
+    renderMath,
     classLink,
     seeAlsoLink,
     sourceLocation,

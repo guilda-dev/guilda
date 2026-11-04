@@ -7,7 +7,9 @@
   <script src="doc-lang.js"></script>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="reference.css">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
 
+  <script src="./vendor/katex/katex.min.js"></script>
   <script src="./database/list_Classes.js"></script>
   <script src="./doc-loader.js"></script>
   <script src="./doc-render.js"></script>
@@ -36,7 +38,7 @@
   <script>
     const loader = window.GuildaDocLoader;
     const {
-      tr, setPageTitle, escapeHtml, nl2br, firstText, toList, renderMarkdown,
+      tr, setPageTitle, escapeHtml, nl2br, firstText, toList, renderMarkdown, formatInlineMarkdown,
       classLink: renderClassLink, seeAlsoLink, sourceLocation, examplesText, groupRows
     } = window.GuildaDocRender;
     const routeParams = loader.getRouteParams();
@@ -74,6 +76,7 @@
       defaultValue: firstText(p?.DefaultCode, p?.Default),
       constraints: firstText(toList(p?.Validation?.Validators).join(', '), p?.Constraints),
       seeAlso: toList(p?.SeeAlso),
+      stale: p?.Stale || '',
       deprecated: p?.Deprecated || ''
     });
     const normalizeMethod = (m) => ({
@@ -90,6 +93,7 @@
       overrides: m?.Overrides || '',
       implementedIn: m?.ImplementedIn || '',
       summary: firstText(m?.Summary, m?.Desc),
+      description: [m?.Summary, m?.Desc].map((v) => (v ?? '').toString().trim()).filter(Boolean).join('\n\n'),
       signature: firstText(m?.Signature, toList(m?.Signatures)[0], `${m?.Name || ''}()`),
       deprecated: m?.Deprecated || ''
     });
@@ -268,7 +272,254 @@
       renderMemberTable(kind);
     }
 
-    function renderClassPage(meta, classDoc) {
+    // ---- Overview sections: Role, Owned data, References, Methods by purpose,
+    // Used by, Subclasses. They are derived from the class data, the class
+    // index and the call graph (database/list_CallGraph.js); a section
+    // without data is not shown.
+
+    // Callers, writers and nodes of the call graph, by node name. Candidate
+    // edges (receiver class unknown) are left out.
+    function indexGraph(graph) {
+      const model = { callers: new Map(), callees: new Map(), writers: new Map() };
+      if (!graph) return model;
+      const name = (index) => graph.nodes[index];
+      const add = (map, key, value) => { if (!map.has(key)) map.set(key, new Set()); map.get(key).add(value); };
+      graph.edges.forEach((edge) => {
+        if (graph.confidences[edge[3]] === 'candidates') return;
+        (Array.isArray(edge[1]) ? edge[1] : [edge[1]]).forEach((to) => {
+          add(model.callers, name(to), name(edge[0]));
+          add(model.callees, name(edge[0]), name(to));
+        });
+      });
+      (graph.writes || []).forEach(([prop, from]) => toList(from).forEach((f) => add(model.writers, name(prop), name(Number(f)))));
+      return model;
+    }
+
+    // "Class.member", "pkg.Class.member", or "Class.get.prop" for an accessor.
+    function nodeParts(name) {
+      const accessor = name.match(/^(.*)\.((?:get|set)\.[^.]+)$/);
+      if (accessor) return { className: accessor[1], member: accessor[2], accessor: true };
+      const dot = name.lastIndexOf('.');
+      return { className: name.slice(0, dot), member: name.slice(dot + 1), accessor: false };
+    }
+
+    // Links to methods given as graph nodes; methods of this class show the bare name.
+    function nodeLinks(names, limit = 8) {
+      const sorted = [...names].sort((a, b) => a.localeCompare(b));
+      const shown = sorted.slice(0, limit).map((name) => {
+        const parts = nodeParts(name);
+        const label = parts.className === className ? parts.member : name;
+        return parts.accessor
+          ? `<code>${escapeHtml(label)}</code>`
+          : `<a href="${loader.pageUrl('method.html', { class: parts.className, method: parts.member })}"><code>${escapeHtml(label)}</code></a>`;
+      });
+      const rest = sorted.length - shown.length;
+      return shown.join(', ') + (rest > 0 ? ` ${muted(tr(`+${rest} more`, `ほか ${rest} 件`))}` : '');
+    }
+
+    // A table whose rows stack into blocks on narrow screens (reference.css).
+    function stackTable(columns, rows) {
+      return `
+        <div class="ref-overview-table">
+          <table class="compact-table ref-stack">
+            <thead><tr>${columns.map(([, label]) => `<th>${label}</th>`).join('')}</tr></thead>
+            <tbody>${rows.map((row) => (row.group !== undefined
+              ? `<tr class="ref-group-row"><th colspan="${columns.length}">${escapeHtml(row.group)}</th></tr>`
+              : `<tr>${columns.map(([key, label], index) => `<td${index ? ` data-label="${escapeHtml(label)}"` : ''}>${row[key] ?? ''}</td>`).join('')}</tr>`)).join('')}</tbody>
+          </table>
+        </div>`;
+    }
+
+    // A JSON list that may arrive as a single object or be missing.
+    const toArray = (value) => (Array.isArray(value) ? value : (value ? [value] : []));
+    const accessBadge = (access) => (isPublic(access) ? '' : `<span class="ref-badge is-small">${escapeHtml(access)}</span>`);
+    const memberCell = (name, badges) => `<strong><code>${escapeHtml(name)}</code></strong>${badges.filter(Boolean).length ? `<span class="ref-hints">${badges.join('')}</span>` : ''}`;
+
+    function renderRole(c, name) {
+      const summary = firstText(c.Summary);
+      const desc = firstText(c.Desc);
+      const image = firstText(c.Image);
+      if (!summary && !desc && !image) return '';
+      return `
+        <h2 id="role">${tr('Role', '役割')}</h2>
+        ${summary ? `<p class="ref-lead">${formatInlineMarkdown(summary)}</p>` : ''}
+        ${desc ? `<div class="markdown-content">${renderMarkdown(desc)}</div>` : ''}
+        ${image ? `<figure class="ref-figure"><img src="${escapeHtml(image)}" alt="${escapeHtml(tr(`Diagram of ${name}`, `${name} の図`))}"></figure>` : ''}`;
+    }
+
+    function renderOwnedData(c, graph) {
+      const refNames = new Set(toList(toArray(c.References).map((r) => r.Name)));
+      const rows = pageData.properties.filter((p) => !p.inherited && !p.hidden && !p.abstract && !refNames.has(p.name));
+      if (!rows.length) return '';
+      const hasStale = rows.some((p) => p.stale);
+      const setBy = (p) => {
+        if (p.constant) return muted('Constant');
+        if (p.dependent) return muted(tr('derived (Dependent)', '導出 (Dependent)'));
+        const writers = graph.writers.get(`${p.defining}.${p.name}`);
+        const access = isPublic(p.setAccess) ? tr('anyone (public)', '誰でも (public)') : `SetAccess = ${escapeHtml(p.setAccess)}`;
+        return `${writers?.size ? nodeLinks(writers) : ''}<div class="ref-muted ref-small">${access}</div>`;
+      };
+      const columns = [
+        ['name', tr('Property', 'プロパティ')],
+        ['meaning', tr('Meaning', '意味')],
+        ['unit', tr('Unit / size', '単位 / サイズ')],
+        ['setBy', tr('Set by', '設定元')],
+        ...(hasStale ? [['stale', tr('Edit makes stale', '編集で無効化')]] : [])
+      ];
+      const toRow = (p) => ({
+        name: memberCell(p.name, [p.dependent ? '<span class="ref-badge is-small">Dependent</span>' : '', accessBadge(p.getAccess)]),
+        meaning: p.description ? `<div class="markdown-content">${renderMarkdown(p.description)}</div>` : muted('-'),
+        unit: [p.unit ? `<span class="ref-unit">${escapeHtml(p.unit)}</span>` : '', p.size ? `<code>${escapeHtml(p.size)}</code>` : ''].filter(Boolean).join(' ') || muted('-'),
+        setBy: setBy(p),
+        stale: p.stale ? formatInlineMarkdown(p.stale) : muted('-')
+      });
+      const body = groupRows(rows, tr('Other', 'その他')).flatMap((group) => [{ group: group.name }, ...group.items.map(toRow)]);
+      return `
+        <h2 id="owned-data">${tr('Owned data', '保持データ')}</h2>
+        <p class="ref-muted ref-small">${tr('Properties this class declares, without references to other objects. Set by: the methods that assign the property (from the call graph) and its SetAccess.', 'このクラスが宣言するプロパティ（他オブジェクトへの参照を除く）。設定元: プロパティに代入するメソッド（呼び出しグラフから）と SetAccess。')}</p>
+        ${stackTable(columns, body)}`;
+    }
+
+    function renderReferences(c, name, graph) {
+      const own = toArray(c.References).map((ref) => {
+        const p = pageData.properties.find((item) => item.name === ref.Name);
+        const writers = graph.writers.get(`${p?.defining || name}.${ref.Name}`);
+        return {
+          name: memberCell(ref.Name, [p ? accessBadge(p.getAccess) : '']),
+          type: ref.Type ? renderClassLink(ref.Type) : muted('-'),
+          meaning: p?.description ? `<div class="markdown-content">${renderMarkdown(p.description)}</div>` : muted('-'),
+          setBy: writers?.size ? nodeLinks(writers) : muted('-')
+        };
+      });
+      // Properties of other classes that point to this class.
+      const incoming = loader.getClasses().flatMap((other) => toArray(other.References)
+        .filter((ref) => other.Name !== name && ref.Type === name)
+        .map((ref) => ({
+          name: `${renderClassLink(other.Name)}<code>.${escapeHtml(ref.Name)}</code>`,
+          type: renderClassLink(ref.Type),
+          setBy: (() => { const w = graph.writers.get(`${other.Name}.${ref.Name}`); return w?.size ? nodeLinks(w) : muted('-'); })()
+        })));
+      if (!own.length && !incoming.length) return '';
+      return `
+        <h2 id="references">${tr('References', '参照')}</h2>
+        ${own.length ? `<h3>${tr('Held by this class', 'このクラスが持つ参照')}</h3>${stackTable([
+          ['name', tr('Reference', '参照')], ['type', tr('Points to', '参照先')], ['meaning', tr('Meaning', '意味')], ['setBy', tr('Set by', '設定元')]
+        ], own)}` : ''}
+        ${incoming.length ? `<h3>${tr('Pointing to this class', 'このクラスを指す参照')}</h3>${stackTable([
+          ['name', tr('Reference', '参照')], ['type', tr('Declared type', '宣言の型')], ['setBy', tr('Set by', '設定元')]
+        ], incoming)}` : ''}`;
+    }
+
+    function renderMethodsByPurpose(name, graph) {
+      const callersOf = (row) => {
+        const set = new Set([...(graph.callers.get(`${row.defining}.${row.name}`) || [])]);
+        if (row.overrides) (graph.callers.get(`${row.overrides}.${row.name}`) || []).forEach((n) => set.add(n));
+        return set;
+      };
+      const calledBy = (row) => { const set = callersOf(row); return set.size ? nodeLinks(set, 6) : muted('-'); };
+      const methods = pageData.methods.filter((m) => !m.inherited && !(m.constructor && !m.implementedIn));
+      const contractProps = pageData.properties.filter((p) => !p.inherited && p.abstract);
+      const contract = [
+        ...contractProps.map((p) => ({ row: p, badges: [`<span class="ref-badge is-small is-abstract">${p.constant ? 'Abstract Constant' : 'Abstract'}</span>`], text: p.description })),
+        ...methods.filter((m) => m.abstract).map((m) => ({ row: m, badges: ['<span class="ref-badge is-small is-abstract">Abstract</span>', m.static ? '<span class="ref-badge is-small">Static</span>' : ''], text: m.description, method: true }))
+      ];
+      const others = methods.filter((m) => !m.abstract);
+      if (!contract.length && !others.length) return '';
+      const methodCell = (m, badges) => `<a class="row-link" href="${methodUrl(m.name)}"><code>${escapeHtml(m.signature || m.name)}</code></a><span class="ref-hints">${badges.join('')}</span>`;
+      const columns = [['name', tr('Member', 'メンバー')], ['what', tr('What it does', '内容')], ['calledBy', tr('Called by', '呼び出し元')]];
+      const body = [];
+      if (contract.length) {
+        body.push({ group: tr('Subclass contract', 'サブクラスの契約') });
+        contract.forEach(({ row, badges, text, method }) => body.push({
+          name: method ? methodCell(row, badges) : memberCell(row.name, badges),
+          what: text ? `<div class="markdown-content">${renderMarkdown(text)}</div>` : muted('-'),
+          calledBy: calledBy(row)
+        }));
+      }
+      groupRows(others, 'Other').forEach((group) => {
+        body.push({ group: groupLabel(group.name) });
+        group.items.forEach((m) => body.push({
+          name: methodCell(m, [accessBadge(m.access), m.static ? '<span class="ref-badge is-small">Static</span>' : '', m.hidden ? '<span class="ref-badge is-small">Hidden</span>' : '', memberHints(m)]),
+          what: m.summary ? formatInlineMarkdown(m.summary) : muted(tr('No summary.', '概要なし。')),
+          calledBy: calledBy(m)
+        }));
+      });
+      return `
+        <h2 id="methods-by-purpose">${tr('Methods by purpose', '目的別メソッド')}</h2>
+        <p class="ref-muted ref-small">${tr('Methods this class defines, in their groups. Members of the subclass contract are what a subclass defines. Called by: from the call graph.', 'このクラスが定義するメソッドをグループ別に表示。サブクラスの契約は、サブクラスが定義するメンバー。呼び出し元は呼び出しグラフから。')}</p>
+        ${stackTable(columns, body)}`;
+    }
+
+    // Public methods of PowerNetwork are the entry points. For each one, the
+    // members of this class reached first from outside it, following the call
+    // graph (certain and inferred edges).
+    function renderUsedBy(name, ancestors, graph, networkDoc) {
+      if (!networkDoc || name === 'PowerNetwork' || !graph.callees.size) return '';
+      // A member of an ancestor counts when this class implements it (a
+      // subclass contract method reached through the base class).
+      const ownMethods = new Set(pageData.methods.filter((row) => !row.inherited).map((row) => row.name));
+      const ancestorSet = new Set(ancestors);
+      const inClass = (node) => {
+        const parts = nodeParts(node);
+        return parts.className === name || (ancestorSet.has(parts.className) && ownMethods.has(parts.member));
+      };
+      const entries = (networkDoc.methods || [])
+        .filter((m) => m.Defining === 'PowerNetwork' && isPublic(m.Access) && !m.Hidden && !m.IsConstructor);
+      const groups = new Map();
+      entries.forEach((m) => {
+        const start = `PowerNetwork.${m.Name}`;
+        const seen = new Set([start]);
+        const queue = [start];
+        const reached = new Set();
+        while (queue.length) {
+          const node = queue.shift();
+          (graph.callees.get(node) || []).forEach((next) => {
+            if (inClass(next)) {
+              if (!inClass(node)) reached.add(next);
+              return;
+            }
+            if (!seen.has(next)) { seen.add(next); queue.push(next); }
+          });
+        }
+        if (!reached.size) return;
+        const group = m.Group || 'Other';
+        if (!groups.has(group)) groups.set(group, []);
+        groups.get(group).push({ entry: m.Name, reached });
+      });
+      if (!groups.size) return '';
+      const entryLink = (entry) => `<a href="${loader.pageUrl('method.html', { class: 'PowerNetwork', method: entry })}"><code>${escapeHtml(entry)}</code></a>`;
+      const body = [...groups.entries()].flatMap(([group, items]) => [
+        { group: groupLabel(group) },
+        ...items.sort((a, b) => a.entry.localeCompare(b.entry)).map((item) => ({ entry: entryLink(item.entry), members: nodeLinks(item.reached, 6) }))
+      ]);
+      return `
+        <h2 id="used-by">${tr('Used by', '利用元')}</h2>
+        <p class="ref-muted ref-small">${tr('Public methods of PowerNetwork whose calls reach this class, with the members they reach first (from the call graph, without candidate links).', '呼び出しがこのクラスに届く PowerNetwork の public メソッドと、最初に届くメンバー（呼び出しグラフから、候補リンクを除く）。')}</p>
+        ${stackTable([['entry', tr('Entry point', '入口')], ['members', tr('Members reached', '届くメンバー')]], body)}`;
+    }
+
+    function renderSubclassTree(name) {
+      const rows = [];
+      const walk = (parent, depth, seen) => {
+        loader.getSubclasses(parent).map((item) => item.Name).sort().forEach((child) => {
+          if (seen.has(child)) return;
+          seen.add(child);
+          const meta = loader.findClass(child) || {};
+          rows.push({
+            name: `<span class="ref-tree-indent" style="--depth: ${depth}">${renderClassLink(child)}</span>${meta.Abstract ? `<span class="ref-hints"><span class="ref-badge is-small is-abstract">${tr('Abstract', '抽象')}</span></span>` : ''}`,
+            summary: meta.Summary ? formatInlineMarkdown(meta.Summary) : muted('-')
+          });
+          walk(child, depth + 1, seen);
+        });
+      };
+      walk(name, 0, new Set());
+      if (!rows.length) return '';
+      return `
+        <h2 id="subclasses">${tr('Subclasses', 'サブクラス')}</h2>
+        ${stackTable([['name', tr('Class', 'クラス')], ['summary', tr('Summary', '概要')]], rows)}`;
+    }
+
+    function renderClassPage(meta, classDoc, graphRaw, networkDoc) {
       const c = meta || {};
       const name = c.Name || className;
       pageData = {
@@ -277,7 +528,7 @@
       };
       const events = toList(classDoc.events);
       const enumeration = toList(classDoc.enumeration);
-      const subclasses = loader.getSubclasses(name).map((item) => item.Name).sort();
+      const graph = indexGraph(graphRaw);
       const ancestors = Array.isArray(c.Ancestors) ? c.Ancestors : loader.parentNames(c);
       const documented = c.Documented ?? Boolean(firstText(c.Summary, c.Desc));
       const category = firstText(c.Category, c.Package);
@@ -317,17 +568,20 @@
       if (!documented) {
         html += `<div class="ref-notice">${tr('This class has no documentation comments yet. The tables below are generated from the source code. To add a description, follow the comment rules in <a href="developer/class-documentation.html">Class Documentation</a>.', 'このクラスのドキュメントコメントは未記入。以下の表はソースコードから生成。説明の追加時は <a href="developer/class-documentation.html">Class Documentation</a> のコメント規約に準拠。')}</div>`;
       }
-      [
-        ['summary', tr('Summary', '概要'), c.Summary],
-        ['description', tr('Description', '説明'), c.Desc],
-        ['examples', tr('Examples', '使用例'), examples]
-      ].filter(([, , value]) => firstText(value)).forEach(([id, title, value]) => {
+      const overview = [
+        ['role', tr('Role', '役割'), renderRole(c, name)],
+        ['examples', tr('Examples', '使用例'), firstText(examples) ? `
+          <h2 id="examples">${tr('Examples', '使用例')}</h2>
+          <div class="markdown-content">${renderMarkdown(examples)}</div>` : ''],
+        ['owned-data', tr('Owned data', '保持データ'), renderOwnedData(c, graph)],
+        ['references', tr('References', '参照'), renderReferences(c, name, graph)],
+        ['methods-by-purpose', tr('Methods by purpose', '目的別メソッド'), renderMethodsByPurpose(name, graph)],
+        ['used-by', tr('Used by', '利用元'), renderUsedBy(name, ancestors, graph, networkDoc)],
+        ['subclasses', tr('Subclasses', 'サブクラス'), renderSubclassTree(name)]
+      ];
+      overview.filter(([, , part]) => part).forEach(([id, title, part]) => {
         sections.push([id, title]);
-        html += `
-          <div class="meta-box" style="margin-top: 16px;">
-            <h2 id="${id}" style="margin-top: 0;">${title}</h2>
-            <div class="markdown-content">${renderMarkdown(value)}</div>
-          </div>`;
+        html += part;
       });
 
       sections.push(['inheritance', tr('Inheritance', '継承')]);
@@ -337,17 +591,16 @@
           <table class="meta-table">
             <tbody>
               <tr><th style="width: 22%;">${tr('Superclasses', 'スーパークラス')}</th><td><div class="ref-chain">${chain}</div></td></tr>
-              <tr><th>${tr('Subclasses', 'サブクラス')}</th><td>${subclasses.length ? `<div class="ref-chain">${subclasses.map(renderClassLink).join('<span class="ref-chain-sep">,</span>')}</div>` : muted(tr('None', 'なし'))}</td></tr>
             </tbody>
           </table>
         </div>`;
 
-      sections.push(['properties', tr('Properties', 'プロパティ')]);
-      html += `<h2 id="properties">${tr('Properties', 'プロパティ')}</h2>`;
+      sections.push(['properties', tr('All properties', '全プロパティ')]);
+      html += `<h2 id="properties">${tr('All properties', '全プロパティ')}</h2>`;
       html += pageData.properties.length ? renderMemberToolbar('property') : `<p>${tr('No properties.', 'プロパティなし。')}</p>`;
 
-      sections.push(['methods', tr('Methods', 'メソッド')]);
-      html += `<h2 id="methods">${tr('Methods', 'メソッド')}</h2>`;
+      sections.push(['methods', tr('All methods', '全メソッド')]);
+      html += `<h2 id="methods">${tr('All methods', '全メソッド')}</h2>`;
       html += pageData.methods.length ? renderMemberToolbar('method') : `<p>${tr('No methods.', 'メソッドなし。')}</p>`;
 
       if (events.length) {
@@ -380,10 +633,15 @@
       window.GuildaDocTree.mount(document.getElementById('source-tree'), {
         className: loader.findClass(className)?.Name || className
       });
-      loader.loadClass(className)
-        .then(({ meta, data }) => {
-          renderClassPage(meta, data);
-          document.addEventListener('guilda-langchange', () => renderClassPage(meta, data));
+      // The call graph and PowerNetwork (the entry points of Used by) are optional.
+      Promise.all([
+        loader.loadClass(className),
+        loader.loadCallGraph(),
+        loader.loadClass('PowerNetwork').then(({ data }) => data).catch(() => null)
+      ])
+        .then(([{ meta, data }, graph, networkDoc]) => {
+          renderClassPage(meta, data, graph, networkDoc);
+          document.addEventListener('guilda-langchange', () => renderClassPage(meta, data, graph, networkDoc));
         })
         .catch((err) => {
           document.getElementById('dynamic-content').innerHTML = `
