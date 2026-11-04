@@ -85,7 +85,7 @@ classdef IEEJ_WEST10 < PowerNetwork
 % Simulation:
 %
 % With the default solver settings simulate can stop at the initial condition
-% (GUILDA:ODEsolver:UnfeasibleDAE): at peak, runs without an event over some time spans
+% (GUILDA:SolverODE:UnfeasibleDAE): at peak, runs without an event over some time spans
 % do. The warning that the initial condition of a phase moved the differential states means
 % that the rotor angles have jumped and the result is wrong; Tolerance 1e-6 and
 % AbsoluteTolerance 1e-8 give it for a fault at `B003` at peak. Discard such a run.
@@ -96,7 +96,7 @@ classdef IEEJ_WEST10 < PowerNetwork
 % ```matlab
 % net = network.IEEJ_WEST10(Section="night");
 % res = net.calculate_powerflow();
-% ev  = ODEevent("fault", net, "TimeSpan", [1,1.07], "FaultBus", "B002");
+% ev  = EventODE("fault", net, "TimeSpan", [1,1.07], "FaultBus", "B002");
 % sol = net.simulate([0,20], ev);
 % ```
 %

@@ -1,5 +1,5 @@
 function c_old = v3_optimize_powerflow(result, flag, output)
-% Convert an OPFresult into the old output tuple of optimize_powerflow.
+% Convert a ResultOPF into the old output tuple of optimize_powerflow.
 %
 % Old (v3) outputs of PowerNetwork.optimize_powerflow, made from the v4 outputs:
 %   [powerflow_bus, powerflow_cub, flag, output, lambda, OPFprob]

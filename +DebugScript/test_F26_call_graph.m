@@ -24,10 +24,10 @@ end
 
 %% A package folder above a user class does not hide a receiver of that name
 % GUILDA 自体は + フォルダの下で動かないので, ユーザーのクラスのフォルダで確認する
-% ODEsolver は GUILDA のコードが Class.member で参照する名前で, パッケージ扱いになると辺が消える
+% SolverODE は GUILDA のコードが Class.member で参照する名前で, パッケージ扱いになると辺が消える
 str_dir = tempname; mkdir(str_dir); c_dir = onCleanup(@() rmdir(str_dir, "s"));
 str_root = copy_guilda(fullfile(str_dir, "GUILDA"));
-str_user = fullfile(str_dir, "+ODEsolver", "user");
+str_user = fullfile(str_dir, "+SolverODE", "user");
 mkdir(str_user);
 writelines(["classdef F26UserClass < Bus", "end"], fullfile(str_user, "F26UserClass.m"));
 str_without = export_graph(str_root);

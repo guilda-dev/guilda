@@ -1,5 +1,5 @@
 function [result, flag, output] = calculate_powerflow(obj, varargin)
-% Calculate the power flow of the network and return a PFCresult.
+% Calculate the power flow of the network and return a ResultPF.
 %
 % Calculates the power flow of the network. The settings are the stored defaults of
 % net.solver_PF; Name-Value options override them for this call only (net.solver_PF is
@@ -8,7 +8,7 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
 % Q = NaN, otherwise the first bus that has a component (GUILDA:Bus:SlackWithoutQnan).
 % A network without buses stops with GUILDA:PowerNetwork:NoBus, and a network whose
 % buses have no components with GUILDA:PowerNetwork:NoSlackCandidate.
-% Accepted options are the names in PFCsolver.OptionMap plus Plot and Export;
+% Accepted options are the names in SolverPF.OptionMap plus Plot and Export;
 % any other name stops with GUILDA:resolve_options:UnknownName.
 %
 % Name-Value options:
@@ -27,7 +27,7 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
 % res = net.calculate_powerflow(Method="dynamic", Tolerance=1e-8, Plot=true);
 % ```
 %
-% See also PFCresult, PFCsolver, PowerNetwork.initialize
+% See also ResultPF, SolverPF, PowerNetwork.initialize
     arguments (Output)
         result   % Bus voltages, injections and branch flows of the solution.
         flag     % exitflag of fsolve ("algebraic", positive = converged) or convergence ("dynamic").

@@ -8,7 +8,7 @@
 %   - Name-Value による一時的な設定の上書き (net.solver_CPF は変わらない)
 %   - 前提条件 (平衡点・負荷母線) の誤りと未知のオプションのエラー
 %   - Plot / Export
-%   - 旧入口 Continuation_Power_Flow(net, opt) と旧コンストラクタ CPFsolver(net, ...)
+%   - 旧入口 Continuation_Power_Flow(net, opt) と旧コンストラクタ SolverCPF(net, ...)
 %
 % 実行: runtests("DebugScript.test_F5_cpf")  または  DebugScript.run_all("Features","F5")
 
@@ -24,7 +24,7 @@ n_bus = numel(net.a_Bus);
 lambda = res.rv_lambda;
 
 % 結果クラスも flag と output を持つ
-assert(isa(res, "CPFresult") && isa(res, "AnalysisResult"))
+assert(isa(res, "ResultCPF") && isa(res, "ResultBase"))
 assert(islogical(flag) && flag && res.l_success && isequal(res.output, output))
 assert(isfield(output, "message") && output.iterations == numel(lambda) - 1)
 assert(numel(output.correctorIterations) == output.iterations)
@@ -58,7 +58,7 @@ assert(norm(res.rm_x(1:2:2*n_bus,:) - V_abs) < 1e-12)
 assert(isequal(size(res.rm_xPredicted), size(res.rm_x)) && all(isnan(res.rm_xPredicted(:,1))))
 
 % 設定と系統の参照
-assert(res.str_solver == "CPFsolver" && res.a_PowerNetwork == net && res.r_elapsed >= 0)
+assert(res.str_solver == "SolverCPF" && res.a_PowerNetwork == net && res.r_elapsed >= 0)
 assert(isequal(res.options.LoadBus, str_load) && res.options.MaxIterations == net.solver_CPF.MaxIterations)
 
 
@@ -93,11 +93,11 @@ assert(isequal(res.options.LoadBus, str_load) && numel(res.rv_lambda) == 3)
 
 %% Failed preconditions and unknown options stop with an error
 % 負荷母線の指定がない / 系統にない母線
-assert(error_id(@() net.calculate_continuation_powerflow()) == "GUILDA:CPFsolver:EmptyLoadBus")
-assert(error_id(@() net.calculate_continuation_powerflow(LoadBus="B099")) == "GUILDA:CPFsolver:UnknownLoadBus")
+assert(error_id(@() net.calculate_continuation_powerflow()) == "GUILDA:SolverCPF:EmptyLoadBus")
+assert(error_id(@() net.calculate_continuation_powerflow(LoadBus="B099")) == "GUILDA:SolverCPF:UnknownLoadBus")
 % initialize 前は平衡点がない (9 母線系統は作成時に initialize しない)
 net2 = DebugScript.helper.build_9bus();
-assert(error_id(@() net2.calculate_continuation_powerflow(LoadBus="B005")) == "GUILDA:CPFsolver:NoEquilibrium")
+assert(error_id(@() net2.calculate_continuation_powerflow(LoadBus="B005")) == "GUILDA:SolverCPF:NoEquilibrium")
 
 % 未知のオプション (v3 の名前も受け付けない)
 try
@@ -118,7 +118,7 @@ net3 = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net3.initialize);
 evalc("net3.a_Bus{2}.l_isSlack = true;");
 assert(net3.s_edit.l_staleEquilibrium)
-assert(error_id(@() net3.calculate_continuation_powerflow(LoadBus=str_load)) == "GUILDA:CPFsolver:StaleEquilibrium")
+assert(error_id(@() net3.calculate_continuation_powerflow(LoadBus=str_load)) == "GUILDA:SolverCPF:StaleEquilibrium")
 
 
 %% Plot and Export of the result
@@ -131,7 +131,7 @@ assert(isa(ax, "matlab.graphics.axis.Axes") && numel(findobj(ax, "Type", "line")
 ax2 = res.Plot(Bus="all", Parent=figure("Visible","off"));
 c_fig2 = onCleanup(@() close(ancestor(ax2, "figure")));
 assert(numel(findobj(ax2, "Type", "line")) == n_bus)
-assert(error_id(@() res.Plot(Bus="B099", Parent=figure("Visible","off"))) == "GUILDA:CPFresult:UnknownBus")
+assert(error_id(@() res.Plot(Bus="B099", Parent=figure("Visible","off"))) == "GUILDA:ResultCPF:UnknownBus")
 close(findall(groot, "Type", "figure", "Visible", "off"))
 % Plot=true は計算後に result.Plot を呼ぶ
 a_before = findall(groot, "Type", "figure");
@@ -150,10 +150,10 @@ assert(max(abs(tab.lambda - res.rv_lambda(:))) < 1e-12 && max(abs(tab.V_B009 - a
 % Export=filename は計算後に result.Export を呼ぶ
 DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=str_load, MaxIteration=2, Export=fullfile(str_dir, "nv.csv")));
 assert(isfile(fullfile(str_dir, "nv.csv")))
-assert(error_id(@() res.Export(fullfile(str_dir, "cpf.mat"))) == "GUILDA:CPFresult:ExportFormat")
+assert(error_id(@() res.Export(fullfile(str_dir, "cpf.mat"))) == "GUILDA:ResultCPF:ExportFormat")
 
 
-%% COMPAT v3 Continuation_Power_Flow and CPFsolver constructor
+%% COMPAT v3 Continuation_Power_Flow and SolverCPF constructor
 % 旧入口 Continuation_Power_Flow(net, opt) は警告して v3 の使い方を保つ
 clear Deprecated
 lastwarn("");
@@ -165,12 +165,12 @@ assert(isa(cpf, "ContinuationPowerFlowV3") && isequal(cpf.CPFBus(:)', str_load))
 [sol, sol_pred] = DebugScript.helper.quiet(@() cpf.solve);
 res = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=str_load));
 assert(isequal(sol, cpf.CPF_Result.x_sol) && isequaln(sol_pred, cpf.CPF_Result.x_prd))
-assert(norm(sol - res.rm_x) < 1e-12 && isa(cpf.CPF_Result.result, "CPFresult"))
+assert(norm(sol - res.rm_x) < 1e-12 && isa(cpf.CPF_Result.result, "ResultCPF"))
 assert(isempty(net.solver_CPF.LoadBus))      % 既定値は変わらない
 
-% 旧コンストラクタ CPFsolver(net, ...) は v4 の呼び方を示すエラー
-assert(error_id(@() CPFsolver(net, "CPFBus", str_load)) == "GUILDA:v3_cpf_constructor:ContinuationPowerFlowConstructor")
-assert(isa(CPFsolver(), "CPFsolver"))
+% 旧コンストラクタ SolverCPF(net, ...) は v4 の呼び方を示すエラー
+assert(error_id(@() SolverCPF(net, "CPFBus", str_load)) == "GUILDA:v3_cpf_constructor:ContinuationPowerFlowConstructor")
+assert(isa(SolverCPF(), "SolverCPF"))
 
 
 % ---- local functions ----

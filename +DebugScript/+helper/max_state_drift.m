@@ -1,7 +1,7 @@
 function d = max_state_drift(sol)
 % シミュレーション結果の全機器状態・全母線電圧の初期値からの最大変化量
 %
-%   d = DebugScript.helper.max_state_drift(sol)   % sol: ODEresult
+%   d = DebugScript.helper.max_state_drift(sol)   % sol: ResultODE
 %
 % 解列中の機器 (NaN) は無視する。外乱なしで平衡点に留まっていれば d ≈ 0。
     r = sol.odeResults;

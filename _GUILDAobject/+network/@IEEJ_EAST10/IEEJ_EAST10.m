@@ -64,7 +64,7 @@ classdef IEEJ_EAST10 < PowerNetwork
 % - The long-period oscillation is about 3.0 s (peak) and 2.1 s (night); the report
 %   states about 2 s and 3 s for its model.
 % - For the 44 cases of table 4.3 (70 ms three-phase fault at the From end, then opening
-%   the circuits), the stable or out-of-step result agreed in 35. ODEevent cannot
+%   the circuits), the stable or out-of-step result agreed in 35. EventODE cannot
 %   open a branch, so these used a separate integrator of the same equations outside
 %   this class; net.simulate gives only the bus fault.
 %
@@ -75,7 +75,7 @@ classdef IEEJ_EAST10 < PowerNetwork
 % net = network.IEEJ_EAST10(Section="night");
 % res = net.calculate_powerflow();
 % net = network.IEEJ_EAST10();
-% ev  = ODEevent("fault", net, "TimeSpan", [1,1.07], "FaultBus", "B036");
+% ev  = EventODE("fault", net, "TimeSpan", [1,1.07], "FaultBus", "B036");
 % sol = net.simulate([0,10], ev);
 % ```
 %

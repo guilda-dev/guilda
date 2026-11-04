@@ -28,7 +28,7 @@ classdef local_LQR < LocalController
 % net.a_Bus{1}.a_Component{1}.add_local_controller(controller.local_LQR("lqr1"));
 % net.a_Bus{2}.a_Component{1}.add_local_controller(controller.local_LQR("lqr2", Input="Vfield", R=2));
 % net.initialize;
-% ev  = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B007");
+% ev  = EventODE("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B007");
 % sol = net.simulate([0,10], ev);
 % ```
 %

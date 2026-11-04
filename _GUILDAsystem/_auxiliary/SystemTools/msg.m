@@ -15,9 +15,9 @@ function txt = msg(ID, varargin)
 % The caller must be the object named in the ID; otherwise msg stops with an error.
 %
 % <@Examples>
-% Inside a method of CPFresult:
+% Inside a method of ResultCPF:
 % ```matlab
-% error(msg("GUILDA:CPFresult:UnknownBus", "B099"));
+% error(msg("GUILDA:ResultCPF:UnknownBus", "B099"));
 % ```
 
     

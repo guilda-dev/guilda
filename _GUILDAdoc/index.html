@@ -239,7 +239,7 @@ net.a_Bus{2}.add_component("load-power");
 
 % Or start from a packaged network and analyse it
 net = network.IEEE14bus;
-fault = ODEevent("fault", net, "FaultBus", "B008", "TimeSpan", [3, 3.1]);
+fault = EventODE("fault", net, "FaultBus", "B008", "TimeSpan", [3, 3.1]);
 sol = net.simulate([0, 50], fault);   % time response
 sys = net.get_sys();                  % linearized model</code></pre>
       </section>
@@ -352,7 +352,7 @@ sys = net.get_sys();                  % linearized model</code></pre>
       <h2>Your First Simulation</h2>
       <p>Load a packaged network, apply a short fault at one bus and simulate the response. The plot shows the frequency deviation of several generators.</p>
 <pre><code>net = network.IEEE14bus;
-fault = ODEevent("fault", net, "FaultBus", "B008", "TimeSpan", [3, 3.1]);
+fault = EventODE("fault", net, "FaultBus", "B008", "TimeSpan", [3, 3.1]);
 sol = net.simulate([0, 50], fault);
 
 xsol = sol.odeResults;
@@ -418,9 +418,9 @@ powerflow = net.calculate_powerflow();
 net.initialize();</code></pre>
 
       <h2 id="tutorial-simulation">3. Run a Time-Domain Simulation</h2>
-      <p>Use <code>ODEevent</code> to describe disturbances. Events can represent state offsets, input changes, bus faults, and unit trips.</p>
+      <p>Use <code>EventODE</code> to describe disturbances. Events can represent state offsets, input changes, bus faults, and unit trips.</p>
 <pre><code>net = network.IEEE14bus;
-fault = ODEevent("fault", net, ...
+fault = EventODE("fault", net, ...
     "FaultBus", "B008", ...
     "TimeSpan", [3, 3.1]);
 
@@ -446,7 +446,7 @@ pss = controller.pss.PSS1("pss1");
 net.a_Bus{1}.a_Component{1}.add_local_controller(avr, pss);
 net.initialize();
 
-fault = ODEevent("fault", net, "FaultBus", "B008", "TimeSpan", [3, 3.01]);
+fault = EventODE("fault", net, "FaultBus", "B008", "TimeSpan", [3, 3.01]);
 sol = net.simulate([0, 50], fault);</code></pre>
 
       <hr style="margin: 50px 0; border: 0; border-top: 1px solid var(--line);">

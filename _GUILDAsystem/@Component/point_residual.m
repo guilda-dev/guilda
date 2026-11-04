@@ -9,7 +9,7 @@ function [rv_dx, rv_I] = point_residual(obj, rv_point)
 % - `rv_dx` — Right-hand sides of the state equations (component, then controllers).
 % - `rv_I` — [pu] Current injected into the bus [Ire; Iim].
 %
-% See also LTIsolver.solve
+% See also SolverLIN.solve
     a_LC = all_controllers(obj);
     [x, V, I, u, c_con] = point_values(obj, a_LC, rv_point);
     c_dx = cell(numel(a_LC),1);

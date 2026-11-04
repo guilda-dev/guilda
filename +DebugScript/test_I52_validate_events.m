@@ -1,4 +1,4 @@
-% I52 イベントの検証 (ODEevent)
+% I52 イベントの検証 (EventODE)
 %
 % 打ち間違いが無外乱の flag=1 にならず、計算前に原因を示すエラーになることを確認する。
 %
@@ -28,7 +28,7 @@ expect_event_error(net, "UnknownTripUnit", "avr1", "TimeSpan", [1,1.2], "TripUni
 %% TripUnit accepts components and global controllers
 net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002"));
 DebugScript.helper.quiet(@() net.initialize);
-[~, flag] = net.simulate([0,2], ODEevent("ev", net, "TimeSpan", [1,1.2], "TripUnit", ["LPQ2B003";"agc"]));
+[~, flag] = net.simulate([0,2], EventODE("ev", net, "TimeSpan", [1,1.2], "TripUnit", ["LPQ2B003";"agc"]));
 assert(flag == 1)
 
 
@@ -71,19 +71,19 @@ expect_event_error(net, "UnknownInputUnit", "InputUnit", "TimeSpan", [1,2], "Inp
 %% Valid events still run
 % 値が 1 つなら全ての名前に使い、イベントの種類ごとに正しい指定は計算できる
 o = { ...
-    ODEevent("os", net, "TimeSpan", 0,        "OffsetUnit", "SG1B001", "OffsetState", ["delta";"omega"], "OffsetValue", 1e-3); ...
-    ODEevent("in", net, "TimeSpan", [1,1.5],  "InputUnit", "SG1B002", "InputName", ["Pmech";"Vfield"], "InputValue", 0.01); ...
-    ODEevent("fl", net, "TimeSpan", [2,2.02], "FaultBus", "B008"); ...
-    ODEevent("tr", net, "TimeSpan", [2.5,2.6], "TripUnit", "LPQ2B003"); ...
-    ODEevent("no", net, "TimeSpan", 1)};
+    EventODE("os", net, "TimeSpan", 0,        "OffsetUnit", "SG1B001", "OffsetState", ["delta";"omega"], "OffsetValue", 1e-3); ...
+    EventODE("in", net, "TimeSpan", [1,1.5],  "InputUnit", "SG1B002", "InputName", ["Pmech";"Vfield"], "InputValue", 0.01); ...
+    EventODE("fl", net, "TimeSpan", [2,2.02], "FaultBus", "B008"); ...
+    EventODE("tr", net, "TimeSpan", [2.5,2.6], "TripUnit", "LPQ2B003"); ...
+    EventODE("no", net, "TimeSpan", 1)};
 [sol, flag] = net.simulate([0,3], o{:});
 assert(flag == 1 && sol.odeResults.t(end) == 3)
 
 
 function expect_event_error(net, str_key, str_text, varargin)
     % エラーの ID と、メッセージが原因を示すこと (str_text を全て含む) を確認する
-    ev = ODEevent("ev", net, varargin{:});
-    str_id = "GUILDA:ODEevent:" + str_key;
+    ev = EventODE("ev", net, varargin{:});
+    str_id = "GUILDA:EventODE:" + str_key;
     try
         net.simulate([0,3], ev);
     catch ME

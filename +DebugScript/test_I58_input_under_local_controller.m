@@ -74,7 +74,7 @@ function res = component_result(r, net, str_unit)
 end
 
 function r = simulate_step(net, str_unit, str_input, r_step, rv_time)
-    ev = ODEevent("step", net, "TimeSpan", rv_time, "InputUnit", str_unit, "InputName", str_input, "InputValue", r_step);
+    ev = EventODE("step", net, "TimeSpan", rv_time, "InputUnit", str_unit, "InputName", str_input, "InputValue", r_step);
     r = net.simulate(rv_time, ev).odeResults;
 end
 

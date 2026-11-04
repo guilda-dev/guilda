@@ -1,7 +1,7 @@
 % F2 潮流計算 (calculate_powerflow)
 %
 % 9母線系統 (旧 Task1/Task2) と IEEE14 母線系統で潮流計算を行い、
-%   - v4 の呼び出し形式 [result, flag, output] と結果クラス PFCresult
+%   - v4 の呼び出し形式 [result, flag, output] と結果クラス ResultPF
 %   - Name-Value による一時的な設定の上書き (net.solver_PF は変わらない)
 %   - v3 の呼び出し形式 (位置引数 mode, export/filename) の互換
 %   - 収束フラグ / 出力の形式
@@ -29,7 +29,7 @@ assert(flag > 0, "潮流計算が収束していない: flag = " + flag)
 assert(isstruct(output) && isfield(output,"message"))
 
 % 結果クラスも flag と output を持つ
-assert(isa(res, "PFCresult") && isa(res, "AnalysisResult"))
+assert(isa(res, "ResultPF") && isa(res, "ResultBase"))
 assert(isequal(res.flag, flag) && isequal(res.output, output) && res.l_success)
 
 % 結果は母線ごとの table (行名 = 母線タグ)
@@ -240,7 +240,7 @@ assert(max(abs(tab_dyn.Vphasor - tab_alg.Vphasor)) < 1e-6)
 net = DebugScript.helper.build_9bus();
 [res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
 assert(flag > 0)
-assert(res.str_solver == "PFCsolver" && res.a_PowerNetwork == net && res.r_elapsed >= 0)
+assert(res.str_solver == "SolverPF" && res.a_PowerNetwork == net && res.r_elapsed >= 0)
 assert(res.options.Method == "algebraic" && isequal(res.options.dynamic, net.solver_PF.dynamic))
 % 反復ごとの母線電圧 (最後が解)
 assert(size(res.cm_Vhistory,1) == numel(net.a_Bus) && isequal(res.rv_step, 0:size(res.cm_Vhistory,2)-1))
@@ -343,7 +343,7 @@ assert(height(tab) == numel(net.a_Branch) && max(abs(tab.Ploss - res.tab_branch.
 DebugScript.helper.quiet(@() net.calculate_powerflow(Export=fullfile(str_dir, "nv.csv")));
 assert(isfile(fullfile(str_dir, "nv.csv")))
 % 未対応の拡張子
-assert(error_id(@() res.Export(fullfile(str_dir, "bus.mat"))) == "GUILDA:PFCresult:ExportFormat")
+assert(error_id(@() res.Export(fullfile(str_dir, "bus.mat"))) == "GUILDA:ResultPF:ExportFormat")
 
 
 %% Dynamic method exports convergence history as JSON
@@ -359,8 +359,8 @@ data = jsondecode(fileread(filepath));
 assert(numel(data.nodes) == numel(net.a_Bus))
 assert(numel(data.nodes(2).Vabs) == numel(res.rv_step))
 % 結果だけ (系統なし) では JSON を書けない
-res_empty = PFCresult();
-assert(error_id(@() res_empty.Export(filepath)) == "GUILDA:PFCresult:NoNetwork")
+res_empty = ResultPF();
+assert(error_id(@() res_empty.Export(filepath)) == "GUILDA:ResultPF:NoNetwork")
 
 
 %% COMPAT v3 positional mode and export options
@@ -370,7 +370,7 @@ clear Deprecated
 lastwarn("");
 w = warning("off", "GUILDA:Deprecated:CalculatePowerflowMode"); c = onCleanup(@() warning(w));
 [res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow("dynamic", "export", false));
-assert(isa(res, "PFCresult") && logical(flag) && res.options.Method == "dynamic")
+assert(isa(res, "ResultPF") && logical(flag) && res.options.Method == "dynamic")
 id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:Deprecated:CalculatePowerflowExport")
 assert(net.solver_PF.Method == "algebraic")       % 既定値は変わらない

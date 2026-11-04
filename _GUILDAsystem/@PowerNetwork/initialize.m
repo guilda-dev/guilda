@@ -53,7 +53,7 @@ function [result, flag, output] = initialize(obj, varargin)
 %
 % See also PowerNetwork.calculate_powerflow, PowerNetwork.optimize_powerflow, PowerNetwork.simulate
     arguments (Output)
-        result   % PFCresult for "powerflow" and "equilibrium" (str_solver = "equilibrium", no branch flows), OPFresult for "OPF"; result.tab_bus is the bus equilibrium.
+        result   % ResultPF for "powerflow" and "equilibrium" (str_solver = "equilibrium", no branch flows), ResultOPF for "OPF"; result.tab_bus is the bus equilibrium.
         flag     % Success flag of the analysis (positive; a failure stops with an error).
         output   % Details of the analysis; output.message describes the outcome.
     end
@@ -469,6 +469,6 @@ function [result, flag, output] = calculate_from_equilibrium(obj)
     tab_bus = array2table(...
         [angle(cv_Vbus),abs(cv_Vbus),real(cv_Sbus),imag(cv_Sbus),cv_Vbus,cv_Ibus], ...
         "VariableNames",["Varg","V","P","Q","Vphasor","Iphasor"],"RowNames",str_Bus);
-    result  = PFCresult(obj, "equilibrium", struct("Method","equilibrium","Tolerance",tol), ...
+    result  = ResultPF(obj, "equilibrium", struct("Method","equilibrium","Tolerance",tol), ...
                               flag, output, t0, tab_bus);
 end
