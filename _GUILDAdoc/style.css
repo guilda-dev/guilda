@@ -148,9 +148,10 @@ body.home-layout main { max-width: 1050px; width: 95%; margin: 32px auto; backgr
 /* ヒーローセクション: title left, tilted mark at the right end standing on a soft contact shadow */
 .hero { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 16px 0 28px; border-bottom: 1px solid var(--line); }
 .hero-text { min-width: 0; }
+/* The title never wraps: its size follows the viewport so the longest language still fits beside (or, on phones, below) the mark */
 .hero-title {
-  font-size: clamp(2.8rem, 8vw, 4.8rem); font-weight: 800; letter-spacing: 0.04em; color: var(--brand);
-  border-bottom: none; line-height: 1.0; margin: 0 0 14px 0; padding: 0;
+  font-size: clamp(1.25rem, 5.4vw, 4rem); font-weight: 800; letter-spacing: 0.02em; color: var(--brand); white-space: nowrap;
+  border-bottom: none; line-height: 1.1; margin: 0 0 14px 0; padding: 0;
 }
 .hero-subtitle { font-size: clamp(0.9rem, 2vw, 1.15rem); font-weight: 400; color: var(--muted); margin: 0; }
 .hero-mark { position: relative; flex: none; width: clamp(64px, 11vw, 112px); margin-right: clamp(0px, 2vw, 24px); padding-bottom: 14px; }
@@ -158,6 +159,10 @@ body.home-layout main { max-width: 1050px; width: 95%; margin: 32px auto; backgr
 .hero-mark::after {
   content: ""; position: absolute; left: 10%; right: 10%; bottom: 0; height: 14px; border-radius: 50%;
   background: radial-gradient(closest-side, color-mix(in srgb, var(--ink) 26%, transparent), transparent);
+}
+@media (max-width: 560px) {
+  .hero { flex-direction: column-reverse; align-items: flex-start; gap: 12px; }
+  .hero-title { font-size: clamp(1.25rem, 6.6vw, 2.4rem); }
 }
 
 .home-intro { max-width: 680px; margin: 26px 0 16px; font-size: 1.1rem; color: var(--ink-2); }
@@ -1284,6 +1289,7 @@ body.doc-layout .meta-box table th {
   .dg .dg-table tr { padding: var(--dg-s3) 0; border-bottom: 1px solid var(--dg-line); }
   .dg .dg-table td { padding: 2px 0; border: 0; }
   .dg .dg-table td[data-label]::before { content: attr(data-label); display: block; margin-top: 6px; color: var(--dg-muted); font-size: 0.7rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+  html[data-lang="ja"] .dg .dg-table td[data-label-ja]::before { content: attr(data-label-ja); }
 }
 
 /* Icons (inline sprite per page: <svg class="dg-sprite"><symbol id="dg-i-…">) */
