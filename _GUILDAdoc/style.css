@@ -444,49 +444,6 @@ html[data-lang="ja"] body [lang="en"] { display: none !important; }
 }
 
 
-/* --- Referenceタブ：中央寄せ＆縮小ラッパー --- */
-.intro-cards-wrapper {
-  max-width: 800px;
-  margin: 0 auto 15px auto; 
-}
-
-.intro-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
-  margin: 0;
-}
-@media (max-width: 700px) { .intro-cards-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 400px) { .intro-cards-grid { grid-template-columns: 1fr; } }
-
-.intro-cards-grid .core-class-card {
-  padding: 15px 12px;
-  margin-bottom: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
-}
-.intro-cards-grid .core-class-card p { font-size: 0.78rem; margin-top: 8px; color: var(--muted); }
-
-.core-class-card {
-  background-color: var(--surface); 
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius);
-  padding: 20px;
-  text-align: center;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
-  text-decoration: none !important;
-  cursor: pointer;
-  color: var(--text-color);
-}
-.core-class-card:hover {
-  background-color: var(--surface-subtle);
-  border-color: var(--brand);
-}
-.core-class-card h3 { margin: 0; font-family: var(--font-mono); font-size: 1.05rem; color: var(--brand); }
-
-
 /* --- Referenceタブ：分類ボタンと表内継承ツリー --- */
 .filter-toggles {
   display: flex;
@@ -728,7 +685,7 @@ html[data-lang="ja"] body [lang="en"] { display: none !important; }
 }
 .uml-lr-canvas { 
   position: relative; 
-  width: 940px;
+  width: 720px;
   height: 420px; 
   margin: 0 auto; 
 }
@@ -756,7 +713,7 @@ html[data-lang="ja"] body [lang="en"] { display: none !important; }
 .uml-pos-branch    { left: 280px; top: 175px; width: 180px; }
 .uml-pos-gc        { left: 280px; top: 310px; width: 180px; }
 .uml-pos-component { left: 520px; top: 80px;  width: 180px; }
-.uml-pos-lc        { left: 760px; top: 110px; width: 150px; } 
+.uml-pos-lc        { left: 520px; top: 260px; width: 180px; }
 
 /* =========================================
    4. ドキュメント用レイアウト (class / method)
