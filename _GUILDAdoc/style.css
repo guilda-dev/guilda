@@ -1289,6 +1289,7 @@ body.doc-layout .meta-box table th {
   .dg .dg-table tr { padding: var(--dg-s3) 0; border-bottom: 1px solid var(--dg-line); }
   .dg .dg-table td { padding: 2px 0; border: 0; }
   .dg .dg-table td[data-label]::before { content: attr(data-label); display: block; margin-top: 6px; color: var(--dg-muted); font-size: 0.7rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+  html[data-lang="ja"] .dg .dg-table td[data-label-ja]::before { content: attr(data-label-ja); }
 }
 
 /* Icons (inline sprite per page: <svg class="dg-sprite"><symbol id="dg-i-…">) */

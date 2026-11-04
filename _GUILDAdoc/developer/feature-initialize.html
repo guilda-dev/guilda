@@ -69,7 +69,7 @@
     <p lang="en">Preconditions: the network has at least one bus with a component (the power flow selects a slack bus when none is set). <code>Method="equilibrium"</code> also needs an earlier successful <code>initialize</code> and no edit since then that changes the equilibrium, except edits of dynamics parameters. The old option <code>methods</code> and its old values are converted by <code>v3_initialize_args</code> with a deprecation warning.</p>
     <p lang="ja">前提条件: 機器を持つ母線が少なくとも 1 つあること（スラック母線が設定されていなければ潮流計算が選びます）。<code>Method="equilibrium"</code> では、さらに以前の <code>initialize</code> が成功しており、その後に平衡点を変える編集（動特性パラメータの編集を除く）がないことが必要です。旧オプション <code>methods</code> とその旧い値は、<code>v3_initialize_args</code> が非推奨の警告を出して変換します。</p>
     <p lang="en"><code>initialize</code> is one of the few analysis methods that change the model (see <a href="api-design.html#side-effects">API Design, rule 6</a>). The shipped network classes and <code>PowerNetwork.import_csv</code> / <code>import_matpower</code> (option <code>Initialize=true</code>, the default) call it when they build a network.</p>
-    <p lang="ja"><code>initialize</code> はモデルを変更する数少ない解析メソッドの 1 つです（<a href="api-design.html#side-effects">API Design のルール 6</a> を参照）。同梱のネットワーククラスと <code>PowerNetwork.import_csv</code> / <code>import_matpower</code>（オプション <code>Initialize=true</code>、既定）は、ネットワークを組み立てるときにこれを呼びます。</p>
+    <p lang="ja"><code>initialize</code> はモデルを変更する数少ない解析メソッドの 1 つです（<a href="api-design.html#side-effects">API 設計のルール 6</a> を参照）。同梱のネットワーククラスと <code>PowerNetwork.import_csv</code> / <code>import_matpower</code>（オプション <code>Initialize=true</code>、既定）は、ネットワークを組み立てるときにこれを呼びます。</p>
 
     <!-- ============================== SEQUENCE ============================== -->
     <h2 id="sequence"><span lang="en">Call sequence</span><span lang="ja">呼び出し順</span></h2>
@@ -262,7 +262,7 @@
         </tr>
         <tr>
           <td>INIT-09</td>
-          <td><code>Bus.set_equilibrium</code> → <code>Component.set_equilibrium(c_V, c_I, r_P, r_Q)</code><small>→ <code>get_equilibrium</code> of the model</small></td>
+          <td><code>Bus.set_equilibrium</code> → <code>Component.set_equilibrium(c_V, c_I, r_P, r_Q)</code><small>→ <span lang="en">the model's <code>get_equilibrium</code></span><span lang="ja">モデルの <code>get_equilibrium</code></span></small></td>
           <td lang="en" data-label="What it does">Calls the model's <code>get_equilibrium</code> with all four arguments and stores the result.</td>
           <td lang="ja" data-label="処理内容">モデルの <code>get_equilibrium</code> を 4 つの引数すべてで呼び、結果を保存します。</td>
           <td lang="en" data-label="Reads"><code>c_V</code>, <code>c_I</code>, <code>r_P</code>, <code>r_Q</code> [pu]; <code>para_dynamics</code> of the model</td>
@@ -354,30 +354,30 @@
     <ul lang="ja">
       <li><strong>書き込むもの:</strong> 上の平衡点のプロパティ、最新でなかった <code>f_*</code> ハンドルのキャッシュ（INIT-02）、スラック母線が未設定のとき潮流計算が選ぶ母線の <code>l_isSlack</code>（呼び出しが成功すれば残ります）、<code>controller.local_LQR</code> のゲイン。</li>
       <li><strong>編集状態:</strong> <code>l_staleEquilibrium</code> は INIT-05 で設定され、INIT-13 で <code>str_flag = "initialized"</code> と全レイヤーの編集ログのリセットとともに解除されます。その間で停止した呼び出しでは設定されたままになります。</li>
-      <li><strong>後からの編集:</strong> 何が古くなるかは編集ログで決まります（<a href="class-design.html#edits">Class Design: Edit handling</a> を参照）。<code>initialize</code> が自動で再実行されることはありません。<code>simulate</code>、<code>linearize</code>、<code>get_sys</code> は <code>GUILDA:PowerNetwork:EquilibriumStale</code> で、連続潮流計算は <code>GUILDA:SolverCPF:StaleEquilibrium</code> で停止します。動特性パラメータだけを編集した後は、<code>initialize(Method="equilibrium")</code> が <code>V</code> と <code>I</code> を保ったまま状態と入力を計算し直します。</li>
+      <li><strong>後からの編集:</strong> 何が古くなるかは編集ログで決まります（<a href="class-design.html#edits">クラス設計: 編集の扱い</a> を参照）。<code>initialize</code> が自動で再実行されることはありません。<code>simulate</code>、<code>linearize</code>、<code>get_sys</code> は <code>GUILDA:PowerNetwork:EquilibriumStale</code> で、連続潮流計算は <code>GUILDA:SolverCPF:StaleEquilibrium</code> で停止します。動特性パラメータだけを編集した後は、<code>initialize(Method="equilibrium")</code> が <code>V</code> と <code>I</code> を保ったまま状態と入力を計算し直します。</li>
       <li><strong>系統周波数:</strong> <code>Hz</code> の編集では次の解析でハンドルが再構築されますが、<code>initialize</code> のやり直しは不要です。</li>
     </ul>
 
     <!-- ============================== FAILURE ============================== -->
     <h2 id="failure"><span lang="en">Failure and flags</span><span lang="ja">失敗とフラグ</span></h2>
     <p lang="en"><code>flag</code> and <code>output</code> are those of the analysis of step 03 (<code>flag = 1</code> for <code>"equilibrium"</code>). A failure is never returned as a flag: <code>initialize</code> stops with an error. The IDs below name the message entries in <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code>; they are not MATLAB identifiers (see <a href="class-design.html#conventions">Class Design: Conventions</a>).</p>
-    <p lang="ja"><code>flag</code> と <code>output</code> はステップ 03 の解析のものです（<code>"equilibrium"</code> では <code>flag = 1</code>）。失敗がフラグとして返ることはなく、<code>initialize</code> はエラーで停止します。下の ID は <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> のメッセージ項目の名前で、MATLAB の識別子ではありません（<a href="class-design.html#conventions">Class Design: Conventions</a> を参照）。</p>
+    <p lang="ja"><code>flag</code> と <code>output</code> はステップ 03 の解析のものです（<code>"equilibrium"</code> では <code>flag = 1</code>）。失敗がフラグとして返ることはなく、<code>initialize</code> はエラーで停止します。下の ID は <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> のメッセージ項目の名前で、MATLAB の識別子ではありません（<a href="class-design.html#conventions">クラス設計: 規約</a> を参照）。</p>
     <table class="dg-table">
       <thead><tr><th lang="en">When</th><th lang="ja">発生する時点</th><th lang="en">Error or warning</th><th lang="ja">エラー・警告</th><th lang="en">State of the network</th><th lang="ja">ネットワークの状態</th></tr></thead>
       <tbody>
         <tr>
           <td><span lang="en">INIT-01</span><span lang="ja">INIT-01</span></td>
-          <td><code>InitializePairs</code>, <code>InitializeMethod</code>; <code>GUILDA:resolve_options:UnknownName</code> for other names</td>
+          <td><code>InitializePairs</code>, <code>InitializeMethod</code>; <span lang="en"><code>GUILDA:resolve_options:UnknownName</code> for other names</span><span lang="ja">それ以外の名前には <code>GUILDA:resolve_options:UnknownName</code></span></td>
           <td lang="en" data-label="State">unchanged</td><td lang="ja" data-label="状態">変更なし</td>
         </tr>
         <tr>
           <td><span lang="en">INIT-03a, power flow not converged</span><span lang="ja">INIT-03a、潮流計算が収束しない</span></td>
-          <td><code>InitializePowerflowFailed</code>; <code>InitializePowerflowIsland</code> when the network is split</td>
+          <td><code>InitializePowerflowFailed</code>; <span lang="en"><code>InitializePowerflowIsland</code> when the network is split</span><span lang="ja">ネットワークが分断されているときは <code>InitializePowerflowIsland</code></span></td>
           <td lang="en" data-label="State">unchanged; a slack bus selected by this call is released</td><td lang="ja" data-label="状態">変更なし。この呼び出しで選ばれたスラック母線は解除されます。</td>
         </tr>
         <tr>
           <td><span lang="en">INIT-03b, OPF not solved</span><span lang="ja">INIT-03b、OPF が解けない</span></td>
-          <td><code>InitializeOPFFailed</code>; <code>InitializeOPFIsland</code> when the network is split (also for an internal error while the problem of a split network is built)</td>
+          <td><code>InitializeOPFFailed</code>; <span lang="en"><code>InitializeOPFIsland</code> when the network is split (also for an internal error while the problem of a split network is built)</span><span lang="ja">ネットワークが分断されているときは <code>InitializeOPFIsland</code>（分断されたネットワークの問題を組み立てる途中の内部エラーでも同じ）</span></td>
           <td lang="en" data-label="State">unchanged</td><td lang="ja" data-label="状態">変更なし</td>
         </tr>
         <tr>
@@ -387,13 +387,13 @@
         </tr>
         <tr>
           <td><span lang="en">INIT-06 to INIT-12</span><span lang="ja">INIT-06〜INIT-12</span></td>
-          <td>errors of the models' <code>get_equilibrium</code> (e.g. <code>GUILDA:AVR_ST1:InvalidValueRange</code>); <code>InitializeNotEquilibrium</code>, <code>InitializeEquilibriumSize</code>, <code>InitializeModelFailed</code>, <code>InitializeModelSize</code></td>
+          <td><span lang="en">errors of the models' <code>get_equilibrium</code> (e.g. <code>GUILDA:AVR_ST1:InvalidValueRange</code>)</span><span lang="ja">モデルの <code>get_equilibrium</code> のエラー（例: <code>GUILDA:AVR_ST1:InvalidValueRange</code>）</span>; <code>InitializeNotEquilibrium</code>, <code>InitializeEquilibriumSize</code>, <code>InitializeModelFailed</code>, <code>InitializeModelSize</code></td>
           <td lang="en" data-label="State">the equilibrium is written in part and <code>l_staleEquilibrium</code> stays true; later analyses stop with <code>EquilibriumStale</code> ("the last net.initialize() stopped before it finished")</td>
           <td lang="ja" data-label="状態">平衡点は途中まで書き込まれ、<code>l_staleEquilibrium</code> は true のままです。後の解析は <code>EquilibriumStale</code>（"the last net.initialize() stopped before it finished"）で停止します。</td>
         </tr>
         <tr>
           <td><span lang="en">INIT-14</span><span lang="ja">INIT-14</span></td>
-          <td>warnings <code>GUILDA:PowerNetwork:EquilibriumResidual</code> (a residual of 1e-6 or more) and <code>GUILDA:PowerNetwork:NetworkIsland</code></td>
+          <td><span lang="en">warnings <code>GUILDA:PowerNetwork:EquilibriumResidual</code> (a residual of 1e-6 or more) and <code>GUILDA:PowerNetwork:NetworkIsland</code></span><span lang="ja">警告 <code>GUILDA:PowerNetwork:EquilibriumResidual</code>（残差 1e-6 以上）と <code>GUILDA:PowerNetwork:NetworkIsland</code></span></td>
           <td lang="en" data-label="State">initialized: a model with a residual can be simulated, but its states move without a disturbance</td>
           <td lang="ja" data-label="状態">初期化済み。残差のあるモデルもシミュレーションできますが、外乱がなくても状態が動きます。</td>
         </tr>
@@ -403,7 +403,7 @@
     <!-- ============================== EXTENSION ============================== -->
     <h2 id="extension"><span lang="en">Extension points</span><span lang="ja">拡張ポイント</span></h2>
     <p lang="en">A new model takes part in initialization through its <code>get_equilibrium</code> (see <a href="model-implementation.html#contracts">Model Implementation: Contracts</a>):</p>
-    <p lang="ja">新しいモデルは <code>get_equilibrium</code> を通じて初期化に参加します（<a href="model-implementation.html#contracts">Model Implementation: Contracts</a> を参照）。</p>
+    <p lang="ja">新しいモデルは <code>get_equilibrium</code> を通じて初期化に参加します（<a href="model-implementation.html#contracts">モデルの実装: 契約</a> を参照）。</p>
     <table class="dg-table">
       <thead><tr><th lang="en">Model</th><th lang="ja">モデル</th><th lang="en">Must implement</th><th lang="ja">実装すべきもの</th></tr></thead>
       <tbody>
@@ -431,7 +431,7 @@
     <ul lang="ja">
       <li>クラス: <a href="class-powernetwork.html">PowerNetwork</a>、<a href="class-bus.html">Bus</a>、<a href="class-branch.html">Branch</a>、<a href="class-component.html">Component</a>、<a href="class-localcontroller.html">LocalController</a>、<a href="class-globalcontroller.html">GlobalController</a></li>
       <li>機能: <a href="feature-model-building.html">モデル構築</a>、<a href="feature-data-io.html">データの入出力</a>、<a href="feature-power-flow.html">潮流計算</a>、<a href="feature-opf.html">最適潮流計算</a>、<a href="feature-cpf.html">連続潮流計算</a>、<a href="feature-simulation.html">時間応答シミュレーション</a>、<a href="feature-linearization.html">近似線形化</a></li>
-      <li>規約: <a href="class-design.html#edits">Class Design: Edit handling</a>、<a href="api-design.html#features">API Design: Per-feature API</a>、<a href="model-implementation.html#contracts">Model Implementation: Contracts</a></li>
+      <li>規約: <a href="class-design.html#edits">クラス設計: 編集の扱い</a>、<a href="api-design.html#features">API 設計: 機能ごとの API</a>、<a href="model-implementation.html#contracts">モデルの実装: 契約</a></li>
     </ul>
   </main>
 </body>

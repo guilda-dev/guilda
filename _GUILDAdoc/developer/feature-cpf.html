@@ -332,15 +332,15 @@
     <table class="dg-table cpf-data">
       <thead><tr><th lang="en">Property</th><th lang="ja">プロパティ</th><th lang="en">Contents and unit</th><th lang="ja">内容と単位</th><th lang="en">Size</th><th lang="ja">サイズ</th></tr></thead>
       <tbody>
-        <tr><td><code>sv_bus</code></td><td lang="en" data-label="Contents">bus tags, the rows of <code>cm_Vbus</code></td><td lang="ja" data-label="内容">母線のタグ。<code>cm_Vbus</code> の行</td><td data-label="Size">n_bus × 1 (14 × 1)</td></tr>
-        <tr><td><code>rv_lambda</code></td><td lang="en" data-label="Contents">λ at each point; the first point is the equilibrium</td><td lang="ja" data-label="内容">各点の λ。最初の点は平衡点</td><td data-label="Size">1 × n_point (1 × 362)</td></tr>
-        <tr><td><code>cm_Vbus</code></td><td lang="en" data-label="Contents">bus voltage phasors [pu]</td><td lang="ja" data-label="内容">母線電圧のフェーザ [pu]</td><td data-label="Size">n_bus × n_point (14 × 362)</td></tr>
-        <tr><td><code>r_lambdaMax</code>, <code>r_noseStep</code></td><td lang="en" data-label="Contents">largest λ and its index in <code>rv_lambda</code></td><td lang="ja" data-label="内容">λ の最大値と、その <code>rv_lambda</code> での位置</td><td data-label="Size">1 × 1</td></tr>
-        <tr><td><code>rm_x</code></td><td lang="en" data-label="Contents">full vector at each point: <code>[|V|; ∠V]</code> per bus [pu, rad] (then the component states with <code>UseInternalState</code>), λ in the last row</td><td lang="ja" data-label="内容">各点の全体ベクトル。母線ごとの <code>[|V|; ∠V]</code> [pu、rad]（<code>UseInternalState</code> では続いて機器の状態）、最後の行が λ</td><td data-label="Size">(2·n_bus + 1) × n_point (29 × 362)</td></tr>
-        <tr><td><code>rm_xPredicted</code></td><td lang="en" data-label="Contents">predicted points in the layout of <code>rm_x</code>; the first column is NaN</td><td lang="ja" data-label="内容"><code>rm_x</code> と同じ配置の予測点。最初の列は NaN</td><td data-label="Size">29 × 362</td></tr>
-        <tr><td><code>tab_path</code> <small>Dependent</small></td><td lang="en" data-label="Contents"><code>lambda</code>, then <code>V_&lt;bus&gt;</code> and <code>Varg_&lt;bus&gt;</code>; what <code>Export</code> writes</td><td lang="ja" data-label="内容"><code>lambda</code>、続いて <code>V_&lt;bus&gt;</code> と <code>Varg_&lt;bus&gt;</code>。<code>Export</code> が書き出す表</td><td data-label="Size">n_point × (1 + 2·n_bus) (362 × 29)</td></tr>
-        <tr><td><code>tab_nose</code> <small>Dependent</small></td><td lang="en" data-label="Contents"><code>V</code>, <code>Varg</code>, <code>Vphasor</code> of each bus at the nose</td><td lang="ja" data-label="内容">先端での各母線の <code>V</code>、<code>Varg</code>、<code>Vphasor</code></td><td data-label="Size">n_bus × 3 (14 × 3)</td></tr>
-        <tr><td><code>flag</code>, <code>output</code>, <code>options</code>, <code>str_solver</code>, <code>r_elapsed</code>, <code>l_success</code></td><td lang="en" data-label="Contents">from <code>ResultBase</code>: <code>flag</code> is true when the path passed the nose; <code>output.iterations</code> (number of steps), <code>output.correctorIterations</code> (1 × steps), <code>output.message</code>; <code>s_options</code>; <code>"SolverCPF"</code>; time [s]</td><td lang="ja" data-label="内容"><code>ResultBase</code> から: <code>flag</code> は経路が先端を越えたとき true。<code>output.iterations</code>（ステップ数）、<code>output.correctorIterations</code>（1 × ステップ数）、<code>output.message</code>、<code>s_options</code>、<code>"SolverCPF"</code>、経過時間 [s]</td><td data-label="Size">—</td></tr>
+        <tr><td><code>sv_bus</code></td><td lang="en" data-label="Contents">bus tags, the rows of <code>cm_Vbus</code></td><td lang="ja" data-label="内容">母線のタグ。<code>cm_Vbus</code> の行</td><td data-label="Size" data-label-ja="サイズ">n_bus × 1 (14 × 1)</td></tr>
+        <tr><td><code>rv_lambda</code></td><td lang="en" data-label="Contents">λ at each point; the first point is the equilibrium</td><td lang="ja" data-label="内容">各点の λ。最初の点は平衡点</td><td data-label="Size" data-label-ja="サイズ">1 × n_point (1 × 362)</td></tr>
+        <tr><td><code>cm_Vbus</code></td><td lang="en" data-label="Contents">bus voltage phasors [pu]</td><td lang="ja" data-label="内容">母線電圧のフェーザ [pu]</td><td data-label="Size" data-label-ja="サイズ">n_bus × n_point (14 × 362)</td></tr>
+        <tr><td><code>r_lambdaMax</code>, <code>r_noseStep</code></td><td lang="en" data-label="Contents">largest λ and its index in <code>rv_lambda</code></td><td lang="ja" data-label="内容">λ の最大値と、その <code>rv_lambda</code> での位置</td><td data-label="Size" data-label-ja="サイズ">1 × 1</td></tr>
+        <tr><td><code>rm_x</code></td><td lang="en" data-label="Contents">full vector at each point: <code>[|V|; ∠V]</code> per bus [pu, rad] (then the component states with <code>UseInternalState</code>), λ in the last row</td><td lang="ja" data-label="内容">各点の全体ベクトル。母線ごとの <code>[|V|; ∠V]</code> [pu、rad]（<code>UseInternalState</code> では続いて機器の状態）、最後の行が λ</td><td data-label="Size" data-label-ja="サイズ">(2·n_bus + 1) × n_point (29 × 362)</td></tr>
+        <tr><td><code>rm_xPredicted</code></td><td lang="en" data-label="Contents">predicted points in the layout of <code>rm_x</code>; the first column is NaN</td><td lang="ja" data-label="内容"><code>rm_x</code> と同じ配置の予測点。最初の列は NaN</td><td data-label="Size" data-label-ja="サイズ">29 × 362</td></tr>
+        <tr><td><code>tab_path</code> <small>Dependent</small></td><td lang="en" data-label="Contents"><code>lambda</code>, then <code>V_&lt;bus&gt;</code> and <code>Varg_&lt;bus&gt;</code>; what <code>Export</code> writes</td><td lang="ja" data-label="内容"><code>lambda</code>、続いて <code>V_&lt;bus&gt;</code> と <code>Varg_&lt;bus&gt;</code>。<code>Export</code> が書き出す表</td><td data-label="Size" data-label-ja="サイズ">n_point × (1 + 2·n_bus) (362 × 29)</td></tr>
+        <tr><td><code>tab_nose</code> <small>Dependent</small></td><td lang="en" data-label="Contents"><code>V</code>, <code>Varg</code>, <code>Vphasor</code> of each bus at the nose</td><td lang="ja" data-label="内容">先端での各母線の <code>V</code>、<code>Varg</code>、<code>Vphasor</code></td><td data-label="Size" data-label-ja="サイズ">n_bus × 3 (14 × 3)</td></tr>
+        <tr><td><code>flag</code>, <code>output</code>, <code>options</code>, <code>str_solver</code>, <code>r_elapsed</code>, <code>l_success</code></td><td lang="en" data-label="Contents">from <code>ResultBase</code>: <code>flag</code> is true when the path passed the nose; <code>output.iterations</code> (number of steps), <code>output.correctorIterations</code> (1 × steps), <code>output.message</code>; <code>s_options</code>; <code>"SolverCPF"</code>; time [s]</td><td lang="ja" data-label="内容"><code>ResultBase</code> から: <code>flag</code> は経路が先端を越えたとき true。<code>output.iterations</code>（ステップ数）、<code>output.correctorIterations</code>（1 × ステップ数）、<code>output.message</code>、<code>s_options</code>、<code>"SolverCPF"</code>、経過時間 [s]</td><td data-label="Size" data-label-ja="サイズ">—</td></tr>
       </tbody>
     </table>
     <p lang="en">No result is written back to the model: the equilibrium, the parameters, and the edit log stay as they were.</p>
@@ -357,14 +357,14 @@
     <ul lang="ja">
       <li><strong>ハンドル:</strong> CPF-02 は他の解析と同じく、最新でない <code>f_*</code> ハンドルを構築します。</li>
       <li><strong>実行中の作業データ:</strong> <code>Bus.iv_CPFV</code>、<code>Component.f_PQ2Bus</code>、<code>UseInternalState</code> では <code>Component.iv_CPFX</code> を <code>build_layout</code> が書き込みます（設定できるのは <code>SolverCPF</code> だけです）。実行後もオブジェクトに残り、次の実行で上書きされます。他からは読まれません。</li>
-      <li><strong>編集状態:</strong> 読むのは <code>l_staleEquilibrium</code> だけです。平衡点を古くする編集（<a href="class-design.html#edits">Class Design: Edit handling</a> を参照）があると、<code>net.initialize()</code> をやり直すまで次の呼び出しは停止します。<code>operation</code>、<code>OPF</code>、<code>graph</code> のパラメータとネットワークの <code>Hz</code> の編集では停止しません。</li>
+      <li><strong>編集状態:</strong> 読むのは <code>l_staleEquilibrium</code> だけです。平衡点を古くする編集（<a href="class-design.html#edits">クラス設計: 編集の扱い</a> を参照）があると、<code>net.initialize()</code> をやり直すまで次の呼び出しは停止します。<code>operation</code>、<code>OPF</code>、<code>graph</code> のパラメータとネットワークの <code>Hz</code> の編集では停止しません。</li>
       <li>ソルバーの設定は変更しません。結果はネットワークへの参照を持ちます。</li>
     </ul>
 
     <!-- ============================== FAILURE ============================== -->
     <h2 id="failure"><span lang="en">Failure and flags</span><span lang="ja">失敗とフラグ</span></h2>
     <p lang="en"><code>flag</code> is logical: <code>true</code> when the largest λ lies strictly inside the path, i.e. the trace passed the nose. When it did not within <code>MaxIterations</code> steps, <code>flag = false</code> and <code>output.message</code> suggests a larger <code>MaxIteration</code> or <code>StepSize</code>; the partial path is still returned. A corrector that does not converge only warns, and the trace continues from the point it reached. The IDs name message entries in <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> and are not MATLAB identifiers (see <a href="class-design.html#conventions">Class Design: Conventions</a>).</p>
-    <p lang="ja"><code>flag</code> は logical で、λ の最大値が経路の内側にあるとき、つまり先端を越えたときに <code>true</code> です。<code>MaxIterations</code> ステップ以内に越えなければ <code>flag = false</code> となり、<code>output.message</code> が <code>MaxIteration</code> または <code>StepSize</code> を大きくするよう示します。途中までの経路は返ります。修正子が収束しなくても警告だけで、到達した点から追跡を続けます。ID は <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> のメッセージ項目の名前で、MATLAB の識別子ではありません（<a href="class-design.html#conventions">Class Design: Conventions</a> を参照）。</p>
+    <p lang="ja"><code>flag</code> は logical で、λ の最大値が経路の内側にあるとき、つまり先端を越えたときに <code>true</code> です。<code>MaxIterations</code> ステップ以内に越えなければ <code>flag = false</code> となり、<code>output.message</code> が <code>MaxIteration</code> または <code>StepSize</code> を大きくするよう示します。途中までの経路は返ります。修正子が収束しなくても警告だけで、到達した点から追跡を続けます。ID は <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> のメッセージ項目の名前で、MATLAB の識別子ではありません（<a href="class-design.html#conventions">クラス設計: 規約</a> を参照）。</p>
     <table class="dg-table">
       <thead><tr><th lang="en">When</th><th lang="ja">発生する時点</th><th lang="en">Error or warning</th><th lang="ja">エラー・警告</th></tr></thead>
       <tbody>
@@ -388,7 +388,7 @@
       <li>ブランチは <code>get_admittance_matrix</code> を通じてのみ関与し、制御器は CPF に関与しません。</li>
     </ul>
     <p lang="en">See <a href="model-implementation.html#contracts">Model Implementation: Contracts</a>.</p>
-    <p lang="ja"><a href="model-implementation.html#contracts">Model Implementation: Contracts</a> を参照してください。</p>
+    <p lang="ja"><a href="model-implementation.html#contracts">モデルの実装: 契約</a> を参照してください。</p>
 
     <!-- ============================== RELATED ============================== -->
     <h2 id="related"><span lang="en">Related pages</span><span lang="ja">関連ページ</span></h2>
@@ -400,7 +400,7 @@
     <ul lang="ja">
       <li>クラス: <a href="class-powernetwork.html">PowerNetwork</a>、<a href="class-bus.html">Bus</a>、<a href="class-branch.html">Branch</a>、<a href="class-component.html">Component</a>、<a href="class-localcontroller.html">LocalController</a>、<a href="class-globalcontroller.html">GlobalController</a></li>
       <li>機能: <a href="feature-model-building.html">モデル構築</a>、<a href="feature-data-io.html">データの入出力</a>、<a href="feature-power-flow.html">潮流計算</a>、<a href="feature-initialize.html">初期化</a>、<a href="feature-opf.html">最適潮流計算</a>、<a href="feature-simulation.html">時間応答シミュレーション</a>、<a href="feature-linearization.html">近似線形化</a></li>
-      <li>規約: <a href="api-design.html#features">API Design: Per-feature API</a>、<a href="class-design.html#edits">Class Design: Edit handling</a></li>
+      <li>規約: <a href="api-design.html#features">API 設計: 機能ごとの API</a>、<a href="class-design.html#edits">クラス設計: 編集の扱い</a></li>
     </ul>
   </main>
 </body>

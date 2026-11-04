@@ -145,7 +145,7 @@
         <path class="dg-sv-line dg-anim-dash" d="M690 110H712" marker-end="url(#cd-ah)"/>
         <!-- pages -->
         <rect class="dg-sv-box is-ok" x="716" y="40" width="80" height="140" rx="8"/>
-        <text class="is-sm is-b is-ok" x="756" y="64" text-anchor="middle">Reference</text>
+        <text lang="en" class="is-sm is-b is-ok" x="756" y="64" text-anchor="middle">Reference</text><text lang="ja" class="is-sm is-b is-ok" x="756" y="64" text-anchor="middle">リファレンス</text>
         <text class="dg-mono is-sm" x="756" y="88" text-anchor="middle">index</text>
         <text class="dg-mono is-sm" x="756" y="105" text-anchor="middle">class</text>
         <text class="dg-mono is-sm" x="756" y="122" text-anchor="middle">method</text>
@@ -180,7 +180,7 @@
     <!-- ============================== WHERE ============================== -->
     <h2 id="where"><span lang="en">Where comments go</span><span lang="ja">コメントを書く場所</span></h2>
     <p class="dg-lead-in" lang="en">Write ordinary MATLAB help comments. Each numbered comment lands in the matching place on the class page. Everything without a number is read from the code.</p>
-    <p class="dg-lead-in" lang="ja">通常の MATLAB ヘルプコメントを書きます。番号の付いた各コメントは、クラスのページの同じ番号の場所に表示されます。番号のない部分はすべてコードから読み取られます。</p>
+    <p class="dg-lead-in" lang="ja">通常の MATLAB ヘルプコメントを書きます。番号の付いた各コメントは、クラスのページの同じ番号の場所に表示されます。番号のない部分はすべてコードから読み取られます。ヘルプコメントは英語で書くため、例のヘルプ本文は英語のままです。</p>
     <figure class="dg-figure">
       <div class="dg-two cd-where">
         <div>
@@ -212,33 +212,33 @@
 </pre>
         </div>
         <div>
-          <span class="dg-kicker">Reference · class.html</span>
+          <span class="dg-kicker"><span lang="en">Reference</span><span lang="ja">リファレンス</span> · class.html</span>
           <div class="cd-page">
             <div class="cd-page-bar">class.html#class=Bus</div>
             <div class="cd-page-body">
               <h4>Bus</h4>
-              <span class="cd-page-label">Summary <span class="cd-pin">1</span></span>
+              <span class="cd-page-label"><span lang="en">Summary</span><span lang="ja">概要</span> <span class="cd-pin">1</span></span>
               Node that connects components.
-              <span class="cd-page-label">Description <span class="cd-pin">2</span></span>
+              <span class="cd-page-label"><span lang="en">Description</span><span lang="ja">説明</span> <span class="cd-pin">2</span></span>
               Holds the bus voltage and the components attached to it.
-              <span class="cd-page-label">See also <span class="cd-pin">3</span></span>
+              <span class="cd-page-label"><span lang="en">See also</span><span lang="ja">関連項目</span> <span class="cd-pin">3</span></span>
               <a href="#where">PowerNetwork</a>, <a href="#where">Component</a>
-              <span class="cd-page-label">Properties · Parameters <span class="cd-pin">4</span></span>
+              <span class="cd-page-label"><span lang="en">Properties</span><span lang="ja">プロパティ</span> · Parameters <span class="cd-pin">4</span></span>
               <table>
-                <tr><th>Name</th><th>Type · Size · Default</th><th>Unit</th><th>Description</th></tr>
+                <tr><th><span lang="en">Name</span><span lang="ja">名前</span></th><th><span lang="en">Type · Size · Default</span><span lang="ja">型 · サイズ · 既定値</span></th><th><span lang="en">Unit</span><span lang="ja">単位</span></th><th><span lang="en">Description</span><span lang="ja">説明</span></th></tr>
                 <tr><td class="dg-mono">r_Sbase</td><td class="dg-mono">double (1,1) 100</td><td>MVA <span class="cd-pin">5</span></td><td>Base power. <span class="cd-pin">5</span></td></tr>
               </table>
-              <span class="cd-page-label">Methods · Add</span>
+              <span class="cd-page-label"><span lang="en">Methods</span><span lang="ja">メソッド</span> · Add</span>
               <table>
-                <tr><th>Signature</th><th>Summary</th></tr>
+                <tr><th><span lang="en">Signature</span><span lang="ja">シグネチャ</span></th><th><span lang="en">Summary</span><span lang="ja">概要</span></th></tr>
                 <tr><td class="dg-mono">idx = add_component(obj, comp, Name=Value)</td><td>Connect a component. <span class="cd-pin">6</span></td></tr>
               </table>
-              <span class="cd-page-label">Arguments (method page)</span>
+              <span class="cd-page-label"><span lang="en">Arguments (method page)</span><span lang="ja">引数（メソッドのページ）</span></span>
               <table>
-                <tr><th>Name</th><th>Kind · Class</th><th>Description</th></tr>
-                <tr><td class="dg-mono">comp</td><td>Positional · Component</td><td>Component to add. <span class="cd-pin">7</span></td></tr>
+                <tr><th><span lang="en">Name</span><span lang="ja">名前</span></th><th><span lang="en">Kind · Class</span><span lang="ja">種類 · クラス</span></th><th><span lang="en">Description</span><span lang="ja">説明</span></th></tr>
+                <tr><td class="dg-mono">comp</td><td><span lang="en">Positional</span><span lang="ja">位置引数</span> · Component</td><td>Component to add. <span class="cd-pin">7</span></td></tr>
                 <tr><td class="dg-mono">Check</td><td>Name-Value · (1,1) logical = true</td><td class="dg-muted">-</td></tr>
-                <tr><td class="dg-mono">idx</td><td>Output · (1,1) double</td><td>Its index on this bus. <span class="cd-pin">8</span></td></tr>
+                <tr><td class="dg-mono">idx</td><td><span lang="en">Output</span><span lang="ja">出力</span> · (1,1) double</td><td>Its index on this bus. <span class="cd-pin">8</span></td></tr>
               </table>
             </div>
           </div>
@@ -320,7 +320,7 @@ a_Solver</pre>
         <tr><td><code>Throws</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">Nothing: read from the error IDs in <code>error(msg("GUILDA:..."))</code> calls.</span><span lang="ja">不要: <code>error(msg("GUILDA:..."))</code> 呼び出しのエラー ID から読み取ります。</span></td></tr>
         <tr><td><code>Size</code>, <code>Default</code>, <code>Constraints</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">The property declaration: size, class, validators and default.</span><span lang="ja">プロパティの宣言: サイズ、クラス、検証関数、既定値。</span></td></tr>
         <tr><td><code>Unit</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">A leading <code>[unit]</code> in the comment.</span><span lang="ja">コメントの先頭の <code>[unit]</code>。</span></td></tr>
-        <tr><td><code>Since</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">The Update log.</span><span lang="ja">Update log。</span></td></tr>
+        <tr><td><code>Since</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">The Update log.</span><span lang="ja">更新履歴。</span></td></tr>
       </tbody>
     </table>
     <div class="dg-two">
@@ -425,7 +425,7 @@ r_Sbase (1,1) double = 100</pre>
         <tr><td><span class="dg-badge is-warn"><span lang="en">Warning</span><span lang="ja">警告</span></span></td><td data-label="Check" data-label-ja="チェック内容"><span lang="en">A <code>&lt;@Deprecated&gt;</code> tag with no text.<small>The text must name the replacement.</small></span><span lang="ja">本文のない <code>&lt;@Deprecated&gt;</code> タグ。<small>本文で代替を示す必要があります。</small></span></td></tr>
         <tr><td><span class="dg-badge is-warn"><span lang="en">Warning</span><span lang="ja">警告</span></span></td><td data-label="Check" data-label-ja="チェック内容"><span lang="en">An unknown tag, or the same tag twice (the last value is used).</span><span lang="ja">未知のタグ、または同じタグの重複（最後の値が使われます）。</span></td></tr>
         <tr><td><span class="dg-badge is-warn"><span lang="en">Warning</span><span lang="ja">警告</span></span></td><td data-label="Check" data-label-ja="チェック内容"><span lang="en">A method declared in the classdef with no implementation file.</span><span lang="ja">classdef で宣言されているのに実装ファイルがないメソッド。</span></td></tr>
-        <tr><td><span class="dg-badge"><span lang="en">Coverage</span><span lang="ja">カバレッジ</span></span></td><td data-label="Check" data-label-ja="チェック内容"><span lang="en">Documented / total for classes, public methods and public properties. Documented means it has an H1 line.<small>Shown at the top of the Reference tab. Undocumented classes get a <span class="dg-badge is-warn">no docs</span> marker there.</small></span><span lang="ja">クラス、公開メソッド、公開プロパティそれぞれの「記述済み / 総数」。記述済みとは H1 行があることです。<small>Reference タブの上部に表示されます。記述のないクラスにはそこで <span class="dg-badge is-warn">no docs</span> の印が付きます。</small></span></td></tr>
+        <tr><td><span class="dg-badge"><span lang="en">Coverage</span><span lang="ja">カバレッジ</span></span></td><td data-label="Check" data-label-ja="チェック内容"><span lang="en">Documented / total for classes, public methods and public properties. Documented means it has an H1 line.<small>Shown at the top of the Reference tab. Undocumented classes get a <span class="dg-badge is-warn">no docs</span> marker there.</small></span><span lang="ja">クラス、公開メソッド、公開プロパティそれぞれの「記述済み / 総数」。記述済みとは H1 行があることです。<small>Reference タブの上部に表示されます。記述のないクラスにはそこで <span class="dg-badge is-warn">説明なし</span> の印が付きます。</small></span></td></tr>
       </tbody>
     </table>
     <p lang="en">With <code>GUILDA.doc("strict", true)</code> the run fails when there are errors.</p>

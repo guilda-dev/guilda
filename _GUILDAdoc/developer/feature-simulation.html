@@ -68,7 +68,7 @@ verdict = sc.judge(result)</code></pre>
 
     <h3><span lang="en">Name-Value options and defaults</span><span lang="ja">Name-Value オプションと既定値</span></h3>
     <p lang="en">The defaults are the properties of <code>net.solver_ODE</code> (a <code>SolverODE</code>). Its constructor reads <code>GUILDA.config("TimeSimulation")</code> for the values marked <em>config</em>; the others are class defaults. The stored <code>Options</code> of the scenarios replace them, and a Name-Value option of the call replaces both, for this call only (<code>scenario_settings</code>, <code>SolverODE.OptionMap</code>, <code>tools.resolve_options</code>); <code>net.reset_solver()</code> replaces the solver with a new one. See <a href="api-design.html#rules">API Design</a> for the shared rules.</p>
-    <p lang="ja">既定値は <code>net.solver_ODE</code> (<code>SolverODE</code>) のプロパティです。<em>config</em> と書いた値はコンストラクタが <code>GUILDA.config("TimeSimulation")</code> から読み、その他はクラスの既定値です。シナリオに保存された <code>Options</code> がこれを置き換え、呼び出しの Name-Value オプションはその両方を、その呼び出しに限って上書きします (<code>scenario_settings</code>、<code>SolverODE.OptionMap</code>、<code>tools.resolve_options</code>)。<code>net.reset_solver()</code> はソルバーを新しいものに置き換えます。共通の規則は <a href="api-design.html#rules">API Design</a> を参照してください。</p>
+    <p lang="ja">既定値は <code>net.solver_ODE</code> (<code>SolverODE</code>) のプロパティです。<em>config</em> と書いた値はコンストラクタが <code>GUILDA.config("TimeSimulation")</code> から読み、その他はクラスの既定値です。シナリオに保存された <code>Options</code> がこれを置き換え、呼び出しの Name-Value オプションはその両方を、その呼び出しに限って上書きします (<code>scenario_settings</code>、<code>SolverODE.OptionMap</code>、<code>tools.resolve_options</code>)。<code>net.reset_solver()</code> はソルバーを新しいものに置き換えます。共通の規則は <a href="api-design.html#rules">API 設計</a> を参照してください。</p>
     <table class="dg-table sim-opts">
       <thead><tr><th><span lang="en">Option</span><span lang="ja">オプション</span></th><th><span lang="en">Meaning</span><span lang="ja">意味</span></th><th><span lang="en">Default</span><span lang="ja">既定値</span></th></tr></thead>
       <tbody>
@@ -105,7 +105,7 @@ verdict = sc.judge(result)</code></pre>
     <h3><span lang="en">Preconditions</span><span lang="ja">前提条件</span></h3>
     <ul>
       <li lang="en"><code>net.initialize()</code> has run and nothing that changes the equilibrium was edited since (see <a href="class-design.html#edits">Class Design, Edit handling</a>). Out-of-date function handles <code>f_*</code> are rebuilt automatically.</li>
-      <li lang="ja"><code>net.initialize()</code> を実行済みで、その後に平衡点を変える編集がないこと (<a href="class-design.html#edits">Class Design の Edit handling</a> を参照)。古くなった関数ハンドル <code>f_*</code> は自動で作り直されます。</li>
+      <li lang="ja"><code>net.initialize()</code> を実行済みで、その後に平衡点を変える編集がないこと (<a href="class-design.html#edits">クラス設計: 編集の扱い</a> を参照)。古くなった関数ハンドル <code>f_*</code> は自動で作り直されます。</li>
       <li lang="en">Every scenario belongs to this network and the tags of its disturbances exist in it now, and every unit a global controller controls is on this network.</li>
       <li lang="ja">すべてのシナリオがこのネットワークに属し、その外乱のタグが現在のネットワークに存在すること。広域制御器が制御する機器がすべてこのネットワーク上にあること。</li>
       <li lang="en">The mass matrices of all components and controllers are constant (<code>tools.read_mass</code>).</li>
@@ -284,7 +284,7 @@ verdict = sc.judge(result)</code></pre>
           <td><code>SolverODE.solve</code> → <code>PowerNetwork.get_admittance_matrix</code>, <code>SolverODE.set_admittance</code></td>
           <td><span lang="en">Builds the context of the run: the complex admittance matrix with all branches closed, its real form, and what the right-hand side reads for each component (<code>get_units</code>).</span><span lang="ja">実行の文脈を作ります。すべてのブランチを閉じた複素数のアドミタンス行列とその実数形式、右辺が機器ごとに読む値 (<code>get_units</code>) です。</span></td>
           <td><span class="sim-lbl"><span lang="en">Reads</span><span lang="ja">読むもの</span></span><span lang="en">branches and bus shunts</span><span lang="ja">ブランチと母線のシャント</span>, <code>rv_Uequilibrium</code></td>
-          <td><span class="sim-lbl"><span lang="en">Returns / changes</span><span lang="ja">返すもの・変更</span></span><code>ctx.Ybus</code>, <code>ctx.Ymat</code> (<code>n_v × n_v</code>, sparse, pu), <code>ctx.absYmat</code>, <code>ctx.sv_open</code>, <code>ctx.iv_busV</code>, <code>ctx.iv_busI</code>, <code>ctx.c_unit</code>, <code>ctx.l_sparse = true</code></td>
+          <td><span class="sim-lbl"><span lang="en">Returns / changes</span><span lang="ja">返すもの・変更</span></span><code>ctx.Ybus</code>, <code>ctx.Ymat</code> (<code>n_v × n_v</code>, <span lang="en">sparse</span><span lang="ja">疎行列</span>, pu), <code>ctx.absYmat</code>, <code>ctx.sv_open</code>, <code>ctx.iv_busV</code>, <code>ctx.iv_busI</code>, <code>ctx.c_unit</code>, <code>ctx.l_sparse = true</code></td>
         </tr>
         <tr>
           <td>SIM-08</td>
@@ -410,7 +410,7 @@ verdict = sc.judge(result)</code></pre>
 
     <h3><code>ResultODE</code></h3>
     <p lang="en">A subclass of <code>ResultBase</code> (see <a href="api-design.html#rules">API Design</a>). The trajectory is stored once, in the order of <code>net.get_variable_map()</code> (see <a href="class-design.html#variables">Class Design, Variable order</a>); the inputs of the local controllers and the bus current variables of the simulator are not stored. Nothing is written back to the buses or components.</p>
-    <p lang="ja"><code>ResultBase</code> のサブクラスです (<a href="api-design.html#rules">API Design</a> を参照)。軌道は <code>net.get_variable_map()</code> の順に 1 回だけ保存します (<a href="class-design.html#variables">Class Design の Variable order</a> を参照)。局所制御器の入力とシミュレータの母線電流変数は保存しません。母線や機器には何も書き戻しません。</p>
+    <p lang="ja"><code>ResultBase</code> のサブクラスです (<a href="api-design.html#rules">API 設計</a> を参照)。軌道は <code>net.get_variable_map()</code> の順に 1 回だけ保存します (<a href="class-design.html#variables">クラス設計: 変数の順序</a> を参照)。局所制御器の入力とシミュレータの母線電流変数は保存しません。母線や機器には何も書き戻しません。</p>
     <table class="dg-table">
       <thead><tr><th><span lang="en">Property</span><span lang="ja">プロパティ</span></th><th><span lang="en">Size, unit</span><span lang="ja">サイズ・単位</span></th><th><span lang="en">Contents</span><span lang="ja">内容</span></th></tr></thead>
       <tbody>
@@ -474,7 +474,7 @@ verdict = sc.judge(result)</code></pre>
     <!-- ============================== EXTENSION ============================== -->
     <h2 id="extension"><span lang="en">Extension points</span><span lang="ja">拡張ポイント</span></h2>
     <p lang="en">A new model takes part in the simulation through the contract in <a href="model-implementation.html#contracts">Model Implementation</a>. What this feature uses:</p>
-    <p lang="ja">新しいモデルは <a href="model-implementation.html#contracts">Model Implementation</a> の契約を通してシミュレーションに加わります。この機能が使うもの:</p>
+    <p lang="ja">新しいモデルは <a href="model-implementation.html#contracts">モデルの実装</a> の契約を通してシミュレーションに加わります。この機能が使うもの:</p>
     <table class="dg-table">
       <thead><tr><th><span lang="en">Model</span><span lang="ja">モデル</span></th><th><span lang="en">Used by the simulation</span><span lang="ja">シミュレーションが使うもの</span></th></tr></thead>
       <tbody>
@@ -514,7 +514,7 @@ verdict = sc.judge(result)</code></pre>
       </div>
     </div>
     <p lang="en">Cross-cutting rules: <a href="class-design.html">Class Design</a> (edit handling, variable order), <a href="api-design.html">API Design</a> (call shape, options, results), <a href="model-implementation.html">Model Implementation</a> (model contracts).</p>
-    <p lang="ja">横断的な規則: <a href="class-design.html">Class Design</a> (編集の扱い、変数の順序)、<a href="api-design.html">API Design</a> (呼び出しの形、オプション、結果)、<a href="model-implementation.html">Model Implementation</a> (モデルの契約)。</p>
+    <p lang="ja">横断的な規則: <a href="class-design.html">クラス設計</a> (編集の扱い、変数の順序)、<a href="api-design.html">API 設計</a> (呼び出しの形、オプション、結果)、<a href="model-implementation.html">モデルの実装</a> (モデルの契約)。</p>
   </main>
 </body>
 </html>
