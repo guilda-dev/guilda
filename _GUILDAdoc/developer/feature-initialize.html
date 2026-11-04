@@ -15,15 +15,40 @@
     .init-seq .dg-sv text { font-size: 15px; paint-order: stroke; stroke: var(--dg-panel); stroke-width: 5px; stroke-linejoin: round; }
     .init-seq .dg-sv text.init-box { font-size: 12px; stroke: none; }
     .init-seq tspan.init-num { fill: var(--dg-accent); font-weight: bold; font-family: var(--dg-mono); }
-    .init-steps { font-size: 0.86rem; }
-    .init-steps td { overflow-wrap: break-word; }
-    .init-steps td:first-child, .init-opts td:first-child, .init-data td:first-child { white-space: nowrap; }
-    .init-steps td small { display: block; }
-    .init-steps td:nth-child(2) { min-width: 13rem; }
-    .init-steps td:nth-child(5), .init-steps td:nth-child(6) { min-width: 9rem; }
+    .init-opts td:first-child, .init-data td:first-child { white-space: nowrap; }
     @media (max-width: 640px) {
-      .init-steps td:first-child, .init-opts td:first-child, .init-data td:first-child { white-space: normal; }
-      .init-steps td:nth-child(n) { min-width: 0; }
+      .init-opts td:first-child, .init-data td:first-child { white-space: normal; }
+    }
+    .init-opts td ul, .init-ext td ul { margin: 0; padding-left: 1.1em; }
+    .init-pre { margin-bottom: 4px; }
+    /* Failure list: one block per step, labelled error and state below */
+    .init-fail { margin: var(--dg-s3) 0 var(--dg-s5); padding: 0; list-style: none; font-size: 0.92rem; line-height: 1.5; }
+    .init-fail > li { padding: 10px 0; border-bottom: 1px solid var(--dg-line); }
+    .init-fail > li:first-child { border-top: 1px solid var(--dg-line); }
+    .init-fail-when { margin: 0 0 6px; font-weight: bold; }
+    .init-fail dl { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: 4px 14px; margin: 0; }
+    .init-fail dt { padding-top: 0.15rem; color: var(--dg-muted); font-size: 0.72rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+    .init-fail dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+    .init-fail dd ul { margin: 0; padding-left: 1.1em; }
+    @media (max-width: 640px) {
+      .init-fail dl { display: block; }
+      .init-fail dt { margin-top: 6px; }
+    }
+    /* Step list (fs-*): one block per step, ID + call as the head, labelled descriptions below. Same block on every feature page. */
+    .fs-steps { margin: var(--dg-s3) 0 var(--dg-s5); padding: 0; list-style: none; font-size: 0.9rem; line-height: 1.55; }
+    .fs-step { padding: 12px 0; border-bottom: 1px solid var(--dg-line); scroll-margin-top: 80px; }
+    .fs-step:first-child { border-top: 1px solid var(--dg-line); }
+    .fs-head { margin: 0 0 6px; overflow-wrap: anywhere; }
+    .fs-id { margin-right: 10px; color: var(--dg-accent); font-family: var(--dg-mono); }
+    .fs-head small { display: block; margin-top: 2px; color: var(--dg-muted); font-size: 0.88em; }
+    .fs-body { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: 4px 14px; margin: 0; }
+    .fs-body dt { padding-top: 0.15rem; color: var(--dg-muted); font-size: 0.72rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+    .fs-body dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+    .fs-body ul { margin: 0; padding-left: 1.1em; list-style: disc; }
+    .fs-steps code { background: var(--code-bg); padding: 1px 5px; border-radius: var(--radius); color: var(--ink); }
+    @media (max-width: 640px) {
+      .fs-body { display: block; }
+      .fs-body dt { margin-top: 6px; }
     }
   </style>
 </head>
@@ -34,8 +59,8 @@
   <main>
     <button type="button" class="developer-back-button" onclick="window.history.back()"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></button>
     <h1><span lang="en">Initialization</span><span lang="ja">初期化</span></h1>
-    <p class="page-lead" lang="en"><code>net.initialize()</code> turns an operating point (a power flow, an AC optimal power flow, or the equilibria the components already hold) into the equilibrium of every bus, component, local controller, and global controller, checks it, and resets the edit log. Every dynamic analysis starts from this equilibrium.</p>
-    <p class="page-lead" lang="ja"><code>net.initialize()</code> は、運転点（潮流計算、交流の最適潮流計算、または機器がすでに持つ平衡点）を、すべての母線・機器・局所制御器・広域制御器の平衡点として設定し、検査したうえで編集ログをリセットします。動的な解析はすべてこの平衡点から始まります。</p>
+    <p class="page-lead" lang="en"><code>net.initialize()</code> turns an operating point (a power flow, an AC optimal power flow, or the equilibria the components already hold) into the equilibrium of every bus, component, local controller, and global controller, checks it, and resets the edit log. Starting point of every dynamic analysis.</p>
+    <p class="page-lead" lang="ja"><code>net.initialize()</code> は運転点（潮流計算、交流の最適潮流計算、または機器が保持済みの平衡点）を、すべての母線・機器・局所制御器・広域制御器の平衡点として設定・検査し、編集ログをリセット。動的な解析はすべてこの平衡点が起点。</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#purpose"><span lang="en">Purpose and entry point</span><span lang="ja">目的と入口</span></a>
@@ -56,20 +81,56 @@
       <tbody>
         <tr>
           <td><code>Method</code></td>
-          <td lang="en" data-label="Values and default"><code>"powerflow"</code> (default): <code>net.calculate_powerflow</code> with the settings of <code>net.solver_PF</code>.<br><code>"OPF"</code>: <code>net.optimize_powerflow</code> with <code>Method="AC OPF"</code> and the settings of <code>net.solver_OPF</code>.<br><code>"equilibrium"</code>: the equilibria the components already hold; the states and inputs are recomputed from the held <code>V</code> and <code>I</code>.<small>The default is fixed in <code>initialize</code>; there is no <code>solver_*</code> property or <code>GUILDA.config</code> entry for it.</small></td>
-          <td lang="ja" data-label="値と既定値"><code>"powerflow"</code>（既定）: <code>net.solver_PF</code> の設定で <code>net.calculate_powerflow</code> を実行します。<br><code>"OPF"</code>: <code>net.solver_OPF</code> の設定で <code>Method="AC OPF"</code> の <code>net.optimize_powerflow</code> を実行します。<br><code>"equilibrium"</code>: 機器がすでに持つ平衡点を使います。状態と入力は保持された <code>V</code> と <code>I</code> から計算し直します。<small>既定値は <code>initialize</code> の中で決まっており、<code>solver_*</code> のプロパティや <code>GUILDA.config</code> の項目はありません。</small></td>
+          <td lang="en" data-label="Values and default"><ul>
+            <li><code>"powerflow"</code> (default): <code>net.calculate_powerflow</code> with the settings of <code>net.solver_PF</code></li>
+            <li><code>"OPF"</code>: <code>net.optimize_powerflow</code> with <code>Method="AC OPF"</code> and the settings of <code>net.solver_OPF</code></li>
+            <li><code>"equilibrium"</code>: the equilibria the components already hold; states and inputs recomputed from the held <code>V</code> and <code>I</code></li>
+          </ul><small>Default fixed in <code>initialize</code>; no <code>solver_*</code> property or <code>GUILDA.config</code> entry for it</small></td>
+          <td lang="ja" data-label="値と既定値"><ul>
+            <li><code>"powerflow"</code>（既定）: <code>net.solver_PF</code> の設定で <code>net.calculate_powerflow</code> を実行</li>
+            <li><code>"OPF"</code>: <code>net.solver_OPF</code> の設定で <code>Method="AC OPF"</code> の <code>net.optimize_powerflow</code> を実行</li>
+            <li><code>"equilibrium"</code>: 機器が保持済みの平衡点を使用。状態と入力は保持された <code>V</code> と <code>I</code> から再計算</li>
+          </ul><small>既定値は <code>initialize</code> 内で固定。対応する <code>solver_*</code> のプロパティや <code>GUILDA.config</code> の項目はなし</small></td>
         </tr>
         <tr>
           <td><span lang="en">other names</span><span lang="ja">その他の名前</span></td>
-          <td lang="en" data-label="Values and default">Passed unchanged to <code>calculate_powerflow</code> (<code>"powerflow"</code>) or <code>optimize_powerflow</code> (<code>"OPF"</code>), which validate them against <code>SolverPF.OptionMap</code> / <code>SolverOPF.OptionMap</code> plus <code>Plot</code> and <code>Export</code>. Their defaults are the properties of <code>net.solver_PF</code> / <code>net.solver_OPF</code>, which a new solver reads from <code>GUILDA.config</code>. <code>"equilibrium"</code> takes no other option. The formulation of the analysis is not an option of <code>initialize</code>: set <code>net.solver_PF.Method</code>.</td>
-          <td lang="ja" data-label="値と既定値">そのまま <code>calculate_powerflow</code>（<code>"powerflow"</code>）または <code>optimize_powerflow</code>（<code>"OPF"</code>）に渡され、<code>SolverPF.OptionMap</code> / <code>SolverOPF.OptionMap</code> と <code>Plot</code>、<code>Export</code> で検査されます。既定値は <code>net.solver_PF</code> / <code>net.solver_OPF</code> のプロパティで、ソルバーは生成時に <code>GUILDA.config</code> から読みます。<code>"equilibrium"</code> は他のオプションを受け付けません。解析の定式化は <code>initialize</code> のオプションではないため、<code>net.solver_PF.Method</code> で設定します。</td>
+          <td lang="en" data-label="Values and default"><ul>
+            <li>Passed unchanged to <code>calculate_powerflow</code> (<code>"powerflow"</code>) or <code>optimize_powerflow</code> (<code>"OPF"</code>)</li>
+            <li>Validated there against <code>SolverPF.OptionMap</code> / <code>SolverOPF.OptionMap</code> plus <code>Plot</code> and <code>Export</code></li>
+            <li>Defaults: the properties of <code>net.solver_PF</code> / <code>net.solver_OPF</code>, which a new solver reads from <code>GUILDA.config</code></li>
+            <li><code>"equilibrium"</code>: no other option</li>
+            <li>Formulation of the analysis: not an option of <code>initialize</code>; set <code>net.solver_PF.Method</code></li>
+          </ul></td>
+          <td lang="ja" data-label="値と既定値"><ul>
+            <li>そのまま <code>calculate_powerflow</code>（<code>"powerflow"</code>）または <code>optimize_powerflow</code>（<code>"OPF"</code>）へ受け渡し</li>
+            <li>渡し先で <code>SolverPF.OptionMap</code> / <code>SolverOPF.OptionMap</code> と <code>Plot</code>、<code>Export</code> により検査</li>
+            <li>既定値: <code>net.solver_PF</code> / <code>net.solver_OPF</code> のプロパティ。ソルバーは生成時に <code>GUILDA.config</code> から読み込み</li>
+            <li><code>"equilibrium"</code>: 他のオプションは不可</li>
+            <li>解析の定式化: <code>initialize</code> のオプションではない。<code>net.solver_PF.Method</code> で設定</li>
+          </ul></td>
         </tr>
       </tbody>
     </table>
-    <p lang="en">Preconditions: the network has at least one bus with a component (the power flow selects a slack bus when none is set). <code>Method="equilibrium"</code> also needs an earlier successful <code>initialize</code> and no edit since then that changes the equilibrium, except edits of dynamics parameters. The old option <code>methods</code> and its old values are converted by <code>v3_initialize_args</code> with a deprecation warning.</p>
-    <p lang="ja">前提条件: 機器を持つ母線が少なくとも 1 つあること（スラック母線が設定されていなければ潮流計算が選びます）。<code>Method="equilibrium"</code> では、さらに以前の <code>initialize</code> が成功しており、その後に平衡点を変える編集（動特性パラメータの編集を除く）がないことが必要です。旧オプション <code>methods</code> とその旧い値は、<code>v3_initialize_args</code> が非推奨の警告を出して変換します。</p>
-    <p lang="en"><code>initialize</code> is one of the few analysis methods that change the model (see <a href="api-design.html#side-effects">API Design, rule 6</a>). The shipped network classes and <code>PowerNetwork.import_csv</code> / <code>import_matpower</code> (option <code>Initialize=true</code>, the default) call it when they build a network.</p>
-    <p lang="ja"><code>initialize</code> はモデルを変更する数少ない解析メソッドの 1 つです（<a href="api-design.html#side-effects">API 設計のルール 6</a> を参照）。同梱のネットワーククラスと <code>PowerNetwork.import_csv</code> / <code>import_matpower</code>（オプション <code>Initialize=true</code>、既定）は、ネットワークを組み立てるときにこれを呼びます。</p>
+    <p class="init-pre" lang="en">Preconditions:</p>
+    <p class="init-pre" lang="ja">前提条件:</p>
+    <ul lang="en">
+      <li>At least one bus with a component (the power flow selects a slack bus when none is set)</li>
+      <li><code>Method="equilibrium"</code>: an earlier successful <code>initialize</code>, and no edit since then that changes the equilibrium (edits of dynamics parameters excepted)</li>
+    </ul>
+    <ul lang="ja">
+      <li>機器を持つ母線が 1 つ以上（スラック母線が未設定なら潮流計算が選択）</li>
+      <li><code>Method="equilibrium"</code>: 先に <code>initialize</code> が成功済みで、その後に平衡点を変える編集（動特性パラメータの編集を除く）がないこと</li>
+    </ul>
+    <p lang="en">The deprecated option <code>methods</code> and its values are converted by <code>v3_initialize_args</code> with a warning.</p>
+    <p lang="ja">非推奨のオプション <code>methods</code> とその値は <code>v3_initialize_args</code> が警告付きで変換。</p>
+    <ul lang="en">
+      <li><code>initialize</code> changes the model: one of the few analysis methods that do (see <a href="api-design.html#side-effects">API Design, rule 6</a>)</li>
+      <li>Called when a network is built: by the shipped network classes and by <code>PowerNetwork.import_csv</code> / <code>import_matpower</code> (option <code>Initialize=true</code>, the default)</li>
+    </ul>
+    <ul lang="ja">
+      <li><code>initialize</code> はモデルを変更: そうした数少ない解析メソッドの 1 つ（<a href="api-design.html#side-effects">API 設計のルール 6</a> を参照）</li>
+      <li>ネットワーク構築時に呼び出し: 同梱のネットワーククラスと <code>PowerNetwork.import_csv</code> / <code>import_matpower</code>（オプション <code>Initialize=true</code>、既定）</li>
+    </ul>
 
     <!-- ============================== SEQUENCE ============================== -->
     <h2 id="sequence"><span lang="en">Call sequence</span><span lang="ja">呼び出し順</span></h2>
@@ -143,283 +204,569 @@
         <path class="dg-sv-line is-muted" d="M185 574H64" marker-end="url(#init-ah-m)"/>
         <text x="191" y="578"><tspan class="init-num">14</tspan> <tspan class="dg-mono">result, flag, output</tspan> <tspan lang="en">+ warnings</tspan><tspan lang="ja">＋警告</tspan></text>
       </svg>
-      <figcaption lang="en">The numbers are the step IDs below (INIT-01 to INIT-14). Step 03 calls <code>calculate_powerflow</code> or <code>optimize_powerflow</code>; with <code>Method="equilibrium"</code> it is a call inside <code>PowerNetwork</code> (<code>calculate_from_equilibrium</code>). Steps 07 to 10 repeat for every bus, component, and local controller; step 12 also evaluates the local and global controllers.</figcaption>
-      <figcaption lang="ja">番号は下の処理ステップの ID（INIT-01〜INIT-14）です。ステップ 03 は <code>calculate_powerflow</code> または <code>optimize_powerflow</code> を呼びます。<code>Method="equilibrium"</code> では <code>PowerNetwork</code> 内の呼び出し（<code>calculate_from_equilibrium</code>）になります。ステップ 07〜10 はすべての母線・機器・局所制御器について繰り返し、ステップ 12 は局所制御器と広域制御器も評価します。</figcaption>
+      <figcaption lang="en">Numbers: the step IDs below (INIT-01 to INIT-14). Step 03 calls <code>calculate_powerflow</code> or <code>optimize_powerflow</code>; with <code>Method="equilibrium"</code>, a call inside <code>PowerNetwork</code> (<code>calculate_from_equilibrium</code>). Steps 07 to 10 repeat for every bus, component, and local controller; step 12 also evaluates the local and global controllers.</figcaption>
+      <figcaption lang="ja">番号は下の処理ステップの ID（INIT-01〜INIT-14）。ステップ 03 は <code>calculate_powerflow</code> または <code>optimize_powerflow</code> を呼び出し、<code>Method="equilibrium"</code> では <code>PowerNetwork</code> 内の呼び出し（<code>calculate_from_equilibrium</code>）。ステップ 07〜10 はすべての母線・機器・局所制御器について反復し、ステップ 12 は局所制御器と広域制御器も評価。</figcaption>
     </figure>
 
     <!-- ============================== STEPS ============================== -->
     <h2 id="steps"><span lang="en">Steps</span><span lang="ja">処理ステップ</span></h2>
-    <p lang="en">All private functions named here are local functions of <code>_GUILDAsystem/@PowerNetwork/initialize.m</code> or <code>@Bus/set_equilibrium.m</code>.</p>
-    <p lang="ja">ここに挙げる非公開の関数は、すべて <code>_GUILDAsystem/@PowerNetwork/initialize.m</code> または <code>@Bus/set_equilibrium.m</code> のローカル関数です。</p>
-    <table class="dg-table init-steps">
-      <thead><tr>
-        <th>ID</th>
-        <th lang="en">Caller → callee.method</th><th lang="ja">呼び出し元 → 呼び出し先.メソッド</th>
-        <th lang="en">What it does</th><th lang="ja">処理内容</th>
-        <th lang="en">Reads</th><th lang="ja">読むもの</th>
-        <th lang="en">Returns or changes</th><th lang="ja">返すもの・変更するもの</th>
-      </tr></thead>
-      <tbody>
-        <tr>
-          <td>INIT-01</td>
-          <td>user → <code>PowerNetwork.initialize</code><small><code>v3_initialize_args</code>, <code>take_method</code></small></td>
-          <td lang="en" data-label="What it does">Converts the v3 option <code>methods</code>, then separates <code>Method</code> from the options of the analysis.</td>
-          <td lang="ja" data-label="処理内容">v3 のオプション <code>methods</code> を変換し、<code>Method</code> と解析へ渡すオプションを分けます。</td>
-          <td lang="en" data-label="Reads"><code>varargin</code></td>
-          <td lang="ja" data-label="読むもの"><code>varargin</code></td>
-          <td lang="en" data-label="Returns or changes"><code>str_method</code>, <code>c_nv</code> (the other Name-Value pairs)</td>
-          <td lang="ja" data-label="返すもの・変更するもの"><code>str_method</code>、<code>c_nv</code>（残りの Name-Value の組）</td>
-        </tr>
-        <tr>
-          <td>INIT-02</td>
-          <td><code>initialize</code> → <code>PowerNetwork.check_edit</code><small>→ <code>LayerPackage.check_edit</code> → <code>set_odefcn</code></small></td>
-          <td lang="en" data-label="What it does">Builds the <code>f_*</code> function handles that are not up to date, parent before children. The equilibrium is not required here.</td>
-          <td lang="ja" data-label="処理内容">最新でない <code>f_*</code> 関数ハンドルを、親から子の順に構築します。ここでは平衡点を要求しません。</td>
-          <td lang="en" data-label="Reads"><code>s_edit.str_odefcn</code> of every layer; <code>tab_parameter.dynamics</code>; network <code>Hz</code></td>
-          <td lang="ja" data-label="読むもの">各レイヤーの <code>s_edit.str_odefcn</code>、<code>tab_parameter.dynamics</code>、ネットワークの <code>Hz</code></td>
-          <td lang="en" data-label="Returns or changes"><code>f_Mass</code>, <code>f_dx</code>, <code>f_I</code>, <code>f_Y</code>, <code>f_Jacobi*</code> of components and controllers; <code>str_odefcn = "updated"</code></td>
-          <td lang="ja" data-label="返すもの・変更するもの">機器と制御器の <code>f_Mass</code>、<code>f_dx</code>、<code>f_I</code>、<code>f_Y</code>、<code>f_Jacobi*</code>。<code>str_odefcn = "updated"</code></td>
-        </tr>
-        <tr>
-          <td>INIT-03a</td>
-          <td><code>initialize</code> → <code>PowerNetwork.calculate_powerflow</code><small>→ <code>SolverPF.solve</code></small></td>
-          <td lang="en" data-label="What it does"><code>Method="powerflow"</code>: solves the power flow (see <a href="feature-power-flow.html">Power Flow</a>). When the call fails and no bus was a slack bus before, <code>release_slack</code> clears the slack bus it selected.</td>
-          <td lang="ja" data-label="処理内容"><code>Method="powerflow"</code>: 潮流計算を解きます（<a href="feature-power-flow.html">潮流計算</a>を参照）。失敗し、かつ呼び出し前にスラック母線がなかった場合は、<code>release_slack</code> が選ばれたスラック母線を解除します。</td>
-          <td lang="en" data-label="Reads"><code>net.solver_PF</code>, <code>c_nv</code>, <code>Bus.l_isSlack</code>, <code>tab_parameter.powerflow</code></td>
-          <td lang="ja" data-label="読むもの"><code>net.solver_PF</code>、<code>c_nv</code>、<code>Bus.l_isSlack</code>、<code>tab_parameter.powerflow</code></td>
-          <td lang="en" data-label="Returns or changes"><code>ResultPF</code>; <code>result.tab_bus</code> is n_bus × 6 (<code>Varg</code> [rad], <code>V</code>, <code>P</code>, <code>Q</code>, <code>Vphasor</code>, <code>Iphasor</code> [pu]). May set <code>l_isSlack</code> of one bus.</td>
-          <td lang="ja" data-label="返すもの・変更するもの"><code>ResultPF</code>。<code>result.tab_bus</code> は n_bus × 6（<code>Varg</code> [rad]、<code>V</code>、<code>P</code>、<code>Q</code>、<code>Vphasor</code>、<code>Iphasor</code> [pu]）。1 つの母線の <code>l_isSlack</code> を設定することがあります。</td>
-        </tr>
-        <tr>
-          <td>INIT-03b</td>
-          <td><code>initialize</code> → <code>PowerNetwork.optimize_powerflow</code><small>→ <code>SolverOPF.solve</code></small></td>
-          <td lang="en" data-label="What it does"><code>Method="OPF"</code>: solves the AC optimal power flow (see <a href="feature-opf.html">Optimal Power Flow</a>). <code>"Method","AC OPF"</code> is appended after the other options, so it always wins.</td>
-          <td lang="ja" data-label="処理内容"><code>Method="OPF"</code>: 交流の最適潮流計算を解きます（<a href="feature-opf.html">最適潮流計算</a>を参照）。<code>"Method","AC OPF"</code> は他のオプションの後に付け加えるため、常に優先されます。</td>
-          <td lang="en" data-label="Reads"><code>net.solver_OPF</code>, <code>c_nv</code>, <code>tab_parameter.OPF</code> / <code>.operation</code>, <code>s_opffcn</code></td>
-          <td lang="ja" data-label="読むもの"><code>net.solver_OPF</code>、<code>c_nv</code>、<code>tab_parameter.OPF</code> / <code>.operation</code>、<code>s_opffcn</code></td>
-          <td lang="en" data-label="Returns or changes"><code>ResultOPF</code> with <code>tab_bus</code> (n_bus × 6) and <code>tab_cub</code> (P, Q of each component)</td>
-          <td lang="ja" data-label="返すもの・変更するもの"><code>tab_bus</code>（n_bus × 6）と <code>tab_cub</code>（各機器の P、Q）を持つ <code>ResultOPF</code></td>
-        </tr>
-        <tr>
-          <td>INIT-03c</td>
-          <td><code>initialize</code> → <code>check_edit_for_equilibrium</code>, <code>calculate_from_equilibrium</code></td>
-          <td lang="en" data-label="What it does"><code>Method="equilibrium"</code>: stops if an edit since the last <code>initialize</code> changes the equilibrium (dynamics edits are allowed). Takes the bus voltage from the components on each bus, sums their currents, and solves the buses without components from <code>Y·V = I</code> with zero injection: <code>V_u = −Y_uu \ (Y_uk·V_k)</code>. Checks <code>max|Y·V − I| &lt; 1e-6</code>.</td>
-          <td lang="ja" data-label="処理内容"><code>Method="equilibrium"</code>: 前回の <code>initialize</code> 以降に平衡点を変える編集があれば停止します（動特性の編集は許されます）。各母線の電圧はその母線の機器から取り、電流は機器の電流の和とします。機器のない母線は注入ゼロとして <code>Y·V = I</code> から <code>V_u = −Y_uu \ (Y_uk·V_k)</code> で求めます。<code>max|Y·V − I| &lt; 1e-6</code> を確認します。</td>
-          <td lang="en" data-label="Reads"><code>tab_editLog</code>, <code>LayerPackage.edit_effect</code>; <code>Component.c_Vequilibrium</code>, <code>c_Iequilibrium</code>; <code>get_admittance_matrix</code></td>
-          <td lang="ja" data-label="読むもの"><code>tab_editLog</code>、<code>LayerPackage.edit_effect</code>、<code>Component.c_Vequilibrium</code>、<code>c_Iequilibrium</code>、<code>get_admittance_matrix</code></td>
-          <td lang="en" data-label="Returns or changes"><code>ResultPF</code> with <code>str_solver = "equilibrium"</code>, <code>options = struct(Method="equilibrium", Tolerance=1e-6)</code>, <code>tab_bus</code> n_bus × 6, empty <code>tab_branch</code>; <code>flag = 1</code>; <code>output.residual</code>, <code>output.message</code></td>
-          <td lang="ja" data-label="返すもの・変更するもの"><code>str_solver = "equilibrium"</code>、<code>options = struct(Method="equilibrium", Tolerance=1e-6)</code>、n_bus × 6 の <code>tab_bus</code>、空の <code>tab_branch</code> を持つ <code>ResultPF</code>。<code>flag = 1</code>。<code>output.residual</code>、<code>output.message</code></td>
-        </tr>
-        <tr>
-          <td>INIT-04</td>
-          <td><code>initialize</code> → <code>component_power</code></td>
-          <td lang="en" data-label="What it does">Decides the power of each component where the analysis fixes it: the OPF solution, or <code>V·conj(I)</code> of the held equilibrium. For the power flow it is left empty, so that the bus distributes the power (INIT-08).</td>
-          <td lang="ja" data-label="処理内容">解析が機器の電力を決める場合はその値を求めます。OPF の解、または保持されている平衡点の <code>V·conj(I)</code> です。潮流計算では空のままにし、母線が電力を配分します（INIT-08）。</td>
-          <td lang="en" data-label="Reads"><code>result.tab_cub{tags, ["P","Q"]}</code> (OPF); <code>c_Vequilibrium</code>, <code>c_Iequilibrium</code> (equilibrium)</td>
-          <td lang="ja" data-label="読むもの"><code>result.tab_cub{tags, ["P","Q"]}</code>（OPF）、<code>c_Vequilibrium</code>、<code>c_Iequilibrium</code>（equilibrium）</td>
-          <td lang="en" data-label="Returns or changes"><code>c_PQ</code>: n_bus × 1 cell, each n_comp × 2 [pu] or <code>[]</code></td>
-          <td lang="ja" data-label="返すもの・変更するもの"><code>c_PQ</code>: n_bus × 1 のセル。各要素は n_comp × 2 [pu] または <code>[]</code></td>
-        </tr>
-        <tr>
-          <td>INIT-05</td>
-          <td><code>initialize</code></td>
-          <td lang="en" data-label="What it does">Marks the equilibrium as out of date before anything is written, so that a point written only in part is never used.</td>
-          <td lang="ja" data-label="処理内容">書き込みを始める前に平衡点を古い状態として印を付けます。途中まで書かれた運転点が使われることはありません。</td>
-          <td lang="en" data-label="Reads">—</td>
-          <td lang="ja" data-label="読むもの">—</td>
-          <td lang="en" data-label="Returns or changes"><code>net.s_edit.l_staleEquilibrium = true</code></td>
-          <td lang="ja" data-label="返すもの・変更するもの"><code>net.s_edit.l_staleEquilibrium = true</code></td>
-        </tr>
-        <tr>
-          <td>INIT-06</td>
-          <td><code>initialize</code> → <code>GlobalController.get_equilibrium</code></td>
-          <td lang="en" data-label="What it does">Gets the equilibrium of each global controller, in the order of <code>net.a_GlobalController</code>. This runs before the buses and components are set.</td>
-          <td lang="ja" data-label="処理内容">各広域制御器の平衡点を <code>net.a_GlobalController</code> の順に求めます。母線と機器の設定より前に実行されます。</td>
-          <td lang="en" data-label="Reads">the controller's own data, e.g. <code>controlledUnits</code></td>
-          <td lang="ja" data-label="読むもの">制御器自身のデータ（例: <code>controlledUnits</code>）</td>
-          <td lang="en" data-label="Returns or changes"><code>rv_Xequilibrium</code> (numel(sv_x) × 1), <code>rv_Uequilibrium</code> of the controller</td>
-          <td lang="ja" data-label="返すもの・変更するもの">制御器の <code>rv_Xequilibrium</code>（numel(sv_x) × 1）、<code>rv_Uequilibrium</code></td>
-        </tr>
-        <tr>
-          <td>INIT-07</td>
-          <td><code>initialize</code> → <code>Bus.set_equilibrium(c_V, c_I, r_P, r_Q, rm_PQ=c_PQ{i})</code></td>
-          <td lang="en" data-label="What it does">For each bus in <code>net.a_Bus</code> order: stores the voltage, takes the component powers from <code>rm_PQ</code> or from INIT-08, and passes each component its current <code>conj((P + jQ)/V)</code>.</td>
-          <td lang="ja" data-label="処理内容"><code>net.a_Bus</code> の順に各母線について、電圧を保存し、機器の電力を <code>rm_PQ</code> または INIT-08 から得て、各機器に電流 <code>conj((P + jQ)/V)</code> を渡します。</td>
-          <td lang="en" data-label="Reads"><code>result.tab_bus{i, ["Vphasor","Iphasor","P","Q"]}</code>, <code>c_PQ{i}</code></td>
-          <td lang="ja" data-label="読むもの"><code>result.tab_bus{i, ["Vphasor","Iphasor","P","Q"]}</code>、<code>c_PQ{i}</code></td>
-          <td lang="en" data-label="Returns or changes"><code>Bus.c_Vequilibrium</code> (complex [pu]). <code>c_I</code> is not stored: <code>Bus.c_Iequilibrium</code> is the sum of the component currents.</td>
-          <td lang="ja" data-label="返すもの・変更するもの"><code>Bus.c_Vequilibrium</code>（複素数 [pu]）。<code>c_I</code> は保存しません。<code>Bus.c_Iequilibrium</code> は機器の電流の和です。</td>
-        </tr>
-        <tr>
-          <td>INIT-08</td>
-          <td><code>Bus.set_equilibrium</code> → <code>distribute_power</code></td>
-          <td lang="en" data-label="What it does">Without <code>rm_PQ</code>: starts from <code>P</code>, <code>Q</code> of <code>tab_parameter.powerflow</code>. On the slack bus, the first component whose <code>Q</code> is NaN (else the first) takes the rest of <code>P</code>; if no <code>Q</code> is NaN, the first component also takes the rest of <code>Q</code>. The rest of <code>Q</code> goes to the components whose <code>Q</code> is NaN: all of it to a single one, otherwise split by <code>QdistributionRule</code> — <code>"baseMVA"</code> (default; in proportion to <code>operation.baseMVA</code>) or <code>"Qmax"</code> (in proportion to <code>Qmax − Qmin</code>, when all are finite). <code>initialize</code> uses the default.</td>
-          <td lang="ja" data-label="処理内容"><code>rm_PQ</code> がない場合: <code>tab_parameter.powerflow</code> の <code>P</code>、<code>Q</code> から始めます。スラック母線では、<code>Q</code> が NaN の最初の機器（なければ最初の機器）が <code>P</code> の残りを受け持ち、NaN の <code>Q</code> がなければ最初の機器が <code>Q</code> の残りも受け持ちます。<code>Q</code> の残りは <code>Q</code> が NaN の機器に配分します。1 台ならすべてを、複数なら <code>QdistributionRule</code> で分けます。<code>"baseMVA"</code>（既定、<code>operation.baseMVA</code> に比例）または <code>"Qmax"</code>（すべて有限のとき <code>Qmax − Qmin</code> に比例）です。<code>initialize</code> は既定値を使います。</td>
-          <td lang="en" data-label="Reads"><code>Bus.l_isSlack</code>; <code>para_powerflow</code> (P, Q), <code>para_operation</code> (baseMVA, Qmin, Qmax) of the components</td>
-          <td lang="ja" data-label="読むもの"><code>Bus.l_isSlack</code>、機器の <code>para_powerflow</code>（P、Q）、<code>para_operation</code>（baseMVA、Qmin、Qmax）</td>
-          <td lang="en" data-label="Returns or changes"><code>tab_PQcomp</code>: n_comp × 2 table (P, Q [pu])</td>
-          <td lang="ja" data-label="返すもの・変更するもの"><code>tab_PQcomp</code>: n_comp × 2 の表（P、Q [pu]）</td>
-        </tr>
-        <tr>
-          <td>INIT-09</td>
-          <td><code>Bus.set_equilibrium</code> → <code>Component.set_equilibrium(c_V, c_I, r_P, r_Q)</code><small>→ <span lang="en">the model's <code>get_equilibrium</code></span><span lang="ja">モデルの <code>get_equilibrium</code></span></small></td>
-          <td lang="en" data-label="What it does">Calls the model's <code>get_equilibrium</code> with all four arguments and stores the result.</td>
-          <td lang="ja" data-label="処理内容">モデルの <code>get_equilibrium</code> を 4 つの引数すべてで呼び、結果を保存します。</td>
-          <td lang="en" data-label="Reads"><code>c_V</code>, <code>c_I</code>, <code>r_P</code>, <code>r_Q</code> [pu]; <code>para_dynamics</code> of the model</td>
-          <td lang="ja" data-label="読むもの"><code>c_V</code>、<code>c_I</code>、<code>r_P</code>、<code>r_Q</code> [pu]、モデルの <code>para_dynamics</code></td>
-          <td lang="en" data-label="Returns or changes"><code>c_Iequilibrium</code> [pu], <code>rv_Xequilibrium</code> (numel(sv_x) × 1), <code>rv_Uequilibrium</code> (numel(sv_u) × 1)</td>
-          <td lang="ja" data-label="返すもの・変更するもの"><code>c_Iequilibrium</code> [pu]、<code>rv_Xequilibrium</code>（numel(sv_x) × 1）、<code>rv_Uequilibrium</code>（numel(sv_u) × 1）</td>
-        </tr>
-        <tr>
-          <td>INIT-10</td>
-          <td><code>Component.set_equilibrium</code> → <code>LocalController.get_equilibrium(V, u)</code></td>
-          <td lang="en" data-label="What it does">Each local controller of the component sets its own equilibrium from the voltage and the component's equilibrium input, and calls its nested controller (e.g. the PSS under an AVR). <code>controller.local_LQR</code> also designs its gain here.</td>
-          <td lang="ja" data-label="処理内容">機器の各局所制御器が、電圧と機器の平衡入力から自身の平衡点を設定し、入れ子の制御器（例: AVR の下の PSS）を呼びます。<code>controller.local_LQR</code> はここでゲインも設計します。</td>
-          <td lang="en" data-label="Reads"><code>c_V</code>, <code>Component.rv_Uequilibrium</code>, <code>tab_parameter.dynamics</code> of the controller</td>
-          <td lang="ja" data-label="読むもの"><code>c_V</code>、<code>Component.rv_Uequilibrium</code>、制御器の <code>tab_parameter.dynamics</code></td>
-          <td lang="en" data-label="Returns or changes">no output; writes <code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code> of the controller and its nested controllers</td>
-          <td lang="ja" data-label="返すもの・変更するもの">出力なし。制御器とその入れ子の制御器の <code>rv_Xequilibrium</code>、<code>rv_Uequilibrium</code> を書き込みます。</td>
-        </tr>
-        <tr>
-          <td>INIT-11</td>
-          <td><code>initialize</code> → <code>get_admittance_matrix</code></td>
-          <td lang="en" data-label="What it does">Checks Kirchhoff's current law at every bus at the point that was written.</td>
-          <td lang="ja" data-label="処理内容">書き込んだ運転点で、すべての母線のキルヒホッフの電流則を確認します。</td>
-          <td lang="en" data-label="Reads"><code>net.cv_Vequilibrium</code>, <code>net.cv_Iequilibrium</code> (n_bus × 1, dependent), the admittance matrix</td>
-          <td lang="ja" data-label="読むもの"><code>net.cv_Vequilibrium</code>、<code>net.cv_Iequilibrium</code>（n_bus × 1、従属プロパティ）、アドミタンス行列</td>
-          <td lang="en" data-label="Returns or changes">error <code>InitializeNotEquilibrium</code> when <code>max|Y·V − I| ≥ 1e-6</code> [pu] (or NaN)</td>
-          <td lang="ja" data-label="返すもの・変更するもの"><code>max|Y·V − I| ≥ 1e-6</code> [pu]（または NaN）のときエラー <code>InitializeNotEquilibrium</code></td>
-        </tr>
-        <tr>
-          <td>INIT-12</td>
-          <td><code>initialize</code> → <code>large_model_residuals</code><small>→ <code>model_residuals</code>, <code>component_residuals</code>, <code>controller_residuals</code>, <code>global_controller_residual</code>, <code>check_point_size</code>, <code>model_value</code></small></td>
-          <td lang="en" data-label="What it does">Evaluates every model at the point at <code>t = 0</code>: <code>f_dx</code>, <code>f_I</code>, and <code>f_Y</code> of each component, <code>f_dx</code> and <code>f_Y</code> of each local controller (depth first), and of each global controller. An input driven by a local controller is compared with the controller's output; an input of a local controller is compared with the observed output or state (<code>iv_obsY</code>, <code>iv_obsX</code>). The inputs of a global controller are the states named <code>sv_u</code> of its controlled units, and its outputs must be zero.</td>
-          <td lang="ja" data-label="処理内容">すべてのモデルを運転点の <code>t = 0</code> で評価します。各機器の <code>f_dx</code>、<code>f_I</code>、<code>f_Y</code>、各局所制御器（深さ優先）と各広域制御器の <code>f_dx</code> と <code>f_Y</code> です。局所制御器が駆動する入力はその制御器の出力と比べ、局所制御器の入力は観測する出力または状態（<code>iv_obsY</code>、<code>iv_obsX</code>）と比べます。広域制御器の入力は制御対象の <code>sv_u</code> と同じ名前の状態で、その出力はゼロでなければなりません。</td>
-          <td lang="en" data-label="Reads"><code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code>, <code>c_Vequilibrium</code>, <code>c_Iequilibrium</code>; <code>f_*</code> handles; <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code></td>
-          <td lang="ja" data-label="読むもの"><code>rv_Xequilibrium</code>、<code>rv_Uequilibrium</code>、<code>c_Vequilibrium</code>、<code>c_Iequilibrium</code>、<code>f_*</code> ハンドル、<code>sv_x</code>、<code>sv_u</code>、<code>sv_y</code></td>
-          <td lang="en" data-label="Returns or changes">one row per model: <code>[max|dx|, |I − Iequilibrium|, max|u − source|]</code>; the text of the models at or above <code>1e-6</code> (at most 10 listed). A wrong size or a failing model function is an error.</td>
-          <td lang="ja" data-label="返すもの・変更するもの">モデルごとに 1 行の <code>[max|dx|, |I − Iequilibrium|, max|u − source|]</code>。<code>1e-6</code> 以上のモデルの一覧テキスト（最大 10 件）。サイズの誤りやモデル関数の失敗はエラーです。</td>
-        </tr>
-        <tr>
-          <td>INIT-13</td>
-          <td><code>initialize</code> → <code>LayerPackage.reset_edit</code></td>
-          <td lang="en" data-label="What it does">Resets the edit state of the network and of every layer below it, recursively through <code>children</code>.</td>
-          <td lang="ja" data-label="処理内容">ネットワークとその下のすべてのレイヤーの編集状態を、<code>children</code> をたどって再帰的にリセットします。</td>
-          <td lang="en" data-label="Reads"><code>children</code> of each layer</td>
-          <td lang="ja" data-label="読むもの">各レイヤーの <code>children</code></td>
-          <td lang="en" data-label="Returns or changes"><code>s_edit.str_flag = "initialized"</code>, <code>s_edit.l_staleEquilibrium = false</code>, empty <code>tab_editLog</code> on every layer</td>
-          <td lang="ja" data-label="返すもの・変更するもの">すべてのレイヤーで <code>s_edit.str_flag = "initialized"</code>、<code>s_edit.l_staleEquilibrium = false</code>、<code>tab_editLog</code> を空にします。</td>
-        </tr>
-        <tr>
-          <td>INIT-14</td>
-          <td><code>initialize</code> → user<small><code>network_islands</code></small></td>
-          <td lang="en" data-label="What it does">Warns about large model residuals and about a network split into islands (connected components of the branch graph), then returns the outputs of the analysis.</td>
-          <td lang="ja" data-label="処理内容">大きなモデル残差と、島に分かれたネットワーク（ブランチのグラフの連結成分）について警告し、解析の出力を返します。</td>
-          <td lang="en" data-label="Reads">INIT-12 text; <code>Branch.a_Bus</code></td>
-          <td lang="ja" data-label="読むもの">INIT-12 のテキスト、<code>Branch.a_Bus</code></td>
-          <td lang="en" data-label="Returns or changes"><code>[result, flag, output]</code> of step 03</td>
-          <td lang="ja" data-label="返すもの・変更するもの">ステップ 03 の <code>[result, flag, output]</code></td>
-        </tr>
-      </tbody>
-    </table>
+    <p lang="en">Private functions named here: local functions of <code>_GUILDAsystem/@PowerNetwork/initialize.m</code> or <code>@Bus/set_equilibrium.m</code>.</p>
+    <p lang="ja">ここに挙げる非公開の関数は、すべて <code>_GUILDAsystem/@PowerNetwork/initialize.m</code> または <code>@Bus/set_equilibrium.m</code> のローカル関数。</p>
+    <ol class="fs-steps">
+      <li class="fs-step" id="INIT-01">
+        <p class="fs-head"><b class="fs-id">INIT-01</b> <span class="fs-call">user → <code>PowerNetwork.initialize</code><small><code>v3_initialize_args</code>, <code>take_method</code></small></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Converts the deprecated option <code>methods</code></li>
+            <li>Separates <code>Method</code> from the options of the analysis</li>
+          </ul><ul lang="ja">
+            <li>非推奨のオプション <code>methods</code> を変換</li>
+            <li><code>Method</code> と解析へ渡すオプションを分離</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>varargin</code></span><span lang="ja"><code>varargin</code></span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en"><code>str_method</code>, <code>c_nv</code> (the other Name-Value pairs)</span><span lang="ja"><code>str_method</code>、<code>c_nv</code>（残りの Name-Value の組）</span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="INIT-02">
+        <p class="fs-head"><b class="fs-id">INIT-02</b> <span class="fs-call"><code>initialize</code> → <code>PowerNetwork.check_edit</code><small>→ <code>LayerPackage.check_edit</code> → <code>set_odefcn</code></small></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Builds the <code>f_*</code> function handles that are not up to date, parent before children</li>
+            <li>Equilibrium not required here</li>
+          </ul><ul lang="ja">
+            <li>最新でない <code>f_*</code> 関数ハンドルを親から子の順に構築</li>
+            <li>ここでは平衡点は不要</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>s_edit.str_odefcn</code> of every layer; <code>tab_parameter.dynamics</code>; network <code>Hz</code></span><span lang="ja">各レイヤーの <code>s_edit.str_odefcn</code>、<code>tab_parameter.dynamics</code>、ネットワークの <code>Hz</code></span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en"><code>f_Mass</code>, <code>f_dx</code>, <code>f_I</code>, <code>f_Y</code>, <code>f_Jacobi*</code> of components and controllers; <code>str_odefcn = "updated"</code></span><span lang="ja">機器と制御器の <code>f_Mass</code>、<code>f_dx</code>、<code>f_I</code>、<code>f_Y</code>、<code>f_Jacobi*</code>。<code>str_odefcn = "updated"</code></span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="INIT-03a">
+        <p class="fs-head"><b class="fs-id">INIT-03a</b> <span class="fs-call"><code>initialize</code> → <code>PowerNetwork.calculate_powerflow</code><small>→ <code>SolverPF.solve</code></small></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li><code>Method="powerflow"</code>: solves the power flow (see <a href="feature-power-flow.html">Power Flow</a>)</li>
+            <li>On failure, if no bus was a slack bus before the call: <code>release_slack</code> clears the slack bus it selected</li>
+          </ul><ul lang="ja">
+            <li><code>Method="powerflow"</code>: 潮流計算を求解（<a href="feature-power-flow.html">潮流計算</a>を参照）</li>
+            <li>失敗時、呼び出し前にスラック母線がなければ <code>release_slack</code> が選ばれたスラック母線を解除</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>net.solver_PF</code>, <code>c_nv</code>, <code>Bus.l_isSlack</code>, <code>tab_parameter.powerflow</code></span><span lang="ja"><code>net.solver_PF</code>、<code>c_nv</code>、<code>Bus.l_isSlack</code>、<code>tab_parameter.powerflow</code></span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en"><code>ResultPF</code>; <code>result.tab_bus</code> n_bus × 6 (<code>Varg</code> [rad], <code>V</code>, <code>P</code>, <code>Q</code>, <code>Vphasor</code>, <code>Iphasor</code> [pu]); may set <code>l_isSlack</code> of one bus</span><span lang="ja"><code>ResultPF</code>。<code>result.tab_bus</code> は n_bus × 6（<code>Varg</code> [rad]、<code>V</code>、<code>P</code>、<code>Q</code>、<code>Vphasor</code>、<code>Iphasor</code> [pu]）。1 つの母線の <code>l_isSlack</code> を設定する場合あり</span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="INIT-03b">
+        <p class="fs-head"><b class="fs-id">INIT-03b</b> <span class="fs-call"><code>initialize</code> → <code>PowerNetwork.optimize_powerflow</code><small>→ <code>SolverOPF.solve</code></small></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li><code>Method="OPF"</code>: solves the AC optimal power flow (see <a href="feature-opf.html">Optimal Power Flow</a>)</li>
+            <li><code>"Method","AC OPF"</code> appended after the other options, so it always wins</li>
+          </ul><ul lang="ja">
+            <li><code>Method="OPF"</code>: 交流の最適潮流計算を求解（<a href="feature-opf.html">最適潮流計算</a>を参照）</li>
+            <li><code>"Method","AC OPF"</code> を他のオプションの後に追加するため常に優先</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>net.solver_OPF</code>, <code>c_nv</code>, <code>tab_parameter.OPF</code> / <code>.operation</code>, <code>s_opffcn</code></span><span lang="ja"><code>net.solver_OPF</code>、<code>c_nv</code>、<code>tab_parameter.OPF</code> / <code>.operation</code>、<code>s_opffcn</code></span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en"><code>ResultOPF</code> with <code>tab_bus</code> (n_bus × 6) and <code>tab_cub</code> (P, Q of each component)</span><span lang="ja"><code>tab_bus</code>（n_bus × 6）と <code>tab_cub</code>（各機器の P、Q）を持つ <code>ResultOPF</code></span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="INIT-03c">
+        <p class="fs-head"><b class="fs-id">INIT-03c</b> <span class="fs-call"><code>initialize</code> → <code>check_edit_for_equilibrium</code>, <code>calculate_from_equilibrium</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li><code>Method="equilibrium"</code>: stops if an edit since the last <code>initialize</code> changes the equilibrium (dynamics edits allowed)</li>
+            <li>Bus voltage taken from the components on each bus; bus current: the sum of their currents</li>
+            <li>Buses without components solved from <code>Y·V = I</code> with zero injection: <code>V_u = −Y_uu \ (Y_uk·V_k)</code></li>
+            <li>Checks <code>max|Y·V − I| &lt; 1e-6</code></li>
+          </ul><ul lang="ja">
+            <li><code>Method="equilibrium"</code>: 前回の <code>initialize</code> 以降に平衡点を変える編集があれば停止（動特性の編集は可）</li>
+            <li>各母線の電圧はその母線の機器から取得、電流は機器の電流の和</li>
+            <li>機器のない母線は注入ゼロとして <code>Y·V = I</code> から求解: <code>V_u = −Y_uu \ (Y_uk·V_k)</code></li>
+            <li><code>max|Y·V − I| &lt; 1e-6</code> を確認</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>tab_editLog</code>, <code>LayerPackage.edit_effect</code>; <code>Component.c_Vequilibrium</code>, <code>c_Iequilibrium</code>; <code>get_admittance_matrix</code></span><span lang="ja"><code>tab_editLog</code>、<code>LayerPackage.edit_effect</code>、<code>Component.c_Vequilibrium</code>、<code>c_Iequilibrium</code>、<code>get_admittance_matrix</code></span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en"><code>ResultPF</code> with <code>str_solver = "equilibrium"</code>, <code>options = struct(Method="equilibrium", Tolerance=1e-6)</code>, <code>tab_bus</code> n_bus × 6, empty <code>tab_branch</code>; <code>flag = 1</code>; <code>output.residual</code>, <code>output.message</code></span><span lang="ja"><code>str_solver = "equilibrium"</code>、<code>options = struct(Method="equilibrium", Tolerance=1e-6)</code>、n_bus × 6 の <code>tab_bus</code>、空の <code>tab_branch</code> を持つ <code>ResultPF</code>。<code>flag = 1</code>。<code>output.residual</code>、<code>output.message</code></span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="INIT-04">
+        <p class="fs-head"><b class="fs-id">INIT-04</b> <span class="fs-call"><code>initialize</code> → <code>component_power</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Decides the power of each component where the analysis fixes it</li>
+            <li>Source: the OPF solution, or <code>V·conj(I)</code> of the held equilibrium</li>
+            <li>Power flow: left empty, so that the bus distributes the power (INIT-08)</li>
+          </ul><ul lang="ja">
+            <li>解析が機器の電力を決める場合はその値を決定</li>
+            <li>値: OPF の解、または保持されている平衡点の <code>V·conj(I)</code></li>
+            <li>潮流計算: 空のまま、母線が電力を配分（INIT-08）</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>result.tab_cub{tags, ["P","Q"]}</code> (OPF); <code>c_Vequilibrium</code>, <code>c_Iequilibrium</code> (equilibrium)</span><span lang="ja"><code>result.tab_cub{tags, ["P","Q"]}</code>（OPF）、<code>c_Vequilibrium</code>、<code>c_Iequilibrium</code>（equilibrium）</span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en"><code>c_PQ</code>: n_bus × 1 cell, each n_comp × 2 [pu] or <code>[]</code></span><span lang="ja"><code>c_PQ</code>: n_bus × 1 のセル。各要素は n_comp × 2 [pu] または <code>[]</code></span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="INIT-05">
+        <p class="fs-head"><b class="fs-id">INIT-05</b> <span class="fs-call"><code>initialize</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Marks the equilibrium as out of date before anything is written</li>
+            <li>A point written only in part is never used</li>
+          </ul><ul lang="ja">
+            <li>書き込み開始前に平衡点を古い状態として印付け</li>
+            <li>途中まで書かれた運転点は使用されない</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en">—</span><span lang="ja">—</span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en"><code>net.s_edit.l_staleEquilibrium = true</code></span><span lang="ja"><code>net.s_edit.l_staleEquilibrium = true</code></span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="INIT-06">
+        <p class="fs-head"><b class="fs-id">INIT-06</b> <span class="fs-call"><code>initialize</code> → <code>GlobalController.get_equilibrium</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Gets the equilibrium of each global controller, in the order of <code>net.a_GlobalController</code></li>
+            <li>Runs before the buses and components are set</li>
+          </ul><ul lang="ja">
+            <li>各広域制御器の平衡点を <code>net.a_GlobalController</code> の順に取得</li>
+            <li>母線と機器の設定より前に実行</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en">the controller's own data, e.g. <code>controlledUnits</code></span><span lang="ja">制御器自身のデータ（例: <code>controlledUnits</code>）</span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en"><code>rv_Xequilibrium</code> (numel(sv_x) × 1), <code>rv_Uequilibrium</code> of the controller</span><span lang="ja">制御器の <code>rv_Xequilibrium</code>（numel(sv_x) × 1）、<code>rv_Uequilibrium</code></span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="INIT-07">
+        <p class="fs-head"><b class="fs-id">INIT-07</b> <span class="fs-call"><code>initialize</code> → <code>Bus.set_equilibrium(c_V, c_I, r_P, r_Q, rm_PQ=c_PQ{i})</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>For each bus in <code>net.a_Bus</code> order: stores the voltage</li>
+            <li>Takes the component powers from <code>rm_PQ</code> or from INIT-08</li>
+            <li>Passes each component its current <code>conj((P + jQ)/V)</code></li>
+          </ul><ul lang="ja">
+            <li><code>net.a_Bus</code> の順に各母線の電圧を保存</li>
+            <li>機器の電力を <code>rm_PQ</code> または INIT-08 から取得</li>
+            <li>各機器に電流 <code>conj((P + jQ)/V)</code> を受け渡し</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>result.tab_bus{i, ["Vphasor","Iphasor","P","Q"]}</code>, <code>c_PQ{i}</code></span><span lang="ja"><code>result.tab_bus{i, ["Vphasor","Iphasor","P","Q"]}</code>、<code>c_PQ{i}</code></span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en"><code>Bus.c_Vequilibrium</code> (complex [pu]); <code>c_I</code> not stored: <code>Bus.c_Iequilibrium</code> is the sum of the component currents</span><span lang="ja"><code>Bus.c_Vequilibrium</code>（複素数 [pu]）。<code>c_I</code> は保存しない。<code>Bus.c_Iequilibrium</code> は機器の電流の和</span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="INIT-08">
+        <p class="fs-head"><b class="fs-id">INIT-08</b> <span class="fs-call"><code>Bus.set_equilibrium</code> → <code>distribute_power</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Without <code>rm_PQ</code>: starts from <code>P</code>, <code>Q</code> of <code>tab_parameter.powerflow</code></li>
+            <li>Slack bus: the first component whose <code>Q</code> is NaN (else the first) takes the rest of <code>P</code>; if no <code>Q</code> is NaN, the first component also takes the rest of <code>Q</code></li>
+            <li>Rest of <code>Q</code>: goes to the components whose <code>Q</code> is NaN</li>
+            <li>A single one takes all of it; several share it by <code>QdistributionRule</code></li>
+            <li>Rules: <code>"baseMVA"</code> (default; in proportion to <code>operation.baseMVA</code>) or <code>"Qmax"</code> (in proportion to <code>Qmax − Qmin</code>, when all are finite)</li>
+            <li><code>initialize</code> uses the default</li>
+          </ul><ul lang="ja">
+            <li><code>rm_PQ</code> がない場合: <code>tab_parameter.powerflow</code> の <code>P</code>、<code>Q</code> から開始</li>
+            <li>スラック母線: <code>Q</code> が NaN の最初の機器（なければ最初の機器）が <code>P</code> の残りを負担。NaN の <code>Q</code> がなければ最初の機器が <code>Q</code> の残りも負担</li>
+            <li><code>Q</code> の残り: <code>Q</code> が NaN の機器に配分</li>
+            <li>1 台ならすべて、複数なら <code>QdistributionRule</code> で分割</li>
+            <li>規則: <code>"baseMVA"</code>（既定、<code>operation.baseMVA</code> に比例）または <code>"Qmax"</code>（すべて有限のとき <code>Qmax − Qmin</code> に比例）</li>
+            <li><code>initialize</code> は既定値を使用</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>Bus.l_isSlack</code>; <code>para_powerflow</code> (P, Q), <code>para_operation</code> (baseMVA, Qmin, Qmax) of the components</span><span lang="ja"><code>Bus.l_isSlack</code>、機器の <code>para_powerflow</code>（P、Q）、<code>para_operation</code>（baseMVA、Qmin、Qmax）</span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en"><code>tab_PQcomp</code>: n_comp × 2 table (P, Q [pu])</span><span lang="ja"><code>tab_PQcomp</code>: n_comp × 2 の表（P、Q [pu]）</span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="INIT-09">
+        <p class="fs-head"><b class="fs-id">INIT-09</b> <span class="fs-call"><code>Bus.set_equilibrium</code> → <code>Component.set_equilibrium(c_V, c_I, r_P, r_Q)</code><small>→ <span lang="en">the model's <code>get_equilibrium</code></span><span lang="ja">モデルの <code>get_equilibrium</code></span></small></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Calls the model's <code>get_equilibrium</code> with all four arguments</li>
+            <li>Stores the result</li>
+          </ul><ul lang="ja">
+            <li>モデルの <code>get_equilibrium</code> を 4 つの引数すべてで呼び出し</li>
+            <li>結果を保存</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>c_V</code>, <code>c_I</code>, <code>r_P</code>, <code>r_Q</code> [pu]; <code>para_dynamics</code> of the model</span><span lang="ja"><code>c_V</code>、<code>c_I</code>、<code>r_P</code>、<code>r_Q</code> [pu]、モデルの <code>para_dynamics</code></span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en"><code>c_Iequilibrium</code> [pu], <code>rv_Xequilibrium</code> (numel(sv_x) × 1), <code>rv_Uequilibrium</code> (numel(sv_u) × 1)</span><span lang="ja"><code>c_Iequilibrium</code> [pu]、<code>rv_Xequilibrium</code>（numel(sv_x) × 1）、<code>rv_Uequilibrium</code>（numel(sv_u) × 1）</span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="INIT-10">
+        <p class="fs-head"><b class="fs-id">INIT-10</b> <span class="fs-call"><code>Component.set_equilibrium</code> → <code>LocalController.get_equilibrium(V, u)</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Each local controller of the component sets its own equilibrium from the voltage and the component's equilibrium input</li>
+            <li>Calls its nested controller (e.g. the PSS under an AVR)</li>
+            <li><code>controller.local_LQR</code> also designs its gain here</li>
+          </ul><ul lang="ja">
+            <li>機器の各局所制御器が電圧と機器の平衡入力から自身の平衡点を設定</li>
+            <li>入れ子の制御器（例: AVR の下の PSS）を呼び出し</li>
+            <li><code>controller.local_LQR</code> はここでゲインも設計</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>c_V</code>, <code>Component.rv_Uequilibrium</code>, <code>tab_parameter.dynamics</code> of the controller</span><span lang="ja"><code>c_V</code>、<code>Component.rv_Uequilibrium</code>、制御器の <code>tab_parameter.dynamics</code></span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en">no output; writes <code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code> of the controller and its nested controllers</span><span lang="ja">出力なし。制御器とその入れ子の制御器の <code>rv_Xequilibrium</code>、<code>rv_Uequilibrium</code> に書き込み</span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="INIT-11">
+        <p class="fs-head"><b class="fs-id">INIT-11</b> <span class="fs-call"><code>initialize</code> → <code>get_admittance_matrix</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Checks Kirchhoff's current law at every bus at the point that was written</li>
+          </ul><ul lang="ja">
+            <li>書き込んだ運転点で、すべての母線のキルヒホッフの電流則を確認</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>net.cv_Vequilibrium</code>, <code>net.cv_Iequilibrium</code> (n_bus × 1, dependent), the admittance matrix</span><span lang="ja"><code>net.cv_Vequilibrium</code>、<code>net.cv_Iequilibrium</code>（n_bus × 1、従属プロパティ）、アドミタンス行列</span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en">error <code>InitializeNotEquilibrium</code> when <code>max|Y·V − I| ≥ 1e-6</code> [pu] (or NaN)</span><span lang="ja"><code>max|Y·V − I| ≥ 1e-6</code> [pu]（または NaN）のときエラー <code>InitializeNotEquilibrium</code></span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="INIT-12">
+        <p class="fs-head"><b class="fs-id">INIT-12</b> <span class="fs-call"><code>initialize</code> → <code>large_model_residuals</code><small>→ <code>model_residuals</code>, <code>component_residuals</code>, <code>controller_residuals</code>, <code>global_controller_residual</code>, <code>check_point_size</code>, <code>model_value</code></small></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Evaluates every model at the point at <code>t = 0</code></li>
+            <li>Evaluated: <code>f_dx</code>, <code>f_I</code>, and <code>f_Y</code> of each component; <code>f_dx</code> and <code>f_Y</code> of each local controller (depth first) and of each global controller</li>
+            <li>An input driven by a local controller: compared with the controller's output. An input of a local controller: compared with the observed output or state (<code>iv_obsY</code>, <code>iv_obsX</code>)</li>
+            <li>Global controller: inputs are the states named <code>sv_u</code> of its controlled units; outputs must be zero</li>
+          </ul><ul lang="ja">
+            <li>すべてのモデルを運転点の <code>t = 0</code> で評価</li>
+            <li>評価対象: 各機器の <code>f_dx</code>、<code>f_I</code>、<code>f_Y</code>、各局所制御器（深さ優先）と各広域制御器の <code>f_dx</code> と <code>f_Y</code></li>
+            <li>局所制御器が駆動する入力はその制御器の出力と比較。局所制御器の入力は観測する出力または状態（<code>iv_obsY</code>、<code>iv_obsX</code>）と比較</li>
+            <li>広域制御器: 入力は制御対象の <code>sv_u</code> と同じ名前の状態。出力はゼロが必要</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code>, <code>c_Vequilibrium</code>, <code>c_Iequilibrium</code>; <code>f_*</code> handles; <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code></span><span lang="ja"><code>rv_Xequilibrium</code>、<code>rv_Uequilibrium</code>、<code>c_Vequilibrium</code>、<code>c_Iequilibrium</code>、<code>f_*</code> ハンドル、<code>sv_x</code>、<code>sv_u</code>、<code>sv_y</code></span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en">one row per model: <code>[max|dx|, |I − Iequilibrium|, max|u − source|]</code>; the text of the models at or above <code>1e-6</code> (at most 10 listed); a wrong size or a failing model function is an error</span><span lang="ja">モデルごとに 1 行の <code>[max|dx|, |I − Iequilibrium|, max|u − source|]</code>。<code>1e-6</code> 以上のモデルの一覧テキスト（最大 10 件）。サイズの誤りやモデル関数の失敗はエラー</span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="INIT-13">
+        <p class="fs-head"><b class="fs-id">INIT-13</b> <span class="fs-call"><code>initialize</code> → <code>LayerPackage.reset_edit</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Resets the edit state of the network and of every layer below it, recursively through <code>children</code></li>
+          </ul><ul lang="ja">
+            <li>ネットワークとその下のすべてのレイヤーの編集状態を、<code>children</code> をたどって再帰的にリセット</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>children</code> of each layer</span><span lang="ja">各レイヤーの <code>children</code></span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en"><code>s_edit.str_flag = "initialized"</code>, <code>s_edit.l_staleEquilibrium = false</code>, empty <code>tab_editLog</code> on every layer</span><span lang="ja">すべてのレイヤーで <code>s_edit.str_flag = "initialized"</code>、<code>s_edit.l_staleEquilibrium = false</code>、空の <code>tab_editLog</code></span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="INIT-14">
+        <p class="fs-head"><b class="fs-id">INIT-14</b> <span class="fs-call"><code>initialize</code> → user<small><code>network_islands</code></small></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Warns about large model residuals and about a network split into islands (connected components of the branch graph)</li>
+            <li>Returns the outputs of the analysis</li>
+          </ul><ul lang="ja">
+            <li>大きなモデル残差と、島に分かれたネットワーク（ブランチのグラフの連結成分）について警告</li>
+            <li>解析の出力を返却</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en">INIT-12 text; <code>Branch.a_Bus</code></span><span lang="ja">INIT-12 のテキスト、<code>Branch.a_Bus</code></span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en"><code>[result, flag, output]</code> of step 03</span><span lang="ja">ステップ 03 の <code>[result, flag, output]</code></span></dd>
+        </dl>
+      </li>
+    </ol>
 
     <!-- ============================== DATA ============================== -->
     <h2 id="data"><span lang="en">Data produced</span><span lang="ja">生成されるデータ</span></h2>
-    <p lang="en">The result object is the result of step 03: <code>ResultPF</code> for <code>"powerflow"</code> and <code>"equilibrium"</code>, <code>ResultOPF</code> for <code>"OPF"</code>. In every case <code>result.tab_bus</code> is the bus equilibrium. The equilibrium itself is stored on the model objects, each on its owner:</p>
-    <p lang="ja">結果オブジェクトはステップ 03 の結果です。<code>"powerflow"</code> と <code>"equilibrium"</code> では <code>ResultPF</code>、<code>"OPF"</code> では <code>ResultOPF</code> です。いずれの場合も <code>result.tab_bus</code> が母線の平衡点です。平衡点そのものはモデルのオブジェクトに、それぞれの所有者ごとに保存されます。</p>
+    <ul lang="en">
+      <li>Result object: the result of step 03; <code>ResultPF</code> for <code>"powerflow"</code> and <code>"equilibrium"</code>, <code>ResultOPF</code> for <code>"OPF"</code></li>
+      <li><code>result.tab_bus</code>: the bus equilibrium in every case</li>
+      <li>The equilibrium itself: stored on the model objects, each on its owner</li>
+    </ul>
+    <ul lang="ja">
+      <li>結果オブジェクト: ステップ 03 の結果。<code>"powerflow"</code> と <code>"equilibrium"</code> では <code>ResultPF</code>、<code>"OPF"</code> では <code>ResultOPF</code></li>
+      <li><code>result.tab_bus</code>: いずれの場合も母線の平衡点</li>
+      <li>平衡点そのもの: モデルのオブジェクトに所有者ごとに保存</li>
+    </ul>
     <table class="dg-table init-data">
       <thead><tr><th lang="en">Owner</th><th lang="ja">所有者</th><th lang="en">Property</th><th lang="ja">プロパティ</th><th lang="en">Size and unit</th><th lang="ja">サイズと単位</th></tr></thead>
       <tbody>
-        <tr><td><code>Bus</code></td><td><code>c_Vequilibrium</code></td><td lang="en" data-label="Size and unit">complex scalar [pu]; the bus owns it, components read it</td><td lang="ja" data-label="サイズと単位">複素スカラー [pu]。母線が所有し、機器はこれを読みます。</td></tr>
+        <tr><td><code>Bus</code></td><td><code>c_Vequilibrium</code></td><td lang="en" data-label="Size and unit">complex scalar [pu]; owned by the bus, read by the components</td><td lang="ja" data-label="サイズと単位">複素スカラー [pu]。母線が所有、機器が参照</td></tr>
         <tr><td><code>Bus</code></td><td><code>c_Iequilibrium</code> <small>Dependent</small></td><td lang="en" data-label="Size and unit">complex scalar [pu]: sum of the component currents, 0 without components</td><td lang="ja" data-label="サイズと単位">複素スカラー [pu]: 機器の電流の和。機器がなければ 0</td></tr>
         <tr><td><code>Component</code></td><td><code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code></td><td lang="en" data-label="Size and unit">numel(sv_x) × 1, numel(sv_u) × 1, in the order of <code>sv_x</code> / <code>sv_u</code></td><td lang="ja" data-label="サイズと単位">numel(sv_x) × 1、numel(sv_u) × 1。<code>sv_x</code> / <code>sv_u</code> の順</td></tr>
         <tr><td><code>Component</code></td><td><code>c_Iequilibrium</code></td><td lang="en" data-label="Size and unit">complex scalar [pu], injected into the bus</td><td lang="ja" data-label="サイズと単位">複素スカラー [pu]、母線への注入電流</td></tr>
         <tr><td><code>Component</code></td><td><code>c_Vequilibrium</code>, <code>rv_Xequilibrium_all</code> <small>Dependent</small></td><td lang="en" data-label="Size and unit">the voltage of the bus; the states of the component followed by those of its local controllers, depth first</td><td lang="ja" data-label="サイズと単位">母線の電圧。機器の状態に続けて局所制御器の状態（深さ優先）</td></tr>
-        <tr><td><code>LocalController</code></td><td><code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code></td><td lang="en" data-label="Size and unit">numel(sv_x) × 1, numel(sv_u) × 1; <code>c_Vequilibrium</code> and <code>c_Iequilibrium</code> are read from the parent</td><td lang="ja" data-label="サイズと単位">numel(sv_x) × 1、numel(sv_u) × 1。<code>c_Vequilibrium</code> と <code>c_Iequilibrium</code> は親から読みます。</td></tr>
+        <tr><td><code>LocalController</code></td><td><code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code></td><td lang="en" data-label="Size and unit">numel(sv_x) × 1, numel(sv_u) × 1; <code>c_Vequilibrium</code> and <code>c_Iequilibrium</code> read from the parent</td><td lang="ja" data-label="サイズと単位">numel(sv_x) × 1、numel(sv_u) × 1。<code>c_Vequilibrium</code> と <code>c_Iequilibrium</code> は親から参照</td></tr>
         <tr><td><code>GlobalController</code></td><td><code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code></td><td lang="en" data-label="Size and unit">numel(sv_x) × 1; the inputs, one per controlled unit and name in <code>sv_u</code></td><td lang="ja" data-label="サイズと単位">numel(sv_x) × 1。入力は制御対象ごと・<code>sv_u</code> の名前ごとに 1 つ</td></tr>
         <tr><td><code>PowerNetwork</code></td><td><code>cv_Vequilibrium</code>, <code>cv_Iequilibrium</code>, <code>rv_Xequilibrium</code> <small>Dependent</small></td><td lang="en" data-label="Size and unit">n_bus × 1 [pu]; all states in the order of the x rows of <code>get_variable_map</code></td><td lang="ja" data-label="サイズと単位">n_bus × 1 [pu]。全状態を <code>get_variable_map</code> の x 行の順に並べたもの</td></tr>
       </tbody>
     </table>
-    <p lang="en">Example, <code>network.IEEE14bus</code> after <code>net.initialize()</code>: <code>result.tab_bus</code> is 14 × 6, <code>net.rv_Xequilibrium</code> is 30 × 1, and the generator <code>SG1B001</code> (<code>component.generator.park</code>) holds a 6 × 1 state and a 2 × 1 input.</p>
-    <p lang="ja">例: <code>network.IEEE14bus</code> で <code>net.initialize()</code> を実行した後、<code>result.tab_bus</code> は 14 × 6、<code>net.rv_Xequilibrium</code> は 30 × 1 で、発電機 <code>SG1B001</code>（<code>component.generator.park</code>）は 6 × 1 の状態と 2 × 1 の入力を持ちます。</p>
+    <p class="init-pre" lang="en">Example, <code>network.IEEE14bus</code> after <code>net.initialize()</code>:</p>
+    <p class="init-pre" lang="ja">例: <code>network.IEEE14bus</code> で <code>net.initialize()</code> を実行した後</p>
+    <ul lang="en">
+      <li><code>result.tab_bus</code>: 14 × 6</li>
+      <li><code>net.rv_Xequilibrium</code>: 30 × 1</li>
+      <li>Generator <code>SG1B001</code> (<code>component.generator.park</code>): a 6 × 1 state and a 2 × 1 input</li>
+    </ul>
+    <ul lang="ja">
+      <li><code>result.tab_bus</code>: 14 × 6</li>
+      <li><code>net.rv_Xequilibrium</code>: 30 × 1</li>
+      <li>発電機 <code>SG1B001</code>（<code>component.generator.park</code>）: 6 × 1 の状態と 2 × 1 の入力</li>
+    </ul>
 
     <!-- ============================== SIDE EFFECTS ============================== -->
     <h2 id="side-effects"><span lang="en">Side effects and caches</span><span lang="ja">副作用とキャッシュ</span></h2>
     <ul lang="en">
-      <li><strong>Written:</strong> the equilibrium properties above; the <code>f_*</code> handle caches that were not up to date (INIT-02); <code>l_isSlack</code> of the bus that the power flow selects when none is set (kept after a successful call); the gain of <code>controller.local_LQR</code>.</li>
-      <li><strong>Edit state:</strong> <code>l_staleEquilibrium</code> is set at INIT-05 and cleared at INIT-13 together with <code>str_flag = "initialized"</code> and the edit log of every layer. A call that stops between them leaves it set.</li>
-      <li><strong>Later edits:</strong> the edit log decides what becomes stale (see <a href="class-design.html#edits">Class Design: Edit handling</a>). Nothing re-runs <code>initialize</code> automatically: <code>simulate</code>, <code>linearize</code>, and <code>get_sys</code> stop with <code>GUILDA:PowerNetwork:EquilibriumStale</code>, and the continuation power flow with <code>GUILDA:SolverCPF:StaleEquilibrium</code>. After edits of dynamics parameters only, <code>initialize(Method="equilibrium")</code> keeps <code>V</code> and <code>I</code> and recomputes the states and inputs.</li>
-      <li><strong>Network frequency:</strong> an edit of <code>Hz</code> rebuilds the handles at the next analysis but does not need a new <code>initialize</code>.</li>
+      <li><strong>Written:</strong>
+        <ul>
+          <li>the equilibrium properties above</li>
+          <li>the <code>f_*</code> handle caches that were not up to date (INIT-02)</li>
+          <li><code>l_isSlack</code> of the bus that the power flow selects when none is set (kept after a successful call)</li>
+          <li>the gain of <code>controller.local_LQR</code></li>
+        </ul>
+      </li>
+      <li><strong>Edit state:</strong>
+        <ul>
+          <li><code>l_staleEquilibrium</code> set at INIT-05</li>
+          <li>cleared at INIT-13, together with <code>str_flag = "initialized"</code> and the edit log of every layer</li>
+          <li>a call that stops between them leaves it set</li>
+        </ul>
+      </li>
+      <li><strong>Later edits:</strong>
+        <ul>
+          <li>the edit log decides what becomes stale (see <a href="class-design.html#edits">Class Design: Edit handling</a>)</li>
+          <li>nothing re-runs <code>initialize</code> automatically</li>
+          <li><code>simulate</code>, <code>linearize</code>, and <code>get_sys</code> stop with <code>GUILDA:PowerNetwork:EquilibriumStale</code>; the continuation power flow with <code>GUILDA:SolverCPF:StaleEquilibrium</code></li>
+          <li>after edits of dynamics parameters only: <code>initialize(Method="equilibrium")</code> keeps <code>V</code> and <code>I</code> and recomputes the states and inputs</li>
+        </ul>
+      </li>
+      <li><strong>Network frequency:</strong> an edit of <code>Hz</code> rebuilds the handles at the next analysis; no new <code>initialize</code> needed</li>
     </ul>
     <ul lang="ja">
-      <li><strong>書き込むもの:</strong> 上の平衡点のプロパティ、最新でなかった <code>f_*</code> ハンドルのキャッシュ（INIT-02）、スラック母線が未設定のとき潮流計算が選ぶ母線の <code>l_isSlack</code>（呼び出しが成功すれば残ります）、<code>controller.local_LQR</code> のゲイン。</li>
-      <li><strong>編集状態:</strong> <code>l_staleEquilibrium</code> は INIT-05 で設定され、INIT-13 で <code>str_flag = "initialized"</code> と全レイヤーの編集ログのリセットとともに解除されます。その間で停止した呼び出しでは設定されたままになります。</li>
-      <li><strong>後からの編集:</strong> 何が古くなるかは編集ログで決まります（<a href="class-design.html#edits">クラス設計: 編集の扱い</a> を参照）。<code>initialize</code> が自動で再実行されることはありません。<code>simulate</code>、<code>linearize</code>、<code>get_sys</code> は <code>GUILDA:PowerNetwork:EquilibriumStale</code> で、連続潮流計算は <code>GUILDA:SolverCPF:StaleEquilibrium</code> で停止します。動特性パラメータだけを編集した後は、<code>initialize(Method="equilibrium")</code> が <code>V</code> と <code>I</code> を保ったまま状態と入力を計算し直します。</li>
-      <li><strong>系統周波数:</strong> <code>Hz</code> の編集では次の解析でハンドルが再構築されますが、<code>initialize</code> のやり直しは不要です。</li>
+      <li><strong>書き込むもの:</strong>
+        <ul>
+          <li>上の平衡点のプロパティ</li>
+          <li>最新でなかった <code>f_*</code> ハンドルのキャッシュ（INIT-02）</li>
+          <li>スラック母線が未設定のとき潮流計算が選ぶ母線の <code>l_isSlack</code>（呼び出しが成功すれば保持）</li>
+          <li><code>controller.local_LQR</code> のゲイン</li>
+        </ul>
+      </li>
+      <li><strong>編集状態:</strong>
+        <ul>
+          <li><code>l_staleEquilibrium</code> は INIT-05 で設定</li>
+          <li>INIT-13 で <code>str_flag = "initialized"</code> と全レイヤーの編集ログのリセットとともに解除</li>
+          <li>その間で停止した呼び出しでは設定されたまま</li>
+        </ul>
+      </li>
+      <li><strong>後からの編集:</strong>
+        <ul>
+          <li>何が古くなるかは編集ログで決定（<a href="class-design.html#edits">クラス設計: 編集の扱い</a> を参照）</li>
+          <li><code>initialize</code> の自動再実行はなし</li>
+          <li><code>simulate</code>、<code>linearize</code>、<code>get_sys</code> は <code>GUILDA:PowerNetwork:EquilibriumStale</code> で、連続潮流計算は <code>GUILDA:SolverCPF:StaleEquilibrium</code> で停止</li>
+          <li>動特性パラメータだけの編集後: <code>initialize(Method="equilibrium")</code> が <code>V</code> と <code>I</code> を保ったまま状態と入力を再計算</li>
+        </ul>
+      </li>
+      <li><strong>系統周波数:</strong> <code>Hz</code> の編集では次の解析でハンドルを再構築。<code>initialize</code> のやり直しは不要</li>
     </ul>
 
     <!-- ============================== FAILURE ============================== -->
     <h2 id="failure"><span lang="en">Failure and flags</span><span lang="ja">失敗とフラグ</span></h2>
-    <p lang="en"><code>flag</code> and <code>output</code> are those of the analysis of step 03 (<code>flag = 1</code> for <code>"equilibrium"</code>). A failure is never returned as a flag: <code>initialize</code> stops with an error. The IDs below name the message entries in <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code>; they are not MATLAB identifiers (see <a href="class-design.html#conventions">Class Design: Conventions</a>).</p>
-    <p lang="ja"><code>flag</code> と <code>output</code> はステップ 03 の解析のものです（<code>"equilibrium"</code> では <code>flag = 1</code>）。失敗がフラグとして返ることはなく、<code>initialize</code> はエラーで停止します。下の ID は <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> のメッセージ項目の名前で、MATLAB の識別子ではありません（<a href="class-design.html#conventions">クラス設計: 規約</a> を参照）。</p>
-    <table class="dg-table">
-      <thead><tr><th lang="en">When</th><th lang="ja">発生する時点</th><th lang="en">Error or warning</th><th lang="ja">エラー・警告</th><th lang="en">State of the network</th><th lang="ja">ネットワークの状態</th></tr></thead>
-      <tbody>
-        <tr>
-          <td><span lang="en">INIT-01</span><span lang="ja">INIT-01</span></td>
-          <td><code>InitializePairs</code>, <code>InitializeMethod</code>; <span lang="en"><code>GUILDA:resolve_options:UnknownName</code> for other names</span><span lang="ja">それ以外の名前には <code>GUILDA:resolve_options:UnknownName</code></span></td>
-          <td lang="en" data-label="State">unchanged</td><td lang="ja" data-label="状態">変更なし</td>
-        </tr>
-        <tr>
-          <td><span lang="en">INIT-03a, power flow not converged</span><span lang="ja">INIT-03a、潮流計算が収束しない</span></td>
-          <td><code>InitializePowerflowFailed</code>; <span lang="en"><code>InitializePowerflowIsland</code> when the network is split</span><span lang="ja">ネットワークが分断されているときは <code>InitializePowerflowIsland</code></span></td>
-          <td lang="en" data-label="State">unchanged; a slack bus selected by this call is released</td><td lang="ja" data-label="状態">変更なし。この呼び出しで選ばれたスラック母線は解除されます。</td>
-        </tr>
-        <tr>
-          <td><span lang="en">INIT-03b, OPF not solved</span><span lang="ja">INIT-03b、OPF が解けない</span></td>
-          <td><code>InitializeOPFFailed</code>; <span lang="en"><code>InitializeOPFIsland</code> when the network is split (also for an internal error while the problem of a split network is built)</span><span lang="ja">ネットワークが分断されているときは <code>InitializeOPFIsland</code>（分断されたネットワークの問題を組み立てる途中の内部エラーでも同じ）</span></td>
-          <td lang="en" data-label="State">unchanged</td><td lang="ja" data-label="状態">変更なし</td>
-        </tr>
-        <tr>
-          <td><span lang="en">INIT-03c</span><span lang="ja">INIT-03c</span></td>
-          <td><code>InitializeEquilibriumOption</code>, <code>InitializeEquilibriumEdited</code>, <code>InitializeNoEquilibrium</code>, <code>InitializeEquilibriumFailed</code></td>
-          <td lang="en" data-label="State">unchanged</td><td lang="ja" data-label="状態">変更なし</td>
-        </tr>
-        <tr>
-          <td><span lang="en">INIT-06 to INIT-12</span><span lang="ja">INIT-06〜INIT-12</span></td>
-          <td><span lang="en">errors of the models' <code>get_equilibrium</code> (e.g. <code>GUILDA:AVR_ST1:InvalidValueRange</code>)</span><span lang="ja">モデルの <code>get_equilibrium</code> のエラー（例: <code>GUILDA:AVR_ST1:InvalidValueRange</code>）</span>; <code>InitializeNotEquilibrium</code>, <code>InitializeEquilibriumSize</code>, <code>InitializeModelFailed</code>, <code>InitializeModelSize</code></td>
-          <td lang="en" data-label="State">the equilibrium is written in part and <code>l_staleEquilibrium</code> stays true; later analyses stop with <code>EquilibriumStale</code> ("the last net.initialize() stopped before it finished")</td>
-          <td lang="ja" data-label="状態">平衡点は途中まで書き込まれ、<code>l_staleEquilibrium</code> は true のままです。後の解析は <code>EquilibriumStale</code>（"the last net.initialize() stopped before it finished"）で停止します。</td>
-        </tr>
-        <tr>
-          <td><span lang="en">INIT-14</span><span lang="ja">INIT-14</span></td>
-          <td><span lang="en">warnings <code>GUILDA:PowerNetwork:EquilibriumResidual</code> (a residual of 1e-6 or more) and <code>GUILDA:PowerNetwork:NetworkIsland</code></span><span lang="ja">警告 <code>GUILDA:PowerNetwork:EquilibriumResidual</code>（残差 1e-6 以上）と <code>GUILDA:PowerNetwork:NetworkIsland</code></span></td>
-          <td lang="en" data-label="State">initialized: a model with a residual can be simulated, but its states move without a disturbance</td>
-          <td lang="ja" data-label="状態">初期化済み。残差のあるモデルもシミュレーションできますが、外乱がなくても状態が動きます。</td>
-        </tr>
-      </tbody>
-    </table>
+    <ul lang="en">
+      <li><code>flag</code> and <code>output</code>: those of the analysis of step 03 (<code>flag = 1</code> for <code>"equilibrium"</code>)</li>
+      <li>A failure is never returned as a flag: <code>initialize</code> stops with an error</li>
+      <li>The IDs below name the message entries in <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code>; not MATLAB identifiers (see <a href="class-design.html#conventions">Class Design: Conventions</a>)</li>
+    </ul>
+    <ul lang="ja">
+      <li><code>flag</code> と <code>output</code>: ステップ 03 の解析のもの（<code>"equilibrium"</code> では <code>flag = 1</code>）</li>
+      <li>失敗はフラグとして返さず、<code>initialize</code> はエラーで停止</li>
+      <li>下の ID は <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> のメッセージ項目の名前。MATLAB の識別子ではない（<a href="class-design.html#conventions">クラス設計: 規約</a> を参照）</li>
+    </ul>
+    <ul class="init-fail">
+      <li>
+        <p class="init-fail-when">INIT-01</p>
+        <dl>
+          <dt><span lang="en">Error or warning</span><span lang="ja">エラー・警告</span></dt>
+          <dd><ul lang="en">
+            <li><code>InitializePairs</code>, <code>InitializeMethod</code></li>
+            <li><code>GUILDA:resolve_options:UnknownName</code> for other names</li>
+          </ul><ul lang="ja">
+            <li><code>InitializePairs</code>、<code>InitializeMethod</code></li>
+            <li>それ以外の名前には <code>GUILDA:resolve_options:UnknownName</code></li>
+          </ul></dd>
+          <dt><span lang="en">State of the network</span><span lang="ja">ネットワークの状態</span></dt>
+          <dd><span lang="en">unchanged</span><span lang="ja">変更なし</span></dd>
+        </dl>
+      </li>
+      <li>
+        <p class="init-fail-when"><span lang="en">INIT-03a, power flow not converged</span><span lang="ja">INIT-03a、潮流計算が収束しない</span></p>
+        <dl>
+          <dt><span lang="en">Error or warning</span><span lang="ja">エラー・警告</span></dt>
+          <dd><ul lang="en">
+            <li><code>InitializePowerflowFailed</code></li>
+            <li><code>InitializePowerflowIsland</code> when the network is split</li>
+          </ul><ul lang="ja">
+            <li><code>InitializePowerflowFailed</code></li>
+            <li>ネットワークが分断されているときは <code>InitializePowerflowIsland</code></li>
+          </ul></dd>
+          <dt><span lang="en">State of the network</span><span lang="ja">ネットワークの状態</span></dt>
+          <dd><ul lang="en">
+            <li>unchanged</li>
+            <li>a slack bus selected by this call is released</li>
+          </ul><ul lang="ja">
+            <li>変更なし</li>
+            <li>この呼び出しで選ばれたスラック母線は解除</li>
+          </ul></dd>
+        </dl>
+      </li>
+      <li>
+        <p class="init-fail-when"><span lang="en">INIT-03b, OPF not solved</span><span lang="ja">INIT-03b、OPF が解けない</span></p>
+        <dl>
+          <dt><span lang="en">Error or warning</span><span lang="ja">エラー・警告</span></dt>
+          <dd><ul lang="en">
+            <li><code>InitializeOPFFailed</code></li>
+            <li><code>InitializeOPFIsland</code> when the network is split (also for an internal error while the problem of a split network is built)</li>
+          </ul><ul lang="ja">
+            <li><code>InitializeOPFFailed</code></li>
+            <li>ネットワークが分断されているときは <code>InitializeOPFIsland</code>（分断されたネットワークの問題を組み立てる途中の内部エラーでも同じ）</li>
+          </ul></dd>
+          <dt><span lang="en">State of the network</span><span lang="ja">ネットワークの状態</span></dt>
+          <dd><span lang="en">unchanged</span><span lang="ja">変更なし</span></dd>
+        </dl>
+      </li>
+      <li>
+        <p class="init-fail-when">INIT-03c</p>
+        <dl>
+          <dt><span lang="en">Error or warning</span><span lang="ja">エラー・警告</span></dt>
+          <dd><code>InitializeEquilibriumOption</code>, <code>InitializeEquilibriumEdited</code>, <code>InitializeNoEquilibrium</code>, <code>InitializeEquilibriumFailed</code></dd>
+          <dt><span lang="en">State of the network</span><span lang="ja">ネットワークの状態</span></dt>
+          <dd><span lang="en">unchanged</span><span lang="ja">変更なし</span></dd>
+        </dl>
+      </li>
+      <li>
+        <p class="init-fail-when"><span lang="en">INIT-06 to INIT-12</span><span lang="ja">INIT-06〜INIT-12</span></p>
+        <dl>
+          <dt><span lang="en">Error or warning</span><span lang="ja">エラー・警告</span></dt>
+          <dd><ul lang="en">
+            <li>errors of the models' <code>get_equilibrium</code> (e.g. <code>GUILDA:AVR_ST1:InvalidValueRange</code>)</li>
+            <li><code>InitializeNotEquilibrium</code>, <code>InitializeEquilibriumSize</code>, <code>InitializeModelFailed</code>, <code>InitializeModelSize</code></li>
+          </ul><ul lang="ja">
+            <li>モデルの <code>get_equilibrium</code> のエラー（例: <code>GUILDA:AVR_ST1:InvalidValueRange</code>）</li>
+            <li><code>InitializeNotEquilibrium</code>、<code>InitializeEquilibriumSize</code>、<code>InitializeModelFailed</code>、<code>InitializeModelSize</code></li>
+          </ul></dd>
+          <dt><span lang="en">State of the network</span><span lang="ja">ネットワークの状態</span></dt>
+          <dd><ul lang="en">
+            <li>the equilibrium is written in part; <code>l_staleEquilibrium</code> stays true</li>
+            <li>later analyses stop with <code>EquilibriumStale</code> ("the last net.initialize() stopped before it finished")</li>
+          </ul><ul lang="ja">
+            <li>平衡点は途中まで書き込み済み。<code>l_staleEquilibrium</code> は true のまま</li>
+            <li>後の解析は <code>EquilibriumStale</code>（"the last net.initialize() stopped before it finished"）で停止</li>
+          </ul></dd>
+        </dl>
+      </li>
+      <li>
+        <p class="init-fail-when">INIT-14</p>
+        <dl>
+          <dt><span lang="en">Error or warning</span><span lang="ja">エラー・警告</span></dt>
+          <dd><ul lang="en">
+            <li>warning <code>GUILDA:PowerNetwork:EquilibriumResidual</code> (a residual of 1e-6 or more)</li>
+            <li>warning <code>GUILDA:PowerNetwork:NetworkIsland</code></li>
+          </ul><ul lang="ja">
+            <li>警告 <code>GUILDA:PowerNetwork:EquilibriumResidual</code>（残差 1e-6 以上）</li>
+            <li>警告 <code>GUILDA:PowerNetwork:NetworkIsland</code></li>
+          </ul></dd>
+          <dt><span lang="en">State of the network</span><span lang="ja">ネットワークの状態</span></dt>
+          <dd><ul lang="en">
+            <li>initialized</li>
+            <li>a model with a residual can be simulated, but its states move without a disturbance</li>
+          </ul><ul lang="ja">
+            <li>初期化済み</li>
+            <li>残差のあるモデルもシミュレーション可能。ただし外乱がなくても状態が変化</li>
+          </ul></dd>
+        </dl>
+      </li>
+    </ul>
 
     <!-- ============================== EXTENSION ============================== -->
     <h2 id="extension"><span lang="en">Extension points</span><span lang="ja">拡張ポイント</span></h2>
     <p lang="en">A new model takes part in initialization through its <code>get_equilibrium</code> (see <a href="model-implementation.html#contracts">Model Implementation: Contracts</a>):</p>
-    <p lang="ja">新しいモデルは <code>get_equilibrium</code> を通じて初期化に参加します（<a href="model-implementation.html#contracts">モデルの実装: 契約</a> を参照）。</p>
-    <table class="dg-table">
+    <p lang="ja">新しいモデルは <code>get_equilibrium</code> を通じて初期化に参加（<a href="model-implementation.html#contracts">モデルの実装: 契約</a> を参照）</p>
+    <table class="dg-table init-ext">
       <thead><tr><th lang="en">Model</th><th lang="ja">モデル</th><th lang="en">Must implement</th><th lang="ja">実装すべきもの</th></tr></thead>
       <tbody>
         <tr><td><code>Component</code></td>
-          <td lang="en" data-label="Must implement"><code>[x, u] = get_equilibrium(obj, c_V, c_I, r_P, r_Q)</code>, always called with all four arguments. <code>x</code> and <code>u</code> have the sizes of <code>sv_x</code> and <code>sv_u</code>, and at <code>(x, V, u)</code> the model holds: <code>fcn_dx = 0</code> and <code>fcn_I = c_I</code>. The power-flow settings <code>P</code>, <code>Q</code> (NaN <code>Q</code> for a voltage-controlling unit) and <code>operation.baseMVA</code> decide what the component receives.</td>
-          <td lang="ja" data-label="実装すべきもの"><code>[x, u] = get_equilibrium(obj, c_V, c_I, r_P, r_Q)</code>。常に 4 つの引数で呼ばれます。<code>x</code> と <code>u</code> は <code>sv_x</code> と <code>sv_u</code> の大きさで、<code>(x, V, u)</code> でモデルが <code>fcn_dx = 0</code> と <code>fcn_I = c_I</code> を満たすこと。機器が受け取る値は潮流計算の設定 <code>P</code>、<code>Q</code>（電圧を制御する機器は <code>Q</code> を NaN）と <code>operation.baseMVA</code> で決まります。</td></tr>
+          <td lang="en" data-label="Must implement"><ul>
+            <li><code>[x, u] = get_equilibrium(obj, c_V, c_I, r_P, r_Q)</code>, always called with all four arguments</li>
+            <li><code>x</code> and <code>u</code>: the sizes of <code>sv_x</code> and <code>sv_u</code></li>
+            <li>At <code>(x, V, u)</code> the model holds <code>fcn_dx = 0</code> and <code>fcn_I = c_I</code></li>
+            <li>What the component receives: decided by the power-flow settings <code>P</code>, <code>Q</code> (NaN <code>Q</code> for a voltage-controlling unit) and <code>operation.baseMVA</code></li>
+          </ul></td>
+          <td lang="ja" data-label="実装すべきもの"><ul>
+            <li><code>[x, u] = get_equilibrium(obj, c_V, c_I, r_P, r_Q)</code>。常に 4 つの引数で呼び出し</li>
+            <li><code>x</code> と <code>u</code>: <code>sv_x</code> と <code>sv_u</code> の大きさ</li>
+            <li><code>(x, V, u)</code> でモデルが <code>fcn_dx = 0</code> と <code>fcn_I = c_I</code> を満たすこと</li>
+            <li>機器が受け取る値: 潮流計算の設定 <code>P</code>、<code>Q</code>（電圧を制御する機器は <code>Q</code> を NaN）と <code>operation.baseMVA</code> で決定</li>
+          </ul></td></tr>
         <tr><td><code>LocalController</code></td>
-          <td lang="en" data-label="Must implement"><code>get_equilibrium(obj, V, u)</code> with no output: write <code>rv_Xequilibrium</code> and <code>rv_Uequilibrium</code>, and call the nested controller. At the equilibrium the outputs must equal the inputs of the component they drive.</td>
-          <td lang="ja" data-label="実装すべきもの">出力のない <code>get_equilibrium(obj, V, u)</code>。<code>rv_Xequilibrium</code> と <code>rv_Uequilibrium</code> を書き込み、入れ子の制御器を呼びます。平衡点では、出力が駆動する機器の入力と等しくなければなりません。</td></tr>
+          <td lang="en" data-label="Must implement"><ul>
+            <li><code>get_equilibrium(obj, V, u)</code> with no output</li>
+            <li>Writes <code>rv_Xequilibrium</code> and <code>rv_Uequilibrium</code>, and calls the nested controller</li>
+            <li>At the equilibrium: outputs must equal the inputs of the component they drive</li>
+          </ul></td>
+          <td lang="ja" data-label="実装すべきもの"><ul>
+            <li>出力のない <code>get_equilibrium(obj, V, u)</code></li>
+            <li><code>rv_Xequilibrium</code> と <code>rv_Uequilibrium</code> を書き込み、入れ子の制御器を呼び出し</li>
+            <li>平衡点: 出力が駆動する機器の入力と一致すること</li>
+          </ul></td></tr>
         <tr><td><code>GlobalController</code></td>
-          <td lang="en" data-label="Must implement"><code>[x, u] = get_equilibrium(obj)</code>. It runs before the buses and components are set (INIT-06), so it must not read their new equilibrium. Its outputs must be zero at the equilibrium, because they are added to the inputs of the controlled units.</td>
-          <td lang="ja" data-label="実装すべきもの"><code>[x, u] = get_equilibrium(obj)</code>。母線と機器の設定より前（INIT-06）に実行されるため、それらの新しい平衡点を読んではいけません。出力は制御対象の入力に加算されるので、平衡点ではゼロでなければなりません。</td></tr>
+          <td lang="en" data-label="Must implement"><ul>
+            <li><code>[x, u] = get_equilibrium(obj)</code></li>
+            <li>Runs before the buses and components are set (INIT-06): must not read their new equilibrium</li>
+            <li>Outputs must be zero at the equilibrium, because they are added to the inputs of the controlled units</li>
+          </ul></td>
+          <td lang="ja" data-label="実装すべきもの"><ul>
+            <li><code>[x, u] = get_equilibrium(obj)</code></li>
+            <li>母線と機器の設定より前（INIT-06）に実行: それらの新しい平衡点の読み取りは不可</li>
+            <li>出力は制御対象の入力に加算されるため、平衡点ではゼロが必要</li>
+          </ul></td></tr>
       </tbody>
     </table>
-    <p lang="en">Check a new model with <code>comp.validate()</code> or <code>con.validate()</code>; <code>initialize</code> reports the remaining residuals with <code>EquilibriumResidual</code>.</p>
-    <p lang="ja">新しいモデルは <code>comp.validate()</code> または <code>con.validate()</code> で確認します。残った残差は <code>initialize</code> が <code>EquilibriumResidual</code> で報告します。</p>
+    <ul lang="en">
+      <li>Check a new model with <code>comp.validate()</code> or <code>con.validate()</code></li>
+      <li><code>initialize</code> reports the remaining residuals with <code>EquilibriumResidual</code></li>
+    </ul>
+    <ul lang="ja">
+      <li>新しいモデルは <code>comp.validate()</code> または <code>con.validate()</code> で確認</li>
+      <li>残った残差は <code>initialize</code> が <code>EquilibriumResidual</code> で報告</li>
+    </ul>
 
     <!-- ============================== RELATED ============================== -->
     <h2 id="related"><span lang="en">Related pages</span><span lang="ja">関連ページ</span></h2>
