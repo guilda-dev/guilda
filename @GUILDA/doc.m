@@ -9,7 +9,8 @@ function doc(option)
 % update : "auto" (default) exports again the classes whose files changed
 %          since the last export (see database/manifest.json), with their
 %          descendants, and everything when the exporter changed. The scan
-%          covers _GUILDAsystem, _GUILDAobject and user classes on the path.
+%          covers _GUILDAsystem, _GUILDAobject and user classes on the path,
+%          and the class images @Class/image.svg.
 %          true/"always" rebuilds everything; false/"never" skips the check.
     arguments
         option.update (1,1) string {mustBeMember(option.update, ["auto","always","never","true","false"])} = "auto"
@@ -97,6 +98,17 @@ function [bln_stale, str_reason, sct_scan] = is_database_stale(str_root)
     cell_diff = setxor(cell_classes, {sct_scan.Classes.Name});
     if ~isempty(cell_diff)
         str_reason = sprintf('class %s was added or removed', cell_diff{1});
+        return
+    end
+    % Class images (@Class/image.svg) are not .m files: compare them apart.
+    cell_old_images = {};
+    if isfield(sct_manifest, 'images') && ~isempty(sct_manifest.images)
+        cell_old_images = strcat({sct_manifest.images.Class}, '|', {sct_manifest.images.Hash});
+    end
+    cell_new_images = strcat({sct_scan.Images.Class}, '|', {sct_scan.Images.Hash});
+    cell_diff = setxor(cell_old_images, cell_new_images);
+    if ~isempty(cell_diff)
+        str_reason = sprintf('the image of %s was added, removed or edited', extractBefore(cell_diff{1}, '|'));
         return
     end
     bln_stale = false;

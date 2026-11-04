@@ -24,6 +24,9 @@ function sct_summary = export_class_database(sct_scan, option)
 %   _GUILDAdoc/database/manifest.json       export state for the next run
 %   _GUILDAdoc/database/list_CallGraph.js   call graph of the System methods,
 %                                           rebuilt in full on every export
+%   _GUILDAdoc/database/images/<Class>.svg  copy of @Class/image.svg (User
+%                                           classes: database/User/images/),
+%                                           synchronized on every export
 %
 % Schema version 5
 % ----------------
@@ -41,7 +44,10 @@ function sct_summary = export_class_database(sct_scan, option)
 %   Superclasses, Ancestors (nearest first), Subclasses (direct, among the
 %   exported classes), Package, File, Line, Abstract, Sealed, Hidden,
 %   Summary, Desc, SeeAlso, Examples, Deprecated, Documented,
-%   PropertyCount {Own, Total}, MethodCount {Own, Total}, path (class JS file)
+%   PropertyCount {Own, Total}, MethodCount {Own, Total}, path (class JS file),
+%   References [{Name, Type}] (own a_* properties; Type is the class from
+%   <@Type> or the name, '' when unknown),
+%   Image (path of the copied image.svg relative to _GUILDAdoc, '' without one)
 % node: Name, Kind ("folder"|"file"), Path, Children ([] for files), and on
 %   file nodes Class (the classdef file and every file in @Class/) and
 %   Method (a method file directly in @Class/).
@@ -54,7 +60,7 @@ function sct_summary = export_class_database(sct_scan, option)
 % property: Name, Defining, Group, GetAccess, SetAccess, Dependent, Constant,
 %   Abstract, Hidden, Transient, HasDefault, DefaultCode,
 %   Validation {Class, Size, Validators}, Unit, File, Line,
-%   Summary, Desc, SeeAlso, Type, Deprecated
+%   Summary, Desc, SeeAlso, Type, Stale, Deprecated
 % method: Name, Defining, Group, Access, Static, Abstract, Sealed, Hidden,
 %   IsConstructor, InputNames, OutputNames, Arguments [argument],
 %   Outputs [argument], Signature, File, Line,
@@ -69,12 +75,17 @@ function sct_summary = export_class_database(sct_scan, option)
 %   Unit     a leading "[unit]" in a property or arguments-block comment
 %   Group    property: trailing comment of the "properties (...)" line,
 %            else the block attributes ("Public" without attributes);
-%            method: name prefix before the first "_", "Constructor",
-%            or "Other" without "_"
+%            method: <@Group> in its help, else <@Group> in the comment
+%            above its declaration in the classdef file, else the trailing
+%            comment of the "methods (...)" line that declares or defines
+%            it, else the name
+%            prefix before the first "_", "Constructor", or "Other" without "_"
 %   Overrides  nearest GUILDA ancestor that defines the same method
 %   Throws     error IDs in error(msg(...)) and MException(...) calls of the
 %              method body (with the local functions of a method file)
-% Tags: <@Examples> (class, method), <@Deprecated> (all), <@Type> (property).
+% Tags: <@Examples> (class, method), <@Deprecated> (all), <@Type> (property),
+%   <@Stale> (property: what an edit of it makes out of date),
+%   <@Group> (method: the purpose group, for methods in their own files).
 %
 % list_CallGraph.js: window.GUILDA_DOC_CALLGRAPH = {
 %   schema: {name, version: 1},
@@ -83,6 +94,7 @@ function sct_summary = export_class_database(sct_scan, option)
 %          list of nodes when the class is not determinable
 %   dynamic: [[from, file, line]] obj.(name), feval, str2func and eval uses
 %   implementers: [[node, count]] subclasses that implement a member
+%   writes: [[node, [from]]] methods that assign a property (obj.prop = ...)
 % }
 % node: "Class.member" or "Class.get.prop" (a property accessor).
 % kind: "method"|"property"|"parameter" (a dynamic Parameter property)|"subclass".
@@ -227,6 +239,8 @@ function sct_summary = export_class_database(sct_scan, option)
     bln_ok = cellfun(@(e) ~isfield(e, 'Failed'), cell_entries);
     cell_class_info = cellfun(@(e) e.Info, cell_entries(bln_ok), 'UniformOutput', false);
     cell_class_info = add_subclasses(cell_class_info);
+    cell_class_info = cellfun(@normalize_references, cell_class_info, 'UniformOutput', false);
+    cell_class_info = sync_images(cell_class_info, sct_scan, str_db_path);
     if isempty(cell_class_info)
         warning(msg("GUILDA:export_class_database:NoClassExported"));
     end
@@ -273,6 +287,7 @@ function sct_summary = export_class_database(sct_scan, option)
         'version',  5, ...
         'exporter', sct_scan.Tool, ...
         'files',    rmfield(sct_scan.Files, 'Changed'), ...
+        'images',   image_state(sct_scan), ...
         'classes',  {cell_entries(bln_ok)});
     write_text_file(str_manifest, jsonencode(sct_manifest));
     write_call_graph(sct_scan, fullfile(str_db_path, 'list_CallGraph.js'));
@@ -338,6 +353,15 @@ function sct_out = encode_call_graph(sct_graph)
         end
         cell_dyn{i} = {i_from, index_of(cell_files, sct_dynamic(i).File), sct_dynamic(i).Line};
     end
+    cell_props = keys(sct_graph.Writes);
+    cell_writes = cell(1, numel(cell_props));
+    for i = 1:numel(cell_props)
+        % A property that is only written has no node yet.
+        cell_ends = [cell_props(i), sct_graph.Writes(cell_props{i})];
+        cell_nodes = [cell_nodes, setdiff(cell_ends, cell_nodes, 'stable')]; %#ok<AGROW>
+        iv_from = cellfun(@(n) index_of(cell_nodes, n), sct_graph.Writes(cell_props{i}));
+        cell_writes{i} = {index_of(cell_nodes, cell_props{i}), num2cell(iv_from)};
+    end
     cell_keys = keys(sct_graph.Implementers);
     cell_impl = cell(1, numel(cell_keys));
     for i = 1:numel(cell_keys)
@@ -346,7 +370,7 @@ function sct_out = encode_call_graph(sct_graph)
     sct_out = struct('schema', struct('name', 'GUILDA call graph', 'version', 1), ...
         'kinds', {cell_kinds}, 'confidences', {cell_confidences}, 'rules', {cell_rules}, ...
         'files', {cell_files}, 'nodes', {cell_nodes}, 'edges', {cell_edges}, ...
-        'dynamic', {cell_dyn}, 'implementers', {cell_impl});
+        'dynamic', {cell_dyn}, 'implementers', {cell_impl}, 'writes', {cell_writes});
 end
 
 function sct_entries = empty_entry_struct()
@@ -435,6 +459,79 @@ function cell_class_info = add_subclasses(cell_class_info)
     for i_class = 1:numel(cell_class_info)
         bln_sub = cellfun(@(s) any(strcmp(s, cell_names{i_class})), cell_supers);
         cell_class_info{i_class}.Subclasses = cell_names(bln_sub);
+    end
+end
+
+function sct_info = normalize_references(sct_info)
+    % References read back from manifest.json is a struct array (or []);
+    % keep it a cell so that it is always a JSON list.
+    if ~isfield(sct_info, 'References') || isempty(sct_info.References)
+        sct_info.References = cell(1, 0);
+    elseif isstruct(sct_info.References)
+        sct_info.References = reshape(num2cell(sct_info.References), 1, []);
+    end
+end
+
+function cell_class_info = sync_images(cell_class_info, sct_scan, str_db_path)
+    % Copy each @Class/image.svg to database/images/<Class>.svg (User
+    % classes: database/User/images/, never published), remove the copies
+    % of images that are gone, and set Image on every class.
+    sct_images = image_state(sct_scan, true);
+    map_image = containers.Map('KeyType', 'char', 'ValueType', 'char');
+    cell_keep = {};
+    map_origin = containers.Map('KeyType', 'char', 'ValueType', 'char');
+    for i_class = 1:numel(cell_class_info)
+        map_origin(cell_class_info{i_class}.Name) = cell_class_info{i_class}.Origin;
+    end
+    for i_image = 1:numel(sct_images)
+        str_class = sct_images(i_image).Class;
+        if ~isKey(map_origin, str_class)
+            continue
+        end
+        str_rel = ['images/', str_class, '.svg'];
+        if strcmp(map_origin(str_class), 'User')
+            str_rel = ['User/', str_rel]; %#ok<AGROW>
+        end
+        str_target = fullfile(str_db_path, strrep(str_rel, '/', filesep));
+        if ~isfolder(fileparts(str_target))
+            mkdir(fileparts(str_target));
+        end
+        [bln_ok, str_message] = copyfile(sct_images(i_image).Path, str_target, 'f');
+        if ~bln_ok
+            warning(msg("GUILDA:export_class_database:ImageCopyFailed", sct_images(i_image).Path, str_message));
+            continue
+        end
+        map_image(str_class) = ['./database/', str_rel];
+        cell_keep{end+1} = str_target; %#ok<AGROW>
+    end
+    for str_folder = {fullfile(str_db_path, 'images'), fullfile(str_db_path, 'User', 'images')}
+        sct_old = dir(fullfile(str_folder{1}, '*.svg'));
+        for i_old = 1:numel(sct_old)
+            str_old = fullfile(sct_old(i_old).folder, sct_old(i_old).name);
+            if ~any(strcmp(cell_keep, str_old))
+                delete(str_old);
+            end
+        end
+    end
+    for i_class = 1:numel(cell_class_info)
+        str_name = cell_class_info{i_class}.Name;
+        if isKey(map_image, str_name)
+            cell_class_info{i_class}.Image = map_image(str_name);
+        else
+            cell_class_info{i_class}.Image = '';
+        end
+    end
+end
+
+function sct_images = image_state(sct_scan, bln_with_path)
+    % Images of the scan; without bln_with_path only Class and Hash, as the
+    % manifest stores them.
+    sct_images = struct('Class', {}, 'Path', {}, 'Hash', {});
+    if isfield(sct_scan, 'Images')
+        sct_images = sct_scan.Images;
+    end
+    if nargin < 2 || ~bln_with_path
+        sct_images = rmfield(sct_images, 'Path');
     end
 end
 
@@ -563,6 +660,7 @@ function [sct_info, sct_validation, sct_coverage] = export_class_doc(str_class_n
     sct_doc_data.events      = build_name_list(meta_class.EventList, sct_ctx);
     sct_doc_data.enumeration = build_name_list(meta_class.EnumerationMemberList, sct_ctx);
     [sct_info, cell_class_diagnostics] = build_class_info(str_class_name, meta_class, sct_ctx);
+    sct_info.References    = get_references(cell_props, str_class_name, sct_ctx);
     sct_info.PropertyCount = count_members(cell_props, str_class_name);
     sct_info.MethodCount   = count_members(cell_methods, str_class_name);
 
@@ -588,6 +686,32 @@ function [sct_info, sct_validation, sct_coverage] = export_class_doc(str_class_n
         '})(window);\n' ...
     ], str_class_key, str_json);
     write_text_file(str_file_name, str_js_content);
+end
+
+function cell_refs = get_references(cell_props, str_class_name, sct_ctx)
+    % Own a_* properties: references to other objects (parent, children,
+    % associations). The class comes from <@Type>, then the name (a_Bus -> Bus).
+    cell_refs = cell(1, 0);
+    cell_classes = keys(sct_ctx.files);
+    cell_shorts = cellfun(@short_class_name, cell_classes, 'UniformOutput', false);
+    for i_prop = 1:numel(cell_props)
+        sct_p = cell_props{i_prop};
+        if ~strcmp(sct_p.Defining, str_class_name) || ~startsWith(sct_p.Name, 'a_')
+            continue
+        end
+        str_type = '';
+        cell_tokens = regexp(sct_p.Type, '[A-Za-z][\w.]*', 'match');
+        i_known = find(ismember(cell_tokens, cell_classes), 1);
+        if ~isempty(i_known)
+            str_type = cell_tokens{i_known};
+        else
+            i_short = find(strcmp(cell_shorts, sct_p.Name(3:end)), 1);
+            if ~isempty(i_short)
+                str_type = cell_classes{i_short};
+            end
+        end
+        cell_refs{end+1} = struct('Name', sct_p.Name, 'Type', str_type); %#ok<AGROW>
+    end
 end
 
 function sct_count = count_members(cell_members, str_class_name)
@@ -779,6 +903,22 @@ function [sct_info, cell_diagnostics] = build_meta_info(meta_item, str_class_nam
             str_raw_help = sanitize_help_text(try_help(str_class_name + "." + string(str_member)));
         end
         sct_info.Signature = build_signature(sct_info, str_defining);
+        % Group of the methods block in the classdef file, if it has one.
+        str_block_group = '';
+        if isKey(sct_class_src.funcs, str_member) && isfield(sct_class_src.funcs(str_member), 'Group')
+            str_block_group = sct_class_src.funcs(str_member).Group;
+        end
+        if isKey(sct_class_src.decls, str_member)
+            % "% <@Group> ..." above the declaration, for a method whose file
+            % cannot carry it (a generated file); else the methods block.
+            sct_decl_tags = parse_tagged_help(sct_class_src.decls(str_member).Comment);
+            if isfield(sct_decl_tags, 'Group') && ~isempty(strtrim(sct_decl_tags.Group))
+                str_block_group = strtrim(sct_decl_tags.Group);
+            elseif isempty(str_block_group)
+                str_block_group = sct_class_src.decls(str_member).Group;
+            end
+        end
+        str_prefix_group = sct_info.Group;
     end
 
     if isempty(strtrim(str_raw_help)) && ~sct_class_src.found
@@ -786,6 +926,16 @@ function [sct_info, cell_diagnostics] = build_meta_info(meta_item, str_class_nam
     end
     str_context = char(str_class_name + "." + string(str_member));
     [sct_info, cell_diagnostics] = apply_help_tags(sct_info, str_raw_help, str_kind, str_context, sct_ctx.strict);
+    if str_kind == "method"
+        % <@Group> wins over the methods block, which wins over the name.
+        sct_info.Group = strtrim(sct_info.Group);
+        if isempty(sct_info.Group)
+            sct_info.Group = str_block_group;
+        end
+        if isempty(sct_info.Group)
+            sct_info.Group = str_prefix_group;
+        end
+    end
 
     % Report problems only where the member is defined, so that an inherited
     % member is not reported again for every subclass.
@@ -1184,6 +1334,7 @@ function sct_src = parse_classdef_source(str_file)
 
     str_state = 'class';
     str_group = '';
+    str_block_comment = '';
     cell_buffer = {};
     n_lines = numel(cell_lines);
     while i <= n_lines
@@ -1206,7 +1357,8 @@ function sct_src = parse_classdef_source(str_file)
                 if ~isempty(str_block)
                     str_state = str_block{1};
                     % "properties (SetAccess = protected) % Parameters"
-                    str_group = strtrim(str_comment);
+                    str_block_comment = strtrim(str_comment);
+                    str_group = str_block_comment;
                     if isempty(str_group)
                         str_group = attribute_label(str_block{2});
                     end
@@ -1246,6 +1398,8 @@ function sct_src = parse_classdef_source(str_file)
                 if ~isempty(regexp(str_code, '^function\>', 'once'))
                     [sct_fn, i] = parse_function_at(cell_lines, i);
                     if ~isempty(sct_fn.Name)
+                        % "methods (Access = protected) % Called by analyses"
+                        sct_fn.Group = str_block_comment;
                         sct_src.funcs(sct_fn.Name) = sct_fn;
                     end
                 else
@@ -1254,7 +1408,8 @@ function sct_src = parse_classdef_source(str_file)
                     sct_header = parse_function_header(['function ', str_decl]);
                     if ~isempty(sct_header.Name)
                         sct_src.decls(sct_header.Name) = struct( ...
-                            'Comment', normalize_comment_lines(cell_buffer), 'Line', i_decl);
+                            'Comment', normalize_comment_lines(cell_buffer), 'Line', i_decl, ...
+                            'Group', str_block_comment);
                     end
                 end
                 cell_buffer = {};
@@ -1920,8 +2075,8 @@ function sct_schema = get_tag_schema()
     end
     sct_schema = struct();
     sct_schema.class    = {'Examples', 'Deprecated'};
-    sct_schema.property = {'Type', 'Deprecated'};
-    sct_schema.method   = {'Examples', 'Deprecated'};
+    sct_schema.property = {'Type', 'Stale', 'Deprecated'};
+    sct_schema.method   = {'Examples', 'Group', 'Deprecated'};
     sct_schema.removed  = struct( ...
         'Summary',     'write the summary as the first comment line (H1 line)', ...
         'Desc',        'write the description as the comment lines after the H1 line', ...

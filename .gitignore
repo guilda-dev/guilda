@@ -60,6 +60,7 @@ _GUILDAdoc/database/GUILDAobject
 _GUILDAdoc/database/User
 _GUILDAdoc/database/manifest.json
 _GUILDAdoc/database/list_CallGraph.js
+_GUILDAdoc/database/images
 # Claude Code: session worktrees and personal settings
 # (.claude/settings.json and .claude/hooks/ are shared and committed)
 .claude/worktrees/
