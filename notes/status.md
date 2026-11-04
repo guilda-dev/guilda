@@ -103,6 +103,10 @@ matlab -batch "DebugScript.run_all"
 | [get-sys-improvements.md](get-sys-improvements.md) §7 | Q8(使われていないコードの削除)、Q9(線形化の疎行列)、Q10(編集の刻印)、Q11(UX シートの記入) |
 | [simulate-improvements.md](simulate-improvements.md) §8 | Q1(`Solver` の不一致は保留と記録)、Q8、Q12、Q13。Q8 以降はこのノートに未回答と記録されています。`faa2d13` のコードとの照合はしていません |
 
+### コードの問題の一覧
+
+- **未対応:** For Developer のページを書く途中で見つかった問題を [dev-pages-code-findings.md](dev-pages-code-findings.md) に記録しました(基準 `765663b`、2026-11-04)。CPF の `iv_CPFX` が残る問題(CPF-1)など、再現したバグを含みます。修正するかは未決です。
+
 ## 解決済みの項目
 
 以前この文書で未決だった項目です。
