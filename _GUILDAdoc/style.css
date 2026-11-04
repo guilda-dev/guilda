@@ -1297,6 +1297,9 @@ body.doc-layout .meta-box table th {
 .dg main h3 code, .dg .dg-item-title code, .dg .dg-row-head code { background: var(--code-bg); color: inherit; }
 .dg .dev-toc { margin: var(--dg-s5) 0 0; padding: 0 0 var(--dg-s3); gap: var(--dg-s2) var(--dg-s5); background: none; border: 0; border-bottom: 1px solid var(--dg-line); border-radius: 0; }
 .dg .dev-toc + h2, .dg .dev-toc + .dg-callout + h2 { border-top: 0; }
+/* main is a size container (dg-main): side-by-side parts below decide from the
+   width they actually get, not from the screen width */
+.dg main { container: dg-main / inline-size; }
 .dg .name-generator { margin-top: var(--dg-s5); }
 .dg .name-generator h2 { margin-top: 0; padding-top: 0; border-top: 0; }
 .dg-kicker { display: block; color: var(--dg-muted); font-size: 0.72rem; font-weight: bold; letter-spacing: 0.06em; text-transform: uppercase; }
@@ -1365,11 +1368,12 @@ body.doc-layout .meta-box table th {
   .dg .dg-only-narrow { display: block; }
 }
 
-/* Two columns with a clear gutter */
-.dg-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--dg-s6); margin: var(--dg-s4) 0 var(--dg-s5); }
+/* Two columns with a clear gutter. They stack wherever a column would be
+   narrower than 20rem (any parent width); .dg-two.is-stacked always stacks. */
+.dg-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, max(20rem, (100% - var(--dg-s6)) / 2)), 1fr)); gap: var(--dg-s5) var(--dg-s6); margin: var(--dg-s4) 0 var(--dg-s5); }
 .dg-two > * { min-width: 0; }
 .dg-two > * > h3:first-child { margin-top: 0; }
-@media (max-width: 760px) { .dg-two { grid-template-columns: minmax(0, 1fr); gap: var(--dg-s5); } }
+.dg-two.is-stacked { grid-template-columns: minmax(0, 1fr); }
 
 /* Single-column list: large number or icon, thin dividers */
 .dg-list { list-style: none; margin: var(--dg-s4) 0 var(--dg-s5); padding: 0; counter-reset: dg-item; }
@@ -1383,9 +1387,12 @@ body.doc-layout .meta-box table th {
 .dg-list ul { margin: var(--dg-s2) 0 0; padding-left: 20px; }
 .dg-item-title { display: block; margin-bottom: 2px; color: var(--dg-ink); font-weight: bold; }
 .dg-list.is-numbered .dg-item-title { font-size: 1.05rem; }
-@media (max-width: 640px) {
+/* .is-cols: one column when main is narrower than 42rem */
+@container dg-main (max-width: 42rem) {
   .dg-list.is-cols { grid-template-columns: minmax(0, 1fr); }
   .dg-list.is-cols > li:nth-child(2) { border-top: 0; }
+}
+@media (max-width: 640px) {
   .dg-list > li { grid-template-columns: 36px minmax(0, 1fr); gap: var(--dg-s3); }
   .dg-list.is-plain > li { grid-template-columns: minmax(0, 1fr); }
 }
@@ -1398,8 +1405,10 @@ body.doc-layout .meta-box table th {
 .dg-mark.is-err { color: var(--dg-err); }
 @media (max-width: 640px) { .dg-mark { width: 34px; height: 34px; font-size: 0.75rem; } }
 
-/* Rows: term on the left, description on the right */
-.dg-rows { margin: var(--dg-s4) 0 var(--dg-s5); border-top: 1px solid var(--dg-line); }
+/* Rows: term on the left, description on the right. .dg-rows is a size
+   container: below 36rem each row stacks (term above description).
+   .dg-rows.is-stacked always stacks, also over page-specific column rules. */
+.dg-rows { container-type: inline-size; margin: var(--dg-s4) 0 var(--dg-s5); border-top: 1px solid var(--dg-line); }
 .dg-row { display: grid; grid-template-columns: minmax(0, 14rem) minmax(0, 1fr); gap: var(--dg-s2) var(--dg-s5); align-items: baseline; padding: var(--dg-s4) 0; border-bottom: 1px solid var(--dg-line); line-height: 1.55; }
 .dg-row > * { min-width: 0; }
 .dg-row p { margin: 0; }
@@ -1408,25 +1417,27 @@ body.doc-layout .meta-box table th {
 .dg-rows.is-arrow .dg-row { grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1.2fr); align-items: center; }
 .dg-row-arrow { color: var(--dg-accent); font-weight: bold; text-align: center; }
 .dg-rows-head { display: grid; padding: var(--dg-s2) 0; border-bottom: 1px solid var(--dg-line); }
-@media (max-width: 640px) {
+@container (max-width: 36rem) {
   .dg-row, .dg-rows.is-arrow .dg-row { grid-template-columns: minmax(0, 1fr); gap: var(--dg-s1); }
   .dg-row-arrow, .dg-rows-head { display: none; }
 }
+.dg .dg-rows.is-stacked > .dg-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--dg-s1); }
+.dg .dg-rows.is-stacked > .dg-row > .dg-row-arrow, .dg .dg-rows.is-stacked > .dg-rows-head { display: none; }
 
-/* Steps: numbered circles joined by a line (vertical on narrow screens) */
+/* Steps: numbered circles joined by a line (vertical when main is narrower than 44rem) */
 .dg-steps { list-style: none; display: grid; grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)); gap: var(--dg-s4); margin: var(--dg-s5) 0; padding: 0; counter-reset: dg-step; }
 .dg-steps > li { counter-increment: dg-step; position: relative; min-width: 0; padding-top: 52px; font-size: 0.92rem; line-height: 1.5; }
 .dg-steps > li::before { content: counter(dg-step); position: absolute; top: 0; left: 0; z-index: 1; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; box-sizing: border-box; border: 1.5px solid var(--dg-accent); border-radius: 50%; background: var(--dg-bg); outline: 5px solid var(--dg-bg); color: var(--dg-accent); font-weight: 600; font-family: var(--font-mono); }
 .dg-steps > li::after { content: ""; position: absolute; top: 17px; left: 36px; right: calc(-1 * var(--dg-s4)); height: 1px; background: var(--line-strong); }
 .dg-steps > li:last-child::after { display: none; }
 .dg-step-title { display: block; margin-bottom: var(--dg-s1); color: var(--dg-ink); font-weight: bold; font-size: 1rem; }
-@media (max-width: 760px) {
+@container dg-main (max-width: 44rem) {
   .dg-steps { grid-template-columns: minmax(0, 1fr); gap: 0; }
   .dg-steps > li { min-height: 36px; padding: 6px 0 var(--dg-s5) 56px; }
   .dg-steps > li::after { top: 36px; bottom: 0; left: 17px; right: auto; width: 1px; height: auto; }
 }
 
-/* Chain: source → step → result */
+/* Chain: source → step → result (vertical when main is narrower than 36rem) */
 .dg-chain { display: flex; align-items: stretch; margin: var(--dg-s3) 0; }
 .dg-chain-node { flex: 1 1 0; min-width: 0; padding: var(--dg-s3) var(--dg-s4); border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface); font-size: 0.9rem; line-height: 1.5; }
 .dg-chain-node.is-ok { border-color: var(--dg-ok); border-top-width: 3px; }
@@ -1441,7 +1452,7 @@ body.doc-layout .meta-box table th {
 .dg-chain-node code { display: inline-block; }
 .dg-chain-arrow { display: flex; flex: 0 0 36px; align-items: center; justify-content: center; color: var(--dg-muted); }
 .dg-chain-arrow::before { content: "→"; font-size: 1.3rem; font-weight: bold; }
-@media (max-width: 640px) {
+@container dg-main (max-width: 36rem) {
   .dg-chain { flex-direction: column; }
   .dg-chain-arrow { flex-basis: 28px; }
   .dg-chain-arrow::before { content: "↓"; }
