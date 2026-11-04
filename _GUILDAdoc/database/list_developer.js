@@ -2,34 +2,6 @@
 // "Group: Title" — the group is the English prefix of title; title_ja uses the matching Japanese prefix.
 const developerData = [
 {
-    title: "Process: Project Management",
-    title_ja: "プロセス: プロジェクト管理",
-    description: "Track work with Issues, follow the version and release rules, keep documentation current, and check the Definition of Done.",
-    description_ja: "Issue で作業を管理し、バージョンとリリースの規則に従い、ドキュメントを最新に保ち、完了の定義 (Definition of Done) を確認します。",
-    link: "developer/project-management.html"
-    },
-{
-    title: "Process: Git Workflow",
-    title_ja: "プロセス: Git ワークフロー",
-    description: "Follow the branch model, name work branches as <type>/<issue>-<slug>, write commit messages as <type>: <summary>, and publish the documentation site.",
-    description_ja: "ブランチモデルに従い、作業ブランチを <type>/<issue>-<slug>、コミットメッセージを <type>: <summary> の形で書き、ドキュメントサイトを公開します。",
-    link: "developer/git-workflow.html"
-    },
-{
-    title: "Codebase: Folder Structure",
-    title_ja: "コードベース: フォルダ構成",
-    description: "Learn what each folder contains, which folders are on the MATLAB path, where to place new files, and which files are generated.",
-    description_ja: "各フォルダの内容、MATLAB パスに含まれるフォルダ、新しいファイルの置き場所、自動生成されるファイルを確認します。",
-    link: "developer/folder-structure.html"
-    },
-{
-    title: "Codebase: Class Design",
-    title_ja: "コードベース: クラス設計",
-    description: "See which class owns which data, the responsibilities of each model class, parent references, solver defaults, edit handling, and unit conventions.",
-    description_ja: "どのクラスがどのデータを持つか、各モデルクラスの責務、親参照、ソルバーの既定値、編集時の扱い、単位の規約を確認します。",
-    link: "developer/class-design.html"
-    },
-{
     title: "Coding: Naming Conventions",
     title_ja: "コーディング: 命名規則",
     description: "Review variable prefixes, size notation, composition examples, and fixed prefixes for special data types.",
@@ -58,43 +30,57 @@ const developerData = [
     link: "developer/model-implementation.html"
     },
 {
-    title: "Classes: PowerNetwork",
-    title_ja: "クラス: PowerNetwork",
-    description: "The network that holds buses, branches, and controllers: the data it owns, the analysis entry points it provides, and how edits mark the equilibrium and cached functions out of date.",
-    description_ja: "母線・ブランチ・制御器を保持するネットワーク: 持つデータ、提供する解析の入口、編集で平衡点やキャッシュした関数が古くなる仕組み。",
+    title: "Codebase: Folder Structure",
+    title_ja: "コードベース: フォルダ構成",
+    description: "Learn what each folder contains, which folders are on the MATLAB path, where to place new files, and which files are generated.",
+    description_ja: "各フォルダの内容、MATLAB パスに含まれるフォルダ、新しいファイルの置き場所、自動生成されるファイルを確認します。",
+    link: "developer/folder-structure.html"
+    },
+{
+    title: "Codebase: Class Design",
+    title_ja: "コードベース: クラス設計",
+    description: "See how the model classes relate as a whole and the rules that span them: ownership, parent references, identity, solver defaults, edit handling, variable order, and unit conventions.",
+    description_ja: "モデルクラスが全体としてどう関係し合うかと、クラスをまたぐ規則 (所有、親参照、識別、ソルバーの既定値、編集時の扱い、変数の順序、単位の規約) を確認します。",
+    link: "developer/class-design.html"
+    },
+{
+    title: "Codebase: PowerNetwork",
+    title_ja: "コードベース: PowerNetwork",
+    description: "The network that holds buses, branches, and controllers: the data it owns, the solver objects and the analysis entry points it provides, and how it collects the edits of every layer.",
+    description_ja: "母線・ブランチ・制御器を保持するネットワーク: 持つデータ、ソルバーオブジェクトと提供する解析の入口、各階層の編集を集める仕組み。",
     link: "developer/class-powernetwork.html"
     },
 {
-    title: "Classes: Bus",
-    title_ja: "クラス: Bus",
+    title: "Codebase: Bus",
+    title_ja: "コードベース: Bus",
     description: "A node of the network: bus types and power flow specifications, the components connected to it, and the values it reads from and returns to the network.",
     description_ja: "ネットワークの節点: 母線の種類と潮流計算の指定値、接続される機器、ネットワークとの間で受け渡す値。",
     link: "developer/class-bus.html"
     },
 {
-    title: "Classes: Branch",
-    title_ja: "クラス: Branch",
+    title: "Codebase: Branch",
+    title_ja: "コードベース: Branch",
     description: "A line or transformer between two buses: its parameters, the admittance matrix it contributes to the network, and the methods the analyses call.",
     description_ja: "2 つの母線を結ぶ送電線・変圧器: パラメータ、ネットワークのアドミタンス行列への寄与、解析から呼ばれるメソッド。",
     link: "developer/class-branch.html"
     },
 {
-    title: "Classes: Component",
-    title_ja: "クラス: Component",
+    title: "Codebase: Component",
+    title_ja: "コードベース: Component",
     description: "The base of generators, loads, and other devices on a bus: states and ports, the equations each subclass implements, and how equilibrium and linear models are obtained.",
     description_ja: "母線に接続する発電機・負荷などの基底クラス: 状態とポート、各サブクラスが実装する方程式、平衡点と線形モデルの求め方。",
     link: "developer/class-component.html"
     },
 {
-    title: "Classes: LocalController",
-    title_ja: "クラス: LocalController",
-    description: "A controller attached to one component, such as an AVR or a PSS: how it observes that component by name, the inputs of its parent it drives, and the equations it implements.",
-    description_ja: "1 つの機器に取り付ける制御器(AVR、PSS など): 名前によるその機器の観測、駆動する親の入力、実装する方程式。",
+    title: "Codebase: LocalController",
+    title_ja: "コードベース: LocalController",
+    description: "A controller attached to one component, such as an AVR, a PSS, or a governor: where it attaches, the data it owns, and the equations it implements.",
+    description_ja: "1 つの機器に取り付ける制御器 (AVR、PSS、ガバナなど): 接続先、持つデータ、実装する方程式。",
     link: "developer/class-localcontroller.html"
     },
 {
-    title: "Classes: GlobalController",
-    title_ja: "クラス: GlobalController",
+    title: "Codebase: GlobalController",
+    title_ja: "コードベース: GlobalController",
     description: "A controller that reads the states of its controlled units and drives their inputs: how it differs from LocalController, its inputs and outputs, and the equations it implements.",
     description_ja: "制御対象の機器の状態を読み、その入力を駆動する制御器: LocalController との違い、入力と出力、実装する方程式。",
     link: "developer/class-globalcontroller.html"
