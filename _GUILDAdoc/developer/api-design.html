@@ -88,7 +88,7 @@
       <tbody>
         <tr><td><span class="ad-num">1</span>Entry point</td><td data-label="Meaning">Each feature is a <code>PowerNetwork</code> method named <code>verb_noun</code> (snake_case).</td><td data-label="Example"><code>net.calculate_powerflow()</code></td></tr>
         <tr><td><span class="ad-num">2</span>Inputs</td><td data-label="Meaning">System data is set beforehand. Analysis settings have defaults. Name-Value options override them for one call.</td><td data-label="Example"><code>Tolerance=1e-10</code></td></tr>
-        <tr><td><span class="ad-num">3</span>Output type</td><td data-label="Meaning">Main analyses return a result class. Simple getters return standard MATLAB types.</td><td data-label="Example"><code>ODEresult</code>, <code>ss</code></td></tr>
+        <tr><td><span class="ad-num">3</span>Output type</td><td data-label="Meaning">Main analyses return a result class. Simple getters return standard MATLAB types.</td><td data-label="Example"><code>ResultODE</code>, <code>ss</code></td></tr>
         <tr><td><span class="ad-num">4</span>Output order</td><td data-label="Meaning">Outputs are always <code>[result, flag, output]</code>.</td><td data-label="Example"><code>[res, flag] = net.simulate(...)</code></td></tr>
         <tr><td><span class="ad-num">5</span>Preconditions</td><td data-label="Meaning">If a precondition fails, stop with an error that says how to fix it.</td><td data-label="Example">"run <code>net.initialize()</code> first"</td></tr>
         <tr><td><span class="ad-num">6</span>Side effects</td><td data-label="Meaning">The verb tells whether the model may change.</td><td data-label="Example"><code>set_</code> may, <code>get_</code> must not</td></tr>
@@ -97,7 +97,7 @@
     </table>
 
     <h3 id="entry-point">1 · Entry point</h3>
-    <p>The solver classes implement these methods: <code>PFCsolver</code>, <code>OPFsolver</code>, <code>CPFsolver</code>, <code>ODEsolver</code> and <code>LTIsolver</code>, held as <code>net.solver_PF</code> / <code>_OPF</code> / <code>_CPF</code> / <code>_ODE</code> / <code>_LIN</code>.</p>
+    <p>The solver classes implement these methods: <code>SolverPF</code>, <code>SolverOPF</code>, <code>SolverCPF</code>, <code>SolverODE</code> and <code>SolverLIN</code>, held as <code>net.solver_PF</code> / <code>_OPF</code> / <code>_CPF</code> / <code>_ODE</code> / <code>_LIN</code>.</p>
     <p>Each solver holds defaults only, never a network or a result. Calling its <code>solve</code> directly is for advanced users only.</p>
 
     <h3 id="inputs">2 · Inputs: defaults and overrides</h3>
@@ -162,7 +162,7 @@
     <table class="dg-table">
       <thead><tr><th>Feature kind</th><th>Returns</th><th>Example</th></tr></thead>
       <tbody>
-        <tr><td>Main analysis</td><td data-label="Returns">a dedicated result class</td><td data-label="Example">power flow, OPF, CPF, time simulation, linearization → a subclass of <code>AnalysisResult</code>, e.g. <code>ODEresult</code></td></tr>
+        <tr><td>Main analysis</td><td data-label="Returns">a dedicated result class</td><td data-label="Example">power flow, OPF, CPF, time simulation, linearization → a subclass of <code>ResultBase</code>, e.g. <code>ResultODE</code></td></tr>
         <tr><td>Simple getter</td><td data-label="Returns">a standard MATLAB type</td><td data-label="Example"><code>get_sys</code> → <code>ss</code>, <code>get_admittance_matrix</code> / <code>get_variable_map</code> → <code>table</code></td></tr>
       </tbody>
     </table>
@@ -194,7 +194,7 @@
     <p>A failed simulation ends in one of these ways, and neither changes model values:</p>
     <ul>
       <li><strong>Numerical failure in <code>simulate</code>.</strong> When the solver gives up on a phase, <code>simulate</code> returns <code>flag = -1</code>. <code>result</code> holds the completed phases up to <code>output.tEnd</code> (no time points when the first phase fails), <code>output.exception</code> holds the <code>MException</code>, and the warning <code>GUILDA:PowerNetwork:SimulationIncomplete</code> is issued. The same warning follows a solver stop (<code>flag = -1</code>) and <code>TimeLimit</code> (<code>flag = 0</code>).</li>
-      <li><strong>Any other error during a phase.</strong> An error of an input function or a model stops with <code>GUILDA:ODEsolver:PhaseFailed</code>, or with <code>InitialConditionFailed</code> / <code>UnfeasibleDAE</code> during the retry from a recomputed initial condition. The original error is its cause, and no result is returned.</li>
+      <li><strong>Any other error during a phase.</strong> An error of an input function or a model stops with <code>GUILDA:SolverODE:PhaseFailed</code>, or with <code>InitialConditionFailed</code> / <code>UnfeasibleDAE</code> during the retry from a recomputed initial condition. The original error is its cause, and no result is returned.</li>
     </ul>
 
     <h3 id="options">7 · Common Name-Value options</h3>
@@ -224,37 +224,37 @@
         <tr>
           <td>Power flow</td>
           <td data-label="Call"><code>net.calculate_powerflow(...)</code><small><code>Method="algebraic"|"dynamic"</code>, <code>Tolerance</code>, <code>MaxIteration</code>, ...</small></td>
-          <td data-label="First output"><code>PFCresult</code></td>
+          <td data-label="First output"><code>ResultPF</code></td>
           <td data-label="Changes net"><span class="dev-status is-ok">No</span><small>Only when no slack bus is set, one is selected (INFO message, rule 5): the first bus with a component with <code>Q = NaN</code>, otherwise the first bus with a component.</small></td>
         </tr>
         <tr>
           <td>Initialization</td>
           <td data-label="Call"><code>net.initialize(...)</code><small><code>Method="powerflow"|"OPF"|"equilibrium"</code>. The other options go to <code>calculate_powerflow</code> (<code>"powerflow"</code>) or <code>optimize_powerflow</code> with <code>Method="AC OPF"</code> (<code>"OPF"</code>). <code>"equilibrium"</code> reuses the equilibria the components hold and takes no other option. The old option <code>methods</code> is deprecated.</small></td>
-          <td data-label="First output"><code>PFCresult</code><small><code>OPFresult</code> for <code>"OPF"</code>.</small></td>
+          <td data-label="First output"><code>ResultPF</code><small><code>ResultOPF</code> for <code>"OPF"</code>.</small></td>
           <td data-label="Changes net"><span class="dev-status">Yes</span><small>Sets the equilibrium and resets the edit log. When the analysis does not succeed, it stops with an error and leaves the equilibrium and the edit log unchanged, and releases a slack bus the power flow set. When writing the point fails or the point does not satisfy Y*V = I (<code>GUILDA:PowerNetwork:InitializeNotEquilibrium</code>), it stops with an error and the equilibrium stays stale until <code>initialize</code> succeeds.</small></td>
         </tr>
         <tr>
           <td>OPF</td>
           <td data-label="Call"><code>net.optimize_powerflow(...)</code><small><code>Method="ELD"|"DC OPF"|"AC OPF"</code>, <code>Solver</code>, <code>Tolerance</code>, <code>MaxIteration</code>, ... Costs and constraints: <code>set_opffcn</code> (see <a href="class-design.html#opf">Class Design</a>).</small></td>
-          <td data-label="First output"><code>OPFresult</code><small>Holds the Lagrange multipliers and the problem object.</small></td>
+          <td data-label="First output"><code>ResultOPF</code><small>Holds the Lagrange multipliers and the problem object.</small></td>
           <td data-label="Changes net"><span class="dev-status is-ok">No</span></td>
         </tr>
         <tr>
           <td>CPF</td>
           <td data-label="Call"><code>net.calculate_continuation_powerflow(...)</code><small><code>LoadBus</code>, <code>StepSize</code>, <code>ArcLength</code>, <code>MaxIteration</code>, ...</small></td>
-          <td data-label="First output"><code>CPFresult</code><small><code>flag</code> is true when the path passed the nose.</small></td>
+          <td data-label="First output"><code>ResultCPF</code><small><code>flag</code> is true when the path passed the nose.</small></td>
           <td data-label="Changes net"><span class="dev-status is-ok">No</span><small>Error if the net is not initialized.</small></td>
         </tr>
         <tr>
           <td>Time simulation</td>
           <td data-label="Call"><code>net.simulate(time, sc1, sc2, ..., ...)</code><br><code>net.simulate(sc, ...)</code><small>The scenarios (<code>Scenario</code>) belong to <code>net</code> (<code>net.add_scenario</code>) and are combined. <code>net.simulate(sc)</code> uses the stored <code>sc.Time</code> and <code>sc.Options</code>; a time and options in the call replace them. <code>Solver</code>, <code>TimeLimit</code>, <code>Progress</code>, ... The verdict is <code>sc.judge(result)</code>, not an output of <code>simulate</code>.</small></td>
-          <td data-label="First output"><code>ODEresult</code><small><code>flag</code>: <code>1</code> done, <code>0</code> time limit, <code>-1</code> solver stop or numerical failure of a phase.</small></td>
+          <td data-label="First output"><code>ResultODE</code><small><code>flag</code>: <code>1</code> done, <code>0</code> time limit, <code>-1</code> solver stop or numerical failure of a phase.</small></td>
           <td data-label="Changes net"><span class="dev-status is-ok">No</span><small>Error if the net is not initialized. Working data is written during a run, and the connection, fault, and offset data is restored on every exit (see <a href="#side-effects">rule 6</a>).</small></td>
         </tr>
         <tr>
           <td>Linearization</td>
           <td data-label="Call"><code>net.linearize(...)</code><br><code>net.get_sys(...)</code><small><code>Algorithm="Feedback"|"Kron"|"DAE"</code>, <code>Point</code>, <code>Coordinate</code>, <code>Plot</code>; <code>get_sys</code> also takes <code>Input</code> and <code>Output</code>. The result holds the unreduced DAE in the order of <code>get_variable_map</code>.</small></td>
-          <td data-label="First output"><code>LTIresult</code><small><code>get_sys</code> returns <code>result.get_ss()</code>, an <code>ss</code>.</small></td>
+          <td data-label="First output"><code>ResultLIN</code><small><code>get_sys</code> returns <code>result.get_ss()</code>, an <code>ss</code>.</small></td>
           <td data-label="Changes net"><span class="dev-status is-ok">No</span><small>Error if the net is not initialized.</small></td>
         </tr>
         <tr>
@@ -292,7 +292,7 @@
 
     <h2 id="related">Related rules</h2>
     <ul>
-      <li>Result classes (<code>PFCresult</code>, <code>OPFresult</code>, <code>CPFresult</code>, <code>ODEresult</code>, <code>LTIresult</code>) go in <code>_GUILDAsystem/_auxiliary/@&lt;Name&gt;/</code> and inherit from <code>AnalysisResult</code> (see <a href="folder-structure.html#folders">Folder Structure</a>).</li>
+      <li>Result classes (<code>ResultPF</code>, <code>ResultOPF</code>, <code>ResultCPF</code>, <code>ResultODE</code>, <code>ResultLIN</code>) go in <code>_GUILDAsystem/_auxiliary/@&lt;Name&gt;/</code> and inherit from <code>ResultBase</code> (see <a href="folder-structure.html#folders">Folder Structure</a>).</li>
       <li>Where data lives, how edits mark results as stale, and the unit conventions are described in <a href="class-design.html">Class Design</a>.</li>
       <li>Name the options and properties of new code with the <a href="naming-conventions.html">Naming Conventions</a>, and document them with <a href="class-documentation.html">Class Documentation</a> tags.</li>
     </ul>

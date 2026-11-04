@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GUILDA Documentation - Home</title>
+  <title data-title-ja="GUILDA ドキュメント - ホーム">GUILDA Documentation - Home</title>
+  <script src="doc-lang.js"></script>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="reference.css">
   
@@ -620,8 +621,9 @@ sol = net.simulate([0, 50], sc);</code></pre>
     </div>
 
     <div id="tab-developer" class="tab-content">
-      <h1>For Developer</h1>
-      <p class="developer-intro">Guides for contributors and maintainers of GUILDA. Select a topic to open its dedicated page.</p>
+      <h1><span lang="en">For Developer</span><span lang="ja">開発者向け</span></h1>
+      <p class="developer-intro" lang="en">Guides for contributors and maintainers of GUILDA. Select a topic to open its dedicated page.</p>
+      <p class="developer-intro" lang="ja">GUILDA の開発者・保守担当者向けのガイドです。トピックを選ぶと専用のページが開きます。</p>
 
       <div id="developer-link-container" class="developer-groups"></div>
     </div>
@@ -791,19 +793,26 @@ sol = net.simulate([0, 50], sc);</code></pre>
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
 
-      // "Process: Git Workflow" -> group "Process", title "Git Workflow"
+      const ja = window.GUILDA_LANG?.get() === 'ja';
+      const splitTitle = (value, fallback) => {
+        const match = /^([^:]+):\s*(.*)$/.exec(value || '');
+        return match ? { label: match[1].trim(), title: match[2] } : { label: fallback, title: value };
+      };
+
+      // "Process: Git Workflow" -> group "Process", title "Git Workflow".
+      // Groups are keyed on the English prefix so they match in both languages.
       const groups = [];
       data.forEach((item, index) => {
-        const match = /^([^:]+):\s*(.*)$/.exec(item.title || '');
-        const label = match ? match[1].trim() : 'Guides';
-        const title = match ? match[2] : item.title;
-        let group = groups.find((g) => g.label === label);
-        if (!group) { group = { label, items: [] }; groups.push(group); }
-        group.items.push({ ...item, title, number: index + 1 });
+        const en = splitTitle(item.title, 'Guides');
+        const shown = ja && item.title_ja ? splitTitle(item.title_ja, 'ガイド') : en;
+        let group = groups.find((g) => g.key === en.label);
+        if (!group) { group = { key: en.label, label: shown.label, items: [] }; groups.push(group); }
+        const description = ja && item.description_ja ? item.description_ja : item.description;
+        group.items.push({ ...item, title: shown.title, description, number: index + 1 });
       });
 
       container.innerHTML = groups.map((group) => `
-        <section class="developer-group is-${escapeHtml(group.label.toLowerCase().replace(/[^a-z0-9]+/g, '-'))}" aria-label="${escapeHtml(group.label)}">
+        <section class="developer-group is-${escapeHtml(group.key.toLowerCase().replace(/[^a-z0-9]+/g, '-'))}" aria-label="${escapeHtml(group.label)}">
           <h2 class="developer-group-label"><span>${escapeHtml(group.label)}</span></h2>
           <div class="developer-link-grid">
             ${group.items.map((item) => `
@@ -813,7 +822,7 @@ sol = net.simulate([0, 50], sc);</code></pre>
                   <span class="developer-link-title">${escapeHtml(item.title)}</span>
                   <span class="developer-link-description">${escapeHtml(item.description)}</span>
                 </span>
-                <span class="developer-link-action">View guide <span aria-hidden="true">→</span></span>
+                <span class="developer-link-action">${ja ? 'ガイドを見る' : 'View guide'} <span aria-hidden="true">→</span></span>
               </a>
             `).join('')}
           </div>
@@ -1055,6 +1064,7 @@ sol = net.simulate([0, 50], sc);</code></pre>
       renderTutorials();
       wireAnalysisLinks();
       renderDeveloperLinks();
+      document.addEventListener('guilda-langchange', renderDeveloperLinks);
       renderReferenceStatus();
       renderReferenceNavigation();
       window.GuildaDocTree?.mount(document.getElementById('reference-source-tree'), null);

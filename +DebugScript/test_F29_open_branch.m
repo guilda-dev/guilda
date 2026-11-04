@@ -138,7 +138,7 @@ net3.add_branch("pi", [3,4], "R", 0.01, "X", 0.1, "C", 0.01);
 DebugScript.helper.quiet(@() net3.initialize);
 ev = DebugScript.helper.scenario("open", net3, "TimeSpan", [1,1.5], "OpenBranch", "EL003");
 [str_id, str_msg] = event_error(net3, ev);
-assert(str_id == "GUILDA:ODEsolver:OpenBranchIsland", str_id + ": " + str_msg)
+assert(str_id == "GUILDA:SolverODE:OpenBranchIsland", str_id + ": " + str_msg)
 assert(all(contains(str_msg, ["EL003", "B004", "Phase 2"])), str_msg)
 
 

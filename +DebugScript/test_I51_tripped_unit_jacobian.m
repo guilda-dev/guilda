@@ -117,7 +117,7 @@ c_w = onCleanup(@() warning(w));
 [~, flag, output] = net.simulate([0,0.1], offset(net,3));
 assert(flag == -1)
 ME = output.exception;
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:ODEsolver:InitialConditionFailed", DebugScript.helper.msg_id(ME) + ": " + ME.message)
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:InitialConditionFailed", DebugScript.helper.msg_id(ME) + ": " + ME.message)
 assert(contains(ME.message, "phase 1") && contains(ME.message, "differential states kept"), ME.message)
 
 
@@ -134,9 +134,9 @@ c_warn = onCleanup(@() warning(w));
 [~, flag, output] = net.simulate([0,2], ev);
 assert(flag == -1)
 ME = output.exception;
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:ODEsolver:InitialConditionFailed", DebugScript.helper.msg_id(ME) + ": " + ME.message)
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:InitialConditionFailed", DebugScript.helper.msg_id(ME) + ": " + ME.message)
 assert(contains(ME.message, "phase 2") && contains(ME.message, "t = [1, 1.2]"), ME.message)
-assert(DebugScript.helper.msg_id(ME.cause{1}) == "GUILDA:ODEsolver:AlgebraicNotSolved", DebugScript.helper.msg_id(ME.cause{1}))
+assert(DebugScript.helper.msg_id(ME.cause{1}) == "GUILDA:SolverODE:AlgebraicNotSolved", DebugScript.helper.msg_id(ME.cause{1}))
 
 
 function err = jacobian_errors(net, tspan, c_events)

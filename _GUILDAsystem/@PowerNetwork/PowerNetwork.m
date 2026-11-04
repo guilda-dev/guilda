@@ -34,12 +34,12 @@ classdef PowerNetwork < PowerSystemModel
 % net.a_Bus{3}.add_component("load-power", P=-0.5, Q=0);
 % net.a_Bus{1}.l_isSlack = true;
 %
-% res = net.calculate_powerflow();          % PFCresult
+% res = net.calculate_powerflow();          % ResultPF
 % net.initialize();                         % equilibrium for the dynamic analyses
 % sc  = Scenario("fault", Time=[0,10]);
 % sc.add_fault("B003", [1,1.05]);
 % net.add_scenario(sc);
-% sim = net.simulate(sc);                   % ODEresult
+% sim = net.simulate(sc);                   % ResultODE
 % sys = net.get_sys();                      % linear state-space model
 % ```
 %
@@ -60,40 +60,40 @@ classdef PowerNetwork < PowerSystemModel
     end
     properties(SetAccess=protected) % Solvers
 
-        % PFCsolver solver of net.calculate_powerflow.
+        % SolverPF solver of net.calculate_powerflow.
         % Its properties are the stored defaults (Method, Tolerance, MaxIterations, ...),
         % kept between runs; Name-Value options of a call override them for that call
-        % only. Results are returned as a PFCresult, never stored in the solver.
-        % <@Type> PFCsolver
+        % only. Results are returned as a ResultPF, never stored in the solver.
+        % <@Type> SolverPF
         solver_PF  
 
-        % OPFsolver solver of net.optimize_powerflow.
+        % SolverOPF solver of net.optimize_powerflow.
         % Its properties are the stored defaults (Method, Solver, Display, MaxIteration,
         % ...), kept between runs; Name-Value options of a call override them for that
-        % call only. Results are returned as an OPFresult, never stored in the solver.
-        % <@Type> OPFsolver
+        % call only. Results are returned as a ResultOPF, never stored in the solver.
+        % <@Type> SolverOPF
         solver_OPF 
 
-        % CPFsolver solver of net.calculate_continuation_powerflow.
+        % SolverCPF solver of net.calculate_continuation_powerflow.
         % Its properties are the stored defaults (LoadBus, MaxIterations, StepSize, ...),
         % kept between runs; Name-Value options of a call override them for that call
-        % only. Results are returned as a CPFresult, never stored in the solver.
-        % <@Type> CPFsolver
+        % only. Results are returned as a ResultCPF, never stored in the solver.
+        % <@Type> SolverCPF
         solver_CPF
 
-        % ODEsolver solver of net.simulate.
+        % SolverODE solver of net.simulate.
         % Its properties are the stored defaults (Solver, RelativeTolerance,
         % AbsoluteTolerance, Progress, TimeLimit, ...), kept between runs; Name-Value
         % options of a call override them for that call only. Results are returned as an
-        % ODEresult, never stored in the solver.
-        % <@Type> ODEsolver
+        % ResultODE, never stored in the solver.
+        % <@Type> SolverODE
         solver_ODE 
 
-        % LTIsolver solver of net.linearize and net.get_sys.
+        % SolverLIN solver of net.linearize and net.get_sys.
         % Its properties are the stored defaults (Algorithm, Point, Coordinate), kept between
         % runs; Name-Value options of a call override them for that call only. Results are
-        % returned as a LTIresult, never stored in the solver.
-        % <@Type> LTIsolver
+        % returned as a ResultLIN, never stored in the solver.
+        % <@Type> SolverLIN
         solver_LIN
     end
     properties(Dependent) % Steady State
@@ -215,7 +215,7 @@ classdef PowerNetwork < PowerSystemModel
             end
         end
     end
-    methods(Access={?ODEsolver, ?LTIsolver})
+    methods(Access={?SolverODE, ?SolverLIN})
         function require_equilibrium(obj)
             % Called at the start of solver_ODE.solve and solver_LIN.solve (the one place
             % of this check for simulate, linearize and get_sys): build the f_* handles

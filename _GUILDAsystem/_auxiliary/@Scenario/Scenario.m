@@ -29,7 +29,7 @@ classdef (Sealed = true) Scenario < auxiliary
 % - An opened branch is left out of the bus admittance matrix and is reconnected at t_end;
 %   a t_end at or after the end of the simulation keeps it open. Opening branches so that a
 %   part of the network is left without any component is an error
-%   (GUILDA:ODEsolver:OpenBranchIsland). A part with components is simulated as an island; a
+%   (GUILDA:SolverODE:OpenBranchIsland). A part with components is simulated as an island; a
 %   constant-power load cut off from all generators usually makes the phase fail (flag = -1).
 % - Offsets and inputs on the same unit are summed over the active disturbances.
 % - The tag of a disturbance names its column in output.phases. It is unique within the
@@ -69,7 +69,7 @@ classdef (Sealed = true) Scenario < auxiliary
 % other.add_scenario(sc.copy());                % sc stays in net
 % ```
 %
-% See also PowerNetwork.add_scenario, PowerNetwork.simulate, ODEresult, ODEsolver
+% See also PowerNetwork.add_scenario, PowerNetwork.simulate, ResultODE, SolverODE
 
     properties (SetAccess=private) % Identity
         % Tag of the scenario, unique among the scenarios of its network.
@@ -102,10 +102,10 @@ classdef (Sealed = true) Scenario < auxiliary
 
         % Stored Name-Value options of net.simulate, as a struct (e.g.
         % struct("Tolerance", 1e-6)). The options given in the call replace them. The names are
-        % those of ODEsolver.OptionMap and Export.
+        % those of SolverODE.OptionMap and Export.
         Options (1,1) struct = struct()
 
-        % Function that judges a result: verdict = Judge(result), result an ODEresult (with
+        % Function that judges a result: verdict = Judge(result), result a ResultODE (with
         % result.flag and result.output). Default: Scenario.out_of_step with its default
         % options. Used by judge.
         Judge (1,1) function_handle = @Scenario.out_of_step
@@ -153,7 +153,7 @@ classdef (Sealed = true) Scenario < auxiliary
         end
 
         function set.Options(obj, s)
-            sv_ok = [string(fieldnames(ODEsolver.OptionMap)); "Export"];
+            sv_ok = [string(fieldnames(SolverODE.OptionMap)); "Export"];
             for str_name = string(fieldnames(s)).'
                 if ~any(strcmpi(str_name, sv_ok))
                     error(msg("GUILDA:Scenario:UnknownOption", char(obj.str_tag), char(str_name), char(join(sv_ok, ", "))));
@@ -348,7 +348,7 @@ classdef (Sealed = true) Scenario < auxiliary
         % ```
             arguments
                 obj
-                result (1,1) ODEresult % Result of net.simulate.
+                result (1,1) ResultODE % Result of net.simulate.
             end
             arguments (Output)
                 verdict % Output of Judge (a struct for Scenario.out_of_step).
@@ -393,7 +393,7 @@ classdef (Sealed = true) Scenario < auxiliary
         end
     end
 
-    methods (Access={?PowerNetwork, ?ODEsolver, ?Scenario})
+    methods (Access={?PowerNetwork, ?SolverODE, ?Scenario})
         function validate(obj, net)
             % Check every disturbance against the network net as it is now.
             for k = 1:height(obj.tab_disturbance)
@@ -402,7 +402,7 @@ classdef (Sealed = true) Scenario < auxiliary
         end
     end
 
-    methods (Static, Access={?ODEsolver})
+    methods (Static, Access={?SolverODE})
         [tab_phase, s_phase] = compile(c_scenario, net, time)
     end
 

@@ -1,5 +1,5 @@
 function [tab_phase, s_phase] = compile(c_scenario, net, time)
-% Build the phases of one run from its scenarios (called by ODEsolver.solve).
+% Build the phases of one run from its scenarios (called by SolverODE.solve).
 %
 % Checks the scenarios against net (each belongs to it, and the tags of its disturbances
 % exist in it now), combines their disturbances and splits the simulation time into phases

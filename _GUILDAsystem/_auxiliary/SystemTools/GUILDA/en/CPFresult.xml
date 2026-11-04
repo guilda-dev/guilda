@@ -1,7 +1,0 @@
-<!--This is an XML file containing error messages related to the class "CPFresult".-->
-<rsccat version="4.0" locale="en" product="GUILDA">
-    <message>
-        <entry key="ExportFormat">Export of CPFresult does not support the extension ''{0}''. Use .csv, .txt, .xlsx or .xls.</entry>
-        <entry key="UnknownBus">CPFresult has no bus {0}. Use the tags in result.sv_bus.</entry>
-    </message>
-</rsccat>

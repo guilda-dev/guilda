@@ -290,7 +290,7 @@ o.InitialSlope = zeros(0,1);
 
 `InitialSlope` は `ode` のプロパティです。`SolverOptions` にはありません。**[試作]**
 
-> **古い記述(2026-11-04、`a9afe24` で確認):** 上の `CalculateInitialCondition` の呼び出し(出力 `l_relaxed` を含む)は当時の形です。現在は `_GUILDAsystem/_auxiliary/@ODEsolver/private/CalculateInitialCondition.m` の `[x0, xp0, l_failed, str_why, me_why] = CalculateInitialCondition(o, options)` で、代数変数だけをニュートン法で解き、微分状態は動かしません。緩めた再計算とその警告 `InitialConditionRelaxed` は `8bd906c`(`fix/ode-initial-condition-jump`、統合は `bf7512b`)で削除されました。
+> **古い記述(2026-11-04、`a9afe24` で確認):** 上の `CalculateInitialCondition` の呼び出し(出力 `l_relaxed` を含む)は当時の形です。現在は `_GUILDAsystem/_auxiliary/@SolverODE/private/CalculateInitialCondition.m` の `[x0, xp0, l_failed, str_why, me_why] = CalculateInitialCondition(o, options)` で、代数変数だけをニュートン法で解き、微分状態は動かしません。緩めた再計算とその警告 `InitialConditionRelaxed` は `8bd906c`(`fix/ode-initial-condition-jump`、統合は `bf7512b`)で削除されました。
 
 **結果(IEEE14、制御器なし、trip SG1B003 `[1,1.2]`)**
 
@@ -625,7 +625,7 @@ flowchart LR
 
 上の決定の後の状況を、`feature/ieej-report-models` のコードと git 履歴で確認した記録です。
 
-- **Q13(EV7 ブランチ開放):** 推奨の「EV5 の後」と異なり、EV5 より前に実装しました。`1d98226`(`feature/simulate-open-branch`)で `ODEevent` に `OpenBranch` を追加し、開放するブランチの組が変わる区間ごとに `ODEsolver` が Y を作り直します。
+- **Q13(EV7 ブランチ開放):** 推奨の「EV5 の後」と異なり、EV5 より前に実装しました。`1d98226`(`feature/simulate-open-branch`)で `ODEevent` に `OpenBranch` を追加し、開放するブランチの組が変わる区間ごとに `ODEsolver`(現 `SolverODE`)が Y を作り直します。
 - **EV5:** その後、`ODEevent` は系統が所有する `Scenario` に置き換わりました(`feature/simulate-scenario`: `e543585`, `a116725`, `b870e43`, `ce78de1`)。区間ごとのデータは `Scenario.compile` が `solve` の冒頭で 1 回だけ作り、これが EV5 の実装です。ブランチ開放は `sc.add_open_branch` です。`ODEevent(tag, net, ...)` は `_GUILDAsystem/_VersionSupport/ODEevent.m` で動きます。詳細は [v4-migration.md](v4-migration.md) 1.18 です。
 - **未回答のまま:** Q8、Q12、#59 の提案。この記録では確認していません。
 

@@ -13,7 +13,7 @@ classdef (Sealed = true) NewtonRaphsonMethod < auxiliary
 % [x, n_iter] = nrm.solve();
 % ```
 %
-% See also CPFsolver
+% See also SolverCPF
     
     properties (Access=public) % Equation
         % Function F of the equation F(x) = b.

@@ -54,7 +54,7 @@ assert(str_got ~= str_id)
 
 
 %% Default TimeLimit is Inf
-mp = ?ODEsolver;
+mp = ?SolverODE;
 p  = mp.PropertyList(string({mp.PropertyList.Name}) == "TimeLimit");
 assert(isinf(p.DefaultValue))
 s_config = readstruct(fullfile(GUILDA.pwd, "@GUILDA", "config", "DefaultTimeSimulation.json"));
@@ -62,7 +62,7 @@ assert(isinf(s_config.TimeLimit.Value))
 
 
 %% Limit keeps counting through the phases
-prog = ODEprogress("none", [0,2], 0.05);
+prog = ProgressODE("none", [0,2], 0.05);
 fcn  = prog.OutputFcn;
 fcn([0,1], zeros(1,1), 'init');
 fcn(0.5, zeros(1,1), '');
@@ -76,7 +76,7 @@ assert(contains(prog.message, "timeout"))
 
 
 %% Inf never stops
-prog = ODEprogress("none", [0,2], Inf);
+prog = ProgressODE("none", [0,2], Inf);
 fcn  = prog.OutputFcn;
 fcn([0,1], zeros(1,1), 'init');
 pause(0.01)

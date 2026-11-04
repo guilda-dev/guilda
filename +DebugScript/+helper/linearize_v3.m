@@ -1,5 +1,5 @@
 function sys = linearize_v3(net, NonUnit, Algorithm)
-% v3 の LTIsolver (get_sys / get_DAE / get_LTI_viaKron / get_LTI_viaFeedback) をそのまま
+% v3 の SolverLIN (get_sys / get_DAE / get_LTI_viaKron / get_LTI_viaFeedback) をそのまま
 % 写したもの。v4 の net.linearize / result.get_ss の行列を比べる基準にする (テスト専用)。
 % 変更点は、obj.odeNetwork を net に、bus.l_isNonUnit をこの関数内の配列にしたことだけ
 % (母線の l_isNonUnit は書き換えない)。
@@ -271,7 +271,7 @@ function sys = get_LTI_viaFeedback(obj)
         [lv_out, feedout] = ismember(string(sysGC.InputName),  string(sysODE.OutputName));
         [lv_in,  feedin ] = ismember(string(sysGC.OutputName), string(sysODE.InputName));
         if ~all(lv_out) || ~all(lv_in)
-            error("GUILDA:LTIsolver:GlobalControllerPort", ...
+            error("GUILDA:SolverLIN:GlobalControllerPort", ...
                   "The ports of the global controller '%s' are not found in the linearized system.", net.a_GlobalController{k}.str_tag)
         end
         sysODE = feedback(sysODE, sysGC, feedin, feedout, +1);
@@ -331,7 +331,7 @@ function [Axx, Bxv, Bxu, Cix, E, str_z] = add_global_controllers(net, str_x, str
         [lv_w, iw] = ismember(string(sysGC.InputName),  str_x);
         [lv_y, iy] = ismember(string(sysGC.OutputName), str_u);
         if ~all(lv_w) || ~all(lv_y)
-            error("GUILDA:LTIsolver:GlobalControllerPort", ...
+            error("GUILDA:SolverLIN:GlobalControllerPort", ...
                   "The ports of the global controller '%s' are not found in the linearized system.", a_GC{k}.str_tag)
         end
         S = zeros(numel(iw), nx);  S(sub2ind(size(S), 1:numel(iw), iw(:)')) = 1;

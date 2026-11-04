@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GUILDA Developer Guide - Project Management</title>
+  <title data-title-ja="GUILDA 開発者ガイド - プロジェクト管理">GUILDA Developer Guide - Project Management</title>
+  <script src="../doc-lang.js"></script>
   <link rel="stylesheet" href="../style.css">
   <style>
     /* Project Management page only (pm-*); shared parts are dg-* in style.css */
@@ -65,6 +66,7 @@
       <a href="#issues">Issues</a>
       <a href="#versions">Versions</a>
       <a href="#documentation">Keeping documentation current</a>
+      <a href="#bilingual">Bilingual developer pages</a>
       <a href="#update-log">Update Log entries</a>
       <a href="#done">Definition of Done</a>
     </nav>
@@ -243,6 +245,27 @@
       <div class="dg-row"><span class="dg-row-head"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-tag"/></svg> A user-visible feature in a release</span><span class="dg-row-arrow" aria-hidden="true">→</span><span><code>_GUILDAdoc/database/list_UpdateLog.js</code></span></div>
       <div class="dg-row"><span class="dg-row-head"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-ruler"/></svg> A developer rule</span><span class="dg-row-arrow" aria-hidden="true">→</span><span>The matching page in this For Developer tab</span></div>
     </div>
+
+    <!-- ===================== Bilingual pages ===================== -->
+    <h2 id="bilingual">Bilingual developer pages</h2>
+    <p>The For Developer tab and every page in <code>_GUILDAdoc/developer/</code> are written in English and Japanese in one file. A toggle at the top right switches the language; the choice is saved in the browser, and <code>?lang=ja</code> or <code>?lang=en</code> in the URL selects it directly. The class and method reference stays in English.</p>
+    <ul class="dg-list is-numbered">
+      <li><div>Load <code>doc-lang.js</code> in <code>&lt;head&gt;</code>, before the stylesheet, so that only one language is shown from the first paint: <code>&lt;script src="../doc-lang.js"&gt;&lt;/script&gt;</code> in a developer page.</div></li>
+      <li><div>Write translatable content as sibling elements with <code>lang="en"</code> and <code>lang="ja"</code>, block or inline, including SVG <code>&lt;text&gt;</code>. The stylesheet hides the inactive language.</div></li>
+      <li><div>Leave shared content without a <code>lang</code> attribute: code, identifiers, file names, and SVG shapes are shown in both languages.</div></li>
+      <li><div>Give the Japanese page title in <code>data-title-ja</code> on <code>&lt;title&gt;</code>; the text of <code>&lt;title&gt;</code> is the English title.</div></li>
+      <li><div>For a card in the For Developer tab, add <code>title_ja</code> and <code>description_ja</code> next to <code>title</code> and <code>description</code> in <code>_GUILDAdoc/database/list_developer.js</code>. <code>title_ja</code> starts with the Japanese group name, for example <code>クラス: PowerNetwork</code>.</div></li>
+    </ul>
+<pre><code>&lt;head&gt;
+  &lt;title data-title-ja="GUILDA 開発者ガイド - 潮流計算"&gt;GUILDA Developer Guide - Power Flow&lt;/title&gt;
+  &lt;script src="../doc-lang.js"&gt;&lt;/script&gt;
+  &lt;link rel="stylesheet" href="../style.css"&gt;
+&lt;/head&gt;
+…
+&lt;h2 id="call-order"&gt;&lt;span lang="en"&gt;Call order&lt;/span&gt;&lt;span lang="ja"&gt;呼び出し順&lt;/span&gt;&lt;/h2&gt;
+&lt;p lang="en"&gt;Call &lt;code&gt;net.calculate_powerflow()&lt;/code&gt; after building the network.&lt;/p&gt;
+&lt;p lang="ja"&gt;ネットワークを組み立てた後に &lt;code&gt;net.calculate_powerflow()&lt;/code&gt; を呼びます。&lt;/p&gt;</code></pre>
+    <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg><p>Update both languages in the same commit. A change to one language alone leaves the two versions of the page saying different things.</p></div>
 
     <!-- ===================== Update Log ===================== -->
     <h2 id="update-log">Update Log entries</h2>

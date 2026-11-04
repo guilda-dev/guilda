@@ -45,7 +45,7 @@ try
 catch me
     str_id = DebugScript.helper.msg_id(me);
 end
-assert(str_id == "GUILDA:ODEsolver:PhaseFailed", "入力関数のエラーで止まる: " + str_id)
+assert(str_id == "GUILDA:SolverODE:PhaseFailed", "入力関数のエラーで止まる: " + str_id)
 assert_restored(net)
 
 

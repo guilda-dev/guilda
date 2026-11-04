@@ -37,7 +37,7 @@ function [tab, c_result] = compare_table4_13(opt)
 % Outputs: `tab` has one row per case: Section, Scenario, FaultBus, OpenBranch, Report,
 % ReportStable, Verdict ("stable", "out-of-step" or "incomplete"), Agree, MaxAngle [deg],
 % TimeOutOfStep [s] (NaN if none), OutOfStep (tags of the machines out of step), Flag (of
-% net.simulate) and Elapsed [s]. `c_result` holds the ODEresult of each case (only when
+% net.simulate) and Elapsed [s]. `c_result` holds the ResultODE of each case (only when
 % requested).
     arguments
         opt.Governor  (1,1) logical = true % true for the governors of the report.
@@ -50,7 +50,7 @@ function [tab, c_result] = compare_table4_13(opt)
     end
     arguments (Output)
         tab      % Table of the cases, the report verdict and the GUILDA verdict.
-        c_result % ODEresult of each case (cell, rows of tab).
+        c_result % ResultODE of each case (cell, rows of tab).
     end
     str_dir = fileparts(mfilename("fullpath"));
     % GUILDA (the repository root) is found through the current folder only; add the root

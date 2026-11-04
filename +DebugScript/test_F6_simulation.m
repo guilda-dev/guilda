@@ -1,4 +1,4 @@
-% F6 時間応答シミュレーション (simulate / Scenario / ODEresult)
+% F6 時間応答シミュレーション (simulate / Scenario / ResultODE)
 %
 % イベントの種類ごとに IEEE14 母線系統の応答を計算し、結果を確認する。
 %   sc  = Scenario("名前");  sc.add_disturbance("名前", "TimeSpan", [t1,t2], <外乱の指定>);  net.add_scenario(sc);
@@ -12,7 +12,7 @@
 %   InputValue : 機器入力への加算 (数値 / 関数ハンドル)
 %
 %   flag: 1 = 終了時刻まで計算, 0 = TimeLimit で停止, -1 = ソルバーが途中で停止
-%   Name-Value (ODEsolver.OptionMap): Solver, SolverOptions, Tolerance, AbsoluteTolerance,
+%   Name-Value (SolverODE.OptionMap): Solver, SolverOptions, Tolerance, AbsoluteTolerance,
 %   SeparateComplexParts, TimeLimit, Progress, Verbose, Plot (+ Export)。その呼び出しだけ有効
 %
 % 実行: runtests("DebugScript.test_F6_simulation")  または  DebugScript.run_all("Features","F6")
@@ -26,7 +26,7 @@ inwin = @(t, t1, t2) t > t1 + 1e-3 & t < t2 - 1e-3;   % 区間の内側 (境界�
 %% Simulation result structure
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 sol = net.simulate([0,3], ev);
-assert(isa(sol, "ODEresult"))
+assert(isa(sol, "ResultODE"))
 
 r = sol.odeResults;
 nt = numel(r.t);
@@ -90,11 +90,11 @@ assert(isequal(sol.get_point(1.5, net.a_Bus{1}.get_variable_map()), x(c_idxBus{1
 assert(isequal(sol.get_point(1.5, net.a_Bus{1}.a_Component{1}.get_variable_map()), ...
                x(c_idxBus{1}(1:height(net.a_Bus{1}.a_Component{1}.get_variable_map())))))
 % 範囲外の時刻、結果にない変数はエラー
-expect_error(@() sol.get_point(3), "GUILDA:ODEresult:PointTime")
+expect_error(@() sol.get_point(3), "GUILDA:ResultODE:PointTime")
 tab_bad = tab(1,:);  tab_bad.Owner = "nobody";
-expect_error(@() sol.get_point(1.5, tab_bad), "GUILDA:ODEresult:UnknownVariable")
+expect_error(@() sol.get_point(1.5, tab_bad), "GUILDA:ResultODE:UnknownVariable")
 % 空の結果
-sol0 = ODEresult();
+sol0 = ResultODE();
 assert(isequal(sol0.odeResults, struct()) && isempty(sol0.rm_variable) && isempty(sol0.rv_t))
 
 
@@ -123,15 +123,15 @@ assert(isequal(net.linearize("Point", {sol, 1, "before"}).rv_point, x_before))
 
 
 %% V4 call returns result flag and output
-% [result, flag, output] を返す。結果クラスは AnalysisResult を継承し、flag / output / 使った設定を持つ
+% [result, flag, output] を返す。結果クラスは ResultBase を継承し、flag / output / 使った設定を持つ
 ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 [sol, flag, output] = net.simulate([0,3], ev);
-assert(isa(sol, "ODEresult") && isa(sol, "AnalysisResult"))
+assert(isa(sol, "ResultODE") && isa(sol, "ResultBase"))
 assert(flag == 1 && sol.flag == 1 && sol.l_success)
 assert(isequal(sol.output, output) && output.tEnd == 3 && output.nPhases == 3 && output.nPhasesDone == 3)
 assert(isstring(output.message) && contains(output.message, "t = 3"))
 assert(istable(output.phases) && height(output.phases) == 3)
-assert(sol.str_solver == "ODEsolver" && sol.str_network == string(net.str_tag) && sol.r_elapsed > 0)
+assert(sol.str_solver == "SolverODE" && sol.str_network == string(net.str_tag) && sol.r_elapsed > 0)
 assert(sol.options.RelativeTolerance == net.solver_ODE.RelativeTolerance)
 assert(sol.options.Progress == "none" && sol.options.TimeLimit == net.solver_ODE.TimeLimit)
 assert(isequal(sol.sv_bus, string(net.a_Bus(:))) && numel(sol.c_component) == numel(net.a_Bus))
@@ -250,13 +250,13 @@ try
     sol.Plot(Quantity="nosuchstate");
     error("DebugScript:noError", "未知の量でエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:ODEresult:UnknownQuantity", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultODE:UnknownQuantity", DebugScript.helper.msg_id(ME))
 end
 try
     sol.Plot(Bus="B999");
     error("DebugScript:noError", "未知の母線でエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:ODEresult:UnknownBus", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultODE:UnknownBus", DebugScript.helper.msg_id(ME))
 end
 
 str_dir = tempname;  mkdir(str_dir);
@@ -274,7 +274,7 @@ try
     sol.Export(fullfile(str_dir, "sim.json"));
     error("DebugScript:noError", "未対応の拡張子でエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:ODEresult:ExportFormat", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultODE:ExportFormat", DebugScript.helper.msg_id(ME))
 end
 % simulate(..., Plot=true, Export=file) は結果のメソッドを呼ぶ
 n_fig = numel(findall(0, "Type", "figure"));
@@ -729,7 +729,7 @@ try
     net.simulate([0,4], ev);
     error("DebugScript:noError", "エラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:ODEsolver:PhaseFailed", DebugScript.helper.msg_id(ME) + ": " + ME.message)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:PhaseFailed", DebugScript.helper.msg_id(ME) + ": " + ME.message)
     assert(contains(ME.message, "phase 2") && contains(ME.message, "t = [1, 3]") && contains(ME.message, "boom"), ME.message)
     assert(DebugScript.helper.msg_id(ME.cause{1}) == "DebugScript:boom")
 end

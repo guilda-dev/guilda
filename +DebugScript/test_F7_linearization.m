@@ -1,4 +1,4 @@
-% F7 近似線形化 (linearize / get_sys / LTIresult / get_variable_map / get_hessian)
+% F7 近似線形化 (linearize / get_sys / ResultLIN / get_variable_map / get_hessian)
 %
 % 平衡点 (または指定した点) まわりの線形モデルを求める。
 %   res = net.linearize("Algorithm", ..., "Point", 点);
@@ -169,7 +169,7 @@ assert(isequal(net.linearize("NonUnit", [7 9]).options.NonUnit, [7 9]))
 assert(~isfield(net.linearize().options, "NonUnit"))
 assert(~isfield(net.linearize("NonUnit", []).options, "NonUnit"))
 % 値の検証と、受け付ける名前の一覧
-assert(~isfield(LTIsolver.OptionMap, "NonUnit"))
+assert(~isfield(SolverLIN.OptionMap, "NonUnit"))
 assert(~contains(strjoin(string(properties(net.solver_LIN))), "NonUnit"))
 try
     net.linearize("NonUnit", 1.5);
@@ -261,7 +261,7 @@ assert(isequal(tab.Kind, ["Vre";"Vim"]))
 tab = n9.get_variable_map();
 assert(nnz(tab.Bus == string(n9.a_Bus{4}.str_tag)) == 2)
 res = DebugScript.helper.quiet(@() n9.linearize);
-assert(isa(res, "LTIresult"))
+assert(isa(res, "ResultLIN"))
 n_x9 = sum(cellfun(@(b) sum(cellfun(@(c) numel(c.sv_x), b.a_Component)), n9.a_Bus));
 e_kron = eig_finite(n9.get_sys("Algorithm","Kron"));
 assert(size(n9.get_sys("Algorithm","Kron").A, 1) == n_x9)
@@ -339,21 +339,21 @@ assert(isequal(sv_D(1:n_gc), sv_K(1:n_gc)))
 assert(isequal(sv_F(end-n_gc+1:end), sv_K(1:n_gc)), strjoin(sv_F(end-n_gc+1:end), ","))
 
 
-%% LTIsolver constructor of v3 names the remedy
-% v3 の LTIsolver(net, NonUnit, ...) は削除: 解法は既定値だけを持つ (net.solver_LIN)
+%% SolverLIN constructor of v3 names the remedy
+% v3 の SolverLIN(net, NonUnit, ...) は削除: 解法は既定値だけを持つ (net.solver_LIN)
 try
-    LTIsolver(net, [], "Algorithm", "Kron");
-    error("DebugScript:NoError", "LTIsolver(net, ...) がエラーにならない")
+    SolverLIN(net, [], "Algorithm", "Kron");
+    error("DebugScript:NoError", "SolverLIN(net, ...) がエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "net.linearize"))
 end
-assert(isa(LTIsolver(), "LTIsolver"))
-assert(isa(net.solver_LIN, "LTIsolver"))
+assert(isa(SolverLIN(), "SolverLIN"))
+assert(isa(net.solver_LIN, "SolverLIN"))
 
 
 %% Analytic jacobians match numerical differentiation
-% get_sys と ODEsolver が使う f_Jacobi* (Jacobi_dx / Jacobi_I / Jacobi_Y) が f_dx, f_I, f_Y の微分と一致する
+% get_sys と SolverODE が使う f_Jacobi* (Jacobi_dx / Jacobi_I / Jacobi_Y) が f_dx, f_I, f_Y の微分と一致する
 for key = DebugScript.helper.model_classes("Component").Key'
     [net3, comp] = DebugScript.helper.build_3bus(key);
     DebugScript.helper.quiet(@() net3.initialize);
@@ -553,7 +553,7 @@ assert(sum(tab.NumCalls(lv)) == 2, "制御器 2 個に %d 回", sum(tab.NumCalls
 
 
 %% Linearize matches v3 get_sys matrices for every algorithm
-% linearize + get_ss の行列と名前は v3 の LTIsolver と同じ (helper.linearize_v3 に v3 のコードを保存)。
+% linearize + get_ss の行列と名前は v3 の SolverLIN と同じ (helper.linearize_v3 に v3 のコードを保存)。
 % 違いは DAE の B の代数方程式の行の符号 (v3 は入力 u の符号が逆で、Kron と伝達関数が合わなかった) と、
 % Feedback が P=Q=0 の負荷の入力を残すこと (v3 は落とした)。nonunit は v3 に渡す指定で、v4 は自動判定で同じ行列になる。
 % 電流のある母線の指定は v3 と別の結果になる (v3 は機器を落とした) ので、ここでは比べない。
@@ -774,19 +774,19 @@ try
     net.linearize("Point", x(1:end-1));
     error("DebugScript:NoError", "長さの違う Point がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:LTIsolver:PointSize", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointSize", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "get_variable_map"))
 end
 try
     net.linearize("Point", "equilibrium");
     error("DebugScript:NoError", "文字列の Point がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:LTIsolver:PointType", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointType", DebugScript.helper.msg_id(ME))
 end
 
 
 %% Point from a simulation result and a time
-% Point={sim, t}: 時刻 t の機器の状態・入力と母線電圧 (ODEresult の値) で線形化する
+% Point={sim, t}: 時刻 t の機器の状態・入力と母線電圧 (ResultODE の値) で線形化する
 net = new_net();
 DebugScript.helper.quiet(@() net.initialize);
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.5,0.55], "FaultBus", "B008");
@@ -827,7 +827,7 @@ try
     net.linearize("Point", {sim, 10});
     error("DebugScript:NoError", "範囲外の時刻がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:ODEresult:PointTime", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultODE:PointTime", DebugScript.helper.msg_id(ME))
 end
 % Point={sim, t, Side}: 第 3 要素は sim.get_point の Side
 assert(isequal(net.linearize("Point", {sim, t, "before"}).rv_point, res.rv_point))
@@ -835,7 +835,7 @@ try
     net.linearize("Point", {sim, t, "middle"});
     error("DebugScript:NoError", "知らない Side がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:LTIsolver:PointType", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointType", DebugScript.helper.msg_id(ME))
 end
 
 
@@ -941,7 +941,7 @@ end
 % v4: [sys, flag, output] = net.get_sys(...) (v3 の 2 番目の出力 lin は flag になった)。
 [sys, flag, output] = net.get_sys("Algorithm", "Kron");
 assert(isa(sys, "ss") && islogical(flag) && flag)
-assert(isa(output.result, "LTIresult") && isequal(output.result.get_ss(), sys))
+assert(isa(output.result, "ResultLIN") && isequal(output.result.get_ss(), sys))
 assert(isstring(output.message))
 
 
@@ -963,7 +963,7 @@ for alg = ["Kron", "Feedback"]
         net_s.get_sys("Algorithm", alg);
         error("DebugScript:NoError", alg + ": エラーにならない")
     catch ME
-        assert(DebugScript.helper.msg_id(ME) == "GUILDA:LTIresult:SingularAvv", DebugScript.helper.msg_id(ME))
+        assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultLIN:SingularAvv", DebugScript.helper.msg_id(ME))
         assert(contains(ME.message, "DAE") && contains(ME.message, "B001"), ME.message)
     end
 end
@@ -987,7 +987,7 @@ try
     n14.get_sys("Point", x);
     error("DebugScript:NoError", "NaN の Point がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:LTIsolver:PointNotFinite", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointNotFinite", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, tab.Label(5)) && contains(ME.message, tab.Label(7)), ME.message)
     assert(~contains(ME.message, tab.Label(6) + ","), ME.message)
 end
@@ -995,7 +995,7 @@ try
     n14.linearize("Point", nan(height(tab),1));
     error("DebugScript:NoError", "NaN の Point がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:LTIsolver:PointNotFinite", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointNotFinite", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "more"), ME.message)
 end
 % トリップ中の {sim, t}: 解列した機器の状態が NaN
@@ -1004,7 +1004,7 @@ try
     n14.get_sys("Point", {sim, 1.2});
     error("DebugScript:NoError", "トリップ中の Point がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:LTIsolver:PointNotFinite", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointNotFinite", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "SG1B002") && contains(ME.message, "trip"), ME.message)
 end
 assert(n14.linearize("Point", {sim, 0.5}).l_success)
@@ -1022,7 +1022,7 @@ for c_point = {{sim,1}, {sim,1.2}, {sim,1.5,"before"}}
         n14.linearize("Point", c_point{1});
         error("DebugScript:NoError", "トリップ中の Point がエラーにならない")
     catch ME
-        assert(DebugScript.helper.msg_id(ME) == "GUILDA:LTIsolver:PointNotFinite", DebugScript.helper.msg_id(ME))
+        assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointNotFinite", DebugScript.helper.msg_id(ME))
         assert(contains(ME.message, "SG1B002") && contains(ME.message, "trip"), ME.message)
     end
 end
@@ -1125,7 +1125,7 @@ try
     n14.linearize("Point", x);
     error("DebugScript:NoError", "V=0 の Point がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:LTIsolver:JacobianNotFinite", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:JacobianNotFinite", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "bus B"), ME.message)
 end
 
@@ -1196,7 +1196,7 @@ for c_arg = {{}, {"NonUnit", 1:2}}
         net_load.get_sys(c_arg{1}{:});
         error("DebugScript:NoError", "エラーにならない")
     catch ME
-        assert(DebugScript.helper.msg_id(ME) == "GUILDA:LTIresult:NoUnitBus", DebugScript.helper.msg_id(ME))
+        assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultLIN:NoUnitBus", DebugScript.helper.msg_id(ME))
         assert(contains(ME.message, "Kron") && contains(ME.message, "DAE"), ME.message)
     end
 end
@@ -1333,7 +1333,7 @@ for c = {{"Output","nope","UnknownOutput"}, {"Input","nope","UnknownInput"}, {"I
         net.get_sys("Algorithm", "Kron", c{1}{1:2});
         error("DebugScript:NoError", "不明な名前がエラーにならない")
     catch ME
-        assert(DebugScript.helper.msg_id(ME) == "GUILDA:LTIresult:" + c{1}{3}, DebugScript.helper.msg_id(ME))
+        assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultLIN:" + c{1}{3}, DebugScript.helper.msg_id(ME))
     end
 end
 try
@@ -1357,7 +1357,7 @@ try
     res.get_ss("Feedback", Output=sv_gone(1));
     error("DebugScript:NoError", "消えた状態がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:LTIresult:StateNotInModel", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultLIN:StateNotInModel", DebugScript.helper.msg_id(ME))
 end
 assert(string(res.get_ss("Kron", Output=sv_gone(1)).OutputName) == sv_gone(1))
 sK = res.get_ss("Kron", Output=["V","I","y"]);

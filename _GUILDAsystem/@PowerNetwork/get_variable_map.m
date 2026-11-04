@@ -2,7 +2,7 @@ function [tab, c_idxBus, c_idxGC] = get_variable_map(obj, str_form)
 % Return the variable map: the order of the state, voltage and input variables.
 %
 % Variable map of the network: the single definition of the order of the variables of
-% the network model, used by net.linearize (LTIresult blocks and Point) and
+% the network model, used by net.linearize (ResultLIN blocks and Point) and
 % shared by other analyses. The order is
 %   1. states x: for each bus in a_Bus, for each component in a_Component, the states
 %      of the component and then of its local controllers (depth first: the AVR or

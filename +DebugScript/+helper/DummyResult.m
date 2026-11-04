@@ -1,5 +1,5 @@
-classdef DummyResult < AnalysisResult
-% AnalysisResult の契約を確かめるための最小の結果クラス (テスト専用)
+classdef DummyResult < ResultBase
+% ResultBase の契約を確かめるための最小の結果クラス (テスト専用)
 %
 %   res = DebugScript.helper.DummyResult(net, solver, options, flag, output, elapsed, value)
 %
@@ -9,7 +9,7 @@ classdef DummyResult < AnalysisResult
     end
     methods
         function obj = DummyResult(net, solver, options, flag, output, elapsed, value)
-            obj@AnalysisResult(net, solver, options, flag, output, elapsed);
+            obj@ResultBase(net, solver, options, flag, output, elapsed);
             obj.value = value;
         end
         function h = Plot(obj, opt)

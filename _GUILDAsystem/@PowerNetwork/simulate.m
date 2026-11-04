@@ -1,5 +1,5 @@
 function [result, flag, output] = simulate(obj, time, varargin)
-% Simulate the network over time and return an ODEresult.
+% Simulate the network over time and return a ResultODE.
 %
 % Time simulation of the network from its equilibrium: the DAE of the buses, components
 % and controllers is integrated over time, with the disturbances of the given scenarios
@@ -8,7 +8,7 @@ function [result, flag, output] = simulate(obj, time, varargin)
 % The settings are the stored defaults of net.solver_ODE, replaced by the stored Options of
 % the scenarios, then by the Name-Value options of the call, for this call only
 % (net.solver_ODE and the scenarios are not changed).
-% Accepted options are the names in ODEsolver.OptionMap plus Export; any other name
+% Accepted options are the names in SolverODE.OptionMap plus Export; any other name
 % stops with GUILDA:resolve_options:UnknownName.
 % time is [t0, tend] with finite t0 < tend. Without it (net.simulate(sc, ...)) or with [],
 % the Time of the scenarios is used, and when they have none the time span of the
@@ -57,7 +57,7 @@ function [result, flag, output] = simulate(obj, time, varargin)
 % res = net.simulate(sc, Tolerance=1e-5);   % the call option wins
 % ```
 %
-% See also Scenario, ODEresult, ODEsolver, PowerNetwork.add_scenario, PowerNetwork.initialize
+% See also Scenario, ResultODE, SolverODE, PowerNetwork.add_scenario, PowerNetwork.initialize
     arguments
         obj
         time = []   % [s] Simulation time [t0, tend], or [] for the Time of the scenarios (or the time span of the disturbances). May be left out.

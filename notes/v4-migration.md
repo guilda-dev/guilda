@@ -19,7 +19,7 @@
 > - **`initialize`'s outputs are reordered.** v3: `[flag, tab, output]`.
 >   v4: `[result, flag, output]` with `result.tab_bus` the old `tab`.
 >   `[flag, tab] = net.initialize()` gives no error: `flag` is then a
->   `PFCresult` and `tab` the exit flag. `if flag` on the result
+>   `ResultPF` and `tab` the exit flag. `if flag` on the result
 >   object fails or means something else; test `result.l_success` (1.17).
 > - **The slack power goes to the first component with `Q = NaN`.** v3 gave it to
 >   the first component of the slack bus, so a load added before a generator
@@ -34,11 +34,11 @@
 >   `net.linearize` are unchanged (1.12).
 > - **`get_sys`'s second output is no longer `lin`.** `[sys, flag, output]`:
 >   `flag` is a logical (all Jacobian entries finite and `Avv` invertible) and
->   `output.result` is the `LTIresult`. `[sys, lin] = net.get_sys()`
+>   `output.result` is the `ResultLIN`. `[sys, lin] = net.get_sys()`
 >   gives no error; using `lin` as an `odeLinearizer` fails later (1.12).
 > - **`optimize_powerflow` with 1–3 outputs has the v4 meaning.**
 >   `[bus, cub, flag] = net.optimize_powerflow()` now gives
->   `bus = OPFresult`, `cub = flag`, `flag = output`. Only the 6-output form
+>   `bus = ResultOPF`, `cub = flag`, `flag = output`. Only the 6-output form
 >   returns the old tuple (with a warning) (1.9).
 > - **DAE `B` sign.** `get_sys(Algorithm="DAE")` / `get_ss("DAE")` returns
 >   `B` with the opposite sign on the algebraic rows (the bus current
@@ -77,23 +77,25 @@
 
 | 旧名 | 新名 |
 |---|---|
-| `PFCsolver` | `PFCsolver` |
-| `PFCresult` | `PFCresult` |
-| `OPFsolver` | `OPFsolver` |
-| `OPFresult` | `OPFresult` |
-| `CPFsolver` | `CPFsolver` |
-| `CPFresult` | `CPFresult` |
-| `ODEsolver` | `ODEsolver` |
-| `ODEresult` | `ODEresult` |
-| `ODEevent` | `Scenario`(互換の `ODEevent(tag, net, ...)` あり。1.18) |
-| `ODEprogress` | `ODEprogress` |
-| `LTIsolver` | `LTIsolver` |
-| `LTIresult` | `LTIresult` |
+| `PowerFlowCalculation` | `SolverPF` |
+| `PowerFlowResult` | `ResultPF` |
+| `OptimalPowerFlow` | `SolverOPF` |
+| `OPFResult` | `ResultOPF` |
+| `ContinuationPowerFlow` | `SolverCPF` |
+| `CPFResult` | `ResultCPF` |
+| `odeSimulator` | `SolverODE` |
+| `odeSimulationResult` | `ResultODE` |
+| `odeEventSet` | `Scenario`(1.18) |
+| `odeProgress` | `ProgressODE` |
+| `odeLinearizer` | `SolverLIN` |
+| `LinearizationResult` | `ResultLIN` |
+
+イベントのクラスは、v3 の `odeEventSet` も v4 の開発途中の名前 `ODEevent` も `Scenario` に対応します。`ODEevent(tag, net, ...)` は互換の関数として残しています(1.18)。`EventODE` という名前は公開されておらず、別名もありません。
 
 次の名前は変わりません。
 
 - 結果の `str_solver` の値は新しいクラス名になりますが、`net.solver_PF`、`net.solver_OPF`、`net.solver_CPF`、`net.solver_ODE`、`net.solver_LIN` のプロパティ名はそのままです。
-- 設定のセクション名とファイル名(`GUILDA.config("PowerFlowCalculation")`、`"OPFsolver"`、`"CPFsolver"`、`Default<セクション名>.json`)はそのままなので、`@GUILDA/user` に保存した設定は引き続き読み込まれます。
+- 設定のセクション名とファイル名(`GUILDA.config("PowerFlowCalculation")`、`"OptimalPowerFlow"`、`"ContinuationPowerFlow"`、`Default<セクション名>.json`)はそのままなので、`@GUILDA/user` に保存した設定は引き続き読み込まれます。
 - `GUILDA:Deprecated:*` と `GUILDA:v3_*` の ID(`ContinuationPowerFlowConstructor`、`OdeLinearizerConstructor` など)と `ContinuationPowerFlowV3`、`Continuation_Power_Flow` もそのままです。
 
 この文書の v3 の書き方を示す箇所では、旧クラス名を残しています。
@@ -241,8 +243,8 @@ Outputs of several controllers on the same input add up. Scalar `alpha` /
 
 - `gc.PowerNetwork` is removed without a compat form (reading it is an
   error).
-- **Trip of a global controller** (`ODEevent` naming it in the trip
-  units): its output is zero during the event (silent change, see the box
+- **Trip of a global controller** (a `Scenario` trip naming the
+  controller): its output is zero during the event (silent change, see the box
   at the top), and after the event it restarts from its equilibrium, like
   a tripped generator.
 - **Trip of a generator with a local controller** no longer fails with
@@ -329,9 +331,9 @@ Outputs of several controllers on the same input add up. Scalar `alpha` /
 Every analysis is a method `net.verb_noun(Name, Value)` that returns
 `[result, flag, output]`:
 
-- `result` is a result object (subclass of `AnalysisResult`):
-  `PFCresult`, `OPFresult`, `CPFresult`, `ODEresult`,
-  `LTIresult`. It holds the computed values, `flag`, `output`,
+- `result` is a result object (subclass of `ResultBase`):
+  `ResultPF`, `ResultOPF`, `ResultCPF`, `ResultODE`,
+  `ResultLIN`. It holds the computed values, `flag`, `output`,
   `options` (the effective settings), `str_solver`, `r_elapsed`,
   `str_network`, `a_PowerNetwork` and `l_success`. Model data stay with the
   network.
@@ -348,7 +350,7 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   relative to the **current folder** (v3 wrote to `GUILDA.pwd`).
 - The solvers hold defaults only: they no longer keep the network, the last
   result or intermediate data (see each section for removed properties).
-- `net.solver_LIN` (`LTIsolver`) is new; `reset_solver` creates all
+- `net.solver_LIN` (`SolverLIN`) is new; `reset_solver` creates all
   five solvers.
 
 ### 1.8 Power flow
@@ -364,7 +366,7 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   `MaxIteration` (solver property `MaxIterations`), `Verbose` (sets
   `Display`), `Plot`, `Export`. New solver properties `solver_PF.Method`
   (default `"algebraic"`) and `solver_PF.Tolerance` (0 = fsolve default).
-- `PFCresult`: `tab_bus` (Varg, V, P, Q, Vphasor, Iphasor per bus;
+- `ResultPF`: `tab_bus` (Varg, V, P, Q, Vphasor, Iphasor per bus;
   the old output table), `tab_branch` (branch flows), `cm_Vhistory`,
   `rv_step`; `Plot` draws the voltage profile, `Export` writes the bus or
   branch table (`.csv`, Excel) or the history (`.json`, GridSpring viewer).
@@ -418,8 +420,8 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   `"AC OPF"`), `Solver` (`"auto"` | `"linprog"` | `"quadprog"` |
   `"fmincon"`), `Tolerance` (`OptimalityTolerance`), `MaxIteration`,
   `Verbose` (sets `Display`), `Plot`, `Export`. Defaults in
-  `net.solver_OPF` (`OPFsolver`, new; it was empty in v3).
-- `OPFresult`: `Plot` draws the component outputs and, for DC/AC OPF, the
+  `net.solver_OPF` (`SolverOPF`, new; it was empty in v3).
+- `ResultOPF`: `Plot` draws the component outputs and, for DC/AC OPF, the
   bus voltages; `Export` writes the bus, connection or branch table.
   `l_success` is true for a positive exit flag. The nodal price of a bus is
   `-res.lambda.Constraints.balancedP_<bus>`.
@@ -480,7 +482,7 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   results change for branches with `R ≠ 0`, taps or phase shifters.
 - **`Solver` must fit the problem.** A `Solver` that cannot express the
   problem (e.g. `"linprog"` with a quadratic cost) stops with
-  `GUILDA:OPFsolver:UnsupportedSolver`, which lists the usable
+  `GUILDA:SolverOPF:UnsupportedSolver`, which lists the usable
   names; there is no silent fallback.
 
 ### 1.10 Continuation power flow
@@ -507,18 +509,18 @@ Option names:
 
 - `flag` is a logical: true when the path passed the nose. `output` has
   `message`, `iterations`, `correctorIterations`.
-- `CPFresult.Plot` draws the PV curves of the load buses; `Export` writes
+- `ResultCPF.Plot` draws the PV curves of the load buses; `Export` writes
   the path table.
 - Behavior: the network must be initialized (an error names the remedy);
   an empty or unknown `LoadBus` is an error (v3 warned for an empty bus
-  list). `CPFsolver()` takes no arguments and holds defaults
+  list). `SolverCPF()` takes no arguments and holds defaults
   only.
 - Deprecated:
 
   | Old form | ID | Behavior |
   |----------|----|----------|
-  | `Continuation_Power_Flow(net, opt)` | `GUILDA:Deprecated:ContinuationPowerFlowFunction` | warning; returns a `ContinuationPowerFlowV3` with the v3 properties, `solve` and `CPF_Result` (`.x_sol`, `.x_prd`, `.result` = the `CPFresult`); `net.solver_CPF` is not changed |
-  | `CPFsolver(net, Name, Value)` | `GUILDA:v3_cpf_constructor:ContinuationPowerFlowConstructor` | **error** |
+  | `Continuation_Power_Flow(net, opt)` | `GUILDA:Deprecated:ContinuationPowerFlowFunction` | warning; returns a `ContinuationPowerFlowV3` with the v3 properties, `solve` and `CPF_Result` (`.x_sol`, `.x_prd`, `.result` = the `ResultCPF`); `net.solver_CPF` is not changed |
+  | `SolverCPF(net, Name, Value)` | `GUILDA:v3_cpf_constructor:ContinuationPowerFlowConstructor` | **error** |
 
   `sol` / `sol_pred` of the wrapper are in the full variable layout (as
   `CPF_Result.x_sol`).
@@ -539,7 +541,7 @@ Option names:
   (`"dialog"` | `"disp"` | `"none"`, or true/false), `Verbose`, `Plot`,
   `Export`. New solver properties `Solver`, `SolverOptions`, `Progress`,
   `Verbose`, `Plot`.
-- `ODEresult` stores the trajectory once, in the order of
+- `ResultODE` stores the trajectory once, in the order of
   `net.get_variable_map()`: `res.rv_t` (times), `res.tab_variable` (the
   map at the time of the run) and `res.rm_variable` (row k at `rv_t(k)`,
   one column per map row, **including the states of local and global
@@ -572,14 +574,14 @@ Option names:
   - **A numerical failure keeps the completed phases.** When the solver gives
     up on a phase, `simulate` no longer throws: it returns `flag = -1`, the
     completed phases in the result, and in `output.exception` the
-    `MException` (`GUILDA:ODEsolver:PhaseFailed`, `InitialConditionFailed`
+    `MException` (`GUILDA:SolverODE:PhaseFailed`, `InitialConditionFailed`
     or `UnfeasibleDAE`, with the original as its cause); `output.exception`
     is empty otherwise. When the first phase fails, the result has no time
     points and `output.tEnd` is the start time, so check `flag` before reading
     the trajectories. Scripts that caught these errors must test `flag`
     instead.
   - **Other errors during a phase still stop.** An error of an input function
-    or a model stops with `GUILDA:ODEsolver:PhaseFailed`, or with
+    or a model stops with `GUILDA:SolverODE:PhaseFailed`, or with
     `InitialConditionFailed` / `UnfeasibleDAE` during the retry from a
     recomputed initial condition (phase and interval in the message, the
     original error as its cause). Only the
@@ -609,38 +611,38 @@ Option names:
     not `.csv`, `.txt`, `.xlsx`, `.xls` or `.mat` stops at once with
     `GUILDA:PowerNetwork:SimulateExport` (before: after the integration, and
     the result was lost).
-  - `ODEsolver` no longer holds `odeNetwork`, `odeTimeTable`, `odeYmat`,
+  - `SolverODE` no longer holds `odeNetwork`, `odeTimeTable`, `odeYmat`,
     `odeResult`, `rv_odeV`; `solver_ODE.simulate(net, ...)` is replaced by
     the internal `solve(net, time, events, options)`.
   - **Event checks.** Before the integration, an event's `InputUnit` must
-    be a component of the network (`GUILDA:ODEevent:UnknownInputUnit`),
-    each `InputName` an input of it (`GUILDA:ODEevent:UnknownInputName`,
+    be a component of the network (`GUILDA:Scenario:UnknownInputUnit`),
+    each `InputName` an input of it (`GUILDA:Scenario:UnknownInputName`,
     the message lists the inputs), and a function `InputValue` must take
     one argument, the time since the event start
-    (`GUILDA:ODEevent:InvalidNargin`). Errors that used to fail inside
+    (`GUILDA:Scenario:InvalidNargin`). Errors that used to fail inside
     the integration now stop at once.
   - **イベントの検査の追加。** 次も積分の前に止まります。
 
-    | ID(現在は `GUILDA:Scenario:*`。1.18) | 条件 |
+    | ID | 条件 |
     |----|------|
-    | `GUILDA:ODEevent:UnknownFaultBus` | `FaultBus` が系統の母線でない |
-    | `GUILDA:ODEevent:UnknownTripUnit` | `TripUnit` が機器でも大域制御器でもない(ローカル制御器は解列できない) |
-    | `GUILDA:ODEevent:UnknownOffsetUnit`, `UnknownOffsetState` | `OffsetUnit` が機器でない、`OffsetState` がその状態でない |
-    | `GUILDA:ODEevent:InvalidTimeSpan` | `TimeSpan` に NaN がある、または順序が逆 |
-    | `GUILDA:ODEevent:ValueCountMismatch` | 値の数が `OffsetState` や `InputName` の数と合わない(1 つの値は全部に共通) |
-    | `GUILDA:ODEevent:OtherNetwork` | 別の系統で作ったイベント(構成が同じでも)。実行する系統で作り直す |
-    | `GUILDA:ODEevent:DuplicateTag`, `ReservedTag` | タグの重複、または `t1`, `t2`, `Properties`, `Row`, `Variables`, 空, `NoAction<数字>` |
-    | `GUILDA:ODEevent:EventArray` | イベントを配列で渡した。`net.simulate(time, ev1, ev2)` のように別の引数で渡す |
+    | `GUILDA:Scenario:UnknownFaultBus` | `FaultBus` が系統の母線でない |
+    | `GUILDA:Scenario:UnknownTripUnit` | `TripUnit` が機器でも大域制御器でもない(ローカル制御器は解列できない) |
+    | `GUILDA:Scenario:UnknownOffsetUnit`, `UnknownOffsetState` | `OffsetUnit` が機器でない、`OffsetState` がその状態でない |
+    | `GUILDA:Scenario:InvalidTimeSpan` | `TimeSpan` に NaN がある、または順序が逆 |
+    | `GUILDA:Scenario:ValueCountMismatch` | 値の数が `OffsetState` や `InputName` の数と合わない(1 つの値は全部に共通) |
+    | `GUILDA:Scenario:OtherNetwork` | 別の系統で作ったイベント(構成が同じでも)。実行する系統で作り直す |
+    | `GUILDA:Scenario:DuplicateTag`, `ReservedTag` | タグの重複、または `t1`, `t2`, `Properties`, `Row`, `Variables`, 空, `NoAction<数字>` |
+    | `GUILDA:Scenario:ScenarioArray` | シナリオを配列で渡した。`net.simulate(time, sc1, sc2)` のように別の引数で渡す |
 
     イベントは系統のタグや状態数の写しを持たなくなったので、作成後に大域制御器を足すなど構成を変えても、そのイベントは使えます。
   - **`simulate` の時間の検査。** `time` は有限で `t0 < tend` の `[t0, tend]`、またはイベントの時間幅を使う `[]` だけです。他の値は `GUILDA:PowerNetwork:SimulateTime` で止まり、理由を示します。以前は 3 点以上の時間を渡すと無言で短い区間だけを計算することがありました。時刻の列が欲しいスクリプトは `res.get_point` で読み出してください。引数の順序(時間、イベント、Name-Value)の誤りは `GUILDA:PowerNetwork:SimulateArguments` で止まります。
-  - **初期条件の失敗の説明。** 区間の開始の初期条件が解けない場合は、これまでどおり `flag = -1` で `output.exception` が `GUILDA:ODEsolver:InitialConditionFailed` です。`output.message` が理由と対処を示すようになりました。よくある原因は、故障で供給できなくなる定電力負荷(`"load-power"`)です。その負荷を `"load-impedance"` にするか、別の母線を故障させてください。同じ故障が定インピーダンス負荷なら完走することをテストで確認しています。
-  - **区間の開始では微分状態を動かしません。** 区間の境界で微分状態はそのまま引き継ぎ、代数変数だけを新しい区間の網で解き直します(解析的なヤコビアンによるニュートン法。`decic` とソルバ自身の初期条件の計算は使いません)。解けなければ `InitialConditionFailed` で止まり、ソルバが微分状態を動かした場合も止まります。以前は、解けないと微分状態も動かして続け、`GUILDA:ODEsolver:InitialConditionRelaxed` を警告するだけでした(IEEJ WEST10 の B003 の地絡で回転子角が最大 2.16 rad 跳んでいました)。この警告と緩めた再計算は `8bd906c`(`fix/ode-initial-condition-jump`、統合は `bf7512b`)で削除しました。
+  - **初期条件の失敗の説明。** 区間の開始の初期条件が解けない場合は、これまでどおり `flag = -1` で `output.exception` が `GUILDA:SolverODE:InitialConditionFailed` です。`output.message` が理由と対処を示すようになりました。よくある原因は、故障で供給できなくなる定電力負荷(`"load-power"`)です。その負荷を `"load-impedance"` にするか、別の母線を故障させてください。同じ故障が定インピーダンス負荷なら完走することをテストで確認しています。
+  - **区間の開始では微分状態を動かしません。** 区間の境界で微分状態はそのまま引き継ぎ、代数変数だけを新しい区間の網で解き直します(解析的なヤコビアンによるニュートン法。`decic` とソルバ自身の初期条件の計算は使いません)。解けなければ `InitialConditionFailed` で止まり、ソルバが微分状態を動かした場合も止まります。以前は、解けないと微分状態も動かして続け、`GUILDA:SolverODE:InitialConditionRelaxed` を警告するだけでした(IEEJ WEST10 の B003 の地絡で回転子角が最大 2.16 rad 跳んでいました)。この警告と緩めた再計算は `8bd906c`(`fix/ode-initial-condition-jump`、統合は `bf7512b`)で削除しました。
   - An event whose `TimeSpan` lies entirely outside the simulation time
-    has no effect and warns `GUILDA:ODEevent:OutsideTimeSpan` (before:
+    has no effect and warns `GUILDA:Scenario:OutsideTimeSpan` (before:
     ignored silently).
   - **A fault, trip or input needs a duration.** A scalar `TimeSpan` or
-    `[t, t]` stops with `GUILDA:ODEevent:ZeroLengthTimeSpan` before the
+    `[t, t]` stops with `GUILDA:Scenario:ZeroLengthTimeSpan` before the
     integration (before: the event lasted until the next phase boundary, so
     it depended on unrelated events). Give `[t_start, t_end]`. An offset alone
     may still use one time.
@@ -670,7 +672,7 @@ Option names:
 
 | v3 | v4 |
 |----|----|
-| `[sys, lin] = net.get_sys(NonUnit=n, Algorithm=a)` | `sys = net.get_sys(Algorithm=a)`; `[sys, flag, output] = ...`, `output.result` is the `LTIresult` |
+| `[sys, lin] = net.get_sys(NonUnit=n, Algorithm=a)` | `sys = net.get_sys(Algorithm=a)`; `[sys, flag, output] = ...`, `output.result` is the `ResultLIN` |
 | `lin = odeLinearizer(net, n, Algorithm=a); sys = lin.get_sys` | `res = net.linearize(); sys = res.get_ss(a)` |
 | `lin.Kxx`, `lin.Kxv`, `lin.Kvx`, `lin.Kvv`, `lin.get_DAE` | `res.rm_Axx`, `rm_Axv`, `rm_Bx`, `rm_Avx`, `rm_Avv`, `rm_Bv`, `rm_E` (unreduced DAE in the order of `res.tab_variable`) |
 | – | `net.linearize(Point=x)` or `Point={sim, t}`: linearize away from the equilibrium |
@@ -689,7 +691,7 @@ Option names:
 - `flag` is true when all Jacobian entries are finite and `Avv` is
   invertible; `output` has `message`, `str_issue`, `l_equilibrium`, `n_x`,
   `n_v`, `n_u`, `rcond_Avv`, `r_residual`, `sv_faultBus`. A `Point` or a model
-  that is not finite stops with `GUILDA:LTIsolver:PointNotFinite` or
+  that is not finite stops with `GUILDA:SolverLIN:PointNotFinite` or
   `JacobianNotFinite`.
 - Default outputs of `get_ss` (as v3): `"Kron"` the states, without output
   names; `"DAE"` the dynamic states; `"Feedback"` the states without those of
@@ -710,8 +712,8 @@ Option names:
   | ID | 条件 | 対応 |
   |----|------|------|
   | `GUILDA:Bus:NoI2V`, `GUILDA:Component:NoI2V` | `port="I2V"` で `D` が正則でない(機器のない母線、`P = Q = 0` の負荷など。以前は NaN を返した) | `port="V2I"` を使う |
-  | `GUILDA:LTIresult:SingularAvv` | Kron / Feedback で `Avv` が正則でない(`rcond < 1e-14`)。`net.linearize` は止まらず `flag = false`、`output.str_issue = "SingularAvv"` | `output.message` が示す母線電圧を確認する。`DAE` は計算できる |
-  | `GUILDA:LTIresult:NoUnitBus` | Feedback で状態を持つ機器がない | Kron か DAE を使う |
+  | `GUILDA:ResultLIN:SingularAvv` | Kron / Feedback で `Avv` が正則でない(`rcond < 1e-14`)。`net.linearize` は止まらず `flag = false`、`output.str_issue = "SingularAvv"` | `output.message` が示す母線電圧を確認する。`DAE` は計算できる |
+  | `GUILDA:ResultLIN:NoUnitBus` | Feedback で状態を持つ機器がない | Kron か DAE を使う |
   | `GUILDA:GlobalController:GlobalControllerPort` | `gc.get_sys` で機器に制御器の入出力がない | 対象の機器を直す |
 - `NonUnit` は廃止しました (Issue #118)。機器のない母線と、状態がなく I2V 形式を
   持たない母線は自動で判定します。`Bus.l_isNonUnit` も削除しています。互換の扱いは
@@ -735,8 +737,8 @@ Option names:
   adds to the internal signal it drives (as `u_mac` does). `full` is
   ignored. The `I2V` outputs `y` now account for V being an output, and
   the outputs of a component with controllers keep their tags.
-- Removed: `LTIsolver(net, NonUnit, Name, Value)` stops with
-  `GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor` (error); `LTIsolver()`
+- Removed: `SolverLIN(net, NonUnit, Name, Value)` stops with
+  `GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor` (error); `SolverLIN()`
   takes no arguments.
 
 ### 1.13 Network files (CSV, MATPOWER)
@@ -861,8 +863,8 @@ there.
 | `net.initialize("methods", "optimal powerflow")` | `net.initialize(Method="OPF")` |
 | `net.initialize("methods", "calculate from Xequilibrium")` | `net.initialize(Method="equilibrium")` |
 
-- `result` is a `PFCresult` (`"powerflow"`, and `"equilibrium"` with
-  `str_solver = "equilibrium"` and no branch flows) or an `OPFresult`
+- `result` is a `ResultPF` (`"powerflow"`, and `"equilibrium"` with
+  `str_solver = "equilibrium"` and no branch flows) or a `ResultOPF`
   (`"OPF"`, which runs AC OPF).
 - Other Name-Value options go unchanged to `calculate_powerflow` or
   `optimize_powerflow` (e.g. `net.initialize(Method="OPF",
@@ -956,7 +958,7 @@ there.
   - 返り値は `Scenario` です。`ev.TimeSpan` などの旧プロパティはなく、`ev.tab_disturbance` の列として読めます(変更はできません)。
   - タグ、状態、入力の検査は作成の時点で行います(以前は `simulate` の時点)。
   - 同じ系統で同じタグの `ODEevent` を作り直すと、前のもの(`ODEevent` で作ったもの)は系統から外れ、その系統で実行できなくなります(ループでシナリオが溜まらないため)。`add_scenario` で追加した同じタグのシナリオがあるときは `GUILDA:PowerNetwork:ScenarioTagInUse` で止まります。
-- **内部。** 区間ごとのデータ(有効な外乱、地絡、解列、開放ブランチ、オフセット、入力関数)は `solve` の冒頭で `Scenario.compile` が 1 回だけ作ります(EV5)。モデルの作業データを書くのは `ODEsolver` だけです。結果は以前の `ODEevent` と同じ(`rv_t`, `rm_variable`, `rm_I`, `output.phases` が代表的な地絡、解列、オフセット、入力、開放の例でビット単位で一致)です。
+- **内部。** 区間ごとのデータ(有効な外乱、地絡、解列、開放ブランチ、オフセット、入力関数)は `solve` の冒頭で `Scenario.compile` が 1 回だけ作ります(EV5)。モデルの作業データを書くのは `SolverODE` だけです。結果は以前の `ODEevent` と同じ(`rv_t`, `rm_variable`, `rm_I`, `output.phases` が代表的な地絡、解列、オフセット、入力、開放の例でビット単位で一致)です。
 
 ---
 
@@ -984,7 +986,7 @@ there.
   ```
 
   A missing Jacobian falls back to a numerical one (`Jacobi_*_num`).
-  `get_sys` and `ODEsolver` use the same `f_Jacobi*` handles.
+  `get_sys` and `SolverODE` use the same `f_Jacobi*` handles.
 - **The old `getJacobiAxx` / `getJacobiBxu` / … style is no longer used.**
   Per-matrix files are ignored; port them to the three `Jacobi_*` methods.
 - **Frequency inside a model:** read `obj.get_Hz()`, never a fixed `60` or a
@@ -1009,8 +1011,8 @@ there.
   it adds (see 1.6). `LocalController.get_dx_algebraic` returns
   `[DAEvec, y]`; the third output `y_name` is removed (the names are `sv_y`).
 - **Working data of a simulation.** `LocalController.l_isConnect` is removed.
-  `Component.rv_Xoffset` / `rv_Uoffset` can only be written by `ODEsolver`
-  and `ODEevent`, and are empty after a run. `rv_Uoffset` is also empty
+  `Component.rv_Xoffset` / `rv_Uoffset` can only be written by `SolverODE`,
+  and are empty after a run. `rv_Uoffset` is also empty
   during a run for a component without an input event, so do not call it
   from a model.
 - **モデルへの要求の明文化。**
@@ -1081,11 +1083,11 @@ and simulation results in the order of `get_variable_map`. Open follow-ups
 | `build_opf_problem("methods", m)` | `GUILDA:Deprecated:BuildOpfProblemMethods` | warning; becomes `Method=m` |
 | 6 outputs of `optimize_powerflow` | `GUILDA:Deprecated:OptimizePowerflowTuple` | warning; returns `{tab_bus, tab_cub, flag, output, lambda, OPFprob}` |
 | `Continuation_Power_Flow(net, opt)` | `GUILDA:Deprecated:ContinuationPowerFlowFunction` | warning; returns a `ContinuationPowerFlowV3` (v3 properties, `solve`, `CPF_Result`) |
-| `CPFsolver(net, Name, Value)` | `GUILDA:v3_cpf_constructor:ContinuationPowerFlowConstructor` | error |
+| `SolverCPF(net, Name, Value)` | `GUILDA:v3_cpf_constructor:ContinuationPowerFlowConstructor` | error |
 | set `net.solver_ODE.Reporter` | `GUILDA:Deprecated:SimulatorReporter` | warning; sets `Progress` (reading `Reporter` returns `Progress`, no warning) |
 | `simulate(..., "Reporter", v)` / `"RelativeTolerance", v` | `GUILDA:Deprecated:SimulateOptionName` | warning; becomes `Progress` / `Tolerance` |
 | user settings key `TimeSimulation.Reporter` (`@GUILDA/user/DefaultTimeSimulation.json`) | – | no warning; read as `Progress` (an existing `Progress` wins); the startup writes the file back with the new key |
-| `LTIsolver(net, NonUnit, Name, Value)` | `GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor` | error |
+| `SolverLIN(net, NonUnit, Name, Value)` | `GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor` | error |
 | `net.linearize` / `net.get_sys` の `NonUnit=n` | `GUILDA:Deprecated:LinearizeNonUnit` | 警告。状態のない母線は無視。状態のある母線は `Feedback` で `GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus`、存在しない母線は `GUILDA:v3_nonunit_range:NonUnit` のエラー |
 | `net.solver_LIN.NonUnit` への空でない値の代入 | `GUILDA:Deprecated:SolverLinNonUnit` | 警告(`.mat` の読み込みでも代入されるので、空の値では出さない)。値は Hidden のプロパティに残り、以後の実行で `NonUnit=n` と同じ扱い(呼び出しの指定が優先)。読み出しは保存した値を返し、警告なし |
 | `initialize("methods", m)` | `GUILDA:Deprecated:InitializeMethods` | warning; becomes `Method=m` |
@@ -1119,17 +1121,17 @@ lists all of them:
 | `@PowerNetwork/build_opf_problem.m` | `v3_opf_args(varargin, "BuildOpfProblemMethods")` | `methods` option |
 | `@PowerNetwork/initialize.m` | `v3_initialize_args(varargin)` | `methods` option and old values |
 | `@PowerNetwork/simulate.m` | `v3_simulate_args(c_nv)` | option names `Reporter`, `RelativeTolerance` |
-| `_auxiliary/@ODEsolver/ODEsolver.m` | `Reporter` property (Dependent, Hidden) | old name of `Progress` |
-| `_auxiliary/@ODEsolver/ODEsolver.m` | `get.Reporter` | returns `Progress` |
-| `_auxiliary/@ODEsolver/ODEsolver.m` | `set.Reporter` | `v3_ode_reporter`: warns, sets `Progress` |
-| `_auxiliary/@CPFsolver/CPFsolver.m` | `v3_cpf_constructor(varargin)` | rejects v3 constructor arguments |
-| `_auxiliary/@LTIsolver/LTIsolver.m` | `v3_linearizer_constructor(varargin)` | rejects v3 constructor arguments |
-| `_auxiliary/@LTIsolver/LTIsolver.m` | `NonUnit` property (Hidden) | 廃止した設定の保存先 |
-| `_auxiliary/@LTIsolver/LTIsolver.m` | `set.NonUnit` | `v3_solver_nonunit`: 警告して保存 |
-| `_auxiliary/@LTIsolver/LTIsolver.m` | `get_options`: `v3_linearize_args(nv, obj.NonUnit)` | `NonUnit` を警告して取り除く |
-| `_auxiliary/@LTIsolver/LTIsolver.m` | `get_options`: `s_options.NonUnit = rv_nonUnit` | 指定があるときだけ結果の `options` に残す |
-| `_auxiliary/@LTIsolver/solve.m` | `v3_nonunit_range(s_options, n_bus)` | 存在しない母線のエラー |
-| `_auxiliary/@LTIresult/get_ss.m` | `v3_nonunit_dynamic(obj.options, s.c_sysBus)` | 状態のある母線のエラー |
+| `_auxiliary/@SolverODE/SolverODE.m` | `Reporter` property (Dependent, Hidden) | old name of `Progress` |
+| `_auxiliary/@SolverODE/SolverODE.m` | `get.Reporter` | returns `Progress` |
+| `_auxiliary/@SolverODE/SolverODE.m` | `set.Reporter` | `v3_ode_reporter`: warns, sets `Progress` |
+| `_auxiliary/@SolverCPF/SolverCPF.m` | `v3_cpf_constructor(varargin)` | rejects v3 constructor arguments |
+| `_auxiliary/@SolverLIN/SolverLIN.m` | `v3_linearizer_constructor(varargin)` | rejects v3 constructor arguments |
+| `_auxiliary/@SolverLIN/SolverLIN.m` | `NonUnit` property (Hidden) | 廃止した設定の保存先 |
+| `_auxiliary/@SolverLIN/SolverLIN.m` | `set.NonUnit` | `v3_solver_nonunit`: 警告して保存 |
+| `_auxiliary/@SolverLIN/SolverLIN.m` | `get_options`: `v3_linearize_args(nv, obj.NonUnit)` | `NonUnit` を警告して取り除く |
+| `_auxiliary/@SolverLIN/SolverLIN.m` | `get_options`: `s_options.NonUnit = rv_nonUnit` | 指定があるときだけ結果の `options` に残す |
+| `_auxiliary/@SolverLIN/solve.m` | `v3_nonunit_range(s_options, n_bus)` | 存在しない母線のエラー |
+| `_auxiliary/@ResultLIN/get_ss.m` | `v3_nonunit_dynamic(obj.options, s.c_sysBus)` | 状態のある母線のエラー |
 | `@GUILDA/private/get_config.m` | `v3_user_config(field, ...)` | user settings key `Reporter` → `Progress` |
 
 `DebugScript.test_F10_api_foundation` checks this list and that core code
@@ -1157,10 +1159,10 @@ settings (an untagged line, needed by the `get_config` hook).
 | `v3_powerflow_args.m` | `calculate_powerflow` positional mode and `export` / `filename` |
 | `v3_opf_args.m` | `methods` option of `optimize_powerflow` and `build_opf_problem` |
 | `v3_optimize_powerflow.m` | v4 outputs → the v3 6-output tuple |
-| `v3_cpf_constructor.m` | error for `CPFsolver(net, ...)` |
+| `v3_cpf_constructor.m` | error for `SolverCPF(net, ...)` |
 | `v3_simulate_args.m` | `simulate` option names `Reporter`, `RelativeTolerance` |
 | `v3_ode_reporter.m` | `solver_ODE.Reporter` setter |
-| `v3_linearizer_constructor.m` | error for `LTIsolver(net, ...)` |
+| `v3_linearizer_constructor.m` | error for `SolverLIN(net, ...)` |
 | `v3_linearize_args.m` | `linearize` / `get_sys` の `NonUnit` |
 | `v3_solver_nonunit.m` | `solver_LIN.NonUnit` の setter |
 | `v3_nonunit_range.m` | `NonUnit` の存在しない母線のエラー |
@@ -1213,9 +1215,9 @@ selects it only for 6 outputs, so 4 or 5 outputs are an error.
    - F4 "Legacy six-output form", "Deprecated methods option", and the
      `methods` part of "Build OPF problem with Method and deprecated
      methods option"
-   - F5 "COMPAT v3 Continuation_Power_Flow and CPFsolver constructor"
+   - F5 "COMPAT v3 Continuation_Power_Flow and SolverCPF constructor"
    - F6 "Deprecated Reporter and option names still work"
-   - F7 "LTIsolver constructor of v3 names the remedy",
+   - F7 "SolverLIN constructor of v3 names the remedy",
      "Deprecated NonUnit option warns and ignores buses without states",
      "Deprecated NonUnit naming a bus with states is rejected",
      "Deprecated NonUnit naming a missing bus is rejected",
@@ -1224,7 +1226,7 @@ selects it only for 6 outputs, so 4 or 5 outputs are an error.
    - F9 the `v3_user_config` asserts in "GUILDA config reads settings"
    - F10 "Legacy output …", "COMPAT hook helper for add_bus baseMVA",
      "COMPAT hooks are single tagged lines …"
-4. `ODEsolver` reads its default `Progress` from the `Progress` key of
+4. `SolverODE` reads its default `Progress` from the `Progress` key of
    `@GUILDA/config/DefaultTimeSimulation.json`; that is the config key,
    not compat code, and stays.
 
@@ -1237,17 +1239,17 @@ selects it only for 6 outputs, so 4 or 5 outputs are an error.
 ### Result classes
 
 A result of power flow, OPF, CPF, simulation or linearization is a subclass of
-`AnalysisResult` (`_GUILDAsystem/_auxiliary/@AnalysisResult/`), in
+`ResultBase` (`_GUILDAsystem/_auxiliary/@ResultBase/`), in
 `_auxiliary/@<Name>Result/`.
 
 ```matlab
-classdef PFCresult < AnalysisResult
+classdef ResultPF < ResultBase
     properties (SetAccess=private)
         tab_bus            % computed results only
     end
     methods
-        function obj = PFCresult(net, solver, options, flag, output, t0, tab_bus)
-            obj@AnalysisResult(net, solver, options, flag, output, t0);
+        function obj = ResultPF(net, solver, options, flag, output, t0, tab_bus)
+            obj@ResultBase(net, solver, options, flag, output, t0);
             obj.tab_bus = tab_bus;
         end
         function h = Plot(obj, opt)     % override only what the class supports
@@ -1264,7 +1266,7 @@ end
 - Store only computed values and the settings used. Never copy model data
   (parameters, V/I owned by buses and components).
 - `Plot` and `Export` are the result's methods. One that a class does not
-  override stops with `GUILDA:AnalysisResult:Unsupported`.
+  override stops with `GUILDA:ResultBase:Unsupported`.
 
 ### Name-Value options
 

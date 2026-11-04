@@ -1,7 +1,7 @@
 function DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec) 
 % Add the equations of the component and its local controllers to the DAE residual.
 %
-% Called by ODEsolver at each evaluation of the network DAE: the state derivatives,
+% Called by SolverODE at each evaluation of the network DAE: the state derivatives,
 % the input equations and the current injected into the bus are added to the entries
 % of `DAEvec` that belong to the component (iv_odeX, iv_odeU) and its bus.
 %
@@ -9,7 +9,7 @@ function DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)
 %
 % - `DAEvec` — Updated DAE residual of the network.
 %
-% See also ODEsolver, Component.fcn_dx, Component.fcn_I
+% See also SolverODE, Component.fcn_dx, Component.fcn_I
 
     % Called directly, the handles may not be built yet. Only the own state is read here:
     % in a simulation, the solver has already brought every layer up to date.
