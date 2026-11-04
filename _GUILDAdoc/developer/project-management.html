@@ -14,6 +14,7 @@
     .pm-xy .is-x { color: var(--dg-err); }
     .pm-xy .is-y { color: var(--dg-ok); }
     .pm-xy .is-dot { color: var(--dg-muted); }
+    .pm-rules small { display: block; margin-top: var(--dg-s1); color: var(--dg-muted); }
 
     /* Definition of Done checklist */
     .pm-dod-top { display: flex; flex-wrap: wrap; align-items: center; gap: var(--dg-s4); margin: var(--dg-s4) 0 var(--dg-s2); }
@@ -278,7 +279,7 @@
     <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg><p><span lang="en">Update both languages in the same commit. A change to one language alone leaves the two languages saying different things.</span><span lang="ja">両方の言語を同じコミットで更新。片方だけの変更では、2 つの言語で内容が食い違う。</span></p></div>
 
     <h3 id="writing-rules"><span lang="en">Writing rules</span><span lang="ja">記述の規則</span></h3>
-    <ul class="dg-list is-plain">
+    <ul class="dg-list is-plain pm-rules">
       <li><div><span class="dg-item-title"><span lang="en">Timeless</span><span lang="ja">時点に依存しない記述</span></span><span lang="en">Write for a reader who starts with the current GUILDA version. No wording that needs knowledge of older versions: “v3”, “v4”, “no longer”, “renamed”, “formerly”. History goes only in the <a href="#update-log">Update Log</a> data.<small>Fine: format versions of external files, math symbols, and a deprecation rule (how a deprecated name keeps working) that does not narrate past versions.</small></span><span lang="ja">現在の GUILDA から使い始める読者向けに記述。過去のバージョンの知識を前提とする表現（「v3」「v4」「旧」「従来」「以前」「廃止」など）は不可。経緯は <a href="#update-log">Update Log</a> のデータにだけ記載。<small>可: 外部ファイルの形式のバージョン、数式の記号、過去を語らない非推奨の規則（非推奨の名前を動かし続ける仕組み）。</small></span></div></li>
       <li><div><span class="dg-item-title"><span lang="en">Terse</span><span lang="ja">簡潔な記述</span></span><span lang="en">Japanese: 体言止め and bullet points rather than です・ます prose, so the point is caught at a glance. English equally terse; bullets where the structure changes.</span><span lang="ja">日本語は です・ます の文章より体言止めと箇条書き。要点が一目でわかる形に。英語も同じく簡潔に、構造が変わる箇所は箇条書き。</span></div></li>
       <li><div><span class="dg-item-title"><span lang="en">Two-column layouts</span><span lang="ja">2 列のレイアウト</span></span><span lang="en">If a two-column block wraps into many lines, first turn it into bullets; if still too long, use one column with the items stacked.</span><span lang="ja">改行の多い 2 列のブロックは、まず箇条書きに。それでも長ければ 1 列にして項目を縦に並べる。</span></div></li>
