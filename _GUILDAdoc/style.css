@@ -306,6 +306,21 @@ body.developer-layout main { max-width: 900px; width: 95%; margin: 32px auto; ba
 .developer-back-button:hover { border-color: var(--brand); color: var(--brand); }
 .developer-layout .page-lead { color: var(--muted); font-size: 1.05rem; }
 
+/* Japanese/English switch (doc-lang.js). Translatable content is written as sibling
+   elements with lang="en" and lang="ja"; only the active language is shown.
+   Without the script, English is shown. */
+html:not([data-lang]) body [lang="ja"],
+html[data-lang="en"] body [lang="ja"],
+html[data-lang="ja"] body [lang="en"] { display: none !important; }
+
+.doc-lang-toggle { position: fixed; top: 10px; right: 12px; z-index: 1100; display: flex; align-items: center; gap: 2px; padding: 2px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius); box-shadow: 0 1px 3px rgba(27, 33, 39, 0.08); font-family: var(--font-sans); font-size: 0.8rem; line-height: 1; }
+.doc-lang-toggle button { min-height: 28px; padding: 4px 9px; border: none; border-radius: 2px; background: transparent; color: var(--muted); font: inherit; font-weight: 600; cursor: pointer; }
+.doc-lang-toggle button:hover { color: var(--ink); }
+.doc-lang-toggle button[aria-pressed="true"] { background: var(--brand); color: var(--surface); }
+.doc-lang-toggle button:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+.doc-lang-sep { color: var(--line-strong); }
+@media print { .doc-lang-toggle { display: none; } }
+
 /* Supported Analyses: a plain list of line pictograms (1.5px strokes, ink and grey, one brand-blue element) */
 .analysis-list { list-style: none; margin: 16px 0 8px; padding: 0; border-top: 1px solid var(--line); }
 .analysis-item { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 20px; align-items: center; padding: 16px 4px; border-bottom: 1px solid var(--line); }
