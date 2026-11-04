@@ -86,19 +86,9 @@ classdef IEEJ_WEST10 < PowerNetwork
 %   modes are then of 1.5 s at peak (damping ratio 0.009) and of 2.0 s at night, which
 %   is slightly unstable (real part +0.0013; the 2.1 s night mode has -0.12 without
 %   governors). The report gives periods of about 3 s (peak) and 2.5 s (night).
-% - The stability results of table 4.5 are mostly not reproduced (scenario/run_table4_5),
-%   and the cause is not identified. 9 of the 26 cases agree, with and without governors:
-%   at peak only the two out-of-step cases A and L (the report has the other 11 stable,
-%   G8 with a growing swing); at night A and the cases E to I, with governors also the G8
-%   trip and without them J. The other cases go out of step, mostly within 3 to 8 s (E at
-%   peak after a growing swing of about 1.5 s), or stop the solver (see run_table4_5).
-%   The swing periods of the stable night cases are mostly 2.0 to 2.4 s (the report: 2.2
-%   to 2.5 s). In a separate check the results depended strongly on `Tq_pp`.
-%
-% Scenarios: the folder `scenario` holds the cases of table 4.5 (`table4_5.csv`: the
-% fault bus, the opened circuit, the timing and the verdict of the report) and
-% `run_table4_5`, which simulates them and compares; see its help for the criterion and
-% how to run it (MATLAB does not run files inside a class folder, so it runs from a copy).
+% - The transient stability cases of table 4.5 of the report are compared in
+%   `_GUILDAverification/IEEJ_WEST10/` (scenarios, verdicts of the report and the
+%   comparison script); see its README.md for the criterion and the latest agreement.
 %
 % Simulation: runs without an event stay at the equilibrium (both sections, with and
 % without governors, over 60 s), and a fault at `B003` at peak completes with the default
