@@ -1,0 +1,26 @@
+function remove_scenario(obj, str_tag)
+% Remove simulation scenarios by tag.
+%
+% The removed scenarios no longer refer to this network (sc.a_PowerNetwork is empty); add
+% them to a network again with add_scenario. The equilibrium does not become stale.
+%
+% <@Examples>
+% ```matlab
+% net.remove_scenario("case1")
+% ```
+%
+% See also PowerNetwork.add_scenario, Scenario
+    arguments
+        obj
+        str_tag (1,:) string   % Tags of the scenarios to remove.
+    end
+    sv_have = string(cellfun(@(s) s.str_tag, obj.a_Scenario, 'UniformOutput', false));
+    sv_missing = str_tag(~ismember(str_tag, sv_have));
+    if ~isempty(sv_missing)
+        error(msg("GUILDA:PowerNetwork:ScenarioNotFound", char(join(sv_missing, "', '")), char(obj.str_tag)));
+    end
+    lv_rm = ismember(sv_have, str_tag);
+    a_rm  = obj.a_Scenario(lv_rm);
+    obj.a_Scenario = obj.a_Scenario(~lv_rm);
+    cellfun(@(s) s.set_parent([]), a_rm);
+end

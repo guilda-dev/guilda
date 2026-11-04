@@ -20,15 +20,17 @@ classdef ODEresult < AnalysisResult
 % ```matlab
 % net = network.IEEE14bus();
 % net.initialize();
-% ev = ODEevent("fault", net, "TimeSpan", [1, 1.05], "FaultBus", "B008");
-% [result, flag] = net.simulate([0, 10], ev);
+% sc = Scenario("fault");
+% sc.add_fault("B008", [1, 1.05]);
+% net.add_scenario(sc);
+% [result, flag] = net.simulate([0, 10], sc);
 % r = result.odeResults;               % r.t, r.Bus(i).V, r.Bus(i).Component(j).X, ...
 % x = result.get_point(2);             % all variables at t = 2, in variable-map order
 % result.Plot(Quantity="omega");       % a state of the components
 % result.Export("sim.mat");
 % ```
 %
-% See also ODEsolver, ODEevent, AnalysisResult, PowerNetwork.get_variable_map
+% See also ODEsolver, Scenario, AnalysisResult, PowerNetwork.get_variable_map
 
     properties (SetAccess=private) % Result
         % [s] Output times, ascending.
@@ -101,7 +103,7 @@ classdef ODEresult < AnalysisResult
                 flag            = false % Success or convergence flag; see AnalysisResult.
                 output   struct = struct() % Solver details; see AnalysisResult.
                 elapsed         = NaN % [s] Elapsed time or tic value; see AnalysisResult.
-                c_phase  cell   = {} % Result of each phase (ODEevent.Event2State: t, x, i).
+                c_phase  cell   = {} % Result of each phase (ODEsolver.phase_result: t, x, i).
             end
             arguments (Output)
                 obj % The result object.
@@ -155,7 +157,8 @@ classdef ODEresult < AnalysisResult
         %
         % <@Examples>
         % ```matlab
-        % sim = net.simulate([0,5], ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008"));
+        % sc = Scenario("fault");  sc.add_fault("B008", [1,1.05]);  net.add_scenario(sc);
+        % sim = net.simulate([0,5], sc);
         % x  = sim.get_point(2);                    % order of net.get_variable_map()
         % x0 = sim.get_point(1.05, Side="before");  % end of the fault
         % res = net.linearize(Point={sim, 2});      % same point as Point=x
