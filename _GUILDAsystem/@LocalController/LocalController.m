@@ -12,6 +12,21 @@ classdef LocalController < PowerSystemModel
 % input event or a global controller on such an input of the component adds to them.
 % The parent voltage V is available to it.
 %
+% Role in the model:
+%
+% - Owns its parameters, its equations (through its subclass), its equilibrium and at most
+%   one nested controller (the PSS under an AVR). Its parent is a component, or the AVR
+%   for a PSS. A PSS observes the same component as its AVR, and its output Vpss drives
+%   the AVR input of that name.
+% - Gives no current to the network (no `fcn_I`). It receives the parent voltage V in its
+%   functions, but does not own the voltage or the frequency, and is not a child of the
+%   bus.
+% - Created with its constructor and attached with `Component.add_local_controller`, which
+%   calls `set_parent`; that resolves the observed inputs and marks the handles stale. A
+%   controller object attaches to one parent at a time.
+% - Differs from `Component` on purpose: no `fcn_I`, the output function is `fcn_y`, and
+%   the Jacobians are required. Inputs named X or Y are not allowed.
+%
 % Subclasses in the `controller` package define the static model functions (`fcn_dx`,
 % `fcn_y`, `fcn_Mass`), their Jacobians and the variable names. Controllers are attached
 % with `Component.add_local_controller`: the key says where (an "avr" or "local"
@@ -73,8 +88,11 @@ classdef LocalController < PowerSystemModel
 %% Parameter    
     properties(SetAccess=protected) % Layer Structure
         a_Component                            % Parent: the component, or the AVR for a PSS ([] when detached).
-        a_LocalController = cell(0,1)          % Nested controller (the PSS under an AVR).
+        a_LocalController = cell(0,1)          % Nested controller (the PSS under an AVR), 0x1 or 1x1. <@Stale> equilibrium
     end
+
+    % Handle cache @(t,x,V,I,u) with param and omega0 bound (set_odefcn, called by check_edit).
+    % A local controller has no f_I.
     properties(SetAccess=protected) % Dynamics
         f_Mass                                 % Mass matrix function @(t,x,V,I,u) with the parameters bound.
         f_dx                                   % State equation function @(t,x,V,I,u) with the parameters bound.
@@ -113,8 +131,8 @@ classdef LocalController < PowerSystemModel
         sv_reserved = ["Xall","Yall"]
     end
     properties(SetAccess=protected) % Steady State
-        rv_Xequilibrium (:,1) double = zeros(0,1)   % State equilibrium.
-        rv_Uequilibrium (:,1) double = zeros(0,1)   % Input equilibrium.
+        rv_Xequilibrium (:,1) double = zeros(0,1)   % State equilibrium (set by get_equilibrium of the subclass).
+        rv_Uequilibrium (:,1) double = zeros(0,1)   % Input equilibrium (set by get_equilibrium of the subclass).
     end    
 
     properties(Dependent) % Steady State
@@ -126,7 +144,7 @@ classdef LocalController < PowerSystemModel
         para_dynamics                          % Parameter object of tab_parameter.dynamics.
     end
     properties(Dependent) % Parameter
-        tab_parameter                          % Parameter table of the controller.
+        tab_parameter                          % Parameter table of the controller (dynamics); the columns sv_para are passed to the model functions as param. An edit makes the handles and the equilibrium stale.
     end
     properties(Dependent, Access=protected) % Layer Structure
         parent                                 % Layer Structure: the parent.
@@ -152,6 +170,8 @@ classdef LocalController < PowerSystemModel
             % attached to it (Component.add_local_controller checks them before the
             % attachment). sv_y by default; a controller whose outputs follow the component
             % (e.g. controller.local_LQR) overrides this.
+            %
+            % <@Group> Internal helpers
             sv = obj.sv_y;
         end
     end
@@ -159,18 +179,24 @@ classdef LocalController < PowerSystemModel
     methods (Access={?Component,?LocalController})
         function add_local_controller(obj,a_Controller)
             % Attach a nested controller (the PSS under an AVR; Component.add_local_controller).
+            %
+            % <@Group> Construction and attachment
             obj.a_LocalController = {a_Controller};
             obj.l_hasController = true;
         end
 
         function remove_local_controller(obj)
             % Detach the nested controller (Component.add_local_controller, when an AVR is replaced; Component.remove_local_controller)
+            %
+            % <@Group> Construction and attachment
             obj.a_LocalController = cell(0,1);
             obj.l_hasController = false;
         end
 
         function set_parent(obj,a_Component)
             % a_Component = [] detaches the controller (Component.add_local_controller)
+            %
+            % <@Group> Construction and attachment
             obj.a_Component = a_Component; 
             obj.resolve_observe();        % inputs read on the component (also of nested controllers)
             obj.mark_odefcn();        % the handles read the frequency of the parent's network
@@ -181,6 +207,8 @@ classdef LocalController < PowerSystemModel
             % the observed component (iv_obsY / iv_obsX), for this controller and the
             % controllers nested in it. An input name found in both sv_y and sv_x is read
             % from sv_y. Without a component, the inputs stay as defined.
+            %
+            % <@Group> Construction and attachment
             if isempty(obj.sv_uRequest)
                 obj.sv_uRequest = obj.sv_u;
             end
@@ -233,17 +261,23 @@ classdef LocalController < PowerSystemModel
             % Called by resolve_observe with the observed component before the inputs
             % are resolved: a controller whose ports depend on the component (e.g. the
             % inputs of the component it drives) sets them here. Does nothing by default.
+            %
+            % <@Group> Hooks for subclasses
         end
 
         function set_inputs(obj, sv_name)
             % Set the input names sv_u after "Xall" / "Yall" are expanded. A controller that
             % uses "Xall" or "Yall" in sv_u overrides this (sv_u is defined by the subclass).
+            %
+            % <@Group> Hooks for subclasses
             error(msg("GUILDA:LocalController:ReservedInputNoOverride", class(obj)))
         end
 
         function comp = observed_component(obj)
             % The component the controller observes: its parent, or for a nested
             % controller (e.g. a PSS under an AVR) the component above them ([] if none)
+            %
+            % <@Group> Internal helpers
             comp = obj.a_Component;
             while isa(comp, "LocalController")
                 comp = comp.a_Component;
@@ -260,6 +294,8 @@ classdef LocalController < PowerSystemModel
             % Bind the parameters and the network frequency into the f_* function handles.
             % Called by check_edit when the handles are not up to date (str_odefcn "unset" or
             % "editted": a dynamics edit, a network Hz edit or an attach since the last build).
+            %
+            % <@Group> Called by analyses
             omega0 = obj.get_Hz();
             param = obj.tab_parameter.dynamics{:,obj.sv_para}.';
 
@@ -277,6 +313,8 @@ classdef LocalController < PowerSystemModel
             % Read the parent's (a Component, or an AVR for a PSS) equilibrium.
             % Kept out of the get methods: MATLAB reads the stored value when a
             % get method refers to its own property, even on another object.
+            %
+            % <@Group> Internal helpers
             if isempty(obj.a_Component)
                 val = zeros(0,1);
             else

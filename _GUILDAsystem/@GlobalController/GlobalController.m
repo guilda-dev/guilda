@@ -8,6 +8,21 @@ classdef GlobalController < PowerSystemModel
 % variable names. A global controller is built for a network and added with
 % `PowerNetwork.add_global_controller`.
 %
+% - Owns its parameters (one row per controlled unit), its equations (through its
+%   subclass) and its equilibrium. Its parent is the network.
+% - The components it acts on, `controlledUnits`, are associations fixed by its
+%   constructor, which receives the network only to look them up. While the controller is
+%   on the network, its units cannot be removed or replaced, nor their buses removed.
+% - Inputs `sv_u`: states of each controlled unit, matched by name in the `sv_x` of the
+%   unit. Outputs `sv_y`: added to the inputs of the same name in the `sv_u` of the unit.
+%   For example, `controller.agc.broadcast_PI_AGC` reads the speed state "omega" of each
+%   generator and adds to its input "Pmech".
+% - Unlike a `LocalController`: no port V or I (its functions receive [] or zeros(2,1),
+%   which they must not use), no nested controller, no observation by output name. It
+%   does not own its units and is not a child of any bus.
+% - Only the network sets and clears `a_PowerNetwork` (`PowerNetwork.add_global_controller`
+%   calls `set_parent`, which marks the handles stale).
+%
 % <@Examples>
 % ```matlab
 % net = network.IEEE14bus();
@@ -31,7 +46,8 @@ classdef GlobalController < PowerSystemModel
     methods (Abstract)
         % Return the state and input equilibria of the controller.
         %
-        % Called by PowerNetwork.initialize after the equilibria of the components are set.
+        % Returns x (nx x 1) and u (nu x 1). Takes no network values: PowerNetwork.initialize
+        % calls it before it sets the equilibria of the buses and components.
         [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj)
     end
     methods (Abstract, Static)        
@@ -43,7 +59,7 @@ classdef GlobalController < PowerSystemModel
         % param and the nominal frequency omega0 [Hz].
         dx = fcn_dx(t, x, V, I, u, param, omega0)
 
-        % Return the outputs of the controller.
+        % Return the outputs of the controller: one value per driven unit input, added to that input.
         y  = fcn_y(t, x, V, I, u, param, omega0)
 
         % Return the mass matrix of the state equation.
@@ -51,6 +67,8 @@ classdef GlobalController < PowerSystemModel
         % It must be constant: simulate calls it with empty t, x, V, I and u.
         M  = fcn_Mass(t, x, V, I, u, param, omega0)
     end       
+
+    % Handle cache @(t,x,V,I,u) with param and omega0 bound (set_odefcn, called by check_edit).
     properties(SetAccess=protected) % Dynamics
         f_Mass                                 % Mass matrix function @(t,x,V,I,u) with the parameters bound.
         f_dx                                   % State equation function @(t,x,V,I,u) with the parameters bound.
@@ -73,17 +91,17 @@ classdef GlobalController < PowerSystemModel
         rv_Xoffset = 0
         rv_Uoffset = @(t) 0
 
-        l_isConnect (1,1) logical = true       % false while a trip event names it (set by SolverODE); its output is zero
+        l_isConnect (1,1) logical = true       % False while an active trip of a scenario names the controller (set by SolverODE); its output is then zero.
     end        
     properties(SetAccess={?PowerNetwork}) % Steady State
-        rv_Xequilibrium (:,1) double = zeros(0,1)   % State equilibrium.
-        rv_Uequilibrium (:,1) double = zeros(0,1)   % Input equilibrium.
+        rv_Xequilibrium (:,1) double = zeros(0,1)   % State equilibrium (from get_equilibrium, set by PowerNetwork.initialize).
+        rv_Uequilibrium (:,1) double = zeros(0,1)   % Equilibrium of the observed states, one entry per input of each unit.
     end    
     properties(SetAccess=protected) % Parameter
         para_dynamics                          % Parameter object of tab_parameter.dynamics.
     end
     properties(Dependent) % Parameter
-        tab_parameter                          % Parameter table; one row per controlled unit.
+        tab_parameter                          % Parameter table (dynamics): one row per controlled unit (row names: the unit tags); the columns sv_para are passed as param. An edit makes the handles and the equilibrium stale.
     end
     properties(Dependent, Access=protected) % Layer Structure
         parent                                 % Layer Structure: the network.
@@ -143,6 +161,8 @@ classdef GlobalController < PowerSystemModel
             % error GUILDA:GlobalController:GlobalControllerPort.
             %
             % See also GlobalController.get_hessian, PowerNetwork.get_sys
+            %
+            % <@Group> Called by analyses
             arguments
                 obj                 
                 x        (:,1) double  = obj.rv_Xequilibrium   % States (default: the equilibrium).
@@ -203,6 +223,8 @@ classdef GlobalController < PowerSystemModel
             % Bind the parameters and the network frequency into the f_* function handles.
             % Called by check_edit when the handles are not up to date (str_odefcn "unset" or
             % "editted": a dynamics edit, a network Hz edit or an attach since the last build).
+            %
+            % <@Group> Called by analyses
             omega0 = obj.get_Hz();
             param = obj.tab_parameter.dynamics{:,obj.sv_para};
 
@@ -218,6 +240,8 @@ classdef GlobalController < PowerSystemModel
     methods (Access={?Component,?LocalController,?PowerNetwork})        
         function set_parent(obj,net)
             % net = [] detaches the controller (PowerNetwork.remove_global_controller)
+            %
+            % <@Group> Construction and attachment
             obj.a_PowerNetwork = net;
             obj.mark_odefcn();        % the handles read the frequency of the network
         end

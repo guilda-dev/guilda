@@ -120,6 +120,12 @@ See the quick reference [**[here]**](./NamingConventions.md).
 
 Many students from the Ishizaki Laboratory have also contributed to this project.
 
+## Third-party software
+GUILDA itself is licensed under the [MIT License](./LICENSE).
+The documentation site bundles [KaTeX](https://katex.org) to render math, unchanged, under its own licenses
+(KaTeX: MIT License; KaTeX fonts: SIL Open Font License 1.1).
+See [`_GUILDAdoc/vendor/README.md`](./_GUILDAdoc/vendor/README.md) for versions, sources, copyright holders and license files.
+
 
 
 <!-- <img src="https://github.com/guilda-dev/guilda/assets/54563775/20094d9b-22f5-4fb8-aff8-d80dc3cde31b" width="800">

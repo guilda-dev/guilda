@@ -33,6 +33,8 @@ function sct_scan = find_doc_classes(option)
 %             on the classdef line), Supers, Changed (differs from cache),
 %             Tracked (System/Object files and files under a User root;
 %             only these concern the database)
+%   Images  : Class, Path (absolute), Hash of each @Class/image.svg, the
+%             figure shown on the class page
 %   Tool    : signature of the documentation tools; a change forces a full
 %             rebuild of the database
     arguments
@@ -47,6 +49,7 @@ function sct_scan = find_doc_classes(option)
     sct_scan.Roots   = struct('Name', {}, 'Origin', {}, 'Path', {});
     sct_scan.Classes = empty_class_struct();
     sct_scan.Files   = empty_file_struct();
+    sct_scan.Images  = struct('Class', {}, 'Path', {}, 'Hash', {});
     sct_scan.Tool    = get_tool_signature(str_root);
 
     % System and Object
@@ -79,6 +82,21 @@ function sct_scan = find_doc_classes(option)
     sct_scan.Classes = sct_scan.Classes(sort(iv_unique));
     [~, iv_order] = sort(lower({sct_scan.Classes.Name}));
     sct_scan.Classes = sct_scan.Classes(iv_order);
+    sct_scan.Images = find_class_images(sct_scan.Classes);
+end
+
+function sct_images = find_class_images(sct_classes)
+    % image.svg next to the classdef file of an @Class folder.
+    sct_images = struct('Class', {}, 'Path', {}, 'Hash', {});
+    for i_class = 1:numel(sct_classes)
+        [str_dir, ~] = fileparts(sct_classes(i_class).File);
+        [~, str_dir_name] = fileparts(str_dir);
+        str_image = fullfile(str_dir, 'image.svg');
+        if startsWith(str_dir_name, '@') && isfile(str_image)
+            sct_images(end+1) = struct('Class', sct_classes(i_class).Name, 'Path', str_image, ...
+                'Hash', file_hash(read_bytes(str_image))); %#ok<AGROW>
+        end
+    end
 end
 
 function cell_path = get_source_path_folders(str_root, str_root_path)

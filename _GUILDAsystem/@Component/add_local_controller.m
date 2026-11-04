@@ -42,6 +42,8 @@ function add_local_controller(obj, varargin)
 % ```
 %
 % See also Component.remove_local_controller, LocalController, controller.avr.AVR_ST1, controller.pss.PSS1, controller.governor.IEEJ_LPT1, controller.local_LQR
+%
+% <@Group> Construction and editing
     arguments
         obj
     end

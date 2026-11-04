@@ -5,6 +5,8 @@ function [prob, x0, const, Vvar] = build_opf_problem(obj, prob, x0, const, Vvar,
 % components unless `l_includeComponent` is false.
 %
 % See also PowerNetwork.build_opf_problem, Component.build_opf_problem
+%
+% <@Group> Called by analyses
     arguments
         obj 
         prob  = optimproblem("Objective",struct("GenCost",0));   % optimproblem to extend.

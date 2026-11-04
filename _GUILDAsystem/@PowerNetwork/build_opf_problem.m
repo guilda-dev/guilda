@@ -17,6 +17,8 @@ function varargout = build_opf_problem(obj, varargin)
 % ```
 %
 % See also PowerNetwork.optimize_powerflow, Bus.build_opf_problem, Branch.build_opf_problem
+%
+% <@Group> OPF
     varargin = v3_opf_args(varargin, "BuildOpfProblemMethods");    % COMPAT(v3)
     [varargout{1:nargout}] = build_problem(obj, varargin{:});
 end

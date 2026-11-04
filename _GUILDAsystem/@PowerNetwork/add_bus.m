@@ -16,6 +16,8 @@ function bus = add_bus(obj, opt)
 % ```
 %
 % See also PowerNetwork.remove_bus, PowerNetwork.add_branch, Bus
+%
+% <@Group> Model building
     arguments
         obj 
         opt.Varg              (1,1) double = 0 /180*pi;   % [rad] Voltage angle setting used when the bus is the slack bus.

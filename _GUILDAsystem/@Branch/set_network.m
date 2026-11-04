@@ -2,6 +2,8 @@ function set_network(obj,a_PowerNetwork)
 % Set the network of the branch; [] detaches it.
 %
 % Called by PowerNetwork.add_branch, remove_branch and remove_bus.
+%
+% <@Group> Construction and editing
     arguments
         obj 
         a_PowerNetwork {mustBeScalarOrEmpty}   % PowerNetwork, or [] to detach.

@@ -10,6 +10,8 @@ function [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, Ii, obs, DAEvec)
 %
 % - `DAEvec` — Updated DAE residual of the network.
 % - `y` — Outputs of the controller, which drive the inputs of its parent of the same name.
+%
+% <@Group> Called by analyses
 
     % A controller attached after its component was brought up to date (see
     % Component.get_dx_algebraic)

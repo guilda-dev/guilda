@@ -5,6 +5,8 @@ function tab_PFset = get_pf_set(obj)
 % is NaN and "PQ" otherwise. P and Q are the sums over the components.
 %
 % See also Bus.str_bustype, PowerNetwork.calculate_powerflow
+%
+% <@Group> Called by analyses
     arguments (Output)
         tab_PFset   % One-row table: Type, Varg, V, P, Q, Varg0, V0 (NaN where the type does not set the value).
     end

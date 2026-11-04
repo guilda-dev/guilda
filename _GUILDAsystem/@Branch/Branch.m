@@ -1,11 +1,24 @@
 classdef Branch < PowerSystemModel
-% Abstract class of a branch of a power network, such as a transmission line or transformer.
+% Abstract class of a line or transformer between two buses, which computes its own 2x2 admittance matrix.
 %
-% A branch connects two buses (`a_Bus`, from and to). Its series and shunt parameters
-% (`tab_parameter.dynamics`: R, X, C, tap, phase) give the admittance matrix used by the
-% power flow, the OPF and the simulation; `tab_parameter.operation` holds the OPF limits
-% (Smax, Imax, Pmax, Qmax, Vargmax). Branches are created by `PowerNetwork.add_branch`;
-% subclasses in the `branch` package define the model (`get_admittance_matrix`).
+% The network sums the matrices of its branches into the bus admittance matrix used by the
+% power flow, the OPF and the simulation.
+%
+% - Owns R, X, C, tap, phase (`tab_parameter.dynamics`), its OPF flow limits
+%   (`tab_parameter.operation`: Smax, Imax, Pmax, Qmax, Vargmax) and drawing data, and
+%   decides how they form an admittance matrix (the subclass contract
+%   `get_admittance_matrix`).
+% - Refers to its two end buses (`a_Bus`, from and to), but is not their parent and does
+%   not own their voltages. The end voltages and currents it shows are derived from the
+%   buses. The order of `a_Bus` is the row and column order of the 2x2 matrix.
+% - Has no states and no function-handle cache. It takes part in the simulation only
+%   through the admittance matrix built when an analysis starts.
+% - Created only by `PowerNetwork.add_branch`; only the network sets and clears
+%   `a_PowerNetwork` and `a_Bus`. No dangling ends: `PowerNetwork.remove_bus` on a bus with
+%   branches stops unless RemoveBranches=true.
+%
+% Subclasses in the `branch` package define `key` (the type name of add_branch), `header`
+% (the tag prefix, "EL" for lines and "ET" for transformers) and `get_admittance_matrix`.
 %
 % <@Examples>
 % ```matlab
@@ -21,16 +34,19 @@ classdef Branch < PowerSystemModel
 %% Abstract Methods/Properties
     properties(Abstract, Constant)
         % Key that identifies the branch type, e.g. "pi" or "pi_transformer".
+        % It is the Type of PowerNetwork.add_branch; running GUILDA regenerates the key list of
+        % add_branch.
         key
 
-        % Prefix of the tags of branches of this type.
+        % Prefix of the tags of branches of this type, e.g. "EL" for lines and "ET" for transformers.
         header
     end
     methods(Abstract)
         % Return the 2x2 admittance matrix of the branch.
         %
         % The matrix maps the voltages of the end buses [V_from; V_to] to the currents
-        % injected into the branch at those ends, in per unit.
+        % injected into the branch at those ends, in per unit. It reads para_dynamics and
+        % must not read or change anything else.
         Ymat = get_admittance_matrix(obj)
     end
 
@@ -41,18 +57,32 @@ classdef Branch < PowerSystemModel
         % <@Type> PowerNetwork
         a_PowerNetwork 
 
-        % End buses of the branch {from; to}.
-        % <@Type> cell
+        % End buses of the branch {from; to}: the row and column order of the admittance matrix.
+        % <@Type> cell of Bus (2x1)
         a_Bus
 
         % OPF terms (Cost, Constraint, DefaultConstraint) set by set_opffcn.
         % reset_opffcn restores the defaults.
         % <@Type> struct
+        % <@Stale> nothing (logged)
         s_opffcn = opffcn.default()
    end
     properties(Dependent) % Parameter
 
-        % Parameter table of the branch: dynamics, operation and graph.
+        % Parameter table of the branch: dynamics, operation and graph; writing it writes the parameters.
+        %
+        % All values are per unit on the system base.
+        %
+        % - `dynamics`: R, X [pu], the series impedance; C [pu], the shunt susceptance (its
+        %   meaning depends on the subclass); tap, the off-nominal ratio; phase [rad], the phase
+        %   shift. An edit makes the equilibrium stale.
+        % - `operation`: OPF limits at both ends, Smax, Imax, Pmax, Qmax [pu] (default Inf), and
+        %   Vargmax [rad], the angle difference of the end buses (default pi/2). An edit makes
+        %   nothing stale.
+        % - `graph`: MidXaxis, MidYaxis, the intermediate points of the line in the diagram;
+        %   Marker, the line style. An edit makes nothing stale.
+        %
+        % Set by add_branch (R, X, C, Tap, Phase and the limits) or by writing the table.
         % <@Type> table
         tab_parameter
 
@@ -60,7 +90,7 @@ classdef Branch < PowerSystemModel
         % <@Type> double
         cv_Vequilibrium
 
-        % [pu] Currents injected into the branch at its ends at the equilibrium.
+        % [pu] Currents injected into the branch at its ends at the equilibrium: get_admittance_matrix() * cv_Vequilibrium.
         % <@Type> double
         cv_Iequilibrium
     end

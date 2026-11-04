@@ -13,6 +13,8 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % kept for old calls.
 %
 % See also Component.get_sys
+%
+% <@Group> Called by analyses
     arguments
         obj
         x        (:,1) double  = obj.rv_Xequilibrium   % States (default: the equilibrium).

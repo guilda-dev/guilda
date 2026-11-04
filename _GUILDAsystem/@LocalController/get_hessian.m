@@ -21,6 +21,8 @@ function varargout = get_hessian(obj, x, V, I, u)
 % - `H_Y` — Hessians of fcn_y: n_y x n_z x n_z.
 %
 % See also LocalController.get_sys
+%
+% <@Group> Queries and checks
     arguments
         obj
         x (:,1) double = obj.rv_Xequilibrium   % States (default: the equilibrium).

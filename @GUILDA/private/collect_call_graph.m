@@ -40,6 +40,8 @@ function sct_graph = collect_call_graph(sct_scan)
 %              Line. One edge per From, To, Kind: the strongest reference, first line.
 %   Dynamic  : struct array From, File, Line: obj.(name), feval, str2func and eval
 %   Implementers : Map "Class.member" -> number of subclasses that implement it
+%   Writes   : Map "Class.prop" -> cell of the method nodes that assign obj.prop = ...
+%              (with a known receiver class, so no candidates)
 %   Missing  : references on a known class to a member it does not have
 %   Stats    : reference counts per confidence and per rule, before merging
     str_root = GUILDA.pwd();
@@ -938,6 +940,7 @@ function sct_graph = emit_graph(sct_units, sct_ctx)
     sct_dynamic = struct('From', {}, 'File', {}, 'Line', {});
     map_conf = containers.Map({'certain', 'inferred', 'candidates'}, {0, 0, 0});
     map_rule = containers.Map('KeyType', 'char', 'ValueType', 'double');
+    map_writes = containers.Map('KeyType', 'char', 'ValueType', 'any');
     for i = find([sct_units.IsMethod])
         str_from = from_node(sct_units(i), sct_ctx);
         iv_reach = i;
@@ -954,6 +957,15 @@ function sct_graph = emit_graph(sct_units, sct_ctx)
         for r = iv_reach
             for k = 1:numel(cell_refs{r})
                 sct_ref = cell_refs{r}{k};
+                if strcmp(sct_ref.Kind, 'write')
+                    str_prop = sct_ref.To{1};
+                    if ~isKey(map_writes, str_prop)
+                        map_writes(str_prop) = {str_from};
+                    elseif ~any(strcmp(map_writes(str_prop), str_from))
+                        map_writes(str_prop) = [map_writes(str_prop), {str_from}];
+                    end
+                    continue
+                end
                 map_conf(sct_ref.Confidence) = map_conf(sct_ref.Confidence) + 1;
                 if ~isKey(map_rule, sct_ref.Rule), map_rule(sct_ref.Rule) = 0; end
                 map_rule(sct_ref.Rule) = map_rule(sct_ref.Rule) + 1;
@@ -979,7 +991,7 @@ function sct_graph = emit_graph(sct_units, sct_ctx)
         end
     end
     sct_graph = struct('Nodes', {cell_nodes}, 'Edges', sct_edges, 'Dynamic', sct_dynamic, ...
-        'Implementers', map_impl, 'Missing', sct_missing, ...
+        'Implementers', map_impl, 'Writes', map_writes, 'Missing', sct_missing, ...
         'Stats', struct('Confidence', map_conf, 'Rule', map_rule));
 end
 
@@ -1058,6 +1070,16 @@ function [cell_refs, iv_dynamic, iv_calls, sct_missing] = read_refs(sct_u, sct_u
                     end
                     if isKey(sct_base.Methods, str_member)
                         cell_refs{end+1} = make_ref({[sct_base.Methods(str_member).Defining, '.', str_member]}, 'method', 'self', sct_ev.Line); %#ok<AGROW>
+                    end
+                end
+            case 'pset'
+                % recv.prop = value: a write, kept apart from the edges.
+                cell_recv = type_of(sct_ev.Recv, map_env, sct_u, sct_units, sct_ctx);
+                if is_class_type(cell_recv) && isKey(sct_ctx.info, cell_recv{1})
+                    sct_info = sct_ctx.info(cell_recv{1});
+                    if isKey(sct_info.Props, sct_ev.Member)
+                        cell_refs{end+1} = make_ref({[sct_info.Props(sct_ev.Member).Defining, '.', sct_ev.Member]}, ...
+                            'write', cell_recv{2}, sct_ev.Line); %#ok<AGROW>
                     end
                 end
             case 'dynamic'

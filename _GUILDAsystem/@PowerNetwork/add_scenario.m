@@ -19,6 +19,8 @@ function add_scenario(obj, sc)
 % ```
 %
 % See also PowerNetwork.remove_scenario, PowerNetwork.simulate, Scenario
+%
+% <@Group> Model building
     arguments
         obj
         sc   % Scenario, or a cell of Scenario objects.

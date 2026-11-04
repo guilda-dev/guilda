@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" viewBox="0 0 600 250" role="img">
+        <title id="cl-map-title">PowerNetwork has no parent. It owns buses, branches, and global controllers, holds the solver objects, and returns result objects.</title>
+        <defs>
+          <marker id="cl-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:#1B2127"/></marker>
+          <marker id="cl-ah-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:#5A6570"/></marker>
+        </defs>
+        <rect x="200" y="20" width="200" height="56" rx="4" style="fill:#0059A7"/>
+        <text x="300" y="46" text-anchor="middle" font-size="16" font-weight="bold" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#FFFFFF">PowerNetwork</text>
+        <text x="300" y="65" text-anchor="middle" font-size="11" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#C7D8EA">base: Hz · baseMVA</text>
+
+        <rect x="20" y="20" width="130" height="56" rx="4" stroke-width="1.5" stroke-dasharray="5 4" style="fill:#F5F6F7; stroke:#5A6570"/>
+        <text x="85" y="44" text-anchor="middle" font-size="13" font-weight="bold" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#5A6570">solver_*</text>
+        <text x="85" y="62" text-anchor="middle" font-size="11" style="fill:#38424C">default settings</text>
+        <path d="M200 48H154" fill="none" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#cl-ah-m)" style="stroke:#5A6570"/>
+
+        <rect x="450" y="20" width="130" height="56" rx="4" stroke-width="1.5" stroke-dasharray="5 4" style="fill:#F5F6F7; stroke:#5A6570"/>
+        <text x="515" y="44" text-anchor="middle" font-size="13" font-weight="bold" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#5A6570">Result*</text>
+        <text x="515" y="62" text-anchor="middle" font-size="11" style="fill:#38424C">returned, not kept</text>
+        <path d="M400 48H446" fill="none" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#cl-ah-m)" style="stroke:#5A6570"/>
+
+        <path d="M240 76V112H90V146" fill="none" stroke-width="1.6" marker-end="url(#cl-ah)" style="stroke:#1B2127"/>
+        <path d="M300 76V146" fill="none" stroke-width="1.6" marker-end="url(#cl-ah)" style="stroke:#1B2127"/>
+        <path d="M360 76V112H510V146" fill="none" stroke-width="1.6" marker-end="url(#cl-ah)" style="stroke:#1B2127"/>
+        <text x="96" y="106" font-size="11" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#1B2127">a_Bus</text>
+        <text x="306" y="106" font-size="11" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#1B2127">a_Branch</text>
+        <text x="410" y="106" font-size="11" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#1B2127">a_GlobalController</text>
+
+        <rect x="20" y="150" width="140" height="48" rx="4" stroke-width="1.5" style="fill:#FFFFFF; stroke:#0059A7"/>
+        <text x="90" y="179" text-anchor="middle" font-size="15" font-weight="bold" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#0059A7">Bus ×N</text>
+        <rect x="230" y="150" width="140" height="48" rx="4" stroke-width="1.5" style="fill:#FFFFFF; stroke:#0059A7"/>
+        <text x="300" y="179" text-anchor="middle" font-size="15" font-weight="bold" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#0059A7">Branch ×M</text>
+        <rect x="440" y="150" width="140" height="48" rx="4" stroke-width="1.5" style="fill:#FFFFFF; stroke:#1B2127"/>
+        <text x="510" y="179" text-anchor="middle" font-size="13" font-weight="bold" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#1B2127">GlobalController</text>
+
+        <text x="20" y="232" font-size="11" style="fill:#5A6570">Solid arrow: owns (parent of). Dashed arrow: holds or returns, not a model child.</text>
+      </svg>

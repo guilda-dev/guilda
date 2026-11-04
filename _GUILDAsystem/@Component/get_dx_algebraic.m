@@ -10,6 +10,8 @@ function DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)
 % - `DAEvec` — Updated DAE residual of the network.
 %
 % See also SolverODE, Component.fcn_dx, Component.fcn_I
+%
+% <@Group> Called by analyses
 
     % Called directly, the handles may not be built yet. Only the own state is read here:
     % in a simulation, the solver has already brought every layer up to date.

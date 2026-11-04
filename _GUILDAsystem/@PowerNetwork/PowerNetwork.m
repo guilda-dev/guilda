@@ -1,5 +1,21 @@
 classdef PowerNetwork < PowerSystemModel
-% Power system model that holds the buses, branches and global controllers of one grid.
+% Root of the model: holds the buses, branches and global controllers of one grid and runs the analyses.
+%
+% - Owns the topology (which buses, branches and global controllers exist), the system
+%   base in `tab_parameter.base` (Hz, baseMVA), the solver objects `solver_*` and the
+%   network-wide OPF terms (`s_opffcn`).
+% - Every analysis starts here: the method reads its settings from a solver object, hands
+%   the network to it and returns a result object.
+% - Not where the numbers are: bus voltages belong to `Bus`, the model equations to
+%   `Component` and the controllers, the numerical methods to the Solver classes.
+% - Results are returned, never stored in the network. The one exception: `initialize`
+%   writes the equilibrium into the buses, components and controllers.
+% - Top of the object tree, with no parent. It is the parent of its buses, branches and
+%   global controllers and the owner of its scenarios; only the network sets and clears
+%   their back references (`Bus.a_PowerNetwork`, `Branch.a_PowerNetwork`, `Branch.a_Bus`,
+%   `GlobalController.a_PowerNetwork`, `Scenario.a_PowerNetwork`).
+% - Every layer below reports its edits upward with `log_edit`; the network appends them to
+%   `tab_editLog` and passes each one to `handle_edit`, which keeps at most one slack bus.
 %
 % A network is built by adding buses (`add_bus`) and branches (`add_branch`); the
 % components (generators, loads, ...) are added to the buses (`Bus.add_component`) and
@@ -48,14 +64,15 @@ classdef PowerNetwork < PowerSystemModel
 %% Properties
 
     properties(SetAccess=private) % Layer Structure
-       a_Bus              (:,1) cell = cell(0,1);   % Buses of the network, in the order of the bus index.
-       a_Branch           (:,1) cell = cell(0,1);   % Branches of the network.
-       a_GlobalController (:,1) cell = cell(0,1);   % Global controllers of the network.
+       a_Bus              (:,1) cell = cell(0,1);   % Buses of the network, in the order of the bus index. <@Stale> equilibrium
+       a_Branch           (:,1) cell = cell(0,1);   % Branches of the network. <@Stale> equilibrium
+       a_GlobalController (:,1) cell = cell(0,1);   % Global controllers of the network. <@Stale> equilibrium
     end
     properties(SetAccess=private) % Scenarios
        % Simulation scenarios of the network (Scenario objects), in the order they were added.
        % Added by add_scenario and removed by remove_scenario; not model data (they do not make
        % the equilibrium stale).
+       % <@Stale> nothing (not logged)
        a_Scenario (:,1) cell = cell(0,1);
     end
     properties(SetAccess=protected) % Solvers
@@ -65,6 +82,7 @@ classdef PowerNetwork < PowerSystemModel
         % kept between runs; Name-Value options of a call override them for that call
         % only. Results are returned as a ResultPF, never stored in the solver.
         % <@Type> SolverPF
+        % <@Stale> nothing
         solver_PF  
 
         % SolverOPF solver of net.optimize_powerflow.
@@ -72,6 +90,7 @@ classdef PowerNetwork < PowerSystemModel
         % ...), kept between runs; Name-Value options of a call override them for that
         % call only. Results are returned as a ResultOPF, never stored in the solver.
         % <@Type> SolverOPF
+        % <@Stale> nothing
         solver_OPF 
 
         % SolverCPF solver of net.calculate_continuation_powerflow.
@@ -79,6 +98,7 @@ classdef PowerNetwork < PowerSystemModel
         % kept between runs; Name-Value options of a call override them for that call
         % only. Results are returned as a ResultCPF, never stored in the solver.
         % <@Type> SolverCPF
+        % <@Stale> nothing
         solver_CPF
 
         % SolverODE solver of net.simulate.
@@ -87,6 +107,7 @@ classdef PowerNetwork < PowerSystemModel
         % options of a call override them for that call only. Results are returned as an
         % ResultODE, never stored in the solver.
         % <@Type> SolverODE
+        % <@Stale> nothing
         solver_ODE 
 
         % SolverLIN solver of net.linearize and net.get_sys.
@@ -94,19 +115,29 @@ classdef PowerNetwork < PowerSystemModel
         % runs; Name-Value options of a call override them for that call only. Results are
         % returned as a ResultLIN, never stored in the solver.
         % <@Type> SolverLIN
+        % <@Stale> nothing
         solver_LIN
     end
     properties(Dependent) % Steady State
         cv_Vequilibrium         % [pu] Bus voltage phasors at the equilibrium, one per bus.
         cv_Iequilibrium         % [pu] Bus current injections at the equilibrium, one per bus.
         rv_Xequilibrium         % State equilibrium, in the order of the x rows of get_variable_map.
-        tab_parameter           % Parameter table of the network (base: Hz and baseMVA).
+
+        % Parameter table of the network (base: Hz and baseMVA); writing it writes the parameters.
+        %
+        % - `Hz` [Hz]: nominal frequency. Models read it with get_Hz() and receive it as omega0.
+        %   Set by the constructor (GUILDA.config("Model","Hz")), by writing the table and by
+        %   import_csv. An edit makes the function handles of every layer stale.
+        % - `baseMVA` [MVA]: system base of all per-unit values (default 100). Stored per-unit
+        %   values are not converted when it changes. Set by the constructor, by writing the
+        %   table, import_csv and import_matpower. An edit makes the equilibrium stale.
+        tab_parameter
     end
     properties(Hidden,SetAccess=protected) % Parameter
         para_base               % Parameter: Hz (nominal frequency) and baseMVA (system base) of the whole network
     end
     properties(SetAccess=protected) % OPF
-        s_opffcn = opffcn.default()   % Network-wide OPF terms (Cost, Constraint, DefaultConstraint) set by set_opffcn.
+        s_opffcn = opffcn.default()   % Network-wide OPF terms (Cost, Constraint, DefaultConstraint) set by set_opffcn. <@Stale> nothing (logged)
     end
     properties(Dependent, Access=protected) % Layer Structure
         parent                  % Layer Structure
@@ -138,6 +169,7 @@ classdef PowerNetwork < PowerSystemModel
     methods
         % Layer Structure
         bus = add_bus(   obj, opt)
+        % <@Group> Model building
         bra = add_branch(obj, Type, from_to, opt)
         add_global_controller(obj, a_Gcon)
         remove_bus( obj, str_BusTag, opt)
@@ -187,6 +219,8 @@ classdef PowerNetwork < PowerSystemModel
             % A MAT file does not hold listeners: restore those of the parameters so that
             % edits of a loaded network are checked and logged. MATLAB turns an error here
             % into a warning, so an incomplete restore is reported as a warning.
+            %
+            % <@Group> Data IO
             if ~restore_parameter_listeners(obj)
                 warning(msg("GUILDA:PowerNetwork:IncompleteLoad", obj.str_tag))
             end
@@ -199,6 +233,8 @@ classdef PowerNetwork < PowerSystemModel
         function handle_edit(obj, tab)
             % At most one slack bus: a bus reports bus.l_isSlack = true as a
             % "Slack" edit (ID starts with its tag); the network releases the others.
+            %
+            % <@Group> Called by analyses
             if string(tab{1,4}) ~= "Slack"
                 return
             end
@@ -220,6 +256,8 @@ classdef PowerNetwork < PowerSystemModel
             % Called at the start of solver_ODE.solve and solver_LIN.solve (the one place
             % of this check for simulate, linearize and get_sys): build the f_* handles
             % that are not up to date; error if net.initialize() is needed.
+            %
+            % <@Group> Called by analyses
             obj.check_edit("RequireEquilibrium", true);
         end
     end

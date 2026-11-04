@@ -24,6 +24,8 @@ function [sys, varargout] = get_sys(obj, opt)
 % Component.get_sys.
 %
 % See also Component.get_sys, Bus.get_variable_map, PowerNetwork.get_sys
+%
+% <@Group> Called by analyses
     arguments
         obj
         opt.port (1,1) {mustBeMember(opt.port, ["V2I", "I2V"])} = "V2I"   % Input and output ports.

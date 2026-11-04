@@ -10,6 +10,8 @@ function reset_opffcn(obj)
 % ```
 %
 % See also Branch.set_opffcn
+%
+% <@Group> Construction and editing
     obj.s_opffcn = opffcn.default();
     obj.log_edit("reset_opffcn", "OPF");
 end

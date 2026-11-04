@@ -2,7 +2,7 @@ classdef Component < PowerSystemModel
 % Abstract class of the equipment connected to a bus, such as generators and loads.
 %
 % A component is a dynamic model with states x, inputs u and outputs y, connected to its
-% bus through the voltage V and the current I it injects:
+% bus through the voltage V and the current I it injects (positive for generation):
 %
 % - `fcn_dx`, `fcn_Mass`: the state equation M*dx/dt = fcn_dx(t, x, V, I, u)
 % - `fcn_I`: the current injected into the bus
@@ -15,6 +15,23 @@ classdef Component < PowerSystemModel
 % diagram settings. Analytic Jacobians (static methods Jacobi_dx, Jacobi_I, Jacobi_Y)
 % are optional; without them the Jacobians are computed numerically.
 %
+% Role in the model:
+%
+% - Owns the device equations (through its subclass), its parameters (dynamics, power-flow
+%   P and Q, operation limits, OPF cost, drawing), its equilibrium (`rv_Xequilibrium`,
+%   `rv_Uequilibrium`, `c_Iequilibrium`) and its local controllers (`a_LocalController`).
+% - The base class turns the static model functions into the cached handles `f_*`, adds its
+%   local controllers to the DAE and the linear model, and computes Jacobians numerically
+%   when the subclass gives none.
+% - Does not own the bus voltage (it reads `a_Bus.c_Vequilibrium`), the network frequency
+%   (it reads `get_Hz()`) or the system base.
+% - Created only by `Bus.add_component` and `Bus.replace_component`. Only the bus sets and
+%   clears `a_Bus` (through `set_bus`, which also marks the handles of the subtree stale);
+%   the component sets `LocalController.a_Component` of its controllers. A
+%   `GlobalController` refers to controlled components in `controlledUnits`; a controlled
+%   component cannot be removed or replaced while the controller is on the network.
+%
+% A new model inherits from `component.generator.abstract` or `component.load.abstract`.
 % The framework relies on three more rules:
 %
 % - `get_equilibrium` is always called with all of c_V, c_I, r_P and r_Q (a trip of
@@ -85,8 +102,12 @@ classdef Component < PowerSystemModel
 %% Parameter
     properties(SetAccess=protected) % Layer Structure
         a_Bus                                  % Bus the component is connected to ([] when removed).
-        a_LocalController (:,1) = cell(0,1)    % Top-level local controllers, in this order: the AVR or "local" controller (a PSS hangs under an AVR), then the governor.
+        a_LocalController (:,1) = cell(0,1)    % Top-level local controllers, in slot order whatever the order of attachment: the AVR or "local" controller (a PSS hangs under an AVR), then the governor. <@Stale> equilibrium
     end
+
+    % Handle cache @(t,x,V,I,u) with the parameters and omega0 bound (set_odefcn, called by
+    % check_edit at the start of an analysis). s_edit.str_odefcn tells whether it is "unset",
+    % "editted" or "updated".
     properties(SetAccess=protected) % Dynamics
         f_Mass                                 % Mass matrix function @(t,x,V,I,u) with the parameters bound.
         f_dx                                   % State equation function @(t,x,V,I,u) with the parameters bound.
@@ -99,7 +120,7 @@ classdef Component < PowerSystemModel
     properties(SetAccess=protected) % Steady State
         rv_Xequilibrium = zeros(0,1)           % State equilibrium.
         rv_Uequilibrium = zeros(0,1)           % Input equilibrium.
-        c_Iequilibrium                         % [pu] Current injected into the bus at the equilibrium.
+        c_Iequilibrium                         % [pu] Current injected into the bus at the equilibrium (complex).
     end
     properties (SetAccess={?SolverODE, ?Component}, Hidden)
         iv_odeX  = [];
@@ -113,8 +134,24 @@ classdef Component < PowerSystemModel
     end
     properties(Dependent) % Steady State
         c_Vequilibrium                         % [pu] Terminal voltage at the equilibrium (= a_Bus.c_Vequilibrium; [] without a bus).
-        rv_Xequilibrium_all                    % State equilibrium including the local controllers.
-        tab_parameter                          % Parameter table: dynamics, operation, powerflow, OPF and graph.
+        rv_Xequilibrium_all                    % State equilibrium of the component, then of its controllers depth first: the order of get_variable_map.
+
+        % Parameter table: dynamics, operation, powerflow, OPF and graph; writing it writes the parameters.
+        %
+        % - `dynamics`: model parameters, per unit on the system base; the columns `sv_para` are
+        %   passed to the model functions as param. Set by the subclass constructor (parameter of
+        %   add_component). An edit makes the handles and the equilibrium stale.
+        % - `powerflow`: P, Q [pu], the injection settings of the power flow (negative for a
+        %   load); Q = NaN makes the bus a PV bus. An edit makes the equilibrium stale.
+        % - `operation`: baseMVA [MVA], the machine rating, used only to share Q on a bus (not
+        %   the system base); Pmin, Pmax, Qmin, Qmax [pu], the OPF bounds (and the "Qmax"
+        %   sharing rule). An edit makes nothing stale.
+        % - `OPF`: P0, Q0 [pu], the OPF initial values; HP, fP, HQ, fQ, the cost
+        %   $H_P P^2 + f_P P + H_Q Q^2 + f_Q Q$ (default 1, 1, 0, 0; for a load 0);
+        %   startup, shutdown: reserved. An edit makes nothing stale.
+        % - `graph`: Xaxis, Yaxis, Marker, MidXaxis, MidYaxis, the drawing data. An edit makes
+        %   nothing stale.
+        tab_parameter
     end
     properties(SetAccess=protected) % Parameter
         para_dynamics                          % Parameter object of tab_parameter.dynamics.
@@ -122,19 +159,19 @@ classdef Component < PowerSystemModel
         para_operation                         % Parameter object of tab_parameter.operation (baseMVA, Pmin, Pmax, Qmin, Qmax).
         para_OPF                               % Parameter object of tab_parameter.OPF (P0, Q0, HP, HQ, fP, fQ; startup/shutdown are reserved).
         para_graph                             % Parameter object of tab_parameter.graph.
-        s_opffcn = opffcn.default()            % OPF terms (Cost, Constraint, DefaultConstraint) set by set_opffcn.
+        s_opffcn = opffcn.default()            % OPF terms (Cost, Constraint, DefaultConstraint) set by set_opffcn. <@Stale> nothing (logged)
     end  
     properties(Dependent, Access=protected) % Layer Structure
         parent                                 % Layer Structure: the bus.
         children                               % Layer Structure: the local controllers and Parameter objects.
     end
     properties (Access={?SolverODE, ?Component})        
-        l_hasController = false;
-        l_isConnect     = true
+        l_hasController = false;               % Whether a local controller is attached.
+        l_isConnect     = true                 % False while an active trip of a scenario names the component (working data of the simulation).
     end
     properties (SetAccess={?SolverODE}, Hidden)
-        rv_Xoffset 
-        rv_Uoffset 
+        rv_Xoffset                             % State offset of the active disturbances in the current phase (built by Scenario.compile).
+        rv_Uoffset                             % Input change of the active disturbances in the current phase (built by Scenario.compile).
     end
     properties (SetAccess={?SolverCPF}) % Continuation Power Flow
         iv_CPFX  = zeros(0,1)                  % Indices of the states in the CPF variable vector (working data of the CPF).
@@ -184,6 +221,8 @@ classdef Component < PowerSystemModel
             % Bind the parameters and the network frequency into the f_* function handles.
             % Called by check_edit when the handles are not up to date (str_odefcn "unset" or
             % "editted": a dynamics edit, a network Hz edit or an attach since the last build).
+            %
+            % <@Group> Called by analyses
             omega0 = obj.get_Hz();
             array = obj.para_dynamics.tab_parameter{:,obj.sv_para};
             

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" viewBox="0 0 600 250" role="img">
+        <title id="cl-map-title">The bus owns the component; the component owns its local controllers; a global controller refers to the component as a controlled unit.</title>
+        <defs>
+          <marker id="cl-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:#1B2127"/></marker>
+          <marker id="cl-ah-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:#5A6570"/></marker>
+        </defs>
+        <rect x="200" y="12" width="200" height="44" rx="4" stroke-width="1.5" style="fill:#FFFFFF; stroke:#0059A7"/>
+        <text x="300" y="40" text-anchor="middle" font-size="15" font-weight="bold" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#0059A7">Bus</text>
+        <path d="M300 56V92" fill="none" stroke-width="1.6" marker-end="url(#cl-ah)" style="stroke:#1B2127"/>
+        <text x="306" y="80" font-size="11" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#1B2127">a_Component</text>
+        <text x="190" y="80" text-anchor="end" font-size="11" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#38424C">V ↓  I ↑</text>
+
+        <rect x="200" y="96" width="200" height="56" rx="4" style="fill:#0059A7"/>
+        <text x="300" y="122" text-anchor="middle" font-size="16" font-weight="bold" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#FFFFFF">Component</text>
+        <text x="300" y="141" text-anchor="middle" font-size="11" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#C7D8EA">x · u · y · f_*</text>
+
+        <rect x="450" y="102" width="130" height="44" rx="4" stroke-width="1.5" style="fill:#FFFFFF; stroke:#1B2127"/>
+        <text x="515" y="130" text-anchor="middle" font-size="12" font-weight="bold" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#1B2127">GlobalController</text>
+        <path d="M450 124H404" fill="none" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#cl-ah-m)" style="stroke:#5A6570"/>
+        <text x="515" y="94" text-anchor="middle" font-size="11" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#5A6570">controlledUnits</text>
+
+        <path d="M300 152V186" fill="none" stroke-width="1.6" marker-end="url(#cl-ah)" style="stroke:#1B2127"/>
+        <text x="306" y="174" font-size="11" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#1B2127">a_LocalController</text>
+        <rect x="200" y="190" width="200" height="40" rx="4" stroke-width="1.5" style="fill:#FFFFFF; stroke:#1B2127"/>
+        <text x="300" y="215" text-anchor="middle" font-size="14" font-weight="bold" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" style="fill:#1B2127">LocalController</text>
+        <text x="410" y="215" font-size="11" style="fill:#38424C">(an AVR, a PSS under it)</text>
+
+        <text x="20" y="130" font-size="11" style="fill:#5A6570">Solid: owns.</text>
+        <text x="20" y="146" font-size="11" style="fill:#5A6570">Dashed: refers only.</text>
+      </svg>

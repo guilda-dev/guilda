@@ -40,6 +40,8 @@ function [result, flag, output] = linearize(obj, varargin)
 % ```
 %
 % See also PowerNetwork.get_sys, PowerNetwork.get_variable_map, ResultLIN, SolverLIN
+%
+% <@Group> Linearization
     arguments (Output)
         result   % Jacobian blocks, variable map, point and settings.
         flag     % True when the result is usable: all Jacobian entries are finite and Avv is invertible.

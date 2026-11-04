@@ -4,6 +4,8 @@ function sys = get_sys_alone(obj, x, V, I, u, opt)
 % The caller checks the edit flags. Arguments and model as LocalController.get_sys.
 %
 % See also LocalController.get_sys, Component.get_sys
+%
+% <@Group> Called by analyses
     arguments
         obj
         x        (:,1) double  = obj.rv_Xequilibrium   % States (default: the equilibrium).

@@ -296,6 +296,39 @@ tr.ref-group-row th {
 }
 .cg-legend li { display: inline-flex; align-items: center; gap: 6px; }
 
+/* Class overview (Role, Owned data, References, Methods by purpose, Used by,
+   Subclasses). Tables stack at every width, as on the For Developer pages:
+   one block per row, the first cell heads it, the others follow as
+   "label | value". */
+.ref-lead { margin: 0 0 10px; color: var(--ink); font-size: 1.05rem; }
+.ref-small { font-size: 0.82rem; }
+.ref-figure { margin: 16px 0 20px; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: #FFFFFF; }
+.ref-figure img { display: block; width: 100%; max-width: 640px; height: auto; margin: 0 auto; }
+.ref-overview-table { margin: 0 0 24px; }
+.doc-layout table.ref-stack,
+.ref-stack tbody, .ref-stack tr, .ref-stack td, .ref-stack th { display: block; width: auto !important; max-width: none !important; white-space: normal !important; }
+.ref-stack { border: 0; box-shadow: none; background: transparent; }
+.ref-stack thead { display: none; }
+.ref-stack tr { padding: 10px 0; border-bottom: 1px solid var(--line); background: transparent; }
+.ref-stack tr:first-child { border-top: 1px solid var(--line); }
+.doc-layout .ref-stack td { padding: 2px 0; border: 0; font-size: 0.9rem; }
+.ref-stack td:first-child { padding-bottom: 4px; overflow-wrap: anywhere; }
+.ref-stack td[data-label] { position: relative; padding-left: 9.5rem; }
+.ref-stack td[data-label]::before { content: attr(data-label); position: absolute; left: 0; top: 4px; width: 9rem; color: var(--muted); font-size: 0.7rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+.ref-stack td .markdown-content > :first-child { margin-top: 0; }
+.ref-stack td .markdown-content > :last-child { margin-bottom: 0; }
+.ref-stack tr.ref-group-row { padding: 0; border: 0; }
+.ref-stack tr.ref-group-row th { box-sizing: border-box; width: 100% !important; margin-top: 14px; padding: 6px 8px; }
+.ref-tree-indent { padding-left: calc(var(--depth, 0) * 1.25rem); }
+@media (max-width: 599px) {
+  .ref-stack td[data-label] { padding-left: 0; }
+  .ref-stack td[data-label]::before { position: static; display: block; width: auto; }
+}
+
+/* LaTeX math (KaTeX); the source is shown when KaTeX is missing. */
+.doc-math { margin: 10px 0; overflow-x: auto; overflow-y: hidden; }
+.doc-math-source { white-space: pre-wrap; }
+
 /* Narrow screens: the sidebar stacks above the content. */
 @media (max-width: 899px) {
   body.doc-layout #sidebar img { max-width: 180px; }

@@ -12,6 +12,8 @@ function tab_Ybus2bus = get_admittance_matrix(obj)
 % ```
 %
 % See also Branch.get_admittance_matrix
+%
+% <@Group> Called by analyses
     arguments (Output)
         tab_Ybus2bus   % [pu] Admittance matrix (complex) with bus tags as row and variable names.
     end

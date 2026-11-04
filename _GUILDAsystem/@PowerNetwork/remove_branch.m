@@ -11,6 +11,8 @@ function remove_branch(obj,tag)
 % ```
 %
 % See also PowerNetwork.add_branch, PowerNetwork.remove_bus
+%
+% <@Group> Model building
     arguments
         obj
         tag string   % Tags of the branches to remove.
