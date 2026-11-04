@@ -154,6 +154,7 @@
     </table>
     <ul>
       <li><span lang="en">Return values: <code>fcn_dx</code>, <code>fcn_Y</code> → column vectors; <code>fcn_I</code> → a complex scalar; <code>fcn_Mass</code> → <code>M</code> of <code>M*dx/dt = fcn_dx</code>.</span><span lang="ja">戻り値: <code>fcn_dx</code>、<code>fcn_Y</code> → 列ベクトル、<code>fcn_I</code> → 複素数のスカラー、<code>fcn_Mass</code> → <code>M*dx/dt = fcn_dx</code> の <code>M</code>。</span></li>
+      <li><span lang="en">The model functions run at every evaluation of the DAE: no <code>arguments</code> block for their inputs; describe them in an <code>Inputs:</code> section of the help (<a href="class-documentation.html#hot-path">Class Documentation: Arguments of hot-path functions</a>).</span><span lang="ja">モデル関数は DAE の評価ごとに実行: 入力に <code>arguments</code> ブロックは使わず、ヘルプの <code>Inputs:</code> 節で記述（<a href="class-documentation.html#hot-path">クラスのドキュメント: ホットパス関数の引数</a>）。</span></li>
       <li><span lang="en">Units and signs: <a href="class-design.html#conventions">Class Design: Coding conventions of the classes</a>.</span><span lang="ja">単位と符号: <a href="class-design.html#conventions">クラス設計: クラス実装の規約</a>。</span></li>
     </ul>
 

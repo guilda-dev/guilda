@@ -73,6 +73,9 @@ function sct_summary = export_class_database(sct_scan, option)
 %   Summary  first comment line (H1); Desc the following lines (Markdown)
 %   SeeAlso  a "See also A, B" line
 %   Unit     a leading "[unit]" in a property or arguments-block comment
+%   Arguments, Outputs  arguments blocks; for a function without one (a
+%            hot-path function), the "Inputs:" / "Outputs:" sections of its
+%            help, which are taken out of Desc (see take_argument_sections)
 %   Group    property: trailing comment of the "properties (...)" line,
 %            else the block attributes ("Public" without attributes);
 %            method: <@Group> in its help, else <@Group> in the comment
@@ -902,6 +905,9 @@ function [sct_info, cell_diagnostics] = build_meta_info(meta_item, str_class_nam
         if isempty(str_raw_help) && ~sct_class_src.found
             str_raw_help = sanitize_help_text(try_help(str_class_name + "." + string(str_member)));
         end
+        [str_raw_help, sct_help_in, sct_help_out] = take_argument_sections(str_raw_help);
+        [sct_info, cell_arg_diagnostics] = merge_help_arguments(sct_info, sct_help_in, sct_help_out, ...
+            char(str_class_name + "." + string(str_member)));
         sct_info.Signature = build_signature(sct_info, str_defining);
         % Group of the methods block in the classdef file, if it has one.
         str_block_group = '';
@@ -935,6 +941,7 @@ function [sct_info, cell_diagnostics] = build_meta_info(meta_item, str_class_nam
         if isempty(sct_info.Group)
             sct_info.Group = str_prefix_group;
         end
+        cell_diagnostics = [cell_diagnostics; cell_arg_diagnostics];
     end
 
     % Report problems only where the member is defined, so that an inherited
@@ -1133,7 +1140,11 @@ function str_signature = build_signature(sct_info, str_defining)
                 case 'Positional'
                     cell_in{end+1} = sct_args(i).Name; %#ok<AGROW>
                 case 'Repeating'
-                    cell_in{end+1} = [sct_args(i).Name, '...']; %#ok<AGROW>
+                    if strcmp(sct_args(i).Name, 'varargin')
+                        cell_in{end+1} = 'varargin'; %#ok<AGROW>
+                    else
+                        cell_in{end+1} = [sct_args(i).Name, '...']; %#ok<AGROW>
+                    end
             end
         end
         if any(strcmp({sct_args.Kind}, 'NameValue'))
@@ -1654,6 +1665,216 @@ function sct_args = empty_argument_struct()
         'Validators', {}, 'Default', {}, 'Required', {}, 'Unit', {}, 'Description', {});
 end
 
+function [str_help, sct_inputs, sct_outputs] = take_argument_sections(str_help)
+    % Arguments described in the help of a function without an arguments
+    % block (a hot-path function, where validation would run on every call):
+    %
+    %   Inputs:
+    %     t       (1,1) double  [s] Time.
+    %     x       (:,1) double  State vector of the network.
+    %     Vi      Bus voltage [Vr; Vi].
+    %   Outputs:
+    %     DAEvec  Updated DAE residual.
+    %
+    % An entry is a name, then "(size) class" and the description, two
+    % spaces apart; size, class and a leading "[unit]" are optional. The
+    % list form "- `name` — description" (or ":") is read too. Deeper
+    % indented lines continue the description. The sections are removed
+    % from the help text; text after the first <@Tag> is not searched.
+    sct_inputs  = empty_argument_struct();
+    sct_outputs = empty_argument_struct();
+    cell_lines = regexp(char(str_help), '\n', 'split');
+    i_tag = find(~cellfun(@isempty, regexp(cell_lines, '<@[A-Za-z]', 'once')), 1, 'first');
+    if isempty(i_tag)
+        i_tag = numel(cell_lines) + 1;
+    end
+    bln_keep = true(size(cell_lines));
+    i = 1;
+    while i < i_tag
+        cell_head = regexp(cell_lines{i}, '^(\s*)(Inputs?|Outputs?)\s*:\s*$', 'tokens', 'once');
+        if isempty(cell_head)
+            i = i + 1;
+            continue
+        end
+        [sct_entries, i_end] = read_argument_section(cell_lines(1:i_tag-1), i + 1, numel(cell_head{1}));
+        if isempty(sct_entries)
+            i = i + 1;
+            continue
+        end
+        if startsWith(cell_head{2}, 'Input')
+            sct_inputs = [sct_inputs, sct_entries]; %#ok<AGROW>
+        else
+            [sct_entries.Kind] = deal('Output');
+            [sct_entries.Required] = deal(false);
+            sct_outputs = [sct_outputs, sct_entries]; %#ok<AGROW>
+        end
+        bln_keep(i:i_end) = false;
+        i = i_end + 1;
+    end
+    if ~all(bln_keep)
+        % Join the text around a removed section with one blank line.
+        str_help = regexprep(strjoin(cell_lines(bln_keep), newline), '\n\s*\n(\s*\n)+', '\n\n');
+        str_help = strtrim(str_help);
+    end
+end
+
+function [sct_entries, i_end] = read_argument_section(cell_lines, i, n_head_indent)
+    % Entries of one section from line i; i_end is its last line. Empty
+    % when the first line is not an entry: the heading is then plain text.
+    sct_entries = empty_argument_struct();
+    i_end = i - 1;
+    while i <= numel(cell_lines) && isempty(strtrim(cell_lines{i}))
+        i = i + 1;
+    end
+    if i > numel(cell_lines)
+        return
+    end
+    n_indent = numel(regexp(cell_lines{i}, '^\s*', 'match', 'once'));
+    if n_indent < n_head_indent || isempty(parse_argument_entry(cell_lines{i}))
+        return
+    end
+    while i <= numel(cell_lines)
+        str_line = cell_lines{i};
+        if isempty(strtrim(str_line))
+            % A blank line ends the section unless another entry follows.
+            i_next = i + find(~cellfun(@(s) isempty(strtrim(s)), cell_lines(i+1:end)), 1, 'first');
+            if isempty(i_next) || numel(regexp(cell_lines{i_next}, '^\s*', 'match', 'once')) ~= n_indent ...
+                    || isempty(parse_argument_entry(cell_lines{i_next}))
+                break
+            end
+            i = i_next;
+            continue
+        end
+        n_line_indent = numel(regexp(str_line, '^\s*', 'match', 'once'));
+        if n_line_indent > n_indent && ~isempty(sct_entries)
+            sct_entries(end).Description = strtrim([sct_entries(end).Description, ' ', strtrim(str_line)]);
+        elseif n_line_indent == n_indent && ~isempty(parse_argument_entry(str_line))
+            sct_entries(end+1) = parse_argument_entry(str_line); %#ok<AGROW>
+        else
+            break
+        end
+        i_end = i;
+        i = i + 1;
+    end
+    % A unit can only be read once the description is complete.
+    for k = 1:numel(sct_entries)
+        [sct_entries(k).Unit, sct_entries(k).Description] = take_unit(sct_entries(k).Description);
+    end
+end
+
+function sct_arg = parse_argument_entry(str_line)
+    % "  x   (:,1) double  Text", "- `x` — Text" or "- `x`: Text"; empty when
+    % the line is not an entry. Description holds the text with its unit.
+    sct_arg = empty_argument_struct();
+    cell_tok = regexp(str_line, '^\s*(-\s+|\*\s+)?(`?)([A-Za-z]\w*)\2(.*)$', 'tokens', 'once');
+    if isempty(cell_tok)
+        return
+    end
+    [str_bullet, str_tick, str_name, str_rest] = cell_tok{:};
+    cell_sep = regexp(str_rest, '^\s*[:—–]\s*|^\s+-\s+', 'match', 'once');
+    if isempty(str_bullet) && isempty(str_tick) && isempty(strtrim(erase(str_rest, ':')))
+        % "Outputs:" is the next heading, not an entry.
+        return
+    elseif ~isempty(cell_sep)
+        str_rest = str_rest(numel(cell_sep)+1:end);
+    elseif isempty(str_bullet) && isempty(str_tick) && ~isempty(str_rest) ...
+            && isempty(regexp(str_rest, '^ {2,}', 'once'))
+        % A bare name is followed by two spaces, so that prose is not read.
+        return
+    end
+    str_rest = strtrim(str_rest);
+    str_size = '';
+    str_class = '';
+    if startsWith(str_rest, '(')
+        i_close = find_matching(str_rest, 1);
+        str_size = str_rest(1:i_close);
+        str_rest = strtrim(str_rest(i_close+1:end));
+        cell_class = regexp(str_rest, '^([A-Za-z][\w.]*)(?: {2,}|$)', 'tokens', 'once');
+    else
+        % A class without a size needs a description after it.
+        cell_class = regexp(str_rest, '^([A-Za-z][\w.]*) {2,}(?=\S)', 'tokens', 'once');
+    end
+    if ~isempty(cell_class)
+        str_class = cell_class{1};
+        str_rest = strtrim(str_rest(numel(str_class)+1:end));
+    end
+    sct_arg = struct('Name', str_name, 'Kind', 'Positional', 'Struct', '', ...
+        'Size', str_size, 'Class', str_class, 'Validators', {cell(1, 0)}, 'Default', '', ...
+        'Required', true, 'Unit', '', 'Description', str_rest);
+end
+
+function [sct_info, cell_diagnostics] = merge_help_arguments(sct_info, sct_inputs, sct_outputs, str_context)
+    % Arguments and Outputs from the help sections, in the order of the
+    % function line. An arguments block wins over a section of its kind.
+    cell_diagnostics = cell(0,1);
+    % The object of an ordinary method needs no entry.
+    bln_object = ~sct_info.Static && ~sct_info.IsConstructor;
+    sct_sides = struct( ...
+        'Field',   {'Arguments', 'Outputs'}, ...
+        'Names',   {sct_info.InputNames, sct_info.OutputNames}, ...
+        'Entries', {sct_inputs, sct_outputs}, ...
+        'Heading', {'Inputs:', 'Outputs:'}, ...
+        'Block',   {'arguments block', 'arguments (Output) block'});
+    for sct_side = sct_sides
+        if isempty(sct_side.Entries)
+            continue
+        end
+        if ~isempty(sct_info.(sct_side.Field))
+            cell_diagnostics{end+1,1} = sprintf( ...
+                'WARNING: %s: both an %s and an "%s" section; the %s is used.', ...
+                str_context, sct_side.Block, sct_side.Heading, sct_side.Block); %#ok<AGROW>
+            continue
+        end
+        cell_entry_names = {sct_side.Entries.Name};
+        cell_names = sct_side.Names;
+        % Entries for names not on the function line describe what
+        % varargin / varargout stand for, and take their place.
+        str_var = regexprep(sct_side.Field, {'Arguments', 'Outputs'}, {'varargin', 'varargout'});
+        cell_extra = setdiff(cell_entry_names, cell_names, 'stable');
+        bln_var = ~isempty(cell_names) && strcmp(cell_names{end}, str_var);
+        if bln_var && ~isempty(cell_extra)
+            cell_names = [cell_names(1:end-1), cell_extra];
+        end
+        cell_args = cell(1, numel(cell_names));
+        for k = 1:numel(cell_names)
+            str_name = cell_names{k};
+            i_entry = find(strcmp(cell_entry_names, str_name), 1, 'first');
+            if isempty(i_entry)
+                sct_arg = struct('Name', str_name, 'Kind', 'Positional', 'Struct', '', ...
+                    'Size', '', 'Class', '', 'Validators', {cell(1, 0)}, 'Default', '', ...
+                    'Required', true, 'Unit', '', 'Description', '');
+                if strcmp(sct_side.Field, 'Outputs')
+                    sct_arg.Kind = 'Output';
+                    sct_arg.Required = false;
+                end
+                bln_exempt = strcmp(str_name, '~') ...
+                    || (bln_object && k == 1 && strcmp(sct_side.Field, 'Arguments'));
+                if ~bln_exempt
+                    cell_diagnostics{end+1,1} = sprintf( ...
+                        'WARNING: %s: "%s" has no entry for %s.', ...
+                        str_context, sct_side.Heading, str_name); %#ok<AGROW>
+                end
+            else
+                sct_arg = sct_side.Entries(i_entry);
+            end
+            if strcmp(str_name, 'varargin')
+                sct_arg.Kind = 'Repeating';
+            end
+            if strcmp(sct_arg.Kind, 'Repeating') || (bln_var && k >= numel(sct_side.Names))
+                sct_arg.Required = false;
+            end
+            cell_args{k} = sct_arg;
+        end
+        cell_unknown = setdiff(cell_entry_names, cell_names, 'stable');
+        for k = 1:numel(cell_unknown)
+            cell_diagnostics{end+1,1} = sprintf( ...
+                'WARNING: %s: "%s" describes %s, which is not on the function line.', ...
+                str_context, sct_side.Heading, cell_unknown{k}); %#ok<AGROW>
+        end
+        sct_info.(sct_side.Field) = cell_args;
+    end
+end
+
 function sct_entry = parse_declaration(str_decl)
     % Parse "name (dims) Class {validators} = default", the common grammar of
     % property declarations and arguments-block entries.
@@ -2087,8 +2308,8 @@ function sct_schema = get_tag_schema()
         'SeeAlso',     'write a "See also A, B" line', ...
         'Since',       'record changes in the Update log', ...
         'Signatures',  'signatures are derived from the function line and arguments blocks', ...
-        'Parameters',  'describe inputs with comments in an arguments block', ...
-        'Returns',     'describe outputs with comments in an arguments (Output) block', ...
+        'Parameters',  'describe inputs with comments in an arguments block, or in an "Inputs:" section of the help without one', ...
+        'Returns',     'describe outputs with comments in an arguments (Output) block, or in an "Outputs:" section of the help without one', ...
         'Calls',       'calls are no longer documented', ...
         'Throws',      'error IDs are collected from error(msg(...)) and MException(...) calls', ...
         'Size',        'state the size in the declaration', ...
@@ -2098,8 +2319,8 @@ function sct_schema = get_tag_schema()
         'Model',       'describe the model in the H1 line or the description', ...
         'Abst',        'write the summary as the first comment line (H1 line)', ...
         'Description', 'write the description as the comment lines after the H1 line', ...
-        'varargin',    'describe inputs with comments in an arguments block', ...
-        'varargout',   'describe outputs with comments in an arguments (Output) block', ...
+        'varargin',    'describe inputs with comments in an arguments block, or in an "Inputs:" section of the help without one', ...
+        'varargout',   'describe outputs with comments in an arguments (Output) block, or in an "Outputs:" section of the help without one', ...
         'DetailsCode', 'write details in the description', ...
         'Example',     'use <@Examples>', ...
         'Seealso',     'write a "See also A, B" line' ...
