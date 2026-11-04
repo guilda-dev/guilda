@@ -43,8 +43,8 @@
 
     <!-- ============================== ROLE ============================== -->
     <h2 id="role"><span lang="en">Role</span><span lang="ja">役割</span></h2>
-    <p lang="en">A <code>Bus</code> owns its voltage (power-flow settings and the equilibrium <code>c_Vequilibrium</code>), its shunt admittance, voltage limits, and the list of its components. Its type for the power flow (slack, PV, PQ) is not stored: it follows from <code>l_isSlack</code> and the <code>Q</code> settings of its components. On the way down, it splits the bus power of the equilibrium among its components; on the way up, it aggregates them (current, linear model, variable map, OPF variables). A bus does <strong>not</strong> own the system base (<code>baseMVA</code> belongs to <code>PowerNetwork</code>), the branches that end at it (a branch only refers to it), or any dynamics: components carry the equations. Buses are created only by <code>PowerNetwork.add_bus</code>.</p>
-    <p lang="ja"><code>Bus</code> は自身の電圧（潮流計算の設定と平衡点 <code>c_Vequilibrium</code>）、シャントアドミタンス、電圧制限、機器の一覧を持ちます。潮流計算での種類（スラック・PV・PQ）は保存せず、<code>l_isSlack</code> と機器の <code>Q</code> 設定から決まります。下向きには平衡点の母線電力を機器へ分配し、上向きには機器を集約します（電流、線形モデル、変数マップ、OPF 変数）。系統基準（<code>baseMVA</code> は <code>PowerNetwork</code> のもの）、端につながるブランチ（ブランチが参照するだけ）、動特性（方程式は機器が持つ）は持ち<strong>ません</strong>。母線は <code>PowerNetwork.add_bus</code> でだけ作られます。</p>
+    <p lang="en">A <code>Bus</code> owns its voltage (power-flow settings and the equilibrium <code>c_Vequilibrium</code>), its shunt admittance, voltage limits, and the list of its components. Its type for the power flow (slack, PV, PQ) is not stored: it follows from <code>l_isSlack</code> and the <code>Q</code> settings of its components. On the way down, it splits the bus power of the equilibrium among its components; on the way up, it aggregates them (current, linear model, variable map, OPF variables). A bus does <strong>not</strong> own the system base (<code>baseMVA</code> belongs to <code>PowerNetwork</code>; a bus <code>baseMVA</code> given to <code>add_bus</code> or in a CSV bus table is accepted for compatibility and ignored), the branches that end at it (a branch only refers to it), or any dynamics: components carry the equations. Buses are created only by <code>PowerNetwork.add_bus</code>.</p>
+    <p lang="ja"><code>Bus</code> は自身の電圧（潮流計算の設定と平衡点 <code>c_Vequilibrium</code>）、シャントアドミタンス、電圧制限、機器の一覧を持ちます。潮流計算での種類（スラック・PV・PQ）は保存せず、<code>l_isSlack</code> と機器の <code>Q</code> 設定から決まります。下向きには平衡点の母線電力を機器へ分配し、上向きには機器を集約します（電流、線形モデル、変数マップ、OPF 変数）。系統基準（<code>baseMVA</code> は <code>PowerNetwork</code> のもの。<code>add_bus</code> や CSV の母線の表で与えた母線の <code>baseMVA</code> は、互換性のために受け付けますが無視します）、端につながるブランチ（ブランチが参照するだけ）、動特性（方程式は機器が持つ）は持ち<strong>ません</strong>。母線は <code>PowerNetwork.add_bus</code> でだけ作られます。</p>
 
     <figure class="dg-figure cl-figure">
       <svg class="dg-svg" viewBox="0 0 600 250" role="img" aria-labelledby="cl-map-title">
@@ -98,7 +98,7 @@
         </tr>
         <tr>
           <td><code>l_isSlack</code></td>
-          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Slack bus flag. Setting it requires a component; the network then clears the flag of the other buses.</span><span lang="ja">スラック母線のフラグ。設定には機器が必要で、設定するとネットワークが他の母線のフラグを外します。</span></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Slack bus flag. Setting it requires a component; the network then clears the flag of the other buses (a bus never changes another bus). Clearing it leaves no slack bus, and <code>calculate_powerflow</code> then selects one.</span><span lang="ja">スラック母線のフラグ。設定には機器が必要で、設定するとネットワークが他の母線のフラグを外します（母線が他の母線を変えることはありません）。外すとスラック母線はなくなり、そのときは <code>calculate_powerflow</code> が1つ選びます。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">logical</td>
           <td data-label="Set by" data-label-ja="設定元"><span lang="en">user; <code>calculate_powerflow</code> when none is set; <code>import_csv</code>, <code>import_matpower</code></span><span lang="ja">利用者、未設定時の <code>calculate_powerflow</code>、<code>import_csv</code>、<code>import_matpower</code></span></td>
           <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-err"><span lang="en">equilibrium</span><span lang="ja">平衡点</span></span></td>
@@ -164,7 +164,7 @@
         <tr><td><code>str_bustype</code></td><td data-label="Meaning" data-label-ja="意味"><span lang="en"><code>"slack"</code>, <code>"PV"</code>, or <code>"PQ"</code>, from <code>get_pf_set</code>.</span><span lang="ja"><code>get_pf_set</code> から得る <code>"slack"</code>、<code>"PV"</code>、<code>"PQ"</code>。</span></td><td data-label="Written by" data-label-ja="書き込み元"><span lang="en">— (<code>Dependent</code>)</span><span lang="ja">—（<code>Dependent</code>）</span></td></tr>
         <tr><td><code>tab_parameter</code></td><td data-label="Meaning" data-label-ja="意味"><span lang="en">Table of <code>dynamics</code>, <code>operation</code>, <code>powerflow</code>, <code>graph</code>; writing it writes the parameters.</span><span lang="ja"><code>dynamics</code>、<code>operation</code>、<code>powerflow</code>、<code>graph</code> の表。書き込むとパラメータに書き込まれます。</span></td><td data-label="Written by" data-label-ja="書き込み元"><span lang="en">— (<code>Dependent</code>)</span><span lang="ja">—（<code>Dependent</code>）</span></td></tr>
         <tr><td><code>iv_odeX</code>, <code>iv_odeI</code>, <code>iv_odeU</code> <small>Hidden</small></td><td data-label="Meaning" data-label-ja="意味"><span lang="en">Positions of the bus voltage and current in the simulation vector.</span><span lang="ja">シミュレーションのベクトル中での母線電圧・電流の位置。</span></td><td data-label="Written by" data-label-ja="書き込み元"><code>SolverODE</code>, <code>Component</code></td></tr>
-        <tr><td><code>l_isFault</code> <small><span lang="en">restricted</span><span lang="ja">アクセス制限</span></small></td><td data-label="Meaning" data-label-ja="意味"><span lang="en">True while an active fault of a scenario is applied at the bus.</span><span lang="ja">シナリオの有効な地絡が母線に加わっている間 true。</span></td><td data-label="Written by" data-label-ja="書き込み元"><code>SolverODE</code></td></tr>
+        <tr><td><code>l_isFault</code> <small><span lang="en">restricted</span><span lang="ja">アクセス制限</span></small></td><td data-label="Meaning" data-label-ja="意味"><span lang="en">True while an active fault of a scenario is applied at the bus.</span><span lang="ja">シナリオの有効な地絡が母線に加わっている間 <code>true</code>。</span></td><td data-label="Written by" data-label-ja="書き込み元"><code>SolverODE</code></td></tr>
         <tr><td><code>iv_CPFV</code></td><td data-label="Meaning" data-label-ja="意味"><span lang="en">Positions of the bus voltage in the CPF variable vector.</span><span lang="ja">CPF の変数ベクトル中での母線電圧の位置。</span></td><td data-label="Written by" data-label-ja="書き込み元"><code>SolverCPF</code></td></tr>
       </tbody>
     </table>
@@ -195,8 +195,8 @@
         </tr>
       </tbody>
     </table>
-    <p lang="en">Attaching a component marks the handles of that component and its controllers as stale, because the frequency they read comes from the network of the bus.</p>
-    <p lang="ja">機器を接続すると、その機器と制御器のハンドルが古いと記録されます。読む周波数が母線の属するネットワークから来るためです。</p>
+    <p lang="en">Attaching a component marks the handles of that component and its controllers as stale (see <a href="class-design.html#edits">Class Design: Edit handling</a>).</p>
+    <p lang="ja">機器を接続すると、その機器と制御器のハンドルが古いと記録されます（<a href="class-design.html#edits">クラス設計: 編集の扱い</a>を参照）。</p>
 
     <!-- ============================== METHODS ============================== -->
     <h2 id="methods"><span lang="en">Methods</span><span lang="ja">メソッド</span></h2>

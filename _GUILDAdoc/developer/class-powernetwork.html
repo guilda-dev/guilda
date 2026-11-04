@@ -358,7 +358,7 @@
         </tr>
         <tr>
           <td><code>get_sys(Name=Value)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Shortcut of <code>linearize</code> followed by <code>ResultLIN.get_ss</code>; also takes <code>Input</code> and <code>Output</code>.</span><span lang="ja"><code>linearize</code> と <code>ResultLIN.get_ss</code> の短縮形。<code>Input</code> と <code>Output</code> も受け取ります。</span>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Shortcut of <code>linearize</code> followed by <code>ResultLIN.get_ss</code>. Inputs <code>u</code>, and no port, because the network closes the buses. By default the outputs follow the states, as in v3, and they depend on <code>Algorithm</code>; <code>Input</code> and <code>Output</code> select other channels.</span><span lang="ja"><code>linearize</code> と <code>ResultLIN.get_ss</code> の短縮形。入力は <code>u</code> で、ネットワークが母線を閉じるためポートはありません。既定では v3 と同じく出力は状態に従い、<code>Algorithm</code> によって変わります。<code>Input</code> と <code>Output</code> でほかのチャネルを選べます。</span>
             <small><span lang="en">Returns: <code>[sys, flag, output]</code>, a state-space model.</span><span lang="ja">返り値: <code>[sys, flag, output]</code>（状態空間モデル）。</span></small></td>
           <td data-label="Changes the model" data-label-ja="モデルの変更"><span lang="en">No.</span><span lang="ja">なし。</span></td>
         </tr>
@@ -386,7 +386,7 @@
         <tr>
           <td><code>check_edit(RequireEquilibrium=)</code> <small>protected</small></td>
           <td data-label="What it does" data-label-ja="内容"><span lang="en">Calls <code>set_odefcn</code> on every layer whose handles are not <code>"updated"</code>, parent before children. With <code>RequireEquilibrium=true</code> it stops with <code>GUILDA:PowerNetwork:EquilibriumStale</code>, naming up to three edits, when the equilibrium is out of date.</span><span lang="ja">ハンドルが <code>"updated"</code> でない各階層で、親から子の順に <code>set_odefcn</code> を呼びます。<code>RequireEquilibrium=true</code> では、平衡点が古いと編集を 3 件まで挙げて <code>GUILDA:PowerNetwork:EquilibriumStale</code> で止まります。</span>
-            <small><span lang="en">Returns: <code>flag</code>, true when the equilibrium is up to date.</span><span lang="ja">返り値: <code>flag</code>（平衡点が最新なら true）。</span></small></td>
+            <small><span lang="en">Returns: <code>flag</code>, true when the equilibrium is up to date.</span><span lang="ja">返り値: <code>flag</code>（平衡点が最新なら <code>true</code>）。</span></small></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><code>initialize</code>, <code>calculate_continuation_powerflow</code>, <code>require_equilibrium</code></td>
         </tr>
         <tr>
