@@ -1,4 +1,4 @@
-function bra = add_branch(obj, Type, from_to, opt)
+function bra = add_branch(obj, Key, from_to, opt)
 % Add a branch between two buses and return it.
 %
 % `from_to` names the two end buses by their index in `a_Bus` or by their tags. The
@@ -17,7 +17,7 @@ function bra = add_branch(obj, Type, from_to, opt)
 % See also PowerNetwork.remove_branch, PowerNetwork.add_bus, Branch
     arguments
         obj 
-        Type         (1,:) char {mustBeMember(Type,{___KEY_LIST___})}   % Branch model key, e.g. "pi" or "pi_transformer".
+        Key          (1,:) char {mustBeMember(Key,{___KEY_LIST___})}   % Branch model key, e.g. "pi" or "pi_transformer".
         from_to      (1,2) {string,double}   = [1,2]   % End buses [from, to], as indices of a_Bus or as bus tags.
         opt.R        (1,1) double = 0;   % [pu] Series resistance.
         opt.X        (1,1) double = 1;   % [pu] Series reactance.
@@ -64,7 +64,7 @@ function bra = add_branch(obj, Type, from_to, opt)
     str_Index = num2str(tools.next_tag_number(string(obj.a_Branch)),"%.3d");
 
     % Build Instance
-    switch Type
+    switch Key
 ___KEY_CASES___
     end
     bra = mkInst(str_Index, opt);

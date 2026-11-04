@@ -1,5 +1,5 @@
-function comp = replace_component(obj, str_tag, Type, parameter, opt)
-% Replace a component of the bus by a component of another type.
+function comp = replace_component(obj, str_tag, Key, parameter, opt)
+% Replace a component of the bus by a component of another model.
 %
 % The new component keeps the power-flow, operation, OPF and graph settings and the
 % number of the replaced one. The replacement is logged as a "Topology" edit, so
@@ -26,7 +26,7 @@ function comp = replace_component(obj, str_tag, Type, parameter, opt)
     arguments
         obj
         str_tag              (1,1) string   % Tag of the component to replace.
-        Type                 (1,:) char {mustBeMember(Type,{___KEY_LIST___})}   % Component type key, e.g. "gen-park" or "load-power".
+        Key                  (1,:) char {mustBeMember(Key,{___KEY_LIST___})}   % Component model key, e.g. "gen-park" or "load-power".
         parameter             = nan;   % Dynamic parameters (table or string); NaN uses the class defaults.
         opt.Controllers      (1,1) string {mustBeMember(opt.Controllers,["drop","keep"])} = "drop";   % Local controllers of the replaced component: "drop" leaves them on it with a warning, "keep" moves them to the new one.
     end
@@ -66,7 +66,7 @@ function comp = replace_component(obj, str_tag, Type, parameter, opt)
 
     
     % get component function
-    switch Type
+    switch Key
 ___KEY_CASES___
     end
     str_controllers = opt.Controllers;
