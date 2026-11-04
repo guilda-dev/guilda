@@ -76,7 +76,7 @@
         <text x="20" y="196" font-size="11" lang="en" style="fill:var(--muted)">Solid: owns. Dashed: refers only (an association, not a parent).</text>
         <text x="20" y="196" font-size="11" lang="ja" style="fill:var(--muted)">実線: 保持する。破線: 参照のみ（関連であり親ではない）。</text>
       </svg>
-      <figcaption><span lang="en">The order of <code>a_Bus</code> is the row and column order of the 2×2 matrix: from, then to.</span><span lang="ja"><code>a_Bus</code> の並びが 2×2 行列の行と列の順です: from、to の順。</span></figcaption>
+      <figcaption><span lang="en">The order of <code>a_Bus</code> is the row and column order of the 2×2 matrix: from, then to.</span><span lang="ja"><code>a_Bus</code> の並びが 2×2 行列の行と列の順です: <code>from</code>、<code>to</code> の順。</span></figcaption>
     </figure>
 
     <!-- ============================== DATA ============================== -->
@@ -152,7 +152,7 @@
           <td data-label="Cleared by" data-label-ja="解除"><code>PowerNetwork.remove_branch</code> → <code>set_network([])</code></td>
         </tr>
         <tr>
-          <td><code>a_Bus</code> <small><span lang="en">association, cell 2×1</span><span lang="ja">関連、cell 2×1</span></small></td>
+          <td><code>a_Bus</code> <small><span lang="en">association, cell 2×1</span><span lang="ja">関連、<code>cell</code> 2×1</span></small></td>
           <td data-label="Set by" data-label-ja="設定"><code>PowerNetwork.add_branch</code> → <code>set_bus({from; to})</code></td>
           <td data-label="Cleared by" data-label-ja="解除"><code>PowerNetwork.remove_branch</code> → <code>set_bus(cell(0,1))</code></td>
         </tr>
@@ -211,7 +211,7 @@
         <tr>
           <td><code>get_admittance_matrix()</code></td>
           <td data-label="What it does" data-label-ja="内容"><span lang="en">The subclass contract above.</span><span lang="ja">上記のサブクラスの契約。</span>
-            <small><span lang="en">Returns: 2×2 complex [pu], rows and columns (from, to).</span><span lang="ja">返り値: 2×2 の複素数 [pu]。行と列は (from, to)。</span></small></td>
+            <small><span lang="en">Returns: 2×2 complex [pu], rows and columns (from, to).</span><span lang="ja">返り値: 2×2 の複素数 [pu]。行と列は (<code>from</code>, <code>to</code>)。</span></small></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en"><code>PowerNetwork.get_admittance_matrix</code> (so every analysis), <code>SolverPF</code> for branch flows, <code>cv_Iequilibrium</code></span><span lang="ja"><code>PowerNetwork.get_admittance_matrix</code>（つまり全解析）、ブランチ潮流を求める <code>SolverPF</code>、<code>cv_Iequilibrium</code></span></td>
         </tr>
         <tr>
@@ -245,8 +245,8 @@
       <tbody>
         <tr><td><code>branch.pi</code></td><td data-label="key / header"><code>"pi"</code> / <code>EL</code></td><td data-label="Model" data-label-ja="モデル"><span lang="en">Pi line: series <code>R + jX</code>, shunt <code>jC</code> at each end (<code>C</code> is half the line charging).</span><span lang="ja">π 形送電線: 直列 <code>R + jX</code>、両端にシャント <code>jC</code>（<code>C</code> は充電容量の半分）。</span></td></tr>
         <tr><td><code>branch.T</code></td><td data-label="key / header"><code>"T"</code> / <code>EL</code></td><td data-label="Model" data-label-ja="モデル"><span lang="en">T line: two halves of <code>R + jX</code> with <code>jC</code> at the midpoint (<code>C</code> is the total line charging); the midpoint is eliminated.</span><span lang="ja">T 形送電線: <code>R + jX</code> を半分ずつに分け、中点に <code>jC</code>（<code>C</code> は全充電容量）。中点は消去します。</span></td></tr>
-        <tr><td><code>branch.pi_transformer</code></td><td data-label="key / header"><code>"pi_transformer"</code> / <code>ET</code></td><td data-label="Model" data-label-ja="モデル"><span lang="en">Ideal transformer <code>tap·e<sup>j·phase</sup></code> at the from end followed by a pi line.</span><span lang="ja">from 端の理想変圧器 <code>tap·e<sup>j·phase</sup></code> に π 形送電線が続くモデル。</span></td></tr>
-        <tr><td><code>branch.two_winding_transformer</code></td><td data-label="key / header"><code>"two_winding_transformer"</code> / <code>ET</code></td><td data-label="Model" data-label-ja="モデル"><span lang="en">Two-winding transformer with tap and phase shift; shunt <code>jC</code> at the from end.</span><span lang="ja">タップと移相を持つ二巻線変圧器。シャント <code>jC</code> は from 端。</span></td></tr>
+        <tr><td><code>branch.pi_transformer</code></td><td data-label="key / header"><code>"pi_transformer"</code> / <code>ET</code></td><td data-label="Model" data-label-ja="モデル"><span lang="en">Ideal transformer <code>tap·e<sup>j·phase</sup></code> at the from end followed by a pi line.</span><span lang="ja"><code>from</code> 端の理想変圧器 <code>tap·e<sup>j·phase</sup></code> に π 形送電線が続くモデル。</span></td></tr>
+        <tr><td><code>branch.two_winding_transformer</code></td><td data-label="key / header"><code>"two_winding_transformer"</code> / <code>ET</code></td><td data-label="Model" data-label-ja="モデル"><span lang="en">Two-winding transformer with tap and phase shift; shunt <code>jC</code> at the from end.</span><span lang="ja">タップと移相を持つ二巻線変圧器。シャント <code>jC</code> は <code>from</code> 端。</span></td></tr>
       </tbody>
     </table>
   </main>
