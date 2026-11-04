@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-title-ja="GUILDA 開発者ガイド - 機能: 近似線形化">GUILDA Developer Guide - Feature: Linearization</title>
+  <script src="../doc-lang.js"></script>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    /* Feature: Linearization page only (lin-*); shared parts are dg-* in style.css */
+    .lin-sig { margin: var(--dg-s3) 0 var(--dg-s4); }
+    .lin-seq > g.dg-mono text { paint-order: stroke; stroke: var(--dg-panel); stroke-width: 4px; stroke-linejoin: round; }
+    .lin-steps td:first-child { width: 4.8rem; white-space: nowrap; }
+    .lin-steps td:nth-child(2) { width: 12rem; }
+    .lin-steps td:nth-child(2) code, .lin-steps td:nth-child(4) code, .lin-steps td:nth-child(5) code { overflow-wrap: anywhere; }
+    .lin-steps tr.lin-loop td:first-child { box-shadow: inset 3px 0 0 var(--dg-accent); padding-left: 8px; }
+    .lin-lbl { display: none; }
+    .lin-opts td:first-child { width: 9rem; }
+    .lin-opts td:nth-child(3) { width: 9rem; }
+    .lin-seq-list { margin: 0; padding-left: 0; list-style: none; font-size: 0.9rem; line-height: 1.5; }
+    .lin-seq-list li { padding: 4px 0; border-bottom: 1px solid var(--dg-line); }
+    .lin-seq-list li.lin-loop { padding-left: 10px; border-left: 3px solid var(--dg-accent); }
+    .lin-seq-list code { overflow-wrap: anywhere; }
+    .lin-seq-list .lin-id { display: inline-block; min-width: 4.2em; color: var(--dg-accent); font-family: var(--dg-mono); font-weight: bold; }
+    @media (max-width: 640px) {
+      .lin-steps td:first-child, .lin-steps td:nth-child(2), .lin-opts td:first-child, .lin-opts td:nth-child(3) { width: auto; }
+      .lin-lbl { display: block; margin-top: 6px; color: var(--dg-muted); font-size: 0.7rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+    }
+  </style>
+</head>
+<body class="developer-layout dg">
+  <svg class="dg-sprite" aria-hidden="true" focusable="false">
+    <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+  </svg>
+  <main>
+    <button type="button" class="developer-back-button" onclick="window.history.back()"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></button>
+    <h1><span lang="en">Feature: Linearization</span><span lang="ja">機能: 近似線形化</span></h1>
+    <p class="page-lead" lang="en"><code>net.linearize</code> linearizes the network DAE at the equilibrium (or at a given point) and returns the unreduced Jacobian blocks as a <code>ResultLIN</code>; <code>result.get_ss</code> and <code>net.get_sys</code> turn them into a state-space model. This page follows one call through <code>SolverLIN</code> and the <code>get_sys</code> of each layer.</p>
+    <p class="page-lead" lang="ja"><code>net.linearize</code> はネットワークの DAE を平衡点 (または指定した点) のまわりで線形化し、縮約前のヤコビアンのブロックを <code>ResultLIN</code> として返します。<code>result.get_ss</code> と <code>net.get_sys</code> はそれを状態空間モデルにします。このページでは、<code>SolverLIN</code> と各層の <code>get_sys</code> を通る 1 回の呼び出しを順に追います。</p>
+
+    <nav class="dev-toc" aria-label="Contents">
+      <a href="#entry"><span lang="en">Purpose and entry point</span><span lang="ja">目的と入口</span></a>
+      <a href="#sequence"><span lang="en">Call sequence</span><span lang="ja">呼び出しシーケンス</span></a>
+      <a href="#steps"><span lang="en">Steps</span><span lang="ja">ステップ</span></a>
+      <a href="#data"><span lang="en">Data produced</span><span lang="ja">生成されるデータ</span></a>
+      <a href="#side-effects"><span lang="en">Side effects and caches</span><span lang="ja">副作用とキャッシュ</span></a>
+      <a href="#failures"><span lang="en">Failure and flags</span><span lang="ja">失敗とフラグ</span></a>
+      <a href="#extension"><span lang="en">Extension points</span><span lang="ja">拡張ポイント</span></a>
+      <a href="#related"><span lang="en">Related pages</span><span lang="ja">関連ページ</span></a>
+    </nav>
+
+    <!-- ============================== ENTRY ============================== -->
+    <h2 id="entry"><span lang="en">Purpose and entry point</span><span lang="ja">目的と入口</span></h2>
+    <p lang="en">The result is the linear DAE in deviations from the point, in the order of <code>net.get_variable_map()</code> (see <a href="class-design.html#variables">Class Design, Variable order</a>), with <code>x</code> the states, <code>v = [Vre1; Vim1; Vre2; …]</code> the bus voltages and <code>u</code> the component inputs:</p>
+    <p lang="ja">結果は点からの偏差で表した線形 DAE で、<code>net.get_variable_map()</code> の順に並びます (<a href="class-design.html#variables">Class Design の Variable order</a> を参照)。<code>x</code> は状態、<code>v = [Vre1; Vim1; Vre2; …]</code> は母線電圧、<code>u</code> は機器の入力です。</p>
+<pre class="lin-sig"><code>E dx/dt = Axx x + Axv v + Bx u
+      0 = Avx x + Avv v + Bv u      % current balance Y v − I of each bus</code></pre>
+<pre class="lin-sig"><code>[result, flag, output] = net.linearize(Name, Value)
+sys = result.get_ss(Algorithm, Coordinate=…, Input=…, Output=…)
+[sys, flag, output] = net.get_sys(Name, Value)    % net.linearize + result.get_ss</code></pre>
+
+    <h3><span lang="en">Name-Value options and defaults</span><span lang="ja">Name-Value オプションと既定値</span></h3>
+    <p lang="en">The defaults are the properties of <code>net.solver_LIN</code> (a <code>SolverLIN</code>, class defaults; no <code>GUILDA.config</code> entry). A Name-Value option overrides them for this call only (<code>SolverLIN.OptionMap</code>, <code>tools.resolve_options</code>); <code>net.reset_solver()</code> replaces the solver. See <a href="api-design.html#rules">API Design</a>.</p>
+    <p lang="ja">既定値は <code>net.solver_LIN</code> (<code>SolverLIN</code>) のプロパティで、クラスの既定値です (<code>GUILDA.config</code> の項目はありません)。Name-Value オプションはその呼び出しに限って上書きします (<code>SolverLIN.OptionMap</code>、<code>tools.resolve_options</code>)。<code>net.reset_solver()</code> はソルバーを置き換えます。<a href="api-design.html#rules">API Design</a> を参照してください。</p>
+    <table class="dg-table lin-opts">
+      <thead><tr><th><span lang="en">Option</span><span lang="ja">オプション</span></th><th><span lang="en">Meaning</span><span lang="ja">意味</span></th><th><span lang="en">Default</span><span lang="ja">既定値</span></th></tr></thead>
+      <tbody>
+        <tr><td><code>Algorithm</code></td><td><span lang="en">Default form of <code>result.get_ss()</code> and of <code>net.get_sys</code>: <code>"Kron"</code>, <code>"Feedback"</code> or <code>"DAE"</code>.</span><span lang="ja"><code>result.get_ss()</code> と <code>net.get_sys</code> の既定の形: <code>"Kron"</code>、<code>"Feedback"</code>、<code>"DAE"</code>。</span></td><td><code>"Feedback"</code></td></tr>
+        <tr><td><code>Point</code></td><td><span lang="en"><code>[]</code> for the equilibrium; a vector in the order of the variable map; or <code>{sim, t}</code> / <code>{sim, t, "before"}</code> for the state of a <code>ResultODE</code> at time <code>t</code>. It sets the variables only: the admittance matrix stays that of the model, also inside a fault.</span><span lang="ja"><code>[]</code> で平衡点。変数マップの順のベクトル。または <code>{sim, t}</code> / <code>{sim, t, "before"}</code> で <code>ResultODE</code> の時刻 <code>t</code> の状態。変数を決めるだけで、アドミタンス行列は地絡中の時刻でもモデルのものです。</span></td><td><code>[]</code></td></tr>
+        <tr><td><code>Coordinate</code></td><td><span lang="en">Bus variables of <code>"DAE"</code>: <code>"theta&amp;rho"</code>, <code>"theta&amp;V"</code> or <code>"Vre&amp;Vim"</code>.</span><span lang="ja"><code>"DAE"</code> の母線変数: <code>"theta&amp;rho"</code>、<code>"theta&amp;V"</code>、<code>"Vre&amp;Vim"</code>。</span></td><td><code>"theta&amp;rho"</code></td></tr>
+        <tr><td><code>Plot</code></td><td><span lang="en">Call <code>result.Plot()</code> (eigenvalue map). Option of the call only.</span><span lang="ja"><code>result.Plot()</code> (固有値マップ) を呼びます。呼び出しだけのオプションです。</span></td><td><code>false</code></td></tr>
+        <tr><td><code>Input</code>, <code>Output</code></td><td><span lang="en"><code>net.get_sys</code> only, passed to <code>get_ss</code>: <code>"u"</code> or input labels; <code>"x"</code>, <code>"V"</code>, <code>"I"</code>, <code>"y"</code> or names.</span><span lang="ja"><code>net.get_sys</code> のみ。<code>get_ss</code> に渡します。<code>"u"</code> または入力のラベル。<code>"x"</code>、<code>"V"</code>、<code>"I"</code>、<code>"y"</code> または名前。</span></td><td><span lang="en">all inputs / per algorithm</span><span lang="ja">全入力 / 形ごと</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3><span lang="en">Preconditions</span><span lang="ja">前提条件</span></h3>
+    <ul>
+      <li lang="en"><code>net.initialize()</code> has run and nothing that changes the equilibrium was edited since, also when a <code>Point</code> is given (see <a href="class-design.html#edits">Class Design, Edit handling</a>). Out-of-date <code>f_*</code> handles are rebuilt automatically.</li>
+      <li lang="ja"><code>net.initialize()</code> を実行済みで、その後に平衡点を変える編集がないこと (<code>Point</code> を与えた場合も同じ。<a href="class-design.html#edits">Class Design の Edit handling</a> を参照)。古い <code>f_*</code> ハンドルは自動で作り直されます。</li>
+      <li lang="en">No component equation depends on the current <code>I</code> (the ports are <code>V</code> in, <code>I</code> out).</li>
+      <li lang="ja">機器の式が電流 <code>I</code> に依存しないこと (端子は <code>V</code> が入力、<code>I</code> が出力)。</li>
+      <li lang="en">A <code>Point</code> vector has one finite value per row of the variable map.</li>
+      <li lang="ja"><code>Point</code> のベクトルは変数マップの行ごとに 1 つの有限な値を持つこと。</li>
+    </ul>
+
+    <!-- ============================== SEQUENCE ============================== -->
+    <h2 id="sequence"><span lang="en">Call sequence</span><span lang="ja">呼び出しシーケンス</span></h2>
+    <p lang="en">The numbers are the step IDs of the <a href="#steps">step table</a>. LIN-07 to LIN-10 repeat for each bus and component, LIN-11 for each global controller. Dashed arrows are returns.</p>
+    <p lang="ja">番号は<a href="#steps">ステップ表</a>の ID です。LIN-07〜LIN-10 は母線・機器ごとに、LIN-11 は広域制御器ごとに繰り返します。破線の矢印は戻り値です。</p>
+    <figure class="dg-figure" aria-labelledby="lin-seq-title">
+      <svg class="dg-svg dg-sv dg-only-wide lin-seq" viewBox="0 0 1000 745" role="img" aria-labelledby="lin-seq-title">
+        <title id="lin-seq-title">Sequence of net.linearize: PowerNetwork, SolverLIN, Bus, Component, LocalController, GlobalController and ResultLIN</title>
+        <defs>
+          <marker id="lin-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head" d="M0 0L10 5L0 10z"/></marker>
+          <marker id="lin-ah-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-sv-head is-muted" d="M0 0L10 5L0 10z"/></marker>
+        </defs>
+        <!-- loop frames -->
+        <rect class="dg-sv-box is-muted" x="232" y="258" width="500" height="134" rx="6"/>
+        <text class="is-k" x="240" y="274" lang="en">LOOP · EACH BUS, EACH COMPONENT</text>
+        <text class="is-k" x="240" y="274" lang="ja">ループ · 母線ごと・機器ごと</text>
+        <rect class="dg-sv-box is-muted" x="232" y="400" width="620" height="44" rx="6"/>
+        <text class="is-k" x="240" y="414" lang="en">LOOP · EACH GLOBAL CONTROLLER</text>
+        <text class="is-k" x="240" y="414" lang="ja">ループ · 広域制御器ごと</text>
+        <!-- lifelines -->
+        <g>
+          <path class="dg-sv-line is-muted" d="M50 52V735M170 52V735M300 52V735M425 52V735M545 52V735M665 52V735M795 52V735M930 52V735"/>
+          <rect class="dg-sv-box is-solid" x="4" y="12" width="92" height="40" rx="6"/>
+          <text class="is-b is-inv" x="50" y="37" text-anchor="middle" lang="en">caller</text>
+          <text class="is-b is-inv" x="50" y="37" text-anchor="middle" lang="ja">呼び出し側</text>
+          <rect class="dg-sv-box" x="108" y="12" width="124" height="40" rx="6"/>
+          <text class="dg-mono is-b" x="170" y="37" text-anchor="middle">PowerNetwork</text>
+          <rect class="dg-sv-box" x="244" y="12" width="112" height="40" rx="6"/>
+          <text class="dg-mono is-b" x="300" y="37" text-anchor="middle">SolverLIN</text>
+          <rect class="dg-sv-box" x="375" y="12" width="100" height="40" rx="6"/>
+          <text class="dg-mono is-b" x="425" y="37" text-anchor="middle">Bus</text>
+          <rect class="dg-sv-box" x="487" y="12" width="116" height="40" rx="6"/>
+          <text class="dg-mono is-b" x="545" y="37" text-anchor="middle">Component</text>
+          <rect class="dg-sv-box" x="607" y="12" width="116" height="40" rx="6"/>
+          <text class="dg-mono is-b" x="665" y="37" text-anchor="middle" style="font-size:11px">LocalController</text>
+          <rect class="dg-sv-box" x="733" y="12" width="124" height="40" rx="6"/>
+          <text class="dg-mono is-b" x="795" y="37" text-anchor="middle" style="font-size:11px">GlobalController</text>
+          <rect class="dg-sv-box is-ok" x="874" y="12" width="112" height="40" rx="6"/>
+          <text class="dg-mono is-b" x="930" y="37" text-anchor="middle">ResultLIN</text>
+        </g>
+        <!-- arrows -->
+        <g class="dg-mono">
+          <path class="dg-sv-line" d="M50 90H168" marker-end="url(#lin-ah)"/>
+          <text class="is-sm" x="56" y="84"><tspan style="fill:var(--dg-accent)">01</tspan> linearize(NV)</text>
+          <path class="dg-sv-line" d="M170 120H298" marker-end="url(#lin-ah)"/>
+          <text class="is-sm" x="176" y="114"><tspan style="fill:var(--dg-accent)">02</tspan> get_options(nv)</text>
+          <path class="dg-sv-line" d="M170 150H298" marker-end="url(#lin-ah)"/>
+          <text class="is-sm" x="176" y="144"><tspan style="fill:var(--dg-accent)">03</tspan> solve(net, s_options)</text>
+          <path class="dg-sv-line" d="M300 180H172" marker-end="url(#lin-ah)"/>
+          <text class="is-sm" x="176" y="174"><tspan style="fill:var(--dg-accent)">04</tspan> require_equilibrium → check_edit</text>
+          <path class="dg-sv-line" d="M300 210H172" marker-end="url(#lin-ah)"/>
+          <text class="is-sm" x="176" y="204"><tspan style="fill:var(--dg-accent)">05</tspan> get_variable_map</text>
+          <path class="dg-sv-line" d="M300 228h26v14h-24" marker-end="url(#lin-ah)"/>
+          <text class="is-sm" x="334" y="240"><tspan style="fill:var(--dg-accent)">06</tspan> point_vector(net, Point)</text>
+          <path class="dg-sv-line" d="M300 300H423" marker-end="url(#lin-ah)"/>
+          <text class="is-sm" x="306" y="294"><tspan style="fill:var(--dg-accent)">07</tspan> get_sys("port","V2I")</text>
+          <path class="dg-sv-line" d="M425 330H543" marker-end="url(#lin-ah)"/>
+          <text class="is-sm" x="431" y="324"><tspan style="fill:var(--dg-accent)">08</tspan> get_sys("port","V2I")</text>
+          <path class="dg-sv-line" d="M545 356H663" marker-end="url(#lin-ah)"/>
+          <text class="is-sm" x="551" y="350"><tspan style="fill:var(--dg-accent)">09</tspan> get_sys_alone</text>
+          <path class="dg-sv-line" d="M545 366h26v14h-24" marker-end="url(#lin-ah)"/>
+          <text class="is-sm" x="579" y="377"><tspan style="fill:var(--dg-accent)">10</tspan> get_sys_alone + connect</text>
+          <path class="dg-sv-line" d="M300 432H793" marker-end="url(#lin-ah)"/>
+          <text class="is-sm" x="306" y="428"><tspan style="fill:var(--dg-accent)">11</tspan> get_sys()</text>
+          <path class="dg-sv-line" d="M300 470H172" marker-end="url(#lin-ah)"/>
+          <text class="is-sm" x="176" y="464"><tspan style="fill:var(--dg-accent)">12</tspan> get_admittance_matrix</text>
+          <path class="dg-sv-line" d="M300 486h26v14h-24" marker-end="url(#lin-ah)"/>
+          <text class="is-sm" x="334" y="498"><tspan style="fill:var(--dg-accent)">13</tspan> blocks + add_global_controllers</text>
+          <path class="dg-sv-line" d="M300 530H543" marker-end="url(#lin-ah)"/>
+          <text class="is-sm" x="306" y="524"><tspan style="fill:var(--dg-accent)">14</tspan> point_residual</text>
+          <path class="dg-sv-line" d="M300 546h26v14h-24" marker-end="url(#lin-ah)"/>
+          <text class="is-sm" x="334" y="558"><tspan style="fill:var(--dg-accent)">15</tspan> rcond(Avv), residual, sv_faultBus</text>
+          <path class="dg-sv-line" d="M300 590H928" marker-end="url(#lin-ah)"/>
+          <text class="is-sm" x="306" y="584"><tspan style="fill:var(--dg-accent)">16</tspan> ResultLIN(net, obj, s_options, flag, output, t0, …)</text>
+          <path class="dg-sv-line" d="M170 620H928" marker-end="url(#lin-ah)"/>
+          <text class="is-sm" x="176" y="614"><tspan style="fill:var(--dg-accent)">17</tspan> Plot()  [Plot=true]</text>
+          <path class="dg-sv-line is-muted" d="M170 650H52" marker-end="url(#lin-ah-m)"/>
+          <text class="is-sm" x="56" y="644"><tspan style="fill:var(--dg-accent)">18</tspan> [result, flag, output]</text>
+          <path class="dg-sv-line" d="M50 680H928" marker-end="url(#lin-ah)"/>
+          <text class="is-sm" x="56" y="674"><tspan style="fill:var(--dg-accent)">19</tspan> result.get_ss(Algorithm, Coordinate, Input, Output) → dss</text>
+          <path class="dg-sv-line" d="M50 715H168" marker-end="url(#lin-ah)"/>
+          <text class="is-sm" x="56" y="709"><tspan style="fill:var(--dg-accent)">20</tspan> get_sys(NV) = 01–18 + 19</text>
+        </g>
+      </svg>
+      <div class="dg-only-narrow">
+        <ol class="lin-seq-list">
+          <li><span class="lin-id">LIN-01</span> <span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.linearize</code></li>
+          <li><span class="lin-id">LIN-02</span> <code>PowerNetwork</code> → <code>SolverLIN.get_options</code></li>
+          <li><span class="lin-id">LIN-03</span> <code>PowerNetwork</code> → <code>SolverLIN.solve</code></li>
+          <li><span class="lin-id">LIN-04</span> <code>SolverLIN</code> → <code>PowerNetwork.require_equilibrium</code></li>
+          <li><span class="lin-id">LIN-05</span> <code>SolverLIN</code> → <code>PowerNetwork.get_variable_map</code></li>
+          <li><span class="lin-id">LIN-06</span> <code>SolverLIN.point_vector</code></li>
+          <li class="lin-loop"><span class="lin-id">LIN-07</span> <code>SolverLIN</code> → <code>Bus.get_sys</code></li>
+          <li class="lin-loop"><span class="lin-id">LIN-08</span> <code>Bus</code> → <code>Component.get_sys</code></li>
+          <li class="lin-loop"><span class="lin-id">LIN-09</span> <code>Component</code> → <code>LocalController.get_sys_alone</code></li>
+          <li class="lin-loop"><span class="lin-id">LIN-10</span> <code>Component.get_sys_alone</code>, <code>connect</code></li>
+          <li class="lin-loop"><span class="lin-id">LIN-11</span> <code>SolverLIN</code> → <code>GlobalController.get_sys</code></li>
+          <li><span class="lin-id">LIN-12</span> <code>SolverLIN</code> → <code>PowerNetwork.get_admittance_matrix</code></li>
+          <li><span class="lin-id">LIN-13</span> <code>SolverLIN</code>: <span lang="en">blocks</span><span lang="ja">ブロック</span>, <code>add_global_controllers</code></li>
+          <li><span class="lin-id">LIN-14</span> <code>SolverLIN</code> → <code>Component.point_residual</code></li>
+          <li><span class="lin-id">LIN-15</span> <code>SolverLIN</code>: <span lang="en">checks</span><span lang="ja">検査</span></li>
+          <li><span class="lin-id">LIN-16</span> <code>SolverLIN</code> → <code>ResultLIN</code></li>
+          <li><span class="lin-id">LIN-17</span> <code>PowerNetwork</code> → <code>ResultLIN.Plot</code></li>
+          <li><span class="lin-id">LIN-18</span> <code>PowerNetwork.linearize</code> → <span lang="en">caller</span><span lang="ja">呼び出し側</span></li>
+          <li><span class="lin-id">LIN-19</span> <span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>ResultLIN.get_ss</code></li>
+          <li><span class="lin-id">LIN-20</span> <span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.get_sys</code></li>
+        </ol>
+      </div>
+      <figcaption lang="en">One run of <code>net.linearize</code>, then <code>get_ss</code>. <code>net.get_sys</code> (LIN-20) runs LIN-01 to LIN-19 in one call.</figcaption>
+      <figcaption lang="ja"><code>net.linearize</code> の 1 回の実行と、その後の <code>get_ss</code>。<code>net.get_sys</code> (LIN-20) は LIN-01〜LIN-19 を 1 回の呼び出しで実行します。</figcaption>
+    </figure>
+
+    <!-- ============================== STEPS ============================== -->
+    <h2 id="steps"><span lang="en">Steps</span><span lang="ja">ステップ</span></h2>
+    <p lang="en">Each row is one requirement of the feature. Rows marked on the left repeat for each bus, component or global controller. <code>n_x</code>, <code>n_v</code> (= 2 × number of buses) and <code>n_u</code> are the numbers of states, bus voltage variables and component inputs of the variable map.</p>
+    <p lang="ja">各行がこの機能の 1 つの要件です。左に印のある行は母線・機器・広域制御器ごとに繰り返します。<code>n_x</code>、<code>n_v</code> (= 2 × 母線数)、<code>n_u</code> は変数マップの状態、母線電圧変数、機器入力の数です。</p>
+    <table class="dg-table lin-steps">
+      <thead><tr><th>ID</th><th><span lang="en">Caller → callee.method</span><span lang="ja">呼び出し元 → 呼び出し先.メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">処理内容</span></th><th><span lang="en">Reads</span><span lang="ja">読むもの</span></th><th><span lang="en">Returns / changes</span><span lang="ja">返すもの・変更</span></th></tr></thead>
+      <tbody>
+        <tr>
+          <td>LIN-01</td>
+          <td><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.linearize</code></td>
+          <td><span lang="en">Takes <code>Plot</code> out of the options (<code>take_call_options</code>).</span><span lang="ja">オプションから <code>Plot</code> を取り出します (<code>take_call_options</code>)。</span></td>
+          <td><span class="lin-lbl"><span lang="en">Reads</span><span lang="ja">読むもの</span></span><code>varargin</code></td>
+          <td><span class="lin-lbl"><span lang="en">Returns / changes</span><span lang="ja">返すもの・変更</span></span><code>c_nv</code>, <code>opt.Plot</code></td>
+        </tr>
+        <tr>
+          <td>LIN-02</td>
+          <td><code>PowerNetwork.linearize</code> → <code>SolverLIN.get_options</code></td>
+          <td><span lang="en">Removes the v3 option <code>NonUnit</code> (<code>v3_linearize_args</code>), applies the overrides (<code>tools.resolve_options</code>), checks the values (<code>validate_options</code>) and the form of <code>Point</code> (<code>check_point</code>).</span><span lang="ja">v3 のオプション <code>NonUnit</code> を取り除き (<code>v3_linearize_args</code>)、上書きを適用し (<code>tools.resolve_options</code>)、値 (<code>validate_options</code>) と <code>Point</code> の形 (<code>check_point</code>) を検査します。</span></td>
+          <td><span class="lin-lbl"><span lang="en">Reads</span><span lang="ja">読むもの</span></span><code>net.solver_LIN</code>, <code>c_nv</code></td>
+          <td><span class="lin-lbl"><span lang="en">Returns / changes</span><span lang="ja">返すもの・変更</span></span><code>s_options</code>: <code>Algorithm</code>, <code>Point</code>, <code>Coordinate</code></td>
+        </tr>
+        <tr>
+          <td>LIN-03</td>
+          <td><code>PowerNetwork.linearize</code> → <code>SolverLIN.solve</code></td>
+          <td><span lang="en">Runs LIN-04 to LIN-16. Starts the elapsed-time clock.</span><span lang="ja">LIN-04〜LIN-16 を実行します。経過時間の計測を始めます。</span></td>
+          <td><span class="lin-lbl"><span lang="en">Reads</span><span lang="ja">読むもの</span></span><code>net</code>, <code>s_options</code></td>
+          <td><span class="lin-lbl"><span lang="en">Returns / changes</span><span lang="ja">返すもの・変更</span></span><code>[result, flag, output]</code></td>
+        </tr>
+        <tr>
+          <td>LIN-04</td>
+          <td><code>SolverLIN.solve</code> → <code>PowerNetwork.require_equilibrium</code></td>
+          <td><span lang="en">Builds out-of-date <code>f_*</code> handles (<code>set_odefcn</code>) and stops if the equilibrium is missing or stale. Then rejects a v3 <code>NonUnit</code> bus that does not exist (<code>v3_nonunit_range</code>).</span><span lang="ja">古い <code>f_*</code> ハンドルを作り直し (<code>set_odefcn</code>)、平衡点がないか古ければ停止します。続いて、存在しない v3 の <code>NonUnit</code> 母線を拒否します (<code>v3_nonunit_range</code>)。</span></td>
+          <td><span class="lin-lbl"><span lang="en">Reads</span><span lang="ja">読むもの</span></span><code>s_edit</code>, <code>tab_editLog</code></td>
+          <td><span class="lin-lbl"><span lang="en">Returns / changes</span><span lang="ja">返すもの・変更</span></span><code>f_*</code>; <code>s_edit.str_odefcn = "updated"</code></td>
+        </tr>
+        <tr>
+          <td>LIN-05</td>
+          <td><code>SolverLIN.solve</code> → <code>PowerNetwork.get_variable_map</code></td>
+          <td><span lang="en">Gets the order of all variables and the rows of each bus and global controller.</span><span lang="ja">全変数の順序と、母線・広域制御器ごとの行を得ます。</span></td>
+          <td><span class="lin-lbl"><span lang="en">Reads</span><span lang="ja">読むもの</span></span><code>sv_x</code>, <code>sv_u</code>, <span lang="en">tags</span><span lang="ja">タグ</span></td>
+          <td><span class="lin-lbl"><span lang="en">Returns / changes</span><span lang="ja">返すもの・変更</span></span><code>tab_map</code> (<code>(n_x + n_v + n_u) × 6</code>), <code>c_idxBus</code>, <code>c_idxGC</code></td>
+        </tr>
+        <tr>
+          <td>LIN-06</td>
+          <td><code>SolverLIN.solve</code> → <code>SolverLIN.point_vector</code></td>
+          <td><span lang="en">Values of the variable map at the point: the equilibrium (<code>[]</code>), the given vector (length checked), or <code>sim.get_point(t, tab_map, Side=…)</code>. Stops when a value is not finite.</span><span lang="ja">点における変数マップの値。平衡点 (<code>[]</code>)、与えたベクトル (長さを検査)、または <code>sim.get_point(t, tab_map, Side=…)</code>。有限でない値があれば停止します。</span></td>
+          <td><span class="lin-lbl"><span lang="en">Reads</span><span lang="ja">読むもの</span></span><code>Point</code>, <code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code>, <code>c_Vequilibrium</code>; <code>ResultODE.rm_variable</code></td>
+          <td><span class="lin-lbl"><span lang="en">Returns / changes</span><span lang="ja">返すもの・変更</span></span><code>rv_point</code> (<code>(n_x + n_v + n_u) × 1</code>), <code>l_eq</code></td>
+        </tr>
+        <tr class="lin-loop">
+          <td>LIN-07</td>
+          <td><code>SolverLIN.solve</code> → <code>Bus.get_sys("port", "V2I")</code></td>
+          <td><span lang="en">Model of each bus with its components, inputs <code>[Vre; Vim; u…]</code>, outputs <code>[Ire; Iim; y…]</code>: the component models side by side with their <code>D</code> blocks of <code>V</code> summed (<code>Point</code> passed as the rows of the bus). A bus without components gives a model with no states and zero current. The solver keeps the current rows and the outputs separately, with the columns of <code>V</code> and of the component inputs (the inputs of the controllers are left out).</span><span lang="ja">各母線と機器のモデル。入力 <code>[Vre; Vim; u…]</code>、出力 <code>[Ire; Iim; y…]</code>。機器のモデルを並べ、<code>V</code> の <code>D</code> ブロックを足し合わせます (<code>Point</code> は母線の行を渡す)。機器のない母線は状態なし・電流 0 のモデルです。ソルバーは電流の行と出力の行を分けて保持し、列は <code>V</code> と機器入力だけを残します (制御器の入力は除く)。</span></td>
+          <td><span class="lin-lbl"><span lang="en">Reads</span><span lang="ja">読むもの</span></span><code>a_Component</code>, <code>rv_point(c_idxBus{i})</code></td>
+          <td><span class="lin-lbl"><span lang="en">Returns / changes</span><span lang="ja">返すもの・変更</span></span><code>c_sysBus{i}</code> (<code>dss</code>, <code>2 × (2 + n_u,i)</code>), <code>c_sysY{i}</code> (<span lang="en">outputs</span><span lang="ja">出力</span>)</td>
+        </tr>
+        <tr class="lin-loop">
+          <td>LIN-08</td>
+          <td><code>Bus.get_sys</code> → <code>Component.get_sys("port", "V2I")</code></td>
+          <td><span lang="en">Model of the component with all its local controllers (depth first): the component with the outputs and voltage its controllers read (LIN-10), the controller models (LIN-09), and extra state outputs for controllers that read states (<code>connect_states</code>), connected by signal name (<code>append</code>, <code>connect</code>). With a <code>Point</code>, <code>point_values</code> splits it into <code>x, V, I, u</code> and the controller inputs.</span><span lang="ja">すべての局所制御器 (深さ優先) を含む機器のモデル。制御器が読む出力と電圧を持つ機器 (LIN-10)、制御器のモデル (LIN-09)、状態を読む制御器のための状態出力 (<code>connect_states</code>) を、信号名で接続します (<code>append</code>, <code>connect</code>)。<code>Point</code> があれば <code>point_values</code> が <code>x, V, I, u</code> と制御器の入力に分けます。</span></td>
+          <td><span class="lin-lbl"><span lang="en">Reads</span><span lang="ja">読むもの</span></span><code>a_LocalController</code>, <code>iv_obsX</code>, <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code>, <span lang="en">equilibrium</span><span lang="ja">平衡点</span></td>
+          <td><span class="lin-lbl"><span lang="en">Returns / changes</span><span lang="ja">返すもの・変更</span></span><code>dss</code>; <span lang="en">states: component, then controllers; outputs with a state's name are</span><span lang="ja">状態は機器、次に制御器。状態と同名の出力は</span> <code>Y_&lt;name&gt;</code></td>
+        </tr>
+        <tr class="lin-loop">
+          <td>LIN-09</td>
+          <td><code>Component.get_sys</code> → <code>LocalController.get_sys_alone("tag", false)</code></td>
+          <td><span lang="en">Model of one controller, inputs <code>[Vre; Vim; sv_u]</code>, outputs <code>sv_y</code>, from <code>f_JacobiDx</code>, <code>f_JacobiY</code> and <code>f_Mass</code> at its point.</span><span lang="ja">1 つの制御器のモデル。入力 <code>[Vre; Vim; sv_u]</code>、出力 <code>sv_y</code>。点における <code>f_JacobiDx</code>、<code>f_JacobiY</code>、<code>f_Mass</code> から作ります。</span></td>
+          <td><span class="lin-lbl"><span lang="en">Reads</span><span lang="ja">読むもの</span></span><code>f_JacobiDx</code>, <code>f_JacobiY</code>, <code>f_Mass</code></td>
+          <td><span class="lin-lbl"><span lang="en">Returns / changes</span><span lang="ja">返すもの・変更</span></span><code>dss</code> (<span lang="en">untagged names, groups for <code>connect</code></span><span lang="ja">タグなしの名前、<code>connect</code> 用のグループ</span>)</td>
+        </tr>
+        <tr class="lin-loop">
+          <td>LIN-10</td>
+          <td><code>Component.get_sys</code> → <code>Component.get_sys_alone(x, V, I, u, controllerPorts=true)</code></td>
+          <td><span lang="en">Model of the component alone: <code>A = Axx</code>, <code>B = [Bxv, Bxu]</code>, <code>C = Cix</code>, <code>D = [Div, Diu]</code>, plus the rows <code>Cyx, [Dyv, Dyu]</code> and <code>V</code> for the controllers. Empty blocks are filled with zeros (<code>shape</code>). Stops when a block of <code>I</code> (<code>Bxi</code>, <code>Dii</code>, <code>Dyi</code>) is not zero.</span><span lang="ja">機器単体のモデル: <code>A = Axx</code>、<code>B = [Bxv, Bxu]</code>、<code>C = Cix</code>、<code>D = [Div, Diu]</code>。制御器のために <code>Cyx, [Dyv, Dyu]</code> と <code>V</code> の行を加えます。空のブロックは 0 で埋めます (<code>shape</code>)。<code>I</code> のブロック (<code>Bxi</code>、<code>Dii</code>、<code>Dyi</code>) が 0 でなければ停止します。</span></td>
+          <td><span class="lin-lbl"><span lang="en">Reads</span><span lang="ja">読むもの</span></span><code>f_JacobiDx</code>, <code>f_JacobiI</code>, <code>f_JacobiY</code>, <code>f_Mass</code> <span lang="en">at</span><span lang="ja">点</span> <code>(0, x, V, I, u)</code></td>
+          <td><span class="lin-lbl"><span lang="en">Returns / changes</span><span lang="ja">返すもの・変更</span></span><code>dss</code> (<code>E = fcn_Mass</code>)</td>
+        </tr>
+        <tr class="lin-loop">
+          <td>LIN-11</td>
+          <td><code>SolverLIN.solve</code> → <code>GlobalController.get_sys</code></td>
+          <td><span lang="en">Model of each global controller: inputs are the states <code>sv_u</code> of each controlled unit, outputs the inputs <code>sv_y</code> they feed. At a <code>Point</code>, the inputs are read from the point (<code>gc_input</code>).</span><span lang="ja">各広域制御器のモデル。入力は各制御対象の状態 <code>sv_u</code>、出力はそれが加わる入力 <code>sv_y</code> です。<code>Point</code> のときは入力を点から読みます (<code>gc_input</code>)。</span></td>
+          <td><span class="lin-lbl"><span lang="en">Reads</span><span lang="ja">読むもの</span></span><code>controlledUnits</code>, <code>f_JacobiDx</code>, <code>f_JacobiY</code>, <code>f_Mass</code></td>
+          <td><span class="lin-lbl"><span lang="en">Returns / changes</span><span lang="ja">返すもの・変更</span></span><code>c_sysGC{k}</code> (<code>dss</code>)</td>
+        </tr>
+        <tr>
+          <td>LIN-12</td>
+          <td><code>SolverLIN.solve</code> → <code>PowerNetwork.get_admittance_matrix</code></td>
+          <td><span lang="en">Admittance matrix of the model (no fault), and the bus voltages at the point.</span><span lang="ja">モデルのアドミタンス行列 (地絡は含まない) と、点における母線電圧。</span></td>
+          <td><span class="lin-lbl"><span lang="en">Reads</span><span lang="ja">読むもの</span></span><span lang="en">branches, bus shunts</span><span lang="ja">ブランチ、母線のシャント</span>, <code>rv_point</code></td>
+          <td><span class="lin-lbl"><span lang="en">Returns / changes</span><span lang="ja">返すもの・変更</span></span><code>cm_Y</code> (<code>n_bus × n_bus</code>, complex, pu), <code>cv_V</code></td>
+        </tr>
+        <tr>
+          <td>LIN-13</td>
+          <td><code>SolverLIN.solve</code> → <code>tools.dcellfun</code>, <code>add_global_controllers</code></td>
+          <td><span lang="en">Stacks the bus models block-diagonally (<code>Axx</code>, <code>Axv</code>, <code>Bxu</code>, <code>Cix</code>, <code>Div</code>, <code>Diu</code>, <code>E</code>), closes the global controllers (their states <code>z</code> after <code>x</code>; inputs picked from <code>x</code>, outputs added to <code>u</code>), checks the state names against the map, and forms <code>Avx = −Cix</code>, <code>Avv = Y − Div</code>, <code>Bv = −Diu</code>.</span><span lang="ja">母線モデルをブロック対角に並べ (<code>Axx</code>、<code>Axv</code>、<code>Bxu</code>、<code>Cix</code>、<code>Div</code>、<code>Diu</code>、<code>E</code>)、広域制御器を閉じ (状態 <code>z</code> を <code>x</code> の後に置き、入力は <code>x</code> から選び、出力は <code>u</code> に加える)、状態名を変数マップと照合し、<code>Avx = −Cix</code>、<code>Avv = Y − Div</code>、<code>Bv = −Diu</code> を作ります。</span></td>
+          <td><span class="lin-lbl"><span lang="en">Reads</span><span lang="ja">読むもの</span></span><code>c_sysBus</code>, <code>c_sysY</code>, <code>c_sysGC</code>, <code>cm_Y</code>, <code>tab_map.Label</code></td>
+          <td><span class="lin-lbl"><span lang="en">Returns / changes</span><span lang="ja">返すもの・変更</span></span><code>s_block</code>, <code>s_model</code> (<span lang="en">see</span><span lang="ja">参照:</span> <a href="#data">Data</a>)</td>
+        </tr>
+        <tr>
+          <td>LIN-14</td>
+          <td><code>SolverLIN.solve</code> → <code>residual_at_point</code> → <code>Component.point_residual</code></td>
+          <td><span lang="en">Nonlinear right-hand sides at the point: <code>f_dx</code> of each component and its controllers, <code>f_dx</code> of each global controller, and <code>Y·v − ΣI</code> of each bus.</span><span lang="ja">点における非線形の右辺: 各機器とその制御器の <code>f_dx</code>、各広域制御器の <code>f_dx</code>、各母線の <code>Y·v − ΣI</code>。</span></td>
+          <td><span class="lin-lbl"><span lang="en">Reads</span><span lang="ja">読むもの</span></span><code>f_dx</code>, <code>f_I</code>, <code>rv_point</code></td>
+          <td><span class="lin-lbl"><span lang="en">Returns / changes</span><span lang="ja">返すもの・変更</span></span><code>rv_residual</code> (<code>(n_x + n_v) × 1</code>)</td>
+        </tr>
+        <tr>
+          <td>LIN-15</td>
+          <td><code>SolverLIN.solve</code></td>
+          <td><span lang="en">Decides <code>flag</code> and <code>output</code>: <code>"NotFinite"</code> when a block has a non-finite entry, else <code>"SingularAvv"</code> when <code>rcond(Avv) &lt; 1e-14</code> (names the undetermined voltages, <code>singular_voltages</code>). Reports buses with <code>|V| &lt; 1e-8</code> (also printed as INFO) and, away from the equilibrium, a residual above <code>1e-6</code>; neither changes <code>flag</code>.</span><span lang="ja"><code>flag</code> と <code>output</code> を決めます。非有限の要素があれば <code>"NotFinite"</code>、そうでなく <code>rcond(Avv) &lt; 1e-14</code> なら <code>"SingularAvv"</code> (定まらない電圧を <code>singular_voltages</code> で示す)。<code>|V| &lt; 1e-8</code> の母線 (INFO としても表示) と、平衡点以外で <code>1e-6</code> を超える残差を報告しますが、どちらも <code>flag</code> は変えません。</span></td>
+          <td><span class="lin-lbl"><span lang="en">Reads</span><span lang="ja">読むもの</span></span><code>s_block</code>, <code>cv_V</code>, <code>rv_residual</code></td>
+          <td><span class="lin-lbl"><span lang="en">Returns / changes</span><span lang="ja">返すもの・変更</span></span><code>flag</code> (logical), <code>output</code></td>
+        </tr>
+        <tr>
+          <td>LIN-16</td>
+          <td><code>SolverLIN.solve</code> → <code>ResultLIN</code></td>
+          <td><span lang="en">Stores the blocks, the map, the point, the residual and the model data.</span><span lang="ja">ブロック、変数マップ、点、残差、モデルのデータを保存します。</span></td>
+          <td><span class="lin-lbl"><span lang="en">Reads</span><span lang="ja">読むもの</span></span><code>s_block</code>, <code>s_model</code>, <code>tab_map</code>, <code>rv_point</code>, <code>rv_residual</code></td>
+          <td><span class="lin-lbl"><span lang="en">Returns / changes</span><span lang="ja">返すもの・変更</span></span><code>result</code> (<code>ResultLIN</code>)</td>
+        </tr>
+        <tr>
+          <td>LIN-17</td>
+          <td><code>PowerNetwork.linearize</code> → <code>ResultLIN.Plot</code></td>
+          <td><span lang="en">With <code>Plot=true</code>: the finite generalized eigenvalues of <code>(A, E)</code> of <code>get_ss(Algorithm)</code>, unstable ones in red.</span><span lang="ja"><code>Plot=true</code> のとき、<code>get_ss(Algorithm)</code> の <code>(A, E)</code> の有限な一般化固有値を描き、不安定なものは赤で示します。</span></td>
+          <td><span class="lin-lbl"><span lang="en">Reads</span><span lang="ja">読むもの</span></span><code>options.Algorithm</code></td>
+          <td><span class="lin-lbl"><span lang="en">Returns / changes</span><span lang="ja">返すもの・変更</span></span><span lang="en">figure</span><span lang="ja">図</span></td>
+        </tr>
+        <tr>
+          <td>LIN-18</td>
+          <td><code>PowerNetwork.linearize</code> → <span lang="en">caller</span><span lang="ja">呼び出し側</span></td>
+          <td><span lang="en">Returns the result.</span><span lang="ja">結果を返します。</span></td>
+          <td></td>
+          <td><span class="lin-lbl"><span lang="en">Returns / changes</span><span lang="ja">返すもの・変更</span></span><code>[result, flag, output]</code></td>
+        </tr>
+        <tr>
+          <td>LIN-19</td>
+          <td><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>ResultLIN.get_ss</code></td>
+          <td><span lang="en">Reduces the blocks to a descriptor model: <code>via_kron</code> eliminates <code>v</code> (<code>A = Axx − Axv·Avv⁻¹·Avx</code>); <code>via_feedback</code> connects the bus models in I-to-V form (<code>i2v_full</code>) through the admittance matrix, absorbs buses without an I-to-V form into it, then closes the global controllers (<code>feedback</code>); <code>via_dae</code> keeps <code>v</code> in the chosen coordinates (<code>coordinate_filter</code>). <code>select_output</code> and <code>input_index</code> apply <code>Output</code> and <code>Input</code>. Stops for <code>"NotFinite"</code>, and for <code>"SingularAvv"</code> except with <code>"DAE"</code>.</span><span lang="ja">ブロックをディスクリプタ形式のモデルに縮約します。<code>via_kron</code> は <code>v</code> を消去 (<code>A = Axx − Axv·Avv⁻¹·Avx</code>)、<code>via_feedback</code> は I-to-V 形式の母線モデル (<code>i2v_full</code>) をアドミタンス行列でつなぎ、I-to-V 形式のない母線はアドミタンス行列に吸収し、最後に広域制御器を閉じます (<code>feedback</code>)。<code>via_dae</code> は <code>v</code> を指定した座標で残します (<code>coordinate_filter</code>)。<code>select_output</code> と <code>input_index</code> が <code>Output</code> と <code>Input</code> を適用します。<code>"NotFinite"</code> では停止し、<code>"SingularAvv"</code> では <code>"DAE"</code> 以外で停止します。</span></td>
+          <td><span class="lin-lbl"><span lang="en">Reads</span><span lang="ja">読むもの</span></span><code>rm_*</code>, <code>s_model</code>, <code>tab_variable</code>, <code>options</code>, <code>output.str_issue</code></td>
+          <td><span class="lin-lbl"><span lang="en">Returns / changes</span><span lang="ja">返すもの・変更</span></span><code>sys</code> (<code>dss</code>; <span lang="en">sizes in</span><span lang="ja">サイズは</span> <a href="#data">Data</a>)</td>
+        </tr>
+        <tr>
+          <td>LIN-20</td>
+          <td><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.get_sys</code></td>
+          <td><span lang="en">Takes <code>Input</code> and <code>Output</code> out (<code>take_channel_options</code>), runs <code>net.linearize</code> (LIN-01 to LIN-18), then <code>result.get_ss(result.options.Algorithm, …)</code> (LIN-19).</span><span lang="ja"><code>Input</code> と <code>Output</code> を取り出し (<code>take_channel_options</code>)、<code>net.linearize</code> (LIN-01〜LIN-18)、続いて <code>result.get_ss(result.options.Algorithm, …)</code> (LIN-19) を実行します。</span></td>
+          <td><span class="lin-lbl"><span lang="en">Reads</span><span lang="ja">読むもの</span></span><code>varargin</code></td>
+          <td><span class="lin-lbl"><span lang="en">Returns / changes</span><span lang="ja">返すもの・変更</span></span><code>[sys, flag, output]</code>; <code>output.result</code> = <code>ResultLIN</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ============================== DATA ============================== -->
+    <h2 id="data"><span lang="en">Data produced</span><span lang="ja">生成されるデータ</span></h2>
+    <h3><code>ResultLIN</code></h3>
+    <p lang="en">A subclass of <code>ResultBase</code> (see <a href="api-design.html#rules">API Design</a>). All blocks are in pu, in deviations from <code>rv_point</code>, and their rows and columns follow <code>tab_variable</code>. Nothing is written back to the network.</p>
+    <p lang="ja"><code>ResultBase</code> のサブクラスです (<a href="api-design.html#rules">API Design</a> を参照)。ブロックはすべて pu で、<code>rv_point</code> からの偏差を表し、行と列は <code>tab_variable</code> の順です。ネットワークには何も書き戻しません。</p>
+    <table class="dg-table">
+      <thead><tr><th><span lang="en">Property</span><span lang="ja">プロパティ</span></th><th><span lang="en">Size</span><span lang="ja">サイズ</span></th><th><span lang="en">Contents</span><span lang="ja">内容</span></th></tr></thead>
+      <tbody>
+        <tr><td><code>tab_variable</code></td><td><code>(n_x + n_v + n_u) × 6</code></td><td><span lang="en">Variable map at the time of the analysis.</span><span lang="ja">解析時の変数マップ。</span></td></tr>
+        <tr><td><code>rv_point</code></td><td><code>(n_x + n_v + n_u) × 1</code></td><td><span lang="en">Point of the linearization.</span><span lang="ja">線形化した点。</span></td></tr>
+        <tr><td><code>rm_Axx</code>, <code>rm_E</code></td><td><code>n_x × n_x</code></td><td><span lang="en">∂f/∂x and the mass matrix.</span><span lang="ja">∂f/∂x と質量行列。</span></td></tr>
+        <tr><td><code>rm_Axv</code></td><td><code>n_x × n_v</code></td><td>∂f/∂v</td></tr>
+        <tr><td><code>rm_Bx</code></td><td><code>n_x × n_u</code></td><td>∂f/∂u</td></tr>
+        <tr><td><code>rm_Avx</code>, <code>rm_Avv</code>, <code>rm_Bv</code></td><td><code>n_v × n_x</code>, <code>n_v × n_v</code>, <code>n_v × n_u</code></td><td><span lang="en">Jacobians of the current balance <code>Y v − I</code>; <code>rm_Avv = Y − Div</code>.</span><span lang="ja">電流バランス <code>Y v − I</code> のヤコビアン。<code>rm_Avv = Y − Div</code>。</span></td></tr>
+        <tr><td><code>rv_residual</code></td><td><code>(n_x + n_v) × 1</code></td><td><span lang="en">Nonlinear right-hand sides at the point; zero at the equilibrium. <code>get_ss</code> leaves it out.</span><span lang="ja">点における非線形の右辺。平衡点では 0。<code>get_ss</code> は使いません。</span></td></tr>
+        <tr><td><code>s_model</code> <small>Hidden</small></td><td>struct</td><td><span lang="en">For <code>get_ss</code>: the bus models <code>c_sysBus</code>, the global controller models <code>c_sysGC</code>, <code>cm_Y</code>, <code>cv_V</code>, <code>lv_nonUnit</code> (buses without components), <code>sv_I</code> and <code>s_output</code> (<code>Cx</code>, <code>Cv</code>, <code>Du</code>, <code>sv_name</code> of the outputs <code>y</code>).</span><span lang="ja"><code>get_ss</code> 用: 母線モデル <code>c_sysBus</code>、広域制御器モデル <code>c_sysGC</code>、<code>cm_Y</code>、<code>cv_V</code>、<code>lv_nonUnit</code> (機器のない母線)、<code>sv_I</code>、<code>s_output</code> (出力 <code>y</code> の <code>Cx</code>、<code>Cv</code>、<code>Du</code>、<code>sv_name</code>)。</span></td></tr>
+        <tr><td><span lang="en">from</span><span lang="ja">継承:</span> <code>ResultBase</code></td><td></td><td><code>flag</code> (logical), <code>output</code>, <code>options</code> (<code>Algorithm</code>, <code>Point</code>, <code>Coordinate</code>), <code>str_solver = "SolverLIN"</code>, <code>r_elapsed</code> [s], <code>str_network</code>, <code>l_success</code></td></tr>
+      </tbody>
+    </table>
+    <p lang="en"><code>output</code> has <code>message</code>, <code>str_issue</code> (<code>""</code>, <code>"NotFinite"</code>, <code>"SingularAvv"</code>), <code>rcond_Avv</code>, <code>r_residual</code> (largest absolute residual), <code>sv_faultBus</code>, <code>l_equilibrium</code>, <code>n_x</code>, <code>n_v</code>, <code>n_u</code>; <code>net.get_sys</code> adds <code>result</code>.</p>
+    <p lang="ja"><code>output</code> のフィールドは <code>message</code>、<code>str_issue</code> (<code>""</code>、<code>"NotFinite"</code>、<code>"SingularAvv"</code>)、<code>rcond_Avv</code>、<code>r_residual</code> (残差の絶対値の最大)、<code>sv_faultBus</code>、<code>l_equilibrium</code>、<code>n_x</code>、<code>n_v</code>、<code>n_u</code> です。<code>net.get_sys</code> は <code>result</code> を加えます。</p>
+
+    <h3><span lang="en">State-space models of <code>get_ss</code></span><span lang="ja"><code>get_ss</code> の状態空間モデル</span></h3>
+    <p lang="en">All are <code>dss</code> objects with <code>StateName</code>, <code>InputName</code> and <code>OutputName</code> (labels of the variable map). The inputs are the component inputs <code>u</code> in the order of the map. The state order of <code>"Kron"</code> and <code>"DAE"</code> puts the global controllers first, that of <code>"Feedback"</code> last (see <a href="class-design.html#variables">Class Design, Variable order</a>).</p>
+    <p lang="ja">いずれも <code>StateName</code>、<code>InputName</code>、<code>OutputName</code> (変数マップのラベル) を持つ <code>dss</code> オブジェクトです。入力は変数マップの順の機器入力 <code>u</code> です。状態の順は、<code>"Kron"</code> と <code>"DAE"</code> では広域制御器が先、<code>"Feedback"</code> では後です (<a href="class-design.html#variables">Class Design の Variable order</a> を参照)。</p>
+    <table class="dg-table">
+      <thead><tr><th>Algorithm</th><th><span lang="en">States</span><span lang="ja">状態</span></th><th><span lang="en">Default outputs</span><span lang="ja">既定の出力</span></th><th><span lang="en">A, B, C, D</span><span lang="ja">A, B, C, D</span></th></tr></thead>
+      <tbody>
+        <tr><td><code>"Kron"</code></td><td><span lang="en">all <code>n_x</code></span><span lang="ja"><code>n_x</code> 個すべて</span></td><td><span lang="en">the states, without output names</span><span lang="ja">状態 (出力名なし)</span></td><td><code>n_x × n_x</code>, <code>n_x × n_u</code>, <code>n_x × n_x</code>, <code>n_x × n_u</code></td></tr>
+        <tr><td><code>"Feedback"</code></td><td><span lang="en"><code>n_x</code> or fewer (<code>connect</code> can remove states such as <code>Vst</code> of an AVR)</span><span lang="ja"><code>n_x</code> 個以下 (<code>connect</code> が AVR の <code>Vst</code> などを取り除くことがある)</span></td><td><span lang="en">states of the components and local controllers, a row for each removed state, no global controller states</span><span lang="ja">機器と局所制御器の状態 (取り除いた状態の行を含み、広域制御器の状態は含まない)</span></td><td><span lang="en">rows of C as the outputs</span><span lang="ja">C の行は出力の数</span></td></tr>
+        <tr><td><code>"DAE"</code></td><td><span lang="en"><code>n_x + n_v</code>: the states, then <code>theta1…</code>, <code>rho1…</code> (or <code>V</code>, <code>Vre</code>/<code>Vim</code>); <code>E</code> singular</span><span lang="ja"><code>n_x + n_v</code>: 状態、続いて <code>theta1…</code>、<code>rho1…</code> (または <code>V</code>、<code>Vre</code>/<code>Vim</code>)。<code>E</code> は特異</span></td><td><span lang="en">the dynamic states</span><span lang="ja">動的な状態</span></td><td><code>(n_x+n_v)²</code>, <code>(n_x+n_v) × n_u</code>, <code>n_x × (n_x+n_v)</code>, <code>n_x × n_u</code></td></tr>
+      </tbody>
+    </table>
+    <p lang="en"><code>Output</code> replaces the outputs with any mix of <code>"x"</code>, <code>"V"</code> (<code>Vre</code>, <code>Vim</code> of each bus), <code>"I"</code> (<code>Y v</code>), <code>"y"</code> (outputs of components and local controllers) and names, written through the eliminated voltages; <code>Input</code> selects the inputs.</p>
+    <p lang="ja"><code>Output</code> は出力を <code>"x"</code>、<code>"V"</code> (各母線の <code>Vre</code>、<code>Vim</code>)、<code>"I"</code> (<code>Y v</code>)、<code>"y"</code> (機器と局所制御器の出力)、名前の任意の組み合わせに置き換え、消去した電圧を通して表します。<code>Input</code> は入力を選びます。</p>
+    <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
+      <p lang="en">Example: <code>network.IEEE14bus</code> at its equilibrium has <code>n_x = 30</code>, <code>n_v = 28</code>, <code>n_u = 34</code>: <code>rm_Axx</code> is 30 × 30, <code>rm_Avv</code> 28 × 28, <code>rm_Bx</code> 30 × 34, <code>rv_residual</code> 58 × 1 (largest entry about 1e-12). <code>"Kron"</code> and <code>"Feedback"</code> have 30 states, <code>"DAE"</code> 58 (<code>C</code> is 30 × 58). For <code>network.IEEE68bus</code> (with AVR and PSS), <code>"Kron"</code> has 144 states, <code>"Feedback"</code> 128 and <code>"DAE"</code> 280.</p>
+      <p lang="ja">例: <code>network.IEEE14bus</code> の平衡点では <code>n_x = 30</code>、<code>n_v = 28</code>、<code>n_u = 34</code> で、<code>rm_Axx</code> は 30 × 30、<code>rm_Avv</code> は 28 × 28、<code>rm_Bx</code> は 30 × 34、<code>rv_residual</code> は 58 × 1 (最大の要素は約 1e-12) です。<code>"Kron"</code> と <code>"Feedback"</code> は状態 30、<code>"DAE"</code> は 58 (<code>C</code> は 30 × 58) です。<code>network.IEEE68bus</code> (AVR と PSS 付き) では <code>"Kron"</code> が 144、<code>"Feedback"</code> が 128、<code>"DAE"</code> が 280 です。</p>
+    </div>
+
+    <!-- ============================== SIDE EFFECTS ============================== -->
+    <h2 id="side-effects"><span lang="en">Side effects and caches</span><span lang="ja">副作用とキャッシュ</span></h2>
+    <table class="dg-table">
+      <thead><tr><th><span lang="en">What</span><span lang="ja">対象</span></th><th><span lang="en">Behaviour</span><span lang="ja">振る舞い</span></th></tr></thead>
+      <tbody>
+        <tr><td><code>f_*</code> <span lang="en">handles</span><span lang="ja">ハンドル</span></td><td><span lang="en">Built by LIN-04 (and by the <code>check_edit</code> in each layer's <code>get_sys</code>) where <code>s_edit.str_odefcn</code> is not <code>"updated"</code>; they stay built.</span><span lang="ja">LIN-04 (および各層の <code>get_sys</code> の <code>check_edit</code>) で <code>s_edit.str_odefcn</code> が <code>"updated"</code> でない層について作り、そのまま残ります。</span></td></tr>
+        <tr><td><span lang="en">Network, equilibrium, edit flags</span><span lang="ja">ネットワーク、平衡点、編集フラグ</span></td><td><span lang="en">Read only. A <code>Point</code> is used for this call only and is not written to the models.</span><span lang="ja">読むだけです。<code>Point</code> はこの呼び出しだけで使い、モデルには書き込みません。</span></td></tr>
+        <tr><td><code>net.solver_LIN</code></td><td><span lang="en">Read only; options of the call are not stored.</span><span lang="ja">読むだけです。呼び出しのオプションは保存しません。</span></td></tr>
+        <tr><td><span lang="en">Command Window</span><span lang="ja">コマンドウィンドウ</span></td><td><span lang="en">An <code>INFO:</code> line when a bus voltage is zero at the point.</span><span lang="ja">点で母線電圧が 0 なら <code>INFO:</code> の行を表示します。</span></td></tr>
+        <tr><td><code>ResultLIN</code></td><td><span lang="en">Holds a reference to the network and its own copies of the map, blocks and bus models; <code>get_ss</code> works from these, so a later edit of the network does not change it. The next <code>linearize</code> after an edit that makes the equilibrium stale stops in LIN-04.</span><span lang="ja">ネットワークへの参照と、変数マップ・ブロック・母線モデルの写しを持ちます。<code>get_ss</code> はこれらから計算するので、後でネットワークを編集しても変わりません。平衡点を古くする編集の後の <code>linearize</code> は LIN-04 で止まります。</span></td></tr>
+      </tbody>
+    </table>
+
+    <!-- ============================== FAILURES ============================== -->
+    <h2 id="failures"><span lang="en">Failure and flags</span><span lang="ja">失敗とフラグ</span></h2>
+    <p lang="en"><code>flag</code> is <code>true</code> when every block is finite and <code>Avv</code> is invertible (<code>rcond ≥ 1e-14</code>). With <code>flag = false</code> the result is still returned and <code>output.str_issue</code> and <code>output.message</code> give the reason; <code>get_ss</code> then stops, except <code>"DAE"</code> with a singular <code>Avv</code>. <code>net.get_sys</code> stops with the error of <code>get_ss</code> in the same cases.</p>
+    <p lang="ja"><code>flag</code> は、すべてのブロックが有限で <code>Avv</code> が正則 (<code>rcond ≥ 1e-14</code>) のとき <code>true</code> です。<code>flag = false</code> でも結果は返り、<code>output.str_issue</code> と <code>output.message</code> に理由が入ります。そのとき <code>get_ss</code> は停止します (ただし <code>Avv</code> が特異な場合の <code>"DAE"</code> は除く)。<code>net.get_sys</code> も同じ場合に <code>get_ss</code> のエラーで停止します。</p>
+    <table class="dg-table">
+      <thead><tr><th><span lang="en">Situation</span><span lang="ja">状況</span></th><th><span lang="en">What the caller sees</span><span lang="ja">呼び出し側に見えるもの</span></th></tr></thead>
+      <tbody>
+        <tr><td><span lang="en">Non-finite Jacobian entry (LIN-15)</span><span lang="ja">ヤコビアンに非有限の要素 (LIN-15)</span></td><td><code>flag = false</code>, <code>str_issue = "NotFinite"</code>; <code>get_ss</code>: <code>GUILDA:ResultLIN:NotFinite</code></td></tr>
+        <tr><td><span lang="en">Singular <code>Avv</code> (LIN-15)</span><span lang="ja"><code>Avv</code> が特異 (LIN-15)</span></td><td><code>flag = false</code>, <code>str_issue = "SingularAvv"</code>; <code>get_ss("Kron"/"Feedback")</code>: <code>GUILDA:ResultLIN:SingularAvv</code></td></tr>
+        <tr><td><span lang="en">Zero bus voltage, point not an equilibrium</span><span lang="ja">母線電圧が 0、点が平衡点でない</span></td><td><span lang="en"><code>flag</code> unchanged; <code>output.message</code>, <code>output.sv_faultBus</code>, <code>result.rv_residual</code></span><span lang="ja"><code>flag</code> は変わらない。<code>output.message</code>、<code>output.sv_faultBus</code>、<code>result.rv_residual</code></span></td></tr>
+        <tr><td><span lang="en">Invalid point (LIN-02, LIN-06)</span><span lang="ja">不正な点 (LIN-02, LIN-06)</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:SolverLIN:PointType</code>, <code>PointSize</code>, <code>PointSimType</code>, <code>PointSimSize</code>, <code>PointNotFinite</code>; <code>GUILDA:ResultODE:PointTime</code></td></tr>
+        <tr><td><span lang="en">Model not finite at the point (<code>dss</code> rejects it, LIN-07, LIN-11)</span><span lang="ja">点でモデルが有限でない (<code>dss</code> が拒否。LIN-07, LIN-11)</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:SolverLIN:JacobianNotFinite</code></td></tr>
+        <tr><td><span lang="en">Equilibrium missing or stale (LIN-04)</span><span lang="ja">平衡点がない、または古い (LIN-04)</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:PowerNetwork:EquilibriumStale</code></td></tr>
+        <tr><td><span lang="en">Model structure</span><span lang="ja">モデルの構造</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:Component:CurrentDependence</code> (LIN-10), <code>GUILDA:GlobalController:GlobalControllerPort</code> (LIN-11), <code>GUILDA:SolverLIN:GlobalControllerPort</code>, <code>GUILDA:SolverLIN:VariableMap</code> (LIN-13)</td></tr>
+        <tr><td><span lang="en"><code>get_ss</code> arguments and forms (LIN-19)</span><span lang="ja"><code>get_ss</code> の引数と形 (LIN-19)</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:ResultLIN:UnknownInput</code>, <code>UnknownOutput</code>, <code>StateNotInModel</code>, <code>NoUnitBus</code>, <code>NoI2V</code>, <code>GlobalControllerPort</code></td></tr>
+        <tr><td><span lang="en">Invalid option</span><span lang="ja">不正なオプション</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:resolve_options:UnknownName</code></td></tr>
+      </tbody>
+    </table>
+    <p lang="en">The IDs name the entries of <code>_GUILDAsystem/_auxiliary/SystemTools/GUILDA/en/&lt;Object&gt;.xml</code>; <code>error(msg(ID))</code> raises the message text of the entry.</p>
+    <p lang="ja">ID は <code>_GUILDAsystem/_auxiliary/SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> の項目名です。<code>error(msg(ID))</code> はその項目のメッセージ本文を出します。</p>
+
+    <!-- ============================== EXTENSION ============================== -->
+    <h2 id="extension"><span lang="en">Extension points</span><span lang="ja">拡張ポイント</span></h2>
+    <p lang="en">A new model is linearized through the contract in <a href="model-implementation.html#contracts">Model Implementation</a>. The Jacobian functions are the same ones the simulation uses, called at <code>t = 0</code> and the point. What this feature uses:</p>
+    <p lang="ja">新しいモデルは <a href="model-implementation.html#contracts">Model Implementation</a> の契約を通して線形化されます。ヤコビアンの関数はシミュレーションと同じもので、<code>t = 0</code> と点で呼ばれます。この機能が使うもの:</p>
+    <table class="dg-table">
+      <thead><tr><th><span lang="en">Model</span><span lang="ja">モデル</span></th><th><span lang="en">Used by the linearization</span><span lang="ja">近似線形化が使うもの</span></th></tr></thead>
+      <tbody>
+        <tr><td><code>Component</code></td><td><span lang="en"><code>Jacobi_dx</code>, <code>Jacobi_I</code>, <code>Jacobi_Y</code> returning <code>[∂/∂x, ∂/∂V, ∂/∂I, ∂/∂u]</code> (numerical differentiation without them); the blocks of <code>I</code> must be zero. <code>fcn_Mass</code> is <code>E</code>. <code>fcn_dx</code> and <code>fcn_I</code> give the residual (LIN-14). <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code> name the states, inputs and outputs; an output with a state's name becomes <code>Y_&lt;name&gt;</code>.</span><span lang="ja"><code>[∂/∂x, ∂/∂V, ∂/∂I, ∂/∂u]</code> を返す <code>Jacobi_dx</code>、<code>Jacobi_I</code>、<code>Jacobi_Y</code> (なければ数値微分)。<code>I</code> のブロックは 0 でなければなりません。<code>fcn_Mass</code> が <code>E</code> になります。<code>fcn_dx</code> と <code>fcn_I</code> は残差に使います (LIN-14)。<code>sv_x</code>、<code>sv_u</code>、<code>sv_y</code> は状態・入力・出力の名前で、状態と同名の出力は <code>Y_&lt;name&gt;</code> になります。</span></td></tr>
+        <tr><td><code>LocalController</code></td><td><span lang="en"><code>Jacobi_dx</code>, <code>Jacobi_Y</code>, <code>fcn_Mass</code>; connected to the component by the names of <code>sv_u</code> and <code>sv_y</code>, as in the simulation. A controller that keeps its own model (such as <code>controller.local_LQR</code>) can call <code>Component.get_sys_alone</code>.</span><span lang="ja"><code>Jacobi_dx</code>、<code>Jacobi_Y</code>、<code>fcn_Mass</code>。シミュレーションと同じく <code>sv_u</code> と <code>sv_y</code> の名前で機器に接続します。独自のモデルを持つ制御器 (<code>controller.local_LQR</code> など) は <code>Component.get_sys_alone</code> を呼べます。</span></td></tr>
+        <tr><td><code>GlobalController</code></td><td><span lang="en"><code>Jacobi_dx</code>, <code>Jacobi_Y</code> (only the <code>u</code> columns are used), <code>fcn_Mass</code>; every controlled unit has the states <code>sv_u</code> and the inputs <code>sv_y</code>.</span><span lang="ja"><code>Jacobi_dx</code>、<code>Jacobi_Y</code> (<code>u</code> の列だけを使う)、<code>fcn_Mass</code>。すべての制御対象が状態 <code>sv_u</code> と入力 <code>sv_y</code> を持つこと。</span></td></tr>
+        <tr><td><span lang="en">New reduced form</span><span lang="ja">新しい縮約形</span></td><td><span lang="en">Add a case to <code>ResultLIN.get_ss</code> and to the <code>Algorithm</code> validators of <code>SolverLIN</code>; build it from <code>rm_*</code> and <code>s_model</code> so that no new linearization is needed.</span><span lang="ja"><code>ResultLIN.get_ss</code> と <code>SolverLIN</code> の <code>Algorithm</code> の検査に場合を加えます。新たな線形化が要らないよう、<code>rm_*</code> と <code>s_model</code> から作ります。</span></td></tr>
+      </tbody>
+    </table>
+
+    <!-- ============================== RELATED ============================== -->
+    <h2 id="related"><span lang="en">Related pages</span><span lang="ja">関連ページ</span></h2>
+    <div class="dg-two">
+      <div>
+        <h3><span lang="en">Classes</span><span lang="ja">クラス</span></h3>
+        <ul>
+          <li><a href="class-powernetwork.html">PowerNetwork</a></li>
+          <li><a href="class-bus.html">Bus</a></li>
+          <li><a href="class-branch.html">Branch</a></li>
+          <li><a href="class-component.html">Component</a></li>
+          <li><a href="class-localcontroller.html">LocalController</a></li>
+          <li><a href="class-globalcontroller.html">GlobalController</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3><span lang="en">Features</span><span lang="ja">機能</span></h3>
+        <ul>
+          <li><a href="feature-model-building.html"><span lang="en">Model building</span><span lang="ja">モデル構築</span></a></li>
+          <li><a href="feature-data-io.html"><span lang="en">Data IO</span><span lang="ja">データ入出力</span></a></li>
+          <li><a href="feature-power-flow.html"><span lang="en">Power flow</span><span lang="ja">潮流計算</span></a></li>
+          <li><a href="feature-initialize.html"><span lang="en">Initialize</span><span lang="ja">平衡点の計算</span></a></li>
+          <li><a href="feature-opf.html"><span lang="en">Optimal power flow</span><span lang="ja">最適潮流計算</span></a></li>
+          <li><a href="feature-cpf.html"><span lang="en">Continuation power flow</span><span lang="ja">連続潮流計算</span></a></li>
+          <li><a href="feature-simulation.html"><span lang="en">Time simulation</span><span lang="ja">時間応答シミュレーション</span></a></li>
+          <li><a href="feature-linearization.html"><span lang="en">Linearization</span><span lang="ja">近似線形化</span></a></li>
+        </ul>
+      </div>
+    </div>
+    <p lang="en">Cross-cutting rules: <a href="class-design.html">Class Design</a> (edit handling, variable order), <a href="api-design.html">API Design</a> (call shape, options, results), <a href="model-implementation.html">Model Implementation</a> (model contracts).</p>
+    <p lang="ja">横断的な規則: <a href="class-design.html">Class Design</a> (編集の扱い、変数の順序)、<a href="api-design.html">API Design</a> (呼び出しの形、オプション、結果)、<a href="model-implementation.html">Model Implementation</a> (モデルの契約)。</p>
+  </main>
+</body>
+</html>

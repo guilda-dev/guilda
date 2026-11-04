@@ -9,6 +9,10 @@
 - [status.md](status.md): テスト結果と未決事項。
 - [v4-migration.md](v4-migration.md): スクリプト作者とモデル作者向けの移行ガイド、非推奨の形、互換性の方針。
 
+## コードの問題の記録
+
+- [dev-pages-code-findings.md](dev-pages-code-findings.md): For Developer のクラスと機能のページを書く途中で見つかったコードと文書の問題(バグ、仕様・コメント不一致、整理)。
+
 ## 要件
 
 - [opf-requirements.md](opf-requirements.md): OPF の要件、ロードマップ、未決の設計事項。

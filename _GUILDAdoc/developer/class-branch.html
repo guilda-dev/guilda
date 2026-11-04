@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-title-ja="GUILDA 開発者ガイド - クラス: Branch">GUILDA Developer Guide - Class: Branch</title>
+  <script src="../doc-lang.js"></script>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    /* Class pages only (cl-*); shared parts are dg-* in style.css */
+    .cl-figure svg { max-width: 600px; margin: 0 auto; }
+    .cl-table td:first-child code { white-space: nowrap; }
+    .cl-table td small + small { margin-top: 4px; }
+    .cl-table .dg-badge { white-space: normal; }
+    .cl-used { display: flex; flex-wrap: wrap; gap: var(--dg-s2); margin: var(--dg-s3) 0 var(--dg-s5); padding: 0; list-style: none; }
+    .cl-used a { display: inline-block; padding: 6px 12px; border: 1px solid var(--dg-line); border-radius: var(--radius); text-decoration: none; }
+    .cl-used a:hover { border-color: var(--brand); }
+    .cl-used small { display: block; color: var(--dg-muted); font-size: 0.8rem; }
+    @media (max-width: 640px) {
+      .cl-table td:first-child code { white-space: normal; }
+      html[data-lang="ja"] .dg .dg-table td[data-label-ja]::before { content: attr(data-label-ja); }
+    }
+  </style>
+</head>
+<body class="developer-layout dg">
+  <svg class="dg-sprite" aria-hidden="true" focusable="false">
+    <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+  </svg>
+  <main>
+    <button type="button" class="developer-back-button" onclick="window.history.back()"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></button>
+    <h1><span lang="en">Class: </span><span lang="ja">クラス: </span><code>Branch</code></h1>
+    <p class="page-lead" lang="en">The abstract base of lines and transformers between two buses. A branch holds its constants and limits and computes its own 2×2 admittance matrix, which the network sums into the bus admittance matrix.</p>
+    <p class="page-lead" lang="ja">2 母線を結ぶ送電線と変圧器の抽象基底クラスです。ブランチは自身の定数と制限を持ち、2×2 のアドミタンス行列を自分で計算します。ネットワークはそれを足し合わせて母線アドミタンス行列を作ります。</p>
+
+    <nav class="dev-toc" aria-label="Contents">
+      <a href="#role"><span lang="en">Role</span><span lang="ja">役割</span></a>
+      <a href="#data"><span lang="en">Owned data</span><span lang="ja">保持するデータ</span></a>
+      <a href="#references"><span lang="en">References</span><span lang="ja">参照</span></a>
+      <a href="#methods"><span lang="en">Methods</span><span lang="ja">メソッド</span></a>
+      <a href="#used-by"><span lang="en">Used by</span><span lang="ja">利用する機能</span></a>
+      <a href="#subclasses"><span lang="en">Subclasses</span><span lang="ja">サブクラス</span></a>
+    </nav>
+
+    <!-- ============================== ROLE ============================== -->
+    <h2 id="role"><span lang="en">Role</span><span lang="ja">役割</span></h2>
+    <p lang="en">A <code>Branch</code> owns <code>R</code>, <code>X</code>, <code>C</code>, <code>tap</code>, <code>phase</code>, its OPF flow limits, and drawing data, and it decides how they form an admittance matrix (the subclass contract <code>get_admittance_matrix</code>). It refers to its two end buses but is not their parent and does not own their voltages: the end voltages and currents it shows are derived from the buses. A branch has no states and no function-handle cache, and it plays no part in the simulation other than through the admittance matrix built when an analysis starts. Branches are created only by <code>PowerNetwork.add_branch</code>.</p>
+    <p lang="ja"><code>Branch</code> は <code>R</code>、<code>X</code>、<code>C</code>、<code>tap</code>、<code>phase</code>、OPF の潮流制限、描画データを持ち、それらからアドミタンス行列をどう作るかを決めます（サブクラスの契約 <code>get_admittance_matrix</code>）。両端の母線を参照しますが、その親ではなく電圧も持ちません。表示する端の電圧・電流は母線から導く派生値です。ブランチには状態も関数ハンドルのキャッシュもなく、解析開始時に作られるアドミタンス行列を通してのみ時間応答シミュレーションに関わります。ブランチは <code>PowerNetwork.add_branch</code> でだけ作られます。</p>
+
+    <figure class="dg-figure cl-figure">
+      <svg class="dg-svg" viewBox="0 0 600 210" role="img" aria-labelledby="cl-map-title">
+        <title id="cl-map-title">PowerNetwork owns the branch. The branch refers to a from bus and a to bus without owning them.</title>
+        <defs>
+          <marker id="cl-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--ink)"/></marker>
+          <marker id="cl-ah-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--muted)"/></marker>
+        </defs>
+        <rect x="200" y="12" width="200" height="44" rx="4" stroke-width="1.5" style="fill:var(--surface); stroke:var(--brand)"/>
+        <text x="300" y="40" text-anchor="middle" font-size="15" font-weight="bold" class="dg-mono" style="fill:var(--brand)">PowerNetwork</text>
+        <path d="M300 56V92" fill="none" stroke-width="1.6" marker-end="url(#cl-ah)" style="stroke:var(--ink)"/>
+        <text x="306" y="80" font-size="11" class="dg-mono" style="fill:var(--ink)">a_Branch</text>
+
+        <rect x="190" y="96" width="220" height="56" rx="4" style="fill:var(--brand)"/>
+        <text x="300" y="122" text-anchor="middle" font-size="16" font-weight="bold" class="dg-mono" style="fill:var(--surface)">Branch</text>
+        <text x="300" y="141" text-anchor="middle" font-size="11" class="dg-mono" style="fill:var(--on-brand-muted)">R · X · C · tap · phase</text>
+
+        <rect x="20" y="102" width="100" height="44" rx="4" stroke-width="1.5" style="fill:var(--surface); stroke:var(--brand)"/>
+        <text x="70" y="130" text-anchor="middle" font-size="14" font-weight="bold" class="dg-mono" style="fill:var(--brand)">Bus</text>
+        <rect x="480" y="102" width="100" height="44" rx="4" stroke-width="1.5" style="fill:var(--surface); stroke:var(--brand)"/>
+        <text x="530" y="130" text-anchor="middle" font-size="14" font-weight="bold" class="dg-mono" style="fill:var(--brand)">Bus</text>
+        <path class="dg-anim-dash" d="M190 124H124" fill="none" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#cl-ah-m)" style="stroke:var(--muted)"/>
+        <path class="dg-anim-dash" d="M410 124H476" fill="none" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#cl-ah-m)" style="stroke:var(--muted)"/>
+        <text x="155" y="116" text-anchor="middle" font-size="11" class="dg-mono" style="fill:var(--muted)">a_Bus{1}</text>
+        <text x="445" y="116" text-anchor="middle" font-size="11" class="dg-mono" style="fill:var(--muted)">a_Bus{2}</text>
+        <text x="70" y="164" text-anchor="middle" font-size="11" style="fill:var(--ink-2)">from</text>
+        <text x="530" y="164" text-anchor="middle" font-size="11" style="fill:var(--ink-2)">to</text>
+
+        <text x="20" y="196" font-size="11" lang="en" style="fill:var(--muted)">Solid: owns. Dashed: refers only (an association, not a parent).</text>
+        <text x="20" y="196" font-size="11" lang="ja" style="fill:var(--muted)">実線: 保持する。破線: 参照のみ（関連であり親ではない）。</text>
+      </svg>
+      <figcaption><span lang="en">The order of <code>a_Bus</code> is the row and column order of the 2×2 matrix: from, then to.</span><span lang="ja"><code>a_Bus</code> の並びが 2×2 行列の行と列の順です: from、to の順。</span></figcaption>
+    </figure>
+
+    <!-- ============================== DATA ============================== -->
+    <h2 id="data"><span lang="en">Owned data</span><span lang="ja">保持するデータ</span></h2>
+    <p class="dg-lead-in" lang="en"><strong>Stale</strong>: what an edit makes out of date (see <a href="class-design.html#edits">Class Design: Edit handling</a>). Parameters live in <code>para_dynamics</code>, <code>para_operation</code>, and <code>para_graph</code> and are read and written through <code>tab_parameter</code>. All values are per unit on the system base.</p>
+    <p class="dg-lead-in" lang="ja"><strong>無効化</strong>: 編集で古くなるもの（<a href="class-design.html#edits">クラス設計: 編集の扱い</a>を参照）。パラメータは <code>para_dynamics</code>、<code>para_operation</code>、<code>para_graph</code> にあり、<code>tab_parameter</code> を通して読み書きします。値はすべて系統基準の単位法です。</p>
+    <table class="dg-table cl-table">
+      <thead>
+        <tr><th><span lang="en">Property</span><span lang="ja">プロパティ</span></th><th><span lang="en">Meaning</span><span lang="ja">意味</span></th><th><span lang="en">Unit / size</span><span lang="ja">単位・サイズ</span></th><th><span lang="en">Set by</span><span lang="ja">設定元</span></th><th><span lang="en">Stale</span><span lang="ja">無効化</span></th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>tab_parameter.dynamics</code></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en"><code>R</code>, <code>X</code>: series impedance. <code>C</code>: shunt susceptance (its meaning depends on the subclass). <code>tap</code>: off-nominal ratio. <code>phase</code>: phase shift.</span><span lang="ja"><code>R</code>、<code>X</code>: 直列インピーダンス。<code>C</code>: シャントサセプタンス（意味はサブクラスによる）。<code>tap</code>: タップ比。<code>phase</code>: 移相角。</span></td>
+          <td data-label="Unit / size" data-label-ja="単位・サイズ">pu, rad</td>
+          <td data-label="Set by" data-label-ja="設定元"><span lang="en"><code>add_branch</code> (<code>R</code>, <code>X</code>, <code>C</code>, <code>Tap</code>, <code>Phase</code>), setter</span><span lang="ja"><code>add_branch</code>（<code>R</code>、<code>X</code>、<code>C</code>、<code>Tap</code>、<code>Phase</code>）、セッター</span></td>
+          <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-err"><span lang="en">equilibrium</span><span lang="ja">平衡点</span></span></td>
+        </tr>
+        <tr>
+          <td><code>tab_parameter.operation</code></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en">OPF limits at both ends: <code>Smax</code>, <code>Imax</code>, <code>Pmax</code>, <code>Qmax</code> (default Inf), and <code>Vargmax</code>, the angle difference of the end buses (default π/2).</span><span lang="ja">両端での OPF 制限: <code>Smax</code>、<code>Imax</code>、<code>Pmax</code>、<code>Qmax</code>（既定 Inf）、端の母線の位相差 <code>Vargmax</code>（既定 π/2）。</span></td>
+          <td data-label="Unit / size" data-label-ja="単位・サイズ">pu, rad</td>
+          <td data-label="Set by" data-label-ja="設定元"><span lang="en"><code>add_branch</code>, setter</span><span lang="ja"><code>add_branch</code>、セッター</span></td>
+          <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-ok"><span lang="en">nothing</span><span lang="ja">なし</span></span></td>
+        </tr>
+        <tr>
+          <td><code>tab_parameter.graph</code></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en"><code>MidXaxis</code>, <code>MidYaxis</code>: intermediate points of the line in the diagram. <code>Marker</code>: line style.</span><span lang="ja"><code>MidXaxis</code>、<code>MidYaxis</code>: 図中の線の中間点。<code>Marker</code>: 線種。</span></td>
+          <td data-label="Unit / size" data-label-ja="単位・サイズ">string</td>
+          <td data-label="Set by" data-label-ja="設定元"><span lang="en"><code>add_branch</code>, setter</span><span lang="ja"><code>add_branch</code>、セッター</span></td>
+          <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-ok"><span lang="en">nothing</span><span lang="ja">なし</span></span></td>
+        </tr>
+        <tr>
+          <td><code>s_opffcn</code></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en">OPF terms of the branch: <code>Cost</code>, <code>Constraint</code>, <code>DefaultConstraint</code>.</span><span lang="ja">ブランチの OPF 項: <code>Cost</code>、<code>Constraint</code>、<code>DefaultConstraint</code>。</span></td>
+          <td data-label="Unit / size" data-label-ja="単位・サイズ">struct</td>
+          <td data-label="Set by" data-label-ja="設定元"><code>set_opffcn</code>, <code>reset_opffcn</code></td>
+          <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-ok"><span lang="en">nothing (logged)</span><span lang="ja">なし（記録のみ）</span></span></td>
+        </tr>
+        <tr>
+          <td><code>str_tag</code></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en"><code>header</code> + a three-digit number, e.g. <code>EL001</code>, <code>ET004</code>.</span><span lang="ja"><code>header</code> + 3 桁の番号（例: <code>EL001</code>、<code>ET004</code>）。</span></td>
+          <td data-label="Unit / size" data-label-ja="単位・サイズ">string</td>
+          <td data-label="Set by" data-label-ja="設定元"><span lang="en">constructor (number from <code>add_branch</code>), setter</span><span lang="ja">コンストラクタ（番号は <code>add_branch</code> が決める）、セッター</span></td>
+          <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-ok"><span lang="en">nothing (logged)</span><span lang="ja">なし（記録のみ）</span></span></td>
+        </tr>
+      </tbody>
+    </table>
+    <h3><span lang="en">Derived (<code>Dependent</code>)</span><span lang="ja">派生値（<code>Dependent</code>）</span></h3>
+    <table class="dg-table cl-table">
+      <thead>
+        <tr><th><span lang="en">Property</span><span lang="ja">プロパティ</span></th><th><span lang="en">Read from</span><span lang="ja">読み出し元</span></th><th><span lang="en">Unit / size</span><span lang="ja">単位・サイズ</span></th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>cv_Vequilibrium</code></td><td data-label="Read from" data-label-ja="読み出し元"><span lang="en"><code>c_Vequilibrium</code> of the two end buses</span><span lang="ja">両端の母線の <code>c_Vequilibrium</code></span></td><td data-label="Unit / size" data-label-ja="単位・サイズ">pu, complex 2×1</td></tr>
+        <tr><td><code>cv_Iequilibrium</code></td><td data-label="Read from" data-label-ja="読み出し元"><span lang="en"><code>get_admittance_matrix() * cv_Vequilibrium</code>: the currents into the branch at its ends</span><span lang="ja"><code>get_admittance_matrix() * cv_Vequilibrium</code>: 両端からブランチへ流れ込む電流</span></td><td data-label="Unit / size" data-label-ja="単位・サイズ">pu, complex 2×1</td></tr>
+        <tr><td><code>tab_parameter</code></td><td data-label="Read from" data-label-ja="読み出し元"><span lang="en">the <code>Parameter</code> objects; writing the table writes the parameters</span><span lang="ja"><code>Parameter</code> オブジェクト。表に書くとパラメータに書き込まれます</span></td><td data-label="Unit / size" data-label-ja="単位・サイズ">table</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ============================== REFERENCES ============================== -->
+    <h2 id="references"><span lang="en">References</span><span lang="ja">参照</span></h2>
+    <p lang="en">Only the network sets and clears both references (see <a href="class-design.html#parents">Class Design: Parent references</a>). The branch has no children other than its <code>Parameter</code> objects.</p>
+    <p lang="ja">2 つの参照を設定・解除するのはネットワークだけです（<a href="class-design.html#parents">クラス設計: 親参照</a>を参照）。ブランチの子は <code>Parameter</code> オブジェクトだけです。</p>
+    <table class="dg-table cl-table">
+      <thead>
+        <tr><th><span lang="en">Reference</span><span lang="ja">参照</span></th><th><span lang="en">Set by</span><span lang="ja">設定</span></th><th><span lang="en">Cleared by</span><span lang="ja">解除</span></th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>a_PowerNetwork</code> <small><span lang="en">parent</span><span lang="ja">親</span></small></td>
+          <td data-label="Set by" data-label-ja="設定"><code>PowerNetwork.add_branch</code> → <code>set_network(net)</code></td>
+          <td data-label="Cleared by" data-label-ja="解除"><code>PowerNetwork.remove_branch</code> → <code>set_network([])</code></td>
+        </tr>
+        <tr>
+          <td><code>a_Bus</code> <small><span lang="en">association, cell 2×1</span><span lang="ja">関連、cell 2×1</span></small></td>
+          <td data-label="Set by" data-label-ja="設定"><code>PowerNetwork.add_branch</code> → <code>set_bus({from; to})</code></td>
+          <td data-label="Cleared by" data-label-ja="解除"><code>PowerNetwork.remove_branch</code> → <code>set_bus(cell(0,1))</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p lang="en">A bus with branches cannot be removed alone: <code>remove_bus</code> stops unless <code>RemoveBranches=true</code>, so a branch never keeps a dangling end.</p>
+    <p lang="ja">ブランチを持つ母線だけを削除することはできません。<code>remove_bus</code> は <code>RemoveBranches=true</code> でなければ止まるため、ブランチの端が宙に浮くことはありません。</p>
+
+    <!-- ============================== METHODS ============================== -->
+    <h2 id="methods"><span lang="en">Methods</span><span lang="ja">メソッド</span></h2>
+
+    <h3><span lang="en">Subclass contract</span><span lang="ja">サブクラスの契約</span></h3>
+    <p lang="en">A concrete branch defines these members. For the steps of adding one, see <a href="model-implementation.html#other">Model Implementation: Branches and networks</a>.</p>
+    <p lang="ja">具象ブランチはこれらのメンバーを定義します。追加の手順は<a href="model-implementation.html#other">モデル実装: ブランチとネットワーク</a>を参照してください。</p>
+    <table class="dg-table cl-table">
+      <thead>
+        <tr><th><span lang="en">Member</span><span lang="ja">メンバー</span></th><th><span lang="en">Contract</span><span lang="ja">契約</span></th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>key</code> <small>Constant</small></td><td data-label="Contract" data-label-ja="契約"><span lang="en">The type name of <code>add_branch(Type, …)</code>, e.g. <code>"pi"</code>. Running <code>GUILDA</code> regenerates the key list of <code>add_branch</code>.</span><span lang="ja"><code>add_branch(Type, …)</code> の型名（例: <code>"pi"</code>）。<code>GUILDA</code> を実行すると <code>add_branch</code> のキー一覧が再生成されます。</span></td></tr>
+        <tr><td><code>header</code> <small>Constant</small></td><td data-label="Contract" data-label-ja="契約"><span lang="en">Tag prefix, e.g. <code>"EL"</code> for lines and <code>"ET"</code> for transformers.</span><span lang="ja">タグの接頭辞（例: 送電線は <code>"EL"</code>、変圧器は <code>"ET"</code>）。</span></td></tr>
+        <tr><td><code>get_admittance_matrix(obj)</code> <small>Abstract</small></td><td data-label="Contract" data-label-ja="契約"><span lang="en">Reads <code>para_dynamics</code> and returns the 2×2 complex matrix [pu] that maps <code>[V_from; V_to]</code> to the currents injected into the branch at those ends. It must not read or change anything else.</span><span lang="ja"><code>para_dynamics</code> を読み、<code>[V_from; V_to]</code> を両端からブランチへ注入される電流に写す 2×2 の複素行列 [pu] を返します。それ以外を読んだり変えたりしてはいけません。</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3><span lang="en">Construction and editing</span><span lang="ja">構築と編集</span></h3>
+    <table class="dg-table cl-table">
+      <thead>
+        <tr><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">内容</span></th><th><span lang="en">Called by</span><span lang="ja">呼び出し元</span></th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>Branch(index, opt)</code> <small><span lang="en">Branch, PowerNetwork only</span><span lang="ja">Branch・PowerNetwork 専用</span></small></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Sets the tag <code>header + index</code>, checks that <code>R</code>, <code>X</code>, <code>C</code> are real, and creates the three <code>Parameter</code> objects.</span><span lang="ja">タグ <code>header + index</code> を設定し、<code>R</code>、<code>X</code>、<code>C</code> が実数か確認して 3 つの <code>Parameter</code> オブジェクトを作ります。</span></td>
+          <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">subclass constructors, from <code>PowerNetwork.add_branch</code></span><span lang="ja">サブクラスのコンストラクタ（<code>PowerNetwork.add_branch</code> から）</span></td>
+        </tr>
+        <tr>
+          <td><code>set_bus(a_Bus)</code>, <code>set_network(net)</code> <small><span lang="en">PowerNetwork only</span><span lang="ja">PowerNetwork 専用</span></small></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Set or clear the end buses and the parent.</span><span lang="ja">端の母線と親を設定・解除します。</span></td>
+          <td data-label="Called by" data-label-ja="呼び出し元"><code>add_branch</code>, <code>remove_branch</code></td>
+        </tr>
+        <tr>
+          <td><code>set_opffcn(Cost=, Constraint=, DefaultConstraint=)</code>, <code>reset_opffcn()</code></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Store or clear the OPF terms of the branch. The handles <code>@(v, p)</code> get <code>v.Pfrom</code>, <code>v.Pto</code>, <code>v.Vargfrom</code>, <code>v.Vargto</code>, and in AC OPF also <code>Q</code>, current, and voltage magnitude at each end. <code>DefaultConstraint=false</code> drops <code>Pmax</code>, <code>Vargmax</code>, <code>Imax</code>, <code>Smax</code>; the flow equations always stay.</span><span lang="ja">ブランチの OPF 項を保存・消去します。ハンドル <code>@(v, p)</code> は <code>v.Pfrom</code>、<code>v.Pto</code>、<code>v.Vargfrom</code>、<code>v.Vargto</code> と、AC OPF では各端の <code>Q</code>・電流・電圧の大きさも受け取ります。<code>DefaultConstraint=false</code> は <code>Pmax</code>、<code>Vargmax</code>、<code>Imax</code>、<code>Smax</code> を外しますが、潮流方程式は常に残ります。</span></td>
+          <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user</span><span lang="ja">利用者</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3><span lang="en">Called by analyses</span><span lang="ja">解析から呼ばれるメソッド</span></h3>
+    <table class="dg-table cl-table">
+      <thead>
+        <tr><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">内容</span></th><th><span lang="en">Called by</span><span lang="ja">呼び出し元</span></th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>get_admittance_matrix()</code></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">The subclass contract above.</span><span lang="ja">上記のサブクラスの契約。</span>
+            <small><span lang="en">Returns: 2×2 complex [pu], rows and columns (from, to).</span><span lang="ja">返り値: 2×2 の複素数 [pu]。行と列は (from, to)。</span></small></td>
+          <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en"><code>PowerNetwork.get_admittance_matrix</code> (so every analysis), <code>SolverPF</code> for branch flows, <code>cv_Iequilibrium</code></span><span lang="ja"><code>PowerNetwork.get_admittance_matrix</code>（つまり全解析）、ブランチ潮流を求める <code>SolverPF</code>、<code>cv_Iequilibrium</code></span></td>
+        </tr>
+        <tr>
+          <td><code>build_opf_problem(prob, x0, const, Vvar, methods=)</code></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Adds the flow variables at both ends, their equations from the end-bus variables in <code>Vvar</code>, the default limits, and the terms of <code>s_opffcn</code>, and adds the flow into each end bus to the power balance <code>const</code>. DC OPF uses <code>b = 1/(X·tap)</code>; ELD returns the inputs unchanged.</span><span lang="ja">両端の潮流変数、<code>Vvar</code> の端母線変数からの潮流方程式、既定の制限、<code>s_opffcn</code> の項を加え、各端母線への流れを電力収支 <code>const</code> に加えます。DC OPF は <code>b = 1/(X·tap)</code> を使い、ELD では入力をそのまま返します。</span>
+            <small><span lang="en">Returns: the extended <code>prob</code>, <code>x0</code>, <code>const</code>.</span><span lang="ja">返り値: 拡張した <code>prob</code>、<code>x0</code>、<code>const</code>。</span></small></td>
+          <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en"><code>PowerNetwork.build_opf_problem</code>, after the buses</span><span lang="ja"><code>PowerNetwork.build_opf_problem</code>（母線の後）</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ============================== USED BY ============================== -->
+    <h2 id="used-by"><span lang="en">Used by</span><span lang="ja">利用する機能</span></h2>
+    <ul class="cl-used">
+      <li><a href="feature-model-building.html"><span lang="en">Model building</span><span lang="ja">モデル構築</span><small>add_branch</small></a></li>
+      <li><a href="feature-data-io.html"><span lang="en">Data IO</span><span lang="ja">データ入出力</span><small>branch/parameter.csv</small></a></li>
+      <li><a href="feature-power-flow.html"><span lang="en">Power flow</span><span lang="ja">潮流計算</span><small>get_admittance_matrix</small></a></li>
+      <li><a href="feature-initialize.html"><span lang="en">Initialize</span><span lang="ja">平衡点の計算</span><small>Y·V = I</small></a></li>
+      <li><a href="feature-opf.html"><span lang="en">OPF</span><span lang="ja">最適潮流計算</span><small>build_opf_problem</small></a></li>
+      <li><a href="feature-cpf.html"><span lang="en">CPF</span><span lang="ja">連続潮流計算</span><small>get_admittance_matrix</small></a></li>
+      <li><a href="feature-simulation.html"><span lang="en">Simulation</span><span lang="ja">時間応答シミュレーション</span><small>get_admittance_matrix</small></a></li>
+      <li><a href="feature-linearization.html"><span lang="en">Linearization</span><span lang="ja">近似線形化</span><small>get_admittance_matrix</small></a></li>
+    </ul>
+
+    <!-- ============================== SUBCLASSES ============================== -->
+    <h2 id="subclasses"><span lang="en">Subclasses</span><span lang="ja">サブクラス</span></h2>
+    <table class="dg-table cl-table">
+      <thead>
+        <tr><th><span lang="en">Class</span><span lang="ja">クラス</span></th><th><code>key</code> / <code>header</code></th><th><span lang="en">Model</span><span lang="ja">モデル</span></th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>branch.pi</code></td><td data-label="key / header"><code>"pi"</code> / <code>EL</code></td><td data-label="Model" data-label-ja="モデル"><span lang="en">Pi line: series <code>R + jX</code>, shunt <code>jC</code> at each end (<code>C</code> is half the line charging).</span><span lang="ja">π 形送電線: 直列 <code>R + jX</code>、両端にシャント <code>jC</code>（<code>C</code> は充電容量の半分）。</span></td></tr>
+        <tr><td><code>branch.T</code></td><td data-label="key / header"><code>"T"</code> / <code>EL</code></td><td data-label="Model" data-label-ja="モデル"><span lang="en">T line: two halves of <code>R + jX</code> with <code>jC</code> at the midpoint (<code>C</code> is the total line charging); the midpoint is eliminated.</span><span lang="ja">T 形送電線: <code>R + jX</code> を半分ずつに分け、中点に <code>jC</code>（<code>C</code> は全充電容量）。中点は消去します。</span></td></tr>
+        <tr><td><code>branch.pi_transformer</code></td><td data-label="key / header"><code>"pi_transformer"</code> / <code>ET</code></td><td data-label="Model" data-label-ja="モデル"><span lang="en">Ideal transformer <code>tap·e<sup>j·phase</sup></code> at the from end followed by a pi line.</span><span lang="ja">from 端の理想変圧器 <code>tap·e<sup>j·phase</sup></code> に π 形送電線が続くモデル。</span></td></tr>
+        <tr><td><code>branch.two_winding_transformer</code></td><td data-label="key / header"><code>"two_winding_transformer"</code> / <code>ET</code></td><td data-label="Model" data-label-ja="モデル"><span lang="en">Two-winding transformer with tap and phase shift; shunt <code>jC</code> at the from end.</span><span lang="ja">タップと移相を持つ二巻線変圧器。シャント <code>jC</code> は from 端。</span></td></tr>
+      </tbody>
+    </table>
+  </main>
+</body>
+</html>

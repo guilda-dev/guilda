@@ -152,9 +152,9 @@
 
     container.innerHTML = `
       <details class="ref-tree-panel"${wide ? ' open' : ''}>
-        <summary class="ref-tree-title">Source files</summary>
-        <input type="search" class="search-box ref-tree-filter" placeholder="Filter files..." autocomplete="off" aria-label="Filter source files">
-        <nav class="ref-tree-scroll" aria-label="Source files">
+        <summary class="ref-tree-title"><span lang="en">Source files</span><span lang="ja">ソースファイル</span></summary>
+        <input type="search" class="search-box ref-tree-filter" autocomplete="off">
+        <nav class="ref-tree-scroll">
           <ul class="ref-tree">${renderNodes(tree, openSet, currentNode, 0)}</ul>
         </nav>
       </details>`;
@@ -166,6 +166,15 @@
       applyFilter(list, event.target.value.trim().toLowerCase());
     });
     bindKeys(list);
+    const applyLabels = () => {
+      const ja = root.GUILDA_LANG?.get() === 'ja';
+      const filter = container.querySelector('.ref-tree-filter');
+      filter.placeholder = ja ? 'ファイルを絞り込み...' : 'Filter files...';
+      filter.setAttribute('aria-label', ja ? 'ソースファイルを絞り込み' : 'Filter source files');
+      scroller.setAttribute('aria-label', ja ? 'ソースファイル' : 'Source files');
+    };
+    applyLabels();
+    document.addEventListener('guilda-langchange', applyLabels);
     panel.addEventListener('toggle', () => { if (panel.open) scrollToCurrent(scroller); });
     scrollToCurrent(scroller);
   }

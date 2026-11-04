@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-title-ja="GUILDA 開発者ガイド - クラス: LocalController">GUILDA Developer Guide - Class: LocalController</title>
+  <script src="../doc-lang.js"></script>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    /* Class pages only (cl-*); shared parts are dg-* in style.css */
+    .cl-figure svg { max-width: 600px; margin: 0 auto; }
+    .cl-table td:first-child code { white-space: nowrap; }
+    .cl-table td small + small { margin-top: 4px; }
+    .cl-table .dg-badge { white-space: normal; }
+    .cl-used { display: flex; flex-wrap: wrap; gap: var(--dg-s2); margin: var(--dg-s3) 0 var(--dg-s5); padding: 0; list-style: none; }
+    .cl-used a { display: inline-block; padding: 6px 12px; border: 1px solid var(--dg-line); border-radius: var(--radius); text-decoration: none; }
+    .cl-used a:hover { border-color: var(--brand); }
+    .cl-used small { display: block; color: var(--dg-muted); font-size: 0.8rem; }
+    @media (max-width: 640px) {
+      .cl-table td:first-child code { white-space: normal; }
+      html[data-lang="ja"] .dg .dg-table td[data-label-ja]::before { content: attr(data-label-ja); }
+    }
+  </style>
+</head>
+<body class="developer-layout dg">
+  <svg class="dg-sprite" aria-hidden="true" focusable="false">
+    <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+  </svg>
+  <main>
+    <button type="button" class="developer-back-button" onclick="window.history.back()"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></button>
+    <h1><span lang="en">Class: </span><span lang="ja">クラス: </span><code>LocalController</code></h1>
+    <p class="page-lead" lang="en">The abstract base of controllers attached to one component, such as an AVR, a PSS, or an LQR. A local controller observes its component by name and drives the inputs of the same name.</p>
+    <p class="page-lead" lang="ja">1 つの機器に付く制御器（AVR、PSS、LQR など）の抽象基底クラスです。ローカル制御器は機器を名前で観測し、同名の入力を駆動します。</p>
+
+    <nav class="dev-toc" aria-label="Contents">
+      <a href="#role"><span lang="en">Role</span><span lang="ja">役割</span></a>
+      <a href="#data"><span lang="en">Owned data</span><span lang="ja">保持するデータ</span></a>
+      <a href="#references"><span lang="en">References</span><span lang="ja">参照</span></a>
+      <a href="#methods"><span lang="en">Methods</span><span lang="ja">メソッド</span></a>
+      <a href="#used-by"><span lang="en">Used by</span><span lang="ja">利用する機能</span></a>
+      <a href="#subclasses"><span lang="en">Subclasses</span><span lang="ja">サブクラス</span></a>
+    </nav>
+
+    <!-- ============================== ROLE ============================== -->
+    <h2 id="role"><span lang="en">Role</span><span lang="ja">役割</span></h2>
+    <p lang="en">A <code>LocalController</code> owns its parameters, its equations (through its subclass), its equilibrium, and at most one nested controller (the PSS under an AVR). Its parent is a component, or the AVR for a PSS. It never outputs a current to the network: its outputs <code>sv_y</code> are inputs of its parent of the same name. Its inputs <code>sv_u</code> read the <strong>observed component</strong> (the component above it, also through an AVR): a name in the component's <code>sv_y</code> reads that output, else a name in <code>sv_x</code> reads that state, and the reserved names <code>Xall</code> and <code>Yall</code> read all of them. An input with the name of an output of its nested controller reads that output; any other input stays at its equilibrium. The parent voltage <code>V</code> is passed to its functions. It does <strong>not</strong> own the voltage or the frequency, and it is not a child of the bus. Controllers are created with their constructor and attached with <code>Component.add_local_controller</code>; for the cross-cutting observation rules see <a href="class-design.html#classes">Class Design</a>.</p>
+    <p lang="ja"><code>LocalController</code> はパラメータ、方程式（サブクラスを通して）、平衡点、高々 1 つの入れ子の制御器（AVR の下の PSS）を持ちます。親は機器、PSS の場合は AVR です。ネットワークへ電流を出力することはなく、出力 <code>sv_y</code> は親の同名の入力になります。入力 <code>sv_u</code> は<strong>観測対象の機器</strong>（自分の上にある機器。AVR を介する場合も含む）を読みます。機器の <code>sv_y</code> にある名前はその出力を、なければ <code>sv_x</code> にある名前はその状態を読み、予約名 <code>Xall</code>、<code>Yall</code> はそれらすべてを読みます。入れ子の制御器の出力と同名の入力はその出力を読み、それ以外の入力は平衡値のままです。親の電圧 <code>V</code> は関数に渡されます。電圧や周波数は持た<strong>ず</strong>、母線の子でもありません。制御器はコンストラクタで作り、<code>Component.add_local_controller</code> で接続します。観測に関する共通の規則は<a href="class-design.html#classes">クラス設計</a>を参照してください。</p>
+
+    <figure class="dg-figure cl-figure">
+      <svg class="dg-svg" viewBox="0 0 600 250" role="img" aria-labelledby="cl-map-title">
+        <title id="cl-map-title">A component owns an AVR; the AVR owns a PSS. Each controller observes the component by name and drives the input of the same name of its parent.</title>
+        <defs>
+          <marker id="cl-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--ink)"/></marker>
+          <marker id="cl-ah-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--muted)"/></marker>
+        </defs>
+        <rect x="200" y="12" width="200" height="48" rx="4" stroke-width="1.5" style="fill:var(--surface); stroke:var(--brand)"/>
+        <text x="300" y="34" text-anchor="middle" font-size="15" font-weight="bold" class="dg-mono" style="fill:var(--brand)">Component</text>
+        <text x="300" y="51" text-anchor="middle" font-size="11" class="dg-mono" style="fill:var(--ink-2)">sv_x · sv_y · sv_u</text>
+        <path d="M300 60V96" fill="none" stroke-width="1.6" marker-end="url(#cl-ah)" style="stroke:var(--ink)"/>
+        <text x="306" y="84" font-size="11" class="dg-mono" style="fill:var(--ink)">a_LocalController</text>
+
+        <rect x="200" y="100" width="200" height="52" rx="4" style="fill:var(--ink)"/>
+        <text x="300" y="124" text-anchor="middle" font-size="15" font-weight="bold" class="dg-mono" style="fill:var(--surface)">LocalController</text>
+        <text x="300" y="142" text-anchor="middle" font-size="11" class="dg-mono" style="fill:var(--surface)">key "avr" · "local"</text>
+
+        <path d="M300 152V186" fill="none" stroke-width="1.6" marker-end="url(#cl-ah)" style="stroke:var(--ink)"/>
+        <text x="306" y="174" font-size="11" class="dg-mono" style="fill:var(--ink)">a_LocalController</text>
+        <rect x="200" y="190" width="200" height="40" rx="4" stroke-width="1.5" style="fill:var(--surface); stroke:var(--ink)"/>
+        <text x="300" y="215" text-anchor="middle" font-size="14" font-weight="bold" class="dg-mono" style="fill:var(--ink)">LocalController "pss"</text>
+
+        <path class="dg-anim-dash" d="M410 126H470V36H404" fill="none" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#cl-ah-m)" style="stroke:var(--muted)"/>
+        <text x="476" y="78" font-size="11" class="dg-mono" style="fill:var(--muted)">sv_y → u</text>
+        <text x="476" y="94" font-size="11" lang="en" style="fill:var(--muted)">drives by name</text>
+        <text x="476" y="94" font-size="11" lang="ja" style="fill:var(--muted)">名前で駆動</text>
+        <path class="dg-anim-dash" d="M196 36H130V126H196" fill="none" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#cl-ah-m)" style="stroke:var(--muted)"/>
+        <text x="124" y="78" text-anchor="end" font-size="11" class="dg-mono" style="fill:var(--muted)">y, x → sv_u</text>
+        <text x="124" y="94" text-anchor="end" font-size="11" lang="en" style="fill:var(--muted)">observes by name</text>
+        <text x="124" y="94" text-anchor="end" font-size="11" lang="ja" style="fill:var(--muted)">名前で観測</text>
+      </svg>
+      <figcaption><span lang="en">A PSS observes the same component as its AVR, and its output <code>Vpss</code> drives the AVR input of that name.</span><span lang="ja">PSS は AVR と同じ機器を観測し、出力 <code>Vpss</code> が AVR の同名の入力を駆動します。</span></figcaption>
+    </figure>
+
+    <!-- ============================== DATA ============================== -->
+    <h2 id="data"><span lang="en">Owned data</span><span lang="ja">保持するデータ</span></h2>
+    <p class="dg-lead-in" lang="en"><strong>Stale</strong>: what an edit makes out of date (see <a href="class-design.html#edits">Class Design: Edit handling</a>).</p>
+    <p class="dg-lead-in" lang="ja"><strong>無効化</strong>: 編集で古くなるもの（<a href="class-design.html#edits">クラス設計: 編集の扱い</a>を参照）。</p>
+    <table class="dg-table cl-table">
+      <thead>
+        <tr><th><span lang="en">Property</span><span lang="ja">プロパティ</span></th><th><span lang="en">Meaning</span><span lang="ja">意味</span></th><th><span lang="en">Unit / size</span><span lang="ja">単位・サイズ</span></th><th><span lang="en">Set by</span><span lang="ja">設定元</span></th><th><span lang="en">Stale</span><span lang="ja">無効化</span></th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>tab_parameter</code> <small><span lang="en">(<code>para_dynamics</code>)</span><span lang="ja">（<code>para_dynamics</code>）</span></small></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Model parameters; the columns <code>sv_para</code> are passed as <code>param</code>.</span><span lang="ja">モデルのパラメータ。<code>sv_para</code> の列が <code>param</code> として渡ります。</span></td>
+          <td data-label="Unit / size" data-label-ja="単位・サイズ"><span lang="en">per class</span><span lang="ja">クラスごと</span></td>
+          <td data-label="Set by" data-label-ja="設定元"><span lang="en">subclass constructor, setter</span><span lang="ja">サブクラスのコンストラクタ、セッター</span></td>
+          <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-err"><span lang="en">handles</span><span lang="ja">ハンドル</span></span> <span class="dg-badge is-err"><span lang="en">equilibrium</span><span lang="ja">平衡点</span></span></td>
+        </tr>
+        <tr>
+          <td><code>a_LocalController</code></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Nested controller (the PSS under an AVR).</span><span lang="ja">入れ子の制御器（AVR の下の PSS）。</span></td>
+          <td data-label="Unit / size" data-label-ja="単位・サイズ">cell 0×1 / 1×1</td>
+          <td data-label="Set by" data-label-ja="設定元"><code>Component.add_local_controller</code>, <code>remove_local_controller</code></td>
+          <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-err"><span lang="en">equilibrium</span><span lang="ja">平衡点</span></span></td>
+        </tr>
+        <tr>
+          <td><code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en">State and input equilibria.</span><span lang="ja">状態と入力の平衡点。</span></td>
+          <td data-label="Unit / size" data-label-ja="単位・サイズ">n<sub>x</sub>×1, n<sub>u</sub>×1</td>
+          <td data-label="Set by" data-label-ja="設定元"><span lang="en">the subclass's <code>get_equilibrium</code></span><span lang="ja">サブクラスの <code>get_equilibrium</code></span></td>
+          <td data-label="Stale" data-label-ja="無効化">—</td>
+        </tr>
+        <tr>
+          <td><code>f_dx</code>, <code>f_Y</code>, <code>f_Mass</code>, <code>f_JacobiDx</code>, <code>f_JacobiY</code></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Handle cache <code>@(t,x,V,I,u)</code> with <code>param</code> and <code>omega0</code> bound. There is no <code>f_I</code>.</span><span lang="ja"><code>param</code> と <code>omega0</code> を束縛したハンドル <code>@(t,x,V,I,u)</code> のキャッシュ。<code>f_I</code> はありません。</span></td>
+          <td data-label="Unit / size" data-label-ja="単位・サイズ">function_handle</td>
+          <td data-label="Set by" data-label-ja="設定元"><span lang="en"><code>set_odefcn</code>, from <code>check_edit</code></span><span lang="ja"><code>set_odefcn</code>（<code>check_edit</code> から）</span></td>
+          <td data-label="Stale" data-label-ja="無効化">—</td>
+        </tr>
+        <tr>
+          <td><code>iv_obsY</code>, <code>iv_obsX</code> <small>Hidden</small></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en">For each input, its index in the observed component's <code>sv_y</code> or <code>sv_x</code> (0: not observed).</span><span lang="ja">各入力について、観測対象の機器の <code>sv_y</code> または <code>sv_x</code> での番号（0 は観測しない）。</span></td>
+          <td data-label="Unit / size" data-label-ja="単位・サイズ">n<sub>u</sub>×1</td>
+          <td data-label="Set by" data-label-ja="設定元"><code>resolve_observe</code> <small><span lang="en">(on attach)</span><span lang="ja">（接続時）</span></small></td>
+          <td data-label="Stale" data-label-ja="無効化">—</td>
+        </tr>
+        <tr>
+          <td><code>str_tag</code></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Tag given to the constructor; subclasses add a header (e.g. <code>CA1</code>, <code>CP1</code>).</span><span lang="ja">コンストラクタに与えたタグ。サブクラスがヘッダーを付けます（例: <code>CA1</code>、<code>CP1</code>）。</span></td>
+          <td data-label="Unit / size" data-label-ja="単位・サイズ">string</td>
+          <td data-label="Set by" data-label-ja="設定元"><span lang="en">constructor, setter</span><span lang="ja">コンストラクタ、セッター</span></td>
+          <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-ok"><span lang="en">nothing (logged)</span><span lang="ja">なし（記録のみ）</span></span></td>
+        </tr>
+      </tbody>
+    </table>
+    <h3><span lang="en">Derived values and working data</span><span lang="ja">派生値と作業データ</span></h3>
+    <table class="dg-table cl-table">
+      <thead>
+        <tr><th><span lang="en">Property</span><span lang="ja">プロパティ</span></th><th><span lang="en">Meaning</span><span lang="ja">意味</span></th><th><span lang="en">Written by</span><span lang="ja">書き込み元</span></th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>c_Vequilibrium</code>, <code>c_Iequilibrium</code></td><td data-label="Meaning" data-label-ja="意味"><span lang="en">Voltage and current equilibrium of the parent (<code>zeros(0,1)</code> without a parent).</span><span lang="ja">親の電圧・電流の平衡点（親がなければ <code>zeros(0,1)</code>）。</span></td><td data-label="Written by" data-label-ja="書き込み元"><span lang="en">— (<code>Dependent</code>)</span><span lang="ja">—（<code>Dependent</code>）</span></td></tr>
+        <tr><td><code>iv_odeX</code>, <code>iv_odeU</code>, <code>iv_odeY</code>, <code>lv_odeUfromLC</code>, <code>iv_odeYtoU</code>, <code>rv_Xoffset</code>, <code>rv_Uoffset</code>, <code>l_hasController</code> <small>Hidden</small></td><td data-label="Meaning" data-label-ja="意味"><span lang="en">Positions in the simulation vector, the inputs driven by the nested controller, and event offsets.</span><span lang="ja">シミュレーションのベクトル中での位置、入れ子の制御器が駆動する入力、イベントのオフセット。</span></td><td data-label="Written by" data-label-ja="書き込み元"><code>SolverODE</code>, <code>EventODE</code></td></tr>
+      </tbody>
+    </table>
+
+    <!-- ============================== REFERENCES ============================== -->
+    <h2 id="references"><span lang="en">References</span><span lang="ja">参照</span></h2>
+    <p lang="en">The parent reference is set and cleared by the component (see <a href="class-design.html#parents">Class Design: Parent references</a>). A controller object can be attached to one parent at a time.</p>
+    <p lang="ja">親参照は機器が設定・解除します（<a href="class-design.html#parents">クラス設計: 親参照</a>を参照）。1 つの制御器オブジェクトは同時に 1 つの親にしか接続できません。</p>
+    <table class="dg-table cl-table">
+      <thead>
+        <tr><th><span lang="en">Reference</span><span lang="ja">参照</span></th><th><span lang="en">Set by</span><span lang="ja">設定</span></th><th><span lang="en">Cleared by</span><span lang="ja">解除</span></th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>a_Component</code> <small><span lang="en">parent</span><span lang="ja">親</span></small></td>
+          <td data-label="Set by" data-label-ja="設定"><span lang="en"><code>Component.add_local_controller</code> → <code>set_parent(parent)</code>, which also resolves the observed inputs and marks the handles stale</span><span lang="ja"><code>Component.add_local_controller</code> → <code>set_parent(parent)</code>（観測する入力を解決し、ハンドルを古いと記録）</span></td>
+          <td data-label="Cleared by" data-label-ja="解除"><span lang="en"><code>Component.remove_local_controller</code>, a replacing <code>add_local_controller</code>, <code>move_local_controllers</code> → <code>set_parent([])</code></span><span lang="ja"><code>Component.remove_local_controller</code>、置き換える <code>add_local_controller</code>、<code>move_local_controllers</code> → <code>set_parent([])</code></span></td>
+        </tr>
+        <tr>
+          <td><code>a_LocalController</code> <small><span lang="en">child</span><span lang="ja">子</span></small></td>
+          <td data-label="Set by" data-label-ja="設定"><span lang="en"><code>Component.add_local_controller</code> → <code>add_local_controller(pss)</code> on the AVR</span><span lang="ja"><code>Component.add_local_controller</code> → AVR の <code>add_local_controller(pss)</code></span></td>
+          <td data-label="Cleared by" data-label-ja="解除"><span lang="en"><code>Component.remove_local_controller</code> or a replaced AVR → <code>remove_local_controller()</code></span><span lang="ja"><code>Component.remove_local_controller</code> または AVR の置き換え → <code>remove_local_controller()</code></span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ============================== METHODS ============================== -->
+    <h2 id="methods"><span lang="en">Methods</span><span lang="ja">メソッド</span></h2>
+
+    <h3 id="contract"><span lang="en">Subclass contract</span><span lang="ja">サブクラスの契約</span></h3>
+    <p lang="en">The contract differs from <code>Component</code> on purpose: there is no <code>fcn_I</code>, the output function is <code>fcn_y</code>, and the Jacobians are required. In every function <code>V</code> and <code>I</code> are the parent's <code>[re; im]</code> [pu]. See <a href="model-implementation.html#controller">Model Implementation: Minimal controller</a>.</p>
+    <p lang="ja">契約は意図的に <code>Component</code> と異なります。<code>fcn_I</code> はなく、出力関数は <code>fcn_y</code> で、ヤコビアンは必須です。すべての関数で <code>V</code> と <code>I</code> は親の <code>[re; im]</code> [pu] です。<a href="model-implementation.html#controller">モデル実装: 最小の制御器</a>を参照してください。</p>
+    <table class="dg-table cl-table">
+      <thead>
+        <tr><th><span lang="en">Member</span><span lang="ja">メンバー</span></th><th><span lang="en">Contract</span><span lang="ja">契約</span></th><th><span lang="en">Called by</span><span lang="ja">呼び出し元</span></th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>key</code>, <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code>, <code>sv_para</code> <small>Abstract, Hidden</small></td><td data-label="Contract" data-label-ja="契約"><span lang="en"><code>key</code> is <code>"avr"</code>, <code>"pss"</code>, or <code>"local"</code> (in the place of an AVR) and decides where <code>add_local_controller</code> attaches it. The names connect by name; <code>X</code> and <code>Y</code> are not allowed as inputs.</span><span lang="ja"><code>key</code> は <code>"avr"</code>、<code>"pss"</code>、<code>"local"</code>（AVR の位置）のいずれかで、<code>add_local_controller</code> の接続先を決めます。名前で接続し、<code>X</code> と <code>Y</code> は入力名に使えません。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>Component.add_local_controller</code>, <code>resolve_observe</code></td></tr>
+        <tr><td><code>get_equilibrium(obj, V, u)</code> <small>Abstract</small></td><td data-label="Contract" data-label-ja="契約"><span lang="en">Sets <code>rv_Xequilibrium</code> and <code>rv_Uequilibrium</code> of the controller and of its nested controller, from the parent voltage <code>V</code> (complex) and the equilibrium input <code>u</code> of the component. Returns nothing.</span><span lang="ja">親の電圧 <code>V</code>（複素数）と機器の平衡入力 <code>u</code> から、自身と入れ子の制御器の <code>rv_Xequilibrium</code>、<code>rv_Uequilibrium</code> を設定します。返り値はありません。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>Component.set_equilibrium</code></td></tr>
+        <tr><td><code>fcn_dx(t, x, V, I, u, param, omega0)</code> <small>Abstract</small></td><td data-label="Contract" data-label-ja="契約">n<sub>x</sub>×1</td><td data-label="Called by" data-label-ja="呼び出し元"><code>f_dx</code></td></tr>
+        <tr><td><code>fcn_y(…)</code> <small>Abstract</small></td><td data-label="Contract" data-label-ja="契約"><span lang="en">n<sub>y</sub>×1, the values for the parent's inputs <code>sv_y</code>.</span><span lang="ja">n<sub>y</sub>×1。親の入力 <code>sv_y</code> に入る値。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>f_Y</code></td></tr>
+        <tr><td><code>fcn_Mass(…)</code> <small>Abstract</small></td><td data-label="Contract" data-label-ja="契約"><span lang="en">Constant n<sub>x</sub>×n<sub>x</sub>; called with empty <code>t, x, V, I, u</code>.</span><span lang="ja">定数の n<sub>x</sub>×n<sub>x</sub>。空の <code>t, x, V, I, u</code> で呼ばれます。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>f_Mass</code></td></tr>
+        <tr><td><code>Jacobi_dx(…)</code>, <code>Jacobi_Y(…)</code> <small>Abstract</small></td><td data-label="Contract" data-label-ja="契約"><span lang="en"><code>[Axx, Bxv, Bxi, Bxu]</code> with n<sub>x</sub> rows and <code>[Cyx, Dyv, Dyi, Dyu]</code> with n<sub>y</sub> rows, with respect to <code>x</code>, <code>V</code>, <code>I</code>, <code>u</code>.</span><span lang="ja"><code>x</code>、<code>V</code>、<code>I</code>、<code>u</code> に関する n<sub>x</sub> 行の <code>[Axx, Bxv, Bxi, Bxu]</code> と n<sub>y</sub> 行の <code>[Cyx, Dyv, Dyi, Dyu]</code>。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>f_JacobiDx</code>, <code>f_JacobiY</code></td></tr>
+        <tr><td><code>resolve_ports(comp)</code>, <code>set_inputs(sv_name)</code> <small><span lang="en">protected, overridable</span><span lang="ja">protected、上書き可</span></small></td><td data-label="Contract" data-label-ja="契約"><span lang="en">Hooks of <code>resolve_observe</code>: <code>resolve_ports</code> lets a controller set ports that depend on the component (does nothing by default); a controller that uses <code>Xall</code> or <code>Yall</code> must override <code>set_inputs</code> to store the expanded <code>sv_u</code> (the default stops with an error).</span><span lang="ja"><code>resolve_observe</code> のフック。<code>resolve_ports</code> は機器に依存するポートを設定するためのもの（既定では何もしない）。<code>Xall</code> や <code>Yall</code> を使う制御器は、展開した <code>sv_u</code> を保存するよう <code>set_inputs</code> を上書きする必要があります（既定はエラー）。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>resolve_observe</code></td></tr>
+        <tr><td><code>Hessian_dx</code>, <code>Hessian_Y</code> <small><span lang="en">optional</span><span lang="ja">任意</span></small></td><td data-label="Contract" data-label-ja="契約"><span lang="en">n<sub>eq</sub>×n<sub>z</sub>×n<sub>z</sub> with <code>z = [x; V; I; u]</code> (see <a href="class-design.html#optional">Optional analyses</a>).</span><span lang="ja"><code>z = [x; V; I; u]</code> として n<sub>eq</sub>×n<sub>z</sub>×n<sub>z</sub>（<a href="class-design.html#optional">任意の解析</a>を参照）。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>get_hessian</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3><span lang="en">Construction and attachment</span><span lang="ja">構築と接続</span></h3>
+    <table class="dg-table cl-table">
+      <thead>
+        <tr><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">内容</span></th><th><span lang="en">Called by</span><span lang="ja">呼び出し元</span></th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>LocalController(tag)</code></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Sets the tag and creates <code>para_dynamics</code>; the controller is not attached yet.</span><span lang="ja">タグを設定して <code>para_dynamics</code> を作ります。まだ接続されていません。</span></td>
+          <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">subclass constructors</span><span lang="ja">サブクラスのコンストラクタ</span></td>
+        </tr>
+        <tr>
+          <td><code>set_parent(parent)</code> <small><span lang="en">Component, LocalController only</span><span lang="ja">Component・LocalController 専用</span></small></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Sets or clears <code>a_Component</code>, runs <code>resolve_observe</code>, and marks the handles of the subtree stale.</span><span lang="ja"><code>a_Component</code> を設定・解除し、<code>resolve_observe</code> を実行して部分木のハンドルを古いと記録します。</span></td>
+          <td data-label="Called by" data-label-ja="呼び出し元"><code>Component.add_local_controller</code>, <code>remove_local_controller</code>, <code>move_local_controllers</code></td>
+        </tr>
+        <tr>
+          <td><code>resolve_observe()</code> <small><span lang="en">Component, LocalController only</span><span lang="ja">Component・LocalController 専用</span></small></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Rejects inputs named <code>X</code> or <code>Y</code>, expands <code>Xall</code> / <code>Yall</code>, and fills <code>iv_obsY</code> / <code>iv_obsX</code> from the observed component (an output wins over a state of the same name); then does the same for the nested controller.</span><span lang="ja"><code>X</code>・<code>Y</code> という入力名を拒否し、<code>Xall</code>・<code>Yall</code> を展開して、観測対象の機器から <code>iv_obsY</code>・<code>iv_obsX</code> を埋めます（同名なら出力が状態より優先）。続いて入れ子の制御器にも同じことを行います。</span></td>
+          <td data-label="Called by" data-label-ja="呼び出し元"><code>set_parent</code></td>
+        </tr>
+        <tr>
+          <td><code>add_local_controller(con)</code>, <code>remove_local_controller()</code> <small><span lang="en">Component, LocalController only</span><span lang="ja">Component・LocalController 専用</span></small></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Set or clear the nested controller and <code>l_hasController</code>.</span><span lang="ja">入れ子の制御器と <code>l_hasController</code> を設定・解除します。</span></td>
+          <td data-label="Called by" data-label-ja="呼び出し元"><code>Component.add_local_controller</code>, <code>Component.remove_local_controller</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3><span lang="en">Called by analyses</span><span lang="ja">解析から呼ばれるメソッド</span></h3>
+    <table class="dg-table cl-table">
+      <thead>
+        <tr><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">内容</span></th><th><span lang="en">Called by</span><span lang="ja">呼び出し元</span></th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>set_odefcn()</code> <small>protected</small></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Binds <code>param</code> and <code>get_Hz()</code> into <code>f_*</code>.</span><span lang="ja"><code>param</code> と <code>get_Hz()</code> を <code>f_*</code> に束縛します。</span></td>
+          <td data-label="Called by" data-label-ja="呼び出し元"><code>check_edit</code></td>
+        </tr>
+        <tr>
+          <td><code>get_dx_algebraic(t, x, V, I, obs, DAEvec)</code> <small><span lang="en">Component, LocalController only</span><span lang="ja">Component・LocalController 専用</span></small></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Builds its inputs from <code>obs.y</code> / <code>obs.x</code> of the observed component (via <code>iv_obsY</code> / <code>iv_obsX</code>), from the nested controller's outputs, and otherwise from <code>rv_Uequilibrium</code>; then adds <code>f_dx</code> to the DAE residual.</span><span lang="ja">観測対象の機器の <code>obs.y</code>・<code>obs.x</code>（<code>iv_obsY</code>・<code>iv_obsX</code> 経由）、入れ子の制御器の出力、それ以外は <code>rv_Uequilibrium</code> から入力を作り、<code>f_dx</code> を DAE の残差に加えます。</span>
+            <small><span lang="en">Returns: <code>[DAEvec, y]</code>; <code>y</code> drives the parent's inputs of the same name.</span><span lang="ja">返り値: <code>[DAEvec, y]</code>。<code>y</code> が親の同名の入力を駆動します。</span></small></td>
+          <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en"><code>Component.get_dx_algebraic</code> (in <code>SolverODE</code>)</span><span lang="ja"><code>Component.get_dx_algebraic</code>（<code>SolverODE</code> 内）</span></td>
+        </tr>
+        <tr>
+          <td><code>get_sys(x, V, I, u, full=, tag=)</code></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Linear model of the controller alone: inputs <code>[Vre; Vim]</code> and <code>sv_u</code>, states <code>sv_x</code>, outputs <code>sv_y</code> (and the states with <code>full=true</code>). Default point: the equilibrium. Builds out-of-date handles and requires an up-to-date equilibrium on a network.</span><span lang="ja">制御器単体の線形モデル: 入力 <code>[Vre; Vim]</code> と <code>sv_u</code>、状態 <code>sv_x</code>、出力 <code>sv_y</code>（<code>full=true</code> で状態も）。既定の点は平衡点。古いハンドルを作り直し、ネットワーク上では最新の平衡点を要求します。</span>
+            <small><span lang="en">Returns: a named descriptor state-space model, then its names.</span><span lang="ja">返り値: 名前付きのディスクリプタ状態空間モデルと、その名前。</span></small></td>
+          <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user; <code>Component.get_sys</code> uses <code>get_sys_alone</code></span><span lang="ja">利用者。<code>Component.get_sys</code> は <code>get_sys_alone</code> を使う</span></td>
+        </tr>
+        <tr>
+          <td><code>get_sys_alone(x, V, I, u, …)</code> <small>Hidden</small></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en"><code>get_sys</code> without the edit checks.</span><span lang="ja">編集の確認をしない <code>get_sys</code>。</span></td>
+          <td data-label="Called by" data-label-ja="呼び出し元"><code>Component.get_sys</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3><span lang="en">Queries and checks</span><span lang="ja">照会と確認</span></h3>
+    <table class="dg-table cl-table">
+      <thead>
+        <tr><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">内容</span></th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>get_hessian(x, V, I, u)</code></td><td data-label="What it does" data-label-ja="内容"><span lang="en">Returns <code>H_dx</code>, <code>H_Y</code> from the subclass's <code>Hessian_*</code>; stops with <code>GUILDA:LocalController:HessianNotSupported</code> otherwise.</span><span lang="ja">サブクラスの <code>Hessian_*</code> から <code>H_dx</code>、<code>H_Y</code> を返します。なければ <code>GUILDA:LocalController:HessianNotSupported</code> で止まります。</span></td></tr>
+        <tr><td><code>validate(l_message)</code></td><td data-label="What it does" data-label-ja="内容"><span lang="en">Checks the model against the contract at the equilibrium of an initialized network; <code>flag.inputs</code> shows where each input is read, so a misspelled name shows as not connected.</span><span lang="ja">初期化済みネットワークの平衡点でモデルを契約と照らし合わせます。<code>flag.inputs</code> が各入力の読み先を示すため、綴り違いの名前は未接続として現れます。</span></td></tr>
+      </tbody>
+    </table>
+
+    <!-- ============================== USED BY ============================== -->
+    <h2 id="used-by"><span lang="en">Used by</span><span lang="ja">利用する機能</span></h2>
+    <ul class="cl-used">
+      <li><a href="feature-model-building.html"><span lang="en">Model building</span><span lang="ja">モデル構築</span><small>add_local_controller</small></a></li>
+      <li><a href="feature-initialize.html"><span lang="en">Initialize</span><span lang="ja">平衡点の計算</span><small>get_equilibrium</small></a></li>
+      <li><a href="feature-simulation.html"><span lang="en">Simulation</span><span lang="ja">時間応答シミュレーション</span><small>get_dx_algebraic</small></a></li>
+      <li><a href="feature-linearization.html"><span lang="en">Linearization</span><span lang="ja">近似線形化</span><small>get_sys_alone</small></a></li>
+    </ul>
+
+    <!-- ============================== SUBCLASSES ============================== -->
+    <h2 id="subclasses"><span lang="en">Subclasses</span><span lang="ja">サブクラス</span></h2>
+    <p lang="en">Shipped in <code>_GUILDAobject/+controller/</code>.</p>
+    <p lang="ja"><code>_GUILDAobject/+controller/</code> に含まれます。</p>
+    <table class="dg-table cl-table">
+      <thead>
+        <tr><th><span lang="en">Class</span><span lang="ja">クラス</span></th><th><code>key</code></th><th><span lang="en">Inputs → outputs</span><span lang="ja">入力 → 出力</span></th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>controller.avr.abstract</code></td><td data-label="key">—</td><td data-label="Inputs → outputs" data-label-ja="入力 → 出力"><span lang="en">Base of the AVRs: <code>Vref</code>, <code>Vpss</code> → <code>Vfield</code>; reads the terminal voltage <code>V</code>.</span><span lang="ja">AVR の基底: <code>Vref</code>、<code>Vpss</code> → <code>Vfield</code>。端子電圧 <code>V</code> を読みます。</span></td></tr>
+        <tr><td><code>controller.avr.AVR_ST1</code>, <code>controller.avr.AVR_DC1</code></td><td data-label="key"><code>"avr"</code></td><td data-label="Inputs → outputs" data-label-ja="入力 → 出力"><code>Vref</code>, <code>Vpss</code> → <code>Vfield</code></td></tr>
+        <tr><td><code>controller.pss.abstract</code></td><td data-label="key">—</td><td data-label="Inputs → outputs" data-label-ja="入力 → 出力"><span lang="en">Base of the PSSs: <code>omega</code> → <code>Vpss</code>.</span><span lang="ja">PSS の基底: <code>omega</code> → <code>Vpss</code>。</span></td></tr>
+        <tr><td><code>controller.pss.PSS1</code></td><td data-label="key"><code>"pss"</code></td><td data-label="Inputs → outputs" data-label-ja="入力 → 出力"><code>omega</code> → <code>Vpss</code></td></tr>
+        <tr><td><code>controller.local_LQR</code></td><td data-label="key"><code>"local"</code></td><td data-label="Inputs → outputs" data-label-ja="入力 → 出力"><span lang="en"><code>Xall</code> → the chosen inputs of the component; no states. The gain <code>K = lqr(A, B, Q, R)</code> is designed at the equilibrium.</span><span lang="ja"><code>Xall</code> → 機器の選んだ入力。状態なし。ゲイン <code>K = lqr(A, B, Q, R)</code> は平衡点で設計します。</span></td></tr>
+        <tr><td><code>controller.local_LQR_retrofit</code></td><td data-label="key">—</td><td data-label="Inputs → outputs" data-label-ja="入力 → 出力"><span lang="en">Retrofit controller written for an earlier controller interface. It does not implement the abstract methods above, so it is an abstract class and cannot be created.</span><span lang="ja">以前の制御器インターフェース向けに書かれたレトロフィット制御器。上記の抽象メソッドを実装していないため抽象クラスであり、作成できません。</span></td></tr>
+      </tbody>
+    </table>
+  </main>
+</body>
+</html>

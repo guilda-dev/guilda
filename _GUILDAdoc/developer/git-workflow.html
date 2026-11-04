@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GUILDA Developer Guide - Git Workflow</title>
+  <title data-title-ja="GUILDA 開発者ガイド - Git ワークフロー">GUILDA Developer Guide - Git Workflow</title>
+  <script src="../doc-lang.js"></script>
   <link rel="stylesheet" href="../style.css">
   <style>
     /* Git Workflow page only (gw-*); shared parts are dg-* in style.css */
@@ -39,6 +40,9 @@
     .gw-merge-btn.is-secondary { background: #21262d; border: 1px solid var(--gh-border); color: var(--gh-text); }
     .gw-task { display: flex; align-items: center; gap: 8px; margin-top: 6px; color: var(--gh-text); }
     .gw-task .dg-icon { color: var(--gh-open); width: 16px; height: 16px; }
+
+    /* Mobile stacked table label in Japanese */
+    @media (max-width: 640px) { html[data-lang="ja"] .dg .dg-table td[data-label-ja]::before { content: attr(data-label-ja); } }
 
     @media (max-width: 640px) {
       .gw-branches .dg-row, .gw-types .dg-row { grid-template-columns: minmax(0, 1fr); }
@@ -76,28 +80,31 @@
   </svg>
 
   <main>
-    <button type="button" class="developer-back-button" onclick="window.history.back()">← Back to For Developer</button>
-    <h1>Git Workflow</h1>
-    <p class="page-lead">Three kinds of branches hold the source: <code>main</code> for releases, a version branch for integration, and short-lived work branches. A separate <code>gh-pages</code> branch holds the published documentation site. Branch names and commit messages share the same change types.</p>
+    <button type="button" class="developer-back-button" onclick="window.history.back()"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></button>
+    <h1><span lang="en">Git Workflow</span><span lang="ja">Git ワークフロー</span></h1>
+    <p class="page-lead" lang="en">Three kinds of branches hold the source: <code>main</code> for releases, a version branch for integration, and short-lived work branches. A separate <code>gh-pages</code> branch holds the published documentation site. Branch names and commit messages share the same change types.</p>
+    <p class="page-lead" lang="ja">ソースは 3 種類のブランチで管理します。リリース用の <code>main</code>、統合用のバージョンブランチ、短期間の作業ブランチです。これとは別に、<code>gh-pages</code> ブランチが公開用のドキュメントサイトを保持します。ブランチ名とコミットメッセージには同じ変更種別を使います。</p>
 
     <nav class="dev-toc" aria-label="Contents">
-      <a href="#branches">Branch model</a>
-      <a href="#branch-names">Branch names</a>
-      <a href="#commits">Commit messages</a>
-      <a href="#pull-requests">Pull requests</a>
-      <a href="#release">Release</a>
-      <a href="#publish-docs">Publishing the documentation</a>
-      <a href="#dont">Do not</a>
+      <a href="#branches"><span lang="en">Branch model</span><span lang="ja">ブランチモデル</span></a>
+      <a href="#branch-names"><span lang="en">Branch names</span><span lang="ja">ブランチ名</span></a>
+      <a href="#commits"><span lang="en">Commit messages</span><span lang="ja">コミットメッセージ</span></a>
+      <a href="#pull-requests"><span lang="en">Pull requests</span><span lang="ja">プルリクエスト</span></a>
+      <a href="#release"><span lang="en">Release</span><span lang="ja">リリース</span></a>
+      <a href="#publish-docs"><span lang="en">Publishing the documentation</span><span lang="ja">ドキュメントの公開</span></a>
+      <a href="#dont"><span lang="en">Do not</span><span lang="ja">禁止事項</span></a>
     </nav>
 
     <!-- ===================== Branch model ===================== -->
-    <h2 id="branches">Branch model</h2>
+    <h2 id="branches"><span lang="en">Branch model</span><span lang="ja">ブランチモデル</span></h2>
     <div class="dg-gh">
       <div class="dg-gh-chrome"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-branch"/></svg>GUILDA / <b>Network graph</b></div>
       <div class="dg-gh-scroll">
         <svg class="gw-graph gw-play" id="gw-graph" viewBox="0 0 880 270" role="img" aria-labelledby="gw-graph-title gw-graph-desc">
-          <title id="gw-graph-title">Branch graph</title>
-          <desc id="gw-graph-desc">The integration branch versionX.Y is cut from main. Work branches feature/42 and fix/51 are cut from versionX.Y and merged back into it by pull requests. At release, versionX.Y is merged into main, the merge commit is tagged vX.Y, and the next integration branch is cut from main.</desc>
+          <title id="gw-graph-title" lang="en">Branch graph</title>
+          <title lang="ja">ブランチグラフ</title>
+          <desc id="gw-graph-desc" lang="en">The integration branch versionX.Y is cut from main. Work branches feature/42 and fix/51 are cut from versionX.Y and merged back into it by pull requests. At release, versionX.Y is merged into main, the merge commit is tagged vX.Y, and the next integration branch is cut from main.</desc>
+          <desc lang="ja">統合ブランチ versionX.Y は main から作成します。作業ブランチ feature/42 と fix/51 は versionX.Y から作成し、プルリクエストで versionX.Y にマージします。リリース時には versionX.Y を main にマージし、マージコミットに vX.Y のタグを付け、main から次の統合ブランチを作成します。</desc>
 
           <!-- lane labels -->
           <g font-size="14" font-weight="bold">
@@ -107,10 +114,10 @@
             <text x="14" y="240" fill="#d29922">fix/51-…</text>
           </g>
           <g font-size="11" fill="#8b949e">
-            <text x="14" y="66">releases · tag vX.Y</text>
-            <text x="14" y="131">integration</text>
-            <text x="14" y="196">work branch</text>
-            <text x="14" y="256">work branch</text>
+            <text lang="en" x="14" y="66">releases · tag vX.Y</text><text lang="ja" x="14" y="66">リリース · タグ vX.Y</text>
+            <text lang="en" x="14" y="131">integration</text><text lang="ja" x="14" y="131">統合</text>
+            <text lang="en" x="14" y="196">work branch</text><text lang="ja" x="14" y="196">作業ブランチ</text>
+            <text lang="en" x="14" y="256">work branch</text><text lang="ja" x="14" y="256">作業ブランチ</text>
           </g>
 
           <!-- main lane -->
@@ -143,82 +150,84 @@
 
           <!-- notes -->
           <g font-size="12">
-            <g class="gw-fade" style="--d:.5s"><text x="232" y="74" fill="#8b949e">cut</text></g>
+            <g class="gw-fade" style="--d:.5s"><text lang="en" x="232" y="74" fill="#8b949e">cut</text><text lang="ja" x="232" y="74" fill="#8b949e">分岐</text></g>
             <g class="gw-fade" style="--d:1.7s"><rect x="384" y="132" width="34" height="20" rx="10" fill="#161b22" stroke="#a371f7"/><text x="401" y="146" text-anchor="middle" font-weight="bold" fill="#a371f7">PR</text></g>
             <g class="gw-fade" style="--d:2.8s"><rect x="588" y="160" width="34" height="20" rx="10" fill="#161b22" stroke="#d29922"/><text x="605" y="174" text-anchor="middle" font-weight="bold" fill="#d29922">PR</text></g>
-            <g class="gw-fade" style="--d:3.4s"><text x="676" y="80" text-anchor="middle" fill="#8b949e">release</text></g>
+            <g class="gw-fade" style="--d:3.4s"><text lang="en" x="676" y="80" text-anchor="middle" fill="#8b949e">release</text><text lang="ja" x="676" y="80" text-anchor="middle" fill="#8b949e">リリース</text></g>
             <g class="gw-pop" style="--d:3.6s"><path d="M712 8 H764 L772 18 L764 28 H712 Z" fill="#161b22" stroke="#d29922" stroke-width="1.5"/><text x="740" y="23" text-anchor="middle" font-weight="bold" fill="#d29922">vX.Y</text></g>
-            <g class="gw-fade" style="--d:4s"><text x="820" y="134" text-anchor="middle" fill="#8b949e">next version</text></g>
+            <g class="gw-fade" style="--d:4s"><text lang="en" x="820" y="134" text-anchor="middle" fill="#8b949e">next version</text><text lang="ja" x="820" y="134" text-anchor="middle" fill="#8b949e">次のバージョン</text></g>
           </g>
         </svg>
       </div>
       <div class="dg-gh-legend">
-        <span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="#8b949e"/></svg>commit</span>
-        <span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="none" stroke="#8b949e" stroke-width="2.5"/></svg>merge commit</span>
-        <span><svg viewBox="0 0 14 14"><path d="M1 3H9L13 7L9 11H1Z" fill="none" stroke="#d29922" stroke-width="1.5"/></svg>release tag</span>
-        <button type="button" class="dg-gh-btn" id="gw-replay"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-replay"/></svg>Replay</button>
+        <span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="#8b949e"/></svg><span lang="en">commit</span><span lang="ja">コミット</span></span>
+        <span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="none" stroke="#8b949e" stroke-width="2.5"/></svg><span lang="en">merge commit</span><span lang="ja">マージコミット</span></span>
+        <span><svg viewBox="0 0 14 14"><path d="M1 3H9L13 7L9 11H1Z" fill="none" stroke="#d29922" stroke-width="1.5"/></svg><span lang="en">release tag</span><span lang="ja">リリースタグ</span></span>
+        <button type="button" class="dg-gh-btn" id="gw-replay"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-replay"/></svg><span lang="en">Replay</span><span lang="ja">再生</span></button>
       </div>
     </div>
 
     <div class="dg-rows gw-branches">
-      <div class="dg-row"><span class="gw-branch-name" style="color:var(--brand)">main</span><span>Released, stable code. Every release is tagged. Contains no coding-assistant config.</span><span class="dg-muted">receives only release merges from <code>release.sh</code></span></div>
-      <div class="dg-row"><span class="gw-branch-name" style="color:var(--ok)">versionX.Y</span><span>Integration branch for the next release.</span><span class="dg-muted">from <code>main</code>, into <code>main</code> at release</span></div>
-      <div class="dg-row"><span class="gw-branch-name" style="color:var(--ink)">&lt;type&gt;/&lt;issue&gt;-&lt;slug&gt;</span><span>One piece of work for one Issue.</span><span class="dg-muted">from <code>versionX.Y</code>, into <code>versionX.Y</code></span></div>
-      <div class="dg-row"><span class="gw-branch-name" style="color:var(--muted)">gh-pages</span><span>Publish-only branch holding the built documentation site, served by GitHub Pages. Shares no history with the other branches and is never edited by hand.</span><span class="dg-muted">written only by <code>GUILDA.publish_doc</code>; never merged into or from other branches (see <a href="#publish-docs">Publishing</a>)</span></div>
+      <div class="dg-row"><span class="gw-branch-name" style="color:var(--brand)">main</span><span><span lang="en">Released, stable code. Every release is tagged. Contains no coding-assistant config.</span><span lang="ja">リリース済みの安定したコードです。すべてのリリースにタグを付けます。コーディングアシスタントの設定は含みません。</span></span><span class="dg-muted"><span lang="en">receives only release merges from <code>release.sh</code></span><span lang="ja"><code>release.sh</code> によるリリースマージだけを受け入れます</span></span></div>
+      <div class="dg-row"><span class="gw-branch-name" style="color:var(--ok)">versionX.Y</span><span><span lang="en">Integration branch for the next release.</span><span lang="ja">次のリリースに向けた統合ブランチです。</span></span><span class="dg-muted"><span lang="en">from <code>main</code>, into <code>main</code> at release</span><span lang="ja"><code>main</code> から作成し、リリース時に <code>main</code> へマージ</span></span></div>
+      <div class="dg-row"><span class="gw-branch-name" style="color:var(--ink)">&lt;type&gt;/&lt;issue&gt;-&lt;slug&gt;</span><span><span lang="en">One piece of work for one Issue.</span><span lang="ja">1 つの Issue に対する 1 つの作業です。</span></span><span class="dg-muted"><span lang="en">from <code>versionX.Y</code>, into <code>versionX.Y</code></span><span lang="ja"><code>versionX.Y</code> から作成し、<code>versionX.Y</code> へマージ</span></span></div>
+      <div class="dg-row"><span class="gw-branch-name" style="color:var(--muted)">gh-pages</span><span><span lang="en">Publish-only branch holding the built documentation site, served by GitHub Pages. Shares no history with the other branches and is never edited by hand.</span><span lang="ja">ビルドしたドキュメントサイトを保持する公開専用のブランチで、GitHub Pages が配信します。他のブランチと履歴を共有せず、手で編集することはありません。</span></span><span class="dg-muted"><span lang="en">written only by <code>GUILDA.publish_doc</code>; never merged into or from other branches (see <a href="#publish-docs">Publishing</a>)</span><span lang="ja"><code>GUILDA.publish_doc</code> だけが書き込み、他のブランチとの間でマージすることはありません（<a href="#publish-docs">ドキュメントの公開</a> を参照）</span></span></div>
     </div>
 
     <!-- ===================== Branch names ===================== -->
-    <h2 id="branch-names">Branch names</h2>
-    <p class="dg-lead-in">Work branches are named <strong class="dg-mono">&lt;type&gt;/&lt;issue&gt;-&lt;slug&gt;</strong>:</p>
+    <h2 id="branch-names"><span lang="en">Branch names</span><span lang="ja">ブランチ名</span></h2>
+    <p class="dg-lead-in" lang="en">Work branches are named <strong class="dg-mono">&lt;type&gt;/&lt;issue&gt;-&lt;slug&gt;</strong>:</p>
+    <p class="dg-lead-in" lang="ja">作業ブランチは <strong class="dg-mono">&lt;type&gt;/&lt;issue&gt;-&lt;slug&gt;</strong> の形式で命名します。</p>
     <figure class="dg-figure">
       <div class="dg-anatomy" role="img" aria-label="feature/42-grid-forming-inverter: type feature, Issue number 42, slug grid-forming-inverter">
-        <span class="dg-part is-accent"><span class="dg-tok">feature</span><span class="dg-kicker">type</span></span>
+        <span class="dg-part is-accent"><span class="dg-tok">feature</span><span class="dg-kicker"><span lang="en">type</span><span lang="ja">種別</span></span></span>
         <span class="dg-sep">/</span>
-        <span class="dg-part is-warn"><span class="dg-tok">42</span><span class="dg-kicker">Issue #</span></span>
+        <span class="dg-part is-warn"><span class="dg-tok">42</span><span class="dg-kicker"><span lang="en">Issue #</span><span lang="ja">Issue 番号</span></span></span>
         <span class="dg-sep">-</span>
-        <span class="dg-part is-ok"><span class="dg-tok">grid-forming-inverter</span><span class="dg-kicker">slug</span></span>
+        <span class="dg-part is-ok"><span class="dg-tok">grid-forming-inverter</span><span class="dg-kicker"><span lang="en">slug</span><span lang="ja">スラッグ</span></span></span>
       </div>
     </figure>
     <ul class="dg-list">
-      <li><span class="dg-mark is-warn">#</span><div><code>&lt;issue&gt;</code> is the GitHub Issue number. Create the Issue first.</div></li>
-      <li><span class="dg-mark is-ok">a-z</span><div><code>&lt;slug&gt;</code>: short English summary, lowercase words joined by hyphens (<code>a-z</code>, <code>0-9</code>, <code>-</code>).</div></li>
-      <li><span class="dg-mark">≤50</span><div>Keep the whole name under about 50 characters.</div></li>
+      <li><span class="dg-mark is-warn">#</span><div><span lang="en"><code>&lt;issue&gt;</code> is the GitHub Issue number. Create the Issue first.</span><span lang="ja"><code>&lt;issue&gt;</code> は GitHub の Issue 番号です。先に Issue を作成してください。</span></div></li>
+      <li><span class="dg-mark is-ok">a-z</span><div><span lang="en"><code>&lt;slug&gt;</code>: short English summary, lowercase words joined by hyphens (<code>a-z</code>, <code>0-9</code>, <code>-</code>).</span><span lang="ja"><code>&lt;slug&gt;</code>: 英語の短い要約です。小文字の単語をハイフンでつなぎます（<code>a-z</code>、<code>0-9</code>、<code>-</code>）。</span></div></li>
+      <li><span class="dg-mark">≤50</span><div><span lang="en">Keep the whole name under about 50 characters.</span><span lang="ja">名前全体を 50 文字程度以内に収めます。</span></div></li>
     </ul>
 
-    <h3>Types</h3>
+    <h3><span lang="en">Types</span><span lang="ja">種別</span></h3>
     <div class="dg-rows gw-types">
-      <div class="dg-row"><span><span class="dg-badge"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-feature"/></svg>feature</span></span><span>New functions, classes, or models</span><span class="gw-example">feature/42-grid-forming-inverter</span></div>
-      <div class="dg-row"><span><span class="dg-badge"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-fix"/></svg>fix</span></span><span>Bug fixes</span><span class="gw-example">fix/51-opf-bus-index</span></div>
-      <div class="dg-row"><span><span class="dg-badge"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-refactor"/></svg>refactor</span></span><span>Restructuring without changing behavior</span><span class="gw-example">refactor/55-split-odesimulator</span></div>
-      <div class="dg-row"><span><span class="dg-badge"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-docs"/></svg>docs</span></span><span>Help comments, documentation pages, tutorials</span><span class="gw-example">docs/60-folder-structure</span></div>
-      <div class="dg-row"><span><span class="dg-badge"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-test"/></svg>test</span></span><span>Test and debug scripts</span><span class="gw-example">test/63-two-machine-validation</span></div>
+      <div class="dg-row"><span><span class="dg-badge"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-feature"/></svg>feature</span></span><span><span lang="en">New functions, classes, or models</span><span lang="ja">新しい関数、クラス、モデル</span></span><span class="gw-example">feature/42-grid-forming-inverter</span></div>
+      <div class="dg-row"><span><span class="dg-badge"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-fix"/></svg>fix</span></span><span><span lang="en">Bug fixes</span><span lang="ja">バグ修正</span></span><span class="gw-example">fix/51-opf-bus-index</span></div>
+      <div class="dg-row"><span><span class="dg-badge"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-refactor"/></svg>refactor</span></span><span><span lang="en">Restructuring without changing behavior</span><span lang="ja">動作を変えない構造の整理</span></span><span class="gw-example">refactor/55-split-odesimulator</span></div>
+      <div class="dg-row"><span><span class="dg-badge"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-docs"/></svg>docs</span></span><span><span lang="en">Help comments, documentation pages, tutorials</span><span lang="ja">ヘルプコメント、ドキュメントページ、チュートリアル</span></span><span class="gw-example">docs/60-folder-structure</span></div>
+      <div class="dg-row"><span><span class="dg-badge"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-test"/></svg>test</span></span><span><span lang="en">Test and debug scripts</span><span lang="ja">テスト・デバッグ用スクリプト</span></span><span class="gw-example">test/63-two-machine-validation</span></div>
     </div>
 
     <section class="name-generator" aria-label="Branch Name Generator">
-      <h2>Branch Name Generator</h2>
-      <p class="name-generator-desc">Pick a type, enter the Issue number and a short summary, then copy the generated <code>git switch</code> command.</p>
+      <h2><span lang="en">Branch Name Generator</span><span lang="ja">ブランチ名ジェネレーター</span></h2>
+      <p class="name-generator-desc" lang="en">Pick a type, enter the Issue number and a short summary, then copy the generated <code>git switch</code> command.</p>
+      <p class="name-generator-desc" lang="ja">種別を選び、Issue 番号と短い要約を入力して、生成された <code>git switch</code> コマンドをコピーします。</p>
 
       <div class="name-generator-row">
-        <span class="name-generator-label">Type</span>
+        <span class="name-generator-label"><span lang="en">Type</span><span lang="ja">種別</span></span>
         <div class="name-generator-options" id="bg-type-options">
-          <button type="button" class="ng-btn" data-type="feature"><span class="ng-btn-code">feature</span><span class="ng-btn-label">new function</span></button>
-          <button type="button" class="ng-btn" data-type="fix"><span class="ng-btn-code">fix</span><span class="ng-btn-label">bug fix</span></button>
-          <button type="button" class="ng-btn" data-type="refactor"><span class="ng-btn-code">refactor</span><span class="ng-btn-label">restructure</span></button>
-          <button type="button" class="ng-btn" data-type="docs"><span class="ng-btn-code">docs</span><span class="ng-btn-label">documentation</span></button>
-          <button type="button" class="ng-btn" data-type="test"><span class="ng-btn-code">test</span><span class="ng-btn-label">test / debug</span></button>
+          <button type="button" class="ng-btn" data-type="feature"><span class="ng-btn-code">feature</span><span class="ng-btn-label"><span lang="en">new function</span><span lang="ja">新機能</span></span></button>
+          <button type="button" class="ng-btn" data-type="fix"><span class="ng-btn-code">fix</span><span class="ng-btn-label"><span lang="en">bug fix</span><span lang="ja">バグ修正</span></span></button>
+          <button type="button" class="ng-btn" data-type="refactor"><span class="ng-btn-code">refactor</span><span class="ng-btn-label"><span lang="en">restructure</span><span lang="ja">構造整理</span></span></button>
+          <button type="button" class="ng-btn" data-type="docs"><span class="ng-btn-code">docs</span><span class="ng-btn-label"><span lang="en">documentation</span><span lang="ja">ドキュメント</span></span></button>
+          <button type="button" class="ng-btn" data-type="test"><span class="ng-btn-code">test</span><span class="ng-btn-label"><span lang="en">test / debug</span><span lang="ja">テスト / デバッグ</span></span></button>
         </div>
       </div>
 
       <div class="name-generator-row">
-        <span class="name-generator-label">Issue number</span>
-        <input type="text" id="bg-issue-input" class="name-generator-input" placeholder="e.g. 42" inputmode="numeric" autocomplete="off">
-        <p class="name-generator-error" id="bg-issue-error">Enter digits only.</p>
+        <span class="name-generator-label"><span lang="en">Issue number</span><span lang="ja">Issue 番号</span></span>
+        <input type="text" id="bg-issue-input" class="name-generator-input" placeholder="e.g. 42" data-placeholder-ja="例: 42" inputmode="numeric" autocomplete="off">
+        <p class="name-generator-error" id="bg-issue-error"><span lang="en">Enter digits only.</span><span lang="ja">数字だけを入力してください。</span></p>
       </div>
 
       <div class="name-generator-row">
-        <span class="name-generator-label">Summary</span>
-        <input type="text" id="bg-slug-input" class="name-generator-input" placeholder="e.g. Folder structure page" autocomplete="off" spellcheck="false">
-        <p class="name-generator-error" id="bg-slug-error">Use English letters, digits, spaces, or hyphens only.</p>
+        <span class="name-generator-label"><span lang="en">Summary</span><span lang="ja">要約</span></span>
+        <input type="text" id="bg-slug-input" class="name-generator-input" placeholder="e.g. Folder structure page" data-placeholder-ja="例: Folder structure page" autocomplete="off" spellcheck="false">
+        <p class="name-generator-error" id="bg-slug-error"><span lang="en">Use English letters, digits, spaces, or hyphens only.</span><span lang="ja">英字、数字、スペース、ハイフンだけを使ってください。</span></p>
       </div>
 
       <div class="name-generator-result">
@@ -228,28 +237,29 @@
     </section>
 
     <!-- ===================== Commit messages ===================== -->
-    <h2 id="commits">Commit messages</h2>
-    <p class="dg-lead-in">The first line is <strong class="dg-mono">&lt;type&gt;: &lt;summary&gt;</strong>:</p>
+    <h2 id="commits"><span lang="en">Commit messages</span><span lang="ja">コミットメッセージ</span></h2>
+    <p class="dg-lead-in" lang="en">The first line is <strong class="dg-mono">&lt;type&gt;: &lt;summary&gt;</strong>:</p>
+    <p class="dg-lead-in" lang="ja">1 行目は <strong class="dg-mono">&lt;type&gt;: &lt;summary&gt;</strong> の形式にします。</p>
     <figure class="dg-figure">
       <div class="dg-anatomy" role="img" aria-label="fix: use bus index instead of position in OPF constraints: type fix, colon and space, summary">
-        <span class="dg-part is-accent"><span class="dg-tok">fix</span><span class="dg-kicker">type</span></span>
+        <span class="dg-part is-accent"><span class="dg-tok">fix</span><span class="dg-kicker"><span lang="en">type</span><span lang="ja">種別</span></span></span>
         <span class="dg-sep">: </span>
-        <span class="dg-part is-ok"><span class="dg-tok">use bus index instead of position in OPF constraints</span><span class="dg-kicker">summary: lowercase imperative verb first, no trailing period</span></span>
+        <span class="dg-part is-ok"><span class="dg-tok">use bus index instead of position in OPF constraints</span><span class="dg-kicker"><span lang="en">summary: lowercase imperative verb first, no trailing period</span><span lang="ja">要約: 小文字の命令形の動詞で始め、末尾にピリオドを付けない</span></span></span>
       </div>
     </figure>
 
     <div class="dg-gh" role="group" aria-label="Example commit message">
       <div class="dg-gh-chrome"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-commit"/></svg>GUILDA / <b>Commit</b> <span class="dg-gh-mono">3f9c2a1</span></div>
       <div class="gw-msg-row">
-        <div class="gw-msg-tag"><b>first line</b>≤ 72 chars</div>
+        <div class="gw-msg-tag"><b><span lang="en">first line</span><span lang="ja">1 行目</span></b><span lang="en">≤ 72 chars</span><span lang="ja">72 文字以内</span></div>
         <div class="gw-msg-text is-title">fix: use bus index instead of position in OPF constraints<div class="gw-meter"><div class="gw-meter-bar"><span></span></div>57 / 72</div></div>
       </div>
       <div class="gw-msg-row">
-        <div class="gw-msg-tag"><b>blank line</b></div>
-        <div class="gw-msg-text is-blank">(empty)</div>
+        <div class="gw-msg-tag"><b><span lang="en">blank line</span><span lang="ja">空行</span></b></div>
+        <div class="gw-msg-text is-blank"><span lang="en">(empty)</span><span lang="ja">（空）</span></div>
       </div>
       <div class="gw-msg-row">
-        <div class="gw-msg-tag"><b>body</b>when the reason is not obvious</div>
+        <div class="gw-msg-tag"><b><span lang="en">body</span><span lang="ja">本文</span></b><span lang="en">when the reason is not obvious</span><span lang="ja">理由が自明でないとき</span></div>
         <div class="gw-msg-text">The constraint matrix was built from the position in a_Bus, which
 breaks after a bus is removed. Refs #51.</div>
       </div>
@@ -257,23 +267,23 @@ breaks after a bus is removed. Refs #51.</div>
     </div>
 
     <ul class="dg-list is-cols">
-      <li><span class="dg-mark">EN</span><div>The summary is in English.</div></li>
-      <li><span class="dg-mark is-ok">add</span><div>Starts with a lowercase verb in the imperative (<em>add</em>, <em>fix</em>, <em>remove</em>).</div></li>
-      <li><span class="dg-mark is-err">no .</span><div>No trailing period.</div></li>
-      <li><span class="dg-mark">≤72</span><div>Keep the first line within 72 characters.</div></li>
-      <li><span class="dg-mark">↵</span><div>Add a body after a blank line when the reason for the change is not obvious.</div></li>
-      <li><span class="dg-mark">1</span><div>One commit contains one logical change.</div></li>
+      <li><span class="dg-mark">EN</span><div><span lang="en">The summary is in English.</span><span lang="ja">要約は英語で書きます。</span></div></li>
+      <li><span class="dg-mark is-ok">add</span><div><span lang="en">Starts with a lowercase verb in the imperative (<em>add</em>, <em>fix</em>, <em>remove</em>).</span><span lang="ja">小文字の命令形の動詞で始めます（<em>add</em>、<em>fix</em>、<em>remove</em>）。</span></div></li>
+      <li><span class="dg-mark is-err">no .</span><div><span lang="en">No trailing period.</span><span lang="ja">末尾にピリオドを付けません。</span></div></li>
+      <li><span class="dg-mark">≤72</span><div><span lang="en">Keep the first line within 72 characters.</span><span lang="ja">1 行目は 72 文字以内に収めます。</span></div></li>
+      <li><span class="dg-mark">↵</span><div><span lang="en">Add a body after a blank line when the reason for the change is not obvious.</span><span lang="ja">変更の理由が自明でない場合は、空行の後に本文を書きます。</span></div></li>
+      <li><span class="dg-mark">1</span><div><span lang="en">One commit contains one logical change.</span><span lang="ja">1 つのコミットには 1 つの論理的な変更だけを含めます。</span></div></li>
     </ul>
 
-    <h3>Commit type and branch type</h3>
+    <h3><span lang="en">Commit type and branch type</span><span lang="ja">コミット種別とブランチ種別</span></h3>
     <div class="dg-rows gw-map" role="table" aria-label="Commit types and matching branch types">
-      <div class="dg-row dg-rows-head" role="row"><span class="dg-kicker" role="columnheader">commit type</span><span></span><span class="dg-kicker" role="columnheader">branch type</span><span class="dg-kicker" role="columnheader">use for</span></div>
-      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge">feat</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-outline">feature</span></span><span role="cell">New functions, classes, or models</span></div>
-      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge">fix</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-outline">fix</span></span><span role="cell">Bug fixes</span></div>
-      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge">refactor</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-outline">refactor</span></span><span role="cell">Restructuring without changing behavior</span></div>
-      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge">docs</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-outline">docs</span></span><span role="cell">Help comments, documentation pages, tutorials</span></div>
-      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge">test</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-outline">test</span></span><span role="cell">Test and debug scripts</span></div>
-      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge is-muted"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-chore"/></svg>chore</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell" class="dg-muted">any</span><span role="cell">Settings, <code>.gitignore</code>, file moves, and other maintenance</span></div>
+      <div class="dg-row dg-rows-head" role="row"><span class="dg-kicker" role="columnheader"><span lang="en">commit type</span><span lang="ja">コミット種別</span></span><span></span><span class="dg-kicker" role="columnheader"><span lang="en">branch type</span><span lang="ja">ブランチ種別</span></span><span class="dg-kicker" role="columnheader"><span lang="en">use for</span><span lang="ja">用途</span></span></div>
+      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge">feat</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-outline">feature</span></span><span role="cell"><span lang="en">New functions, classes, or models</span><span lang="ja">新しい関数、クラス、モデル</span></span></div>
+      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge">fix</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-outline">fix</span></span><span role="cell"><span lang="en">Bug fixes</span><span lang="ja">バグ修正</span></span></div>
+      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge">refactor</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-outline">refactor</span></span><span role="cell"><span lang="en">Restructuring without changing behavior</span><span lang="ja">動作を変えない構造の整理</span></span></div>
+      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge">docs</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-outline">docs</span></span><span role="cell"><span lang="en">Help comments, documentation pages, tutorials</span><span lang="ja">ヘルプコメント、ドキュメントページ、チュートリアル</span></span></div>
+      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge">test</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell"><span class="dg-badge is-outline">test</span></span><span role="cell"><span lang="en">Test and debug scripts</span><span lang="ja">テスト・デバッグ用スクリプト</span></span></div>
+      <div class="dg-row" role="row"><span role="cell"><span class="dg-badge is-muted"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-chore"/></svg>chore</span></span><span class="dg-row-arrow" aria-hidden="true">↔</span><span role="cell" class="dg-muted"><span lang="en">any</span><span lang="ja">任意</span></span><span role="cell"><span lang="en">Settings, <code>.gitignore</code>, file moves, and other maintenance</span><span lang="ja">設定、<code>.gitignore</code>、ファイルの移動などの保守作業</span></span></div>
     </div>
 
     <div class="dg-gh">
@@ -288,10 +298,11 @@ breaks after a bus is removed. Refs #51.</div>
         </g>
       </svg>
     </div>
-    <p class="dg-caption">A branch may mix types, for example <code>feat:</code> and <code>docs:</code> commits on a <code>feature/</code> branch.</p>
+    <p class="dg-caption" lang="en">A branch may mix types, for example <code>feat:</code> and <code>docs:</code> commits on a <code>feature/</code> branch.</p>
+    <p class="dg-caption" lang="ja">1 つのブランチに複数の種別が混在してもかまいません。たとえば <code>feature/</code> ブランチに <code>feat:</code> と <code>docs:</code> のコミットを含められます。</p>
 
     <!-- ===================== Pull requests ===================== -->
-    <h2 id="pull-requests">Pull requests</h2>
+    <h2 id="pull-requests"><span lang="en">Pull requests</span><span lang="ja">プルリクエスト</span></h2>
     <div class="dg-gh" role="img" aria-label="Example pull request into versionX.Y from feature/42-grid-forming-inverter, titled feat: add grid-forming inverter model, with Closes #42 and the Definition of Done in the description.">
       <div class="dg-gh-chrome"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-pr"/></svg>GUILDA / <b>Pull requests</b></div>
       <div class="dg-gh-body">
@@ -302,7 +313,7 @@ breaks after a bus is removed. Refs #51.</div>
           <div class="dg-gh-box-body">
             <span class="dg-gh-skel"></span><span class="dg-gh-skel is-short"></span>
             <p class="dg-gh-h"><span class="dg-gh-link">Closes #42</span></p>
-            <div class="gw-task"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-check"/></svg>Definition of Done checked</div>
+            <div class="gw-task"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-check"/></svg><span lang="en">Definition of Done checked</span><span lang="ja">Definition of Done を確認済み</span></div>
           </div>
         </div>
         <div class="dg-gh-box">
@@ -312,79 +323,88 @@ breaks after a bus is removed. Refs #51.</div>
       </div>
     </div>
     <ol class="dg-steps" style="--n:5">
-      <li><span class="dg-step-title">Sync</span>Keep the work branch up to date by merging the integration branch into it.</li>
-      <li><span class="dg-step-title">Open PR</span>Into the integration branch. Title uses the same <code>&lt;type&gt;: &lt;summary&gt;</code> format.</li>
-      <li><span class="dg-step-title">Link Issue</span>Write <code>Closes #&lt;issue&gt;</code> in the description so the Issue is closed on merge.</li>
-      <li><span class="dg-step-title">Check</span>Check the items in <a href="project-management.html#done">Definition of Done</a>.</li>
-      <li><span class="dg-step-title">Merge &amp; delete</span>After review, merge the pull request and delete the work branch.</li>
+      <li><span class="dg-step-title"><span lang="en">Sync</span><span lang="ja">同期</span></span><span lang="en">Keep the work branch up to date by merging the integration branch into it.</span><span lang="ja">統合ブランチを作業ブランチにマージして、作業ブランチを最新に保ちます。</span></li>
+      <li><span class="dg-step-title"><span lang="en">Open PR</span><span lang="ja">PR を作成</span></span><span lang="en">Into the integration branch. Title uses the same <code>&lt;type&gt;: &lt;summary&gt;</code> format.</span><span lang="ja">統合ブランチに向けて作成します。タイトルにも同じ <code>&lt;type&gt;: &lt;summary&gt;</code> の形式を使います。</span></li>
+      <li><span class="dg-step-title"><span lang="en">Link Issue</span><span lang="ja">Issue をリンク</span></span><span lang="en">Write <code>Closes #&lt;issue&gt;</code> in the description so the Issue is closed on merge.</span><span lang="ja">説明に <code>Closes #&lt;issue&gt;</code> と書くと、マージ時に Issue が閉じられます。</span></li>
+      <li><span class="dg-step-title"><span lang="en">Check</span><span lang="ja">確認</span></span><span lang="en">Check the items in <a href="project-management.html#done">Definition of Done</a>.</span><span lang="ja"><a href="project-management.html#done">Definition of Done</a> の項目を確認します。</span></li>
+      <li><span class="dg-step-title"><span lang="en">Merge &amp; delete</span><span lang="ja">マージと削除</span></span><span lang="en">After review, merge the pull request and delete the work branch.</span><span lang="ja">レビュー後にプルリクエストをマージし、作業ブランチを削除します。</span></li>
     </ol>
 
     <!-- ===================== Release ===================== -->
-    <h2 id="release">Release</h2>
+    <h2 id="release"><span lang="en">Release</span><span lang="ja">リリース</span></h2>
     <ol class="dg-steps" style="--n:4">
-      <li><span class="dg-step-title">Review PR</span>Open a pull request from the integration branch into <code>main</code> for review. Do not merge it on GitHub.</li>
-      <li><span class="dg-step-title">release.sh</span>From a clean <code>versionX.Y</code>, run <code>bash .claude/release/release.sh X.Y</code>. It merges into <code>main</code> with <code>--no-ff</code>, removes the assistant config, commits <code>chore: release vX.Y</code>, and tags the merge commit <code>vX.Y</code>.</li>
-      <li><span class="dg-step-title">Push</span>Check the result, then run the printed <code>git push origin main vX.Y</code>. GitHub marks the pull request as merged.</li>
-      <li><span class="dg-step-title">Next branch</span>Run <code>bash .claude/release/start-version.sh X.Y PREV</code>: it creates the next <code>versionX.Y</code> from <code>main</code> and restores the assistant config from <code>versionPREV</code>.</li>
+      <li><span class="dg-step-title"><span lang="en">Review PR</span><span lang="ja">レビュー用 PR</span></span><span lang="en">Open a pull request from the integration branch into <code>main</code> for review. Do not merge it on GitHub.</span><span lang="ja">レビューのため、統合ブランチから <code>main</code> へのプルリクエストを作成します。GitHub 上ではマージしないでください。</span></li>
+      <li><span class="dg-step-title">release.sh</span><span lang="en">From a clean <code>versionX.Y</code>, run <code>bash .claude/release/release.sh X.Y</code>. It merges into <code>main</code> with <code>--no-ff</code>, removes the assistant config, commits <code>chore: release vX.Y</code>, and tags the merge commit <code>vX.Y</code>.</span><span lang="ja">クリーンな <code>versionX.Y</code> で <code>bash .claude/release/release.sh X.Y</code> を実行します。<code>--no-ff</code> で <code>main</code> にマージし、アシスタント設定を削除して <code>chore: release vX.Y</code> をコミットし、マージコミットに <code>vX.Y</code> のタグを付けます。</span></li>
+      <li><span class="dg-step-title"><span lang="en">Push</span><span lang="ja">プッシュ</span></span><span lang="en">Check the result, then run the printed <code>git push origin main vX.Y</code>. GitHub marks the pull request as merged.</span><span lang="ja">結果を確認してから、表示された <code>git push origin main vX.Y</code> を実行します。GitHub 上でプルリクエストはマージ済みになります。</span></li>
+      <li><span class="dg-step-title"><span lang="en">Next branch</span><span lang="ja">次のブランチ</span></span><span lang="en">Run <code>bash .claude/release/start-version.sh X.Y PREV</code>: it creates the next <code>versionX.Y</code> from <code>main</code> and restores the assistant config from <code>versionPREV</code>.</span><span lang="ja"><code>bash .claude/release/start-version.sh X.Y PREV</code> を実行します。<code>main</code> から次の <code>versionX.Y</code> を作成し、<code>versionPREV</code> からアシスタント設定を復元します。</span></li>
     </ol>
     <div class="dg-callout">
       <svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
-      <div>
+      <div lang="en">
         <p><strong>Assistant config never lands in <code>main</code>.</strong> <code>.claude/</code>, <code>.codex/</code> and <code>.github/copilot-instructions.md</code> are tracked on the integration and work branches only, so users who clone <code>main</code> or run <code>GUILDA.gitpull</code> never get them.</p>
         <p><code>release.sh</code> removes them from the release merge and checks that <code>main</code> has none; <code>start-version.sh</code> brings them back. If the merge conflicts, the script aborts: merge <code>main</code> into <code>versionX.Y</code>, resolve the conflicts there, and run it again.</p>
+      </div>
+      <div lang="ja">
+        <p><strong>アシスタント設定は <code>main</code> に入りません。</strong> <code>.claude/</code>、<code>.codex/</code>、<code>.github/copilot-instructions.md</code> は統合ブランチと作業ブランチでだけ管理するため、<code>main</code> をクローンしたユーザーや <code>GUILDA.gitpull</code> を実行したユーザーには届きません。</p>
+        <p><code>release.sh</code> はリリースマージからこれらを取り除き、<code>main</code> に残っていないことを確認します。<code>start-version.sh</code> がこれらを元に戻します。マージでコンフリクトが起きるとスクリプトは中断します。その場合は <code>main</code> を <code>versionX.Y</code> にマージしてそこでコンフリクトを解消し、もう一度実行してください。</p>
       </div>
     </div>
 
     <!-- ===================== Publishing the documentation ===================== -->
-    <h2 id="publish-docs">Publishing the documentation</h2>
-    <p>The documentation site is served by GitHub Pages at <a href="https://guilda-dev.github.io/guilda/"><code>https://guilda-dev.github.io/guilda/</code></a> from the <code>gh-pages</code> branch. The generated class reference is never committed to source branches, so the site is published by a MATLAB command that builds it and commits the result to <code>gh-pages</code>. Nothing else updates the site.</p>
+    <h2 id="publish-docs"><span lang="en">Publishing the documentation</span><span lang="ja">ドキュメントの公開</span></h2>
+    <p lang="en">The documentation site is served by GitHub Pages at <a href="https://guilda-dev.github.io/guilda/"><code>https://guilda-dev.github.io/guilda/</code></a> from the <code>gh-pages</code> branch. The generated class reference is never committed to source branches, so the site is published by a MATLAB command that builds it and commits the result to <code>gh-pages</code>. Nothing else updates the site.</p>
+    <p lang="ja">ドキュメントサイトは <code>gh-pages</code> ブランチから GitHub Pages によって <a href="https://guilda-dev.github.io/guilda/"><code>https://guilda-dev.github.io/guilda/</code></a> で配信されます。生成されたクラスリファレンスはソースブランチにコミットしないため、サイトは、それをビルドして結果を <code>gh-pages</code> にコミットする MATLAB コマンドで公開します。それ以外の方法でサイトが更新されることはありません。</p>
     <ol class="dg-steps" style="--n:4">
-      <li><span class="dg-step-title">Check out</span>Switch to <code>main</code> or <code>versionX.Y</code> with no uncommitted changes to tracked files.</li>
-      <li><span class="dg-step-title">Run</span>In MATLAB, run <code>GUILDA.publish_doc()</code>. It rebuilds the class reference and commits the site to <code>gh-pages</code>.</li>
-      <li><span class="dg-step-title">Confirm</span>Confirm the dialog to push <code>gh-pages</code> to <code>origin</code>.</li>
-      <li><span class="dg-step-title">Check</span>The site updates within a few minutes. Open it and check the changed pages.</li>
+      <li><span class="dg-step-title"><span lang="en">Check out</span><span lang="ja">チェックアウト</span></span><span lang="en">Switch to <code>main</code> or <code>versionX.Y</code> with no uncommitted changes to tracked files.</span><span lang="ja"><code>main</code> または <code>versionX.Y</code> に切り替え、追跡対象ファイルに未コミットの変更がない状態にします。</span></li>
+      <li><span class="dg-step-title"><span lang="en">Run</span><span lang="ja">実行</span></span><span lang="en">In MATLAB, run <code>GUILDA.publish_doc()</code>. It rebuilds the class reference and commits the site to <code>gh-pages</code>.</span><span lang="ja">MATLAB で <code>GUILDA.publish_doc()</code> を実行します。クラスリファレンスを再構築し、サイトを <code>gh-pages</code> にコミットします。</span></li>
+      <li><span class="dg-step-title"><span lang="en">Confirm</span><span lang="ja">承認</span></span><span lang="en">Confirm the dialog to push <code>gh-pages</code> to <code>origin</code>.</span><span lang="ja">ダイアログで承認すると、<code>gh-pages</code> が <code>origin</code> にプッシュされます。</span></li>
+      <li><span class="dg-step-title"><span lang="en">Check</span><span lang="ja">確認</span></span><span lang="en">The site updates within a few minutes. Open it and check the changed pages.</span><span lang="ja">数分以内にサイトが更新されます。サイトを開いて、変更したページを確認します。</span></li>
     </ol>
 
-    <h3>What the command does</h3>
+    <h3><span lang="en">What the command does</span><span lang="ja">コマンドの処理内容</span></h3>
     <ul class="dg-list is-numbered">
-      <li><div><span class="dg-item-title">Checks the checkout</span>Refuses to run on any branch other than <code>main</code> or <code>versionX.Y</code>, or when tracked files have uncommitted changes.</div></li>
-      <li><div><span class="dg-item-title">Rebuilds the class reference</span>Regenerates <code>_GUILDAdoc/database/</code> from scratch and stops if any class export reports errors.</div></li>
-      <li><div><span class="dg-item-title">Writes the site</span>In a temporary Git worktree of <code>gh-pages</code> (created as an orphan branch the first time), writes <code>_GUILDAdoc/</code>, <code>LICENSE</code>, a root <code>index.html</code> that redirects to <code>_GUILDAdoc/index.html</code>, and an empty <code>.nojekyll</code>.</div></li>
-      <li><div><span class="dg-item-title">Commits</span>Commits <code>docs: publish &lt;branch&gt;@&lt;short-sha&gt;</code>, naming the source branch and commit. If nothing changed, it makes no commit.</div></li>
-      <li><div><span class="dg-item-title">Pushes</span>Asks for confirmation, then pushes <code>gh-pages</code> to <code>origin</code>.</div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Checks the checkout</span><span lang="ja">チェックアウトの確認</span></span><span lang="en">Refuses to run on any branch other than <code>main</code> or <code>versionX.Y</code>, or when tracked files have uncommitted changes.</span><span lang="ja"><code>main</code> と <code>versionX.Y</code> 以外のブランチや、追跡対象ファイルに未コミットの変更がある場合は実行を拒否します。</span></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Rebuilds the class reference</span><span lang="ja">クラスリファレンスの再構築</span></span><span lang="en">Regenerates <code>_GUILDAdoc/database/</code> from scratch and stops if any class export reports errors.</span><span lang="ja"><code>_GUILDAdoc/database/</code> を一から再生成し、クラスのエクスポートでエラーが報告された場合は停止します。</span></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Writes the site</span><span lang="ja">サイトの書き出し</span></span><span lang="en">In a temporary Git worktree of <code>gh-pages</code> (created as an orphan branch the first time), writes <code>_GUILDAdoc/</code>, <code>LICENSE</code>, a root <code>index.html</code> that redirects to <code>_GUILDAdoc/index.html</code>, and an empty <code>.nojekyll</code>.</span><span lang="ja"><code>gh-pages</code> の一時的な Git ワークツリー（初回は orphan ブランチとして作成）に、<code>_GUILDAdoc/</code>、<code>LICENSE</code>、<code>_GUILDAdoc/index.html</code> へリダイレクトするルートの <code>index.html</code>、空の <code>.nojekyll</code> を書き出します。</span></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Commits</span><span lang="ja">コミット</span></span><span lang="en">Commits <code>docs: publish &lt;branch&gt;@&lt;short-sha&gt;</code>, naming the source branch and commit. If nothing changed, it makes no commit.</span><span lang="ja">ソースのブランチとコミットを示す <code>docs: publish &lt;branch&gt;@&lt;short-sha&gt;</code> をコミットします。変更がなければコミットしません。</span></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Pushes</span><span lang="ja">プッシュ</span></span><span lang="en">Asks for confirmation, then pushes <code>gh-pages</code> to <code>origin</code>.</span><span lang="ja">確認を求めてから、<code>gh-pages</code> を <code>origin</code> にプッシュします。</span></div></li>
     </ul>
 
-    <h3>Options</h3>
+    <h3><span lang="en">Options</span><span lang="ja">オプション</span></h3>
     <table class="dg-table">
-      <thead><tr><th>Call</th><th>Effect</th></tr></thead>
+      <thead><tr><th><span lang="en">Call</span><span lang="ja">呼び出し</span></th><th><span lang="en">Effect</span><span lang="ja">効果</span></th></tr></thead>
       <tbody>
-        <tr><td><code>GUILDA.publish_doc()</code></td><td data-label="Effect">Build, commit, ask for confirmation, and push.</td></tr>
-        <tr><td><code>GUILDA.publish_doc("confirm", false)</code></td><td data-label="Effect">Push without the confirmation dialog.</td></tr>
-        <tr><td><code>GUILDA.publish_doc("push", false)</code></td><td data-label="Effect">Build and commit to the local <code>gh-pages</code> only. Push it later with <code>git push origin gh-pages</code>.</td></tr>
+        <tr><td><code>GUILDA.publish_doc()</code></td><td data-label="Effect" data-label-ja="効果"><span lang="en">Build, commit, ask for confirmation, and push.</span><span lang="ja">ビルドとコミットを行い、確認を求めてからプッシュします。</span></td></tr>
+        <tr><td><code>GUILDA.publish_doc("confirm", false)</code></td><td data-label="Effect" data-label-ja="効果"><span lang="en">Push without the confirmation dialog.</span><span lang="ja">確認ダイアログなしでプッシュします。</span></td></tr>
+        <tr><td><code>GUILDA.publish_doc("push", false)</code></td><td data-label="Effect" data-label-ja="効果"><span lang="en">Build and commit to the local <code>gh-pages</code> only. Push it later with <code>git push origin gh-pages</code>.</span><span lang="ja">ローカルの <code>gh-pages</code> へのビルドとコミットだけを行います。後で <code>git push origin gh-pages</code> でプッシュします。</span></td></tr>
       </tbody>
     </table>
 
     <div class="dg-callout">
       <svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
-      <div>
+      <div lang="en">
         <p><strong>One-time setup.</strong> A repository admin sets <em>Settings → Pages → Build and deployment</em> to <em>Deploy from a branch</em>, with branch <code>gh-pages</code> and folder <code>/ (root)</code>.</p>
         <p>The site shows the branch that was published last; the latest commit message on <code>gh-pages</code> names it.</p>
+      </div>
+      <div lang="ja">
+        <p><strong>初回のみの設定。</strong> リポジトリの管理者が <em>Settings → Pages → Build and deployment</em> を <em>Deploy from a branch</em> にし、ブランチを <code>gh-pages</code>、フォルダを <code>/ (root)</code> に設定します。</p>
+        <p>サイトには最後に公開したブランチの内容が表示されます。どのブランチかは、<code>gh-pages</code> の最新のコミットメッセージで分かります。</p>
       </div>
     </div>
 
     <!-- ===================== Do not ===================== -->
-    <h2 id="dont">Do not</h2>
+    <h2 id="dont"><span lang="en">Do not</span><span lang="ja">禁止事項</span></h2>
     <ul class="dg-list">
-      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title">Direct commits</span>Commit directly to <code>main</code>.</div></li>
-      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title">Manual merges into main</span>Merge or cherry-pick into <code>main</code> by hand or on GitHub; release with <code>release.sh</code>.</div></li>
-      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title">Force-push</span>Force-push to <code>main</code> or the integration branch.</div></li>
-      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title">Generated / personal files</span>Commit generated files or personal settings (see <a href="folder-structure.html#generated">Generated files</a>).</div></li>
-      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title">Hand edits to gh-pages</span>Commit to, merge into, or merge from <code>gh-pages</code> by hand; publish with <code>GUILDA.publish_doc</code>.</div></li>
-      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title">Other prefixes</span>Create work branches with other prefixes such as <code>dev/</code> or <code>develop/</code>.</div></li>
+      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title"><span lang="en">Direct commits</span><span lang="ja">直接コミット</span></span><span lang="en">Commit directly to <code>main</code>.</span><span lang="ja"><code>main</code> に直接コミットしないでください。</span></div></li>
+      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title"><span lang="en">Manual merges into main</span><span lang="ja">main への手動マージ</span></span><span lang="en">Merge or cherry-pick into <code>main</code> by hand or on GitHub; release with <code>release.sh</code>.</span><span lang="ja"><code>main</code> へのマージやチェリーピックを、手作業や GitHub 上で行わないでください。リリースには <code>release.sh</code> を使います。</span></div></li>
+      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title"><span lang="en">Force-push</span><span lang="ja">強制プッシュ</span></span><span lang="en">Force-push to <code>main</code> or the integration branch.</span><span lang="ja"><code>main</code> や統合ブランチに強制プッシュしないでください。</span></div></li>
+      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title"><span lang="en">Generated / personal files</span><span lang="ja">自動生成ファイル・個人用ファイル</span></span><span lang="en">Commit generated files or personal settings (see <a href="folder-structure.html#generated">Generated files</a>).</span><span lang="ja">自動生成ファイルや個人設定をコミットしないでください（<a href="folder-structure.html#generated">自動生成ファイル</a> を参照）。</span></div></li>
+      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title"><span lang="en">Hand edits to gh-pages</span><span lang="ja">gh-pages の手動編集</span></span><span lang="en">Commit to, merge into, or merge from <code>gh-pages</code> by hand; publish with <code>GUILDA.publish_doc</code>.</span><span lang="ja"><code>gh-pages</code> への手動のコミットや、<code>gh-pages</code> との間の手動マージを行わないでください。公開には <code>GUILDA.publish_doc</code> を使います。</span></div></li>
+      <li><span class="dg-mark is-err"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-no"/></svg></span><div><span class="dg-item-title"><span lang="en">Other prefixes</span><span lang="ja">その他の接頭辞</span></span><span lang="en">Create work branches with other prefixes such as <code>dev/</code> or <code>develop/</code>.</span><span lang="ja"><code>dev/</code> や <code>develop/</code> など、他の接頭辞で作業ブランチを作成しないでください。</span></div></li>
     </ul>
     <div class="dg-callout is-warn">
       <svg class="dg-icon" aria-hidden="true"><use href="#dg-i-shield"/></svg>
-      <p><strong>Enforced by Claude Code hooks</strong> (<code>.claude/settings.json</code>, <code>.claude/hooks/</code>): Claude Code sessions in this repository are blocked from creating branches with other names, committing on <code>main</code>, <code>versionX.Y</code> or non-work branches, force-pushing or deleting <code>main</code> / <code>versionX.Y</code>, running <code>git merge</code> or <code>git cherry-pick</code> on <code>main</code> (use <code>release.sh</code>), and editing generated files; a commit message that breaks the format is sent back for <code>git commit --amend</code>.</p>
+      <p><span lang="en"><strong>Enforced by Claude Code hooks</strong> (<code>.claude/settings.json</code>, <code>.claude/hooks/</code>): Claude Code sessions in this repository are blocked from creating branches with other names, committing on <code>main</code>, <code>versionX.Y</code> or non-work branches, force-pushing or deleting <code>main</code> / <code>versionX.Y</code>, running <code>git merge</code> or <code>git cherry-pick</code> on <code>main</code> (use <code>release.sh</code>), and editing generated files; a commit message that breaks the format is sent back for <code>git commit --amend</code>.</span><span lang="ja"><strong>Claude Code のフックによる強制</strong>（<code>.claude/settings.json</code>、<code>.claude/hooks/</code>）: このリポジトリの Claude Code セッションでは、他の名前のブランチの作成、<code>main</code>・<code>versionX.Y</code>・作業ブランチ以外でのコミット、<code>main</code> / <code>versionX.Y</code> の強制プッシュや削除、<code>main</code> 上での <code>git merge</code> や <code>git cherry-pick</code> の実行（<code>release.sh</code> を使います）、自動生成ファイルの編集がブロックされます。形式に従わないコミットメッセージは、<code>git commit --amend</code> で直すよう差し戻されます。</span></p>
     </div>
   </main>
 
@@ -409,6 +429,45 @@ breaks after a bus is removed. Refs #51.</div>
       var output = document.getElementById('bg-output');
       var copyBtn = document.getElementById('bg-copy-btn');
       var selectedType = null;
+      var copiedTimer = null;
+      var copied = false;
+
+      var MESSAGES = {
+        en: {
+          selectType: 'Select a type, then enter the Issue number and a summary.',
+          fixInput: 'Fix the input above to generate a name.',
+          enterRest: 'Enter the Issue number and a summary.',
+          copy: 'Copy',
+          copied: 'Copied!'
+        },
+        ja: {
+          selectType: '種別を選び、Issue 番号と要約を入力してください。',
+          fixInput: '名前を生成するには、上の入力を修正してください。',
+          enterRest: 'Issue 番号と要約を入力してください。',
+          copy: 'コピー',
+          copied: 'コピーしました'
+        }
+      };
+
+      function msg(key) {
+        var lang = document.documentElement.dataset.lang === 'ja' ? 'ja' : 'en';
+        return MESSAGES[lang][key];
+      }
+
+      // Placeholders: the English text is in placeholder, the Japanese one in data-placeholder-ja.
+      [issueInput, slugInput].forEach(function (input) {
+        input.setAttribute('data-placeholder-en', input.getAttribute('placeholder'));
+      });
+
+      function applyLang() {
+        var ja = document.documentElement.dataset.lang === 'ja';
+        [issueInput, slugInput].forEach(function (input) {
+          var text = ja ? input.getAttribute('data-placeholder-ja') : input.getAttribute('data-placeholder-en');
+          if (text) input.setAttribute('placeholder', text);
+        });
+        copyBtn.textContent = msg(copied ? 'copied' : 'copy');
+        update();
+      }
 
       typeButtons.forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -439,11 +498,11 @@ breaks after a bus is removed. Refs #51.</div>
         if (ready) {
           output.textContent = 'git switch -c ' + selectedType + '/' + issue + '-' + slug;
         } else if (selectedType === null) {
-          output.textContent = 'Select a type, then enter the Issue number and a summary.';
+          output.textContent = msg('selectType');
         } else if (!isValidIssue || !isValidSlug) {
-          output.textContent = 'Fix the input above to generate a name.';
+          output.textContent = msg('fixInput');
         } else {
-          output.textContent = 'Enter the Issue number and a summary.';
+          output.textContent = msg('enterRest');
         }
         copyBtn.disabled = !ready;
       }
@@ -463,8 +522,10 @@ breaks after a bus is removed. Refs #51.</div>
         if (copyBtn.disabled) return;
         var text = output.textContent;
         var flash = function () {
-          copyBtn.textContent = 'Copied!';
-          setTimeout(function () { copyBtn.textContent = 'Copy'; }, 1200);
+          copied = true;
+          copyBtn.textContent = msg('copied');
+          clearTimeout(copiedTimer);
+          copiedTimer = setTimeout(function () { copied = false; copyBtn.textContent = msg('copy'); }, 1200);
         };
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(text).then(flash, function () { fallbackCopy(text); flash(); });
@@ -474,7 +535,8 @@ breaks after a bus is removed. Refs #51.</div>
         }
       });
 
-      update();
+      document.addEventListener('guilda-langchange', applyLang);
+      applyLang();
     })();
   </script>
 </body>

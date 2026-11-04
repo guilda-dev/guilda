@@ -60,22 +60,22 @@ const developerData = [
 {
     title: "Classes: PowerNetwork",
     title_ja: "クラス: PowerNetwork",
-    description: "The network that holds buses, branches, and controllers: the data it owns, the analysis entry points it provides, and how it keeps cached results consistent after edits.",
-    description_ja: "母線・ブランチ・制御器を保持するネットワーク: 持つデータ、提供する解析の入口、編集後にキャッシュした結果の整合を保つ仕組み。",
+    description: "The network that holds buses, branches, and controllers: the data it owns, the analysis entry points it provides, and how edits mark the equilibrium and cached functions out of date.",
+    description_ja: "母線・ブランチ・制御器を保持するネットワーク: 持つデータ、提供する解析の入口、編集で平衡点やキャッシュした関数が古くなる仕組み。",
     link: "developer/class-powernetwork.html"
     },
 {
     title: "Classes: Bus",
     title_ja: "クラス: Bus",
-    description: "A node of the network: bus types and power flow specifications, the component connected to it, and the values it reads from and returns to the network.",
+    description: "A node of the network: bus types and power flow specifications, the components connected to it, and the values it reads from and returns to the network.",
     description_ja: "ネットワークの節点: 母線の種類と潮流計算の指定値、接続される機器、ネットワークとの間で受け渡す値。",
     link: "developer/class-bus.html"
     },
 {
     title: "Classes: Branch",
     title_ja: "クラス: Branch",
-    description: "A line or transformer between two buses: its parameters, the admittance it contributes to the network, and how it is switched during a simulation.",
-    description_ja: "2 つの母線を結ぶ送電線・変圧器: パラメータ、ネットワークのアドミタンスへの寄与、シミュレーション中の開閉の扱い。",
+    description: "A line or transformer between two buses: its parameters, the admittance matrix it contributes to the network, and the methods the analyses call.",
+    description_ja: "2 つの母線を結ぶ送電線・変圧器: パラメータ、ネットワークのアドミタンス行列への寄与、解析から呼ばれるメソッド。",
     link: "developer/class-branch.html"
     },
 {
@@ -88,15 +88,15 @@ const developerData = [
 {
     title: "Classes: LocalController",
     title_ja: "クラス: LocalController",
-    description: "A controller that observes and acts on a selected set of buses: its observation and input ports, states, and the equations it implements.",
-    description_ja: "選んだ母線群を観測して入力を与える制御器: 観測・入力のポート、状態、実装する方程式。",
+    description: "A controller attached to one component, such as an AVR or a PSS: how it observes that component by name, the inputs of its parent it drives, and the equations it implements.",
+    description_ja: "1 つの機器に取り付ける制御器(AVR、PSS など): 名前によるその機器の観測、駆動する親の入力、実装する方程式。",
     link: "developer/class-localcontroller.html"
     },
 {
     title: "Classes: GlobalController",
     title_ja: "クラス: GlobalController",
-    description: "A controller that observes the whole network: how it differs from LocalController, its observation and input ports, and the equations it implements.",
-    description_ja: "ネットワーク全体を観測する制御器: LocalController との違い、観測・入力のポート、実装する方程式。",
+    description: "A controller that reads the states of its controlled units and drives their inputs: how it differs from LocalController, its inputs and outputs, and the equations it implements.",
+    description_ja: "制御対象の機器の状態を読み、その入力を駆動する制御器: LocalController との違い、入力と出力、実装する方程式。",
     link: "developer/class-globalcontroller.html"
     },
 {
@@ -123,8 +123,8 @@ const developerData = [
 {
     title: "Features: Initialization",
     title_ja: "機能: 初期化",
-    description: "Finding the equilibrium of components and controllers after the power flow: the call order, the values each class reads, and the initial states it returns.",
-    description_ja: "潮流計算の後に機器と制御器の平衡点を求める処理: 呼び出し順、各クラスが読む値と返す初期状態。",
+    description: "Finding the operating point and then the equilibria of components and controllers: the call order, the values each class reads, and the initial states it returns.",
+    description_ja: "動作点を求め、続いて機器と制御器の平衡点を求める処理: 呼び出し順、各クラスが読む値と返す初期状態。",
     link: "developer/feature-initialize.html"
     },
 {
@@ -136,21 +136,21 @@ const developerData = [
     },
 {
     title: "Features: Continuation Power Flow",
-    title_ja: "機能: 連続型潮流計算",
-    description: "Tracing the power flow solution as the load grows: the call order, the inputs each step reads, and the curve it returns.",
-    description_ja: "負荷の増加に沿って潮流解を追跡する処理: 呼び出し順、各段階が読む入力、返す曲線。",
+    title_ja: "機能: 連続潮流計算",
+    description: "Tracing the power flow solution as the power of the components on selected buses is scaled up: the call order, the inputs each step reads, and the curve it returns.",
+    description_ja: "選んだ母線の機器の電力を増やしながら潮流解を追跡する処理: 呼び出し順、各段階が読む入力、返す曲線。",
     link: "developer/feature-cpf.html"
     },
 {
     title: "Features: Time-Domain Simulation",
-    title_ja: "機能: 時間領域シミュレーション",
+    title_ja: "機能: 時間応答シミュレーション",
     description: "Running a time-domain simulation: how events split it into phases, the call order between classes in each phase, and the results it returns.",
-    description_ja: "時間領域シミュレーションの実行: イベントによる区間の分割、各区間でのクラス間の呼び出し順、返す結果。",
+    description_ja: "時間応答シミュレーションの実行: イベントによる区間の分割、各区間でのクラス間の呼び出し順、返す結果。",
     link: "developer/feature-simulation.html"
     },
 {
     title: "Features: Linearization",
-    title_ja: "機能: 線形化",
+    title_ja: "機能: 近似線形化",
     description: "Obtaining a linear model around an equilibrium: how each class contributes its matrices, the call order, and the system it returns.",
     description_ja: "平衡点まわりの線形モデルの導出: 各クラスが行列を提供する方法、呼び出し順、返すシステム。",
     link: "developer/feature-linearization.html"
