@@ -115,7 +115,7 @@ classdef (Sealed = true) Scenario < auxiliary
     end
 
     properties (Hidden) % Compatibility
-        % True for a scenario made by the deprecated ODEevent(tag, net, ...).  COMPAT(v3)
+        % True for a scenario made by the deprecated ODEevent(tag, net, ...) (set by _VersionSupport/ODEevent.m).
         l_compat (1,1) logical = false
     end
 
