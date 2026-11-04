@@ -60,8 +60,8 @@
   <main>
     <button type="button" class="developer-back-button" onclick="window.history.back()"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></button>
     <h1><span lang="en">Project Management</span><span lang="ja">プロジェクト管理</span></h1>
-    <p class="page-lead" lang="en">All work in GUILDA is tracked with GitHub Issues. One Issue corresponds to one work branch and one pull request.</p>
-    <p class="page-lead" lang="ja">GUILDA の作業はすべて GitHub Issues で管理します。1 つの Issue が 1 つの作業ブランチと 1 つのプルリクエストに対応します。</p>
+    <p class="page-lead" lang="en">All work is tracked in GitHub Issues: one Issue, one work branch, one pull request.</p>
+    <p class="page-lead" lang="ja">GUILDA の作業はすべて GitHub Issues で管理。1 つの Issue に作業ブランチ 1 つ、プルリクエスト 1 つが対応。</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#flow"><span lang="en">Workflow</span><span lang="ja">作業の流れ</span></a>
@@ -77,13 +77,13 @@
     <h2 id="flow"><span lang="en">Workflow</span><span lang="ja">作業の流れ</span></h2>
     <figure class="dg-figure">
       <ol class="dg-steps" style="--n:5">
-        <li><span class="dg-step-title"><span lang="en">Issue</span><span lang="ja">Issue</span></span><span lang="en">Open an Issue that describes the problem or the goal.</span><span lang="ja">問題または目標を説明する Issue を作成します。</span></li>
-        <li><span class="dg-step-title"><span lang="en">Work branch</span><span lang="ja">作業ブランチ</span></span><span lang="en">Create a work branch from the integration branch, following the <a href="git-workflow.html#branch-names">branch naming rule</a>.</span><span lang="ja"><a href="git-workflow.html#branch-names">ブランチ名の規則</a>に従って、統合ブランチから作業ブランチを作成します。</span></li>
-        <li><span class="dg-step-title"><span lang="en">Commits</span><span lang="ja">コミット</span></span><span lang="en">Commit with <a href="git-workflow.html#commits"><code>&lt;type&gt;: &lt;summary&gt;</code></a> messages.</span><span lang="ja"><a href="git-workflow.html#commits"><code>&lt;type&gt;: &lt;summary&gt;</code></a> 形式のメッセージでコミットします。</span></li>
-        <li><span class="dg-step-title"><span lang="en">Pull request</span><span lang="ja">プルリクエスト</span></span><span lang="en">Open a pull request into the integration branch and complete the <a href="#done">Definition of Done</a>.</span><span lang="ja">統合ブランチへのプルリクエストを作成し、<a href="#done">完了の定義</a>を満たします。</span></li>
-        <li><span class="dg-step-title"><span lang="en">Merge</span><span lang="ja">マージ</span></span><span lang="en">Merge, delete the branch, and let <code>Closes #&lt;issue&gt;</code> close the Issue.</span><span lang="ja">マージしてブランチを削除します。Issue は <code>Closes #&lt;issue&gt;</code> によって閉じられます。</span></li>
+        <li><span class="dg-step-title"><span lang="en">Issue</span><span lang="ja">Issue</span></span><span lang="en">Open an Issue that describes the problem or the goal.</span><span lang="ja">問題または目標を説明する Issue を作成。</span></li>
+        <li><span class="dg-step-title"><span lang="en">Work branch</span><span lang="ja">作業ブランチ</span></span><span lang="en">Create a work branch from the integration branch, following the <a href="git-workflow.html#branch-names">branch naming rule</a>.</span><span lang="ja"><a href="git-workflow.html#branch-names">ブランチ名の規則</a>に従って、統合ブランチから作業ブランチを作成。</span></li>
+        <li><span class="dg-step-title"><span lang="en">Commits</span><span lang="ja">コミット</span></span><span lang="en">Commit with <a href="git-workflow.html#commits"><code>&lt;type&gt;: &lt;summary&gt;</code></a> messages.</span><span lang="ja"><a href="git-workflow.html#commits"><code>&lt;type&gt;: &lt;summary&gt;</code></a> 形式のメッセージでコミット。</span></li>
+        <li><span class="dg-step-title"><span lang="en">Pull request</span><span lang="ja">プルリクエスト</span></span><span lang="en">Open a pull request into the integration branch and complete the <a href="#done">Definition of Done</a>.</span><span lang="ja">統合ブランチへのプルリクエストを作成し、<a href="#done">完了の定義</a>を満たす。</span></li>
+        <li><span class="dg-step-title"><span lang="en">Merge</span><span lang="ja">マージ</span></span><span lang="en">Merge, delete the branch, and let <code>Closes #&lt;issue&gt;</code> close the Issue.</span><span lang="ja">マージしてブランチを削除。Issue は <code>Closes #&lt;issue&gt;</code> で閉じる。</span></li>
       </ol>
-      <figcaption><span lang="en">The work collects in the integration branch <code>versionX.Y</code>, which is released into <code>main</code> as <code>vX.Y</code> (see <a href="#versions">Versions</a>).</span><span lang="ja">作業は統合ブランチ <code>versionX.Y</code> に集められ、<code>vX.Y</code> として <code>main</code> にリリースされます（<a href="#versions">バージョン</a>を参照）。</span></figcaption>
+      <figcaption><span lang="en">Work collects in the integration branch <code>versionX.Y</code>, released into <code>main</code> as <code>vX.Y</code> (see <a href="#versions">Versions</a>).</span><span lang="ja">作業は統合ブランチ <code>versionX.Y</code> に集約し、<code>vX.Y</code> として <code>main</code> にリリース（<a href="#versions">バージョン</a>を参照）。</span></figcaption>
     </figure>
 
     <!-- ===================== Issues ===================== -->
@@ -110,9 +110,9 @@
       </div>
     </div>
     <ol class="dg-list">
-      <li><span class="dg-mark is-warn">1</span><div><span class="dg-item-title"><span lang="en">Title</span><span lang="ja">タイトル</span></span><span lang="en">Write the title in English as a short statement of the goal, e.g. <em>Add grid-forming inverter model</em>.</span><span lang="ja">タイトルは英語で、目標を短く述べる文にします。例: <em>Add grid-forming inverter model</em>。</span></div></li>
-      <li><span class="dg-mark is-warn">2</span><div><span class="dg-item-title"><span lang="en">Description</span><span lang="ja">説明</span></span><span lang="en">Describe the background, the expected result, and, for bugs, the steps to reproduce.</span><span lang="ja">背景と期待する結果を書きます。バグの場合は再現手順も書きます。</span></div></li>
-      <li><span class="dg-mark is-warn">3</span><div><span class="dg-item-title"><span lang="en">Label</span><span lang="ja">ラベル</span></span><span lang="en">Add one type label that matches the branch type: <code>feature</code>, <code>fix</code>, <code>refactor</code>, <code>docs</code>, or <code>test</code>.</span><span lang="ja">ブランチの種類に合う種類ラベルを 1 つ付けます: <code>feature</code>、<code>fix</code>、<code>refactor</code>、<code>docs</code>、<code>test</code>。</span></div></li>
+      <li><span class="dg-mark is-warn">1</span><div><span class="dg-item-title"><span lang="en">Title</span><span lang="ja">タイトル</span></span><span lang="en">In English, a short statement of the goal, e.g. <em>Add grid-forming inverter model</em>.</span><span lang="ja">英語で、目標を短く述べる文。例: <em>Add grid-forming inverter model</em>。</span></div></li>
+      <li><span class="dg-mark is-warn">2</span><div><span class="dg-item-title"><span lang="en">Description</span><span lang="ja">説明</span></span><span lang="en">Background and expected result; for bugs, also the steps to reproduce.</span><span lang="ja">背景と期待する結果。バグでは再現手順も。</span></div></li>
+      <li><span class="dg-mark is-warn">3</span><div><span class="dg-item-title"><span lang="en">Label</span><span lang="ja">ラベル</span></span><span lang="en">One type label that matches the branch type: <code>feature</code>, <code>fix</code>, <code>refactor</code>, <code>docs</code>, or <code>test</code>.</span><span lang="ja">ブランチの種類に合う種類ラベルを 1 つ: <code>feature</code>、<code>fix</code>、<code>refactor</code>、<code>docs</code>、<code>test</code>。</span></div></li>
     </ol>
 
     <h3><span lang="en">Label → branch type</span><span lang="ja">ラベル → ブランチの種類</span></h3>
@@ -157,7 +157,7 @@
           <rect x="160" y="200" width="130" height="40" rx="4" stroke-width="1.5" style="fill:var(--brand-tint); stroke:var(--brand)"/><text lang="en" x="225" y="225" style="fill:var(--brand)">pull request</text><text lang="ja" x="225" y="225" font-size="13" style="fill:var(--brand)">プルリクエスト</text>
         </g>
       </svg>
-      <figcaption><span lang="en">Split an Issue when it cannot be finished in one pull request.</span><span lang="ja">1 つのプルリクエストで終えられない Issue は分割します。</span></figcaption>
+      <figcaption><span lang="en">Split an Issue when it cannot be finished in one pull request.</span><span lang="ja">1 つのプルリクエストで終えられない Issue は分割。</span></figcaption>
     </figure>
 
     <!-- ===================== Versions ===================== -->
@@ -217,35 +217,35 @@
         <h3><span lang="en">Version number</span><span lang="ja">バージョン番号</span></h3>
         <div class="pm-xy" aria-label="X.Y"><span class="is-x">X</span><span class="is-dot">.</span><span class="is-y">Y</span></div>
         <ul class="dg-list">
-          <li><span class="dg-mark is-err">X+1</span><div><span lang="en">Increase <code>X</code> for changes that break existing scripts: <code>X.Y</code> → <code>(X+1).0</code>.</span><span lang="ja">既存のスクリプトが動かなくなる変更では <code>X</code> を上げます: <code>X.Y</code> → <code>(X+1).0</code>。</span></div></li>
-          <li><span class="dg-mark is-ok">Y+1</span><div><span lang="en">Increase <code>Y</code> otherwise: <code>X.Y</code> → <code>X.(Y+1)</code>.</span><span lang="ja">それ以外では <code>Y</code> を上げます: <code>X.Y</code> → <code>X.(Y+1)</code>。</span></div></li>
+          <li><span class="dg-mark is-err">X+1</span><div><span lang="en">Changes that break existing scripts: increase <code>X</code>. <code>X.Y</code> → <code>(X+1).0</code>.</span><span lang="ja">既存のスクリプトが動かなくなる変更: <code>X</code> を上げる。 <code>X.Y</code> → <code>(X+1).0</code>。</span></div></li>
+          <li><span class="dg-mark is-ok">Y+1</span><div><span lang="en">Otherwise: increase <code>Y</code>. <code>X.Y</code> → <code>X.(Y+1)</code>.</span><span lang="ja">それ以外: <code>Y</code> を上げる。 <code>X.Y</code> → <code>X.(Y+1)</code>。</span></div></li>
         </ul>
       </div>
       <div>
         <h3><span lang="en">Names built from <code>X.Y</code></span><span lang="ja"><code>X.Y</code> から作る名前</span></h3>
         <ul class="dg-list">
-          <li><span class="dg-mark"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-branch"/></svg></span><div><span class="dg-item-title"><span lang="en">Integration branch</span><span lang="ja">統合ブランチ</span> <code>versionX.Y</code></span><span lang="en">One per release under development.</span><span lang="ja">開発中のリリースごとに 1 つ作ります。</span></div></li>
-          <li><span class="dg-mark"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-tag"/></svg></span><div><span class="dg-item-title"><span lang="en">Release tag</span><span lang="ja">リリースタグ</span> <code>vX.Y</code></span><span lang="en">On the merge commit in <code>main</code>.</span><span lang="ja"><code>main</code> のマージコミットに付けます。</span></div></li>
+          <li><span class="dg-mark"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-branch"/></svg></span><div><span class="dg-item-title"><span lang="en">Integration branch</span><span lang="ja">統合ブランチ</span> <code>versionX.Y</code></span><span lang="en">One per release under development.</span><span lang="ja">開発中のリリースごとに 1 つ。</span></div></li>
+          <li><span class="dg-mark"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-tag"/></svg></span><div><span class="dg-item-title"><span lang="en">Release tag</span><span lang="ja">リリースタグ</span> <code>vX.Y</code></span><span lang="en">On the merge commit in <code>main</code>.</span><span lang="ja"><code>main</code> のマージコミットに付与。</span></div></li>
         </ul>
       </div>
     </div>
 
     <h3><span lang="en">Breaking changes</span><span lang="ja">互換性を壊す変更</span></h3>
-    <div class="dg-chain" role="img" aria-label="An existing script calls the old name, a wrapper in _GUILDAsystem/_VersionSupport/ forwards it to the renamed public name.">
+    <div class="dg-chain" role="img" aria-label="An existing script calls the old name, a wrapper in _GUILDAsystem/_VersionSupport/ forwards it to the current public name.">
       <div class="dg-chain-node"><span class="dg-kicker"><span lang="en">existing script</span><span lang="ja">既存のスクリプト</span></span><code>oldName(…)</code></div>
       <div class="dg-chain-arrow" aria-hidden="true"></div>
       <div class="dg-chain-node is-warn"><span class="dg-kicker"><span lang="en">wrapper</span><span lang="ja">ラッパー</span></span><code>_GUILDAsystem/_VersionSupport/</code></div>
       <div class="dg-chain-arrow" aria-hidden="true"></div>
-      <div class="dg-chain-node is-ok"><span class="dg-kicker"><span lang="en">renamed public name</span><span lang="ja">変更後の公開名</span></span><code>newName(…)</code></div>
+      <div class="dg-chain-node is-ok"><span class="dg-kicker"><span lang="en">current public name</span><span lang="ja">現在の公開名</span></span><code>newName(…)</code></div>
     </div>
-    <p lang="en">When a public name changes, keep the old name working through a wrapper in <code>_GUILDAsystem/_VersionSupport/</code> for at least one major version (<code>X</code> → <code>X+1</code>).</p>
-    <p lang="ja">公開名を変更するときは、少なくとも 1 メジャーバージョン（<code>X</code> → <code>X+1</code>）の間、<code>_GUILDAsystem/_VersionSupport/</code> のラッパーで古い名前を使えるようにしておきます。</p>
+    <p lang="en">When a public name changes, a wrapper in <code>_GUILDAsystem/_VersionSupport/</code> keeps the old name working for at least one major version (<code>X</code> → <code>X+1</code>).</p>
+    <p lang="ja">公開名の変更時は、<code>_GUILDAsystem/_VersionSupport/</code> のラッパーで古い名前を少なくとも 1 メジャーバージョン（<code>X</code> → <code>X+1</code>）維持。</p>
 
     <!-- ===================== Documentation ===================== -->
     <h2 id="documentation"><span lang="en">Keeping documentation current</span><span lang="ja">ドキュメントの更新</span></h2>
     <div class="dg-rows is-arrow">
       <div class="dg-row dg-rows-head"><span class="dg-kicker"><span lang="en">When you change…</span><span lang="ja">変更したもの</span></span><span></span><span class="dg-kicker"><span lang="en">Also update</span><span lang="ja">あわせて更新するもの</span></span></div>
-      <div class="dg-row"><span class="dg-row-head"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-class"/></svg> <span lang="en">A public class, property, or method</span><span lang="ja">公開クラス・プロパティ・メソッド</span></span><span class="dg-row-arrow" aria-hidden="true">→</span><span><span lang="en">Its help comment tags (<a href="class-documentation.html">How to Define Class Documentation</a>). The class reference is regenerated from them.</span><span lang="ja">そのヘルプコメントのタグ（<a href="class-documentation.html">クラスのドキュメント</a>）。クラスリファレンスはタグから再生成されます。</span></span></div>
+      <div class="dg-row"><span class="dg-row-head"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-class"/></svg> <span lang="en">A public class, property, or method</span><span lang="ja">公開クラス・プロパティ・メソッド</span></span><span class="dg-row-arrow" aria-hidden="true">→</span><span><span lang="en">Its help comment tags (<a href="class-documentation.html">How to Define Class Documentation</a>). The class reference is regenerated from them.</span><span lang="ja">そのヘルプコメントのタグ（<a href="class-documentation.html">クラスのドキュメント</a>）。クラスリファレンスはタグから再生成。</span></span></div>
       <div class="dg-row"><span class="dg-row-head"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-folder"/></svg> <span lang="en">The folder layout</span><span lang="ja">フォルダ構成</span></span><span class="dg-row-arrow" aria-hidden="true">→</span><span><a href="folder-structure.html"><span lang="en">Folder Structure</span><span lang="ja">フォルダ構成</span></a></span></div>
       <div class="dg-row"><span class="dg-row-head"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-book"/></svg> <span lang="en">A tutorial</span><span lang="ja">チュートリアル</span></span><span class="dg-row-arrow" aria-hidden="true">→</span><span><code>_GUILDAdoc/database/list_Tutorials.js</code></span></div>
       <div class="dg-row"><span class="dg-row-head"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-tag"/></svg> <span lang="en">A user-visible feature in a release</span><span lang="ja">リリースに含まれる、ユーザーから見える機能</span></span><span class="dg-row-arrow" aria-hidden="true">→</span><span><code>_GUILDAdoc/database/list_UpdateLog.js</code></span></div>
@@ -254,16 +254,17 @@
 
     <!-- ===================== Bilingual pages ===================== -->
     <h2 id="bilingual"><span lang="en">Bilingual documentation pages</span><span lang="ja">ドキュメントページの日英併記</span></h2>
-    <p lang="en">Every HTML page in <code>_GUILDAdoc/</code>, including all tabs of <code>index.html</code>, <code>class.html</code>, <code>method.html</code> and the pages in <code>developer/</code>, is written in English and Japanese in one file. A toggle at the top right switches the language; the choice is saved in the browser, and <code>?lang=ja</code> or <code>?lang=en</code> in the URL selects it directly.</p>
-    <p lang="ja"><code>_GUILDAdoc/</code> のすべての HTML ページ（<code>index.html</code> の全タブ、<code>class.html</code>、<code>method.html</code>、<code>developer/</code> の各ページ）は、英語と日本語を 1 つのファイルに書きます。右上の切り替えで言語を選べます。選択はブラウザに保存され、URL に <code>?lang=ja</code> または <code>?lang=en</code> を付けると直接指定できます。</p>
-    <p lang="en">Content that the doc scripts fill in from data stays in its source language: the reference text taken from MATLAB help comments, and the items loaded from <code>database/list_*.js</code>, except where a list gives <code>_ja</code> fields.</p>
-    <p lang="ja">ドキュメントのスクリプトがデータから埋め込む内容は、元の言語のまま表示されます。MATLAB のヘルプコメントから作るリファレンスの本文と、<code>database/list_*.js</code> から読み込む項目がこれにあたります。ただし、リストに <code>_ja</code> フィールドがある場合はそれを使います。</p>
+    <ul class="dg-list is-plain">
+      <li><div><span class="dg-item-title"><span lang="en">Scope</span><span lang="ja">対象</span></span><span lang="en">Every HTML page in <code>_GUILDAdoc/</code> (all tabs of <code>index.html</code>, <code>class.html</code>, <code>method.html</code>, the pages in <code>developer/</code>): English and Japanese in one file.</span><span lang="ja"><code>_GUILDAdoc/</code> のすべての HTML ページ（<code>index.html</code> の全タブ、<code>class.html</code>、<code>method.html</code>、<code>developer/</code> の各ページ）。英語と日本語を 1 つのファイルに記述。</span></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Language switch</span><span lang="ja">言語の切り替え</span></span><span lang="en">Toggle at the top right; the choice is saved in the browser. <code>?lang=ja</code> or <code>?lang=en</code> in the URL selects it directly.</span><span lang="ja">右上の切り替えで選択。選択はブラウザに保存。URL の <code>?lang=ja</code> / <code>?lang=en</code> で直接指定。</span></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Data-driven content</span><span lang="ja">データから埋め込む内容</span></span><span lang="en">Stays in its source language: reference text from MATLAB help comments, and items from <code>database/list_*.js</code>, except where a list gives <code>_ja</code> fields.</span><span lang="ja">元の言語のまま表示。MATLAB のヘルプコメントから作るリファレンスの本文と、<code>database/list_*.js</code> の項目。ただしリストに <code>_ja</code> フィールドがあればそれを使用。</span></div></li>
+    </ul>
     <ul class="dg-list is-numbered">
-      <li><div><span lang="en">Load <code>doc-lang.js</code> in <code>&lt;head&gt;</code>, before the stylesheet, so that only one language is shown from the first paint: <code>&lt;script src="doc-lang.js"&gt;&lt;/script&gt;</code> in a page at the top of <code>_GUILDAdoc/</code>, <code>&lt;script src="../doc-lang.js"&gt;&lt;/script&gt;</code> in a developer page.</span><span lang="ja">最初の描画から一方の言語だけが表示されるよう、<code>doc-lang.js</code> を <code>&lt;head&gt;</code> 内でスタイルシートより前に読み込みます。<code>_GUILDAdoc/</code> 直下のページでは <code>&lt;script src="doc-lang.js"&gt;&lt;/script&gt;</code>、開発者ページでは <code>&lt;script src="../doc-lang.js"&gt;&lt;/script&gt;</code> です。</span></div></li>
-      <li><div><span lang="en">Write translatable content as sibling elements with <code>lang="en"</code> and <code>lang="ja"</code>, block or inline, including SVG <code>&lt;text&gt;</code>. The stylesheet hides the inactive language.</span><span lang="ja">翻訳する内容は、<code>lang="en"</code> と <code>lang="ja"</code> を付けた兄弟要素として書きます。ブロック要素でもインライン要素でもよく、SVG の <code>&lt;text&gt;</code> も同様です。表示していない言語はスタイルシートが隠します。</span></div></li>
-      <li><div><span lang="en">Leave shared content without a <code>lang</code> attribute: code, identifiers, file names, and SVG shapes are shown in both languages.</span><span lang="ja">共通の内容には <code>lang</code> 属性を付けません。コード、識別子、ファイル名、SVG の図形は両方の言語で表示されます。</span></div></li>
-      <li><div><span lang="en">Give the Japanese page title in <code>data-title-ja</code> on <code>&lt;title&gt;</code>; the text of <code>&lt;title&gt;</code> is the English title.</span><span lang="ja">日本語のページタイトルは <code>&lt;title&gt;</code> の <code>data-title-ja</code> に書きます。<code>&lt;title&gt;</code> の本文は英語のタイトルです。</span></div></li>
-      <li><div><span lang="en">For a card in the For Developer tab, add <code>title_ja</code> and <code>description_ja</code> next to <code>title</code> and <code>description</code> in <code>_GUILDAdoc/database/list_developer.js</code>. <code>title_ja</code> starts with the Japanese group name, for example <code>クラス: PowerNetwork</code>.</span><span lang="ja">For Developer タブのカードには、<code>_GUILDAdoc/database/list_developer.js</code> の <code>title</code> と <code>description</code> の隣に <code>title_ja</code> と <code>description_ja</code> を追加します。<code>title_ja</code> は日本語のグループ名で始めます（例: <code>クラス: PowerNetwork</code>）。</span></div></li>
+      <li><div><span lang="en">Load <code>doc-lang.js</code> in <code>&lt;head&gt;</code>, before the stylesheet, so that only one language is shown from the first paint: <code>&lt;script src="doc-lang.js"&gt;&lt;/script&gt;</code> in a page at the top of <code>_GUILDAdoc/</code>, <code>&lt;script src="../doc-lang.js"&gt;&lt;/script&gt;</code> in a developer page.</span><span lang="ja">最初の描画から一方の言語だけを表示するため、<code>doc-lang.js</code> を <code>&lt;head&gt;</code> 内、スタイルシートより前で読み込み。<code>_GUILDAdoc/</code> 直下のページは <code>&lt;script src="doc-lang.js"&gt;&lt;/script&gt;</code>、開発者ページは <code>&lt;script src="../doc-lang.js"&gt;&lt;/script&gt;</code>。</span></div></li>
+      <li><div><span lang="en">Write translatable content as sibling elements with <code>lang="en"</code> and <code>lang="ja"</code>, block or inline, including SVG <code>&lt;text&gt;</code>. The stylesheet hides the inactive language.</span><span lang="ja">翻訳する内容は <code>lang="en"</code> と <code>lang="ja"</code> の兄弟要素で記述。ブロック要素・インライン要素のどちらも可、SVG の <code>&lt;text&gt;</code> も同様。非表示の言語はスタイルシートが隠す。</span></div></li>
+      <li><div><span lang="en">Leave shared content without a <code>lang</code> attribute: code, identifiers, file names, and SVG shapes are shown in both languages.</span><span lang="ja">共通の内容には <code>lang</code> 属性なし。コード、識別子、ファイル名、SVG の図形は両方の言語で表示。</span></div></li>
+      <li><div><span lang="en">Give the Japanese page title in <code>data-title-ja</code> on <code>&lt;title&gt;</code>; the text of <code>&lt;title&gt;</code> is the English title.</span><span lang="ja">日本語のページタイトルは <code>&lt;title&gt;</code> の <code>data-title-ja</code> に記述。<code>&lt;title&gt;</code> の本文は英語のタイトル。</span></div></li>
+      <li><div><span lang="en">For a card in the For Developer tab, add <code>title_ja</code> and <code>description_ja</code> next to <code>title</code> and <code>description</code> in <code>_GUILDAdoc/database/list_developer.js</code>. <code>title_ja</code> starts with the Japanese group name, for example <code>クラス: PowerNetwork</code>.</span><span lang="ja">For Developer タブのカードは、<code>_GUILDAdoc/database/list_developer.js</code> の <code>title</code>・<code>description</code> の隣に <code>title_ja</code>・<code>description_ja</code> を追加。<code>title_ja</code> は日本語のグループ名で開始（例: <code>クラス: PowerNetwork</code>）。</span></div></li>
     </ul>
 <pre><code>&lt;head&gt;
   &lt;title data-title-ja="GUILDA 開発者ガイド - 潮流計算"&gt;GUILDA Developer Guide - Power Flow&lt;/title&gt;
@@ -273,13 +274,21 @@
 …
 &lt;h2 id="call-order"&gt;&lt;span lang="en"&gt;Call order&lt;/span&gt;&lt;span lang="ja"&gt;呼び出し順&lt;/span&gt;&lt;/h2&gt;
 &lt;p lang="en"&gt;Call &lt;code&gt;net.calculate_powerflow()&lt;/code&gt; after building the network.&lt;/p&gt;
-&lt;p lang="ja"&gt;ネットワークを組み立てた後に &lt;code&gt;net.calculate_powerflow()&lt;/code&gt; を呼びます。&lt;/p&gt;</code></pre>
-    <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg><p><span lang="en">Update both languages in the same commit. A change to one language alone leaves the two versions of the page saying different things.</span><span lang="ja">両方の言語を同じコミットで更新します。片方の言語だけを変更すると、ページの 2 つの版で内容が食い違います。</span></p></div>
+&lt;p lang="ja"&gt;ネットワークの組み立て後に &lt;code&gt;net.calculate_powerflow()&lt;/code&gt; を呼ぶ。&lt;/p&gt;</code></pre>
+    <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg><p><span lang="en">Update both languages in the same commit. A change to one language alone leaves the two languages saying different things.</span><span lang="ja">両方の言語を同じコミットで更新。片方だけの変更では、2 つの言語で内容が食い違う。</span></p></div>
+
+    <h3 id="writing-rules"><span lang="en">Writing rules</span><span lang="ja">記述の規則</span></h3>
+    <ul class="dg-list is-plain">
+      <li><div><span class="dg-item-title"><span lang="en">Timeless</span><span lang="ja">時点に依存しない記述</span></span><span lang="en">Write for a reader who starts with the current GUILDA version. No wording that needs knowledge of older versions: “v3”, “v4”, “no longer”, “renamed”, “formerly”. History goes only in the <a href="#update-log">Update Log</a> data.<small>Fine: format versions of external files, math symbols, and a deprecation rule (how a deprecated name keeps working) that does not narrate past versions.</small></span><span lang="ja">現在の GUILDA から使い始める読者向けに記述。過去のバージョンの知識を前提とする表現（「v3」「v4」「旧」「従来」「以前」「廃止」など）は不可。経緯は <a href="#update-log">Update Log</a> のデータにだけ記載。<small>可: 外部ファイルの形式のバージョン、数式の記号、過去を語らない非推奨の規則（非推奨の名前を動かし続ける仕組み）。</small></span></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Terse</span><span lang="ja">簡潔な記述</span></span><span lang="en">Japanese: 体言止め and bullet points rather than です・ます prose, so the point is caught at a glance. English equally terse; bullets where the structure changes.</span><span lang="ja">日本語は です・ます の文章より体言止めと箇条書き。要点が一目でわかる形に。英語も同じく簡潔に、構造が変わる箇所は箇条書き。</span></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Two-column layouts</span><span lang="ja">2 列のレイアウト</span></span><span lang="en">If a two-column block wraps into many lines, first turn it into bullets; if still too long, use one column with the items stacked.</span><span lang="ja">改行の多い 2 列のブロックは、まず箇条書きに。それでも長ければ 1 列にして項目を縦に並べる。</span></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Same structure</span><span lang="ja">同じ構造</span></span><span lang="en">English and Japanese have the same blocks, bullets, and order.</span><span lang="ja">英語と日本語で同じブロック、箇条書き、順序。</span></div></li>
+    </ul>
 
     <!-- ===================== Update Log ===================== -->
     <h2 id="update-log"><span lang="en">Update Log entries</span><span lang="ja">Update Log の項目</span></h2>
-    <p lang="en">Each entry in <code>_GUILDAdoc/database/list_UpdateLog.js</code> is one object. The Home tab shows the entries newest first and colours each card by its type.</p>
-    <p lang="ja"><code>_GUILDAdoc/database/list_UpdateLog.js</code> の各項目は 1 つのオブジェクトです。Home タブは新しい順に項目を表示し、種類ごとにカードを色分けします。</p>
+    <p lang="en">Each entry in <code>_GUILDAdoc/database/list_UpdateLog.js</code> is one object. The Home tab shows entries newest first, each card coloured by its type.</p>
+    <p lang="ja"><code>_GUILDAdoc/database/list_UpdateLog.js</code> の各項目は 1 つのオブジェクト。Home タブは新しい順に表示し、種類ごとにカードを色分け。</p>
 <pre><code>{
   "title": "Add grid-forming inverter model",
   "date": "YYYY-MM-DD",
@@ -287,19 +296,19 @@
   "content": "One or two sentences on what changed for users."
 }</code></pre>
     <p lang="en">The <code>type</code> field uses the <a href="https://keepachangelog.com/" target="_blank">Keep a Changelog</a> categories:</p>
-    <p lang="ja"><code>type</code> フィールドには <a href="https://keepachangelog.com/" target="_blank">Keep a Changelog</a> の分類を使います。</p>
+    <p lang="ja"><code>type</code> フィールドは <a href="https://keepachangelog.com/" target="_blank">Keep a Changelog</a> の分類:</p>
     <table class="dg-table">
       <thead><tr><th><span lang="en">Type</span><span lang="ja">種類</span></th><th><span lang="en">Use it for</span><span lang="ja">用途</span></th></tr></thead>
       <tbody>
         <tr><td><span class="dg-badge is-ok">added</span></td><td data-label="Use it for" data-label-ja="用途"><span lang="en">A new feature, class, method or option.</span><span lang="ja">新しい機能、クラス、メソッド、オプション。</span></td></tr>
         <tr><td><span class="dg-badge">changed</span></td><td data-label="Use it for" data-label-ja="用途"><span lang="en">A change in the behaviour or interface of something that already exists.</span><span lang="ja">既存のものの動作やインターフェースの変更。</span></td></tr>
-        <tr><td><span class="dg-badge is-warn">deprecated</span></td><td data-label="Use it for" data-label-ja="用途"><span lang="en">Something that still works but will be removed; name its replacement.</span><span lang="ja">まだ動くが今後削除されるもの。代わりのものを明記します。</span></td></tr>
-        <tr><td><span class="dg-badge is-err">removed</span></td><td data-label="Use it for" data-label-ja="用途"><span lang="en">Something that no longer exists.</span><span lang="ja">削除されたもの。</span></td></tr>
+        <tr><td><span class="dg-badge is-warn">deprecated</span></td><td data-label="Use it for" data-label-ja="用途"><span lang="en">Something that still works but will be removed; name its replacement.</span><span lang="ja">まだ動くが今後削除されるもの。代わりを明記。</span></td></tr>
+        <tr><td><span class="dg-badge is-err">removed</span></td><td data-label="Use it for" data-label-ja="用途"><span lang="en">Something removed.</span><span lang="ja">削除されたもの。</span></td></tr>
         <tr><td><span class="dg-badge is-muted">fixed</span></td><td data-label="Use it for" data-label-ja="用途"><span lang="en">A bug fix.</span><span lang="ja">バグの修正。</span></td></tr>
       </tbody>
     </table>
-    <p lang="en">An entry without <code>type</code> is shown in neutral grey without a label. An unknown value is shown the same way and logs a warning in the browser console.</p>
-    <p lang="ja"><code>type</code> のない項目は、ラベルなしの灰色で表示されます。未知の値も同じように表示され、ブラウザのコンソールに警告が出ます。</p>
+    <p lang="en">No <code>type</code>: neutral grey, no label. An unknown value: shown the same way, with a warning in the browser console.</p>
+    <p lang="ja"><code>type</code> なし: ラベルなしの灰色で表示。未知の値: 同様に表示し、ブラウザのコンソールに警告。</p>
 
     <!-- ===================== Definition of Done ===================== -->
     <h2 id="done"><span lang="en">Definition of Done</span><span lang="ja">完了の定義</span></h2>
@@ -309,7 +318,7 @@
         <circle class="pm-ring-fg" id="pm-ring-fg" cx="32" cy="32" r="26" stroke-dasharray="163.4" stroke-dashoffset="163.4"/>
         <text id="pm-ring-text" x="32" y="37" text-anchor="middle">0/6</text>
       </svg>
-      <p><span lang="en">Check these items before requesting a review.</span><span lang="ja">レビューを依頼する前に、次の項目を確認します。</span></p>
+      <p><span lang="en">Check these before requesting a review.</span><span lang="ja">レビュー依頼の前に次の項目を確認。</span></p>
       <span class="dev-status" id="pm-dod-status" aria-live="polite"><span lang="en">Not ready</span><span lang="ja">未完了</span></span>
     </div>
     <ul class="dg-list is-plain pm-dod" id="pm-dod">
