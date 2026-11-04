@@ -120,6 +120,13 @@
           <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-err"><span lang="en">equilibrium</span><span lang="ja">平衡点</span></span></td>
         </tr>
         <tr>
+          <td><code>a_Scenario</code></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Simulation scenarios (<code>Scenario</code>), unique by tag. Not model data.</span><span lang="ja">シミュレーションのシナリオ（<code>Scenario</code>）。タグで一意です。モデルのデータではありません。</span></td>
+          <td data-label="Unit / size" data-label-ja="単位・サイズ">cell S×1</td>
+          <td data-label="Set by" data-label-ja="設定元"><code>add_scenario</code>, <code>remove_scenario</code></td>
+          <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-ok"><span lang="en">nothing (not logged)</span><span lang="ja">なし（記録もしない）</span></span></td>
+        </tr>
+        <tr>
           <td><code>tab_parameter.base.Hz</code></td>
           <td data-label="Meaning" data-label-ja="意味"><span lang="en">Nominal frequency. Models read it with <code>get_Hz()</code> and receive it as <code>omega0</code>.</span><span lang="ja">定格周波数。モデルは <code>get_Hz()</code> で読み、<code>omega0</code> として受け取ります。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">Hz, 1×1</td>
@@ -185,8 +192,8 @@
 
     <!-- ============================== REFERENCES ============================== -->
     <h2 id="references"><span lang="en">References</span><span lang="ja">参照</span></h2>
-    <p lang="en">The network has no parent. It is the parent of its buses, branches, and global controllers, and it alone sets and clears their back references (see <a href="class-design.html#parents">Class Design: Parent references</a>).</p>
-    <p lang="ja">ネットワークに親はありません。母線・ブランチ・広域制御器の親であり、それらの逆参照を設定・解除するのはネットワークだけです（<a href="class-design.html#parents">クラス設計: 親参照</a>を参照）。</p>
+    <p lang="en">The network has no parent. It is the parent of its buses, branches, and global controllers (and the owner of its scenarios), and it alone sets and clears their back references (see <a href="class-design.html#parents">Class Design: Parent references</a>).</p>
+    <p lang="ja">ネットワークに親はありません。母線・ブランチ・広域制御器の親（およびシナリオの所有者）であり、それらの逆参照を設定・解除するのはネットワークだけです（<a href="class-design.html#parents">クラス設計: 親参照</a>を参照）。</p>
     <table class="dg-table cl-table">
       <thead>
         <tr><th><span lang="en">Reference</span><span lang="ja">参照</span></th><th><span lang="en">Set by</span><span lang="ja">設定</span></th><th><span lang="en">Cleared by</span><span lang="ja">解除</span></th></tr>
@@ -206,6 +213,11 @@
           <td><code>GlobalController.a_PowerNetwork</code></td>
           <td data-label="Set by" data-label-ja="設定"><span lang="en"><code>add_global_controller</code> → <code>set_parent</code>. The constructor takes the network only to find the controlled components.</span><span lang="ja"><code>add_global_controller</code> → <code>set_parent</code>。コンストラクタがネットワークを受け取るのは制御対象の機器を探すためだけです。</span></td>
           <td data-label="Cleared by" data-label-ja="解除"><code>remove_global_controller</code> → <code>set_parent([])</code></td>
+        </tr>
+        <tr>
+          <td><code>Scenario.a_PowerNetwork</code></td>
+          <td data-label="Set by" data-label-ja="設定"><span lang="en"><code>add_scenario</code> → <code>set_parent</code>, after checking the tags of its disturbances against this network. A scenario of another network is moved.</span><span lang="ja"><code>add_scenario</code> → <code>set_parent</code>。外乱のタグをこのネットワークと照合した後に設定します。ほかのネットワークのシナリオは移動します。</span></td>
+          <td data-label="Cleared by" data-label-ja="解除"><span lang="en"><code>remove_scenario</code>, or adding it to another network → <code>set_parent([])</code></span><span lang="ja"><code>remove_scenario</code>、またはほかのネットワークへの追加 → <code>set_parent([])</code></span></td>
         </tr>
       </tbody>
     </table>
@@ -253,6 +265,11 @@
           <td><code>remove_branch(tags)</code>, <code>remove_global_controller(tags)</code></td>
           <td data-label="What it does" data-label-ja="内容"><span lang="en">Remove by tag; an unknown tag is an error and nothing is removed. Both log a <code>Topology</code> edit and clear the back references.</span><span lang="ja">タグで削除します。存在しないタグはエラーで、何も削除しません。どちらも <code>Topology</code> 編集を記録し、逆参照を解除します。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user; <code>remove_bus</code> calls <code>remove_branch</code></span><span lang="ja">利用者。<code>remove_bus</code> が <code>remove_branch</code> を呼ぶ</span></td>
+        </tr>
+        <tr>
+          <td><code>add_scenario(sc)</code>, <code>remove_scenario(tags)</code></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Add a <code>Scenario</code> (or a cell of them, e.g. from <code>Scenario.import_csv</code>) after checking its disturbances against this network and that its tag is free (<code>GUILDA:PowerNetwork:ScenarioTagInUse</code>); a scenario of another network is moved (<code>sc.copy()</code> keeps it there). Remove by tag. Nothing is logged and nothing becomes stale.</span><span lang="ja"><code>Scenario</code>（またはそのセル。<code>Scenario.import_csv</code> の出力など）を、外乱をこのネットワークと照合し、タグが未使用であること（<code>GUILDA:PowerNetwork:ScenarioTagInUse</code>）を確認してから追加します。ほかのネットワークのシナリオは移動します（残すには <code>sc.copy()</code>）。削除はタグで行います。何も記録せず、何も無効になりません。</span></td>
+          <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user; the deprecated <code>ODEevent</code></span><span lang="ja">利用者。非推奨の <code>ODEevent</code></span></td>
         </tr>
         <tr>
           <td><code>set_opffcn(Cost=, Constraint=, DefaultConstraint=)</code>, <code>reset_opffcn()</code></td>
@@ -328,8 +345,8 @@
           <td data-label="Changes the model" data-label-ja="モデルの変更"><span lang="en">Only the CPF working data (<code>iv_CPFV</code>, <code>iv_CPFX</code>, <code>f_PQ2Bus</code>).</span><span lang="ja">CPF の作業データ（<code>iv_CPFV</code>、<code>iv_CPFX</code>、<code>f_PQ2Bus</code>）だけ。</span></td>
         </tr>
         <tr>
-          <td><code>simulate(time, events..., Name=Value)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Time-domain simulation through <code>solver_ODE</code>, from the equilibrium, with <code>EventODE</code> disturbances.</span><span lang="ja"><code>solver_ODE</code> による平衡点からの時間応答シミュレーション。外乱は <code>EventODE</code> で与えます。</span>
+          <td><code>simulate(time, sc1, sc2, ..., Name=Value)</code>, <code>simulate(sc, Name=Value)</code></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Time-domain simulation through <code>solver_ODE</code>, from the equilibrium, with the combined disturbances of scenarios of this network (<code>Scenario</code>). Without a time, the <code>Time</code> of the scenarios is used; their stored <code>Options</code> come between the solver defaults and the call options. The verdict is <code>sc.judge(result)</code>.</span><span lang="ja"><code>solver_ODE</code> による平衡点からの時間応答シミュレーション。外乱は、このネットワークのシナリオ（<code>Scenario</code>）の外乱を合わせたものです。時間を与えなければシナリオの <code>Time</code> を使い、シナリオに保存した <code>Options</code> はソルバーの既定値と呼び出しのオプションの間に入ります。判定は <code>sc.judge(result)</code> で得ます。</span>
             <small><span lang="en">Returns: <code>ResultODE</code>.</span><span lang="ja">返り値: <code>ResultODE</code>。</span></small></td>
           <td data-label="Changes the model" data-label-ja="モデルの変更"><span lang="en">Only the simulation working data, restored at the end (see <a href="api-design.html#side-effects">Side effects</a>).</span><span lang="ja">シミュレーションの作業データだけで、終了時に戻します（<a href="api-design.html#side-effects">副作用</a>を参照）。</span></td>
         </tr>
@@ -424,7 +441,7 @@
       <tbody>
         <tr><td><code>network.IEEE9bus</code>, <code>network.IEEE14bus</code>, <code>network.IEEE68bus</code></td><td data-label="Grid" data-label-ja="系統"><span lang="en">IEEE test systems (MATPOWER case14; WSCC 3-machine and NETS-NYPS 16-machine with AVRs and PSSs).</span><span lang="ja">IEEE のテスト系統（MATPOWER case14、AVR・PSS 付きの WSCC 3 機系統と NETS-NYPS 16 機系統）。</span></td></tr>
         <tr><td><code>network.IEEE14bus_NoTap</code>, <code>network.IEEE14bus_lossless</code></td><td data-label="Grid" data-label-ja="系統"><span lang="en">Variants of the 14-bus system: every transformer tap set to 1, or no branch resistance.</span><span lang="ja">14 母線系統の派生（全変圧器のタップを 1 にしたもの、ブランチ抵抗をなくしたもの）。</span></td></tr>
-        <tr><td><code>network.IEEJ_EAST10</code>, <code>network.IEEJ_EAST30</code>, <code>network.IEEJ_WEST10</code>, <code>network.IEEJ_WEST30</code></td><td data-label="Grid" data-label-ja="系統"><span lang="en">IEEJ standard models of the eastern and western grids of Japan.</span><span lang="ja">電気学会の東・西日本標準モデル。</span></td></tr>
+        <tr><td><code>network.IEEJ_EAST10</code>, <code>network.IEEJ_EAST30</code>, <code>network.IEEJ_WEST10</code>, <code>network.IEEJ_WEST30</code></td><td data-label="Grid" data-label-ja="系統"><span lang="en">IEEJ standard models of the eastern and western grids of Japan, with the generators, AVRs and governors of the IEEJ report by default (<code>Section</code> <code>"peak"</code> or <code>"night"</code>; <code>Governor=false</code> leaves out the governors, <code>LocalController=false</code> all local controllers). Their comparison with the report is in <code>_GUILDAverification/&lt;Network&gt;/</code>.</span><span lang="ja">電気学会の東・西日本標準モデル。既定で報告書の発電機・AVR・ガバナを持ちます（<code>Section</code> は <code>"peak"</code> または <code>"night"</code>。<code>Governor=false</code> でガバナを、<code>LocalController=false</code> でローカル制御器をすべて省きます）。報告書との比較は <code>_GUILDAverification/&lt;Network&gt;/</code> にあります。</span></td></tr>
         <tr><td><code>network.Ishizaki6Bus</code>, <code>network.TEST31bus</code>, <code>network.Txt3Bus</code>, <code>network.Tutorial3bus</code></td><td data-label="Grid" data-label-ja="系統"><span lang="en">Small grids for teaching and tests.</span><span lang="ja">教育・テスト用の小規模系統。</span></td></tr>
       </tbody>
     </table>
