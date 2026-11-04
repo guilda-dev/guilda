@@ -165,7 +165,7 @@ const updateLogData = [
     "title": "Simulation event checks",
     "date": "2026-10-30",
     "type": "changed",
-    "content": "odeEventSet checks InputUnit, InputName and InputValue before the integration starts and stops with a GUILDA:odeEventSet:* error that lists the valid inputs. An event that lies entirely outside the simulation time warns (GUILDA:odeEventSet:OutsideTimeSpan) instead of being ignored silently."
+    "content": "odeEventSet checks InputUnit, InputName and InputValue before the integration starts and stops with a GUILDA:odeEventSet:* error that lists the valid inputs. An event that lies entirely outside the simulation time warns (GUILDA:odeEventSet:OutsideTimeSpan) instead of being ignored silently. (The class is now Scenario and the IDs GUILDA:Scenario:*.)"
   },
   {
     "title": "Option and setting names",
@@ -237,7 +237,7 @@ const updateLogData = [
     "title": "Incomplete simulations are reported and kept",
     "date": "2026-11-02",
     "type": "changed",
-    "content": "net.simulate warns GUILDA:PowerNetwork:SimulationIncomplete whenever flag is not 1. A numerical failure in a phase returns flag = -1 with the completed phases and output.exception instead of an error; errors of input functions and models still stop the run. TimeLimit now covers the whole run and defaults to Inf. Simulation uses sparse matrices with a fallback to dense ones (output.isSparse). A fault, trip or input with a scalar or zero-length TimeSpan is an error (GUILDA:odeEventSet:ZeroLengthTimeSpan), and Export is checked before the run and includes controller states."
+    "content": "net.simulate warns GUILDA:PowerNetwork:SimulationIncomplete whenever flag is not 1. A numerical failure in a phase returns flag = -1 with the completed phases and output.exception instead of an error; errors of input functions and models still stop the run. TimeLimit now covers the whole run and defaults to Inf. Simulation uses sparse matrices with a fallback to dense ones (output.isSparse). A fault, trip or input with a scalar or zero-length TimeSpan is an error (now GUILDA:Scenario:ZeroLengthTimeSpan), and Export is checked before the run and includes controller states."
   },
   {
     "title": "Simulation and initialize fixes",
@@ -261,7 +261,7 @@ const updateLogData = [
     "title": "Analysis classes renamed",
     "date": "2026-11-02",
     "type": "changed",
-    "content": "The solver, result and event classes have uniform names, with no aliases: SolverPF, ResultPF, SolverOPF, ResultOPF, SolverCPF, ResultCPF, SolverODE, ResultODE, EventODE, ProgressODE, SolverLIN and ResultLIN replace PowerFlowCalculation, PowerFlowResult, OptimalPowerFlow, OPFResult, ContinuationPowerFlow, CPFResult, odeSimulator, odeSimulationResult, odeEventSet, odeProgress, odeLinearizer and LinearizationResult. Message IDs follow the new names. net.solver_* properties and GUILDA.config section names do not change."
+    "content": "The solver and result classes have uniform names, with no aliases: SolverPF, ResultPF, SolverOPF, ResultOPF, SolverCPF, ResultCPF, SolverODE, ResultODE, ProgressODE, SolverLIN and ResultLIN replace PowerFlowCalculation, PowerFlowResult, OptimalPowerFlow, OPFResult, ContinuationPowerFlow, CPFResult, odeSimulator, odeSimulationResult, odeProgress, odeLinearizer and LinearizationResult. The event class odeEventSet is replaced by Scenario (see the entry Simulation scenarios), and ODEevent remains as a deprecated wrapper; the name EventODE was never released. Message IDs follow the new names. net.solver_* properties and GUILDA.config section names do not change."
   },
   {
     "title": "Model functions built at analysis time",
@@ -273,6 +273,54 @@ const updateLogData = [
     "title": "IEEJ standard networks",
     "date": "2026-11-04",
     "type": "added",
-    "content": "New network.IEEJ_EAST10, network.IEEJ_EAST30, network.IEEJ_WEST10 and network.IEEJ_WEST30, the IEEJ standard power system models converted from the report's Y-method data: gen-park generators, load-impedance loads, and the LAT=1 rotating exciter as an AVR_DC1 on every generator. Section=\"peak\" (default) or \"night\" selects the power-flow section, and LocalController=false builds them without the AVRs. Not modeled: governors (Pmech is constant), the constant-current part of the report's loads and their frequency dependence, and the 0 to 4 pu field voltage limit. The power flows agree with the report, but the dynamics differ: the WEST models do not reproduce the report's stability tables, and simulate has no line opening. See each class help for the conversions and the comparison."
+    "content": "New network.IEEJ_EAST10, network.IEEJ_EAST30, network.IEEJ_WEST10 and network.IEEJ_WEST30, the IEEJ standard power system models converted from the report's Y-method data: gen-park generators (Xq_p = Xq for the report's machines without a q-axis transient circuit), load-impedance loads, the LAT=1 rotating exciter as an AVR_DC1 with the 0 to 4 pu field voltage limit, and the report's governors (IEEJ_LPT1, IEEJ_LPT3, IEEJ_LPT4). Section=\"peak\" (default) or \"night\" selects the power-flow section; Governor=false leaves out the governors and LocalController=false all local controllers. Not modeled: the constant-current part of the report's loads and their frequency dependence. The power flows agree with the report; the stability tables are compared case by case in _GUILDAverification. See each class help for the conversions."
+  },
+  {
+    "title": "Simulation scenarios",
+    "date": "2026-11-04",
+    "type": "added",
+    "content": "The disturbances of a simulation are a Scenario: sc = Scenario(tag), then sc.add_fault, add_trip, add_open_branch, add_offset or add_input, and net.add_scenario(sc). The network owns its scenarios (net.a_Scenario); adding one to another network moves it, and sc.copy() makes a duplicate. net.simulate(sc) uses the stored Time and Options of the scenario, net.simulate(time, sc1, sc2, ...) combines several, and sc.judge(result) gives the verdict (default Scenario.out_of_step). Scenario.import_csv and Scenario.export_csv read and write scenarios as CSV."
+  },
+  {
+    "title": "ODEevent deprecated",
+    "date": "2026-11-04",
+    "type": "deprecated",
+    "content": "ODEevent(tag, net, Name=Value) still works and returns a Scenario with one disturbance, already added to net, but warns GUILDA:Deprecated:ODEevent once per session. Use Scenario and net.add_scenario instead; the checks now run when the event is made and report GUILDA:Scenario:* IDs."
+  },
+  {
+    "title": "Branch opening in simulations",
+    "date": "2026-11-04",
+    "type": "added",
+    "content": "sc.add_open_branch(branches, [t_start, t_end]) opens branches during a simulation: they are left out of the admittance matrix and reconnected at t_end, or stay open when t_end is at or after the end. Opening branches so that buses are left without any component is an error (GUILDA:SolverODE:OpenBranchIsland)."
+  },
+  {
+    "title": "Governor slot and IEEJ governors",
+    "date": "2026-11-04",
+    "type": "added",
+    "content": "A component can have a governor (key \"governor\") beside its AVR or \"local\" controller; it is listed after them in a_LocalController and in the variables, and the two must drive different inputs (GUILDA:Component:ControllerOutputOverlap). New controller.governor.IEEJ_LPT1 (thermal and nuclear), IEEJ_LPT3 and IEEJ_LPT4 (hydro), the governors of the IEEJ standard models, drive Pmech."
+  },
+  {
+    "title": "AVR_DC1 field voltage limit",
+    "date": "2026-11-04",
+    "type": "added",
+    "content": "controller.avr.AVR_DC1 takes Vfld_max and Vfld_min, a limit of the field voltage without windup. The defaults Inf and -Inf give the same results as before."
+  },
+  {
+    "title": "gen-park with Xq_p = Xq",
+    "date": "2026-11-04",
+    "type": "fixed",
+    "content": "component.generator.park computes its equilibrium when Xq_p equals Xq (or Xd_p equals Xd), so a machine without a q-axis transient circuit can be modeled with Xq_p = Xq."
+  },
+  {
+    "title": "IEEJ networks use the report's controllers",
+    "date": "2026-11-04",
+    "type": "changed",
+    "content": "network.IEEJ_EAST10, IEEJ_EAST30, IEEJ_WEST10 and IEEJ_WEST30 now build the report's models by default: with governors, with the 0 to 4 pu field voltage limit of the exciters, and with Xq_p = Xq. Governor=false gives the networks without governors."
+  },
+  {
+    "title": "Verification against published results",
+    "date": "2026-11-04",
+    "type": "added",
+    "content": "The new folder _GUILDAverification/<network>/ compares a bundled network with its literature: a README with the reference and the latest agreement, the cases as Scenario CSV files, the published verdicts and a comparison script. It covers the four IEEJ networks; with governors, the stability verdicts agree in 33/44 (EAST10), 55/55 (EAST30), 9/26 (WEST10) and 5/12 (WEST30) cases, while the loads remain constant-impedance."
   }
 ];
