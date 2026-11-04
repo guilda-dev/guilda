@@ -14,7 +14,7 @@ net = DebugScript.helper.build_3bus("gen-1axis");
 net.a_Bus{3}.add_component("gen-needpq-stub");
 DebugScript.helper.quiet(@() net.initialize);
 str_tag = net.a_Bus{3}.a_Component{end}.str_tag;
-ev = ODEevent("trip", net, "TimeSpan", [0.2,0.4], "TripUnit", str_tag);
+ev = DebugScript.helper.scenario("trip", net, "TimeSpan", [0.2,0.4], "TripUnit", str_tag);
 sol = DebugScript.helper.quiet(@() net.simulate([0,1], ev));
 assert(sol.flag == 1, sol.output.message)
 

@@ -1,6 +1,7 @@
-% F29 ブランチの開放 (ODEevent の OpenBranch)
+% F29 ブランチの開放 (Scenario の OpenBranch)
 %
-%   ev = ODEevent("open", net, "TimeSpan", [t1,t2], "OpenBranch", "EL003");
+%   sc = Scenario("open");  sc.add_open_branch("EL003", [t1,t2]);  net.add_scenario(sc);
+%   (テストでは DebugScript.helper.scenario("open", net, "TimeSpan", [t1,t2], "OpenBranch", "EL003"))
 %
 % OpenBranch のブランチは t1 から t2 まで網の Y から除かれ、t2 で再投入される。
 % t2 が計算時間の終わり以降なら開放のまま (地絡の後に回線を切る使い方)。
@@ -15,7 +16,7 @@ inwin = @(t, t1, t2) t > t1 + 1e-3 & t < t2 - 1e-3;   % 区間の内側 (境界�
 
 %% Open and reclose returns near the equilibrium
 % EL003 (B002-B003) を 1.0〜1.2 秒に開放して再投入する
-[sol, flag, output] = net.simulate([0,10], ODEevent("open", net, "TimeSpan", [1,1.2], "OpenBranch", "EL003"));
+[sol, flag, output] = net.simulate([0,10], DebugScript.helper.scenario("open", net, "TimeSpan", [1,1.2], "OpenBranch", "EL003"));
 assert(flag == 1 && output.nPhases == 3, output.message)
 r = sol.odeResults;
 assert(r.t(end) == 10)
@@ -31,7 +32,7 @@ end
 
 
 %% Y of the open phase is the Y without the branch
-c_Y = phase_admittance(net, [0,2], {ODEevent("open", net, "TimeSpan", [1,1.2], "OpenBranch", "EL003")});
+c_Y = phase_admittance(net, [0,2], {DebugScript.helper.scenario("open", net, "TimeSpan", [1,1.2], "OpenBranch", "EL003")});
 Y_full = full_admittance(net);
 Y_open = admittance_without("EL003");
 assert(numel(c_Y) == 3)
@@ -46,14 +47,14 @@ assert(norm(full(c_Y{2} - Y_full), 1) > 1, "開放で Y が変わる")
 box = containers.Map("KeyType", "double", "ValueType", "double");
 s_options = net.solver_ODE.get_options({"Progress", "none"});
 s_options.PhaseProbe = @(o) store(box, jacobian_error_ode(o));
-net.solver_ODE.solve(net, [0,2], {ODEevent("open", net, "TimeSpan", [1,1.2], "OpenBranch", "EL003")}, s_options);
+net.solver_ODE.solve(net, [0,2], {DebugScript.helper.scenario("open", net, "TimeSpan", [1,1.2], "OpenBranch", "EL003")}, s_options);
 err = cell2mat(box.values);
 assert(numel(err) == 3 && max(err) < 1e-5, "誤差 " + mat2str(err,3))
 
 
 %% Bus currents follow the Y of each phase
 % 結果の母線電流 I は各区間の Y と電圧から I = Y*V
-ev  = ODEevent("open", net, "TimeSpan", [1,1.2], "OpenBranch", "EL003");
+ev  = DebugScript.helper.scenario("open", net, "TimeSpan", [1,1.2], "OpenBranch", "EL003");
 r   = net.simulate([0,2], ev).odeResults;
 [V, I] = bus_trajectories(r);
 Y_full = full_admittance(net);
@@ -70,8 +71,8 @@ assert(max(abs(I(lv,:) - V(lv,:)*Y_full.'), [], "all") < 1e-10)
 %% Permanent opening after a fault
 % B003 の地絡を 70 ms で除去し、同時に EL003 (B002-B003) を計算の終わりまで開放する。
 % 計算時間の外へはみ出す t_end で警告は出ない
-ev_fault = ODEevent("fault", net, "TimeSpan", [1,1.07], "FaultBus", "B003");
-ev_open  = ODEevent("open",  net, "TimeSpan", [1.07,20], "OpenBranch", "EL003");
+ev_fault = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.07], "FaultBus", "B003");
+ev_open  = DebugScript.helper.scenario("open",  net, "TimeSpan", [1.07,20], "OpenBranch", "EL003");
 lastwarn("");
 [sol, flag, output] = net.simulate([0,10], ev_fault, ev_open);
 assert(isempty(lastwarn()), "警告: " + lastwarn())
@@ -92,8 +93,8 @@ assert(spread(r.t > 9) < 0.5*spread(inwin(r.t, 1.07, 3)), "発電機の周波数
 
 
 %% Overlapping openings use the union of the open branches
-ev1 = ODEevent("open1", net, "TimeSpan", [1,2], "OpenBranch", "EL003");
-ev2 = ODEevent("open2", net, "TimeSpan", [1.5,2.5], "OpenBranch", ["EL005"; "EL003"]);
+ev1 = DebugScript.helper.scenario("open1", net, "TimeSpan", [1,2], "OpenBranch", "EL003");
+ev2 = DebugScript.helper.scenario("open2", net, "TimeSpan", [1.5,2.5], "OpenBranch", ["EL005"; "EL003"]);
 c_Y = phase_admittance(net, [0,3], {ev1, ev2});
 assert(numel(c_Y) == 5)
 c_ref = {full_admittance(net), admittance_without("EL003"), admittance_without(["EL003","EL005"]), ...
@@ -105,29 +106,27 @@ end
 
 %% Without OpenBranch the admittance is unchanged
 % 開放のない区間の Y は従来と同じ式 sparse(complex2matrix(Y)) で、結果も変わらない
-c_Y = phase_admittance(net, [0,2], {ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008")});
+c_Y = phase_admittance(net, [0,2], {DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008")});
 Y_ref = sparse(tools.complex2matrix(net.get_admittance_matrix.Variables));
 assert(numel(c_Y) == 3 && all(cellfun(@(Y) isequal(Y, Y_ref), c_Y)))
 
 
 %% One event can fault a bus and open a branch
-ev = ODEevent("both", net, "TimeSpan", [1,1.05], "FaultBus", "B008", "OpenBranch", "EL003");
+ev = DebugScript.helper.scenario("both", net, "TimeSpan", [1,1.05], "FaultBus", "B008", "OpenBranch", "EL003");
 [~, flag, output] = net.simulate([0,2], ev);
 assert(flag == 1, output.message)
 
 
 %% Unknown branch tag stops with an error
-ev = ODEevent("open", net, "TimeSpan", [1,2], "OpenBranch", ["EL003"; "EL999"]);
-[str_id, str_msg] = event_error(net, ev);
-assert(str_id == "GUILDA:ODEevent:UnknownOpenBranch", str_id + ": " + str_msg)
+[str_id, str_msg] = call_error(@() DebugScript.helper.scenario("open", net, "TimeSpan", [1,2], "OpenBranch", ["EL003"; "EL999"]));
+assert(str_id == "GUILDA:Scenario:UnknownOpenBranch", str_id + ": " + str_msg)
 assert(contains(str_msg, '"open"') && contains(str_msg, "EL999") && ~contains(str_msg, "EL003,"), str_msg)
 
 
 %% Opening needs a duration
 for ts = {1, [1,1]}
-    ev = ODEevent("open", net, "TimeSpan", ts{1}, "OpenBranch", "EL003");
-    [str_id, str_msg] = event_error(net, ev);
-    assert(str_id == "GUILDA:ODEevent:ZeroLengthTimeSpan", str_id + ": " + str_msg)
+    [str_id, str_msg] = call_error(@() DebugScript.helper.scenario("open", net, "TimeSpan", ts{1}, "OpenBranch", "EL003"));
+    assert(str_id == "GUILDA:Scenario:ZeroLengthTimeSpan", str_id + ": " + str_msg)
 end
 
 
@@ -137,7 +136,7 @@ net3 = DebugScript.helper.build_3bus("load-impedance");
 net3.add_bus();
 net3.add_branch("pi", [3,4], "R", 0.01, "X", 0.1, "C", 0.01);
 DebugScript.helper.quiet(@() net3.initialize);
-ev = ODEevent("open", net3, "TimeSpan", [1,1.5], "OpenBranch", "EL003");
+ev = DebugScript.helper.scenario("open", net3, "TimeSpan", [1,1.5], "OpenBranch", "EL003");
 [str_id, str_msg] = event_error(net3, ev);
 assert(str_id == "GUILDA:ODEsolver:OpenBranchIsland", str_id + ": " + str_msg)
 assert(all(contains(str_msg, ["EL003", "B004", "Phase 2"])), str_msg)
@@ -145,14 +144,14 @@ assert(all(contains(str_msg, ["EL003", "B004", "Phase 2"])), str_msg)
 
 %% A part with components is simulated as an island
 % ET020 は B008 (発電機のみ) を網につなぐ唯一のブランチ
-[~, flag, output] = net.simulate([0,2], ODEevent("open", net, "TimeSpan", [1,1.2], "OpenBranch", "ET020"));
+[~, flag, output] = net.simulate([0,2], DebugScript.helper.scenario("open", net, "TimeSpan", [1,1.2], "OpenBranch", "ET020"));
 assert(flag == 1, output.message)
 
 
 %% Open branch after the fallback to dense matrices
 % 大きな系統で密行列へ切り替わった後も、開放区間の Y は密で、回線を除いた Y になる
 net_r = ring(136);
-c_Y = phase_admittance(net_r, [0,0.1], {ODEevent("open", net_r, "TimeSpan", [0.05,0.08], "OpenBranch", "EL001")});
+c_Y = phase_admittance(net_r, [0,0.1], {DebugScript.helper.scenario("open", net_r, "TimeSpan", [0.05,0.08], "OpenBranch", "EL001")});
 Y_open = full_admittance(net_r);
 br = net_r.a_Branch{1};
 Y_open(1:4,1:4) = Y_open(1:4,1:4) - tools.complex2matrix(br.get_admittance_matrix());   % B001, B002
@@ -223,10 +222,14 @@ function [V, I] = bus_trajectories(r)
 end
 
 function [str_id, str_msg] = event_error(net, varargin)
+    [str_id, str_msg] = call_error(@() net.simulate([0,3], varargin{:}));
+end
+
+function [str_id, str_msg] = call_error(f)
     str_id  = "";
     str_msg = "";
     try
-        net.simulate([0,3], varargin{:});
+        f();
     catch ME
         str_id  = string(DebugScript.helper.msg_id(ME));
         str_msg = string(ME.message);

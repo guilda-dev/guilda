@@ -242,7 +242,7 @@ assert(norm(n1.cv_Vequilibrium - net.cv_Vequilibrium) == 0)
 assert(norm(sort(abs(eig(n1.get_sys.A))) - sort(abs(eig(net.get_sys.A)))) < 1e-10)
 f = functions(comp.f_dx);
 assert(f.workspace{1}.obj == comp)                      % f_* も読み込んだ機器を指す
-ev  = ODEevent("fault", n1, "TimeSpan", [1,1.05], "FaultBus", "B003");
+ev  = DebugScript.helper.scenario("fault", n1, "TimeSpan", [1,1.05], "FaultBus", "B003");
 sol = DebugScript.helper.quiet(@() n1.simulate([0,2], ev));
 assert(sol.odeResults.t(end) == 2)
 
@@ -563,7 +563,7 @@ DebugScript.helper.quiet(@() net.initialize);
 e = eig(net.get_sys.A);
 e = e(abs(e) > 1e-6);
 assert(abs(max(real(e)) - (-0.594552)) < 1e-5)
-ev  = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 sol = DebugScript.helper.quiet(@() net.simulate([0,3], ev));
 assert(sol.odeResults.t(end) == 3)
 
@@ -621,7 +621,7 @@ DebugScript.helper.quiet(@() net.initialize);
 e = DebugScript.helper.finite_eigs(net.get_sys("Algorithm","Kron"));
 e = e(abs(e) > 1e-6);
 assert(abs(max(real(e)) - (-0.0069046)) < 1e-6)     % AVR・PSS 付きで安定
-ev  = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
+ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 sol = DebugScript.helper.quiet(@() net.simulate([0,3], ev));
 assert(sol.odeResults.t(end) == 3)
 Vfd = sol.odeResults.Bus(1).Component(1).U.Vfield;     % AVR が動作する
@@ -651,7 +651,7 @@ DebugScript.helper.quiet(@() net.initialize);
 e = DebugScript.helper.finite_eigs(net.get_sys("Algorithm","Kron"));
 e = e(abs(e) > 1e-6);
 assert(abs(max(real(e)) - (-0.0051275)) < 1e-6)     % AVR・PSS 付きで安定
-ev  = ODEevent("fault", net, "TimeSpan", [0.2,0.25], "FaultBus", "B030");
+ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.2,0.25], "FaultBus", "B030");
 sol = DebugScript.helper.quiet(@() net.simulate([0,1], ev, TimeLimit=Inf));
 assert(sol.odeResults.t(end) == 1)
 

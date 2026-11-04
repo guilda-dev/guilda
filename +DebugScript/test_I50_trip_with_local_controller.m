@@ -6,7 +6,7 @@
 % 実行: runtests("DebugScript.test_I50_trip_with_local_controller")  または  DebugScript.run_all("Features","I50")
 
 % 共通設定 (各テストの前に毎回実行される)
-trip = @(n, ts) ODEevent("trip", n, "TimeSpan", ts, "TripUnit", "SG1B003");
+trip = @(n, ts) DebugScript.helper.scenario("trip", n, "TimeSpan", ts, "TripUnit", "SG1B003");
 
 
 %% Default IEEE9 trip completes
