@@ -51,15 +51,15 @@
     <p class="page-lead" lang="ja">トップレベルの各フォルダの役割、フォルダ間の依存関係、新しいファイルの置き場所。</p>
 
     <nav class="dev-toc" aria-label="Contents">
-      <a href="#overview"><span lang="en">Overview</span><span lang="ja">概要</span></a>
+      <a href="#overview"><span lang="en">Overview of the folders</span><span lang="ja">フォルダ構成の概要</span></a>
       <a href="#folders"><span lang="en">Top-level folders</span><span lang="ja">トップレベルのフォルダ</span></a>
-      <a href="#placement"><span lang="en">Placement rules</span><span lang="ja">配置ルール</span></a>
+      <a href="#placement"><span lang="en">Placement rules for new files</span><span lang="ja">新しいファイルの配置ルール</span></a>
       <a href="#generated"><span lang="en">Generated files</span><span lang="ja">自動生成ファイル</span></a>
-      <a href="#legacy"><span lang="en">Archived code</span><span lang="ja">アーカイブ</span></a>
+      <a href="#legacy"><span lang="en">Archived code</span><span lang="ja">アーカイブしたコード</span></a>
     </nav>
 
     <!-- ============================== OVERVIEW ============================== -->
-    <h2 id="overview"><span lang="en">Overview</span><span lang="ja">概要</span></h2>
+    <h2 id="overview"><span lang="en">Overview of the folders</span><span lang="ja">フォルダ構成の概要</span></h2>
     <figure class="dg-figure fs-figure">
       <svg class="dg-svg" viewBox="0 0 480 624" role="img" aria-labelledby="fs-map-title">
         <title id="fs-map-title" lang="en">Map of the GUILDA top-level folders and how they depend on each other</title>
@@ -141,8 +141,8 @@
         <div>
           <p><span lang="en">Entry point of the toolbox. Running <code>&gt;&gt; GUILDA</code> prepares the environment.</span><span lang="ja">ツールボックスのエントリポイント。<code>&gt;&gt; GUILDA</code> の実行で環境を準備。</span></p>
           <dl>
-            <dt><span lang="en">Belongs here</span><span lang="ja">置くもの</span></dt><dd><span lang="en">Environment setup, user settings and their shipped defaults, and commands that open the tutorials and this documentation.</span><span lang="ja">環境設定、ユーザー設定とその既定値、チュートリアルとこのドキュメントを開くコマンド。</span></dd>
-            <dt><span lang="en">Relation</span><span lang="ja">関係</span></dt><dd><span lang="en">Puts the other code folders on the MATLAB path. Contains no power system modeling or analysis.</span><span lang="ja">他のコードフォルダを MATLAB パスに追加。電力系統のモデリングや解析は含まない。</span></dd>
+            <dt><span lang="en">What belongs here</span><span lang="ja">このフォルダに置くもの</span></dt><dd><span lang="en">Environment setup, user settings and their shipped defaults, and commands that open the tutorials and this documentation.</span><span lang="ja">環境設定、ユーザー設定とその既定値、チュートリアルとこのドキュメントを開くコマンド。</span></dd>
+            <dt><span lang="en">Relation to other folders</span><span lang="ja">他のフォルダとの関係</span></dt><dd><span lang="en">Puts the other code folders on the MATLAB path. Contains no power system modeling or analysis.</span><span lang="ja">他のコードフォルダを MATLAB パスに追加。電力系統のモデリングや解析は含まない。</span></dd>
           </dl>
         </div>
       </div>
@@ -151,11 +151,11 @@
         <div>
           <p><span lang="en">The modeling framework.</span><span lang="ja">モデリングのフレームワーク。</span></p>
           <dl>
-            <dt><span lang="en">Belongs here</span><span lang="ja">置くもの</span></dt><dd><span lang="en">Base classes that define what a network, bus, branch, component, and controller are; the classes that perform analysis; general helper functions; wrappers that keep deprecated names working.</span><span lang="ja">ネットワーク、母線、ブランチ、機器、制御器を定義する基底クラス、解析を行うクラス、汎用の補助関数、非推奨の名前を動かし続けるラッパー。</span></dd>
+            <dt><span lang="en">What belongs here</span><span lang="ja">このフォルダに置くもの</span></dt><dd><span lang="en">Base classes that define what a network, bus, branch, component, and controller are; the classes that perform analysis; general helper functions; wrappers that keep deprecated names working.</span><span lang="ja">ネットワーク、母線、ブランチ、機器、制御器を定義する基底クラス、解析を行うクラス、汎用の補助関数、非推奨の名前を動かし続けるラッパー。</span></dd>
             <dt><span lang="en">Core classes</span><span lang="ja">コアクラス</span></dt><dd><code>@PowerNetwork</code>, <code>@Bus</code>, <code>@Branch</code>, <code>@Component</code>, <code>@LocalController</code>, <code>@GlobalController</code>.</dd>
             <dt><span lang="en">Support classes</span><span lang="ja">補助クラス</span></dt><dd><span lang="en">In <code>_auxiliary/</code>:</span><span lang="ja"><code>_auxiliary/</code> 内:</span><ul><li><span lang="en">Class categories</span><span lang="ja">クラスカテゴリ</span>: <code>LayerPackage</code>, <code>PowerSystemModel</code>, <code>auxiliary</code>, <code>@Parameter</code></li><li><span lang="en">Solvers</span><span lang="ja">ソルバー</span>: <code>@SolverPF</code>, <code>@NewtonRaphsonMethod</code>, <code>@SolverOPF</code>, <code>@SolverCPF</code>, <code>@SolverODE</code>, <code>@Scenario</code> <span lang="en">(the disturbances of a simulation, owned by a network)</span><span lang="ja">（ネットワークが所有するシミュレーションの外乱）</span>, <code>@ProgressODE</code>, <code>@SolverLIN</code></li><li><span lang="en">Result classes</span><span lang="ja">結果クラス</span>: <code>@ResultBase</code> <span lang="en">and its subclasses</span><span lang="ja">とそのサブクラス</span> <code>@ResultPF</code>, <code>@ResultOPF</code>, <code>@ResultCPF</code>, <code>@ResultODE</code>, <code>@ResultLIN</code></li><li><span lang="en">Drawing</span><span lang="ja">描画</span>: <code>@DrawerNetDiagram</code></li></ul></dd>
-            <dt><span lang="en">Other</span><span lang="ja">その他</span></dt><dd><span lang="en"><code>+tools/</code> helpers; <code>_VersionSupport/</code> wrappers for deprecated names (e.g. <code>Continuation_Power_Flow</code> → <code>net.calculate_continuation_powerflow</code>, <code>CsvNetHandler</code> → <code>PowerNetwork.import_csv</code> / <code>net.export_csv</code>, <code>ODEevent</code> → <code>Scenario</code>).</span><span lang="ja"><code>+tools/</code> の補助関数、<code>_VersionSupport/</code> の非推奨の名前のラッパー（例: <code>Continuation_Power_Flow</code> → <code>net.calculate_continuation_powerflow</code>、<code>CsvNetHandler</code> → <code>PowerNetwork.import_csv</code> / <code>net.export_csv</code>、<code>ODEevent</code> → <code>Scenario</code>）。</span></dd>
-            <dt><span lang="en">Relation</span><span lang="ja">関係</span></dt><dd><span lang="en">Depends on no concrete model in <code>_GUILDAobject</code>, so models can be added or removed without touching the framework. Network import and export are methods of <code>PowerNetwork</code>, not separate classes.</span><span lang="ja"><code>_GUILDAobject</code> の具体的なモデルには非依存。フレームワークに手を加えずにモデルを追加・削除可能。ネットワークのインポートとエクスポートは独立したクラスではなく <code>PowerNetwork</code> のメソッド。</span></dd>
+            <dt><span lang="en">Other contents</span><span lang="ja">その他の中身</span></dt><dd><span lang="en"><code>+tools/</code> helpers; <code>_VersionSupport/</code> wrappers for deprecated names (e.g. <code>Continuation_Power_Flow</code> → <code>net.calculate_continuation_powerflow</code>, <code>CsvNetHandler</code> → <code>PowerNetwork.import_csv</code> / <code>net.export_csv</code>, <code>ODEevent</code> → <code>Scenario</code>).</span><span lang="ja"><code>+tools/</code> の補助関数、<code>_VersionSupport/</code> の非推奨の名前のラッパー（例: <code>Continuation_Power_Flow</code> → <code>net.calculate_continuation_powerflow</code>、<code>CsvNetHandler</code> → <code>PowerNetwork.import_csv</code> / <code>net.export_csv</code>、<code>ODEevent</code> → <code>Scenario</code>）。</span></dd>
+            <dt><span lang="en">Relation to other folders</span><span lang="ja">他のフォルダとの関係</span></dt><dd><span lang="en">Depends on no concrete model in <code>_GUILDAobject</code>, so models can be added or removed without touching the framework. Network import and export are methods of <code>PowerNetwork</code>, not separate classes.</span><span lang="ja"><code>_GUILDAobject</code> の具体的なモデルには非依存。フレームワークに手を加えずにモデルを追加・削除可能。ネットワークのインポートとエクスポートは独立したクラスではなく <code>PowerNetwork</code> のメソッド。</span></dd>
           </dl>
         </div>
       </div>
@@ -164,9 +164,9 @@
         <div>
           <p><span lang="en">Concrete models that users put into a network.</span><span lang="ja">ユーザーがネットワークに組み込む具体的なモデル。</span></p>
           <dl>
-            <dt><span lang="en">Belongs here</span><span lang="ja">置くもの</span></dt><dd><ul><li><span lang="en">Model classes, grouped into packages by kind (branch / component / controller / network); sub-packages for model families that share a base class.</span><span lang="ja">種類（branch / component / controller / network）ごとのパッケージにまとめたモデルクラス。基底クラスを共有するモデル群はサブパッケージ。</span></li><li><span lang="en">A network template: a class that builds the network in its constructor, usually a class folder with data subfolders per element type.</span><span lang="ja">ネットワークテンプレート: コンストラクタでネットワークを組み立てるクラス。通常は要素の種類ごとのデータのサブフォルダを持つクラスフォルダ。</span></li></ul></dd>
-            <dt><span lang="en">Networks</span><span lang="ja">ネットワーク</span></dt><dd><span lang="en">Bundled templates:</span><span lang="ja">同梱のテンプレート:</span><ul><li><code>IEEE9bus</code>, <code>IEEE14bus</code> <span lang="en">(the MATPOWER <code>case14</code> data)</span><span lang="ja">（MATPOWER の <code>case14</code> のデータ）</span>, <code>IEEE14bus_NoTap</code> <span lang="en">(transformer taps at 1)</span><span lang="ja">（変圧器タップを 1 に固定）</span>, <code>IEEE14bus_lossless</code> (<code>R = 0</code>), <code>IEEE68bus</code></li><li><span lang="en">IEEJ standard models</span><span lang="ja">電気学会標準モデル</span> <code>IEEJ_EAST10</code>, <code>IEEJ_EAST30</code>, <code>IEEJ_WEST10</code>, <code>IEEJ_WEST30</code><span lang="en">: a <code>peak/</code> and a <code>night/</code> folder each, chosen with <code>Section</code></span><span lang="ja">: それぞれ <code>peak/</code> と <code>night/</code> のフォルダ、<code>Section</code> で選択</span></li><li><span lang="en">Each constructor loads its own folder with <code>PowerNetwork.import_csv(dir, Network=obj)</code>.</span><span lang="ja">各コンストラクタは <code>PowerNetwork.import_csv(dir, Network=obj)</code> で自身のフォルダを読み込み。</span></li></ul></dd>
-            <dt><span lang="en">Relation</span><span lang="ja">関係</span></dt><dd><span lang="en">Every model inherits from a base class in <code>_GUILDAsystem</code>.</span><span lang="ja">すべてのモデルは <code>_GUILDAsystem</code> の基底クラスを継承。</span></dd>
+            <dt><span lang="en">What belongs here</span><span lang="ja">このフォルダに置くもの</span></dt><dd><ul><li><span lang="en">Model classes, grouped into packages by kind (branch / component / controller / network); sub-packages for model families that share a base class.</span><span lang="ja">種類（branch / component / controller / network）ごとのパッケージにまとめたモデルクラス。基底クラスを共有するモデル群はサブパッケージ。</span></li><li><span lang="en">A network template: a class that builds the network in its constructor, usually a class folder with data subfolders per element type.</span><span lang="ja">ネットワークテンプレート: コンストラクタでネットワークを組み立てるクラス。通常は要素の種類ごとのデータのサブフォルダを持つクラスフォルダ。</span></li></ul></dd>
+            <dt><span lang="en">Network templates</span><span lang="ja">ネットワークのテンプレート</span></dt><dd><span lang="en">Bundled templates:</span><span lang="ja">同梱のテンプレート:</span><ul><li><code>IEEE9bus</code>, <code>IEEE14bus</code> <span lang="en">(the MATPOWER <code>case14</code> data)</span><span lang="ja">（MATPOWER の <code>case14</code> のデータ）</span>, <code>IEEE14bus_NoTap</code> <span lang="en">(transformer taps at 1)</span><span lang="ja">（変圧器タップを 1 に固定）</span>, <code>IEEE14bus_lossless</code> (<code>R = 0</code>), <code>IEEE68bus</code></li><li><span lang="en">IEEJ standard models</span><span lang="ja">電気学会標準モデル</span> <code>IEEJ_EAST10</code>, <code>IEEJ_EAST30</code>, <code>IEEJ_WEST10</code>, <code>IEEJ_WEST30</code><span lang="en">: a <code>peak/</code> and a <code>night/</code> folder each, chosen with <code>Section</code></span><span lang="ja">: それぞれ <code>peak/</code> と <code>night/</code> のフォルダ、<code>Section</code> で選択</span></li><li><span lang="en">Each constructor loads its own folder with <code>PowerNetwork.import_csv(dir, Network=obj)</code>.</span><span lang="ja">各コンストラクタは <code>PowerNetwork.import_csv(dir, Network=obj)</code> で自身のフォルダを読み込み。</span></li></ul></dd>
+            <dt><span lang="en">Relation to other folders</span><span lang="ja">他のフォルダとの関係</span></dt><dd><span lang="en">Every model inherits from a base class in <code>_GUILDAsystem</code>.</span><span lang="ja">すべてのモデルは <code>_GUILDAsystem</code> の基底クラスを継承。</span></dd>
           </dl>
         </div>
       </div>
@@ -175,8 +175,8 @@
         <div>
           <p><span lang="en">Learning material for users.</span><span lang="ja">ユーザー向けの学習教材。</span></p>
           <dl>
-            <dt><span lang="en">Belongs here</span><span lang="ja">置くもの</span></dt><dd><span lang="en">Live scripts that walk through using GUILDA, and reference scripts per model family.</span><span lang="ja">GUILDA の使い方を順を追って説明するライブスクリプトと、モデル群ごとの参考スクリプト。</span></dd>
-            <dt><span lang="en">Relation</span><span lang="ja">関係</span></dt><dd><span lang="en">Uses only the public API of <code>_GUILDAsystem</code> and <code>_GUILDAobject</code>; opened from <code>@GUILDA</code>. Each tutorial is listed in the documentation.</span><span lang="ja"><code>_GUILDAsystem</code> と <code>_GUILDAobject</code> の公開 API だけを使用。<code>@GUILDA</code> から開く。各チュートリアルはドキュメントに掲載。</span></dd>
+            <dt><span lang="en">What belongs here</span><span lang="ja">このフォルダに置くもの</span></dt><dd><span lang="en">Live scripts that walk through using GUILDA, and reference scripts per model family.</span><span lang="ja">GUILDA の使い方を順を追って説明するライブスクリプトと、モデル群ごとの参考スクリプト。</span></dd>
+            <dt><span lang="en">Relation to other folders</span><span lang="ja">他のフォルダとの関係</span></dt><dd><span lang="en">Uses only the public API of <code>_GUILDAsystem</code> and <code>_GUILDAobject</code>; opened from <code>@GUILDA</code>. Each tutorial is listed in the documentation.</span><span lang="ja"><code>_GUILDAsystem</code> と <code>_GUILDAobject</code> の公開 API だけを使用。<code>@GUILDA</code> から開く。各チュートリアルはドキュメントに掲載。</span></dd>
           </dl>
         </div>
       </div>
@@ -185,8 +185,8 @@
         <div>
           <p><span lang="en">This documentation site, viewed in a browser.</span><span lang="ja">ブラウザで閲覧する、このドキュメントサイト。</span></p>
           <dl>
-            <dt><span lang="en">Belongs here</span><span lang="ja">置くもの</span></dt><dd><span lang="en">Hand-written pages, styles, and lists, plus a class reference generated from the help comments in the MATLAB source.</span><span lang="ja">手書きのページ、スタイル、一覧と、MATLAB ソースのヘルプコメントから生成するクラスリファレンス。</span></dd>
-            <dt><span lang="en">Relation</span><span lang="ja">関係</span></dt><dd><span lang="en">Reads the code folders but is never called by them. Opened from <code>@GUILDA</code>.</span><span lang="ja">コードフォルダを参照するが、コードフォルダからは呼び出されない。<code>@GUILDA</code> から開く。</span></dd>
+            <dt><span lang="en">What belongs here</span><span lang="ja">このフォルダに置くもの</span></dt><dd><span lang="en">Hand-written pages, styles, and lists, plus a class reference generated from the help comments in the MATLAB source.</span><span lang="ja">手書きのページ、スタイル、一覧と、MATLAB ソースのヘルプコメントから生成するクラスリファレンス。</span></dd>
+            <dt><span lang="en">Relation to other folders</span><span lang="ja">他のフォルダとの関係</span></dt><dd><span lang="en">Reads the code folders but is never called by them. Opened from <code>@GUILDA</code>.</span><span lang="ja">コードフォルダを参照するが、コードフォルダからは呼び出されない。<code>@GUILDA</code> から開く。</span></dd>
           </dl>
         </div>
       </div>
@@ -195,8 +195,8 @@
         <div>
           <p><span lang="en">Verification of the bundled models against published results, one subfolder per network.</span><span lang="ja">同梱のモデルを公表された結果と比較して検証。ネットワークごとに 1 つのサブフォルダ。</span></p>
           <dl>
-            <dt><span lang="en">Belongs here</span><span lang="ja">置くもの</span></dt><dd><span lang="en">For each network (details in its <code>README.md</code>):</span><span lang="ja">ネットワークごとに（詳細はその <code>README.md</code>）:</span><ul><li><span lang="en"><code>README.md</code>: the literature reference (link and bibliographic data only, never a copy of the paper or its figures), the criterion, the modelling differences, the latest measured agreement</span><span lang="ja"><code>README.md</code>: 文献の参照（リンクと書誌情報のみ。論文や図のコピーは置かない）、判定基準、モデル化の違い、最新の一致状況</span></li><li><span lang="en">The cases as Scenario CSV files; the published verdicts as CSV</span><span lang="ja">Scenario の CSV ファイルとしてのケース、公表された判定の CSV</span></li><li><span lang="en">A comparison function</span><span lang="ja">比較用の関数</span></li></ul></dd>
-            <dt><span lang="en">Relation</span><span lang="ja">関係</span></dt><dd><span lang="en">Uses the public API of <code>_GUILDAsystem</code> and <code>_GUILDAobject</code> and is never called by them. Kept in releases. Not on the path: run a comparison with <code>run(...)</code> or after <code>cd</code> into its subfolder.</span><span lang="ja"><code>_GUILDAsystem</code> と <code>_GUILDAobject</code> の公開 API を使用し、それらからは呼ばれない。リリースにも含める。パス外のため、比較は <code>run(...)</code> で、またはそのサブフォルダに <code>cd</code> してから実行。</span></dd>
+            <dt><span lang="en">What belongs here</span><span lang="ja">このフォルダに置くもの</span></dt><dd><span lang="en">For each network (details in its <code>README.md</code>):</span><span lang="ja">ネットワークごとに（詳細はその <code>README.md</code>）:</span><ul><li><span lang="en"><code>README.md</code>: the literature reference (link and bibliographic data only, never a copy of the paper or its figures), the criterion, the modelling differences, the latest measured agreement</span><span lang="ja"><code>README.md</code>: 文献の参照（リンクと書誌情報のみ。論文や図のコピーは置かない）、判定基準、モデル化の違い、最新の一致状況</span></li><li><span lang="en">The cases as Scenario CSV files; the published verdicts as CSV</span><span lang="ja">Scenario の CSV ファイルとしてのケース、公表された判定の CSV</span></li><li><span lang="en">A comparison function</span><span lang="ja">比較用の関数</span></li></ul></dd>
+            <dt><span lang="en">Relation to other folders</span><span lang="ja">他のフォルダとの関係</span></dt><dd><span lang="en">Uses the public API of <code>_GUILDAsystem</code> and <code>_GUILDAobject</code> and is never called by them. Kept in releases. Not on the path: run a comparison with <code>run(...)</code> or after <code>cd</code> into its subfolder.</span><span lang="ja"><code>_GUILDAsystem</code> と <code>_GUILDAobject</code> の公開 API を使用し、それらからは呼ばれない。リリースにも含める。パス外のため、比較は <code>run(...)</code> で、またはそのサブフォルダに <code>cd</code> してから実行。</span></dd>
           </dl>
         </div>
       </div>
@@ -205,8 +205,8 @@
         <div>
           <p><span lang="en">Default output folder for exported data.</span><span lang="ja">エクスポートしたデータの既定の出力フォルダ。</span></p>
           <dl>
-            <dt><span lang="en">Belongs here</span><span lang="ja">置くもの</span></dt><dd><span lang="en">Files written by GUILDA's export functions. Nothing hand-written.</span><span lang="ja">GUILDA のエクスポート関数が書き出すファイル。手書きのファイルは置かない。</span></dd>
-            <dt><span lang="en">Relation</span><span lang="ja">関係</span></dt><dd><span lang="en">Created on demand; safe to delete.</span><span lang="ja">必要に応じて作成。削除しても問題なし。</span></dd>
+            <dt><span lang="en">What belongs here</span><span lang="ja">このフォルダに置くもの</span></dt><dd><span lang="en">Files written by GUILDA's export functions. Nothing hand-written.</span><span lang="ja">GUILDA のエクスポート関数が書き出すファイル。手書きのファイルは置かない。</span></dd>
+            <dt><span lang="en">Relation to other folders</span><span lang="ja">他のフォルダとの関係</span></dt><dd><span lang="en">Created on demand; safe to delete.</span><span lang="ja">必要に応じて作成。削除しても問題なし。</span></dd>
           </dl>
         </div>
       </div>
@@ -237,29 +237,29 @@
     <p lang="ja">システムが書き換えるファイル。<strong>緑のソースを編集</strong>、赤の出力は編集しない。</p>
     <div class="fs-gen">
       <div class="dg-chain">
-        <div class="dg-chain-node is-ok"><span class="dg-kicker"><span lang="en">✎ edit</span><span lang="ja">✎ 編集</span></span><span class="fs-dest-note"><span lang="en">in <code>_GUILDAsystem/</code></span><span lang="ja"><code>_GUILDAsystem/</code> 内</span></span><code>@Bus/add_component.template</code><br><code>@Bus/replace_component.template</code><br><code>@PowerNetwork/add_branch.template</code></div>
+        <div class="dg-chain-node is-ok"><span class="dg-kicker"><span lang="en">✎ source to edit</span><span lang="ja">✎ 編集するソース</span></span><span class="fs-dest-note"><span lang="en">in <code>_GUILDAsystem/</code></span><span lang="ja"><code>_GUILDAsystem/</code> 内</span></span><code>@Bus/add_component.template</code><br><code>@Bus/replace_component.template</code><br><code>@PowerNetwork/add_branch.template</code></div>
         <div class="dg-chain-arrow" aria-hidden="true"></div>
-        <div class="dg-chain-node is-step"><span class="dg-kicker"><span lang="en">runs</span><span lang="ja">実行</span></span><span lang="en">at startup</span><span lang="ja">起動時</span></div>
+        <div class="dg-chain-node is-step"><span class="dg-kicker"><span lang="en">generated by</span><span lang="ja">生成する処理</span></span><span lang="en">at startup</span><span lang="ja">起動時</span></div>
         <div class="dg-chain-arrow" aria-hidden="true"></div>
-        <div class="dg-chain-node is-err"><span class="dg-kicker"><span lang="en">✕ do not edit</span><span lang="ja">✕ 編集禁止</span></span><span class="fs-dest-note"><span lang="en">in <code>_GUILDAsystem/</code></span><span lang="ja"><code>_GUILDAsystem/</code> 内</span></span><code>@Bus/add_component.m</code><br><code>@Bus/replace_component.m</code><br><code>@PowerNetwork/add_branch.m</code></div>
+        <div class="dg-chain-node is-err"><span class="dg-kicker"><span lang="en">✕ output, do not edit</span><span lang="ja">✕ 生成物（編集禁止）</span></span><span class="fs-dest-note"><span lang="en">in <code>_GUILDAsystem/</code></span><span lang="ja"><code>_GUILDAsystem/</code> 内</span></span><code>@Bus/add_component.m</code><br><code>@Bus/replace_component.m</code><br><code>@PowerNetwork/add_branch.m</code></div>
       </div>
     </div>
     <div class="fs-gen">
       <div class="dg-chain">
-        <div class="dg-chain-node is-ok"><span class="dg-kicker"><span lang="en">✎ edit</span><span lang="ja">✎ 編集</span></span><span lang="en">help comments in the MATLAB source</span><span lang="ja">MATLAB ソースのヘルプコメント</span></div>
+        <div class="dg-chain-node is-ok"><span class="dg-kicker"><span lang="en">✎ source to edit</span><span lang="ja">✎ 編集するソース</span></span><span lang="en">help comments in the MATLAB source</span><span lang="ja">MATLAB ソースのヘルプコメント</span></div>
         <div class="dg-chain-arrow" aria-hidden="true"></div>
-        <div class="dg-chain-node is-step"><span class="dg-kicker"><span lang="en">runs</span><span lang="ja">実行</span></span><code>GUILDA.doc("update", true)</code></div>
+        <div class="dg-chain-node is-step"><span class="dg-kicker"><span lang="en">generated by</span><span lang="ja">生成する処理</span></span><code>GUILDA.doc("update", true)</code></div>
         <div class="dg-chain-arrow" aria-hidden="true"></div>
-        <div class="dg-chain-node is-err"><span class="dg-kicker"><span lang="en">✕ do not edit</span><span lang="ja">✕ 編集禁止</span></span><span class="fs-dest-note"><span lang="en">in <code>_GUILDAdoc/database/</code></span><span lang="ja"><code>_GUILDAdoc/database/</code> 内</span></span><code>list_Classes.js</code><br><code>GUILDAsystem/</code><br><code>GUILDAobject/</code></div>
+        <div class="dg-chain-node is-err"><span class="dg-kicker"><span lang="en">✕ output, do not edit</span><span lang="ja">✕ 生成物（編集禁止）</span></span><span class="fs-dest-note"><span lang="en">in <code>_GUILDAdoc/database/</code></span><span lang="ja"><code>_GUILDAdoc/database/</code> 内</span></span><code>list_Classes.js</code><br><code>GUILDAsystem/</code><br><code>GUILDAobject/</code></div>
       </div>
     </div>
     <div class="fs-gen">
       <div class="dg-chain">
-        <div class="dg-chain-node is-ok"><span class="dg-kicker"><span lang="en">✎ change</span><span lang="ja">✎ 変更</span></span><span lang="en">settings changed by the user</span><span lang="ja">ユーザーが変更した設定</span></div>
+        <div class="dg-chain-node is-ok"><span class="dg-kicker"><span lang="en">✎ what the user changes</span><span lang="ja">✎ 利用者が変更するもの</span></span><span lang="en">settings changed by the user</span><span lang="ja">ユーザーが変更した設定</span></div>
         <div class="dg-chain-arrow" aria-hidden="true"></div>
-        <div class="dg-chain-node is-step"><span class="dg-kicker"><span lang="en">runs</span><span lang="ja">実行</span></span><code>GUILDA.setting</code></div>
+        <div class="dg-chain-node is-step"><span class="dg-kicker"><span lang="en">generated by</span><span lang="ja">生成する処理</span></span><code>GUILDA.setting</code></div>
         <div class="dg-chain-arrow" aria-hidden="true"></div>
-        <div class="dg-chain-node is-err"><span class="dg-kicker"><span lang="en">✕ do not edit or commit</span><span lang="ja">✕ 編集・コミット禁止</span></span><code>@GUILDA/user/</code></div>
+        <div class="dg-chain-node is-err"><span class="dg-kicker"><span lang="en">✕ output, do not edit or commit</span><span lang="ja">✕ 生成物（編集・コミット禁止）</span></span><code>@GUILDA/user/</code></div>
       </div>
     </div>
     <p class="dg-caption" lang="en">All outputs above are listed in <code>.gitignore</code>.</p>
@@ -270,7 +270,7 @@
     </div>
 
     <!-- ============================== ARCHIVE ============================== -->
-    <h2 id="legacy"><span lang="en">Archived code</span><span lang="ja">アーカイブ</span></h2>
+    <h2 id="legacy"><span lang="en">Archived code</span><span lang="ja">アーカイブしたコード</span></h2>
     <ul>
       <li><span lang="en">Code kept for reference only goes into a folder named <code>archive/</code> next to its original location.</span><span lang="ja">参照用にだけ残すコードは、元の場所の隣の <code>archive/</code> フォルダへ。</span></li>
       <li><span lang="en">With no <code>@</code> or <code>+</code> prefix, it stays off the MATLAB path inside class and package folders.</span><span lang="ja"><code>@</code> や <code>+</code> の接頭辞がないため、クラスフォルダやパッケージフォルダの中では MATLAB パス外。</span></li>

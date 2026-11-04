@@ -42,13 +42,13 @@
       <a href="#principles"><span lang="en">Design principles</span><span lang="ja">設計原則</span></a>
       <a href="#classes"><span lang="en">Classes at a glance</span><span lang="ja">クラスの概観</span></a>
       <a href="#parents"><span lang="en">Parent references</span><span lang="ja">親への参照</span></a>
-      <a href="#identity"><span lang="en">Identity</span><span lang="ja">識別</span></a>
-      <a href="#solvers"><span lang="en">Solver settings</span><span lang="ja">ソルバー設定</span></a>
-      <a href="#edits"><span lang="en">Edit handling</span><span lang="ja">編集の扱い</span></a>
-      <a href="#variables"><span lang="en">Variable order</span><span lang="ja">変数の順序</span></a>
-      <a href="#optional"><span lang="en">Optional analyses</span><span lang="ja">任意対応の解析</span></a>
-      <a href="#opf"><span lang="en">OPF customization</span><span lang="ja">OPF のカスタマイズ</span></a>
-      <a href="#conventions"><span lang="en">Conventions</span><span lang="ja">規約</span></a>
+      <a href="#identity"><span lang="en">Identifying objects (tags)</span><span lang="ja">オブジェクトの識別（タグ）</span></a>
+      <a href="#solvers"><span lang="en">Solver settings of analyses</span><span lang="ja">解析のソルバー設定</span></a>
+      <a href="#edits"><span lang="en">Handling of model edits</span><span lang="ja">モデル編集の扱い</span></a>
+      <a href="#variables"><span lang="en">Order of state and input variables</span><span lang="ja">状態・入力変数の順序</span></a>
+      <a href="#optional"><span lang="en">Optional analyses (Hessians)</span><span lang="ja">任意対応の解析（ヘッセ行列）</span></a>
+      <a href="#opf"><span lang="en">OPF customization by models</span><span lang="ja">モデルによる OPF のカスタマイズ</span></a>
+      <a href="#conventions"><span lang="en">Coding conventions of the classes</span><span lang="ja">クラス実装の規約</span></a>
     </nav>
 
     <div class="dg-callout">
@@ -172,7 +172,7 @@
       <li><div>
         <span class="dg-item-title"><span lang="en">Edits only record; analyses check</span><span lang="ja">編集は記録するだけ、確認は解析が行う</span></span>
         <p lang="en">Editing a parameter or a mode only updates the value and records what became stale; nothing is rebuilt per edit. An analysis checks the flags when it starts (see <a href="#edits">Edit handling</a>).</p>
-        <p lang="ja">パラメータやモードの編集は、値の更新と、古くなったものの記録のみ。編集ごとの再構築なし。フラグの確認は解析の開始時（<a href="#edits">編集の扱い</a>を参照）。</p>
+        <p lang="ja">パラメータやモードの編集は、値の更新と、古くなったものの記録のみ。編集ごとの再構築なし。フラグの確認は解析の開始時（<a href="#edits">モデル編集の扱い</a>を参照）。</p>
       </div></li>
     </ol>
 
@@ -239,7 +239,7 @@
     </ol>
 
     <!-- ============================== IDENTITY ============================== -->
-    <h2 id="identity"><span lang="en">Identity: tags, not indices</span><span lang="ja">識別: インデックスではなくタグ</span></h2>
+    <h2 id="identity"><span lang="en">Identifying objects: tags, not indices</span><span lang="ja">オブジェクトの識別: インデックスではなくタグ</span></h2>
     <div class="cd-split">
       <div class="is-ok"><span class="dg-kicker"><span lang="en">Tag (e.g. <code>B001</code>)</span><span lang="ja">タグ（例: <code>B001</code>）</span></span><p lang="en">The permanent ID of an object. Use it in saved data and in scenarios: a disturbance names its buses, branches, and units by tag, checked against the network when it is added and again when it is simulated.</p><p lang="ja">オブジェクトの恒久的な ID。保存するデータとシナリオで使用。外乱は母線・ブランチ・機器をタグで指定し、外乱の追加時とシミュレーション時にネットワークと照合。</p></div>
       <div class="is-err"><span class="dg-kicker"><span lang="en">Index (e.g. <code>net.a_Bus{3}</code>)</span><span lang="ja">インデックス（例: <code>net.a_Bus{3}</code>）</span></span><p lang="en">Only the current position. It shifts after <code>remove_*</code>, so never store it.</p><p lang="ja">現在の位置にすぎない。<code>remove_*</code> の後にずれるため、保存しない。</p></div>
@@ -251,21 +251,21 @@
     </ul>
 
     <!-- ============================== SOLVERS ============================== -->
-    <h2 id="solvers"><span lang="en">Solver settings</span><span lang="ja">ソルバー設定</span></h2>
+    <h2 id="solvers"><span lang="en">Solver settings of analyses</span><span lang="ja">解析のソルバー設定</span></h2>
     <div class="cd-split">
       <div><span class="dg-kicker"><span lang="en">Persistent defaults: <code>net.solver_*</code></span><span lang="ja">永続的な既定値: <code>net.solver_*</code></span></span><p lang="en">The solver objects hold the default settings of each analysis. A change made there stays, so repeated runs keep the last settings.</p><p lang="ja">ソルバーオブジェクトが各解析の既定の設定を保持。ここでの変更は残るため、繰り返し実行しても最後の設定を維持。</p></div>
-      <div class="is-muted"><span class="dg-kicker"><span lang="en">Run-time Name-Value options</span><span lang="ja">実行時の名前と値のオプション</span></span><p lang="en">Override the defaults for that call only. The stored defaults do not change.</p><p lang="ja">その呼び出しに限り既定値を上書き。保存されている既定値は不変。</p></div>
+      <div class="is-muted"><span class="dg-kicker"><span lang="en">Run-time Name-Value options</span><span lang="ja">実行時の Name-Value オプション</span></span><p lang="en">Override the defaults for that call only. The stored defaults do not change.</p><p lang="ja">その呼び出しに限り既定値を上書き。保存されている既定値は不変。</p></div>
     </div>
     <p lang="en">System data (line constants, power-flow specifications, limits) is not a solver setting: set it beforehand on the model objects through properties and <code>tab_parameter</code> (see <a href="api-design.html#rules">API Design, rule 2</a>).</p>
     <p lang="ja">系統データ（線路定数、潮流計算の指定値、制限値）はソルバーの設定ではない。プロパティと <code>tab_parameter</code> を通じて、事前にモデルオブジェクトに設定（<a href="api-design.html#rules">API 設計のルール 2</a> を参照）。</p>
 
     <!-- ============================== EDITS ============================== -->
-    <h2 id="edits"><span lang="en">Edit handling</span><span lang="ja">編集の扱い</span></h2>
+    <h2 id="edits"><span lang="en">Handling of model edits</span><span lang="ja">モデル編集の扱い</span></h2>
     <p lang="en">Edits are recorded in <code>s_edit.str_flag</code> (<code>unset</code> / <code>initialized</code> / <code>editted</code>) and in the edit log <code>tab_editLog</code>, which also records the category of what became stale.</p>
     <p lang="ja">編集の記録先は <code>s_edit.str_flag</code>（<code>unset</code> / <code>initialized</code> / <code>editted</code>）と編集ログ <code>tab_editLog</code>。編集ログには、古くなったものの区分も記録。</p>
     <table class="cd-table">
       <thead>
-        <tr><th><span lang="en">Edit</span><span lang="ja">編集</span></th><th><span lang="en">Becomes stale</span><span lang="ja">古くなるもの</span></th></tr>
+        <tr><th><span lang="en">Edit of the model</span><span lang="ja">モデルの編集</span></th><th><span lang="en">Becomes stale</span><span lang="ja">古くなるもの</span></th></tr>
       </thead>
       <tbody>
         <tr><td><span lang="en">dynamics parameter</span><span lang="ja">動特性パラメータ</span></td><td><span class="dg-badge is-err"><span lang="en">function-handle cache</span><span lang="ja">関数ハンドルのキャッシュ</span></span> <span class="dg-badge is-err"><span lang="en">equilibrium</span><span lang="ja">平衡点</span></span><small><span lang="en">The function-handle cache applies to components and controllers only; a bus shunt or a branch constant changes the equilibrium.</span><span lang="ja">関数ハンドルのキャッシュは機器と制御器のみに関係。母線のシャントやブランチの定数は平衡点を変更。</span></small></td></tr>
@@ -287,7 +287,7 @@
     </ul>
 
     <!-- ============================== VARIABLES ============================== -->
-    <h2 id="variables"><span lang="en">Variable order</span><span lang="ja">変数の順序</span></h2>
+    <h2 id="variables"><span lang="en">Order of state and input variables</span><span lang="ja">状態・入力変数の順序</span></h2>
     <p lang="en"><code>net.get_variable_map()</code> is the single definition of the order of the model variables.</p>
     <p lang="ja"><code>net.get_variable_map()</code> がモデル変数の順序の唯一の定義。</p>
     <ul>
@@ -296,7 +296,7 @@
     </ul>
     <table class="cd-table">
       <thead>
-        <tr><th><span lang="en">Block</span><span lang="ja">ブロック</span></th><th><span lang="en">Order</span><span lang="ja">順序</span></th></tr>
+        <tr><th><span lang="en">Variable block</span><span lang="ja">変数のブロック</span></th><th><span lang="en">Order</span><span lang="ja">順序</span></th></tr>
       </thead>
       <tbody>
         <tr><td><span lang="en">1. states <code>x</code></span><span lang="ja">1. 状態 <code>x</code></span></td><td><span lang="en">For each bus, for each component: the component's states, then its local controllers' states (depth first: the AVR or <code>"local"</code> controller, the PSS under the AVR, then the governor, whatever the order of attachment). Then the states of each global controller.</span><span lang="ja">母線ごと、機器ごとに、機器の状態、続いてそのローカル制御器の状態（深さ優先: AVR または <code>"local"</code> の制御器、AVR の下の PSS、ガバナの順。接続した順序によらない）。その後に各グローバル制御器の状態。</span></td></tr>
@@ -311,7 +311,7 @@
     </ul>
 
     <!-- ============================== OPTIONAL ============================== -->
-    <h2 id="optional"><span lang="en">Optional analyses: Hessians</span><span lang="ja">任意対応の解析: ヘッセ行列</span></h2>
+    <h2 id="optional"><span lang="en">Optional analyses (Hessians)</span><span lang="ja">任意対応の解析（ヘッセ行列）</span></h2>
     <p lang="en">An analysis that only some models support is a method on the base class with a per-class contract, as <code>get_hessian</code> on <code>Component</code>, <code>LocalController</code>, and <code>GlobalController</code>.</p>
     <p lang="ja">一部のモデルだけが対応する解析は、クラスごとの契約を持つ基底クラスのメソッドに。例: <code>Component</code>、<code>LocalController</code>、<code>GlobalController</code> の <code>get_hessian</code>。</p>
     <div class="cd-split">
@@ -322,12 +322,12 @@
     <p lang="ja">導関数は各クラスが提供。記号微分は使わないため、Symbolic Math Toolbox は不要。</p>
 
     <!-- ============================== OPF ============================== -->
-    <h2 id="opf"><span lang="en">OPF customization</span><span lang="ja">OPF のカスタマイズ</span></h2>
+    <h2 id="opf"><span lang="en">OPF customization by models</span><span lang="ja">モデルによる OPF のカスタマイズ</span></h2>
     <p lang="en">Each object holds its own OPF terms, set with <code>obj.set_opffcn("Cost", @(v,p) ..., "Constraint", @(v,p) struct(...), "DefaultConstraint", false)</code> and restored with <code>obj.reset_opffcn()</code>. <code>v</code>: the object's optimization variables; <code>p</code>: its parameters.</p>
     <p lang="ja">各オブジェクトが自身の OPF 項を保持。設定は <code>obj.set_opffcn("Cost", @(v,p) ..., "Constraint", @(v,p) struct(...), "DefaultConstraint", false)</code>、元に戻すのは <code>obj.reset_opffcn()</code>。<code>v</code> はオブジェクトの最適化変数、<code>p</code> はそのパラメータ。</p>
     <table class="cd-table">
       <thead>
-        <tr><th><span lang="en">Term</span><span lang="ja">項</span></th><th><span lang="en">Effect</span><span lang="ja">効果</span></th></tr>
+        <tr><th><span lang="en">OPF term</span><span lang="ja">OPF の項</span></th><th><span lang="en">Effect</span><span lang="ja">効果</span></th></tr>
       </thead>
       <tbody>
         <tr><td><code>Cost</code></td><td><span lang="en">Replaces the default cost of the object.</span><span lang="ja">オブジェクトの既定のコストを置換。</span></td></tr>
@@ -340,10 +340,10 @@
     <p lang="ja">DC OPF: <code>|V| = 1</code>、MATPOWER と同じブランチのサセプタンス <code>b = 1/(X·tap)</code>。</p>
 
     <!-- ============================== CONVENTIONS ============================== -->
-    <h2 id="conventions"><span lang="en">Conventions</span><span lang="ja">規約</span></h2>
+    <h2 id="conventions"><span lang="en">Coding conventions of the classes</span><span lang="ja">クラス実装の規約</span></h2>
     <table class="cd-table">
       <thead>
-        <tr><th><span lang="en">Topic</span><span lang="ja">項目</span></th><th><span lang="en">Convention</span><span lang="ja">規約</span></th></tr>
+        <tr><th><span lang="en">Topic</span><span lang="ja">対象の項目</span></th><th><span lang="en">Convention</span><span lang="ja">規約</span></th></tr>
       </thead>
       <tbody>
         <tr>

@@ -25,26 +25,26 @@
     <p class="page-lead"><span lang="en">How to add a new generator, load, or controller: what the framework requires of the class, a minimal generator and AVR, and how to test them.</span><span lang="ja">新しい発電機、負荷、制御器の追加方法。フレームワークがクラスに求めること、最小限の発電機と AVR の例、テスト方法。</span></p>
 
     <nav class="dev-toc" aria-label="Contents">
-      <a href="#steps"><span lang="en">Steps</span><span lang="ja">手順</span></a>
-      <a href="#contracts"><span lang="en">Contracts</span><span lang="ja">契約</span></a>
-      <a href="#generator"><span lang="en">Minimal generator</span><span lang="ja">最小限の発電機</span></a>
-      <a href="#network"><span lang="en">Using the model</span><span lang="ja">モデルの使用</span></a>
-      <a href="#controller"><span lang="en">Minimal controller</span><span lang="ja">最小限の制御器</span></a>
-      <a href="#testing"><span lang="en">Testing</span><span lang="ja">テスト</span></a>
-      <a href="#other"><span lang="en">Branches and networks</span><span lang="ja">ブランチとネットワーク</span></a>
+      <a href="#steps"><span lang="en">Steps to add a model</span><span lang="ja">モデル追加の手順</span></a>
+      <a href="#contracts"><span lang="en">Contracts a model implements</span><span lang="ja">モデルが実装する契約</span></a>
+      <a href="#generator"><span lang="en">Minimal generator example</span><span lang="ja">最小限の発電機の例</span></a>
+      <a href="#network"><span lang="en">Using the new model</span><span lang="ja">新しいモデルの使用</span></a>
+      <a href="#controller"><span lang="en">Minimal controller example</span><span lang="ja">最小限の制御器の例</span></a>
+      <a href="#testing"><span lang="en">Testing a new model</span><span lang="ja">新しいモデルのテスト</span></a>
+      <a href="#other"><span lang="en">New branches and networks</span><span lang="ja">新しいブランチとネットワーク</span></a>
     </nav>
 
     <!-- ============================== STEPS ============================== -->
-    <h2 id="steps"><span lang="en">Steps</span><span lang="ja">手順</span></h2>
+    <h2 id="steps"><span lang="en">Steps to add a model</span><span lang="ja">モデル追加の手順</span></h2>
     <ol class="dg-list is-numbered">
       <li><div><span class="dg-item-title"><span lang="en">Choose the base class and the place</span><span lang="ja">基底クラスと置き場所を決める</span></span><p lang="en">Put the class in the matching package of <code>_GUILDAobject</code> (see <a href="folder-structure.html#placement">Folder Structure</a>). A small model can be one <code>classdef</code> file.</p><p lang="ja">クラスは <code>_GUILDAobject</code> の該当するパッケージに配置（<a href="folder-structure.html#placement">フォルダ構成</a>を参照）。小さなモデルなら <code>classdef</code> ファイル 1 つで可。</p></div></li>
-      <li><div><span class="dg-item-title"><span lang="en">Implement the contract</span><span lang="ja">契約を実装する</span></span><p lang="en">Define the constants and methods in <a href="#contracts">Contracts</a>. Document the class with <a href="class-documentation.html">Class Documentation</a> and name new properties with the <a href="naming-conventions.html">Naming Conventions</a>.</p><p lang="ja"><a href="#contracts">契約</a>にある定数とメソッドを定義。クラスの説明は<a href="class-documentation.html">クラスのドキュメント</a>、新しいプロパティの名前は<a href="naming-conventions.html">命名規則</a>に従う。</p></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Implement the model contract</span><span lang="ja">モデルの契約を実装する</span></span><p lang="en">Define the constants and methods in <a href="#contracts">Contracts</a>. Document the class with <a href="class-documentation.html">Class Documentation</a> and name new properties with the <a href="naming-conventions.html">Naming Conventions</a>.</p><p lang="ja"><a href="#contracts">契約</a>にある定数とメソッドを定義。クラスの説明は<a href="class-documentation.html">クラスのドキュメント</a>、新しいプロパティの名前は<a href="naming-conventions.html">命名規則</a>に従う。</p></div></li>
       <li><div><span class="dg-item-title"><span lang="en">Register a component or branch key</span><span lang="ja">機器またはブランチのキーを登録する</span></span><ul><li><span lang="en">Run <code>GUILDA</code> again: it scans the repository, finds the <code>key</code> of each class, and generates <code>Bus.add_component</code> and <code>PowerNetwork.add_branch</code>. Until then the key is rejected.</span><span lang="ja"><code>GUILDA</code> を再実行。リポジトリを走査して各クラスの <code>key</code> を見つけ、<code>Bus.add_component</code> と <code>PowerNetwork.add_branch</code> を生成。それまではそのキーは不可。</span></li><li><span lang="en">A class that does not load: warning <code>GUILDA:dictionary:ClassNotLoaded</code> with the reason.</span><span lang="ja">読み込めないクラス: 理由とともに警告 <code>GUILDA:dictionary:ClassNotLoaded</code>。</span></li><li><span lang="en">Controllers: no such step; create them with their constructor.</span><span lang="ja">制御器: この手順なし。コンストラクタで作成。</span></li></ul></div></li>
-      <li><div><span class="dg-item-title"><span lang="en">Test it</span><span lang="ja">テストする</span></span><p lang="en">Check the contract with <code>validate</code>, then run the checks in <a href="#testing">Testing</a>.</p><p lang="ja"><code>validate</code> で契約を確認し、続いて<a href="#testing">テスト</a>の確認。</p></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Test the model</span><span lang="ja">モデルをテストする</span></span><p lang="en">Check the contract with <code>validate</code>, then run the checks in <a href="#testing">Testing</a>.</p><p lang="ja"><code>validate</code> で契約を確認し、続いて<a href="#testing">テスト</a>の確認。</p></div></li>
     </ol>
 
     <!-- ============================== CONTRACTS ============================== -->
-    <h2 id="contracts"><span lang="en">Contracts</span><span lang="ja">契約</span></h2>
+    <h2 id="contracts"><span lang="en">Contracts a model implements</span><span lang="ja">モデルが実装する契約</span></h2>
     <p lang="en">The three kinds of model have different contracts on purpose (see <a href="class-design.html#classes">Class Design</a>). The differences are easy to miss: compare them here.</p>
     <p lang="ja">3 種類のモデルは意図的に異なる契約（<a href="class-design.html#classes">クラス設計</a>を参照）。違いを見落としやすいため、ここで比較。</p>
     <table class="mi-table">
@@ -154,7 +154,7 @@
     </table>
     <ul>
       <li><span lang="en">Return values: <code>fcn_dx</code>, <code>fcn_Y</code> → column vectors; <code>fcn_I</code> → a complex scalar; <code>fcn_Mass</code> → <code>M</code> of <code>M*dx/dt = fcn_dx</code>.</span><span lang="ja">戻り値: <code>fcn_dx</code>、<code>fcn_Y</code> → 列ベクトル、<code>fcn_I</code> → 複素数のスカラー、<code>fcn_Mass</code> → <code>M*dx/dt = fcn_dx</code> の <code>M</code>。</span></li>
-      <li><span lang="en">Units and signs: <a href="class-design.html#conventions">Class Design: Conventions</a>.</span><span lang="ja">単位と符号: <a href="class-design.html#conventions">クラス設計: 規約</a>。</span></li>
+      <li><span lang="en">Units and signs: <a href="class-design.html#conventions">Class Design: Coding conventions of the classes</a>.</span><span lang="ja">単位と符号: <a href="class-design.html#conventions">クラス設計: クラス実装の規約</a>。</span></li>
     </ul>
 
     <h3><span lang="en">Rules that apply to every model</span><span lang="ja">すべてのモデルに適用されるルール</span></h3>
@@ -169,7 +169,7 @@
     </ul>
 
     <!-- ============================== GENERATOR ============================== -->
-    <h2 id="generator"><span lang="en">Minimal generator</span><span lang="ja">最小限の発電機</span></h2>
+    <h2 id="generator"><span lang="en">Minimal generator example</span><span lang="ja">最小限の発電機の例</span></h2>
     <ul>
       <li><span lang="en">A constant-magnitude source behind the reactance <code>Xs</code>, with the swing equation.</span><span lang="ja">リアクタンス <code>Xs</code> の背後にある大きさ一定の電源と動揺方程式のモデル。</span></li>
       <li><span lang="en">Same dynamics as <code>gen-classical</code> with <code>Xd = Xq = Xs</code>: a useful check.</span><span lang="ja"><code>Xd = Xq = Xs</code> とした <code>gen-classical</code> と同じ動特性。確認に有用。</span></li>
@@ -222,10 +222,10 @@ end
     <p lang="ja"><code>Xs</code> のように同梱の <code>parameter.csv</code> にないパラメータを持つ発電機: <code>add_component</code> の <code>parameter</code> オプションにテーブルが必要。</p>
 
     <!-- ============================== NETWORK ============================== -->
-    <h2 id="network"><span lang="en">Using the model</span><span lang="ja">モデルの使用</span></h2>
+    <h2 id="network"><span lang="en">Using the new model</span><span lang="ja">新しいモデルの使用</span></h2>
     <ul>
       <li><span lang="en">Once <code>GUILDA</code> has registered the key, the model works in every analysis.</span><span lang="ja"><code>GUILDA</code> がキーを登録すれば、そのモデルはすべての解析で使用可能。</span></li>
-      <li><span lang="en">Keep the objects that <code>add_bus</code> returns and pass their tags to <code>add_branch</code>: a bus index shifts when a bus is removed, a tag does not (see <a href="class-design.html#identity">Identity</a>).</span><span lang="ja"><code>add_bus</code> が返すオブジェクトを保持し、そのタグを <code>add_branch</code> に渡す。母線のインデックスは母線の削除でずれるが、タグはずれない（<a href="class-design.html#identity">識別</a>を参照）。</span></li>
+      <li><span lang="en">Keep the objects that <code>add_bus</code> returns and pass their tags to <code>add_branch</code>: a bus index shifts when a bus is removed, a tag does not (see <a href="class-design.html#identity">Identifying objects</a>).</span><span lang="ja"><code>add_bus</code> が返すオブジェクトを保持し、そのタグを <code>add_branch</code> に渡す。母線のインデックスは母線の削除でずれるが、タグはずれない（<a href="class-design.html#identity">オブジェクトの識別</a>を参照）。</span></li>
     </ul>
 <pre class="mi-code" data-run="network">para = table(100, 10, 0.3, VariableNames=["M","D","Xs"]);
 net  = PowerNetwork();
@@ -247,7 +247,7 @@ sys = net.get_sys();
 </pre>
 
     <!-- ============================== CONTROLLER ============================== -->
-    <h2 id="controller"><span lang="en">Minimal controller</span><span lang="ja">最小限の制御器</span></h2>
+    <h2 id="controller"><span lang="en">Minimal controller example</span><span lang="ja">最小限の制御器の例</span></h2>
     <ul>
       <li><span lang="en">A first-order AVR. Its output <code>Vfield</code> drives the generator input of that name.</span><span lang="ja">1 次遅れの AVR。出力 <code>Vfield</code> が発電機の同名の入力を駆動。</span></li>
       <li><span lang="en">No generator output is called <code>Vref</code> or <code>Vpss</code>: <code>Vref</code> stays at its equilibrium, <code>Vpss</code> reads a PSS when one is attached.</span><span lang="ja">発電機に <code>Vref</code>、<code>Vpss</code> という名前の出力はない。<code>Vref</code> は平衡点の値のまま、<code>Vpss</code> は PSS が接続されていればその出力。</span></li>
@@ -327,7 +327,7 @@ sim = net.simulate([0,10], sc);
     <p lang="ja">取り外し: <code>g2.remove_local_controller(avr.str_tag, RemoveNested=true)</code>。このオプションで PSS も取り外し。PSS の付いた AVR はこのオプションなしでは取り外し不可。</p>
 
     <!-- ============================== TESTING ============================== -->
-    <h2 id="testing"><span lang="en">Testing</span><span lang="ja">テスト</span></h2>
+    <h2 id="testing"><span lang="en">Testing a new model</span><span lang="ja">新しいモデルのテスト</span></h2>
     <h3><span lang="en">Check the contract with <code>validate</code></span><span lang="ja"><code>validate</code> で契約を確認する</span></h3>
     <ul>
       <li><span lang="en"><code>comp.validate</code> and <code>con.validate</code> print the comparison and return a struct of tables.</span><span lang="ja"><code>comp.validate</code> と <code>con.validate</code> は比較結果を表示し、テーブルの構造体を返す。</span></li>
@@ -358,15 +358,15 @@ s.inputs          % Vref: "equilibrium (not connected)", Vpss: "output of CPp"
       <li><span lang="en">A local controller must be attached to a component on an initialized network.</span><span lang="ja">ローカル制御器は、初期化済みのネットワーク上の機器への接続が必要。</span></li>
     </ul>
 
-    <h3><span lang="en">Check the behavior</span><span lang="ja">挙動を確認する</span></h3>
+    <h3><span lang="en">Check the dynamic behavior</span><span lang="ja">動的な挙動を確認する</span></h3>
     <ol class="dg-list is-numbered">
       <li><div><span class="dg-item-title"><span lang="en">Stay at the equilibrium</span><span lang="ja">平衡点にとどまる</span></span><p lang="en"><code>net.simulate</code> without scenarios keeps the states at <code>rv_Xequilibrium</code>.</p><p lang="ja">シナリオなしの <code>net.simulate</code> で、状態が <code>rv_Xequilibrium</code> にとどまる。</p></div></li>
-      <li><div><span class="dg-item-title"><span lang="en">Survive a disturbance</span><span lang="ja">外乱に耐える</span></span><p lang="en">Run a fault and a trip with a <code>Scenario</code> (<code>add_fault</code>, <code>add_trip</code>). <code>flag</code> is <code>1</code> when the simulation completes. A trip calls <code>get_equilibrium</code> with <code>I = P = Q = 0</code>.</p><p lang="ja"><code>Scenario</code>（<code>add_fault</code>、<code>add_trip</code>）で地絡と解列（トリップ）を実行。シミュレーションが完了すれば <code>flag</code> は <code>1</code>。解列では <code>I = P = Q = 0</code> で <code>get_equilibrium</code> を呼び出し。</p></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Run through a fault and a trip</span><span lang="ja">地絡と解列を最後までシミュレーションする</span></span><p lang="en">Run a fault and a trip with a <code>Scenario</code> (<code>add_fault</code>, <code>add_trip</code>). <code>flag</code> is <code>1</code> when the simulation completes. A trip calls <code>get_equilibrium</code> with <code>I = P = Q = 0</code>.</p><p lang="ja"><code>Scenario</code>（<code>add_fault</code>、<code>add_trip</code>）で地絡と解列（トリップ）を実行。シミュレーションが完了すれば <code>flag</code> は <code>1</code>。解列では <code>I = P = Q = 0</code> で <code>get_equilibrium</code> を呼び出し。</p></div></li>
       <li><div><span class="dg-item-title"><span lang="en">Look at the linear model</span><span lang="ja">線形モデルを調べる</span></span><p lang="en"><code>eig(net.get_sys())</code>. A network of synchronous machines has an eigenvalue near zero from the common rotation of the rotor angles. The others: in the left half plane unless intended. An unstable result can also come from the rest of the test network, so compare with an existing model on the same network.</p><p lang="ja"><code>eig(net.get_sys())</code> を確認。同期機からなるネットワークには、回転子角の一斉回転による 0 付近の固有値。それ以外の固有値は、意図した場合を除いて左半平面。不安定な結果はテスト用ネットワークのほかの部分から生じることもあるため、同じネットワーク上の既存のモデルと比較。</p></div></li>
       <li><div><span class="dg-item-title"><span lang="en">Compare with a known model</span><span lang="ja">既知のモデルと比較する</span></span><p lang="en">When an existing class reduces to your model, the eigenvalues should agree, as below.</p><p lang="ja">既存のクラスが新しいモデルに帰着する場合、下のように固有値が一致。</p></div></li>
     </ol>
 
-    <h3><span lang="en">Add a test</span><span lang="ja">テストを追加する</span></h3>
+    <h3><span lang="en">Add a test to the test suite</span><span lang="ja">テストスイートにテストを追加する</span></h3>
     <ul>
       <li><span lang="en">Add a <code>%%</code> section to the script of the feature in <code>+DebugScript</code>, or a new script <code>test_I&lt;issue&gt;_&lt;slug&gt;.m</code>.</span><span lang="ja"><code>+DebugScript</code> にあるその機能のスクリプトに <code>%%</code> セクションを追加、または新しいスクリプト <code>test_I&lt;issue&gt;_&lt;slug&gt;.m</code> を作成。</span></li>
       <li><span lang="en">Run it with <code>DebugScript.run_all("Features","I&lt;issue&gt;")</code>. Each section runs as one test.</span><span lang="ja"><code>DebugScript.run_all("Features","I&lt;issue&gt;")</code> で実行。各セクションが 1 つのテスト。</span></li>
@@ -417,7 +417,7 @@ end
 </pre>
 
     <!-- ============================== OTHER ============================== -->
-    <h2 id="other"><span lang="en">Branches and networks</span><span lang="ja">ブランチとネットワーク</span></h2>
+    <h2 id="other"><span lang="en">New branches and networks</span><span lang="ja">新しいブランチとネットワーク</span></h2>
     <ul>
       <li><span lang="en"><strong>Branch.</strong> Inherit from <code>Branch</code> in <code>_GUILDAobject/+branch/</code> and define the constants <code>key</code> and <code>header</code> (the prefix of the tags), and the method <code>get_admittance_matrix</code>, which returns the 2×2 matrix from the parameters <code>R</code>, <code>X</code>, <code>C</code>, <code>tap</code>, and <code>phase</code>. Run <code>GUILDA</code> to register the key.</span><span lang="ja"><strong>ブランチ</strong>: <code>_GUILDAobject/+branch/</code> で <code>Branch</code> を継承し、定数 <code>key</code> と <code>header</code>（タグの接頭辞）、およびパラメータ <code>R</code>、<code>X</code>、<code>C</code>、<code>tap</code>、<code>phase</code> から 2×2 行列を返すメソッド <code>get_admittance_matrix</code> を定義。キーの登録は <code>GUILDA</code> の実行で。</span></li>
       <li><span lang="en"><strong>Network.</strong> Inherit from <code>PowerNetwork</code> in <code>_GUILDAobject/+network/</code>, and build the network in the constructor from CSV folders or in code (see <a href="folder-structure.html#placement">Folder Structure</a>).</span><span lang="ja"><strong>ネットワーク</strong>: <code>_GUILDAobject/+network/</code> で <code>PowerNetwork</code> を継承し、コンストラクタの中で CSV フォルダから、またはコードでネットワークを組み立てる（<a href="folder-structure.html#placement">フォルダ構成</a>を参照）。</span></li>

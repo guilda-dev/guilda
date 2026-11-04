@@ -65,9 +65,9 @@
     <p class="page-lead" lang="ja">GUILDA の作業はすべて GitHub Issues で管理。1 つの Issue に作業ブランチ 1 つ、プルリクエスト 1 つが対応。</p>
 
     <nav class="dev-toc" aria-label="Contents">
-      <a href="#flow"><span lang="en">Workflow</span><span lang="ja">作業の流れ</span></a>
-      <a href="#issues"><span lang="en">Issues</span><span lang="ja">Issue</span></a>
-      <a href="#versions"><span lang="en">Versions</span><span lang="ja">バージョン</span></a>
+      <a href="#flow"><span lang="en">Workflow of a change</span><span lang="ja">変更の作業の流れ</span></a>
+      <a href="#issues"><span lang="en">Writing an Issue</span><span lang="ja">Issue の書き方</span></a>
+      <a href="#versions"><span lang="en">Versions and branches</span><span lang="ja">バージョンとブランチ</span></a>
       <a href="#documentation"><span lang="en">Keeping documentation current</span><span lang="ja">ドキュメントの更新</span></a>
       <a href="#bilingual"><span lang="en">Bilingual documentation pages</span><span lang="ja">ドキュメントページの日英併記</span></a>
       <a href="#update-log"><span lang="en">Update Log entries</span><span lang="ja">Update Log の項目</span></a>
@@ -75,20 +75,20 @@
     </nav>
 
     <!-- ===================== Workflow ===================== -->
-    <h2 id="flow"><span lang="en">Workflow</span><span lang="ja">作業の流れ</span></h2>
+    <h2 id="flow"><span lang="en">Workflow of a change</span><span lang="ja">変更の作業の流れ</span></h2>
     <figure class="dg-figure">
       <ol class="dg-list is-numbered">
-        <li><div><span class="dg-item-title"><span lang="en">Issue</span><span lang="ja">Issue</span></span><span lang="en">Open an Issue that describes the problem or the goal.</span><span lang="ja">問題または目標を説明する Issue を作成。</span></div></li>
-        <li><div><span class="dg-item-title"><span lang="en">Work branch</span><span lang="ja">作業ブランチ</span></span><span lang="en">Create a work branch from the integration branch, following the <a href="git-workflow.html#branch-names">branch naming rule</a>.</span><span lang="ja"><a href="git-workflow.html#branch-names">ブランチ名の規則</a>に従って、統合ブランチから作業ブランチを作成。</span></div></li>
-        <li><div><span class="dg-item-title"><span lang="en">Commits</span><span lang="ja">コミット</span></span><span lang="en">Commit with <a href="git-workflow.html#commits"><code>&lt;type&gt;: &lt;summary&gt;</code></a> messages.</span><span lang="ja"><a href="git-workflow.html#commits"><code>&lt;type&gt;: &lt;summary&gt;</code></a> 形式のメッセージでコミット。</span></div></li>
-        <li><div><span class="dg-item-title"><span lang="en">Pull request</span><span lang="ja">プルリクエスト</span></span><span lang="en">Open a pull request into the integration branch and complete the <a href="#done">Definition of Done</a>.</span><span lang="ja">統合ブランチへのプルリクエストを作成し、<a href="#done">完了の定義</a>を満たす。</span></div></li>
-        <li><div><span class="dg-item-title"><span lang="en">Merge</span><span lang="ja">マージ</span></span><span lang="en">Merge, delete the branch, and let <code>Closes #&lt;issue&gt;</code> close the Issue.</span><span lang="ja">マージしてブランチを削除。Issue は <code>Closes #&lt;issue&gt;</code> で閉じる。</span></div></li>
+        <li><div><span class="dg-item-title"><span lang="en">Open an Issue</span><span lang="ja">Issue の作成</span></span><span lang="en">Open an Issue that describes the problem or the goal.</span><span lang="ja">問題または目標を説明する Issue を作成。</span></div></li>
+        <li><div><span class="dg-item-title"><span lang="en">Create a work branch</span><span lang="ja">作業ブランチの作成</span></span><span lang="en">Create a work branch from the integration branch, following the <a href="git-workflow.html#branch-names">branch naming rule</a>.</span><span lang="ja"><a href="git-workflow.html#branch-names">ブランチ名の規則</a>に従って、統合ブランチから作業ブランチを作成。</span></div></li>
+        <li><div><span class="dg-item-title"><span lang="en">Commit the changes</span><span lang="ja">変更のコミット</span></span><span lang="en">Commit with <a href="git-workflow.html#commits"><code>&lt;type&gt;: &lt;summary&gt;</code></a> messages.</span><span lang="ja"><a href="git-workflow.html#commits"><code>&lt;type&gt;: &lt;summary&gt;</code></a> 形式のメッセージでコミット。</span></div></li>
+        <li><div><span class="dg-item-title"><span lang="en">Open a pull request</span><span lang="ja">プルリクエストの作成</span></span><span lang="en">Open a pull request into the integration branch and complete the <a href="#done">Definition of Done</a>.</span><span lang="ja">統合ブランチへのプルリクエストを作成し、<a href="#done">完了の定義</a>を満たす。</span></div></li>
+        <li><div><span class="dg-item-title"><span lang="en">Merge and close</span><span lang="ja">マージと Issue のクローズ</span></span><span lang="en">Merge, delete the branch, and let <code>Closes #&lt;issue&gt;</code> close the Issue.</span><span lang="ja">マージしてブランチを削除。Issue は <code>Closes #&lt;issue&gt;</code> で閉じる。</span></div></li>
       </ol>
-      <figcaption><span lang="en">Work collects in the integration branch <code>versionX.Y</code>, released into <code>main</code> as <code>vX.Y</code> (see <a href="#versions">Versions</a>).</span><span lang="ja">作業は統合ブランチ <code>versionX.Y</code> に集約し、<code>vX.Y</code> として <code>main</code> にリリース（<a href="#versions">バージョン</a>を参照）。</span></figcaption>
+      <figcaption><span lang="en">Work collects in the integration branch <code>versionX.Y</code>, released into <code>main</code> as <code>vX.Y</code> (see <a href="#versions">Versions and branches</a>).</span><span lang="ja">作業は統合ブランチ <code>versionX.Y</code> に集約し、<code>vX.Y</code> として <code>main</code> にリリース（<a href="#versions">バージョンとブランチ</a>を参照）。</span></figcaption>
     </figure>
 
     <!-- ===================== Issues ===================== -->
-    <h2 id="issues"><span lang="en">Issues</span><span lang="ja">Issue</span></h2>
+    <h2 id="issues"><span lang="en">Writing an Issue</span><span lang="ja">Issue の書き方</span></h2>
     <div class="dg-gh" role="img" aria-label="Example GitHub Issue #42, Add grid-forming inverter model, open, with a description that has Background, Expected result, and Steps to reproduce for bugs, and the label feature.">
       <div class="dg-gh-chrome"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-issue"/></svg>GUILDA / <b>Issues</b></div>
       <div class="dg-gh-body">
@@ -111,12 +111,12 @@
       </div>
     </div>
     <ol class="dg-list">
-      <li><span class="dg-mark is-warn">1</span><div><span class="dg-item-title"><span lang="en">Title</span><span lang="ja">タイトル</span></span><span lang="en">In English, a short statement of the goal, e.g. <em>Add grid-forming inverter model</em>.</span><span lang="ja">英語で、目標を短く述べる文。例: <em>Add grid-forming inverter model</em>。</span></div></li>
-      <li><span class="dg-mark is-warn">2</span><div><span class="dg-item-title"><span lang="en">Description</span><span lang="ja">説明</span></span><span lang="en">Background and expected result; for bugs, also the steps to reproduce.</span><span lang="ja">背景と期待する結果。バグでは再現手順も。</span></div></li>
-      <li><span class="dg-mark is-warn">3</span><div><span class="dg-item-title"><span lang="en">Label</span><span lang="ja">ラベル</span></span><span lang="en">One type label that matches the branch type: <code>feature</code>, <code>fix</code>, <code>refactor</code>, <code>docs</code>, or <code>test</code>.</span><span lang="ja">ブランチの種類に合う種類ラベルを 1 つ: <code>feature</code>、<code>fix</code>、<code>refactor</code>、<code>docs</code>、<code>test</code>。</span></div></li>
+      <li><span class="dg-mark is-warn">1</span><div><span class="dg-item-title"><span lang="en">Issue title</span><span lang="ja">Issue のタイトル</span></span><span lang="en">In English, a short statement of the goal, e.g. <em>Add grid-forming inverter model</em>.</span><span lang="ja">英語で、目標を短く述べる文。例: <em>Add grid-forming inverter model</em>。</span></div></li>
+      <li><span class="dg-mark is-warn">2</span><div><span class="dg-item-title"><span lang="en">Issue description</span><span lang="ja">Issue の説明</span></span><span lang="en">Background and expected result; for bugs, also the steps to reproduce.</span><span lang="ja">背景と期待する結果。バグでは再現手順も。</span></div></li>
+      <li><span class="dg-mark is-warn">3</span><div><span class="dg-item-title"><span lang="en">Type label</span><span lang="ja">種別ラベル</span></span><span lang="en">One type label that matches the branch type: <code>feature</code>, <code>fix</code>, <code>refactor</code>, <code>docs</code>, or <code>test</code>.</span><span lang="ja">ブランチの種類に合う種類ラベルを 1 つ: <code>feature</code>、<code>fix</code>、<code>refactor</code>、<code>docs</code>、<code>test</code>。</span></div></li>
     </ol>
 
-    <h3><span lang="en">Label → branch type</span><span lang="ja">ラベル → ブランチの種類</span></h3>
+    <h3><span lang="en">Issue label and branch type</span><span lang="ja">Issue のラベルとブランチの種類</span></h3>
     <div class="dg-gh pm-labels" role="table" aria-label="Issue label and matching branch type">
       <div class="dg-gh-chrome"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-tag"/></svg>GUILDA / <b>Labels</b></div>
       <div role="row" class="dg-gh-check"><span role="cell" class="dg-gh-label is-feature">feature</span><span aria-hidden="true">→</span><span role="cell" class="dg-gh-branch">feature/…</span></div>
@@ -162,7 +162,7 @@
     </figure>
 
     <!-- ===================== Versions ===================== -->
-    <h2 id="versions"><span lang="en">Versions</span><span lang="ja">バージョン</span></h2>
+    <h2 id="versions"><span lang="en">Versions and branches</span><span lang="ja">バージョンとブランチ</span></h2>
     <div class="dg-gh">
       <div class="dg-gh-chrome"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-branch"/></svg>GUILDA / <b>Network graph</b></div>
       <div class="dg-gh-scroll">
@@ -256,7 +256,7 @@
     <!-- ===================== Bilingual pages ===================== -->
     <h2 id="bilingual"><span lang="en">Bilingual documentation pages</span><span lang="ja">ドキュメントページの日英併記</span></h2>
     <ul class="dg-list is-plain">
-      <li><div><span class="dg-item-title"><span lang="en">Scope</span><span lang="ja">対象</span></span><span lang="en">Every HTML page in <code>_GUILDAdoc/</code> (all tabs of <code>index.html</code>, <code>class.html</code>, <code>method.html</code>, the pages in <code>developer/</code>): English and Japanese in one file.</span><span lang="ja"><code>_GUILDAdoc/</code> のすべての HTML ページ（<code>index.html</code> の全タブ、<code>class.html</code>、<code>method.html</code>、<code>developer/</code> の各ページ）。英語と日本語を 1 つのファイルに記述。</span></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Pages in scope</span><span lang="ja">対象のページ</span></span><span lang="en">Every HTML page in <code>_GUILDAdoc/</code> (all tabs of <code>index.html</code>, <code>class.html</code>, <code>method.html</code>, the pages in <code>developer/</code>): English and Japanese in one file.</span><span lang="ja"><code>_GUILDAdoc/</code> のすべての HTML ページ（<code>index.html</code> の全タブ、<code>class.html</code>、<code>method.html</code>、<code>developer/</code> の各ページ）。英語と日本語を 1 つのファイルに記述。</span></div></li>
       <li><div><span class="dg-item-title"><span lang="en">Language switch</span><span lang="ja">言語の切り替え</span></span><span lang="en">Toggle at the top right; the choice is saved in the browser. <code>?lang=ja</code> or <code>?lang=en</code> in the URL selects it directly.</span><span lang="ja">右上の切り替えで選択。選択はブラウザに保存。URL の <code>?lang=ja</code> / <code>?lang=en</code> で直接指定。</span></div></li>
       <li><div><span class="dg-item-title"><span lang="en">Data-driven content</span><span lang="ja">データから埋め込む内容</span></span><span lang="en">Stays in its source language: reference text from MATLAB help comments, and items from <code>database/list_*.js</code>, except where a list gives <code>_ja</code> fields.</span><span lang="ja">元の言語のまま表示。MATLAB のヘルプコメントから作るリファレンスの本文と、<code>database/list_*.js</code> の項目。ただしリストに <code>_ja</code> フィールドがあればそれを使用。</span></div></li>
     </ul>
@@ -278,12 +278,13 @@
 &lt;p lang="ja"&gt;ネットワークの組み立て後に &lt;code&gt;net.calculate_powerflow()&lt;/code&gt; を呼ぶ。&lt;/p&gt;</code></pre>
     <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg><p><span lang="en">Update both languages in the same commit. A change to one language alone leaves the two languages saying different things.</span><span lang="ja">両方の言語を同じコミットで更新。片方だけの変更では、2 つの言語で内容が食い違う。</span></p></div>
 
-    <h3 id="writing-rules"><span lang="en">Writing rules</span><span lang="ja">記述の規則</span></h3>
+    <h3 id="writing-rules"><span lang="en">Writing rules for the pages</span><span lang="ja">ページの記述の規則</span></h3>
     <ul class="dg-list is-plain pm-rules">
-      <li><div><span class="dg-item-title"><span lang="en">Timeless</span><span lang="ja">時点に依存しない記述</span></span><span lang="en">Write for a reader who starts with the current GUILDA version. No wording that needs knowledge of older versions: “v3”, “v4”, “no longer”, “renamed”, “formerly”. History goes only in the <a href="#update-log">Update Log</a> data.<small>Fine: format versions of external files, math symbols, and a deprecation rule (how a deprecated name keeps working) that does not narrate past versions.</small></span><span lang="ja">現在の GUILDA から使い始める読者向けに記述。過去のバージョンの知識を前提とする表現（「v3」「v4」「旧」「従来」「以前」「廃止」など）は不可。経緯は <a href="#update-log">Update Log</a> のデータにだけ記載。<small>可: 外部ファイルの形式のバージョン、数式の記号、過去を語らない非推奨の規則（非推奨の名前を動かし続ける仕組み）。</small></span></div></li>
-      <li><div><span class="dg-item-title"><span lang="en">Terse</span><span lang="ja">簡潔な記述</span></span><span lang="en">Japanese: 体言止め and bullet points rather than です・ます prose, so the point is caught at a glance. English equally terse; bullets where the structure changes.</span><span lang="ja">日本語は です・ます の文章より体言止めと箇条書き。要点が一目でわかる形に。英語も同じく簡潔に、構造が変わる箇所は箇条書き。</span></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Timeless wording</span><span lang="ja">時点に依存しない記述</span></span><span lang="en">Write for a reader who starts with the current GUILDA version. No wording that needs knowledge of older versions: “v3”, “v4”, “no longer”, “renamed”, “formerly”. History goes only in the <a href="#update-log">Update Log</a> data.<small>Fine: format versions of external files, math symbols, and a deprecation rule (how a deprecated name keeps working) that does not narrate past versions.</small></span><span lang="ja">現在の GUILDA から使い始める読者向けに記述。過去のバージョンの知識を前提とする表現（「v3」「v4」「旧」「従来」「以前」「廃止」など）は不可。経緯は <a href="#update-log">Update Log</a> のデータにだけ記載。<small>可: 外部ファイルの形式のバージョン、数式の記号、過去を語らない非推奨の規則（非推奨の名前を動かし続ける仕組み）。</small></span></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Terse body text</span><span lang="ja">簡潔な本文</span></span><span lang="en">Japanese: 体言止め and bullet points rather than です・ます prose, so the point is caught at a glance. English equally terse; bullets where the structure changes.</span><span lang="ja">日本語は です・ます の文章より体言止めと箇条書き。要点が一目でわかる形に。英語も同じく簡潔に、構造が変わる箇所は箇条書き。</span></div></li>
       <li><div><span class="dg-item-title"><span lang="en">Two-column layouts</span><span lang="ja">2 列のレイアウト</span></span><span lang="en">If a two-column block wraps into many lines, first turn it into bullets; if still too long, use one column with the items stacked.</span><span lang="ja">改行の多い 2 列のブロックは、まず箇条書きに。それでも長ければ 1 列にして項目を縦に並べる。</span></div></li>
-      <li><div><span class="dg-item-title"><span lang="en">Same structure</span><span lang="ja">同じ構造</span></span><span lang="en">English and Japanese have the same blocks, bullets, and order.</span><span lang="ja">英語と日本語で同じブロック、箇条書き、順序。</span></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Headings that name their subject</span><span lang="ja">対象を明示する見出し</span></span><span lang="en">Headings and labels (TOC, table headers, step labels) name what they are about, e.g. “Identifying objects (tags)”, not a bare “Identity:”; terseness is for body text.</span><span lang="ja">見出し・ラベル（目次、表の見出し、ステップのラベル）は何についての項目かを明示。例: 「識別：」ではなく「オブジェクトの識別（タグ）」。簡潔さは本文に適用。</span></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Same structure in both languages</span><span lang="ja">両言語で同じ構造</span></span><span lang="en">English and Japanese have the same blocks, bullets, and order.</span><span lang="ja">英語と日本語で同じブロック、箇条書き、順序。</span></div></li>
     </ul>
 
     <!-- ===================== Update Log ===================== -->

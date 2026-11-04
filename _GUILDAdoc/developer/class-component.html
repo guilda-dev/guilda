@@ -41,21 +41,21 @@
   </svg>
   <main>
     <button type="button" class="developer-back-button" onclick="window.history.back()"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></button>
-    <h1><span lang="en">Class: </span><span lang="ja">クラス: </span><code>Component</code></h1>
+    <h1><span lang="en"><code>Component</code> Class Design</span><span lang="ja"><code>Component</code> クラスの設計</span></h1>
     <p class="page-lead" lang="en">Abstract base of generators, loads, and other devices on a bus. A dynamic model with states <code>x</code>, inputs <code>u</code>, and outputs <code>y</code>, connected to its bus through the voltage <code>V</code> and the current <code>I</code> it injects.</p>
     <p class="page-lead" lang="ja">母線に接続する発電機・負荷などの機器の抽象基底クラス。状態 <code>x</code>、入力 <code>u</code>、出力 <code>y</code> を持つ動的モデル。電圧 <code>V</code> と注入電流 <code>I</code> で母線と接続。</p>
 
     <nav class="dev-toc" aria-label="Contents">
-      <a href="#role"><span lang="en">Role</span><span lang="ja">役割</span></a>
-      <a href="#data"><span lang="en">Owned data</span><span lang="ja">保持するデータ</span></a>
-      <a href="#references"><span lang="en">References</span><span lang="ja">参照</span></a>
-      <a href="#methods"><span lang="en">Methods</span><span lang="ja">メソッド</span></a>
-      <a href="#used-by"><span lang="en">Used by</span><span lang="ja">利用する機能</span></a>
-      <a href="#subclasses"><span lang="en">Subclasses</span><span lang="ja">サブクラス</span></a>
+      <a href="#role"><span lang="en">Role of Component</span><span lang="ja">Component の役割</span></a>
+      <a href="#data"><span lang="en">Data owned by Component</span><span lang="ja">Component が保持するデータ</span></a>
+      <a href="#references"><span lang="en">References held by Component</span><span lang="ja">Component が持つ参照</span></a>
+      <a href="#methods"><span lang="en">Methods of Component</span><span lang="ja">Component のメソッド</span></a>
+      <a href="#used-by"><span lang="en">Features that use Component</span><span lang="ja">Component を使う機能</span></a>
+      <a href="#subclasses"><span lang="en">Subclasses of Component</span><span lang="ja">Component のサブクラス</span></a>
     </nav>
 
     <!-- ============================== ROLE ============================== -->
-    <h2 id="role"><span lang="en">Role</span><span lang="ja">役割</span></h2>
+    <h2 id="role"><span lang="en">Role of Component</span><span lang="ja">Component の役割</span></h2>
     <ul>
       <li><span lang="en">Owns the device equations (through its subclass), its parameters (dynamics, power-flow <code>P</code> and <code>Q</code>, operation limits, OPF cost, drawing), its equilibrium (<code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code>, <code>c_Iequilibrium</code>), and its local controllers.</span><span lang="ja">機器の方程式（サブクラス経由）、パラメータ（動特性、潮流計算の <code>P</code>・<code>Q</code>、運転制限、OPF コスト、描画）、平衡点（<code>rv_Xequilibrium</code>、<code>rv_Uequilibrium</code>、<code>c_Iequilibrium</code>）、ローカル制御器を保持</span></li>
       <li><span lang="en">The base class turns the static model functions into the cached handles <code>f_*</code>, adds its local controllers to the DAE and the linear model, and computes Jacobians numerically when the subclass gives none.</span><span lang="ja">基底クラスの役目: 静的なモデル関数をキャッシュしたハンドル <code>f_*</code> に変換、ローカル制御器を DAE と線形モデルに組み込み、サブクラスが与えないヤコビアンを数値計算</span></li>
@@ -101,12 +101,12 @@
     </figure>
 
     <!-- ============================== DATA ============================== -->
-    <h2 id="data"><span lang="en">Owned data</span><span lang="ja">保持するデータ</span></h2>
-    <p class="dg-lead-in" lang="en"><strong>Stale</strong>: what an edit makes out of date (see <a href="class-design.html#edits">Class Design: Edit handling</a>). Parameters live in <code>para_dynamics</code>, <code>para_powerflow</code>, <code>para_operation</code>, <code>para_OPF</code>, and <code>para_graph</code>, read and written through <code>tab_parameter</code>.</p>
-    <p class="dg-lead-in" lang="ja"><strong>無効化</strong>: 編集で古くなるもの（<a href="class-design.html#edits">クラス設計: 編集の扱い</a>を参照）。パラメータの置き場所は <code>para_dynamics</code>、<code>para_powerflow</code>、<code>para_operation</code>、<code>para_OPF</code>、<code>para_graph</code>、読み書きは <code>tab_parameter</code> 経由。</p>
+    <h2 id="data"><span lang="en">Data owned by Component</span><span lang="ja">Component が保持するデータ</span></h2>
+    <p class="dg-lead-in" lang="en"><strong>Becomes stale on edit</strong>: what an edit makes out of date (see <a href="class-design.html#edits">Class Design: Handling of model edits</a>). Parameters live in <code>para_dynamics</code>, <code>para_powerflow</code>, <code>para_operation</code>, <code>para_OPF</code>, and <code>para_graph</code>, read and written through <code>tab_parameter</code>.</p>
+    <p class="dg-lead-in" lang="ja"><strong>編集で古くなるもの</strong>: 編集で古くなるもの（<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>を参照）。パラメータの置き場所は <code>para_dynamics</code>、<code>para_powerflow</code>、<code>para_operation</code>、<code>para_OPF</code>、<code>para_graph</code>、読み書きは <code>tab_parameter</code> 経由。</p>
     <table class="dg-table cl-table cl-stack">
       <thead>
-        <tr><th><span lang="en">Property</span><span lang="ja">プロパティ</span></th><th><span lang="en">Meaning</span><span lang="ja">意味</span></th><th><span lang="en">Unit / size</span><span lang="ja">単位・サイズ</span></th><th><span lang="en">Set by</span><span lang="ja">設定元</span></th><th><span lang="en">Stale</span><span lang="ja">無効化</span></th></tr>
+        <tr><th><span lang="en">Property</span><span lang="ja">プロパティ</span></th><th><span lang="en">Meaning</span><span lang="ja">意味</span></th><th><span lang="en">Unit / size</span><span lang="ja">単位・サイズ</span></th><th><span lang="en">Set by</span><span lang="ja">設定元</span></th><th><span lang="en">Becomes stale on edit</span><span lang="ja">編集で古くなるもの</span></th></tr>
       </thead>
       <tbody>
         <tr>
@@ -114,70 +114,70 @@
           <td data-label="Meaning" data-label-ja="意味"><span lang="en">Local controllers attached directly, in slot order whatever the order of attachment: an AVR or a <code>"local"</code> controller (a PSS hangs under the AVR), then a <code>"governor"</code>.</span><span lang="ja">直接つながるローカル制御器。接続順によらず 2 つの枠の順: AVR または <code>"local"</code> 制御器（PSS は AVR の下）、続いて <code>"governor"</code>。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">cell</td>
           <td data-label="Set by" data-label-ja="設定元"><code>add_local_controller</code>, <code>remove_local_controller</code>, <code>move_local_controllers</code></td>
-          <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-err"><span lang="en">equilibrium</span><span lang="ja">平衡点</span></span></td>
+          <td data-label="Becomes stale on edit" data-label-ja="編集で古くなるもの"><span class="dg-badge is-err"><span lang="en">equilibrium</span><span lang="ja">平衡点</span></span></td>
         </tr>
         <tr>
           <td><code>tab_parameter.dynamics</code></td>
           <td data-label="Meaning" data-label-ja="意味"><span lang="en">Model parameters, per unit on the system base; the columns <code>sv_para</code> are passed to the model functions as <code>param</code>.</span><span lang="ja">モデルのパラメータ（系統基準の単位法）。<code>sv_para</code> の列が <code>param</code> としてモデル関数へ。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ"><span lang="en">pu, per class</span><span lang="ja">pu、クラスごと</span></td>
           <td data-label="Set by" data-label-ja="設定元"><span lang="en">subclass constructor (<code>parameter</code> of <code>add_component</code>), setter</span><span lang="ja">サブクラスのコンストラクタ（<code>add_component</code> の <code>parameter</code>）、セッター</span></td>
-          <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-err"><span lang="en">handles</span><span lang="ja">ハンドル</span></span> <span class="dg-badge is-err"><span lang="en">equilibrium</span><span lang="ja">平衡点</span></span></td>
+          <td data-label="Becomes stale on edit" data-label-ja="編集で古くなるもの"><span class="dg-badge is-err"><span lang="en">handles</span><span lang="ja">ハンドル</span></span> <span class="dg-badge is-err"><span lang="en">equilibrium</span><span lang="ja">平衡点</span></span></td>
         </tr>
         <tr>
           <td><code>tab_parameter.powerflow</code></td>
           <td data-label="Meaning" data-label-ja="意味"><span lang="en"><code>P</code>, <code>Q</code>: injection settings of the power flow (negative for a load); <code>Q = NaN</code> makes the bus a PV bus.</span><span lang="ja"><code>P</code>、<code>Q</code>: 潮流計算の注入電力の設定（負荷は負）。<code>Q = NaN</code> で母線は PV 母線。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">pu</td>
           <td data-label="Set by" data-label-ja="設定元"><span lang="en"><code>add_component</code>, setter</span><span lang="ja"><code>add_component</code>、セッター</span></td>
-          <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-err"><span lang="en">equilibrium</span><span lang="ja">平衡点</span></span></td>
+          <td data-label="Becomes stale on edit" data-label-ja="編集で古くなるもの"><span class="dg-badge is-err"><span lang="en">equilibrium</span><span lang="ja">平衡点</span></span></td>
         </tr>
         <tr>
           <td><code>tab_parameter.operation</code></td>
           <td data-label="Meaning" data-label-ja="意味"><span lang="en"><code>baseMVA</code>: machine rating, used only to share <code>Q</code> on a bus (not the system base). <code>Pmin</code>, <code>Pmax</code>, <code>Qmin</code>, <code>Qmax</code>: OPF bounds (and the <code>"Qmax"</code> sharing rule).</span><span lang="ja"><code>baseMVA</code>: 機器の定格。用途は母線上での <code>Q</code> の分配のみ（系統基準ではない）。<code>Pmin</code>、<code>Pmax</code>、<code>Qmin</code>、<code>Qmax</code>: OPF の範囲（と <code>"Qmax"</code> の分配規則）。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">MVA, pu</td>
           <td data-label="Set by" data-label-ja="設定元"><span lang="en"><code>add_component</code>, setter</span><span lang="ja"><code>add_component</code>、セッター</span></td>
-          <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-ok"><span lang="en">nothing</span><span lang="ja">なし</span></span></td>
+          <td data-label="Becomes stale on edit" data-label-ja="編集で古くなるもの"><span class="dg-badge is-ok"><span lang="en">nothing</span><span lang="ja">なし</span></span></td>
         </tr>
         <tr>
           <td><code>tab_parameter.OPF</code></td>
           <td data-label="Meaning" data-label-ja="意味"><span lang="en"><code>P0</code>, <code>Q0</code>: OPF initial values. <code>HP</code>, <code>fP</code>, <code>HQ</code>, <code>fQ</code>: cost <code>HP·P² + fP·P + HQ·Q² + fQ·Q</code> (default 1, 1, 0, 0; a load 0). <code>startup</code>, <code>shutdown</code>: reserved.</span><span lang="ja"><code>P0</code>、<code>Q0</code>: OPF の初期値。<code>HP</code>、<code>fP</code>、<code>HQ</code>、<code>fQ</code>: コスト <code>HP·P² + fP·P + HQ·Q² + fQ·Q</code>（既定 1, 1, 0, 0。負荷は 0）。<code>startup</code>、<code>shutdown</code>: 予約。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">pu</td>
           <td data-label="Set by" data-label-ja="設定元"><span lang="en"><code>add_component</code> (<code>OPFinit_*</code>, <code>OPFcost_*</code>), setter</span><span lang="ja"><code>add_component</code>（<code>OPFinit_*</code>、<code>OPFcost_*</code>）、セッター</span></td>
-          <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-ok"><span lang="en">nothing</span><span lang="ja">なし</span></span></td>
+          <td data-label="Becomes stale on edit" data-label-ja="編集で古くなるもの"><span class="dg-badge is-ok"><span lang="en">nothing</span><span lang="ja">なし</span></span></td>
         </tr>
         <tr>
           <td><code>tab_parameter.graph</code></td>
           <td data-label="Meaning" data-label-ja="意味"><span lang="en"><code>Xaxis</code>, <code>Yaxis</code>, <code>Marker</code>, <code>MidXaxis</code>, <code>MidYaxis</code>: drawing data.</span><span lang="ja"><code>Xaxis</code>、<code>Yaxis</code>、<code>Marker</code>、<code>MidXaxis</code>、<code>MidYaxis</code>: 描画データ。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">—</td>
           <td data-label="Set by" data-label-ja="設定元"><span lang="en"><code>add_component</code>, setter</span><span lang="ja"><code>add_component</code>、セッター</span></td>
-          <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-ok"><span lang="en">nothing</span><span lang="ja">なし</span></span></td>
+          <td data-label="Becomes stale on edit" data-label-ja="編集で古くなるもの"><span class="dg-badge is-ok"><span lang="en">nothing</span><span lang="ja">なし</span></span></td>
         </tr>
         <tr>
           <td><code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code></td>
           <td data-label="Meaning" data-label-ja="意味"><span lang="en">State and input equilibria of the component itself.</span><span lang="ja">機器自身の状態と入力の平衡点。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">n<sub>x</sub>×1, n<sub>u</sub>×1</td>
           <td data-label="Set by" data-label-ja="設定元"><code>set_equilibrium</code></td>
-          <td data-label="Stale" data-label-ja="無効化">—</td>
+          <td data-label="Becomes stale on edit" data-label-ja="編集で古くなるもの">—</td>
         </tr>
         <tr>
           <td><code>c_Iequilibrium</code></td>
           <td data-label="Meaning" data-label-ja="意味"><span lang="en">Current injected into the bus at the equilibrium.</span><span lang="ja">平衡点で母線に注入する電流。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">pu, complex 1×1</td>
           <td data-label="Set by" data-label-ja="設定元"><code>set_equilibrium</code></td>
-          <td data-label="Stale" data-label-ja="無効化">—</td>
+          <td data-label="Becomes stale on edit" data-label-ja="編集で古くなるもの">—</td>
         </tr>
         <tr>
           <td><code>f_dx</code>, <code>f_I</code>, <code>f_Y</code>, <code>f_Mass</code>, <code>f_JacobiDx</code>, <code>f_JacobiI</code>, <code>f_JacobiY</code></td>
           <td data-label="Meaning" data-label-ja="意味"><span lang="en">Handle cache <code>@(t,x,V,I,u)</code> with <code>param</code> and <code>omega0</code> bound. Analytic <code>Jacobi_*</code> of the subclass when defined, numerical differences otherwise. <code>s_edit.str_odefcn</code>: <code>unset</code>, <code>editted</code>, or <code>updated</code>. Why handles: they bind the class's own methods, and folding the constant parameters and <code>omega0</code> in keeps the call short: <code>f_dx(t,x,V,I,u)</code>.</span><span lang="ja"><code>param</code> と <code>omega0</code> を束縛したハンドル <code>@(t,x,V,I,u)</code> のキャッシュ。サブクラスに <code>Jacobi_*</code> があれば解析的、なければ数値差分。<code>s_edit.str_odefcn</code>: <code>unset</code>、<code>editted</code>、<code>updated</code> のいずれか。ハンドルの理由: クラス自身のメソッドを束縛し、定数のパラメータと <code>omega0</code> を組み込むことで呼び出しが <code>f_dx(t,x,V,I,u)</code> と短くなるため。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">function_handle</td>
           <td data-label="Set by" data-label-ja="設定元"><span lang="en"><code>set_odefcn</code>, from <code>check_edit</code> at the start of an analysis</span><span lang="ja"><code>set_odefcn</code>（解析開始時の <code>check_edit</code> から）</span></td>
-          <td data-label="Stale" data-label-ja="無効化">—</td>
+          <td data-label="Becomes stale on edit" data-label-ja="編集で古くなるもの">—</td>
         </tr>
         <tr>
           <td><code>s_opffcn</code></td>
           <td data-label="Meaning" data-label-ja="意味"><span lang="en">OPF terms of the component: <code>Cost</code>, <code>Constraint</code>, <code>DefaultConstraint</code>.</span><span lang="ja">機器の OPF 項: <code>Cost</code>、<code>Constraint</code>、<code>DefaultConstraint</code>。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">struct</td>
           <td data-label="Set by" data-label-ja="設定元"><code>set_opffcn</code>, <code>reset_opffcn</code></td>
-          <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-ok"><span lang="en">nothing (logged)</span><span lang="ja">なし（記録のみ）</span></span></td>
+          <td data-label="Becomes stale on edit" data-label-ja="編集で古くなるもの"><span class="dg-badge is-ok"><span lang="en">nothing (logged)</span><span lang="ja">なし（記録のみ）</span></span></td>
         </tr>
       </tbody>
     </table>
@@ -198,37 +198,37 @@
     </table>
 
     <!-- ============================== REFERENCES ============================== -->
-    <h2 id="references"><span lang="en">References</span><span lang="ja">参照</span></h2>
+    <h2 id="references"><span lang="en">References held by Component</span><span lang="ja">Component が持つ参照</span></h2>
     <p lang="en">Only the parent sets and clears a parent reference (see <a href="class-design.html#parents">Class Design: Parent references</a>).</p>
     <p lang="ja">親参照の設定・解除は親のみ（<a href="class-design.html#parents">クラス設計: 親参照</a>を参照）。</p>
     <table class="dg-table cl-table">
       <thead>
-        <tr><th><span lang="en">Reference</span><span lang="ja">参照</span></th><th><span lang="en">Set by</span><span lang="ja">設定</span></th><th><span lang="en">Cleared by</span><span lang="ja">解除</span></th></tr>
+        <tr><th><span lang="en">Reference</span><span lang="ja">参照</span></th><th><span lang="en">Set by</span><span lang="ja">設定する処理</span></th><th><span lang="en">Cleared by</span><span lang="ja">解除する処理</span></th></tr>
       </thead>
       <tbody>
         <tr>
           <td><code>a_Bus</code> <small><span lang="en">parent</span><span lang="ja">親</span></small></td>
-          <td data-label="Set by" data-label-ja="設定"><span lang="en"><code>Bus.add_component</code>, <code>Bus.replace_component</code> → <code>set_bus(bus)</code>, which also marks the handles of the subtree stale</span><span lang="ja"><code>Bus.add_component</code>、<code>Bus.replace_component</code> → <code>set_bus(bus)</code>（部分木のハンドルも古いと記録）</span></td>
-          <td data-label="Cleared by" data-label-ja="解除"><code>Bus.remove_component</code>, <code>Bus.replace_component</code> → <code>set_bus([])</code></td>
+          <td data-label="Set by" data-label-ja="設定する処理"><span lang="en"><code>Bus.add_component</code>, <code>Bus.replace_component</code> → <code>set_bus(bus)</code>, which also marks the handles of the subtree stale</span><span lang="ja"><code>Bus.add_component</code>、<code>Bus.replace_component</code> → <code>set_bus(bus)</code>（部分木のハンドルも古いと記録）</span></td>
+          <td data-label="Cleared by" data-label-ja="解除する処理"><code>Bus.remove_component</code>, <code>Bus.replace_component</code> → <code>set_bus([])</code></td>
         </tr>
         <tr>
           <td><code>LocalController.a_Component</code> <small><span lang="en">children</span><span lang="ja">子</span></small></td>
-          <td data-label="Set by" data-label-ja="設定"><code>add_local_controller</code> → <code>LocalController.set_parent(obj)</code></td>
-          <td data-label="Cleared by" data-label-ja="解除"><span lang="en"><code>remove_local_controller</code>, a replacing <code>add_local_controller</code>, <code>move_local_controllers</code> → <code>set_parent([])</code></span><span lang="ja"><code>remove_local_controller</code>、置き換える <code>add_local_controller</code>、<code>move_local_controllers</code> → <code>set_parent([])</code></span></td>
+          <td data-label="Set by" data-label-ja="設定する処理"><code>add_local_controller</code> → <code>LocalController.set_parent(obj)</code></td>
+          <td data-label="Cleared by" data-label-ja="解除する処理"><span lang="en"><code>remove_local_controller</code>, a replacing <code>add_local_controller</code>, <code>move_local_controllers</code> → <code>set_parent([])</code></span><span lang="ja"><code>remove_local_controller</code>、置き換える <code>add_local_controller</code>、<code>move_local_controllers</code> → <code>set_parent([])</code></span></td>
         </tr>
         <tr>
           <td><code>GlobalController.controlledUnits</code> <small><span lang="en">association</span><span lang="ja">関連</span></small></td>
-          <td data-label="Set by" data-label-ja="設定"><span lang="en">the <code>GlobalController</code> constructor</span><span lang="ja"><code>GlobalController</code> のコンストラクタ</span></td>
-          <td data-label="Cleared by" data-label-ja="解除"><span lang="en">never; a controlled component cannot be removed or replaced while the controller is on the network</span><span lang="ja">解除なし。制御器がネットワークにある間、制御対象の機器は削除・置き換え不可</span></td>
+          <td data-label="Set by" data-label-ja="設定する処理"><span lang="en">the <code>GlobalController</code> constructor</span><span lang="ja"><code>GlobalController</code> のコンストラクタ</span></td>
+          <td data-label="Cleared by" data-label-ja="解除する処理"><span lang="en">never; a controlled component cannot be removed or replaced while the controller is on the network</span><span lang="ja">解除なし。制御器がネットワークにある間、制御対象の機器は削除・置き換え不可</span></td>
         </tr>
       </tbody>
     </table>
 
     <!-- ============================== METHODS ============================== -->
-    <h2 id="methods"><span lang="en">Methods</span><span lang="ja">メソッド</span></h2>
+    <h2 id="methods"><span lang="en">Methods of Component</span><span lang="ja">Component のメソッド</span></h2>
 
-    <h3 id="contract"><span lang="en">Subclass contract</span><span lang="ja">サブクラスの契約</span></h3>
-    <p lang="en">Members a concrete component defines. Worked example: <a href="model-implementation.html#contracts">Model Implementation: Contracts</a>.</p>
+    <h3 id="contract"><span lang="en">Members a subclass implements</span><span lang="ja">サブクラスが実装するメンバー</span></h3>
+    <p lang="en">Members a concrete component defines. Worked example: <a href="model-implementation.html#contracts">Model Implementation: Contracts a model implements</a>.</p>
     <p lang="ja">具象機器が定義するメンバー。例は<a href="model-implementation.html#contracts">モデル実装: 契約</a>。</p>
     <ul>
       <li><span lang="en">In every model function: <code>t</code> in seconds; <code>V</code>, <code>I</code> real 2×1 vectors <code>[re; im]</code> [pu]; <code>param</code> the row of <code>tab_parameter.dynamics</code> in the order of <code>sv_para</code>; <code>omega0</code> the nominal frequency [Hz].</span><span lang="ja">全モデル関数で共通: <code>t</code> は秒、<code>V</code>・<code>I</code> は実数の 2×1 ベクトル <code>[re; im]</code> [pu]、<code>param</code> は <code>sv_para</code> の順の <code>tab_parameter.dynamics</code> の行、<code>omega0</code> は定格周波数 [Hz]</span></li>
@@ -236,121 +236,121 @@
     </ul>
     <table class="dg-table cl-table cl-stack">
       <thead>
-        <tr><th><span lang="en">Member</span><span lang="ja">メンバー</span></th><th><span lang="en">Contract</span><span lang="ja">契約</span></th><th><span lang="en">Called by</span><span lang="ja">呼び出し元</span></th></tr>
+        <tr><th><span lang="en">Member</span><span lang="ja">メンバー</span></th><th><span lang="en">Required behavior</span><span lang="ja">実装の要件</span></th><th><span lang="en">Called by</span><span lang="ja">呼び出し元</span></th></tr>
       </thead>
       <tbody>
-        <tr><td><code>key</code>, <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code>, <code>sv_para</code> <small>Constant</small></td><td data-label="Contract" data-label-ja="契約"><span lang="en">The type key of <code>add_component</code> and the names of the states, inputs, outputs, and model parameters. Names are what controllers and the variable map connect by.</span><span lang="ja"><code>add_component</code> の型キーと、状態・入力・出力・モデルパラメータの名前。制御器と変数マップは名前で接続。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">all layers</span><span lang="ja">全階層</span></td></tr>
-        <tr><td><code>get_equilibrium(obj, c_V, c_I, r_P, r_Q)</code> <small>Abstract</small></td><td data-label="Contract" data-label-ja="契約"><span lang="en">Always called with all four arguments (complex <code>c_V</code>, <code>c_I</code>; real <code>r_P</code>, <code>r_Q</code>). Returns <code>[x, u]</code>, n<sub>x</sub>×1 and n<sub>u</sub>×1, such that <code>fcn_dx = 0</code> and <code>fcn_I = c_I</code>.</span><span lang="ja">呼び出しは常に 4 引数（複素数 <code>c_V</code>、<code>c_I</code>、実数 <code>r_P</code>、<code>r_Q</code>）。<code>fcn_dx = 0</code> かつ <code>fcn_I = c_I</code> となる <code>[x, u]</code>（n<sub>x</sub>×1、n<sub>u</sub>×1）を返す。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><span lang="en"><code>set_equilibrium</code>; <code>SolverODE</code> for a tripped generator (<code>c_I = r_P = r_Q = 0</code>)</span><span lang="ja"><code>set_equilibrium</code>、解列した発電機に対する <code>SolverODE</code>（<code>c_I = r_P = r_Q = 0</code>）</span></td></tr>
-        <tr><td><code>fcn_dx(t, x, V, I, u, param, omega0)</code> <small>Abstract</small></td><td data-label="Contract" data-label-ja="契約"><span lang="en">Right-hand side of <code>M·dx/dt = fcn_dx</code>: n<sub>x</sub>×1.</span><span lang="ja"><code>M·dx/dt = fcn_dx</code> の右辺: n<sub>x</sub>×1。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>f_dx</code></td></tr>
-        <tr><td><code>fcn_I(…)</code> <small>Abstract</small></td><td data-label="Contract" data-label-ja="契約"><span lang="en">Current injected into the bus as a complex scalar.</span><span lang="ja">母線への注入電流（複素スカラー）。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>f_I</code></td></tr>
-        <tr><td><code>fcn_Y(…)</code> <small>Abstract</small></td><td data-label="Contract" data-label-ja="契約"><span lang="en">Outputs read by local controllers: n<sub>y</sub>×1.</span><span lang="ja">ローカル制御器が読む出力: n<sub>y</sub>×1。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>f_Y</code></td></tr>
-        <tr><td><code>fcn_Mass(…)</code> <small>Abstract</small></td><td data-label="Contract" data-label-ja="契約"><span lang="en">Constant mass matrix n<sub>x</sub>×n<sub>x</sub>. <code>simulate</code> calls it with empty <code>t, x, V, I, u</code>; if not constant, stops with <code>GUILDA:read_mass:NotConstant</code>.</span><span lang="ja">定数の質量行列 n<sub>x</sub>×n<sub>x</sub>。<code>simulate</code> は空の <code>t, x, V, I, u</code> で呼び出し、定数でなければ <code>GUILDA:read_mass:NotConstant</code> で停止。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>f_Mass</code></td></tr>
-        <tr><td><code>Jacobi_dx</code>, <code>Jacobi_I</code>, <code>Jacobi_Y</code> <small><span lang="en">optional</span><span lang="ja">任意</span></small></td><td data-label="Contract" data-label-ja="契約"><span lang="en">Same arguments. Each returns four blocks with respect to <code>x</code>, <code>V</code>, <code>I</code>, <code>u</code>: <code>[Axx, Bxv, Bxi, Bxu]</code> with n<sub>x</sub> rows, <code>[Cix, Div, Dii, Diu]</code> with 2 rows (<code>[Ire; Iim]</code>), <code>[Cyx, Dyv, Dyi, Dyu]</code> with n<sub>y</sub> rows. Without them, central differences of <code>fcn_*</code> are used.</span><span lang="ja">引数は同じ。<code>x</code>、<code>V</code>、<code>I</code>、<code>u</code> に関する 4 ブロックを返す: n<sub>x</sub> 行の <code>[Axx, Bxv, Bxi, Bxu]</code>、2 行（<code>[Ire; Iim]</code>）の <code>[Cix, Div, Dii, Diu]</code>、n<sub>y</sub> 行の <code>[Cyx, Dyv, Dyi, Dyu]</code>。なければ <code>fcn_*</code> の中心差分。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>f_Jacobi*</code></td></tr>
-        <tr><td><code>getCompPQ(obj, x, V, u, param)</code> <small><span lang="en">optional</span><span lang="ja">任意</span></small></td><td data-label="Contract" data-label-ja="契約"><span lang="en">Injected power <code>[P; Q]</code> from the internal state.</span><span lang="ja">内部状態から求めた注入電力 <code>[P; Q]</code>。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><span lang="en"><code>SolverCPF</code> with <code>UseInternalState=true</code></span><span lang="ja"><code>UseInternalState=true</code> の <code>SolverCPF</code></span></td></tr>
-        <tr><td><code>Hessian_dx</code>, <code>Hessian_I</code>, <code>Hessian_Y</code> <small><span lang="en">optional</span><span lang="ja">任意</span></small></td><td data-label="Contract" data-label-ja="契約"><span lang="en">Second derivatives, n<sub>eq</sub>×n<sub>z</sub>×n<sub>z</sub> with <code>z = [x; V; I; u]</code> (see <a href="class-design.html#optional">Optional analyses</a>).</span><span lang="ja">2 階微分。<code>z = [x; V; I; u]</code> として n<sub>eq</sub>×n<sub>z</sub>×n<sub>z</sub>（<a href="class-design.html#optional">任意の解析</a>を参照）。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>get_hessian</code></td></tr>
+        <tr><td><code>key</code>, <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code>, <code>sv_para</code> <small>Constant</small></td><td data-label="Required behavior" data-label-ja="実装の要件"><span lang="en">The type key of <code>add_component</code> and the names of the states, inputs, outputs, and model parameters. Names are what controllers and the variable map connect by.</span><span lang="ja"><code>add_component</code> の型キーと、状態・入力・出力・モデルパラメータの名前。制御器と変数マップは名前で接続。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">all layers</span><span lang="ja">全階層</span></td></tr>
+        <tr><td><code>get_equilibrium(obj, c_V, c_I, r_P, r_Q)</code> <small>Abstract</small></td><td data-label="Required behavior" data-label-ja="実装の要件"><span lang="en">Always called with all four arguments (complex <code>c_V</code>, <code>c_I</code>; real <code>r_P</code>, <code>r_Q</code>). Returns <code>[x, u]</code>, n<sub>x</sub>×1 and n<sub>u</sub>×1, such that <code>fcn_dx = 0</code> and <code>fcn_I = c_I</code>.</span><span lang="ja">呼び出しは常に 4 引数（複素数 <code>c_V</code>、<code>c_I</code>、実数 <code>r_P</code>、<code>r_Q</code>）。<code>fcn_dx = 0</code> かつ <code>fcn_I = c_I</code> となる <code>[x, u]</code>（n<sub>x</sub>×1、n<sub>u</sub>×1）を返す。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><span lang="en"><code>set_equilibrium</code>; <code>SolverODE</code> for a tripped generator (<code>c_I = r_P = r_Q = 0</code>)</span><span lang="ja"><code>set_equilibrium</code>、解列した発電機に対する <code>SolverODE</code>（<code>c_I = r_P = r_Q = 0</code>）</span></td></tr>
+        <tr><td><code>fcn_dx(t, x, V, I, u, param, omega0)</code> <small>Abstract</small></td><td data-label="Required behavior" data-label-ja="実装の要件"><span lang="en">Right-hand side of <code>M·dx/dt = fcn_dx</code>: n<sub>x</sub>×1.</span><span lang="ja"><code>M·dx/dt = fcn_dx</code> の右辺: n<sub>x</sub>×1。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>f_dx</code></td></tr>
+        <tr><td><code>fcn_I(…)</code> <small>Abstract</small></td><td data-label="Required behavior" data-label-ja="実装の要件"><span lang="en">Current injected into the bus as a complex scalar.</span><span lang="ja">母線への注入電流（複素スカラー）。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>f_I</code></td></tr>
+        <tr><td><code>fcn_Y(…)</code> <small>Abstract</small></td><td data-label="Required behavior" data-label-ja="実装の要件"><span lang="en">Outputs read by local controllers: n<sub>y</sub>×1.</span><span lang="ja">ローカル制御器が読む出力: n<sub>y</sub>×1。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>f_Y</code></td></tr>
+        <tr><td><code>fcn_Mass(…)</code> <small>Abstract</small></td><td data-label="Required behavior" data-label-ja="実装の要件"><span lang="en">Constant mass matrix n<sub>x</sub>×n<sub>x</sub>. <code>simulate</code> calls it with empty <code>t, x, V, I, u</code>; if not constant, stops with <code>GUILDA:read_mass:NotConstant</code>.</span><span lang="ja">定数の質量行列 n<sub>x</sub>×n<sub>x</sub>。<code>simulate</code> は空の <code>t, x, V, I, u</code> で呼び出し、定数でなければ <code>GUILDA:read_mass:NotConstant</code> で停止。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>f_Mass</code></td></tr>
+        <tr><td><code>Jacobi_dx</code>, <code>Jacobi_I</code>, <code>Jacobi_Y</code> <small><span lang="en">optional</span><span lang="ja">任意</span></small></td><td data-label="Required behavior" data-label-ja="実装の要件"><span lang="en">Same arguments. Each returns four blocks with respect to <code>x</code>, <code>V</code>, <code>I</code>, <code>u</code>: <code>[Axx, Bxv, Bxi, Bxu]</code> with n<sub>x</sub> rows, <code>[Cix, Div, Dii, Diu]</code> with 2 rows (<code>[Ire; Iim]</code>), <code>[Cyx, Dyv, Dyi, Dyu]</code> with n<sub>y</sub> rows. Without them, central differences of <code>fcn_*</code> are used.</span><span lang="ja">引数は同じ。<code>x</code>、<code>V</code>、<code>I</code>、<code>u</code> に関する 4 ブロックを返す: n<sub>x</sub> 行の <code>[Axx, Bxv, Bxi, Bxu]</code>、2 行（<code>[Ire; Iim]</code>）の <code>[Cix, Div, Dii, Diu]</code>、n<sub>y</sub> 行の <code>[Cyx, Dyv, Dyi, Dyu]</code>。なければ <code>fcn_*</code> の中心差分。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>f_Jacobi*</code></td></tr>
+        <tr><td><code>getCompPQ(obj, x, V, u, param)</code> <small><span lang="en">optional</span><span lang="ja">任意</span></small></td><td data-label="Required behavior" data-label-ja="実装の要件"><span lang="en">Injected power <code>[P; Q]</code> from the internal state.</span><span lang="ja">内部状態から求めた注入電力 <code>[P; Q]</code>。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><span lang="en"><code>SolverCPF</code> with <code>UseInternalState=true</code></span><span lang="ja"><code>UseInternalState=true</code> の <code>SolverCPF</code></span></td></tr>
+        <tr><td><code>Hessian_dx</code>, <code>Hessian_I</code>, <code>Hessian_Y</code> <small><span lang="en">optional</span><span lang="ja">任意</span></small></td><td data-label="Required behavior" data-label-ja="実装の要件"><span lang="en">Second derivatives, n<sub>eq</sub>×n<sub>z</sub>×n<sub>z</sub> with <code>z = [x; V; I; u]</code> (see <a href="class-design.html#optional">Optional analyses</a>).</span><span lang="ja">2 階微分。<code>z = [x; V; I; u]</code> として n<sub>eq</sub>×n<sub>z</sub>×n<sub>z</sub>（<a href="class-design.html#optional">任意の解析</a>を参照）。</span></td><td data-label="Called by" data-label-ja="呼び出し元"><code>get_hessian</code></td></tr>
       </tbody>
     </table>
 
-    <h3><span lang="en">Construction and editing</span><span lang="ja">構築と編集</span></h3>
+    <h3><span lang="en">Methods for construction and editing</span><span lang="ja">構築と編集のメソッド</span></h3>
     <table class="dg-table cl-table cl-stack">
       <thead>
-        <tr><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">内容</span></th><th><span lang="en">Called by</span><span lang="ja">呼び出し元</span></th></tr>
+        <tr><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">処理内容</span></th><th><span lang="en">Called by</span><span lang="ja">呼び出し元</span></th></tr>
       </thead>
       <tbody>
         <tr>
           <td><code>Component(str_tag, opt)</code> <small>protected</small></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Creates the five <code>Parameter</code> objects from the options of <code>add_component</code>; a NaN cost becomes 0 for a load and 1 otherwise. Does not build the handles.</span><span lang="ja"><code>add_component</code> のオプションから 5 つの <code>Parameter</code> オブジェクトを作成。NaN のコストは負荷なら 0、それ以外は 1。ハンドルは作らない。</span></td>
+          <td data-label="What it does" data-label-ja="処理内容"><span lang="en">Creates the five <code>Parameter</code> objects from the options of <code>add_component</code>; a NaN cost becomes 0 for a load and 1 otherwise. Does not build the handles.</span><span lang="ja"><code>add_component</code> のオプションから 5 つの <code>Parameter</code> オブジェクトを作成。NaN のコストは負荷なら 0、それ以外は 1。ハンドルは作らない。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">subclass constructors</span><span lang="ja">サブクラスのコンストラクタ</span></td>
         </tr>
         <tr>
           <td><code>add_local_controller(con, …)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Attaches controllers in the order given, by <code>key</code>: <code>"avr"</code>, <code>"local"</code> to the component's first slot (replacing the attached one); <code>"pss"</code> to its AVR; <code>"governor"</code> to the second slot (replacing the attached governor). The two top-level controllers must drive different inputs; a common output (e.g. <code>Pmech</code> of a <code>local_LQR</code> on all the inputs and of a governor) is the error <code>GUILDA:Component:ControllerOutputOverlap</code>, checked before anything changes. Also errors: a controller attached elsewhere, an unknown key, an output that matches no input. Each addition logs a <code>Topology</code> edit.</span><span lang="ja">与えた順に <code>key</code> に従って制御器を接続: <code>"avr"</code>・<code>"local"</code> は機器の 1 つ目の枠へ（既存のものを置き換え）、<code>"pss"</code> はその AVR へ、<code>"governor"</code> は 2 つ目の枠へ（既存のガバナを置き換え）。最上位の 2 つの制御器は異なる入力を駆動する必要あり。共通の出力（すべての入力に対する <code>local_LQR</code> とガバナの <code>Pmech</code> など）はエラー <code>GUILDA:Component:ControllerOutputOverlap</code>、確認は変更前に実施。その他のエラー: 他所に接続中の制御器、未知のキー、どの入力にも合わない出力。追加ごとに <code>Topology</code> 編集を記録。</span></td>
+          <td data-label="What it does" data-label-ja="処理内容"><span lang="en">Attaches controllers in the order given, by <code>key</code>: <code>"avr"</code>, <code>"local"</code> to the component's first slot (replacing the attached one); <code>"pss"</code> to its AVR; <code>"governor"</code> to the second slot (replacing the attached governor). The two top-level controllers must drive different inputs; a common output (e.g. <code>Pmech</code> of a <code>local_LQR</code> on all the inputs and of a governor) is the error <code>GUILDA:Component:ControllerOutputOverlap</code>, checked before anything changes. Also errors: a controller attached elsewhere, an unknown key, an output that matches no input. Each addition logs a <code>Topology</code> edit.</span><span lang="ja">与えた順に <code>key</code> に従って制御器を接続: <code>"avr"</code>・<code>"local"</code> は機器の 1 つ目の枠へ（既存のものを置き換え）、<code>"pss"</code> はその AVR へ、<code>"governor"</code> は 2 つ目の枠へ（既存のガバナを置き換え）。最上位の 2 つの制御器は異なる入力を駆動する必要あり。共通の出力（すべての入力に対する <code>local_LQR</code> とガバナの <code>Pmech</code> など）はエラー <code>GUILDA:Component:ControllerOutputOverlap</code>、確認は変更前に実施。その他のエラー: 他所に接続中の制御器、未知のキー、どの入力にも合わない出力。追加ごとに <code>Topology</code> 編集を記録。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user, <code>move_local_controllers</code></span><span lang="ja">利用者、<code>move_local_controllers</code></span></td>
         </tr>
         <tr>
           <td><code>remove_local_controller(tag, RemoveNested=)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Detaches a controller by tag. An AVR that still has a PSS needs <code>RemoveNested=true</code>. Logs a <code>Topology</code> edit.</span><span lang="ja">タグで制御器を切り離し、<code>Topology</code> 編集を記録。PSS が付いた AVR には <code>RemoveNested=true</code> が必要。</span></td>
+          <td data-label="What it does" data-label-ja="処理内容"><span lang="en">Detaches a controller by tag. An AVR that still has a PSS needs <code>RemoveNested=true</code>. Logs a <code>Topology</code> edit.</span><span lang="ja">タグで制御器を切り離し、<code>Topology</code> 編集を記録。PSS が付いた AVR には <code>RemoveNested=true</code> が必要。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user</span><span lang="ja">利用者</span></td>
         </tr>
         <tr>
           <td><code>move_local_controllers(comp_new)</code> <small><span lang="en">Bus only</span><span lang="ja">Bus 専用</span></small></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Detaches all controllers and attaches them to <code>comp_new</code>.</span><span lang="ja">すべての制御器を切り離し、<code>comp_new</code> に接続。</span></td>
+          <td data-label="What it does" data-label-ja="処理内容"><span lang="en">Detaches all controllers and attaches them to <code>comp_new</code>.</span><span lang="ja">すべての制御器を切り離し、<code>comp_new</code> に接続。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><code>Bus.replace_component(…, Controllers="keep")</code></td>
         </tr>
         <tr>
           <td><code>set_opffcn(Cost=, Constraint=, DefaultConstraint=)</code>, <code>reset_opffcn()</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Store or clear the OPF terms. Handles get <code>v.P</code> (and <code>v.Q</code> in AC OPF). <code>Cost</code> replaces the default cost; <code>DefaultConstraint=false</code> drops the bounds (and, for a load, the fixing of <code>P</code>, <code>Q</code>).</span><span lang="ja">OPF 項の保存・消去。ハンドルが受け取るのは <code>v.P</code>（AC OPF では <code>v.Q</code> も）。<code>Cost</code> は既定のコストを置き換え。<code>DefaultConstraint=false</code> で範囲（負荷では <code>P</code>・<code>Q</code> の固定も）を除外。</span></td>
+          <td data-label="What it does" data-label-ja="処理内容"><span lang="en">Store or clear the OPF terms. Handles get <code>v.P</code> (and <code>v.Q</code> in AC OPF). <code>Cost</code> replaces the default cost; <code>DefaultConstraint=false</code> drops the bounds (and, for a load, the fixing of <code>P</code>, <code>Q</code>).</span><span lang="ja">OPF 項の保存・消去。ハンドルが受け取るのは <code>v.P</code>（AC OPF では <code>v.Q</code> も）。<code>Cost</code> は既定のコストを置き換え。<code>DefaultConstraint=false</code> で範囲（負荷では <code>P</code>・<code>Q</code> の固定も）を除外。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user</span><span lang="ja">利用者</span></td>
         </tr>
       </tbody>
     </table>
 
-    <h3><span lang="en">Called by analyses</span><span lang="ja">解析から呼ばれるメソッド</span></h3>
+    <h3><span lang="en">Methods called by analyses</span><span lang="ja">解析から呼ばれるメソッド</span></h3>
     <table class="dg-table cl-table cl-stack">
       <thead>
-        <tr><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">内容</span></th><th><span lang="en">Called by</span><span lang="ja">呼び出し元</span></th></tr>
+        <tr><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">処理内容</span></th><th><span lang="en">Called by</span><span lang="ja">呼び出し元</span></th></tr>
       </thead>
       <tbody>
         <tr>
           <td><code>set_odefcn()</code> <small>protected</small></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Binds <code>param</code> and <code>get_Hz()</code> into <code>f_*</code> and sets <code>str_odefcn = "updated"</code>.</span><span lang="ja"><code>param</code> と <code>get_Hz()</code> を <code>f_*</code> に束縛し、<code>str_odefcn = "updated"</code> に設定。</span></td>
+          <td data-label="What it does" data-label-ja="処理内容"><span lang="en">Binds <code>param</code> and <code>get_Hz()</code> into <code>f_*</code> and sets <code>str_odefcn = "updated"</code>.</span><span lang="ja"><code>param</code> と <code>get_Hz()</code> を <code>f_*</code> に束縛し、<code>str_odefcn = "updated"</code> に設定。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><code>check_edit</code></td>
         </tr>
         <tr>
           <td><code>set_equilibrium(c_V, c_I, r_P, r_Q)</code> <small><span lang="en">Bus only</span><span lang="ja">Bus 専用</span></small></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Calls <code>get_equilibrium</code> and stores <code>c_Iequilibrium</code>, <code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code>; then calls <code>get_equilibrium(c_V, u)</code> of each local controller.</span><span lang="ja"><code>get_equilibrium</code> を呼び、<code>c_Iequilibrium</code>、<code>rv_Xequilibrium</code>、<code>rv_Uequilibrium</code> を保存。続いて各ローカル制御器の <code>get_equilibrium(c_V, u)</code> を呼ぶ。</span></td>
+          <td data-label="What it does" data-label-ja="処理内容"><span lang="en">Calls <code>get_equilibrium</code> and stores <code>c_Iequilibrium</code>, <code>rv_Xequilibrium</code>, <code>rv_Uequilibrium</code>; then calls <code>get_equilibrium(c_V, u)</code> of each local controller.</span><span lang="ja"><code>get_equilibrium</code> を呼び、<code>c_Iequilibrium</code>、<code>rv_Xequilibrium</code>、<code>rv_Uequilibrium</code> を保存。続いて各ローカル制御器の <code>get_equilibrium(c_V, u)</code> を呼ぶ。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><code>Bus.set_equilibrium</code></td>
         </tr>
         <tr>
           <td><code>get_dx_algebraic(t, x, V, I, u, DAEvec)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Evaluates <code>f_dx</code>, <code>f_I</code>, and the controllers at the simulation vector <code>x</code> (positions <code>iv_odeX</code>, <code>iv_odeU</code>). A controller output drives the input of the same name, added to any input disturbance or global controller on it. A tripped component injects no current.</span><span lang="ja">シミュレーションのベクトル <code>x</code>（位置 <code>iv_odeX</code>、<code>iv_odeU</code>）で <code>f_dx</code>、<code>f_I</code>、制御器を評価。制御器の出力は同名の入力を駆動し、その入力への入力外乱や広域制御器に加算。解列した機器の注入電流はゼロ。</span>
+          <td data-label="What it does" data-label-ja="処理内容"><span lang="en">Evaluates <code>f_dx</code>, <code>f_I</code>, and the controllers at the simulation vector <code>x</code> (positions <code>iv_odeX</code>, <code>iv_odeU</code>). A controller output drives the input of the same name, added to any input disturbance or global controller on it. A tripped component injects no current.</span><span lang="ja">シミュレーションのベクトル <code>x</code>（位置 <code>iv_odeX</code>、<code>iv_odeU</code>）で <code>f_dx</code>、<code>f_I</code>、制御器を評価。制御器の出力は同名の入力を駆動し、その入力への入力外乱や広域制御器に加算。解列した機器の注入電流はゼロ。</span>
             <small><span lang="en">Returns: the updated DAE residual.</span><span lang="ja">返り値: 更新した DAE の残差。</span></small></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><code>SolverODE</code></td>
         </tr>
         <tr>
           <td><code>get_sys(x, V, I, u, port=, tag=, Point=)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Linear model of the component with its controllers (connected by name inside). Inputs: the port, <code>u</code>, the controllers' inputs. States: the component's, then the controllers'. Outputs: the other port, <code>y</code>, the controllers' outputs. An output with a state's name is labelled <code>Y_</code> + name. An input that a controller also drives (e.g. <code>Vfield</code> under an AVR) stays an input, added to the controller output. Default point: the equilibrium; <code>Point</code> takes the order of <code>get_variable_map</code> or <code>{sim, t}</code>. Rebuilds out-of-date handles; without <code>Point</code>, requires an up-to-date equilibrium.</span><span lang="ja">制御器（内部で名前により接続）を含む機器の線形モデル。入力: ポート、<code>u</code>、制御器の入力。状態: 機器、続いて制御器。出力: もう一方のポート、<code>y</code>、制御器の出力。状態と同名の出力は <code>Y_</code> + 名前。制御器も駆動する入力（例: AVR の下の <code>Vfield</code>）は入力のまま残り、制御器の出力に加算。既定の点は平衡点、<code>Point</code> は <code>get_variable_map</code> の順または <code>{sim, t}</code>。古いハンドルを再構築。<code>Point</code> がなければ最新の平衡点が必要。</span>
+          <td data-label="What it does" data-label-ja="処理内容"><span lang="en">Linear model of the component with its controllers (connected by name inside). Inputs: the port, <code>u</code>, the controllers' inputs. States: the component's, then the controllers'. Outputs: the other port, <code>y</code>, the controllers' outputs. An output with a state's name is labelled <code>Y_</code> + name. An input that a controller also drives (e.g. <code>Vfield</code> under an AVR) stays an input, added to the controller output. Default point: the equilibrium; <code>Point</code> takes the order of <code>get_variable_map</code> or <code>{sim, t}</code>. Rebuilds out-of-date handles; without <code>Point</code>, requires an up-to-date equilibrium.</span><span lang="ja">制御器（内部で名前により接続）を含む機器の線形モデル。入力: ポート、<code>u</code>、制御器の入力。状態: 機器、続いて制御器。出力: もう一方のポート、<code>y</code>、制御器の出力。状態と同名の出力は <code>Y_</code> + 名前。制御器も駆動する入力（例: AVR の下の <code>Vfield</code>）は入力のまま残り、制御器の出力に加算。既定の点は平衡点、<code>Point</code> は <code>get_variable_map</code> の順または <code>{sim, t}</code>。古いハンドルを再構築。<code>Point</code> がなければ最新の平衡点が必要。</span>
             <small><span lang="en">Returns: a named descriptor state-space model, then its names.</span><span lang="ja">返り値: 名前付きのディスクリプタ状態空間モデルと、その名前。</span></small></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><code>Bus.get_sys</code> <span lang="en">(so <code>SolverLIN</code>), user</span><span lang="ja">（つまり <code>SolverLIN</code>）、利用者</span></td>
         </tr>
         <tr>
           <td><code>get_sys_alone(x, V, I, u, port=, controllerPorts=)</code> <small>Hidden</small></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">The component without its controllers and without the edit checks; untagged names.</span><span lang="ja">制御器を含まず、編集の確認もしない機器だけのモデル。名前にタグなし。</span></td>
+          <td data-label="What it does" data-label-ja="処理内容"><span lang="en">The component without its controllers and without the edit checks; untagged names.</span><span lang="ja">制御器を含まず、編集の確認もしない機器だけのモデル。名前にタグなし。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><code>get_sys</code>, <code>controller.local_LQR</code></td>
         </tr>
         <tr>
           <td><code>point_residual(rv_point)</code> <small><span lang="en">SolverLIN only</span><span lang="ja">SolverLIN 専用</span></small></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">The state equations of the component and its controllers and the current at a point in the order of <code>get_variable_map</code>.</span><span lang="ja"><code>get_variable_map</code> の順の点での、機器と制御器の状態方程式と電流。</span>
+          <td data-label="What it does" data-label-ja="処理内容"><span lang="en">The state equations of the component and its controllers and the current at a point in the order of <code>get_variable_map</code>.</span><span lang="ja"><code>get_variable_map</code> の順の点での、機器と制御器の状態方程式と電流。</span>
             <small><span lang="en">Returns: <code>[rv_dx, rv_I]</code>.</span><span lang="ja">返り値: <code>[rv_dx, rv_I]</code>。</span></small></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en"><code>SolverLIN.solve</code> (residual of a <code>Point</code>)</span><span lang="ja"><code>SolverLIN.solve</code>（<code>Point</code> の残差）</span></td>
         </tr>
         <tr>
           <td><code>get_variable_map(str_form)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Its rows of the network map: its states and its controllers' states, <code>Vre</code>, <code>Vim</code> of its bus, its inputs.</span><span lang="ja">ネットワークのマップのうち自身の行: 自身と制御器の状態、母線の <code>Vre</code>・<code>Vim</code>、自身の入力。</span></td>
+          <td data-label="What it does" data-label-ja="処理内容"><span lang="en">Its rows of the network map: its states and its controllers' states, <code>Vre</code>, <code>Vim</code> of its bus, its inputs.</span><span lang="ja">ネットワークのマップのうち自身の行: 自身と制御器の状態、母線の <code>Vre</code>・<code>Vim</code>、自身の入力。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><code>Bus.get_variable_map</code>, <code>get_sys</code></td>
         </tr>
         <tr>
           <td><code>build_opf_problem(prob, x0, const, Busvar, methods=)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Adds <code>P</code> (and <code>Q</code> in AC OPF), the bounds, the cost, and the <code>s_opffcn</code> terms, and adds its power to the bus balance. A load with infinite bounds keeps its <code>P</code>, <code>Q</code> settings.</span><span lang="ja"><code>P</code>（AC OPF では <code>Q</code> も）、範囲、コスト、<code>s_opffcn</code> の項を追加し、自身の電力を母線の収支に加算。範囲が無限の負荷は <code>P</code>・<code>Q</code> の設定を維持。</span></td>
+          <td data-label="What it does" data-label-ja="処理内容"><span lang="en">Adds <code>P</code> (and <code>Q</code> in AC OPF), the bounds, the cost, and the <code>s_opffcn</code> terms, and adds its power to the bus balance. A load with infinite bounds keeps its <code>P</code>, <code>Q</code> settings.</span><span lang="ja"><code>P</code>（AC OPF では <code>Q</code> も）、範囲、コスト、<code>s_opffcn</code> の項を追加し、自身の電力を母線の収支に加算。範囲が無限の負荷は <code>P</code>・<code>Q</code> の設定を維持。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><code>Bus.build_opf_problem</code></td>
         </tr>
       </tbody>
     </table>
 
-    <h3><span lang="en">Queries and checks</span><span lang="ja">照会と確認</span></h3>
+    <h3><span lang="en">Query and check methods</span><span lang="ja">照会と確認のメソッド</span></h3>
     <table class="dg-table cl-table">
       <thead>
-        <tr><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">内容</span></th></tr>
+        <tr><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">処理内容</span></th></tr>
       </thead>
       <tbody>
-        <tr><td><code>get_hessian(x, V, I, u)</code></td><td data-label="What it does" data-label-ja="内容"><span lang="en">Returns <code>H_dx</code>, <code>H_I</code>, <code>H_Y</code> from the subclass's <code>Hessian_*</code>; stops with <code>GUILDA:Component:HessianNotSupported</code> otherwise.</span><span lang="ja">サブクラスの <code>Hessian_*</code> から <code>H_dx</code>、<code>H_I</code>、<code>H_Y</code> を返す。なければ <code>GUILDA:Component:HessianNotSupported</code> で停止。</span></td></tr>
-        <tr><td><code>validate(l_message)</code> <small>Hidden</small></td><td data-label="What it does" data-label-ja="内容"><span lang="en">Checks the model functions against the contract at the equilibrium (or a random point) and compares analytic Jacobians with finite differences.</span><span lang="ja">平衡点（または乱数の点）でモデル関数を契約と照合し、解析的ヤコビアンを有限差分と比較。</span></td></tr>
-        <tr><td><code>parameter_error(str_key, …)</code> <small>protected</small></td><td data-label="What it does" data-label-ja="内容"><span lang="en">Raises a message of <code>Component.xml</code> for a base class in the <code>component</code> package.</span><span lang="ja"><code>component</code> パッケージの基底クラス用に <code>Component.xml</code> のメッセージを送出。</span></td></tr>
+        <tr><td><code>get_hessian(x, V, I, u)</code></td><td data-label="What it does" data-label-ja="処理内容"><span lang="en">Returns <code>H_dx</code>, <code>H_I</code>, <code>H_Y</code> from the subclass's <code>Hessian_*</code>; stops with <code>GUILDA:Component:HessianNotSupported</code> otherwise.</span><span lang="ja">サブクラスの <code>Hessian_*</code> から <code>H_dx</code>、<code>H_I</code>、<code>H_Y</code> を返す。なければ <code>GUILDA:Component:HessianNotSupported</code> で停止。</span></td></tr>
+        <tr><td><code>validate(l_message)</code> <small>Hidden</small></td><td data-label="What it does" data-label-ja="処理内容"><span lang="en">Checks the model functions against the contract at the equilibrium (or a random point) and compares analytic Jacobians with finite differences.</span><span lang="ja">平衡点（または乱数の点）でモデル関数を契約と照合し、解析的ヤコビアンを有限差分と比較。</span></td></tr>
+        <tr><td><code>parameter_error(str_key, …)</code> <small>protected</small></td><td data-label="What it does" data-label-ja="処理内容"><span lang="en">Raises a message of <code>Component.xml</code> for a base class in the <code>component</code> package.</span><span lang="ja"><code>component</code> パッケージの基底クラス用に <code>Component.xml</code> のメッセージを送出。</span></td></tr>
       </tbody>
     </table>
 
     <!-- ============================== USED BY ============================== -->
-    <h2 id="used-by"><span lang="en">Used by</span><span lang="ja">利用する機能</span></h2>
+    <h2 id="used-by"><span lang="en">Features that use Component</span><span lang="ja">Component を使う機能</span></h2>
     <ul class="cl-used">
       <li><a href="feature-model-building.html"><span lang="en">Model building</span><span lang="ja">モデル構築</span><small>add_local_controller</small></a></li>
       <li><a href="feature-data-io.html"><span lang="en">Data IO</span><span lang="ja">データ入出力</span><small>component/&lt;key&gt;/*.csv</small></a></li>
@@ -363,7 +363,7 @@
     </ul>
 
     <!-- ============================== SUBCLASSES ============================== -->
-    <h2 id="subclasses"><span lang="en">Subclasses</span><span lang="ja">サブクラス</span></h2>
+    <h2 id="subclasses"><span lang="en">Subclasses of Component</span><span lang="ja">Component のサブクラス</span></h2>
     <p lang="en">In <code>_GUILDAobject/+component/</code>. A new model inherits from one of the two base classes (see <a href="model-implementation.html">Model Implementation</a>).</p>
     <p lang="ja">場所は <code>_GUILDAobject/+component/</code>。新しいモデルは 2 つの基底クラスのいずれかを継承（<a href="model-implementation.html">モデル実装</a>を参照）。</p>
     <table class="dg-table cl-table">
