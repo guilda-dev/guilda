@@ -10,6 +10,8 @@ function flag = validate(obj, l_message)
 % get_equilibrium is called as the model requires it, so a model that stores values
 % there (e.g. the loads) stores those of the evaluation point: run net.initialize after
 % validating a component that has no equilibrium.
+%
+% <@Group> Queries and checks
     arguments
         obj
         l_message (1,1) logical = true   % Print the comparison.

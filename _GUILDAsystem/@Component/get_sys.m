@@ -34,6 +34,8 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % then (`varargout`) sys.StateName, sys.InputName and sys.OutputName, kept for old calls.
 %
 % See also Component.get_variable_map, Bus.get_sys, PowerNetwork.get_sys
+%
+% <@Group> Called by analyses
     arguments
         obj 
         x        (:,1) double = obj.rv_Xequilibrium   % States (default: the equilibrium).

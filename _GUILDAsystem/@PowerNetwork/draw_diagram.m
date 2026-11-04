@@ -7,6 +7,8 @@ function G = draw_diagram(obj,ax)
 % ```
 %
 % See also DrawerNetDiagram
+%
+% <@Group> Queries and display
     arguments
         obj 
         ax  = axes('Parent',figure())   % Axes to draw in (default: new axes in a new figure).

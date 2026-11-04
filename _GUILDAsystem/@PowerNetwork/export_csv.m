@@ -26,6 +26,8 @@ function path = export_csv(obj, path, opt)
 % ```
 %
 % See also PowerNetwork.import_csv
+%
+% <@Group> Data IO
 
     arguments
         obj

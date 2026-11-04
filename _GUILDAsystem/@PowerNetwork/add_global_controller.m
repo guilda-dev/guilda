@@ -6,6 +6,8 @@ function add_global_controller(obj, a_Gcon)
 % `sv_u` and the inputs `sv_y` of the controller. The addition is logged as a "Topology" edit.
 %
 % See also PowerNetwork.remove_global_controller, GlobalController
+%
+% <@Group> Model building
     if ismember(a_Gcon.str_tag, string(obj.a_GlobalController))
         error(msg("GUILDA:PowerNetwork:GconTagInUse", char(a_Gcon.str_tag), char(obj.str_tag)))
     end

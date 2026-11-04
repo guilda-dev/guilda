@@ -11,6 +11,8 @@ function reset_opffcn(obj)
 % ```
 %
 % See also PowerNetwork.set_opffcn
+%
+% <@Group> Model building
     obj.s_opffcn = opffcn.default();
     obj.log_edit("reset_opffcn", "OPF");
 end

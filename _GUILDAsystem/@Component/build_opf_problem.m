@@ -6,6 +6,8 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Busvar, opt
 % (Q) of tab_parameter.powerflow while its Pmin/Pmax (Qmin/Qmax) are infinite.
 %
 % See also Bus.build_opf_problem, Component.set_opffcn
+%
+% <@Group> Called by analyses
     arguments
         obj 
         prob   = optimproblem();   % optimproblem to extend.

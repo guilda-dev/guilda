@@ -2,6 +2,8 @@ function set_equilibrium(obj,c_V,c_I,r_P,r_Q)
 % Compute and store the state and input equilibria from the bus voltage and current.
 %
 % Called by Bus.set_equilibrium. The local controllers compute their equilibria too.
+%
+% <@Group> Called by analyses
     arguments
         obj 
         c_V   % [pu] Bus voltage phasor.

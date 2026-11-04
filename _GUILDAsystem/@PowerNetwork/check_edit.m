@@ -6,6 +6,8 @@ function flag = check_edit(obj, opt)
 % RequireEquilibrium is true, stops with an error if initialize has not run
 % or something that changes the equilibrium was edited since (dynamics,
 % baseMVA or powerflow parameters, topology, slack bus; not the network Hz).
+%
+% <@Group> Called by analyses
     arguments
         obj   % Target network.
         opt.RequireEquilibrium (1,1) logical = false   % Error with ID GUILDA:PowerNetwork:EquilibriumStale when the equilibrium is out of date.

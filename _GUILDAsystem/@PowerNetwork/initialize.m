@@ -52,6 +52,8 @@ function [result, flag, output] = initialize(obj, varargin)
 % ```
 %
 % See also PowerNetwork.calculate_powerflow, PowerNetwork.optimize_powerflow, PowerNetwork.simulate
+%
+% <@Group> Initialize
     arguments (Output)
         result   % ResultPF for "powerflow" and "equilibrium" (str_solver = "equilibrium", no branch flows), ResultOPF for "OPF"; result.tab_bus is the bus equilibrium.
         flag     % Success flag of the analysis (positive; a failure stops with an error).

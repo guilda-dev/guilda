@@ -20,6 +20,8 @@ function remove_local_controller(obj, str_tag, opt)
 % ```
 %
 % See also Component.add_local_controller, LocalController
+%
+% <@Group> Construction and editing
     arguments
         obj
         str_tag (1,1) string   % Tag (str_tag) of the local controller to remove.

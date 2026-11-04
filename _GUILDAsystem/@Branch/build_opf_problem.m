@@ -6,6 +6,8 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Vvar, optio
 % balance in `const`. "ELD" ignores branches and returns the inputs unchanged.
 %
 % See also PowerNetwork.build_opf_problem, Bus.build_opf_problem, Branch.set_opffcn
+%
+% <@Group> Called by analyses
     arguments
         obj 
         prob  = optimproblem();   % optimproblem to extend.

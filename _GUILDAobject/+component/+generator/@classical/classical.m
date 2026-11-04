@@ -21,12 +21,14 @@ classdef classical < component.generator.abstract
 % - `Xd` [pu]: d-axis synchronous reactance.
 % - `Xq` [pu]: q-axis synchronous reactance.
 %
-% **Equations** (`omega0` is the network frequency `get_Hz()`; `Vd`, `Vq`, `Id`, `Iq`
-% are the bus voltage and current in the rotor dq frame)
-% ```
-% d(delta)/dt   = 2*pi*omega0*omega
-% M*d(omega)/dt = -D*omega - P + Pmech
-% Id = (Vfield - Vq)/Xd,  Iq = Vd/Xq,  P = Vd*Id + Vq*Iq
+% **Equations** (swing equation; $\omega_0$ is the network frequency `get_Hz()`; $V_d$, $V_q$,
+% $I_d$, $I_q$ are the bus voltage and current in the rotor dq frame)
+% ```math
+% \begin{aligned}
+% \dot{\delta} &= 2\pi\omega_0\,\omega \\
+% M\dot{\omega} &= -D\,\omega - P + P_\mathrm{mech} \\
+% I_d &= \frac{V_\mathrm{field} - V_q}{X_d}, \quad I_q = \frac{V_d}{X_q}, \quad P = V_d I_d + V_q I_q
+% \end{aligned}
 % ```
 %
 % <@Examples>

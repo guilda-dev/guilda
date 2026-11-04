@@ -7,6 +7,8 @@ function sys = get_sys_alone(obj, x, V, I, u, opt)
 % get_sys can connect the controllers by name. The caller checks the edit flags.
 %
 % See also Component.get_sys, controller.local_LQR
+%
+% <@Group> Called by analyses
     arguments
         obj
         x (:,1) double   % States.

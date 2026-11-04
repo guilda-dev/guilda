@@ -33,6 +33,8 @@ function [result, flag, output] = calculate_continuation_powerflow(obj, varargin
 % ```
 %
 % See also ResultCPF, SolverCPF
+%
+% <@Group> CPF
     arguments (Output)
         result   % lambda and bus voltages along the path, and the nose point.
         flag     % True when the path passed the nose.

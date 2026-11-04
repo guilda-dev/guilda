@@ -5,6 +5,8 @@ function set_equilibrium(obj, c_V, c_I, r_P, r_Q, opt)
 % component whose Q is NaN; Q goes to the components whose Q is NaN, split by
 % `QdistributionRule`. A slack bus without such components gives both to its first component.
 % With `rm_PQ` the components take the given powers instead, and r_P and r_Q are not used.
+%
+% <@Group> Called by analyses
     arguments
         obj 
         c_V   % [pu] Bus voltage phasor.

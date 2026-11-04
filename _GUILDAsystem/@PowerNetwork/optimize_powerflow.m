@@ -47,6 +47,8 @@ function varargout = optimize_powerflow(obj, varargin)
 % ```
 %
 % See also ResultOPF, SolverOPF, PowerNetwork.set_opffcn, PowerNetwork.build_opf_problem
+%
+% <@Group> OPF
 
     varargin = v3_opf_args(varargin);                         % COMPAT(v3)
     [c_nv, opt] = take_call_options(varargin);

@@ -31,6 +31,8 @@ function [sys, flag, output] = get_sys(obj, varargin)
 % ```
 %
 % See also PowerNetwork.linearize, ResultLIN.get_ss
+%
+% <@Group> Linearization
     arguments (Output)
         sys      % Descriptor state-space model (dss) with state, input and output names.
         flag     % True when the result is usable: all Jacobian entries are finite and Avv is invertible.

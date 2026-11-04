@@ -28,6 +28,8 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
 % ```
 %
 % See also ResultPF, SolverPF, PowerNetwork.initialize
+%
+% <@Group> Power flow
     arguments (Output)
         result   % Bus voltages, injections and branch flows of the solution.
         flag     % exitflag of fsolve ("algebraic", positive = converged) or convergence ("dynamic").

@@ -5,6 +5,8 @@ function G = draw_spring_model(obj,mode)
 % the bus data for the chosen mode.
 %
 % See also PowerNetwork.draw_diagram, GraphMassSpring
+%
+% <@Group> Queries and display
     arguments
         obj 
         mode (1,1) string {mustBeMember(mode,["CalculatePowerFlow","DynamicSimulation"])}   % Bus data to show: "CalculatePowerFlow" or "DynamicSimulation".

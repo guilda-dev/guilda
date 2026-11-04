@@ -38,6 +38,8 @@ function net = import_matpower(mpc, opt)
 % ```
 %
 % See also PowerNetwork.import_csv, tools.network_to_mpc
+%
+% <@Group> Data IO
 
     arguments
         mpc   % MATPOWER case: the struct (baseMVA, bus, gen, branch, optional gencost), the name of a case function on the path ("case14"), a .m or .mat case file, or a function handle that returns the struct.

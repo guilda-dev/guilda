@@ -39,6 +39,8 @@ function net = import_csv(path, opt)
 % ```
 %
 % See also PowerNetwork.export_csv, PowerNetwork.import_matpower
+%
+% <@Group> Data IO
 
     arguments
         path               (1,1) string   % Model folder (e.g. the folder written by net.export_csv).

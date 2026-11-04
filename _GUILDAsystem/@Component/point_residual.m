@@ -10,6 +10,8 @@ function [rv_dx, rv_I] = point_residual(obj, rv_point)
 % - `rv_I` — [pu] Current injected into the bus [Ire; Iim].
 %
 % See also SolverLIN.solve
+%
+% <@Group> Called by analyses
     a_LC = all_controllers(obj);
     [x, V, I, u, c_con] = point_values(obj, a_LC, rv_point);
     c_dx = cell(numel(a_LC),1);

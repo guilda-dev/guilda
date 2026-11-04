@@ -6,6 +6,8 @@ function remove_component(obj, str_tag)
 % controller cannot be removed.
 %
 % See also Bus.add_component
+%
+% <@Group> Construction and editing
     arguments
         obj 
         str_tag (1,1) string   % Tag of the component to remove.

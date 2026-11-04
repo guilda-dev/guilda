@@ -6,6 +6,8 @@ function flag = validate(obj, l_message)
 % check: it is reported as FAIL in flag.contract and the values that cannot be computed
 % are NaN. flag.inputs shows where each input is read, so a misspelled input name
 % appears as "equilibrium (not connected)".
+%
+% <@Group> Queries and checks
     arguments
         obj
         l_message (1,1) logical = true   % Print the comparison.

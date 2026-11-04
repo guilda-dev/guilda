@@ -58,6 +58,8 @@ function [result, flag, output] = simulate(obj, time, varargin)
 % ```
 %
 % See also Scenario, ResultODE, SolverODE, PowerNetwork.add_scenario, PowerNetwork.initialize
+%
+% <@Group> Simulation
     arguments
         obj
         time = []   % [s] Simulation time [t0, tend], or [] for the Time of the scenarios (or the time span of the disturbances). May be left out.

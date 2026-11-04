@@ -5,6 +5,8 @@ function reset_solver(obj)
 % solver objects, which discards the stored defaults changed on them.
 %
 % See also SolverPF, SolverOPF, SolverCPF, SolverODE, SolverLIN
+%
+% <@Group> Model building
     obj.solver_PF  = SolverPF();
     obj.solver_OPF = SolverOPF();
     obj.solver_CPF = SolverCPF();
