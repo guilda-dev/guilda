@@ -16,7 +16,19 @@
     .cl-used a { display: inline-block; padding: 6px 12px; border: 1px solid var(--dg-line); border-radius: var(--radius); text-decoration: none; }
     .cl-used a:hover { border-color: var(--brand); }
     .cl-used small { display: block; color: var(--dg-muted); font-size: 0.8rem; }
+    /* Stacked tables: one block per row at every width; the first cell heads it, the others follow as "label | value" */
+    .dg .dg-table.cl-stack, .dg .cl-stack tbody, .dg .cl-stack tr, .dg .cl-stack td { display: block; width: auto; }
+    .dg .cl-stack thead { display: none; }
+    .dg .cl-stack tr { padding: var(--dg-s3) 0; border-bottom: 1px solid var(--dg-line); }
+    .dg .cl-stack tr:first-child { border-top: 1px solid var(--dg-line); }
+    .dg .cl-stack td { padding: 2px 0; border: 0; }
+    .dg .cl-stack td:first-child { padding-bottom: 4px; }
+    .dg .cl-stack td[data-label] { position: relative; padding-left: 9.5rem; }
+    .dg .cl-stack td[data-label]::before { content: attr(data-label); position: absolute; left: 0; top: 5px; width: 9rem; color: var(--dg-muted); font-size: 0.7rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+    html[data-lang="ja"] .dg .cl-stack td[data-label-ja]::before { content: attr(data-label-ja); }
     @media (max-width: 640px) {
+      .dg .cl-stack td[data-label] { padding-left: 0; }
+      .dg .cl-stack td[data-label]::before { position: static; display: block; width: auto; margin-top: 6px; }
       .cl-table td:first-child code { white-space: normal; }
       html[data-lang="ja"] .dg .dg-table td[data-label-ja]::before { content: attr(data-label-ja); }
     }
@@ -29,8 +41,8 @@
   <main>
     <button type="button" class="developer-back-button" onclick="window.history.back()"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></button>
     <h1><span lang="en">Class: </span><span lang="ja">クラス: </span><code>Bus</code></h1>
-    <p class="page-lead" lang="en">A node of the network. It owns the algebraic variable of the network, the bus voltage, holds the components connected to it, and turns their settings into the power-flow specification of the node.</p>
-    <p class="page-lead" lang="ja">ネットワークの節点です。ネットワークの代数変数である母線電圧を持ち、接続される機器を保持し、機器の設定から節点の潮流計算の指定値を作ります。</p>
+    <p class="page-lead" lang="en">A node of the network. Owns the bus voltage (the network's algebraic variable) and its components, and turns their settings into the node's power-flow specification.</p>
+    <p class="page-lead" lang="ja">ネットワークの節点。母線電圧（ネットワークの代数変数）と接続機器を保持し、機器の設定から節点の潮流計算の指定値を作成。</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#role"><span lang="en">Role</span><span lang="ja">役割</span></a>
@@ -43,8 +55,13 @@
 
     <!-- ============================== ROLE ============================== -->
     <h2 id="role"><span lang="en">Role</span><span lang="ja">役割</span></h2>
-    <p lang="en">A <code>Bus</code> owns its voltage (power-flow settings and the equilibrium <code>c_Vequilibrium</code>), its shunt admittance, voltage limits, and the list of its components. Its type for the power flow (slack, PV, PQ) is not stored: it follows from <code>l_isSlack</code> and the <code>Q</code> settings of its components. On the way down, it splits the bus power of the equilibrium among its components; on the way up, it aggregates them (current, linear model, variable map, OPF variables). A bus does <strong>not</strong> own the system base (<code>baseMVA</code> belongs to <code>PowerNetwork</code>; a bus <code>baseMVA</code> given to <code>add_bus</code> or in a CSV bus table is accepted for compatibility and ignored), the branches that end at it (a branch only refers to it), or any dynamics: components carry the equations. Buses are created only by <code>PowerNetwork.add_bus</code>.</p>
-    <p lang="ja"><code>Bus</code> は自身の電圧（潮流計算の設定と平衡点 <code>c_Vequilibrium</code>）、シャントアドミタンス、電圧制限、機器の一覧を持ちます。潮流計算での種類（スラック・PV・PQ）は保存せず、<code>l_isSlack</code> と機器の <code>Q</code> 設定から決まります。下向きには平衡点の母線電力を機器へ分配し、上向きには機器を集約します（電流、線形モデル、変数マップ、OPF 変数）。系統基準（<code>baseMVA</code> は <code>PowerNetwork</code> のもの。<code>add_bus</code> や CSV の母線の表で与えた母線の <code>baseMVA</code> は、互換性のために受け付けますが無視します）、端につながるブランチ（ブランチが参照するだけ）、動特性（方程式は機器が持つ）は持ち<strong>ません</strong>。母線は <code>PowerNetwork.add_bus</code> でだけ作られます。</p>
+    <ul>
+      <li><span lang="en">Owns its voltage (power-flow settings and the equilibrium <code>c_Vequilibrium</code>), shunt admittance, voltage limits, and the list of its components.</span><span lang="ja">自身の電圧（潮流計算の設定と平衡点 <code>c_Vequilibrium</code>）、シャントアドミタンス、電圧制限、機器の一覧を保持</span></li>
+      <li><span lang="en">Power-flow type (slack, PV, PQ) not stored: it follows from <code>l_isSlack</code> and the components' <code>Q</code> settings.</span><span lang="ja">潮流計算での種類（スラック・PV・PQ）は保存せず、<code>l_isSlack</code> と機器の <code>Q</code> 設定から決定</span></li>
+      <li><span lang="en">Down: splits the equilibrium bus power among its components. Up: aggregates them (current, linear model, variable map, OPF variables).</span><span lang="ja">下向き: 平衡点の母線電力を機器へ分配。上向き: 機器を集約（電流、線形モデル、変数マップ、OPF 変数）</span></li>
+      <li><span lang="en">Does <strong>not</strong> own the system base (<code>baseMVA</code> belongs to <code>PowerNetwork</code>; a bus <code>baseMVA</code> given to <code>add_bus</code> or in a CSV bus table is accepted and ignored), the branches that end at it (a branch only refers to it), or any dynamics (components carry the equations).</span><span lang="ja">系統基準（<code>baseMVA</code> は <code>PowerNetwork</code> のもの。<code>add_bus</code> や CSV の母線の表で与えた母線の <code>baseMVA</code> は受け付けるが無視）、端につながるブランチ（ブランチが参照するだけ）、動特性（方程式は機器が保持）は<strong>保持しない</strong></span></li>
+      <li><span lang="en">Created only by <code>PowerNetwork.add_bus</code>.</span><span lang="ja">作成は <code>PowerNetwork.add_bus</code> のみ</span></li>
+    </ul>
 
     <figure class="dg-figure cl-figure">
       <svg class="dg-svg" viewBox="0 0 600 250" role="img" aria-labelledby="cl-map-title">
@@ -77,14 +94,14 @@
         <text x="20" y="130" font-size="11" lang="ja" style="fill:var(--muted)">実線: 保持する。</text>
         <text x="20" y="146" font-size="11" lang="ja" style="fill:var(--muted)">破線: 参照のみ。</text>
       </svg>
-      <figcaption><span lang="en">A bus does not know its branches; the network and the branches do.</span><span lang="ja">母線は自分のブランチを知りません。知っているのはネットワークとブランチです。</span></figcaption>
+      <figcaption><span lang="en">A bus does not know its branches; the network and the branches do.</span><span lang="ja">母線は自分のブランチを知らない。知っているのはネットワークとブランチ。</span></figcaption>
     </figure>
 
     <!-- ============================== DATA ============================== -->
     <h2 id="data"><span lang="en">Owned data</span><span lang="ja">保持するデータ</span></h2>
-    <p class="dg-lead-in" lang="en"><strong>Stale</strong>: what an edit makes out of date (see <a href="class-design.html#edits">Class Design: Edit handling</a>). Parameters live in <code>Parameter</code> objects (<code>para_dynamics</code>, <code>para_powerflow</code>, <code>para_operation</code>, <code>para_graph</code>) and are read and written through <code>tab_parameter</code>.</p>
-    <p class="dg-lead-in" lang="ja"><strong>無効化</strong>: 編集で古くなるもの（<a href="class-design.html#edits">クラス設計: 編集の扱い</a>を参照）。パラメータは <code>Parameter</code> オブジェクト（<code>para_dynamics</code>、<code>para_powerflow</code>、<code>para_operation</code>、<code>para_graph</code>）にあり、<code>tab_parameter</code> を通して読み書きします。</p>
-    <table class="dg-table cl-table">
+    <p class="dg-lead-in" lang="en"><strong>Stale</strong>: what an edit makes out of date (see <a href="class-design.html#edits">Class Design: Edit handling</a>). Parameters live in <code>Parameter</code> objects (<code>para_dynamics</code>, <code>para_powerflow</code>, <code>para_operation</code>, <code>para_graph</code>), read and written through <code>tab_parameter</code>.</p>
+    <p class="dg-lead-in" lang="ja"><strong>無効化</strong>: 編集で古くなるもの（<a href="class-design.html#edits">クラス設計: 編集の扱い</a>を参照）。パラメータの置き場所は <code>Parameter</code> オブジェクト（<code>para_dynamics</code>、<code>para_powerflow</code>、<code>para_operation</code>、<code>para_graph</code>）、読み書きは <code>tab_parameter</code> 経由。</p>
+    <table class="dg-table cl-table cl-stack">
       <thead>
         <tr><th><span lang="en">Property</span><span lang="ja">プロパティ</span></th><th><span lang="en">Meaning</span><span lang="ja">意味</span></th><th><span lang="en">Unit / size</span><span lang="ja">単位・サイズ</span></th><th><span lang="en">Set by</span><span lang="ja">設定元</span></th><th><span lang="en">Stale</span><span lang="ja">無効化</span></th></tr>
       </thead>
@@ -98,7 +115,7 @@
         </tr>
         <tr>
           <td><code>l_isSlack</code></td>
-          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Slack bus flag. Setting it requires a component; the network then clears the flag of the other buses (a bus never changes another bus). Clearing it leaves no slack bus, and <code>calculate_powerflow</code> then selects one.</span><span lang="ja">スラック母線のフラグ。設定には機器が必要で、設定するとネットワークが他の母線のフラグを外します（母線が他の母線を変えることはありません）。外すとスラック母線はなくなり、そのときは <code>calculate_powerflow</code> が1つ選びます。</span></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Slack bus flag. Setting it requires a component; the network then clears the other buses' flags (a bus never changes another bus). Cleared: no slack bus, and <code>calculate_powerflow</code> selects one.</span><span lang="ja">スラック母線のフラグ。設定には機器が必要。設定時はネットワークが他の母線のフラグを解除（母線が他の母線を変えることはない）。解除するとスラック母線なし、その場合は <code>calculate_powerflow</code> が 1 つ選択。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">logical</td>
           <td data-label="Set by" data-label-ja="設定元"><span lang="en">user; <code>calculate_powerflow</code> when none is set; <code>import_csv</code>, <code>import_matpower</code></span><span lang="ja">利用者、未設定時の <code>calculate_powerflow</code>、<code>import_csv</code>、<code>import_matpower</code></span></td>
           <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-err"><span lang="en">equilibrium</span><span lang="ja">平衡点</span></span></td>
@@ -112,7 +129,7 @@
         </tr>
         <tr>
           <td><code>tab_parameter.dynamics</code></td>
-          <td data-label="Meaning" data-label-ja="意味"><span lang="en"><code>Gshunt</code>, <code>Bshunt</code>: shunt admittance, added to the diagonal of the network admittance matrix.</span><span lang="ja"><code>Gshunt</code>、<code>Bshunt</code>: シャントアドミタンス。ネットワークのアドミタンス行列の対角に加わります。</span></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en"><code>Gshunt</code>, <code>Bshunt</code>: shunt admittance, added to the diagonal of the network admittance matrix.</span><span lang="ja"><code>Gshunt</code>、<code>Bshunt</code>: シャントアドミタンス。ネットワークのアドミタンス行列の対角に加算。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">pu</td>
           <td data-label="Set by" data-label-ja="設定元"><span lang="en"><code>add_bus</code>, setter</span><span lang="ja"><code>add_bus</code>、セッター</span></td>
           <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-err"><span lang="en">equilibrium</span><span lang="ja">平衡点</span></span></td>
@@ -133,7 +150,7 @@
         </tr>
         <tr>
           <td><code>c_Vequilibrium</code></td>
-          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Voltage phasor at the equilibrium. The bus is its single owner; components and controllers read it.</span><span lang="ja">平衡点の電圧フェーザ。母線が唯一の所有者で、機器と制御器はこれを読みます。</span></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Voltage phasor at the equilibrium. The bus is its single owner; components and controllers read it.</span><span lang="ja">平衡点の電圧フェーザ。母線が唯一の所有者、機器と制御器はこれを読む。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">pu, complex 1×1</td>
           <td data-label="Set by" data-label-ja="設定元"><code>set_equilibrium</code> <small><span lang="en">(from <code>initialize</code>)</span><span lang="ja">（<code>initialize</code> から）</span></small></td>
           <td data-label="Stale" data-label-ja="無効化">—</td>
@@ -147,7 +164,7 @@
         </tr>
         <tr>
           <td><code>str_tag</code></td>
-          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Permanent ID, e.g. <code>B001</code>. A rename does not change the tags of existing components.</span><span lang="ja">永続的な ID（例: <code>B001</code>）。名前を変えても既存の機器のタグは変わりません。</span></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Permanent ID, e.g. <code>B001</code>. Changing it leaves the tags of existing components as they are.</span><span lang="ja">永続的な ID（例: <code>B001</code>）。変更しても既存の機器のタグは不変。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">string</td>
           <td data-label="Set by" data-label-ja="設定元"><span lang="en"><code>add_bus</code> (<code>Tag</code>, <code>FullTag</code>), setter</span><span lang="ja"><code>add_bus</code>（<code>Tag</code>、<code>FullTag</code>）、セッター</span></td>
           <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-ok"><span lang="en">nothing (logged)</span><span lang="ja">なし（記録のみ）</span></span></td>
@@ -162,7 +179,7 @@
       <tbody>
         <tr><td><code>c_Iequilibrium</code></td><td data-label="Meaning" data-label-ja="意味"><span lang="en">Current injection at the equilibrium [pu]: the sum of the <code>c_Iequilibrium</code> of its components (0 without components).</span><span lang="ja">平衡点の注入電流 [pu]。機器の <code>c_Iequilibrium</code> の和（機器がなければ 0）。</span></td><td data-label="Written by" data-label-ja="書き込み元"><span lang="en">— (<code>Dependent</code>)</span><span lang="ja">—（<code>Dependent</code>）</span></td></tr>
         <tr><td><code>str_bustype</code></td><td data-label="Meaning" data-label-ja="意味"><span lang="en"><code>"slack"</code>, <code>"PV"</code>, or <code>"PQ"</code>, from <code>get_pf_set</code>.</span><span lang="ja"><code>get_pf_set</code> から得る <code>"slack"</code>、<code>"PV"</code>、<code>"PQ"</code>。</span></td><td data-label="Written by" data-label-ja="書き込み元"><span lang="en">— (<code>Dependent</code>)</span><span lang="ja">—（<code>Dependent</code>）</span></td></tr>
-        <tr><td><code>tab_parameter</code></td><td data-label="Meaning" data-label-ja="意味"><span lang="en">Table of <code>dynamics</code>, <code>operation</code>, <code>powerflow</code>, <code>graph</code>; writing it writes the parameters.</span><span lang="ja"><code>dynamics</code>、<code>operation</code>、<code>powerflow</code>、<code>graph</code> の表。書き込むとパラメータに書き込まれます。</span></td><td data-label="Written by" data-label-ja="書き込み元"><span lang="en">— (<code>Dependent</code>)</span><span lang="ja">—（<code>Dependent</code>）</span></td></tr>
+        <tr><td><code>tab_parameter</code></td><td data-label="Meaning" data-label-ja="意味"><span lang="en">Table of <code>dynamics</code>, <code>operation</code>, <code>powerflow</code>, <code>graph</code>; writing it writes the parameters.</span><span lang="ja"><code>dynamics</code>、<code>operation</code>、<code>powerflow</code>、<code>graph</code> の表。表への書き込みはパラメータへの書き込み。</span></td><td data-label="Written by" data-label-ja="書き込み元"><span lang="en">— (<code>Dependent</code>)</span><span lang="ja">—（<code>Dependent</code>）</span></td></tr>
         <tr><td><code>iv_odeX</code>, <code>iv_odeI</code>, <code>iv_odeU</code> <small>Hidden</small></td><td data-label="Meaning" data-label-ja="意味"><span lang="en">Positions of the bus voltage and current in the simulation vector.</span><span lang="ja">シミュレーションのベクトル中での母線電圧・電流の位置。</span></td><td data-label="Written by" data-label-ja="書き込み元"><code>SolverODE</code>, <code>Component</code></td></tr>
         <tr><td><code>l_isFault</code> <small><span lang="en">restricted</span><span lang="ja">アクセス制限</span></small></td><td data-label="Meaning" data-label-ja="意味"><span lang="en">True while an active fault of a scenario is applied at the bus.</span><span lang="ja">シナリオの有効な地絡が母線に加わっている間 <code>true</code>。</span></td><td data-label="Written by" data-label-ja="書き込み元"><code>SolverODE</code></td></tr>
         <tr><td><code>iv_CPFV</code></td><td data-label="Meaning" data-label-ja="意味"><span lang="en">Positions of the bus voltage in the CPF variable vector.</span><span lang="ja">CPF の変数ベクトル中での母線電圧の位置。</span></td><td data-label="Written by" data-label-ja="書き込み元"><code>SolverCPF</code></td></tr>
@@ -171,8 +188,8 @@
 
     <!-- ============================== REFERENCES ============================== -->
     <h2 id="references"><span lang="en">References</span><span lang="ja">参照</span></h2>
-    <p lang="en">The parent reference is set and cleared only by the parent (see <a href="class-design.html#parents">Class Design: Parent references</a>).</p>
-    <p lang="ja">親参照を設定・解除するのは親だけです（<a href="class-design.html#parents">クラス設計: 親参照</a>を参照）。</p>
+    <p lang="en">Only the parent sets and clears the parent reference (see <a href="class-design.html#parents">Class Design: Parent references</a>).</p>
+    <p lang="ja">親参照の設定・解除は親のみ（<a href="class-design.html#parents">クラス設計: 親参照</a>を参照）。</p>
     <table class="dg-table cl-table">
       <thead>
         <tr><th><span lang="en">Reference</span><span lang="ja">参照</span></th><th><span lang="en">Set by</span><span lang="ja">設定</span></th><th><span lang="en">Cleared by</span><span lang="ja">解除</span></th></tr>
@@ -195,80 +212,80 @@
         </tr>
       </tbody>
     </table>
-    <p lang="en">Attaching a component marks the handles of that component and its controllers as stale (see <a href="class-design.html#edits">Class Design: Edit handling</a>).</p>
-    <p lang="ja">機器を接続すると、その機器と制御器のハンドルが古いと記録されます（<a href="class-design.html#edits">クラス設計: 編集の扱い</a>を参照）。</p>
+    <p lang="en">Attaching a component marks the handles of that component and its controllers stale (see <a href="class-design.html#edits">Class Design: Edit handling</a>).</p>
+    <p lang="ja">機器の接続時、その機器と制御器のハンドルを「古い」と記録（<a href="class-design.html#edits">クラス設計: 編集の扱い</a>を参照）。</p>
 
     <!-- ============================== METHODS ============================== -->
     <h2 id="methods"><span lang="en">Methods</span><span lang="ja">メソッド</span></h2>
 
     <h3><span lang="en">Construction and editing</span><span lang="ja">構築と編集</span></h3>
-    <table class="dg-table cl-table">
+    <table class="dg-table cl-table cl-stack">
       <thead>
         <tr><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">内容</span></th><th><span lang="en">Called by</span><span lang="ja">呼び出し元</span></th></tr>
       </thead>
       <tbody>
         <tr>
           <td><code>Bus(net, tag, opt)</code> <small><span lang="en">PowerNetwork only</span><span lang="ja">PowerNetwork 専用</span></small></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Sets the parent and tag and creates the four <code>Parameter</code> objects.</span><span lang="ja">親とタグを設定し、4 つの <code>Parameter</code> オブジェクトを作ります。</span></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Sets the parent and tag and creates the four <code>Parameter</code> objects.</span><span lang="ja">親とタグを設定し、4 つの <code>Parameter</code> オブジェクトを作成。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><code>PowerNetwork.add_bus</code></td>
         </tr>
         <tr>
           <td><code>add_component(Type, Name=Value)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Creates the component class of the key <code>Type</code> with tag header + number + bus tag (e.g. <code>SG1B001</code>), attaches it, and logs a <code>Topology</code> edit. The key list is generated from the component classes on the path.</span><span lang="ja">キー <code>Type</code> の機器クラスを、ヘッダー + 番号 + 母線タグ（例: <code>SG1B001</code>）のタグで作って接続し、<code>Topology</code> 編集を記録します。キーの一覧はパス上の機器クラスから生成されます。</span>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Creates the component class of key <code>Type</code> with tag header + number + bus tag (e.g. <code>SG1B001</code>), attaches it, and logs a <code>Topology</code> edit. Key list generated from the component classes on the path.</span><span lang="ja">キー <code>Type</code> の機器クラスを、ヘッダー + 番号 + 母線タグ（例: <code>SG1B001</code>）のタグで作成・接続し、<code>Topology</code> 編集を記録。キーの一覧はパス上の機器クラスから生成。</span>
             <small><span lang="en">Reads: <code>parameter</code>, <code>P</code>, <code>Q</code>, <code>baseMVA</code>, <code>Pmin</code>…<code>Qmax</code>, <code>OPFinit_*</code>, <code>OPFcost_*</code>, drawing options. Returns: the <code>Component</code>.</span><span lang="ja">読む値: <code>parameter</code>、<code>P</code>、<code>Q</code>、<code>baseMVA</code>、<code>Pmin</code>〜<code>Qmax</code>、<code>OPFinit_*</code>、<code>OPFcost_*</code>、描画オプション。返り値: <code>Component</code>。</span></small></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user, <code>import_csv</code>, <code>import_matpower</code></span><span lang="ja">利用者、<code>import_csv</code>、<code>import_matpower</code></span></td>
         </tr>
         <tr>
           <td><code>remove_component(tag)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Detaches the component and logs a <code>Topology</code> edit. An unknown tag, or a component controlled by a global controller, is an error.</span><span lang="ja">機器を切り離し、<code>Topology</code> 編集を記録します。存在しないタグや広域制御器が制御する機器はエラーです。</span></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Detaches the component and logs a <code>Topology</code> edit. Error: an unknown tag, or a component controlled by a global controller.</span><span lang="ja">機器を切り離し、<code>Topology</code> 編集を記録。エラー: 存在しないタグ、広域制御器が制御する機器。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user</span><span lang="ja">利用者</span></td>
         </tr>
         <tr>
           <td><code>replace_component(tag, Type, parameter, Controllers=)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Puts a component of another type in the same place, keeping the power-flow, operation, OPF, and graph settings and the number. <code>Controllers="drop"</code> (default) leaves the local controllers on the old component with a warning; <code>"keep"</code> moves them (<code>Component.move_local_controllers</code>) after checking that the new component has their signals.</span><span lang="ja">別の種類の機器を同じ位置に置き、潮流計算・運転・OPF・描画の設定と番号を引き継ぎます。<code>Controllers="drop"</code>（既定）は制御器を古い機器に残して警告し、<code>"keep"</code> は新しい機器が必要な信号を持つことを確認してから移します（<code>Component.move_local_controllers</code>）。</span>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Puts a component of another type in the same place, keeping the power-flow, operation, OPF, and graph settings and the number. <code>Controllers="drop"</code> (default): local controllers stay on the replaced component, with a warning. <code>"keep"</code>: moves them (<code>Component.move_local_controllers</code>) after checking that the new component has their signals.</span><span lang="ja">別の種類の機器を同じ位置に配置し、潮流計算・運転・OPF・描画の設定と番号を引き継ぐ。<code>Controllers="drop"</code>（既定）: ローカル制御器は置き換え前の機器に残り、警告。<code>"keep"</code>: 新しい機器が必要な信号を持つか確認してから移動（<code>Component.move_local_controllers</code>）。</span>
             <small><span lang="en">Returns: the new <code>Component</code>.</span><span lang="ja">返り値: 新しい <code>Component</code>。</span></small></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user</span><span lang="ja">利用者</span></td>
         </tr>
         <tr>
           <td><code>set_opffcn(Cost=, Constraint=, DefaultConstraint=)</code>, <code>reset_opffcn()</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Store or clear the OPF terms of the bus. The handles <code>@(v, p)</code> get <code>v.Varg</code> and, in AC OPF, <code>v.V</code>. <code>DefaultConstraint=false</code> drops <code>Vmin</code>/<code>Vmax</code>; the power balance always stays.</span><span lang="ja">母線の OPF 項を保存・消去します。ハンドル <code>@(v, p)</code> は <code>v.Varg</code> と、AC OPF では <code>v.V</code> を受け取ります。<code>DefaultConstraint=false</code> は <code>Vmin</code>/<code>Vmax</code> を外しますが、電力収支は常に残ります。</span></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Store or clear the OPF terms of the bus. The handles <code>@(v, p)</code> get <code>v.Varg</code> and, in AC OPF, <code>v.V</code>. <code>DefaultConstraint=false</code> drops <code>Vmin</code>/<code>Vmax</code>; the power balance always stays.</span><span lang="ja">母線の OPF 項の保存・消去。ハンドル <code>@(v, p)</code> が受け取るのは <code>v.Varg</code>、AC OPF では <code>v.V</code> も。<code>DefaultConstraint=false</code> で <code>Vmin</code>/<code>Vmax</code> を除外。電力収支は常に残る。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user</span><span lang="ja">利用者</span></td>
         </tr>
       </tbody>
     </table>
 
     <h3><span lang="en">Called by analyses</span><span lang="ja">解析から呼ばれるメソッド</span></h3>
-    <table class="dg-table cl-table">
+    <table class="dg-table cl-table cl-stack">
       <thead>
         <tr><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">内容</span></th><th><span lang="en">Called by</span><span lang="ja">呼び出し元</span></th></tr>
       </thead>
       <tbody>
         <tr>
           <td><code>get_pf_set()</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Builds the power-flow specification: <code>"slack"</code> fixes <code>Varg</code> and <code>V</code>; otherwise <code>P</code> and <code>Q</code> are the sums over the components, and a NaN sum of <code>Q</code> makes the bus <code>"PV"</code> with <code>V</code> fixed, else <code>"PQ"</code>.</span><span lang="ja">潮流計算の指定値を作ります。<code>"slack"</code> は <code>Varg</code> と <code>V</code> を固定します。それ以外では <code>P</code>、<code>Q</code> は機器の和で、<code>Q</code> の和が NaN なら <code>V</code> を固定した <code>"PV"</code>、そうでなければ <code>"PQ"</code> です。</span>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Builds the power-flow specification. <code>"slack"</code>: fixes <code>Varg</code> and <code>V</code>. Otherwise: <code>P</code>, <code>Q</code> are the sums over the components; a NaN sum of <code>Q</code> gives <code>"PV"</code> with <code>V</code> fixed, else <code>"PQ"</code>.</span><span lang="ja">潮流計算の指定値を作成。<code>"slack"</code>: <code>Varg</code> と <code>V</code> を固定。それ以外: <code>P</code>、<code>Q</code> は機器の和。<code>Q</code> の和が NaN なら <code>V</code> を固定した <code>"PV"</code>、そうでなければ <code>"PQ"</code>。</span>
             <small><span lang="en">Reads: <code>l_isSlack</code>, <code>tab_parameter.powerflow</code>, the components' <code>P</code>, <code>Q</code>. Returns: a one-row table <code>Type</code>, <code>Varg</code>, <code>V</code>, <code>P</code>, <code>Q</code>, <code>Varg0</code>, <code>V0</code> (NaN where the type does not set the value).</span><span lang="ja">読む値: <code>l_isSlack</code>、<code>tab_parameter.powerflow</code>、機器の <code>P</code>・<code>Q</code>。返り値: 1 行の表 <code>Type</code>、<code>Varg</code>、<code>V</code>、<code>P</code>、<code>Q</code>、<code>Varg0</code>、<code>V0</code>（種類が定めない値は NaN）。</span></small></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><code>SolverPF</code>, <code>SolverCPF</code>, <code>ResultPF.Export</code>, <code>str_bustype</code></td>
         </tr>
         <tr>
           <td><code>set_equilibrium(c_V, c_I, r_P, r_Q, QdistributionRule=, rm_PQ=)</code> <small><span lang="en">PowerNetwork, Bus</span><span lang="ja">PowerNetwork・Bus 専用</span></small></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Stores <code>c_V</code> as <code>c_Vequilibrium</code> and gives each component its share: the slack bus gives the remaining <code>P</code> to its first component with <code>Q = NaN</code>; the remaining <code>Q</code> is split among the components with <code>Q = NaN</code> by <code>baseMVA</code> (default) or by the <code>Qmin</code>–<code>Qmax</code> range (<code>"Qmax"</code>). With <code>rm_PQ</code> (one row per component, e.g. from the OPF) those powers are used instead. Then it calls <code>Component.set_equilibrium</code> with the current <code>conj((P + jQ)/V)</code>.</span><span lang="ja"><code>c_V</code> を <code>c_Vequilibrium</code> に保存し、各機器に分担を渡します。スラック母線は残りの <code>P</code> を <code>Q = NaN</code> の最初の機器に与え、残りの <code>Q</code> は <code>Q = NaN</code> の機器に <code>baseMVA</code> 比（既定）または <code>Qmin</code>〜<code>Qmax</code> の幅（<code>"Qmax"</code>）で分けます。<code>rm_PQ</code>（機器ごとに 1 行、例: OPF の解）を渡すとその電力を使います。最後に電流 <code>conj((P + jQ)/V)</code> で <code>Component.set_equilibrium</code> を呼びます。</span></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Stores <code>c_V</code> as <code>c_Vequilibrium</code> and gives each component its share. Slack bus: the remaining <code>P</code> goes to its first component with <code>Q = NaN</code>. The remaining <code>Q</code> is split among the components with <code>Q = NaN</code> by <code>baseMVA</code> (default) or by the <code>Qmin</code>–<code>Qmax</code> range (<code>"Qmax"</code>). With <code>rm_PQ</code> (one row per component, e.g. from the OPF): those powers instead. Finally calls <code>Component.set_equilibrium</code> with the current <code>conj((P + jQ)/V)</code>.</span><span lang="ja"><code>c_V</code> を <code>c_Vequilibrium</code> に保存し、各機器に分担を配分。スラック母線: 残りの <code>P</code> を <code>Q = NaN</code> の最初の機器へ。残りの <code>Q</code> は <code>Q = NaN</code> の機器に <code>baseMVA</code> 比（既定）または <code>Qmin</code>〜<code>Qmax</code> の幅（<code>"Qmax"</code>）で分配。<code>rm_PQ</code>（機器ごとに 1 行、例: OPF の解）指定時はその電力を使用。最後に電流 <code>conj((P + jQ)/V)</code> で <code>Component.set_equilibrium</code> を呼ぶ。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><code>PowerNetwork.initialize</code></td>
         </tr>
         <tr>
           <td><code>get_sys(port=, Point=)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Linear model of the bus with its components and their controllers. <code>"V2I"</code>: inputs <code>[Vre; Vim]</code> and the components' inputs, outputs the summed current and the components' outputs. <code>"I2V"</code> inverts the port and stops with <code>GUILDA:Bus:NoI2V</code> when D is singular. It builds out-of-date handles; without <code>Point</code> it requires an up-to-date equilibrium.</span><span lang="ja">機器と制御器を含む母線の線形モデル。<code>"V2I"</code> は入力が <code>[Vre; Vim]</code> と機器の入力、出力が合計電流と機器の出力です。<code>"I2V"</code> はポートを逆にし、D が特異なら <code>GUILDA:Bus:NoI2V</code> で止まります。古いハンドルを作り直し、<code>Point</code> がなければ最新の平衡点を要求します。</span>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Linear model of the bus with its components and their controllers. <code>"V2I"</code>: inputs <code>[Vre; Vim]</code> and the components' inputs; outputs the summed current and the components' outputs. <code>"I2V"</code>: inverted port; stops with <code>GUILDA:Bus:NoI2V</code> when D is singular. Rebuilds out-of-date handles; without <code>Point</code>, requires an up-to-date equilibrium.</span><span lang="ja">機器と制御器を含む母線の線形モデル。<code>"V2I"</code>: 入力は <code>[Vre; Vim]</code> と機器の入力、出力は合計電流と機器の出力。<code>"I2V"</code>: ポートを反転、D が特異なら <code>GUILDA:Bus:NoI2V</code> で停止。古いハンドルを再構築。<code>Point</code> がなければ最新の平衡点が必要。</span>
             <small><span lang="en">Returns: a named descriptor state-space model, then its <code>StateName</code>, <code>InputName</code>, <code>OutputName</code>.</span><span lang="ja">返り値: 名前付きのディスクリプタ状態空間モデルと、その <code>StateName</code>、<code>InputName</code>、<code>OutputName</code>。</span></small></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><code>SolverLIN.solve</code> <span lang="en">(port <code>"V2I"</code>), user</span><span lang="ja">（ポート <code>"V2I"</code>）、利用者</span></td>
         </tr>
         <tr>
           <td><code>get_variable_map(str_form)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">The rows of the network map that belong to the bus, in the same relative order: the states of each component (with its controllers), <code>Vre</code>, <code>Vim</code>, then the inputs. This is the order of <code>get_sys(Point=…)</code>.</span><span lang="ja">ネットワークのマップのうちこの母線の行を、同じ相対順で返します: 各機器の状態（制御器を含む）、<code>Vre</code>、<code>Vim</code>、入力。<code>get_sys(Point=…)</code> の並びです。</span>
-            <small><span lang="en">Returns: <code>[tab, c_idx]</code>; <code>"rows"</code> returns the string rows used inside the network map.</span><span lang="ja">返り値: <code>[tab, c_idx]</code>。<code>"rows"</code> はネットワークのマップ内部で使う文字列の行を返します。</span></small></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">The bus's rows of the network map, in the same relative order: each component's states (with its controllers), <code>Vre</code>, <code>Vim</code>, then the inputs. Same order as <code>get_sys(Point=…)</code>.</span><span lang="ja">ネットワークのマップのうちこの母線の行を同じ相対順で返す: 各機器の状態（制御器を含む）、<code>Vre</code>、<code>Vim</code>、入力。<code>get_sys(Point=…)</code> と同じ並び。</span>
+            <small><span lang="en">Returns: <code>[tab, c_idx]</code>; <code>"rows"</code> returns the string rows used inside the network map.</span><span lang="ja">返り値: <code>[tab, c_idx]</code>。<code>"rows"</code> ではネットワークのマップ内部で使う文字列の行。</span></small></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><code>PowerNetwork.get_variable_map</code>, <code>get_sys</code></td>
         </tr>
         <tr>
           <td><code>build_opf_problem(prob, x0, const, Vvar, methods=, l_includeComponent=)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Adds the bus variables (<code>Varg</code>; <code>V</code> in AC OPF), the voltage bounds, and its own terms of <code>s_opffcn</code>, then calls <code>Component.build_opf_problem</code> of each component. ELD has no bus variables.</span><span lang="ja">母線の変数（<code>Varg</code>、AC OPF では <code>V</code>）、電圧範囲、自身の <code>s_opffcn</code> の項を加え、各機器の <code>Component.build_opf_problem</code> を呼びます。ELD には母線変数がありません。</span>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Adds the bus variables (<code>Varg</code>; <code>V</code> in AC OPF), the voltage bounds, and its own <code>s_opffcn</code> terms, then calls each component's <code>Component.build_opf_problem</code>. ELD: no bus variables.</span><span lang="ja">母線の変数（<code>Varg</code>、AC OPF では <code>V</code>）、電圧範囲、自身の <code>s_opffcn</code> の項を追加し、各機器の <code>Component.build_opf_problem</code> を呼ぶ。ELD では母線変数なし。</span>
             <small><span lang="en">Returns: the extended <code>prob</code>, <code>x0</code>, <code>const</code> (power balance), <code>Vvar</code>.</span><span lang="ja">返り値: 拡張した <code>prob</code>、<code>x0</code>、<code>const</code>（電力収支）、<code>Vvar</code>。</span></small></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><code>PowerNetwork.build_opf_problem</code></td>
         </tr>
@@ -290,8 +307,8 @@
 
     <!-- ============================== SUBCLASSES ============================== -->
     <h2 id="subclasses"><span lang="en">Subclasses</span><span lang="ja">サブクラス</span></h2>
-    <p lang="en"><code>Bus</code> is a concrete class and has no subclasses. What differs from bus to bus (slack, PV, PQ, shunt) is data, not a type.</p>
-    <p lang="ja"><code>Bus</code> は具象クラスで、サブクラスはありません。母線ごとの違い（スラック・PV・PQ、シャント）は型ではなくデータで表します。</p>
+    <p lang="en">Concrete class, no subclasses. What differs from bus to bus (slack, PV, PQ, shunt) is data, not a type.</p>
+    <p lang="ja">具象クラス、サブクラスなし。母線ごとの違い（スラック・PV・PQ、シャント）は型ではなくデータで表現。</p>
   </main>
 </body>
 </html>
