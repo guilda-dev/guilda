@@ -91,8 +91,8 @@ b1.l_isSlack = true;</code></pre>
       <tbody>
         <tr><td><code>PowerNetwork(tag="PowerNetwork")</code></td><td data-label="Returns" data-label-ja="戻り値"><code>net</code></td><td data-label="Defaults come from" data-label-ja="既定値の出所"><code>Hz</code> = <code>GUILDA.config("Model","Hz")</code>, <code>baseMVA</code> = 100; <span lang="en">solvers from <code>reset_solver</code></span><span lang="ja">ソルバーは <code>reset_solver</code></span></td></tr>
         <tr><td><code>net.add_bus(Name=Value)</code></td><td data-label="Returns" data-label-ja="戻り値"><code>Bus</code></td><td data-label="Defaults come from" data-label-ja="既定値の出所"><span lang="en">arguments block of <code>add_bus</code></span><span lang="ja"><code>add_bus</code> の arguments ブロック</span></td></tr>
-        <tr><td><code>net.add_branch(Type, from_to, Name=Value)</code></td><td data-label="Returns" data-label-ja="戻り値"><code>Branch</code></td><td data-label="Defaults come from" data-label-ja="既定値の出所"><span lang="en">arguments block of <code>add_branch</code></span><span lang="ja"><code>add_branch</code> の arguments ブロック</span></td></tr>
-        <tr><td><code>bus.add_component(Type, parameter=..., Name=Value)</code></td><td data-label="Returns" data-label-ja="戻り値"><code>Component</code></td><td data-label="Defaults come from" data-label-ja="既定値の出所"><span lang="en">arguments block of <code>add_component</code>; dynamics: first row of the class <code>parameter.csv</code> (or a named row / a given table)</span><span lang="ja"><code>add_component</code> の arguments ブロック。dynamics はクラスの <code>parameter.csv</code> の 1 行目（または名前で選んだ行・与えた table）</span></td></tr>
+        <tr><td><code>net.add_branch(Key, from_to, Name=Value)</code></td><td data-label="Returns" data-label-ja="戻り値"><code>Branch</code></td><td data-label="Defaults come from" data-label-ja="既定値の出所"><span lang="en">arguments block of <code>add_branch</code></span><span lang="ja"><code>add_branch</code> の arguments ブロック</span></td></tr>
+        <tr><td><code>bus.add_component(Key, parameter=..., Name=Value)</code></td><td data-label="Returns" data-label-ja="戻り値"><code>Component</code></td><td data-label="Defaults come from" data-label-ja="既定値の出所"><span lang="en">arguments block of <code>add_component</code>; dynamics: first row of the class <code>parameter.csv</code> (or a named row / a given table)</span><span lang="ja"><code>add_component</code> の arguments ブロック。dynamics はクラスの <code>parameter.csv</code> の 1 行目（または名前で選んだ行・与えた table）</span></td></tr>
         <tr><td><code>comp.add_local_controller(con, ...)</code></td><td data-label="Returns" data-label-ja="戻り値">—</td><td data-label="Defaults come from" data-label-ja="既定値の出所"><span lang="en">controller constructors, e.g. <code>controller.avr.AVR_ST1(tag, Name=Value)</code></span><span lang="ja">制御器のコンストラクタ（例: <code>controller.avr.AVR_ST1(tag, Name=Value)</code>）</span></td></tr>
         <tr><td><code>net.add_global_controller(gc)</code></td><td data-label="Returns" data-label-ja="戻り値">—</td><td data-label="Defaults come from" data-label-ja="既定値の出所"><span lang="en">controller constructor, e.g. <code>controller.agc.broadcast_PI_AGC(net, tag, gens..., Name=Value)</code></span><span lang="ja">制御器のコンストラクタ（例: <code>controller.agc.broadcast_PI_AGC(net, tag, gens..., Name=Value)</code>）</span></td></tr>
         <tr><td><code>bus.l_isSlack = true</code>, <code>obj.tab_parameter = tab</code>, <code>obj.para_*.Name = v</code>, <code>obj.str_tag = s</code></td><td data-label="Returns" data-label-ja="戻り値">—</td><td data-label="Defaults come from" data-label-ja="既定値の出所">—</td></tr>
@@ -173,14 +173,14 @@ b1.l_isSlack = true;</code></pre>
           <path class="dg-sv-line is-muted" d="M34 254H78" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="246" width="30" height="16" rx="8"/>
           <text class="is-inv is-b" x="18" y="258" text-anchor="middle" style="font-size:10px">03</text>
-          <text class="dg-mono is-sm fmb-l" x="92" y="248" text-anchor="start">add_branch(Type, from_to, ...)</text>
+          <text class="dg-mono is-sm fmb-l" x="92" y="248" text-anchor="start">add_branch(Key, from_to, ...)</text>
           <path class="dg-sv-line" d="M207 284H438" marker-end="url(#fmb-ah)"/>
           <text class="dg-mono is-sm fmb-l" x="211" y="278" text-anchor="start">mkInst(index, opt); set_bus; set_network</text>
           <path class="dg-sv-line" d="M88 314H319" marker-end="url(#fmb-ah)"/>
           <path class="dg-sv-line is-muted" d="M34 314H78" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="306" width="30" height="16" rx="8"/>
           <text class="is-inv is-b" x="18" y="318" text-anchor="middle" style="font-size:10px">04</text>
-          <text class="dg-mono is-sm fmb-l" x="92" y="308" text-anchor="start">add_component(Type, ...)</text>
+          <text class="dg-mono is-sm fmb-l" x="92" y="308" text-anchor="start">add_component(Key, ...)</text>
           <path class="dg-sv-line" d="M326 344H556" marker-end="url(#fmb-ah)"/>
           <text class="dg-mono is-sm fmb-l" x="330" y="338" text-anchor="start">mkInst(index, para, opt); set_bus(bus)</text>
           <path class="dg-sv-line" d="M88 374H556" marker-end="url(#fmb-ah)"/>
@@ -329,13 +329,13 @@ b1.l_isSlack = true;</code></pre>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li>Before any change: check <code>Type</code> against the generated key list, resolve <code>from_to</code> (indices of <code>a_Bus</code> or tags), reject equal ends and <code>R = X = 0</code></li>
+            <li>Before any change: check <code>Key</code> against the generated key list, resolve <code>from_to</code> (indices of <code>a_Bus</code> or tags), reject equal ends and <code>R = X = 0</code></li>
             <li>Create the class of the key (<code>mkInst</code>)</li>
             <li><code>Branch</code> constructor: set the tag <code>header</code> + three digits, assert real R, X, C, create three <code>Parameter</code> objects</li>
             <li>Call <code>set_bus({from; to})</code> and <code>set_network(net)</code></li>
             <li>Append to <code>a_Branch</code></li>
           </ul><ul lang="ja">
-            <li>変更前に検査: <code>Type</code> を生成済みのキー一覧で検査、<code>from_to</code>（<code>a_Bus</code> の番号またはタグ）を解決、両端が同じもの・<code>R = X = 0</code> を拒否</li>
+            <li>変更前に検査: <code>Key</code> を生成済みのキー一覧で検査、<code>from_to</code>（<code>a_Bus</code> の番号またはタグ）を解決、両端が同じもの・<code>R = X = 0</code> を拒否</li>
             <li>キーのクラスを作成（<code>mkInst</code>）</li>
             <li><code>Branch</code> のコンストラクタ: タグ <code>header</code> + 3 桁を設定、R・X・C が実数であることを assert、3 つの <code>Parameter</code> を作成</li>
             <li><code>set_bus({from; to})</code> と <code>set_network(net)</code> を呼び出し</li>

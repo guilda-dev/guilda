@@ -230,8 +230,8 @@
           <td data-label="Called by" data-label-ja="呼び出し元"><code>PowerNetwork.add_bus</code></td>
         </tr>
         <tr>
-          <td><code>add_component(Type, Name=Value)</code></td>
-          <td data-label="What it does" data-label-ja="処理内容"><span lang="en">Creates the component class of key <code>Type</code> with tag header + number + bus tag (e.g. <code>SG1B001</code>), attaches it, and logs a <code>Topology</code> edit. Key list generated from the component classes on the path.</span><span lang="ja">キー <code>Type</code> の機器クラスを、ヘッダー + 番号 + 母線タグ（例: <code>SG1B001</code>）のタグで作成・接続し、<code>Topology</code> 編集を記録。キーの一覧はパス上の機器クラスから生成。</span>
+          <td><code>add_component(Key, Name=Value)</code></td>
+          <td data-label="What it does" data-label-ja="処理内容"><span lang="en">Creates the component class named by <code>Key</code> with tag header + number + bus tag (e.g. <code>SG1B001</code>), attaches it, and logs a <code>Topology</code> edit. Key list generated from the component classes on the path.</span><span lang="ja"><code>Key</code> が示す機器クラスを、ヘッダー + 番号 + 母線タグ（例: <code>SG1B001</code>）のタグで作成・接続し、<code>Topology</code> 編集を記録。キーの一覧はパス上の機器クラスから生成。</span>
             <small><span lang="en">Reads: <code>parameter</code>, <code>P</code>, <code>Q</code>, <code>baseMVA</code>, <code>Pmin</code>…<code>Qmax</code>, <code>OPFinit_*</code>, <code>OPFcost_*</code>, drawing options. Returns: the <code>Component</code>.</span><span lang="ja">読む値: <code>parameter</code>、<code>P</code>、<code>Q</code>、<code>baseMVA</code>、<code>Pmin</code>〜<code>Qmax</code>、<code>OPFinit_*</code>、<code>OPFcost_*</code>、描画オプション。返り値: <code>Component</code>。</span></small></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user, <code>import_csv</code>, <code>import_matpower</code></span><span lang="ja">利用者、<code>import_csv</code>、<code>import_matpower</code></span></td>
         </tr>
@@ -241,7 +241,7 @@
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user</span><span lang="ja">利用者</span></td>
         </tr>
         <tr>
-          <td><code>replace_component(tag, Type, parameter, Controllers=)</code></td>
+          <td><code>replace_component(tag, Key, parameter, Controllers=)</code></td>
           <td data-label="What it does" data-label-ja="処理内容"><span lang="en">Puts a component of another type in the same place, keeping the power-flow, operation, OPF, and graph settings and the number. <code>Controllers="drop"</code> (default): local controllers stay on the replaced component, with a warning. <code>"keep"</code>: moves them (<code>Component.move_local_controllers</code>) after checking that the new component has their signals.</span><span lang="ja">別の種類の機器を同じ位置に配置し、潮流計算・運転・OPF・描画の設定と番号を引き継ぐ。<code>Controllers="drop"</code>（既定）: ローカル制御器は置き換え前の機器に残り、警告。<code>"keep"</code>: 新しい機器が必要な信号を持つか確認してから移動（<code>Component.move_local_controllers</code>）。</span>
             <small><span lang="en">Returns: the new <code>Component</code>.</span><span lang="ja">返り値: 新しい <code>Component</code>。</span></small></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user</span><span lang="ja">利用者</span></td>
