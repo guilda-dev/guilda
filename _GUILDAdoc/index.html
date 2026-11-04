@@ -884,7 +884,7 @@ sol = net.simulate([0, 50], sc);</code></pre>
                   <span class="developer-link-title">${escapeHtml(item.title)}</span>
                   <span class="developer-link-description">${escapeHtml(item.description)}</span>
                 </span>
-                <span class="developer-link-action">${ja ? 'ガイドを見る' : 'View guide'} <span aria-hidden="true">→</span></span>
+                <span class="developer-link-action">${item.link.startsWith('class.html') ? (ja ? 'リファレンスを見る' : 'View reference') : (ja ? 'ガイドを見る' : 'View guide')} <span aria-hidden="true">→</span></span>
               </a>
             `).join('')}
           </div>
