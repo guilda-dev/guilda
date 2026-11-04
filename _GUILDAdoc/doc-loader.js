@@ -70,7 +70,8 @@
     } else if (params && typeof params === 'object') {
       targetUrl.hash = new URLSearchParams(params).toString();
     }
-    return targetUrl.href;
+    // Carry the shown language as ?lang= (doc-lang.js).
+    return root.GUILDA_LANG?.url ? root.GUILDA_LANG.url(targetUrl.href) : targetUrl.href;
   }
 
   function navigate(pageName, params) {
