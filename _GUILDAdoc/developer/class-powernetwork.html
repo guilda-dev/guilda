@@ -16,7 +16,19 @@
     .cl-used a { display: inline-block; padding: 6px 12px; border: 1px solid var(--dg-line); border-radius: var(--radius); text-decoration: none; }
     .cl-used a:hover { border-color: var(--brand); }
     .cl-used small { display: block; color: var(--dg-muted); font-size: 0.8rem; }
+    /* Stacked tables: one block per row at every width; the first cell heads it, the others follow as "label | value" */
+    .dg .dg-table.cl-stack, .dg .cl-stack tbody, .dg .cl-stack tr, .dg .cl-stack td { display: block; width: auto; }
+    .dg .cl-stack thead { display: none; }
+    .dg .cl-stack tr { padding: var(--dg-s3) 0; border-bottom: 1px solid var(--dg-line); }
+    .dg .cl-stack tr:first-child { border-top: 1px solid var(--dg-line); }
+    .dg .cl-stack td { padding: 2px 0; border: 0; }
+    .dg .cl-stack td:first-child { padding-bottom: 4px; }
+    .dg .cl-stack td[data-label] { position: relative; padding-left: 9.5rem; }
+    .dg .cl-stack td[data-label]::before { content: attr(data-label); position: absolute; left: 0; top: 5px; width: 9rem; color: var(--dg-muted); font-size: 0.7rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+    html[data-lang="ja"] .dg .cl-stack td[data-label-ja]::before { content: attr(data-label-ja); }
     @media (max-width: 640px) {
+      .dg .cl-stack td[data-label] { padding-left: 0; }
+      .dg .cl-stack td[data-label]::before { position: static; display: block; width: auto; margin-top: 6px; }
       .cl-table td:first-child code { white-space: normal; }
       html[data-lang="ja"] .dg .dg-table td[data-label-ja]::before { content: attr(data-label-ja); }
     }
@@ -29,8 +41,8 @@
   <main>
     <button type="button" class="developer-back-button" onclick="window.history.back()"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></button>
     <h1><span lang="en">Class: </span><span lang="ja">クラス: </span><code>PowerNetwork</code></h1>
-    <p class="page-lead" lang="en">The root of the model: it holds the buses, branches, and global controllers of one grid, the system base values, and the default settings of every analysis, and it is the entry point that runs them.</p>
-    <p class="page-lead" lang="ja">モデルの根です。1 つの系統の母線・ブランチ・広域制御器、系統の基準値、各解析の既定設定を持ち、すべての解析を実行する入口になります。</p>
+    <p class="page-lead" lang="en">Root of the model. Holds the buses, branches, and global controllers of one grid, the system base values, and the defaults of every analysis; the entry point that runs them.</p>
+    <p class="page-lead" lang="ja">モデルの根。1 つの系統の母線・ブランチ・広域制御器、系統の基準値、各解析の既定設定を保持。すべての解析を実行する入口。</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#role"><span lang="en">Role</span><span lang="ja">役割</span></a>
@@ -43,8 +55,12 @@
 
     <!-- ============================== ROLE ============================== -->
     <h2 id="role"><span lang="en">Role</span><span lang="ja">役割</span></h2>
-    <p lang="en"><code>PowerNetwork</code> owns the topology (which buses, branches, and global controllers exist), the system base in <code>tab_parameter.base</code> (<code>Hz</code>, <code>baseMVA</code>), the solver objects <code>solver_*</code>, and the network-wide OPF terms. Every analysis starts here: the method reads its settings from a solver object, hands the network to it, and returns a result object. It is <strong>not</strong> where the numbers are: bus voltages belong to <code>Bus</code>, the model equations to <code>Component</code> and the controllers, and the numerical methods to the <code>Solver*</code> classes. Results are returned, never stored in the network. The one exception is <code>initialize</code>, which writes the equilibrium into the buses, components, and controllers.</p>
-    <p lang="ja"><code>PowerNetwork</code> はトポロジー（どの母線・ブランチ・広域制御器があるか）、<code>tab_parameter.base</code> の系統基準値（<code>Hz</code>、<code>baseMVA</code>）、ソルバーオブジェクト <code>solver_*</code>、ネットワーク全体の OPF 項を持ちます。すべての解析はここから始まります。メソッドはソルバーオブジェクトから設定を読み、ネットワークを渡し、結果オブジェクトを返します。数値そのものは持<strong>ちません</strong>。母線電圧は <code>Bus</code>、モデルの方程式は <code>Component</code> と制御器、数値解法は <code>Solver*</code> クラスが担います。結果は返り値であり、ネットワークには保存しません。例外は <code>initialize</code> で、平衡点を母線・機器・制御器に書き込みます。</p>
+    <ul>
+      <li><span lang="en">Owns the topology (which buses, branches, and global controllers exist), the system base in <code>tab_parameter.base</code> (<code>Hz</code>, <code>baseMVA</code>), the solver objects <code>solver_*</code>, and the network-wide OPF terms.</span><span lang="ja">トポロジー（どの母線・ブランチ・広域制御器があるか）、<code>tab_parameter.base</code> の系統基準値（<code>Hz</code>、<code>baseMVA</code>）、ソルバーオブジェクト <code>solver_*</code>、ネットワーク全体の OPF 項を保持</span></li>
+      <li><span lang="en">Every analysis starts here: the method reads its settings from a solver object, hands the network to it, and returns a result object.</span><span lang="ja">すべての解析の起点。メソッドがソルバーオブジェクトから設定を読み、ネットワークを渡し、結果オブジェクトを返す</span></li>
+      <li><span lang="en"><strong>Not</strong> where the numbers are: bus voltages belong to <code>Bus</code>, the model equations to <code>Component</code> and the controllers, the numerical methods to the <code>Solver*</code> classes.</span><span lang="ja">数値そのものは保持<strong>しない</strong>。母線電圧は <code>Bus</code>、モデルの方程式は <code>Component</code> と制御器、数値解法は <code>Solver*</code> クラスの担当</span></li>
+      <li><span lang="en">Results are returned, never stored in the network. Only exception: <code>initialize</code> writes the equilibrium into the buses, components, and controllers.</span><span lang="ja">結果は返り値で、ネットワークには保存しない。例外は <code>initialize</code> のみ（平衡点を母線・機器・制御器に書き込む）</span></li>
+    </ul>
 
     <figure class="dg-figure cl-figure">
       <svg class="dg-svg" viewBox="0 0 600 250" role="img" aria-labelledby="cl-map-title">
@@ -86,21 +102,21 @@
         <text x="20" y="232" font-size="11" lang="en" style="fill:var(--muted)">Solid arrow: owns (parent of). Dashed arrow: holds or returns, not a model child.</text>
         <text x="20" y="232" font-size="11" lang="ja" style="fill:var(--muted)">実線: 保持し親になる。破線: 持つ・返すが、モデルの子ではない。</text>
       </svg>
-      <figcaption><span lang="en">PowerNetwork is the top of the object tree and has no parent.</span><span lang="ja">PowerNetwork はオブジェクト木の頂点で、親を持ちません。</span></figcaption>
+      <figcaption><span lang="en">Top of the object tree; no parent.</span><span lang="ja">オブジェクト木の頂点。親なし。</span></figcaption>
     </figure>
 
     <!-- ============================== DATA ============================== -->
     <h2 id="data"><span lang="en">Owned data</span><span lang="ja">保持するデータ</span></h2>
-    <p class="dg-lead-in" lang="en"><strong>Stale</strong>: what an edit of the value makes out of date (see <a href="class-design.html#edits">Class Design: Edit handling</a>). Derived values are <code>Dependent</code> and are read from their owner.</p>
-    <p class="dg-lead-in" lang="ja"><strong>無効化</strong>: その値を編集したときに古くなるもの（<a href="class-design.html#edits">クラス設計: 編集の扱い</a>を参照）。派生値は <code>Dependent</code> で、所有者から読みます。</p>
-    <table class="dg-table cl-table">
+    <p class="dg-lead-in" lang="en"><strong>Stale</strong>: what an edit of the value makes out of date (see <a href="class-design.html#edits">Class Design: Edit handling</a>). Derived values are <code>Dependent</code> and read from their owner.</p>
+    <p class="dg-lead-in" lang="ja"><strong>無効化</strong>: その値の編集で古くなるもの（<a href="class-design.html#edits">クラス設計: 編集の扱い</a>を参照）。派生値は <code>Dependent</code> で、所有者から読み出し。</p>
+    <table class="dg-table cl-table cl-stack">
       <thead>
         <tr><th><span lang="en">Property</span><span lang="ja">プロパティ</span></th><th><span lang="en">Meaning</span><span lang="ja">意味</span></th><th><span lang="en">Unit / size</span><span lang="ja">単位・サイズ</span></th><th><span lang="en">Set by</span><span lang="ja">設定元</span></th><th><span lang="en">Stale</span><span lang="ja">無効化</span></th></tr>
       </thead>
       <tbody>
         <tr>
           <td><code>a_Bus</code></td>
-          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Buses, in the order of the bus index.</span><span lang="ja">母線。並びが母線番号になります。</span></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Buses, in the order of the bus index.</span><span lang="ja">母線。並び = 母線番号。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">cell N×1</td>
           <td data-label="Set by" data-label-ja="設定元"><code>add_bus</code>, <code>remove_bus</code></td>
           <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-err"><span lang="en">equilibrium</span><span lang="ja">平衡点</span></span></td>
@@ -121,28 +137,28 @@
         </tr>
         <tr>
           <td><code>a_Scenario</code></td>
-          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Simulation scenarios (<code>Scenario</code>), unique by tag. Not model data.</span><span lang="ja">シミュレーションのシナリオ（<code>Scenario</code>）。タグで一意です。モデルのデータではありません。</span></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Simulation scenarios (<code>Scenario</code>). Not model data.</span><span lang="ja">シミュレーションのシナリオ（<code>Scenario</code>）。モデルのデータではない。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">cell S×1</td>
           <td data-label="Set by" data-label-ja="設定元"><code>add_scenario</code>, <code>remove_scenario</code></td>
           <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-ok"><span lang="en">nothing (not logged)</span><span lang="ja">なし（記録もしない）</span></span></td>
         </tr>
         <tr>
           <td><code>tab_parameter.base.Hz</code></td>
-          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Nominal frequency. Models read it with <code>get_Hz()</code> and receive it as <code>omega0</code>.</span><span lang="ja">定格周波数。モデルは <code>get_Hz()</code> で読み、<code>omega0</code> として受け取ります。</span></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Nominal frequency. Models read it with <code>get_Hz()</code> and receive it as <code>omega0</code>.</span><span lang="ja">定格周波数。モデルは <code>get_Hz()</code> で読み、<code>omega0</code> として受け取る。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">Hz, 1×1</td>
           <td data-label="Set by" data-label-ja="設定元"><span lang="en">constructor (<code>GUILDA.config("Model","Hz")</code>), setter, <code>import_csv</code></span><span lang="ja">コンストラクタ（<code>GUILDA.config("Model","Hz")</code>）、セッター、<code>import_csv</code></span></td>
           <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-err"><span lang="en">handles of every layer</span><span lang="ja">全階層のハンドル</span></span></td>
         </tr>
         <tr>
           <td><code>tab_parameter.base.baseMVA</code></td>
-          <td data-label="Meaning" data-label-ja="意味"><span lang="en">System base of all per-unit values. Stored per-unit values are not converted when it changes.</span><span lang="ja">すべての単位法の値の系統基準。変更しても保存済みの単位法の値は換算されません。</span></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en">System base of all per-unit values. Stored per-unit values are not converted when it changes.</span><span lang="ja">すべての単位法の値の系統基準。変更時も保存済みの単位法の値は換算なし。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ"><span lang="en">MVA, 1×1 (default 100)</span><span lang="ja">MVA、1×1（既定 100）</span></td>
           <td data-label="Set by" data-label-ja="設定元"><span lang="en">constructor, setter, <code>import_csv</code>, <code>import_matpower</code></span><span lang="ja">コンストラクタ、セッター、<code>import_csv</code>、<code>import_matpower</code></span></td>
           <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-err"><span lang="en">equilibrium</span><span lang="ja">平衡点</span></span></td>
         </tr>
         <tr>
           <td><code>solver_PF</code>, <code>solver_OPF</code>, <code>solver_CPF</code>, <code>solver_ODE</code>, <code>solver_LIN</code></td>
-          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Solver objects (<code>SolverPF</code>, <code>SolverOPF</code>, <code>SolverCPF</code>, <code>SolverODE</code>, <code>SolverLIN</code>). Their properties are the persistent defaults of each analysis (see <a href="class-design.html#solvers">Solver settings</a>).</span><span lang="ja">ソルバーオブジェクト（<code>SolverPF</code>、<code>SolverOPF</code>、<code>SolverCPF</code>、<code>SolverODE</code>、<code>SolverLIN</code>）。プロパティが各解析の持続的な既定値です（<a href="class-design.html#solvers">ソルバー設定</a>を参照）。</span></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Solver objects (<code>SolverPF</code>, <code>SolverOPF</code>, <code>SolverCPF</code>, <code>SolverODE</code>, <code>SolverLIN</code>). Their properties are the persistent defaults of each analysis (see <a href="class-design.html#solvers">Solver settings</a>).</span><span lang="ja">ソルバーオブジェクト（<code>SolverPF</code>、<code>SolverOPF</code>、<code>SolverCPF</code>、<code>SolverODE</code>、<code>SolverLIN</code>）。プロパティ = 各解析の持続的な既定値（<a href="class-design.html#solvers">ソルバー設定</a>を参照）。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ"><span lang="en">object</span><span lang="ja">オブジェクト</span></td>
           <td data-label="Set by" data-label-ja="設定元"><span lang="en">constructor and <code>reset_solver</code>; the user edits their properties</span><span lang="ja">コンストラクタと <code>reset_solver</code>。プロパティは利用者が編集</span></td>
           <td data-label="Stale" data-label-ja="無効化"><span class="dg-badge is-ok"><span lang="en">nothing</span><span lang="ja">なし</span></span></td>
@@ -156,14 +172,14 @@
         </tr>
         <tr>
           <td><code>tab_editLog</code></td>
-          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Edits reported by every layer since the last <code>initialize</code>: <code>timestamp</code>, <code>ID</code>, <code>log</code>, <code>tag</code>, <code>before</code>, <code>after</code>. Rows are recorded once the network has been initialized.</span><span lang="ja">前回の <code>initialize</code> 以降に各階層から報告された編集: <code>timestamp</code>、<code>ID</code>、<code>log</code>、<code>tag</code>、<code>before</code>、<code>after</code>。行は一度初期化した後から記録されます。</span></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Edits reported by every layer since the last <code>initialize</code>: <code>timestamp</code>, <code>ID</code>, <code>log</code>, <code>tag</code>, <code>before</code>, <code>after</code>. Recorded only after the first initialization.</span><span lang="ja">前回の <code>initialize</code> 以降に各階層から報告された編集: <code>timestamp</code>、<code>ID</code>、<code>log</code>、<code>tag</code>、<code>before</code>、<code>after</code>。記録は一度初期化した後から。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">table ×6</td>
           <td data-label="Set by" data-label-ja="設定元"><span lang="en"><code>log_edit</code>; cleared by <code>initialize</code></span><span lang="ja"><code>log_edit</code>。<code>initialize</code> で消去</span></td>
           <td data-label="Stale" data-label-ja="無効化">—</td>
         </tr>
         <tr>
           <td><code>s_edit</code> <small>Hidden</small></td>
-          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Edit state: <code>str_flag</code> (<code>unset</code> / <code>initialized</code> / <code>editted</code>), <code>str_odefcn</code>, and <code>l_staleEquilibrium</code>, which is kept on the network only.</span><span lang="ja">編集状態: <code>str_flag</code>（<code>unset</code> / <code>initialized</code> / <code>editted</code>）、<code>str_odefcn</code>、ネットワークだけが持つ <code>l_staleEquilibrium</code>。</span></td>
+          <td data-label="Meaning" data-label-ja="意味"><span lang="en">Edit state: <code>str_flag</code> (<code>unset</code> / <code>initialized</code> / <code>editted</code>), <code>str_odefcn</code>, and <code>l_staleEquilibrium</code> (network only).</span><span lang="ja">編集状態: <code>str_flag</code>（<code>unset</code> / <code>initialized</code> / <code>editted</code>）、<code>str_odefcn</code>、<code>l_staleEquilibrium</code>（ネットワークのみ）。</span></td>
           <td data-label="Unit / size" data-label-ja="単位・サイズ">struct</td>
           <td data-label="Set by" data-label-ja="設定元"><span lang="en"><code>log_edit</code>; reset by <code>initialize</code></span><span lang="ja"><code>log_edit</code>。<code>initialize</code> でリセット</span></td>
           <td data-label="Stale" data-label-ja="無効化">—</td>
@@ -186,14 +202,16 @@
         <tr><td><code>cv_Vequilibrium</code></td><td data-label="Read from" data-label-ja="読み出し元"><span lang="en"><code>c_Vequilibrium</code> of each bus</span><span lang="ja">各母線の <code>c_Vequilibrium</code></span></td><td data-label="Unit / size" data-label-ja="単位・サイズ">pu, complex N×1</td></tr>
         <tr><td><code>cv_Iequilibrium</code></td><td data-label="Read from" data-label-ja="読み出し元"><span lang="en"><code>c_Iequilibrium</code> of each bus (sum of its components)</span><span lang="ja">各母線の <code>c_Iequilibrium</code>（機器の和）</span></td><td data-label="Unit / size" data-label-ja="単位・サイズ">pu, complex N×1</td></tr>
         <tr><td><code>rv_Xequilibrium</code></td><td data-label="Read from" data-label-ja="読み出し元"><span lang="en"><code>rv_Xequilibrium_all</code> of each component, then <code>rv_Xequilibrium</code> of each global controller, in the order of the x rows of <code>get_variable_map</code></span><span lang="ja">各機器の <code>rv_Xequilibrium_all</code>、続いて各広域制御器の <code>rv_Xequilibrium</code>。<code>get_variable_map</code> の x 行の順</span></td><td data-label="Unit / size" data-label-ja="単位・サイズ">n<sub>x</sub>×1</td></tr>
-        <tr><td><code>tab_parameter</code></td><td data-label="Read from" data-label-ja="読み出し元"><span lang="en">the <code>Parameter</code> object <code>para_base</code>; writing the table writes the parameters</span><span lang="ja"><code>Parameter</code> オブジェクト <code>para_base</code>。表に書くとパラメータに書き込まれます</span></td><td data-label="Unit / size" data-label-ja="単位・サイズ">table (<code>base</code>)</td></tr>
+        <tr><td><code>tab_parameter</code></td><td data-label="Read from" data-label-ja="読み出し元"><span lang="en">the <code>Parameter</code> object <code>para_base</code>; writing the table writes the parameters</span><span lang="ja"><code>Parameter</code> オブジェクト <code>para_base</code>。表への書き込みはパラメータへの書き込み</span></td><td data-label="Unit / size" data-label-ja="単位・サイズ">table (<code>base</code>)</td></tr>
       </tbody>
     </table>
 
     <!-- ============================== REFERENCES ============================== -->
     <h2 id="references"><span lang="en">References</span><span lang="ja">参照</span></h2>
-    <p lang="en">The network has no parent. It is the parent of its buses, branches, and global controllers (and the owner of its scenarios), and it alone sets and clears their back references (see <a href="class-design.html#parents">Class Design: Parent references</a>).</p>
-    <p lang="ja">ネットワークに親はありません。母線・ブランチ・広域制御器の親（およびシナリオの所有者）であり、それらの逆参照を設定・解除するのはネットワークだけです（<a href="class-design.html#parents">クラス設計: 親参照</a>を参照）。</p>
+    <ul>
+      <li><span lang="en">No parent.</span><span lang="ja">親なし</span></li>
+      <li><span lang="en">Parent of its buses, branches, and global controllers, and owner of its scenarios. Only the network sets and clears their back references (see <a href="class-design.html#parents">Class Design: Parent references</a>).</span><span lang="ja">母線・ブランチ・広域制御器の親、シナリオの所有者。それらの逆参照の設定・解除はネットワークのみ（<a href="class-design.html#parents">クラス設計: 親参照</a>を参照）</span></li>
+    </ul>
     <table class="dg-table cl-table">
       <thead>
         <tr><th><span lang="en">Reference</span><span lang="ja">参照</span></th><th><span lang="en">Set by</span><span lang="ja">設定</span></th><th><span lang="en">Cleared by</span><span lang="ja">解除</span></th></tr>
@@ -201,7 +219,7 @@
       <tbody>
         <tr>
           <td><code>Bus.a_PowerNetwork</code></td>
-          <td data-label="Set by" data-label-ja="設定"><span lang="en"><code>add_bus</code>, through the <code>Bus</code> constructor (only the network can create a bus)</span><span lang="ja"><code>add_bus</code> が <code>Bus</code> コンストラクタ経由で設定（母線を作れるのはネットワークだけ）</span></td>
+          <td data-label="Set by" data-label-ja="設定"><span lang="en"><code>add_bus</code>, through the <code>Bus</code> constructor (only the network can create a bus)</span><span lang="ja"><code>add_bus</code> が <code>Bus</code> コンストラクタ経由で設定（母線を作れるのはネットワークのみ）</span></td>
           <td data-label="Cleared by" data-label-ja="解除"><code>remove_bus</code> → <code>Bus.set_network([])</code></td>
         </tr>
         <tr>
@@ -211,154 +229,165 @@
         </tr>
         <tr>
           <td><code>GlobalController.a_PowerNetwork</code></td>
-          <td data-label="Set by" data-label-ja="設定"><span lang="en"><code>add_global_controller</code> → <code>set_parent</code>. The constructor takes the network only to find the controlled components.</span><span lang="ja"><code>add_global_controller</code> → <code>set_parent</code>。コンストラクタがネットワークを受け取るのは制御対象の機器を探すためだけです。</span></td>
+          <td data-label="Set by" data-label-ja="設定"><span lang="en"><code>add_global_controller</code> → <code>set_parent</code>. The constructor takes the network only to find the controlled components.</span><span lang="ja"><code>add_global_controller</code> → <code>set_parent</code>。コンストラクタがネットワークを受け取るのは制御対象の機器を探すためのみ。</span></td>
           <td data-label="Cleared by" data-label-ja="解除"><code>remove_global_controller</code> → <code>set_parent([])</code></td>
         </tr>
         <tr>
           <td><code>Scenario.a_PowerNetwork</code></td>
-          <td data-label="Set by" data-label-ja="設定"><span lang="en"><code>add_scenario</code> → <code>set_parent</code>, after checking the tags of its disturbances against this network. A scenario of another network is moved.</span><span lang="ja"><code>add_scenario</code> → <code>set_parent</code>。外乱のタグをこのネットワークと照合した後に設定します。ほかのネットワークのシナリオは移動します。</span></td>
-          <td data-label="Cleared by" data-label-ja="解除"><span lang="en"><code>remove_scenario</code>, or adding it to another network → <code>set_parent([])</code></span><span lang="ja"><code>remove_scenario</code>、またはほかのネットワークへの追加 → <code>set_parent([])</code></span></td>
+          <td data-label="Set by" data-label-ja="設定"><span lang="en"><code>add_scenario</code> → <code>set_parent</code>, after checking the tags of its disturbances against this network.</span><span lang="ja"><code>add_scenario</code> → <code>set_parent</code>。外乱のタグをこのネットワークと照合した後に設定。</span></td>
+          <td data-label="Cleared by" data-label-ja="解除"><span lang="en"><code>remove_scenario</code> → <code>set_parent([])</code></span><span lang="ja"><code>remove_scenario</code> → <code>set_parent([])</code></span></td>
         </tr>
       </tbody>
     </table>
-    <p lang="en">Every layer below reports its edits upward with <code>log_edit</code>. The network appends them to <code>tab_editLog</code> and passes each one to <code>handle_edit</code>, which keeps the network-wide rule of at most one slack bus: when a bus reports <code>l_isSlack = true</code>, the network clears the flag of the other buses.</p>
-    <p lang="ja">下の各階層は <code>log_edit</code> で編集を上へ報告します。ネットワークはそれを <code>tab_editLog</code> に追加し、1 件ずつ <code>handle_edit</code> に渡します。<code>handle_edit</code> はスラック母線を高々 1 つに保つ規則を守ります。ある母線が <code>l_isSlack = true</code> を報告すると、ネットワークは他の母線のフラグを外します。</p>
+    <ul>
+      <li><span lang="en">Every layer below reports its edits upward with <code>log_edit</code>. The network appends them to <code>tab_editLog</code> and passes each one to <code>handle_edit</code>.</span><span lang="ja">下の各階層が <code>log_edit</code> で編集を上へ報告。ネットワークが <code>tab_editLog</code> に追加し、1 件ずつ <code>handle_edit</code> に渡す</span></li>
+      <li><span lang="en"><code>handle_edit</code> keeps at most one slack bus: when a bus reports <code>l_isSlack = true</code>, the flag of the other buses is cleared.</span><span lang="ja"><code>handle_edit</code> がスラック母線を高々 1 つに維持。ある母線が <code>l_isSlack = true</code> を報告すると、他の母線のフラグを解除</span></li>
+    </ul>
 
     <!-- ============================== METHODS ============================== -->
     <h2 id="methods"><span lang="en">Methods</span><span lang="ja">メソッド</span></h2>
 
     <h3><span lang="en">Construction and editing</span><span lang="ja">構築と編集</span></h3>
-    <table class="dg-table cl-table">
+    <table class="dg-table cl-table cl-stack">
       <thead>
         <tr><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">内容</span></th><th><span lang="en">Called by</span><span lang="ja">呼び出し元</span></th></tr>
       </thead>
       <tbody>
         <tr>
           <td><code>PowerNetwork(tag)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Creates an empty network with <code>para_base</code> and new solver objects.</span><span lang="ja"><code>para_base</code> と新しいソルバーオブジェクトを持つ空のネットワークを作ります。</span>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Creates an empty network with <code>para_base</code> and new solver objects.</span><span lang="ja"><code>para_base</code> と新しいソルバーオブジェクトを持つ空のネットワークを作成。</span>
             <small><span lang="en">Returns: the network.</span><span lang="ja">返り値: ネットワーク。</span></small></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user; network classes such as <code>network.IEEE9bus</code></span><span lang="ja">利用者、<code>network.IEEE9bus</code> などのネットワーククラス</span></td>
         </tr>
         <tr>
           <td><code>add_bus(Name=Value)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Creates a bus with the next free tag (<code>B</code> + largest number + 1, or <code>FullTag</code>), appends it to <code>a_Bus</code>, and logs a <code>Topology</code> edit.</span><span lang="ja">次の空きタグ（<code>B</code> + 最大番号 + 1、または <code>FullTag</code>）で母線を作り、<code>a_Bus</code> に追加して <code>Topology</code> 編集を記録します。</span>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Creates a bus with the next free tag (<code>B</code> + largest number + 1, or <code>FullTag</code>), appends it to <code>a_Bus</code>, and logs a <code>Topology</code> edit.</span><span lang="ja">次の空きタグ（<code>B</code> + 最大番号 + 1、または <code>FullTag</code>）で母線を作成し、<code>a_Bus</code> に追加して <code>Topology</code> 編集を記録。</span>
             <small><span lang="en">Reads: <code>V</code>, <code>Varg</code>, <code>V0</code>, <code>Varg0</code>, <code>Gshunt</code>, <code>Bshunt</code>, <code>Vmin</code>, <code>Vmax</code>, <code>baseKV</code>, drawing options. Returns: the <code>Bus</code>.</span><span lang="ja">読む値: <code>V</code>、<code>Varg</code>、<code>V0</code>、<code>Varg0</code>、<code>Gshunt</code>、<code>Bshunt</code>、<code>Vmin</code>、<code>Vmax</code>、<code>baseKV</code>、描画オプション。返り値: <code>Bus</code>。</span></small></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user, <code>import_csv</code>, <code>import_matpower</code></span><span lang="ja">利用者、<code>import_csv</code>、<code>import_matpower</code></span></td>
         </tr>
         <tr>
           <td><code>add_branch(Type, from_to, Name=Value)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Creates the branch class of the key <code>Type</code> between two buses given by index or tag, sets its end buses and network, and logs a <code>Topology</code> edit. Unknown or equal end buses, and <code>R = X = 0</code>, are errors that leave the network unchanged. The key list is generated from the branch classes on the path.</span><span lang="ja">キー <code>Type</code> のブランチクラスを、番号またはタグで指定した 2 母線の間に作り、端の母線とネットワークを設定して <code>Topology</code> 編集を記録します。存在しない・同じ端母線や <code>R = X = 0</code> はエラーで、ネットワークは変わりません。キーの一覧はパス上のブランチクラスから生成されます。</span>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Creates the branch class of the key <code>Type</code> between two buses given by index or tag, sets its end buses and network, and logs a <code>Topology</code> edit. Unknown or equal end buses, and <code>R = X = 0</code>, are errors that leave the network unchanged. Key list generated from the branch classes on the path.</span><span lang="ja">キー <code>Type</code> のブランチクラスを、番号またはタグで指定した 2 母線の間に作成し、端の母線とネットワークを設定して <code>Topology</code> 編集を記録。存在しない・同じ端母線や <code>R = X = 0</code> はエラーで、ネットワークは不変。キーの一覧はパス上のブランチクラスから生成。</span>
             <small><span lang="en">Reads: <code>R</code>, <code>X</code>, <code>C</code>, <code>Tap</code>, <code>Phase</code>, flow limits, drawing options. Returns: the <code>Branch</code>.</span><span lang="ja">読む値: <code>R</code>、<code>X</code>、<code>C</code>、<code>Tap</code>、<code>Phase</code>、潮流制限、描画オプション。返り値: <code>Branch</code>。</span></small></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user, <code>import_csv</code>, <code>import_matpower</code></span><span lang="ja">利用者、<code>import_csv</code>、<code>import_matpower</code></span></td>
         </tr>
         <tr>
           <td><code>add_global_controller(gcon)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Checks that the tag is free, that each controlled component is on this network, and that it has the states <code>sv_u</code> and the inputs <code>sv_y</code> of the controller; then appends it, sets its parent, and logs a <code>Topology</code> edit.</span><span lang="ja">タグが未使用か、各制御対象機器がこのネットワークにあるか、制御器の <code>sv_u</code> を状態に、<code>sv_y</code> を入力に持つかを確認し、追加して親を設定し、<code>Topology</code> 編集を記録します。</span></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Checks that the tag is free, that each controlled component is on this network, and that it has the states <code>sv_u</code> and the inputs <code>sv_y</code> of the controller; then appends it, sets its parent, and logs a <code>Topology</code> edit.</span><span lang="ja">タグが未使用か、各制御対象機器がこのネットワークにあるか、制御器の <code>sv_u</code> を状態に、<code>sv_y</code> を入力に持つかを確認。その後、追加して親を設定し、<code>Topology</code> 編集を記録。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user</span><span lang="ja">利用者</span></td>
         </tr>
         <tr>
           <td><code>remove_bus(tags, RemoveBranches=false)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Removes buses with their components. A bus with connected branches is an error unless <code>RemoveBranches=true</code>; a bus whose component is controlled by a global controller is always an error.</span><span lang="ja">母線を機器ごと削除します。ブランチがつながる母線は <code>RemoveBranches=true</code> でなければエラー、広域制御器が制御する機器を持つ母線は常にエラーです。</span></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Removes buses with their components. A bus with connected branches is an error unless <code>RemoveBranches=true</code>; a bus whose component is controlled by a global controller is always an error.</span><span lang="ja">母線を機器ごと削除。ブランチがつながる母線は <code>RemoveBranches=true</code> でなければエラー、広域制御器が制御する機器を持つ母線は常にエラー。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user</span><span lang="ja">利用者</span></td>
         </tr>
         <tr>
           <td><code>remove_branch(tags)</code>, <code>remove_global_controller(tags)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Remove by tag; an unknown tag is an error and nothing is removed. Both log a <code>Topology</code> edit and clear the back references.</span><span lang="ja">タグで削除します。存在しないタグはエラーで、何も削除しません。どちらも <code>Topology</code> 編集を記録し、逆参照を解除します。</span></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Remove by tag; an unknown tag is an error and nothing is removed. Both log a <code>Topology</code> edit and clear the back references.</span><span lang="ja">タグで削除。存在しないタグはエラーで、何も削除しない。どちらも <code>Topology</code> 編集を記録し、逆参照を解除。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user; <code>remove_bus</code> calls <code>remove_branch</code></span><span lang="ja">利用者。<code>remove_bus</code> が <code>remove_branch</code> を呼ぶ</span></td>
         </tr>
         <tr>
           <td><code>add_scenario(sc)</code>, <code>remove_scenario(tags)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Add a <code>Scenario</code> (or a cell of them, e.g. from <code>Scenario.import_csv</code>) after checking its disturbances against this network and that its tag is free (<code>GUILDA:PowerNetwork:ScenarioTagInUse</code>); a scenario of another network is moved (<code>sc.copy()</code> keeps it there). Remove by tag. Nothing is logged and nothing becomes stale.</span><span lang="ja"><code>Scenario</code>（またはそのセル。<code>Scenario.import_csv</code> の出力など）を、外乱をこのネットワークと照合し、タグが未使用であること（<code>GUILDA:PowerNetwork:ScenarioTagInUse</code>）を確認してから追加します。ほかのネットワークのシナリオは移動します（残すには <code>sc.copy()</code>）。削除はタグで行います。何も記録せず、何も無効になりません。</span></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Add a <code>Scenario</code> (or a cell of them, e.g. from <code>Scenario.import_csv</code>) after checking its disturbances against this network and that its tag is free (<code>GUILDA:PowerNetwork:ScenarioTagInUse</code>). Remove by tag. Nothing is logged and nothing becomes stale.</span><span lang="ja"><code>Scenario</code>（またはそのセル。<code>Scenario.import_csv</code> の出力など）を、外乱をこのネットワークと照合し、タグが未使用であること（<code>GUILDA:PowerNetwork:ScenarioTagInUse</code>）を確認してから追加。削除はタグで指定。記録なし、無効化なし。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user; the deprecated <code>ODEevent</code></span><span lang="ja">利用者。非推奨の <code>ODEevent</code></span></td>
         </tr>
         <tr>
           <td><code>set_opffcn(Cost=, Constraint=, DefaultConstraint=)</code>, <code>reset_opffcn()</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Store or clear network-wide OPF terms in <code>s_opffcn</code>. The handles <code>@(v, p)</code> reach the variables of every object by tag (<code>v.Component.(tag).P</code>). <code>DefaultConstraint=false</code> drops the fixed reference angle. Logged as <code>OPF</code>, nothing becomes stale.</span><span lang="ja">ネットワーク全体の OPF 項を <code>s_opffcn</code> に保存・消去します。ハンドル <code>@(v, p)</code> は各オブジェクトの変数にタグでアクセスします（<code>v.Component.(tag).P</code>）。<code>DefaultConstraint=false</code> は参照母線の角度固定を外します。<code>OPF</code> として記録され、何も無効になりません。</span></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Store or clear network-wide OPF terms in <code>s_opffcn</code>. The handles <code>@(v, p)</code> reach the variables of every object by tag (<code>v.Component.(tag).P</code>). <code>DefaultConstraint=false</code> drops the fixed reference angle. Logged as <code>OPF</code>; nothing becomes stale.</span><span lang="ja">ネットワーク全体の OPF 項の <code>s_opffcn</code> への保存・消去。ハンドル <code>@(v, p)</code> は各オブジェクトの変数にタグでアクセス（<code>v.Component.(tag).P</code>）。<code>DefaultConstraint=false</code> で参照母線の角度固定を除外。<code>OPF</code> として記録、無効化なし。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user; read by <code>build_opf_problem</code></span><span lang="ja">利用者。<code>build_opf_problem</code> が読む</span></td>
         </tr>
         <tr>
           <td><code>reset_solver()</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Replaces all <code>solver_*</code> with new objects, which discards the stored defaults.</span><span lang="ja"><code>solver_*</code> をすべて新しいオブジェクトに置き換え、保存した既定値を捨てます。</span></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Replaces all <code>solver_*</code> with new objects, discarding the stored defaults.</span><span lang="ja"><code>solver_*</code> をすべて新しいオブジェクトに置換し、保存した既定値を破棄。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">constructor, user</span><span lang="ja">コンストラクタ、利用者</span></td>
         </tr>
         <tr>
           <td><code>import_csv(path, Initialize=, Network=)</code> <small>Static</small></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Builds a network from a CSV model folder; every table is checked before the network changes. <code>Network=obj</code> fills an existing network.</span><span lang="ja">CSV モデルフォルダからネットワークを作ります。ネットワークを変える前にすべての表を検査します。<code>Network=obj</code> は既存のネットワークに追加します。</span>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Builds a network from a CSV model folder; every table is checked before the network changes. <code>Network=obj</code> fills an existing network.</span><span lang="ja">CSV モデルフォルダからネットワークを作成。ネットワークを変える前にすべての表を検査。<code>Network=obj</code> で既存のネットワークに追加。</span>
             <small><span lang="en">Returns: the network (initialized unless <code>Initialize=false</code>).</span><span lang="ja">返り値: ネットワーク（<code>Initialize=false</code> でなければ初期化済み）。</span></small></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user; constructors of the network classes</span><span lang="ja">利用者、ネットワーククラスのコンストラクタ</span></td>
         </tr>
         <tr>
           <td><code>import_matpower(mpc, Name=Value)</code> <small>Static</small></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Builds a network from a MATPOWER case, converting to per unit on <code>mpc.baseMVA</code> and angles to radians.</span><span lang="ja">MATPOWER のケースからネットワークを作ります。<code>mpc.baseMVA</code> 基準の単位法とラジアンに換算します。</span></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Builds a network from a MATPOWER case, converting to per unit on <code>mpc.baseMVA</code> and angles to radians.</span><span lang="ja">MATPOWER のケースからネットワークを作成。<code>mpc.baseMVA</code> 基準の単位法とラジアンに換算。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user</span><span lang="ja">利用者</span></td>
         </tr>
         <tr>
           <td><code>export_csv(path, Overwrite=, ClassFile=)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Writes the network to a CSV model folder that <code>import_csv</code> reads back. Equilibria and controllers are not written (warning <code>GUILDA:PowerNetwork:ControllersNotSaved</code>).</span><span lang="ja"><code>import_csv</code> で読み戻せる CSV モデルフォルダに書き出します。平衡点と制御器は書き出しません（警告 <code>GUILDA:PowerNetwork:ControllersNotSaved</code>）。</span>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Writes the network to a CSV model folder that <code>import_csv</code> reads back. Equilibria and controllers are not written (warning <code>GUILDA:PowerNetwork:ControllersNotSaved</code>).</span><span lang="ja"><code>import_csv</code> で読み戻せる CSV モデルフォルダに書き出し。平衡点と制御器は書き出さない（警告 <code>GUILDA:PowerNetwork:ControllersNotSaved</code>）。</span>
             <small><span lang="en">Returns: the folder path.</span><span lang="ja">返り値: フォルダのパス。</span></small></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">user</span><span lang="ja">利用者</span></td>
         </tr>
         <tr>
           <td><code>loadobj(obj)</code> <small>Static</small></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Attaches the parameter listeners again after loading from a MAT file, so that edits of a loaded network are checked and logged.</span><span lang="ja">MAT ファイルから読み込んだ後にパラメータのリスナーを付け直し、読み込んだネットワークの編集も検査・記録されるようにします。</span></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Attaches the parameter listeners again after loading from a MAT file, so edits of a loaded network are checked and logged.</span><span lang="ja">MAT ファイルから読み込んだ後にパラメータのリスナーを再設定。読み込んだネットワークの編集も検査・記録の対象に。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><span lang="en">MATLAB, on <code>load</code></span><span lang="ja">MATLAB（<code>load</code> 時）</span></td>
         </tr>
       </tbody>
     </table>
 
     <h3><span lang="en">Analysis entry points</span><span lang="ja">解析の入口</span></h3>
-    <p class="dg-lead-in" lang="en">Each entry point merges the Name-Value options with the defaults of its solver (<code>solver_*.get_options</code>), calls <code>solver_*.solve(net, options)</code>, and returns <code>[result, flag, output]</code> (see <a href="api-design.html">API Design</a>). The solver object is not changed by the call.</p>
-    <p class="dg-lead-in" lang="ja">各入口は Name-Value オプションをソルバーの既定値と合わせ（<code>solver_*.get_options</code>）、<code>solver_*.solve(net, options)</code> を呼んで <code>[result, flag, output]</code> を返します（<a href="api-design.html">API 設計</a>を参照）。呼び出しでソルバーオブジェクトは変わりません。</p>
-    <table class="dg-table cl-table">
+    <p class="dg-lead-in" lang="en">Each entry point merges the Name-Value options with the defaults of its solver (<code>solver_*.get_options</code>), calls <code>solver_*.solve(net, options)</code>, and returns <code>[result, flag, output]</code> (see <a href="api-design.html">API Design</a>). The solver object is left unchanged.</p>
+    <p class="dg-lead-in" lang="ja">各入口の流れ: Name-Value オプションをソルバーの既定値と統合（<code>solver_*.get_options</code>）→ <code>solver_*.solve(net, options)</code> → <code>[result, flag, output]</code> を返す（<a href="api-design.html">API 設計</a>を参照）。ソルバーオブジェクトは不変。</p>
+    <table class="dg-table cl-table cl-stack">
       <thead>
         <tr><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">内容</span></th><th><span lang="en">Changes the model</span><span lang="ja">モデルの変更</span></th></tr>
       </thead>
       <tbody>
         <tr>
           <td><code>calculate_powerflow</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Power flow through <code>solver_PF</code>, which reads <code>get_admittance_matrix</code> and <code>Bus.get_pf_set</code> of every bus.</span><span lang="ja"><code>solver_PF</code> による潮流計算。<code>get_admittance_matrix</code> と全母線の <code>Bus.get_pf_set</code> を読みます。</span>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Power flow through <code>solver_PF</code>, which reads <code>get_admittance_matrix</code> and <code>Bus.get_pf_set</code> of every bus.</span><span lang="ja"><code>solver_PF</code> による潮流計算。<code>get_admittance_matrix</code> と全母線の <code>Bus.get_pf_set</code> を読む。</span>
             <small><span lang="en">Returns: <code>ResultPF</code>.</span><span lang="ja">返り値: <code>ResultPF</code>。</span></small></td>
-          <td data-label="Changes the model" data-label-ja="モデルの変更"><span lang="en">Only when no slack bus is set: selects one (<code>tools.slack_bus_index</code>).</span><span lang="ja">スラック母線が未設定のときだけ 1 つ選びます（<code>tools.slack_bus_index</code>）。</span></td>
+          <td data-label="Changes the model" data-label-ja="モデルの変更"><span lang="en">Only when no slack bus is set: selects one (<code>tools.slack_bus_index</code>).</span><span lang="ja">スラック母線が未設定のときのみ 1 つ選択（<code>tools.slack_bus_index</code>）。</span></td>
         </tr>
         <tr>
           <td><code>optimize_powerflow</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Optimal power flow through <code>solver_OPF</code>, which builds the problem with <code>build_opf_problem</code>.</span><span lang="ja"><code>solver_OPF</code> による最適潮流計算。問題は <code>build_opf_problem</code> で組み立てます。</span>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Optimal power flow through <code>solver_OPF</code>, which builds the problem with <code>build_opf_problem</code>.</span><span lang="ja"><code>solver_OPF</code> による最適潮流計算。問題の組み立ては <code>build_opf_problem</code>。</span>
             <small><span lang="en">Returns: <code>ResultOPF</code>.</span><span lang="ja">返り値: <code>ResultOPF</code>。</span></small></td>
           <td data-label="Changes the model" data-label-ja="モデルの変更"><span lang="en">No.</span><span lang="ja">なし。</span></td>
         </tr>
         <tr>
           <td><code>build_opf_problem(Method=, validate=)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Builds the OPF <code>optimproblem</code> without solving it: each bus adds its variables and those of its components (<code>Bus.build_opf_problem</code>), the reference angle is fixed, each branch adds its flows (<code>Branch.build_opf_problem</code>), and the network-wide terms of <code>s_opffcn</code> are applied.</span><span lang="ja">OPF の <code>optimproblem</code> を解かずに組み立てます。各母線が自身と機器の変数を加え（<code>Bus.build_opf_problem</code>）、参照角を固定し、各ブランチが潮流を加え（<code>Branch.build_opf_problem</code>）、最後に <code>s_opffcn</code> のネットワーク全体の項を適用します。</span>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Builds the OPF <code>optimproblem</code> without solving it: each bus adds its variables and those of its components (<code>Bus.build_opf_problem</code>), the reference angle is fixed, each branch adds its flows (<code>Branch.build_opf_problem</code>), and the network-wide terms of <code>s_opffcn</code> are applied.</span><span lang="ja">OPF の <code>optimproblem</code> を解かずに組み立て。各母線が自身と機器の変数を追加（<code>Bus.build_opf_problem</code>）→ 参照角を固定 → 各ブランチが潮流を追加（<code>Branch.build_opf_problem</code>）→ <code>s_opffcn</code> のネットワーク全体の項を適用。</span>
             <small><span lang="en">Returns: <code>prob</code>, <code>x0</code>.</span><span lang="ja">返り値: <code>prob</code>、<code>x0</code>。</span></small></td>
           <td data-label="Changes the model" data-label-ja="モデルの変更"><span lang="en">No.</span><span lang="ja">なし。</span></td>
         </tr>
         <tr>
           <td><code>initialize(Method=)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Builds out-of-date handles (<code>check_edit</code>), obtains the operating point (<code>"powerflow"</code>, <code>"OPF"</code>, or <code>"equilibrium"</code>), then sets it: <code>GlobalController.get_equilibrium</code> for each global controller and <code>Bus.set_equilibrium</code> for each bus. It checks <code>Y·V = I</code> and the model residuals, and clears the edit log.</span><span lang="ja">古いハンドルを作り直し（<code>check_edit</code>）、運転点を求め（<code>"powerflow"</code>、<code>"OPF"</code>、<code>"equilibrium"</code>）、設定します。各広域制御器の <code>GlobalController.get_equilibrium</code> と各母線の <code>Bus.set_equilibrium</code> を呼び、<code>Y·V = I</code> とモデルの残差を確認して編集ログを消去します。</span>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Builds out-of-date handles (<code>check_edit</code>), obtains the operating point (<code>"powerflow"</code>, <code>"OPF"</code>, or <code>"equilibrium"</code>), then sets it: <code>GlobalController.get_equilibrium</code> for each global controller and <code>Bus.set_equilibrium</code> for each bus. Checks <code>Y·V = I</code> and the model residuals, and clears the edit log.</span><span lang="ja">古いハンドルを再構築（<code>check_edit</code>）→ 運転点を計算（<code>"powerflow"</code>、<code>"OPF"</code>、<code>"equilibrium"</code>）→ 設定（各広域制御器の <code>GlobalController.get_equilibrium</code>、各母線の <code>Bus.set_equilibrium</code>）。<code>Y·V = I</code> とモデルの残差を確認し、編集ログを消去。</span>
             <small><span lang="en">Returns: <code>ResultPF</code> (or <code>ResultOPF</code> for <code>"OPF"</code>).</span><span lang="ja">返り値: <code>ResultPF</code>（<code>"OPF"</code> では <code>ResultOPF</code>）。</span></small></td>
           <td data-label="Changes the model" data-label-ja="モデルの変更"><span lang="en">Yes: the equilibrium of every bus, component, and controller, and the edit state.</span><span lang="ja">あり: 全母線・機器・制御器の平衡点と編集状態。</span></td>
         </tr>
         <tr>
           <td><code>calculate_continuation_powerflow</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Builds out-of-date handles and traces the PV curve through <code>solver_CPF</code>, starting from the equilibrium of <code>initialize</code>.</span><span lang="ja">古いハンドルを作り直し、<code>initialize</code> の平衡点から <code>solver_CPF</code> で PV 曲線を追跡します。</span>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Builds out-of-date handles and traces the PV curve through <code>solver_CPF</code>, starting from the equilibrium of <code>initialize</code>.</span><span lang="ja">古いハンドルを再構築し、<code>initialize</code> の平衡点から <code>solver_CPF</code> で PV 曲線を追跡。</span>
             <small><span lang="en">Returns: <code>ResultCPF</code>.</span><span lang="ja">返り値: <code>ResultCPF</code>。</span></small></td>
-          <td data-label="Changes the model" data-label-ja="モデルの変更"><span lang="en">Only the CPF working data (<code>iv_CPFV</code>, <code>iv_CPFX</code>, <code>f_PQ2Bus</code>).</span><span lang="ja">CPF の作業データ（<code>iv_CPFV</code>、<code>iv_CPFX</code>、<code>f_PQ2Bus</code>）だけ。</span></td>
+          <td data-label="Changes the model" data-label-ja="モデルの変更"><span lang="en">Only the CPF working data (<code>iv_CPFV</code>, <code>iv_CPFX</code>, <code>f_PQ2Bus</code>).</span><span lang="ja">CPF の作業データ（<code>iv_CPFV</code>、<code>iv_CPFX</code>、<code>f_PQ2Bus</code>）のみ。</span></td>
         </tr>
         <tr>
           <td><code>simulate(time, sc1, sc2, ..., Name=Value)</code>, <code>simulate(sc, Name=Value)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Time-domain simulation through <code>solver_ODE</code>, from the equilibrium, with the combined disturbances of scenarios of this network (<code>Scenario</code>). Without a time, the <code>Time</code> of the scenarios is used; their stored <code>Options</code> come between the solver defaults and the call options. The verdict is <code>sc.judge(result)</code>.</span><span lang="ja"><code>solver_ODE</code> による平衡点からの時間応答シミュレーション。外乱は、このネットワークのシナリオ（<code>Scenario</code>）の外乱を合わせたものです。時間を与えなければシナリオの <code>Time</code> を使い、シナリオに保存した <code>Options</code> はソルバーの既定値と呼び出しのオプションの間に入ります。判定は <code>sc.judge(result)</code> で得ます。</span>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Time-domain simulation through <code>solver_ODE</code>, from the equilibrium, with the combined disturbances of scenarios of this network (<code>Scenario</code>).</span><span lang="ja"><code>solver_ODE</code> による平衡点からの時間応答シミュレーション。外乱は、このネットワークのシナリオ（<code>Scenario</code>）の外乱の合成。</span>
+            <ul>
+              <li><span lang="en">Without a time, the <code>Time</code> of the scenarios is used.</span><span lang="ja">時間の指定なし → シナリオの <code>Time</code> を使用</span></li>
+              <li><span lang="en">Stored <code>Options</code> of the scenarios come between the solver defaults and the call options.</span><span lang="ja">シナリオに保存した <code>Options</code> の優先順位は、ソルバーの既定値と呼び出しのオプションの間</span></li>
+              <li><span lang="en">Verdict: <code>sc.judge(result)</code>.</span><span lang="ja">判定: <code>sc.judge(result)</code></span></li>
+            </ul>
             <small><span lang="en">Returns: <code>ResultODE</code>.</span><span lang="ja">返り値: <code>ResultODE</code>。</span></small></td>
-          <td data-label="Changes the model" data-label-ja="モデルの変更"><span lang="en">Only the simulation working data, restored at the end (see <a href="api-design.html#side-effects">Side effects</a>).</span><span lang="ja">シミュレーションの作業データだけで、終了時に戻します（<a href="api-design.html#side-effects">副作用</a>を参照）。</span></td>
+          <td data-label="Changes the model" data-label-ja="モデルの変更"><span lang="en">Only the simulation working data, restored at the end (see <a href="api-design.html#side-effects">Side effects</a>).</span><span lang="ja">シミュレーションの作業データのみ。終了時に復元（<a href="api-design.html#side-effects">副作用</a>を参照）。</span></td>
         </tr>
         <tr>
           <td><code>linearize(Algorithm=, Point=, Coordinate=)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Linearization through <code>solver_LIN</code>, which calls <code>get_sys</code> of every bus and global controller and <code>get_admittance_matrix</code>.</span><span lang="ja"><code>solver_LIN</code> による近似線形化。全母線・広域制御器の <code>get_sys</code> と <code>get_admittance_matrix</code> を呼びます。</span>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Linearization through <code>solver_LIN</code>, which calls <code>get_sys</code> of every bus and global controller and <code>get_admittance_matrix</code>.</span><span lang="ja"><code>solver_LIN</code> による近似線形化。全母線・広域制御器の <code>get_sys</code> と <code>get_admittance_matrix</code> を呼ぶ。</span>
             <small><span lang="en">Returns: <code>ResultLIN</code>.</span><span lang="ja">返り値: <code>ResultLIN</code>。</span></small></td>
-          <td data-label="Changes the model" data-label-ja="モデルの変更"><span lang="en">No; a <code>Point</code> is used for this call only.</span><span lang="ja">なし。<code>Point</code> はその呼び出しだけで使います。</span></td>
+          <td data-label="Changes the model" data-label-ja="モデルの変更"><span lang="en">No; a <code>Point</code> is used for this call only.</span><span lang="ja">なし。<code>Point</code> はその呼び出しのみで使用。</span></td>
         </tr>
         <tr>
           <td><code>get_sys(Name=Value)</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Shortcut of <code>linearize</code> followed by <code>ResultLIN.get_ss</code>. Inputs <code>u</code>, and no port, because the network closes the buses. By default the outputs follow the states, as in v3, and they depend on <code>Algorithm</code>; <code>Input</code> and <code>Output</code> select other channels.</span><span lang="ja"><code>linearize</code> と <code>ResultLIN.get_ss</code> の短縮形。入力は <code>u</code> で、ネットワークが母線を閉じるためポートはありません。既定では v3 と同じく出力は状態に従い、<code>Algorithm</code> によって変わります。<code>Input</code> と <code>Output</code> でほかのチャネルを選べます。</span>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Shortcut of <code>linearize</code> followed by <code>ResultLIN.get_ss</code>.</span><span lang="ja"><code>linearize</code> と <code>ResultLIN.get_ss</code> の短縮形。</span>
+            <ul>
+              <li><span lang="en">Inputs <code>u</code>; no port, because the network closes the buses.</span><span lang="ja">入力は <code>u</code>。ネットワークが母線を閉じるためポートなし</span></li>
+              <li><span lang="en">Default outputs follow the states and depend on <code>Algorithm</code>; <code>Input</code> and <code>Output</code> select other channels.</span><span lang="ja">既定の出力は状態に従い、<code>Algorithm</code> で変化。<code>Input</code> と <code>Output</code> でほかのチャネルを選択</span></li>
+            </ul>
             <small><span lang="en">Returns: <code>[sys, flag, output]</code>, a state-space model.</span><span lang="ja">返り値: <code>[sys, flag, output]</code>（状態空間モデル）。</span></small></td>
           <td data-label="Changes the model" data-label-ja="モデルの変更"><span lang="en">No.</span><span lang="ja">なし。</span></td>
         </tr>
@@ -366,37 +395,37 @@
     </table>
 
     <h3><span lang="en">Called by analyses</span><span lang="ja">解析から呼ばれるメソッド</span></h3>
-    <table class="dg-table cl-table">
+    <table class="dg-table cl-table cl-stack">
       <thead>
         <tr><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">内容</span></th><th><span lang="en">Called by</span><span lang="ja">呼び出し元</span></th></tr>
       </thead>
       <tbody>
         <tr>
           <td><code>get_admittance_matrix()</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Sums the 2×2 matrices of the branches (<code>Branch.get_admittance_matrix</code>) and the bus shunts <code>Gshunt + jBshunt</code>.</span><span lang="ja">ブランチの 2×2 行列（<code>Branch.get_admittance_matrix</code>）と母線のシャント <code>Gshunt + jBshunt</code> を足し合わせます。</span>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Sums the 2×2 matrices of the branches (<code>Branch.get_admittance_matrix</code>) and the bus shunts <code>Gshunt + jBshunt</code>.</span><span lang="ja">ブランチの 2×2 行列（<code>Branch.get_admittance_matrix</code>）と母線のシャント <code>Gshunt + jBshunt</code> の総和。</span>
             <small><span lang="en">Returns: an N×N complex table [pu] with the bus tags as row and variable names.</span><span lang="ja">返り値: 行名・列名が母線タグの N×N 複素数の表 [pu]。</span></small></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><code>SolverPF</code>, <code>SolverCPF</code>, <code>SolverODE</code>, <code>SolverLIN</code>, <code>initialize</code>, <code>ResultPF.Export</code>, <code>DrawerNetDiagram</code></td>
         </tr>
         <tr>
           <td><code>get_variable_map()</code></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">The single definition of the variable order: states, bus voltages, inputs (see <a href="class-design.html#variables">Variable order</a>). It collects <code>Bus.get_variable_map("rows")</code> and the states of the global controllers.</span><span lang="ja">変数の並びの唯一の定義です: 状態、母線電圧、入力（<a href="class-design.html#variables">変数の順序</a>を参照）。<code>Bus.get_variable_map("rows")</code> と広域制御器の状態を集めます。</span>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Single definition of the variable order: states, bus voltages, inputs (see <a href="class-design.html#variables">Variable order</a>). Collects <code>Bus.get_variable_map("rows")</code> and the states of the global controllers.</span><span lang="ja">変数の並びの唯一の定義: 状態、母線電圧、入力（<a href="class-design.html#variables">変数の順序</a>を参照）。<code>Bus.get_variable_map("rows")</code> と広域制御器の状態を収集。</span>
             <small><span lang="en">Returns: <code>[tab, c_idxBus, c_idxGC]</code>; <code>tab</code> has the columns <code>Index</code>, <code>Kind</code>, <code>Owner</code>, <code>Name</code>, <code>Label</code>, <code>Bus</code>.</span><span lang="ja">返り値: <code>[tab, c_idxBus, c_idxGC]</code>。<code>tab</code> の列は <code>Index</code>、<code>Kind</code>、<code>Owner</code>、<code>Name</code>、<code>Label</code>、<code>Bus</code>。</span></small></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><code>SolverLIN</code>, <code>ResultLIN</code>, <code>ResultODE</code></td>
         </tr>
         <tr>
           <td><code>check_edit(RequireEquilibrium=)</code> <small>protected</small></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Calls <code>set_odefcn</code> on every layer whose handles are not <code>"updated"</code>, parent before children. With <code>RequireEquilibrium=true</code> it stops with <code>GUILDA:PowerNetwork:EquilibriumStale</code>, naming up to three edits, when the equilibrium is out of date.</span><span lang="ja">ハンドルが <code>"updated"</code> でない各階層で、親から子の順に <code>set_odefcn</code> を呼びます。<code>RequireEquilibrium=true</code> では、平衡点が古いと編集を 3 件まで挙げて <code>GUILDA:PowerNetwork:EquilibriumStale</code> で止まります。</span>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Calls <code>set_odefcn</code> on every layer whose handles are not <code>"updated"</code>, parent before children. With <code>RequireEquilibrium=true</code>, an out-of-date equilibrium stops it with <code>GUILDA:PowerNetwork:EquilibriumStale</code>, naming up to three edits.</span><span lang="ja">ハンドルが <code>"updated"</code> でない各階層で、親から子の順に <code>set_odefcn</code> を呼ぶ。<code>RequireEquilibrium=true</code> では、平衡点が古いと編集を 3 件まで挙げて <code>GUILDA:PowerNetwork:EquilibriumStale</code> で停止。</span>
             <small><span lang="en">Returns: <code>flag</code>, true when the equilibrium is up to date.</span><span lang="ja">返り値: <code>flag</code>（平衡点が最新なら <code>true</code>）。</span></small></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><code>initialize</code>, <code>calculate_continuation_powerflow</code>, <code>require_equilibrium</code></td>
         </tr>
         <tr>
           <td><code>require_equilibrium()</code> <small><span lang="en">SolverODE, SolverLIN only</span><span lang="ja">SolverODE・SolverLIN 専用</span></small></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en"><code>check_edit(RequireEquilibrium=true)</code>; the one place of this check for <code>simulate</code>, <code>linearize</code>, and <code>get_sys</code>, so a solver called directly checks it too.</span><span lang="ja"><code>check_edit(RequireEquilibrium=true)</code>。<code>simulate</code>・<code>linearize</code>・<code>get_sys</code> の確認はここだけで行うため、ソルバーを直接呼んでも確認されます。</span></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en"><code>check_edit(RequireEquilibrium=true)</code>; the one place of this check for <code>simulate</code>, <code>linearize</code>, and <code>get_sys</code>, so a solver called directly checks it too.</span><span lang="ja"><code>check_edit(RequireEquilibrium=true)</code>。<code>simulate</code>・<code>linearize</code>・<code>get_sys</code> の確認はここのみのため、ソルバーを直接呼んでも確認あり。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><code>SolverODE.solve</code>, <code>SolverLIN.solve</code></td>
         </tr>
         <tr>
           <td><code>handle_edit(tab)</code> <small>protected</small></td>
-          <td data-label="What it does" data-label-ja="内容"><span lang="en">Receives each reported edit row; for a <code>Slack</code> edit it clears <code>l_isSlack</code> of the other buses.</span><span lang="ja">報告された編集行を 1 件ずつ受け取ります。<code>Slack</code> 編集なら他の母線の <code>l_isSlack</code> を外します。</span></td>
+          <td data-label="What it does" data-label-ja="内容"><span lang="en">Receives each reported edit row; a <code>Slack</code> edit clears <code>l_isSlack</code> of the other buses.</span><span lang="ja">報告された編集行を 1 件ずつ受け取る。<code>Slack</code> 編集なら他の母線の <code>l_isSlack</code> を解除。</span></td>
           <td data-label="Called by" data-label-ja="呼び出し元"><code>log_edit</code></td>
         </tr>
       </tbody>
@@ -408,9 +437,9 @@
         <tr><th><span lang="en">Method</span><span lang="ja">メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">内容</span></th></tr>
       </thead>
       <tbody>
-        <tr><td><code>info(equilibrium=, parameter=, bus=, branch=, component=)</code></td><td data-label="What it does" data-label-ja="内容"><span lang="en">Prints a summary of buses, branches, and components; each option switches a part on or off.</span><span lang="ja">母線・ブランチ・機器の概要を表示します。各オプションで部分ごとに表示を切り替えます。</span></td></tr>
-        <tr><td><code>draw_diagram(ax)</code></td><td data-label="What it does" data-label-ja="内容"><span lang="en">Draws the network diagram (<code>DrawerNetDiagram</code>) and returns the graph.</span><span lang="ja">系統図を描き（<code>DrawerNetDiagram</code>）、グラフを返します。</span></td></tr>
-        <tr><td><code>draw_spring_model(mode)</code></td><td data-label="What it does" data-label-ja="内容"><span lang="en">Draws an interactive mass-spring graph; <code>mode</code> is <code>"CalculatePowerFlow"</code> or <code>"DynamicSimulation"</code>.</span><span lang="ja">対話的な質点ばねグラフを描きます。<code>mode</code> は <code>"CalculatePowerFlow"</code> または <code>"DynamicSimulation"</code>。</span></td></tr>
+        <tr><td><code>info(equilibrium=, parameter=, bus=, branch=, component=)</code></td><td data-label="What it does" data-label-ja="内容"><span lang="en">Prints a summary of buses, branches, and components; each option switches a part on or off.</span><span lang="ja">母線・ブランチ・機器の概要を表示。各オプションで部分ごとに表示を切り替え。</span></td></tr>
+        <tr><td><code>draw_diagram(ax)</code></td><td data-label="What it does" data-label-ja="内容"><span lang="en">Draws the network diagram (<code>DrawerNetDiagram</code>) and returns the graph.</span><span lang="ja">系統図を描画（<code>DrawerNetDiagram</code>）し、グラフを返す。</span></td></tr>
+        <tr><td><code>draw_spring_model(mode)</code></td><td data-label="What it does" data-label-ja="内容"><span lang="en">Draws an interactive mass-spring graph; <code>mode</code> is <code>"CalculatePowerFlow"</code> or <code>"DynamicSimulation"</code>.</span><span lang="ja">対話的な質点ばねグラフを描画。<code>mode</code> は <code>"CalculatePowerFlow"</code> または <code>"DynamicSimulation"</code>。</span></td></tr>
         <tr><td><code>disp_tree</code>, <code>get_tag</code>, <code>struct</code></td><td data-label="What it does" data-label-ja="内容"><span lang="en">Inherited from <code>LayerPackage</code>: the layer tree, the tag path, and a struct view.</span><span lang="ja"><code>LayerPackage</code> から継承: 階層の木、タグのパス、構造体表示。</span></td></tr>
       </tbody>
     </table>
@@ -418,7 +447,7 @@
     <!-- ============================== USED BY ============================== -->
     <h2 id="used-by"><span lang="en">Used by</span><span lang="ja">利用する機能</span></h2>
     <p lang="en">Every feature starts at <code>PowerNetwork</code>.</p>
-    <p lang="ja">すべての機能は <code>PowerNetwork</code> から始まります。</p>
+    <p lang="ja">すべての機能の起点は <code>PowerNetwork</code>。</p>
     <ul class="cl-used">
       <li><a href="feature-model-building.html"><span lang="en">Model building</span><span lang="ja">モデル構築</span><small>add_* / remove_*</small></a></li>
       <li><a href="feature-data-io.html"><span lang="en">Data IO</span><span lang="ja">データ入出力</span><small>import_csv / export_csv / import_matpower</small></a></li>
@@ -432,8 +461,12 @@
 
     <!-- ============================== SUBCLASSES ============================== -->
     <h2 id="subclasses"><span lang="en">Subclasses</span><span lang="ja">サブクラス</span></h2>
-    <p lang="en">A network class in <code>_GUILDAobject/+network/</code> is a subclass of <code>PowerNetwork</code> whose constructor builds a ready-made grid, usually with <code>PowerNetwork.import_csv(folder, Network=obj)</code> from the CSV folders next to its class file. They add no methods. To add one, see <a href="model-implementation.html#other">Model Implementation: Branches and networks</a>.</p>
-    <p lang="ja"><code>_GUILDAobject/+network/</code> のネットワーククラスは <code>PowerNetwork</code> のサブクラスで、コンストラクタが既成の系統を組み立てます。多くはクラスファイルの隣の CSV フォルダから <code>PowerNetwork.import_csv(folder, Network=obj)</code> で読み込みます。メソッドは追加しません。追加方法は<a href="model-implementation.html#other">モデル実装: ブランチとネットワーク</a>を参照してください。</p>
+    <ul>
+      <li><span lang="en">The network classes in <code>_GUILDAobject/+network/</code> subclass <code>PowerNetwork</code>; their constructors build a ready-made grid.</span><span lang="ja"><code>_GUILDAobject/+network/</code> のネットワーククラスは <code>PowerNetwork</code> のサブクラス。コンストラクタが既成の系統を構築</span></li>
+      <li><span lang="en">Most read the CSV folders next to their class file with <code>PowerNetwork.import_csv(folder, Network=obj)</code>.</span><span lang="ja">多くはクラスファイルの隣の CSV フォルダから <code>PowerNetwork.import_csv(folder, Network=obj)</code> で読み込み</span></li>
+      <li><span lang="en">No added methods.</span><span lang="ja">追加メソッドなし</span></li>
+      <li><span lang="en">Adding one: <a href="model-implementation.html#other">Model Implementation: Branches and networks</a>.</span><span lang="ja">追加方法: <a href="model-implementation.html#other">モデル実装: ブランチとネットワーク</a></span></li>
+    </ul>
     <table class="dg-table cl-table">
       <thead>
         <tr><th><span lang="en">Class</span><span lang="ja">クラス</span></th><th><span lang="en">Grid</span><span lang="ja">系統</span></th></tr>
@@ -441,7 +474,7 @@
       <tbody>
         <tr><td><code>network.IEEE9bus</code>, <code>network.IEEE14bus</code>, <code>network.IEEE68bus</code></td><td data-label="Grid" data-label-ja="系統"><span lang="en">IEEE test systems (MATPOWER case14; WSCC 3-machine and NETS-NYPS 16-machine with AVRs and PSSs).</span><span lang="ja">IEEE のテスト系統（MATPOWER case14、AVR・PSS 付きの WSCC 3 機系統と NETS-NYPS 16 機系統）。</span></td></tr>
         <tr><td><code>network.IEEE14bus_NoTap</code>, <code>network.IEEE14bus_lossless</code></td><td data-label="Grid" data-label-ja="系統"><span lang="en">Variants of the 14-bus system: every transformer tap set to 1, or no branch resistance.</span><span lang="ja">14 母線系統の派生（全変圧器のタップを 1 にしたもの、ブランチ抵抗をなくしたもの）。</span></td></tr>
-        <tr><td><code>network.IEEJ_EAST10</code>, <code>network.IEEJ_EAST30</code>, <code>network.IEEJ_WEST10</code>, <code>network.IEEJ_WEST30</code></td><td data-label="Grid" data-label-ja="系統"><span lang="en">IEEJ standard models of the eastern and western grids of Japan, with the generators, AVRs and governors of the IEEJ report by default (<code>Section</code> <code>"peak"</code> or <code>"night"</code>; <code>Governor=false</code> leaves out the governors, <code>LocalController=false</code> all local controllers). Their comparison with the report is in <code>_GUILDAverification/&lt;Network&gt;/</code>.</span><span lang="ja">電気学会の東・西日本標準モデル。既定で報告書の発電機・AVR・ガバナを持ちます（<code>Section</code> は <code>"peak"</code> または <code>"night"</code>。<code>Governor=false</code> でガバナを、<code>LocalController=false</code> でローカル制御器をすべて省きます）。報告書との比較は <code>_GUILDAverification/&lt;Network&gt;/</code> にあります。</span></td></tr>
+        <tr><td><code>network.IEEJ_EAST10</code>, <code>network.IEEJ_EAST30</code>, <code>network.IEEJ_WEST10</code>, <code>network.IEEJ_WEST30</code></td><td data-label="Grid" data-label-ja="系統"><span lang="en">IEEJ standard models of the eastern and western grids of Japan, with the generators, AVRs and governors of the IEEJ report by default (<code>Section</code> <code>"peak"</code> or <code>"night"</code>; <code>Governor=false</code> leaves out the governors, <code>LocalController=false</code> all local controllers). Comparison with the report: <code>_GUILDAverification/&lt;Network&gt;/</code>.</span><span lang="ja">電気学会の東・西日本標準モデル。既定で報告書の発電機・AVR・ガバナ付き（<code>Section</code> は <code>"peak"</code> または <code>"night"</code>。<code>Governor=false</code> でガバナを、<code>LocalController=false</code> でローカル制御器をすべて省略）。報告書との比較: <code>_GUILDAverification/&lt;Network&gt;/</code>。</span></td></tr>
         <tr><td><code>network.Ishizaki6Bus</code>, <code>network.TEST31bus</code>, <code>network.Txt3Bus</code>, <code>network.Tutorial3bus</code></td><td data-label="Grid" data-label-ja="系統"><span lang="en">Small grids for teaching and tests.</span><span lang="ja">教育・テスト用の小規模系統。</span></td></tr>
       </tbody>
     </table>

@@ -22,7 +22,7 @@
   <main>
     <button type="button" class="developer-back-button" onclick="window.history.back()"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></button>
     <h1><span lang="en">Model Implementation</span><span lang="ja">モデルの実装</span></h1>
-    <p class="page-lead"><span lang="en">How to add a new generator, load, or controller: what the framework requires of the class, a minimal generator and AVR, and how to test them.</span><span lang="ja">新しい発電機、負荷、制御器を追加する方法として、フレームワークがクラスに求めること、最小限の発電機と AVR の例、そのテスト方法を説明します。</span></p>
+    <p class="page-lead"><span lang="en">How to add a new generator, load, or controller: what the framework requires of the class, a minimal generator and AVR, and how to test them.</span><span lang="ja">新しい発電機、負荷、制御器の追加方法。フレームワークがクラスに求めること、最小限の発電機と AVR の例、テスト方法。</span></p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#steps"><span lang="en">Steps</span><span lang="ja">手順</span></a>
@@ -37,16 +37,16 @@
     <!-- ============================== STEPS ============================== -->
     <h2 id="steps"><span lang="en">Steps</span><span lang="ja">手順</span></h2>
     <ol class="dg-list is-numbered">
-      <li><div><span class="dg-item-title"><span lang="en">Choose the base class and the place</span><span lang="ja">基底クラスと置き場所を決める</span></span><p lang="en">Put the class in the matching package of <code>_GUILDAobject</code> (see <a href="folder-structure.html#placement">Folder Structure</a>). A small model can be one <code>classdef</code> file.</p><p lang="ja">クラスは <code>_GUILDAobject</code> の該当するパッケージに置きます（<a href="folder-structure.html#placement">フォルダ構成</a>を参照）。小さなモデルなら <code>classdef</code> ファイル1つで構いません。</p></div></li>
-      <li><div><span class="dg-item-title"><span lang="en">Implement the contract</span><span lang="ja">契約を実装する</span></span><p lang="en">Define the constants and methods in <a href="#contracts">Contracts</a>. Document the class with <a href="class-documentation.html">Class Documentation</a> and name new properties with the <a href="naming-conventions.html">Naming Conventions</a>.</p><p lang="ja"><a href="#contracts">契約</a>にある定数とメソッドを定義します。クラスは<a href="class-documentation.html">クラスのドキュメント</a>に従って記述し、新しいプロパティは<a href="naming-conventions.html">命名規則</a>に従って名付けます。</p></div></li>
-      <li><div><span class="dg-item-title"><span lang="en">Register a component or branch key</span><span lang="ja">機器またはブランチのキーを登録する</span></span><p lang="en">Run <code>GUILDA</code> again. It scans the repository, finds the <code>key</code> of each class, and generates <code>Bus.add_component</code> and <code>PowerNetwork.add_branch</code>. Until then the key is rejected. A class that does not load gives the warning <code>GUILDA:dictionary:ClassNotLoaded</code> with the reason. Controllers have no such step: you create them with their constructor.</p><p lang="ja"><code>GUILDA</code> を再度実行します。リポジトリを走査して各クラスの <code>key</code> を見つけ、<code>Bus.add_component</code> と <code>PowerNetwork.add_branch</code> を生成します。それまではそのキーは受け付けられません。読み込めないクラスがあると、理由とともに警告 <code>GUILDA:dictionary:ClassNotLoaded</code> が出ます。制御器にはこの手順はなく、コンストラクタで作成します。</p></div></li>
-      <li><div><span class="dg-item-title"><span lang="en">Test it</span><span lang="ja">テストする</span></span><p lang="en">Check the contract with <code>validate</code>, then run the checks in <a href="#testing">Testing</a>.</p><p lang="ja"><code>validate</code> で契約を確認し、続いて<a href="#testing">テスト</a>の確認を行います。</p></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Choose the base class and the place</span><span lang="ja">基底クラスと置き場所を決める</span></span><p lang="en">Put the class in the matching package of <code>_GUILDAobject</code> (see <a href="folder-structure.html#placement">Folder Structure</a>). A small model can be one <code>classdef</code> file.</p><p lang="ja">クラスは <code>_GUILDAobject</code> の該当するパッケージに配置（<a href="folder-structure.html#placement">フォルダ構成</a>を参照）。小さなモデルなら <code>classdef</code> ファイル 1 つで可。</p></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Implement the contract</span><span lang="ja">契約を実装する</span></span><p lang="en">Define the constants and methods in <a href="#contracts">Contracts</a>. Document the class with <a href="class-documentation.html">Class Documentation</a> and name new properties with the <a href="naming-conventions.html">Naming Conventions</a>.</p><p lang="ja"><a href="#contracts">契約</a>にある定数とメソッドを定義。クラスの説明は<a href="class-documentation.html">クラスのドキュメント</a>、新しいプロパティの名前は<a href="naming-conventions.html">命名規則</a>に従う。</p></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Register a component or branch key</span><span lang="ja">機器またはブランチのキーを登録する</span></span><ul><li><span lang="en">Run <code>GUILDA</code> again: it scans the repository, finds the <code>key</code> of each class, and generates <code>Bus.add_component</code> and <code>PowerNetwork.add_branch</code>. Until then the key is rejected.</span><span lang="ja"><code>GUILDA</code> を再実行。リポジトリを走査して各クラスの <code>key</code> を見つけ、<code>Bus.add_component</code> と <code>PowerNetwork.add_branch</code> を生成。それまではそのキーは不可。</span></li><li><span lang="en">A class that does not load: warning <code>GUILDA:dictionary:ClassNotLoaded</code> with the reason.</span><span lang="ja">読み込めないクラス: 理由とともに警告 <code>GUILDA:dictionary:ClassNotLoaded</code>。</span></li><li><span lang="en">Controllers: no such step; create them with their constructor.</span><span lang="ja">制御器: この手順なし。コンストラクタで作成。</span></li></ul></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Test it</span><span lang="ja">テストする</span></span><p lang="en">Check the contract with <code>validate</code>, then run the checks in <a href="#testing">Testing</a>.</p><p lang="ja"><code>validate</code> で契約を確認し、続いて<a href="#testing">テスト</a>の確認。</p></div></li>
     </ol>
 
     <!-- ============================== CONTRACTS ============================== -->
     <h2 id="contracts"><span lang="en">Contracts</span><span lang="ja">契約</span></h2>
-    <p lang="en">The three kinds of model have different contracts on purpose (see <a href="class-design.html#classes">Class Design</a>). The differences are easy to miss, so compare them here.</p>
-    <p lang="ja">3種類のモデルは、意図的に異なる契約を持ちます（<a href="class-design.html#classes">クラス設計</a>を参照）。違いを見落としやすいので、ここで比較してください。</p>
+    <p lang="en">The three kinds of model have different contracts on purpose (see <a href="class-design.html#classes">Class Design</a>). The differences are easy to miss: compare them here.</p>
+    <p lang="ja">3 種類のモデルは意図的に異なる契約（<a href="class-design.html#classes">クラス設計</a>を参照）。違いを見落としやすいため、ここで比較。</p>
     <table class="mi-table">
       <thead>
         <tr><th></th><th>Component</th><th>LocalController</th><th>GlobalController</th></tr>
@@ -67,7 +67,7 @@
         <tr>
           <td><span lang="en"><code>key</code>, <code>sv_*</code> attributes</span><span lang="ja"><code>key</code>、<code>sv_*</code> の属性</span></td>
           <td><code>Constant</code></td>
-          <td><code>SetAccess=protected, Hidden</code><small><span lang="en">Not <code>Constant</code>.</span><span lang="ja"><code>Constant</code> ではありません。</span></small></td>
+          <td><code>SetAccess=protected, Hidden</code><small><span lang="en">Not <code>Constant</code>.</span><span lang="ja"><code>Constant</code> ではない。</span></small></td>
           <td><code>Constant, Hidden</code></td>
         </tr>
         <tr>
@@ -84,19 +84,19 @@
         </tr>
         <tr>
           <td><span lang="en">Mass matrix</span><span lang="ja">質量行列</span></td>
-          <td colspan="3"><span lang="en"><code>fcn_Mass</code>: constant and square. <code>simulate</code> calls it with empty <code>t, x, V, I, u</code>; a matrix that uses them stops with <code>GUILDA:read_mass:NotConstant</code>.</span><span lang="ja"><code>fcn_Mass</code>: 定数の正方行列です。<code>simulate</code> は空の <code>t, x, V, I, u</code> で呼び出し、これらを使う行列は <code>GUILDA:read_mass:NotConstant</code> で停止します。</span></td>
+          <td colspan="3"><span lang="en"><code>fcn_Mass</code>: constant and square. <code>simulate</code> calls it with empty <code>t, x, V, I, u</code>; a matrix that uses them stops with <code>GUILDA:read_mass:NotConstant</code>.</span><span lang="ja"><code>fcn_Mass</code>: 定数の正方行列。<code>simulate</code> は空の <code>t, x, V, I, u</code> で呼び出し、これらを使う行列は <code>GUILDA:read_mass:NotConstant</code> で停止。</span></td>
         </tr>
         <tr>
           <td><span lang="en">Jacobians</span><span lang="ja">ヤコビ行列</span></td>
-          <td><span lang="en"><code>Jacobi_dx</code>, <code>Jacobi_I</code>, <code>Jacobi_Y</code> are optional</span><span lang="ja"><code>Jacobi_dx</code>、<code>Jacobi_I</code>、<code>Jacobi_Y</code> は任意</span><small><span lang="en">Numerical differentiation is used without them.</span><span lang="ja">ない場合は数値微分を使います。</span></small></td>
+          <td><span lang="en"><code>Jacobi_dx</code>, <code>Jacobi_I</code>, <code>Jacobi_Y</code> are optional</span><span lang="ja"><code>Jacobi_dx</code>、<code>Jacobi_I</code>、<code>Jacobi_Y</code> は任意</span><small><span lang="en">Numerical differentiation is used without them.</span><span lang="ja">ない場合は数値微分。</span></small></td>
           <td><span lang="en"><code>Jacobi_dx</code>, <code>Jacobi_Y</code> are required</span><span lang="ja"><code>Jacobi_dx</code>、<code>Jacobi_Y</code> は必須</span></td>
           <td><span lang="en"><code>Jacobi_dx</code>, <code>Jacobi_Y</code> are required</span><span lang="ja"><code>Jacobi_dx</code>、<code>Jacobi_Y</code> は必須</span></td>
         </tr>
         <tr>
           <td><span lang="en">Equilibrium</span><span lang="ja">平衡点</span></td>
-          <td><code>[x,u] = get_equilibrium(obj,V,I,P,Q)</code><small><span lang="en">Always called with the four arguments. A trip of <code>simulate</code> passes <code>I = P = Q = 0</code>.</span><span lang="ja">常に4つの引数で呼ばれます。<code>simulate</code> の解列（トリップ）では <code>I = P = Q = 0</code> が渡されます。</span></small></td>
-          <td><code>get_equilibrium(obj,V,u)</code><small><span lang="en"><code>u</code> is the equilibrium input of the component. No output: write <code>rv_Xequilibrium</code> and <code>rv_Uequilibrium</code>, and call the nested controller.</span><span lang="ja"><code>u</code> は機器の平衡点での入力です。出力はありません。<code>rv_Xequilibrium</code> と <code>rv_Uequilibrium</code> に書き込み、入れ子の制御器を呼び出します。</span></small></td>
-          <td><code>[x,u] = get_equilibrium(obj)</code><small><span lang="en">Called after the components are set.</span><span lang="ja">機器の平衡点が設定された後に呼ばれます。</span></small></td>
+          <td><code>[x,u] = get_equilibrium(obj,V,I,P,Q)</code><small><span lang="en">Always called with the four arguments. A trip of <code>simulate</code> passes <code>I = P = Q = 0</code>.</span><span lang="ja">常に 4 つの引数で呼び出し。<code>simulate</code> の解列（トリップ）では <code>I = P = Q = 0</code>。</span></small></td>
+          <td><code>get_equilibrium(obj,V,u)</code><small><span lang="en"><code>u</code> is the equilibrium input of the component. No output: write <code>rv_Xequilibrium</code> and <code>rv_Uequilibrium</code>, and call the nested controller.</span><span lang="ja"><code>u</code> は機器の平衡点での入力。出力なし。<code>rv_Xequilibrium</code> と <code>rv_Uequilibrium</code> に書き込み、入れ子の制御器を呼び出す。</span></small></td>
+          <td><code>[x,u] = get_equilibrium(obj)</code><small><span lang="en">Called after the components are set.</span><span lang="ja">機器の平衡点の設定後に呼び出し。</span></small></td>
         </tr>
         <tr>
           <td><span lang="en"><code>V</code> in <code>get_equilibrium</code></span><span lang="ja"><code>get_equilibrium</code> の <code>V</code></span></td>
@@ -113,7 +113,7 @@
         <tr>
           <td><span lang="en">Inputs come from</span><span lang="ja">入力の取得元</span></td>
           <td><span lang="en">Controllers and input disturbances, by name</span><span lang="ja">制御器と入力外乱（名前で接続）</span></td>
-          <td><span lang="en">By name <code>sv_u</code>: an output of the component, then a state, then an output of the nested controller. Other names stay at the equilibrium.</span><span lang="ja">名前 <code>sv_u</code> によって、機器の出力、次に状態、次に入れ子の制御器の出力の順に探します。それ以外の名前は平衡点の値のままです。</span></td>
+          <td><span lang="en">By name <code>sv_u</code>: an output of the component, then a state, then an output of the nested controller. Other names stay at the equilibrium.</span><span lang="ja">名前 <code>sv_u</code> で、機器の出力 → 状態 → 入れ子の制御器の出力の順に検索。それ以外の名前は平衡点の値のまま。</span></td>
           <td><span lang="en">The states named <code>sv_u</code> of each controlled unit</span><span lang="ja">各制御対象の、<code>sv_u</code> という名前の状態</span></td>
         </tr>
         <tr>
@@ -126,7 +126,7 @@
           <td><span lang="en">Check</span><span lang="ja">確認</span></td>
           <td><code>comp.validate</code></td>
           <td><code>con.validate</code></td>
-          <td><span lang="en">No <code>validate</code>; check with <code>agc.get_sys</code> and a simulation</span><span lang="ja"><code>validate</code> はありません。<code>agc.get_sys</code> とシミュレーションで確認します</span></td>
+          <td><span lang="en">No <code>validate</code>; check with <code>agc.get_sys</code> and a simulation</span><span lang="ja"><code>validate</code> なし。<code>agc.get_sys</code> とシミュレーションで確認</span></td>
         </tr>
         <tr>
           <td><span lang="en">Example</span><span lang="ja">例</span></td>
@@ -139,7 +139,7 @@
 
     <h3><span lang="en">Arguments of the model functions</span><span lang="ja">モデル関数の引数</span></h3>
     <p lang="en">Each model function has the arguments <code>(t, x, V, I, u, param, omega0)</code>.</p>
-    <p lang="ja">各モデル関数は引数 <code>(t, x, V, I, u, param, omega0)</code> をとります。</p>
+    <p lang="ja">各モデル関数の引数は <code>(t, x, V, I, u, param, omega0)</code>。</p>
     <table class="mi-table">
       <thead>
         <tr><th><span lang="en">Argument</span><span lang="ja">引数</span></th><th><span lang="en">Value</span><span lang="ja">値</span></th></tr>
@@ -147,29 +147,35 @@
       <tbody>
         <tr><td><code>t</code></td><td><span lang="en">Time in seconds.</span><span lang="ja">時間（秒）。</span></td></tr>
         <tr><td><code>x</code>, <code>u</code></td><td><span lang="en">Column vectors in the order of <code>sv_x</code> and <code>sv_u</code>.</span><span lang="ja"><code>sv_x</code> と <code>sv_u</code> の順の列ベクトル。</span></td></tr>
-        <tr><td><code>V</code>, <code>I</code></td><td><span lang="en"><code>[re; im]</code> in per unit. <code>I</code> is the current injected into the bus. A global controller has no port: do not use them.</span><span lang="ja">単位法の <code>[re; im]</code>。<code>I</code> は母線に注入される電流です。グローバル制御器にはポートがないため、使わないでください。</span></td></tr>
+        <tr><td><code>V</code>, <code>I</code></td><td><span lang="en"><code>[re; im]</code> in per unit. <code>I</code> is the current injected into the bus. A global controller has no port: do not use them.</span><span lang="ja">単位法の <code>[re; im]</code>。<code>I</code> は母線への注入電流。グローバル制御器はポートがないため使用不可。</span></td></tr>
         <tr><td><code>param</code></td><td><span lang="en">The dynamic parameters in the order of <code>sv_para</code>.</span><span lang="ja"><code>sv_para</code> の順の動特性パラメータ。</span></td></tr>
-        <tr><td><code>omega0</code></td><td><span lang="en">The nominal frequency in Hz. Multiply by <code>2*pi</code> in the model.</span><span lang="ja">Hz 単位の定格周波数。モデルの中で <code>2*pi</code> を掛けます。</span></td></tr>
+        <tr><td><code>omega0</code></td><td><span lang="en">The nominal frequency in Hz. Multiply by <code>2*pi</code> in the model.</span><span lang="ja">Hz 単位の定格周波数。モデルの中で <code>2*pi</code> を掛ける。</span></td></tr>
       </tbody>
     </table>
-    <p lang="en"><code>fcn_dx</code> and <code>fcn_Y</code> return column vectors, <code>fcn_I</code> returns a complex scalar, and <code>fcn_Mass</code> returns <code>M</code> of <code>M*dx/dt = fcn_dx</code>. See <a href="class-design.html#conventions">Class Design: Conventions</a> for units and signs.</p>
-    <p lang="ja"><code>fcn_dx</code> と <code>fcn_Y</code> は列ベクトルを、<code>fcn_I</code> は複素数のスカラーを、<code>fcn_Mass</code> は <code>M*dx/dt = fcn_dx</code> の <code>M</code> を返します。単位と符号については<a href="class-design.html#conventions">クラス設計: 規約</a>を参照してください。</p>
+    <ul>
+      <li><span lang="en">Return values: <code>fcn_dx</code>, <code>fcn_Y</code> → column vectors; <code>fcn_I</code> → a complex scalar; <code>fcn_Mass</code> → <code>M</code> of <code>M*dx/dt = fcn_dx</code>.</span><span lang="ja">戻り値: <code>fcn_dx</code>、<code>fcn_Y</code> → 列ベクトル、<code>fcn_I</code> → 複素数のスカラー、<code>fcn_Mass</code> → <code>M*dx/dt = fcn_dx</code> の <code>M</code>。</span></li>
+      <li><span lang="en">Units and signs: <a href="class-design.html#conventions">Class Design: Conventions</a>.</span><span lang="ja">単位と符号: <a href="class-design.html#conventions">クラス設計: 規約</a>。</span></li>
+    </ul>
 
     <h3><span lang="en">Rules that apply to every model</span><span lang="ja">すべてのモデルに適用されるルール</span></h3>
     <ul>
-      <li><span lang="en">The model functions must not depend on <code>I</code>: <code>simulate</code> accepts it, but the linearization does not.</span><span lang="ja">モデル関数は <code>I</code> に依存してはいけません。<code>simulate</code> は受け付けますが、近似線形化は受け付けません。</span></li>
-      <li><span lang="en"><code>sv_u</code> must not contain the port names <code>Vre</code>, <code>Vim</code>, <code>Ire</code>, <code>Iim</code>.</span><span lang="ja"><code>sv_u</code> にポート名 <code>Vre</code>、<code>Vim</code>、<code>Ire</code>、<code>Iim</code> を含めてはいけません。</span></li>
-      <li><span lang="en"><code>net.initialize</code> evaluates the point that <code>get_equilibrium</code> returns. A wrong size or an error in a model function stops it (<code>GUILDA:PowerNetwork:InitializeEquilibriumSize</code>, <code>InitializeModelSize</code>, <code>InitializeModelFailed</code>). A point where the state moves gives the warning <code>GUILDA:PowerNetwork:EquilibriumResidual</code>.</span><span lang="ja"><code>net.initialize</code> は <code>get_equilibrium</code> が返す点を評価します。サイズの誤りやモデル関数のエラーがあると停止します（<code>GUILDA:PowerNetwork:InitializeEquilibriumSize</code>、<code>InitializeModelSize</code>、<code>InitializeModelFailed</code>）。状態が動く点では警告 <code>GUILDA:PowerNetwork:EquilibriumResidual</code> が出ます。</span></li>
-      <li><span lang="en">A controller can use the input names <code>"Xall"</code> and <code>"Yall"</code> to observe all the states or outputs of the component. It must then override <code>set_inputs</code>; see <code>controller.local_LQR</code>. The names <code>"X"</code> and <code>"Y"</code> are errors.</span><span lang="ja">制御器は入力名 <code>"Xall"</code> と <code>"Yall"</code> を使って、機器のすべての状態またはすべての出力を観測できます。その場合は <code>set_inputs</code> をオーバーライドする必要があります（<code>controller.local_LQR</code> を参照）。<code>"X"</code> と <code>"Y"</code> という名前はエラーになります。</span></li>
-      <li><span lang="en">A component has two slots for local controllers: one <code>"avr"</code> or <code>"local"</code> controller (with a <code>"pss"</code> under an AVR), and one <code>"governor"</code> beside it. <code>a_LocalController</code> and the variables list them in this order, whatever the order of attachment. A new controller replaces the one in its slot with the warning <code>GUILDA:Component:ReplaceController</code>.</span><span lang="ja">機器にはローカル制御器の枠が2つあります。<code>"avr"</code> または <code>"local"</code> の制御器1つ（AVR の下には <code>"pss"</code>）と、その横の <code>"governor"</code> 1つです。<code>a_LocalController</code> と変数の並びは、接続した順序によらずこの順になります。新しく接続すると、警告 <code>GUILDA:Component:ReplaceController</code> とともに同じ枠の制御器が置き換えられます。</span></li>
-      <li><span lang="en">The two top-level controllers of a component must drive different inputs. A governor and a <code>"local"</code> controller that both drive <code>Pmech</code> (such as <code>controller.local_LQR</code> on all the inputs) stop with <code>GUILDA:Component:ControllerOutputOverlap</code>. A controller whose outputs follow the component (as <code>local_LQR</code> does) overrides <code>driven_inputs</code>, so that the check runs before the attachment.</span><span lang="ja">機器の最上位の2つの制御器は、異なる入力を駆動しなければなりません。ガバナと、どちらも <code>Pmech</code> を駆動する <code>"local"</code> 制御器（すべての入力に対する <code>controller.local_LQR</code> など）を組み合わせると、<code>GUILDA:Component:ControllerOutputOverlap</code> で停止します。出力が機器に合わせて決まる制御器（<code>local_LQR</code> など）は <code>driven_inputs</code> をオーバーライドし、接続の前にこの確認が行われるようにします。</span></li>
-      <li><span lang="en"><code>getCompPQ(obj, x, V, u, param)</code>, with <code>V</code> as <code>[abs; angle]</code>, is needed only by the continuation power flow with <code>UseInternalState=true</code>; without it, that analysis stops with <code>GUILDA:build_layout:MissingGetCompPQ</code>.</span><span lang="ja"><code>V</code> を <code>[abs; angle]</code> として受け取る <code>getCompPQ(obj, x, V, u, param)</code> は、<code>UseInternalState=true</code> の連続潮流計算でだけ必要です。ない場合、その解析は <code>GUILDA:build_layout:MissingGetCompPQ</code> で停止します。</span></li>
+      <li><span lang="en">The model functions must not depend on <code>I</code>: <code>simulate</code> accepts it, but the linearization does not.</span><span lang="ja">モデル関数は <code>I</code> に依存しない。<code>simulate</code> は受け付けるが、近似線形化は不可。</span></li>
+      <li><span lang="en"><code>sv_u</code> must not contain the port names <code>Vre</code>, <code>Vim</code>, <code>Ire</code>, <code>Iim</code>.</span><span lang="ja"><code>sv_u</code> にポート名 <code>Vre</code>、<code>Vim</code>、<code>Ire</code>、<code>Iim</code> を含めない。</span></li>
+      <li><span lang="en"><code>net.initialize</code> evaluates the point that <code>get_equilibrium</code> returns. A wrong size or an error in a model function stops it (<code>GUILDA:PowerNetwork:InitializeEquilibriumSize</code>, <code>InitializeModelSize</code>, <code>InitializeModelFailed</code>). A point where the state moves gives the warning <code>GUILDA:PowerNetwork:EquilibriumResidual</code>.</span><span lang="ja"><code>net.initialize</code> は <code>get_equilibrium</code> が返す点を評価。サイズの誤りやモデル関数のエラーで停止（<code>GUILDA:PowerNetwork:InitializeEquilibriumSize</code>、<code>InitializeModelSize</code>、<code>InitializeModelFailed</code>）。状態が動く点では警告 <code>GUILDA:PowerNetwork:EquilibriumResidual</code>。</span></li>
+      <li><span lang="en">A controller can use the input names <code>"Xall"</code> and <code>"Yall"</code> to observe all the states or outputs of the component. It must then override <code>set_inputs</code>; see <code>controller.local_LQR</code>. The names <code>"X"</code> and <code>"Y"</code> are errors.</span><span lang="ja">制御器は入力名 <code>"Xall"</code> と <code>"Yall"</code> で、機器のすべての状態またはすべての出力を観測可能。その場合は <code>set_inputs</code> のオーバーライドが必要（<code>controller.local_LQR</code> を参照）。名前 <code>"X"</code>、<code>"Y"</code> はエラー。</span></li>
+      <li><span lang="en">A component has two slots for local controllers: one <code>"avr"</code> or <code>"local"</code> controller (with a <code>"pss"</code> under an AVR), and one <code>"governor"</code> beside it. <code>a_LocalController</code> and the variables list them in this order, whatever the order of attachment. A new controller replaces the one in its slot with the warning <code>GUILDA:Component:ReplaceController</code>.</span><span lang="ja">機器のローカル制御器の枠は 2 つ。<code>"avr"</code> または <code>"local"</code> の制御器 1 つ（AVR の下には <code>"pss"</code>）と、その横の <code>"governor"</code> 1 つ。<code>a_LocalController</code> と変数の並びは、接続の順序によらずこの順。新しく接続すると同じ枠の制御器を置き換え、警告 <code>GUILDA:Component:ReplaceController</code>。</span></li>
+      <li><span lang="en">The two top-level controllers of a component must drive different inputs. A governor and a <code>"local"</code> controller that both drive <code>Pmech</code> (such as <code>controller.local_LQR</code> on all the inputs) stop with <code>GUILDA:Component:ControllerOutputOverlap</code>. A controller whose outputs follow the component (as <code>local_LQR</code> does) overrides <code>driven_inputs</code>, so that the check runs before the attachment.</span><span lang="ja">機器の最上位の 2 つの制御器は、異なる入力を駆動。ガバナと、どちらも <code>Pmech</code> を駆動する <code>"local"</code> 制御器（すべての入力に対する <code>controller.local_LQR</code> など）の組み合わせは <code>GUILDA:Component:ControllerOutputOverlap</code> で停止。出力が機器に合わせて決まる制御器（<code>local_LQR</code> など）は <code>driven_inputs</code> をオーバーライドし、接続の前にこの確認を実行。</span></li>
+      <li><span lang="en"><code>getCompPQ(obj, x, V, u, param)</code>, with <code>V</code> as <code>[abs; angle]</code>, is needed only by the continuation power flow with <code>UseInternalState=true</code>; without it, that analysis stops with <code>GUILDA:build_layout:MissingGetCompPQ</code>.</span><span lang="ja"><code>V</code> を <code>[abs; angle]</code> として受け取る <code>getCompPQ(obj, x, V, u, param)</code> は、<code>UseInternalState=true</code> の連続潮流計算でだけ必要。ない場合、その解析は <code>GUILDA:build_layout:MissingGetCompPQ</code> で停止。</span></li>
     </ul>
 
     <!-- ============================== GENERATOR ============================== -->
     <h2 id="generator"><span lang="en">Minimal generator</span><span lang="ja">最小限の発電機</span></h2>
-    <p lang="en">A constant-magnitude source behind the reactance <code>Xs</code>, with the swing equation. It has the same dynamics as <code>gen-classical</code> with <code>Xd = Xq = Xs</code>, which makes a useful check. The base class <code>component.generator.abstract</code> provides the constructor and sets the tag to <code>"SG"</code> + index. A load inherits from <code>component.load.abstract</code> in the same way.</p>
-    <p lang="ja">リアクタンス <code>Xs</code> の背後にある大きさ一定の電源に、動揺方程式を組み合わせたモデルです。<code>Xd = Xq = Xs</code> とした <code>gen-classical</code> と同じ動特性を持つため、確認に役立ちます。基底クラス <code>component.generator.abstract</code> がコンストラクタを提供し、タグを <code>"SG"</code> + インデックスに設定します。負荷も同じように <code>component.load.abstract</code> を継承します。</p>
+    <ul>
+      <li><span lang="en">A constant-magnitude source behind the reactance <code>Xs</code>, with the swing equation.</span><span lang="ja">リアクタンス <code>Xs</code> の背後にある大きさ一定の電源と動揺方程式のモデル。</span></li>
+      <li><span lang="en">Same dynamics as <code>gen-classical</code> with <code>Xd = Xq = Xs</code>: a useful check.</span><span lang="ja"><code>Xd = Xq = Xs</code> とした <code>gen-classical</code> と同じ動特性。確認に有用。</span></li>
+      <li><span lang="en">The base class <code>component.generator.abstract</code> provides the constructor and sets the tag to <code>"SG"</code> + index.</span><span lang="ja">基底クラス <code>component.generator.abstract</code> がコンストラクタを提供し、タグを <code>"SG"</code> + インデックスに設定。</span></li>
+      <li><span lang="en">A load inherits from <code>component.load.abstract</code> in the same way.</span><span lang="ja">負荷も同様に <code>component.load.abstract</code> を継承。</span></li>
+    </ul>
     <span class="mi-file">_GUILDAobject/+component/+generator/simple_sg.m</span>
 <pre class="mi-code" data-file="_GUILDAobject/+component/+generator/simple_sg.m">classdef simple_sg &lt; component.generator.abstract
 % Generator with a constant-magnitude source E behind the reactance Xs.
@@ -213,12 +219,14 @@
 end
 </pre>
     <p lang="en">A generator with parameters that are not in the bundled <code>parameter.csv</code>, like <code>Xs</code>, needs a table in the <code>parameter</code> option of <code>add_component</code>.</p>
-    <p lang="ja"><code>Xs</code> のように、同梱の <code>parameter.csv</code> にないパラメータを持つ発電機では、<code>add_component</code> の <code>parameter</code> オプションにテーブルを渡す必要があります。</p>
+    <p lang="ja"><code>Xs</code> のように同梱の <code>parameter.csv</code> にないパラメータを持つ発電機: <code>add_component</code> の <code>parameter</code> オプションにテーブルが必要。</p>
 
     <!-- ============================== NETWORK ============================== -->
     <h2 id="network"><span lang="en">Using the model</span><span lang="ja">モデルの使用</span></h2>
-    <p lang="en">After <code>GUILDA</code> has registered the key, the model works in every analysis. Keep the objects that <code>add_bus</code> returns and pass their tags to <code>add_branch</code>: a bus index shifts when a bus is removed, and a tag does not (see <a href="class-design.html#identity">Identity</a>).</p>
-    <p lang="ja"><code>GUILDA</code> がキーを登録すると、そのモデルはすべての解析で使えます。<code>add_bus</code> が返すオブジェクトを保持し、そのタグを <code>add_branch</code> に渡してください。母線のインデックスは母線を削除するとずれますが、タグはずれません（<a href="class-design.html#identity">識別</a>を参照）。</p>
+    <ul>
+      <li><span lang="en">Once <code>GUILDA</code> has registered the key, the model works in every analysis.</span><span lang="ja"><code>GUILDA</code> がキーを登録すれば、そのモデルはすべての解析で使用可能。</span></li>
+      <li><span lang="en">Keep the objects that <code>add_bus</code> returns and pass their tags to <code>add_branch</code>: a bus index shifts when a bus is removed, a tag does not (see <a href="class-design.html#identity">Identity</a>).</span><span lang="ja"><code>add_bus</code> が返すオブジェクトを保持し、そのタグを <code>add_branch</code> に渡す。母線のインデックスは母線の削除でずれるが、タグはずれない（<a href="class-design.html#identity">識別</a>を参照）。</span></li>
+    </ul>
 <pre class="mi-code" data-run="network">para = table(100, 10, 0.3, VariableNames=["M","D","Xs"]);
 net  = PowerNetwork();
 b1   = net.add_bus(V=1.00);
@@ -240,8 +248,12 @@ sys = net.get_sys();
 
     <!-- ============================== CONTROLLER ============================== -->
     <h2 id="controller"><span lang="en">Minimal controller</span><span lang="ja">最小限の制御器</span></h2>
-    <p lang="en">A first-order AVR. Its output <code>Vfield</code> drives the input of that name of the generator. No output of the generator is called <code>Vref</code> or <code>Vpss</code>, so <code>Vref</code> stays at its equilibrium and <code>Vpss</code> reads a PSS when one is attached. The Jacobians must be written by hand. The constructor adds the parameters and builds the function handles, which are built again with the frequency of the network when the controller is attached.</p>
-    <p lang="ja">1次遅れの AVR です。出力 <code>Vfield</code> は、発電機の同じ名前の入力を駆動します。発電機には <code>Vref</code> や <code>Vpss</code> という名前の出力がないため、<code>Vref</code> は平衡点の値のままで、<code>Vpss</code> は PSS が接続されていればその出力を読みます。ヤコビ行列は手で書く必要があります。コンストラクタはパラメータを追加して関数ハンドルを作ります。関数ハンドルは、制御器が接続されたときにネットワークの周波数で作り直されます。</p>
+    <ul>
+      <li><span lang="en">A first-order AVR. Its output <code>Vfield</code> drives the generator input of that name.</span><span lang="ja">1 次遅れの AVR。出力 <code>Vfield</code> が発電機の同名の入力を駆動。</span></li>
+      <li><span lang="en">No generator output is called <code>Vref</code> or <code>Vpss</code>: <code>Vref</code> stays at its equilibrium, <code>Vpss</code> reads a PSS when one is attached.</span><span lang="ja">発電機に <code>Vref</code>、<code>Vpss</code> という名前の出力はない。<code>Vref</code> は平衡点の値のまま、<code>Vpss</code> は PSS が接続されていればその出力。</span></li>
+      <li><span lang="en">The Jacobians are written by hand.</span><span lang="ja">ヤコビ行列は手で記述。</span></li>
+      <li><span lang="en">The constructor adds the parameters and builds the function handles; they are built again with the network frequency when the controller is attached.</span><span lang="ja">コンストラクタがパラメータを追加して関数ハンドルを作成。制御器の接続時にネットワークの周波数で再作成。</span></li>
+    </ul>
     <span class="mi-file">_GUILDAobject/+controller/+avr/simple_avr.m</span>
 <pre class="mi-code" data-file="_GUILDAobject/+controller/+avr/simple_avr.m">classdef simple_avr &lt; LocalController
 % First-order AVR: Te*dVfd/dt = -Vfd + Ka*(Vref + Vpss - |V|), Vfield = Vfd.
@@ -304,7 +316,7 @@ sys = net.get_sys();
 end
 </pre>
     <p lang="en">Attaching a controller changes the dynamics, so run <code>initialize</code> again. Without it, <code>simulate</code> stops with <code>GUILDA:PowerNetwork:EquilibriumStale</code>.</p>
-    <p lang="ja">制御器を接続すると動特性が変わるため、<code>initialize</code> を再度実行します。実行しないと、<code>simulate</code> は <code>GUILDA:PowerNetwork:EquilibriumStale</code> で停止します。</p>
+    <p lang="ja">制御器の接続で動特性が変わるため、<code>initialize</code> を再実行。実行しないと <code>simulate</code> は <code>GUILDA:PowerNetwork:EquilibriumStale</code> で停止。</p>
 <pre class="mi-code" data-run="controller">avr = controller.avr.simple_avr("a", Ka=30, Te=0.05);
 pss = controller.pss.PSS1("p");
 g2.add_local_controller(avr, pss);
@@ -312,13 +324,16 @@ net.initialize();
 sim = net.simulate([0,10], sc);
 </pre>
     <p lang="en">To detach it, call <code>g2.remove_local_controller(avr.str_tag, RemoveNested=true)</code>. The option also removes the PSS, and an AVR with a PSS cannot be removed without it.</p>
-    <p lang="ja">取り外すには <code>g2.remove_local_controller(avr.str_tag, RemoveNested=true)</code> を呼びます。このオプションは PSS も取り外します。PSS の付いた AVR は、このオプションなしでは取り外せません。</p>
+    <p lang="ja">取り外し: <code>g2.remove_local_controller(avr.str_tag, RemoveNested=true)</code>。このオプションで PSS も取り外し。PSS の付いた AVR はこのオプションなしでは取り外し不可。</p>
 
     <!-- ============================== TESTING ============================== -->
     <h2 id="testing"><span lang="en">Testing</span><span lang="ja">テスト</span></h2>
     <h3><span lang="en">Check the contract with <code>validate</code></span><span lang="ja"><code>validate</code> で契約を確認する</span></h3>
-    <p lang="en"><code>comp.validate</code> and <code>con.validate</code> print the comparison and return a struct of tables. A broken model does not stop the check: it appears as <code>FAIL</code>. Pass <code>false</code> to skip the printing.</p>
-    <p lang="ja"><code>comp.validate</code> と <code>con.validate</code> は比較結果を表示し、テーブルの構造体を返します。モデルに問題があっても確認は止まらず、<code>FAIL</code> として表示されます。表示を省くには <code>false</code> を渡します。</p>
+    <ul>
+      <li><span lang="en"><code>comp.validate</code> and <code>con.validate</code> print the comparison and return a struct of tables.</span><span lang="ja"><code>comp.validate</code> と <code>con.validate</code> は比較結果を表示し、テーブルの構造体を返す。</span></li>
+      <li><span lang="en">A broken model does not stop the check: it appears as <code>FAIL</code>.</span><span lang="ja">モデルに問題があっても確認は止まらず、<code>FAIL</code> と表示。</span></li>
+      <li><span lang="en">Pass <code>false</code> to skip the printing.</span><span lang="ja">表示を省くには <code>false</code> を渡す。</span></li>
+    </ul>
 <pre class="mi-code" data-run="validate">s = g2.validate(false);
 s.contract        % status (PASS, FAIL, INFO) and detail of each check
 s.inputs          % where each input is read
@@ -333,25 +348,30 @@ s.inputs          % Vref: "equilibrium (not connected)", Vpss: "output of CPp"
       </thead>
       <tbody>
         <tr><td><code>contract</code></td><td><span lang="en">Sizes of <code>x</code>, <code>u</code>, and the model functions; <code>fcn_I</code> complex; <code>fcn_Mass</code> constant and square; no dependence on <code>I</code>; no port names in <code>sv_u</code>; whether <code>getCompPQ</code> is defined.</span><span lang="ja"><code>x</code>、<code>u</code>、モデル関数のサイズ、<code>fcn_I</code> が複素数であること、<code>fcn_Mass</code> が定数の正方行列であること、<code>I</code> に依存しないこと、<code>sv_u</code> にポート名がないこと、<code>getCompPQ</code> が定義されているかどうか。</span></td></tr>
-        <tr><td><code>inputs</code></td><td><span lang="en">The source of each input. A misspelled input name is not an error when the controller is attached; it appears here as <code>equilibrium (not connected)</code>.</span><span lang="ja">各入力の取得元。入力名の綴りを誤っても制御器の接続時にはエラーにならず、ここに <code>equilibrium (not connected)</code> と表示されます。</span></td></tr>
-        <tr><td><code>dx</code>, <code>I</code></td><td><span lang="en">The residuals at the point. They should be close to zero at an equilibrium.</span><span lang="ja">その点での残差。平衡点ではほぼ0になるはずです。</span></td></tr>
-        <tr><td><code>Axx</code>, <code>Bxv</code>, ...</td><td><span lang="en">The absolute difference between each analytic Jacobian and finite differences. A component without <code>Jacobi_*</code> has nothing to compare.</span><span lang="ja">解析的なヤコビ行列と有限差分との差の絶対値。<code>Jacobi_*</code> のない機器では比較するものがありません。</span></td></tr>
+        <tr><td><code>inputs</code></td><td><span lang="en">The source of each input. A misspelled input name is not an error when the controller is attached; it appears here as <code>equilibrium (not connected)</code>.</span><span lang="ja">各入力の取得元。入力名の綴りの誤りは制御器の接続時にはエラーにならず、ここに <code>equilibrium (not connected)</code> と表示。</span></td></tr>
+        <tr><td><code>dx</code>, <code>I</code></td><td><span lang="en">The residuals at the point. They should be close to zero at an equilibrium.</span><span lang="ja">その点での残差。平衡点ではほぼ 0。</span></td></tr>
+        <tr><td><code>Axx</code>, <code>Bxv</code>, ...</td><td><span lang="en">The absolute difference between each analytic Jacobian and finite differences. A component without <code>Jacobi_*</code> has nothing to compare.</span><span lang="ja">解析的なヤコビ行列と有限差分との差の絶対値。<code>Jacobi_*</code> のない機器は比較対象なし。</span></td></tr>
       </tbody>
     </table>
-    <p lang="en">A component is checked at its equilibrium, or at a random point with unit <code>V</code> and <code>I</code> before <code>net.initialize</code>, where the residuals are not zero. A local controller must be attached to a component on an initialized network.</p>
-    <p lang="ja">機器は平衡点で確認されます。<code>net.initialize</code> の前は、大きさ1の <code>V</code> と <code>I</code> を持つランダムな点で確認されるため、残差は0になりません。ローカル制御器は、初期化済みのネットワーク上の機器に接続されている必要があります。</p>
+    <ul>
+      <li><span lang="en">A component is checked at its equilibrium; before <code>net.initialize</code>, at a random point with unit <code>V</code> and <code>I</code>, where the residuals are not zero.</span><span lang="ja">機器は平衡点で確認。<code>net.initialize</code> の前は大きさ 1 の <code>V</code>、<code>I</code> を持つランダムな点で確認するため、残差は 0 にならない。</span></li>
+      <li><span lang="en">A local controller must be attached to a component on an initialized network.</span><span lang="ja">ローカル制御器は、初期化済みのネットワーク上の機器への接続が必要。</span></li>
+    </ul>
 
     <h3><span lang="en">Check the behavior</span><span lang="ja">挙動を確認する</span></h3>
     <ol class="dg-list is-numbered">
-      <li><div><span class="dg-item-title"><span lang="en">Stay at the equilibrium</span><span lang="ja">平衡点にとどまる</span></span><p lang="en"><code>net.simulate</code> without scenarios keeps the states at <code>rv_Xequilibrium</code>.</p><p lang="ja">シナリオなしの <code>net.simulate</code> で、状態が <code>rv_Xequilibrium</code> にとどまります。</p></div></li>
-      <li><div><span class="dg-item-title"><span lang="en">Survive a disturbance</span><span lang="ja">外乱に耐える</span></span><p lang="en">Run a fault and a trip with a <code>Scenario</code> (<code>add_fault</code>, <code>add_trip</code>). <code>flag</code> is <code>1</code> when the simulation completes. A trip calls <code>get_equilibrium</code> with <code>I = P = Q = 0</code>.</p><p lang="ja"><code>Scenario</code>（<code>add_fault</code>、<code>add_trip</code>）で地絡と解列（トリップ）を実行します。シミュレーションが完了すると <code>flag</code> は <code>1</code> になります。解列では <code>I = P = Q = 0</code> で <code>get_equilibrium</code> が呼ばれます。</p></div></li>
-      <li><div><span class="dg-item-title"><span lang="en">Look at the linear model</span><span lang="ja">線形モデルを調べる</span></span><p lang="en"><code>eig(net.get_sys())</code>. A network of synchronous machines has an eigenvalue near zero from the common rotation of the rotor angles. The other eigenvalues should be in the left half plane unless you expect otherwise. An unstable result can also come from the rest of the test network, so compare with an existing model on the same network.</p><p lang="ja"><code>eig(net.get_sys())</code> を調べます。同期機からなるネットワークには、回転子角が一斉に回転することによる0付近の固有値があります。それ以外の固有値は、意図した場合を除いて左半平面にあるはずです。不安定な結果はテスト用ネットワークのほかの部分から生じることもあるため、同じネットワーク上の既存のモデルと比較してください。</p></div></li>
-      <li><div><span class="dg-item-title"><span lang="en">Compare with a known model</span><span lang="ja">既知のモデルと比較する</span></span><p lang="en">When an existing class reduces to your model, the eigenvalues should agree, as below.</p><p lang="ja">既存のクラスが新しいモデルに帰着する場合は、以下のように固有値が一致するはずです。</p></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Stay at the equilibrium</span><span lang="ja">平衡点にとどまる</span></span><p lang="en"><code>net.simulate</code> without scenarios keeps the states at <code>rv_Xequilibrium</code>.</p><p lang="ja">シナリオなしの <code>net.simulate</code> で、状態が <code>rv_Xequilibrium</code> にとどまる。</p></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Survive a disturbance</span><span lang="ja">外乱に耐える</span></span><p lang="en">Run a fault and a trip with a <code>Scenario</code> (<code>add_fault</code>, <code>add_trip</code>). <code>flag</code> is <code>1</code> when the simulation completes. A trip calls <code>get_equilibrium</code> with <code>I = P = Q = 0</code>.</p><p lang="ja"><code>Scenario</code>（<code>add_fault</code>、<code>add_trip</code>）で地絡と解列（トリップ）を実行。シミュレーションが完了すれば <code>flag</code> は <code>1</code>。解列では <code>I = P = Q = 0</code> で <code>get_equilibrium</code> を呼び出し。</p></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Look at the linear model</span><span lang="ja">線形モデルを調べる</span></span><p lang="en"><code>eig(net.get_sys())</code>. A network of synchronous machines has an eigenvalue near zero from the common rotation of the rotor angles. The others: in the left half plane unless intended. An unstable result can also come from the rest of the test network, so compare with an existing model on the same network.</p><p lang="ja"><code>eig(net.get_sys())</code> を確認。同期機からなるネットワークには、回転子角の一斉回転による 0 付近の固有値。それ以外の固有値は、意図した場合を除いて左半平面。不安定な結果はテスト用ネットワークのほかの部分から生じることもあるため、同じネットワーク上の既存のモデルと比較。</p></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Compare with a known model</span><span lang="ja">既知のモデルと比較する</span></span><p lang="en">When an existing class reduces to your model, the eigenvalues should agree, as below.</p><p lang="ja">既存のクラスが新しいモデルに帰着する場合、下のように固有値が一致。</p></div></li>
     </ol>
 
     <h3><span lang="en">Add a test</span><span lang="ja">テストを追加する</span></h3>
-    <p lang="en">Add a <code>%%</code> section to the script of the feature in <code>+DebugScript</code>, or a new script <code>test_I&lt;issue&gt;_&lt;slug&gt;.m</code>, and run it with <code>DebugScript.run_all("Features","I&lt;issue&gt;")</code>. Each section runs as one test. Put local functions at the end of the script.</p>
-    <p lang="ja"><code>+DebugScript</code> にあるその機能のスクリプトに <code>%%</code> セクションを追加するか、新しいスクリプト <code>test_I&lt;issue&gt;_&lt;slug&gt;.m</code> を作り、<code>DebugScript.run_all("Features","I&lt;issue&gt;")</code> で実行します。各セクションが1つのテストとして実行されます。ローカル関数はスクリプトの最後に置いてください。</p>
+    <ul>
+      <li><span lang="en">Add a <code>%%</code> section to the script of the feature in <code>+DebugScript</code>, or a new script <code>test_I&lt;issue&gt;_&lt;slug&gt;.m</code>.</span><span lang="ja"><code>+DebugScript</code> にあるその機能のスクリプトに <code>%%</code> セクションを追加、または新しいスクリプト <code>test_I&lt;issue&gt;_&lt;slug&gt;.m</code> を作成。</span></li>
+      <li><span lang="en">Run it with <code>DebugScript.run_all("Features","I&lt;issue&gt;")</code>. Each section runs as one test.</span><span lang="ja"><code>DebugScript.run_all("Features","I&lt;issue&gt;")</code> で実行。各セクションが 1 つのテスト。</span></li>
+      <li><span lang="en">Local functions go at the end of the script.</span><span lang="ja">ローカル関数はスクリプトの最後に配置。</span></li>
+    </ul>
     <span class="mi-file">+DebugScript/test_I114_new_models.m</span>
 <pre class="mi-code" data-file="+DebugScript/test_I114_new_models.m">% New generator and AVR, on a small network built in the test.
 
@@ -399,8 +419,8 @@ end
     <!-- ============================== OTHER ============================== -->
     <h2 id="other"><span lang="en">Branches and networks</span><span lang="ja">ブランチとネットワーク</span></h2>
     <ul>
-      <li><span lang="en"><strong>Branch.</strong> Inherit from <code>Branch</code> in <code>_GUILDAobject/+branch/</code> and define the constants <code>key</code> and <code>header</code> (the prefix of the tags), and the method <code>get_admittance_matrix</code>, which returns the 2×2 matrix from the parameters <code>R</code>, <code>X</code>, <code>C</code>, <code>tap</code>, and <code>phase</code>. Run <code>GUILDA</code> to register the key.</span><span lang="ja"><strong>ブランチ</strong>: <code>_GUILDAobject/+branch/</code> で <code>Branch</code> を継承し、定数 <code>key</code> と <code>header</code>（タグの接頭辞）、およびパラメータ <code>R</code>、<code>X</code>、<code>C</code>、<code>tap</code>、<code>phase</code> から 2×2 行列を返すメソッド <code>get_admittance_matrix</code> を定義します。キーを登録するには <code>GUILDA</code> を実行します。</span></li>
-      <li><span lang="en"><strong>Network.</strong> Inherit from <code>PowerNetwork</code> in <code>_GUILDAobject/+network/</code>, and build the network in the constructor from CSV folders or in code (see <a href="folder-structure.html#placement">Folder Structure</a>).</span><span lang="ja"><strong>ネットワーク</strong>: <code>_GUILDAobject/+network/</code> で <code>PowerNetwork</code> を継承し、コンストラクタの中で CSV フォルダから、またはコードでネットワークを組み立てます（<a href="folder-structure.html#placement">フォルダ構成</a>を参照）。</span></li>
+      <li><span lang="en"><strong>Branch.</strong> Inherit from <code>Branch</code> in <code>_GUILDAobject/+branch/</code> and define the constants <code>key</code> and <code>header</code> (the prefix of the tags), and the method <code>get_admittance_matrix</code>, which returns the 2×2 matrix from the parameters <code>R</code>, <code>X</code>, <code>C</code>, <code>tap</code>, and <code>phase</code>. Run <code>GUILDA</code> to register the key.</span><span lang="ja"><strong>ブランチ</strong>: <code>_GUILDAobject/+branch/</code> で <code>Branch</code> を継承し、定数 <code>key</code> と <code>header</code>（タグの接頭辞）、およびパラメータ <code>R</code>、<code>X</code>、<code>C</code>、<code>tap</code>、<code>phase</code> から 2×2 行列を返すメソッド <code>get_admittance_matrix</code> を定義。キーの登録は <code>GUILDA</code> の実行で。</span></li>
+      <li><span lang="en"><strong>Network.</strong> Inherit from <code>PowerNetwork</code> in <code>_GUILDAobject/+network/</code>, and build the network in the constructor from CSV folders or in code (see <a href="folder-structure.html#placement">Folder Structure</a>).</span><span lang="ja"><strong>ネットワーク</strong>: <code>_GUILDAobject/+network/</code> で <code>PowerNetwork</code> を継承し、コンストラクタの中で CSV フォルダから、またはコードでネットワークを組み立てる（<a href="folder-structure.html#placement">フォルダ構成</a>を参照）。</span></li>
     </ul>
   </main>
 </body>

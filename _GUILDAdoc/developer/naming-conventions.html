@@ -92,7 +92,7 @@
     <button type="button" class="developer-back-button" onclick="window.history.back()"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></button>
     <h1><span lang="en">Naming Conventions in GUILDA</span><span lang="ja">GUILDA の命名規則</span></h1>
     <p class="page-lead" lang="en">Variable naming follows <strong><code>[variableType][size]_[variableDescription]</code></strong>.</p>
-    <p class="page-lead" lang="ja">変数名は <strong><code>[variableType][size]_[variableDescription]</code></strong> の形で付けます。</p>
+    <p class="page-lead" lang="ja">変数名は <strong><code>[variableType][size]_[variableDescription]</code></strong> の形。</p>
 
     <div class="dg-anatomy nc-formula" aria-hidden="true">
       <span class="dg-part is-accent"><span class="dg-tok">variableType</span></span>
@@ -183,8 +183,8 @@
       </div>
       <!-- rows are generated from NC_TYPES below -->
     </div>
-    <p class="dg-caption" lang="en"><code>f</code>: function handle (cell array if the variable itself is an array). Click any cell to load it into the generator below.</p>
-    <p class="dg-caption" lang="ja"><code>f</code>: 関数ハンドル（変数自体が配列のときは cell 配列）。セルをクリックすると、下のジェネレーターに読み込まれます。</p>
+    <p class="dg-caption" lang="en"><code>f</code>: function handle (cell array if the variable itself is an array). Click a cell to load it into the generator below.</p>
+    <p class="dg-caption" lang="ja"><code>f</code>: 関数ハンドル（変数自体が配列のときは cell 配列）。セルのクリックで下のジェネレーターに読み込み。</p>
 
     <h2><span lang="en">Naming Composition Examples</span><span lang="ja">命名の組み立て例</span></h2>
     <div class="dg-rows">
@@ -221,7 +221,7 @@
         <div>
           <span class="dg-item-title"><span lang="en">Table type</span><span lang="ja">table 型</span></span>
           <div class="nc-formula-line"><b>tab_</b> + <i><span lang="en">[variable description]</span><span lang="ja">[変数の説明]</span></i> &nbsp;→&nbsp; <code>tab_bus_data</code></div>
-          <p class="dg-muted"><span lang="en">Regardless of argument or output count.</span><span lang="ja">引数や出力の数にかかわらず使います。</span></p>
+          <p class="dg-muted"><span lang="en">Regardless of argument or output count.</span><span lang="ja">引数や出力の数にかかわらず使用。</span></p>
         </div>
       </li>
       <li>
@@ -234,7 +234,7 @@
         <div>
           <span class="dg-item-title"><span lang="en">GUILDA-specific class (cell array)</span><span lang="ja">GUILDA 独自のクラス（cell 配列）</span></span>
           <div class="nc-formula-line"><b>a_</b> + <i><span lang="en">[ClassName]</span><span lang="ja">[クラス名]</span></i> &nbsp;→&nbsp; <code>a_Controller</code></div>
-          <p class="dg-muted"><span lang="en">A cell array of GUILDA class objects, named after the class.</span><span lang="ja">GUILDA のクラスのオブジェクトを並べた cell 配列です。名前はクラス名から付けます。</span></p>
+          <p class="dg-muted"><span lang="en">A cell array of GUILDA class objects, named after the class.</span><span lang="ja">GUILDA のクラスのオブジェクトを並べた cell 配列。名前はクラス名から。</span></p>
         </div>
       </li>
       <li>
@@ -246,19 +246,19 @@
         <div>
           <span class="dg-item-title"><span lang="en">Parameter class</span><span lang="ja">Parameter クラス</span></span>
           <div class="nc-formula-line"><b>para_</b> + <i><span lang="en">[data description]</span><span lang="ja">[データの説明]</span></i> &nbsp;→&nbsp; <code>para_generator</code></div>
-          <p class="dg-muted"><span lang="en">Only for properties holding GUILDA's <code>Parameter</code> class.</span><span lang="ja">GUILDA の <code>Parameter</code> クラスを保持するプロパティにだけ使います。</span></p>
+          <p class="dg-muted"><span lang="en">Only for properties holding GUILDA's <code>Parameter</code> class.</span><span lang="ja">GUILDA の <code>Parameter</code> クラスを保持するプロパティにだけ使用。</span></p>
         </div>
       </li>
     </ul>
 
     <h2><span lang="en">Name-Value Options</span><span lang="ja">Name-Value オプション</span></h2>
     <p lang="en">Name-Value option names use UpperCamelCase, as in MATLAB (e.g. <code>Method</code>, <code>Tolerance</code>, <code>MaxIteration</code>). See <a href="api-design.html">API Design</a> for the common options.</p>
-    <p lang="ja">Name-Value オプションの名前は、MATLAB と同じく UpperCamelCase にします（例: <code>Method</code>、<code>Tolerance</code>、<code>MaxIteration</code>）。共通のオプションは <a href="api-design.html">API 設計</a> を参照してください。</p>
+    <p lang="ja">Name-Value オプションの名前は MATLAB と同じく UpperCamelCase（例: <code>Method</code>、<code>Tolerance</code>、<code>MaxIteration</code>）。共通のオプションは <a href="api-design.html">API 設計</a> を参照。</p>
 
     <section class="name-generator" aria-label="Variable Name Generator">
       <h2><span lang="en">Variable Name Generator</span><span lang="ja">変数名ジェネレーター</span></h2>
-      <p class="name-generator-desc" lang="en">Pick a variable type and a size, then type a description to build a name that follows the convention. Copy it when you're done.</p>
-      <p class="name-generator-desc" lang="ja">変数の型とサイズを選び、説明を入力すると、規則に沿った名前ができます。できたらコピーしてください。</p>
+      <p class="name-generator-desc" lang="en">Pick a type and a size, then type a description: the generator builds a name that follows the convention. Copy it to use it.</p>
+      <p class="name-generator-desc" lang="ja">型とサイズを選び、説明を入力すると規則どおりの名前を生成。できた名前はコピーして使用。</p>
 
       <div class="name-generator-row">
         <span class="name-generator-label"><span lang="en">Variable Type</span><span lang="ja">変数の型</span></span>
@@ -286,7 +286,7 @@
       <div class="name-generator-row">
         <span class="name-generator-label"><span lang="en">Description</span><span lang="ja">説明</span></span>
         <input type="text" id="ng-content-input" class="name-generator-input" placeholder="e.g. voltage" autocomplete="off" spellcheck="false">
-        <p class="name-generator-error" id="ng-content-error"><span lang="en">Only letters (a-z, A-Z) are allowed — no numbers or symbols.</span><span lang="ja">使えるのは英字（a-z, A-Z）だけです。数字や記号は使えません。</span></p>
+        <p class="name-generator-error" id="ng-content-error"><span lang="en">Only letters (a-z, A-Z) are allowed — no numbers or symbols.</span><span lang="ja">英字（a-z, A-Z）のみ。数字・記号は不可。</span></p>
       </div>
 
       <div class="name-generator-result">
@@ -320,11 +320,11 @@
           placeholder: 'e.g. voltage'
         },
         ja: {
-          pick: '型とサイズを選び、説明を入力してください。',
-          fix: '上の説明を直すと名前ができます。',
-          enter: '説明を入力すると名前ができます。',
+          pick: '型とサイズを選び、説明を入力。',
+          fix: '上の説明を直すと名前を生成。',
+          enter: '説明を入力すると名前を生成。',
           copy: 'コピー',
-          copied: 'コピーしました',
+          copied: 'コピー済み',
           placeholder: '例: voltage'
         }
       };

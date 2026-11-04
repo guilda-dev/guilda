@@ -14,23 +14,32 @@
     .fmb-ref .fmb-open { fill: none; stroke: var(--dg-muted); stroke-width: 1.5; }
     .fmb-ref .fmb-assoc { fill: none; stroke: var(--dg-muted); stroke-width: 1.5; stroke-dasharray: 2 4; }
     .fmb-ref .fmb-l { paint-order: stroke; stroke: var(--dg-panel); stroke-width: 6px; stroke-linejoin: round; font-size: 11px; }
-    .fmb-steps { font-size: 0.86rem; }
-    .fmb-steps td:first-child { white-space: nowrap; font-family: var(--dg-mono); }
-    .fmb-steps td:nth-child(2) { min-width: 9rem; }
     .fmb-narrow { margin: 0; padding-left: 0; list-style: none; font-size: 0.9rem; }
     .fmb-narrow li { padding: 6px 0; border-bottom: 1px solid var(--dg-line); }
     .fmb-narrow b { display: inline-block; min-width: 3.6em; color: var(--dg-accent); font-family: var(--dg-mono); }
     @media (max-width: 640px) {
-      html[data-lang="ja"] .fmb-steps td:nth-child(2)::before { content: "呼び出し"; }
-      html[data-lang="ja"] .fmb-steps td:nth-child(3)::before { content: "処理"; }
-      html[data-lang="ja"] .fmb-steps td:nth-child(4)::before { content: "読み取る情報"; }
-      html[data-lang="ja"] .fmb-steps td:nth-child(5)::before { content: "戻り値・変更"; }
       html[data-lang="ja"] .fmb-entry td:nth-child(2)::before { content: "戻り値"; }
       html[data-lang="ja"] .fmb-entry td:nth-child(3)::before { content: "既定値の出所"; }
       html[data-lang="ja"] .fmb-refs td:nth-child(2)::before { content: "参照先"; }
       html[data-lang="ja"] .fmb-refs td:nth-child(3)::before { content: "種類"; }
       html[data-lang="ja"] .fmb-refs td:nth-child(4)::before { content: "設定・解除"; }
       html[data-lang="ja"] .fmb-fail td:nth-child(2)::before { content: "呼び出し側に見えるもの"; }
+    }
+    /* Step list (fs-*): one block per step, ID + call as the head, labelled descriptions below. Same block on every feature page. */
+    .fs-steps { margin: var(--dg-s3) 0 var(--dg-s5); padding: 0; list-style: none; font-size: 0.9rem; line-height: 1.55; }
+    .fs-step { padding: 12px 0; border-bottom: 1px solid var(--dg-line); scroll-margin-top: 80px; }
+    .fs-step:first-child { border-top: 1px solid var(--dg-line); }
+    .fs-head { margin: 0 0 6px; overflow-wrap: anywhere; }
+    .fs-id { margin-right: 10px; color: var(--dg-accent); font-family: var(--dg-mono); }
+    .fs-head small { display: block; margin-top: 2px; color: var(--dg-muted); font-size: 0.88em; }
+    .fs-body { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: 4px 14px; margin: 0; }
+    .fs-body dt { padding-top: 0.15rem; color: var(--dg-muted); font-size: 0.72rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+    .fs-body dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+    .fs-body ul { margin: 0; padding-left: 1.1em; list-style: disc; }
+    .fs-steps code { background: var(--code-bg); padding: 1px 5px; border-radius: var(--radius); color: var(--ink); }
+    @media (max-width: 640px) {
+      .fs-body { display: block; }
+      .fs-body dt { margin-top: 6px; }
     }
   </style>
 </head>
@@ -42,7 +51,7 @@
     <button type="button" class="developer-back-button" onclick="window.history.back()"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></button>
     <h1><span lang="en">Feature: Model Building</span><span lang="ja">機能: モデル構築</span></h1>
     <p class="page-lead" lang="en">A network is a tree of handle objects. The parent's <code>add_*</code> method creates or attaches each child and sets the child's reference back to it; every change is reported up to the network, which records what became stale.</p>
-    <p class="page-lead" lang="ja">ネットワークはハンドルオブジェクトの木です。親の <code>add_*</code> メソッドが子を作成または接続し、子から親への参照を設定します。すべての変更はネットワークまで伝えられ、ネットワークが何が古くなったかを記録します。</p>
+    <p class="page-lead" lang="ja">ネットワークはハンドルオブジェクトの木。親の <code>add_*</code> メソッドが子を作成または接続し、子から親への参照を設定。すべての変更はネットワークまで伝わり、古くなった対象をネットワークが記録。</p>
 
     <nav class="dev-toc" aria-label="Contents">
       <a href="#entry"><span lang="en">Purpose and entry point</span><span lang="ja">目的と入口</span></a>
@@ -57,8 +66,18 @@
 
     <!-- ============================== 1. ENTRY ============================== -->
     <h2 id="entry"><span lang="en">1. Purpose and entry point</span><span lang="ja">1. 目的と入口</span></h2>
-    <p lang="en">Model building produces a <code>PowerNetwork</code> with its buses, branches, components, local controllers and global controllers, and the power-flow, operation, OPF, dynamics and diagram parameters of each. It can be done by hand, by a shipped network class (<code>network.IEEE9bus()</code> and the other classes in <code>_GUILDAobject/+network</code>), or by import (see <a href="feature-data-io.html">Data Import and Export</a>).</p>
-    <p lang="ja">モデル構築は、<code>PowerNetwork</code> と、その母線・ブランチ・機器・ローカル制御器・グローバル制御器、そしてそれぞれの潮流・operation・OPF・dynamics・図のパラメータを作ります。手で組み立てる方法、同梱のネットワーククラス（<code>network.IEEE9bus()</code> など <code>_GUILDAobject/+network</code> のクラス）を使う方法、読み込みによる方法（<a href="feature-data-io.html">データの入出力</a>参照）があります。</p>
+    <p lang="en">Model building produces a <code>PowerNetwork</code> with its buses, branches, components, local controllers and global controllers, and the power-flow, operation, OPF, dynamics and diagram parameters of each. Three ways:</p>
+    <p lang="ja">モデル構築の成果物は <code>PowerNetwork</code> と、その母線・ブランチ・機器・ローカル制御器・グローバル制御器、およびそれぞれの潮流・operation・OPF・dynamics・図のパラメータ。方法は 3 通り:</p>
+    <ul lang="en">
+      <li>By hand</li>
+      <li>By a shipped network class (<code>network.IEEE9bus()</code> and the other classes in <code>_GUILDAobject/+network</code>)</li>
+      <li>By import (see <a href="feature-data-io.html">Data Import and Export</a>)</li>
+    </ul>
+    <ul lang="ja">
+      <li>手で組み立てる</li>
+      <li>同梱のネットワーククラス（<code>network.IEEE9bus()</code> など <code>_GUILDAobject/+network</code> のクラス）</li>
+      <li>読み込み（<a href="feature-data-io.html">データの入出力</a>参照）</li>
+    </ul>
 <pre><code>net = PowerNetwork("ThreeBus");
 b1  = net.add_bus(V=1.0, Varg=0);
 b2  = net.add_bus();
@@ -80,8 +99,16 @@ b1.l_isSlack = true;</code></pre>
         <tr><td><code>remove_bus</code>, <code>remove_branch</code>, <code>remove_global_controller</code>, <code>remove_component</code>, <code>replace_component</code>, <code>remove_local_controller</code></td><td data-label="Returns" data-label-ja="戻り値"><span lang="en"><code>replace_component</code>: the new <code>Component</code></span><span lang="ja"><code>replace_component</code>: 新しい <code>Component</code></span></td><td data-label="Defaults come from" data-label-ja="既定値の出所">—</td></tr>
       </tbody>
     </table>
-    <p lang="en">Model building uses no <code>solver_*</code> setting. Preconditions: <code>GUILDA</code> has been run, so that <code>add_branch.m</code>, <code>add_component.m</code> and <code>replace_component.m</code> have been generated from their <code>.template</code> files with the list of model keys (<code>update_class_signature</code>). <code>net.initialize()</code> is not needed to build, but it is needed after building before the dynamic analyses.</p>
-    <p lang="ja">モデル構築は <code>solver_*</code> の設定を使いません。前提条件: <code>GUILDA</code> を実行済みで、<code>add_branch.m</code>、<code>add_component.m</code>、<code>replace_component.m</code> がそれぞれの <code>.template</code> からモデルのキー一覧付きで生成されていること（<code>update_class_signature</code>）。構築に <code>net.initialize()</code> は不要ですが、構築後に動的な解析を行う前には必要です。</p>
+    <ul lang="en">
+      <li>Solver settings: no <code>solver_*</code> setting used</li>
+      <li>Precondition: <code>GUILDA</code> has been run, so that <code>add_branch.m</code>, <code>add_component.m</code> and <code>replace_component.m</code> have been generated from their <code>.template</code> files with the list of model keys (<code>update_class_signature</code>)</li>
+      <li><code>net.initialize()</code>: not needed to build; needed after building, before the dynamic analyses</li>
+    </ul>
+    <ul lang="ja">
+      <li>ソルバー設定: <code>solver_*</code> の設定は不使用</li>
+      <li>前提条件: <code>GUILDA</code> を実行済みで、<code>add_branch.m</code>・<code>add_component.m</code>・<code>replace_component.m</code> がそれぞれの <code>.template</code> からモデルのキー一覧付きで生成済み（<code>update_class_signature</code>）</li>
+      <li><code>net.initialize()</code>: 構築には不要。構築後、動的な解析の前に必要</li>
+    </ul>
 
     <!-- ============================== 2. SEQUENCE ============================== -->
     <h2 id="sequence"><span lang="en">2. Call sequence</span><span lang="ja">2. 呼び出し順</span></h2>
@@ -246,97 +273,398 @@ b1.l_isSlack = true;</code></pre>
         <li><b>MB-14</b> → <code>Component.remove_local_controller</code></li>
         <li><b>MB-15</b> → <code>LayerPackage.set.str_tag</code></li>
       </ol>
-      <figcaption lang="en">Numbers are the step IDs of the table below. Every <code>add_*</code>, <code>remove_*</code> and <code>replace_*</code> call ends with <code>log_edit</code> on the parent (MB-10), which is not drawn for each step.</figcaption>
-      <figcaption lang="ja">番号は下の表のステップ ID です。<code>add_*</code>・<code>remove_*</code>・<code>replace_*</code> はすべて最後に親の <code>log_edit</code>（MB-10）を呼びますが、図では各ステップには描いていません。</figcaption>
+      <figcaption lang="en">Numbers are the step IDs of the list below. Every <code>add_*</code>, <code>remove_*</code> and <code>replace_*</code> call ends with <code>log_edit</code> on the parent (MB-10), not drawn for each step.</figcaption>
+      <figcaption lang="ja">番号は下のステップ一覧の ID。<code>add_*</code>・<code>remove_*</code>・<code>replace_*</code> はすべて最後に親の <code>log_edit</code>（MB-10）を呼び出し（図では各ステップに省略）。</figcaption>
     </figure>
 
     <!-- ============================== 3. STEPS ============================== -->
     <h2 id="steps"><span lang="en">3. Steps</span><span lang="ja">3. 処理ステップ</span></h2>
-    <table class="dg-table fmb-steps">
-      <thead><tr><th>ID</th><th><span lang="en">Caller → callee.method</span><span lang="ja">呼び出し元 → 呼び出し先.メソッド</span></th><th><span lang="en">What it does</span><span lang="ja">処理</span></th><th><span lang="en">Reads</span><span lang="ja">読み取る情報</span></th><th><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></th></tr></thead>
-      <tbody>
-        <tr id="MB-01"><td>MB-01</td>
-          <td data-label="Call" data-label-ja="呼び出し"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork</code> <span lang="en">(constructor)</span><span lang="ja">（コンストラクタ）</span></td>
-          <td data-label="What it does" data-label-ja="処理"><span lang="en">Sets the tag, creates <code>para_base</code> (<code>Parameter(obj,"base")</code> with <code>Hz</code> and <code>baseMVA</code>) and calls <code>reset_solver</code>, which creates <code>SolverPF</code>, <code>SolverOPF</code>, <code>SolverCPF</code>, <code>SolverODE</code> and <code>SolverLIN</code>. A network class such as <code>network.IEEE9bus</code> calls it implicitly, so its tag is <code>"PowerNetwork"</code>.</span><span lang="ja">タグを設定し、<code>para_base</code>（<code>Hz</code> と <code>baseMVA</code> を持つ <code>Parameter(obj,"base")</code>）を作り、<code>reset_solver</code> を呼んで <code>SolverPF</code>・<code>SolverOPF</code>・<code>SolverCPF</code>・<code>SolverODE</code>・<code>SolverLIN</code> を作ります。<code>network.IEEE9bus</code> などのネットワーククラスは暗黙にこれを呼ぶので、タグは <code>"PowerNetwork"</code> になります。</span></td>
-          <td data-label="Reads" data-label-ja="読み取る情報"><code>tag</code>, <code>GUILDA.config("Model","Hz")</code>, <code>GUILDA.config</code> <span lang="en">of each solver</span><span lang="ja">（各ソルバー）</span></td>
-          <td data-label="Returns / changes" data-label-ja="戻り値・変更"><code>net</code> <span lang="en">with empty <code>a_Bus</code>, <code>a_Branch</code>, <code>a_GlobalController</code> (0×1 cell); <code>s_edit</code> = unset / unset / false</span><span lang="ja">（<code>a_Bus</code>・<code>a_Branch</code>・<code>a_GlobalController</code> は空の 0×1 cell。<code>s_edit</code> = 未設定 / 未設定 / false）</span></td></tr>
-        <tr id="MB-02"><td>MB-02</td>
-          <td data-label="Call" data-label-ja="呼び出し"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.add_bus</code> → <code>Bus</code></td>
-          <td data-label="What it does" data-label-ja="処理"><span lang="en">Makes the tag <code>Tag</code> + three digits (<code>tools.next_tag_number</code>: largest number in use + 1) unless <code>FullTag</code> is given; drops the v3 option <code>baseMVA</code> (<code>v3_bus_baseMVA</code>). The <code>Bus</code> constructor (access: <code>PowerNetwork</code>, <code>Bus</code>) sets <code>a_PowerNetwork</code> first, then the tag (a tag used by another bus gets a suffix), and creates four <code>Parameter</code> objects. Appends the bus to <code>a_Bus</code>.</span><span lang="ja">タグは <code>Tag</code> + 3 桁（<code>tools.next_tag_number</code>: 使用中の最大番号 + 1）、<code>FullTag</code> があればそれを使います。v3 のオプション <code>baseMVA</code> を取り除きます（<code>v3_bus_baseMVA</code>）。<code>Bus</code> のコンストラクタ（アクセス: <code>PowerNetwork</code>、<code>Bus</code>）は先に <code>a_PowerNetwork</code> を、次にタグを設定し（他の母線が使っているタグには接尾辞が付きます）、4 つの <code>Parameter</code> を作ります。母線を <code>a_Bus</code> に追加します。</span></td>
-          <td data-label="Reads" data-label-ja="読み取る情報"><span lang="en">options (defaults: V 1, Varg 0, V0 1, Varg0 0, Gshunt 0, Bshunt 0, Vmin 0.5, Vmax 1.5, baseKV 230, Xaxis/Yaxis NaN, Marker "s"), tags of <code>a_Bus</code></span><span lang="ja">オプション（既定値: V 1, Varg 0, V0 1, Varg0 0, Gshunt 0, Bshunt 0, Vmin 0.5, Vmax 1.5, baseKV 230, Xaxis/Yaxis NaN, Marker "s"）、<code>a_Bus</code> のタグ</span></td>
-          <td data-label="Returns / changes" data-label-ja="戻り値・変更"><code>bus</code>; <code>para_dynamics</code> (Gshunt, Bshunt), <code>para_operation</code> (baseKV, Vmin, Vmax), <code>para_powerflow</code> (V, Varg, V0, Varg0), <code>para_graph</code> (Xaxis, Yaxis, Marker); <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></td></tr>
-        <tr id="MB-03"><td>MB-03</td>
-          <td data-label="Call" data-label-ja="呼び出し"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.add_branch</code> → <code>Branch</code></td>
-          <td data-label="What it does" data-label-ja="処理"><span lang="en">Checks <code>Type</code> against the generated key list, resolves <code>from_to</code> (indices of <code>a_Bus</code> or tags), rejects equal ends and <code>R = X = 0</code>, all before any change. Creates the class of the key (<code>mkInst</code>); the <code>Branch</code> constructor sets the tag <code>header</code> + three digits, asserts real R, X, C and creates three <code>Parameter</code> objects. Then <code>set_bus({from; to})</code> and <code>set_network(net)</code>; appends to <code>a_Branch</code>.</span><span lang="ja"><code>Type</code> を生成済みのキー一覧で検査し、<code>from_to</code>（<code>a_Bus</code> の番号またはタグ）を解決し、両端が同じもの・<code>R = X = 0</code> を拒否します。いずれも変更前に行います。キーのクラスを作り（<code>mkInst</code>）、<code>Branch</code> のコンストラクタがタグ <code>header</code> + 3 桁を設定し、R・X・C が実数であることを assert し、3 つの <code>Parameter</code> を作ります。その後 <code>set_bus({from; to})</code> と <code>set_network(net)</code> を呼び、<code>a_Branch</code> に追加します。</span></td>
-          <td data-label="Reads" data-label-ja="読み取る情報"><span lang="en">options (defaults: R 0, X 1, C 0, Tap 1, Phase 0, Smax/Imax/Pmax/Qmax Inf, Vargmax π/2, Marker "-"), <code>a_Bus</code>, tags of <code>a_Branch</code></span><span lang="ja">オプション（既定値: R 0, X 1, C 0, Tap 1, Phase 0, Smax/Imax/Pmax/Qmax Inf, Vargmax π/2, Marker "-"）、<code>a_Bus</code>、<code>a_Branch</code> のタグ</span></td>
-          <td data-label="Returns / changes" data-label-ja="戻り値・変更"><code>br</code>; <code>para_dynamics</code> (R, X, C, tap, phase), <code>para_operation</code> (Smax, Imax, Pmax, Qmax, Vargmax), <code>para_graph</code> (MidXaxis, MidYaxis, Marker); <code>br.a_Bus</code> (2×1 cell), <code>br.a_PowerNetwork</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></td></tr>
-        <tr id="MB-04"><td>MB-04</td>
-          <td data-label="Call" data-label-ja="呼び出し"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>Bus.add_component</code> → <code>Component</code></td>
-          <td data-label="What it does" data-label-ja="処理"><span lang="en">The tag is the class prefix, the next number among the components of this bus, and the bus tag (e.g. <code>SG1B001</code>). The subclass constructor calls <code>Component(str_tag, opt)</code>, which creates five <code>Parameter</code> objects and replaces a NaN cost <code>HP</code> / <code>fP</code> by 0 for a load and 1 otherwise; the subclass adds <code>sv_para</code> to <code>para_dynamics</code>. A generator forces <code>Q = NaN</code>. Then <code>comp.set_bus(bus)</code>, which marks the handles of the component and its controllers stale (<code>mark_odefcn</code>); appends to <code>a_Component</code>.</span><span lang="ja">タグはクラスの接頭辞、この母線の機器の中での次の番号、母線のタグを並べたものです（例: <code>SG1B001</code>）。サブクラスのコンストラクタが <code>Component(str_tag, opt)</code> を呼び、5 つの <code>Parameter</code> を作り、NaN のコスト <code>HP</code> / <code>fP</code> を負荷なら 0、それ以外は 1 にします。サブクラスは <code>sv_para</code> を <code>para_dynamics</code> に追加します。発電機は <code>Q = NaN</code> にします。その後 <code>comp.set_bus(bus)</code> を呼び、機器とその制御器のハンドルを古い状態にします（<code>mark_odefcn</code>）。<code>a_Component</code> に追加します。</span></td>
-          <td data-label="Reads" data-label-ja="読み取る情報"><span lang="en">options (P 0, Q 0, baseMVA 100, Pmin/Qmin −Inf, Pmax/Qmax Inf, OPF P0/Q0 0, HP/fP NaN, HQ/fQ 0, Marker "o"), <code>parameter</code>, class <code>parameter.csv</code></span><span lang="ja">オプション（P 0, Q 0, baseMVA 100, Pmin/Qmin −Inf, Pmax/Qmax Inf, OPF P0/Q0 0, HP/fP NaN, HQ/fQ 0, Marker "o"）、<code>parameter</code>、クラスの <code>parameter.csv</code></span></td>
-          <td data-label="Returns / changes" data-label-ja="戻り値・変更"><code>comp</code>; <code>para_operation</code> (baseMVA, Pmin, Pmax, Qmin, Qmax), <code>para_powerflow</code> (P, Q), <code>para_OPF</code> (P0, Q0, HP, HQ, fP, fQ, startup, shutdown), <code>para_graph</code>, <code>para_dynamics</code>; <code>comp.a_Bus</code>; <code>s_edit.str_odefcn</code> = unset; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></td></tr>
-        <tr id="MB-05"><td>MB-05</td>
-          <td data-label="Call" data-label-ja="呼び出し"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>Component.add_local_controller</code> → <code>LocalController.set_parent</code></td>
-          <td data-label="What it does" data-label-ja="処理"><span lang="en">Checks every controller before any change: key <code>"avr"</code>, <code>"pss"</code>, <code>"local"</code> or <code>"governor"</code>; not attached elsewhere; outputs <code>sv_y</code> match inputs of the target (the component, or the AVR for a PSS); the AVR or <code>"local"</code> controller and the governor drive different inputs (<code>GUILDA:Component:ControllerOutputOverlap</code>). An AVR or <code>"local"</code> controller becomes <code>a_LocalController{1}</code> (an old one is detached with a warning and its PSS moves to a new AVR unless a PSS is given); a PSS goes under the AVR; a governor comes after it in <code>a_LocalController</code> (an old governor is detached with a warning). <code>set_parent</code> sets <code>a_Component</code>, resolves the observed signals (<code>resolve_observe</code>: expands <code>"Xall"</code> / <code>"Yall"</code>, sets <code>iv_obsY</code> / <code>iv_obsX</code>) and calls <code>mark_odefcn</code>.</span><span lang="ja">変更の前にすべての制御器を検査します: キーが <code>"avr"</code>・<code>"pss"</code>・<code>"local"</code>・<code>"governor"</code> のいずれか、他に接続されていない、出力 <code>sv_y</code> が接続先（機器、PSS なら AVR）の入力と一致する、AVR または <code>"local"</code> の制御器とガバナが異なる入力を駆動する（<code>GUILDA:Component:ControllerOutputOverlap</code>）。AVR と <code>"local"</code> の制御器は <code>a_LocalController{1}</code> になります（既存のものは警告付きで切り離され、PSS が与えられていなければその PSS は新しい AVR に移ります）。PSS は AVR の下に付きます。ガバナは <code>a_LocalController</code> でその後ろに並びます（既存のガバナは警告付きで切り離されます）。<code>set_parent</code> は <code>a_Component</code> を設定し、観測する信号を解決し（<code>resolve_observe</code>: <code>"Xall"</code> / <code>"Yall"</code> を展開し、<code>iv_obsY</code> / <code>iv_obsX</code> を設定）、<code>mark_odefcn</code> を呼びます。</span></td>
-          <td data-label="Reads" data-label-ja="読み取る情報"><code>con.key</code>, <code>con.sv_y</code>, <code>con.sv_u</code>, <code>con.a_Component</code>, <code>comp.sv_u</code>, <code>comp.sv_x</code>, <code>comp.sv_y</code></td>
-          <td data-label="Returns / changes" data-label-ja="戻り値・変更"><code>comp.a_LocalController</code>, <code>avr.a_LocalController</code>, <code>con.a_Component</code>, <code>comp.l_hasController</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code> <span lang="en">per controller</span><span lang="ja">（制御器ごと）</span></td></tr>
-        <tr id="MB-06"><td>MB-06</td>
-          <td data-label="Call" data-label-ja="呼び出し"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>GlobalController</code> <span lang="en">(subclass constructor)</span><span lang="ja">（サブクラスのコンストラクタ）</span></td>
-          <td data-label="What it does" data-label-ja="処理"><span lang="en">Resolves each controlled unit, given as a component object or tag, among the components of <code>net.a_Bus</code>. The network is only read: <code>a_PowerNetwork</code> stays empty until MB-07.</span><span lang="ja">制御対象（機器のオブジェクトまたはタグ）を <code>net.a_Bus</code> の機器の中から解決します。ネットワークは読むだけで、<code>a_PowerNetwork</code> は MB-07 まで空のままです。</span></td>
-          <td data-label="Reads" data-label-ja="読み取る情報"><code>net.a_Bus{:}.a_Component</code></td>
-          <td data-label="Returns / changes" data-label-ja="戻り値・変更"><code>gc</code>; <code>gc.controlledUnits</code> <span lang="en">(cell of components)</span><span lang="ja">（機器の cell）</span>, <code>para_dynamics</code></td></tr>
-        <tr id="MB-07"><td>MB-07</td>
-          <td data-label="Call" data-label-ja="呼び出し"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.add_global_controller</code> → <code>GlobalController.set_parent</code></td>
-          <td data-label="What it does" data-label-ja="処理"><span lang="en">Checks that the tag is unused, that every unit belongs to this network (handle comparison through <code>unit.a_Bus.a_PowerNetwork</code>), and that <code>sv_u</code> are states and <code>sv_y</code> inputs of every unit. Appends; <code>set_parent(net)</code> sets <code>a_PowerNetwork</code> and calls <code>mark_odefcn</code>.</span><span lang="ja">タグが未使用であること、すべての制御対象がこのネットワークに属すること（<code>unit.a_Bus.a_PowerNetwork</code> によるハンドル比較）、<code>sv_u</code> が各対象の状態、<code>sv_y</code> が入力であることを検査します。追加した後、<code>set_parent(net)</code> が <code>a_PowerNetwork</code> を設定し <code>mark_odefcn</code> を呼びます。</span></td>
-          <td data-label="Reads" data-label-ja="読み取る情報"><code>gc.str_tag</code>, <code>gc.controlledUnits</code>, <code>gc.sv_u</code>, <code>gc.sv_y</code>, <span lang="en">unit</span><span lang="ja">対象の</span> <code>sv_x</code>, <code>sv_u</code></td>
-          <td data-label="Returns / changes" data-label-ja="戻り値・変更"><code>net.a_GlobalController</code>, <code>gc.a_PowerNetwork</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></td></tr>
-        <tr id="MB-08"><td>MB-08</td>
-          <td data-label="Call" data-label-ja="呼び出し"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>Bus.set.l_isSlack</code></td>
-          <td data-label="What it does" data-label-ja="処理"><span lang="en">Does nothing when the value is unchanged. <code>true</code> needs a component; it prints which component takes the remaining power (the first with <code>Q = NaN</code>, else the first) and warns when none has <code>Q = NaN</code>. Logs a <code>"Slack"</code> edit; <code>PowerNetwork.handle_edit</code> then sets <code>l_isSlack = false</code> on every other bus, so at most one bus is the slack bus.</span><span lang="ja">値が変わらなければ何もしません。<code>true</code> には機器が必要で、残りの電力を受け持つ機器（<code>Q = NaN</code> の最初の機器、なければ最初の機器）を表示し、<code>Q = NaN</code> の機器がなければ警告します。<code>"Slack"</code> の編集を記録し、<code>PowerNetwork.handle_edit</code> が他のすべての母線を <code>l_isSlack = false</code> にするので、slack 母線は高々 1 つです。</span></td>
-          <td data-label="Reads" data-label-ja="読み取る情報"><code>a_Component</code>, <span lang="en">component</span><span lang="ja">機器の</span> <code>para_powerflow.Q</code>, <span lang="en">other buses</span><span lang="ja">他の母線の</span> <code>l_isSlack</code></td>
-          <td data-label="Returns / changes" data-label-ja="戻り値・変更"><code>l_isSlack</code> <span lang="en">of this and other buses</span><span lang="ja">（この母線と他の母線）</span>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Slack"</code></td></tr>
-        <tr id="MB-09"><td>MB-09</td>
-          <td data-label="Call" data-label-ja="呼び出し"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>Parameter</code> <span lang="en">(set method and listeners)</span><span lang="ja">（set メソッドとリスナー）</span></td>
-          <td data-label="What it does" data-label-ja="処理"><span lang="en"><code>obj.tab_parameter = tab</code> assigns <code>para_&lt;group&gt;.&lt;name&gt;</code> column by column; <code>obj.para_*.Name = v</code> assigns one value. The set method of the dynamic property (<code>Parameter.add_entry</code> → <code>attach_callbacks</code>) checks the class; the PreSet listener stores the old value, the PostSet listener compares with <code>isequaln</code> and, when the value changed, calls <code>log_edit</code> and the <code>CallbackChanged</code> of the container.</span><span lang="ja"><code>obj.tab_parameter = tab</code> は <code>para_&lt;group&gt;.&lt;name&gt;</code> に列ごとに代入し、<code>obj.para_*.Name = v</code> は 1 つの値を代入します。動的プロパティの set メソッド（<code>Parameter.add_entry</code> → <code>attach_callbacks</code>）がクラスを検査し、PreSet リスナーが元の値を保存し、PostSet リスナーが <code>isequaln</code> で比較して、値が変わっていれば <code>log_edit</code> とコンテナの <code>CallbackChanged</code> を呼びます。</span></td>
-          <td data-label="Reads" data-label-ja="読み取る情報"><span lang="en">new value, class given to <code>add_entry</code>, old value</span><span lang="ja">新しい値、<code>add_entry</code> で指定したクラス、元の値</span></td>
-          <td data-label="Returns / changes" data-label-ja="戻り値・変更"><span lang="en">the parameter value; edit</span><span lang="ja">パラメータの値、編集</span> <code>"Parameter(&lt;group&gt;)"</code> <span lang="en">with log <code>"edit &lt;name&gt;"</code> and before/after values</span><span lang="ja">（ログ <code>"edit &lt;name&gt;"</code> と変更前後の値）</span></td></tr>
-        <tr id="MB-10"><td>MB-10</td>
-          <td data-label="Call" data-label-ja="呼び出し"><span lang="en">any layer</span><span lang="ja">各層</span> → <code>LayerPackage.log_edit</code> → <span lang="en">parent</span><span lang="ja">親の</span> <code>log_edit</code> → <code>PowerNetwork.handle_edit</code></td>
-          <td data-label="What it does" data-label-ja="処理"><span lang="en">Builds one log row (time, tag path, log, tag, before, after) and decides with <code>LayerPackage.edit_effect</code> what it makes stale. A dynamics parameter marks its owner's handles <code>"editted"</code>. A layer below the network sets its own <code>str_flag = "editted"</code> and passes the row to its parent. The network, once it has been initialized (<code>str_flag ~= "unset"</code>), sets <code>str_flag = "editted"</code>, raises <code>l_staleEquilibrium</code> for dynamics, base (baseMVA), powerflow, Topology and Slack edits, and appends the row to <code>tab_editLog</code>; it always calls <code>handle_edit</code>. A network <code>Hz</code> edit marks the handles of every layer.</span><span lang="ja">ログの 1 行（時刻、タグのパス、ログ、タグ、変更前、変更後）を作り、<code>LayerPackage.edit_effect</code> で何が古くなるかを決めます。dynamics パラメータは所有者のハンドルを <code>"editted"</code> にします。ネットワークより下の層は自身の <code>str_flag = "editted"</code> を設定し、行を親に渡します。ネットワークは、初期化済み（<code>str_flag ~= "unset"</code>）なら <code>str_flag = "editted"</code> とし、dynamics・base（baseMVA）・powerflow・Topology・Slack の編集で <code>l_staleEquilibrium</code> を立て、行を <code>tab_editLog</code> に追加します。<code>handle_edit</code> は常に呼びます。ネットワークの <code>Hz</code> の編集は、すべての層のハンドルを古い状態にします。</span></td>
-          <td data-label="Reads" data-label-ja="読み取る情報"><span lang="en">log row, <code>parent</code> chain, network <code>s_edit</code></span><span lang="ja">ログの行、<code>parent</code> の連鎖、ネットワークの <code>s_edit</code></span></td>
-          <td data-label="Returns / changes" data-label-ja="戻り値・変更"><code>s_edit.str_flag</code>, <code>s_edit.str_odefcn</code>, <code>s_edit.l_staleEquilibrium</code>, <code>net.tab_editLog</code></td></tr>
-        <tr id="MB-11"><td>MB-11</td>
-          <td data-label="Call" data-label-ja="呼び出し"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>network.IEEE9bus</code> <span lang="en">(constructor)</span><span lang="ja">（コンストラクタ）</span></td>
-          <td data-label="What it does" data-label-ja="処理"><span lang="en">A shipped network is a <code>PowerNetwork</code> subclass in <code>+network/@&lt;Name&gt;/</code>. Its constructor builds itself from the CSV folders next to the class file with <code>PowerNetwork.import_csv(dir, Network=obj, Initialize=false)</code>, which runs MB-02 to MB-04 and MB-08; adds what the CSV format does not hold (IEEE9bus: an <code>AVR_ST1</code> and a <code>PSS1</code> per generator from <code>controller/avr</code> and <code>controller/pss</code>, unless <code>LocalController=false</code>); and calls <code>initialize</code>.</span><span lang="ja">同梱のネットワークは <code>+network/@&lt;Name&gt;/</code> にある <code>PowerNetwork</code> のサブクラスです。コンストラクタは、クラスファイルの隣にある CSV フォルダから <code>PowerNetwork.import_csv(dir, Network=obj, Initialize=false)</code> で自身を組み立て（MB-02〜MB-04、MB-08 を実行）、CSV 形式が持たないものを加え（IEEE9bus: <code>LocalController=false</code> でなければ、<code>controller/avr</code> と <code>controller/pss</code> から発電機ごとに <code>AVR_ST1</code> と <code>PSS1</code>）、<code>initialize</code> を呼びます。</span></td>
-          <td data-label="Reads" data-label-ja="読み取る情報"><span lang="en">CSV folders of the class (see <a href="feature-data-io.html">Data Import and Export</a>)</span><span lang="ja">クラスの CSV フォルダ（<a href="feature-data-io.html">データの入出力</a>参照）</span></td>
-          <td data-label="Returns / changes" data-label-ja="戻り値・変更"><span lang="en">an initialized network: <code>s_edit.str_flag = "initialized"</code>, handles built, empty <code>tab_editLog</code></span><span lang="ja">初期化済みのネットワーク: <code>s_edit.str_flag = "initialized"</code>、ハンドル構築済み、<code>tab_editLog</code> は空</span></td></tr>
-        <tr id="MB-12"><td>MB-12</td>
-          <td data-label="Call" data-label-ja="呼び出し"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.remove_bus</code> / <code>remove_branch</code> / <code>remove_global_controller</code></td>
-          <td data-label="What it does" data-label-ja="処理"><span lang="en">Checks the tags first. A bus cannot be removed while a global controller controls one of its components, or while branches end at it unless <code>RemoveBranches=true</code> (then <code>remove_branch</code> runs first). The removed objects are taken out of the cell and detached: <code>bus.set_network([])</code>, <code>br.set_bus(cell(0,1))</code> and <code>br.set_network([])</code>, <code>gc.set_parent([])</code>. A removed bus keeps its components.</span><span lang="ja">先にタグを検査します。グローバル制御器が母線の機器を制御している間、またはブランチがその母線につながっている間（<code>RemoveBranches=true</code> なら先に <code>remove_branch</code> を実行）は母線を削除できません。削除したオブジェクトは cell から外し、切り離します: <code>bus.set_network([])</code>、<code>br.set_bus(cell(0,1))</code> と <code>br.set_network([])</code>、<code>gc.set_parent([])</code>。削除された母線は機器を保持したままです。</span></td>
-          <td data-label="Reads" data-label-ja="読み取る情報"><span lang="en">tags, <code>gc.controlledUnits</code>, <code>br.a_Bus</code></span><span lang="ja">タグ、<code>gc.controlledUnits</code>、<code>br.a_Bus</code></span></td>
-          <td data-label="Returns / changes" data-label-ja="戻り値・変更"><code>a_Bus</code>, <code>a_Branch</code>, <code>a_GlobalController</code>; <span lang="en">back-references cleared; edit</span><span lang="ja">逆参照を解除、編集</span> <code>"Topology"</code></td></tr>
-        <tr id="MB-13"><td>MB-13</td>
-          <td data-label="Call" data-label-ja="呼び出し"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>Bus.remove_component</code> / <code>Bus.replace_component</code></td>
-          <td data-label="What it does" data-label-ja="処理"><span lang="en">Refuses a component that a global controller controls (<code>private/controlling_gcon</code>, handle comparison). <code>remove_component</code> takes it out and calls <code>comp.set_bus([])</code>. <code>replace_component</code> creates the new type with the powerflow, operation, graph and OPF settings and the number of the old one, attaches it, gives it a placeholder equilibrium (the bus voltage and the old current), and either moves the local controllers (<code>Controllers="keep"</code>, after checking that the new component has their ports) or leaves them on the old component with a warning (<code>"drop"</code>); the old component is detached.</span><span lang="ja">グローバル制御器が制御している機器は拒否します（<code>private/controlling_gcon</code>、ハンドル比較）。<code>remove_component</code> は機器を外して <code>comp.set_bus([])</code> を呼びます。<code>replace_component</code> は、元の機器の powerflow・operation・graph・OPF の設定と番号で新しい種類を作って接続し、仮の平衡点（母線電圧と元の電流）を与え、ローカル制御器を移す（<code>Controllers="keep"</code>。新しい機器にそのポートがあることを先に検査）か、警告付きで元の機器に残します（<code>"drop"</code>）。元の機器は切り離されます。</span></td>
-          <td data-label="Reads" data-label-ja="読み取る情報"><code>a_Component</code>, <code>net.a_GlobalController</code>, <span lang="en">old component parameters and controllers</span><span lang="ja">元の機器のパラメータと制御器</span></td>
-          <td data-label="Returns / changes" data-label-ja="戻り値・変更"><code>bus.a_Component</code>; <span lang="en">new component (replace)</span><span lang="ja">新しい機器（replace）</span>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></td></tr>
-        <tr id="MB-14"><td>MB-14</td>
-          <td data-label="Call" data-label-ja="呼び出し"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>Component.remove_local_controller</code></td>
-          <td data-label="What it does" data-label-ja="処理"><span lang="en">Removes the top controller by tag (with its PSS only when <code>RemoveNested=true</code>) or the PSS alone; the removed controllers are detached (<code>set_parent([])</code>) and can be attached again.</span><span lang="ja">タグで最上位の制御器（<code>RemoveNested=true</code> のときだけその PSS も）または PSS だけを削除します。削除された制御器は切り離され（<code>set_parent([])</code>）、再び接続できます。</span></td>
-          <td data-label="Reads" data-label-ja="読み取る情報"><code>a_LocalController</code>, <span lang="en">tags</span><span lang="ja">タグ</span></td>
-          <td data-label="Returns / changes" data-label-ja="戻り値・変更"><code>a_LocalController</code>, <code>l_hasController</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></td></tr>
-        <tr id="MB-15"><td>MB-15</td>
-          <td data-label="Call" data-label-ja="呼び出し"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>LayerPackage.set.str_tag</code></td>
-          <td data-label="What it does" data-label-ja="処理"><span lang="en">A tag already used by a sibling (<code>parent.children</code>) gets a three-digit suffix starting at 002, with an Info line. A rename is logged; tags of child layers do not follow.</span><span lang="ja">兄弟（<code>parent.children</code>）が使っているタグには 002 から始まる 3 桁の接尾辞が付き、Info が表示されます。名前の変更は記録されます。子の層のタグは追従しません。</span></td>
-          <td data-label="Reads" data-label-ja="読み取る情報"><span lang="en">sibling tags</span><span lang="ja">兄弟のタグ</span></td>
-          <td data-label="Returns / changes" data-label-ja="戻り値・変更"><code>str_tag</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Tag"</code> <span lang="en">(nothing becomes stale)</span><span lang="ja">（何も古くならない）</span></td></tr>
-      </tbody>
-    </table>
+    <ol class="fs-steps">
+      <li class="fs-step" id="MB-01">
+        <p class="fs-head"><b class="fs-id">MB-01</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork</code> <span lang="en">(constructor)</span><span lang="ja">（コンストラクタ）</span></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Set the tag</li>
+            <li>Create <code>para_base</code> (<code>Parameter(obj,"base")</code> with <code>Hz</code> and <code>baseMVA</code>)</li>
+            <li>Call <code>reset_solver</code>: creates <code>SolverPF</code>, <code>SolverOPF</code>, <code>SolverCPF</code>, <code>SolverODE</code> and <code>SolverLIN</code></li>
+            <li>Called implicitly by a network class such as <code>network.IEEE9bus</code>, so its tag is <code>"PowerNetwork"</code></li>
+          </ul><ul lang="ja">
+            <li>タグを設定</li>
+            <li><code>para_base</code>（<code>Hz</code> と <code>baseMVA</code> を持つ <code>Parameter(obj,"base")</code>）を作成</li>
+            <li><code>reset_solver</code> を呼び出し、<code>SolverPF</code>・<code>SolverOPF</code>・<code>SolverCPF</code>・<code>SolverODE</code>・<code>SolverLIN</code> を作成</li>
+            <li><code>network.IEEE9bus</code> などのネットワーククラスが暗黙に呼び出すため、タグは <code>"PowerNetwork"</code></li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><code>tag</code>, <code>GUILDA.config("Model","Hz")</code>, <code>GUILDA.config</code> <span lang="en">of each solver</span><span lang="ja">（各ソルバー）</span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><code>net</code> <span lang="en">with empty <code>a_Bus</code>, <code>a_Branch</code>, <code>a_GlobalController</code> (0×1 cell); <code>s_edit</code> = unset / unset / false</span><span lang="ja">（<code>a_Bus</code>・<code>a_Branch</code>・<code>a_GlobalController</code> は空の 0×1 cell。<code>s_edit</code> = 未設定 / 未設定 / false）</span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-02">
+        <p class="fs-head"><b class="fs-id">MB-02</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.add_bus</code> → <code>Bus</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Tag: <code>Tag</code> + three digits (<code>tools.next_tag_number</code>: largest number in use + 1), or <code>FullTag</code> when given</li>
+            <li>Ignore the option <code>baseMVA</code> and remove it from the options (<code>v3_bus_baseMVA</code>)</li>
+            <li><code>Bus</code> constructor (access: <code>PowerNetwork</code>, <code>Bus</code>): set <code>a_PowerNetwork</code> first, then the tag (a tag used by another bus gets a suffix)</li>
+            <li>Create four <code>Parameter</code> objects</li>
+            <li>Append the bus to <code>a_Bus</code></li>
+          </ul><ul lang="ja">
+            <li>タグ: <code>Tag</code> + 3 桁（<code>tools.next_tag_number</code>: 使用中の最大番号 + 1）、<code>FullTag</code> があればそれを使用</li>
+            <li>オプション <code>baseMVA</code> は無視し、オプションから削除（<code>v3_bus_baseMVA</code>）</li>
+            <li><code>Bus</code> のコンストラクタ（アクセス: <code>PowerNetwork</code>、<code>Bus</code>）: 先に <code>a_PowerNetwork</code>、次にタグを設定（他の母線が使用中のタグには接尾辞を付与）</li>
+            <li>4 つの <code>Parameter</code> を作成</li>
+            <li>母線を <code>a_Bus</code> に追加</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en">options (defaults: V 1, Varg 0, V0 1, Varg0 0, Gshunt 0, Bshunt 0, Vmin 0.5, Vmax 1.5, baseKV 230, Xaxis/Yaxis NaN, Marker "s"), tags of <code>a_Bus</code></span><span lang="ja">オプション（既定値: V 1, Varg 0, V0 1, Varg0 0, Gshunt 0, Bshunt 0, Vmin 0.5, Vmax 1.5, baseKV 230, Xaxis/Yaxis NaN, Marker "s"）、<code>a_Bus</code> のタグ</span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><code>bus</code>; <code>para_dynamics</code> (Gshunt, Bshunt), <code>para_operation</code> (baseKV, Vmin, Vmax), <code>para_powerflow</code> (V, Varg, V0, Varg0), <code>para_graph</code> (Xaxis, Yaxis, Marker); <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-03">
+        <p class="fs-head"><b class="fs-id">MB-03</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.add_branch</code> → <code>Branch</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Before any change: check <code>Type</code> against the generated key list, resolve <code>from_to</code> (indices of <code>a_Bus</code> or tags), reject equal ends and <code>R = X = 0</code></li>
+            <li>Create the class of the key (<code>mkInst</code>)</li>
+            <li><code>Branch</code> constructor: set the tag <code>header</code> + three digits, assert real R, X, C, create three <code>Parameter</code> objects</li>
+            <li>Call <code>set_bus({from; to})</code> and <code>set_network(net)</code></li>
+            <li>Append to <code>a_Branch</code></li>
+          </ul><ul lang="ja">
+            <li>変更前に検査: <code>Type</code> を生成済みのキー一覧で検査、<code>from_to</code>（<code>a_Bus</code> の番号またはタグ）を解決、両端が同じもの・<code>R = X = 0</code> を拒否</li>
+            <li>キーのクラスを作成（<code>mkInst</code>）</li>
+            <li><code>Branch</code> のコンストラクタ: タグ <code>header</code> + 3 桁を設定、R・X・C が実数であることを assert、3 つの <code>Parameter</code> を作成</li>
+            <li><code>set_bus({from; to})</code> と <code>set_network(net)</code> を呼び出し</li>
+            <li><code>a_Branch</code> に追加</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en">options (defaults: R 0, X 1, C 0, Tap 1, Phase 0, Smax/Imax/Pmax/Qmax Inf, Vargmax π/2, Marker "-"), <code>a_Bus</code>, tags of <code>a_Branch</code></span><span lang="ja">オプション（既定値: R 0, X 1, C 0, Tap 1, Phase 0, Smax/Imax/Pmax/Qmax Inf, Vargmax π/2, Marker "-"）、<code>a_Bus</code>、<code>a_Branch</code> のタグ</span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><code>br</code>; <code>para_dynamics</code> (R, X, C, tap, phase), <code>para_operation</code> (Smax, Imax, Pmax, Qmax, Vargmax), <code>para_graph</code> (MidXaxis, MidYaxis, Marker); <code>br.a_Bus</code> (2×1 cell), <code>br.a_PowerNetwork</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-04">
+        <p class="fs-head"><b class="fs-id">MB-04</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>Bus.add_component</code> → <code>Component</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Tag: class prefix + next number among the components of this bus + bus tag (e.g. <code>SG1B001</code>)</li>
+            <li>Subclass constructor calls <code>Component(str_tag, opt)</code>: creates five <code>Parameter</code> objects; replaces a NaN cost <code>HP</code> / <code>fP</code> by 0 for a load, 1 otherwise</li>
+            <li>Subclass adds <code>sv_para</code> to <code>para_dynamics</code></li>
+            <li>Generator: force <code>Q = NaN</code></li>
+            <li>Call <code>comp.set_bus(bus)</code>: marks the handles of the component and its controllers stale (<code>mark_odefcn</code>)</li>
+            <li>Append to <code>a_Component</code></li>
+          </ul><ul lang="ja">
+            <li>タグ: クラスの接頭辞 + この母線の機器の中での次の番号 + 母線のタグ（例: <code>SG1B001</code>）</li>
+            <li>サブクラスのコンストラクタが <code>Component(str_tag, opt)</code> を呼び出し: 5 つの <code>Parameter</code> を作成、NaN のコスト <code>HP</code> / <code>fP</code> を負荷なら 0、それ以外は 1 に置換</li>
+            <li>サブクラスが <code>sv_para</code> を <code>para_dynamics</code> に追加</li>
+            <li>発電機: <code>Q = NaN</code> に固定</li>
+            <li><code>comp.set_bus(bus)</code> を呼び出し: 機器とその制御器のハンドルを古い状態に（<code>mark_odefcn</code>）</li>
+            <li><code>a_Component</code> に追加</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en">options (P 0, Q 0, baseMVA 100, Pmin/Qmin −Inf, Pmax/Qmax Inf, OPF P0/Q0 0, HP/fP NaN, HQ/fQ 0, Marker "o"), <code>parameter</code>, class <code>parameter.csv</code></span><span lang="ja">オプション（P 0, Q 0, baseMVA 100, Pmin/Qmin −Inf, Pmax/Qmax Inf, OPF P0/Q0 0, HP/fP NaN, HQ/fQ 0, Marker "o"）、<code>parameter</code>、クラスの <code>parameter.csv</code></span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><code>comp</code>; <code>para_operation</code> (baseMVA, Pmin, Pmax, Qmin, Qmax), <code>para_powerflow</code> (P, Q), <code>para_OPF</code> (P0, Q0, HP, HQ, fP, fQ, startup, shutdown), <code>para_graph</code>, <code>para_dynamics</code>; <code>comp.a_Bus</code>; <code>s_edit.str_odefcn</code> = unset; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-05">
+        <p class="fs-head"><b class="fs-id">MB-05</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>Component.add_local_controller</code> → <code>LocalController.set_parent</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Check every controller before any change:
+              <ul>
+                <li>key <code>"avr"</code>, <code>"pss"</code>, <code>"local"</code> or <code>"governor"</code></li>
+                <li>not attached elsewhere</li>
+                <li>outputs <code>sv_y</code> match inputs of the target (the component, or the AVR for a PSS)</li>
+                <li>the AVR or <code>"local"</code> controller and the governor drive different inputs (<code>GUILDA:Component:ControllerOutputOverlap</code>)</li>
+              </ul>
+            </li>
+            <li>AVR or <code>"local"</code> controller: becomes <code>a_LocalController{1}</code>; an existing one is detached with a warning, and its PSS moves to the new AVR unless a PSS is given</li>
+            <li>PSS: goes under the AVR</li>
+            <li>Governor: placed after the AVR in <code>a_LocalController</code>; an existing governor is detached with a warning</li>
+            <li><code>set_parent</code>: set <code>a_Component</code>, resolve the observed signals (<code>resolve_observe</code>: expand <code>"Xall"</code> / <code>"Yall"</code>, set <code>iv_obsY</code> / <code>iv_obsX</code>), call <code>mark_odefcn</code></li>
+          </ul><ul lang="ja">
+            <li>変更前にすべての制御器を検査:
+              <ul>
+                <li>キーが <code>"avr"</code>・<code>"pss"</code>・<code>"local"</code>・<code>"governor"</code> のいずれか</li>
+                <li>他に未接続</li>
+                <li>出力 <code>sv_y</code> が接続先（機器、PSS なら AVR）の入力と一致</li>
+                <li>AVR または <code>"local"</code> の制御器とガバナが異なる入力を駆動（<code>GUILDA:Component:ControllerOutputOverlap</code>）</li>
+              </ul>
+            </li>
+            <li>AVR・<code>"local"</code> の制御器: <code>a_LocalController{1}</code> に配置。既存のものは警告付きで切り離し、PSS の指定がなければその PSS は新しい AVR へ移動</li>
+            <li>PSS: AVR の下に配置</li>
+            <li>ガバナ: <code>a_LocalController</code> で AVR の後ろに配置。既存のガバナは警告付きで切り離し</li>
+            <li><code>set_parent</code>: <code>a_Component</code> を設定、観測する信号を解決（<code>resolve_observe</code>: <code>"Xall"</code> / <code>"Yall"</code> を展開、<code>iv_obsY</code> / <code>iv_obsX</code> を設定）、<code>mark_odefcn</code> を呼び出し</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><code>con.key</code>, <code>con.sv_y</code>, <code>con.sv_u</code>, <code>con.a_Component</code>, <code>comp.sv_u</code>, <code>comp.sv_x</code>, <code>comp.sv_y</code></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><code>comp.a_LocalController</code>, <code>avr.a_LocalController</code>, <code>con.a_Component</code>, <code>comp.l_hasController</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code> <span lang="en">per controller</span><span lang="ja">（制御器ごと）</span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-06">
+        <p class="fs-head"><b class="fs-id">MB-06</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>GlobalController</code> <span lang="en">(subclass constructor)</span><span lang="ja">（サブクラスのコンストラクタ）</span></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Resolve each controlled unit (component object or tag) among the components of <code>net.a_Bus</code></li>
+            <li>Network only read: <code>a_PowerNetwork</code> stays empty until MB-07</li>
+          </ul><ul lang="ja">
+            <li>制御対象（機器のオブジェクトまたはタグ）を <code>net.a_Bus</code> の機器から解決</li>
+            <li>ネットワークは読み取りのみ: <code>a_PowerNetwork</code> は MB-07 まで空</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><code>net.a_Bus{:}.a_Component</code></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><code>gc</code>; <code>gc.controlledUnits</code> <span lang="en">(cell of components)</span><span lang="ja">（機器の cell）</span>, <code>para_dynamics</code></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-07">
+        <p class="fs-head"><b class="fs-id">MB-07</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.add_global_controller</code> → <code>GlobalController.set_parent</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Check:
+              <ul>
+                <li>the tag is unused</li>
+                <li>every unit belongs to this network (handle comparison through <code>unit.a_Bus.a_PowerNetwork</code>)</li>
+                <li><code>sv_u</code> are states and <code>sv_y</code> inputs of every unit</li>
+              </ul>
+            </li>
+            <li>Append the controller</li>
+            <li><code>set_parent(net)</code>: set <code>a_PowerNetwork</code>, call <code>mark_odefcn</code></li>
+          </ul><ul lang="ja">
+            <li>検査:
+              <ul>
+                <li>タグが未使用</li>
+                <li>すべての制御対象がこのネットワークに所属（<code>unit.a_Bus.a_PowerNetwork</code> によるハンドル比較）</li>
+                <li><code>sv_u</code> が各対象の状態、<code>sv_y</code> が入力</li>
+              </ul>
+            </li>
+            <li>制御器を追加</li>
+            <li><code>set_parent(net)</code>: <code>a_PowerNetwork</code> を設定、<code>mark_odefcn</code> を呼び出し</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><code>gc.str_tag</code>, <code>gc.controlledUnits</code>, <code>gc.sv_u</code>, <code>gc.sv_y</code>, <span lang="en">unit</span><span lang="ja">対象の</span> <code>sv_x</code>, <code>sv_u</code></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><code>net.a_GlobalController</code>, <code>gc.a_PowerNetwork</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-08">
+        <p class="fs-head"><b class="fs-id">MB-08</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>Bus.set.l_isSlack</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>No-op when the value is unchanged</li>
+            <li><code>true</code>: needs a component</li>
+            <li>Print the component that takes the remaining power (the first with <code>Q = NaN</code>, else the first)</li>
+            <li>Warn when no component has <code>Q = NaN</code></li>
+            <li>Log a <code>"Slack"</code> edit</li>
+            <li><code>PowerNetwork.handle_edit</code>: set <code>l_isSlack = false</code> on every other bus, so at most one slack bus</li>
+          </ul><ul lang="ja">
+            <li>値が不変なら何もしない</li>
+            <li><code>true</code>: 機器が必要</li>
+            <li>残りの電力を受け持つ機器（<code>Q = NaN</code> の最初の機器、なければ最初の機器）を表示</li>
+            <li><code>Q = NaN</code> の機器がなければ警告</li>
+            <li><code>"Slack"</code> の編集を記録</li>
+            <li><code>PowerNetwork.handle_edit</code>: 他のすべての母線を <code>l_isSlack = false</code> に設定。slack 母線は高々 1 つ</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><code>a_Component</code>, <span lang="en">component</span><span lang="ja">機器の</span> <code>para_powerflow.Q</code>, <span lang="en">other buses</span><span lang="ja">他の母線の</span> <code>l_isSlack</code></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><code>l_isSlack</code> <span lang="en">of this and other buses</span><span lang="ja">（この母線と他の母線）</span>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Slack"</code></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-09">
+        <p class="fs-head"><b class="fs-id">MB-09</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>Parameter</code> <span lang="en">(set method and listeners)</span><span lang="ja">（set メソッドとリスナー）</span></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li><code>obj.tab_parameter = tab</code>: assign <code>para_&lt;group&gt;.&lt;name&gt;</code> column by column</li>
+            <li><code>obj.para_*.Name = v</code>: assign one value</li>
+            <li>Set method of the dynamic property (<code>Parameter.add_entry</code> → <code>attach_callbacks</code>): check the class</li>
+            <li>PreSet listener: store the old value</li>
+            <li>PostSet listener: compare with <code>isequaln</code>; when the value changed, call <code>log_edit</code> and the <code>CallbackChanged</code> of the container</li>
+          </ul><ul lang="ja">
+            <li><code>obj.tab_parameter = tab</code>: <code>para_&lt;group&gt;.&lt;name&gt;</code> に列ごとに代入</li>
+            <li><code>obj.para_*.Name = v</code>: 1 つの値を代入</li>
+            <li>動的プロパティの set メソッド（<code>Parameter.add_entry</code> → <code>attach_callbacks</code>）: クラスを検査</li>
+            <li>PreSet リスナー: 元の値を保存</li>
+            <li>PostSet リスナー: <code>isequaln</code> で比較。値が変わっていれば <code>log_edit</code> とコンテナの <code>CallbackChanged</code> を呼び出し</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en">new value, class given to <code>add_entry</code>, old value</span><span lang="ja">新しい値、<code>add_entry</code> で指定したクラス、元の値</span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en">the parameter value; edit</span><span lang="ja">パラメータの値、編集</span> <code>"Parameter(&lt;group&gt;)"</code> <span lang="en">with log <code>"edit &lt;name&gt;"</code> and before/after values</span><span lang="ja">（ログ <code>"edit &lt;name&gt;"</code> と変更前後の値）</span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-10">
+        <p class="fs-head"><b class="fs-id">MB-10</b> <span class="fs-call"><span lang="en">any layer</span><span lang="ja">各層</span> → <code>LayerPackage.log_edit</code> → <span lang="en">parent</span><span lang="ja">親の</span> <code>log_edit</code> → <code>PowerNetwork.handle_edit</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Build one log row (time, tag path, log, tag, before, after)</li>
+            <li>Decide with <code>LayerPackage.edit_effect</code> what the edit makes stale</li>
+            <li>Dynamics parameter: mark its owner's handles <code>"editted"</code></li>
+            <li>Layer below the network: set its own <code>str_flag = "editted"</code>, pass the row to its parent</li>
+            <li>Network, once initialized (<code>str_flag ~= "unset"</code>):
+              <ul>
+                <li>set <code>str_flag = "editted"</code></li>
+                <li>raise <code>l_staleEquilibrium</code> for dynamics, base (baseMVA), powerflow, Topology and Slack edits</li>
+                <li>append the row to <code>tab_editLog</code></li>
+              </ul>
+            </li>
+            <li>Network: always call <code>handle_edit</code></li>
+            <li>Network <code>Hz</code> edit: mark the handles of every layer</li>
+          </ul><ul lang="ja">
+            <li>ログの 1 行（時刻、タグのパス、ログ、タグ、変更前、変更後）を作成</li>
+            <li><code>LayerPackage.edit_effect</code> で古くなる対象を決定</li>
+            <li>dynamics パラメータ: 所有者のハンドルを <code>"editted"</code> に</li>
+            <li>ネットワークより下の層: 自身の <code>str_flag = "editted"</code> を設定し、行を親に渡す</li>
+            <li>ネットワーク（初期化済み、<code>str_flag ~= "unset"</code> の場合）:
+              <ul>
+                <li><code>str_flag = "editted"</code> に設定</li>
+                <li>dynamics・base（baseMVA）・powerflow・Topology・Slack の編集で <code>l_staleEquilibrium</code> を立てる</li>
+                <li>行を <code>tab_editLog</code> に追加</li>
+              </ul>
+            </li>
+            <li>ネットワーク: <code>handle_edit</code> を常に呼び出し</li>
+            <li>ネットワークの <code>Hz</code> の編集: すべての層のハンドルを古い状態に</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en">log row, <code>parent</code> chain, network <code>s_edit</code></span><span lang="ja">ログの行、<code>parent</code> の連鎖、ネットワークの <code>s_edit</code></span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><code>s_edit.str_flag</code>, <code>s_edit.str_odefcn</code>, <code>s_edit.l_staleEquilibrium</code>, <code>net.tab_editLog</code></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-11">
+        <p class="fs-head"><b class="fs-id">MB-11</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>network.IEEE9bus</code> <span lang="en">(constructor)</span><span lang="ja">（コンストラクタ）</span></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Shipped network: a <code>PowerNetwork</code> subclass in <code>+network/@&lt;Name&gt;/</code></li>
+            <li>Constructor: build itself from the CSV folders next to the class file with <code>PowerNetwork.import_csv(dir, Network=obj, Initialize=false)</code> (runs MB-02 to MB-04 and MB-08)</li>
+            <li>Add what the CSV format does not hold (IEEE9bus: an <code>AVR_ST1</code> and a <code>PSS1</code> per generator from <code>controller/avr</code> and <code>controller/pss</code>, unless <code>LocalController=false</code>)</li>
+            <li>Call <code>initialize</code></li>
+          </ul><ul lang="ja">
+            <li>同梱のネットワーク: <code>+network/@&lt;Name&gt;/</code> にある <code>PowerNetwork</code> のサブクラス</li>
+            <li>コンストラクタ: クラスファイルの隣の CSV フォルダから <code>PowerNetwork.import_csv(dir, Network=obj, Initialize=false)</code> で自身を構築（MB-02〜MB-04、MB-08 を実行）</li>
+            <li>CSV 形式が持たないものを追加（IEEE9bus: <code>LocalController=false</code> でなければ、<code>controller/avr</code> と <code>controller/pss</code> から発電機ごとに <code>AVR_ST1</code> と <code>PSS1</code>）</li>
+            <li><code>initialize</code> を呼び出し</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en">CSV folders of the class (see <a href="feature-data-io.html">Data Import and Export</a>)</span><span lang="ja">クラスの CSV フォルダ（<a href="feature-data-io.html">データの入出力</a>参照）</span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en">an initialized network: <code>s_edit.str_flag = "initialized"</code>, handles built, empty <code>tab_editLog</code></span><span lang="ja">初期化済みのネットワーク: <code>s_edit.str_flag = "initialized"</code>、ハンドル構築済み、<code>tab_editLog</code> は空</span></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-12">
+        <p class="fs-head"><b class="fs-id">MB-12</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.remove_bus</code> / <code>remove_branch</code> / <code>remove_global_controller</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Check the tags first</li>
+            <li>Bus not removable while a global controller controls one of its components</li>
+            <li>Bus not removable while branches end at it, unless <code>RemoveBranches=true</code> (then <code>remove_branch</code> runs first)</li>
+            <li>Take the removed objects out of the cell and detach them: <code>bus.set_network([])</code>, <code>br.set_bus(cell(0,1))</code> and <code>br.set_network([])</code>, <code>gc.set_parent([])</code></li>
+            <li>A removed bus keeps its components</li>
+          </ul><ul lang="ja">
+            <li>先にタグを検査</li>
+            <li>グローバル制御器が母線の機器を制御している間は母線の削除不可</li>
+            <li>ブランチがその母線につながっている間は母線の削除不可（<code>RemoveBranches=true</code> なら先に <code>remove_branch</code> を実行）</li>
+            <li>削除したオブジェクトを cell から外して切り離し: <code>bus.set_network([])</code>、<code>br.set_bus(cell(0,1))</code> と <code>br.set_network([])</code>、<code>gc.set_parent([])</code></li>
+            <li>削除された母線は機器を保持したまま</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en">tags, <code>gc.controlledUnits</code>, <code>br.a_Bus</code></span><span lang="ja">タグ、<code>gc.controlledUnits</code>、<code>br.a_Bus</code></span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><code>a_Bus</code>, <code>a_Branch</code>, <code>a_GlobalController</code>; <span lang="en">back-references cleared; edit</span><span lang="ja">逆参照を解除、編集</span> <code>"Topology"</code></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-13">
+        <p class="fs-head"><b class="fs-id">MB-13</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>Bus.remove_component</code> / <code>Bus.replace_component</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Refuse a component that a global controller controls (<code>private/controlling_gcon</code>, handle comparison)</li>
+            <li><code>remove_component</code>: take it out, call <code>comp.set_bus([])</code></li>
+            <li><code>replace_component</code>:
+              <ul>
+                <li>create the new type with the powerflow, operation, graph and OPF settings and the number of the old one, and attach it</li>
+                <li>give it a placeholder equilibrium (the bus voltage and the old current)</li>
+                <li><code>Controllers="keep"</code>: move the local controllers, after checking that the new component has their ports</li>
+                <li><code>"drop"</code>: leave them on the old component with a warning</li>
+                <li>detach the old component</li>
+              </ul>
+            </li>
+          </ul><ul lang="ja">
+            <li>グローバル制御器が制御している機器は拒否（<code>private/controlling_gcon</code>、ハンドル比較）</li>
+            <li><code>remove_component</code>: 機器を外して <code>comp.set_bus([])</code> を呼び出し</li>
+            <li><code>replace_component</code>:
+              <ul>
+                <li>元の機器の powerflow・operation・graph・OPF の設定と番号で新しい種類を作成して接続</li>
+                <li>仮の平衡点（母線電圧と元の電流）を付与</li>
+                <li><code>Controllers="keep"</code>: ローカル制御器を移動（新しい機器にそのポートがあることを先に検査）</li>
+                <li><code>"drop"</code>: 警告付きで元の機器に残す</li>
+                <li>元の機器を切り離し</li>
+              </ul>
+            </li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><code>a_Component</code>, <code>net.a_GlobalController</code>, <span lang="en">old component parameters and controllers</span><span lang="ja">元の機器のパラメータと制御器</span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><code>bus.a_Component</code>; <span lang="en">new component (replace)</span><span lang="ja">新しい機器（replace）</span>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-14">
+        <p class="fs-head"><b class="fs-id">MB-14</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>Component.remove_local_controller</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Remove by tag the top controller (with its PSS only when <code>RemoveNested=true</code>) or the PSS alone</li>
+            <li>Detach the removed controllers (<code>set_parent([])</code>); they can be attached again</li>
+          </ul><ul lang="ja">
+            <li>タグで最上位の制御器（<code>RemoveNested=true</code> のときだけその PSS も）または PSS だけを削除</li>
+            <li>削除した制御器を切り離し（<code>set_parent([])</code>）。再接続可能</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><code>a_LocalController</code>, <span lang="en">tags</span><span lang="ja">タグ</span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><code>a_LocalController</code>, <code>l_hasController</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
+        </dl>
+      </li>
+      <li class="fs-step" id="MB-15">
+        <p class="fs-head"><b class="fs-id">MB-15</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>LayerPackage.set.str_tag</code></span></p>
+        <dl class="fs-body">
+          <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
+          <dd><ul lang="en">
+            <li>Tag already used by a sibling (<code>parent.children</code>): add a three-digit suffix starting at 002, with an Info line</li>
+            <li>Log the rename</li>
+            <li>Tags of child layers do not follow</li>
+          </ul><ul lang="ja">
+            <li>兄弟（<code>parent.children</code>）が使用中のタグ: 002 から始まる 3 桁の接尾辞を付与し、Info を表示</li>
+            <li>名前の変更を記録</li>
+            <li>子の層のタグは追従しない</li>
+          </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en">sibling tags</span><span lang="ja">兄弟のタグ</span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><code>str_tag</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Tag"</code> <span lang="en">(nothing becomes stale)</span><span lang="ja">（何も古くならない）</span></dd>
+        </dl>
+      </li>
+    </ol>
 
     <!-- ============================== 4. DATA ============================== -->
     <h2 id="data"><span lang="en">4. Data produced</span><span lang="ja">4. 生成されるデータ</span></h2>
     <p lang="en">The result is the object tree itself. All model classes derive from <code>LayerPackage &lt; handle</code>, so a variable holds a reference: <code>gen = net.a_Bus{1}.a_Component{1}</code> is the same object as the one in the network.</p>
-    <p lang="ja">結果はオブジェクトの木そのものです。すべてのモデルクラスは <code>LayerPackage &lt; handle</code> を継承するので、変数は参照を持ちます。<code>gen = net.a_Bus{1}.a_Component{1}</code> はネットワーク内のものと同じオブジェクトです。</p>
+    <p lang="ja">結果はオブジェクトの木そのもの。すべてのモデルクラスは <code>LayerPackage &lt; handle</code> を継承するため、変数が持つのは参照。<code>gen = net.a_Bus{1}.a_Component{1}</code> はネットワーク内と同じオブジェクト。</p>
     <figure class="dg-figure">
       <svg class="dg-svg dg-sv fmb-ref dg-only-wide" viewBox="0 0 760 500" role="img" aria-labelledby="fmb-ref-title">
         <title id="fmb-ref-title">Object references of a built network: net holds buses B001 and B002, branch EL001 and global controller agc; B001 holds SG1B001, which holds avr1, which holds pss1; B002 holds LPQ1B002. Each child refers back to its parent. EL001 refers to its two end buses and agc to the components it controls without being their parent.</title>
@@ -418,9 +746,9 @@ b1.l_isSlack = true;</code></pre>
         <text class="is-sm" lang="ja" x="70" y="494">点線: 親ではないオブジェクトへの参照</text>
       </svg>
       <p class="dg-only-narrow" lang="en">The references of a built network are listed in the table below.</p>
-      <p class="dg-only-narrow" lang="ja">構築したネットワークの参照は下の表にまとめています。</p>
+      <p class="dg-only-narrow" lang="ja">構築したネットワークの参照は下の表を参照。</p>
       <figcaption lang="en">A two-bus network with a generator (AVR and PSS), a load, a line and an AGC. Not drawn: every model object also holds its <code>Parameter</code> containers (<code>para_*</code>), whose parent is that object.</figcaption>
-      <figcaption lang="ja">発電機（AVR と PSS）、負荷、送電線、AGC を持つ 2 母線のネットワーク。図に描いていないもの: すべてのモデルオブジェクトは <code>Parameter</code> のコンテナ（<code>para_*</code>）も持ち、その親はそのオブジェクトです。</figcaption>
+      <figcaption lang="ja">発電機（AVR と PSS）、負荷、送電線、AGC を持つ 2 母線のネットワーク。図に未記載: すべてのモデルオブジェクトは <code>Parameter</code> のコンテナ（<code>para_*</code>）も保持し、その親はそのオブジェクト。</figcaption>
     </figure>
     <table class="dg-table fmb-refs">
       <thead><tr><th><span lang="en">Holder.property</span><span lang="ja">保持側.プロパティ</span></th><th><span lang="en">Refers to</span><span lang="ja">参照先</span></th><th><span lang="en">Kind</span><span lang="ja">種類</span></th><th><span lang="en">Set / cleared by</span><span lang="ja">設定・解除</span></th></tr></thead>
@@ -436,34 +764,42 @@ b1.l_isSlack = true;</code></pre>
         <tr><td><code>GlobalController.controlledUnits</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">controlled components</span><span lang="ja">制御対象の機器</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">reference, not a parent</span><span lang="ja">参照（親ではない）</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><span lang="en">constructor</span><span lang="ja">コンストラクタ</span></td></tr>
       </tbody>
     </table>
-    <p lang="en">The children reached through the protected property <code>children</code> are the ones that <code>check_edit</code>, <code>reset_edit</code>, <code>mark_odefcn</code>, <code>disp_tree</code> and <code>struct</code> walk. Values derived from several owners are <code>Dependent</code> properties that read the owner each time, for example <code>Component.c_Vequilibrium</code> (= <code>a_Bus.c_Vequilibrium</code>), <code>Bus.c_Iequilibrium</code> (sum of the component currents) and <code>PowerNetwork.cv_Vequilibrium</code>. <code>net.disp_tree()</code> prints the tree.</p>
-    <p lang="ja">protected プロパティ <code>children</code> でたどれる子が、<code>check_edit</code>・<code>reset_edit</code>・<code>mark_odefcn</code>・<code>disp_tree</code>・<code>struct</code> が巡回する対象です。複数の所有者から導かれる値は、そのつど所有者を読む <code>Dependent</code> プロパティです。例: <code>Component.c_Vequilibrium</code>（= <code>a_Bus.c_Vequilibrium</code>）、<code>Bus.c_Iequilibrium</code>（機器の電流の和）、<code>PowerNetwork.cv_Vequilibrium</code>。<code>net.disp_tree()</code> は木を表示します。</p>
+    <ul lang="en">
+      <li>Protected property <code>children</code>: the children that <code>check_edit</code>, <code>reset_edit</code>, <code>mark_odefcn</code>, <code>disp_tree</code> and <code>struct</code> walk</li>
+      <li>Values derived from several owners: <code>Dependent</code> properties that read the owner each time, e.g. <code>Component.c_Vequilibrium</code> (= <code>a_Bus.c_Vequilibrium</code>), <code>Bus.c_Iequilibrium</code> (sum of the component currents), <code>PowerNetwork.cv_Vequilibrium</code></li>
+      <li><code>net.disp_tree()</code>: prints the tree</li>
+    </ul>
+    <ul lang="ja">
+      <li>protected プロパティ <code>children</code>: <code>check_edit</code>・<code>reset_edit</code>・<code>mark_odefcn</code>・<code>disp_tree</code>・<code>struct</code> が巡回する子</li>
+      <li>複数の所有者から導かれる値: そのつど所有者を読む <code>Dependent</code> プロパティ。例: <code>Component.c_Vequilibrium</code>（= <code>a_Bus.c_Vequilibrium</code>）、<code>Bus.c_Iequilibrium</code>（機器の電流の和）、<code>PowerNetwork.cv_Vequilibrium</code></li>
+      <li><code>net.disp_tree()</code>: 木を表示</li>
+    </ul>
 
     <!-- ============================== 5. SIDE EFFECTS ============================== -->
     <h2 id="side-effects"><span lang="en">5. Side effects and caches</span><span lang="ja">5. 副作用とキャッシュ</span></h2>
     <ul lang="en">
-      <li><b>Before the first <code>initialize</code></b>: the network's <code>str_flag</code> is <code>"unset"</code>, so no row is added to <code>tab_editLog</code> and the equilibrium flag is not raised; <code>handle_edit</code> still keeps a single slack bus.</li>
-      <li><b>After <code>initialize</code></b>: an edit marked stale in <a href="class-design.html#edits">Class Design: edit handling</a> sets <code>str_flag = "editted"</code> and <code>l_staleEquilibrium = true</code>; <code>simulate</code>, <code>linearize</code> and <code>get_sys</code> then stop until <code>initialize</code> runs again. Operation, OPF, graph and tag edits are logged but leave the equilibrium valid.</li>
-      <li><b>Handle cache</b>: constructors do not build <code>f_*</code> (<code>str_odefcn = "unset"</code>). Attaching (<code>Component.set_bus</code>, <code>LocalController.set_parent</code>, <code>GlobalController.set_parent</code>) and a dynamics or network <code>Hz</code> edit turn <code>"updated"</code> into <code>"editted"</code>. <code>check_edit</code> at the start of the next analysis rebuilds them (see <a href="feature-initialize.html">Initialization</a>).</li>
-      <li><b>Detached objects</b>: a removed object has no parent, so its later edits stop at it (<code>log_edit</code> returns) and do not reach the network.</li>
-      <li><b>Copies</b>: there is no deep-copy method; <code>b = a</code> copies a handle. Save and load through a MAT file or CSV export for an independent network. <code>PowerNetwork.loadobj</code> attaches the parameter listeners again after a MAT load (warning <code>GUILDA:PowerNetwork:IncompleteLoad</code> when a layer is still loading).</li>
+      <li><b>Before the first <code>initialize</code></b>: the network's <code>str_flag</code> is <code>"unset"</code>, so no row is added to <code>tab_editLog</code> and the equilibrium flag is not raised. <code>handle_edit</code> still keeps a single slack bus</li>
+      <li><b>After <code>initialize</code></b>: an edit marked stale in <a href="class-design.html#edits">Class Design: edit handling</a> sets <code>str_flag = "editted"</code> and <code>l_staleEquilibrium = true</code>; <code>simulate</code>, <code>linearize</code> and <code>get_sys</code> then stop until <code>initialize</code> runs again. Operation, OPF, graph and tag edits: logged, equilibrium stays valid</li>
+      <li><b>Handle cache</b>: constructors do not build <code>f_*</code> (<code>str_odefcn = "unset"</code>). Attaching (<code>Component.set_bus</code>, <code>LocalController.set_parent</code>, <code>GlobalController.set_parent</code>) and a dynamics or network <code>Hz</code> edit turn <code>"updated"</code> into <code>"editted"</code>. <code>check_edit</code> at the start of the next analysis rebuilds them (see <a href="feature-initialize.html">Initialization</a>)</li>
+      <li><b>Detached objects</b>: a removed object has no parent, so its later edits stop at it (<code>log_edit</code> returns) and do not reach the network</li>
+      <li><b>Copies</b>: no deep-copy method; <code>b = a</code> copies a handle. For an independent network, save and load through a MAT file or CSV export. <code>PowerNetwork.loadobj</code> attaches the parameter listeners again after a MAT load (warning <code>GUILDA:PowerNetwork:IncompleteLoad</code> when a layer is still loading)</li>
     </ul>
     <ul lang="ja">
-      <li><b>最初の <code>initialize</code> の前</b>: ネットワークの <code>str_flag</code> は <code>"unset"</code> なので、<code>tab_editLog</code> に行は追加されず、平衡点のフラグも立ちません。<code>handle_edit</code> は slack 母線を 1 つに保ちます。</li>
-      <li><b><code>initialize</code> の後</b>: <a href="class-design.html#edits">クラス設計: 編集の扱い</a>で古くなるとされる編集は <code>str_flag = "editted"</code>、<code>l_staleEquilibrium = true</code> にし、<code>simulate</code>・<code>linearize</code>・<code>get_sys</code> は再び <code>initialize</code> を実行するまで停止します。operation・OPF・graph・タグの編集は記録されますが、平衡点は有効なままです。</li>
-      <li><b>ハンドルキャッシュ</b>: コンストラクタは <code>f_*</code> を作りません（<code>str_odefcn = "unset"</code>）。接続（<code>Component.set_bus</code>、<code>LocalController.set_parent</code>、<code>GlobalController.set_parent</code>）と、dynamics またはネットワークの <code>Hz</code> の編集は、<code>"updated"</code> を <code>"editted"</code> にします。次の解析の最初の <code>check_edit</code> が作り直します（<a href="feature-initialize.html">初期化</a>参照）。</li>
-      <li><b>切り離されたオブジェクト</b>: 削除されたオブジェクトには親がないので、その後の編集はそこで止まり（<code>log_edit</code> が戻る）、ネットワークには届きません。</li>
-      <li><b>コピー</b>: ディープコピーのメソッドはありません。<code>b = a</code> はハンドルのコピーです。独立したネットワークが必要なら、MAT ファイルへの保存と読み込み、または CSV への書き出しを使います。<code>PowerNetwork.loadobj</code> は MAT からの読み込み後にパラメータのリスナーを付け直します（層がまだ読み込み中なら警告 <code>GUILDA:PowerNetwork:IncompleteLoad</code>）。</li>
+      <li><b>最初の <code>initialize</code> の前</b>: ネットワークの <code>str_flag</code> は <code>"unset"</code> のため、<code>tab_editLog</code> への行の追加なし、平衡点のフラグも立たない。<code>handle_edit</code> は slack 母線を 1 つに維持</li>
+      <li><b><code>initialize</code> の後</b>: <a href="class-design.html#edits">クラス設計: 編集の扱い</a>で古くなるとされる編集は <code>str_flag = "editted"</code>、<code>l_staleEquilibrium = true</code> に設定し、<code>simulate</code>・<code>linearize</code>・<code>get_sys</code> は再び <code>initialize</code> を実行するまで停止。operation・OPF・graph・タグの編集: 記録のみ、平衡点は有効なまま</li>
+      <li><b>ハンドルキャッシュ</b>: コンストラクタは <code>f_*</code> を作らない（<code>str_odefcn = "unset"</code>）。接続（<code>Component.set_bus</code>、<code>LocalController.set_parent</code>、<code>GlobalController.set_parent</code>）と、dynamics またはネットワークの <code>Hz</code> の編集で <code>"updated"</code> を <code>"editted"</code> に変更。次の解析の最初の <code>check_edit</code> が再構築（<a href="feature-initialize.html">初期化</a>参照）</li>
+      <li><b>切り離されたオブジェクト</b>: 削除されたオブジェクトには親がないため、その後の編集はそこで停止し（<code>log_edit</code> が戻る）、ネットワークには届かない</li>
+      <li><b>コピー</b>: ディープコピーのメソッドはなし。<code>b = a</code> はハンドルのコピー。独立したネットワークには MAT ファイルへの保存と読み込み、または CSV への書き出しを使用。<code>PowerNetwork.loadobj</code> は MAT からの読み込み後にパラメータのリスナーを再設定（層がまだ読み込み中なら警告 <code>GUILDA:PowerNetwork:IncompleteLoad</code>）</li>
     </ul>
 
     <!-- ============================== 6. FAILURES ============================== -->
     <h2 id="failures"><span lang="en">6. Failure and flags</span><span lang="ja">6. 失敗とフラグ</span></h2>
     <p lang="en">The <code>add_*</code>, <code>remove_*</code> and <code>replace_*</code> methods check before they change anything, so a rejected call leaves the network as it was.</p>
-    <p lang="ja"><code>add_*</code>・<code>remove_*</code>・<code>replace_*</code> は変更の前に検査するので、拒否された呼び出しはネットワークを元のまま残します。</p>
+    <p lang="ja"><code>add_*</code>・<code>remove_*</code>・<code>replace_*</code> は変更前に検査するため、拒否された呼び出しの後もネットワークは元のまま。</p>
     <table class="dg-table fmb-fail">
       <thead><tr><th><span lang="en">Call</span><span lang="ja">呼び出し</span></th><th><span lang="en">What the caller sees</span><span lang="ja">呼び出し側に見えるもの</span></th></tr></thead>
       <tbody>
-        <tr><td><code>add_bus</code>, <code>add_branch</code>, <code>add_component</code> <span lang="en">options</span><span lang="ja">のオプション</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><span lang="en">MATLAB argument validation errors (unknown key, wrong size or class); deprecated <code>baseMVA</code> on a bus: <code>GUILDA:Deprecated:BusBaseMVA</code> / <code>BusBaseMVAMismatch</code></span><span lang="ja">MATLAB の引数検証エラー（未知のキー、サイズやクラスの誤り）。母線の非推奨オプション <code>baseMVA</code>: <code>GUILDA:Deprecated:BusBaseMVA</code> / <code>BusBaseMVAMismatch</code></span></td></tr>
+        <tr><td><code>add_bus</code>, <code>add_branch</code>, <code>add_component</code> <span lang="en">options</span><span lang="ja">のオプション</span></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><span lang="en">MATLAB argument validation errors (unknown key, wrong size or class); bus option <code>baseMVA</code> (ignored): <code>GUILDA:Deprecated:BusBaseMVA</code> / <code>BusBaseMVAMismatch</code></span><span lang="ja">MATLAB の引数検証エラー（未知のキー、サイズやクラスの誤り）。母線のオプション <code>baseMVA</code>（無視）: <code>GUILDA:Deprecated:BusBaseMVA</code> / <code>BusBaseMVAMismatch</code></span></td></tr>
         <tr><td><code>add_branch</code></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:PowerNetwork:BranchBusIndex</code>, <code>BusNotFound</code>, <code>BranchSelfLoop</code>, <code>BranchZeroImpedance</code>; <span lang="en">complex R, X or C: an <code>assert</code> without identifier</span><span lang="ja">R・X・C が複素数: 識別子のない <code>assert</code></span></td></tr>
         <tr><td><code>add_component</code></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:Component:MissingParameter</code>, <code>UnknownParameter</code> (<span lang="en">error</span><span lang="ja">エラー</span>); <code>GeneratorQIgnored</code> (<span lang="en">warning</span><span lang="ja">警告</span>)</td></tr>
         <tr><td><code>add_local_controller</code></td><td data-label="What the caller sees" data-label-ja="呼び出し側に見えるもの"><code>GUILDA:Component:InvalidControllerKey</code>, <code>SharedController</code>, <code>ControllerOutput</code>, <code>NotExtAvr</code>, <code>PssParentKey</code>; <code>ReplaceController</code> (<span lang="en">warning</span><span lang="ja">警告</span>); <code>GUILDA:LocalController:ReservedInputNames</code>, <code>ReservedInputNoOverride</code></td></tr>
@@ -475,27 +811,27 @@ b1.l_isSlack = true;</code></pre>
     </table>
     <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
       <p lang="en">The IDs name the entries of <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> that <code>msg</code> reads. <code>error(msg(...))</code> passes only the text, so the MATLAB exception has an empty identifier.</p>
-      <p lang="ja">ID は <code>msg</code> が読む <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> のエントリ名です。<code>error(msg(...))</code> は本文だけを渡すので、MATLAB の例外の識別子は空です。</p>
+      <p lang="ja">ID は <code>msg</code> が読む <code>SystemTools/GUILDA/en/&lt;Object&gt;.xml</code> のエントリ名。<code>error(msg(...))</code> は本文だけを渡すため、MATLAB の例外の識別子は空。</p>
     </div>
 
     <!-- ============================== 7. EXTENSION ============================== -->
     <h2 id="extension"><span lang="en">7. Extension points</span><span lang="ja">7. 拡張ポイント</span></h2>
     <ul lang="en">
-      <li><b>Component</b>: a class in <code>+component</code> with the constants <code>key</code>, <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code>, <code>sv_para</code>; a constructor <code>(index, parameter, opt)</code> that calls the <code>Component</code> constructor with the tag and adds every <code>sv_para</code> to <code>para_dynamics</code> with <code>add_entry</code>. Run <code>GUILDA</code> again so that <code>add_component</code> knows the key.</li>
-      <li><b>Branch</b>: a class in <code>+branch</code> with the constants <code>key</code> and <code>header</code> and <code>get_admittance_matrix</code>; the constructor <code>(index, opt)</code> is inherited.</li>
-      <li><b>Local controller</b>: <code>key</code> <code>"avr"</code>, <code>"pss"</code> or <code>"local"</code>; outputs named after the inputs they drive; inputs named after the outputs or states they observe (<code>"Xall"</code> / <code>"Yall"</code> need an override of <code>set_inputs</code>; <code>resolve_ports</code> may adapt the ports to the component).</li>
-      <li><b>Global controller</b>: constructor <code>(net, tag, units...)</code> calling the <code>GlobalController</code> constructor; <code>sv_u</code> must be states and <code>sv_y</code> inputs of every unit.</li>
-      <li><b>Network class</b>: a <code>PowerNetwork</code> subclass in <code>+network/@&lt;Name&gt;/</code> with the CSV folders, whose constructor calls <code>PowerNetwork.import_csv(dir, Network=obj)</code>. <code>net.export_csv(".../@&lt;Name&gt;")</code> writes such a class.</li>
+      <li><b>Component</b>: a class in <code>+component</code> with the constants <code>key</code>, <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code>, <code>sv_para</code>, and a constructor <code>(index, parameter, opt)</code> that calls the <code>Component</code> constructor with the tag and adds every <code>sv_para</code> to <code>para_dynamics</code> with <code>add_entry</code>. Run <code>GUILDA</code> again so that <code>add_component</code> knows the key</li>
+      <li><b>Branch</b>: a class in <code>+branch</code> with the constants <code>key</code> and <code>header</code> and <code>get_admittance_matrix</code>. The constructor <code>(index, opt)</code> is inherited</li>
+      <li><b>Local controller</b>: <code>key</code> <code>"avr"</code>, <code>"pss"</code> or <code>"local"</code>; outputs named after the inputs they drive; inputs named after the outputs or states they observe (<code>"Xall"</code> / <code>"Yall"</code> need an override of <code>set_inputs</code>; <code>resolve_ports</code> may adapt the ports to the component)</li>
+      <li><b>Global controller</b>: constructor <code>(net, tag, units...)</code> calling the <code>GlobalController</code> constructor. <code>sv_u</code> must be states and <code>sv_y</code> inputs of every unit</li>
+      <li><b>Network class</b>: a <code>PowerNetwork</code> subclass in <code>+network/@&lt;Name&gt;/</code> with the CSV folders, whose constructor calls <code>PowerNetwork.import_csv(dir, Network=obj)</code>. <code>net.export_csv(".../@&lt;Name&gt;")</code> writes such a class</li>
     </ul>
     <ul lang="ja">
-      <li><b>機器</b>: <code>+component</code> のクラスで、定数 <code>key</code>・<code>sv_x</code>・<code>sv_u</code>・<code>sv_y</code>・<code>sv_para</code> を持ち、コンストラクタ <code>(index, parameter, opt)</code> がタグを付けて <code>Component</code> のコンストラクタを呼び、すべての <code>sv_para</code> を <code>add_entry</code> で <code>para_dynamics</code> に加えます。<code>add_component</code> がキーを認識するよう、<code>GUILDA</code> を再実行します。</li>
-      <li><b>ブランチ</b>: <code>+branch</code> のクラスで、定数 <code>key</code>・<code>header</code> と <code>get_admittance_matrix</code> を持ちます。コンストラクタ <code>(index, opt)</code> は継承されます。</li>
-      <li><b>ローカル制御器</b>: <code>key</code> は <code>"avr"</code>・<code>"pss"</code>・<code>"local"</code>。出力は駆動する入力の名前、入力は観測する出力または状態の名前にします（<code>"Xall"</code> / <code>"Yall"</code> には <code>set_inputs</code> のオーバーライドが必要。<code>resolve_ports</code> でポートを機器に合わせることもできます）。</li>
-      <li><b>グローバル制御器</b>: コンストラクタ <code>(net, tag, units...)</code> が <code>GlobalController</code> のコンストラクタを呼びます。<code>sv_u</code> は各対象の状態、<code>sv_y</code> は入力でなければなりません。</li>
-      <li><b>ネットワーククラス</b>: CSV フォルダを持つ <code>+network/@&lt;Name&gt;/</code> の <code>PowerNetwork</code> サブクラスで、コンストラクタが <code>PowerNetwork.import_csv(dir, Network=obj)</code> を呼びます。<code>net.export_csv(".../@&lt;Name&gt;")</code> はこの形のクラスを書き出します。</li>
+      <li><b>機器</b>: <code>+component</code> のクラス。定数 <code>key</code>・<code>sv_x</code>・<code>sv_u</code>・<code>sv_y</code>・<code>sv_para</code> と、タグを付けて <code>Component</code> のコンストラクタを呼び、すべての <code>sv_para</code> を <code>add_entry</code> で <code>para_dynamics</code> に加えるコンストラクタ <code>(index, parameter, opt)</code> を持つ。<code>add_component</code> がキーを認識するよう <code>GUILDA</code> を再実行</li>
+      <li><b>ブランチ</b>: <code>+branch</code> のクラス。定数 <code>key</code>・<code>header</code> と <code>get_admittance_matrix</code> を持つ。コンストラクタ <code>(index, opt)</code> は継承</li>
+      <li><b>ローカル制御器</b>: <code>key</code> は <code>"avr"</code>・<code>"pss"</code>・<code>"local"</code>。出力名は駆動する入力の名前、入力名は観測する出力または状態の名前（<code>"Xall"</code> / <code>"Yall"</code> には <code>set_inputs</code> のオーバーライドが必要。<code>resolve_ports</code> でポートを機器に合わせることも可能）</li>
+      <li><b>グローバル制御器</b>: コンストラクタ <code>(net, tag, units...)</code> が <code>GlobalController</code> のコンストラクタを呼び出し。<code>sv_u</code> は各対象の状態、<code>sv_y</code> は入力であることが必要</li>
+      <li><b>ネットワーククラス</b>: CSV フォルダを持つ <code>+network/@&lt;Name&gt;/</code> の <code>PowerNetwork</code> サブクラス。コンストラクタが <code>PowerNetwork.import_csv(dir, Network=obj)</code> を呼び出し。<code>net.export_csv(".../@&lt;Name&gt;")</code> はこの形のクラスを書き出し</li>
     </ul>
-    <p lang="en">Step-by-step instructions and the model contracts are in <a href="model-implementation.html">Model Implementation</a> (<a href="model-implementation.html#steps">steps</a>, <a href="model-implementation.html#contracts">contracts</a>, <a href="model-implementation.html#controller">controller</a>, <a href="model-implementation.html#other">branches and networks</a>).</p>
-    <p lang="ja">手順とモデルの約束は <a href="model-implementation.html">モデルの実装</a>（<a href="model-implementation.html#steps">手順</a>、<a href="model-implementation.html#contracts">約束</a>、<a href="model-implementation.html#controller">制御器</a>、<a href="model-implementation.html#other">ブランチとネットワーク</a>）にあります。</p>
+    <p lang="en">Step-by-step instructions and the model contracts: <a href="model-implementation.html">Model Implementation</a> (<a href="model-implementation.html#steps">steps</a>, <a href="model-implementation.html#contracts">contracts</a>, <a href="model-implementation.html#controller">controller</a>, <a href="model-implementation.html#other">branches and networks</a>).</p>
+    <p lang="ja">手順とモデルの約束: <a href="model-implementation.html">モデルの実装</a>（<a href="model-implementation.html#steps">手順</a>、<a href="model-implementation.html#contracts">約束</a>、<a href="model-implementation.html#controller">制御器</a>、<a href="model-implementation.html#other">ブランチとネットワーク</a>）。</p>
 
     <!-- ============================== 8. RELATED ============================== -->
     <h2 id="related"><span lang="en">8. Related pages</span><span lang="ja">8. 関連ページ</span></h2>
