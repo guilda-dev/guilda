@@ -6,7 +6,7 @@ standard model report.
 ## Reference
 
 - The Institute of Electrical Engineers of Japan (電気学会), 電力系統の標準モデル
-  (Standard models of power systems), IEEJ Technical Report No. 754, 1999.
+  (Standard models of power systems).
   Online: <http://www2.iee.or.jp/~pes/model/kikan/kikan_mokuji.html>
 - Section 4.2 (EAST 10-machine model), table 4.3: stability of the peak and night
   sections for faults on the trunk lines.
