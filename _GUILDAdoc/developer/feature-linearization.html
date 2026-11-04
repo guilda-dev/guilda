@@ -42,7 +42,7 @@
     <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
   </svg>
   <main>
-    <button type="button" class="developer-back-button" onclick="window.history.back()"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></button>
+    <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
     <h1><span lang="en">Linearization Feature Design</span><span lang="ja">近似線形化機能の設計</span></h1>
     <p class="page-lead" lang="en"><code>net.linearize</code> linearizes the network DAE at the equilibrium (or a given point). Output: the unreduced Jacobian blocks as a <code>ResultLIN</code>; <code>result.get_ss</code> and <code>net.get_sys</code> turn them into a state-space model. This page follows one call through <code>SolverLIN</code> and the <code>get_sys</code> of each layer.</p>
     <p class="page-lead" lang="ja"><code>net.linearize</code>: ネットワークの DAE を平衡点 (または指定した点) のまわりで線形化する機能。出力は縮約前のヤコビアンのブロックを持つ <code>ResultLIN</code>。<code>result.get_ss</code> と <code>net.get_sys</code> で状態空間モデルに変換。このページの対象は、<code>SolverLIN</code> と各層の <code>get_sys</code> を通る 1 回の呼び出し。</p>

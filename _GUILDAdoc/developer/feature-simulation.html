@@ -42,7 +42,7 @@
     <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
   </svg>
   <main>
-    <button type="button" class="developer-back-button" onclick="window.history.back()"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></button>
+    <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
     <h1><span lang="en">Time Simulation Feature Design</span><span lang="ja">時間応答シミュレーション機能の設計</span></h1>
     <p class="page-lead" lang="en"><code>net.simulate</code> integrates the differential-algebraic equations (DAE) of the network over time from the equilibrium of <code>net.initialize</code>, under the disturbances of the given scenarios (<code>Scenario</code>). This page follows one call: public method → <code>SolverODE</code> → <code>ResultODE</code>.</p>
     <p class="page-lead" lang="ja"><code>net.simulate</code>: <code>net.initialize</code> の平衡点から出発し、与えたシナリオ (<code>Scenario</code>) の外乱のもとでネットワークの微分代数方程式 (DAE) を時間積分する機能。このページの対象は 1 回の呼び出し: 公開メソッド → <code>SolverODE</code> → <code>ResultODE</code>。</p>

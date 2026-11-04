@@ -48,7 +48,7 @@
     <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
   </svg>
   <main>
-    <button type="button" class="developer-back-button" onclick="window.history.back()"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></button>
+    <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
     <h1><span lang="en">Data Import and Export Feature Design</span><span lang="ja">データの入出力機能の設計</span></h1>
     <p class="page-lead" lang="en">Reads a network from a CSV model folder or a MATPOWER case; writes it to a CSV model folder or a MATPOWER case struct. The importers check the input, then build the network through the public <code>add_*</code> methods, so an imported network is the same as one built by hand.</p>
     <p class="page-lead" lang="ja">ネットワークの読み込み元は CSV のモデルフォルダまたは MATPOWER のケース、書き出し先は CSV のモデルフォルダまたは MATPOWER のケース構造体。読み込みは入力を検査してから公開の <code>add_*</code> メソッドで組み立てるため、読み込んだネットワークは手で組み立てたものと同一。</p>

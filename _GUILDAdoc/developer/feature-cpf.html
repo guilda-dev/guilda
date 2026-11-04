@@ -43,7 +43,7 @@
     <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
   </svg>
   <main>
-    <button type="button" class="developer-back-button" onclick="window.history.back()"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></button>
+    <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
     <h1><span lang="en">Continuation Power Flow Feature Design</span><span lang="ja">連続潮流計算機能の設計</span></h1>
     <p class="page-lead" lang="en"><code>net.calculate_continuation_powerflow()</code> starts from the equilibrium of <code>net.initialize</code>, scales the power of the components on the load buses by <code>(1 + λ)</code>, and traces the power-flow solution with a predictor-corrector method past the maximum loading point (the nose of the PV curve). Output: the path as a <code>ResultCPF</code>.</p>
     <p class="page-lead" lang="ja"><code>net.calculate_continuation_powerflow()</code>: <code>net.initialize</code> の平衡点から出発し、負荷母線の機器の電力を <code>(1 + λ)</code> 倍しながら、予測子・修正子法で最大負荷点（PV カーブの先端）の先まで潮流解を追跡する機能。出力は経路を持つ <code>ResultCPF</code>。</p>

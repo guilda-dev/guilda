@@ -57,7 +57,7 @@
     <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
   </svg>
   <main>
-    <button type="button" class="developer-back-button" onclick="window.history.back()"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></button>
+    <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
     <h1><span lang="en">Initialization Feature Design</span><span lang="ja">初期化機能の設計</span></h1>
     <p class="page-lead" lang="en"><code>net.initialize()</code> turns an operating point (a power flow, an AC optimal power flow, or the equilibria the components already hold) into the equilibrium of every bus, component, local controller, and global controller, checks it, and resets the edit log. Starting point of every dynamic analysis.</p>
     <p class="page-lead" lang="ja"><code>net.initialize()</code> は運転点（潮流計算、交流の最適潮流計算、または機器が保持済みの平衡点）を、すべての母線・機器・局所制御器・広域制御器の平衡点として設定・検査し、編集ログをリセット。動的な解析はすべてこの平衡点が起点。</p>

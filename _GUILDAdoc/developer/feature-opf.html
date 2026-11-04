@@ -42,7 +42,7 @@
     <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
   </svg>
   <main>
-    <button type="button" class="developer-back-button" onclick="window.history.back()"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></button>
+    <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
     <h1><span lang="en">Optimal Power Flow Feature Design</span><span lang="ja">最適潮流計算機能の設計</span></h1>
     <p class="page-lead" lang="en"><code>net.optimize_powerflow()</code> finds the operating point of least generation cost within the operating limits. Buses, components, and branches each add their variables, costs, and constraints to one <code>optimproblem</code>; the Optimization Toolbox solves it. Output: a <code>ResultOPF</code>; the network is unchanged.</p>
     <p class="page-lead" lang="ja"><code>net.optimize_powerflow()</code>: 運用上の制約のもとで発電コスト最小の運転点を求める機能。母線・機器・ブランチがそれぞれの変数・コスト・制約を 1 つの <code>optimproblem</code> に追加し、Optimization Toolbox が求解。出力は <code>ResultOPF</code>、ネットワークは不変。</p>

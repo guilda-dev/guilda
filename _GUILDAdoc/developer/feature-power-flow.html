@@ -45,7 +45,7 @@
     <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
   </svg>
   <main>
-    <button type="button" class="developer-back-button" onclick="window.history.back()"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></button>
+    <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
     <h1><span lang="en">Power Flow Feature Design</span><span lang="ja">潮流計算機能の設計</span></h1>
     <p class="page-lead" lang="en"><code>net.calculate_powerflow()</code>: bus voltages from the power-flow settings of the buses and components. <code>SolverPF</code> builds the equations and runs <code>fsolve</code> or <code>ode15s</code>; values returned in a <code>ResultPF</code>, not written to the model.</p>
     <p class="page-lead" lang="ja"><code>net.calculate_powerflow()</code>: 母線と機器の潮流設定から母線電圧を計算。<code>SolverPF</code> が方程式を組み立てて <code>fsolve</code> または <code>ode15s</code> を実行。結果は <code>ResultPF</code> として返却し、モデルには書き込まない。</p>
