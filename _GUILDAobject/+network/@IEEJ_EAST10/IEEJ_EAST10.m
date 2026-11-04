@@ -74,19 +74,9 @@ classdef IEEJ_EAST10 < PowerNetwork
 %   real eigenvalue `0.167`.
 % - The long-period oscillation is about 2.7 s (peak) and 2.0 s (night) with governors,
 %   2.9 s and 2.1 s without; the report states about 2 s and 3 s for its model.
-% - For the 44 cases of table 4.3 (70 ms three-phase fault at the From end, then
-%   opening 1 or 2 circuits; `scenario/run_table4_3.m`), the stable or out-of-step
-%   result agrees in 33 with governors (peak 14 of 21, night 19 of 23) and in 35
-%   without (peak 17 of 21, night 18 of 23). With governors the multi-swing
-%   out-of-step cases of the peak section become stable, as the governors damp the
-%   long-period oscillation. The limit of EF changes no result.
-%
-% Scenario:
-%
-% The folder `scenario` of this class holds the cases of table 4.3 (`table4_3.csv`) and
-% the function `run_table4_3`, which builds the network, runs each case and compares
-% it with the report. MATLAB does not run files in a class folder, so copy the
-% function to a folder on the path first (see its help).
+% - The 44 fault cases of table 4.3 are compared with the report in
+%   `_GUILDAverification/IEEJ_EAST10/` (scenarios, report verdicts and the comparison
+%   script; see its README.md for the criterion and the measured agreement).
 %
 % <@Examples>
 % Run the power flow of the night section, and simulate a fault at bus 36 at peak:
