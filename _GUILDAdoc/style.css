@@ -326,6 +326,36 @@ html[data-lang="ja"] body [lang="en"] { display: none !important; }
 .doc-lang-sep { color: var(--line-strong); }
 @media print { .doc-lang-toggle { display: none; } }
 
+/* Side menus of the developer pages (doc-nav.js), only where there is room.
+   1200px and up: page list and "On this page" in a column left of main.
+   1440px and up: main is centred again, the page list sits left of it and
+   "On this page" right of it (below the language toggle).
+   Narrower screens keep the inline .dev-toc and no side menus. */
+.doc-side { display: none; }
+@media (min-width: 1200px) {
+  body.developer-layout { --doc-side-w: 228px; --doc-side-gap: 24px; }
+  body.developer-layout main { width: calc(100% - var(--doc-side-w) - 3 * var(--doc-side-gap)); margin-left: calc(var(--doc-side-w) + 2 * var(--doc-side-gap)); margin-right: auto; }
+  body.developer-layout main .dev-toc { display: none; }
+  .dg main .dev-toc + h2, .dg main .dev-toc + .dg-callout + h2 { border-top: 1px solid var(--dg-line); }
+  .doc-side { position: fixed; top: 32px; bottom: 24px; left: var(--doc-side-gap); z-index: 10; display: flex; flex-direction: column; gap: 20px; width: var(--doc-side-w); font-size: 0.86rem; line-height: 1.4; }
+  .doc-side ul { margin: 0; padding: 0; list-style: none; }
+  .doc-side a { display: block; padding: 4px 10px; border-left: 2px solid transparent; color: var(--ink-2); }
+  .doc-side a:hover { color: var(--brand); text-decoration: none; }
+  .doc-side-pages { position: relative; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  .doc-side-pages a.is-current { border-left-color: var(--brand); background: var(--brand-tint); color: var(--brand); font-weight: 600; }
+  .doc-side a.doc-side-home { margin-bottom: 8px; padding-left: 12px; color: var(--ink); font-weight: 700; }
+  .doc-side-group + .doc-side-group { margin-top: 12px; }
+  .doc-side-label { margin: 0 0 4px; padding-left: 12px; color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+  .doc-side-toc { flex: 0 1 auto; max-height: 45%; overflow-y: auto; padding-top: 16px; border-top: 1px solid var(--line); }
+  .doc-side-toc a.is-active { border-left-color: var(--brand); color: var(--brand); }
+}
+@media (min-width: 1440px) {
+  body.developer-layout main { width: 95%; margin-left: auto; margin-right: auto; }
+  .doc-side { left: calc(50% - 450px - var(--doc-side-gap) - var(--doc-side-w)); }
+  .doc-side-toc { position: fixed; top: 64px; left: calc(50% + 450px + var(--doc-side-gap)); width: var(--doc-side-w); max-height: calc(100vh - 88px); padding-top: 0; border-top: 0; }
+}
+@media print { .doc-side { display: none; } }
+
 /* Supported Analyses: a plain list of line pictograms (1.5px strokes, ink and grey, one brand-blue element) */
 .analysis-list { list-style: none; margin: 16px 0 8px; padding: 0; border-top: 1px solid var(--line); }
 .analysis-item { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 20px; align-items: center; padding: 16px 4px; border-bottom: 1px solid var(--line); }

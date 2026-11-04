@@ -154,9 +154,18 @@
     syncToggle(root.dataset.lang);
   }
 
+  // Developer pages get side menus on wide screens from doc-nav.js.
+  function loadSideNav() {
+    if (!document.body.classList.contains('developer-layout') || window.GuildaDocNav) return;
+    const script = document.createElement('script');
+    script.src = new URL('doc-nav.js', docRoot).href;
+    document.head.appendChild(script);
+  }
+
   function onReady() {
     applyTitle(root.dataset.lang);
     insertToggle();
+    loadSideNav();
   }
 
   const initial = resolve(['back_forward', 'reload'].includes(navigationType()));
