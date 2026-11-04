@@ -97,9 +97,11 @@ classdef IEEJ_WEST30 < PowerNetwork
 % ```matlab
 % net = network.IEEJ_WEST30(Section="night");
 % res = net.calculate_powerflow();
-% ev  = ODEevent("fault", net, "TimeSpan", [0.1,0.17], "FaultBus", "B1220");
-% op  = ODEevent("open",  net, "TimeSpan", [0.17,10], "OpenBranch", "EL042");
-% sol = net.simulate([0,10], ev, op);
+% sc  = Scenario("fault-open", Time=[0,10]);
+% sc.add_fault("B1220", [0.1,0.17]);
+% sc.add_open_branch("EL042", [0.17,10]);
+% net.add_scenario(sc);
+% sol = net.simulate(sc);
 % ```
 %
 % Run the 12 cases of table 4.13 with the script of the folder `scenario/`, copied out of
@@ -112,7 +114,7 @@ classdef IEEJ_WEST30 < PowerNetwork
 % tab = run_table4_13(Governor=true);
 % ```
 %
-% See also controller.avr.AVR_DC1, controller.governor.IEEJ_LPT1, controller.governor.IEEJ_LPT3, component.generator.park, component.load.impedance, ODEevent
+% See also controller.avr.AVR_DC1, controller.governor.IEEJ_LPT1, controller.governor.IEEJ_LPT3, component.generator.park, component.load.impedance, Scenario
 
     properties(Constant) % Data
         ver = 2 % Version of the bundled network data.

@@ -127,9 +127,11 @@ classdef IEEJ_EAST30 < PowerNetwork
 % ```matlab
 % net = network.IEEJ_EAST30(Section="night");
 % res = net.calculate_powerflow();
-% ev  = {ODEevent("fault", net, "TimeSpan", [1,1.07], "FaultBus", "B3105"), ...
-%        ODEevent("open",  net, "TimeSpan", [1.07,10], "OpenBranch", ["EL047";"EL048"])};
-% sol = net.simulate([0,10], ev{:});
+% sc  = Scenario("fault-open", Time=[0,10]);
+% sc.add_fault("B3105", [1,1.07]);
+% sc.add_open_branch(["EL047";"EL048"], [1.07,10]);
+% net.add_scenario(sc);
+% sol = net.simulate(sc);
 % ```
 %
 % See also controller.avr.AVR_DC1, controller.governor.IEEJ_LPT1, controller.governor.IEEJ_LPT4, component.generator.park, network.IEEE68bus

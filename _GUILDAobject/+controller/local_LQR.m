@@ -28,8 +28,10 @@ classdef local_LQR < LocalController
 % net.a_Bus{1}.a_Component{1}.add_local_controller(controller.local_LQR("lqr1"));
 % net.a_Bus{2}.a_Component{1}.add_local_controller(controller.local_LQR("lqr2", Input="Vfield", R=2));
 % net.initialize;
-% ev  = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B007");
-% sol = net.simulate([0,10], ev);
+% sc  = Scenario("fault");
+% sc.add_fault("B007", [1,1.05]);
+% net.add_scenario(sc);
+% sol = net.simulate([0,10], sc);
 % ```
 %
 % See also Component.add_local_controller, controller.avr.abstract, controller.local_LQR_retrofit

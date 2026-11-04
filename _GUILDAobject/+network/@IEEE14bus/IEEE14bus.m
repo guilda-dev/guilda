@@ -82,8 +82,10 @@ classdef IEEE14bus < PowerNetwork
 % ```matlab
 % net = network.IEEE14bus();
 % res = net.calculate_powerflow();
-% ev  = ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-% sol = net.simulate([0,10], ev);
+% sc  = Scenario("fault");
+% sc.add_fault("B008", [1,1.05]);
+% net.add_scenario(sc);
+% sol = net.simulate([0,10], sc);
 % ```
 %
 % See also network.IEEE14bus_NoTap, network.IEEE14bus_lossless, PowerNetwork.import_matpower

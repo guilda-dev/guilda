@@ -116,7 +116,7 @@
         <rect class="dg-sv-box is-soft" x="1" y="88" width="318" height="68" rx="10"/>
         <text class="is-k" x="15" y="109">ANALYSIS SETTINGS · DEFAULTS</text>
         <text class="dg-mono is-sm" x="15" y="128">net.solver_PF / _OPF / _CPF / _ODE / _LIN</text>
-        <text class="is-sm is-muted" x="15" y="145">method · tolerance · time span · events</text>
+        <text class="is-sm is-muted" x="15" y="145">method · tolerance · time span</text>
         <text class="is-sm is-muted" x="15" y="172">kept between runs; a call never changes them</text>
         <!-- name-value -->
         <rect class="dg-sv-box is-warn" x="1" y="180" width="318" height="64" rx="10"/>
@@ -143,7 +143,7 @@
         <table class="dg-table">
           <tbody>
             <tr><td>System data</td><td data-label="Set in">properties, <code>tab_parameter</code>, before the call</td><td data-label="Examples">line constants, V/P/Q specs, operating limits</td></tr>
-            <tr><td>Analysis settings</td><td data-label="Defaults in"><code>net.solver_PF</code> / <code>_OPF</code> / <code>_CPF</code> / <code>_ODE</code> / <code>_LIN</code>; kept between runs</td><td data-label="Examples">method, tolerance, time span, events</td></tr>
+            <tr><td>Analysis settings</td><td data-label="Defaults in"><code>net.solver_PF</code> / <code>_OPF</code> / <code>_CPF</code> / <code>_ODE</code> / <code>_LIN</code>; kept between runs</td><td data-label="Examples">method, tolerance, time span</td></tr>
             <tr><td>Name-Value options</td><td data-label="Set in">the call; this call only</td><td data-label="Effect">replaces the default for this call</td></tr>
           </tbody>
         </table>
@@ -247,7 +247,7 @@
         </tr>
         <tr>
           <td>Time simulation</td>
-          <td data-label="Call"><code>net.simulate(time, events..., ...)</code><small><code>Solver</code>, <code>TimeLimit</code>, <code>Progress</code>, ...</small></td>
+          <td data-label="Call"><code>net.simulate(time, sc1, sc2, ..., ...)</code><br><code>net.simulate(sc, ...)</code><small>The scenarios (<code>Scenario</code>) belong to <code>net</code> (<code>net.add_scenario</code>) and are combined. <code>net.simulate(sc)</code> uses the stored <code>sc.Time</code> and <code>sc.Options</code>; a time and options in the call replace them. <code>Solver</code>, <code>TimeLimit</code>, <code>Progress</code>, ... The verdict is <code>sc.judge(result)</code>, not an output of <code>simulate</code>.</small></td>
           <td data-label="First output"><code>ODEresult</code><small><code>flag</code>: <code>1</code> done, <code>0</code> time limit, <code>-1</code> solver stop or numerical failure of a phase.</small></td>
           <td data-label="Changes net"><span class="dev-status is-ok">No</span><small>Error if the net is not initialized. Working data is written during a run, and the connection, fault, and offset data is restored on every exit (see <a href="#side-effects">rule 6</a>).</small></td>
         </tr>

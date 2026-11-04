@@ -68,7 +68,7 @@
 
     <figure class="dg-figure cd-figure">
       <svg class="dg-svg" viewBox="0 0 600 330" role="img" aria-labelledby="cd-map-title">
-        <title id="cd-map-title">Model classes: PowerNetwork owns buses, branches, and global controllers; a bus owns components; a component owns local controllers. Branches refer to their two end buses.</title>
+        <title id="cd-map-title">Model classes: PowerNetwork owns buses, branches, and global controllers; a bus owns components; a component owns local controllers. Branches refer to their two end buses. PowerNetwork also owns its simulation scenarios, which are not model data.</title>
         <defs>
           <marker id="cd-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--ink)"/></marker>
           <marker id="cd-ah-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--muted)"/></marker>
@@ -77,6 +77,12 @@
         <rect x="200" y="12" width="200" height="56" rx="4" style="fill:var(--brand)"/>
         <text x="300" y="38" text-anchor="middle" font-size="16" font-weight="bold" class="dg-mono" style="fill:var(--surface)">PowerNetwork</text>
         <text x="300" y="57" text-anchor="middle" font-size="11" style="fill:var(--on-brand-muted)">base values · solver_* · topology</text>
+
+        <path d="M400 40H456" fill="none" stroke-width="1.6" marker-end="url(#cd-ah)" style="stroke:var(--ink)"/>
+        <text x="428" y="33" text-anchor="middle" font-size="10" style="fill:var(--ink)">a_Scenario</text>
+        <rect x="460" y="12" width="125" height="56" rx="4" stroke-width="1.5" stroke-dasharray="5 4" style="fill:var(--surface-subtle); stroke:var(--muted)"/>
+        <text x="522" y="38" text-anchor="middle" font-size="14" font-weight="bold" class="dg-mono" style="fill:var(--muted)">Scenario ×N</text>
+        <text x="522" y="57" text-anchor="middle" font-size="10" style="fill:var(--ink-2)">disturbances · not model</text>
 
         <path d="M240 68V100H90V126" fill="none" stroke-width="1.6" marker-end="url(#cd-ah)" style="stroke:var(--ink)"/>
         <path d="M300 68V126" fill="none" stroke-width="1.6" marker-end="url(#cd-ah)" style="stroke:var(--ink)"/>
@@ -119,7 +125,7 @@
 
         <text x="20" y="312" font-size="11" style="fill:var(--muted)">Solid arrow: owns (holds in a_* and is the parent). Dashed arrow: association only.</text>
       </svg>
-      <figcaption>Every model class has exactly one parent. Each child keeps a read-only reference back to that parent (see <a href="#parents">Parent references</a>).</figcaption>
+      <figcaption>Every model class has exactly one parent. Each child keeps a read-only reference back to that parent (see <a href="#parents">Parent references</a>). A <code>Scenario</code> is not model data: it belongs to at most one network, and editing it does not make the equilibrium stale.</figcaption>
     </figure>
 
     <!-- ============================== PRINCIPLES ============================== -->
@@ -164,9 +170,9 @@
       <div class="dg-row cd-c-net">
         <div><code class="cd-name">PowerNetwork</code><span class="cd-role">The whole system and the entry point of every analysis.</span></div>
         <dl>
-          <dt>Owns</dt><dd><code>a_Bus</code>, <code>a_Branch</code>, <code>a_GlobalController</code>; the system base values in <code>tab_parameter.base</code>: the network frequency <code>Hz</code> and the system <code>baseMVA</code> <small>(components and controllers read the frequency with <code>get_Hz()</code>; they never keep a copy)</small>; the slack bus <small>(the network keeps at most one: setting a new one clears the previous one, and clearing it leaves none, in which case <code>calculate_powerflow</code> selects one; a bus never changes the flag of another bus)</small>; the solver objects <code>solver_PF</code> / <code>solver_OPF</code> / <code>solver_CPF</code> / <code>solver_ODE</code> / <code>solver_LIN</code> as persistent default analysis settings (see <a href="#solvers">Solver settings</a>).</dd>
+          <dt>Owns</dt><dd><code>a_Bus</code>, <code>a_Branch</code>, <code>a_GlobalController</code>; the simulation scenarios <code>a_Scenario</code> <small>(not model data: adding, removing, or editing a scenario does not make the equilibrium stale and is not logged)</small>; the system base values in <code>tab_parameter.base</code>: the network frequency <code>Hz</code> and the system <code>baseMVA</code> <small>(components and controllers read the frequency with <code>get_Hz()</code>; they never keep a copy)</small>; the slack bus <small>(the network keeps at most one: setting a new one clears the previous one, and clearing it leaves none, in which case <code>calculate_powerflow</code> selects one; a bus never changes the flag of another bus)</small>; the solver objects <code>solver_PF</code> / <code>solver_OPF</code> / <code>solver_CPF</code> / <code>solver_ODE</code> / <code>solver_LIN</code> as persistent default analysis settings (see <a href="#solvers">Solver settings</a>).</dd>
           <dt>Derived</dt><dd>Equilibria of all buses (<code>cv_Vequilibrium</code>, <code>cv_Iequilibrium</code>, <code>rv_Xequilibrium</code>); the network admittance matrix.</dd>
-          <dt>Methods</dt><dd><code>add_*</code> / <code>remove_*</code>; the analysis entry points (see <a href="api-design.html">API Design</a>); <code>get_admittance_matrix</code>; <code>linearize</code> and its shortcut <code>get_sys</code>; <code>get_variable_map</code>; <code>set_opffcn</code> / <code>reset_opffcn</code> for network-wide OPF terms (see <a href="#opf">OPF customization</a>).</dd>
+          <dt>Methods</dt><dd><code>add_*</code> / <code>remove_*</code> (including <code>add_scenario</code> / <code>remove_scenario</code>); the analysis entry points (see <a href="api-design.html">API Design</a>); <code>get_admittance_matrix</code>; <code>linearize</code> and its shortcut <code>get_sys</code>; <code>get_variable_map</code>; <code>set_opffcn</code> / <code>reset_opffcn</code> for network-wide OPF terms (see <a href="#opf">OPF customization</a>).</dd>
         </dl>
       </div>
       <div class="dg-row cd-c-bus">
@@ -218,15 +224,15 @@
       <div class="dg-row cd-c-other">
         <div><code class="cd-name">Analysis and result classes</code><span class="cd-role"><code>auxiliary</code> subclasses</span></div>
         <dl>
-          <dt>Does</dt><dd>Run analyses (power flow, CPF, simulation, linearization, IO, drawing) and hold their results.</dd>
-          <dt>Working data</dt><dd>Per-run working data (<code>iv_odeX</code> / <code>iv_odeI</code> / <code>iv_odeU</code> / <code>iv_odeY</code>, <code>lv_odeUfromLC</code> / <code>iv_odeYtoU</code>, <code>l_isFault</code>, <code>rv_Xoffset</code> / <code>rv_Uoffset</code>, <code>l_isConnect</code> of components and global controllers, <code>iv_CPFV</code> / <code>iv_CPFX</code> / <code>f_PQ2Bus</code>) lives on the model classes and is written by the analysis classes. It is not model data. Write access is restricted to the analysis classes: <code>ODEsolver</code> and <code>ODEevent</code> for the simulation data, and <code>CPFsolver</code> for the CPF data. <code>iv_ode*</code> of buses and components and <code>Component.lv_odeUfromLC</code> are the exception: <code>ODEsolver</code> and <code>Component</code> may write them, not <code>ODEevent</code>. <code>Component</code> may also write its own <code>l_isConnect</code>. <code>Bus.l_isFault</code> and <code>Component.l_isConnect</code> are also restricted for reading. See <a href="api-design.html#side-effects">API Design: Side effects</a> for what a simulation restores.</dd>
+          <dt>Does</dt><dd>Run analyses (power flow, CPF, simulation, linearization, IO, drawing) and hold their results. <code>Scenario</code> holds the timed disturbances of a simulation (faults, trips, branch openings, offsets, inputs), with its stored time, options, and judge function; it is owned by a network (<code>net.a_Scenario</code>) and builds the per-phase data of a run once (<code>Scenario.compile</code>, called by <code>ODEsolver.solve</code>).</dd>
+          <dt>Working data</dt><dd>Per-run working data (<code>iv_odeX</code> / <code>iv_odeI</code> / <code>iv_odeU</code> / <code>iv_odeY</code>, <code>lv_odeUfromLC</code> / <code>iv_odeYtoU</code>, <code>l_isFault</code>, <code>rv_Xoffset</code> / <code>rv_Uoffset</code>, <code>l_isConnect</code> of components and global controllers, <code>iv_CPFV</code> / <code>iv_CPFX</code> / <code>f_PQ2Bus</code>) lives on the model classes and is written by the analysis classes. It is not model data. Write access is restricted to the analysis classes: <code>ODEsolver</code> for the simulation data, and <code>CPFsolver</code> for the CPF data. <code>Scenario</code> only reads the network. <code>iv_ode*</code> of buses and components and <code>Component.lv_odeUfromLC</code> are the exception: <code>ODEsolver</code> and <code>Component</code> may write them. <code>Component</code> may also write its own <code>l_isConnect</code>. <code>Bus.l_isFault</code> and <code>Component.l_isConnect</code> are also restricted for reading. See <a href="api-design.html#side-effects">API Design: Side effects</a> for what a simulation restores.</dd>
         </dl>
       </div>
     </div>
 
     <!-- ============================== PARENTS ============================== -->
     <h2 id="parents">Parent references</h2>
-    <p>Each child keeps a read-only reference to its parent: <code>Bus.a_PowerNetwork</code>, <code>Branch.a_PowerNetwork</code>, <code>Component.a_Bus</code>, <code>LocalController.a_Component</code>, <code>GlobalController.a_PowerNetwork</code>, and the parent of each <code>Parameter</code>. They follow these rules:</p>
+    <p>Each child keeps a read-only reference to its parent: <code>Bus.a_PowerNetwork</code>, <code>Branch.a_PowerNetwork</code>, <code>Component.a_Bus</code>, <code>LocalController.a_Component</code>, <code>GlobalController.a_PowerNetwork</code>, <code>Scenario.a_PowerNetwork</code>, and the parent of each <code>Parameter</code>. They follow these rules:</p>
     <ol class="dg-list is-numbered">
       <li><div><span class="dg-item-title">Only the parent sets and clears it</span><p>The reference is set by the parent's constructor or <code>add_*</code> method and cleared by its <code>remove_*</code> method, so a removed object no longer points to its old parent. No other code writes it.</p></div></li>
       <li><div><span class="dg-item-title">A child only reads its parent</span><p>For the tag path, for edit notification, and for shared settings such as the frequency.</p></div></li>
@@ -236,10 +242,10 @@
     <!-- ============================== IDENTITY ============================== -->
     <h2 id="identity">Identity: tags, not indices</h2>
     <div class="cd-split">
-      <div class="is-ok"><span class="dg-kicker">Tag (e.g. <code>B001</code>)</span><p>The permanent ID of an object. Use it in saved data and in event definitions.</p></div>
+      <div class="is-ok"><span class="dg-kicker">Tag (e.g. <code>B001</code>)</span><p>The permanent ID of an object. Use it in saved data and in scenarios: a disturbance names its buses, branches, and units by tag, checked against the network when it is added and again when it is simulated.</p></div>
       <div class="is-err"><span class="dg-kicker">Index (e.g. <code>net.a_Bus{3}</code>)</span><p>Only the current position. It shifts after <code>remove_*</code>, so never store it.</p></div>
     </div>
-    <p>An automatic tag takes the largest number in use plus one (buses <code>B###</code>, branches <code>###</code>, components per bus). A number is never reused while a larger one exists, so a new tag never names an existing or earlier object. A global controller's tag is chosen by the user and must be unique.</p>
+    <p>An automatic tag takes the largest number in use plus one (buses <code>B###</code>, branches <code>###</code>, components per bus). A number is never reused while a larger one exists, so a new tag never names an existing or earlier object. A global controller's tag is chosen by the user and must be unique. So is the tag of a scenario among the scenarios of its network; adding a scenario of another network moves it, and <code>sc.copy()</code> gives an unattached duplicate.</p>
 
     <!-- ============================== SOLVERS ============================== -->
     <h2 id="solvers">Solver settings</h2>

@@ -239,8 +239,9 @@ net.a_Bus{2}.add_component("load-power");
 
 % Or start from a packaged network and analyse it
 net = network.IEEE14bus;
-fault = ODEevent("fault", net, "FaultBus", "B008", "TimeSpan", [3, 3.1]);
-sol = net.simulate([0, 50], fault);   % time response
+sc = Scenario("fault");  sc.add_fault("B008", [3, 3.1]);
+net.add_scenario(sc);
+sol = net.simulate([0, 50], sc);      % time response
 sys = net.get_sys();                  % linearized model</code></pre>
       </section>
 
@@ -352,8 +353,10 @@ sys = net.get_sys();                  % linearized model</code></pre>
       <h2>Your First Simulation</h2>
       <p>Load a packaged network, apply a short fault at one bus and simulate the response. The plot shows the frequency deviation of several generators.</p>
 <pre><code>net = network.IEEE14bus;
-fault = ODEevent("fault", net, "FaultBus", "B008", "TimeSpan", [3, 3.1]);
-sol = net.simulate([0, 50], fault);
+sc = Scenario("fault");
+sc.add_fault("B008", [3, 3.1]);       % ground fault on bus B008 from 3 s to 3.1 s
+net.add_scenario(sc);
+sol = net.simulate([0, 50], sc);
 
 xsol = sol.odeResults;
 figure;
@@ -418,13 +421,15 @@ powerflow = net.calculate_powerflow();
 net.initialize();</code></pre>
 
       <h2 id="tutorial-simulation">3. Run a Time-Domain Simulation</h2>
-      <p>Use <code>ODEevent</code> to describe disturbances. Events can represent state offsets, input changes, bus faults, unit trips, and branch openings.</p>
+      <p>Use a <code>Scenario</code> to describe disturbances. A scenario holds timed disturbances: state offsets, input changes, bus faults, unit trips, and branch openings. Add it to the network, then simulate it.</p>
 <pre><code>net = network.IEEE14bus;
-fault = ODEevent("fault", net, ...
-    "FaultBus", "B008", ...
-    "TimeSpan", [3, 3.1]);
+sc = Scenario("fault", Time=[0, 50]);
+sc.add_fault("B008", [3, 3.1]);           % ground fault from 3 s to 3.1 s
+sc.add_open_branch("EL013", [3.1, 50]);   % then a line opened until the end
+net.add_scenario(sc);
 
-sol = net.simulate([0, 50], fault);
+sol = net.simulate(sc);                   % the Time of the scenario
+verdict = sc.judge(sol);                  % "stable", "out-of-step" or "incomplete"
 xsol = sol.odeResults;
 
 figure;
@@ -446,8 +451,10 @@ pss = controller.pss.PSS1("pss1");
 net.a_Bus{1}.a_Component{1}.add_local_controller(avr, pss);
 net.initialize();
 
-fault = ODEevent("fault", net, "FaultBus", "B008", "TimeSpan", [3, 3.01]);
-sol = net.simulate([0, 50], fault);</code></pre>
+sc = Scenario("fault");
+sc.add_fault("B008", [3, 3.01]);
+net.add_scenario(sc);
+sol = net.simulate([0, 50], sc);</code></pre>
 
       <hr style="margin: 50px 0; border: 0; border-top: 1px solid var(--line);">
       
