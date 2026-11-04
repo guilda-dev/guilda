@@ -10,11 +10,12 @@ function [tab, summary] = compare_table4_5(opt)
 % MaxAngle [deg] (largest `|delta_i - delta_G10|`), Flag (of simulate). `summary` has the
 % agreement per section. Both are printed when Display is true.
 %
-% <@Examples>
+% Use (this folder is not on the MATLAB path; run GUILDA first). When the current folder
+% is not the GUILDA root, the root is added to the path for the run and removed after it:
+%
 % ```matlab
-% % from the root of the repository, after GUILDA
-% addpath(fullfile(pwd, "_GUILDAverification", "IEEJ_WEST10"));
-% tab = compare_table4_5();                               % governors on (default)
+% run(fullfile(GUILDA.pwd, "_GUILDAverification", "IEEJ_WEST10", "compare_table4_5.m"))
+% cd(fullfile(GUILDA.pwd, "_GUILDAverification", "IEEJ_WEST10"))
 % tab = compare_table4_5(Governor=false, Sections="peak", Cases=["A","L"], Plot=true);
 % ```
 %
@@ -33,6 +34,14 @@ function [tab, summary] = compare_table4_5(opt)
     end
 
     str_dir = fileparts(mfilename("fullpath"));
+    % GUILDA (the repository root) is found through the current folder only; add the root
+    % for this run when it is neither the current folder nor on the path (after cd, or
+    % inside run). which("GUILDA") is not empty there once the class has been loaded.
+    str_root = fileparts(fileparts(str_dir));
+    if ~any(strcmp(str_root, [string(pwd), split(string(path), pathsep).']))
+        addpath(str_root);
+        obj_cleanup = onCleanup(@() rmpath(str_root));
+    end
     tab_rep = readtable(fullfile(str_dir, "table4_5_report.csv"), "TextType", "string", "Delimiter", ",");
     tab_rep = tab_rep(ismember(tab_rep.Section, opt.Sections), :);
     if ~isempty(opt.Cases)

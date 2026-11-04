@@ -67,16 +67,19 @@ See the help of `network.IEEJ_EAST10` for the full list. The ones that matter he
 
 ## How to run
 
-From the GUILDA root folder, after `GUILDA` (the folder is not on the path):
+Start GUILDA from the repository root (`>> GUILDA`), then either run the comparison file
+with its defaults or change to this folder and call it with options:
 
 ```matlab
-addpath("_GUILDAverification/IEEJ_EAST10");
-tab = compare_table4_3();                                % with governors, both sections
+run(fullfile(GUILDA.pwd, "_GUILDAverification", "IEEJ_EAST10", "compare_table4_3.m"))
+
+cd(fullfile(GUILDA.pwd, "_GUILDAverification", "IEEJ_EAST10"))
 tab = compare_table4_3(Governor=false);                  % without governors
 tab = compare_table4_3(Sections="peak", Cases=21, Plot=true);   % one case with a plot
 ```
 
-`cd` into this folder also works when the GUILDA root folder is on the path. A full run
+This folder is not on the MATLAB path. When the current folder is not the GUILDA root,
+the function adds the root to the path for the run and removes it afterwards. A full run
 of the 44 cases takes a few minutes.
 
 ## Measured agreement

@@ -75,14 +75,19 @@ governors (the default network) and without them (`Governor=false`).
 
 ## How to run
 
-From the GUILDA root, after `GUILDA;`:
+Start GUILDA from the repository root (`>> GUILDA`), then either run the comparison file
+with its defaults or change to this folder and call it with options:
 
 ```matlab
-run("_GUILDAverification/IEEJ_EAST30/compare_table4_9.m")     % governors on, all 55 cases
-cd _GUILDAverification/IEEJ_EAST30
+run(fullfile(GUILDA.pwd, "_GUILDAverification", "IEEJ_EAST30", "compare_table4_9.m"))
+
+cd(fullfile(GUILDA.pwd, "_GUILDAverification", "IEEJ_EAST30"))
 [tab, r_agree] = compare_table4_9(Governor=false);
 tab = compare_table4_9(Sections="night", Circuits=2, Plot=true);
 ```
+
+This folder is not on the MATLAB path. When the current folder is not the GUILDA root,
+the function adds the root to the path for the run and removes it afterwards.
 
 `tab` has one row per case (report and GUILDA verdicts, time, generators, tolerance
 used, agreement) and `r_agree` is [agreeing cases, cases]. Options: `Governor`,

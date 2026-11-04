@@ -750,7 +750,8 @@ assert(d_v(1) > 1e-2, "地絡の始まりで電圧が解き直されていない
 %% Fault in IEEJ WEST10 keeps the rotor angles
 % IEEJ WEST10 (AVR の質量行列が対角でない) の B003 の地絡は、Tolerance 1e-6 では初期条件の
 % 計算が微分状態を固定できず、G1 の delta が地絡の直前に 1.5156 から 1.8073 へ跳んでいた
-% (警告 InitialConditionRelaxed のみで結果は誤り)。どの Tolerance でも跳ばない
+% (当時は警告 InitialConditionRelaxed を出すだけで結果は誤り。その警告は bf7512b で削除)。
+% どの Tolerance でも跳ばず、警告も出ない
 net = DebugScript.helper.quiet(@() network.IEEJ_WEST10(Section="peak"));
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.1,0.17], "FaultBus", "B003");
 for tol = [1e-4, 1e-6]

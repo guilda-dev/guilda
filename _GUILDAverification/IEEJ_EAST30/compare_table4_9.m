@@ -15,9 +15,12 @@ function [tab, r_agree] = compare_table4_9(opt)
 % without an out-of-step ("incomplete") is run again with the relative tolerance
 % RetryTolerance; if it is incomplete again the case does not agree.
 %
+% Use (this folder is not on the MATLAB path; run GUILDA first). When the current folder
+% is not the GUILDA root, the root is added to the path for the run and removed after it:
+%
 % ```matlab
-% run("_GUILDAverification/IEEJ_EAST30/compare_table4_9.m")   % governors on, all cases
-% cd _GUILDAverification/IEEJ_EAST30
+% run(fullfile(GUILDA.pwd, "_GUILDAverification", "IEEJ_EAST30", "compare_table4_9.m"))
+% cd(fullfile(GUILDA.pwd, "_GUILDAverification", "IEEJ_EAST30"))
 % [tab, r_agree] = compare_table4_9(Governor=false);
 % tab = compare_table4_9(Sections="night", Circuits=2);
 % ```
@@ -38,8 +41,13 @@ function [tab, r_agree] = compare_table4_9(opt)
         r_agree (1,2) double % [number of agreeing cases, number of cases].
     end
     str_dir = fileparts(mfilename("fullpath"));
-    if isempty(which("GUILDA"))   % GUILDA root (with @GUILDA) on the path, for runs after cd here
-        addpath(fileparts(fileparts(str_dir)));
+    % GUILDA (the repository root) is found through the current folder only; add the root
+    % for this run when it is neither the current folder nor on the path (after cd, or
+    % inside run). which("GUILDA") is not empty there once the class has been loaded.
+    str_root = fileparts(fileparts(str_dir));
+    if ~any(strcmp(str_root, [string(pwd), split(string(path), pathsep).']))
+        addpath(str_root);
+        obj_cleanup = onCleanup(@() rmpath(str_root));
     end
     str_csv = fullfile(str_dir, "table4_9_scenarios.csv");
     o = detectImportOptions(fullfile(str_dir, "table4_9_report.csv"), "Delimiter", ",", "TextType", "string");

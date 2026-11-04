@@ -67,7 +67,8 @@ here and only the report's unstable cases agree.
 
 ## How to run
 
-Start GUILDA from the repository root, then:
+Start GUILDA from the repository root (`>> GUILDA`), then either run the comparison file
+with its defaults or change to this folder and call it with options:
 
 ```matlab
 run(fullfile(GUILDA.pwd, "_GUILDAverification", "IEEJ_WEST30", "compare_table4_13.m"))
@@ -76,6 +77,9 @@ cd(fullfile(GUILDA.pwd, "_GUILDAverification", "IEEJ_WEST30"))
 tab = compare_table4_13(Governor=false);                  % without the governors
 tab = compare_table4_13(Sections="night", Cases=["A","D"], Plot=true);
 ```
+
+This folder is not on the MATLAB path. When the current folder is not the GUILDA root,
+the function adds the root to the path for the run and removes it afterwards.
 
 Options: `Governor` (default true), `Sections` ("peak", "night"), `Cases` ("A" to "F"),
 `TimeEnd` (at most 20 s), `TimeLimit`, `Plot`, `Display`. The output table has one row

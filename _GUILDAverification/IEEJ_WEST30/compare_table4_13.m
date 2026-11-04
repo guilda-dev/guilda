@@ -54,9 +54,10 @@ function [tab, c_result] = compare_table4_13(opt)
     end
     str_dir = fileparts(mfilename("fullpath"));
     % GUILDA (the repository root) is found through the current folder only; add the root
-    % for this run when the current folder is elsewhere (after cd, or inside run).
-    if isempty(which("GUILDA"))
-        str_root = fileparts(fileparts(str_dir));
+    % for this run when it is neither the current folder nor on the path (after cd, or
+    % inside run). which("GUILDA") is not empty there once the class has been loaded.
+    str_root = fileparts(fileparts(str_dir));
+    if ~any(strcmp(str_root, [string(pwd), split(string(path), pathsep).']))
         addpath(str_root);
         obj_cleanup = onCleanup(@() rmpath(str_root));
     end
