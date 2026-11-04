@@ -17,25 +17,23 @@
     .opf-prob { font-size: 0.86rem; }
     .opf-prob td { overflow-wrap: break-word; }
     .opf-opts td:first-child, .opf-data td:first-child { white-space: nowrap; }
-    /* Step cards: ID + call on top, then Does / Reads / Returns as labelled rows */
-    .opf-steps { list-style: none; margin: 16px 0 24px; padding: 0; font-size: 0.9rem; line-height: 1.55; }
-    .opf-steps > li { margin: 0 0 10px; padding: 10px 14px; border: 1px solid var(--dg-line); border-radius: 8px; background: var(--dg-card); }
-    .opf-steps > li.opf-loop { border-left: 4px solid var(--dg-accent); }
-    .opf-steps > li > p { margin: 0 0 8px; }
-    .opf-steps > li > p > b { margin-right: 0.6em; color: var(--dg-accent); font-family: var(--dg-mono); }
-    .opf-steps > li > p > small { display: block; color: var(--dg-muted); }
-    .opf-steps dl { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 4px 14px; margin: 0; }
-    .opf-steps dt { margin: 0; color: var(--dg-muted); font-size: 0.75rem; font-weight: bold; line-height: 2; }
-    .opf-steps dd { margin: 0; }
-    .opf-steps dd ul { margin: 2px 0 0; padding-left: 1.2em; list-style: disc; }
-    .opf-steps dd li { margin: 0; }
-    .opf-steps code { overflow-wrap: anywhere; }
+    /* Step list (fs-*): one block per step, ID + call as the head, labelled descriptions below. Same block on every feature page. */
+    .fs-steps { margin: var(--dg-s3) 0 var(--dg-s5); padding: 0; list-style: none; font-size: 0.9rem; line-height: 1.55; }
+    .fs-step { padding: 12px 0; border-bottom: 1px solid var(--dg-line); scroll-margin-top: 80px; }
+    .fs-step:first-child { border-top: 1px solid var(--dg-line); }
+    .fs-head { margin: 0 0 6px; overflow-wrap: anywhere; }
+    .fs-id { margin-right: 10px; color: var(--dg-accent); font-family: var(--dg-mono); }
+    .fs-head small { display: block; margin-top: 2px; color: var(--dg-muted); font-size: 0.88em; }
+    .fs-body { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: 4px 14px; margin: 0; }
+    .fs-body dt { padding-top: 0.15rem; color: var(--dg-muted); font-size: 0.72rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+    .fs-body dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+    .fs-body ul { margin: 0; padding-left: 1.1em; list-style: disc; }
+    .fs-steps code { background: var(--code-bg); padding: 1px 5px; border-radius: var(--radius); color: var(--ink); }
+    .fs-step.opf-loop { padding-left: 10px; box-shadow: inset 3px 0 0 var(--dg-accent); }   /* step repeats (page-local) */
     @media (max-width: 640px) {
       .opf-opts td:first-child, .opf-data td:first-child { white-space: normal; }
-      .opf-steps > li { padding: 8px 10px; }
-      .opf-steps dl { grid-template-columns: 1fr; gap: 0; }
-      .opf-steps dt { line-height: 1.6; }
-      .opf-steps dd { margin-bottom: 6px; }
+      .fs-body { display: block; }
+      .fs-body dt { margin-top: 6px; }
     }
   </style>
 </head>
@@ -194,325 +192,250 @@
     <h2 id="steps"><span lang="en">Steps</span><span lang="ja">処理ステップ</span></h2>
     <p lang="en">Private helpers: local functions in the file of the calling method (<code>@SolverOPF/solve.m</code>, <code>@PowerNetwork/build_opf_problem.m</code>, <code>@Branch/build_opf_problem.m</code>, ...). <code>+opffcn</code> package: <code>_GUILDAsystem/_auxiliary/</code>.</p>
     <p lang="ja">非公開の補助関数: 呼び出し元メソッドのファイル（<code>@SolverOPF/solve.m</code>、<code>@PowerNetwork/build_opf_problem.m</code>、<code>@Branch/build_opf_problem.m</code> など）のローカル関数。<code>+opffcn</code> パッケージ: <code>_GUILDAsystem/_auxiliary/</code>。</p>
-    <ol class="opf-steps">
-      <li>
-        <p><b>OPF-01</b> user → <code>PowerNetwork.optimize_powerflow</code><small><code>v3_opf_args</code>, <code>take_call_options</code></small></p>
-        <dl>
+    <ol class="fs-steps">
+      <li class="fs-step" id="OPF-01">
+        <p class="fs-head"><b class="fs-id">OPF-01</b> <span class="fs-call">user → <code>PowerNetwork.optimize_powerflow</code></span><small><code>v3_opf_args</code>, <code>take_call_options</code></small></p>
+        <dl class="fs-body">
           <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
-          <dd lang="en">Maps the deprecated option <code>methods</code> to <code>Method</code>; separates <code>Plot</code> and <code>Export</code> from the solver options.</dd>
-          <dd lang="ja">非推奨オプション <code>methods</code> を <code>Method</code> に変換。<code>Plot</code> と <code>Export</code> をソルバーのオプションから分離</dd>
-          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
+          <dd><span lang="en">Maps the deprecated option <code>methods</code> to <code>Method</code>; separates <code>Plot</code> and <code>Export</code> from the solver options.</span><span lang="ja">非推奨オプション <code>methods</code> を <code>Method</code> に変換。<code>Plot</code> と <code>Export</code> をソルバーのオプションから分離</span></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
           <dd><code>varargin</code></dd>
-          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
           <dd><code>c_nv</code>, <code>opt.Plot</code>, <code>opt.Export</code></dd>
         </dl>
       </li>
-      <li>
-        <p><b>OPF-02</b> <code>optimize_powerflow</code> → <code>SolverOPF.get_options</code><small>→ <code>tools.resolve_options</code>, <code>validate_options</code></small></p>
-        <dl>
+      <li class="fs-step" id="OPF-02">
+        <p class="fs-head"><b class="fs-id">OPF-02</b> <span class="fs-call"><code>optimize_powerflow</code> → <code>SolverOPF.get_options</code></span><small>→ <code>tools.resolve_options</code>, <code>validate_options</code></small></p>
+        <dl class="fs-body">
           <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
-          <dd lang="en">Maps the Name-Value names through <code>OptionMap</code>, checks the values, fills the rest from the solver.</dd>
-          <dd lang="ja">Name-Value の名前を <code>OptionMap</code> で対応づけ、値を検査。残りの設定はソルバーから補完</dd>
-          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
-          <dd lang="en"><code>c_nv</code>; public properties of <code>net.solver_OPF</code></dd>
-          <dd lang="ja"><code>c_nv</code>、<code>net.solver_OPF</code> の public プロパティ</dd>
-          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
-          <dd lang="en"><code>s_options</code>: struct with 11 fields (<code>Method</code>, <code>Solver</code>, <code>Algorithm_*</code>, <code>Display</code>, <code>MaxIteration</code>, ...). Solver unchanged.</dd>
-          <dd lang="ja"><code>s_options</code>: 11 フィールドの構造体（<code>Method</code>、<code>Solver</code>、<code>Algorithm_*</code>、<code>Display</code>、<code>MaxIteration</code> など）。ソルバーは不変</dd>
+          <dd><span lang="en">Maps the Name-Value names through <code>OptionMap</code>, checks the values, fills the rest from the solver.</span><span lang="ja">Name-Value の名前を <code>OptionMap</code> で対応づけ、値を検査。残りの設定はソルバーから補完</span></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>c_nv</code>; public properties of <code>net.solver_OPF</code></span><span lang="ja"><code>c_nv</code>、<code>net.solver_OPF</code> の public プロパティ</span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en"><code>s_options</code>: struct with 11 fields (<code>Method</code>, <code>Solver</code>, <code>Algorithm_*</code>, <code>Display</code>, <code>MaxIteration</code>, ...). Solver unchanged.</span><span lang="ja"><code>s_options</code>: 11 フィールドの構造体（<code>Method</code>、<code>Solver</code>、<code>Algorithm_*</code>、<code>Display</code>、<code>MaxIteration</code> など）。ソルバーは不変</span></dd>
         </dl>
       </li>
-      <li>
-        <p><b>OPF-03</b> <code>optimize_powerflow</code> → <code>SolverOPF.solve(net, s_options)</code></p>
-        <dl>
+      <li class="fs-step" id="OPF-03">
+        <p class="fs-head"><b class="fs-id">OPF-03</b> <span class="fs-call"><code>optimize_powerflow</code> → <code>SolverOPF.solve(net, s_options)</code></span></p>
+        <dl class="fs-body">
           <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
-          <dd lang="en">Starts the timer; runs OPF-04 to OPF-15.</dd>
-          <dd lang="ja">タイマー開始。OPF-04〜OPF-15 を実行</dd>
-          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
+          <dd><span lang="en">Starts the timer; runs OPF-04 to OPF-15.</span><span lang="ja">タイマー開始。OPF-04〜OPF-15 を実行</span></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
           <dd><code>s_options.Method</code></dd>
-          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
           <dd><code>[result, flag, output]</code></dd>
         </dl>
       </li>
-      <li>
-        <p><b>OPF-04</b> <code>SolverOPF.solve</code> → <code>PowerNetwork.build_opf_problem("Method", m)</code><small>→ <code>build_problem</code></small></p>
-        <dl>
+      <li class="fs-step" id="OPF-04">
+        <p class="fs-head"><b class="fs-id">OPF-04</b> <span class="fs-call"><code>SolverOPF.solve</code> → <code>PowerNetwork.build_opf_problem("Method", m)</code></span><small>→ <code>build_problem</code></small></p>
+        <dl class="fs-body">
           <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
-          <dd lang="en">
-            <ul>
+          <dd><ul lang="en">
               <li>Writes the OPF settings and the network tree into the problem's <code>Description</code>.</li>
               <li>Creates <code>optimproblem</code> (minimize, <code>Objective.GenCost = 0</code>).</li>
               <li><code>"ELD"</code>: starts the single balance <code>const.P = 0</code>.</li>
-            </ul>
-          </dd>
-          <dd lang="ja">
-            <ul>
+            </ul><ul lang="ja">
               <li>OPF の設定とネットワークの木構造を問題の <code>Description</code> に記録</li>
               <li><code>optimproblem</code> を作成（最小化、<code>Objective.GenCost = 0</code>）</li>
               <li><code>"ELD"</code>: 単一の需給式 <code>const.P = 0</code> を用意</li>
-            </ul>
-          </dd>
-          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
-          <dd lang="en"><code>tab_parameter</code> (<code>operation</code>, <code>powerflow</code>, <code>OPF</code>) of buses, components, branches; <code>disp_tree</code></dd>
-          <dd lang="ja">母線・機器・ブランチの <code>tab_parameter</code>（<code>operation</code>、<code>powerflow</code>、<code>OPF</code>）、<code>disp_tree</code></dd>
-          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
-          <dd lang="en"><code>prob</code>, <code>x0</code>, <code>const</code>, <code>Vvar</code> (empty structs)</dd>
-          <dd lang="ja"><code>prob</code>、<code>x0</code>、<code>const</code>、<code>Vvar</code>（空の構造体）</dd>
+            </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>tab_parameter</code> (<code>operation</code>, <code>powerflow</code>, <code>OPF</code>) of buses, components, branches; <code>disp_tree</code></span><span lang="ja">母線・機器・ブランチの <code>tab_parameter</code>（<code>operation</code>、<code>powerflow</code>、<code>OPF</code>）、<code>disp_tree</code></span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en"><code>prob</code>, <code>x0</code>, <code>const</code>, <code>Vvar</code> (empty structs)</span><span lang="ja"><code>prob</code>、<code>x0</code>、<code>const</code>、<code>Vvar</code>（空の構造体）</span></dd>
         </dl>
       </li>
-      <li>
-        <p><b>OPF-05</b> <code>build_problem</code> → <code>Bus.build_opf_problem(prob, x0, const, Vvar, "methods", m)</code></p>
-        <dl>
+      <li class="fs-step" id="OPF-05">
+        <p class="fs-head"><b class="fs-id">OPF-05</b> <span class="fs-call"><code>build_problem</code> → <code>Bus.build_opf_problem(prob, x0, const, Vvar, "methods", m)</code></span></p>
+        <dl class="fs-body">
           <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
-          <dd lang="en">For each bus in <code>net.a_Bus</code> order:
-            <ul>
+          <dd><span lang="en">For each bus in <code>net.a_Bus</code> order:</span><ul lang="en">
               <li>the bus variable and the shunt terms of its power balance (see the table below);</li>
               <li>its components (OPF-06);</li>
               <li>its own <code>set_opffcn</code> terms (OPF-07, not in <code>"ELD"</code>).</li>
-            </ul>
-          </dd>
-          <dd lang="ja"><code>net.a_Bus</code> の順に母線ごとに追加:
-            <ul>
+            </ul><span lang="ja"><code>net.a_Bus</code> の順に母線ごとに追加:</span><ul lang="ja">
               <li>母線の変数と需給式のシャント項（下の表を参照）</li>
               <li>接続する機器（OPF-06）</li>
               <li>母線自身の <code>set_opffcn</code> の項（OPF-07、<code>"ELD"</code> 以外）</li>
-            </ul>
-          </dd>
-          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
+            </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
           <dd><code>para_powerflow</code> (<code>Varg0</code>, <code>V0</code>), <code>para_operation</code> (<code>Vmin</code>, <code>Vmax</code>), <code>para_dynamics</code> (<code>Gshunt</code>, <code>Bshunt</code>), <code>s_opffcn.DefaultConstraint</code></dd>
-          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
-          <dd lang="en">variable <code>&lt;bus&gt;</code>; <code>x0.&lt;bus&gt;</code>; <code>const.P_&lt;bus&gt;</code>, <code>const.Q_&lt;bus&gt;</code>; <code>Vvar.&lt;bus&gt;</code></dd>
-          <dd lang="ja">変数 <code>&lt;bus&gt;</code>、<code>x0.&lt;bus&gt;</code>、<code>const.P_&lt;bus&gt;</code>、<code>const.Q_&lt;bus&gt;</code>、<code>Vvar.&lt;bus&gt;</code></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en">variable <code>&lt;bus&gt;</code>; <code>x0.&lt;bus&gt;</code>; <code>const.P_&lt;bus&gt;</code>, <code>const.Q_&lt;bus&gt;</code>; <code>Vvar.&lt;bus&gt;</code></span><span lang="ja">変数 <code>&lt;bus&gt;</code>、<code>x0.&lt;bus&gt;</code>、<code>const.P_&lt;bus&gt;</code>、<code>const.Q_&lt;bus&gt;</code>、<code>Vvar.&lt;bus&gt;</code></span></dd>
         </dl>
       </li>
-      <li>
-        <p><b>OPF-06</b> <code>Bus.build_opf_problem</code> → <code>Component.build_opf_problem</code><small><code>cost_term</code></small></p>
-        <dl>
+      <li class="fs-step" id="OPF-06">
+        <p class="fs-head"><b class="fs-id">OPF-06</b> <span class="fs-call"><code>Bus.build_opf_problem</code> → <code>Component.build_opf_problem</code></span><small><code>cost_term</code></small></p>
+        <dl class="fs-body">
           <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
-          <dd lang="en">
-            <ul>
+          <dd><ul lang="en">
               <li>Adds the output variable with its bounds, and adds it to the power balance of its bus.</li>
               <li>Adds the default cost unless <code>set_opffcn</code> gave a <code>Cost</code>; <code>cost_term</code> leaves out zero coefficients.</li>
               <li>A load (<code>component.load.abstract</code>) with infinite bounds is fixed to its power-flow <code>P</code> / <code>Q</code>.</li>
-            </ul>
-          </dd>
-          <dd lang="ja">
-            <ul>
+            </ul><ul lang="ja">
               <li>出力の変数を上下限付きで追加し、その母線の需給式に加算</li>
               <li><code>set_opffcn</code> の <code>Cost</code> がなければ既定のコストを追加。<code>cost_term</code> はゼロの係数を省略</li>
               <li>上下限が無限大の負荷（<code>component.load.abstract</code>）は潮流計算の <code>P</code> / <code>Q</code> に固定</li>
-            </ul>
-          </dd>
-          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
-          <dd lang="en"><code>para_OPF</code> (<code>P0</code>, <code>Q0</code>, <code>HP</code>, <code>fP</code>, <code>HQ</code>, <code>fQ</code>), <code>para_operation</code> (<code>Pmin</code>, <code>Pmax</code>, <code>Qmin</code>, <code>Qmax</code>), <code>para_powerflow</code> (loads), <code>s_opffcn</code></dd>
-          <dd lang="ja"><code>para_OPF</code>（<code>P0</code>、<code>Q0</code>、<code>HP</code>、<code>fP</code>、<code>HQ</code>、<code>fQ</code>）、<code>para_operation</code>（<code>Pmin</code>、<code>Pmax</code>、<code>Qmin</code>、<code>Qmax</code>）、<code>para_powerflow</code>（負荷）、<code>s_opffcn</code></dd>
-          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
-          <dd lang="en">variable <code>&lt;component&gt;</code>; <code>x0.&lt;component&gt;</code>; terms in <code>const</code> and <code>prob.Objective.GenCost</code></dd>
-          <dd lang="ja">変数 <code>&lt;component&gt;</code>、<code>x0.&lt;component&gt;</code>、<code>const</code> と <code>prob.Objective.GenCost</code> の項</dd>
+            </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>para_OPF</code> (<code>P0</code>, <code>Q0</code>, <code>HP</code>, <code>fP</code>, <code>HQ</code>, <code>fQ</code>), <code>para_operation</code> (<code>Pmin</code>, <code>Pmax</code>, <code>Qmin</code>, <code>Qmax</code>), <code>para_powerflow</code> (loads), <code>s_opffcn</code></span><span lang="ja"><code>para_OPF</code>（<code>P0</code>、<code>Q0</code>、<code>HP</code>、<code>fP</code>、<code>HQ</code>、<code>fQ</code>）、<code>para_operation</code>（<code>Pmin</code>、<code>Pmax</code>、<code>Qmin</code>、<code>Qmax</code>）、<code>para_powerflow</code>（負荷）、<code>s_opffcn</code></span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en">variable <code>&lt;component&gt;</code>; <code>x0.&lt;component&gt;</code>; terms in <code>const</code> and <code>prob.Objective.GenCost</code></span><span lang="ja">変数 <code>&lt;component&gt;</code>、<code>x0.&lt;component&gt;</code>、<code>const</code> と <code>prob.Objective.GenCost</code> の項</span></dd>
         </dl>
       </li>
-      <li>
-        <p><b>OPF-07</b> <code>Component</code> / <code>Bus.build_opf_problem</code> → <code>opffcn.apply(obj, prob, m, s_var)</code><small>→ <code>opffcn.variables</code>, <code>opffcn.param</code></small></p>
-        <dl>
+      <li class="fs-step" id="OPF-07">
+        <p class="fs-head"><b class="fs-id">OPF-07</b> <span class="fs-call"><code>Component</code> / <code>Bus.build_opf_problem</code> → <code>opffcn.apply(obj, prob, m, s_var)</code></span><small>→ <code>opffcn.variables</code>, <code>opffcn.param</code></small></p>
+        <dl class="fs-body">
           <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
-          <dd lang="en">Adds the user terms of the object; nothing when neither handle is set.
-            <ul>
+          <dd><span lang="en">Adds the user terms of the object; nothing when neither handle is set.</span><ul lang="en">
               <li><code>Cost(v, p)</code> → the objective</li>
               <li>each field <code>&lt;name&gt;</code> of <code>Constraint(v, p)</code> → <code>prob.Constraints.&lt;name&gt;_&lt;tag&gt;</code></li>
-            </ul>
-          </dd>
-          <dd lang="ja">オブジェクトのユーザー定義の項を追加。どちらのハンドルもなければ何もしない
-            <ul>
+            </ul><span lang="ja">オブジェクトのユーザー定義の項を追加。どちらのハンドルもなければ何もしない</span><ul lang="ja">
               <li><code>Cost(v, p)</code> → 目的関数</li>
               <li><code>Constraint(v, p)</code> の各フィールド <code>&lt;name&gt;</code> → <code>prob.Constraints.&lt;name&gt;_&lt;tag&gt;</code></li>
-            </ul>
-          </dd>
-          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
-          <dd lang="en"><code>s_opffcn.Cost</code>, <code>.Constraint</code>; the object's variables (<code>v.P</code>, <code>v.Q</code>; <code>v.Varg</code>, <code>v.V</code>); its <code>para_*</code> tables as <code>p</code></dd>
-          <dd lang="ja"><code>s_opffcn.Cost</code>、<code>.Constraint</code>、オブジェクトの変数（<code>v.P</code>、<code>v.Q</code>、<code>v.Varg</code>、<code>v.V</code>）、<code>p</code> としての <code>para_*</code> の表</dd>
-          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
-          <dd lang="en"><code>prob</code> with the terms added</dd>
-          <dd lang="ja">項を加えた <code>prob</code></dd>
+            </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>s_opffcn.Cost</code>, <code>.Constraint</code>; the object's variables (<code>v.P</code>, <code>v.Q</code>; <code>v.Varg</code>, <code>v.V</code>); its <code>para_*</code> tables as <code>p</code></span><span lang="ja"><code>s_opffcn.Cost</code>、<code>.Constraint</code>、オブジェクトの変数（<code>v.P</code>、<code>v.Q</code>、<code>v.Varg</code>、<code>v.V</code>）、<code>p</code> としての <code>para_*</code> の表</span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en"><code>prob</code> with the terms added</span><span lang="ja">項を加えた <code>prob</code></span></dd>
         </dl>
       </li>
-      <li>
-        <p><b>OPF-08</b> <code>build_problem</code><small><code>tools.slack_bus_index</code></small></p>
-        <dl>
+      <li class="fs-step" id="OPF-08">
+        <p class="fs-head"><b class="fs-id">OPF-08</b> <span class="fs-call"><code>build_problem</code></span><small><code>tools.slack_bus_index</code></small></p>
+        <dl class="fs-body">
           <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
-          <dd lang="en">Fixes the reference angle (not in <code>"ELD"</code> or with <code>net.set_opffcn(DefaultConstraint=false)</code>): the bus of <code>tools.slack_bus_index</code>, or the first bus, keeps its power-flow <code>Varg</code> (0 when NaN). <code>l_isSlack</code> is not set.</dd>
-          <dd lang="ja">基準位相角を固定（<code>"ELD"</code> と <code>net.set_opffcn(DefaultConstraint=false)</code> では省略）。<code>tools.slack_bus_index</code> の母線（なければ最初の母線）が潮流計算の <code>Varg</code>（NaN なら 0）を維持。<code>l_isSlack</code> は設定しない</dd>
-          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
-          <dd lang="en"><code>Bus.l_isSlack</code>, component <code>Q</code> settings, <code>para_powerflow.Varg</code>, <code>net.s_opffcn</code></dd>
-          <dd lang="ja"><code>Bus.l_isSlack</code>、機器の <code>Q</code> 設定、<code>para_powerflow.Varg</code>、<code>net.s_opffcn</code></dd>
-          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
+          <dd><span lang="en">Fixes the reference angle (not in <code>"ELD"</code> or with <code>net.set_opffcn(DefaultConstraint=false)</code>): the bus of <code>tools.slack_bus_index</code>, or the first bus, keeps its power-flow <code>Varg</code> (0 when NaN). <code>l_isSlack</code> is not set.</span><span lang="ja">基準位相角を固定（<code>"ELD"</code> と <code>net.set_opffcn(DefaultConstraint=false)</code> では省略）。<code>tools.slack_bus_index</code> の母線（なければ最初の母線）が潮流計算の <code>Varg</code>（NaN なら 0）を維持。<code>l_isSlack</code> は設定しない</span></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>Bus.l_isSlack</code>, component <code>Q</code> settings, <code>para_powerflow.Varg</code>, <code>net.s_opffcn</code></span><span lang="ja"><code>Bus.l_isSlack</code>、機器の <code>Q</code> 設定、<code>para_powerflow.Varg</code>、<code>net.s_opffcn</code></span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
           <dd><code>prob.Constraints.VargRef</code></dd>
         </dl>
       </li>
-      <li>
-        <p><b>OPF-09</b> <code>build_problem</code> → <code>Branch.build_opf_problem(prob, x0, const, Vvar, "methods", m)</code><small><code>dc_susceptance</code>; → <code>opffcn.apply</code></small></p>
-        <dl>
+      <li class="fs-step" id="OPF-09">
+        <p class="fs-head"><b class="fs-id">OPF-09</b> <span class="fs-call"><code>build_problem</code> → <code>Branch.build_opf_problem(prob, x0, const, Vvar, "methods", m)</code></span><small><code>dc_susceptance</code>; → <code>opffcn.apply</code></small></p>
+        <dl class="fs-body">
           <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
-          <dd lang="en">For each branch (not in <code>"ELD"</code>), adds:
-            <ul>
+          <dd><span lang="en">For each branch (not in <code>"ELD"</code>), adds:</span><ul lang="en">
               <li>the angle-difference limit;</li>
               <li>one variable per end, <code>&lt;branch&gt;_&lt;bus&gt;</code>: the flow from the branch into that bus (initial point: the flow at the initial bus voltages);</li>
               <li>the definitions of the flows from the end-bus variables, and the flow limits;</li>
               <li>the end flows to the balance of each end bus;</li>
               <li>its <code>set_opffcn</code> terms.</li>
-            </ul>
-          </dd>
-          <dd lang="ja">各ブランチについて追加（<code>"ELD"</code> 以外）:
-            <ul>
+            </ul><span lang="ja">各ブランチについて追加（<code>"ELD"</code> 以外）:</span><ul lang="ja">
               <li>位相角差の制約</li>
               <li>端ごとに 1 つの変数 <code>&lt;branch&gt;_&lt;bus&gt;</code>: ブランチからその母線へ流れ込む潮流（初期点は母線の初期電圧での潮流）</li>
               <li>両端の母線変数による潮流の定義と、潮流の制約</li>
               <li>各端の母線の需給式への端の潮流</li>
               <li>ブランチの <code>set_opffcn</code> の項</li>
-            </ul>
-          </dd>
-          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
-          <dd lang="en"><code>Vvar</code> and <code>x0</code> of the end buses; <code>para_operation</code> (<code>Pmax</code>, <code>Qmax</code>, <code>Imax</code>, <code>Smax</code>, <code>Vargmax</code>); <code>get_admittance_matrix</code> (AC); <code>X</code>, <code>tap</code>, <code>phase</code> (DC)</dd>
-          <dd lang="ja">両端の母線の <code>Vvar</code> と <code>x0</code>、<code>para_operation</code>（<code>Pmax</code>、<code>Qmax</code>、<code>Imax</code>、<code>Smax</code>、<code>Vargmax</code>）、<code>get_admittance_matrix</code>（AC）、<code>X</code>、<code>tap</code>、<code>phase</code>（DC）</dd>
-          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
-          <dd lang="en">2 end variables; constraints <code>VargMax1_</code>, <code>VargMax2_</code>, <code>defIre_</code>, <code>defIim_</code>, <code>defP_</code>, <code>defQ_</code>, <code>Imax_</code>, <code>Smax_</code>; terms in <code>const</code></dd>
-          <dd lang="ja">端の変数 2 つ、制約 <code>VargMax1_</code>、<code>VargMax2_</code>、<code>defIre_</code>、<code>defIim_</code>、<code>defP_</code>、<code>defQ_</code>、<code>Imax_</code>、<code>Smax_</code>、<code>const</code> の項</dd>
+            </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>Vvar</code> and <code>x0</code> of the end buses; <code>para_operation</code> (<code>Pmax</code>, <code>Qmax</code>, <code>Imax</code>, <code>Smax</code>, <code>Vargmax</code>); <code>get_admittance_matrix</code> (AC); <code>X</code>, <code>tap</code>, <code>phase</code> (DC)</span><span lang="ja">両端の母線の <code>Vvar</code> と <code>x0</code>、<code>para_operation</code>（<code>Pmax</code>、<code>Qmax</code>、<code>Imax</code>、<code>Smax</code>、<code>Vargmax</code>）、<code>get_admittance_matrix</code>（AC）、<code>X</code>、<code>tap</code>、<code>phase</code>（DC）</span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en">2 end variables; constraints <code>VargMax1_</code>, <code>VargMax2_</code>, <code>defIre_</code>, <code>defIim_</code>, <code>defP_</code>, <code>defQ_</code>, <code>Imax_</code>, <code>Smax_</code>; terms in <code>const</code></span><span lang="ja">端の変数 2 つ、制約 <code>VargMax1_</code>、<code>VargMax2_</code>、<code>defIre_</code>、<code>defIim_</code>、<code>defP_</code>、<code>defQ_</code>、<code>Imax_</code>、<code>Smax_</code>、<code>const</code> の項</span></dd>
         </dl>
       </li>
-      <li>
-        <p><b>OPF-10</b> <code>build_problem</code></p>
-        <dl>
+      <li class="fs-step" id="OPF-10">
+        <p class="fs-head"><b class="fs-id">OPF-10</b> <span class="fs-call"><code>build_problem</code></span></p>
+        <dl class="fs-body">
           <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
-          <dd lang="en">Turns every collected injection sum into an equality. The power balance of each bus stays, also with <code>DefaultConstraint=false</code>.</dd>
-          <dd lang="ja">集めた注入の和をすべて等式制約に変換。各母線の需給式は <code>DefaultConstraint=false</code> でも残存</dd>
-          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
+          <dd><span lang="en">Turns every collected injection sum into an equality. The power balance of each bus stays, also with <code>DefaultConstraint=false</code>.</span><span lang="ja">集めた注入の和をすべて等式制約に変換。各母線の需給式は <code>DefaultConstraint=false</code> でも残存</span></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
           <dd><code>const</code></dd>
-          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
-          <dd lang="en"><code>balancedP_&lt;bus&gt;</code>, <code>balancedQ_&lt;bus&gt;</code> (AC); <code>balancedP</code> (ELD)</dd>
-          <dd lang="ja"><code>balancedP_&lt;bus&gt;</code>、<code>balancedQ_&lt;bus&gt;</code>（AC）、<code>balancedP</code>（ELD）</dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en"><code>balancedP_&lt;bus&gt;</code>, <code>balancedQ_&lt;bus&gt;</code> (AC); <code>balancedP</code> (ELD)</span><span lang="ja"><code>balancedP_&lt;bus&gt;</code>、<code>balancedQ_&lt;bus&gt;</code>（AC）、<code>balancedP</code>（ELD）</span></dd>
         </dl>
       </li>
-      <li>
-        <p><b>OPF-11</b> <code>build_problem</code> → <code>opffcn.apply(net, prob, m, Vvar)</code></p>
-        <dl>
+      <li class="fs-step" id="OPF-11">
+        <p class="fs-head"><b class="fs-id">OPF-11</b> <span class="fs-call"><code>build_problem</code> → <code>opffcn.apply(net, prob, m, Vvar)</code></span></p>
+        <dl class="fs-body">
           <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
-          <dd lang="en">Adds the network-wide terms of <code>net.set_opffcn</code>.
-            <ul>
+          <dd><span lang="en">Adds the network-wide terms of <code>net.set_opffcn</code>.</span><ul lang="en">
               <li><code>v</code>: every object by tag (<code>v.Component.(tag).P</code>, ...)</li>
               <li><code>p</code>: <code>Method</code> and <code>base</code></li>
               <li>constraint names without suffix</li>
-            </ul>
-          </dd>
-          <dd lang="ja"><code>net.set_opffcn</code> によるネットワーク全体の項を追加
-            <ul>
+            </ul><span lang="ja"><code>net.set_opffcn</code> によるネットワーク全体の項を追加</span><ul lang="ja">
               <li><code>v</code>: タグで各オブジェクトを参照（<code>v.Component.(tag).P</code> など）</li>
               <li><code>p</code>: <code>Method</code> と <code>base</code></li>
               <li>制約名に接尾辞なし</li>
-            </ul>
-          </dd>
-          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
-          <dd lang="en"><code>net.s_opffcn</code>; <code>prob.Variables</code></dd>
-          <dd lang="ja"><code>net.s_opffcn</code>、<code>prob.Variables</code></dd>
-          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
-          <dd lang="en"><code>prob</code>, <code>x0</code> (struct, one field per variable); with <code>validate=true</code>, the constraints evaluated at <code>x0</code> are printed</dd>
-          <dd lang="ja"><code>prob</code>、<code>x0</code>（変数ごとに 1 フィールドの構造体）。<code>validate=true</code> では <code>x0</code> で評価した制約を表示</dd>
+            </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>net.s_opffcn</code>; <code>prob.Variables</code></span><span lang="ja"><code>net.s_opffcn</code>、<code>prob.Variables</code></span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en"><code>prob</code>, <code>x0</code> (struct, one field per variable); with <code>validate=true</code>, the constraints evaluated at <code>x0</code> are printed</span><span lang="ja"><code>prob</code>、<code>x0</code>（変数ごとに 1 フィールドの構造体）。<code>validate=true</code> では <code>x0</code> で評価した制約を表示</span></dd>
         </dl>
       </li>
-      <li>
-        <p><b>OPF-12</b> <code>SolverOPF.solve</code> → <code>SolverOPF.optimoption(prob, s_options)</code><small><code>check_solver</code></small></p>
-        <dl>
+      <li class="fs-step" id="OPF-12">
+        <p class="fs-head"><b class="fs-id">OPF-12</b> <span class="fs-call"><code>SolverOPF.solve</code> → <code>SolverOPF.optimoption(prob, s_options)</code></span><small><code>check_solver</code></small></p>
+        <dl class="fs-body">
           <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
-          <dd lang="en">
-            <ul>
+          <dd><ul lang="en">
               <li>Picks the solver: <code>solvers(prob)</code> for <code>"auto"</code>; a named solver is checked against the problem.</li>
               <li>Passes only the settings that differ from the solver's defaults, so the stored defaults call <code>solve(prob, x0)</code> as it is.</li>
-            </ul>
-          </dd>
-          <dd lang="ja">
-            <ul>
+            </ul><ul lang="ja">
               <li>ソルバーを選択: <code>"auto"</code> では <code>solvers(prob)</code>、名前を指定した場合はその問題を表せるか確認</li>
               <li>ソルバーの既定値と異なる設定だけを指定。保存された既定値のままなら <code>solve(prob, x0)</code> をそのまま呼び出し</li>
-            </ul>
-          </dd>
-          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
-          <dd lang="en"><code>prob</code>, <code>s_options</code>, <code>optimoptions(solver)</code></dd>
-          <dd lang="ja"><code>prob</code>、<code>s_options</code>、<code>optimoptions(solver)</code></dd>
-          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
-          <dd lang="en"><code>c_nv</code>: <code>{"Solver", name}</code> and <code>{"Options", optimoptions(...)}</code> when needed</dd>
-          <dd lang="ja"><code>c_nv</code>: 必要に応じて <code>{"Solver", name}</code> と <code>{"Options", optimoptions(...)}</code></dd>
+            </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>prob</code>, <code>s_options</code>, <code>optimoptions(solver)</code></span><span lang="ja"><code>prob</code>、<code>s_options</code>、<code>optimoptions(solver)</code></span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en"><code>c_nv</code>: <code>{"Solver", name}</code> and <code>{"Options", optimoptions(...)}</code> when needed</span><span lang="ja"><code>c_nv</code>: 必要に応じて <code>{"Solver", name}</code> と <code>{"Options", optimoptions(...)}</code></span></dd>
         </dl>
       </li>
-      <li>
-        <p><b>OPF-13</b> <code>SolverOPF.solve</code> → <code>solve(prob, x0, c_nv{:})</code><small>Optimization Toolbox</small></p>
-        <dl>
+      <li class="fs-step" id="OPF-13">
+        <p class="fs-head"><b class="fs-id">OPF-13</b> <span class="fs-call"><code>SolverOPF.solve</code> → <code>solve(prob, x0, c_nv{:})</code></span><small>Optimization Toolbox</small></p>
+        <dl class="fs-body">
           <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
-          <dd lang="en">Solves the problem. A struct objective value is summed into one number.</dd>
-          <dd lang="ja">問題を求解。構造体の目的関数値は 1 つの数値に合計</dd>
-          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
-          <dd lang="en"><code>prob</code>, <code>x0</code></dd>
-          <dd lang="ja"><code>prob</code>、<code>x0</code></dd>
-          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
-          <dd lang="en"><code>sol</code> (struct by variable name), <code>fval</code>, <code>flag</code> (an exit flag), <code>output</code>, <code>lambda</code></dd>
-          <dd lang="ja"><code>sol</code>（変数名ごとの構造体）、<code>fval</code>、<code>flag</code>（終了フラグ）、<code>output</code>、<code>lambda</code></dd>
+          <dd><span lang="en">Solves the problem. A struct objective value is summed into one number.</span><span lang="ja">問題を求解。構造体の目的関数値は 1 つの数値に合計</span></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>prob</code>, <code>x0</code></span><span lang="ja"><code>prob</code>、<code>x0</code></span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en"><code>sol</code> (struct by variable name), <code>fval</code>, <code>flag</code> (an exit flag), <code>output</code>, <code>lambda</code></span><span lang="ja"><code>sol</code>（変数名ごとの構造体）、<code>fval</code>、<code>flag</code>（終了フラグ）、<code>output</code>、<code>lambda</code></span></dd>
         </dl>
       </li>
-      <li>
-        <p><b>OPF-14</b> <code>SolverOPF.solve</code> → <code>format_bus</code>, <code>format_branch</code></p>
-        <dl>
+      <li class="fs-step" id="OPF-14">
+        <p class="fs-head"><b class="fs-id">OPF-14</b> <span class="fs-call"><code>SolverOPF.solve</code> → <code>format_bus</code>, <code>format_branch</code></span></p>
+        <dl class="fs-body">
           <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
-          <dd lang="en">Builds the result tables from <code>sol</code>:
-            <ul>
+          <dd><span lang="en">Builds the result tables from <code>sol</code>:</span><ul lang="en">
               <li>bus values, and the injections of each connection (in bus order: components, then branch ends);</li>
               <li>branch flows into the branch at each end, with losses.</li>
               <li>In <code>"AC OPF"</code> the component current is <code>(P − jQ)/conj(V)</code>.</li>
-            </ul>
-          </dd>
-          <dd lang="ja"><code>sol</code> から結果の表を作成
-            <ul>
+            </ul><span lang="ja"><code>sol</code> から結果の表を作成</span><ul lang="ja">
               <li>母線の値と各接続の注入（母線の順に、機器、続いてブランチ端）</li>
               <li>各端でブランチへ流れ込む潮流と損失</li>
               <li><code>"AC OPF"</code> では機器の電流を <code>(P − jQ)/conj(V)</code> とする</li>
-            </ul>
-          </dd>
-          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
-          <dd lang="en"><code>sol</code>, <code>net.a_Bus</code>, <code>net.a_Branch</code>, <code>Branch.a_Bus</code></dd>
-          <dd lang="ja"><code>sol</code>、<code>net.a_Bus</code>、<code>net.a_Branch</code>、<code>Branch.a_Bus</code></dd>
-          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
-          <dd lang="en"><code>tab_bus</code>, <code>tab_cub</code>, <code>tab_branch</code> (see <a href="#data">Data produced</a>)</dd>
-          <dd lang="ja"><code>tab_bus</code>、<code>tab_cub</code>、<code>tab_branch</code>（<a href="#data">生成されるデータ</a>を参照）</dd>
+            </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>sol</code>, <code>net.a_Bus</code>, <code>net.a_Branch</code>, <code>Branch.a_Bus</code></span><span lang="ja"><code>sol</code>、<code>net.a_Bus</code>、<code>net.a_Branch</code>、<code>Branch.a_Bus</code></span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
+          <dd><span lang="en"><code>tab_bus</code>, <code>tab_cub</code>, <code>tab_branch</code> (see <a href="#data">Data produced</a>)</span><span lang="ja"><code>tab_bus</code>、<code>tab_cub</code>、<code>tab_branch</code>（<a href="#data">生成されるデータ</a>を参照）</span></dd>
         </dl>
       </li>
-      <li>
-        <p><b>OPF-15</b> <code>SolverOPF.solve</code> → <code>ResultOPF(...)</code><small>→ <code>ResultBase</code></small></p>
-        <dl>
+      <li class="fs-step" id="OPF-15">
+        <p class="fs-head"><b class="fs-id">OPF-15</b> <span class="fs-call"><code>SolverOPF.solve</code> → <code>ResultOPF(...)</code></span><small>→ <code>ResultBase</code></small></p>
+        <dl class="fs-body">
           <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
-          <dd lang="en">Stores the result, the effective settings, the outcome, and the elapsed time.</dd>
-          <dd lang="ja">結果、実際に使った設定、成否、経過時間を保存</dd>
-          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
-          <dd lang="en">the outputs of OPF-13 and OPF-14; <code>net</code>; the <code>tic</code> of OPF-03</dd>
-          <dd lang="ja">OPF-13 と OPF-14 の出力、<code>net</code>、OPF-03 の <code>tic</code></dd>
-          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
+          <dd><span lang="en">Stores the result, the effective settings, the outcome, and the elapsed time.</span><span lang="ja">結果、実際に使った設定、成否、経過時間を保存</span></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en">the outputs of OPF-13 and OPF-14; <code>net</code>; the <code>tic</code> of OPF-03</span><span lang="ja">OPF-13 と OPF-14 の出力、<code>net</code>、OPF-03 の <code>tic</code></span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
           <dd><code>ResultOPF</code></dd>
         </dl>
       </li>
-      <li>
-        <p><b>OPF-16</b> <code>optimize_powerflow</code> → user<small><code>result.Plot</code>, <code>result.Export</code>, <code>legacy_output</code></small></p>
-        <dl>
+      <li class="fs-step" id="OPF-16">
+        <p class="fs-head"><b class="fs-id">OPF-16</b> <span class="fs-call"><code>optimize_powerflow</code> → user</span><small><code>result.Plot</code>, <code>result.Export</code>, <code>legacy_output</code></small></p>
+        <dl class="fs-body">
           <dt><span lang="en">Does</span><span lang="ja">処理</span></dt>
-          <dd lang="en">
-            <ul>
+          <dd><ul lang="en">
               <li>Runs <code>Plot</code> / <code>Export</code> when asked.</li>
               <li>With 6 outputs: the deprecated tuple <code>[powerflow_bus, powerflow_cub, flag, output, lambda, OPFprob]</code> through <code>v3_optimize_powerflow</code>, with a deprecation warning.</li>
-            </ul>
-          </dd>
-          <dd lang="ja">
-            <ul>
+            </ul><ul lang="ja">
               <li>指定があれば <code>Plot</code> / <code>Export</code> を実行</li>
               <li>出力 6 個の呼び出し: <code>v3_optimize_powerflow</code> が非推奨の出力 <code>[powerflow_bus, powerflow_cub, flag, output, lambda, OPFprob]</code> を警告付きで返却</li>
-            </ul>
-          </dd>
-          <dt><span lang="en">Reads</span><span lang="ja">参照</span></dt>
-          <dd lang="en"><code>opt</code>, <code>nargout</code></dd>
-          <dd lang="ja"><code>opt</code>、<code>nargout</code></dd>
-          <dt><span lang="en">Returns / changes</span><span lang="ja">出力・変更</span></dt>
+            </ul></dd>
+          <dt><span lang="en">Reads</span><span lang="ja">読み取り</span></dt>
+          <dd><span lang="en"><code>opt</code>, <code>nargout</code></span><span lang="ja"><code>opt</code>、<code>nargout</code></span></dd>
+          <dt><span lang="en">Returns / changes</span><span lang="ja">戻り値・変更</span></dt>
           <dd><code>[result, flag, output]</code></dd>
         </dl>
       </li>
