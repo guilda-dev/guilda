@@ -22,7 +22,8 @@ One subfolder per bundled network, named after its class (for example `IEEJ_WEST
 ## How to run
 
 Start GUILDA from the repository root (`>> GUILDA`), then either run the comparison file
-or change to its folder and call it with options:
+with its defaults or change to its folder and call it with options. All the comparison
+functions work both ways; for example:
 
 ```matlab
 run(fullfile(GUILDA.pwd, "_GUILDAverification", "IEEJ_WEST30", "compare_table4_13.m"))

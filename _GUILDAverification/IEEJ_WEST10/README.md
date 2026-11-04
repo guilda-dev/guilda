@@ -70,16 +70,20 @@ step, stopped, or with fewer than two crossings).
 
 ## How to run
 
-From the root of the repository, with MATLAB R2026a:
+Start GUILDA from the repository root (`>> GUILDA`), then either run the comparison file
+with its defaults or change to this folder and call it with options:
 
 ```matlab
-GUILDA;
-addpath(fullfile(pwd, "_GUILDAverification", "IEEJ_WEST10"));
-[tab, summary] = compare_table4_5();                    % governors on (default)
+run(fullfile(GUILDA.pwd, "_GUILDAverification", "IEEJ_WEST10", "compare_table4_5.m"))
+
+cd(fullfile(GUILDA.pwd, "_GUILDAverification", "IEEJ_WEST10"))
 [tab, summary] = compare_table4_5(Governor=false);      % AVRs only
 tab = compare_table4_5(Sections="peak", Cases=["A","L"], Plot=true);
 tab = compare_table4_5(SimulateOptions={"Tolerance", 1e-6, "AbsoluteTolerance", 1e-8});
 ```
+
+This folder is not on the MATLAB path. When the current folder is not the GUILDA root,
+the function adds the root to the path for the run and removes it afterwards.
 
 Options: `Governor` (network option; true adds the `LPT = 1` governors of the report),
 `Sections` (`"peak"`, `"night"`), `Cases` (case ids such as `"A"`, `"G8"`), `Plot`,

@@ -15,11 +15,12 @@ function tab = compare_table4_3(opt)
 % default 1e-4: with 1e-4, ode15s stops early in some large-swing cases. It is stored in
 % the Options of each scenario, as Options are not saved in the CSV.
 %
-% <@Examples>
-% From this folder (or with `run` on this file for the defaults):
+% Use (this folder is not on the MATLAB path; run GUILDA first). When the current folder
+% is not the GUILDA root, the root is added to the path for the run and removed after it:
 %
 % ```matlab
-% tab = compare_table4_3();
+% run(fullfile(GUILDA.pwd, "_GUILDAverification", "IEEJ_EAST10", "compare_table4_3.m"))
+% cd(fullfile(GUILDA.pwd, "_GUILDAverification", "IEEJ_EAST10"))
 % tab = compare_table4_3(Governor=false, Sections="peak");
 % ```
 %
@@ -36,6 +37,14 @@ function tab = compare_table4_3(opt)
         tab table % The cases with the report and GUILDA verdicts and their agreement.
     end
     str_dir = fileparts(mfilename("fullpath"));
+    % GUILDA (the repository root) is found through the current folder only; add the root
+    % for this run when it is neither the current folder nor on the path (after cd, or
+    % inside run). which("GUILDA") is not empty there once the class has been loaded.
+    str_root = fileparts(fileparts(str_dir));
+    if ~any(strcmp(str_root, [string(pwd), split(string(path), pathsep).']))
+        addpath(str_root);
+        obj_cleanup = onCleanup(@() rmpath(str_root));
+    end
     str_scenario = fullfile(str_dir, "table4_3_scenarios.csv");
     tab_report = readtable(fullfile(str_dir, "table4_3_report.csv"), TextType="string", Delimiter=",");
 
