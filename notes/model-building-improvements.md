@@ -667,7 +667,7 @@ flowchart LR
 
 ### 実装の状況(基準 `fe9aa3a`、2026-11-02)
 
-コードと git 履歴から確認できる範囲の記録です。上の表は提案時の質問と推奨としてそのまま残しています。
+コードと git 履歴から確認できる範囲の記録です。上の表は提案時の質問と推奨としてそのまま残しています。Q12 の行だけは 2026-11-04 に `a9afe24`(`feature/ieej-report-models`)で更新しました。
 
 | # | 状況 | 確認した内容 |
 |---|---|---|
@@ -682,7 +682,7 @@ flowchart LR
 | Q9 | 実装済み(推奨どおり) | `20acdb0`。改名は `Tag` で記録し、機器のタグは変えない |
 | Q10 | 未決 | 数値の添字を非推奨にするコードはありません。文書でタグを勧めるかは確認していません |
 | Q11 | 未決 | `ModelPath` はコードにありません(RG1 は未実装) |
-| Q12 | 未決 | 変更はありません。枠を変えない決定の記録はありません |
+| Q12 | 推奨(変えない)と異なり、変えると決定(保守者、2026-11-04)。実装済み | 枠を変えました。`"avr"` / `"local"` の連鎖と並ぶ 2 つ目の最上位の制御器として `"governor"` のキーを追加(`70a59ac`)。2 つの出力は重なってはならず(`GUILDA:Component:ControllerOutputOverlap`)、順序は avr / local の連鎖、次に governor で固定です。IEEJ の調速機 `IEEJ_LPT1`, `IEEJ_LPT3`, `IEEJ_LPT4`(`9733ecc`)、開発者向けページの説明(`86a41d2`)。ブランチ `feature/governor-controller`。この行は `a9afe24`(2026-11-04)で更新 |
 | Q13 | 未決 | `未+GFM`, `未+farm`, `+load/history`, `未実装newclass.m` などは残っています |
 | Q14 | 実装済み(推奨どおり) | `18ab896` の `GUILDA:PowerNetwork:BranchNotFound` |
 | Q15 | 実装済み(推奨どおり) | `e2be0d0` の `GUILDA:import_csv:UnknownColumn` |
