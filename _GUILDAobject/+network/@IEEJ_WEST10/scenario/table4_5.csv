@@ -1,0 +1,27 @@
+Section,Case,Event,FaultBus,OpenBranch,Circuits,TripBus,TimeStart,FaultDuration,Verdict,TimeOutOfStep,OutOfStepGen,Period
+peak,A,3LG-O line 20 at node 1,B001,LINE20-1,1,,0.1,0.07,out-of-step,4.3,G2,3.4
+peak,B,3LG-O line 20 at node 2,B002,LINE20-1,1,,0.1,0.07,stable,NaN,,3.0
+peak,C,3LG-O line 30 at node 2,B002,LINE30-1,1,,0.1,0.07,stable,NaN,,3.0
+peak,D,3LG-O line 40 at node 3,B003,LINE40-1,1,,0.1,0.07,stable,NaN,,3.0
+peak,E,3LG-O line 50 at node 4,B004,LINE50-1,1,,0.1,0.07,stable,NaN,,3.0
+peak,F,3LG-O line 60 at node 5,B005,LINE60-1,1,,0.1,0.07,stable,NaN,,3.0
+peak,G,3LG-O line 70 at node 6,B006,LINE70-1,1,,0.1,0.07,stable,NaN,,2.9
+peak,H,3LG-O line 80 at node 7,B007,LINE80-1,1,,0.1,0.07,stable,NaN,,3.2
+peak,I,3LG-O line 90 at node 8,B008,LINE90-1,1,,0.1,0.07,stable,NaN,,2.8
+peak,J,3LG-O line 90 at node 9,B009,LINE90-1,1,,0.1,0.07,stable,NaN,,3.3
+peak,K,3LG-O line 120 at node 2,B002,LINE120-1,1,,0.1,0.07,stable,NaN,,3.0
+peak,L,3LG-O line 120 at node 12,B012,LINE120-1,1,,0.1,0.07,out-of-step,7.0,G1,3.1
+peak,G8,G8 trip (transformer 980 opened),,,0,B028,0.1,0,growing,NaN,,4.4
+night,A,3LG-O line 20 at node 1,B001,LINE20-1,1,,0.1,0.07,out-of-step,4.9,G2,3.1
+night,B,3LG-O line 20 at node 2,B002,LINE20-1,1,,0.1,0.07,stable,NaN,,2.6
+night,C,3LG-O line 30 at node 2,B002,LINE30-1,1,,0.1,0.07,stable,NaN,,2.8
+night,D,3LG-O line 40 at node 3,B003,LINE40-1,1,,0.1,0.07,stable,NaN,,2.6
+night,E,3LG-O line 50 at node 4,B004,LINE50-1,1,,0.1,0.07,stable,NaN,,2.5
+night,F,3LG-O line 60 at node 5,B005,LINE60-1,1,,0.1,0.07,stable,NaN,,2.4
+night,G,3LG-O line 70 at node 6,B006,LINE70-1,1,,0.1,0.07,stable,NaN,,2.5
+night,H,3LG-O line 80 at node 7,B007,LINE80-1,1,,0.1,0.07,stable,NaN,,2.5
+night,I,3LG-O line 90 at node 8,B008,LINE90-1,1,,0.1,0.07,stable,NaN,,2.2
+night,J,3LG-O line 90 at node 9,B009,LINE90-1,1,,0.1,0.07,stable,NaN,,2.4
+night,K,3LG-O line 120 at node 2,B002,LINE120-1,1,,0.1,0.07,stable,NaN,,2.5
+night,L,3LG-O line 120 at node 12,B012,LINE120-1,1,,0.1,0.07,stable,NaN,,2.3
+night,G8,G8 trip (transformer 980 opened),,,0,B028,0.1,0,stable,NaN,,2.6
