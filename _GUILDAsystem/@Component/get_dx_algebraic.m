@@ -5,9 +5,16 @@ function DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)
 % the input equations and the current injected into the bus are added to the entries
 % of `DAEvec` that belong to the component (iv_odeX, iv_odeU) and its bus.
 %
+% Inputs:
+%   t       (1,1) double  [s] Time.
+%   x       (:,1) double  Variables of the network DAE (states, inputs, bus voltages and currents).
+%   Vi      (2,1) double  [pu] Bus voltage [real; imag].
+%   Ii      (2,1) double  [pu] Bus current [real; imag].
+%   u       (:,1) double  Input values of the component: equilibrium, input events and global
+%                         controllers.
+%   DAEvec  (:,1) double  DAE residual of the network so far.
 % Outputs:
-%
-% - `DAEvec` — Updated DAE residual of the network.
+%   DAEvec  (:,1) double  Updated DAE residual of the network.
 %
 % See also SolverODE, Component.fcn_dx, Component.fcn_I
 %

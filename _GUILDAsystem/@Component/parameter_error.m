@@ -5,10 +5,6 @@ function parameter_error(obj, str_key, varargin) %#ok<INUSD>
 % in the `component` package reach Component.xml through this method.
 % "GeneratorQIgnored" is a warning; the other keys are errors.
 %
-% Inputs:
-% - `str_key`: key of the message in Component.xml.
-% - `varargin`: values for the placeholders of the message.
-%
 % See also msg, component.generator.abstract
 %
 % <@Group> Queries and checks
