@@ -136,21 +136,21 @@ const developerData = [
     },
 {
     title: "Features: Continuation Power Flow",
-    title_ja: "機能: 連続型潮流計算",
+    title_ja: "機能: 連続潮流計算",
     description: "Tracing the power flow solution as the load grows: the call order, the inputs each step reads, and the curve it returns.",
     description_ja: "負荷の増加に沿って潮流解を追跡する処理: 呼び出し順、各段階が読む入力、返す曲線。",
     link: "developer/feature-cpf.html"
     },
 {
     title: "Features: Time-Domain Simulation",
-    title_ja: "機能: 時間領域シミュレーション",
+    title_ja: "機能: 時間応答シミュレーション",
     description: "Running a time-domain simulation: how events split it into phases, the call order between classes in each phase, and the results it returns.",
-    description_ja: "時間領域シミュレーションの実行: イベントによる区間の分割、各区間でのクラス間の呼び出し順、返す結果。",
+    description_ja: "時間応答シミュレーションの実行: イベントによる区間の分割、各区間でのクラス間の呼び出し順、返す結果。",
     link: "developer/feature-simulation.html"
     },
 {
     title: "Features: Linearization",
-    title_ja: "機能: 線形化",
+    title_ja: "機能: 近似線形化",
     description: "Obtaining a linear model around an equilibrium: how each class contributes its matrices, the call order, and the system it returns.",
     description_ja: "平衡点まわりの線形モデルの導出: 各クラスが行列を提供する方法、呼び出し順、返すシステム。",
     link: "developer/feature-linearization.html"
