@@ -504,8 +504,6 @@ sol = net.simulate([0, 50], sc);</code></pre>
         <div id="reference-source-tree"></div>
         <h3><span lang="en">Tutorials on this page</span><span lang="ja">このページのチュートリアル</span></h3>
         <ul class="ref-toc">
-          <li><a href="#ref-core" onclick="document.getElementById('ref-core')?.scrollIntoView(); return false;"><span lang="en">Core Components</span><span lang="ja">主要な構成要素</span></a></li>
-          <li><a href="#ref-diagram" onclick="document.getElementById('ref-diagram')?.scrollIntoView(); return false;"><span lang="en">Class Diagram</span><span lang="ja">クラス図</span></a></li>
           <li><a href="#ref-inherited" onclick="document.getElementById('ref-inherited')?.scrollIntoView(); return false;"><span lang="en">Inherited Classes</span><span lang="ja">継承クラス</span></a></li>
           <li><a href="#ref-auxiliary" onclick="document.getElementById('ref-auxiliary')?.scrollIntoView(); return false;"><span lang="en">Auxiliary Classes</span><span lang="ja">補助クラス</span></a></li>
         </ul>
@@ -517,94 +515,6 @@ sol = net.simulate([0, 50], sc);</code></pre>
         <p><strong><span lang="en">The class reference has not been generated yet.</span><span lang="ja">クラスリファレンスは未生成。</span></strong></p>
         <p lang="en">Run <code>GUILDA.doc</code> in MATLAB. It builds <code>_GUILDAdoc/database</code> from the source code and reopens this page.</p>
         <p lang="ja">MATLAB で <code>GUILDA.doc</code> を実行。ソースコードから <code>_GUILDAdoc/database</code> を生成し、このページを再表示。</p>
-      </div>
-
-      <div class="reference-section">
-        <h2 id="ref-core"><span lang="en">Core Components of the System Model</span><span lang="ja">系統モデルの主要な構成要素</span></h2>
-        <p lang="en">The main elements of a GUILDA system model. <code>PowerNetwork</code> is the container: set the other classes in it and the model is ready for analysis.</p>
-        <p lang="ja">GUILDA の系統モデルの主な構成要素。<code>PowerNetwork</code> クラスが入れ物で、その中に他のクラスを設定すると解析可能な系統モデルが完成。</p>
-        
-        <div class="intro-cards-wrapper">
-          <div class="intro-cards-grid" id="core-class-cards"></div>
-        </div>
-      </div>
-
-      <div class="reference-section">
-        <div class="class-diagram-header" style="margin-top: 0;">
-          <h2 id="ref-diagram" style="margin: 0; padding-bottom: 0; border: none;"><span lang="en">Class Diagram</span><span lang="ja">クラス図</span></h2>
-          <div class="uml-notation-horizontal">
-            <span class="notation-title"><span lang="en">UML NOTATION</span><span lang="ja">UML 記法</span></span>
-            <span class="notation-item"><strong>◇──</strong> <span lang="en">Composition (Has-a)</span><span lang="ja">コンポジション（has-a）</span></span>
-            <span class="notation-item"><strong>1</strong> <span lang="en">Owner (Parent)</span><span lang="ja">所有者（親）</span></span>
-            <span class="notation-item"><strong>0..*</strong> <span lang="en">Multiplicity (Children)</span><span lang="ja">多重度（子）</span></span>
-          </div>
-        </div>
-
-        <p style="margin-top: 10px;" lang="en">The has-a relationships of each component class.</p>
-        <p style="margin-top: 10px;" lang="ja">各構成要素クラスの has-a 関係。</p>
-        
-        <div class="uml-lr-scroll">
-          <div class="uml-lr-canvas">
-            <svg class="uml-links" viewBox="0 0 940 420" preserveAspectRatio="none">
-              <defs>
-                <marker id="diamond" markerWidth="14" markerHeight="10" refX="0" refY="5" orient="auto">
-                  <polygon points="0,5 7,0 14,5 7,10" class="uml-diamond" />
-                </marker>
-              </defs>
-
-              <line x1="220" y1="160" x2="280" y2="80" class="uml-link-line" marker-start="url(#diamond)" />
-              <text x="230" y="140" class="uml-link-text">1</text>
-              <text x="250" y="85" class="uml-link-text">0..*</text>
-              
-              <line x1="220" y1="185" x2="280" y2="200" class="uml-link-line" marker-start="url(#diamond)" />
-              <text x="235" y="175" class="uml-link-text">1</text>
-              <text x="250" y="195" class="uml-link-text">0..*</text>
-              
-              <line x1="220" y1="210" x2="280" y2="320" class="uml-link-line" marker-start="url(#diamond)" />
-              <text x="230" y="240" class="uml-link-text">1</text>
-              <text x="250" y="315" class="uml-link-text">0..*</text>
-              
-              <line x1="460" y1="80" x2="520" y2="120" class="uml-link-line" marker-start="url(#diamond)" />
-              <text x="475" y="85" class="uml-link-text">1</text>
-              <text x="495" y="115" class="uml-link-text">0..*</text>
-              
-              <line x1="700" y1="135" x2="760" y2="135" class="uml-link-line" marker-start="url(#diamond)" />
-              <text x="710" y="125" class="uml-link-text">1</text>
-              <text x="735" y="125" class="uml-link-text">0..*</text>
-            </svg>
-
-            <div class="uml-node uml-pos-pn">
-              <div class="uml-class-name">PowerNetwork</div>
-              <div class="uml-divider"></div>
-              <ul class="uml-prop-list">
-                <li><strong>a_Bus</strong> : Bus [0..*]</li>
-                <li><strong>a_Branch</strong> : Branch [0..*]</li>
-                <li><strong>a_GlobalController</strong> : GlobalController [0..*]</li>
-              </ul>
-            </div>
-
-            <div class="uml-node uml-pos-bus">
-              <div class="uml-class-name">Bus</div>
-              <div class="uml-divider"></div>
-              <ul class="uml-prop-list">
-                <li><strong>a_Component</strong> : Component [0..*]</li>
-              </ul>
-            </div>
-
-            <div class="uml-node uml-pos-branch"><div class="uml-class-name">Branch</div></div>
-            <div class="uml-node uml-pos-gc"><div class="uml-class-name">GlobalController</div></div>
-
-            <div class="uml-node uml-pos-component">
-              <div class="uml-class-name">Component</div>
-              <div class="uml-divider"></div>
-              <ul class="uml-prop-list">
-                <li><strong>a_LocalController</strong> : LocalController [0..*]</li>
-              </ul>
-            </div>
-
-            <div class="uml-node uml-pos-lc"><div class="uml-class-name">LocalController</div></div>
-          </div>
-        </div>
       </div>
 
       <div class="reference-section">
@@ -917,21 +827,7 @@ sol = net.simulate([0, 50], sc);</code></pre>
 
     function renderReferenceNavigation() {
       const data = getClassReferenceData();
-      const schema = window.GuildaDocLoader?.getSchema() || {};
       const categories = getModelCategories(data);
-      const coreClassNames = Array.isArray(schema.coreClasses) && schema.coreClasses.length
-        ? schema.coreClasses
-        : categories;
-
-      const cards = document.getElementById('core-class-cards');
-      if (cards) {
-        cards.innerHTML = coreClassNames.map(name => data.find(c => c.Name === name)).filter(Boolean).map(c => `
-          <a href="${window.GuildaDocLoader.pageUrl('class.html', { class: c.Name })}" class="core-class-card">
-            <h3>${c.Name}</h3>
-            <p>${escapeHtml(firstLineText(c.Summary || c.Desc)) || bilingual(`Reference for ${c.Name}.`, `${c.Name} のリファレンス。`)}</p>
-          </a>
-        `).join('');
-      }
 
       const toggles = document.getElementById('class-filter-toggles');
       if (toggles) {

@@ -44,48 +44,6 @@ const developerData = [
     link: "developer/class-design.html"
     },
 {
-    title: "Codebase: PowerNetwork",
-    title_ja: "コードベース: PowerNetwork",
-    description: "Reference page of the network that holds buses, branches, and controllers and runs every analysis: its role, owned data, references, methods by purpose (one group per feature), and subclasses.",
-    description_ja: "母線・ブランチ・制御器を保持し全解析を実行するネットワークのリファレンスページ: 役割、保持データ、参照、目的別メソッド (機能ごとのグループ)、サブクラス。",
-    link: "class.html#class=PowerNetwork"
-    },
-{
-    title: "Codebase: Bus",
-    title_ja: "コードベース: Bus",
-    description: "Reference page of a node of the network: its role, owned data such as the voltage and the slack flag, references, methods by purpose, and the analyses that use it.",
-    description_ja: "ネットワークの節点のリファレンスページ: 役割、電圧やスラック指定などの保持データ、参照、目的別メソッド、利用する解析。",
-    link: "class.html#class=Bus"
-    },
-{
-    title: "Codebase: Branch",
-    title_ja: "コードベース: Branch",
-    description: "Reference page of a line or transformer between two buses: its role, parameters, references to its end buses, the subclass contract, methods by purpose, and subclasses.",
-    description_ja: "2 つの母線を結ぶ送電線・変圧器のリファレンスページ: 役割、パラメータ、両端の母線への参照、サブクラスの契約、目的別メソッド、サブクラス。",
-    link: "class.html#class=Branch"
-    },
-{
-    title: "Codebase: Component",
-    title_ja: "コードベース: Component",
-    description: "Reference page of the base of generators, loads, and other devices on a bus: its role, owned data, the subclass contract with its equations, methods by purpose, the analyses that use it, and subclasses.",
-    description_ja: "母線に接続する発電機・負荷などの基底クラスのリファレンスページ: 役割、保持データ、方程式を含むサブクラスの契約、目的別メソッド、利用する解析、サブクラス。",
-    link: "class.html#class=Component"
-    },
-{
-    title: "Codebase: LocalController",
-    title_ja: "コードベース: LocalController",
-    description: "Reference page of a controller attached to one component, such as an AVR, a PSS, or a governor: its role, owned data, references, the subclass contract, methods by purpose, and subclasses.",
-    description_ja: "1 つの機器に取り付ける制御器 (AVR、PSS、ガバナなど) のリファレンスページ: 役割、保持データ、参照、サブクラスの契約、目的別メソッド、サブクラス。",
-    link: "class.html#class=LocalController"
-    },
-{
-    title: "Codebase: GlobalController",
-    title_ja: "コードベース: GlobalController",
-    description: "Reference page of a controller that reads the states of its controlled units and drives their inputs: its role, owned data, references, the subclass contract, methods by purpose, and subclasses.",
-    description_ja: "制御対象の機器の状態を読み、その入力を駆動する制御器のリファレンスページ: 役割、保持データ、参照、サブクラスの契約、目的別メソッド、サブクラス。",
-    link: "class.html#class=GlobalController"
-    },
-{
     title: "Features: Model Building",
     title_ja: "機能: モデル構築",
     description: "How a network is built from buses, branches, components, and controllers, and the references the objects keep to each other.",

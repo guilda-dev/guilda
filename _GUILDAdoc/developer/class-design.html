@@ -41,6 +41,7 @@
     <nav class="dev-toc" aria-label="Contents">
       <a href="#principles"><span lang="en">Design principles</span><span lang="ja">設計原則</span></a>
       <a href="#classes"><span lang="en">Classes at a glance</span><span lang="ja">クラスの概観</span></a>
+      <a href="#class-diagram"><span lang="en">Class diagram of the model classes</span><span lang="ja">モデルクラスのクラス図</span></a>
       <a href="#parents"><span lang="en">Parent references</span><span lang="ja">親への参照</span></a>
       <a href="#identity"><span lang="en">Identifying objects (tags)</span><span lang="ja">オブジェクトの識別（タグ）</span></a>
       <a href="#solvers"><span lang="en">Solver settings of analyses</span><span lang="ja">解析のソルバー設定</span></a>
@@ -178,7 +179,82 @@
 
     <!-- ============================== CLASSES ============================== -->
     <h2 id="classes"><span lang="en">Classes at a glance</span><span lang="ja">クラスの概観</span></h2>
-    <p class="dg-lead-in"><span lang="en">What each class owns, derives, and does, its references, and its subclass contract: on its Reference page (linked below).</span><span lang="ja">各クラスが所有・導出するもの、行う処理、参照、サブクラスの契約は、各クラスのリファレンスページ（下表のリンク）。</span></p>
+    <p class="dg-lead-in"><span lang="en"><code>PowerNetwork</code> is the container of a system model: set the other model classes in it and the model is ready for analysis. What each class owns, derives, and does, its references, and its subclass contract: on its Reference page (linked in the table below).</span><span lang="ja"><code>PowerNetwork</code> が系統モデルの入れ物。その中に他のモデルクラスを設定すると解析可能な系統モデルが完成。各クラスが所有・導出するもの、行う処理、参照、サブクラスの契約は、各クラスのリファレンスページ（下表のリンク）。</span></p>
+
+    <div class="class-diagram-header">
+      <h3 id="class-diagram"><span lang="en">Class diagram of the model classes</span><span lang="ja">モデルクラスのクラス図</span></h3>
+      <div class="uml-notation-horizontal">
+        <span class="notation-title"><span lang="en">UML NOTATION</span><span lang="ja">UML 記法</span></span>
+        <span class="notation-item"><strong>◇──</strong> <span lang="en">Composition (Has-a)</span><span lang="ja">コンポジション（has-a）</span></span>
+        <span class="notation-item"><strong>1</strong> <span lang="en">Owner (Parent)</span><span lang="ja">所有者（親）</span></span>
+        <span class="notation-item"><strong>0..*</strong> <span lang="en">Multiplicity (Children)</span><span lang="ja">多重度（子）</span></span>
+      </div>
+    </div>
+    <p><span lang="en">The has-a relationships of the model classes, with the <code>a_*</code> property that holds each set of children.</span><span lang="ja">モデルクラスの has-a 関係と、子を保持する <code>a_*</code> プロパティ。</span></p>
+    <div class="uml-lr-scroll">
+      <div class="uml-lr-canvas">
+        <svg class="uml-links" aria-hidden="true" viewBox="0 0 720 420" preserveAspectRatio="none">
+          <defs>
+            <marker id="cd-diamond" markerWidth="14" markerHeight="10" refX="0" refY="5" orient="auto">
+              <polygon points="0,5 7,0 14,5 7,10" class="uml-diamond" />
+            </marker>
+          </defs>
+
+          <line x1="220" y1="160" x2="280" y2="80" class="uml-link-line" marker-start="url(#cd-diamond)" />
+          <text x="230" y="140" class="uml-link-text">1</text>
+          <text x="250" y="85" class="uml-link-text">0..*</text>
+          
+          <line x1="220" y1="185" x2="280" y2="200" class="uml-link-line" marker-start="url(#cd-diamond)" />
+          <text x="235" y="175" class="uml-link-text">1</text>
+          <text x="250" y="195" class="uml-link-text">0..*</text>
+          
+          <line x1="220" y1="210" x2="280" y2="320" class="uml-link-line" marker-start="url(#cd-diamond)" />
+          <text x="230" y="240" class="uml-link-text">1</text>
+          <text x="250" y="315" class="uml-link-text">0..*</text>
+          
+          <line x1="460" y1="80" x2="520" y2="120" class="uml-link-line" marker-start="url(#cd-diamond)" />
+          <text x="475" y="85" class="uml-link-text">1</text>
+          <text x="495" y="115" class="uml-link-text">0..*</text>
+          
+          <line x1="610" y1="182" x2="610" y2="260" class="uml-link-line" marker-start="url(#cd-diamond)" />
+          <text x="618" y="210" class="uml-link-text">1</text>
+          <text x="618" y="254" class="uml-link-text">0..*</text>
+        </svg>
+
+        <div class="uml-node uml-pos-pn">
+          <div class="uml-class-name">PowerNetwork</div>
+          <div class="uml-divider"></div>
+          <ul class="uml-prop-list">
+            <li><strong>a_Bus</strong> : Bus [0..*]</li>
+            <li><strong>a_Branch</strong> : Branch [0..*]</li>
+            <li><strong>a_GlobalController</strong> : GlobalController [0..*]</li>
+          </ul>
+        </div>
+
+        <div class="uml-node uml-pos-bus">
+          <div class="uml-class-name">Bus</div>
+          <div class="uml-divider"></div>
+          <ul class="uml-prop-list">
+            <li><strong>a_Component</strong> : Component [0..*]</li>
+          </ul>
+        </div>
+
+        <div class="uml-node uml-pos-branch"><div class="uml-class-name">Branch</div></div>
+        <div class="uml-node uml-pos-gc"><div class="uml-class-name">GlobalController</div></div>
+
+        <div class="uml-node uml-pos-component">
+          <div class="uml-class-name">Component</div>
+          <div class="uml-divider"></div>
+          <ul class="uml-prop-list">
+            <li><strong>a_LocalController</strong> : LocalController [0..*]</li>
+          </ul>
+        </div>
+
+        <div class="uml-node uml-pos-lc"><div class="uml-class-name">LocalController</div></div>
+      </div>
+    </div>
+
+    <h3 id="class-roles"><span lang="en">Role of each class</span><span lang="ja">各クラスの役割</span></h3>
     <table class="cd-table">
       <thead>
         <tr><th><span lang="en">Class</span><span lang="ja">クラス</span></th><th><span lang="en">Role</span><span lang="ja">役割</span></th></tr>
