@@ -22,12 +22,12 @@
       <img src="./images/GUILDAicon.png" alt="GUILDA Logo" class="header-logo">
       
       <div class="tabs">
-        <button class="tab-button active" onclick="openTab('tab-home')">Home</button>
-        <button class="tab-button" onclick="openTab('tab-about')">About</button>
-        <button class="tab-button" onclick="openTab('tab-getting-started')">Getting Started</button>
-        <button class="tab-button" onclick="openTab('tab-tutorial')">Tutorial</button>
-        <button class="tab-button" onclick="openTab('tab-reference')">Reference</button>
-        <button class="tab-button" onclick="openTab('tab-developer')">For Developer</button>
+        <button class="tab-button active" onclick="openTab('tab-home')"><span lang="en">Home</span><span lang="ja">ホーム</span></button>
+        <button class="tab-button" onclick="openTab('tab-about')"><span lang="en">About</span><span lang="ja">概要</span></button>
+        <button class="tab-button" onclick="openTab('tab-getting-started')"><span lang="en">Getting Started</span><span lang="ja">はじめに</span></button>
+        <button class="tab-button" onclick="openTab('tab-tutorial')"><span lang="en">Tutorial</span><span lang="ja">チュートリアル</span></button>
+        <button class="tab-button" onclick="openTab('tab-reference')"><span lang="en">Reference</span><span lang="ja">リファレンス</span></button>
+        <button class="tab-button" onclick="openTab('tab-developer')"><span lang="en">For Developer</span><span lang="ja">開発者向け</span></button>
       </div>
     </div>
   </header>
@@ -42,13 +42,14 @@
         <div class="hero-mark" aria-hidden="true"><img src="./images/GUILDA-logo-square.png" alt="" width="128" height="128"></div>
       </div>
 
-      <p class="home-intro">A MATLAB power-system simulator for students and researchers in systems and control, built from blocks you combine, analyse and share.</p>
+      <p class="home-intro" lang="en">A MATLAB power-system simulator for students and researchers in systems and control, built from blocks you combine, analyse and share.</p>
+      <p class="home-intro" lang="ja">システム制御を学ぶ学生・研究者のための MATLAB 電力系統シミュレータです。部品を組み合わせてモデルを作り、解析し、共有できます。</p>
       <div class="home-actions">
-        <a class="btn btn-primary" href="#tab-getting-started" onclick="openTab('tab-getting-started'); return false;">Get started</a>
-        <a class="btn" href="#tab-about" onclick="openTab('tab-about'); return false;">About GUILDA</a>
+        <a class="btn btn-primary" href="#tab-getting-started" onclick="openTab('tab-getting-started'); return false;"><span lang="en">Get started</span><span lang="ja">はじめる</span></a>
+        <a class="btn" href="#tab-about" onclick="openTab('tab-about'); return false;"><span lang="en">About GUILDA</span><span lang="ja">GUILDA について</span></a>
       </div>
 
-      <h2>Supported Analyses</h2>
+      <h2><span lang="en">Supported Analyses</span><span lang="ja">対応する解析</span></h2>
       <ol class="analysis-list">
         <li class="analysis-item">
           <svg class="analysis-icon" viewBox="0 0 48 48" aria-hidden="true">
@@ -57,10 +58,10 @@
             <path class="ai-brand" d="M10 40 L36 14 M36 14 L29 15.6 M36 14 L34.4 21"/>
           </svg>
           <div class="analysis-body">
-            <h3>RMS phasor models</h3>
-            <p>Three-phase balanced networks described as phasors.</p>
+            <h3><span lang="en">RMS phasor models</span><span lang="ja">実効値フェーザモデル</span></h3>
+            <p><span lang="en">Three-phase balanced networks described as phasors.</span><span lang="ja">三相平衡の電力系統をフェーザで記述します。</span></p>
           </div>
-          <a class="analysis-link" data-tutorial="Tutorial1_1_NetBuild.mlx" href="#tab-tutorial">Tutorial <span aria-hidden="true">→</span></a>
+          <a class="analysis-link" data-tutorial="Tutorial1_1_NetBuild.mlx" href="#tab-tutorial"><span lang="en">Tutorial</span><span lang="ja">チュートリアル</span> <span aria-hidden="true">→</span></a>
         </li>
         <li class="analysis-item">
           <svg class="analysis-icon" viewBox="0 0 48 48" aria-hidden="true">
@@ -69,10 +70,10 @@
             <path class="ai-brand" d="M6 26 H14 C17 26 17 10 21 10 C25 10 25 38 29 38 C32 38 32 18 35 18 C38 18 38 31 40.5 31 C42.5 31 43 26 44 26"/>
           </svg>
           <div class="analysis-body">
-            <h3>Time-domain simulation</h3>
-            <p>Responses to faults, load and input changes, and initial-value perturbations.</p>
+            <h3><span lang="en">Time-domain simulation</span><span lang="ja">時間応答シミュレーション</span></h3>
+            <p><span lang="en">Responses to faults, load and input changes, and initial-value perturbations.</span><span lang="ja">地絡、負荷や入力の変化、初期値の摂動に対する応答を計算します。</span></p>
           </div>
-          <a class="analysis-link" data-tutorial="Tutorial3_1_Simulation.mlx" href="#tab-tutorial">Tutorial <span aria-hidden="true">→</span></a>
+          <a class="analysis-link" data-tutorial="Tutorial3_1_Simulation.mlx" href="#tab-tutorial"><span lang="en">Tutorial</span><span lang="ja">チュートリアル</span> <span aria-hidden="true">→</span></a>
         </li>
         <li class="analysis-item">
           <svg class="analysis-icon" viewBox="0 0 48 48" aria-hidden="true">
@@ -82,10 +83,11 @@
             <circle class="ai-dot" cx="28" cy="24" r="1.8"/>
           </svg>
           <div class="analysis-body">
-            <h3>Linearization</h3>
-            <p>Approximate linear models <span class="nowrap">ẋ = Ax + Bu</span>, <span class="nowrap">y = Cx + Du</span> and energy-function Hessians.</p>
+            <h3><span lang="en">Linearization</span><span lang="ja">近似線形化</span></h3>
+            <p lang="en">Approximate linear models <span class="nowrap">ẋ = Ax + Bu</span>, <span class="nowrap">y = Cx + Du</span> and energy-function Hessians.</p>
+            <p lang="ja">近似線形モデル <span class="nowrap">ẋ = Ax + Bu</span>、<span class="nowrap">y = Cx + Du</span> とエネルギー関数のヘッセ行列を求めます。</p>
           </div>
-          <a class="analysis-link" data-section="tutorial-linear-model" href="#tab-tutorial">Tutorial <span aria-hidden="true">→</span></a>
+          <a class="analysis-link" data-section="tutorial-linear-model" href="#tab-tutorial"><span lang="en">Tutorial</span><span lang="ja">チュートリアル</span> <span aria-hidden="true">→</span></a>
         </li>
         <li class="analysis-item">
           <svg class="analysis-icon" viewBox="0 0 48 48" aria-hidden="true">
@@ -97,10 +99,10 @@
             <circle class="ai-brand-dot" cx="33" cy="26" r="2.6"/>
           </svg>
           <div class="analysis-body">
-            <h3>Optimal power flow</h3>
-            <p>General formulations of OPF problems on the same network.</p>
+            <h3><span lang="en">Optimal power flow</span><span lang="ja">最適潮流計算</span></h3>
+            <p><span lang="en">General formulations of OPF problems on the same network.</span><span lang="ja">同じ系統モデルの上で、一般的な形の最適潮流計算問題を扱います。</span></p>
           </div>
-          <a class="analysis-link" data-tutorial="Tutorial5_1_OPF.mlx" href="#tab-tutorial">Tutorial <span aria-hidden="true">→</span></a>
+          <a class="analysis-link" data-tutorial="Tutorial5_1_OPF.mlx" href="#tab-tutorial"><span lang="en">Tutorial</span><span lang="ja">チュートリアル</span> <span aria-hidden="true">→</span></a>
         </li>
         <li class="analysis-item">
           <svg class="analysis-icon" viewBox="0 0 48 48" aria-hidden="true">
@@ -111,124 +113,154 @@
             <circle class="ai-brand-dot" cx="22" cy="8" r="2.2"/>
           </svg>
           <div class="analysis-body">
-            <h3>Graph &amp; animation</h3>
-            <p>Network graphs whose node heights and colours follow the response.</p>
+            <h3><span lang="en">Graph &amp; animation</span><span lang="ja">グラフとアニメーション</span></h3>
+            <p><span lang="en">Network graphs whose node heights and colours follow the response.</span><span lang="ja">ノードの高さと色が応答に合わせて変わる系統グラフを描きます。</span></p>
           </div>
         </li>
       </ol>
 
-      <h2>Update Log</h2>
-      <ul class="ulog-legend" aria-label="Update types">
-        <li class="is-added">Added</li>
-        <li class="is-changed">Changed</li>
-        <li class="is-deprecated">Deprecated</li>
-        <li class="is-removed">Removed</li>
-        <li class="is-fixed">Fixed</li>
+      <h2><span lang="en">Update Log</span><span lang="ja">更新履歴</span></h2>
+      <ul class="ulog-legend" aria-label="Update types" data-aria-label-ja="更新の種類">
+        <li class="is-added"><span lang="en">Added</span><span lang="ja">追加</span></li>
+        <li class="is-changed"><span lang="en">Changed</span><span lang="ja">変更</span></li>
+        <li class="is-deprecated"><span lang="en">Deprecated</span><span lang="ja">非推奨</span></li>
+        <li class="is-removed"><span lang="en">Removed</span><span lang="ja">削除</span></li>
+        <li class="is-fixed"><span lang="en">Fixed</span><span lang="ja">修正</span></li>
       </ul>
-      <div id="update-log-container" class="ulog" tabindex="0" role="region" aria-label="Update log, newest first. Scroll sideways to see more."></div>
+      <div id="update-log-container" class="ulog" tabindex="0" role="region" aria-label="Update log, newest first. Scroll sideways to see more." data-aria-label-ja="更新履歴（新しい順）。横にスクロールすると続きを表示します。"></div>
 
-      <h2>License</h2>
-      <p>
+      <h2><span lang="en">License</span><span lang="ja">ライセンス</span></h2>
+      <p lang="en">
         GUILDA is released under the MIT License. For more details, please refer to the
         <a href="../LICENSE" target="_blank"><code>LICENSE</code></a> file located in the root directory of the repository.
+      </p>
+      <p lang="ja">
+        GUILDA は MIT ライセンスで公開しています。詳しくはリポジトリのルートにある
+        <a href="../LICENSE" target="_blank"><code>LICENSE</code></a> ファイルを参照してください。
       </p>
 
     </div>
 
     <div id="tab-about" class="tab-content about">
       <div class="about-hero">
-        <p class="about-eyebrow">About GUILDA</p>
-        <h1 class="about-title">Power-system knowledge, in the language of systems and control.</h1>
-        <p class="about-lead">
-          Why GUILDA exists and the ideas behind its design. GUILDA is developed by the Ishizaki Laboratory in collaboration with Takahiro Kawaguchi (Gunma University).
-        </p>
+        <p class="about-eyebrow"><span lang="en">About GUILDA</span><span lang="ja">GUILDA について</span></p>
+        <h1 class="about-title"><span lang="en">Power-system knowledge, in the language of systems and control.</span><span lang="ja">電力系統の知識を、システム制御の言葉で。</span></h1>
+        <p class="about-lead" lang="en">Why GUILDA exists and the ideas behind its design. GUILDA is developed by the Ishizaki Laboratory in collaboration with Takahiro Kawaguchi (Gunma University).</p>
+        <p class="about-lead" lang="ja">GUILDA が生まれた理由と、その設計の考え方を紹介します。GUILDA は石崎研究室が川口貴弘氏（群馬大学）と共同で開発しています。</p>
         <figure class="about-demo">
-          <img src="./images/movie.gif" alt="GUILDA animation: a network graph whose node heights and colours follow the simulated response" class="demo-gif">
-          <figcaption>A simulated fault spreading through a network, drawn by GUILDA's animation tools.</figcaption>
+          <img src="./images/movie.gif" data-alt-ja="GUILDA のアニメーション: ノードの高さと色がシミュレーション結果に合わせて変わる系統グラフ" alt="GUILDA animation: a network graph whose node heights and colours follow the simulated response" class="demo-gif">
+          <figcaption><span lang="en">A simulated fault spreading through a network, drawn by GUILDA's animation tools.</span><span lang="ja">系統に広がる地絡の影響を、GUILDA のアニメーション機能で描いたものです。</span></figcaption>
         </figure>
       </div>
 
       <section class="about-section">
         <div class="about-text">
-          <p class="about-step"><span>01</span> Why</p>
-          <h2>Future grids are a control problem</h2>
-          <p>
+          <p class="about-step"><span>01</span> <span lang="en">Why</span><span lang="ja">なぜ</span></p>
+          <h2><span lang="en">Future grids are a control problem</span><span lang="ja">これからの電力系統は制御の問題</span></h2>
+          <p lang="en">
             Decarbonisation changes who takes part in the grid. Power once flowed one way, from large plants to consumers.
             Now wind and solar plants, homes with rooftop PV, batteries and microgrids join in, and many of them can be controlled.
             Keeping the supply stable means steering that flow, and that is where control engineering can help.
           </p>
-          <p>
+          <p lang="ja">
+            脱炭素化によって、電力系統に参加する主体が変わりつつあります。かつて電力は大規模な発電所から需要家へ一方向に流れていました。
+            いまは風力・太陽光発電所、屋根上太陽光のある家庭、蓄電池、マイクログリッドが加わり、その多くは制御できます。
+            安定した供給を保つにはその流れを操る必要があり、そこで制御工学が力を発揮できます。
+          </p>
+          <p lang="en">
             Yet the two fields frame problems differently. Power-system and power-electronics tools value detailed models, fast computation,
             faithful reproduction of real events and one module per piece of equipment. Control engineering looks for models that capture the essential dynamics,
             and for principles that follow from them. Learning the power domain well enough to bridge that gap takes a lot of time.
           </p>
+          <p lang="ja">
+            ところが、二つの分野では問題の捉え方が異なります。電力系統やパワーエレクトロニクスのツールは、詳細なモデル、高速な計算、
+            実際の現象の忠実な再現、機器ごとに一つのモジュールを重視します。一方、制御工学は本質的なダイナミクスを捉えたモデルと、
+            そこから導かれる原理を求めます。この溝を埋められるほど電力分野を学ぶには、多くの時間がかかります。
+          </p>
         </div>
         <figure class="about-figure">
-          <img src="./images/about/grid-past-future.svg" alt="Before: a power plant sends power one way to homes. Ahead: wind, homes with solar panels, a factory, a battery and a microgrid exchange power in both directions." width="720" height="300">
+          <img src="./images/about/grid-past-future.svg" data-alt-ja="これまで: 発電所から家庭へ電力が一方向に流れる。これから: 風力、太陽光パネルのある家庭、工場、蓄電池、マイクログリッドが双方向に電力をやり取りする。" alt="Before: a power plant sends power one way to homes. Ahead: wind, homes with solar panels, a factory, a battery and a microgrid exchange power in both directions." width="720" height="300">
         </figure>
       </section>
 
       <section class="about-section about-what">
         <div class="about-text">
-          <p class="about-step"><span>02</span> What</p>
-          <h2>A simulator built for systems and control</h2>
-          <p>
+          <p class="about-step"><span>02</span> <span lang="en">What</span><span lang="ja">何を</span></p>
+          <h2><span lang="en">A simulator built for systems and control</span><span lang="ja">システム制御のためのシミュレータ</span></h2>
+          <p lang="en">
             GUILDA is a power-system simulator for students and researchers in systems and control. It brings power-system knowledge into control engineering,
             so that you can study grids with the tools and questions of our own field.
           </p>
-          <p>
+          <p lang="ja">
+            GUILDA は、システム制御を学ぶ学生・研究者のための電力系統シミュレータです。電力系統の知識を制御工学に持ち込み、
+            私たち自身の分野の道具と問いで電力系統を研究できるようにします。
+          </p>
+          <p lang="en">
             It is closely linked with the textbook <a href="https://lim.ishizaki-lab.jp/guilda#h.66rvn04iyvio" target="_blank">「電力系統のシステム制御工学」</a>
             (<em>Systems Control Engineering of Power Systems</em>), which explains power systems from the viewpoint of control and uses GUILDA for its numerical examples.
           </p>
+          <p lang="ja">
+            教科書<a href="https://lim.ishizaki-lab.jp/guilda#h.66rvn04iyvio" target="_blank">「電力系統のシステム制御工学」</a>と密接に連携しています。
+            この教科書は電力系統を制御の視点から解説し、数値例に GUILDA を用いています。
+          </p>
         </div>
         <div class="about-bridge" aria-hidden="true">
-          <span class="about-bridge-node">Power systems engineering</span>
+          <span class="about-bridge-node"><span lang="en">Power systems engineering</span><span lang="ja">電力系統工学</span></span>
           <span class="about-bridge-arrow"><img src="./images/GUILDA-logo-square.png" alt=""></span>
-          <span class="about-bridge-node is-brand">Systems &amp; control</span>
+          <span class="about-bridge-node is-brand"><span lang="en">Systems &amp; control</span><span lang="ja">システム制御</span></span>
         </div>
       </section>
 
       <section class="about-goals">
-        <p class="about-step"><span>03</span> Design goals</p>
-        <h2>Three things GUILDA is designed to do</h2>
+        <p class="about-step"><span>03</span> <span lang="en">Design goals</span><span lang="ja">設計目標</span></p>
+        <h2><span lang="en">Three things GUILDA is designed to do</span><span lang="ja">GUILDA が目指す三つのこと</span></h2>
         <ol class="goal-list">
           <li>
             <span class="goal-num">1</span>
-            <h3>Usable by power-system beginners</h3>
-            <p>Run real analyses without first deriving admittance matrices, operating points or the differential-algebraic equations of the whole grid.</p>
+            <h3><span lang="en">Usable by power-system beginners</span><span lang="ja">電力系統の初学者でも使える</span></h3>
+            <p><span lang="en">Run real analyses without first deriving admittance matrices, operating points or the differential-algebraic equations of the whole grid.</span><span lang="ja">アドミタンス行列や動作点、系統全体の微分代数方程式を自分で導出しなくても、本格的な解析を実行できます。</span></p>
           </li>
           <li>
             <span class="goal-num">2</span>
-            <h3>Reveal structure and properties</h3>
-            <p>Tutorials, graphs, animations and linearized models help you see why the system behaves as it does, not only what it does.</p>
+            <h3><span lang="en">Reveal structure and properties</span><span lang="ja">構造と性質を明らかにする</span></h3>
+            <p><span lang="en">Tutorials, graphs, animations and linearized models help you see why the system behaves as it does, not only what it does.</span><span lang="ja">チュートリアル、グラフ、アニメーション、線形化モデルによって、系統が何をするかだけでなく、なぜそう振る舞うのかを理解できます。</span></p>
           </li>
           <li>
             <span class="goal-num">3</span>
-            <h3>Split models by signals</h3>
-            <p>Divide the system by physical signals such as frequency and power, not only by equipment, so that control-theoretic analyses fit naturally.</p>
+            <h3><span lang="en">Split models by signals</span><span lang="ja">信号でモデルを分割する</span></h3>
+            <p><span lang="en">Divide the system by physical signals such as frequency and power, not only by equipment, so that control-theoretic analyses fit naturally.</span><span lang="ja">機器単位だけでなく、周波数や電力などの物理信号でシステムを分割できるので、制御理論に基づく解析に自然になじみます。</span></p>
           </li>
         </ol>
         <figure class="about-figure about-figure-wide">
-          <img src="./images/about/signal-split.svg" alt="A synchronous generator has a turbine and an electromagnet. GUILDA lets you split the network into a mechanical subsystem F and an electrical subsystem G in negative feedback, exchanging frequency deviation and active power." width="720" height="280">
-          <figcaption>
+          <img src="./images/about/signal-split.svg" data-alt-ja="同期発電機はタービンと電磁石を持つ。GUILDA では系統を機械系サブシステム F と電気系サブシステム G に分け、周波数偏差と有効電力をやり取りする負のフィードバック結合として扱える。" alt="A synchronous generator has a turbine and an electromagnet. GUILDA lets you split the network into a mechanical subsystem F and an electrical subsystem G in negative feedback, exchanging frequency deviation and active power." width="720" height="280">
+          <figcaption lang="en">
             Example: for passivity-based stability analysis, the always-passive mechanical parts become one subsystem <em>F</em> in feedback with the electrical subsystem <em>G</em>.
             If <em>G</em> is passive, so is the whole system, and the analysis can focus on <em>G</em>. A tool that only offers one block per machine cannot express this split.
+          </figcaption>
+          <figcaption lang="ja">
+            例: 受動性に基づく安定性解析では、常に受動的な機械系をひとつのサブシステム <em>F</em> とし、電気系のサブシステム <em>G</em> とのフィードバック結合として扱います。
+            <em>G</em> が受動的であればシステム全体も受動的になるので、<em>G</em> に絞って解析できます。発電機ごとに一つのブロックしか持たないツールでは、この分割を表現できません。
           </figcaption>
         </figure>
       </section>
 
       <section class="about-section">
         <div class="about-text">
-          <p class="about-step"><span>04</span> How</p>
-          <h2>Building blocks that snap together</h2>
-          <p>
+          <p class="about-step"><span>04</span> <span lang="en">How</span><span lang="ja">どのように</span></p>
+          <h2><span lang="en">Building blocks that snap together</span><span lang="ja">組み合わせて使える部品</span></h2>
+          <p lang="en">
             GUILDA is object-oriented. Buses, branches, generators, loads and controllers are classes, and they fit together like puzzle pieces into a
             <code>PowerNetwork</code>. The network takes care of the electrical constraints and the interactions between devices, so you can go straight to simulating,
             linearizing and plotting.
           </p>
+          <p lang="ja">
+            GUILDA はオブジェクト指向で作られています。母線、ブランチ、発電機、負荷、制御器はそれぞれクラスであり、パズルのピースのように組み合わせて
+            <code>PowerNetwork</code> を構成します。電気的な制約や機器間の相互作用はネットワークが扱うので、すぐにシミュレーション、
+            近似線形化、プロットに進めます。
+          </p>
         </div>
         <figure class="about-figure">
-          <img src="./images/about/puzzle-network.svg" alt="Loose pieces labelled Generator, Bus, Branch, Load and Controller snap into one PowerNetwork, which is then simulated to give a time response." width="720" height="300">
+          <img src="./images/about/puzzle-network.svg" data-alt-ja="発電機、母線、ブランチ、負荷、制御器のピースが一つの PowerNetwork に組み合わさり、シミュレーションで時間応答が得られる。" alt="Loose pieces labelled Generator, Bus, Branch, Load and Controller snap into one PowerNetwork, which is then simulated to give a time response." width="720" height="300">
         </figure>
 <pre class="about-code"><code>% Snap the pieces together
 net = PowerNetwork("TestSystem");
@@ -247,111 +279,128 @@ sys = net.get_sys();                  % linearized model</code></pre>
 
       <section class="about-section about-vision">
         <div class="about-text">
-          <p class="about-step"><span>05</span> Vision</p>
-          <h2>A platform where knowledge keeps growing</h2>
-          <p>
+          <p class="about-step"><span>05</span> <span lang="en">Vision</span><span lang="ja">ビジョン</span></p>
+          <h2><span lang="en">A platform where knowledge keeps growing</span><span lang="ja">知識が育ち続けるプラットフォーム</span></h2>
+          <p lang="en">
             Research know-how often lives in one person's head and leaves with them. GUILDA aims to be a knowledge platform built on the
             SECI knowledge spiral of Ikujiro Nonaka, where tacit and explicit knowledge keep turning into each other:
           </p>
+          <p lang="ja">
+            研究のノウハウは一人の頭の中にとどまり、その人とともに失われがちです。GUILDA は、野中郁次郎の SECI モデル（知識スパイラル）に基づき、
+            暗黙知と形式知が絶えず移り変わる知識プラットフォームを目指しています。
+          </p>
           <ul class="seci-list">
-            <li><strong>Socialization</strong> Share experience and progress in meetings and discussions.</li>
-            <li><strong>Externalization</strong> Write what you learned as models and analyses with clear interfaces.</li>
-            <li><strong>Combination</strong> Connect those objects on the platform into new analyses.</li>
-            <li><strong>Internalization</strong> Use the platform in your own research and gain new insight.</li>
+            <li><strong><span lang="en">Socialization</span><span lang="ja">共同化</span></strong> <span lang="en">Share experience and progress in meetings and discussions.</span><span lang="ja">ミーティングや議論を通じて経験と進捗を共有します。</span></li>
+            <li><strong><span lang="en">Externalization</span><span lang="ja">表出化</span></strong> <span lang="en">Write what you learned as models and analyses with clear interfaces.</span><span lang="ja">学んだことを、明確なインタフェースを持つモデルや解析として書き表します。</span></li>
+            <li><strong><span lang="en">Combination</span><span lang="ja">連結化</span></strong> <span lang="en">Connect those objects on the platform into new analyses.</span><span lang="ja">それらのオブジェクトをプラットフォーム上でつなぎ、新しい解析を組み立てます。</span></li>
+            <li><strong><span lang="en">Internalization</span><span lang="ja">内面化</span></strong> <span lang="en">Use the platform in your own research and gain new insight.</span><span lang="ja">自分の研究でプラットフォームを使い、新たな知見を得ます。</span></li>
           </ul>
-          <p>
+          <p lang="en">
             Each turn of the spiral leaves something reusable behind, so knowledge is not tied to individuals and keeps growing.
             The name echoes a <em>guild</em>: a circle of researchers and engineers who learn from one another and build together.
           </p>
+          <p lang="ja">
+            スパイラルが一回りするたびに再利用できるものが残るので、知識は個人に縛られず育ち続けます。
+            名前は<em>ギルド</em>に由来します。互いに学び合い、ともに作り上げる研究者と技術者の集まりです。
+          </p>
         </div>
         <figure class="about-figure about-seci">
-          <img src="./images/about/seci-cycle.svg" alt="The SECI spiral turning clockwise: Socialization, Externalization, Combination, Internalization, with GUILDA at the centre." width="480" height="480">
+          <img src="./images/about/seci-cycle.svg" data-alt-ja="時計回りに回る SECI スパイラル: 共同化、表出化、連結化、内面化。中心に GUILDA がある。" alt="The SECI spiral turning clockwise: Socialization, Externalization, Combination, Internalization, with GUILDA at the centre." width="480" height="480">
           <img src="./images/GUILDA-logo-square.png" alt="" class="about-seci-logo">
         </figure>
       </section>
 
       <figure class="about-figure about-figure-wide about-guild">
-        <img src="./images/about/guild-platform.svg" alt="People around a shared platform each add a block, such as a new model or a new controller, and everyone reuses the growing structure." width="720" height="300">
+        <img src="./images/about/guild-platform.svg" data-alt-ja="共有のプラットフォームを囲む人々が、新しいモデルや新しい制御器などのブロックを加え、全員が育っていく構造を再利用する。" alt="People around a shared platform each add a block, such as a new model or a new controller, and everyone reuses the growing structure." width="720" height="300">
       </figure>
 
       <section class="about-compare">
-        <p class="about-step"><span>06</span> Compared</p>
-        <h2>Where GUILDA stands</h2>
+        <p class="about-step"><span>06</span> <span lang="en">Compared</span><span lang="ja">比較</span></p>
+        <h2><span lang="en">Where GUILDA stands</span><span lang="ja">GUILDA の位置づけ</span></h2>
         <div class="compare-scroll">
           <table class="compare-table">
             <thead>
-              <tr><th>Analysis</th><th>Conventional analysis package</th><th>GUILDA</th></tr>
+              <tr><th><span lang="en">Analysis</span><span lang="ja">解析</span></th><th><span lang="en">Conventional analysis package</span><span lang="ja">従来の解析パッケージ</span></th><th>GUILDA</th></tr>
             </thead>
             <tbody>
-              <tr><td>Power flow</td><td><span class="mark-yes">✓</span></td><td><span class="mark-yes">✓</span></td></tr>
-              <tr><td>Small-signal stability via linearization</td><td><span class="mark-yes">✓</span></td><td><span class="mark-yes">✓</span></td></tr>
-              <tr><td>Time-domain (transient) response</td><td><span class="mark-yes">✓</span></td><td><span class="mark-yes">✓</span></td></tr>
-              <tr><td>Interfaces for control engineering</td><td><span class="mark-part">Limited</span></td><td><span class="mark-core">Core focus</span></td></tr>
+              <tr><td><span lang="en">Power flow</span><span lang="ja">潮流計算</span></td><td><span class="mark-yes">✓</span></td><td><span class="mark-yes">✓</span></td></tr>
+              <tr><td><span lang="en">Small-signal stability via linearization</span><span lang="ja">近似線形化による微小信号安定性</span></td><td><span class="mark-yes">✓</span></td><td><span class="mark-yes">✓</span></td></tr>
+              <tr><td><span lang="en">Time-domain (transient) response</span><span lang="ja">時間応答（過渡応答）</span></td><td><span class="mark-yes">✓</span></td><td><span class="mark-yes">✓</span></td></tr>
+              <tr><td><span lang="en">Interfaces for control engineering</span><span lang="ja">制御工学向けのインタフェース</span></td><td><span class="mark-part"><span lang="en">Limited</span><span lang="ja">限定的</span></span></td><td><span class="mark-core"><span lang="en">Core focus</span><span lang="ja">中心的な目標</span></span></td></tr>
             </tbody>
           </table>
         </div>
-        <p class="compare-note">Based on Table 1 of the article below, which compares GUILDA with CPAT, a power-system analysis package widely used in Japan. CPAT also offers fault and harmonic calculations, which GUILDA does not target.</p>
+        <p class="compare-note" lang="en">Based on Table 1 of the article below, which compares GUILDA with CPAT, a power-system analysis package widely used in Japan. CPAT also offers fault and harmonic calculations, which GUILDA does not target.</p>
+        <p class="compare-note" lang="ja">下記の記事の表 1 に基づきます。この表は、国内で広く使われている電力系統解析パッケージ CPAT と GUILDA を比較したものです。CPAT は故障計算や高調波計算も備えていますが、GUILDA はそれらを対象としていません。</p>
       </section>
 
       <section class="about-reading">
-        <h2>Books and articles</h2>
+        <h2><span lang="en">Books and articles</span><span lang="ja">書籍・記事</span></h2>
         <ul>
           <li>
-            T. Ishizaki, T. Kawaguchi and K. Kawabe,
-            <a href="https://lim.ishizaki-lab.jp/guilda#h.66rvn04iyvio" target="_blank">「電力系統のシステム制御工学 – システム数理と MATLAB シミュレーション –」</a>, Corona Publishing (in Japanese).
-            The textbook explains power systems in the language of systems and control and uses GUILDA for its numerical examples.
+            <span lang="en">T. Ishizaki, T. Kawaguchi and K. Kawabe,</span><span lang="ja">石崎孝幸・川口貴弘・河辺賢一 著、</span>
+            <a href="https://lim.ishizaki-lab.jp/guilda#h.66rvn04iyvio" target="_blank">「電力系統のシステム制御工学 – システム数理と MATLAB シミュレーション –」</a><span lang="en">, Corona Publishing (in Japanese).
+            The textbook explains power systems in the language of systems and control and uses GUILDA for its numerical examples.</span><span lang="ja">、コロナ社。
+            電力系統をシステム制御の言葉で解説した教科書で、数値例に GUILDA を用いています。</span>
           </li>
           <li>
             T. Nishino, T. Kawaguchi and T. Ishizaki,
             <a href="https://www.jstage.jst.go.jp/article/sicejl/62/9/62_559/_article/-char/ja" target="_blank">「GUILDA：エネルギーナレッジマネジメントのはじめの一歩」</a>,
-            <em>計測と制御</em>, Vol. 62, No. 9, pp. 559–563, 2023 (in Japanese).
+            <em>計測と制御</em>, Vol. 62, No. 9, pp. 559–563, 2023<span lang="en"> (in Japanese)</span>.
           </li>
           <li>
-            <a href="https://www.jstage.jst.go.jp/article/sicejl/62/10/62_640/_pdf/-char/ja" target="_blank">Introductory article</a>,
-            <em>計測と制御</em>, Vol. 62, No. 10 (in Japanese, PDF).
+            <a href="https://www.jstage.jst.go.jp/article/sicejl/62/10/62_640/_pdf/-char/ja" target="_blank"><span lang="en">Introductory article</span><span lang="ja">紹介記事</span></a>,
+            <em>計測と制御</em>, Vol. 62, No. 10 (<span lang="en">in Japanese, </span>PDF).
           </li>
         </ul>
-        <h2>How to cite</h2>
-        <p>If you use GUILDA in published work, please cite the article that introduces it:</p>
+        <h2><span lang="en">How to cite</span><span lang="ja">引用方法</span></h2>
+        <p lang="en">If you use GUILDA in published work, please cite the article that introduces it:</p>
+        <p lang="ja">GUILDA を用いた成果を発表する際は、GUILDA を紹介した次の記事を引用してください。</p>
 <pre class="about-cite"><code>T. Nishino, T. Kawaguchi and T. Ishizaki, "GUILDA: エネルギーナレッジマネジメントのはじめの一歩,"
 計測と制御, Vol. 62, No. 9, pp. 559–563, 2023.</code></pre>
       </section>
     </div>
 
     <div id="tab-getting-started" class="tab-content">
-      <h1>Getting Started</h1>
+      <h1><span lang="en">Getting Started</span><span lang="ja">はじめに</span></h1>
 
-      <h2>Requirements</h2>
-      <p>GUILDA runs on MATLAB and requires the following products:</p>
+      <h2><span lang="en">Requirements</span><span lang="ja">動作環境</span></h2>
+      <p lang="en">GUILDA runs on MATLAB and requires the following products:</p>
+      <p lang="ja">GUILDA は MATLAB 上で動作し、次の製品が必要です。</p>
       <ul>
         <li>MATLAB</li>
         <li>Control System Toolbox</li>
         <li>Optimization Toolbox</li>
       </ul>
-      <p>Symbolic Math Toolbox is optional. GUILDA never uses symbolic derivatives at run time; only a few developer scripts that check hand-written Jacobians need it.</p>
+      <p lang="en">Symbolic Math Toolbox is optional. GUILDA never uses symbolic derivatives at run time; only a few developer scripts that check hand-written Jacobians need it.</p>
+      <p lang="ja">Symbolic Math Toolbox は任意です。GUILDA は実行時に記号微分を使いません。手書きのヤコビ行列を検証する一部の開発者向けスクリプトだけが必要とします。</p>
 
-      <h2>Install</h2>
-      <p>Clone or download the repository from GitHub, or open it directly in MATLAB Online.</p>
+      <h2><span lang="en">Install</span><span lang="ja">インストール</span></h2>
+      <p lang="en">Clone or download the repository from GitHub, or open it directly in MATLAB Online.</p>
+      <p lang="ja">GitHub からリポジトリをクローンまたはダウンロードするか、MATLAB Online で直接開いてください。</p>
       <div class="install-buttons">
-        <a href="https://github.com/guilda-dev/guilda" target="_blank" class="btn-github"><svg class="gh-mark" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg><span>From GitHub</span></a>
-        <a href="https://matlab.mathworks.com/open/github/v1?repo=guilda-dev/guilda&project=./GUILDA.prj" target="_blank" class="btn-badge"><img src="https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg" alt="Open in MATLAB Online" onerror="this.parentNode.classList.add('is-offline')"><span class="btn-badge-fallback">Open in MATLAB Online</span></a>
+        <a href="https://github.com/guilda-dev/guilda" target="_blank" class="btn-github"><svg class="gh-mark" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg><span><span lang="en">From GitHub</span><span lang="ja">GitHub から入手</span></span></a>
+        <a href="https://matlab.mathworks.com/open/github/v1?repo=guilda-dev/guilda&project=./GUILDA.prj" target="_blank" class="btn-badge"><img src="https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg" alt="Open in MATLAB Online" onerror="this.parentNode.classList.add('is-offline')"><span class="btn-badge-fallback"><span lang="en">Open in MATLAB Online</span><span lang="ja">MATLAB Online で開く</span></span></a>
       </div>
 
-      <h2>Start GUILDA</h2>
-      <p>Open the GUILDA repository folder in MATLAB and run the constructor at the beginning of a session.</p>
+      <h2><span lang="en">Start GUILDA</span><span lang="ja">GUILDA の起動</span></h2>
+      <p lang="en">Open the GUILDA repository folder in MATLAB and run the constructor at the beginning of a session.</p>
+      <p lang="ja">MATLAB で GUILDA のリポジトリフォルダを開き、セッションの最初にコンストラクタを実行します。</p>
 <pre><code>&gt;&gt; GUILDA;</code></pre>
-      <p>The constructor prepares the environment by performing the configured startup tasks:</p>
+      <p lang="en">The constructor prepares the environment by performing the configured startup tasks:</p>
+      <p lang="ja">コンストラクタは、設定された起動時の処理を実行して環境を整えます。</p>
       <ul>
-        <li>Print the GUILDA logo.</li>
-        <li>Pull the latest revision when Git update is enabled.</li>
-        <li>Add the required GUILDA folders to the MATLAB path. This step is always performed.</li>
-        <li>Check the required MATLAB products.</li>
-        <li>Update the generated documentation database and class signature map when enabled.</li>
-        <li>Display the update log and open the tutorial when enabled.</li>
+        <li><span lang="en">Print the GUILDA logo.</span><span lang="ja">GUILDA のロゴを表示します。</span></li>
+        <li><span lang="en">Pull the latest revision when Git update is enabled.</span><span lang="ja">Git による更新が有効なとき、最新のリビジョンを取得します。</span></li>
+        <li><span lang="en">Add the required GUILDA folders to the MATLAB path. This step is always performed.</span><span lang="ja">必要な GUILDA のフォルダを MATLAB のパスに追加します。この処理は常に実行されます。</span></li>
+        <li><span lang="en">Check the required MATLAB products.</span><span lang="ja">必要な MATLAB 製品を確認します。</span></li>
+        <li><span lang="en">Update the generated documentation database and class signature map when enabled.</span><span lang="ja">有効なとき、生成されるドキュメントのデータベースとクラスのシグネチャマップを更新します。</span></li>
+        <li><span lang="en">Display the update log and open the tutorial when enabled.</span><span lang="ja">有効なとき、更新履歴を表示し、チュートリアルを開きます。</span></li>
       </ul>
 
-      <h2>Your First Simulation</h2>
-      <p>Load a packaged network, apply a short fault at one bus and simulate the response. The plot shows the frequency deviation of several generators.</p>
+      <h2><span lang="en">Your First Simulation</span><span lang="ja">最初のシミュレーション</span></h2>
+      <p lang="en">Load a packaged network, apply a short fault at one bus and simulate the response. The plot shows the frequency deviation of several generators.</p>
+      <p lang="ja">同梱の系統モデルを読み込み、ある母線で短時間の地絡を起こして応答をシミュレーションします。プロットにはいくつかの発電機の周波数偏差が表示されます。</p>
 <pre><code>net = network.IEEE14bus;
 fault = EventODE("fault", net, "FaultBus", "B008", "TimeSpan", [3, 3.1]);
 sol = net.simulate([0, 50], fault);
@@ -360,15 +409,17 @@ xsol = sol.odeResults;
 figure;
 hold on;
 arrayfun(@(i) plot(xsol.t, xsol.Bus(i).Component(1).X.omega), [1, 2, 3, 6, 8]);</code></pre>
-      <p>To build your own network, linearize it or add controllers, continue with the <a href="#tab-tutorial" onclick="openTab('tab-tutorial'); return false;">Tutorial</a>.</p>
+      <p lang="en">To build your own network, linearize it or add controllers, continue with the <a href="#tab-tutorial" onclick="openTab('tab-tutorial'); return false;">Tutorial</a>.</p>
+      <p lang="ja">独自の系統モデルの構築、近似線形化、制御器の追加については <a href="#tab-tutorial" onclick="openTab('tab-tutorial'); return false;">チュートリアル</a> に進んでください。</p>
 
-      <h2>Startup Settings</h2>
-      <p>Use the settings window to enable or disable optional startup tasks. Path setup cannot be disabled because it is required to use GUILDA.</p>
+      <h2><span lang="en">Startup Settings</span><span lang="ja">起動時の設定</span></h2>
+      <p lang="en">Use the settings window to enable or disable optional startup tasks. Path setup cannot be disabled because it is required to use GUILDA.</p>
+      <p lang="ja">設定ウィンドウで、起動時の任意の処理を有効・無効にできます。パスの設定は GUILDA の利用に必須のため無効にできません。</p>
 <pre><code>&gt;&gt; GUILDA.setting();</code></pre>
       
-      <img src="./images/setting_startup.png" alt="GUILDA Environment Settings" style="width: 50%; max-width: 100%; height: auto; display: block; margin: 20px 0; border: 1px solid var(--line); border-radius: var(--radius);">
+      <img src="./images/setting_startup.png" data-alt-ja="GUILDA の環境設定" alt="GUILDA Environment Settings" style="width: 50%; max-width: 100%; height: auto; display: block; margin: 20px 0; border: 1px solid var(--line); border-radius: var(--radius);">
 
-      <h2>Utility Functions</h2>
+      <h2><span lang="en">Utility Functions</span><span lang="ja">ユーティリティ関数</span></h2>
 <pre><code>&gt;&gt; GUILDA.pwd()         % Get the GUILDA repository path
 &gt;&gt; GUILDA.rmpath()      % Remove GUILDA folders from the MATLAB path
 &gt;&gt; GUILDA.addpath()     % Add the required folders again
@@ -379,23 +430,27 @@ arrayfun(@(i) plot(xsol.t, xsol.Bus(i).Component(1).X.omega), [1, 2, 3, 6, 8]);<
 &gt;&gt; GUILDA.dictionary()  % Search the implemented class hierarchy
 &gt;&gt; GUILDA.newclass()    % Open the class creation tool (under development)</code></pre>
 
-      <h2>Managed GUILDA Folders</h2>
-      <p>The following folders under <code>@GUILDA</code> are managed by GUILDA and should not be edited directly:</p>
+      <h2><span lang="en">Managed GUILDA Folders</span><span lang="ja">GUILDA が管理するフォルダ</span></h2>
+      <p lang="en">The following folders under <code>@GUILDA</code> are managed by GUILDA and should not be edited directly:</p>
+      <p lang="ja"><code>@GUILDA</code> 以下の次のフォルダは GUILDA が管理しているため、直接編集しないでください。</p>
       <table>
-        <tr><th>Folder</th><th>Purpose</th></tr>
-        <tr><td><code>@GUILDA/private</code></td><td>Internal functions used by GUILDA class methods.</td></tr>
-        <tr><td><code>@GUILDA/config</code></td><td>Configuration values used during startup and internal analyses.</td></tr>
-        <tr><td><code>@GUILDA/user</code></td><td>User settings and tags associated with instantiated objects.</td></tr>
+        <tr><th><span lang="en">Folder</span><span lang="ja">フォルダ</span></th><th><span lang="en">Purpose</span><span lang="ja">用途</span></th></tr>
+        <tr><td><code>@GUILDA/private</code></td><td><span lang="en">Internal functions used by GUILDA class methods.</span><span lang="ja">GUILDA クラスのメソッドが使う内部関数。</span></td></tr>
+        <tr><td><code>@GUILDA/config</code></td><td><span lang="en">Configuration values used during startup and internal analyses.</span><span lang="ja">起動時や内部の解析で使う設定値。</span></td></tr>
+        <tr><td><code>@GUILDA/user</code></td><td><span lang="en">User settings and tags associated with instantiated objects.</span><span lang="ja">ユーザー設定と、生成したオブジェクトに関連付けたタグ。</span></td></tr>
       </table>
     </div>
 
     <div id="tab-tutorial" class="tab-content">
-      <h1>Basic Workflow</h1>
-      <p>A typical GUILDA analysis proceeds from network construction to operating-point initialization, followed by simulation, linearization, or controller evaluation. The examples below follow the verification flow in <code>+DebugScript</code>. They assume GUILDA has been started as described in <a href="#tab-getting-started" onclick="openTab('tab-getting-started'); return false;">Getting Started</a>.</p>
-      <p>For users who want to learn through hands-on experience, please refer to the <a href="#hands-on-tutorial" onclick="openTab('tab-tutorial', 'hands-on-tutorial'); return false;" style="font-weight: bold;">Hands-on Tutorial</a> section below.</p>
+      <h1><span lang="en">Basic Workflow</span><span lang="ja">基本的な流れ</span></h1>
+      <p lang="en">A typical GUILDA analysis proceeds from network construction to operating-point initialization, followed by simulation, linearization, or controller evaluation. The examples below follow the verification flow in <code>+DebugScript</code>. They assume GUILDA has been started as described in <a href="#tab-getting-started" onclick="openTab('tab-getting-started'); return false;">Getting Started</a>.</p>
+      <p lang="ja">GUILDA による典型的な解析は、系統モデルの構築から動作点の初期化へと進み、その後に時間応答シミュレーション、近似線形化、制御器の評価を行います。以下の例は <code>+DebugScript</code> の検証の流れに沿っています。<a href="#tab-getting-started" onclick="openTab('tab-getting-started'); return false;">はじめに</a> の手順で GUILDA を起動していることを前提とします。</p>
+      <p lang="en">For users who want to learn through hands-on experience, please refer to the <a href="#hands-on-tutorial" onclick="openTab('tab-tutorial', 'hands-on-tutorial'); return false;" style="font-weight: bold;">Hands-on Tutorial</a> section below.</p>
+      <p lang="ja">手を動かしながら学びたい方は、下の <a href="#hands-on-tutorial" onclick="openTab('tab-tutorial', 'hands-on-tutorial'); return false;" style="font-weight: bold;">ハンズオンチュートリアル</a> を参照してください。</p>
 
-      <h2>1. Build or Load a Network</h2>
-      <p>For a quick analysis, load one of the packaged networks. To build a model manually, create a <code>PowerNetwork</code> and add buses, branches, and components in that order.</p>
+      <h2><span lang="en">1. Build or Load a Network</span><span lang="ja">1. 系統モデルを構築する・読み込む</span></h2>
+      <p lang="en">For a quick analysis, load one of the packaged networks. To build a model manually, create a <code>PowerNetwork</code> and add buses, branches, and components in that order.</p>
+      <p lang="ja">手早く解析するには、同梱の系統モデルを読み込みます。モデルを自分で構築するときは <code>PowerNetwork</code> を作成し、母線、ブランチ、機器の順に追加します。</p>
 <pre><code>% Load a packaged test network (IEEE 14-bus, MATPOWER case14 data)
 net = network.IEEE14bus;
 % Same network with every transformer tap set to 1
@@ -409,8 +464,9 @@ net.add_branch("pi", [1, 2]);
 net.a_Bus{1}.add_component("gen-park");
 net.a_Bus{2}.add_component("load-power");</code></pre>
 
-      <h2>2. Set and Initialize the Operating Point</h2>
-      <p>Set the power-flow parameters on buses and components, inspect the power-flow solution when needed, and then initialize the model. Initialization distributes the equilibrium voltage, current, active power, and reactive power to each object.</p>
+      <h2><span lang="en">2. Set and Initialize the Operating Point</span><span lang="ja">2. 動作点を設定して初期化する</span></h2>
+      <p lang="en">Set the power-flow parameters on buses and components, inspect the power-flow solution when needed, and then initialize the model. Initialization distributes the equilibrium voltage, current, active power, and reactive power to each object.</p>
+      <p lang="ja">母線と機器に潮流計算のパラメーターを設定し、必要に応じて潮流計算の解を確認してから、モデルを初期化します。初期化によって、平衡点における電圧、電流、有効電力、無効電力が各オブジェクトに割り当てられます。</p>
 <pre><code>% Example power-flow settings
 net.a_Bus{1}.tab_parameter.powerflow{:, ["V", "Varg"]} = [1.05, 0.00];
 net.a_Bus{1}.a_Component{1}.tab_parameter.powerflow{:, ["P", "Q"]} = [nan, nan];
@@ -418,8 +474,9 @@ net.a_Bus{1}.a_Component{1}.tab_parameter.powerflow{:, ["P", "Q"]} = [nan, nan];
 powerflow = net.calculate_powerflow();
 net.initialize();</code></pre>
 
-      <h2 id="tutorial-simulation">3. Run a Time-Domain Simulation</h2>
-      <p>Use <code>EventODE</code> to describe disturbances. Events can represent state offsets, input changes, bus faults, and unit trips.</p>
+      <h2 id="tutorial-simulation"><span lang="en">3. Run a Time-Domain Simulation</span><span lang="ja">3. 時間応答シミュレーションを実行する</span></h2>
+      <p lang="en">Use <code>EventODE</code> to describe disturbances. Events can represent state offsets, input changes, bus faults, and unit trips.</p>
+      <p lang="ja">外乱は <code>EventODE</code> で記述します。イベントでは、状態のオフセット、入力の変化、母線の地絡、機器の解列を表せます。</p>
 <pre><code>net = network.IEEE14bus;
 fault = EventODE("fault", net, ...
     "FaultBus", "B008", ...
@@ -432,16 +489,18 @@ figure;
 hold on;
 arrayfun(@(i) plot(xsol.t, xsol.Bus(i).Component(1).X.omega), [1, 2, 3, 6, 8]);</code></pre>
 
-      <h2 id="tutorial-linear-model">4. Obtain a Linear Model</h2>
-      <p>After initialization, obtain the linearized interconnected model. Buses without dynamic units are detected automatically.</p>
+      <h2 id="tutorial-linear-model"><span lang="en">4. Obtain a Linear Model</span><span lang="ja">4. 線形モデルを求める</span></h2>
+      <p lang="en">After initialization, obtain the linearized interconnected model. Buses without dynamic units are detected automatically.</p>
+      <p lang="ja">初期化の後、近似線形化した相互結合モデルを求めます。動的な機器を持たない母線は自動的に検出されます。</p>
 <pre><code>net = network.IEEE14bus;
 net.initialize();
 
 sys = net.get_sys();
 eig(sys.A)</code></pre>
 
-      <h2>5. Add and Evaluate Controllers</h2>
-      <p>Local controllers are attached to components; global controllers are attached to the network. Reinitialize the network after changing its controller structure, then repeat the simulation or linearization.</p>
+      <h2><span lang="en">5. Add and Evaluate Controllers</span><span lang="ja">5. 制御器を追加して評価する</span></h2>
+      <p lang="en">Local controllers are attached to components; global controllers are attached to the network. Reinitialize the network after changing its controller structure, then repeat the simulation or linearization.</p>
+      <p lang="ja">ローカル制御器は機器に、グローバル制御器はネットワークに取り付けます。制御器の構成を変えたらネットワークを初期化し直し、シミュレーションや近似線形化をやり直します。</p>
 <pre><code>avr = controller.avr.AVR_ST1("avr1");
 pss = controller.pss.PSS1("pss1");
 net.a_Bus{1}.a_Component{1}.add_local_controller(avr, pss);
@@ -452,11 +511,12 @@ sol = net.simulate([0, 50], fault);</code></pre>
 
       <hr style="margin: 50px 0; border: 0; border-top: 1px solid var(--line);">
       
-      <h1 id="hands-on-tutorial">Hands-on Tutorial for GUILDA</h1>
-      <p>Tutorials in Live Script format, which explain how to implement various analyses, are provided in the <code>_GUILDAtutorial</code> folder of the source files.</p>
+      <h1 id="hands-on-tutorial"><span lang="en">Hands-on Tutorial for GUILDA</span><span lang="ja">GUILDA ハンズオンチュートリアル</span></h1>
+      <p lang="en">Tutorials in Live Script format, which explain how to implement various analyses, are provided in the <code>_GUILDAtutorial</code> folder of the source files.</p>
+      <p lang="ja">さまざまな解析の実装方法を解説したライブスクリプト形式のチュートリアルを、ソースの <code>_GUILDAtutorial</code> フォルダに用意しています。</p>
       
       <div id="tutorial-toc-container"></div>
-      <h2>Abstract</h2>
+      <h2><span lang="en">Abstract</span><span lang="ja">各チュートリアルの概要</span></h2>
       <div id="tutorial-abstract-container"></div>
     </div>
 
@@ -464,25 +524,27 @@ sol = net.simulate([0, 50], fault);</code></pre>
       <div class="ref-layout">
       <aside class="ref-aside">
         <div id="reference-source-tree"></div>
-        <h3>On this page</h3>
+        <h3><span lang="en">On this page</span><span lang="ja">このページの内容</span></h3>
         <ul class="ref-toc">
-          <li><a href="#ref-core" onclick="document.getElementById('ref-core')?.scrollIntoView(); return false;">Core Components</a></li>
-          <li><a href="#ref-diagram" onclick="document.getElementById('ref-diagram')?.scrollIntoView(); return false;">Class Diagram</a></li>
-          <li><a href="#ref-inherited" onclick="document.getElementById('ref-inherited')?.scrollIntoView(); return false;">Inherited Classes</a></li>
-          <li><a href="#ref-auxiliary" onclick="document.getElementById('ref-auxiliary')?.scrollIntoView(); return false;">Auxiliary Classes</a></li>
+          <li><a href="#ref-core" onclick="document.getElementById('ref-core')?.scrollIntoView(); return false;"><span lang="en">Core Components</span><span lang="ja">主要な構成要素</span></a></li>
+          <li><a href="#ref-diagram" onclick="document.getElementById('ref-diagram')?.scrollIntoView(); return false;"><span lang="en">Class Diagram</span><span lang="ja">クラス図</span></a></li>
+          <li><a href="#ref-inherited" onclick="document.getElementById('ref-inherited')?.scrollIntoView(); return false;"><span lang="en">Inherited Classes</span><span lang="ja">継承クラス</span></a></li>
+          <li><a href="#ref-auxiliary" onclick="document.getElementById('ref-auxiliary')?.scrollIntoView(); return false;"><span lang="en">Auxiliary Classes</span><span lang="ja">補助クラス</span></a></li>
         </ul>
       </aside>
       <div class="ref-main">
-      <h1>Class Reference</h1>
+      <h1><span lang="en">Class Reference</span><span lang="ja">クラスリファレンス</span></h1>
       <p class="ref-status" id="reference-status"></p>
       <div id="reference-empty" class="ref-empty" hidden>
-        <p><strong>The class reference has not been generated yet.</strong></p>
-        <p>Run <code>GUILDA.doc</code> in MATLAB. It builds <code>_GUILDAdoc/database</code> from the source code and opens this page again.</p>
+        <p><strong><span lang="en">The class reference has not been generated yet.</span><span lang="ja">クラスリファレンスはまだ生成されていません。</span></strong></p>
+        <p lang="en">Run <code>GUILDA.doc</code> in MATLAB. It builds <code>_GUILDAdoc/database</code> from the source code and opens this page again.</p>
+        <p lang="ja">MATLAB で <code>GUILDA.doc</code> を実行してください。ソースコードから <code>_GUILDAdoc/database</code> を生成し、このページを開き直します。</p>
       </div>
 
       <div class="reference-section">
-        <h2 id="ref-core">Core Components of the System Model</h2>
-        <p>In GUILDA, the system model is primarily constructed using the following elements. The <code>PowerNetwork</code> class acts as a container, and by setting other classes within it, the system model is completed and ready for analysis.</p>
+        <h2 id="ref-core"><span lang="en">Core Components of the System Model</span><span lang="ja">系統モデルの主要な構成要素</span></h2>
+        <p lang="en">In GUILDA, the system model is primarily constructed using the following elements. The <code>PowerNetwork</code> class acts as a container, and by setting other classes within it, the system model is completed and ready for analysis.</p>
+        <p lang="ja">GUILDA の系統モデルは、主に次の要素で構成されます。<code>PowerNetwork</code> クラスが入れ物となり、その中に他のクラスを設定することで系統モデルが完成し、解析できる状態になります。</p>
         
         <div class="intro-cards-wrapper">
           <div class="intro-cards-grid" id="core-class-cards"></div>
@@ -491,16 +553,17 @@ sol = net.simulate([0, 50], fault);</code></pre>
 
       <div class="reference-section">
         <div class="class-diagram-header" style="margin-top: 0;">
-          <h2 id="ref-diagram" style="margin: 0; padding-bottom: 0; border: none;">Class Diagram</h2>
+          <h2 id="ref-diagram" style="margin: 0; padding-bottom: 0; border: none;"><span lang="en">Class Diagram</span><span lang="ja">クラス図</span></h2>
           <div class="uml-notation-horizontal">
-            <span class="notation-title">UML NOTATION</span>
-            <span class="notation-item"><strong>◇──</strong> Composition (Has-a)</span>
-            <span class="notation-item"><strong>1</strong> Owner (Parent)</span>
-            <span class="notation-item"><strong>0..*</strong> Multiplicity (Children)</span>
+            <span class="notation-title"><span lang="en">UML NOTATION</span><span lang="ja">UML 記法</span></span>
+            <span class="notation-item"><strong>◇──</strong> <span lang="en">Composition (Has-a)</span><span lang="ja">コンポジション（has-a）</span></span>
+            <span class="notation-item"><strong>1</strong> <span lang="en">Owner (Parent)</span><span lang="ja">所有者（親）</span></span>
+            <span class="notation-item"><strong>0..*</strong> <span lang="en">Multiplicity (Children)</span><span lang="ja">多重度（子）</span></span>
           </div>
         </div>
 
-        <p style="margin-top: 10px;">The has-a relationships of each component class are shown in the class diagram below.</p>
+        <p style="margin-top: 10px;" lang="en">The has-a relationships of each component class are shown in the class diagram below.</p>
+        <p style="margin-top: 10px;" lang="ja">各構成要素クラスの has-a 関係を次のクラス図に示します。</p>
         
         <div class="uml-lr-scroll">
           <div class="uml-lr-canvas">
@@ -567,12 +630,13 @@ sol = net.simulate([0, 50], fault);</code></pre>
       </div>
 
       <div class="reference-section">
-        <h2 id="ref-inherited">Inherited Classes</h2>
-        <p>The first column shows the inheritance hierarchy generated from each class's <code>Parent</code> metadata. Select a category to focus on one subtree, or select a class name to open its reference page.</p>
+        <h2 id="ref-inherited"><span lang="en">Inherited Classes</span><span lang="ja">継承クラス</span></h2>
+        <p lang="en">The first column shows the inheritance hierarchy generated from each class's <code>Parent</code> metadata. Select a category to focus on one subtree, or select a class name to open its reference page.</p>
+        <p lang="ja">1 列目は、各クラスの <code>Parent</code> メタデータから生成した継承階層です。カテゴリを選ぶとその部分木だけを表示し、クラス名を選ぶとそのリファレンスページを開きます。</p>
         
         <div class="view-panel">
           <div class="view-panel-row view-panel-row-stacked">
-            <div class="view-panel-label">Display Classes</div>
+            <div class="view-panel-label"><span lang="en">Display Classes</span><span lang="ja">表示するクラス</span></div>
             <div class="view-panel-controls">
               <div class="filter-toggles" id="class-filter-toggles"></div>
             </div>
@@ -580,13 +644,13 @@ sol = net.simulate([0, 50], fault);</code></pre>
         </div>
 
         <div class="ref-toolbar">
-          <input type="search" id="class-search" class="search-box" placeholder="Search all classes by name, package, or summary..." autocomplete="off">
-          <label class="ref-check"><input type="checkbox" id="class-undocumented-only"> Not documented only</label>
+          <input type="search" id="class-search" class="search-box" placeholder="Search all classes by name, package, or summary..." data-placeholder-ja="クラス名、パッケージ、概要で全クラスを検索..." autocomplete="off">
+          <label class="ref-check"><input type="checkbox" id="class-undocumented-only"> <span lang="en">Not documented only</span><span lang="ja">ドキュメント未整備のみ</span></label>
         </div>
-        <div class="inheritance-legend" aria-label="Class marker legend">
-          <span class="inheritance-legend-item"><span class="tree-node-marker" aria-hidden="true"></span>Concrete class</span>
-          <span class="inheritance-legend-item"><span class="tree-node-marker is-abstract" aria-hidden="true"></span>Abstract class</span>
-          <span class="inheritance-legend-item"><span class="ref-badge is-undocumented is-small">no docs</span>No documentation comments yet</span>
+        <div class="inheritance-legend" aria-label="Class marker legend" data-aria-label-ja="クラスの記号の凡例">
+          <span class="inheritance-legend-item"><span class="tree-node-marker" aria-hidden="true"></span><span lang="en">Concrete class</span><span lang="ja">具象クラス</span></span>
+          <span class="inheritance-legend-item"><span class="tree-node-marker is-abstract" aria-hidden="true"></span><span lang="en">Abstract class</span><span lang="ja">抽象クラス</span></span>
+          <span class="inheritance-legend-item"><span class="ref-badge is-undocumented is-small"><span lang="en">no docs</span><span lang="ja">説明なし</span></span><span lang="en">No documentation comments yet</span><span lang="ja">ドキュメントコメントがまだありません</span></span>
         </div>
 
         <div class="ref-table-scroll">
@@ -598,8 +662,9 @@ sol = net.simulate([0, 50], fault);</code></pre>
       </div>
 
       <div class="reference-section">
-        <h2 id="ref-auxiliary">Auxiliary Classes</h2>
-        <p>Although these classes do not directly correspond to the physical components of the power system model, they are essential for various analyses and data management within GUILDA. Base classes shared by both trees (such as <code>LayerPackage</code>) are listed here too. The search box and the filter above apply to this table as well.</p>
+        <h2 id="ref-auxiliary"><span lang="en">Auxiliary Classes</span><span lang="ja">補助クラス</span></h2>
+        <p lang="en">Although these classes do not directly correspond to the physical components of the power system model, they are essential for various analyses and data management within GUILDA. Base classes shared by both trees (such as <code>LayerPackage</code>) are listed here too. The search box and the filter above apply to this table as well.</p>
+        <p lang="ja">これらのクラスは系統モデルの物理的な構成要素には直接対応しませんが、GUILDA の各種解析やデータ管理に欠かせません。両方の木に共通する基底クラス（<code>LayerPackage</code> など）もここに載せています。上の検索ボックスと絞り込みはこの表にも適用されます。</p>
 
         <div class="ref-table-scroll">
           <table class="compact-table inheritance-table auxiliary-table">
@@ -623,6 +688,25 @@ sol = net.simulate([0, 50], fault);</code></pre>
   </main>
 
   <script>
+    // Fixed UI text in both languages; style.css shows the one of <html data-lang>.
+    function bilingual(en, ja) {
+      return `<span lang="en">${en}</span><span lang="ja">${ja}</span>`;
+    }
+
+    // Attributes cannot hold both languages: data-placeholder-ja, data-aria-label-ja and
+    // data-alt-ja give the Japanese text, and the original English is kept in data-*-en.
+    function applyLanguageAttributes() {
+      const ja = window.GUILDA_LANG?.get() === 'ja';
+      [['placeholder', 'placeholder'], ['aria-label', 'ariaLabel'], ['alt', 'alt']].forEach(([attr, key]) => {
+        const jaKey = `${key}Ja`;
+        const enKey = `${key}En`;
+        document.querySelectorAll(`[data-${attr}-ja]`).forEach(el => {
+          if (el.dataset[enKey] === undefined) el.dataset[enKey] = el.getAttribute(attr) || '';
+          el.setAttribute(attr, ja ? el.dataset[jaKey] : el.dataset[enKey]);
+        });
+      });
+    }
+
     // Switch tabs without reloading. With targetId, scroll to that element inside the tab.
     function openTab(tabId, targetId) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -657,7 +741,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
 
       const data = typeof updateLogData !== 'undefined' ? updateLogData : (typeof update_log !== 'undefined' ? update_log : null);
       if (!Array.isArray(data) || data.length === 0) {
-        container.innerHTML = '<p style="color: var(--muted);">No update log data found.</p>';
+        container.innerHTML = `<p style="color: var(--muted);">${bilingual('No update log data found.', '更新履歴のデータが見つかりません。')}</p>`;
         return;
       }
 
@@ -666,7 +750,10 @@ sol = net.simulate([0, 50], fault);</code></pre>
       // Newest first
       const items = [...data].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
       // Keep a Changelog types; anything else renders neutral with no label
-      const types = { added: 'Added', changed: 'Changed', deprecated: 'Deprecated', removed: 'Removed', fixed: 'Fixed' };
+      const types = {
+        added: bilingual('Added', '追加'), changed: bilingual('Changed', '変更'), deprecated: bilingual('Deprecated', '非推奨'),
+        removed: bilingual('Removed', '削除'), fixed: bilingual('Fixed', '修正')
+      };
       items.forEach(u => {
         if (u.type !== undefined && !Object.hasOwn(types, u.type)) console.warn(`Update log: unknown type "${u.type}" in "${u.title}"`);
       });
@@ -748,7 +835,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
       const data = typeof tutorialData !== 'undefined' ? tutorialData : (typeof tutorial !== 'undefined' ? tutorial : null);
       
       if (data && Array.isArray(data) && data.length > 0) {
-        toc.innerHTML = '<table><tr><th>File Name</th><th>Analysis Type</th></tr>' + 
+        toc.innerHTML = `<table><tr><th>${bilingual('File Name', 'ファイル名')}</th><th>${bilingual('Analysis Type', '解析の種類')}</th></tr>` + 
           data.map(t => {
             const safeId = tutorialAnchorId(t.filename);
             return `<tr><td><a href="#${safeId}"><code>${t.filename || ''}</code></a></td><td>${t.analysis || ''}</td></tr>`;
@@ -758,14 +845,14 @@ sol = net.simulate([0, 50], fault);</code></pre>
           const safeId = tutorialAnchorId(t.filename);
           return `
             <h3 id="${safeId}"><code>${t.filename || ''}</code></h3>
-            <table><tr><th style="width:25%">Item</th><th>Description</th></tr>
-            <tr><td>Power System</td><td>${t.system || ''}</td></tr>
-            <tr><td>Analysis Type</td><td>${t.analysis || ''}</td></tr>
-            <tr><td>Description</td><td>${t.description || ''}</td></tr></table>
+            <table><tr><th style="width:25%">${bilingual('Item', '項目')}</th><th>${bilingual('Description', '説明')}</th></tr>
+            <tr><td>${bilingual('Power System', '系統モデル')}</td><td>${t.system || ''}</td></tr>
+            <tr><td>${bilingual('Analysis Type', '解析の種類')}</td><td>${t.analysis || ''}</td></tr>
+            <tr><td>${bilingual('Description', '説明')}</td><td>${t.description || ''}</td></tr></table>
           `;
         }).join('');
       } else {
-        toc.innerHTML = '<p style="color: var(--muted);">No tutorial data found.</p>';
+        toc.innerHTML = `<p style="color: var(--muted);">${bilingual('No tutorial data found.', 'チュートリアルのデータが見つかりません。')}</p>`;
         abs.innerHTML = '';
       }
     }
@@ -859,7 +946,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
         cards.innerHTML = coreClassNames.map(name => data.find(c => c.Name === name)).filter(Boolean).map(c => `
           <a href="${window.GuildaDocLoader.pageUrl('class.html', { class: c.Name })}" class="core-class-card">
             <h3>${c.Name}</h3>
-            <p>${escapeHtml(firstLineText(c.Summary || c.Desc)) || `Reference for ${c.Name}.`}</p>
+            <p>${escapeHtml(firstLineText(c.Summary || c.Desc)) || bilingual(`Reference for ${c.Name}.`, `${c.Name} のリファレンス。`)}</p>
           </a>
         `).join('');
       }
@@ -867,7 +954,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
       const toggles = document.getElementById('class-filter-toggles');
       if (toggles) {
         toggles.innerHTML = ['All', ...categories].map(name => `
-          <button class="filter-btn${name === activeFilter ? ' active' : ''}" data-filter="${name}">${name}</button>
+          <button class="filter-btn${name === activeFilter ? ' active' : ''}" data-filter="${name}">${name === 'All' ? bilingual('All', 'すべて') : name}</button>
         `).join('');
         toggles.querySelectorAll('.filter-btn').forEach(btn => {
           btn.addEventListener('click', () => filterClasses(btn.dataset.filter, btn));
@@ -916,12 +1003,17 @@ sol = net.simulate([0, 50], fault);</code></pre>
       const coverage = loader.getCoverage();
       const validation = loader.getValidation();
       const generatedAt = loader.getSchema()?.generatedAt;
-      const parts = [`${classes.length} classes`];
+      const ja = window.GUILDA_LANG?.get() === 'ja';
+      const parts = [ja ? `${classes.length} クラス` : `${classes.length} classes`];
       if (coverage) {
-        parts.push(`documented: ${coverage.Classes.Documented}/${coverage.Classes.Total} classes, ${coverage.Methods.Documented}/${coverage.Methods.Total} public methods, ${coverage.Properties.Documented}/${coverage.Properties.Total} public properties`);
+        parts.push(ja
+          ? `説明あり: クラス ${coverage.Classes.Documented}/${coverage.Classes.Total}、public メソッド ${coverage.Methods.Documented}/${coverage.Methods.Total}、public プロパティ ${coverage.Properties.Documented}/${coverage.Properties.Total}`
+          : `documented: ${coverage.Classes.Documented}/${coverage.Classes.Total} classes, ${coverage.Methods.Documented}/${coverage.Methods.Total} public methods, ${coverage.Properties.Documented}/${coverage.Properties.Total} public properties`);
       }
-      parts.push(`${validation.warningCount || 0} warnings, ${validation.errorCount || 0} errors`);
-      if (generatedAt) parts.push(`generated ${generatedAt.replace('T', ' ').slice(0, 16)}`);
+      parts.push(ja
+        ? `警告 ${validation.warningCount || 0} 件、エラー ${validation.errorCount || 0} 件`
+        : `${validation.warningCount || 0} warnings, ${validation.errorCount || 0} errors`);
+      if (generatedAt) parts.push(`${ja ? '生成日時' : 'generated'} ${generatedAt.replace('T', ' ').slice(0, 16)}`);
       if (status) status.textContent = parts.join(' · ');
     }
 
@@ -929,7 +1021,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
     // a class whose parents are not in the set becomes a top-level row.
     function renderClassTree({ thead, tbody, classes, subtreeRootName, emptyText }) {
       if (!thead || !tbody) return;
-      thead.innerHTML = '<tr><th>Class Hierarchy</th><th>Summary</th></tr>';
+      thead.innerHTML = `<tr><th>${bilingual('Class Hierarchy', 'クラス階層')}</th><th>${bilingual('Summary', '概要')}</th></tr>`;
       if (!classes.length) {
         tbody.innerHTML = `<tr><td colspan="2" class="tree-empty">${emptyText}</td></tr>`;
         return;
@@ -950,7 +1042,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
 
       const subtreeRoot = subtreeRootName ? nodes.get(subtreeRootName) : root;
       if (!subtreeRoot) {
-        tbody.innerHTML = '<tr><td colspan="2" class="tree-empty">No classes were found for this category.</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="2" class="tree-empty">${bilingual('No classes were found for this category.', 'このカテゴリのクラスは見つかりませんでした。')}</td></tr>`;
         return;
       }
 
@@ -976,7 +1068,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
           }
         });
         if (!visibleNames.size) {
-          tbody.innerHTML = '<tr><td colspan="2" class="tree-empty">No matching classes found.</td></tr>';
+          tbody.innerHTML = `<tr><td colspan="2" class="tree-empty">${bilingual('No matching classes found.', '該当するクラスはありません。')}</td></tr>`;
           return;
         }
       }
@@ -1014,7 +1106,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
         const hierarchyCell = `<div class="tree-table-name" style="--tree-depth:${guides.length}">${renderGuides(guides)}${nodeMarker}${classLabel}</div>`;
         const summaryCell = isDocumented(node)
           ? escapeHtml(summary)
-          : '<span class="ref-badge is-undocumented is-small">no docs</span>';
+          : `<span class="ref-badge is-undocumented is-small">${bilingual('no docs', '説明なし')}</span>`;
 
         return `<tr${rowAttributes}>
           <td>${hierarchyCell}</td>
@@ -1032,7 +1124,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
         tbody: document.getElementById('class-list-tbody'),
         classes: modelClasses,
         subtreeRootName: activeFilter !== 'All' ? activeFilter : (hasRealRoot ? 'PowerSystemModel' : ''),
-        emptyText: 'No class reference data found.'
+        emptyText: bilingual('No class reference data found.', 'クラスリファレンスのデータが見つかりません。')
       });
       renderAuxiliaryClassList();
     }
@@ -1044,7 +1136,7 @@ sol = net.simulate([0, 50], fault);</code></pre>
         tbody: document.getElementById('auxiliary-list-tbody'),
         classes: data.filter(c => !isModelClass(c)),
         subtreeRootName: '',
-        emptyText: 'No auxiliary classes found.'
+        emptyText: bilingual('No auxiliary classes found.', '補助クラスは見つかりませんでした。')
       });
     }
 
@@ -1058,7 +1150,10 @@ sol = net.simulate([0, 50], fault);</code></pre>
       wireAnalysisLinks();
       renderDeveloperLinks();
       document.addEventListener('guilda-langchange', renderDeveloperLinks);
+      applyLanguageAttributes();
+      document.addEventListener('guilda-langchange', applyLanguageAttributes);
       renderReferenceStatus();
+      document.addEventListener('guilda-langchange', renderReferenceStatus);
       renderReferenceNavigation();
       window.GuildaDocTree?.mount(document.getElementById('reference-source-tree'), null);
       renderInheritanceTree();
