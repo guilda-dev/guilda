@@ -65,7 +65,7 @@ classdef ResultOPF < ResultBase
         % Create an optimal power flow result.
         %
         % Stores the computed values of an optimal power flow.
-            arguments
+            arguments (Input)
                 net               = [] % Analysed network; see ResultBase.
                 solver            = "SolverOPF" % Solver object or its class name; see ResultBase.
                 options    struct = struct() % Effective settings; see ResultBase.
@@ -101,6 +101,9 @@ classdef ResultOPF < ResultBase
         %
         % Success test behind l_success: the exitflag of solve (an
         % optim.problemdef.ExitFlag or a number) is positive.
+            arguments (Input)
+                obj
+            end
             arguments (Output)
                 l % True when the problem was solved.
             end

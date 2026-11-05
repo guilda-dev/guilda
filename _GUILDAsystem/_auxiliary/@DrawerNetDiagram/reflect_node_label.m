@@ -1,4 +1,7 @@
 function reflect_node_label(obj)
+    arguments (Input)
+        obj
+    end
     
     n_bus = obj.n_bus;
     n_com = obj.n_component;

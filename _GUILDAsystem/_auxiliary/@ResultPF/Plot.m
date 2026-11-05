@@ -4,7 +4,7 @@ function fig = Plot(obj, opt)
 % Draws the voltage profile of the solution: the voltage magnitude [pu] and the phase
 % angle [deg] of each bus, as bar charts in two tiles.
 % calculate_powerflow(..., Plot=true) calls it.
-    arguments
+    arguments (Input)
         obj
         opt.Parent = [] % Container to draw in. A new figure when empty.
     end

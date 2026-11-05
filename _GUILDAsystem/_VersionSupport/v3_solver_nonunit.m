@@ -7,11 +7,10 @@ function rv_nonUnit = v3_solver_nonunit(rv_nonUnit)
 % stored value (no warning). An empty value lists no bus and does not warn: loading a
 % network from a .mat file sets the property too.
 %
-% Inputs:
-%
-% - `rv_nonUnit` — Value set to the property.
-%
 % See also SolverLIN, v3_linearize_args
+    arguments (Input)
+        rv_nonUnit   % Value set to the property.
+    end
     arguments (Output)
         rv_nonUnit   % Value to store.
     end

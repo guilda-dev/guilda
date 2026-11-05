@@ -24,7 +24,7 @@ function sc = ODEevent(tag, net, opt)
 % add_open_branch, add_offset, add_input); net.add_scenario(sc).
 %
 % See also Scenario, PowerNetwork.add_scenario, PowerNetwork.simulate
-    arguments
+    arguments (Input)
         tag (1,1) string % Tag of the event: of the scenario and of its disturbance.
         net {mustBeA(net, 'PowerNetwork')} % Network the event belongs to.
         opt.TimeSpan     % [s] [t_start, t_end], or t_start alone for an offset.

@@ -4,14 +4,6 @@ function txt = msg(ID, varargin)
 % Reads SystemTools/GUILDA/en/<Object>.xml and returns the entry of the key, with the
 % placeholders {0}, {1}, ... replaced by the additional inputs.
 %
-% Inputs:
-% - `ID`: "GUILDA:<Object>:<Key>" (string or char). <Object> is the class or file that
-%   calls msg.
-% - `varargin`: values for the placeholders of the message (string, char or number); as
-%   many as the message has.
-%
-% Output `txt`: the message text (char).
-%
 % The caller must be the object named in the ID; otherwise msg stops with an error.
 %
 % <@Examples>
@@ -19,7 +11,15 @@ function txt = msg(ID, varargin)
 % ```matlab
 % error(msg("GUILDA:ResultCPF:UnknownBus", "B099"));
 % ```
-
+    arguments (Input)
+        ID        % "GUILDA:<Object>:<Key>" (string or char); <Object> is the class or file that calls msg.
+    end
+    arguments (Input, Repeating)
+        varargin  % Values for the placeholders of the message (string, char or number); as many as the message has.
+    end
+    arguments (Output)
+        txt       % Message text (char).
+    end
     
     import java.text.MessageFormat    
 

@@ -1,4 +1,8 @@
 function set_graphics_color(h, color)
+arguments (Input)
+    h      % Graphics object to color; its children are colored too.
+    color  % RGB color (invalid values give black).
+end
 if ~isgraphics(h)
     return
 end

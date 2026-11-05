@@ -15,7 +15,7 @@ function [result, flag, output] = solve(obj, net, sct_options)
 % point (zero bus voltage) with an INFO message and in output.message, and a point that is
 % not an equilibrium in output.message; result.rv_residual holds the residual. flag does
 % not depend on them.
-    arguments
+    arguments (Input)
         obj % Solver (net.solver_LIN).
         net % Initialized network.
         sct_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).

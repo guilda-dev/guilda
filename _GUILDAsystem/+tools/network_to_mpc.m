@@ -19,14 +19,14 @@ function mpc = network_to_mpc(net)
 % fixed P and Q, or a branch admittance matrix that does not fit the branch model.
 % mpc.bus_name, mpc.gen_name and mpc.branch_name hold the GUILDA tags.
 %
-% Inputs:
-% - `net`: Network to convert. It is only read.
-%
 % <@Examples>
 % ```matlab
 % mpc = tools.network_to_mpc(network.IEEE14bus);
 % r   = runopf(mpc, mpoption("verbose",0,"out.all",0));   % needs MATPOWER
 % ```
+    arguments (Input)
+        net % Network to convert. It is only read.
+    end
     arguments (Output)
         mpc % MATPOWER case (version 2): baseMVA, bus, gen, branch, gencost, plus bus_name, gen_name and branch_name.
     end

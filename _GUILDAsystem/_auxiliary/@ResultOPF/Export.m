@@ -6,7 +6,7 @@ function s_file = Export(obj, filename, opt)
 % (tab_bus), or with Table="cub" the connection table (tab_cub), or with Table="branch"
 % the branch table (tab_branch). A relative filename is relative to the current folder.
 % optimize_powerflow(..., Export=filename) calls it.
-    arguments
+    arguments (Input)
         obj
         filename  (1,1) string = string(datetime("now","Format","uuMMdd_HHmmss")) + "_OPF.csv" % Output file; its extension selects the format.
         opt.Table (1,1) string {mustBeMember(opt.Table,["bus","cub","branch"])} = "bus" % Table to write.

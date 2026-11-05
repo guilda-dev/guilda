@@ -1,11 +1,13 @@
 function matrix = matrix_polar_transform(equilibrium, is_reverse)
 % Compute the matrix that converts (real, imag) deviations to (arg, abs) deviations.
 %
-% Linearized at the complex values `equilibrium`, one 2x2 block per value
-% (block-diagonal). With `is_reverse` true, the matrix converts (arg, abs) to
-% (real, imag) instead (default false).
-    if nargin<2
-        is_reverse = false;
+% Linearized at the complex values, one 2x2 block per value (block-diagonal).
+    arguments (Input)
+        equilibrium        % Complex values at which to linearize.
+        is_reverse = false % true: convert (arg, abs) deviations to (real, imag) instead.
+    end
+    arguments (Output)
+        matrix             % Block-diagonal transformation matrix, one 2x2 block per value.
     end
 
     r = real(equilibrium);

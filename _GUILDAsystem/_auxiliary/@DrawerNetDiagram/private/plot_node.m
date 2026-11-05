@@ -1,4 +1,16 @@
 function [h,s] = plot_node(ax, center_xyz, marker, radius, color, nodedata)
+    arguments (Input)
+        ax          % Axes to draw in.
+        center_xyz  % Position of the center [x y z].
+        marker      % Marker: "s", "o", "^", "v", ">", "<", "none", or "_"/"|" followed by a length.
+        radius      % Size of the solid.
+        color       % Face color.
+        nodedata    % UserData stored on the drawn object (struct with Type and Index).
+    end
+    arguments (Output)
+        h           % Graphics object drawn.
+        s           % Bounding box of the object (struct with fields min and max).
+    end
     x0 = center_xyz(1);
     y0 = center_xyz(2);
     z0 = center_xyz(3);

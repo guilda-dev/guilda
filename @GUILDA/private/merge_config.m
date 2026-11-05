@@ -1,4 +1,12 @@
 function struct_env = merge_config(struct_env, struct_user)
+% Merge user configuration values into the default configuration.
+    arguments (Input)
+        struct_env   % Default configuration (fields with Value and Type).
+        struct_user  % User configuration values read from @GUILDA/user.
+    end
+    arguments (Output)
+        struct_env   % Default configuration with the valid user values applied.
+    end
     fields = fieldnames(struct_user);
     for i = 1:numel(fields)
         field = fields{i};

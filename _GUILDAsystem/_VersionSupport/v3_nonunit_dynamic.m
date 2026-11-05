@@ -4,12 +4,11 @@ function v3_nonunit_dynamic(sct_options, c_sysBus)
 % v3 compatibility hook of ResultLIN.get_ss with "Feedback": stops with
 % GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus. "Kron" and "DAE" never used the option.
 %
-% Inputs:
-%
-% - `sct_options` — Options of the result; the field NonUnit exists only when buses are listed.
-% - `c_sysBus` — Bus models, in the order of net.a_Bus.
-%
 % See also v3_linearize_args, ResultLIN.get_ss
+    arguments (Input)
+        sct_options  % Options of the result; the field NonUnit exists only when buses are listed.
+        c_sysBus     % Bus models, in the order of net.a_Bus.
+    end
     if ~isfield(sct_options, "NonUnit")
         return
     end

@@ -36,7 +36,7 @@ classdef ContinuationPowerFlowV3 < handle
     methods
         function obj = ContinuationPowerFlowV3(net, opt)
             % Create the v3 view for a network with the given v3 options.
-            arguments
+            arguments (Input)
                 net                 % Network to analyse.
                 opt.CPFBus          % Tags of the buses whose loads are scaled.
                 opt.CPFInitLam      % lambda at the starting point.
@@ -44,6 +44,9 @@ classdef ContinuationPowerFlowV3 < handle
                 opt.CPFStepSize     % Step size of the predictor.
                 opt.CPFArcL         % Arc length of the corrector.
                 opt.CPFUseInternal  % Solve with the internal states of the generators.
+            end
+            arguments (Output)
+                obj                 % v3 view of the continuation power flow.
             end
             obj.CPFNet = net;
             for s_name = string(fieldnames(opt)).'

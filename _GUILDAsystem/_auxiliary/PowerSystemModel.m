@@ -15,6 +15,9 @@ classdef PowerSystemModel < LayerPackage
             % Nominal frequency [Hz] of the network the model belongs to.
             % net.tab_parameter.base.Hz; GUILDA.config("Model","Hz") when not attached to a
             % network. This is the omega0 passed to the model functions (models multiply it by 2*pi).
+            arguments (Input)
+                obj
+            end
             arguments (Output)
                 Hz (1,1) double % [Hz] Nominal frequency.
             end

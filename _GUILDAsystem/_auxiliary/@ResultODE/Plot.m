@@ -6,7 +6,7 @@ function ax = Plot(obj, opt)
 % components, a state or an input given by its name (e.g. omega, Pmech), with one line
 % per component of the selected buses that has it. By default it draws Vabs of every bus.
 % simulate(..., Plot=true) calls it.
-    arguments
+    arguments (Input)
         obj
         opt.Quantity (1,1) string = "Vabs" % "Vabs", "Vangle", "P", "Q", or a state or input name of the components.
         opt.Bus      {mustBeText} = "all" % Tags of the buses to draw (for a component quantity: the buses of the components); "all" for every bus.

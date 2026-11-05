@@ -1,4 +1,8 @@
 function set_config(Env)
+% Write the configuration to the user files in @GUILDA/user.
+    arguments (Input)
+        Env  % Configuration struct (as returned by get_config).
+    end
     Env = format(Env);
 
     sv_file  = arrayfun(@(s) string(s.name), dir(fullfile(GUILDA.pwd,"@GUILDA","config")));

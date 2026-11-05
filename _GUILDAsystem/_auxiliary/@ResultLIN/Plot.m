@@ -5,7 +5,7 @@ function fig = Plot(obj, opt)
 % (A, E) of get_ss(Algorithm) in the complex plane, with the imaginary axis.
 % Eigenvalues with a positive real part (larger than Tolerance) are drawn in red.
 % net.linearize(..., Plot=true) calls it.
-    arguments
+    arguments (Input)
         obj
         opt.Algorithm (1,1) string {mustBeMember(opt.Algorithm, ["Kron","Feedback","DAE"])} = obj.options.Algorithm % Model whose eigenvalues are drawn. Default: the Algorithm of the linearization.
         opt.Tolerance (1,1) double {mustBeNonnegative} = 1e-6 % Real part above which an eigenvalue is drawn as unstable.

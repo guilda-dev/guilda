@@ -2,7 +2,7 @@ function log_edit(obj, log, tag, before, after)
     % Append a new edit-log record.
     %
     % Builds the edit-log row and reports it up to the network (report_edit), which records it.
-    arguments
+    arguments (Input)
         obj % Target layer object.
         log    (1,1) string = ""; % Log message.
         tag    (1,1) string = ""; % Kind of edit (see edit_effect).

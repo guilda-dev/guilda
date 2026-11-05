@@ -5,7 +5,7 @@ function [net, sct_visited] = struct(obj, l_disp, s_header, sct_visited)
 % name); child layers become nested structs and an object reached a second time becomes
 % the path where it was first stored. Analysis objects (auxiliary) and other handles are
 % not copied.
-    arguments
+    arguments (Input)
         obj 
         l_disp     (1,1) logical   = true; % Print the properties that cannot be read or copied.
         s_header   (1,1) string    = "net"; % Path of this layer in the struct, used for messages and repeated objects.

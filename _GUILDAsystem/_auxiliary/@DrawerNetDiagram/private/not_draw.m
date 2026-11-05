@@ -1,4 +1,7 @@
 function h = not_draw()
+    arguments (Output)
+        h  % Invisible placeholder patch.
+    end
 
     h = patch(        'Vertices', ones(4,2)*1e-5, ...
                          'Faces', ones(4,2), ...

@@ -1,4 +1,7 @@
 function reflect_color_mode(obj)
+    arguments (Input)
+        obj
+    end
     color_mode = obj.ColorMode;
 
     n_edge   = obj.n_branch;

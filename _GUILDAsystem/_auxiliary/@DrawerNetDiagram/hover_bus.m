@@ -1,4 +1,11 @@
 function output_txt = hover_bus(obj, i_bus)
+    arguments (Input)
+        obj
+        i_bus       % Index of the bus.
+    end
+    arguments (Output)
+        output_txt  % Lines of the data tip text.
+    end
 
     bustype = char(obj.tab_bus{i_bus,"Type"});
     c_Vbus  = obj.cv_Vbus(i_bus);

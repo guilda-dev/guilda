@@ -1,4 +1,7 @@
 function rehash(obj)
+    arguments (Input)
+        obj
+    end
     if ~isgraphics(obj.ax)
        obj.ax = axes('Parent',figure());
     end

@@ -7,6 +7,13 @@ function w = build_layout(net, useInt)
 %   w.rm_BusEM : maps the unknowns into the full variable vector
 %   w.CONSTANT : fixed part of the full variable vector
 %   w.InitVal  : unknowns at the equilibrium
+    arguments (Input)
+        net                    % Network initialized by net.initialize.
+        useInt                 % True to solve with the internal states of the components.
+    end
+    arguments (Output)
+        w       (1,1) struct   % Variable layout (fields above).
+    end
 
     a_Bus = net.a_Bus;
     n_Bus = numel(a_Bus);

@@ -1,6 +1,19 @@
 function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_dynamic(~, cm_Y, tab_PFset, sct_options)
 % Settle virtual bus dynamics at the power flow solution (ode15s). cm_Vhistory holds the
 % bus voltages at each output time (n_bus x n_step), rv_step the times [s].
+    arguments (Input)
+        ~
+        cm_Y        (:,:) double  % [pu] Bus admittance matrix (complex, in the bus order of tab_PFset).
+        tab_PFset   table         % Power flow settings of the buses (rows of get_pf_set).
+        sct_options (1,1) struct  % Effective settings (output of get_options).
+    end
+    arguments (Output)
+        cv_Vbus     (:,1) double  % [pu] Complex bus voltages of the solution.
+        flag                      % True when the bus dynamics converged within the tolerance.
+        output                    % Details; output.message describes the outcome.
+        cm_Vhistory               % [pu] Complex bus voltages at each output time (n_bus x n_step).
+        rv_step                   % [s] Output times.
+    end
 
     N   = size(tab_PFset,1);
     M   = sct_options.dynamic.Mass;

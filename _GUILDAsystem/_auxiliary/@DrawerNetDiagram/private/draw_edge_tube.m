@@ -1,4 +1,13 @@
 function h = draw_edge_tube(ax, path, radius, color)
+    arguments (Input)
+        ax      % Axes to draw in.
+        path    % Points of the path, one [x y z] per row.
+        radius  % Radius of the tube.
+        color   % Face color.
+    end
+    arguments (Output)
+        h       % Surface drawn (a point marker when the path has one point).
+    end
     
     % 重複する点の削除
     if size(path,1) > 1

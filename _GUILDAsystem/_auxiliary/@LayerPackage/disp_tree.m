@@ -2,12 +2,12 @@ function varargout = disp_tree(obj, sr_ignore)
 % Render the hierarchy tree with optional filtering.
 %
 % Displays or returns a text tree of this layer and its descendants.
-%
-% Outputs:
-% - `text`: Hierarchy string when one output is requested.
-    arguments
+    arguments (Input)
         obj % Root layer object.
         sr_ignore (1,:) string = ["Parameter"]; % Class names to ignore in output.
+    end
+    arguments (Output, Repeating)
+        varargout % Hierarchy string (text) when one output is requested; displayed otherwise.
     end
     text = newline + " " + obj.s_tag + " " + link(obj) + newline ...
          + subtree(obj, "", sr_ignore) + newline;

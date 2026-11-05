@@ -1,4 +1,11 @@
 function TimeSpan = getTimeSpan(times, option)
+    arguments (Input)
+        times     % [s] Switching times of the disturbances.
+        option    % [s] Simulation time [t0, tend], or [] to choose it from the times.
+    end
+    arguments (Output)
+        TimeSpan  % [s] Phases of the simulation, one [t_start, t_end] per row.
+    end
     tcat = reshape(times,[],1);
     tmax = max(tcat);    
 

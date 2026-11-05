@@ -10,11 +10,11 @@ function [f_cost, f_const, l_default, s_log] = update(obj, opt)
 % [obj.f_opfcost, obj.f_opfconst, obj.l_opfdefault, s_log] = ...
 %     opffcn.update(obj, Cost=@(v, p) 2*v.P, DefaultConstraint=true);
 % ```
-    arguments
-        obj % Component, Bus, Branch or PowerNetwork whose terms are updated.
-        opt.Cost       {mustBeHandleOrEmpty(opt.Cost)} % Cost handle @(v, p), or [] to clear.
-        opt.Constraint {mustBeHandleOrEmpty(opt.Constraint)} % Constraint handle @(v, p) returning a struct of named constraints, or [] to clear.
-        opt.DefaultConstraint (1,1) logical % Keep the default constraints of the object.
+    arguments (Input)
+        obj                                                               % Component, Bus, Branch or PowerNetwork whose terms are updated.
+        opt.Cost                    {mustBeHandleOrEmpty(opt.Cost)}       % Cost handle @(v, p), or [] to clear.
+        opt.Constraint              {mustBeHandleOrEmpty(opt.Constraint)} % Constraint handle @(v, p) returning a struct of named constraints, or [] to clear.
+        opt.DefaultConstraint (1,1) logical                               % Keep the default constraints of the object.
     end
     arguments (Output)
         f_cost    % New f_opfcost.

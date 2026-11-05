@@ -14,15 +14,15 @@ function c_out = legacy_output(c_new, n_out, iv_old, f_legacy, s_key)
 % can select the old form unambiguously.
 %
 % See also Deprecated
-    arguments
-        c_new    (1,:) cell   % v4 outputs {result, flag, output}.
-        n_out    (1,1) double   % nargout of the calling method.
-        iv_old         double   % Output counts that select the old signature.
-        f_legacy (1,1) function_handle   % Converter in _VersionSupport/: f_legacy(c_new{:}) returns the old outputs as a cell row.
-        s_key    (1,1) string = ""   % Key of the deprecation warning in Deprecated.xml; "" for no warning.
+    arguments (Input)
+        c_new    (1,:) cell                 % v4 outputs {result, flag, output}.
+        n_out    (1,1) double               % nargout of the calling method.
+        iv_old         double               % Output counts that select the old signature.
+        f_legacy (1,1) function_handle      % Converter in _VersionSupport/: f_legacy(c_new{:}) returns the old outputs as a cell row.
+        s_key    (1,1) string          = "" % Key of the deprecation warning in Deprecated.xml; "" for no warning.
     end
     arguments (Output)
-        c_out   % Outputs to assign to varargout.
+        c_out                               % Outputs to assign to varargout.
     end
     if ~ismember(n_out, iv_old)
         c_out = c_new;

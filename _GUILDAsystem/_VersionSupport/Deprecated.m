@@ -20,9 +20,13 @@ function Deprecated(key, varargin)
 % - A removed form that cannot keep working is an error in the file that detects it, with
 %   its text in the XML of that file: error(msg("GUILDA:<File>:KEY", ...)).
 %
-% The input `key` is the KEY above and `varargin` the arguments of the message text.
-%
 % See also legacy_output
+    arguments (Input)
+        key       % KEY of the deprecated form (see above).
+    end
+    arguments (Input, Repeating)
+        varargin  % Arguments of the message text.
+    end
     persistent sv_shown
     if isempty(sv_shown)
         sv_shown = strings(0,1);

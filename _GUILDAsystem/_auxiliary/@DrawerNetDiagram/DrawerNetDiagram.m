@@ -119,10 +119,13 @@ classdef DrawerNetDiagram < auxiliary
     methods
         function obj = DrawerNetDiagram(net, ax, opt)
         % Create the diagram of a network and draw its equilibrium.
-            arguments
+            arguments (Input)
                 net (1,1) PowerNetwork % Network to draw.
                 ax  (1,1) matlab.graphics.axis.Axes = axes('Parent',figure()); % Axes to draw in.
-                opt.?SolverODE
+                opt.?SolverODE % Name-Value options; each field is copied to the property of the same name.
+            end
+            arguments (Output)
+                obj % The diagram.
             end
             obj.ax = ax;
             
@@ -155,13 +158,19 @@ classdef DrawerNetDiagram < auxiliary
         reflect_arrow_forward(obj)
         apply_color_values(obj, h_list, rv_value)
         function flag = validate(obj)
+            arguments (Input)
+                obj
+            end
+            arguments (Output)
+                flag (1,1) logical % True when there is nothing to draw on.
+            end
             flag = isempty(obj.plt) || ~isgraphics(obj.ax);
         end
     end
 
     methods
         function set.ax(obj,ax)
-            arguments
+            arguments (Input)
                 obj 
                 ax (1,1) matlab.graphics.axis.Axes
             end

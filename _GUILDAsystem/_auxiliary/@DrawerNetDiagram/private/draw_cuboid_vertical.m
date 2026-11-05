@@ -1,4 +1,16 @@
 function h = draw_cuboid_vertical(ax, x0, y0, z0, radius, color, scale_y)
+arguments (Input)
+    ax           % Axes to draw in.
+    x0           % X coordinate of the center.
+    y0           % Y coordinate of the start.
+    z0           % Z coordinate of the center.
+    radius       % Height of the bar.
+    color        % Face color.
+    scale_y = [] % Length of the bar along y (1 when empty or omitted).
+end
+arguments (Output)
+    h            % Patch drawn.
+end
 if nargin < 7 || isempty(scale_y)
     scale_y = 1;
 end

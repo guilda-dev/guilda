@@ -6,13 +6,12 @@ function c_old = v3_optimize_powerflow(result, flag, output)
 % optimize_powerflow returns them through legacy_output when called with 6 outputs
 % (GUILDA:Deprecated:OptimizePowerflowTuple).
 %
-% Name-Value options:
-%
-% - `result` — Result of optimize_powerflow.
-% - `flag` — exitflag of solve.
-% - `output` — Solver details.
-%
 % See also legacy_output, PowerNetwork.optimize_powerflow
+    arguments (Input)
+        result  % Result of optimize_powerflow.
+        flag    % exitflag of solve.
+        output  % Solver details.
+    end
     arguments (Output)
         c_old   % {powerflow_bus, powerflow_cub, flag, output, lambda, OPFprob}.
     end

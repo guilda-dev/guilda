@@ -44,6 +44,12 @@ function sct_graph = collect_call_graph(sct_scan)
 %              (with a known receiver class, so no candidates)
 %   Missing  : references on a known class to a member it does not have
 %   Stats    : reference counts per confidence and per rule, before merging
+    arguments (Input)
+        sct_scan  % Output of find_doc_classes.
+    end
+    arguments (Output)
+        sct_graph  % Call graph (Nodes, Edges, Dynamic, Implementers, Writes, Missing, Stats).
+    end
     s_root = GUILDA.pwd();
     sct_ctx = build_context(sct_scan, s_root);
     sct_units = build_units(sct_scan, sct_ctx, s_root);

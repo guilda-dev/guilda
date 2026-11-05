@@ -12,7 +12,7 @@ function obj = Continuation_Power_Flow(net,opt)
 % Use net.calculate_continuation_powerflow(LoadBus=sv_bus) instead.
 %
 % See also PowerNetwork.calculate_continuation_powerflow, ContinuationPowerFlowV3
-    arguments
+    arguments (Input)
         net   % Network to analyse.
         opt (1,1) struct = struct()   % v3 options: CPFBus, CPFInitLam, CPFMaxIter, CPFStepSize, CPFArcL, CPFUseInternal.
     end

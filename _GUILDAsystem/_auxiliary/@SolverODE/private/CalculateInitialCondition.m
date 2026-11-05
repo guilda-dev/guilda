@@ -8,8 +8,17 @@ function [x0, xp0, l_failed, s_why, me_why] = CalculateInitialCondition(o, optio
 % decic and the consistency step of the solver are not used: they may move the differential
 % states (decic when it cannot keep them, the solver for a sparse mass matrix that is not
 % diagonal).
-% l_failed: no algebraic variables satisfy the equations (x0, xp0 are empty). s_why: the
-% reason. me_why: the error when l_failed.
+    arguments (Input)
+        o                         % MATLAB ode object of the phase (InitialValue, MassMatrix, ODEFcn, Jacobian).
+        options   (1,1) struct    % odeset options (RelTol, AbsTol).
+    end
+    arguments (Output)
+        x0                        % Consistent initial value, or empty when l_failed.
+        xp0                       % Consistent initial slope, or empty when l_failed.
+        l_failed  (1,1) logical   % True when no algebraic variables satisfy the equations (x0, xp0 are empty).
+        s_why                     % Reason of the failure ("" otherwise).
+        me_why                    % Error when l_failed ([] otherwise).
+    end
 
     M  = o.MassMatrix.MassMatrix;
     x0 = o.InitialValue;

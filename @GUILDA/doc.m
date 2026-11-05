@@ -6,17 +6,16 @@ function doc(option)
 % >> GUILDA.doc("update", true)        % always rebuild
 % >> GUILDA.doc("update", false)       % never rebuild
 %
-% update : "auto" (default) exports again the classes whose files changed
-%          since the last export (see database/manifest.json), with their
-%          descendants, and everything when the exporter changed. The scan
-%          covers _GUILDAsystem, _GUILDAobject and user classes on the path,
-%          and the class images @Class/image.svg.
-%          true/"always" rebuilds everything; false/"never" skips the check.
-    arguments
-        option.update (1,1) string {mustBeMember(option.update, ["auto","always","never","true","false"])} = "auto"
-        option.open   (1,1) logical = true
-        option.strict (1,1) logical = false
-        option.class  (1,1) string = ""
+% With update "auto", the classes whose files changed since the last export
+% (see database/manifest.json) are exported again with their descendants,
+% and everything when the exporter changed. The scan covers _GUILDAsystem,
+% _GUILDAobject and user classes on the path, and the class images
+% @Class/image.svg.
+    arguments (Input)
+        option.update (1,1) string {mustBeMember(option.update, ["auto","always","never","true","false"])} = "auto"  % "auto" rebuilds changed classes; true/"always" rebuilds everything; false/"never" skips the check.
+        option.open   (1,1) logical = true   % Open the page in the browser.
+        option.strict (1,1) logical = false  % Removed tags are errors and errors stop the export.
+        option.class  (1,1) string = ""      % Class whose reference page is opened; "" opens the top page.
     end
 
     s_doc_root   = fullfile(GUILDA.pwd(), '_GUILDAdoc');

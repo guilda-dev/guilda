@@ -1,6 +1,13 @@
 function opt = optimoption(~, sct_options)
 % Build the fsolve options of the "algebraic" method from the effective settings sct_options
 % (see get_options). 0 for MaxIterations, MaxFunEvals or Tolerance keeps the fsolve default.
+    arguments (Input)
+        ~
+        sct_options (1,1) struct  % Effective settings (output of get_options).
+    end
+    arguments (Output)
+        opt                     % fsolve options (optimoptions object).
+    end
 
     if sct_options.PlotFcn=="none"
         s_PlotFcn = [];

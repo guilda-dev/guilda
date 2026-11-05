@@ -1,10 +1,17 @@
 function h = draw_cone(ax, x0, y0, z0, radius, color, theta_offset)
     % Draw cone in specified direction
-    % theta_offset: rotation angle in radians
-    %   pi/2   = upward (^)
-    %  -pi/2   = downward (v)
-    %   0      = rightward (>)
-    %   pi     = leftward (<)
+    arguments (Input)
+        ax            % Axes to draw in.
+        x0            % X coordinate of the center.
+        y0            % Y coordinate of the center.
+        z0            % Z coordinate of the center.
+        radius        % Radius of the cone base.
+        color         % Face color.
+        theta_offset  % [rad] Rotation angle: pi/2 up (^), -pi/2 down (v), 0 right (>), pi left (<).
+    end
+    arguments (Output)
+        h             % Patch drawn.
+    end
     
     hgt    = 2.0 * radius;
     z_top  = z0 + 0.8 * radius;

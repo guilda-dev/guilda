@@ -5,7 +5,7 @@ function [result,flag,output] = solve(obj, net, sct_options)
 % returns the computed values as a ResultPF. The solver is only read: nothing is
 % written back into it. Called by net.calculate_powerflow; calling it directly is for
 % advanced use.
-    arguments
+    arguments (Input)
         obj % Solver (net.solver_PF).
         net % Network with a slack bus.
         sct_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).

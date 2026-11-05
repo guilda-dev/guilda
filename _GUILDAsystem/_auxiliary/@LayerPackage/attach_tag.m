@@ -9,7 +9,7 @@ function out = attach_tag(obj,sm_name_list)
 % ans =
 %     ["V_Tag", "P_Tag"]
 % ```
-    arguments
+    arguments (Input)
         obj % Target layer object.
         sm_name_list (:,:) string % Base names to be tagged.
     end

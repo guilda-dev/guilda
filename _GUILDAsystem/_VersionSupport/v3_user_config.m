@@ -5,11 +5,10 @@ function sct_user = v3_user_config(s_field, sct_user)
 % get_config): renames the old keys into the v4 ones.
 %   TimeSimulation.Reporter -> TimeSimulation.Progress (kept when Progress is also given)
 % The startup writes the settings back (set_config), so an old file is converted once.
-%
-% Name-Value options:
-%
-% - `s_field` — Settings category (file name without Default and .json), e.g. "TimeSimulation".
-% - `sct_user` — Contents of the user settings file.
+    arguments (Input)
+        s_field   % Settings category (file name without Default and .json), e.g. "TimeSimulation".
+        sct_user  % Contents of the user settings file.
+    end
     arguments (Output)
         sct_user % User settings with the v4 keys.
     end

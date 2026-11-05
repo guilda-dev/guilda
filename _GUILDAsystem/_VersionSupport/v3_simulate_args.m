@@ -8,11 +8,10 @@ function c_nv = v3_simulate_args(c_nv)
 % Each old name warns once (GUILDA:Deprecated:SimulateOptionName). Other arguments are
 % returned unchanged.
 %
-% Name-Value options:
-%
-% - `c_nv` — Name-Value options of simulate (after the events).
-%
 % See also PowerNetwork.simulate
+    arguments (Input)
+        c_nv   % Name-Value options of simulate (after the events).
+    end
     arguments (Output)
         c_nv   % Name-Value options with the v4 names.
     end

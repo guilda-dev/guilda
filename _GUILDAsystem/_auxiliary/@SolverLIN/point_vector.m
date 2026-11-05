@@ -18,13 +18,13 @@ function [rv_point, l_equilibrium] = point_vector(layer, Point)
 % Point is a point of the variables, and the network stays the one of the model: at a time
 % inside a fault of {sim, t} the states are those of the fault, but the admittance matrix
 % does not include the fault. The model is not changed.
-%
-% Inputs:
-% - `layer`: Analysed layer.
-% - `Point`: Point option.
+    arguments (Input)
+        layer          % Analysed layer (PowerNetwork, Bus or Component).
+        Point          % Point option ([], a vector, {sim, t} or {sim, t, Side}).
+    end
     arguments (Output)
-        rv_point % Values in the order of layer.get_variable_map().
-        l_equilibrium % True when Point is [] (the equilibrium).
+        rv_point       % Values in the order of layer.get_variable_map().
+        l_equilibrium  % True when Point is [] (the equilibrium).
     end
     SolverLIN.check_point(Point);
     c_rows  = layer.get_variable_map("rows");

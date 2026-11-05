@@ -1,4 +1,7 @@
 function draw_graph_network(obj)
+    arguments (Input)
+        obj
+    end
     edge_base_radius = 0.001;
 
 
@@ -300,12 +303,15 @@ end
 
 
 function txt = customhover(src, event_obj, ax, drawer, hObj)
-    arguments
-        src
-        event_obj
-        ax 
-        drawer 
-        hObj     = event_obj.Target;
+    arguments (Input)
+        src                           %#ok<INUSA> Data cursor object.
+        event_obj                     %#ok<INUSA> Event data of the data tip.
+        ax                            %#ok<INUSA> Axes of the diagram.
+        drawer                        % The diagram (DrawerNetDiagram).
+        hObj      = event_obj.Target; % Graphics object under the cursor.
+    end
+    arguments (Output)
+        txt  % Data tip text.
     end
 
     txt  = 'No Data...'; 

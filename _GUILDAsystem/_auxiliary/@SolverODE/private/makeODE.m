@@ -1,6 +1,12 @@
 function o = makeODE(sct_options)
 % MATLAB ode object with the settings of sct_options: every public property of ode that is
 % a field of sct_options is set, in the property order of ode (Solver before SolverOptions).
+    arguments (Input)
+        sct_options  (1,1) struct  % Effective settings (output of SolverODE.get_options).
+    end
+    arguments (Output)
+        o                          % MATLAB ode object with the settings.
+    end
     o = ode;
 
     cls = metaclass(o);

@@ -63,7 +63,7 @@ classdef ResultCPF < ResultBase
         % Create a continuation power flow result.
         %
         % Stores the computed values of a continuation power flow.
-            arguments
+            arguments (Input)
                 net                  = [] % Analysed network; see ResultBase.
                 solver               = "SolverCPF" % Solver object or its class name; see ResultBase.
                 options       struct = struct() % Effective settings; see ResultBase.

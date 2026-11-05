@@ -82,6 +82,10 @@ classdef LayerPackage < handle
         function report_edit(obj, tab)
         % Pass an edit row built by log_edit up to the top layer (PowerNetwork), which
         % records it in tab_editLog and keeps network-wide rules. PowerNetwork overrides this.
+            arguments (Input)
+                obj
+                tab  % Edit-log row built by log_edit (columns of tab_editLog).
+            end
             if isa(obj.parent,"LayerPackage")
                 obj.parent.report_edit(tab);
             end
@@ -91,6 +95,9 @@ classdef LayerPackage < handle
         % Build the f_* handle cache from the current parameters and network frequency.
         % Layers that own handles (Component, LocalController, GlobalController)
         % override this; other layers have nothing to build.
+            arguments (Input)
+                obj
+            end
             obj.sct_edit.s_odefcn = "updated";
         end
 
@@ -99,6 +106,9 @@ classdef LayerPackage < handle
         % of the frequency they read: a network Hz edit (log_edit) and an attach
         % (Component.set_bus, LocalController.set_parent, GlobalController.set_parent).
         % check_edit builds them at the next analysis. Handles never built stay "unset".
+            arguments (Input)
+                obj
+            end
             if obj.sct_edit.s_odefcn == "updated"
                 obj.sct_edit.s_odefcn = "editted";
             end
@@ -125,9 +135,9 @@ classdef LayerPackage < handle
         %   Parameter(graph)       -             -
         %   OPF                    -             -         (set_opffcn / reset_opffcn)
         %   Tag                    -             -         (rename through s_tag)
-            arguments
-                obj % Any layer (the mapping does not depend on it).
-                tab table % Edit-log rows (columns of tab_editLog).
+            arguments (Input)
+                obj        % Any layer (the mapping does not depend on it).
+                tab  table % Edit-log rows (columns of tab_editLog).
             end
             arguments (Output)
                 lv_odefcn      % True for rows that make the handles of the parameter's owner stale (Nx1).
@@ -156,7 +166,7 @@ classdef LayerPackage < handle
         % net.a_Bus{1}.doc()    % page of the class of the first bus
         % doc(net)              % same as net.doc()
         % ```
-            arguments
+            arguments (Input)
                 obj (1,1) % Layer whose class page is opened.
             end
             GUILDA.doc("class", class(obj));
@@ -209,6 +219,9 @@ classdef LayerPackage < handle
         % ```matlab
         % tab = table(obj);
         % ```
+            arguments (Input)
+                obj
+            end
             arguments (Output)
                 tab % Parameter table of the layer.
             end
@@ -224,6 +237,9 @@ classdef LayerPackage < handle
         % ```matlab
         % str = string(obj);
         % ```
+            arguments (Input)
+                obj
+            end
             arguments (Output)
                 str % Tag string of the layer object.
             end

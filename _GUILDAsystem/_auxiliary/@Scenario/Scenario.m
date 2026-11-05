@@ -135,7 +135,7 @@ classdef (Sealed = true) Scenario < auxiliary
         %
         % Add disturbances with add_fault, add_trip, add_open_branch, add_offset, add_input or
         % add_disturbance, then attach it with net.add_scenario(sc).
-            arguments
+            arguments (Input)
                 tag (1,1) string {mustBeNonzeroLengthText} % Tag of the scenario, unique among the scenarios of a network.
                 opt.Time        % [s] Simulation time [t0, tend], or [] (see the property Time).
                 opt.Options     % Stored Name-Value options of net.simulate (see the property Options).
@@ -177,7 +177,7 @@ classdef (Sealed = true) Scenario < auxiliary
         % ```matlab
         % sc.add_disturbance("fault+open", TimeSpan=[1, 1.05], FaultBus="B008", OpenBranch="EL003");
         % ```
-            arguments
+            arguments (Input)
                 obj
                 tag (1,1) string % Tag of the disturbance, unique in the scenario (the column of output.phases).
                 opt.TimeSpan {mustBeRow, validateTimeSpanSize} = [0,10] % [s] [t_start, t_end], or t_start alone for an offset only.
@@ -206,7 +206,7 @@ classdef (Sealed = true) Scenario < auxiliary
         % ```matlab
         % sc.add_fault("B008", [0.10, 0.17]);           % tag "fault1"
         % ```
-            arguments
+            arguments (Input)
                 obj
                 bus  (:,1) string % Tags of the faulted buses.
                 time (1,2) double % [s] [t_start, t_end] of the fault.
@@ -225,7 +225,7 @@ classdef (Sealed = true) Scenario < auxiliary
         %
         % A tripped unit is disconnected (its states are NaN in the result) and reconnected at
         % t_end. A local controller cannot be tripped.
-            arguments
+            arguments (Input)
                 obj
                 unit (:,1) string % Tags of the components or global controllers.
                 time (1,2) double % [s] [t_start, t_end] of the trip.
@@ -249,7 +249,7 @@ classdef (Sealed = true) Scenario < auxiliary
         % ```matlab
         % sc.add_open_branch(["EL003"; "EL004"], [0.17, 20]);   % open until the end
         % ```
-            arguments
+            arguments (Input)
                 obj
                 branch (:,1) string % Tags of the branches (see string(net.a_Branch)).
                 time   (1,2) double % [s] [t_start, t_end] of the opening.
@@ -273,7 +273,7 @@ classdef (Sealed = true) Scenario < auxiliary
         % ```matlab
         % sc.add_offset("SG1B001", ["delta"; "omega"], [0.1; 0], 0);
         % ```
-            arguments
+            arguments (Input)
                 obj
                 unit  (1,1) string % Tag of the component.
                 state (:,1) string % Names of the states (e.g. "delta").
@@ -301,7 +301,7 @@ classdef (Sealed = true) Scenario < auxiliary
         % ```matlab
         % sc.add_input("SG1B002", ["Pmech"; "Vfield"], {0.05; @(t) 0.01*t}, [1, 1.5]);
         % ```
-            arguments
+            arguments (Input)
                 obj
                 unit  (1,1) string % Tag of the component.
                 name  (:,1) string % Names of the inputs (e.g. "Pmech", "Vfield").
@@ -321,7 +321,7 @@ classdef (Sealed = true) Scenario < auxiliary
 
         function remove_disturbance(obj, tag)
         % Remove disturbances by tag.
-            arguments
+            arguments (Input)
                 obj
                 tag (:,1) string % Tags of the disturbances to remove.
             end
@@ -346,7 +346,7 @@ classdef (Sealed = true) Scenario < auxiliary
         % verdict = sc.judge(result);
         % sc.Judge = @(r) Scenario.out_of_step(r, Reference="COI", Threshold=180);
         % ```
-            arguments
+            arguments (Input)
                 obj
                 result (1,1) ResultODE % Result of net.simulate.
             end
@@ -361,6 +361,9 @@ classdef (Sealed = true) Scenario < auxiliary
         %
         % The duplicate has the same tag, disturbances, Time, Options, Judge and
         % Description, and no network: add it to another network with net.add_scenario.
+            arguments (Input)
+                obj
+            end
             arguments (Output)
                 sc % New Scenario, not attached to a network.
             end
@@ -379,6 +382,9 @@ classdef (Sealed = true) Scenario < auxiliary
     methods (Hidden)
         function str = string(obj)
         % Tag of the scenario.
+            arguments (Input)
+                obj
+            end
             arguments (Output)
                 str % Tag string.
             end
@@ -389,6 +395,10 @@ classdef (Sealed = true) Scenario < auxiliary
     methods (Access={?PowerNetwork})
         function set_parent(obj, net)
             % Called by net.add_scenario / net.remove_scenario only ([] detaches).
+            arguments (Input)
+                obj
+                net % Network the scenario belongs to, or [] to detach it.
+            end
             obj.a_PowerNetwork = net;
         end
     end
@@ -396,6 +406,10 @@ classdef (Sealed = true) Scenario < auxiliary
     methods (Access={?PowerNetwork, ?SolverODE, ?Scenario})
         function validate(obj, net)
             % Check every disturbance against the network net as it is now.
+            arguments (Input)
+                obj
+                net % Network to check against ([] checks only what needs no network).
+            end
             for k = 1:height(obj.tab_disturbance)
                 validate_disturbance(get_record(obj.tab_disturbance, k), obj.s_tag, net);
             end
@@ -409,6 +423,14 @@ classdef (Sealed = true) Scenario < auxiliary
     methods (Access=private)
         function s_tag = add_record(obj, d, s_kind)
             % Add the disturbance record d; an empty tag takes <s_kind><n>.
+            arguments (Input)
+                obj
+                d       % Disturbance record (struct with the fields of add_disturbance).
+                s_kind  % Prefix of the automatic tag ("" keeps the tag as given).
+            end
+            arguments (Output)
+                s_tag   % Tag of the added disturbance.
+            end
             if strlength(d.Tag) == 0 && ~ismissing(d.Tag) && s_kind ~= ""
                 d.Tag = next_tag(obj.tab_disturbance.Tag, s_kind);
             end
@@ -430,6 +452,13 @@ classdef (Sealed = true) Scenario < auxiliary
     methods (Access={?Scenario})
         function s_tag = add_checked(obj, d)
             % Add a record read from a file (import_csv); "" takes event<n>.
+            arguments (Input)
+                obj
+                d      % Disturbance record (struct with the fields of add_disturbance).
+            end
+            arguments (Output)
+                s_tag  % Tag of the added disturbance.
+            end
             s_tag = obj.add_record(d, "event");
         end
     end

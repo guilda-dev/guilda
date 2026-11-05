@@ -11,11 +11,10 @@ function c_nv = v3_powerflow_args(c_nv)
 % history by default, and the default file name is <yyMMdd_HHmmss>_PFcalculation.json
 % in GUILDA.pwd. A v4 argument list is returned unchanged.
 %
-% Name-Value options:
-%
-% - `c_nv` — varargin of calculate_powerflow.
-%
 % See also PowerNetwork.calculate_powerflow
+    arguments (Input)
+        c_nv   % varargin of calculate_powerflow.
+    end
     arguments (Output)
         c_nv   % Name-Value options of the v4 signature.
     end
