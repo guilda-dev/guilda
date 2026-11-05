@@ -160,8 +160,8 @@ Every parameter or topology edit is logged and records what it made stale:
   needs `net.initialize()`.
 - Adding or replacing an AVR or PSS (`add_local_controller`) is logged as a
   `Topology` edit, so the equilibrium becomes stale.
-- **改名は記録だけです。** `s_tag` への代入は `tab_editLog` にタグ `Tag` で記録され、何も古くしません。母線を改名しても、その機器のタグは変わりません(タグは永続的な ID として扱います)。
-- **編集ログは各層が持ちます。** 各層は自分の編集を保持し、`tab_editLog` はどの層にもあって、その層と下の層の編集を編集順に集めます。`net.tab_editLog` は従来どおり系統全体、`bus.tab_editLog` はその母線と機器・制御器だけです。削除した層は自分の編集を持ち去り(削除は親の `Topology` の行)、別の親に付けるとその層の編集は消えます。まだ一度も `initialize` されていない層(最後の `initialize` の後に新しく作って追加した層など)の編集は、次の `initialize` まで記録されません(平衡点は追加の `Topology` の行で古いままです)。
+- **改名は記録だけです。** `s_tag` への代入は編集ログ(`disp_edit`)にタグ `Tag` で記録され、何も古くしません。母線を改名しても、その機器のタグは変わりません(タグは永続的な ID として扱います)。
+- **編集ログは各層が持ちます。** 各層は自分の編集を保持し、`disp_edit` はどの層にもあって、その層と下の層の編集を編集順に表示します(出力引数があれば表を返します)。`net.disp_edit()` は系統全体、`bus.disp_edit()` はその母線と機器・制御器だけです。v3 の `tab_editLog` はなくなり、`tab = net.disp_edit();` で同じ列の表を得ます。削除した層は自分の編集を持ち去り(削除は親の `Topology` の行)、別の親に付けるとその層の編集は消え、次の `initialize` まで記録されません。まだ一度も `initialize` されていない層(最後の `initialize` の後に新しく作って追加した層など)の編集は、次の `initialize` まで記録されません(平衡点は追加の `Topology` の行で古いままです)。
 - **パラメータの型の誤りはエラーです。** 宣言と違うクラスの値を代入すると `GUILDA:Parameter:ClassNameMismatch` で止まり、値も編集履歴も変わりません。以前は MATLAB がリスナー内のエラーを警告に変えていたので、スクリプトは止まりませんでした。`try` / `catch` なしで型の違う値を代入しているスクリプトは、正しいクラスの値に直してください。
 
 `initialize`, `simulate`, `linearize` and `get_sys` rebuild stale `f_*`
@@ -971,7 +971,7 @@ there.
 | `bus.str_bustype` | `bus.s_bustype` |
 | `res.str_solver`、`res.str_network` | `res.s_solver`、`res.s_network` |
 | `linearize`/`get_sys` の `output.str_issue` | `output.s_issue` |
-| `comp.sct_edit.str_odefcn`(モデル作者向け) | `comp.sct_edit.s_odefcn` |
+| `comp.sct_edit.str_odefcn`(モデル作者向け) | `comp.s_odefcn` |
 
 - `net.info` と `struct(obj)` の表や構造体の列名、フィールド名も `s_tag`、`s_bustype` になります。
 - 名前の対応表は [naming-struct-string.md](naming-struct-string.md) にあります。
@@ -1008,7 +1008,7 @@ there.
 - **Frequency inside a model:** read `obj.get_Hz()`, never a fixed `60` or a
   component `para_base`.
 - **No `set_odefcn` in the constructor.** The `f_*` handles are built when an
-  analysis first uses them (`sct_edit.s_odefcn`: `"unset"`, `"editted"`,
+  analysis first uses them (`s_odefcn`: `"unset"`, `"editted"`,
   `"updated"`), with the frequency of the network the model is attached to.
   A constructor that still calls `obj.set_odefcn()` keeps working: the handles
   are then built once with `GUILDA.config("Model","Hz")` and built again after

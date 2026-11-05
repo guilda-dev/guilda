@@ -38,7 +38,7 @@ function flag = validate(obj, l_message)
     contract = strings(0,3);
 
     % evaluation point
-    if ~obj.sct_edit.l_initialized || isempty(obj.c_Iequilibrium)
+    if ~obj.l_initialized || isempty(obj.c_Iequilibrium)
         rv_V = rand(2,1);
         rv_I = rand(2,1);
         rv_V = rv_V/norm(rv_V);

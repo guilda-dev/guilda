@@ -3,7 +3,7 @@
 % 系統モデルを組み立てる API の使い方と結果を確認する。
 %   add_bus / add_branch / add_component / add_local_controller / add_global_controller
 %   replace_component / remove_component / remove_branch / remove_bus / remove_global_controller
-%   タグ、tab_parameter の編集、編集ログ (tab_editLog, sct_edit.l_initialized)
+%   タグ、tab_parameter の編集、編集ログ (disp_edit, l_initialized)
 %
 % 実行: runtests("DebugScript.test_F1_model_building")  または  DebugScript.run_all("Features","F1")
 
@@ -529,7 +529,7 @@ net.remove_bus("B010");
 assert(numel(net.a_Bus) == 9)
 assert(~ismember("B010", string(net.a_Bus)))
 assert(isempty(bus.a_PowerNetwork))                 % 削除した母線は系統への参照を持たない
-assert(net.tab_editLog.tag(end) == "Topology")
+assert(net.disp_edit().tag(end) == "Topology")
 
 % 存在しないタグはエラー
 try
@@ -581,7 +581,7 @@ DebugScript.helper.quiet(@() net.initialize);
 net.remove_global_controller("agc");
 assert(isempty(net.a_GlobalController))
 assert(isempty(agc.a_PowerNetwork))                   % 削除した制御器は系統への参照を持たない
-assert(net.tab_editLog.tag(end) == "Topology")
+assert(net.disp_edit().tag(end) == "Topology")
 
 % 存在しないタグはエラー
 try
@@ -620,34 +620,34 @@ assert(DebugScript.helper.edit_flag(net) == "unset")
 % initialize 後は "initialized"、ログは空
 DebugScript.helper.quiet(@() net.initialize);
 assert(DebugScript.helper.edit_flag(net) == "initialized")
-assert(height(net.tab_editLog) == 0)
+assert(height(net.disp_edit()) == 0)
 
 % パラメータを変更すると "editted" になり、変更前後の値が記録される
 net.a_Bus{5}.a_Component{1}.tab_parameter.powerflow.P = -1.1;
 assert(DebugScript.helper.edit_flag(net) == "editted")
-lv = net.tab_editLog.log == "edit P";
+lv = net.disp_edit().log == "edit P";
 assert(any(lv))
-assert(net.tab_editLog.before{find(lv,1)} == -1.0 && net.tab_editLog.after{find(lv,1)} == -1.1)
+assert(net.disp_edit().before{find(lv,1)} == -1.0 && net.disp_edit().after{find(lv,1)} == -1.1)
 
 % 時刻の書式は "uuuu/MM/dd HH:mm:ss" の文字列
-tab = net.tab_editLog;
+tab = net.disp_edit();
 assert(isstring(tab.timestamp) && all(matches(tab.timestamp, digitsPattern(4)+"/"+digitsPattern(2)+"/"+digitsPattern(2)+" "+digitsPattern(2)+":"+digitsPattern(2)+":"+digitsPattern(2))))
 assert(abs(datetime(tab.timestamp(end), "InputFormat","uuuu/MM/dd HH:mm:ss") - datetime("now")) < minutes(1))
 assert(isequal(tab.Properties.VariableNames, {'timestamp','ID','log','tag','before','after'}))
 
-% 各層は自分の編集だけを持ち、tab_editLog はその層と下の層の編集を集める
+% 各層は自分の編集だけを持ち、disp_edit はその層と下の層の編集を集める
 bus = net.a_Bus{5};
-assert(isequal(bus.tab_editLog, net.tab_editLog) && isequal(bus.a_Component{1}.tab_editLog, net.tab_editLog))
-assert(height(net.a_Bus{4}.tab_editLog) == 0)
+assert(isequal(bus.disp_edit(), net.disp_edit()) && isequal(bus.a_Component{1}.disp_edit(), net.disp_edit()))
+assert(height(net.a_Bus{4}.disp_edit()) == 0)
 
 % 構成の変更 (機器の削除) も記録される
 net.a_Bus{8}.remove_component(string(net.a_Bus{8}.a_Component{1}));
-assert(any(contains(net.tab_editLog.log, "remove")))
+assert(any(contains(net.disp_edit().log, "remove")))
 
 % 再度 initialize するとログはリセットされる
 net.a_Bus{8}.add_component("load-power", "P", -1.2, "Q", -0.4);
 DebugScript.helper.quiet(@() net.initialize);
-assert(DebugScript.helper.edit_flag(net) == "initialized" && height(net.tab_editLog) == 0)
+assert(DebugScript.helper.edit_flag(net) == "initialized" && height(net.disp_edit()) == 0)
 
 
 %% Edit log of a layer collects its subtree in edit order
@@ -656,25 +656,25 @@ DebugScript.helper.quiet(@() net.initialize);
 comp5 = net.a_Bus{5}.a_Component{1};
 comp6 = net.a_Bus{6}.a_Component{1};
 
-% 1 秒以内に別の層を交互に編集しても、tab_editLog は編集の順
+% 1 秒以内に別の層を交互に編集しても、disp_edit は編集の順
 P5 = comp5.para_powerflow.P;  P6 = comp6.para_powerflow.P;
 for k = 1:5
     comp5.tab_parameter.powerflow.P = P5 - 0.01*k;
     comp6.tab_parameter.powerflow.P = P6 - 0.01*k;
 end
 net.a_Bus{5}.s_tag = "BX";
-tab = net.tab_editLog;
+tab = net.disp_edit();
 assert(height(tab) == 11)   % 1 回の編集は 1 行 (同じ行を 2 回数えない)
 assert(isequal(tab.ID(1:2:10), repmat("powerflow/"+string(comp5)+"/BX/TestSystem", 5, 1)) ...   % 改名前の行も 1 行ずつ
     || isequal(tab.ID(1:2:10), repmat("powerflow/"+string(comp5)+"/B005/TestSystem", 5, 1)))
 assert(isequal([tab.after{1:2:10}]', P5 - 0.01*(1:5)') && isequal([tab.after{2:2:10}]', P6 - 0.01*(1:5)'))
 assert(tab.tag(end) == "Tag")
 
-% 母線の tab_editLog は系統の tab_editLog の部分集合 (その母線と機器の行だけ)
-tab5 = net.a_Bus{5}.tab_editLog;
+% 母線の disp_edit は系統の disp_edit の部分集合 (その母線と機器の行だけ)
+tab5 = net.a_Bus{5}.disp_edit();
 assert(height(tab5) == 6 && all(ismember(tab5.log, tab.log)))
 assert(isequal(tab5, tab([1:2:10, 11],:)))
-assert(isequal(comp6.tab_editLog, tab(2:2:10,:)))
+assert(isequal(comp6.disp_edit(), tab(2:2:10,:)))
 
 %% Removal keeps staleness; attaching clears the edits made before
 net = DebugScript.helper.build_9bus();
@@ -684,25 +684,25 @@ avr  = controller.avr.AVR_ST1("avr1");
 gen1.add_local_controller(avr);
 DebugScript.helper.quiet(@() net.initialize);
 
-% 制御器の Parameter の編集は制御器の行として系統の tab_editLog に出る
+% 制御器の Parameter の編集は制御器の行として系統の disp_edit に出る
 avr.para_dynamics.kap = 31;
-assert(height(avr.tab_editLog) == 1 && height(net.tab_editLog) == 1 && net.l_staleEquilibrium)
+assert(height(avr.disp_edit()) == 1 && height(net.disp_edit()) == 1 && net.l_staleEquilibrium)
 DebugScript.helper.quiet(@() net.initialize);
 
 % 削除した制御器は自分の行を持ち去るが、削除は機器の Topology の行として残り、平衡点は古いまま
 avr.para_dynamics.kap = 32;
 gen1.remove_local_controller(avr.s_tag);
-assert(height(avr.tab_editLog) == 1 && net.l_staleEquilibrium)
-assert(height(net.tab_editLog) == 1 && net.tab_editLog.tag == "Topology")
+assert(height(avr.disp_edit()) == 1 && net.l_staleEquilibrium)
+assert(height(net.disp_edit()) == 1 && net.disp_edit().tag == "Topology")
 
 % 切り離した制御器の編集は系統に届かない。別の機器に付けると前の行は消える
 avr.para_dynamics.kap = 33;
-assert(height(avr.tab_editLog) == 2 && height(net.tab_editLog) == 1)
+assert(height(avr.disp_edit()) == 2 && height(net.disp_edit()) == 1)
 gen3.add_local_controller(avr);
-assert(height(avr.tab_editLog) == 0)
-assert(all(net.tab_editLog.tag == "Topology") && height(net.tab_editLog) == 2)
+assert(height(avr.disp_edit()) == 0)
+assert(all(net.disp_edit().tag == "Topology") && height(net.disp_edit()) == 2)
 DebugScript.helper.quiet(@() net.initialize);
-assert(~net.l_staleEquilibrium && height(net.tab_editLog) == 0)
+assert(~net.l_staleEquilibrium && height(net.disp_edit()) == 0)
 
 
 %% Edit log records only changed parameters
@@ -711,5 +711,5 @@ DebugScript.helper.quiet(@() net.initialize);
 
 % 1つのパラメータを変更したらログは1行だけのはず
 net.a_Bus{5}.a_Component{1}.tab_parameter.powerflow.P = -1.1;
-assert(height(net.tab_editLog) == 1, ...
-       "1つの変更で " + height(net.tab_editLog) + " 行記録された: " + join(net.tab_editLog.log, ", "))
+assert(height(net.disp_edit()) == 1, ...
+       "1つの変更で " + height(net.disp_edit()) + " 行記録された: " + join(net.disp_edit().log, ", "))

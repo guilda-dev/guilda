@@ -265,12 +265,12 @@ s_id = "GUILDA:Component:ControllerOutputOverlap";
 [net, comp] = DebugScript.helper.build_3bus("gen-park");
 gov = controller.governor.IEEJ_LPT1("g");
 comp.add_local_controller(gov);
-n_log = height(net.tab_editLog);
+n_log = height(net.disp_edit());
 lqr = controller.local_LQR("lqr");    % 既定ではすべての入力 (Pmech を含む) を駆動する
 ME = caught(@() comp.add_local_controller(lqr));
 assert(ME.identifier == s_id)
 assert(contains(ME.message, "Pmech") && contains(ME.message, gov.s_tag) && contains(ME.message, lqr.s_tag))
-assert(same_list(comp.a_LocalController, {gov}) && isempty(lqr.a_Component) && height(net.tab_editLog) == n_log)
+assert(same_list(comp.a_LocalController, {gov}) && isempty(lqr.a_Component) && height(net.disp_edit()) == n_log)
 % 逆の順でも、同じ呼び出しでも
 [~, comp] = DebugScript.helper.build_3bus("gen-park");
 evalc("comp.add_local_controller(controller.local_LQR(""lqr"", Input=""Pmech""))");
