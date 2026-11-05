@@ -457,3 +457,41 @@ tr.ref-group-row:hover { background: transparent; }
   .doc-layout .ref-table-scroll .compact-table td,
   .doc-layout .ref-table-scroll .compact-table th { padding: 8px; }
 }
+
+/* Facts under a member description (class.html): Points to, Unit / size,
+   Set by, Edit makes stale, Called by. Label beside value; stacked on phones. */
+.ref-facts {
+  display: grid;
+  grid-template-columns: 9.5rem minmax(0, 1fr);
+  gap: 2px 12px;
+  margin: 8px 0 0;
+  padding: 6px 0 0;
+  border-top: 1px dashed var(--line);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+}
+.ref-facts > div { display: contents; }
+.ref-facts dt { padding-top: 2px; color: var(--muted); font-size: 0.7rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+.ref-facts dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.ref-facts dd .markdown-content > :first-child { margin-top: 0; }
+@media (max-width: 600px) {
+  .ref-facts { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .ref-facts dd { margin-bottom: 4px; }
+}
+/* Description view of the member tables: cells start at the top; on phones
+   each row stacks, the name above its description and facts. */
+.doc-layout .ref-member-stack td { vertical-align: top; }
+@media (min-width: 601px) {
+  .doc-layout .ref-member-stack th.col-name,
+  .doc-layout .ref-member-stack td.col-name { width: 30%; }
+}
+@media (max-width: 600px) {
+  .ref-member-stack thead { display: none; }
+  .ref-member-stack tr:not(.ref-group-row) { display: block; border-bottom: 1px solid var(--line); }
+  .doc-layout .ref-member-stack tr:not(.ref-group-row) td { display: block; width: auto; max-width: none; border: 0; }
+  .doc-layout .ref-table-scroll .ref-member-stack tr:not(.ref-group-row) td:first-child { padding-bottom: 0; }
+  .ref-member-stack tr.ref-group-row,
+  .ref-member-stack tr.ref-group-row th { display: block; width: auto !important; }
+}
+.ref-member-stack td .markdown-content > :first-child { margin-top: 0; }
+.ref-member-stack td .markdown-content > :last-child { margin-bottom: 0; }

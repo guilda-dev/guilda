@@ -89,7 +89,7 @@
       sealed: Boolean(m?.Sealed),
       hidden: Boolean(m?.Hidden),
       constructor: Boolean(m?.IsConstructor),
-      group: m?.Group || (m?.IsConstructor ? 'Constructor' : ''),
+      group: m?.Abstract ? CONTRACT_GROUP : (m?.Group || (m?.IsConstructor ? 'Constructor' : '')),
       overrides: m?.Overrides || '',
       implementedIn: m?.ImplementedIn || '',
       summary: firstText(m?.Summary, m?.Desc),
@@ -104,8 +104,9 @@
       file: ['Defined in its own file in the class folder', 'クラスフォルダ内の個別ファイルで定義'],
       private: ['Defined in the private folder of the class', 'クラスの private フォルダで定義']
     };
-    // Group names written by the generator; other group names come from the source comments.
-    const groupLabel = (name) => ({ Constructor: tr('Constructor', 'コンストラクタ'), Other: tr('Other', 'その他') })[name] || name;
+    // Group names written by the generator or shared by every class; other group names come from the source comments.
+    const CONTRACT_GROUP = 'Subclass contract';
+    const groupLabel = (name) => ({ Constructor: tr('Constructor', 'コンストラクタ'), Other: tr('Other', 'その他'), [CONTRACT_GROUP]: tr('Subclass contract', 'サブクラスの契約'), 'Cached function handles': tr('Cached function handles', 'キャッシュした関数ハンドル') })[name] || name;
     const memberHints = (row) => {
       const hints = [
         row.deprecated ? `<span class="ref-badge is-small is-deprecated">${tr('Deprecated', '非推奨')}</span>` : '',
@@ -116,6 +117,36 @@
     };
     const propertyName = (p) => `<strong>${breakableName(p.name)}</strong>${memberHints(p)}`;
     const methodName = (m) => `<a class="row-link" href="${methodUrl(m.name)}">${breakableName(m.name)}</a>${memberHints(m)}`;
+
+    // Facts shown under the description of a member: a label and its value,
+    // stacked on phones (reference.css).
+    const facts = (items) => {
+      const shown = items.filter(([, value]) => value);
+      return shown.length ? `<dl class="ref-facts">${shown.map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join('')}</dl>` : '';
+    };
+    const propertySetBy = (p) => {
+      if (p.constant) return muted('Constant');
+      if (p.dependent) return muted(tr('derived (Dependent)', '導出 (Dependent)'));
+      const writers = pageData.graph.writers.get(`${p.defining}.${p.name}`);
+      const access = isPublic(p.setAccess) ? tr('anyone (public)', '誰でも (public)') : `SetAccess = ${escapeHtml(p.setAccess)}`;
+      return [writers?.size ? nodeLinks(writers) : '', muted(access)].filter(Boolean).join(' · ');
+    };
+    const propertyFacts = (p) => facts([
+      [tr('Points to', '参照先'), p.pointsTo ? renderClassLink(p.pointsTo) : ''],
+      [tr('Unit / size', '単位 / サイズ'), [p.unit ? `<span class="ref-unit">${escapeHtml(p.unit)}</span>` : '', p.size ? `<code>${escapeHtml(p.size)}</code>` : ''].filter(Boolean).join(' ')],
+      [tr('Set by', '設定元'), p.abstract ? '' : propertySetBy(p)],
+      [tr('Edit makes stale', '編集で無効化'), p.stale ? formatInlineMarkdown(p.stale) : '']
+    ]);
+    const methodCallers = (m) => {
+      const set = new Set(pageData.graph.callers.get(`${m.defining}.${m.name}`) || []);
+      if (m.overrides) (pageData.graph.callers.get(`${m.overrides}.${m.name}`) || []).forEach((n) => set.add(n));
+      return set;
+    };
+    // Attribute badges of the Description view (the Meta Data view lists them all).
+    const badgeHints = (labels) => {
+      const shown = labels.filter(Boolean);
+      return shown.length ? `<span class="ref-hints">${shown.map((label) => `<span class="ref-badge is-small${label === 'Abstract' ? ' is-abstract' : ''}">${escapeHtml(label)}</span>`).join('')}</span>` : '';
+    };
 
     const memberViews = {
       property: {
@@ -141,12 +172,12 @@
           ]
         },
         description: {
-          columns: () => [['name', tr('Name', '名前')], ['unit', tr('Unit', '単位')], ['description', tr('Description', '説明')]],
+          columns: () => [['name', tr('Name', '名前')], ['description', tr('Description', '説明')]],
           cells: (p) => [
-            propertyName(p),
-            p.unit ? `<span class="ref-unit">${escapeHtml(p.unit)}</span>` : muted('-'),
+            propertyName(p) + badgeHints([isPublic(p.getAccess) ? '' : p.getAccess, p.dependent ? 'Dependent' : '', p.abstract ? 'Abstract' : '', p.hidden ? 'Hidden' : '']),
             (p.description ? `<div class="markdown-content">${renderMarkdown(p.description)}</div>` : muted(tr('No description.', '説明なし。')))
               + (p.seeAlso.length ? `<p class="ref-see-also ref-muted" style="margin: 4px 0 0;">${tr('See also', '関連項目:')} ${p.seeAlso.map((item) => seeAlsoLink(item, className, pageData.methods.map((m) => m.name))).join(', ')}</p>` : '')
+              + propertyFacts(p)
           ]
         }
       },
@@ -169,10 +200,14 @@
         },
         description: {
           columns: () => [['name', tr('Method', 'メソッド')], ['summary', tr('Summary', '概要')]],
-          cells: (m) => [
-            methodName(m),
-            m.summary ? nl2br(m.summary) : muted(tr('No summary.', '概要なし。'))
-          ]
+          cells: (m) => {
+            const callers = methodCallers(m);
+            return [
+              methodName(m) + badgeHints([isPublic(m.access) ? '' : m.access, m.static ? 'Static' : '', m.abstract ? 'Abstract' : '', m.hidden ? 'Hidden' : '']),
+              (m.summary ? formatInlineMarkdown(m.summary) : muted(tr('No summary.', '概要なし。')))
+                + facts([[tr('Called by', '呼び出し元'), callers.size ? nodeLinks(callers, 6) : '']])
+            ];
+          }
         }
       }
     };
@@ -216,7 +251,7 @@
       container.innerHTML = `
         <p class="ref-count">${tr(`${rows.length} of ${allRows.length} shown`, `${allRows.length} 件中 ${rows.length} 件を表示`)}</p>
         <div class="ref-table-scroll">
-          <table class="compact-table ${kind === 'method' ? 'method-link-table' : 'description-table'}">
+          <table class="compact-table ${kind === 'method' ? 'method-link-table' : 'description-table'}${state.view === 'description' ? ' ref-member-stack' : ''}">
             <thead><tr>${header}</tr></thead>
             <tbody>${body}</tbody>
           </table>
@@ -272,10 +307,10 @@
       renderMemberTable(kind);
     }
 
-    // ---- Overview sections: Role, Owned data, References, Methods by purpose,
-    // Used by, Subclasses. They are derived from the class data, the class
-    // index and the call graph (database/list_CallGraph.js); a section
-    // without data is not shown.
+    // ---- Sections derived from the class data, the class index and the call
+    // graph (database/list_CallGraph.js): Role, the Set by / Called by facts
+    // of the member tables, Pointing to this class, Used by, Subclasses. A
+    // section without data is not shown.
 
     // Callers, writers and nodes of the call graph, by node name. Candidate
     // edges (receiver class unknown) are left out.
@@ -332,8 +367,6 @@
 
     // A JSON list that may arrive as a single object or be missing.
     const toArray = (value) => (Array.isArray(value) ? value : (value ? [value] : []));
-    const accessBadge = (access) => (isPublic(access) ? '' : `<span class="ref-badge is-small">${escapeHtml(access)}</span>`);
-    const memberCell = (name, badges) => `<strong><code>${escapeHtml(name)}</code></strong>${badges.filter(Boolean).length ? `<span class="ref-hints">${badges.join('')}</span>` : ''}`;
 
     function renderRole(c, name) {
       const summary = firstText(c.Summary);
@@ -347,107 +380,19 @@
         ${image ? `<figure class="ref-figure"><img src="${escapeHtml(image)}" alt="${escapeHtml(tr(`Diagram of ${name}`, `${name} の図`))}"></figure>` : ''}`;
     }
 
-    function renderOwnedData(c, graph) {
-      const refNames = new Set(toList(toArray(c.References).map((r) => r.Name)));
-      const rows = pageData.properties.filter((p) => !p.inherited && !p.hidden && !p.abstract && !refNames.has(p.name));
-      if (!rows.length) return '';
-      const hasStale = rows.some((p) => p.stale);
-      const setBy = (p) => {
-        if (p.constant) return muted('Constant');
-        if (p.dependent) return muted(tr('derived (Dependent)', '導出 (Dependent)'));
-        const writers = graph.writers.get(`${p.defining}.${p.name}`);
-        const access = isPublic(p.setAccess) ? tr('anyone (public)', '誰でも (public)') : `SetAccess = ${escapeHtml(p.setAccess)}`;
-        return `${writers?.size ? nodeLinks(writers) : ''}<div class="ref-muted ref-small">${access}</div>`;
-      };
-      const columns = [
-        ['name', tr('Property', 'プロパティ')],
-        ['meaning', tr('Meaning', '意味')],
-        ['unit', tr('Unit / size', '単位 / サイズ')],
-        ['setBy', tr('Set by', '設定元')],
-        ...(hasStale ? [['stale', tr('Edit makes stale', '編集で無効化')]] : [])
-      ];
-      const toRow = (p) => ({
-        name: memberCell(p.name, [p.dependent ? '<span class="ref-badge is-small">Dependent</span>' : '', accessBadge(p.getAccess)]),
-        meaning: p.description ? `<div class="markdown-content">${renderMarkdown(p.description)}</div>` : muted('-'),
-        unit: [p.unit ? `<span class="ref-unit">${escapeHtml(p.unit)}</span>` : '', p.size ? `<code>${escapeHtml(p.size)}</code>` : ''].filter(Boolean).join(' ') || muted('-'),
-        setBy: setBy(p),
-        stale: p.stale ? formatInlineMarkdown(p.stale) : muted('-')
-      });
-      const body = groupRows(rows, tr('Other', 'その他')).flatMap((group) => [{ group: group.name, count: group.items.length }, ...group.items.map(toRow)]);
-      return `
-        <h2 id="owned-data">${tr('Owned data', '保持データ')}</h2>
-        <p class="ref-muted ref-small">${tr('Properties this class declares, without references to other objects. Set by: the methods that assign the property (from the call graph) and its SetAccess.', 'このクラスが宣言するプロパティ（他オブジェクトへの参照を除く）。設定元: プロパティに代入するメソッド（呼び出しグラフから）と SetAccess。')}</p>
-        ${stackTable(columns, body)}`;
-    }
-
-    function renderReferences(c, name, graph) {
-      const own = toArray(c.References).map((ref) => {
-        const p = pageData.properties.find((item) => item.name === ref.Name);
-        const writers = graph.writers.get(`${p?.defining || name}.${ref.Name}`);
-        return {
-          name: memberCell(ref.Name, [p ? accessBadge(p.getAccess) : '']),
-          type: ref.Type ? renderClassLink(ref.Type) : muted('-'),
-          meaning: p?.description ? `<div class="markdown-content">${renderMarkdown(p.description)}</div>` : muted('-'),
-          setBy: writers?.size ? nodeLinks(writers) : muted('-')
-        };
-      });
-      // Properties of other classes that point to this class.
+    // Properties of other classes that point to this class (the references
+    // this class holds are the "Points to" of its own properties).
+    function renderIncomingReferences(name, graph) {
       const incoming = loader.getClasses().flatMap((other) => toArray(other.References)
         .filter((ref) => other.Name !== name && ref.Type === name)
         .map((ref) => ({
           name: `${renderClassLink(other.Name)}<code>.${escapeHtml(ref.Name)}</code>`,
-          type: renderClassLink(ref.Type),
           setBy: (() => { const w = graph.writers.get(`${other.Name}.${ref.Name}`); return w?.size ? nodeLinks(w) : muted('-'); })()
         })));
-      if (!own.length && !incoming.length) return '';
+      if (!incoming.length) return '';
       return `
-        <h2 id="references">${tr('References', '参照')}</h2>
-        ${own.length ? `<h3>${tr('Held by this class', 'このクラスが持つ参照')}</h3>${stackTable([
-          ['name', tr('Reference', '参照')], ['type', tr('Points to', '参照先')], ['meaning', tr('Meaning', '意味')], ['setBy', tr('Set by', '設定元')]
-        ], own)}` : ''}
-        ${incoming.length ? `<h3>${tr('Pointing to this class', 'このクラスを指す参照')}</h3>${stackTable([
-          ['name', tr('Reference', '参照')], ['type', tr('Declared type', '宣言の型')], ['setBy', tr('Set by', '設定元')]
-        ], incoming)}` : ''}`;
-    }
-
-    function renderMethodsByPurpose(name, graph) {
-      const callersOf = (row) => {
-        const set = new Set([...(graph.callers.get(`${row.defining}.${row.name}`) || [])]);
-        if (row.overrides) (graph.callers.get(`${row.overrides}.${row.name}`) || []).forEach((n) => set.add(n));
-        return set;
-      };
-      const calledBy = (row) => { const set = callersOf(row); return set.size ? nodeLinks(set, 6) : muted('-'); };
-      const methods = pageData.methods.filter((m) => !m.inherited && !(m.constructor && !m.implementedIn));
-      const contractProps = pageData.properties.filter((p) => !p.inherited && p.abstract);
-      const contract = [
-        ...contractProps.map((p) => ({ row: p, badges: [`<span class="ref-badge is-small is-abstract">${p.constant ? 'Abstract Constant' : 'Abstract'}</span>`], text: p.description })),
-        ...methods.filter((m) => m.abstract).map((m) => ({ row: m, badges: ['<span class="ref-badge is-small is-abstract">Abstract</span>', m.static ? '<span class="ref-badge is-small">Static</span>' : ''], text: m.description, method: true }))
-      ];
-      const others = methods.filter((m) => !m.abstract);
-      if (!contract.length && !others.length) return '';
-      const methodCell = (m, badges) => `<a class="row-link" href="${methodUrl(m.name)}"><code>${escapeHtml(m.signature || m.name)}</code></a><span class="ref-hints">${badges.join('')}</span>`;
-      const columns = [['name', tr('Member', 'メンバー')], ['what', tr('What it does', '内容')], ['calledBy', tr('Called by', '呼び出し元')]];
-      const body = [];
-      if (contract.length) {
-        body.push({ group: tr('Subclass contract', 'サブクラスの契約'), count: contract.length });
-        contract.forEach(({ row, badges, text, method }) => body.push({
-          name: method ? methodCell(row, badges) : memberCell(row.name, badges),
-          what: text ? `<div class="markdown-content">${renderMarkdown(text)}</div>` : muted('-'),
-          calledBy: calledBy(row)
-        }));
-      }
-      groupRows(others, 'Other').forEach((group) => {
-        body.push({ group: groupLabel(group.name), count: group.items.length });
-        group.items.forEach((m) => body.push({
-          name: methodCell(m, [accessBadge(m.access), m.static ? '<span class="ref-badge is-small">Static</span>' : '', m.hidden ? '<span class="ref-badge is-small">Hidden</span>' : '', memberHints(m)]),
-          what: m.summary ? formatInlineMarkdown(m.summary) : muted(tr('No summary.', '概要なし。')),
-          calledBy: calledBy(m)
-        }));
-      });
-      return `
-        <h2 id="methods-by-purpose">${tr('Methods by purpose', '目的別メソッド')}</h2>
-        <p class="ref-muted ref-small">${tr('Methods this class defines, in their groups. Members of the subclass contract are what a subclass defines. Called by: from the call graph.', 'このクラスが定義するメソッドをグループ別に表示。サブクラスの契約は、サブクラスが定義するメンバー。呼び出し元は呼び出しグラフから。')}</p>
-        ${stackTable(columns, body)}`;
+        <h3 id="referenced-by">${tr('Pointing to this class', 'このクラスを指す参照')}</h3>
+        ${stackTable([['name', tr('Reference', '参照')], ['setBy', tr('Set by', '設定元')]], incoming)}`;
     }
 
     // Public methods of PowerNetwork are the entry points. For each one, the
@@ -522,13 +467,18 @@
     function renderClassPage(meta, classDoc, graphRaw, networkDoc) {
       const c = meta || {};
       const name = c.Name || className;
+      const graph = indexGraph(graphRaw);
+      const pointsTo = new Map(toArray(c.References).map((ref) => [ref.Name, ref.Type]));
+      const methods = (Array.isArray(classDoc.methods) ? classDoc.methods : []).map(normalizeMethod);
       pageData = {
-        properties: (Array.isArray(classDoc.properties) ? classDoc.properties : []).map(normalizeProperty),
-        methods: (Array.isArray(classDoc.methods) ? classDoc.methods : []).map(normalizeMethod)
+        graph,
+        properties: (Array.isArray(classDoc.properties) ? classDoc.properties : []).map(normalizeProperty)
+          .map((p) => ({ ...p, pointsTo: pointsTo.get(p.name) || '' })),
+        // The subclass contract leads the method groups.
+        methods: [...methods.filter((m) => m.group === CONTRACT_GROUP), ...methods.filter((m) => m.group !== CONTRACT_GROUP)]
       };
       const events = toList(classDoc.events);
       const enumeration = toList(classDoc.enumeration);
-      const graph = indexGraph(graphRaw);
       const ancestors = Array.isArray(c.Ancestors) ? c.Ancestors : loader.parentNames(c);
       const documented = c.Documented ?? Boolean(firstText(c.Summary, c.Desc));
       const category = firstText(c.Category, c.Package);
@@ -573,9 +523,13 @@
         ['examples', tr('Examples', '使用例'), firstText(examples) ? `
           <h2 id="examples">${tr('Examples', '使用例')}</h2>
           <div class="markdown-content">${renderMarkdown(examples)}</div>` : ''],
-        ['owned-data', tr('Owned data', '保持データ'), renderOwnedData(c, graph)],
-        ['references', tr('References', '参照'), renderReferences(c, name, graph)],
-        ['methods-by-purpose', tr('Methods by purpose', '目的別メソッド'), renderMethodsByPurpose(name, graph)],
+        ['properties', tr('Properties', 'プロパティ'), `
+          <h2 id="properties">${tr('Properties', 'プロパティ')}</h2>
+          ${pageData.properties.length ? renderMemberToolbar('property') : `<p>${tr('No properties.', 'プロパティなし。')}</p>`}
+          ${renderIncomingReferences(name, graph)}`],
+        ['methods', tr('Methods', 'メソッド'), `
+          <h2 id="methods">${tr('Methods', 'メソッド')}</h2>
+          ${pageData.methods.length ? renderMemberToolbar('method') : `<p>${tr('No methods.', 'メソッドなし。')}</p>`}`],
         ['used-by', tr('Used by', '利用元'), renderUsedBy(name, ancestors, graph, networkDoc)],
         ['subclasses', tr('Subclasses', 'サブクラス'), renderSubclassTree(name)]
       ];
@@ -594,14 +548,6 @@
             </tbody>
           </table>
         </div>`;
-
-      sections.push(['properties', tr('All properties', '全プロパティ')]);
-      html += `<h2 id="properties">${tr('All properties', '全プロパティ')}</h2>`;
-      html += pageData.properties.length ? renderMemberToolbar('property') : `<p>${tr('No properties.', 'プロパティなし。')}</p>`;
-
-      sections.push(['methods', tr('All methods', '全メソッド')]);
-      html += `<h2 id="methods">${tr('All methods', '全メソッド')}</h2>`;
-      html += pageData.methods.length ? renderMemberToolbar('method') : `<p>${tr('No methods.', 'メソッドなし。')}</p>`;
 
       if (events.length) {
         sections.push(['events', tr('Events', 'イベント')]);

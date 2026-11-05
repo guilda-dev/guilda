@@ -1,27 +1,34 @@
-function [s, str_log] = update(s, opt)
-% Update s_opffcn with the given handles (shared part of set_opffcn).
+function [f_cost, f_const, l_default, str_log] = update(obj, opt)
+% Return the OPF terms of obj with the given handles (shared part of set_opffcn).
 %
-% Used by set_opffcn of Component, Bus, Branch and PowerNetwork. The given fields replace
-% the stored ones, the others are kept. Cost=[] or Constraint=[] clears that handle.
+% Used by set_opffcn of Component, Bus, Branch and PowerNetwork, which store the outputs in
+% f_opfcost, f_opfconst and l_opfdefault. The given names replace the stored values, the
+% others are kept. Cost=[] or Constraint=[] clears that handle.
 %
 % <@Examples>
 % ```matlab
-% [s, str_log] = opffcn.update(obj.s_opffcn, Cost=@(v, p) 2*v.P, DefaultConstraint=true);
+% [obj.f_opfcost, obj.f_opfconst, obj.l_opfdefault, str_log] = ...
+%     opffcn.update(obj, Cost=@(v, p) 2*v.P, DefaultConstraint=true);
 % ```
     arguments
-        s (1,1) struct % Stored s_opffcn.
+        obj % Component, Bus, Branch or PowerNetwork whose terms are updated.
         opt.Cost       {mustBeHandleOrEmpty(opt.Cost)} % Cost handle @(v, p), or [] to clear.
         opt.Constraint {mustBeHandleOrEmpty(opt.Constraint)} % Constraint handle @(v, p) returning a struct of named constraints, or [] to clear.
         opt.DefaultConstraint (1,1) logical % Keep the default constraints of the object.
     end
     arguments (Output)
-        s % New s_opffcn.
-        str_log % Edit-log message.
+        f_cost    % New f_opfcost.
+        f_const   % New f_opfconst.
+        l_default % New l_opfdefault.
+        str_log   % Edit-log message.
     end
+    f_cost    = obj.f_opfcost;
+    f_const   = obj.f_opfconst;
+    l_default = obj.l_opfdefault;
+    if isfield(opt, "Cost");              f_cost    = opt.Cost;              end
+    if isfield(opt, "Constraint");        f_const   = opt.Constraint;        end
+    if isfield(opt, "DefaultConstraint"); l_default = opt.DefaultConstraint; end
     str_name = string(fieldnames(opt)).';
-    for str = str_name
-        s.(str) = opt.(str);
-    end
     if isempty(str_name)
         str_log = "set_opffcn";
     else

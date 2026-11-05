@@ -29,7 +29,7 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Vvar, optio
     
     % get Parameter (set_opffcn DefaultConstraint=false: no default limits)
     para_ope  = obj.para_operation;
-    if ~obj.s_opffcn.DefaultConstraint
+    if ~obj.l_opfdefault
         para_ope = struct("Pmax",nan, "Qmax",nan, "Vargmax",nan, "Imax",nan, "Smax",nan);
     end
     

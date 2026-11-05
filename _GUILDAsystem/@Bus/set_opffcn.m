@@ -35,6 +35,6 @@ function set_opffcn(obj, varargin)
 % See also Bus.reset_opffcn, PowerNetwork.set_opffcn
 %
 % <@Group> Construction and editing
-    [obj.s_opffcn, str_log] = opffcn.update(obj.s_opffcn, varargin{:});
+    [obj.f_opfcost, obj.f_opfconst, obj.l_opfdefault, str_log] = opffcn.update(obj, varargin{:});
     obj.log_edit(str_log, "OPF");
 end

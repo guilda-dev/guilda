@@ -36,8 +36,7 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Busvar, opt
         lb = [ope.Pmin; ope.Qmin];
         ub = [ope.Pmax; ope.Qmax];
         PQ0 = [opf.P0; opf.Q0];
-        s_fcn = obj.s_opffcn;
-        if ~s_fcn.DefaultConstraint
+        if ~obj.l_opfdefault
             lb(:) = -inf;
             ub(:) =  inf;
         elseif isa(obj,"component.load.abstract")
@@ -49,7 +48,7 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Busvar, opt
             PQ0(l_fix) = PQ(l_fix);
         end
         % set_opffcn Cost replaces the default cost
-        l_defCost = isempty(s_fcn.Cost);
+        l_defCost = isempty(obj.f_opfcost);
     
         switch option.methods
             case "AC OPF"

@@ -259,7 +259,7 @@
               <li>母線自身の <code>set_opffcn</code> の項（OPF-07、<code>"ELD"</code> 以外）</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>para_powerflow</code> (<code>Varg0</code>, <code>V0</code>), <code>para_operation</code> (<code>Vmin</code>, <code>Vmax</code>), <code>para_dynamics</code> (<code>Gshunt</code>, <code>Bshunt</code>), <code>s_opffcn.DefaultConstraint</code></dd>
+          <dd><code>para_powerflow</code> (<code>Varg0</code>, <code>V0</code>), <code>para_operation</code> (<code>Vmin</code>, <code>Vmax</code>), <code>para_dynamics</code> (<code>Gshunt</code>, <code>Bshunt</code>), <code>l_opfdefault</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en">variable <code>&lt;bus&gt;</code>; <code>x0.&lt;bus&gt;</code>; <code>const.P_&lt;bus&gt;</code>, <code>const.Q_&lt;bus&gt;</code>; <code>Vvar.&lt;bus&gt;</code></span><span lang="ja">変数 <code>&lt;bus&gt;</code>、<code>x0.&lt;bus&gt;</code>、<code>const.P_&lt;bus&gt;</code>、<code>const.Q_&lt;bus&gt;</code>、<code>Vvar.&lt;bus&gt;</code></span></dd>
         </dl>
@@ -278,7 +278,7 @@
               <li>上下限が無限大の負荷（<code>component.load.abstract</code>）は潮流計算の <code>P</code> / <code>Q</code> に固定</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>para_OPF</code> (<code>P0</code>, <code>Q0</code>, <code>HP</code>, <code>fP</code>, <code>HQ</code>, <code>fQ</code>), <code>para_operation</code> (<code>Pmin</code>, <code>Pmax</code>, <code>Qmin</code>, <code>Qmax</code>), <code>para_powerflow</code> (loads), <code>s_opffcn</code></span><span lang="ja"><code>para_OPF</code>（<code>P0</code>、<code>Q0</code>、<code>HP</code>、<code>fP</code>、<code>HQ</code>、<code>fQ</code>）、<code>para_operation</code>（<code>Pmin</code>、<code>Pmax</code>、<code>Qmin</code>、<code>Qmax</code>）、<code>para_powerflow</code>（負荷）、<code>s_opffcn</code></span></dd>
+          <dd><span lang="en"><code>para_OPF</code> (<code>P0</code>, <code>Q0</code>, <code>HP</code>, <code>fP</code>, <code>HQ</code>, <code>fQ</code>), <code>para_operation</code> (<code>Pmin</code>, <code>Pmax</code>, <code>Qmin</code>, <code>Qmax</code>), <code>para_powerflow</code> (loads), <code>f_opfcost</code>, <code>l_opfdefault</code></span><span lang="ja"><code>para_OPF</code>（<code>P0</code>、<code>Q0</code>、<code>HP</code>、<code>fP</code>、<code>HQ</code>、<code>fQ</code>）、<code>para_operation</code>（<code>Pmin</code>、<code>Pmax</code>、<code>Qmin</code>、<code>Qmax</code>）、<code>para_powerflow</code>（負荷）、<code>f_opfcost</code>、<code>l_opfdefault</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en">variable <code>&lt;component&gt;</code>; <code>x0.&lt;component&gt;</code>; terms in <code>const</code> and <code>prob.Objective.GenCost</code></span><span lang="ja">変数 <code>&lt;component&gt;</code>、<code>x0.&lt;component&gt;</code>、<code>const</code> と <code>prob.Objective.GenCost</code> の項</span></dd>
         </dl>
@@ -295,7 +295,7 @@
               <li><code>Constraint(v, p)</code> の各フィールド <code>&lt;name&gt;</code> → <code>prob.Constraints.&lt;name&gt;_&lt;tag&gt;</code></li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>s_opffcn.Cost</code>, <code>.Constraint</code>; the object's variables (<code>v.P</code>, <code>v.Q</code>; <code>v.Varg</code>, <code>v.V</code>); its <code>para_*</code> tables as <code>p</code></span><span lang="ja"><code>s_opffcn.Cost</code>、<code>.Constraint</code>、オブジェクトの変数（<code>v.P</code>、<code>v.Q</code>、<code>v.Varg</code>、<code>v.V</code>）、<code>p</code> としての <code>para_*</code> の表</span></dd>
+          <dd><span lang="en"><code>f_opfcost</code>, <code>f_opfconst</code>; the object's variables (<code>v.P</code>, <code>v.Q</code>; <code>v.Varg</code>, <code>v.V</code>); its <code>para_*</code> tables as <code>p</code></span><span lang="ja"><code>f_opfcost</code>、<code>f_opfconst</code>、オブジェクトの変数（<code>v.P</code>、<code>v.Q</code>、<code>v.Varg</code>、<code>v.V</code>）、<code>p</code> としての <code>para_*</code> の表</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en"><code>prob</code> with the terms added</span><span lang="ja">項を加えた <code>prob</code></span></dd>
         </dl>
@@ -306,7 +306,7 @@
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Fixes the reference angle (not in <code>"ELD"</code> or with <code>net.set_opffcn(DefaultConstraint=false)</code>): the bus of <code>tools.slack_bus_index</code>, or the first bus, keeps its power-flow <code>Varg</code> (0 when NaN). <code>l_isSlack</code> is not set.</span><span lang="ja">基準位相角を固定（<code>"ELD"</code> と <code>net.set_opffcn(DefaultConstraint=false)</code> では省略）。<code>tools.slack_bus_index</code> の母線（なければ最初の母線）が潮流計算の <code>Varg</code>（NaN なら 0）を維持。<code>l_isSlack</code> は設定しない</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>Bus.l_isSlack</code>, component <code>Q</code> settings, <code>para_powerflow.Varg</code>, <code>net.s_opffcn</code></span><span lang="ja"><code>Bus.l_isSlack</code>、機器の <code>Q</code> 設定、<code>para_powerflow.Varg</code>、<code>net.s_opffcn</code></span></dd>
+          <dd><span lang="en"><code>Bus.l_isSlack</code>, component <code>Q</code> settings, <code>para_powerflow.Varg</code>, <code>net.l_opfdefault</code></span><span lang="ja"><code>Bus.l_isSlack</code>、機器の <code>Q</code> 設定、<code>para_powerflow.Varg</code>、<code>net.l_opfdefault</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>prob.Constraints.VargRef</code></dd>
         </dl>
@@ -359,7 +359,7 @@
               <li>制約名に接尾辞なし</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>net.s_opffcn</code>; <code>prob.Variables</code></span><span lang="ja"><code>net.s_opffcn</code>、<code>prob.Variables</code></span></dd>
+          <dd><span lang="en"><code>net.f_opfcost</code>, <code>net.f_opfconst</code>; <code>prob.Variables</code></span><span lang="ja"><code>net.f_opfcost</code>、<code>net.f_opfconst</code>、<code>prob.Variables</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en"><code>prob</code>, <code>x0</code> (struct, one field per variable); with <code>validate=true</code>, the constraints evaluated at <code>x0</code> are printed</span><span lang="ja"><code>prob</code>、<code>x0</code>（変数ごとに 1 フィールドの構造体）。<code>validate=true</code> では <code>x0</code> で評価した制約を表示</span></dd>
         </dl>

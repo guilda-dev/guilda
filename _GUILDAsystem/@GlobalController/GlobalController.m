@@ -36,7 +36,7 @@ classdef GlobalController < PowerSystemModel
 %
 % See also PowerNetwork.add_global_controller, controller.agc.broadcast_PI_AGC, LocalController
 
-    properties(Abstract, Constant, Hidden=true)
+    properties(Abstract, Constant, Hidden=true) % Subclass contract
         key      (1,1) string   % Kind of controller.
         sv_x    (:,1) string    % Names of the states.
         sv_u    (:,1) string    % Names of the inputs (states of the controlled units).
@@ -69,7 +69,7 @@ classdef GlobalController < PowerSystemModel
     end       
 
     % Handle cache @(t,x,V,I,u) with param and omega0 bound (set_odefcn, called by check_edit).
-    properties(SetAccess=protected) % Dynamics
+    properties(SetAccess=protected) % Cached function handles
         f_Mass                                 % Mass matrix function @(t,x,V,I,u) with the parameters bound.
         f_dx                                   % State equation function @(t,x,V,I,u) with the parameters bound.
         f_Y                                    % Output function @(t,x,V,I,u) with the parameters bound.
@@ -80,10 +80,10 @@ classdef GlobalController < PowerSystemModel
     properties (SetAccess=protected) % Layer Structure
         a_PowerNetwork                         % PowerNetwork the controller belongs to (set by add_global_controller).
     end
-    properties (SetAccess=protected, Hidden)
+    properties (SetAccess=protected, Hidden) % Layer Structure
         controlledUnits                        % Controlled components, in the order given to the constructor.
     end
-    properties (SetAccess={?SolverODE}, Hidden)
+    properties (SetAccess={?SolverODE}, Hidden) % Simulation working data
         iv_odeX (:,1) double = zeros(0,1);
         iv_odeU (:,1) double = zeros(0,1);
         iv_odeY (:,1) double = zeros(0,1);        

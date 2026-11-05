@@ -54,7 +54,7 @@ classdef Component < PowerSystemModel
 % See also Bus.add_component, LocalController, component.generator.abstract
 
 %% Abstract properties/methods
-    properties(Abstract,Constant)
+    properties(Abstract,Constant) % Subclass contract
         key      (1,1) string   % Key of the component type, used by Bus.add_component.
         sv_x    (:,1) string    % Names of the states.
         sv_u    (:,1) string    % Names of the inputs.
@@ -108,7 +108,7 @@ classdef Component < PowerSystemModel
     % Handle cache @(t,x,V,I,u) with the parameters and omega0 bound (set_odefcn, called by
     % check_edit at the start of an analysis). s_edit.str_odefcn tells whether it is "unset",
     % "editted" or "updated".
-    properties(SetAccess=protected) % Dynamics
+    properties(SetAccess=protected) % Cached function handles
         f_Mass                                 % Mass matrix function @(t,x,V,I,u) with the parameters bound.
         f_dx                                   % State equation function @(t,x,V,I,u) with the parameters bound.
         f_I                                    % Current injection function @(t,x,V,I,u) with the parameters bound.
@@ -122,20 +122,21 @@ classdef Component < PowerSystemModel
         rv_Uequilibrium = zeros(0,1)           % Input equilibrium.
         c_Iequilibrium                         % [pu] Current injected into the bus at the equilibrium (complex).
     end
-    properties (SetAccess={?SolverODE, ?Component}, Hidden)
+    properties (SetAccess={?SolverODE, ?Component}, Hidden) % Simulation working data
         iv_odeX  = [];
         iv_odeU  = [];        
         iv_odeY  = [];        
         lv_odeUfromLC = false(0,1);            % Inputs driven by an output of a top-level local controller.
         iv_odeYtoU    = zeros(0,1);            % Index of each such input in the outputs of the top-level controllers, stacked in order.
     end    
-    properties(Dependent, Hidden)
+    properties(Dependent, Hidden) % Compatibility
         para_base                              % COMPAT(v3) ComponentBaseView: Hz is held by the network (use get_Hz)
     end
     properties(Dependent) % Steady State
         c_Vequilibrium                         % [pu] Terminal voltage at the equilibrium (= a_Bus.c_Vequilibrium; [] without a bus).
         rv_Xequilibrium_all                    % State equilibrium of the component, then of its controllers depth first: the order of get_variable_map.
-
+    end
+    properties(Dependent) % Parameter
         % Parameter table: dynamics, operation, powerflow, OPF and graph; writing it writes the parameters.
         %
         % - `dynamics`: model parameters, per unit on the system base; the columns `sv_para` are
@@ -159,17 +160,21 @@ classdef Component < PowerSystemModel
         para_operation                         % Parameter object of tab_parameter.operation (baseMVA, Pmin, Pmax, Qmin, Qmax).
         para_OPF                               % Parameter object of tab_parameter.OPF (P0, Q0, HP, HQ, fP, fQ; startup/shutdown are reserved).
         para_graph                             % Parameter object of tab_parameter.graph.
-        s_opffcn = opffcn.default()            % OPF terms (Cost, Constraint, DefaultConstraint) set by set_opffcn. <@Stale> nothing (logged)
     end  
+    properties(SetAccess=protected) % OPF
+        f_opfcost    = []   % OPF cost handle @(v, p) set by set_opffcn; it replaces the default cost of the component ([]: none). <@Stale> nothing (logged)
+        f_opfconst   = []   % OPF constraint handle @(v, p) set by set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing (logged)
+        l_opfdefault = true % Whether the default OPF constraints of the component are kept (DefaultConstraint of set_opffcn). <@Stale> nothing (logged)
+    end
     properties(Dependent, Access=protected) % Layer Structure
         parent                                 % Layer Structure: the bus.
         children                               % Layer Structure: the local controllers and Parameter objects.
     end
-    properties (Access={?SolverODE, ?Component})        
+    properties (Access={?SolverODE, ?Component}) % Simulation working data
         l_hasController = false;               % Whether a local controller is attached.
         l_isConnect     = true                 % False while an active trip of a scenario names the component (working data of the simulation).
     end
-    properties (SetAccess={?SolverODE}, Hidden)
+    properties (SetAccess={?SolverODE}, Hidden) % Simulation working data
         rv_Xoffset                             % State offset of the active disturbances in the current phase (built by Scenario.compile).
         rv_Uoffset                             % Input change of the active disturbances in the current phase (built by Scenario.compile).
     end

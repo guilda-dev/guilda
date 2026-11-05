@@ -31,7 +31,7 @@ function [prob, x0, const, Vvar] = build_opf_problem(obj, prob, x0, const, Vvar,
             opf  = obj.para_powerflow;   % initial point (Varg0, V0)
             ope  = obj.para_operation;
             Vlim = [ope.Vmin; ope.Vmax];
-            if ~obj.s_opffcn.DefaultConstraint   % set_opffcn: no default voltage bounds
+            if ~obj.l_opfdefault   % set_opffcn: no default voltage bounds
                 Vlim = [-inf; inf];
             end
             var  = optimvar(str, {'Varg','V'}, 1,     "Type",    "continuous" ,...
