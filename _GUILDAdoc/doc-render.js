@@ -41,22 +41,21 @@
     return `<code class="doc-math-source">${escapeHtml(tex)}</code>`;
   };
 
-  // $...$ outside code spans: no space just inside the dollars, so that
-  // "$5 and $6" stays text. Returns the text with placeholders.
-  const takeInlineMath = (text, store) => text.replace(/`[^`]*`|\$(?=\S)([^$\n]*?\S)\$/g, (match, tex) => {
-    if (tex === undefined) return match;
-    store.push(renderMath(tex, false));
-    return `@@MATH${store.length - 1}@@`;
+  // Code spans and $...$ math (no space just inside the dollars, so that
+  // "$5 and $6" stays text) are rendered first and held as placeholders, so
+  // the emphasis and link rules never see their contents (`Kt*s`, `a_b`).
+  const takeInlineSpans = (text, store) => text.replace(/`([^`]+)`|\$(?=\S)([^$\n]*?\S)\$/g, (match, code, tex) => {
+    store.push(code !== undefined ? `<code>${escapeHtml(code)}</code>` : renderMath(tex, false));
+    return `@@SPAN${store.length - 1}@@`;
   });
 
   const formatInlineMarkdown = (text) => {
-    const math = [];
-    let output = escapeHtml(takeInlineMath((text ?? '').toString(), math));
-    output = output.replace(/`([^`]+)`/g, '<code>$1</code>');
+    const spans = [];
+    let output = escapeHtml(takeInlineSpans((text ?? '').toString(), spans));
     output = output.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     output = output.replace(/\*([^*]+)\*/g, '<em>$1</em>');
     output = output.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-    return output.replace(/@@MATH(\d+)@@/g, (_, index) => math[Number(index)] || '');
+    return output.replace(/@@SPAN(\d+)@@/g, (_, index) => spans[Number(index)] || '');
   };
 
   const renderMarkdown = (input) => {
