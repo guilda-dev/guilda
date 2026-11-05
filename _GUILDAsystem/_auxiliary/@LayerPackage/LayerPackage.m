@@ -13,15 +13,17 @@ classdef LayerPackage < handle
 %   below it (children, recursively), in the order they were made: net.tab_editLog shows
 %   every edit of the network, bus.tab_editLog only those of the bus, its components and
 %   their controllers. Columns: timestamp ("uuuu/MM/dd HH:mm:ss"), ID (tags from the edited
-%   layer up, joined by "/"), log message, tag (kind of edit, see edit_effect), states
-%   before and after. Each layer keeps its own rows once it has been initialized;
+%   layer up, joined by "/"; a parameter edit starts with its group, e.g.
+%   "powerflow/SG1B005/B005/TestSystem"), log message, tag (kind of edit, see edit_effect),
+%   states before and after. Each layer keeps its own rows once it has been initialized;
 %   initialize clears them (reset_edit), and so does attaching the layer to a new parent
 %   (clear_edit_log). The table is built when read.
 % - The rows of a layer are stored as columns (`n_editLog`, `rv_editSeq`, ...), filled by
 %   log_edit (store_edit). Rows 1:n_editLog are in use; the columns grow by doubling, so an
 %   edit is written in place. They have no validators, which would check the whole column
 %   on each edit.
-% - `sct_edit` is the edit state of the layer (set.sct_edit checks its fields).
+% - `sct_edit` is the edit state of the layer (set.sct_edit checks its fields). Its
+%   GetAccess is public (Hidden) because the DebugScript tests, which are scripts, read it.
 %   `l_initialized` is true once initialize has run with the layer in the network (set by
 %   reset_edit at the end of initialize). `s_odefcn` is the state of the cached f_*
 %   function handles built by set_odefcn: "unset" (never built), "editted" (built, but no
@@ -67,7 +69,7 @@ classdef LayerPackage < handle
     properties(SetAccess=protected, Hidden) % Edit log
         sct_edit (1,1) struct = struct("l_initialized",false, "s_odefcn","unset")  % Edit state of the layer: l_initialized and s_odefcn (see the class help).
     end
-    properties(Dependent) % Edit log
+    properties(Dependent, SetAccess=private) % Edit log
         tab_editLog  % Edits of the layer and its subtree since the last initialize, in order (see the class help). <@Type> table (Nx6) <@Stale> nothing
     end
     properties(Access=private, Hidden) % Edit log storage
@@ -82,36 +84,15 @@ classdef LayerPackage < handle
     end
     
     %% Tag
-    properties(Access=protected) % Tag
-        l_managedTag = true;  % True when the layer is managed by the tag system. <@Type> logical
-    end
     properties % Tag
         s_tag  % User-defined tag of the layer, unique among its siblings (see the class help). <@Type> string
     end
 
 
     methods(Access=protected)
-        out = get_tag(obj,l_with_layer, s_split)
         log_edit(obj, log, tag, before, after)
         reset_edit(obj)
         flag = check_edit(obj)
-
-        function top = get_top_layer(obj)
-        % Top layer of the hierarchy the layer belongs to: the first layer up the parents
-        % without a LayerPackage parent (the layer itself when it has none).
-            arguments (Input)
-                obj
-            end
-            arguments (Output)
-                top % Top layer (LayerPackage).
-            end
-            top = obj;
-            a_parent = top.parent;
-            while isa(a_parent,"LayerPackage")
-                top = a_parent;
-                a_parent = top.parent;
-            end
-        end
 
         function report_edit(obj, a_layer, tag, l_equilibrium) %#ok<INUSD>
         % Tell the top layer of the hierarchy about an edit (log_edit calls this on it), for
@@ -162,6 +143,8 @@ classdef LayerPackage < handle
         end
     end
     methods(Access=private)
+        out = get_tag(obj, s_split)
+
         function store_edit(obj, a_layer, log, tag, before, after)
         % Append one edit to the layer's own rows (log_edit).
             arguments (Input)
@@ -185,7 +168,7 @@ classdef LayerPackage < handle
             end
             obj.rv_editSeq(n)   = next_edit_seq();
             obj.rv_editTime(n)  = now;
-            obj.sv_editID(n)    = a_layer.get_tag(true,"/");
+            obj.sv_editID(n)    = a_layer.get_tag("/");
             obj.sv_editLog(n)   = log;
             obj.sv_editTag(n)   = tag;
             obj.c_editBefore{n} = before;
@@ -308,7 +291,7 @@ classdef LayerPackage < handle
         function set.s_tag(obj,s_newtag)
             % A tag that already exists among the siblings gets a number suffix
             s_newtag = string(s_newtag);
-            if obj.l_managedTag && ~isempty(obj.parent)
+            if ~isempty(obj.parent)
                 a_sameLayer = obj.parent.children;
                 l_me  = tools.vcellfun(@(a) a==obj, a_sameLayer);
                 sv_sameLayer = string( a_sameLayer(~l_me) );

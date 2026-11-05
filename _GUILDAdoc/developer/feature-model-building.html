@@ -511,15 +511,15 @@ b1.l_isSlack = true;</code></pre>
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li>Dynamics parameter (<code>LayerPackage.edit_effect</code>): mark its owner's handles <code>"editted"</code></li>
-            <li>The edited layer (the owner for a <code>Parameter</code> container), once initialized (<code>sct_edit.l_initialized</code>): write the row (time, tag path, log, tag, before, after) in place into its own log columns (<code>store_edit</code>); <code>tab_editLog</code> collects the subtree into a table when read</li>
-            <li>Report the edit to the top layer of the hierarchy (<code>get_top_layer</code>, up the <code>parent</code> chain; <code>report_edit</code>); nothing is stored there</li>
+            <li>The edited layer (the owner for a <code>Parameter</code> container), once initialized (<code>sct_edit.l_initialized</code>): write the row (time, tag path from the edited layer up, e.g. <code>powerflow/SG1B005/B005/TestSystem</code> for a parameter, log, tag, before, after) in place into its own log columns (<code>store_edit</code>); <code>tab_editLog</code> collects the subtree into a table when read</li>
+            <li>Report the edit to the top layer of the hierarchy (up the <code>parent</code> chain; <code>report_edit</code>); nothing is stored there</li>
             <li>Network, once initialized: an edit that makes the equilibrium stale (dynamics, base (baseMVA), powerflow, Topology and Slack) sets the flag behind <code>l_staleEquilibrium</code></li>
             <li>Network: always call <code>handle_edit</code></li>
             <li>Network <code>Hz</code> edit: mark the handles of every layer</li>
           </ul><ul lang="ja">
             <li>dynamics パラメータ（<code>LayerPackage.edit_effect</code>）: 所有者のハンドルを <code>"editted"</code> に</li>
-            <li>編集した層（<code>Parameter</code> コンテナの場合は所有者、初期化済み <code>sct_edit.l_initialized</code> の場合）: 行（時刻、タグのパス、ログ、タグ、変更前、変更後）を自分のログの列にその場で書き込み（<code>store_edit</code>）。<code>tab_editLog</code> は読み出し時に部分木を表に集約</li>
-            <li>階層の最上位の層（<code>get_top_layer</code>、<code>parent</code> をたどる）に編集を通知（<code>report_edit</code>）。そこには記録しない</li>
+            <li>編集した層（<code>Parameter</code> コンテナの場合は所有者、初期化済み <code>sct_edit.l_initialized</code> の場合）: 行（時刻、編集した層から上へのタグのパス（パラメータなら例: <code>powerflow/SG1B005/B005/TestSystem</code>）、ログ、タグ、変更前、変更後）を自分のログの列にその場で書き込み（<code>store_edit</code>）。<code>tab_editLog</code> は読み出し時に部分木を表に集約</li>
+            <li>階層の最上位の層（<code>parent</code> をたどる）に編集を通知（<code>report_edit</code>）。そこには記録しない</li>
             <li>ネットワーク（初期化済みの場合）: 平衡点を古くする編集（dynamics・base（baseMVA）・powerflow・Topology・Slack）で <code>l_staleEquilibrium</code> のフラグを設定<code>l_staleEquilibrium</code> はログから算出（dynamics・base（baseMVA）・powerflow・Topology・Slack の行）</li>
             <li>ネットワーク: <code>handle_edit</code> を常に呼び出し</li>
             <li>ネットワークの <code>Hz</code> の編集: すべての層のハンドルを古い状態に</li>
