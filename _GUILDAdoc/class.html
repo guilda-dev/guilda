@@ -39,7 +39,7 @@
     const loader = window.GuildaDocLoader;
     const {
       tr, setPageTitle, escapeHtml, nl2br, firstText, toList, renderMarkdown, formatInlineMarkdown,
-      classLink: renderClassLink, seeAlsoLink, sourceLocation, examplesText, groupRows
+      classLink: renderClassLink, seeAlsoLink, sourceLocation, examplesText, groupRows, groupHeading
     } = window.GuildaDocRender;
     const routeParams = loader.getRouteParams();
     const className = routeParams.get('class');
@@ -198,15 +198,15 @@
         });
 
       const header = columns.map(([key, label]) => (key === 'flags'
-        ? `<th>${label}</th>`
-        : `<th class="sortable-header" data-sort="${key}">${label} ↕</th>`)).join('');
-      const renderRow = (row) => `<tr${row.inherited ? ' class="ref-inherited"' : ''}>${view.cells(row).map((cell) => `<td>${cell}</td>`).join('')}</tr>`;
+        ? `<th class="col-${key}">${label}</th>`
+        : `<th class="sortable-header col-${key}" data-sort="${key}">${label} ↕</th>`)).join('');
+      const renderRow = (row) => `<tr${row.inherited ? ' class="ref-inherited"' : ''}>${view.cells(row).map((cell, index) => `<td class="col-${columns[index][0]}">${cell}</td>`).join('')}</tr>`;
       let body;
       if (!rows.length) {
         body = `<tr><td colspan="${columns.length}" style="text-align:center; color: var(--muted);">${kind === 'property' ? tr('No matching properties found.', '該当するプロパティなし。') : tr('No matching methods found.', '該当するメソッドなし。')}</td></tr>`;
       } else if (state.grouped && hasGroups(kind)) {
         body = groupRows(rows, 'Other', allRows).map((group) => `
-          <tr class="ref-group-row"><th colspan="${columns.length}">${escapeHtml(groupLabel(group.name))} <span class="ref-muted">(${group.items.length})</span></th></tr>
+          <tr class="ref-group-row"><th colspan="${columns.length}">${groupHeading(groupLabel(group.name), group.items.length)}</th></tr>
           ${group.items.map(renderRow).join('')}`).join('');
       } else {
         body = rows.map(renderRow).join('');
@@ -324,8 +324,8 @@
           <table class="compact-table ref-stack">
             <thead><tr>${columns.map(([, label]) => `<th>${label}</th>`).join('')}</tr></thead>
             <tbody>${rows.map((row) => (row.group !== undefined
-              ? `<tr class="ref-group-row"><th colspan="${columns.length}">${escapeHtml(row.group)}</th></tr>`
-              : `<tr>${columns.map(([key, label], index) => `<td${index ? ` data-label="${escapeHtml(label)}"` : ''}>${row[key] ?? ''}</td>`).join('')}</tr>`)).join('')}</tbody>
+              ? `<tr class="ref-group-row"><th colspan="${columns.length}">${groupHeading(row.group, row.count)}</th></tr>`
+              : `<tr>${columns.map(([key, label], index) => `<td class="col-${key}"${index ? ` data-label="${escapeHtml(label)}"` : ''}>${row[key] ?? ''}</td>`).join('')}</tr>`)).join('')}</tbody>
           </table>
         </div>`;
     }
@@ -373,7 +373,7 @@
         setBy: setBy(p),
         stale: p.stale ? formatInlineMarkdown(p.stale) : muted('-')
       });
-      const body = groupRows(rows, tr('Other', 'その他')).flatMap((group) => [{ group: group.name }, ...group.items.map(toRow)]);
+      const body = groupRows(rows, tr('Other', 'その他')).flatMap((group) => [{ group: group.name, count: group.items.length }, ...group.items.map(toRow)]);
       return `
         <h2 id="owned-data">${tr('Owned data', '保持データ')}</h2>
         <p class="ref-muted ref-small">${tr('Properties this class declares, without references to other objects. Set by: the methods that assign the property (from the call graph) and its SetAccess.', 'このクラスが宣言するプロパティ（他オブジェクトへの参照を除く）。設定元: プロパティに代入するメソッド（呼び出しグラフから）と SetAccess。')}</p>
@@ -429,7 +429,7 @@
       const columns = [['name', tr('Member', 'メンバー')], ['what', tr('What it does', '内容')], ['calledBy', tr('Called by', '呼び出し元')]];
       const body = [];
       if (contract.length) {
-        body.push({ group: tr('Subclass contract', 'サブクラスの契約') });
+        body.push({ group: tr('Subclass contract', 'サブクラスの契約'), count: contract.length });
         contract.forEach(({ row, badges, text, method }) => body.push({
           name: method ? methodCell(row, badges) : memberCell(row.name, badges),
           what: text ? `<div class="markdown-content">${renderMarkdown(text)}</div>` : muted('-'),
@@ -437,7 +437,7 @@
         }));
       }
       groupRows(others, 'Other').forEach((group) => {
-        body.push({ group: groupLabel(group.name) });
+        body.push({ group: groupLabel(group.name), count: group.items.length });
         group.items.forEach((m) => body.push({
           name: methodCell(m, [accessBadge(m.access), m.static ? '<span class="ref-badge is-small">Static</span>' : '', m.hidden ? '<span class="ref-badge is-small">Hidden</span>' : '', memberHints(m)]),
           what: m.summary ? formatInlineMarkdown(m.summary) : muted(tr('No summary.', '概要なし。')),
@@ -489,7 +489,7 @@
       if (!groups.size) return '';
       const entryLink = (entry) => `<a href="${loader.pageUrl('method.html', { class: 'PowerNetwork', method: entry })}"><code>${escapeHtml(entry)}</code></a>`;
       const body = [...groups.entries()].flatMap(([group, items]) => [
-        { group: groupLabel(group) },
+        { group: groupLabel(group), count: items.length },
         ...items.sort((a, b) => a.entry.localeCompare(b.entry)).map((item) => ({ entry: entryLink(item.entry), members: nodeLinks(item.reached, 6) }))
       ]);
       return `

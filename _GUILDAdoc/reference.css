@@ -3,11 +3,40 @@
 /* Class reference (index.html#tab-reference, class.html, method.html).
    Shared tokens come from style.css; only reference-specific rules live here. */
 
-.ref-status {
-  margin: 0 0 14px;
-  font-size: 0.85rem;
-  color: var(--muted);
+/* Reference tab summary: one tile per figure, wrapping on narrow screens. */
+.ref-status { margin: 0 0 18px; }
+.ref-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
 }
+.ref-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 12px 10px;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.ref-stat-label { color: var(--muted); font-size: 0.75rem; font-weight: 600; line-height: 1.3; }
+.ref-stat-value { margin-top: auto; color: var(--ink); font-size: 1.35rem; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.ref-stat-total { color: var(--muted); font-size: 0.85rem; font-weight: 600; }
+.ref-stat-pct { margin-left: 6px; color: var(--ok); font-size: 0.75rem; font-weight: 600; }
+.ref-stat-bar { display: block; height: 4px; margin-top: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.ref-stat-bar > span { display: block; height: 100%; background: var(--ok); }
+.ref-stat.is-partial { border-top-color: var(--brand); }
+.ref-stat.is-partial .ref-stat-pct { color: var(--brand); }
+.ref-stat.is-partial .ref-stat-bar > span { background: var(--brand); }
+.ref-stat.is-clear { border-top-color: var(--ok); }
+.ref-stat.is-clear .ref-stat-value { color: var(--ok); }
+.ref-stat.is-warn { border-color: var(--warn-line); border-top-color: var(--warn-line); background: var(--warn-bg); }
+.ref-stat.is-warn .ref-stat-value, .ref-stat.is-warn .ref-stat-label { color: var(--warn); }
+.ref-stat.is-err { border-color: var(--err); border-top-color: var(--err); background: var(--err-bg); }
+.ref-stat.is-err .ref-stat-value, .ref-stat.is-err .ref-stat-label { color: var(--err); }
+.ref-stat-caption { margin: 6px 0 0; color: var(--muted); font-size: 0.75rem; }
 
 .ref-empty {
   padding: 16px 18px;
@@ -68,6 +97,8 @@
 
 /* Long code-like lines in comments must wrap instead of widening the page. */
 .doc-layout .markdown-content { overflow-wrap: anywhere; }
+/* So must long error IDs in the Throws list of a method page. */
+.doc-layout #dynamic-content li > code { overflow-wrap: anywhere; }
 
 .ref-toolbar {
   display: flex;
@@ -237,14 +268,50 @@ tr.ref-inherited td .row-link { font-weight: normal; }
 .ref-badge.is-deprecated { border-color: var(--err); color: var(--err); }
 .ref-badge.is-user { border-color: var(--brand); color: var(--brand); }
 
-/* Group heading rows inside the member tables. */
-tr.ref-group-row th {
-  background: var(--surface-subtle);
-  color: var(--ink);
-  font-size: 0.8rem;
-  letter-spacing: 0.02em;
-  text-align: left;
+/* Group headings (groupHeading in doc-render.js): a tinted band with a
+   "Group" tag, the name in the UI font and a count badge, unlike the
+   monospace member names below them. */
+.ref-group { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
+.ref-group-tag {
+  padding: 0 6px;
+  border: 1px solid var(--brand);
+  border-radius: var(--radius);
+  color: var(--brand);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.6;
+  text-transform: uppercase;
 }
+.ref-group-name { color: var(--ink); font-family: var(--font-sans); font-size: 0.9rem; font-weight: 700; overflow-wrap: anywhere; }
+.ref-group-count {
+  min-width: 1.6em;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--brand);
+  color: var(--surface);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.6;
+  text-align: center;
+}
+tr.ref-group-row th,
+.doc-layout .compact-table tr.ref-group-row th {
+  padding: 7px 12px;
+  border-top: 1px solid var(--brand);
+  border-bottom: 1px solid var(--line);
+  border-left: 3px solid var(--brand);
+  background: var(--brand-tint);
+  font-family: var(--font-sans);
+  font-weight: normal;
+  text-align: left;
+  white-space: normal;
+}
+tr.ref-group-row:hover { background: transparent; }
+.ref-nav-group { margin: 10px 0 2px; }
+.ref-nav-group .ref-group-tag { display: none; }
+.ref-nav-group .ref-group-name { font-size: 0.78rem; }
+.ref-nav-group .ref-group-count { background: var(--surface-subtle); color: var(--muted); border: 1px solid var(--line); }
 .ref-hints { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-left: 6px; vertical-align: middle; }
 .ref-see-also a > code { color: inherit; }
 .ref-unit { font-family: var(--font-mono); font-size: 0.85em; white-space: nowrap; }
@@ -309,19 +376,21 @@ tr.ref-group-row th {
 .ref-stack tbody, .ref-stack tr, .ref-stack td, .ref-stack th { display: block; width: auto !important; max-width: none !important; white-space: normal !important; }
 .ref-stack { border: 0; box-shadow: none; background: transparent; }
 .ref-stack thead { display: none; }
-.ref-stack tr { padding: 10px 0; border-bottom: 1px solid var(--line); background: transparent; }
-.ref-stack tr:first-child { border-top: 1px solid var(--line); }
-.doc-layout .ref-stack td { padding: 2px 0; border: 0; font-size: 0.9rem; }
-.ref-stack td:first-child { padding-bottom: 4px; overflow-wrap: anywhere; }
-.ref-stack td[data-label] { position: relative; padding-left: 9.5rem; }
-.ref-stack td[data-label]::before { content: attr(data-label); position: absolute; left: 0; top: 4px; width: 9rem; color: var(--muted); font-size: 0.7rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+/* Each row is a card; its first cell is the card's title bar. */
+.ref-stack tr { margin: 0 0 8px; padding: 0 0 8px; border: 1px solid var(--line); border-left: 3px solid var(--line-strong); border-radius: var(--radius); background: var(--surface); }
+.ref-stack tr:hover { background: var(--surface); }
+.doc-layout .ref-stack td { padding: 2px 14px; border: 0; font-size: 0.9rem; }
+.doc-layout .ref-stack td:first-child { margin-bottom: 6px; padding: 7px 14px; border-bottom: 1px solid var(--line); background: var(--surface-subtle); overflow-wrap: anywhere; }
+.ref-stack td.col-unit { white-space: nowrap !important; }
+.doc-layout .ref-stack td[data-label] { position: relative; padding-left: calc(9.5rem + 14px); }
+.ref-stack td[data-label]::before { content: attr(data-label); position: absolute; left: 14px; top: 4px; width: 9rem; color: var(--muted); font-size: 0.7rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
 .ref-stack td .markdown-content > :first-child { margin-top: 0; }
 .ref-stack td .markdown-content > :last-child { margin-bottom: 0; }
-.ref-stack tr.ref-group-row { padding: 0; border: 0; }
-.ref-stack tr.ref-group-row th { box-sizing: border-box; width: 100% !important; margin-top: 14px; padding: 6px 8px; }
+.ref-stack tr.ref-group-row { margin: 18px 0 8px; padding: 0; border: 0; border-radius: 0; background: transparent; }
+.ref-stack tr.ref-group-row th { box-sizing: border-box; width: 100% !important; }
 .ref-tree-indent { padding-left: calc(var(--depth, 0) * 1.25rem); }
 @media (max-width: 599px) {
-  .ref-stack td[data-label] { padding-left: 0; }
+  .doc-layout .ref-stack td[data-label] { padding-left: 14px; }
   .ref-stack td[data-label]::before { position: static; display: block; width: auto; }
 }
 
@@ -335,3 +404,48 @@ tr.ref-group-row th {
   body.doc-layout #main-content { padding: 16px; }
   .ref-method-nav { columns: 2; }
 }
+
+/* Section headings of the class and method pages: a tinted band with a
+   brand bar, unlike the group headings and cards inside the section. */
+.doc-layout #dynamic-content > h2 {
+  margin: 44px 0 14px;
+  padding: 8px 14px;
+  border: 0;
+  border-left: 5px solid var(--brand);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: linear-gradient(90deg, var(--brand-tint), var(--surface-subtle));
+  font-size: 1.35rem;
+  scroll-margin-top: 12px;
+}
+.doc-layout #dynamic-content > h3 {
+  margin: 22px 0 10px;
+  padding-left: 10px;
+  border-left: 3px solid var(--line-strong);
+  font-size: 1.05rem;
+}
+
+/* Links: brand colour and an underline, so they differ from inline code.
+   Code inside a link keeps the link colour on a blue tint. */
+.doc-layout #dynamic-content a {
+  color: var(--brand);
+  text-decoration: underline;
+  text-decoration-color: var(--on-brand-muted);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.doc-layout #dynamic-content a:hover { color: var(--brand-strong); text-decoration-color: currentColor; }
+.doc-layout #dynamic-content a > code,
+.doc-layout #dynamic-content a > strong > code {
+  background: var(--brand-tint);
+  color: inherit;
+}
+.doc-layout #dynamic-content svg a,
+.doc-layout #dynamic-content a.view-btn { text-decoration: none; }
+
+/* Member tables: a narrow Unit column; Description takes the rest. */
+.doc-layout .compact-table th.col-unit,
+.doc-layout .compact-table td.col-unit { width: 6ch; min-width: 0; white-space: nowrap; }
+.doc-layout .compact-table th.col-description,
+.doc-layout .compact-table td.col-description { width: auto; max-width: none; }
+/* Member names stay monospace, unlike the group headings between them. */
+.doc-layout .compact-table td.col-name { font-family: var(--font-mono); }

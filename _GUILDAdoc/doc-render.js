@@ -196,6 +196,12 @@
       .sort((a, b) => (rank(a.name) - rank(b.name)) || (a.index - b.index));
   };
 
+  // Heading of a member group: a "Group" tag, the group name in the UI font
+  // and the member count, so it reads apart from the member names (reference.css).
+  const groupHeading = (label, count) => `<span class="ref-group"><span class="ref-group-tag">${tr('Group', 'グループ')}</span>`
+    + `<span class="ref-group-name">${escapeHtml(label)}</span>`
+    + `${count === undefined ? '' : `<span class="ref-group-count" title="${tr('Members', 'メンバー数')}">${count}</span>`}</span>`;
+
   root.GuildaDocRender = Object.freeze({
     tr,
     setPageTitle,
@@ -210,6 +216,7 @@
     seeAlsoLink,
     sourceLocation,
     examplesText,
-    groupRows
+    groupRows,
+    groupHeading
   });
 })(window);
