@@ -18,13 +18,15 @@ function flag = check_edit(obj, opt)
     check_edit@LayerPackage(obj);
     flag = ~obj.l_staleEquilibrium;
     if opt.RequireEquilibrium && ~flag
-        tab = obj.tab_editLog;
-        [~, lv] = obj.edit_effect(tab);
-        lv = lv & tab.tag ~= "Initialize";   % an "Initialize" row: initialize stopped while writing
+        i      = 1:obj.n_editLog;
+        sv_tag = obj.sv_editTag(i);
+        sv_log = obj.sv_editLog(i);
+        [~, lv] = obj.edit_effect(sv_tag, sv_log);
+        lv = lv & sv_tag ~= "Initialize";   % an "Initialize" row: initialize stopped while writing
         if ~obj.sct_edit.l_initialized
             s_reason = "net.initialize() has not been run";
         elseif any(lv)
-            sv_edit    = tab.ID(lv) + ": " + tab.log(lv);
+            sv_edit    = obj.sv_editID(i(lv)) + ": " + sv_log(lv);
             s_reason   = "edited since the last initialize (" + join(sv_edit(1:min(end,3)), ", ");
             if numel(sv_edit) > 3
                 s_reason = s_reason + ", ...";

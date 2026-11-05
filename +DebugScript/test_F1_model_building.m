@@ -629,6 +629,17 @@ lv = net.tab_editLog.log == "edit P";
 assert(any(lv))
 assert(net.tab_editLog.before{find(lv,1)} == -1.0 && net.tab_editLog.after{find(lv,1)} == -1.1)
 
+% 時刻の書式は "uuuu/MM/dd HH:mm:ss" の文字列
+tab = net.tab_editLog;
+assert(isstring(tab.timestamp) && all(matches(tab.timestamp, digitsPattern(4)+"/"+digitsPattern(2)+"/"+digitsPattern(2)+" "+digitsPattern(2)+":"+digitsPattern(2)+":"+digitsPattern(2))))
+assert(abs(datetime(tab.timestamp(end), "InputFormat","uuuu/MM/dd HH:mm:ss") - datetime("now")) < minutes(1))
+assert(isequal(tab.Properties.VariableNames, {'timestamp','ID','log','tag','before','after'}))
+
+% ログは階層の最上位 (系統) が持ち、どの層の tab_editLog も同じ行を示す
+bus = net.a_Bus{5};
+assert(isequal(bus.tab_editLog, net.tab_editLog) && isequal(bus.a_Component{1}.tab_editLog, net.tab_editLog))
+assert(isequal(bus.a_Component{1}.para_powerflow.tab_editLog, net.tab_editLog))
+
 % 構成の変更 (機器の削除) も記録される
 net.a_Bus{8}.remove_component(string(net.a_Bus{8}.a_Component{1}));
 assert(any(contains(net.tab_editLog.log, "remove")))

@@ -1,17 +1,19 @@
 classdef LayerPackage < handle
 % Abstract base class for layer hierarchy management in GUILDA.
 %
-% It centralizes parent/children relationships, tag handling, and edit logging (each layer
-% reports its edits with log_edit; the network keeps them in PowerNetwork.tab_editLog). The
-% network, buses, branches, components, controllers (through PowerSystemModel) and
-% Parameter containers derive from it.
+% It centralizes parent/children relationships, tag handling, and the edit log: each layer
+% records its edits with log_edit, the top layer of the hierarchy (the layer without a
+% LayerPackage parent, normally the network) keeps them once it has been initialized, and
+% tab_editLog of any layer shows the log of its hierarchy. The network, buses, branches,
+% components, controllers (through PowerSystemModel) and Parameter containers derive from it.
 %
 % <@Examples>
 % ```matlab
 % net = network.IEEE14bus();
 % net.disp_tree();            % hierarchy of the layers below the network
 % net.a_Bus{1}.doc();         % class reference page of the first bus
-% net.tab_editLog             % edits since the last net.initialize (kept on the network)
+% net.tab_editLog             % edits since the last net.initialize
+% net.a_Bus{1}.tab_editLog    % the same rows: the log of the hierarchy the bus belongs to
 % ```
 %
 % See also PowerSystemModel, Parameter
@@ -51,8 +53,30 @@ classdef LayerPackage < handle
         %   Only Component, LocalController and GlobalController own handles.
         %
         % Whether the equilibrium is stale is not stored: PowerNetwork.l_staleEquilibrium
-        % derives it from tab_editLog (see edit_effect).
+        % derives it from the edit log (see edit_effect).
         sct_edit (1,1) struct = struct("l_initialized",false, "s_odefcn","unset")
+    end
+    properties(Dependent) % Edit log
+        % Edits since the last initialize, of the hierarchy the layer belongs to: the log
+        % kept by its top layer (the layer without a LayerPackage parent), so bus.tab_editLog
+        % shows the same rows as net.tab_editLog. Columns: timestamp ("uuuu/MM/dd HH:mm:ss"),
+        % ID (tags from the edited layer up, joined by "/"), log message, tag (kind of edit,
+        % see edit_effect), states before and after. Rows are kept once the top layer has been
+        % initialized and cleared at the end of initialize (reset_edit). Built when read.
+        % <@Type> table (Nx6) <@Stale> nothing
+        tab_editLog
+    end
+    properties(GetAccess=protected, SetAccess=private, Hidden) % Edit log storage
+        % Columns of the edit log, filled on the top layer by report_edit and read through
+        % tab_editLog. Rows 1:n_editLog are in use; the columns grow by doubling, so an edit
+        % is written in place. No validators: they would check the whole column on each edit.
+        n_editLog    = 0;           % Number of rows in use.
+        rv_editTime  = zeros(0,1);  % Time of each edit (datenum of now; formatted when read).
+        sv_editID    = strings(0,1);  % ID column.
+        sv_editLog   = strings(0,1);  % log column.
+        sv_editTag   = strings(0,1);  % tag column.
+        c_editBefore = cell(0,1);     % before column.
+        c_editAfter  = cell(0,1);     % after column.
     end
     
     %% Tag
@@ -65,7 +89,7 @@ classdef LayerPackage < handle
         % User-defined tag of the layer.
         % Used for identification within the layer structure; a tag that already exists among
         % the siblings is renamed with a number suffix.
-        % A rename is recorded in the network's tab_editLog (tag "Tag") and makes nothing stale. Tags are permanent
+        % A rename is recorded in tab_editLog (tag "Tag") and makes nothing stale. Tags are permanent
         % IDs, so the tags of existing child layers do not follow: after renaming bus B002 to BX, its
         % component SG1B002 keeps its tag and a component added later is SG2BX.
         % <@Type> string
@@ -79,16 +103,69 @@ classdef LayerPackage < handle
         reset_edit(obj)
         flag = check_edit(obj)
 
-        function report_edit(obj, tab)
-        % Pass an edit row built by log_edit up to the top layer (PowerNetwork), which
-        % records it in tab_editLog and keeps network-wide rules. PowerNetwork overrides this.
+        function top = get_top_layer(obj)
+        % Top layer of the hierarchy the layer belongs to: the first layer up the parents
+        % without a LayerPackage parent (the layer itself when it has none).
             arguments (Input)
                 obj
-                tab  % Edit-log row built by log_edit (columns of tab_editLog).
             end
-            if isa(obj.parent,"LayerPackage")
-                obj.parent.report_edit(tab);
+            arguments (Output)
+                top % Top layer (LayerPackage).
             end
+            top = obj;
+            a_parent = top.parent;
+            while isa(a_parent,"LayerPackage")
+                top = a_parent;
+                a_parent = top.parent;
+            end
+        end
+
+        function report_edit(obj, a_layer, log, tag, before, after)
+        % Record an edit on the top layer of the hierarchy (log_edit calls this on it). The
+        % row is kept once the top layer has been initialized. PowerNetwork extends this
+        % with its network-wide rules (handle_edit).
+            arguments (Input)
+                obj      % Top layer.
+                a_layer  % Edited layer (its tags give the ID column).
+                log      % Log message.
+                tag      % Kind of edit (see edit_effect).
+                before   % State before the edit.
+                after    % State after the edit.
+            end
+            if ~obj.sct_edit.l_initialized
+                return
+            end
+            n = obj.n_editLog + 1;
+            if n > numel(obj.rv_editTime)
+                n_size = max(64, 2*numel(obj.rv_editTime));
+                obj.rv_editTime(n_size,1)  = 0;
+                obj.sv_editID(n_size,1)    = "";
+                obj.sv_editLog(n_size,1)   = "";
+                obj.sv_editTag(n_size,1)   = "";
+                obj.c_editBefore{n_size,1} = [];
+                obj.c_editAfter{n_size,1}  = [];
+            end
+            obj.rv_editTime(n)  = now;
+            obj.sv_editID(n)    = a_layer.get_tag(true,"/");
+            obj.sv_editLog(n)   = log;
+            obj.sv_editTag(n)   = tag;
+            obj.c_editBefore{n} = before;
+            obj.c_editAfter{n}  = after;
+            obj.n_editLog       = n;
+        end
+
+        function clear_edit_log(obj)
+        % Remove every row of the layer's own edit log (reset_edit).
+            arguments (Input)
+                obj
+            end
+            obj.n_editLog    = 0;
+            obj.rv_editTime  = zeros(0,1);
+            obj.sv_editID    = strings(0,1);
+            obj.sv_editLog   = strings(0,1);
+            obj.sv_editTag   = strings(0,1);
+            obj.c_editBefore = cell(0,1);
+            obj.c_editAfter  = cell(0,1);
         end
 
         function set_odefcn(obj)
@@ -116,8 +193,9 @@ classdef LayerPackage < handle
         end
     end
     methods(Access=protected)
-        function [lv_odefcn, lv_equilibrium] = edit_effect(obj, tab) %#ok<INUSL>
-        % What each row of an edit log (tab_editLog) makes stale, from its "tag" and "log" columns.
+        function [lv_odefcn, lv_equilibrium] = edit_effect(obj, sv_tag, sv_log) %#ok<INUSL>
+        % What each edit-log row makes stale, from its "tag" and "log" columns (one edit in
+        % log_edit, the whole log in PowerNetwork).
         %   tag                    f_* handles   equilibrium
         %   Parameter(dynamics)    stale         stale
         %   Parameter(base)        -             stale     (PowerNetwork para_base: baseMVA;
@@ -136,17 +214,17 @@ classdef LayerPackage < handle
         %   OPF                    -             -         (set_opffcn / reset_opffcn)
         %   Tag                    -             -         (rename through s_tag)
             arguments (Input)
-                obj        % Any layer (the mapping does not depend on it).
-                tab  table % Edit-log rows (columns of tab_editLog).
+                obj            % Any layer (the mapping does not depend on it).
+                sv_tag string  % tag column of the rows (Nx1).
+                sv_log string  % log column of the rows (Nx1).
             end
             arguments (Output)
                 lv_odefcn      % True for rows that make the handles of the parameter's owner stale (Nx1).
                 lv_equilibrium % True for rows that make the equilibrium stale (Nx1).
             end
-            sv_tag = string(tab.tag);
             lv_odefcn      = sv_tag == "Parameter(dynamics)";
-            lv_equilibrium = ismember(sv_tag, ["Parameter(dynamics)", "Parameter(powerflow)", "Topology", "Slack", "Initialize"]) ...
-                           | (sv_tag == "Parameter(base)" & string(tab.log) ~= "edit Hz");
+            lv_equilibrium = matches(sv_tag, ["Parameter(dynamics)", "Parameter(powerflow)", "Topology", "Slack", "Initialize"]) ...
+                           | (sv_tag == "Parameter(base)" & sv_log ~= "edit Hz");
         end
     end
     methods
@@ -170,6 +248,15 @@ classdef LayerPackage < handle
                 obj (1,1) % Layer whose class page is opened.
             end
             GUILDA.doc("class", class(obj));
+        end
+
+        function tab = get.tab_editLog(obj)
+            top = obj.get_top_layer();
+            i   = (1:top.n_editLog)';
+            timestamp = string(datetime(top.rv_editTime(i), 'ConvertFrom','datenum', 'Format','uuuu/MM/dd HH:mm:ss'));
+            tab = table(timestamp, top.sv_editID(i), top.sv_editLog(i), top.sv_editTag(i), ...
+                        top.c_editBefore(i), top.c_editAfter(i), ...
+                        'VariableNames', ["timestamp","ID","log","tag","before","after"]);
         end
 
         function set.sct_edit(obj, sct_edit)

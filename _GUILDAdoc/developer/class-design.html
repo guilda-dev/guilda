@@ -337,8 +337,8 @@
 
     <!-- ============================== EDITS ============================== -->
     <h2 id="edits"><span lang="en">Handling of model edits</span><span lang="ja">モデル編集の扱い</span></h2>
-    <p lang="en">Edits are recorded in the edit log <code>tab_editLog</code> of the network, which also records the category of what became stale; <code>sct_edit.l_initialized</code> tells whether <code>initialize</code> has run. Whether the equilibrium is stale (<code>net.l_staleEquilibrium</code>) is derived from the two (<code>LayerPackage.edit_effect</code>).</p>
-    <p lang="ja">編集の記録先はネットワークの編集ログ <code>tab_editLog</code>。編集ログには、古くなったものの区分も記録。<code>initialize</code> の実行済みかどうかは <code>sct_edit.l_initialized</code>。平衡点が古いかどうか（<code>net.l_staleEquilibrium</code>）は両者から算出（<code>LayerPackage.edit_effect</code>）。</p>
+    <p lang="en">Edits are recorded in the edit log, which <code>LayerPackage</code> owns: the top layer of the hierarchy (the layer without a parent, normally the network) keeps it as columns and builds the table <code>tab_editLog</code> when it is read, from any layer (<code>bus.tab_editLog</code> shows the same rows as <code>net.tab_editLog</code>). The log also records the category of what became stale; <code>sct_edit.l_initialized</code> tells whether <code>initialize</code> has run. Whether the equilibrium is stale (<code>net.l_staleEquilibrium</code>) is derived from the two (<code>LayerPackage.edit_effect</code>).</p>
+    <p lang="ja">編集の記録先は <code>LayerPackage</code> が持つ編集ログ。階層の最上位の層（親のない層、通常はネットワーク）が列ごとに保持し、どの層からでも読み出し時に表 <code>tab_editLog</code> を作成（<code>bus.tab_editLog</code> は <code>net.tab_editLog</code> と同じ行）。編集ログには、古くなったものの区分も記録。<code>initialize</code> の実行済みかどうかは <code>sct_edit.l_initialized</code>。平衡点が古いかどうか（<code>net.l_staleEquilibrium</code>）は両者から算出（<code>LayerPackage.edit_effect</code>）。</p>
     <table class="cd-table">
       <thead>
         <tr><th><span lang="en">Edit of the model</span><span lang="ja">モデルの編集</span></th><th><span lang="en">Becomes stale</span><span lang="ja">古くなるもの</span></th></tr>

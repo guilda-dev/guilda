@@ -10,7 +10,7 @@ classdef Parameter < auxiliary & LayerPackage & dynamicprops
 % net = network.IEEE14bus();
 % bus = net.a_Bus{1};
 % bus.tab_parameter                  % parameters of the bus as a table
-% net.tab_editLog                    % edits are logged on the network
+% net.tab_editLog                    % edits are logged by the top layer (the network)
 % ```
 %
 % See also LayerPackage

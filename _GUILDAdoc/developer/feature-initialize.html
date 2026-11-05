@@ -483,7 +483,7 @@
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>children</code> of each layer</span><span lang="ja">各レイヤーの <code>children</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>sct_edit.l_initialized = true</code> on every layer; empty <code>net.tab_editLog</code> (<code>PowerNetwork.reset_edit</code>), so <code>l_staleEquilibrium</code> is false</span><span lang="ja">すべてのレイヤーで <code>sct_edit.l_initialized = true</code>。<code>net.tab_editLog</code> は空（<code>PowerNetwork.reset_edit</code>）、よって <code>l_staleEquilibrium</code> は false</span></dd>
+          <dd><span lang="en"><code>sct_edit.l_initialized = true</code> on every layer; empty <code>net.tab_editLog</code> (<code>LayerPackage.reset_edit</code> clears the log the network keeps), so <code>l_staleEquilibrium</code> is false</span><span lang="ja">すべてのレイヤーで <code>sct_edit.l_initialized = true</code>。<code>net.tab_editLog</code> は空（<code>LayerPackage.reset_edit</code> がネットワークの保持するログを消去）、よって <code>l_staleEquilibrium</code> は false</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="INIT-14">
