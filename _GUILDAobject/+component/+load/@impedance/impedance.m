@@ -6,22 +6,26 @@ classdef impedance < component.load.abstract
 % consumes the specified `P` and `Q` at the power-flow voltage and less or more
 % power when the voltage changes.
 %
-% **States** (`sv_x`)
+% **Dynamic model**
+% The model is a dynamical system with state $x$, input $u$ and output $y$, connected
+% to its bus through the bus voltage $V$ and the current $I$ it injects.
+%
+% **State variables** $x$ (`sv_x`)
 % - none
 %
-% **Inputs** (`sv_u`, the ports for local controllers and events)
+% **Input signals** $u$ (`sv_u`; the ports driven by local controllers and events)
 % - `R` [pu]: resistance of the load.
 % - `X` [pu]: reactance of the load.
 %
-% **Outputs** (`sv_y`)
+% **Output signals** $y$ (`sv_y`; read by local controllers)
 % - none
 %
 % **Parameters** (`sv_para`)
 % - none
 %
 % **Equation**
-% ```
-% I = -V/(R + jX)
+% ```math
+% I = -\frac{V}{R + jX}
 % ```
 %
 % <@Examples>

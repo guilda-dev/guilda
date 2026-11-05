@@ -1,8 +1,8 @@
 classdef GlobalController < PowerSystemModel
 % Abstract class of a controller that acts on several components of a network, such as an AGC.
 %
-% A global controller is a dynamic model with states x, inputs u and outputs y. Its
-% inputs are states of the controlled components (`controlledUnits`), read by the names
+% A global controller is a dynamical system with state $x$, input $u$ and output $y$. Its
+% input signals are states of the controlled components (`controlledUnits`), read by the names
 % in `sv_u`, and its outputs are inputs of those components. Subclasses in the
 % `controller` package define the static model functions (`fcn_dx`, `fcn_y`, `fcn_Mass`), their Jacobians and the
 % variable names. A global controller is built for a network and added with
@@ -13,8 +13,8 @@ classdef GlobalController < PowerSystemModel
 % - The components it acts on, `controlledUnits`, are associations fixed by its
 %   constructor, which receives the network only to look them up. While the controller is
 %   on the network, its units cannot be removed or replaced, nor their buses removed.
-% - Inputs `sv_u`: states of each controlled unit, matched by name in the `sv_x` of the
-%   unit. Outputs `sv_y`: added to the inputs of the same name in the `sv_u` of the unit.
+% - Input signals `sv_u`: states of each controlled unit, matched by name in the `sv_x` of the
+%   unit. Output signals `sv_y`: added to the inputs of the same name in the `sv_u` of the unit.
 %   For example, `controller.agc.broadcast_PI_AGC` reads the speed state "omega" of each
 %   generator and adds to its input "Pmech".
 % - Unlike a `LocalController`: no port V or I (its functions receive [] or zeros(2,1),

@@ -1,21 +1,40 @@
 classdef (Sealed = true) AVR_DC1 < controller.avr.abstract
 % Automatic voltage regulator with a DC exciter (IEEE type DC1).
-% The AVR observes the terminal voltage `V` [pu] of the generator it is attached to
-% and takes the input `u = [Vref; Vpss]` [pu]: the voltage reference and the output
-% of the attached PSS (0 without a PSS). Its output `Vfield` [pu] is the field
-% voltage input of the generator.
+% The AVR observes the terminal voltage $V$ [pu] of the generator it is attached to
+% and drives the field voltage input of the generator.
 %
-% State `x = [Vtr; Vap; Vfld; Vst]` [pu]:
+% **Dynamic model**
+% The controller is a dynamical system with state $x$, input $u$ and output $y$.
 %
-% - transducer: `ttr*dVtr/dt = -Vtr + |V|`
-% - amplifier: `tap*dVap/dt = -Vap + kap*(Vref + Vpss - Vtr - Vst)`, frozen while
-%   `Vap` is outside `(Vap_min, Vap_max)` and the input drives it further out
-% - exciter: `tex*dVfld/dt = -(aex1 + aex2*exp(bex*Vfld))*Vfld + Vap`, frozen while
-%   `Vfld` is at or beyond `Vfld_max` or `Vfld_min` and the input drives it further out
-%   (a non-windup limit on the field voltage)
-% - stabilizing feedback: `tst*dVst/dt = -Vst + kst*dVfld/dt`
+% **State variables** $x$ (`sv_x`)
+% - `Vtr` [pu]: Transducer output.
+% - `Vap` [pu]: Amplifier output.
+% - `Vfld` [pu]: Exciter output (field voltage).
+% - `Vst` [pu]: Stabilizing feedback.
 %
-% The output is `Vfield = Vfld`.
+% **Input signals** $u$ (`sv_u`)
+% - `Vref` [pu]: Voltage reference.
+% - `Vpss` [pu]: Output of the attached PSS (0 without a PSS).
+%
+% **Output signals** $y$ (`sv_y`)
+% - `Vfield` [pu]: Field voltage, the `Vfield` input of the generator.
+%
+% **Equations** (transducer, amplifier, exciter, stabilizing feedback)
+% ```math
+% \left\{
+% \begin{aligned}
+% t_\mathrm{tr}\dot{V}_\mathrm{tr} &= -V_\mathrm{tr} + |V| \\
+% t_\mathrm{ap}\dot{V}_\mathrm{ap} &= -V_\mathrm{ap} + k_\mathrm{ap}\,(V_\mathrm{ref} + V_\mathrm{pss} - V_\mathrm{tr} - V_\mathrm{st}) \\
+% t_\mathrm{ex}\dot{V}_\mathrm{fld} &= -\left(a_\mathrm{ex1} + a_\mathrm{ex2}\,e^{b_\mathrm{ex}V_\mathrm{fld}}\right)V_\mathrm{fld} + V_\mathrm{ap} \\
+% t_\mathrm{st}\dot{V}_\mathrm{st} &= -V_\mathrm{st} + k_\mathrm{st}\,\dot{V}_\mathrm{fld}
+% \end{aligned}
+% \right.
+% ```
+%
+% The output is `Vfield = Vfld`. Two non-windup limits freeze a state while it is out
+% of its range and the input drives it further out: `Vap` outside
+% `(Vap_min, Vap_max)`, and `Vfld` at or beyond `Vfld_max` or `Vfld_min` (a limit on
+% the field voltage).
 %
 % <@Examples>
 % Attach the AVR and a PSS to a generator and simulate a fault:

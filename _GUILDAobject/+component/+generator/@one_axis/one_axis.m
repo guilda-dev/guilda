@@ -4,16 +4,20 @@ classdef one_axis < component.generator.abstract
 % The rotor follows the swing equation and the q-axis internal voltage `Eq`
 % follows the field circuit (flux decay model).
 %
-% **States** (`sv_x`)
+% **Dynamic model**
+% The model is a dynamical system with state $x$, input $u$ and output $y$, connected
+% to its bus through the bus voltage $V$ and the current $I$ it injects.
+%
+% **State variables** $x$ (`sv_x`)
 % - `delta` [rad]: Rotor angle in the network reference frame.
 % - `omega` [pu]: Rotor speed deviation from the network frequency.
 % - `Eq` [pu]: q-axis internal voltage behind the transient reactance.
 %
-% **Inputs** (`sv_u`, the ports for local controllers)
+% **Input signals** $u$ (`sv_u`; the ports driven by local controllers)
 % - `Pmech` [pu]: Mechanical power (governor output).
 % - `Vfield` [pu]: Field voltage (AVR output).
 %
-% **Outputs** (`sv_y`)
+% **Output signals** $y$ (`sv_y`; read by local controllers)
 % - `omega` [pu]: Rotor speed deviation from the network frequency.
 %
 % **Parameters** (`sv_para`, the columns of `tab_parameter.dynamics`)
@@ -24,13 +28,21 @@ classdef one_axis < component.generator.abstract
 % - `Xd_p` [pu]: d-axis transient reactance.
 % - `Td_p` [s]: d-axis open-circuit transient time constant.
 %
-% **Equations** (`omega0` is the network frequency `get_Hz()`; `Vd`, `Vq`, `Id`, `Iq`
-% are the bus voltage and current in the rotor dq frame)
+% **Equations** ($\omega_0$ is the network frequency `get_Hz()`; $V_d$, $V_q$, $I_d$, $I_q$
+% are the bus voltage and current in the rotor dq frame; a prime marks a transient
+% quantity, e.g. $X_d'$ is `Xd_p`)
+% ```math
+% \left\{
+% \begin{aligned}
+% \dot{\delta} &= 2\pi\omega_0\,\omega \\
+% M\dot{\omega} &= -D\,\omega - P + P_\mathrm{mech} \\
+% T_{d}'\dot{E}_q &= -E_q - (X_d - X_d')\,I_d + V_\mathrm{field}
+% \end{aligned}
+% \right.
 % ```
-% d(delta)/dt   = 2*pi*omega0*omega
-% M*d(omega)/dt = -D*omega - P + Pmech
-% Td_p*d(Eq)/dt = -Eq - (Xd - Xd_p)*Id + Vfield
-% Id = (Eq - Vq)/Xd_p,  Iq = Vd/Xq,  P = Vd*Id + Vq*Iq
+% with
+% ```math
+% I_d = \frac{E_q - V_q}{X_d'}, \quad I_q = \frac{V_d}{X_q}, \quad P = V_d I_d + V_q I_q
 % ```
 %
 % <@Examples>

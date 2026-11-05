@@ -1,8 +1,8 @@
 classdef abstract < LocalController
 % Base class of the automatic voltage regulators (AVR) attached to a generator.
 % An AVR observes the terminal voltage `V` [pu] of the generator and takes the
-% input `u = [Vref; Vpss]` [pu]: the voltage reference and the output of an
-% attached PSS. Its output `Vfield` [pu] is the field voltage input of the
+% input signals `u = [Vref; Vpss]` [pu]: the voltage reference and the output of an
+% attached PSS. Its output signal `Vfield` [pu] is the field voltage input of the
 % generator. A PSS is attached to the AVR as its own local controller.
 %
 % See also controller.avr.AVR_ST1, controller.avr.AVR_DC1, controller.pss.abstract

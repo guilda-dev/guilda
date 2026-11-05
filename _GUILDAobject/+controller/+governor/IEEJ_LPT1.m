@@ -1,23 +1,48 @@
 classdef (Sealed = true) IEEJ_LPT1 < controller.governor.abstract
 % Governor of thermal and nuclear units of the IEEJ standard models (LPT = 1).
 % The model of fig. A1.2 (a) of the IEEJ technical report on the standard power
-% system models (appendix 1, section 3). It observes the speed deviation `omega`
-% [pu] of the generator and drives its `Pmech` [pu on the system base]; the inputs
-% `Pref` (65M) and `Plimit` (77M) [pu of the rated MW] stay at their equilibrium.
+% system models (appendix 1, section 3). It observes the speed deviation of the
+% generator and drives its mechanical power input.
 %
-% State `x = [Pgov; Psv; Pch; Prh]` [pu of the rated MW]:
+% **Dynamic model**
+% The controller is a dynamical system with state $x$, input $u$ and output $y$.
 %
-% - speed governor: `Tg*dPgov/dt = -Pgov + (100/droop)*omega`
-% - low value gate: `g = min(Pref - Pgov, Plimit)`
-% - servo: `dPsv/dt = Ks*(g - Psv)`, limited to `[rate_min, rate_max]`, and frozen
-%   while `Psv` is at `pos_max` or `pos_min` and pushed further out (non-windup)
-% - steam chest: `Tch*dPch/dt = -Pch + Psv`
-% - reheater: `Trh*dPrh/dt = -Prh + Pch`
+% **State variables** $x$ (`sv_x`, in pu of the rated MW)
+% - `Pgov`: Speed governor output.
+% - `Psv`: Servo position.
+% - `Pch`: Steam chest output.
+% - `Prh`: Reheater output.
 %
-% The output is `Pmech = Prate*(Fhp*Pch + Frh*Prh)`. `Prate` is the rated MW of
-% the machine divided by the system base and `PLM` [%] the governor margin, which
-% sets `Pref` and `Plimit` at the equilibrium (see controller.governor.abstract).
-% The other defaults are the values of the figure.
+% **Input signals** $u$ (`sv_u`)
+% - `omega` [pu]: Speed deviation of the generator.
+% - `Pref` [pu of the rated MW]: Load setting (65M), kept at its equilibrium.
+% - `Plimit` [pu of the rated MW]: Load limiter (77M), kept at its equilibrium.
+%
+% **Output signals** $y$ (`sv_y`)
+% - `Pmech` [pu on the system base]: Mechanical power, the `Pmech` input of the generator.
+%
+% **Equations**
+% ```math
+% \left\{
+% \begin{aligned}
+% T_g\,\dot{P}_\mathrm{gov} &= -P_\mathrm{gov} + \frac{100}{\mathrm{droop}}\,\omega \\
+% \dot{P}_\mathrm{sv} &= K_s\,(g - P_\mathrm{sv}) \\
+% T_\mathrm{ch}\dot{P}_\mathrm{ch} &= -P_\mathrm{ch} + P_\mathrm{sv} \\
+% T_\mathrm{rh}\dot{P}_\mathrm{rh} &= -P_\mathrm{rh} + P_\mathrm{ch}
+% \end{aligned}
+% \right.
+% ```
+% with the low value gate and the output
+% ```math
+% g = \min(P_\mathrm{ref} - P_\mathrm{gov},\ P_\mathrm{limit}), \qquad P_\mathrm{mech} = P_\mathrm{rate}\,(F_\mathrm{hp}P_\mathrm{ch} + F_\mathrm{rh}P_\mathrm{rh})
+% ```
+%
+% The servo rate $\dot{P}_\mathrm{sv}$ is limited to `[rate_min, rate_max]`, and `Psv` is
+% frozen while it is at `pos_max` or `pos_min` and pushed further out (non-windup).
+%
+% `Prate` is the rated MW of the machine divided by the system base and `PLM` [%]
+% the governor margin, which sets `Pref` and `Plimit` at the equilibrium (see
+% controller.governor.abstract). The other defaults are the values of the figure.
 %
 % <@Examples>
 % Attach a governor beside the AVR of a generator and trip a load:

@@ -4,15 +4,19 @@ classdef classical < component.generator.abstract
 % The rotor follows the swing equation. The internal voltage is the field input
 % `Vfield` behind the reactances `Xd` and `Xq`; the model has no flux dynamics.
 %
-% **States** (`sv_x`)
+% **Dynamic model**
+% The model is a dynamical system with state $x$, input $u$ and output $y$, connected
+% to its bus through the bus voltage $V$ and the current $I$ it injects.
+%
+% **State variables** $x$ (`sv_x`)
 % - `delta` [rad]: Rotor angle in the network reference frame.
 % - `omega` [pu]: Rotor speed deviation from the network frequency.
 %
-% **Inputs** (`sv_u`, the ports for local controllers)
+% **Input signals** $u$ (`sv_u`; the ports driven by local controllers)
 % - `Pmech` [pu]: Mechanical power (governor output).
 % - `Vfield` [pu]: Field voltage (AVR output).
 %
-% **Outputs** (`sv_y`)
+% **Output signals** $y$ (`sv_y`; read by local controllers)
 % - `omega` [pu]: Rotor speed deviation from the network frequency.
 %
 % **Parameters** (`sv_para`, the columns of `tab_parameter.dynamics`)
@@ -21,14 +25,19 @@ classdef classical < component.generator.abstract
 % - `Xd` [pu]: d-axis synchronous reactance.
 % - `Xq` [pu]: q-axis synchronous reactance.
 %
-% **Equations** (swing equation; $\omega_0$ is the network frequency `get_Hz()`; $V_d$, $V_q$,
-% $I_d$, $I_q$ are the bus voltage and current in the rotor dq frame)
+% **Equations** ($\omega_0$ is the network frequency `get_Hz()`; $V_d$, $V_q$, $I_d$, $I_q$
+% are the bus voltage and current in the rotor dq frame)
 % ```math
+% \left\{
 % \begin{aligned}
 % \dot{\delta} &= 2\pi\omega_0\,\omega \\
-% M\dot{\omega} &= -D\,\omega - P + P_\mathrm{mech} \\
-% I_d &= \frac{V_\mathrm{field} - V_q}{X_d}, \quad I_q = \frac{V_d}{X_q}, \quad P = V_d I_d + V_q I_q
+% M\dot{\omega} &= -D\,\omega - P + P_\mathrm{mech}
 % \end{aligned}
+% \right.
+% ```
+% with
+% ```math
+% I_d = \frac{V_\mathrm{field} - V_q}{X_d}, \quad I_q = \frac{V_d}{X_q}, \quad P = V_d I_d + V_q I_q
 % ```
 %
 % <@Examples>

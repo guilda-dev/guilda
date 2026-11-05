@@ -77,6 +77,7 @@
       <a href="#class-page"><span lang="en">Class page sections</span><span lang="ja">クラスのページの構成</span></a>
       <a href="#image"><span lang="en">Figure</span><span lang="ja">図</span></a>
       <a href="#math"><span lang="en">Math</span><span lang="ja">数式</span></a>
+      <a href="#dynamics"><span lang="en">Dynamic models</span><span lang="ja">動的モデル</span></a>
       <a href="#tags"><span lang="en">Tags to use</span><span lang="ja">使うタグ</span></a>
       <a href="#removed"><span lang="en">Unsupported tags</span><span lang="ja">使わないタグ</span></a>
       <a href="#collected"><span lang="en">Information collected from the code</span><span lang="ja">コードから集める情報</span></a>
@@ -337,12 +338,47 @@
       <li><span lang="en">Rendered with KaTeX 0.19.1, bundled in <code>_GUILDAdoc/vendor/katex/</code> (no CDN, so offline and <code>file://</code> work). Without it the source shows as code.</span><span lang="ja">表示は <code>_GUILDAdoc/vendor/katex/</code> に同梱の KaTeX 0.19.1（CDN なし、オフラインと <code>file://</code> で動作）。ない場合はソースをコードとして表示。</span></li>
       <li><span lang="en">Licenses: MIT for KaTeX (<code>vendor/katex/LICENSE</code>), SIL Open Font License 1.1 for its fonts (<code>vendor/katex/fonts/OFL.txt</code>); the notice is <code>_GUILDAdoc/vendor/README.md</code>. Keep them with the files when KaTeX is updated.</span><span lang="ja">ライセンス: KaTeX は MIT（<code>vendor/katex/LICENSE</code>）、フォントは SIL Open Font License 1.1（<code>vendor/katex/fonts/OFL.txt</code>）。告知は <code>_GUILDAdoc/vendor/README.md</code>。KaTeX の更新時もファイルと一緒に維持。</span></li>
     </ul>
-<pre class="cd-code"><span class="cd-c">% **Equations** (swing equation; $\omega_0$ is the network frequency)</span>
+
+    <h3 id="dynamics"><span lang="en">Dynamic models</span><span lang="ja">動的モデル</span></h3>
+    <p class="dg-lead-in" lang="en">For a component or controller whose help lists its states, inputs and outputs. The words name the signals of the dynamical system, not the arguments of a function.</p>
+    <p class="dg-lead-in" lang="ja">状態・入力・出力を列挙するコンポーネントとコントローラのヘルプ向け。関数の引数ではなく、動的システムの信号であることを明示する表現。</p>
+    <ul>
+      <li><span lang="en">Lead: <code>**Dynamic model**</code>, then one sentence: the model is a dynamical system with state <i>x</i>, input <i>u</i> and output <i>y</i> (a component adds its bus voltage <i>V</i> and injected current <i>I</i>).</span><span lang="ja">冒頭: <code>**Dynamic model**</code> と 1 文の説明。モデルは状態 <i>x</i>、入力 <i>u</i>、出力 <i>y</i> をもつ動的システム（コンポーネントは母線電圧 <i>V</i> と注入電流 <i>I</i> も記載）。</span></li>
+      <li><span lang="en">Then, in this order, the parts the model has: <code>**State variables** $x$ (`sv_x`)</code>, <code>**Input signals** $u$ (`sv_u`; …)</code>, <code>**Output signals** $y$ (`sv_y`; …)</code>, <code>**Parameters** (`sv_para`, …)</code>, <code>**Equations**</code>. One item per variable, in the order of the property.</span><span lang="ja">続いて、モデルにある部分をこの順で: <code>**State variables** $x$ (`sv_x`)</code>、<code>**Input signals** $u$ (`sv_u`; …)</code>、<code>**Output signals** $y$ (`sv_y`; …)</code>、<code>**Parameters** (`sv_para`, …)</code>、<code>**Equations**</code>。変数ごとに 1 項目、プロパティの並び順。</span></li>
+      <li><span lang="en">No part for what the help does not describe: a model with no equations lists none.</span><span lang="ja">ヘルプで扱わない部分は省略。式のないモデルへの式の追加は不可。</span></li>
+      <li><span lang="en">Equations: two or more differential equations form a braced system, <code>\left\{ \begin{aligned} … \end{aligned} \right.</code>, one equation per line aligned at <code>=</code>. The algebraic relations follow after <code>with</code>, in a second <code>```math</code> block. A single equation has no brace.</span><span lang="ja">式: 2 本以上の微分方程式は波括弧の連立形 <code>\left\{ \begin{aligned} … \end{aligned} \right.</code>、1 行 1 式で <code>=</code> 揃え。代数式は <code>with</code> の後に別の <code>```math</code> ブロック。1 本だけの式は波括弧なし。</span></li>
+      <li><span lang="en">Symbols: state the meaning of a symbol that is not a variable name in the heading, e.g. a prime for <code>_p</code>. Limits and non-windup rules stay in the text after the equations.</span><span lang="ja">記号: 変数名と異なる記号は見出しの括弧内で説明（例: プライムは <code>_p</code>）。リミットとワインドアップ防止は式の後の本文。</span></li>
+    </ul>
+<pre class="cd-code"><span class="cd-c">% **Dynamic model**</span>
+<span class="cd-c">% The model is a dynamical system with state $x$, input $u$ and output $y$, connected</span>
+<span class="cd-c">% to its bus through the bus voltage $V$ and the current $I$ it injects.</span>
+<span class="cd-c">%</span>
+<span class="cd-c">% **State variables** $x$ (`sv_x`)</span>
+<span class="cd-c">% - `delta` [rad]: Rotor angle in the network reference frame.</span>
+<span class="cd-c">% - `omega` [pu]: Rotor speed deviation from the network frequency.</span>
+<span class="cd-c">%</span>
+<span class="cd-c">% **Input signals** $u$ (`sv_u`; the ports driven by local controllers)</span>
+<span class="cd-c">% - `Pmech` [pu]: Mechanical power (governor output).</span>
+<span class="cd-c">%</span>
+<span class="cd-c">% **Output signals** $y$ (`sv_y`; read by local controllers)</span>
+<span class="cd-c">% - `omega` [pu]: Rotor speed deviation from the network frequency.</span>
+<span class="cd-c">%</span>
+<span class="cd-c">% **Parameters** (`sv_para`, the columns of `tab_parameter.dynamics`)</span>
+<span class="cd-c">% - `M` [s]: Inertia constant (`M = 2H`).</span>
+<span class="cd-c">% - `D` [pu]: Damping coefficient.</span>
+<span class="cd-c">%</span>
+<span class="cd-c">% **Equations** ($\omega_0$ is the network frequency `get_Hz()`)</span>
 <span class="cd-c">% ```math</span>
+<span class="cd-c">% \left\{</span>
 <span class="cd-c">% \begin{aligned}</span>
 <span class="cd-c">% \dot{\delta} &amp;= 2\pi\omega_0\,\omega \\</span>
 <span class="cd-c">% M\dot{\omega} &amp;= -D\,\omega - P + P_\mathrm{mech}</span>
 <span class="cd-c">% \end{aligned}</span>
+<span class="cd-c">% \right.</span>
+<span class="cd-c">% ```</span>
+<span class="cd-c">% with</span>
+<span class="cd-c">% ```math</span>
+<span class="cd-c">% P = V_d I_d + V_q I_q</span>
 <span class="cd-c">% ```</span></pre>
 
     <!-- ============================== TAGS ============================== -->

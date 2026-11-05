@@ -1,12 +1,12 @@
 classdef Component < PowerSystemModel
 % Abstract class of the equipment connected to a bus, such as generators and loads.
 %
-% A component is a dynamic model with states x, inputs u and outputs y, connected to its
-% bus through the voltage V and the current I it injects (positive for generation):
+% A component is a dynamical system with state $x$, input $u$ and output $y$, connected to
+% its bus through the bus voltage $V$ and the current $I$ it injects (positive for generation):
 %
 % - `fcn_dx`, `fcn_Mass`: the state equation M*dx/dt = fcn_dx(t, x, V, I, u)
 % - `fcn_I`: the current injected into the bus
-% - `fcn_Y`: the outputs (inputs of the local controllers)
+% - `fcn_Y`: the output signals (read by the local controllers)
 %
 % Subclasses in the `component` package define these static methods, the names of the
 % variables (`sv_x`, `sv_u`, `sv_y`, `sv_para`) and the equilibrium (`get_equilibrium`).

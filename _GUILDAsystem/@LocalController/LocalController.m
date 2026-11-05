@@ -1,13 +1,13 @@
 classdef LocalController < PowerSystemModel
 % Abstract class of a controller attached to one component, such as an AVR, a PSS, a governor or an LQR.
 %
-% A local controller is a dynamic model with states x, inputs u and outputs y.
+% A local controller is a dynamical system with state $x$, input $u$ and output $y$.
 % It observes the component it is attached to (directly, or through the controllers
-% above it) by the names of its inputs sv_u: a name in sv_y of the component reads that
+% above it) by the names of its input signals sv_u: a name in sv_y of the component reads that
 % output, otherwise a name in sv_x reads that state (an output is read when both have
 % the name). The reserved inputs "Xall" / "Yall" observe all the states / all the
 % outputs. An input of the name of an output of a nested controller (e.g. Vpss) reads
-% that output; other inputs stay at the equilibrium. The outputs sv_y of the controller
+% that output; other inputs stay at the equilibrium. The output signals sv_y of the controller
 % drive the inputs of the same name of the component (or of the controller above it); an
 % input event or a global controller on such an input of the component adds to them.
 % The parent voltage V is available to it.

@@ -2,8 +2,8 @@ classdef abstract < Component
 % Base class of the synchronous generator models.
 %
 % A generator model connects to one bus, takes the mechanical power `Pmech` and
-% the field voltage `Vfield` as inputs, and injects a current into the bus.
-% Subclasses define the states, the equations and the parameter names
+% the field voltage `Vfield` as input signals, and injects a current into the bus.
+% Subclasses define the state variables, the equations and the parameter names
 % (`sv_x`, `sv_u`, `sv_y`, `sv_para`).
 %
 % Add a generator with `Bus.add_component` and a model key such as

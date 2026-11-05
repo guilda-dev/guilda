@@ -1,20 +1,45 @@
 classdef (Sealed = true) IEEJ_LPT3 < controller.governor.abstract
 % Governor of hydro units of the IEEJ standard models, model 1 (LPT = 3).
 % The model of fig. A1.2 (b) of the IEEJ technical report on the standard power
-% system models (appendix 1, section 3). It observes the speed deviation `omega`
-% [pu] of the generator and drives its `Pmech` [pu on the system base]; the inputs
-% `Pref` (65M) and `Plimit` (77M) [pu of the rated MW] stay at their equilibrium.
+% system models (appendix 1, section 3). It observes the speed deviation of the
+% generator and drives its mechanical power input.
 %
-% State `x = [Pgov; Psv]` [pu of the rated MW]:
+% **Dynamic model**
+% The controller is a dynamical system with state $x$, input $u$ and output $y$.
 %
-% - speed governor: `Tg*dPgov/dt = -Pgov + (100/droop)*omega`
-% - low value gate: `g = min(Pref - Pgov, Plimit)`
-% - servo: `dPsv/dt = (g - Psv)/Ts`, limited to `[rate_min, rate_max]`, and frozen
-%   while `Psv` is at `pos_max` or `pos_min` and pushed further out (non-windup)
+% **State variables** $x$ (`sv_x`, in pu of the rated MW)
+% - `Pgov`: Speed governor output.
+% - `Psv`: Servo position.
 %
-% The turbine output is the servo position: `Pmech = Prate*Psv`. `Prate` is the
-% rated MW of the machine divided by the system base and `PLM` [%] the governor
-% margin, which sets `Pref` and `Plimit` at the equilibrium (see
+% **Input signals** $u$ (`sv_u`)
+% - `omega` [pu]: Speed deviation of the generator.
+% - `Pref` [pu of the rated MW]: Load setting (65M), kept at its equilibrium.
+% - `Plimit` [pu of the rated MW]: Load limiter (77M), kept at its equilibrium.
+%
+% **Output signals** $y$ (`sv_y`)
+% - `Pmech` [pu on the system base]: Mechanical power, the `Pmech` input of the generator.
+%
+% **Equations**
+% ```math
+% \left\{
+% \begin{aligned}
+% T_g\,\dot{P}_\mathrm{gov} &= -P_\mathrm{gov} + \frac{100}{\mathrm{droop}}\,\omega \\
+% T_s\,\dot{P}_\mathrm{sv} &= g - P_\mathrm{sv}
+% \end{aligned}
+% \right.
+% ```
+% with the low value gate and the output
+% ```math
+% g = \min(P_\mathrm{ref} - P_\mathrm{gov},\ P_\mathrm{limit}), \qquad P_\mathrm{mech} = P_\mathrm{rate}\,P_\mathrm{sv}
+% ```
+%
+% The servo rate $\dot{P}_\mathrm{sv}$ is limited to `[rate_min, rate_max]`, and `Psv` is
+% frozen while it is at `pos_max` or `pos_min` and pushed further out (non-windup).
+%
+% The turbine output is the servo position.
+%
+% `Prate` is the rated MW of the machine divided by the system base and `PLM` [%]
+% the governor margin, which sets `Pref` and `Plimit` at the equilibrium (see
 % controller.governor.abstract). The other defaults are the values of the figure.
 %
 % <@Examples>

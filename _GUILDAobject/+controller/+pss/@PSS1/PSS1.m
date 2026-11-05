@@ -1,15 +1,28 @@
 classdef (Sealed = true) PSS1 < controller.pss.abstract
 % Power system stabilizer with a washout filter and two lead-lag blocks.
-% The PSS observes the frequency deviation `omega` [pu] of the generator and
-% outputs the stabilizing signal `Vpss` [pu] to the `Vpss` input of the AVR it is
-% attached to. Its transfer function from `omega` to `Vpss` is
+% The PSS observes the frequency deviation of the generator and drives the `Vpss`
+% input of the AVR it is attached to.
 %
-% ```
-% kpss * tWS*s/(1 + tWS*s) * (1 + tn1*s)/(1 + td1*s) * (1 + tn2*s)/(1 + td2*s)
+% **Dynamic model**
+% The controller is a dynamical system with state $x$, input $u$ and output $y$.
+%
+% **State variables** $x$ (`sv_x`)
+% - `xiWS` [pu]: State of the washout filter.
+% - `xi1` [pu]: State of the first lead-lag block.
+% - `xi2` [pu]: State of the second lead-lag block.
+%
+% **Input signals** $u$ (`sv_u`)
+% - `omega` [pu]: Frequency deviation of the generator.
+%
+% **Output signals** $y$ (`sv_y`)
+% - `Vpss` [pu]: Stabilizing signal, the `Vpss` input of the AVR.
+%
+% **Equations** (transfer function from $\omega$ to $V_\mathrm{pss}$)
+% ```math
+% k_\mathrm{pss}\,\frac{t_\mathrm{WS}s}{1 + t_\mathrm{WS}s}\,\frac{1 + t_\mathrm{n1}s}{1 + t_\mathrm{d1}s}\,\frac{1 + t_\mathrm{n2}s}{1 + t_\mathrm{d2}s}
 % ```
 %
-% with the output limited to `[Vpss_min, Vpss_max]`. The state `x = [xiWS; xi1; xi2]`
-% [pu] holds the washout filter and the two lead-lag blocks.
+% The output is limited to `[Vpss_min, Vpss_max]`.
 %
 % <@Examples>
 % Attach an AVR with this PSS to a generator and simulate a fault:

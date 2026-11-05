@@ -1,26 +1,52 @@
 classdef (Sealed = true) IEEJ_LPT4 < controller.governor.abstract
 % Governor of hydro units of the IEEJ standard models, model 2 (LPT = 4).
 % The model of fig. A1.2 (c) of the IEEJ technical report on the standard power
-% system models (appendix 1, section 3). It observes the speed deviation `omega`
-% [pu] of the generator and drives its `Pmech` [pu on the system base]; the inputs
-% `Pref` (65M) and `Plimit` (77M) [pu of the rated MW] stay at their equilibrium.
+% system models (appendix 1, section 3). It observes the speed deviation of the
+% generator and drives its mechanical power input.
 %
-% State `x = [Pgov; Pdr; Psv; Pw]` [pu of the rated MW]:
+% **Dynamic model**
+% The controller is a dynamical system with state $x$, input $u$ and output $y$.
 %
-% - speed governor: `Tg*dPgov/dt = -omega - (droop/100)*Pgov - (Kt/Tt)*(Pgov - Pdr)`,
-%   an integrator with the permanent droop `droop/100` and the temporary droop
-%   `Kt*s/(1 + Tt*s)` in its feedback
-% - temporary droop: `Tt*dPdr/dt = -Pdr + Pgov`
-% - low value gate: `g = min(Pref + Pgov, Plimit)`
-% - servo: `dPsv/dt = (g - Psv)/Ts`, limited to `[rate_min, rate_max]`, and frozen
-%   while `Psv` is at `pos_max` or `pos_min` and pushed further out (non-windup)
-% - water column: `Tw*dPw/dt = -Pw + Psv`
+% **State variables** $x$ (`sv_x`, in pu of the rated MW)
+% - `Pgov`: Speed governor output.
+% - `Pdr`: Temporary droop state.
+% - `Psv`: Servo position.
+% - `Pw`: Water column output.
 %
-% The output is `Pmech = Prate*(Kw*Pw + Kv*Psv)`: with the defaults the turbine is
-% `(1 - 3s)/(1 + 1.5s)`. `Prate` is the rated MW of the machine divided by the
-% system base and `PLM` [%] the governor margin, which sets `Pref` and `Plimit` at
-% the equilibrium (see controller.governor.abstract). The other defaults are the
-% values of the figure.
+% **Input signals** $u$ (`sv_u`)
+% - `omega` [pu]: Speed deviation of the generator.
+% - `Pref` [pu of the rated MW]: Load setting (65M), kept at its equilibrium.
+% - `Plimit` [pu of the rated MW]: Load limiter (77M), kept at its equilibrium.
+%
+% **Output signals** $y$ (`sv_y`)
+% - `Pmech` [pu on the system base]: Mechanical power, the `Pmech` input of the generator.
+%
+% **Equations**
+% ```math
+% \left\{
+% \begin{aligned}
+% T_g\,\dot{P}_\mathrm{gov} &= -\omega - \frac{\mathrm{droop}}{100}\,P_\mathrm{gov} - \frac{K_t}{T_t}\,(P_\mathrm{gov} - P_\mathrm{dr}) \\
+% T_t\,\dot{P}_\mathrm{dr} &= -P_\mathrm{dr} + P_\mathrm{gov} \\
+% T_s\,\dot{P}_\mathrm{sv} &= g - P_\mathrm{sv} \\
+% T_w\,\dot{P}_\mathrm{w} &= -P_\mathrm{w} + P_\mathrm{sv}
+% \end{aligned}
+% \right.
+% ```
+% with the low value gate and the output
+% ```math
+% g = \min(P_\mathrm{ref} + P_\mathrm{gov},\ P_\mathrm{limit}), \qquad P_\mathrm{mech} = P_\mathrm{rate}\,(K_wP_\mathrm{w} + K_vP_\mathrm{sv})
+% ```
+%
+% The servo rate $\dot{P}_\mathrm{sv}$ is limited to `[rate_min, rate_max]`, and `Psv` is
+% frozen while it is at `pos_max` or `pos_min` and pushed further out (non-windup).
+%
+% The speed governor is an integrator with the permanent droop `droop/100` and the
+% temporary droop $K_t s/(1 + T_t s)$ in its feedback. With the defaults the turbine is
+% `(1 - 3s)/(1 + 1.5s)`.
+%
+% `Prate` is the rated MW of the machine divided by the system base and `PLM` [%]
+% the governor margin, which sets `Pref` and `Plimit` at the equilibrium (see
+% controller.governor.abstract). The other defaults are the values of the figure.
 %
 % <@Examples>
 % ```matlab
