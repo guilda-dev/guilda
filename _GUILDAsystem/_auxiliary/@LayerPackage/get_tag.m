@@ -19,7 +19,7 @@ function out = get_tag(obj,l_with_layer, str_split)
 
     if l_with_layer && isa(obj.parent,"LayerPackage")
         str_pTag = obj.parent.get_tag(l_with_layer,str_split);
-        if isempty(char(str_pTag)) || isempty(char(out))
+        if strlength(str_pTag) == 0 || strlength(out) == 0
             str_split = "";
         end
         out =  out + str_split + str_pTag;

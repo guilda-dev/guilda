@@ -221,7 +221,7 @@ assert(r_err < 0.01, "relative error %g", r_err)
 [net, comp, avr, pss, gov] = build_full("after");
 comp.remove_local_controller(gov.str_tag);
 assert(same_list(comp.a_LocalController, {avr}) && avr.a_LocalController{1} == pss && isempty(gov.a_Component))
-assert(net.s_edit.l_staleEquilibrium)
+assert(net.l_staleEquilibrium)
 comp.add_local_controller(gov);
 ME = caught(@() comp.remove_local_controller(avr.str_tag));
 assert(ME.identifier == "GUILDA:Component:ControllerHasNested")

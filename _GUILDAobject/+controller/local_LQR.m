@@ -190,7 +190,7 @@ classdef local_LQR < LocalController
             obj.f_Y    = @(t,x,V,I,u) obj.fcn_y(t, x, V, I, u, param, omega0);
             obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
             obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
-            obj.s_edit.str_odefcn = "updated";
+            obj.sct_edit.str_odefcn = "updated";
         end
     end
 
@@ -234,8 +234,7 @@ classdef local_LQR < LocalController
             if isempty(comp) || isempty(comp.a_Bus) || isempty(comp.a_Bus.a_PowerNetwork)
                 l = false;
             else
-                s = comp.a_Bus.a_PowerNetwork.s_edit;
-                l = s.str_flag ~= "unset" && ~s.l_staleEquilibrium;
+                l = ~comp.a_Bus.a_PowerNetwork.l_staleEquilibrium;
             end
         end
 

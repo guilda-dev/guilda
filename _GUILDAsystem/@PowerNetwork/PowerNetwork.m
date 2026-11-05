@@ -15,7 +15,8 @@ classdef PowerNetwork < PowerSystemModel
 %   their back references (`Bus.a_PowerNetwork`, `Branch.a_PowerNetwork`, `Branch.a_Bus`,
 %   `GlobalController.a_PowerNetwork`, `Scenario.a_PowerNetwork`).
 % - Every layer below reports its edits upward with `log_edit`; the network appends them to
-%   `tab_editLog` and passes each one to `handle_edit`, which keeps at most one slack bus.
+%   `tab_editLog` (`report_edit`) and passes each one to `handle_edit`, which keeps at most
+%   one slack bus. `l_staleEquilibrium` is derived from that log.
 %
 % A network is built by adding buses (`add_bus`) and branches (`add_branch`); the
 % components (generators, loads, ...) are added to the buses (`Bus.add_component`) and
@@ -74,6 +75,23 @@ classdef PowerNetwork < PowerSystemModel
        % the equilibrium stale).
        % <@Stale> nothing (not logged)
        a_Scenario (:,1) cell = cell(0,1);
+    end
+    properties(SetAccess=private) % Edit log
+        % Log of the edits made to the network and its layers since the last initialize.
+        % Columns: timestamp, ID, log message, tag, and the states before and after the edit.
+        % Rows are appended once initialize has run and cleared at the end of initialize.
+        % <@Type> table (Nx6)
+        % <@Stale> nothing
+        tab_editLog = table('Size',[0 6], 'VariableTypes',["string","string","string","string","cell","cell"], ...
+                            'VariableNames',["timestamp","ID","log","tag","before","after"]);
+    end
+    properties(Dependent, Hidden) % Edit log
+        % True when the equilibrium set by initialize no longer matches the model: initialize
+        % has not run, or a row of tab_editLog affects the equilibrium (see edit_effect;
+        % edits of "dynamics", "base" (baseMVA) and "powerflow" parameters, topology and
+        % slack-bus changes, and an initialize that stopped while writing the equilibrium).
+        % <@Type> logical
+        l_staleEquilibrium
     end
     properties(SetAccess=protected) % Solvers
 
@@ -233,15 +251,34 @@ classdef PowerNetwork < PowerSystemModel
         % Edit handling: build the f_* handles that are not up to date, check the equilibrium
         flag = check_edit(obj, opt)
 
+        function report_edit(obj, tab)
+            % Record an edit reported by a layer (log_edit) once initialize has run, and keep
+            % the network-wide rules (handle_edit), also before the first initialize.
+            %
+            % <@Group> Called by analyses
+            if obj.sct_edit.l_initialized
+                obj.tab_editLog = [obj.tab_editLog; tab];
+            end
+            obj.handle_edit(tab);
+        end
+
+        function reset_edit(obj)
+            % Mark every layer as initialized and clear the edit log (end of initialize).
+            %
+            % <@Group> Called by analyses
+            reset_edit@LayerPackage(obj);
+            obj.tab_editLog(1:end,:) = [];
+        end
+
         function handle_edit(obj, tab)
             % At most one slack bus: a bus reports bus.l_isSlack = true as a
             % "Slack" edit (ID starts with its tag); the network releases the others.
             %
             % <@Group> Called by analyses
-            if string(tab{1,4}) ~= "Slack"
+            if tab.tag ~= "Slack"
                 return
             end
-            str_id  = split(string(tab{1,2}), "/");
+            str_id  = split(tab.ID, "/");
             lv_this = string(obj.a_Bus) == str_id(1);
             if ~any(lv_this) || ~obj.a_Bus{lv_this}.l_isSlack
                 return
@@ -267,6 +304,11 @@ classdef PowerNetwork < PowerSystemModel
 
 %% Get Method
     methods
+        function l = get.l_staleEquilibrium(obj)
+            [~, lv] = obj.edit_effect(obj.tab_editLog);
+            l = ~obj.sct_edit.l_initialized || any(lv);
+        end
+
         function tp = get.tab_parameter(obj)
             base = obj.para_base.tab_parameter;
             tp   = table(base);

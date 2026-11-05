@@ -107,8 +107,9 @@ function [result, flag, output] = initialize(obj, varargin)
     tab_PFsol = result.tab_bus;
     c_PQ      = component_power(obj, str_method, result);
 
-    % stays set if a step below fails, so a partly written point is never used
-    obj.s_edit.l_staleEquilibrium = true;
+    % stays in the log if a step below fails, so a partly written point is never used
+    % (reset_edit clears it when initialize finishes)
+    obj.log_edit("initialize", "Initialize");
 
     for i_gc = 1:numel(obj.a_GlobalController)
         a_GC = obj.a_GlobalController{i_gc};
@@ -407,12 +408,9 @@ end
 function check_edit_for_equilibrium(obj)
 % Stops when an edit since the last initialize would be lost by Method="equilibrium".
 % Dynamics edits are not lost: the states and inputs are recomputed from the held V and I.
-    if obj.s_edit.str_flag == "unset"
-        return
-    end
     tab = obj.tab_editLog;
-    [~, lv] = arrayfun(@(t, l) LayerPackage.edit_effect(t, l), string(tab.tag), string(tab.log));
-    lv = lv & string(tab.tag) ~= "Parameter(dynamics)";
+    [~, lv] = obj.edit_effect(tab);
+    lv = lv & ~ismember(tab.tag, ["Parameter(dynamics)", "Initialize"]);
     if any(lv)
         str_edit = tab.ID(lv) + ": " + tab.log(lv);
         str_list = join(str_edit(1:min(end,3)), ", ");

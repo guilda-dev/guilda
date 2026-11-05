@@ -15,23 +15,23 @@ function flag = check_edit(obj, opt)
     arguments (Output)
         flag   % True when the equilibrium is up to date.
     end
-    flag = check_edit@LayerPackage(obj);
+    check_edit@LayerPackage(obj);
+    flag = ~obj.l_staleEquilibrium;
     if opt.RequireEquilibrium && ~flag
-        if obj.s_edit.str_flag == "unset"
+        tab = obj.tab_editLog;
+        [~, lv] = obj.edit_effect(tab);
+        lv = lv & tab.tag ~= "Initialize";   % an "Initialize" row: initialize stopped while writing
+        if ~obj.sct_edit.l_initialized
             str_reason = "net.initialize() has not been run";
-        else
-            tab = obj.tab_editLog;
-            [~, lv] = arrayfun(@(t, l) LayerPackage.edit_effect(t, l), string(tab.tag), string(tab.log));
-            if any(lv)
-                str_edit   = tab.ID(lv) + ": " + tab.log(lv);
-                str_reason = "edited since the last initialize (" + join(str_edit(1:min(end,3)), ", ");
-                if numel(str_edit) > 3
-                    str_reason = str_reason + ", ...";
-                end
-                str_reason = str_reason + ")";
-            else
-                str_reason = "the last net.initialize() stopped before it finished";
+        elseif any(lv)
+            str_edit   = tab.ID(lv) + ": " + tab.log(lv);
+            str_reason = "edited since the last initialize (" + join(str_edit(1:min(end,3)), ", ");
+            if numel(str_edit) > 3
+                str_reason = str_reason + ", ...";
             end
+            str_reason = str_reason + ")";
+        else
+            str_reason = "the last net.initialize() stopped before it finished";
         end
         error(msg("GUILDA:PowerNetwork:EquilibriumStale", char(obj.str_tag), char(str_reason)))
     end

@@ -13,7 +13,7 @@ for c_net = {DebugScript.helper.build_9bus(), DebugScript.helper.build_ieee14()}
     net = c_net{1};
     res = DebugScript.helper.quiet(@() net.initialize(Method="OPF", Verbose=false));
     assert(kcl_residual(net) < tol_kcl)
-    assert(~net.s_edit.l_staleEquilibrium)
+    assert(~net.l_staleEquilibrium)
     assert(drift(net) < tol_drift)
     assert_component_power(net, res)
 
@@ -96,7 +96,7 @@ DebugScript.helper.quiet(@() net.initialize);
 gen.para_powerflow.P = 0.9;
 assert(contains(error_of(@() net.initialize(Method="equilibrium")).message, "net.initialize()"))
 DebugScript.helper.quiet(@() net.initialize);
-assert(kcl_residual(net) < 1e-8 && ~net.s_edit.l_staleEquilibrium)
+assert(kcl_residual(net) < 1e-8 && ~net.l_staleEquilibrium)
 assert(abs(real(gen.c_Vequilibrium*conj(gen.c_Iequilibrium)) - 0.9) < 1e-10)
 
 
@@ -106,9 +106,9 @@ DebugScript.helper.quiet(@() net.initialize);
 V = net.cv_Vequilibrium;
 U = gen.rv_Uequilibrium;
 gen.para_dynamics.Xd = 1.2*gen.para_dynamics.Xd;
-assert(net.s_edit.l_staleEquilibrium)
+assert(net.l_staleEquilibrium)
 DebugScript.helper.quiet(@() net.initialize(Method="equilibrium"));
-assert(~net.s_edit.l_staleEquilibrium)
+assert(~net.l_staleEquilibrium)
 assert(norm(net.cv_Vequilibrium - V) < 1e-10 && kcl_residual(net) < 1e-8)
 assert(norm(gen.rv_Uequilibrium - U) > 1e-6)      % 界磁入力が新しい Xd に合わせて変わる
 assert(drift(net) < 1e-6)
@@ -121,7 +121,7 @@ gen.add_local_controller(lqr);
 DebugScript.helper.quiet(@() net.initialize);
 lqr.Q = ones(1, numel(gen.sv_x) + 1);           % 重みのサイズが違うので set_equilibrium で失敗する
 error_of(@() net.initialize());
-assert(net.s_edit.l_staleEquilibrium)
+assert(net.l_staleEquilibrium)
 ME = error_of(@() net.simulate([0 1]));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:EquilibriumStale", DebugScript.helper.msg_id(ME))
 
@@ -133,9 +133,9 @@ DebugScript.helper.quiet(@() net.initialize);
 a_Comp = net.a_Bus{2}.a_Component;
 a_Comp{1}.para_operation.baseMVA = 0;
 a_Comp{2}.para_operation.baseMVA = 0;
-assert(~net.s_edit.l_staleEquilibrium)
+assert(~net.l_staleEquilibrium)
 error_of(@() net.initialize());
-assert(net.s_edit.l_staleEquilibrium)
+assert(net.l_staleEquilibrium)
 ME = error_of(@() net.simulate([0 1]));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:EquilibriumStale", DebugScript.helper.msg_id(ME))
 assert(contains(ME.message, "stopped before it finished"), ME.message)
@@ -147,7 +147,7 @@ DebugScript.helper.quiet(@() net.initialize);
 V = net.cv_Vequilibrium;
 ME = error_of(@() net.initialize(Method="OPF", MaxIteration=2));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeOPFFailed", DebugScript.helper.msg_id(ME))
-assert(~net.s_edit.l_staleEquilibrium && isequal(net.cv_Vequilibrium, V))
+assert(~net.l_staleEquilibrium && isequal(net.cv_Vequilibrium, V))
 
 
 %% Slack bus without a component is not an equilibrium
@@ -156,7 +156,7 @@ DebugScript.helper.quiet(@() net.initialize);    % B001 がスラックになる
 net.a_Bus{1}.remove_component(string(net.a_Bus{1}.a_Component{1}));
 ME = error_of(@() net.initialize());
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeNotEquilibrium", DebugScript.helper.msg_id(ME))
-assert(net.s_edit.l_staleEquilibrium)
+assert(net.l_staleEquilibrium)
 
 
 %% A point that violates KCL stops initialize and marks the equilibrium stale
@@ -164,10 +164,10 @@ assert(net.s_edit.l_staleEquilibrium)
 net = DebugScript.helper.build_9bus();
 ME  = error_of(@() net.initialize(Tolerance=1e3));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeNotEquilibrium", DebugScript.helper.msg_id(ME))
-assert(net.s_edit.l_staleEquilibrium)
+assert(net.l_staleEquilibrium)
 assert(DebugScript.helper.msg_id(error_of(@() net.simulate([0 1]))) == "GUILDA:PowerNetwork:EquilibriumStale")
 DebugScript.helper.quiet(@() net.initialize);
-assert(~net.s_edit.l_staleEquilibrium && kcl_residual(net) < 1e-8)
+assert(~net.l_staleEquilibrium && kcl_residual(net) < 1e-8)
 
 
 % ---- local functions ----
@@ -227,7 +227,7 @@ function assert_edit_stops(net, str_id, str_log)
     ME  = error_of(@() net.initialize(Method="equilibrium"));
     assert(DebugScript.helper.msg_id(ME) == str_id, DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, str_log))
-    assert(isequal(net.cv_Vequilibrium, V) && net.s_edit.l_staleEquilibrium && height(net.tab_editLog) == n)
+    assert(isequal(net.cv_Vequilibrium, V) && net.l_staleEquilibrium && height(net.tab_editLog) == n)
 end
 
 function ME = error_of(fcn)

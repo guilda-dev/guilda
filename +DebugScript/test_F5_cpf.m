@@ -117,7 +117,7 @@ assert(error_id(@() net.calculate_continuation_powerflow("LoadBus")) == "GUILDA:
 net3 = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net3.initialize);
 evalc("net3.a_Bus{2}.l_isSlack = true;");
-assert(net3.s_edit.l_staleEquilibrium)
+assert(net3.l_staleEquilibrium)
 assert(error_id(@() net3.calculate_continuation_powerflow(LoadBus=str_load)) == "GUILDA:SolverCPF:StaleEquilibrium")
 
 

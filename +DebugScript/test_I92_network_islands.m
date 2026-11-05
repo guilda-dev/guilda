@@ -11,7 +11,7 @@ net = balanced_island();
 [str_id, str_msg] = warning_of(@() net.initialize);
 assert(str_id == "GUILDA:PowerNetwork:NetworkIsland", str_id)
 assert(contains(str_msg, "[B001, B002, B003], [B004, B005]"), str_msg)
-assert(~net.s_edit.l_staleEquilibrium && kcl_residual(net) < 1e-6)
+assert(~net.l_staleEquilibrium && kcl_residual(net) < 1e-6)
 
 
 %% The warning of a balanced island can be turned off

@@ -17,7 +17,7 @@ net = network_with("equilibrium");
 [str_id, str_msg] = warning_of(@() net.initialize);
 assert(str_id == str_warn, str_id)
 assert(contains(str_msg, "|dx| = 0.1") && contains(str_msg, "'" + string(stub(net)) + "'"), str_msg)
-assert(~net.s_edit.l_staleEquilibrium)
+assert(~net.l_staleEquilibrium)
 DebugScript.helper.quiet(@() net.simulate([0 0.1]));
 
 % 誤りのない機器は警告しない
@@ -167,7 +167,7 @@ function check_stop(net, str_id, sv_text)
     assert(~isempty(ME), "initialize did not stop")
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:" + str_id, DebugScript.helper.msg_id(ME))
     assert(all(contains(ME.message, sv_text)), ME.message)
-    assert(net.s_edit.l_staleEquilibrium)
+    assert(net.l_staleEquilibrium)
 end
 
 function [str_id, str_msg] = warning_of(fcn)
