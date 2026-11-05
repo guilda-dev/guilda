@@ -212,16 +212,16 @@
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>c_nv</code>; public properties of <code>net.solver_OPF</code></span><span lang="ja"><code>c_nv</code>、<code>net.solver_OPF</code> の public プロパティ</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>s_options</code>: struct with 11 fields (<code>Method</code>, <code>Solver</code>, <code>Algorithm_*</code>, <code>Display</code>, <code>MaxIteration</code>, ...). Solver unchanged.</span><span lang="ja"><code>s_options</code>: 11 フィールドの構造体（<code>Method</code>、<code>Solver</code>、<code>Algorithm_*</code>、<code>Display</code>、<code>MaxIteration</code> など）。ソルバーは不変</span></dd>
+          <dd><span lang="en"><code>sct_options</code>: struct with 11 fields (<code>Method</code>, <code>Solver</code>, <code>Algorithm_*</code>, <code>Display</code>, <code>MaxIteration</code>, ...). Solver unchanged.</span><span lang="ja"><code>sct_options</code>: 11 フィールドの構造体（<code>Method</code>、<code>Solver</code>、<code>Algorithm_*</code>、<code>Display</code>、<code>MaxIteration</code> など）。ソルバーは不変</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="OPF-03">
-        <p class="fs-head"><b class="fs-id">OPF-03</b> <span class="fs-call"><code>optimize_powerflow</code> → <code>SolverOPF.solve(net, s_options)</code></span></p>
+        <p class="fs-head"><b class="fs-id">OPF-03</b> <span class="fs-call"><code>optimize_powerflow</code> → <code>SolverOPF.solve(net, sct_options)</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Starts the timer; runs OPF-04 to OPF-15.</span><span lang="ja">タイマー開始。OPF-04〜OPF-15 を実行</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>s_options.Method</code></dd>
+          <dd><code>sct_options.Method</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>[result, flag, output]</code></dd>
         </dl>
@@ -284,7 +284,7 @@
         </dl>
       </li>
       <li class="fs-step" id="OPF-07">
-        <p class="fs-head"><b class="fs-id">OPF-07</b> <span class="fs-call"><code>Component</code> / <code>Bus.build_opf_problem</code> → <code>opffcn.apply(obj, prob, m, s_var)</code></span><small>→ <code>opffcn.variables</code>, <code>opffcn.param</code></small></p>
+        <p class="fs-head"><b class="fs-id">OPF-07</b> <span class="fs-call"><code>Component</code> / <code>Bus.build_opf_problem</code> → <code>opffcn.apply(obj, prob, m, sct_var)</code></span><small>→ <code>opffcn.variables</code>, <code>opffcn.param</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Adds the user terms of the object; nothing when neither handle is set.</span><ul lang="en">
@@ -365,7 +365,7 @@
         </dl>
       </li>
       <li class="fs-step" id="OPF-12">
-        <p class="fs-head"><b class="fs-id">OPF-12</b> <span class="fs-call"><code>SolverOPF.solve</code> → <code>SolverOPF.optimoption(prob, s_options)</code></span><small><code>check_solver</code></small></p>
+        <p class="fs-head"><b class="fs-id">OPF-12</b> <span class="fs-call"><code>SolverOPF.solve</code> → <code>SolverOPF.optimoption(prob, sct_options)</code></span><small><code>check_solver</code></small></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -376,7 +376,7 @@
               <li>ソルバーの既定値と異なる設定だけを指定。保存された既定値のままなら <code>solve(prob, x0)</code> をそのまま呼び出し</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>prob</code>, <code>s_options</code>, <code>optimoptions(solver)</code></span><span lang="ja"><code>prob</code>、<code>s_options</code>、<code>optimoptions(solver)</code></span></dd>
+          <dd><span lang="en"><code>prob</code>, <code>sct_options</code>, <code>optimoptions(solver)</code></span><span lang="ja"><code>prob</code>、<code>sct_options</code>、<code>optimoptions(solver)</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en"><code>c_nv</code>: <code>{"Solver", name}</code> and <code>{"Options", optimoptions(...)}</code> when needed</span><span lang="ja"><code>c_nv</code>: 必要に応じて <code>{"Solver", name}</code> と <code>{"Options", optimoptions(...)}</code></span></dd>
         </dl>
@@ -497,9 +497,9 @@
           <td lang="en" data-label="Contents">the solved <code>optimproblem</code>; its <code>Description</code> records the OPF settings of the run</td>
           <td lang="ja" data-label="内容">解いた <code>optimproblem</code>。<code>Description</code> に実行時の OPF の設定を記録</td>
           <td data-label="Size" data-label-ja="サイズ">1×1</td></tr>
-        <tr><td><code>flag</code>, <code>output</code>, <code>options</code>, <code>str_solver</code>, <code>r_elapsed</code>, <code>l_success</code></td>
-          <td lang="en" data-label="Contents">from <code>ResultBase</code>: the exit flag and output of <code>solve</code>, <code>s_options</code>, <code>"SolverOPF"</code>, the time [s]; <code>l_success</code> is true when the flag is positive</td>
-          <td lang="ja" data-label="内容"><code>ResultBase</code> から: <code>solve</code> の終了フラグと出力、<code>s_options</code>、<code>"SolverOPF"</code>、経過時間 [s]。<code>l_success</code> はフラグが正のとき true</td>
+        <tr><td><code>flag</code>, <code>output</code>, <code>options</code>, <code>s_solver</code>, <code>r_elapsed</code>, <code>l_success</code></td>
+          <td lang="en" data-label="Contents">from <code>ResultBase</code>: the exit flag and output of <code>solve</code>, <code>sct_options</code>, <code>"SolverOPF"</code>, the time [s]; <code>l_success</code> is true when the flag is positive</td>
+          <td lang="ja" data-label="内容"><code>ResultBase</code> から: <code>solve</code> の終了フラグと出力、<code>sct_options</code>、<code>"SolverOPF"</code>、経過時間 [s]。<code>l_success</code> はフラグが正のとき true</td>
           <td data-label="Size" data-label-ja="サイズ">—</td></tr>
       </tbody>
     </table>

@@ -71,12 +71,12 @@ classdef ResultLIN < ResultBase
         % Bus models (V2I, at the point), global controller models, admittance matrix,
         % non-unit buses and bus voltages at the point: used by get_ss("Feedback") and
         % the coordinates of get_ss("DAE"). The Output option of get_ss also uses the names of
-        % the bus currents (sv_I) and the outputs of the bus models (s_output).
-        s_model struct = struct()
+        % the bus currents (sv_I) and the outputs of the bus models (sct_output).
+        sct_model struct = struct()
     end
 
     methods
-        function obj = ResultLIN(net, solver, options, flag, output, elapsed, tab_variable, rv_point, s_block, s_model, rv_residual)
+        function obj = ResultLIN(net, solver, options, flag, output, elapsed, tab_variable, rv_point, sct_block, sct_model, rv_residual)
         % Create a linearization result.
         %
         % Stores the computed values of a linearization.
@@ -89,8 +89,8 @@ classdef ResultLIN < ResultBase
                 elapsed             = NaN % [s] Elapsed time or tic value; see ResultBase.
                 tab_variable table  = table() % Variable map.
                 rv_point     double = zeros(0,1) % Point in the order of tab_variable.
-                s_block      struct = struct() % Fields Axx, Axv, Bx, Avx, Avv, Bv, E.
-                s_model      struct = struct() % Data for get_ss (bus and controller models, Y, non-unit buses, V).
+                sct_block    struct = struct() % Fields Axx, Axv, Bx, Avx, Avv, Bv, E.
+                sct_model    struct = struct() % Data for get_ss (bus and controller models, Y, non-unit buses, V).
                 rv_residual  double = zeros(0,1) % Residual at the point (rows x and v of tab_variable).
             end
             arguments (Output)
@@ -101,11 +101,11 @@ classdef ResultLIN < ResultBase
             obj.rv_point     = rv_point(:);
             obj.rv_residual  = rv_residual(:);
             for str = ["Axx","Axv","Bx","Avx","Avv","Bv","E"]
-                if isfield(s_block, str)
-                    obj.("rm_" + str) = s_block.(str);
+                if isfield(sct_block, str)
+                    obj.("rm_" + str) = sct_block.(str);
                 end
             end
-            obj.s_model = s_model;
+            obj.sct_model = sct_model;
         end
 
         sys = get_ss(obj, Algorithm, opt)

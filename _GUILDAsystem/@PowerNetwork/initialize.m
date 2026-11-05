@@ -55,17 +55,17 @@ function [result, flag, output] = initialize(obj, varargin)
 %
 % <@Group> Initialize
     arguments (Output)
-        result   % ResultPF for "powerflow" and "equilibrium" (str_solver = "equilibrium", no branch flows), ResultOPF for "OPF"; result.tab_bus is the bus equilibrium.
+        result   % ResultPF for "powerflow" and "equilibrium" (s_solver = "equilibrium", no branch flows), ResultOPF for "OPF"; result.tab_bus is the bus equilibrium.
         flag     % Success flag of the analysis (positive; a failure stops with an error).
         output   % Details of the analysis; output.message describes the outcome.
     end
 
     varargin = v3_initialize_args(varargin);                  % COMPAT(v3)
-    [str_method, c_nv] = take_method(varargin);
+    [s_method, c_nv] = take_method(varargin);
 
     obj.check_edit();    % build the f_* handles that are not up to date
 
-    switch str_method
+    switch s_method
         case "powerflow"
             lv_slack = tools.vcellfun(@(b) b.l_isSlack, obj.a_Bus);
             try
@@ -105,10 +105,11 @@ function [result, flag, output] = initialize(obj, varargin)
             [result, flag, output] = calculate_from_equilibrium(obj);
     end
     tab_PFsol = result.tab_bus;
-    c_PQ      = component_power(obj, str_method, result);
+    c_PQ      = component_power(obj, s_method, result);
 
-    % stays set if a step below fails, so a partly written point is never used
-    obj.s_edit.l_staleEquilibrium = true;
+    % stays in the log if a step below fails, so a partly written point is never used
+    % (reset_edit clears it when initialize finishes)
+    obj.log_edit("initialize", "Initialize");
 
     for i_gc = 1:numel(obj.a_GlobalController)
         a_GC = obj.a_GlobalController{i_gc};
@@ -126,37 +127,37 @@ function [result, flag, output] = initialize(obj, varargin)
     end
 
     % the point that was set must satisfy Kirchhoff's current law at every bus
-    str_Bus = string(obj.a_Bus);
+    sv_Bus  = string(obj.a_Bus);
     tab_Y   = obj.get_admittance_matrix;
-    r_resid = max(abs(tab_Y{str_Bus,str_Bus}*obj.cv_Vequilibrium - obj.cv_Iequilibrium), [], "includenan");
+    r_resid = max(abs(tab_Y{sv_Bus,sv_Bus}*obj.cv_Vequilibrium - obj.cv_Iequilibrium), [], "includenan");
     if ~(r_resid < equilibrium_tolerance())
-        error(msg("GUILDA:PowerNetwork:InitializeNotEquilibrium", char(str_method), char(string(r_resid))))
+        error(msg("GUILDA:PowerNetwork:InitializeNotEquilibrium", char(s_method), char(string(r_resid))))
     end
 
     % the models must hold the point; sizes stop here, while the equilibrium is out of date
-    str_residual = large_model_residuals(obj);
+    s_residual = large_model_residuals(obj);
 
     % reset log
     obj.reset_edit()
 
-    if str_residual ~= ""
-        warning(msg("GUILDA:PowerNetwork:EquilibriumResidual", char(string(equilibrium_tolerance())), char(str_residual)))
+    if s_residual ~= ""
+        warning(msg("GUILDA:PowerNetwork:EquilibriumResidual", char(string(equilibrium_tolerance())), char(s_residual)))
     end
 
-    [n_island, str_island] = network_islands(obj);
+    [n_island, s_island] = network_islands(obj);
     if n_island > 1
-        warning(msg("GUILDA:PowerNetwork:NetworkIsland", string(obj), char(string(n_island)), char(str_island)))
+        warning(msg("GUILDA:PowerNetwork:NetworkIsland", string(obj), char(string(n_island)), char(s_island)))
     end
 end
 
 
-function [str_method, c_nv] = take_method(c_in)
+function [s_method, c_nv] = take_method(c_in)
 % Separates Method (of initialize) from the options passed to the analysis
-    sv_method = ["powerflow","OPF","equilibrium"];
+    sr_method = ["powerflow","OPF","equilibrium"];
     if mod(numel(c_in), 2) ~= 0
         error(msg("GUILDA:PowerNetwork:InitializePairs"))
     end
-    str_method = "powerflow";
+    s_method   = "powerflow";
     lv_method  = false(size(c_in));
     for k = 1:2:numel(c_in)
         x = c_in{k};
@@ -164,10 +165,10 @@ function [str_method, c_nv] = take_method(c_in)
             lv_method(k:k+1) = true;
             v = c_in{k+1};
             l_text = (ischar(v) && isrow(v)) || (isstring(v) && isscalar(v));
-            if ~l_text || ~any(strcmpi(v, sv_method))
-                error(msg("GUILDA:PowerNetwork:InitializeMethod", char(join('"' + sv_method + '"', ", "))))
+            if ~l_text || ~any(strcmpi(v, sr_method))
+                error(msg("GUILDA:PowerNetwork:InitializeMethod", char(join('"' + sr_method + '"', ", "))))
             end
-            str_method = sv_method(strcmpi(v, sv_method));
+            s_method = sr_method(strcmpi(v, sr_method));
         end
     end
     c_nv = c_in(~lv_method);
@@ -176,50 +177,50 @@ end
 
 function stop_powerflow(obj, output)
 % Error of a failed power flow: names the islands of a split network instead of the solver settings
-    [n_island, str_island] = network_islands(obj);
-    str_reason = char(string(output.message));
+    [n_island, s_island] = network_islands(obj);
+    s_reason = char(string(output.message));
     if n_island > 1
-        error(msg("GUILDA:PowerNetwork:InitializePowerflowIsland", str_reason, string(obj), char(string(n_island)), char(str_island)))
+        error(msg("GUILDA:PowerNetwork:InitializePowerflowIsland", s_reason, string(obj), char(string(n_island)), char(s_island)))
     end
-    error(msg("GUILDA:PowerNetwork:InitializePowerflowFailed", str_reason))
+    error(msg("GUILDA:PowerNetwork:InitializePowerflowFailed", s_reason))
 end
 
 
 function stop_opf(obj, output)
 % Error of a failed OPF: names the islands of a split network instead of the solver settings
-    [n_island, str_island] = network_islands(obj);
-    str_reason = char(string(output.message));
+    [n_island, s_island] = network_islands(obj);
+    s_reason = char(string(output.message));
     if n_island > 1
-        error(msg("GUILDA:PowerNetwork:InitializeOPFIsland", str_reason, string(obj), char(string(n_island)), char(str_island)))
+        error(msg("GUILDA:PowerNetwork:InitializeOPFIsland", s_reason, string(obj), char(string(n_island)), char(s_island)))
     end
-    error(msg("GUILDA:PowerNetwork:InitializeOPFFailed", str_reason))
+    error(msg("GUILDA:PowerNetwork:InitializeOPFFailed", s_reason))
 end
 
 
-function [n_island, str_island] = network_islands(obj)
+function [n_island, s_island] = network_islands(obj)
 % Number of the parts of the network that branches connect, and their bus tags as text
     n_show  = 10;   % islands, and buses per island, that the text lists
-    str_Bus = string(obj.a_Bus);
-    str_Bus = str_Bus(:);
+    sv_Bus  = string(obj.a_Bus);
+    sv_Bus  = sv_Bus(:);
     n_Br    = numel(obj.a_Branch);
     im_edge = zeros(n_Br,2);
     for i_br = 1:n_Br
-        [~, im_edge(i_br,:)] = ismember(string(obj.a_Branch{i_br}.a_Bus), str_Bus);
+        [~, im_edge(i_br,:)] = ismember(string(obj.a_Branch{i_br}.a_Bus), sv_Bus);
     end
-    rv_bin   = conncomp(graph(im_edge(:,1), im_edge(:,2), [], numel(str_Bus)));
+    rv_bin   = conncomp(graph(im_edge(:,1), im_edge(:,2), [], numel(sv_Bus)));
     n_island = max([0, rv_bin]);
 
     sv = strings(1, min(n_island, n_show));
     for i_island = 1:numel(sv)
-        sv_bus = str_Bus(rv_bin == i_island);
+        sv_bus = sv_Bus(rv_bin == i_island);
         if numel(sv_bus) > n_show
             sv_bus = [sv_bus(1:n_show); "... (" + numel(sv_bus) + " buses)"];
         end
         sv(i_island) = "[" + join(sv_bus, ", ") + "]";
     end
-    str_island = join(sv, ", ");
+    s_island = join(sv, ", ");
     if n_island > n_show
-        str_island = str_island + ", ...";
+        s_island = s_island + ", ...";
     end
 end
 
@@ -238,12 +239,12 @@ function tol = equilibrium_tolerance()
 end
 
 
-function str_list = large_model_residuals(obj)
+function s_list = large_model_residuals(obj)
 % The models above the tolerance and their residuals, as text ("" for none)
     n_show = 10;   % models that the text lists
     [sv_tag, rm_resid] = model_residuals(obj);
     lv_large = ~(max(rm_resid, [], 2, "includenan") < equilibrium_tolerance());
-    str_list = "";
+    s_list   = "";
     if any(lv_large)
         rm_large = rm_resid(lv_large,:);
         sv_line  = compose("'%s': |dx| = %.3g, |I - Iequilibrium| = %.3g, |u - source| = %.3g", ...
@@ -251,7 +252,7 @@ function str_list = large_model_residuals(obj)
         if numel(sv_line) > n_show
             sv_line = [sv_line(1:n_show); "... (" + numel(sv_line) + " models)"];
         end
-        str_list = join(sv_line, newline);
+        s_list = join(sv_line, newline);
     end
 end
 
@@ -296,7 +297,7 @@ function c_row = component_residuals(comp)
         y = model_value(comp, "fcn_Y", numel(comp.sv_y), @() comp.f_Y(0, x, V, I, u));
         [rv_source, c_row] = nested_outputs(comp, rv_source, x, y, V, I);
     end
-    c_row = [{{string(comp.str_tag), [largest(dx), abs(c_Ic - c_I), largest(u - rv_source)]}}; c_row];
+    c_row = [{{string(comp.s_tag), [largest(dx), abs(c_Ic - c_I), largest(u - rv_source)]}}; c_row];
 end
 
 
@@ -329,7 +330,7 @@ function [y, c_row] = controller_residuals(con, x_obs, y_obs, V, I)
     rv_source(lv_Y) = y_obs(con.iv_obsY(lv_Y));
     rv_source(lv_X) = x_obs(con.iv_obsX(lv_X));
     [rv_source, c_row] = nested_outputs(con, rv_source, x_obs, y_obs, V, I);
-    c_row = [{{string(con.str_tag), [largest(dx), 0, largest(u - rv_source)]}}; c_row];
+    c_row = [{{string(con.s_tag), [largest(dx), 0, largest(u - rv_source)]}}; c_row];
 end
 
 
@@ -347,7 +348,7 @@ function c_row = global_controller_residual(gc)
 
     dx = model_value(gc, "fcn_dx", numel(gc.sv_x), @() gc.f_dx(0, x, zeros(2,1), zeros(2,1), u));
     y  = gc.f_Y(0, x, zeros(2,1), zeros(2,1), u);
-    c_row = {{string(gc.str_tag), [largest(dx), 0, largest(y)]}};
+    c_row = {{string(gc.s_tag), [largest(dx), 0, largest(y)]}};
 end
 
 
@@ -356,22 +357,22 @@ function check_point_size(model, n_uExpected)
     n_x = numel(model.rv_Xequilibrium);
     n_u = numel(model.rv_Uequilibrium);
     if n_x ~= numel(model.sv_x) || n_u ~= n_uExpected
-        error(msg("GUILDA:PowerNetwork:InitializeEquilibriumSize", char(string(model.str_tag)), ...
+        error(msg("GUILDA:PowerNetwork:InitializeEquilibriumSize", char(string(model.s_tag)), ...
                   char(string(n_x)), char(string(numel(model.sv_x))), char(string(n_u)), char(string(n_uExpected))))
     end
 end
 
 
-function val = model_value(model, str_fcn, n, f)
+function val = model_value(model, s_fcn, n, f)
 % Value of a model function at the point, which must have n elements
-    str_tag = char(string(model.str_tag));
+    s_tag = char(string(model.s_tag));
     try
         val = f();
     catch ME
-        error(msg("GUILDA:PowerNetwork:InitializeModelFailed", str_tag, char(str_fcn), ME.message))
+        error(msg("GUILDA:PowerNetwork:InitializeModelFailed", s_tag, char(s_fcn), ME.message))
     end
     if numel(val) ~= n
-        error(msg("GUILDA:PowerNetwork:InitializeModelSize", str_tag, char(str_fcn), ...
+        error(msg("GUILDA:PowerNetwork:InitializeModelSize", s_tag, char(s_fcn), ...
                   char(join(string(size(val)), "x")), char(string(n))))
     end
     val = reshape(full(val), [], 1);
@@ -384,7 +385,7 @@ function r = largest(v)
 end
 
 
-function c_PQ = component_power(obj, str_method, result)
+function c_PQ = component_power(obj, s_method, result)
 % [P Q] of the components of each bus when the analysis fixes them; [] lets Bus.set_equilibrium distribute
     n_Bus = numel(obj.a_Bus);
     c_PQ  = cell(n_Bus,1);
@@ -393,7 +394,7 @@ function c_PQ = component_power(obj, str_method, result)
         if isempty(a_Comp)
             continue
         end
-        switch str_method
+        switch s_method
             case "OPF"
                 c_PQ{i_bus} = real(result.tab_cub{string(a_Comp),["P","Q"]});
             case "equilibrium"
@@ -407,19 +408,16 @@ end
 function check_edit_for_equilibrium(obj)
 % Stops when an edit since the last initialize would be lost by Method="equilibrium".
 % Dynamics edits are not lost: the states and inputs are recomputed from the held V and I.
-    if obj.s_edit.str_flag == "unset"
-        return
-    end
     tab = obj.tab_editLog;
-    [~, lv] = arrayfun(@(t, l) LayerPackage.edit_effect(t, l), string(tab.tag), string(tab.log));
-    lv = lv & string(tab.tag) ~= "Parameter(dynamics)";
+    [~, lv] = obj.edit_effect(tab);
+    lv = lv & ~ismember(tab.tag, ["Parameter(dynamics)", "Initialize"]);
     if any(lv)
-        str_edit = tab.ID(lv) + ": " + tab.log(lv);
-        str_list = join(str_edit(1:min(end,3)), ", ");
-        if numel(str_edit) > 3
-            str_list = str_list + ", ...";
+        sv_edit  = tab.ID(lv) + ": " + tab.log(lv);
+        s_list   = join(sv_edit(1:min(end,3)), ", ");
+        if numel(sv_edit) > 3
+            s_list = s_list + ", ...";
         end
-        error(msg("GUILDA:PowerNetwork:InitializeEquilibriumEdited", char(str_list)))
+        error(msg("GUILDA:PowerNetwork:InitializeEquilibriumEdited", char(s_list)))
     end
 end
 
@@ -431,10 +429,10 @@ function [result, flag, output] = calculate_from_equilibrium(obj)
 %   Buses without components inject no current; their voltage is solved from Y*V = I.
 
     t0      = tic;
-    str_Bus = string(obj.a_Bus);
-    n_Bus   = numel(str_Bus);
+    sv_Bus  = string(obj.a_Bus);
+    n_Bus   = numel(sv_Bus);
     tab_Y   = obj.get_admittance_matrix;
-    cm_Y    = tab_Y{str_Bus,str_Bus};
+    cm_Y    = tab_Y{sv_Bus,sv_Bus};
 
     cv_Vbus  = nan(n_Bus,1);
     cv_Ibus  = zeros(n_Bus,1);
@@ -470,7 +468,7 @@ function [result, flag, output] = calculate_from_equilibrium(obj)
     cv_Sbus = cv_Vbus .* conj(cv_Ibus);
     tab_bus = array2table(...
         [angle(cv_Vbus),abs(cv_Vbus),real(cv_Sbus),imag(cv_Sbus),cv_Vbus,cv_Ibus], ...
-        "VariableNames",["Varg","V","P","Q","Vphasor","Iphasor"],"RowNames",str_Bus);
+        "VariableNames",["Varg","V","P","Q","Vphasor","Iphasor"],"RowNames",sv_Bus);
     result  = ResultPF(obj, "equilibrium", struct("Method","equilibrium","Tolerance",tol), ...
                               flag, output, t0, tab_bus);
 end

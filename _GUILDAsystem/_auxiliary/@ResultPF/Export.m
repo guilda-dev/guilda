@@ -1,4 +1,4 @@
-function str_file = Export(obj, filename, opt)
+function s_file = Export(obj, filename, opt)
 % Write the bus/branch table or the iteration history to a file.
 %
 % Writes the result to a file. The format follows the extension of filename:
@@ -15,37 +15,37 @@ function str_file = Export(obj, filename, opt)
         opt.Table (1,1) string {mustBeMember(opt.Table,["bus","branch"])} = "bus" % Table written to a CSV or Excel file.
     end
     arguments (Output)
-        str_file % Path of the written file.
+        s_file % Path of the written file.
     end
-    str_file = filename;
-    [~, ~, str_ext] = fileparts(str_file);
+    s_file = filename;
+    [~, ~, s_ext] = fileparts(s_file);
 
-    switch lower(str_ext)
+    switch lower(s_ext)
         case {".csv", ".txt", ".xlsx", ".xls"}
             if opt.Table == "bus"
                 tab = obj.tab_bus;
             else
                 tab = obj.tab_branch;
             end
-            writetable(tab, str_file, "WriteRowNames", true);
+            writetable(tab, s_file, "WriteRowNames", true);
         case ".json"
-            export_json(obj, str_file);
+            export_json(obj, s_file);
         otherwise
-            error(msg("GUILDA:ResultPF:ExportFormat", char(str_ext)));
+            error(msg("GUILDA:ResultPF:ExportFormat", char(s_ext)));
     end
 end
 
 
-function export_json(obj, str_file)
+function export_json(obj, s_file)
 % Iteration history in the format of the GridSpring viewer
     net = obj.a_PowerNetwork;
     if isempty(net)
         error(msg("GUILDA:ResultPF:NoNetwork"));
     end
     tab_PFset = tools.vcellfun(@(b) b.get_pf_set, net.a_Bus);
-    str_bus   = string(tab_PFset.Properties.RowNames);
+    sv_bus    = string(tab_PFset.Properties.RowNames);
     tab_Ymat  = net.get_admittance_matrix;
-    cm_Y      = tab_Ymat{str_bus,str_bus};
+    cm_Y      = tab_Ymat{sv_bus,sv_bus};
     n_Bus     = size(tab_PFset,1);
 
     out = struct();
@@ -118,15 +118,15 @@ function export_json(obj, str_file)
     out.edges = reshape(g.Edges.EndNodes.', [], 1).';
 
     jsonStr = jsonencode(out,"PrettyPrint",true);
-    fid     = fopen(str_file, 'w');
+    fid     = fopen(s_file, 'w');
     if fid < 0
-        error(msg("GUILDA:ResultPF:FileOpen", char(str_file)));
+        error(msg("GUILDA:ResultPF:FileOpen", char(s_file)));
     end
     fwrite(fid, jsonStr, 'char');
     fclose(fid);
 
     disp("<INFO>")
-    disp("  Exported json file: "+str_file);
+    disp("  Exported json file: "+s_file);
     disp("  You can upload this json file to the following link to visualize the calculation process.");
     fprintf('  <a href="https://ta-nish18.github.io/GridSpring/">https://ta-nish18.github.io/GridSpring/</a>\n\n')
 end

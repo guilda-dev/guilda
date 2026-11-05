@@ -116,14 +116,14 @@ classdef IEEJ_WEST30 < PowerNetwork
             arguments (Output)
                 obj % IEEJ_WEST30 network.
             end
-            str_filepath = mfilename("fullpath");
-            str_dirpath  = fileparts(str_filepath);
-            str_section  = fullfile(str_dirpath, opt.Section);
-            PowerNetwork.import_csv(str_section, Network=obj, Initialize=false);
+            s_filepath   = mfilename("fullpath");
+            s_dirpath    = fileparts(s_filepath);
+            s_section    = fullfile(s_dirpath, opt.Section);
+            PowerNetwork.import_csv(s_section, Network=obj, Initialize=false);
             if opt.LocalController
-                add_avr(obj, str_section);
+                add_avr(obj, s_section);
                 if opt.Governor
-                    add_governor(obj, str_section);
+                    add_governor(obj, s_section);
                 end
             end
             obj.initialize;
@@ -132,13 +132,13 @@ classdef IEEJ_WEST30 < PowerNetwork
 end
 
 
-function add_avr(net, str_section)
+function add_avr(net, s_section)
 % controller/avr/parameter.csv : AVR_DC1 parameters of the generator at each Bus
     arguments (Input)
         net         (1,1) PowerNetwork  % Network being built.
-        str_section                     % Folder that holds the controller/ CSV files.
+        s_section                       % Folder that holds the controller/ CSV files.
     end
-    tab_avr = readtable(fullfile(str_section, "controller", "avr", "parameter.csv"));
+    tab_avr = readtable(fullfile(s_section, "controller", "avr", "parameter.csv"));
     for i = 1:height(tab_avr)
         i_bus = tab_avr.Bus(i);
         c_avr = namedargs2cell(table2struct(removevars(tab_avr(i,:), "Bus")));
@@ -147,13 +147,13 @@ function add_avr(net, str_section)
 end
 
 
-function add_governor(net, str_section)
+function add_governor(net, s_section)
 % controller/governor/parameter.csv : IEEJ_LPTn governor (n = LPT) of the generator at each Bus
     arguments (Input)
         net         (1,1) PowerNetwork  % Network being built.
-        str_section                     % Folder that holds the controller/ CSV files.
+        s_section                       % Folder that holds the controller/ CSV files.
     end
-    tab_gov = readtable(fullfile(str_section, "controller", "governor", "parameter.csv"));
+    tab_gov = readtable(fullfile(s_section, "controller", "governor", "parameter.csv"));
     for i = 1:height(tab_gov)
         i_bus = tab_gov.Bus(i);
         c_gov = namedargs2cell(table2struct(removevars(tab_gov(i,:), ["Bus","LPT"])));

@@ -14,8 +14,8 @@ function check_requirement()
     fprintf(['︎   version : R2025a~ ',repmat(' ',1,nc),'... '])
     tab_ver  = struct2table(ver);
     l_MATLAB = (string(tab_ver.Name) == "MATLAB");
-    str_Release  = sort([tab_ver{l_MATLAB,"Release"},{'(R2025a)'}]);
-    if strcmp(str_Release{1},"(R2025a)")
+    sr_Release   = sort([tab_ver{l_MATLAB,"Release"},{'(R2025a)'}]);
+    if strcmp(sr_Release{1},"(R2025a)")
         disp('ok')
     else
         disp('update your MATLAB version.')

@@ -28,11 +28,11 @@ assert(~ismember("SG1B002", string(bus.a_Component)))
 %% A component no controller controls can still be edited
 [net, agc, bus, comp] = build_controlled_network();
 bus3 = net.a_Bus{3};
-str_tag = string(bus3.a_Component{1});
-new = bus3.replace_component(str_tag, "gen-classical");
+s_tag = string(bus3.a_Component{1});
+new = bus3.replace_component(s_tag, "gen-classical");
 assert(bus3.a_Component{1} == new)
-bus3.remove_component(str_tag);
-assert(~ismember(str_tag, string(bus3.a_Component)))
+bus3.remove_component(s_tag);
+assert(~ismember(s_tag, string(bus3.a_Component)))
 
 
 %% add_global_controller rejects a controller that kept a removed component, also after an earlier run

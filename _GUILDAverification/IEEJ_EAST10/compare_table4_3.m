@@ -36,17 +36,17 @@ function tab = compare_table4_3(opt)
     arguments (Output)
         tab table % The cases with the report and GUILDA verdicts and their agreement.
     end
-    str_dir = fileparts(mfilename("fullpath"));
+    s_dir = fileparts(mfilename("fullpath"));
     % GUILDA (the repository root) is found through the current folder only; add the root
     % for this run when it is neither the current folder nor on the path (after cd, or
     % inside run). which("GUILDA") is not empty there once the class has been loaded.
-    str_root = fileparts(fileparts(str_dir));
-    if ~any(strcmp(str_root, [string(pwd), split(string(path), pathsep).']))
-        addpath(str_root);
-        obj_cleanup = onCleanup(@() rmpath(str_root));
+    s_root = fileparts(fileparts(s_dir));
+    if ~any(strcmp(s_root, [string(pwd), split(string(path), pathsep).']))
+        addpath(s_root);
+        obj_cleanup = onCleanup(@() rmpath(s_root));
     end
-    str_scenario = fullfile(str_dir, "table4_3_scenarios.csv");
-    tab_report = readtable(fullfile(str_dir, "table4_3_report.csv"), TextType="string", Delimiter=",");
+    s_scenario = fullfile(s_dir, "table4_3_scenarios.csv");
+    tab_report = readtable(fullfile(s_dir, "table4_3_report.csv"), TextType="string", Delimiter=",");
 
     lv_run = ismember(tab_report.Section, opt.Sections);
     if ~isempty(opt.Cases)
@@ -61,14 +61,14 @@ function tab = compare_table4_3(opt)
     tab.MaxAngle      = zeros(n_case,1);    % [deg] largest relative angle
     tab.Flag          = zeros(n_case,1);    % flag of net.simulate
 
-    s_tolerance = struct("Tolerance", opt.Tolerance, "AbsoluteTolerance", opt.Tolerance);
+    sct_tolerance = struct("Tolerance", opt.Tolerance, "AbsoluteTolerance", opt.Tolerance);
     for s = intersect(opt.Sections, tab.Section.', "stable")
         net  = network.IEEJ_EAST10(Section=s, Governor=opt.Governor);
-        c_sc = Scenario.import_csv(str_scenario, Network=net);
-        sv_tag = cellfun(@(sc) sc.str_tag, c_sc);
+        c_sc = Scenario.import_csv(s_scenario, Network=net);
+        sv_tag = cellfun(@(sc) sc.s_tag, c_sc);
         for k = find(tab.Section == s).'
             sc = c_sc{sv_tag == tab.Scenario(k)};
-            sc.Options = s_tolerance;
+            sc.Options = sct_tolerance;
             [result, flag] = net.simulate(sc, Progress="none");
             verdict = sc.judge(result);
 
@@ -99,21 +99,21 @@ function tab = compare_table4_3(opt)
 end
 
 
-function plot_angles(result, str_ref, str_title)
+function plot_angles(result, s_ref, s_title)
 % Rotor angles of the generators relative to the reference generator
     arguments (Input)
         result     % Simulation result (ResultODE).
-        str_ref    % Tag of the reference generator.
-        str_title  % Title of the figure.
+        s_ref      % Tag of the reference generator.
+        s_title    % Title of the figure.
     end
     tab_var = result.tab_variable;
     lv_d    = tab_var.Kind == "x" & tab_var.Name == "delta";
     sv_unit = tab_var.Owner(lv_d);
     m_delta = result.rm_variable(:, lv_d);
-    m_rel   = m_delta - m_delta(:, sv_unit == str_ref);
-    figure("Name", str_title);
+    m_rel   = m_delta - m_delta(:, sv_unit == s_ref);
+    figure("Name", s_title);
     plot(result.rv_t, m_rel*180/pi);
-    xlabel("t [s]"); ylabel("rotor angle - " + str_ref + " [deg]");
+    xlabel("t [s]"); ylabel("rotor angle - " + s_ref + " [deg]");
     legend(sv_unit, Location="eastoutside", Interpreter="none");
-    title(str_title, Interpreter="none");
+    title(s_title, Interpreter="none");
 end

@@ -13,9 +13,9 @@ function tab = model_classes(group)
     end
     lastwarn("");
     list = GUILDA.dictionary("PowerSystemModel", "disp", false, "output", group);
-    [str_warn, str_id] = lastwarn(); str_id = DebugScript.helper.msg_id(str_warn, str_id);
-    if str_id == "GUILDA:dictionary:ClassNotLoaded"
-        error("DebugScript:ModelNotLoaded", "%s", str_warn);
+    [s_warn, s_id] = lastwarn(); s_id = DebugScript.helper.msg_id(s_warn, s_id);
+    if s_id == "GUILDA:dictionary:ClassNotLoaded"
+        error("DebugScript:ModelNotLoaded", "%s", s_warn);
     end
 
     sv_class = reshape(string(list.filename), [], 1);
@@ -26,16 +26,16 @@ function tab = model_classes(group)
 end
 
 
-function str_key = default_key(str_class)
+function s_key = default_key(s_class)
     arguments (Input)
-        str_class  % クラス名
+        s_class    % クラス名
     end
     arguments (Output)
-        str_key  % クラスの既定のキー
+        s_key    % クラスの既定のキー
     end
-    prop = findobj(meta.class.fromName(str_class).PropertyList, "Name", "key");
-    str_key = "";
+    prop = findobj(meta.class.fromName(s_class).PropertyList, "Name", "key");
+    s_key = "";
     if ~isempty(prop) && prop.HasDefault && ~isempty(prop.DefaultValue)
-        str_key = string(prop.DefaultValue);
+        s_key = string(prop.DefaultValue);
     end
 end

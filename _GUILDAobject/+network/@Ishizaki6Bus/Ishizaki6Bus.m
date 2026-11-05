@@ -42,9 +42,9 @@ classdef Ishizaki6Bus < PowerNetwork
             arguments (Output)
                 obj % Ishizaki6Bus network.
             end
-            str_filepath = mfilename("fullpath");
+            s_filepath = mfilename("fullpath");
 
-            new_path = replace(str_filepath,[filesep,'Ishizaki6Bus'],'');
+            new_path = replace(s_filepath,[filesep,'Ishizaki6Bus'],'');
             bra_path = [new_path,[filesep,'branch_origin',filesep,'parameter.csv']];
 
             tab_branch = readtable(bra_path);
@@ -65,14 +65,14 @@ classdef Ishizaki6Bus < PowerNetwork
                 case 'None'
             end
             
-            str_tmp = tempname;
-            mkdir(fullfile(str_tmp,'branch'));
-            c_tmp = onCleanup(@() rmdir(str_tmp,'s'));
-            copyfile(fullfile(new_path,'bus'),fullfile(str_tmp,'bus'));
-            copyfile(fullfile(new_path,'component'),fullfile(str_tmp,'component'));
-            writetable(tab_branch,fullfile(str_tmp,'branch','parameter.csv'));
+            s_tmp = tempname;
+            mkdir(fullfile(s_tmp,'branch'));
+            c_tmp = onCleanup(@() rmdir(s_tmp,'s'));
+            copyfile(fullfile(new_path,'bus'),fullfile(s_tmp,'bus'));
+            copyfile(fullfile(new_path,'component'),fullfile(s_tmp,'component'));
+            writetable(tab_branch,fullfile(s_tmp,'branch','parameter.csv'));
 
-            PowerNetwork.import_csv(str_tmp, Network=obj);
+            PowerNetwork.import_csv(s_tmp, Network=obj);
         end
     end
 end

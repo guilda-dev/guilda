@@ -123,7 +123,7 @@ classdef local_LQR < LocalController
             end
             comp = obj.a_Component;
             if ~isa(comp, "Component")
-                error(msg("GUILDA:local_LQR:NotOnComponent", obj.str_tag))
+                error(msg("GUILDA:local_LQR:NotOnComponent", obj.s_tag))
             end
             [~, iv_u] = ismember(obj.sv_y, comp.sv_u);
 
@@ -172,7 +172,7 @@ classdef local_LQR < LocalController
         end
 
         function set_odefcn(obj)
-            % Called by check_edit when the handles are not up to date (str_odefcn "unset" or
+            % Called by check_edit when the handles are not up to date (s_odefcn "unset" or
             % "editted": a dynamics edit, a network Hz edit or an attach since the last build).
             % A Hz edit keeps the equilibrium, so K is redesigned here, at the first analysis
             % after the edit (check_edit has already built the component, the parent). When
@@ -188,8 +188,8 @@ classdef local_LQR < LocalController
                     % A warning, not an error: check_edit goes on to build the other layers.
                     % K stays for the old frequency, so the record makes the equilibrium stale
                     % and the analysis that runs check_edit asks for net.initialize.
-                    warning(msg("GUILDA:local_LQR:RedesignFailed", obj.str_tag, sprintf("%g", omega0), ME.message))
-                    obj.log_edit(obj.str_tag + " redesign failed", "Parameter(dynamics)");
+                    warning(msg("GUILDA:local_LQR:RedesignFailed", obj.s_tag, sprintf("%g", omega0), ME.message))
+                    obj.log_edit(obj.s_tag + " redesign failed", "Parameter(dynamics)");
                 end
             end
 
@@ -209,7 +209,7 @@ classdef local_LQR < LocalController
             obj.f_Y    = @(t,x,V,I,u) obj.fcn_y(t, x, V, I, u, param, omega0);
             obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
             obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
-            obj.s_edit.str_odefcn = "updated";
+            obj.sct_edit.s_odefcn = "updated";
         end
     end
 
@@ -229,7 +229,7 @@ classdef local_LQR < LocalController
             % Design model: the component connected to the infinite bus V0 through the
             % admittance y = I*/(V* - V0), so that dI = y dV
             if abs(V - obj.V0) < 1e-9
-                error(msg("GUILDA:local_LQR:DesignModel", obj.str_tag, sprintf("%g", obj.V0)))
+                error(msg("GUILDA:local_LQR:DesignModel", obj.s_tag, sprintf("%g", obj.V0)))
             end
             y_inf = tools.complex2matrix(I0 / (V - obj.V0));
             sys   = comp.get_sys_alone(x0, [real(V); imag(V)], [real(I0); imag(I0)], u);
@@ -246,7 +246,7 @@ classdef local_LQR < LocalController
             Qw = obj.Q;  if isempty(Qw); Qw = eye(nx); end
             Rw = obj.R;  if isempty(Rw); Rw = eye(nu); end
             if ~isequal(size(Qw), [nx nx]) || ~isequal(size(Rw), [nu nu])
-                error(msg("GUILDA:local_LQR:WeightSize", obj.str_tag, string(nx), string(nx), join(comp.sv_x, ","), string(nu), string(nu), join(obj.sv_y, ",")))
+                error(msg("GUILDA:local_LQR:WeightSize", obj.s_tag, string(nx), string(nx), join(comp.sv_x, ","), string(nu), string(nu), join(obj.sv_y, ",")))
             end
             obj.K = lqr(A, Bu, Qw, Rw);
             obj.r_designHz = obj.get_Hz();
@@ -264,19 +264,18 @@ classdef local_LQR < LocalController
             if isempty(comp) || isempty(comp.a_Bus) || isempty(comp.a_Bus.a_PowerNetwork)
                 l = false;
             else
-                s = comp.a_Bus.a_PowerNetwork.s_edit;
-                l = s.str_flag ~= "unset" && ~s.l_staleEquilibrium;
+                l = ~comp.a_Bus.a_PowerNetwork.l_staleEquilibrium;
             end
         end
 
-        function log_change(obj, str_name)
+        function log_change(obj, s_name)
             % A weight edit changes K, which net.initialize recomputes
             arguments (Input)
                 obj
-                str_name  % Name of the edited weight.
+                s_name    % Name of the edited weight.
             end
             if ~isempty(obj.a_Component)
-                obj.log_edit(obj.str_tag + " edit " + str_name, "Parameter(dynamics)");
+                obj.log_edit(obj.s_tag + " edit " + s_name, "Parameter(dynamics)");
             end
         end
     end
@@ -378,11 +377,11 @@ classdef local_LQR < LocalController
     end
 end
 
-function W = weight(W, str_name)
+function W = weight(W, s_name)
     % A vector is the diagonal of the weight
     arguments (Input)
         W         % Weight as given: a matrix, its diagonal or empty.
-        str_name  % Name of the weight ("Q" or "R"), for the error message.
+        s_name    % Name of the weight ("Q" or "R"), for the error message.
     end
     arguments (Output)
         W  % Weight matrix, or empty.
@@ -392,6 +391,6 @@ function W = weight(W, str_name)
     elseif isvector(W) && ~isscalar(W)
         W = diag(W);
     elseif size(W,1) ~= size(W,2)
-        error(msg("GUILDA:local_LQR:WeightShape", str_name))
+        error(msg("GUILDA:local_LQR:WeightShape", s_name))
     end
 end

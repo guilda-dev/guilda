@@ -25,18 +25,18 @@ classdef BadControllerStub < LocalController
         l_xsizeLater (1,1) logical = false   % 次の get_equilibrium から xsize にする (initialize の後で validate を試す)
     end
     properties (Constant, Hidden)
-        sv_bad = ["none","jacobian","jacsize","xsize","massx","currentdep","residual","output","input"]
+        sr_bad = ["none","jacobian","jacsize","xsize","massx","currentdep","residual","output","input"]
     end
     methods
-        function obj = BadControllerStub(str_bad)
+        function obj = BadControllerStub(s_bad)
             arguments (Input)
-                str_bad  % 入れる誤りの種類 (sv_bad のいずれか)
+                s_bad    % 入れる誤りの種類 (sv_bad のいずれか)
             end
             arguments (Output)
                 obj  % 作成したオブジェクト
             end
             obj@LocalController("CLbad")
-            obj.para_dynamics.add_entry("bad", find(obj.sv_bad == str_bad), "double");
+            obj.para_dynamics.add_entry("bad", find(obj.sr_bad == s_bad), "double");
         end
         function get_equilibrium(obj, ~, u)
             arguments (Input)
@@ -45,11 +45,11 @@ classdef BadControllerStub < LocalController
                 u    % 機器の平衡点の入力
             end
             obj.rv_Xequilibrium = u(2);
-            if obj.sv_bad(obj.para_dynamics.bad) == "xsize" || obj.l_xsizeLater
+            if obj.sr_bad(obj.para_dynamics.bad) == "xsize" || obj.l_xsizeLater
                 obj.rv_Xequilibrium = [u(2); 0];
             end
             obj.rv_Uequilibrium = [0; 0];
-            if obj.sv_bad(obj.para_dynamics.bad) == "input"
+            if obj.sr_bad(obj.para_dynamics.bad) == "input"
                 obj.rv_Uequilibrium = [0.2; 0];
             end
         end
@@ -69,9 +69,9 @@ classdef BadControllerStub < LocalController
                 dx  % 状態方程式の右辺
             end
             dx = u(1);
-            if DebugScript.helper.BadControllerStub.sv_bad(param) == "currentdep"
+            if DebugScript.helper.BadControllerStub.sr_bad(param) == "currentdep"
                 dx = dx + 1e-3*I(1);
-            elseif DebugScript.helper.BadControllerStub.sv_bad(param) == "residual"
+            elseif DebugScript.helper.BadControllerStub.sr_bad(param) == "residual"
                 dx = dx + 0.1;
             end
         end
@@ -89,7 +89,7 @@ classdef BadControllerStub < LocalController
                 y  % 出力
             end
             y = x(1);
-            if DebugScript.helper.BadControllerStub.sv_bad(param) == "output"
+            if DebugScript.helper.BadControllerStub.sr_bad(param) == "output"
                 y = y + 0.1;
             end
         end
@@ -107,7 +107,7 @@ classdef BadControllerStub < LocalController
                 M  % 質量行列
             end
             M = 1;
-            if DebugScript.helper.BadControllerStub.sv_bad(param) == "massx"
+            if DebugScript.helper.BadControllerStub.sr_bad(param) == "massx"
                 M = 1 + x(1)^2;
             end
         end
@@ -128,9 +128,9 @@ classdef BadControllerStub < LocalController
                 Bxu  % fcn_dx の u によるヤコビアン
             end
             Axx = 0;  Bxv = zeros(1,2);  Bxi = zeros(1,2);  Bxu = [1, 0];
-            if DebugScript.helper.BadControllerStub.sv_bad(param) == "jacobian"
+            if DebugScript.helper.BadControllerStub.sr_bad(param) == "jacobian"
                 Axx = 5;
-            elseif DebugScript.helper.BadControllerStub.sv_bad(param) == "jacsize"
+            elseif DebugScript.helper.BadControllerStub.sr_bad(param) == "jacsize"
                 Axx = zeros(2);
             end
         end

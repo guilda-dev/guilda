@@ -17,22 +17,22 @@ function sc = scenario(tag, net, varargin)
     arguments (Output)
         sc  % 追加したシナリオ
     end
-    str_sc = tag;
-    if strlength(str_sc) == 0
-        str_sc = "event";
+    s_sc = tag;
+    if strlength(s_sc) == 0
+        s_sc = "event";
     end
-    sv_have = string(cellfun(@(s) s.str_tag, net.a_Scenario, 'UniformOutput', false));
+    sv_have = string(cellfun(@(s) s.s_tag, net.a_Scenario, 'UniformOutput', false));
     n = 1;
-    while ismember(str_sc, sv_have)
+    while ismember(s_sc, sv_have)
         n = n + 1;
-        str_sc = tag + "_" + n;
+        s_sc = tag + "_" + n;
     end
-    sc = Scenario(str_sc);
+    sc = Scenario(s_sc);
     net.add_scenario(sc);           % 先に追加: 外乱は系統に対して旧 ODEevent と同じ順で検査される
     try
         sc.add_disturbance(tag, varargin{:});
     catch ME
-        net.remove_scenario(str_sc);
+        net.remove_scenario(s_sc);
         rethrow(ME)
     end
 end

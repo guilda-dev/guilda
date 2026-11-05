@@ -45,9 +45,9 @@ assert(norm(full(c_Y{2} - Y_full), 1) > 1, "開放で Y が変わる")
 %% Jacobian matches the right-hand side in the open phase
 % 解析的なヤコビアンと右辺の中心差分 (I51 と同じ方法) が開放区間でも一致する
 box = containers.Map("KeyType", "double", "ValueType", "double");
-s_options = net.solver_ODE.get_options({"Progress", "none"});
-s_options.PhaseProbe = @(o) store(box, jacobian_error_ode(o));
-net.solver_ODE.solve(net, [0,2], {DebugScript.helper.scenario("open", net, "TimeSpan", [1,1.2], "OpenBranch", "EL003")}, s_options);
+sct_options = net.solver_ODE.get_options({"Progress", "none"});
+sct_options.PhaseProbe = @(o) store(box, jacobian_error_ode(o));
+net.solver_ODE.solve(net, [0,2], {DebugScript.helper.scenario("open", net, "TimeSpan", [1,1.2], "OpenBranch", "EL003")}, sct_options);
 err = cell2mat(box.values);
 assert(numel(err) == 3 && max(err) < 1e-5, "誤差 " + mat2str(err,3))
 
@@ -118,15 +118,15 @@ assert(flag == 1, output.message)
 
 
 %% Unknown branch tag stops with an error
-[str_id, str_msg] = call_error(@() DebugScript.helper.scenario("open", net, "TimeSpan", [1,2], "OpenBranch", ["EL003"; "EL999"]));
-assert(str_id == "GUILDA:Scenario:UnknownOpenBranch", str_id + ": " + str_msg)
-assert(contains(str_msg, '"open"') && contains(str_msg, "EL999") && ~contains(str_msg, "EL003,"), str_msg)
+[s_id, s_msg] = call_error(@() DebugScript.helper.scenario("open", net, "TimeSpan", [1,2], "OpenBranch", ["EL003"; "EL999"]));
+assert(s_id == "GUILDA:Scenario:UnknownOpenBranch", s_id + ": " + s_msg)
+assert(contains(s_msg, '"open"') && contains(s_msg, "EL999") && ~contains(s_msg, "EL003,"), s_msg)
 
 
 %% Opening needs a duration
 for ts = {1, [1,1]}
-    [str_id, str_msg] = call_error(@() DebugScript.helper.scenario("open", net, "TimeSpan", ts{1}, "OpenBranch", "EL003"));
-    assert(str_id == "GUILDA:Scenario:ZeroLengthTimeSpan", str_id + ": " + str_msg)
+    [s_id, s_msg] = call_error(@() DebugScript.helper.scenario("open", net, "TimeSpan", ts{1}, "OpenBranch", "EL003"));
+    assert(s_id == "GUILDA:Scenario:ZeroLengthTimeSpan", s_id + ": " + s_msg)
 end
 
 
@@ -137,9 +137,9 @@ net3.add_bus();
 net3.add_branch("pi", [3,4], "R", 0.01, "X", 0.1, "C", 0.01);
 DebugScript.helper.quiet(@() net3.initialize);
 ev = DebugScript.helper.scenario("open", net3, "TimeSpan", [1,1.5], "OpenBranch", "EL003");
-[str_id, str_msg] = event_error(net3, ev);
-assert(str_id == "GUILDA:SolverODE:OpenBranchIsland", str_id + ": " + str_msg)
-assert(all(contains(str_msg, ["EL003", "B004", "Phase 2"])), str_msg)
+[s_id, s_msg] = event_error(net3, ev);
+assert(s_id == "GUILDA:SolverODE:OpenBranchIsland", s_id + ": " + s_msg)
+assert(all(contains(s_msg, ["EL003", "B004", "Phase 2"])), s_msg)
 
 
 %% A part with components is simulated as an island
@@ -183,9 +183,9 @@ end
 function c_Y = phase_admittance(net, time, c_events)
     % 各区間の右辺が使う ctx.Ymat (PhaseProbe で ode の右辺から取り出す)
     box = containers.Map("KeyType", "double", "ValueType", "any");
-    s_options = net.solver_ODE.get_options({"Progress", "none"});
-    s_options.PhaseProbe = @(o) store(box, ode_ymat(o));
-    [~, flag, output] = net.solver_ODE.solve(net, time, c_events, s_options);
+    sct_options = net.solver_ODE.get_options({"Progress", "none"});
+    sct_options.PhaseProbe = @(o) store(box, ode_ymat(o));
+    [~, flag, output] = net.solver_ODE.solve(net, time, c_events, sct_options);
     assert(flag == 1, output.message)
     % PhaseProbe は区間ごとに 1 回 (密行列で解き直す区間は、切り替え前の疎行列を記録)
     assert(box.Count == output.nPhases)
@@ -221,18 +221,18 @@ function [V, I] = bus_trajectories(r)
     I = cell2mat(arrayfun(@(b) b.I{:,:}, r.Bus(:).', "UniformOutput", false));
 end
 
-function [str_id, str_msg] = event_error(net, varargin)
-    [str_id, str_msg] = call_error(@() net.simulate([0,3], varargin{:}));
+function [s_id, s_msg] = event_error(net, varargin)
+    [s_id, s_msg] = call_error(@() net.simulate([0,3], varargin{:}));
 end
 
-function [str_id, str_msg] = call_error(f)
-    str_id  = "";
-    str_msg = "";
+function [s_id, s_msg] = call_error(f)
+    s_id    = "";
+    s_msg   = "";
     try
         f();
     catch ME
-        str_id  = string(DebugScript.helper.msg_id(ME));
-        str_msg = string(ME.message);
+        s_id    = string(DebugScript.helper.msg_id(ME));
+        s_msg   = string(ME.message);
     end
 end
 

@@ -23,7 +23,7 @@ function DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)
 
     % Called directly, the handles may not be built yet. Only the own state is read here:
     % in a simulation, the solver has already brought every layer up to date.
-    if obj.s_edit.str_odefcn ~= "updated"
+    if obj.sct_edit.s_odefcn ~= "updated"
         obj.check_edit();
     end
 

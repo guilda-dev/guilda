@@ -67,11 +67,11 @@ classdef IEEE68bus < PowerNetwork
             arguments (Output)
                 obj % IEEE68bus network.
             end
-            str_filepath = mfilename("fullpath");
-            str_dirpath  = fileparts(str_filepath);
-            PowerNetwork.import_csv(str_dirpath, Network=obj, Initialize=false);
+            s_filepath   = mfilename("fullpath");
+            s_dirpath    = fileparts(s_filepath);
+            PowerNetwork.import_csv(s_dirpath, Network=obj, Initialize=false);
             if opt.LocalController
-                add_avr_pss(obj, str_dirpath);
+                add_avr_pss(obj, s_dirpath);
             end
             obj.initialize;
         end
@@ -79,15 +79,15 @@ classdef IEEE68bus < PowerNetwork
 end
 
 
-function add_avr_pss(net, str_dirpath)
+function add_avr_pss(net, s_dirpath)
 % controller/avr/parameter.csv : AVR_ST1 parameters of the generator at each Bus
 % controller/pss/parameter.csv : PSS1 parameters of the generator at each Bus
     arguments (Input)
         net         (1,1) PowerNetwork  % Network being built.
-        str_dirpath                     % Folder that holds the controller/ CSV files.
+        s_dirpath                       % Folder that holds the controller/ CSV files.
     end
-    tab_avr = readtable(fullfile(str_dirpath, "controller", "avr", "parameter.csv"));
-    tab_pss = readtable(fullfile(str_dirpath, "controller", "pss", "parameter.csv"));
+    tab_avr = readtable(fullfile(s_dirpath, "controller", "avr", "parameter.csv"));
+    tab_pss = readtable(fullfile(s_dirpath, "controller", "pss", "parameter.csv"));
     for i = 1:height(tab_avr)
         i_bus = tab_avr.Bus(i);
         c_avr = namedargs2cell(table2struct(removevars(tab_avr(i,:), "Bus")));

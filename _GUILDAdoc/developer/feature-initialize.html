@@ -175,7 +175,7 @@
         <text x="218" y="223"><tspan class="init-num">04</tspan> <tspan class="dg-mono">component_power</tspan></text>
         <!-- 05 -->
         <path class="dg-sv-line" d="M185 246h26v14h-22" marker-end="url(#init-ah)"/>
-        <text x="218" y="257"><tspan class="init-num">05</tspan> <tspan class="dg-mono">l_staleEquilibrium = true</tspan></text>
+        <text x="218" y="257"><tspan class="init-num">05</tspan> <tspan class="dg-mono">log "Initialize"</tspan></text>
         <!-- 06 -->
         <path class="dg-sv-line" d="M185 294H446" marker-end="url(#init-ah)"/>
         <text x="330" y="288"><tspan class="init-num">06</tspan> <tspan class="dg-mono">get_equilibrium()</tspan></text>
@@ -227,7 +227,7 @@
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>varargin</code></span><span lang="ja"><code>varargin</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>str_method</code>, <code>c_nv</code> (the other Name-Value pairs)</span><span lang="ja"><code>str_method</code>、<code>c_nv</code>（残りの Name-Value の組）</span></dd>
+          <dd><span lang="en"><code>s_method</code>, <code>c_nv</code> (the other Name-Value pairs)</span><span lang="ja"><code>s_method</code>、<code>c_nv</code>（残りの Name-Value の組）</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="INIT-02">
@@ -242,9 +242,9 @@
             <li>ここでは平衡点は不要</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>s_edit.str_odefcn</code> of every layer; <code>tab_parameter.dynamics</code>; network <code>Hz</code></span><span lang="ja">各レイヤーの <code>s_edit.str_odefcn</code>、<code>tab_parameter.dynamics</code>、ネットワークの <code>Hz</code></span></dd>
+          <dd><span lang="en"><code>sct_edit.s_odefcn</code> of every layer; <code>tab_parameter.dynamics</code>; network <code>Hz</code></span><span lang="ja">各レイヤーの <code>sct_edit.s_odefcn</code>、<code>tab_parameter.dynamics</code>、ネットワークの <code>Hz</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>f_Mass</code>, <code>f_dx</code>, <code>f_I</code>, <code>f_Y</code>, <code>f_Jacobi*</code> of components and controllers; <code>str_odefcn = "updated"</code></span><span lang="ja">機器と制御器の <code>f_Mass</code>、<code>f_dx</code>、<code>f_I</code>、<code>f_Y</code>、<code>f_Jacobi*</code>。<code>str_odefcn = "updated"</code></span></dd>
+          <dd><span lang="en"><code>f_Mass</code>, <code>f_dx</code>, <code>f_I</code>, <code>f_Y</code>, <code>f_Jacobi*</code> of components and controllers; <code>s_odefcn = "updated"</code></span><span lang="ja">機器と制御器の <code>f_Mass</code>、<code>f_dx</code>、<code>f_I</code>、<code>f_Y</code>、<code>f_Jacobi*</code>。<code>s_odefcn = "updated"</code></span></dd>
         </dl>
       </li>
       <li class="fs-step" id="INIT-03a">
@@ -299,7 +299,7 @@
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>tab_editLog</code>, <code>LayerPackage.edit_effect</code>; <code>Component.c_Vequilibrium</code>, <code>c_Iequilibrium</code>; <code>get_admittance_matrix</code></span><span lang="ja"><code>tab_editLog</code>、<code>LayerPackage.edit_effect</code>、<code>Component.c_Vequilibrium</code>、<code>c_Iequilibrium</code>、<code>get_admittance_matrix</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>ResultPF</code> with <code>str_solver = "equilibrium"</code>, <code>options = struct(Method="equilibrium", Tolerance=1e-6)</code>, <code>tab_bus</code> n_bus × 6, empty <code>tab_branch</code>; <code>flag = 1</code>; <code>output.residual</code>, <code>output.message</code></span><span lang="ja"><code>str_solver = "equilibrium"</code>、<code>options = struct(Method="equilibrium", Tolerance=1e-6)</code>、n_bus × 6 の <code>tab_bus</code>、空の <code>tab_branch</code> を持つ <code>ResultPF</code>。<code>flag = 1</code>。<code>output.residual</code>、<code>output.message</code></span></dd>
+          <dd><span lang="en"><code>ResultPF</code> with <code>s_solver = "equilibrium"</code>, <code>options = struct(Method="equilibrium", Tolerance=1e-6)</code>, <code>tab_bus</code> n_bus × 6, empty <code>tab_branch</code>; <code>flag = 1</code>; <code>output.residual</code>, <code>output.message</code></span><span lang="ja"><code>s_solver = "equilibrium"</code>、<code>options = struct(Method="equilibrium", Tolerance=1e-6)</code>、n_bus × 6 の <code>tab_bus</code>、空の <code>tab_branch</code> を持つ <code>ResultPF</code>。<code>flag = 1</code>。<code>output.residual</code>、<code>output.message</code></span></dd>
         </dl>
       </li>
       <li class="fs-step" id="INIT-04">
@@ -326,16 +326,16 @@
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li>Marks the equilibrium as out of date before anything is written</li>
+            <li>Marks the equilibrium as out of date before anything is written: logs an edit with tag <code>"Initialize"</code> (<code>log_edit</code>), which <code>LayerPackage.edit_effect</code> counts as stale; before the first <code>initialize</code> nothing is logged and the equilibrium is stale anyway</li>
             <li>A point written only in part is never used</li>
           </ul><ul lang="ja">
-            <li>書き込み開始前に平衡点を古い状態として印付け</li>
+            <li>書き込み開始前に平衡点を古い状態として印付け: タグ <code>"Initialize"</code> の編集を記録（<code>log_edit</code>）。<code>LayerPackage.edit_effect</code> はこれを古いと判定。最初の <code>initialize</code> の前は記録なし（平衡点はもともと古い扱い）</li>
             <li>途中まで書かれた運転点は使用されない</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en">—</span><span lang="ja">—</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>net.s_edit.l_staleEquilibrium = true</code></span><span lang="ja"><code>net.s_edit.l_staleEquilibrium = true</code></span></dd>
+          <dd><span lang="en">a <code>"Initialize"</code> row in <code>net.tab_editLog</code> (<code>net.l_staleEquilibrium</code> is true)</span><span lang="ja"><code>net.tab_editLog</code> に <code>"Initialize"</code> の行（<code>net.l_staleEquilibrium</code> は true）</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="INIT-06">
@@ -483,7 +483,7 @@
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>children</code> of each layer</span><span lang="ja">各レイヤーの <code>children</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>s_edit.str_flag = "initialized"</code>, <code>s_edit.l_staleEquilibrium = false</code>, empty <code>tab_editLog</code> on every layer</span><span lang="ja">すべてのレイヤーで <code>s_edit.str_flag = "initialized"</code>、<code>s_edit.l_staleEquilibrium = false</code>、空の <code>tab_editLog</code></span></dd>
+          <dd><span lang="en"><code>sct_edit.l_initialized = true</code> on every layer; empty <code>net.tab_editLog</code> (<code>PowerNetwork.reset_edit</code>), so <code>l_staleEquilibrium</code> is false</span><span lang="ja">すべてのレイヤーで <code>sct_edit.l_initialized = true</code>。<code>net.tab_editLog</code> は空（<code>PowerNetwork.reset_edit</code>）、よって <code>l_staleEquilibrium</code> は false</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="INIT-14">
@@ -556,8 +556,8 @@
       </li>
       <li><strong>Edit state:</strong>
         <ul>
-          <li><code>l_staleEquilibrium</code> set at INIT-05</li>
-          <li>cleared at INIT-13, together with <code>str_flag = "initialized"</code> and the edit log of every layer</li>
+          <li><code>l_staleEquilibrium</code> made true at INIT-05 (an <code>"Initialize"</code> row in the edit log)</li>
+          <li>cleared at INIT-13, which sets <code>sct_edit.l_initialized</code> on every layer and empties the edit log of the network</li>
           <li>a call that stops between them leaves it set</li>
         </ul>
       </li>
@@ -582,8 +582,8 @@
       </li>
       <li><strong>編集状態:</strong>
         <ul>
-          <li><code>l_staleEquilibrium</code> は INIT-05 で設定</li>
-          <li>INIT-13 で <code>str_flag = "initialized"</code> と全レイヤーの編集ログのリセットとともに解除</li>
+          <li><code>l_staleEquilibrium</code> は INIT-05 で true（編集ログに <code>"Initialize"</code> の行）</li>
+          <li>INIT-13 で全レイヤーの <code>sct_edit.l_initialized</code> の設定とネットワークの編集ログの消去とともに解除</li>
           <li>その間で停止した呼び出しでは設定されたまま</li>
         </ul>
       </li>
@@ -684,10 +684,10 @@
           </ul></dd>
           <dt><span lang="en">State of the network after the failure</span><span lang="ja">失敗後のネットワークの状態</span></dt>
           <dd><ul lang="en">
-            <li>the equilibrium is written in part; <code>l_staleEquilibrium</code> stays true</li>
+            <li>the equilibrium is written in part; the <code>"Initialize"</code> row stays in the edit log, so <code>l_staleEquilibrium</code> stays true</li>
             <li>later analyses stop with <code>EquilibriumStale</code> ("the last net.initialize() stopped before it finished")</li>
           </ul><ul lang="ja">
-            <li>平衡点は途中まで書き込み済み。<code>l_staleEquilibrium</code> は true のまま</li>
+            <li>平衡点は途中まで書き込み済み。編集ログに <code>"Initialize"</code> の行が残り、<code>l_staleEquilibrium</code> は true のまま</li>
             <li>後の解析は <code>EquilibriumStale</code>（"the last net.initialize() stopped before it finished"）で停止</li>
           </ul></dd>
         </dl>

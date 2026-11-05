@@ -53,7 +53,7 @@ classdef (Sealed = true) IEEJ_LPT1 < controller.governor.abstract
 % gen.add_local_controller(controller.governor.IEEJ_LPT1("gov1", Prate=2.5, PLM=5));
 % net.initialize;
 % sc  = Scenario("trip");
-% sc.add_trip(net.a_Bus{5}.a_Component{1}.str_tag, [1,Inf]);
+% sc.add_trip(net.a_Bus{5}.a_Component{1}.s_tag, [1,Inf]);
 % net.add_scenario(sc);
 % sol = net.simulate([0,30], sc);
 % ```
@@ -119,7 +119,7 @@ classdef (Sealed = true) IEEJ_LPT1 < controller.governor.abstract
             r_P0   = obj.initial_output(u);
             r_pos0 = r_P0 / r_gain;
             if ~(r_pos0 >= tab{:,'pos_min'} && r_pos0 <= tab{:,'pos_max'})
-                error(msg("GUILDA:IEEJ_LPT1:OutputOutOfRange", char(obj.str_tag), num2str(r_P0), num2str(tab{:,'Prate'}), ...
+                error(msg("GUILDA:IEEJ_LPT1:OutputOutOfRange", char(obj.s_tag), num2str(r_P0), num2str(tab{:,'Prate'}), ...
                           num2str(r_pos0), num2str(tab{:,'pos_min'}), num2str(tab{:,'pos_max'})))
             end
             [r_Pref, r_Plimit] = obj.load_setting(r_pos0, tab{:,'PLM'}, r_gain, tab{:,'pos_max'});

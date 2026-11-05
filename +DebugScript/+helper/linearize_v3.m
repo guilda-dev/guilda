@@ -110,7 +110,7 @@ function sys = get_DAE(obj,opt)
             filt_i = [-    rm_Vi,  rm_V\rm_Vr ;
                            rm_Vr,  rm_V\rm_Vi];
 
-            str_busvar = ["theta";"V"];
+            sv_busvar = ["theta";"V"];
         case "theta&rho" 
             rm_S = [-rm_Q, rm_P;...
                      rm_P, rm_Q];
@@ -120,14 +120,14 @@ function sys = get_DAE(obj,opt)
             filt_i = [-rm_Vi,  rm_Vr ; 
                        rm_Vr,  rm_Vi];
             
-            str_busvar = ["theta";"rho"];
+            sv_busvar = ["theta";"rho"];
         case "Vre&Vim"
             rm_S = zeros(n_v, n_v);
 
             filt_o = eye(n_v);
             filt_i = eye(n_v);
 
-            str_busvar = ["Vre";"Vim"];
+            sv_busvar = ["Vre";"Vim"];
     end
 
     A_dae = blkdiag(eye(n_x),filt_o)      ...
@@ -136,8 +136,8 @@ function sys = get_DAE(obj,opt)
     B_dae = blkdiag(eye(n_x),filt_o)      ...
             * B_dae;
 
-    str_busvar = reshape(str_busvar+(1:n_b),2,[]);
-    str_busvar = reshape(str_busvar',1,[]);
+    sv_busvar  = reshape(sv_busvar+(1:n_b),2,[]);
+    sv_busvar  = reshape(sv_busvar',1,[]);
 
     G = real( Y.Variables );
     B = imag( Y.Variables );
@@ -150,7 +150,7 @@ function sys = get_DAE(obj,opt)
 
     sys = dss(A_dae, B_dae, C_dae, D_dae, E_dae);
     sys.InputName  = input;
-    sys.StateName  = [output(:)',str_busvar];
+    sys.StateName  = [output(:)',sv_busvar];
     sys.OutputName = output;    
 
 
@@ -218,9 +218,9 @@ function sys = get_LTI_viaKron(obj)
     E_dae  = blkdiag(E{:});
 
     % global controllers (all of them; their states come first)
-    str_u = tools.cellfun(@(s) s(3:end), i);    % component inputs (the columns of Bu)
+    sv_u = tools.cellfun(@(s) s(3:end), i);    % component inputs (the columns of Bu)
     [Ax_dae, Bv_dae, Bu_dae, Cx_dae, E_dae, SN] = add_global_controllers( ...
-        obj.odeNetwork, vertcat(x{:}), vertcat(str_u{:}), Ax_dae, Bv_dae, Bu_dae, Cx_dae, Du_dae, E_dae);
+        obj.odeNetwork, vertcat(x{:}), vertcat(sv_u{:}), Ax_dae, Bv_dae, Bu_dae, Cx_dae, Du_dae, E_dae);
     
     lv_input  = ismember(input, busVnames);
     lv_output = ismember(output,busInames);
@@ -290,7 +290,7 @@ function sys = get_LTI_viaFeedback(obj)
         [lv_in,  feedin ] = ismember(string(sysGC.OutputName), string(sysODE.InputName));
         if ~all(lv_out) || ~all(lv_in)
             error("GUILDA:SolverLIN:GlobalControllerPort", ...
-                  "The ports of the global controller '%s' are not found in the linearized system.", net.a_GlobalController{k}.str_tag)
+                  "The ports of the global controller '%s' are not found in the linearized system.", net.a_GlobalController{k}.s_tag)
         end
         sysODE = feedback(sysODE, sysGC, feedin, feedout, +1);
     end
@@ -323,22 +323,22 @@ function tf = has_I2V(bus)
     tf  = ~isempty(sys.A) || rcond(sys.D(:,1:2)) > 1e-12;
 end
 
-function [Axx, Bxv, Bxu, Cix, E, str_z] = add_global_controllers(net, str_x, str_u, Axx, Bxv, Bxu, Cix, Diu, E)
+function [Axx, Bxv, Bxu, Cix, E, sv_z] = add_global_controllers(net, sv_x, sv_u, Axx, Bxv, Bxu, Cix, Diu, E)
 % Add the global controllers of net to the linear model of the components (used by Kron and DAE)
 %
 %   E dx/dt = Axx x + Bxv v + Bxu u,   i = Cix x + ... + Diu u
-%   x: component states (names str_x), u: component inputs (names str_u)
+%   x: component states (names sv_x), u: component inputs (names sv_u)
 %
 % Global controller k:  E_k dz_k/dt = A_k z_k + B_k w_k,  y_k = C_k z_k + D_k w_k
-%   its inputs w_k are component states (InputName in str_x): w_k = S_k x
-%   its outputs y_k add to component inputs (OutputName in str_u): u <- u + T_k y_k
+%   its inputs w_k are component states (InputName in sv_x): w_k = S_k x
+%   its outputs y_k add to component inputs (OutputName in sv_u): u <- u + T_k y_k
 %
 % The states z of all controllers are put before x, in the order of a_GlobalController.
-% The returned matrices are for [z; x]; Bxu keeps the external input u. str_z: names of z.
+% The returned matrices are for [z; x]; Bxu keeps the external input u. sv_z: names of z.
     arguments (Input)
         net    % Power network.
-        str_x  % Names of the component states x.
-        str_u  % Names of the component inputs u.
+        sv_x   % Names of the component states x.
+        sv_u   % Names of the component inputs u.
         Axx    % Jacobian of the states with respect to x.
         Bxv    % Jacobian of the states with respect to V.
         Bxu    % Jacobian of the states with respect to u.
@@ -352,10 +352,10 @@ function [Axx, Bxv, Bxu, Cix, E, str_z] = add_global_controllers(net, str_x, str
         Bxu    % Jacobian of the states [z; x] with respect to u.
         Cix    % Jacobian of the bus currents with respect to [z; x].
         E      % Mass matrix of [z; x].
-        str_z  % Names of the controller states z.
+        sv_z   % Names of the controller states z.
     end
     a_GC  = net.a_GlobalController;
-    str_z = string.empty(0,1);
+    sv_z  = string.empty(0,1);
     if isempty(a_GC)
         return
     end
@@ -367,15 +367,15 @@ function [Axx, Bxv, Bxu, Cix, E, str_z] = add_global_controllers(net, str_x, str
     Bzx   = cell(numel(a_GC),1);
     Cuz   = cell(1,numel(a_GC));
     Ez    = cell(numel(a_GC),1);
-    str_z = cell(numel(a_GC),1);  %#ok (cell while collecting)
+    sv_z  = cell(numel(a_GC),1);  %#ok (cell while collecting)
     Dux   = zeros(nu,nx);
     for k = 1:numel(a_GC)
         sysGC = a_GC{k}.get_sys("full",true);
-        [lv_w, iw] = ismember(string(sysGC.InputName),  str_x);
-        [lv_y, iy] = ismember(string(sysGC.OutputName), str_u);
+        [lv_w, iw] = ismember(string(sysGC.InputName),  sv_x);
+        [lv_y, iy] = ismember(string(sysGC.OutputName), sv_u);
         if ~all(lv_w) || ~all(lv_y)
             error("GUILDA:SolverLIN:GlobalControllerPort", ...
-                  "The ports of the global controller '%s' are not found in the linearized system.", a_GC{k}.str_tag)
+                  "The ports of the global controller '%s' are not found in the linearized system.", a_GC{k}.s_tag)
         end
         S = zeros(numel(iw), nx);  S(sub2ind(size(S), 1:numel(iw), iw(:)')) = 1;
         T = zeros(nu, numel(iy));  T(sub2ind(size(T), iy(:)', 1:numel(iy))) = 1;
@@ -385,12 +385,12 @@ function [Axx, Bxv, Bxu, Cix, E, str_z] = add_global_controllers(net, str_x, str
         Cuz{k}   = T * sysGC.C;
         Dux      = Dux + T * sysGC.D * S;
         Ez{k}    = sysGC.E;
-        str_z{k} = string(sysGC.StateName);
+        sv_z{k} = string(sysGC.StateName);
     end
     Az    = blkdiag(Az{:});
     Bzx   = vertcat(Bzx{:});
     Cuz   = horzcat(Cuz{:});
-    str_z = [string.empty(0,1); vertcat(str_z{:})];
+    sv_z  = [string.empty(0,1); vertcat(sv_z{:})];
     nz    = size(Az,1);
 
     Axx = [Az, Bzx; Bxu*Cuz, Axx + Bxu*Dux];
@@ -400,21 +400,21 @@ function [Axx, Bxv, Bxu, Cix, E, str_z] = add_global_controllers(net, str_x, str
     E   = blkdiag(Ez{:}, E);
 end
 
-function sys = v3_ports(bus, str_port)
+function sys = v3_ports(bus, s_port)
 % v4 の bus.get_sys には制御器の入出力と機器の出力があり、状態は出力に無いので、v3 と同じ
 % 入力 [ポート; 機器の入力 u] と出力 (V2I: I、I2V: [状態; V]) だけにする
     arguments (Input)
         bus
-        str_port = "V2I"
+        s_port = "V2I"
     end
     arguments (Output)
         sys  % v3 と同じ入出力の母線モデル
     end
-    sys  = bus.get_sys("port", str_port);
+    sys  = bus.get_sys("port", s_port);
     sv_u = tools.cellfun(@(c) string(c.attach_tag(c.sv_u)), bus.a_Component);
     [~, iv_u] = ismember(vertcat(strings(0,1), sv_u{:}), string(sys.InputName));
     sys  = sys(1:2, [1, 2, reshape(iv_u, 1, [])]);
-    if str_port == "I2V"
+    if s_port == "I2V"
         nx = size(sys.A,1);
         sv_out = [string(sys.StateName); string(sys.OutputName)];
         sv_in  = string(sys.InputName);

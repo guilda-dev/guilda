@@ -33,7 +33,7 @@ function mpc = network_to_mpc(net)
     base    = net.para_base.baseMVA;
     a_Bus   = net.a_Bus;
     n_bus   = numel(a_Bus);
-    str_bus = string(a_Bus);
+    sv_bus  = string(a_Bus);
 
     % ---- buses -----------------------------------------------------------------------
     rm_bus = zeros(n_bus, 13);
@@ -43,7 +43,7 @@ function mpc = network_to_mpc(net)
     rm_bus(:,11) = 1;                                      % zone
     rm_gen  = zeros(0, 21);
     c_cost  = cell(0, 1);                                  % [HP, fP, HQ, fQ, startup, shutdown]
-    str_gen = strings(0, 1);
+    sv_gen  = strings(0, 1);
     for i = 1:n_bus
         bus = a_Bus{i};
         pf  = bus.para_powerflow;
@@ -73,7 +73,7 @@ function mpc = network_to_mpc(net)
                            V_g, cop.baseMVA, 1, cop.Pmax*base, cop.Pmin*base];
             rm_gen  = [rm_gen; r_gen];                                          %#ok<AGROW>
             c_cost  = [c_cost; {[opf.HP, opf.fP, opf.HQ, opf.fQ, opf.startup, opf.shutdown]}]; %#ok<AGROW>
-            str_gen = [str_gen; string(com)];                                   %#ok<AGROW>
+            sv_gen  = [sv_gen; string(com)];                                   %#ok<AGROW>
             rm_bus(i, 2) = 2;                                                   % PV
         end
     end
@@ -100,15 +100,15 @@ function mpc = network_to_mpc(net)
     a_Branch   = net.a_Branch;
     n_br       = numel(a_Branch);
     rm_branch  = zeros(n_br, 13);
-    str_branch = string(a_Branch(:));
+    sv_branch  = string(a_Branch(:));
     for k = 1:n_br
         br  = a_Branch{k};
         ope = br.para_operation;
         dyn = br.para_dynamics;
-        [~, iv_bus] = ismember(string(br.a_Bus), str_bus);
-        for str_lim = ["Imax","Pmax","Qmax"]
-            if ~isnan(ope.(str_lim)) && ~isinf(ope.(str_lim))
-                error(msg("GUILDA:network_to_mpc:BranchLimit", string(br), str_lim));
+        [~, iv_bus] = ismember(string(br.a_Bus), sv_bus);
+        for s_lim = ["Imax","Pmax","Qmax"]
+            if ~isnan(ope.(s_lim)) && ~isinf(ope.(s_lim))
+                error(msg("GUILDA:network_to_mpc:BranchLimit", string(br), s_lim));
             end
         end
         Y  = br.get_admittance_matrix();
@@ -155,7 +155,7 @@ function mpc = network_to_mpc(net)
     mpc.gen         = rm_gen;
     mpc.branch      = rm_branch;
     mpc.gencost     = rm_gencost;
-    mpc.bus_name    = cellstr(str_bus(:));
-    mpc.gen_name    = cellstr(str_gen);
-    mpc.branch_name = cellstr(str_branch);
+    mpc.bus_name    = cellstr(sv_bus(:));
+    mpc.gen_name    = cellstr(sv_gen);
+    mpc.branch_name = cellstr(sv_branch);
 end

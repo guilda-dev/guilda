@@ -55,10 +55,10 @@ net = three_bus();
 net.a_Bus{1}.add_component("load-impedance", "P",-0.5, "Q",-0.1);
 net.a_Bus{3}.add_component("load-impedance", "P",-0.5, "Q",-0.1);
 DebugScript.helper.quiet(@() net.initialize);
-assert(slack_index(net) == 1 && ~net.s_edit.l_staleEquilibrium)
-str_Bus = string(net.a_Bus);
+assert(slack_index(net) == 1 && ~net.l_staleEquilibrium)
+sv_Bus  = string(net.a_Bus);
 tab_Y   = net.get_admittance_matrix;
-assert(max(abs(tab_Y{str_Bus,str_Bus}*net.cv_Vequilibrium - net.cv_Iequilibrium)) < 1e-6)   % initialize の許容値
+assert(max(abs(tab_Y{sv_Bus,sv_Bus}*net.cv_Vequilibrium - net.cv_Iequilibrium)) < 1e-6)   % initialize の許容値
 
 
 %% A network without buses names the cause
@@ -120,8 +120,8 @@ assert(tools.slack_bus_index(net) == 2)
 mpc = tools.network_to_mpc(net);
 assert(find(mpc.bus(:,2) == 3) == 2)
 assert(isempty(slack_index(net)))
-for str_method = ["DC OPF", "AC OPF"]
-    res = net.optimize_powerflow(Method=str_method, Verbose=false);
+for s_method = ["DC OPF", "AC OPF"]
+    res = net.optimize_powerflow(Method=s_method, Verbose=false);
     assert(res.l_success && abs(res.tab_bus.Varg(2)) < 1e-9 && abs(res.tab_bus.Varg(1)) > 1e-3)
     assert(isempty(slack_index(net)))
 end
@@ -161,13 +161,13 @@ function net = three_bus()
     net.add_branch("pi",[2,3], "R",0.01, "X",0.085);
 end
 
-function str_id = quiet_powerflow(net)
+function s_id = quiet_powerflow(net)
 % 潮流計算を実行し、収束を確かめて、出た警告の ID を返す (なければ "")
     lastwarn("", "");
     [~, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
     assert(flag > 0)
-    str_id = DebugScript.helper.msg_id();
-    str_id = string(str_id);
+    s_id   = DebugScript.helper.msg_id();
+    s_id   = string(s_id);
 end
 
 function ME = powerflow_error(net)

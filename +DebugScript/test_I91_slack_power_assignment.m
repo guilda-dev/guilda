@@ -22,9 +22,9 @@ assert(norm(tab1{["load","gen"],["P","Q"]} - tab2{["load","gen"],["P","Q"]}) < 1
 
 %% A CSV round trip keeps the operating point
 net = slack_network(["load", "gen"]);
-[str_dir, c] = temp_folder(); %#ok<ASGLU>
-str_path = DebugScript.helper.quiet(@() net.export_csv(fullfile(str_dir, "Net")));
-net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(str_path));
+[s_dir, c] = temp_folder(); %#ok<ASGLU>
+s_path = DebugScript.helper.quiet(@() net.export_csv(fullfile(s_dir, "Net")));
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path));
 DebugScript.helper.quiet(@() net2.initialize);
 tab1 = component_power(net);
 tab2 = component_power(net2);
@@ -54,9 +54,9 @@ assert(kcl_residual(net) < 1e-8)
 %% The INFO message names the component that takes the remaining power
 net = slack_network(["load", "gen"], false);
 evalc("net.a_Bus{1}.l_isSlack = false;");
-str_out = string(evalc("net.a_Bus{1}.l_isSlack = true;"));
-assert(contains(str_out, string(net.a_Bus{1}.a_Component{2})), str_out)
-assert(~contains(str_out, string(net.a_Bus{1}.a_Component{1})), str_out)
+s_out = string(evalc("net.a_Bus{1}.l_isSlack = true;"));
+assert(contains(s_out, string(net.a_Bus{1}.a_Component{2})), s_out)
+assert(~contains(s_out, string(net.a_Bus{1}.a_Component{1})), s_out)
 
 
 %% Method="OPF" and "equilibrium" keep the powers they fix, whatever the order
@@ -72,10 +72,10 @@ assert(norm(tab1{["load","gen"],["P","Q"]} - tab2{["load","gen"],["P","Q"]}) < 1
 
 
 % ---- local functions ----
-function net = slack_network(str_comp, l_init)
-% B001 (スラック) に str_comp の順で機器を追加した2母線系統
+function net = slack_network(sr_comp, l_init)
+% B001 (スラック) に sr_comp の順で機器を追加した2母線系統
     arguments (Input)
-        str_comp (1,:) string
+        sr_comp  (1,:) string
         l_init   (1,1) logical = true
     end
     net = PowerNetwork("Slack");
@@ -83,7 +83,7 @@ function net = slack_network(str_comp, l_init)
     net.add_bus();
     net.add_branch("pi",[1,2], "R",0.01, "X",0.085);
     bus = net.a_Bus{1};
-    for str = str_comp
+    for str = sr_comp
         switch str
             case "load";  bus.add_component("load-power", "P",-0.2, "Q",-0.05);
             case "load2"; bus.add_component("load-power", "P",-0.1, "Q",-0.02);
@@ -114,19 +114,19 @@ end
 
 function str = name_of(r_P)
     r_all = [-0.2, -0.1, 0.1, 0.05];
-    str_all = ["load", "load2", "gen", "gen2"];
+    sr_all = ["load", "load2", "gen", "gen2"];
     [~, i] = min(abs(r_all - r_P));
-    str = str_all(i);
+    str = sr_all(i);
 end
 
 function r = kcl_residual(net)
-    str_Bus = string(net.a_Bus);
+    sv_Bus  = string(net.a_Bus);
     tab_Y   = net.get_admittance_matrix;
-    r = max(abs(tab_Y{str_Bus,str_Bus}*net.cv_Vequilibrium - net.cv_Iequilibrium));
+    r = max(abs(tab_Y{sv_Bus,sv_Bus}*net.cv_Vequilibrium - net.cv_Iequilibrium));
 end
 
-function [str_dir, c] = temp_folder()
-    str_dir = tempname;
-    mkdir(str_dir);
-    c = onCleanup(@() rmdir(str_dir, "s"));
+function [s_dir, c] = temp_folder()
+    s_dir = tempname;
+    mkdir(s_dir);
+    c = onCleanup(@() rmdir(s_dir, "s"));
 end

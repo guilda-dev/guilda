@@ -99,7 +99,7 @@ classdef (Sealed = true) AVR_ST1 < controller.avr.abstract
             Vap_st = u(2);            
             
             if Vap_st <= Vap_min || Vap_st >= Vap_max
-                error(msg("GUILDA:AVR_ST1:InvalidValueRange", char(obj.str_tag), num2str(Vap_st), num2str(Vap_min), num2str(Vap_max)))
+                error(msg("GUILDA:AVR_ST1:InvalidValueRange", char(obj.s_tag), num2str(Vap_st), num2str(Vap_min), num2str(Vap_max)))
             end
 
             Vst_st  = 0;

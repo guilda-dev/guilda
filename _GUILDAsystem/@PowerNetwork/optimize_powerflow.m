@@ -52,9 +52,9 @@ function varargout = optimize_powerflow(obj, varargin)
 
     varargin = v3_opf_args(varargin);                         % COMPAT(v3)
     [c_nv, opt] = take_call_options(varargin);
-    s_options   = obj.solver_OPF.get_options(c_nv);
+    sct_options = obj.solver_OPF.get_options(c_nv);
 
-    [result, flag, output] = obj.solver_OPF.solve(obj, s_options);
+    [result, flag, output] = obj.solver_OPF.solve(obj, sct_options);
 
     if opt.Plot
         result.Plot();

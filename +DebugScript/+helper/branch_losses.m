@@ -12,11 +12,11 @@ function S = branch_losses(net, cv_V)
     arguments (Output)
         S  % [pu] 全送電線の複素損失の合計
     end
-    str_bus = string(net.a_Bus);
+    sv_bus = string(net.a_Bus);
     S = 0;
     for k = 1:numel(net.a_Branch)
         br = net.a_Branch{k};
-        [~, idx] = ismember(string(br.a_Bus), str_bus);
+        [~, idx] = ismember(string(br.a_Bus), sv_bus);
         Vb = cv_V(idx(:));
         Ib = br.get_admittance_matrix() * Vb;
         S  = S + sum(Vb .* conj(Ib));

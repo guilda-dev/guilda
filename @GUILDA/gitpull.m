@@ -8,7 +8,7 @@ function gitpull()
 
     % Check modified files
     repo = gitrepo;
-    str_ModifiedFiles  = repo.ModifiedFiles;
+    sv_ModifiedFiles   = repo.ModifiedFiles;
 
     fprintf('\n === Git pull === \n')
     
@@ -16,18 +16,18 @@ function gitpull()
     GUILDApath  = string(GUILDA.pwd);
     UntouchPath = GUILDApath + filesep + ["_GUILDAsystem","_GUILDAobject","@GUILDA"];
             
-    l_rmFiles   = cellfun(@(p) contains(p,UntouchPath), str_ModifiedFiles);
-    str_rmFiles = str_ModifiedFiles(l_rmFiles);
+    l_rmFiles   = cellfun(@(p) contains(p,UntouchPath), sv_ModifiedFiles);
+    sv_rmFiles  = sv_ModifiedFiles(l_rmFiles);
 
     % Exception: Changes to the following files are permitted.
     keepPath    = fullfile(GUILDApath,"@GUILDA","user");
-    l_keepFiles = cellfun(@(p) contains(p,keepPath), str_rmFiles);
-    str_rmFiles = str_rmFiles(~l_keepFiles);
+    l_keepFiles = cellfun(@(p) contains(p,keepPath), sv_rmFiles);
+    sv_rmFiles  = sv_rmFiles(~l_keepFiles);
     
     
-    if ~isempty(str_rmFiles)
+    if ~isempty(sv_rmFiles)
         disp("  Found a modified file in the GUILDA source code.")
-        cellfun(@(f) disp("    Editing detected: "+f), str_rmFiles)
+        cellfun(@(f) disp("    Editing detected: "+f), sv_rmFiles)
         fprintf(newline+  "    Your action >>")
 
         sentence = "Please select an action for the edited files:"+newline+...
@@ -50,15 +50,15 @@ function gitpull()
                 % ファイルの複製
                 disp(['  << Duplicate file to ',dirname,' folder >>'])
                 flag_emergence_stop = false;
-                for i = 1:numel(str_rmFiles)
-                    str_rmFilesi = str_rmFiles(i);
-                    [stashpath,stashfile,extc] = fileparts(str_rmFilesi);
+                for i = 1:numel(sv_rmFiles)
+                    s_rmFilesi = sv_rmFiles(i);
+                    [stashpath,stashfile,extc] = fileparts(s_rmFilesi);
                     stashpath = replace(stashpath,GUILDApath,"");
                     filename = [char(stashfile), char(extc)];
                     nc = max(1,40-numel(filename));
                     fprintf(['    Copy File: ',filename,repmat(' ',1,nc),'...'])
 
-                    if ~isfile(str_rmFilesi)
+                    if ~isfile(s_rmFilesi)
                         disp("Not Found (deleted)")
                         continue
                     end
@@ -67,7 +67,7 @@ function gitpull()
                     if ~isfolder(newpath)
                         mkdir(newpath)
                     end
-                    if copyfile(str_rmFilesi, newpath )
+                    if copyfile(s_rmFilesi, newpath )
                         disp('ok')
                     else
                         disp('failed')
@@ -87,7 +87,7 @@ function gitpull()
         try 
             disp('  << Clean up Edits >>')
             fprintf('    Reset Modified Files ...')
-            % cellfun(@(f) system(['git checkout HEAD ',f]), str_rmFiles);
+            % cellfun(@(f) system(['git checkout HEAD ',f]), sv_rmFiles);
             disp('ok')
             disp(' ')
         catch

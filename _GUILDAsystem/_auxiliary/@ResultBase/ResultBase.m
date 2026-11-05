@@ -5,7 +5,7 @@ classdef (Abstract) ResultBase < auxiliary
 % also keeps flag and output, the settings actually used and the elapsed time, so the
 % result alone is enough to check the outcome. A result stores only what the analysis
 % computed and the settings it used. Model data stays with its owner: the result refers to
-% the network (a_PowerNetwork) and keeps its tag (str_network); it does not copy bus,
+% the network (a_PowerNetwork) and keeps its tag (s_network); it does not copy bus,
 % branch or component data. Plot and Export are part of the contract. A subclass overrides
 % the ones it supports; the others stop with the error GUILDA:ResultBase:Unsupported.
 %
@@ -38,13 +38,13 @@ classdef (Abstract) ResultBase < auxiliary
         options struct = struct()
 
         % Class name of the solver object that ran the analysis.
-        str_solver (1,1) string = ""
+        s_solver (1,1) string = ""
 
         % [s] Elapsed time of the analysis.
         r_elapsed (1,1) double = NaN
 
         % Tag of the analysed network at the time of the analysis.
-        str_network (1,1) string = ""
+        s_network (1,1) string = ""
     end
     properties (SetAccess=protected, Hidden) % Network
         % Reference to the analysed network (not a copy).
@@ -77,12 +77,12 @@ classdef (Abstract) ResultBase < auxiliary
             end
             if ~isempty(net)
                 obj.a_PowerNetwork = net;
-                obj.str_network    = string(net.str_tag);
+                obj.s_network      = string(net.s_tag);
             end
             if isstring(solver) || ischar(solver)
-                obj.str_solver = string(solver);
+                obj.s_solver = string(solver);
             else
-                obj.str_solver = string(class(solver));
+                obj.s_solver = string(class(solver));
             end
             obj.options = options;
             obj.flag    = flag;
@@ -124,7 +124,7 @@ classdef (Abstract) ResultBase < auxiliary
         % - `Name, Value`: Export options defined by the result class.
         %
         % Outputs:
-        % - `str_file`: Path of the written file.
+        % - `s_file`: Path of the written file.
             obj.error_unsupported("Export");
         end
     end
@@ -149,12 +149,12 @@ classdef (Abstract) ResultBase < auxiliary
             end
         end
 
-        function error_unsupported(obj, str_method)
+        function error_unsupported(obj, s_method)
         % Error for an unsupported Plot or Export.
         %
         % Stops with GUILDA:ResultBase:Unsupported for a method of the Plot / Export
         % contract that this result class does not provide.
-            error(msg("GUILDA:ResultBase:Unsupported", char(str_method), class(obj)));
+            error(msg("GUILDA:ResultBase:Unsupported", char(s_method), class(obj)));
         end
     end
 end
