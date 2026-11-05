@@ -1,7 +1,7 @@
 classdef abstract < LocalController
 % Base class of the power system stabilizers (PSS) attached to an AVR.
-% A PSS observes the frequency deviation `omega` [pu] of the generator and outputs
-% the stabilizing signal `Vpss` [pu], which is the `Vpss` input of the AVR it is
+% A PSS observes the frequency deviation `omega` [pu] of the generator and has the
+% output signal `Vpss` [pu], which is the `Vpss` input of the AVR it is
 % attached to. The base class has no state and outputs 0.
 %
 % See also controller.pss.PSS1, controller.avr.abstract

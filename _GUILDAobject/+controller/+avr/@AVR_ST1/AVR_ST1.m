@@ -1,15 +1,33 @@
 classdef (Sealed = true) AVR_ST1 < controller.avr.abstract
 % Automatic voltage regulator with a static exciter (IEEE type ST1).
-% The AVR observes the terminal voltage `V` [pu] of the generator it is attached to
-% and takes the input `u = [Vref; Vpss]` [pu]: the voltage reference and the output
-% of the attached PSS (0 without a PSS). Its output `Vfield` [pu] is the field
-% voltage input of the generator.
+% The AVR observes the terminal voltage $V$ [pu] of the generator it is attached to
+% and drives the field voltage input of the generator.
 %
-% State `x = [Vtr; Vap; Vst]` [pu]:
+% **Dynamic model**
+% The controller is a dynamical system with state $x$, input $u$ and output $y$.
 %
-% - transducer: `ttr*dVtr/dt = -Vtr + |V|`
-% - amplifier: `tap*dVap/dt = -Vap + kap*(Vref + Vpss - Vtr - Vst)`
-% - stabilizing feedback: `tst*dVst/dt = -Vst + kst*dVap/dt`
+% **State variables** $x$ (`sv_x`)
+% - `Vtr` [pu]: Transducer output.
+% - `Vap` [pu]: Amplifier output.
+% - `Vst` [pu]: Stabilizing feedback.
+%
+% **Input signals** $u$ (`sv_u`)
+% - `Vref` [pu]: Voltage reference.
+% - `Vpss` [pu]: Output of the attached PSS (0 without a PSS).
+%
+% **Output signals** $y$ (`sv_y`)
+% - `Vfield` [pu]: Field voltage, the `Vfield` input of the generator.
+%
+% **Equations** (transducer, amplifier, stabilizing feedback)
+% ```math
+% \left\{
+% \begin{aligned}
+% t_\mathrm{tr}\dot{V}_\mathrm{tr} &= -V_\mathrm{tr} + |V| \\
+% t_\mathrm{ap}\dot{V}_\mathrm{ap} &= -V_\mathrm{ap} + k_\mathrm{ap}\,(V_\mathrm{ref} + V_\mathrm{pss} - V_\mathrm{tr} - V_\mathrm{st}) \\
+% t_\mathrm{st}\dot{V}_\mathrm{st} &= -V_\mathrm{st} + k_\mathrm{st}\,\dot{V}_\mathrm{ap}
+% \end{aligned}
+% \right.
+% ```
 %
 % The output is `Vfield = Vap` limited to `[Vap_min, Vap_max]`. With the defaults
 % (`ttr = 0`, `tst = kst = 0`) the AVR is the first-order lag `kap/(1 + tap*s)`.

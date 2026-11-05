@@ -1,10 +1,10 @@
 classdef abstract < LocalController
 % Base class of the governors (speed governor and turbine) attached to a generator.
 % A governor is attached to the generator beside its AVR (key "governor"). It
-% observes the speed deviation `omega` [pu] of the generator and takes the inputs
-% `u = [omega; Pref; Plimit]`: `Pref` is the load setting (65M) and `Plimit` the
+% observes the speed deviation `omega` [pu] of the generator and takes the input
+% signals `u = [omega; Pref; Plimit]`: `Pref` is the load setting (65M) and `Plimit` the
 % load limiter (77M), in pu of the rated MW of the machine. They match no output
-% of the generator, so they stay at their equilibrium. Its output `Pmech` [pu on
+% of the generator, so they stay at their equilibrium. Its output signal `Pmech` [pu on
 % the system base] is the mechanical power input of the generator.
 %
 % `Prate` [pu] is the rated MW of the machine divided by the system base, so that

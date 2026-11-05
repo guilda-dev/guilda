@@ -1,7 +1,7 @@
 classdef local_LQR < LocalController
 % State-feedback LQR controller of one component.
-% The controller observes all the states `x` of the component it is attached to
-% (the reserved input name "Xall") and drives the inputs `Input` of the component
+% The controller observes all the state variables `x` of the component it is attached to
+% (the reserved input signal name "Xall") and drives the inputs `Input` of the component
 % (by name, e.g. "Vfield" [pu] or "Pmech" [pu]; all its inputs by default):
 %
 % ```

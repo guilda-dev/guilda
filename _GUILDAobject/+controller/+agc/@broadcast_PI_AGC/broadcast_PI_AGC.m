@@ -1,15 +1,28 @@
 classdef broadcast_PI_AGC < GlobalController    
 % Automatic generation control that broadcasts one PI command to several generators.
-% The controller observes the frequency deviations `omega_i` [pu] of the
-% controlled generators and outputs a mechanical power command `Pmech_i` [pu] to
-% the `Pmech` input of each of them:
+% The controller observes the frequency deviations of the controlled generators and
+% drives the `Pmech` input of each of them.
 %
-% - broadcast frequency: `w = sum(beta_i*omega_i)`
-% - integrator: `dxi/dt = w`
-% - command: `Pmech_i = -alpha_i*(kP*w + kI*xi)`
+% **Dynamic model**
+% The controller is a dynamical system with state $x$, input $u$ and output $y$.
 %
-% `alpha_i` shares the command among the generators and `beta_i` weights their
-% frequency deviations.
+% **State variables** $x$ (`sv_x`)
+% - `xi`: Integral of the broadcast frequency.
+%
+% **Input signals** $u$ (`sv_u`, one per controlled generator $i$)
+% - `omega` [pu]: Frequency deviation $\omega_i$ of the generator.
+%
+% **Output signals** $y$ (`sv_y`, one per controlled generator $i$)
+% - `Pmech` [pu]: Mechanical power command $P_{\mathrm{mech},i}$, added to the `Pmech`
+%   input of the generator.
+%
+% **Equations**
+% ```math
+% \dot{\xi} = w, \qquad w = \sum_i \beta_i\,\omega_i, \qquad P_{\mathrm{mech},i} = -\alpha_i\,(k_P\,w + k_I\,\xi)
+% ```
+%
+% $\alpha_i$ (`alpha`) shares the command among the generators and $\beta_i$ (`beta`)
+% weights their frequency deviations.
 %
 % <@Examples>
 % Control the generators at buses 1 and 2 and simulate a fault:

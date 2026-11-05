@@ -4,22 +4,26 @@ classdef power < component.load.abstract
 % The load injects the power `Pload + jQload` into the bus whatever the voltage.
 % The steady inputs come from the power-flow solution (`get_equilibrium`).
 %
-% **States** (`sv_x`)
+% **Dynamic model**
+% The model is a dynamical system with state $x$, input $u$ and output $y$, connected
+% to its bus through the bus voltage $V$ and the current $I$ it injects.
+%
+% **State variables** $x$ (`sv_x`)
 % - none
 %
-% **Inputs** (`sv_u`, the ports for local controllers and events)
+% **Input signals** $u$ (`sv_u`; the ports driven by local controllers and events)
 % - `Pload` [pu]: active power injected into the bus (negative for consumption).
 % - `Qload` [pu]: reactive power injected into the bus (negative for consumption).
 %
-% **Outputs** (`sv_y`)
+% **Output signals** $y$ (`sv_y`; read by local controllers)
 % - none
 %
 % **Parameters** (`sv_para`)
 % - none
 %
 % **Equation**
-% ```
-% I = conj((Pload + jQload)/V)
+% ```math
+% I = \overline{\left(\frac{P_\mathrm{load} + jQ_\mathrm{load}}{V}\right)}
 % ```
 %
 % <@Examples>

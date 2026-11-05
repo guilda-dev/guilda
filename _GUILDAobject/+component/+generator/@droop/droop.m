@@ -4,14 +4,18 @@ classdef droop < component.generator.abstract
 % The rotor inertia is neglected and the angle changes in proportion to the power
 % mismatch (droop characteristic). The internal voltage is the field input `Vfield`.
 %
-% **States** (`sv_x`)
+% **Dynamic model**
+% The model is a dynamical system with state $x$, input $u$ and output $y$, connected
+% to its bus through the bus voltage $V$ and the current $I$ it injects.
+%
+% **State variables** $x$ (`sv_x`)
 % - `delta` [rad]: Rotor angle in the network reference frame.
 %
-% **Inputs** (`sv_u`, the ports for local controllers)
+% **Input signals** $u$ (`sv_u`; the ports driven by local controllers)
 % - `Pmech` [pu]: Mechanical power (governor output).
 % - `Vfield` [pu]: Field voltage (AVR output).
 %
-% **Outputs** (`sv_y`)
+% **Output signals** $y$ (`sv_y`; read by local controllers)
 % - none
 %
 % **Parameters** (`sv_para`, the columns of `tab_parameter.dynamics`)
@@ -19,11 +23,14 @@ classdef droop < component.generator.abstract
 % - `Xd` [pu]: d-axis synchronous reactance.
 % - `Xq` [pu]: q-axis synchronous reactance.
 %
-% **Equations** (`omega0` is the network frequency `get_Hz()`; `Vd`, `Vq`, `Id`, `Iq`
+% **Equations** ($\omega_0$ is the network frequency `get_Hz()`; $V_d$, $V_q$, $I_d$, $I_q$
 % are the bus voltage and current in the rotor dq frame)
+% ```math
+% \frac{D}{2\pi\omega_0}\,\dot{\delta} = P_\mathrm{mech} - P
 % ```
-% D/(2*pi*omega0)*d(delta)/dt = Pmech - P
-% Id = (Vfield - Vq)/Xd,  Iq = Vd/Xq,  P = Vd*Id + Vq*Iq
+% with
+% ```math
+% I_d = \frac{V_\mathrm{field} - V_q}{X_d}, \quad I_q = \frac{V_d}{X_q}, \quad P = V_d I_d + V_q I_q
 % ```
 %
 % The model has no output (`sv_y` is empty) and no `omega` state.
