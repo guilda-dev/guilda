@@ -6,10 +6,13 @@ function sv_issue = check_model_contract(obj, opt)
 %
 % 検査するのは contract の FAIL、点での残差 (dx, I) と Jacobian の差。計算できなかった
 % 値 (NaN) も問題として数える。
-    arguments
+    arguments (Input)
         obj
         opt.TolResidual (1,1) double = 1e-8
         opt.TolJacobian (1,1) double = 1e-5
+    end
+    arguments (Output)
+        sv_issue  % 契約に反する点の一覧 (空なら問題なし)
     end
     try
         flag = obj.validate(false);
@@ -31,6 +34,14 @@ end
 
 
 function str = over_tolerance(flag, fn, tol)
+    arguments (Input)
+        flag  % validate の結果
+        fn    % 調べるフィールド名
+        tol   % 許容誤差
+    end
+    arguments (Output)
+        str  % 許容誤差を超えたときの説明 (超えなければ空)
+    end
     str = strings(0,1);
     if ~isfield(flag, fn) || isempty(flag.(fn)) || width(flag.(fn)) == 0
         return

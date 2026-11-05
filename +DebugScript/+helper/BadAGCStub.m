@@ -10,10 +10,28 @@ classdef BadAGCStub < controller.agc.broadcast_PI_AGC
     end
     methods
         function obj = BadAGCStub(net, tag, s_bad, varargin)
+            arguments (Input)
+                net      % 電力系統
+                tag      % タグの接尾辞
+                s_bad    % 入れる誤りの種類 ("output" / "xsize")
+            end
+            arguments (Input, Repeating)
+                varargin  % broadcast_PI_AGC へ渡す制御対象の機器
+            end
+            arguments (Output)
+                obj  % 作成したオブジェクト
+            end
             obj@controller.agc.broadcast_PI_AGC(net, tag, varargin{:});
             obj.s_bad = s_bad;
         end
         function [x, u] = get_equilibrium(obj)
+            arguments (Input)
+                obj
+            end
+            arguments (Output)
+                x  % 平衡点の状態
+                u  % 平衡点の入力
+            end
             [x, u] = get_equilibrium@controller.agc.broadcast_PI_AGC(obj);
             if obj.s_bad == "output"
                 x = 0.5;

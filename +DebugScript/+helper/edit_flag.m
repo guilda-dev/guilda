@@ -3,6 +3,12 @@ function flag = edit_flag(net)
 % (sct_edit.l_initialized と tab_editLog から求める)
 %
 %   flag = DebugScript.helper.edit_flag(net)
+    arguments (Input)
+        net
+    end
+    arguments (Output)
+        flag  % 編集状態 ("unset" / "initialized" / "editted")
+    end
     if ~net.sct_edit.l_initialized
         flag = "unset";
     elseif height(net.tab_editLog) > 0

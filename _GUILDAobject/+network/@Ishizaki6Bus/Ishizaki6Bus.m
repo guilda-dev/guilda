@@ -35,7 +35,7 @@ classdef Ishizaki6Bus < PowerNetwork
     methods
         function obj = Ishizaki6Bus(alpha,opt)
             % Create the network with the given resistance ratio and lines.
-            arguments
+            arguments (Input)
                 alpha (1,1) double = 1; % [pu/pu] Ratio R/X of lines 4-5, 4-6 and 5-6.
                 opt.line {mustBeMember(opt.line, {'L23','L46','Both','None'})} = 'Both' % Lines to remove: 'L23' (2-3), 'L46' (4-6), 'Both' or 'None'.
             end            

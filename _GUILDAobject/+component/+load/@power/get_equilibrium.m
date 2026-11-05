@@ -5,7 +5,7 @@ function [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj,c_V,c_I,r_P,r_
 % is stored in `PQ_st` and becomes the steady input `[Pload; Qload]`.
 %
 % See also fcn_I, PQ_st
-    arguments
+    arguments (Input)
         obj 
         % [pu] Complex bus voltage of the power-flow solution.
         c_V %#ok

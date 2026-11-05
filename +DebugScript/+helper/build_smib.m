@@ -6,6 +6,10 @@ function [net, gen] = build_smib()
 %   B001: gen-1axis (P = 0.8)  --  X = 0.3  --  B002: 無限大母線 (slack, |V| = 1)
 % 無限大母線は慣性 M = 1e8、リアクタンス 1e-4 の gen-classical で近似する。
 % controller.local_LQR の設計モデル (V0 = 1 の無限大母線) と同じ系統になる。
+    arguments (Output)
+        net  % 作成した電力系統
+        gen  % B001 の発電機
+    end
     net = PowerNetwork("SMIB");
     net.add_bus("V",1.00);
     net.add_bus("V",1.00);

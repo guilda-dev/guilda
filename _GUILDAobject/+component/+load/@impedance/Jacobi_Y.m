@@ -3,16 +3,16 @@ function [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t,x,V,I,u,param,omega0) %#ok
 %
 % Analytic derivatives of `fcn_Y` at the given point.
 %
-% Inputs:
-% - `t` [s]: time.
-% - `x`: state vector in the order of `sv_x`.
-% - `V` [pu]: bus voltage as `[real; imag]`.
-% - `I` [pu]: bus current as `[real; imag]`.
-% - `u`: input vector in the order of `sv_u`.
-% - `param`: dynamic parameters in the order of `sv_para`.
-% - `omega0` [Hz]: network frequency (`get_Hz`).
-%
 % See also fcn_Y
+    arguments (Input)
+        t      double        % [s] Time.
+        x      double        % State vector in the order of `sv_x`.
+        V      double        % [pu] Bus voltage as `[real; imag]`.
+        I      double        % [pu] Bus current as `[real; imag]`.
+        u      double        % Input vector in the order of `sv_u`.
+        param  double        % Dynamic parameters in the order of `sv_para`.
+        omega0 (1,1) double  % [Hz] Network frequency (`get_Hz`).
+    end
     arguments (Output)
         Cyx % Jacobian of `fcn_Y` with respect to `x`.
         Dyv % Jacobian of `fcn_Y` with respect to `V` `[real; imag]`.

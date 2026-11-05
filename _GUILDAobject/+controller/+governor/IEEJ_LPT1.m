@@ -63,7 +63,7 @@ classdef (Sealed = true) IEEJ_LPT1 < controller.governor.abstract
     methods
         function obj = IEEJ_LPT1(tag, param)
         % Create an IEEJ_LPT1 governor with the tag "CG" + tag.
-            arguments
+            arguments (Input)
                 tag            (1,1) string % Tag suffix; the controller tag is "CG" + tag.
                 param.Prate    (1,1) double {mustBePositive} = 1 % [pu] Rated MW of the machine divided by the system base.
                 param.PLM      (1,1) double = 5 % [%] Governor margin (of the rated MW); negative for load-limit operation.
@@ -109,10 +109,11 @@ classdef (Sealed = true) IEEJ_LPT1 < controller.governor.abstract
         % position follows from it, and PLM sets Pref and Plimit (see
         % controller.governor.abstract). An error is raised when the servo position is
         % outside `[pos_min, pos_max]`.
-        %
-        % Inputs:
-        % - `V` [pu] Complex terminal voltage of the generator at the equilibrium (unused).
-        % - `u` [pu] Equilibrium input of the generator `[Pmech; Vfield]`.
+            arguments (Input)
+                obj
+                V    % [pu] Complex terminal voltage of the generator at the equilibrium (unused).
+                u    % [pu] Equilibrium input of the generator `[Pmech; Vfield]`.
+            end
             tab = obj.tab_parameter.dynamics;
             r_gain = tab{:,'Fhp'} + tab{:,'Frh'};
             r_P0   = obj.initial_output(u);
@@ -131,16 +132,35 @@ classdef (Sealed = true) IEEJ_LPT1 < controller.governor.abstract
     methods (Static)
         function Mass = fcn_Mass(t, x, V, I, u, param, omega0) %#ok<INUSL>
         % Return the mass matrix `diag([Tg, 1, Tch, Trh])` of the state equation.
+            arguments (Input)
+                t      double        % [s] Time.
+                x      double        % States in the order of `sv_x`.
+                V      double        % [pu] Terminal voltage of the parent [real; imag].
+                I      double        % [pu] Terminal current of the parent [real; imag].
+                u      double        % Inputs in the order of `sv_u`.
+                param  double        % Dynamic parameters in the order of `sv_para`.
+                omega0 (1,1) double  % [Hz] Nominal frequency of the network.
+            end
+            arguments (Output)
+                Mass  % Mass matrix of the state equation.
+            end
             Mass = diag([param(4), 1, param(10), param(11)]);
         end
 
         function dx = fcn_dx(t, x, V, I, u, param, omega0) %#ok<INUSL>
         % Return the right-hand side `f` of `M*dx/dt = f` (M: fcn_Mass).
-        %
-        % Inputs:
-        % - `x` [pu] State `[Pgov; Psv; Pch; Prh]`.
-        % - `u` [pu] Input `[omega; Pref; Plimit]`.
-        % - `param` Parameter vector in the order of `sv_para`.
+            arguments (Input)
+                t      double        % [s] Time.
+                x      double        % [pu] State `[Pgov; Psv; Pch; Prh]`.
+                V      double        % [pu] Terminal voltage of the parent [real; imag].
+                I      double        % [pu] Terminal current of the parent [real; imag].
+                u      double        % [pu] Input `[omega; Pref; Plimit]`.
+                param  double        % Parameter vector in the order of `sv_para`.
+                omega0 (1,1) double  % [Hz] Nominal frequency of the network.
+            end
+            arguments (Output)
+                dx  % Right side of the state equation in the order of `sv_x`.
+            end
             [r_rate, ~] = rate(x, u, param);
             dx = [-x(1) + 100/param(3)*u(1);
                   r_rate;
@@ -150,11 +170,38 @@ classdef (Sealed = true) IEEJ_LPT1 < controller.governor.abstract
 
         function y = fcn_y(t, x, V, I, u, param, omega0) %#ok<INUSL>
         % Return the output `Pmech = Prate*(Fhp*Pch + Frh*Prh)` [pu on the system base].
+            arguments (Input)
+                t      double        % [s] Time.
+                x      double        % States in the order of `sv_x`.
+                V      double        % [pu] Terminal voltage of the parent [real; imag].
+                I      double        % [pu] Terminal current of the parent [real; imag].
+                u      double        % Inputs in the order of `sv_u`.
+                param  double        % Dynamic parameters in the order of `sv_para`.
+                omega0 (1,1) double  % [Hz] Nominal frequency of the network.
+            end
+            arguments (Output)
+                y  % Outputs in the order of `sv_y`.
+            end
             y = param(1)*(param(12)*x(3) + param(13)*x(4));
         end
 
         function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t, x, V, I, u, param, omega0) %#ok<INUSL>
         % Return the Jacobians of fcn_dx on the active branch of the gate and the limits.
+            arguments (Input)
+                t      double        % [s] Time.
+                x      double        % States in the order of `sv_x`.
+                V      double        % [pu] Terminal voltage of the parent [real; imag].
+                I      double        % [pu] Terminal current of the parent [real; imag].
+                u      double        % Inputs in the order of `sv_u`.
+                param  double        % Dynamic parameters in the order of `sv_para`.
+                omega0 (1,1) double  % [Hz] Nominal frequency of the network.
+            end
+            arguments (Output)
+                Axx  % Jacobian of `fcn_dx` with respect to `x`.
+                Bxv  % Jacobian of `fcn_dx` with respect to `V` `[real; imag]`.
+                Bxi  % Jacobian of `fcn_dx` with respect to `I` `[real; imag]`.
+                Bxu  % Jacobian of `fcn_dx` with respect to `u`.
+            end
             [~, r_slope, l_ref] = rate(x, u, param);
             Axx = [-1,             0,        0,  0;
                    -r_slope*l_ref, -r_slope, 0,  0;
@@ -170,6 +217,21 @@ classdef (Sealed = true) IEEJ_LPT1 < controller.governor.abstract
 
         function [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t, x, V, I, u, param, omega0) %#ok<INUSD>
         % Return the Jacobians of fcn_y.
+            arguments (Input)
+                t      double        % [s] Time.
+                x      double        % States in the order of `sv_x`.
+                V      double        % [pu] Terminal voltage of the parent [real; imag].
+                I      double        % [pu] Terminal current of the parent [real; imag].
+                u      double        % Inputs in the order of `sv_u`.
+                param  double        % Dynamic parameters in the order of `sv_para`.
+                omega0 (1,1) double  % [Hz] Nominal frequency of the network.
+            end
+            arguments (Output)
+                Cyx  % Jacobian of `fcn_y` with respect to `x`.
+                Dyv  % Jacobian of `fcn_y` with respect to `V` `[real; imag]`.
+                Dyi  % Jacobian of `fcn_y` with respect to `I` `[real; imag]`.
+                Dyu  % Jacobian of `fcn_y` with respect to `u`.
+            end
             Cyx = param(1)*[0, 0, param(12), param(13)];
             Dyv = zeros(1,2);
             Dyi = zeros(1,2);
@@ -180,6 +242,16 @@ end
 
 function [r_rate, r_slope, l_ref] = rate(x, u, param)
 % Servo speed after the low value gate and the limits, its slope and the gate branch
+    arguments (Input)
+        x      double  % [pu] State of the governor.
+        u      double  % [pu] Input `[omega; Pref; Plimit]`.
+        param  double  % Parameter vector in the order of `sv_para`.
+    end
+    arguments (Output)
+        r_rate   % Speed of the servo position.
+        r_slope  % Derivative of r_rate with respect to the error of the servo position.
+        l_ref    % True when the load setting passes the low value gate.
+    end
     [r_gate, l_ref] = controller.governor.abstract.lvg(u(2) - x(1), u(3));
     [r_rate, r_slope] = controller.governor.abstract.servo_rate(r_gate - x(2), x(2), param(5), ...
                                                                 param(7), param(6), param(9), param(8));

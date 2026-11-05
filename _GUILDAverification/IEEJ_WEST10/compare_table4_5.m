@@ -20,7 +20,7 @@ function [tab, summary] = compare_table4_5(opt)
 % ```
 %
 % See also network.IEEJ_WEST10, Scenario, Scenario.import_csv, PowerNetwork.simulate
-    arguments
+    arguments (Input)
         opt.Governor (1,1) logical = true % Network option Governor (true: the report's LPT = 1 governors).
         opt.Sections (1,:) string {mustBeMember(opt.Sections,["peak","night"])} = ["peak","night"] % Sections to run.
         opt.Cases (1,:) string = string.empty % Case ids to run (e.g. ["A","G8"]); empty for all.
@@ -109,6 +109,12 @@ function v = judge_table4_5(result)
 % Period: the period of the swing of G1 from G10, from its upward crossings of its mean
 % after 2 s (mean of up to three periods; NaN when out-of-step, stopped or with fewer than
 % two crossings).
+    arguments (Input)
+        result  % Simulation result (ResultODE).
+    end
+    arguments (Output)
+        v  % Judge of Scenario.out_of_step with the fields t, Angle and Period added.
+    end
     v = Scenario.out_of_step(result);
 
     % Angles of the generators (G1 to G10 in the order of their buses) from G10 [deg]
@@ -148,5 +154,11 @@ end
 
 function r = peak_to_peak(rv)
 % Peak-to-peak value of a vector
+    arguments (Input)
+        rv  % Vector.
+    end
+    arguments (Output)
+        r  % Peak-to-peak value of rv.
+    end
     r = max(rv) - min(rv);
 end

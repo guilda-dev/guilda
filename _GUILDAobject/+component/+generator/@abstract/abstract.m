@@ -37,6 +37,16 @@ classdef abstract < Component
             % (the tag is `"SG"+index`), `parameter` selects the dynamic
             % parameters (see the class description) and `varargin` holds
             % the name-value options of `add_component`.
+            arguments (Input)
+                index      % Tag suffix: the tag is "SG"+index.
+                parameter  % Dynamic parameters: a table, a name in parameter.csv ("NGT2", "NGT6", "NGT8"), or NaN for its first row.
+            end
+            arguments (Input, Repeating)
+                varargin  % Options of Bus.add_component, passed on to Component.
+            end
+            arguments (Output)
+                obj  % Generator object.
+            end
             obj@Component("SG"+index, varargin{:})
             r_Q = obj.para_powerflow.Q;
             if ~isnan(r_Q) && r_Q ~= 0

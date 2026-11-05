@@ -3,16 +3,16 @@ function [Cix,Div,Dii,Diu] = Jacobi_I(t,x,V,I,u,param,omega0) %#ok
 %
 % Analytic derivatives of `fcn_I`, with the current split as `[real; imag]`.
 %
-% Inputs:
-% - `t` [s]: time.
-% - `x`: state vector in the order of `sv_x`.
-% - `V` [pu]: bus voltage as `[real; imag]`.
-% - `I` [pu]: bus current as `[real; imag]`.
-% - `u`: input vector in the order of `sv_u`.
-% - `param`: dynamic parameters in the order of `sv_para`.
-% - `omega0` [Hz]: network frequency (`get_Hz`).
-%
 % See also fcn_I
+    arguments (Input)
+        t      double        % [s] Time.
+        x      double        % State vector in the order of `sv_x`.
+        V      double        % [pu] Bus voltage as `[real; imag]`.
+        I      double        % [pu] Bus current as `[real; imag]`.
+        u      double        % Input vector in the order of `sv_u`.
+        param  double        % Dynamic parameters in the order of `sv_para`.
+        omega0 (1,1) double  % [Hz] Network frequency (`get_Hz`).
+    end
     arguments (Output)
         Cix % Jacobian of the bus current `[real; imag]` with respect to `x`.
         Div % Jacobian of the bus current `[real; imag]` with respect to `V` `[real; imag]`.

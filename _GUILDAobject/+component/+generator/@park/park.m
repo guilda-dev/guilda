@@ -91,13 +91,14 @@ classdef park < component.generator.abstract
             %
             % Used by the continuation power flow (`f_PQ2Bus`).
             %
-            % Inputs:
-            % - `x`: state vector in the order of `sv_x`.
-            % - `V`: bus voltage as `[abs; angle]` in [pu] and [rad].
-            % - `u`: input vector in the order of `sv_u`.
-            % - `para`: dynamic parameters in the order of `sv_para`.
-            %
             % See also fcn_I
+            arguments (Input)
+                obj
+                x    double  % State vector in the order of `sv_x`.
+                V    double  % Bus voltage as `[abs; angle]` in [pu] and [rad].
+                u    double  % Input vector in the order of `sv_u`.
+                para double  % Dynamic parameters in the order of `sv_para`.
+            end
             arguments (Output)
                 PQ % [pu] Active and reactive power `[P; Q]` injected into the bus.
             end

@@ -58,6 +58,16 @@ classdef impedance < component.load.abstract
             % `index` is the tag suffix (the tag is `"LRX"+index`). The
             % `parameter` argument is ignored, and `varargin` holds the
             % name-value options of `add_component`.
+            arguments (Input)
+                index  % Tag suffix.
+                ~      % Parameter input of Bus.add_component (ignored).
+            end
+            arguments (Input, Repeating)
+                varargin  % Options of Bus.add_component, passed on to Component.
+            end
+            arguments (Output)
+                obj  % Constant-impedance load object.
+            end
             obj@component.load.abstract("RX"+index, varargin{:})
         end
     end

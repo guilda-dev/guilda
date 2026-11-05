@@ -5,7 +5,7 @@ function [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj, c_V, c_I, r_P
 % from the terminal voltage and the injected power; the speed deviation is 0.
 %
 % See also fcn_dx, Component.rv_Xequilibrium
-    arguments
+    arguments (Input)
         obj 
         c_V % [pu] Complex bus voltage of the power-flow solution.
         c_I % [pu] Complex current injected into the bus.

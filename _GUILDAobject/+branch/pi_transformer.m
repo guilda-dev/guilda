@@ -36,6 +36,9 @@ classdef pi_transformer < Branch
         function Ymat = get_admittance_matrix(obj)
         % Return the 2-by-2 admittance matrix of the transformer branch.
         % Rows and columns are ordered (from bus, to bus).
+            arguments (Input)
+                obj
+            end
             arguments (Output)
                 Ymat % [pu] 2-by-2 complex admittance matrix.
             end

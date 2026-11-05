@@ -3,10 +3,13 @@ function sys = linearize_v3(net, NonUnit, Algorithm)
 % 写したもの。v4 の net.linearize / result.get_ss の行列を比べる基準にする (テスト専用)。
 % 変更点は、obj.odeNetwork を net に、bus.l_isNonUnit をこの関数内の配列にしたことだけ
 % (母線の l_isNonUnit は書き換えない)。
-    arguments
+    arguments (Input)
         net
         NonUnit (1,:) double = []
         Algorithm (1,1) string = "Feedback"
+    end
+    arguments (Output)
+        sys  % v3 の SolverLIN と同じ線形化モデル
     end
     obj = struct();
     obj.odeNetwork = net;
@@ -26,11 +29,14 @@ function sys = linearize_v3(net, NonUnit, Algorithm)
 end
 
 function sys = get_DAE(obj,opt)                                     
-    arguments
+    arguments (Input)
         obj 
         opt (1,1) string {mustBeMember(opt,["theta&V","theta&rho","Vre&Vim"])} = "theta&rho"%"theta&V"
     end
 
+    arguments (Output)
+        sys  % 記述子形式の線形化モデル
+    end
     bus = obj.odeNetwork.a_Bus;
     ssFromBus = tools.cellfun(@(bs) v3_ports(bs), bus);    
 
@@ -170,6 +176,12 @@ function sys = get_DAE(obj,opt)
 end
 
 function sys = get_LTI_viaKron(obj)                                     
+    arguments (Input)
+        obj
+    end
+    arguments (Output)
+        sys  % Kron 縮約で求めた線形化モデル
+    end
 
     bus = obj.odeNetwork.a_Bus;
     ssFromBus = tools.cellfun(@(bs) v3_ports(bs), bus);       
@@ -237,6 +249,12 @@ function sys = get_LTI_viaKron(obj)
 end
 
 function sys = get_LTI_viaFeedback(obj)  
+    arguments (Input)
+        obj
+    end
+    arguments (Output)
+        sys  % フィードバック結合で求めた線形化モデル
+    end
     net = obj.odeNetwork;
     bus = net.a_Bus;
 
@@ -295,6 +313,12 @@ function sys = get_LTI_viaFeedback(obj)
 end
 
 function tf = has_I2V(bus)
+    arguments (Input)
+        bus  % 母線
+    end
+    arguments (Output)
+        tf  % I2V ポートの母線なら true
+    end
     sys = bus.get_sys("port","V2I","full",false);
     tf  = ~isempty(sys.A) || rcond(sys.D(:,1:2)) > 1e-12;
 end
@@ -311,6 +335,25 @@ function [Axx, Bxv, Bxu, Cix, E, sv_z] = add_global_controllers(net, sv_x, sv_u,
 %
 % The states z of all controllers are put before x, in the order of a_GlobalController.
 % The returned matrices are for [z; x]; Bxu keeps the external input u. sv_z: names of z.
+    arguments (Input)
+        net    % Power network.
+        sv_x   % Names of the component states x.
+        sv_u   % Names of the component inputs u.
+        Axx    % Jacobian of the states with respect to x.
+        Bxv    % Jacobian of the states with respect to V.
+        Bxu    % Jacobian of the states with respect to u.
+        Cix    % Jacobian of the bus currents with respect to x.
+        Diu    % Jacobian of the bus currents with respect to u.
+        E      % Mass matrix of x.
+    end
+    arguments (Output)
+        Axx    % Jacobian of the states with respect to [z; x].
+        Bxv    % Jacobian of the states [z; x] with respect to V.
+        Bxu    % Jacobian of the states [z; x] with respect to u.
+        Cix    % Jacobian of the bus currents with respect to [z; x].
+        E      % Mass matrix of [z; x].
+        sv_z   % Names of the controller states z.
+    end
     a_GC  = net.a_GlobalController;
     sv_z  = string.empty(0,1);
     if isempty(a_GC)
@@ -360,9 +403,12 @@ end
 function sys = v3_ports(bus, s_port)
 % v4 の bus.get_sys には制御器の入出力と機器の出力があり、状態は出力に無いので、v3 と同じ
 % 入力 [ポート; 機器の入力 u] と出力 (V2I: I、I2V: [状態; V]) だけにする
-    arguments
+    arguments (Input)
         bus
         s_port = "V2I"
+    end
+    arguments (Output)
+        sys  % v3 と同じ入出力の母線モデル
     end
     sys  = bus.get_sys("port", s_port);
     sv_u = tools.cellfun(@(c) string(c.attach_tag(c.sv_u)), bus.a_Component);

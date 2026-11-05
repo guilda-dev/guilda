@@ -7,6 +7,9 @@ function mpc = case14_data()
 % MATPOWER (BSD 3-Clause) の case14 は IEEE 14 母線系統 (U. of Washington の Power Systems
 % Test Case Archive) に費用 gencost を加えたデータ。単位は MW, MVAr, p.u., 度。
 % runopf(case14) の最適値は 8081.53 $/hr、rundcopf(case14) は 7642.59 $/hr。
+    arguments (Output)
+        mpc  % MATPOWER 形式の系統データ
+    end
     mpc.version = '2';
     mpc.baseMVA = 100;
     mpc.bus = [

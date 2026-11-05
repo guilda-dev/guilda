@@ -26,7 +26,7 @@ function [tab, r_agree] = compare_table4_9(opt)
 % ```
 %
 % See also network.IEEJ_EAST30, Scenario, Scenario.out_of_step, PowerNetwork.simulate
-    arguments
+    arguments (Input)
         opt.Governor  (1,1) logical = true % true for the default network with governors; false for exciters only.
         opt.Sections  (1,:) string {mustBeMember(opt.Sections, ["peak","night"])} = ["peak","night"] % Sections to run.
         opt.Circuits  (1,:) double {mustBeMember(opt.Circuits, [1,2])} = [1,2] % Numbers of faulted circuits to run.
@@ -118,6 +118,17 @@ end
 
 function result = run_case(net, sc, opt, varargin)
 % Simulate one scenario quietly: the solver warnings after an out-of-step are expected
+    arguments (Input)
+        net  % Power network.
+        sc   % Scenario to simulate.
+        opt  % Options of compare_table4_9.
+    end
+    arguments (Input, Repeating)
+        varargin  % Name-value options passed on to PowerNetwork.simulate.
+    end
+    arguments (Output)
+        result  % Simulation result (ResultODE).
+    end
     sct_warn = warning("off", "all");
     c_clean = onCleanup(@() warning(sct_warn));
     result = net.simulate(sc, "Progress", "none", "TimeLimit", opt.TimeLimit, varargin{:});
@@ -127,6 +138,15 @@ end
 function [sv_gen, rv_t, rm_deg] = generators(result, s_ref)
 % Rotor angles [deg] relative to the reference, with the report's generator names
 % (generators in bus order: G1 to G8 are nodes 2001 to 2008, G9 to G30 nodes 3001 to 3022)
+    arguments (Input)
+        result   % Simulation result (ResultODE).
+        s_ref    % Tag of the reference generator.
+    end
+    arguments (Output)
+        sv_gen  % Generator names of the report (G1, G2, ...).
+        rv_t    % [s] Time.
+        rm_deg  % [deg] Rotor angles relative to the reference, one column per generator.
+    end
     tab_var = result.tab_variable;
     l_delta = tab_var.Kind == "x" & tab_var.Name == "delta";
     sv_owner = tab_var.Owner(l_delta);
@@ -139,5 +159,11 @@ end
 
 function c = agree_mark(l)
 % Text of the agreement column
+    arguments (Input)
+        l  % True when the verdicts agree.
+    end
+    arguments (Output)
+        c  % Text of the agreement column.
+    end
     if l, c = "agree"; else, c = "DIFFERENT"; end
 end

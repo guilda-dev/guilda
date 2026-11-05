@@ -3,22 +3,22 @@ function [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t,x,V,I,u,param,omega0) %#ok
     % The derivatives of the output `y` of fcn_y are taken with respect to
     % the state, the voltage, the current and the input.
     %
-    % Inputs:
-    % - `t` [s] Time (unused).
-    % - `x` [pu] State `[xiWS; xi1; xi2]` of the washout filter and the two lead-lag blocks.
-    % - `V` [pu] Terminal voltage as `[real; imag]` (unused).
-    % - `I` [pu] Terminal current as `[real; imag]` (unused).
-    % - `u` [pu] Frequency deviation `omega` of the generator.
-    % - `param` Parameter vector in the order of `sv_para`.
-    % - `omega0` [Hz] Nominal frequency (unused).
-    %
-    % Outputs:
-    % - `Cyx` Derivative of `y` with respect to `x`.
-    % - `Dyv` Derivative of `y` with respect to `V` (`[real; imag]`).
-    % - `Dyi` Derivative of `y` with respect to `I` (`[real; imag]`).
-    % - `Dyu` Derivative of `y` with respect to `u`.
-    %
     % See also controller.pss.PSS1.fcn_y, controller.pss.PSS1.Jacobi_dx
+    arguments (Input)
+        t      double        % [s] Time (unused).
+        x      double        % [pu] State `[xiWS; xi1; xi2]` of the washout filter and the two lead-lag blocks.
+        V      double        % [pu] Terminal voltage as `[real; imag]` (unused).
+        I      double        % [pu] Terminal current as `[real; imag]` (unused).
+        u      double        % [pu] Frequency deviation `omega` of the generator.
+        param  double        % Parameter vector in the order of `sv_para`.
+        omega0 (1,1) double  % [Hz] Nominal frequency (unused).
+    end
+    arguments (Output)
+        Cyx  % Derivative of `y` with respect to `x`.
+        Dyv  % Derivative of `y` with respect to `V` (`[real; imag]`).
+        Dyi  % Derivative of `y` with respect to `I` (`[real; imag]`).
+        Dyu  % Derivative of `y` with respect to `u`.
+    end
     kpss = param(1);     
     tn1 = param(3);
     td1 = param(4);

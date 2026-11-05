@@ -36,6 +36,9 @@ classdef T < Branch
         % Return the 2-by-2 admittance matrix of the line.
         % Rows and columns are ordered (from bus, to bus). The midpoint node
         % is eliminated (Kron reduction).
+            arguments (Input)
+                obj
+            end
             arguments (Output)
                 Ymat % [pu] 2-by-2 complex admittance matrix.
             end

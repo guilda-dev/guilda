@@ -5,7 +5,7 @@ function [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj,c_V,c_I,r_P,r_
 % `Z = -c_V/c_I` is stored in `Z` and becomes the steady input `[R; X]`.
 %
 % See also fcn_I, Z
-    arguments
+    arguments (Input)
         obj 
         c_V % [pu] Complex bus voltage of the power-flow solution.
         c_I % [pu] Complex current injected into the bus.

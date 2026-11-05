@@ -5,6 +5,12 @@ function varargout = quiet(fcn)
 %
 % GUILDA の処理は INFO 表示が多いため、テストの出力を読みやすくするために使う。
 % エラーはそのまま呼び出し元へ伝わる。
+    arguments (Input)
+        fcn  % 実行する関数ハンドル
+    end
+    arguments (Output, Repeating)
+        varargout  % fcn の出力
+    end
     out = cell(1, nargout);
     if nargout == 0
         evalc("fcn();");

@@ -132,6 +132,7 @@ function c = register_stub()
     str = replace(str, "DebugScript.helper.BadComponentStub", "component.load.bad_i93_stub");
     str = replace(str, "classdef BadComponentStub", "classdef bad_i93_stub");
     str = replace(str, "BadComponentStub(s_bad, s_tag, opt)", "bad_i93_stub(s_tag, s_bad, opt)");
+    str = regexprep(str, '(\n\s+)s_bad(\s+%[^\n]*)(\n\s+)s_tag = "1"(\s+%[^\n]*)', '$1s_tag$4$3s_bad$2');
     writelines(str, s_file);
     rehash
     evalc("GUILDA;");

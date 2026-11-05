@@ -6,13 +6,12 @@ function [environment, subsystem] = get_environment(net, idx, do_check)
 % of controller.local_LQR_retrofit. This function uses the GUILDA v2 network
 % interface (`a_bus`, `get_sys_area`).
 %
-% Inputs:
-% - `net` Network in the GUILDA v2 format.
-% - `idx` Index of the bus of the generator.
-% - `do_check` true to compare the result with the full network in a Bode plot (default false).
-%
 % See also controller.local_LQR_retrofit
-
+arguments (Input)
+    net               % Network in the GUILDA v2 format.
+    idx               % Index of the bus of the generator.
+    do_check = false  % True to compare the result with the full network in a Bode plot.
+end
 arguments (Output)
     environment % Environment model `(delta_m, E_m) -> (angleV_m, absV_m)` (ss).
     subsystem   % Generator model `(Vin_polar, u) -> (delta, omega, E)` (ss).
@@ -61,6 +60,12 @@ end
 
 
 function sys_out = myinv(sys)
+arguments (Input)
+    sys  % State-space model with an invertible D (ss).
+end
+arguments (Output)
+    sys_out  % Inverse model of sys (ss).
+end
 
 [A, B, C, D] = ssdata(sys);
 
