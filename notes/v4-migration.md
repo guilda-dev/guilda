@@ -161,6 +161,7 @@ Every parameter or topology edit is logged and records what it made stale:
 - Adding or replacing an AVR or PSS (`add_local_controller`) is logged as a
   `Topology` edit, so the equilibrium becomes stale.
 - **改名は記録だけです。** `s_tag` への代入は `tab_editLog` にタグ `Tag` で記録され、何も古くしません。母線を改名しても、その機器のタグは変わりません(タグは永続的な ID として扱います)。
+- **編集ログは各層が持ちます。** 各層は自分の編集を保持し、`tab_editLog` はどの層にもあって、その層と下の層の編集を編集順に集めます。`net.tab_editLog` は従来どおり系統全体、`bus.tab_editLog` はその母線と機器・制御器だけです。削除した層は自分の編集を持ち去り(削除は親の `Topology` の行)、別の親に付けるとその層の編集は消えます。まだ一度も `initialize` されていない層(最後の `initialize` の後に新しく作って追加した層など)の編集は、次の `initialize` まで記録されません(平衡点は追加の `Topology` の行で古いままです)。
 - **パラメータの型の誤りはエラーです。** 宣言と違うクラスの値を代入すると `GUILDA:Parameter:ClassNameMismatch` で止まり、値も編集履歴も変わりません。以前は MATLAB がリスナー内のエラーを警告に変えていたので、スクリプトは止まりませんでした。`try` / `catch` なしで型の違う値を代入しているスクリプトは、正しいクラスの値に直してください。
 
 `initialize`, `simulate`, `linearize` and `get_sys` rebuild stale `f_*`

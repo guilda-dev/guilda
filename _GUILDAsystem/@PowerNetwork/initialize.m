@@ -414,13 +414,11 @@ end
 function check_edit_for_equilibrium(obj)
 % Stops when an edit since the last initialize would be lost by Method="equilibrium".
 % Dynamics edits are not lost: the states and inputs are recomputed from the held V and I.
-    i      = 1:obj.n_editLog;
-    sv_tag = obj.sv_editTag(i);
-    sv_log = obj.sv_editLog(i);
-    [~, lv] = obj.edit_effect(sv_tag, sv_log);
-    lv = lv & ~matches(sv_tag, ["Parameter(dynamics)", "Initialize"]);
+    tab = obj.tab_editLog;
+    [~, lv] = obj.edit_effect(tab.tag, tab.log);
+    lv = lv & ~matches(tab.tag, ["Parameter(dynamics)", "Initialize"]);
     if any(lv)
-        sv_edit  = obj.sv_editID(i(lv)) + ": " + sv_log(lv);
+        sv_edit  = tab.ID(lv) + ": " + tab.log(lv);
         s_list   = join(sv_edit(1:min(end,3)), ", ");
         if numel(sv_edit) > 3
             s_list = s_list + ", ...";

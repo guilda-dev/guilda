@@ -14,15 +14,15 @@ classdef PowerNetwork < PowerSystemModel
 %   global controllers and the owner of its scenarios; only the network sets and clears
 %   their back references (`Bus.a_PowerNetwork`, `Branch.a_PowerNetwork`, `Branch.a_Bus`,
 %   `GlobalController.a_PowerNetwork`, `Scenario.a_PowerNetwork`).
-% - As the top layer of its hierarchy, the network keeps the edit log of every layer below
-%   (`LayerPackage`: `log_edit`, `report_edit`, `tab_editLog`): rows are kept once
-%   initialize has run and cleared at the end of initialize. The network passes every
-%   reported edit, also before the first initialize, to `handle_edit`, which keeps at most
-%   one slack bus.
-% - `l_staleEquilibrium` is derived from that log: it is true when initialize has not run,
-%   or a row of the log affects the equilibrium (see edit_effect; edits of "dynamics",
-%   "base" (baseMVA) and "powerflow" parameters, topology and slack-bus changes, and an
-%   initialize that stopped while writing the equilibrium).
+% - Each layer keeps its own edits (`LayerPackage`: `log_edit`, `tab_editLog`), and
+%   `net.tab_editLog` collects those of the whole network. Every edit is also reported to
+%   the network (`report_edit`), also before the first initialize: `handle_edit` keeps at
+%   most one slack bus.
+% - `l_staleEquilibrium` is true when initialize has not run, or an edit reported since
+%   affects the equilibrium (see edit_effect; edits of "dynamics", "base" (baseMVA) and
+%   "powerflow" parameters, topology and slack-bus changes, and an initialize that stopped
+%   while writing the equilibrium). The network keeps this as one flag, so reading it costs
+%   nothing however many edits were made.
 %
 % A network is built by adding buses (`add_bus`) and branches (`add_branch`); the
 % components (generators, loads, ...) are added to the buses (`Bus.add_component`) and
@@ -90,6 +90,9 @@ classdef PowerNetwork < PowerSystemModel
     end
     properties(SetAccess=private) % Scenarios
         a_Scenario (:,1) cell = cell(0,1);  % Simulation scenarios (Scenario), in the order added by add_scenario; not model data. <@Stale> nothing (not logged)
+    end
+    properties(Access=private, Hidden) % Edit log
+        l_editedEquilibrium = false;  % True when an edit reported since the last initialize makes the equilibrium stale (report_edit; cleared by reset_edit).
     end
     properties(Dependent, Hidden) % Edit log
         l_staleEquilibrium  % True when the equilibrium of initialize no longer matches the model (see the class help). <@Type> logical
@@ -214,21 +217,34 @@ classdef PowerNetwork < PowerSystemModel
         % Edit handling: build the f_* handles that are not up to date, check the equilibrium
         flag = check_edit(obj, opt)
 
-        function report_edit(obj, a_layer, log, tag, before, after)
-            % Record an edit reported by a layer (LayerPackage.report_edit, once initialize has
-            % run) and keep the network-wide rules (handle_edit), also before the first initialize.
+        function report_edit(obj, a_layer, tag, l_equilibrium)
+            % Keep the network-wide rules for an edit of any layer of the network (log_edit):
+            % the equilibrium state once initialize has run, and handle_edit, also before the
+            % first initialize. The rows themselves stay on the edited layers.
             %
             % <@Group> Called by analyses
             arguments (Input)
                 obj
-                a_layer  % Edited layer.
-                log      % Log message.
-                tag      % Kind of edit (see edit_effect).
-                before   % State before the edit.
-                after    % State after the edit.
+                a_layer        % Edited layer.
+                tag            % Kind of edit (see edit_effect).
+                l_equilibrium  % True when the edit makes the equilibrium stale (edit_effect).
             end
-            report_edit@LayerPackage(obj, a_layer, log, tag, before, after);
+            if l_equilibrium && obj.sct_edit.l_initialized
+                obj.l_editedEquilibrium = true;
+            end
             obj.handle_edit(a_layer, tag);
+        end
+
+        function reset_edit(obj)
+            % Mark every layer as initialized, clear their edits and the equilibrium state
+            % (end of initialize).
+            %
+            % <@Group> Called by analyses
+            arguments (Input)
+                obj
+            end
+            reset_edit@LayerPackage(obj);
+            obj.l_editedEquilibrium = false;
         end
 
         function handle_edit(obj, a_layer, tag)
@@ -273,9 +289,7 @@ classdef PowerNetwork < PowerSystemModel
 %% Get Method
     methods
         function l = get.l_staleEquilibrium(obj)
-            i = 1:obj.n_editLog;
-            [~, lv] = obj.edit_effect(obj.sv_editTag(i), obj.sv_editLog(i));
-            l = ~obj.sct_edit.l_initialized || any(lv);
+            l = ~obj.sct_edit.l_initialized || obj.l_editedEquilibrium;
         end
 
         function tp = get.tab_parameter(obj)

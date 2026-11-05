@@ -130,6 +130,9 @@ classdef Bus < PowerSystemModel
                 net   % PowerNetwork, or [] to detach the bus.
             end
             obj.a_PowerNetwork = net;
+            if ~isempty(net)
+                obj.clear_edit_log();   % edits made before do not belong to the new network
+            end
         end
     end
     

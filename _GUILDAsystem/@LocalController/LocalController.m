@@ -213,6 +213,9 @@ classdef LocalController < PowerSystemModel
                 a_Component   % Component, the AVR for a PSS, or [] to detach.
             end
             obj.a_Component = a_Component; 
+            if ~isempty(a_Component)
+                obj.clear_edit_log();     % edits made before do not belong to the new parent
+            end
             obj.resolve_observe();        % inputs read on the component (also of nested controllers)
             obj.mark_odefcn();        % the handles read the frequency of the parent's network
         end
