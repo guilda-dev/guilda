@@ -322,5 +322,11 @@ const updateLogData = [
     "date": "2026-11-04",
     "type": "added",
     "content": "The new folder _GUILDAverification/<network>/ compares a bundled network with its literature: a README with the reference and the latest agreement, the cases as Scenario CSV files, the published verdicts and a comparison script. It covers the four IEEJ networks; with governors, the stability verdicts agree in 33/44 (EAST10), 55/55 (EAST30), 9/26 (WEST10) and 5/12 (WEST30) cases, while the loads remain constant-impedance."
+  },
+  {
+    "title": "Unused tools functions removed",
+    "date": "2026-11-05",
+    "type": "removed",
+    "content": "tools.closeUI, tools.ssfeedback, tools.input, tools.transTab, tools.DNS, tools.FigureClass and the tools.for_ss package (collect, dae2ode, feedback, kron, reorder) are removed. Nothing in GUILDA called them."
   }
 ];
