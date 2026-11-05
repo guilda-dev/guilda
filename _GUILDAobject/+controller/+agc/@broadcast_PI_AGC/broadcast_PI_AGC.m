@@ -42,12 +42,12 @@ classdef broadcast_PI_AGC < GlobalController
 %
 % See also GlobalController, PowerNetwork.add_global_controller
 
-    properties (Constant, Hidden)
-        key  = "agc"
-        sv_x = "xi"
-        sv_u = "omega"
-        sv_y = "Pmech"
-        sv_para = ["alpha","beta","kP","kI"]
+    properties (Constant, Hidden) % Model definition
+        key = "agc"  % Kind of controller.
+        sv_x = "xi"  % Names of the states.
+        sv_u = "omega"  % Names of the inputs, one per controlled generator.
+        sv_y = "Pmech"  % Names of the outputs, one per controlled generator.
+        sv_para = ["alpha","beta","kP","kI"]  % Names of the dynamic parameters passed to the model functions.
     end           
     
     methods

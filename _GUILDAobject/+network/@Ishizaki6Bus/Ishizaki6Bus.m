@@ -29,7 +29,7 @@ classdef Ishizaki6Bus < PowerNetwork
 
  
     properties(Constant) % Data
-        ver = 1 % Version of the bundled network data.
+        ver = 1  % Version of the bundled network data.
     end
 
     methods

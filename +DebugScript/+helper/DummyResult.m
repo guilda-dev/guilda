@@ -5,7 +5,7 @@ classdef DummyResult < ResultBase
 %
 % Plot だけを実装し、Export は基底クラスのまま (未対応エラー) にしている。
     properties (SetAccess=private)
-        value
+        value  % Plot で描く値
     end
     methods
         function obj = DummyResult(net, solver, options, flag, output, elapsed, value)

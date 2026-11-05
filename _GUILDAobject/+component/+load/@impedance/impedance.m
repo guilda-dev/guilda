@@ -39,16 +39,15 @@ classdef impedance < component.load.abstract
 %
 % See also component.load.abstract, component.load.power, Bus.add_component
     properties % Steady state
-        % [pu] Complex impedance `R + jX`, set by `get_equilibrium`.
-        Z
+        Z  % [pu] Complex impedance R + jX, set by get_equilibrium.
     end
 
     properties(Constant) % Model definition
-        key      = "load-impedance";   % Model key that selects this class in `Bus.add_component`.
-        sv_x    = [];                 % State names (none).
-        sv_u    = ["R";"X"];          % Input port names.
-        sv_y    = [];                 % Output names (none).
-        sv_para = [];                 % Dynamic parameter names (none).
+        key = "load-impedance";  % Model key that selects this class in `Bus.add_component`.
+        sv_x = [];  % State names (none).
+        sv_u = ["R";"X"];  % Input port names.
+        sv_y = [];  % Output names (none).
+        sv_para = [];  % Dynamic parameter names (none).
     end
 
     methods(Access={?Bus})

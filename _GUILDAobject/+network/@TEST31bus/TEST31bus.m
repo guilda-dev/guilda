@@ -85,7 +85,7 @@ classdef TEST31bus < PowerNetwork
 % See also network.IEEE14bus
 
     properties(Constant) % Data
-        ver = 1.1 % Version of the bundled network data.
+        ver = 1.1  % Version of the bundled network data.
     end
 
     methods

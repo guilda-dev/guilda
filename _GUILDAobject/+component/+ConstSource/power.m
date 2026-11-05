@@ -12,8 +12,7 @@
 % See also component.load.power
     
     properties % Steady state
-        % [pu] Steady power `[P; Q]`, set by `get_equilibrium`.
-        PQ_st
+        PQ_st  % [pu] Steady power [P; Q], set by get_equilibrium.
     end
 
     methods

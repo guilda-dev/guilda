@@ -6,7 +6,7 @@ classdef BadAGCStub < controller.agc.broadcast_PI_AGC
 %   output : 積分器の平衡点が 0 でなく、出力が機器の入力を動かす
 %   xsize  : 平衡点の x が 2 要素
     properties (SetAccess=immutable)
-        s_bad
+        s_bad  % 入れる誤りの種類 ("output" / "xsize")
     end
     methods
         function obj = BadAGCStub(net, tag, s_bad, varargin)

@@ -93,18 +93,9 @@ classdef abstract < Component
     end    
 
     properties(SetAccess = protected) % Controllers (legacy)
-        % Legacy slot for an AVR.
-        %
-        % <@Deprecated> Use `add_local_controller` and `a_LocalController`.
-        avr
-        % Legacy slot for a PSS.
-        %
-        % <@Deprecated> Use `add_local_controller` and `a_LocalController`.
-        pss
-        % Legacy slot for a governor.
-        %
-        % <@Deprecated> Use `add_local_controller` and `a_LocalController`.
-        governor
+        avr  % Legacy slot for an AVR. <@Deprecated> Use add_local_controller and a_LocalController.
+        pss  % Legacy slot for a PSS. <@Deprecated> Use add_local_controller and a_LocalController.
+        governor  % Legacy slot for a governor. <@Deprecated> Use add_local_controller and a_LocalController.
     end
 
     methods
