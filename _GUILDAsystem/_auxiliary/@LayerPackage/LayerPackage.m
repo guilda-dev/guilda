@@ -10,6 +10,7 @@ classdef LayerPackage < handle
 % ```matlab
 % net = network.IEEE14bus();
 % net.disp_tree();            % hierarchy of the layers below the network
+% net.a_Bus{1}.doc();         % class reference page of the first bus
 % net.tab_editLog             % edits since the last net.initialize (kept on the network)
 % ```
 %
@@ -141,6 +142,25 @@ classdef LayerPackage < handle
     methods
         varargout = disp_tree(obj, str_ignore)
         [out, sct_visited] = struct(obj, l_disp, str_header, sct_visited)
+
+        function doc(obj)
+        % Open the class reference page of the layer's class.
+        %
+        % Opens the GUILDA class reference (English page) of class(obj) in the browser, as
+        % GUILDA.doc("class", class(obj)). doc with a class name (doc PowerNetwork) is
+        % MATLAB's doc.
+        %
+        % <@Examples>
+        % ```matlab
+        % net.doc()             % page of the network class
+        % net.a_Bus{1}.doc()    % page of the class of the first bus
+        % doc(net)              % same as net.doc()
+        % ```
+            arguments
+                obj (1,1) % Layer whose class page is opened.
+            end
+            GUILDA.doc("class", class(obj));
+        end
 
         function set.sct_edit(obj, sct_edit)
             % A field cannot have a validator, and assigning a misspelled field would add a new one
