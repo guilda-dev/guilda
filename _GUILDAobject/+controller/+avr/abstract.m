@@ -6,12 +6,12 @@ classdef abstract < LocalController
 % generator. A PSS is attached to the AVR as its own local controller.
 %
 % See also controller.avr.AVR_ST1, controller.avr.AVR_DC1, controller.pss.abstract
-    properties (SetAccess=protected, Hidden)
-        key      
-        sv_x    
-        sv_u = ["Vref";"Vpss"]   
-        sv_y = ["Vfield"]    
-        sv_para 
+    properties (SetAccess=protected, Hidden) % Model definition
+        key  % Kind of controller (set by the concrete AVRs).
+        sv_x  % Names of the states (set by the concrete AVRs).
+        sv_u = ["Vref";"Vpss"]  % Names of the inputs: voltage reference and PSS output.
+        sv_y = ["Vfield"]  % Names of the outputs: field voltage of the generator.
+        sv_para  % Names of the dynamic parameters (set by the concrete AVRs).
     end    
     methods
         function obj = abstract(tag) 

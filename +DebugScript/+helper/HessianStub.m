@@ -6,11 +6,11 @@ classdef HessianStub < Component
 %   y  = x1
 % Hessian_dx だけを定義し、Hessian_I / Hessian_Y は定義しない。
     properties (Constant)
-        key     = "test-hessian-stub"
-        sv_x    = ["x1";"x2"]
-        sv_u    = "w"
-        sv_y    = "x1"
-        sv_para = strings(0,1)
+        key = "test-hessian-stub"  % 機器の種類のキー
+        sv_x = ["x1";"x2"]  % 状態の名前
+        sv_u = "w"  % 入力の名前
+        sv_y = "x1"  % 出力の名前
+        sv_para = strings(0,1)  % 動的パラメータの名前
     end
 
     methods

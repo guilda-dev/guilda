@@ -91,7 +91,7 @@ classdef IEEE14bus < PowerNetwork
 % See also network.IEEE14bus_NoTap, network.IEEE14bus_lossless, PowerNetwork.import_matpower
 
     properties(Constant) % Data
-        ver = 1 % Version of the bundled network data.
+        ver = 1  % Version of the bundled network data.
     end
 
     methods

@@ -16,12 +16,12 @@ classdef BadComponentStub < Component
 %   masssize    : fcn_Mass が正方でない
 %   dxerror     : fcn_dx がエラーで止まる
     properties (Constant)
-        key     = "test-bad-stub"
-        sv_x    = ["x1";"x2"]
-        sv_u    = ["u1";"u2"]
-        sv_y    = "x1"
-        sv_para = "bad"
-        sr_bad  = ["none","equilibrium","xsize","currentreal","massx","needpq","currentdep","dxsize","ysize","masssize","dxerror"]
+        key = "test-bad-stub"  % 機器の種類のキー
+        sv_x = ["x1";"x2"]  % 状態の名前
+        sv_u = ["u1";"u2"]  % 入力の名前
+        sv_y = "x1"  % 出力の名前
+        sv_para = "bad"  % 動的パラメータの名前
+        sr_bad = ["none","equilibrium","xsize","currentreal","massx","needpq","currentdep","dxsize","ysize","masssize","dxerror"]  % 入れられる誤りの種類 ("none" は誤りなし)
     end
 
     methods

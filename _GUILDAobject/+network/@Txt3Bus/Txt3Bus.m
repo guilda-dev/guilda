@@ -20,7 +20,7 @@ classdef Txt3Bus < PowerNetwork
 % See also network.Tutorial3bus
  
     properties(Constant) % Data
-        ver = 1 % Version of the bundled network data.
+        ver = 1  % Version of the bundled network data.
     end
 
     methods

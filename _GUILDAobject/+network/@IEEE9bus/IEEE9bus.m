@@ -79,7 +79,7 @@ classdef IEEE9bus < PowerNetwork
 % See also controller.avr.AVR_ST1, controller.pss.PSS1, network.IEEE68bus
 
     properties(Constant) % Data
-        ver = 1 % Version of the bundled network data.
+        ver = 1  % Version of the bundled network data.
     end
 
     methods

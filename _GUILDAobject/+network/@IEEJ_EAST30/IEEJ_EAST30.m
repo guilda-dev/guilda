@@ -126,7 +126,7 @@ classdef IEEJ_EAST30 < PowerNetwork
 % See also controller.avr.AVR_DC1, controller.governor.IEEJ_LPT1, controller.governor.IEEJ_LPT4, component.generator.park, network.IEEE68bus
 
     properties(Constant) % Data
-        ver = 2 % Version of the bundled network data.
+        ver = 2  % Version of the bundled network data.
     end
 
     methods

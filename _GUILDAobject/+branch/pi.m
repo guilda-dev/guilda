@@ -26,8 +26,8 @@ classdef pi < Branch
 % See also branch.pi_transformer, branch.T, PowerNetwork.add_branch
 
     properties(Constant) % Identification
-        header = "EL"   % Tag prefix of this branch type ("EL" for lines).
-        key    = "pi"   % Type name used by PowerNetwork.add_branch.
+        header = "EL"  % Tag prefix of this branch type ("EL" for lines).
+        key = "pi"  % Type name used by PowerNetwork.add_branch.
     end
 
     methods

@@ -15,17 +15,17 @@ classdef BadControllerStub < LocalController
 %   output     : 出力が発電機の入力と合わない
 %   input      : 入力の平衡点が発電機の出力と合わない
     properties (SetAccess=protected, Hidden)
-        key     = "local"
-        sv_x    = "x1"
-        sv_u    = ["omega";"Vppss"]
-        sv_y    = "Vfield"
-        sv_para = "bad"
+        key = "local"  % 制御器の種類 ("local": AVR の位置に付ける)
+        sv_x = "x1"  % 状態の名前
+        sv_u = ["omega";"Vppss"]  % 入力の名前 (Vppss は綴りの誤りで未接続)
+        sv_y = "Vfield"  % 出力の名前
+        sv_para = "bad"  % 動的パラメータの名前
     end
     properties
-        l_xsizeLater (1,1) logical = false   % 次の get_equilibrium から xsize にする (initialize の後で validate を試す)
+        l_xsizeLater (1,1) logical = false  % 次の get_equilibrium から xsize にする (initialize の後で validate を試す)
     end
     properties (Constant, Hidden)
-        sr_bad = ["none","jacobian","jacsize","xsize","massx","currentdep","residual","output","input"]
+        sr_bad = ["none","jacobian","jacsize","xsize","massx","currentdep","residual","output","input"]  % 入れられる誤りの種類 ("none" は誤りなし)
     end
     methods
         function obj = BadControllerStub(s_bad)

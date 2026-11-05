@@ -47,11 +47,11 @@ classdef droop < component.generator.abstract
 % See also component.generator.abstract, Bus.add_component
 
     properties (Constant) % Model definition
-        key      = "gen-droop";        % Model key that selects this class in `Bus.add_component`.
-        sv_x    = "delta";             % State names.
-        sv_u    = ["Pmech";"Vfield"];  % Input port names.
-        sv_y    = string.empty(0,1)    % Output names read by local controllers.
-        sv_para = ["D","Xd","Xq"]      % Dynamic parameter names.
+        key = "gen-droop";  % Model key that selects this class in `Bus.add_component`.
+        sv_x = "delta";  % State names.
+        sv_u = ["Pmech";"Vfield"];  % Input port names.
+        sv_y = string.empty(0,1)  % Output names read by local controllers.
+        sv_para = ["D","Xd","Xq"]  % Dynamic parameter names.
     end
     methods        
         dx = fcn_dx(obj, t, x, V, I, u, param, omega0)

@@ -85,7 +85,7 @@ classdef IEEE14bus_NoTap < PowerNetwork
 % See also network.IEEE14bus, network.IEEE14bus_lossless
 
     properties(Constant) % Data
-        ver = 1 % Version of the bundled network data.
+        ver = 1  % Version of the bundled network data.
     end
 
     methods

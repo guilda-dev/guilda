@@ -25,12 +25,12 @@ classdef abstract < LocalController
 % simply no governor: the generator then keeps `Pmech` at its equilibrium.
 %
 % See also controller.governor.IEEJ_LPT1, controller.governor.IEEJ_LPT3, controller.governor.IEEJ_LPT4, Component.add_local_controller
-    properties (SetAccess=protected, Hidden)
-        key  = "governor"
-        sv_x
-        sv_u = ["omega";"Pref";"Plimit"]
-        sv_y = "Pmech"
-        sv_para
+    properties (SetAccess=protected, Hidden) % Model definition
+        key = "governor"  % Kind of controller ("governor": beside the AVR).
+        sv_x  % Names of the states (set by the concrete governors).
+        sv_u = ["omega";"Pref";"Plimit"]  % Names of the inputs: speed deviation, load setting and load limiter.
+        sv_y = "Pmech"  % Names of the outputs: mechanical power of the generator.
+        sv_para  % Names of the dynamic parameters (set by the concrete governors).
     end
     methods
         function obj = abstract(tag)

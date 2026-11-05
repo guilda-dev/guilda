@@ -102,7 +102,7 @@ classdef IEEJ_WEST30 < PowerNetwork
 % See also controller.avr.AVR_DC1, controller.governor.IEEJ_LPT1, controller.governor.IEEJ_LPT3, component.generator.park, component.load.impedance, Scenario
 
     properties(Constant) % Data
-        ver = 2 % Version of the bundled network data.
+        ver = 2  % Version of the bundled network data.
     end
 
     methods

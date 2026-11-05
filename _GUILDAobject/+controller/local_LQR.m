@@ -20,6 +20,12 @@ classdef local_LQR < LocalController
 % AGC) on a driven input adds to its output, and the design of `K` does not take it
 % into account (use `Input="Vfield"` with an AGC on Pmech to keep them apart).
 %
+% - Editing `Q`, `R` or `V0` makes the equilibrium stale; `net.initialize` recomputes `K`.
+%   After a network Hz edit, the next analysis recomputes `K` when the equilibrium is up
+%   to date.
+% - `sys_design` is the component connected to the infinite bus; its inputs are the
+%   driven inputs and its outputs the states.
+%
 % <@Examples>
 % Attach LQR controllers to two generators and simulate a fault:
 %
@@ -37,44 +43,28 @@ classdef local_LQR < LocalController
 % See also Component.add_local_controller, controller.avr.abstract, controller.local_LQR_retrofit
 
     properties (SetAccess=protected, Hidden) % Signals
-        key     = "local"           % Controller kind ("local": in the place of an AVR).
-        sv_x    = strings(0,1)      % Names of the controller states (none).
-        sv_u    = "Xall"            % Names of the observed signals ("Xall": all the states of the component).
-        sv_y    = strings(0,1)      % Names of the driven inputs of the component.
-        sv_para = strings(0,1)      % Names of the parameters (none).
+        key = "local"  % Controller kind ("local": in the place of an AVR).
+        sv_x = strings(0,1)  % Names of the controller states (none).
+        sv_u = "Xall"  % Names of the observed signals ("Xall": all the states of the component).
+        sv_y = strings(0,1)  % Names of the driven inputs of the component.
+        sv_para = strings(0,1)  % Names of the parameters (none).
     end
 
     properties % Design weights
-        % State weight of the LQR.
-        % An nx-by-nx matrix for the states of the component; a vector is its
-        % diagonal (empty: identity). Editing it makes the equilibrium stale;
-        % net.initialize recomputes K.
-        Q = []
-        % Input weight of the LQR.
-        % An nu-by-nu matrix for the driven inputs; a vector is its diagonal
-        % (empty: identity). Editing it makes the equilibrium stale;
-        % net.initialize recomputes K.
-        R = []
-        % [pu] Voltage of the infinite bus of the design model.
-        % A complex scalar.
-        V0 = 1
+        Q = []  % State weight of the LQR (nx-by-nx; a vector is the diagonal, empty the identity). <@Stale> equilibrium
+        R = []  % Input weight of the LQR (nu-by-nu; a vector is the diagonal, empty the identity). <@Stale> equilibrium
+        V0 = 1  % [pu] Voltage of the infinite bus of the design model (complex scalar). <@Stale> equilibrium
     end
 
     properties (SetAccess=private) % Design results
-        % Feedback gain `K` in `u = u* - K*(x - x*)`.
-        % An nu-by-nx matrix computed by net.initialize and, after a network Hz edit,
-        % by the next analysis when the equilibrium is up to date.
-        K = zeros(0,0)
-        % Linear model used to compute K (ss).
-        % The component connected to the infinite bus; its inputs are the driven
-        % inputs and its outputs the states.
-        sys_design
+        K = zeros(0,0)  % Feedback gain K in u = u* - K*(x - x*) (nu-by-nx).
+        sys_design  % Linear model used to compute K (ss).
     end
 
     properties (Access=private) % Internal
-        sv_input (:,1) string = strings(0,1)   % Input as given (empty: all the inputs)
-        rv_u0    (:,1) double = zeros(0,1)     % equilibrium of the driven inputs
-        r_designHz double = []                 % [Hz] frequency K was designed for (empty: not designed)
+        sv_input (:,1) string = strings(0,1)  % Input as given (empty: all the inputs).
+        rv_u0 (:,1) double = zeros(0,1)  % Equilibrium of the driven inputs.
+        r_designHz double = []  % [Hz] Frequency K was designed for (empty: not designed).
     end
 
     methods
