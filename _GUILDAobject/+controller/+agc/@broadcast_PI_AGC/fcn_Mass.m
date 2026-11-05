@@ -1,4 +1,4 @@
-function M = fcn_Mass(t, x, V, I, u, param, omega0) %#ok
+function M = fcn_Mass(t, x, V, I, u, param, omega0)
     % Return the mass matrix of the broadcast_PI_AGC state equation.
     % The state equation is `M*dx/dt = f(t, x, V, I, u)`. The diagonal of `M` holds the time constants [s];
     % a zero time constant makes the corresponding equation algebraic.

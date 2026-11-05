@@ -8,7 +8,7 @@
 
 %% Trip of a generator that requires P and Q completes
 % スタブをキーとして一時的に登録するので、GUILDA の再実行が 1 回で済むようにまとめる
-c_stub = register_stubs(); %#ok<NASGU>
+c_stub = register_stubs();
 
 net = DebugScript.helper.build_3bus("gen-1axis");
 net.a_Bus{3}.add_component("gen-needpq-stub");

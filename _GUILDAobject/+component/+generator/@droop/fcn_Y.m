@@ -1,4 +1,4 @@
-function y = fcn_Y(obj, t, x, V, I, u, param, omega0) %#ok
+function y = fcn_Y(obj, t, x, V, I, u, param, omega0)
 % Calculate the output passed to local controllers.
 %
 % Local controllers read the output by the names in `sv_y`.

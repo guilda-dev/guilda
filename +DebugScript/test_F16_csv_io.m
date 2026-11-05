@@ -338,7 +338,7 @@ assert(contains(s_msg, "SG"))
 
 
 %% A failure after the checks can leave Network= partly built (see the help)
-[s_path, c] = csv_folder(); %#ok<ASGLU>
+[s_path, c] = csv_folder();
 s_file = fullfile(s_path, "branch", "parameter.csv");
 tab = readtable(s_file, "TextType", "string");
 tab.Type(2) = "nosuch";

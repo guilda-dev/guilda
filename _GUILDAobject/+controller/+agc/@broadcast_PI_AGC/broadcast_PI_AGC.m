@@ -87,27 +87,12 @@ classdef broadcast_PI_AGC < GlobalController
                                            "kP", repmat(opt.kP, [na,1]), "double", ...
                                            "kI", repmat(opt.kI, [na,1]), "double");                        
         end
-
-        function [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj)
-        % Return the equilibrium of the AGC: zero integrator state and zero frequency deviations.
-            arguments (Input)
-                obj
-            end
-            arguments (Output)
-                rv_Xequilibrium % [pu*s] Equilibrium integrator state (0).
-                rv_Uequilibrium % [pu] Equilibrium frequency deviations (0), one per controlled generator.
-            end
-            nCU = numel(obj.controlledUnits);
-            rv_Xequilibrium = 0;
-            rv_Uequilibrium = zeros(nCU,1);
-        end                                        
     end
     
     methods (Static)
         dx = fcn_dx(t, x, V, I, u, param, omega0)
         y  = fcn_y(t, x, V, I, u, param, omega0)
         M  = fcn_Mass(t, x, V, I, u, param, omega0)
-
         [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0);
         [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t,x,V,I,u,param,omega0);
     end

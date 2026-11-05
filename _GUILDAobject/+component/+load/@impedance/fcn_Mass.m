@@ -1,4 +1,4 @@
-function M = fcn_Mass(obj,t,x,V,I,u,param,omega0) %#ok
+function M = fcn_Mass(obj,t,x,V,I,u,param,omega0)
 % Return the mass matrix of the state equation.
 %
 % The state equation is `M*dx/dt = fcn_dx(...)`.

@@ -1,4 +1,4 @@
-function Vpss = fcn_y(t, x, V, I, u, param, omega0) %#ok
+function Vpss = fcn_y(t, x, V, I, u, param, omega0)
     % Return the output of the PSS1 controller.
     %
     % See also controller.pss.PSS1.fcn_dx, controller.pss.PSS1.Jacobi_Y
