@@ -502,7 +502,7 @@ sol = net.simulate([0, 50], sc);</code></pre>
       <div class="ref-layout">
       <aside class="ref-aside">
         <div id="reference-source-tree"></div>
-        <h3><span lang="en">Tutorials on this page</span><span lang="ja">このページのチュートリアル</span></h3>
+        <h3><span lang="en">On this page</span><span lang="ja">このページの内容</span></h3>
         <ul class="ref-toc">
           <li><a href="#ref-inherited" onclick="document.getElementById('ref-inherited')?.scrollIntoView(); return false;"><span lang="en">Inherited Classes</span><span lang="ja">継承クラス</span></a></li>
           <li><a href="#ref-auxiliary" onclick="document.getElementById('ref-auxiliary')?.scrollIntoView(); return false;"><span lang="en">Auxiliary Classes</span><span lang="ja">補助クラス</span></a></li>
@@ -510,7 +510,7 @@ sol = net.simulate([0, 50], sc);</code></pre>
       </aside>
       <div class="ref-main">
       <h1><span lang="en">Class Reference</span><span lang="ja">クラスリファレンス</span></h1>
-      <p class="ref-status" id="reference-status"></p>
+      <div class="ref-status" id="reference-status"></div>
       <div id="reference-empty" class="ref-empty" hidden>
         <p><strong><span lang="en">The class reference has not been generated yet.</span><span lang="ja">クラスリファレンスは未生成。</span></strong></p>
         <p lang="en">Run <code>GUILDA.doc</code> in MATLAB. It builds <code>_GUILDAdoc/database</code> from the source code and reopens this page.</p>
@@ -519,8 +519,6 @@ sol = net.simulate([0, 50], sc);</code></pre>
 
       <div class="reference-section">
         <h2 id="ref-inherited"><span lang="en">Inherited Classes</span><span lang="ja">継承クラス</span></h2>
-        <p lang="en">The first column is the inheritance hierarchy generated from each class's <code>Parent</code> metadata. Select a category to show only its subtree, or a class name to open its reference page.</p>
-        <p lang="ja">1 列目は各クラスの <code>Parent</code> メタデータから生成した継承階層。カテゴリの選択でその部分木だけを表示、クラス名の選択でリファレンスページを表示。</p>
         
         <div class="view-panel">
           <div class="view-panel-row view-panel-row-stacked">
@@ -881,18 +879,29 @@ sol = net.simulate([0, 50], sc);</code></pre>
       const coverage = loader.getCoverage();
       const validation = loader.getValidation();
       const generatedAt = loader.getSchema()?.generatedAt;
-      const ja = window.GUILDA_LANG?.get() === 'ja';
-      const parts = [ja ? `${classes.length} クラス` : `${classes.length} classes`];
-      if (coverage) {
-        parts.push(ja
-          ? `説明あり: クラス ${coverage.Classes.Documented}/${coverage.Classes.Total}、public メソッド ${coverage.Methods.Documented}/${coverage.Methods.Total}、public プロパティ ${coverage.Properties.Documented}/${coverage.Properties.Total}`
-          : `documented: ${coverage.Classes.Documented}/${coverage.Classes.Total} classes, ${coverage.Methods.Documented}/${coverage.Methods.Total} public methods, ${coverage.Properties.Documented}/${coverage.Properties.Total} public properties`);
-      }
-      parts.push(ja
-        ? `警告 ${validation.warningCount || 0} 件、エラー ${validation.errorCount || 0} 件`
-        : `${validation.warningCount || 0} warnings, ${validation.errorCount || 0} errors`);
-      if (generatedAt) parts.push(`${ja ? '生成日時' : 'generated'} ${generatedAt.replace('T', ' ').slice(0, 16)}`);
-      if (status) status.textContent = parts.join(' · ');
+      if (!status) return;
+      // One tile per figure: a count, a documented/total share with a bar, or an issue count.
+      const label = (en, ja) => `<span class="ref-stat-label"><span lang="en">${en}</span><span lang="ja">${ja}</span></span>`;
+      const tile = (body, modifier = '') => `<div class="ref-stat${modifier}">${body}</div>`;
+      const share = (en, ja, part) => {
+        const pct = part.Total ? Math.round(100 * part.Documented / part.Total) : 100;
+        return tile(`${label(en, ja)}
+          <span class="ref-stat-value">${part.Documented}<span class="ref-stat-total">/${part.Total}</span><span class="ref-stat-pct">${pct}%</span></span>
+          <span class="ref-stat-bar" role="presentation"><span style="width: ${pct}%"></span></span>`, pct < 100 ? ' is-partial' : '');
+      };
+      const issues = (en, ja, count, kind) => tile(`${label(en, ja)}<span class="ref-stat-value">${count}</span>`, count > 0 ? ` is-${kind}` : ' is-clear');
+      const tiles = [
+        tile(`${label('Classes', 'クラス')}<span class="ref-stat-value">${classes.length}</span>`),
+        ...(coverage ? [
+          share('Documented classes', '説明ありのクラス', coverage.Classes),
+          share('Documented public methods', '説明ありの public メソッド', coverage.Methods),
+          share('Documented public properties', '説明ありの public プロパティ', coverage.Properties)
+        ] : []),
+        issues('Warnings', '警告', validation.warningCount || 0, 'warn'),
+        issues('Errors', 'エラー', validation.errorCount || 0, 'err')
+      ];
+      status.innerHTML = `<div class="ref-stats">${tiles.join('')}</div>`
+        + (generatedAt ? `<p class="ref-stat-caption"><span lang="en">Generated</span><span lang="ja">生成日時</span> ${escapeHtml(generatedAt.replace('T', ' ').slice(0, 16))}</p>` : '');
     }
 
     // Draw one inheritance tree into a table. `classes` is the set to show;

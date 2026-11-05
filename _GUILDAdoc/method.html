@@ -41,7 +41,7 @@
     const loader = window.GuildaDocLoader;
     const {
       tr, setPageTitle, escapeHtml, nl2br, firstText, toList, formatInlineMarkdown, renderMarkdown,
-      classLink, seeAlsoLink, sourceLocation, examplesText, groupRows
+      classLink, seeAlsoLink, sourceLocation, examplesText, groupRows, groupHeading
     } = window.GuildaDocRender;
     const routeParams = loader.getRouteParams();
     const className = routeParams.get('class');
@@ -119,7 +119,7 @@
         <h3 class="ref-nav-title">${tr(`Methods of ${escapeHtml(ownerName)}`, `${escapeHtml(ownerName)} のメソッド`)}</h3>
         ${grouped
           ? groupRows(methods, 'Other').map((group) => `
-              <p class="ref-muted" style="margin: 8px 0 2px; font-size: 0.75rem;">${escapeHtml(groupLabel(group.name))}</p>
+              <p class="ref-nav-group">${groupHeading(groupLabel(group.name), group.items.length)}</p>
               <ul class="ref-method-nav" style="margin-bottom: 6px;">${group.items.map(item).join('')}</ul>`).join('')
           : `<ul class="ref-method-nav">${methods.map(item).join('')}</ul>`}`;
     }
@@ -177,8 +177,8 @@
       return `
         <div class="ref-table-scroll"><table class="compact-table description-table">
           <thead><tr>
-            <th>${tr('Name', '名前')}</th><th>${tr('Kind', '種類')}</th><th>${tr('Size / Class', 'サイズ / クラス')}</th>${withUnit ? `<th>${tr('Unit', '単位')}</th>` : ''}
-            <th>${tr('Description', '説明')}</th><th>${tr('Required', '必須')}</th><th>${tr('Default', '既定値')}</th><th>${tr('Validators', '検証関数')}</th>
+            <th>${tr('Name', '名前')}</th><th>${tr('Kind', '種類')}</th><th>${tr('Size / Class', 'サイズ / クラス')}</th>${withUnit ? `<th class="col-unit">${tr('Unit', '単位')}</th>` : ''}
+            <th class="col-description">${tr('Description', '説明')}</th><th>${tr('Required', '必須')}</th><th>${tr('Default', '既定値')}</th><th>${tr('Validators', '検証関数')}</th>
           </tr></thead>
           <tbody>
             ${rows.map((p) => `
@@ -186,8 +186,8 @@
                 <td><strong>${cell(p.name)}</strong></td>
                 <td>${cell(kindLabel(p.kind || 'Positional'))}</td>
                 <td>${cell(p.type)}</td>
-                ${withUnit ? `<td>${p.unit ? `<span class="ref-unit">${escapeHtml(p.unit)}</span>` : muted('-')}</td>` : ''}
-                <td>${p.description ? formatInlineMarkdown(p.description) : muted('-')}</td>
+                ${withUnit ? `<td class="col-unit">${p.unit ? `<span class="ref-unit">${escapeHtml(p.unit)}</span>` : muted('-')}</td>` : ''}
+                <td class="col-description">${p.description ? formatInlineMarkdown(p.description) : muted('-')}</td>
                 <td>${typeof p.required === 'boolean' ? (p.required ? tr('Required', '必須') : tr('Optional', '任意')) : cell(p.required)}</td>
                 <td>${p.default ? `<span class="ref-code">${escapeHtml(p.default)}</span>` : muted('-')}</td>
                 <td>${cell(p.validators)}</td>
@@ -202,15 +202,15 @@
       return `
         <div class="ref-table-scroll"><table class="compact-table description-table">
           <thead><tr>
-            <th>${tr('Name', '名前')}</th>${withType ? `<th>${tr('Size / Class', 'サイズ / クラス')}</th>` : ''}${withUnit ? `<th>${tr('Unit', '単位')}</th>` : ''}<th>${tr('Description', '説明')}</th>
+            <th>${tr('Name', '名前')}</th>${withType ? `<th>${tr('Size / Class', 'サイズ / クラス')}</th>` : ''}${withUnit ? `<th class="col-unit">${tr('Unit', '単位')}</th>` : ''}<th class="col-description">${tr('Description', '説明')}</th>
           </tr></thead>
           <tbody>
             ${rows.map((r) => `
               <tr>
                 <td><strong>${cell(r.name)}</strong></td>
                 ${withType ? `<td>${cell(r.type)}</td>` : ''}
-                ${withUnit ? `<td>${r.unit ? `<span class="ref-unit">${escapeHtml(r.unit)}</span>` : muted('-')}</td>` : ''}
-                <td>${r.description ? formatInlineMarkdown(r.description) : muted('-')}</td>
+                ${withUnit ? `<td class="col-unit">${r.unit ? `<span class="ref-unit">${escapeHtml(r.unit)}</span>` : muted('-')}</td>` : ''}
+                <td class="col-description">${r.description ? formatInlineMarkdown(r.description) : muted('-')}</td>
               </tr>`).join('')}
           </tbody>
         </table></div>`;
