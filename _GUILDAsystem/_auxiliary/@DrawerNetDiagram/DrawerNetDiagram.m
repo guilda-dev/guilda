@@ -7,6 +7,13 @@ classdef DrawerNetDiagram < auxiliary
 % Changing a property updates the drawing; hovering over an element shows its values. It
 % is implemented without the digraph plot.
 %
+% - `ColorMode`: "Loss", "I (current)", "P (active power)", "Q (reactive power)", "none",
+%   or "User defined" (set NodeB_ColorVal, NodeC_ColorVal, EdgeB2B_ColorVal,
+%   EdgeB2C_ColorVal).
+% - `EdgeWidthMode`: "G", "B", "Y" (conductance, susceptance, magnitude of the series
+%   admittance of the branch), "SvdMaxYmat" (largest singular value of the admittance
+%   matrix of the branch) or "none".
+%
 % <@Examples>
 % ```matlab
 % net = network.IEEE14bus();
@@ -20,101 +27,69 @@ classdef DrawerNetDiagram < auxiliary
 % See also PowerNetwork.draw_diagram
 
     properties % Appearance
-        ColorLim       (1,2) double = [0,2]; % Limits of the color scale (clim of the axes).
-        ColorMap       (:,3) double = turbo; % Colormap of the color values.
-
-        % Quantity that colors the branches and component connections.
-        % "Loss", "I (current)", "P (active power)", "Q (reactive power)", "none", or "User
-        % defined" (set NodeB_ColorVal, NodeC_ColorVal, EdgeB2B_ColorVal, EdgeB2C_ColorVal).
-        ColorMode      (1,1) string {mustBeMember(ColorMode, [...
+        ColorLim (1,2) double = [0,2];  % Limits of the color scale (clim of the axes).
+        ColorMap (:,3) double = turbo;  % Colormap of the color values.
+        ColorMode (1,1) string {mustBeMember(ColorMode, [...
                                             "none",               ...
                                             "Loss",               ...
                                             "I (current)",        ...
                                             "P (active power)",   ...
                                             "Q (reactive power)", ...
-                                            "User defined"])} = "I (current)";
-        NodeFontSize      (1,1) double = 5;      % Font size of the labels.
-        NodeFontWeight    (1,1) string = "bold"; % Font weight of the labels.
-        EdgeWidthSclae    (1,1) double = 0.15;   % Scale of the branch width per unit of the EdgeWidthMode value.
-        EdgeWidthOffset   (1,1) double = 1;      % Branch width added to the scaled value.
-
-        % Quantity of the admittance that sets the branch widths.
-        % "G", "B", "Y" (conductance, susceptance, magnitude of the series admittance of the
-        % branch), "SvdMaxYmat" (the dynamics parameter SvdMaxYmat of the branch) or "none".
-        EdgeWidthMode     (1,1) string {mustBeMember(EdgeWidthMode, ["none","G", "B", "Y", "SvdMaxYmat"])} = "SvdMaxYmat";
-        MarkerSize        (1,1) double = 10;     % Size of the bus and component solids.
-
-        % Quantity that sets the height of each bus: "Vmag", "Varg", "Vsin", "P", "Q" or "none".
-        NodeHeightMode    (1,1) string {mustBeMember(NodeHeightMode, ["none", "Vmag", "Varg", "Vsin", "P", "Q"])} = "none";
-        NodeB_ColorVal    (:,1) double = [];     % Color values of the buses, one per bus.
-        NodeC_ColorVal    (:,1) double = [];     % Color values of the components, one per component.
-        EdgeB2B_ColorVal  (:,1) double = [];     % Color values of the branches, one per branch.
-        EdgeB2C_ColorVal  (:,1) double = [];     % Color values of the component connections, one per component.
-        NodeLabelB        (:,1) string = [];     % Labels of the buses, one per bus.
-        NodeLabelC        (:,1) string = [];     % Labels of the components, one per component.
-        NodeLabelMode     (1,1) string {mustBeMember(NodeLabelMode, ["none", "name", "info"])} = "name" % Labels shown: "name" (tags), "info" (values) or "none".
-
-        EdgeB2B_forward   (:,1) double = [];     % Arrow direction of each branch: 1 forward, -1 backward, 0 none.
-        EdgeB2C_forward   (:,1) double = [];     % Arrow direction of each component connection: 1, -1 or 0.
-        GridWidth         (1,1) double = 0.01;   % Spacing of the grid lines of the axes.
+                                            "User defined"])} = "I (current)";  % Quantity that colors the branches and component connections (see the class help).
+        NodeFontSize (1,1) double = 5;  % Font size of the labels.
+        NodeFontWeight (1,1) string = "bold";  % Font weight of the labels.
+        EdgeWidthSclae (1,1) double = 0.15;  % Scale of the branch width per unit of the EdgeWidthMode value.
+        EdgeWidthOffset (1,1) double = 1;  % Branch width added to the scaled value.
+        EdgeWidthMode (1,1) string {mustBeMember(EdgeWidthMode, ["none","G", "B", "Y", "SvdMaxYmat"])} = "SvdMaxYmat";  % Admittance quantity that sets the branch widths (see the class help).
+        MarkerSize (1,1) double = 10;  % Size of the bus and component solids.
+        NodeHeightMode (1,1) string {mustBeMember(NodeHeightMode, ["none", "Vmag", "Varg", "Vsin", "P", "Q"])} = "none";  % Quantity that sets the height of each bus: "Vmag", "Varg", "Vsin", "P", "Q" or "none".
+        NodeB_ColorVal (:,1) double = [];  % Color values of the buses, one per bus.
+        NodeC_ColorVal (:,1) double = [];  % Color values of the components, one per component.
+        EdgeB2B_ColorVal (:,1) double = [];  % Color values of the branches, one per branch.
+        EdgeB2C_ColorVal (:,1) double = [];  % Color values of the component connections, one per component.
+        NodeLabelB (:,1) string = [];  % Labels of the buses, one per bus.
+        NodeLabelC (:,1) string = [];  % Labels of the components, one per component.
+        NodeLabelMode (1,1) string {mustBeMember(NodeLabelMode, ["none", "name", "info"])} = "name"  % Labels shown: "name" (tags), "info" (values) or "none".
+        EdgeB2B_forward (:,1) double = [];  % Arrow direction of each branch: 1 forward, -1 backward, 0 none.
+        EdgeB2C_forward (:,1) double = [];  % Arrow direction of each component connection: 1, -1 or 0.
+        GridWidth (1,1) double = 0.01;  % Spacing of the grid lines of the axes.
     end
-
-    % Properties for storing graphics objects
     properties % Graphics
-        % Axes of the diagram.
-        % <@Type> matlab.graphics.axis.Axes
-        ax
+        ax  % Axes of the diagram. <@Type> matlab.graphics.axis.Axes
     end
     properties(SetAccess = private) % Graphics
-        % Graphics objects of the diagram, as a struct of handle arrays.
-        % <@Type> struct
-        plt
-
-        % True when the diagram must be drawn again (new axes).
-        % <@Type> logical
-        flag_new
+        plt  % Graphics objects of the diagram, as a struct of handle arrays. <@Type> struct
+        flag_new  % True when the diagram must be drawn again (new axes). <@Type> logical
     end
-
-    % Private properties for storing parameters of the system
     properties(Access = private) % Network data
-        im_edge
-        
-        cm_Ymat
-
-        tab_bus
-        tab_branch
-        tab_component
-
-        n_bus
-        n_branch
-        n_component
-
-        sv_bus
-        sv_branch
-        sv_component
-
-        cm_Vbus2Ibranch
-        cm_Vbus2Vbranch
+        im_edge  % End-bus indices of each branch (2 x n_branch).
+        cm_Ymat  % [pu] Admittance matrix of the network (sparse).
+        tab_bus  % Bus type and operation and graph parameters, one row per bus.
+        tab_branch  % Branch class and operation, graph and dynamics parameters (with SvdMaxYmat), one row per branch.
+        tab_component  % Bus index, class and operation and graph parameters, one row per component.
+        n_bus  % Number of buses.
+        n_branch  % Number of branches.
+        n_component  % Number of components.
+        sv_bus  % Bus tags.
+        sv_branch  % Branch tags.
+        sv_component  % Component tags without the bus tag.
+        cm_Vbus2Ibranch  % Map from the bus voltages to the currents into the branches at both ends (sparse).
+        cm_Vbus2Vbranch  % Map from the bus voltages to the end voltages of the branches (sparse).
     end
-
-    % Properties for storing values for current state
     properties(Access = private) % State
-        cv_Vbus
-        cv_Ibus
-        rv_Pbus
-        rv_Qbus
-
-        cm_Vbranch
-        cm_Ibranch
-        rm_Pbranch
-        rm_Qbranch
-
-        cv_Vcomp
-        cv_Icomp
-        rv_Pcomp
-        rv_Qcomp
+        cv_Vbus  % [pu] Bus voltage phasors shown.
+        cv_Ibus  % [pu] Bus current injections.
+        rv_Pbus  % [pu] Active power injections of the buses.
+        rv_Qbus  % [pu] Reactive power injections of the buses.
+        cm_Vbranch  % [pu] End voltages of the branches (2 x n_branch).
+        cm_Ibranch  % [pu] Currents into the branches at both ends (2 x n_branch).
+        rm_Pbranch  % [pu] Active power into the branches at both ends (2 x n_branch).
+        rm_Qbranch  % [pu] Reactive power into the branches at both ends (2 x n_branch).
+        cv_Vcomp  % [pu] Voltage of the bus of each component.
+        cv_Icomp  % [pu] Current injection of each component.
+        rv_Pcomp  % [pu] Active power injection of each component.
+        rv_Qcomp  % [pu] Reactive power injection of each component.
     end
-
 
     methods
         function obj = DrawerNetDiagram(net, ax, opt)

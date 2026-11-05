@@ -2,9 +2,14 @@ classdef ResultCPF < ResultBase
 % Result of net.calculate_continuation_powerflow.
 %
 % Holds the load parameter lambda and the bus voltages at each point of the traced path,
-% and the nose point (maximum loading). The loads of options.LoadBus are scaled by (1 + lambda). It holds computed values only;
-% the settings of the buses and components stay with the network. Plot draws the PV
-% curves. Export writes the path as a table (CSV, Excel).
+% and the nose point (maximum loading). The loads of options.LoadBus are scaled by
+% (1 + lambda). It holds computed values only; the settings of the buses and components
+% stay with the network. Plot draws the PV curves. Export writes the path as a table (CSV,
+% Excel): tab_path.
+%
+% `rm_x` is the CPF_Result.x_sol of v3: its rows are [|V|; angle V] of each bus (followed
+% by the component states when options.UseInternalState is true), and lambda in the last
+% row. `rm_xPredicted` is the CPF_Result.x_prd of v3 in the same layout.
 %
 % <@Examples>
 % ```matlab
@@ -20,42 +25,18 @@ classdef ResultCPF < ResultBase
 % See also SolverCPF, ResultBase
 
     properties (SetAccess=private) % Result
-        % Bus tags, in the order of the rows of cm_Vbus.
-        sv_bus (:,1) string = strings(0,1)
-
-        % Load parameter lambda at each point of the path (the first point is the equilibrium).
-        rv_lambda double = zeros(1,0)
-
-        % [pu] Bus voltage phasors at each point of the path, one row per bus.
-        cm_Vbus double = zeros(0,0)
-
-        % Largest lambda on the path (the nose of the PV curve: maximum loading).
-        r_lambdaMax (1,1) double = NaN
-
-        % Index of the nose point in rv_lambda and the columns of cm_Vbus.
-        r_noseStep (1,1) double = NaN
-
-        % Full variable vector at each point of the path (the CPF_Result.x_sol of v3).
-        % Rows: [|V|; angle V] of each bus (followed by the component states when
-        % options.UseInternalState is true), and lambda in the last row.
-        rm_x double = zeros(0,0)
-
-        % Predicted points of the predictor-corrector method, in the layout of rm_x.
-        % The CPF_Result.x_prd of v3. The first column is NaN.
-        rm_xPredicted double = zeros(0,0)
+        sv_bus (:,1) string = strings(0,1)  % Bus tags, in the order of the rows of cm_Vbus.
+        rv_lambda double = zeros(1,0)  % Load parameter lambda at each point of the path (the first point is the equilibrium).
+        cm_Vbus double = zeros(0,0)  % [pu] Bus voltage phasors at each point of the path, one row per bus.
+        r_lambdaMax (1,1) double = NaN  % Largest lambda on the path (the nose of the PV curve: maximum loading).
+        r_noseStep (1,1) double = NaN  % Index of the nose point in rv_lambda and the columns of cm_Vbus.
+        rm_x double = zeros(0,0)  % Full variable vector at each point of the path, lambda in the last row (see the class help).
+        rm_xPredicted double = zeros(0,0)  % Predicted points of the predictor-corrector method, in the layout of rm_x (first column NaN).
     end
 
     properties (Dependent) % Result
-        % Bus voltages at the nose point, one row per bus (row names = bus tags).
-        % Columns: V [pu], Varg [rad], Vphasor [pu].
-        % <@Type> table (n_bus x 3)
-        tab_nose
-
-        % The path as a table, one row per point.
-        % Columns: lambda, then V_<bus> [pu] and Varg_<bus> [rad] of each bus. Export writes
-        % this table.
-        % <@Type> table (n_step x (1 + 2 n_bus))
-        tab_path
+        tab_nose  % Bus voltages at the nose point, one row per bus: V [pu], Varg [rad], Vphasor [pu]. <@Type> table (n_bus x 3)
+        tab_path  % The path, one row per point: lambda, then V_<bus> [pu] and Varg_<bus> [rad] of each bus. <@Type> table (n_step x (1 + 2 n_bus))
     end
 
     methods

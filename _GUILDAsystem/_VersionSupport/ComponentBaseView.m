@@ -20,11 +20,11 @@ classdef ComponentBaseView < handle
 % See also Component, PowerNetwork
 
     properties (Access=private)
-        a_Comp
+        a_Comp  % Component whose para_base this view shows.
     end
     properties (Dependent) % Parameter
-        Hz              % [Hz] Nominal frequency of the network of the component.
-        tab_parameter   % One-column table with Hz.
+        Hz  % [Hz] Nominal frequency of the network of the component.
+        tab_parameter  % One-column table with Hz.
     end
 
     methods

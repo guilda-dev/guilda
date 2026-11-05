@@ -16,6 +16,21 @@ classdef ResultODE < ResultBase
 % trajectory of the buses or components. Export writes all trajectories as a table (CSV,
 % Excel) or as a MAT-file.
 %
+% - `tab_variable` has one row per variable with Index, Kind ("x" | "Vre" | "Vim" | "u"),
+%   Owner, Name, Label and Bus (see PowerNetwork.get_variable_map).
+% - In `rm_variable` the states of a tripped unit are NaN while it is tripped. The inputs u
+%   are the inputs applied to the components (steady value, outputs of the controllers and
+%   event inputs).
+% - `rm_I` holds the columns B1 Ireal, B1 Iimag, B2 Ireal, ... They are not variables of the
+%   map; odeResults.Bus(i).I and .PQ are made from them.
+% - `odeResults` has the fields t (time [s], column), Bus(i).V (table Vreal, Vimag),
+%   Bus(i).I (Ireal, Iimag), Bus(i).PQ (P, Q), Bus(i).Component(j).X (states, columns named
+%   by sv_x) and Bus(i).Component(j).U (inputs, columns named by sv_u). Bus(i) follows
+%   net.a_Bus and Component(j) follows a_Component of the bus. The states of the local and
+%   global controllers are in rm_variable only.
+% - At a boundary between two phases the time appears twice in rv_t and odeResults: the
+%   end of one phase, then the start of the next (see get_point).
+%
 % <@Examples>
 % ```matlab
 % net = network.IEEE14bus();
@@ -33,59 +48,21 @@ classdef ResultODE < ResultBase
 % See also SolverODE, Scenario, ResultBase, PowerNetwork.get_variable_map
 
     properties (SetAccess=private) % Result
-        % [s] Output times, ascending.
-        % At a boundary between two phases the time appears twice: the end of one phase, then
-        % the start of the next (see get_point).
-        rv_t (:,1) double = zeros(0,1)
-
-        % Variable map at the time of the simulation (see PowerNetwork.get_variable_map).
-        % One row per variable with Index, Kind ("x" | "Vre" | "Vim" | "u"), Owner, Name, Label,
-        % Bus. Its rows are the columns of rm_variable.
-        % <@Type> table ((n_x + n_v + n_u) x 6)
-        tab_variable table = table()
-
-        % Trajectory of all variables, one row per output time.
-        % Row k holds the values at rv_t(k), column m the variable tab_variable(m,:). The states
-        % of a tripped unit are NaN while it is tripped. The inputs u are the inputs applied to
-        % the components (steady value, outputs of the controllers and event inputs).
-        % <@Type> double (n_t x (n_x + n_v + n_u))
-        rm_variable double = zeros(0,0)
-
-        % [pu] Currents injected into the buses.
-        % Columns Ireal, Iimag of each bus in the order of sv_bus (B1 Ireal, B1 Iimag, B2 Ireal,
-        % ...). They are not variables of the map; odeResults.Bus(i).I and .PQ are made from them.
-        % <@Type> double (n_t x 2 n_bus)
-        rm_I double = zeros(0,0)
-
-        % Bus tags, in the order of odeResults.Bus.
-        sv_bus (:,1) string = strings(0,1)
-
-        % Component tags of each bus, in the order of odeResults.Bus(i).Component.
-        c_component (:,1) cell = cell(0,1)
+        rv_t (:,1) double = zeros(0,1)  % [s] Output times, ascending; a phase boundary appears twice (end of one phase, start of the next).
+        tab_variable table = table()  % Variable map at the time of the simulation: its rows are the columns of rm_variable. <@Type> table ((n_x + n_v + n_u) x 6)
+        rm_variable double = zeros(0,0)  % Trajectory of all variables: row k at rv_t(k), column m the variable tab_variable(m,:). <@Type> double (n_t x (n_x + n_v + n_u))
+        rm_I double = zeros(0,0)  % [pu] Currents injected into the buses: Ireal, Iimag of each bus in the order of sv_bus. <@Type> double (n_t x 2 n_bus)
+        sv_bus (:,1) string = strings(0,1)  % Bus tags, in the order of odeResults.Bus.
+        c_component (:,1) cell = cell(0,1)  % Component tags of each bus, in the order of odeResults.Bus(i).Component.
     end
 
     properties (Dependent) % Result
-        % Trajectories per bus and component, as a struct (a view of rv_t, rm_variable and rm_I).
-        % Fields: t (time [s], column), Bus(i).V (table Vreal, Vimag), Bus(i).I (Ireal, Iimag),
-        % Bus(i).PQ (P, Q), Bus(i).Component(j).X (states, columns named by sv_x) and
-        % Bus(i).Component(j).U (inputs, columns named by sv_u). Bus(i) follows net.a_Bus and
-        % Component(j) follows a_Component of the bus. The states of the local and global
-        % controllers are in rm_variable only. At a boundary between two phases the time appears
-        % twice (end of one phase, start of the next).
-        % <@Type> struct (1x1)
-        odeResults
+        odeResults  % Trajectories per bus and component: a view of rv_t, rm_variable and rm_I (see the class help). <@Type> struct (1x1)
     end
 
     properties (Access=private, Hidden) % Internal state
-        % Columns of rm_variable for the view odeResults.
-        % c_index{i}.iv_V (2 x 1) and c_index{i}.c_x{j}, c_index{i}.c_u{j} for component j of
-        % bus i.
-        % <@Type> cell of struct (n_bus x 1)
-        c_index (:,1) cell = cell(0,1)
-
-        % odeResults, built on first access.
-        % <@Type> struct (0x0 or 1x1)
-        sct_view struct = struct([])
+        c_index (:,1) cell = cell(0,1)  % Columns of rm_variable for odeResults: c_index{i}.iv_V, .c_x{j} and .c_u{j} of component j of bus i. <@Type> cell of struct (n_bus x 1)
+        sct_view struct = struct([])  % odeResults, built on first access. <@Type> struct (0x0 or 1x1)
     end
 
     methods

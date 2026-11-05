@@ -21,16 +21,16 @@ classdef ContinuationPowerFlowV3 < handle
 % See also Continuation_Power_Flow, PowerNetwork.calculate_continuation_powerflow, ResultCPF
 
     properties (Access=public) % Options
-        CPFBus         (:,1) string = strings(0,1)   % Tags of the buses whose loads are scaled (LoadBus).
-        CPFInitLam     (1,1) double = 0              % lambda at the starting point (InitialLambda).
-        CPFMaxIter     (1,1) {mustBePositive} = 500  % Maximum number of predictor-corrector steps (MaxIteration).
-        CPFStepSize    (1,1) {mustBePositive} = 0.5  % Step size of the predictor (StepSize).
-        CPFArcL        (1,1) {mustBePositive} = 10^-3   % Arc length of the corrector (ArcLength).
-        CPFUseInternal (1,1) logical = false         % Solve with the internal states of the generators (UseInternalState).
+        CPFBus (:,1) string = strings(0,1)  % Tags of the buses whose loads are scaled (LoadBus).
+        CPFInitLam (1,1) double = 0  % lambda at the starting point (InitialLambda).
+        CPFMaxIter (1,1) {mustBePositive} = 500  % Maximum number of predictor-corrector steps (MaxIteration).
+        CPFStepSize (1,1) {mustBePositive} = 0.5  % Step size of the predictor (StepSize).
+        CPFArcL (1,1) {mustBePositive} = 10^-3  % Arc length of the corrector (ArcLength).
+        CPFUseInternal (1,1) logical = false  % Solve with the internal states of the generators (UseInternalState).
     end
     properties (SetAccess=private) % Result
-        CPFNet                                       % Network to analyse.
-        CPF_Result = struct("x_sol", [], "x_prd", [], "result", [])   % Result of the last solve: x_sol, x_prd and the ResultCPF.
+        CPFNet  % Network to analyse.
+        CPF_Result = struct("x_sol", [], "x_prd", [], "result", [])  % Result of the last solve: x_sol, x_prd and the ResultCPF.
     end
 
     methods
