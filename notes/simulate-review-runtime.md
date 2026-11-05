@@ -116,7 +116,7 @@
 - 複数イベントの合成(`setEventCondition`)
   - 同じ機器へのオフセットと入力は名前で照合して加算(`:247-281`、`F6:437-453`)
   - `FaultBus` / `TripUnit` は和集合(`:324-325`)
-  - イベント列名は `str_tag`。**重複はエラー** `MATLAB:table:DuplicateVarNames`(同じタグで 2 回の地絡は書けない)。`t1` などの予約名も同じ **[実機]**(`:178-179,207`)
+  - イベント列名は `s_tag`。**重複はエラー** `MATLAB:table:DuplicateVarNames`(同じタグで 2 回の地絡は書けない)。`t1` などの予約名も同じ **[実機]**(`:178-179,207`)
 - 関数入力の `t` は「イベント開始からの経過時間」に換算する(`:299-301`)。
 
 ### 2.3 範囲外とスカラー
@@ -284,7 +284,7 @@
 
 ### 5.1 `odeSimulationResult`
 
-- 継承 `AnalysisResult < auxiliary < handle`。保持: `flag, output, options, str_solver, r_elapsed, str_network`、Hidden の `a_PowerNetwork`(`AnalysisResult.m:30-53`)。
+- 継承 `AnalysisResult < auxiliary < handle`。保持: `flag, output, options, s_solver, r_elapsed, s_network`、Hidden の `a_PowerNetwork`(`AnalysisResult.m:30-53`)。
 - 本体(`odeSimulationResult.m:32-62`)
 
 | プロパティ | 内容 |

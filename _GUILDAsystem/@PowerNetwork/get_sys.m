@@ -11,7 +11,7 @@ function [sys, flag, output] = get_sys(obj, varargin)
 % output is now flag.
 % When flag is false, this stops with the error of ResultLIN.get_ss, except "DAE"
 % with a singular Avv, which returns the model and flag false; net.linearize returns the
-% result, whose output.str_issue and output.message give the reason. A Point or a model that
+% result, whose output.s_issue and output.message give the reason. A Point or a model that
 % is not finite stops earlier, with the errors of net.linearize.
 %
 % Name-Value options:

@@ -15,7 +15,7 @@ function [tab_phase, sct_phase] = compile(c_scenario, net, time)
 %      0  |  1 |   0   |   0  |    0       <- NoAction1 when no disturbance is active
 %      1  | .. |   1   |   0  |    0
 %
-% sct_phase(k) holds what phase k applies, built once here: t1, t2, sv_event (tags of the
+% sct_phase(k) holds what phase k applies, built once here: t1, t2, sr_event (tags of the
 % active disturbances), sv_fault, sv_trip, sv_open (tags), and c_Xoffset, c_Uoffset with one
 % cell per component in the order of the buses and their components: the state offset
 % added at the start of the phase (offsets of the disturbances that start there; all active
@@ -38,11 +38,11 @@ function [tab_phase, sct_phase] = compile(c_scenario, net, time)
     for k = 1:numel(c_scenario)
         sc = c_scenario{k};
         if isempty(sc.a_PowerNetwork) || sc.a_PowerNetwork ~= net
-            str_owner = "no network";
+            s_owner = "no network";
             if ~isempty(sc.a_PowerNetwork)
-                str_owner = "network """ + sc.a_PowerNetwork.str_tag + """";
+                s_owner = "network """ + sc.a_PowerNetwork.s_tag + """";
             end
-            error(msg("GUILDA:Scenario:OtherNetwork", char(sc.str_tag), char(net.str_tag), char(str_owner)));
+            error(msg("GUILDA:Scenario:OtherNetwork", char(sc.s_tag), char(net.s_tag), char(s_owner)));
         end
         sc.validate(net);
     end
@@ -53,17 +53,17 @@ function [tab_phase, sct_phase] = compile(c_scenario, net, time)
         tab = c_scenario{k}.tab_disturbance;
         for r = 1:height(tab)
             d = Scenario.record(tab, r);
-            d.Scenario = c_scenario{k}.str_tag;
+            d.Scenario = c_scenario{k}.s_tag;
             c_dist{end+1} = d; %#ok<AGROW>
         end
     end
     sv_tag = string(cellfun(@(d) d.Tag, c_dist, 'UniformOutput', false));
     [~, iv_first] = unique(sv_tag, 'stable');
     if numel(iv_first) < numel(sv_tag)
-        str_dup = sv_tag(setdiff(1:numel(sv_tag), iv_first));
-        str_dup = str_dup(1);
-        sv_sc   = cellfun(@(d) d.Scenario, c_dist(sv_tag == str_dup));
-        error(msg("GUILDA:Scenario:DuplicateRunTag", char(str_dup), char(join(unique(sv_sc, 'stable'), ", "))));
+        s_dup   = sv_tag(setdiff(1:numel(sv_tag), iv_first));
+        s_dup   = s_dup(1);
+        sv_sc   = cellfun(@(d) d.Scenario, c_dist(sv_tag == s_dup));
+        error(msg("GUILDA:Scenario:DuplicateRunTag", char(s_dup), char(join(unique(sv_sc, 'stable'), ", "))));
     end
 
     % Without disturbances: an empty one at t0, so that the time table is built as usual
@@ -133,9 +133,9 @@ function [tab_phase, c_dist] = phase_table(c_dist, time)
         if all( ~tab{IT,:} )
             lv_tab     = false(vtab,1);
             lv_tab(IT) = true;
-            str_none   = "NoAction" + num2str(IT);
-            tabInsert  = table(lv_tab, 'VariableNames', str_none);
-            d          = Scenario.blank(str_none, all_time(IT,:));
+            s_none     = "NoAction" + num2str(IT);
+            tabInsert  = table(lv_tab, 'VariableNames', s_none);
+            d          = Scenario.blank(s_none, all_time(IT,:));
             d.Scenario = "";
 
             tab    = [tab, tabInsert]; %#ok<AGROW>
@@ -160,7 +160,7 @@ function sct_phase = phase_data(tab_phase, c_dist, net)
         s = struct();
         s.t1       = tab_phase{tp,"t1"};
         s.t2       = tab_phase{tp,"t2"};
-        s.sv_event = sv_name(lv_act).';
+        s.sr_event = sv_name(lv_act).';
         c = cellfun(@(d) d.FaultBus, c_act, 'UniformOutput', false);
         s.sv_fault = vertcat(strings(0,1), c{:});
         c = cellfun(@(d) d.TripUnit, c_act, 'UniformOutput', false);
@@ -193,7 +193,7 @@ function [c_Xoffset, c_Uoffset] = phase_offsets(odeEvents, c_comp, TimePhase, It
 
     for j = 1:numel(c_comp)
         comp  = c_comp{j};
-        c_tag = comp.str_tag;
+        c_tag = comp.s_tag;
         l_osU = ismember(osU, c_tag);
         l_inU = ismember(inU, c_tag);
 

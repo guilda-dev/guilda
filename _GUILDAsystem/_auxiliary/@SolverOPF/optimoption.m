@@ -1,4 +1,4 @@
-function [str_solver, c_nv] = optimoption(obj, prob, sct_options) %#ok<INUSL>
+function [s_solver, c_nv] = optimoption(obj, prob, sct_options) %#ok<INUSL>
 % Get the solver name and the solve() options for the effective settings.
 %
 % Returns the Name-Value arguments of solve (Optimization Toolbox) for the effective settings.
@@ -9,22 +9,22 @@ function [str_solver, c_nv] = optimoption(obj, prob, sct_options) %#ok<INUSL>
 % - `prob`: Problem built by build_opf_problem.
 % - `sct_options`: Effective settings (output of get_options).
     arguments (Output)
-        str_solver % Solver that runs the problem (linprog, quadprog or fmincon).
+        s_solver % Solver that runs the problem (linprog, quadprog or fmincon).
         c_nv % Name-Value arguments of solve: Solver and Options when needed.
     end
     if sct_options.Solver == "auto"
-        str_solver = string(solvers(prob));
+        s_solver = string(solvers(prob));
     else
-        str_solver = sct_options.Solver;
-        check_solver(prob, str_solver);
+        s_solver = sct_options.Solver;
+        check_solver(prob, s_solver);
     end
 
     c_opt = {};
-    str_alg = "Algorithm_" + str_solver;
-    if isfield(sct_options, str_alg)
-        o_def = optimoptions(str_solver);
-        if sct_options.(str_alg) ~= string(o_def.Algorithm)
-            c_opt = [c_opt, {"Algorithm", sct_options.(str_alg)}];
+    s_alg = "Algorithm_" + s_solver;
+    if isfield(sct_options, s_alg)
+        o_def = optimoptions(s_solver);
+        if sct_options.(s_alg) ~= string(o_def.Algorithm)
+            c_opt = [c_opt, {"Algorithm", sct_options.(s_alg)}];
         end
     end
     if sct_options.Display ~= "default"
@@ -32,32 +32,32 @@ function [str_solver, c_nv] = optimoption(obj, prob, sct_options) %#ok<INUSL>
     end
     sct_num = struct("MaxIteration","MaxIterations", "OptimalityTolerance","OptimalityTolerance", ...
                    "StepTolerance","StepTolerance", "MaxFunctionEvaluations","MaxFunctionEvaluations");
-    for str_name = string(fieldnames(sct_num)).'
-        if ~isnan(sct_options.(str_name))
-            c_opt = [c_opt, {sct_num.(str_name), sct_options.(str_name)}]; %#ok<AGROW>
+    for s_name = string(fieldnames(sct_num)).'
+        if ~isnan(sct_options.(s_name))
+            c_opt = [c_opt, {sct_num.(s_name), sct_options.(s_name)}]; %#ok<AGROW>
         end
     end
-    if sct_options.UseParallel && str_solver == "fmincon"
+    if sct_options.UseParallel && s_solver == "fmincon"
         c_opt = [c_opt, {"UseParallel", true}];
     end
 
     c_nv = {};
     if sct_options.Solver ~= "auto"
-        c_nv = {"Solver", str_solver};
+        c_nv = {"Solver", s_solver};
     end
     if ~isempty(c_opt)
-        c_nv = [c_nv, {"Options", optimoptions(str_solver, c_opt{:})}];
+        c_nv = [c_nv, {"Options", optimoptions(s_solver, c_opt{:})}];
     end
 end
 
 
-function check_solver(prob, str_solver)
+function check_solver(prob, s_solver)
 % Backend check: a Solver that cannot express the problem (e.g. linprog with a quadratic
 % cost or a nonlinear set_opffcn term) stops here with the Solver names that can.
 % External backends (stage 3) add their own capability check at this point.
     [~, c_valid] = solvers(prob);
-    str_usable = intersect(["linprog","quadprog","fmincon"], string(c_valid), "stable");
-    if ~any(str_usable == str_solver)
-        error(msg("GUILDA:SolverOPF:UnsupportedSolver", str_solver, join("""" + str_usable + """", ", ")))
+    sr_usable = intersect(["linprog","quadprog","fmincon"], string(c_valid), "stable");
+    if ~any(sr_usable == s_solver)
+        error(msg("GUILDA:SolverOPF:UnsupportedSolver", s_solver, join("""" + sr_usable + """", ", ")))
     end
 end

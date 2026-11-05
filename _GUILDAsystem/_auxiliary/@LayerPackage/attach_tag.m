@@ -1,4 +1,4 @@
-function out = attach_tag(obj,str_name_list)
+function out = attach_tag(obj,sm_name_list)
 % Generate names with layer tag suffix.
 %
 % Appends this class tag to each input name.
@@ -11,10 +11,10 @@ function out = attach_tag(obj,str_name_list)
 % ```
     arguments
         obj % Target layer object.
-        str_name_list (:,:) string % Base names to be tagged.
+        sm_name_list (:,:) string % Base names to be tagged.
     end
     arguments (Output)
         out % Input names with layer tag suffix.
     end
-    out = str_name_list +"_"+ obj.get_tag(true,"_");
+    out = sm_name_list +"_"+ obj.get_tag(true,"_");
 end

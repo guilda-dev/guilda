@@ -111,11 +111,11 @@ classdef (Sealed = true) SolverCPF < auxiliary
             mc = metaclass(obj);
             a_prop = mc.PropertyList(~[mc.PropertyList.Constant] & strcmp({mc.PropertyList.SetAccess}, 'public'));
             sct_options = struct();
-            for str_prop = string({a_prop.Name})
-                if isfield(sct_given, str_prop)
-                    sct_options.(str_prop) = sct_given.(str_prop);
+            for s_prop = string({a_prop.Name})
+                if isfield(sct_given, s_prop)
+                    sct_options.(s_prop) = sct_given.(s_prop);
                 else
-                    sct_options.(str_prop) = obj.(str_prop);
+                    sct_options.(s_prop) = obj.(s_prop);
                 end
             end
             sct_options.LoadBus = reshape(string(sct_options.LoadBus), 1, []);

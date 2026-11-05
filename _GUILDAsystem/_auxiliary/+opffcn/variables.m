@@ -1,4 +1,4 @@
-function v = variables(obj, prob, str_method, sct_var)
+function v = variables(obj, prob, s_method, sct_var)
 % Collect the optimization variables that the set_opffcn handles of obj receive (first argument v).
 %
 % Names in sct_var (e.g. the variables the caller just created) are taken from there, other
@@ -14,7 +14,7 @@ function v = variables(obj, prob, str_method, sct_var)
     arguments
         obj % Component, Bus, Branch or PowerNetwork.
         prob % Optimization problem being built.
-        str_method (1,1) string % "ELD", "DC OPF" or "AC OPF".
+        s_method   (1,1) string % "ELD", "DC OPF" or "AC OPF".
         sct_var    (1,1) struct = struct() % Optimization variables of the caller by name.
     end
     get = @(str) lookup(prob, sct_var, str);
@@ -23,52 +23,52 @@ function v = variables(obj, prob, str_method, sct_var)
             v = struct("Component", struct(), "Bus", struct(), "Branch", struct());
             for i = 1:numel(obj.a_Bus)
                 bus = obj.a_Bus{i};
-                v.Bus.(string(bus)) = opffcn.variables(bus, prob, str_method, sct_var);
+                v.Bus.(string(bus)) = opffcn.variables(bus, prob, s_method, sct_var);
                 for j = 1:numel(bus.a_Component)
                     com = bus.a_Component{j};
-                    v.Component.(string(com)) = opffcn.variables(com, prob, str_method, sct_var);
+                    v.Component.(string(com)) = opffcn.variables(com, prob, s_method, sct_var);
                 end
             end
             for i = 1:numel(obj.a_Branch)
                 br = obj.a_Branch{i};
-                v.Branch.(string(br)) = opffcn.variables(br, prob, str_method, sct_var);
+                v.Branch.(string(br)) = opffcn.variables(br, prob, s_method, sct_var);
             end
 
         case isa(obj, "Component")
             var = get(string(obj));
             v.P = var("P");
-            if str_method == "AC OPF"
+            if s_method == "AC OPF"
                 v.Q = var("Q");
             end
 
         case isa(obj, "Bus")
             v = struct();
-            if str_method == "ELD"
+            if s_method == "ELD"
                 return
             end
             var = get(string(obj));
             v.Varg = var("Varg");
-            if str_method == "AC OPF"
+            if s_method == "AC OPF"
                 v.V = var("V");
             end
 
         case isa(obj, "Branch")
             v = struct();
-            if str_method == "ELD"
+            if s_method == "ELD"
                 return
             end
-            str_bus = string(obj.a_Bus);
-            str_end = string(obj) + "_" + str_bus;
-            busF = get(str_bus(1));
-            busT = get(str_bus(2));
-            endF = get(str_end(1));
-            endT = get(str_end(2));
+            sv_bus  = string(obj.a_Bus);
+            sv_end  = string(obj) + "_" + sv_bus;
+            busF = get(sv_bus(1));
+            busT = get(sv_bus(2));
+            endF = get(sv_end(1));
+            endT = get(sv_end(2));
             % The end variables hold the flow into the bus; v holds the flow into the branch.
             v.Pfrom = -endF("P");
             v.Pto   = -endT("P");
             v.Vargfrom = busF("Varg");
             v.Vargto   = busT("Varg");
-            if str_method == "AC OPF"
+            if s_method == "AC OPF"
                 v.Qfrom    = -endF("Q");
                 v.Qto      = -endT("Q");
                 v.Ifrom_re = -endF("Ireal");

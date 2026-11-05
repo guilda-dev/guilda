@@ -3,14 +3,14 @@ function opt = optimoption(~, sct_options)
 % (see get_options). 0 for MaxIterations, MaxFunEvals or Tolerance keeps the fsolve default.
 
     if sct_options.PlotFcn=="none"
-        str_PlotFcn = [];
+        s_PlotFcn = [];
     else
-        str_PlotFcn = sct_options.PlotFcn;
+        s_PlotFcn = sct_options.PlotFcn;
     end
     opt = optimoptions("fsolve",...
                        "UseParallel" , sct_options.UseParallel  ,...
                        "Display"     , sct_options.Display      ,...
-                       "PlotFcn"     , str_PlotFcn            ,...
+                       "PlotFcn"     , s_PlotFcn              ,...
                        'SpecifyObjectiveGradient', true );
     if sct_options.MaxFunEvals ~= 0
         opt = optimoptions(opt,"MaxFunctionEvaluations", sct_options.MaxFunEvals);

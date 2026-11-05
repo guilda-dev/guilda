@@ -108,7 +108,7 @@ classdef Branch < PowerSystemModel
     methods(Access={?Branch, ?PowerNetwork})
         function obj = Branch(index, opt)
             % Create a branch (called by PowerNetwork.add_branch through a subclass).
-            obj.str_tag = obj.header+index;
+            obj.s_tag = obj.header+index;
             
             a_Pm = Parameter(obj,"dynamics");
             a_Po = Parameter(obj,"operation");

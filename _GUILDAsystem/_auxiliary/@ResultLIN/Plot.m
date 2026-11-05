@@ -32,9 +32,9 @@ function fig = Plot(obj, opt)
     grid(fig, "on");
     xlabel(fig, "Real");
     ylabel(fig, "Imag");
-    str_title = "Eigenvalues (" + opt.Algorithm + ")";
+    s_title = "Eigenvalues (" + opt.Algorithm + ")";
     if isfield(obj.output, "l_equilibrium") && ~obj.output.l_equilibrium
-        str_title = str_title + " at the given point";
+        s_title = s_title + " at the given point";
     end
-    title(fig, str_title);
+    title(fig, s_title);
 end

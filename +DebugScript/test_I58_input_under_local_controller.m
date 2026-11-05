@@ -8,30 +8,30 @@
 
 % 共通設定 (各テストの前に毎回実行される)
 r_step = 1e-3;
-str_unit = "SG1B003";
+s_unit = "SG1B003";
 
 
 %% A step on an input driven by an AVR matches get_sys
-net = build_with_avr(str_unit);
-gen = component_of(net, str_unit);
+net = build_with_avr(s_unit);
+gen = component_of(net, s_unit);
 assert(any(string(gen.a_LocalController{1}.sv_y) == "Vfield"))
-[r_err, r_max] = error_to_linear(net, str_unit, "Vfield", r_step);
+[r_err, r_max] = error_to_linear(net, s_unit, "Vfield", r_step);
 assert(r_max > 1e-8, "the step has no effect: %g", r_max)
 assert(r_err < 0.01, "relative error %g", r_err)
 
 
 %% The recorded input is the output of the controller plus the event
-net = build_with_avr(str_unit);
-gen = component_of(net, str_unit);
+net = build_with_avr(s_unit);
+gen = component_of(net, s_unit);
 r_vf = gen.rv_Uequilibrium(gen.sv_u == "Vfield");
-r = simulate_step(net, str_unit, "Vfield", r_step, [0,1e-3]);
-U = component_result(r, net, str_unit).U;
+r = simulate_step(net, s_unit, "Vfield", r_step, [0,1e-3]);
+U = component_result(r, net, s_unit).U;
 assert(abs(U.Vfield(end) - (r_vf + r_step)) < 1e-6, "Vfield %g", U.Vfield(end) - r_vf)
 
 
 %% A step on an input no controller drives still matches get_sys
-net = build_with_avr(str_unit);
-[r_err, r_max] = error_to_linear(net, str_unit, "Pmech", r_step);
+net = build_with_avr(s_unit);
+[r_err, r_max] = error_to_linear(net, s_unit, "Pmech", r_step);
 assert(r_max > 1e-5, "the step has no effect: %g", r_max)
 assert(r_err < 0.01, "relative error %g", r_err)
 
@@ -39,9 +39,9 @@ assert(r_err < 0.01, "relative error %g", r_err)
 %% A global controller on a driven input adds to the local controller
 % AGC も LQR も SG1B003 の Pmech を駆動する。加算のときだけ AGC を含む線形モデルと一致する
 net = DebugScript.helper.build_ieee14();
-gen = component_of(net, str_unit);
+gen = component_of(net, s_unit);
 evalc("gen.add_local_controller(controller.local_LQR(""lqr"", Input=""Pmech""))");
-net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", str_unit, "SG1B001"));
+net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", s_unit, "SG1B001"));
 DebugScript.helper.quiet(@() net.initialize);
 [r_err, r_max] = error_to_linear(net, "SG1B002", "Pmech", r_step);
 assert(r_max > 1e-6, "the step has no effect: %g", r_max)
@@ -49,46 +49,46 @@ assert(r_err < 0.01, "relative error %g", r_err)
 
 
 %% Without an external signal the equilibrium is kept
-net = build_with_avr(str_unit);
+net = build_with_avr(s_unit);
 r = net.simulate([0,5]).odeResults;
-gen = component_of(net, str_unit);
-X = component_result(r, net, str_unit).X;
+gen = component_of(net, s_unit);
+X = component_result(r, net, s_unit).X;
 assert(max(abs(X.omega - gen.rv_Xequilibrium(gen.sv_x == "omega"))) < 1e-9)
 
 
-function net = build_with_avr(str_unit)
+function net = build_with_avr(s_unit)
     net = DebugScript.helper.build_ieee14();
-    component_of(net, str_unit).add_local_controller(controller.avr.AVR_ST1("avr"), controller.pss.PSS1("pss"));
+    component_of(net, s_unit).add_local_controller(controller.avr.AVR_ST1("avr"), controller.pss.PSS1("pss"));
     DebugScript.helper.quiet(@() net.initialize);
 end
 
-function comp = component_of(net, str_unit)
+function comp = component_of(net, s_unit)
     c_comp = cellfun(@(b) b.a_Component, net.a_Bus, "UniformOutput", false);
     c_comp = vertcat(c_comp{:});
-    comp = c_comp{cellfun(@(c) string(c.str_tag) == str_unit, c_comp)};
+    comp = c_comp{cellfun(@(c) string(c.s_tag) == s_unit, c_comp)};
 end
 
-function res = component_result(r, net, str_unit)
-    i_bus = find(cellfun(@(b) any(cellfun(@(c) c == component_of(net, str_unit), b.a_Component)), net.a_Bus));
+function res = component_result(r, net, s_unit)
+    i_bus = find(cellfun(@(b) any(cellfun(@(c) c == component_of(net, s_unit), b.a_Component)), net.a_Bus));
     res = r.Bus(i_bus).Component(1);
 end
 
-function r = simulate_step(net, str_unit, str_input, r_step, rv_time)
-    ev = DebugScript.helper.scenario("step", net, "TimeSpan", rv_time, "InputUnit", str_unit, "InputName", str_input, "InputValue", r_step);
+function r = simulate_step(net, s_unit, s_input, r_step, rv_time)
+    ev = DebugScript.helper.scenario("step", net, "TimeSpan", rv_time, "InputUnit", s_unit, "InputName", s_input, "InputValue", r_step);
     r = net.simulate(rv_time, ev).odeResults;
 end
 
-function [r_err, r_max] = error_to_linear(net, str_unit, str_input, r_step)
+function [r_err, r_max] = error_to_linear(net, s_unit, s_input, r_step)
 % Relative 2-norm error of the omega of the unit to the Kron model, and the largest change of omega.
     rv_time = [0,10];
     % 既定の許容誤差では応答 (1e-5 程度) に対して積分誤差が目立つ
     net.solver_ODE.RelativeTolerance = 1e-8;
     net.solver_ODE.AbsoluteTolerance = 1e-10;
-    r = simulate_step(net, str_unit, str_input, r_step, rv_time);
+    r = simulate_step(net, s_unit, s_input, r_step, rv_time);
 
-    gen = component_of(net, str_unit);
+    gen = component_of(net, s_unit);
     sys = net.get_sys("Algorithm", "Kron");
-    i_u = string(sys.InputName) == gen.attach_tag(str_input);
+    i_u = string(sys.InputName) == gen.attach_tag(s_input);
     i_x = string(sys.StateName) == gen.attach_tag("omega");
     assert(nnz(i_u) == 1 && nnz(i_x) == 1)
 
@@ -106,7 +106,7 @@ function [r_err, r_max] = error_to_linear(net, str_unit, str_input, r_step)
         rv_lin(k) = x(i_x);
     end
 
-    res = component_result(r, net, str_unit).X;
+    res = component_result(r, net, s_unit).X;
     [rv_tu, iv_u] = unique(r.t);
     rv_non = interp1(rv_tu, res.omega(iv_u), rv_t) - gen.rv_Xequilibrium(gen.sv_x == "omega");
     r_err = norm(rv_non - rv_lin)/norm(rv_lin);

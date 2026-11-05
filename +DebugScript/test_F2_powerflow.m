@@ -56,7 +56,7 @@ net = DebugScript.helper.build_9bus();
 evalc("net.a_Bus{1}.l_isSlack = true;");     % evalc: 設定時の INFO 表示を抑制
 evalc("net.a_Bus{2}.l_isSlack = true;");
 assert(net.a_Bus{2}.l_isSlack && ~net.a_Bus{1}.l_isSlack)
-assert(net.a_Bus{2}.str_bustype == "slack")
+assert(net.a_Bus{2}.s_bustype == "slack")
 
 % スラック母線の電圧位相 (Varg) は指定値が使われる
 % B001 は PV 母線になるので発電機出力 P を与える (Task2 では NaN)
@@ -96,7 +96,7 @@ assert(height(net.tab_editLog) == n_log && n_slack(net) == 1)
 
 % 切り替えた系統で潮流計算でき、指定した母線がスラックとして使われる
 [~, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
-assert(flag > 0 && n_slack(net) == 1 && net.a_Bus{2}.str_bustype == "slack")
+assert(flag > 0 && n_slack(net) == 1 && net.a_Bus{2}.s_bustype == "slack")
 
 % スラック指定を外すこともできる (外すとスラックは0、潮流計算で先頭の母線が選ばれる)
 evalc("net.a_Bus{2}.l_isSlack = false;");
@@ -115,8 +115,8 @@ net = DebugScript.helper.build_9bus();
 DebugScript.helper.quiet(@() net.calculate_powerflow);
 
 % 発電機母線: Q が NaN → PV、負荷母線: P,Q 指定 → PQ、機器なし母線: P=Q=0 の PQ
-str_type = string(cellfun(@(b) b.str_bustype, net.a_Bus, "UniformOutput", false));
-assert(isequal(str_type(:)', ["slack","PV","PV","PQ","PQ","PQ","PQ","PQ","PQ"]))
+sv_type = string(cellfun(@(b) b.s_bustype, net.a_Bus, "UniformOutput", false));
+assert(isequal(sv_type(:)', ["slack","PV","PV","PQ","PQ","PQ","PQ","PQ","PQ"]))
 
 % get_pf_set は母線ごとの潮流条件を返す
 tab_set = net.a_Bus{2}.get_pf_set;
@@ -226,7 +226,7 @@ tab_alg = DebugScript.helper.quiet(@() net.calculate_powerflow(Method="algebraic
 tab_dyn = DebugScript.helper.quiet(@() net.calculate_powerflow(Method="dynamic")).tab_bus;
 
 % PV 母線の電圧は指定値
-lv_PV = string(cellfun(@(b) b.str_bustype, net.a_Bus, "UniformOutput", false)) == "PV";
+lv_PV = string(cellfun(@(b) b.s_bustype, net.a_Bus, "UniformOutput", false)) == "PV";
 V_set = cellfun(@(b) b.tab_parameter.powerflow.V, net.a_Bus);
 assert(max(abs(tab_dyn.V(lv_PV) - V_set(lv_PV))) < 1e-4, "dynamic で PV 母線の電圧指定が守られていない")
 assert(max(abs(tab_dyn.Vphasor - tab_alg.Vphasor)) < 1e-3)
@@ -240,7 +240,7 @@ assert(max(abs(tab_dyn.Vphasor - tab_alg.Vphasor)) < 1e-6)
 net = DebugScript.helper.build_9bus();
 [res, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);
 assert(flag > 0)
-assert(res.str_solver == "SolverPF" && res.a_PowerNetwork == net && res.r_elapsed >= 0)
+assert(res.s_solver == "SolverPF" && res.a_PowerNetwork == net && res.r_elapsed >= 0)
 assert(res.options.Method == "algebraic" && isequal(res.options.dynamic, net.solver_PF.dynamic))
 % 反復ごとの母線電圧 (最後が解)
 assert(size(res.cm_Vhistory,1) == numel(net.a_Bus) && isequal(res.rv_step, 0:size(res.cm_Vhistory,2)-1))
@@ -259,12 +259,12 @@ assert(abs(tab_br{4,"Pfrom"} - real(V_ft(1)*conj(I_ft(1)))) < 1e-12)
 S_inject = sum(res.tab_bus.P) + 1j*sum(res.tab_bus.Q);
 assert(abs(sum(tab_br.Ploss) + 1j*sum(tab_br.Qloss) - S_inject) < 1e-8)
 % 各母線: 注入 = 接続する枝へ流れ込む電力の合計
-str_from = string(cellfun(@(b) string(b.a_Bus{1}), net.a_Branch, "UniformOutput", false));
-str_to   = string(cellfun(@(b) string(b.a_Bus{2}), net.a_Branch, "UniformOutput", false));
-for str_bus = string(net.a_Bus)'
-    S_br = sum(tab_br.Pfrom(str_from == str_bus) + 1j*tab_br.Qfrom(str_from == str_bus)) ...
-         + sum(tab_br.Pto(str_to == str_bus)     + 1j*tab_br.Qto(str_to == str_bus));
-    assert(abs(S_br - res.tab_bus{str_bus,"P"} - 1j*res.tab_bus{str_bus,"Q"}) < 1e-8)
+sv_from  = string(cellfun(@(b) string(b.a_Bus{1}), net.a_Branch, "UniformOutput", false));
+sv_to    = string(cellfun(@(b) string(b.a_Bus{2}), net.a_Branch, "UniformOutput", false));
+for s_bus = string(net.a_Bus)'
+    S_br = sum(tab_br.Pfrom(sv_from == s_bus) + 1j*tab_br.Qfrom(sv_from == s_bus)) ...
+         + sum(tab_br.Pto(sv_to == s_bus)     + 1j*tab_br.Qto(sv_to == s_bus));
+    assert(abs(S_br - res.tab_bus{s_bus,"P"} - 1j*res.tab_bus{s_bus,"Q"}) < 1e-8)
 end
 
 
@@ -280,8 +280,8 @@ w = warning("off"); c = onCleanup(@() warning(w));
 assert(flag == 0 && ~res.l_success)
 assert(res.options.MaxIterations == 1 && res.options.Tolerance == 1e-10)
 % Verbose=true は fsolve の表示 ("iter")
-str_log = evalc("res = net.calculate_powerflow(Verbose=true);");
-assert(res.options.Display == "iter" && strlength(str_log) > strlength(evalc("net.calculate_powerflow();")))
+s_log = evalc("res = net.calculate_powerflow(Verbose=true);");
+assert(res.options.Display == "iter" && strlength(s_log) > strlength(evalc("net.calculate_powerflow();")))
 res = DebugScript.helper.quiet(@() net.calculate_powerflow(verbose=false, method="dynamic"));   % 名前の大文字小文字は区別しない
 assert(res.options.Display == "none" && res.options.Method == "dynamic")
 
@@ -332,18 +332,18 @@ assert(numel(a_new) == 1)
 close(a_new)
 
 % Export: 拡張子で形式が決まる。CSV は母線または枝の表
-str_dir = tempname; mkdir(str_dir); c_dir = onCleanup(@() rmdir(str_dir, "s"));
-f_bus = res.Export(fullfile(str_dir, "bus.csv"));
+s_dir = tempname; mkdir(s_dir); c_dir = onCleanup(@() rmdir(s_dir, "s"));
+f_bus = res.Export(fullfile(s_dir, "bus.csv"));
 tab = readtable(f_bus, "ReadRowNames", true);
 assert(isequal(string(tab.Properties.RowNames), string(net.a_Bus)) && max(abs(tab.V - res.tab_bus.V)) < 1e-12)
-res.Export(fullfile(str_dir, "branch.csv"), Table="branch");
-tab = readtable(fullfile(str_dir, "branch.csv"), "ReadRowNames", true);
+res.Export(fullfile(s_dir, "branch.csv"), Table="branch");
+tab = readtable(fullfile(s_dir, "branch.csv"), "ReadRowNames", true);
 assert(height(tab) == numel(net.a_Branch) && max(abs(tab.Ploss - res.tab_branch.Ploss)) < 1e-12)
 % Export=filename は計算後に result.Export を呼ぶ
-DebugScript.helper.quiet(@() net.calculate_powerflow(Export=fullfile(str_dir, "nv.csv")));
-assert(isfile(fullfile(str_dir, "nv.csv")))
+DebugScript.helper.quiet(@() net.calculate_powerflow(Export=fullfile(s_dir, "nv.csv")));
+assert(isfile(fullfile(s_dir, "nv.csv")))
 % 未対応の拡張子
-assert(error_id(@() res.Export(fullfile(str_dir, "bus.mat"))) == "GUILDA:ResultPF:ExportFormat")
+assert(error_id(@() res.Export(fullfile(s_dir, "bus.mat"))) == "GUILDA:ResultPF:ExportFormat")
 
 
 %% Dynamic method exports convergence history as JSON

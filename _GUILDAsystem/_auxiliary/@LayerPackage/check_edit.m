@@ -2,7 +2,7 @@ function flag = check_edit(obj)
 % Build the handles that are not up to date and report whether the equilibrium is.
 %
 % Brings the layer and its descendants up to date. Calls set_odefcn on every layer whose
-% sct_edit.str_odefcn is not "updated" ("unset": never built; "editted": a dynamics edit, a
+% sct_edit.s_odefcn is not "updated" ("unset": never built; "editted": a dynamics edit, a
 % network Hz edit or an attach since the last build), parent before children, and reports
 % whether initialize has run (PowerNetwork.check_edit also checks the edits since). Called at the start of every
 % analysis that uses the f_* handles: initialize, calculate_continuation_powerflow and,
@@ -15,7 +15,7 @@ function flag = check_edit(obj)
     arguments (Output)
         flag % True when initialize has run; on PowerNetwork, also nothing that changes the equilibrium was edited since.
     end
-    if obj.sct_edit.str_odefcn ~= "updated"
+    if obj.sct_edit.s_odefcn ~= "updated"
         obj.set_odefcn();
     end
     cellfun(@(c) c.check_edit(), obj.children);

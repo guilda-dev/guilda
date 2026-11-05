@@ -81,7 +81,7 @@
 <pre><code>net = PowerNetwork("ThreeBus");
 b1  = net.add_bus(V=1.0, Varg=0);
 b2  = net.add_bus();
-net.add_branch("pi", [b1.str_tag, b2.str_tag], R=0.01, X=0.085);
+net.add_branch("pi", [b1.s_tag, b2.s_tag], R=0.01, X=0.085);
 gen = b1.add_component("gen-1axis", P=0.5);
 b2.add_component("load-power", P=-0.5, Q=-0.1);
 gen.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
@@ -95,7 +95,7 @@ b1.l_isSlack = true;</code></pre>
         <tr><td><code>bus.add_component(Key, parameter=..., Name=Value)</code></td><td data-label="Returns" data-label-ja="戻り値"><code>Component</code></td><td data-label="Defaults come from" data-label-ja="既定値の出所"><span lang="en">arguments block of <code>add_component</code>; dynamics: first row of the class <code>parameter.csv</code> (or a named row / a given table)</span><span lang="ja"><code>add_component</code> の arguments ブロック。dynamics はクラスの <code>parameter.csv</code> の 1 行目（または名前で選んだ行・与えた table）</span></td></tr>
         <tr><td><code>comp.add_local_controller(con, ...)</code></td><td data-label="Returns" data-label-ja="戻り値">—</td><td data-label="Defaults come from" data-label-ja="既定値の出所"><span lang="en">controller constructors, e.g. <code>controller.avr.AVR_ST1(tag, Name=Value)</code></span><span lang="ja">制御器のコンストラクタ（例: <code>controller.avr.AVR_ST1(tag, Name=Value)</code>）</span></td></tr>
         <tr><td><code>net.add_global_controller(gc)</code></td><td data-label="Returns" data-label-ja="戻り値">—</td><td data-label="Defaults come from" data-label-ja="既定値の出所"><span lang="en">controller constructor, e.g. <code>controller.agc.broadcast_PI_AGC(net, tag, gens..., Name=Value)</code></span><span lang="ja">制御器のコンストラクタ（例: <code>controller.agc.broadcast_PI_AGC(net, tag, gens..., Name=Value)</code>）</span></td></tr>
-        <tr><td><code>bus.l_isSlack = true</code>, <code>obj.tab_parameter = tab</code>, <code>obj.para_*.Name = v</code>, <code>obj.str_tag = s</code></td><td data-label="Returns" data-label-ja="戻り値">—</td><td data-label="Defaults come from" data-label-ja="既定値の出所">—</td></tr>
+        <tr><td><code>bus.l_isSlack = true</code>, <code>obj.tab_parameter = tab</code>, <code>obj.para_*.Name = v</code>, <code>obj.s_tag = s</code></td><td data-label="Returns" data-label-ja="戻り値">—</td><td data-label="Defaults come from" data-label-ja="既定値の出所">—</td></tr>
         <tr><td><code>remove_bus</code>, <code>remove_branch</code>, <code>remove_global_controller</code>, <code>remove_component</code>, <code>replace_component</code>, <code>remove_local_controller</code></td><td data-label="Returns" data-label-ja="戻り値"><span lang="en"><code>replace_component</code>: the new <code>Component</code></span><span lang="ja"><code>replace_component</code>: 新しい <code>Component</code></span></td><td data-label="Defaults come from" data-label-ja="既定値の出所">—</td></tr>
       </tbody>
     </table>
@@ -253,7 +253,7 @@ b1.l_isSlack = true;</code></pre>
           <path class="dg-sv-line is-muted" d="M34 940H78" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="932" width="30" height="16" rx="8"/>
           <text class="is-inv is-b" x="18" y="944" text-anchor="middle" style="font-size:10px">15</text>
-          <text class="dg-mono is-sm fmb-l" x="92" y="934" text-anchor="start">str_tag = &quot;BX&quot;</text>
+          <text class="dg-mono is-sm fmb-l" x="92" y="934" text-anchor="start">s_tag = &quot;BX&quot;</text>
         </svg>
       </div>
       <ol class="dg-only-narrow fmb-narrow">
@@ -271,7 +271,7 @@ b1.l_isSlack = true;</code></pre>
         <li><b>MB-12</b> → <code>PowerNetwork.remove_*</code></li>
         <li><b>MB-13</b> → <code>Bus.remove_component</code> / <code>replace_component</code></li>
         <li><b>MB-14</b> → <code>Component.remove_local_controller</code></li>
-        <li><b>MB-15</b> → <code>LayerPackage.set.str_tag</code></li>
+        <li><b>MB-15</b> → <code>LayerPackage.set.s_tag</code></li>
       </ol>
       <figcaption lang="en">Numbers are the step IDs of the list below. Every <code>add_*</code>, <code>remove_*</code> and <code>replace_*</code> call ends with <code>log_edit</code> on the parent (MB-10), not drawn for each step.</figcaption>
       <figcaption lang="ja">番号は下のステップ一覧の ID。<code>add_*</code>・<code>remove_*</code>・<code>replace_*</code> はすべて最後に親の <code>log_edit</code>（MB-10）を呼び出し（図では各ステップに省略）。</figcaption>
@@ -353,14 +353,14 @@ b1.l_isSlack = true;</code></pre>
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li>Tag: class prefix + next number among the components of this bus + bus tag (e.g. <code>SG1B001</code>)</li>
-            <li>Subclass constructor calls <code>Component(str_tag, opt)</code>: creates five <code>Parameter</code> objects; replaces a NaN cost <code>HP</code> / <code>fP</code> by 0 for a load, 1 otherwise</li>
+            <li>Subclass constructor calls <code>Component(s_tag, opt)</code>: creates five <code>Parameter</code> objects; replaces a NaN cost <code>HP</code> / <code>fP</code> by 0 for a load, 1 otherwise</li>
             <li>Subclass adds <code>sv_para</code> to <code>para_dynamics</code></li>
             <li>Generator: force <code>Q = NaN</code></li>
             <li>Call <code>comp.set_bus(bus)</code>: marks the handles of the component and its controllers stale (<code>mark_odefcn</code>)</li>
             <li>Append to <code>a_Component</code></li>
           </ul><ul lang="ja">
             <li>タグ: クラスの接頭辞 + この母線の機器の中での次の番号 + 母線のタグ（例: <code>SG1B001</code>）</li>
-            <li>サブクラスのコンストラクタが <code>Component(str_tag, opt)</code> を呼び出し: 5 つの <code>Parameter</code> を作成、NaN のコスト <code>HP</code> / <code>fP</code> を負荷なら 0、それ以外は 1 に置換</li>
+            <li>サブクラスのコンストラクタが <code>Component(s_tag, opt)</code> を呼び出し: 5 つの <code>Parameter</code> を作成、NaN のコスト <code>HP</code> / <code>fP</code> を負荷なら 0、それ以外は 1 に置換</li>
             <li>サブクラスが <code>sv_para</code> を <code>para_dynamics</code> に追加</li>
             <li>発電機: <code>Q = NaN</code> に固定</li>
             <li><code>comp.set_bus(bus)</code> を呼び出し: 機器とその制御器のハンドルを古い状態に（<code>mark_odefcn</code>）</li>
@@ -369,7 +369,7 @@ b1.l_isSlack = true;</code></pre>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en">options (P 0, Q 0, baseMVA 100, Pmin/Qmin −Inf, Pmax/Qmax Inf, OPF P0/Q0 0, HP/fP NaN, HQ/fQ 0, Marker "o"), <code>parameter</code>, class <code>parameter.csv</code></span><span lang="ja">オプション（P 0, Q 0, baseMVA 100, Pmin/Qmin −Inf, Pmax/Qmax Inf, OPF P0/Q0 0, HP/fP NaN, HQ/fQ 0, Marker "o"）、<code>parameter</code>、クラスの <code>parameter.csv</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>comp</code>; <code>para_operation</code> (baseMVA, Pmin, Pmax, Qmin, Qmax), <code>para_powerflow</code> (P, Q), <code>para_OPF</code> (P0, Q0, HP, HQ, fP, fQ, startup, shutdown), <code>para_graph</code>, <code>para_dynamics</code>; <code>comp.a_Bus</code>; <code>sct_edit.str_odefcn</code> = unset; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
+          <dd><code>comp</code>; <code>para_operation</code> (baseMVA, Pmin, Pmax, Qmin, Qmax), <code>para_powerflow</code> (P, Q), <code>para_OPF</code> (P0, Q0, HP, HQ, fP, fQ, startup, shutdown), <code>para_graph</code>, <code>para_dynamics</code>; <code>comp.a_Bus</code>; <code>sct_edit.s_odefcn</code> = unset; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="MB-05">
@@ -452,7 +452,7 @@ b1.l_isSlack = true;</code></pre>
             <li><code>set_parent(net)</code>: <code>a_PowerNetwork</code> を設定、<code>mark_odefcn</code> を呼び出し</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>gc.str_tag</code>, <code>gc.controlledUnits</code>, <code>gc.sv_u</code>, <code>gc.sv_y</code>, <span lang="en">unit</span><span lang="ja">対象の</span> <code>sv_x</code>, <code>sv_u</code></dd>
+          <dd><code>gc.s_tag</code>, <code>gc.controlledUnits</code>, <code>gc.sv_u</code>, <code>gc.sv_y</code>, <span lang="en">unit</span><span lang="ja">対象の</span> <code>sv_x</code>, <code>sv_u</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>net.a_GlobalController</code>, <code>gc.a_PowerNetwork</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
         </dl>
@@ -527,7 +527,7 @@ b1.l_isSlack = true;</code></pre>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en">log row, <code>parent</code> chain, network <code>sct_edit</code></span><span lang="ja">ログの行、<code>parent</code> の連鎖、ネットワークの <code>sct_edit</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>sct_edit.str_odefcn</code>, <code>net.tab_editLog</code> (<code>net.l_staleEquilibrium</code>)</dd>
+          <dd><code>sct_edit.s_odefcn</code>, <code>net.tab_editLog</code> (<code>net.l_staleEquilibrium</code>)</dd>
         </dl>
       </li>
       <li class="fs-step" id="MB-11">
@@ -627,7 +627,7 @@ b1.l_isSlack = true;</code></pre>
         </dl>
       </li>
       <li class="fs-step" id="MB-15">
-        <p class="fs-head"><b class="fs-id">MB-15</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>LayerPackage.set.str_tag</code></span></p>
+        <p class="fs-head"><b class="fs-id">MB-15</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>LayerPackage.set.s_tag</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -642,7 +642,7 @@ b1.l_isSlack = true;</code></pre>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en">sibling tags</span><span lang="ja">兄弟のタグ</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>str_tag</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Tag"</code> <span lang="en">(nothing becomes stale)</span><span lang="ja">（何も古くならない）</span></dd>
+          <dd><code>s_tag</code>; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Tag"</code> <span lang="en">(nothing becomes stale)</span><span lang="ja">（何も古くならない）</span></dd>
         </dl>
       </li>
     </ol>
@@ -766,14 +766,14 @@ b1.l_isSlack = true;</code></pre>
     <ul lang="en">
       <li><b>Before the first <code>initialize</code></b>: the network's <code>sct_edit.l_initialized</code> is false, so no row is added to <code>tab_editLog</code> (the equilibrium is stale anyway). <code>handle_edit</code> still keeps a single slack bus</li>
       <li><b>After <code>initialize</code></b>: an edit marked stale in <a href="class-design.html#edits">Class Design: Handling of model edits</a> adds a row that makes <code>l_staleEquilibrium</code> true; <code>simulate</code>, <code>linearize</code> and <code>get_sys</code> then stop until <code>initialize</code> runs again. Operation, OPF, graph and tag edits: logged, equilibrium stays valid</li>
-      <li><b>Handle cache</b>: constructors do not build <code>f_*</code> (<code>str_odefcn = "unset"</code>). Attaching (<code>Component.set_bus</code>, <code>LocalController.set_parent</code>, <code>GlobalController.set_parent</code>) and a dynamics or network <code>Hz</code> edit turn <code>"updated"</code> into <code>"editted"</code>. <code>check_edit</code> at the start of the next analysis rebuilds them (see <a href="feature-initialize.html">Initialization</a>)</li>
+      <li><b>Handle cache</b>: constructors do not build <code>f_*</code> (<code>s_odefcn = "unset"</code>). Attaching (<code>Component.set_bus</code>, <code>LocalController.set_parent</code>, <code>GlobalController.set_parent</code>) and a dynamics or network <code>Hz</code> edit turn <code>"updated"</code> into <code>"editted"</code>. <code>check_edit</code> at the start of the next analysis rebuilds them (see <a href="feature-initialize.html">Initialization</a>)</li>
       <li><b>Detached objects</b>: a removed object has no parent, so its later edits stop at it (<code>report_edit</code> has no parent to pass to) and do not reach the network</li>
       <li><b>Copies</b>: no deep-copy method; <code>b = a</code> copies a handle. For an independent network, save and load through a MAT file or CSV export. <code>PowerNetwork.loadobj</code> attaches the parameter listeners again after a MAT load (warning <code>GUILDA:PowerNetwork:IncompleteLoad</code> when a layer is still loading)</li>
     </ul>
     <ul lang="ja">
       <li><b>最初の <code>initialize</code> の前</b>: ネットワークの <code>sct_edit.l_initialized</code> は false のため、<code>tab_editLog</code> への行の追加なし（平衡点はもともと古い扱い）。<code>handle_edit</code> は slack 母線を 1 つに維持</li>
       <li><b><code>initialize</code> の後</b>: <a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>で古くなるとされる編集は <code>l_staleEquilibrium</code> を true にする行を追加し、<code>simulate</code>・<code>linearize</code>・<code>get_sys</code> は再び <code>initialize</code> を実行するまで停止。operation・OPF・graph・タグの編集: 記録のみ、平衡点は有効なまま</li>
-      <li><b>ハンドルキャッシュ</b>: コンストラクタは <code>f_*</code> を作らない（<code>str_odefcn = "unset"</code>）。接続（<code>Component.set_bus</code>、<code>LocalController.set_parent</code>、<code>GlobalController.set_parent</code>）と、dynamics またはネットワークの <code>Hz</code> の編集で <code>"updated"</code> を <code>"editted"</code> に変更。次の解析の最初の <code>check_edit</code> が再構築（<a href="feature-initialize.html">初期化</a>参照）</li>
+      <li><b>ハンドルキャッシュ</b>: コンストラクタは <code>f_*</code> を作らない（<code>s_odefcn = "unset"</code>）。接続（<code>Component.set_bus</code>、<code>LocalController.set_parent</code>、<code>GlobalController.set_parent</code>）と、dynamics またはネットワークの <code>Hz</code> の編集で <code>"updated"</code> を <code>"editted"</code> に変更。次の解析の最初の <code>check_edit</code> が再構築（<a href="feature-initialize.html">初期化</a>参照）</li>
       <li><b>切り離されたオブジェクト</b>: 削除されたオブジェクトには親がないため、その後の編集はそこで停止し（<code>report_edit</code> の渡し先の親なし）、ネットワークには届かない</li>
       <li><b>コピー</b>: ディープコピーのメソッドはなし。<code>b = a</code> はハンドルのコピー。独立したネットワークには MAT ファイルへの保存と読み込み、または CSV への書き出しを使用。<code>PowerNetwork.loadobj</code> は MAT からの読み込み後にパラメータのリスナーを再設定（層がまだ読み込み中なら警告 <code>GUILDA:PowerNetwork:IncompleteLoad</code>）</li>
     </ul>

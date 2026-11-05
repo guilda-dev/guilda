@@ -51,25 +51,25 @@ function c_scenario = import_csv(path, opt)
     o = setvartype(o, o.VariableNames, "string");
     tab = readtable(path, o);
 
-    sv_col = ["Scenario","Description","ScenarioTimeStart","ScenarioTimeEnd","Tag","TimeStart","TimeEnd", ...
+    sr_col = ["Scenario","Description","ScenarioTimeStart","ScenarioTimeEnd","Tag","TimeStart","TimeEnd", ...
               "FaultBus","TripUnit","OpenBranch","OffsetUnit","OffsetState","OffsetValue", ...
               "InputUnit","InputName","InputValue"];
     sv_in = string(tab.Properties.VariableNames);
     if ~ismember("Scenario", sv_in)
         error(msg("GUILDA:Scenario:CsvMissingColumn", char(path)));
     end
-    sv_unknown = setdiff(sv_in, sv_col, "stable");
+    sv_unknown = setdiff(sv_in, sr_col, "stable");
     if ~isempty(sv_unknown)
         warning(msg("GUILDA:Scenario:CsvUnknownColumn", char(path), char(join(sv_unknown, ", "))));
     end
     n_row = height(tab);
-    for str_col = sv_col
-        if ismember(str_col, sv_in)
-            x = strip(tab.(str_col));
+    for s_col = sr_col
+        if ismember(s_col, sv_in)
+            x = strip(tab.(s_col));
             x(ismissing(x)) = "";
-            tab.(str_col) = x;
+            tab.(s_col) = x;
         else
-            tab.(str_col) = strings(n_row, 1);
+            tab.(s_col) = strings(n_row, 1);
         end
     end
 
@@ -79,14 +79,14 @@ function c_scenario = import_csv(path, opt)
         iv_row = find(tab.Scenario == sv_sc(i));
         sc = Scenario(sv_sc(i));
         sc.Description = one_value(tab, iv_row, "Description", sv_sc(i), path);
-        str_t0 = one_value(tab, iv_row, "ScenarioTimeStart", sv_sc(i), path);
-        str_t1 = one_value(tab, iv_row, "ScenarioTimeEnd", sv_sc(i), path);
-        if str_t0 ~= "" || str_t1 ~= ""
-            sc.Time = [to_numbers(str_t0, iv_row(1), "ScenarioTimeStart", path), ...
-                       to_numbers(str_t1, iv_row(1), "ScenarioTimeEnd", path)];
+        s_t0   = one_value(tab, iv_row, "ScenarioTimeStart", sv_sc(i), path);
+        s_t1   = one_value(tab, iv_row, "ScenarioTimeEnd", sv_sc(i), path);
+        if s_t0 ~= "" || s_t1 ~= ""
+            sc.Time = [to_numbers(s_t0, iv_row(1), "ScenarioTimeStart", path), ...
+                       to_numbers(s_t1, iv_row(1), "ScenarioTimeEnd", path)];
         end
         for r = iv_row(:).'
-            if all(tab{r, sv_col(5:end)} == "")
+            if all(tab{r, sr_col(5:end)} == "")
                 continue        % a row of the scenario only
             end
             rv_ts = to_numbers(tab.TimeStart(r), r, "TimeStart", path);
@@ -117,12 +117,12 @@ function c_scenario = import_csv(path, opt)
 end
 
 
-function str = one_value(tab, iv_row, str_col, str_scenario, path)
+function str = one_value(tab, iv_row, s_col, s_scenario, path)
 % The value of a scenario column: the same on every row that gives it
-    sv = unique(tab.(str_col)(iv_row), "stable");
+    sv = unique(tab.(s_col)(iv_row), "stable");
     sv = sv(sv ~= "");
     if numel(sv) > 1
-        error(msg("GUILDA:Scenario:CsvConflict", char(str_scenario), char(path), char(str_col)));
+        error(msg("GUILDA:Scenario:CsvConflict", char(s_scenario), char(path), char(s_col)));
     end
     str = "";
     if ~isempty(sv)
@@ -137,7 +137,7 @@ function sv = to_list(str)
     end
 end
 
-function rv = to_numbers(str, r, str_col, path)
+function rv = to_numbers(str, r, s_col, path)
     rv = zeros(0,1);
     if str == ""
         return
@@ -145,6 +145,6 @@ function rv = to_numbers(str, r, str_col, path)
     sv = strip(split(str, ";"));
     rv = str2double(sv);
     if any(isnan(rv) & ~strcmpi(sv, "NaN"))
-        error(msg("GUILDA:Scenario:CsvInvalidValue", string(r), char(path), char(str_col), char(str)));
+        error(msg("GUILDA:Scenario:CsvInvalidValue", string(r), char(path), char(s_col), char(str)));
     end
 end

@@ -8,23 +8,23 @@
 % 実行: runtests("DebugScript.test_F19_model_constructor")  または  DebugScript.run_all("Features","F19")
 
 % 共通設定 (各テストの前に毎回実行される)
-str_miss = "GUILDA:Component:MissingParameter";
-str_name = "GUILDA:Component:UnknownParameter";
-str_q    = "GUILDA:Component:GeneratorQIgnored";
+s_miss   = "GUILDA:Component:MissingParameter";
+s_name   = "GUILDA:Component:UnknownParameter";
+s_q      = "GUILDA:Component:GeneratorQIgnored";
 
 
 %% A table without a column names the missing column
 bus = PowerNetwork().add_bus();
 tab = table(1, 2, VariableNames=["M", "D"]);
 ME = caught(@() bus.add_component("gen-1axis", parameter=tab));
-assert(DebugScript.helper.msg_id(ME) == str_miss)
+assert(DebugScript.helper.msg_id(ME) == s_miss)
 assert(contains(ME.message, "Xd") && ~contains(ME.message, "'M") && contains(ME.message, "table"))
 assert(isempty(bus.a_Component))
 
 
 %% A model column absent from parameter.csv names the column and the file
 ME = caught(@() DebugScript.helper.GeneratorStub("1B001", nan, default_opt()));
-assert(DebugScript.helper.msg_id(ME) == str_miss)
+assert(DebugScript.helper.msg_id(ME) == s_miss)
 assert(contains(ME.message, "Zeta") && contains(ME.message, "parameter.csv"))
 
 
@@ -36,10 +36,10 @@ assert(gen.para_dynamics.tab_parameter.Zeta == 1 && gen.para_dynamics.tab_parame
 %% An unknown parameter name lists the allowed names
 bus = PowerNetwork().add_bus();
 ME = caught(@() bus.add_component("gen-park", parameter="NGT9"));
-assert(DebugScript.helper.msg_id(ME) == str_name)
+assert(DebugScript.helper.msg_id(ME) == s_name)
 assert(contains(ME.message, "NGT9") && contains(ME.message, "NGT2") && contains(ME.message, "NGT8"))
 assert(isempty(bus.a_Component))
-assert(DebugScript.helper.msg_id(caught(@() bus.add_component("gen-park", parameter=["NGT2", "NGT6"]))) == str_name)
+assert(DebugScript.helper.msg_id(caught(@() bus.add_component("gen-park", parameter=["NGT2", "NGT6"]))) == s_name)
 
 
 %% Known parameter names select the row of parameter.csv
@@ -54,23 +54,23 @@ assert(gen0.para_dynamics.tab_parameter.Xd == 1.7 && gen0.para_dynamics.tab_para
 
 %% A load subclass without a constructor works
 ld = DebugScript.helper.LoadStub("2B003", nan, default_opt());
-assert(ld.str_tag == "L2B003")
+assert(ld.s_tag == "L2B003")
 assert(isa(ld, "component.load.abstract") && ld.para_powerflow.P == 0.5)
 
 
 %% Built-in loads keep their tags
 bus = PowerNetwork().add_bus();
 ld = bus.add_component("load-power", P=-0.8, Q=-0.3);
-assert(startsWith(ld.str_tag, "LPQ1") && ld.para_powerflow.Q == -0.3)
-assert(startsWith(bus.add_component("load-impedance", P=-0.1).str_tag, "LRX2"))
+assert(startsWith(ld.s_tag, "LPQ1") && ld.para_powerflow.Q == -0.3)
+assert(startsWith(bus.add_component("load-impedance", P=-0.1).s_tag, "LRX2"))
 
 
 %% An ignored generator Q warns and is still replaced by NaN
 bus = PowerNetwork().add_bus();
 lastwarn("");
 gen = bus.add_component("gen-park", P=0.5, Q=0.3);
-[str_msg, str_id] = lastwarn(); str_id = DebugScript.helper.msg_id(str_msg, str_id);
-assert(string(str_id) == str_q && contains(str_msg, "0.3") && contains(str_msg, gen.str_tag))
+[s_msg, s_id] = lastwarn(); s_id = DebugScript.helper.msg_id(s_msg, s_id);
+assert(string(s_id) == s_q && contains(s_msg, "0.3") && contains(s_msg, gen.s_tag))
 assert(isnan(gen.para_powerflow.Q))
 
 
@@ -86,9 +86,9 @@ assert(string(lastwarn) == "")
 net = DebugScript.helper.build_ieee14();
 bus = net.a_Bus{1};
 lastwarn("");
-gen = bus.replace_component(bus.a_Component{1}.str_tag, "gen-classical");
-str_id = DebugScript.helper.msg_id();
-assert(string(str_id) ~= str_q && isnan(gen.para_powerflow.Q))
+gen = bus.replace_component(bus.a_Component{1}.s_tag, "gen-classical");
+s_id = DebugScript.helper.msg_id();
+assert(string(s_id) ~= s_q && isnan(gen.para_powerflow.Q))
 
 
 %% Built-in networks and the bundled CSV data do not warn about Q
@@ -96,7 +96,7 @@ c_net = {@() network.IEEE9bus(), @() network.IEEE14bus(), @() network.IEEE14bus_
          @() network.IEEE68bus(), @() network.Ishizaki6Bus(), @() network.TEST31bus(), @() network.Txt3Bus(), @() network.Tutorial3bus(), ...
          @() network.IEEJ_EAST10(), @() network.IEEJ_EAST30(), @() network.IEEJ_WEST10(), @() network.IEEJ_WEST30()};
 for i = 1:numel(c_net)
-    s = warning("error", str_q);    %#ok<CTPCT>
+    s = warning("error", s_q);    %#ok<CTPCT>
     c_warn = onCleanup(@() warning(s));
     DebugScript.helper.quiet(c_net{i});
     clear c_warn
@@ -111,7 +111,7 @@ gen.add_local_controller(lqr);
 pss = controller.pss.PSS1("pss1");
 ME = caught(@() gen.add_local_controller(pss));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:Component:PssParentKey")
-assert(contains(ME.message, "'local'") && contains(ME.message, lqr.str_tag) && contains(ME.message, "'avr'"))
+assert(contains(ME.message, "'local'") && contains(ME.message, lqr.s_tag) && contains(ME.message, "'avr'"))
 assert(isempty(pss.a_Component))
 
 

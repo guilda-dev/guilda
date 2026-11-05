@@ -39,13 +39,13 @@ ev_fault = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.4,5], "Fault
 ev_trip  = DebugScript.helper.scenario("trip", net, "TimeSpan", [0.4,5], "TripUnit", ["SG1B003";"agc"]);
 ev_error = DebugScript.helper.scenario("input", net, "TimeSpan", [0.4,5], "InputUnit", "SG1B002", "InputName", "Pmech", ...
                        "InputValue", @bad_input);
-str_id = "";
+s_id = "";
 try
     DebugScript.helper.quiet(@() net.simulate([0,2], ev_fault, ev_trip, ev_error));
 catch me
-    str_id = DebugScript.helper.msg_id(me);
+    s_id = DebugScript.helper.msg_id(me);
 end
-assert(str_id == "GUILDA:SolverODE:PhaseFailed", "入力関数のエラーで止まる: " + str_id)
+assert(s_id == "GUILDA:SolverODE:PhaseFailed", "入力関数のエラーで止まる: " + s_id)
 assert_restored(net)
 
 
@@ -84,15 +84,15 @@ end
 function assert_restored(net)
     a_gc = net.a_GlobalController;
     for k = 1:numel(a_gc)
-        assert(a_gc{k}.l_isConnect, "大域制御器 " + a_gc{k}.str_tag)
+        assert(a_gc{k}.l_isConnect, "大域制御器 " + a_gc{k}.s_tag)
     end
     for i = 1:numel(net.a_Bus)
         bus = net.a_Bus{i};
-        assert(~get_private(bus, "l_isFault"), "母線 " + bus.str_tag)
+        assert(~get_private(bus, "l_isFault"), "母線 " + bus.s_tag)
         for j = 1:numel(bus.a_Component)
             comp = bus.a_Component{j};
-            assert(get_private(comp, "l_isConnect"), "機器 " + comp.str_tag)
-            assert(isempty(comp.rv_Xoffset) && isempty(comp.rv_Uoffset), "機器 " + comp.str_tag)
+            assert(get_private(comp, "l_isConnect"), "機器 " + comp.s_tag)
+            assert(isempty(comp.rv_Xoffset) && isempty(comp.rv_Uoffset), "機器 " + comp.s_tag)
         end
     end
 end

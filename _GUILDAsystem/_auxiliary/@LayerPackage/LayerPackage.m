@@ -40,7 +40,7 @@ classdef LayerPackage < handle
         %
         % - l_initialized: True once initialize has run with the layer in the network (set by
         %   reset_edit at the end of initialize).
-        % - str_odefcn: State of the cached f_* function handles built by set_odefcn: "unset"
+        % - s_odefcn: State of the cached f_* function handles built by set_odefcn: "unset"
         %   (never built), "editted" (built, but no longer matching the parameters or the
         %   network frequency) or "updated" (built from the current values). An edit of a
         %   "dynamics" parameter (log_edit, on its owner), a network Hz edit (log_edit, on every
@@ -52,7 +52,7 @@ classdef LayerPackage < handle
         %
         % Whether the equilibrium is stale is not stored: PowerNetwork.l_staleEquilibrium
         % derives it from tab_editLog (see edit_effect).
-        sct_edit (1,1) struct = struct("l_initialized",false, "str_odefcn","unset")
+        sct_edit (1,1) struct = struct("l_initialized",false, "s_odefcn","unset")
     end
     
     %% Tag
@@ -69,12 +69,12 @@ classdef LayerPackage < handle
         % IDs, so the tags of existing child layers do not follow: after renaming bus B002 to BX, its
         % component SG1B002 keeps its tag and a component added later is SG2BX.
         % <@Type> string
-        str_tag
+        s_tag
     end
 
 
     methods(Access=protected)
-        out = get_tag(obj,l_with_layer, str_split)
+        out = get_tag(obj,l_with_layer, s_split)
         log_edit(obj, log, tag, before, after)
         reset_edit(obj)
         flag = check_edit(obj)
@@ -91,7 +91,7 @@ classdef LayerPackage < handle
         % Build the f_* handle cache from the current parameters and network frequency.
         % Layers that own handles (Component, LocalController, GlobalController)
         % override this; other layers have nothing to build.
-            obj.sct_edit.str_odefcn = "updated";
+            obj.sct_edit.s_odefcn = "updated";
         end
 
         function mark_odefcn(obj)
@@ -99,8 +99,8 @@ classdef LayerPackage < handle
         % of the frequency they read: a network Hz edit (log_edit) and an attach
         % (Component.set_bus, LocalController.set_parent, GlobalController.set_parent).
         % check_edit builds them at the next analysis. Handles never built stay "unset".
-            if obj.sct_edit.str_odefcn == "updated"
-                obj.sct_edit.str_odefcn = "editted";
+            if obj.sct_edit.s_odefcn == "updated"
+                obj.sct_edit.s_odefcn = "editted";
             end
             cellfun(@(c) c.mark_odefcn(), obj.children);
         end
@@ -124,7 +124,7 @@ classdef LayerPackage < handle
         %   Parameter(OPF)         -             -
         %   Parameter(graph)       -             -
         %   OPF                    -             -         (set_opffcn / reset_opffcn)
-        %   Tag                    -             -         (rename through str_tag)
+        %   Tag                    -             -         (rename through s_tag)
             arguments
                 obj % Any layer (the mapping does not depend on it).
                 tab table % Edit-log rows (columns of tab_editLog).
@@ -140,8 +140,8 @@ classdef LayerPackage < handle
         end
     end
     methods
-        varargout = disp_tree(obj, str_ignore)
-        [out, sct_visited] = struct(obj, l_disp, str_header, sct_visited)
+        varargout = disp_tree(obj, sr_ignore)
+        [out, sct_visited] = struct(obj, l_disp, s_header, sct_visited)
 
         function doc(obj)
         % Open the class reference page of the layer's class.
@@ -165,40 +165,40 @@ classdef LayerPackage < handle
         function set.sct_edit(obj, sct_edit)
             % A field cannot have a validator, and assigning a misspelled field would add a new one
             mustBeA(sct_edit.l_initialized, "logical");
-            mustBeMember(sct_edit.str_odefcn, ["unset","editted","updated"]);
+            mustBeMember(sct_edit.s_odefcn, ["unset","editted","updated"]);
             assert(numel(fieldnames(sct_edit)) == 2, "GUILDA:LayerPackage:EditStateFields", "sct_edit has exactly two fields.");
             obj.sct_edit = sct_edit;
         end
 
-        function set.str_tag(obj,str_newtag)
+        function set.s_tag(obj,s_newtag)
             % A tag that already exists among the siblings gets a number suffix
-            str_newtag = string(str_newtag);
+            s_newtag = string(s_newtag);
             if obj.l_managedTag && ~isempty(obj.parent)
                 a_sameLayer = obj.parent.children;
                 l_me  = tools.vcellfun(@(a) a==obj, a_sameLayer);
-                str_sameLayer = string( a_sameLayer(~l_me) );
-                if any(str_sameLayer==str_newtag)
+                sv_sameLayer = string( a_sameLayer(~l_me) );
+                if any(sv_sameLayer==s_newtag)
                     id = 2;
-                    str_modified = str_newtag+num2str(id,"%.3d");
-                    while ismember(str_modified, str_sameLayer)
+                    s_modified = s_newtag+num2str(id,"%.3d");
+                    while ismember(s_modified, sv_sameLayer)
                         id = id+1;
-                        str_modified = str_newtag+num2str(id,"%.3d");
+                        s_modified = s_newtag+num2str(id,"%.3d");
                     end
                     fprintf("Info : Tag changed due to overlaps detected")
-                    disp(['[ "',char(str_newtag),'" >> "',char(str_modified),'"]'])
-                    str_newtag = str_modified;
+                    disp(['[ "',char(s_newtag),'" >> "',char(s_modified),'"]'])
+                    s_newtag = s_modified;
                 end
             end
-            str_oldtag = obj.str_tag;
-            obj.str_tag = str_newtag;
+            s_oldtag = obj.s_tag;
+            obj.s_tag = s_newtag;
             % The first assignment (constructor) is not a rename.
-            if ~isempty(str_oldtag) && str_oldtag ~= str_newtag
-                obj.log_edit("rename " + str_oldtag + " -> " + str_newtag, "Tag", str_oldtag, str_newtag);
+            if ~isempty(s_oldtag) && s_oldtag ~= s_newtag
+                obj.log_edit("rename " + s_oldtag + " -> " + s_newtag, "Tag", s_oldtag, s_newtag);
             end
         end
     end
     methods(Hidden)
-        out = attach_tag(obj,str_name_list)
+        out = attach_tag(obj,sm_name_list)
 
         function tab = table(obj)
         % Convert layer parameters into table format.
@@ -227,7 +227,7 @@ classdef LayerPackage < handle
             arguments (Output)
                 str % Tag string of the layer object.
             end
-            str = obj.str_tag;
+            str = obj.s_tag;
         end
     end
 end

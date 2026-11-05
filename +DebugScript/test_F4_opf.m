@@ -170,20 +170,20 @@ assert(abs(tab_bus{"B001","P"} - P1) < tol)
 net = DebugScript.helper.build_ieee14();
 a_Com  = tools.vcellfun(@(b) b.a_Component, net.a_Bus);
 l_load = cellfun(is_load, a_Com);
-str_load = string(a_Com(l_load));
+sv_load = string(a_Com(l_load));
 P_load = cellfun(@(c) c.tab_parameter.powerflow.P, a_Com(l_load));
 
 [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD")); tab_bus = res.tab_bus; tab_cub = res.tab_cub;
 assert(flag > 0)
 assert(abs(sum(tab_bus.P)) < tol)
-assert(max(abs(tab_cub{str_load,"P"} - P_load)) < tol)
+assert(max(abs(tab_cub{sv_load,"P"} - P_load)) < tol)
 % 等増分費用: B001 (430.29 P^2 + 2000 P) と B002 (2500 P^2 + 2000 P) で負荷 2.59 を賄い、
 % 限界費用 2*430.29*P1 + 2000 = 2*2500*P2 + 2000 = 3901.6 < 4000 なので他の 3 台は Pmin = 0
 %   → P1 = 2.59*5000/(860.585+5000) = 2.2097, P2 = 0.3803 (rundcopf(case14) の 220.97, 38.03 MW)
-str_gen = string(cellfun(@(b) b.a_Component{1}, net.a_Bus([1 2 3 6 8]), "UniformOutput", false));
+sv_gen = string(cellfun(@(b) b.a_Component{1}, net.a_Bus([1 2 3 6 8]), "UniformOutput", false));
 r_HP1 = 2*430.292599;
 P1 = -sum(P_load)*5000/(r_HP1+5000);
-assert(max(abs(tab_cub{str_gen,"P"} - [P1; -sum(P_load)-P1; 0; 0; 0])) < 1e-4)
+assert(max(abs(tab_cub{sv_gen,"P"} - [P1; -sum(P_load)-P1; 0; 0; 0])) < 1e-4)
 
 [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF")); tab_DC = res.tab_bus; tab_cub_DC = res.tab_cub;
 assert(flag > 0)
@@ -196,7 +196,7 @@ assert(max(abs(tab_cub_DC{string(a_Com),"P"} - tab_cub{string(a_Com),"P"})) < 1e
 net = DebugScript.helper.build_ieee14();
 a_Com  = tools.vcellfun(@(b) b.a_Component, net.a_Bus);
 l_load = cellfun(is_load, a_Com);
-str_load = string(a_Com(l_load));
+sv_load = string(a_Com(l_load));
 PQ_load = cell2mat(cellfun(@(c) c.tab_parameter.powerflow{1,["P","Q"]}, a_Com(l_load), "UniformOutput", false));
 
 [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF")); tab_bus = res.tab_bus; tab_cub = res.tab_cub;
@@ -205,7 +205,7 @@ Y = net.get_admittance_matrix.Variables;
 assert(norm(tab_bus.Vphasor .* conj(Y*tab_bus.Vphasor) - (tab_bus.P + 1j*tab_bus.Q)) < 1e-4)
 S_loss = DebugScript.helper.branch_losses(net, tab_bus.Vphasor);
 assert(abs(sum(tab_bus.P) - real(S_loss)) < 1e-4)
-assert(max(abs(tab_cub{str_load,["P","Q"]} - PQ_load), [], "all") < tol)
+assert(max(abs(tab_cub{sv_load,["P","Q"]} - PQ_load), [], "all") < tol)
 Vmin = cellfun(@(b) b.tab_parameter.operation.Vmin, net.a_Bus);
 Vmax = cellfun(@(b) b.tab_parameter.operation.Vmax, net.a_Bus);
 assert(all(tab_bus.V >= Vmin - tol & tab_bus.V <= Vmax + tol))
@@ -226,13 +226,13 @@ assert(J_AC <= DebugScript.helper.opf_cost(net, DebugScript.helper.pf_component_
 %     → 送電制約の乗数 μ = 3、負荷母線の価格 π3 = 4 (どちらの発電機の限界費用よりも高い)
 % 節点価格 (負荷 1 単位あたりの費用増) = -lambda.Constraints.balancedP_<母線>
 net = build_loop3();
-str_bus = string(net.a_Bus);
-str_gen = string(cellfun(@(b) b.a_Component{1}, net.a_Bus(1:2), "UniformOutput", false));
-price = @(r) -cellfun(@(s) r.lambda.Constraints.("balancedP_"+s), cellstr(str_bus));
+sv_bus  = string(net.a_Bus);
+sv_gen  = string(cellfun(@(b) b.a_Component{1}, net.a_Bus(1:2), "UniformOutput", false));
+price = @(r) -cellfun(@(s) r.lambda.Constraints.("balancedP_"+s), cellstr(sv_bus));
 
 [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
 assert(flag > 0)
-assert(max(abs(res.tab_cub{str_gen,"P"} - [0.75; 0.25])) < 1e-6)
+assert(max(abs(res.tab_cub{sv_gen,"P"} - [0.75; 0.25])) < 1e-6)
 assert(max(abs(price(res) - 2.5)) < 1e-6)
 
 br13 = net.a_Branch{3};
@@ -240,13 +240,13 @@ assert(isequal(string(br13.a_Bus(:)).', ["B001","B003"]))
 br13.tab_parameter.operation.Pmax = 0.5;
 [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
 assert(flag > 0)
-assert(max(abs(res.tab_cub{str_gen,"P"} - [0.5; 0.5])) < 1e-6)
+assert(max(abs(res.tab_cub{sv_gen,"P"} - [0.5; 0.5])) < 1e-6)
 assert(abs(res.tab_branch{string(br13),"Pfrom"} - 0.5) < 1e-6)
 assert(max(abs(price(res) - [2; 3; 4])) < 1e-6)
 assert(abs(res.r_cost - (0.5^2+0.5 + 0.5^2+2*0.5)) < 1e-6)
 % 送電制約の乗数: 両端の変数の上下限の乗数の合計 = μ = 3
-str_end = string(br13) + "_" + string(br13.a_Bus);
-mu = sum(cellfun(@(s) res.lambda.Variables.(s).Upper + res.lambda.Variables.(s).Lower, cellstr(str_end)));
+sv_end = string(br13) + "_" + string(br13.a_Bus);
+mu = sum(cellfun(@(s) res.lambda.Variables.(s).Upper + res.lambda.Variables.(s).Lower, cellstr(sv_end)));
 assert(abs(mu - 3) < 1e-6)
 
 
@@ -291,7 +291,7 @@ net = DebugScript.helper.build_9bus();
 res0 = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF"));
 [~, k] = max(abs(res0.tab_branch.Ifrom));
 br = net.a_Branch{k};
-str_end = string(br) + "_" + string(br.a_Bus);
+sv_end = string(br) + "_" + string(br.a_Bus);
 
 r_Imax = 0.8*max(abs(res0.tab_branch{k,["Ifrom","Ito"]}));
 br.tab_parameter.operation.Imax = r_Imax;
@@ -300,7 +300,7 @@ assert(flag > 0)
 r_I = max(abs(res.tab_branch{k,["Ifrom","Ito"]}));
 assert(r_I <= r_Imax + 1e-6 && r_I >= r_Imax - 1e-4)
 assert(res.r_cost > res0.r_cost)
-assert(max(cellfun(@(s) res.lambda.Constraints.("Imax_"+s), cellstr(str_end))) > 0)
+assert(max(cellfun(@(s) res.lambda.Constraints.("Imax_"+s), cellstr(sv_end))) > 0)
 
 br.tab_parameter.operation.Imax = inf;
 S0 = abs(res0.tab_branch{k,["Pfrom","Pto"]} + 1j*res0.tab_branch{k,["Qfrom","Qto"]});
@@ -338,11 +338,11 @@ c_opt = {"Tolerance", 1e-10};
 res = DebugScript.helper.quiet(@() net.optimize_powerflow("Method", "AC OPF", c_opt{:}));
 assert(res.l_success)
 for k = 1:numel(a_Load)
-    str_bus = string(a_Load{k}.a_Bus);
-    for str_pq = ["P","Q"]
-        lam = res.lambda.Constraints.("balanced"+str_pq+"_"+str_bus);
-        fd  = fd_load(net, "AC OPF", a_Load{k}, str_pq, h, c_opt);
-        assert(abs(fd + lam) < 1e-4*max(1, abs(lam)), str_bus + " " + str_pq + sprintf(": FD %.6f, -lambda %.6f", fd, -lam))
+    s_bus = string(a_Load{k}.a_Bus);
+    for s_pq = ["P","Q"]
+        lam = res.lambda.Constraints.("balanced"+s_pq+"_"+s_bus);
+        fd  = fd_load(net, "AC OPF", a_Load{k}, s_pq, h, c_opt);
+        assert(abs(fd + lam) < 1e-4*max(1, abs(lam)), s_bus + " " + s_pq + sprintf(": FD %.6f, -lambda %.6f", fd, -lam))
     end
 end
 
@@ -394,17 +394,17 @@ assert(error_id(@() tools.network_to_mpc(net2)) == "GUILDA:network_to_mpc:Branch
 net = DebugScript.helper.build_ieee14();
 mpc = DebugScript.helper.case14_data();
 assert(norm(net.get_admittance_matrix.Variables - mpc_ybus(mpc)) < 1e-12)
-str_gen = string(cellfun(@(b) b.a_Component{1}, net.a_Bus(mpc.gen(:,1)), "UniformOutput", false));
+sv_gen = string(cellfun(@(b) b.a_Component{1}, net.a_Bus(mpc.gen(:,1)), "UniformOutput", false));
 [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", Tolerance=1e-10));
 assert(flag > 0)
 assert(abs(res.r_cost - 8081.53) < 0.01, sprintf("AC cost %.4f", res.r_cost))
-assert(max(abs(100*res.tab_cub{str_gen,"P"} - [194.33; 36.72; 28.74; 0; 8.50])) < 0.01)
+assert(max(abs(100*res.tab_cub{sv_gen,"P"} - [194.33; 36.72; 28.74; 0; 8.50])) < 0.01)
 assert(all(res.tab_bus.V >= 0.94 - 1e-6 & res.tab_bus.V <= 1.06 + 1e-6))
 
 [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
 assert(flag > 0)
 assert(abs(res.r_cost - 7642.59) < 0.01, sprintf("DC cost %.4f", res.r_cost))
-assert(max(abs(100*res.tab_cub{str_gen,"P"} - [220.97; 38.03; 0; 0; 0])) < 0.01)
+assert(max(abs(100*res.tab_cub{sv_gen,"P"} - [220.97; 38.03; 0; 0; 0])) < 0.01)
 
 
 %% AC and DC OPF agree with MATPOWER on IEEE 14-bus
@@ -418,7 +418,7 @@ net = DebugScript.helper.build_ieee14();
 mpc14 = loadcase("case14");
 assert(DebugScript.helper.quiet(@() set_case14(net, mpc14)) < 1e-12)
 mpc = tools.network_to_mpc(net);
-str_gen = string(mpc.gen_name);
+sv_gen = string(mpc.gen_name);
 mpc = rmfield(mpc, ["bus_name","gen_name","branch_name"]);
 mpopt = mpoption("verbose", 0, "out.all", 0, "opf.ac.solver", "MIPS", "mips.gradtol", 1e-10, "mips.comptol", 1e-10, "mips.costtol", 1e-10);
 r14 = runopf(mpc14, mpopt);
@@ -430,7 +430,7 @@ assert(flag > 0)
 assert(abs(res.r_cost - rmp.f) < 1e-5*rmp.f, sprintf("AC cost: GUILDA %.6f, MATPOWER %.6f", res.r_cost, rmp.f))
 assert(max(abs(res.tab_bus.V - rmp.bus(:,8))) < 1e-4)
 assert(max(abs(res.tab_bus.Varg - rmp.bus(:,9)*pi/180)) < 1e-4)
-assert(max(abs(res.tab_cub{str_gen,"P"} - rmp.gen(:,2)/100)) < 1e-4)
+assert(max(abs(res.tab_cub{sv_gen,"P"} - rmp.gen(:,2)/100)) < 1e-4)
 
 mpc = rmfield(tools.network_to_mpc(net), ["bus_name","gen_name","branch_name"]);
 rdc = rundcopf(mpc, mpopt);
@@ -439,20 +439,20 @@ assert(rdc.success)
 assert(flag > 0)
 assert(abs(res.r_cost - rdc.f) < 1e-6*rdc.f, sprintf("DC cost: GUILDA %.6f, MATPOWER %.6f", res.r_cost, rdc.f))
 assert(max(abs(res.tab_bus.Varg - rdc.bus(:,9)*pi/180)) < 1e-5)
-assert(max(abs(res.tab_cub{str_gen,"P"} - rdc.gen(:,2)/100)) < 1e-5)
+assert(max(abs(res.tab_cub{sv_gen,"P"} - rdc.gen(:,2)/100)) < 1e-5)
 
 
 %% Result class of all three methods
 % 結果は ResultOPF。flag と output を持ち、費用・ラグランジュ乗数・最適化問題も保持する
 net = DebugScript.helper.build_9bus();
 sct_col = struct("ELD", ["P"], "DC_OPF", ["Varg","V","P"], "AC_OPF", ["Varg","V","P","Q","Vphasor","Iphasor"]);
-for str_m = ["ELD","DC OPF","AC OPF"]
-    [res, flag, output] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method=str_m));
+for s_m = ["ELD","DC OPF","AC OPF"]
+    [res, flag, output] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method=s_m));
     assert(isa(res, "ResultOPF") && isa(res, "ResultBase"))
     assert(isequal(res.flag, flag) && isequal(res.output, output) && res.l_success)
     assert(isstruct(output) && isfield(output, "message"))
-    assert(res.options.Method == str_m && res.str_solver == "SolverOPF" && res.str_network == string(net.str_tag))
-    assert(isequal(string(res.tab_bus.Properties.VariableNames), sct_col.(replace(str_m, " ", "_"))))
+    assert(res.options.Method == s_m && res.s_solver == "SolverOPF" && res.s_network == string(net.s_tag))
+    assert(isequal(string(res.tab_bus.Properties.VariableNames), sct_col.(replace(s_m, " ", "_"))))
     assert(isequal(string(res.tab_bus.Properties.RowNames), string(net.a_Bus)))
     assert(isequal(string(res.tab_branch.Properties.RowNames), string(net.a_Branch)))
     % 費用 = 機器の費用関数の合計
@@ -495,10 +495,10 @@ assert(res.options.MaxIteration == 2)
 assert(double(flag) > 0 && output.solver == "fmincon" && res.options.OptimalityTolerance == 1e-10)
 assert(all(abs(res.tab_bus{["B001","B002","B003"],"P"} - 1) < 1e-4))
 % Verbose=true はソルバーの表示 ("iter")、false は表示なし
-str_on  = evalc("res = net.optimize_powerflow(Method=""DC OPF"", Verbose=true);");
+s_on    = evalc("res = net.optimize_powerflow(Method=""DC OPF"", Verbose=true);");
 assert(res.options.Display == "iter")
-str_off = evalc("res = net.optimize_powerflow(method=""DC OPF"", verbose=false);");   % 名前の大文字小文字は区別しない
-assert(res.options.Display == "none" && strlength(str_on) > strlength(str_off))
+s_off = evalc("res = net.optimize_powerflow(method=""DC OPF"", verbose=false);");   % 名前の大文字小文字は区別しない
+assert(res.options.Display == "none" && strlength(s_on) > strlength(s_off))
 
 % 保存されている既定値は変わらない
 assert(isequaln(sct_before, solver.get_options()) && net.solver_OPF == solver)   % NaN = ソルバーの既定値
@@ -550,21 +550,21 @@ assert(numel(a_new) == 1)
 close(a_new)
 
 % Export: 母線・接続・送電線の表を CSV に書く
-str_dir = tempname; mkdir(str_dir); c_dir = onCleanup(@() rmdir(str_dir, "s"));
-f_bus = res.Export(fullfile(str_dir, "bus.csv"));
+s_dir = tempname; mkdir(s_dir); c_dir = onCleanup(@() rmdir(s_dir, "s"));
+f_bus = res.Export(fullfile(s_dir, "bus.csv"));
 tab = readtable(f_bus, "ReadRowNames", true);
 assert(isequal(string(tab.Properties.RowNames), string(net.a_Bus)) && max(abs(tab.V - res.tab_bus.V)) < 1e-12)
-res.Export(fullfile(str_dir, "cub.csv"), Table="cub");
-tab = readtable(fullfile(str_dir, "cub.csv"), "ReadRowNames", true);
+res.Export(fullfile(s_dir, "cub.csv"), Table="cub");
+tab = readtable(fullfile(s_dir, "cub.csv"), "ReadRowNames", true);
 assert(isequal(string(tab.Properties.RowNames), string(res.tab_cub.Properties.RowNames)))
-res.Export(fullfile(str_dir, "branch.csv"), Table="branch");
-tab = readtable(fullfile(str_dir, "branch.csv"), "ReadRowNames", true);
+res.Export(fullfile(s_dir, "branch.csv"), Table="branch");
+tab = readtable(fullfile(s_dir, "branch.csv"), "ReadRowNames", true);
 assert(max(abs(tab.Ploss - res.tab_branch.Ploss)) < 1e-12)
 % Export=filename は計算後に result.Export を呼ぶ
-f_opt = fullfile(str_dir, "opt.csv");
+f_opt = fullfile(s_dir, "opt.csv");
 DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF", Export=f_opt));
 assert(isfile(f_opt))
-assert(error_id(@() res.Export(fullfile(str_dir, "x.json"))) == "GUILDA:ResultOPF:ExportFormat")
+assert(error_id(@() res.Export(fullfile(s_dir, "x.json"))) == "GUILDA:ResultOPF:ExportFormat")
 
 
 %% Legacy six-output form
@@ -626,9 +626,9 @@ net = DebugScript.helper.build_ieee14();
 mpc = DebugScript.helper.case14_data();
 [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
 assert(flag > 0)
-str_gen = string(cellfun(@(b) b.a_Component{1}, net.a_Bus(mpc.gen(:,1)), "UniformOutput", false));
+sv_gen = string(cellfun(@(b) b.a_Component{1}, net.a_Bus(mpc.gen(:,1)), "UniformOutput", false));
 assert(abs(res.r_cost - 7642.59) < 0.01, sprintf("DC cost %.4f", res.r_cost))
-assert(max(abs(100*res.tab_cub{str_gen,"P"} - [220.97; 38.03; 0; 0; 0])) < 0.01)
+assert(max(abs(100*res.tab_cub{sv_gen,"P"} - [220.97; 38.03; 0; 0; 0])) < 0.01)
 
 nb  = size(mpc.bus,1);
 br  = mpc.branch;
@@ -640,15 +640,15 @@ Cft = sparse([1:nl, 1:nl], [br(:,1); br(:,2)], [ones(nl,1); -ones(nl,1)], nl, nb
 Bbus    = full(Cft.'*diag(b)*Cft);
 Pbusinj = Cft.'*(-b.*shift);
 Pg = zeros(nb,1);
-Pg(mpc.gen(:,1)) = res.tab_cub{str_gen,"P"};
+Pg(mpc.gen(:,1)) = res.tab_cub{sv_gen,"P"};
 Pinj = Pg - mpc.bus(:,3)/mpc.baseMVA - mpc.bus(:,5)/mpc.baseMVA;
 th = zeros(nb,1);
 th(2:end) = Bbus(2:end,2:end) \ (Pinj(2:end) - Pbusinj(2:end));
 assert(max(abs(res.tab_bus.Varg - th)) < 1e-8)
-str_bus = string(net.a_Bus);
+sv_bus = string(net.a_Bus);
 for k = 1:numel(net.a_Branch)
     brk = net.a_Branch{k};
-    [~, iv] = ismember(string(brk.a_Bus), str_bus);
+    [~, iv] = ismember(string(brk.a_Bus), sv_bus);
     j = find(br(:,1) == iv(1) & br(:,2) == iv(2), 1);
     assert(abs(res.tab_branch{string(brk),"Pfrom"} - b(j)*(th(iv(1)) - th(iv(2)) - shift(j))) < 1e-8)
 end
@@ -656,7 +656,7 @@ end
 b_old = zeros(nl,1);
 for k = 1:numel(net.a_Branch)
     brk = net.a_Branch{k};
-    [~, iv] = ismember(string(brk.a_Bus), str_bus);
+    [~, iv] = ismember(string(brk.a_Bus), sv_bus);
     j = find(br(:,1) == iv(1) & br(:,2) == iv(2), 1);
     Y = brk.get_admittance_matrix();
     b_old(j) = -imag(Y(1,2));
@@ -705,8 +705,8 @@ net = DebugScript.helper.build_9bus();
 g1 = net.a_Bus{1}.a_Component{1};
 g1.set_opffcn("Cost", @(v, p) 2*v.P^2 + p.OPF.fP*v.P);
 assert(isa(g1.f_opfcost, "function_handle") && g1.tab_parameter.OPF.HP == 1)
-for str_m = ["ELD","DC OPF"]
-    [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method=str_m));
+for s_m = ["ELD","DC OPF"]
+    [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method=s_m));
     assert(flag > 0)
     assert(max(abs(res.tab_bus{["B001","B002","B003"],"P"} - [0.6; 1.2; 1.2])) < 1e-5)
     assert(abs(res.r_cost - 6.6) < 1e-6)
@@ -729,8 +729,8 @@ assert(abs(res.r_cost - (2*P1^2 + P1 + 0.1*Q1^2 + DebugScript.helper.opf_cost(ne
 net = DebugScript.helper.build_9bus();
 g1 = net.a_Bus{1}.a_Component{1};
 g1.set_opffcn("Constraint", @(v, p) struct("Cap", v.P <= 0.4));
-for str_m = ["ELD","DC OPF"]
-    [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method=str_m));
+for s_m = ["ELD","DC OPF"]
+    [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method=s_m));
     assert(flag > 0)
     assert(isfield(res.OPFprob.Constraints, "Cap_SG1B001"))
     assert(max(abs(res.tab_bus{["B001","B002","B003"],"P"} - [0.4; 1.3; 1.3])) < 1e-5)
@@ -790,12 +790,12 @@ assert(~isfield(prob.Constraints, "VargRef"))
 net = build_loop3();
 br13 = net.a_Branch{3};
 br13.tab_parameter.operation.Pmax = 0.5;
-str_gen = string(cellfun(@(b) b.a_Component{1}, net.a_Bus(1:2), "UniformOutput", false));
+sv_gen = string(cellfun(@(b) b.a_Component{1}, net.a_Bus(1:2), "UniformOutput", false));
 res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
-assert(max(abs(res.tab_cub{str_gen,"P"} - [0.5; 0.5])) < 1e-6)
+assert(max(abs(res.tab_cub{sv_gen,"P"} - [0.5; 0.5])) < 1e-6)
 br13.set_opffcn("DefaultConstraint", false);
 res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
-assert(max(abs(res.tab_cub{str_gen,"P"} - [0.75; 0.25])) < 1e-6)
+assert(max(abs(res.tab_cub{sv_gen,"P"} - [0.75; 0.25])) < 1e-6)
 assert(isfield(res.OPFprob.Constraints, "defP_EL003_B001"))
 
 
@@ -835,23 +835,23 @@ assert(isempty(g1.f_opfcost) && ~isempty(g1.f_opfconst))
 %     → P1 = P2 = 0.75, P3 = 1.5、乗数 = (2*1.5+1) - (2*0.75+1) = 1.5 (名前は "Reserve")
 %   費用: SG1B003 に P3 を追加 → 2*P1+1 = 2*P2+1 = 2*P3+2、合計 3 → P3 = 2/3, P1 = P2 = 7/6
 net = DebugScript.helper.build_9bus();
-str_g = string(cellfun(@(b) b.a_Component{1}, net.a_Bus(1:3), "UniformOutput", false));
+sv_g = string(cellfun(@(b) b.a_Component{1}, net.a_Bus(1:3), "UniformOutput", false));
 net.set_opffcn("Constraint", @(v, p) struct("Reserve", ...
-    (2 - v.Component.(str_g(1)).P) + (2 - v.Component.(str_g(2)).P) >= 2.5));
-for str_m = ["ELD","DC OPF","AC OPF"]
-    [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method=str_m));
+    (2 - v.Component.(sv_g(1)).P) + (2 - v.Component.(sv_g(2)).P) >= 2.5));
+for s_m = ["ELD","DC OPF","AC OPF"]
+    [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method=s_m));
     assert(flag > 0)
-    P = res.tab_cub{str_g,"P"};
+    P = res.tab_cub{sv_g,"P"};
     assert(P(1) + P(2) <= 1.5 + 1e-6)
     assert(res.lambda.Constraints.Reserve > 1e-3)
-    if str_m ~= "AC OPF"
+    if s_m ~= "AC OPF"
         assert(max(abs(P - [0.75; 0.75; 1.5])) < 1e-5)
         assert(abs(res.lambda.Constraints.Reserve - 1.5) < 1e-5)
     end
 end
-net.set_opffcn("Constraint", [], "Cost", @(v, p) v.Component.(str_g(3)).P);
+net.set_opffcn("Constraint", [], "Cost", @(v, p) v.Component.(sv_g(3)).P);
 res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="ELD"));
-assert(max(abs(res.tab_cub{str_g,"P"} - [7/6; 7/6; 2/3])) < 1e-5)
+assert(max(abs(res.tab_cub{sv_g,"P"} - [7/6; 7/6; 2/3])) < 1e-5)
 assert(abs(res.r_cost - (DebugScript.helper.opf_cost(net, res.tab_cub) + 2/3)) < 1e-6)
 % 母線・送電線の変数も参照できる: B004 と B007 の位相差を 0 にする (DC OPF)
 net.set_opffcn("Cost", [], "Constraint", @(v, p) struct("SameAngle", v.Bus.B004.Varg == v.Bus.B007.Varg, ...
@@ -926,19 +926,19 @@ function net = build_loop3()
     end
 end
 
-function fd = fd_load(net, str_method, ld, str_pq, h, c_opt)
+function fd = fd_load(net, s_method, ld, s_pq, h, c_opt)
 % 負荷 ld の P または Q (注入) を ±h 変えたときの最適費用の中心差分 (負荷 1 単位の増加あたり)
-    v0 = ld.tab_parameter.powerflow.(str_pq);
-    c_restore = onCleanup(@() set_pf(ld, str_pq, v0));
-    set_pf(ld, str_pq, v0 - h);
-    J_more = DebugScript.helper.quiet(@() net.optimize_powerflow("Method", str_method, c_opt{:})).r_cost;
-    set_pf(ld, str_pq, v0 + h);
-    J_less = DebugScript.helper.quiet(@() net.optimize_powerflow("Method", str_method, c_opt{:})).r_cost;
+    v0 = ld.tab_parameter.powerflow.(s_pq);
+    c_restore = onCleanup(@() set_pf(ld, s_pq, v0));
+    set_pf(ld, s_pq, v0 - h);
+    J_more = DebugScript.helper.quiet(@() net.optimize_powerflow("Method", s_method, c_opt{:})).r_cost;
+    set_pf(ld, s_pq, v0 + h);
+    J_less = DebugScript.helper.quiet(@() net.optimize_powerflow("Method", s_method, c_opt{:})).r_cost;
     fd = (J_more - J_less)/(2*h);
 end
 
-function set_pf(ld, str_pq, v)
-    ld.tab_parameter.powerflow.(str_pq) = v;
+function set_pf(ld, s_pq, v)
+    ld.tab_parameter.powerflow.(s_pq) = v;
 end
 
 function [b, phase] = dc_susceptance(br)
@@ -992,10 +992,10 @@ function err = set_case14(net, mpc)
             end
         end
     end
-    str_bus = string(net.a_Bus);
+    sv_bus = string(net.a_Bus);
     for k = 1:numel(net.a_Branch)
         br = net.a_Branch{k};
-        [~, iv] = ismember(string(br.a_Bus), str_bus);
+        [~, iv] = ismember(string(br.a_Bus), sv_bus);
         j = find(mpc.branch(:,1) == iv(1) & mpc.branch(:,2) == iv(2), 1);
         r_tap = mpc.branch(j,9);
         if r_tap == 0; r_tap = 1; end

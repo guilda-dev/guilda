@@ -1,6 +1,6 @@
 # simulate レビュー: ワークフロー・データ管理・編集時の対応(現状調査)
 
-> 当時の調査記録です。調査の基準は `951800e` で、以後の変更は本文に反映していません(周波数と `f_*` の状態の名前だけは、現在の `get_Hz()` と `sct_edit.str_odefcn` に置き換えて書いています(当時は Dependent プロパティと論理値のフラグでした))。現状は [status.md](status.md) と [v4-migration.md](v4-migration.md) を見てください。
+> 当時の調査記録です。調査の基準は `951800e` で、以後の変更は本文に反映していません(周波数と `f_*` の状態の名前だけは、現在の `get_Hz()` と `sct_edit.s_odefcn` に置き換えて書いています(当時は Dependent プロパティと論理値のフラグでした))。現状は [status.md](status.md) と [v4-migration.md](v4-migration.md) を見てください。
 
 `PowerNetwork.simulate` の精査に向けた現状把握です。改善案の統合は後続の作業で担当するため、
 解決策は 1 行の方向性までにとどめています。
@@ -73,10 +73,10 @@ Q は NaN の機器にだけ配分されます。それ以外の機器は設定�
 | | `para_base`(`Hz`, `baseMVA`) | 保持 | ユーザー(`tab_parameter` 経由を含む) | `:97,121-123,237-247` |
 | | `solver_PF/OPF/CPF/ODE/LIN` | 保持(`SetAccess=protected`、中身は公開プロパティ) | `reset_solver`。設定値はユーザー | `:52-89`, `PN/reset_solver.m:8-12` |
 | | `cv_Vequilibrium`, `cv_Iequilibrium`, `rv_Xequilibrium` | Dependent | なし(下位層から集約) | `:91-93,222-233` |
-| | `str_editFlag`, `tab_editLog`, `l_staleEquilibrium` | 保持(`LayerPackage` から継承) | `log_edit`, `reset_edit` | `LP/LayerPackage.m:40,46,61` |
+| | `s_editFlag`, `tab_editLog`, `l_staleEquilibrium` | 保持(`LayerPackage` から継承) | `log_edit`, `reset_edit` | `LP/LayerPackage.m:40,46,61` |
 | Bus | `l_isSlack` | 保持(公開) | ユーザー、`calculate_powerflow`、`handle_edit`、`release_slack` | `@Bus/Bus.m:34,162-182` |
 | | `c_Vequilibrium` | 保持。**初期値 1** | `Bus.set_equilibrium` | `:43`, `@Bus/set_equilibrium.m:17` |
-| | `c_Iequilibrium`, `str_bustype`, `tab_parameter` | Dependent | なし | `:29-31,118-136` |
+| | `c_Iequilibrium`, `s_bustype`, `tab_parameter` | Dependent | なし | `:29-31,118-136` |
 | | `iv_odeX`, `iv_odeI`, `iv_odeU` | 作業データ(`SetAccess={?odeSimulator,?Component}`) | `odeSimulator` | `:56-60`, `SIM:392-394` |
 | | `l_isFault` | 作業データ(`Access={?odeSimulator,?odeEventSet}`) | `odeEventSet` | `:36-38`, `EVT:333` |
 | Branch | `para_dynamics/operation/graph` | 保持 | ユーザー | `@Branch/Branch.m:69-71` |
@@ -138,8 +138,8 @@ LocalController を単に取り外す公開 API もありません。`remove_loc
 1. `Parameter` の値を変えると PostSet が新旧を比較し、変化があれば `log_edit("edit <name>", "Parameter(<group>)")` を呼びます
    (`_GUILDAsystem/_auxiliary/@Parameter/callbackPostSet.m:13-19`)。型違いは元に戻してエラーにします。この巻き戻しでログや stale は**残りません**(P は復元、ログ 0 行)。**[実測]**
 2. `log_edit` は `edit_effect` で影響を判定します(`LP/log_edit.m:17-18`, `LP/LayerPackage.m:130-159`)。
-   - `f_*` が stale になる編集は、所有者の `str_odefcn` を立てます。`base` の場合は全子孫に立てます(`LP/log_edit.m:19-25`)。
-   - ログ行は親へ順に伝わり、途中の層は `str_editFlag="editted"` になります(`:37-39`)。
+   - `f_*` が stale になる編集は、所有者の `s_odefcn` を立てます。`base` の場合は全子孫に立てます(`LP/log_edit.m:19-25`)。
+   - ログ行は親へ順に伝わり、途中の層は `s_editFlag="editted"` になります(`:37-39`)。
    - `PowerNetwork` で `l_staleEquilibrium` とログを更新します。ただし `unset` の間は記録しません(`:27-33`)。
    - 最後に `handle_edit` がスラック母線を 1 つに保ちます(`:36`, `PN/PowerNetwork.m:182-199`)。
 3. `check_edit` は全層を辿って stale な `f_*` を再構築し、`editFlag ~= "unset" && ~l_staleEquilibrium` を返します(`LP/check_edit.m:13-17`)。
@@ -147,7 +147,7 @@ LocalController を単に取り外す公開 API もありません。`remove_loc
 5. `reset_edit` はフラグ・stale・ログを再帰的に消去します(`LP/reset_edit.m:5-8`)。呼ぶのは `initialize` の末尾だけです(`PN/initialize.m:99`)。
 
 補足: `LocalController.children` は `para_dynamics` を含まないため(`@LocalController/LocalController.m:286-288`)、`reset_edit` は LC の `Parameter` に届きません。
-その `str_editFlag` は `editted` のまま残りますが、判定に使うのはネットワークの値だけなので実害はありません。**[コード]**
+その `s_editFlag` は `editted` のまま残りますが、判定に使うのはネットワークの値だけなので実害はありません。**[コード]**
 
 ### 3.2 編集の種類ごとの影響
 
@@ -182,7 +182,7 @@ LocalController を単に取り外す公開 API もありません。`remove_loc
 | `replace_component` と LC | **LC が引き継がれない** | 新機器の LC は 0 個、ドキュメント記載なし | **[実測]** |
 | 同じ LC を 2 台に接続 | **検査なし** | 接続は通り、`simulate` は DAE 指数エラー | **[実測]** |
 | 同じ GC を 2 つの網に追加 | **検査なし** | `set_parent` は上書きのみ(`@GlobalController/GlobalController.m:178-182`) | **[コード]**(動作は **[未確認]**) |
-| `str_tag` の変更 | **ログなし** | `LP/LayerPackage.m:167-170`。作成済みイベントと食い違う | **[実測]** |
+| `s_tag` の変更 | **ログなし** | `LP/LayerPackage.m:167-170`。作成済みイベントと食い違う | **[実測]** |
 | イベント作成後の Topology 変更 | **再検証なし** | `MATLAB:innerdim`(`EVT:377`) | **[実測]** |
 | 他の網のイベント | **検査なし** | 内部エラーで停止 | **[実測]** |
 | `comp.rv_Xoffset` への直接代入 | 影響なし | 公開だが、次回 `setEventCondition` が上書き(`EVT:245`) | **[コード]** |
@@ -230,7 +230,7 @@ GC だけ `onCleanup` で片付けており、Component の `l_isConnect` には
 | 7 | operation 編集は「nothing」(`DOC:265`) | 同じ文書が機器の `baseMVA` は Q 配分に使うと記載(`DOC:191`)。実際に Q が変わる | **[実測]** |
 | 8 | `baseMVA` 編集で「per-unit values change」(`DOC:260`) | 自動再換算はない。`para_base.baseMVA` の数値利用は MATPOWER 入出力などのみで、`f_*` の再構築に効果なし | **[コード: grep]** |
 | 9 | 解析は開始時にフラグを確認(`DOC:155,271-273`) | `simulate` / `linearize` / `get_sys` / `initialize` のみ。`comp.get_sys`、`bus.get_sys`、CPF は確認しない。`comp.get_sys` は `Component` のドキュメント例にある(`@Component/Component.m:26`) | **[実測]** |
-| 10 | 親参照は親だけが書く、子は上へ書かない(`DOC:230-232`) | `log_edit` は `Parameter` から親の `str_odefcn` を書く(`LP/log_edit.m:21,23`)。通知の範囲とも読める | **[コード]** |
+| 10 | 親参照は親だけが書く、子は上へ書かない(`DOC:230-232`) | `log_edit` は `Parameter` から親の `s_odefcn` を書く(`LP/log_edit.m:21,23`)。通知の範囲とも読める | **[コード]** |
 | 11 | イベントはタグで識別(`DOC:238`) | `odeEventSet` はタグと状態数の表を作成時に固定(`EVT:118-122`)。後から変わると破綻 | **[実測]** |
 | 12 | `initialize`: `"OPF"` は完全な AC 動作点を与える(`PN/initialize.m:13-14`) | 平衡点は OPF の P を反映しない(H2) | **[実測]** |
 | 13 | `initialize`: `"equilibrium"` は保存値を再設定する(`PN/initialize.m:15-16`) | 検査は保存値で行うが、再設定は `para_powerflow` を使う(H2) | **[実測]** |
@@ -309,7 +309,7 @@ g1.para_operation.baseMVA = 300;   % 以後の simulate は古い Q 配分のま
 
 ### L(低)
 
-- **L1.** `str_tag` の変更がログに残りません(**[実測]**、`LP/LayerPackage.m:167-170`)。保存データやイベントの識別子なので、変更を禁止するか Topology 相当にする。
+- **L1.** `s_tag` の変更がログに残りません(**[実測]**、`LP/LayerPackage.m:167-170`)。保存データやイベントの識別子なので、変更を禁止するか Topology 相当にする。
 - **L2.** `V0`, `Varg0`(初期値)の編集でも平衡点が stale になります(**[実測]**)。解は変わらないので過剰な可能性があります。編集の影響を分類し直す。
 - **L3.** `baseMVA` と Bus / Branch の dynamics は `f_*` を再構築しますが、数値には効きません。**[コード]** 無害。分類を整理する。
 - **L4.** Component の `l_isConnect` は例外時に復帰しません(GC のみ `onCleanup`)。現状は次回実行で上書きされ、実害は確認していません。**[実測]** 片付けを統一する。

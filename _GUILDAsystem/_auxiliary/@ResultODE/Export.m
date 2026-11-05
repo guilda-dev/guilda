@@ -1,4 +1,4 @@
-function str_file = Export(obj, filename)
+function s_file = Export(obj, filename)
 % Write the trajectories to a table file or a MAT-file.
 %
 % Writes the trajectories to a file. The format follows the extension of filename:
@@ -11,14 +11,14 @@ function str_file = Export(obj, filename)
         filename (1,1) string = string(datetime("now","Format","uuMMdd_HHmmss")) + "_simulation.csv" % Output file; its extension selects the format.
     end
     arguments (Output)
-        str_file % Path of the written file.
+        s_file % Path of the written file.
     end
-    str_file = filename;
-    [~, ~, str_ext] = fileparts(str_file);
+    s_file = filename;
+    [~, ~, s_ext] = fileparts(s_file);
 
-    switch lower(str_ext)
+    switch lower(s_ext)
         case {".csv", ".txt", ".xlsx", ".xls"}
-            writetable(wide_table(obj), str_file);
+            writetable(wide_table(obj), s_file);
         case ".mat"
             odeResults   = obj.odeResults; %#ok<PROPLC>
             rm_variable  = obj.rm_variable;
@@ -26,9 +26,9 @@ function str_file = Export(obj, filename)
             options    = obj.options;
             flag       = obj.flag;
             output     = obj.output;
-            save(str_file, "odeResults", "rm_variable", "tab_variable", "options", "flag", "output");
+            save(s_file, "odeResults", "rm_variable", "tab_variable", "options", "flag", "output");
         otherwise
-            error(msg("GUILDA:ResultODE:ExportFormat", char(str_ext)));
+            error(msg("GUILDA:ResultODE:ExportFormat", char(s_ext)));
     end
 end
 
@@ -53,6 +53,6 @@ function tab = wide_table(obj)
     tab = [tab, array2table(obj.rm_variable(:, lv_ctrl), 'VariableNames', tab_map.Label(lv_ctrl))];
 end
 
-function tab = prefixed(tab, str_tag)
-    tab.Properties.VariableNames = str_tag + "_" + string(tab.Properties.VariableNames);
+function tab = prefixed(tab, s_tag)
+    tab.Properties.VariableNames = s_tag + "_" + string(tab.Properties.VariableNames);
 end

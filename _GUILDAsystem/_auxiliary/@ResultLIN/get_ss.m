@@ -44,7 +44,7 @@ function sys = get_ss(obj, Algorithm, opt)
 % order. An unknown name stops with GUILDA:ResultLIN:UnknownInput; an unknown Output name
 % stops with GUILDA:ResultLIN:UnknownOutput.
 %
-% A result with flag false (output.str_issue) stops with an error that repeats output.message:
+% A result with flag false (output.s_issue) stops with an error that repeats output.message:
 % GUILDA:ResultLIN:NotFinite for every algorithm, and GUILDA:ResultLIN:SingularAvv
 % for "Kron" and "Feedback", which eliminate the bus voltages. "DAE" keeps them and still works.
 %
@@ -68,9 +68,9 @@ function sys = get_ss(obj, Algorithm, opt)
     arguments (Output)
         sys % Descriptor state-space model with StateName, InputName and OutputName.
     end
-    if obj.output.str_issue == "NotFinite"
+    if obj.output.s_issue == "NotFinite"
         error(msg("GUILDA:ResultLIN:NotFinite", obj.output.message))
-    elseif obj.output.str_issue == "SingularAvv" && Algorithm ~= "DAE"
+    elseif obj.output.s_issue == "SingularAvv" && Algorithm ~= "DAE"
         error(msg("GUILDA:ResultLIN:SingularAvv", obj.output.message, Algorithm))
     end
     switch Algorithm
@@ -104,19 +104,19 @@ function str = default_coordinate(obj)
     end
 end
 
-function [p, str_x, str_u] = legacy_order(obj)
+function [p, sv_x, sv_u] = legacy_order(obj)
 % State order of Kron and DAE: global controllers first, then the components
 % (Feedback appends the global controllers after the components, as in v3)
     tab   = obj.tab_variable;
     tab_x = tab(tab.Kind == "x", :);
     p     = [find(tab_x.Bus == ""); find(tab_x.Bus ~= "")];
-    str_x = tab_x.Label(p);
-    str_u = tab.Label(tab.Kind == "u");
+    sv_x  = tab_x.Label(p);
+    sv_u  = tab.Label(tab.Kind == "u");
 end
 
 
 function sys = via_kron(obj)
-    [p, str_x, str_u] = legacy_order(obj);
+    [p, sv_x, sv_u] = legacy_order(obj);
 
     Ax_dae = obj.rm_Axx(p,p);
     Bv_dae = obj.rm_Axv(p,:);
@@ -137,15 +137,15 @@ function sys = via_kron(obj)
     Dx_ode = zeros(n_x,n_u);
 
     sys = dss(Ax_ode, Bx_ode, Cx_ode, Dx_ode, E_ode);
-    sys.InputName  = str_u;
-    sys.StateName  = str_x;
+    sys.InputName  = sv_u;
+    sys.StateName  = sv_x;
     sys.OutputName = string.empty(0,1);
 end
 
 
 function sys = via_dae(obj, opt)
-    [p, str_x, input] = legacy_order(obj);
-    output = str_x;
+    [p, sv_x, input] = legacy_order(obj);
+    output = sv_x;
 
     Axx  = obj.rm_Axx(p,p);
     Axv  = obj.rm_Axv(p,:);
@@ -178,24 +178,24 @@ function sys = via_dae(obj, opt)
              -B_dae(ir_Vim,:);
               B_dae(ir_Vre,:)];
 
-    [filt_o, filt_i, str_busvar] = coordinate_filter(obj.sct_model.cv_V, opt);
+    [filt_o, filt_i, sr_busvar] = coordinate_filter(obj.sct_model.cv_V, opt);
     A_dae = blkdiag(eye(n_x),filt_o)      ...
             * A_dae                       ...
             * blkdiag(eye(n_x),filt_i);
     B_dae = blkdiag(eye(n_x),filt_o)      ...
             * B_dae;
 
-    str_busvar = reshape(str_busvar+(1:n_b),2,[]);
-    str_busvar = reshape(str_busvar',1,[]);
+    sr_busvar  = reshape(sr_busvar+(1:n_b),2,[]);
+    sr_busvar  = reshape(sr_busvar',1,[]);
 
     sys = dss(A_dae, B_dae, C_dae, D_dae, E_dae);
     sys.InputName  = input;
-    sys.StateName  = [output(:)',str_busvar];
+    sys.StateName  = [output(:)',sr_busvar];
     sys.OutputName = output;
 end
 
 
-function [filt_o, filt_i, str_busvar] = coordinate_filter(Vc_st, str_coordinate)
+function [filt_o, filt_i, sv_busvar] = coordinate_filter(Vc_st, s_coordinate)
 % Change of the bus variables of "DAE": [Vre...; Vim...] = filt_i * (bus variables)
     n_v = 2*numel(Vc_st);
 
@@ -203,28 +203,28 @@ function [filt_o, filt_i, str_busvar] = coordinate_filter(Vc_st, str_coordinate)
     rm_Vi = diag(imag(Vc_st));
     rm_V  = diag(abs( Vc_st));
 
-    switch str_coordinate
+    switch s_coordinate
         case "theta&V"
             filt_o = [-    rm_Vi,       rm_Vr ;
                        rm_V\rm_Vr, rm_V\rm_Vi];
             filt_i = [-    rm_Vi,  rm_V\rm_Vr ;
                            rm_Vr,  rm_V\rm_Vi];
-            str_busvar = ["theta";"V"];
+            sv_busvar = ["theta";"V"];
         case "theta&rho"
             filt_o = [-rm_Vi,  rm_Vr ;
                        rm_Vr,  rm_Vi];
             filt_i = [-rm_Vi,  rm_Vr ;
                        rm_Vr,  rm_Vi];
-            str_busvar = ["theta";"rho"];
+            sv_busvar = ["theta";"rho"];
         case "Vre&Vim"
             filt_o = eye(n_v);
             filt_i = eye(n_v);
-            str_busvar = ["Vre";"Vim"];
+            sv_busvar = ["Vre";"Vim"];
     end
 end
 
 
-function sys = select_output(obj, sys, Algorithm, str_coordinate, sv_select)
+function sys = select_output(obj, sys, Algorithm, s_coordinate, sv_select)
 % Replaces the outputs of the model by the selected ones: y = Cx x + Cv v + Du u of the
 % unreduced DAE, written with the states and inputs of the model
     tab  = obj.tab_variable;
@@ -269,7 +269,7 @@ function sys = select_output(obj, sys, Algorithm, str_coordinate, sv_select)
     Du = Du(iv_all,:);
 
     if Algorithm == "DAE"
-        [~, filt_i] = coordinate_filter(obj.sct_model.cv_V, str_coordinate);
+        [~, filt_i] = coordinate_filter(obj.sct_model.cv_V, s_coordinate);
         p = legacy_order(obj);
         C = [Cx(:,p), Cv(:,[1:2:n_v, 2:2:n_v]) * filt_i];
         D = Du;

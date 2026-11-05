@@ -6,7 +6,7 @@
 % 実行: runtests("DebugScript.test_I66_shared_local_controller")  または  DebugScript.run_all("Features","I66")
 
 % 共通設定 (各テストの前に毎回実行される)
-str_id = "GUILDA:Component:SharedController";
+s_id = "GUILDA:Component:SharedController";
 
 
 %% A second connection of an AVR stops with an error naming the cause
@@ -14,8 +14,8 @@ str_id = "GUILDA:Component:SharedController";
 avr = controller.avr.AVR_ST1("avrA");
 gen1.add_local_controller(avr);
 ME = caught(@() gen2.add_local_controller(avr));
-assert(DebugScript.helper.msg_id(ME) == str_id)
-assert(contains(ME.message, "avrA") && contains(ME.message, gen1.str_tag) && contains(ME.message, gen2.str_tag))
+assert(DebugScript.helper.msg_id(ME) == s_id)
+assert(contains(ME.message, "avrA") && contains(ME.message, gen1.s_tag) && contains(ME.message, gen2.s_tag))
 assert(avr.a_Component == gen1 && gen1.a_LocalController{1} == avr)
 assert(isempty(gen2.a_LocalController))
 
@@ -24,7 +24,7 @@ assert(isempty(gen2.a_LocalController))
 [net, gen1, gen2] = fresh_network();
 lqr = controller.local_LQR("lqrA");
 gen1.add_local_controller(lqr);
-assert(DebugScript.helper.msg_id(caught(@() gen2.add_local_controller(lqr))) == str_id)
+assert(DebugScript.helper.msg_id(caught(@() gen2.add_local_controller(lqr))) == s_id)
 assert(lqr.a_Component == gen1 && isempty(gen2.a_LocalController))
 
 
@@ -35,7 +35,7 @@ avr2 = controller.avr.AVR_ST1("avr2");
 pss  = controller.pss.PSS1("pss1");
 gen1.add_local_controller(avr1, pss);
 gen2.add_local_controller(avr2);
-assert(DebugScript.helper.msg_id(caught(@() gen2.add_local_controller(pss))) == str_id)
+assert(DebugScript.helper.msg_id(caught(@() gen2.add_local_controller(pss))) == s_id)
 assert(pss.a_Component == avr1 && avr1.a_LocalController{1} == pss)
 assert(isempty(avr2.a_LocalController))
 
@@ -48,7 +48,7 @@ avrIn = controller.avr.AVR_ST1("avrNew");
 pss   = controller.pss.PSS1("pss1");
 gen1.add_local_controller(avr1, pss);
 gen2.add_local_controller(avr2);
-assert(DebugScript.helper.msg_id(caught(@() gen2.add_local_controller(avrIn, pss))) == str_id)
+assert(DebugScript.helper.msg_id(caught(@() gen2.add_local_controller(avrIn, pss))) == s_id)
 assert(gen2.a_LocalController{1} == avr2 && avr2.a_Component == gen2)
 assert(isempty(avrIn.a_Component))
 assert(pss.a_Component == avr1)
@@ -60,7 +60,7 @@ avr = controller.avr.AVR_ST1("avrA");
 gen1.add_local_controller(avr);
 DebugScript.helper.quiet(@() net.initialize);
 n_log = height(net.tab_editLog);
-assert(DebugScript.helper.msg_id(caught(@() gen2.add_local_controller(avr))) == str_id)
+assert(DebugScript.helper.msg_id(caught(@() gen2.add_local_controller(avr))) == s_id)
 assert(~net.l_staleEquilibrium && height(net.tab_editLog) == n_log)
 
 

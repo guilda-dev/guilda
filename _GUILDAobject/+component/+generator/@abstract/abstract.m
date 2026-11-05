@@ -40,25 +40,25 @@ classdef abstract < Component
             obj@Component("SG"+index, varargin{:})
             r_Q = obj.para_powerflow.Q;
             if ~isnan(r_Q) && r_Q ~= 0
-                obj.parameter_error("GeneratorQIgnored", char(obj.str_tag), char(string(r_Q)))
+                obj.parameter_error("GeneratorQIgnored", char(obj.s_tag), char(string(r_Q)))
             end
             obj.para_powerflow.Q = nan;
             
             if istable(parameter)
                 mp = parameter;
-                str_source = "the given table";
+                s_source = "the given table";
             else 
                 datapath = fullfile(fileparts(mfilename("fullpath")), "parameter.csv");
                 dataset  = readtable(datapath);                
-                str_source = "parameter.csv";
+                s_source = "parameter.csv";
                 if ischar(parameter) || isstring(parameter)                
                     sv_name = ["NGT2";"NGT6";"NGT8"];
-                    str_name = string(parameter);
-                    if ~isscalar(str_name) || ~ismember(str_name, sv_name)
-                        obj.parameter_error("UnknownParameter", char(strjoin(str_name(:)', ", ")), ...
-                                            char(obj.str_tag), char(strjoin(sv_name', ", ")))
+                    s_name = string(parameter);
+                    if ~isscalar(s_name) || ~ismember(s_name, sv_name)
+                        obj.parameter_error("UnknownParameter", char(strjoin(s_name(:)', ", ")), ...
+                                            char(obj.s_tag), char(strjoin(sv_name', ", ")))
                     end
-                    mp = dataset(str_name==sv_name,:);
+                    mp = dataset(s_name==sv_name,:);
                 else
                     mp = dataset(1,:);
                 end
@@ -67,7 +67,7 @@ classdef abstract < Component
             sv_miss = setdiff(string(obj.sv_para), string(mp.Properties.VariableNames), "stable");
             if ~isempty(sv_miss)
                 obj.parameter_error("MissingParameter", char(strjoin(sv_miss(:)', ", ")), ...
-                                    char(obj.str_tag), char(str_source))
+                                    char(obj.s_tag), char(s_source))
             end
             mp = mp(:,obj.sv_para);
             

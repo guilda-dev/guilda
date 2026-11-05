@@ -39,60 +39,60 @@ function path = export_csv(obj, path, opt)
         path   % The written model folder.
     end
     path = strip(path, "right", filesep);
-    [str_parent, str_folder] = fileparts(path);
+    [s_parent, s_folder] = fileparts(path);
     if ~isfield(opt, "ClassFile")
-        opt.ClassFile = startsWith(str_folder, "@");
+        opt.ClassFile = startsWith(s_folder, "@");
     end
-    str_class = strip(str_folder, "left", "@");
-    if opt.ClassFile && ~isvarname(str_class)
-        error(msg("GUILDA:export_csv:InvalidClassName", str_class));
+    s_class = strip(s_folder, "left", "@");
+    if opt.ClassFile && ~isvarname(s_class)
+        error(msg("GUILDA:export_csv:InvalidClassName", s_class));
     end
-    if str_parent ~= "" && ~isfolder(str_parent)
-        error(msg("GUILDA:export_csv:NoParentFolder", str_parent));
+    if s_parent ~= "" && ~isfolder(s_parent)
+        error(msg("GUILDA:export_csv:NoParentFolder", s_parent));
     end
     if isfolder(path)
         if ~opt.Overwrite
             error(msg("GUILDA:export_csv:FolderExists", path));
         end
-        for str_sub = ["network", "bus", "branch", "component"]
-            if isfolder(fullfile(path, str_sub))
-                rmdir(fullfile(path, str_sub), "s");
+        for s_sub = ["network", "bus", "branch", "component"]
+            if isfolder(fullfile(path, s_sub))
+                rmdir(fullfile(path, s_sub), "s");
             end
         end
-        if isfile(fullfile(path, str_class + ".m"))
-            delete(fullfile(path, str_class + ".m"));
+        if isfile(fullfile(path, s_class + ".m"))
+            delete(fullfile(path, s_class + ".m"));
         end
     end
-    for str_sub = ["network", "bus", "branch", "component"]
-        mkdir(fullfile(path, str_sub));
+    for s_sub = ["network", "bus", "branch", "component"]
+        mkdir(fullfile(path, s_sub));
     end
 
     % Export network base values
     writetable(obj.para_base.tab_parameter, fullfile(path, "network", "parameter.csv"));
 
     % Export bus and branch data
-    str_bus = string(obj.a_Bus);
+    sv_bus = string(obj.a_Bus);
     writetable(bus_table(obj),             fullfile(path, "bus",    "parameter.csv"));
-    writetable(branch_table(obj, str_bus), fullfile(path, "branch", "parameter.csv"));
+    writetable(branch_table(obj, sv_bus), fullfile(path, "branch", "parameter.csv"));
 
     % Export component data
     a_Comp  = tools.vcellfun(@(bus) bus.a_Component, obj.a_Bus);
-    str_key = tools.vcellfun(@(comp) string(comp.key), a_Comp);
-    [str_key,~,i_keymap] = unique(str_key);
-    for i_key = 1:numel(str_key)
-        str_path_comp = fullfile(path, "component", str_key(i_key));
+    sv_key  = tools.vcellfun(@(comp) string(comp.key), a_Comp);
+    [sv_key,~,i_keymap] = unique(sv_key);
+    for i_key = 1:numel(sv_key)
+        s_path_comp   = fullfile(path, "component", sv_key(i_key));
         a_Compi       = a_Comp(i_keymap == i_key);
-        mkdir(str_path_comp);
+        mkdir(s_path_comp);
 
-        [tab_para, tab_dyn, tab_opf] = component_table(a_Compi, str_bus);
-        writetable(tab_para, fullfile(str_path_comp, "main.csv"));
-        writetable(tab_dyn,  fullfile(str_path_comp, "dynamics.csv"));
-        writetable(tab_opf,  fullfile(str_path_comp, "opf.csv"));
+        [tab_para, tab_dyn, tab_opf] = component_table(a_Compi, sv_bus);
+        writetable(tab_para, fullfile(s_path_comp, "main.csv"));
+        writetable(tab_dyn,  fullfile(s_path_comp, "dynamics.csv"));
+        writetable(tab_opf,  fullfile(s_path_comp, "opf.csv"));
     end
 
     % Class file
     if opt.ClassFile
-        writelines(class_file(str_class, obj), fullfile(path, str_class + ".m"));
+        writelines(class_file(s_class, obj), fullfile(path, s_class + ".m"));
     end
 
     warn_controllers_not_saved(obj, a_Comp);
@@ -100,29 +100,29 @@ end
 
 
 function warn_controllers_not_saved(net, a_Comp)
-    str_local  = [strings(0,1); tools.vcellfun(@(comp) local_controller_paths(comp), a_Comp)];
-    str_global = [strings(0,1); tools.vcellfun(@string, net.a_GlobalController)];
-    if isempty(str_local) && isempty(str_global)
+    sv_local   = [strings(0,1); tools.vcellfun(@(comp) local_controller_paths(comp), a_Comp)];
+    sv_global  = [strings(0,1); tools.vcellfun(@string, net.a_GlobalController)];
+    if isempty(sv_local) && isempty(sv_global)
         return
     end
-    warning(msg("GUILDA:PowerNetwork:ControllersNotSaved", char(net.str_tag), ...
-                char(string(numel(str_local))), char(tag_list(str_local)), ...
-                char(string(numel(str_global))), char(tag_list(str_global))))
+    warning(msg("GUILDA:PowerNetwork:ControllersNotSaved", char(net.s_tag), ...
+                char(string(numel(sv_local))), char(tag_list(sv_local)), ...
+                char(string(numel(sv_global))), char(tag_list(sv_global))))
 end
 
-function str_path = local_controller_paths(layer)
+function sv_path = local_controller_paths(layer)
     % "<component>/<AVR>" and "<component>/<AVR>/<PSS>": tags alone may repeat between components
-    str_path = strings(0,1);
+    sv_path = strings(0,1);
     for i = 1:numel(layer.a_LocalController)
         con = layer.a_LocalController{i};
-        str_path = [str_path; string(layer) + "/" + [string(con); local_controller_paths(con)]]; %#ok<AGROW>
+        sv_path = [sv_path; string(layer) + "/" + [string(con); local_controller_paths(con)]]; %#ok<AGROW>
     end
 end
 
-function str = tag_list(str_tag)
+function str = tag_list(sv_tag)
     str = "none";
-    if ~isempty(str_tag)
-        str = join(str_tag, ", ");
+    if ~isempty(sv_tag)
+        str = join(sv_tag, ", ");
     end
 end
 
@@ -132,7 +132,7 @@ function tab_pf = bus_table(net)
     FullTag = strings(n_bus,1);
     Slack = zeros(n_bus,1);
     for i = 1:n_bus
-        FullTag(i) = string(net.a_Bus{i}.str_tag);
+        FullTag(i) = string(net.a_Bus{i}.s_tag);
         Tag(i)   = regexprep(FullTag(i), '\d+$', '');
         Slack(i) = net.a_Bus{i}.l_isSlack;
     end
@@ -145,7 +145,7 @@ function tab_pf = bus_table(net)
     tab_pf  = [table(Tag, FullTag), tab_bus, table(Slack)];
 end
 
-function tab_para = branch_table(net, str_bus)
+function tab_para = branch_table(net, sv_bus)
     n_bra = numel(net.a_Branch);
     Type  = strings(n_bra,1);
     From  = nan(n_bra,1);
@@ -155,8 +155,8 @@ function tab_para = branch_table(net, str_bus)
         br = net.a_Branch{i};
         FullTag(i) = string(br);
         Type(i) = br.key;
-        From(i) = find(str_bus == string(br.a_Bus{1}));
-        To(i)   = find(str_bus == string(br.a_Bus{2}));
+        From(i) = find(sv_bus == string(br.a_Bus{1}));
+        To(i)   = find(sv_bus == string(br.a_Bus{2}));
     end
 
     get_tab = @(b) [b.para_dynamics.tab_parameter,...
@@ -166,7 +166,7 @@ function tab_para = branch_table(net, str_bus)
     tab_para = [table(Type, From, To, FullTag), tab_bra];
 end
 
-function [tab_opt, tab_para, tab_opf] = component_table(a_Comp, str_Bus)
+function [tab_opt, tab_para, tab_opf] = component_table(a_Comp, sv_Bus)
     n_comp = numel(a_Comp);
 
     Bus = nan(n_comp,1);
@@ -187,7 +187,7 @@ function [tab_opt, tab_para, tab_opf] = component_table(a_Comp, str_Bus)
         para{i} = comp.para_dynamics.tab_parameter;
 
         tab_OPF  = comp.para_OPF.tab_parameter;
-        Bus(i) = find(str_Bus == string(comp.a_Bus));
+        Bus(i) = find(sv_Bus == string(comp.a_Bus));
         FullTag(i) = string(comp);
         OPFinit_P0(i) = tab_OPF.P0;
         OPFinit_Q0(i) = tab_OPF.Q0;
@@ -219,9 +219,9 @@ function [tab_opt, tab_para, tab_opf] = component_table(a_Comp, str_Bus)
     tab_para    = [table(ParameterID), tab_para];
 end
 
-function str_code = class_file(str_class, net)
-    str_template = fullfile(fileparts(mfilename("fullpath")), "private", "export_csv_class.txt");
-    str_code     = string(fileread(str_template));
+function s_code = class_file(s_class, net)
+    s_template   = fullfile(fileparts(mfilename("fullpath")), "private", "export_csv_class.txt");
+    s_code       = string(fileread(s_template));
 
     a_comp   = tools.vcellfun(@(bus) bus.a_Component, net.a_Bus);
     l_isgen  = tools.vcellfun(@(comp) isa(comp, "component.generator.abstract"), a_comp);
@@ -231,7 +231,7 @@ function str_code = class_file(str_class, net)
     n_count = [numel(net.a_Bus), numel(net.a_Branch), numel(a_comp), ...
                sum(l_isgen), sum(l_isload), sum(l_others)];
 
-    str_rep = ["___MODEL_NAME___"     , ...
+    sr_rep = ["___MODEL_NAME___"     , ...
                "____MADE_DATE____"    , ...
                "___BUS_NUM___"        , ...
                "___BRANCH_NUM___"     , ...
@@ -239,8 +239,8 @@ function str_code = class_file(str_class, net)
                "___GENERATOR_NUM___"  , ...
                "___LOAD_NUM___"       , ...
                "___COMPENSATOR_NUM___"];
-    str_new = [str_class, ...
+    sr_new = [s_class, ...
                string(datetime("now","Format","uuuu/MM/dd HH:mm:ss")), ...
                string(n_count)];
-    str_code = replace(str_code, str_rep, str_new);
+    s_code = replace(s_code, sr_rep, sr_new);
 end

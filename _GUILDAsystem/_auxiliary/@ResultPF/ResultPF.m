@@ -68,6 +68,6 @@ classdef ResultPF < ResultBase
         end
 
         fig = Plot(obj, opt)
-        str_file = Export(obj, filename, opt)
+        s_file = Export(obj, filename, opt)
     end
 end

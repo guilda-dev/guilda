@@ -1,6 +1,6 @@
 # 新しいモデルクラスの実装方法(現状調査)
 
-> 当時の調査記録です。調査の基準は `df3f709` で、以後の変更は本文に反映していません(周波数と `f_*` の状態の名前だけは、現在の `get_Hz()` と `sct_edit.str_odefcn` に置き換えて書いています(当時は Dependent プロパティと論理値のフラグでした))。現状は [status.md](status.md) と [v4-migration.md](v4-migration.md) を見てください。
+> 当時の調査記録です。調査の基準は `df3f709` で、以後の変更は本文に反映していません(周波数と `f_*` の状態の名前だけは、現在の `get_Hz()` と `sct_edit.s_odefcn` に置き換えて書いています(当時は Dependent プロパティと論理値のフラグでした))。現状は [status.md](status.md) と [v4-migration.md](v4-migration.md) を見てください。
 
 `Component`、制御器、`Branch`、ネットワークテンプレートを新しく実装する手順と、実際に実装したときの摩擦の記録です。改善案は後続の作業で作成するので、ここには書きません。既存クラスから系統を組み立てる手順は姉妹ノート `notes/model-building-workflow.md`(ブランチ `docs/model-building-workflow`)の範囲です。
 
@@ -63,7 +63,7 @@
 
 戻り値は `fcn_dx`, `fcn_Y` が列、`fcn_I` が**複素スカラー**(`class-design.html:344`)、`fcn_Mass` が `M dx/dt = fcn_dx` の `M` です。単位の規約は pu(系統基準)、rad、s です。
 
-`Bus.add_component` は `mkInst(str_index, para, opt)` を呼びます(`@Bus/add_component.template:54`)。`opt` は `P`, `Q`, `baseMVA` などの構造体で、`Component` のコンストラクタはこれを必要とします(`Component.m:134`)。
+`Bus.add_component` は `mkInst(s_index, para, opt)` を呼びます(`@Bus/add_component.template:54`)。`opt` は `P`, `Q`, `baseMVA` などの構造体で、`Component` のコンストラクタはこれを必要とします(`Component.m:134`)。
 
 | 親クラス | タグ | パラメータの扱い | 根拠 |
 |---|---|---|---|

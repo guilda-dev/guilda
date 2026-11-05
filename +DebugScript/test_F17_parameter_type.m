@@ -80,10 +80,10 @@ assert(avr.para_dynamics.kap == kap && height(net.tab_editLog) == 0)
 
 %% Check and log are kept after save and load
 [net, ~] = initialized_3bus();
-str_file = [tempname, '.mat'];
-c_file = onCleanup(@() delete(str_file));
-save(str_file, "net");
-s = load(str_file);
+s_file = [tempname, '.mat'];
+c_file = onCleanup(@() delete(s_file));
+save(s_file, "net");
+s = load(s_file);
 para = s.net.a_Bus{1}.para_powerflow;
 V = para.V;
 check_error(assign_error(para, "V", "x"), "V", "double", "string");

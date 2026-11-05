@@ -282,7 +282,7 @@ l_c = double(cj.l_isConnect);
 odeJac(rv,rh) = odeJac(rv,rh) + [ Axx, Bxu, Bxv, Bxi; -l_c*Cix, -l_c*Diu, -l_c*Div, -l_c*Dii];
 
 % SIM:254-265 同じ ode オブジェクトで解き直す
-[x0r, xp0, l_failed, l_relaxed, str_why] = CalculateInitialCondition(o, options);
+[x0r, xp0, l_failed, l_relaxed, s_why] = CalculateInitialCondition(o, options);
 o.InitialValue = x0r;  o.InitialSlope = xp0;
 sol = solve(o, 0, t2-t1);
 o.InitialSlope = zeros(0,1);
@@ -290,7 +290,7 @@ o.InitialSlope = zeros(0,1);
 
 `InitialSlope` は `ode` のプロパティです。`SolverOptions` にはありません。**[試作]**
 
-> **古い記述(2026-11-04、`a9afe24` で確認):** 上の `CalculateInitialCondition` の呼び出し(出力 `l_relaxed` を含む)は当時の形です。現在は `_GUILDAsystem/_auxiliary/@SolverODE/private/CalculateInitialCondition.m` の `[x0, xp0, l_failed, str_why, me_why] = CalculateInitialCondition(o, options)` で、代数変数だけをニュートン法で解き、微分状態は動かしません。緩めた再計算とその警告 `InitialConditionRelaxed` は `8bd906c`(`fix/ode-initial-condition-jump`、統合は `bf7512b`)で削除されました。
+> **古い記述(2026-11-04、`a9afe24` で確認):** 上の `CalculateInitialCondition` の呼び出し(出力 `l_relaxed` を含む)は当時の形です。現在は `_GUILDAsystem/_auxiliary/@SolverODE/private/CalculateInitialCondition.m` の `[x0, xp0, l_failed, s_why, me_why] = CalculateInitialCondition(o, options)` で、代数変数だけをニュートン法で解き、微分状態は動かしません。緩めた再計算とその警告 `InitialConditionRelaxed` は `8bd906c`(`fix/ode-initial-condition-jump`、統合は `bf7512b`)で削除されました。
 
 **結果(IEEE14、制御器なし、trip SG1B003 `[1,1.2]`)**
 
@@ -396,7 +396,7 @@ end
 ```matlab
 phase = compile(c_events, net, time);   % struct 配列。1 要素が 1 区間
 % phase(k): t1, t2, lv_keep, iv_keep, lv_connect, lv_fault, rv_Xoffset(加算先の添字と値),
-%           c_Uoffset, Ymat, str_events
+%           c_Uoffset, Ymat, s_events
 ```
 
 | 判断 | 推奨 | 理由 |

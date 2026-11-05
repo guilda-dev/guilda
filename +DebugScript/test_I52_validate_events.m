@@ -80,18 +80,18 @@ o = { ...
 assert(flag == 1 && sol.odeResults.t(end) == 3)
 
 
-function expect_event_error(net, str_key, str_text, varargin)
-    % エラーの ID と、メッセージが原因を示すこと (str_text を全て含む) を確認する
+function expect_event_error(net, s_key, s_text, varargin)
+    % エラーの ID と、メッセージが原因を示すこと (s_text を全て含む) を確認する
     % 系統に属するシナリオへの追加の時点で検査される
-    str_id = "GUILDA:Scenario:" + str_key;
+    s_id = "GUILDA:Scenario:" + s_key;
     try
         ev = DebugScript.helper.scenario("ev", net, varargin{:});
         net.simulate([0,3], ev);
     catch ME
-        assert(DebugScript.helper.msg_id(ME) == str_id, DebugScript.helper.msg_id(ME) + ": " + ME.message)
-        assert(all(contains(ME.message, str_text)), "原因が示されない: " + ME.message)
+        assert(DebugScript.helper.msg_id(ME) == s_id, DebugScript.helper.msg_id(ME) + ": " + ME.message)
+        assert(all(contains(ME.message, s_text)), "原因が示されない: " + ME.message)
         assert(contains(ME.message, '"ev"'), "外乱の名前が示されない: " + ME.message)
         return
     end
-    error("DebugScript:noError", "エラーにならない (期待: " + str_id + ")")
+    error("DebugScript:noError", "エラーにならない (期待: " + s_id + ")")
 end

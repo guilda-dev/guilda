@@ -191,8 +191,8 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         while idx<=numel(fo)
             lv = strcmp(fi,fo(idx));
             if any(lv)
-                str_i = fi{lv};
-                rv_val = in.(str_i);
+                s_i = fi{lv};
+                rv_val = in.(s_i);
                 nv = numel(rv_val);                
     
                 Connect(nv_all+(1:nv), :) = [rv_val', repmat(out.(fo{idx}), [nv,1])];

@@ -12,11 +12,11 @@
 
 warning("off", "backtrace");
 evalc("try; GUILDA; catch; end");
-str_sec = getenv("SIMREVIEW_SECTIONS");
-if strlength(str_sec) == 0
-    str_sec = "1,2,3,4,5,6";
+s_sec = getenv("SIMREVIEW_SECTIONS");
+if strlength(s_sec) == 0
+    s_sec = "1,2,3,4,5,6";
 end
-rv_sec = str2double(split(string(str_sec), ","));
+rv_sec = str2double(split(string(s_sec), ","));
 
 fprintf("# MATLAB %s / %s\n", version, computer);
 fprintf("# 測定日 %s, CPU論理数 %d\n", string(datetime("today")), feature("numcores"));
@@ -36,20 +36,20 @@ function print_load(str)
     fprintf("# 負荷 (%s): %s\n", str, strip(string(regexp(txt, "load averages?:.*", "match", "once"))));
 end
 
-function net = build(str_net, opt)
+function net = build(s_net, opt)
     arguments
-        str_net (1,1) string
+        s_net   (1,1) string
         opt.LC  (1,1) logical = true
         opt.AGC (1,1) logical = false
         opt.Init (1,1) logical = true
     end
-    if str_net == "IEEE14bus"      % IEEE14bus は制御器なしで、LocalController オプションを持たない
+    if s_net == "IEEE14bus"      % IEEE14bus は制御器なしで、LocalController オプションを持たない
         net = network.IEEE14bus();
         if opt.LC
             add_avr_pss(net);
         end
     else
-        net = network.(str_net)(LocalController=opt.LC);
+        net = network.(s_net)(LocalController=opt.LC);
     end
     net.solver_ODE.Progress = "none";
     net.solver_ODE.TimeLimit = Inf;
@@ -77,13 +77,13 @@ function init(net)
     evalc("net.initialize()");
 end
 
-function ev = fault(net, str_bus, tspan)
+function ev = fault(net, s_bus, tspan)
     arguments
         net
-        str_bus (1,1) string = string(net.a_Bus{1})
+        s_bus (1,1) string = string(net.a_Bus{1})
         tspan = [1, 1.05]
     end
-    ev = odeEventSet("fault", net, "TimeSpan", tspan, "FaultBus", str_bus);
+    ev = odeEventSet("fault", net, "TimeSpan", tspan, "FaultBus", s_bus);
 end
 
 function t = median_time(fcn, n)
@@ -142,18 +142,18 @@ function section_performance()
         "IEEE68bus", false, false, true,  "ode15s", 3, 120};
     fprintf("net|LC|AGC|fault|solver|n_var|init中央値[s]|sim初回[s]|sim中央値[s]|sim最小[s]|sim最大[s]|flag|tEnd|n_t|nRHS|nJac|nOutFcn|ms/RHS換算|rm_variable+rm_I+rv_t[MB]|byteStream[MB]|odeResults表示[s]\n");
     for i = 1:size(c_case,1)
-        [str_net, l_lc, l_agc, l_ev, str_sol, n, r_tl] = c_case{i,:};
+        [s_net, l_lc, l_agc, l_ev, s_sol, n, r_tl] = c_case{i,:};
         try
-            t_init = median_time(@() build(str_net, LC=l_lc, AGC=l_agc), n) ...
-                   - median_time(@() build(str_net, LC=l_lc, AGC=l_agc, Init=false), n);
-            net = build(str_net, LC=l_lc, AGC=l_agc);
+            t_init = median_time(@() build(s_net, LC=l_lc, AGC=l_agc), n) ...
+                   - median_time(@() build(s_net, LC=l_lc, AGC=l_agc, Init=false), n);
+            net = build(s_net, LC=l_lc, AGC=l_agc);
             if l_ev
                 c_ev = {fault(net)};
             else
                 c_ev = {};
             end
-            c_sol = kv("Solver", str_sol);
-            if str_sol == "ode23t*"
+            c_sol = kv("Solver", s_sol);
+            if s_sol == "ode23t*"
                 c_sol = kv("Solver", "ode23t", "SolverOptions", matlab.ode.options.ODE23t);
             end
             run = @() net.simulate([0,10], c_ev{:}, c_sol{:}, TimeLimit=r_tl);
@@ -169,18 +169,18 @@ function section_performance()
             bs = numel(getByteStreamFromArray(sol))/1e6;
             t0 = tic; r = sol.odeResults; t_view = toc(t0); %#ok
             fprintf("%s|%d|%d|%d|%s|%d|%.3f|%.3f|%.3f|%.3f|%.3f|%d|%g|%d|%d|%d|%d|%.3f|%.3f|%.2f|%.3f\n", ...
-                str_net, l_lc, l_agc, l_ev, str_sol, size(sol.rm_variable,2), t_init, t_first, median(rv), min(rv), max(rv), ...
+                s_net, l_lc, l_agc, l_ev, s_sol, size(sol.rm_variable,2), t_init, t_first, median(rv), min(rv), max(rv), ...
                 flag, output.tEnd, numel(sol.rv_t), n_rhs, n_jac, n_out, 1e3*median(rv)/max(n_rhs,1), mb, bs, t_view);
         catch me
-            fprintf("%s|%d|%d|%d|%s|ERROR %s: %s\n", str_net, l_lc, l_agc, l_ev, str_sol, me.identifier, first_line(me.message));
+            fprintf("%s|%d|%d|%d|%s|ERROR %s: %s\n", s_net, l_lc, l_agc, l_ev, s_sol, me.identifier, first_line(me.message));
         end
     end
 
     % 他プロセスの負荷の影響を受けにくい条件: 計算スレッド 1
     print_load("1 スレッド測定の前");
     n0 = maxNumCompThreads(1);
-    for str_net = ["IEEE14bus","IEEE68bus"]
-        net = build(str_net);
+    for s_net = ["IEEE14bus","IEEE68bus"]
+        net = build(s_net);
         ev  = fault(net);
         run = @() net.simulate([0,10], ev);
         run();
@@ -188,7 +188,7 @@ function section_performance()
         for k = 1:5
             t0 = tic; run(); rv(k) = toc(t0);
         end
-        fprintf("1スレッド %s fault ode15s: 中央値 %.3f s, 最小 %.3f, 最大 %.3f (5回)\n", str_net, median(rv), min(rv), max(rv));
+        fprintf("1スレッド %s fault ode15s: 中央値 %.3f s, 最小 %.3f, 最大 %.3f (5回)\n", s_net, median(rv), min(rv), max(rv));
     end
     maxNumCompThreads(n0);
     print_load("1 スレッド測定の後");
@@ -213,11 +213,11 @@ function section_performance()
     end
 
     % Jacobian の疎性 (odeSimulator は密行列を返す)
-    for str_net = ["IEEE9bus","IEEE14bus","IEEE68bus"]
-        net = build(str_net);
+    for s_net = ["IEEE9bus","IEEE14bus","IEEE68bus"]
+        net = build(s_net);
         res = net.linearize();
         J = [res.rm_Axx, res.rm_Axv; res.rm_Avx, res.rm_Avv];
-        fprintf("疎性 %s: 線形化ブロック [Axx Axv;Avx Avv] %dx%d, 非零率 %.1f%%\n", str_net, size(J,1), size(J,2), 100*nnz(J)/numel(J));
+        fprintf("疎性 %s: 線形化ブロック [Axx Axv;Avx Avv] %dx%d, 非零率 %.1f%%\n", s_net, size(J,1), size(J,2), 100*nnz(J)/numel(J));
     end
 end
 
@@ -231,8 +231,8 @@ end
 function section_bottleneck()
     fprintf("\n## 2 ボトルネック\n");
     fprintf("条件: time=[0,10], fault 先頭母線 [1,1.05], ode15s, 既定 Tolerance, profile は1回 (ウォームアップ1回の後)\n");
-    for str_net = ["IEEE14bus","IEEE68bus"]
-        net = build(str_net);
+    for s_net = ["IEEE14bus","IEEE68bus"]
+        net = build(s_net);
         ev  = fault(net);
         run = @() net.simulate([0,10], ev);
         run();
@@ -249,7 +249,7 @@ function section_bottleneck()
         [~, iv_root] = max(total);
         t_all = total(iv_root);
         fprintf("### %s: プロファイラなし %.3f s, プロファイラあり %.3f s (root=%s), nRHS=%d, nJac=%d, r_elapsed=%.3f\n", ...
-            str_net, t_plain, t_all, names(iv_root), n_rhs, n_jac, sol.r_elapsed);
+            s_net, t_plain, t_all, names(iv_root), n_rhs, n_jac, sol.r_elapsed);
         fprintf("self順位|関数|呼出数|self[s]|self[%%]|total[s]\n");
         [~, iv] = sort(selft, "descend");
         for k = 1:min(25, numel(iv))
@@ -257,10 +257,10 @@ function section_bottleneck()
             fprintf("%d|%s|%d|%.3f|%.1f|%.3f\n", k, names(m), ft(m).NumCalls, selft(m), 100*selft(m)/t_all, total(m));
         end
         fprintf("主要処理(total)|呼出数|total[s]|total[%%]\n");
-        for str_pat = ["require_equilibrium","check_edit","get_admittance_matrix","initialize_index","odeEventSet.table", ...
+        for s_pat = ["require_equilibrium","check_edit","get_admittance_matrix","initialize_index","odeEventSet.table", ...
                        "makeODE","CalculateInitialCondition","setEventCondition","getInitialCondition","getNextPhase","Event2State", ...
                        "odeSimulationResult.odeSimulationResult","ode.solve","getODEFunction","getODEJacobian","get_dx_algebraic","time_keeper"]
-            for m = find(contains(names, str_pat))
+            for m = find(contains(names, s_pat))
                 fprintf("%s|%d|%.3f|%.1f\n", names(m), ft(m).NumCalls, total(m), 100*total(m)/t_all);
             end
         end
@@ -269,8 +269,8 @@ function section_bottleneck()
     % プロファイラなしの個別計測 (呼び出しあたり)
     fprintf("### 呼び出しあたり (プロファイラなし, 各 20000 回の平均)\n");
     fprintf("net|対象|us/呼出|RHS1回あたりの呼出数|RHS1回あたり[ms]換算\n");
-    for str_net = ["IEEE14bus","IEEE68bus"]
-        net = build(str_net);
+    for s_net = ["IEEE14bus","IEEE68bus"]
+        net = build(s_net);
         net.simulate([0,0.01]);
         c_comp = {};
         for i = 1:numel(net.a_Bus)
@@ -296,7 +296,7 @@ function section_bottleneck()
                 f();
             end
             us = toc(t0)/20000*1e6;
-            fprintf("%s|%s|%.2f|%d|%.3f\n", str_net, c_ben{k,1}, us, c_ben{k,3}, us*c_ben{k,3}/1e3);
+            fprintf("%s|%s|%.2f|%d|%.3f\n", s_net, c_ben{k,1}, us, c_ben{k,3}, us*c_ben{k,3}/1e3);
         end
         Y = tools.complex2matrix(net.get_admittance_matrix.Variables);
         v = ones(size(Y,1),1);
@@ -305,7 +305,7 @@ function section_bottleneck()
         for it = 1:20000
             f();
         end
-        fprintf("%s|Y*V (%dx%d 密, 比較用)|%.2f|1|%.3f\n", str_net, size(Y,1), size(Y,2), toc(t0)/20000*1e6, toc(t0)/20000*1e3);
+        fprintf("%s|Y*V (%dx%d 密, 比較用)|%.2f|1|%.3f\n", s_net, size(Y,1), size(Y,2), toc(t0)/20000*1e6, toc(t0)/20000*1e3);
     end
 end
 
@@ -350,9 +350,9 @@ function section_edit()
       "operation の編集 (母線 Vmax)",                  "lc", @(n) set_tab(n.a_Bus{2}, "operation", "Vmax", 1.4)};
 
     for i = 1:size(c,1)
-        [str_name, str_base, f_edit] = c{i,:};
-        base = @() edit_net(str_base);
-        probe_edit(str_name, base, f_edit);
+        [s_name, s_base, f_edit] = c{i,:};
+        base = @() edit_net(s_base);
+        probe_edit(s_name, base, f_edit);
     end
 
     % 直接は書けないはずのもの
@@ -369,8 +369,8 @@ function section_edit()
     probe_set("gen.rv_Xoffset = ... (Hidden, public)", @() set_prop(g, "rv_Xoffset", g.rv_Xoffset));
 end
 
-function n = edit_net(str_base)
-    switch str_base
+function n = edit_net(s_base)
+    switch s_base
         case "lc"
             n = network.IEEE9bus();
         case "no"
@@ -383,7 +383,7 @@ function n = edit_net(str_base)
     n.solver_ODE.TimeLimit = Inf;
 end
 
-function probe_edit(str_name, base, f_edit)
+function probe_edit(s_name, base, f_edit)
     c_nv = kv("Tolerance", 1e-6, "AbsoluteTolerance", 1e-8);
     tspan = [0,3];
     try
@@ -402,13 +402,13 @@ function probe_edit(str_name, base, f_edit)
             res_new = ref.simulate(tspan, fault(ref,"B007"), c_nv{:});
         catch me
             res_new = [];
-            str_ref = "基準計算不可 " + me.identifier;
+            s_ref   = "基準計算不可 " + me.identifier;
         end
 
-        [sol, flag, str_err, str_id] = try_sim(@() net.simulate(tspan, fault(net,"B007"), c_nv{:}));
+        [sol, flag, s_err, s_id] = try_sim(@() net.simulate(tspan, fault(net,"B007"), c_nv{:}));
         if isempty(sol)
-            str_detail = str_id + ": " + str_err;
-            fprintf("%s|停止|-|-|-|-|%d|%s\n", str_name, l_stale, str_detail);
+            s_detail = s_id + ": " + s_err;
+            fprintf("%s|停止|-|-|-|-|%d|%s\n", s_name, l_stale, s_detail);
             return
         end
         d_old = sim_diff(sol, res_old);
@@ -416,13 +416,13 @@ function probe_edit(str_name, base, f_edit)
         if ~isempty(res_new)
             d_new = sim_diff(sol, res_new);
         end
-        str_out = classify(d_old, d_new);
+        s_out = classify(d_old, d_new);
         drift = pre_drift(sol, 0.9);
-        str_detail = "";
-        if isempty(res_new), str_detail = str_ref; end
-        fprintf("%s|%s|%d|%.3e|%.3e|%.3e|%d|%s\n", str_name, str_out, flag, d_old, d_new, drift, l_stale, str_detail);
+        s_detail = "";
+        if isempty(res_new), s_detail = s_ref; end
+        fprintf("%s|%s|%d|%.3e|%.3e|%.3e|%d|%s\n", s_name, s_out, flag, d_old, d_new, drift, l_stale, s_detail);
     catch me
-        fprintf("%s|測定失敗|-|-|-|-|-|%s: %s\n", str_name, me.identifier, first_line(me.message));
+        fprintf("%s|測定失敗|-|-|-|-|-|%s: %s\n", s_name, me.identifier, first_line(me.message));
     end
 end
 
@@ -436,13 +436,13 @@ function s = classify(d_old, d_new)
     end
 end
 
-function [sol, flag, str_err, str_id] = try_sim(fcn)
-    sol = []; flag = NaN; str_err = ""; str_id = "";
+function [sol, flag, s_err, s_id] = try_sim(fcn)
+    sol = []; flag = NaN; s_err = ""; s_id = "";
     try
         [~, sol, flag] = evalc_sim(fcn);
     catch me
-        str_err = first_line(me.message);
-        str_id  = string(me.identifier);
+        s_err   = first_line(me.message);
+        s_id    = string(me.identifier);
         sol = [];
     end
 end
@@ -481,16 +481,16 @@ function d = pre_drift(sol, t_end)
     d = max(abs(m - m(1,:)), [], "all");
 end
 
-function set_tab(obj, str_tab, str_col, val)
-    obj.tab_parameter.(str_tab).(str_col) = val;
+function set_tab(obj, s_tab, s_col, val)
+    obj.tab_parameter.(s_tab).(s_col) = val;
 end
-function assign_whole(obj, str_tab, str_col, val)
+function assign_whole(obj, s_tab, s_col, val)
     tp = obj.tab_parameter;
-    tp.(str_tab).(str_col) = val;
+    tp.(s_tab).(s_col) = val;
     obj.tab_parameter = tp;
 end
-function set_para(obj, str_para, str_col, val)
-    obj.(str_para).(str_col) = val;
+function set_para(obj, s_para, s_col, val)
+    obj.(s_para).(s_col) = val;
 end
 function copy_only(obj)
     tp = obj.tab_parameter;
@@ -516,12 +516,12 @@ end
 function set_prop(obj, str, val)
     obj.(str) = val;
 end
-function probe_set(str_name, fcn)
+function probe_set(s_name, fcn)
     try
         fcn();
-        fprintf("%s|書き込めた\n", str_name);
+        fprintf("%s|書き込めた\n", s_name);
     catch me
-        fprintf("%s|エラー %s: %s\n", str_name, me.identifier, first_line(me.message));
+        fprintf("%s|エラー %s: %s\n", s_name, me.identifier, first_line(me.message));
     end
 end
 
@@ -691,7 +691,7 @@ function section_side_effects()
     net = mk();
     res_fault = net.simulate([0,3], fault(net,"B008"));
     tab = res_fault.tab_variable;
-    lv_c = ismember(tab.Owner, ["agc", string(net.a_Bus{1}.a_Component{1}.a_LocalController{1}.str_tag)]);
+    lv_c = ismember(tab.Owner, ["agc", string(net.a_Bus{1}.a_Component{1}.a_LocalController{1}.s_tag)]);
     fprintf("fault 実行の末尾での制御器状態の平衡点からの最大ずれ: %.3e\n", max(abs(res_fault.rm_variable(end,lv_c) - res_fault.rm_variable(1,lv_c))));
     res_after = net.simulate([0,3]);
     fprintf("次の外乱なし実行: 初期値の差(1回目初期値比)=%.3e, 全体の drift=%.3e, 制御器 drift=%.3e\n", ...
@@ -711,11 +711,11 @@ function section_side_effects()
     probe_stale_event();
 
     fprintf("### 4-9 AGC が制御する発電機の trip (制御器なし IEEE14bus + AGC(SG1B001,SG1B002))\n");
-    for str_unit = ["SG1B002","SG1B003"]
+    for s_unit = ["SG1B002","SG1B003"]
         for l_agc = [true,false]
             net = build("IEEE14bus", LC=false, AGC=l_agc);
-            [~, sol, flag, output] = capture_sim(@() net.simulate([0,3], odeEventSet("trip", net, "TimeSpan", [1,2], "TripUnit", str_unit)));
-            fprintf("trip %s, AGC=%d: flag=%d tEnd=%g n_t=%d\n", str_unit, l_agc, flag, output.tEnd, numel(sol.rv_t));
+            [~, sol, flag, output] = capture_sim(@() net.simulate([0,3], odeEventSet("trip", net, "TimeSpan", [1,2], "TripUnit", s_unit)));
+            fprintf("trip %s, AGC=%d: flag=%d tEnd=%g n_t=%d\n", s_unit, l_agc, flag, output.tEnd, numel(sol.rv_t));
         end
     end
 
@@ -727,21 +727,21 @@ function section_side_effects()
         "AVR",       @(g) g.add_local_controller(controller.avr.AVR_ST1("avrT")); ...
         "AVR+PSS",   @(g) g.add_local_controller(controller.avr.AVR_ST1("avrT"), controller.pss.PSS1("pssT")); ...
         "LQR",       @(g) g.add_local_controller(controller.local_LQR("lqrT", Input="Vfield"))};
-    for str_net = ["IEEE9bus","IEEE14bus"]
+    for s_net = ["IEEE9bus","IEEE14bus"]
         for i = 1:size(c_lc,1)
             for c_ts = {[1,1.5],[1,5]}
-                probe_trip(str_net, c_lc{i,1}, c_lc{i,2}, c_ts{1});
+                probe_trip(s_net, c_lc{i,1}, c_lc{i,2}, c_ts{1});
             end
         end
     end
     % 同梱ネットワークの既定 (AVR+PSS つき) での trip
-    for str_net = ["IEEE9bus","IEEE68bus"]
-        net = build(str_net);
+    for s_net = ["IEEE9bus","IEEE68bus"]
+        net = build(s_net);
         try
             [~, sol, flag] = evalc_sim(@() net.simulate([0,2], odeEventSet("trip", net, "TimeSpan", [0.5,1], "TripUnit", "SG1B002")));
-            fprintf("%s 既定|AVR+PSS|[0.5,1]|OK flag=%d n_t=%d message=%s\n", str_net, flag, numel(sol.rv_t), first_line(sol.output.message));
+            fprintf("%s 既定|AVR+PSS|[0.5,1]|OK flag=%d n_t=%d message=%s\n", s_net, flag, numel(sol.rv_t), first_line(sol.output.message));
         catch me
-            fprintf("%s 既定|AVR+PSS|[0.5,1]|ERROR id='%s' %s (スタック先頭 %s:%d)\n", str_net, me.identifier, first_line(me.message), me.stack(1).name, me.stack(1).line);
+            fprintf("%s 既定|AVR+PSS|[0.5,1]|ERROR id='%s' %s (スタック先頭 %s:%d)\n", s_net, me.identifier, first_line(me.message), me.stack(1).name, me.stack(1).line);
             g = net.a_Bus{2}.a_Component{1};
             fprintf("  エラー直後 l_isConnect=%d; 外乱なしの再実行 flag=", get_private(g,"l_isConnect"));
             [~, s2, f2] = evalc_sim(@() net.simulate([0,2]));
@@ -758,15 +758,15 @@ function net = pick_net(str, mk, mk2)
     end
 end
 
-function probe_trip(str_net, str_lc, f_lc, ts)
-    net = build(str_net, LC=false, Init=false);
+function probe_trip(s_net, s_lc, f_lc, ts)
+    net = build(s_net, LC=false, Init=false);
     f_lc(net.a_Bus{2}.a_Component{1});
     init(net);
     try
         [~, sol, flag] = evalc_sim(@() net.simulate([0,3], odeEventSet("trip", net, "TimeSpan", ts, "TripUnit", "SG1B002")));
-        fprintf("%s|%s|%s|OK flag=%d tEnd=%g n_t=%d\n", str_net, str_lc, mat2str(ts), flag, sol.rv_t(end), numel(sol.rv_t));
+        fprintf("%s|%s|%s|OK flag=%d tEnd=%g n_t=%d\n", s_net, s_lc, mat2str(ts), flag, sol.rv_t(end), numel(sol.rv_t));
     catch me
-        fprintf("%s|%s|%s|ERROR id='%s' %s (スタック先頭 %s:%d)\n", str_net, str_lc, mat2str(ts), me.identifier, first_line(me.message), me.stack(1).name, me.stack(1).line);
+        fprintf("%s|%s|%s|ERROR id='%s' %s (スタック先頭 %s:%d)\n", s_net, s_lc, mat2str(ts), me.identifier, first_line(me.message), me.stack(1).name, me.stack(1).line);
     end
 end
 
@@ -946,8 +946,8 @@ function probe_stale_event()
     sB = netB.simulate([0,3], fault(netB,"B007"), c_nv{:});
     try
         evalc("[sX, flagX] = netB.simulate([0,3], fault(netA,""B007""), c_nv{:});");
-        fprintf("(e) netB.simulate(netA の事象): エラーなし flag=%d, str_network=%s, 自分の応答との差=%.3e, 事象側 netA の応答との差=%.3e\n", ...
-            flagX, sX.str_network, sim_diff(sX,sB), sim_diff(sX,sA));
+        fprintf("(e) netB.simulate(netA の事象): エラーなし flag=%d, s_network=%s, 自分の応答との差=%.3e, 事象側 netA の応答との差=%.3e\n", ...
+            flagX, sX.s_network, sim_diff(sX,sB), sim_diff(sX,sA));
     catch me
         fprintf("(e) netB.simulate(netA の事象): エラー %s: %s\n", me.identifier, first_line(me.message));
     end
@@ -1091,12 +1091,12 @@ function section_arguments()
       "event", "未知の OffsetUnit",          @(n) n.simulate([0,3], odeEventSet("a",n,"TimeSpan",1,"OffsetUnit","XXX","OffsetState","delta","OffsetValue",0.1)); ...
       "event", "未知の OffsetState",         @(n) n.simulate([0,3], odeEventSet("a",n,"TimeSpan",1,"OffsetUnit","SG1B001","OffsetState","xxx","OffsetValue",0.1)); ...
       "event", "OffsetState/Value 個数違い",  @(n) n.simulate([0,3], odeEventSet("a",n,"TimeSpan",1,"OffsetUnit","SG1B001","OffsetState",["delta";"omega"],"OffsetValue",[0.1;0.2;0.3])); ...
-      "event", "OffsetUnit=AVR の tag",      @(n) n.simulate([0,3], odeEventSet("a",n,"TimeSpan",1,"OffsetUnit",string(n.a_Bus{1}.a_Component{1}.a_LocalController{1}.str_tag),"OffsetState","Vfd","OffsetValue",0.1)); ...
+      "event", "OffsetUnit=AVR の tag",      @(n) n.simulate([0,3], odeEventSet("a",n,"TimeSpan",1,"OffsetUnit",string(n.a_Bus{1}.a_Component{1}.a_LocalController{1}.s_tag),"OffsetState","Vfd","OffsetValue",0.1)); ...
       "event", "未知の InputUnit",           @(n) n.simulate([0,3], odeEventSet("a",n,"TimeSpan",[1,2],"InputUnit","XXX","InputName","Pmech","InputValue",0.1)); ...
       "event", "未知の InputName",           @(n) n.simulate([0,3], odeEventSet("a",n,"TimeSpan",[1,2],"InputUnit","SG1B002","InputName","xxx","InputValue",0.1)); ...
       "event", "InputValue 個数違い",        @(n) n.simulate([0,3], odeEventSet("a",n,"TimeSpan",[1,2],"InputUnit","SG1B002","InputName",["Pmech";"Vfield"],"InputValue",[0.1;0.2;0.3])); ...
       "event", "InputValue が行列を返す関数", @(n) n.simulate([0,3], odeEventSet("a",n,"TimeSpan",[1,2],"InputUnit","SG1B002","InputName","Pmech","InputValue",{@(t) [t;t]})); ...
-      "event", "trip=AVR の tag",            @(n) n.simulate([0,3], tr(n,string(n.a_Bus{1}.a_Component{1}.a_LocalController{1}.str_tag),"TimeSpan",[1,1.2])); ...
+      "event", "trip=AVR の tag",            @(n) n.simulate([0,3], tr(n,string(n.a_Bus{1}.a_Component{1}.a_LocalController{1}.s_tag),"TimeSpan",[1,1.2])); ...
       "event", "trip 発電機を全部",           @(n) n.simulate([0,3], tr(n,all_gens(n),"TimeSpan",[1,1.2])); ...
       "event", "fault 全母線",                @(n) n.simulate([0,3], odeEventSet("a",n,"TimeSpan",[1,1.2],"FaultBus",string(n.a_Bus))); ...
       "event", "事象の順序: 後の事象を先に",    @(n) n.simulate([0,3], odeEventSet("b",n,"TimeSpan",[2,2.2],"FaultBus","B009"), odeEventSet("a",n,"TimeSpan",[1,1.2],"FaultBus","B008")); ...
@@ -1133,7 +1133,7 @@ function section_arguments()
     fprintf("TimeSpan=[2,1] の応答と外乱なしの差: %.3e\n", sim_diff(a,s0));
     % AVR の tag の trip は効くか
     n2 = build("IEEE14bus");
-    a = n2.simulate([0,3], odeEventSet("t", n2, "TimeSpan", [1,1.2], "TripUnit", string(n2.a_Bus{1}.a_Component{1}.a_LocalController{1}.str_tag)));
+    a = n2.simulate([0,3], odeEventSet("t", n2, "TimeSpan", [1,1.2], "TripUnit", string(n2.a_Bus{1}.a_Component{1}.a_LocalController{1}.s_tag)));
     fprintf("AVR の tag の trip の応答と外乱なしの差: %.3e\n", sim_diff(a, n2.simulate([0,3])));
 
     % 5-4 ソルバ指定が効くか
@@ -1181,8 +1181,8 @@ function section_arguments()
     end
 end
 
-function v = bus_v(sol, str_bus, t)
-    lv = sol.tab_variable.Bus == str_bus & ismember(sol.tab_variable.Kind, ["Vre","Vim"]);
+function v = bus_v(sol, s_bus, t)
+    lv = sol.tab_variable.Bus == s_bus & ismember(sol.tab_variable.Kind, ["Vre","Vim"]);
     [tu, iu] = unique(sol.rv_t, "last");
     v = norm(interp1(tu, sol.rm_variable(iu, lv), t));
 end
@@ -1193,24 +1193,24 @@ function sv = all_gens(n)
         cm = n.a_Bus{i}.a_Component;
         for j = 1:numel(cm)
             if isa(cm{j}, "component.generator.abstract")
-                sv(end+1,1) = cm{j}.str_tag; %#ok
+                sv(end+1,1) = cm{j}.s_tag; %#ok
             end
         end
     end
 end
 
-function probe_arg(str_grp, str_name, fcn)
+function probe_arg(s_grp, s_name, fcn)
     sol = []; flag = NaN; output = struct("tEnd",NaN,"nPhases",NaN); %#ok
     try
         net = build("IEEE14bus");
         net.solver_ODE.TimeLimit = 30;
         lastwarn("");
         txt = evalc("[sol, flag, output] = fcn(net);");
-        [str_w, id_w] = lastwarn;
-        fprintf("%s|%s|OK|%d|%g|%d|%d|%s|%s\n", str_grp, str_name, flag, output.tEnd, output.nPhases, numel(sol.rv_t), id_w, ...
-            clip(str_w + " " + txt + " / " + first_line(output.message)));
+        [s_w, id_w] = lastwarn;
+        fprintf("%s|%s|OK|%d|%g|%d|%d|%s|%s\n", s_grp, s_name, flag, output.tEnd, output.nPhases, numel(sol.rv_t), id_w, ...
+            clip(s_w + " " + txt + " / " + first_line(output.message)));
     catch me
-        fprintf("%s|%s|ERR|-|-|-|-|%s|%s\n", str_grp, str_name, me.identifier, clip(me.message));
+        fprintf("%s|%s|ERR|-|-|-|-|%s|%s\n", s_grp, s_name, me.identifier, clip(me.message));
     end
 end
 
@@ -1271,21 +1271,21 @@ function section_accuracy()
     fprintf("条件: t=0 に状態 offset, 非線形は Tolerance=1e-8, AbsoluteTolerance=1e-10, time=[0,10]\n");
     fprintf("線形: 線形化ブロックを代数消去し E\\(Axx-Axv*inv(Avv)*Avx) の expm で自由応答 (get_ss は使わない)。比較は t>=0.05 の x と V\n");
     fprintf("net|unit/state|offset|最大偏差(線形)|最大差|相対誤差|相対誤差/offset\n");
-    for str_net = ["IEEE9bus","IEEE14bus"]
-        net = build(str_net);
+    for s_net = ["IEEE9bus","IEEE14bus"]
+        net = build(s_net);
         res = net.linearize();
-        fprintf("%s: rcond(E)=%.3e, rcond(Avv)=%.3e, tab 一致=%d, 平衡点の最大|実部| 固有値 (右端3つ)=", str_net, rcond(full(res.rm_E)), rcond(full(res.rm_Avv)), isequal(res.tab_variable, net.get_variable_map()));
+        fprintf("%s: rcond(E)=%.3e, rcond(Avv)=%.3e, tab 一致=%d, 平衡点の最大|実部| 固有値 (右端3つ)=", s_net, rcond(full(res.rm_E)), rcond(full(res.rm_Avv)), isequal(res.tab_variable, net.get_variable_map()));
         [A, iv_d, A_alg] = reduced_A(res);
         e = sort(real(eig(A)), "descend");
         fprintf("%s, 微分状態 %d / 状態 %d\n", mat2str(e(1:3)', 4), numel(iv_d), size(res.rm_E,1));
         tab = res.tab_variable;
         iv_x = find(tab.Kind == "x");
         iv_v = find(tab.Kind == "Vre" | tab.Kind == "Vim");
-        for str_state = ["delta","omega"]
+        for s_state = ["delta","omega"]
             for r_eps = [1e-4, 1e-3, 1e-2, 1e-1]
-                ev = odeEventSet("os", net, "TimeSpan", 0, "OffsetUnit", "SG1B002", "OffsetState", str_state, "OffsetValue", r_eps);
+                ev = odeEventSet("os", net, "TimeSpan", 0, "OffsetUnit", "SG1B002", "OffsetState", s_state, "OffsetValue", r_eps);
                 sol = net.simulate([0,10], ev, Tolerance=1e-8, AbsoluteTolerance=1e-10);
-                lvx = tab.Owner(iv_x) == "SG1B002" & tab.Name(iv_x) == str_state;
+                lvx = tab.Owner(iv_x) == "SG1B002" & tab.Name(iv_x) == s_state;
                 z0 = double(lvx(iv_d))*r_eps;
                 lt = sol.rv_t >= 0.05;
                 tg = sol.rv_t(lt);
@@ -1295,7 +1295,7 @@ function section_accuracy()
                 sim_v = sol.rm_variable(lt, iv_v) - res.rv_point(iv_v)';
                 d = max(abs([sim_x - Z', sim_v - V']), [], "all");
                 m = max(abs([Z; V]), [], "all");
-                fprintf("%s|SG1B002/%s|%g|%.3e|%.3e|%.3e|%.3e\n", str_net, str_state, r_eps, m, d, d/m, d/m/r_eps);
+                fprintf("%s|SG1B002/%s|%g|%.3e|%.3e|%.3e|%.3e\n", s_net, s_state, r_eps, m, d, d/m, d/m/r_eps);
             end
         end
     end

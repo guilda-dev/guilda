@@ -13,8 +13,8 @@ c_stub = register_stubs(); %#ok<NASGU>
 net = DebugScript.helper.build_3bus("gen-1axis");
 net.a_Bus{3}.add_component("gen-needpq-stub");
 DebugScript.helper.quiet(@() net.initialize);
-str_tag = net.a_Bus{3}.a_Component{end}.str_tag;
-ev = DebugScript.helper.scenario("trip", net, "TimeSpan", [0.2,0.4], "TripUnit", str_tag);
+s_tag = net.a_Bus{3}.a_Component{end}.s_tag;
+ev = DebugScript.helper.scenario("trip", net, "TimeSpan", [0.2,0.4], "TripUnit", s_tag);
 sol = DebugScript.helper.quiet(@() net.simulate([0,1], ev));
 assert(sol.flag == 1, sol.output.message)
 
@@ -22,7 +22,7 @@ assert(sol.flag == 1, sol.output.message)
 net = DebugScript.helper.build_3bus("gen-1axis");
 net.a_Bus{3}.add_component("test-bad-stub", "parameter","massx");
 DebugScript.helper.quiet(@() net.initialize);
-check_mass_error(net, net.a_Bus{3}.a_Component{end}.str_tag);
+check_mass_error(net, net.a_Bus{3}.a_Component{end}.s_tag);
 
 % get_sys keeps its point, so the contract concerns simulate only
 assert(~isempty(DebugScript.helper.quiet(@() net.a_Bus{3}.a_Component{end}.get_sys())))
@@ -33,32 +33,32 @@ assert(~isempty(DebugScript.helper.quiet(@() net.a_Bus{3}.a_Component{end}.get_s
 con = DebugScript.helper.BadControllerStub("massx");
 comp.add_local_controller(con);
 DebugScript.helper.quiet(@() net.initialize);
-check_mass_error(net, con.str_tag);
+check_mass_error(net, con.s_tag);
 
 
 %% UseInternalState names the component without getCompPQ
-for str_key = ["gen-droop","load-impedance"]
+for s_key = ["gen-droop","load-impedance"]
     net = DebugScript.helper.build_3bus("gen-1axis");
-    net.a_Bus{3}.add_component(str_key);
+    net.a_Bus{3}.add_component(s_key);
     DebugScript.helper.quiet(@() net.initialize);
-    str_tag = net.a_Bus{3}.a_Component{end}.str_tag;
+    s_tag = net.a_Bus{3}.a_Component{end}.s_tag;
     ME = [];
     try
         DebugScript.helper.quiet(@() net.calculate_continuation_powerflow( ...
-            LoadBus=net.a_Bus{3}.str_tag, UseInternalState=true));
+            LoadBus=net.a_Bus{3}.s_tag, UseInternalState=true));
     catch ME
     end
-    assert(~isempty(ME), str_key + " did not stop")
+    assert(~isempty(ME), s_key + " did not stop")
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:build_layout:MissingGetCompPQ", DebugScript.helper.msg_id(ME))
-    assert(contains(ME.message, str_tag), ME.message)
+    assert(contains(ME.message, s_tag), ME.message)
 end
 
 
 %% Controllers declare get_equilibrium
-for str_class = ["LocalController","GlobalController"]
-    mc = meta.class.fromName(str_class);
+for s_class = ["LocalController","GlobalController"]
+    mc = meta.class.fromName(s_class);
     m = mc.MethodList(strcmp({mc.MethodList.Name}, "get_equilibrium"));
-    assert(isscalar(m) && m.Abstract && ~m.Static, str_class)
+    assert(isscalar(m) && m.Abstract && ~m.Static, s_class)
 end
 
 
@@ -70,7 +70,7 @@ for c_decl = {"Component","fcn_dx"; "LocalController","fcn_dx"; "LocalController
 end
 
 
-function check_mass_error(net, str_tag)
+function check_mass_error(net, s_tag)
     ME = [];
     try
         DebugScript.helper.quiet(@() net.simulate([0,1]));
@@ -78,32 +78,32 @@ function check_mass_error(net, str_tag)
     end
     assert(~isempty(ME), "simulate did not stop")
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:read_mass:NotConstant", DebugScript.helper.msg_id(ME))
-    assert(contains(ME.message, str_tag), ME.message)
+    assert(contains(ME.message, s_tag), ME.message)
 end
 
 function c = register_stubs()
 % +DebugScript のクラスは add_component のキーにならないので、写しを登録する
-    str_dir = fileparts(fileparts(which("component.load.power")));
-    str_gen = fullfile(fileparts(str_dir), "+generator", "needpq_i105_stub.m");
+    s_dir   = fileparts(fileparts(which("component.load.power")));
+    s_gen   = fullfile(fileparts(s_dir), "+generator", "needpq_i105_stub.m");
     str = fileread(which("DebugScript.helper.NeedPQGeneratorStub"));
     str = replace(str, "classdef NeedPQGeneratorStub", "classdef needpq_i105_stub");
-    writelines(str, str_gen);
+    writelines(str, s_gen);
 
-    str_load = fullfile(str_dir, "bad_i105_stub.m");
+    s_load = fullfile(s_dir, "bad_i105_stub.m");
     str = fileread(which("DebugScript.helper.BadComponentStub"));
     str = replace(str, "DebugScript.helper.BadComponentStub", "component.load.bad_i105_stub");
     str = replace(str, "classdef BadComponentStub", "classdef bad_i105_stub");
-    str = replace(str, "BadComponentStub(str_bad, str_tag, opt)", "bad_i105_stub(str_tag, str_bad, opt)");
-    writelines(str, str_load);
+    str = replace(str, "BadComponentStub(s_bad, s_tag, opt)", "bad_i105_stub(s_tag, s_bad, opt)");
+    writelines(str, s_load);
 
     rehash
     evalc("GUILDA;");
-    c = onCleanup(@() unregister_stubs(str_gen, str_load));
+    c = onCleanup(@() unregister_stubs(s_gen, s_load));
 end
 
-function unregister_stubs(str_gen, str_load)
-    delete(str_gen);
-    delete(str_load);
+function unregister_stubs(s_gen, s_load)
+    delete(s_gen);
+    delete(s_load);
     rehash
     evalc("GUILDA;");
 end

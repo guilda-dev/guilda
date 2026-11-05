@@ -16,8 +16,8 @@ function log_edit(obj, log, tag, before, after)
     % Record what the edit made stale (see LayerPackage.edit_effect): the handle cache of the
     % parameter's owner. The network derives the equilibrium state from its log.
     l_odefcn = obj.edit_effect(tab);
-    if l_odefcn && isa(obj,"Parameter") && isa(obj.parent,"LayerPackage") && obj.parent.sct_edit.str_odefcn == "updated"
-        obj.parent.sct_edit.str_odefcn = "editted";
+    if l_odefcn && isa(obj,"Parameter") && isa(obj.parent,"LayerPackage") && obj.parent.sct_edit.s_odefcn == "updated"
+        obj.parent.sct_edit.s_odefcn = "editted";
     end
 
     obj.report_edit(tab);

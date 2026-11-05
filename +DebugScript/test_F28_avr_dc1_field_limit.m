@@ -119,7 +119,7 @@ function [sol, avr] = simulate_offset(avr)
     [net, comp] = DebugScript.helper.build_3bus("gen-park");
     comp.add_local_controller(avr);
     DebugScript.helper.quiet(@() net.initialize);
-    ev  = DebugScript.helper.scenario("offset", net, "TimeSpan", 0, "OffsetUnit", comp.str_tag, "OffsetState", "Eq", "OffsetValue", 1);
+    ev  = DebugScript.helper.scenario("offset", net, "TimeSpan", 0, "OffsetUnit", comp.s_tag, "OffsetState", "Eq", "OffsetValue", 1);
     sol = DebugScript.helper.quiet(@() net.simulate([0,5], ev));
 end
 
@@ -134,7 +134,7 @@ end
 function rv_fld = field_trajectory(sol, avr)
 % 結果から AVR の Vfld の軌道を取り出す
     tab = sol.tab_variable;
-    rv_fld = sol.rm_variable(:, tab.Owner == avr.str_tag & tab.Name == "Vfld");
+    rv_fld = sol.rm_variable(:, tab.Owner == avr.s_tag & tab.Name == "Vfld");
 end
 
 function ME = initialize_error(avr)
@@ -149,13 +149,13 @@ function ME = initialize_error(avr)
     assert(~isempty(ME), "範囲エラーが発生しなかった")
 end
 
-function check_error(ME, str_tag, str_limits)
+function check_error(ME, s_tag, s_limits)
 % エラーの ID と、文言の機器名・上下限・対処を確認する
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:AVR_DC1:FieldOutOfRange", "ID が " + DebugScript.helper.msg_id(ME))
     str = string(ME.message);
     assert(~contains(str, "ID specification"), str)
-    assert(contains(str, "AVR_DC1 '" + str_tag + "'"), str)
-    assert(contains(str, str_limits), str)
+    assert(contains(str, "AVR_DC1 '" + s_tag + "'"), str)
+    assert(contains(str, s_limits), str)
     assert(contains(str, "Widen Vfld_min and Vfld_max"), str)
 end
 

@@ -357,9 +357,9 @@ verdict = sc.judge(result)</code></pre>
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Calls <code>check_edit("RequireEquilibrium", true)</code>: <code>LayerPackage.check_edit</code> calls <code>set_odefcn</code> on every layer whose handles are not up to date, then stops if the equilibrium is stale.</span><span lang="ja"><code>check_edit("RequireEquilibrium", true)</code> を呼び出し。<code>LayerPackage.check_edit</code> がハンドルの古い層ごとに <code>set_odefcn</code> を呼び、平衡点が古ければ停止</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>sct_edit.l_initialized</code>, <code>l_staleEquilibrium</code>, <code>sct_edit.str_odefcn</code>, <code>tab_editLog</code></dd>
+          <dd><code>sct_edit.l_initialized</code>, <code>l_staleEquilibrium</code>, <code>sct_edit.s_odefcn</code>, <code>tab_editLog</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>f_dx</code>, <code>f_I</code>, <code>f_Y</code>, <code>f_Mass</code>, <code>f_JacobiDx</code>, <code>f_JacobiI</code>, <code>f_JacobiY</code>; <code>sct_edit.str_odefcn = "updated"</code></dd>
+          <dd><code>f_dx</code>, <code>f_I</code>, <code>f_Y</code>, <code>f_Mass</code>, <code>f_JacobiDx</code>, <code>f_JacobiI</code>, <code>f_JacobiY</code>; <code>sct_edit.s_odefcn = "updated"</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="SIM-05">
@@ -382,7 +382,7 @@ verdict = sc.judge(result)</code></pre>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>sc.tab_disturbance</code> (<code>TimeSpan</code>, <code>FaultBus</code>, <code>TripUnit</code>, <code>OpenBranch</code>, <code>Offset*</code>, <code>Input*</code>), <code>sc.a_PowerNetwork</code>; <span lang="en">bus, branch and component tags</span><span lang="ja">母線・ブランチ・機器のタグ</span>, <code>sv_x</code>, <code>sv_u</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>tab_phase</code> (<span lang="en">table, one row per phase: <code>t1</code>, <code>t2</code> [s], one logical column per disturbance</span><span lang="ja">表。フェーズごとに 1 行: <code>t1</code>, <code>t2</code> [s] と、外乱ごとの論理値の列</span>), <code>sct_phase</code> (<span lang="en">per phase</span><span lang="ja">フェーズごと</span>: <code>t1</code>, <code>t2</code>, <code>sv_event</code>, <code>sv_fault</code>, <code>sv_trip</code>, <code>sv_open</code>, <code>c_Xoffset</code>, <code>c_Uoffset</code>)</dd>
+          <dd><code>tab_phase</code> (<span lang="en">table, one row per phase: <code>t1</code>, <code>t2</code> [s], one logical column per disturbance</span><span lang="ja">表。フェーズごとに 1 行: <code>t1</code>, <code>t2</code> [s] と、外乱ごとの論理値の列</span>), <code>sct_phase</code> (<span lang="en">per phase</span><span lang="ja">フェーズごと</span>: <code>t1</code>, <code>t2</code>, <code>sr_event</code>, <code>sv_fault</code>, <code>sv_trip</code>, <code>sv_open</code>, <code>c_Xoffset</code>, <code>c_Uoffset</code>)</dd>
         </dl>
       </li>
       <li class="fs-step" id="SIM-06">
@@ -516,7 +516,7 @@ verdict = sc.judge(result)</code></pre>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>o.InitialValue</code>, <code>o.ODEFcn</code>, <code>o.Jacobian</code>, <code>o.MassMatrix</code>, <code>RelTol</code>, <code>AbsTol</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>x0_ic</code>, <code>xp0_ic</code> (<code>n_red × 1</code>), <code>l_failed</code>, <code>str_why</code></dd>
+          <dd><code>x0_ic</code>, <code>xp0_ic</code> (<code>n_red × 1</code>), <code>l_failed</code>, <code>s_why</code></dd>
         </dl>
       </li>
       <li class="fs-step sim-loop" id="SIM-14">
@@ -692,7 +692,7 @@ verdict = sc.judge(result)</code></pre>
         <tr><td><code>rm_I</code></td><td><code>n_t × n_v</code>, pu</td><td><span lang="en">Bus current injections <code>Y·V</code>: <code>Ireal, Iimag</code> of each bus.</span><span lang="ja">母線注入電流 <code>Y·V</code>: 母線ごとの <code>Ireal, Iimag</code>。</span></td></tr>
         <tr><td><code>sv_bus</code>, <code>c_component</code></td><td><code>n_bus × 1</code></td><td><span lang="en">Bus tags, and the component tags of each bus.</span><span lang="ja">母線のタグと、母線ごとの機器のタグ。</span></td></tr>
         <tr><td><code>odeResults</code></td><td>struct</td><td><span lang="en">Dependent view built on first access: <code>t</code>, <code>Bus(i).V</code> (<code>Vreal</code>, <code>Vimag</code>), <code>Bus(i).I</code>, <code>Bus(i).PQ</code> (<code>P</code>, <code>Q</code>), <code>Bus(i).Component(j).X</code> and <code>.U</code> (tables named by <code>sv_x</code>, <code>sv_u</code>). Controller states are only in <code>rm_variable</code>.</span><span lang="ja">初回参照時に作る依存ビュー: <code>t</code>, <code>Bus(i).V</code> (<code>Vreal</code>, <code>Vimag</code>), <code>Bus(i).I</code>, <code>Bus(i).PQ</code> (<code>P</code>, <code>Q</code>), <code>Bus(i).Component(j).X</code> と <code>.U</code> (<code>sv_x</code>, <code>sv_u</code> を列名とする表)。制御器の状態は <code>rm_variable</code> のみ。</span></td></tr>
-        <tr><td><span lang="en">from</span><span lang="ja">継承:</span> <code>ResultBase</code></td><td></td><td><code>flag</code>, <code>output</code>, <code>options</code> (= <code>sct_options</code>), <code>str_solver = "SolverODE"</code>, <code>r_elapsed</code> [s], <code>str_network</code>, <code>l_success</code> (<code>flag &gt; 0</code>)</td></tr>
+        <tr><td><span lang="en">from</span><span lang="ja">継承:</span> <code>ResultBase</code></td><td></td><td><code>flag</code>, <code>output</code>, <code>options</code> (= <code>sct_options</code>), <code>s_solver = "SolverODE"</code>, <code>r_elapsed</code> [s], <code>s_network</code>, <code>l_success</code> (<code>flag &gt; 0</code>)</td></tr>
       </tbody>
     </table>
     <ul lang="en">
@@ -715,7 +715,7 @@ verdict = sc.judge(result)</code></pre>
     <table class="dg-table">
       <thead><tr><th><span lang="en">Object</span><span lang="ja">対象のオブジェクト</span></th><th><span lang="en">Behaviour</span><span lang="ja">振る舞い</span></th></tr></thead>
       <tbody>
-        <tr><td><code>f_*</code> <span lang="en">handles</span><span lang="ja">ハンドル</span></td><td><span lang="en">Built by SIM-04 where <code>sct_edit.str_odefcn</code> is not <code>"updated"</code>; they stay built after the run.</span><span lang="ja">SIM-04 で <code>sct_edit.str_odefcn</code> が <code>"updated"</code> でない層について構築。実行後も残存</span></td></tr>
+        <tr><td><code>f_*</code> <span lang="en">handles</span><span lang="ja">ハンドル</span></td><td><span lang="en">Built by SIM-04 where <code>sct_edit.s_odefcn</code> is not <code>"updated"</code>; they stay built after the run.</span><span lang="ja">SIM-04 で <code>sct_edit.s_odefcn</code> が <code>"updated"</code> でない層について構築。実行後も残存</span></td></tr>
         <tr><td><span lang="en">Equilibrium, edit flags</span><span lang="ja">平衡点、編集フラグ</span></td><td><span lang="en">Read only. <code>sct_edit.l_initialized</code>, <code>l_staleEquilibrium</code>, <code>tab_editLog</code> and the equilibrium values are not changed.</span><span lang="ja">参照のみ。<code>sct_edit.l_initialized</code>、<code>l_staleEquilibrium</code>、<code>tab_editLog</code>、平衡点の値は不変</span></td></tr>
         <tr><td><code>net.solver_ODE</code></td><td><span lang="en">Read only; options of the call are not stored.</span><span lang="ja">参照のみ。呼び出しのオプションは保存しない</span></td></tr>
         <tr><td><span lang="en">Simulator indices</span><span lang="ja">シミュレータの添字</span></td><td><span lang="en"><code>iv_odeX</code>, <code>iv_odeU</code>, <code>iv_odeY</code>, <code>iv_odeI</code>, <code>lv_odeUfromLC</code>, <code>iv_odeYtoU</code> are written by SIM-06 and kept after the run; every run renumbers them.</span><span lang="ja"><code>iv_odeX</code>、<code>iv_odeU</code>、<code>iv_odeY</code>、<code>iv_odeI</code>、<code>lv_odeUfromLC</code>、<code>iv_odeYtoU</code> : SIM-06 で書き込み、実行後も残存。実行ごとに番号を振り直し</span></td></tr>

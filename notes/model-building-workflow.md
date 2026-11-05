@@ -28,7 +28,7 @@
 
 | 経路 | 必要な入力 | 表現できること | 表現できないこと | 初期化 | チュートリアル |
 |---|---|---|---|---|---|
-| 組み込みネットワーク `network.IEEE9bus()` など | クラス名。`IEEE9bus`/`IEEE68bus` は `LocalController`、`Ishizaki6Bus` は `alpha`,`line` | 第2節の9クラス。付属データそのもの | タグ指定不可(`str_tag` は常に `"PowerNetwork"`、X12)。データの変更は構築後の編集で行う | コンストラクタが実行 | `Step1`(68bus、9bus は廃止名)、`Step3`/`Step4`/`Supplement_Tools`(Tutorial3bus) |
+| 組み込みネットワーク `network.IEEE9bus()` など | クラス名。`IEEE9bus`/`IEEE68bus` は `LocalController`、`Ishizaki6Bus` は `alpha`,`line` | 第2節の9クラス。付属データそのもの | タグ指定不可(`s_tag` は常に `"PowerNetwork"`、X12)。データの変更は構築後の編集で行う | コンストラクタが実行 | `Step1`(68bus、9bus は廃止名)、`Step3`/`Step4`/`Supplement_Tools`(Tutorial3bus) |
 | CSV `PowerNetwork.import_csv(path)` | `bus/parameter.csv`(V, Varg)、`branch/parameter.csv`(Type, From, To)、任意で `component/<key>/main.csv`(Bus, P, Q)、`dynamics.csv`、`opf.csv`、`network/parameter.csv` | 全母線・ブランチ・機器のパラメータ、Hz、baseMVA、Slack、作図情報、`Network=` で既存ネットへの追加 | 制御器、OPF 関数(`set_opffcn`)、平衡点、発電機の固定 Q | `Initialize=true`(既定)で実行 | なし(`Step5` に `export_csv` の語が1回あるのみ) |
 | MATPOWER `PowerNetwork.import_matpower(mpc)` | 構造体、ケース名、`.m`/`.mat`、関数ハンドル(`baseMVA, bus, gen, branch`、任意で `gencost`)。MATPOWER 本体は不要 | 潮流データ、運転制限、多項式コスト(2次まで)、停止中の設備の除外、全発電機共通のモデルとパラメータ | 発電機ごとのモデル・動特性、制御器、孤立母線(type 4)、区分線形コスト、3次以上のコスト、version 1 | `Initialize=true`(既定)で実行 | なし |
 | 手動組み立て `PowerNetwork` + `add_*` | 母線・機器・ブランチの各パラメータ | すべて(制御器、GC、OPF 関数を含む) | なし | 利用者が `initialize` を呼ぶ | `Step1`(本体)、`Step2`(制御器、記述は旧 API) |
@@ -92,7 +92,7 @@ flowchart TD
 
 ### 3.2 手動組み立て
 
-**[実行 M1]** 各段階の状態です。`flag` は `str_editFlag` です。
+**[実行 M1]** 各段階の状態です。`flag` は `s_editFlag` です。
 
 | 順 | 呼び出し | 変わる状態 | 実測 |
 |---:|---|---|---|
@@ -210,7 +210,7 @@ gen.para_powerflow.P = 0.6;                      % Parameter を直接
 | スラック変更 | `Slack`(2行) | ○ | — | 停止 |
 | `add_*`, `remove_*`, `replace_*` | `Topology` | ○ | — | 停止 |
 | `reset_opffcn` | `OPF` | — | — | 動く |
-| タグ変更 `bus.str_tag="BX"` | **記録なし** | — | — | 動く |
+| タグ変更 `bus.s_tag="BX"` | **記録なし** | — | — | 動く |
 | `net.solver_PF.Tolerance` | 記録なし | — | — | 動く |
 
 - **[実行 E_same]** 同じ値の代入は記録されません。
@@ -240,7 +240,7 @@ gen.para_powerflow.P = 0.6;                      % Parameter を直接
 | 制御器タグ | ヘッダー + 指定タグ。例 `CAa1`, `CPp1`, `CLq` | M2, E_lqrQ |
 | GC タグ | 指定どおり。例 `agc` | M3 |
 | 削除後 | 番号は再利用されず、添字は詰まる。`B002` を消すと `a_Bus{2}` は `B003` | S16 |
-| 改名 | `str_tag` への代入で可能。重複は `BX002` のように変更して Info を出す | S15, `_auxiliary/@LayerPackage/validate_tag.m:21-31` |
+| 改名 | `s_tag` への代入で可能。重複は `BX002` のように変更して Info を出す | S15, `_auxiliary/@LayerPackage/validate_tag.m:21-31` |
 | 母線の改名の影響 | 機器タグは変わらない(`SG1B002` のまま)。次の機器は `SG1BX` | X08 |
 
 **[実行 S16]** 添字は削除で意味が変わります。`remove_bus("B002")`、`add_bus` のあと `add_branch("pi",[2,3])` は `B003-B004` を結びました。
@@ -343,7 +343,7 @@ gen.para_powerflow.P = 0.6;                      % Parameter を直接
 | 24 | `add_branch.m` は `.gitignore` にあるのに追跡されている | 事実 | `.gitignore:42`, `@PowerNetwork/add_branch.m` |
 | 25 | テスト専用の `test-hessian-stub` が機器キーの一覧に出る | 実行 R02, C10 | `+DebugScript/+helper/HessianStub.m`, `@GUILDA/private/update_class_signature.m:3` |
 | 26 | `Ishizaki6Bus` の構築が追跡対象の CSV を書き換える | 実行 X13 | `_GUILDAobject/+network/@Ishizaki6Bus/Ishizaki6Bus.m:66-67` |
-| 27 | クラスの宣言と実装の引数が違う(`add_bus(obj,str_Bus,opt)` と `add_bus(obj,opt)`) | 事実 | `@PowerNetwork/PowerNetwork.m:131-132`, `@PowerNetwork/add_bus.m:1`, `@PowerNetwork/add_branch.m:1` |
+| 27 | クラスの宣言と実装の引数が違う(`add_bus(obj,s_Bus,opt)` と `add_bus(obj,opt)`) | 事実 | `@PowerNetwork/PowerNetwork.m:131-132`, `@PowerNetwork/add_bus.m:1`, `@PowerNetwork/add_branch.m:1` |
 | 28 | 文書の「exactly one」スラックと実装の「at most one」が違う。削除の後はスラック 0 個の状態がありうる | 実行 S03 | `_GUILDAdoc/developer/class-design.html:166`, `@Bus/Bus.m:34` |
 | 29 | `api-design.html` のルール 5(前提が満たされなければ修正方法を示すエラー)に合わないものが多い。A01, A02, A05, A07, A08, C8, C9, F04 は MATLAB や fsolve の生のエラーです | 実行 | `_GUILDAdoc/developer/api-design.html` Preconditions |
 | 30 | 値を元に戻しても stale が残る | 実行 E_rev | `_auxiliary/@LayerPackage/log_edit.m:30`, `_auxiliary/@LayerPackage/reset_edit.m:6` |

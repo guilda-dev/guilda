@@ -1,4 +1,4 @@
-function comp = replace_component(obj, str_tag, Key, parameter, opt)
+function comp = replace_component(obj, s_tag, Key, parameter, opt)
 % Replace a component of the bus by a component of another model.
 %
 % The new component keeps the power-flow, operation, OPF and graph settings and the
@@ -25,7 +25,7 @@ function comp = replace_component(obj, str_tag, Key, parameter, opt)
 
     arguments
         obj
-        str_tag              (1,1) string   % Tag of the component to replace.
+        s_tag                (1,1) string   % Tag of the component to replace.
         Key                  (1,:) char {mustBeMember(Key,{___KEY_LIST___})}   % Component model key, e.g. "gen-park" or "load-power".
         parameter             = nan;   % Dynamic parameters (table or string); NaN uses the class defaults.
         opt.Controllers      (1,1) string {mustBeMember(opt.Controllers,["drop","keep"])} = "drop";   % Local controllers of the replaced component: "drop" leaves them on it with a warning, "keep" moves them to the new one.
@@ -34,16 +34,16 @@ function comp = replace_component(obj, str_tag, Key, parameter, opt)
         comp   % New Component object.
     end
 
-    str_tagComp = string(obj.a_Component);
-    lv_rmcub = str_tagComp==str_tag;
+    s_tagComp = string(obj.a_Component);
+    lv_rmcub = s_tagComp==s_tag;
     if ~any(lv_rmcub)
-        error(msg("GUILDA:Bus:ComponentNotFound", char(str_tag), char(obj.str_tag)))
+        error(msg("GUILDA:Bus:ComponentNotFound", char(s_tag), char(obj.s_tag)))
     end
 
     comp_pre = obj.a_Component{lv_rmcub};
-    str_gcon = controlling_gcon(obj, comp_pre);
-    if str_gcon ~= ""
-        error(msg("GUILDA:Bus:ComponentControlled", char(comp_pre.str_tag), char(str_gcon)))
+    s_gcon   = controlling_gcon(obj, comp_pre);
+    if s_gcon ~= ""
+        error(msg("GUILDA:Bus:ComponentControlled", char(comp_pre.s_tag), char(s_gcon)))
     end
     tab_pre  = [comp_pre.para_powerflow.tab_parameter, ...
                 comp_pre.para_operation.tab_parameter, ...
@@ -61,18 +61,18 @@ function comp = replace_component(obj, str_tag, Key, parameter, opt)
     opt_comp.OPFcost_shutdown = tab_opf.shutdown;
 
     % keep the number of the replaced component: "<header><number><bus tag>"
-    str_num   = regexp(extractBefore(comp_pre.str_tag, strlength(comp_pre.str_tag)-strlength(obj.str_tag)+1), "\d+$", "match", "once");
-    str_index = string(str_num)+obj.str_tag;
+    s_num     = regexp(extractBefore(comp_pre.s_tag, strlength(comp_pre.s_tag)-strlength(obj.s_tag)+1), "\d+$", "match", "once");
+    s_index   = string(s_num)+obj.s_tag;
 
     
     % get component function
     switch Key
 ___KEY_CASES___
     end
-    str_controllers = opt.Controllers;
-    comp = mkInst(str_index, parameter, opt_comp);
+    s_controllers = opt.Controllers;
+    comp = mkInst(s_index, parameter, opt_comp);
     a_con = controllers_of(comp_pre);
-    if str_controllers == "keep"
+    if s_controllers == "keep"
         check_keep(comp_pre, comp);    % before anything changes
     end
 
@@ -87,13 +87,13 @@ ___KEY_CASES___
     % The equilibrium is a placeholder: the topology change below makes
     % simulate/get_sys require net.initialize() first, which builds the f_* handles.
     comp.set_equilibrium(Vequilibrium, Iequilibrium);
-    obj.log_edit(obj.str_tag+" <<-replace--- "+str_tag+" -> "+comp.str_tag,"Topology")
+    obj.log_edit(obj.s_tag+" <<-replace--- "+s_tag+" -> "+comp.s_tag,"Topology")
     if ~isempty(a_con)
-        if str_controllers == "keep"
+        if s_controllers == "keep"
             % After the placeholder equilibrium, on which a controller must not be designed
             comp_pre.move_local_controllers(comp);
         else
-            warning(msg("GUILDA:Bus:ControllersDropped", tag_list(a_con), char(comp_pre.str_tag), char(comp.str_tag)))
+            warning(msg("GUILDA:Bus:ControllersDropped", tag_list(a_con), char(comp_pre.s_tag), char(comp.s_tag)))
         end
     end
     comp_pre.set_bus([])    % the replaced component no longer reads this bus
@@ -115,7 +115,7 @@ function check_keep(comp_pre, comp)
         con     = comp_pre.a_LocalController{k};
         sv_miss = setdiff(string(con.sv_y(:)), string(comp.sv_u(:)), "stable");
         if ~isempty(sv_miss)
-            sv_why(end+1,1) = con.str_tag + " drives " + join(sv_miss, ", ");    %#ok<AGROW>
+            sv_why(end+1,1) = con.s_tag + " drives " + join(sv_miss, ", ");    %#ok<AGROW>
         end
     end
     a_con = controllers_of(comp_pre);
@@ -129,14 +129,14 @@ function check_keep(comp_pre, comp)
         end
         sv_miss = setdiff(sv_obs, [string(comp.sv_y(:)); string(comp.sv_x(:))], "stable");
         if ~isempty(sv_miss)
-            sv_why(end+1,1) = a_con{k}.str_tag + " observes " + join(sv_miss, ", ");    %#ok<AGROW>
+            sv_why(end+1,1) = a_con{k}.s_tag + " observes " + join(sv_miss, ", ");    %#ok<AGROW>
         end
     end
     if ~isempty(sv_why)
-        error(msg("GUILDA:Bus:ControllersNotKept", char(comp_pre.str_tag), char(comp.str_tag), char(join(sv_why, "; "))))
+        error(msg("GUILDA:Bus:ControllersNotKept", char(comp_pre.s_tag), char(comp.s_tag), char(join(sv_why, "; "))))
     end
 end
 
 function str = tag_list(a_con)
-    str = char(join(cellfun(@(con) con.str_tag, a_con), ", "));
+    str = char(join(cellfun(@(con) con.s_tag, a_con), ", "));
 end

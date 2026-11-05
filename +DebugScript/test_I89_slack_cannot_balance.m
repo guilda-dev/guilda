@@ -8,16 +8,16 @@
 %% A load-only slack bus warns, names the bus and the fix, and still takes effect
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
 bus = net.a_Bus{3};
-[str_id, str_msg] = set_slack(bus);
-assert(str_id == "GUILDA:Bus:SlackWithoutQnan", str_id)
-assert(contains(str_msg, string(bus)) && contains(str_msg, "Q = NaN"), str_msg)
+[s_id, s_msg] = set_slack(bus);
+assert(s_id == "GUILDA:Bus:SlackWithoutQnan", s_id)
+assert(contains(s_msg, string(bus)) && contains(s_msg, "Q = NaN"), s_msg)
 assert(bus.l_isSlack && ~net.a_Bus{1}.l_isSlack)
 
 
 %% A load-only network still initializes and passes KCL
 net = load_only_network();
-[str_id, ~] = set_slack(net.a_Bus{1});
-assert(str_id == "GUILDA:Bus:SlackWithoutQnan", str_id)
+[s_id, ~] = set_slack(net.a_Bus{1});
+assert(s_id == "GUILDA:Bus:SlackWithoutQnan", s_id)
 DebugScript.helper.quiet(@() net.initialize);
 assert(~net.l_staleEquilibrium && kcl_residual(net) < 1e-8)
 
@@ -44,8 +44,8 @@ set_slack(net.a_Bus{1});
 assert(set_slack(net.a_Bus{1}) == "")
 lastwarn("", "");
 evalc("net.a_Bus{1}.l_isSlack = false;");
-str_id = DebugScript.helper.msg_id();
-assert(string(str_id) == "")
+s_id = DebugScript.helper.msg_id();
+assert(string(s_id) == "")
 
 
 %% A bus without components still stops with NonUnitBus
@@ -66,8 +66,8 @@ net.a_Bus{1}.add_component("load-power", "P",-0.1, "Q",-0.05);
 set_slack(net.a_Bus{1});
 lastwarn("", "");
 evalc("net.a_Bus{1}.remove_component(string(net.a_Bus{1}.a_Component{1}));");
-str_id = DebugScript.helper.msg_id();
-assert(string(str_id) == "")
+s_id = DebugScript.helper.msg_id();
+assert(string(s_id) == "")
 DebugScript.helper.quiet(@() net.initialize);
 assert(~net.l_staleEquilibrium && kcl_residual(net) < 1e-8)
 load1 = net.a_Bus{1}.a_Component{1};
@@ -79,8 +79,8 @@ assert(abs(real(load1.c_Vequilibrium*conj(load1.c_Iequilibrium)) - load1.para_po
 set_slack(net.a_Bus{1});
 lastwarn("", "");
 evalc("net.a_Bus{1}.remove_component(string(net.a_Bus{1}.a_Component{1}));");
-str_id = DebugScript.helper.msg_id();
-assert(string(str_id) == "")
+s_id = DebugScript.helper.msg_id();
+assert(string(s_id) == "")
 ME = [];
 try
     DebugScript.helper.quiet(@() net.initialize);
@@ -91,13 +91,13 @@ assert(net.l_staleEquilibrium)
 
 
 % ---- local functions ----
-function [str_id, str_msg] = set_slack(bus)
+function [s_id, s_msg] = set_slack(bus)
 % スラックに指定し、出た警告の ID と文を返す (なければ "")
     lastwarn("", "");
     evalc("bus.l_isSlack = true;");
-    [str_msg, str_id] = lastwarn(); str_id = DebugScript.helper.msg_id(str_msg, str_id);
-    str_msg = string(str_msg);
-    str_id  = string(str_id);
+    [s_msg, s_id] = lastwarn(); s_id = DebugScript.helper.msg_id(s_msg, s_id);
+    s_msg   = string(s_msg);
+    s_id    = string(s_id);
 end
 
 function net = load_only_network()
@@ -110,7 +110,7 @@ function net = load_only_network()
 end
 
 function r = kcl_residual(net)
-    str_Bus = string(net.a_Bus);
+    sv_Bus  = string(net.a_Bus);
     tab_Y   = net.get_admittance_matrix;
-    r = max(abs(tab_Y{str_Bus,str_Bus}*net.cv_Vequilibrium - net.cv_Iequilibrium));
+    r = max(abs(tab_Y{sv_Bus,sv_Bus}*net.cv_Vequilibrium - net.cv_Iequilibrium));
 end

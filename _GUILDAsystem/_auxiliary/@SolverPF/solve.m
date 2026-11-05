@@ -19,8 +19,8 @@ function [result,flag,output] = solve(obj, net, sct_options)
 
     tab_Ymat  = net.get_admittance_matrix;
     tab_PFset = tools.vcellfun(@(b) b.get_pf_set, net.a_Bus);
-    str_bus   = string(tab_PFset.Properties.RowNames);
-    cm_Y      = tab_Ymat{str_bus,str_bus};
+    sv_bus    = string(tab_PFset.Properties.RowNames);
+    cm_Y      = tab_Ymat{sv_bus,sv_bus};
 
     switch sct_options.Method
         case "algebraic"
@@ -36,8 +36,8 @@ function [result,flag,output] = solve(obj, net, sct_options)
     % convert double->table
     tab_bus = array2table(...
         [angle(cv_Vbus),abs(cv_Vbus),real(cv_Sbus),imag(cv_Sbus),cv_Vbus,cv_Ibus], ...
-        "VariableNames",["Varg","V","P","Q","Vphasor","Iphasor"],"RowNames",str_bus);
-    tab_branch = branch_flow(net, str_bus, cv_Vbus);
+        "VariableNames",["Varg","V","P","Q","Vphasor","Iphasor"],"RowNames",sv_bus);
+    tab_branch = branch_flow(net, sv_bus, cv_Vbus);
 
     result = ResultPF(net, obj, sct_options, flag, output, t0, ...
                              tab_bus, tab_branch, cm_Vhistory, rv_step);
@@ -53,25 +53,25 @@ function [result,flag,output] = solve(obj, net, sct_options)
 end
 
 
-function tab = branch_flow(net, str_bus, cv_Vbus)
+function tab = branch_flow(net, sv_bus, cv_Vbus)
 % Power and current at both ends of each branch (from = br.a_Bus{1}, to = br.a_Bus{2})
     n_br  = numel(net.a_Branch);
     cm_I  = zeros(n_br,2);
     cm_S  = zeros(n_br,2);
     for k = 1:n_br
         br = net.a_Branch{k};
-        [~, idx] = ismember(string(br.a_Bus), str_bus);
+        [~, idx] = ismember(string(br.a_Bus), sv_bus);
         cv_Vb = cv_Vbus(idx(:));
         cv_Ib = br.get_admittance_matrix() * cv_Vb;
         cm_I(k,:) = cv_Ib.';
         cm_S(k,:) = (cv_Vb .* conj(cv_Ib)).';
     end
-    str_branch = strings(n_br,1);
+    sv_branch = strings(n_br,1);
     for k = 1:n_br
-        str_branch(k) = string(net.a_Branch{k});
+        sv_branch(k) = string(net.a_Branch{k});
     end
     tab = table(real(cm_S(:,1)), imag(cm_S(:,1)), real(cm_S(:,2)), imag(cm_S(:,2)), ...
                 cm_I(:,1), cm_I(:,2), real(sum(cm_S,2)), imag(sum(cm_S,2)), ...
                 'VariableNames', ["Pfrom","Qfrom","Pto","Qto","Ifrom","Ito","Ploss","Qloss"], ...
-                'RowNames', str_branch);
+                'RowNames', sv_branch);
 end

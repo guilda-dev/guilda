@@ -1,4 +1,4 @@
-function str_file = Export(obj, filename, opt)
+function s_file = Export(obj, filename, opt)
 % Write the bus, connection or branch table to a file.
 %
 % Writes a table of the result to a CSV (.csv, .txt) or Excel (.xlsx, .xls) file, with
@@ -12,16 +12,16 @@ function str_file = Export(obj, filename, opt)
         opt.Table (1,1) string {mustBeMember(opt.Table,["bus","cub","branch"])} = "bus" % Table to write.
     end
     arguments (Output)
-        str_file % Path of the written file.
+        s_file % Path of the written file.
     end
-    str_file = filename;
-    [~, ~, str_ext] = fileparts(str_file);
+    s_file = filename;
+    [~, ~, s_ext] = fileparts(s_file);
 
-    switch lower(str_ext)
+    switch lower(s_ext)
         case {".csv", ".txt", ".xlsx", ".xls"}
             tab = obj.("tab_" + opt.Table);
-            writetable(tab, str_file, "WriteRowNames", true);
+            writetable(tab, s_file, "WriteRowNames", true);
         otherwise
-            error(msg("GUILDA:ResultOPF:ExportFormat", char(str_ext)));
+            error(msg("GUILDA:ResultOPF:ExportFormat", char(s_ext)));
     end
 end

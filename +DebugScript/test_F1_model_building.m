@@ -11,7 +11,7 @@
 %% Add buses with default tags
 % ネットワーククラスの定義
 net = PowerNetwork("TestSystem");
-assert(net.str_tag == "TestSystem")
+assert(net.s_tag == "TestSystem")
 
 % Busクラスは add_bus で追加する (Bus のコンストラクタは直接呼べない)
 for i = 1:3
@@ -30,7 +30,7 @@ bus = net.add_bus("V", 1.05, "Varg", 0.1, "Bshunt", 0.2, "baseKV", 154, "Tag", "
 
 % 戻り値は追加された Bus、オプションは tab_parameter に入る
 assert(isa(bus, "Bus") && bus == net.a_Bus{1})
-assert(bus.str_tag == "Bus001")
+assert(bus.s_tag == "Bus001")
 tp = bus.tab_parameter;
 assert(tp.powerflow.V == 1.05 && tp.powerflow.Varg == 0.1)
 assert(tp.dynamics.Bshunt == 0.2 && tp.operation.baseKV == 154)
@@ -47,8 +47,8 @@ assert(string(id) == "GUILDA:Deprecated:BusBaseMVA")
 assert(~ismember("baseMVA", string(bus.tab_parameter.operation.Properties.VariableNames)))
 lastwarn("");
 evalc('net.add_bus("baseMVA", 50);');
-[str_warn, id] = lastwarn(); id = DebugScript.helper.msg_id(str_warn, id);
-assert(string(id) == "GUILDA:Deprecated:BusBaseMVAMismatch" && contains(str_warn, "50") && contains(str_warn, "100"))
+[s_warn, id] = lastwarn(); id = DebugScript.helper.msg_id(s_warn, id);
+assert(string(id) == "GUILDA:Deprecated:BusBaseMVAMismatch" && contains(s_warn, "50") && contains(s_warn, "100"))
 assert(net.tab_parameter.base.baseMVA == 100 && numel(net.a_Bus) == 2)
 lastwarn("");
 evalc('net.add_bus("baseMVA", 50);');
@@ -77,8 +77,8 @@ assert(br1.tab_parameter.dynamics.R == 0.01 && br1.tab_parameter.dynamics.C == 0
 assert(br2.tab_parameter.dynamics.tap == 1.02)
 
 % タグは種類ごとのヘッダ + 通し番号で一意
-str_tag = string(net.a_Branch);
-assert(numel(unique(str_tag)) == 4)
+sv_tag = string(net.a_Branch);
+assert(numel(unique(sv_tag)) == 4)
 
 
 %% Add branch by bus tag
@@ -117,22 +117,22 @@ for i = 1:height(tab_model)
 end
 
 % Componentクラスは母線から key を指定して追加する
-str_keys = tab_model.Key;
-str_cls  = tab_model.Class;
-for k = 1:numel(str_keys)
-    comp = net.a_Bus{k}.add_component(str_keys(k), "P", 0.1);
-    assert(isa(comp, str_cls(k)), str_keys(k))
-    assert(comp.key == str_keys(k))
+sv_keys  = tab_model.Key;
+sv_cls   = tab_model.Class;
+for k = 1:numel(sv_keys)
+    comp = net.a_Bus{k}.add_component(sv_keys(k), "P", 0.1);
+    assert(isa(comp, sv_cls(k)), sv_keys(k))
+    assert(comp.key == sv_keys(k))
     assert(comp.a_Bus == net.a_Bus{k})                         % 接続先の母線
     assert(comp.tab_parameter.powerflow.P == 0.1)              % 潮流設定
     assert(numel(comp.sv_x) == size(comp.rv_Xequilibrium,1) || isempty(comp.rv_Xequilibrium))
 end
 
 % タグ: 発電機は "SG", 負荷は "L" + 機種記号 + 母線内番号 + 母線タグ
-i_gen  = find(startsWith(str_keys, "gen"), 1);
-i_load = find(startsWith(str_keys, "load"), 1);
-assert(net.a_Bus{i_gen}.a_Component{1}.str_tag == "SG1" + net.a_Bus{i_gen}.str_tag)
-assert(startsWith(net.a_Bus{i_load}.a_Component{1}.str_tag, "L") && endsWith(net.a_Bus{i_load}.a_Component{1}.str_tag, "1" + net.a_Bus{i_load}.str_tag))
+i_gen  = find(startsWith(sv_keys, "gen"), 1);
+i_load = find(startsWith(sv_keys, "load"), 1);
+assert(net.a_Bus{i_gen}.a_Component{1}.s_tag == "SG1" + net.a_Bus{i_gen}.s_tag)
+assert(startsWith(net.a_Bus{i_load}.a_Component{1}.s_tag, "L") && endsWith(net.a_Bus{i_load}.a_Component{1}.s_tag, "1" + net.a_Bus{i_load}.s_tag))
 
 % 発電機の Q は既定で NaN (PV 母線)、負荷は指定値
 assert(isnan(net.a_Bus{i_gen}.a_Component{1}.tab_parameter.powerflow.Q))
@@ -401,10 +401,10 @@ assert(isequal(agc1.rv_Xequilibrium, 0) && isequal(agc2.rv_Xequilibrium, 0))
 %% Replace component
 net = DebugScript.helper.build_9bus();
 DebugScript.helper.quiet(@() net.initialize);
-str_old = string(net.a_Bus{5}.a_Component{1});
+s_old = string(net.a_Bus{5}.a_Component{1});
 
 % 定電力負荷を定インピーダンス負荷に置き換える
-net.a_Bus{5}.replace_component(str_old, "load-impedance");
+net.a_Bus{5}.replace_component(s_old, "load-impedance");
 comp = net.a_Bus{5}.a_Component{1};
 assert(isa(comp, "component.load.impedance"))
 assert(numel(net.a_Bus{5}.a_Component) == 1)
@@ -420,10 +420,10 @@ assert(isempty(comp_old.a_Bus) && isempty(comp_old.c_Vequilibrium))
 %% Remove component
 net = DebugScript.helper.build_9bus();
 DebugScript.helper.quiet(@() net.initialize);
-str_tag = string(net.a_Bus{5}.a_Component{1});
+s_tag = string(net.a_Bus{5}.a_Component{1});
 
 comp = net.a_Bus{5}.a_Component{1};
-net.a_Bus{5}.remove_component(str_tag);
+net.a_Bus{5}.remove_component(s_tag);
 assert(isempty(net.a_Bus{5}.a_Component))
 
 % 削除した機器は母線への参照を持たない (元の母線の電圧に追従しない)
@@ -441,12 +441,12 @@ end
 
 %% Remove branch
 net = DebugScript.helper.build_9bus();
-str_tag = string(net.a_Branch{9});
+s_tag = string(net.a_Branch{9});
 Y_before = net.get_admittance_matrix;
 
-net.remove_branch(str_tag);
+net.remove_branch(s_tag);
 assert(numel(net.a_Branch) == 8)
-assert(~ismember(str_tag, string(net.a_Branch)))
+assert(~ismember(s_tag, string(net.a_Branch)))
 
 % 削除した送電線 (B008-B009) の分だけアドミタンス行列が変わる
 Y_after = net.get_admittance_matrix;
@@ -463,13 +463,13 @@ assert(isempty(br.a_PowerNetwork) && isempty(br.a_Bus))
 net = DebugScript.helper.build_9bus();
 net.remove_branch(string(net.a_Branch{3}));
 br = net.add_branch("pi", [1,2]);
-assert(br.str_tag == "EL010")
+assert(br.s_tag == "EL010")
 assert(numel(unique(string(net.a_Branch))) == numel(net.a_Branch))
 
 % 途中の番号を消しても再利用しない
 net.remove_branch(["EL004","EL005"]);
 br = net.add_branch("two_winding_transformer", [1,2]);
-assert(br.str_tag == "ET011")
+assert(br.s_tag == "ET011")
 assert(numel(unique(string(net.a_Branch))) == numel(net.a_Branch))
 
 
@@ -481,16 +481,16 @@ bus.add_component("load-power");
 bus.add_component("load-power");
 bus.remove_component("LPQ1B001");
 comp = bus.add_component("load-power");
-assert(comp.str_tag == "LPQ3B001")
+assert(comp.s_tag == "LPQ3B001")
 assert(isequal(string(bus.a_Component)', ["LPQ2B001","LPQ3B001"]))
 
 for i = 1:8
     bus.add_component("gen-classical");
 end
-assert(bus.a_Component{end}.str_tag == "SG11B001")
+assert(bus.a_Component{end}.s_tag == "SG11B001")
 bus.remove_component("LPQ2B001");
 comp = bus.add_component("load-power");
-assert(comp.str_tag == "LPQ12B001")
+assert(comp.s_tag == "LPQ12B001")
 assert(numel(unique(string(bus.a_Component))) == numel(bus.a_Component))
 
 
@@ -500,9 +500,9 @@ DebugScript.helper.quiet(@() net.initialize);
 bus = net.a_Bus{5};
 assert(string(bus.a_Component{1}) == "LPQ1B005")
 comp = bus.replace_component("LPQ1B005", "load-impedance");
-assert(comp.str_tag == "LRX1B005")
+assert(comp.s_tag == "LRX1B005")
 comp = bus.replace_component("LRX1B005", "load-power");
-assert(comp.str_tag == "LPQ1B005")
+assert(comp.s_tag == "LPQ1B005")
 
 
 %% Global controller tag in use is rejected
@@ -558,7 +558,7 @@ assert(all(cellfun(@(br) isempty(br.a_PowerNetwork), a_conn)))
 
 % 新しい母線のタグは既存のタグと重ならない
 bus = net.add_bus();
-assert(numel(unique(string(net.a_Bus))) == 9 && bus.str_tag == "B010")
+assert(numel(unique(string(net.a_Bus))) == 9 && bus.s_tag == "B010")
 
 % 大域制御器が制御している機器のある母線は削除できない
 net = DebugScript.helper.build_ieee14();

@@ -178,7 +178,7 @@ classdef PowerNetwork < PowerSystemModel
             arguments (Output)
                 obj   % New PowerNetwork without buses.
             end
-            obj.str_tag   = tag;
+            obj.s_tag     = tag;
             obj.para_base = Parameter(obj,"base");
             obj.para_base.add_entry(     "Hz", GUILDA.config("Model","Hz"), "double",...
                                     "baseMVA", 100                        , "double");
@@ -193,13 +193,13 @@ classdef PowerNetwork < PowerSystemModel
         % <@Group> Model building
         bra = add_branch(obj, Type, from_to, opt)
         add_global_controller(obj, a_Gcon)
-        remove_bus( obj, str_BusTag, opt)
+        remove_bus( obj, sr_BusTag, opt)
         remove_branch( obj, tag)
-        remove_global_controller( obj, str_GconTag)
+        remove_global_controller( obj, sr_GconTag)
 
         % Scenarios of the time simulation
         add_scenario(obj, sc)
-        remove_scenario(obj, str_tag)
+        remove_scenario(obj, sr_tag)
         
         % initialize
         [result, flag, output] = initialize(obj, varargin)
@@ -243,7 +243,7 @@ classdef PowerNetwork < PowerSystemModel
             %
             % <@Group> Data IO
             if ~restore_parameter_listeners(obj)
-                warning(msg("GUILDA:PowerNetwork:IncompleteLoad", obj.str_tag))
+                warning(msg("GUILDA:PowerNetwork:IncompleteLoad", obj.s_tag))
             end
         end
     end
@@ -278,8 +278,8 @@ classdef PowerNetwork < PowerSystemModel
             if tab.tag ~= "Slack"
                 return
             end
-            str_id  = split(tab.ID, "/");
-            lv_this = string(obj.a_Bus) == str_id(1);
+            sv_id   = split(tab.ID, "/");
+            lv_this = string(obj.a_Bus) == sv_id(1);
             if ~any(lv_this) || ~obj.a_Bus{lv_this}.l_isSlack
                 return
             end
@@ -346,7 +346,7 @@ classdef PowerNetwork < PowerSystemModel
             end
         end
         
-        % function set.str_methodPF(~,~)
+        % function set.s_methodPF(~,~)
         %     error("Property: Records the power flow calculation method used by obj.initialize()."+newline+...
         %           " Update : Automatically refreshes based on the method used upon each execution of obj.initialize().")
         % end
@@ -363,8 +363,8 @@ function l_complete = restore_parameter_listeners(layer)
     l_complete = true;
     mc = metaclass(layer);
     lv = startsWith(string({mc.PropertyList.Name}), "para_") & ~[mc.PropertyList.Dependent];
-    for str_para = string({mc.PropertyList(lv).Name})
-        para = layer.(str_para);
+    for s_para = string({mc.PropertyList(lv).Name})
+        para = layer.(s_para);
         if ~isa(para, "Parameter")
             l_complete = false;
             continue

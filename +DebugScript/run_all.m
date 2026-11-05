@@ -39,10 +39,10 @@ function results = run_all(opt)
     import matlab.unittest.plugins.DiagnosticsRecordingPlugin
 
     % GUILDA のフォルダへ移動
-    str_root = fileparts(fileparts(mfilename("fullpath")));
-    str_cwd  = pwd;
-    cd(str_root);
-    c_cwd = onCleanup(@() cd(str_cwd));
+    s_root   = fileparts(fileparts(mfilename("fullpath")));
+    s_cwd    = pwd;
+    cd(s_root);
+    c_cwd = onCleanup(@() cd(s_cwd));
 
     % 図は表示しない
     fig_vis = get(0, "DefaultFigureVisible");
@@ -68,15 +68,15 @@ function results = run_all(opt)
 
     % テストの取得
     suite = testsuite("DebugScript");
-    str_file    = string({suite.TestParentName});
-    str_file    = erase(str_file, "DebugScript.");
-    str_feature = extractBetween(str_file, "test_", "_");
+    sr_file     = string({suite.TestParentName});
+    sr_file     = erase(sr_file, "DebugScript.");
+    sr_feature  = extractBetween(sr_file, "test_", "_");
     if isempty(opt.Features)
-        lv_run = startsWith(str_feature, ["F","I"]);
+        lv_run = startsWith(sr_feature, ["F","I"]);
     else
-        lv_run = ismember(str_feature, opt.Features);
+        lv_run = ismember(sr_feature, opt.Features);
     end
-    suite = suite(lv_run);  str_file = str_file(lv_run);  str_feature = str_feature(lv_run);
+    suite = suite(lv_run);  sr_file = sr_file(lv_run);  sr_feature = sr_feature(lv_run);
     if isempty(suite)
         error("DebugScript:NoTests", "Features = [%s] に該当するテストがありません (例: [""F1"",""F2""])。", join(opt.Features, ","));
     end
@@ -89,10 +89,10 @@ function results = run_all(opt)
     % 機能ごとに実行
     rows = cell(0,1);
     t_all = tic;
-    for f = unique(str_file, "stable")
-        lv  = str_file == f;
+    for f = unique(sr_file, "stable")
+        lv  = sr_file == f;
         sub = suite(lv);
-        fprintf("[%s] %s (%d tests) ... ", str_feature(find(lv,1)), f, numel(sub));
+        fprintf("[%s] %s (%d tests) ... ", sr_feature(find(lv,1)), f, numel(sub));
         t_f = tic;
         if opt.Verbose
             res = runner.run(sub);
@@ -102,7 +102,7 @@ function results = run_all(opt)
         end
         fprintf("%.1f s\n", toc(t_f));
         for i = 1:numel(res)
-            rows{end+1,1} = classify(res(i), str_feature(find(lv,1)), f, tab_known); %#ok<AGROW>
+            rows{end+1,1} = classify(res(i), sr_feature(find(lv,1)), f, tab_known); %#ok<AGROW>
         end
     end
     results = vertcat(rows{:});
@@ -128,19 +128,19 @@ function results = run_all(opt)
 end
 
 
-function row = classify(res, str_feature, str_file, tab_known)
-    str_test = string(extractAfter(res.Name, "/"));
-    str_key  = str_file + "/" + str_test;
-    lv_known = tab_known.Test == str_key;
+function row = classify(res, sr_feature, sr_file, tab_known)
+    s_test   = string(extractAfter(res.Name, "/"));
+    s_key    = sr_file + "/" + s_test;
+    lv_known = tab_known.Test == s_key;
 
     msg = "";
-    str_id = "";
+    s_id = "";
     if res.Failed || res.Incomplete
         rec = res.Details.DiagnosticRecord;
         if ~isempty(rec)
             if isprop(rec(1), "Exception")
                 msg    = string(rec(1).Exception.message);
-                str_id = string(rec(1).Exception.identifier);
+                s_id   = string(rec(1).Exception.identifier);
             else
                 msg = string(rec(1).Report);
             end
@@ -148,24 +148,24 @@ function row = classify(res, str_feature, str_file, tab_known)
         msg = strtrim(strtok(msg, newline));
     end
 
-    if ~res.Passed && str_id == "DebugScript:Skip"
-        str_result = "SKIP";
+    if ~res.Passed && s_id == "DebugScript:Skip"
+        s_result = "SKIP";
     elseif res.Passed
         if any(lv_known)
-            str_result = "FIXED?";
+            s_result = "FIXED?";
             msg = "既知の不具合として登録済みだが成功: " + tab_known.Reason(find(lv_known,1));
         else
-            str_result = "PASS";
+            s_result = "PASS";
         end
     else
         if any(lv_known)
-            str_result = "KNOWN";
+            s_result = "KNOWN";
             msg = tab_known.Reason(find(lv_known,1)) + "  [" + msg + "]";
         else
-            str_result = "FAIL";
+            s_result = "FAIL";
         end
     end
-    row = table(string(str_feature), str_test, str_result, res.Duration, msg, ...
+    row = table(string(sr_feature), s_test, s_result, res.Duration, msg, ...
                 'VariableNames', ["Feature","Test","Result","Time","Message"]);
 end
 

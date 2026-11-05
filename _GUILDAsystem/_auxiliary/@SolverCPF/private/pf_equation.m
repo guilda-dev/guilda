@@ -32,7 +32,7 @@ function func = pf_equation(net,w,sv_load,useInt,x,Ymat)
 
             compSeq = i_Comp.c_Vequilibrium * conj(i_Comp.c_Iequilibrium);
 
-            isLoad  = ismember(i_Bus.str_tag,sv_load);
+            isLoad  = ismember(i_Bus.s_tag,sv_load);
 
             Ueq = i_Comp.rv_Uequilibrium;
             PQG = PQG + i_Comp.f_PQ2Bus(X_Comp,V_Bus,Ueq) * ~isLoad;

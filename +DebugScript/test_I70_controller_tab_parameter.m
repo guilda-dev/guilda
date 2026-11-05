@@ -17,11 +17,11 @@ DebugScript.helper.quiet(@() net.initialize);
 val = 2 * avr.para_dynamics.kap;
 avr.tab_parameter.dynamics.kap = val;
 assert(avr.para_dynamics.kap == val && avr.tab_parameter.dynamics.kap == val)
-assert(avr.sct_edit.str_odefcn == "editted" && comp.sct_edit.str_odefcn == "updated" && net.l_staleEquilibrium)
+assert(avr.sct_edit.s_odefcn == "editted" && comp.sct_edit.s_odefcn == "updated" && net.l_staleEquilibrium)
 assert(height(net.tab_editLog) == 1 && net.tab_editLog.log == "edit kap")   % 他の列は変更扱いにならない
 
 DebugScript.helper.quiet(@() net.initialize);
-assert(avr.sct_edit.str_odefcn == "updated")
+assert(avr.sct_edit.s_odefcn == "updated")
 x = avr.rv_Xequilibrium + 0.01;  u = avr.rv_Uequilibrium;
 V = [real(comp.c_Vequilibrium); imag(comp.c_Vequilibrium)];
 para = avr.tab_parameter.dynamics{:, avr.sv_para}.';
@@ -40,7 +40,7 @@ name = pss.sv_para(1);
 val  = 2 * pss.para_dynamics.(name) + 1;
 pss.tab_parameter.dynamics.(name) = val;
 assert(pss.para_dynamics.(name) == val)
-assert(pss.sct_edit.str_odefcn == "editted" && net.l_staleEquilibrium)
+assert(pss.sct_edit.s_odefcn == "editted" && net.l_staleEquilibrium)
 assert(height(net.tab_editLog) == 1 && net.tab_editLog.log == "edit " + name)
 
 
@@ -52,7 +52,7 @@ avr = comp.a_LocalController{1};
 DebugScript.helper.quiet(@() net.initialize);
 
 avr.tab_parameter = avr.tab_parameter;
-assert(avr.sct_edit.str_odefcn == "updated" && ~net.l_staleEquilibrium)
+assert(avr.sct_edit.s_odefcn == "updated" && ~net.l_staleEquilibrium)
 assert(height(net.tab_editLog) == 0)
 
 
@@ -78,11 +78,11 @@ DebugScript.helper.quiet(@() net.initialize);
 agc.tab_parameter.dynamics.kP = [200; 300];
 assert(isequal(agc.para_dynamics.kP, [200; 300]))
 assert(isequal(agc.tab_parameter.dynamics.kP, [200; 300]))
-assert(agc.sct_edit.str_odefcn == "editted" && net.l_staleEquilibrium)
+assert(agc.sct_edit.s_odefcn == "editted" && net.l_staleEquilibrium)
 assert(height(net.tab_editLog) == 1 && net.tab_editLog.log == "edit kP")
 
 DebugScript.helper.quiet(@() net.initialize);
-assert(agc.sct_edit.str_odefcn == "updated")
+assert(agc.sct_edit.s_odefcn == "updated")
 para = agc.tab_parameter.dynamics{:, agc.sv_para};
 x = 0.1;  u = [0.01; 0.02];
 assert(norm(agc.f_dx(0,x,[],[],u) - agc.fcn_dx(0,x,[],[],u,para,60)) < 1e-12, ...
@@ -103,7 +103,7 @@ assert(height(net.tab_editLog) == 1 && net.tab_editLog.log == "edit kP")
 DebugScript.helper.quiet(@() net.initialize);
 
 agc.tab_parameter = agc.tab_parameter;
-assert(agc.sct_edit.str_odefcn == "updated" && ~net.l_staleEquilibrium)
+assert(agc.sct_edit.s_odefcn == "updated" && ~net.l_staleEquilibrium)
 assert(height(net.tab_editLog) == 0)
 
 
