@@ -8,6 +8,9 @@ classdef Branch < PowerSystemModel
 %   (`tab_parameter.operation`: Smax, Imax, Pmax, Qmax, Vargmax) and drawing data, and
 %   decides how they form an admittance matrix (the subclass contract
 %   `get_admittance_matrix`).
+% - Parameters (`tab_parameter`) are per unit on the system base, set by add_branch (R, X,
+%   C, Tap, Phase and the limits) or by writing the table. An edit of dynamics makes the
+%   equilibrium stale; operation and graph make nothing stale.
 % - Refers to its two end buses (`a_Bus`, from and to), but is not their parent and does
 %   not own their voltages. The end voltages and currents it shows are derived from the
 %   buses. The order of `a_Bus` is the row and column order of the 2x2 matrix.
@@ -33,13 +36,8 @@ classdef Branch < PowerSystemModel
 
 %% Abstract Methods/Properties
     properties(Abstract, Constant) % Subclass contract
-        % Key that identifies the branch type, e.g. "pi" or "pi_transformer".
-        % It is the Type of PowerNetwork.add_branch; running GUILDA regenerates the key list of
-        % add_branch.
-        key
-
-        % Prefix of the tags of branches of this type, e.g. "EL" for lines and "ET" for transformers.
-        header
+        key  % Branch type, e.g. "pi": the Type of PowerNetwork.add_branch (running GUILDA regenerates its key list).
+        header  % Tag prefix of branches of this type, e.g. "EL" for lines and "ET" for transformers.
     end
     methods(Abstract)
         % Return the 2x2 admittance matrix of the branch.
@@ -51,63 +49,42 @@ classdef Branch < PowerSystemModel
     end
 
 %% Properties
-   properties(SetAccess=protected) % Layer Structure
-
-        % PowerNetwork the branch belongs to ([] when removed).
-        % <@Type> PowerNetwork
-        a_PowerNetwork 
-
-        % End buses of the branch {from; to}: the row and column order of the admittance matrix.
-        % <@Type> cell of Bus (2x1)
-        a_Bus
-   end
+    properties(SetAccess=protected) % Layer Structure
+        a_PowerNetwork  % PowerNetwork the branch belongs to ([] when removed). <@Type> PowerNetwork
+        a_Bus  % End buses {from; to}: the row and column order of the admittance matrix. <@Type> cell of Bus (2x1)
+    end
     properties(SetAccess=protected) % OPF
-        f_opfcost    = []   % OPF cost handle @(v, p) set by set_opffcn; it replaces the default cost of the branch ([]: none). <@Stale> nothing (logged)
-        f_opfconst   = []   % OPF constraint handle @(v, p) set by set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing (logged)
-        l_opfdefault = true % Whether the default OPF constraints of the branch are kept (DefaultConstraint of set_opffcn). <@Stale> nothing (logged)
+        f_opfcost = []  % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the branch ([]: none). <@Stale> nothing (logged)
+        f_opfconst = []  % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing (logged)
+        l_opfdefault = true  % Whether the default OPF constraints of the branch are kept (DefaultConstraint of set_opffcn). <@Stale> nothing (logged)
     end
     properties(Dependent) % Parameter
-
-        % Parameter table of the branch: dynamics, operation and graph; writing it writes the parameters.
-        %
-        % All values are per unit on the system base.
-        %
-        % - `dynamics`: R, X [pu], the series impedance; C [pu], the shunt susceptance (its
-        %   meaning depends on the subclass); tap, the off-nominal ratio; phase [rad], the phase
-        %   shift. An edit makes the equilibrium stale.
-        % - `operation`: OPF limits at both ends, Smax, Imax, Pmax, Qmax [pu] (default Inf), and
-        %   Vargmax [rad], the angle difference of the end buses (default pi/2). An edit makes
-        %   nothing stale.
-        % - `graph`: MidXaxis, MidYaxis, the intermediate points of the line in the diagram;
-        %   Marker, the line style. An edit makes nothing stale.
-        %
-        % Set by add_branch (R, X, C, Tap, Phase and the limits) or by writing the table.
-        % <@Type> table
-        tab_parameter
-
-        % [pu] Voltage phasors of the end buses at the equilibrium.
-        % <@Type> double
-        cv_Vequilibrium
-
-        % [pu] Currents injected into the branch at its ends at the equilibrium: get_admittance_matrix() * cv_Vequilibrium.
-        % <@Type> double
-        cv_Iequilibrium
+        tab_parameter  % Parameter table: the para_* tables side by side; writing it writes the parameters. <@Type> table
+        cv_Vequilibrium  % [pu] Voltage phasors of the end buses at the equilibrium. <@Type> double
+        cv_Iequilibrium  % [pu] Currents into the branch at its ends at the equilibrium: get_admittance_matrix() * cv_Vequilibrium. <@Type> double
     end
-    
+
     properties(Hidden,SetAccess=protected) % Parameter
-        para_dynamics       % Parameter: R, X, C, tap, phase
-        para_operation      % Parameter: Smax, Imax, Pmax, Qmax, Vargmax
-        para_graph          % Parameter: MidXaxis, MidYaxis, Marker
+        para_dynamics  % R, X [pu]: series impedance; C [pu]: shunt susceptance (meaning set by the subclass); tap: off-nominal ratio; phase [rad].
+        para_operation  % OPF limits at both ends: Smax, Imax, Pmax, Qmax [pu] (default Inf); Vargmax [rad]: end-bus angle difference (default pi/2).
+        para_graph  % MidXaxis, MidYaxis: intermediate points of the line in the diagram; Marker: line style.
     end
     properties(Dependent, Access=protected) % Layer Structure
-        parent              % Layer Structure
-        children            % Layer Structure
+        parent  % Parent in the layer structure: the network.
+        children  % Children in the layer structure: the Parameter objects.
     end
 
 %% Constructor
     methods(Access={?Branch, ?PowerNetwork})
         function obj = Branch(index, opt)
             % Create a branch (called by PowerNetwork.add_branch through a subclass).
+            arguments (Input)
+                index (1,1) string   % Number part of the tag, e.g. "001".
+                opt   (1,1) struct   % Branch settings of add_branch.
+            end
+            arguments (Output)
+                obj   % New Branch object.
+            end
             obj.str_tag = obj.header+index;
             
             a_Pm = Parameter(obj,"dynamics");

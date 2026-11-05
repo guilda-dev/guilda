@@ -12,6 +12,9 @@ function reset_opffcn(obj)
 % See also Component.set_opffcn
 %
 % <@Group> Construction and editing
+    arguments (Input)
+        obj
+    end
     obj.f_opfcost    = [];
     obj.f_opfconst   = [];
     obj.l_opfdefault = true;

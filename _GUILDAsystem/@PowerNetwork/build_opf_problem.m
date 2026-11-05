@@ -1,14 +1,11 @@
 function varargout = build_opf_problem(obj, varargin)
 % Build the optimization problem of the optimal power flow without solving it.
 %
-% `net.optimize_powerflow` solves the same problem. The options are passed as
-% Name-Value arguments (the input is `varargin`):
+% `net.optimize_powerflow` solves the same problem. The Name-Value options:
 %
 % - `Method` — "ELD", "DC OPF" or "AC OPF". Default: "AC OPF".
 % - `validate` — Check that the initial point x0 fits the problem. Default: false.
-%
-% Outputs (`varargout`): `prob`, the optimproblem, and `x0`, the initial point as a
-% struct of the variables. With no output the problem is displayed.
+% With no output the problem is displayed.
 %
 % <@Examples>
 % ```matlab
@@ -19,13 +16,22 @@ function varargout = build_opf_problem(obj, varargin)
 % See also PowerNetwork.optimize_powerflow, Bus.build_opf_problem, Branch.build_opf_problem
 %
 % <@Group> OPF
+    arguments (Input)
+        obj
+    end
+    arguments (Input, Repeating)
+        varargin   % Name-Value options Method and validate.
+    end
+    arguments (Output, Repeating)
+        varargout   % prob (the optimproblem), then x0 (the initial point as a struct of the variables).
+    end
     varargin = v3_opf_args(varargin, "BuildOpfProblemMethods");    % COMPAT(v3)
     [varargout{1:nargout}] = build_problem(obj, varargin{:});
 end
 
 
 function varargout = build_problem(obj,options)
-arguments
+arguments (Input)
     obj 
     options.Method   (1,1) string {mustBeMember(options.Method,["ELD","DC OPF","AC OPF"])} = "AC OPF";
     options.validate (1,1) logical = false;

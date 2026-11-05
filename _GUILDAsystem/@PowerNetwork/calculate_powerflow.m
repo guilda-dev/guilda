@@ -30,6 +30,12 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
 % See also ResultPF, SolverPF, PowerNetwork.initialize
 %
 % <@Group> Power flow
+    arguments (Input)
+        obj
+    end
+    arguments (Input, Repeating)
+        varargin   % Name-Value options.
+    end
     arguments (Output)
         result   % Bus voltages, injections and branch flows of the solution.
         flag     % exitflag of fsolve ("algebraic", positive = converged) or convergence ("dynamic").
@@ -90,7 +96,7 @@ function [c_nv, opt] = take_call_options(c_in)
 end
 
 function opt = call_options(opt)
-    arguments
+    arguments (Input)
         opt.Plot   (1,1) logical = false
         opt.Export {mustBeA(opt.Export, ["logical","string","char"])} = false
     end

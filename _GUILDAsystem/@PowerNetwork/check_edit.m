@@ -8,7 +8,7 @@ function flag = check_edit(obj, opt)
 % baseMVA or powerflow parameters, topology, slack bus; not the network Hz).
 %
 % <@Group> Called by analyses
-    arguments
+    arguments (Input)
         obj   % Target network.
         opt.RequireEquilibrium (1,1) logical = false   % Error with ID GUILDA:PowerNetwork:EquilibriumStale when the equilibrium is out of date.
     end

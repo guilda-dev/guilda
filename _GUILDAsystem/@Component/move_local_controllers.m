@@ -7,6 +7,10 @@ function move_local_controllers(obj, comp_new)
 % Called by Bus.replace_component, which checks first that the new component suits them.
 %
 % <@Group> Construction and editing
+    arguments (Input)
+        obj
+        comp_new (1,1) Component   % Component that receives the controllers.
+    end
     a_con = obj.a_LocalController;
     obj.a_LocalController = cell(0,1);
     obj.l_hasController   = false;

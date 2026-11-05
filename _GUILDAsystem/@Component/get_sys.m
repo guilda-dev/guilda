@@ -30,13 +30,10 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % Out-of-date f_* handles are built first. Without Point, a component on a network stops
 % with the error GUILDA:PowerNetwork:EquilibriumStale when net.initialize() is needed.
 %
-% Outputs: `sys`, a descriptor state-space model with state, input and output names;
-% then (`varargout`) sys.StateName, sys.InputName and sys.OutputName, kept for old calls.
-%
 % See also Component.get_variable_map, Bus.get_sys, PowerNetwork.get_sys
 %
 % <@Group> Called by analyses
-    arguments
+    arguments (Input)
         obj 
         x        (:,1) double = obj.rv_Xequilibrium   % States (default: the equilibrium).
         V        (:,1) double = [real(obj.c_Vequilibrium); imag(obj.c_Vequilibrium)]   % [pu] Bus voltage [Vre; Vim] (default: the equilibrium).
@@ -47,7 +44,13 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         opt.tag  (1,1) logical = true   % Name the states, inputs and outputs with the component tag.
         opt.con  (1,1) logical = false     % Ignored; kept for old calls (the local controllers are always included).
         opt.Point = []   % Point of the linearization; overrides x, V, I, u.
-    end        
+    end
+    arguments (Output)
+        sys   % Descriptor state-space model with state, input and output names.
+    end
+    arguments (Output, Repeating)
+        varargout   % sys.StateName, sys.InputName and sys.OutputName, kept for old calls.
+    end
 
     l_equilibrium = isempty(opt.Point) && ~iscell(opt.Point);
     obj.check_edit();

@@ -9,13 +9,10 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % Out-of-date f_* handles are built first. A controller on a network stops with the error
 % GUILDA:PowerNetwork:EquilibriumStale when net.initialize() is needed.
 %
-% Outputs after `sys` (`varargout`): sys.StateName, sys.InputName and sys.OutputName,
-% kept for old calls.
-%
 % See also Component.get_sys
 %
 % <@Group> Called by analyses
-    arguments
+    arguments (Input)
         obj
         x        (:,1) double  = obj.rv_Xequilibrium   % States (default: the equilibrium).
         V        (:,1) double  = [real(obj.c_Vequilibrium);imag(obj.c_Vequilibrium)]   % [pu] Voltage [Vre; Vim] of the parent.
@@ -23,6 +20,12 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         u        (:,1) double  = obj.rv_Uequilibrium   % Inputs (default: the equilibrium).
         opt.full (1,1) logical = false     % Also output the states.
         opt.tag  (1,1) logical = true   % Name the states, inputs and outputs with the controller tag.
+    end
+    arguments (Output)
+        sys   % State-space model of the controller with state, input and output names.
+    end
+    arguments (Output, Repeating)
+        varargout   % sys.StateName, sys.InputName and sys.OutputName, kept for old calls.
     end
 
     obj.check_edit();

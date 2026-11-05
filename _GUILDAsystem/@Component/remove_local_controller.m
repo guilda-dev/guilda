@@ -22,7 +22,7 @@ function remove_local_controller(obj, str_tag, opt)
 % See also Component.add_local_controller, LocalController
 %
 % <@Group> Construction and editing
-    arguments
+    arguments (Input)
         obj
         str_tag (1,1) string   % Tag (str_tag) of the local controller to remove.
         opt.RemoveNested (1,1) logical = false   % Also remove the controller nested in the removed one (the PSS under an AVR).

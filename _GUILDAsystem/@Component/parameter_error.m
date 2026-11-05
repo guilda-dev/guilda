@@ -8,11 +8,11 @@ function parameter_error(obj, str_key, varargin) %#ok<INUSD>
 % See also msg, component.generator.abstract
 %
 % <@Group> Queries and checks
-    arguments
+    arguments (Input)
         obj
         str_key (1,1) string   % Key of the message in Component.xml.
     end
-    arguments (Repeating)
+    arguments (Input, Repeating)
         varargin               % Values for the placeholders of the message.
     end
 

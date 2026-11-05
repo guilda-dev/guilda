@@ -42,6 +42,12 @@ function [result, flag, output] = linearize(obj, varargin)
 % See also PowerNetwork.get_sys, PowerNetwork.get_variable_map, ResultLIN, SolverLIN
 %
 % <@Group> Linearization
+    arguments (Input)
+        obj
+    end
+    arguments (Input, Repeating)
+        varargin   % Name-Value options.
+    end
     arguments (Output)
         result   % Jacobian blocks, variable map, point and settings.
         flag     % True when the result is usable: all Jacobian entries are finite and Avv is invertible.
@@ -75,7 +81,7 @@ function [c_nv, opt] = take_call_options(c_in)
 end
 
 function opt = call_options(opt)
-    arguments
+    arguments (Input)
         opt.Plot (1,1) logical = false
     end
 end

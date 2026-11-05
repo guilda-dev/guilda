@@ -8,7 +8,11 @@ classdef Bus < PowerSystemModel
 %   admittance, its voltage limits and the list of its components (`a_Component`).
 % - The power-flow type (slack, PV, PQ) is not stored: it follows from `l_isSlack` and the
 %   Q settings of the components. The slack bus fixes V and Varg, a bus whose components
-%   leave Q as NaN is a PV bus, and any other bus is a PQ bus.
+%   leave Q as NaN is a PV bus, and any other bus is a PQ bus. Setting `l_isSlack` makes the
+%   network clear the flag of the other buses (a bus never changes another bus); with no
+%   slack bus, `calculate_powerflow` selects one.
+% - Parameters (`tab_parameter`) are set by `add_bus` or by writing the table. An edit of
+%   powerflow or dynamics makes the equilibrium stale; operation and graph make nothing stale.
 % - Down: splits the equilibrium bus power among its components (`set_equilibrium`).
 %   Up: aggregates them (current, linear model, variable map, OPF variables).
 % - Does not own the system base (baseMVA belongs to `PowerNetwork`; a bus baseMVA given
@@ -38,68 +42,60 @@ classdef Bus < PowerSystemModel
 
     %% Properties
     properties (Dependent) % Power Flow
-        str_bustype              % Power-flow type of the bus: "slack", "PV" or "PQ" (from get_pf_set).
-        c_Iequilibrium           % [pu] Current injection at the equilibrium: sum of the component currents (0 without components).
+        str_bustype  % Power-flow type of the bus: "slack", "PV" or "PQ" (from get_pf_set).
+        c_Iequilibrium  % [pu] Current injection at the equilibrium: sum of the component currents (0 without components).
     end
     properties % Power Flow
-        % True for the slack bus (at most one per network).
-        % Setting it requires a component; the network then clears the flags of the other buses
-        % (a bus never changes another bus). With no slack bus, calculate_powerflow selects one.
-        % <@Stale> equilibrium
-        l_isSlack      (1,1) logical = false;
+        l_isSlack (1,1) logical = false;  % True for the slack bus (at most one per network; setting it requires a component). <@Stale> equilibrium
     end
     properties (Access={?SolverODE}) % Simulation working data
-        l_isFault (1,1) logical = false         % True while an active fault of a scenario is applied at the bus (working data of the simulation).
+        l_isFault (1,1) logical = false  % True while an active fault of a scenario is applied at the bus (simulation working data).
     end
 
     properties (SetAccess=protected) % Layer Structure
-        a_PowerNetwork                          % PowerNetwork the bus belongs to ([] when removed).
-        a_Component (:,1) = cell(0,1)           % Components connected to the bus. <@Stale> equilibrium
-        c_Vequilibrium      = 1;                % [pu] Voltage phasor at the equilibrium (the bus owns it; components and controllers read it).
+        a_PowerNetwork  % PowerNetwork the bus belongs to ([] when removed).
+        a_Component (:,1) = cell(0,1)  % Components connected to the bus. <@Stale> equilibrium
+        c_Vequilibrium = 1;  % [pu] Voltage phasor at the equilibrium (owned by the bus; components and controllers read it).
     end
     properties (SetAccess=protected) % OPF
-        f_opfcost    = []   % OPF cost handle @(v, p) set by set_opffcn; it replaces the default cost of the bus ([]: none). <@Stale> nothing (logged)
-        f_opfconst   = []   % OPF constraint handle @(v, p) set by set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing (logged)
-        l_opfdefault = true % Whether the default OPF constraints of the bus are kept (DefaultConstraint of set_opffcn). <@Stale> nothing (logged)
+        f_opfcost = []  % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the bus ([]: none). <@Stale> nothing (logged)
+        f_opfconst = []  % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing (logged)
+        l_opfdefault = true  % Whether the default OPF constraints of the bus are kept (DefaultConstraint of set_opffcn). <@Stale> nothing (logged)
     end
     properties (Dependent) % Parameter
-        % Parameter table: dynamics, operation, powerflow and graph; writing it writes the parameters.
-        %
-        % - `powerflow`: V, Varg [pu, rad], the voltage settings used by a slack bus (V also by a
-        %   PV bus); V0, Varg0, the initial values of the power-flow and OPF solvers.
-        % - `dynamics`: Gshunt, Bshunt [pu], the shunt admittance, added to the diagonal of the
-        %   network admittance matrix.
-        % - `operation`: Vmin, Vmax [pu], the OPF voltage bounds; baseKV [kV], the base voltage,
-        %   stored but used in no calculation.
-        % - `graph`: Xaxis, Yaxis, Marker, the drawing position and marker (NaN: automatic layout).
-        %
-        % All are set by add_bus or by writing the table. An edit of powerflow or dynamics makes
-        % the equilibrium stale; operation and graph make nothing stale.
-        tab_parameter
+        tab_parameter  % Parameter table: the para_* tables side by side; writing it writes the parameters.
     end
     properties (Hidden,SetAccess=protected) % Parameter
-        para_dynamics                           % Parameter: Gshunt, Bshunt
-        para_powerflow                          % Parameter: V, Varg, V0, Varg0
-        para_operation                          % Parameter: baseKV, Vmin, Vmax
-        para_graph                              % Parameter: Xaxis, Yaxis, Marker
+        para_dynamics  % Shunt admittance Gshunt, Bshunt [pu], added to the diagonal of the network admittance matrix.
+        para_powerflow  % V [pu], Varg [rad]: voltage settings of a slack bus (V also of a PV bus); V0 [pu], Varg0 [rad]: solver initial values.
+        para_operation  % Vmin, Vmax [pu]: OPF voltage bounds; baseKV [kV]: base voltage, stored but used in no calculation.
+        para_graph  % Xaxis, Yaxis: drawing position (NaN: automatic layout); Marker: marker of the bus.
     end
     properties (Dependent, Access=protected) % Layer Structure
-        parent                                  % Layer Structure
-        children                                % Layer Structure
+        parent  % Parent in the layer structure: the network.
+        children  % Children in the layer structure: the components, then the Parameter objects.
     end
     properties (SetAccess={?SolverODE, ?Component}, Hidden) % Simulation working data
-        iv_odeX  = zeros(0,1);      % Positions of the bus voltage [Vre; Vim] in the simulation vector.
-        iv_odeI  = zeros(0,1);      % Positions of the bus current [Ire; Iim] in the simulation vector.
-        iv_odeU  = zeros(0,1);      % Not set by the simulation (a bus has no inputs).
+        iv_odeX = zeros(0,1);  % Positions of the bus voltage [Vre; Vim] in the simulation vector.
+        iv_odeI = zeros(0,1);  % Positions of the bus current [Ire; Iim] in the simulation vector.
+        iv_odeU = zeros(0,1);  % Not set by the simulation (a bus has no inputs).
     end
     properties (SetAccess={?SolverCPF}) % Continuation Power Flow
-        iv_CPFV = zeros(0,1)        % Indices of the bus voltage in the CPF variable vector (working data of the CPF).
+        iv_CPFV = zeros(0,1)  % Indices of the bus voltage in the CPF variable vector (CPF working data).
     end
 
 %% Constructor
     methods (Access={?PowerNetwork ?Bus})
         function obj = Bus(net,tag,opt)
             % Create a bus of the network net (called by PowerNetwork.add_bus).
+            arguments (Input)
+                net (1,1) PowerNetwork   % Network the bus belongs to.
+                tag (1,1) string         % Tag of the bus.
+                opt (1,1) struct         % Bus settings of add_bus (without Tag and FullTag).
+            end
+            arguments (Output)
+                obj   % New Bus object.
+            end
             obj.a_PowerNetwork = net;
             obj.str_tag        = tag;
             obj.para_dynamics  = Parameter(obj,"dynamics");
@@ -126,9 +122,13 @@ classdef Bus < PowerSystemModel
     end
     methods (Access={?PowerNetwork})
         function set_network(obj, net)
-            % net = [] detaches the bus (PowerNetwork.remove_bus)
+            % Set the network of the bus; net = [] detaches it (PowerNetwork.remove_bus).
             %
             % <@Group> Construction and editing
+            arguments (Input)
+                obj
+                net   % PowerNetwork, or [] to detach the bus.
+            end
             obj.a_PowerNetwork = net;
         end
     end

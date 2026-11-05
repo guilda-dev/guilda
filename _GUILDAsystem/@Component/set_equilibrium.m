@@ -4,7 +4,7 @@ function set_equilibrium(obj,c_V,c_I,r_P,r_Q)
 % Called by Bus.set_equilibrium. The local controllers compute their equilibria too.
 %
 % <@Group> Called by analyses
-    arguments
+    arguments (Input)
         obj 
         c_V   % [pu] Bus voltage phasor.
         c_I   % [pu] Current injected by the component.

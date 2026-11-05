@@ -4,7 +4,7 @@ function set_network(obj,a_PowerNetwork)
 % Called by PowerNetwork.add_branch, remove_branch and remove_bus.
 %
 % <@Group> Construction and editing
-    arguments
+    arguments (Input)
         obj 
         a_PowerNetwork {mustBeScalarOrEmpty}   % PowerNetwork, or [] to detach.
     end

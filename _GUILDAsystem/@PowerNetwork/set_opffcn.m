@@ -43,6 +43,12 @@ function set_opffcn(obj, varargin)
 % See also PowerNetwork.reset_opffcn, Component.set_opffcn, Bus.set_opffcn, Branch.set_opffcn
 %
 % <@Group> Model building
+    arguments (Input)
+        obj
+    end
+    arguments (Input, Repeating)
+        varargin   % Name-Value options Cost, Constraint and DefaultConstraint.
+    end
     [obj.f_opfcost, obj.f_opfconst, obj.l_opfdefault, str_log] = opffcn.update(obj, varargin{:});
     obj.log_edit(str_log, "OPF");
 end

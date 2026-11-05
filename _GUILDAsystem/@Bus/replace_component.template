@@ -23,7 +23,7 @@ function comp = replace_component(obj, str_tag, Key, parameter, opt)
 %
 % See also Bus.add_component, Bus.remove_component
 
-    arguments
+    arguments (Input)
         obj
         str_tag              (1,1) string   % Tag of the component to replace.
         Key                  (1,:) char {mustBeMember(Key,{___KEY_LIST___})}   % Component model key, e.g. "gen-park" or "load-power".

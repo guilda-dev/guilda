@@ -16,21 +16,18 @@ function varargout = get_hessian(obj, x, V, I, u)
 % two dimensions). A method may return [] for an all-zero Hessian. Hessian_dx is
 % required; Hessian_I and Hessian_Y are needed only when their output is requested.
 %
-% Outputs (`varargout`, in this order):
-%
-% - `H_dx` — Hessians of fcn_dx: n_x x n_z x n_z.
-% - `H_I` — Hessians of [Ire; Iim] of fcn_I: 2 x n_z x n_z.
-% - `H_Y` — Hessians of fcn_Y: n_y x n_z x n_z.
-%
 % See also Component.get_sys
 %
 % <@Group> Queries and checks
-    arguments
+    arguments (Input)
         obj
         x (:,1) double = obj.rv_Xequilibrium   % States (default: the equilibrium).
         V (:,1) double = [real(obj.c_Vequilibrium); imag(obj.c_Vequilibrium)]   % [pu] Bus voltage [Vre; Vim] (default: the equilibrium).
         I (:,1) double = [real(obj.c_Iequilibrium); imag(obj.c_Iequilibrium)]   % [pu] Current [Ire; Iim] (default: the equilibrium).
         u (:,1) double = obj.rv_Uequilibrium   % Inputs (default: the equilibrium).
+    end
+    arguments (Output, Repeating)
+        varargout   % In this order: H_dx (fcn_dx, n_x x n_z x n_z), H_I ([Ire; Iim] of fcn_I, 2 x n_z x n_z), H_Y (fcn_Y, n_y x n_z x n_z).
     end
     c_method = {"Hessian_dx", numel(obj.sv_x); "Hessian_I", 2; "Hessian_Y", numel(obj.sv_y)};
     param    = obj.para_dynamics.tab_parameter{:,obj.sv_para};

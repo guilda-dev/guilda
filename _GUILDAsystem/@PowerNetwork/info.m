@@ -12,7 +12,7 @@ function info(obj, opt)
 % See also PowerNetwork.draw_diagram
 %
 % <@Group> Queries and display
-    arguments
+    arguments (Input)
         obj 
         opt.equilibrium(1,1) logical = true   % Show the equilibrium values.
         opt.parameter  (1,1) logical = true   % Show the parameters.

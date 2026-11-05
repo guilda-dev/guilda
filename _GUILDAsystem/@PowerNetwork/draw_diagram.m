@@ -9,7 +9,7 @@ function G = draw_diagram(obj,ax)
 % See also DrawerNetDiagram
 %
 % <@Group> Queries and display
-    arguments
+    arguments (Input)
         obj 
         ax  = axes('Parent',figure())   % Axes to draw in (default: new axes in a new figure).
     end

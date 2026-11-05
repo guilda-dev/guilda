@@ -9,7 +9,7 @@ function sys = get_sys_alone(obj, x, V, I, u, opt)
 % See also Component.get_sys, controller.local_LQR
 %
 % <@Group> Called by analyses
-    arguments
+    arguments (Input)
         obj
         x (:,1) double   % States.
         V (:,1) double   % [pu] Bus voltage [Vre; Vim].
@@ -17,6 +17,9 @@ function sys = get_sys_alone(obj, x, V, I, u, opt)
         u (:,1) double   % Inputs.
         opt.port (1,1) {mustBeMember(opt.port, ["V2I", "I2V"])} = "V2I"   % Input and output ports.
         opt.controllerPorts (1,1) logical = false   % Also output what the controllers read.
+    end
+    arguments (Output)
+        sys   % State-space model with untagged names, grouped by channel.
     end
 
     nx = numel(obj.sv_x);

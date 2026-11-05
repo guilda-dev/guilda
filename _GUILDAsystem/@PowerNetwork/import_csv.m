@@ -42,7 +42,7 @@ function net = import_csv(path, opt)
 %
 % <@Group> Data IO
 
-    arguments
+    arguments (Input)
         path               (1,1) string   % Model folder (e.g. the folder written by net.export_csv).
         opt.Initialize     (1,1) logical = true   % Run net.initialize() after building the network.
         opt.Network                      = []   % Existing network to add the buses, branches and components to (it is returned). Its Hz and baseMVA are overwritten by network/parameter.csv when the file gives them. Default: a new PowerNetwork tagged with the folder name (without a leading @).
@@ -329,7 +329,7 @@ end
 
 function optional_cols = check_cols(tab, required_cols, optional_cols, relpath, other_cols)
     % other_cols: known columns that the caller reads by itself or ignores
-    arguments
+    arguments (Input)
         tab
         required_cols
         optional_cols

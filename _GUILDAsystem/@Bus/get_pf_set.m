@@ -7,6 +7,9 @@ function tab_PFset = get_pf_set(obj)
 % See also Bus.str_bustype, PowerNetwork.calculate_powerflow
 %
 % <@Group> Called by analyses
+    arguments (Input)
+        obj
+    end
     arguments (Output)
         tab_PFset   % One-row table: Type, Varg, V, P, Q, Varg0, V0 (NaN where the type does not set the value).
     end

@@ -12,7 +12,7 @@ function remove_scenario(obj, str_tag)
 % See also PowerNetwork.add_scenario, Scenario
 %
 % <@Group> Model building
-    arguments
+    arguments (Input)
         obj
         str_tag (1,:) string   % Tags of the scenarios to remove.
     end

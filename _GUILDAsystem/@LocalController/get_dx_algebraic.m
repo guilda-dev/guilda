@@ -7,7 +7,7 @@ function [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, Ii, obs, DAEvec)
 % the equilibrium.
 %
 % <@Group> Called by analyses
-    arguments
+    arguments (Input)
         obj
         t      (1,1) double  % [s] Time.
         x      (:,1) double  % Variables of the network DAE (states, inputs, bus voltages and currents).

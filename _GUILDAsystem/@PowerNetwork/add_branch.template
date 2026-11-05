@@ -15,7 +15,7 @@ function bra = add_branch(obj, Key, from_to, opt)
 % ```
 %
 % See also PowerNetwork.remove_branch, PowerNetwork.add_bus, Branch
-    arguments
+    arguments (Input)
         obj 
         Key          (1,:) char {mustBeMember(Key,{___KEY_LIST___})}   % Branch model key, e.g. "pi" or "pi_transformer".
         from_to      (1,2) {string,double}   = [1,2]   % End buses [from, to], as indices of a_Bus or as bus tags.

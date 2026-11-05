@@ -12,7 +12,7 @@ function comp = add_component(obj,Key,opt)
 % ```
 %
 % See also Bus.remove_component, Bus.replace_component, Component
-    arguments
+    arguments (Input)
         obj
         Key                  (1,:) char {mustBeMember(Key,{___KEY_LIST___})}   % Component model key, e.g. "gen-park" or "load-power".
         opt.parameter                     = nan;   % Dynamic parameters (table or string); NaN uses the class defaults.
