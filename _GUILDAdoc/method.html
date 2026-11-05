@@ -41,7 +41,7 @@
     const loader = window.GuildaDocLoader;
     const {
       tr, setPageTitle, escapeHtml, nl2br, firstText, toList, formatInlineMarkdown, renderMarkdown,
-      classLink, seeAlsoLink, sourceLocation, examplesText, groupRows, groupHeading, breakableName
+      classLink, seeAlsoLink, sourceLocation, examplesText, groupRows, groupHeading, breakableName, accessTag
     } = window.GuildaDocRender;
     const routeParams = loader.getRouteParams();
     const className = routeParams.get('class');
@@ -172,25 +172,34 @@
       return toList(m.OutputNames).map((name) => ({ name, type: '', unit: '', description: '' }));
     }
 
+    // Argument tables share the column widths of the class page member
+    // tables (reference.css): short cells fit their content, Description
+    // takes the rest, and on phones each row stacks with its column names.
+    const argCell = (key, width, label, html) => `<td class="col-${key} is-${width}" data-label="${escapeHtml(label)}">${html}</td>`;
+
     function renderInputTable(rows) {
       const withUnit = rows.some((p) => p.unit);
+      const labels = {
+        kind: tr('Kind', '種類'), type: tr('Size / Class', 'サイズ / クラス'), unit: tr('Unit', '単位'),
+        required: tr('Required', '必須'), default: tr('Default', '既定値'), validators: tr('Validators', '検証関数')
+      };
       return `
-        <div class="ref-table-scroll"><table class="compact-table description-table">
+        <div class="ref-table-scroll"><table class="compact-table ref-member-table">
           <thead><tr>
-            <th>${tr('Name', '名前')}</th><th>${tr('Kind', '種類')}</th><th>${tr('Size / Class', 'サイズ / クラス')}</th>${withUnit ? `<th class="col-unit">${tr('Unit', '単位')}</th>` : ''}
-            <th class="col-description">${tr('Description', '説明')}</th><th>${tr('Required', '必須')}</th><th>${tr('Default', '既定値')}</th><th>${tr('Validators', '検証関数')}</th>
+            <th class="col-name is-name">${tr('Name', '名前')}</th><th class="col-kind is-fit">${labels.kind}</th><th class="col-type is-wrap">${labels.type}</th>${withUnit ? `<th class="col-unit is-fit">${labels.unit}</th>` : ''}
+            <th class="col-description is-flex">${tr('Description', '説明')}</th><th class="col-required is-fit">${labels.required}</th><th class="col-default is-wrap">${labels.default}</th><th class="col-validators is-wrap">${labels.validators}</th>
           </tr></thead>
           <tbody>
             ${rows.map((p) => `
               <tr>
-                <td class="col-name"><strong>${p.name ? breakableName(p.name) : muted('-')}</strong></td>
-                <td>${cell(kindLabel(p.kind || 'Positional'))}</td>
-                <td>${cell(p.type)}</td>
-                ${withUnit ? `<td class="col-unit">${p.unit ? `<span class="ref-unit">${escapeHtml(p.unit)}</span>` : muted('-')}</td>` : ''}
-                <td class="col-description">${p.description ? formatInlineMarkdown(p.description) : muted('-')}</td>
-                <td>${typeof p.required === 'boolean' ? (p.required ? tr('Required', '必須') : tr('Optional', '任意')) : cell(p.required)}</td>
-                <td>${p.default ? `<span class="ref-code">${escapeHtml(p.default)}</span>` : muted('-')}</td>
-                <td>${cell(p.validators)}</td>
+                <td class="col-name is-name"><strong>${p.name ? breakableName(p.name) : muted('-')}</strong></td>
+                ${argCell('kind', 'fit', labels.kind, cell(kindLabel(p.kind || 'Positional')))}
+                ${argCell('type', 'wrap', labels.type, cell(p.type))}
+                ${withUnit ? argCell('unit', 'fit', labels.unit, p.unit ? `<span class="ref-unit">${escapeHtml(p.unit)}</span>` : muted('-')) : ''}
+                <td class="col-description is-flex">${p.description ? formatInlineMarkdown(p.description) : muted('-')}</td>
+                ${argCell('required', 'fit', labels.required, typeof p.required === 'boolean' ? (p.required ? tr('Required', '必須') : tr('Optional', '任意')) : cell(p.required))}
+                ${argCell('default', 'wrap', labels.default, p.default ? `<span class="ref-code">${escapeHtml(p.default)}</span>` : muted('-'))}
+                ${argCell('validators', 'wrap', labels.validators, cell(p.validators))}
               </tr>`).join('')}
           </tbody>
         </table></div>`;
@@ -199,18 +208,19 @@
     function renderOutputTable(rows) {
       const withUnit = rows.some((r) => r.unit);
       const withType = rows.some((r) => r.type);
+      const labels = { type: tr('Size / Class', 'サイズ / クラス'), unit: tr('Unit', '単位') };
       return `
-        <div class="ref-table-scroll"><table class="compact-table description-table">
+        <div class="ref-table-scroll"><table class="compact-table ref-member-table">
           <thead><tr>
-            <th>${tr('Name', '名前')}</th>${withType ? `<th>${tr('Size / Class', 'サイズ / クラス')}</th>` : ''}${withUnit ? `<th class="col-unit">${tr('Unit', '単位')}</th>` : ''}<th class="col-description">${tr('Description', '説明')}</th>
+            <th class="col-name is-name">${tr('Name', '名前')}</th>${withType ? `<th class="col-type is-wrap">${labels.type}</th>` : ''}${withUnit ? `<th class="col-unit is-fit">${labels.unit}</th>` : ''}<th class="col-description is-flex">${tr('Description', '説明')}</th>
           </tr></thead>
           <tbody>
             ${rows.map((r) => `
               <tr>
-                <td class="col-name"><strong>${r.name ? breakableName(r.name) : muted('-')}</strong></td>
-                ${withType ? `<td>${cell(r.type)}</td>` : ''}
-                ${withUnit ? `<td class="col-unit">${r.unit ? `<span class="ref-unit">${escapeHtml(r.unit)}</span>` : muted('-')}</td>` : ''}
-                <td class="col-description">${r.description ? formatInlineMarkdown(r.description) : muted('-')}</td>
+                <td class="col-name is-name"><strong>${r.name ? breakableName(r.name) : muted('-')}</strong></td>
+                ${withType ? argCell('type', 'wrap', labels.type, cell(r.type)) : ''}
+                ${withUnit ? argCell('unit', 'fit', labels.unit, r.unit ? `<span class="ref-unit">${escapeHtml(r.unit)}</span>` : muted('-')) : ''}
+                <td class="col-description is-flex">${r.description ? formatInlineMarkdown(r.description) : muted('-')}</td>
               </tr>`).join('')}
           </tbody>
         </table></div>`;
@@ -248,7 +258,7 @@
 
       const badges = [
         group ? `<span class="ref-badge" title="${tr('Method group', 'メソッドグループ')}">${escapeHtml(groupLabel(group))}</span>` : '',
-        m.Access && m.Access !== 'public' ? `<span class="ref-badge">${escapeHtml(m.Access)}</span>` : '',
+        m.Access && m.Access !== 'public' ? accessTag(m.Access, false) : '',
         m.Static ? '<span class="ref-badge">Static</span>' : '',
         m.Abstract ? `<span class="ref-badge is-abstract">${tr('Abstract', '抽象メソッド')}</span>` : '',
         m.Sealed ? '<span class="ref-badge is-sealed">Sealed</span>' : '',
@@ -310,7 +320,7 @@
               <tr><th>${tr('Overrides', 'オーバーライド元')}</th><td>${m.Overrides ? classLink(m.Overrides) : muted('-')}</td></tr>
               <tr><th>${tr('Implemented in', '実装場所')}</th><td>${cell(IMPLEMENTED_IN_LABELS[m.ImplementedIn] ? tr(...IMPLEMENTED_IN_LABELS[m.ImplementedIn]) : m.ImplementedIn)}</td></tr>
               <tr><th>${tr('Group', 'グループ')}</th><td>${cell(groupLabel(group))}</td></tr>
-              <tr><th>${tr('Access', 'アクセス')}</th><td>${cell(m.Access, 'N/A')}</td></tr>
+              <tr><th>${tr('Access', 'アクセス')}</th><td>${m.Access ? accessTag(m.Access) : 'N/A'}</td></tr>
               <tr><th>Static</th><td>${yesNo(m.Static)}</td></tr>
               <tr><th>Abstract</th><td>${yesNo(m.Abstract)}</td></tr>
               <tr><th>Sealed</th><td>${yesNo(m.Sealed)}</td></tr>

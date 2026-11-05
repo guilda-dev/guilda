@@ -39,16 +39,17 @@
     const loader = window.GuildaDocLoader;
     const {
       tr, setPageTitle, escapeHtml, nl2br, firstText, toList, renderMarkdown, formatInlineMarkdown,
-      classLink: renderClassLink, seeAlsoLink, sourceLocation, examplesText, groupRows, groupHeading, breakableName
+      classLink: renderClassLink, seeAlsoLink, sourceLocation, examplesText, groupRows, groupHeading, breakableName, accessTag
     } = window.GuildaDocRender;
     const routeParams = loader.getRouteParams();
     const className = routeParams.get('class');
 
     // View state of the member tables. The tables are re-rendered on their
-    // own so that the search boxes keep focus while typing.
+    // own so that the search boxes keep focus while typing. The shown
+    // columns are read from localStorage when the table is first drawn.
     const memberState = {
-      property: { view: 'description', search: '', inherited: true, publicOnly: false, grouped: true, sort: 'name', order: 1 },
-      method:   { view: 'description', search: '', inherited: true, publicOnly: false, grouped: true, sort: 'name', order: 1 }
+      property: { columns: null, search: '', inherited: true, publicOnly: false, grouped: true, sort: 'name', order: 1 },
+      method:   { columns: null, search: '', inherited: true, publicOnly: false, grouped: true, sort: 'name', order: 1 }
     };
     let pageData = null;
 
@@ -128,12 +129,13 @@
       if (p.constant) return muted('Constant');
       if (p.dependent) return muted(tr('derived (Dependent)', '導出 (Dependent)'));
       const writers = pageData.graph.writers.get(`${p.defining}.${p.name}`);
-      const access = isPublic(p.setAccess) ? tr('anyone (public)', '誰でも (public)') : `SetAccess = ${escapeHtml(p.setAccess)}`;
+      const access = isPublic(p.setAccess) ? `${tr('anyone', '誰でも')} ${accessTag('public')}` : `SetAccess = ${accessTag(p.setAccess)}`;
       return [writers?.size ? nodeLinks(writers) : '', muted(access)].filter(Boolean).join(' · ');
     };
-    const propertyFacts = (p) => facts([
+    // Unit and size are left out of the facts while their own columns are shown.
+    const propertyFacts = (p, shown) => facts([
       [tr('Points to', '参照先'), p.pointsTo ? renderClassLink(p.pointsTo) : ''],
-      [tr('Unit / size', '単位 / サイズ'), [p.unit ? `<span class="ref-unit">${escapeHtml(p.unit)}</span>` : '', p.size ? `<code>${escapeHtml(p.size)}</code>` : ''].filter(Boolean).join(' ')],
+      [tr('Unit / size', '単位 / サイズ'), [p.unit && !shown.has('unit') ? `<span class="ref-unit">${escapeHtml(p.unit)}</span>` : '', p.size && !shown.has('size') ? `<code>${escapeHtml(p.size)}</code>` : ''].filter(Boolean).join(' ')],
       [tr('Set by', '設定元'), p.abstract ? '' : propertySetBy(p)],
       [tr('Edit makes stale', '編集で無効化'), p.stale ? formatInlineMarkdown(p.stale) : '']
     ]);
@@ -142,83 +144,86 @@
       if (m.overrides) (pageData.graph.callers.get(`${m.overrides}.${m.name}`) || []).forEach((n) => set.add(n));
       return set;
     };
-    // Attribute badges of the Description view (the Meta Data view lists them all).
-    const badgeHints = (labels) => {
-      const shown = labels.filter(Boolean);
-      return shown.length ? `<span class="ref-hints">${shown.map((label) => `<span class="ref-badge is-small${label === 'Abstract' ? ' is-abstract' : ''}">${escapeHtml(label)}</span>`).join('')}</span>` : '';
+    // Hints beside a member name: the access tag and attribute badges, each
+    // left out while its own column is shown.
+    const nameHints = (access, labels) => {
+      const shown = [access && !isPublic(access) ? accessTag(access) : '',
+        ...labels.filter(Boolean).map((label) => `<span class="ref-badge is-small${label === 'Abstract' ? ' is-abstract' : ''}">${escapeHtml(label)}</span>`)].filter(Boolean);
+      return shown.length ? `<span class="ref-hints">${shown.join('')}</span>` : '';
     };
+    const accessCell = (value) => (value ? accessTag(value) : muted('N/A'));
+    const orDash = (html) => html || muted('-');
 
-    const memberViews = {
-      property: {
-        attributes: {
-          columns: () => [['name', tr('Name', '名前')], ['getAccess', 'GetAccess'], ['setAccess', 'SetAccess'], ['flags', tr('Attributes', '属性')], ['defining', tr('Defined in', '定義元')]],
-          cells: (p) => [
-            propertyName(p),
-            escapeHtml(p.getAccess || 'N/A'),
-            escapeHtml(p.setAccess || 'N/A'),
-            [flag(p.dependent, 'Dependent'), flag(p.constant, 'Constant'), flag(p.abstract, 'Abstract'), flag(p.hidden, 'Hidden')].join(' '),
-            definedIn(p)
-          ]
-        },
-        type: {
-          columns: () => [['name', tr('Name', '名前')], ['type', tr('Type', '型')], ['size', tr('Size', 'サイズ')], ['unit', tr('Unit', '単位')], ['defaultValue', tr('Default', '既定値')], ['constraints', tr('Validators', '検証関数')]],
-          cells: (p) => [
-            propertyName(p),
-            nl2br(p.type) || muted('-'),
-            nl2br(p.size) || muted('-'),
-            p.unit ? `<span class="ref-unit">${escapeHtml(p.unit)}</span>` : muted('-'),
-            p.defaultValue ? `<span class="ref-code">${nl2br(p.defaultValue)}</span>` : muted('-'),
-            nl2br(p.constraints) || muted('-')
-          ]
-        },
-        description: {
-          columns: () => [['name', tr('Name', '名前')], ['description', tr('Description', '説明')]],
-          cells: (p) => [
-            propertyName(p) + badgeHints([isPublic(p.getAccess) ? '' : p.getAccess, p.dependent ? 'Dependent' : '', p.abstract ? 'Abstract' : '', p.hidden ? 'Hidden' : '']),
-            (p.description ? `<div class="markdown-content">${renderMarkdown(p.description)}</div>` : muted(tr('No description.', '説明なし。')))
-              + (p.seeAlso.length ? `<p class="ref-see-also ref-muted" style="margin: 4px 0 0;">${tr('See also', '関連項目:')} ${p.seeAlso.map((item) => seeAlsoLink(item, className, pageData.methods.map((m) => m.name))).join(', ')}</p>` : '')
-              + propertyFacts(p)
-          ]
-        }
-      },
-      method: {
-        attributes: {
-          columns: () => [['name', tr('Method', 'メソッド')], ['access', tr('Access', 'アクセス')], ['flags', tr('Attributes', '属性')], ['defining', tr('Defined in', '定義元')]],
-          cells: (m) => [
-            methodName(m),
-            escapeHtml(m.access || 'N/A'),
-            [flag(m.constructor, 'Constructor'), flag(m.static, 'Static'), flag(m.abstract, 'Abstract'), flag(m.sealed, 'Sealed'), flag(m.hidden, 'Hidden')].join(' '),
-            definedIn(m)
-          ]
-        },
-        signature: {
-          columns: () => [['name', tr('Method', 'メソッド')], ['signature', tr('Signature', 'シグネチャ')]],
-          cells: (m) => [
-            methodName(m),
-            `<span class="ref-code">${escapeHtml(m.signature)}</span>`
-          ]
-        },
-        description: {
-          columns: () => [['name', tr('Method', 'メソッド')], ['summary', tr('Summary', '概要')]],
-          cells: (m) => {
-            const callers = methodCallers(m);
-            return [
-              methodName(m) + badgeHints([isPublic(m.access) ? '' : m.access, m.static ? 'Static' : '', m.abstract ? 'Abstract' : '', m.hidden ? 'Hidden' : '']),
-              (m.summary ? formatInlineMarkdown(m.summary) : muted(tr('No summary.', '概要なし。')))
-                + facts([[tr('Called by', '呼び出し元'), callers.size ? nodeLinks(callers, 6) : '']])
-            ];
-          }
-        }
-      }
+    // Columns of the member tables. Name is always shown; the picker turns the
+    // others on and off. width: "fit" columns take the width of their content,
+    // "wrap" ones too but may wrap, the others share the rest (reference.css).
+    // Details (the facts) sit under Description or Summary while it is shown.
+    const memberColumns = {
+      property: [
+        { key: 'name', label: () => tr('Name', '名前'),
+          cell: (p, on) => propertyName(p) + nameHints(on.has('getAccess') ? '' : p.getAccess, on.has('flags') ? [] : [p.dependent ? 'Dependent' : '', p.abstract ? 'Abstract' : '', p.hidden ? 'Hidden' : '']) },
+        { key: 'description', label: () => tr('Description', '説明'),
+          cell: (p, on) => (p.description ? `<div class="markdown-content">${renderMarkdown(p.description)}</div>` : muted(tr('No description.', '説明なし。')))
+            + (p.seeAlso.length ? `<p class="ref-see-also ref-muted" style="margin: 4px 0 0;">${tr('See also', '関連項目:')} ${p.seeAlso.map((item) => seeAlsoLink(item, className, pageData.methods.map((m) => m.name))).join(', ')}</p>` : '')
+            + (on.has('facts') ? propertyFacts(p, on) : '') },
+        { key: 'facts', label: () => tr('Details', '詳細'), sort: false, under: 'description',
+          cell: (p, on) => orDash(propertyFacts(p, on)) },
+        { key: 'unit', label: () => tr('Unit', '単位'), width: 'fit', cell: (p) => (p.unit ? `<span class="ref-unit">${escapeHtml(p.unit)}</span>` : muted('-')) },
+        { key: 'type', label: () => tr('Type', '型'), width: 'fit', cell: (p) => orDash(nl2br(p.type)) },
+        { key: 'size', label: () => tr('Size', 'サイズ'), width: 'fit', cell: (p) => orDash(nl2br(p.size)) },
+        { key: 'defaultValue', label: () => tr('Default', '既定値'), width: 'wrap', cell: (p) => (p.defaultValue ? `<span class="ref-code">${nl2br(p.defaultValue)}</span>` : muted('-')) },
+        { key: 'constraints', label: () => tr('Validators', '検証関数'), width: 'wrap', cell: (p) => orDash(nl2br(p.constraints)) },
+        { key: 'getAccess', label: () => 'GetAccess', width: 'fit', cell: (p) => accessCell(p.getAccess) },
+        { key: 'setAccess', label: () => 'SetAccess', width: 'fit', cell: (p) => accessCell(p.setAccess) },
+        { key: 'flags', label: () => tr('Attributes', '属性'), width: 'wrap', sort: false,
+          cell: (p) => orDash([flag(p.dependent, 'Dependent'), flag(p.constant, 'Constant'), flag(p.abstract, 'Abstract'), flag(p.hidden, 'Hidden')].join(' ').trim()) },
+        { key: 'defining', label: () => tr('Defined in', '定義元'), width: 'fit', cell: definedIn }
+      ],
+      method: [
+        { key: 'name', label: () => tr('Method', 'メソッド'),
+          cell: (m, on) => methodName(m) + nameHints(on.has('access') ? '' : m.access, on.has('flags') ? [] : [m.static ? 'Static' : '', m.abstract ? 'Abstract' : '', m.hidden ? 'Hidden' : '']) },
+        { key: 'summary', label: () => tr('Summary', '概要'),
+          cell: (m, on) => (m.summary ? formatInlineMarkdown(m.summary) : muted(tr('No summary.', '概要なし。')))
+            + (on.has('facts') ? methodFacts(m) : '') },
+        { key: 'facts', label: () => tr('Details', '詳細'), sort: false, under: 'summary', cell: (m) => orDash(methodFacts(m)) },
+        { key: 'signature', label: () => tr('Signature', 'シグネチャ'), cell: (m) => `<span class="ref-code">${escapeHtml(m.signature)}</span>` },
+        { key: 'access', label: () => tr('Access', 'アクセス'), width: 'fit', cell: (m) => accessCell(m.access) },
+        { key: 'flags', label: () => tr('Attributes', '属性'), width: 'wrap', sort: false,
+          cell: (m) => orDash([flag(m.constructor, 'Constructor'), flag(m.static, 'Static'), flag(m.abstract, 'Abstract'), flag(m.sealed, 'Sealed'), flag(m.hidden, 'Hidden')].join(' ').trim()) },
+        { key: 'defining', label: () => tr('Defined in', '定義元'), width: 'fit', cell: definedIn }
+      ]
     };
+    const methodFacts = (m) => {
+      const callers = methodCallers(m);
+      return facts([[tr('Called by', '呼び出し元'), callers.size ? nodeLinks(callers, 6) : '']]);
+    };
+    // The default equals the former Description view.
+    const DEFAULT_COLUMNS = { property: ['description', 'facts'], method: ['summary', 'facts'] };
+    const columnStoreKey = (kind) => `guilda-doc-columns-${kind}`;
+    function loadColumns(kind) {
+      try {
+        const saved = JSON.parse(window.localStorage.getItem(columnStoreKey(kind)) || 'null');
+        if (Array.isArray(saved)) return new Set(saved.filter((key) => key !== 'name' && memberColumns[kind].some((col) => col.key === key)));
+      } catch (error) {
+        // No storage (private window, blocked site data): use the default.
+      }
+      return new Set(DEFAULT_COLUMNS[kind]);
+    }
+    function saveColumns(kind) {
+      try {
+        window.localStorage.setItem(columnStoreKey(kind), JSON.stringify([...memberState[kind].columns]));
+      } catch (error) {
+        // The choice lasts until the page is left.
+      }
+    }
 
     const hasGroups = (kind) => (kind === 'property' ? pageData.properties : pageData.methods).some((row) => row.group);
 
     function renderMemberTable(kind) {
       const state = memberState[kind];
       const allRows = kind === 'property' ? pageData.properties : pageData.methods;
-      const view = memberViews[kind][state.view];
-      const columns = view.columns();
+      const on = state.columns;
+      const columns = memberColumns[kind].filter((col) => col.key === 'name' || (on.has(col.key) && !(col.under && on.has(col.under))));
       const term = state.search.toLowerCase();
       const accessOf = (row) => (kind === 'property' ? row.getAccess : row.access);
 
@@ -232,10 +237,13 @@
           return a > b ? state.order : (a < b ? -state.order : 0);
         });
 
-      const header = columns.map(([key, label]) => (key === 'flags'
-        ? `<th class="col-${key}">${label}</th>`
-        : `<th class="sortable-header col-${key}" data-sort="${key}">${label} ↕</th>`)).join('');
-      const renderRow = (row) => `<tr${row.inherited ? ' class="ref-inherited"' : ''}>${view.cells(row).map((cell, index) => `<td class="col-${columns[index][0]}">${cell}</td>`).join('')}</tr>`;
+      const widthClass = (col) => (col.key === 'name' ? ' is-name' : (col.width ? ` is-${col.width}` : ' is-flex'));
+      const header = columns.map((col) => (col.sort === false
+        ? `<th class="col-${col.key}${widthClass(col)}">${col.label()}</th>`
+        : `<th class="sortable-header col-${col.key}${widthClass(col)}" data-sort="${col.key}">${col.label()}&nbsp;↕</th>`)).join('');
+      // Phones stack each row; data-label names the short cells there.
+      const labelOf = (col) => (col.width || col.under ? ` data-label="${escapeHtml(col.label())}"` : '');
+      const renderRow = (row) => `<tr${row.inherited ? ' class="ref-inherited"' : ''}>${columns.map((col) => `<td class="col-${col.key}${widthClass(col)}"${labelOf(col)}>${col.cell(row, on)}</td>`).join('')}</tr>`;
       let body;
       if (!rows.length) {
         body = `<tr><td colspan="${columns.length}" style="text-align:center; color: var(--muted);">${kind === 'property' ? tr('No matching properties found.', '該当するプロパティなし。') : tr('No matching methods found.', '該当するメソッドなし。')}</td></tr>`;
@@ -247,11 +255,13 @@
         body = rows.map(renderRow).join('');
       }
 
+      // Without a column that takes the rest, the table is as wide as its content.
+      const fit = columns.every((col) => col.key === 'name' || col.width);
       const container = document.getElementById(`${kind}-table`);
       container.innerHTML = `
         <p class="ref-count">${tr(`${rows.length} of ${allRows.length} shown`, `${allRows.length} 件中 ${rows.length} 件を表示`)}</p>
         <div class="ref-table-scroll">
-          <table class="compact-table ${kind === 'method' ? 'method-link-table' : 'description-table'}${state.view === 'description' ? ' ref-member-stack' : ''}">
+          <table class="compact-table ref-member-table${kind === 'method' ? ' method-link-table' : ''}${fit ? ' is-fit' : ''}">
             <thead><tr>${header}</tr></thead>
             <tbody>${body}</tbody>
           </table>
@@ -265,11 +275,13 @@
       });
     }
 
+    // Column picker: one row of checkboxes on desktop, a collapsed
+    // <details> on phones (opened here, by width).
+    const phoneQuery = window.matchMedia('(max-width: 600px)');
     function renderMemberToolbar(kind) {
       const state = memberState[kind];
-      const views = kind === 'property'
-        ? [['description', tr('Description', '説明')], ['type', tr('Details', '詳細')], ['attributes', tr('Meta Data', 'メタデータ')]]
-        : [['description', tr('Description', '説明')], ['signature', tr('Signature', 'シグネチャ')], ['attributes', tr('Meta Data', 'メタデータ')]];
+      if (!state.columns) state.columns = loadColumns(kind);
+      const choices = memberColumns[kind].filter((col) => col.key !== 'name');
       return `
         <div class="ref-toolbar" data-kind="${kind}">
           <input type="search" class="search-box" placeholder="${kind === 'property' ? tr('Search properties...', 'プロパティを検索...') : tr('Search methods...', 'メソッドを検索...')}" value="${escapeHtml(state.search)}" autocomplete="off">
@@ -277,16 +289,20 @@
           <label class="ref-check"><input type="checkbox" data-option="inherited"${state.inherited ? ' checked' : ''}> ${tr('Inherited', '継承メンバー')}</label>
           <label class="ref-check"><input type="checkbox" data-option="publicOnly"${state.publicOnly ? ' checked' : ''}> ${tr('Public only', 'public のみ')}</label>
         </div>
-        <div class="view-switcher" data-kind="${kind}">
-          ${views.map(([value, label]) => `<button type="button" class="view-btn${state.view === value ? ' active' : ''}" data-view="${value}">${label}</button>`).join('')}
-        </div>
+        <details class="ref-columns" data-kind="${kind}"${phoneQuery.matches ? '' : ' open'}>
+          <summary>${tr('Columns', '表示列')}</summary>
+          <div class="ref-columns-list">
+            <span class="ref-columns-label">${tr('Columns', '表示列')}</span>
+            ${choices.map((col) => `<label class="ref-check"><input type="checkbox" data-column="${col.key}"${state.columns.has(col.key) ? ' checked' : ''}> ${col.label()}</label>`).join('')}
+          </div>
+        </details>
         <div id="${kind}-table"></div>`;
     }
 
     function bindMemberToolbar(kind) {
       const state = memberState[kind];
       const toolbar = document.querySelector(`.ref-toolbar[data-kind="${kind}"]`);
-      const switcher = document.querySelector(`.view-switcher[data-kind="${kind}"]`);
+      const picker = document.querySelector(`.ref-columns[data-kind="${kind}"]`);
       toolbar.querySelector('input[type="search"]').addEventListener('input', (event) => {
         state.search = event.target.value;
         renderMemberTable(kind);
@@ -297,15 +313,19 @@
           renderMemberTable(kind);
         });
       });
-      switcher.querySelectorAll('[data-view]').forEach((button) => {
-        button.addEventListener('click', () => {
-          state.view = button.dataset.view;
-          switcher.querySelectorAll('[data-view]').forEach((b) => b.classList.toggle('active', b === button));
+      picker.querySelectorAll('input[data-column]').forEach((input) => {
+        input.addEventListener('change', () => {
+          if (input.checked) state.columns.add(input.dataset.column);
+          else state.columns.delete(input.dataset.column);
+          saveColumns(kind);
           renderMemberTable(kind);
         });
       });
       renderMemberTable(kind);
     }
+    phoneQuery.addEventListener('change', () => {
+      document.querySelectorAll('.ref-columns').forEach((picker) => { picker.open = !phoneQuery.matches; });
+    });
 
     // ---- Sections derived from the class data, the class index and the call
     // graph (database/list_CallGraph.js): Role, the Set by / Called by facts
