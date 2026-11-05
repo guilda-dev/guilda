@@ -248,7 +248,7 @@ classdef GlobalController < PowerSystemModel
             
             obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
             obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
-            obj.sct_edit.s_odefcn = "updated";
+            obj.s_odefcn = "updated";
         end
     end
     methods (Access={?Component,?LocalController,?PowerNetwork})        
@@ -262,7 +262,7 @@ classdef GlobalController < PowerSystemModel
             end
             obj.a_PowerNetwork = net;
             if ~isempty(net)
-                obj.clear_edit_log();     % edits made before do not belong to the new network
+                obj.reset_edit(false);   % edits made before do not belong to the new network; not initialized there yet
             end
             obj.mark_odefcn();        % the handles read the frequency of the network
         end

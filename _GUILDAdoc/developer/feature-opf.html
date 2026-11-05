@@ -511,13 +511,13 @@
     <ul lang="en">
       <li>Network, solver, and edit state unchanged; no cache: the problem is built from the current parameters on every call.</li>
       <li>No <code>check_edit</code>, no equilibrium needed: runs on a network never initialized or edited since.</li>
-      <li><code>set_opffcn</code> and <code>reset_opffcn</code> are logged in <code>tab_editLog</code> with the tag <code>OPF</code>; edits of <code>operation</code> and <code>OPF</code> parameters are logged too. None of them makes the equilibrium stale (see <a href="class-design.html#edits">Class Design: Handling of model edits</a>).</li>
+      <li><code>set_opffcn</code> and <code>reset_opffcn</code> are logged in the edit log (<code>disp_edit</code>) with the tag <code>OPF</code>; edits of <code>operation</code> and <code>OPF</code> parameters are logged too. None of them makes the equilibrium stale (see <a href="class-design.html#edits">Class Design: Handling of model edits</a>).</li>
       <li>The result keeps a reference to the network, not a copy. Record of the settings of the run: <code>OPFprob.Description</code>.</li>
     </ul>
     <ul lang="ja">
       <li>ネットワーク、ソルバー、編集状態は不変。キャッシュも不使用。問題は呼び出しごとに現在のパラメータから構築</li>
       <li><code>check_edit</code> の呼び出しなし、平衡点も不要。未初期化のネットワークや初期化後に編集したネットワークでも実行可能</li>
-      <li><code>set_opffcn</code> と <code>reset_opffcn</code> はタグ <code>OPF</code> で <code>tab_editLog</code> に記録。<code>operation</code> と <code>OPF</code> のパラメータの編集も記録。いずれも平衡点を古くしない（<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a> を参照）</li>
+      <li><code>set_opffcn</code> と <code>reset_opffcn</code> はタグ <code>OPF</code> で編集ログ（<code>disp_edit</code>）に記録。<code>operation</code> と <code>OPF</code> のパラメータの編集も記録。いずれも平衡点を古くしない（<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a> を参照）</li>
       <li>結果が持つのはネットワークのコピーではなく参照。実行時の設定の記録は <code>OPFprob.Description</code></li>
     </ul>
 

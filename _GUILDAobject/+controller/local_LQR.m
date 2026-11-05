@@ -199,7 +199,7 @@ classdef local_LQR < LocalController
             obj.f_Y    = @(t,x,V,I,u) obj.fcn_y(t, x, V, I, u, param, omega0);
             obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
             obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
-            obj.sct_edit.s_odefcn = "updated";
+            obj.s_odefcn = "updated";
         end
     end
 
