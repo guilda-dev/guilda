@@ -223,11 +223,11 @@ end
 function assert_edit_stops(net, s_id, s_log)
 % エラーで止まり、平衡点も編集記録も変わらない
     V   = net.cv_Vequilibrium;
-    n   = height(net.tab_editLog);
+    n   = height(net.disp_edit());
     ME  = error_of(@() net.initialize(Method="equilibrium"));
     assert(DebugScript.helper.msg_id(ME) == s_id, DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, s_log))
-    assert(isequal(net.cv_Vequilibrium, V) && net.l_staleEquilibrium && height(net.tab_editLog) == n)
+    assert(isequal(net.cv_Vequilibrium, V) && net.l_staleEquilibrium && height(net.disp_edit()) == n)
 end
 
 function ME = error_of(fcn)

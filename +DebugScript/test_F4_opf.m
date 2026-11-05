@@ -865,7 +865,7 @@ assert(abs(res.tab_bus{"B004","Varg"} - res.tab_bus{"B007","Varg"}) < 1e-6)
 net = DebugScript.helper.build_9bus();
 DebugScript.helper.quiet(@() net.initialize());
 assert(~net.l_staleEquilibrium)
-n0 = height(net.tab_editLog);
+n0 = height(net.disp_edit());
 g1 = net.a_Bus{1}.a_Component{1};
 g1.set_opffcn("Cost", @(v, p) 2*v.P^2 + v.P, "DefaultConstraint", false);
 net.a_Bus{5}.set_opffcn("Constraint", @(v, p) struct("Vhigh", v.V <= 1.02));
@@ -874,7 +874,8 @@ net.set_opffcn("Constraint", @(v, p) struct("Reserve", v.Component.SG1B001.P <= 
 g1.reset_opffcn();
 net.reset_opffcn();
 assert(~net.l_staleEquilibrium)
-tab_log = net.tab_editLog(n0+1:end,:);
+tab_log = net.disp_edit();
+tab_log = tab_log(n0+1:end,:);
 assert(height(tab_log) == 6 && all(string(tab_log.tag) == "OPF"))
 assert(string(tab_log.log(1)) == "set_opffcn: Cost, DefaultConstraint" && string(tab_log.log(end)) == "reset_opffcn")
 assert(startsWith(string(tab_log.ID(1)), "SG1B001"))

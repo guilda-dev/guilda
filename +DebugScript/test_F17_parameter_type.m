@@ -11,7 +11,7 @@ V = para.V;
 ME = assign_error(para, "V", "x");
 check_error(ME, "V", "double", "string");
 assert(para.V == V && isa(para.V, "double"))
-assert(height(net.tab_editLog) == 0)
+assert(height(net.disp_edit()) == 0)
 assert(~net.l_staleEquilibrium)
 
 %% Wrong type raises no warning
@@ -28,8 +28,8 @@ para = net.a_Bus{1}.para_powerflow;
 V = para.V;
 para.V = V + 0.01;
 assert(para.V == V + 0.01)
-assert(height(net.tab_editLog) == 1 && net.tab_editLog.log == "edit V")
-assert(net.tab_editLog.before{1} == V && net.tab_editLog.after{1} == V + 0.01)
+assert(height(net.disp_edit()) == 1 && net.disp_edit().log == "edit V")
+assert(net.disp_edit().before{1} == V && net.disp_edit().after{1} == V + 0.01)
 assert(net.l_staleEquilibrium)
 
 %% Same value is not an edit
@@ -37,7 +37,7 @@ assert(net.l_staleEquilibrium)
 para = net.a_Bus{1}.para_powerflow;
 para.V = para.V;
 para.Varg = para.Varg;
-assert(height(net.tab_editLog) == 0)
+assert(height(net.disp_edit()) == 0)
 
 %% Edit after a rejected assignment logs the right previous value
 [net, ~] = initialized_3bus();
@@ -45,7 +45,7 @@ para = net.a_Bus{1}.para_powerflow;
 V = para.V;
 assign_error(para, "V", "x");
 para.V = V + 0.01;
-assert(height(net.tab_editLog) == 1 && net.tab_editLog.before{1} == V)
+assert(height(net.disp_edit()) == 1 && net.disp_edit().before{1} == V)
 
 %% Each parameter of one add_entry keeps its own class
 [net, ~] = initialized_3bus();
@@ -61,7 +61,7 @@ check_error(assign_error(para, "Varg", "x"), "Varg", "double", "string");
 [net, ~] = initialized_3bus();
 Hz = net.para_base.Hz;
 check_error(assign_error(net.para_base, "Hz", "60"), "Hz", "double", "string");
-assert(net.para_base.Hz == Hz && height(net.tab_editLog) == 0)
+assert(net.para_base.Hz == Hz && height(net.disp_edit()) == 0)
 
 %% Assignment through tab_parameter rejects a wrong type
 [net, comp] = initialized_3bus();
@@ -76,7 +76,7 @@ catch ME
 end
 assert(~isempty(ME), "エラーが発生しなかった")
 check_error(ME, "kap", "double", "string");
-assert(avr.para_dynamics.kap == kap && height(net.tab_editLog) == 0)
+assert(avr.para_dynamics.kap == kap && height(net.disp_edit()) == 0)
 
 %% Check and log are kept after save and load
 [net, ~] = initialized_3bus();
@@ -87,9 +87,9 @@ s = load(s_file);
 para = s.net.a_Bus{1}.para_powerflow;
 V = para.V;
 check_error(assign_error(para, "V", "x"), "V", "double", "string");
-assert(para.V == V && height(s.net.tab_editLog) == 0)
+assert(para.V == V && height(s.net.disp_edit()) == 0)
 para.V = V + 0.01;
-assert(height(s.net.tab_editLog) == 1 && s.net.tab_editLog.log == "edit V")
+assert(height(s.net.disp_edit()) == 1 && s.net.disp_edit().log == "edit V")
 
 
 function [net, comp] = initialized_3bus()

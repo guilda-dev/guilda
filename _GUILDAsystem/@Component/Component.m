@@ -28,7 +28,7 @@ classdef Component < PowerSystemModel
 %   local controllers to the DAE and the linear model, and computes Jacobians numerically
 %   when the subclass gives none. The handles @(t,x,V,I,u) bind the parameters and omega0;
 %   `set_odefcn` builds them, called by `check_edit` at the start of an analysis, and
-%   `sct_edit.s_odefcn` tells whether they are "unset", "editted" or "updated".
+%   `s_odefcn` tells whether they are "unset", "editted" or "updated".
 % - Does not own the bus voltage (it reads `a_Bus.c_Vequilibrium`), the network frequency
 %   (it reads `get_Hz()`) or the system base.
 % - Created only by `Bus.add_component` and `Bus.replace_component`. Only the bus sets and
@@ -250,7 +250,7 @@ classdef Component < PowerSystemModel
             obj.f_dx   = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, array, omega0);
             obj.f_I    = @(t,x,V,I,u) obj.fcn_I(t, x, V, I, u, array, omega0);
             obj.f_Y    = @(t,x,V,I,u) obj.fcn_Y(t, x, V, I, u, array, omega0);
-            obj.sct_edit.s_odefcn = "updated";
+            obj.s_odefcn = "updated";
         end
 
         % Raise a constructor message of Component.xml for a subclass in another folder.

@@ -179,7 +179,7 @@ s_out = evalc('bus = net.add_bus(FullTag="B001");');
 assert(string(bus) == "B001002")
 assert(contains(s_out, "Tag changed") && contains(s_out, "B001002"))
 assert(sum(string(net.a_Bus) == "B001") == 1)
-assert(endsWith(string(net.tab_editLog.log(end)), "<<-Add--- B001002"), "追加のログは確定したタグを示す")
+assert(endsWith(string(net.disp_edit().log(end)), "<<-Add--- B001002"), "追加のログは確定したタグを示す")
 
 
 %% Importing a bus FullTag logs the addition with that tag and no rename
@@ -196,7 +196,7 @@ s_path = DebugScript.helper.quiet(@() net.export_csv(fullfile(s_dir, "Net")));
 net2 = initialized_network();
 DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Network=net2, Initialize=false));
 assert(all(ismember(["Sub7"; "1234"], string(net2.a_Bus))))
-sv_log = string(net2.tab_editLog.log);
+sv_log = string(net2.disp_edit().log);
 assert(any(endsWith(sv_log, "<<-Add--- Sub7")) && any(endsWith(sv_log, "<<-Add--- 1234")))
 assert(~any(contains(sv_log, "<<-Add--- B")), "自動のタグを経由しない")
 % 既存の系統ではブランチの自動番号がずれるので、ブランチの改名は記録されうる

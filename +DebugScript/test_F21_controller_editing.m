@@ -51,12 +51,12 @@ assert(isempty(avr.a_LocalController))
 old = controller.avr.AVR_ST1("avrOld");
 gen.add_local_controller(old);
 DebugScript.helper.quiet(@() net.initialize);
-n_log = height(net.tab_editLog);
+n_log = height(net.disp_edit());
 avrIn = controller.avr.AVR_ST1("avrNew");
 ME = caught(@() gen.add_local_controller(avrIn, DebugScript.helper.OutputStub("pss", "Vfield")));
 assert(DebugScript.helper.msg_id(ME) == s_out && contains(ME.message, avrIn.s_tag))
 assert(gen.a_LocalController{1} == old && isempty(avrIn.a_Component))
-assert(~net.l_staleEquilibrium && height(net.tab_editLog) == n_log)
+assert(~net.l_staleEquilibrium && height(net.disp_edit()) == n_log)
 
 
 %% A PSS without an AVR keeps its own error
@@ -118,13 +118,13 @@ DebugScript.helper.quiet(@() net.initialize);
 assert(numel(gen.rv_Xequilibrium_all) == n0 + numel(avr.sv_x) + numel(pss.sv_x))
 
 gen.remove_local_controller(pss.s_tag);
-assert(net.l_staleEquilibrium && net.tab_editLog.tag(end) == "Topology")
+assert(net.l_staleEquilibrium && net.disp_edit().tag(end) == "Topology")
 assert(gen.a_LocalController{1} == avr && isempty(avr.a_LocalController) && isempty(pss.a_Component))
 DebugScript.helper.quiet(@() net.initialize);
 assert(numel(gen.rv_Xequilibrium_all) == n0 + numel(avr.sv_x))
 
 gen.remove_local_controller(avr.s_tag);
-assert(net.l_staleEquilibrium && net.tab_editLog.tag(end) == "Topology")
+assert(net.l_staleEquilibrium && net.disp_edit().tag(end) == "Topology")
 assert(isempty(gen.a_LocalController) && isempty(avr.a_Component))
 DebugScript.helper.quiet(@() net.initialize);
 assert(numel(gen.rv_Xequilibrium_all) == n0)
@@ -139,16 +139,16 @@ avr = controller.avr.AVR_ST1("avr1");
 pss = controller.pss.PSS1("pss1");
 gen.add_local_controller(avr, pss);
 DebugScript.helper.quiet(@() net.initialize);
-n_log = height(net.tab_editLog);
+n_log = height(net.disp_edit());
 ME = caught(@() gen.remove_local_controller(avr.s_tag));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:Component:ControllerHasNested" && contains(ME.message, "pss1"))
 assert(gen.a_LocalController{1} == avr && avr.a_LocalController{1} == pss && pss.a_Component == avr)
-assert(~net.l_staleEquilibrium && height(net.tab_editLog) == n_log)
+assert(~net.l_staleEquilibrium && height(net.disp_edit()) == n_log)
 
 gen.remove_local_controller(avr.s_tag, RemoveNested=true);
 assert(isempty(gen.a_LocalController) && isempty(avr.a_LocalController))
 assert(isempty(avr.a_Component) && isempty(pss.a_Component))
-assert(height(net.tab_editLog) == n_log + 1 && contains(net.tab_editLog.log(end), "pss1"))
+assert(height(net.disp_edit()) == n_log + 1 && contains(net.disp_edit().log(end), "pss1"))
 
 
 %% remove_local_controller: an unknown tag changes nothing

@@ -86,13 +86,13 @@ DebugScript.helper.quiet(@() net.initialize);
 assert(n_slack(net) == 1 && net.a_Bus{3}.l_isSlack)
 evalc("net.a_Bus{2}.l_isSlack = true;");
 assert(n_slack(net) == 1 && net.a_Bus{2}.l_isSlack)
-assert(net.l_staleEquilibrium && net.tab_editLog.tag(end) == "Slack")
-assert(any(contains(net.tab_editLog.log, "slack bus -> B002")))
+assert(net.l_staleEquilibrium && net.disp_edit().tag(end) == "Slack")
+assert(any(contains(net.disp_edit().log, "slack bus -> B002")))
 
 % 同じ値の再設定は何も記録しない
-n_log = height(net.tab_editLog);
+n_log = height(net.disp_edit());
 evalc("net.a_Bus{2}.l_isSlack = true;");
-assert(height(net.tab_editLog) == n_log && n_slack(net) == 1)
+assert(height(net.disp_edit()) == n_log && n_slack(net) == 1)
 
 % 切り替えた系統で潮流計算でき、指定した母線がスラックとして使われる
 [~, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);

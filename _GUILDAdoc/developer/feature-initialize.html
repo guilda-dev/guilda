@@ -242,7 +242,7 @@
             <li>ここでは平衡点は不要</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>sct_edit.s_odefcn</code> of every layer; <code>tab_parameter.dynamics</code>; network <code>Hz</code></span><span lang="ja">各レイヤーの <code>sct_edit.s_odefcn</code>、<code>tab_parameter.dynamics</code>、ネットワークの <code>Hz</code></span></dd>
+          <dd><span lang="en"><code>s_odefcn</code> of every layer; <code>tab_parameter.dynamics</code>; network <code>Hz</code></span><span lang="ja">各レイヤーの <code>s_odefcn</code>、<code>tab_parameter.dynamics</code>、ネットワークの <code>Hz</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en"><code>f_Mass</code>, <code>f_dx</code>, <code>f_I</code>, <code>f_Y</code>, <code>f_Jacobi*</code> of components and controllers; <code>s_odefcn = "updated"</code></span><span lang="ja">機器と制御器の <code>f_Mass</code>、<code>f_dx</code>、<code>f_I</code>、<code>f_Y</code>、<code>f_Jacobi*</code>。<code>s_odefcn = "updated"</code></span></dd>
         </dl>
@@ -297,7 +297,7 @@
             <li><code>max|Y·V − I| &lt; 1e-6</code> を確認</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>tab_editLog</code>, <code>LayerPackage.edit_effect</code>; <code>Component.c_Vequilibrium</code>, <code>c_Iequilibrium</code>; <code>get_admittance_matrix</code></span><span lang="ja"><code>tab_editLog</code>、<code>LayerPackage.edit_effect</code>、<code>Component.c_Vequilibrium</code>、<code>c_Iequilibrium</code>、<code>get_admittance_matrix</code></span></dd>
+          <dd><span lang="en"><code>net.disp_edit()</code>, <code>PowerSystemModel.edit_effect</code>; <code>Component.c_Vequilibrium</code>, <code>c_Iequilibrium</code>; <code>get_admittance_matrix</code></span><span lang="ja"><code>net.disp_edit()</code>、<code>PowerSystemModel.edit_effect</code>、<code>Component.c_Vequilibrium</code>、<code>c_Iequilibrium</code>、<code>get_admittance_matrix</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en"><code>ResultPF</code> with <code>s_solver = "equilibrium"</code>, <code>options = struct(Method="equilibrium", Tolerance=1e-6)</code>, <code>tab_bus</code> n_bus × 6, empty <code>tab_branch</code>; <code>flag = 1</code>; <code>output.residual</code>, <code>output.message</code></span><span lang="ja"><code>s_solver = "equilibrium"</code>、<code>options = struct(Method="equilibrium", Tolerance=1e-6)</code>、n_bus × 6 の <code>tab_bus</code>、空の <code>tab_branch</code> を持つ <code>ResultPF</code>。<code>flag = 1</code>。<code>output.residual</code>、<code>output.message</code></span></dd>
         </dl>
@@ -326,16 +326,16 @@
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li>Marks the equilibrium as out of date before anything is written: logs an edit with tag <code>"Initialize"</code> (<code>log_edit</code>), which <code>LayerPackage.edit_effect</code> counts as stale; before the first <code>initialize</code> nothing is logged and the equilibrium is stale anyway</li>
+            <li>Marks the equilibrium as out of date before anything is written: logs an edit with tag <code>"Initialize"</code> (<code>log_edit</code>), which <code>PowerSystemModel.edit_effect</code> counts as stale; before the first <code>initialize</code> nothing is logged and the equilibrium is stale anyway</li>
             <li>A point written only in part is never used</li>
           </ul><ul lang="ja">
-            <li>書き込み開始前に平衡点を古い状態として印付け: タグ <code>"Initialize"</code> の編集を記録（<code>log_edit</code>）。<code>LayerPackage.edit_effect</code> はこれを古いと判定。最初の <code>initialize</code> の前は記録なし（平衡点はもともと古い扱い）</li>
+            <li>書き込み開始前に平衡点を古い状態として印付け: タグ <code>"Initialize"</code> の編集を記録（<code>log_edit</code>）。<code>PowerSystemModel.edit_effect</code> はこれを古いと判定。最初の <code>initialize</code> の前は記録なし（平衡点はもともと古い扱い）</li>
             <li>途中まで書かれた運転点は使用されない</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en">—</span><span lang="ja">—</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en">a <code>"Initialize"</code> row in <code>net.tab_editLog</code> (<code>net.l_staleEquilibrium</code> is true)</span><span lang="ja"><code>net.tab_editLog</code> に <code>"Initialize"</code> の行（<code>net.l_staleEquilibrium</code> は true）</span></dd>
+          <dd><span lang="en">a <code>"Initialize"</code> row in <code>net.disp_edit()</code> (<code>net.l_staleEquilibrium</code> is true)</span><span lang="ja"><code>net.disp_edit()</code> に <code>"Initialize"</code> の行（<code>net.l_staleEquilibrium</code> は true）</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="INIT-06">
@@ -483,7 +483,7 @@
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>children</code> of each layer</span><span lang="ja">各レイヤーの <code>children</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>sct_edit.l_initialized = true</code> on every layer; empty <code>net.tab_editLog</code> (<code>reset_edit</code> clears the edits of every layer and the stale flag of the network), so <code>l_staleEquilibrium</code> is false</span><span lang="ja">すべてのレイヤーで <code>sct_edit.l_initialized = true</code>。<code>net.tab_editLog</code> は空（<code>reset_edit</code> が全レイヤーの編集とネットワークの stale フラグを消去）、よって <code>l_staleEquilibrium</code> は false</span></dd>
+          <dd><span lang="en"><code>l_initialized = true</code> on every layer; empty <code>net.disp_edit()</code> (<code>reset_edit(true)</code> clears the edits of every layer), so <code>l_staleEquilibrium</code> is false</span><span lang="ja">すべてのレイヤーで <code>l_initialized = true</code>。<code>net.disp_edit()</code> は空（<code>reset_edit(true)</code> が全レイヤーの編集を消去）、よって <code>l_staleEquilibrium</code> は false</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="INIT-14">
@@ -557,7 +557,7 @@
       <li><strong>Edit state:</strong>
         <ul>
           <li><code>l_staleEquilibrium</code> made true at INIT-05 (an <code>"Initialize"</code> row in the edit log)</li>
-          <li>cleared at INIT-13, which sets <code>sct_edit.l_initialized</code> on every layer and clears the edits of every layer</li>
+          <li>cleared at INIT-13, which sets <code>l_initialized</code> on every layer and clears the edits of every layer</li>
           <li>a call that stops between them leaves it set</li>
         </ul>
       </li>
@@ -583,7 +583,7 @@
       <li><strong>編集状態:</strong>
         <ul>
           <li><code>l_staleEquilibrium</code> は INIT-05 で true（編集ログに <code>"Initialize"</code> の行）</li>
-          <li>INIT-13 で全レイヤーの <code>sct_edit.l_initialized</code> の設定と全レイヤーの編集の消去とともに解除</li>
+          <li>INIT-13 で全レイヤーの <code>l_initialized</code> の設定と全レイヤーの編集の消去とともに解除</li>
           <li>その間で停止した呼び出しでは設定されたまま</li>
         </ul>
       </li>
