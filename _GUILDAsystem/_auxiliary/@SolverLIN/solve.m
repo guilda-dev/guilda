@@ -262,7 +262,7 @@ function [Axx, Bxv, Bxu, Cix, E, sv_z] = add_global_controllers(c_sysGC, a_GC, s
     Bzx   = cell(numel(c_sysGC),1);
     Cuz   = cell(1,numel(c_sysGC));
     Ez    = cell(numel(c_sysGC),1);
-    sv_z  = cell(numel(c_sysGC),1);  %#ok (cell while collecting)
+    sv_z  = cell(numel(c_sysGC),1);  % cell while collecting
     Dux   = zeros(nu,nx);
     for k = 1:numel(c_sysGC)
         sysGC = c_sysGC{k};
@@ -273,7 +273,6 @@ function [Axx, Bxv, Bxu, Cix, E, sv_z] = add_global_controllers(c_sysGC, a_GC, s
         end
         S = zeros(numel(iw), nx);  S(sub2ind(size(S), 1:numel(iw), iw(:)')) = 1;
         T = zeros(nu, numel(iy));  T(sub2ind(size(T), iy(:)', 1:numel(iy))) = 1;
-
         Az{k}    = sysGC.A;
         Bzx{k}   = sysGC.B * S;
         Cuz{k}   = T * sysGC.C;

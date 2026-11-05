@@ -51,7 +51,6 @@ classdef LayerPackage < handle
         tab_parameter  % Parameter table: the para_* tables side by side. <@Type> table
     end
 
-
     %% Layer Structure
     properties(Abstract, Dependent, Access=protected) % Layer structure
         parent  % Parent layer in the hierarchy. <@Type> LayerPackage
@@ -70,37 +69,12 @@ classdef LayerPackage < handle
         s_tag  % User-defined tag of the layer, unique among its siblings (see the class help). <@Type> string
     end
 
-
     methods(Access=protected)
         log_edit(obj, log, tag, before, after)
         reset_edit(obj, l_initialized)
         sct_log = collect_edit(obj)
-
-        function handle_edit(obj, a_layer, tag, log) %#ok<INUSD>
-        % Hook for an edit of a_layer, called by log_edit on every layer from the edited
-        % layer (the owner of a Parameter container) up to the top. Does nothing here;
-        % subclasses override it for their own rules.
-            arguments (Input)
-                obj            % Layer on the path from the edited layer to the top.
-                a_layer        % Edited layer (a Parameter container for a parameter edit).
-                tag string     % Kind of edit.
-                log string     % Log message.
-            end
-        end
-
-        function l = is_parent_of(obj, a_layer)
-        % True when obj is the parent of a_layer (parent is protected, so a subclass cannot
-        % read it on a layer of another branch of the class tree, e.g. a Parameter).
-            arguments (Input)
-                obj
-                a_layer  % Any layer.
-            end
-            arguments (Output)
-                l (1,1) logical  % True when a_layer.parent is obj.
-            end
-            a_parent = a_layer.parent;
-            l = isa(a_parent, "LayerPackage") && a_parent == obj;
-        end
+        handle_edit(obj, a_layer, tag, log)
+        l = is_parent_of(obj, a_layer)
     end
     methods(Access=private)
         out = get_tag(obj, s_split)
@@ -109,25 +83,7 @@ classdef LayerPackage < handle
         varargout = disp_tree(obj, sr_ignore)
         varargout = disp_edit(obj)
         [out, sct_visited] = struct(obj, l_disp, s_header, sct_visited)
-
-        function doc(obj)
-        % Open the class reference page of the layer's class.
-        %
-        % Opens the GUILDA class reference (English page) of class(obj) in the browser, as
-        % GUILDA.doc("class", class(obj)). doc with a class name (doc PowerNetwork) is
-        % MATLAB's doc.
-        %
-        % <@Examples>
-        % ```matlab
-        % net.doc()             % page of the network class
-        % net.a_Bus{1}.doc()    % page of the class of the first bus
-        % doc(net)              % same as net.doc()
-        % ```
-            arguments (Input)
-                obj (1,1) % Layer whose class page is opened.
-            end
-            GUILDA.doc("class", class(obj));
-        end
+        doc(obj)
 
         function set.s_tag(obj,s_newtag)
             % A tag that already exists among the siblings gets a number suffix
@@ -158,41 +114,7 @@ classdef LayerPackage < handle
     end
     methods(Hidden)
         out = attach_tag(obj,sm_name_list)
-
-        function tab = table(obj)
-        % Convert layer parameters into table format.
-        %
-        % Returns the parameter table associated with this layer object.
-        %
-        % <@Examples>
-        % ```matlab
-        % tab = table(obj);
-        % ```
-            arguments (Input)
-                obj
-            end
-            arguments (Output)
-                tab % Parameter table of the layer.
-            end
-            tab = obj.tab_parameter;
-        end
-        
-        function str = string(obj)
-        % Convert the layer object to a tag string.
-        %
-        % Returns the tag string representation of this layer object.
-        %
-        % <@Examples>
-        % ```matlab
-        % str = string(obj);
-        % ```
-            arguments (Input)
-                obj
-            end
-            arguments (Output)
-                str % Tag string of the layer object.
-            end
-            str = obj.s_tag;
-        end
+        tab = table(obj)
+        str = string(obj)
     end
 end

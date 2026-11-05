@@ -61,42 +61,8 @@ classdef ComponentBaseView < handle
     end
 
     methods (Static)
-        function tp = add_column(comp, tp)
-            % Return the tab_parameter of a component with the deprecated "base" column first.
-            arguments (Input)
-                comp  % Component whose tab_parameter is returned.
-                tp    % tab_parameter table without the "base" column.
-            end
-            arguments (Output)
-                tp    % tab_parameter table with the "base" column first.
-            end
-            tp = [table(ComponentBaseView(comp), 'VariableNames', "base"), tp];
-        end
-        function tp = remove_column(tp)
-            % Remove the "base" column from a tab_parameter table.
-            %
-            % "base" is this view (a handle): an edit of comp.tab_parameter.base.Hz
-            % has already been forwarded to the network.
-            arguments (Input)
-                tp  % tab_parameter table.
-            end
-            arguments (Output)
-                tp  % tab_parameter table without the "base" column.
-            end
-            if ismember("base", string(tp.Properties.VariableNames))
-                tp = removevars(tp, "base");
-            end
-        end
-        function check_assign(val)
-            % Accept only this view for comp.para_base = value.
-            %
-            % comp.para_base.Hz = x is forwarded by the view itself (it is a handle).
-            arguments (Input)
-                val  % Value assigned to comp.para_base.
-            end
-            if ~isa(val, "ComponentBaseView")
-                error(msg("GUILDA:ComponentBaseView:ComponentBaseHz"));
-            end
-        end
+        tp = add_column(comp, tp)
+        tp = remove_column(tp)
+        check_assign(val)
     end
 end
