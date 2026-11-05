@@ -403,7 +403,7 @@ classdef (Sealed = true) Scenario < auxiliary
     end
 
     methods (Static, Access={?SolverODE})
-        [tab_phase, s_phase] = compile(c_scenario, net, time)
+        [tab_phase, sct_phase] = compile(c_scenario, net, time)
     end
 
     methods (Access=private)

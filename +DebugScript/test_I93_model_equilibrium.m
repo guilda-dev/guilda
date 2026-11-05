@@ -26,8 +26,8 @@ assert(warning_of(@() net.initialize) == "")
 
 % 警告は止められる
 net = network_with("equilibrium");
-s_warn = warning("off", "all");   % ID がないので個別には止められない
-c_warn = onCleanup(@() warning(s_warn));
+sct_warn = warning("off", "all");   % ID がないので個別には止められない
+c_warn = onCleanup(@() warning(sct_warn));
 str_out = evalc("net.initialize;");
 assert(~contains(str_out, "do not hold"), str_out)
 clear c_warn

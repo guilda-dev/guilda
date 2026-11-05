@@ -1,4 +1,4 @@
-function [tab_phase, s_phase] = compile(c_scenario, net, time)
+function [tab_phase, sct_phase] = compile(c_scenario, net, time)
 % Build the phases of one run from its scenarios (called by SolverODE.solve).
 %
 % Checks the scenarios against net (each belongs to it, and the tags of its disturbances
@@ -15,7 +15,7 @@ function [tab_phase, s_phase] = compile(c_scenario, net, time)
 %      0  |  1 |   0   |   0  |    0       <- NoAction1 when no disturbance is active
 %      1  | .. |   1   |   0  |    0
 %
-% s_phase(k) holds what phase k applies, built once here: t1, t2, sv_event (tags of the
+% sct_phase(k) holds what phase k applies, built once here: t1, t2, sv_event (tags of the
 % active disturbances), sv_fault, sv_trip, sv_open (tags), and c_Xoffset, c_Uoffset with one
 % cell per component in the order of the buses and their components: the state offset
 % added at the start of the phase (offsets of the disturbances that start there; all active
@@ -28,7 +28,7 @@ function [tab_phase, s_phase] = compile(c_scenario, net, time)
     end
     arguments (Output)
         tab_phase table   % Phase table (output.phases).
-        s_phase   struct  % Data of each phase (n_phase x 1).
+        sct_phase struct  % Data of each phase (n_phase x 1).
     end
 
     % Each scenario: a scalar of this network, with its tags in the network now
@@ -78,7 +78,7 @@ function [tab_phase, s_phase] = compile(c_scenario, net, time)
     end
 
     [tab_phase, c_dist] = phase_table(c_dist, time);
-    s_phase = phase_data(tab_phase, c_dist, net);
+    sct_phase = phase_data(tab_phase, c_dist, net);
 end
 
 
@@ -147,7 +147,7 @@ function [tab_phase, c_dist] = phase_table(c_dist, time)
 end
 
 
-function s_phase = phase_data(tab_phase, c_dist, net)
+function sct_phase = phase_data(tab_phase, c_dist, net)
 % What each phase applies (see compile)
     c_comp = cellfun(@(b) b.a_Component, net.a_Bus, 'UniformOutput', false);
     c_comp = vertcat(cell(0,1), c_comp{:});
@@ -170,7 +170,7 @@ function s_phase = phase_data(tab_phase, c_dist, net)
         [s.c_Xoffset, s.c_Uoffset] = phase_offsets(c_act(:), c_comp, [s.t1, s.t2], tp);
         c_s{tp} = s;
     end
-    s_phase = vertcat(c_s{:});
+    sct_phase = vertcat(c_s{:});
 end
 
 

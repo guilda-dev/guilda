@@ -178,7 +178,7 @@ function sys = via_dae(obj, opt)
              -B_dae(ir_Vim,:);
               B_dae(ir_Vre,:)];
 
-    [filt_o, filt_i, str_busvar] = coordinate_filter(obj.s_model.cv_V, opt);
+    [filt_o, filt_i, str_busvar] = coordinate_filter(obj.sct_model.cv_V, opt);
     A_dae = blkdiag(eye(n_x),filt_o)      ...
             * A_dae                       ...
             * blkdiag(eye(n_x),filt_i);
@@ -234,16 +234,16 @@ function sys = select_output(obj, sys, Algorithm, str_coordinate, sv_select)
     n_x  = numel(sv_x);
     n_v  = numel(sv_v);
     n_u  = numel(sv_u);
-    s_y  = obj.s_model.s_output;
+    sct_y = obj.sct_model.sct_output;
     sv_model = string(sys.StateName);
     sv_model = sv_model(ismember(sv_model, sv_x));
 
     % Every output, in the order of the kinds x, V, I, y
-    c_kind = {["x";"V";"I";"y"], {sv_model; sv_v; obj.s_model.sv_I; s_y.sv_name}};
-    sv_all = [sv_x; sv_v; obj.s_model.sv_I; s_y.sv_name];
-    Cx = [eye(n_x); zeros(2*n_v, n_x); s_y.Cx];
-    Cv = [zeros(n_x, n_v); eye(n_v); tools.complex2matrix(obj.s_model.cm_Y); s_y.Cv];
-    Du = [zeros(n_x+2*n_v, n_u); s_y.Du];
+    c_kind = {["x";"V";"I";"y"], {sv_model; sv_v; obj.sct_model.sv_I; sct_y.sv_name}};
+    sv_all = [sv_x; sv_v; obj.sct_model.sv_I; sct_y.sv_name];
+    Cx = [eye(n_x); zeros(2*n_v, n_x); sct_y.Cx];
+    Cv = [zeros(n_x, n_v); eye(n_v); tools.complex2matrix(obj.sct_model.cm_Y); sct_y.Cv];
+    Du = [zeros(n_x+2*n_v, n_u); sct_y.Du];
 
     sv_name = strings(0,1);
     for str = sv_select(:)'
@@ -269,7 +269,7 @@ function sys = select_output(obj, sys, Algorithm, str_coordinate, sv_select)
     Du = Du(iv_all,:);
 
     if Algorithm == "DAE"
-        [~, filt_i] = coordinate_filter(obj.s_model.cv_V, str_coordinate);
+        [~, filt_i] = coordinate_filter(obj.sct_model.cv_V, str_coordinate);
         p = legacy_order(obj);
         C = [Cx(:,p), Cv(:,[1:2:n_v, 2:2:n_v]) * filt_i];
         D = Du;
@@ -310,7 +310,7 @@ end
 
 
 function sys = via_feedback(obj)
-    s     = obj.s_model;
+    s     = obj.sct_model;
     n_bus = numel(s.c_sysBus);
 
     v3_nonunit_dynamic(obj.options, s.c_sysBus);    % COMPAT(v3)

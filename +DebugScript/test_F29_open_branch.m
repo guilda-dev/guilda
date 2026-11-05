@@ -45,9 +45,9 @@ assert(norm(full(c_Y{2} - Y_full), 1) > 1, "開放で Y が変わる")
 %% Jacobian matches the right-hand side in the open phase
 % 解析的なヤコビアンと右辺の中心差分 (I51 と同じ方法) が開放区間でも一致する
 box = containers.Map("KeyType", "double", "ValueType", "double");
-s_options = net.solver_ODE.get_options({"Progress", "none"});
-s_options.PhaseProbe = @(o) store(box, jacobian_error_ode(o));
-net.solver_ODE.solve(net, [0,2], {DebugScript.helper.scenario("open", net, "TimeSpan", [1,1.2], "OpenBranch", "EL003")}, s_options);
+sct_options = net.solver_ODE.get_options({"Progress", "none"});
+sct_options.PhaseProbe = @(o) store(box, jacobian_error_ode(o));
+net.solver_ODE.solve(net, [0,2], {DebugScript.helper.scenario("open", net, "TimeSpan", [1,1.2], "OpenBranch", "EL003")}, sct_options);
 err = cell2mat(box.values);
 assert(numel(err) == 3 && max(err) < 1e-5, "誤差 " + mat2str(err,3))
 
@@ -183,9 +183,9 @@ end
 function c_Y = phase_admittance(net, time, c_events)
     % 各区間の右辺が使う ctx.Ymat (PhaseProbe で ode の右辺から取り出す)
     box = containers.Map("KeyType", "double", "ValueType", "any");
-    s_options = net.solver_ODE.get_options({"Progress", "none"});
-    s_options.PhaseProbe = @(o) store(box, ode_ymat(o));
-    [~, flag, output] = net.solver_ODE.solve(net, time, c_events, s_options);
+    sct_options = net.solver_ODE.get_options({"Progress", "none"});
+    sct_options.PhaseProbe = @(o) store(box, ode_ymat(o));
+    [~, flag, output] = net.solver_ODE.solve(net, time, c_events, sct_options);
     assert(flag == 1, output.message)
     % PhaseProbe は区間ごとに 1 回 (密行列で解き直す区間は、切り替え前の疎行列を記録)
     assert(box.Count == output.nPhases)

@@ -35,10 +35,10 @@ assert(GUILDA.config("Model", "Hz") == 60)
 cf = GUILDA.config("TimeSimulation");
 assert(isstruct(cf) && isfield(cf, "Progress") && ~isfield(cf, "Reporter"))
 % COMPAT(v3): 旧ユーザー設定のキー Reporter は Progress として読む
-s_old = v3_user_config("TimeSimulation", struct("Reporter", "disp", "TimeLimit", 5));
-assert(isequal(s_old, struct("TimeLimit", 5, "Progress", "disp")))
-s_both = v3_user_config("TimeSimulation", struct("Reporter", "disp", "Progress", "none"));
-assert(isequal(s_both, struct("Progress", "none")))
+sct_old = v3_user_config("TimeSimulation", struct("Reporter", "disp", "TimeLimit", 5));
+assert(isequal(sct_old, struct("TimeLimit", 5, "Progress", "disp")))
+sct_both = v3_user_config("TimeSimulation", struct("Reporter", "disp", "Progress", "none"));
+assert(isequal(sct_both, struct("Progress", "none")))
 assert(isequal(v3_user_config("Model", struct("Reporter", 1)), struct("Reporter", 1)))
 
 
@@ -151,13 +151,13 @@ sv_dev = readlines(fullfile(str_root, sv_allowed(3)));
 assert(any(contains(regexprep(sv_dev, "^\s*%.*", ""), regexpPattern(str_pat))))
 sv_hit = strings(0, 1);
 for str_dir = ["@GUILDA", "_GUILDAsystem", "_GUILDAobject"]
-    s_files = dir(fullfile(str_root, str_dir, "**", "*.m"));
-    for k = 1:numel(s_files)
-        str_rel = string(erase(fullfile(s_files(k).folder, s_files(k).name), string(str_root) + filesep));
+    sct_files = dir(fullfile(str_root, str_dir, "**", "*.m"));
+    for k = 1:numel(sct_files)
+        str_rel = string(erase(fullfile(sct_files(k).folder, sct_files(k).name), string(str_root) + filesep));
         if ismember(str_rel, sv_allowed) || contains(str_rel, ["archive", "未+GFM"])
             continue
         end
-        sv_line = readlines(fullfile(s_files(k).folder, s_files(k).name));
+        sv_line = readlines(fullfile(sct_files(k).folder, sct_files(k).name));
         sv_code = regexprep(sv_line, "^\s*%.*", "");          % コメント行は除く
         l_hit   = contains(sv_code, regexpPattern(str_pat));
         sv_hit  = [sv_hit; str_rel + ":" + string(find(l_hit))]; %#ok<AGROW>

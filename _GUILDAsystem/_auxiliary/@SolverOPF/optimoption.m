@@ -1,4 +1,4 @@
-function [str_solver, c_nv] = optimoption(obj, prob, s_options) %#ok<INUSL>
+function [str_solver, c_nv] = optimoption(obj, prob, sct_options) %#ok<INUSL>
 % Get the solver name and the solve() options for the effective settings.
 %
 % Returns the Name-Value arguments of solve (Optimization Toolbox) for the effective settings.
@@ -7,42 +7,42 @@ function [str_solver, c_nv] = optimoption(obj, prob, s_options) %#ok<INUSL>
 %
 % Inputs:
 % - `prob`: Problem built by build_opf_problem.
-% - `s_options`: Effective settings (output of get_options).
+% - `sct_options`: Effective settings (output of get_options).
     arguments (Output)
         str_solver % Solver that runs the problem (linprog, quadprog or fmincon).
         c_nv % Name-Value arguments of solve: Solver and Options when needed.
     end
-    if s_options.Solver == "auto"
+    if sct_options.Solver == "auto"
         str_solver = string(solvers(prob));
     else
-        str_solver = s_options.Solver;
+        str_solver = sct_options.Solver;
         check_solver(prob, str_solver);
     end
 
     c_opt = {};
     str_alg = "Algorithm_" + str_solver;
-    if isfield(s_options, str_alg)
+    if isfield(sct_options, str_alg)
         o_def = optimoptions(str_solver);
-        if s_options.(str_alg) ~= string(o_def.Algorithm)
-            c_opt = [c_opt, {"Algorithm", s_options.(str_alg)}];
+        if sct_options.(str_alg) ~= string(o_def.Algorithm)
+            c_opt = [c_opt, {"Algorithm", sct_options.(str_alg)}];
         end
     end
-    if s_options.Display ~= "default"
-        c_opt = [c_opt, {"Display", s_options.Display}];
+    if sct_options.Display ~= "default"
+        c_opt = [c_opt, {"Display", sct_options.Display}];
     end
-    s_num = struct("MaxIteration","MaxIterations", "OptimalityTolerance","OptimalityTolerance", ...
+    sct_num = struct("MaxIteration","MaxIterations", "OptimalityTolerance","OptimalityTolerance", ...
                    "StepTolerance","StepTolerance", "MaxFunctionEvaluations","MaxFunctionEvaluations");
-    for str_name = string(fieldnames(s_num)).'
-        if ~isnan(s_options.(str_name))
-            c_opt = [c_opt, {s_num.(str_name), s_options.(str_name)}]; %#ok<AGROW>
+    for str_name = string(fieldnames(sct_num)).'
+        if ~isnan(sct_options.(str_name))
+            c_opt = [c_opt, {sct_num.(str_name), sct_options.(str_name)}]; %#ok<AGROW>
         end
     end
-    if s_options.UseParallel && str_solver == "fmincon"
+    if sct_options.UseParallel && str_solver == "fmincon"
         c_opt = [c_opt, {"UseParallel", true}];
     end
 
     c_nv = {};
-    if s_options.Solver ~= "auto"
+    if sct_options.Solver ~= "auto"
         c_nv = {"Solver", str_solver};
     end
     if ~isempty(c_opt)

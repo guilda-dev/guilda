@@ -92,7 +92,7 @@ classdef (Sealed = true) SolverCPF < auxiliary
             obj.Verbose          = sct.Verbose.Value;
         end
 
-        function s_options = get_options(obj, nv)
+        function sct_options = get_options(obj, nv)
         % Get the effective settings of one run as a struct.
         %
         % Every stored setting of the solver, with the Name-Value overrides of the call applied. The solver itself is not changed.
@@ -103,25 +103,25 @@ classdef (Sealed = true) SolverCPF < auxiliary
                 nv (1,:) cell = {} % Name-Value overrides: LoadBus, MaxIteration, Tolerance, StepSize, ArcLength, InitialLambda, UseInternalState, Verbose.
             end
             arguments (Output)
-                s_options % One field per setting (LoadBus, InitialLambda, MaxIterations, StepSize, ArcLength, Tolerance, UseInternalState, Verbose).
+                sct_options % One field per setting (LoadBus, InitialLambda, MaxIterations, StepSize, ArcLength, Tolerance, UseInternalState, Verbose).
             end
-            s_given = tools.resolve_options(obj, SolverCPF.OptionMap, nv);
+            sct_given = tools.resolve_options(obj, SolverCPF.OptionMap, nv);
             validate_options(nv{:});
 
             mc = metaclass(obj);
             a_prop = mc.PropertyList(~[mc.PropertyList.Constant] & strcmp({mc.PropertyList.SetAccess}, 'public'));
-            s_options = struct();
+            sct_options = struct();
             for str_prop = string({a_prop.Name})
-                if isfield(s_given, str_prop)
-                    s_options.(str_prop) = s_given.(str_prop);
+                if isfield(sct_given, str_prop)
+                    sct_options.(str_prop) = sct_given.(str_prop);
                 else
-                    s_options.(str_prop) = obj.(str_prop);
+                    sct_options.(str_prop) = obj.(str_prop);
                 end
             end
-            s_options.LoadBus = reshape(string(s_options.LoadBus), 1, []);
+            sct_options.LoadBus = reshape(string(sct_options.LoadBus), 1, []);
         end
 
-        [result,flag,output] = solve(obj, net, s_options)
+        [result,flag,output] = solve(obj, net, sct_options)
     end
 end
 

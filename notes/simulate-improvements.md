@@ -223,7 +223,7 @@
 
 ```matlab
 % SIM: get_options の末尾
-s_options.SolverOptions = match_solver_options(s_options.Solver, s_options.SolverOptions, ...
+sct_options.SolverOptions = match_solver_options(sct_options.Solver, sct_options.SolverOptions, ...
                               any(strcmpi(string(nv(1:2:end)), "SolverOptions")));
 
 function opts = match_solver_options(solver, opts, l_given)

@@ -143,7 +143,7 @@ end
 
 function quiet_replace(fcn)
     % Run a replacement, which issues the ReplaceController warning
-    s_warn = warning("off", "GUILDA:Component:ReplaceController");
-    c_warn = onCleanup(@() warning(s_warn));
+    sct_warn = warning("off", "GUILDA:Component:ReplaceController");
+    c_warn = onCleanup(@() warning(sct_warn));
     fcn();
 end

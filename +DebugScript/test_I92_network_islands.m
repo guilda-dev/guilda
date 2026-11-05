@@ -17,8 +17,8 @@ assert(~net.l_staleEquilibrium && kcl_residual(net) < 1e-6)
 %% The warning of a balanced island can be turned off
 % error(msg(...)) 系の警告には ID がないので、すべての警告を止める形でだけ止められる
 net = balanced_island();
-s_warn = warning("off", "all");
-c_warn = onCleanup(@() warning(s_warn));
+sct_warn = warning("off", "all");
+c_warn = onCleanup(@() warning(sct_warn));
 str_out = evalc("net.initialize;");   % 無効な警告も lastwarn には残るので表示で確かめる
 assert(~contains(str_out, "split into"), str_out)
 clear c_warn

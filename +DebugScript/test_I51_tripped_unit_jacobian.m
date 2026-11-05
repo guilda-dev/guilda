@@ -142,9 +142,9 @@ assert(DebugScript.helper.msg_id(ME.cause{1}) == "GUILDA:SolverODE:AlgebraicNotS
 function err = jacobian_errors(net, tspan, c_events)
 % 全区間で、解析的なヤコビアンと右辺の中心差分の最大誤差
     box = containers.Map("KeyType", "double", "ValueType", "double");
-    s_options = net.solver_ODE.get_options({"Progress", "none"});
-    s_options.PhaseProbe = @(o) store(box, jacobian_error_ode(o));
-    net.solver_ODE.solve(net, tspan, c_events, s_options);
+    sct_options = net.solver_ODE.get_options({"Progress", "none"});
+    sct_options.PhaseProbe = @(o) store(box, jacobian_error_ode(o));
+    net.solver_ODE.solve(net, tspan, c_events, sct_options);
     err = cell2mat(box.values);
 end
 

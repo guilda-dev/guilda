@@ -57,8 +57,8 @@ assert(str_got ~= str_id)
 mp = ?SolverODE;
 p  = mp.PropertyList(string({mp.PropertyList.Name}) == "TimeLimit");
 assert(isinf(p.DefaultValue))
-s_config = readstruct(fullfile(GUILDA.pwd, "@GUILDA", "config", "DefaultTimeSimulation.json"));
-assert(isinf(s_config.TimeLimit.Value))
+sct_config = readstruct(fullfile(GUILDA.pwd, "@GUILDA", "config", "DefaultTimeSimulation.json"));
+assert(isinf(sct_config.TimeLimit.Value))
 
 
 %% Limit keeps counting through the phases
@@ -106,7 +106,7 @@ function c_ev = faults(net)
 end
 
 function [flag, output] = run_with_delay(net, tspan, c_events, t_delay, t_limit)
-    s_options = net.solver_ODE.get_options({"Progress", "none", "TimeLimit", t_limit});
-    s_options.PhaseProbe = @(o) pause(t_delay);
-    [~, flag, output] = net.solver_ODE.solve(net, tspan, c_events, s_options);
+    sct_options = net.solver_ODE.get_options({"Progress", "none", "TimeLimit", t_limit});
+    sct_options.PhaseProbe = @(o) pause(t_delay);
+    [~, flag, output] = net.solver_ODE.solve(net, tspan, c_events, sct_options);
 end

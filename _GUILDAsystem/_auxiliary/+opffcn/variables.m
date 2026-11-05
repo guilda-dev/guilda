@@ -1,7 +1,7 @@
-function v = variables(obj, prob, str_method, s_var)
+function v = variables(obj, prob, str_method, sct_var)
 % Collect the optimization variables that the set_opffcn handles of obj receive (first argument v).
 %
-% Names in s_var (e.g. the variables the caller just created) are taken from there, other
+% Names in sct_var (e.g. the variables the caller just created) are taken from there, other
 % names from prob.Variables, which lists only the variables already used in the problem.
 %
 % - Component: P (all methods), Q ("AC OPF").
@@ -15,23 +15,23 @@ function v = variables(obj, prob, str_method, s_var)
         obj % Component, Bus, Branch or PowerNetwork.
         prob % Optimization problem being built.
         str_method (1,1) string % "ELD", "DC OPF" or "AC OPF".
-        s_var      (1,1) struct = struct() % Optimization variables of the caller by name.
+        sct_var    (1,1) struct = struct() % Optimization variables of the caller by name.
     end
-    get = @(str) lookup(prob, s_var, str);
+    get = @(str) lookup(prob, sct_var, str);
     switch true
         case isa(obj, "PowerNetwork")
             v = struct("Component", struct(), "Bus", struct(), "Branch", struct());
             for i = 1:numel(obj.a_Bus)
                 bus = obj.a_Bus{i};
-                v.Bus.(string(bus)) = opffcn.variables(bus, prob, str_method, s_var);
+                v.Bus.(string(bus)) = opffcn.variables(bus, prob, str_method, sct_var);
                 for j = 1:numel(bus.a_Component)
                     com = bus.a_Component{j};
-                    v.Component.(string(com)) = opffcn.variables(com, prob, str_method, s_var);
+                    v.Component.(string(com)) = opffcn.variables(com, prob, str_method, sct_var);
                 end
             end
             for i = 1:numel(obj.a_Branch)
                 br = obj.a_Branch{i};
-                v.Branch.(string(br)) = opffcn.variables(br, prob, str_method, s_var);
+                v.Branch.(string(br)) = opffcn.variables(br, prob, str_method, sct_var);
             end
 
         case isa(obj, "Component")
@@ -82,9 +82,9 @@ function v = variables(obj, prob, str_method, s_var)
 end
 
 
-function var = lookup(prob, s_var, str)
-    if isfield(s_var, str)
-        var = s_var.(str);
+function var = lookup(prob, sct_var, str)
+    if isfield(sct_var, str)
+        var = sct_var.(str);
     else
         var = prob.Variables.(str);
     end

@@ -67,7 +67,7 @@ assert(isequal(res.options.LoadBus, str_load) && res.options.MaxIterations == ne
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 solver = net.solver_CPF;
-s_before = solver.get_options();
+sct_before = solver.get_options();
 
 % MaxIteration=3 ではノーズに届かない
 [res, flag, output] = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow( ...
@@ -75,14 +75,14 @@ s_before = solver.get_options();
 assert(~flag && ~res.l_success && numel(res.rv_lambda) == 4 && contains(output.message, "MaxIteration"))
 assert(res.options.MaxIterations == 3 && res.options.StepSize == 0.4 && res.options.ArcLength == 2e-3 && res.options.Tolerance == 1e-6)
 % 実効設定は get_options で確認できる (InitialLambda は出発点の λ)
-s_opt = solver.get_options({"InitialLambda", 0.1, "UseInternalState", true});
-assert(s_opt.InitialLambda == 0.1 && s_opt.UseInternalState && s_opt.MaxIterations == solver.MaxIterations)
+sct_opt = solver.get_options({"InitialLambda", 0.1, "UseInternalState", true});
+assert(sct_opt.InitialLambda == 0.1 && sct_opt.UseInternalState && sct_opt.MaxIterations == solver.MaxIterations)
 % Verbose=true は各ステップの λ を表示する (名前の大文字小文字は区別しない)
 str_log = evalc("net.calculate_continuation_powerflow(loadbus=str_load, maxiteration=2, verbose=true);");
 assert(count(str_log, "CPF step") == 2)
 
 % 保存されている既定値は変わらない
-assert(isequal(s_before, solver.get_options()) && net.solver_CPF == solver && isempty(solver.LoadBus))
+assert(isequal(sct_before, solver.get_options()) && net.solver_CPF == solver && isempty(solver.LoadBus))
 
 % 既定値を変えると以後の呼び出しすべてに効く
 net.solver_CPF.LoadBus = str_load;

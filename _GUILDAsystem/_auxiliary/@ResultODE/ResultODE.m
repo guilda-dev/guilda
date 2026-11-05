@@ -85,7 +85,7 @@ classdef ResultODE < ResultBase
 
         % odeResults, built on first access.
         % <@Type> struct (0x0 or 1x1)
-        s_view struct = struct([])
+        sct_view struct = struct([])
     end
 
     methods
@@ -134,10 +134,10 @@ classdef ResultODE < ResultBase
         end
 
         function s = get.odeResults(obj)
-            if isempty(obj.s_view)
-                obj.s_view = obj.build_view();
+            if isempty(obj.sct_view)
+                obj.sct_view = obj.build_view();
             end
-            s = obj.s_view;
+            s = obj.sct_view;
         end
 
         function rv = get_point(obj, t, tab_map, opt)

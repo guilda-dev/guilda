@@ -1,4 +1,4 @@
-function prob = apply(obj, prob, str_method, s_var)
+function prob = apply(obj, prob, str_method, sct_var)
 % Add the set_opffcn terms of obj to the OPF problem.
 %
 % Called by build_opf_problem of each class.
@@ -8,7 +8,7 @@ function prob = apply(obj, prob, str_method, s_var)
 % - Constraint: each field <name> of fcnCon(v, p) becomes prob.Constraints.<name>_<tag>
 %   (prob.Constraints.<name> for PowerNetwork); its dual has the same label.
 %
-% v is opffcn.variables(obj, prob, str_method, s_var); p is opffcn.param(obj, str_method).
+% v is opffcn.variables(obj, prob, str_method, sct_var); p is opffcn.param(obj, str_method).
 %
 % Output `prob`: the problem with the terms added.
 %
@@ -17,13 +17,13 @@ function prob = apply(obj, prob, str_method, s_var)
         obj % Component, Bus, Branch or PowerNetwork whose f_opfcost and f_opfconst are applied.
         prob % Optimization problem being built.
         str_method (1,1) string % "ELD", "DC OPF" or "AC OPF".
-        s_var      (1,1) struct = struct() % Optimization variables of the caller by name.
+        sct_var    (1,1) struct = struct() % Optimization variables of the caller by name.
     end
     if isempty(obj.f_opfcost) && isempty(obj.f_opfconst)
         return
     end
     str_obj = string(obj);
-    v = opffcn.variables(obj, prob, str_method, s_var);
+    v = opffcn.variables(obj, prob, str_method, sct_var);
     p = opffcn.param(obj, str_method);
 
     if ~isempty(obj.f_opfcost)

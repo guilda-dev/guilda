@@ -445,14 +445,14 @@ assert(max(abs(res.tab_cub{str_gen,"P"} - rdc.gen(:,2)/100)) < 1e-5)
 %% Result class of all three methods
 % 結果は ResultOPF。flag と output を持ち、費用・ラグランジュ乗数・最適化問題も保持する
 net = DebugScript.helper.build_9bus();
-s_col = struct("ELD", ["P"], "DC_OPF", ["Varg","V","P"], "AC_OPF", ["Varg","V","P","Q","Vphasor","Iphasor"]);
+sct_col = struct("ELD", ["P"], "DC_OPF", ["Varg","V","P"], "AC_OPF", ["Varg","V","P","Q","Vphasor","Iphasor"]);
 for str_m = ["ELD","DC OPF","AC OPF"]
     [res, flag, output] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method=str_m));
     assert(isa(res, "ResultOPF") && isa(res, "ResultBase"))
     assert(isequal(res.flag, flag) && isequal(res.output, output) && res.l_success)
     assert(isstruct(output) && isfield(output, "message"))
     assert(res.options.Method == str_m && res.str_solver == "SolverOPF" && res.str_network == string(net.str_tag))
-    assert(isequal(string(res.tab_bus.Properties.VariableNames), s_col.(replace(str_m, " ", "_"))))
+    assert(isequal(string(res.tab_bus.Properties.VariableNames), sct_col.(replace(str_m, " ", "_"))))
     assert(isequal(string(res.tab_bus.Properties.RowNames), string(net.a_Bus)))
     assert(isequal(string(res.tab_branch.Properties.RowNames), string(net.a_Branch)))
     % 費用 = 機器の費用関数の合計
@@ -484,7 +484,7 @@ assert(res.options.Method == "AC OPF")
 %% Name-Value options override solver defaults for one call only
 net = DebugScript.helper.build_9bus();
 solver   = net.solver_OPF;
-s_before = solver.get_options();
+sct_before = solver.get_options();
 
 % MaxIteration=2 では AC OPF は解けない
 [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="AC OPF", MaxIteration=2));
@@ -501,7 +501,7 @@ str_off = evalc("res = net.optimize_powerflow(method=""DC OPF"", verbose=false);
 assert(res.options.Display == "none" && strlength(str_on) > strlength(str_off))
 
 % 保存されている既定値は変わらない
-assert(isequaln(s_before, solver.get_options()) && net.solver_OPF == solver)   % NaN = ソルバーの既定値
+assert(isequaln(sct_before, solver.get_options()) && net.solver_OPF == solver)   % NaN = ソルバーの既定値
 
 % 既定値を変えると以後の呼び出しすべてに効く
 net.solver_OPF.Method = "ELD";

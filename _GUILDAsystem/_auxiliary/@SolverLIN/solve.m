@@ -1,7 +1,7 @@
-function [result, flag, output] = solve(obj, net, s_options)
+function [result, flag, output] = solve(obj, net, sct_options)
 % Linearize the network with the given settings.
 %
-% Linearizes the network net at the point s_options.Point and returns the unreduced DAE
+% Linearizes the network net at the point sct_options.Point and returns the unreduced DAE
 % (the Jacobian blocks in the order of net.get_variable_map()) as a ResultLIN.
 % The solver and the network are only read: nothing is written back into them.
 % Called by net.linearize; calling it
@@ -18,7 +18,7 @@ function [result, flag, output] = solve(obj, net, s_options)
     arguments
         obj % Solver (net.solver_LIN).
         net % Initialized network.
-        s_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
+        sct_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
     end
     arguments (Output)
         result % Jacobian blocks, variable map, point and settings.
@@ -31,10 +31,10 @@ function [result, flag, output] = solve(obj, net, s_options)
     a_bus = net.a_Bus;
     a_gc  = net.a_GlobalController;
     n_bus = numel(a_bus);
-    v3_nonunit_range(s_options, n_bus);        % COMPAT(v3)
+    v3_nonunit_range(sct_options, n_bus);        % COMPAT(v3)
 
     [tab_map, c_idxBus, c_idxGC] = net.get_variable_map();
-    [rv_point, l_eq] = SolverLIN.point_vector(net, s_options.Point);
+    [rv_point, l_eq] = SolverLIN.point_vector(net, sct_options.Point);
     lv_bad = ~isfinite(rv_point);
     if any(lv_bad)
         error(msg("GUILDA:SolverLIN:PointNotFinite", list_labels(tab_map.Label(lv_bad))))
@@ -99,17 +99,17 @@ function [result, flag, output] = solve(obj, net, s_options)
     end
 
     Ymat = tools.complex2matrix(cm_Y);
-    s_block = struct( ...
+    sct_block = struct( ...
         "Axx", Axx, "Axv", Axv, "Bx", Bxu, ...
         "Avx", -Cix, "Avv", Ymat - Div, "Bv", -Diu, ...
         "E", Ex);
     sv_I = tools.cellfun(@(S) string(S.OutputName), c_sysBus);
     sv_y = tools.cellfun(@(S) string(S.OutputName), c_sysY);
-    s_output = struct( ...
+    sct_output = struct( ...
         "Cx", Cyx, "Cv", tools.dcellfun(@(S) S.D(:,1:2), c_sysY), "Du", Dyu, ...
         "sv_name", vertcat(strings(0,1), sv_y{:}));
-    s_model = struct( ...
-        "s_output", s_output, "sv_I", vertcat(sv_I{:}), ...
+    sct_model = struct( ...
+        "sct_output", sct_output, "sv_I", vertcat(sv_I{:}), ...
         "c_sysBus", {c_sysBus}, "c_sysGC", {c_sysGC}, "cm_Y", cm_Y, ...
         "lv_nonUnit", tools.vcellfun(@(b) isempty(b.a_Component), a_bus), ...
         "cv_V", cv_V);
@@ -125,14 +125,14 @@ function [result, flag, output] = solve(obj, net, s_options)
         output.message = "Linearized at the given point.";
     end
     output.str_issue = "";
-    output.rcond_Avv = rcond(s_block.Avv);
-    if ~all(cellfun(@(M) all(isfinite(M(:))), struct2cell(s_block)))
+    output.rcond_Avv = rcond(sct_block.Avv);
+    if ~all(cellfun(@(M) all(isfinite(M(:))), struct2cell(sct_block)))
         output.str_issue = "NotFinite";
         output.message = output.message + " Some Jacobian entries are not finite.";
     elseif output.rcond_Avv < r_rcondMin
         output.str_issue = "SingularAvv";
         output.message = output.message + sprintf(" Avv is singular (rcond = %g): the current balance does not determine %s.", ...
-            output.rcond_Avv, list_labels(singular_voltages(s_block.Avv, tab_map)));
+            output.rcond_Avv, list_labels(singular_voltages(sct_block.Avv, tab_map)));
     end
     flag = output.str_issue == "";
 
@@ -159,12 +159,12 @@ function [result, flag, output] = solve(obj, net, s_options)
                                                   output.r_residual, sv_row(i_max));
     end
     output.l_equilibrium = l_eq;
-    output.n_x = size(s_block.Axx,1);
-    output.n_v = size(s_block.Avv,1);
-    output.n_u = size(s_block.Bx,2);
+    output.n_x = size(sct_block.Axx,1);
+    output.n_v = size(sct_block.Avv,1);
+    output.n_u = size(sct_block.Bx,2);
 
-    result = ResultLIN(net, obj, s_options, flag, output, t0, ...
-                                 tab_map, rv_point, s_block, s_model, rv_residual);
+    result = ResultLIN(net, obj, sct_options, flag, output, t0, ...
+                                 tab_map, rv_point, sct_block, sct_model, rv_residual);
 end
 
 

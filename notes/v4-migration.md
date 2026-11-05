@@ -992,7 +992,7 @@ there.
 - **Frequency inside a model:** read `obj.get_Hz()`, never a fixed `60` or a
   component `para_base`.
 - **No `set_odefcn` in the constructor.** The `f_*` handles are built when an
-  analysis first uses them (`s_edit.str_odefcn`: `"unset"`, `"editted"`,
+  analysis first uses them (`sct_edit.str_odefcn`: `"unset"`, `"editted"`,
   `"updated"`), with the frequency of the network the model is attached to.
   A constructor that still calls `obj.set_odefcn()` keeps working: the handles
   are then built once with `GUILDA.config("Model","Hz")` and built again after
@@ -1129,8 +1129,8 @@ lists all of them:
 | `_auxiliary/@SolverLIN/SolverLIN.m` | `NonUnit` property (Hidden) | 廃止した設定の保存先 |
 | `_auxiliary/@SolverLIN/SolverLIN.m` | `set.NonUnit` | `v3_solver_nonunit`: 警告して保存 |
 | `_auxiliary/@SolverLIN/SolverLIN.m` | `get_options`: `v3_linearize_args(nv, obj.NonUnit)` | `NonUnit` を警告して取り除く |
-| `_auxiliary/@SolverLIN/SolverLIN.m` | `get_options`: `s_options.NonUnit = rv_nonUnit` | 指定があるときだけ結果の `options` に残す |
-| `_auxiliary/@SolverLIN/solve.m` | `v3_nonunit_range(s_options, n_bus)` | 存在しない母線のエラー |
+| `_auxiliary/@SolverLIN/SolverLIN.m` | `get_options`: `sct_options.NonUnit = rv_nonUnit` | 指定があるときだけ結果の `options` に残す |
+| `_auxiliary/@SolverLIN/solve.m` | `v3_nonunit_range(sct_options, n_bus)` | 存在しない母線のエラー |
 | `_auxiliary/@ResultLIN/get_ss.m` | `v3_nonunit_dynamic(obj.options, s.c_sysBus)` | 状態のある母線のエラー |
 | `@GUILDA/private/get_config.m` | `v3_user_config(field, ...)` | user settings key `Reporter` → `Progress` |
 
@@ -1280,17 +1280,17 @@ function varargout = calculate_powerflow(obj, opt)
         opt.MaxIteration (1,1) double {mustBeNonnegative, mustBeInteger}   % no default
         opt.Verbose      (1,1) logical
     end
-    s_map = struct("MaxIteration", "MaxIterations", ...
+    sct_map = struct("MaxIteration", "MaxIterations", ...
                    "Verbose", {{"Display", @(l) replace(string(l), ["true","false"], ["iter","none"])}});
-    options = tools.resolve_options(obj.solver_PF, s_map, opt);
+    options = tools.resolve_options(obj.solver_PF, sct_map, opt);
     ...
 end
 ```
 
 - Declare the options in the `arguments` block **without defaults**, so
   that only the given names are fields of `opt`; validate them there.
-- `s_map` maps each accepted name to a solver field: a name, a string array
+- `sct_map` maps each accepted name to a solver field: a name, a string array
   (several fields), a dotted path into a struct property
   (`"dynamic.t_span"`), or `{field, converter}`.
-- A name not in `s_map` gives `GUILDA:resolve_options:UnknownName` with the
+- A name not in `sct_map` gives `GUILDA:resolve_options:UnknownName` with the
   list of accepted names.

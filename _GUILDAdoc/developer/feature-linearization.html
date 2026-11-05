@@ -146,7 +146,7 @@ sys = result.get_ss(Algorithm, Coordinate=…, Input=…, Output=…)
           <path class="dg-sv-line" d="M170 120H298" marker-end="url(#lin-ah)"/>
           <text class="is-sm" x="176" y="114"><tspan style="fill:var(--dg-accent)">02</tspan> get_options(nv)</text>
           <path class="dg-sv-line" d="M170 150H298" marker-end="url(#lin-ah)"/>
-          <text class="is-sm" x="176" y="144"><tspan style="fill:var(--dg-accent)">03</tspan> solve(net, s_options)</text>
+          <text class="is-sm" x="176" y="144"><tspan style="fill:var(--dg-accent)">03</tspan> solve(net, sct_options)</text>
           <path class="dg-sv-line" d="M300 180H172" marker-end="url(#lin-ah)"/>
           <text class="is-sm" x="176" y="174"><tspan style="fill:var(--dg-accent)">04</tspan> require_equilibrium → check_edit</text>
           <path class="dg-sv-line" d="M300 210H172" marker-end="url(#lin-ah)"/>
@@ -172,7 +172,7 @@ sys = result.get_ss(Algorithm, Coordinate=…, Input=…, Output=…)
           <path class="dg-sv-line" d="M300 546h26v14h-24" marker-end="url(#lin-ah)"/>
           <text class="is-sm" x="334" y="558"><tspan style="fill:var(--dg-accent)">15</tspan> rcond(Avv), residual, sv_faultBus</text>
           <path class="dg-sv-line" d="M300 590H928" marker-end="url(#lin-ah)"/>
-          <text class="is-sm" x="306" y="584"><tspan style="fill:var(--dg-accent)">16</tspan> ResultLIN(net, obj, s_options, flag, output, t0, …)</text>
+          <text class="is-sm" x="306" y="584"><tspan style="fill:var(--dg-accent)">16</tspan> ResultLIN(net, obj, sct_options, flag, output, t0, …)</text>
           <path class="dg-sv-line" d="M170 620H928" marker-end="url(#lin-ah)"/>
           <text class="is-sm" x="176" y="614"><tspan style="fill:var(--dg-accent)">17</tspan> Plot()  [Plot=true]</text>
           <path class="dg-sv-line is-muted" d="M170 650H52" marker-end="url(#lin-ah-m)"/>
@@ -247,7 +247,7 @@ sys = result.get_ss(Algorithm, Coordinate=…, Input=…, Output=…)
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>net.solver_LIN</code>, <code>c_nv</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>s_options</code>: <code>Algorithm</code>, <code>Point</code>, <code>Coordinate</code></dd>
+          <dd><code>sct_options</code>: <code>Algorithm</code>, <code>Point</code>, <code>Coordinate</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="LIN-03">
@@ -256,7 +256,7 @@ sys = result.get_ss(Algorithm, Coordinate=…, Input=…, Output=…)
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Runs LIN-04 to LIN-16; starts the elapsed-time clock.</span><span lang="ja">LIN-04〜LIN-16 を実行。経過時間の計測開始</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>net</code>, <code>s_options</code></dd>
+          <dd><code>net</code>, <code>sct_options</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>[result, flag, output]</code></dd>
         </dl>
@@ -408,7 +408,7 @@ sys = result.get_ss(Algorithm, Coordinate=…, Input=…, Output=…)
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>c_sysBus</code>, <code>c_sysY</code>, <code>c_sysGC</code>, <code>cm_Y</code>, <code>tab_map.Label</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>s_block</code>, <code>s_model</code> (<span lang="en">see</span><span lang="ja">参照:</span> <a href="#data"><span lang="en">Data</span><span lang="ja">生成されるデータ</span></a>)</dd>
+          <dd><code>sct_block</code>, <code>sct_model</code> (<span lang="en">see</span><span lang="ja">参照:</span> <a href="#data"><span lang="en">Data</span><span lang="ja">生成されるデータ</span></a>)</dd>
         </dl>
       </li>
       <li class="fs-step" id="LIN-14">
@@ -436,7 +436,7 @@ sys = result.get_ss(Algorithm, Coordinate=…, Input=…, Output=…)
               <li><code>flag</code> を変えずに報告: <code>|V| &lt; 1e-8</code> の母線 (INFO としても表示)、平衡点以外で <code>1e-6</code> を超える残差</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>s_block</code>, <code>cv_V</code>, <code>rv_residual</code></dd>
+          <dd><code>sct_block</code>, <code>cv_V</code>, <code>rv_residual</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>flag</code> (logical), <code>output</code></dd>
         </dl>
@@ -447,7 +447,7 @@ sys = result.get_ss(Algorithm, Coordinate=…, Input=…, Output=…)
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Stores the blocks, the map, the point, the residual and the model data.</span><span lang="ja">ブロック、変数マップ、点、残差、モデルのデータを保存</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>s_block</code>, <code>s_model</code>, <code>tab_map</code>, <code>rv_point</code>, <code>rv_residual</code></dd>
+          <dd><code>sct_block</code>, <code>sct_model</code>, <code>tab_map</code>, <code>rv_point</code>, <code>rv_residual</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>result</code> (<code>ResultLIN</code>)</dd>
         </dl>
@@ -492,7 +492,7 @@ sys = result.get_ss(Algorithm, Coordinate=…, Input=…, Output=…)
               <li>停止: <code>"NotFinite"</code>、および <code>"DAE"</code> 以外での <code>"SingularAvv"</code></li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>rm_*</code>, <code>s_model</code>, <code>tab_variable</code>, <code>options</code>, <code>output.str_issue</code></dd>
+          <dd><code>rm_*</code>, <code>sct_model</code>, <code>tab_variable</code>, <code>options</code>, <code>output.str_issue</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>sys</code> (<code>dss</code>; <span lang="en">sizes in</span><span lang="ja">サイズは</span> <a href="#data"><span lang="en">Data</span><span lang="ja">生成されるデータ</span></a>)</dd>
         </dl>
@@ -533,7 +533,7 @@ sys = result.get_ss(Algorithm, Coordinate=…, Input=…, Output=…)
         <tr><td><code>rm_Bx</code></td><td><code>n_x × n_u</code></td><td>∂f/∂u</td></tr>
         <tr><td><code>rm_Avx</code>, <code>rm_Avv</code>, <code>rm_Bv</code></td><td><code>n_v × n_x</code>, <code>n_v × n_v</code>, <code>n_v × n_u</code></td><td><span lang="en">Jacobians of the current balance <code>Y v − I</code>; <code>rm_Avv = Y − Div</code>.</span><span lang="ja">電流バランス <code>Y v − I</code> のヤコビアン。<code>rm_Avv = Y − Div</code>。</span></td></tr>
         <tr><td><code>rv_residual</code></td><td><code>(n_x + n_v) × 1</code></td><td><span lang="en">Nonlinear right-hand sides at the point; zero at the equilibrium. <code>get_ss</code> leaves it out.</span><span lang="ja">点における非線形の右辺。平衡点では 0。<code>get_ss</code> では不使用。</span></td></tr>
-        <tr><td><code>s_model</code> <small>Hidden</small></td><td>struct</td><td><span lang="en">For <code>get_ss</code>: the bus models <code>c_sysBus</code>, the global controller models <code>c_sysGC</code>, <code>cm_Y</code>, <code>cv_V</code>, <code>lv_nonUnit</code> (buses without components), <code>sv_I</code> and <code>s_output</code> (<code>Cx</code>, <code>Cv</code>, <code>Du</code>, <code>sv_name</code> of the outputs <code>y</code>).</span><span lang="ja"><code>get_ss</code> 用: 母線モデル <code>c_sysBus</code>、広域制御器モデル <code>c_sysGC</code>、<code>cm_Y</code>、<code>cv_V</code>、<code>lv_nonUnit</code> (機器のない母線)、<code>sv_I</code>、<code>s_output</code> (出力 <code>y</code> の <code>Cx</code>、<code>Cv</code>、<code>Du</code>、<code>sv_name</code>)。</span></td></tr>
+        <tr><td><code>sct_model</code> <small>Hidden</small></td><td>struct</td><td><span lang="en">For <code>get_ss</code>: the bus models <code>c_sysBus</code>, the global controller models <code>c_sysGC</code>, <code>cm_Y</code>, <code>cv_V</code>, <code>lv_nonUnit</code> (buses without components), <code>sv_I</code> and <code>sct_output</code> (<code>Cx</code>, <code>Cv</code>, <code>Du</code>, <code>sv_name</code> of the outputs <code>y</code>).</span><span lang="ja"><code>get_ss</code> 用: 母線モデル <code>c_sysBus</code>、広域制御器モデル <code>c_sysGC</code>、<code>cm_Y</code>、<code>cv_V</code>、<code>lv_nonUnit</code> (機器のない母線)、<code>sv_I</code>、<code>sct_output</code> (出力 <code>y</code> の <code>Cx</code>、<code>Cv</code>、<code>Du</code>、<code>sv_name</code>)。</span></td></tr>
         <tr><td><span lang="en">from</span><span lang="ja">継承:</span> <code>ResultBase</code></td><td></td><td><code>flag</code> (logical), <code>output</code>, <code>options</code> (<code>Algorithm</code>, <code>Point</code>, <code>Coordinate</code>), <code>str_solver = "SolverLIN"</code>, <code>r_elapsed</code> [s], <code>str_network</code>, <code>l_success</code></td></tr>
       </tbody>
     </table>
@@ -622,7 +622,7 @@ sys = result.get_ss(Algorithm, Coordinate=…, Input=…, Output=…)
         <tr><td><code>Component</code></td><td><span lang="en"><code>Jacobi_dx</code>, <code>Jacobi_I</code>, <code>Jacobi_Y</code> returning <code>[∂/∂x, ∂/∂V, ∂/∂I, ∂/∂u]</code> (numerical differentiation without them); the blocks of <code>I</code> must be zero. <code>fcn_Mass</code> is <code>E</code>. <code>fcn_dx</code> and <code>fcn_I</code> give the residual (LIN-14). <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code> name the states, inputs and outputs; an output with a state's name becomes <code>Y_&lt;name&gt;</code>.</span><span lang="ja"><code>[∂/∂x, ∂/∂V, ∂/∂I, ∂/∂u]</code> を返す <code>Jacobi_dx</code>、<code>Jacobi_I</code>、<code>Jacobi_Y</code> (なければ数値微分)。<code>I</code> のブロックは 0 が必須。<code>fcn_Mass</code> が <code>E</code>。<code>fcn_dx</code> と <code>fcn_I</code> は残差に使用 (LIN-14)。<code>sv_x</code>、<code>sv_u</code>、<code>sv_y</code>: 状態・入力・出力の名前。状態と同名の出力は <code>Y_&lt;name&gt;</code></span></td></tr>
         <tr><td><code>LocalController</code></td><td><span lang="en"><code>Jacobi_dx</code>, <code>Jacobi_Y</code>, <code>fcn_Mass</code>; connected to the component by the names of <code>sv_u</code> and <code>sv_y</code>, as in the simulation. A controller that keeps its own model (such as <code>controller.local_LQR</code>) can call <code>Component.get_sys_alone</code>.</span><span lang="ja"><code>Jacobi_dx</code>、<code>Jacobi_Y</code>、<code>fcn_Mass</code>。シミュレーションと同じく <code>sv_u</code> と <code>sv_y</code> の名前で機器に接続。独自のモデルを持つ制御器 (<code>controller.local_LQR</code> など) は <code>Component.get_sys_alone</code> を呼び出し可能</span></td></tr>
         <tr><td><code>GlobalController</code></td><td><span lang="en"><code>Jacobi_dx</code>, <code>Jacobi_Y</code> (only the <code>u</code> columns are used), <code>fcn_Mass</code>; every controlled unit has the states <code>sv_u</code> and the inputs <code>sv_y</code>.</span><span lang="ja"><code>Jacobi_dx</code>、<code>Jacobi_Y</code> (<code>u</code> の列だけを使う)、<code>fcn_Mass</code>。すべての制御対象が状態 <code>sv_u</code> と入力 <code>sv_y</code> を保持</span></td></tr>
-        <tr><td><span lang="en">New reduced form</span><span lang="ja">新しい縮約形</span></td><td><span lang="en">Add a case to <code>ResultLIN.get_ss</code> and to the <code>Algorithm</code> validators of <code>SolverLIN</code>; build it from <code>rm_*</code> and <code>s_model</code> so that no new linearization is needed.</span><span lang="ja"><code>ResultLIN.get_ss</code> と <code>SolverLIN</code> の <code>Algorithm</code> の検査に場合を追加。新たな線形化が不要なよう、<code>rm_*</code> と <code>s_model</code> から構築</span></td></tr>
+        <tr><td><span lang="en">New reduced form</span><span lang="ja">新しい縮約形</span></td><td><span lang="en">Add a case to <code>ResultLIN.get_ss</code> and to the <code>Algorithm</code> validators of <code>SolverLIN</code>; build it from <code>rm_*</code> and <code>sct_model</code> so that no new linearization is needed.</span><span lang="ja"><code>ResultLIN.get_ss</code> と <code>SolverLIN</code> の <code>Algorithm</code> の検査に場合を追加。新たな線形化が不要なよう、<code>rm_*</code> と <code>sct_model</code> から構築</span></td></tr>
       </tbody>
     </table>
 

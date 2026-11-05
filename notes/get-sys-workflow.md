@@ -1,6 +1,6 @@
 # `PowerNetwork.get_sys` 調査: ワークフロー・データ・編集・引数・一時データ
 
-> 当時の調査記録です。調査の基準は `951800e` で、以後の変更は本文に反映していません(周波数と `f_*` の状態の名前だけは、現在の `get_Hz()` と `s_edit.str_odefcn` に置き換えて書いています(当時は Dependent プロパティと論理値のフラグでした))。現状は [status.md](status.md) と [v4-migration.md](v4-migration.md) を見てください。
+> 当時の調査記録です。調査の基準は `951800e` で、以後の変更は本文に反映していません(周波数と `f_*` の状態の名前だけは、現在の `get_Hz()` と `sct_edit.str_odefcn` に置き換えて書いています(当時は Dependent プロパティと論理値のフラグでした))。現状は [status.md](status.md) と [v4-migration.md](v4-migration.md) を見てください。
 
 現行実装の調査メモです。改善案は後続の作業でこのノートを基に作成します。`odeLinearizer` 内部の数値計算(Kron / DAE / Feedback)は姉妹ノート `notes/get-sys-linearization.md`(ブランチ `docs/get-sys-linearization`)の範囲で、ここでは入出力だけを扱います。
 
@@ -80,7 +80,7 @@ net.get_sys(NV...)                         @PowerNetwork/get_sys.m:31
 └─ net.linearize(NV...)                    @PowerNetwork/linearize.m:41-44
    ├─ take_call_options: Plot を分離       :52-66
    ├─ solver_LIN.get_options(c_nv)         _auxiliary/@odeLinearizer/odeLinearizer.m:80-84
-   └─ solver_LIN.solve(net, s_options)     _auxiliary/@odeLinearizer/solve.m
+   └─ solver_LIN.solve(net, sct_options)     _auxiliary/@odeLinearizer/solve.m
       ├─ net.require_equilibrium()         :22  → check_edit(RequireEquilibrium=true)
       ├─ NonUnit の範囲確認                 :27-31
       ├─ net.get_variable_map()            :33
@@ -152,7 +152,7 @@ output.result = result                          @PowerNetwork/get_sys.m:33
 | P, Q: `para_powerflow` と平衡点の電流 | `Bus.set_equilibrium` | OPF の解とは同期しません(E11) |
 | baseMVA: 系統の `para_base` と機器の `para_operation.baseMVA` | 同期しません。別の意味です(系統基準と機器定格) | 定格は Q 配分に使いますが、古くなる扱いではありません(E04) |
 | 順序の定義: `get_variable_map` と `iv_ode*` | `odeSimulationResult` の `simulator_columns` で照合 | 2種類の順序が併存します。`iv_ode*` の並びは機器ごとに x, u が交互で、V の後に I が続きます(`_auxiliary/@odeSimulator/odeSimulator.m:398-407`, `:391-396`)。不一致は例外になります(`_auxiliary/@odeSimulationResult/odeSimulationResult.m:299-304`) |
-| Y: 都度計算と `ctx.Ymat` / `s_model.cm_Y` | 実行ごと、結果ごとのスナップショット | 実行中は変わらないので問題ありません |
+| Y: 都度計算と `ctx.Ymat` / `sct_model.cm_Y` | 実行ごと、結果ごとのスナップショット | 実行中は変わらないので問題ありません |
 | 機器の参照: `Bus.a_Component` と `GC.controlledUnits` | 同期しません | `replace_component` などで食い違います(E09) |
 
 ## 3. パラメータ変更時の動作
@@ -245,17 +245,17 @@ output.result = result                          @PowerNetwork/get_sys.m:33
 
 ### 4.2 設定の解決
 
-**[事実]** `tools.resolve_options(solver, s_map, nv)`(`+tools/resolve_options.m`)の動作です。
+**[事実]** `tools.resolve_options(solver, sct_map, nv)`(`+tools/resolve_options.m`)の動作です。
 
-1. `s_map`(各ソルバの `OptionMap`)の各項について、保存値を読みます(`:52-71`)。
+1. `sct_map`(各ソルバの `OptionMap`)の各項について、保存値を読みます(`:52-71`)。
 2. 呼び出しの Name-Value を上書きします。名前は大文字小文字を区別せず、同じ名前は後が勝ちます。未知の名前は `UnknownName` です(`:75-92`)。
-3. ソルバオブジェクトには書きません。`s_options` は別の struct です。
+3. ソルバオブジェクトには書きません。`sct_options` は別の struct です。
 
 ソルバごとの違いがあります。
 
 | | `odeLinearizer` | `odeSimulator` | `PowerFlowCalculation` |
 |---|---|---|---|
-| `s_options` の中身 | `OptionMap` の項目だけ | 公開設定の全て(Hidden 等を除く) | 公開設定の全て |
+| `sct_options` の中身 | `OptionMap` の項目だけ | 公開設定の全て(Hidden 等を除く) | 公開設定の全て |
 | 根拠 | `_auxiliary/@odeLinearizer/odeLinearizer.m:80` | `_auxiliary/@odeSimulator/odeSimulator.m:124-137` | `_auxiliary/@PowerFlowCalculation/PowerFlowCalculation.m:98-110` |
 | `Plot` | 呼び出し単位(保存されません) | ソルバの保存設定 | 呼び出し単位 |
 | `Export` | なし | 呼び出し単位 | 呼び出し単位 |
@@ -311,7 +311,7 @@ output.result = result                          @PowerNetwork/get_sys.m:33
 | `iv_CPFV`, `iv_CPFX`, `f_PQ2Bus` | 母線、機器 | CPF の `build_layout` | 解除しません | CPF のみ |
 | `ctx`, `tab_phase`, `x0`, `Mass`, `odeProg` | `solve` のローカル変数 | 実行ごと | 関数の終了時 | シミュレータのみ |
 | `odeIteration` など | `odeEventSet` | 位相ごと | イベントを再利用すると上書き | イベントのみ |
-| `s_options` | ローカル、結果の `options` | 実行ごと | ソルバには残りません | 結果 |
+| `sct_options` | ローカル、結果の `options` | 実行ごと | ソルバには残りません | 結果 |
 
 **[事実]** `l_isConnect`, `l_isFault`, `rv_*offset`, `iv_ode*` は、`git grep` の範囲では `linearize` の経路(`odeLinearizer`, `Bus.get_sys`, `Component.get_sys`, `point_vector`)から読まれません。
 

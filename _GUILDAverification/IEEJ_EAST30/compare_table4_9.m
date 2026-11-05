@@ -118,8 +118,8 @@ end
 
 function result = run_case(net, sc, opt, varargin)
 % Simulate one scenario quietly: the solver warnings after an out-of-step are expected
-    s_warn = warning("off", "all");
-    c_clean = onCleanup(@() warning(s_warn));
+    sct_warn = warning("off", "all");
+    c_clean = onCleanup(@() warning(sct_warn));
     result = net.simulate(sc, "Progress", "none", "TimeLimit", opt.TimeLimit, varargin{:});
 end
 

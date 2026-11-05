@@ -389,7 +389,7 @@ function probe_edit(str_name, base, f_edit)
     try
         net = base();
         init(net);
-        s_old = net.simulate(tspan, fault(net,"B007"), c_nv{:});
+        res_old = net.simulate(tspan, fault(net,"B007"), c_nv{:});
 
         evalc("f_edit(net)");
         l_stale = net.l_staleEquilibrium;
@@ -399,9 +399,9 @@ function probe_edit(str_name, base, f_edit)
         evalc("f_edit(ref)");
         try
             init(ref);
-            s_new = ref.simulate(tspan, fault(ref,"B007"), c_nv{:});
+            res_new = ref.simulate(tspan, fault(ref,"B007"), c_nv{:});
         catch me
-            s_new = [];
+            res_new = [];
             str_ref = "基準計算不可 " + me.identifier;
         end
 
@@ -411,15 +411,15 @@ function probe_edit(str_name, base, f_edit)
             fprintf("%s|停止|-|-|-|-|%d|%s\n", str_name, l_stale, str_detail);
             return
         end
-        d_old = sim_diff(sol, s_old);
+        d_old = sim_diff(sol, res_old);
         d_new = NaN;
-        if ~isempty(s_new)
-            d_new = sim_diff(sol, s_new);
+        if ~isempty(res_new)
+            d_new = sim_diff(sol, res_new);
         end
         str_out = classify(d_old, d_new);
         drift = pre_drift(sol, 0.9);
         str_detail = "";
-        if isempty(s_new), str_detail = str_ref; end
+        if isempty(res_new), str_detail = str_ref; end
         fprintf("%s|%s|%d|%.3e|%.3e|%.3e|%d|%s\n", str_name, str_out, flag, d_old, d_new, drift, l_stale, str_detail);
     catch me
         fprintf("%s|測定失敗|-|-|-|-|-|%s: %s\n", str_name, me.identifier, first_line(me.message));
@@ -689,13 +689,13 @@ function section_side_effects()
     % 4-6 制御器の内部状態
     fprintf("### 4-6 制御器の内部状態の持ち越し\n");
     net = mk();
-    s_fault = net.simulate([0,3], fault(net,"B008"));
-    tab = s_fault.tab_variable;
+    res_fault = net.simulate([0,3], fault(net,"B008"));
+    tab = res_fault.tab_variable;
     lv_c = ismember(tab.Owner, ["agc", string(net.a_Bus{1}.a_Component{1}.a_LocalController{1}.str_tag)]);
-    fprintf("fault 実行の末尾での制御器状態の平衡点からの最大ずれ: %.3e\n", max(abs(s_fault.rm_variable(end,lv_c) - s_fault.rm_variable(1,lv_c))));
-    s_after = net.simulate([0,3]);
+    fprintf("fault 実行の末尾での制御器状態の平衡点からの最大ずれ: %.3e\n", max(abs(res_fault.rm_variable(end,lv_c) - res_fault.rm_variable(1,lv_c))));
+    res_after = net.simulate([0,3]);
     fprintf("次の外乱なし実行: 初期値の差(1回目初期値比)=%.3e, 全体の drift=%.3e, 制御器 drift=%.3e\n", ...
-        max(abs(s_after.rm_variable(1,:) - s_fault.rm_variable(1,:))), pre_drift(s_after,3.1), max(abs(s_after.rm_variable(:,lv_c) - s_after.rm_variable(1,lv_c)), [], "all"));
+        max(abs(res_after.rm_variable(1,:) - res_fault.rm_variable(1,:))), pre_drift(res_after,3.1), max(abs(res_after.rm_variable(:,lv_c) - res_after.rm_variable(1,lv_c)), [], "all"));
     net = mk();
     net.simulate([0,3], odeEventSet("trip", net, "TimeSpan", [1,5], "TripUnit", "agc"));
     fprintf("AGC を最後まで trip した直後の l_isConnect=%d (onCleanup で戻す設計)\n", get_private(net.a_GlobalController{1},"l_isConnect"));
@@ -999,10 +999,10 @@ function probe_stale_event()
 end
 
 function report_event(str, net, ev_old, ev_new, c_nv)
-    s_new = net.simulate([0,3], ev_new, c_nv{:});
+    res_new = net.simulate([0,3], ev_new, c_nv{:});
     try
-        [txt, s_old, flag] = evalc_sim(@() net.simulate([0,3], ev_old, c_nv{:}));
-        fprintf("%s: エラーなし flag=%d tEnd=%g, 新しい事象との差=%.3e, 表示=%d文字\n", str, flag, s_old.rv_t(end), sim_diff(s_old, s_new), strlength(strtrim(txt)));
+        [txt, res_old, flag] = evalc_sim(@() net.simulate([0,3], ev_old, c_nv{:}));
+        fprintf("%s: エラーなし flag=%d tEnd=%g, 新しい事象との差=%.3e, 表示=%d文字\n", str, flag, res_old.rv_t(end), sim_diff(res_old, res_new), strlength(strtrim(txt)));
     catch me
         fprintf("%s: エラー %s: %s\n", str, me.identifier, first_line(me.message));
     end
@@ -1141,7 +1141,7 @@ function section_arguments()
     fprintf("指定|flag|n_t|sum(rv_t)|options.Solver|ode15s(既定)と時刻が一致|結果\n");
     n = build("IEEE9bus");
     ev = fault(n,"B007");
-    s_ref = n.simulate([0,3], ev);
+    res_ref = n.simulate([0,3], ev);
     c_s = { ...
         "Solver=ode15s",  kv("Solver","ode15s"); ...
         "Solver=ode23t",  kv("Solver","ode23t"); ...
@@ -1161,7 +1161,7 @@ function section_arguments()
         try
             nv = c_s{i,2};
             [~, r, f] = evalc_sim(@() n.simulate([0,3], ev, nv{:}, TimeLimit=30));
-            fprintf("%s|%d|%d|%.6f|%s|%d|OK\n", c_s{i,1}, f, numel(r.rv_t), sum(r.rv_t), string(r.options.Solver), isequal(r.rv_t, s_ref.rv_t));
+            fprintf("%s|%d|%d|%.6f|%s|%d|OK\n", c_s{i,1}, f, numel(r.rv_t), sum(r.rv_t), string(r.options.Solver), isequal(r.rv_t, res_ref.rv_t));
         catch me
             fprintf("%s|-|-|-|-|-|ERR %s: %s\n", c_s{i,1}, me.identifier, first_line(me.message));
         end
@@ -1170,7 +1170,7 @@ function section_arguments()
     n3 = build("IEEE9bus");
     n3.solver_ODE.Solver = "ode23t";
     r = n3.simulate([0,3], fault(n3,"B007"));
-    fprintf("net.solver_ODE.Solver=ode23t と保存: n_t=%d, ode15s と時刻が一致=%d, options.Solver=%s\n", numel(r.rv_t), isequal(r.rv_t, s_ref.rv_t), string(r.options.Solver));
+    fprintf("net.solver_ODE.Solver=ode23t と保存: n_t=%d, ode15s と時刻が一致=%d, options.Solver=%s\n", numel(r.rv_t), isequal(r.rv_t, res_ref.rv_t), string(r.options.Solver));
     % 初期化していないとき
     n0 = build("IEEE14bus", Init=false);
     try
@@ -1234,8 +1234,8 @@ function section_accuracy()
     fprintf("条件: fault 先頭母線以外 B007/B008, [1,1.05], time=[0,10], ode15s, 基準は Tolerance=1e-10, AbsoluteTolerance=1e-12。時間は3回の中央値\n");
     fprintf("誤差 fin: 終了時刻の x,V の最大差 (補間なし), peak: 全区間の omega の最大|値|の差\n");
     fprintf("net|Tolerance|AbsoluteTolerance|sim中央値[s]|n_t|nRHS|誤差fin|peak差|flag\n");
-    for s_net = {struct("n","IEEE9bus","b","B007"), struct("n","IEEE14bus","b","B008"), struct("n","IEEE68bus","b","B001")}
-        sn = s_net{1};
+    for c_net = {struct("n","IEEE9bus","b","B007"), struct("n","IEEE14bus","b","B008"), struct("n","IEEE68bus","b","B001")}
+        sn = c_net{1};
         net = build(sn.n);
         ev  = fault(net, sn.b);
         ref = net.simulate([0,10], ev, Tolerance=1e-10, AbsoluteTolerance=1e-12);

@@ -129,16 +129,16 @@ DebugScript.helper.quiet(@() net_a.initialize);
 D = net_a.a_Bus{2}.get_sys("port","V2I").D(1:2,1:2);
 assert(rcond(D) < 1e-12 && norm(D) > 0.1, "電流があり I2V 形式がない母線になっていない")
 res = net_a.linearize();
-s_k = res.get_ss("Kron");
-s_f = res.get_ss("Feedback");
-assert(max(real(eig_finite(s_f))) < 1e-6, "不安定")
-assert(same_eigs(eig_finite(s_k), eig_finite(s_f), 1e-6), "固有値")
-assert(isequal(s_f.InputName, s_k.InputName), "入力の名前と順")
-[lv, ix] = ismember(s_k.StateName, s_f.StateName);
+sys_k = res.get_ss("Kron");
+sys_f = res.get_ss("Feedback");
+assert(max(real(eig_finite(sys_f))) < 1e-6, "不安定")
+assert(same_eigs(eig_finite(sys_k), eig_finite(sys_f), 1e-6), "固有値")
+assert(isequal(sys_f.InputName, sys_k.InputName), "入力の名前と順")
+[lv, ix] = ismember(sys_k.StateName, sys_f.StateName);
 assert(all(lv), "状態の名前")
 w = 1i;
-G_k = (w*s_k.E - s_k.A) \ s_k.B;
-G_f = (w*s_f.E - s_f.A) \ s_f.B;
+G_k = (w*sys_k.E - sys_k.A) \ sys_k.B;
+G_f = (w*sys_f.E - sys_f.A) \ sys_f.B;
 assert(norm(G_k - G_f(ix,:), "fro") < 1e-9, "入力から状態までの周波数応答")
 
 
@@ -241,13 +241,13 @@ assert(string(id) == "", id)
 n6 = network.Ishizaki6Bus();
 DebugScript.helper.quiet(@() n6.initialize);
 res = n6.linearize();
-s_k = res.get_ss("Kron");
-s_f = res.get_ss("Feedback");
-assert(isequal(s_f.InputName, s_k.InputName))
-assert(same_eigs(eig_finite(s_k), eig_finite(s_f), 1e-6))
-[~, ix] = ismember(s_k.StateName, s_f.StateName);
-G_k = (1i*s_k.E - s_k.A) \ s_k.B;
-G_f = (1i*s_f.E - s_f.A) \ s_f.B;
+sys_k = res.get_ss("Kron");
+sys_f = res.get_ss("Feedback");
+assert(isequal(sys_f.InputName, sys_k.InputName))
+assert(same_eigs(eig_finite(sys_k), eig_finite(sys_f), 1e-6))
+[~, ix] = ismember(sys_k.StateName, sys_f.StateName);
+G_k = (1i*sys_k.E - sys_k.A) \ sys_k.B;
+G_f = (1i*sys_f.E - sys_f.A) \ sys_f.B;
 assert(norm(G_k - G_f(ix,:), "fro") < 1e-9)
 
 
@@ -573,26 +573,26 @@ for k = 1:numel(nets)
     DebugScript.helper.quiet(@() nets{k}.initialize);
     res = nets{k}.linearize();
     for alg = ["Kron","Feedback","DAE"]
-        s_ful = res.get_ss(alg);
-        s_new = s_ful;
-        s_old = DebugScript.helper.linearize_v3(nets{k}, nonunit{k}, alg);
+        sys_ful = res.get_ss(alg);
+        sys_new = sys_ful;
+        sys_old = DebugScript.helper.linearize_v3(nets{k}, nonunit{k}, alg);
         str = nets{k}.str_tag + " " + alg;
         if alg == "Feedback"
-            s_new = s_ful(:, ismember(s_ful.InputName, s_old.InputName));
+            sys_new = sys_ful(:, ismember(sys_ful.InputName, sys_old.InputName));
         end
-        B_old = s_old.B;
+        B_old = sys_old.B;
         if alg == "DAE"
             n_x = size(res.rm_Axx,1);
             B_old(n_x+1:end,:) = -B_old(n_x+1:end,:);
         end
-        assert(isequal(size(s_new.A), size(s_old.A)), str)
-        tol = 1e-10 * max(1, norm(s_old.A, 1));
-        assert(norm(s_new.A - s_old.A, 1) <= tol && norm(s_new.E - s_old.E, 1) <= tol, str + ": A, E")
-        assert(norm(s_new.B - B_old, 1) <= tol && norm(s_new.C - s_old.C, 1) <= tol && norm(s_new.D - s_old.D, 1) <= tol, str + ": B, C, D")
-        assert(isequal(s_new.StateName, s_old.StateName) && isequal(s_new.InputName, s_old.InputName) && ...
-               isequal(s_new.OutputName, s_old.OutputName), str + ": names")
+        assert(isequal(size(sys_new.A), size(sys_old.A)), str)
+        tol = 1e-10 * max(1, norm(sys_old.A, 1));
+        assert(norm(sys_new.A - sys_old.A, 1) <= tol && norm(sys_new.E - sys_old.E, 1) <= tol, str + ": A, E")
+        assert(norm(sys_new.B - B_old, 1) <= tol && norm(sys_new.C - sys_old.C, 1) <= tol && norm(sys_new.D - sys_old.D, 1) <= tol, str + ": B, C, D")
+        assert(isequal(sys_new.StateName, sys_old.StateName) && isequal(sys_new.InputName, sys_old.InputName) && ...
+               isequal(sys_new.OutputName, sys_old.OutputName), str + ": names")
         % net.get_sys は linearize + get_ss と同じ
-        assert(isequal(nets{k}.get_sys("Algorithm", alg), s_ful), str + ": get_sys")
+        assert(isequal(nets{k}.get_sys("Algorithm", alg), sys_ful), str + ": get_sys")
     end
 end
 
@@ -918,9 +918,9 @@ assert(isequal(res.rv_point(c_idxGC{1}), x(c_idxGC{1})))
 %% Overrides apply to one call and leave the solver unchanged
 net = new_net();
 DebugScript.helper.quiet(@() net.initialize);
-s_before = net.solver_LIN.get_options();
+sct_before = net.solver_LIN.get_options();
 res = net.linearize("Algorithm", "Kron");
-assert(isequal(net.solver_LIN.get_options(), s_before))
+assert(isequal(net.solver_LIN.get_options(), sct_before))
 assert(res.options.Algorithm == "Kron")
 assert(isequal(res.get_ss(), res.get_ss("Kron")))
 % 既定値の変更は残る
@@ -1058,7 +1058,7 @@ str = evalc('[res, flag, output] = n9.linearize("Point", {sim, 0.52});');
 assert(contains(str, "INFO") && contains(str, "B008"), str)
 assert(flag && output.str_issue == "" && isequal(output.sv_faultBus, "B008"))
 assert(contains(output.message, "B008") && contains(output.message, "not an equilibrium"), output.message)
-assert(norm(res.s_model.cm_Y - n9.get_admittance_matrix.Variables, 1) == 0)
+assert(norm(res.sct_model.cm_Y - n9.get_admittance_matrix.Variables, 1) == 0)
 % 故障母線の電圧は 0 で、Y に故障がないのでその母線の電流の収支が残る
 assert(output.r_residual > 0.1 && output.r_residual == max(abs(res.rv_residual)))
 % 極座標の DAE はここでは使えないが、Vre&Vim は Kron, Feedback と同じ固有値になる
@@ -1304,26 +1304,26 @@ str_w = string(gen.attach_tag("omega"));
 sM = net.get_sys(Algorithm="Kron", output=[sv_v(3), str_w, sv_v(3)]);
 assert(isequal(string(sM.OutputName), [sv_v(3); str_w]))
 for alg = ["Kron","Feedback","DAE"]
-    s_def = res.get_ss(alg);
-    s_x   = res.get_ss(alg, Output="x");
-    assert(isequal(s_x.A, s_def.A) && isequal(s_x.E, s_def.E) && isequal(s_x.B, s_def.B) && all(s_x.D == 0, "all"), alg)
-    sv_state = string(s_x.StateName);
-    assert(isequal(string(s_x.OutputName), sv_state(ismember(sv_state, tab.Label(tab.Kind == "x")))), alg)
-    assert(isequal(s_x.C, eye(size(s_x.C,1), size(s_x.A,1))), alg)
+    sys_def = res.get_ss(alg);
+    sys_x = res.get_ss(alg, Output="x");
+    assert(isequal(sys_x.A, sys_def.A) && isequal(sys_x.E, sys_def.E) && isequal(sys_x.B, sys_def.B) && all(sys_x.D == 0, "all"), alg)
+    sv_state = string(sys_x.StateName);
+    assert(isequal(string(sys_x.OutputName), sv_state(ismember(sv_state, tab.Label(tab.Kind == "x")))), alg)
+    assert(isequal(sys_x.C, eye(size(sys_x.C,1), size(sys_x.A,1))), alg)
 end
 % Feedback の既定の出力は v3 と同じで、global controller の状態を含まない。消えた Vst の行を持つ
-s_def = res.get_ss("Feedback");
-assert(~any(string(s_def.OutputName) == string(net.a_GlobalController{1}.attach_tag("xi"))))
+sys_def = res.get_ss("Feedback");
+assert(~any(string(sys_def.OutputName) == string(net.a_GlobalController{1}.attach_tag("xi"))))
 
 % Input: 指定の順。状態は変わらない。Output と併用できる。列ベクトルも受ける
 sv_u = tab.Label(tab.Kind == "u");
 for alg = ["Kron","Feedback","DAE"]
-    s_all = net.get_sys(Algorithm=alg, Output="V");
-    s_sel = net.get_sys(Algorithm=alg, Output="V", Input=sv_u([3;1]));
-    assert(isequal(string(s_sel.InputName), sv_u([3;1])), alg)
-    assert(isequal(s_sel.A, s_all.A) && isequal(s_sel.StateName, s_all.StateName), alg)
-    [~, iu] = ismember(sv_u([3;1]), string(s_all.InputName));
-    assert(isequal(s_sel.D, s_all.D(:,iu)) && isequal(s_sel.B, s_all.B(:,iu)), alg)
+    sys_all = net.get_sys(Algorithm=alg, Output="V");
+    sys_sel = net.get_sys(Algorithm=alg, Output="V", Input=sv_u([3;1]));
+    assert(isequal(string(sys_sel.InputName), sv_u([3;1])), alg)
+    assert(isequal(sys_sel.A, sys_all.A) && isequal(sys_sel.StateName, sys_all.StateName), alg)
+    [~, iu] = ismember(sv_u([3;1]), string(sys_all.InputName));
+    assert(isequal(sys_sel.D, sys_all.D(:,iu)) && isequal(sys_sel.B, sys_all.B(:,iu)), alg)
     assert(isequal(net.get_sys(Algorithm=alg, Input="u").InputName, net.get_sys(Algorithm=alg).InputName), alg)
 end
 

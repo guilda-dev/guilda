@@ -454,12 +454,12 @@ for str_layer = ["component", "bus", "network"]
     end
     assert(norm(lqr.K - lqr_ref.K) < 1e-6 * norm(lqr_ref.K), str_layer + ": K")
     assert(lqr.sct_edit.str_odefcn == "updated" && ~net.l_staleEquilibrium, str_layer)
-    s = gen.get_sys();  s_ref = gen_ref.get_sys();
-    assert(norm(s.A - s_ref.A, 1) < 1e-6 * norm(s_ref.A, 1) && norm(s.B - s_ref.B, 1) < 1e-6 * norm(s_ref.B, 1), str_layer + ": 機器のモデル")
-    assert(isequal(s.StateName, s_ref.StateName) && isequal(s.InputName, s_ref.InputName), str_layer + ": 名前")
+    s = gen.get_sys();  sys_ref = gen_ref.get_sys();
+    assert(norm(s.A - sys_ref.A, 1) < 1e-6 * norm(sys_ref.A, 1) && norm(s.B - sys_ref.B, 1) < 1e-6 * norm(sys_ref.B, 1), str_layer + ": 機器のモデル")
+    assert(isequal(s.StateName, sys_ref.StateName) && isequal(s.InputName, sys_ref.InputName), str_layer + ": 名前")
     for alg = ["Kron", "Feedback", "DAE"]
-        s = net.get_sys("Algorithm", alg);  s_ref = ref.get_sys("Algorithm", alg);
-        assert(isequal(size(s.A), size(s_ref.A)) && norm(s.A - s_ref.A, 1) < 1e-6 * norm(s_ref.A, 1), str_layer + " " + alg)
+        s = net.get_sys("Algorithm", alg);  sys_ref = ref.get_sys("Algorithm", alg);
+        assert(isequal(size(s.A), size(sys_ref.A)) && norm(s.A - sys_ref.A, 1) < 1e-6 * norm(sys_ref.A, 1), str_layer + " " + alg)
     end
 end
 

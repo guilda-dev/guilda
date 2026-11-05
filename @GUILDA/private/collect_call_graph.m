@@ -26,7 +26,7 @@ function sct_graph = collect_call_graph(sct_scan)
 % declared and constructor give "certain" edges, candidates gives "candidates",
 % and the others give "inferred". A variable assigned two different classes is unknown.
 %
-% Struct-like receivers give no edge: names such as opt, ctx or s_x, name-value
+% Struct-like receivers give no edge: names such as opt, ctx or sct_x, name-value
 % argument structs, variables built only by x.f = ..., values of a non-class type,
 % and an UpperCamelCase member (name-value naming) on an unknown receiver.
 %

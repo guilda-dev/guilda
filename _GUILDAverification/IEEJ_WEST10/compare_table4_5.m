@@ -62,8 +62,8 @@ function [tab, summary] = compare_table4_5(opt)
 
             % The run stops early (flag) rather than with a warning: an out-of-step case
             % often stops the solver once the angles have passed 360 degrees
-            s_warn = warning("off", "all");
-            o_restore = onCleanup(@() warning(s_warn));
+            sct_warn = warning("off", "all");
+            o_restore = onCleanup(@() warning(sct_warn));
             [result, rv_flag(k)] = net.simulate(sc, c_sim{:});
             clear o_restore
 

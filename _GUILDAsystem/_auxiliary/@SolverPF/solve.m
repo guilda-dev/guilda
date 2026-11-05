@@ -1,14 +1,14 @@
-function [result,flag,output] = solve(obj, net, s_options)
+function [result,flag,output] = solve(obj, net, sct_options)
 % Solve the power flow with the given settings.
 %
-% Runs the power flow calculation of net with the effective settings s_options and
+% Runs the power flow calculation of net with the effective settings sct_options and
 % returns the computed values as a ResultPF. The solver is only read: nothing is
 % written back into it. Called by net.calculate_powerflow; calling it directly is for
 % advanced use.
     arguments
         obj % Solver (net.solver_PF).
         net % Network with a slack bus.
-        s_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
+        sct_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
     end
     arguments (Output)
         result % Bus and branch values of the solution.
@@ -22,11 +22,11 @@ function [result,flag,output] = solve(obj, net, s_options)
     str_bus   = string(tab_PFset.Properties.RowNames);
     cm_Y      = tab_Ymat{str_bus,str_bus};
 
-    switch s_options.Method
+    switch sct_options.Method
         case "algebraic"
-            [cv_Vbus,flag,output,cm_Vhistory,rv_step] = obj.solve_algebraic(cm_Y, tab_PFset, s_options);
+            [cv_Vbus,flag,output,cm_Vhistory,rv_step] = obj.solve_algebraic(cm_Y, tab_PFset, sct_options);
         case "dynamic"
-            [cv_Vbus,flag,output,cm_Vhistory,rv_step] = obj.solve_dynamic(cm_Y, tab_PFset, s_options);
+            [cv_Vbus,flag,output,cm_Vhistory,rv_step] = obj.solve_dynamic(cm_Y, tab_PFset, sct_options);
     end
 
     % Vbus -> Ibus -> Pbus,Qbus
@@ -39,12 +39,12 @@ function [result,flag,output] = solve(obj, net, s_options)
         "VariableNames",["Varg","V","P","Q","Vphasor","Iphasor"],"RowNames",str_bus);
     tab_branch = branch_flow(net, str_bus, cv_Vbus);
 
-    result = ResultPF(net, obj, s_options, flag, output, t0, ...
+    result = ResultPF(net, obj, sct_options, flag, output, t0, ...
                              tab_bus, tab_branch, cm_Vhistory, rv_step);
 
     % Notify
     if flag<=0
-        switch s_options.WhenFailed
+        switch sct_options.WhenFailed
         case "WARN" ; warning(msg("GUILDA:SolverPF:NotConverged", output.message))
         case "ERROR"; error(msg("GUILDA:SolverPF:NotConverged", output.message))
         case "DISP" ; disp(output.message)

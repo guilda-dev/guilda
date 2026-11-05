@@ -84,15 +84,15 @@ function [result, flag, output] = simulate(obj, time, varargin)
     [time, c_nv] = scenario_settings(c_events, time, c_nv);
     [c_nv, opt] = take_call_options(c_nv);
     check_export(opt.Export);
-    s_options   = obj.solver_ODE.get_options(c_nv);
+    sct_options = obj.solver_ODE.get_options(c_nv);
 
-    [result, flag, output] = obj.solver_ODE.solve(obj, time, c_events, s_options);
+    [result, flag, output] = obj.solver_ODE.solve(obj, time, c_events, sct_options);
 
     if flag ~= 1
         warning(msg("GUILDA:PowerNetwork:SimulationIncomplete", string(flag), output.message));
     end
 
-    if s_options.Plot
+    if sct_options.Plot
         result.Plot();
     end
     if isstring(opt.Export)
@@ -153,22 +153,22 @@ function [time, c_nv] = scenario_settings(c_events, time, c_nv)
             sv_call(end+1) = lower(string(c_nv{k})); %#ok<AGROW>
         end
     end
-    s_stored = struct();     % lower-case name -> {Name, Value}
+    sct_stored = struct();     % lower-case name -> {Name, Value}
     for k = 1:numel(c_sc)
-        s_opt = c_sc{k}.Options;
-        for str_name = string(fieldnames(s_opt)).'
+        sct_opt = c_sc{k}.Options;
+        for str_name = string(fieldnames(sct_opt)).'
             str_key = lower(str_name);
             if ismember(str_key, sv_call)
                 continue
             end
-            if isfield(s_stored, str_key) && ~isequal(s_stored.(str_key){2}, s_opt.(str_name))
+            if isfield(sct_stored, str_key) && ~isequal(sct_stored.(str_key){2}, sct_opt.(str_name))
                 error(msg("GUILDA:PowerNetwork:ScenarioOptionConflict", char(str_name), ...
                           char(join(cellfun(@(s) s.str_tag, c_sc), ", "))));
             end
-            s_stored.(str_key) = {str_name, s_opt.(str_name)};
+            sct_stored.(str_key) = {str_name, sct_opt.(str_name)};
         end
     end
-    c_pair = struct2cell(s_stored);
+    c_pair = struct2cell(sct_stored);
     c_pair = [c_pair{:}];
     c_nv = [c_pair, c_nv];
 end

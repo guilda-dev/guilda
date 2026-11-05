@@ -227,16 +227,16 @@
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>c_nv</code>; public properties of <code>net.solver_CPF</code></span><span lang="ja"><code>c_nv</code>、<code>net.solver_CPF</code> の public プロパティ</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>s_options</code>: struct with 8 fields (<code>LoadBus</code> as a 1 × n string row). Solver unchanged.</span><span lang="ja"><code>s_options</code>: 8 フィールドの構造体（<code>LoadBus</code> は 1 × n の string 行）。ソルバーは不変</span></dd>
+          <dd><span lang="en"><code>sct_options</code>: struct with 8 fields (<code>LoadBus</code> as a 1 × n string row). Solver unchanged.</span><span lang="ja"><code>sct_options</code>: 8 フィールドの構造体（<code>LoadBus</code> は 1 × n の string 行）。ソルバーは不変</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="CPF-04">
-        <p class="fs-head"><b class="fs-id">CPF-04</b> <span class="fs-call"><code>calculate_continuation_powerflow</code> → <code>SolverCPF.solve(net, s_options)</code></span></p>
+        <p class="fs-head"><b class="fs-id">CPF-04</b> <span class="fs-call"><code>calculate_continuation_powerflow</code> → <code>SolverCPF.solve(net, sct_options)</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Starts the timer; runs CPF-05 to CPF-14.</span><span lang="ja">タイマー開始。CPF-05〜CPF-14 を実行</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>s_options</code></dd>
+          <dd><code>sct_options</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>[result, flag, output]</code></dd>
         </dl>
@@ -321,7 +321,7 @@
               <li><code>ConvTol</code> = <code>Tolerance</code></li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>get_admittance_matrix</code>, <code>w</code>, <code>s_options</code></span><span lang="ja"><code>get_admittance_matrix</code>、<code>w</code>、<code>s_options</code></span></dd>
+          <dd><span lang="en"><code>get_admittance_matrix</code>, <code>w</code>, <code>sct_options</code></span><span lang="ja"><code>get_admittance_matrix</code>、<code>w</code>、<code>sct_options</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en"><code>NRM</code>, <code>f_Jac</code>; <code>x_current = [w.InitVal; InitialLambda]</code></span><span lang="ja"><code>NRM</code>、<code>f_Jac</code>、<code>x_current = [w.InitVal; InitialLambda]</code></span></dd>
         </dl>
@@ -463,7 +463,7 @@
         <tr><td><code>rm_xPredicted</code></td><td lang="en" data-label="Contents">predicted points in the layout of <code>rm_x</code>; the first column is NaN</td><td lang="ja" data-label="内容"><code>rm_x</code> と同じ配置の予測点。最初の列は NaN</td><td data-label="Size" data-label-ja="サイズ">29 × 362</td></tr>
         <tr><td><code>tab_path</code> <small>Dependent</small></td><td lang="en" data-label="Contents"><code>lambda</code>, then <code>V_&lt;bus&gt;</code> and <code>Varg_&lt;bus&gt;</code>; what <code>Export</code> writes</td><td lang="ja" data-label="内容"><code>lambda</code>、続いて <code>V_&lt;bus&gt;</code> と <code>Varg_&lt;bus&gt;</code>。<code>Export</code> が書き出す表</td><td data-label="Size" data-label-ja="サイズ">n_point × (1 + 2·n_bus) (362 × 29)</td></tr>
         <tr><td><code>tab_nose</code> <small>Dependent</small></td><td lang="en" data-label="Contents"><code>V</code>, <code>Varg</code>, <code>Vphasor</code> of each bus at the nose</td><td lang="ja" data-label="内容">先端での各母線の <code>V</code>、<code>Varg</code>、<code>Vphasor</code></td><td data-label="Size" data-label-ja="サイズ">n_bus × 3 (14 × 3)</td></tr>
-        <tr><td><code>flag</code>, <code>output</code>, <code>options</code>, <code>str_solver</code>, <code>r_elapsed</code>, <code>l_success</code></td><td lang="en" data-label="Contents">from <code>ResultBase</code>: <code>flag</code> is true when the path passed the nose; <code>output.iterations</code> (number of steps), <code>output.correctorIterations</code> (1 × steps), <code>output.message</code>; <code>s_options</code>; <code>"SolverCPF"</code>; time [s]</td><td lang="ja" data-label="内容"><code>ResultBase</code> から: <code>flag</code> は経路が先端を越えたとき true。<code>output.iterations</code>（ステップ数）、<code>output.correctorIterations</code>（1 × ステップ数）、<code>output.message</code>、<code>s_options</code>、<code>"SolverCPF"</code>、経過時間 [s]</td><td data-label="Size" data-label-ja="サイズ">—</td></tr>
+        <tr><td><code>flag</code>, <code>output</code>, <code>options</code>, <code>str_solver</code>, <code>r_elapsed</code>, <code>l_success</code></td><td lang="en" data-label="Contents">from <code>ResultBase</code>: <code>flag</code> is true when the path passed the nose; <code>output.iterations</code> (number of steps), <code>output.correctorIterations</code> (1 × steps), <code>output.message</code>; <code>sct_options</code>; <code>"SolverCPF"</code>; time [s]</td><td lang="ja" data-label="内容"><code>ResultBase</code> から: <code>flag</code> は経路が先端を越えたとき true。<code>output.iterations</code>（ステップ数）、<code>output.correctorIterations</code>（1 × ステップ数）、<code>output.message</code>、<code>sct_options</code>、<code>"SolverCPF"</code>、経過時間 [s]</td><td data-label="Size" data-label-ja="サイズ">—</td></tr>
       </tbody>
     </table>
     <p lang="en">Nothing is written back to the model: equilibrium, parameters, and edit log unchanged.</p>

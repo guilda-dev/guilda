@@ -1,14 +1,14 @@
-function [result,flag,output] = solve(obj, net, s_options)
+function [result,flag,output] = solve(obj, net, sct_options)
 % Build and solve the optimal power flow with the given settings.
 %
 % Builds the optimal power flow problem of net (net.build_opf_problem) for
-% s_options.Method, solves it with the effective settings s_options and returns the
+% sct_options.Method, solves it with the effective settings sct_options and returns the
 % solution as a ResultOPF. The solver is only read: nothing is written back into it.
 % Called by net.optimize_powerflow; calling it directly is for advanced use.
     arguments
         obj % Solver (net.solver_OPF).
         net % Network to optimize.
-        s_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
+        sct_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
     end
     arguments (Output)
         result % Bus, connection and branch values of the solution.
@@ -16,13 +16,13 @@ function [result,flag,output] = solve(obj, net, s_options)
         output % Solver details; output.message describes the outcome.
     end
     t0 = tic;
-    str_method = s_options.Method;
+    str_method = sct_options.Method;
 
     % get OPF problem
     [OPFprob,x0] = net.build_opf_problem("Method",str_method);
 
     % solve OPF problem
-    [~, c_nv] = obj.optimoption(OPFprob, s_options);
+    [~, c_nv] = obj.optimoption(OPFprob, sct_options);
     [sol,fval,flag,output,lambda] = solve(OPFprob,x0,c_nv{:});
     if isstruct(fval)
         fval = sum(cell2mat(struct2cell(fval)));
@@ -31,7 +31,7 @@ function [result,flag,output] = solve(obj, net, s_options)
     [tab_bus, tab_cub] = format_bus(net, sol, str_method);
     tab_branch         = format_branch(net, sol, str_method);
 
-    result = ResultOPF(net, obj, s_options, flag, output, t0, ...
+    result = ResultOPF(net, obj, sct_options, flag, output, t0, ...
                        tab_bus, tab_cub, tab_branch, fval, lambda, OPFprob);
 end
 

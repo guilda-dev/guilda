@@ -356,7 +356,7 @@
 
 - **対象:** `+DebugScript/+helper/build_ieee14.m` 6 行
 - **内容:** コメントは「コンストラクタ内で CSV を読み込むだけで、平衡点は未設定」ですが、`network.IEEE14bus` のコンストラクタは初期化まで行います。
-- **再現・根拠:** [再現] 作った直後の `s_edit.str_flag` は `"initialized"`、`l_staleEquilibrium` は false でした。
+- **再現・根拠:** [再現] 作った直後の `sct_edit.str_flag` は `"initialized"`、`l_staleEquilibrium` は false でした。
 - **影響:** テストの前提を誤解します。
 - **分類:** 仕様・コメント不一致
 

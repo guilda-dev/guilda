@@ -48,8 +48,8 @@ function [sv_id, c_pat] = catalog()
         c_cache  = cell(0,1);
         rv_len   = zeros(0,1);
         for i = numel(a_xml):-1:1   % 同じ文章の entry は Deprecated.xml を先にする
-            s_xml = readstruct(fullfile(str_dir, a_xml(i).name));
-            a_ent = s_xml.message.entry;
+            sct_xml = readstruct(fullfile(str_dir, a_xml(i).name));
+            a_ent = sct_xml.message.entry;
             for k = 1:numel(a_ent)
                 [str_pat, n_len] = to_pattern(a_ent(k).Text);
                 if n_len > 0   % "{0}" だけの entry は何にでも一致するので調べない

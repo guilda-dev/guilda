@@ -271,7 +271,7 @@ end
 %% Name-Value options override solver defaults for one call only
 net = DebugScript.helper.build_9bus();
 solver = net.solver_PF;
-s_before = struct("Method", solver.Method, "MaxIterations", solver.MaxIterations, ...
+sct_before = struct("Method", solver.Method, "MaxIterations", solver.MaxIterations, ...
                   "Display", solver.Display, "Tolerance", solver.Tolerance);
 
 % MaxIteration=1 では収束しない (fsolve の exitflag = 0)
@@ -286,9 +286,9 @@ res = DebugScript.helper.quiet(@() net.calculate_powerflow(verbose=false, method
 assert(res.options.Display == "none" && res.options.Method == "dynamic")
 
 % 保存されている既定値は変わらない
-s_after = struct("Method", solver.Method, "MaxIterations", solver.MaxIterations, ...
+sct_after = struct("Method", solver.Method, "MaxIterations", solver.MaxIterations, ...
                  "Display", solver.Display, "Tolerance", solver.Tolerance);
-assert(isequal(s_before, s_after) && net.solver_PF == solver)
+assert(isequal(sct_before, sct_after) && net.solver_PF == solver)
 
 % 既定値を変えると以後の呼び出しすべてに効く
 net.solver_PF.Method = "dynamic";
