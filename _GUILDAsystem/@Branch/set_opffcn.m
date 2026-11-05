@@ -19,7 +19,7 @@ function set_opffcn(obj, varargin)
 % Pmax, Vargmax, Imax and Smax. The branch flow equations are always kept.
 % Given names replace the stored ones, the others are kept; Cost=[] or Constraint=[]
 % clears that term. reset_opffcn restores all defaults. The edit is logged in
-% tab_editLog and does not make the equilibrium stale.
+% the edit log and does not make the equilibrium stale.
 %
 % Name-Value options:
 %

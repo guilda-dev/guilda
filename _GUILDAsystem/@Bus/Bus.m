@@ -131,7 +131,7 @@ classdef Bus < PowerSystemModel
             end
             obj.a_PowerNetwork = net;
             if ~isempty(net)
-                obj.clear_edit_log();   % edits made before do not belong to the new network
+                obj.reset_edit(false);   % edits made before do not belong to the new network; not initialized there yet
             end
         end
     end

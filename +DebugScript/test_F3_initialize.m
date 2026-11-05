@@ -368,7 +368,7 @@ function [V, I, X, tab_log, s_flag] = snapshot(net)
     I = net.cv_Iequilibrium;
     X = cellfun(@(b) cellfun(@(c) c.rv_Xequilibrium, b.a_Component, "UniformOutput", false), ...
                 net.a_Bus, "UniformOutput", false);
-    tab_log  = net.tab_editLog;
+    tab_log  = net.disp_edit();
     s_flag   = DebugScript.helper.edit_flag(net);
 end
 

@@ -190,7 +190,7 @@
     <p lang="en">Example:</p>
     <p lang="ja">例:</p>
     <ul>
-      <li><span lang="en">Edit state <code>sct_edit.l_initialized</code>: whether <code>initialize</code> has run; the edits since are the rows of <code>net.tab_editLog</code>.</span><span lang="ja">編集状態 <code>sct_edit.l_initialized</code>: <code>initialize</code> の実行済みかどうか。以後の編集は <code>net.tab_editLog</code> の行。</span></li>
+      <li><span lang="en">Edit state <code>l_initialized</code>: whether <code>initialize</code> has run; <code>net.disp_edit()</code> shows the edits since.</span><span lang="ja">編集状態 <code>l_initialized</code>: <code>initialize</code> の実行済みかどうか。以後の編集は <code>net.disp_edit()</code> で表示。</span></li>
       <li><span lang="en">A simulation or a linearization needs an up-to-date equilibrium: <code>initialize</code> has run, and no edit since then made the equilibrium stale.</span><span lang="ja">シミュレーションと近似線形化には最新の平衡点が必要。<code>initialize</code> が実行済みで、その後の編集で平衡点が古くなっていないこと。</span></li>
       <li><span lang="en">Otherwise: the error "run <code>net.initialize()</code> first" (see <a href="class-design.html#edits">Class Design: Handling of model edits</a>).</span><span lang="ja">満たさなければ「先に <code>net.initialize()</code> を実行してください」のエラー（<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a> を参照）。</span></li>
     </ul>

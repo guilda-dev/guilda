@@ -144,7 +144,7 @@ function [result, flag, output] = initialize(obj, varargin)
     s_residual = large_model_residuals(obj);
 
     % reset log
-    obj.reset_edit()
+    obj.reset_edit(true)
 
     if s_residual ~= ""
         warning(msg("GUILDA:PowerNetwork:EquilibriumResidual", char(string(equilibrium_tolerance())), char(s_residual)))
@@ -414,7 +414,7 @@ end
 function check_edit_for_equilibrium(obj)
 % Stops when an edit since the last initialize would be lost by Method="equilibrium".
 % Dynamics edits are not lost: the states and inputs are recomputed from the held V and I.
-    tab = obj.tab_editLog;
+    tab = obj.disp_edit();
     [~, lv] = obj.edit_effect(tab.tag, tab.log);
     lv = lv & ~matches(tab.tag, ["Parameter(dynamics)", "Initialize"]);
     if any(lv)
