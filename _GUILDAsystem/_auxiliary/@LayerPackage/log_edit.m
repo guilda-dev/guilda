@@ -28,7 +28,12 @@ function log_edit(obj, log, tag, before, after)
         a_owner.store_edit(obj, log, tag, before, after);
     end
 
-    obj.get_top_layer().report_edit(obj, tag, l_equilibrium);
+    % Top layer of the hierarchy: the first layer up the parents without a LayerPackage parent.
+    a_top = obj;
+    while isa(a_top.parent,"LayerPackage")
+        a_top = a_top.parent;
+    end
+    a_top.report_edit(obj, tag, l_equilibrium);
 
     % A network Hz edit reaches the handles of every layer: the next analysis
     % (check_edit) builds them with the new frequency.

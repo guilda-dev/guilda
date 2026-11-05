@@ -38,7 +38,8 @@ classdef LayerPackage < handle
     end
     %% Edit log
     properties(SetAccess=protected, Hidden) % Edit log
-        % Edit state of the layer, one struct with these fields (set.sct_edit checks them):
+        % Edit state of the layer, one struct with these fields (set.sct_edit checks them).
+        % GetAccess is public (Hidden) because the DebugScript tests, which are scripts, read it.
         %
         % - l_initialized: True once initialize has run with the layer in the network (set by
         %   reset_edit at the end of initialize).
@@ -56,12 +57,13 @@ classdef LayerPackage < handle
         % from the edits reported to it; see edit_effect).
         sct_edit (1,1) struct = struct("l_initialized",false, "s_odefcn","unset")
     end
-    properties(Dependent) % Edit log
+    properties(Dependent, SetAccess=private) % Edit log
         % Edits since the last initialize of the layer and of every layer below it (children,
         % recursively), in the order they were made: net.tab_editLog shows every edit of the
         % network, bus.tab_editLog only those of the bus, its components and their controllers.
         % Columns: timestamp ("uuuu/MM/dd HH:mm:ss"), ID (tags from the edited layer up, joined
-        % by "/"), log message, tag (kind of edit, see edit_effect), states before and after.
+        % by "/"; a parameter edit starts with its group, e.g. "powerflow/SG1B005/B005/TestSystem"),
+        % log message, tag (kind of edit, see edit_effect), states before and after.
         % Each layer keeps its own rows once it has been initialized; initialize clears them
         % (reset_edit), and so does attaching the layer to a new parent (clear_edit_log).
         % Built when read.
@@ -83,11 +85,6 @@ classdef LayerPackage < handle
     end
     
     %% Tag
-    properties(Access=protected) % Tag
-        % True when the layer is managed by the tag system.
-        % <@Type> logical
-        l_managedTag = true;
-    end
     properties % Tag
         % User-defined tag of the layer.
         % Used for identification within the layer structure; a tag that already exists among
@@ -101,27 +98,9 @@ classdef LayerPackage < handle
 
 
     methods(Access=protected)
-        out = get_tag(obj,l_with_layer, s_split)
         log_edit(obj, log, tag, before, after)
         reset_edit(obj)
         flag = check_edit(obj)
-
-        function top = get_top_layer(obj)
-        % Top layer of the hierarchy the layer belongs to: the first layer up the parents
-        % without a LayerPackage parent (the layer itself when it has none).
-            arguments (Input)
-                obj
-            end
-            arguments (Output)
-                top % Top layer (LayerPackage).
-            end
-            top = obj;
-            a_parent = top.parent;
-            while isa(a_parent,"LayerPackage")
-                top = a_parent;
-                a_parent = top.parent;
-            end
-        end
 
         function report_edit(obj, a_layer, tag, l_equilibrium) %#ok<INUSD>
         % Tell the top layer of the hierarchy about an edit (log_edit calls this on it), for
@@ -172,6 +151,8 @@ classdef LayerPackage < handle
         end
     end
     methods(Access=private)
+        out = get_tag(obj, s_split)
+
         function store_edit(obj, a_layer, log, tag, before, after)
         % Append one edit to the layer's own rows (log_edit).
             arguments (Input)
@@ -195,7 +176,7 @@ classdef LayerPackage < handle
             end
             obj.rv_editSeq(n)   = next_edit_seq();
             obj.rv_editTime(n)  = now;
-            obj.sv_editID(n)    = a_layer.get_tag(true,"/");
+            obj.sv_editID(n)    = a_layer.get_tag("/");
             obj.sv_editLog(n)   = log;
             obj.sv_editTag(n)   = tag;
             obj.c_editBefore{n} = before;
@@ -318,7 +299,7 @@ classdef LayerPackage < handle
         function set.s_tag(obj,s_newtag)
             % A tag that already exists among the siblings gets a number suffix
             s_newtag = string(s_newtag);
-            if obj.l_managedTag && ~isempty(obj.parent)
+            if ~isempty(obj.parent)
                 a_sameLayer = obj.parent.children;
                 l_me  = tools.vcellfun(@(a) a==obj, a_sameLayer);
                 sv_sameLayer = string( a_sameLayer(~l_me) );
