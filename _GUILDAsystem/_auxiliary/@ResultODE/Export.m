@@ -20,7 +20,7 @@ function s_file = Export(obj, filename)
         case {".csv", ".txt", ".xlsx", ".xls"}
             writetable(wide_table(obj), s_file);
         case ".mat"
-            odeResults   = obj.odeResults; %#ok<PROPLC>
+            odeResults   = obj.odeResults;
             rm_variable  = obj.rm_variable;
             tab_variable = obj.tab_variable;
             options    = obj.options;

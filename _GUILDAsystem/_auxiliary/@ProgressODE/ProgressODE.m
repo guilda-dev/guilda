@@ -29,7 +29,6 @@ classdef ProgressODE < auxiliary
     end
 
     methods
-
         function obj = ProgressODE(mode, t_simulate, timelimit)
         % Create the progress display of a simulation.
             arguments (Input)
@@ -59,36 +58,7 @@ classdef ProgressODE < auxiliary
             obj.mode = val;
         end
 
-
-        function f = dialogFcn(obj,t,x,flag)
-        % Update the waitbar (output function of mode "dialog").
-            arguments (Input)
-                obj
-                t     % [s] Time of the solver (empty or [t0 tend] at "init", empty at "done").
-                x     % States of the solver.
-                flag  % "init", "done", "break" or empty.
-            end
-            arguments (Output)
-                f     % True to stop the integration (always false).
-            end
-            [f,t,flag] = obj.time_keeper(t,x,flag);
-
-            switch char(flag)
-                case 'init'
-                    obj.phase = obj.phase +1;
-                    obj.tlast = t(1);
-                    return
-                otherwise
-                    if ~isgraphics(obj.dialog)
-                        obj.dialog = waitbar(0,' ','Name','Simulation in progress...');
-                    end
-                    per = (t-obj.tlast)/obj.tspan;
-                    if per>= 0.01
-                        waitbar(t/obj.tspan,obj.dialog,sprintf(['Time: %0.2f(s) / %0.2f(s)',newline,'phase : %.1d'],t,obj.tlim(end), obj.phase))
-                        obj.tlast = floor(per*100)/100 * obj.tspan + obj.tlast;
-                    end
-            end
-        end
+        f = dialogFcn(obj,t,x,flag)
         function delete(obj)
         % Close the waitbar.
             arguments (Input)
@@ -99,130 +69,13 @@ classdef ProgressODE < auxiliary
             end
         end
 
-        function f = dispFcn(obj,t,x,flag)
-        % Update the text bar (output function of mode "disp").
-            arguments (Input)
-                obj
-                t     % [s] Time of the solver (empty or [t0 tend] at "init", empty at "done").
-                x     % States of the solver.
-                flag  % "init", "done", "break" or empty.
-            end
-            arguments (Output)
-                f     % True to stop the integration (always false).
-            end
-            [f,t,flag] = obj.time_keeper(t,x,flag);
-
-            switch char(flag)
-                case 'init'
-                    obj.phase = obj.phase +1;
-                    if obj.phase==1
-                        obj.disp_header(t)
-                    end
-                    obj.disp_init(t)
-                case 'done'
-                    fprintf('\b')
-                    disp(obj.message)
-                    obj.message = " ";
-                otherwise
-                    wid = lastwarn;
-                    if ~strcmp(obj.last_warn,wid)
-                        obj.disp_header(obj.tlim);
-                        obj.disp_init(obj.tlim);
-                    end
-                    per = (t-obj.tlast)/obj.tspan;
-                    if per>= 0.01
-                        roundper = floor(per*100);
-                        fprintf(repmat('>',1,roundper))
-                        obj.tlast = roundper/100 * obj.tspan + obj.tlast;
-                    end
-            end
-        end
-
-        function [f,t,flag] = time_keeper(obj,t,~,flag)
-        % Stop the integration when the run exceeds timelimit (output function of mode "none").
-        %
-        % Shifts t by timeoffset and records the reason of a stop in message.
-            arguments (Input)
-                obj
-                t     % [s] Time of the solver (empty or [t0 tend] at "init", empty at "done").
-                ~
-                flag  % "init", "done", "break" or empty.
-            end
-            arguments (Output)
-                f     % True to stop the integration (always false).
-                t     % [s] Time shifted by timeoffset.
-                flag  % Flag, set to 'done' when the run stops.
-            end
-            t = obj.timeoffset + t;
-            f = 0;
-            switch char(flag)
-                case 'init'
-                    obj.ToBeContinue = true;
-                case 'done'
-                    return
-                case 'break'
-                    if isempty(obj.tlast)
-                        obj.message = "|(break)";
-                    else
-                        obj.message = "|(break: t="+obj.tlast+")";
-                    end
-                    flag = 'done';
-                    return
-                otherwise
-                    if  obj.ToBeContinue && toc(obj.start_time) >= obj.timelimit
-                        obj.ToBeContinue = false;
-                        obj.message = "|(timeout: t="+t(1)+")";
-                        flag = 'done';
-                    end
-            end
-        end
-
-
-        function [value,isterminal,direction] = Events(obj,~,~)
-        % Check whether the phase may continue (event function of the solver).
-            arguments (Output)
-                value       % Event value: true while the phase may continue.
-                isterminal  % 1 (the event stops the integration).
-                direction   % 0 (any direction).
-            end
-            % No input block: SolverODE calls this as odeProg.Events() without t and x.
-            value = obj.ToBeContinue;
-            isterminal = 1;
-            direction  = 0;
-        end
-
+        f = dispFcn(obj,t,x,flag)
+        [f,t,flag] = time_keeper(obj,t,~,flag)
+        [value,isterminal,direction] = Events(obj,~,~)
     end
 
     methods(Access=private)
-        function disp_header(obj, t)
-            arguments (Input)
-                obj
-                t  % [s] Simulation time; t(1) is the start of the phase.
-            end
-            disp(' ')
-            t0 = [num2str( obj.tlim(1)  ),'s'];
-            te = [num2str( obj.tlim(end)),'s'];
-            disp(['         ',t0,repmat(' ',[1,101-numel([t0,te])]),te])
-            disp(['         |        10%       20%       30%       40%       50%       60%       70%       80%       90%        |',newline,...
-                  '         |---------o---------o---------o---------o---------o---------o---------o---------o---------o---------|'])
-
-            obj.tlast     = t(1);
-            obj.last_warn = lastwarn;
-        end
-
-        function disp_init(obj,t)
-            arguments (Input)
-                obj
-                t  % [s] Simulation time; t(1) is the start of the phase.
-            end
-            fprintf([' phase', num2str(obj.phase,"%.2d"),' |'])
-            per = (t(1)-obj.tlim(1))/obj.tspan;
-            if per>= 0.01
-                roundper = floor(per*100);
-                fprintf([repmat(' ',1,roundper-1),'|'])
-                obj.tlast = roundper/100 * obj.tspan + obj.tlim(1);
-            end
-        end
+        disp_header(obj, t)
+        disp_init(obj,t)
     end
 end
-

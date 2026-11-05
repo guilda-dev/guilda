@@ -80,75 +80,12 @@ classdef (Abstract) ResultBase < auxiliary
             l = obj.is_success();
         end
 
-        function varargout = Plot(obj, varargin) %#ok<STOUT>
-        % Plot the result.
-        %
-        % Plots the result. Each result class defines its own figures and Name-Value
-        % options. A result class without a plot stops with GUILDA:ResultBase:Unsupported.
-            arguments (Input)
-                obj
-            end
-            arguments (Input, Repeating)
-                varargin  % Name-Value plot options defined by the result class.
-            end
-            arguments (Output, Repeating)
-                varargout % Created figure or axes (defined by the result class).
-            end
-            obj.error_unsupported("Plot");
-        end
-
-        function varargout = Export(obj, varargin) %#ok<STOUT>
-        % Write the result to a file.
-        %
-        % Writes the result to a file. Each result class defines the file formats and
-        % Name-Value options. A result class without an export stops with
-        % GUILDA:ResultBase:Unsupported.
-            arguments (Input)
-                obj
-            end
-            arguments (Input, Repeating)
-                varargin  % Output file, then Name-Value export options defined by the result class.
-            end
-            arguments (Output, Repeating)
-                varargout % Path of the written file (defined by the result class).
-            end
-            obj.error_unsupported("Export");
-        end
+        varargout = Plot(obj, varargin)
+        varargout = Export(obj, varargin)
     end
 
     methods (Access=protected)
-        function l = is_success(obj)
-        % Decide whether flag means success.
-        %
-        % Success test behind l_success: a logical flag as it is, a numeric flag when
-        % positive (as for exitflag of fsolve or fmincon). Override it when an analysis
-        % uses another convention.
-            arguments (Input)
-                obj
-            end
-            arguments (Output)
-                l % True when the analysis succeeded.
-            end
-            f = obj.flag;
-            if islogical(f)
-                l = isscalar(f) && f;
-            elseif isnumeric(f)
-                l = isscalar(f) && f > 0;
-            else
-                l = false;
-            end
-        end
-
-        function error_unsupported(obj, s_method)
-        % Error for an unsupported Plot or Export.
-        %
-        % Stops with GUILDA:ResultBase:Unsupported for a method of the Plot / Export
-        % contract that this result class does not provide.
-            arguments (Input)
-                obj
-                s_method % Name of the unsupported method ("Plot" or "Export").
-            end
-            error(msg("GUILDA:ResultBase:Unsupported", char(s_method), class(obj)));
-        end
+        l = is_success(obj)
+        error_unsupported(obj, s_method)
     end
 end

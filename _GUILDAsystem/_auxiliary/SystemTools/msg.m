@@ -4,7 +4,8 @@ function txt = msg(ID, varargin)
 % Reads SystemTools/GUILDA/en/<Object>.xml and returns the entry of the key, with the
 % placeholders {0}, {1}, ... replaced by the additional inputs.
 %
-% The caller must be the object named in the ID; otherwise msg stops with an error.
+% The caller must be the object named in the ID (a function in @Class/private counts as
+% Class); otherwise msg stops with an error.
 %
 % <@Examples>
 % Inside a method of ResultCPF:
@@ -38,8 +39,13 @@ function txt = msg(ID, varargin)
     
     ST      = dbstack("-completenames");
     splitST = arrayfun(@(s) strsplit(s.file,filesep), ST, 'UniformOutput', false);
-    
-    if ~isequal(msg{2},replace(splitST{2}{end-1},'@','')) || ~isequal(msg{1},'GUILDA')
+    % A function in @Class/private belongs to Class.
+    s_folder = splitST{2}{end-1};
+    if strcmp(s_folder,'private') && startsWith(splitST{2}{end-2},'@')
+        s_folder = splitST{2}{end-2};
+    end
+
+    if ~isequal(msg{2},replace(s_folder,'@','')) || ~isequal(msg{1},'GUILDA')
         mfile = append(msg{2}, '.m');
         if ~isequal(mfile, splitST{2}{end})
             error("The ID specification is invalid.")
@@ -63,7 +69,6 @@ function txt = msg(ID, varargin)
         txt = char(message);
     else
         args = varargin;
-        
         narg = numel(args);
         if MSGnums == narg
             subs_txt = MessageFormat.format(message, args);

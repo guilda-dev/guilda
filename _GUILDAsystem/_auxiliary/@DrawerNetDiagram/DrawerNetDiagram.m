@@ -132,15 +132,7 @@ classdef DrawerNetDiagram < auxiliary
         reflect_node_label(obj)
         reflect_arrow_forward(obj)
         apply_color_values(obj, h_list, rv_value)
-        function flag = validate(obj)
-            arguments (Input)
-                obj
-            end
-            arguments (Output)
-                flag (1,1) logical % True when there is nothing to draw on.
-            end
-            flag = isempty(obj.plt) || ~isgraphics(obj.ax);
-        end
+        flag = validate(obj)
     end
 
     methods
@@ -269,7 +261,6 @@ classdef DrawerNetDiagram < auxiliary
             obj.apply_color_values(obj.plt.CompArrow,rv_value);             %#ok
         end
 
-
         % Setters for node labels
         function set.NodeLabelB(obj, label)
             obj.NodeLabelB = string(label);
@@ -294,7 +285,6 @@ classdef DrawerNetDiagram < auxiliary
             if validate(obj) || ~isfield(obj.plt, 'NodeLabel'); return; end %#ok
             obj.reflect_node_label
         end
-
 
         % Setters for edge direction (for directed edge shapes)
         function set.EdgeB2B_forward(obj, forward)
@@ -352,5 +342,3 @@ classdef DrawerNetDiagram < auxiliary
         end
     end
 end
-
-
