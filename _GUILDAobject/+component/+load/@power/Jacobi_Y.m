@@ -1,4 +1,4 @@
-function [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t,x,V,I,u,param,omega0) %#ok
+function [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t,x,V,I,u,param,omega0)
 % Calculate the Jacobians of the output.
 %
 % Analytic derivatives of `fcn_Y` at the given point.

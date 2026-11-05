@@ -1,4 +1,4 @@
-function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0) %#ok
+function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0)
 % Calculate the Jacobians of the state equation.
 %
 % Analytic derivatives of `fcn_dx` at the given point, used for linearization.

@@ -75,24 +75,12 @@ classdef (Sealed = true) PSS1 < controller.pss.abstract
             obj.sv_y    = "Vpss";
             obj.sv_para = ["kpss"; "tWS"; "tn1"; "td1"; "tn2"; "td2"; "Vpss_min"; "Vpss_max"];
         end        
-        
-        function get_equilibrium(obj, V, u) %#ok
-        % Set the equilibrium state and input of the PSS to 0.
-            arguments (Input)
-                obj
-                V    % [pu] Complex terminal voltage of the generator at the equilibrium (unused).
-                u    % [pu] Equilibrium input of the generator (unused).
-            end
-            obj.rv_Xequilibrium = zeros(3,1);
-            obj.rv_Uequilibrium = 0;
-        end
     end
 
     methods (Static)
         dx   = fcn_dx(t, x, V, I, u, param, omega0)
         Vpss = fcn_y(t, x, V, I, u, param, omega0)
         Mass = fcn_Mass(t, x, V, I, u, param, omega0)
-
         [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0)
         [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t,x,V,I,u,param,omega0)
     end    

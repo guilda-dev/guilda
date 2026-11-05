@@ -1,4 +1,4 @@
-function dx = fcn_dx(t, x, V, I, u, param, omega0) %#ok   
+function dx = fcn_dx(t, x, V, I, u, param, omega0)
     % Return the right-hand side of the PSS1 state equation.
     % The state equation is `M*dx/dt = f(t, x, V, I, u)`, where `M` is given by fcn_Mass.
     %

@@ -1,4 +1,4 @@
-function [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t,x,V,I,u,param,omega0) %#ok
+function [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t,x,V,I,u,param,omega0)
     % Return the Jacobians of the AVR_DC1 output.
     % The derivatives of the output `y` of fcn_y are taken with respect to
     % the state, the voltage, the current and the input.

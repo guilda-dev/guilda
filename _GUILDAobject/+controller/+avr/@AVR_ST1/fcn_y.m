@@ -1,4 +1,4 @@
-function y = fcn_y(t, x, V, I, u, param, omega0) %#ok   
+function y = fcn_y(t, x, V, I, u, param, omega0)
     % Return the output of the AVR_ST1 controller.
     %
     % See also controller.avr.AVR_ST1.fcn_dx, controller.avr.AVR_ST1.Jacobi_Y

@@ -1,4 +1,4 @@
-function [Cix,Div,Dii,Diu] = Jacobi_I(t,x,V,I,u,param,omega0) %#ok
+function [Cix,Div,Dii,Diu] = Jacobi_I(t,x,V,I,u,param,omega0)
 % Calculate the Jacobians of the bus current.
 %
 % Analytic derivatives of `fcn_I`, with the current split as `[real; imag]`.

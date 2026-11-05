@@ -2,7 +2,9 @@ function results = run_all(opt)
 % 機能別・Issue 別のデバッグテスト (+DebugScript/test_F*.m, test_I*.m) をまとめて実行し、結果を一覧表示する
 %
 %   DebugScript.run_all
+%   DebugScript.run_all("Level", "small")
 %   DebugScript.run_all("Features", ["F2","I52"])
+%   DebugScript.run_all("Features", "F7", "Level", "medium")
 %   results = DebugScript.run_all("FailOnUnexpected", false);
 %
 % バッチ実行:
@@ -20,16 +22,24 @@ function results = run_all(opt)
 %      SKIP   : 前提 (任意のツールなど) が無いため実行しなかったテスト。テストの中で
 %               error("DebugScript:Skip", "理由") を投げると SKIP になる (失敗に数えない)
 %
+% 段階 (Level) と目安 (R2026a。件数・時間は計測時のもの)
+%   small  : 約 440 件・約 2〜3 分。変更のたびに実行する
+%   medium : 約 600 件・約 5〜7 分。ブランチをマージする前に実行する
+%   large  : 全件 (約 690 件)・約 15 分。統合ブランチの確認とリリース前に実行する (既定)
+%   medium・large に入るテストは DebugScript.test_levels で指定する (一覧にないテストは small)。
+%
 % 対話操作が必要な機能 (GUILDA.setting など) は manual_F9_interactive.m で手動確認する。
 %
 % オプション
 %   Features         : 実行する機能や Issue ("F1", "I52" など。既定はすべての test_F*.m, test_I*.m)
+%   Level            : 実行する段階 ("small" / "medium" / "large"。既定 "large" = 全件)。Features と同時に指定すると両方に該当するテストを実行する
 %   Verbose          : true のとき GUILDA の表示をそのまま出す (既定 false: ログファイルへ保存)
 %   FailOnUnexpected : true のとき想定外の失敗があれば最後に error にする (バッチの終了コード用)
 %   LogFile          : 抑制した出力の保存先
 
     arguments (Input)
         opt.Features         (1,:) string  = string.empty(1,0)
+        opt.Level            (1,1) string  {mustBeMember(opt.Level, ["small","medium","large"])} = "large"
         opt.Verbose          (1,1) logical = false
         opt.FailOnUnexpected (1,1) logical = true
         opt.LogFile          (1,1) string  = fullfile(tempdir, "GUILDA_DebugScript_" + string(datetime("now","Format","uuuuMMdd_HHmmss")) + ".log")
@@ -76,9 +86,25 @@ function results = run_all(opt)
     else
         lv_run = ismember(sr_feature, opt.Features);
     end
-    suite = suite(lv_run);  sr_file = sr_file(lv_run);  sr_feature = sr_feature(lv_run);
+
+    % 段階による選択 (一覧にないテストは small)
+    tab_level = DebugScript.test_levels();
+    sr_key    = sr_file + "/" + string(extractAfter({suite.Name}, "/"));
+    sr_level  = repmat("small", size(sr_key));
+    [lv_listed, i_level] = ismember(sr_key, tab_level.Test);
+    sr_level(lv_listed)  = tab_level.Level(i_level(lv_listed));
+    sr_missing = setdiff(tab_level.Test, sr_key);
+    if ~isempty(sr_missing)
+        warning("DebugScript:UnknownLevelTest", "test_levels.m に存在しないテストがあります: %s", join(sr_missing, ", "));
+    end
+    switch opt.Level
+        case "small",  lv_run = lv_run & sr_level == "small";
+        case "medium", lv_run = lv_run & sr_level ~= "large";
+    end
+
+    suite = suite(lv_run);  sr_file = sr_file(lv_run);  sr_feature = sr_feature(lv_run);  sr_level = sr_level(lv_run);
     if isempty(suite)
-        error("DebugScript:NoTests", "Features = [%s] に該当するテストがありません (例: [""F1"",""F2""])。", join(opt.Features, ","));
+        error("DebugScript:NoTests", "Features = [%s], Level = %s に該当するテストがありません (例: [""F1"",""F2""])。", join(opt.Features, ","), opt.Level);
     end
 
     tab_known = DebugScript.known_failures();
@@ -90,8 +116,9 @@ function results = run_all(opt)
     rows = cell(0,1);
     t_all = tic;
     for f = unique(sr_file, "stable")
-        lv  = sr_file == f;
-        sub = suite(lv);
+        lv     = sr_file == f;
+        sub    = suite(lv);
+        sr_sub = sr_level(lv);
         fprintf("[%s] %s (%d tests) ... ", sr_feature(find(lv,1)), f, numel(sub));
         t_f = tic;
         if opt.Verbose
@@ -103,6 +130,7 @@ function results = run_all(opt)
         fprintf("%.1f s\n", toc(t_f));
         for i = 1:numel(res)
             rows{end+1,1} = classify(res(i), sr_feature(find(lv,1)), f, tab_known); %#ok<AGROW>
+            rows{end,1}.Level = sr_sub(i);
         end
     end
     results = vertcat(rows{:});
@@ -174,7 +202,7 @@ function print_summary(results, t_total, opt)
     bar = string(repmat('=',1,110));
     disp(" ")
     disp(bar)
-    disp("  GUILDA DebugScript summary")
+    disp("  GUILDA DebugScript summary (Level = " + opt.Level + ")")
     disp(bar)
     w = max(strlength(results.Test)) + 2;
     fmt = "%-4s %-" + w + "s %-7s %7.2fs  %s\n";
@@ -205,6 +233,14 @@ function print_summary(results, t_total, opt)
     end
     if n("FIXED?") > 0
         disp("  => FIXED? のテストは修正済みの可能性があります。known_failures.m から削除してください。")
+    end
+    % small 扱いなのに遅いテスト (全件実行のときだけ判定する)
+    if opt.Level == "large"
+        lv_slow = results.Level == "small" & results.Time > 3;
+        if any(lv_slow)
+            fprintf("  => small 扱いで 3 秒を超えたテストがあります。test_levels.m への登録を検討してください:\n");
+            fprintf("       %s/%s (%s s)\n", [results.Feature(lv_slow), results.Test(lv_slow), compose("%.1f", results.Time(lv_slow))]');
+        end
     end
     if ~opt.Verbose
         disp("  GUILDA の表示はログに保存: " + opt.LogFile)

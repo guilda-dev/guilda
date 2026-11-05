@@ -1,4 +1,4 @@
-function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0) %#ok
+function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0)
     % Return the Jacobians of the AVR_DC1 state equation.
     % The derivatives of the right-hand side `f` of fcn_dx are taken with respect to
     % the state, the voltage, the current and the input.
