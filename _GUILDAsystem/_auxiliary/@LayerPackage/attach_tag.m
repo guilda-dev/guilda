@@ -16,5 +16,5 @@ function out = attach_tag(obj,sm_name_list)
     arguments (Output)
         out % Input names with layer tag suffix.
     end
-    out = sm_name_list +"_"+ obj.get_tag(true,"_");
+    out = sm_name_list +"_"+ obj.get_tag("_");
 end

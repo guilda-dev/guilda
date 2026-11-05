@@ -1,27 +1,16 @@
-function out = get_tag(obj,l_with_layer, s_split)
-    % Build tag string with optional hierarchy composition.
+function out = get_tag(obj, s_split)
+    % Tag of the layer followed by the tags of its parents, up the hierarchy.
     %
-    % Returns the layer tag, optionally including parent-layer tags.
+    % Returns the tags from the layer up to the top layer, joined by s_split.
     arguments (Input)
         obj % Target layer object.
-        l_with_layer (1,1) logical = false; % Include parent-layer tags recursively.
-        s_split      (1,1) string  = ""; % Delimiter for composed tags.
+        s_split (1,1) string = ""; % Delimiter between the tags.
     end
     arguments (Output)
-        out % Layer tag string.
+        out % Composed tag string.
     end
-
-    if obj.l_managedTag
-        out = obj.s_tag;
-    else
-        out = "";
-    end
-
-    if l_with_layer && isa(obj.parent,"LayerPackage")
-        s_pTag = obj.parent.get_tag(l_with_layer,s_split);
-        if strlength(s_pTag) == 0 || strlength(out) == 0
-            s_split = "";
-        end
-        out =  out + s_split + s_pTag;
+    out = obj.s_tag;
+    if isa(obj.parent,"LayerPackage")
+        out = out + s_split + obj.parent.get_tag(s_split);
     end
 end
