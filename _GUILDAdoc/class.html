@@ -39,7 +39,7 @@
     const loader = window.GuildaDocLoader;
     const {
       tr, setPageTitle, escapeHtml, nl2br, firstText, toList, renderMarkdown, formatInlineMarkdown,
-      classLink: renderClassLink, seeAlsoLink, sourceLocation, examplesText, groupRows, groupHeading
+      classLink: renderClassLink, seeAlsoLink, sourceLocation, examplesText, groupRows, groupHeading, breakableName
     } = window.GuildaDocRender;
     const routeParams = loader.getRouteParams();
     const className = routeParams.get('class');
@@ -114,8 +114,8 @@
       ].join('');
       return hints ? `<span class="ref-hints">${hints}</span>` : '';
     };
-    const propertyName = (p) => `<strong>${escapeHtml(p.name)}</strong>${memberHints(p)}`;
-    const methodName = (m) => `<a class="row-link" href="${methodUrl(m.name)}">${escapeHtml(m.name)}</a>${memberHints(m)}`;
+    const propertyName = (p) => `<strong>${breakableName(p.name)}</strong>${memberHints(p)}`;
+    const methodName = (m) => `<a class="row-link" href="${methodUrl(m.name)}">${breakableName(m.name)}</a>${memberHints(m)}`;
 
     const memberViews = {
       property: {
