@@ -258,8 +258,8 @@
         <tr><td><span lang="en">Property group</span><span lang="ja">プロパティのグループ</span> <span class="cd-pin">4</span></td><td data-label="What to write" data-label-ja="書くもの"><span lang="en">A trailing comment on the <code>properties (...)</code> line.</span><span lang="ja"><code>properties (...)</code> 行の行末コメント。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">Without it, properties are grouped by access.</span><span lang="ja">ない場合はアクセス属性でグループ分け。</span></td></tr>
         <tr><td><span lang="en">Unit</span><span lang="ja">単位</span> <span class="cd-pin">5</span></td><td data-label="What to write" data-label-ja="書くもの"><span lang="en">A leading <code>[unit]</code> in a property comment or an <code>arguments</code> comment.</span><span lang="ja">プロパティのコメントまたは <code>arguments</code> のコメントの先頭に書く <code>[unit]</code>。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en"><code>% [MVA] Base power.</code> The rest of the line is the summary.<small>Examples: <code>[pu]</code>, <code>[MVA]</code>, <code>[rad/s]</code>.</small></span><span lang="ja"><code>% [MVA] Base power.</code> 行の残りが概要。<small>例: <code>[pu]</code>、<code>[MVA]</code>、<code>[rad/s]</code>。</small></span></td></tr>
         <tr><td><span lang="en">Method group</span><span lang="ja">メソッドのグループ</span></td><td data-label="What to write" data-label-ja="書くもの"><span lang="en">The purpose group, e.g. <code>Called by analyses</code>. The first of these wins:<small>1. <code>% &lt;@Group&gt; name</code> in the method's help.</small><small>2. <code>% &lt;@Group&gt; name</code> directly above its declaration in the <code>methods</code> block of the classdef (for a method whose file is generated from a template).</small><small>3. A trailing comment on the <code>methods (...)</code> line that declares or defines it.</small><small>4. The verb prefix of the name.</small></span><span lang="ja">目的のグループ。例: <code>Called by analyses</code>。次の順で先にあるものを採用:<small>1. メソッドのヘルプ内の <code>% &lt;@Group&gt; name</code>。</small><small>2. classdef の <code>methods</code> ブロックで宣言の直上に書く <code>% &lt;@Group&gt; name</code>（テンプレートから生成されるファイルのメソッド用）。</small><small>3. 宣言・定義している <code>methods (...)</code> 行の行末コメント。</small><small>4. 名前の動詞接頭辞。</small></span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">Verb prefix: <code>set_</code>, <code>get_</code>, <code>add_</code>, <code>calculate_</code> and the other verbs each get a group; the constructor has its own; anything else is in Other.<small>The groups of <code>PowerNetwork</code> methods (Power flow, Simulation, ...) also label the Used by section of other classes.</small></span><span lang="ja">動詞接頭辞: <code>set_</code>、<code>get_</code>、<code>add_</code>、<code>calculate_</code> などの動詞ごとにグループ。コンストラクターは専用のグループ。それ以外は Other。<small><code>PowerNetwork</code> のメソッドのグループ（Power flow、Simulation など）は、他クラスの利用元の見出しにも使用。</small></span></td></tr>
-        <tr><td><span lang="en">Inputs</span><span lang="ja">入力</span> <span class="cd-pin">7</span></td><td data-label="What to write" data-label-ja="書くもの"><span lang="en">A trailing <code>% text</code> in the <code>arguments</code> block, or a comment line above the argument.</span><span lang="ja"><code>arguments</code> ブロック内の行末の <code>% text</code>、または引数の上のコメント行。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">Size, class, validators and defaults come from the same line.<small>A hot-path function has no <code>arguments</code> block: an <code>Inputs:</code> section in its help instead (see <a href="#hot-path">Arguments of hot-path functions</a>).</small></span><span lang="ja">サイズ、クラス、検証関数、既定値は同じ行から読み取り。<small><code>arguments</code> ブロックを持たないホットパス関数: ヘルプ内の <code>Inputs:</code> 節で代替（<a href="#hot-path">ホットパス関数の引数</a>を参照）。</small></span></td></tr>
-        <tr><td><span lang="en">Outputs</span><span lang="ja">出力</span> <span class="cd-pin">8</span></td><td data-label="What to write" data-label-ja="書くもの"><span lang="en">The same, in an <code>arguments (Output)</code> block.</span><span lang="ja">同じ書き方を <code>arguments (Output)</code> ブロックで。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">Without the block: an <code>Outputs:</code> section in the help, else the names only.</span><span lang="ja">このブロックがない場合: ヘルプ内の <code>Outputs:</code> 節、それもなければ名前だけを掲載。</span></td></tr>
+        <tr><td><span lang="en">Inputs</span><span lang="ja">入力</span> <span class="cd-pin">7</span></td><td data-label="What to write" data-label-ja="書くもの"><span lang="en">A trailing <code>% text</code> in the <code>arguments</code> block, or a comment line above the argument.</span><span lang="ja"><code>arguments</code> ブロック内の行末の <code>% text</code>、または引数の上のコメント行。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">Size, class, validators and defaults come from the same line.</span><span lang="ja">サイズ、クラス、検証関数、既定値は同じ行から読み取り。</span></td></tr>
+        <tr><td><span lang="en">Outputs</span><span lang="ja">出力</span> <span class="cd-pin">8</span></td><td data-label="What to write" data-label-ja="書くもの"><span lang="en">The same, in an <code>arguments (Output)</code> block.</span><span lang="ja">同じ書き方を <code>arguments (Output)</code> ブロックで。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">Outputs without the block are listed by name only.</span><span lang="ja">このブロックがない出力は名前だけを掲載。</span></td></tr>
       </tbody>
     </table>
     <table class="dg-table">
@@ -272,42 +272,37 @@
     </table>
 
     <h3 id="hot-path"><span lang="en">Arguments of hot-path functions</span><span lang="ja">ホットパス関数の引数</span></h3>
-    <p lang="en">An <code>arguments</code> block validates its inputs on every call, while the exporter only reads the text. A function that runs in an inner loop therefore describes its arguments in the help comment instead.</p>
-    <p lang="ja"><code>arguments</code> ブロックの検証は呼び出しのたびに実行、エクスポーターはテキストを読むだけ。このため内側のループで動く関数は、引数をヘルプコメントで記述。</p>
+    <p lang="en">Arguments are described only in <code>arguments</code> and <code>arguments (Output)</code> blocks. What a block may check depends on how often the function runs.</p>
+    <p lang="ja">引数の記述は <code>arguments</code> / <code>arguments (Output)</code> ブロックのみ。ブロックで検査してよい範囲は関数の呼び出し頻度で区別。</p>
     <table class="dg-table">
-      <thead><tr><th><span lang="en">Function</span><span lang="ja">関数</span></th><th><span lang="en">How to describe its arguments</span><span lang="ja">引数の記述方法</span></th></tr></thead>
+      <thead><tr><th><span lang="en">Function</span><span lang="ja">関数</span></th><th><span lang="en">Allowed in its arguments blocks</span><span lang="ja">arguments ブロックで使えるもの</span></th></tr></thead>
       <tbody>
-        <tr><td><span lang="en">Entry point and public API, e.g. <code>simulate</code>, <code>add_component</code></span><span lang="ja">入口と公開 API。例: <code>simulate</code>、<code>add_component</code></span></td><td data-label="How to describe its arguments" data-label-ja="引数の記述方法"><span lang="en">An <code>arguments</code> block, which validates the inputs and documents them.</span><span lang="ja"><code>arguments</code> ブロック。入力の検証と文書化を兼用。</span></td></tr>
-        <tr><td><span lang="en">Called in an inner loop: ODE right-hand side, Newton iteration, per-step update, e.g. <code>get_dx_algebraic</code></span><span lang="ja">内側のループで呼ばれる関数: ODE の右辺、Newton 反復、ステップごとの更新。例: <code>get_dx_algebraic</code></span></td><td data-label="How to describe its arguments" data-label-ja="引数の記述方法"><span lang="en">No <code>arguments</code> block. <code>Inputs:</code> and <code>Outputs:</code> sections in the help comment.</span><span lang="ja"><code>arguments</code> ブロックなし。ヘルプコメント内の <code>Inputs:</code> 節と <code>Outputs:</code> 節。</span></td></tr>
+        <tr><td><span lang="en">Entry point and public API, e.g. <code>simulate</code>, <code>add_component</code></span><span lang="ja">入口と公開 API。例: <code>simulate</code>、<code>add_component</code></span></td><td data-label="Allowed in its arguments blocks" data-label-ja="arguments ブロックで使えるもの"><span lang="en">Full validation: size, class, validator functions, defaults and name-value arguments.</span><span lang="ja">すべての検証: サイズ、クラス、検証関数、既定値、名前と値の引数。</span></td></tr>
+        <tr><td><span lang="en">Hot path, called per ODE right-hand side evaluation, Newton iteration or time step, e.g. <code>get_dx_*</code>, model <code>fcn_*</code> / <code>Jacobi_*</code>, power-flow mismatch</span><span lang="ja">ホットパス関数: ODE 右辺の評価、Newton 反復、時間ステップごとに呼ばれる関数。例: <code>get_dx_*</code>、モデルの <code>fcn_*</code> / <code>Jacobi_*</code>、潮流のミスマッチ</span></td><td data-label="Allowed in its arguments blocks" data-label-ja="arguments ブロックで使えるもの"><span lang="en">Size and class with a comment. No validator functions (<code>{mustBe...}</code>) and no name-value arguments (<code>opt.Name</code>): range checks belong at the analysis entry, done once.</span><span lang="ja">サイズとクラス、コメント。検証関数（<code>{mustBe...}</code>）と名前と値の引数（<code>opt.Name</code>）は不可: 範囲の検査は解析の入口で一度だけ。</span></td></tr>
       </tbody>
     </table>
-<pre class="cd-code"><span class="cd-k">function</span> DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)
-<span class="cd-c">% Add the equations of the component to the DAE residual.</span>
-<span class="cd-c">%</span>
-<span class="cd-c">% Inputs:</span>
-<span class="cd-c">%   t       (1,1) double  [s] Time.</span>
-<span class="cd-c">%   x       (:,1) double  Variables of the network DAE.</span>
-<span class="cd-c">%   Vi      (2,1) double  [pu] Bus voltage [real; imag].</span>
-<span class="cd-c">%   u       Input values of the component, after input events</span>
-<span class="cd-c">%           and global controllers.</span>
-<span class="cd-c">%   DAEvec  (:,1) double  DAE residual so far.</span>
-<span class="cd-c">% Outputs:</span>
-<span class="cd-c">%   DAEvec  (:,1) double  Updated DAE residual.</span>
-</pre>
     <ul lang="en">
-      <li>One entry per line: the name, then <code>(size) class</code> and the description, separated by two spaces. Size, class and a leading <code>[unit]</code> are optional.</li>
-      <li>A more indented line continues the description. The list form <code>- `x` — text</code> (or <code>- `x`: text</code>) is read too.</li>
-      <li>The <code>function</code> line decides the names and their order. The object of a method needs no entry; entries for names not on the line take the place of <code>varargin</code> / <code>varargout</code>.</li>
-      <li>The sections become the argument tables of the method page and leave the description.</li>
-      <li>An <code>arguments</code> block wins over a section of the same kind.</li>
+      <li>Why: validator functions and name-value parsing run on every call, while size and class checks are nearly free.</li>
+      <li>Size and class declarations convert the input: a row vector becomes a column, <code>single</code> becomes <code>double</code>. Declare only shapes that every caller passes; otherwise declare the class only, or write the comment only.</li>
     </ul>
     <ul lang="ja">
-      <li>1 行に 1 項目: 名前、<code>(size) class</code>、説明を 2 つ以上の空白で区切って記述。サイズ、クラス、先頭の <code>[unit]</code> は省略可。</li>
-      <li>より深く字下げした行は説明の続き。リスト形式 <code>- `x` — text</code>（または <code>- `x`: text</code>）も読み取り。</li>
-      <li>名前と順序は <code>function</code> 行で決定。メソッドのオブジェクト引数には項目不要。<code>function</code> 行にない名前の項目は <code>varargin</code> / <code>varargout</code> の中身として扱い。</li>
-      <li>節はメソッドのページの引数表になり、説明文からは除外。</li>
-      <li>同じ種類の <code>arguments</code> ブロックがあればそちらを優先。</li>
+      <li>理由: 検証関数と名前と値の引数の解析は呼び出しのたびに実行、サイズとクラスの検査はほぼ無負担。</li>
+      <li>サイズとクラスの宣言による入力の変換: 行ベクトルは列ベクトル、<code>single</code> は <code>double</code> に。宣言するサイズはすべての呼び出し元が渡す形のみ。形が一定でなければクラスだけ、またはコメントだけ。</li>
     </ul>
+<pre class="cd-code"><span class="cd-k">function</span> DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)
+<span class="cd-c">% Add the equations of the component to the DAE residual.</span>
+    <span class="cd-k">arguments</span>
+        obj
+        t      (1,1) double  <span class="cd-c">% [s] Time.</span>
+        x      (:,1) double  <span class="cd-c">% Variables of the network DAE.</span>
+        Vi     (2,1) double  <span class="cd-c">% [pu] Bus voltage [real; imag].</span>
+        Ii     (2,1) double  <span class="cd-c">% [pu] Bus current [real; imag].</span>
+        u      (:,1) double  <span class="cd-c">% Input values of the component.</span>
+        DAEvec (:,1) double  <span class="cd-c">% DAE residual of the network so far.</span>
+    <span class="cd-k">end</span>
+    <span class="cd-k">arguments</span> (Output)
+        DAEvec (:,1) double  <span class="cd-c">% Updated DAE residual of the network.</span>
+    <span class="cd-k">end</span></pre>
 
     <!-- ============================== CLASS PAGE ============================== -->
     <h2 id="class-page"><span lang="en">Class page sections</span><span lang="ja">クラスのページの構成</span></h2>
@@ -404,8 +399,8 @@ a_Solver</pre>
         <tr><td><code>Category</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">Nothing: the package is the category.</span><span lang="ja">不要: パッケージがカテゴリ。</span></td></tr>
         <tr><td><code>Constructor</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">The constructor's own comment block and <code>arguments</code> block.</span><span lang="ja">コンストラクター自身のコメントブロックと <code>arguments</code> ブロック。</span></td></tr>
         <tr><td><code>Signatures</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">Nothing: the <code>function</code> line and the <code>arguments</code> block. Show other call forms in <code>&lt;@Examples&gt;</code>.</span><span lang="ja">不要: <code>function</code> 行と <code>arguments</code> ブロックから読み取り。別の呼び出し方は <code>&lt;@Examples&gt;</code> で。</span></td></tr>
-        <tr><td><code>Parameters</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">Comments in the <code>arguments</code> block; for a hot-path function, an <code>Inputs:</code> section (see <a href="#hot-path">Arguments of hot-path functions</a>).</span><span lang="ja"><code>arguments</code> ブロック内のコメント。ホットパス関数では <code>Inputs:</code> 節（<a href="#hot-path">ホットパス関数の引数</a>を参照）。</span></td></tr>
-        <tr><td><code>Returns</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">Comments in the <code>arguments (Output)</code> block, or an <code>Outputs:</code> section.</span><span lang="ja"><code>arguments (Output)</code> ブロック内のコメント、または <code>Outputs:</code> 節。</span></td></tr>
+        <tr><td><code>Parameters</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">Comments in the <code>arguments</code> block.</span><span lang="ja"><code>arguments</code> ブロック内のコメント。</span></td></tr>
+        <tr><td><code>Returns</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">Comments in the <code>arguments (Output)</code> block.</span><span lang="ja"><code>arguments (Output)</code> ブロック内のコメント。</span></td></tr>
         <tr><td><code>Calls</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">The See also line, or a sentence in the description.</span><span lang="ja">See also 行、または説明の中の文。</span></td></tr>
         <tr><td><code>Throws</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">Nothing: read from the error IDs in <code>error(msg("GUILDA:..."))</code> calls.</span><span lang="ja">不要: <code>error(msg("GUILDA:..."))</code> 呼び出しのエラー ID から読み取り。</span></td></tr>
         <tr><td><code>Size</code>, <code>Default</code>, <code>Constraints</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">The property declaration: size, class, validators and default.</span><span lang="ja">プロパティの宣言: サイズ、クラス、検証関数、既定値。</span></td></tr>
@@ -443,7 +438,7 @@ r_Sbase (1,1) double = 100</pre>
         <tr><td><span lang="en">Property</span><span lang="ja">プロパティ</span></td><td data-label="Field" data-label-ja="項目"><span lang="en">Access</span><span lang="ja">アクセス</span></td><td data-label="Read from" data-label-ja="読み取り元"><span lang="en">The <code>properties (...)</code> attributes.</span><span lang="ja"><code>properties (...)</code> の属性。</span></td></tr>
         <tr><td><span lang="en">Property</span><span lang="ja">プロパティ</span></td><td data-label="Field" data-label-ja="項目"><span lang="en">Validation, Default</span><span lang="ja">検証、既定値</span></td><td data-label="Read from" data-label-ja="読み取り元"><span lang="en">The declaration: size, class, validators and <code>= value</code>.</span><span lang="ja">宣言: サイズ、クラス、検証関数、<code>= value</code>。</span></td></tr>
         <tr><td><span lang="en">Property</span><span lang="ja">プロパティ</span></td><td data-label="Field" data-label-ja="項目"><span lang="en">Group, Unit</span><span lang="ja">グループ、単位</span></td><td data-label="Read from" data-label-ja="読み取り元"><span lang="en">The comments (see <a href="#where">Where comments go</a>).</span><span lang="ja">コメント（<a href="#where">コメントを書く場所</a>を参照）。</span></td></tr>
-        <tr><td><span lang="en">Method</span><span lang="ja">メソッド</span></td><td data-label="Field" data-label-ja="項目"><span lang="en">Signature, Arguments</span><span lang="ja">シグネチャ、引数</span></td><td data-label="Read from" data-label-ja="読み取り元"><span lang="en">The <code>function</code> line and the <code>arguments</code> blocks, else the <code>Inputs:</code> / <code>Outputs:</code> sections.</span><span lang="ja"><code>function</code> 行と <code>arguments</code> ブロック。ない場合は <code>Inputs:</code> / <code>Outputs:</code> 節。</span></td></tr>
+        <tr><td><span lang="en">Method</span><span lang="ja">メソッド</span></td><td data-label="Field" data-label-ja="項目"><span lang="en">Signature, Arguments</span><span lang="ja">シグネチャ、引数</span></td><td data-label="Read from" data-label-ja="読み取り元"><span lang="en">The <code>function</code> line and the <code>arguments</code> blocks.</span><span lang="ja"><code>function</code> 行と <code>arguments</code> ブロック。</span></td></tr>
         <tr><td><span lang="en">Method</span><span lang="ja">メソッド</span></td><td data-label="Field" data-label-ja="項目"><span lang="en">Overrides</span><span lang="ja">オーバーライド</span></td><td data-label="Read from" data-label-ja="読み取り元"><span lang="en">A superclass method with the same name.</span><span lang="ja">スーパークラスにある同名のメソッド。</span></td></tr>
         <tr><td><span lang="en">Method</span><span lang="ja">メソッド</span></td><td data-label="Field" data-label-ja="項目">ImplementedIn</td><td data-label="Read from" data-label-ja="読み取り元"><span lang="en">The file that holds the <code>function</code>.</span><span lang="ja"><code>function</code> があるファイル。</span></td></tr>
         <tr><td><span lang="en">Method</span><span lang="ja">メソッド</span></td><td data-label="Field" data-label-ja="項目"><span lang="en">Throws</span><span lang="ja">スローするエラー</span></td><td data-label="Read from" data-label-ja="読み取り元"><span lang="en">The error IDs in its <code>error(msg(...))</code> calls.</span><span lang="ja">その中の <code>error(msg(...))</code> 呼び出しのエラー ID。</span></td></tr>
@@ -503,7 +498,6 @@ r_Sbase (1,1) double = 100</pre>
           <button type="button" class="tg-target-btn" data-target="property"><span lang="en">Property</span><span lang="ja">プロパティ</span></button>
         </div>
         <label class="tg-switch" id="tg-declared-switch" hidden><input type="checkbox" id="tg-declared" checked> <span id="tg-declared-label"></span></label>
-        <label class="tg-switch" id="tg-hotpath-switch" hidden><input type="checkbox" id="tg-hotpath"> <span lang="en">Hot-path function: <code>Inputs:</code> / <code>Outputs:</code> sections instead of <code>arguments</code> blocks</span><span lang="ja">ホットパス関数: <code>arguments</code> ブロックの代わりに <code>Inputs:</code> / <code>Outputs:</code> 節</span></label>
       </div>
 
       <div class="tag-generator-fields" id="tg-fields"></div>
@@ -528,7 +522,6 @@ r_Sbase (1,1) double = 100</pre>
         <tr><td><span class="dg-badge is-warn"><span lang="en">Warning</span><span lang="ja">警告</span></span></td><td data-label="Check" data-label-ja="チェック内容"><span lang="en">A <code>&lt;@Deprecated&gt;</code> tag with no text.<small>The text must name the replacement.</small></span><span lang="ja">本文のない <code>&lt;@Deprecated&gt;</code> タグ。<small>本文で代替の明示が必要。</small></span></td></tr>
         <tr><td><span class="dg-badge is-warn"><span lang="en">Warning</span><span lang="ja">警告</span></span></td><td data-label="Check" data-label-ja="チェック内容"><span lang="en">An unknown tag, or the same tag twice (the last value is used).</span><span lang="ja">未知のタグ、または同じタグの重複（最後の値を使用）。</span></td></tr>
         <tr><td><span class="dg-badge is-warn"><span lang="en">Warning</span><span lang="ja">警告</span></span></td><td data-label="Check" data-label-ja="チェック内容"><span lang="en">A method declared in the classdef with no implementation file.</span><span lang="ja">classdef で宣言されているのに実装ファイルがないメソッド。</span></td></tr>
-        <tr><td><span class="dg-badge is-warn"><span lang="en">Warning</span><span lang="ja">警告</span></span></td><td data-label="Check" data-label-ja="チェック内容"><span lang="en">An <code>Inputs:</code> / <code>Outputs:</code> section that misses a name of the <code>function</code> line or describes one not on it, or that repeats an <code>arguments</code> block.</span><span lang="ja"><code>function</code> 行の名前が欠けている、または行にない名前を記述した <code>Inputs:</code> / <code>Outputs:</code> 節。<code>arguments</code> ブロックと重複した節。</span></td></tr>
         <tr><td><span class="dg-badge"><span lang="en">Coverage</span><span lang="ja">カバレッジ</span></span></td><td data-label="Check" data-label-ja="チェック内容"><span lang="en">Documented / total for classes, public methods and public properties. Documented means it has an H1 line.<small>Shown at the top of the Reference tab. Undocumented classes get a <span class="dg-badge is-warn">no docs</span> marker there.</small></span><span lang="ja">クラス、公開メソッド、公開プロパティそれぞれの「記述済み / 総数」。記述済み = H1 行あり。<small>Reference タブの上部に表示。記述のないクラスにはそこで <span class="dg-badge is-warn">説明なし</span> の印。</small></span></td></tr>
       </tbody>
     </table>
@@ -581,8 +574,7 @@ r_Sbase (1,1) double = 100</pre>
   <script>
     (function () {
       // kind: text (one comment line per input line), code (Examples, fenced if
-      // not already), rows (an arguments block, or an Inputs:/Outputs: section
-      // of the help while the hot-path switch is on). declared: hidden while the
+      // not already), rows (an arguments block). declared: hidden while the
       // "declaration states the class" switch is on.
       var FIELD_SETS = {
         class: {
@@ -613,15 +605,12 @@ r_Sbase (1,1) double = 100</pre>
         method: {
           pasteHint: 'Paste this directly after the "function ..." line. Merge the arguments lines into your arguments blocks.',
           pasteHint_ja: '「function ...」行の直後に貼り付け。arguments の行は既存の arguments ブロックにまとめる。',
-          hotPathHint: 'Paste this directly after the "function ..." line. List every input of the function line except the object, in its order.',
-          hotPathHint_ja: '「function ...」行の直後に貼り付け。function 行の入力はオブジェクト以外すべて、同じ順で記述。',
-          hotPath: true,
           fields: [
             { key: 'summary', label: 'Summary (H1 line)', required: true, rows: 1, placeholder: 'Starts with a verb, e.g. Connect a component.', label_ja: '概要（H1 行）', placeholder_ja: '動詞で開始。例: Connect a component.' },
             { key: 'desc', label: 'Description', rows: 3, placeholder: 'Following comment lines. Markdown is supported.', label_ja: '説明', placeholder_ja: '続くコメント行。Markdown 可。' },
             { key: 'seeAlso', label: 'See also', rows: 1, placeholder: 'e.g. remove_component, Component', label_ja: '関連項目（See also）', placeholder_ja: '例: remove_component, Component' },
-            { key: 'inputs', label: 'Inputs (arguments block)', kind: 'rows', block: 'arguments', section: 'Inputs:', hotLabel: 'Inputs (Inputs: section)', hotLabel_ja: '入力（Inputs: 節）', namePattern: /^[A-Za-z]\w*(\.[A-Za-z]\w*)?$/, namePlaceholder: 'comp or opt.Check', label_ja: '入力（arguments ブロック）', namePlaceholder_ja: 'comp または opt.Check' },
-            { key: 'outputs', label: 'Outputs (arguments (Output) block)', kind: 'rows', block: 'arguments (Output)', section: 'Outputs:', hotLabel: 'Outputs (Outputs: section)', hotLabel_ja: '出力（Outputs: 節）', namePattern: /^[A-Za-z]\w*$/, namePlaceholder: 'idx', label_ja: '出力（arguments (Output) ブロック）' },
+            { key: 'inputs', label: 'Inputs (arguments block)', kind: 'rows', block: 'arguments', namePattern: /^[A-Za-z]\w*(\.[A-Za-z]\w*)?$/, namePlaceholder: 'comp or opt.Check', label_ja: '入力（arguments ブロック）', namePlaceholder_ja: 'comp または opt.Check' },
+            { key: 'outputs', label: 'Outputs (arguments (Output) block)', kind: 'rows', block: 'arguments (Output)', namePattern: /^[A-Za-z]\w*$/, namePlaceholder: 'idx', label_ja: '出力（arguments (Output) ブロック）' },
             { key: 'group', label: '<@Group>', rows: 1, placeholder: 'Purpose group, e.g. Called by analyses', placeholder_ja: '目的のグループ。例: Called by analyses' },
             { key: 'examples', label: '<@Examples>', kind: 'code', rows: 3, placeholder: 'MATLAB code; it is put in a ```matlab block.', placeholder_ja: 'MATLAB コード。```matlab ブロックに挿入。' },
             { key: 'deprecated', label: '<@Deprecated>', rows: 1, placeholder: 'Leave empty unless deprecated; name the replacement.', placeholder_ja: '非推奨でなければ空欄。非推奨なら代替を記入。' }
@@ -632,8 +621,6 @@ r_Sbase (1,1) double = 100</pre>
       var declaredSwitch = document.getElementById('tg-declared-switch');
       var declaredInput = document.getElementById('tg-declared');
       var declaredLabel = document.getElementById('tg-declared-label');
-      var hotPathSwitch = document.getElementById('tg-hotpath-switch');
-      var hotPathInput = document.getElementById('tg-hotpath');
       var targetButtons = Array.prototype.slice.call(document.querySelectorAll('#tg-target-options .tg-target-btn'));
       var fieldsContainer = document.getElementById('tg-fields');
       var emptyMsg = document.getElementById('tg-empty');
@@ -676,12 +663,6 @@ r_Sbase (1,1) double = 100</pre>
       function tr(obj, key) { return (lang() === 'ja' && obj[key + '_ja']) || obj[key]; }
 
       function hideDeclared() { return !declaredSwitch.hidden && declaredInput.checked; }
-      function hotPath() { return !hotPathSwitch.hidden && hotPathInput.checked; }
-
-      hotPathInput.addEventListener('change', function () {
-        renderFields();
-        update();
-      });
 
       declaredInput.addEventListener('change', function () {
         renderFields();
@@ -695,7 +676,6 @@ r_Sbase (1,1) double = 100</pre>
           var declaredText = FIELD_SETS[currentTarget].declaredLabel;
           declaredSwitch.hidden = !declaredText;
           declaredLabel.textContent = declaredText ? tr(FIELD_SETS[currentTarget], 'declaredLabel') : '';
-          hotPathSwitch.hidden = !FIELD_SETS[currentTarget].hotPath;
           renderFields();
           update();
         });
@@ -705,7 +685,7 @@ r_Sbase (1,1) double = 100</pre>
         var label = document.createElement(forId ? 'label' : 'span');
         label.className = 'tag-generator-field-label';
         var apply = function () {
-          label.textContent = (f.kind === 'rows' && hotPath()) ? tr(f, 'hotLabel') : tr(f, 'label');
+          label.textContent = tr(f, 'label');
           if (f.required) {
             var badge = document.createElement('span');
             badge.className = 'dg-badge is-err';
@@ -876,25 +856,16 @@ r_Sbase (1,1) double = 100</pre>
           var get = function (k) { return tr.querySelector('[data-col="' + k + '"]').value.trim(); };
           var name = get('name'), unit = get('unit'), desc = get('desc');
           if (!name && !unit && !desc) return;
-          if (!(hotPath() ? /^[A-Za-z]\w*$/ : f.namePattern).test(name)) {
+          if (!f.namePattern.test(name)) {
             error = error || str('badName')(tr(f, 'label'), name);
             return;
           }
           var text = (unit ? '[' + unit + '] ' : '') + desc;
-          rowLines.push({ name: name, text: text });
+          rowLines.push('    ' + name + (text ? ' % ' + text : ''));
         });
         entry.wrap.classList.toggle('has-error', !!error);
         if (!rowLines.length) return { lines: [], error: error };
-        if (hotPath()) {
-          // "%   name  text": the description starts two spaces after the longest name.
-          var width = Math.max.apply(null, rowLines.map(function (r) { return r.name.length; }));
-          return { lines: ['% ' + f.section].concat(rowLines.map(function (r) {
-            return ('%   ' + r.name + (r.text ? new Array(width - r.name.length + 3).join(' ') + r.text : '')).replace(/\s+$/, '');
-          })), error: error };
-        }
-        return { lines: [f.block].concat(rowLines.map(function (r) {
-          return '    ' + r.name + (r.text ? ' % ' + r.text : '');
-        }), ['end']), error: error };
+        return { lines: [f.block].concat(rowLines, ['end']), error: error };
       }
 
       function build() {
@@ -907,17 +878,6 @@ r_Sbase (1,1) double = 100</pre>
 
         if (summary) head.push('% ' + (unit ? '[' + unit + '] ' : '') + summary);
         head = head.concat(lines(value('desc')).map(comment));
-
-        var sections = [];
-        ['inputs', 'outputs'].forEach(function (key) {
-          if (!entries[key]) return;
-          var block = argumentBlock(entries[key]);
-          error = error || block.error;
-          if (hotPath()) sections = sections.concat(block.lines);
-          else code = code.concat(block.lines);
-        });
-        if (sections.length) head = head.concat(head.length ? ['%'] : [], sections);
-
         var see = seeAlsoLine(value('seeAlso'));
         if (see) head.push('%', see);
 
@@ -926,6 +886,13 @@ r_Sbase (1,1) double = 100</pre>
         tags = tags.concat(tagLines('Stale', value('stale')));
         tags = tags.concat(tagLines('Group', value('group')));
         tags = tags.concat(tagLines('Deprecated', value('deprecated')));
+
+        ['inputs', 'outputs'].forEach(function (key) {
+          if (!entries[key]) return;
+          var block = argumentBlock(entries[key]);
+          error = error || block.error;
+          code = code.concat(block.lines);
+        });
 
         var any = head.length || tags.length || code.length || unit;
         if (any && !summary) error = error || str('needSummary');
@@ -955,7 +922,7 @@ r_Sbase (1,1) double = 100</pre>
         }
         output.textContent = result.text;
         outputWrap.style.display = result.text ? 'block' : 'none';
-        hint.textContent = result.error || tr(set, hotPath() ? 'hotPathHint' : 'pasteHint');
+        hint.textContent = result.error || tr(set, 'pasteHint');
         copyBtn.disabled = !!result.error;
       }
 
