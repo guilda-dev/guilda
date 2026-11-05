@@ -84,15 +84,15 @@ function [result, flag, output] = simulate(obj, time, varargin)
     [time, c_nv] = scenario_settings(c_events, time, c_nv);
     [c_nv, opt] = take_call_options(c_nv);
     check_export(opt.Export);
-    s_options   = obj.solver_ODE.get_options(c_nv);
+    sct_options = obj.solver_ODE.get_options(c_nv);
 
-    [result, flag, output] = obj.solver_ODE.solve(obj, time, c_events, s_options);
+    [result, flag, output] = obj.solver_ODE.solve(obj, time, c_events, sct_options);
 
     if flag ~= 1
         warning(msg("GUILDA:PowerNetwork:SimulationIncomplete", string(flag), output.message));
     end
 
-    if s_options.Plot
+    if sct_options.Plot
         result.Plot();
     end
     if isstring(opt.Export)
@@ -108,28 +108,28 @@ function check_export(export)
     if ~isstring(export)
         return
     end
-    [~, ~, str_ext] = fileparts(export);
-    if ~isscalar(export) || ~ismember(lower(str_ext), [".csv", ".txt", ".xlsx", ".xls", ".mat"])
-        error(msg("GUILDA:PowerNetwork:SimulateExport", char(str_ext)));
+    [~, ~, s_ext] = fileparts(export);
+    if ~isscalar(export) || ~ismember(lower(s_ext), [".csv", ".txt", ".xlsx", ".xls", ".mat"])
+        error(msg("GUILDA:PowerNetwork:SimulateExport", char(s_ext)));
     end
 end
 
 function check_time(time)
 % time must be [] or a real vector [t0, tend] with finite t0 < tend
     if ~isnumeric(time) || ~isreal(time)
-        str_reason = "it is a non-real or non-numeric value of class " + class(time);
+        s_reason = "it is a non-real or non-numeric value of class " + class(time);
     elseif isempty(time)
         return
     elseif ~isvector(time) || numel(time) ~= 2
-        str_reason = "it has the size " + join(string(size(time)), "x");
+        s_reason = "it has the size " + join(string(size(time)), "x");
     elseif ~all(isfinite(time))
-        str_reason = "it has a value that is not finite: " + mat2str(time);
+        s_reason = "it has a value that is not finite: " + mat2str(time);
     elseif time(1) >= time(2)
-        str_reason = "t0 is not smaller than tend: " + mat2str(time);
+        s_reason = "t0 is not smaller than tend: " + mat2str(time);
     else
         return
     end
-    error(msg("GUILDA:PowerNetwork:SimulateTime", str_reason));
+    error(msg("GUILDA:PowerNetwork:SimulateTime", s_reason));
 end
 
 function [time, c_nv] = scenario_settings(c_events, time, c_nv)
@@ -142,7 +142,7 @@ function [time, c_nv] = scenario_settings(c_events, time, c_nv)
             time = c_time{1};
             if ~all(cellfun(@(t) isequal(t, time), c_time))
                 error(msg("GUILDA:PowerNetwork:ScenarioTimeConflict", ...
-                          char(join(cellfun(@(s) s.str_tag, c_sc), ", ")), ...
+                          char(join(cellfun(@(s) s.s_tag, c_sc), ", ")), ...
                           char(join(cellfun(@(t) string(mat2str(t)), c_time), ", "))));
             end
         end
@@ -153,22 +153,22 @@ function [time, c_nv] = scenario_settings(c_events, time, c_nv)
             sv_call(end+1) = lower(string(c_nv{k})); %#ok<AGROW>
         end
     end
-    s_stored = struct();     % lower-case name -> {Name, Value}
+    sct_stored = struct();     % lower-case name -> {Name, Value}
     for k = 1:numel(c_sc)
-        s_opt = c_sc{k}.Options;
-        for str_name = string(fieldnames(s_opt)).'
-            str_key = lower(str_name);
-            if ismember(str_key, sv_call)
+        sct_opt = c_sc{k}.Options;
+        for s_name = string(fieldnames(sct_opt)).'
+            s_key = lower(s_name);
+            if ismember(s_key, sv_call)
                 continue
             end
-            if isfield(s_stored, str_key) && ~isequal(s_stored.(str_key){2}, s_opt.(str_name))
-                error(msg("GUILDA:PowerNetwork:ScenarioOptionConflict", char(str_name), ...
-                          char(join(cellfun(@(s) s.str_tag, c_sc), ", "))));
+            if isfield(sct_stored, s_key) && ~isequal(sct_stored.(s_key){2}, sct_opt.(s_name))
+                error(msg("GUILDA:PowerNetwork:ScenarioOptionConflict", char(s_name), ...
+                          char(join(cellfun(@(s) s.s_tag, c_sc), ", "))));
             end
-            s_stored.(str_key) = {str_name, s_opt.(str_name)};
+            sct_stored.(s_key) = {s_name, sct_opt.(s_name)};
         end
     end
-    c_pair = struct2cell(s_stored);
+    c_pair = struct2cell(sct_stored);
     c_pair = [c_pair{:}];
     c_nv = [c_pair, c_nv];
 end

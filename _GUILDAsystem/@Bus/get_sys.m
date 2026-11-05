@@ -40,7 +40,7 @@ function [sys, varargout] = get_sys(obj, opt)
     obj.check_edit();
     if l_equilibrium && ~isempty(obj.a_PowerNetwork)
         net = obj.a_PowerNetwork;
-        if net.s_edit.str_flag == "unset" || net.s_edit.l_staleEquilibrium
+        if net.l_staleEquilibrium
             net.check_edit("RequireEquilibrium", true);
         end
     end
@@ -103,7 +103,7 @@ function [sys, varargout] = get_sys(obj, opt)
         case "I2V"
             % A bus without components or with P = Q = 0 loads has no I-to-V form
             if ~(rcond(Dv_sum) > 1e-12)
-                error(msg("GUILDA:Bus:NoI2V", obj.str_tag))
+                error(msg("GUILDA:Bus:NoI2V", obj.s_tag))
             end
 
             % V = inv_Dv (I - Cx x - Du u)

@@ -3,7 +3,7 @@ function bus = add_bus(obj, opt)
 %
 % The bus tag is `Tag` followed by a three-digit number (the largest number in use + 1),
 % e.g. "B001". `FullTag` gives the complete tag instead, with no automatic number; a
-% tag already used in the network is renamed with a number suffix, as for `str_tag`, and
+% tag already used in the network is renamed with a number suffix, as for `s_tag`, and
 % an Info line shows the change. The addition is logged as a "Topology" edit, so the equilibrium becomes
 % stale until `net.initialize()` runs again.
 %
@@ -41,15 +41,15 @@ function bus = add_bus(obj, opt)
     end
 
     % largest number in use + 1 (after remove_bus, numel+1 may already be taken)
-    str_Bus = opt.Tag+num2str(tools.next_tag_number(string(obj.a_Bus)),"%.3d");
+    s_Bus = opt.Tag+num2str(tools.next_tag_number(string(obj.a_Bus)),"%.3d");
     if opt.FullTag ~= ""
-        str_Bus = opt.FullTag;
+        s_Bus = opt.FullTag;
     end
 
     opt = v3_bus_baseMVA(obj, opt);                   % COMPAT(v3)
     opt = rmfield(opt,["Tag","FullTag"]);
-    bus = Bus(obj, str_Bus, opt);
+    bus = Bus(obj, s_Bus, opt);
     
     obj.a_Bus = [obj.a_Bus;{bus}];
-    obj.log_edit(obj.str_tag+" <<-Add--- "+bus.str_tag,"Topology");
+    obj.log_edit(obj.s_tag+" <<-Add--- "+bus.s_tag,"Topology");
 end

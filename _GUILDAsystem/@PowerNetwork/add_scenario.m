@@ -35,18 +35,18 @@ function add_scenario(obj, sc)
 
     % Checks before the network changes
     lv_new  = cellfun(@(s) isempty(s.a_PowerNetwork) || s.a_PowerNetwork ~= obj, sc);
-    sv_tag  = string(cellfun(@(s) s.str_tag, sc, 'UniformOutput', false));
-    sv_have = string(cellfun(@(s) s.str_tag, obj.a_Scenario, 'UniformOutput', false));
+    sv_tag  = string(cellfun(@(s) s.s_tag, sc, 'UniformOutput', false));
+    sv_have = string(cellfun(@(s) s.s_tag, obj.a_Scenario, 'UniformOutput', false));
     for k = find(lv_new(:)).'
         if ismember(sv_tag(k), sv_have) || sum(sv_tag(lv_new) == sv_tag(k)) > 1
-            error(msg("GUILDA:PowerNetwork:ScenarioTagInUse", char(sv_tag(k)), char(obj.str_tag)));
+            error(msg("GUILDA:PowerNetwork:ScenarioTagInUse", char(sv_tag(k)), char(obj.s_tag)));
         end
         sc{k}.validate(obj);
     end
 
     for k = find(lv_new(:)).'
         if ~isempty(sc{k}.a_PowerNetwork)
-            sc{k}.a_PowerNetwork.remove_scenario(sc{k}.str_tag);
+            sc{k}.a_PowerNetwork.remove_scenario(sc{k}.s_tag);
         end
         obj.a_Scenario = [obj.a_Scenario; sc(k)];
         sc{k}.set_parent(obj);

@@ -83,7 +83,7 @@
 ### CPF-3 `LoadBus` の母線のすべての機器を増やす
 
 - **対象:** `_auxiliary/@SolverCPF/private/pf_equation.m` 39 行、`_auxiliary/@SolverCPF/SolverCPF.m` のヘルプ
-- **内容:** 増やす対象は母線単位で決まり(`isLoad = ismember(i_Bus.str_tag, sv_load)`)、その母線の発電機も含むすべての機器の電力に `(1 + λ)` を掛けます。`UseInternalState=true` では `or(isLoad, useInt)` なので、すべての母線のすべての機器を増やします。一方、クラスのヘルプは "scales the loads of LoadBus"、`UseInternalState` のヘルプは "all loads are scaled" と書いています。`LoadBus` プロパティのヘルプ("The power the components of these buses draw")と `feature-cpf.html` はコードどおりです。
+- **内容:** 増やす対象は母線単位で決まり(`isLoad = ismember(i_Bus.s_tag, sv_load)`)、その母線の発電機も含むすべての機器の電力に `(1 + λ)` を掛けます。`UseInternalState=true` では `or(isLoad, useInt)` なので、すべての母線のすべての機器を増やします。一方、クラスのヘルプは "scales the loads of LoadBus"、`UseInternalState` のヘルプは "all loads are scaled" と書いています。`LoadBus` プロパティのヘルプ("The power the components of these buses draw")と `feature-cpf.html` はコードどおりです。
 - **再現・根拠:** [事実] コードを読んで確認しました。
 - **影響:** 発電機のある母線を `LoadBus` に入れると、負荷だけを増やすつもりで発電も増えます。`UseInternalState=true` では `LoadBus` の指定が結果に効きません。
 - **分類:** 仕様・コメント不一致(意図した仕様かどうかは未決)
@@ -284,7 +284,7 @@
 
 - **対象:** `_GUILDAobject/+network/@*`、`@PowerNetwork/import_csv.m`
 - **内容:** 同梱ネットワーク(`IEEE9bus` など)のタグは既定の `"PowerNetwork"` のままです。`import_csv(..., Network=obj)` はタグを設定しません。`Network` を省略した `import_csv` はフォルダ名をタグにします。
-- **再現・根拠:** [再現] `network.IEEE9bus` と `network.IEEE14bus` の `str_tag` は `"PowerNetwork"` でした。
+- **再現・根拠:** [再現] `network.IEEE9bus` と `network.IEEE14bus` の `s_tag` は `"PowerNetwork"` でした。
 - **影響:** 編集履歴やメッセージで、どのネットワークかが区別できません。
 - **分類:** 整理
 
@@ -356,7 +356,7 @@
 
 - **対象:** `+DebugScript/+helper/build_ieee14.m` 6 行
 - **内容:** コメントは「コンストラクタ内で CSV を読み込むだけで、平衡点は未設定」ですが、`network.IEEE14bus` のコンストラクタは初期化まで行います。
-- **再現・根拠:** [再現] 作った直後の `s_edit.str_flag` は `"initialized"`、`l_staleEquilibrium` は false でした。
+- **再現・根拠:** [再現] 作った直後の `sct_edit.s_flag` は `"initialized"`、`l_staleEquilibrium` は false でした。
 - **影響:** テストの前提を誤解します。
 - **分類:** 仕様・コメント不一致
 

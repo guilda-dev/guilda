@@ -4,7 +4,7 @@ function tab_PFset = get_pf_set(obj)
 % The bus type is "slack" for the slack bus, "PV" when the summed Q of its components
 % is NaN and "PQ" otherwise. P and Q are the sums over the components.
 %
-% See also Bus.str_bustype, PowerNetwork.calculate_powerflow
+% See also Bus.s_bustype, PowerNetwork.calculate_powerflow
 %
 % <@Group> Called by analyses
     arguments (Input)

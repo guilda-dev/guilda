@@ -82,7 +82,7 @@ classdef SolverPF < auxiliary
             obj.WhenFailed    = sct.WhenFailed.Value;
         end
 
-        function s_options = get_options(obj, nv)
+        function sct_options = get_options(obj, nv)
         % Get the effective settings of one run as a struct.
         %
         % Every stored setting of the solver, with the Name-Value overrides of the call applied. The solver itself is not changed.
@@ -93,31 +93,31 @@ classdef SolverPF < auxiliary
                 nv (1,:) cell = {} % Name-Value overrides: Method, Tolerance, MaxIteration, Verbose.
             end
             arguments (Output)
-                s_options % One field per setting (Method, Tolerance, MaxIterations, Display, ..., dynamic).
+                sct_options % One field per setting (Method, Tolerance, MaxIterations, Display, ..., dynamic).
             end
-            s_given = tools.resolve_options(obj, SolverPF.OptionMap, nv);
+            sct_given = tools.resolve_options(obj, SolverPF.OptionMap, nv);
             validate_options(nv{:});
 
             mc = metaclass(obj);
             a_prop = mc.PropertyList(~[mc.PropertyList.Constant] & strcmp({mc.PropertyList.SetAccess}, 'public'));
-            s_options = struct();
-            for str_prop = string({a_prop.Name})
-                if isfield(s_given, str_prop)
-                    s_options.(str_prop) = s_given.(str_prop);
+            sct_options = struct();
+            for s_prop = string({a_prop.Name})
+                if isfield(sct_given, s_prop)
+                    sct_options.(s_prop) = sct_given.(s_prop);
                 else
-                    s_options.(str_prop) = obj.(str_prop);
+                    sct_options.(s_prop) = obj.(s_prop);
                 end
             end
-            s_options.Method = string(s_options.Method);
+            sct_options.Method = string(sct_options.Method);
         end
 
-        [result,flag,output] = solve(obj, net, s_options)
+        [result,flag,output] = solve(obj, net, sct_options)
     end
 
     methods(Hidden)
-        [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_algebraic(obj, cm_Y, tab_PFset, s_options)
-        [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_dynamic(  obj, cm_Y, tab_PFset, s_options)
-        opt = optimoption(obj, s_options)
+        [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_algebraic(obj, cm_Y, tab_PFset, sct_options)
+        [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_dynamic(  obj, cm_Y, tab_PFset, sct_options)
+        opt = optimoption(obj, sct_options)
     end
 end
 

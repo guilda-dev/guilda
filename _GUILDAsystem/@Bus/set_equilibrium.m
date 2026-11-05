@@ -40,7 +40,7 @@ function set_equilibrium(obj, c_V, c_I, r_P, r_Q, opt)
 end
 
 
-function tab_PQcomp = distribute_power(obj, r_P, r_Q, str_rule)
+function tab_PQcomp = distribute_power(obj, r_P, r_Q, s_rule)
 % P and Q of each component: para_powerflow, the slack remainder and the split of NaN Q
     a_Comp = obj.a_Component;
     n_Comp = numel(a_Comp);
@@ -73,7 +73,7 @@ function tab_PQcomp = distribute_power(obj, r_P, r_Q, str_rule)
             tab_Ocomp = tools.vcellfun(@(c) c.para_operation.tab_parameter, a_Comp);
                 rv_Qmin = tab_Ocomp{lv_Qnan,"Qmin"};
                 rv_Qmax = tab_Ocomp{lv_Qnan,"Qmax"};
-            if str_rule=="Qmax" && ~any( isinf([rv_Qmin,rv_Qmax]), "all")
+            if s_rule=="Qmax" && ~any( isinf([rv_Qmin,rv_Qmax]), "all")
                 r_Qminall = sum(rv_Qmin);
                 r_Qmaxall = sum(rv_Qmax); 
                 rv_Qrate  = (rv_Qmax-rv_Qmin)/(r_Qmaxall-r_Qminall);

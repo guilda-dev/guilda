@@ -42,12 +42,12 @@ function ME = initialize_error(avr)
     assert(~isempty(ME), "範囲エラーが発生しなかった")
 end
 
-function check_error(ME, str_class, str_tag, str_limits)
+function check_error(ME, s_class, s_tag, s_limits)
 % エラーの ID と、文言の機器名・上下限・対処を確認する
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:" + str_class + ":InvalidValueRange", "ID が " + DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:" + s_class + ":InvalidValueRange", "ID が " + DebugScript.helper.msg_id(ME))
     str = string(ME.message);
     assert(~contains(str, "ID specification"), str)
-    assert(contains(str, str_class + " '" + str_tag + "'"), str)
-    assert(contains(str, str_limits), str)
+    assert(contains(str, s_class + " '" + s_tag + "'"), str)
+    assert(contains(str, s_limits), str)
     assert(contains(str, "Widen Vap_min and Vap_max"), str)
 end

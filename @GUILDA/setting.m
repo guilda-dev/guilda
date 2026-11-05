@@ -20,8 +20,8 @@ function setting()
     
     function build_component(uifig, field)
         data = env.(field);
-        str_fields = fieldnames(data);
-        num_fields = numel(str_fields);
+        sv_fields  = fieldnames(data);
+        num_fields = numel(sv_fields);
     
         % Clean up existing UI components before rebuilding
         % delete(uifig.Children);
@@ -71,7 +71,7 @@ function setting()
         
 
         for i = 1:num_fields
-            ith_field = str_fields{i};
+            ith_field = sv_fields{i};
             ith_data  = data.(ith_field);
 
             ul               = uilabel(uigrid,'Text',ith_field,'FontSize',15,'FontColor',fontcolor,"FontWeight","bold","HorizontalAlignment","right");

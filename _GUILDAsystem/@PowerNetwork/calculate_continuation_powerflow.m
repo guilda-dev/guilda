@@ -50,9 +50,9 @@ function [result, flag, output] = calculate_continuation_powerflow(obj, varargin
     obj.check_edit();    % build the f_* handles that are not up to date
 
     [c_nv, opt] = take_call_options(varargin);
-    s_options   = obj.solver_CPF.get_options(c_nv);
+    sct_options = obj.solver_CPF.get_options(c_nv);
 
-    [result, flag, output] = obj.solver_CPF.solve(obj, s_options);
+    [result, flag, output] = obj.solver_CPF.solve(obj, sct_options);
 
     if opt.Plot
         result.Plot();

@@ -18,11 +18,11 @@ function flag = validate(obj, l_message)
 
     comp = obj.observed_component();
     if isempty(comp) || isempty(comp.a_Bus) || isempty(comp.a_Bus.a_PowerNetwork)
-        error(msg("GUILDA:LocalController:ValidateNotAttached", obj.str_tag))
+        error(msg("GUILDA:LocalController:ValidateNotAttached", obj.s_tag))
     end
     obj.check_edit();
     net = comp.a_Bus.a_PowerNetwork;
-    if net.s_edit.str_flag == "unset" || net.s_edit.l_staleEquilibrium
+    if net.l_staleEquilibrium
         net.check_edit("RequireEquilibrium", true);
     end
 
@@ -55,29 +55,29 @@ function flag = validate(obj, l_message)
     fcn_Y  = @(x,v,u) obj.f_Y( time, x, v, rv_I, u);
 
     % validate dx=0 at the equilibrium point
-    [dx_test, str_id] = eval_value(@() fcn_dx(rv_x,rv_V,rv_u));
-    [l_ok, str_detail] = check_size(dx_test, str_id, nx);
-    contract = add_row(contract, "fcn_dx size", l_ok, str_detail);
+    [dx_test, s_id] = eval_value(@() fcn_dx(rv_x,rv_V,rv_u));
+    [l_ok, s_detail] = check_size(dx_test, s_id, nx);
+    contract = add_row(contract, "fcn_dx size", l_ok, s_detail);
     if l_ok
         dx_test = reshape(dx_test, nx, 1);
     else
         dx_test = nan(nx,1);
     end
 
-    [y_test, str_id] = eval_value(@() fcn_Y(rv_x,rv_V,rv_u));
-    [l_ok, str_detail] = check_size(y_test, str_id, ny);
-    contract = add_row(contract, "fcn_y size", l_ok, str_detail);
+    [y_test, s_id] = eval_value(@() fcn_Y(rv_x,rv_V,rv_u));
+    [l_ok, s_detail] = check_size(y_test, s_id, ny);
+    contract = add_row(contract, "fcn_y size", l_ok, s_detail);
 
     % simulate reads the mass matrix without a point (tools.read_mass)
-    [M_test, str_id] = eval_value(@() obj.f_Mass([],[],[],[],[]));
-    l_ok = str_id == "" && (isequal(size(M_test),[nx,nx]) || (nx == 0 && isempty(M_test)));
+    [M_test, s_id] = eval_value(@() obj.f_Mass([],[],[],[],[]));
+    l_ok = s_id == "" && (isequal(size(M_test),[nx,nx]) || (nx == 0 && isempty(M_test)));
     contract = add_row(contract, "fcn_Mass constant and square", l_ok, ...
-        join_detail(str_id, "size " + join(string(size(M_test)),"x") + sprintf(" (sv_x %d)",nx)));
+        join_detail(s_id, "size " + join(string(size(M_test)),"x") + sprintf(" (sv_x %d)",nx)));
 
     % I is not a port of a controller: get_sys leaves its effect out of the linear model
-    [r_dep, str_id] = current_dependence({@(I) obj.f_dx(time,rv_x,rv_V,I,rv_u), @(I) obj.f_Y(time,rv_x,rv_V,I,rv_u)}, rv_I);
-    contract = add_row(contract, "no dependence on I", str_id == "" && r_dep < 1e-10, ...
-        join_detail(str_id, sprintf("%.3g",r_dep)));
+    [r_dep, s_id] = current_dependence({@(I) obj.f_dx(time,rv_x,rv_V,I,rv_u), @(I) obj.f_Y(time,rv_x,rv_V,I,rv_u)}, rv_I);
+    contract = add_row(contract, "no dependence on I", s_id == "" && r_dep < 1e-10, ...
+        join_detail(s_id, sprintf("%.3g",r_dep)));
 
     sv_port = intersect(obj.sv_u, sv_v);
     contract = add_row(contract, "sv_u has no port names", isempty(sv_port), join(sv_port,", "));
@@ -135,14 +135,14 @@ function sv = unique_names(sv)
     sv = matlab.lang.makeUniqueStrings(reshape(string(sv),[],1));
 end
 
-function contract = add_row(contract, str_check, l_ok, str_detail)
-    if ismissing(str_detail)   % join of an empty list
-        str_detail = "";
+function contract = add_row(contract, s_check, l_ok, s_detail)
+    if ismissing(s_detail)   % join of an empty list
+        s_detail = "";
     end
     if l_ok
-        contract = [contract; str_check, "PASS", str_detail];
+        contract = [contract; s_check, "PASS", s_detail];
     else
-        contract = [contract; str_check, "FAIL", str_detail];
+        contract = [contract; s_check, "FAIL", s_detail];
     end
 end
 
@@ -151,13 +151,13 @@ function v = fit_size(v, n)
     v = [v(1:min(end,n)); zeros(n-numel(v),1)];
 end
 
-function [val, str_id] = eval_value(f)
+function [val, s_id] = eval_value(f)
     val = [];
-    str_id = "";
+    s_id = "";
     try
         val = f();
     catch ME
-        str_id = error_text(ME);
+        s_id = error_text(ME);
     end
 end
 
@@ -169,30 +169,30 @@ function str = error_text(ME)
     end
 end
 
-function [l_ok, str_detail] = check_size(val, str_id, n)
-    l_ok = str_id == "" && numel(val) == n;
-    str_detail = join_detail(str_id, "size " + join(string(size(val)),"x") + sprintf(" (expected %d)",n));
+function [l_ok, s_detail] = check_size(val, s_id, n)
+    l_ok = s_id == "" && numel(val) == n;
+    s_detail = join_detail(s_id, "size " + join(string(size(val)),"x") + sprintf(" (expected %d)",n));
 end
 
-function str = join_detail(str_id, str_value)
-    if str_id == ""
-        str = str_value;
+function str = join_detail(s_id, s_value)
+    if s_id == ""
+        str = s_value;
     else
-        str = str_id;
+        str = s_id;
     end
 end
 
-function [r_dep, str_id] = current_dependence(c_f, rv_I)
+function [r_dep, s_id] = current_dependence(c_f, rv_I)
     % Largest slope of the model functions with respect to I (the error of the first failure)
     r_dep  = 0;
-    str_id = "";
+    s_id   = "";
     d = 1e-3;
     for k = 1:numel(c_f)
         for m = 1:2
             e = d * ((1:2)==m).';
             [r, id] = eval_value(@() max(abs(reshape(c_f{k}(rv_I+e) - c_f{k}(rv_I),[],1)))/d);
             if id ~= ""
-                str_id = id;
+                s_id = id;
             elseif ~isempty(r)
                 r_dep = max(r_dep, r);
             end
@@ -217,35 +217,35 @@ function J = diff_arg(f, v, nr, delta)
     end
 end
 
-function [flag, contract] = compare_jacobian(flag, contract, str_method, f_valid, f_num, point, sv_name, sv_row, c_col)
+function [flag, contract] = compare_jacobian(flag, contract, s_method, f_valid, f_num, point, sv_name, sv_row, c_col)
     % Compare the analytic blocks with the numerical ones; NaN for a block that cannot be
     % compared. An empty name skips the block of I, which is checked as a dependence on I.
-    str_detail = "";
+    s_detail = "";
     c_num   = {};
     c_valid = cell(1,4);
     try
         c_num = f_num();
         [c_valid{:}] = f_valid(point{:});
     catch ME
-        str_detail = error_text(ME);
+        s_detail = error_text(ME);
     end
     for k = find(sv_name ~= "")
         nr = numel(sv_row);
         nc = numel(c_col{k});
         A = nan(nr,nc);
-        if str_detail == ""
+        if s_detail == ""
             V = c_valid{k};
             if isempty(V)              % Models may return [] for an empty or all-zero block (get_sys)
                 A = abs(c_num{k});
             elseif numel(V) == nr*nc
                 A = abs(c_num{k} - reshape(full(V),nr,nc));
             else
-                str_detail = sv_name(k) + " size " + join(string(size(V)),"x") + sprintf(" (expected %dx%d)",nr,nc);
+                s_detail = sv_name(k) + " size " + join(string(size(V)),"x") + sprintf(" (expected %dx%d)",nr,nc);
             end
         end
         flag.(sv_name(k)) = mktab(A, sv_row, c_col{k});
     end
-    contract = add_row(contract, str_method+" sizes", str_detail == "", str_detail);
+    contract = add_row(contract, s_method+" sizes", s_detail == "", s_detail);
 end
 
 function sv_src = input_sources(obj, comp)
@@ -256,13 +256,13 @@ function sv_src = input_sources(obj, comp)
     sv_src = repmat("equilibrium (not connected)", nu, 1);
     for k = 1:nu
         if obj.iv_obsY(k) > 0
-            sv_src(k) = "output of " + comp.str_tag;
+            sv_src(k) = "output of " + comp.s_tag;
         elseif obj.iv_obsX(k) > 0
-            sv_src(k) = "state of " + comp.str_tag;
+            sv_src(k) = "state of " + comp.s_tag;
         end
         for m = 1:numel(obj.a_LocalController)
             if any(obj.a_LocalController{m}.sv_y == obj.sv_u(k))
-                sv_src(k) = "output of " + obj.a_LocalController{m}.str_tag;
+                sv_src(k) = "output of " + obj.a_LocalController{m}.s_tag;
             end
         end
     end

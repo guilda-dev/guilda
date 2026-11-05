@@ -1,4 +1,4 @@
-function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_algebraic(obj, cm_Y, tab_PFset, s_options)
+function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_algebraic(obj, cm_Y, tab_PFset, sct_options)
 % Solve the power equations with fsolve. cm_Vhistory holds the bus voltages at each
 % iteration (n_bus x n_step), rv_step the iteration numbers.
 
@@ -29,7 +29,7 @@ function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_algebraic(obj, cm_Y, 
     rv_V0 = reshape([V0.*cos(T0), V0.*sin(T0)].', [], 1);
 
     % optimoptions (the iterates are recorded by the nested function record)
-    opt = optimoptions(obj.optimoption(s_options), "OutputFcn", @record);
+    opt = optimoptions(obj.optimoption(sct_options), "OutputFcn", @record);
     rm_hist = nan(2*n_Bus, 0);
     n_iter  = 0;
 

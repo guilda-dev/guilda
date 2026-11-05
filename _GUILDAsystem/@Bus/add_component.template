@@ -42,8 +42,8 @@ function comp = add_component(obj,Key,opt)
     end
     % Build Instance
     % largest number on this bus + 1 (after remove_component, numel+1 may already be taken)
-    index     = tools.next_tag_number(string(obj.a_Component), obj.str_tag);
-    str_index = num2str(index)+obj.str_tag;
+    index     = tools.next_tag_number(string(obj.a_Component), obj.s_tag);
+    s_index   = num2str(index)+obj.s_tag;
     para      = opt.parameter;
     opt       = rmfield( opt, "parameter");
 
@@ -51,10 +51,10 @@ function comp = add_component(obj,Key,opt)
     switch Key
 ___KEY_CASES___
     end
-    comp = mkInst(str_index,para,opt);
+    comp = mkInst(s_index,para,opt);
 
     % register
     comp.set_bus(obj)
     obj.a_Component = [obj.a_Component; {comp}];
-    obj.log_edit(obj.str_tag+" <<-connect--- "+comp.str_tag+"","Topology")
+    obj.log_edit(obj.s_tag+" <<-connect--- "+comp.s_tag+"","Topology")
 end

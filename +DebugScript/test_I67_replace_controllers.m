@@ -7,16 +7,16 @@
 
 %% The default drops the controllers with a warning naming them
 [net, bus, gen, avr, pss] = network_with_avr_pss();
-[new, id, str] = replace_warned(@() bus.replace_component(gen.str_tag, "gen-1axis"));
+[new, id, str] = replace_warned(@() bus.replace_component(gen.s_tag, "gen-1axis"));
 assert(id == "GUILDA:Bus:ControllersDropped")
-assert(contains(str, avr.str_tag) && contains(str, pss.str_tag) && contains(str, gen.str_tag))
+assert(contains(str, avr.s_tag) && contains(str, pss.s_tag) && contains(str, gen.s_tag))
 assert(isempty(new.a_LocalController))
 assert(bus.a_Component{1} == new)
 
 
 %% The default leaves the controllers on the replaced component
 [net, bus, gen, avr, pss] = network_with_avr_pss();
-replace_warned(@() bus.replace_component(gen.str_tag, "gen-1axis"));
+replace_warned(@() bus.replace_component(gen.s_tag, "gen-1axis"));
 assert(gen.a_LocalController{1} == avr && avr.a_Component == gen)
 assert(avr.a_LocalController{1} == pss && pss.a_Component == avr)
 
@@ -25,14 +25,14 @@ assert(avr.a_LocalController{1} == pss && pss.a_Component == avr)
 net = DebugScript.helper.build_ieee14();
 gen = net.a_Bus{1}.a_Component{1};
 assert(isempty(gen.a_LocalController))
-[new, id] = replace_warned(@() net.a_Bus{1}.replace_component(gen.str_tag, "gen-1axis"));
+[new, id] = replace_warned(@() net.a_Bus{1}.replace_component(gen.s_tag, "gen-1axis"));
 assert(id == "")
 assert(isempty(new.a_LocalController))
 
 
 %% "keep" with the optional parameter omitted moves the AVR and the PSS
 [net, bus, gen, avr, pss] = network_with_avr_pss();
-[new, id] = replace_warned(@() bus.replace_component(gen.str_tag, "gen-1axis", Controllers="keep"));
+[new, id] = replace_warned(@() bus.replace_component(gen.s_tag, "gen-1axis", Controllers="keep"));
 assert(id == "")
 assert(new.a_LocalController{1} == avr && avr.a_Component == new)
 assert(avr.a_LocalController{1} == pss && pss.a_Component == avr)
@@ -41,15 +41,15 @@ assert(isempty(gen.a_LocalController))
 
 %% "keep" with the parameter given uses that parameter
 [net, bus, gen, avr] = network_with_avr_pss();
-new = bus.replace_component(gen.str_tag, "gen-1axis", nan, Controllers="keep");
+new = bus.replace_component(gen.s_tag, "gen-1axis", nan, Controllers="keep");
 assert(new.a_LocalController{1} == avr)
 
 
 %% A kept AVR and PSS are simulated after net.initialize
 [net, bus, gen] = network_with_avr_pss();
 n_x = numel(gen.a_LocalController{1}.sv_x) + numel(gen.a_LocalController{1}.a_LocalController{1}.sv_x);
-new = bus.replace_component(gen.str_tag, "gen-1axis", Controllers="keep");
-assert(net.s_edit.l_staleEquilibrium)
+new = bus.replace_component(gen.s_tag, "gen-1axis", Controllers="keep");
+assert(net.l_staleEquilibrium)
 DebugScript.helper.quiet(@() net.initialize);
 assert(numel(new.rv_Xequilibrium_all) == numel(new.sv_x) + n_x)
 sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
@@ -62,7 +62,7 @@ gen = net.a_Bus{1}.a_Component{1};
 lqr = controller.local_LQR("lqrA", Input="Vfield");
 gen.add_local_controller(lqr);
 DebugScript.helper.quiet(@() net.initialize);
-new = net.a_Bus{1}.replace_component(gen.str_tag, "gen-classical", Controllers="keep");
+new = net.a_Bus{1}.replace_component(gen.s_tag, "gen-classical", Controllers="keep");
 assert(new.a_LocalController{1} == lqr && lqr.a_Component == new)
 DebugScript.helper.quiet(@() net.initialize);
 assert(isequal(size(lqr.K), [1, numel(new.sv_x)]))
@@ -72,9 +72,9 @@ assert(isequal(size(lqr.K), [1, numel(new.sv_x)]))
 [net, bus, gen, avr, pss] = network_with_avr_pss();
 DebugScript.helper.quiet(@() net.initialize);
 n_log = height(net.tab_editLog);
-ME = caught(@() bus.replace_component(gen.str_tag, "load-power", Controllers="keep"));
+ME = caught(@() bus.replace_component(gen.s_tag, "load-power", Controllers="keep"));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:Bus:ControllersNotKept")
-assert(contains(ME.message, "Vfield") && contains(ME.message, avr.str_tag))
+assert(contains(ME.message, "Vfield") && contains(ME.message, avr.s_tag))
 assert_unchanged(net, bus, gen, avr, pss, n_log)
 
 
@@ -82,23 +82,23 @@ assert_unchanged(net, bus, gen, avr, pss, n_log)
 [net, bus, gen, avr, pss] = network_with_avr_pss();
 DebugScript.helper.quiet(@() net.initialize);
 n_log = height(net.tab_editLog);
-ME = caught(@() bus.replace_component(gen.str_tag, "gen-droop", Controllers="keep"));
+ME = caught(@() bus.replace_component(gen.s_tag, "gen-droop", Controllers="keep"));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:Bus:ControllersNotKept")
-assert(contains(ME.message, "omega") && contains(ME.message, pss.str_tag))
+assert(contains(ME.message, "omega") && contains(ME.message, pss.s_tag))
 assert_unchanged(net, bus, gen, avr, pss, n_log)
 
 
 %% An unknown value of Controllers is an error
 [net, bus, gen] = network_with_avr_pss();
-caught(@() bus.replace_component(gen.str_tag, "gen-1axis", Controllers="move"));
+caught(@() bus.replace_component(gen.s_tag, "gen-1axis", Controllers="move"));
 assert(bus.a_Component{1} == gen)
 
 
 %% A component under a global controller is still rejected, also with "keep"
 net  = DebugScript.helper.build_ieee14();
 comp = net.a_Bus{2}.a_Component{1};
-net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", comp.str_tag));
-ME = caught(@() net.a_Bus{2}.replace_component(comp.str_tag, "gen-1axis", Controllers="keep"));
+net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", comp.s_tag));
+ME = caught(@() net.a_Bus{2}.replace_component(comp.s_tag, "gen-1axis", Controllers="keep"));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:Bus:ComponentControlled")
 assert(net.a_Bus{2}.a_Component{1} == comp)
 
@@ -117,7 +117,7 @@ function assert_unchanged(net, bus, gen, avr, pss, n_log)
     assert(bus.a_Component{1} == gen && gen.a_Bus == bus)
     assert(gen.a_LocalController{1} == avr && avr.a_Component == gen)
     assert(avr.a_LocalController{1} == pss && pss.a_Component == avr)
-    assert(~net.s_edit.l_staleEquilibrium && height(net.tab_editLog) == n_log)
+    assert(~net.l_staleEquilibrium && height(net.tab_editLog) == n_log)
 end
 
 function [new, id, str] = replace_warned(fcn)

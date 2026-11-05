@@ -46,8 +46,8 @@ classdef ContinuationPowerFlowV3 < handle
                 opt.CPFUseInternal  % Solve with the internal states of the generators.
             end
             obj.CPFNet = net;
-            for str_name = string(fieldnames(opt)).'
-                obj.(str_name) = opt.(str_name);
+            for s_name = string(fieldnames(opt)).'
+                obj.(s_name) = opt.(s_name);
             end
         end
 

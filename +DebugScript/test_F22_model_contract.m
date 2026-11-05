@@ -273,20 +273,20 @@ pss = avr.a_LocalController{1};
 flag = pss.validate(false);
 assert_no_fail(flag, "pss");
 assert_jacobians_close(flag, tol_jacobi, "pss");
-assert(flag.inputs{"omega","source"} == "output of " + comp.str_tag)
+assert(flag.inputs{"omega","source"} == "output of " + comp.s_tag)
 flag = avr.validate(false);
 assert_no_fail(flag, "avr");
 assert(flag.inputs{"Vref","source"} == "equilibrium (not connected)")
-assert(flag.inputs{"Vpss","source"} == "output of " + pss.str_tag)
+assert(flag.inputs{"Vpss","source"} == "output of " + pss.s_tag)
 
 
 %% Component inputs show the sources
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
 comp.add_local_controller(controller.avr.AVR_ST1("avr1"));
-net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", comp.str_tag));
+net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", comp.s_tag));
 DebugScript.helper.quiet(@() net.initialize);
 flag = comp.validate(false);
-assert(flag.inputs{"Vfield","source"} == "output of " + comp.a_LocalController{1}.str_tag)
+assert(flag.inputs{"Vfield","source"} == "output of " + comp.a_LocalController{1}.s_tag)
 assert(contains(flag.inputs{"Pmech","source"}, "agc"))
 flag = net.a_Bus{1}.a_Component{1}.validate(false);
 assert(all(flag.inputs.source == "equilibrium (not connected)"))
@@ -299,7 +299,7 @@ DebugScript.helper.quiet(@() net.initialize);
 flag = comp.a_LocalController{1}.validate(false);
 assert_no_fail(flag, "none");
 assert(flag.inputs{"Vppss","source"} == "equilibrium (not connected)")
-assert(flag.inputs{"omega","source"} == "output of " + comp.str_tag)
+assert(flag.inputs{"omega","source"} == "output of " + comp.s_tag)
 assert(max(flag.Axx{:,:}, [], "all") < tol_jacobi)
 
 
@@ -309,7 +309,7 @@ comp.add_local_controller(DebugScript.helper.ObserveStub(["Xall";"Yall"]));
 DebugScript.helper.quiet(@() net.initialize);
 flag = comp.a_LocalController{1}.validate(false);
 assert(height(flag.inputs) == numel(comp.sv_x) + numel(comp.sv_y))
-assert(flag.inputs{"delta","source"} == "state of " + comp.str_tag)
+assert(flag.inputs{"delta","source"} == "state of " + comp.s_tag)
 
 
 %% Controller contract violations are detected
@@ -353,9 +353,9 @@ comp.add_local_controller(controller.avr.AVR_ST1("avr1"));
 assert_error(@() comp.a_LocalController{1}.validate(false), "GUILDA:PowerNetwork:EquilibriumStale");
 
 
-function assert_contract(obj, str_name)
+function assert_contract(obj, s_name)
     sv = DebugScript.helper.check_model_contract(obj);
-    assert(isempty(sv), "%s: %s", str_name, join(sv, ", "));
+    assert(isempty(sv), "%s: %s", s_name, join(sv, ", "));
 end
 
 function con = attach_controller(comp, cls)
@@ -377,37 +377,37 @@ function sv_key = generator_keys()
     sv_key = tab.Key(arrayfun(@(c) ismember("component.generator.abstract", superclasses(c)), tab.Class))';
 end
 
-function sv_key = generated_keys(str_class, str_file)
+function sv_key = generated_keys(s_class, s_file)
     % 生成された switch の case ('key'; mkInst = ...) を読む
-    str = fileread(fullfile(GUILDA.pwd, "_GUILDAsystem", str_class, str_file), "Encoding", "UTF-8");
+    str = fileread(fullfile(GUILDA.pwd, "_GUILDAsystem", s_class, s_file), "Encoding", "UTF-8");
     sv_key = reshape(string(extractBetween(str, "case '", "';")), [], 1);
 end
 
-function assert_no_fail(flag, str_name)
+function assert_no_fail(flag, s_name)
     lv = flag.contract.status == "FAIL";
-    assert(~any(lv), "%s: %s", str_name, join(flag.contract.Properties.RowNames(lv) + " (" + flag.contract.detail(lv) + ")", ", "));
+    assert(~any(lv), "%s: %s", s_name, join(flag.contract.Properties.RowNames(lv) + " (" + flag.contract.detail(lv) + ")", ", "));
 end
 
-function assert_only_fail(flag, str_check)
+function assert_only_fail(flag, s_check)
     sv = string(flag.contract.Properties.RowNames(flag.contract.status == "FAIL"));
-    assert(isequal(sv, str_check), "FAIL: %s (expected %s)", join(sv,", "), str_check);
+    assert(isequal(sv, s_check), "FAIL: %s (expected %s)", join(sv,", "), s_check);
 end
 
-function assert_jacobians_close(flag, tol, str_name)
+function assert_jacobians_close(flag, tol, s_name)
     for fn = ["Axx","Bxv","Bxi","Bxu","Cix","Div","Dii","Diu","Cyx","Dyv","Dyi","Dyu"]
         if isfield(flag, fn) && ~isempty(flag.(fn)) && width(flag.(fn)) > 0
             r = max(flag.(fn){:,:}, [], "all");
-            assert(r < tol, "%s: %s %g", str_name, fn, r);
+            assert(r < tol, "%s: %s %g", s_name, fn, r);
         end
     end
 end
 
-function assert_error(f, str_id)
+function assert_error(f, s_id)
     try
         f();
     catch ME
-        assert(DebugScript.helper.msg_id(ME) == str_id, "%s", DebugScript.helper.msg_id(ME));
+        assert(DebugScript.helper.msg_id(ME) == s_id, "%s", DebugScript.helper.msg_id(ME));
         return
     end
-    error("no error (expected %s)", str_id);
+    error("no error (expected %s)", s_id);
 end

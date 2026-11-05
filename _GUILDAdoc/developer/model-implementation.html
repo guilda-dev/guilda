@@ -234,15 +234,15 @@ net  = PowerNetwork();
 b1   = net.add_bus(V=1.00);
 b2   = net.add_bus(V=1.02);
 b3   = net.add_bus();
-net.add_branch("pi", [b1.str_tag, b2.str_tag], R=0.010, X=0.085);
-net.add_branch("pi", [b2.str_tag, b3.str_tag], R=0.017, X=0.092);
+net.add_branch("pi", [b1.s_tag, b2.s_tag], R=0.010, X=0.085);
+net.add_branch("pi", [b2.s_tag, b3.s_tag], R=0.017, X=0.092);
 g1   = b1.add_component("gen-simple", "parameter",para);
 g2   = b2.add_component("gen-simple", "P",0.5, "parameter",para);
 b3.add_component("load-impedance", "P",-1.0, "Q",-0.2);
 net.initialize();
 
 sc  = Scenario("fault");
-sc.add_fault(b3.str_tag, [1,1.05]);
+sc.add_fault(b3.s_tag, [1,1.05]);
 net.add_scenario(sc);
 sim = net.simulate([0,10], sc);
 sys = net.get_sys();
@@ -325,8 +325,8 @@ g2.add_local_controller(avr, pss);
 net.initialize();
 sim = net.simulate([0,10], sc);
 </pre>
-    <p lang="en">To detach it, call <code>g2.remove_local_controller(avr.str_tag, RemoveNested=true)</code>. The option also removes the PSS, and an AVR with a PSS cannot be removed without it.</p>
-    <p lang="ja">取り外し: <code>g2.remove_local_controller(avr.str_tag, RemoveNested=true)</code>。このオプションで PSS も取り外し。PSS の付いた AVR はこのオプションなしでは取り外し不可。</p>
+    <p lang="en">To detach it, call <code>g2.remove_local_controller(avr.s_tag, RemoveNested=true)</code>. The option also removes the PSS, and an AVR with a PSS cannot be removed without it.</p>
+    <p lang="ja">取り外し: <code>g2.remove_local_controller(avr.s_tag, RemoveNested=true)</code>。このオプションで PSS も取り外し。PSS の付いた AVR はこのオプションなしでは取り外し不可。</p>
 
     <!-- ============================== TESTING ============================== -->
     <h2 id="testing"><span lang="en">Testing a new model</span><span lang="ja">新しいモデルのテスト</span></h2>
@@ -398,20 +398,20 @@ assert(~any(s.contract.status == "FAIL"))
 assert(s.inputs.source("Vref") == "equilibrium (not connected)")
 
 eig_new = sort(eig(net.get_sys()));
-g2.remove_local_controller(avr.str_tag);
+g2.remove_local_controller(avr.s_tag);
 g2.add_local_controller(controller.avr.AVR_ST1("b", kap=30, tap=0.05));
 net.initialize();
 assert(norm(eig_new - sort(eig(net.get_sys()))) &lt; 1e-6)
 
-function [net, g2] = make_network(str_key, para)
+function [net, g2] = make_network(s_key, para)
     net = PowerNetwork();
     b1  = net.add_bus(V=1.00);
     b2  = net.add_bus(V=1.02);
     b3  = net.add_bus();
-    net.add_branch("pi", [b1.str_tag, b2.str_tag], R=0.010, X=0.085);
-    net.add_branch("pi", [b2.str_tag, b3.str_tag], R=0.017, X=0.092);
-    b1.add_component(str_key, "parameter",para);
-    g2  = b2.add_component(str_key, "P",0.5, "parameter",para);
+    net.add_branch("pi", [b1.s_tag, b2.s_tag], R=0.010, X=0.085);
+    net.add_branch("pi", [b2.s_tag, b3.s_tag], R=0.017, X=0.092);
+    b1.add_component(s_key, "parameter",para);
+    g2  = b2.add_component(s_key, "P",0.5, "parameter",para);
     b3.add_component("load-impedance", "P",-1.0, "Q",-0.2);
     net.solver_ODE.Progress = "none";
     net.initialize();

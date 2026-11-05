@@ -34,9 +34,9 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Vvar, optio
     end
     
     % Branch Variables : Current / Vbusi("Varg")-Vbusj("Varg")
-    str_bus = string(obj.a_Bus);
-    Vbusi = Vvar.(str_bus(1));
-    Vbusj = Vvar.(str_bus(2));
+    sv_bus = string(obj.a_Bus);
+    Vbusi = Vvar.(sv_bus(1));
+    Vbusj = Vvar.(sv_bus(2));
     if ~isnan(para_ope.Vargmax) && ~isinf(para_ope.Vargmax)
         str = string(obj);
         Vm  = para_ope.Vargmax;
@@ -46,7 +46,7 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Vvar, optio
 
     % Variables of each branch end are named "<branch>_<bus>" (str(1): end at bus i, str(2): end at bus j).
     % They hold the power/current flowing from the branch into the bus.
-    str  = string(obj) + "_" + str_bus;
+    str  = string(obj) + "_" + sv_bus;
     Convar = ["P_","Q_"] + string(obj.a_Bus);
     switch option.methods
         case "AC OPF"
@@ -66,7 +66,7 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Vvar, optio
 
             % Initial point: the end values at the initial bus voltages, so that the
             % definitions below hold at x0 (a zero current is also a non-smooth point of |I|).
-            rv_x0V = [x0.(str_bus(1)), x0.(str_bus(2))];
+            rv_x0V = [x0.(sv_bus(1)), x0.(sv_bus(2))];
             cv_V0  = (rv_x0V(2,:) .* exp(1j*rv_x0V(1,:))).';
             cv_I0  = rm_Yij * cv_V0;
             cv_S0  = cv_V0 .* conj(cv_I0);
@@ -132,8 +132,8 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Vvar, optio
             prob.Constraints.("defP_"+str(2)) = P_j == b *(Vbusi("Varg")-Vbusj("Varg")-phase);
 
             % Initial point: the end values at the initial bus angles
-            x0.(str(1)) = b *(x0.(str_bus(2))-x0.(str_bus(1))+phase);
-            x0.(str(2)) = b *(x0.(str_bus(1))-x0.(str_bus(2))-phase);
+            x0.(str(1)) = b *(x0.(sv_bus(2))-x0.(sv_bus(1))+phase);
+            x0.(str(2)) = b *(x0.(sv_bus(1))-x0.(sv_bus(2))-phase);
 
             const.(Convar(1,1)) = const.(Convar(1,1)) + P_i;
             const.(Convar(2,1)) = const.(Convar(2,1)) + P_j;

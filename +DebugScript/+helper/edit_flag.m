@@ -1,6 +1,13 @@
-function flag = edit_flag(obj)
-% LayerPackage の編集状態 s_edit.str_flag ("unset"/"initialized"/"editted") を読む
+function flag = edit_flag(net)
+% PowerNetwork の編集状態を "unset" (initialize 前) / "initialized" (編集なし) / "editted" (編集あり) で返す
+% (sct_edit.l_initialized と tab_editLog から求める)
 %
 %   flag = DebugScript.helper.edit_flag(net)
-    flag = string(obj.s_edit.str_flag);
+    if ~net.sct_edit.l_initialized
+        flag = "unset";
+    elseif height(net.tab_editLog) > 0
+        flag = "editted";
+    else
+        flag = "initialized";
+    end
 end

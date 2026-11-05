@@ -33,7 +33,7 @@ classdef impedance < component.load.abstract
 % net = PowerNetwork();
 % bus = net.add_bus();
 % ld  = bus.add_component("load-impedance", "P", -0.8, "Q", -0.3);
-% ld.str_tag                        % "LRX1B001"
+% ld.s_tag                          % "LRX1B001"
 % ld.sv_u                           % R, X
 % ```
 %

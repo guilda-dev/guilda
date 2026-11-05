@@ -42,37 +42,37 @@ function bra = add_branch(obj, Key, from_to, opt)
         ir_bus = from_to;
         n_bus  = numel(obj.a_Bus);
         if any(ir_bus < 1 | ir_bus > n_bus | ir_bus ~= fix(ir_bus))
-            error(msg("GUILDA:PowerNetwork:BranchBusIndex", mat2str(from_to), char(obj.str_tag), char(string(n_bus))))
+            error(msg("GUILDA:PowerNetwork:BranchBusIndex", mat2str(from_to), char(obj.s_tag), char(string(n_bus))))
         end
     else
-        str_Bus = string(obj.a_Bus)';
-        [~,ir_bus] = ismember(from_to, str_Bus);
+        sr_Bus = string(obj.a_Bus)';
+        [~,ir_bus] = ismember(from_to, sr_Bus);
         if any(ir_bus == 0)
-            error(msg("GUILDA:PowerNetwork:BusNotFound", char(from_to(find(ir_bus == 0, 1))), char(obj.str_tag)))
+            error(msg("GUILDA:PowerNetwork:BusNotFound", char(from_to(find(ir_bus == 0, 1))), char(obj.s_tag)))
         end
     end
     a_Bus = obj.a_Bus(ir_bus);
 
     if ir_bus(1) == ir_bus(2)
-        error(msg("GUILDA:PowerNetwork:BranchSelfLoop", char(a_Bus{1}.str_tag)))
+        error(msg("GUILDA:PowerNetwork:BranchSelfLoop", char(a_Bus{1}.s_tag)))
     end
     if opt.R == 0 && opt.X == 0
-        error(msg("GUILDA:PowerNetwork:BranchZeroImpedance", char(a_Bus{1}.str_tag), char(a_Bus{2}.str_tag)))
+        error(msg("GUILDA:PowerNetwork:BranchZeroImpedance", char(a_Bus{1}.s_tag), char(a_Bus{2}.s_tag)))
     end
 
     % largest number in use + 1 (after remove_branch, numel+1 may already be taken)
-    str_Index = num2str(tools.next_tag_number(string(obj.a_Branch)),"%.3d");
+    s_Index = num2str(tools.next_tag_number(string(obj.a_Branch)),"%.3d");
 
     % Build Instance
     switch Key
 ___KEY_CASES___
     end
-    bra = mkInst(str_Index, opt);
+    bra = mkInst(s_Index, opt);
 
     % register
     bra.set_bus(a_Bus)
     bra.set_network(obj)
     obj.a_Branch = [obj.a_Branch;{bra}];
-    obj.log_edit(obj.str_tag+" <<-Add--- "+bra.str_tag,"Topology");
+    obj.log_edit(obj.s_tag+" <<-Add--- "+bra.s_tag,"Topology");
     
 end

@@ -50,14 +50,14 @@ end
     tab_OPF.Branch    = tab_OPF.Branch(:,"operation");
     tab_OPF.Branch.Properties.RowNames = string(obj.a_Branch);
     
-    str_text = newline+"Optimal Poer Flow ("+options.Method+")"+newline...
+    s_text = newline+"Optimal Poer Flow ("+options.Method+")"+newline...
              + string(repmat('=',1,100))+newline+newline;
-    for str_tag = ["Bus","Component","Branch"]
-        str_text = str_text...
-                 + "<<"+str_tag+" OPF setting>>"+newline...
-                 + formattedDisplayText(tab_OPF.(str_tag))+newline+newline;
+    for s_tag = ["Bus","Component","Branch"]
+        s_text = s_text...
+                 + "<<"+s_tag+" OPF setting>>"+newline...
+                 + formattedDisplayText(tab_OPF.(s_tag))+newline+newline;
     end
-    str_text = str_text + "<<Network Topology>>"+newline...
+    s_text = s_text + "<<Network Topology>>"+newline...
                         + obj.disp_tree + newline...
                         +string(repmat('=',1,100))+newline;
 
@@ -68,7 +68,7 @@ end
     Vvar  = struct();
     prob = optimproblem("ObjectiveSense","minimize",...
                         "Objective"     ,struct("GenCost",0),...
-                        "Description"   ,str_text);
+                        "Description"   ,s_text);
     if options.Method=="ELD"
         const.P = 0;
     end
@@ -95,10 +95,10 @@ end
         [prob, x0, const] = a_Branch{i}.build_opf_problem(prob,x0,const,Vvar,"methods",options.Method);
     end
 
-    str_const = fieldnames(const);
-    for i = 1:numel(str_const)
-        str_coni = str_const{i};
-        prob.Constraints.("balanced"+str_coni) = const.(str_coni) == 0;
+    sv_const = fieldnames(const);
+    for i = 1:numel(sv_const)
+        s_coni = sv_const{i};
+        prob.Constraints.("balanced"+s_coni) = const.(s_coni) == 0;
     end
 
     % network-wide set_opffcn terms (variables of all objects, addressed by tag)

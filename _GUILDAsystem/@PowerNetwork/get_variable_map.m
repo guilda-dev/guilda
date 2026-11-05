@@ -1,4 +1,4 @@
-function [tab, c_idxBus, c_idxGC] = get_variable_map(obj, str_form)
+function [tab, c_idxBus, c_idxGC] = get_variable_map(obj, s_form)
 % Return the variable map: the order of the state, voltage and input variables.
 %
 % Variable map of the network: the single definition of the order of the variables of
@@ -36,7 +36,7 @@ function [tab, c_idxBus, c_idxGC] = get_variable_map(obj, str_form)
 % <@Group> Called by analyses
     arguments (Input)
         obj
-        str_form (1,1) string {mustBeMember(str_form, ["table","rows"])} = "table" % "rows" (internal): return the rows without the table.
+        s_form (1,1) string {mustBeMember(s_form, ["table","rows"])} = "table" % "rows" (internal): return the rows without the table.
     end
     arguments (Output)
         tab        % One row per variable: Index, Kind, Owner, Name, Label, Bus.
@@ -60,7 +60,7 @@ function [tab, c_idxBus, c_idxGC] = get_variable_map(obj, str_form)
         if n > 0
             sv_label = reshape(string(gc.attach_tag(sv_name)), [], 1);
         end
-        c_gc{k} = [repmat("x",n,1), repmat(string(gc.str_tag),n,1), sv_name, sv_label, strings(n,1)];
+        c_gc{k} = [repmat("x",n,1), repmat(string(gc.s_tag),n,1), sv_name, sv_label, strings(n,1)];
     end
     c_rows = {vertcat(strings(0,5), c_x{:}, c_gc{:}); vertcat(strings(0,5), c_V{:}); vertcat(strings(0,5), c_u{:})};
 
@@ -81,7 +81,7 @@ function [tab, c_idxBus, c_idxGC] = get_variable_map(obj, str_form)
         c_idxGC{k} = (sum(n_x) + sum(n_gc(1:k-1)) + (1:n_gc(k)))';
     end
 
-    if str_form == "rows"
+    if s_form == "rows"
         tab = c_rows;
         return
     end

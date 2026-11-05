@@ -1,78 +1,78 @@
-function [s_options, sv_given] = resolve_options(solver, s_map, nv)
+function [sct_options, sv_given] = resolve_options(solver, sct_map, nv)
 % Merge the stored solver defaults with the call-time overrides into the effective settings.
 %
 % Merges the stored defaults of a solver object (net.solver_*) with the Name-Value
 % overrides of one call and returns the effective settings. The solver object is only
 % read: the overrides apply to this call and never change the stored defaults.
-% s_map lists the Name-Value names an analysis accepts (UpperCamelCase common names
+% sct_map lists the Name-Value names an analysis accepts (UpperCamelCase common names
 % such as Method, Tolerance, MaxIteration, Solver, TimeLimit, Verbose) and the solver
-% field each one sets. A name that is not in s_map stops with the error
+% field each one sets. A name that is not in sct_map stops with the error
 % GUILDA:resolve_options:UnknownName, which lists the accepted names.
-% s_options has one field per solver field named in s_map (the top-level property for
+% sct_options has one field per solver field named in sct_map (the top-level property for
 % a nested path such as "dynamic.t_span"); the stored value when the name was not
 % given, the override otherwise. Name matching is case-insensitive.
 %
 % <@Examples>
 % ```matlab
-% s_map = struct("MaxIteration", "MaxIterations", ...
+% sct_map = struct("MaxIteration", "MaxIterations", ...
 %                "Verbose",      {{"Display", @(l) replace(string(l), ["true","false"], ["iter","none"])}});
-% opt = tools.resolve_options(net.solver_PF, s_map, {"MaxIteration", 50});
+% opt = tools.resolve_options(net.solver_PF, sct_map, {"MaxIteration", 50});
 % opt.MaxIterations   % 50; net.solver_PF.MaxIterations is unchanged
 % ```
     arguments
         solver % Holder of the stored defaults, e.g. net.solver_PF. Only read.
-        s_map (1,1) struct % One field per accepted Name-Value name. The value is the solver field it sets: a string ("MaxIterations"), a string array to set several fields, a dotted path into a struct property ("dynamic.t_span"), or a cell {field, fcn} where fcn converts the given value (e.g. Verbose=true -> Display="iter").
+        sct_map (1,1) struct % One field per accepted Name-Value name. The value is the solver field it sets: a string ("MaxIterations"), a string array to set several fields, a dotted path into a struct property ("dynamic.t_span"), or a cell {field, fcn} where fcn converts the given value (e.g. Verbose=true -> Display="iter").
         nv          = struct() % Overrides of this call: the struct of an arguments block (opt.Name with no default, so only given names are fields) or a cell {Name1, Value1, ...}.
     end
     arguments (Output)
-        s_options % Effective settings, keyed by solver field name.
-        sv_given % Accepted names given in this call, in s_map spelling.
+        sct_options % Effective settings, keyed by solver field name.
+        sv_given % Accepted names given in this call, in sct_map spelling.
     end
 
-    str_solver = string(class(solver));
-    sv_names   = string(fieldnames(s_map)).';
+    s_solver   = string(class(solver));
+    sr_names   = string(fieldnames(sct_map)).';
 
     % Name-Value pairs of this call
     if isstruct(nv)
-        sv_in = string(fieldnames(nv)).';
+        sr_in = string(fieldnames(nv)).';
         c_in  = struct2cell(nv).';
     elseif iscell(nv)
         if mod(numel(nv), 2) ~= 0
-            error(msg("GUILDA:resolve_options:InvalidPairs", char(str_solver)));
+            error(msg("GUILDA:resolve_options:InvalidPairs", char(s_solver)));
         end
-        sv_in = string(nv(1:2:end));
+        sr_in = string(nv(1:2:end));
         c_in  = nv(2:2:end);
     else
-        error(msg("GUILDA:resolve_options:InvalidPairs", char(str_solver)));
+        error(msg("GUILDA:resolve_options:InvalidPairs", char(s_solver)));
     end
 
     % Stored defaults of every field the map refers to
-    s_options = struct();
-    c_target  = cell(size(sv_names));
-    for i = 1:numel(sv_names)
-        [sv_path, f_convert] = map_entry(s_map.(sv_names(i)));
+    sct_options = struct();
+    c_target  = cell(size(sr_names));
+    for i = 1:numel(sr_names)
+        [sv_path, f_convert] = map_entry(sct_map.(sr_names(i)));
         c_target{i} = {sv_path, f_convert};
         for path = sv_path
-            sv_part = split(path, ".").';
-            if ~has_field(solver, sv_part(1))
-                error(msg("GUILDA:resolve_options:UnknownField", char(sv_names(i)), char(path), char(str_solver)));
+            sr_part = split(path, ".").';
+            if ~has_field(solver, sr_part(1))
+                error(msg("GUILDA:resolve_options:UnknownField", char(sr_names(i)), char(path), char(s_solver)));
             end
-            if ~isfield(s_options, sv_part(1))
-                s_options.(sv_part(1)) = solver.(sv_part(1));
+            if ~isfield(sct_options, sr_part(1))
+                sct_options.(sr_part(1)) = solver.(sr_part(1));
             end
-            if numel(sv_part) > 1 && ~has_path(s_options.(sv_part(1)), sv_part(2:end))
-                error(msg("GUILDA:resolve_options:UnknownField", char(sv_names(i)), char(path), char(str_solver)));
+            if numel(sr_part) > 1 && ~has_path(sct_options.(sr_part(1)), sr_part(2:end))
+                error(msg("GUILDA:resolve_options:UnknownField", char(sr_names(i)), char(path), char(s_solver)));
             end
         end
     end
 
     % Overrides (a repeated name: the last one wins)
     sv_given = strings(1,0);
-    for k = 1:numel(sv_in)
-        idx = find(strcmpi(sv_in(k), sv_names), 1);
+    for k = 1:numel(sr_in)
+        idx = find(strcmpi(sr_in(k), sr_names), 1);
         if isempty(idx)
-            error(msg("GUILDA:resolve_options:UnknownName", char(sv_in(k)), char(str_solver), ...
-                      char(join(sv_names, ", "))));
+            error(msg("GUILDA:resolve_options:UnknownName", char(sr_in(k)), char(s_solver), ...
+                      char(join(sr_names, ", "))));
         end
         [sv_path, f_convert] = c_target{idx}{:};
         val = c_in{k};
@@ -80,10 +80,10 @@ function [s_options, sv_given] = resolve_options(solver, s_map, nv)
             val = f_convert(val);
         end
         for path = sv_path
-            sv_part   = cellstr(split(path, ".").');
-            s_options = setfield(s_options, sv_part{:}, val);
+            sr_part   = cellstr(split(path, ".").');
+            sct_options = setfield(sct_options, sr_part{:}, val);
         end
-        sv_given = [sv_given(sv_given ~= sv_names(idx)), sv_names(idx)];
+        sv_given = [sv_given(sv_given ~= sr_names(idx)), sr_names(idx)];
     end
 end
 
@@ -99,17 +99,17 @@ function [sv_path, f_convert] = map_entry(entry)
     sv_path = reshape(string(entry), 1, []);
 end
 
-function l = has_field(solver, str_name)
+function l = has_field(solver, s_name)
     if isstruct(solver)
-        l = isfield(solver, str_name);
+        l = isfield(solver, s_name);
     else
-        l = isprop(solver, str_name);
+        l = isprop(solver, s_name);
     end
 end
 
-function l = has_path(s, sv_part)
+function l = has_path(s, sr_part)
     l = true;
-    for p = sv_part
+    for p = sr_part
         if ~isstruct(s) || ~isfield(s, p)
             l = false;
             return

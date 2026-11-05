@@ -3,7 +3,7 @@
 % 実行: runtests("DebugScript.test_F8_utilities")  または  DebugScript.run_all("Features","F8")
 
 % 共通設定 (各テストの前に毎回実行される)
-str_templates = ["IEEE14bus","IEEE14bus_NoTap","IEEE14bus_lossless","Ishizaki6Bus","TEST31bus","Txt3Bus","Tutorial3bus"];
+sr_templates = ["IEEE14bus","IEEE14bus_NoTap","IEEE14bus_lossless","Ishizaki6Bus","TEST31bus","Txt3Bus","Tutorial3bus"];
 
 
 %% Admittance matrix is symmetric and matches branch data
@@ -56,6 +56,36 @@ txt = evalc("net.info(""parameter"", false, ""equilibrium"", false)");
 assert(contains(txt, "Total Buses: 14"))
 
 
+%% struct keeps each layer and gives a repeated one its first path
+% 同じタグの別オブジェクト (各機器の para_dynamics はタグ "dynamics") を取り違えない
+net = DebugScript.helper.build_9bus();
+s   = net.struct(false);
+for i = 1:numel(net.a_Bus)
+    for j = 1:numel(net.a_Bus{i}.a_Component)
+        sc = s.a_Bus{i}.a_Component{j};
+        assert(isstruct(sc.para_dynamics) && sc.para_dynamics.class == class(net.a_Bus{i}.a_Component{j}.para_dynamics), ...
+               "a_Bus{" + i + "}.a_Component{" + j + "}.para_dynamics")
+    end
+end
+% 2 回目に現れたオブジェクトは最初に格納したパス
+br  = net.a_Branch{1};
+i_from = find(cellfun(@(b) b == br.a_Bus{1}, net.a_Bus));
+assert(s.a_Branch{1}.a_Bus{1} == "net.a_Bus{" + i_from + "}", s.a_Branch{1}.a_Bus{1})
+% info の表はパスではなくタグを表示する
+txt = evalc("net.info(""parameter"", false, ""equilibrium"", false)");
+assert(~contains(txt, """net.") && contains(txt, """" + string(br.a_Bus{1}) + """"))
+
+
+%% disp_tree prints a layer without children
+net = DebugScript.helper.build_9bus();
+br  = net.a_Branch{1};
+txt = evalc("br.disp_tree()");
+assert(contains(txt, br.s_tag))
+assert(contains(br.disp_tree(), br.s_tag))
+txt = net.disp_tree();
+assert(contains(txt, "┗━━") && contains(txt, string(net.a_Bus{end})))
+
+
 %% Draw diagram
 % 図は非表示で作成して閉じる
 net = DebugScript.helper.build_ieee14();
@@ -72,17 +102,17 @@ assert(~isempty(ax.Children))
 % CSV に書き出して読み込むと同じ系統になる
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
-str_dir = tempname;  mkdir(str_dir);
-c = onCleanup(@() rmdir(str_dir, "s"));
+s_dir = tempname;  mkdir(s_dir);
+c = onCleanup(@() rmdir(s_dir, "s"));
 
 % フォルダ名が @ で始まるとクラスファイルも書き出す
-str_path = net.export_csv(fullfile(str_dir, "@RoundTrip14"));
-assert(all(isfolder(fullfile(str_path, ["network","bus","branch","component"]))))
-assert(isfile(fullfile(str_path, "RoundTrip14.m")))
-assert(contains(fileread(fullfile(str_path, "RoundTrip14.m")), "PowerNetwork.import_csv(str_dirpath, Network=obj)"))
+s_path = net.export_csv(fullfile(s_dir, "@RoundTrip14"));
+assert(all(isfolder(fullfile(s_path, ["network","bus","branch","component"]))))
+assert(isfile(fullfile(s_path, "RoundTrip14.m")))
+assert(contains(fileread(fullfile(s_path, "RoundTrip14.m")), "PowerNetwork.import_csv(s_dirpath, Network=obj)"))
 
-net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(str_path));
-assert(isa(net2, "PowerNetwork") && string(net2.str_tag) == "RoundTrip14")
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path));
+assert(isa(net2, "PowerNetwork") && string(net2.s_tag) == "RoundTrip14")
 assert(numel(net2.a_Bus) == numel(net.a_Bus) && numel(net2.a_Branch) == numel(net.a_Branch))
 n_comp = @(n) sum(cellfun(@(b) numel(b.a_Component), n.a_Bus));
 assert(n_comp(net2) == n_comp(net))
@@ -91,32 +121,32 @@ assert(norm(net2.cv_Vequilibrium - net.cv_Vequilibrium) < 1e-8)
 assert(isequal(cellfun(@(b) b.l_isSlack, net2.a_Bus), cellfun(@(b) b.l_isSlack, net.a_Bus)))
 
 % クラスファイルを使うとフォルダがそのまま系統クラスになる
-addpath(str_dir);
-c_path = onCleanup(@() rmpath(str_dir));
+addpath(s_dir);
+c_path = onCleanup(@() rmpath(s_dir));
 net3 = DebugScript.helper.quiet(@() feval("RoundTrip14"));
 assert(isa(net3, "PowerNetwork") && norm(net3.cv_Vequilibrium - net.cv_Vequilibrium) < 1e-8)
 clear c_path
 
 % 母線の baseMVA は廃止: 書き出さず、読み込み時は列があっても無視する (テンプレートの CSV には残っている)
-tab_bus = readtable(fullfile(str_path, "bus", "parameter.csv"));
+tab_bus = readtable(fullfile(s_path, "bus", "parameter.csv"));
 assert(~ismember("baseMVA", string(tab_bus.Properties.VariableNames)))
 tab_bus.baseMVA = repmat(50, height(tab_bus), 1);
-writetable(tab_bus, fullfile(str_path, "bus", "parameter.csv"));
-net3 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(str_path));
+writetable(tab_bus, fullfile(s_path, "bus", "parameter.csv"));
+net3 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path));
 assert(norm(net3.cv_Vequilibrium - net.cv_Vequilibrium) < 1e-8)
 assert(~ismember("baseMVA", string(net3.a_Bus{1}.tab_parameter.operation.Properties.VariableNames)))
 assert(net3.tab_parameter.base.baseMVA == 100 && net3.tab_parameter.base.Hz == GUILDA.config("Model","Hz"))
 
 % 同じフォルダへの再出力は Overwrite 指定が必要
-assert(error_id(@() net.export_csv(str_path)) == "GUILDA:export_csv:FolderExists")
+assert(error_id(@() net.export_csv(s_path)) == "GUILDA:export_csv:FolderExists")
 % Overwrite は前回の機器フォルダを消してから書き出す (古い機器が残らない)
-mkdir(fullfile(str_path, "component", "gen-classical"));
-net.export_csv(str_path, Overwrite=true);
-assert(~isfolder(fullfile(str_path, "component", "gen-classical")))
+mkdir(fullfile(s_path, "component", "gen-classical"));
+net.export_csv(s_path, Overwrite=true);
+assert(~isfolder(fullfile(s_path, "component", "gen-classical")))
 % @ で始まらないフォルダにはクラスファイルを書かない
-str_plain = net.export_csv(fullfile(str_dir, "Plain14"));
-assert(isempty(dir(fullfile(str_plain, "*.m"))))
-assert(error_id(@() PowerNetwork.import_csv(fullfile(str_dir, "NoSuchFolder"))) == "GUILDA:import_csv:NotFound")
+s_plain = net.export_csv(fullfile(s_dir, "Plain14"));
+assert(isempty(dir(fullfile(s_plain, "*.m"))))
+assert(error_id(@() PowerNetwork.import_csv(fullfile(s_dir, "NoSuchFolder"))) == "GUILDA:import_csv:NotFound")
 
 
 %% CSV round trip keeps Hz baseMVA and the slack bus
@@ -129,31 +159,31 @@ net.a_Bus{2}.add_component("gen-park");
 net.tab_parameter.base.Hz      = 50;
 net.tab_parameter.base.baseMVA = 250;
 DebugScript.helper.quiet(@() set_slack(net.a_Bus{2}));
-str_dir = tempname;  mkdir(str_dir);
-c = onCleanup(@() rmdir(str_dir, "s"));
-str_path = net.export_csv(fullfile(str_dir, "Base2Bus"));
-tab_net  = readtable(fullfile(str_path, "network", "parameter.csv"));
+s_dir = tempname;  mkdir(s_dir);
+c = onCleanup(@() rmdir(s_dir, "s"));
+s_path   = net.export_csv(fullfile(s_dir, "Base2Bus"));
+tab_net  = readtable(fullfile(s_path, "network", "parameter.csv"));
 assert(isequal(string(tab_net.Properties.VariableNames), ["Hz","baseMVA"]) && height(tab_net) == 1)
 assert(tab_net.Hz == 50 && tab_net.baseMVA == 250)
 
-net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(str_path, Initialize=false));
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Initialize=false));
 assert(net2.tab_parameter.base.Hz == 50 && net2.tab_parameter.base.baseMVA == 250)
 assert(net2.a_Bus{2}.l_isSlack && ~net2.a_Bus{1}.l_isSlack)
 assert(net2.a_Bus{1}.a_Component{1}.get_Hz() == 50)
 
 % network/parameter.csv の無い古いフォルダ・値が NaN の列は既定値 (GUILDA.config の Hz, 100 MVA)
-writetable(table(nan, 300, 'VariableNames', ["Hz","baseMVA"]), fullfile(str_path, "network", "parameter.csv"));
-net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(str_path, Initialize=false));
+writetable(table(nan, 300, 'VariableNames', ["Hz","baseMVA"]), fullfile(s_path, "network", "parameter.csv"));
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Initialize=false));
 assert(net2.tab_parameter.base.Hz == GUILDA.config("Model","Hz") && net2.tab_parameter.base.baseMVA == 300)
-rmdir(fullfile(str_path, "network"), "s");
-net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(str_path, Initialize=false));
+rmdir(fullfile(s_path, "network"), "s");
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Initialize=false));
 assert(net2.tab_parameter.base.Hz == GUILDA.config("Model","Hz") && net2.tab_parameter.base.baseMVA == 100)
 
 % Network= で既存の系統へ追加できる (母線番号は CSV の行番号)
 net3 = PowerNetwork("Host");
 net3.add_bus();
 net3.a_Bus{1}.add_component("load-power");
-out  = DebugScript.helper.quiet(@() PowerNetwork.import_csv(str_path, Network=net3, Initialize=false));
+out  = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Network=net3, Initialize=false));
 assert(out == net3 && numel(net3.a_Bus) == 3 && numel(net3.a_Branch) == 1)
 assert(isequal(string(net3.a_Branch{1}.a_Bus(:)).', string(net3.a_Bus(2:3)).'))
 
@@ -165,32 +195,32 @@ net.add_bus();  net.add_bus();
 net.add_branch("pi_transformer", [1,2], "X",0.2, "Tap",0.95, "Phase",5/180*pi);
 net.a_Bus{1}.add_component("gen-park");
 net.a_Bus{2}.add_component("load-power", "P",-0.5, "Q",-0.1);
-str_dir = tempname;  mkdir(str_dir);
-c = onCleanup(@() rmdir(str_dir, "s"));
-str_path = net.export_csv(fullfile(str_dir, "@Tap2Bus"));
-str_csv  = fullfile(str_path, "branch", "parameter.csv");
-tab_bra  = readtable(str_csv);
+s_dir = tempname;  mkdir(s_dir);
+c = onCleanup(@() rmdir(s_dir, "s"));
+s_path   = net.export_csv(fullfile(s_dir, "@Tap2Bus"));
+s_csv    = fullfile(s_path, "branch", "parameter.csv");
+tab_bra  = readtable(s_csv);
 assert(all(ismember(["tap","phase"], string(tab_bra.Properties.VariableNames))))
 
 get_tp = @(n) n.a_Branch{1}.tab_parameter.dynamics{1,["tap","phase"]};
-net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(str_path, Initialize=false));
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Initialize=false));
 assert(max(abs(get_tp(net2) - [0.95, 5/180*pi])) < 1e-12)
 assert(norm(net2.get_admittance_matrix.Variables - net.get_admittance_matrix.Variables, "fro") < 1e-12)
 
 % 列名 Tap/Phase でも読める
-writetable(renamevars(tab_bra, ["tap","phase"], ["Tap","Phase"]), str_csv);
-net3 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(str_path, Initialize=false));
+writetable(renamevars(tab_bra, ["tap","phase"], ["Tap","Phase"]), s_csv);
+net3 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Initialize=false));
 assert(max(abs(get_tp(net3) - [0.95, 5/180*pi])) < 1e-12)
 
 % 両方の綴りがあるとエラー
 tab_bra.Tap = tab_bra.tap;
-writetable(tab_bra, str_csv);
-assert(error_id(@() PowerNetwork.import_csv(str_path, Initialize=false)) == "GUILDA:import_csv:DuplicateColumns")
+writetable(tab_bra, s_csv);
+assert(error_id(@() PowerNetwork.import_csv(s_path, Initialize=false)) == "GUILDA:import_csv:DuplicateColumns")
 
 % 同梱の IEEE14bus の変圧器タップが読み込まれる
 net = DebugScript.helper.quiet(@() network.IEEE14bus);
-str_bus = string(net.a_Bus(:)).';
-r_tap = @(f,t) net.a_Branch{cellfun(@(b) isequal(string(b.a_Bus(:)).', str_bus([f t])), net.a_Branch)}.tab_parameter.dynamics.tap;
+sr_bus = string(net.a_Bus(:)).';
+r_tap = @(f,t) net.a_Branch{cellfun(@(b) isequal(string(b.a_Bus(:)).', sr_bus([f t])), net.a_Branch)}.tab_parameter.dynamics.tap;
 assert(isequal([r_tap(4,7), r_tap(4,9), r_tap(5,6)], [0.978, 0.969, 0.932]))
 
 
@@ -198,27 +228,27 @@ assert(isequal([r_tap(4,7), r_tap(4,9), r_tap(5,6)], [0.978, 0.969, 0.932]))
 % v3 の CsvNetHandler.import / export は警告を出して新しい API を呼ぶ
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
-str_dir = tempname;  mkdir(str_dir);
-c = onCleanup(@() rmdir(str_dir, "s"));
+s_dir = tempname;  mkdir(s_dir);
+c = onCleanup(@() rmdir(s_dir, "s"));
 clear Deprecated
 lastwarn("");
-str_path = DebugScript.helper.quiet(@() CsvNetHandler.export(net, "Old14", "savepath", str_dir, "version", 3));
+s_path = DebugScript.helper.quiet(@() CsvNetHandler.export(net, "Old14", "savepath", s_dir, "version", 3));
 id = DebugScript.helper.msg_id();
 assert(id == "GUILDA:Deprecated:CsvNetHandlerExport", id)
-assert(str_path == fullfile(str_dir, "@Old14") && isfile(fullfile(str_path, "Old14.m")))
-assert(contains(fileread(fullfile(str_path, "Old14.m")), "ver = 3"))
-assert(isfile(fullfile(str_path, "network", "parameter.csv")))
+assert(s_path == fullfile(s_dir, "@Old14") && isfile(fullfile(s_path, "Old14.m")))
+assert(contains(fileread(fullfile(s_path, "Old14.m")), "ver = 3"))
+assert(isfile(fullfile(s_path, "network", "parameter.csv")))
 % 既存フォルダは Overwrite が必要
-assert(error_id(@() CsvNetHandler.export(net, "Old14", "savepath", str_dir)) == "GUILDA:export_csv:FolderExists")
+assert(error_id(@() CsvNetHandler.export(net, "Old14", "savepath", s_dir)) == "GUILDA:export_csv:FolderExists")
 
 lastwarn("");
-net2 = DebugScript.helper.quiet(@() CsvNetHandler.import(str_path));
+net2 = DebugScript.helper.quiet(@() CsvNetHandler.import(s_path));
 id = DebugScript.helper.msg_id();
 assert(id == "GUILDA:Deprecated:CsvNetHandlerImport", id)
 assert(norm(net2.cv_Vequilibrium - net.cv_Vequilibrium) < 1e-8)
 % 既存の系統へ読み込む v3 の形 (系統クラスのコンストラクタで使っていた形)
 net3 = PowerNetwork();
-out  = DebugScript.helper.quiet(@() CsvNetHandler.import(str_path, net3, "Initialize", false));
+out  = DebugScript.helper.quiet(@() CsvNetHandler.import(s_path, net3, "Initialize", false));
 assert(out == net3 && numel(net3.a_Bus) == 14)
 
 
@@ -226,12 +256,12 @@ assert(out == net3 && numel(net3.a_Bus) == 14)
 % save / load で構成が戻り、解析の結果も同じ
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);
-str_mat = tempname + ".mat";
-c = onCleanup(@() delete(str_mat));
-save(str_mat, "net");
+s_mat = tempname + ".mat";
+c = onCleanup(@() delete(s_mat));
+save(s_mat, "net");
 
 lastwarn("");
-s = load(str_mat);  n1 = s.net;
+s = load(s_mat);  n1 = s.net;
 assert(isempty(lastwarn), lastwarn)
 assert(n1 ~= net)
 assert(isequal(string(n1.a_Bus), string(net.a_Bus)) && isequal(string(n1.a_Branch), string(net.a_Branch)))
@@ -247,14 +277,14 @@ sol = DebugScript.helper.quiet(@() n1.simulate([0,2], ev));
 assert(sol.odeResults.t(end) == 2)
 
 % 読み込んだ系統でも編集が記録され、平衡点が古くなる
-assert(height(n1.tab_editLog) == 0 && ~n1.s_edit.l_staleEquilibrium)
+assert(height(n1.tab_editLog) == 0 && ~n1.l_staleEquilibrium)
 comp.tab_parameter.dynamics.D = comp.tab_parameter.dynamics.D * 2;
 assert(height(n1.tab_editLog) == 1)                     % リスナーは 1 組だけ
-assert(comp.s_edit.str_odefcn == "editted" && n1.s_edit.l_staleEquilibrium)
+assert(comp.sct_edit.s_odefcn == "editted" && n1.l_staleEquilibrium)
 assert(error_id(@() n1.get_sys) == "GUILDA:PowerNetwork:EquilibriumStale")
-assert(height(net.tab_editLog) == 0 && ~net.s_edit.l_staleEquilibrium)  % 元の系統は変わらない
+assert(height(net.tab_editLog) == 0 && ~net.l_staleEquilibrium)  % 元の系統は変わらない
 DebugScript.helper.quiet(@() n1.initialize);
-assert(comp.s_edit.str_odefcn == "updated" && ~n1.s_edit.l_staleEquilibrium)
+assert(comp.sct_edit.s_odefcn == "updated" && ~n1.l_staleEquilibrium)
 
 % 型の検査も効く (読み込む前と同じく、エラーになり値は変わらない)
 r_D = comp.para_dynamics.D;
@@ -262,27 +292,27 @@ assert(error_id(@() set_dynamics_D(comp, "abc")) == "GUILDA:Parameter:ClassNameM
 assert(isequal(comp.para_dynamics.D, r_D))
 
 % 母線・送電線・系統のパラメータと、読み込み後の構成の編集
-s = load(str_mat);  n2 = s.net;
+s = load(s_mat);  n2 = s.net;
 n2.a_Bus{3}.tab_parameter.powerflow.V = 1.01;
-assert(height(n2.tab_editLog) == 1 && n2.s_edit.l_staleEquilibrium)
-s = load(str_mat);  n3 = s.net;
+assert(height(n2.tab_editLog) == 1 && n2.l_staleEquilibrium)
+s = load(s_mat);  n3 = s.net;
 n3.a_Branch{1}.tab_parameter.dynamics.R = 0.02;
-assert(height(n3.tab_editLog) == 1 && n3.s_edit.l_staleEquilibrium)
-s = load(str_mat);  n4 = s.net;
+assert(height(n3.tab_editLog) == 1 && n3.l_staleEquilibrium)
+s = load(s_mat);  n4 = s.net;
 n4.tab_parameter.base.Hz = 50;
-assert(n4.a_Bus{2}.a_Component{1}.s_edit.str_odefcn == "editted" && ~n4.s_edit.l_staleEquilibrium)
+assert(n4.a_Bus{2}.a_Component{1}.sct_edit.s_odefcn == "editted" && ~n4.l_staleEquilibrium)
 n4.get_sys();
 assert(DebugScript.helper.handle_Hz(n4.a_Bus{2}.a_Component{1}) == 50)
-s = load(str_mat);  n5 = s.net;
+s = load(s_mat);  n5 = s.net;
 DebugScript.helper.quiet(@() set_slack(n5.a_Bus{2}));
-assert(n5.a_Bus{2}.l_isSlack && n5.s_edit.l_staleEquilibrium)
-s = load(str_mat);  n6 = s.net;
+assert(n5.a_Bus{2}.l_isSlack && n5.l_staleEquilibrium)
+s = load(s_mat);  n6 = s.net;
 n6.add_bus();
-assert(numel(n6.a_Bus) == 4 && n6.s_edit.l_staleEquilibrium && numel(net.a_Bus) == 3)
+assert(numel(n6.a_Bus) == 4 && n6.l_staleEquilibrium && numel(net.a_Bus) == 3)
 
 % 直接は代入できない
-for str_prop = ["a_Bus","a_Branch","a_GlobalController"]
-    assert(error_id(@() set_prop(net, str_prop, cell(0,1))) == "MATLAB:class:SetProhibited", str_prop)
+for s_prop = ["a_Bus","a_Branch","a_GlobalController"]
+    assert(error_id(@() set_prop(net, s_prop, cell(0,1))) == "MATLAB:class:SetProhibited", s_prop)
 end
 
 
@@ -290,25 +320,25 @@ end
 % 制御器のパラメータの編集も記録される
 net = DebugScript.helper.quiet(@() network.IEEE9bus);
 DebugScript.helper.quiet(@() net.initialize);
-str_mat = tempname + ".mat";
-c = onCleanup(@() delete(str_mat));
-save(str_mat, "net");
-s   = load(str_mat);
+s_mat = tempname + ".mat";
+c = onCleanup(@() delete(s_mat));
+save(s_mat, "net");
+s   = load(s_mat);
 avr = s.net.a_Bus{1}.a_Component{1}.a_LocalController{1};
 pss = avr.a_LocalController{1};
 assert(isa(avr, "controller.avr.AVR_ST1") && isa(pss, "controller.pss.PSS1"))
 avr.para_dynamics.kap = avr.para_dynamics.kap * 1.1;
-assert(height(s.net.tab_editLog) == 1 && s.net.s_edit.l_staleEquilibrium && avr.s_edit.str_odefcn == "editted")
+assert(height(s.net.tab_editLog) == 1 && s.net.l_staleEquilibrium && avr.sct_edit.s_odefcn == "editted")
 pss.para_dynamics.kpss = pss.para_dynamics.kpss * 1.1;
-assert(height(s.net.tab_editLog) == 2 && pss.s_edit.str_odefcn == "editted")
+assert(height(s.net.tab_editLog) == 2 && pss.sct_edit.s_odefcn == "editted")
 
 % 結果オブジェクトが参照する系統も同じ
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);
 res = DebugScript.helper.quiet(@() net.calculate_powerflow);
-save(str_mat, "res");
+save(s_mat, "res");
 lastwarn("");
-s = load(str_mat);
+s = load(s_mat);
 assert(isempty(lastwarn), lastwarn)
 assert(numel(s.res.a_PowerNetwork.a_Bus) == 3)
 s.res.a_PowerNetwork.a_Bus{2}.a_Component{1}.para_dynamics.D = 1;
@@ -316,16 +346,16 @@ assert(height(s.res.a_PowerNetwork.tab_editLog) == 1)
 
 % 系統の下の層だけを保存すると、その層の編集は記録できないので警告する
 gen = net.a_Bus{2}.a_Component{1};
-save(str_mat, "gen");
+save(s_mat, "gen");
 lastwarn("");
-s = load(str_mat);
+s = load(s_mat);
 id = DebugScript.helper.msg_id();
 assert(id == "GUILDA:PowerNetwork:IncompleteLoad", id)
 assert(numel(s.gen.a_Bus.a_PowerNetwork.a_Bus) == 3)     % 構成は戻る
 comp = gen;                                              % 系統と一緒に保存しても同じ
-save(str_mat, "net", "comp");
+save(s_mat, "net", "comp");
 lastwarn("");
-s = load(str_mat);
+s = load(s_mat);
 id = DebugScript.helper.msg_id();
 assert(id == "GUILDA:PowerNetwork:IncompleteLoad", id)
 assert(s.comp == s.net.a_Bus{2}.a_Component{1})
@@ -340,10 +370,10 @@ net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B003")
 DebugScript.helper.quiet(@() net.initialize);
 res = net.linearize();
 sim = net.simulate([0,1], Progress="none");
-str_mat = tempname + ".mat";
-c = onCleanup(@() delete(str_mat));
-save(str_mat, "net", "res", "sim");
-s = load(str_mat);
+s_mat = tempname + ".mat";
+c = onCleanup(@() delete(s_mat));
+save(s_mat, "net", "res", "sim");
+s = load(s_mat);
 same_ss = @(a, b) isequal(a.A, b.A) && isequal(a.B, b.B) && isequal(a.C, b.C) && isequal(a.D, b.D) && isequal(a.E, b.E) && ...
                   isequal(a.StateName, b.StateName) && isequal(a.InputName, b.InputName) && isequal(a.OutputName, b.OutputName);
 for alg = ["Kron", "Feedback", "DAE"]
@@ -383,9 +413,9 @@ assert(net.a_Bus{1}.l_isSlack && sum(cellfun(@(b) b.l_isSlack, net.a_Bus)) == 1)
 assert(all(isfinite(net.cv_Vequilibrium)))                  % Initialize=true が既定
 
 mpc = tools.network_to_mpc(net);
-for str_f = ["bus","gen","branch","gencost"]
-    assert(isequal(size(mpc.(str_f)), size(mpc14.(str_f))), str_f)
-    assert(max(abs(mpc.(str_f) - mpc14.(str_f)), [], "all") < 1e-12, str_f)
+for s_f = ["bus","gen","branch","gencost"]
+    assert(isequal(size(mpc.(s_f)), size(mpc14.(s_f))), s_f)
+    assert(max(abs(mpc.(s_f) - mpc14.(s_f)), [], "all") < 1e-12, s_f)
 end
 
 % 機器: 発電機は gen-park (既定)、負荷は load-power で P, Q は消費が負
@@ -396,8 +426,8 @@ assert(isnan(gen.tab_parameter.powerflow.Q) && abs(gen.tab_parameter.powerflow.P
 assert(max(abs(ld.tab_parameter.powerflow{1,["P","Q"]} - [-0.217, -0.127])) < 1e-15)
 assert(abs(net.a_Bus{9}.tab_parameter.dynamics.Bshunt - 0.19) < 1e-15)
 assert(isempty(net.a_Bus{7}.a_Component))                   % 負荷も発電機も無い母線
-str_type = string(cellfun(@(b) b.key, net.a_Branch, "UniformOutput", false));
-assert(sum(str_type == "pi_transformer") == 3 && sum(str_type == "pi") == 17)
+sv_type = string(cellfun(@(b) b.key, net.a_Branch, "UniformOutput", false));
+assert(sum(sv_type == "pi_transformer") == 3 && sum(sv_type == "pi") == 17)
 
 % 潮流計算は network.IEEE14bus と一致
 ref = DebugScript.helper.quiet(@() network.IEEE14bus);
@@ -412,14 +442,14 @@ assert(flag > 0 && abs(res.r_cost - 8081.53) < 0.01, sprintf("AC cost %.4f", res
 % 入力の形: 関数ハンドル・ケースファイル・オプション
 net = DebugScript.helper.quiet(@() PowerNetwork.import_matpower(@DebugScript.helper.case14_data, ...
           GeneratorModel="gen-classical", Hz=50, Tag="My14", Initialize=false));
-assert(string(net.str_tag) == "My14" && net.tab_parameter.base.Hz == 50)
+assert(string(net.s_tag) == "My14" && net.tab_parameter.base.Hz == 50)
 assert(isa(net.a_Bus{1}.a_Component{1}, "component.generator.classical"))
-str_dir = tempname;  mkdir(str_dir);
-c = onCleanup(@() rmdir(str_dir, "s"));
-writelines(["function mpc = mycase14()", "mpc = DebugScript.helper.case14_data();", "end"], fullfile(str_dir, "mycase14.m"));
-net = DebugScript.helper.quiet(@() PowerNetwork.import_matpower(fullfile(str_dir, "mycase14.m"), Initialize=false));
-assert(string(net.str_tag) == "mycase14" && numel(net.a_Bus) == 14)
-assert(~contains(path, str_dir))                            % 一時的に追加したパスは戻す
+s_dir = tempname;  mkdir(s_dir);
+c = onCleanup(@() rmdir(s_dir, "s"));
+writelines(["function mpc = mycase14()", "mpc = DebugScript.helper.case14_data();", "end"], fullfile(s_dir, "mycase14.m"));
+net = DebugScript.helper.quiet(@() PowerNetwork.import_matpower(fullfile(s_dir, "mycase14.m"), Initialize=false));
+assert(string(net.s_tag) == "mycase14" && numel(net.a_Bus) == 14)
+assert(~contains(path, s_dir))                            % 一時的に追加したパスは戻す
 assert(error_id(@() PowerNetwork.import_matpower("no_such_case_xyz")) == "GUILDA:import_matpower:CaseNotFound")
 
 % 停止中の発電機・送電線は読み込まない。CSV を経由しても同じ mpc に戻る
@@ -427,8 +457,8 @@ mpc_off = mpc14;
 mpc_off.branch(16, 11) = 0;
 net = DebugScript.helper.quiet(@() PowerNetwork.import_matpower(mpc_off, Initialize=false));
 assert(numel(net.a_Branch) == 19)
-str_path = net.export_csv(fullfile(str_dir, "Csv14"));
-net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(str_path, Initialize=false));
+s_path = net.export_csv(fullfile(s_dir, "Csv14"));
+net2 = DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Initialize=false));
 mpc2 = tools.network_to_mpc(net2);
 assert(max(abs(mpc2.bus - mpc14.bus), [], "all") < 1e-12 && max(abs(mpc2.gen - mpc14.gen), [], "all") < 1e-12)
 
@@ -731,6 +761,6 @@ function set_dynamics_D(comp, val)
     comp.para_dynamics.D = val;
 end
 
-function set_prop(obj, str_prop, val)
-    obj.(str_prop) = val;
+function set_prop(obj, s_prop, val)
+    obj.(s_prop) = val;
 end

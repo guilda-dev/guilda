@@ -43,10 +43,10 @@ classdef ComponentBaseView < handle
         function set.Hz(obj, val)
             bus = obj.a_Comp.a_Bus;
             if isempty(bus) || isempty(bus.a_PowerNetwork)
-                error(msg("GUILDA:ComponentBaseView:ComponentBaseHzNoNetwork", char(string(obj.a_Comp.str_tag))));
+                error(msg("GUILDA:ComponentBaseView:ComponentBaseHzNoNetwork", char(string(obj.a_Comp.s_tag))));
             end
             net = bus.a_PowerNetwork;
-            Deprecated("ComponentBaseHzSet", net.str_tag, val);
+            Deprecated("ComponentBaseHzSet", net.s_tag, val);
             net.para_base.Hz = val;
         end
         function set.tab_parameter(obj, val)

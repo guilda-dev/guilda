@@ -19,15 +19,15 @@ function publish_doc(option)
         option.push    (1,1) logical = true
     end
 
-    str_root   = GUILDA.pwd();
-    str_branch = "gh-pages";
-    str_site   = "https://guilda-dev.github.io/guilda/";
+    s_root     = GUILDA.pwd();
+    s_branch   = "gh-pages";
+    s_site     = "https://guilda-dev.github.io/guilda/";
 
     fprintf('\n === Publish Documentation === \n')
 
     % 1. Checks (no side effects before all of them pass)
-    [str_source, str_sha] = check_source_repository(str_root, option.push);
-    fprintf('  Source : %s@%s\n', str_source, str_sha)
+    [s_source, s_sha] = check_source_repository(s_root, option.push);
+    fprintf('  Source : %s@%s\n', s_source, s_sha)
 
     % 2. Rebuild the class reference (without user classes)
     sct_summary = export_class_database(find_doc_classes("user", false), "strict", false, "full", true);
@@ -36,117 +36,117 @@ function publish_doc(option)
     end
 
     % 3. Check out gh-pages into a temporary worktree
-    fprintf('  Preparing %s ...\n', str_branch)
-    run_git(str_root, 'worktree prune');
-    check_branch_free(str_root, str_branch);
-    bln_new = prepare_branch(str_root, str_branch, option.push);
-    str_tmp = string(tempname);
+    fprintf('  Preparing %s ...\n', s_branch)
+    run_git(s_root, 'worktree prune');
+    check_branch_free(s_root, s_branch);
+    bln_new = prepare_branch(s_root, s_branch, option.push);
+    s_tmp   = string(tempname);
     if bln_new
-        run_git(str_root, sprintf('worktree add --detach %s HEAD', quote(str_tmp)));
-        wt_cleanup = onCleanup(@() remove_worktree(str_root, str_tmp));
-        run_git(str_tmp, sprintf('checkout -q --orphan %s', str_branch));
-        run_git(str_tmp, 'rm -r -q --cached .');
+        run_git(s_root, sprintf('worktree add --detach %s HEAD', quote(s_tmp)));
+        wt_cleanup = onCleanup(@() remove_worktree(s_root, s_tmp));
+        run_git(s_tmp, sprintf('checkout -q --orphan %s', s_branch));
+        run_git(s_tmp, 'rm -r -q --cached .');
     else
-        run_git(str_root, sprintf('worktree add %s %s', quote(str_tmp), str_branch));
-        wt_cleanup = onCleanup(@() remove_worktree(str_root, str_tmp));
+        run_git(s_root, sprintf('worktree add %s %s', quote(s_tmp), s_branch));
+        wt_cleanup = onCleanup(@() remove_worktree(s_root, s_tmp));
     end
 
     % 4. Replace the contents
-    write_site(str_root, str_tmp);
+    write_site(s_root, s_tmp);
     if ~bln_new
-        keep_published_index(str_tmp);
+        keep_published_index(s_tmp);
     end
 
     % 5. Commit
-    run_git(str_tmp, 'add -A');
-    str_changes = run_git(str_tmp, 'status --porcelain');
-    if strlength(strtrim(str_changes)) == 0
-        fprintf('  No changes: %s already matches %s@%s.\n\n', str_branch, str_source, str_sha)
+    run_git(s_tmp, 'add -A');
+    s_changes = run_git(s_tmp, 'status --porcelain');
+    if strlength(strtrim(s_changes)) == 0
+        fprintf('  No changes: %s already matches %s@%s.\n\n', s_branch, s_source, s_sha)
         return
     end
-    str_message = sprintf('docs: publish %s@%s', str_source, str_sha);
-    run_git(str_tmp, sprintf('commit -q -m "%s"', str_message));
-    fprintf('  Committed to %s : %s\n', str_branch, str_message)
+    s_message = sprintf('docs: publish %s@%s', s_source, s_sha);
+    run_git(s_tmp, sprintf('commit -q -m "%s"', s_message));
+    fprintf('  Committed to %s : %s\n', s_branch, s_message)
     clear wt_cleanup
 
     % 6. Push
-    str_push = sprintf('git push origin %s', str_branch);
+    s_push = sprintf('git push origin %s', s_branch);
     if ~option.push
-        fprintf('  Push skipped. To publish, run in %s:\n    %s\n\n', str_root, str_push)
+        fprintf('  Push skipped. To publish, run in %s:\n    %s\n\n', s_root, s_push)
         return
     end
     if option.confirm
-        str_answer = questdlg( ...
-            sprintf('Push "%s" to origin/%s?\nThe site %s will be updated.', str_message, str_branch, str_site), ...
+        s_answer = questdlg( ...
+            sprintf('Push "%s" to origin/%s?\nThe site %s will be updated.', s_message, s_branch, s_site), ...
             'Publish documentation', 'Push', 'Cancel', 'Cancel');
-        if ~strcmp(str_answer, 'Push')
-            fprintf('  Push cancelled. The commit stays on the local %s branch.\n', str_branch)
-            fprintf('  To publish later, run in %s:\n    %s\n\n', str_root, str_push)
+        if ~strcmp(s_answer, 'Push')
+            fprintf('  Push cancelled. The commit stays on the local %s branch.\n', s_branch)
+            fprintf('  To publish later, run in %s:\n    %s\n\n', s_root, s_push)
             return
         end
     end
-    [r_status, str_out] = system(sprintf('git --no-pager -C %s push --no-progress origin %s', quote(str_root), str_branch));
-    fprintf('%s', str_out)
+    [r_status, s_out] = system(sprintf('git --no-pager -C %s push --no-progress origin %s', quote(s_root), s_branch));
+    fprintf('%s', s_out)
     if r_status ~= 0
-        error(msg("GUILDA:publish_doc:PushFailed", str_branch));
+        error(msg("GUILDA:publish_doc:PushFailed", s_branch));
     end
-    fprintf('  Published : %s\n\n', str_site)
+    fprintf('  Published : %s\n\n', s_site)
 end
 
 
-function [str_source, str_sha] = check_source_repository(str_root, bln_push)
+function [s_source, s_sha] = check_source_repository(s_root, bln_push)
     [r_status, ~] = system('git --version');
     if r_status ~= 0
         error(msg("GUILDA:publish_doc:NoGit"));
     end
-    [r_status, str_out] = system(sprintf('git --no-pager -C %s rev-parse --is-inside-work-tree', quote(str_root)));
-    if r_status ~= 0 || ~strcmp(strtrim(str_out), 'true')
-        error(msg("GUILDA:publish_doc:NoRepository", str_root));
+    [r_status, s_out] = system(sprintf('git --no-pager -C %s rev-parse --is-inside-work-tree', quote(s_root)));
+    if r_status ~= 0 || ~strcmp(strtrim(s_out), 'true')
+        error(msg("GUILDA:publish_doc:NoRepository", s_root));
     end
 
-    str_source = strtrim(run_git(str_root, 'rev-parse --abbrev-ref HEAD'));
-    if ~(strcmp(str_source, 'main') || ~isempty(regexp(str_source, '^version\d+\.\d+$', 'once')))
-        error(msg("GUILDA:publish_doc:WrongBranch", str_source));
+    s_source = strtrim(run_git(s_root, 'rev-parse --abbrev-ref HEAD'));
+    if ~(strcmp(s_source, 'main') || ~isempty(regexp(s_source, '^version\d+\.\d+$', 'once')))
+        error(msg("GUILDA:publish_doc:WrongBranch", s_source));
     end
 
-    str_tracked = run_git(str_root, 'status --porcelain --untracked-files=no');
-    if strlength(strtrim(str_tracked)) > 0
-        error(msg("GUILDA:publish_doc:UncommittedChanges", str_tracked));
+    s_tracked = run_git(s_root, 'status --porcelain --untracked-files=no');
+    if strlength(strtrim(s_tracked)) > 0
+        error(msg("GUILDA:publish_doc:UncommittedChanges", s_tracked));
     end
-    str_untracked = run_git(str_root, 'status --porcelain --untracked-files=all -- _GUILDAdoc');
-    if strlength(strtrim(str_untracked)) > 0
-        error(msg("GUILDA:publish_doc:UntrackedDocFiles", str_untracked));
+    s_untracked = run_git(s_root, 'status --porcelain --untracked-files=all -- _GUILDAdoc');
+    if strlength(strtrim(s_untracked)) > 0
+        error(msg("GUILDA:publish_doc:UntrackedDocFiles", s_untracked));
     end
 
     if bln_push
-        [r_status, ~] = system(sprintf('git --no-pager -C %s remote get-url origin', quote(str_root)));
+        [r_status, ~] = system(sprintf('git --no-pager -C %s remote get-url origin', quote(s_root)));
         if r_status ~= 0
             error(msg("GUILDA:publish_doc:NoOrigin"));
         end
     end
-    str_sha = strtrim(run_git(str_root, 'rev-parse --short HEAD'));
+    s_sha = strtrim(run_git(s_root, 'rev-parse --short HEAD'));
 end
 
 
-function bln_new = prepare_branch(str_root, str_branch, bln_push)
+function bln_new = prepare_branch(s_root, s_branch, bln_push)
     % Bring the local branch up to date with origin. Returns true when the
     % branch exists neither locally nor on origin.
     bln_remote = false;
-    [r_status, ~] = system(sprintf('git --no-pager -C %s remote get-url origin', quote(str_root)));
+    [r_status, ~] = system(sprintf('git --no-pager -C %s remote get-url origin', quote(s_root)));
     if r_status == 0
-        [r_status, str_out] = system(sprintf('git --no-pager -C %s ls-remote --exit-code --heads origin %s', quote(str_root), str_branch));
+        [r_status, s_out] = system(sprintf('git --no-pager -C %s ls-remote --exit-code --heads origin %s', quote(s_root), s_branch));
         if r_status == 0
             bln_remote = true;
         elseif r_status ~= 2 && bln_push
-            error(msg("GUILDA:publish_doc:RemoteUnreachable", string(str_out)));
+            error(msg("GUILDA:publish_doc:RemoteUnreachable", string(s_out)));
         end
     end
-    str_remote_ref = "refs/remotes/origin/" + str_branch;
+    s_remote_ref = "refs/remotes/origin/" + s_branch;
     if bln_remote
-        run_git(str_root, sprintf('fetch -q origin +refs/heads/%s:%s', str_branch, str_remote_ref));
+        run_git(s_root, sprintf('fetch -q origin +refs/heads/%s:%s', s_branch, s_remote_ref));
     end
 
-    [r_status, ~] = system(sprintf('git --no-pager -C %s show-ref --verify --quiet refs/heads/%s', quote(str_root), str_branch));
+    [r_status, ~] = system(sprintf('git --no-pager -C %s show-ref --verify --quiet refs/heads/%s', quote(s_root), s_branch));
     bln_local = r_status == 0;
 
     bln_new = ~bln_local && ~bln_remote;
@@ -154,65 +154,65 @@ function bln_new = prepare_branch(str_root, str_branch, bln_push)
         return
     end
     if ~bln_local
-        run_git(str_root, sprintf('branch %s %s', str_branch, str_remote_ref));
+        run_git(s_root, sprintf('branch %s %s', s_branch, s_remote_ref));
         return
     end
-    [r_behind, ~] = system(sprintf('git --no-pager -C %s merge-base --is-ancestor %s %s', quote(str_root), str_branch, str_remote_ref));
-    [r_ahead, ~]  = system(sprintf('git --no-pager -C %s merge-base --is-ancestor %s %s', quote(str_root), str_remote_ref, str_branch));
+    [r_behind, ~] = system(sprintf('git --no-pager -C %s merge-base --is-ancestor %s %s', quote(s_root), s_branch, s_remote_ref));
+    [r_ahead, ~]  = system(sprintf('git --no-pager -C %s merge-base --is-ancestor %s %s', quote(s_root), s_remote_ref, s_branch));
     if r_behind == 0
-        run_git(str_root, sprintf('branch -f %s %s', str_branch, str_remote_ref));
+        run_git(s_root, sprintf('branch -f %s %s', s_branch, s_remote_ref));
     elseif r_ahead ~= 0
-        error(msg("GUILDA:publish_doc:Diverged", str_branch, str_branch, str_branch, str_branch));
+        error(msg("GUILDA:publish_doc:Diverged", s_branch, s_branch, s_branch, s_branch));
     end
 end
 
 
-function check_branch_free(str_root, str_branch)
+function check_branch_free(s_root, s_branch)
     % A worktree left by an interrupted run keeps the branch checked out.
-    str_list = run_git(str_root, 'worktree list --porcelain');
-    cell_blocks = strsplit(strrep(str_list, char(13), ''), [newline newline]);
+    s_list = run_git(s_root, 'worktree list --porcelain');
+    cell_blocks = strsplit(strrep(s_list, char(13), ''), [newline newline]);
     for i_block = 1:numel(cell_blocks)
-        if contains(cell_blocks{i_block}, "branch refs/heads/" + str_branch)
-            str_path = regexp(cell_blocks{i_block}, '(?<=^worktree )[^\n]*', 'match', 'once', 'lineanchors');
-            error(msg("GUILDA:publish_doc:BranchInUse", str_branch, str_path, str_path));
+        if contains(cell_blocks{i_block}, "branch refs/heads/" + s_branch)
+            s_path = regexp(cell_blocks{i_block}, '(?<=^worktree )[^\n]*', 'match', 'once', 'lineanchors');
+            error(msg("GUILDA:publish_doc:BranchInUse", s_branch, s_path, s_path));
         end
     end
 end
 
 
-function write_site(str_root, str_tmp)
+function write_site(s_root, s_tmp)
     % Remove everything except .git, then copy the site.
-    sct_items = dir(str_tmp);
+    sct_items = dir(s_tmp);
     sct_items = sct_items(~ismember({sct_items.name}, {'.', '..', '.git'}));
     for i_item = 1:numel(sct_items)
-        str_item = fullfile(str_tmp, sct_items(i_item).name);
+        s_item = fullfile(s_tmp, sct_items(i_item).name);
         if sct_items(i_item).isdir
-            rmdir(str_item, 's');
+            rmdir(s_item, 's');
         else
-            delete(str_item);
+            delete(s_item);
         end
     end
 
-    copy_or_error(fullfile(str_root, '_GUILDAdoc'), fullfile(str_tmp, '_GUILDAdoc'));
-    copy_or_error(fullfile(str_root, 'LICENSE'), fullfile(str_tmp, 'LICENSE'));
+    copy_or_error(fullfile(s_root, '_GUILDAdoc'), fullfile(s_tmp, '_GUILDAdoc'));
+    copy_or_error(fullfile(s_root, 'LICENSE'), fullfile(s_tmp, 'LICENSE'));
 
     % Local export data: user classes and the incremental-export manifest.
-    str_db = fullfile(str_tmp, '_GUILDAdoc', 'database');
-    if isfolder(fullfile(str_db, 'User'))
-        rmdir(fullfile(str_db, 'User'), 's');
+    s_db = fullfile(s_tmp, '_GUILDAdoc', 'database');
+    if isfolder(fullfile(s_db, 'User'))
+        rmdir(fullfile(s_db, 'User'), 's');
     end
-    if isfile(fullfile(str_db, 'manifest.json'))
-        delete(fullfile(str_db, 'manifest.json'));
+    if isfile(fullfile(s_db, 'manifest.json'))
+        delete(fullfile(s_db, 'manifest.json'));
     end
 
     % OS files are ignored in the source branch, but gh-pages has no .gitignore.
-    for str_pattern = ["**/.DS_Store", "**/._*", "**/Thumbs.db", "**/ehthumbs.db", "**/Desktop.ini", "**/*.asv"]
-        sct_junk = dir(fullfile(str_tmp, '_GUILDAdoc', str_pattern));
+    for s_pattern = ["**/.DS_Store", "**/._*", "**/Thumbs.db", "**/ehthumbs.db", "**/Desktop.ini", "**/*.asv"]
+        sct_junk = dir(fullfile(s_tmp, '_GUILDAdoc', s_pattern));
         sct_junk = sct_junk(~[sct_junk.isdir]);
         arrayfun(@(s) delete(fullfile(s.folder, s.name)), sct_junk);
     end
 
-    str_index = "<!doctype html>" + newline + ...
+    s_index = "<!doctype html>" + newline + ...
         "<html lang=""en"">" + newline + ...
         "<head>" + newline + ...
         "<meta charset=""utf-8"">" + newline + ...
@@ -224,65 +224,65 @@ function write_site(str_root, str_tmp)
         "<p><a href=""_GUILDAdoc/index.html"">GUILDA Documentation</a></p>" + newline + ...
         "</body>" + newline + ...
         "</html>" + newline;
-    write_text(fullfile(str_tmp, 'index.html'), str_index);
-    write_text(fullfile(str_tmp, '.nojekyll'), "");
+    write_text(fullfile(s_tmp, 'index.html'), s_index);
+    write_text(fullfile(s_tmp, '.nojekyll'), "");
 end
 
 
-function keep_published_index(str_tmp)
+function keep_published_index(s_tmp)
     % The exporter stamps generatedAt on every rebuild. Keep the published
     % class index when nothing else in it changed, so an unchanged site
     % makes no commit.
-    str_path = '_GUILDAdoc/database/list_Classes.js';
-    [r_status, str_old] = system(sprintf('git --no-pager -C %s show HEAD:%s', quote(str_tmp), str_path));
+    s_path = '_GUILDAdoc/database/list_Classes.js';
+    [r_status, s_old] = system(sprintf('git --no-pager -C %s show HEAD:%s', quote(s_tmp), s_path));
     if r_status ~= 0
         return
     end
-    str_new = fileread(fullfile(str_tmp, str_path), 'Encoding', 'UTF-8');
-    str_pattern = {'"generatedAt":\s*"[^"]*"', '\r'};
-    if strcmp(regexprep(strtrim(str_old), str_pattern, ''), regexprep(strtrim(str_new), str_pattern, ''))
-        run_git(str_tmp, sprintf('checkout HEAD -- %s', str_path));
+    s_new = fileread(fullfile(s_tmp, s_path), 'Encoding', 'UTF-8');
+    sr_pattern = {'"generatedAt":\s*"[^"]*"', '\r'};
+    if strcmp(regexprep(strtrim(s_old), sr_pattern, ''), regexprep(strtrim(s_new), sr_pattern, ''))
+        run_git(s_tmp, sprintf('checkout HEAD -- %s', s_path));
     end
 end
 
 
-function copy_or_error(str_from, str_to)
-    [bln_ok, str_msg] = copyfile(str_from, str_to);
+function copy_or_error(s_from, s_to)
+    [bln_ok, s_msg] = copyfile(s_from, s_to);
     if ~bln_ok
-        error(msg("GUILDA:publish_doc:CopyFailed", str_from, string(str_msg)));
+        error(msg("GUILDA:publish_doc:CopyFailed", s_from, string(s_msg)));
     end
 end
 
 
-function write_text(str_file, str_content)
-    fid = fopen(str_file, 'w', 'n', 'UTF-8');
+function write_text(s_file, s_content)
+    fid = fopen(s_file, 'w', 'n', 'UTF-8');
     if fid == -1
-        error(msg("GUILDA:publish_doc:WriteFailed", str_file));
+        error(msg("GUILDA:publish_doc:WriteFailed", s_file));
     end
-    fprintf(fid, '%s', str_content);
+    fprintf(fid, '%s', s_content);
     fclose(fid);
 end
 
 
-function remove_worktree(str_root, str_tmp)
-    [r_status, ~] = system(sprintf('git --no-pager -C %s worktree remove --force %s', quote(str_root), quote(str_tmp)));
+function remove_worktree(s_root, s_tmp)
+    [r_status, ~] = system(sprintf('git --no-pager -C %s worktree remove --force %s', quote(s_root), quote(s_tmp)));
     if r_status ~= 0
-        if isfolder(str_tmp)
-            rmdir(str_tmp, 's');
+        if isfolder(s_tmp)
+            rmdir(s_tmp, 's');
         end
-        system(sprintf('git --no-pager -C %s worktree prune', quote(str_root)));
+        system(sprintf('git --no-pager -C %s worktree prune', quote(s_root)));
     end
 end
 
 
-function str_out = run_git(str_dir, str_args)
-    [r_status, str_out] = system(sprintf('git --no-pager -C %s %s', quote(str_dir), str_args));
+function s_out = run_git(s_dir, s_args)
+    [r_status, s_out] = system(sprintf('git --no-pager -C %s %s', quote(s_dir), s_args));
     if r_status ~= 0
-        error(msg("GUILDA:publish_doc:GitFailed", str_args, string(str_out)));
+        error(msg("GUILDA:publish_doc:GitFailed", s_args, string(s_out)));
     end
 end
 
 
-function str_quoted = quote(str_path)
-    str_quoted = """" + string(str_path) + """";
+function s_quoted = quote(s_path)
+    s_quoted = """" + string(s_path) + """";
 end

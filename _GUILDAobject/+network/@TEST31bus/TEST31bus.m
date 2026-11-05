@@ -94,9 +94,9 @@ classdef TEST31bus < PowerNetwork
             arguments (Output)
                 obj % TEST31bus network.
             end
-            str_filepath = mfilename("fullpath");
-            str_dirpath  = fileparts(str_filepath);
-            PowerNetwork.import_csv(str_dirpath, Network=obj);
+            s_filepath   = mfilename("fullpath");
+            s_dirpath    = fileparts(s_filepath);
+            PowerNetwork.import_csv(s_dirpath, Network=obj);
         end
     end
 end

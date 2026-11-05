@@ -1,4 +1,4 @@
-function [x0, xp0, l_failed, str_why, me_why] = CalculateInitialCondition(o, options)
+function [x0, xp0, l_failed, s_why, me_why] = CalculateInitialCondition(o, options)
 % Consistent initial condition of a phase, for the ode object o.
 % The differential states (the variables that the mass matrix multiplies) keep the values
 % of o.InitialValue exactly: they are continuous at an event, and an offset event has already
@@ -8,7 +8,7 @@ function [x0, xp0, l_failed, str_why, me_why] = CalculateInitialCondition(o, opt
 % decic and the consistency step of the solver are not used: they may move the differential
 % states (decic when it cannot keep them, the solver for a sparse mass matrix that is not
 % diagonal).
-% l_failed: no algebraic variables satisfy the equations (x0, xp0 are empty). str_why: the
+% l_failed: no algebraic variables satisfy the equations (x0, xp0 are empty). s_why: the
 % reason. me_why: the error when l_failed.
 
     M  = o.MassMatrix.MassMatrix;
@@ -17,13 +17,13 @@ function [x0, xp0, l_failed, str_why, me_why] = CalculateInitialCondition(o, opt
 
     xp0 = zeros(0,1);
     l_failed = false;
-    str_why  = "";
+    s_why    = "";
     me_why   = [];
 
     lv_alg = reshape(full(all(M == 0, 1)), [], 1);     % variables without derivative
     lv_eqA = full(all(M == 0, 2));                     % algebraic equations
     if nnz(lv_alg) ~= nnz(lv_eqA)
-        [x0, l_failed, str_why, me_why] = fail(sprintf(['The mass matrix has %d zero rows and %d zero columns, ' ...
+        [x0, l_failed, s_why, me_why] = fail(sprintf(['The mass matrix has %d zero rows and %d zero columns, ' ...
             'so the algebraic variables cannot be solved from the algebraic equations.'], nnz(lv_eqA), nnz(lv_alg)));
         return
     end
@@ -68,7 +68,7 @@ function [x0, xp0, l_failed, str_why, me_why] = CalculateInitialCondition(o, opt
         l_done = probe == 1 && norm(dy, inf) <= 1e-3*(rtol*norm(y, inf) + atol);
     end
     if ~l_done || ~all(isfinite(f))
-        [x0, l_failed, str_why, me_why] = fail(sprintf(['The algebraic equations could not be satisfied at the start of the phase ' ...
+        [x0, l_failed, s_why, me_why] = fail(sprintf(['The algebraic equations could not be satisfied at the start of the phase ' ...
             'with the differential states kept (largest residual %g after %d Newton iterations). ' ...
             'A common reason is a constant-power load ("load-power") that the network cannot supply ' ...
             'at the voltages of the phase, e.g. during a fault on or next to the bus that feeds it. ' ...
@@ -93,9 +93,9 @@ function [x0, xp0, l_failed, str_why, me_why] = CalculateInitialCondition(o, opt
     xp0 = full(xp0);
 end
 
-function [x0, l_failed, str_why, me_why] = fail(str_why)
+function [x0, l_failed, s_why, me_why] = fail(s_why)
     x0       = zeros(0,1);
     l_failed = true;
-    str_why  = string(str_why);
-    me_why   = MException("GUILDA:SolverODE:AlgebraicNotSolved", "%s", str_why);
+    s_why    = string(s_why);
+    me_why   = MException("GUILDA:SolverODE:AlgebraicNotSolved", "%s", s_why);
 end

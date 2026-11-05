@@ -119,12 +119,12 @@ classdef (Sealed = true) AVR_DC1 < controller.avr.abstract
 
             Vfld_st = u(2);
             if Vfld_st < Vfld_min || Vfld_st > Vfld_max
-                error(msg("GUILDA:AVR_DC1:FieldOutOfRange", char(obj.str_tag), num2str(Vfld_st), num2str(Vfld_min), num2str(Vfld_max)))
+                error(msg("GUILDA:AVR_DC1:FieldOutOfRange", char(obj.s_tag), num2str(Vfld_st), num2str(Vfld_min), num2str(Vfld_max)))
             end
             Vap_st  = Vfld_st*(aex1 + aex2*exp(bex*Vfld_st));
             
             if Vap_st <= Vap_min || Vap_st >= Vap_max
-                error(msg("GUILDA:AVR_DC1:InvalidValueRange", char(obj.str_tag), num2str(Vap_st), num2str(Vap_min), num2str(Vap_max)))
+                error(msg("GUILDA:AVR_DC1:InvalidValueRange", char(obj.s_tag), num2str(Vap_st), num2str(Vap_min), num2str(Vap_max)))
             end
             Vcom_st = Vap_st/kap;            
             Vref_st = abs(V) + Vcom_st;

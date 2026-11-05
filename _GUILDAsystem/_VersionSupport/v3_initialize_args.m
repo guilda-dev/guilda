@@ -19,8 +19,8 @@ function c_nv = v3_initialize_args(c_nv)
     arguments (Output)
         c_nv   % Name-Value options of the v4 signature.
     end
-    sv_old = ["powerflow calculation","optimal powerflow","calculate from Xequilibrium"];
-    sv_new = ["powerflow","OPF","equilibrium"];
+    sr_old = ["powerflow calculation","optimal powerflow","calculate from Xequilibrium"];
+    sr_new = ["powerflow","OPF","equilibrium"];
     if mod(numel(c_nv), 2) ~= 0
         return                          % not Name-Value pairs: initialize reports it
     end
@@ -33,8 +33,8 @@ function c_nv = v3_initialize_args(c_nv)
             c_nv{k} = "Method";
         end
         v = c_nv{k+1};
-        if is_text(v) && any(strcmpi(v, sv_old))
-            c_nv{k+1} = sv_new(strcmpi(v, sv_old));
+        if is_text(v) && any(strcmpi(v, sr_old))
+            c_nv{k+1} = sr_new(strcmpi(v, sr_old));
             Deprecated("InitializeMethodValue", v, c_nv{k+1});
         end
         if l_oldName

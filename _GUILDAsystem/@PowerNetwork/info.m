@@ -20,12 +20,14 @@ function info(obj, opt)
         opt.branch     (1,1) logical = true   % Show the branch table.
         opt.component  (1,1) logical = true   % Show the component tables.
     end
-    net = obj.struct();
+    [net, sct_visited] = obj.struct();
+    % a layer reached a second time (e.g. the buses of a branch) is the path where it was stored
+    tag_of = @(s_path) sct_visited.a_obj{sct_visited.sv_path == s_path}.s_tag;
 
     
     bar  = string(repmat('=',1,100));
     sep  = @(s) disp( newline+bar+newline+"  "+s+newline+bar+newline);
-    list = @(c) string([' ',tools.hcellfun(@(ci) [char(ci.str_tag),' '], c)]);
+    list = @(c) string([' ',tools.hcellfun(@(ci) [char(ci.s_tag),' '], c)]);
 
     a_Bus = net.a_Bus;
     a_Bra = net.a_Branch;
@@ -43,12 +45,12 @@ function info(obj, opt)
     if opt.bus
         tab_bus  = cell2tab(a_Bus);
         
-        Tag = tab_bus{:,'str_tag'};
+        Tag = tab_bus{:,'s_tag'};
         Component = tools.vcellfun(@(c) list(c), tab_bus.a_Component);
         tab_disp = table(Tag, Component);
 
         if opt.parameter
-            bustype   = tab_bus.str_bustype;
+            bustype   = tab_bus.s_bustype;
             Parameter = [table(bustype), tab_bus.tab_parameter];
             tab_disp  = [tab_disp, table(Parameter)];
         end
@@ -67,15 +69,15 @@ function info(obj, opt)
     end
 
     if opt.branch
-        [str_cls, cell_tab] = separate(a_Bra);
+        [sv_cls, cell_tab] = separate(a_Bra);
 
         sep("Branch")
-        for i_cls = 1:numel(str_cls)
+        for i_cls = 1:numel(sv_cls)
             tab_bra  = cell_tab{i_cls};
             
-            Tag   = tab_bra{:,'str_tag'};
-            from = tools.vcellfun(@(c) string(c{1}), tab_bra.a_Bus);
-            to   = tools.vcellfun(@(c) string(c{2}), tab_bra.a_Bus);
+            Tag   = tab_bra{:,'s_tag'};
+            from = tools.vcellfun(@(c) tag_of(c{1}), tab_bra.a_Bus);
+            to   = tools.vcellfun(@(c) tag_of(c{2}), tab_bra.a_Bus);
             Bus  = table(from,to);
             tab_disp = table(Tag,Bus);
     
@@ -83,20 +85,20 @@ function info(obj, opt)
                 Parameter = tab_bra.tab_parameter;
                 tab_disp  = [tab_disp, table(Parameter)]; %#ok
             end
-            disp(newline+" << "+str_cls(i_cls)+" >>"+newline)
+            disp(newline+" << "+sv_cls(i_cls)+" >>"+newline)
             disp(tab_disp);
         end
     end
 
     if opt.component
-        [str_cls, cell_tab] = separate(a_Com);
+        [sv_cls, cell_tab] = separate(a_Com);
 
         sep("Component")
-        for i_cls = 1:numel(str_cls)
+        for i_cls = 1:numel(sv_cls)
             tab_com  = cell_tab{i_cls};
             
-            Tag   = tab_com{:,'str_tag'};
-            Bus   = tab_com.a_Bus;
+            Tag   = tab_com{:,'s_tag'};
+            Bus   = arrayfun(tag_of, tab_com.a_Bus);
             Controller = tools.vcellfun(@(c) list(c), tab_com.a_LocalController);
             tab_disp = table(Tag,Bus,Controller);
     
@@ -122,19 +124,19 @@ function info(obj, opt)
                 Equilibrium = table(PowerFlow,State,Input);
                 tab_disp = [tab_disp, table(Equilibrium)]; %#ok
             end
-            disp(newline+" << "+str_cls(i_cls)+" >>"+newline)
+            disp(newline+" << "+sv_cls(i_cls)+" >>"+newline)
             disp(tab_disp);
         end
     end
 
 end
 
-function [str_cls, cell_tab] = separate(cell_cls)
-    str_cls = tools.vcellfun(@(c) string(c.class), cell_cls);
-    [str_cls, ~, i_cls] = unique(str_cls);
+function [sv_cls, cell_tab] = separate(cell_cls)
+    sv_cls = tools.vcellfun(@(c) string(c.class), cell_cls);
+    [sv_cls, ~, i_cls] = unique(sv_cls);
     
-    cell_tab = cell(numel(str_cls),1);
-    for i = 1:numel(str_cls)
+    cell_tab = cell(numel(sv_cls),1);
+    for i = 1:numel(sv_cls)
         cell_tab{i} = cell2tab(cell_cls(i_cls==i));
     end
 end
@@ -142,25 +144,25 @@ end
 
 
 function tab = cell2tab(cell_cls)
-    str_fd = tools.hcellfun(@(c) fieldnames(c), cell_cls);
-    str_fd = unique(str_fd);
+    sv_fd  = tools.hcellfun(@(c) fieldnames(c), cell_cls);
+    sv_fd  = unique(sv_fd);
 
-    n_fd  = numel(str_fd);
+    n_fd  = numel(sv_fd);
     n_cls = numel(cell_cls);
 
     sct_cls(n_cls) = struct();
     for i_cls = 1:n_cls
         a_clsi  = cell_cls{i_cls};
         for i_fd = 1:n_fd
-            str_fdi = str_fd{i_fd};
-            if isfield( a_clsi, str_fdi)
-                if iscell(a_clsi.(str_fdi))
-                    sct_cls(i_cls).(str_fdi) = {a_clsi.(str_fdi)};
+            s_fdi = sv_fd{i_fd};
+            if isfield( a_clsi, s_fdi)
+                if iscell(a_clsi.(s_fdi))
+                    sct_cls(i_cls).(s_fdi) = {a_clsi.(s_fdi)};
                 else
-                    sct_cls(i_cls).(str_fdi) = a_clsi.(str_fdi);
+                    sct_cls(i_cls).(s_fdi) = a_clsi.(s_fdi);
                 end
             else
-                sct_cls(i_cls).(str_fdi) = [];
+                sct_cls(i_cls).(s_fdi) = [];
             end
         end
     end

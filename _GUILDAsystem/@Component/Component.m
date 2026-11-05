@@ -28,7 +28,7 @@ classdef Component < PowerSystemModel
 %   local controllers to the DAE and the linear model, and computes Jacobians numerically
 %   when the subclass gives none. The handles @(t,x,V,I,u) bind the parameters and omega0;
 %   `set_odefcn` builds them, called by `check_edit` at the start of an analysis, and
-%   `s_edit.str_odefcn` tells whether they are "unset", "editted" or "updated".
+%   `sct_edit.s_odefcn` tells whether they are "unset", "editted" or "updated".
 % - Does not own the bus voltage (it reads `a_Bus.c_Vequilibrium`), the network frequency
 %   (it reads `get_Hz()`) or the system base.
 % - Created only by `Bus.add_component` and `Bus.replace_component`. Only the bus sets and
@@ -174,16 +174,16 @@ classdef Component < PowerSystemModel
 
 %% Constructor
     methods(Access=protected)
-        function obj = Component(str_tag, opt)
+        function obj = Component(s_tag, opt)
             % Create the parameters of a component (called by the subclass constructors).
             arguments (Input)
-                str_tag (1,1) string   % Tag of the component.
-                opt     (1,1) struct   % Settings of add_component (without parameter).
+                s_tag (1,1) string   % Tag of the component.
+                opt   (1,1) struct   % Settings of add_component (without parameter).
             end
             arguments (Output)
                 obj   % New Component object.
             end
-            obj.str_tag        = str_tag;
+            obj.s_tag          = s_tag;
             obj.para_dynamics  = Parameter(obj,"dynamics");
             obj.para_powerflow = Parameter(obj,"powerflow");
             obj.para_OPF       = Parameter(obj,"OPF");
@@ -218,7 +218,7 @@ classdef Component < PowerSystemModel
 
         function set_odefcn(obj)
             % Bind the parameters and the network frequency into the f_* function handles.
-            % Called by check_edit when the handles are not up to date (str_odefcn "unset" or
+            % Called by check_edit when the handles are not up to date (s_odefcn "unset" or
             % "editted": a dynamics edit, a network Hz edit or an attach since the last build).
             %
             % <@Group> Called by analyses
@@ -250,11 +250,11 @@ classdef Component < PowerSystemModel
             obj.f_dx   = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, array, omega0);
             obj.f_I    = @(t,x,V,I,u) obj.fcn_I(t, x, V, I, u, array, omega0);
             obj.f_Y    = @(t,x,V,I,u) obj.fcn_Y(t, x, V, I, u, array, omega0);
-            obj.s_edit.str_odefcn = "updated";
+            obj.sct_edit.s_odefcn = "updated";
         end
 
         % Raise a constructor message of Component.xml for a subclass in another folder.
-        parameter_error(obj, str_key, varargin)
+        parameter_error(obj, s_key, varargin)
     end
             
 
@@ -262,7 +262,7 @@ classdef Component < PowerSystemModel
     methods
         % Layer Structure
         add_local_controller(obj, a_Controller)
-        remove_local_controller(obj, str_tag, opt)
+        remove_local_controller(obj, s_tag, opt)
 
         % OPF
         [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Busvar, option)

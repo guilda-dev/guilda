@@ -44,15 +44,15 @@ function c_H = hessians(obj, c_method, x, V, I, u, param)
     n_z = numel(x) + 2 + 2 + numel(u);
     c_H = cell(1, size(c_method,1));
     for k = 1:numel(c_H)
-        [str_method, n_f] = c_method{k,:};
-        if ~ismethod(obj, str_method)
-            error(msg("GUILDA:LocalController:HessianNotSupported", class(obj), str_method))
+        [s_method, n_f] = c_method{k,:};
+        if ~ismethod(obj, s_method)
+            error(msg("GUILDA:LocalController:HessianNotSupported", class(obj), s_method))
         end
-        H = obj.(str_method)(0, x, V, I, u, param, obj.get_Hz());
+        H = obj.(s_method)(0, x, V, I, u, param, obj.get_Hz());
         if isempty(H)
             H = zeros(n_f, n_z, n_z);
         elseif numel(H) ~= n_f*n_z*n_z
-            error(msg("GUILDA:LocalController:HessianSize", class(obj), str_method, string(numel(H)), string(n_f), string(n_z), string(n_z)))
+            error(msg("GUILDA:LocalController:HessianSize", class(obj), s_method, string(numel(H)), string(n_f), string(n_z), string(n_z)))
         end
         c_H{k} = reshape(full(H), n_f, n_z, n_z);
     end

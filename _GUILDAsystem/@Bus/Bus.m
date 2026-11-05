@@ -32,9 +32,9 @@ classdef Bus < PowerSystemModel
 % net = network.IEEE9bus();
 % bus = net.a_Bus{1};
 % bus.tab_parameter.powerflow          % V, Varg, V0, Varg0
-% bus.str_bustype                      % "slack", "PV" or "PQ"
+% bus.s_bustype                        % "slack", "PV" or "PQ"
 % gen = bus.add_component("gen-park", P=0.5);
-% bus.remove_component(gen.str_tag);
+% bus.remove_component(gen.s_tag);
 % sys = bus.get_sys();                 % linear model from V to I
 % ```
 %
@@ -42,7 +42,7 @@ classdef Bus < PowerSystemModel
 
     %% Properties
     properties (Dependent) % Power Flow
-        str_bustype  % Power-flow type of the bus: "slack", "PV" or "PQ" (from get_pf_set).
+        s_bustype  % Power-flow type of the bus: "slack", "PV" or "PQ" (from get_pf_set).
         c_Iequilibrium  % [pu] Current injection at the equilibrium: sum of the component currents (0 without components).
     end
     properties % Power Flow
@@ -97,7 +97,7 @@ classdef Bus < PowerSystemModel
                 obj   % New Bus object.
             end
             obj.a_PowerNetwork = net;
-            obj.str_tag        = tag;
+            obj.s_tag          = tag;
             obj.para_dynamics  = Parameter(obj,"dynamics");
             obj.para_operation = Parameter(obj,"operation");
             obj.para_powerflow = Parameter(obj,"powerflow");
@@ -135,11 +135,11 @@ classdef Bus < PowerSystemModel
     
     methods
         % Layer Structure
-        remove_component(obj,str_tag)
+        remove_component(obj,s_tag)
         % <@Group> Construction and editing
         comp = add_component(obj,Type,varargin)
         % <@Group> Construction and editing
-        comp = replace_component(obj, str_tag, Type, parameter)
+        comp = replace_component(obj, s_tag, Type, parameter)
 
         % PF(powerflow) calculation
         tab_PFset    = get_pf_set(obj)
@@ -153,7 +153,7 @@ classdef Bus < PowerSystemModel
 
 %% Get Methods
     methods
-        function type = get.str_bustype(obj)
+        function type = get.s_bustype(obj)
             s = obj.get_pf_set;
             type = s.Type;
         end
@@ -218,9 +218,9 @@ classdef Bus < PowerSystemModel
             % Reported to the network, which keeps at most one slack bus by
             % releasing the other buses (PowerNetwork.handle_edit).
             if val
-                obj.log_edit("slack bus -> "+obj.str_tag,"Slack");
+                obj.log_edit("slack bus -> "+obj.s_tag,"Slack");
             else
-                obj.log_edit("slack bus released: "+obj.str_tag,"Slack");
+                obj.log_edit("slack bus released: "+obj.s_tag,"Slack");
             end
         end
     end

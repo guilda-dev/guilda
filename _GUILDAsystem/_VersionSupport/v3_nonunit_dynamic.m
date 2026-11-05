@@ -1,4 +1,4 @@
-function v3_nonunit_dynamic(s_options, c_sysBus)
+function v3_nonunit_dynamic(sct_options, c_sysBus)
 % Reject a bus with states in the retired option NonUnit.
 %
 % v3 compatibility hook of ResultLIN.get_ss with "Feedback": stops with
@@ -6,16 +6,16 @@ function v3_nonunit_dynamic(s_options, c_sysBus)
 %
 % Inputs:
 %
-% - `s_options` — Options of the result; the field NonUnit exists only when buses are listed.
+% - `sct_options` — Options of the result; the field NonUnit exists only when buses are listed.
 % - `c_sysBus` — Bus models, in the order of net.a_Bus.
 %
 % See also v3_linearize_args, ResultLIN.get_ss
-    if ~isfield(s_options, "NonUnit")
+    if ~isfield(sct_options, "NonUnit")
         return
     end
-    lv_dynamic = ismember(1:numel(c_sysBus), s_options.NonUnit) & ...
+    lv_dynamic = ismember(1:numel(c_sysBus), sct_options.NonUnit) & ...
                  reshape(tools.vcellfun(@(S) ~isempty(S.A), c_sysBus), 1, []);
     if any(lv_dynamic)
-        error(msg("GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus", num2str(s_options.NonUnit), num2str(find(lv_dynamic))))
+        error(msg("GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus", num2str(sct_options.NonUnit), num2str(find(lv_dynamic))))
     end
 end

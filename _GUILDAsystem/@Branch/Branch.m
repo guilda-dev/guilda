@@ -85,7 +85,7 @@ classdef Branch < PowerSystemModel
             arguments (Output)
                 obj   % New Branch object.
             end
-            obj.str_tag = obj.header+index;
+            obj.s_tag = obj.header+index;
             
             a_Pm = Parameter(obj,"dynamics");
             a_Po = Parameter(obj,"operation");

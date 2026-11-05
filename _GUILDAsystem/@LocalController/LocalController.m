@@ -26,7 +26,7 @@ classdef LocalController < PowerSystemModel
 %   controller object attaches to one parent at a time.
 % - Differs from `Component` on purpose: no `fcn_I`, the output function is `fcn_y`, and
 %   the Jacobians are required. Inputs named X or Y are not allowed.
-% - `resolve_observe` (called by `set_parent`) expands "Xall" / "Yall" (`sv_reserved`) and
+% - `resolve_observe` (called by `set_parent`) expands "Xall" / "Yall" (`sr_reserved`) and
 %   sets where each input sv_u(k) is read on the observed component: iv_obsY(k) is its
 %   index in sv_y, iv_obsX(k) its index in sv_x, and both are 0 for an input that is not
 %   observed (its equilibrium value, or the output of a nested controller of the same name).
@@ -122,7 +122,7 @@ classdef LocalController < PowerSystemModel
         sv_uRequest (:,1) string = strings(0,1)  % sv_u as defined, before "Xall" / "Yall" are expanded.
     end
     properties (Constant, Hidden) % Layer Structure
-        sv_reserved = ["Xall","Yall"]  % Reserved input names: all the states sv_x / all the outputs sv_y of the component.
+        sr_reserved = ["Xall","Yall"]  % Reserved input names: all the states sv_x / all the outputs sv_y of the component.
     end
     properties(SetAccess=protected) % Steady State
         rv_Xequilibrium (:,1) double = zeros(0,1)  % State equilibrium (set by get_equilibrium of the subclass).
@@ -155,7 +155,7 @@ classdef LocalController < PowerSystemModel
             arguments (Output)
                 obj   % New controller, not attached yet.
             end
-            obj.str_tag = tag;
+            obj.s_tag = tag;
             obj.para_dynamics = Parameter(obj,"dynamics");
         end        
     end    
@@ -236,7 +236,7 @@ classdef LocalController < PowerSystemModel
             comp = obj.observed_component();
             if isempty(comp)
                 sv_req = obj.sv_uRequest;
-                if any(ismember(sv_req, obj.sv_reserved))
+                if any(ismember(sv_req, obj.sr_reserved))
                     obj.set_inputs(sv_req);
                 end
                 obj.iv_obsY = zeros(numel(obj.sv_u),1);
@@ -247,14 +247,14 @@ classdef LocalController < PowerSystemModel
                 for k = 1:numel(obj.sv_uRequest)
                     switch obj.sv_uRequest(k)
                         case "Xall"
-                            sv_add = comp.sv_x;  str_src = "X";
+                            sv_add = comp.sv_x;  s_src = "X";
                         case "Yall"
-                            sv_add = comp.sv_y;  str_src = "Y";
+                            sv_add = comp.sv_y;  s_src = "Y";
                         otherwise
-                            sv_add = obj.sv_uRequest(k);  str_src = "";
+                            sv_add = obj.sv_uRequest(k);  s_src = "";
                     end
                     sv_name = [sv_name; sv_add(:)];                              %#ok<AGROW>
-                    sv_src  = [sv_src; repmat(str_src, numel(sv_add), 1)];       %#ok<AGROW>
+                    sv_src  = [sv_src; repmat(s_src, numel(sv_add), 1)];       %#ok<AGROW>
                 end
                 if ~isequal(sv_name, obj.sv_u)
                     obj.set_inputs(sv_name);
@@ -324,7 +324,7 @@ classdef LocalController < PowerSystemModel
     methods (Access=protected)
         function set_odefcn(obj)
             % Bind the parameters and the network frequency into the f_* function handles.
-            % Called by check_edit when the handles are not up to date (str_odefcn "unset" or
+            % Called by check_edit when the handles are not up to date (s_odefcn "unset" or
             % "editted": a dynamics edit, a network Hz edit or an attach since the last build).
             %
             % <@Group> Called by analyses
@@ -340,11 +340,11 @@ classdef LocalController < PowerSystemModel
 
             obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
             obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
-            obj.s_edit.str_odefcn = "updated";
+            obj.sct_edit.s_odefcn = "updated";
         end
     end
     methods (Access=private)
-        function val = parent_equilibrium(obj, str_prop)
+        function val = parent_equilibrium(obj, s_prop)
             % Read the parent's (a Component, or an AVR for a PSS) equilibrium.
             % Kept out of the get methods: MATLAB reads the stored value when a
             % get method refers to its own property, even on another object.
@@ -352,7 +352,7 @@ classdef LocalController < PowerSystemModel
             % <@Group> Internal helpers
             arguments (Input)
                 obj
-                str_prop (1,1) string   % Name of the equilibrium property of the parent.
+                s_prop (1,1) string   % Name of the equilibrium property of the parent.
             end
             arguments (Output)
                 val   % Value of that property, or zeros(0,1) without a parent.
@@ -360,7 +360,7 @@ classdef LocalController < PowerSystemModel
             if isempty(obj.a_Component)
                 val = zeros(0,1);
             else
-                val = obj.a_Component.(str_prop);
+                val = obj.a_Component.(s_prop);
             end
         end
     end
@@ -392,7 +392,7 @@ classdef LocalController < PowerSystemModel
         end
         function tab = get.tab_parameter(obj)
             tab_tab  = obj.para_dynamics.tab_parameter;
-            tab_name = obj.para_dynamics.str_tag;
+            tab_name = obj.para_dynamics.s_tag;
             tab = table(tab_tab, 'VariableNames', tab_name);
         end
     end

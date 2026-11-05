@@ -1,4 +1,4 @@
-function [f_cost, f_const, l_default, str_log] = update(obj, opt)
+function [f_cost, f_const, l_default, s_log] = update(obj, opt)
 % Return the OPF terms of obj with the given handles (shared part of set_opffcn).
 %
 % Used by set_opffcn of Component, Bus, Branch and PowerNetwork, which store the outputs in
@@ -7,7 +7,7 @@ function [f_cost, f_const, l_default, str_log] = update(obj, opt)
 %
 % <@Examples>
 % ```matlab
-% [obj.f_opfcost, obj.f_opfconst, obj.l_opfdefault, str_log] = ...
+% [obj.f_opfcost, obj.f_opfconst, obj.l_opfdefault, s_log] = ...
 %     opffcn.update(obj, Cost=@(v, p) 2*v.P, DefaultConstraint=true);
 % ```
     arguments
@@ -20,7 +20,7 @@ function [f_cost, f_const, l_default, str_log] = update(obj, opt)
         f_cost    % New f_opfcost.
         f_const   % New f_opfconst.
         l_default % New l_opfdefault.
-        str_log   % Edit-log message.
+        s_log     % Edit-log message.
     end
     f_cost    = obj.f_opfcost;
     f_const   = obj.f_opfconst;
@@ -28,11 +28,11 @@ function [f_cost, f_const, l_default, str_log] = update(obj, opt)
     if isfield(opt, "Cost");              f_cost    = opt.Cost;              end
     if isfield(opt, "Constraint");        f_const   = opt.Constraint;        end
     if isfield(opt, "DefaultConstraint"); l_default = opt.DefaultConstraint; end
-    str_name = string(fieldnames(opt)).';
-    if isempty(str_name)
-        str_log = "set_opffcn";
+    sr_name = string(fieldnames(opt)).';
+    if isempty(sr_name)
+        s_log = "set_opffcn";
     else
-        str_log = "set_opffcn: " + join(str_name, ", ");
+        s_log = "set_opffcn: " + join(sr_name, ", ");
     end
 end
 

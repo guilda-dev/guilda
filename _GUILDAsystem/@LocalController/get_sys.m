@@ -35,7 +35,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     end
     if ~isempty(owner) && ~isempty(owner.a_Bus) && ~isempty(owner.a_Bus.a_PowerNetwork)
         net = owner.a_Bus.a_PowerNetwork;
-        if net.s_edit.str_flag == "unset" || net.s_edit.l_staleEquilibrium
+        if net.l_staleEquilibrium
             net.check_edit("RequireEquilibrium", true);
         end
     end

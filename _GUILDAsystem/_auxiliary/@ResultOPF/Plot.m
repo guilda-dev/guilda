@@ -16,35 +16,35 @@ function fig = Plot(obj, opt)
         opt.Parent = figure();
     end
 
-    str_method = "";
+    s_method = "";
     if isfield(obj.options, "Method")
-        str_method = obj.options.Method;
+        s_method = obj.options.Method;
     end
     l_V   = ismember("Varg", obj.tab_bus.Properties.VariableNames);
     l_AC  = ismember("Q", obj.tab_bus.Properties.VariableNames);
     n_tile = 1 + l_V + l_AC;
 
     fig = tiledlayout(opt.Parent, n_tile, 1, "TileSpacing", "compact");
-    str_title = "Optimal power flow";
-    if str_method ~= ""
-        str_title = str_title + " (" + str_method + ")";
+    s_title = "Optimal power flow";
+    if s_method ~= ""
+        s_title = s_title + " (" + s_method + ")";
     end
     if ~isnan(obj.r_cost)
-        str_title = str_title + ", cost = " + num2str(obj.r_cost, 6);
+        s_title = s_title + ", cost = " + num2str(obj.r_cost, 6);
     end
     if ~obj.l_success
-        str_title = str_title + " - not solved";
+        s_title = s_title + " - not solved";
     end
-    title(fig, str_title);
+    title(fig, s_title);
 
     % component rows (the branch-end rows are "<branch>_<bus>")
-    str_row = string(obj.tab_cub.Properties.RowNames);
-    lv_com  = true(size(str_row));
+    sv_row  = string(obj.tab_cub.Properties.RowNames);
+    lv_com  = true(size(sv_row));
     if ~isempty(obj.tab_branch)
-        str_br = string(obj.tab_branch.Properties.RowNames);
-        lv_com = ~startsWith(str_row, str_br + "_");
+        sv_br  = string(obj.tab_branch.Properties.RowNames);
+        lv_com = ~startsWith(sv_row, sv_br + "_");
     end
-    x = categorical(str_row(lv_com), str_row(lv_com));
+    x = categorical(sv_row(lv_com), sv_row(lv_com));
 
     ax = nexttile(fig);
     if l_AC
@@ -57,8 +57,8 @@ function fig = Plot(obj, opt)
     end
     grid(ax, "on");
 
-    str_bus = string(obj.tab_bus.Properties.RowNames);
-    x = categorical(str_bus, str_bus);
+    sv_bus = string(obj.tab_bus.Properties.RowNames);
+    x = categorical(sv_bus, sv_bus);
     if l_AC
         ax = nexttile(fig);
         bar(ax, x, obj.tab_bus.V);

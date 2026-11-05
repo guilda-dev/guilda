@@ -94,7 +94,7 @@
 
 次の名前は変わりません。
 
-- 結果の `str_solver` の値は新しいクラス名になりますが、`net.solver_PF`、`net.solver_OPF`、`net.solver_CPF`、`net.solver_ODE`、`net.solver_LIN` のプロパティ名はそのままです。
+- 結果の `s_solver` の値は新しいクラス名になりますが、`net.solver_PF`、`net.solver_OPF`、`net.solver_CPF`、`net.solver_ODE`、`net.solver_LIN` のプロパティ名はそのままです。
 - 設定のセクション名とファイル名(`GUILDA.config("PowerFlowCalculation")`、`"OptimalPowerFlow"`、`"ContinuationPowerFlow"`、`Default<セクション名>.json`)はそのままなので、`@GUILDA/user` に保存した設定は引き続き読み込まれます。
 - `GUILDA:Deprecated:*` と `GUILDA:v3_*` の ID(`ContinuationPowerFlowConstructor`、`OdeLinearizerConstructor` など)と `ContinuationPowerFlowV3`、`Continuation_Power_Flow` もそのままです。
 
@@ -151,7 +151,7 @@ Every parameter or topology edit is logged and records what it made stale:
 | `Parameter(powerflow)`, `Topology`, `Slack` | –      | stale       |
 | `Parameter(operation/OPF/graph)`       | –           | –           |
 | `OPF` (`set_opffcn`, `reset_opffcn`)   | –           | –           |
-| `Tag`(`str_tag` による改名)          | –           | –           |
+| `Tag`(`s_tag` による改名)          | –           | –           |
 
 - A network **Hz** edit only marks the handles of every layer stale, and the
   next analysis rebuilds them: the equilibrium does not depend on the nominal
@@ -160,7 +160,7 @@ Every parameter or topology edit is logged and records what it made stale:
   needs `net.initialize()`.
 - Adding or replacing an AVR or PSS (`add_local_controller`) is logged as a
   `Topology` edit, so the equilibrium becomes stale.
-- **改名は記録だけです。** `str_tag` への代入は `tab_editLog` にタグ `Tag` で記録され、何も古くしません。母線を改名しても、その機器のタグは変わりません(タグは永続的な ID として扱います)。
+- **改名は記録だけです。** `s_tag` への代入は `tab_editLog` にタグ `Tag` で記録され、何も古くしません。母線を改名しても、その機器のタグは変わりません(タグは永続的な ID として扱います)。
 - **パラメータの型の誤りはエラーです。** 宣言と違うクラスの値を代入すると `GUILDA:Parameter:ClassNameMismatch` で止まり、値も編集履歴も変わりません。以前は MATLAB がリスナー内のエラーを警告に変えていたので、スクリプトは止まりませんでした。`try` / `catch` なしで型の違う値を代入しているスクリプトは、正しいクラスの値に直してください。
 
 `initialize`, `simulate`, `linearize` and `get_sys` rebuild stale `f_*`
@@ -283,7 +283,7 @@ Outputs of several controllers on the same input add up. Scalar `alpha` /
   `GUILDA:Component:ReplaceController` and detaches the replaced
   controller. Before, the PSS was dropped. Adding or replacing is logged (1.3).
 - **`local_LQR` と Hz の編集。** 系統の Hz を編集しても平衡点は古くならないので、`K` は編集の時点では変わらず、次の `get_sys`(機器、母線、系統のどの層でも)か `simulate` で保持している平衡点から設計し直します。値は同じ Hz で `net.initialize()` し直したときと一致します(許容差 `1e-6` の相対誤差で確認)。動特性も一緒に編集したときは `GUILDA:PowerNetwork:EquilibriumStale` で止まり、`K` は `initialize` まで変わりません。同じ Hz に戻したときは設計し直しません。
-- **ローカル制御器の削除。** `comp.remove_local_controller(tag)` を追加しました。タグは `str_tag` で指定します。
+- **ローカル制御器の削除。** `comp.remove_local_controller(tag)` を追加しました。タグは `s_tag` で指定します。
 
   ```matlab
   gen.remove_local_controller("CP1");                     % PSS だけ
@@ -334,8 +334,8 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
 - `result` is a result object (subclass of `ResultBase`):
   `ResultPF`, `ResultOPF`, `ResultCPF`, `ResultODE`,
   `ResultLIN`. It holds the computed values, `flag`, `output`,
-  `options` (the effective settings), `str_solver`, `r_elapsed`,
-  `str_network`, `a_PowerNetwork` and `l_success`. Model data stay with the
+  `options` (the effective settings), `s_solver`, `r_elapsed`,
+  `s_network`, `a_PowerNetwork` and `l_success`. Model data stay with the
   network.
 - `flag` keeps the solver's exit flag where there is one; `output.message`
   describes the outcome.
@@ -689,7 +689,7 @@ Option names:
   have the opposite sign; the input-to-state transfer function of the DAE
   model now equals that of Kron.
 - `flag` is true when all Jacobian entries are finite and `Avv` is
-  invertible; `output` has `message`, `str_issue`, `l_equilibrium`, `n_x`,
+  invertible; `output` has `message`, `s_issue`, `l_equilibrium`, `n_x`,
   `n_v`, `n_u`, `rcond_Avv`, `r_residual`, `sv_faultBus`. A `Point` or a model
   that is not finite stops with `GUILDA:SolverLIN:PointNotFinite` or
   `JacobianNotFinite`.
@@ -712,7 +712,7 @@ Option names:
   | ID | 条件 | 対応 |
   |----|------|------|
   | `GUILDA:Bus:NoI2V`, `GUILDA:Component:NoI2V` | `port="I2V"` で `D` が正則でない(機器のない母線、`P = Q = 0` の負荷など。以前は NaN を返した) | `port="V2I"` を使う |
-  | `GUILDA:ResultLIN:SingularAvv` | Kron / Feedback で `Avv` が正則でない(`rcond < 1e-14`)。`net.linearize` は止まらず `flag = false`、`output.str_issue = "SingularAvv"` | `output.message` が示す母線電圧を確認する。`DAE` は計算できる |
+  | `GUILDA:ResultLIN:SingularAvv` | Kron / Feedback で `Avv` が正則でない(`rcond < 1e-14`)。`net.linearize` は止まらず `flag = false`、`output.s_issue = "SingularAvv"` | `output.message` が示す母線電圧を確認する。`DAE` は計算できる |
   | `GUILDA:ResultLIN:NoUnitBus` | Feedback で状態を持つ機器がない | Kron か DAE を使う |
   | `GUILDA:GlobalController:GlobalControllerPort` | `gc.get_sys` で機器に制御器の入出力がない | 対象の機器を直す |
 - `NonUnit` は廃止しました (Issue #118)。機器のない母線と、状態がなく I2V 形式を
@@ -864,7 +864,7 @@ there.
 | `net.initialize("methods", "calculate from Xequilibrium")` | `net.initialize(Method="equilibrium")` |
 
 - `result` is a `ResultPF` (`"powerflow"`, and `"equilibrium"` with
-  `str_solver = "equilibrium"` and no branch flows) or a `ResultOPF`
+  `s_solver = "equilibrium"` and no branch flows) or a `ResultOPF`
   (`"OPF"`, which runs AC OPF).
 - Other Name-Value options go unchanged to `calculate_powerflow` or
   `optimize_powerflow` (e.g. `net.initialize(Method="OPF",
@@ -960,6 +960,21 @@ there.
   - 同じ系統で同じタグの `ODEevent` を作り直すと、前のもの(`ODEevent` で作ったもの)は系統から外れ、その系統で実行できなくなります(ループでシナリオが溜まらないため)。`add_scenario` で追加した同じタグのシナリオがあるときは `GUILDA:PowerNetwork:ScenarioTagInUse` で止まります。
 - **内部。** 区間ごとのデータ(有効な外乱、地絡、解列、開放ブランチ、オフセット、入力関数)は `solve` の冒頭で `Scenario.compile` が 1 回だけ作ります(EV5)。モデルの作業データを書くのは `SolverODE` だけです。結果は以前の `ODEevent` と同じ(`rv_t`, `rm_variable`, `rm_I`, `output.phases` が代表的な地絡、解列、オフセット、入力、開放の例でビット単位で一致)です。
 
+### 1.19 文字列と構造体の名前(`str_` → `s_`、`s_` → `sct_`)
+
+型の文字 `s` は文字列だけを表し、構造体は `sct_` になりました(2026-11-05)。互換の別名はありません。
+
+| v3 / 旧 v4 | v4 |
+|----|----|
+| `obj.str_tag`(すべての層、`Parameter`、`Scenario`) | `obj.s_tag` |
+| `bus.str_bustype` | `bus.s_bustype` |
+| `res.str_solver`、`res.str_network` | `res.s_solver`、`res.s_network` |
+| `linearize`/`get_sys` の `output.str_issue` | `output.s_issue` |
+| `comp.sct_edit.str_odefcn`(モデル作者向け) | `comp.sct_edit.s_odefcn` |
+
+- `net.info` と `struct(obj)` の表や構造体の列名、フィールド名も `s_tag`、`s_bustype` になります。
+- 名前の対応表は [naming-struct-string.md](naming-struct-string.md) にあります。
+
 ---
 
 ## 2. Changes so far — model authors
@@ -992,7 +1007,7 @@ there.
 - **Frequency inside a model:** read `obj.get_Hz()`, never a fixed `60` or a
   component `para_base`.
 - **No `set_odefcn` in the constructor.** The `f_*` handles are built when an
-  analysis first uses them (`s_edit.str_odefcn`: `"unset"`, `"editted"`,
+  analysis first uses them (`sct_edit.s_odefcn`: `"unset"`, `"editted"`,
   `"updated"`), with the frequency of the network the model is attached to.
   A constructor that still calls `obj.set_odefcn()` keeps working: the handles
   are then built once with `GUILDA.config("Model","Hz")` and built again after
@@ -1129,8 +1144,8 @@ lists all of them:
 | `_auxiliary/@SolverLIN/SolverLIN.m` | `NonUnit` property (Hidden) | 廃止した設定の保存先 |
 | `_auxiliary/@SolverLIN/SolverLIN.m` | `set.NonUnit` | `v3_solver_nonunit`: 警告して保存 |
 | `_auxiliary/@SolverLIN/SolverLIN.m` | `get_options`: `v3_linearize_args(nv, obj.NonUnit)` | `NonUnit` を警告して取り除く |
-| `_auxiliary/@SolverLIN/SolverLIN.m` | `get_options`: `s_options.NonUnit = rv_nonUnit` | 指定があるときだけ結果の `options` に残す |
-| `_auxiliary/@SolverLIN/solve.m` | `v3_nonunit_range(s_options, n_bus)` | 存在しない母線のエラー |
+| `_auxiliary/@SolverLIN/SolverLIN.m` | `get_options`: `sct_options.NonUnit = rv_nonUnit` | 指定があるときだけ結果の `options` に残す |
+| `_auxiliary/@SolverLIN/solve.m` | `v3_nonunit_range(sct_options, n_bus)` | 存在しない母線のエラー |
 | `_auxiliary/@ResultLIN/get_ss.m` | `v3_nonunit_dynamic(obj.options, s.c_sysBus)` | 状態のある母線のエラー |
 | `@GUILDA/private/get_config.m` | `v3_user_config(field, ...)` | user settings key `Reporter` → `Progress` |
 
@@ -1260,7 +1275,7 @@ end
 ```
 
 - The base keeps `flag`, `output`, `options` (effective settings),
-  `str_solver`, `r_elapsed` (pass `tic` or seconds), `str_network` and a
+  `s_solver`, `r_elapsed` (pass `tic` or seconds), `s_network` and a
   reference `a_PowerNetwork`. `l_success` is true for a positive numeric or a
   true logical flag; override `is_success` for another convention.
 - Store only computed values and the settings used. Never copy model data
@@ -1280,17 +1295,17 @@ function varargout = calculate_powerflow(obj, opt)
         opt.MaxIteration (1,1) double {mustBeNonnegative, mustBeInteger}   % no default
         opt.Verbose      (1,1) logical
     end
-    s_map = struct("MaxIteration", "MaxIterations", ...
+    sct_map = struct("MaxIteration", "MaxIterations", ...
                    "Verbose", {{"Display", @(l) replace(string(l), ["true","false"], ["iter","none"])}});
-    options = tools.resolve_options(obj.solver_PF, s_map, opt);
+    options = tools.resolve_options(obj.solver_PF, sct_map, opt);
     ...
 end
 ```
 
 - Declare the options in the `arguments` block **without defaults**, so
   that only the given names are fields of `opt`; validate them there.
-- `s_map` maps each accepted name to a solver field: a name, a string array
+- `sct_map` maps each accepted name to a solver field: a name, a string array
   (several fields), a dotted path into a struct property
   (`"dynamic.t_span"`), or `{field, converter}`.
-- A name not in `s_map` gives `GUILDA:resolve_options:UnknownName` with the
+- A name not in `sct_map` gives `GUILDA:resolve_options:UnknownName` with the
   list of accepted names.

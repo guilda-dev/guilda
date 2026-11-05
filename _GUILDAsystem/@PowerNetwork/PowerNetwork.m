@@ -15,7 +15,13 @@ classdef PowerNetwork < PowerSystemModel
 %   their back references (`Bus.a_PowerNetwork`, `Branch.a_PowerNetwork`, `Branch.a_Bus`,
 %   `GlobalController.a_PowerNetwork`, `Scenario.a_PowerNetwork`).
 % - Every layer below reports its edits upward with `log_edit`; the network appends them to
-%   `tab_editLog` and passes each one to `handle_edit`, which keeps at most one slack bus.
+%   `tab_editLog` (`report_edit`) and passes each one to `handle_edit`, which keeps at most
+%   one slack bus. Rows are appended once initialize has run and cleared at the end of
+%   initialize.
+% - `l_staleEquilibrium` is derived from that log: it is true when initialize has not run,
+%   or a row of tab_editLog affects the equilibrium (see edit_effect; edits of "dynamics",
+%   "base" (baseMVA) and "powerflow" parameters, topology and slack-bus changes, and an
+%   initialize that stopped while writing the equilibrium).
 %
 % A network is built by adding buses (`add_bus`) and branches (`add_branch`); the
 % components (generators, loads, ...) are added to the buses (`Bus.add_component`) and
@@ -84,6 +90,13 @@ classdef PowerNetwork < PowerSystemModel
     properties(SetAccess=private) % Scenarios
         a_Scenario (:,1) cell = cell(0,1);  % Simulation scenarios (Scenario), in the order added by add_scenario; not model data. <@Stale> nothing (not logged)
     end
+    properties(SetAccess=private) % Edit log
+        tab_editLog = table('Size',[0 6], 'VariableTypes',["string","string","string","string","cell","cell"], ...
+                            'VariableNames',["timestamp","ID","log","tag","before","after"]);  % Edits since the last initialize: timestamp, ID, log message, tag, states before and after. <@Type> table (Nx6) <@Stale> nothing
+    end
+    properties(Dependent, Hidden) % Edit log
+        l_staleEquilibrium  % True when the equilibrium of initialize no longer matches the model (see the class help). <@Type> logical
+    end
     properties(SetAccess=protected) % Solvers
         solver_PF  % Solver of calculate_powerflow (returns a ResultPF); stored defaults: Method, Tolerance, MaxIterations, ... <@Type> SolverPF <@Stale> nothing
         solver_OPF  % Solver of optimize_powerflow (returns a ResultOPF); stored defaults: Method, Solver, Display, MaxIteration, ... <@Type> SolverOPF <@Stale> nothing
@@ -125,7 +138,7 @@ classdef PowerNetwork < PowerSystemModel
             arguments (Output)
                 obj   % New PowerNetwork without buses.
             end
-            obj.str_tag   = tag;
+            obj.s_tag     = tag;
             obj.para_base = Parameter(obj,"base");
             obj.para_base.add_entry(     "Hz", GUILDA.config("Model","Hz"), "double",...
                                     "baseMVA", 100                        , "double");
@@ -140,13 +153,13 @@ classdef PowerNetwork < PowerSystemModel
         % <@Group> Model building
         bra = add_branch(obj, Type, from_to, opt)
         add_global_controller(obj, a_Gcon)
-        remove_bus( obj, str_BusTag, opt)
+        remove_bus( obj, sr_BusTag, opt)
         remove_branch( obj, tag)
-        remove_global_controller( obj, str_GconTag)
+        remove_global_controller( obj, sr_GconTag)
 
         % Scenarios of the time simulation
         add_scenario(obj, sc)
-        remove_scenario(obj, str_tag)
+        remove_scenario(obj, sr_tag)
         
         % initialize
         [result, flag, output] = initialize(obj, varargin)
@@ -196,13 +209,39 @@ classdef PowerNetwork < PowerSystemModel
                 obj   % Network with the listeners of its parameters restored.
             end
             if ~restore_parameter_listeners(obj)
-                warning(msg("GUILDA:PowerNetwork:IncompleteLoad", obj.str_tag))
+                warning(msg("GUILDA:PowerNetwork:IncompleteLoad", obj.s_tag))
             end
         end
     end
     methods(Access=protected)
         % Edit handling: build the f_* handles that are not up to date, check the equilibrium
         flag = check_edit(obj, opt)
+
+        function report_edit(obj, tab)
+            % Record an edit reported by a layer (log_edit) once initialize has run, and keep
+            % the network-wide rules (handle_edit), also before the first initialize.
+            %
+            % <@Group> Called by analyses
+            arguments (Input)
+                obj
+                tab table   % Edit-log row reported by a layer (variables timestamp, ID, log, tag, before, after).
+            end
+            if obj.sct_edit.l_initialized
+                obj.tab_editLog = [obj.tab_editLog; tab];
+            end
+            obj.handle_edit(tab);
+        end
+
+        function reset_edit(obj)
+            % Mark every layer as initialized and clear the edit log (end of initialize).
+            %
+            % <@Group> Called by analyses
+            arguments (Input)
+                obj
+            end
+            reset_edit@LayerPackage(obj);
+            obj.tab_editLog(1:end,:) = [];
+        end
 
         function handle_edit(obj, tab)
             % At most one slack bus: a bus reports bus.l_isSlack = true as a
@@ -211,13 +250,13 @@ classdef PowerNetwork < PowerSystemModel
             % <@Group> Called by analyses
             arguments (Input)
                 obj
-                tab table   % Edit-log row just appended to tab_editLog (ID in column 2, kind in column 4).
+                tab table   % Edit-log row just appended to tab_editLog (variables ID and tag).
             end
-            if string(tab{1,4}) ~= "Slack"
+            if tab.tag ~= "Slack"
                 return
             end
-            str_id  = split(string(tab{1,2}), "/");
-            lv_this = string(obj.a_Bus) == str_id(1);
+            sv_id   = split(tab.ID, "/");
+            lv_this = string(obj.a_Bus) == sv_id(1);
             if ~any(lv_this) || ~obj.a_Bus{lv_this}.l_isSlack
                 return
             end
@@ -245,6 +284,11 @@ classdef PowerNetwork < PowerSystemModel
 
 %% Get Method
     methods
+        function l = get.l_staleEquilibrium(obj)
+            [~, lv] = obj.edit_effect(obj.tab_editLog);
+            l = ~obj.sct_edit.l_initialized || any(lv);
+        end
+
         function tp = get.tab_parameter(obj)
             base = obj.para_base.tab_parameter;
             tp   = table(base);
@@ -282,7 +326,7 @@ classdef PowerNetwork < PowerSystemModel
             end
         end
         
-        % function set.str_methodPF(~,~)
+        % function set.s_methodPF(~,~)
         %     error("Property: Records the power flow calculation method used by obj.initialize()."+newline+...
         %           " Update : Automatically refreshes based on the method used upon each execution of obj.initialize().")
         % end
@@ -305,8 +349,8 @@ function l_complete = restore_parameter_listeners(layer)
     l_complete = true;
     mc = metaclass(layer);
     lv = startsWith(string({mc.PropertyList.Name}), "para_") & ~[mc.PropertyList.Dependent];
-    for str_para = string({mc.PropertyList(lv).Name})
-        para = layer.(str_para);
+    for s_para = string({mc.PropertyList(lv).Name})
+        para = layer.(s_para);
         if ~isa(para, "Parameter")
             l_complete = false;
             continue
