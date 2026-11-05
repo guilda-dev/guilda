@@ -1,4 +1,4 @@
-function [net, dict_cls] = struct(obj, l_disp, str_header, dict_cls)
+function [net, sct_visited] = struct(obj, l_disp, str_header, sct_visited)
 % Convert the layer and its descendants to a nested struct.
 %
 % Copies every property of the layer into a struct field (field "class" holds the class
@@ -9,19 +9,22 @@ function [net, dict_cls] = struct(obj, l_disp, str_header, dict_cls)
         obj 
         l_disp     (1,1) logical   = true; % Print the properties that cannot be read or copied.
         str_header (1,1) string    = "net"; % Path of this layer in the struct, used for messages and repeated objects.
-        dict_cls   (1,1) dictionary= dictionary("NoData","NaN"); % Objects already stored and their paths (used by the recursion).
+        sct_visited (1,1) struct   = struct("a_obj",{cell(0,1)}, "sv_path",strings(0,1)); % Layers already stored (a_obj) and their paths (sv_path), used by the recursion.
     end
     arguments (Output)
         net % Nested struct of the layer.
-        dict_cls % Objects stored so far and their paths.
+        sct_visited % Layers stored so far and their paths.
     end
 
-    if isKey(dict_cls, obj)
-        net = string(obj);
+    % compared by identity: different layers may share a tag
+    lv_visited = cellfun(@(o) o == obj, sct_visited.a_obj);
+    if any(lv_visited)
+        net = sct_visited.sv_path(lv_visited);
         return
     end
 
-    dict_cls(obj) = str_header;
+    sct_visited.a_obj{end+1,1}   = obj;
+    sct_visited.sv_path(end+1,1) = str_header;
     net = struct('class', string(class(obj)) );
 
     str_prop = properties(obj);
@@ -36,22 +39,22 @@ function [net, dict_cls] = struct(obj, l_disp, str_header, dict_cls)
             end
             continue
         end
-        [net.(str_pi), dict_cls] = copy(inst_pi, l_disp, str_header_i, dict_cls);
+        [net.(str_pi), sct_visited] = copy(inst_pi, l_disp, str_header_i, sct_visited);
     end    
 end
 
-function [out, dict_cls] = copy(data_inst, l_disp, str_head, dict_cls)
+function [out, sct_visited] = copy(data_inst, l_disp, str_head, sct_visited)
 
     if iscell(data_inst)
         n_inst = numel(data_inst);
         out = cell(n_inst,1);
         for i = 1:n_inst
             str_head_i = str_head + "{"+i+"}";
-            [out{i}, dict_cls]  = copy(data_inst{i}, l_disp, str_head_i, dict_cls);
+            [out{i}, sct_visited] = copy(data_inst{i}, l_disp, str_head_i, sct_visited);
         end
 
     elseif isa(data_inst, "LayerPackage")
-        [out,dict_cls] = data_inst.struct(l_disp, str_head, dict_cls);
+        [out, sct_visited] = data_inst.struct(l_disp, str_head, sct_visited);
 
     elseif isa(data_inst, "auxiliary")
         out = "out of target.";

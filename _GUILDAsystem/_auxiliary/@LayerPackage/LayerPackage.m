@@ -81,7 +81,7 @@ classdef LayerPackage < handle
 
 
     methods(Access=protected)
-        log_edit(obj, log, time, tab)
+        log_edit(obj, log, tag, before, after, time, tab)
         reset_edit(obj)
         flag = check_edit(obj)
 
@@ -148,10 +148,10 @@ classdef LayerPackage < handle
         end
     end
     methods
-        varargout = disp_tree(obj,str_space,str_ignore,l_isfirst)
+        varargout = disp_tree(obj, str_ignore)
         out = get_tag(obj,l_with_layer, str_split)
         out = attach_tag(obj,str_name_list)
-        [out, dict_cls] = struct(obj, l_disp, str_header, dict_cls)
+        [out, sct_visited] = struct(obj, l_disp, str_header, sct_visited)
 
         function set.s_edit(obj, s_edit)
             % A field cannot have a validator, and assigning a misspelled field would add a new one

@@ -20,7 +20,9 @@ function info(obj, opt)
         opt.branch     (1,1) logical = true   % Show the branch table.
         opt.component  (1,1) logical = true   % Show the component tables.
     end
-    net = obj.struct();
+    [net, sct_visited] = obj.struct();
+    % a layer reached a second time (e.g. the buses of a branch) is the path where it was stored
+    tag_of = @(str_path) sct_visited.a_obj{sct_visited.sv_path == str_path}.str_tag;
 
     
     bar  = string(repmat('=',1,100));
@@ -74,8 +76,8 @@ function info(obj, opt)
             tab_bra  = cell_tab{i_cls};
             
             Tag   = tab_bra{:,'str_tag'};
-            from = tools.vcellfun(@(c) string(c{1}), tab_bra.a_Bus);
-            to   = tools.vcellfun(@(c) string(c{2}), tab_bra.a_Bus);
+            from = tools.vcellfun(@(c) tag_of(c{1}), tab_bra.a_Bus);
+            to   = tools.vcellfun(@(c) tag_of(c{2}), tab_bra.a_Bus);
             Bus  = table(from,to);
             tab_disp = table(Tag,Bus);
     
@@ -96,7 +98,7 @@ function info(obj, opt)
             tab_com  = cell_tab{i_cls};
             
             Tag   = tab_com{:,'str_tag'};
-            Bus   = tab_com.a_Bus;
+            Bus   = arrayfun(tag_of, tab_com.a_Bus);
             Controller = tools.vcellfun(@(c) list(c), tab_com.a_LocalController);
             tab_disp = table(Tag,Bus,Controller);
     
