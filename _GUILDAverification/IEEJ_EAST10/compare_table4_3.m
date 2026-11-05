@@ -25,7 +25,7 @@ function tab = compare_table4_3(opt)
 % ```
 %
 % See also network.IEEJ_EAST10, Scenario, Scenario.out_of_step
-    arguments
+    arguments (Input)
         opt.Governor (1,1) logical = true % true for the governors of the network (its default).
         opt.Sections (1,:) string {mustBeMember(opt.Sections,["peak","night"])} = ["peak","night"] % Sections to run.
         opt.Cases (1,:) double = [] % Row numbers of table4_3_report.csv to run; [] for all the rows of Sections.
@@ -101,6 +101,11 @@ end
 
 function plot_angles(result, str_ref, str_title)
 % Rotor angles of the generators relative to the reference generator
+    arguments (Input)
+        result     % Simulation result (ResultODE).
+        str_ref    % Tag of the reference generator.
+        str_title  % Title of the figure.
+    end
     tab_var = result.tab_variable;
     lv_d    = tab_var.Kind == "x" & tab_var.Name == "delta";
     sv_unit = tab_var.Owner(lv_d);

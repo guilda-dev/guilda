@@ -7,6 +7,13 @@ function [r_dx, r_I] = equilibrium_residual(comp)
 %   r_I  : |f_I(x*, V*, I*, u*) - I*| (機器の出力電流と潮流計算の電流の差)
 % 機器が保持している関数ハンドル f_dx, f_I をそのまま使う
 % (シミュレーションで使われる式と同じ)。
+    arguments (Input)
+        comp  % 平衡点を設定済みの機器
+    end
+    arguments (Output)
+        r_dx  % max|f_dx(x*, V*, I*, u*)|
+        r_I   % |f_I(x*, V*, I*, u*) - I*|
+    end
     V  = comp.c_Vequilibrium;
     I  = comp.c_Iequilibrium;
     rv_V = [real(V); imag(V)];

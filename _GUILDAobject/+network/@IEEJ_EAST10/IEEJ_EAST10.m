@@ -112,7 +112,7 @@ classdef IEEJ_EAST10 < PowerNetwork
     methods
         function obj = IEEJ_EAST10(opt)
             % Create the network from the CSV data of one power-flow section.
-            arguments
+            arguments (Input)
                 opt.Section (1,1) string {mustBeMember(opt.Section,["peak","night"])} = "peak" % Power-flow section.
                 opt.LocalController (1,1) logical = true % true to add an AVR to every generator; false for no AVR and no governor.
                 opt.Governor (1,1) logical = true % true to add the governors of controller/governor (with LocalController).
@@ -136,6 +136,10 @@ end
 
 function add_avr(net, str_dirpath)
 % controller/avr/parameter.csv : AVR_DC1 parameters of the generator at each Bus
+    arguments (Input)
+        net         (1,1) PowerNetwork  % Network being built.
+        str_dirpath                     % Folder that holds the controller/ CSV files.
+    end
     tab_avr = readtable(fullfile(str_dirpath, "controller", "avr", "parameter.csv"));
     for i = 1:height(tab_avr)
         i_bus = tab_avr.Bus(i);
@@ -148,6 +152,10 @@ end
 function add_governor(net, str_dirpath)
 % controller/governor/parameter.csv : governor of the generator at each Bus
 %   LPT selects controller.governor.IEEJ_LPT<LPT>; the other columns are its parameters.
+    arguments (Input)
+        net         (1,1) PowerNetwork  % Network being built.
+        str_dirpath                     % Folder that holds the controller/ CSV files.
+    end
     tab_gov = readtable(fullfile(str_dirpath, "controller", "governor", "parameter.csv"));
     for i = 1:height(tab_gov)
         i_bus = tab_gov.Bus(i);

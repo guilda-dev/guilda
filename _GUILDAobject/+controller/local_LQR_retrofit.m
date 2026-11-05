@@ -39,13 +39,13 @@ classdef local_LQR_retrofit <  LocalController
     methods
         function obj = local_LQR_retrofit(net, idx, Q, R, model)
             % Create a retrofit controller for the generator at one bus.
-            %
-            % Inputs:
-            % - `net` Network in the GUILDA v2 format.
-            % - `idx` Index of the bus whose generator is controlled.
-            % - `Q` State weight matrix of the LQR (padded with zeros to the model size).
-            % - `R` Input weight of the LQR; `Inf` gives a zero gain.
-            % - `model` Environment model `(delta, E) -> (angleV, absV)` (ss); default: zero model.
+            arguments (Input)
+                net    % Network in the GUILDA v2 format.
+                idx    % Index of the bus whose generator is controlled.
+                Q      % State weight matrix of the LQR (padded with zeros to the model size).
+                R      % Input weight of the LQR; `Inf` gives a zero gain.
+                model = []  % Environment model `(delta, E) -> (angleV, absV)` (ss); empty: zero model.
+            end
             arguments (Output)
                 obj % local_LQR_retrofit object.
             end
@@ -111,6 +111,9 @@ classdef local_LQR_retrofit <  LocalController
 
         function nx = get_nx(obj)
             % Return the number of controller states.
+            arguments (Input)
+                obj
+            end
             arguments (Output)
                 nx % Number of states.
             end
@@ -119,6 +122,9 @@ classdef local_LQR_retrofit <  LocalController
 
         function nu = get_nu(obj)
             % Return the number of controller outputs (2).
+            arguments (Input)
+                obj
+            end
             arguments (Output)
                 nu % Number of outputs.
             end
@@ -128,23 +134,27 @@ classdef local_LQR_retrofit <  LocalController
         function initialize(obj)
             % Do nothing; the controller is set up by the constructor.
             % レトロフィット制御器導入時は解列シミュレーション不可
+            arguments (Input)
+                obj
+            end
         end
 
         function [dx, u] = get_dx_u(obj, t, x, X, Vcell, Icell, U, is_linear)
             % Return the state derivative and the input to the generator.
-            %
-            % Inputs:
-            % - `t` [s] Time (unused).
-            % - `x` Controller state.
-            % - `X` Cell array with the generator state.
-            % - `Vcell` [pu] Cell array with the terminal voltage `[real; imag]`.
-            % - `Icell` [pu] Cell array with the terminal current (unused).
-            % - `U` Global input (unused).
-            % - `is_linear` true to use the linearized polar transform (default false).
-            %
-            % Outputs:
-            % - `dx` Controller state derivative.
-            % - `u` Cell array with the input to the generator.
+            arguments (Input)
+                obj
+                t          % [s] Time (unused).
+                x          % Controller state.
+                X          % Cell array with the generator state.
+                Vcell      % [pu] Cell array with the terminal voltage `[real; imag]`.
+                Icell      % [pu] Cell array with the terminal current (unused).
+                U          % Global input (unused).
+                is_linear = false  % True to use the linearized polar transform.
+            end
+            arguments (Output)
+                dx  % Controller state derivative.
+                u   % Cell array with the input to the generator.
+            end
             if nargin < 8
                 is_linear = false;
             end
@@ -176,16 +186,28 @@ classdef local_LQR_retrofit <  LocalController
         function [dx, u] = get_dx_u_linear(obj, t, x, X, Vcell, Icell, U)
             % Return the state derivative and the input with the linearized polar transform.
             % Same as get_dx_u with `is_linear = true`.
-            %
-            % Outputs:
-            % - `dx` Controller state derivative.
-            % - `u` Cell array with the input to the generator.
+            arguments (Input)
+                obj
+                t      % [s] Time (unused).
+                x      % Controller state.
+                X      % Cell array with the generator state.
+                Vcell  % [pu] Cell array with the terminal voltage `[real; imag]`.
+                Icell  % [pu] Cell array with the terminal current (unused).
+                U      % Global input (unused).
+            end
+            arguments (Output)
+                dx  % Controller state derivative.
+                u   % Cell array with the input to the generator.
+            end
             [dx, u] = get_dx_u(obj, t, x, X, Vcell, Icell, U, true);
         end
 
         % シミュレーションを実行できるようにするための一時的な実装なので要修正
         function [A, BX, BV, BI, Bu, C, DX, DV, DI, Du] = get_linear_matrix(obj)
             % Return empty state-space matrices so that a simulation can run.
+            arguments (Input)
+                obj
+            end
             arguments (Output)
                 A  % Empty matrix.
                 BX % Empty matrix.

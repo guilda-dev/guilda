@@ -39,7 +39,7 @@ function [tab, c_result] = compare_table4_13(opt)
 % TimeOutOfStep [s] (NaN if none), OutOfStep (tags of the machines out of step), Flag (of
 % net.simulate) and Elapsed [s]. `c_result` holds the ResultODE of each case (only when
 % requested).
-    arguments
+    arguments (Input)
         opt.Governor  (1,1) logical = true % true for the governors of the report.
         opt.Sections  (1,:) string {mustBeMember(opt.Sections, ["peak","night"])} = ["peak","night"] % Sections to run.
         opt.Cases     (1,:) string {mustBeMember(opt.Cases, ["A","B","C","D","E","F"])} = ["A","B","C","D","E","F"] % Scenario tags to run.
@@ -122,6 +122,12 @@ end
 
 function str = verdict_of(l_stable)
 % Verdict of Scenario.out_of_step that agrees with the report: "stable" or "out-of-step"
+    arguments (Input)
+        l_stable  % True when the report says the case is stable.
+    end
+    arguments (Output)
+        str  % "stable" or "out-of-step".
+    end
     if l_stable
         str = "stable";
     else
@@ -132,6 +138,12 @@ end
 
 function check_case(net, sv_br, sc, row)
 % Error when the scenario does not match the case data of the report CSV
+    arguments (Input)
+        net    % Power network.
+        sv_br  % Tags of the branches of net.
+        sc     % Scenario of the case.
+        row    % Row of the report CSV for the case.
+    end
     tab_d = sc.tab_disturbance;
     sv_fault = vertcat(strings(0,1), tab_d.FaultBus{:});
     sv_open  = vertcat(strings(0,1), tab_d.OpenBranch{:});
@@ -150,6 +162,12 @@ end
 
 function plot_case(result, v, str_sec, row)
 % Rotor angles of the generators relative to the reference machine of the verdict
+    arguments (Input)
+        result   % Simulation result (ResultODE).
+        v        % Judge of the scenario.
+        str_sec  % Section ("peak" or "night").
+        row      % Row of the report CSV for the case.
+    end
     tab = result.tab_variable;
     lv_d = tab.Kind == "x" & tab.Name == "delta";
     m_delta = result.rm_variable(:, lv_d);

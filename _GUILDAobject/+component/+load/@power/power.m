@@ -58,6 +58,16 @@ classdef power < component.load.abstract
             % `index` is the tag suffix (the tag is `"LPQ"+index`). The
             % `parameter` argument is ignored, and `varargin` holds the
             % name-value options of `add_component`.
+            arguments (Input)
+                index  % Tag suffix.
+                ~      % Parameter input of Bus.add_component (ignored).
+            end
+            arguments (Input, Repeating)
+                varargin  % Options of Bus.add_component, passed on to Component.
+            end
+            arguments (Output)
+                obj  % Constant-power load object.
+            end
             obj@component.load.abstract("PQ"+index, varargin{:})
         end
     end
@@ -81,6 +91,13 @@ classdef power < component.load.abstract
             % the input `u = [Pload; Qload]`; `x`, `V` and `param` are not used.
             %
             % See also fcn_I
+            arguments (Input)
+                obj
+                x     double  % States (unused).
+                V     double  % Bus voltage (unused).
+                u     double  % [pu] Input `[Pload; Qload]`.
+                param double  % Dynamic parameters (unused).
+            end
             arguments (Output)
                 PQ % [pu] Active and reactive power `[P; Q]` injected into the bus.
             end

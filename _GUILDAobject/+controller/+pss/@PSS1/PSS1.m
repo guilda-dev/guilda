@@ -43,7 +43,7 @@ classdef (Sealed = true) PSS1 < controller.pss.abstract
     methods
         function obj = PSS1(tag, param)
         % Create a PSS1 stabilizer with the tag "CP" + tag.
-            arguments            
+            arguments (Input)
                 tag            (1,1) string % Tag suffix; the controller tag is "CP" + tag.
                 param.kpss     (1,1) double = 5 % [pu] Gain of the stabilizer.
                 param.tWS      (1,1) double = 10 % [s] Time constant of the washout filter.
@@ -78,19 +78,20 @@ classdef (Sealed = true) PSS1 < controller.pss.abstract
         
         function get_equilibrium(obj, V, u) %#ok
         % Set the equilibrium state and input of the PSS to 0.
-        %
-        % Inputs:
-        % - `V` [pu] Complex terminal voltage of the generator at the equilibrium (unused).
-        % - `u` [pu] Equilibrium input of the generator (unused).
+            arguments (Input)
+                obj
+                V    % [pu] Complex terminal voltage of the generator at the equilibrium (unused).
+                u    % [pu] Equilibrium input of the generator (unused).
+            end
             obj.rv_Xequilibrium = zeros(3,1);
             obj.rv_Uequilibrium = 0;
         end
     end
 
     methods (Static)
-        dx = fcn_dx(t, x, V, I, u, para, omega0)
-        y  = fcn_y(t, x, V, I, u, para, omega0)
-        M  = fcn_Mass(t, x, V, I, u, para, omega0)
+        dx   = fcn_dx(t, x, V, I, u, param, omega0)
+        Vpss = fcn_y(t, x, V, I, u, param, omega0)
+        Mass = fcn_Mass(t, x, V, I, u, param, omega0)
 
         [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t,x,V,I,u,param,omega0)
         [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t,x,V,I,u,param,omega0)

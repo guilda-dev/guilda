@@ -66,7 +66,14 @@ end
 for c_decl = {"Component","fcn_dx"; "LocalController","fcn_dx"; "LocalController","fcn_Mass"; "controller.pss.PSS1","fcn_Mass"}.'
     mc = meta.class.fromName(c_decl{1});
     m = mc.MethodList(strcmp({mc.MethodList.Name}, c_decl{2}));
-    assert(isequal(m.InputNames(1:2), {'t';'x'}) || isequal(m.InputNames(1:2), {'r_t';'rv_x'}), c_decl{1})
+    c_in = m.InputNames;
+    if isequal(c_in, {'varargin'})
+        % メソッドファイルに arguments ブロックがあると meta は varargin を返すので、関数行から読む
+        str = fileread(fullfile(fileparts(which(c_decl{1})), c_decl{2} + ".m"));
+        c_tok = regexp(str, 'function[^(]*\(([^)]*)\)', 'tokens', 'once');
+        c_in = cellstr(strtrim(split(string(c_tok{1}), ",")));
+    end
+    assert(isequal(c_in(1:2), {'t';'x'}) || isequal(c_in(1:2), {'r_t';'rv_x'}), c_decl{1})
 end
 
 
@@ -94,6 +101,7 @@ function c = register_stubs()
     str = replace(str, "DebugScript.helper.BadComponentStub", "component.load.bad_i105_stub");
     str = replace(str, "classdef BadComponentStub", "classdef bad_i105_stub");
     str = replace(str, "BadComponentStub(str_bad, str_tag, opt)", "bad_i105_stub(str_tag, str_bad, opt)");
+    str = regexprep(str, '(\n\s+)str_bad(\s+%[^\n]*)(\n\s+)str_tag = "1"(\s+%[^\n]*)', '$1str_tag$4$3str_bad$2');
     writelines(str, str_load);
 
     rehash

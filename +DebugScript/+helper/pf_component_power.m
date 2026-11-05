@@ -5,6 +5,13 @@ function tab = pf_component_power(net, tab_bus)
 %
 % 負荷は潮流設定の P, Q のまま、残りを母線の負荷以外の機器 (1 母線に 1 台まで) に割り当てる。
 % 行名は機器名で、DebugScript.helper.opf_cost にそのまま渡せる。
+    arguments (Input)
+        net      % 電力系統
+        tab_bus  % 潮流計算の解 (母線ごとの P, Q)
+    end
+    arguments (Output)
+        tab  % 機器ごとの P, Q (行名 = 機器名)
+    end
     str = string.empty(0,1);
     PQ  = zeros(0,2);
     for i = 1:numel(net.a_Bus)

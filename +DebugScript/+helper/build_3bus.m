@@ -8,9 +8,13 @@ function [net, comp] = build_3bus(key, opt)
 % key が load-* のときは B002 を gen-park、B003 を key の負荷にする。
 % comp は key で追加した機器。全母線に機器があるので、機器のない母線の消去も発生しない。
 % parameter は key の機器の add_component へそのまま渡す。
-    arguments
+    arguments (Input)
         key (1,1) string
         opt.parameter = nan
+    end
+    arguments (Output)
+        net   % 作成した電力系統
+        comp  % key で追加した機器
     end
     net = PowerNetwork("Test3Bus");
     net.add_bus("V",1.00);

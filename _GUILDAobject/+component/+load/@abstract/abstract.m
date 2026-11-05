@@ -25,6 +25,15 @@ classdef abstract < Component
             % and `varargin`, the name-value options of `Bus.add_component`.
             % A subclass without a constructor passes on the inputs of
             % `Bus.add_component`, whose `parameter` is not used by a load.
+            arguments (Input)
+                tag  % Tag without the leading "L".
+            end
+            arguments (Input, Repeating)
+                varargin  % Options of Bus.add_component, passed on to Component; first the ignored parameter input when the subclass has no constructor.
+            end
+            arguments (Output)
+                obj  % Load object.
+            end
             if numel(varargin) == 2
                 varargin(1) = [];
             end

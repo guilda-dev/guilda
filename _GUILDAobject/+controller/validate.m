@@ -115,7 +115,17 @@ end
 all(dif < 1e-14, 1)
 
 
-function [Jx, Ju, Cy, Dy] = get_avr_jacobian(x, u)    
+function [Jx, Ju, Cy, Dy] = get_avr_jacobian(x, u)
+    arguments (Input)
+        x  % [pu] AVR_DC1 state [Vtr; Vap; Vfld; Vst] (numeric or symbolic).
+        u  % [pu] AVR_DC1 input [Vref; Vpss; Vabs].
+    end
+    arguments (Output)
+        Jx  % Jacobian of the state equation with respect to x.
+        Ju  % Jacobian of the state equation with respect to u.
+        Cy  % Jacobian of the output with respect to x.
+        Dy  % Jacobian of the output with respect to u.
+    end
     Vtr  = x(1);
     Vap  = x(2);
     Vfld = x(3);

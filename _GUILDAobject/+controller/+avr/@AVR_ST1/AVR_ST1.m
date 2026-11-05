@@ -51,7 +51,7 @@ classdef (Sealed = true) AVR_ST1 < controller.avr.abstract
     methods
         function obj = AVR_ST1(tag, param)
         % Create an AVR_ST1 regulator with the tag "CA" + tag.
-            arguments               
+            arguments (Input)
                 tag           (1,1) string % Tag suffix; the controller tag is "CA" + tag.
                 param.ttr     (1,1) double = 0 % [s] Time constant of the voltage transducer.
                 param.tap     (1,1) double = 0.05 % [s] Time constant of the amplifier.
@@ -86,10 +86,11 @@ classdef (Sealed = true) AVR_ST1 < controller.avr.abstract
         % The reference `Vref` is chosen so that the field voltage equals the
         % generator's equilibrium field voltage `u(2)`; `Vpss` is 0 at the equilibrium.
         % An error is raised when the required amplifier output is outside `[Vap_min, Vap_max]`.
-        %
-        % Inputs:
-        % - `V` [pu] Complex terminal voltage of the generator at the equilibrium.
-        % - `u` [pu] Equilibrium input of the generator `[Pmech; Vfield]`.
+            arguments (Input)
+                obj
+                V    % [pu] Complex terminal voltage of the generator at the equilibrium.
+                u    % [pu] Equilibrium input of the generator `[Pmech; Vfield]`.
+            end
             tab = obj.tab_parameter.dynamics;
             Vap_max = tab{:, 'Vap_max'};
             Vap_min = tab{:, 'Vap_min'};            
@@ -115,9 +116,10 @@ classdef (Sealed = true) AVR_ST1 < controller.avr.abstract
 
         function set_PSS(obj, cls)
         % Attach a PSS to the AVR.
-        %
-        % Inputs:
-        % - `cls` PSS object (a controller.pss.abstract subclass).
+            arguments (Input)
+                obj
+                cls  % PSS object (a controller.pss.abstract subclass).
+            end
             obj.a_LocalController{1} = cls;
             obj.l_hasController = true;
         end

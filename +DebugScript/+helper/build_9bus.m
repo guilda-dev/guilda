@@ -8,10 +8,13 @@ function net = build_9bus(opt)
 % ただし Task1 の送電線は既定値 (R=0, X=1) のままで潮流解が存在しないため、
 % 既定では IEEE 9 母線 (Anderson & Fouad) の線路定数を与える。
 % "Feasible", false にすると Task1 と同じ既定定数のまま (非収束ケース) で作成する。
-    arguments
+    arguments (Input)
         opt.Feasible (1,1) logical = true
     end
 
+    arguments (Output)
+        net  % 作成した電力系統
+    end
 % ネットワーククラスの定義
     net = PowerNetwork("TestSystem");
 

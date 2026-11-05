@@ -24,6 +24,15 @@
             % `Veq` and `Ieq` are the complex bus voltage and current [pu]. The
             % state equilibrium `x_st` is empty and the steady input `u_st` is
             % the power `[P; Q]` [pu], also stored in `PQ_st`.
+            arguments (Input)
+                obj
+                Veq  % [pu] Complex bus voltage.
+                Ieq  % [pu] Complex bus current.
+            end
+            arguments (Output)
+                x_st  % Equilibrium state (empty).
+                u_st  % [pu] Steady input, the power `[P; Q]`.
+            end
             PQ = Veq * conj(Ieq);
             obj.PQ_st = [real(PQ); imag(PQ)];
             x_st = zeros(0, 1);
@@ -36,6 +45,18 @@
             % `V` and `I` are the bus voltage and current as `[real; imag]` [pu]
             % and `u` is the power `[P; Q]` [pu]. `dx` is empty; `constraint` is
             % the difference between `I` and the current of the power `u`.
+            arguments (Input)
+                obj
+                t  % [s] Time (unused).
+                x  % State (empty, unused).
+                V  % [pu] Bus voltage `[real; imag]`.
+                I  % [pu] Bus current `[real; imag]`.
+                u  % [pu] Power `[P; Q]`.
+            end
+            arguments (Output)
+                dx          % State derivative (empty).
+                constraint  % [pu] Difference between `I` and the current of the power `u`.
+            end
             dx = zeros(0, 1);
             PQ = u(1) + 1j*u(2);
             V = V(1)+1j*V(2);
@@ -45,14 +66,34 @@
 
         function u_name = naming_port(obj)
             % Return the input port names (v1 interface).
+            arguments (Input)
+                obj
+            end
+            arguments (Output)
+                u_name  % Input port names {'RealPower','ReactivePower'}.
+            end
             u_name = {'RealPower','ReactivePower'};
         end
         
-        function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, ~, V)
+        function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, x, V) %#ok<INUSD>
             % Return the matrices of the linearized model (v1 interface).
-            %
-            % `V` is the bus voltage `[real; imag]` [pu] of the operating point;
-            % empty or omitted uses `V_st`.
+            arguments (Input)
+                obj
+                x = []  % State of the operating point (unused).
+                V = []  % [pu] Bus voltage `[real; imag]` of the operating point; empty or omitted: `V_st`.
+            end
+            arguments (Output)
+                A   % State matrix (empty).
+                B   % Input matrix (0-by-2).
+                C   % Output matrix (2-by-0).
+                D   % Feedthrough from the power input `[P; Q]` to the current.
+                BV  % State matrix for the bus voltage (0-by-2).
+                DV  % Feedthrough from the bus voltage to the current.
+                BI  % State matrix for the bus current (0-by-2).
+                DI  % Feedthrough from the bus current (`-eye(2)`).
+                R   % Empty.
+                S   % Empty.
+            end
             if nargin < 3
                 [A, B, C, D, BV, DV, BI, DI, R, S] = obj.get_linear_matrix([], obj.V_st);
             else

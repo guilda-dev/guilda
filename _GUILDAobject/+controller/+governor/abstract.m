@@ -35,7 +35,7 @@ classdef abstract < LocalController
     methods
         function obj = abstract(tag)
         % Create the governor base object with the tag "CG" + tag.
-            arguments
+            arguments (Input)
                 tag (1,1) string = "base" % Tag suffix; the controller tag is "CG" + tag.
             end
             arguments (Output)
@@ -48,9 +48,13 @@ classdef abstract < LocalController
     methods (Access=protected)
         function r_P0 = initial_output(obj, u)
         % Turbine output at the equilibrium [pu of the rated MW]: Pmech / Prate.
-        %
-        % Inputs:
-        % - `u` [pu] Equilibrium input of the generator (Pmech is read by name).
+            arguments (Input)
+                obj
+                u  % [pu] Equilibrium input of the generator (Pmech is read by name).
+            end
+            arguments (Output)
+                r_P0  % [pu of the rated MW] Turbine output at the equilibrium.
+            end
             comp = obj.a_Component;
             r_Pmech = u(1);
             if isa(comp, "Component") && any(comp.sv_u == "Pmech")
@@ -63,12 +67,16 @@ classdef abstract < LocalController
     methods (Static, Hidden)
         function [r_Pref, r_Plimit] = load_setting(r_pos0, r_PLM, r_gain, r_posMax)
         % Load setting (65M) and load limiter (77M) from the margin PLM [%].
-        %
-        % Inputs:
-        % - `r_pos0` Servo position at the equilibrium.
-        % - `r_PLM` [%] Governor margin (of the rated MW).
-        % - `r_gain` Steady-state gain from the servo position to the turbine output.
-        % - `r_posMax` Upper limit of the servo position.
+            arguments (Input)
+                r_pos0    (1,1) double  % Servo position at the equilibrium.
+                r_PLM     (1,1) double  % [%] Governor margin (of the rated MW).
+                r_gain    (1,1) double  % Steady-state gain from the servo position to the turbine output.
+                r_posMax  (1,1) double  % Upper limit of the servo position.
+            end
+            arguments (Output)
+                r_Pref    % Load setting (65M) at the equilibrium.
+                r_Plimit  % Load limiter (77M).
+            end
             r_margin = abs(r_PLM)/100/r_gain;
             if r_PLM > 0
                 r_Pref   = r_pos0;
@@ -85,6 +93,14 @@ classdef abstract < LocalController
         function [r_gate, l_ref] = lvg(r_e, r_Plimit)
         % Low value gate: the smaller of the load setting signal r_e and the limiter.
         % l_ref is true when r_e passes (also when they are equal).
+            arguments (Input)
+                r_e       (1,1) double  % Load setting signal.
+                r_Plimit  (1,1) double  % Load limiter.
+            end
+            arguments (Output)
+                r_gate  % Output of the gate: the smaller of r_e and r_Plimit.
+                l_ref   % True when r_e passes.
+            end
             l_ref = r_e <= r_Plimit;
             if l_ref
                 r_gate = r_e;
@@ -97,6 +113,19 @@ classdef abstract < LocalController
         % Speed of the servo position: r_gain*r_err limited to [r_rateMin, r_rateMax],
         % and 0 while the position is at a limit and pushed further out (non-windup).
         % r_slope is d(r_rate)/d(r_err) on the active branch.
+            arguments (Input)
+                r_err      (1,1) double  % Error of the servo position.
+                r_pos      (1,1) double  % Servo position.
+                r_gain     (1,1) double  % Servo gain.
+                r_rateMin  (1,1) double  % Lower limit of the speed.
+                r_rateMax  (1,1) double  % Upper limit of the speed.
+                r_posMin   (1,1) double  % Lower limit of the position.
+                r_posMax   (1,1) double  % Upper limit of the position.
+            end
+            arguments (Output)
+                r_rate   % Speed of the servo position.
+                r_slope  % Derivative of r_rate with respect to r_err on the active branch.
+            end
             r_rate  = r_gain*r_err;
             r_slope = r_gain;
             if r_rate > r_rateMax

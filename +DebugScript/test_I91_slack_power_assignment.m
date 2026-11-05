@@ -74,7 +74,7 @@ assert(norm(tab1{["load","gen"],["P","Q"]} - tab2{["load","gen"],["P","Q"]}) < 1
 % ---- local functions ----
 function net = slack_network(str_comp, l_init)
 % B001 (スラック) に str_comp の順で機器を追加した2母線系統
-    arguments
+    arguments (Input)
         str_comp (1,:) string
         l_init   (1,1) logical = true
     end

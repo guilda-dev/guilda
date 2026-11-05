@@ -26,6 +26,14 @@ classdef BadComponentStub < Component
 
     methods
         function obj = BadComponentStub(str_bad, str_tag, opt)
+            arguments (Input)
+                str_bad           % 入れる誤りの種類
+                str_tag = "1"     % タグの接尾辞
+                opt     = struct  % add_component の設定 (省略時は既定値)
+            end
+            arguments (Output)
+                obj  % 作成したオブジェクト
+            end
             if nargin < 3   % 系統につなぐときは add_component が渡す
                 str_tag = "1";
                 opt = struct("baseMVA",100, "Pmin",-inf, "Pmax",inf, "Qmin",-inf, "Qmax",inf, ...
@@ -39,6 +47,17 @@ classdef BadComponentStub < Component
         end
 
         function [x, u] = get_equilibrium(obj, ~, c_I, r_P, ~)
+            arguments (Input)
+                obj
+                ~
+                c_I  % [pu] 注入電流 (複素数)
+                r_P  % [pu] 有効電力
+                ~
+            end
+            arguments (Output)
+                x  % 平衡点の状態
+                u  % 平衡点の入力
+            end
             str_bad = obj.sv_bad(obj.para_dynamics.bad);
             if str_bad == "needpq"
                 r_P; %#ok<VUNUS> 2 引数で呼ぶと MATLAB:minrhs になる
@@ -55,6 +74,18 @@ classdef BadComponentStub < Component
 
     methods (Static)
         function dx = fcn_dx(~, x, ~, I, u, param, ~)
+            arguments (Input)
+                ~
+                x      % 状態
+                ~
+                I      % [pu] 母線電流 [real; imag]
+                u      % 入力
+                param  % 動的パラメータ (sv_para の順)
+                ~
+            end
+            arguments (Output)
+                dx  % 状態方程式の右辺
+            end
             dx = u - x;
             if DebugScript.helper.BadComponentStub.sv_bad(param) == "currentdep"
                 dx = dx + 1e-3*I(1);
@@ -65,18 +96,54 @@ classdef BadComponentStub < Component
             end
         end
         function I = fcn_I(~, x, ~, ~, ~, param, ~)
+            arguments (Input)
+                ~
+                x      % 状態
+                ~
+                ~
+                ~
+                param  % 動的パラメータ (sv_para の順)
+                ~
+            end
+            arguments (Output)
+                I  % [pu] 母線への注入電流 (複素数)
+            end
             I = x(1) + 1j*x(2);
             if DebugScript.helper.BadComponentStub.sv_bad(param) == "currentreal"
                 I = [x(1); x(2)];
             end
         end
         function y = fcn_Y(~, x, ~, ~, ~, param, ~)
+            arguments (Input)
+                ~
+                x      % 状態
+                ~
+                ~
+                ~
+                param  % 動的パラメータ (sv_para の順)
+                ~
+            end
+            arguments (Output)
+                y  % 出力
+            end
             y = x(1);
             if DebugScript.helper.BadComponentStub.sv_bad(param) == "ysize"
                 y = [x(1); x(2)];
             end
         end
         function M = fcn_Mass(~, x, ~, ~, ~, param, ~)
+            arguments (Input)
+                ~
+                x      % 状態
+                ~
+                ~
+                ~
+                param  % 動的パラメータ (sv_para の順)
+                ~
+            end
+            arguments (Output)
+                M  % 質量行列
+            end
             M = eye(2);
             if DebugScript.helper.BadComponentStub.sv_bad(param) == "massx"
                 M = (1 + x(1)^2) * M;

@@ -3,19 +3,19 @@ function Mass = fcn_Mass(t, x, V, I, u, param, omega0) %#ok
     % The state equation is `M*dx/dt = f(t, x, V, I, u)`. The diagonal of `M` holds the time constants [s];
     % a zero time constant makes the corresponding equation algebraic.
     %
-    % Inputs:
-    % - `t` [s] Time (unused).
-    % - `x` [pu] State `[xiWS; xi1; xi2]` of the washout filter and the two lead-lag blocks.
-    % - `V` [pu] Terminal voltage as `[real; imag]` (unused).
-    % - `I` [pu] Terminal current as `[real; imag]` (unused).
-    % - `u` [pu] Frequency deviation `omega` of the generator.
-    % - `param` Parameter vector in the order of `sv_para`.
-    % - `omega0` [Hz] Nominal frequency (unused).
-    %
-    % Outputs:
-    % - `Mass` Mass matrix `M`, one row and column per state.
-    %
     % See also controller.pss.PSS1.fcn_dx
+    arguments (Input)
+        t      double        % [s] Time (unused).
+        x      double        % [pu] State `[xiWS; xi1; xi2]` of the washout filter and the two lead-lag blocks.
+        V      double        % [pu] Terminal voltage as `[real; imag]` (unused).
+        I      double        % [pu] Terminal current as `[real; imag]` (unused).
+        u      double        % [pu] Frequency deviation `omega` of the generator.
+        param  double        % Parameter vector in the order of `sv_para`.
+        omega0 (1,1) double  % [Hz] Nominal frequency (unused).
+    end
+    arguments (Output)
+        Mass  % Mass matrix `M`, one row and column per state.
+    end
     
     tWS = param(2);
     % 位相進み補償器    

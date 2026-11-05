@@ -5,6 +5,13 @@ function J = opf_cost(net, tab)
 %
 % 費用は機器の tab_parameter.OPF の HP*P^2 + fP*P + HQ*Q^2 + fQ*Q の合計。
 % tab に Q 列が無い場合 (ELD, DC OPF) は P の項だけを足す。
+    arguments (Input)
+        net  % 電力系統
+        tab  % 機器ごとの P, Q (行名 = 機器名)
+    end
+    arguments (Output)
+        J  % 費用関数の値
+    end
     a_Com = tools.vcellfun(@(b) b.a_Component, net.a_Bus);
     l_Q   = ismember("Q", tab.Properties.VariableNames);
     J = 0;

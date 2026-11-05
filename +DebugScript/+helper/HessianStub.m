@@ -15,6 +15,9 @@ classdef HessianStub < Component
 
     methods
         function obj = HessianStub()
+            arguments (Output)
+                obj  % 作成したオブジェクト
+            end
             opt = struct("baseMVA",100, "Pmin",-inf, "Pmax",inf, "Qmin",-inf, "Qmax",inf, ...
                          "P",0, "Q",0, "OPFinit_P0",0, "OPFinit_Q0",0, "OPFcost_HP",1, ...
                          "OPFcost_HQ",0, "OPFcost_fP",1, "OPFcost_fQ",0, "OPFcost_startup",0, ...
@@ -24,6 +27,17 @@ classdef HessianStub < Component
         end
 
         function [x, u] = get_equilibrium(~, ~, ~, ~, ~)
+            arguments (Input)
+                ~
+                ~
+                ~
+                ~
+                ~
+            end
+            arguments (Output)
+                x  % 平衡点の状態
+                u  % 平衡点の入力
+            end
             x = zeros(2,1);
             u = 0;
         end
@@ -31,20 +45,80 @@ classdef HessianStub < Component
 
     methods (Static)
         function dx = fcn_dx(~, x, V, ~, u, ~, ~)
+            arguments (Input)
+                ~
+                x  % 状態
+                V  % [pu] 母線電圧 [real; imag]
+                ~
+                u  % 入力
+                ~
+                ~
+            end
+            arguments (Output)
+                dx  % 状態方程式の右辺
+            end
             dx = [x(1)^2 * V(1); x(1) * u(1)];
         end
         function I = fcn_I(~, x, V, ~, ~, ~, ~)
+            arguments (Input)
+                ~
+                x  % 状態
+                V  % [pu] 母線電圧 [real; imag]
+                ~
+                ~
+                ~
+                ~
+            end
+            arguments (Output)
+                I  % [pu] 母線への注入電流 (複素数)
+            end
             I = x(2) * (V(1) + 1j*V(2));
         end
         function y = fcn_Y(~, x, ~, ~, ~, ~, ~)
+            arguments (Input)
+                ~
+                x  % 状態
+                ~
+                ~
+                ~
+                ~
+                ~
+            end
+            arguments (Output)
+                y  % 出力
+            end
             y = x(1);
         end
         function M = fcn_Mass(~, ~, ~, ~, ~, ~, ~)
+            arguments (Input)
+                ~
+                ~
+                ~
+                ~
+                ~
+                ~
+                ~
+            end
+            arguments (Output)
+                M  % 質量行列
+            end
             M = eye(2);
         end
 
         function H = Hessian_dx(~, x, V, ~, ~, ~, ~)
             % z = [x1 x2 Vre Vim Ire Iim w]
+            arguments (Input)
+                ~
+                x  % 状態
+                V  % [pu] 母線電圧 [real; imag]
+                ~
+                ~
+                ~
+                ~
+            end
+            arguments (Output)
+                H  % fcn_dx の [x; V; I; u] による 2 階微分
+            end
             H = zeros(2, 7, 7);
             H(1,1,1) = 2*V(1);
             H(1,1,3) = 2*x(1);  H(1,3,1) = 2*x(1);

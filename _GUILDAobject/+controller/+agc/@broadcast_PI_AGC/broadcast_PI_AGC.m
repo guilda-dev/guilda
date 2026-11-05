@@ -53,14 +53,14 @@ classdef broadcast_PI_AGC < GlobalController
     methods
         function obj = broadcast_PI_AGC(net, tag, varargin, opt)
         % Create the AGC for the generators given after the tag.
-            arguments
+            arguments (Input)
                 net % PowerNetwork that contains the controlled generators.
                 tag % Tag of the controller.
             end
-            arguments (Input,Repeating)
+            arguments (Input, Repeating)
                 varargin % Controlled generators, each a generator object or its tag.
             end
-            arguments
+            arguments (Input)
                 opt.alpha (:,1) double = 1 % [pu] Share of the command for each controlled generator; a scalar applies to all.
                 opt.beta  (:,1) double = 1 % [pu] Weight of each generator's frequency deviation; a scalar applies to all.
                 opt.kP    (1,1) double = 100 % [pu] Proportional gain.
@@ -90,6 +90,9 @@ classdef broadcast_PI_AGC < GlobalController
 
         function [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj)
         % Return the equilibrium of the AGC: zero integrator state and zero frequency deviations.
+            arguments (Input)
+                obj
+            end
             arguments (Output)
                 rv_Xequilibrium % [pu*s] Equilibrium integrator state (0).
                 rv_Uequilibrium % [pu] Equilibrium frequency deviations (0), one per controlled generator.

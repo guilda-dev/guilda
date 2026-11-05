@@ -7,6 +7,16 @@ function sc = scenario(tag, net, varargin)
 % 外乱のタグは tag (output.phases の列名)。シナリオのタグも tag だが、系統に同じタグの
 % シナリオがあれば tag_2, tag_3, ... にする (旧 ODEevent と同じく、同じタグで何度でも作れる)。
 % 引数は Scenario.add_disturbance の Name-Value。検査は追加の時点で行われ、失敗したらシナリオを系統から外す。
+    arguments (Input)
+        tag  % タグの接尾辞
+        net  % 電力系統
+    end
+    arguments (Input, Repeating)
+        varargin  % Scenario.add_disturbance の Name-Value
+    end
+    arguments (Output)
+        sc  % 追加したシナリオ
+    end
     str_sc = tag;
     if strlength(str_sc) == 0
         str_sc = "event";

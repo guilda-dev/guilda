@@ -80,7 +80,7 @@ classdef local_LQR < LocalController
     methods
         function obj = local_LQR(tag, opt)
         % Create a state-feedback LQR controller with the tag "CL" + tag.
-            arguments
+            arguments (Input)
                 tag        (1,1) string                 % Tag suffix; the controller tag is "CL" + tag.
                 opt.Q      double = []                  % State weight: nx-by-nx matrix or its diagonal (default: identity).
                 opt.R      double = []                  % Input weight: nu-by-nu matrix or its diagonal (default: identity).
@@ -116,10 +116,11 @@ classdef local_LQR < LocalController
             % The component calls this after its equilibrium is set: the observed
             % signals of the controller are the states `x*` and its outputs the
             % driven inputs `u*` of the component.
-            %
-            % Inputs:
-            % - `V` [pu] Complex terminal voltage of the component at the equilibrium.
-            % - `u` Equilibrium input of the component (in the order of its sv_u).
+            arguments (Input)
+                obj
+                V  % [pu] Complex terminal voltage of the component at the equilibrium.
+                u  % Equilibrium input of the component (in the order of its sv_u).
+            end
             comp = obj.a_Component;
             if ~isa(comp, "Component")
                 error(msg("GUILDA:local_LQR:NotOnComponent", obj.str_tag))
@@ -137,6 +138,13 @@ classdef local_LQR < LocalController
     methods (Hidden)
         function sv_in = driven_inputs(obj, comp)
             % The driven inputs on the component comp: Input, or all the inputs of comp
+            arguments (Input)
+                obj
+                comp  Component  % Component the controller is attached to.
+            end
+            arguments (Output)
+                sv_in  % Names of the driven inputs on comp.
+            end
             if isempty(obj.sv_input)
                 sv_in = reshape(string(comp.sv_u), [], 1);
             else
@@ -148,10 +156,18 @@ classdef local_LQR < LocalController
     methods (Access=protected)
         function resolve_ports(obj, comp)
             % The driven inputs: Input, or all the inputs of the component
+            arguments (Input)
+                obj
+                comp  Component  % Component the controller is attached to.
+            end
             obj.sv_y = obj.driven_inputs(comp);
         end
 
         function set_inputs(obj, sv_name)
+            arguments (Input)
+                obj
+                sv_name  % Names of the observed signals.
+            end
             obj.sv_u = sv_name;
         end
 
@@ -161,6 +177,9 @@ classdef local_LQR < LocalController
             % A Hz edit keeps the equilibrium, so K is redesigned here, at the first analysis
             % after the edit (check_edit has already built the component, the parent). When
             % the equilibrium is not up to date, net.initialize redesigns K instead.
+            arguments (Input)
+                obj
+            end
             omega0 = obj.get_Hz();
             if ~isempty(obj.r_designHz) && obj.r_designHz ~= omega0 && obj.equilibrium_valid()
                 try
@@ -197,6 +216,11 @@ classdef local_LQR < LocalController
     methods (Access=private)
         function design_gain(obj, V, u)
             % Design K at the equilibrium of the component; the caller builds the handles.
+            arguments (Input)
+                obj
+                V  % [pu] Complex terminal voltage of the component at the equilibrium.
+                u  % Equilibrium input of the component (in the order of its sv_u).
+            end
             comp = obj.a_Component;
             x0 = comp.rv_Xequilibrium;
             I0 = comp.c_Iequilibrium;
@@ -230,6 +254,12 @@ classdef local_LQR < LocalController
 
         function l = equilibrium_valid(obj)
             % True when the component is in a network whose equilibrium is up to date
+            arguments (Input)
+                obj
+            end
+            arguments (Output)
+                l  % True when the equilibrium of the network is up to date.
+            end
             comp = obj.a_Component;
             if isempty(comp) || isempty(comp.a_Bus) || isempty(comp.a_Bus.a_PowerNetwork)
                 l = false;
@@ -241,6 +271,10 @@ classdef local_LQR < LocalController
 
         function log_change(obj, str_name)
             % A weight edit changes K, which net.initialize recomputes
+            arguments (Input)
+                obj
+                str_name  % Name of the edited weight.
+            end
             if ~isempty(obj.a_Component)
                 obj.log_edit(obj.str_tag + " edit " + str_name, "Parameter(dynamics)");
             end
@@ -250,34 +284,69 @@ classdef local_LQR < LocalController
     methods (Static)
         function dx = fcn_dx(t, x, V, I, u, param, omega0) %#ok
             % State equation of the controller (no state).
-            %
-            % Outputs:
-            % - `dx` Empty state derivative (0-by-1).
+            arguments (Input)
+                t      double        % [s] Time.
+                x      double        % States in the order of `sv_x`.
+                V      double        % [pu] Terminal voltage of the parent [real; imag].
+                I      double        % [pu] Terminal current of the parent [real; imag].
+                u      double        % Inputs in the order of `sv_u`.
+                param  (1,1) struct  % Gain `K`, equilibrium state `x0` and input `u0`.
+                omega0 (1,1) double  % [Hz] Nominal frequency of the network.
+            end
+            arguments (Output)
+                dx  % Empty state derivative (0-by-1).
+            end
             dx = zeros(0,1);
         end
         function y = fcn_y(t, x, V, I, u, param, omega0) %#ok
             % Output equation `y = u* - K*(u - x*)`, where `u` is the observed state of the component.
-            %
-            % Inputs:
-            % - `u` Observed states `x` of the component.
-            % - `param` Struct with the gain `K`, the equilibrium state `x0` and input `u0`.
-            %
-            % Outputs:
-            % - `y` Driven inputs of the component.
+            arguments (Input)
+                t      double        % [s] Time.
+                x      double        % States in the order of `sv_x`.
+                V      double        % [pu] Terminal voltage of the parent [real; imag].
+                I      double        % [pu] Terminal current of the parent [real; imag].
+                u      double        % Observed states `x` of the component.
+                param  (1,1) struct  % Gain `K`, equilibrium state `x0` and input `u0`.
+                omega0 (1,1) double  % [Hz] Nominal frequency of the network.
+            end
+            arguments (Output)
+                y  % Driven inputs of the component.
+            end
             y = param.u0 - param.K * (u - param.x0);
         end
         function M = fcn_Mass(t, x, V, I, u, param, omega0) %#ok
             % Mass matrix of the controller (no state).
-            %
-            % Outputs:
-            % - `M` Empty mass matrix (0-by-0).
+            arguments (Input)
+                t      double        % [s] Time.
+                x      double        % States in the order of `sv_x`.
+                V      double        % [pu] Terminal voltage of the parent [real; imag].
+                I      double        % [pu] Terminal current of the parent [real; imag].
+                u      double        % Inputs in the order of `sv_u`.
+                param  (1,1) struct  % Gain `K`, equilibrium state `x0` and input `u0`.
+                omega0 (1,1) double  % [Hz] Nominal frequency of the network.
+            end
+            arguments (Output)
+                M  % Empty mass matrix (0-by-0).
+            end
             M = zeros(0,0);
         end
         function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t, x, V, I, u, param, omega0) %#ok
             % Jacobian of the state equation (empty: no state).
-            %
-            % Outputs:
-            % - `Axx`, `Bxv`, `Bxi`, `Bxu` Empty Jacobians with respect to x, V, I and u.
+            arguments (Input)
+                t      double        % [s] Time.
+                x      double        % States in the order of `sv_x`.
+                V      double        % [pu] Terminal voltage of the parent [real; imag].
+                I      double        % [pu] Terminal current of the parent [real; imag].
+                u      double        % Inputs in the order of `sv_u`.
+                param  (1,1) struct  % Gain `K`, equilibrium state `x0` and input `u0`.
+                omega0 (1,1) double  % [Hz] Nominal frequency of the network.
+            end
+            arguments (Output)
+                Axx  % Empty Jacobian with respect to x (0-by-0).
+                Bxv  % Empty Jacobian with respect to V (0-by-2).
+                Bxi  % Empty Jacobian with respect to I (0-by-2).
+                Bxu  % Empty Jacobian with respect to u (0-by-nu).
+            end
             Axx = zeros(0,0);
             Bxv = zeros(0,2);
             Bxi = zeros(0,2);
@@ -285,11 +354,21 @@ classdef local_LQR < LocalController
         end
         function [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t, x, V, I, u, param, omega0) %#ok
             % Jacobian of the output equation.
-            %
-            % Outputs:
-            % - `Cyx` Jacobian with respect to x (ny-by-0).
-            % - `Dyv`, `Dyi` Jacobians with respect to V and I (zero).
-            % - `Dyu` Jacobian with respect to the observed states (`-K`).
+            arguments (Input)
+                t      double        % [s] Time.
+                x      double        % States in the order of `sv_x`.
+                V      double        % [pu] Terminal voltage of the parent [real; imag].
+                I      double        % [pu] Terminal current of the parent [real; imag].
+                u      double        % Inputs in the order of `sv_u`.
+                param  (1,1) struct  % Gain `K`, equilibrium state `x0` and input `u0`.
+                omega0 (1,1) double  % [Hz] Nominal frequency of the network.
+            end
+            arguments (Output)
+                Cyx  % Jacobian with respect to x (ny-by-0).
+                Dyv  % Jacobian with respect to V (zero).
+                Dyi  % Jacobian with respect to I (zero).
+                Dyu  % Jacobian with respect to the observed states (`-K`).
+            end
             ny  = size(param.K,1);
             Cyx = zeros(ny,0);
             Dyv = zeros(ny,2);
@@ -301,6 +380,13 @@ end
 
 function W = weight(W, str_name)
     % A vector is the diagonal of the weight
+    arguments (Input)
+        W         % Weight as given: a matrix, its diagonal or empty.
+        str_name  % Name of the weight ("Q" or "R"), for the error message.
+    end
+    arguments (Output)
+        W  % Weight matrix, or empty.
+    end
     if isempty(W)
         W = [];
     elseif isvector(W) && ~isscalar(W)

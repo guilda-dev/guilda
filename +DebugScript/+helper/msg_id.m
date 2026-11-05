@@ -10,9 +10,12 @@ function str_id = msg_id(x, id)
 % 文字列に一致する。identifier があるとき (MATLAB 自身、テスト、MException) はそれを返し、
 % どの entry にも一致しないときは空を返す。ME.identifier と同じく char を返す。
 
-    arguments
+    arguments (Input)
         x = []
         id = ""
+    end
+    arguments (Output)
+        str_id  % メッセージ ID (char、見つからなければ空)
     end
     if nargin == 0
         [x, id] = lastwarn();
@@ -40,6 +43,10 @@ end
 
 function [sv_id, c_pat] = catalog()
 % 全 entry の ID と正規表現。固定部分が長いものを先に調べる (短い entry に誤って一致させない)
+    arguments (Output)
+        sv_id  % メッセージ ID の一覧
+        c_pat  % 各 ID の文章の正規表現
+    end
     persistent sv_cache c_cache
     if isempty(sv_cache)
         str_dir = fullfile(fileparts(which("msg")), "GUILDA", "en");
@@ -70,6 +77,13 @@ end
 
 function [str_pat, n_len] = to_pattern(str_text)
 % entry の文章を正規表現へ変換する。msg は引数がないとき文章をそのまま返す
+    arguments (Input)
+        str_text  % メッセージの文章 (プレースホルダ付き)
+    end
+    arguments (Output)
+        str_pat  % 文章に一致する正規表現
+        n_len    % プレースホルダを除いた文字数
+    end
     str = char(str_text);
     c_lit = regexp(str, '\{\d+(,.*?)?\}', "split");
     if isscalar(c_lit)

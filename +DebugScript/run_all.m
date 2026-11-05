@@ -28,7 +28,7 @@ function results = run_all(opt)
 %   FailOnUnexpected : true のとき想定外の失敗があれば最後に error にする (バッチの終了コード用)
 %   LogFile          : 抑制した出力の保存先
 
-    arguments
+    arguments (Input)
         opt.Features         (1,:) string  = string.empty(1,0)
         opt.Verbose          (1,1) logical = false
         opt.FailOnUnexpected (1,1) logical = true

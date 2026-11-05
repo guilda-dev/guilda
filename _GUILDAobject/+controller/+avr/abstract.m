@@ -16,7 +16,7 @@ classdef abstract < LocalController
     methods
         function obj = abstract(tag) 
         % Create the AVR base object with the tag "CA" + tag.
-            arguments
+            arguments (Input)
                 tag = "base" % Tag suffix; the controller tag is "CA" + tag.
             end
             arguments (Output)
@@ -28,10 +28,11 @@ classdef abstract < LocalController
         function get_equilibrium(obj, V, u)      
         % Set the equilibrium state and input of the AVR and of its PSS.
         % The base AVR stores the field voltage `u(2)` as its equilibrium state.
-        %
-        % Inputs:
-        % - `V` [pu] Complex terminal voltage of the generator at the equilibrium.
-        % - `u` [pu] Equilibrium input of the generator `[Pmech; Vfield]`.
+            arguments (Input)
+                obj
+                V    % [pu] Complex terminal voltage of the generator at the equilibrium.
+                u    % [pu] Equilibrium input of the generator `[Pmech; Vfield]`.
+            end
             obj.rv_Xequilibrium = u(2);
             obj.rv_Uequilibrium = [];
             cellfun(@(c) c.get_equilibrium(V,u), obj.a_LocalController);
@@ -40,9 +41,10 @@ classdef abstract < LocalController
         function set_PSS(obj, cls) %#ok
         % Attach a PSS to the AVR.
         % The base implementation ignores `cls`; the concrete AVRs attach `cls`.
-        %
-        % Inputs:
-        % - `cls` PSS object (a controller.pss.abstract subclass).
+            arguments (Input)
+                obj
+                cls  % PSS object (a controller.pss.abstract subclass).
+            end
             obj.a_LocalController{1} = controller.pss.base;
             obj.l_hasController = true;
         end

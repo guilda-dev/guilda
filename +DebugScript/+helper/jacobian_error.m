@@ -7,6 +7,12 @@ function err = jacobian_error(obj)
 % SolverODE と同じ呼び出し方 f_Jacobi*(t,x,V,I,u) で得た行列を、
 % f_dx / f_I / f_Y (Component) または f_dx / f_Y (制御器) の中心差分と比べる。
 % 平衡点でだけ 0 になる項も確かめるため、平衡点から少しずらした点で比べる。
+    arguments (Input)
+        obj
+    end
+    arguments (Output)
+        err  % 解析的なヤコビアンと数値微分の最大誤差
+    end
     if isa(obj, "Component")
         V = [real(obj.c_Vequilibrium); imag(obj.c_Vequilibrium)];
         I = [real(obj.c_Iequilibrium); imag(obj.c_Iequilibrium)];
@@ -51,6 +57,12 @@ function err = jacobian_error(obj)
 end
 
 function v = cvec(c)
+    arguments (Input)
+        c  % 行列の cell 配列
+    end
+    arguments (Output)
+        v  % 全要素を並べた列ベクトル
+    end
     if isreal(c) && numel(c) == 2
         v = c(:);
     else
