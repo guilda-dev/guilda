@@ -10,8 +10,6 @@ classdef LayerPackage < handle
 % ```matlab
 % net = network.IEEE14bus();
 % net.disp_tree();            % hierarchy of the layers below the network
-% bus = net.a_Bus{1};
-% bus.get_tag(true, "/")      % tag including the parent layers
 % net.tab_editLog             % edits since the last net.initialize (kept on the network)
 % ```
 %
@@ -75,6 +73,7 @@ classdef LayerPackage < handle
 
 
     methods(Access=protected)
+        out = get_tag(obj,l_with_layer, str_split)
         log_edit(obj, log, tag, before, after)
         reset_edit(obj)
         flag = check_edit(obj)
@@ -105,7 +104,7 @@ classdef LayerPackage < handle
             cellfun(@(c) c.mark_odefcn(), obj.children);
         end
     end
-    methods(Hidden)
+    methods(Access=protected)
         function [lv_odefcn, lv_equilibrium] = edit_effect(obj, tab) %#ok<INUSL>
         % What each row of an edit log (tab_editLog) makes stale, from its "tag" and "log" columns.
         %   tag                    f_* handles   equilibrium
@@ -141,8 +140,6 @@ classdef LayerPackage < handle
     end
     methods
         varargout = disp_tree(obj, str_ignore)
-        out = get_tag(obj,l_with_layer, str_split)
-        out = attach_tag(obj,str_name_list)
         [out, sct_visited] = struct(obj, l_disp, str_header, sct_visited)
 
         function set.sct_edit(obj, sct_edit)
@@ -181,6 +178,8 @@ classdef LayerPackage < handle
         end
     end
     methods(Hidden)
+        out = attach_tag(obj,str_name_list)
+
         function tab = table(obj)
         % Convert layer parameters into table format.
         %
