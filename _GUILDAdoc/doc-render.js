@@ -208,6 +208,17 @@
     + `<span class="ref-group-name">${escapeHtml(label)}</span>`
     + `${count === undefined ? '' : `<span class="ref-group-count" title="${tr('Members', 'メンバー数')}">${count}</span>`}</span>`;
 
+  // An access value (GetAccess, SetAccess, Access) as a tag coloured by its
+  // kind: public, protected, private, a class list such as {?SolverODE} or
+  // "Component, SolverODE" (the database drops the ? and braces), or
+  // anything else (immutable, none). Colours in reference.css.
+  const accessKind = (value) => {
+    const text = (value ?? '').toString().trim();
+    if (['public', 'protected', 'private'].includes(text)) return text;
+    return /[?{,.]|^[A-Z]/.test(text) ? 'classes' : 'other';
+  };
+  const accessTag = (value, small = true) => `<span class="ref-badge${small ? ' is-small' : ''} ref-access is-${accessKind(value)}">${escapeHtml(value)}</span>`;
+
   root.GuildaDocRender = Object.freeze({
     tr,
     setPageTitle,
@@ -224,6 +235,7 @@
     examplesText,
     groupRows,
     groupHeading,
-    breakableName
+    breakableName,
+    accessTag
   });
 })(window);

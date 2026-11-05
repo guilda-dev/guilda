@@ -460,38 +460,100 @@ tr.ref-group-row:hover { background: transparent; }
 
 /* Facts under a member description (class.html): Points to, Unit / size,
    Set by, Edit makes stale, Called by. Label beside value; stacked on phones. */
+/* Each fact is a row that wraps: the value drops under its label when the
+   cell is too narrow for both (many columns, or phones). */
 .ref-facts {
-  display: grid;
-  grid-template-columns: 9.5rem minmax(0, 1fr);
-  gap: 2px 12px;
   margin: 8px 0 0;
   padding: 6px 0 0;
   border-top: 1px dashed var(--line);
   font-family: var(--font-sans);
   font-size: 0.85rem;
 }
-.ref-facts > div { display: contents; }
-.ref-facts dt { padding-top: 2px; color: var(--muted); font-size: 0.7rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
-.ref-facts dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.ref-facts > div { display: flex; flex-wrap: wrap; gap: 0 12px; margin-bottom: 2px; }
+.ref-facts dt { flex: 0 0 9.5rem; padding-top: 2px; color: var(--muted); font-size: 0.7rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+.ref-facts dd { flex: 1 1 24ch; min-width: 0; margin: 0; overflow-wrap: anywhere; }
 .ref-facts dd .markdown-content > :first-child { margin-top: 0; }
 @media (max-width: 600px) {
-  .ref-facts { grid-template-columns: minmax(0, 1fr); gap: 0; }
-  .ref-facts dd { margin-bottom: 4px; }
+  .ref-facts > div { margin-bottom: 4px; }
+  .ref-facts dt { flex-basis: 100%; }
 }
-/* Description view of the member tables: cells start at the top; on phones
-   each row stacks, the name above its description and facts. */
-.doc-layout .ref-member-stack td { vertical-align: top; }
+/* Member tables of the class page (class.html) and argument tables of the
+   method page (method.html). On the class page the column picker sets the
+   columns. "is-fit" columns take the width of their content, "is-wrap" ones
+   too but may wrap at spaces, "is-flex" ones (Description, Summary,
+   Signature, Details) share the rest. These replace the nth-child widths of
+   style.css. On phones each row stacks: the name, then the cells, the short
+   ones with their column name. */
+.doc-layout table.ref-member-table th,
+.doc-layout table.ref-member-table td { width: auto; max-width: none; vertical-align: top; }
+.doc-layout table.ref-member-table th { min-width: 0; }
 @media (min-width: 601px) {
-  .doc-layout .ref-member-stack th.col-name,
-  .doc-layout .ref-member-stack td.col-name { width: 30%; }
+  .doc-layout .ref-table-scroll table.ref-member-table td,
+  .doc-layout .ref-table-scroll table.ref-member-table th { padding: 9px 8px; }
 }
+.doc-layout table.ref-member-table .is-name { width: 1%; }
+.doc-layout table.ref-member-table .is-fit { width: 1%; white-space: nowrap; }
+.doc-layout table.ref-member-table .is-wrap { width: 1%; min-width: 0; white-space: normal; word-break: normal; overflow-wrap: anywhere; }
+.doc-layout table.ref-member-table td.is-wrap { max-width: 28ch; }
+.doc-layout table.ref-member-table .is-flex { width: auto; min-width: 16ch; }
+.doc-layout table.ref-member-table.is-fit { width: auto; }
+.doc-layout table.ref-member-table.is-fit th,
+.doc-layout table.ref-member-table.is-fit td { width: auto; }
+/* Headers of wrapping columns break between words only. */
+.doc-layout table.ref-member-table th.is-wrap { overflow-wrap: normal; word-break: keep-all; }
+.doc-layout table.ref-member-table td.col-signature { overflow-wrap: anywhere; }
+.ref-member-table td .markdown-content > :first-child { margin-top: 0; }
+.ref-member-table td .markdown-content > :last-child { margin-bottom: 0; }
 @media (max-width: 600px) {
-  .ref-member-stack thead { display: none; }
-  .ref-member-stack tr:not(.ref-group-row) { display: block; border-bottom: 1px solid var(--line); }
-  .doc-layout .ref-member-stack tr:not(.ref-group-row) td { display: block; width: auto; max-width: none; border: 0; }
-  .doc-layout .ref-table-scroll .ref-member-stack tr:not(.ref-group-row) td:first-child { padding-bottom: 0; }
-  .ref-member-stack tr.ref-group-row,
-  .ref-member-stack tr.ref-group-row th { display: block; width: auto !important; }
+  .ref-member-table thead { display: none; }
+  .ref-member-table tr:not(.ref-group-row) { display: block; padding: 4px 0; border-bottom: 1px solid var(--line); }
+  .doc-layout .ref-member-table tr:not(.ref-group-row) td { display: block; width: auto !important; max-width: none; min-width: 0; border: 0; white-space: normal; }
+  .doc-layout .ref-table-scroll .ref-member-table tr:not(.ref-group-row) td { padding-top: 2px; padding-bottom: 2px; }
+  .doc-layout .ref-member-table td.is-fit { overflow-wrap: anywhere; }
+  .ref-member-table td[data-label]::before {
+    content: attr(data-label);
+    display: inline-block;
+    min-width: 7.5rem;
+    margin-right: 8px;
+    color: var(--muted);
+    font-family: var(--font-sans);
+    font-size: 0.7rem;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .ref-member-table td.col-facts[data-label]::before { display: block; }
+  .ref-member-table tr.ref-group-row,
+  .ref-member-table tr.ref-group-row th { display: block; width: auto !important; }
 }
-.ref-member-stack td .markdown-content > :first-child { margin-top: 0; }
-.ref-member-stack td .markdown-content > :last-child { margin-bottom: 0; }
+
+/* Column picker above a member table: one row of small checkboxes; on
+   phones a collapsed "Columns" disclosure. */
+.ref-columns { margin: -4px 0 12px; font-size: 0.8rem; }
+.ref-columns > summary { display: none; }
+.ref-columns-list { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+.ref-columns-label { color: var(--muted); font-size: 0.7rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; }
+.ref-columns .ref-check { gap: 4px; font-size: 0.8rem; }
+.ref-columns .ref-check input { margin: 0; }
+@media (max-width: 600px) {
+  .ref-columns > summary { display: list-item; color: var(--ink-2); font-weight: 600; cursor: pointer; }
+  .ref-columns-label { display: none; }
+  .ref-columns[open] .ref-columns-list { margin-top: 6px; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+}
+
+/* Access values (accessTag in doc-render.js): public green, protected
+   orange, private red, a class list such as {?SolverODE} blue, others
+   neutral. Text on a tint, the border in the same hue. */
+:root {
+  --access-public: var(--ok);   --access-public-bg: var(--ok-bg);   --access-public-line: #7FA88A;
+  --access-protected: #9A4A00;  --access-protected-bg: #FBF2EA;     --access-protected-line: #D99A5E;
+  --access-private: var(--err); --access-private-bg: var(--err-bg); --access-private-line: #D48F8F;
+  --access-classes: var(--brand); --access-classes-bg: var(--brand-tint); --access-classes-line: #8FB0D3;
+  --access-other: var(--ink);   --access-other-bg: var(--surface);  --access-other-line: var(--line-strong);
+}
+.ref-access { font-family: var(--font-mono); }
+.ref-access.is-public { border-color: var(--access-public-line); background: var(--access-public-bg); color: var(--access-public); }
+.ref-access.is-protected { border-color: var(--access-protected-line); background: var(--access-protected-bg); color: var(--access-protected); }
+.ref-access.is-private { border-color: var(--access-private-line); background: var(--access-private-bg); color: var(--access-private); }
+.ref-access.is-classes { border-color: var(--access-classes-line); background: var(--access-classes-bg); color: var(--access-classes); white-space: normal; word-break: normal; overflow-wrap: normal; }
+.ref-access.is-other { border-color: var(--access-other-line); background: var(--access-other-bg); color: var(--access-other); }
