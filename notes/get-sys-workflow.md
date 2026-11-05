@@ -131,7 +131,7 @@ output.result = result                          @PowerNetwork/get_sys.m:33
 | ソルバ設定 | `net.solver_*` | 各ネットワークが持つ既定値。結果は持ちません | `@PowerNetwork/PowerNetwork.m:52-89` |
 | 変数の順序 | `get_variable_map`(都度計算) | 「ただ一つの定義」とされています | `@PowerNetwork/get_variable_map.m:4-6`, `_GUILDAdoc/developer/class-design.html:278` |
 | 結果 | `AnalysisResult` | 計算値と使用した設定。`a_PowerNetwork` は生きた参照です | `_auxiliary/@AnalysisResult/AnalysisResult.m:49-54,78-81` |
-| OPF の項 | 各層の `s_opffcn` | 動的解析では使いません | `@PowerNetwork/PowerNetwork.m:100` |
+| OPF の項 | 各層の `f_opfcost`・`f_opfconst`・`l_opfdefault` | 動的解析では使いません | `@PowerNetwork/PowerNetwork.m:141` |
 
 ### 2.2 タグと添字
 

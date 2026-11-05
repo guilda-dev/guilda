@@ -4,7 +4,7 @@ function prob = apply(obj, prob, str_method, s_var)
 % Called by build_opf_problem of each class.
 %
 % - Cost: fcnCost(v, p) is added to the objective. The caller leaves out its default
-%   cost when obj.s_opffcn.Cost is set, so the handle replaces the default.
+%   cost when obj.f_opfcost is set, so the handle replaces the default.
 % - Constraint: each field <name> of fcnCon(v, p) becomes prob.Constraints.<name>_<tag>
 %   (prob.Constraints.<name> for PowerNetwork); its dual has the same label.
 %
@@ -14,21 +14,20 @@ function prob = apply(obj, prob, str_method, s_var)
 %
 % See also opffcn.variables, opffcn.param, opffcn.update
     arguments
-        obj % Component, Bus, Branch or PowerNetwork whose s_opffcn is applied.
+        obj % Component, Bus, Branch or PowerNetwork whose f_opfcost and f_opfconst are applied.
         prob % Optimization problem being built.
         str_method (1,1) string % "ELD", "DC OPF" or "AC OPF".
         s_var      (1,1) struct = struct() % Optimization variables of the caller by name.
     end
-    s = obj.s_opffcn;
-    if isempty(s.Cost) && isempty(s.Constraint)
+    if isempty(obj.f_opfcost) && isempty(obj.f_opfconst)
         return
     end
     str_obj = string(obj);
     v = opffcn.variables(obj, prob, str_method, s_var);
     p = opffcn.param(obj, str_method);
 
-    if ~isempty(s.Cost)
-        cost = call(s.Cost, v, p, str_obj, "Cost");
+    if ~isempty(obj.f_opfcost)
+        cost = call(obj.f_opfcost, v, p, str_obj, "Cost");
         if ~(isscalar(cost) && (isa(cost, "optim.problemdef.OptimizationExpression") ...
                                 || (isnumeric(cost) && isreal(cost))))
             error(msg("GUILDA:apply:InvalidCost", str_obj))
@@ -36,8 +35,8 @@ function prob = apply(obj, prob, str_method, s_var)
         prob.Objective.GenCost = prob.Objective.GenCost + cost;
     end
 
-    if ~isempty(s.Constraint)
-        con = call(s.Constraint, v, p, str_obj, "Constraint");
+    if ~isempty(obj.f_opfconst)
+        con = call(obj.f_opfconst, v, p, str_obj, "Constraint");
         if ~(isstruct(con) && isscalar(con))
             error(msg("GUILDA:apply:InvalidConstraint", str_obj))
         end

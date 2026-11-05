@@ -159,7 +159,9 @@ classdef Component < PowerSystemModel
         para_operation                         % Parameter object of tab_parameter.operation (baseMVA, Pmin, Pmax, Qmin, Qmax).
         para_OPF                               % Parameter object of tab_parameter.OPF (P0, Q0, HP, HQ, fP, fQ; startup/shutdown are reserved).
         para_graph                             % Parameter object of tab_parameter.graph.
-        s_opffcn = opffcn.default()            % OPF terms (Cost, Constraint, DefaultConstraint) set by set_opffcn. <@Stale> nothing (logged)
+        f_opfcost    = []   % OPF cost handle @(v, p) set by set_opffcn; it replaces the default cost of the component ([]: none). <@Stale> nothing (logged)
+        f_opfconst   = []   % OPF constraint handle @(v, p) set by set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing (logged)
+        l_opfdefault = true % Whether the default OPF constraints of the component are kept (DefaultConstraint of set_opffcn). <@Stale> nothing (logged)
     end  
     properties(Dependent, Access=protected) % Layer Structure
         parent                                 % Layer Structure: the bus.

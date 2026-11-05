@@ -61,11 +61,9 @@ classdef Branch < PowerSystemModel
         % <@Type> cell of Bus (2x1)
         a_Bus
 
-        % OPF terms (Cost, Constraint, DefaultConstraint) set by set_opffcn.
-        % reset_opffcn restores the defaults.
-        % <@Type> struct
-        % <@Stale> nothing (logged)
-        s_opffcn = opffcn.default()
+        f_opfcost    = []   % OPF cost handle @(v, p) set by set_opffcn; it replaces the default cost of the branch ([]: none). <@Stale> nothing (logged)
+        f_opfconst   = []   % OPF constraint handle @(v, p) set by set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing (logged)
+        l_opfdefault = true % Whether the default OPF constraints of the branch are kept (DefaultConstraint of set_opffcn). <@Stale> nothing (logged)
    end
     properties(Dependent) % Parameter
 

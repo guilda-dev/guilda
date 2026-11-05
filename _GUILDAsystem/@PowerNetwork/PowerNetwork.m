@@ -3,7 +3,7 @@ classdef PowerNetwork < PowerSystemModel
 %
 % - Owns the topology (which buses, branches and global controllers exist), the system
 %   base in `tab_parameter.base` (Hz, baseMVA), the solver objects `solver_*` and the
-%   network-wide OPF terms (`s_opffcn`).
+%   network-wide OPF terms (`f_opfcost`, `f_opfconst`, `l_opfdefault`).
 % - Every analysis starts here: the method reads its settings from a solver object, hands
 %   the network to it and returns a result object.
 % - Not where the numbers are: bus voltages belong to `Bus`, the model equations to
@@ -137,7 +137,9 @@ classdef PowerNetwork < PowerSystemModel
         para_base               % Parameter: Hz (nominal frequency) and baseMVA (system base) of the whole network
     end
     properties(SetAccess=protected) % OPF
-        s_opffcn = opffcn.default()   % Network-wide OPF terms (Cost, Constraint, DefaultConstraint) set by set_opffcn. <@Stale> nothing (logged)
+        f_opfcost    = []   % OPF cost handle @(v, p) set by set_opffcn; it replaces the default cost of the network ([]: none). <@Stale> nothing (logged)
+        f_opfconst   = []   % OPF constraint handle @(v, p) set by set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing (logged)
+        l_opfdefault = true % Whether the default OPF constraints of the network are kept (DefaultConstraint of set_opffcn). <@Stale> nothing (logged)
     end
     properties(Dependent, Access=protected) % Layer Structure
         parent                  % Layer Structure

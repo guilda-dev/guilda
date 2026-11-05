@@ -70,7 +70,9 @@ classdef Bus < PowerSystemModel
         a_PowerNetwork                          % PowerNetwork the bus belongs to ([] when removed).
         a_Component (:,1) = cell(0,1)           % Components connected to the bus. <@Stale> equilibrium
         c_Vequilibrium      = 1;                % [pu] Voltage phasor at the equilibrium (the bus owns it; components and controllers read it).
-        s_opffcn = opffcn.default()             % OPF terms (Cost, Constraint, DefaultConstraint) set by set_opffcn. <@Stale> nothing (logged)
+        f_opfcost    = []   % OPF cost handle @(v, p) set by set_opffcn; it replaces the default cost of the bus ([]: none). <@Stale> nothing (logged)
+        f_opfconst   = []   % OPF constraint handle @(v, p) set by set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing (logged)
+        l_opfdefault = true % Whether the default OPF constraints of the bus are kept (DefaultConstraint of set_opffcn). <@Stale> nothing (logged)
     end
     properties (Hidden,SetAccess=protected) % Parameter
         para_dynamics                           % Parameter: Gshunt, Bshunt

@@ -77,7 +77,7 @@ end
     % Reference angle: the bus of tools.slack_bus_index (the first bus if no bus has a
     % component) keeps its power-flow Varg. l_isSlack is not set.
     % net.set_opffcn(DefaultConstraint=false) removes it.
-    if options.Method ~= "ELD" && obj.s_opffcn.DefaultConstraint
+    if options.Method ~= "ELD" && obj.l_opfdefault
         i_ref = tools.slack_bus_index(obj);
         if isempty(i_ref); i_ref = 1; end
         Varg_ref = a_Bus{i_ref}.para_powerflow.Varg;

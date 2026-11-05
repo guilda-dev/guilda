@@ -704,7 +704,7 @@ assert(abs(abs(res.lambda.Constraints.balancedP) - 4) < 1e-5)
 net = DebugScript.helper.build_9bus();
 g1 = net.a_Bus{1}.a_Component{1};
 g1.set_opffcn("Cost", @(v, p) 2*v.P^2 + p.OPF.fP*v.P);
-assert(isa(g1.s_opffcn.Cost, "function_handle") && g1.tab_parameter.OPF.HP == 1)
+assert(isa(g1.f_opfcost, "function_handle") && g1.tab_parameter.OPF.HP == 1)
 for str_m = ["ELD","DC OPF"]
     [res, flag] = DebugScript.helper.quiet(@() net.optimize_powerflow(Method=str_m));
     assert(flag > 0)
@@ -814,7 +814,9 @@ g1.reset_opffcn();
 net.a_Bus{4}.reset_opffcn();
 net.a_Branch{1}.reset_opffcn();
 net.reset_opffcn();
-assert(isequal(g1.s_opffcn, opffcn.default()) && isequal(net.s_opffcn, opffcn.default()))
+for obj = {g1, net}
+    assert(isempty(obj{1}.f_opfcost) && isempty(obj{1}.f_opfconst) && obj{1}.l_opfdefault)
+end
 res = DebugScript.helper.quiet(@() net.optimize_powerflow(Method="DC OPF"));
 assert(~any(isfield(res.OPFprob.Constraints, ["Cap_SG1B001","Flat_B004","Sum"])))
 assert(abs(res.r_cost - res0.r_cost) < 1e-9)
@@ -822,9 +824,9 @@ assert(max(abs(res.tab_bus.P - res0.tab_bus.P)) < 1e-9)
 % 指定しなかった項は残る: Constraint だけを設定すると Cost はそのまま、[] で消える
 g1.set_opffcn("Cost", @(v, p) 2*v.P^2 + v.P);
 g1.set_opffcn("Constraint", @(v, p) struct("Cap", v.P <= 0.4));
-assert(~isempty(g1.s_opffcn.Cost) && ~isempty(g1.s_opffcn.Constraint))
+assert(~isempty(g1.f_opfcost) && ~isempty(g1.f_opfconst))
 g1.set_opffcn("Cost", []);
-assert(isempty(g1.s_opffcn.Cost) && ~isempty(g1.s_opffcn.Constraint))
+assert(isempty(g1.f_opfcost) && ~isempty(g1.f_opfconst))
 
 
 %% Network-level reserve constraint and cost
