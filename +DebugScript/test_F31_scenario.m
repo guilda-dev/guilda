@@ -175,7 +175,7 @@ s2.add_offset("SG1B001", ["delta";"omega"], [0.1; 1e-3], 0);
 s2.add_input("SG1B002", ["Pmech";"Vfield"], {0.05; 0.1/3}, [1,1.5], Tag="in");
 s2.add_disturbance("both", TimeSpan=[2,2.05], FaultBus=["B003";"B005"], TripUnit="SG1B003");
 s3 = Scenario("empty", Description="no disturbance, a comma, and ""quotes""");
-s_file = fullfile(tempdir, "GUILDA_F31_scenarios.csv");
+s_file = tempname + ".csv";
 c_rm = onCleanup(@() delete(s_file));
 Scenario.export_csv(s_file, {s1, s2, s3}, Overwrite=true);
 assert(error_id(@() Scenario.export_csv(s_file, s1)) == "GUILDA:Scenario:CsvFileExists")
@@ -189,7 +189,7 @@ for k = 1:3
     assert(isequaln(normalize_values(c_in{k}.tab_disturbance), normalize_values(c_ref{k}.tab_disturbance)), c_ref{k}.s_tag)
 end
 % 書き出し直しても同じファイル
-s_file2 = fullfile(tempdir, "GUILDA_F31_scenarios2.csv");
+s_file2 = tempname + ".csv";
 c_rm2 = onCleanup(@() delete(s_file2));
 Scenario.export_csv(s_file2, c_in, Overwrite=true);
 assert(isequal(readlines(s_file), readlines(s_file2)))
