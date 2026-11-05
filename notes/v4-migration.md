@@ -1144,8 +1144,8 @@ lists all of them:
 | `_auxiliary/@SolverLIN/SolverLIN.m` | `v3_linearizer_constructor(varargin)` | rejects v3 constructor arguments |
 | `_auxiliary/@SolverLIN/SolverLIN.m` | `NonUnit` property (Hidden) | 廃止した設定の保存先 |
 | `_auxiliary/@SolverLIN/SolverLIN.m` | `set.NonUnit` | `v3_solver_nonunit`: 警告して保存 |
-| `_auxiliary/@SolverLIN/SolverLIN.m` | `get_options`: `v3_linearize_args(nv, obj.NonUnit)` | `NonUnit` を警告して取り除く |
-| `_auxiliary/@SolverLIN/SolverLIN.m` | `get_options`: `sct_options.NonUnit = rv_nonUnit` | 指定があるときだけ結果の `options` に残す |
+| `_auxiliary/@SolverLIN/get_options.m` | `v3_linearize_args(nv, obj.NonUnit)` | `NonUnit` を警告して取り除く |
+| `_auxiliary/@SolverLIN/get_options.m` | `sct_options.NonUnit = rv_nonUnit` | 指定があるときだけ結果の `options` に残す |
 | `_auxiliary/@SolverLIN/solve.m` | `v3_nonunit_range(sct_options, n_bus)` | 存在しない母線のエラー |
 | `_auxiliary/@ResultLIN/get_ss.m` | `v3_nonunit_dynamic(obj.options, s.c_sysBus)` | 状態のある母線のエラー |
 | `@GUILDA/private/get_config.m` | `v3_user_config(field, ...)` | user settings key `Reporter` → `Progress` |
