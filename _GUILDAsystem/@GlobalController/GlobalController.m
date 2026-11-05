@@ -150,122 +150,17 @@ classdef GlobalController < PowerSystemModel
 
                 idx = idx + 1;
             end
-            
+
         end
 
         % get sys
-        function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
-            % Linearize the global controller.
-            %
-            % The inputs are the outputs of the controlled units and the outputs are the
-            % controller outputs that feed them; the V and I ports are not used.
-            %
-            % Out-of-date f_* handles are built first. A controller on a network stops with the
-            % error GUILDA:PowerNetwork:EquilibriumStale when net.initialize() is needed.
-            % A controlled unit without the states sv_u or the inputs sv_y stops with the
-            % error GUILDA:GlobalController:GlobalControllerPort.
-            %
-            % See also GlobalController.get_hessian, PowerNetwork.get_sys
-            %
-            % <@Group> Called by analyses
-            arguments (Input)
-                obj                 
-                x        (:,1) double  = obj.rv_Xequilibrium   % States (default: the equilibrium).
-                V        (:,1) double  = zeros(2,1)   % Not a port: zeros(2,1).
-                I        (:,1) double  = zeros(2,1)   % Not a port: zeros(2,1).
-                u        (:,1) double  = obj.rv_Uequilibrium   % Inputs (default: the equilibrium).
-                opt.full (1,1) logical = false  % Ignored; kept for old calls.
-            end
-            arguments (Output)
-                sys   % Descriptor state-space model (dss) with state, input and output names.
-            end
-            arguments (Output, Repeating)
-                varargout   % sys.StateName, sys.InputName and sys.OutputName, as on the other layers.
-            end
-
-            a_Comp = obj.controlledUnits;
-            for k = 1:numel(a_Comp)
-                s = a_Comp{k};
-                if ~all(ismember(obj.sv_u, s.sv_x)) || ~all(ismember(obj.sv_y, s.sv_u))
-                    error(msg("GUILDA:GlobalController:GlobalControllerPort", obj.s_tag, join(obj.sv_u, " "), join(obj.sv_y, " "), s.s_tag, class(s), join(s.sv_x, " "), join(s.sv_u, " ")))
-                end
-            end
-
-            obj.check_edit();
-            if ~isempty(obj.a_PowerNetwork)
-                net = obj.a_PowerNetwork;
-                if net.l_staleEquilibrium
-                    net.check_edit("RequireEquilibrium", true);
-                end
-            end
-
-            % Same Jacobian contract as SolverODE: f_JacobiDx/Y(t,x,V,I,u).
-            % A global controller has no V port, so only the u columns are used.
-            nx = numel(x);
-            nu = numel(u);
-            [Axx,~,~,Bxu] = obj.f_JacobiDx(0,x,V,I,u);
-            [Cyx,~,~,Dyu] = obj.f_JacobiY( 0,x,V,I,u);
-            ny = size(Cyx,1);
-
-            A = reshape(Axx,nx,nx);
-            B = reshape(Bxu,nx,nu);
-            C = reshape(Cyx,ny,nx);
-            D = reshape(Dyu,ny,nu);
-
-            E = obj.f_Mass(0,x,V,I,u);
-
-            sys = dss(A,B,C,D,E);
-
-            xNames = obj.attach_tag(obj.sv_x);
-            uNames = cellfun(@(s) s.attach_tag(obj.sv_u), a_Comp);
-            yNames = cellfun(@(s) s.attach_tag(obj.sv_y), a_Comp);
-
-            sys.StateName  = xNames;
-            sys.InputName  = uNames;
-            sys.OutputName = yNames;
-
-            varargout{1} = sys.StateName;
-            varargout{2} = sys.InputName;
-            varargout{3} = sys.OutputName;
-        end
-    end   
+        [sys, varargout] = get_sys(obj, x, V, I, u, opt)
+    end
     methods (Access=protected)
-        function set_odefcn(obj)
-            % Bind the parameters and the network frequency into the f_* function handles.
-            % Called by check_edit when the handles are not up to date (s_odefcn "unset" or
-            % "editted": a dynamics edit, a network Hz edit or an attach since the last build).
-            %
-            % <@Group> Called by analyses
-            arguments (Input)
-                obj
-            end
-            omega0 = obj.get_Hz();
-            param = obj.tab_parameter.dynamics{:,obj.sv_para};
-
-            obj.f_dx   = @(t,x,V,I,u) obj.fcn_dx(t,x,V,I,u,param,omega0);
-            obj.f_Y    = @(t,x,V,I,u) obj.fcn_y(t,x,V,I,u,param,omega0);
-            obj.f_Mass = @(t,x,V,I,u) obj.fcn_Mass(t,x,V,I,u,param,omega0);
-            
-            obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
-            obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
-            obj.s_odefcn = "updated";
-        end
+        set_odefcn(obj)
     end
     methods (Access={?Component,?LocalController,?PowerNetwork})        
-        function set_parent(obj,net)
-            % Set the network of the controller; net = [] detaches it (PowerNetwork.remove_global_controller).
-            %
-            % <@Group> Construction and attachment
-            arguments (Input)
-                obj
-                net   % PowerNetwork, or [] to detach the controller.
-            end
-            obj.a_PowerNetwork = net;
-            if ~isempty(net)
-                obj.reset_edit(false);   % edits made before do not belong to the new network; not initialized there yet
-            end
-            obj.mark_odefcn();        % the handles read the frequency of the network
-        end
+        set_parent(obj,net)
     end
     methods        
         function p = get.parent(obj)

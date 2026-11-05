@@ -121,19 +121,7 @@ classdef Bus < PowerSystemModel
         set_equilibrium(obj, c_V, c_I, r_P, r_Q, opt)
     end
     methods (Access={?PowerNetwork})
-        function set_network(obj, net)
-            % Set the network of the bus; net = [] detaches it (PowerNetwork.remove_bus).
-            %
-            % <@Group> Construction and editing
-            arguments (Input)
-                obj
-                net   % PowerNetwork, or [] to detach the bus.
-            end
-            obj.a_PowerNetwork = net;
-            if ~isempty(net)
-                obj.reset_edit(false);   % edits made before do not belong to the new network; not initialized there yet
-            end
-        end
+        set_network(obj, net)
     end
     
     methods
