@@ -47,7 +47,7 @@ classdef LocalController < PowerSystemModel
 % See also Component.add_local_controller, controller.avr.AVR_ST1, controller.pss.PSS1, controller.governor.IEEJ_LPT1, controller.local_LQR
 
 %% Abstract properties/methods    
-    properties(Abstract, SetAccess=protected, Hidden)
+    properties(Abstract, SetAccess=protected, Hidden) % Subclass contract
         key      (1,1) string   % Kind of controller: "avr", "pss", "local" (attached in the place of an AVR) or "governor" (beside it).
         sv_x    (:,1) string    % Names of the states.
         sv_u    (:,1) string    % Names of the inputs.
@@ -93,7 +93,7 @@ classdef LocalController < PowerSystemModel
 
     % Handle cache @(t,x,V,I,u) with param and omega0 bound (set_odefcn, called by check_edit).
     % A local controller has no f_I.
-    properties(SetAccess=protected) % Dynamics
+    properties(SetAccess=protected) % Cached function handles
         f_Mass                                 % Mass matrix function @(t,x,V,I,u) with the parameters bound.
         f_dx                                   % State equation function @(t,x,V,I,u) with the parameters bound.
         f_Y                                    % Output function @(t,x,V,I,u) with the parameters bound.
@@ -101,7 +101,7 @@ classdef LocalController < PowerSystemModel
         f_JacobiDx                             % Jacobian function of f_dx.
         f_JacobiY                              % Jacobian function of f_Y.
     end    
-    properties (SetAccess={?SolverODE}, Hidden)
+    properties (SetAccess={?SolverODE}, Hidden) % Simulation working data
         iv_odeX  = zeros(0,1);
         iv_odeU  = zeros(0,1);
         iv_odeY  = zeros(0,1);

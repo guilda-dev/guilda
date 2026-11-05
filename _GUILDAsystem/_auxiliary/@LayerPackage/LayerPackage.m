@@ -17,7 +17,7 @@ classdef LayerPackage < handle
 % See also PowerSystemModel, Parameter
 
     %% Abstract
-    properties(Abstract, Dependent) % Parameters
+    properties(Abstract, Dependent) % Parameter
         % Parameters of the layer used by the analyses.
         % <@Type> Parameter
         tab_parameter

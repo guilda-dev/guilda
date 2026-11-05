@@ -32,7 +32,7 @@ classdef Branch < PowerSystemModel
 % See also PowerNetwork.add_branch, branch.pi, Bus
 
 %% Abstract Methods/Properties
-    properties(Abstract, Constant)
+    properties(Abstract, Constant) % Subclass contract
         % Key that identifies the branch type, e.g. "pi" or "pi_transformer".
         % It is the Type of PowerNetwork.add_branch; running GUILDA regenerates the key list of
         % add_branch.
@@ -60,11 +60,12 @@ classdef Branch < PowerSystemModel
         % End buses of the branch {from; to}: the row and column order of the admittance matrix.
         % <@Type> cell of Bus (2x1)
         a_Bus
-
+   end
+    properties(SetAccess=protected) % OPF
         f_opfcost    = []   % OPF cost handle @(v, p) set by set_opffcn; it replaces the default cost of the branch ([]: none). <@Stale> nothing (logged)
         f_opfconst   = []   % OPF constraint handle @(v, p) set by set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing (logged)
         l_opfdefault = true % Whether the default OPF constraints of the branch are kept (DefaultConstraint of set_opffcn). <@Stale> nothing (logged)
-   end
+    end
     properties(Dependent) % Parameter
 
         % Parameter table of the branch: dynamics, operation and graph; writing it writes the parameters.

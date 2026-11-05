@@ -122,7 +122,8 @@ classdef PowerNetwork < PowerSystemModel
         cv_Vequilibrium         % [pu] Bus voltage phasors at the equilibrium, one per bus.
         cv_Iequilibrium         % [pu] Bus current injections at the equilibrium, one per bus.
         rv_Xequilibrium         % State equilibrium, in the order of the x rows of get_variable_map.
-
+    end
+    properties(Dependent) % Parameter
         % Parameter table of the network (base: Hz and baseMVA); writing it writes the parameters.
         %
         % - `Hz` [Hz]: nominal frequency. Models read it with get_Hz() and receive it as omega0.

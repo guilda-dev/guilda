@@ -39,7 +39,30 @@ classdef Bus < PowerSystemModel
     %% Properties
     properties (Dependent) % Power Flow
         str_bustype              % Power-flow type of the bus: "slack", "PV" or "PQ" (from get_pf_set).
+        c_Iequilibrium           % [pu] Current injection at the equilibrium: sum of the component currents (0 without components).
+    end
+    properties % Power Flow
+        % True for the slack bus (at most one per network).
+        % Setting it requires a component; the network then clears the flags of the other buses
+        % (a bus never changes another bus). With no slack bus, calculate_powerflow selects one.
+        % <@Stale> equilibrium
+        l_isSlack      (1,1) logical = false;
+    end
+    properties (Access={?SolverODE}) % Simulation working data
+        l_isFault (1,1) logical = false         % True while an active fault of a scenario is applied at the bus (working data of the simulation).
+    end
 
+    properties (SetAccess=protected) % Layer Structure
+        a_PowerNetwork                          % PowerNetwork the bus belongs to ([] when removed).
+        a_Component (:,1) = cell(0,1)           % Components connected to the bus. <@Stale> equilibrium
+        c_Vequilibrium      = 1;                % [pu] Voltage phasor at the equilibrium (the bus owns it; components and controllers read it).
+    end
+    properties (SetAccess=protected) % OPF
+        f_opfcost    = []   % OPF cost handle @(v, p) set by set_opffcn; it replaces the default cost of the bus ([]: none). <@Stale> nothing (logged)
+        f_opfconst   = []   % OPF constraint handle @(v, p) set by set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing (logged)
+        l_opfdefault = true % Whether the default OPF constraints of the bus are kept (DefaultConstraint of set_opffcn). <@Stale> nothing (logged)
+    end
+    properties (Dependent) % Parameter
         % Parameter table: dynamics, operation, powerflow and graph; writing it writes the parameters.
         %
         % - `powerflow`: V, Varg [pu, rad], the voltage settings used by a slack bus (V also by a
@@ -53,26 +76,6 @@ classdef Bus < PowerSystemModel
         % All are set by add_bus or by writing the table. An edit of powerflow or dynamics makes
         % the equilibrium stale; operation and graph make nothing stale.
         tab_parameter
-        c_Iequilibrium           % [pu] Current injection at the equilibrium: sum of the component currents (0 without components).
-    end
-    properties % Power Flow
-        % True for the slack bus (at most one per network).
-        % Setting it requires a component; the network then clears the flags of the other buses
-        % (a bus never changes another bus). With no slack bus, calculate_powerflow selects one.
-        % <@Stale> equilibrium
-        l_isSlack      (1,1) logical = false;
-    end
-    properties (Access={?SolverODE})
-        l_isFault (1,1) logical = false         % True while an active fault of a scenario is applied at the bus (working data of the simulation).
-    end
-
-    properties (SetAccess=protected) % Layer Structure
-        a_PowerNetwork                          % PowerNetwork the bus belongs to ([] when removed).
-        a_Component (:,1) = cell(0,1)           % Components connected to the bus. <@Stale> equilibrium
-        c_Vequilibrium      = 1;                % [pu] Voltage phasor at the equilibrium (the bus owns it; components and controllers read it).
-        f_opfcost    = []   % OPF cost handle @(v, p) set by set_opffcn; it replaces the default cost of the bus ([]: none). <@Stale> nothing (logged)
-        f_opfconst   = []   % OPF constraint handle @(v, p) set by set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing (logged)
-        l_opfdefault = true % Whether the default OPF constraints of the bus are kept (DefaultConstraint of set_opffcn). <@Stale> nothing (logged)
     end
     properties (Hidden,SetAccess=protected) % Parameter
         para_dynamics                           % Parameter: Gshunt, Bshunt
@@ -84,7 +87,7 @@ classdef Bus < PowerSystemModel
         parent                                  % Layer Structure
         children                                % Layer Structure
     end
-    properties (SetAccess={?SolverODE, ?Component}, Hidden)
+    properties (SetAccess={?SolverODE, ?Component}, Hidden) % Simulation working data
         iv_odeX  = zeros(0,1);      % Positions of the bus voltage [Vre; Vim] in the simulation vector.
         iv_odeI  = zeros(0,1);      % Positions of the bus current [Ire; Iim] in the simulation vector.
         iv_odeU  = zeros(0,1);      % Not set by the simulation (a bus has no inputs).

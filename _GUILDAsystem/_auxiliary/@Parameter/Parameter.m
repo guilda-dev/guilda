@@ -34,7 +34,7 @@ classdef Parameter < auxiliary & LayerPackage & dynamicprops
         % <@Type> LayerPackage
         a_cls
     end
-    properties(Dependent) % Parameters
+    properties(Dependent) % Parameter
 
         % Parameter table generated from the dynamic properties.
         % One column per parameter; a container without parameters gives a table with the
