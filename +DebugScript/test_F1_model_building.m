@@ -665,8 +665,8 @@ end
 net.a_Bus{5}.s_tag = "BX";
 tab = net.tab_editLog;
 assert(height(tab) == 11)   % 1 回の編集は 1 行 (同じ行を 2 回数えない)
-assert(isequal(tab.ID(1:2:10), repmat(string(comp5)+"/BX/TestSystem", 5, 1)) ...   % 改名前の行も 1 行ずつ
-    || isequal(tab.ID(1:2:10), repmat(string(comp5)+"/B005/TestSystem", 5, 1)))
+assert(isequal(tab.ID(1:2:10), repmat("powerflow/"+string(comp5)+"/BX/TestSystem", 5, 1)) ...   % 改名前の行も 1 行ずつ
+    || isequal(tab.ID(1:2:10), repmat("powerflow/"+string(comp5)+"/B005/TestSystem", 5, 1)))
 assert(isequal([tab.after{1:2:10}]', P5 - 0.01*(1:5)') && isequal([tab.after{2:2:10}]', P6 - 0.01*(1:5)'))
 assert(tab.tag(end) == "Tag")
 
