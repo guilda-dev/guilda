@@ -7,7 +7,7 @@ function [prob, x0, const, Vvar] = build_opf_problem(obj, prob, x0, const, Vvar,
 % See also PowerNetwork.build_opf_problem, Component.build_opf_problem
 %
 % <@Group> Called by analyses
-    arguments
+    arguments (Input)
         obj 
         prob  = optimproblem("Objective",struct("GenCost",0));   % optimproblem to extend.
         x0    = struct();   % Struct of initial values, extended.

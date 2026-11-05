@@ -29,7 +29,7 @@ function path = export_csv(obj, path, opt)
 %
 % <@Group> Data IO
 
-    arguments
+    arguments (Input)
         obj
         path            (1,1) string   % Model folder to write (created; its parent must exist).
         opt.Overwrite   (1,1) logical = false   % Replace an existing folder.

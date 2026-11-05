@@ -8,6 +8,10 @@ function add_global_controller(obj, a_Gcon)
 % See also PowerNetwork.remove_global_controller, GlobalController
 %
 % <@Group> Model building
+    arguments (Input)
+        obj
+        a_Gcon (1,1) GlobalController   % Global controller built for this network.
+    end
     if ismember(a_Gcon.s_tag, string(obj.a_GlobalController))
         error(msg("GUILDA:PowerNetwork:GconTagInUse", char(a_Gcon.s_tag), char(obj.s_tag)))
     end

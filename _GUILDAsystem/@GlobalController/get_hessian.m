@@ -16,20 +16,18 @@ function varargout = get_hessian(obj, x, V, I, u)
 % two dimensions). A method may return [] for an all-zero Hessian. Hessian_dx is
 % required; Hessian_Y is needed only when its output is requested.
 %
-% Outputs (`varargout`, in this order):
-%
-% - `H_dx` — Hessians of fcn_dx: n_x x n_z x n_z.
-% - `H_Y` — Hessians of fcn_y: n_y x n_z x n_z.
-%
 % See also GlobalController.get_sys
 %
 % <@Group> Queries and checks
-    arguments
+    arguments (Input)
         obj
         x (:,1) double = obj.rv_Xequilibrium   % States.
         V (:,1) double = zeros(2,1)   % Not a port: zeros(2,1).
         I (:,1) double = zeros(2,1)   % Not a port: zeros(2,1).
         u (:,1) double = obj.rv_Uequilibrium   % Inputs (states of the controlled units).
+    end
+    arguments (Output, Repeating)
+        varargout   % In this order: H_dx (fcn_dx, n_x x n_z x n_z), H_Y (fcn_y, n_y x n_z x n_z).
     end
     c_method = {"Hessian_dx", numel(obj.sv_x); "Hessian_Y", numel(obj.sv_y)};
     param    = obj.tab_parameter.dynamics{:,obj.sv_para};

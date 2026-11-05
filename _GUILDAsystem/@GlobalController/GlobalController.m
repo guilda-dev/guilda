@@ -22,6 +22,8 @@ classdef GlobalController < PowerSystemModel
 %   does not own its units and is not a child of any bus.
 % - Only the network sets and clears `a_PowerNetwork` (`PowerNetwork.add_global_controller`
 %   calls `set_parent`, which marks the handles stale).
+% - The handles `f_*` @(t,x,V,I,u) bind param and omega0; `set_odefcn` builds them, called
+%   by `check_edit`. An edit of `tab_parameter` makes the handles and the equilibrium stale.
 %
 % <@Examples>
 % ```matlab
@@ -37,11 +39,11 @@ classdef GlobalController < PowerSystemModel
 % See also PowerNetwork.add_global_controller, controller.agc.broadcast_PI_AGC, LocalController
 
     properties(Abstract, Constant, Hidden=true) % Subclass contract
-        key      (1,1) string   % Kind of controller.
-        sv_x    (:,1) string    % Names of the states.
-        sv_u    (:,1) string    % Names of the inputs (states of the controlled units).
-        sv_y    (:,1) string    % Names of the outputs (inputs of the controlled units).
-        sv_para (:,1) string    % Names of the dynamic parameters passed to the model functions.
+        key (1,1) string  % Kind of controller.
+        sv_x (:,1) string  % Names of the states.
+        sv_u (:,1) string  % Names of the inputs (states of the controlled units).
+        sv_y (:,1) string  % Names of the outputs (inputs of the controlled units).
+        sv_para (:,1) string  % Names of the dynamic parameters passed to the model functions.
     end
     methods (Abstract)
         % Return the state and input equilibria of the controller.
@@ -68,52 +70,58 @@ classdef GlobalController < PowerSystemModel
         M  = fcn_Mass(t, x, V, I, u, param, omega0)
     end       
 
-    % Handle cache @(t,x,V,I,u) with param and omega0 bound (set_odefcn, called by check_edit).
     properties(SetAccess=protected) % Cached function handles
-        f_Mass                                 % Mass matrix function @(t,x,V,I,u) with the parameters bound.
-        f_dx                                   % State equation function @(t,x,V,I,u) with the parameters bound.
-        f_Y                                    % Output function @(t,x,V,I,u) with the parameters bound.
-
-        f_JacobiDx                             % Jacobian function of f_dx.
-        f_JacobiY                              % Jacobian function of f_Y.
-    end    
+        f_Mass  % Mass matrix function @(t,x,V,I,u) with the parameters bound.
+        f_dx  % State equation function @(t,x,V,I,u) with the parameters bound.
+        f_Y  % Output function @(t,x,V,I,u) with the parameters bound.
+        f_JacobiDx  % Jacobian function of f_dx.
+        f_JacobiY  % Jacobian function of f_Y.
+    end
     properties (SetAccess=protected) % Layer Structure
-        a_PowerNetwork                         % PowerNetwork the controller belongs to (set by add_global_controller).
+        a_PowerNetwork  % PowerNetwork the controller belongs to (set by add_global_controller).
     end
     properties (SetAccess=protected, Hidden) % Layer Structure
-        controlledUnits                        % Controlled components, in the order given to the constructor.
+        controlledUnits  % Controlled components, in the order given to the constructor.
     end
     properties (SetAccess={?SolverODE}, Hidden) % Simulation working data
-        iv_odeX (:,1) double = zeros(0,1);
-        iv_odeU (:,1) double = zeros(0,1);
-        iv_odeY (:,1) double = zeros(0,1);        
-
-        rv_Xoffset = 0
-        rv_Uoffset = @(t) 0
-
-        l_isConnect (1,1) logical = true       % False while an active trip of a scenario names the controller (set by SolverODE); its output is then zero.
-    end        
+        iv_odeX (:,1) double = zeros(0,1);  % Positions of the states in the simulation vector.
+        iv_odeU (:,1) double = zeros(0,1);  % Positions of the observed unit states (the inputs) in the simulation vector.
+        iv_odeY (:,1) double = zeros(0,1);  % Positions of the driven unit inputs (the outputs) in the simulation vector.
+        rv_Xoffset = 0  % State offset added to the initial state (0 for a global controller).
+        rv_Uoffset = @(t) 0  % Input change over time (zero for a global controller).
+        l_isConnect (1,1) logical = true  % False while an active trip of a scenario names the controller (set by SolverODE); its output is then zero.
+    end
     properties(SetAccess={?PowerNetwork}) % Steady State
-        rv_Xequilibrium (:,1) double = zeros(0,1)   % State equilibrium (from get_equilibrium, set by PowerNetwork.initialize).
-        rv_Uequilibrium (:,1) double = zeros(0,1)   % Equilibrium of the observed states, one entry per input of each unit.
-    end    
+        rv_Xequilibrium (:,1) double = zeros(0,1)  % State equilibrium (from get_equilibrium, set by PowerNetwork.initialize).
+        rv_Uequilibrium (:,1) double = zeros(0,1)  % Equilibrium of the observed states, one entry per input of each unit.
+    end
     properties(SetAccess=protected) % Parameter
-        para_dynamics                          % Parameter object of tab_parameter.dynamics.
+        para_dynamics  % Dynamic parameters, one row per controlled unit; the sv_para columns are passed as param.
     end
     properties(Dependent) % Parameter
-        tab_parameter                          % Parameter table (dynamics): one row per controlled unit (row names: the unit tags); the columns sv_para are passed as param. An edit makes the handles and the equilibrium stale.
+        tab_parameter  % Parameter table: the para_* tables side by side (row names: the unit tags); writing it writes the parameters.
     end
     properties(Dependent, Access=protected) % Layer Structure
-        parent                                 % Layer Structure: the network.
-        children                               % Layer Structure: none.
+        parent  % Parent in the layer structure: the network.
+        children  % Children in the layer structure: none.
     end
-    
+
     methods
         function obj = GlobalController(net, tag, varargin)
             % Create a global controller of the network net that controls the given components.
             %
             % `varargin` lists the controlled components of net, as Component objects or
             % tags. Anything else stops with GUILDA:GlobalController:InvalidComponent.
+            arguments (Input)
+                net (1,1) PowerNetwork   % Network whose components are controlled.
+                tag (1,1) string         % Tag of the controller.
+            end
+            arguments (Input, Repeating)
+                varargin   % Controlled components of net, as Component objects or tags.
+            end
+            arguments (Output)
+                obj   % New GlobalController object.
+            end
             obj.s_tag = tag;
             obj.para_dynamics = Parameter(obj,"dynamics");
 
@@ -150,10 +158,7 @@ classdef GlobalController < PowerSystemModel
             % Linearize the global controller.
             %
             % The inputs are the outputs of the controlled units and the outputs are the
-            % controller outputs that feed them; the V and I ports are not used. The output
-            % sys is a descriptor state-space model (dss) with state, input and output names;
-            % `varargout` gives sys.StateName, sys.InputName and sys.OutputName as on the
-            % other layers.
+            % controller outputs that feed them; the V and I ports are not used.
             %
             % Out-of-date f_* handles are built first. A controller on a network stops with the
             % error GUILDA:PowerNetwork:EquilibriumStale when net.initialize() is needed.
@@ -163,13 +168,19 @@ classdef GlobalController < PowerSystemModel
             % See also GlobalController.get_hessian, PowerNetwork.get_sys
             %
             % <@Group> Called by analyses
-            arguments
+            arguments (Input)
                 obj                 
                 x        (:,1) double  = obj.rv_Xequilibrium   % States (default: the equilibrium).
                 V        (:,1) double  = zeros(2,1)   % Not a port: zeros(2,1).
                 I        (:,1) double  = zeros(2,1)   % Not a port: zeros(2,1).
                 u        (:,1) double  = obj.rv_Uequilibrium   % Inputs (default: the equilibrium).
                 opt.full (1,1) logical = false  % Ignored; kept for old calls.
+            end
+            arguments (Output)
+                sys   % Descriptor state-space model (dss) with state, input and output names.
+            end
+            arguments (Output, Repeating)
+                varargout   % sys.StateName, sys.InputName and sys.OutputName, as on the other layers.
             end
 
             a_Comp = obj.controlledUnits;
@@ -225,6 +236,9 @@ classdef GlobalController < PowerSystemModel
             % "editted": a dynamics edit, a network Hz edit or an attach since the last build).
             %
             % <@Group> Called by analyses
+            arguments (Input)
+                obj
+            end
             omega0 = obj.get_Hz();
             param = obj.tab_parameter.dynamics{:,obj.sv_para};
 
@@ -239,9 +253,13 @@ classdef GlobalController < PowerSystemModel
     end
     methods (Access={?Component,?LocalController,?PowerNetwork})        
         function set_parent(obj,net)
-            % net = [] detaches the controller (PowerNetwork.remove_global_controller)
+            % Set the network of the controller; net = [] detaches it (PowerNetwork.remove_global_controller).
             %
             % <@Group> Construction and attachment
+            arguments (Input)
+                obj
+                net   % PowerNetwork, or [] to detach the controller.
+            end
             obj.a_PowerNetwork = net;
             obj.mark_odefcn();        % the handles read the frequency of the network
         end

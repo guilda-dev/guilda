@@ -26,6 +26,13 @@ classdef LocalController < PowerSystemModel
 %   controller object attaches to one parent at a time.
 % - Differs from `Component` on purpose: no `fcn_I`, the output function is `fcn_y`, and
 %   the Jacobians are required. Inputs named X or Y are not allowed.
+% - `resolve_observe` (called by `set_parent`) expands "Xall" / "Yall" (`sr_reserved`) and
+%   sets where each input sv_u(k) is read on the observed component: iv_obsY(k) is its
+%   index in sv_y, iv_obsX(k) its index in sv_x, and both are 0 for an input that is not
+%   observed (its equilibrium value, or the output of a nested controller of the same name).
+% - The handles `f_*` @(t,x,V,I,u) bind param and omega0 (there is no f_I); `set_odefcn`
+%   builds them, called by `check_edit`. An edit of `tab_parameter` makes the handles and
+%   the equilibrium stale.
 %
 % Subclasses in the `controller` package define the static model functions (`fcn_dx`,
 % `fcn_y`, `fcn_Mass`), their Jacobians and the variable names. Controllers are attached
@@ -48,11 +55,11 @@ classdef LocalController < PowerSystemModel
 
 %% Abstract properties/methods    
     properties(Abstract, SetAccess=protected, Hidden) % Subclass contract
-        key      (1,1) string   % Kind of controller: "avr", "pss", "local" (attached in the place of an AVR) or "governor" (beside it).
-        sv_x    (:,1) string    % Names of the states.
-        sv_u    (:,1) string    % Names of the inputs.
-        sv_y    (:,1) string    % Names of the outputs.
-        sv_para (:,1) string    % Names of the dynamic parameters passed to the model functions.
+        key (1,1) string  % Kind: "avr", "pss", "local" (attached in the place of an AVR) or "governor" (beside it).
+        sv_x (:,1) string  % Names of the states.
+        sv_u (:,1) string  % Names of the inputs.
+        sv_y (:,1) string  % Names of the outputs.
+        sv_para (:,1) string  % Names of the dynamic parameters passed to the model functions.
     end
     methods (Abstract)
         % Set rv_Xequilibrium and rv_Uequilibrium of the controller and of its nested controllers.
@@ -87,74 +94,64 @@ classdef LocalController < PowerSystemModel
     
 %% Parameter    
     properties(SetAccess=protected) % Layer Structure
-        a_Component                            % Parent: the component, or the AVR for a PSS ([] when detached).
-        a_LocalController = cell(0,1)          % Nested controller (the PSS under an AVR), 0x1 or 1x1. <@Stale> equilibrium
+        a_Component  % Parent: the component, or the AVR for a PSS ([] when detached).
+        a_LocalController = cell(0,1)  % Nested controller (the PSS under an AVR), 0x1 or 1x1. <@Stale> equilibrium
     end
-
-    % Handle cache @(t,x,V,I,u) with param and omega0 bound (set_odefcn, called by check_edit).
-    % A local controller has no f_I.
     properties(SetAccess=protected) % Cached function handles
-        f_Mass                                 % Mass matrix function @(t,x,V,I,u) with the parameters bound.
-        f_dx                                   % State equation function @(t,x,V,I,u) with the parameters bound.
-        f_Y                                    % Output function @(t,x,V,I,u) with the parameters bound.
-
-        f_JacobiDx                             % Jacobian function of f_dx.
-        f_JacobiY                              % Jacobian function of f_Y.
-    end    
+        f_Mass  % Mass matrix function @(t,x,V,I,u) with the parameters bound.
+        f_dx  % State equation function @(t,x,V,I,u) with the parameters bound.
+        f_Y  % Output function @(t,x,V,I,u) with the parameters bound.
+        f_JacobiDx  % Jacobian function of f_dx.
+        f_JacobiY  % Jacobian function of f_Y.
+    end
     properties (SetAccess={?SolverODE}, Hidden) % Simulation working data
-        iv_odeX  = zeros(0,1);
-        iv_odeU  = zeros(0,1);
-        iv_odeY  = zeros(0,1);
-        lv_odeUfromLC = false(0,1);            % Inputs driven by an output of a nested controller.
-        iv_odeYtoU    = zeros(0,1);            % Index of each such input in the outputs of the nested controllers, stacked in order.
-
-        rv_Xoffset = 0
-        rv_Uoffset = @(t) 0
-        
-        l_hasController (1,1) logical = false
-    end    
+        iv_odeX = zeros(0,1);  % Positions of the states in the simulation vector.
+        iv_odeU = zeros(0,1);  % Positions of the inputs in the simulation vector.
+        iv_odeY = zeros(0,1);  % Positions of the parent inputs driven by the outputs sv_y, matched by name.
+        lv_odeUfromLC = false(0,1);  % Inputs driven by an output of a nested controller.
+        iv_odeYtoU = zeros(0,1);  % Index of each such input in the outputs of the nested controllers, stacked in order.
+        rv_Xoffset = 0  % State offset added to the initial state (0 for a local controller).
+        rv_Uoffset = @(t) 0  % Input change over time (zero for a local controller).
+        l_hasController (1,1) logical = false  % Whether a nested controller is attached.
+    end
     properties (SetAccess=private, Hidden) % Layer Structure
-        % Where each input sv_u(k) is read on the observed component (the component the
-        % controller is attached to, directly or through the controllers above it):
-        % iv_obsY(k) is its index in sv_y, iv_obsX(k) its index in sv_x, and both are 0 for
-        % an input that is not observed (its equilibrium value, or the output of a nested
-        % controller of the same name). Set by resolve_observe.
-        iv_obsY (:,1) double = zeros(0,1)
-        iv_obsX (:,1) double = zeros(0,1)
+        iv_obsY (:,1) double = zeros(0,1)  % Index in sv_y of the observed component of each input (0: not read from sv_y).
+        iv_obsX (:,1) double = zeros(0,1)  % Index in sv_x of the observed component of each input (0: not read from sv_x).
     end
     properties (Access=private) % Layer Structure
-        sv_uRequest (:,1) string = strings(0,1)   % sv_u as defined, before "Xall" / "Yall" are expanded
+        sv_uRequest (:,1) string = strings(0,1)  % sv_u as defined, before "Xall" / "Yall" are expanded.
     end
     properties (Constant, Hidden) % Layer Structure
-        % Reserved input names: an input "Xall" observes all the states sv_x of the
-        % component and an input "Yall" all its outputs sv_y (expanded when attached).
-        sr_reserved = ["Xall","Yall"]
+        sr_reserved = ["Xall","Yall"]  % Reserved input names: all the states sv_x / all the outputs sv_y of the component.
     end
     properties(SetAccess=protected) % Steady State
-        rv_Xequilibrium (:,1) double = zeros(0,1)   % State equilibrium (set by get_equilibrium of the subclass).
-        rv_Uequilibrium (:,1) double = zeros(0,1)   % Input equilibrium (set by get_equilibrium of the subclass).
-    end    
+        rv_Xequilibrium (:,1) double = zeros(0,1)  % State equilibrium (set by get_equilibrium of the subclass).
+        rv_Uequilibrium (:,1) double = zeros(0,1)  % Input equilibrium (set by get_equilibrium of the subclass).
+    end
 
     properties(Dependent) % Steady State
-        c_Vequilibrium                         % [pu] Voltage equilibrium of the parent (zeros(0,1) without a parent).
-        c_Iequilibrium                         % [pu] Current equilibrium of the parent (zeros(0,1) without a parent).
-    end    
-    
+        c_Vequilibrium  % [pu] Voltage equilibrium of the parent (zeros(0,1) without a parent).
+        c_Iequilibrium  % [pu] Current equilibrium of the parent (zeros(0,1) without a parent).
+    end
+
     properties(SetAccess=protected) % Parameter
-        para_dynamics                          % Parameter object of tab_parameter.dynamics.
+        para_dynamics  % Dynamic parameters; the sv_para columns are passed to the model functions as param.
     end
     properties(Dependent) % Parameter
-        tab_parameter                          % Parameter table of the controller (dynamics); the columns sv_para are passed to the model functions as param. An edit makes the handles and the equilibrium stale.
+        tab_parameter  % Parameter table: the para_* tables side by side; writing it writes the parameters.
     end
     properties(Dependent, Access=protected) % Layer Structure
-        parent                                 % Layer Structure: the parent.
-        children                               % Layer Structure: the nested controller.
+        parent  % Parent in the layer structure: the component, or the AVR for a PSS.
+        children  % Children in the layer structure: the nested controller.
     end
     
 %% Constructor    
     methods
         function obj = LocalController(tag)
             % Create a local controller with the given tag (called by the subclass constructors).
+            arguments (Input)
+                tag (1,1) string   % Tag of the controller.
+            end
             arguments (Output)
                 obj   % New controller, not attached yet.
             end
@@ -165,13 +162,20 @@ classdef LocalController < PowerSystemModel
 
 %% Methods    
     methods (Hidden)
-        function sv = driven_inputs(obj, comp) %#ok<INUSD>
+        function sv = driven_inputs(obj, comp)
             % Names of the inputs of the component comp that the controller drives once
             % attached to it (Component.add_local_controller checks them before the
             % attachment). sv_y by default; a controller whose outputs follow the component
             % (e.g. controller.local_LQR) overrides this.
             %
             % <@Group> Internal helpers
+            arguments (Input)
+                obj
+                comp   % Component the controller is to be attached to.
+            end
+            arguments (Output)
+                sv (:,1) string   % Names of the driven inputs of comp.
+            end
             sv = obj.sv_y;
         end
     end
@@ -181,6 +185,10 @@ classdef LocalController < PowerSystemModel
             % Attach a nested controller (the PSS under an AVR; Component.add_local_controller).
             %
             % <@Group> Construction and attachment
+            arguments (Input)
+                obj
+                a_Controller (1,1) LocalController   % Nested controller (the PSS).
+            end
             obj.a_LocalController = {a_Controller};
             obj.l_hasController = true;
         end
@@ -189,14 +197,21 @@ classdef LocalController < PowerSystemModel
             % Detach the nested controller (Component.add_local_controller, when an AVR is replaced; Component.remove_local_controller)
             %
             % <@Group> Construction and attachment
+            arguments (Input)
+                obj
+            end
             obj.a_LocalController = cell(0,1);
             obj.l_hasController = false;
         end
 
         function set_parent(obj,a_Component)
-            % a_Component = [] detaches the controller (Component.add_local_controller)
+            % Set the parent of the controller; a_Component = [] detaches it (Component.add_local_controller).
             %
             % <@Group> Construction and attachment
+            arguments (Input)
+                obj
+                a_Component   % Component, the AVR for a PSS, or [] to detach.
+            end
             obj.a_Component = a_Component; 
             obj.resolve_observe();        % inputs read on the component (also of nested controllers)
             obj.mark_odefcn();        % the handles read the frequency of the parent's network
@@ -209,6 +224,9 @@ classdef LocalController < PowerSystemModel
             % from sv_y. Without a component, the inputs stay as defined.
             %
             % <@Group> Construction and attachment
+            arguments (Input)
+                obj
+            end
             if isempty(obj.sv_uRequest)
                 obj.sv_uRequest = obj.sv_u;
             end
@@ -257,12 +275,16 @@ classdef LocalController < PowerSystemModel
     end
 
     methods (Access=protected)
-        function resolve_ports(obj, comp) %#ok
+        function resolve_ports(obj, comp)
             % Called by resolve_observe with the observed component before the inputs
             % are resolved: a controller whose ports depend on the component (e.g. the
             % inputs of the component it drives) sets them here. Does nothing by default.
             %
             % <@Group> Hooks for subclasses
+            arguments (Input)
+                obj
+                comp   % Observed component.
+            end
         end
 
         function set_inputs(obj, sv_name)
@@ -270,6 +292,10 @@ classdef LocalController < PowerSystemModel
             % uses "Xall" or "Yall" in sv_u overrides this (sv_u is defined by the subclass).
             %
             % <@Group> Hooks for subclasses
+            arguments (Input)
+                obj
+                sv_name (:,1) string   % Input names with "Xall" / "Yall" expanded.
+            end
             error(msg("GUILDA:LocalController:ReservedInputNoOverride", class(obj)))
         end
 
@@ -278,6 +304,12 @@ classdef LocalController < PowerSystemModel
             % controller (e.g. a PSS under an AVR) the component above them ([] if none)
             %
             % <@Group> Internal helpers
+            arguments (Input)
+                obj
+            end
+            arguments (Output)
+                comp   % Observed Component, or [] if none.
+            end
             comp = obj.a_Component;
             while isa(comp, "LocalController")
                 comp = comp.a_Component;
@@ -296,6 +328,9 @@ classdef LocalController < PowerSystemModel
             % "editted": a dynamics edit, a network Hz edit or an attach since the last build).
             %
             % <@Group> Called by analyses
+            arguments (Input)
+                obj
+            end
             omega0 = obj.get_Hz();
             param = obj.tab_parameter.dynamics{:,obj.sv_para}.';
 
@@ -315,6 +350,13 @@ classdef LocalController < PowerSystemModel
             % get method refers to its own property, even on another object.
             %
             % <@Group> Internal helpers
+            arguments (Input)
+                obj
+                s_prop (1,1) string   % Name of the equilibrium property of the parent.
+            end
+            arguments (Output)
+                val   % Value of that property, or zeros(0,1) without a parent.
+            end
             if isempty(obj.a_Component)
                 val = zeros(0,1);
             else

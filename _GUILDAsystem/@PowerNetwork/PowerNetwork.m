@@ -16,7 +16,12 @@ classdef PowerNetwork < PowerSystemModel
 %   `GlobalController.a_PowerNetwork`, `Scenario.a_PowerNetwork`).
 % - Every layer below reports its edits upward with `log_edit`; the network appends them to
 %   `tab_editLog` (`report_edit`) and passes each one to `handle_edit`, which keeps at most
-%   one slack bus. `l_staleEquilibrium` is derived from that log.
+%   one slack bus. Rows are appended once initialize has run and cleared at the end of
+%   initialize.
+% - `l_staleEquilibrium` is derived from that log: it is true when initialize has not run,
+%   or a row of tab_editLog affects the equilibrium (see edit_effect; edits of "dynamics",
+%   "base" (baseMVA) and "powerflow" parameters, topology and slack-bus changes, and an
+%   initialize that stopped while writing the equilibrium).
 %
 % A network is built by adding buses (`add_bus`) and branches (`add_branch`); the
 % components (generators, loads, ...) are added to the buses (`Bus.add_component`) and
@@ -30,8 +35,21 @@ classdef PowerNetwork < PowerSystemModel
 % - network diagrams (`draw_diagram`) and CSV / MATPOWER import and export
 %
 % Each analysis runs a solver object stored in a `solver_*` property. The properties of
-% that solver are the stored defaults; Name-Value options of a call override them for
-% that call only. Results are returned as result objects and never stored in the network.
+% that solver are the stored defaults, kept between runs; Name-Value options of a call
+% override them for that call only. Results are returned as result objects and never
+% stored in the network or the solver.
+%
+% The scenarios (`a_Scenario`) are added by `add_scenario` and removed by
+% `remove_scenario`; they are not model data and do not make the equilibrium stale.
+%
+% The parameters of the network (`tab_parameter.base`):
+%
+% - `Hz` [Hz]: nominal frequency. Models read it with get_Hz() and receive it as omega0.
+%   Set by the constructor (GUILDA.config("Model","Hz")), by writing the table and by
+%   import_csv. An edit makes the function handles of every layer stale.
+% - `baseMVA` [MVA]: system base of all per-unit values (default 100). Stored per-unit
+%   values are not converted when it changes. Set by the constructor, by writing the
+%   table, import_csv and import_matpower. An edit makes the equilibrium stale.
 %
 % Power-flow settings are parameters of the buses (`tab_parameter.powerflow`: V, Varg)
 % and the components (`tab_parameter.powerflow`: P, Q). OPF limits and costs are in
@@ -65,105 +83,47 @@ classdef PowerNetwork < PowerSystemModel
 %% Properties
 
     properties(SetAccess=private) % Layer Structure
-       a_Bus              (:,1) cell = cell(0,1);   % Buses of the network, in the order of the bus index. <@Stale> equilibrium
-       a_Branch           (:,1) cell = cell(0,1);   % Branches of the network. <@Stale> equilibrium
-       a_GlobalController (:,1) cell = cell(0,1);   % Global controllers of the network. <@Stale> equilibrium
+        a_Bus (:,1) cell = cell(0,1);  % Buses of the network, in the order of the bus index. <@Stale> equilibrium
+        a_Branch (:,1) cell = cell(0,1);  % Branches of the network. <@Stale> equilibrium
+        a_GlobalController (:,1) cell = cell(0,1);  % Global controllers of the network. <@Stale> equilibrium
     end
     properties(SetAccess=private) % Scenarios
-       % Simulation scenarios of the network (Scenario objects), in the order they were added.
-       % Added by add_scenario and removed by remove_scenario; not model data (they do not make
-       % the equilibrium stale).
-       % <@Stale> nothing (not logged)
-       a_Scenario (:,1) cell = cell(0,1);
+        a_Scenario (:,1) cell = cell(0,1);  % Simulation scenarios (Scenario), in the order added by add_scenario; not model data. <@Stale> nothing (not logged)
     end
     properties(SetAccess=private) % Edit log
-        % Log of the edits made to the network and its layers since the last initialize.
-        % Columns: timestamp, ID, log message, tag, and the states before and after the edit.
-        % Rows are appended once initialize has run and cleared at the end of initialize.
-        % <@Type> table (Nx6)
-        % <@Stale> nothing
         tab_editLog = table('Size',[0 6], 'VariableTypes',["string","string","string","string","cell","cell"], ...
-                            'VariableNames',["timestamp","ID","log","tag","before","after"]);
+                            'VariableNames',["timestamp","ID","log","tag","before","after"]);  % Edits since the last initialize: timestamp, ID, log message, tag, states before and after. <@Type> table (Nx6) <@Stale> nothing
     end
     properties(Dependent, Hidden) % Edit log
-        % True when the equilibrium set by initialize no longer matches the model: initialize
-        % has not run, or a row of tab_editLog affects the equilibrium (see edit_effect;
-        % edits of "dynamics", "base" (baseMVA) and "powerflow" parameters, topology and
-        % slack-bus changes, and an initialize that stopped while writing the equilibrium).
-        % <@Type> logical
-        l_staleEquilibrium
+        l_staleEquilibrium  % True when the equilibrium of initialize no longer matches the model (see the class help). <@Type> logical
     end
     properties(SetAccess=protected) % Solvers
-
-        % SolverPF solver of net.calculate_powerflow.
-        % Its properties are the stored defaults (Method, Tolerance, MaxIterations, ...),
-        % kept between runs; Name-Value options of a call override them for that call
-        % only. Results are returned as a ResultPF, never stored in the solver.
-        % <@Type> SolverPF
-        % <@Stale> nothing
-        solver_PF  
-
-        % SolverOPF solver of net.optimize_powerflow.
-        % Its properties are the stored defaults (Method, Solver, Display, MaxIteration,
-        % ...), kept between runs; Name-Value options of a call override them for that
-        % call only. Results are returned as a ResultOPF, never stored in the solver.
-        % <@Type> SolverOPF
-        % <@Stale> nothing
-        solver_OPF 
-
-        % SolverCPF solver of net.calculate_continuation_powerflow.
-        % Its properties are the stored defaults (LoadBus, MaxIterations, StepSize, ...),
-        % kept between runs; Name-Value options of a call override them for that call
-        % only. Results are returned as a ResultCPF, never stored in the solver.
-        % <@Type> SolverCPF
-        % <@Stale> nothing
-        solver_CPF
-
-        % SolverODE solver of net.simulate.
-        % Its properties are the stored defaults (Solver, RelativeTolerance,
-        % AbsoluteTolerance, Progress, TimeLimit, ...), kept between runs; Name-Value
-        % options of a call override them for that call only. Results are returned as an
-        % ResultODE, never stored in the solver.
-        % <@Type> SolverODE
-        % <@Stale> nothing
-        solver_ODE 
-
-        % SolverLIN solver of net.linearize and net.get_sys.
-        % Its properties are the stored defaults (Algorithm, Point, Coordinate), kept between
-        % runs; Name-Value options of a call override them for that call only. Results are
-        % returned as a ResultLIN, never stored in the solver.
-        % <@Type> SolverLIN
-        % <@Stale> nothing
-        solver_LIN
+        solver_PF  % Solver of calculate_powerflow (returns a ResultPF); stored defaults: Method, Tolerance, MaxIterations, ... <@Type> SolverPF <@Stale> nothing
+        solver_OPF  % Solver of optimize_powerflow (returns a ResultOPF); stored defaults: Method, Solver, Display, MaxIteration, ... <@Type> SolverOPF <@Stale> nothing
+        solver_CPF  % Solver of calculate_continuation_powerflow (returns a ResultCPF); stored defaults: LoadBus, MaxIterations, StepSize, ... <@Type> SolverCPF <@Stale> nothing
+        solver_ODE  % Solver of simulate (returns a ResultODE); stored defaults: Solver, RelativeTolerance, AbsoluteTolerance, Progress, TimeLimit, ... <@Type> SolverODE <@Stale> nothing
+        solver_LIN  % Solver of linearize and get_sys (returns a ResultLIN); stored defaults: Algorithm, Point, Coordinate. <@Type> SolverLIN <@Stale> nothing
     end
     properties(Dependent) % Steady State
-        cv_Vequilibrium         % [pu] Bus voltage phasors at the equilibrium, one per bus.
-        cv_Iequilibrium         % [pu] Bus current injections at the equilibrium, one per bus.
-        rv_Xequilibrium         % State equilibrium, in the order of the x rows of get_variable_map.
+        cv_Vequilibrium  % [pu] Bus voltage phasors at the equilibrium, one per bus.
+        cv_Iequilibrium  % [pu] Bus current injections at the equilibrium, one per bus.
+        rv_Xequilibrium  % State equilibrium, in the order of the x rows of get_variable_map.
     end
     properties(Dependent) % Parameter
-        % Parameter table of the network (base: Hz and baseMVA); writing it writes the parameters.
-        %
-        % - `Hz` [Hz]: nominal frequency. Models read it with get_Hz() and receive it as omega0.
-        %   Set by the constructor (GUILDA.config("Model","Hz")), by writing the table and by
-        %   import_csv. An edit makes the function handles of every layer stale.
-        % - `baseMVA` [MVA]: system base of all per-unit values (default 100). Stored per-unit
-        %   values are not converted when it changes. Set by the constructor, by writing the
-        %   table, import_csv and import_matpower. An edit makes the equilibrium stale.
-        tab_parameter
+        tab_parameter  % Parameter table: the para_* tables side by side; writing it writes the parameters.
     end
     properties(Hidden,SetAccess=protected) % Parameter
-        para_base               % Parameter: Hz (nominal frequency) and baseMVA (system base) of the whole network
+        para_base  % Hz [Hz]: nominal frequency, read with get_Hz() and passed as omega0; baseMVA [MVA]: system base of all per-unit values (default 100).
     end
     properties(SetAccess=protected) % OPF
-        f_opfcost    = []   % OPF cost handle @(v, p) set by set_opffcn; it replaces the default cost of the network ([]: none). <@Stale> nothing (logged)
-        f_opfconst   = []   % OPF constraint handle @(v, p) set by set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing (logged)
-        l_opfdefault = true % Whether the default OPF constraints of the network are kept (DefaultConstraint of set_opffcn). <@Stale> nothing (logged)
+        f_opfcost = []  % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the network ([]: none). <@Stale> nothing (logged)
+        f_opfconst = []  % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing (logged)
+        l_opfdefault = true  % Whether the default OPF constraints of the network are kept (DefaultConstraint of set_opffcn). <@Stale> nothing (logged)
     end
     properties(Dependent, Access=protected) % Layer Structure
-        parent                  % Layer Structure
-        children                % Layer Structure
-    end    
+        parent  % Parent in the layer structure: none (the network is the top).
+        children  % Children in the layer structure: the buses, branches and global controllers, then the Parameter object.
+    end
 
 %% Constructor
     methods
@@ -172,7 +132,7 @@ classdef PowerNetwork < PowerSystemModel
             %
             % The nominal frequency is GUILDA.config("Model","Hz") and the system base is
             % 100 MVA (net.tab_parameter.base).
-            arguments
+            arguments (Input)
                 tag (1,1) string = "PowerNetwork";   % Tag of the network.
             end
             arguments (Output)
@@ -242,6 +202,12 @@ classdef PowerNetwork < PowerSystemModel
             % into a warning, so an incomplete restore is reported as a warning.
             %
             % <@Group> Data IO
+            arguments (Input)
+                obj   % Network read from the MAT file.
+            end
+            arguments (Output)
+                obj   % Network with the listeners of its parameters restored.
+            end
             if ~restore_parameter_listeners(obj)
                 warning(msg("GUILDA:PowerNetwork:IncompleteLoad", obj.s_tag))
             end
@@ -256,6 +222,10 @@ classdef PowerNetwork < PowerSystemModel
             % the network-wide rules (handle_edit), also before the first initialize.
             %
             % <@Group> Called by analyses
+            arguments (Input)
+                obj
+                tab table   % Edit-log row reported by a layer (variables timestamp, ID, log, tag, before, after).
+            end
             if obj.sct_edit.l_initialized
                 obj.tab_editLog = [obj.tab_editLog; tab];
             end
@@ -266,6 +236,9 @@ classdef PowerNetwork < PowerSystemModel
             % Mark every layer as initialized and clear the edit log (end of initialize).
             %
             % <@Group> Called by analyses
+            arguments (Input)
+                obj
+            end
             reset_edit@LayerPackage(obj);
             obj.tab_editLog(1:end,:) = [];
         end
@@ -275,6 +248,10 @@ classdef PowerNetwork < PowerSystemModel
             % "Slack" edit (ID starts with its tag); the network releases the others.
             %
             % <@Group> Called by analyses
+            arguments (Input)
+                obj
+                tab table   % Edit-log row just appended to tab_editLog (variables ID and tag).
+            end
             if tab.tag ~= "Slack"
                 return
             end
@@ -298,6 +275,9 @@ classdef PowerNetwork < PowerSystemModel
             % that are not up to date; error if net.initialize() is needed.
             %
             % <@Group> Called by analyses
+            arguments (Input)
+                obj
+            end
             obj.check_edit("RequireEquilibrium", true);
         end
     end
@@ -360,6 +340,12 @@ function l_complete = restore_parameter_listeners(layer)
 % l_complete is false when a layer is still being loaded (the MAT file holds a variable
 % below the network, which loads the network from inside that layer): its parameters are
 % not available yet.
+    arguments (Input)
+        layer   % PowerNetwork, Bus, Branch, Component or controller.
+    end
+    arguments (Output)
+        l_complete (1,1) logical   % False when a layer is still being loaded.
+    end
     l_complete = true;
     mc = metaclass(layer);
     lv = startsWith(string({mc.PropertyList.Name}), "para_") & ~[mc.PropertyList.Dependent];

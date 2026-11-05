@@ -41,7 +41,7 @@ function net = import_matpower(mpc, opt)
 %
 % <@Group> Data IO
 
-    arguments
+    arguments (Input)
         mpc   % MATPOWER case: the struct (baseMVA, bus, gen, branch, optional gencost), the name of a case function on the path ("case14"), a .m or .mat case file, or a function handle that returns the struct.
         opt.GeneratorModel      (1,1) string  = "gen-park"   % Component key of every generator (e.g. "gen-park", "gen-classical", "gen-1axis").
         opt.GeneratorParameter                = nan   % Dynamic parameters of every generator (the parameter argument of add_component); NaN uses the defaults of the model class (first row of its parameter.csv).

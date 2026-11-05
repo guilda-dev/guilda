@@ -8,7 +8,7 @@ function remove_component(obj, s_tag)
 % See also Bus.add_component
 %
 % <@Group> Construction and editing
-    arguments
+    arguments (Input)
         obj 
         s_tag (1,1) string   % Tag of the component to remove.
     end

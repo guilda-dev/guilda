@@ -11,7 +11,7 @@ function remove_global_controller(obj, sr_GconTag)
 % See also PowerNetwork.add_global_controller
 %
 % <@Group> Model building
-    arguments
+    arguments (Input)
         obj
         sr_GconTag (1,:) string   % Tags of the global controllers to remove.
     end

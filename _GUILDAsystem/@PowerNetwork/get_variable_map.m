@@ -34,7 +34,7 @@ function [tab, c_idxBus, c_idxGC] = get_variable_map(obj, s_form)
 % See also PowerNetwork.linearize, Bus.get_variable_map, Component.get_variable_map
 %
 % <@Group> Called by analyses
-    arguments
+    arguments (Input)
         obj
         s_form (1,1) string {mustBeMember(s_form, ["table","rows"])} = "table" % "rows" (internal): return the rows without the table.
     end

@@ -32,12 +32,6 @@ function varargout = optimize_powerflow(obj, varargin)
 % - `Plot` — Call result.Plot after the calculation. Default: false.
 % - `Export` — Call result.Export after the calculation: true for the default file name, or the file name. Default: false.
 %
-% Outputs:
-%
-% - `result` — Bus values, connection injections, branch flows, cost and Lagrange multipliers of the solution.
-% - `flag` — exitflag of solve (positive = solved).
-% - `output` — Solver details; output.message describes the outcome.
-%
 % <@Examples>
 % ```matlab
 % [res, flag] = net.optimize_powerflow();            % AC OPF (net.solver_OPF.Method)
@@ -49,6 +43,15 @@ function varargout = optimize_powerflow(obj, varargin)
 % See also ResultOPF, SolverOPF, PowerNetwork.set_opffcn, PowerNetwork.build_opf_problem
 %
 % <@Group> OPF
+    arguments (Input)
+        obj
+    end
+    arguments (Input, Repeating)
+        varargin   % Name-Value options.
+    end
+    arguments (Output, Repeating)
+        varargout   % result (bus values, connection injections, branch flows, cost and Lagrange multipliers), flag (exitflag of solve, positive = solved), output (solver details; output.message describes the outcome).
+    end
 
     varargin = v3_opf_args(varargin);                         % COMPAT(v3)
     [c_nv, opt] = take_call_options(varargin);
@@ -87,7 +90,7 @@ function [c_nv, opt] = take_call_options(c_in)
 end
 
 function opt = call_options(opt)
-    arguments
+    arguments (Input)
         opt.Plot   (1,1) logical = false
         opt.Export {mustBeA(opt.Export, ["logical","string","char"])} = false
     end

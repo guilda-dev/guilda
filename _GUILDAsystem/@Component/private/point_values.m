@@ -1,11 +1,21 @@
 function [x, V, I, u, c_con] = point_values(obj, a_LC, rv_point)
-% Values of the component and of its local controllers a_LC (depth first) at a point,
-% rv_point in the order of obj.get_variable_map():
-%   x, V, u : read from rv_point
-%   I       : fcn_I at the point (the equilibrium current is passed for I)
-%   c_con{k}: {x, V, I, u} of a_LC{k}; its inputs are the outputs and states of the
-%             component it observes and the outputs of the other controllers connected
-%             to them by name, as in the simulation, and the equilibrium inputs for the others
+% Values of the component and of its local controllers a_LC (depth first) at a point.
+%
+% The inputs of a controller are the outputs and states of the component it observes and
+% the outputs of the other controllers connected to them by name, as in the simulation,
+% and the equilibrium inputs for the others.
+    arguments (Input)
+        obj
+        a_LC     (:,1) cell     % Local controllers of the component, depth first.
+        rv_point (:,1) double   % Point in the order of obj.get_variable_map().
+    end
+    arguments (Output)
+        x     % States of the component, read from rv_point.
+        V     % [pu] Bus voltage [Vre; Vim], read from rv_point.
+        I     % [pu] Current [Ire; Iim]: fcn_I at the point (the equilibrium current is passed for I).
+        u     % Inputs of the component, read from rv_point.
+        c_con % c_con{k}: {x, V, I, u} of a_LC{k}.
+    end
     nx  = numel(obj.sv_x);
     nxc = cellfun(@(c) numel(c.sv_x), a_LC);
     n_x = nx + sum(nxc);

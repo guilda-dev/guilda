@@ -13,6 +13,9 @@ function reset_opffcn(obj)
 % See also PowerNetwork.set_opffcn
 %
 % <@Group> Model building
+    arguments (Input)
+        obj
+    end
     obj.f_opfcost    = [];
     obj.f_opfconst   = [];
     obj.l_opfdefault = true;

@@ -8,15 +8,12 @@ function flag = validate(obj, l_message)
 % appears as "equilibrium (not connected)".
 %
 % <@Group> Queries and checks
-    arguments
+    arguments (Input)
         obj
         l_message (1,1) logical = true   % Print the comparison.
     end
     arguments (Output)
-        % Struct of tables: dx is the residual at the equilibrium, Axx, Bxu, ... the
-        % absolute differences of each Jacobian block, contract the status (PASS or FAIL)
-        % of each check and inputs the connection source of each input.
-        flag
+        flag   % Struct of tables: dx (residual at the equilibrium), Axx, Bxu, ... (absolute differences of each Jacobian block), contract (PASS or FAIL of each check), inputs (connection source of each input).
     end
 
     comp = obj.observed_component();

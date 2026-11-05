@@ -7,6 +7,9 @@ function reset_solver(obj)
 % See also SolverPF, SolverOPF, SolverCPF, SolverODE, SolverLIN
 %
 % <@Group> Model building
+    arguments (Input)
+        obj
+    end
     obj.solver_PF  = SolverPF();
     obj.solver_OPF = SolverOPF();
     obj.solver_CPF = SolverCPF();

@@ -8,7 +8,7 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Vvar, optio
 % See also PowerNetwork.build_opf_problem, Bus.build_opf_problem, Branch.set_opffcn
 %
 % <@Group> Called by analyses
-    arguments
+    arguments (Input)
         obj 
         prob  = optimproblem();   % optimproblem to extend.
         x0    = struct()   % Struct of initial values, extended.

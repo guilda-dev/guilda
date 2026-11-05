@@ -16,7 +16,7 @@ function remove_bus(obj, sr_BusTag, opt)
 % See also PowerNetwork.add_bus, PowerNetwork.remove_branch
 %
 % <@Group> Model building
-    arguments
+    arguments (Input)
         obj
         sr_BusTag (1,:) string   % Tags of the buses to remove.
         opt.RemoveBranches (1,1) logical = false   % Also remove the branches connected to the removed buses.

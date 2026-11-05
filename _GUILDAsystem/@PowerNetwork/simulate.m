@@ -60,7 +60,7 @@ function [result, flag, output] = simulate(obj, time, varargin)
 % See also Scenario, ResultODE, SolverODE, PowerNetwork.add_scenario, PowerNetwork.initialize
 %
 % <@Group> Simulation
-    arguments
+    arguments (Input)
         obj
         time = []   % [s] Simulation time [t0, tend], or [] for the Time of the scenarios (or the time span of the disturbances). May be left out.
     end
@@ -210,7 +210,7 @@ function [c_nv, opt] = take_call_options(c_in)
 end
 
 function opt = call_options(opt)
-    arguments
+    arguments (Input)
         opt.Export {mustBeA(opt.Export, ["logical","string","char"])} = false
     end
     if ischar(opt.Export)

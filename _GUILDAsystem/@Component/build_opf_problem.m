@@ -8,7 +8,7 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Busvar, opt
 % See also Bus.build_opf_problem, Component.set_opffcn
 %
 % <@Group> Called by analyses
-    arguments
+    arguments (Input)
         obj 
         prob   = optimproblem();   % optimproblem to extend.
         x0     = struct();   % Struct of initial values, extended.

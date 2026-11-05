@@ -20,7 +20,7 @@ function tab = get_variable_map(obj, s_form)
 % See also PowerNetwork.get_variable_map, Component.get_sys
 %
 % <@Group> Called by analyses
-    arguments
+    arguments (Input)
         obj
         s_form (1,1) string {mustBeMember(s_form, ["table","rows"])} = "table" % "rows" (internal): return the rows without the table.
     end

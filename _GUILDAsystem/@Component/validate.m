@@ -12,15 +12,12 @@ function flag = validate(obj, l_message)
 % validating a component that has no equilibrium.
 %
 % <@Group> Queries and checks
-    arguments
+    arguments (Input)
         obj
         l_message (1,1) logical = true   % Print the comparison.
     end
     arguments (Output)
-        % Struct of tables: dx and I are the residuals at the point, Axx, Bxv, ... the
-        % absolute differences of each Jacobian block, contract the status (PASS, FAIL
-        % or INFO) of each check and inputs the connection source of each input.
-        flag
+        flag   % Struct of tables: dx, I (residuals at the point), Axx, Bxv, ... (absolute differences of each Jacobian block), contract (PASS, FAIL or INFO of each check), inputs (connection source of each input).
     end
 
     % make variable

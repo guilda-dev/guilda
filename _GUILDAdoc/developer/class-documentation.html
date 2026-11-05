@@ -73,6 +73,7 @@
     <nav class="dev-toc" aria-label="Contents">
       <a href="#pipeline"><span lang="en">How the reference is generated</span><span lang="ja">リファレンス生成のしくみ</span></a>
       <a href="#where"><span lang="en">Where help comments go</span><span lang="ja">ヘルプコメントを書く場所</span></a>
+      <a href="#arguments"><span lang="en">Arguments blocks</span><span lang="ja">arguments ブロック</span></a>
       <a href="#hot-path"><span lang="en">Arguments of hot-path functions</span><span lang="ja">ホットパス関数の引数</span></a>
       <a href="#class-page"><span lang="en">Class page sections</span><span lang="ja">クラスのページの構成</span></a>
       <a href="#image"><span lang="en">Figure</span><span lang="ja">図</span></a>
@@ -198,14 +199,13 @@
 <span class="cd-c">% See also PowerNetwork, Component</span><span class="cd-pin">3</span>
 
   <span class="cd-k">properties</span> (SetAccess = protected) <span class="cd-c">% Parameters</span><span class="cd-pin">4</span>
-    <span class="cd-c">% [MVA] Base power.</span><span class="cd-pin">5</span>
-    r_Sbase (1,1) double = 100
+    r_Sbase (1,1) double = 100  <span class="cd-c">% [MVA] Base power.</span><span class="cd-pin">5</span>
   <span class="cd-k">end</span>
 
   <span class="cd-k">methods</span>
     <span class="cd-k">function</span> idx = add_component(obj, comp, opt)
     <span class="cd-c">% Connect a component.</span><span class="cd-pin">6</span>
-      <span class="cd-k">arguments</span>
+      <span class="cd-k">arguments</span> (Input)
         obj
         comp Component <span class="cd-c">% Component to add.</span><span class="cd-pin">7</span>
         opt.Check (1,1) logical = true
@@ -259,7 +259,7 @@
         <tr><td><span lang="en">Property group</span><span lang="ja">プロパティのグループ</span> <span class="cd-pin">4</span></td><td data-label="What to write" data-label-ja="書くもの"><span lang="en">A trailing comment on the <code>properties (...)</code> line.</span><span lang="ja"><code>properties (...)</code> 行の行末コメント。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">Name the group by role, with the same name in every class: e.g. <code>Parameter</code>, <code>OPF</code>, <code>Cached function handles</code>, <code>Simulation working data</code>, <code>Subclass contract</code> (abstract properties). Without it, properties are grouped by access.</span><span lang="ja">グループ名は役割で、どのクラスでも同じ名前。例: <code>Parameter</code>、<code>OPF</code>、<code>Cached function handles</code>、<code>Simulation working data</code>、<code>Subclass contract</code>（抽象プロパティ）。ない場合はアクセス属性でグループ分け。</span></td></tr>
         <tr><td><span lang="en">Unit</span><span lang="ja">単位</span> <span class="cd-pin">5</span></td><td data-label="What to write" data-label-ja="書くもの"><span lang="en">A leading <code>[unit]</code> in a property comment or an <code>arguments</code> comment.</span><span lang="ja">プロパティのコメントまたは <code>arguments</code> のコメントの先頭に書く <code>[unit]</code>。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en"><code>% [MVA] Base power.</code> The rest of the line is the summary.<small>Examples: <code>[pu]</code>, <code>[MVA]</code>, <code>[rad/s]</code>.</small></span><span lang="ja"><code>% [MVA] Base power.</code> 行の残りが概要。<small>例: <code>[pu]</code>、<code>[MVA]</code>、<code>[rad/s]</code>。</small></span></td></tr>
         <tr><td><span lang="en">Method group</span><span lang="ja">メソッドのグループ</span></td><td data-label="What to write" data-label-ja="書くもの"><span lang="en">The purpose group, e.g. <code>Called by analyses</code>. The first of these wins:<small>1. <code>% &lt;@Group&gt; name</code> in the method's help.</small><small>2. <code>% &lt;@Group&gt; name</code> directly above its declaration in the <code>methods</code> block of the classdef (for a method whose file is generated from a template).</small><small>3. A trailing comment on the <code>methods (...)</code> line that declares or defines it.</small><small>4. The verb prefix of the name.</small></span><span lang="ja">目的のグループ。例: <code>Called by analyses</code>。次の順で先にあるものを採用:<small>1. メソッドのヘルプ内の <code>% &lt;@Group&gt; name</code>。</small><small>2. classdef の <code>methods</code> ブロックで宣言の直上に書く <code>% &lt;@Group&gt; name</code>（テンプレートから生成されるファイルのメソッド用）。</small><small>3. 宣言・定義している <code>methods (...)</code> 行の行末コメント。</small><small>4. 名前の動詞接頭辞。</small></span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">Verb prefix: <code>set_</code>, <code>get_</code>, <code>add_</code>, <code>calculate_</code> and the other verbs each get a group; the constructor has its own; anything else is in Other.<small>The groups of <code>PowerNetwork</code> methods (Power flow, Simulation, ...) also label the Used by section of other classes.</small></span><span lang="ja">動詞接頭辞: <code>set_</code>、<code>get_</code>、<code>add_</code>、<code>calculate_</code> などの動詞ごとにグループ。コンストラクターは専用のグループ。それ以外は Other。<small><code>PowerNetwork</code> のメソッドのグループ（Power flow、Simulation など）は、他クラスの利用元の見出しにも使用。</small></span></td></tr>
-        <tr><td><span lang="en">Inputs</span><span lang="ja">入力</span> <span class="cd-pin">7</span></td><td data-label="What to write" data-label-ja="書くもの"><span lang="en">A trailing <code>% text</code> in the <code>arguments</code> block, or a comment line above the argument.</span><span lang="ja"><code>arguments</code> ブロック内の行末の <code>% text</code>、または引数の上のコメント行。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">Size, class, validators and defaults come from the same line.</span><span lang="ja">サイズ、クラス、検証関数、既定値は同じ行から読み取り。</span></td></tr>
+        <tr><td><span lang="en">Inputs</span><span lang="ja">入力</span> <span class="cd-pin">7</span></td><td data-label="What to write" data-label-ja="書くもの"><span lang="en">A trailing <code>% text</code> in the <code>arguments (Input)</code> block, or a comment line above the argument.</span><span lang="ja"><code>arguments (Input)</code> ブロック内の行末の <code>% text</code>、または引数の上のコメント行。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">Size, class, validators and defaults come from the same line.</span><span lang="ja">サイズ、クラス、検証関数、既定値は同じ行から読み取り。</span></td></tr>
         <tr><td><span lang="en">Outputs</span><span lang="ja">出力</span> <span class="cd-pin">8</span></td><td data-label="What to write" data-label-ja="書くもの"><span lang="en">The same, in an <code>arguments (Output)</code> block.</span><span lang="ja">同じ書き方を <code>arguments (Output)</code> ブロックで。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">Outputs without the block are listed by name only.</span><span lang="ja">このブロックがない出力は名前だけを掲載。</span></td></tr>
       </tbody>
     </table>
@@ -267,14 +267,30 @@
       <thead><tr><th><span lang="en">Comment target</span><span lang="ja">コメントの対象</span></th><th><span lang="en">Put the <code>%</code> block</span><span lang="ja"><code>%</code> ブロックの位置</span></th><th><span lang="en">Notes</span><span lang="ja">補足</span></th></tr></thead>
       <tbody>
         <tr><td><span lang="en">Class</span><span lang="ja">クラス</span></td><td data-label="Put the % block" data-label-ja="% ブロックの位置"><span lang="en">Directly below <code>classdef</code>.</span><span lang="ja"><code>classdef</code> の直下。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">A blank line or a <code>%%</code> section line ends the block.</span><span lang="ja">空行または <code>%%</code> のセクション行でブロックの終わり。</span></td></tr>
-        <tr><td><span lang="en">Property</span><span lang="ja">プロパティ</span></td><td data-label="Put the % block" data-label-ja="% ブロックの位置"><span lang="en">Directly above the declaration.</span><span lang="ja">宣言の直上。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">A trailing <code>% text</code> on the same line is used only when there is no block above.</span><span lang="ja">同じ行の行末の <code>% text</code> は、上にブロックがないときだけ使用。</span></td></tr>
-        <tr><td><span lang="en">Method</span><span lang="ja">メソッド</span></td><td data-label="Put the % block" data-label-ja="% ブロックの位置"><span lang="en">Directly after the <code>function</code> line, before the <code>arguments</code> blocks.</span><span lang="ja"><code>function</code> 行の直後、<code>arguments</code> ブロックの前。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">Works in <code>@Class/&lt;method&gt;.m</code>, in a function inside the classdef, and in <code>@Class/private/&lt;method&gt;.m</code>.<small>Abstract method or signature-only declaration: put the block above the signature in the <code>methods</code> block.</small></span><span lang="ja"><code>@Class/&lt;method&gt;.m</code>、classdef 内の関数、<code>@Class/private/&lt;method&gt;.m</code> のいずれでも可。<small>抽象メソッドやシグネチャだけの宣言: <code>methods</code> ブロック内のシグネチャの上にブロック。</small></span></td></tr>
+        <tr><td><span lang="en">Property</span><span lang="ja">プロパティ</span></td><td data-label="Put the % block" data-label-ja="% ブロックの位置"><span lang="en">One trailing comment on the declaration line, separated by exactly two spaces: <code>name = default  % Comment.</code></span><span lang="ja">宣言行の行末に 1 行のコメント。区切りはちょうど 2 つの空白: <code>name = default  % Comment.</code></span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">The comment fits on that line: no comment lines above the property and no padding to align columns. <code>[unit]</code> leads the comment; tags such as <code>&lt;@Type&gt;</code> and <code>&lt;@Stale&gt;</code> end the line.<small>Details that do not fit go in the class help or in the help of the method concerned. <code>tab_parameter</code> only says that it is the <code>para_*</code> tables side by side; each <code>para_*</code> comment lists its entries, with units.</small></span><span lang="ja">コメントはその 1 行に収める: プロパティの上のコメント行と、列をそろえる空白は不可。<code>[unit]</code> はコメントの先頭、<code>&lt;@Type&gt;</code> や <code>&lt;@Stale&gt;</code> などのタグは行の最後。<small>収まらない詳細はクラスのヘルプか、関係するメソッドのヘルプへ。<code>tab_parameter</code> のコメントは <code>para_*</code> の表を並べたものという説明のみ。各 <code>para_*</code> のコメントに項目と単位。</small></span></td></tr>
+        <tr><td><span lang="en">Method</span><span lang="ja">メソッド</span></td><td data-label="Put the % block" data-label-ja="% ブロックの位置"><span lang="en">Directly after the <code>function</code> line, before the <code>arguments (Input)</code> blocks.</span><span lang="ja"><code>function</code> 行の直後、<code>arguments (Input)</code> ブロックの前。</span></td><td data-label="Notes" data-label-ja="補足"><span lang="en">Works in <code>@Class/&lt;method&gt;.m</code>, in a function inside the classdef, and in <code>@Class/private/&lt;method&gt;.m</code>.<small>Abstract method or signature-only declaration: put the block above the signature in the <code>methods</code> block.</small></span><span lang="ja"><code>@Class/&lt;method&gt;.m</code>、classdef 内の関数、<code>@Class/private/&lt;method&gt;.m</code> のいずれでも可。<small>抽象メソッドやシグネチャだけの宣言: <code>methods</code> ブロック内のシグネチャの上にブロック。</small></span></td></tr>
       </tbody>
     </table>
 
+    <h3 id="arguments"><span lang="en">Arguments blocks</span><span lang="ja">arguments ブロック</span></h3>
+    <p lang="en">Arguments are described only in <code>arguments (Input)</code> and <code>arguments (Output)</code> blocks.</p>
+    <p lang="ja">引数の記述は <code>arguments (Input)</code> / <code>arguments (Output)</code> ブロックのみ。</p>
+    <ul lang="en">
+      <li>Input blocks are written <code>arguments (Input)</code>, never a bare <code>arguments</code>; repeating inputs are <code>arguments (Input, Repeating)</code>. MATLAB reads both forms the same way; the written form says which side the block describes.</li>
+      <li>Every method declares its inputs and outputs in these blocks, each entry with a trailing <code>% [unit] Description.</code>; <code>obj</code> is listed too, even when it is the only input. <code>Inputs:</code> or <code>Outputs:</code> prose in the help is not written.</li>
+      <li><code>varargin</code> goes in <code>arguments (Input, Repeating)</code> and <code>varargout</code> in <code>arguments (Output, Repeating)</code>: MATLAB accepts them in no other block.</li>
+      <li>Exempt: property <code>get.</code> / <code>set.</code> methods, where MATLAB allows no <code>arguments</code> block.</li>
+    </ul>
+    <ul lang="ja">
+      <li>入力のブロックの表記は <code>arguments (Input)</code>。<code>arguments</code> だけの表記は不可。繰り返し入力は <code>arguments (Input, Repeating)</code>。MATLAB の解釈はどちらも同じで、表記でブロックが入力側か出力側かを明示。</li>
+      <li>すべてのメソッドが入力と出力をこれらのブロックで宣言。各項目の行末に <code>% [unit] Description.</code>。入力が <code>obj</code> だけでも <code>obj</code> を記載。ヘルプに <code>Inputs:</code> / <code>Outputs:</code> の文章は書かない。</li>
+      <li><code>varargin</code> は <code>arguments (Input, Repeating)</code>、<code>varargout</code> は <code>arguments (Output, Repeating)</code>: MATLAB はこれ以外のブロックでは不可。</li>
+      <li>例外: プロパティの <code>get.</code> / <code>set.</code> メソッド。MATLAB が <code>arguments</code> ブロックを許さないため。</li>
+    </ul>
+
     <h3 id="hot-path"><span lang="en">Arguments of hot-path functions</span><span lang="ja">ホットパス関数の引数</span></h3>
-    <p lang="en">Arguments are described only in <code>arguments</code> and <code>arguments (Output)</code> blocks. What a block may check depends on how often the function runs.</p>
-    <p lang="ja">引数の記述は <code>arguments</code> / <code>arguments (Output)</code> ブロックのみ。ブロックで検査してよい範囲は関数の呼び出し頻度で区別。</p>
+    <p lang="en">What a block may check depends on how often the function runs.</p>
+    <p lang="ja">ブロックで検査してよい範囲は関数の呼び出し頻度で区別。</p>
     <table class="dg-table">
       <thead><tr><th><span lang="en">Function</span><span lang="ja">関数</span></th><th><span lang="en">Allowed in its arguments blocks</span><span lang="ja">arguments ブロックで使えるもの</span></th></tr></thead>
       <tbody>
@@ -292,7 +308,7 @@
     </ul>
 <pre class="cd-code"><span class="cd-k">function</span> DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)
 <span class="cd-c">% Add the equations of the component to the DAE residual.</span>
-    <span class="cd-k">arguments</span>
+    <span class="cd-k">arguments</span> (Input)
         obj
         t      (1,1) double  <span class="cd-c">% [s] Time.</span>
         x      (:,1) double  <span class="cd-c">% Variables of the network DAE.</span>
@@ -414,10 +430,7 @@
       </div>
       <div>
         <span class="dg-kicker"><span lang="en">Property comment</span><span lang="ja">プロパティのコメント</span></span>
-<pre class="cd-code" style="margin-top:8px"><span class="cd-c">% Solver used by calculate_powerflow.</span>
-<span class="cd-c">% &lt;@Type&gt; SolverPF</span>
-<span class="cd-c">% &lt;@Stale&gt; nothing</span>
-a_Solver</pre>
+<pre class="cd-code" style="margin-top:8px">solver_PF  <span class="cd-c">% Solver of calculate_powerflow. &lt;@Type&gt; SolverPF &lt;@Stale&gt; nothing</span></pre>
       </div>
     </div>
 
@@ -434,7 +447,7 @@ a_Solver</pre>
         <tr><td><code>Category</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">Nothing: the package is the category.</span><span lang="ja">不要: パッケージがカテゴリ。</span></td></tr>
         <tr><td><code>Constructor</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">The constructor's own comment block and <code>arguments</code> block.</span><span lang="ja">コンストラクター自身のコメントブロックと <code>arguments</code> ブロック。</span></td></tr>
         <tr><td><code>Signatures</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">Nothing: the <code>function</code> line and the <code>arguments</code> block. Show other call forms in <code>&lt;@Examples&gt;</code>.</span><span lang="ja">不要: <code>function</code> 行と <code>arguments</code> ブロックから読み取り。別の呼び出し方は <code>&lt;@Examples&gt;</code> で。</span></td></tr>
-        <tr><td><code>Parameters</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">Comments in the <code>arguments</code> block.</span><span lang="ja"><code>arguments</code> ブロック内のコメント。</span></td></tr>
+        <tr><td><code>Parameters</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">Comments in the <code>arguments (Input)</code> block.</span><span lang="ja"><code>arguments (Input)</code> ブロック内のコメント。</span></td></tr>
         <tr><td><code>Returns</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">Comments in the <code>arguments (Output)</code> block.</span><span lang="ja"><code>arguments (Output)</code> ブロック内のコメント。</span></td></tr>
         <tr><td><code>Calls</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">The See also line, or a sentence in the description.</span><span lang="ja">See also 行、または説明の中の文。</span></td></tr>
         <tr><td><code>Throws</code></td><td data-label="Write instead" data-label-ja="代わりに書くもの"><span lang="en">Nothing: read from the error IDs in <code>error(msg("GUILDA:..."))</code> calls.</span><span lang="ja">不要: <code>error(msg("GUILDA:..."))</code> 呼び出しのエラー ID から読み取り。</span></td></tr>
@@ -624,14 +637,14 @@ r_Sbase (1,1) double = 100</pre>
           ]
         },
         property: {
-          pasteHint: 'Paste this directly above the property declaration. A group name goes as a trailing comment on the "properties (...)" line.',
-          pasteHint_ja: 'プロパティ宣言の直上に貼り付け。グループ名は「properties (...)」行の行末コメントに記述。',
+          pasteHint: 'Append this to the property declaration line: name = default  % Comment. A group name goes as a trailing comment on the "properties (...)" line.',
+          pasteHint_ja: 'プロパティ宣言行の行末に追加: name = default  % Comment。グループ名は「properties (...)」行の行末コメントに記述。',
+          oneLine: true,
           declaredLabel: 'The declaration states the class, e.g. r_Sbase (1,1) double = 100',
           declaredLabel_ja: '宣言でクラスを示している（例: r_Sbase (1,1) double = 100）',
           fields: [
             { key: 'unit', label: 'Unit', rows: 1, placeholder: 'e.g. MVA, pu, rad/s', label_ja: '単位', placeholder_ja: '例: MVA, pu, rad/s' },
-            { key: 'summary', label: 'Summary (H1 line)', required: true, rows: 1, placeholder: 'e.g. Base power.', label_ja: '概要（H1 行）', placeholder_ja: '例: Base power.' },
-            { key: 'desc', label: 'Description', rows: 2, placeholder: 'Following comment lines. Markdown is supported.', label_ja: '説明', placeholder_ja: '続くコメント行。Markdown 可。' },
+            { key: 'summary', label: 'Summary', required: true, rows: 1, placeholder: 'One line, e.g. Base power.', label_ja: '概要', placeholder_ja: '1 行。例: Base power.' },
             { key: 'type', label: '<@Type>', declared: true, rows: 1, placeholder: 'e.g. SolverPF', placeholder_ja: '例: SolverPF' },
             { key: 'stale', label: '<@Stale>', rows: 1, placeholder: 'What an edit makes out of date, e.g. equilibrium', placeholder_ja: '編集で古くなるもの。例: equilibrium' },
             { key: 'deprecated', label: '<@Deprecated>', rows: 1, placeholder: 'Leave empty unless deprecated; name the replacement.', placeholder_ja: '非推奨でなければ空欄。非推奨なら代替を記入。' }
@@ -644,7 +657,7 @@ r_Sbase (1,1) double = 100</pre>
             { key: 'summary', label: 'Summary (H1 line)', required: true, rows: 1, placeholder: 'Starts with a verb, e.g. Connect a component.', label_ja: '概要（H1 行）', placeholder_ja: '動詞で開始。例: Connect a component.' },
             { key: 'desc', label: 'Description', rows: 3, placeholder: 'Following comment lines. Markdown is supported.', label_ja: '説明', placeholder_ja: '続くコメント行。Markdown 可。' },
             { key: 'seeAlso', label: 'See also', rows: 1, placeholder: 'e.g. remove_component, Component', label_ja: '関連項目（See also）', placeholder_ja: '例: remove_component, Component' },
-            { key: 'inputs', label: 'Inputs (arguments block)', kind: 'rows', block: 'arguments', namePattern: /^[A-Za-z]\w*(\.[A-Za-z]\w*)?$/, namePlaceholder: 'comp or opt.Check', label_ja: '入力（arguments ブロック）', namePlaceholder_ja: 'comp または opt.Check' },
+            { key: 'inputs', label: 'Inputs (arguments (Input) block)', kind: 'rows', block: 'arguments (Input)', namePattern: /^[A-Za-z]\w*(\.[A-Za-z]\w*)?$/, namePlaceholder: 'comp or opt.Check', label_ja: '入力（arguments (Input) ブロック）', namePlaceholder_ja: 'comp または opt.Check' },
             { key: 'outputs', label: 'Outputs (arguments (Output) block)', kind: 'rows', block: 'arguments (Output)', namePattern: /^[A-Za-z]\w*$/, namePlaceholder: 'idx', label_ja: '出力（arguments (Output) ブロック）' },
             { key: 'group', label: '<@Group>', rows: 1, placeholder: 'Purpose group, e.g. Called by analyses', placeholder_ja: '目的のグループ。例: Called by analyses' },
             { key: 'examples', label: '<@Examples>', kind: 'code', rows: 3, placeholder: 'MATLAB code; it is put in a ```matlab block.', placeholder_ja: 'MATLAB コード。```matlab ブロックに挿入。' },
@@ -931,6 +944,13 @@ r_Sbase (1,1) double = 100</pre>
 
         var any = head.length || tags.length || code.length || unit;
         if (any && !summary) error = error || str('needSummary');
+
+        // A property comment is one trailing line: the summary, then the tags.
+        if (FIELD_SETS[currentTarget].oneLine) {
+          var inline = tags.map(function (l) { return l.replace(/^%\s?/, ''); }).join(' ');
+          var line = head.length ? head[0] + (inline ? ' ' + inline : '') : '';
+          return { text: line ? '  ' + line : '', any: any, error: error };
+        }
 
         var out = head.slice();
         if (tags.length) out = out.concat(out.length > 1 ? ['%'] : [], tags);

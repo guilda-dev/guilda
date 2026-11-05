@@ -7,7 +7,7 @@ function set_equilibrium(obj, c_V, c_I, r_P, r_Q, opt)
 % With `rm_PQ` the components take the given powers instead, and r_P and r_Q are not used.
 %
 % <@Group> Called by analyses
-    arguments
+    arguments (Input)
         obj 
         c_V   % [pu] Bus voltage phasor.
         c_I   % [pu] Bus current injection phasor.
