@@ -46,6 +46,7 @@
     const routeParams = loader.getRouteParams();
     const className = routeParams.get('class');
     const methodName = routeParams.get('method');
+    loader.reloadOnRouteChange(['class', 'method']);
 
     const muted = (text) => `<span class="ref-muted">${text}</span>`;
     const cell = (value, fallback = muted('-')) => {
