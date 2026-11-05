@@ -31,7 +31,7 @@
 | 6 | `OL/solve.m:51-59` | 大域制御器の `get_sys` |
 | 7 | `OL/solve.m:61-62` | `Y` と `cv_V` |
 | 8 | `OL/solve.m:67-78` | ブロックを `blkdiag` で連結し、大域制御器を閉じる |
-| 9 | `OL/solve.m:85-94` | `s_block` (DAE) と `s_model` (Feedback 用) を作る |
+| 9 | `OL/solve.m:85-94` | `sct_block` (DAE) と `sct_model` (Feedback 用) を作る |
 | 10 | `OL/solve.m:96-110` | `flag` は全ブロックが有限かどうかだけ。`rcond_Avv` は記録するだけで判定しない |
 | 11 | `LR/get_ss.m:36-43` | Kron / Feedback / DAE へ変換 |
 

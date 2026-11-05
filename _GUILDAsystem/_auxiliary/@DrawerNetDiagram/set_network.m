@@ -14,7 +14,7 @@ function set_network(obj, net)
     
     Ymat = net.get_admittance_matrix();
     obj.cm_Ymat    = sparse(Ymat.Variables);
-    get_tab = @(bus) [array2table(bus.str_bustype,"VariableNames","Type"),...
+    get_tab = @(bus) [array2table(bus.s_bustype,"VariableNames","Type"),...
                       bus.tab_parameter(:,["operation","graph"])];
     obj.tab_bus    = tools.vcellfun(@(b) get_tab(b), a_bus);
 
@@ -22,14 +22,14 @@ function set_network(obj, net)
                       bra.tab_parameter(:,["operation","graph","dynamics"])];
     obj.tab_branch = tools.vcellfun(@(bra) get_tab(bra), a_branch);
 
-    obj.str_bus     = string(a_bus);
-    str_bus2bus     = tools.hcellfun(@(b) string(b.a_Bus), a_branch);
-    [~,obj.im_edge] = ismember(str_bus2bus, obj.str_bus);    
+    obj.sv_bus      = string(a_bus);
+    sm_bus2bus      = tools.hcellfun(@(b) string(b.a_Bus), a_branch);
+    [~,obj.im_edge] = ismember(sm_bus2bus, obj.sv_bus);    
 
     % If any bus is missing coordinates, use a force-directed layout to determine positions.
     rm_axis = obj.tab_bus.graph{:, ["Xaxis","Yaxis"]};
     if any(isnan(rm_axis(:)), 'all')
-        G      = graph(obj.im_edge(1,:), obj.im_edge(2,:), [], obj.str_bus);
+        G      = graph(obj.im_edge(1,:), obj.im_edge(2,:), [], obj.sv_bus);
         fig    = figure('Visible', 'off');
         h_temp = plot(G, 'Layout', 'force', 'UseGravity', true, 'Iterations', 100);
         x_main = h_temp.XData;
@@ -44,18 +44,18 @@ function set_network(obj, net)
 
     % extract component information
     i_comp = 0;
-    obj.str_component = string(nan(obj.n_component, 1));
+    obj.sv_component  = string(nan(obj.n_component, 1));
     obj.tab_component = cell(obj.n_component, 1);
     for i = 1:obj.n_bus
         a_busi   = a_bus{i};
-        str_busi = string(a_busi);
+        s_busi   = string(a_busi);
         a_compi  = a_busi.a_Component;
         n_compi  = numel(a_compi);
         tab_busindex = array2table(i,"VariableNames","bus");
         for j = 1:n_compi
             a_compij = a_compi{j};
             i_comp   = i_comp+1;
-            obj.str_component(i_comp) = replace(string(a_compij), str_busi, '');
+            obj.sv_component(i_comp) = replace(string(a_compij), s_busi, '');
             tab_classi = array2table(string(class(a_compij)), "VariableNames","class");
             obj.tab_component{i_comp} = [tab_busindex, tab_classi, a_compij.tab_parameter(:,["operation","graph"])];
             if any( isnan( obj.tab_component{i_comp}.graph{:,["Xaxis","Yaxis"]} ))
@@ -70,12 +70,12 @@ function set_network(obj, net)
 
 
     % Precompute matrices for efficient updates during plotting
-    obj.str_branch      = string(nan(obj.n_branch, 1));
+    obj.sv_branch       = string(nan(obj.n_branch, 1));
     obj.cm_Vbus2Ibranch = zeros(obj.n_branch*2, obj.n_bus);
     obj.cm_Vbus2Vbranch = zeros(obj.n_branch*2, obj.n_bus);
     SvdMaxYmat = nan(obj.n_branch, 1);
     for i = 1:obj.n_branch
-        obj.str_branch(i)     = string(a_branch{i});
+        obj.sv_branch(i)     = string(a_branch{i});
         Ymat_branchi          = a_branch{i}.get_admittance_matrix();
         obj.cm_Vbus2Ibranch(2*i-1:2*i, obj.im_edge(:,i)) = Ymat_branchi;
         obj.cm_Vbus2Vbranch(2*i-1:2*i, obj.im_edge(:,i)) = eye(2);

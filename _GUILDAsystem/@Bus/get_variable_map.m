@@ -1,4 +1,4 @@
-function [tab, c_idx] = get_variable_map(obj, str_form)
+function [tab, c_idx] = get_variable_map(obj, s_form)
 % Return the variable map of the bus: the order of its Point vector.
 %
 % Variable map of the bus: the rows of net.get_variable_map() that belong to it, in the
@@ -14,7 +14,7 @@ function [tab, c_idx] = get_variable_map(obj, str_form)
 % <@Group> Called by analyses
     arguments
         obj
-        str_form (1,1) string {mustBeMember(str_form, ["table","rows"])} = "table" % "rows" (internal): return the rows without the table.
+        s_form (1,1) string {mustBeMember(s_form, ["table","rows"])} = "table" % "rows" (internal): return the rows without the table.
     end
     arguments (Output)
         tab     % One row per variable: Index, Kind ("x" | "Vre" | "Vim" | "u"), Owner, Name, Label, Bus.
@@ -27,8 +27,8 @@ function [tab, c_idx] = get_variable_map(obj, str_form)
     c_x  = tools.cellfun(@(r) r{1}, c_comp);
     c_u  = tools.cellfun(@(r) r{3}, c_comp);
     sv_V = string(obj.attach_tag(["Vre";"Vim"]));
-    str_bus = string(obj.str_tag);
-    sm_V = [["Vre";"Vim"], repmat(str_bus,2,1), ["Vre";"Vim"], sv_V(:), repmat(str_bus,2,1)];
+    s_bus = string(obj.s_tag);
+    sm_V = [["Vre";"Vim"], repmat(s_bus,2,1), ["Vre";"Vim"], sv_V(:), repmat(s_bus,2,1)];
     c_rows = {vertcat(strings(0,5), c_x{:}); sm_V; vertcat(strings(0,5), c_u{:})};
 
     % rows of each component: its x, the bus V, its u
@@ -42,7 +42,7 @@ function [tab, c_idx] = get_variable_map(obj, str_form)
         c_idx{j} = [iv_x, n_xall + (1:2), iv_u]';
     end
 
-    if str_form == "rows"
+    if s_form == "rows"
         tab = c_rows;
         return
     end

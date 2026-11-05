@@ -5,12 +5,12 @@
 %
 % 実行: runtests("DebugScript.test_F27_park_equal_reactance")  または  DebugScript.run_all("Features","F27")
 
-str_warn = "GUILDA:PowerNetwork:EquilibriumResidual";
+s_warn = "GUILDA:PowerNetwork:EquilibriumResidual";
 
 
 %% Xq_p equal to Xq gives a finite equilibrium with Ed = 0
 [net, g2] = network_with("Xq_p", @(p) p.Xq);
-assert(warning_of(@() net.initialize) ~= str_warn)
+assert(warning_of(@() net.initialize) ~= s_warn)
 
 x = g2.rv_Xequilibrium;
 assert(all(isfinite(x)) && all(isfinite(g2.rv_Uequilibrium)))
@@ -41,7 +41,7 @@ end
 
 %% Xd_p equal to Xd gives a finite equilibrium
 [net, g2] = network_with("Xd_p", @(p) p.Xd);
-assert(warning_of(@() net.initialize) ~= str_warn)
+assert(warning_of(@() net.initialize) ~= s_warn)
 assert(all(isfinite(g2.rv_Xequilibrium)))
 assert(abs(g2.rv_Xequilibrium(g2.sv_x == "Eq") - g2.rv_Uequilibrium(2)) < 1e-12)   % Eq = Vfield
 
@@ -56,7 +56,7 @@ for k = 1:numel(net.a_Bus)
         g = net.a_Bus{k}.a_Component{j};
         if ~isa(g, "component.generator.park"), continue, end
         x_old = old_equilibrium(g.para_dynamics, g.c_Vequilibrium, g.c_Iequilibrium);
-        assert(norm(g.rv_Xequilibrium - x_old) < 1e-12 * norm(x_old), g.str_tag)
+        assert(norm(g.rv_Xequilibrium - x_old) < 1e-12 * norm(x_old), g.s_tag)
         n = n + 1;
     end
 end
@@ -72,11 +72,11 @@ end
 
 
 % ---- local functions ----
-function [net, g2] = network_with(str_para, fcn_value)
-% B002 の gen-park のパラメータ str_para を fcn_value(既定のパラメータ) にした 3 母線系統
+function [net, g2] = network_with(s_para, fcn_value)
+% B002 の gen-park のパラメータ s_para を fcn_value(既定のパラメータ) にした 3 母線系統
     [~, g] = DebugScript.helper.build_3bus("gen-park");
     p = g.tab_parameter.dynamics;
-    p.(str_para) = fcn_value(p);
+    p.(s_para) = fcn_value(p);
     [net, g2] = DebugScript.helper.build_3bus("gen-park", parameter=p);
 end
 
@@ -102,10 +102,10 @@ function x = old_equilibrium(para, c_V, c_I)
     x = [dst; 0; SE\(wst+ust)];
 end
 
-function str_id = warning_of(fcn)
+function s_id = warning_of(fcn)
 % 関数を実行し、最後の警告の ID を返す (なければ "")
     lastwarn("", "");
     evalc("fcn();");
-    [str_msg, str_id] = lastwarn();
-    str_id = string(DebugScript.helper.msg_id(str_msg, str_id));
+    [s_msg, s_id] = lastwarn();
+    s_id = string(DebugScript.helper.msg_id(s_msg, s_id));
 end

@@ -35,7 +35,7 @@ function [rv_point, l_equilibrium] = point_vector(layer, Point)
         rv_point = assemble(layer, @equilibrium_comp, @equilibrium_bus, @equilibrium_gc);
     elseif isnumeric(Point)
         if numel(Point) ~= n_var
-            error(msg("GUILDA:SolverLIN:PointSize", string(numel(Point)), string(layer.str_tag), string(n_var), lower(class_name(layer))))
+            error(msg("GUILDA:SolverLIN:PointSize", string(numel(Point)), string(layer.s_tag), string(n_var), lower(class_name(layer))))
         end
         rv_point = double(Point(:));
     else

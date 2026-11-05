@@ -9,17 +9,17 @@
 % 実行: runtests("DebugScript.test_I71_layer_get_sys")  または  DebugScript.run_all("Features","I71")
 
 % 共通設定 (各テストの前に毎回実行される)
-str_staleID = "GUILDA:PowerNetwork:EquilibriumStale";
-str_load    = ["B009","B010","B011","B012","B013","B014"];
+s_staleID   = "GUILDA:PowerNetwork:EquilibriumStale";
+sr_load     = ["B009","B010","B011","B012","B013","B014"];
 
 
 %% Layer get_sys before initialize asks for initialize
 [net, ~] = build_with_controllers();
 [gen, bus, avr, pss] = layers(net);
-assert_stale_error(@() gen.get_sys(), str_staleID)
-assert_stale_error(@() bus.get_sys(), str_staleID)
-assert_stale_error(@() avr.get_sys(), str_staleID)
-assert_stale_error(@() pss.get_sys(), str_staleID)
+assert_stale_error(@() gen.get_sys(), s_staleID)
+assert_stale_error(@() bus.get_sys(), s_staleID)
+assert_stale_error(@() avr.get_sys(), s_staleID)
+assert_stale_error(@() pss.get_sys(), s_staleID)
 
 
 %% Layer get_sys after a dynamics edit asks for initialize
@@ -27,22 +27,22 @@ assert_stale_error(@() pss.get_sys(), str_staleID)
 DebugScript.helper.quiet(@() net.initialize);
 [gen, bus, avr, pss] = layers(net);
 gen.tab_parameter.dynamics.D = 3 * gen.tab_parameter.dynamics.D;
-assert(net.s_edit.l_staleEquilibrium)
-assert_stale_error(@() gen.get_sys(), str_staleID)
-assert_stale_error(@() gen.get_sys("port", "I2V"), str_staleID)
-assert_stale_error(@() bus.get_sys(), str_staleID)
-assert_stale_error(@() avr.get_sys(), str_staleID)
-assert_stale_error(@() pss.get_sys(), str_staleID)
+assert(net.l_staleEquilibrium)
+assert_stale_error(@() gen.get_sys(), s_staleID)
+assert_stale_error(@() gen.get_sys("port", "I2V"), s_staleID)
+assert_stale_error(@() bus.get_sys(), s_staleID)
+assert_stale_error(@() avr.get_sys(), s_staleID)
+assert_stale_error(@() pss.get_sys(), s_staleID)
 
 % 位置引数で点を与えても制御器は平衡点で線形化するのでエラーのまま
 x = gen.rv_Xequilibrium;  V = [real(gen.c_Vequilibrium); imag(gen.c_Vequilibrium)];
 I = [real(gen.c_Iequilibrium); imag(gen.c_Iequilibrium)];  u = gen.rv_Uequilibrium;
-assert_stale_error(@() gen.get_sys(x, V, I, u), str_staleID)
+assert_stale_error(@() gen.get_sys(x, V, I, u), s_staleID)
 
 % 失敗した net.get_sys の後も下位層の答えは変わらない (エラーのまま)
-assert_stale_error(@() net.get_sys(), str_staleID)
-assert_stale_error(@() gen.get_sys(), str_staleID)
-assert_stale_error(@() bus.get_sys(), str_staleID)
+assert_stale_error(@() net.get_sys(), s_staleID)
+assert_stale_error(@() gen.get_sys(), s_staleID)
+assert_stale_error(@() bus.get_sys(), s_staleID)
 
 
 %% Layer get_sys after initialize uses the edited model
@@ -70,10 +70,10 @@ DebugScript.helper.quiet(@() net.initialize);
 [gen, bus, avr, pss] = layers(net);
 A_gen = gen.get_sys().A;  A_bus = bus.get_sys().A;
 net.para_base.Hz = 2 * net.para_base.Hz;
-assert(~net.s_edit.l_staleEquilibrium && gen.s_edit.str_odefcn == "editted")
+assert(~net.l_staleEquilibrium && gen.sct_edit.s_odefcn == "editted")
 
 A_gen2 = gen.get_sys().A;
-assert(gen.s_edit.str_odefcn == "updated" && avr.s_edit.str_odefcn == "updated" && pss.s_edit.str_odefcn == "updated")
+assert(gen.sct_edit.s_odefcn == "updated" && avr.sct_edit.s_odefcn == "updated" && pss.sct_edit.s_odefcn == "updated")
 assert(DebugScript.helper.handle_Hz(gen) == net.para_base.Hz && ~isequal(A_gen2, A_gen))
 assert(~isequal(bus.get_sys().A, A_bus))
 
@@ -86,9 +86,9 @@ assert(norm(bus.get_sys().A - bus_ref.get_sys().A) < 1e-9)
 
 % 制御器の get_sys も、その制御器 (と入れ子の制御器) のハンドルを新しい Hz で作り直す
 net.para_base.Hz = 3 * net.para_base.Hz;
-assert(avr.s_edit.str_odefcn == "editted" && pss.s_edit.str_odefcn == "editted")
+assert(avr.sct_edit.s_odefcn == "editted" && pss.sct_edit.s_odefcn == "editted")
 avr.get_sys();
-assert(avr.s_edit.str_odefcn == "updated" && pss.s_edit.str_odefcn == "updated")
+assert(avr.sct_edit.s_odefcn == "updated" && pss.sct_edit.s_odefcn == "updated")
 assert(DebugScript.helper.handle_Hz(avr) == net.para_base.Hz && DebugScript.helper.handle_Hz(pss) == net.para_base.Hz)
 
 
@@ -102,33 +102,33 @@ A0 = gen.get_sys("Point", rv_point(c_idx{1})).A;
 A0_bus = bus.get_sys("Point", rv_point).A;
 
 gen.tab_parameter.dynamics.D = 3 * gen.tab_parameter.dynamics.D;
-assert(net.s_edit.l_staleEquilibrium && gen.s_edit.str_odefcn == "editted")
+assert(net.l_staleEquilibrium && gen.sct_edit.s_odefcn == "editted")
 A1 = gen.get_sys("Point", rv_point(c_idx{1})).A;
-assert(gen.s_edit.str_odefcn == "updated" && ~isequal(A1, A0))
+assert(gen.sct_edit.s_odefcn == "updated" && ~isequal(A1, A0))
 assert(~isequal(bus.get_sys("Point", rv_point).A, A0_bus))
-assert(net.s_edit.l_staleEquilibrium)      % 平衡点は古いまま
+assert(net.l_staleEquilibrium)      % 平衡点は古いまま
 
 
 %% Layers without a network skip the equilibrium check
 avr = controller.avr.AVR_ST1("avr1");
-assert(~isequal(error_id(@() avr.get_sys()), str_staleID))
+assert(~isequal(error_id(@() avr.get_sys()), s_staleID))
 
 
 %% Global controller get_sys checks edits
 [net, gc] = build_with_agc();
-assert_stale_error(@() gc.get_sys(), str_staleID)
+assert_stale_error(@() gc.get_sys(), s_staleID)
 
 DebugScript.helper.quiet(@() net.initialize);
 sys0 = gc.get_sys();
 gc.para_dynamics.kI = 2 * gc.para_dynamics.kI;
-assert(gc.s_edit.str_odefcn == "editted" && net.s_edit.l_staleEquilibrium)
-assert_stale_error(@() gc.get_sys(), str_staleID)
-assert_stale_error(@() gc.get_sys(gc.rv_Xequilibrium, zeros(2,1), zeros(2,1), gc.rv_Uequilibrium), str_staleID)
-assert(gc.s_edit.str_odefcn == "updated")
+assert(gc.sct_edit.s_odefcn == "editted" && net.l_staleEquilibrium)
+assert_stale_error(@() gc.get_sys(), s_staleID)
+assert_stale_error(@() gc.get_sys(gc.rv_Xequilibrium, zeros(2,1), zeros(2,1), gc.rv_Uequilibrium), s_staleID)
+assert(gc.sct_edit.s_odefcn == "updated")
 
 % 失敗した net.get_sys の後もエラーのまま
-assert_stale_error(@() net.get_sys(), str_staleID)
-assert_stale_error(@() gc.get_sys(), str_staleID)
+assert_stale_error(@() net.get_sys(), s_staleID)
+assert_stale_error(@() gc.get_sys(), s_staleID)
 
 % initialize の後は編集後のモデルで、同じ kI で作った系統と一致する
 DebugScript.helper.quiet(@() net.initialize);
@@ -144,9 +144,9 @@ assert(norm(ssdata_all(sys1) - ssdata_all(gc_ref.get_sys())) < 1e-9)
 [net, gc] = build_with_agc();
 DebugScript.helper.quiet(@() net.initialize);
 net.para_base.Hz = 2 * net.para_base.Hz;
-assert(gc.s_edit.str_odefcn == "editted" && ~net.s_edit.l_staleEquilibrium)
+assert(gc.sct_edit.s_odefcn == "editted" && ~net.l_staleEquilibrium)
 gc.get_sys();
-assert(gc.s_edit.str_odefcn == "updated" && DebugScript.helper.handle_Hz(gc) == net.para_base.Hz)
+assert(gc.sct_edit.s_odefcn == "updated" && DebugScript.helper.handle_Hz(gc) == net.para_base.Hz)
 
 
 %% Initialize of a controller that designs with get_sys still passes
@@ -162,19 +162,19 @@ net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 gen = net.a_Bus{1}.a_Component{1};
 gen.tab_parameter.dynamics.D = 3 * gen.tab_parameter.dynamics.D;
-assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=str_load)) == "GUILDA:SolverCPF:StaleEquilibrium")
-assert(gen.s_edit.str_odefcn == "updated")
+assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=sr_load)) == "GUILDA:SolverCPF:StaleEquilibrium")
+assert(gen.sct_edit.s_odefcn == "updated")
 
 
 %% CPF after a network Hz edit keeps the path
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 gen = net.a_Bus{1}.a_Component{1};
-res0 = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=str_load));
+res0 = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=sr_load));
 net.para_base.Hz = 2 * net.para_base.Hz;
-assert(gen.s_edit.str_odefcn == "editted" && ~net.s_edit.l_staleEquilibrium)
-res1 = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=str_load));
-assert(gen.s_edit.str_odefcn == "updated" && DebugScript.helper.handle_Hz(gen) == net.para_base.Hz)
+assert(gen.sct_edit.s_odefcn == "editted" && ~net.l_staleEquilibrium)
+res1 = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=sr_load));
+assert(gen.sct_edit.s_odefcn == "updated" && DebugScript.helper.handle_Hz(gen) == net.para_base.Hz)
 assert(isequal(res1.rv_lambda, res0.rv_lambda) && isequal(res1.cm_Vbus, res0.cm_Vbus))
 
 
@@ -206,12 +206,12 @@ function [gen, bus, avr, pss] = layers(net)
     pss = avr.a_LocalController{1};
 end
 
-function assert_stale_error(fcn, str_id)
+function assert_stale_error(fcn, s_id)
 % fcn が平衡点の古さを知らせるエラー (net.initialize() を促す) になることを確認する
     try
         DebugScript.helper.quiet(fcn);
     catch ME
-        assert(DebugScript.helper.msg_id(ME) == str_id, "想定外のエラー: " + DebugScript.helper.msg_id(ME) + " " + ME.message)
+        assert(DebugScript.helper.msg_id(ME) == s_id, "想定外のエラー: " + DebugScript.helper.msg_id(ME) + " " + ME.message)
         assert(contains(ME.message, "net.initialize()"))
         return
     end

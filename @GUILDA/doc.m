@@ -18,9 +18,9 @@ function doc(option)
         option.class  (1,1) string = ""      % Class whose reference page is opened; "" opens the top page.
     end
 
-    str_doc_root = fullfile(GUILDA.pwd(), '_GUILDAdoc');
-    str_doc_path = fullfile(str_doc_root, 'index.html');
-    str_doc_path = strrep(str_doc_path, '\\', '/');
+    s_doc_root   = fullfile(GUILDA.pwd(), '_GUILDAdoc');
+    s_doc_path   = fullfile(s_doc_root, 'index.html');
+    s_doc_path   = strrep(s_doc_path, '\\', '/');
 
     switch option.update
         case {"always", "true"}
@@ -29,49 +29,49 @@ function doc(option)
         case {"never", "false"}
             bln_update = false;
         otherwise
-            [bln_update, str_reason, sct_scan] = is_database_stale(GUILDA.pwd());
+            [bln_update, s_reason, sct_scan] = is_database_stale(GUILDA.pwd());
             if bln_update
-                fprintf('  Class reference is out of date (%s).\n', str_reason);
+                fprintf('  Class reference is out of date (%s).\n', s_reason);
             end
     end
 
     if bln_update
         export_class_database(sct_scan, "strict", option.strict, ...
             "full", ismember(option.update, ["always", "true"]));
-        str_doc_path_for_cmd = strrep(str_doc_path, '''', '''''');
-        fprintf('  Document Page : <a href="matlab:web(''%s'', ''-browser'')">%s</a>\n', str_doc_path_for_cmd, '/_GUILDAdoc/index.html');
+        s_doc_path_for_cmd = strrep(s_doc_path, '''', '''''');
+        fprintf('  Document Page : <a href="matlab:web(''%s'', ''-browser'')">%s</a>\n', s_doc_path_for_cmd, '/_GUILDAdoc/index.html');
     end
     if option.open
         if strlength(option.class) == 0
-            web(str_doc_path, '-browser')
+            web(s_doc_path, '-browser')
         else
-            open_class_page(str_doc_root, option.class)
+            open_class_page(s_doc_root, option.class)
         end
     end
 end
 
-function [bln_stale, str_reason, sct_scan] = is_database_stale(str_root)
+function [bln_stale, s_reason, sct_scan] = is_database_stale(s_root)
     % Scan the source and user folders, reusing database/manifest.json for
     % unchanged files, and compare with the last export.
     bln_stale = true;
-    str_db = fullfile(str_root, '_GUILDAdoc', 'database');
+    s_db = fullfile(s_root, '_GUILDAdoc', 'database');
     sct_manifest = [];
-    if isfile(fullfile(str_db, 'list_Classes.js')) && isfile(fullfile(str_db, 'manifest.json'))
+    if isfile(fullfile(s_db, 'list_Classes.js')) && isfile(fullfile(s_db, 'manifest.json'))
         try
-            sct_manifest = jsondecode(fileread(fullfile(str_db, 'manifest.json'), 'Encoding', 'UTF-8'));
+            sct_manifest = jsondecode(fileread(fullfile(s_db, 'manifest.json'), 'Encoding', 'UTF-8'));
         catch
             sct_manifest = [];
         end
     end
     if ~isstruct(sct_manifest) || ~all(isfield(sct_manifest, {'exporter', 'files', 'classes'}))
         sct_scan = find_doc_classes();
-        str_reason = 'no database';
+        s_reason = 'no database';
         return
     end
     sct_scan = find_doc_classes("cache", sct_manifest.files);
 
     if ~strcmp(sct_manifest.exporter, sct_scan.Tool)
-        str_reason = 'the exporter was changed';
+        s_reason = 'the exporter was changed';
         return
     end
     % Only tracked files count (System, Object, and files in User roots).
@@ -84,9 +84,9 @@ function [bln_stale, str_reason, sct_scan] = is_database_stale(str_root)
     cell_new = {sct_files.Path};
     cell_changed = [cell_new([sct_files.Changed]), setxor(cell_old, cell_new)];
     if ~isempty(cell_changed)
-        str_reason = sprintf('%s was added, removed or edited', strrep(cell_changed{1}, [str_root, filesep], ''));
+        s_reason = sprintf('%s was added, removed or edited', strrep(cell_changed{1}, [s_root, filesep], ''));
         if numel(cell_changed) > 1
-            str_reason = sprintf('%s and %d more', str_reason, numel(cell_changed) - 1);
+            s_reason = sprintf('%s and %d more', s_reason, numel(cell_changed) - 1);
         end
         return
     end
@@ -96,7 +96,7 @@ function [bln_stale, str_reason, sct_scan] = is_database_stale(str_root)
     end
     cell_diff = setxor(cell_classes, {sct_scan.Classes.Name});
     if ~isempty(cell_diff)
-        str_reason = sprintf('class %s was added or removed', cell_diff{1});
+        s_reason = sprintf('class %s was added or removed', cell_diff{1});
         return
     end
     % Class images (@Class/image.svg) are not .m files: compare them apart.
@@ -107,31 +107,31 @@ function [bln_stale, str_reason, sct_scan] = is_database_stale(str_root)
     cell_new_images = strcat({sct_scan.Images.Class}, '|', {sct_scan.Images.Hash});
     cell_diff = setxor(cell_old_images, cell_new_images);
     if ~isempty(cell_diff)
-        str_reason = sprintf('the image of %s was added, removed or edited', extractBefore(cell_diff{1}, '|'));
+        s_reason = sprintf('the image of %s was added, removed or edited', extractBefore(cell_diff{1}, '|'));
         return
     end
     bln_stale = false;
-    str_reason = '';
+    s_reason = '';
 end
 
-function open_class_page(str_doc_root, str_class_name)
-    str_class_path = fullfile(str_doc_root, 'class.html');
-    str_class_path = strrep(str_class_path, '\\', '/');
-    str_class_url = "file://" + str_class_path + "?class=" + str_class_name;
+function open_class_page(s_doc_root, s_class_name)
+    s_class_path   = fullfile(s_doc_root, 'class.html');
+    s_class_path   = strrep(s_class_path, '\\', '/');
+    s_class_url = "file://" + s_class_path + "?class=" + s_class_name;
 
     % macOS removes URL parameters while handing a local file to an
     % external browser. Let a temporary page perform the final navigation.
-    str_redirect_path = string(tempname) + ".html";
-    str_redirect_html = "<!doctype html><meta charset=""utf-8"">" + ...
-        "<script>location.replace(" + jsonencode(char(str_class_url)) + ");</script>";
+    s_redirect_path   = string(tempname) + ".html";
+    s_redirect_html   = "<!doctype html><meta charset=""utf-8"">" + ...
+        "<script>location.replace(" + jsonencode(char(s_class_url)) + ");</script>";
 
-    fid = fopen(str_redirect_path, 'w', 'n', 'UTF-8');
+    fid = fopen(s_redirect_path, 'w', 'n', 'UTF-8');
     if fid == -1
         error(msg("GUILDA:doc:RedirectFile"));
     end
     file_cleanup = onCleanup(@() fclose(fid));
-    fprintf(fid, '%s', str_redirect_html);
+    fprintf(fid, '%s', s_redirect_html);
     clear file_cleanup
 
-    web(str_redirect_path, '-browser')
+    web(s_redirect_path, '-browser')
 end

@@ -14,8 +14,8 @@ function path = export_csv(path, scenarios, opt)
 %
 % <@Examples>
 % ```matlab
-% str_file = Scenario.export_csv(fullfile(tempdir, "cases.csv"), net.a_Scenario, Overwrite=true);
-% c_sc = Scenario.import_csv(str_file);
+% s_file = Scenario.export_csv(fullfile(tempdir, "cases.csv"), net.a_Scenario, Overwrite=true);
+% c_sc = Scenario.import_csv(s_file);
 % ```
 %
 % See also Scenario.import_csv, PowerNetwork.export_csv
@@ -37,40 +37,40 @@ function path = export_csv(path, scenarios, opt)
         error(msg("GUILDA:Scenario:CsvFileExists", char(path)));
     end
 
-    sv_col = ["Scenario","Description","ScenarioTimeStart","ScenarioTimeEnd","Tag","TimeStart","TimeEnd", ...
+    sr_col = ["Scenario","Description","ScenarioTimeStart","ScenarioTimeEnd","Tag","TimeStart","TimeEnd", ...
               "FaultBus","TripUnit","OpenBranch","OffsetUnit","OffsetState","OffsetValue", ...
               "InputUnit","InputName","InputValue"];
-    sm = strings(0, numel(sv_col));
+    sm = strings(0, numel(sr_col));
     for i = 1:numel(scenarios)
         sc = scenarios{i};
         if ~isempty(fieldnames(sc.Options))
-            warning(msg("GUILDA:Scenario:CsvNotSaved", char(sc.str_tag), "Options"));
+            warning(msg("GUILDA:Scenario:CsvNotSaved", char(sc.s_tag), "Options"));
         end
         if ~strcmp(func2str(sc.Judge), "Scenario.out_of_step")
-            warning(msg("GUILDA:Scenario:CsvNotSaved", char(sc.str_tag), "Judge"));
+            warning(msg("GUILDA:Scenario:CsvNotSaved", char(sc.s_tag), "Judge"));
         end
-        rv_head = [sc.str_tag, sc.Description, strings(1,2)];
+        rv_head = [sc.s_tag, sc.Description, strings(1,2)];
         if ~isempty(sc.Time)
             rv_head(3:4) = [num2text(sc.Time(1)), num2text(sc.Time(2))];
         end
         tab = sc.tab_disturbance;
         if height(tab) == 0
-            sm(end+1,:) = [rv_head, strings(1, numel(sv_col)-4)]; %#ok<AGROW>
+            sm(end+1,:) = [rv_head, strings(1, numel(sr_col)-4)]; %#ok<AGROW>
         end
         for k = 1:height(tab)
             d = Scenario.record(tab, k);
             ts = d.TimeSpan;
-            str_te = num2text(ts(2));
+            s_te = num2text(ts(2));
             if ts(1) == ts(2)
-                str_te = "";
+                s_te = "";
             end
-            sm(end+1,:) = [rv_head, d.Tag, num2text(ts(1)), str_te, list2text(d.FaultBus), ...
+            sm(end+1,:) = [rv_head, d.Tag, num2text(ts(1)), s_te, list2text(d.FaultBus), ...
                            list2text(d.TripUnit), list2text(d.OpenBranch), d.OffsetUnit, ...
                            list2text(d.OffsetState), list2text(num2text(d.OffsetValue)), d.InputUnit, ...
-                           list2text(d.InputName), value2text(d.InputValue, d.Tag, sc.str_tag)]; %#ok<AGROW>
+                           list2text(d.InputName), value2text(d.InputValue, d.Tag, sc.s_tag)]; %#ok<AGROW>
         end
     end
-    tab_out = array2table(sm, "VariableNames", sv_col);
+    tab_out = array2table(sm, "VariableNames", sr_col);
     writetable(tab_out, path, "QuoteStrings", "minimal");
 end
 
@@ -94,9 +94,9 @@ function sv = num2text(rv)
     end
 end
 
-function str = value2text(val, str_tag, str_scenario)
+function str = value2text(val, s_tag, s_scenario)
     if isa(val, "function_handle") || (iscell(val) && any(cellfun(@(v) isa(v, "function_handle"), val)))
-        error(msg("GUILDA:Scenario:CsvFunctionHandle", char(str_tag), char(str_scenario)));
+        error(msg("GUILDA:Scenario:CsvFunctionHandle", char(s_tag), char(s_scenario)));
     end
     if iscell(val)
         val = vertcat(zeros(0,1), val{:});

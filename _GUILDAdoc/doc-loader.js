@@ -62,6 +62,27 @@
     };
   }
 
+  // A link to another class or method of the same page file changes only the
+  // hash, so the browser keeps the document. The pages render once from the
+  // route, so reload them when one of the named parameters changes (links,
+  // the source tree, back/forward). A hash without them, such as a section
+  // anchor, leaves the page as it is.
+  function reloadOnRouteChange(names) {
+    const routeOf = () => {
+      const params = getRouteParams();
+      return names.map((name) => params.get(name) || '');
+    };
+    const shown = routeOf();
+    root.addEventListener('hashchange', () => {
+      const route = routeOf();
+      if (route.every((value) => !value)) return;
+      if (route.some((value, index) => value !== shown[index])) {
+        root.scrollTo(0, 0);
+        root.location.reload();
+      }
+    });
+  }
+
   function pageUrl(pageName, params) {
     const currentPageUrl = root.location.href.split(/[?#]/)[0];
     const targetUrl = new URL(pageName, currentPageUrl);
@@ -232,6 +253,7 @@
     getSubclasses,
     getTree,
     getRouteParams,
+    reloadOnRouteChange,
     pageUrl,
     navigate,
     findClass,

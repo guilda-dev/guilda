@@ -15,18 +15,18 @@ assert(flag && isa(sys, "ss"))
 
 % 3. 結果を残して、方式ごとにモデルを取り出す (線形化は 1 回で済む)
 res = net.linearize();
-s_feedback = res.get_ss("Feedback");
-s_dae      = res.get_ss("DAE");
+sys_feedback = res.get_ss("Feedback");
+sys_dae    = res.get_ss("DAE");
 tab = net.get_variable_map();             % 変数の順 (res.rm_Axx などの行と列)
 disp(head(tab))
 e_kron = DebugScript.helper.finite_eigs(sys_kron);
-assert(DebugScript.helper.same_eigs(e_kron, DebugScript.helper.finite_eigs(s_feedback), 1e-6))
-assert(DebugScript.helper.same_eigs(e_kron, DebugScript.helper.finite_eigs(s_dae), 1e-6))
+assert(DebugScript.helper.same_eigs(e_kron, DebugScript.helper.finite_eigs(sys_feedback), 1e-6))
+assert(DebugScript.helper.same_eigs(e_kron, DebugScript.helper.finite_eigs(sys_dae), 1e-6))
 
 % 4. 入出力を選ぶ。種類 ("x", "V", "I", "y") と名前を指定できる。Input は tab の Label から選ぶ
 sv_u = tab.Label(tab.Kind == "u");
-s_io = net.get_sys("Output", ["V", "I"], "Input", sv_u(1:2));
-assert(numel(s_io.InputName) == 2 && numel(s_io.OutputName) == 4*numel(net.a_Bus))
+sys_io = net.get_sys("Output", ["V", "I"], "Input", sv_u(1:2));
+assert(numel(sys_io.InputName) == 2 && numel(sys_io.OutputName) == 4*numel(net.a_Bus))
 
 % 5. シミュレーションの途中の点で線形化する。平衡点でない点は output.message と result.rv_residual に現れる
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.5,0.55], "FaultBus", "B008");

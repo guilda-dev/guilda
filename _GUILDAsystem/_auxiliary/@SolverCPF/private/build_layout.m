@@ -136,7 +136,7 @@ function w = build_layout(net, useInt)
         params = i_Comp.tab_parameter.dynamics{:,i_Comp.sv_para};
         if useInt
             if ~ismethod(i_Comp,"getCompPQ")
-                error(msg("GUILDA:build_layout:MissingGetCompPQ", i_Comp.str_tag, class(i_Comp)));
+                error(msg("GUILDA:build_layout:MissingGetCompPQ", i_Comp.s_tag, class(i_Comp)));
             end
             i_Comp.f_PQ2Bus = @(x,V,u) i_Comp.getCompPQ(x,V,u,params);
         else

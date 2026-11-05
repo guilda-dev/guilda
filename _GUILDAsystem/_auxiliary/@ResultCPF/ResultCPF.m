@@ -102,12 +102,12 @@ classdef ResultCPF < ResultBase
 
         function tab = get.tab_path(obj)
             rm_V = [abs(obj.cm_Vbus); angle(obj.cm_Vbus)].';
-            sv_name = ["V_" + obj.sv_bus; "Varg_" + obj.sv_bus].';
+            sr_name = ["V_" + obj.sv_bus; "Varg_" + obj.sv_bus].';
             tab = [table(obj.rv_lambda(:), 'VariableNames', "lambda"), ...
-                   array2table(rm_V, 'VariableNames', sv_name)];
+                   array2table(rm_V, 'VariableNames', sr_name)];
         end
 
         fig = Plot(obj, opt)
-        str_file = Export(obj, filename)
+        s_file = Export(obj, filename)
     end
 end

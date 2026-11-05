@@ -77,7 +77,7 @@ classdef SolverLIN < auxiliary
             obj.Point = val;
         end
 
-        function s_options = get_options(obj, nv)
+        function sct_options = get_options(obj, nv)
         % Get the effective settings of one run as a struct.
         %
         % The stored settings of the solver with the
@@ -89,18 +89,18 @@ classdef SolverLIN < auxiliary
                 nv (1,:) cell = {} % Name-Value overrides: Algorithm, Point, Coordinate.
             end
             arguments (Output)
-                s_options % Fields Algorithm, Point, Coordinate.
+                sct_options % Fields Algorithm, Point, Coordinate.
             end
             [nv, rv_nonUnit] = v3_linearize_args(nv, obj.NonUnit);              % COMPAT(v3)
-            s_options = tools.resolve_options(obj, SolverLIN.OptionMap, nv);
+            sct_options = tools.resolve_options(obj, SolverLIN.OptionMap, nv);
             validate_options(nv{:});
-            s_options.Algorithm = string(s_options.Algorithm);
-            s_options.Coordinate = string(s_options.Coordinate);
-            SolverLIN.check_point(s_options.Point);
-            if ~isempty(rv_nonUnit), s_options.NonUnit = rv_nonUnit; end        % COMPAT(v3)
+            sct_options.Algorithm = string(sct_options.Algorithm);
+            sct_options.Coordinate = string(sct_options.Coordinate);
+            SolverLIN.check_point(sct_options.Point);
+            if ~isempty(rv_nonUnit), sct_options.NonUnit = rv_nonUnit; end        % COMPAT(v3)
         end
 
-        [result, flag, output] = solve(obj, net, s_options)
+        [result, flag, output] = solve(obj, net, sct_options)
     end
 
     methods (Static, Hidden)

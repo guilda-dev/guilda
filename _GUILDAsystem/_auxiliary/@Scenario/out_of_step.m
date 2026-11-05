@@ -50,13 +50,13 @@ function verdict = out_of_step(result, opt)
         case "slack"
             net = result.a_PowerNetwork;
             lv_slack = cellfun(@(b) b.l_isSlack, net.a_Bus);
-            str_slack = string(net.a_Bus(lv_slack));
-            i_ref = find(ismember(sv_bus, str_slack), 1);
+            sv_slack = string(net.a_Bus(lv_slack));
+            i_ref = find(ismember(sv_bus, sv_slack), 1);
             if isempty(i_ref)
-                error(msg("GUILDA:Scenario:NoSlackGenerator", char(join(str_slack, ", ")), char(net.str_tag)));
+                error(msg("GUILDA:Scenario:NoSlackGenerator", char(join(sv_slack, ", ")), char(net.s_tag)));
             end
             rv_ref = m_delta(:, i_ref);
-            str_ref = sv_unit(i_ref);
+            s_ref = sv_unit(i_ref);
         case "coi"
             net = result.a_PowerNetwork;
             c_comp = tools.cellfun(@(b) b.a_Component, net.a_Bus);
@@ -75,14 +75,14 @@ function verdict = out_of_step(result, opt)
             m_d = m_delta;
             m_d(isnan(m_d)) = 0;
             rv_ref = sum(m_d .* m_w, 2) ./ sum(m_w, 2);
-            str_ref = "COI";
+            s_ref = "COI";
         otherwise
             i_ref = find(sv_unit == opt.Reference, 1);
             if isempty(i_ref)
                 error(msg("GUILDA:Scenario:UnknownReference", char(opt.Reference), char(join(sv_unit, ", "))));
             end
             rv_ref = m_delta(:, i_ref);
-            str_ref = sv_unit(i_ref);
+            s_ref = sv_unit(i_ref);
     end
 
     m_rel  = abs(m_delta - rv_ref);
@@ -103,6 +103,6 @@ function verdict = out_of_step(result, opt)
     end
     verdict.Units     = sv_unit(lv_out(:));
     verdict.MaxAngle  = max([m_rel(:); NaN], [], "omitnan")*180/pi;
-    verdict.Reference = str_ref;
+    verdict.Reference = s_ref;
     verdict.Threshold = opt.Threshold;
 end

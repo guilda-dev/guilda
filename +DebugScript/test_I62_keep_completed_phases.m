@@ -13,7 +13,7 @@ sv_gen = generators(net);
 ev_trip_later = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.5], "TripUnit", sv_gen);
 ev_trip_first = DebugScript.helper.scenario("trip", net, "TimeSpan", [0,1.5], "TripUnit", sv_gen);
 ev_nan = DebugScript.helper.scenario("nan", net, "TimeSpan", [1,1.2], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", NaN);
-str_warn = "GUILDA:PowerNetwork:SimulationIncomplete";
+s_warn = "GUILDA:PowerNetwork:SimulationIncomplete";
 
 
 %% Solver error in a later phase keeps the completed phases
@@ -37,9 +37,9 @@ assert(DebugScript.helper.msg_id(ME.cause{1}) == "MATLAB:ode15s:MassMatrixAllZer
 %% Warning and message name the reason
 lastwarn("");
 [~, ~, output] = run(net, [0,2], ev_trip_later);
-[str_msg, id] = lastwarn(); id = DebugScript.helper.msg_id(str_msg, id);
-assert(id == str_warn, id)
-assert(contains(str_msg, output.message))
+[s_msg, id] = lastwarn(); id = DebugScript.helper.msg_id(s_msg, id);
+assert(id == s_warn, id)
+assert(contains(s_msg, output.message))
 assert(contains(output.message, "t = 1 s of 2 s") && contains(output.message, output.exception.message), output.message)
 
 
@@ -75,27 +75,27 @@ assert(isgraphics(ax))
 
 %% Empty result can be exported
 sol = run(net, [0,2], ev_trip_first);
-str_dir = tempname;
-mkdir(str_dir);
-c_dir = onCleanup(@() rmdir(str_dir, "s"));
-str_csv = fullfile(str_dir, "empty.csv");
-sol.Export(str_csv);
-tab = readtable(str_csv);
+s_dir = tempname;
+mkdir(s_dir);
+c_dir = onCleanup(@() rmdir(s_dir, "s"));
+s_csv = fullfile(s_dir, "empty.csv");
+sol.Export(s_csv);
+tab = readtable(s_csv);
 assert(height(tab) == 0 && any(string(tab.Properties.VariableNames) == "t"))
-str_mat = fullfile(str_dir, "empty.mat");
-sol.Export(str_mat);
-s = load(str_mat);
+s_mat = fullfile(s_dir, "empty.mat");
+sol.Export(s_mat);
+s = load(s_mat);
 assert(s.flag == -1 && DebugScript.helper.msg_id(s.output.exception) == "GUILDA:SolverODE:PhaseFailed")
 
 
 %% Plot and Export options work when the first phase fails
-str_dir = tempname;
-mkdir(str_dir);
-c_dir = onCleanup(@() rmdir(str_dir, "s"));
-str_csv = fullfile(str_dir, "opt.csv");
-[~, flag] = run(net, [0,2], ev_trip_first, "Plot", true, "Export", str_csv);
+s_dir = tempname;
+mkdir(s_dir);
+c_dir = onCleanup(@() rmdir(s_dir, "s"));
+s_csv = fullfile(s_dir, "opt.csv");
+[~, flag] = run(net, [0,2], ev_trip_first, "Plot", true, "Export", s_csv);
 close all
-assert(flag == -1 && isfile(str_csv))
+assert(flag == -1 && isfile(s_csv))
 
 
 %% Working data is restored after a failed phase
@@ -103,7 +103,7 @@ run(net, [0,2], ev_trip_later);
 for i = 1:numel(net.a_Bus)
     for j = 1:numel(net.a_Bus{i}.a_Component)
         comp = net.a_Bus{i}.a_Component{j};
-        assert(get_private(comp, "l_isConnect"), comp.str_tag)
+        assert(get_private(comp, "l_isConnect"), comp.s_tag)
     end
 end
 ref = DebugScript.helper.build_ieee14();
@@ -172,9 +172,9 @@ function ME = catch_error(fcn)
     assert(~isempty(ME), "エラーにならない")
 end
 
-function expect_error(fcn, str_id)
+function expect_error(fcn, s_id)
     ME = catch_error(fcn);
-    assert(DebugScript.helper.msg_id(ME) == str_id, DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == s_id, DebugScript.helper.msg_id(ME))
 end
 
 function sv = generators(net)
@@ -182,8 +182,8 @@ function sv = generators(net)
     for i = 1:numel(net.a_Bus)
         for j = 1:numel(net.a_Bus{i}.a_Component)
             comp = net.a_Bus{i}.a_Component{j};
-            if startsWith(comp.str_tag, "SG")
-                sv(end+1,1) = comp.str_tag; %#ok<AGROW>
+            if startsWith(comp.s_tag, "SG")
+                sv(end+1,1) = comp.s_tag; %#ok<AGROW>
             end
         end
     end

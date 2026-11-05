@@ -92,7 +92,7 @@ classdef ResultOPF < ResultBase
         end
 
         fig = Plot(obj, opt)
-        str_file = Export(obj, filename, opt)
+        s_file = Export(obj, filename, opt)
     end
 
     methods (Access=protected)

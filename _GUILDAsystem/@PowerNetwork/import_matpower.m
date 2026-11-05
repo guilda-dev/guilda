@@ -54,9 +54,9 @@ function net = import_matpower(mpc, opt)
         net   % The built network.
     end
 
-    [mpc, str_name] = load_case(mpc);
+    [mpc, s_name] = load_case(mpc);
     if ~isfield(opt, "Tag")
-        opt.Tag = str_name;
+        opt.Tag = s_name;
     end
     check_case(mpc);
     base = mpc.baseMVA;
@@ -133,9 +133,9 @@ function net = import_matpower(mpc, opt)
         if r_tap == 0; r_tap = 1; end
         r_phase = rm_br(k, 10)*pi/180;
         if r_tap == 1 && r_phase == 0
-            str_type = 'pi';
+            s_type = 'pi';
         else
-            str_type = 'pi_transformer';
+            s_type = 'pi_transformer';
         end
         r_Smax = rm_br(k, 6)/base;
         if r_Smax == 0; r_Smax = inf; end
@@ -146,8 +146,8 @@ function net = import_matpower(mpc, opt)
         else
             r_ang = min(r_ang)*pi/180;
         end
-        str_fromto = [string(a_Bus{im_brbus(k,1)}), string(a_Bus{im_brbus(k,2)})];
-        net.add_branch(str_type, str_fromto, "R", rm_br(k,3), "X", rm_br(k,4), "C", rm_br(k,5)/2, ...
+        sr_fromto = [string(a_Bus{im_brbus(k,1)}), string(a_Bus{im_brbus(k,2)})];
+        net.add_branch(s_type, sr_fromto, "R", rm_br(k,3), "X", rm_br(k,4), "C", rm_br(k,5)/2, ...
                        "Tap", r_tap, "Phase", r_phase, "Smax", r_Smax, "Vargmax", r_ang);
     end
 
@@ -157,34 +157,34 @@ function net = import_matpower(mpc, opt)
 end
 
 
-function [mpc, str_name] = load_case(mpc)
+function [mpc, s_name] = load_case(mpc)
 % struct | case name | case file (.m/.mat) | function handle -> struct
-    str_name = "PowerNetwork";
+    s_name = "PowerNetwork";
     if isa(mpc, "function_handle")
-        str_name = string(func2str(mpc));
+        s_name = string(func2str(mpc));
         mpc = mpc();
     elseif (ischar(mpc) || isstring(mpc)) && isscalar(string(mpc))
-        str_case = string(mpc);
-        [str_dir, str_name, str_ext] = fileparts(str_case);
-        if str_ext == ".mat" && isfile(str_case)
-            s = load(str_case);
+        s_case = string(mpc);
+        [s_dir, s_name, s_ext] = fileparts(s_case);
+        if s_ext == ".mat" && isfile(s_case)
+            s = load(s_case);
             if isfield(s, "mpc")
                 mpc = s.mpc;
             else
                 c = struct2cell(s);
                 mpc = c{1};
             end
-        elseif isfile(str_case) || isfile(str_case + ".m")
-            if str_dir == ""; str_dir = pwd; end
-            str_old = addpath(str_dir);
-            c_restore = onCleanup(@() path(str_old));
-            mpc = feval(str_name);
-        elseif any(exist(str_case) == [2 3 6])                     %#ok<EXIST>
-            mpc = feval(str_case);
+        elseif isfile(s_case) || isfile(s_case + ".m")
+            if s_dir == ""; s_dir = pwd; end
+            s_old = addpath(s_dir);
+            c_restore = onCleanup(@() path(s_old));
+            mpc = feval(s_name);
+        elseif any(exist(s_case) == [2 3 6])                     %#ok<EXIST>
+            mpc = feval(s_case);
         else
-            error(msg("GUILDA:import_matpower:CaseNotFound", str_case));
+            error(msg("GUILDA:import_matpower:CaseNotFound", s_case));
         end
-        if ~isvarname(str_name); str_name = "PowerNetwork"; end
+        if ~isvarname(s_name); s_name = "PowerNetwork"; end
     end
     if ~isstruct(mpc) || ~isscalar(mpc)
         error(msg("GUILDA:import_matpower:InvalidCaseType", class(mpc)));
@@ -192,10 +192,10 @@ function [mpc, str_name] = load_case(mpc)
 end
 
 function check_case(mpc)
-    str_need = ["baseMVA", "bus", "gen", "branch"];
-    l_miss   = ~isfield(mpc, str_need);
+    sr_need  = ["baseMVA", "bus", "gen", "branch"];
+    l_miss   = ~isfield(mpc, sr_need);
     if any(l_miss)
-        error(msg("GUILDA:import_matpower:InvalidCaseField", strjoin(str_need(l_miss), ", ")));
+        error(msg("GUILDA:import_matpower:InvalidCaseField", strjoin(sr_need(l_miss), ", ")));
     end
     if isfield(mpc, "version") && string(mpc.version) == "1"
         error(msg("GUILDA:import_matpower:UnsupportedVersion"));

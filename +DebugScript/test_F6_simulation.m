@@ -68,19 +68,19 @@ assert(isequal(size(sol.rm_I), [nt, 2*numel(net.a_Bus)]))
 r = sol.odeResults;
 assert(isequal(r.t, sol.rv_t) && height(r.Bus(1).V) == nt)
 avr = net.a_Bus{1}.a_Component{1}.a_LocalController{1};
-assert(all(ismember([avr.str_tag, avr.a_LocalController{1}.str_tag, net.a_GlobalController{1}.str_tag], tab.Owner)))
+assert(all(ismember([avr.s_tag, avr.a_LocalController{1}.s_tag, net.a_GlobalController{1}.s_tag], tab.Owner)))
 for i = 1:numel(net.a_Bus)
     bus = net.a_Bus{i};
-    assert(isequaln(r.Bus(i).V.Variables, sol.rm_variable(:, tab.Bus == bus.str_tag & (tab.Kind == "Vre" | tab.Kind == "Vim"))))
+    assert(isequaln(r.Bus(i).V.Variables, sol.rm_variable(:, tab.Bus == bus.s_tag & (tab.Kind == "Vre" | tab.Kind == "Vim"))))
     assert(isequaln(r.Bus(i).I.Variables, sol.rm_I(:, 2*i-1:2*i)))
     for j = 1:numel(bus.a_Component)
         c = bus.a_Component{j};
-        assert(isequaln(r.Bus(i).Component(j).X.Variables, sol.rm_variable(:, tab.Owner == c.str_tag & tab.Kind == "x")))
-        assert(isequaln(r.Bus(i).Component(j).U.Variables, sol.rm_variable(:, tab.Owner == c.str_tag & tab.Kind == "u")))
+        assert(isequaln(r.Bus(i).Component(j).X.Variables, sol.rm_variable(:, tab.Owner == c.s_tag & tab.Kind == "x")))
+        assert(isequaln(r.Bus(i).Component(j).U.Variables, sol.rm_variable(:, tab.Owner == c.s_tag & tab.Kind == "u")))
     end
 end
 % 制御器の状態は地絡で動く
-X_avr = sol.rm_variable(:, tab.Owner == avr.str_tag);
+X_avr = sol.rm_variable(:, tab.Owner == avr.s_tag);
 assert(norm(X_avr(1,:)' - avr.rv_Xequilibrium) < 1e-8 && max(abs(X_avr - X_avr(1,:)), [], "all") > 1e-4)
 assert(max(abs(sol.rm_variable(:, c_idxGC{1})), [], "all") > 1e-6)
 % get_point: 変数の表の順の列ベクトル。母線・機器の表を与えるとその行だけ
@@ -105,7 +105,7 @@ gen = net.a_Bus{1}.a_Component{1};
 ev  = DebugScript.helper.scenario("offset", net, "TimeSpan", 1, "OffsetUnit", "SG1B001", "OffsetState", "delta", "OffsetValue", 0.1);
 sol = net.simulate([0,2], ev);
 tab = sol.tab_variable;
-iv_d = find(tab.Owner == gen.str_tag & tab.Name == "delta");
+iv_d = find(tab.Owner == gen.s_tag & tab.Name == "delta");
 assert(nnz(sol.rv_t == 1) == 2, "境界の時刻が 2 回出力されていない")
 x_after  = sol.get_point(1);
 x_before = sol.get_point(1, Side="before");
@@ -131,7 +131,7 @@ assert(flag == 1 && sol.flag == 1 && sol.l_success)
 assert(isequal(sol.output, output) && output.tEnd == 3 && output.nPhases == 3 && output.nPhasesDone == 3)
 assert(isstring(output.message) && contains(output.message, "t = 3"))
 assert(istable(output.phases) && height(output.phases) == 3)
-assert(sol.str_solver == "SolverODE" && sol.str_network == string(net.str_tag) && sol.r_elapsed > 0)
+assert(sol.s_solver == "SolverODE" && sol.s_network == string(net.s_tag) && sol.r_elapsed > 0)
 assert(sol.options.RelativeTolerance == net.solver_ODE.RelativeTolerance)
 assert(sol.options.Progress == "none" && sol.options.TimeLimit == net.solver_ODE.TimeLimit)
 assert(isequal(sol.sv_bus, string(net.a_Bus(:))) && numel(sol.c_component) == numel(net.a_Bus))
@@ -259,28 +259,28 @@ catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultODE:UnknownBus", DebugScript.helper.msg_id(ME))
 end
 
-str_dir = tempname;  mkdir(str_dir);
-c_dir = onCleanup(@() rmdir(str_dir, "s"));
-str_csv = sol.Export(fullfile(str_dir, "sim.csv"));
-tab = readtable(str_csv, "VariableNamingRule", "preserve");
+s_dir = tempname;  mkdir(s_dir);
+c_dir = onCleanup(@() rmdir(s_dir, "s"));
+s_csv = sol.Export(fullfile(s_dir, "sim.csv"));
+tab = readtable(s_csv, "VariableNamingRule", "preserve");
 assert(height(tab) == numel(sol.odeResults.t))
 sv  = string(tab.Properties.VariableNames);
 assert(sv(1) == "t" && any(sv == "B001_Vreal") && any(sv == "SG1B001_omega") && any(sv == "B008_Q"))
 assert(max(abs(tab.SG1B001_omega - sol.odeResults.Bus(1).Component(1).X.omega)) < 1e-10)
-str_mat = sol.Export(fullfile(str_dir, "sim.mat"));
-s = load(str_mat);
+s_mat = sol.Export(fullfile(s_dir, "sim.mat"));
+s = load(s_mat);
 assert(isequal(s.odeResults.t, sol.odeResults.t) && s.flag == sol.flag)
 try
-    sol.Export(fullfile(str_dir, "sim.json"));
+    sol.Export(fullfile(s_dir, "sim.json"));
     error("DebugScript:noError", "未対応の拡張子でエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultODE:ExportFormat", DebugScript.helper.msg_id(ME))
 end
 % simulate(..., Plot=true, Export=file) は結果のメソッドを呼ぶ
 n_fig = numel(findall(0, "Type", "figure"));
-net.simulate([0,1], ev, Plot=true, Export=fullfile(str_dir, "sim2.csv"));
+net.simulate([0,1], ev, Plot=true, Export=fullfile(s_dir, "sim2.csv"));
 assert(numel(findall(0, "Type", "figure")) == n_fig + 1)
-assert(isfile(fullfile(str_dir, "sim2.csv")))
+assert(isfile(fullfile(s_dir, "sim2.csv")))
 
 
 %% Fault bus
@@ -717,11 +717,11 @@ assert(flag == 1, output.message)
 ev = DebugScript.helper.scenario("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) 1/(1.5-t));
 lastwarn("");
 [~, flag, output] = net.solver_ODE.solve(net, [0,4], {ev}, net.solver_ODE.get_options({}));   % net.simulate の警告で lastwarn が変わらない
-str_warn = lastwarn();
+s_warn = lastwarn();
 assert(flag == -1)
 assert(output.tEnd > 1 && output.tEnd < 2.5)
 assert(contains(output.message, "phase 2") && contains(output.message, "t = [1, 3]"), output.message)
-assert(strlength(str_warn) > 0 && contains(output.message, str_warn), output.message)
+assert(strlength(s_warn) > 0 && contains(output.message, s_warn), output.message)
 
 % 計算中のエラーは区間を示す GUILDA のエラーになり、元のエラーは cause に残る
 ev = DebugScript.helper.scenario("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) boom(t));
@@ -830,15 +830,15 @@ function [d_x, d_v] = boundary_jumps(net, sol)
     end
 end
 
-function set_property(obj, str_name, val)
-    obj.(str_name) = val;
+function set_property(obj, s_name, val)
+    obj.(s_name) = val;
 end
 
-function expect_error(f, str_id)
+function expect_error(f, s_id)
     try
         f();
-        error("DebugScript:noError", "エラーにならない (期待: " + str_id + ")")
+        error("DebugScript:noError", "エラーにならない (期待: " + s_id + ")")
     catch ME
-        assert(DebugScript.helper.msg_id(ME) == str_id, DebugScript.helper.msg_id(ME) + ": " + ME.message)
+        assert(DebugScript.helper.msg_id(ME) == s_id, DebugScript.helper.msg_id(ME) + ": " + ME.message)
     end
 end

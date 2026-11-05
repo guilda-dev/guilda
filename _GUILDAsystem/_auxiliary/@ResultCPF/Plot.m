@@ -37,11 +37,11 @@ function ax = Plot(obj, opt)
     ylabel(ax, "|V| [pu]");
     legend(ax, sv_plot, "Location", "southwest");
     grid(ax, "on");
-    str_title = "PV curve";
+    s_title = "PV curve";
     if ~obj.l_success
-        str_title = str_title + " - nose not reached";
+        s_title = s_title + " - nose not reached";
     end
-    title(ax, str_title);
+    title(ax, s_title);
 end
 
 

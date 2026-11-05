@@ -36,18 +36,18 @@ function tab_out = dictionary(headword,opt)
     tab_out = cell(n_out,1);
     for i = 1:n_out
         l_flag      = true;
-        str_parent  = opt.output(i);
+        sv_parent   = opt.output(i);
         tab_outi     = [];
         while l_flag
             l_flag = false;
-            lv_child = ismember(class_list.superclass,str_parent);
+            lv_child = ismember(class_list.superclass,sv_parent);
             if any(lv_child)
                 l_flag = true;
                 tab_add    = class_list(lv_child,:);
                 [~,iv_add] = sort(tab_add.superclass);
                 tab_outi   = [tab_outi; tab_add(iv_add,:)]; %#ok
                 class_list = class_list(~lv_child,:);
-                str_parent = tab_add.filename;
+                sv_parent  = tab_add.filename;
             end
         end
         No = (1:size(tab_outi,1))';

@@ -26,7 +26,7 @@ function sct_graph = collect_call_graph(sct_scan)
 % declared and constructor give "certain" edges, candidates gives "candidates",
 % and the others give "inferred". A variable assigned two different classes is unknown.
 %
-% Struct-like receivers give no edge: names such as opt, ctx or s_x, name-value
+% Struct-like receivers give no edge: names such as opt, ctx or sct_x, name-value
 % argument structs, variables built only by x.f = ..., values of a non-class type,
 % and an UpperCamelCase member (name-value naming) on an unknown receiver.
 %
@@ -50,9 +50,9 @@ function sct_graph = collect_call_graph(sct_scan)
     arguments (Output)
         sct_graph  % Call graph (Nodes, Edges, Dynamic, Implementers, Writes, Missing, Stats).
     end
-    str_root = GUILDA.pwd();
-    sct_ctx = build_context(sct_scan, str_root);
-    sct_units = build_units(sct_scan, sct_ctx, str_root);
+    s_root = GUILDA.pwd();
+    sct_ctx = build_context(sct_scan, s_root);
+    sct_units = build_units(sct_scan, sct_ctx, s_root);
 
     % Repeated rounds let types learned in one unit reach the others.
     for i_round = 1:3
@@ -64,61 +64,61 @@ end
 
 
 %% Classes and members
-function sct_ctx = build_context(sct_scan, str_root)
+function sct_ctx = build_context(sct_scan, s_root)
     sct_classes = sct_scan.Classes;
     bln_system = strcmp({sct_classes.Origin}, 'System');
     bln_object = strcmp({sct_classes.Origin}, 'Object');
 
     sct_ctx = struct();
-    sct_ctx.root     = str_root;
+    sct_ctx.root     = s_root;
     sct_ctx.info     = containers.Map('KeyType', 'char', 'ValueType', 'any');
     sct_ctx.shorts   = containers.Map('KeyType', 'char', 'ValueType', 'char');
     sct_ctx.index    = containers.Map('KeyType', 'char', 'ValueType', 'any');
     sct_ctx.implementers = containers.Map('KeyType', 'char', 'ValueType', 'any');
     sct_ctx.props    = containers.Map('KeyType', 'char', 'ValueType', 'any');
     sct_ctx.outputs  = containers.Map('KeyType', 'char', 'ValueType', 'any');
-    sct_ctx.packages = package_names(sct_scan, str_root);
+    sct_ctx.packages = package_names(sct_scan, s_root);
     sct_ctx.system   = {sct_classes(bln_system).Name};
 
     cell_guilda = {sct_classes(bln_system | bln_object).Name};
     for i_class = find(bln_system)
-        str_name = sct_classes(i_class).Name;
-        meta_class = meta.class.fromName(str_name);
+        s_name = sct_classes(i_class).Name;
+        meta_class = meta.class.fromName(s_name);
         if isempty(meta_class)
-            warning(msg("GUILDA:collect_call_graph:NoClass", str_name));
+            warning(msg("GUILDA:collect_call_graph:NoClass", s_name));
             continue
         end
-        sct_info = read_members(str_name, meta_class, cell_guilda);
-        sct_ctx.info(str_name) = sct_info;
-        sct_ctx.shorts(sct_info.Short) = str_name;
+        sct_info = read_members(s_name, meta_class, cell_guilda);
+        sct_ctx.info(s_name) = sct_info;
+        sct_ctx.shorts(sct_info.Short) = s_name;
         add_to_index(sct_ctx.index, sct_info);
     end
 
     % Members each class gets only from a subclass, in the System or the Object tree.
     for i_class = find(bln_system | bln_object)
-        str_name = sct_classes(i_class).Name;
-        meta_class = meta.class.fromName(str_name);
+        s_name = sct_classes(i_class).Name;
+        meta_class = meta.class.fromName(s_name);
         if isempty(meta_class)
             continue
         end
-        cell_ancestors = setdiff(superclasses(str_name), {'handle'});
-        cell_own = own_member_names(meta_class, str_name);
-        for str_ancestor = reshape(cell_ancestors, 1, [])
-            for str_member = cell_own
-                str_key = [str_ancestor{1}, '.', str_member{1}];
-                if isKey(sct_ctx.implementers, str_key)
-                    sct_ctx.implementers(str_key) = [sct_ctx.implementers(str_key), {str_name}];
+        cell_ancestors = setdiff(superclasses(s_name), {'handle'});
+        cell_own = own_member_names(meta_class, s_name);
+        for s_ancestor = reshape(cell_ancestors, 1, [])
+            for s_member = cell_own
+                s_key = [s_ancestor{1}, '.', s_member{1}];
+                if isKey(sct_ctx.implementers, s_key)
+                    sct_ctx.implementers(s_key) = [sct_ctx.implementers(s_key), {s_name}];
                 else
-                    sct_ctx.implementers(str_key) = {str_name};
+                    sct_ctx.implementers(s_key) = {s_name};
                 end
             end
         end
     end
 end
 
-function cell_names = package_names(sct_scan, str_root)
+function cell_names = package_names(sct_scan, s_root)
     cell_names = {'containers', 'matlab', 'java', 'py'};
-    cell_rel = extractAfter({sct_scan.Files.Path}, [str_root, filesep]);
+    cell_rel = extractAfter({sct_scan.Files.Path}, [s_root, filesep]);
     cell_tokens = regexp(cell_rel, '(?:^|[/\\])\+(\w+)', 'tokens');
     for i_file = 1:numel(cell_tokens)
         for i_token = 1:numel(cell_tokens{i_file})
@@ -128,68 +128,68 @@ function cell_names = package_names(sct_scan, str_root)
     cell_names = unique(cell_names);
 end
 
-function sct_info = read_members(str_name, meta_class, cell_guilda)
-    sct_info = struct('Name', str_name, 'Short', short_name(str_name), ...
+function sct_info = read_members(s_name, meta_class, cell_guilda)
+    sct_info = struct('Name', s_name, 'Short', short_name(s_name), ...
         'Methods', containers.Map('KeyType', 'char', 'ValueType', 'any'), ...
         'Props', containers.Map('KeyType', 'char', 'ValueType', 'any'), ...
-        'Dynamic', any(strcmp(superclasses(str_name), 'dynamicprops')));
+        'Dynamic', any(strcmp(superclasses(s_name), 'dynamicprops')));
     meta_methods = meta_class.MethodList;
     for i_item = 1:numel(meta_methods)
         meta_m = meta_methods(i_item);
-        str_defining = meta_m.DefiningClass.Name;
-        if ~strcmp(meta_m.Name, 'empty') && any(strcmp(cell_guilda, str_defining))
-            sct_info.Methods(meta_m.Name) = struct('Defining', str_defining, ...
+        s_defining = meta_m.DefiningClass.Name;
+        if ~strcmp(meta_m.Name, 'empty') && any(strcmp(cell_guilda, s_defining))
+            sct_info.Methods(meta_m.Name) = struct('Defining', s_defining, ...
                 'Static', meta_m.Static, 'Abstract', meta_m.Abstract);
         end
     end
     meta_props = meta_class.PropertyList;
     for i_item = 1:numel(meta_props)
         meta_p = meta_props(i_item);
-        str_defining = meta_p.DefiningClass.Name;
-        if any(strcmp(cell_guilda, str_defining))
-            str_type = '';
+        s_defining = meta_p.DefiningClass.Name;
+        if any(strcmp(cell_guilda, s_defining))
+            s_type = '';
             if ~isempty(meta_p.Validation) && ~isempty(meta_p.Validation.Class)
-                str_type = meta_p.Validation.Class.Name;
+                s_type = meta_p.Validation.Class.Name;
             end
-            sct_info.Props(meta_p.Name) = struct('Defining', str_defining, ...
-                'Type', str_type, 'Abstract', meta_p.Abstract);
+            sct_info.Props(meta_p.Name) = struct('Defining', s_defining, ...
+                'Type', s_type, 'Abstract', meta_p.Abstract);
         end
     end
 end
 
 function add_to_index(map_index, sct_info)
     % Member name -> the classes that define it (inherited members count once).
-    for str_kind = ["Methods", "Props"]
-        map_members = sct_info.(str_kind);
-        for str_member = keys(map_members)
-            sct_m = map_members(str_member{1});
-            str_node = [sct_m.Defining, '.', str_member{1}];
-            if isKey(map_index, str_member{1})
-                sct_entry = map_index(str_member{1});
+    for s_kind = ["Methods", "Props"]
+        map_members = sct_info.(s_kind);
+        for s_member = keys(map_members)
+            sct_m = map_members(s_member{1});
+            s_node = [sct_m.Defining, '.', s_member{1}];
+            if isKey(map_index, s_member{1})
+                sct_entry = map_index(s_member{1});
             else
                 sct_entry = struct('Nodes', {{}}, 'IsMethod', true);
             end
-            if ~any(strcmp(sct_entry.Nodes, str_node))
-                sct_entry.Nodes{end+1} = str_node;
+            if ~any(strcmp(sct_entry.Nodes, s_node))
+                sct_entry.Nodes{end+1} = s_node;
             end
-            sct_entry.IsMethod = sct_entry.IsMethod && str_kind == "Methods";
-            map_index(str_member{1}) = sct_entry;
+            sct_entry.IsMethod = sct_entry.IsMethod && s_kind == "Methods";
+            map_index(s_member{1}) = sct_entry;
         end
     end
 end
 
-function cell_own = own_member_names(meta_class, str_name)
+function cell_own = own_member_names(meta_class, s_name)
     meta_m = meta_class.MethodList;
     meta_p = meta_class.PropertyList;
     cell_m = cell(1, numel(meta_m));
     for i = 1:numel(meta_m)
-        if strcmp(meta_m(i).DefiningClass.Name, str_name) && ~meta_m(i).Abstract
+        if strcmp(meta_m(i).DefiningClass.Name, s_name) && ~meta_m(i).Abstract
             cell_m{i} = meta_m(i).Name;
         end
     end
     cell_p = cell(1, numel(meta_p));
     for i = 1:numel(meta_p)
-        if strcmp(meta_p(i).DefiningClass.Name, str_name) && ~meta_p(i).Abstract
+        if strcmp(meta_p(i).DefiningClass.Name, s_name) && ~meta_p(i).Abstract
             cell_p{i} = meta_p(i).Name;
         end
     end
@@ -197,15 +197,15 @@ function cell_own = own_member_names(meta_class, str_name)
     cell_own = cell_own(~cellfun(@isempty, cell_own));
 end
 
-function str_short = short_name(str_name)
-    cell_parts = strsplit(str_name, '.');
-    str_short = cell_parts{end};
+function s_short = short_name(s_name)
+    cell_parts = strsplit(s_name, '.');
+    s_short = cell_parts{end};
 end
 
 
 
 %% Units: one per function, reduced to plain events so that mtree is read only once
-function sct_units = build_units(sct_scan, sct_ctx, str_root)
+function sct_units = build_units(sct_scan, sct_ctx, s_root)
     % The files of each class: the classdef file and the @Class folder.
     sct_units = struct('Name', {}, 'Class', {}, 'IsMethod', {}, 'File', {}, 'Line', {}, ...
         'Self', {}, 'Inputs', {}, 'Outputs', {}, 'Declared', {}, 'StructVars', {}, 'Events', {}, ...
@@ -213,37 +213,37 @@ function sct_units = build_units(sct_scan, sct_ctx, str_root)
     cell_files = {sct_scan.Files.Path};
     cell_system = sct_ctx.system;
     for i_class = 1:numel(cell_system)
-        str_class = cell_system{i_class};
-        if ~isKey(sct_ctx.info, str_class)
+        s_class = cell_system{i_class};
+        if ~isKey(sct_ctx.info, s_class)
             continue
         end
-        str_file = sct_scan.Classes(strcmp({sct_scan.Classes.Name}, str_class)).File;
-        [str_dir, ~] = fileparts(str_file);
-        [~, str_dir_name] = fileparts(str_dir);
-        cell_class_files = {str_file};
-        if startsWith(str_dir_name, '@')
-            cell_class_files = cell_files(startsWith(cell_files, [str_dir, filesep]));
+        s_file = sct_scan.Classes(strcmp({sct_scan.Classes.Name}, s_class)).File;
+        [s_dir, ~] = fileparts(s_file);
+        [~, s_dir_name] = fileparts(s_dir);
+        cell_class_files = {s_file};
+        if startsWith(s_dir_name, '@')
+            cell_class_files = cell_files(startsWith(cell_files, [s_dir, filesep]));
         end
         for i_file = 1:numel(cell_class_files)
-            sct_units = [sct_units, read_file_units(cell_class_files{i_file}, str_class, str_file, sct_ctx, str_root)]; %#ok<AGROW>
+            sct_units = [sct_units, read_file_units(cell_class_files{i_file}, s_class, s_file, sct_ctx, s_root)]; %#ok<AGROW>
         end
     end
     sct_units = link_helpers(sct_units);
 end
 
-function sct_found = read_file_units(str_file, str_class, str_classdef_file, sct_ctx, str_root)
+function sct_found = read_file_units(s_file, s_class, s_classdef_file, sct_ctx, s_root)
     sct_found = struct('Name', {}, 'Class', {}, 'IsMethod', {}, 'File', {}, 'Line', {}, ...
         'Self', {}, 'Inputs', {}, 'Outputs', {}, 'Declared', {}, 'StructVars', {}, 'Events', {}, ...
         'Scope', {}, 'Calls', {}, 'ArgTypes', {}, 'Env', {});
-    T = mtree(str_file, '-file');
+    T = mtree(s_file, '-file');
     if T.count == 0 || any(strcmp(T.kinds, 'ERR'))
-        warning(msg("GUILDA:collect_call_graph:ParseFailed", str_file));
+        warning(msg("GUILDA:collect_call_graph:ParseFailed", s_file));
         return
     end
-    sct_info = sct_ctx.info(str_class);
-    str_rel = strrep(extractAfter(str_file, [str_root, filesep]), '\', '/');
-    bln_private = contains(str_rel, '/private/');
-    bln_classdef = strcmp(str_file, str_classdef_file);
+    sct_info = sct_ctx.info(s_class);
+    s_rel = strrep(extractAfter(s_file, [s_root, filesep]), '\', '/');
+    bln_private = contains(s_rel, '/private/');
+    bln_classdef = strcmp(s_file, s_classdef_file);
 
     iv_in_methods = [];
     if bln_classdef
@@ -252,10 +252,10 @@ function sct_found = read_file_units(str_file, str_class, str_classdef_file, sct
     iv_functions = T.mtfind('Kind', 'FUNCTION').indices;
     for k = 1:numel(iv_functions)
         fn = T.select(iv_functions(k));
-        str_fname = strip(fn.Fname.string);
-        str_base = regexprep(str_fname, '^(get|set)\.', '');
-        bln_accessor = ~strcmp(str_base, str_fname);
-        bln_member = isKey(sct_info.Methods, str_fname) || bln_accessor;
+        s_fname = strip(fn.Fname.string);
+        s_base = regexprep(s_fname, '^(get|set)\.', '');
+        bln_accessor = ~strcmp(s_base, s_fname);
+        bln_member = isKey(sct_info.Methods, s_fname) || bln_accessor;
         if bln_classdef
             % Functions after the classdef block are local helpers.
             bln_method = any(iv_in_methods == iv_functions(k)) && bln_member;
@@ -264,46 +264,46 @@ function sct_found = read_file_units(str_file, str_class, str_classdef_file, sct
             % lists private/ functions as methods, but they are helpers: no self.
             bln_method = k == 1 && bln_member && ~bln_private;
         end
-        str_self_kind = 'none';
+        s_self_kind = 'none';
         if bln_method
-            if strcmp(str_fname, sct_info.Short)
-                str_self_kind = 'output';
-            elseif bln_accessor || ~sct_info.Methods(str_fname).Static
-                str_self_kind = 'input';
+            if strcmp(s_fname, sct_info.Short)
+                s_self_kind = 'output';
+            elseif bln_accessor || ~sct_info.Methods(s_fname).Static
+                s_self_kind = 'input';
             end
         end
-        sct_unit = read_function(T, fn, str_self_kind);
-        sct_unit.Name = str_fname;
-        sct_unit.Class = str_class;
+        sct_unit = read_function(T, fn, s_self_kind);
+        sct_unit.Name = s_fname;
+        sct_unit.Class = s_class;
         sct_unit.IsMethod = bln_method;
-        sct_unit.File = str_rel;
+        sct_unit.File = s_rel;
         sct_unit.Line = fn.lineno;
         if bln_private
-            sct_unit.Scope = private_scope(str_rel, k == 1);
+            sct_unit.Scope = private_scope(s_rel, k == 1);
         else
-            sct_unit.Scope = str_rel;
+            sct_unit.Scope = s_rel;
         end
         sct_found(end+1) = sct_unit; %#ok<AGROW>
     end
 end
 
-function str_scope = private_scope(str_rel, bln_first)
+function s_scope = private_scope(s_rel, bln_first)
     % The first function of a private file is visible to the whole class folder.
     if bln_first
-        str_scope = ['private:', regexprep(str_rel, '/private/[^/]*$', '')];
+        s_scope = ['private:', regexprep(s_rel, '/private/[^/]*$', '')];
     else
-        str_scope = str_rel;
+        s_scope = s_rel;
     end
 end
 
-function sct_unit = read_function(T, fn, str_self_kind)
+function sct_unit = read_function(T, fn, s_self_kind)
     sct_unit = struct('Name', '', 'Class', '', 'IsMethod', false, 'File', '', 'Line', 0, ...
         'Self', '', 'Inputs', {node_names(fn.Ins)}, 'Outputs', {node_names(fn.Outs)}, ...
         'Declared', {cell(0, 2)}, 'StructVars', {{}}, 'Events', [], ...
         'Scope', '', 'Calls', {{}}, 'ArgTypes', {{}}, 'Env', []);
-    if strcmp(str_self_kind, 'input') && ~isempty(sct_unit.Inputs)
+    if strcmp(s_self_kind, 'input') && ~isempty(sct_unit.Inputs)
         sct_unit.Self = sct_unit.Inputs{1};
-    elseif strcmp(str_self_kind, 'output') && ~isempty(sct_unit.Outputs)
+    elseif strcmp(s_self_kind, 'output') && ~isempty(sct_unit.Outputs)
         sct_unit.Self = sct_unit.Outputs{1};
     end
     body = fn.Tree;
@@ -374,13 +374,13 @@ function cell_events = read_call(n)
         case 'ATBASE'
             cell_events{1} = struct('Type', 'super', 'Name', f.Left.string, 'Base', chain_text(f.Right), 'Line', n.lineno);
         case 'ID'
-            str_name = f.string;
-            if any(strcmp(str_name, {'feval', 'str2func', 'eval', 'evalc', 'evalin'}))
+            s_name = f.string;
+            if any(strcmp(s_name, {'feval', 'str2func', 'eval', 'evalc', 'evalin'}))
                 cell_events{1} = struct('Type', 'dynamic', 'Recv', struct('k', 'val'), 'Line', n.lineno);
                 return
             end
-            cell_events{1} = struct('Type', 'call', 'Name', str_name, 'Args', {cellfun(@to_expr, cell_args, 'UniformOutput', false)}, 'Line', n.lineno);
-            if any(strcmp(str_name, {'cellfun', 'arrayfun'}))
+            cell_events{1} = struct('Type', 'call', 'Name', s_name, 'Args', {cellfun(@to_expr, cell_args, 'UniformOutput', false)}, 'Line', n.lineno);
+            if any(strcmp(s_name, {'cellfun', 'arrayfun'}))
                 cell_events = [cell_events, bind_anon_params(cell_args, n.lineno)];
             end
     end
@@ -522,17 +522,17 @@ function sct_units = link_helpers(sct_units)
         end
     end
     for i = 1:numel(sct_units)
-        str_private = ['private:', regexprep(sct_units(i).File, '(/private)?/[^/]*$', '')];
+        s_private   = ['private:', regexprep(sct_units(i).File, '(/private)?/[^/]*$', '')];
         cell_events = sct_units(i).Events;
         for k = 1:numel(cell_events)
             if strcmp(cell_events{k}.Type, 'call')
                 r_target = 0;
-                str_local = [sct_units(i).File, '|', cell_events{k}.Name];
-                str_shared = [str_private, '|', cell_events{k}.Name];
-                if isKey(map_scope, str_local)
-                    r_target = map_scope(str_local);
-                elseif isKey(map_scope, str_shared)
-                    r_target = map_scope(str_shared);
+                s_local = [sct_units(i).File, '|', cell_events{k}.Name];
+                s_shared = [s_private, '|', cell_events{k}.Name];
+                if isKey(map_scope, s_local)
+                    r_target = map_scope(s_local);
+                elseif isKey(map_scope, s_shared)
+                    r_target = map_scope(s_shared);
                 end
                 cell_events{k}.Target = r_target;
             end
@@ -580,8 +580,8 @@ function sct_units = learn_types(sct_units, sct_ctx)
             if is_class_type(cell_type) && strcmp(sct_u.Self, sct_u.Outputs{1}) == false
                 sct_ctx.outputs(output_key(sct_u)) = cell_type;
                 if startsWith(sct_u.Name, 'get.')
-                    str_member = extractAfter(sct_u.Name, 'get.');
-                    sct_ctx.props([sct_u.Class, '.', str_member]) = cell_type;
+                    s_member = extractAfter(sct_u.Name, 'get.');
+                    sct_ctx.props([sct_u.Class, '.', s_member]) = cell_type;
                 end
             end
         end
@@ -591,11 +591,11 @@ function sct_units = learn_types(sct_units, sct_ctx)
     end
 end
 
-function str_key = output_key(sct_u)
+function s_key = output_key(sct_u)
     if sct_u.IsMethod
-        str_key = [sct_u.Class, '.', sct_u.Name];
+        s_key = [sct_u.Class, '.', sct_u.Name];
     else
-        str_key = [sct_u.File, '|', sct_u.Name];
+        s_key = [sct_u.File, '|', sct_u.Name];
     end
 end
 
@@ -612,14 +612,14 @@ function learn_property(sct_ev, map_env, sct_units, sct_ctx)
     if ~is_class_type(cell_value)
         return
     end
-    str_key = [sct_info.Props(sct_ev.Member).Defining, '.', sct_ev.Member];
-    if isKey(sct_ctx.props, str_key)
-        cell_old = sct_ctx.props(str_key);
+    s_key = [sct_info.Props(sct_ev.Member).Defining, '.', sct_ev.Member];
+    if isKey(sct_ctx.props, s_key)
+        cell_old = sct_ctx.props(s_key);
         if ~strcmp(cell_old{1}, cell_value{1})
-            sct_ctx.props(str_key) = {'', ''};  % Two classes: not determinable.
+            sct_ctx.props(s_key) = {'', ''};  % Two classes: not determinable.
         end
     else
-        sct_ctx.props(str_key) = {cell_value{1}, 'assignment'};
+        sct_ctx.props(s_key) = {cell_value{1}, 'assignment'};
     end
 end
 
@@ -666,8 +666,8 @@ function map_env = build_env(sct_u, sct_units, sct_ctx)
             map_env(sct_u.Declared{i, 1}) = cell_type;
         end
     end
-    for str_var = sct_u.StructVars
-        map_env(str_var{1}) = {'#value', 'declared'};
+    for s_var = sct_u.StructVars
+        map_env(s_var{1}) = {'#value', 'declared'};
     end
     bln_fixed = @(s) strcmp(s, sct_u.Self);
     if ~isempty(sct_u.Self)
@@ -694,9 +694,9 @@ function map_env = build_env(sct_u, sct_units, sct_ctx)
         end
     end
     % x.f = ... with no other source of x: a struct built here.
-    for str_var = keys(map_struct_writes)
-        if ~isKey(map_assigned, str_var{1}) && ~isKey(map_env, str_var{1})
-            map_env(str_var{1}) = {'#value', 'name'};
+    for s_var = keys(map_struct_writes)
+        if ~isKey(map_assigned, s_var{1}) && ~isKey(map_env, s_var{1})
+            map_env(s_var{1}) = {'#value', 'name'};
         end
     end
     for i_pass = 1:2
@@ -724,17 +724,17 @@ function map_env = build_env(sct_u, sct_units, sct_ctx)
             end
             map_seen(sct_ev.Var) = cell_new;
         end
-        for str_var = keys(map_seen)
-            cell_type = map_seen(str_var{1});
-            bln_input = any(strcmp(cell_inputs, str_var{1}));
+        for s_var = keys(map_seen)
+            cell_type = map_seen(s_var{1});
+            bln_input = any(strcmp(cell_inputs, s_var{1}));
             if isempty(cell_type{1})
                 if ~bln_input
-                    cell_type = name_type(str_var{1}, sct_ctx);
+                    cell_type = name_type(s_var{1}, sct_ctx);
                 else
                     continue
                 end
             end
-            map_env(str_var{1}) = cell_type;
+            map_env(s_var{1}) = cell_type;
         end
     end
 end
@@ -753,9 +753,9 @@ function cell_type = type_of(sct_e, map_env, sct_u, sct_units, sct_ctx)
         case 'idx'
             cell_type = type_of(sct_e.l, map_env, sct_u, sct_units, sct_ctx);
         case 'dot'
-            str_chain = expr_chain(sct_e);
-            if isKey(sct_ctx.info, str_chain)
-                cell_type = {str_chain, 'constructor'};
+            s_chain = expr_chain(sct_e);
+            if isKey(sct_ctx.info, s_chain)
+                cell_type = {s_chain, 'constructor'};
                 return
             end
             cell_left = type_of(sct_e.l, map_env, sct_u, sct_units, sct_ctx);
@@ -778,9 +778,9 @@ function cell_type = type_of(sct_e, map_env, sct_u, sct_units, sct_ctx)
                 cell_type = {'#value', 'name'};
                 return
             end
-            str_helper = [sct_u.File, '|', sct_e.f];
-            if isKey(sct_ctx.outputs, str_helper)
-                cell_type = sct_ctx.outputs(str_helper);
+            s_helper = [sct_u.File, '|', sct_e.f];
+            if isKey(sct_ctx.outputs, s_helper)
+                cell_type = sct_ctx.outputs(s_helper);
                 return
             end
             cell_first = type_of(sct_e.a, map_env, sct_u, sct_units, sct_ctx);
@@ -793,13 +793,13 @@ function cell_type = type_of(sct_e, map_env, sct_u, sct_units, sct_ctx)
     end
 end
 
-function cell_type = member_type(cell_left, str_member, sct_ctx)
+function cell_type = member_type(cell_left, s_member, sct_ctx)
     cell_type = {'', ''};
     if strcmp(cell_left{1}, '#value')
         % A struct field can hold an object: ctx.net.a_Bus. The field itself gets no edge.
         cell_type = cell_left;
-        if isempty(regexp(str_member, '^[A-Z]', 'once'))
-            cell_named = name_type(str_member, sct_ctx);
+        if isempty(regexp(s_member, '^[A-Z]', 'once'))
+            cell_named = name_type(s_member, sct_ctx);
             if is_class_type(cell_named)
                 cell_type = cell_named;
             end
@@ -808,8 +808,8 @@ function cell_type = member_type(cell_left, str_member, sct_ctx)
     end
     if is_class_type(cell_left) && isKey(sct_ctx.info, cell_left{1})
         sct_info = sct_ctx.info(cell_left{1});
-        if isKey(sct_info.Props, str_member)
-            sct_p = sct_info.Props(str_member);
+        if isKey(sct_info.Props, s_member)
+            sct_p = sct_info.Props(s_member);
             if ~isempty(sct_p.Type) && isKey(sct_ctx.info, sct_p.Type)
                 cell_type = {sct_p.Type, weaker(cell_left{2}, 'declared')};
                 return
@@ -817,18 +817,18 @@ function cell_type = member_type(cell_left, str_member, sct_ctx)
                 cell_type = {'#value', 'declared'};
                 return
             end
-            str_key = [sct_p.Defining, '.', str_member];
-            if isKey(sct_ctx.props, str_key)
-                cell_learned = sct_ctx.props(str_key);
+            s_key = [sct_p.Defining, '.', s_member];
+            if isKey(sct_ctx.props, s_key)
+                cell_learned = sct_ctx.props(s_key);
                 if ~isempty(cell_learned{1})
                     cell_type = {cell_learned{1}, weaker(cell_left{2}, cell_learned{2})};
                 end
                 return
             end
-        elseif isKey(sct_info.Methods, str_member)
-            str_key = [sct_info.Methods(str_member).Defining, '.', str_member];
-            if isKey(sct_ctx.outputs, str_key)
-                cell_learned = sct_ctx.outputs(str_key);
+        elseif isKey(sct_info.Methods, s_member)
+            s_key = [sct_info.Methods(s_member).Defining, '.', s_member];
+            if isKey(sct_ctx.outputs, s_key)
+                cell_learned = sct_ctx.outputs(s_key);
                 cell_type = {cell_learned{1}, weaker(weaker(cell_left{2}, cell_learned{2}), 'assignment')};
             end
             return
@@ -841,8 +841,8 @@ function cell_type = member_type(cell_left, str_member, sct_ctx)
     end
     % UpperCamelCase on an unknown receiver is a struct field, such as r.Bus(i).
     cell_named = {'', ''};
-    if isempty(regexp(str_member, '^[A-Z]', 'once'))
-        cell_named = name_type(str_member, sct_ctx);
+    if isempty(regexp(s_member, '^[A-Z]', 'once'))
+        cell_named = name_type(s_member, sct_ctx);
     end
     if ~isempty(cell_named{1})
         cell_type = cell_named;
@@ -858,71 +858,71 @@ function str = expr_chain(sct_e)
         case 'id'
             str = sct_e.s;
         case 'dot'
-            str_left = expr_chain(sct_e.l);
-            if ~isempty(str_left)
-                str = [str_left, '.', sct_e.f];
+            s_left = expr_chain(sct_e.l);
+            if ~isempty(s_left)
+                str = [s_left, '.', sct_e.f];
             end
     end
 end
 
-function cell_type = class_from_name(str_name, str_rule, sct_ctx)
+function cell_type = class_from_name(s_name, s_rule, sct_ctx)
     cell_type = {'', ''};
-    if isKey(sct_ctx.info, str_name)
-        cell_type = {str_name, str_rule};
-    elseif any(strcmp(str_name, {'double', 'single', 'logical', 'string', 'char', 'table', 'struct', 'function_handle'}))
-        cell_type = {'#value', str_rule};
+    if isKey(sct_ctx.info, s_name)
+        cell_type = {s_name, s_rule};
+    elseif any(strcmp(s_name, {'double', 'single', 'logical', 'string', 'char', 'table', 'struct', 'function_handle'}))
+        cell_type = {'#value', s_rule};
     end
 end
 
-function cell_type = name_type(str_name, sct_ctx)
+function cell_type = name_type(s_name, sct_ctx)
     % Naming rule of developer/naming-conventions.html, with the usual short forms.
     cell_type = {'', ''};
-    if any(strcmp(str_name, {'opt', 'opts', 'option', 'options', 'ctx', 'mpc', 'args', 'arg', 'config', 'cfg', 'info', 'param'})) ...
-            || ~isempty(regexp(str_name, '^(s|str|sct|tab|cell|map|iv|rv|cv|lv|sv|im|rm|cm|lm|sm|l|r|i|n|bln)_', 'once'))
+    if any(strcmp(s_name, {'opt', 'opts', 'option', 'options', 'ctx', 'mpc', 'args', 'arg', 'config', 'cfg', 'info', 'param'})) ...
+            || ~isempty(regexp(s_name, '^(s|str|sct|tab|cell|map|iv|rv|cv|lv|sv|sr|im|rm|cm|lm|sm|l|r|i|n|bln)_', 'once'))
         cell_type = {'#value', 'name'};
         return
     end
-    if startsWith(str_name, 'para_') && isKey(sct_ctx.info, 'Parameter')
+    if startsWith(s_name, 'para_') && isKey(sct_ctx.info, 'Parameter')
         cell_type = {'Parameter', 'name'};
         return
     end
-    str_key = lower(regexprep(str_name, '^(a_|old_|new_|i(?=[A-Z]))', ''));
-    str_key = regexprep(str_key, '(_?[ij]+|\d+|_old|_new)$', '');
+    s_key   = lower(regexprep(s_name, '^(a_|old_|new_|i(?=[A-Z]))', ''));
+    s_key   = regexprep(s_key, '(_?[ij]+|\d+|_old|_new)$', '');
     persistent map_alias
     if isempty(map_alias)
         map_alias = containers.Map( ...
             {'net', 'network', 'comp', 'br', 'bra', 'lc', 'avr', 'pss', 'gc'}, ...
             {'PowerNetwork', 'PowerNetwork', 'Component', 'Branch', 'Branch', 'LocalController', 'LocalController', 'LocalController', 'GlobalController'});
     end
-    if isKey(map_alias, str_key)
-        str_class = map_alias(str_key);
+    if isKey(map_alias, s_key)
+        s_class = map_alias(s_key);
     else
-        str_class = '';
-        for str_short = keys(sct_ctx.shorts)
-            if strcmpi(str_short{1}, str_key)
-                str_class = sct_ctx.shorts(str_short{1});
+        s_class = '';
+        for s_short = keys(sct_ctx.shorts)
+            if strcmpi(s_short{1}, s_key)
+                s_class = sct_ctx.shorts(s_short{1});
                 break
             end
         end
     end
-    if ~isempty(str_class) && isKey(sct_ctx.info, str_class)
-        cell_type = {str_class, 'name'};
+    if ~isempty(s_class) && isKey(sct_ctx.info, s_class)
+        cell_type = {s_class, 'name'};
     end
 end
 
-function str_rule = weaker(str_a, str_b)
+function s_rule = weaker(s_a, s_b)
     cell_order = {'self', 'constructor', 'declared', 'assignment', 'argument', 'name', 'unique'};
-    i_a = find(strcmp(cell_order, str_a), 1);
-    i_b = find(strcmp(cell_order, str_b), 1);
+    i_a = find(strcmp(cell_order, s_a), 1);
+    i_b = find(strcmp(cell_order, s_b), 1);
     if isempty(i_a), i_a = 0; end
     if isempty(i_b), i_b = 0; end
     if i_a >= i_b
-        str_rule = str_a;
+        s_rule = s_a;
     else
-        str_rule = str_b;
+        s_rule = s_b;
     end
-    if isempty(str_rule)
-        str_rule = 'name';
+    if isempty(s_rule)
+        s_rule = 'name';
     end
 end
 
@@ -948,7 +948,7 @@ function sct_graph = emit_graph(sct_units, sct_ctx)
     map_rule = containers.Map('KeyType', 'char', 'ValueType', 'double');
     map_writes = containers.Map('KeyType', 'char', 'ValueType', 'any');
     for i = find([sct_units.IsMethod])
-        str_from = from_node(sct_units(i), sct_ctx);
+        s_from   = from_node(sct_units(i), sct_ctx);
         iv_reach = i;
         iv_todo = cell_calls{i};
         while ~isempty(iv_todo)
@@ -964,21 +964,21 @@ function sct_graph = emit_graph(sct_units, sct_ctx)
             for k = 1:numel(cell_refs{r})
                 sct_ref = cell_refs{r}{k};
                 if strcmp(sct_ref.Kind, 'write')
-                    str_prop = sct_ref.To{1};
-                    if ~isKey(map_writes, str_prop)
-                        map_writes(str_prop) = {str_from};
-                    elseif ~any(strcmp(map_writes(str_prop), str_from))
-                        map_writes(str_prop) = [map_writes(str_prop), {str_from}];
+                    s_prop = sct_ref.To{1};
+                    if ~isKey(map_writes, s_prop)
+                        map_writes(s_prop) = {s_from};
+                    elseif ~any(strcmp(map_writes(s_prop), s_from))
+                        map_writes(s_prop) = [map_writes(s_prop), {s_from}];
                     end
                     continue
                 end
                 map_conf(sct_ref.Confidence) = map_conf(sct_ref.Confidence) + 1;
                 if ~isKey(map_rule, sct_ref.Rule), map_rule(sct_ref.Rule) = 0; end
                 map_rule(sct_ref.Rule) = map_rule(sct_ref.Rule) + 1;
-                add_edge(map_edges, str_from, sct_ref, sct_units(r).File);
+                add_edge(map_edges, s_from, sct_ref, sct_units(r).File);
             end
             for k = 1:numel(cell_dynamic{r})
-                sct_dynamic(end+1) = struct('From', str_from, 'File', sct_units(r).File, 'Line', cell_dynamic{r}(k)); %#ok<AGROW>
+                sct_dynamic(end+1) = struct('From', s_from, 'File', sct_units(r).File, 'Line', cell_dynamic{r}(k)); %#ok<AGROW>
             end
         end
     end
@@ -991,9 +991,9 @@ function sct_graph = emit_graph(sct_units, sct_ctx)
         cell_nodes = unique([{sct_edges.From}, cell_to]);
     end
     map_impl = containers.Map('KeyType', 'char', 'ValueType', 'double');
-    for str_key = keys(sct_ctx.implementers)
-        if any(strcmp(cell_nodes, str_key{1}))
-            map_impl(str_key{1}) = numel(unique(sct_ctx.implementers(str_key{1})));
+    for s_key = keys(sct_ctx.implementers)
+        if any(strcmp(cell_nodes, s_key{1}))
+            map_impl(s_key{1}) = numel(unique(sct_ctx.implementers(s_key{1})));
         end
     end
     sct_graph = struct('Nodes', {cell_nodes}, 'Edges', sct_edges, 'Dynamic', sct_dynamic, ...
@@ -1001,28 +1001,28 @@ function sct_graph = emit_graph(sct_units, sct_ctx)
         'Stats', struct('Confidence', map_conf, 'Rule', map_rule));
 end
 
-function str_from = from_node(sct_u, sct_ctx)
-    str_base = regexprep(sct_u.Name, '^(get|set)\.', '');
+function s_from = from_node(sct_u, sct_ctx)
+    s_base   = regexprep(sct_u.Name, '^(get|set)\.', '');
     sct_info = sct_ctx.info(sct_u.Class);
-    if strcmp(str_base, sct_u.Name) && isKey(sct_info.Methods, sct_u.Name)
-        str_from = [sct_info.Methods(sct_u.Name).Defining, '.', sct_u.Name];
+    if strcmp(s_base, sct_u.Name) && isKey(sct_info.Methods, sct_u.Name)
+        s_from = [sct_info.Methods(sct_u.Name).Defining, '.', sct_u.Name];
     else
-        str_from = [sct_u.Class, '.', sct_u.Name];
+        s_from = [sct_u.Class, '.', sct_u.Name];
     end
 end
 
-function add_edge(map_edges, str_from, sct_ref, str_file)
+function add_edge(map_edges, s_from, sct_ref, s_file)
     cell_order = {'certain', 'inferred', 'candidates'};
-    str_key = [str_from, '>', strjoin(sct_ref.To, '|'), '>', sct_ref.Kind];
-    sct_new = struct('From', str_from, 'To', {sct_ref.To}, 'Kind', sct_ref.Kind, ...
-        'Confidence', sct_ref.Confidence, 'Rule', sct_ref.Rule, 'File', str_file, 'Line', sct_ref.Line);
-    if isKey(map_edges, str_key)
-        sct_old = map_edges(str_key);
+    s_key   = [s_from, '>', strjoin(sct_ref.To, '|'), '>', sct_ref.Kind];
+    sct_new = struct('From', s_from, 'To', {sct_ref.To}, 'Kind', sct_ref.Kind, ...
+        'Confidence', sct_ref.Confidence, 'Rule', sct_ref.Rule, 'File', s_file, 'Line', sct_ref.Line);
+    if isKey(map_edges, s_key)
+        sct_old = map_edges(s_key);
         if find(strcmp(cell_order, sct_new.Confidence)) >= find(strcmp(cell_order, sct_old.Confidence))
             return
         end
     end
-    map_edges(str_key) = sct_new;
+    map_edges(s_key) = sct_new;
 end
 
 function [cell_refs, iv_dynamic, iv_calls, sct_missing] = read_refs(sct_u, sct_units, sct_ctx)
@@ -1036,11 +1036,11 @@ function [cell_refs, iv_dynamic, iv_calls, sct_missing] = read_refs(sct_u, sct_u
         sct_ev = cell_events{k};
         switch sct_ev.Type
             case 'dot'
-                str_chain = expr_chain(struct('k', 'dot', 'l', sct_ev.Recv, 'f', sct_ev.Member));
-                if isKey(sct_ctx.info, str_chain)
+                s_chain = expr_chain(struct('k', 'dot', 'l', sct_ev.Recv, 'f', sct_ev.Member));
+                if isKey(sct_ctx.info, s_chain)
                     % pkg.Class(...) is a constructor call; pkg.Class.member comes next.
                     if ~sct_ev.Inner
-                        cell_refs{end+1} = constructor_ref(str_chain, sct_ev.Line, sct_ctx); %#ok<AGROW>
+                        cell_refs{end+1} = constructor_ref(s_chain, sct_ev.Line, sct_ctx); %#ok<AGROW>
                     end
                     continue
                 end
@@ -1070,12 +1070,12 @@ function [cell_refs, iv_dynamic, iv_calls, sct_missing] = read_refs(sct_u, sct_u
             case 'super'
                 if isKey(sct_ctx.info, sct_ev.Base)
                     sct_base = sct_ctx.info(sct_ev.Base);
-                    str_member = sct_ev.Name;
-                    if strcmp(str_member, sct_u.Self)
-                        str_member = sct_base.Short;  % obj@Base(...): the constructor.
+                    s_member = sct_ev.Name;
+                    if strcmp(s_member, sct_u.Self)
+                        s_member = sct_base.Short;  % obj@Base(...): the constructor.
                     end
-                    if isKey(sct_base.Methods, str_member)
-                        cell_refs{end+1} = make_ref({[sct_base.Methods(str_member).Defining, '.', str_member]}, 'method', 'self', sct_ev.Line); %#ok<AGROW>
+                    if isKey(sct_base.Methods, s_member)
+                        cell_refs{end+1} = make_ref({[sct_base.Methods(s_member).Defining, '.', s_member]}, 'method', 'self', sct_ev.Line); %#ok<AGROW>
                     end
                 end
             case 'pset'
@@ -1099,9 +1099,9 @@ function [cell_refs, iv_dynamic, iv_calls, sct_missing] = read_refs(sct_u, sct_u
     end
 end
 
-function sct_ref = constructor_ref(str_class, r_line, sct_ctx)
-    str_short = sct_ctx.info(str_class).Short;
-    sct_ref = make_ref({[str_class, '.', str_short]}, 'method', 'constructor', r_line);
+function sct_ref = constructor_ref(s_class, r_line, sct_ctx)
+    s_short = sct_ctx.info(s_class).Short;
+    sct_ref = make_ref({[s_class, '.', s_short]}, 'method', 'constructor', r_line);
 end
 
 function cell_refs = method_form(sct_ev, map_env, sct_u, sct_units, sct_ctx)
@@ -1118,20 +1118,20 @@ function cell_refs = method_form(sct_ev, map_env, sct_u, sct_units, sct_ctx)
         % Unknown receiver: a name that is only a System method, never a MATLAB function.
         if isKey(sct_ctx.index, sct_ev.Name) && sct_ctx.index(sct_ev.Name).IsMethod && exist(sct_ev.Name) == 0 %#ok<EXIST>
             sct_entry = sct_ctx.index(sct_ev.Name);
-            str_rule = 'candidates';
-            if isscalar(sct_entry.Nodes), str_rule = 'unique'; end
-            cell_refs{1} = make_ref(sct_entry.Nodes, 'method', str_rule, sct_ev.Line);
+            s_rule = 'candidates';
+            if isscalar(sct_entry.Nodes), s_rule = 'unique'; end
+            cell_refs{1} = make_ref(sct_entry.Nodes, 'method', s_rule, sct_ev.Line);
         end
         return
     end
     sct_info = sct_ctx.info(cell_first{1});
     if isKey(sct_info.Methods, sct_ev.Name)
         sct_m = sct_info.Methods(sct_ev.Name);
-        str_kind = 'method';
+        s_kind = 'method';
         if sct_m.Abstract
-            str_kind = 'subclass';
+            s_kind = 'subclass';
         end
-        cell_refs{1} = make_ref({[sct_m.Defining, '.', sct_ev.Name]}, str_kind, cell_first{2}, sct_ev.Line);
+        cell_refs{1} = make_ref({[sct_m.Defining, '.', sct_ev.Name]}, s_kind, cell_first{2}, sct_ev.Line);
     elseif strcmp(cell_first{2}, 'self') && isKey(sct_ctx.implementers, [sct_info.Name, '.', sct_ev.Name])
         cell_refs{1} = make_ref({[sct_info.Name, '.', sct_ev.Name]}, 'subclass', 'self', sct_ev.Line);
     end
@@ -1140,7 +1140,7 @@ end
 function [sct_ref, sct_miss] = resolve_dot(sct_ev, map_env, sct_u, sct_units, sct_ctx)
     sct_ref = [];
     sct_miss = struct('From', {}, 'Class', {}, 'Member', {}, 'Rule', {}, 'File', {}, 'Line', {});
-    str_member = sct_ev.Member;
+    s_member = sct_ev.Member;
     cell_recv = type_of(sct_ev.Recv, map_env, sct_u, sct_units, sct_ctx);
     if strcmp(cell_recv{1}, '#value')
         return
@@ -1150,60 +1150,60 @@ function [sct_ref, sct_miss] = resolve_dot(sct_ev, map_env, sct_u, sct_units, sc
     end
     if is_class_type(cell_recv) && isKey(sct_ctx.info, cell_recv{1})
         sct_info = sct_ctx.info(cell_recv{1});
-        str_rule = cell_recv{2};
-        if isKey(sct_info.Methods, str_member)
-            sct_m = sct_info.Methods(str_member);
-            str_kind = 'method';
-            if sct_m.Abstract, str_kind = 'subclass'; end
-            sct_ref = make_ref({[sct_m.Defining, '.', str_member]}, str_kind, str_rule, sct_ev.Line);
+        s_rule   = cell_recv{2};
+        if isKey(sct_info.Methods, s_member)
+            sct_m = sct_info.Methods(s_member);
+            s_kind = 'method';
+            if sct_m.Abstract, s_kind = 'subclass'; end
+            sct_ref = make_ref({[sct_m.Defining, '.', s_member]}, s_kind, s_rule, sct_ev.Line);
             return
-        elseif isKey(sct_info.Props, str_member)
-            sct_p = sct_info.Props(str_member);
-            str_kind = 'property';
-            if sct_p.Abstract, str_kind = 'subclass'; end
-            sct_ref = make_ref({[sct_p.Defining, '.', str_member]}, str_kind, str_rule, sct_ev.Line);
+        elseif isKey(sct_info.Props, s_member)
+            sct_p = sct_info.Props(s_member);
+            s_kind = 'property';
+            if sct_p.Abstract, s_kind = 'subclass'; end
+            sct_ref = make_ref({[sct_p.Defining, '.', s_member]}, s_kind, s_rule, sct_ev.Line);
             return
         elseif sct_info.Dynamic
-            sct_ref = make_ref({[sct_info.Name, '.', str_member]}, 'parameter', str_rule, sct_ev.Line);
+            sct_ref = make_ref({[sct_info.Name, '.', s_member]}, 'parameter', s_rule, sct_ev.Line);
             return
-        elseif isKey(sct_ctx.implementers, [sct_info.Name, '.', str_member])
-            sct_ref = make_ref({[sct_info.Name, '.', str_member]}, 'subclass', str_rule, sct_ev.Line);
+        elseif isKey(sct_ctx.implementers, [sct_info.Name, '.', s_member])
+            sct_ref = make_ref({[sct_info.Name, '.', s_member]}, 'subclass', s_rule, sct_ev.Line);
             return
         end
         sct_miss(1).From = [sct_u.Class, '.', sct_u.Name];
         sct_miss(1).Class = sct_info.Name;
-        sct_miss(1).Member = str_member;
-        sct_miss(1).Rule = str_rule;
+        sct_miss(1).Member = s_member;
+        sct_miss(1).Rule = s_rule;
         sct_miss(1).File = sct_u.File;
         sct_miss(1).Line = sct_ev.Line;
         % self, declared and constructor are facts; the member is then not a class member.
-        if any(strcmp(str_rule, {'self', 'declared', 'constructor'}))
+        if any(strcmp(s_rule, {'self', 'declared', 'constructor'}))
             return
         end
     end
 
     % Unknown receiver: name-value fields are UpperCamelCase.
-    if ~isempty(regexp(str_member, '^[A-Z]', 'once')) || ~isKey(sct_ctx.index, str_member)
+    if ~isempty(regexp(s_member, '^[A-Z]', 'once')) || ~isKey(sct_ctx.index, s_member)
         return
     end
-    sct_entry = sct_ctx.index(str_member);
-    str_kind = 'property';
-    if sct_entry.IsMethod, str_kind = 'method'; end
+    sct_entry = sct_ctx.index(s_member);
+    s_kind = 'property';
+    if sct_entry.IsMethod, s_kind = 'method'; end
     if isscalar(sct_entry.Nodes)
-        sct_ref = make_ref(sct_entry.Nodes, str_kind, 'unique', sct_ev.Line);
+        sct_ref = make_ref(sct_entry.Nodes, s_kind, 'unique', sct_ev.Line);
     else
-        sct_ref = make_ref(sct_entry.Nodes, str_kind, 'candidates', sct_ev.Line);
+        sct_ref = make_ref(sct_entry.Nodes, s_kind, 'candidates', sct_ev.Line);
     end
 end
 
-function sct_ref = make_ref(cell_to, str_kind, str_rule, r_line)
-    switch str_rule
+function sct_ref = make_ref(cell_to, s_kind, s_rule, r_line)
+    switch s_rule
         case {'self', 'declared', 'constructor'}
-            str_conf = 'certain';
+            s_conf = 'certain';
         case 'candidates'
-            str_conf = 'candidates';
+            s_conf = 'candidates';
         otherwise
-            str_conf = 'inferred';
+            s_conf = 'inferred';
     end
-    sct_ref = struct('To', {reshape(cell_to, 1, [])}, 'Kind', str_kind, 'Confidence', str_conf, 'Rule', str_rule, 'Line', r_line);
+    sct_ref = struct('To', {reshape(cell_to, 1, [])}, 'Kind', s_kind, 'Confidence', s_conf, 'Rule', s_rule, 'Line', r_line);
 end

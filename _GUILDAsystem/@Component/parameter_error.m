@@ -1,4 +1,4 @@
-function parameter_error(obj, str_key, varargin) %#ok<INUSD>
+function parameter_error(obj, s_key, varargin) %#ok<INUSD>
 % Raise a constructor message of Component.xml for a subclass in another folder.
 %
 % `msg` only accepts a caller in the folder of the ID, so the base classes of the models
@@ -10,15 +10,15 @@ function parameter_error(obj, str_key, varargin) %#ok<INUSD>
 % <@Group> Queries and checks
     arguments
         obj
-        str_key (1,1) string   % Key of the message in Component.xml.
+        s_key (1,1) string   % Key of the message in Component.xml.
     end
     arguments (Repeating)
         varargin               % Values for the placeholders of the message.
     end
 
-    if str_key == "GeneratorQIgnored"
+    if s_key == "GeneratorQIgnored"
         warning(msg("GUILDA:Component:GeneratorQIgnored", varargin{:}))
     else
-        error(msg("GUILDA:Component:" + str_key, varargin{:}))
+        error(msg("GUILDA:Component:" + s_key, varargin{:}))
     end
 end

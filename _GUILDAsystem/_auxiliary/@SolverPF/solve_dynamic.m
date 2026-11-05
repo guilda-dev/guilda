@@ -1,11 +1,11 @@
-function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_dynamic(~, cm_Y, tab_PFset, s_options)
+function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_dynamic(~, cm_Y, tab_PFset, sct_options)
 % Settle virtual bus dynamics at the power flow solution (ode15s). cm_Vhistory holds the
 % bus voltages at each output time (n_bus x n_step), rv_step the times [s].
     arguments (Input)
         ~
         cm_Y        (:,:) double  % [pu] Bus admittance matrix (complex, in the bus order of tab_PFset).
         tab_PFset   table         % Power flow settings of the buses (rows of get_pf_set).
-        s_options   (1,1) struct  % Effective settings (output of get_options).
+        sct_options (1,1) struct  % Effective settings (output of get_options).
     end
     arguments (Output)
         cv_Vbus     (:,1) double  % [pu] Complex bus voltages of the solution.
@@ -16,11 +16,11 @@ function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_dynamic(~, cm_Y, tab_
     end
 
     N   = size(tab_PFset,1);
-    M   = s_options.dynamic.Mass;
-    D   = s_options.dynamic.Damper;
-    foh = s_options.dynamic.foh_PQ;
-    t_span = s_options.dynamic.t_span;
-    tol = s_options.Tolerance;
+    M   = sct_options.dynamic.Mass;
+    D   = sct_options.dynamic.Damper;
+    foh = sct_options.dynamic.foh_PQ;
+    t_span = sct_options.dynamic.t_span;
+    tol = sct_options.Tolerance;
     if tol == 0
         tol = 1e-5;
     end

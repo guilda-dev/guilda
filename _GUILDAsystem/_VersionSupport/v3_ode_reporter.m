@@ -1,4 +1,4 @@
-function str_mode = v3_ode_reporter(val)
+function s_mode = v3_ode_reporter(val)
 % Convert a value set to the old SolverODE property Reporter.
 %
 % v3 compatibility hook of SolverODE.Reporter: the property was renamed Progress.
@@ -10,8 +10,8 @@ function str_mode = v3_ode_reporter(val)
         val        % Value set to Reporter: "none", "disp" or "dialog".
     end
     arguments (Output)
-        str_mode   % Value for SolverODE.Progress.
+        s_mode     % Value for SolverODE.Progress.
     end
     Deprecated("SimulatorReporter");
-    str_mode = string(val);
+    s_mode = string(val);
 end

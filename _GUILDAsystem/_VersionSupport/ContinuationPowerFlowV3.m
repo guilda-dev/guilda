@@ -49,8 +49,8 @@ classdef ContinuationPowerFlowV3 < handle
                 obj                 % v3 view of the continuation power flow.
             end
             obj.CPFNet = net;
-            for str_name = string(fieldnames(opt)).'
-                obj.(str_name) = opt.(str_name);
+            for s_name = string(fieldnames(opt)).'
+                obj.(s_name) = opt.(s_name);
             end
         end
 

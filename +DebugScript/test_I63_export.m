@@ -10,8 +10,8 @@ net.a_Bus{2}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr"));
 net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002"));
 DebugScript.helper.quiet(@() net.initialize);
 ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.1,0.15], "FaultBus", "B008");
-str_dir = tempname;  mkdir(str_dir);
-c_dir = onCleanup(@() rmdir(str_dir, "s"));
+s_dir = tempname;  mkdir(s_dir);
+c_dir = onCleanup(@() rmdir(s_dir, "s"));
 tab_ctrl = net.get_variable_map();
 tab_ctrl = tab_ctrl(ismember(tab_ctrl.Owner, ["CAavr","CPpss","agc"]), :);
 
@@ -32,15 +32,15 @@ end
 
 
 %% Every format of Export is accepted and written
-for str_ext = [".csv", ".CSV", ".txt", ".xlsx", ".xls", ".mat"]
-    str_file = fullfile(str_dir, "accepted" + str_ext);
-    net.simulate([0,0.2], ev, Export=str_file);
-    assert(isfile(str_file), str_file)
-    delete(str_file)
+for s_ext = [".csv", ".CSV", ".txt", ".xlsx", ".xls", ".mat"]
+    s_file = fullfile(s_dir, "accepted" + s_ext);
+    net.simulate([0,0.2], ev, Export=s_file);
+    assert(isfile(s_file), s_file)
+    delete(s_file)
 end
 % Export=true も Export=false も従来どおり (true は既定の名前で現在のフォルダに書く)
-str_old = cd(str_dir);
-c_back = onCleanup(@() cd(str_old));
+s_old = cd(s_dir);
+c_back = onCleanup(@() cd(s_old));
 net.simulate([0,0.2], ev, Export=true);
 assert(numel(dir("*_simulation.csv")) == 1)
 delete("*_simulation.csv")
@@ -50,8 +50,8 @@ assert(isempty(dir("*_simulation.csv")))
 
 %% Table has the controller states, by Label, after the existing columns
 sol = net.simulate([0,0.2], ev);
-str_csv = sol.Export(fullfile(str_dir, "sim.csv"));
-tab = readtable(str_csv, "VariableNamingRule", "preserve");
+s_csv = sol.Export(fullfile(s_dir, "sim.csv"));
+tab = readtable(s_csv, "VariableNamingRule", "preserve");
 sv  = string(tab.Properties.VariableNames);
 assert(height(tab) == numel(sol.rv_t))
 assert(numel(unique(sv)) == numel(sv))
@@ -69,7 +69,7 @@ assert(max(abs(tab.SG1B001_omega - sol.odeResults.Bus(1).Component(1).X.omega)) 
 net0 = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net0.initialize);
 sol0 = net0.simulate([0,0.1]);
-tab0 = readtable(sol0.Export(fullfile(str_dir, "sim0.csv")), "VariableNamingRule", "preserve");
+tab0 = readtable(sol0.Export(fullfile(s_dir, "sim0.csv")), "VariableNamingRule", "preserve");
 n_bus = numel(net0.a_Bus);
 n_comp = 0;
 for i = 1:n_bus
@@ -85,8 +85,8 @@ assert(width(tab0) == 1 + 6*n_bus + n_comp)
 
 %% MAT file has the controller states
 sol = net.simulate([0,0.2], ev);
-str_mat = sol.Export(fullfile(str_dir, "sim.mat"));
-s = load(str_mat);
+s_mat = sol.Export(fullfile(s_dir, "sim.mat"));
+s = load(s_mat);
 assert(isequal(s.rm_variable, sol.rm_variable) && isequal(s.tab_variable, sol.tab_variable))
 assert(isequal(s.odeResults.t, sol.odeResults.t) && s.flag == sol.flag)
 assert(all(ismember(tab_ctrl.Label, s.tab_variable.Label)))

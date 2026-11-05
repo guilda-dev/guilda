@@ -111,7 +111,7 @@ assert(error_id(@() net.simulate([0,2], sc)) == "GUILDA:Scenario:OtherNetwork")
 
 % 複製は親を持たず、元の系統はそのまま
 cp = sc.copy();
-assert(isempty(cp.a_PowerNetwork) && cp ~= sc && cp.str_tag == "own")
+assert(isempty(cp.a_PowerNetwork) && cp ~= sc && cp.s_tag == "own")
 assert(isequaln(cp.tab_disturbance, sc.tab_disturbance))
 assert(error_id(@() net.simulate([0,2], cp)) == "GUILDA:Scenario:OtherNetwork")
 net.add_scenario(cp);
@@ -175,49 +175,49 @@ s2.add_offset("SG1B001", ["delta";"omega"], [0.1; 1e-3], 0);
 s2.add_input("SG1B002", ["Pmech";"Vfield"], {0.05; 0.1/3}, [1,1.5], Tag="in");
 s2.add_disturbance("both", TimeSpan=[2,2.05], FaultBus=["B003";"B005"], TripUnit="SG1B003");
 s3 = Scenario("empty", Description="no disturbance, a comma, and ""quotes""");
-str_file = fullfile(tempdir, "GUILDA_F31_scenarios.csv");
-c_rm = onCleanup(@() delete(str_file));
-Scenario.export_csv(str_file, {s1, s2, s3}, Overwrite=true);
-assert(error_id(@() Scenario.export_csv(str_file, s1)) == "GUILDA:Scenario:CsvFileExists")
+s_file = fullfile(tempdir, "GUILDA_F31_scenarios.csv");
+c_rm = onCleanup(@() delete(s_file));
+Scenario.export_csv(s_file, {s1, s2, s3}, Overwrite=true);
+assert(error_id(@() Scenario.export_csv(s_file, s1)) == "GUILDA:Scenario:CsvFileExists")
 
-c_in = Scenario.import_csv(str_file);
+c_in = Scenario.import_csv(s_file);
 assert(numel(c_in) == 3 && all(cellfun(@(s) isempty(s.a_PowerNetwork), c_in)))
 c_ref = {s1, s2, s3};
 for k = 1:3
-    assert(c_in{k}.str_tag == c_ref{k}.str_tag && c_in{k}.Description == c_ref{k}.Description)
+    assert(c_in{k}.s_tag == c_ref{k}.s_tag && c_in{k}.Description == c_ref{k}.Description)
     assert(isequal(c_in{k}.Time, c_ref{k}.Time))
-    assert(isequaln(normalize_values(c_in{k}.tab_disturbance), normalize_values(c_ref{k}.tab_disturbance)), c_ref{k}.str_tag)
+    assert(isequaln(normalize_values(c_in{k}.tab_disturbance), normalize_values(c_ref{k}.tab_disturbance)), c_ref{k}.s_tag)
 end
 % 書き出し直しても同じファイル
-str_file2 = fullfile(tempdir, "GUILDA_F31_scenarios2.csv");
-c_rm2 = onCleanup(@() delete(str_file2));
-Scenario.export_csv(str_file2, c_in, Overwrite=true);
-assert(isequal(readlines(str_file), readlines(str_file2)))
+s_file2 = fullfile(tempdir, "GUILDA_F31_scenarios2.csv");
+c_rm2 = onCleanup(@() delete(s_file2));
+Scenario.export_csv(s_file2, c_in, Overwrite=true);
+assert(isequal(readlines(s_file), readlines(s_file2)))
 
 % Network を与えると系統へ追加し、タグを検査する
-c_net = Scenario.import_csv(str_file, Network=net);
+c_net = Scenario.import_csv(s_file, Network=net);
 assert(all(cellfun(@(s) s.a_PowerNetwork == net, c_net)) && numel(net.a_Scenario) == 3)
 [~, flag] = DebugScript.helper.quiet(@() net.simulate([0,1.8], c_net{2}));
 assert(flag == 1)
-assert(error_id(@() Scenario.import_csv(str_file, Network=net)) == "GUILDA:PowerNetwork:ScenarioTagInUse")
+assert(error_id(@() Scenario.import_csv(s_file, Network=net)) == "GUILDA:PowerNetwork:ScenarioTagInUse")
 
 % 関数ハンドルは CSV に書けない
 s4 = Scenario("fun");
 s4.add_input("SG1B002", "Pmech", @(t) 0.01*t, [1,2]);
-assert(error_id(@() Scenario.export_csv(str_file, s4, Overwrite=true)) == "GUILDA:Scenario:CsvFunctionHandle")
+assert(error_id(@() Scenario.export_csv(s_file, s4, Overwrite=true)) == "GUILDA:Scenario:CsvFunctionHandle")
 % 必要な列は Scenario だけ。未知の列は警告して無視する。空の Tag は event<n>
-writelines(["Scenario,Tag,TimeStart,FaultBus,TimeEnd,Memo"; "m,,1,B008,1.05,note"; "m,f2,2,B003;B005,2.05,"], str_file);
+writelines(["Scenario,Tag,TimeStart,FaultBus,TimeEnd,Memo"; "m,,1,B008,1.05,note"; "m,f2,2,B003;B005,2.05,"], s_file);
 lastwarn("");
-c_memo = Scenario.import_csv(str_file);
+c_memo = Scenario.import_csv(s_file);
 assert(string(DebugScript.helper.msg_id()) == "GUILDA:Scenario:CsvUnknownColumn")
 assert(isscalar(c_memo) && isequal(c_memo{1}.tab_disturbance.Tag.', ["event1","f2"]))
 assert(isequal(c_memo{1}.tab_disturbance.FaultBus{2}, ["B003";"B005"]) && isequal(c_memo{1}.tab_disturbance.TimeSpan(1,:), [1,1.05]))
-writelines(["Tag,TimeStart"; "f,1"], str_file);
-assert(error_id(@() Scenario.import_csv(str_file)) == "GUILDA:Scenario:CsvMissingColumn")
-writelines(["Scenario,Tag,TimeStart,TimeEnd,FaultBus"; "m,f,one,2,B008"], str_file);
-assert(error_id(@() Scenario.import_csv(str_file)) == "GUILDA:Scenario:CsvInvalidValue")
-writelines(["Scenario,ScenarioTimeEnd"; "m,10"; "m,20"], str_file);
-assert(error_id(@() Scenario.import_csv(str_file)) == "GUILDA:Scenario:CsvConflict")
+writelines(["Tag,TimeStart"; "f,1"], s_file);
+assert(error_id(@() Scenario.import_csv(s_file)) == "GUILDA:Scenario:CsvMissingColumn")
+writelines(["Scenario,Tag,TimeStart,TimeEnd,FaultBus"; "m,f,one,2,B008"], s_file);
+assert(error_id(@() Scenario.import_csv(s_file)) == "GUILDA:Scenario:CsvInvalidValue")
+writelines(["Scenario,ScenarioTimeEnd"; "m,10"; "m,20"], s_file);
+assert(error_id(@() Scenario.import_csv(s_file)) == "GUILDA:Scenario:CsvConflict")
 
 
 %% Default judge: stable and out-of-step on IEEE9bus
@@ -276,7 +276,7 @@ clear Deprecated
 lastwarn("");
 ev = DebugScript.helper.quiet(@() ODEevent("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008"));
 assert(string(DebugScript.helper.msg_id()) == "GUILDA:Deprecated:ODEevent")
-assert(isa(ev, "Scenario") && ev.a_PowerNetwork == net && ev.str_tag == "fault" && ev.tab_disturbance.Tag == "fault")
+assert(isa(ev, "Scenario") && ev.a_PowerNetwork == net && ev.s_tag == "fault" && ev.tab_disturbance.Tag == "fault")
 lastwarn("");
 ev2 = DebugScript.helper.quiet(@() ODEevent("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B002"));
 assert(isempty(lastwarn()), "警告は 1 回だけ")
@@ -290,7 +290,7 @@ assert(isequaln(r_old.rm_variable, r_new.rm_variable) && isequal(r_old.output.ph
 % 同じタグの ODEevent は前のものを置き換える (ループで増えない)
 ev3 = DebugScript.helper.quiet(@() ODEevent("fault", net, "TimeSpan", [1,1.1], "FaultBus", "B008"));
 assert(isempty(ev.a_PowerNetwork) && ev3.a_PowerNetwork == net)
-assert(sum(cellfun(@(s) s.str_tag == "fault", net.a_Scenario)) == 1)
+assert(sum(cellfun(@(s) s.s_tag == "fault", net.a_Scenario)) == 1)
 % Scenario として追加した同じタグのシナリオは置き換えない
 assert(error_id(@() ODEevent("new", net, "TimeSpan", [1,1.1], "FaultBus", "B008")) == "GUILDA:PowerNetwork:ScenarioTagInUse")
 

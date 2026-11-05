@@ -36,7 +36,7 @@ function sys = get_sys_alone(obj, x, V, I, u, opt)
 
     % The ports are V (input) and I (output), so a model whose equations depend on I cannot be linearized here
     if any([Bxi(:); Dii(:); Dyi(:)] ~= 0)
-        error(msg("GUILDA:Component:CurrentDependence", obj.str_tag))
+        error(msg("GUILDA:Component:CurrentDependence", obj.s_tag))
     end
 
     sv_V = ["Vre";"Vim"];
@@ -58,7 +58,7 @@ function sys = get_sys_alone(obj, x, V, I, u, opt)
 
         case "I2V"
             if ~(rcond(Div) > 1e-12)
-                error(msg("GUILDA:Component:NoI2V", obj.str_tag))
+                error(msg("GUILDA:Component:NoI2V", obj.s_tag))
             end
             inv_Div = Div^-1;
 

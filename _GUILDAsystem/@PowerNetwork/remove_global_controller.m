@@ -1,4 +1,4 @@
-function remove_global_controller(obj, str_GconTag)
+function remove_global_controller(obj, sr_GconTag)
 % Remove global controllers by tag.
 %
 % The removed controllers no longer refer to this network.
@@ -13,17 +13,17 @@ function remove_global_controller(obj, str_GconTag)
 % <@Group> Model building
     arguments
         obj
-        str_GconTag (1,:) string   % Tags of the global controllers to remove.
+        sr_GconTag (1,:) string   % Tags of the global controllers to remove.
     end
-    str_tagGcon = string(obj.a_GlobalController);
-    str_missing = str_GconTag(~ismember(str_GconTag, str_tagGcon));
-    if ~isempty(str_missing)
-        error(msg("GUILDA:PowerNetwork:GconNotFound", char(join(str_missing,"', '")), char(obj.str_tag)))
+    sv_tagGcon  = string(obj.a_GlobalController);
+    sr_missing  = sr_GconTag(~ismember(sr_GconTag, sv_tagGcon));
+    if ~isempty(sr_missing)
+        error(msg("GUILDA:PowerNetwork:GconNotFound", char(join(sr_missing,"', '")), char(obj.s_tag)))
     end
-    lv_rm   = ismember(str_tagGcon, str_GconTag);
+    lv_rm   = ismember(sv_tagGcon, sr_GconTag);
     a_rmGC  = obj.a_GlobalController(lv_rm);
 
     obj.a_GlobalController = obj.a_GlobalController(~lv_rm);
-    obj.log_edit(obj.str_tag+" ---remove->> "+join(str_tagGcon(lv_rm),", "),"Topology");
+    obj.log_edit(obj.s_tag+" ---remove->> "+join(sv_tagGcon(lv_rm),", "),"Topology");
     cellfun(@(g) g.set_parent([]), a_rmGC);
 end

@@ -15,17 +15,17 @@ function c_nv = v3_simulate_args(c_nv)
     arguments (Output)
         c_nv   % Name-Value options with the v4 names.
     end
-    sv_old = ["Reporter", "RelativeTolerance"];
-    sv_new = ["Progress", "Tolerance"];
+    sr_old = ["Reporter", "RelativeTolerance"];
+    sr_new = ["Progress", "Tolerance"];
     for k = 1:2:numel(c_nv)
         x = c_nv{k};
         if ~((ischar(x) && isrow(x)) || (isstring(x) && isscalar(x)))
             continue
         end
-        idx = find(strcmpi(x, sv_old), 1);
+        idx = find(strcmpi(x, sr_old), 1);
         if ~isempty(idx)
-            Deprecated("SimulateOptionName", sv_old(idx), sv_new(idx));
-            c_nv{k} = sv_new(idx);
+            Deprecated("SimulateOptionName", sr_old(idx), sr_new(idx));
+            c_nv{k} = sr_new(idx);
         end
     end
 end

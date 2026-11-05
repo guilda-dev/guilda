@@ -52,16 +52,16 @@ function [tab, c_result] = compare_table4_13(opt)
         tab      % Table of the cases, the report verdict and the GUILDA verdict.
         c_result % ResultODE of each case (cell, rows of tab).
     end
-    str_dir = fileparts(mfilename("fullpath"));
+    s_dir = fileparts(mfilename("fullpath"));
     % GUILDA (the repository root) is found through the current folder only; add the root
     % for this run when it is neither the current folder nor on the path (after cd, or
     % inside run). which("GUILDA") is not empty there once the class has been loaded.
-    str_root = fileparts(fileparts(str_dir));
-    if ~any(strcmp(str_root, [string(pwd), split(string(path), pathsep).']))
-        addpath(str_root);
-        obj_cleanup = onCleanup(@() rmpath(str_root));
+    s_root = fileparts(fileparts(s_dir));
+    if ~any(strcmp(s_root, [string(pwd), split(string(path), pathsep).']))
+        addpath(s_root);
+        obj_cleanup = onCleanup(@() rmpath(s_root));
     end
-    tab_rep = readtable(fullfile(str_dir, "table4_13_report.csv"), TextType="string", Delimiter=",");
+    tab_rep = readtable(fullfile(s_dir, "table4_13_report.csv"), TextType="string", Delimiter=",");
     tab_rep = tab_rep(ismember(tab_rep.Section, opt.Sections) & ismember(tab_rep.Scenario, opt.Cases), :);
 
     n_case = height(tab_rep);
@@ -69,12 +69,12 @@ function [tab, c_result] = compare_table4_13(opt)
     sv_oos = strings(n_case,1);      rv_flag = nan(n_case,1); rv_time = nan(n_case,1);
     c_result = cell(n_case,1);
 
-    for str_sec = opt.Sections
-        lv_sec = find(tab_rep.Section == str_sec).';
+    for s_sec = opt.Sections
+        lv_sec = find(tab_rep.Section == s_sec).';
         if isempty(lv_sec), continue, end
-        net  = network.IEEJ_WEST30(Section=str_sec, Governor=opt.Governor);
-        c_sc = Scenario.import_csv(fullfile(str_dir, "table4_13_" + str_sec + ".csv"), Network=net);
-        sv_sc = cellfun(@(s) s.str_tag, c_sc);
+        net  = network.IEEJ_WEST30(Section=s_sec, Governor=opt.Governor);
+        c_sc = Scenario.import_csv(fullfile(s_dir, "table4_13_" + s_sec + ".csv"), Network=net);
+        sv_sc = cellfun(@(s) s.s_tag, c_sc);
         sv_br = string(net.a_Branch);
 
         for k = lv_sec
@@ -97,11 +97,11 @@ function [tab, c_result] = compare_table4_13(opt)
                 c_result{k} = result;
             end
             if opt.Plot
-                plot_case(result, v, str_sec, row);
+                plot_case(result, v, s_sec, row);
             end
             if opt.Display
                 fprintf("%-5s %s  report %-11s GUILDA %-11s  max %7.0f deg  t360 %5.2f s  [%s]  (%.0f s)\n", ...
-                        str_sec, row.Scenario, verdict_of(row.ReportStable), sv_verdict(k), rv_max(k), rv_toos(k), sv_oos(k), rv_time(k));
+                        s_sec, row.Scenario, verdict_of(row.ReportStable), sv_verdict(k), rv_max(k), rv_toos(k), sv_oos(k), rv_time(k));
             end
         end
     end
@@ -111,9 +111,9 @@ function [tab, c_result] = compare_table4_13(opt)
            table(sv_verdict, lv_agree, rv_max, rv_toos, sv_oos, rv_flag, rv_time, ...
                  VariableNames=["Verdict","Agree","MaxAngle","TimeOutOfStep","OutOfStep","Flag","Elapsed"])];
     if opt.Display
-        for str_sec = opt.Sections
-            lv = tab.Section == str_sec;
-            fprintf("%s: %d of %d agree\n", str_sec, nnz(tab.Agree(lv)), nnz(lv));
+        for s_sec = opt.Sections
+            lv = tab.Section == s_sec;
+            fprintf("%s: %d of %d agree\n", s_sec, nnz(tab.Agree(lv)), nnz(lv));
         end
         fprintf("Total (Governor=%d): %d of %d agree\n", opt.Governor, nnz(tab.Agree), height(tab));
     end
@@ -148,15 +148,15 @@ function check_case(net, sv_br, sc, row)
 end
 
 
-function plot_case(result, v, str_sec, row)
+function plot_case(result, v, s_sec, row)
 % Rotor angles of the generators relative to the reference machine of the verdict
     tab = result.tab_variable;
     lv_d = tab.Kind == "x" & tab.Name == "delta";
     m_delta = result.rm_variable(:, lv_d);
     rv_ref  = m_delta(:, tab.Owner(lv_d) == v.Reference);
-    figure("Name", "IEEJ_WEST30 " + str_sec + " case " + row.Scenario);
+    figure("Name", "IEEJ_WEST30 " + s_sec + " case " + row.Scenario);
     plot(result.rv_t, (m_delta - rv_ref)*180/pi);
     xlabel("t [s]"); ylabel("\delta - \delta_{ref} [deg]");
-    title(sprintf("%s %s: %s (report: %s)", str_sec, row.Scenario, v.Verdict, row.Report));
+    title(sprintf("%s %s: %s (report: %s)", s_sec, row.Scenario, v.Verdict, row.Report));
     grid on
 end

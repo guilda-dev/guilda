@@ -74,7 +74,7 @@ classdef (Sealed = true) Scenario < auxiliary
     properties (SetAccess=private) % Identity
         % Tag of the scenario, unique among the scenarios of its network.
         % <@Type> string
-        str_tag (1,1) string = ""
+        s_tag (1,1) string = ""
     end
 
     properties (SetAccess=private) % Layer Structure
@@ -125,7 +125,7 @@ classdef (Sealed = true) Scenario < auxiliary
 
     properties (Constant, Hidden) % Disturbance fields
         % Disturbance fields, in the column order of tab_disturbance (after Tag and TimeSpan).
-        sv_field = ["FaultBus","TripUnit","OpenBranch","OffsetUnit","OffsetState","OffsetValue", ...
+        sr_field = ["FaultBus","TripUnit","OpenBranch","OffsetUnit","OffsetState","OffsetValue", ...
                     "InputUnit","InputName","InputValue"]
     end
 
@@ -145,24 +145,24 @@ classdef (Sealed = true) Scenario < auxiliary
             arguments (Output)
                 obj % New scenario without disturbances.
             end
-            obj.str_tag = tag;
+            obj.s_tag = tag;
             obj.tab_disturbance = empty_disturbances();
-            for str_name = string(fieldnames(opt)).'
-                obj.(str_name) = opt.(str_name);
+            for s_name = string(fieldnames(opt)).'
+                obj.(s_name) = opt.(s_name);
             end
         end
 
         function set.Options(obj, s)
             sv_ok = [string(fieldnames(SolverODE.OptionMap)); "Export"];
-            for str_name = string(fieldnames(s)).'
-                if ~any(strcmpi(str_name, sv_ok))
-                    error(msg("GUILDA:Scenario:UnknownOption", char(obj.str_tag), char(str_name), char(join(sv_ok, ", "))));
+            for s_name = string(fieldnames(s)).'
+                if ~any(strcmpi(s_name, sv_ok))
+                    error(msg("GUILDA:Scenario:UnknownOption", char(obj.s_tag), char(s_name), char(join(sv_ok, ", "))));
                 end
             end
             obj.Options = s;
         end
 
-        function str_tag = add_disturbance(obj, tag, opt)
+        function s_tag = add_disturbance(obj, tag, opt)
         % Add a disturbance given by any of the disturbance fields.
         %
         % The general form, with the fields of the deprecated ODEevent: one disturbance may
@@ -192,14 +192,14 @@ classdef (Sealed = true) Scenario < auxiliary
                 opt.InputValue  (:,1) {mustBeA(opt.InputValue, {'double','cell','function_handle'})} = zeros(0,1) % Values added to InputName: numbers, or a cell of numbers and functions f(t) of the time since t_start.
             end
             arguments (Output)
-                str_tag (1,1) string % Tag of the added disturbance.
+                s_tag (1,1) string % Tag of the added disturbance.
             end
             d = opt;
             d.Tag = tag;
-            str_tag = obj.add_record(d, "");
+            s_tag = obj.add_record(d, "");
         end
 
-        function str_tag = add_fault(obj, bus, time, opt)
+        function s_tag = add_fault(obj, bus, time, opt)
         % Add a ground fault (voltage 0) on buses from t_start to t_end.
         %
         % <@Examples>
@@ -213,14 +213,14 @@ classdef (Sealed = true) Scenario < auxiliary
                 opt.Tag (1,1) string = "" % Tag of the disturbance; default fault<n>.
             end
             arguments (Output)
-                str_tag (1,1) string % Tag of the added disturbance.
+                s_tag (1,1) string % Tag of the added disturbance.
             end
             d = blank_record(opt.Tag, time);
             d.FaultBus = bus;
-            str_tag = obj.add_record(d, "fault");
+            s_tag = obj.add_record(d, "fault");
         end
 
-        function str_tag = add_trip(obj, unit, time, opt)
+        function s_tag = add_trip(obj, unit, time, opt)
         % Add a trip of components or global controllers from t_start to t_end.
         %
         % A tripped unit is disconnected (its states are NaN in the result) and reconnected at
@@ -232,14 +232,14 @@ classdef (Sealed = true) Scenario < auxiliary
                 opt.Tag (1,1) string = "" % Tag of the disturbance; default trip<n>.
             end
             arguments (Output)
-                str_tag (1,1) string % Tag of the added disturbance.
+                s_tag (1,1) string % Tag of the added disturbance.
             end
             d = blank_record(opt.Tag, time);
             d.TripUnit = unit;
-            str_tag = obj.add_record(d, "trip");
+            s_tag = obj.add_record(d, "trip");
         end
 
-        function str_tag = add_open_branch(obj, branch, time, opt)
+        function s_tag = add_open_branch(obj, branch, time, opt)
         % Add the opening of branches from t_start to t_end.
         %
         % The branches are left out of the bus admittance matrix and reconnected at t_end; a
@@ -256,14 +256,14 @@ classdef (Sealed = true) Scenario < auxiliary
                 opt.Tag (1,1) string = "" % Tag of the disturbance; default open<n>.
             end
             arguments (Output)
-                str_tag (1,1) string % Tag of the added disturbance.
+                s_tag (1,1) string % Tag of the added disturbance.
             end
             d = blank_record(opt.Tag, time);
             d.OpenBranch = branch;
-            str_tag = obj.add_record(d, "open");
+            s_tag = obj.add_record(d, "open");
         end
 
-        function str_tag = add_offset(obj, unit, state, value, time, opt)
+        function s_tag = add_offset(obj, unit, state, value, time, opt)
         % Add an offset of the states of a component at one time.
         %
         % The values are added to the states at time (to the initial states when time is the
@@ -282,16 +282,16 @@ classdef (Sealed = true) Scenario < auxiliary
                 opt.Tag (1,1) string = "" % Tag of the disturbance; default offset<n>.
             end
             arguments (Output)
-                str_tag (1,1) string % Tag of the added disturbance.
+                s_tag (1,1) string % Tag of the added disturbance.
             end
             d = blank_record(opt.Tag, time);
             d.OffsetUnit  = unit;
             d.OffsetState = state;
             d.OffsetValue = value;
-            str_tag = obj.add_record(d, "offset");
+            s_tag = obj.add_record(d, "offset");
         end
 
-        function str_tag = add_input(obj, unit, name, value, time, opt)
+        function s_tag = add_input(obj, unit, name, value, time, opt)
         % Add values to inputs of a component from t_start to t_end.
         %
         % A value is a number or a function f(t) of the time since t_start; several inputs take
@@ -310,13 +310,13 @@ classdef (Sealed = true) Scenario < auxiliary
                 opt.Tag (1,1) string = "" % Tag of the disturbance; default input<n>.
             end
             arguments (Output)
-                str_tag (1,1) string % Tag of the added disturbance.
+                s_tag (1,1) string % Tag of the added disturbance.
             end
             d = blank_record(opt.Tag, time);
             d.InputUnit  = unit;
             d.InputName  = name;
             d.InputValue = value;
-            str_tag = obj.add_record(d, "input");
+            s_tag = obj.add_record(d, "input");
         end
 
         function remove_disturbance(obj, tag)
@@ -327,7 +327,7 @@ classdef (Sealed = true) Scenario < auxiliary
             end
             lv_bad = ~ismember(tag, obj.tab_disturbance.Tag);
             if any(lv_bad)
-                error(msg("GUILDA:Scenario:DisturbanceNotFound", char(join(tag(lv_bad), ", ")), char(obj.str_tag)));
+                error(msg("GUILDA:Scenario:DisturbanceNotFound", char(join(tag(lv_bad), ", ")), char(obj.s_tag)));
             end
             obj.tab_disturbance = obj.tab_disturbance(~ismember(obj.tab_disturbance.Tag, tag), :);
         end
@@ -367,7 +367,7 @@ classdef (Sealed = true) Scenario < auxiliary
             arguments (Output)
                 sc % New Scenario, not attached to a network.
             end
-            sc = Scenario(obj.str_tag, Time=obj.Time, Options=obj.Options, Judge=obj.Judge, ...
+            sc = Scenario(obj.s_tag, Time=obj.Time, Options=obj.Options, Judge=obj.Judge, ...
                           Description=obj.Description);
             sc.tab_disturbance = obj.tab_disturbance;
         end
@@ -388,7 +388,7 @@ classdef (Sealed = true) Scenario < auxiliary
             arguments (Output)
                 str % Tag string.
             end
-            str = obj.str_tag;
+            str = obj.s_tag;
         end
     end
 
@@ -411,33 +411,33 @@ classdef (Sealed = true) Scenario < auxiliary
                 net % Network to check against ([] checks only what needs no network).
             end
             for k = 1:height(obj.tab_disturbance)
-                validate_disturbance(get_record(obj.tab_disturbance, k), obj.str_tag, net);
+                validate_disturbance(get_record(obj.tab_disturbance, k), obj.s_tag, net);
             end
         end
     end
 
     methods (Static, Access={?SolverODE})
-        [tab_phase, s_phase] = compile(c_scenario, net, time)
+        [tab_phase, sct_phase] = compile(c_scenario, net, time)
     end
 
     methods (Access=private)
-        function str_tag = add_record(obj, d, str_kind)
-            % Add the disturbance record d; an empty tag takes <str_kind><n>.
+        function s_tag = add_record(obj, d, s_kind)
+            % Add the disturbance record d; an empty tag takes <s_kind><n>.
             arguments (Input)
                 obj
-                d        % Disturbance record (struct with the fields of add_disturbance).
-                str_kind % Prefix of the automatic tag ("" keeps the tag as given).
+                d       % Disturbance record (struct with the fields of add_disturbance).
+                s_kind  % Prefix of the automatic tag ("" keeps the tag as given).
             end
             arguments (Output)
-                str_tag  % Tag of the added disturbance.
+                s_tag   % Tag of the added disturbance.
             end
-            if strlength(d.Tag) == 0 && ~ismissing(d.Tag) && str_kind ~= ""
-                d.Tag = next_tag(obj.tab_disturbance.Tag, str_kind);
+            if strlength(d.Tag) == 0 && ~ismissing(d.Tag) && s_kind ~= ""
+                d.Tag = next_tag(obj.tab_disturbance.Tag, s_kind);
             end
-            check_tag(d.Tag, obj.str_tag, obj.tab_disturbance.Tag);
-            validate_disturbance(d, obj.str_tag, obj.a_PowerNetwork);
+            check_tag(d.Tag, obj.s_tag, obj.tab_disturbance.Tag);
+            validate_disturbance(d, obj.s_tag, obj.a_PowerNetwork);
             obj.tab_disturbance = [obj.tab_disturbance; record_row(d)];
-            str_tag = d.Tag;
+            s_tag = d.Tag;
         end
     end
 
@@ -446,20 +446,20 @@ classdef (Sealed = true) Scenario < auxiliary
         function d = record(tab, k),               d = get_record(tab, k);              end
         function d = blank(tag, time),             d = blank_record(tag, time);         end
         function tab = empty_table(),              tab = empty_disturbances();          end
-        function check(d, str_scenario, net),      validate_disturbance(d, str_scenario, net); end
+        function check(d, s_scenario, net),      validate_disturbance(d, s_scenario, net); end
     end
 
     methods (Access={?Scenario})
-        function str_tag = add_checked(obj, d)
+        function s_tag = add_checked(obj, d)
             % Add a record read from a file (import_csv); "" takes event<n>.
             arguments (Input)
                 obj
-                d       % Disturbance record (struct with the fields of add_disturbance).
+                d      % Disturbance record (struct with the fields of add_disturbance).
             end
             arguments (Output)
-                str_tag % Tag of the added disturbance.
+                s_tag  % Tag of the added disturbance.
             end
-            str_tag = obj.add_record(d, "event");
+            s_tag = obj.add_record(d, "event");
         end
     end
 end
@@ -517,35 +517,35 @@ function d = get_record(tab, k)
     d.InputValue  = tab.InputValue{k};
 end
 
-function str_tag = next_tag(sv_tag, str_kind)
-% <str_kind><n> with n the largest number in use with this prefix plus one
-    sv_num = extractAfter(sv_tag(startsWith(sv_tag, str_kind)), strlength(str_kind));
+function s_tag = next_tag(sv_tag, s_kind)
+% <s_kind><n> with n the largest number in use with this prefix plus one
+    sv_num = extractAfter(sv_tag(startsWith(sv_tag, s_kind)), strlength(s_kind));
     rv_num = str2double(sv_num(matches(sv_num, digitsPattern)));
     n = max([0; rv_num(:)]) + 1;
-    str_tag = str_kind + n;
+    s_tag = s_kind + n;
 end
 
-function check_tag(str_tag, str_scenario, sv_tag)
+function check_tag(s_tag, s_scenario, sv_tag)
 % Tags name the columns of the phase table: unique and not reserved
-    if ismissing(str_tag) || ismember(str_tag, ["t1","t2","Properties","Row","Variables",""]) ...
-            || matches(str_tag, "NoAction" + digitsPattern)
-        error(msg("GUILDA:Scenario:ReservedTag", char(string(str_tag)), char(str_scenario)));
+    if ismissing(s_tag) || ismember(s_tag, ["t1","t2","Properties","Row","Variables",""]) ...
+            || matches(s_tag, "NoAction" + digitsPattern)
+        error(msg("GUILDA:Scenario:ReservedTag", char(string(s_tag)), char(s_scenario)));
     end
-    if ismember(str_tag, sv_tag)
-        error(msg("GUILDA:Scenario:DuplicateTag", char(str_tag), char(str_scenario)));
+    if ismember(s_tag, sv_tag)
+        error(msg("GUILDA:Scenario:DuplicateTag", char(s_tag), char(s_scenario)));
     end
 end
 
-function validate_disturbance(d, str_scenario, net)
+function validate_disturbance(d, s_scenario, net)
 % Checks of one disturbance; with net = [] (scenario not attached), those without the network.
-    c_lbl = {char(d.Tag), char(str_scenario)};
+    c_lbl = {char(d.Tag), char(s_scenario)};
     ts = d.TimeSpan;
     if ~isnumeric(ts) || ~isreal(ts) || any(isnan(ts)) || (numel(ts) == 2 && ts(1) > ts(2))
-        str_ts = class(ts);
+        s_ts = class(ts);
         if isnumeric(ts)
-            str_ts = mat2str(ts);
+            s_ts = mat2str(ts);
         end
-        error(msg("GUILDA:Scenario:InvalidTimeSpan", c_lbl{:}, str_ts));
+        error(msg("GUILDA:Scenario:InvalidTimeSpan", c_lbl{:}, s_ts));
     end
 
     % A fault, trip, opening or input needs its end time; only an offset acts at one instant.
@@ -558,28 +558,28 @@ function validate_disturbance(d, str_scenario, net)
 
     l_net = ~isempty(net);
     if l_net
-        str_net = char(net.str_tag);
+        s_net = char(net.s_tag);
         a_bus  = net.a_Bus;
-        sv_bus = string(cellfun(@(b) b.str_tag, a_bus, 'UniformOutput', false));
+        sv_bus = string(cellfun(@(b) b.s_tag, a_bus, 'UniformOutput', false));
         lv_bad = ~ismember(d.FaultBus, sv_bus);
         if any(lv_bad)
-            error(msg("GUILDA:Scenario:UnknownFaultBus", c_lbl{:}, char(join(d.FaultBus(lv_bad), ", ")), str_net));
+            error(msg("GUILDA:Scenario:UnknownFaultBus", c_lbl{:}, char(join(d.FaultBus(lv_bad), ", ")), s_net));
         end
 
         sv_br  = string(net.a_Branch);
         lv_bad = ~ismember(d.OpenBranch, sv_br);
         if any(lv_bad)
-            error(msg("GUILDA:Scenario:UnknownOpenBranch", c_lbl{:}, char(join(d.OpenBranch(lv_bad), ", ")), str_net));
+            error(msg("GUILDA:Scenario:UnknownOpenBranch", c_lbl{:}, char(join(d.OpenBranch(lv_bad), ", ")), s_net));
         end
 
         a_comp = cellfun(@(b) b.a_Component, a_bus, 'UniformOutput', false);
         a_comp = vertcat(cell(0,1), a_comp{:});
-        sv_tag = string(cellfun(@(c) c.str_tag, a_comp, 'UniformOutput', false));
+        sv_tag = string(cellfun(@(c) c.s_tag, a_comp, 'UniformOutput', false));
 
-        sv_gc  = string(cellfun(@(g) g.str_tag, net.a_GlobalController, 'UniformOutput', false));
+        sv_gc  = string(cellfun(@(g) g.s_tag, net.a_GlobalController, 'UniformOutput', false));
         lv_bad = ~ismember(d.TripUnit, [sv_tag(:); sv_gc(:)]);
         if any(lv_bad)
-            error(msg("GUILDA:Scenario:UnknownTripUnit", c_lbl{:}, char(join(d.TripUnit(lv_bad), ", ")), str_net));
+            error(msg("GUILDA:Scenario:UnknownTripUnit", c_lbl{:}, char(join(d.TripUnit(lv_bad), ", ")), s_net));
         end
     end
 
@@ -587,7 +587,7 @@ function validate_disturbance(d, str_scenario, net)
         if l_net
             lv_cmp = sv_tag == d.OffsetUnit;
             if ~any(lv_cmp)
-                error(msg("GUILDA:Scenario:UnknownOffsetUnit", c_lbl{:}, char(d.OffsetUnit), str_net));
+                error(msg("GUILDA:Scenario:UnknownOffsetUnit", c_lbl{:}, char(d.OffsetUnit), s_net));
             end
             sv_x = string(a_comp{find(lv_cmp,1)}.sv_x(:));
             lv_bad = ~ismember(d.OffsetState, sv_x);
@@ -605,7 +605,7 @@ function validate_disturbance(d, str_scenario, net)
     if l_net
         lv_cmp = sv_tag == d.InputUnit;
         if ~any(lv_cmp)
-            error(msg("GUILDA:Scenario:UnknownInputUnit", c_lbl{:}, char(d.InputUnit), str_net));
+            error(msg("GUILDA:Scenario:UnknownInputUnit", c_lbl{:}, char(d.InputUnit), s_net));
         end
         sv_u = string(a_comp{find(lv_cmp,1)}.sv_u(:));
         lv_bad = ~ismember(d.InputName, sv_u);
@@ -628,11 +628,11 @@ function validate_disturbance(d, str_scenario, net)
     end
 end
 
-function checkValueCount(c_lbl, str_value, values, str_name, names)
+function checkValueCount(c_lbl, s_value, values, s_name, names)
     % One value per name, or a single value for all the names
     if isempty(names) || ~(isscalar(values) || numel(values) == numel(names))
-        error(msg("GUILDA:Scenario:ValueCountMismatch", c_lbl{:}, char(str_value), ...
-                string(numel(values)), string(numel(names)), char(str_name)));
+        error(msg("GUILDA:Scenario:ValueCountMismatch", c_lbl{:}, char(s_value), ...
+                string(numel(values)), string(numel(names)), char(s_name)));
     end
 end
 

@@ -17,8 +17,8 @@ assert(isequal(x, net.linearize().rv_point(1:height(tab))))
 
 % 変数表の持ち主ごとに、その行の値が持ち主の平衡点と一致する
 for owner = all_owners(net)'
-    assert(isequal(x(tab.Owner == string(owner{1}.str_tag)), owner{1}.rv_Xequilibrium), ...
-           "Owner " + owner{1}.str_tag)
+    assert(isequal(x(tab.Owner == string(owner{1}.s_tag)), owner{1}.rv_Xequilibrium), ...
+           "Owner " + owner{1}.s_tag)
 end
 
 

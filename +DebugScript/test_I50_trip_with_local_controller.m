@@ -101,9 +101,9 @@ function assert_restart(sol, gen, t2)
     end
     for k = 1:numel(a_LC)
         lc = a_LC{k};
-        rv = val(tab.Kind == "x" & tab.Owner == lc.str_tag);
+        rv = val(tab.Kind == "x" & tab.Owner == lc.s_tag);
         lv = diag(lc.f_Mass([],[],[],[],[])) ~= 0;
-        assert(numel(rv) == numel(lv), lc.str_tag + " の状態が地図にない")
-        assert(max(abs(rv(lv) - lc.rv_Xequilibrium(lv)), [], "all") < 1e-9, lc.str_tag + " が平衡点から再開していない")
+        assert(numel(rv) == numel(lv), lc.s_tag + " の状態が地図にない")
+        assert(max(abs(rv(lv) - lc.rv_Xequilibrium(lv)), [], "all") < 1e-9, lc.s_tag + " が平衡点から再開していない")
     end
 end

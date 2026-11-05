@@ -43,7 +43,7 @@ function sct_scan = find_doc_classes(option)
         sct_scan  % Scan result (Roots, Classes, Files, Images, Tool).
     end
 
-    str_root = GUILDA.pwd();
+    s_root = GUILDA.pwd();
     sct_cache = make_cache(option.cache);
 
     sct_scan = struct();
@@ -51,19 +51,19 @@ function sct_scan = find_doc_classes(option)
     sct_scan.Classes = empty_class_struct();
     sct_scan.Files   = empty_file_struct();
     sct_scan.Images  = struct('Class', {}, 'Path', {}, 'Hash', {});
-    sct_scan.Tool    = get_tool_signature(str_root);
+    sct_scan.Tool    = get_tool_signature(s_root);
 
     % System and Object
-    for str_origin = ["System", "Object"]
-        str_root_path = fullfile(str_root, "_GUILDA" + lower(str_origin));
-        if ~isfolder(str_root_path)
+    for s_origin = ["System", "Object"]
+        s_root_path = fullfile(s_root, "_GUILDA" + lower(s_origin));
+        if ~isfolder(s_root_path)
             continue
         end
-        sct_scan.Roots(end+1) = struct('Name', char(str_origin), 'Origin', char(str_origin), 'Path', char(str_root_path));
-        [sct_cls, sct_files] = scan_source_root(char(str_root_path), ...
-            get_source_path_folders(str_root, char(str_root_path)), sct_cache);
-        [sct_cls.Origin] = deal(char(str_origin));
-        [sct_cls.Root]   = deal(char(str_root_path));
+        sct_scan.Roots(end+1) = struct('Name', char(s_origin), 'Origin', char(s_origin), 'Path', char(s_root_path));
+        [sct_cls, sct_files] = scan_source_root(char(s_root_path), ...
+            get_source_path_folders(s_root, char(s_root_path)), sct_cache);
+        [sct_cls.Origin] = deal(char(s_origin));
+        [sct_cls.Root]   = deal(char(s_root_path));
         sct_scan.Classes = [sct_scan.Classes, sct_cls];
         sct_scan.Files   = [sct_scan.Files, sct_files];
     end
@@ -72,7 +72,7 @@ function sct_scan = find_doc_classes(option)
 
     % User
     if option.user
-        sct_scan = add_user_classes(sct_scan, str_root, sct_cache);
+        sct_scan = add_user_classes(sct_scan, s_root, sct_cache);
     end
 
     sct_scan.Classes = rmfield(sct_scan.Classes, {'Classdef', 'Supers'});
@@ -90,36 +90,36 @@ function sct_images = find_class_images(sct_classes)
     % image.svg next to the classdef file of an @Class folder.
     sct_images = struct('Class', {}, 'Path', {}, 'Hash', {});
     for i_class = 1:numel(sct_classes)
-        [str_dir, ~] = fileparts(sct_classes(i_class).File);
-        [~, str_dir_name] = fileparts(str_dir);
-        str_image = fullfile(str_dir, 'image.svg');
-        if startsWith(str_dir_name, '@') && isfile(str_image)
-            sct_images(end+1) = struct('Class', sct_classes(i_class).Name, 'Path', str_image, ...
-                'Hash', file_hash(read_bytes(str_image))); %#ok<AGROW>
+        [s_dir, ~] = fileparts(sct_classes(i_class).File);
+        [~, s_dir_name] = fileparts(s_dir);
+        s_image = fullfile(s_dir, 'image.svg');
+        if startsWith(s_dir_name, '@') && isfile(s_image)
+            sct_images(end+1) = struct('Class', sct_classes(i_class).Name, 'Path', s_image, ...
+                'Hash', file_hash(read_bytes(s_image))); %#ok<AGROW>
         end
     end
 end
 
-function cell_path = get_source_path_folders(str_root, str_root_path)
+function cell_path = get_source_path_folders(s_root, s_root_path)
     % Path folders under one root, the root first.
-    [~, str_root_name] = fileparts(str_root_path);
-    str_list = fullfile(str_root, '@GUILDA', 'config', 'ListPath.txt');
+    [~, s_root_name] = fileparts(s_root_path);
+    s_list = fullfile(s_root, '@GUILDA', 'config', 'ListPath.txt');
     cell_list = {};
-    if isfile(str_list)
-        cell_list = strsplit(strtrim(fileread(str_list)));
+    if isfile(s_list)
+        cell_list = strsplit(strtrim(fileread(s_list)));
     end
-    cell_list = cell_list(strcmp(cell_list, str_root_name) | startsWith(cell_list, [str_root_name, '/']));
-    cell_list = unique([{str_root_name}, cell_list], 'stable');
-    cell_path = cellfun(@(p) fullfile(str_root, strrep(p, '/', filesep)), cell_list, 'UniformOutput', false);
+    cell_list = cell_list(strcmp(cell_list, s_root_name) | startsWith(cell_list, [s_root_name, '/']));
+    cell_list = unique([{s_root_name}, cell_list], 'stable');
+    cell_path = cellfun(@(p) fullfile(s_root, strrep(p, '/', filesep)), cell_list, 'UniformOutput', false);
     cell_path = cell_path(cellfun(@isfolder, cell_path));
 end
 
-function [sct_classes, sct_files] = scan_source_root(str_root_path, cell_path, sct_cache)
+function [sct_classes, sct_files] = scan_source_root(s_root_path, cell_path, sct_cache)
     % One recursive listing of the root, filtered by the path rules: a path
     % folder, then +pkg folders, then optionally @Class (and @Class/private).
     sct_classes = empty_class_struct();
     sct_files   = empty_file_struct();
-    sct_list = dir(fullfile(str_root_path, '**', '*.m'));
+    sct_list = dir(fullfile(s_root_path, '**', '*.m'));
     sct_list = sct_list(~startsWith({sct_list.name}, '.'));
     [cell_folders, ~, iv_folder] = unique({sct_list.folder});
     sct_kind = cellfun(@(f) classify_folder(f, cell_path), cell_folders);
@@ -128,26 +128,26 @@ function [sct_classes, sct_files] = scan_source_root(str_root_path, cell_path, s
         if ~sct_k.Valid
             continue
         end
-        [~, str_base] = fileparts(sct_list(i_item).name);
-        bln_candidate = isempty(sct_k.Class) || (~sct_k.Private && strcmp(str_base, sct_k.Class));
+        [~, s_base] = fileparts(sct_list(i_item).name);
+        bln_candidate = isempty(sct_k.Class) || (~sct_k.Private && strcmp(s_base, sct_k.Class));
         sct_file = read_file_entry(sct_list(i_item), bln_candidate, sct_cache);
         sct_files(end+1) = sct_file; %#ok<AGROW>
         if isempty(sct_k.Class)
-            sct_classes(end+1) = make_class([sct_k.Package, str_base], sct_file); %#ok<AGROW>
+            sct_classes(end+1) = make_class([sct_k.Package, s_base], sct_file); %#ok<AGROW>
         elseif bln_candidate
             sct_classes(end+1) = make_class([sct_k.Package, sct_k.Class], sct_file); %#ok<AGROW>
         end
     end
 end
 
-function sct_kind = classify_folder(str_folder, cell_path)
+function sct_kind = classify_folder(s_folder, cell_path)
     sct_kind = struct('Valid', false, 'Package', '', 'Class', '', 'Private', false);
-    bln_under = cellfun(@(p) strcmp(str_folder, p) || startsWith(str_folder, [p, filesep]), cell_path);
+    bln_under = cellfun(@(p) strcmp(s_folder, p) || startsWith(s_folder, [p, filesep]), cell_path);
     if ~any(bln_under)
         return
     end
-    str_base = cell_path{find(bln_under, 1, 'last')};
-    cell_parts = strsplit(str_folder(numel(str_base)+1:end), filesep);
+    s_base = cell_path{find(bln_under, 1, 'last')};
+    cell_parts = strsplit(s_folder(numel(s_base)+1:end), filesep);
     cell_parts = cell_parts(~cellfun(@isempty, cell_parts));
     if ~isempty(cell_parts) && strcmp(cell_parts{end}, 'private')
         sct_kind.Private = true;
@@ -167,8 +167,8 @@ function sct_kind = classify_folder(str_folder, cell_path)
     sct_kind.Package = strjoin(cellfun(@(c) [c(2:end), '.'], cell_parts, 'UniformOutput', false), '');
 end
 
-function sct_scan = add_user_classes(sct_scan, str_root, sct_cache)
-    cell_folders = get_user_path_folders(str_root);
+function sct_scan = add_user_classes(sct_scan, s_root, sct_cache)
+    cell_folders = get_user_path_folders(s_root);
     sct_cls_all = empty_class_struct();
     cell_folder_of = {};
     for i_folder = 1:numel(cell_folders)
@@ -213,13 +213,13 @@ function sct_scan = add_user_classes(sct_scan, str_root, sct_cache)
     % another such folder.
     cell_class_folders = unique(cell_folder_of, 'stable');
     for i_folder = 1:numel(cell_class_folders)
-        str_folder = cell_class_folders{i_folder};
-        bln_inside = any(cellfun(@(f) ~strcmp(f, str_folder) && startsWith(str_folder, [f, filesep]), cell_class_folders));
+        s_folder   = cell_class_folders{i_folder};
+        bln_inside = any(cellfun(@(f) ~strcmp(f, s_folder) && startsWith(s_folder, [f, filesep]), cell_class_folders));
         if bln_inside
             continue
         end
-        [~, str_name] = fileparts(str_folder);
-        sct_scan.Roots(end+1) = struct('Name', str_name, 'Origin', 'User', 'Path', str_folder);
+        [~, s_name] = fileparts(s_folder);
+        sct_scan.Roots(end+1) = struct('Name', s_name, 'Origin', 'User', 'Path', s_folder);
     end
     cell_roots = {sct_scan.Roots(strcmp({sct_scan.Roots.Origin}, 'User')).Path};
     % Changes to other user files (scripts, unrelated classes) do not
@@ -229,89 +229,89 @@ function sct_scan = add_user_classes(sct_scan, str_root, sct_cache)
         [sct_scan.Files(bln_in).Tracked] = deal(true);
     end
     for i_cls = 1:numel(sct_cls_all)
-        str_folder = cell_folder_of{i_cls};
-        i_root = find(cellfun(@(r) strcmp(r, str_folder) || startsWith(str_folder, [r, filesep]), cell_roots), 1, 'first');
+        s_folder = cell_folder_of{i_cls};
+        i_root = find(cellfun(@(r) strcmp(r, s_folder) || startsWith(s_folder, [r, filesep]), cell_roots), 1, 'first');
         sct_cls_all(i_cls).Origin = 'User';
         sct_cls_all(i_cls).Root   = cell_roots{i_root};
     end
     sct_scan.Classes = [sct_scan.Classes, sct_cls_all];
 end
 
-function cell_folders = get_user_path_folders(str_root)
+function cell_folders = get_user_path_folders(s_root)
     % Folders on the MATLAB path that belong to the user: not MATLAB's own,
     % not GUILDA's own (in this or another copy of GUILDA), not add-ons.
     cell_folders = strsplit(path, pathsep);
-    str_matlab = matlabroot;
-    cell_folders = cell_folders(~cellfun(@isempty, cell_folders) & ~startsWith(cell_folders, str_matlab));
+    s_matlab = matlabroot;
+    cell_folders = cell_folders(~cellfun(@isempty, cell_folders) & ~startsWith(cell_folders, s_matlab));
     bln_keep = true(size(cell_folders));
     for i_folder = 1:numel(cell_folders)
-        str_folder = cell_folders{i_folder};
-        cell_parts = strsplit(str_folder, {'/', '\'});
-        bln_keep(i_folder) = ~is_under(str_folder, str_matlab) ...
-            && ~is_under(str_folder, str_root) ...
+        s_folder   = cell_folders{i_folder};
+        cell_parts = strsplit(s_folder, {'/', '\'});
+        bln_keep(i_folder) = ~is_under(s_folder, s_matlab) ...
+            && ~is_under(s_folder, s_root) ...
             && ~any(startsWith(cell_parts, {'_GUILDA', '@GUILDA'})) ...
-            && ~contains(str_folder, {'MATLAB Add-Ons', 'SupportPackages'}) ...
-            && isfolder(str_folder);
+            && ~contains(s_folder, {'MATLAB Add-Ons', 'SupportPackages'}) ...
+            && isfolder(s_folder);
     end
     cell_folders = cell_folders(bln_keep);
 end
 
-function bln = is_under(str_folder, str_parent)
-    bln = strcmp(str_folder, str_parent) || startsWith(str_folder, [str_parent, filesep]);
+function bln = is_under(s_folder, s_parent)
+    bln = strcmp(s_folder, s_parent) || startsWith(s_folder, [s_parent, filesep]);
 end
 
-function [sct_classes, sct_files] = scan_folder(str_folder, str_package, sct_cache)
+function [sct_classes, sct_files] = scan_folder(s_folder, s_package, sct_cache)
     % Classes (with Classdef flag) and .m files of one path folder, its +pkg
     % folders and its @Class folders.
     sct_classes = empty_class_struct();
     sct_files   = empty_file_struct();
-    sct_list = dir(str_folder);
+    sct_list = dir(s_folder);
     for i_item = 1:numel(sct_list)
-        str_name = sct_list(i_item).name;
-        if str_name(1) == '.'
+        s_name = sct_list(i_item).name;
+        if s_name(1) == '.'
             continue
         end
-        str_path = fullfile(str_folder, str_name);
+        s_path = fullfile(s_folder, s_name);
         if sct_list(i_item).isdir
-            if str_name(1) == '+'
-                [sct_cls, sct_f] = scan_folder(str_path, [str_package, str_name(2:end), '.'], sct_cache);
+            if s_name(1) == '+'
+                [sct_cls, sct_f] = scan_folder(s_path, [s_package, s_name(2:end), '.'], sct_cache);
                 sct_classes = [sct_classes, sct_cls]; %#ok<AGROW>
                 sct_files   = [sct_files, sct_f]; %#ok<AGROW>
-            elseif str_name(1) == '@'
-                [sct_cls, sct_f] = scan_class_folder(str_path, [str_package, str_name(2:end)], sct_cache);
+            elseif s_name(1) == '@'
+                [sct_cls, sct_f] = scan_class_folder(s_path, [s_package, s_name(2:end)], sct_cache);
                 sct_classes = [sct_classes, sct_cls]; %#ok<AGROW>
                 sct_files   = [sct_files, sct_f]; %#ok<AGROW>
             end
             continue
         end
-        [~, str_base, str_ext] = fileparts(str_name);
-        if ~strcmp(str_ext, '.m')
+        [~, s_base, s_ext] = fileparts(s_name);
+        if ~strcmp(s_ext, '.m')
             continue
         end
         sct_file = read_file_entry(sct_list(i_item), true, sct_cache);
         sct_files(end+1) = sct_file; %#ok<AGROW>
-        sct_classes(end+1) = make_class([str_package, str_base], sct_file); %#ok<AGROW>
+        sct_classes(end+1) = make_class([s_package, s_base], sct_file); %#ok<AGROW>
     end
 end
 
-function [sct_classes, sct_files] = scan_class_folder(str_folder, str_class, sct_cache)
+function [sct_classes, sct_files] = scan_class_folder(s_folder, s_class, sct_cache)
     sct_classes = empty_class_struct();
     sct_files   = empty_file_struct();
-    [~, str_short] = fileparts(str_folder);
-    str_short = str_short(2:end);
-    sct_list = [dir(fullfile(str_folder, '*.m')); dir(fullfile(str_folder, 'private', '*.m'))];
+    [~, s_short] = fileparts(s_folder);
+    s_short = s_short(2:end);
+    sct_list = [dir(fullfile(s_folder, '*.m')); dir(fullfile(s_folder, 'private', '*.m'))];
     for i_item = 1:numel(sct_list)
-        bln_classdef_file = strcmp(sct_list(i_item).folder, str_folder) && strcmp(sct_list(i_item).name, [str_short, '.m']);
+        bln_classdef_file = strcmp(sct_list(i_item).folder, s_folder) && strcmp(sct_list(i_item).name, [s_short, '.m']);
         sct_file = read_file_entry(sct_list(i_item), bln_classdef_file, sct_cache);
         sct_files(end+1) = sct_file; %#ok<AGROW>
         if bln_classdef_file
-            sct_classes(end+1) = make_class(str_class, sct_file); %#ok<AGROW>
+            sct_classes(end+1) = make_class(s_class, sct_file); %#ok<AGROW>
         end
     end
 end
 
-function sct_class = make_class(str_name, sct_file)
-    sct_class = struct('Name', str_name, 'File', sct_file.Path, 'Origin', '', 'Root', '', ...
+function sct_class = make_class(s_name, sct_file)
+    sct_class = struct('Name', s_name, 'File', sct_file.Path, 'Origin', '', 'Root', '', ...
         'Classdef', sct_file.Classdef, 'Supers', {sct_file.Supers});
 end
 
@@ -341,15 +341,15 @@ end
 function sct_file = read_file_entry(sct_dir, bln_candidate, sct_cache)
     % bln_candidate: the file may be a classdef file, so its first code line
     % is read for the class and superclass names.
-    str_path = fullfile(sct_dir.folder, sct_dir.name);
+    s_path   = fullfile(sct_dir.folder, sct_dir.name);
     r_time   = round((sct_dir.datenum - 719529) * 86400);
-    sct_file = struct('Path', str_path, 'Time', r_time, 'Bytes', sct_dir.bytes, 'Hash', '', ...
+    sct_file = struct('Path', s_path, 'Time', r_time, 'Bytes', sct_dir.bytes, 'Hash', '', ...
         'Classdef', false, 'Name', '', 'Supers', {cell(1, 0)}, 'Changed', true, 'Tracked', true);
 
-    if isKey(sct_cache, str_path)
-        sct_old = sct_cache(str_path);
+    if isKey(sct_cache, s_path)
+        sct_old = sct_cache(s_path);
         if sct_old.Bytes == sct_file.Bytes && (sct_old.Time == r_time ...
-                || strcmp(sct_old.Hash, file_hash(read_bytes(str_path))))
+                || strcmp(sct_old.Hash, file_hash(read_bytes(s_path))))
             % Unchanged content: a file rewritten with the same text (for
             % example a generated file) only gets the new time.
             sct_file.Hash     = sct_old.Hash;
@@ -363,16 +363,16 @@ function sct_file = read_file_entry(sct_dir, bln_candidate, sct_cache)
         end
     end
 
-    u8_bytes = read_bytes(str_path);
+    u8_bytes = read_bytes(s_path);
     sct_file.Hash = file_hash(u8_bytes);
     if bln_candidate
         [sct_file.Classdef, sct_file.Name, sct_file.Supers] = parse_classdef_line(char(native2unicode(u8_bytes(:)', 'UTF-8')));
     end
 end
 
-function u8_bytes = read_bytes(str_path)
+function u8_bytes = read_bytes(s_path)
     u8_bytes = zeros(0, 1, 'uint8');
-    file_id = fopen(str_path, 'r');
+    file_id = fopen(s_path, 'r');
     if file_id < 0
         return
     end
@@ -380,56 +380,56 @@ function u8_bytes = read_bytes(str_path)
     fclose(file_id);
 end
 
-function str_hash = file_hash(u8_bytes)
+function s_hash = file_hash(u8_bytes)
     % Two position-weighted sums; exact in double precision for files below
     % about 6 MB, enough to tell an edited file from a rewritten one.
     r_bytes = double(u8_bytes(:));
     n = numel(r_bytes);
-    str_hash = sprintf('%d-%d', sum(r_bytes), sum(r_bytes .* (n:-1:1)'));
+    s_hash = sprintf('%d-%d', sum(r_bytes), sum(r_bytes .* (n:-1:1)'));
 end
 
-function [bln_classdef, str_name, cell_supers] = parse_classdef_line(str_text)
+function [bln_classdef, s_name, cell_supers] = parse_classdef_line(s_text)
     % "classdef (Attributes) Name < Super1 & pkg.Super2" on the first code
     % line, with "..." continuations.
     bln_classdef = false;
-    str_name = '';
+    s_name = '';
     cell_supers = cell(1, 0);
-    cell_lines = splitlines(str_text);
-    str_code = '';
+    cell_lines = splitlines(s_text);
+    s_code = '';
     for i_line = 1:numel(cell_lines)
-        str_line = strtrim(regexprep(cell_lines{i_line}, '%.*$', ''));
-        if isempty(str_line) && isempty(str_code)
+        s_line = strtrim(regexprep(cell_lines{i_line}, '%.*$', ''));
+        if isempty(s_line) && isempty(s_code)
             continue
         end
-        str_code = [str_code, ' ', str_line]; %#ok<AGROW>
-        if ~endsWith(str_line, '...')
+        s_code = [s_code, ' ', s_line]; %#ok<AGROW>
+        if ~endsWith(s_line, '...')
             break
         end
-        str_code = str_code(1:end-3);
+        s_code = s_code(1:end-3);
     end
-    str_code = strtrim(str_code);
-    if isempty(regexp(str_code, '^classdef\>', 'once'))
+    s_code = strtrim(s_code);
+    if isempty(regexp(s_code, '^classdef\>', 'once'))
         return
     end
     bln_classdef = true;
-    str_rest = strtrim(regexprep(str_code, '^classdef\s*', '', 'once'));
-    if startsWith(str_rest, '(')
-        i_close = find(str_rest == ')', 1, 'first');
+    s_rest = strtrim(regexprep(s_code, '^classdef\s*', '', 'once'));
+    if startsWith(s_rest, '(')
+        i_close = find(s_rest == ')', 1, 'first');
         if isempty(i_close), return, end
-        str_rest = strtrim(str_rest(i_close+1:end));
+        s_rest = strtrim(s_rest(i_close+1:end));
     end
-    cell_parts = strsplit(str_rest, '<');
-    str_name = strtrim(cell_parts{1});
+    cell_parts = strsplit(s_rest, '<');
+    s_name = strtrim(cell_parts{1});
     if numel(cell_parts) > 1
         cell_supers = strtrim(strsplit(strjoin(cell_parts(2:end), '<'), '&'));
         cell_supers = cell_supers(~cellfun(@isempty, cell_supers));
     end
 end
 
-function str_signature = get_tool_signature(str_root)
+function s_signature = get_tool_signature(s_root)
     % Content checksums of the exporter, the call graph collector and this file.
     cell_files = {'export_class_database.m', 'collect_call_graph.m', 'find_doc_classes.m'};
-    cell_hash = cellfun(@(f) file_hash(read_bytes(fullfile(str_root, '@GUILDA', 'private', f))), ...
+    cell_hash = cellfun(@(f) file_hash(read_bytes(fullfile(s_root, '@GUILDA', 'private', f))), ...
         cell_files, 'UniformOutput', false);
-    str_signature = strjoin(cell_hash, '|');
+    s_signature = strjoin(cell_hash, '|');
 end

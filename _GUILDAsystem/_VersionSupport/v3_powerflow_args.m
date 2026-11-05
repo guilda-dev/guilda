@@ -20,11 +20,11 @@ function c_nv = v3_powerflow_args(c_nv)
     end
     l_mode = mod(numel(c_nv), 2) == 1 && is_text(c_nv{1}) ...
              && any(strcmpi(c_nv{1}, ["algebraic","dynamic"]));
-    str_mode = "";
+    s_mode = "";
     if l_mode
-        str_mode = lower(string(c_nv{1}));
+        s_mode   = lower(string(c_nv{1}));
         c_nv     = c_nv(2:end);
-        Deprecated("CalculatePowerflowMode", str_mode);
+        Deprecated("CalculatePowerflowMode", s_mode);
     end
 
     if mod(numel(c_nv), 2) ~= 0
@@ -43,13 +43,13 @@ function c_nv = v3_powerflow_args(c_nv)
 
     % old export options: export (default true for "dynamic"), filename
     iv_export = find(strcmp(sv_name, "export"));
-    l_export  = str_mode == "dynamic";
+    l_export  = s_mode == "dynamic";
     if ~isempty(iv_export)
         l_export = logical(c_nv{2*iv_export(end)});
     end
-    str_file = string(datetime("now","Format","uuMMdd_HHmmss")) + "_PFcalculation.json";
+    s_file = string(datetime("now","Format","uuMMdd_HHmmss")) + "_PFcalculation.json";
     if ~isempty(iv_file)
-        str_file = string(c_nv{2*iv_file(end)});
+        s_file = string(c_nv{2*iv_file(end)});
     end
     if ~isempty(iv_export) || ~isempty(iv_file)
         Deprecated("CalculatePowerflowExport");
@@ -60,10 +60,10 @@ function c_nv = v3_powerflow_args(c_nv)
     lv_keep([2*iv_drop-1, 2*iv_drop]) = false;
     c_nv = c_nv(lv_keep);
     if l_mode
-        c_nv = [{"Method", str_mode}, c_nv];
+        c_nv = [{"Method", s_mode}, c_nv];
     end
     if l_export
-        c_nv = [c_nv, {"Export", fullfile(GUILDA.pwd, str_file)}];
+        c_nv = [c_nv, {"Export", fullfile(GUILDA.pwd, s_file)}];
     end
 end
 

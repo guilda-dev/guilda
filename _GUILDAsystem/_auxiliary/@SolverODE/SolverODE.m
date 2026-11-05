@@ -113,7 +113,7 @@ classdef (Sealed = true) SolverODE < auxiliary
         function v = get.Reporter(obj), v = obj.Progress; end                              % COMPAT(v3)
         function set.Reporter(obj, v), obj.Progress = v3_ode_reporter(v); end               % COMPAT(v3)
 
-        function s_options = get_options(obj, nv)
+        function sct_options = get_options(obj, nv)
         % Get the effective settings of one run as a struct.
         %
         % Every stored setting of the solver, with the Name-Value overrides of the call applied. The solver itself is not changed.
@@ -124,29 +124,29 @@ classdef (Sealed = true) SolverODE < auxiliary
                 nv (1,:) cell = {} % Name-Value overrides: Solver, SolverOptions, Tolerance, AbsoluteTolerance, SeparateComplexParts, TimeLimit, Progress, Verbose, Plot.
             end
             arguments (Output)
-                s_options % One field per setting (Solver, SolverOptions, RelativeTolerance, AbsoluteTolerance, SeparateComplexParts, Progress, TimeLimit, Verbose, Plot).
+                sct_options % One field per setting (Solver, SolverOptions, RelativeTolerance, AbsoluteTolerance, SeparateComplexParts, Progress, TimeLimit, Verbose, Plot).
             end
-            s_given = tools.resolve_options(obj, SolverODE.OptionMap, nv);
+            sct_given = tools.resolve_options(obj, SolverODE.OptionMap, nv);
             validate_options(nv{:});
 
             mc = metaclass(obj);
             a_prop = mc.PropertyList(~[mc.PropertyList.Constant] & ~[mc.PropertyList.Dependent] & ...
                                      ~[mc.PropertyList.Hidden] & strcmp({mc.PropertyList.SetAccess}, 'public'));
-            s_options = struct();
-            for str_prop = string({a_prop.Name})
-                if isfield(s_given, str_prop)
-                    s_options.(str_prop) = s_given.(str_prop);
+            sct_options = struct();
+            for s_prop = string({a_prop.Name})
+                if isfield(sct_given, s_prop)
+                    sct_options.(s_prop) = sct_given.(s_prop);
                 else
-                    s_options.(str_prop) = obj.(str_prop);
+                    sct_options.(s_prop) = obj.(s_prop);
                 end
             end
         end
 
-        function [result, flag, output] = solve(obj, net, time, c_events, s_options)
+        function [result, flag, output] = solve(obj, net, time, c_events, sct_options)
         % Integrate the network DAE with the given settings.
         %
         % Runs the time simulation of net over time with the scenarios c_events and the
-        % effective settings s_options, and returns the trajectories as an
+        % effective settings sct_options, and returns the trajectories as an
         % ResultODE. The solver is only read: nothing is written back into it.
         % The simulation working data of the models (iv_odeX, iv_odeU, iv_odeY, iv_odeI) is
         % rebuilt for this run. Called by net.simulate; calling it directly is for advanced
@@ -164,7 +164,7 @@ classdef (Sealed = true) SolverODE < auxiliary
                 net % Network initialized by net.initialize.
                 time      (:,1) double = [] % [s] Simulation time [t0, tend] (or [] for the time span of the events).
                 c_events  cell = {} % Scenarios of the run (each attached to net; see Scenario).
-                s_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
+                sct_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
             end
             arguments (Output)
                 result % Trajectories of the buses and components.
@@ -175,8 +175,8 @@ classdef (Sealed = true) SolverODE < auxiliary
             net.require_equilibrium();    % build out-of-date f_*; error if net.initialize() is needed
 
             % Phases of the run: checks the scenarios, builds the data of each phase once
-            [tab_phase, s_phase] = Scenario.compile(c_events, net, time);
-            check_islands(net, {s_phase.sv_open}.', tab_phase);
+            [tab_phase, sct_phase] = Scenario.compile(c_events, net, time);
+            check_islands(net, {sct_phase.sv_open}.', tab_phase);
             SolverODE.initialize_index(net);
             c_restore = onCleanup(@() SolverODE.restore_working_data(net));
 
@@ -192,20 +192,20 @@ classdef (Sealed = true) SolverODE < auxiliary
             ctx.l_GC    = ~isempty(net.a_GlobalController);
             ctx.c_unit  = SolverODE.get_units(net);
 
-            o = makeODE(s_options);
+            o = makeODE(sct_options);
             options = odeset("RelTol", o.RelativeTolerance, "AbsTol", o.AbsoluteTolerance);
             np   = size(tab_phase,1);
             x0   = [];
             Mass = [];
 
             % Set reporter
-            str_evt = string(tab_phase.Properties.VariableNames(3:end));
+            sr_evt = string(tab_phase.Properties.VariableNames(3:end));
             ts = tab_phase{  1,"t1"};
             te = tab_phase{end,"t2"};
-            if s_options.Verbose
-                print_phases(tab_phase, str_evt);
+            if sct_options.Verbose
+                print_phases(tab_phase, sr_evt);
             end
-            odeProg  = ProgressODE( s_options.Progress, [ts,te], s_options.TimeLimit);
+            odeProg  = ProgressODE( sct_options.Progress, [ts,te], sct_options.TimeLimit);
             o.SolverOptions.OutputFcn = odeProg.OutputFcn;
             o.EventDefinition = odeEvent("EventFcn", @(t,x) odeProg.Events(), "Response", "stop");
 
@@ -216,7 +216,7 @@ classdef (Sealed = true) SolverODE < auxiliary
             while tp <= np
 
                 % Faults, trips, open branches, offsets and inputs of the phase (Scenario.compile)
-                ph = s_phase(tp);
+                ph = sct_phase(tp);
 
                 % A tripped global controller gives no output (TripUnit names it)
                 SolverODE.set_gc_connect(net, ph.sv_trip);
@@ -237,25 +237,25 @@ classdef (Sealed = true) SolverODE < auxiliary
 
                 o.InitialValue = x0;
                 o = SolverODE.set_equations(o, ctx, RM, EM, ~lv_FBorTC, Mass);
-                if isfield(s_options, "PhaseProbe")     % test hook: compare Jacobian and right-hand side
-                    s_options.PhaseProbe(o);
+                if isfield(sct_options, "PhaseProbe")     % test hook: compare Jacobian and right-hand side
+                    sct_options.PhaseProbe(o);
                 end
 
                 % update reporter
                 odeProg.timeoffset = t1;
                 odeProg.message  = "|";
                 if tp~=np
-                    str_evti = str_evt( tab_phase{tp+1,3:end} );
-                    str_evti = str_evti(~contains(str_evti,"NoAction"));
-                    if ~isempty(str_evti)
-                        odeProg.message  = "|("+join(str_evti,",")+": t="+t2+")";
+                    sr_evti  = sr_evt( tab_phase{tp+1,3:end} );
+                    sr_evti  = sr_evti(~contains(sr_evti,"NoAction"));
+                    if ~isempty(sr_evti)
+                        odeProg.message  = "|("+join(sr_evti,",")+": t="+t2+")";
                     end
                 end
 
                 % The warning of the solver (e.g. why it stopped) goes into output.message
-                [str_warn0, id_warn0] = lastwarn();
+                [s_warn0, id_warn0] = lastwarn();
                 lastwarn("");
-                str_phase = {num2str(tp), num2str(t1), num2str(t2)};
+                sr_phase = {num2str(tp), num2str(t1), num2str(t2)};
 
                 % Consistent initial condition: the differential states keep their values at
                 % the start of the phase and only the algebraic variables are solved again.
@@ -263,18 +263,18 @@ classdef (Sealed = true) SolverODE < auxiliary
                 try
                     x0_ic = x0;  xp0_ic = zeros(0,1);  l_failed = false;
                     if nnz(Mass) > 0
-                        [x0_ic, xp0_ic, l_failed, str_why, me_ic] = CalculateInitialCondition(o, options);
+                        [x0_ic, xp0_ic, l_failed, s_why, me_ic] = CalculateInitialCondition(o, options);
                     end
                 catch me
                     odeProg.OutputFcn([],[],"break");
                     ME = MException('GUILDA:SolverODE:PhaseFailed', '%s', ...
-                                    msg('GUILDA:SolverODE:PhaseFailed', str_phase{:}, me.message));
+                                    msg('GUILDA:SolverODE:PhaseFailed', sr_phase{:}, me.message));
                     throw(ME.addCause(me))
                 end
                 if l_failed
                     odeProg.OutputFcn([],[],"break");
                     me_stop = MException('GUILDA:SolverODE:InitialConditionFailed', '%s', ...
-                                         msg('GUILDA:SolverODE:InitialConditionFailed', str_phase{:}, str_why));
+                                         msg('GUILDA:SolverODE:InitialConditionFailed', sr_phase{:}, s_why));
                     me_stop = me_stop.addCause(me_ic);
                     flag = -1;
                     break
@@ -293,17 +293,17 @@ classdef (Sealed = true) SolverODE < auxiliary
                     catch me
 
                         if SolverODE.is_false_index_error(ctx, me)
-                            [ctx, o] = SolverODE.use_dense(ctx, o, x0, RM, EM, ~lv_FBorTC, s_options.Verbose, Mass);
+                            [ctx, o] = SolverODE.use_dense(ctx, o, x0, RM, EM, ~lv_FBorTC, sct_options.Verbose, Mass);
                             continue
                         end
 
                         odeProg.OutputFcn([],[],"break");
                         % NeedBetterY0: the solver did not accept the consistent initial condition
-                        str_id = 'GUILDA:SolverODE:PhaseFailed';
+                        s_id = 'GUILDA:SolverODE:PhaseFailed';
                         if endsWith(string(me.identifier), ":NeedBetterY0")
-                            str_id = 'GUILDA:SolverODE:UnfeasibleDAE';
+                            s_id = 'GUILDA:SolverODE:UnfeasibleDAE';
                         end
-                        ME = MException(str_id, '%s', msg(str_id, str_phase{:}, me.message));
+                        ME = MException(s_id, '%s', msg(s_id, sr_phase{:}, me.message));
                         ME = ME.addCause(me);
                         if ~SolverODE.is_numerical_failure(me, o)
                             throw(ME)
@@ -317,18 +317,18 @@ classdef (Sealed = true) SolverODE < auxiliary
                 if isempty(me_stop) && ~isequal(sol.Solution(lv_dif,1), x0_ic(lv_dif))
                     % Not expected: the solver changed the differential states at the start
                     odeProg.OutputFcn([],[],"break");
-                    str_why = sprintf("the solver moved the differential states by up to %g at the start of the phase.", ...
+                    s_why = sprintf("the solver moved the differential states by up to %g at the start of the phase.", ...
                                       max(abs(sol.Solution(lv_dif,1) - x0_ic(lv_dif))));
                     me_stop = MException('GUILDA:SolverODE:InitialConditionFailed', '%s', ...
-                                         msg('GUILDA:SolverODE:InitialConditionFailed', str_phase{:}, str_why));
+                                         msg('GUILDA:SolverODE:InitialConditionFailed', sr_phase{:}, s_why));
                 end
                 if ~isempty(me_stop)
                     flag = -1;
                     break
                 end
-                str_warn = lastwarn();
-                if isempty(str_warn)
-                    lastwarn(str_warn0, id_warn0);
+                s_warn = lastwarn();
+                if isempty(s_warn)
+                    lastwarn(s_warn0, id_warn0);
                 end
 
                 c_phase{tp} = SolverODE.phase_result(net, ph, struct('Time', (sol.Time + t1)', 'Solution', (EM * sol.Solution).'), ctx.Ymat);
@@ -362,27 +362,27 @@ classdef (Sealed = true) SolverODE < auxiliary
                     output.message = sprintf("The simulation reached t = %g s (%d phases).", output.tEnd, np);
                 case 0
                     output.message = sprintf("The simulation stopped at t = %g s of %g s in phase %d: the computation time exceeded TimeLimit = %g s. " + ...
-                                             "Increase TimeLimit (Inf for no limit).", output.tEnd, te, tp, s_options.TimeLimit);
+                                             "Increase TimeLimit (Inf for no limit).", output.tEnd, te, tp, sct_options.TimeLimit);
                 otherwise
                     if ~isempty(me_stop)
                         output.message = sprintf("The simulation stopped at t = %g s of %g s. %s\n" + ...
                                                  "Try a smaller Tolerance, other SolverOptions, or check the model and the events.", ...
                                                  output.tEnd, te, me_stop.message);
-                    elseif isempty(str_warn)
-                        str_warn = "(no message from the solver)";
+                    elseif isempty(s_warn)
+                        s_warn = "(no message from the solver)";
                     end
                     if isempty(me_stop)
                         output.message = sprintf("The solver stopped at t = %g s of %g s in phase %d (t = [%g, %g] s). " + ...
                                                  "Solver (time from the start of the phase): %s\n" + ...
                                                  "Try a smaller Tolerance, other SolverOptions, or check the model.", ...
-                                                 output.tEnd, te, tp, tab_phase{tp,"t1"}, tab_phase{tp,"t2"}, strtrim(str_warn));
+                                                 output.tEnd, te, tp, tab_phase{tp,"t1"}, tab_phase{tp,"t2"}, strtrim(s_warn));
                     end
             end
-            if s_options.Verbose
+            if sct_options.Verbose
                 disp(output.message)
             end
 
-            result = ResultODE(net, obj, s_options, flag, output, t0, c_phase);
+            result = ResultODE(net, obj, sct_options, flag, output, t0, c_phase);
         end
     end
 
@@ -422,7 +422,7 @@ classdef (Sealed = true) SolverODE < auxiliary
                 for idx = 1:numel(gcon.controlledUnits)
                     unit = gcon.controlledUnits{idx};
                     if isempty(unit.a_Bus) || ~isequal(unit.a_Bus.a_PowerNetwork, net)
-                        error(msg("GUILDA:SolverODE:ForeignControlledUnit", char(gcon.str_tag), char(unit.str_tag), char(net.str_tag)))
+                        error(msg("GUILDA:SolverODE:ForeignControlledUnit", char(gcon.s_tag), char(unit.s_tag), char(net.s_tag)))
                     end
                 end
             end
@@ -541,7 +541,7 @@ classdef (Sealed = true) SolverODE < auxiliary
 
             for i=1:numel(a_bus)
                 iBus = a_bus{i};
-                iBus.l_isFault = ismember(iBus.str_tag, BusFault);
+                iBus.l_isFault = ismember(iBus.s_tag, BusFault);
 
                 Ieq = iBus.c_Iequilibrium;
                 Veq = iBus.c_Vequilibrium;
@@ -592,17 +592,17 @@ classdef (Sealed = true) SolverODE < auxiliary
             M0 = RM * M0 * RM.';
         end
 
-        function s_out = phase_result(net, ph, s_sol, Ymat)
+        function sct_out = phase_result(net, ph, sct_sol, Ymat)
             % Trajectory of one phase (t, x, bus currents i) for ResultODE; the states of the
             % tripped units are NaN.
             arguments (Input)
-                net    % Network of the run.
-                ph     % Data of the phase (an element of the output of Scenario.compile).
-                s_sol  % Solution of the phase (fields Time and Solution, full state vector).
-                Ymat   % [pu] Real admittance matrix of the phase (I = Y*V).
+                net      % Network of the run.
+                ph       % Data of the phase (an element of the output of Scenario.compile).
+                sct_sol  % Solution of the phase (fields Time and Solution, full state vector).
+                Ymat     % [pu] Real admittance matrix of the phase (I = Y*V).
             end
             arguments (Output)
-                s_out  % Trajectory of the phase (fields t, x, i).
+                sct_out  % Trajectory of the phase (fields t, x, i).
             end
             a_bus = net.a_Bus;
             a_cmp = cellfun(@(bi) bi.a_Component, a_bus, 'UniformOutput', false);
@@ -616,8 +616,8 @@ classdef (Sealed = true) SolverODE < auxiliary
             B_sti = cell2mat( cellfun(@(bi) bi.iv_odeX, a_bus, 'UniformOutput', false) );
             C_sti = cell2mat( cellfun(@(ci) ci.iv_odeX, a_unit(lv_Ctagi), 'UniformOutput', false) );
 
-            Time = s_sol.Time;
-            xsol = s_sol.Solution;
+            Time = sct_sol.Time;
+            xsol = sct_sol.Solution;
 
             if any(lv_Ctagi)
                 xsol(:, C_sti) = NaN;
@@ -626,7 +626,7 @@ classdef (Sealed = true) SolverODE < auxiliary
             Vsol = xsol(:, B_sti);
             Isol = Ymat * Vsol.';
 
-            s_out = struct('t', Time, 'x', xsol, 'i', Isol.');
+            sct_out = struct('t', Time, 'x', xsol, 'i', Isol.');
         end
 
         function ctx = set_admittance(ctx, sv_open, l_force)
@@ -742,11 +742,11 @@ classdef (Sealed = true) SolverODE < auxiliary
             arguments (Output)
                 l  (1,1) logical  % True when the solver gave up on the phase.
             end
-            str_id = string(me.identifier);
-            l = ismember(str_id, ["MATLAB:daeic12:NeedBetterY0", "MATLAB:daeic12:IndexGTOne", ...
+            s_id = string(me.identifier);
+            l = ismember(s_id, ["MATLAB:daeic12:NeedBetterY0", "MATLAB:daeic12:IndexGTOne", ...
                                   "MATLAB:daeic3:NeedBetterY0", "MATLAB:daeic3:IndexGTOne", ...
                                   "MATLAB:decic:IndexGTOne", "MATLAB:decic:ConvergenceFail"]) ...
-                || (ismember(str_id, ["MATLAB:ode15s:MassMatrixAllZero", "MATLAB:ode23t:MassMatrixAllZero"]) ...
+                || (ismember(s_id, ["MATLAB:ode15s:MassMatrixAllZero", "MATLAB:ode23t:MassMatrixAllZero"]) ...
                     && nnz(o.MassMatrix.MassMatrix) == 0);
         end
 
@@ -816,16 +816,16 @@ classdef (Sealed = true) SolverODE < auxiliary
             end
         end
 
-        function set_gc_connect(net, str_trip)
-            % Global controllers named in str_trip are tripped (l_isConnect = false),
+        function set_gc_connect(net, sv_trip)
+            % Global controllers named in sv_trip are tripped (l_isConnect = false),
             % the others connected. Components are set by initial_condition.
             arguments (Input)
-                net       % Network of the run.
-                str_trip  % Tags of the tripped units.
+                net      % Network of the run.
+                sv_trip  % Tags of the tripped units.
             end
             a_GCs = net.a_GlobalController;
             for k = 1:numel(a_GCs)
-                a_GCs{k}.l_isConnect = ~ismember(a_GCs{k}.str_tag, str_trip);
+                a_GCs{k}.l_isConnect = ~ismember(a_GCs{k}.s_tag, sv_trip);
             end
         end
 
@@ -1169,11 +1169,11 @@ function check_islands(net, c_open, tab_phase)
     end
 end
 
-function print_phases(tab_phase, str_evt)
+function print_phases(tab_phase, sr_evt)
 % Verbose: one line per integration phase with its active events
     fprintf("Time simulation: %d phase(s)\n", height(tab_phase));
     for k = 1:height(tab_phase)
-        sv = str_evt(tab_phase{k,3:end});
+        sv = sr_evt(tab_phase{k,3:end});
         sv = sv(~contains(sv,"NoAction"));
         if isempty(sv)
             sv = "-";
@@ -1213,7 +1213,7 @@ function [Btag_all, Ctag_all] = getStateTags(net)
     % global controllers follow the components in the state vector (see initialize_index)
     a_GCs = net.a_GlobalController;
     for k = 1:numel(a_GCs)
-        sv_tag = [sv_tag; {a_GCs{k}.str_tag}]; %#ok
+        sv_tag = [sv_tag; {a_GCs{k}.s_tag}]; %#ok
         rv_rep = [rv_rep; {numel(a_GCs{k}.sv_x)}]; %#ok
     end
 
@@ -1231,7 +1231,7 @@ function [sv_tag, rv_rep] = getTM(OBJs, sv_tag, rv_rep)
         OBJ = OBJs{no};
         rs_idx = numel([OBJ.sv_x; OBJ.sv_u]);
 
-        sv_tag = [sv_tag; OBJ.str_tag]; %#ok
+        sv_tag = [sv_tag; OBJ.s_tag]; %#ok
         rv_rep = [rv_rep; rs_idx];      %#ok
 
         % its local controllers, depth first (the order of SolverODE.initialize_index)
@@ -1249,7 +1249,7 @@ function [rv_x0, rm_Mass, TC] = getXM(OBJs, rv_x0, rm_Mass, TC)
         nu_idx = numel(OBJ.iv_odeU);
 
         if isa(OBJ, 'Component')
-            OBJ.l_isConnect = ~ismember(OBJ.str_tag, TC);
+            OBJ.l_isConnect = ~ismember(OBJ.s_tag, TC);
         end
         rv_u0 = OBJ.rv_Uequilibrium;
         if ~isempty(OBJ.rv_Uoffset)     % empty without an input (see Scenario.compile)

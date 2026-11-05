@@ -106,7 +106,7 @@ classdef Component < PowerSystemModel
     end
 
     % Handle cache @(t,x,V,I,u) with the parameters and omega0 bound (set_odefcn, called by
-    % check_edit at the start of an analysis). s_edit.str_odefcn tells whether it is "unset",
+    % check_edit at the start of an analysis). sct_edit.s_odefcn tells whether it is "unset",
     % "editted" or "updated".
     properties(SetAccess=protected) % Cached function handles
         f_Mass                                 % Mass matrix function @(t,x,V,I,u) with the parameters bound.
@@ -187,9 +187,9 @@ classdef Component < PowerSystemModel
     
 %% Constructor
     methods(Access=protected)
-        function obj = Component(str_tag, opt)
+        function obj = Component(s_tag, opt)
             % Create the parameters of a component (called by the subclass constructors).
-            obj.str_tag        = str_tag;
+            obj.s_tag          = s_tag;
             obj.para_dynamics  = Parameter(obj,"dynamics");
             obj.para_powerflow = Parameter(obj,"powerflow");
             obj.para_OPF       = Parameter(obj,"OPF");
@@ -224,7 +224,7 @@ classdef Component < PowerSystemModel
 
         function set_odefcn(obj)
             % Bind the parameters and the network frequency into the f_* function handles.
-            % Called by check_edit when the handles are not up to date (str_odefcn "unset" or
+            % Called by check_edit when the handles are not up to date (s_odefcn "unset" or
             % "editted": a dynamics edit, a network Hz edit or an attach since the last build).
             %
             % <@Group> Called by analyses
@@ -253,11 +253,11 @@ classdef Component < PowerSystemModel
             obj.f_dx   = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, array, omega0);
             obj.f_I    = @(t,x,V,I,u) obj.fcn_I(t, x, V, I, u, array, omega0);
             obj.f_Y    = @(t,x,V,I,u) obj.fcn_Y(t, x, V, I, u, array, omega0);
-            obj.s_edit.str_odefcn = "updated";
+            obj.sct_edit.s_odefcn = "updated";
         end
 
         % Raise a constructor message of Component.xml for a subclass in another folder.
-        parameter_error(obj, str_key, varargin)
+        parameter_error(obj, s_key, varargin)
     end
             
 
@@ -265,7 +265,7 @@ classdef Component < PowerSystemModel
     methods
         % Layer Structure
         add_local_controller(obj, a_Controller)
-        remove_local_controller(obj, str_tag, opt)
+        remove_local_controller(obj, s_tag, opt)
 
         % OPF
         [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Busvar, option)

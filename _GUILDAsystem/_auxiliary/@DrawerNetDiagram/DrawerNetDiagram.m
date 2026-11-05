@@ -89,9 +89,9 @@ classdef DrawerNetDiagram < auxiliary
         n_branch
         n_component
 
-        str_bus
-        str_branch
-        str_component
+        sv_bus
+        sv_branch
+        sv_component
 
         cm_Vbus2Ibranch
         cm_Vbus2Vbranch
@@ -129,9 +129,9 @@ classdef DrawerNetDiagram < auxiliary
             end
             obj.ax = ax;
             
-            str_fd = fieldnames(opt);
-            for i_fd = 1:numel(str_fd)
-                stri = str_fd{i_fd};
+            sv_fd = fieldnames(opt);
+            for i_fd = 1:numel(sv_fd)
+                stri = sv_fd{i_fd};
                 obj.(stri) = opt.(stri);
             end
 

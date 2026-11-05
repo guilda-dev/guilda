@@ -7,18 +7,18 @@
 
 %% A bus index is rejected when no buses exist yet
 net = PowerNetwork("T");
-[id, str_msg] = error_info(@() net.add_branch("pi", [1,2], X=0.1));
+[id, s_msg] = error_info(@() net.add_branch("pi", [1,2], X=0.1));
 assert(id == "GUILDA:PowerNetwork:BranchBusIndex", id)
-assert(contains(str_msg, "[1 2]") && contains(str_msg, "has 0 buses") && contains(str_msg, "net.add_bus()"), str_msg)
+assert(contains(s_msg, "[1 2]") && contains(s_msg, "has 0 buses") && contains(s_msg, "net.add_bus()"), s_msg)
 assert(isempty(net.a_Branch))
 
 
 %% Bus indices that are not in the network are rejected
 net = build_two_buses();
 for from_to = {[1,3], [0,1], [-1,2], [1.5,2], [NaN,1], [1,Inf]}
-    [id, str_msg] = error_info(@() net.add_branch("pi", from_to{1}, X=0.1));
+    [id, s_msg] = error_info(@() net.add_branch("pi", from_to{1}, X=0.1));
     assert(id == "GUILDA:PowerNetwork:BranchBusIndex", id)
-    assert(contains(str_msg, mat2str(from_to{1})) && contains(str_msg, "has 2 buses"), str_msg)
+    assert(contains(s_msg, mat2str(from_to{1})) && contains(s_msg, "has 2 buses"), s_msg)
 end
 assert(isempty(net.a_Branch))
 
@@ -26,9 +26,9 @@ assert(isempty(net.a_Branch))
 %% An unknown bus tag is rejected and the message names it
 net = build_two_buses();
 for from_to = {["B001","B099"], ["B099","B001"]}
-    [id, str_msg] = error_info(@() net.add_branch("pi", from_to{1}, X=0.1));
+    [id, s_msg] = error_info(@() net.add_branch("pi", from_to{1}, X=0.1));
     assert(id == "GUILDA:PowerNetwork:BusNotFound", id)
-    assert(contains(str_msg, "B099"), str_msg)
+    assert(contains(s_msg, "B099"), s_msg)
 end
 assert(isempty(net.a_Branch))
 
@@ -36,19 +36,19 @@ assert(isempty(net.a_Branch))
 %% A self loop is rejected by index and by tag, and the message points to the shunt
 net = build_two_buses();
 for from_to = {[1,1], ["B001","B001"]}
-    [id, str_msg] = error_info(@() net.add_branch("pi", from_to{1}, X=0.1));
+    [id, s_msg] = error_info(@() net.add_branch("pi", from_to{1}, X=0.1));
     assert(id == "GUILDA:PowerNetwork:BranchSelfLoop", id)
-    assert(contains(str_msg, "B001") && contains(str_msg, "Bshunt"), str_msg)
+    assert(contains(s_msg, "B001") && contains(s_msg, "Bshunt"), s_msg)
 end
 assert(isempty(net.a_Branch))
 
 
 %% R = X = 0 is rejected for every branch model
 net = build_two_buses();
-for str_type = ["pi","T","pi_transformer","two_winding_transformer"]
-    [id, str_msg] = error_info(@() net.add_branch(str_type, [1,2], R=0, X=0));
+for s_type = ["pi","T","pi_transformer","two_winding_transformer"]
+    [id, s_msg] = error_info(@() net.add_branch(s_type, [1,2], R=0, X=0));
     assert(id == "GUILDA:PowerNetwork:BranchZeroImpedance", id)
-    assert(contains(str_msg, "B001") && contains(str_msg, "B002") && contains(str_msg, "nonzero"), str_msg)
+    assert(contains(s_msg, "B001") && contains(s_msg, "B002") && contains(s_msg, "nonzero"), s_msg)
 end
 assert(isempty(net.a_Branch))
 
@@ -63,11 +63,11 @@ assert(numel(net.a_Branch) == 4)
 
 
 %% All built-in networks still build
-for str_net = ["IEEE9bus","IEEE14bus","IEEE14bus_NoTap","IEEE14bus_lossless", ...
+for s_net = ["IEEE9bus","IEEE14bus","IEEE14bus_NoTap","IEEE14bus_lossless", ...
                "IEEE68bus","Ishizaki6Bus","TEST31bus","Txt3Bus","Tutorial3bus", ...
                "IEEJ_EAST10","IEEJ_EAST30","IEEJ_WEST10","IEEJ_WEST30"]
-    net = DebugScript.helper.quiet(@() feval("network."+str_net));
-    assert(~isempty(net.a_Branch), str_net)
+    net = DebugScript.helper.quiet(@() feval("network."+s_net));
+    assert(~isempty(net.a_Branch), s_net)
 end
 
 
@@ -77,14 +77,14 @@ function net = build_two_buses()
     net.add_bus();
 end
 
-function [id, str_msg] = error_info(fh)
+function [id, s_msg] = error_info(fh)
 % 実行してエラー ID と文面を返す (エラーにならなければ "")
     id = "";
-    str_msg = "";
+    s_msg = "";
     try
         DebugScript.helper.quiet(fh);
     catch ME
         id = string(DebugScript.helper.msg_id(ME));
-        str_msg = string(ME.message);
+        s_msg = string(ME.message);
     end
 end

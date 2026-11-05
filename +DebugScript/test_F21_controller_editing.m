@@ -7,14 +7,14 @@
 % 実行: runtests("DebugScript.test_F21_controller_editing")  または  DebugScript.run_all("Features","F21")
 
 % 共通設定 (各テストの前に毎回実行される)
-str_key = "GUILDA:Component:InvalidControllerKey";
-str_out = "GUILDA:Component:ControllerOutput";
+s_key   = "GUILDA:Component:InvalidControllerKey";
+s_out   = "GUILDA:Component:ControllerOutput";
 
 
 %% An unknown key stops with an error instead of attaching nothing
 [net, gen] = fresh_network();
 ME = caught(@() gen.add_local_controller(DebugScript.helper.OutputStub("turbine", "Pmech")));
-assert(DebugScript.helper.msg_id(ME) == str_key)
+assert(DebugScript.helper.msg_id(ME) == s_key)
 assert(contains(ME.message, "turbine") && contains(ME.message, "avr") && contains(ME.message, "governor"))
 assert(isempty(gen.a_LocalController))
 
@@ -22,8 +22,8 @@ assert(isempty(gen.a_LocalController))
 %% An output matching no input stops with an error naming the output and the inputs
 [net, gen] = fresh_network();
 ME = caught(@() gen.add_local_controller(DebugScript.helper.OutputStub("avr", "Vfiled")));
-assert(DebugScript.helper.msg_id(ME) == str_out)
-assert(contains(ME.message, "Vfiled") && contains(ME.message, gen.str_tag))
+assert(DebugScript.helper.msg_id(ME) == s_out)
+assert(contains(ME.message, "Vfiled") && contains(ME.message, gen.s_tag))
 assert(contains(ME.message, "Pmech") && contains(ME.message, "Vfield"))
 assert(isempty(gen.a_LocalController))
 
@@ -33,7 +33,7 @@ net = DebugScript.helper.build_ieee14();
 comp = net.a_Bus{9}.a_Component{1};
 assert(isa(comp, "component.load.impedance") || isa(comp, "component.load.power"))
 avr = controller.avr.AVR_ST1("avr1");
-assert(DebugScript.helper.msg_id(caught(@() comp.add_local_controller(avr))) == str_out)
+assert(DebugScript.helper.msg_id(caught(@() comp.add_local_controller(avr))) == s_out)
 assert(isempty(comp.a_LocalController) && isempty(avr.a_Component))
 
 
@@ -42,7 +42,7 @@ assert(isempty(comp.a_LocalController) && isempty(avr.a_Component))
 avr = controller.avr.AVR_ST1("avr1");
 gen.add_local_controller(avr);
 ME = caught(@() gen.add_local_controller(DebugScript.helper.OutputStub("pss", "Vpsss")));
-assert(DebugScript.helper.msg_id(ME) == str_out && contains(ME.message, avr.str_tag) && contains(ME.message, "Vpss"))
+assert(DebugScript.helper.msg_id(ME) == s_out && contains(ME.message, avr.s_tag) && contains(ME.message, "Vpss"))
 assert(isempty(avr.a_LocalController))
 
 
@@ -54,22 +54,22 @@ DebugScript.helper.quiet(@() net.initialize);
 n_log = height(net.tab_editLog);
 avrIn = controller.avr.AVR_ST1("avrNew");
 ME = caught(@() gen.add_local_controller(avrIn, DebugScript.helper.OutputStub("pss", "Vfield")));
-assert(DebugScript.helper.msg_id(ME) == str_out && contains(ME.message, avrIn.str_tag))
+assert(DebugScript.helper.msg_id(ME) == s_out && contains(ME.message, avrIn.s_tag))
 assert(gen.a_LocalController{1} == old && isempty(avrIn.a_Component))
-assert(~net.s_edit.l_staleEquilibrium && height(net.tab_editLog) == n_log)
+assert(~net.l_staleEquilibrium && height(net.tab_editLog) == n_log)
 
 
 %% A PSS without an AVR keeps its own error
 [net, gen] = fresh_network();
 ME = caught(@() gen.add_local_controller(controller.pss.PSS1("pss1")));
 assert(contains(ME.message, "no AVR"))
-assert(DebugScript.helper.msg_id(ME) ~= str_out)
+assert(DebugScript.helper.msg_id(ME) ~= s_out)
 
 
 %% An LQR driving an unknown input stops with the same error
 [net, gen] = fresh_network();
 lqr = controller.local_LQR("lqr1", Input="Vref");
-assert(DebugScript.helper.msg_id(caught(@() gen.add_local_controller(lqr))) == str_out)
+assert(DebugScript.helper.msg_id(caught(@() gen.add_local_controller(lqr))) == s_out)
 assert(isempty(gen.a_LocalController) && isempty(lqr.a_Component))
 
 
@@ -117,14 +117,14 @@ gen.add_local_controller(avr, pss);
 DebugScript.helper.quiet(@() net.initialize);
 assert(numel(gen.rv_Xequilibrium_all) == n0 + numel(avr.sv_x) + numel(pss.sv_x))
 
-gen.remove_local_controller(pss.str_tag);
-assert(net.s_edit.l_staleEquilibrium && net.tab_editLog.tag(end) == "Topology")
+gen.remove_local_controller(pss.s_tag);
+assert(net.l_staleEquilibrium && net.tab_editLog.tag(end) == "Topology")
 assert(gen.a_LocalController{1} == avr && isempty(avr.a_LocalController) && isempty(pss.a_Component))
 DebugScript.helper.quiet(@() net.initialize);
 assert(numel(gen.rv_Xequilibrium_all) == n0 + numel(avr.sv_x))
 
-gen.remove_local_controller(avr.str_tag);
-assert(net.s_edit.l_staleEquilibrium && net.tab_editLog.tag(end) == "Topology")
+gen.remove_local_controller(avr.s_tag);
+assert(net.l_staleEquilibrium && net.tab_editLog.tag(end) == "Topology")
 assert(isempty(gen.a_LocalController) && isempty(avr.a_Component))
 DebugScript.helper.quiet(@() net.initialize);
 assert(numel(gen.rv_Xequilibrium_all) == n0)
@@ -140,12 +140,12 @@ pss = controller.pss.PSS1("pss1");
 gen.add_local_controller(avr, pss);
 DebugScript.helper.quiet(@() net.initialize);
 n_log = height(net.tab_editLog);
-ME = caught(@() gen.remove_local_controller(avr.str_tag));
+ME = caught(@() gen.remove_local_controller(avr.s_tag));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:Component:ControllerHasNested" && contains(ME.message, "pss1"))
 assert(gen.a_LocalController{1} == avr && avr.a_LocalController{1} == pss && pss.a_Component == avr)
-assert(~net.s_edit.l_staleEquilibrium && height(net.tab_editLog) == n_log)
+assert(~net.l_staleEquilibrium && height(net.tab_editLog) == n_log)
 
-gen.remove_local_controller(avr.str_tag, RemoveNested=true);
+gen.remove_local_controller(avr.s_tag, RemoveNested=true);
 assert(isempty(gen.a_LocalController) && isempty(avr.a_LocalController))
 assert(isempty(avr.a_Component) && isempty(pss.a_Component))
 assert(height(net.tab_editLog) == n_log + 1 && contains(net.tab_editLog.log(end), "pss1"))
@@ -158,8 +158,8 @@ avr = controller.avr.AVR_ST1("avr1");
 gen.add_local_controller(avr);
 DebugScript.helper.quiet(@() net.initialize);
 ME = caught(@() gen.remove_local_controller("none"));
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:Component:ControllerNotFound" && contains(ME.message, "none") && contains(ME.message, gen.str_tag))
-assert(gen.a_LocalController{1} == avr && ~net.s_edit.l_staleEquilibrium)
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:Component:ControllerNotFound" && contains(ME.message, "none") && contains(ME.message, gen.s_tag))
+assert(gen.a_LocalController{1} == avr && ~net.l_staleEquilibrium)
 
 
 %% remove_local_controller: removed controllers can be attached again, here or elsewhere
@@ -167,14 +167,14 @@ assert(gen.a_LocalController{1} == avr && ~net.s_edit.l_staleEquilibrium)
 avr = controller.avr.AVR_ST1("avr1");
 pss = controller.pss.PSS1("pss1");
 gen.add_local_controller(avr, pss);
-gen.remove_local_controller(avr.str_tag, RemoveNested=true);
+gen.remove_local_controller(avr.s_tag, RemoveNested=true);
 gen2 = net.a_Bus{2}.a_Component{1};
 gen2.add_local_controller(avr, pss);
 assert(gen2.a_LocalController{1} == avr && avr.a_LocalController{1} == pss && pss.a_Component == avr)
 lqr = controller.local_LQR("lqr1");
 gen.add_local_controller(lqr);
 DebugScript.helper.quiet(@() net.initialize);
-gen.remove_local_controller(lqr.str_tag);
+gen.remove_local_controller(lqr.s_tag);
 assert(isempty(gen.a_LocalController) && isempty(lqr.a_Component))
 
 

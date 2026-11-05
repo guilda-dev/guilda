@@ -85,7 +85,7 @@ classdef ResultODE < ResultBase
 
         % odeResults, built on first access.
         % <@Type> struct (0x0 or 1x1)
-        s_view struct = struct([])
+        sct_view struct = struct([])
     end
 
     methods
@@ -134,10 +134,10 @@ classdef ResultODE < ResultBase
         end
 
         function s = get.odeResults(obj)
-            if isempty(obj.s_view)
-                obj.s_view = obj.build_view();
+            if isempty(obj.sct_view)
+                obj.sct_view = obj.build_view();
             end
-            s = obj.s_view;
+            s = obj.sct_view;
         end
 
         function rv = get_point(obj, t, tab_map, opt)
@@ -199,13 +199,13 @@ classdef ResultODE < ResultBase
         end
 
         ax = Plot(obj, opt)
-        str_file = Export(obj, filename)
+        s_file = Export(obj, filename)
     end
 
     methods (Access=private)
         function iv = columns_of(obj, tab_map)
         % Columns of rm_variable for the rows of tab_map (matched by Kind, Owner, Name, Bus)
-            str_key = @(T) string(T.Kind) + "|" + string(T.Owner) + "|" + string(T.Name) + "|" + string(T.Bus);
+            f_key = @(T) string(T.Kind) + "|" + string(T.Owner) + "|" + string(T.Name) + "|" + string(T.Bus);
             if height(tab_map) == 0
                 iv = zeros(0,1);
                 return
@@ -213,7 +213,7 @@ classdef ResultODE < ResultBase
             if ~all(ismember(["Kind","Owner","Name","Bus"], string(tab_map.Properties.VariableNames)))
                 error(msg("GUILDA:ResultODE:InvalidMap"))
             end
-            [lv, iv] = ismember(str_key(tab_map), str_key(obj.tab_variable));
+            [lv, iv] = ismember(f_key(tab_map), f_key(obj.tab_variable));
             if ~all(lv)
                 sv_label = string(tab_map.Label(~lv));
                 error(msg("GUILDA:ResultODE:UnknownVariable", join(sv_label(1:min(end,5)), ", ")))

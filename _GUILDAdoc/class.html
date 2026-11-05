@@ -43,6 +43,7 @@
     } = window.GuildaDocRender;
     const routeParams = loader.getRouteParams();
     const className = routeParams.get('class');
+    loader.reloadOnRouteChange(['class']);
 
     // View state of the member tables. The tables are re-rendered on their
     // own so that the search boxes keep focus while typing. The shown

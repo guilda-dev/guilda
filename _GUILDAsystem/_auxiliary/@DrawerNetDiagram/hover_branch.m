@@ -7,8 +7,8 @@ function output_txt = hover_branch(obj, i_branch)
         output_txt  % Lines of the data tip text.
     end
 
-    str_tag   = char(obj.str_branch(i_branch));
-    str_class = replace(char(obj.tab_branch{i_branch,"class"}),'_','\_');
+    s_tag     = char(obj.sv_branch(i_branch));
+    s_class   = replace(char(obj.tab_branch{i_branch,"class"}),'_','\_');
     
     rv_I = abs(obj.cm_Ibranch(:,i_branch));
     rv_P = obj.rm_Pbranch(:,i_branch);
@@ -20,7 +20,7 @@ function output_txt = hover_branch(obj, i_branch)
 
     iv_edge = obj.im_edge(:,i_branch);
 
-    output_txt = {['\fontname{SansSerif}\bf{',str_tag,' @', str_class,'}'] , ...   
+    output_txt = {['\fontname{SansSerif}\bf{',s_tag,' @', s_class,'}'] , ...   
                   ['\fontname{SansSerif}\bf{ on Branch}']  , ...
                   ['\fontname{Monospaced} {\it ∠V_{ij}}  = ' , num2str(r_Vargij),'^\circ']  , ...
                   ['\fontname{Monospaced} {\it P}_{loss } = ', num2str(Ploss)]          , ...

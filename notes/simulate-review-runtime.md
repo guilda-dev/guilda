@@ -48,7 +48,7 @@
 2. `split_events`: 先頭から連続する `odeEventSet` をイベントとし、残りを Name-Value とする。Name 位置の型と、Name-Value 中のイベントを検査して `GUILDA:PowerNetwork:SimulateArguments` を出す(`simulate.m:53,71-90`)。
 3. `v3_simulate_args`: `Reporter`→`Progress`、`RelativeTolerance`→`Tolerance` に読み替える。大小文字は区別しない(`simulate.m:54`、`v3_simulate_args.m:19-30`)。
 4. `take_call_options`: `Export` だけを取り出して検査する。奇数個なら何もせず後段に任せる(`simulate.m:55,92-116`)。
-5. `solver_ODE.get_options`: `resolve_options` で名前と変換を処理し、`validate_options` で値を検査する。最後に metaclass で公開プロパティ全部を走査して `s_options` を作る(`odeSimulator.m:124-137,701-714`)。
+5. `solver_ODE.get_options`: `resolve_options` で名前と変換を処理し、`validate_options` で値を検査する。最後に metaclass で公開プロパティ全部を走査して `sct_options` を作る(`odeSimulator.m:124-137,701-714`)。
 6. `solve` を呼び(`simulate.m:58`)、戻ったら `Plot`、`Export` の順に実行する(`simulate.m:60-67`)。
 
 ### 1.2 オプション一覧
@@ -72,8 +72,8 @@
 - 既定値の読み込み: `PowerNetwork` の生成時に `reset_solver` が `odeSimulator()` を作り(`PowerNetwork.m:124`、`reset_solver.m:11`)、`GUILDA.config("TimeSimulation")` を読む(`odeSimulator.m:95`)。config は `persistent` でキャッシュされる(`@GUILDA/config.m:8-11`)。`@GUILDA/user/` の同名ファイルがシステム設定に上書きマージされる(`@GUILDA/private/get_config.m:16-29`)。
 - `TimeSim.json:35` は末尾カンマを含み厳密な JSON ではないが、`readstruct` は読める **[実機]**(`TimeLimit=10`)。
 - 上書きは呼び出し限りで、`solver_ODE` には書き戻さない(`resolve_options.m:5-6`、`odeSimulator.m:145`)。F6 でもテスト済み(`F6:144-154`)。
-- 名前の照合は大小文字を区別しない(`resolve_options.m:76`)。`s_options` には **変換前の値** が入る(例: `Plot=1` は double のまま)。`validate_options` は検査するだけで値を返さない(`odeSimulator.m:125`)。
-- `get_options` の metaclass 走査(`:127-137`)は、`OptionMap` が公開設定 9 個を全部覆っているので、`resolve_options` が返す `s_given` と同じ内容を作り直している。
+- 名前の照合は大小文字を区別しない(`resolve_options.m:76`)。`sct_options` には **変換前の値** が入る(例: `Plot=1` は double のまま)。`validate_options` は検査するだけで値を返さない(`odeSimulator.m:125`)。
+- `get_options` の metaclass 走査(`:127-137`)は、`OptionMap` が公開設定 9 個を全部覆っているので、`resolve_options` が返す `sct_given` と同じ内容を作り直している。
 - `take_call_options` は `linearize.m:52` と `optimize_powerflow.m:70` にも同名のローカルコピーがある。
 
 ### 1.3 `time` の形式
@@ -116,7 +116,7 @@
 - 複数イベントの合成(`setEventCondition`)
   - 同じ機器へのオフセットと入力は名前で照合して加算(`:247-281`、`F6:437-453`)
   - `FaultBus` / `TripUnit` は和集合(`:324-325`)
-  - イベント列名は `str_tag`。**重複はエラー** `MATLAB:table:DuplicateVarNames`(同じタグで 2 回の地絡は書けない)。`t1` などの予約名も同じ **[実機]**(`:178-179,207`)
+  - イベント列名は `s_tag`。**重複はエラー** `MATLAB:table:DuplicateVarNames`(同じタグで 2 回の地絡は書けない)。`t1` などの予約名も同じ **[実機]**(`:178-179,207`)
 - 関数入力の `t` は「イベント開始からの経過時間」に換算する(`:299-301`)。
 
 ### 2.3 範囲外とスカラー
@@ -210,7 +210,7 @@
 
 ### 3.5 ソルバーの使い方とフォールバック
 
-- `makeODE` は `ode` の全 public プロパティのうち `s_options` にあるものをプロパティ順に設定する(`makeODE.m:4-16`)。
+- `makeODE` は `ode` の全 public プロパティのうち `sct_options` にあるものをプロパティ順に設定する(`makeODE.m:4-16`)。
 - **`Solver` 単独指定は無効** **[実機]**: `Solver` の次に `SolverOptions`(既定 `ODE15s`)を設定するので、`ode` 側が `Solver` を `ode15s` へ戻す(`o.Solver="ode23t"` → `o.SolverOptions=ODE15s` → `o.Solver==ode15s`)。
   - `net.simulate(..., Solver="ode23t")` は既定と **完全に同一の解**(`isequaln`、144 点)。`Solver="ode45"` も特異質量行列なのに `flag=1` で完走する。
   - `SolverOptions=matlab.ode.options.ODE23t` を併記すれば 276 点となり本当に切り替わる。`ODE45` 併記は `PhaseFailed`。
@@ -284,7 +284,7 @@
 
 ### 5.1 `odeSimulationResult`
 
-- 継承 `AnalysisResult < auxiliary < handle`。保持: `flag, output, options, str_solver, r_elapsed, str_network`、Hidden の `a_PowerNetwork`(`AnalysisResult.m:30-53`)。
+- 継承 `AnalysisResult < auxiliary < handle`。保持: `flag, output, options, s_solver, r_elapsed, s_network`、Hidden の `a_PowerNetwork`(`AnalysisResult.m:30-53`)。
 - 本体(`odeSimulationResult.m:32-62`)
 
 | プロパティ | 内容 |
@@ -294,7 +294,7 @@
 | `rm_variable` | 全変数の軌道。列は x(機器+LC)、大域 x、V、**機器の** u |
 | `rm_I` | `Y*V` で後計算した電流(`odeEventSet.m:422-423`)。DAE の `I` 行そのものではない |
 | `sv_bus`, `c_component` | タグ |
-| `odeResults`(Dependent) | 初回アクセスで `build_view` し `s_view` にキャッシュ(`:127-132,218-261`) |
+| `odeResults`(Dependent) | 初回アクセスで `build_view` し `sct_view` にキャッシュ(`:127-132,218-261`) |
 
 - **結果に残らない変数**: LC の入力、母線 `I` の状態、大域の入出力。
 - 解列機器の x は NaN(`odeEventSet.m:418-420`)。**u は 0、LC の状態は実行値** のまま。
@@ -453,7 +453,7 @@
 
 - 行列 → `table` → 行列の往復(`odeEventSet.m:425-429`, `odeSimulationResult.m:118-120`)。
 - `get_variable_map` を 2 回(`odeSimulationResult.m:122,307`)。
-- `build_view` は全列を `array2table` 化して `s_view` に保持(`:225-226`)。`rm_variable` と二重にメモリを使う。
+- `build_view` は全列を `array2table` 化して `sct_view` に保持(`:225-226`)。`rm_variable` と二重にメモリを使う。
 - ソルバーの全ステップを保存し、出力間引きの手段がない(`odeSimulator.m:248,280`)。
 
 ## 9. 気づいた問題点

@@ -23,7 +23,7 @@ function path = export(net, ModelName, opt)
     Deprecated("CsvNetHandlerExport");
     path = net.export_csv(fullfile(opt.savepath, "@"+ModelName), Overwrite=opt.Overwrite, ClassFile=true);
     if opt.version ~= 1
-        str_file = fullfile(path, ModelName + ".m");
-        writelines(replace(string(fileread(str_file)), "ver = 1" + newline, "ver = " + string(opt.version) + newline), str_file);
+        s_file = fullfile(path, ModelName + ".m");
+        writelines(replace(string(fileread(s_file)), "ver = 1" + newline, "ver = " + string(opt.version) + newline), s_file);
     end
 end

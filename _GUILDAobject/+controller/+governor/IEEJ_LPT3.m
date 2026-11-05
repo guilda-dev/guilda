@@ -98,7 +98,7 @@ classdef (Sealed = true) IEEJ_LPT3 < controller.governor.abstract
             tab = obj.tab_parameter.dynamics;
             r_P0 = obj.initial_output(u);
             if ~(r_P0 >= tab{:,'pos_min'} && r_P0 <= tab{:,'pos_max'})
-                error(msg("GUILDA:IEEJ_LPT3:OutputOutOfRange", char(obj.str_tag), num2str(r_P0), num2str(tab{:,'Prate'}), ...
+                error(msg("GUILDA:IEEJ_LPT3:OutputOutOfRange", char(obj.s_tag), num2str(r_P0), num2str(tab{:,'Prate'}), ...
                           num2str(tab{:,'pos_min'}), num2str(tab{:,'pos_max'})))
             end
             [r_Pref, r_Plimit] = obj.load_setting(r_P0, tab{:,'PLM'}, 1, tab{:,'pos_max'});
