@@ -19,7 +19,7 @@ function flag = check_edit(obj, opt)
     flag = ~obj.l_staleEquilibrium;
     if opt.RequireEquilibrium && ~flag
         tab = obj.tab_editLog;
-        [~, lv] = obj.edit_effect(tab);
+        [~, lv] = obj.edit_effect(tab.tag, tab.log);
         lv = lv & tab.tag ~= "Initialize";   % an "Initialize" row: initialize stopped while writing
         if ~obj.sct_edit.l_initialized
             s_reason = "net.initialize() has not been run";

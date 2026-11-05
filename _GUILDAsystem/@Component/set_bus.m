@@ -9,5 +9,8 @@ function set_bus(obj,bus)
         bus   % Bus of the component, or [] to detach it.
     end
     obj.a_Bus = bus;
+    if ~isempty(bus)
+        obj.clear_edit_log();   % edits made before do not belong to the new network
+    end
     obj.mark_odefcn();    % the handles read the frequency of the network the bus belongs to
 end

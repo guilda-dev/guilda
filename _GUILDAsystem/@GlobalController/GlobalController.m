@@ -261,6 +261,9 @@ classdef GlobalController < PowerSystemModel
                 net   % PowerNetwork, or [] to detach the controller.
             end
             obj.a_PowerNetwork = net;
+            if ~isempty(net)
+                obj.clear_edit_log();     % edits made before do not belong to the new network
+            end
             obj.mark_odefcn();        % the handles read the frequency of the network
         end
     end
