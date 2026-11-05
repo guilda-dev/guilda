@@ -162,115 +162,17 @@ classdef LocalController < PowerSystemModel
 
 %% Methods    
     methods (Hidden)
-        function sv = driven_inputs(obj, comp)
-            % Names of the inputs of the component comp that the controller drives once
-            % attached to it (Component.add_local_controller checks them before the
-            % attachment). sv_y by default; a controller whose outputs follow the component
-            % (e.g. controller.local_LQR) overrides this.
-            %
-            % <@Group> Internal helpers
-            arguments (Input)
-                obj
-                comp   % Component the controller is to be attached to.
-            end
-            arguments (Output)
-                sv (:,1) string   % Names of the driven inputs of comp.
-            end
-            sv = obj.sv_y;
-        end
+        sv = driven_inputs(obj, comp)
     end
 
     methods (Access={?Component,?LocalController})
-        function add_local_controller(obj,a_Controller)
-            % Attach a nested controller (the PSS under an AVR; Component.add_local_controller).
-            %
-            % <@Group> Construction and attachment
-            arguments (Input)
-                obj
-                a_Controller (1,1) LocalController   % Nested controller (the PSS).
-            end
-            obj.a_LocalController = {a_Controller};
-            obj.l_hasController = true;
-        end
+        add_local_controller(obj,a_Controller)
 
-        function remove_local_controller(obj)
-            % Detach the nested controller (Component.add_local_controller, when an AVR is replaced; Component.remove_local_controller)
-            %
-            % <@Group> Construction and attachment
-            arguments (Input)
-                obj
-            end
-            obj.a_LocalController = cell(0,1);
-            obj.l_hasController = false;
-        end
+        remove_local_controller(obj)
 
-        function set_parent(obj,a_Component)
-            % Set the parent of the controller; a_Component = [] detaches it (Component.add_local_controller).
-            %
-            % <@Group> Construction and attachment
-            arguments (Input)
-                obj
-                a_Component   % Component, the AVR for a PSS, or [] to detach.
-            end
-            obj.a_Component = a_Component; 
-            if ~isempty(a_Component)
-                obj.reset_edit(false);   % edits made before do not belong to the new parent; not initialized there yet
-            end
-            obj.resolve_observe();        % inputs read on the component (also of nested controllers)
-            obj.mark_odefcn();        % the handles read the frequency of the parent's network
-        end
+        set_parent(obj,a_Component)
 
-        function resolve_observe(obj)
-            % Expand the reserved inputs "Xall" / "Yall" and find where each input is read on
-            % the observed component (iv_obsY / iv_obsX), for this controller and the
-            % controllers nested in it. An input name found in both sv_y and sv_x is read
-            % from sv_y. Without a component, the inputs stay as defined.
-            %
-            % <@Group> Construction and attachment
-            arguments (Input)
-                obj
-            end
-            if isempty(obj.sv_uRequest)
-                obj.sv_uRequest = obj.sv_u;
-            end
-            if any(ismember(obj.sv_uRequest, ["X","Y"]))
-                error(msg("GUILDA:LocalController:ReservedInputNames", class(obj)))
-            end
-            comp = obj.observed_component();
-            if isempty(comp)
-                sv_req = obj.sv_uRequest;
-                if any(ismember(sv_req, obj.sr_reserved))
-                    obj.set_inputs(sv_req);
-                end
-                obj.iv_obsY = zeros(numel(obj.sv_u),1);
-                obj.iv_obsX = zeros(numel(obj.sv_u),1);
-            else
-                obj.resolve_ports(comp);
-                sv_name = strings(0,1);  sv_src = strings(0,1);
-                for k = 1:numel(obj.sv_uRequest)
-                    switch obj.sv_uRequest(k)
-                        case "Xall"
-                            sv_add = comp.sv_x;  s_src = "X";
-                        case "Yall"
-                            sv_add = comp.sv_y;  s_src = "Y";
-                        otherwise
-                            sv_add = obj.sv_uRequest(k);  s_src = "";
-                    end
-                    sv_name = [sv_name; sv_add(:)];                              %#ok<AGROW>
-                    sv_src  = [sv_src; repmat(s_src, numel(sv_add), 1)];       %#ok<AGROW>
-                end
-                if ~isequal(sv_name, obj.sv_u)
-                    obj.set_inputs(sv_name);
-                end
-                [~, iv_y] = ismember(sv_name, comp.sv_y);
-                [~, iv_x] = ismember(sv_name, comp.sv_x);
-                iv_y(sv_src == "X") = 0;
-                iv_x(sv_src == "Y" | iv_y > 0) = 0;
-                obj.iv_obsY = iv_y;
-                obj.iv_obsX = iv_x;
-            end
-            cellfun(@(c) c.resolve_observe(), obj.a_LocalController);
-        end
+        resolve_observe(obj)
 
         % get dx and y
         [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, Ii, obs, DAEvec)
@@ -278,94 +180,19 @@ classdef LocalController < PowerSystemModel
     end
 
     methods (Access=protected)
-        function resolve_ports(obj, comp)
-            % Called by resolve_observe with the observed component before the inputs
-            % are resolved: a controller whose ports depend on the component (e.g. the
-            % inputs of the component it drives) sets them here. Does nothing by default.
-            %
-            % <@Group> Hooks for subclasses
-            arguments (Input)
-                obj
-                comp   % Observed component.
-            end
-        end
+        resolve_ports(obj, comp)
 
-        function set_inputs(obj, sv_name)
-            % Set the input names sv_u after "Xall" / "Yall" are expanded. A controller that
-            % uses "Xall" or "Yall" in sv_u overrides this (sv_u is defined by the subclass).
-            %
-            % <@Group> Hooks for subclasses
-            arguments (Input)
-                obj
-                sv_name (:,1) string   % Input names with "Xall" / "Yall" expanded.
-            end
-            error(msg("GUILDA:LocalController:ReservedInputNoOverride", class(obj)))
-        end
+        set_inputs(obj, sv_name)
 
-        function comp = observed_component(obj)
-            % The component the controller observes: its parent, or for a nested
-            % controller (e.g. a PSS under an AVR) the component above them ([] if none)
-            %
-            % <@Group> Internal helpers
-            arguments (Input)
-                obj
-            end
-            arguments (Output)
-                comp   % Observed Component, or [] if none.
-            end
-            comp = obj.a_Component;
-            while isa(comp, "LocalController")
-                comp = comp.a_Component;
-            end
-            if ~isa(comp, "Component")
-                comp = [];
-            end
-        end
+        comp = observed_component(obj)
 
     end
 
     methods (Access=protected)
-        function set_odefcn(obj)
-            % Bind the parameters and the network frequency into the f_* function handles.
-            % Called by check_edit when the handles are not up to date (s_odefcn "unset" or
-            % "editted": a dynamics edit, a network Hz edit or an attach since the last build).
-            %
-            % <@Group> Called by analyses
-            arguments (Input)
-                obj
-            end
-            omega0 = obj.get_Hz();
-            param = obj.tab_parameter.dynamics{:,obj.sv_para}.';
-
-            obj.f_dx   = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, param, omega0);            
-            obj.f_Mass = @(t,x,V,I,u) obj.fcn_Mass(t, x, V, I, u, param, omega0);
-            obj.f_Y    = @(t,x,V,I,u) obj.fcn_y(t, x, V, I, u, param, omega0);
-
-            obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
-            obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
-            obj.s_odefcn = "updated";
-        end
+        set_odefcn(obj)
     end
     methods (Access=private)
-        function val = parent_equilibrium(obj, s_prop)
-            % Read the parent's (a Component, or an AVR for a PSS) equilibrium.
-            % Kept out of the get methods: MATLAB reads the stored value when a
-            % get method refers to its own property, even on another object.
-            %
-            % <@Group> Internal helpers
-            arguments (Input)
-                obj
-                s_prop (1,1) string   % Name of the equilibrium property of the parent.
-            end
-            arguments (Output)
-                val   % Value of that property, or zeros(0,1) without a parent.
-            end
-            if isempty(obj.a_Component)
-                val = zeros(0,1);
-            else
-                val = obj.a_Component.(s_prop);
-            end
-        end
+        val = parent_equilibrium(obj, s_prop)
     end
 
 

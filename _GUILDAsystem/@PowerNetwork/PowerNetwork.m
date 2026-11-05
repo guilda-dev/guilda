@@ -193,73 +193,16 @@ classdef PowerNetwork < PowerSystemModel
         net = import_csv(path, opt)
         net = import_matpower(mpc, opt)
 
-        function obj = loadobj(obj)
-            % A MAT file does not hold listeners: restore those of the parameters so that
-            % edits of a loaded network are checked and logged. MATLAB turns an error here
-            % into a warning, so an incomplete restore is reported as a warning.
-            %
-            % <@Group> Data IO
-            arguments (Input)
-                obj   % Network read from the MAT file.
-            end
-            arguments (Output)
-                obj   % Network with the listeners of its parameters restored.
-            end
-            if ~restore_parameter_listeners(obj)
-                warning(msg("GUILDA:PowerNetwork:IncompleteLoad", obj.s_tag))
-            end
-        end
+        obj = loadobj(obj)
     end
     methods(Access=protected)
         % Edit handling: build the f_* handles that are not up to date, check the equilibrium
         flag = check_edit(obj, opt)
 
-        function handle_edit(obj, a_layer, tag, log)
-            % Network-wide rules for an edit of any layer of the network (log_edit), also
-            % before the first initialize: at most one slack bus (a bus reports
-            % bus.l_isSlack = true as a "Slack" edit; the network releases the others),
-            % and a network Hz edit marks the f_* handles of every layer, so the next
-            % analysis (check_edit) builds them with the new frequency.
-            %
-            % <@Group> Called by analyses
-            arguments (Input)
-                obj
-                a_layer        % Edited layer (the bus for a "Slack" edit).
-                tag string     % Kind of edit (see edit_effect).
-                log string     % Log message.
-            end
-            handle_edit@PowerSystemModel(obj, a_layer, tag, log);
-            if tag == "Parameter(base)" && log == "edit Hz" && isa(a_layer, "Parameter") && obj.is_parent_of(a_layer)
-                obj.mark_odefcn();
-                return
-            end
-            if tag ~= "Slack"
-                return
-            end
-            lv_this = tools.vcellfun(@(b) b == a_layer, obj.a_Bus);
-            if ~any(lv_this) || ~obj.a_Bus{lv_this}.l_isSlack
-                return
-            end
-            for i = find(~lv_this(:)')
-                bus = obj.a_Bus{i};
-                if bus.l_isSlack
-                    bus.l_isSlack = false;
-                end
-            end
-        end
+        handle_edit(obj, a_layer, tag, log)
     end
     methods(Access={?SolverODE, ?SolverLIN})
-        function require_equilibrium(obj)
-            % Called at the start of solver_ODE.solve and solver_LIN.solve (the one place
-            % of this check for simulate, linearize and get_sys): build the f_* handles
-            % that are not up to date; error if net.initialize() is needed.
-            %
-            % <@Group> Called by analyses
-            arguments (Input)
-                obj
-            end
-            obj.check_edit("RequireEquilibrium", true);
-        end
+        require_equilibrium(obj)
     end
 
 %% Get Method
@@ -315,42 +258,4 @@ classdef PowerNetwork < PowerSystemModel
         %           " Update : Automatically refreshes based on the method used upon each execution of obj.initialize().")
         % end
     end
-end
-
-
-function l_complete = restore_parameter_listeners(layer)
-% Attach the class check and the listeners of Parameter.add_entry again on a layer and all
-% layers below it. The class a parameter must keep is taken from its value.
-% l_complete is false when a layer is still being loaded (the MAT file holds a variable
-% below the network, which loads the network from inside that layer): its parameters are
-% not available yet.
-    arguments (Input)
-        layer   % PowerNetwork, Bus, Branch, Component or controller.
-    end
-    arguments (Output)
-        l_complete (1,1) logical   % False when a layer is still being loaded.
-    end
-    l_complete = true;
-    mc = metaclass(layer);
-    lv = startsWith(string({mc.PropertyList.Name}), "para_") & ~[mc.PropertyList.Dependent];
-    for s_para = string({mc.PropertyList(lv).Name})
-        para = layer.(s_para);
-        if ~isa(para, "Parameter")
-            l_complete = false;
-            continue
-        end
-        for name = setdiff(string(properties(para)), string(properties("Parameter"))).'
-            para.attach_callbacks(name, class(para.(name)));
-        end
-    end
-    if isa(layer, "PowerNetwork")
-        a_lower = [layer.a_Bus; layer.a_Branch; layer.a_GlobalController];
-    elseif isa(layer, "Bus")
-        a_lower = layer.a_Component;
-    elseif isprop(layer, "a_LocalController")
-        a_lower = layer.a_LocalController;
-    else
-        a_lower = {};
-    end
-    l_complete = all([l_complete, cellfun(@restore_parameter_listeners, a_lower(:).')]);
 end
