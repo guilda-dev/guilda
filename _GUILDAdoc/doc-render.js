@@ -196,6 +196,12 @@
       .sort((a, b) => (rank(a.name) - rank(b.name)) || (a.index - b.index));
   };
 
+  // A member name with <wbr> after "_" and between camelCase words, so a
+  // narrow column wraps it there rather than mid-word (reference.css).
+  const breakableName = (name) => escapeHtml(name)
+    .replace(/_/g, '_<wbr>')
+    .replace(/([a-z0-9])([A-Z])/g, '$1<wbr>$2');
+
   // Heading of a member group: a "Group" tag, the group name in the UI font
   // and the member count, so it reads apart from the member names (reference.css).
   const groupHeading = (label, count) => `<span class="ref-group"><span class="ref-group-tag">${tr('Group', 'グループ')}</span>`
@@ -217,6 +223,7 @@
     sourceLocation,
     examplesText,
     groupRows,
-    groupHeading
+    groupHeading,
+    breakableName
   });
 })(window);

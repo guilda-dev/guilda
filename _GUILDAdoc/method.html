@@ -41,7 +41,7 @@
     const loader = window.GuildaDocLoader;
     const {
       tr, setPageTitle, escapeHtml, nl2br, firstText, toList, formatInlineMarkdown, renderMarkdown,
-      classLink, seeAlsoLink, sourceLocation, examplesText, groupRows, groupHeading
+      classLink, seeAlsoLink, sourceLocation, examplesText, groupRows, groupHeading, breakableName
     } = window.GuildaDocRender;
     const routeParams = loader.getRouteParams();
     const className = routeParams.get('class');
@@ -183,7 +183,7 @@
           <tbody>
             ${rows.map((p) => `
               <tr>
-                <td><strong>${cell(p.name)}</strong></td>
+                <td class="col-name"><strong>${p.name ? breakableName(p.name) : muted('-')}</strong></td>
                 <td>${cell(kindLabel(p.kind || 'Positional'))}</td>
                 <td>${cell(p.type)}</td>
                 ${withUnit ? `<td class="col-unit">${p.unit ? `<span class="ref-unit">${escapeHtml(p.unit)}</span>` : muted('-')}</td>` : ''}
@@ -207,7 +207,7 @@
           <tbody>
             ${rows.map((r) => `
               <tr>
-                <td><strong>${cell(r.name)}</strong></td>
+                <td class="col-name"><strong>${r.name ? breakableName(r.name) : muted('-')}</strong></td>
                 ${withType ? `<td>${cell(r.type)}</td>` : ''}
                 ${withUnit ? `<td class="col-unit">${r.unit ? `<span class="ref-unit">${escapeHtml(r.unit)}</span>` : muted('-')}</td>` : ''}
                 <td class="col-description">${r.description ? formatInlineMarkdown(r.description) : muted('-')}</td>

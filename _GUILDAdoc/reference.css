@@ -449,3 +449,11 @@ tr.ref-group-row:hover { background: transparent; }
 .doc-layout .compact-table td.col-description { width: auto; max-width: none; }
 /* Member names stay monospace, unlike the group headings between them. */
 .doc-layout .compact-table td.col-name { font-family: var(--font-mono); }
+/* Phones: member names may wrap (at the <wbr> of breakableName first) so
+   Description keeps room; desktop keeps them on one line. */
+@media (max-width: 600px) {
+  .doc-layout .compact-table td.col-name { width: auto; white-space: normal; word-break: normal; overflow-wrap: normal; font-size: 0.85rem; }
+  .doc-layout .compact-table th.col-name { width: auto; min-width: 0; }
+  .doc-layout .ref-table-scroll .compact-table td,
+  .doc-layout .ref-table-scroll .compact-table th { padding: 8px; }
+}
