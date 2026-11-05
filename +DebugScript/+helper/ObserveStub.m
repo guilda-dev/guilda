@@ -23,7 +23,7 @@ classdef ObserveStub < LocalController
             obj@LocalController("CSstub")
             obj.sv_u = reshape(string(sv_u), [], 1);
         end
-        function get_equilibrium(obj, V, u) %#ok
+        function get_equilibrium(obj, V, u)
             arguments (Input)
                 obj
                 V    % [pu] 機器の平衡点の端子電圧 (複素数)
@@ -43,7 +43,7 @@ classdef ObserveStub < LocalController
         end
     end
     methods (Static)
-        function dx = fcn_dx(t, x, V, I, u, param, omega0) %#ok
+        function dx = fcn_dx(t, x, V, I, u, param, omega0)
             arguments (Input)
                 t       % [s] 時刻
                 x       % 状態
@@ -58,7 +58,7 @@ classdef ObserveStub < LocalController
             end
             dx = zeros(0,1);
         end
-        function y = fcn_y(t, x, V, I, u, param, omega0) %#ok
+        function y = fcn_y(t, x, V, I, u, param, omega0)
             arguments (Input)
                 t       % [s] 時刻
                 x       % 状態
@@ -73,7 +73,7 @@ classdef ObserveStub < LocalController
             end
             y = zeros(0,1);
         end
-        function M = fcn_Mass(t, x, V, I, u, param, omega0) %#ok
+        function M = fcn_Mass(t, x, V, I, u, param, omega0)
             arguments (Input)
                 t       % [s] 時刻
                 x       % 状態
@@ -88,7 +88,7 @@ classdef ObserveStub < LocalController
             end
             M = zeros(0,0);
         end
-        function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t, x, V, I, u, param, omega0) %#ok
+        function [Axx,Bxv,Bxi,Bxu] = Jacobi_dx(t, x, V, I, u, param, omega0)
             arguments (Input)
                 t       % [s] 時刻
                 x       % 状態
@@ -106,7 +106,7 @@ classdef ObserveStub < LocalController
             end
             Axx = zeros(0,0);  Bxv = zeros(0,2);  Bxi = zeros(0,2);  Bxu = zeros(0,numel(u));
         end
-        function [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t, x, V, I, u, param, omega0) %#ok
+        function [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t, x, V, I, u, param, omega0)
             arguments (Input)
                 t       % [s] 時刻
                 x       % 状態

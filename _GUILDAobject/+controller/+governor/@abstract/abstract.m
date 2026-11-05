@@ -46,96 +46,12 @@ classdef abstract < LocalController
     end
 
     methods (Access=protected)
-        function r_P0 = initial_output(obj, u)
-        % Turbine output at the equilibrium [pu of the rated MW]: Pmech / Prate.
-            arguments (Input)
-                obj
-                u  % [pu] Equilibrium input of the generator (Pmech is read by name).
-            end
-            arguments (Output)
-                r_P0  % [pu of the rated MW] Turbine output at the equilibrium.
-            end
-            comp = obj.a_Component;
-            r_Pmech = u(1);
-            if isa(comp, "Component") && any(comp.sv_u == "Pmech")
-                r_Pmech = u(comp.sv_u == "Pmech");
-            end
-            r_P0 = r_Pmech / obj.tab_parameter.dynamics{:, 'Prate'};
-        end
+        r_P0 = initial_output(obj, u)
     end
 
     methods (Static, Hidden)
-        function [r_Pref, r_Plimit] = load_setting(r_pos0, r_PLM, r_gain, r_posMax)
-        % Load setting (65M) and load limiter (77M) from the margin PLM [%].
-            arguments (Input)
-                r_pos0    (1,1) double  % Servo position at the equilibrium.
-                r_PLM     (1,1) double  % [%] Governor margin (of the rated MW).
-                r_gain    (1,1) double  % Steady-state gain from the servo position to the turbine output.
-                r_posMax  (1,1) double  % Upper limit of the servo position.
-            end
-            arguments (Output)
-                r_Pref    % Load setting (65M) at the equilibrium.
-                r_Plimit  % Load limiter (77M).
-            end
-            r_margin = abs(r_PLM)/100/r_gain;
-            if r_PLM > 0
-                r_Pref   = r_pos0;
-                r_Plimit = r_pos0 + r_margin;
-            elseif r_PLM == 0
-                r_Pref   = r_pos0;
-                r_Plimit = r_posMax;
-            else
-                r_Pref   = r_pos0 + r_margin;
-                r_Plimit = r_pos0;
-            end
-        end
-
-        function [r_gate, l_ref] = lvg(r_e, r_Plimit)
-        % Low value gate: the smaller of the load setting signal r_e and the limiter.
-        % l_ref is true when r_e passes (also when they are equal).
-            arguments (Input)
-                r_e       (1,1) double  % Load setting signal.
-                r_Plimit  (1,1) double  % Load limiter.
-            end
-            arguments (Output)
-                r_gate  % Output of the gate: the smaller of r_e and r_Plimit.
-                l_ref   % True when r_e passes.
-            end
-            l_ref = r_e <= r_Plimit;
-            if l_ref
-                r_gate = r_e;
-            else
-                r_gate = r_Plimit;
-            end
-        end
-
-        function [r_rate, r_slope] = servo_rate(r_err, r_pos, r_gain, r_rateMin, r_rateMax, r_posMin, r_posMax)
-        % Speed of the servo position: r_gain*r_err limited to [r_rateMin, r_rateMax],
-        % and 0 while the position is at a limit and pushed further out (non-windup).
-        % r_slope is d(r_rate)/d(r_err) on the active branch.
-            arguments (Input)
-                r_err      (1,1) double  % Error of the servo position.
-                r_pos      (1,1) double  % Servo position.
-                r_gain     (1,1) double  % Servo gain.
-                r_rateMin  (1,1) double  % Lower limit of the speed.
-                r_rateMax  (1,1) double  % Upper limit of the speed.
-                r_posMin   (1,1) double  % Lower limit of the position.
-                r_posMax   (1,1) double  % Upper limit of the position.
-            end
-            arguments (Output)
-                r_rate   % Speed of the servo position.
-                r_slope  % Derivative of r_rate with respect to r_err on the active branch.
-            end
-            r_rate  = r_gain*r_err;
-            r_slope = r_gain;
-            if r_rate > r_rateMax
-                r_rate = r_rateMax;  r_slope = 0;
-            elseif r_rate < r_rateMin
-                r_rate = r_rateMin;  r_slope = 0;
-            end
-            if (r_pos >= r_posMax && r_rate > 0) || (r_pos <= r_posMin && r_rate < 0)
-                r_rate = 0;  r_slope = 0;
-            end
-        end
+        [r_Pref, r_Plimit] = load_setting(r_pos0, r_PLM, r_gain, r_posMax)
+        [r_gate, l_ref] = lvg(r_e, r_Plimit)
+        [r_rate, r_slope] = servo_rate(r_err, r_pos, r_gain, r_rateMin, r_rateMax, r_posMin, r_posMax)
     end
 end

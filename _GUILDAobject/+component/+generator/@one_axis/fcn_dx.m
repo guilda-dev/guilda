@@ -1,4 +1,4 @@
-function dx = fcn_dx(obj,t,x,V,I,u,param,omega0) %#ok
+function dx = fcn_dx(obj,t,x,V,I,u,param,omega0)
 % Calculate the right side of the state equation.
 %
 % The state equation is `M*dx/dt = fcn_dx(...)`, with `M` from `fcn_Mass`.

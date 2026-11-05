@@ -30,21 +30,4 @@ classdef pi < Branch
         key = "pi"  % Type name used by PowerNetwork.add_branch.
     end
 
-    methods
-        function Ymat = get_admittance_matrix(obj)
-        % Return the 2-by-2 admittance matrix of the line.
-        % Rows and columns are ordered (from bus, to bus).
-            arguments (Input)
-                obj
-            end
-            arguments (Output)
-                Ymat % [pu] 2-by-2 complex admittance matrix.
-            end
-            para  = obj.para_dynamics;
-            yij   = 1/(para.R+1j*para.X);
-            cij   = 1j * para.C;
-            Ymat  = [ cij+yij,    -yij ;
-                         -yij, cij+yij ];
-        end
-    end
 end

@@ -1,0 +1,16 @@
+function Mass = fcn_Mass(t, x, V, I, u, param, omega0)
+% Return the mass matrix `diag([Tg, Tt, 1, Tw])` of the state equation.
+    arguments (Input)
+        t      double        % [s] Time.
+        x      double        % States in the order of `sv_x`.
+        V      double        % [pu] Terminal voltage of the parent [real; imag].
+        I      double        % [pu] Terminal current of the parent [real; imag].
+        u      double        % Inputs in the order of `sv_u`.
+        param  double        % Dynamic parameters in the order of `sv_para`.
+        omega0 (1,1) double  % [Hz] Nominal frequency of the network.
+    end
+    arguments (Output)
+        Mass  % Mass matrix of the state equation.
+    end
+    Mass = diag([param(4), param(6), 1, param(12)]);
+end

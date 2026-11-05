@@ -96,7 +96,7 @@ c_net = {@() network.IEEE9bus(), @() network.IEEE14bus(), @() network.IEEE14bus_
          @() network.IEEE68bus(), @() network.Ishizaki6Bus(), @() network.TEST31bus(), @() network.Txt3Bus(), @() network.Tutorial3bus(), ...
          @() network.IEEJ_EAST10(), @() network.IEEJ_EAST30(), @() network.IEEJ_WEST10(), @() network.IEEJ_WEST30()};
 for i = 1:numel(c_net)
-    s = warning("error", s_q);    %#ok<CTPCT>
+    s = warning("error", s_q);
     c_warn = onCleanup(@() warning(s));
     DebugScript.helper.quiet(c_net{i});
     clear c_warn

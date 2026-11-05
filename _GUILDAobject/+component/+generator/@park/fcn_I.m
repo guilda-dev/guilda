@@ -1,4 +1,4 @@
-function I = fcn_I(obj, t, x, V, I, u, para, omega0) %#ok   
+function I = fcn_I(obj, t, x, V, I, u, para, omega0)
 % Calculate the current that the component injects into the bus.
 %
 % The current follows the convention of `c_Iequilibrium`: positive into the bus.

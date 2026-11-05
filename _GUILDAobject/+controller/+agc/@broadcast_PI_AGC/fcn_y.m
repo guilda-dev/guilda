@@ -1,4 +1,4 @@
-function y = fcn_y(t, x, V, I, u, param, omega0) %#ok
+function y = fcn_y(t, x, V, I, u, param, omega0)
     % Return the output of the broadcast_PI_AGC controller.
     %
     % See also controller.agc.broadcast_PI_AGC.fcn_dx, controller.agc.broadcast_PI_AGC.Jacobi_Y
