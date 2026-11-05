@@ -106,7 +106,7 @@ classdef Component < PowerSystemModel
     end
 
     % Handle cache @(t,x,V,I,u) with the parameters and omega0 bound (set_odefcn, called by
-    % check_edit at the start of an analysis). s_edit.str_odefcn tells whether it is "unset",
+    % check_edit at the start of an analysis). sct_edit.str_odefcn tells whether it is "unset",
     % "editted" or "updated".
     properties(SetAccess=protected) % Cached function handles
         f_Mass                                 % Mass matrix function @(t,x,V,I,u) with the parameters bound.
@@ -253,7 +253,7 @@ classdef Component < PowerSystemModel
             obj.f_dx   = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, array, omega0);
             obj.f_I    = @(t,x,V,I,u) obj.fcn_I(t, x, V, I, u, array, omega0);
             obj.f_Y    = @(t,x,V,I,u) obj.fcn_Y(t, x, V, I, u, array, omega0);
-            obj.s_edit.str_odefcn = "updated";
+            obj.sct_edit.str_odefcn = "updated";
         end
 
         % Raise a constructor message of Component.xml for a subclass in another folder.

@@ -3,7 +3,7 @@
 % 系統モデルを組み立てる API の使い方と結果を確認する。
 %   add_bus / add_branch / add_component / add_local_controller / add_global_controller
 %   replace_component / remove_component / remove_branch / remove_bus / remove_global_controller
-%   タグ、tab_parameter の編集、編集ログ (tab_editLog, s_edit.str_flag)
+%   タグ、tab_parameter の編集、編集ログ (tab_editLog, sct_edit.l_initialized)
 %
 % 実行: runtests("DebugScript.test_F1_model_building")  または  DebugScript.run_all("Features","F1")
 

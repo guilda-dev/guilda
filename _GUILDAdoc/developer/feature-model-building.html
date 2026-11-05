@@ -216,7 +216,7 @@ b1.l_isSlack = true;</code></pre>
           <path class="dg-sv-line is-muted" d="M34 584H197" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="576" width="30" height="16" rx="8"/>
           <text class="is-inv is-b" x="18" y="588" text-anchor="middle" style="font-size:10px">10</text>
-          <text class="dg-mono is-sm fmb-l" x="908" y="578" text-anchor="end">log_edit → ... → log_edit, handle_edit</text>
+          <text class="dg-mono is-sm fmb-l" x="908" y="578" text-anchor="end">log_edit → report_edit → ... → handle_edit</text>
           <text class="is-k" lang="en" x="4" y="634">Shipped network class</text>
           <text class="is-k" lang="ja" x="4" y="634">同梱ネットワーククラス</text>
           <path class="dg-sv-line is-muted" d="M4 639H956" style="stroke-dasharray:2 4"/>
@@ -298,7 +298,7 @@ b1.l_isSlack = true;</code></pre>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>tag</code>, <code>GUILDA.config("Model","Hz")</code>, <code>GUILDA.config</code> <span lang="en">of each solver</span><span lang="ja">（各ソルバー）</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>net</code> <span lang="en">with empty <code>a_Bus</code>, <code>a_Branch</code>, <code>a_GlobalController</code> (0×1 cell); <code>s_edit</code> = unset / unset / false</span><span lang="ja">（<code>a_Bus</code>・<code>a_Branch</code>・<code>a_GlobalController</code> は空の 0×1 cell。<code>s_edit</code> = 未設定 / 未設定 / false）</span></dd>
+          <dd><code>net</code> <span lang="en">with empty <code>a_Bus</code>, <code>a_Branch</code>, <code>a_GlobalController</code> (0×1 cell); <code>sct_edit</code> = not initialized / unset; empty <code>tab_editLog</code></span><span lang="ja">（<code>a_Bus</code>・<code>a_Branch</code>・<code>a_GlobalController</code> は空の 0×1 cell。<code>sct_edit</code> = 未初期化 / 未設定、<code>tab_editLog</code> は空）</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="MB-02">
@@ -369,7 +369,7 @@ b1.l_isSlack = true;</code></pre>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en">options (P 0, Q 0, baseMVA 100, Pmin/Qmin −Inf, Pmax/Qmax Inf, OPF P0/Q0 0, HP/fP NaN, HQ/fQ 0, Marker "o"), <code>parameter</code>, class <code>parameter.csv</code></span><span lang="ja">オプション（P 0, Q 0, baseMVA 100, Pmin/Qmin −Inf, Pmax/Qmax Inf, OPF P0/Q0 0, HP/fP NaN, HQ/fQ 0, Marker "o"）、<code>parameter</code>、クラスの <code>parameter.csv</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>comp</code>; <code>para_operation</code> (baseMVA, Pmin, Pmax, Qmin, Qmax), <code>para_powerflow</code> (P, Q), <code>para_OPF</code> (P0, Q0, HP, HQ, fP, fQ, startup, shutdown), <code>para_graph</code>, <code>para_dynamics</code>; <code>comp.a_Bus</code>; <code>s_edit.str_odefcn</code> = unset; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
+          <dd><code>comp</code>; <code>para_operation</code> (baseMVA, Pmin, Pmax, Qmin, Qmax), <code>para_powerflow</code> (P, Q), <code>para_OPF</code> (P0, Q0, HP, HQ, fP, fQ, startup, shutdown), <code>para_graph</code>, <code>para_dynamics</code>; <code>comp.a_Bus</code>; <code>sct_edit.str_odefcn</code> = unset; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="MB-05">
@@ -506,42 +506,28 @@ b1.l_isSlack = true;</code></pre>
         </dl>
       </li>
       <li class="fs-step" id="MB-10">
-        <p class="fs-head"><b class="fs-id">MB-10</b> <span class="fs-call"><span lang="en">any layer</span><span lang="ja">各層</span> → <code>LayerPackage.log_edit</code> → <span lang="en">parent</span><span lang="ja">親の</span> <code>log_edit</code> → <code>PowerNetwork.handle_edit</code></span></p>
+        <p class="fs-head"><b class="fs-id">MB-10</b> <span class="fs-call"><span lang="en">any layer</span><span lang="ja">各層</span> → <code>LayerPackage.log_edit</code> → <span lang="en">parent</span><span lang="ja">親の</span> <code>report_edit</code> → <code>PowerNetwork.report_edit</code>, <code>handle_edit</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li>Build one log row (time, tag path, log, tag, before, after)</li>
-            <li>Decide with <code>LayerPackage.edit_effect</code> what the edit makes stale</li>
-            <li>Dynamics parameter: mark its owner's handles <code>"editted"</code></li>
-            <li>Layer below the network: set its own <code>str_flag = "editted"</code>, pass the row to its parent</li>
-            <li>Network, once initialized (<code>str_flag ~= "unset"</code>):
-              <ul>
-                <li>set <code>str_flag = "editted"</code></li>
-                <li>raise <code>l_staleEquilibrium</code> for dynamics, base (baseMVA), powerflow, Topology and Slack edits</li>
-                <li>append the row to <code>tab_editLog</code></li>
-              </ul>
-            </li>
+            <li>Dynamics parameter (<code>LayerPackage.edit_effect</code>): mark its owner's handles <code>"editted"</code></li>
+            <li>Layer below the network: pass the row to its parent (<code>report_edit</code>)</li>
+            <li>Network, once initialized (<code>sct_edit.l_initialized</code>): append the row to <code>tab_editLog</code>; <code>l_staleEquilibrium</code> is derived from the log (dynamics, base (baseMVA), powerflow, Topology and Slack rows)</li>
             <li>Network: always call <code>handle_edit</code></li>
             <li>Network <code>Hz</code> edit: mark the handles of every layer</li>
           </ul><ul lang="ja">
             <li>ログの 1 行（時刻、タグのパス、ログ、タグ、変更前、変更後）を作成</li>
-            <li><code>LayerPackage.edit_effect</code> で古くなる対象を決定</li>
-            <li>dynamics パラメータ: 所有者のハンドルを <code>"editted"</code> に</li>
-            <li>ネットワークより下の層: 自身の <code>str_flag = "editted"</code> を設定し、行を親に渡す</li>
-            <li>ネットワーク（初期化済み、<code>str_flag ~= "unset"</code> の場合）:
-              <ul>
-                <li><code>str_flag = "editted"</code> に設定</li>
-                <li>dynamics・base（baseMVA）・powerflow・Topology・Slack の編集で <code>l_staleEquilibrium</code> を立てる</li>
-                <li>行を <code>tab_editLog</code> に追加</li>
-              </ul>
-            </li>
+            <li>dynamics パラメータ（<code>LayerPackage.edit_effect</code>）: 所有者のハンドルを <code>"editted"</code> に</li>
+            <li>ネットワークより下の層: 行を親に渡す（<code>report_edit</code>）</li>
+            <li>ネットワーク（初期化済み、<code>sct_edit.l_initialized</code> の場合）: 行を <code>tab_editLog</code> に追加。<code>l_staleEquilibrium</code> はログから算出（dynamics・base（baseMVA）・powerflow・Topology・Slack の行）</li>
             <li>ネットワーク: <code>handle_edit</code> を常に呼び出し</li>
             <li>ネットワークの <code>Hz</code> の編集: すべての層のハンドルを古い状態に</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en">log row, <code>parent</code> chain, network <code>s_edit</code></span><span lang="ja">ログの行、<code>parent</code> の連鎖、ネットワークの <code>s_edit</code></span></dd>
+          <dd><span lang="en">log row, <code>parent</code> chain, network <code>sct_edit</code></span><span lang="ja">ログの行、<code>parent</code> の連鎖、ネットワークの <code>sct_edit</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>s_edit.str_flag</code>, <code>s_edit.str_odefcn</code>, <code>s_edit.l_staleEquilibrium</code>, <code>net.tab_editLog</code></dd>
+          <dd><code>sct_edit.str_odefcn</code>, <code>net.tab_editLog</code> (<code>net.l_staleEquilibrium</code>)</dd>
         </dl>
       </li>
       <li class="fs-step" id="MB-11">
@@ -562,7 +548,7 @@ b1.l_isSlack = true;</code></pre>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en">CSV folders of the class (see <a href="feature-data-io.html">Data Import and Export</a>)</span><span lang="ja">クラスの CSV フォルダ（<a href="feature-data-io.html">データの入出力</a>参照）</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en">an initialized network: <code>s_edit.str_flag = "initialized"</code>, handles built, empty <code>tab_editLog</code></span><span lang="ja">初期化済みのネットワーク: <code>s_edit.str_flag = "initialized"</code>、ハンドル構築済み、<code>tab_editLog</code> は空</span></dd>
+          <dd><span lang="en">an initialized network: <code>sct_edit.l_initialized = true</code>, handles built, empty <code>tab_editLog</code></span><span lang="ja">初期化済みのネットワーク: <code>sct_edit.l_initialized = true</code>、ハンドル構築済み、<code>tab_editLog</code> は空</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="MB-12">
@@ -778,17 +764,17 @@ b1.l_isSlack = true;</code></pre>
     <!-- ============================== 5. SIDE EFFECTS ============================== -->
     <h2 id="side-effects"><span lang="en">5. Side effects on the model and caches</span><span lang="ja">5. モデルへの副作用とキャッシュ</span></h2>
     <ul lang="en">
-      <li><b>Before the first <code>initialize</code></b>: the network's <code>str_flag</code> is <code>"unset"</code>, so no row is added to <code>tab_editLog</code> and the equilibrium flag is not raised. <code>handle_edit</code> still keeps a single slack bus</li>
-      <li><b>After <code>initialize</code></b>: an edit marked stale in <a href="class-design.html#edits">Class Design: Handling of model edits</a> sets <code>str_flag = "editted"</code> and <code>l_staleEquilibrium = true</code>; <code>simulate</code>, <code>linearize</code> and <code>get_sys</code> then stop until <code>initialize</code> runs again. Operation, OPF, graph and tag edits: logged, equilibrium stays valid</li>
+      <li><b>Before the first <code>initialize</code></b>: the network's <code>sct_edit.l_initialized</code> is false, so no row is added to <code>tab_editLog</code> (the equilibrium is stale anyway). <code>handle_edit</code> still keeps a single slack bus</li>
+      <li><b>After <code>initialize</code></b>: an edit marked stale in <a href="class-design.html#edits">Class Design: Handling of model edits</a> adds a row that makes <code>l_staleEquilibrium</code> true; <code>simulate</code>, <code>linearize</code> and <code>get_sys</code> then stop until <code>initialize</code> runs again. Operation, OPF, graph and tag edits: logged, equilibrium stays valid</li>
       <li><b>Handle cache</b>: constructors do not build <code>f_*</code> (<code>str_odefcn = "unset"</code>). Attaching (<code>Component.set_bus</code>, <code>LocalController.set_parent</code>, <code>GlobalController.set_parent</code>) and a dynamics or network <code>Hz</code> edit turn <code>"updated"</code> into <code>"editted"</code>. <code>check_edit</code> at the start of the next analysis rebuilds them (see <a href="feature-initialize.html">Initialization</a>)</li>
-      <li><b>Detached objects</b>: a removed object has no parent, so its later edits stop at it (<code>log_edit</code> returns) and do not reach the network</li>
+      <li><b>Detached objects</b>: a removed object has no parent, so its later edits stop at it (<code>report_edit</code> has no parent to pass to) and do not reach the network</li>
       <li><b>Copies</b>: no deep-copy method; <code>b = a</code> copies a handle. For an independent network, save and load through a MAT file or CSV export. <code>PowerNetwork.loadobj</code> attaches the parameter listeners again after a MAT load (warning <code>GUILDA:PowerNetwork:IncompleteLoad</code> when a layer is still loading)</li>
     </ul>
     <ul lang="ja">
-      <li><b>最初の <code>initialize</code> の前</b>: ネットワークの <code>str_flag</code> は <code>"unset"</code> のため、<code>tab_editLog</code> への行の追加なし、平衡点のフラグも立たない。<code>handle_edit</code> は slack 母線を 1 つに維持</li>
-      <li><b><code>initialize</code> の後</b>: <a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>で古くなるとされる編集は <code>str_flag = "editted"</code>、<code>l_staleEquilibrium = true</code> に設定し、<code>simulate</code>・<code>linearize</code>・<code>get_sys</code> は再び <code>initialize</code> を実行するまで停止。operation・OPF・graph・タグの編集: 記録のみ、平衡点は有効なまま</li>
+      <li><b>最初の <code>initialize</code> の前</b>: ネットワークの <code>sct_edit.l_initialized</code> は false のため、<code>tab_editLog</code> への行の追加なし（平衡点はもともと古い扱い）。<code>handle_edit</code> は slack 母線を 1 つに維持</li>
+      <li><b><code>initialize</code> の後</b>: <a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>で古くなるとされる編集は <code>l_staleEquilibrium</code> を true にする行を追加し、<code>simulate</code>・<code>linearize</code>・<code>get_sys</code> は再び <code>initialize</code> を実行するまで停止。operation・OPF・graph・タグの編集: 記録のみ、平衡点は有効なまま</li>
       <li><b>ハンドルキャッシュ</b>: コンストラクタは <code>f_*</code> を作らない（<code>str_odefcn = "unset"</code>）。接続（<code>Component.set_bus</code>、<code>LocalController.set_parent</code>、<code>GlobalController.set_parent</code>）と、dynamics またはネットワークの <code>Hz</code> の編集で <code>"updated"</code> を <code>"editted"</code> に変更。次の解析の最初の <code>check_edit</code> が再構築（<a href="feature-initialize.html">初期化</a>参照）</li>
-      <li><b>切り離されたオブジェクト</b>: 削除されたオブジェクトには親がないため、その後の編集はそこで停止し（<code>log_edit</code> が戻る）、ネットワークには届かない</li>
+      <li><b>切り離されたオブジェクト</b>: 削除されたオブジェクトには親がないため、その後の編集はそこで停止し（<code>report_edit</code> の渡し先の親なし）、ネットワークには届かない</li>
       <li><b>コピー</b>: ディープコピーのメソッドはなし。<code>b = a</code> はハンドルのコピー。独立したネットワークには MAT ファイルへの保存と読み込み、または CSV への書き出しを使用。<code>PowerNetwork.loadobj</code> は MAT からの読み込み後にパラメータのリスナーを再設定（層がまだ読み込み中なら警告 <code>GUILDA:PowerNetwork:IncompleteLoad</code>）</li>
     </ul>
 

@@ -214,7 +214,7 @@
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Builds the <code>f_*</code> handles that are not up to date (the corrector calls <code>f_dx</code>). Equilibrium check: later, in CPF-05.</span><span lang="ja">最新でない <code>f_*</code> ハンドルを構築（修正子が <code>f_dx</code> を呼ぶため）。平衡点の確認は後の CPF-05</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>s_edit.str_odefcn</code> of every layer</span><span lang="ja">各レイヤーの <code>s_edit.str_odefcn</code></span></dd>
+          <dd><span lang="en"><code>sct_edit.str_odefcn</code> of every layer</span><span lang="ja">各レイヤーの <code>sct_edit.str_odefcn</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en"><code>f_*</code> handles; <code>str_odefcn = "updated"</code></span><span lang="ja"><code>f_*</code> ハンドル、<code>str_odefcn = "updated"</code></span></dd>
         </dl>
@@ -255,7 +255,7 @@
               <li><code>LoadBus</code> が空、またはネットワークにない母線を含む</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>Component.c_Iequilibrium</code>, <code>net.s_edit.l_staleEquilibrium</code>, <code>LoadBus</code>, bus tags</span><span lang="ja"><code>Component.c_Iequilibrium</code>、<code>net.s_edit.l_staleEquilibrium</code>、<code>LoadBus</code>、母線のタグ</span></dd>
+          <dd><span lang="en"><code>Component.c_Iequilibrium</code>, <code>net.l_staleEquilibrium</code>, <code>LoadBus</code>, bus tags</span><span lang="ja"><code>Component.c_Iequilibrium</code>、<code>net.l_staleEquilibrium</code>、<code>LoadBus</code>、母線のタグ</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en">— (errors only)</span><span lang="ja">—（エラーのみ）</span></dd>
         </dl>

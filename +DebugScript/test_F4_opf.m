@@ -861,10 +861,10 @@ assert(abs(res.tab_bus{"B004","Varg"} - res.tab_bus{"B007","Varg"}) < 1e-6)
 
 
 %% set_opffcn does not make the equilibrium stale
-% OPF の設定は平衡点に影響しない: 編集ログ (tag "OPF") には残るが s_edit.l_staleEquilibrium は変わらない
+% OPF の設定は平衡点に影響しない: 編集ログ (tag "OPF") には残るが l_staleEquilibrium は変わらない
 net = DebugScript.helper.build_9bus();
 DebugScript.helper.quiet(@() net.initialize());
-assert(~net.s_edit.l_staleEquilibrium)
+assert(~net.l_staleEquilibrium)
 n0 = height(net.tab_editLog);
 g1 = net.a_Bus{1}.a_Component{1};
 g1.set_opffcn("Cost", @(v, p) 2*v.P^2 + v.P, "DefaultConstraint", false);
@@ -873,14 +873,14 @@ net.a_Branch{1}.set_opffcn("Constraint", @(v, p) struct("Pfwd", v.Pfrom <= 2));
 net.set_opffcn("Constraint", @(v, p) struct("Reserve", v.Component.SG1B001.P <= 3));
 g1.reset_opffcn();
 net.reset_opffcn();
-assert(~net.s_edit.l_staleEquilibrium)
+assert(~net.l_staleEquilibrium)
 tab_log = net.tab_editLog(n0+1:end,:);
 assert(height(tab_log) == 6 && all(string(tab_log.tag) == "OPF"))
 assert(string(tab_log.log(1)) == "set_opffcn: Cost, DefaultConstraint" && string(tab_log.log(end)) == "reset_opffcn")
 assert(startsWith(string(tab_log.ID(1)), "SG1B001"))
 % 比較: 潮流設定の編集は平衡点を古くする
 net.a_Bus{5}.a_Component{1}.tab_parameter.powerflow.P = -1.1;
-assert(net.s_edit.l_staleEquilibrium)
+assert(net.l_staleEquilibrium)
 
 
 %% Invalid set_opffcn input stops with an error

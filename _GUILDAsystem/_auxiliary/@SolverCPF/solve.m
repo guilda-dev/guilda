@@ -95,7 +95,7 @@ function check_network(net, sv_load)
             end
         end
     end
-    if net.s_edit.l_staleEquilibrium
+    if net.l_staleEquilibrium
         error(msg("GUILDA:SolverCPF:StaleEquilibrium"));
     end
     if isempty(sv_load)

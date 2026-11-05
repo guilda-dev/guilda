@@ -305,7 +305,7 @@ classdef LocalController < PowerSystemModel
 
             obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
             obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
-            obj.s_edit.str_odefcn = "updated";
+            obj.sct_edit.str_odefcn = "updated";
         end
     end
     methods (Access=private)

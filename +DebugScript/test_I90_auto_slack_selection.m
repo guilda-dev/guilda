@@ -55,7 +55,7 @@ net = three_bus();
 net.a_Bus{1}.add_component("load-impedance", "P",-0.5, "Q",-0.1);
 net.a_Bus{3}.add_component("load-impedance", "P",-0.5, "Q",-0.1);
 DebugScript.helper.quiet(@() net.initialize);
-assert(slack_index(net) == 1 && ~net.s_edit.l_staleEquilibrium)
+assert(slack_index(net) == 1 && ~net.l_staleEquilibrium)
 str_Bus = string(net.a_Bus);
 tab_Y   = net.get_admittance_matrix;
 assert(max(abs(tab_Y{str_Bus,str_Bus}*net.cv_Vequilibrium - net.cv_Iequilibrium)) < 1e-6)   % initialize の許容値

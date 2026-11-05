@@ -23,7 +23,7 @@ function [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, Ii, obs, DAEvec)
 
     % A controller attached after its component was brought up to date (see
     % Component.get_dx_algebraic)
-    if obj.s_edit.str_odefcn ~= "updated"
+    if obj.sct_edit.str_odefcn ~= "updated"
         obj.check_edit();
     end
 
