@@ -2,13 +2,13 @@ function out = get_tag(obj,l_with_layer, str_split)
     % Build tag string with optional hierarchy composition.
     %
     % Returns the layer tag, optionally including parent-layer tags.
-    arguments
-        obj % Target layer object.
+    arguments (Input)
+        obj
         l_with_layer (1,1) logical = false; % Include parent-layer tags recursively.
-        str_split    (1,1) string  = ""; % Delimiter for composed tags.
+        str_split    (1,1) string  = "";    % Delimiter for composed tags.
     end
     arguments (Output)
-        out % Layer tag string.
+        out                                 % Layer tag string.
     end
 
     if obj.l_managedTag

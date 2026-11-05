@@ -19,7 +19,7 @@ function [s_options, sv_given] = resolve_options(solver, s_map, nv)
 % opt = tools.resolve_options(net.solver_PF, s_map, {"MaxIteration", 50});
 % opt.MaxIterations   % 50; net.solver_PF.MaxIterations is unchanged
 % ```
-    arguments
+    arguments (Input)
         solver % Holder of the stored defaults, e.g. net.solver_PF. Only read.
         s_map (1,1) struct % One field per accepted Name-Value name. The value is the solver field it sets: a string ("MaxIterations"), a string array to set several fields, a dotted path into a struct property ("dynamic.t_span"), or a cell {field, fcn} where fcn converts the given value (e.g. Verbose=true -> Display="iter").
         nv          = struct() % Overrides of this call: the struct of an arguments block (opt.Name with no default, so only given names are fields) or a cell {Name1, Value1, ...}.

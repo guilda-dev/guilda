@@ -7,12 +7,11 @@ function [c_nv, rv_nonUnit] = v3_linearize_args(c_nv, rv_nonUnit)
 % kept in the options of the result only to report the listed buses that remain errors
 % (v3_nonunit_range, v3_nonunit_dynamic). Other arguments are returned unchanged.
 %
-% Inputs:
-%
-% - `c_nv` — Name-Value options of the call.
-% - `rv_nonUnit` — Value stored in net.solver_LIN.NonUnit, used when the call gives none.
-%
 % See also SolverLIN, Deprecated
+    arguments (Input)
+        c_nv        % Name-Value options of the call.
+        rv_nonUnit  % Value stored in net.solver_LIN.NonUnit, used when the call gives none.
+    end
     arguments (Output)
         c_nv        % Name-Value options without NonUnit.
         rv_nonUnit  % Listed bus indices, as a row.
@@ -34,7 +33,7 @@ end
 
 
 function val = check_value(val)
-    arguments
+    arguments (Input)
         val (1,:) double {mustBeInteger, mustBePositive}
     end
 end

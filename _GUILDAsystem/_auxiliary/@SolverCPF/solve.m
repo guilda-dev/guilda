@@ -9,7 +9,7 @@ function [result,flag,output] = solve(obj, net, s_options)
 % It stops with an error naming the remedy when the network has no equilibrium
 % (run net.initialize), when the equilibrium is stale, or when LoadBus is empty or names
 % a bus that is not in the network.
-    arguments
+    arguments (Input)
         obj % Solver (net.solver_CPF).
         net % Network initialized by net.initialize.
         s_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).

@@ -5,15 +5,15 @@ function [net, dict_cls] = struct(obj, l_disp, str_header, dict_cls)
 % name); child layers become nested structs and an object reached a second time becomes
 % the path where it was first stored. Analysis objects (auxiliary) and other handles are
 % not copied.
-    arguments
-        obj 
-        l_disp     (1,1) logical   = true; % Print the properties that cannot be read or copied.
-        str_header (1,1) string    = "net"; % Path of this layer in the struct, used for messages and repeated objects.
+    arguments (Input)
+        obj
+        l_disp     (1,1) logical   = true;                       % Print the properties that cannot be read or copied.
+        str_header (1,1) string    = "net";                      % Path of this layer in the struct, used for messages and repeated objects.
         dict_cls   (1,1) dictionary= dictionary("NoData","NaN"); % Objects already stored and their paths (used by the recursion).
     end
     arguments (Output)
-        net % Nested struct of the layer.
-        dict_cls % Objects stored so far and their paths.
+        net                                                      % Nested struct of the layer.
+        dict_cls                                                 % Objects stored so far and their paths.
     end
 
     if isKey(dict_cls, obj)

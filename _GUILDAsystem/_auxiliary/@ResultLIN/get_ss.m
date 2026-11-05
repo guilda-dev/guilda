@@ -58,7 +58,7 @@ function sys = get_ss(obj, Algorithm, opt)
 % ```
 %
 % See also PowerNetwork.get_sys, ResultLIN.Plot
-    arguments
+    arguments (Input)
         obj
         Algorithm (1,1) string {mustBeMember(Algorithm, ["Kron","Feedback","DAE"])} = default_algorithm(obj) % Form of the model.
         opt.Coordinate (1,1) string {mustBeMember(opt.Coordinate, ["theta&V","theta&rho","Vre&Vim"])} = default_coordinate(obj) % Bus variables of "DAE": angle and log magnitude (rho), angle and magnitude, or real and imaginary parts. Default: options.Coordinate of the result.

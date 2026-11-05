@@ -96,7 +96,7 @@ classdef ResultODE < ResultBase
         % simulator (SolverODE order: each component with its inputs and local controllers,
         % the global controllers, then the voltage and current of each bus) into the order of
         % net.get_variable_map(). Created by SolverODE.solve.
-            arguments
+            arguments (Input)
                 net             = [] % Analysed network; see ResultBase.
                 solver          = "SolverODE" % Solver object or its class name; see ResultBase.
                 options  struct = struct() % Effective settings; see ResultBase.
@@ -165,7 +165,7 @@ classdef ResultODE < ResultBase
         % ```
         %
         % See also PowerNetwork.get_variable_map, SolverLIN
-            arguments
+            arguments (Input)
                 obj
                 t        (1,1) double {mustBeReal} % [s] Time within [rv_t(1), rv_t(end)].
                 tab_map  table = obj.tab_variable % Rows to return (a variable map or a part of it).

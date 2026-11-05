@@ -1,16 +1,17 @@
-function [str_solver, c_nv] = optimoption(obj, prob, s_options) %#ok<INUSL>
+function [str_solver, c_nv] = optimoption(obj, prob, s_options)
 % Get the solver name and the solve() options for the effective settings.
 %
 % Returns the Name-Value arguments of solve (Optimization Toolbox) for the effective settings.
 % Only settings that differ from the defaults of the solver are passed, so that the
 % stored defaults (Solver="auto", Display="default", NaN) call solve(prob, x0) as is.
-%
-% Inputs:
-% - `prob`: Problem built by build_opf_problem.
-% - `s_options`: Effective settings (output of get_options).
+    arguments (Input)
+        obj  %#ok<INUSA>
+        prob                     % Problem built by build_opf_problem.
+        s_options  (1,1) struct  % Effective settings (output of get_options).
+    end
     arguments (Output)
-        str_solver % Solver that runs the problem (linprog, quadprog or fmincon).
-        c_nv % Name-Value arguments of solve: Solver and Options when needed.
+        str_solver               % Solver that runs the problem (linprog, quadprog or fmincon).
+        c_nv                     % Name-Value arguments of solve: Solver and Options when needed.
     end
     if s_options.Solver == "auto"
         str_solver = string(solvers(prob));

@@ -10,7 +10,7 @@ function path = export(net, ModelName, opt)
 % Use net.export_csv(fullfile(savepath, "@"+ModelName)) instead.
 %
 % See also PowerNetwork.export_csv
-    arguments
+    arguments (Input)
         net               (1,1) PowerNetwork   % Network to write.
         ModelName         (1,1) string  {mustBeValidVariableName} = "PowerNetwork"+string(datetime("now","Format","uuuuMMdd_HHmmss"))   % Class name of the model.
         opt.version       (1,1) double  = 1   % Constant ver of the class file.

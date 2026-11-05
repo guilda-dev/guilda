@@ -1,6 +1,17 @@
 function func = pf_equation(net,w,sv_load,useInt,x,Ymat)
 % Power flow equations of the CPF at x = [unknowns; lambda] (layout w, see build_layout).
 % The loads of the buses sv_load (all loads when useInt) are scaled by (1 + lambda).
+    arguments (Input)
+        net                   % Analysed network.
+        w       (1,1) struct  % Variable layout (output of build_layout).
+        sv_load               % Tags of the buses whose loads are scaled.
+        useInt                % True to use the internal states of the components.
+        x       (:,1) double  % Point [unknowns; lambda].
+        Ymat                  % [pu] Bus admittance matrix (complex).
+    end
+    arguments (Output)
+        func    (:,1) double  % Residuals of the solved equations.
+    end
     bus = net.a_Bus;
 
     lambda = x(end);

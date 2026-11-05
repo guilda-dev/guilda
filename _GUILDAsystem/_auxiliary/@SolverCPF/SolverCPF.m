@@ -79,6 +79,12 @@ classdef (Sealed = true) SolverCPF < auxiliary
         % A network creates its own (net.solver_CPF); net.reset_solver() replaces it with a
         % new one. Any argument (the v3 form SolverCPF(net, Name, Value)) stops with
         % GUILDA:v3_cpf_constructor:ContinuationPowerFlowConstructor.
+            arguments (Input, Repeating)
+                varargin  % Arguments of the removed v3 form (any of them stops with an error).
+            end
+            arguments (Output)
+                obj  % CPF solver with the configured defaults.
+            end
             v3_cpf_constructor(varargin);       % COMPAT(v3)
             sct = GUILDA.config("ContinuationPowerFlow");
             sv_bus = string(sct.LoadBus.Value);
@@ -98,7 +104,7 @@ classdef (Sealed = true) SolverCPF < auxiliary
         % Every stored setting of the solver, with the Name-Value overrides of the call applied. The solver itself is not changed.
         % A name that is not in OptionMap stops with GUILDA:resolve_options:UnknownName;
         % an invalid value stops with the validation error of the option.
-            arguments
+            arguments (Input)
                 obj % Solver holding the defaults (net.solver_CPF).
                 nv (1,:) cell = {} % Name-Value overrides: LoadBus, MaxIteration, Tolerance, StepSize, ArcLength, InitialLambda, UseInternalState, Verbose.
             end
@@ -128,7 +134,7 @@ end
 
 function validate_options(opt)
 % Value checks of the Name-Value options (names are already checked by resolve_options)
-    arguments
+    arguments (Input)
         opt.LoadBus          {mustBeText}
         opt.MaxIteration     (1,1) double  {mustBePositive,mustBeInteger}
         opt.Tolerance        (1,1) double  {mustBePositive}

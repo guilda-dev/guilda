@@ -27,7 +27,7 @@ function verdict = out_of_step(result, opt)
 % ```
 %
 % See also Scenario.judge, ResultODE
-    arguments
+    arguments (Input)
         result (1,1) ResultODE % Result of net.simulate.
         opt.Reference (1,1) string = "slack" % "slack", "COI", or the tag of a unit with delta.
         opt.Threshold (1,1) double {mustBePositive} = 360 % [deg] Largest allowed absolute rotor angle relative to the reference.

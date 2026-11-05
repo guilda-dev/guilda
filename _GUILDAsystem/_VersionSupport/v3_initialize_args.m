@@ -11,11 +11,10 @@ function c_nv = v3_initialize_args(c_nv)
 % The old values are accepted under both names. The old output order [flag, tab, output]
 % cannot be detected and is not converted. A v4 argument list is returned unchanged.
 %
-% Inputs:
-%
-% - `c_nv` — varargin of initialize.
-%
 % See also PowerNetwork.initialize, Deprecated
+    arguments (Input)
+        c_nv   % varargin of initialize.
+    end
     arguments (Output)
         c_nv   % Name-Value options of the v4 signature.
     end

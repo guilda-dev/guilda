@@ -42,6 +42,9 @@ classdef GUILDA < handle
             %
             % If any of the above startup operations are not required, modify the contents of the startup setting via GUILDA.setting. 
             % Only items marked with 'o' can be skipped. Items marked with 'x' cannot be skipped.
+            arguments (Output)
+                obj  % GUILDA utility object.
+            end
 
             GUILDApath = fullfile(obj.pwd,"@GUILDA","config");
             has_desktop = usejava('desktop');   % false in -batch / -nodisplay
@@ -83,6 +86,9 @@ classdef GUILDA < handle
         end
 
         function disp(~)
+            arguments (Input)
+                ~
+            end
             fprintf( "  === @GUILDA Class Methods ===\n"+...
                      "  >> GUILDA.pwd()        : Get guilda path\n"+...
                      "  >> GUILDA.setting()    : Launch settings window (GUI launches)\n"+...

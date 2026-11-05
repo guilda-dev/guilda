@@ -34,7 +34,7 @@ function c_scenario = import_csv(path, opt)
 % ```
 %
 % See also Scenario.export_csv, PowerNetwork.add_scenario, PowerNetwork.import_csv
-    arguments
+    arguments (Input)
         path (1,1) string   % CSV file (e.g. written by Scenario.export_csv).
         opt.Network = []    % Network to add the scenarios to; [] leaves them unattached.
     end

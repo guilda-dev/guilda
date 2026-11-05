@@ -1,4 +1,11 @@
 function output_txt = hover_component(obj, i_comp)
+    arguments (Input)
+        obj
+        i_comp      % Index of the component.
+    end
+    arguments (Output)
+        output_txt  % Lines of the data tip text.
+    end
 
     str_tag   = char(obj.str_component(i_comp));
     str_class = replace(char(obj.tab_component.class(i_comp)),'_','\_');

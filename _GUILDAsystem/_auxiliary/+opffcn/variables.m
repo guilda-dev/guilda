@@ -11,11 +11,14 @@ function v = variables(obj, prob, str_method, s_var)
 %   Flows go into the branch at each end (from = a_Bus{1}, to = a_Bus{2}),
 %   with the signs of ResultOPF.tab_branch.
 % - PowerNetwork: v.Component.(tag), v.Bus.(tag), v.Branch.(tag) holding the above.
-    arguments
-        obj % Component, Bus, Branch or PowerNetwork.
-        prob % Optimization problem being built.
-        str_method (1,1) string % "ELD", "DC OPF" or "AC OPF".
+    arguments (Input)
+        obj                                % Component, Bus, Branch or PowerNetwork.
+        prob                               % Optimization problem being built.
+        str_method (1,1) string            % "ELD", "DC OPF" or "AC OPF".
         s_var      (1,1) struct = struct() % Optimization variables of the caller by name.
+    end
+    arguments (Output)
+        v                                  % Optimization variables of obj by name (see above).
     end
     get = @(str) lookup(prob, s_var, str);
     switch true

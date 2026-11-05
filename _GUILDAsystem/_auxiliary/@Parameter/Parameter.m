@@ -63,13 +63,13 @@ classdef Parameter < auxiliary & LayerPackage & dynamicprops
         %
         % The container is not a managed tag: its tag names the parameter group (e.g.
         % "powerflow", "dynamics") used in the edit log.
-            arguments
-                a_parent % Parent layer object.
-                str_tag = "Parameter" % Parameter tag.
-                CallBackChanged = @(varargin) []; % Callback executed after parameter changes.
+            arguments (Input)
+                a_parent                             % Parent layer object.
+                str_tag         = "Parameter"        % Parameter tag.
+                CallBackChanged = @(varargin) [];    % Callback executed after parameter changes.
             end
             arguments (Output)
-                obj % Created parameter container.
+                obj                                  % Created parameter container.
             end
             obj.a_cls        = a_parent;
             obj.l_managedTag = false;

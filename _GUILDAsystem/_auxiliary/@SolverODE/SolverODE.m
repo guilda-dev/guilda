@@ -94,6 +94,9 @@ classdef (Sealed = true) SolverODE < auxiliary
         %
         % A network creates its own (net.solver_ODE); net.reset_solver() replaces it with a
         % new one.
+            arguments (Output)
+                obj  % Time simulation solver with the configured defaults.
+            end
             sct = GUILDA.config("TimeSimulation");
             obj.AbsoluteTolerance   = sct.AbsoluteTolerance.Value;
             obj.RelativeTolerance   = sct.RelativeTolerance.Value;
@@ -116,7 +119,7 @@ classdef (Sealed = true) SolverODE < auxiliary
         % Every stored setting of the solver, with the Name-Value overrides of the call applied. The solver itself is not changed.
         % A name that is not in OptionMap stops with GUILDA:resolve_options:UnknownName;
         % an invalid value stops with the validation error of the option.
-            arguments
+            arguments (Input)
                 obj % Solver holding the defaults (net.solver_ODE).
                 nv (1,:) cell = {} % Name-Value overrides: Solver, SolverOptions, Tolerance, AbsoluteTolerance, SeparateComplexParts, TimeLimit, Progress, Verbose, Plot.
             end
@@ -156,7 +159,7 @@ classdef (Sealed = true) SolverODE < auxiliary
         % the time reached (output.tEnd), with no time points when the first phase could not
         % be solved. An error of other code during a phase, such as an input function or a
         % model, stops with an error (GUILDA:SolverODE:PhaseFailed, the original as cause).
-            arguments
+            arguments (Input)
                 obj % Solver (net.solver_ODE).
                 net % Network initialized by net.initialize.
                 time      (:,1) double = [] % [s] Simulation time [t0, tend] (or [] for the time span of the events).
@@ -386,6 +389,12 @@ classdef (Sealed = true) SolverODE < auxiliary
     methods (Static, Hidden)
         function str = progress_mode(val)
         % Value of the Name-Value option Progress: true -> "dialog", false -> "none"
+            arguments (Input)
+                val  % Value of Progress: true, false, "dialog", "disp" or "none".
+            end
+            arguments (Output)
+                str  % Progress mode ("dialog", "disp" or "none").
+            end
             if islogical(val) || isnumeric(val)
                 if val
                     str = "dialog";
@@ -403,6 +412,9 @@ classdef (Sealed = true) SolverODE < auxiliary
         function initialize_index(net)
             % Method for assigning state variable numbers to each device and bus.
             % Execute this before performing analysis using the ODE solver.         
+            arguments (Input)
+                net  % Network of the run.
+            end
             
             % Global controllers must not read the indices of a component outside the network.
             for k = 1:numel(net.a_GlobalController)
@@ -490,6 +502,10 @@ classdef (Sealed = true) SolverODE < auxiliary
 
         function set_offsets(net, ph)
             % State offsets and input functions of the phase on the components (Scenario.compile)
+            arguments (Input)
+                net  % Network of the run.
+                ph   % Data of the phase (an element of the output of Scenario.compile).
+            end
             c_comp = tools.cellfun(@(b) b.a_Component, net.a_Bus);
             c_comp = vertcat(cell(0,1), c_comp{:});
             for j = 1:numel(c_comp)
@@ -502,6 +518,19 @@ classdef (Sealed = true) SolverODE < auxiliary
             % Fault and trip flags of the phase, the reduction of the state vector (without the
             % faulted buses and tripped units) and the initial value and mass matrix of the
             % phase. x0 and M0 are those at the end of the last phase ([] for the first one).
+            arguments (Input)
+                net  % Network of the run.
+                ph   % Data of the phase (an element of the output of Scenario.compile).
+                x0   % Initial value at the end of the last phase, or [] for the first phase.
+                M0   % Mass matrix at the end of the last phase, or [] for the first phase.
+            end
+            arguments (Output)
+                EM         % Expansion matrix from the reduced to the full state vector.
+                RM         % Reduction matrix from the full to the reduced state vector.
+                lv_FBorTC  % True for the entries of the faulted buses and tripped units.
+                x0         % Initial value of the reduced state vector.
+                M0         % Mass matrix of the reduced state vector.
+            end
             a_bus = net.a_Bus;
             BusFault = ph.sv_fault;
             CompTrip = ph.sv_trip;
@@ -566,6 +595,15 @@ classdef (Sealed = true) SolverODE < auxiliary
         function s_out = phase_result(net, ph, s_sol, Ymat)
             % Trajectory of one phase (t, x, bus currents i) for ResultODE; the states of the
             % tripped units are NaN.
+            arguments (Input)
+                net    % Network of the run.
+                ph     % Data of the phase (an element of the output of Scenario.compile).
+                s_sol  % Solution of the phase (fields Time and Solution, full state vector).
+                Ymat   % [pu] Real admittance matrix of the phase (I = Y*V).
+            end
+            arguments (Output)
+                s_out  % Trajectory of the phase (fields t, x, i).
+            end
             a_bus = net.a_Bus;
             a_cmp = cellfun(@(bi) bi.a_Component, a_bus, 'UniformOutput', false);
             a_cmp = vertcat(a_cmp{:});
@@ -594,6 +632,14 @@ classdef (Sealed = true) SolverODE < auxiliary
         function ctx = set_admittance(ctx, sv_open, l_force)
             % ctx.Ymat (real 2n x 2n, I = Y*V) and ctx.absYmat with the branches sv_open
             % left out of the bus admittance matrix. Rebuilt only when the set changes.
+            arguments (Input)
+                ctx                     % Context of the run.
+                sv_open                 % Tags of the open branches.
+                l_force  (1,1) logical  % True to rebuild even when the set is unchanged.
+            end
+            arguments (Output)
+                ctx  % Context with Ymat, absYmat and sv_open updated.
+            end
             sv_open = reshape(sv_open, [], 1);
             if ~l_force && isequal(sv_open, ctx.sv_open)
                 return
@@ -623,6 +669,17 @@ classdef (Sealed = true) SolverODE < auxiliary
             % for a diagonal mass matrix the consistency step of the solver changes only the
             % algebraic variables, while for a sparse one that is not diagonal it moves all of
             % them (see CalculateInitialCondition).
+            arguments (Input)
+                o     % MATLAB ode object of the run.
+                ctx   % Context of the run.
+                RM    % Reduction matrix of the phase.
+                EM    % Expansion matrix of the phase.
+                lg    % True for the entries of the full state vector that are solved.
+                Mass  % Mass matrix of the phase.
+            end
+            arguments (Output)
+                o  % ode object with MassMatrix, ODEFcn and Jacobian set.
+            end
             lv_dif = full(any(Mass ~= 0, 1)).';
             lv_eqD = full(any(Mass ~= 0, 2));
             if ~isdiag(Mass) && nnz(lv_dif) == nnz(lv_eqD)
@@ -643,6 +700,15 @@ classdef (Sealed = true) SolverODE < auxiliary
 
         function g = solve_differential(f, dMd, lv_dif, lv_eqD)
             % Rows of f (a vector or a Jacobian) for the identity mass matrix (see set_equations)
+            arguments (Input)
+                f       (:,:) double         % Right-hand side or Jacobian.
+                dMd     (1,1) decomposition  % Decomposition of the differential block of the mass matrix.
+                lv_dif  (:,1) logical        % True for the differential variables.
+                lv_eqD  (:,1) logical        % True for the differential equations.
+            end
+            arguments (Output)
+                g  (:,:) double  % Rows of f for the identity mass matrix.
+            end
             g = f;
             g(lv_dif,:)  = dMd \ f(lv_eqD,:);
             g(~lv_dif,:) = f(~lv_eqD,:);
@@ -653,6 +719,13 @@ classdef (Sealed = true) SolverODE < auxiliary
             % condest of the sparse algebraic block can be far above the true condition number
             % (daeic12 tests eps*nnz(J)*condest(J) > 1). A DAE of a higher index fails with
             % dense matrices too, and that error is reported.
+            arguments (Input)
+                ctx                    % Context of the run.
+                me   (1,1) MException  % Error of the solver.
+            end
+            arguments (Output)
+                l  (1,1) logical  % True when the error is a false index error of the sparse matrices.
+            end
             l = ctx.l_sparse && endsWith(string(me.identifier), ":IndexGTOne");
         end
 
@@ -662,6 +735,13 @@ classdef (Sealed = true) SolverODE < auxiliary
             % the errors of input functions and models: any other identifier is not one of these.
             % The mass matrix error is checked against the phase, as an input function may
             % call an ode solver of its own.
+            arguments (Input)
+                me  (1,1) MException  % Error of the solver.
+                o                     % MATLAB ode object of the phase.
+            end
+            arguments (Output)
+                l  (1,1) logical  % True when the solver gave up on the phase.
+            end
             str_id = string(me.identifier);
             l = ismember(str_id, ["MATLAB:daeic12:NeedBetterY0", "MATLAB:daeic12:IndexGTOne", ...
                                   "MATLAB:daeic3:NeedBetterY0", "MATLAB:daeic3:IndexGTOne", ...
@@ -672,6 +752,20 @@ classdef (Sealed = true) SolverODE < auxiliary
 
         function [ctx, o] = use_dense(ctx, o, x0, RM, EM, lg, l_verbose, Mass)
             % Solve the current phase again and the next phases with dense matrices.
+            arguments (Input)
+                ctx        % Context of the run.
+                o          % MATLAB ode object of the run.
+                x0         % Initial value of the phase.
+                RM         % Reduction matrix of the phase.
+                EM         % Expansion matrix of the phase.
+                lg         % True for the entries of the full state vector that are solved.
+                l_verbose  % True to print a message.
+                Mass       % Mass matrix of the phase.
+            end
+            arguments (Output)
+                ctx  % Context with dense matrices.
+                o    % ode object with dense equations.
+            end
             ctx.l_sparse = false;
             ctx.Ymat     = full(ctx.Ymat);
             ctx.absYmat  = full(ctx.absYmat);
@@ -686,6 +780,12 @@ classdef (Sealed = true) SolverODE < auxiliary
 
         function c_unit = get_units(net)
             % What getODEFunction reads for each component, fixed during a run
+            arguments (Input)
+                net  % Network of the run.
+            end
+            arguments (Output)
+                c_unit  % One struct per component (fields ue, idx_U, idx_V, idx_I, comp).
+            end
             c_comp = tools.cellfun(@(b) b.a_Component, net.a_Bus);
             c_comp = vertcat(cell(0,1), c_comp{:});
             c_unit = cell(size(c_comp));
@@ -700,6 +800,9 @@ classdef (Sealed = true) SolverODE < auxiliary
         function restore_working_data(net)
             % Put the working data set during a run back to its initial values,
             % also after an error, so that the analysis leaves the model unchanged.
+            arguments (Input)
+                net  % Network of the run.
+            end
             SolverODE.set_gc_connect(net, strings(0,1));
             a_bus = net.a_Bus;
             for i = 1:numel(a_bus)
@@ -716,14 +819,29 @@ classdef (Sealed = true) SolverODE < auxiliary
         function set_gc_connect(net, str_trip)
             % Global controllers named in str_trip are tripped (l_isConnect = false),
             % the others connected. Components are set by initial_condition.
+            arguments (Input)
+                net       % Network of the run.
+                str_trip  % Tags of the tripped units.
+            end
             a_GCs = net.a_GlobalController;
             for k = 1:numel(a_GCs)
                 a_GCs{k}.l_isConnect = ~ismember(a_GCs{k}.str_tag, str_trip);
             end
         end
 
-        function odeX = getODEFunction(ctx, t, x, RM, EM, lg) %#ok
+        function odeX = getODEFunction(ctx, t, x, RM, EM, lg)
             % Method for retrieving the DAE system to be analyzed.            
+            arguments (Input)
+                ctx                 % Context of the run.
+                t    (1,1) double   % [s] Time from the start of the phase.
+                x    (:,1) double   % Reduced state vector.
+                RM                  %#ok<INUSA> Reduction matrix of the phase.
+                EM                  %#ok<INUSA> Expansion matrix of the phase.
+                lg   (:,1) logical  % True for the entries of the full state vector that are solved.
+            end
+            arguments (Output)
+                odeX  (:,1) double  % Right-hand side of the reduced DAE.
+            end
             
             x_lg = x;
             x = zeros(size(lg), 'like', x_lg);
@@ -789,8 +907,19 @@ classdef (Sealed = true) SolverODE < auxiliary
 
         end
 
-        function odeJac = getODEJacobian(ctx, t, x, RM, EM, lg) %#ok
+        function odeJac = getODEJacobian(ctx, t, x, RM, EM, lg)
             % Method for obtaining the Jacobian of the DAE system under analysis.
+            arguments (Input)
+                ctx                 % Context of the run.
+                t    (1,1) double   % [s] Time from the start of the phase.
+                x    (:,1) double   % Reduced state vector.
+                RM                  %#ok<INUSA> Reduction matrix of the phase.
+                EM                  %#ok<INUSA> Expansion matrix of the phase.
+                lg   (:,1) logical  % True for the entries of the full state vector that are solved.
+            end
+            arguments (Output)
+                odeJac  (:,:) double  % Jacobian of the reduced DAE (sparse when ctx.l_sparse).
+            end
 
             x_lg = x;
             x = zeros(size(lg), 'like', x_lg);
@@ -918,7 +1047,19 @@ classdef (Sealed = true) SolverODE < auxiliary
                 
         
 
-        function [x0, M0] = getNextPhase(ctx, x0, M0, RM, EM) %#ok
+        function [x0, M0] = getNextPhase(ctx, x0, M0, RM, EM)
+            % Initial value and mass matrix of the next phase from the end of the current one.
+            arguments (Input)
+                ctx                % Context of the run.
+                x0   (:,1) double  % Reduced state vector at the end of the phase.
+                M0                 % Reduced mass matrix of the phase.
+                RM                 %#ok<INUSA> Reduction matrix of the phase.
+                EM                 % Expansion matrix of the phase.
+            end
+            arguments (Output)
+                x0  (:,1) double  % Full state vector at the start of the next phase.
+                M0                % Full mass matrix at the start of the next phase.
+            end
             a_bus  = ctx.net.a_Bus;            
 
             x0 = EM * x0;
@@ -982,7 +1123,7 @@ end
 
 function validate_options(opt)
 % Value checks of the Name-Value options (names are already checked by resolve_options)
-    arguments
+    arguments (Input)
         opt.Solver               (1,1) matlab.ode.SolverID
         opt.SolverOptions        (1,1) matlab.ode.Options
         opt.Tolerance            (1,1) double {mustBePositive, mustBeBetween(opt.Tolerance,1e-15,1e-3,"closed")}

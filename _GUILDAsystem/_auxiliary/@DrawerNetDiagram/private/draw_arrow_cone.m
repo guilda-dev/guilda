@@ -1,4 +1,15 @@
 function h = draw_arrow_cone(ax, tip_xyz, dir_vec, cone_len, cone_radius, color)
+arguments (Input)
+    ax           % Axes to draw in.
+    tip_xyz      % Position of the tip [x y z].
+    dir_vec      % Direction of the arrow [x y z]; nothing is drawn when it is zero.
+    cone_len     % Length of the cone.
+    cone_radius  % Radius of the cone base.
+    color        % Face color.
+end
+arguments (Output)
+    h            % Surface drawn (empty placeholder when nothing is drawn).
+end
 L = norm(dir_vec);
 if L < eps
     h = gobjects(1,1);

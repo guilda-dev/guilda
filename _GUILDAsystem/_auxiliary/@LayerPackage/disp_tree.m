@@ -2,14 +2,14 @@ function varargout = disp_tree(obj,str_space,str_ignore,l_isfirst)
 % Render the hierarchy tree with optional filtering.
 %
 % Displays or returns a text tree of this layer and its descendants.
-%
-% Outputs:
-% - `text`: Hierarchy string when one output is requested.
-    arguments
-        obj % Root layer object.
-        str_space  (1,1) string  = "" % Indentation prefix for recursive rendering.
+    arguments (Input)
+        obj
+        str_space  (1,1) string  = ""             % Indentation prefix for recursive rendering.
         str_ignore (1,:) string  = ["Parameter"]; % Class names to ignore in output.
-        l_isfirst  (1,1) logical = true; % Whether this call is the root invocation.
+        l_isfirst  (1,1) logical = true;          % Whether this call is the root invocation.
+    end
+    arguments (Output, Repeating)
+        varargout                                 % Hierarchy string (text) when one output is requested; displayed otherwise.
     end
     text = "";
     if l_isfirst

@@ -19,7 +19,7 @@ function path = export_csv(path, scenarios, opt)
 % ```
 %
 % See also Scenario.import_csv, PowerNetwork.export_csv
-    arguments
+    arguments (Input)
         path (1,1) string          % CSV file to write.
         scenarios                  % Scenario or cell of Scenario objects (e.g. net.a_Scenario).
         opt.Overwrite (1,1) logical = false % Replace an existing file.

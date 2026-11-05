@@ -1,9 +1,12 @@
 function tab_out = dictionary(headword,opt)
 % Search classes implemented in this software
-    arguments
-        headword   (1,1) string {mustBeMember(headword,  ["PowerSystemModel","PowerNetwork","Branch","Component","Controller","LocalController","GlobalController","auxiliary"])} = "PowerSystemModel"
-        opt.disp   (1,1) logical = true
-        opt.output (1,:) string {mustBeMember(opt.output,["PowerSystemModel","PowerNetwork","Branch","Component","Controller","LocalController","GlobalController","auxiliary"])} = headword
+    arguments (Input)
+        headword   (1,1) string {mustBeMember(headword,  ["PowerSystemModel","PowerNetwork","Branch","Component","Controller","LocalController","GlobalController","auxiliary"])} = "PowerSystemModel"  % Root class of the displayed class tree.
+        opt.disp   (1,1) logical = true      % Print the class tree to the Command Window.
+        opt.output (1,:) string {mustBeMember(opt.output,["PowerSystemModel","PowerNetwork","Branch","Component","Controller","LocalController","GlobalController","auxiliary"])} = headword  % Root classes whose descendants are returned.
+    end
+    arguments (Output)
+        tab_out  % Table of descendant classes (No, filename, superclass); a cell of tables when several outputs are requested.
     end
     
     char_class = char(headword);

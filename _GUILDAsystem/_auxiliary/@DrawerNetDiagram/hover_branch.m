@@ -1,4 +1,11 @@
 function output_txt = hover_branch(obj, i_branch)
+    arguments (Input)
+        obj
+        i_branch    % Index of the branch.
+    end
+    arguments (Output)
+        output_txt  % Lines of the data tip text.
+    end
 
     str_tag   = char(obj.str_branch(i_branch));
     str_class = replace(char(obj.tab_branch{i_branch,"class"}),'_','\_');

@@ -5,11 +5,10 @@ function s_user = v3_user_config(str_field, s_user)
 % get_config): renames the old keys into the v4 ones.
 %   TimeSimulation.Reporter -> TimeSimulation.Progress (kept when Progress is also given)
 % The startup writes the settings back (set_config), so an old file is converted once.
-%
-% Name-Value options:
-%
-% - `str_field` — Settings category (file name without Default and .json), e.g. "TimeSimulation".
-% - `s_user` — Contents of the user settings file.
+    arguments (Input)
+        str_field  % Settings category (file name without Default and .json), e.g. "TimeSimulation".
+        s_user     % Contents of the user settings file.
+    end
     arguments (Output)
         s_user   % User settings with the v4 keys.
     end

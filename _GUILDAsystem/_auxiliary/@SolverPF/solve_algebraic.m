@@ -1,6 +1,19 @@
 function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_algebraic(obj, cm_Y, tab_PFset, s_options)
 % Solve the power equations with fsolve. cm_Vhistory holds the bus voltages at each
 % iteration (n_bus x n_step), rv_step the iteration numbers.
+    arguments (Input)
+        obj
+        cm_Y        (:,:) double  % [pu] Bus admittance matrix (complex, in the bus order of tab_PFset).
+        tab_PFset   table         % Power flow settings of the buses (rows of get_pf_set).
+        s_options   (1,1) struct  % Effective settings (output of get_options).
+    end
+    arguments (Output)
+        cv_Vbus     (:,1) double  % [pu] Complex bus voltages of the solution.
+        flag                      % exitflag of fsolve.
+        output                    % Output structure of fsolve.
+        cm_Vhistory               % [pu] Complex bus voltages at each iteration (n_bus x n_step).
+        rv_step                   % Iteration numbers.
+    end
 
     % Collect Info
     rm_Y  = sparse(tools.complex2matrix(cm_Y));

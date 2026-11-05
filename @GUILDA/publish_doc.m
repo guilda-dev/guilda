@@ -11,12 +11,9 @@ function publish_doc(option)
 % gh-pages layout: _GUILDAdoc/, LICENSE, index.html (redirect), .nojekyll.
 % User classes (database/User) and database/manifest.json are local data and
 % are never published.
-%
-% confirm : ask with a dialog before "git push origin gh-pages" (default true).
-% push    : false builds and commits locally without pushing (default true).
-    arguments
-        option.confirm (1,1) logical = true
-        option.push    (1,1) logical = true
+    arguments (Input)
+        option.confirm (1,1) logical = true  % Ask with a dialog before "git push origin gh-pages".
+        option.push    (1,1) logical = true  % Push to origin; false builds and commits locally only.
     end
 
     str_root   = GUILDA.pwd();

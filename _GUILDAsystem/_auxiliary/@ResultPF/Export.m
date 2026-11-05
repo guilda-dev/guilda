@@ -9,7 +9,7 @@ function str_file = Export(obj, filename, opt)
 %                                bus types and the admittance matrix from the network.
 % A relative filename is relative to the current folder.
 % calculate_powerflow(..., Export=filename) calls it.
-    arguments
+    arguments (Input)
         obj
         filename  (1,1) string = string(datetime("now","Format","uuMMdd_HHmmss")) + "_PowerFlow.csv" % Output file; its extension selects the format.
         opt.Table (1,1) string {mustBeMember(opt.Table,["bus","branch"])} = "bus" % Table written to a CSV or Excel file.
@@ -38,6 +38,10 @@ end
 
 function export_json(obj, str_file)
 % Iteration history in the format of the GridSpring viewer
+    arguments (Input)
+        obj
+        str_file  % Path of the JSON file to write.
+    end
     net = obj.a_PowerNetwork;
     if isempty(net)
         error(msg("GUILDA:ResultPF:NoNetwork"));

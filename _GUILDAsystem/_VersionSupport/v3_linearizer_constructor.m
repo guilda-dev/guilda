@@ -7,11 +7,10 @@ function v3_linearizer_constructor(c_args)
 % (net.solver_LIN) and is created as SolverLIN(). Any argument stops with
 % GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor, which names net.linearize and net.get_sys.
 %
-% Name-Value options:
-%
-% - `c_args` — varargin of the constructor.
-%
 % See also SolverLIN
+    arguments (Input)
+        c_args  % varargin of the constructor.
+    end
     if ~isempty(c_args)
         error(msg("GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor"));
     end

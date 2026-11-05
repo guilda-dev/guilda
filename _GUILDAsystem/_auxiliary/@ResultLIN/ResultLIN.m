@@ -80,7 +80,7 @@ classdef ResultLIN < ResultBase
         % Create a linearization result.
         %
         % Stores the computed values of a linearization.
-            arguments
+            arguments (Input)
                 net                 = [] % Analysed network; see ResultBase.
                 solver              = "SolverLIN" % Solver object or its class name; see ResultBase.
                 options      struct = struct() % Effective settings; see ResultBase.

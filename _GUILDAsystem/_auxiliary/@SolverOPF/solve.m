@@ -5,7 +5,7 @@ function [result,flag,output] = solve(obj, net, s_options)
 % s_options.Method, solves it with the effective settings s_options and returns the
 % solution as a ResultOPF. The solver is only read: nothing is written back into it.
 % Called by net.optimize_powerflow; calling it directly is for advanced use.
-    arguments
+    arguments (Input)
         obj % Solver (net.solver_OPF).
         net % Network to optimize.
         s_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).

@@ -44,9 +44,12 @@ classdef (Sealed = true) NewtonRaphsonMethod < auxiliary
         %
         % The Name-Value options are the public properties; the others keep the defaults of
         % GUILDA.config("NewtonRaphsonMethod").
-            arguments                
+            arguments (Input)
                 opt.?NewtonRaphsonMethod
             end            
+            arguments (Output)
+                obj  % Newton-Raphson solver.
+            end
 
             fnames = fieldnames(opt);
             argi = 1;
@@ -87,17 +90,40 @@ classdef (Sealed = true) NewtonRaphsonMethod < auxiliary
 
     methods (Static,Access=private,Hidden)
         function l = has_symbolic()
+            % Return true when Symbolic Math Toolbox is installed and licensed.
+            arguments (Output)
+                l  % true when Symbolic Math Toolbox is available.
+            end
             l = license('test','Symbolic_Toolbox') && ~isempty(ver('symbolic'));
         end
     end
 
     methods (Access=private,Hidden)
-        function Jacobian = numerical_differentiation(obj, x, OBJFcn, del) %#ok                                               
+        function Jacobian = numerical_differentiation(obj, x, OBJFcn, del)
+            % Compute the Jacobian of OBJFcn at x by central differences.
+            arguments (Input)
+                obj       %#ok<INUSA>
+                x         % Point at which to differentiate (column).
+                OBJFcn    % Function to differentiate.
+                del       % Step of the differences.
+            end
+            arguments (Output)
+                Jacobian  % Jacobian of OBJFcn at x.
+            end
             nx  = numel(x);
             Jacobian = cell2mat( arrayfun(@(ITER) ( OBJFcn(x+[zeros(ITER-1,1);del;zeros(nx-ITER,1)]) - ...
                 OBJFcn(x-[zeros(ITER-1,1);del;zeros(nx-ITER,1)]) ) / 2 / del, 1:nx, 'UniformOutput', false) );
         end
-        function flag = isConvergence(obj,dx,Tol) %#ok
+        function flag = isConvergence(obj,dx,Tol)
+            % Return true when every element of the step is smaller than the tolerance.
+            arguments (Input)
+                obj   %#ok<INUSA>
+                dx    % Newton step.
+                Tol   % Absolute tolerance.
+            end
+            arguments (Output)
+                flag  % true when all(abs(dx) < Tol).
+            end
             flag = all(abs(dx) < Tol);
         end
     end
@@ -109,10 +135,13 @@ classdef (Sealed = true) NewtonRaphsonMethod < auxiliary
         %
         % Iterates x = x - StepSize * (J(x) \ (F(x) - b)) until every element of the step is
         % smaller than ConvTol, or MaxIter iterations (then with a warning).
-        %
-        % Outputs:
-        % - `xi`: Solution x.
-        % - `iteration`: Number of iterations.
+            arguments (Input)
+                obj
+            end
+            arguments (Output)
+                xi         % Solution x.
+                iteration  % Number of iterations.
+            end
 
             AbsTol = obj.ConvTol;
             Gamma  = obj.StepSize;

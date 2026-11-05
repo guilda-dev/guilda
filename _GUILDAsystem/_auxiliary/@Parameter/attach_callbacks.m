@@ -2,10 +2,11 @@ function attach_callbacks(obj,name,valid)
     % Attach the class check and the change listeners of a parameter.
     %
     % A MAT file keeps neither of them, so PowerNetwork.loadobj attaches them again.
-    %
-    % Inputs:
-    % - `name`: Property name of the parameter.
-    % - `valid`: Class the value must have.
+    arguments (Input)
+        obj
+        name   % Property name of the parameter.
+        valid  % Class the value must have.
+    end
     dprop           = findprop(obj,name);
     dprop.SetMethod = set_method(name,valid);                                              % Before Change: Validate (an error here is a real error, unlike in a listener)
     

@@ -21,7 +21,7 @@ function [tab_phase, s_phase] = compile(c_scenario, net, time)
 % added at the start of the phase (offsets of the disturbances that start there; all active
 % offsets in the first phase) and the input function u(t) of the phase, t from the start
 % of the phase ([] without an input).
-    arguments
+    arguments (Input)
         c_scenario cell                 % Scenarios of the run.
         net                             % Network being simulated.
         time (:,1) double = []          % [s] [t0; tend], or [] for the time span of the disturbances.

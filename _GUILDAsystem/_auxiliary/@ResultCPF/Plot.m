@@ -5,7 +5,7 @@ function ax = Plot(obj, opt)
 % lambda along the path. A dashed line marks the nose (maximum loading, r_lambdaMax).
 % By default it draws the load buses (options.LoadBus); Bus selects other buses.
 % calculate_continuation_powerflow(..., Plot=true) calls it.
-    arguments
+    arguments (Input)
         obj
         opt.Bus    {mustBeText} = default_bus(obj) % Tags of the buses to draw; "all" for every bus.
         opt.Parent = [] % Container to draw in. A new figure when empty.

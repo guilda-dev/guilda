@@ -1,4 +1,9 @@
 function apply_color_values(obj, h_list, rv_value)
+    arguments (Input)
+        obj
+        h_list    % Graphics handles to color.
+        rv_value  % Color values, one per handle (NaN draws gray).
+    end
     n_target = numel(h_list);
     if n_target == 0
         return

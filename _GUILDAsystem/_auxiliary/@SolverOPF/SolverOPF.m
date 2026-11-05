@@ -65,6 +65,9 @@ classdef SolverOPF < auxiliary
         %
         % A network creates its own (net.solver_OPF); net.reset_solver() replaces it with a
         % new one.
+            arguments (Output)
+                obj  % OPF solver with the configured defaults.
+            end
             sct = GUILDA.config("OptimalPowerFlow");
             obj.Method                 = sct.Method.Value;
             obj.Solver                 = sct.Solver.Value;
@@ -85,7 +88,7 @@ classdef SolverOPF < auxiliary
         % Every stored setting of the solver, with the Name-Value overrides of the call applied. The solver itself is not changed.
         % A name that is not in OptionMap stops with GUILDA:resolve_options:UnknownName;
         % an invalid value stops with the validation error of the option.
-            arguments
+            arguments (Input)
                 obj % Solver holding the defaults (net.solver_OPF).
                 nv (1,:) cell = {} % Name-Value overrides: Method, Solver, Tolerance, MaxIteration, Verbose.
             end
@@ -120,7 +123,7 @@ end
 
 function validate_options(opt)
 % Value checks of the Name-Value options (names are already checked by resolve_options)
-    arguments
+    arguments (Input)
         opt.Method       (1,1) string  {mustBeMember(opt.Method,["ELD","DC OPF","AC OPF"])}
         opt.Solver       (1,1) string  {mustBeMember(opt.Solver,["auto","linprog","quadprog","fmincon"])}
         opt.Tolerance    (1,1) double  {mustBePositive}

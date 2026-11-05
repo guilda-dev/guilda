@@ -2,13 +2,13 @@ function add_entry(obj,names,defaults,valids)
     % Register parameter names, defaults, and validation classes.
     %
     % Adds dynamic properties and attaches the class check and the change listeners.
-    arguments
-        obj % Target parameter container.
+    arguments (Input)
+        obj
     end
-    arguments(Input,Repeating)
-        names    %(1,1) string {mustBeValidVariableName}
-        defaults %(1,1) 
-        valids   %(1,1) string
+    arguments (Input, Repeating)
+        names     % Property name of the parameter (valid variable name).
+        defaults  % Default value of the parameter.
+        valids    % Class the value must have.
     end
     for i = 1:numel(names)
         name    = names{i};

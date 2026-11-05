@@ -7,11 +7,10 @@ function v3_cpf_constructor(c_args)
 % Any argument stops with GUILDA:v3_cpf_constructor:ContinuationPowerFlowConstructor, which names
 % net.calculate_continuation_powerflow and the wrapper Continuation_Power_Flow(net, opt).
 %
-% Name-Value options:
-%
-% - `c_args` — varargin of the constructor.
-%
 % See also SolverCPF
+    arguments (Input)
+        c_args  % varargin of the constructor.
+    end
     if ~isempty(c_args)
         error(msg("GUILDA:v3_cpf_constructor:ContinuationPowerFlowConstructor"));
     end

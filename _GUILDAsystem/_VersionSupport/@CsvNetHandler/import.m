@@ -9,7 +9,7 @@ function net = import(path, net, opt)
 % Use PowerNetwork.import_csv(path, Network=net) instead.
 %
 % See also PowerNetwork.import_csv
-    arguments
+    arguments (Input)
         path               (1,1) string   % Model folder.
         net                       = []   % Network to add the model to.
         opt.Initialize     (1,1) logical = true   % Run net.initialize() afterwards.

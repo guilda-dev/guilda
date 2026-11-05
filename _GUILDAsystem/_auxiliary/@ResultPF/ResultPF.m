@@ -45,7 +45,7 @@ classdef ResultPF < ResultBase
         % Create a power flow result.
         %
         % Stores the computed values of a power flow calculation.
-            arguments
+            arguments (Input)
                 net               = [] % Analysed network; see ResultBase.
                 solver            = "SolverPF" % Solver object or its class name; see ResultBase.
                 options    struct = struct() % Effective settings; see ResultBase.

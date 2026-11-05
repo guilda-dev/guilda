@@ -1,4 +1,16 @@
 function [h, h_arrow] = plot_edge(ax, path, radius, color, edgedata, type)
+    arguments (Input)
+        ax        % Axes to draw in.
+        path      % Points of the path, one [x y z] per row.
+        radius    % Radius of the tube.
+        color     % Face color.
+        edgedata  % UserData stored on the drawn objects (struct with Type and Index).
+        type      % Edge style: "-", "oo-", "-oo" or "-oo-".
+    end
+    arguments (Output)
+        h         % Tube, or group of the tube and its spheres.
+        h_arrow   % Group of the two arrow cones (empty placeholder when the path is too short).
+    end
 
     h_arrow   = gobjects(1, 1);
     edge_type = string(type);

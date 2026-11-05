@@ -10,14 +10,15 @@ function prob = apply(obj, prob, str_method, s_var)
 %
 % v is opffcn.variables(obj, prob, str_method, s_var); p is opffcn.param(obj, str_method).
 %
-% Output `prob`: the problem with the terms added.
-%
 % See also opffcn.variables, opffcn.param, opffcn.update
-    arguments
-        obj % Component, Bus, Branch or PowerNetwork whose f_opfcost and f_opfconst are applied.
-        prob % Optimization problem being built.
-        str_method (1,1) string % "ELD", "DC OPF" or "AC OPF".
+    arguments (Input)
+        obj                                % Component, Bus, Branch or PowerNetwork whose f_opfcost and f_opfconst are applied.
+        prob                               % Optimization problem being built.
+        str_method (1,1) string            % "ELD", "DC OPF" or "AC OPF".
         s_var      (1,1) struct = struct() % Optimization variables of the caller by name.
+    end
+    arguments (Output)
+        prob                               % Problem with the terms added.
     end
     if isempty(obj.f_opfcost) && isempty(obj.f_opfconst)
         return

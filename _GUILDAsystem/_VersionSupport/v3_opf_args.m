@@ -7,12 +7,12 @@ function c_nv = v3_opf_args(c_nv, str_key)
 % A v4 argument list is returned unchanged.
 %
 % See also PowerNetwork.optimize_powerflow
-    arguments
-        c_nv    cell   % varargin of optimize_powerflow or build_opf_problem.
-        str_key (1,1) string = "OptimizePowerflowMethods"   % Key of the deprecation message.
+    arguments (Input)
+        c_nv          cell                                % varargin of optimize_powerflow or build_opf_problem.
+        str_key (1,1) string = "OptimizePowerflowMethods" % Key of the deprecation message.
     end
     arguments (Output)
-        c_nv   % Name-Value options of the v4 signature.
+        c_nv                                              % Name-Value options of the v4 signature.
     end
     if mod(numel(c_nv), 2) ~= 0
         return                          % not Name-Value pairs: the caller reports it

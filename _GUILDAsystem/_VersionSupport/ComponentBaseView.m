@@ -30,6 +30,12 @@ classdef ComponentBaseView < handle
     methods
         function obj = ComponentBaseView(comp)
             % Create the view for the component comp.
+            arguments (Input)
+                comp  % Component whose para_base is viewed.
+            end
+            arguments (Output)
+                obj   % View of the removed para_base.
+            end
             obj.a_Comp = comp;
         end
         function Hz = get.Hz(obj)
@@ -57,6 +63,13 @@ classdef ComponentBaseView < handle
     methods (Static)
         function tp = add_column(comp, tp)
             % Return the tab_parameter of a component with the deprecated "base" column first.
+            arguments (Input)
+                comp  % Component whose tab_parameter is returned.
+                tp    % tab_parameter table without the "base" column.
+            end
+            arguments (Output)
+                tp    % tab_parameter table with the "base" column first.
+            end
             tp = [table(ComponentBaseView(comp), 'VariableNames', "base"), tp];
         end
         function tp = remove_column(tp)
@@ -64,6 +77,12 @@ classdef ComponentBaseView < handle
             %
             % "base" is this view (a handle): an edit of comp.tab_parameter.base.Hz
             % has already been forwarded to the network.
+            arguments (Input)
+                tp  % tab_parameter table.
+            end
+            arguments (Output)
+                tp  % tab_parameter table without the "base" column.
+            end
             if ismember("base", string(tp.Properties.VariableNames))
                 tp = removevars(tp, "base");
             end
@@ -72,6 +91,9 @@ classdef ComponentBaseView < handle
             % Accept only this view for comp.para_base = value.
             %
             % comp.para_base.Hz = x is forwarded by the view itself (it is a handle).
+            arguments (Input)
+                val  % Value assigned to comp.para_base.
+            end
             if ~isa(val, "ComponentBaseView")
                 error(msg("GUILDA:ComponentBaseView:ComponentBaseHz"));
             end

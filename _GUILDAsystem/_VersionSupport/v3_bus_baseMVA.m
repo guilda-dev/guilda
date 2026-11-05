@@ -6,12 +6,11 @@ function opt = v3_bus_baseMVA(net, opt)
 % GUILDA:Deprecated:BusBaseMVAMismatch when it differs from the system base
 % net.tab_parameter.base.baseMVA. The field is removed from opt.
 %
-% Name-Value options:
-%
-% - `net` — Network the bus is added to.
-% - `opt` — Options of add_bus.
-%
 % See also PowerNetwork.add_bus
+    arguments (Input)
+        net   % Network the bus is added to.
+        opt   % Options of add_bus.
+    end
     arguments (Output)
         opt   % opt without the baseMVA field.
     end

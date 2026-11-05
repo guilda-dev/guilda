@@ -61,6 +61,12 @@ classdef SolverLIN < auxiliary
         % A network creates its own (net.solver_LIN); net.reset_solver() replaces it with a
         % new one. The v3 form SolverLIN(net, NonUnit, Algorithm=...) is removed: any
         % argument stops with GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor (use net.linearize).
+            arguments (Input, Repeating)
+                varargin  % Arguments of the removed v3 form (any of them stops with an error).
+            end
+            arguments (Output)
+                obj  % Linearization solver with the default settings.
+            end
             v3_linearizer_constructor(varargin);        % COMPAT(v3)
         end
 
@@ -78,7 +84,7 @@ classdef SolverLIN < auxiliary
         % Name-Value overrides of the call applied. The solver itself is not changed.
         % A name that is not in OptionMap stops with GUILDA:resolve_options:UnknownName;
         % an invalid value stops with the validation error of the option.
-            arguments
+            arguments (Input)
                 obj % Solver holding the defaults (net.solver_LIN).
                 nv (1,:) cell = {} % Name-Value overrides: Algorithm, Point, Coordinate.
             end
@@ -106,7 +112,7 @@ end
 
 function validate_options(opt)
 % Value checks of the Name-Value options (names are already checked by resolve_options)
-    arguments
+    arguments (Input)
         opt.Algorithm (1,1) string {mustBeMember(opt.Algorithm, ["Kron","Feedback","DAE"])}
         opt.Point
         opt.Coordinate (1,1) string {mustBeMember(opt.Coordinate, ["theta&V","theta&rho","Vre&Vim"])}

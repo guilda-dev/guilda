@@ -1,6 +1,17 @@
 function [x_pred,t_old] = predict(f_Jac,h,x_current,x_past,t_old)
 % Predictor of the CPF: the tangent at the first step (x_past empty), the secant
 % from the previous step afterwards. t_old is the last tangent (orientation).
+    arguments (Input)
+        f_Jac     (1,1) function_handle  % Jacobian of the power flow equations of the CPF.
+        h         (1,1) double           % Step size of the predictor.
+        x_current (:,1) double           % Current point [unknowns; lambda].
+        x_past                           % Previous point, or [] at the first step.
+        t_old                            % Last tangent, or [] before the first one.
+    end
+    arguments (Output)
+        x_pred    (:,1) double           % Predicted point.
+        t_old                            % Last tangent (updated at the first step).
+    end
 
     if isempty(x_past)
 

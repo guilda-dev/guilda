@@ -4,7 +4,7 @@ function set_powerflow(obj, net, opt)
 % Uses Vbus and Icomp when both are given with one value per bus and per component;
 % otherwise reads the equilibrium of net. Then the bus, component and branch powers are
 % computed and the drawing is updated.
-    arguments
+    arguments (Input)
         obj
         net      = [] % Network whose equilibrium is shown when Vbus or Icomp is not given.
         opt.Vbus  (:,1) double = []; % [pu] Bus voltage phasors, one per bus.

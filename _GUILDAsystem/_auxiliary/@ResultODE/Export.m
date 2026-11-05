@@ -6,7 +6,7 @@ function str_file = Export(obj, filename)
 % <bus>_Ireal, <bus>_Iimag, <bus>_P, <bus>_Q of each bus and <component>_<name> of each
 % state and input); .mat saves odeResults, options, flag and output. A relative filename is
 % relative to the current folder. simulate(..., Export=filename) calls it.
-    arguments
+    arguments (Input)
         obj
         filename (1,1) string = string(datetime("now","Format","uuMMdd_HHmmss")) + "_simulation.csv" % Output file; its extension selects the format.
     end

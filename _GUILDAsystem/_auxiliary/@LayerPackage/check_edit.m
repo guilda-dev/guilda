@@ -12,6 +12,9 @@ function flag = check_edit(obj)
 % LocalController.get_dx_algebraic when the layer itself is not "updated" (a direct
 % call; in a simulation the solver has already checked every layer). See
 % PowerNetwork.check_edit.
+    arguments (Input)
+        obj
+    end
     arguments (Output)
         flag % True when initialize has run and nothing that changes the equilibrium was edited since (meaningful on PowerNetwork).
     end

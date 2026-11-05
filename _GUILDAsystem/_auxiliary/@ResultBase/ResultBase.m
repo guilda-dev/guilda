@@ -64,7 +64,7 @@ classdef (Abstract) ResultBase < auxiliary
         %
         % Stores the parts shared by every result. Call it from a subclass constructor
         % as obj@ResultBase(...).
-            arguments
+            arguments (Input)
                 net                = [] % Analysed network (kept as a reference) or [].
                 solver             = "" % Solver object that ran the analysis, or its class name.
                 options   struct   = struct() % Effective settings of the run (output of tools.resolve_options).
@@ -98,33 +98,38 @@ classdef (Abstract) ResultBase < auxiliary
             l = obj.is_success();
         end
 
-        function varargout = Plot(obj, varargin) %#ok<STOUT,INUSD>
+        function varargout = Plot(obj, varargin) %#ok<STOUT>
         % Plot the result.
         %
         % Plots the result. Each result class defines its own figures and Name-Value
         % options. A result class without a plot stops with GUILDA:ResultBase:Unsupported.
-        %
-        % Inputs:
-        % - `Name, Value`: Plot options defined by the result class.
-        %
-        % Outputs:
-        % - `h`: Created figure or axes (defined by the result class).
+            arguments (Input)
+                obj
+            end
+            arguments (Input, Repeating)
+                varargin  % Name-Value plot options defined by the result class.
+            end
+            arguments (Output, Repeating)
+                varargout % Created figure or axes (defined by the result class).
+            end
             obj.error_unsupported("Plot");
         end
 
-        function varargout = Export(obj, varargin) %#ok<STOUT,INUSD>
+        function varargout = Export(obj, varargin) %#ok<STOUT>
         % Write the result to a file.
         %
         % Writes the result to a file. Each result class defines the file formats and
         % Name-Value options. A result class without an export stops with
         % GUILDA:ResultBase:Unsupported.
-        %
-        % Inputs:
-        % - `filename`: Output file.
-        % - `Name, Value`: Export options defined by the result class.
-        %
-        % Outputs:
-        % - `str_file`: Path of the written file.
+            arguments (Input)
+                obj
+            end
+            arguments (Input, Repeating)
+                varargin  % Output file, then Name-Value export options defined by the result class.
+            end
+            arguments (Output, Repeating)
+                varargout % Path of the written file (defined by the result class).
+            end
             obj.error_unsupported("Export");
         end
     end
@@ -136,6 +141,9 @@ classdef (Abstract) ResultBase < auxiliary
         % Success test behind l_success: a logical flag as it is, a numeric flag when
         % positive (as for exitflag of fsolve or fmincon). Override it when an analysis
         % uses another convention.
+            arguments (Input)
+                obj
+            end
             arguments (Output)
                 l % True when the analysis succeeded.
             end
@@ -154,6 +162,10 @@ classdef (Abstract) ResultBase < auxiliary
         %
         % Stops with GUILDA:ResultBase:Unsupported for a method of the Plot / Export
         % contract that this result class does not provide.
+            arguments (Input)
+                obj
+                str_method % Name of the unsupported method ("Plot" or "Export").
+            end
             error(msg("GUILDA:ResultBase:Unsupported", char(str_method), class(obj)));
         end
     end

@@ -5,10 +5,6 @@ function sct_summary = export_class_database(sct_scan, option)
 % >> export_class_database(find_doc_classes())                % changed classes only
 % >> export_class_database(find_doc_classes(), "full", true)  % every class
 %
-% sct_scan : output of find_doc_classes (Roots, Classes, Files, Tool).
-% full     : ignore database/manifest.json and export every class.
-% strict   : removed tags are errors and errors stop the export; implies full.
-%
 % A class is exported again when one of its files (the classdef file, or
 % every .m file in its @Class folder) was added, removed or edited, and so
 % are its descendants, which show its members. The other classes are taken
@@ -99,10 +95,13 @@ function sct_summary = export_class_database(sct_scan, option)
 % node: "Class.member" or "Class.get.prop" (a property accessor).
 % kind: "method"|"property"|"parameter" (a dynamic Parameter property)|"subclass".
 % confidence: "certain"|"inferred"|"candidates". See collect_call_graph.m.
-    arguments
-        sct_scan (1,1) struct
-        option.strict (1,1) logical = false
-        option.full   (1,1) logical = false
+    arguments (Input)
+        sct_scan (1,1) struct                % Output of find_doc_classes (Roots, Classes, Files, Tool).
+        option.strict (1,1) logical = false  % Removed tags are errors and errors stop the export; implies full.
+        option.full   (1,1) logical = false  % Ignore database/manifest.json and export every class.
+    end
+    arguments (Output)
+        sct_summary (1,1) struct  % Export summary (ClassCount, ExportedCount, WarningCount, ErrorCount, Coverage).
     end
     sct_classes = sct_scan.Classes;
     cell_names  = {sct_classes.Name};
@@ -893,8 +892,14 @@ function [sct_info, cell_diagnostics] = build_meta_info(meta_item, str_class_nam
             sct_info.ImplementedIn = '';
         end
         if ~isempty(sct_fn)
-            if ~isempty(sct_fn.Inputs),  sct_info.InputNames  = sct_fn.Inputs;  end
-            if ~isempty(sct_fn.Outputs), sct_info.OutputNames = sct_fn.Outputs; end
+            % meta reports varargin (varargout) for a method without inputs (outputs)
+            % that has an arguments block: the function line has none.
+            if ~isempty(sct_fn.Inputs) || isequal(sct_info.InputNames, {'varargin'})
+                sct_info.InputNames = sct_fn.Inputs;
+            end
+            if ~isempty(sct_fn.Outputs) || isequal(sct_info.OutputNames, {'varargout'})
+                sct_info.OutputNames = sct_fn.Outputs;
+            end
             sct_info.Arguments = num2cell(sct_fn.Arguments);
             sct_info.Outputs   = num2cell(sct_fn.OutputArguments);
             sct_info.Throws    = sct_fn.Throws;
@@ -1638,6 +1643,8 @@ function sct_arg = make_argument(sct_entry, str_block, str_description)
     else
         str_kind = 'Positional';
     end
+    % A Code Analyzer pragma (%#ok, %#ok<ID>) before the description is not part of it.
+    str_description = regexprep(str_description, '^#ok(<[^>]*>)?\s*', '');
     [str_unit, str_description] = take_unit(str_description);
     sct_arg = struct( ...
         'Name', str_name, ...

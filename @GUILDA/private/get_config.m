@@ -1,4 +1,11 @@
 function out = get_config(varargin)
+% Read the GUILDA configuration (defaults merged with the user settings).
+    arguments (Input, Repeating)
+        varargin  % Field names passed to getfield to select a part of the configuration.
+    end
+    arguments (Output)
+        out  % Configuration struct, or the selected part of it.
+    end
 
     % path_env_user = fullfile(GUILDA.pwd,"@GUILDA","user"  ,"GUILDAconfig.json");
     % path_env_sys  = fullfile(GUILDA.pwd,"@GUILDA","config","GUILDAconfig.json");

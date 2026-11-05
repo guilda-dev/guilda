@@ -1,4 +1,15 @@
 function [con,jacobi_V,jacobi_I] = PFconst_slack(rv_V,~,tVstar)
+% Power flow equation of the slack bus and its Jacobians (residual of fsolve).
+    arguments (Input)
+        rv_V     (2,1) double  % [pu] Bus voltage [real; imag].
+        ~
+        tVstar   (2,1) double  % Specified [angle [rad]; |V| [pu]].
+    end
+    arguments (Output)
+        con      (2,1) double  % Mismatch [angle; |V|] - tVstar.
+        jacobi_V (2,2) double  % Jacobian of con with respect to rv_V.
+        jacobi_I (2,2) double  % Jacobian of con with respect to the bus current (zero).
+    end
     Vre = rv_V(1);
     Vim = rv_V(2);
 

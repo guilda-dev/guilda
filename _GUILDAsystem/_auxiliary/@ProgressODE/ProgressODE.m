@@ -41,10 +41,13 @@ classdef ProgressODE < auxiliary
 
         function obj = ProgressODE(mode, t_simulate, timelimit)
         % Create the progress display of a simulation.
-            arguments
+            arguments (Input)
                 mode       (1,1) string {mustBeMember(mode,["none","disp","dialog"])}  = 'disp'; % Display mode.
                 t_simulate (1,:) double = [0,100] % [s] Simulation time [t0, tend].
                 timelimit  (1,1) double {mustBePositive}  = inf; % [s] Limit of the wall-clock time of the whole run.
+            end
+            arguments (Output)
+                obj % The progress display.
             end
             obj.mode      = mode;
             obj.timelimit = timelimit;
@@ -68,6 +71,15 @@ classdef ProgressODE < auxiliary
 
         function f = dialogFcn(obj,t,x,flag)
         % Update the waitbar (output function of mode "dialog").
+            arguments (Input)
+                obj
+                t     % [s] Time of the solver (empty or [t0 tend] at "init", empty at "done").
+                x     % States of the solver.
+                flag  % "init", "done", "break" or empty.
+            end
+            arguments (Output)
+                f     % True to stop the integration (always false).
+            end
             [f,t,flag] = obj.time_keeper(t,x,flag);
 
             switch char(flag)
@@ -88,6 +100,9 @@ classdef ProgressODE < auxiliary
         end
         function delete(obj)
         % Close the waitbar.
+            arguments (Input)
+                obj
+            end
             if isgraphics(obj.dialog)
                 delete(obj.dialog);
             end
@@ -95,6 +110,15 @@ classdef ProgressODE < auxiliary
 
         function f = dispFcn(obj,t,x,flag)
         % Update the text bar (output function of mode "disp").
+            arguments (Input)
+                obj
+                t     % [s] Time of the solver (empty or [t0 tend] at "init", empty at "done").
+                x     % States of the solver.
+                flag  % "init", "done", "break" or empty.
+            end
+            arguments (Output)
+                f     % True to stop the integration (always false).
+            end
             [f,t,flag] = obj.time_keeper(t,x,flag);
 
             switch char(flag)
@@ -127,6 +151,17 @@ classdef ProgressODE < auxiliary
         % Stop the integration when the run exceeds timelimit (output function of mode "none").
         %
         % Shifts t by timeoffset and records the reason of a stop in message.
+            arguments (Input)
+                obj
+                t     % [s] Time of the solver (empty or [t0 tend] at "init", empty at "done").
+                ~
+                flag  % "init", "done", "break" or empty.
+            end
+            arguments (Output)
+                f     % True to stop the integration (always false).
+                t     % [s] Time shifted by timeoffset.
+                flag  % Flag, set to 'done' when the run stops.
+            end
             t = obj.timeoffset + t;
             f = 0;
             switch char(flag)
@@ -154,6 +189,12 @@ classdef ProgressODE < auxiliary
 
         function [value,isterminal,direction] = Events(obj,~,~)
         % Check whether the phase may continue (event function of the solver).
+            arguments (Output)
+                value       % Event value: true while the phase may continue.
+                isterminal  % 1 (the event stops the integration).
+                direction   % 0 (any direction).
+            end
+            % No input block: SolverODE calls this as odeProg.Events() without t and x.
             value = obj.ToBeContinue;
             isterminal = 1;
             direction  = 0;
@@ -163,6 +204,10 @@ classdef ProgressODE < auxiliary
 
     methods(Access=private)
         function disp_header(obj, t)
+            arguments (Input)
+                obj
+                t  % [s] Simulation time; t(1) is the start of the phase.
+            end
             disp(' ')
             t0 = [num2str( obj.tlim(1)  ),'s'];
             te = [num2str( obj.tlim(end)),'s'];
@@ -175,6 +220,10 @@ classdef ProgressODE < auxiliary
         end
 
         function disp_init(obj,t)
+            arguments (Input)
+                obj
+                t  % [s] Simulation time; t(1) is the start of the phase.
+            end
             fprintf([' phase', num2str(obj.phase,"%.2d"),' |'])
             per = (t(1)-obj.tlim(1))/obj.tspan;
             if per>= 0.01

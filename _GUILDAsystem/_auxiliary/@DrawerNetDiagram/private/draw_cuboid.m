@@ -1,4 +1,15 @@
 function h = draw_cuboid(ax, x0, y0, z0, radius, color)
+arguments (Input)
+    ax      % Axes to draw in.
+    x0      % X coordinate of the center.
+    y0      % Y coordinate of the center.
+    z0      % Z coordinate of the center.
+    radius  % Size of the solid.
+    color   % Face color.
+end
+arguments (Output)
+    h       % Patch drawn.
+end
 w = 1.6*radius;
 hgt = 1.4*radius;
 x = x0 + 0.5*w*[-1 -1  1  1 -1 -1  1  1];

@@ -5,6 +5,12 @@ function out = complex2matrix(a)
 % y = A*x is complex2vec(y) = complex2matrix(A) * complex2vec(x).
 %
 % See also tools.complex2vec, tools.vec2complex
+    arguments (Input)
+        a    % Complex matrix.
+    end
+    arguments (Output)
+        out  % Real matrix with one 2x2 block [re, -im; im, re] per element of a.
+    end
     r = real(a);
     c = imag(a);
     out = zeros(size(r, 1)*2, size(r, 2)*2);

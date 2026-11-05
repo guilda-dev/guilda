@@ -20,10 +20,8 @@ function sct_scan = find_doc_classes(option)
 % >> sct_scan = find_doc_classes("user", false)     % System and Object only
 % >> sct_scan = find_doc_classes("cache", sct_manifest.files)
 %
-% user  : also scan user folders (default true).
-% cache : the files list of a previous scan (database/manifest.json). A file
-%         whose size and time are unchanged is not read again; a file whose
-%         time changed but whose size is the same is compared by checksum.
+% A file in cache whose size and time are unchanged is not read again; a file
+% whose time changed but whose size is the same is compared by checksum.
 %
 % Output struct:
 %   Roots   : Name, Origin ("System"|"Object"|"User"), Path (absolute)
@@ -37,9 +35,12 @@ function sct_scan = find_doc_classes(option)
 %             figure shown on the class page
 %   Tool    : signature of the documentation tools; a change forces a full
 %             rebuild of the database
-    arguments
-        option.user  (1,1) logical = true
-        option.cache = []
+    arguments (Input)
+        option.user  (1,1) logical = true  % Also scan user folders.
+        option.cache = []                  % Files list of a previous scan (database/manifest.json).
+    end
+    arguments (Output)
+        sct_scan  % Scan result (Roots, Classes, Files, Images, Tool).
     end
 
     str_root = GUILDA.pwd();

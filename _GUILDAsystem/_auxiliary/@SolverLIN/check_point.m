@@ -6,6 +6,9 @@ function check_point(Point)
 % time, and "after" | "before" for a phase boundary).
 % The length of a vector is checked against the analysed layer by point_vector.
 % Any other form stops with GUILDA:SolverLIN:PointType.
+    arguments (Input)
+        Point  % Point option to check.
+    end
     if isempty(Point) && ~iscell(Point)
         return
     end

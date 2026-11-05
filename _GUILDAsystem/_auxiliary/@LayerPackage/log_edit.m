@@ -2,14 +2,14 @@ function log_edit(obj, log, tag, before, after, time, tab)
     % Append a new edit-log record.
     %
     % Records an edit event and propagates it to parent layers.
-    arguments
-        obj % Target layer object.
-        log   (1,1) string = "";                                                    %#ok
-        tag   (1,1) string = ""; %#ok
-        before = nan;                                                               %#ok
-        after  = nan;                                                               %#ok
-        time   = string(datetime('now','Format','uuuu/MM/dd HH:mm:ss'));            %#ok
-        tab    = table(time, obj.get_tag(true,"/"), log, tag, {before}, {after}) % Prebuilt edit-log row.
+    arguments (Input)
+        obj
+        log    (1,1) string = "";                                                   %#ok Log message.
+        tag    (1,1) string = "";                                                   %#ok Tag of the edit, e.g. "Parameter(dynamics)" or "Topology".
+        before = nan;                                                               %#ok State before the edit.
+        after  = nan;                                                               %#ok State after the edit.
+        time   = string(datetime('now','Format','uuuu/MM/dd HH:mm:ss'));            %#ok Timestamp of the edit.
+        tab    = table(time, obj.get_tag(true,"/"), log, tag, {before}, {after})    % Prebuilt edit-log row.
     end
     % Record what the edit made stale (see LayerPackage.edit_effect):
     % the handle cache of the parameter's owner, and the network equilibrium.

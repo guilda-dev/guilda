@@ -85,17 +85,24 @@ classdef LayerPackage < handle
         reset_edit(obj)
         flag = check_edit(obj)
 
-        function handle_edit(obj, tab) %#ok
+        function handle_edit(obj, tab)
         % Called by log_edit on the top layer (PowerNetwork) with every edit
         % reported by its layers (tab: the tab_editLog row), so that the
         % network can keep network-wide rules; a child never writes its siblings.
         % PowerNetwork overrides this; other layers do nothing.
+            arguments (Input)
+                obj  %#ok<INUSA>
+                tab  %#ok<INUSA> tab_editLog row of the reported edit.
+            end
         end
 
         function set_odefcn(obj)
         % Build the f_* handle cache from the current parameters and network frequency.
         % Layers that own handles (Component, LocalController, GlobalController)
         % override this; other layers have nothing to build.
+            arguments (Input)
+                obj
+            end
             obj.s_edit.str_odefcn = "updated";
         end
 
@@ -104,6 +111,9 @@ classdef LayerPackage < handle
         % of the frequency they read: a network Hz edit (log_edit) and an attach
         % (Component.set_bus, LocalController.set_parent, GlobalController.set_parent).
         % check_edit builds them at the next analysis. Handles never built stay "unset".
+            arguments (Input)
+                obj
+            end
             a_layer = {obj};
             while ~isempty(a_layer)
                 if a_layer{1}.s_edit.str_odefcn == "updated"
@@ -131,9 +141,13 @@ classdef LayerPackage < handle
         %   Parameter(graph)       -             -
         %   OPF                    -             -         (set_opffcn / reset_opffcn)
         %   Tag                    -             -         (rename through str_tag)
-            arguments
-                str_logtag (1,1) string
-                str_log    (1,1) string = ""
+            arguments (Input)
+                str_logtag    (1,1) string      % "tag" column of tab_editLog.
+                str_log       (1,1) string = "" % "log" column of tab_editLog.
+            end
+            arguments (Output)
+                l_odefcn                        % true when the edit makes the f_* handles stale.
+                l_equilibrium                   % true when the edit makes the equilibrium stale.
             end
             switch str_logtag
                 case "Parameter(base)"
@@ -198,6 +212,9 @@ classdef LayerPackage < handle
         % ```matlab
         % tab = table(obj);
         % ```
+            arguments (Input)
+                obj
+            end
             arguments (Output)
                 tab % Parameter table of the layer.
             end
@@ -213,6 +230,9 @@ classdef LayerPackage < handle
         % ```matlab
         % str = string(obj);
         % ```
+            arguments (Input)
+                obj
+            end
             arguments (Output)
                 str % Tag string of the layer object.
             end

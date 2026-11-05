@@ -5,15 +5,15 @@ function i_bus = slack_bus_index(net)
 % has a component with Q = NaN, otherwise the first bus that has a component. It is empty
 % when no bus has a component.
 %
-% Inputs:
-% - `net`: Network to look at. It is only read.
-%
 % <@Examples>
 % ```matlab
 % i_bus = tools.slack_bus_index(network.IEEE14bus);
 % ```
 %
 % See also PowerNetwork.calculate_powerflow, PowerNetwork.build_opf_problem, tools.network_to_mpc
+    arguments (Input)
+        net   % Network to look at. It is only read.
+    end
     arguments (Output)
         i_bus % Index in net.a_Bus; empty when no bus has a component.
     end

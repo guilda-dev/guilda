@@ -11,7 +11,7 @@ function n = next_tag_number(str_tags, str_suffix)
 % n = tools.next_tag_number(string(net.a_Branch))
 % n = tools.next_tag_number(string(bus.a_Component), bus.str_tag)
 % ```
-    arguments
+    arguments (Input)
         str_tags   string % Tags in use.
         str_suffix (1,1) string = "" % Suffix of the tags to count; tags without it are ignored.
     end
