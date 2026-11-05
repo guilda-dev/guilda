@@ -311,7 +311,7 @@
     <ol class="dg-list is-numbered">
       <li><div><span class="dg-item-title"><span lang="en">Only the parent sets and clears it</span><span lang="ja">設定と解除は親だけが行う</span></span><p lang="en">Set by the parent's constructor or <code>add_*</code> method, cleared by its <code>remove_*</code> method, so a removed object has no parent reference. No other code writes it.</p><p lang="ja">親のコンストラクタまたは <code>add_*</code> メソッドが設定し、<code>remove_*</code> メソッドが解除。削除されたオブジェクトは親を参照しない。ほかのコードからの書き込みなし。</p></div></li>
       <li><div><span class="dg-item-title"><span lang="en">A child only reads its parent</span><span lang="ja">子は親を読むだけ</span></span><p lang="en">For the tag path, for edit notification, and for shared settings such as the frequency.</p><p lang="ja">タグのパス、編集の通知、周波数などの共有設定のため。</p></div></li>
-      <li><div><span class="dg-item-title"><span lang="en">A child never writes upward or sideways</span><span lang="ja">子は上にも横にも書き込まない</span></span><p lang="en">No writes to its parent or siblings, and no copy of its parent's data. The one exception is the edit notification: a <code>Parameter</code> marks the handle cache of the object that owns it as stale (<code>s_edit.str_odefcn = "editted"</code>).</p><p lang="ja">親や兄弟への書き込みなし、親のデータのコピーも持たない。唯一の例外は編集の通知: <code>Parameter</code> は自身を所有するオブジェクトのハンドルキャッシュを古いと印付け（<code>s_edit.str_odefcn = "editted"</code>）。</p></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">A child never writes upward or sideways</span><span lang="ja">子は上にも横にも書き込まない</span></span><p lang="en">No writes to its parent or siblings, and no copy of its parent's data. The one exception is the edit notification: a <code>Parameter</code> marks the handle cache of the object that owns it as stale (<code>sct_edit.str_odefcn = "editted"</code>).</p><p lang="ja">親や兄弟への書き込みなし、親のデータのコピーも持たない。唯一の例外は編集の通知: <code>Parameter</code> は自身を所有するオブジェクトのハンドルキャッシュを古いと印付け（<code>sct_edit.str_odefcn = "editted"</code>）。</p></div></li>
     </ol>
 
     <!-- ============================== IDENTITY ============================== -->
@@ -337,8 +337,8 @@
 
     <!-- ============================== EDITS ============================== -->
     <h2 id="edits"><span lang="en">Handling of model edits</span><span lang="ja">モデル編集の扱い</span></h2>
-    <p lang="en">Edits are recorded in <code>s_edit.str_flag</code> (<code>unset</code> / <code>initialized</code> / <code>editted</code>) and in the edit log <code>tab_editLog</code>, which also records the category of what became stale.</p>
-    <p lang="ja">編集の記録先は <code>s_edit.str_flag</code>（<code>unset</code> / <code>initialized</code> / <code>editted</code>）と編集ログ <code>tab_editLog</code>。編集ログには、古くなったものの区分も記録。</p>
+    <p lang="en">Edits are recorded in the edit log <code>tab_editLog</code> of the network, which also records the category of what became stale; <code>sct_edit.l_initialized</code> tells whether <code>initialize</code> has run. Whether the equilibrium is stale (<code>net.l_staleEquilibrium</code>) is derived from the two (<code>LayerPackage.edit_effect</code>).</p>
+    <p lang="ja">編集の記録先はネットワークの編集ログ <code>tab_editLog</code>。編集ログには、古くなったものの区分も記録。<code>initialize</code> の実行済みかどうかは <code>sct_edit.l_initialized</code>。平衡点が古いかどうか（<code>net.l_staleEquilibrium</code>）は両者から算出（<code>LayerPackage.edit_effect</code>）。</p>
     <table class="cd-table">
       <thead>
         <tr><th><span lang="en">Edit of the model</span><span lang="ja">モデルの編集</span></th><th><span lang="en">Becomes stale</span><span lang="ja">古くなるもの</span></th></tr>
