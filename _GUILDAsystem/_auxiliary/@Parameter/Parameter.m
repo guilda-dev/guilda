@@ -15,45 +15,22 @@ classdef Parameter < auxiliary & LayerPackage & dynamicprops
 %
 % See also LayerPackage
     properties(SetAccess=private) % Callback
-
-        % Callback function executed after parameter changes.
-        % <@Type> function_handle
-        CallbackChanged = @() [];
+        CallbackChanged = @() [];  % Callback function executed after parameter changes. <@Type> function_handle
     end
     properties(Access=private) % Internal state
-
-        % Parameter names managed by this container.
-        % <@Type> string (1xN)
-        sv_parameter = [];
-
-        % Stashed value used for change comparison.
-        % <@Type> any
-        val_stash 
-
-        % Parent layer object managed by this container.
-        % <@Type> LayerPackage
-        a_cls
+        sv_parameter = [];  % Parameter names managed by this container. <@Type> string (1xN)
+        val_stash  % Stashed value used for change comparison. <@Type> any
+        a_cls  % Owner layer of this container. <@Type> LayerPackage
     end
     properties(Dependent) % Parameter
-
-        % Parameter table generated from the dynamic properties.
-        % One column per parameter; a container without parameters gives a table with the
-        % single column NoData.
-        % <@Type> table (1xN)
-        tab_parameter
+        tab_parameter  % Parameter table: one column per parameter (the single column NoData when there are none). <@Type> table (1xN)
     end
     properties(Dependent, Access=protected) % Layer structure
-
-        % Parent layer interface for compatibility.
-        % <@Type> LayerPackage
-        parent
-
-        % Parameter class has no children, but the property is kept for interface compatibility.
-        % <@Type> none (0x1)
-        children
+        parent  % Parent in the layer structure: the owner layer. <@Type> LayerPackage
+        children  % Children in the layer structure: none (kept for the LayerPackage interface). <@Type> none (0x1)
     end
     properties % Parameters
-        NoData = nan; % Placeholder value of a container without parameters.
+        NoData = nan;  % Placeholder value of a container without parameters.
     end
     
     %% Constructor

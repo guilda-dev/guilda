@@ -7,6 +7,14 @@ classdef ResultPF < ResultBase
 % network. Plot draws the voltage profile. Export writes the bus or branch table (CSV,
 % Excel) or the iteration history (JSON for the GridSpring viewer).
 %
+% - `tab_bus` has the bus tags as row names; it is the same table as the first output of
+%   calculate_powerflow in v3.
+% - `tab_branch` has the branch tags as row names. "from" is br.a_Bus{1}, "to" is
+%   br.a_Bus{2}. Pfrom, Qfrom, Pto, Qto: power flowing into the branch at each end; Ifrom,
+%   Ito: current phasors into the branch; Ploss, Qloss: losses of the branch (sum of both
+%   ends).
+% - `cm_Vhistory` has one column per iteration ("algebraic") or output time ("dynamic").
+%
 % <@Examples>
 % ```matlab
 % net = network.IEEE14bus();
@@ -20,24 +28,10 @@ classdef ResultPF < ResultBase
 % See also SolverPF, ResultBase
 
     properties (SetAccess=private) % Result
-        % Bus values of the solution, one row per bus (row names = bus tags).
-        % Columns: Varg [rad], V [pu], P, Q (injections into the network) [pu], Vphasor,
-        % Iphasor [pu]. The same table as the first output of calculate_powerflow in v3.
-        tab_bus table = table()
-
-        % Branch flows, one row per branch (row names = branch tags).
-        % "from" is br.a_Bus{1}, "to" is br.a_Bus{2}. Pfrom, Qfrom, Pto, Qto: power flowing into
-        % the branch at each end [pu]; Ifrom, Ito: current phasors into the branch [pu]; Ploss,
-        % Qloss: losses of the branch (sum of both ends) [pu].
-        tab_branch table = table()
-
-        % [pu] Bus voltage phasors at each iteration or output time.
-        % One row per bus in the order of tab_bus, one column per iteration ("algebraic") or
-        % output time ("dynamic").
-        cm_Vhistory double = zeros(0,0)
-
-        % Iteration numbers ("algebraic") or times [s] ("dynamic") of cm_Vhistory.
-        rv_step double = zeros(1,0)
+        tab_bus table = table()  % Bus values, one row per bus: Varg [rad], V [pu], P, Q (injections into the network) [pu], Vphasor, Iphasor [pu].
+        tab_branch table = table()  % Branch flows, one row per branch: Pfrom, Qfrom, Pto, Qto, Ifrom, Ito, Ploss, Qloss [pu] (see the class help).
+        cm_Vhistory double = zeros(0,0)  % [pu] Bus voltage phasors, one row per bus (tab_bus order), one column per iteration or output time.
+        rv_step double = zeros(1,0)  % Iteration numbers ("algebraic") or times [s] ("dynamic") of cm_Vhistory.
     end
 
     methods

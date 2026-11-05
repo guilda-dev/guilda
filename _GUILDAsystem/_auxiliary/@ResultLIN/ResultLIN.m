@@ -16,7 +16,17 @@ classdef ResultLIN < ResultBase
 % constant rv_residual: its rows add to the right-hand sides above, and get_ss leaves it out.
 % Y is the admittance matrix of the model, also at a point inside a fault.
 % get_ss returns a reduced state-space model (Kron / Feedback / DAE); Plot draws the
-% eigenvalue map. The result holds computed values only; the network is not changed.
+% eigenvalue map.
+%
+% - `tab_variable` has one row per variable with Index, Kind ("x" | "Vre" | "Vim" | "u"),
+%   Owner, Name, Label and Bus (see PowerNetwork.get_variable_map).
+% - `rv_residual` holds the right-hand sides of the state equations, then Y v - I of each
+%   bus, with the inputs at their values in rv_point.
+% - `sct_model` holds the bus models (V2I, at the point), the global controller models, the
+%   admittance matrix, the non-unit buses and the bus voltages at the point: used by
+%   get_ss("Feedback") and the coordinates of get_ss("DAE"). The Output option of get_ss
+%   also uses the names of the bus currents (sv_I) and the outputs of the bus models
+%   (sct_output). The result holds computed values only; the network is not changed.
 %
 % <@Examples>
 % ```matlab
@@ -31,48 +41,19 @@ classdef ResultLIN < ResultBase
 % See also SolverLIN, ResultBase
 
     properties (SetAccess=private) % Result
-        % Variable map at the time of the analysis (see PowerNetwork.get_variable_map).
-        % One row per variable with Index, Kind ("x" | "Vre" | "Vim" | "u"), Owner, Name, Label,
-        % Bus. It is the order of the rows and columns of the Jacobian blocks.
-        tab_variable table = table()
-
-        % Point of the linearization in the order of tab_variable.
-        % The equilibrium when output.l_equilibrium is true.
-        rv_point (:,1) double = zeros(0,1)
-
-        % d(dx/dt)/dx: Jacobian of the state equations with respect to the states.
-        rm_Axx double = zeros(0,0)
-
-        % d(dx/dt)/dv: Jacobian of the state equations with respect to the bus voltages.
-        rm_Axv double = zeros(0,0)
-
-        % d(dx/dt)/du: Jacobian of the state equations with respect to the inputs.
-        rm_Bx double = zeros(0,0)
-
-        % Jacobian of the bus current balance (Y v - I) with respect to the states.
-        rm_Avx double = zeros(0,0)
-
-        % Jacobian of the bus current balance (Y v - I) with respect to the bus voltages.
-        % The admittance matrix minus the component terms.
-        rm_Avv double = zeros(0,0)
-
-        % Jacobian of the bus current balance (Y v - I) with respect to the inputs.
-        rm_Bv double = zeros(0,0)
-
-        % Mass matrix of the state equations (the algebraic equations have none).
-        rm_E double = zeros(0,0)
-
-        % Residual of the nonlinear DAE at rv_point, in the order of the rows x and v of tab_variable.
-        % The right-hand sides of the state equations, then Y v - I of each bus. The inputs are
-        % the values of rv_point. Zero at an equilibrium.
-        rv_residual (:,1) double = zeros(0,1)
+        tab_variable table = table()  % Variable map at the time of the analysis: the order of the rows and columns of the Jacobian blocks.
+        rv_point (:,1) double = zeros(0,1)  % Point of the linearization in the order of tab_variable (the equilibrium when output.l_equilibrium is true).
+        rm_Axx double = zeros(0,0)  % d(dx/dt)/dx: Jacobian of the state equations with respect to the states.
+        rm_Axv double = zeros(0,0)  % d(dx/dt)/dv: Jacobian of the state equations with respect to the bus voltages.
+        rm_Bx double = zeros(0,0)  % d(dx/dt)/du: Jacobian of the state equations with respect to the inputs.
+        rm_Avx double = zeros(0,0)  % Jacobian of the bus current balance (Y v - I) with respect to the states.
+        rm_Avv double = zeros(0,0)  % Jacobian of the bus current balance (Y v - I) with respect to the bus voltages: Y minus the component terms.
+        rm_Bv double = zeros(0,0)  % Jacobian of the bus current balance (Y v - I) with respect to the inputs.
+        rm_E double = zeros(0,0)  % Mass matrix of the state equations (the algebraic equations have none).
+        rv_residual (:,1) double = zeros(0,1)  % Residual of the nonlinear DAE at rv_point, rows x and v of tab_variable; zero at an equilibrium.
     end
     properties (SetAccess=private, Hidden) % Model data
-        % Bus models (V2I, at the point), global controller models, admittance matrix,
-        % non-unit buses and bus voltages at the point: used by get_ss("Feedback") and
-        % the coordinates of get_ss("DAE"). The Output option of get_ss also uses the names of
-        % the bus currents (sv_I) and the outputs of the bus models (sct_output).
-        sct_model struct = struct()
+        sct_model struct = struct()  % Model data of get_ss: bus and global controller models, admittance matrix, ... (see the class help).
     end
 
     methods

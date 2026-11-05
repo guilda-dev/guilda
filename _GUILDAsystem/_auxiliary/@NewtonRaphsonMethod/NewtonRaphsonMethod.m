@@ -4,7 +4,8 @@ classdef (Sealed = true) NewtonRaphsonMethod < auxiliary
 % The continuation power flow uses it as its corrector. Give the equation and the options
 % as Name-Value arguments of the constructor (they are the public properties), then call
 % solve. Without NRMJac the Jacobian is computed by central differences with step
-% Increment.
+% Increment; giving NRMJac is usually faster. NRMFcn may be a symbolic expression (needs
+% Symbolic Math Toolbox); GUILDA itself always passes function handles.
 %
 % <@Examples>
 % ```matlab
@@ -16,26 +17,14 @@ classdef (Sealed = true) NewtonRaphsonMethod < auxiliary
 % See also SolverCPF
     
     properties (Access=public) % Equation
-        % Function F of the equation F(x) = b.
-        % A function handle, or a symbolic expression (needs Symbolic Math Toolbox; GUILDA
-        % itself always passes function handles).
-        % <@Type> function_handle | sym
-        NRMFcn 
-
-        % Jacobian of NRMFcn.
-        % Computed by numerical differentiation when not given; giving it is usually faster.
-        % <@Type> function_handle
-        NRMJac          
-
-        % Right-hand side b of F(x) = b; zeros (F(x) = 0) when not given.
-        % <@Type> double (n x 1)
-        NRMVal 
-        
-        ConvTol   (1,1) double  = GUILDA.config("NewtonRaphsonMethod","ConvTol"  ); % Absolute tolerance of the step dx for convergence.
-        MaxIter   (1,1) double  = GUILDA.config("NewtonRaphsonMethod","MaxIter"  ); % Maximum number of iterations (a warning when reached).
-        InitVal   (:,1) double  = GUILDA.config("NewtonRaphsonMethod","InitVal"  ); % Initial value of x.
-        Increment (1,1) double  = GUILDA.config("NewtonRaphsonMethod","Increment"); % Step of the numerical differentiation.
-        StepSize  (1,1) double  = GUILDA.config("NewtonRaphsonMethod","StepSize" ); % Factor of the update x = x - StepSize*dx; large values may not converge.
+        NRMFcn  % Function F of the equation F(x) = b: a function handle or a symbolic expression. <@Type> function_handle | sym
+        NRMJac  % Jacobian of NRMFcn; computed by numerical differentiation when not given. <@Type> function_handle
+        NRMVal  % Right-hand side b of F(x) = b; zeros (F(x) = 0) when not given. <@Type> double (n x 1)
+        ConvTol (1,1) double = GUILDA.config("NewtonRaphsonMethod","ConvTol");  % Absolute tolerance of the step dx for convergence.
+        MaxIter (1,1) double = GUILDA.config("NewtonRaphsonMethod","MaxIter");  % Maximum number of iterations (a warning when reached).
+        InitVal (:,1) double = GUILDA.config("NewtonRaphsonMethod","InitVal");  % Initial value of x.
+        Increment (1,1) double = GUILDA.config("NewtonRaphsonMethod","Increment");  % Step of the numerical differentiation.
+        StepSize (1,1) double = GUILDA.config("NewtonRaphsonMethod","StepSize");  % Factor of the update x = x - StepSize*dx; large values may not converge.
     end
     
     methods

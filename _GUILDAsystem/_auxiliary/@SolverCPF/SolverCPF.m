@@ -9,6 +9,18 @@ classdef (Sealed = true) SolverCPF < auxiliary
 % OptionMap and get_options). The solver holds settings only: results are returned as a
 % ResultCPF.
 %
+% - The power the components of the `LoadBus` buses draw is multiplied by (1 + lambda).
+% - `StepSize` multiplies the tangent at the first step and the secant from the previous
+%   step afterwards. The trace stops before `MaxIterations` when lambda falls below 0 after
+%   the nose.
+% - With `UseInternalState` true, the generator powers follow their state equations
+%   (getCompPQ) and all loads are scaled; when false, the components inject their
+%   equilibrium powers. True stops with GUILDA:build_layout:MissingGetCompPQ if a component
+%   has no getCompPQ.
+% - `OptionMap` is the input of tools.resolve_options. MaxIteration, Tolerance and Verbose
+%   are common names; LoadBus, InitialLambda, StepSize, ArcLength and UseInternalState have
+%   no common equivalent.
+%
 % <@Examples>
 % ```matlab
 % net = network.IEEE14bus();
@@ -21,46 +33,17 @@ classdef (Sealed = true) SolverCPF < auxiliary
 % See also ResultCPF, PowerNetwork.calculate_continuation_powerflow
 
     properties (Access=public) % Settings
-        % Tags of the buses whose loads are increased.
-        % The power the components of these buses draw is multiplied by (1 + lambda). Must not
-        % be empty when solving.
-        LoadBus          (1,:) string = strings(1,0)
-
-        % Value of lambda at the starting point (the equilibrium).
-        InitialLambda    (1,1) double = 0
-
-        % Maximum number of predictor-corrector steps.
-        % The trace stops earlier when lambda falls below 0 after the nose.
-        MaxIterations    (1,1) double {mustBePositive,mustBeInteger} = 500
-
-        % Step size of the predictor.
-        % It multiplies the tangent at the first step and the secant from the previous step
-        % afterwards.
-        StepSize         (1,1) double {mustBePositive} = 0.5
-
-        % Arc length of the corrector.
-        % The corrected point satisfies |x - x_current|^2 = ArcLength.
-        ArcLength        (1,1) double {mustBePositive} = 1e-3
-
-        % Convergence tolerance (ConvTol) of the Newton-Raphson corrector.
-        Tolerance        (1,1) double {mustBePositive} = 1e-5
-
-        % Solve the power flow with the internal states of the generators.
-        % When true, the generator powers follow their state equations (getCompPQ) and all loads
-        % are scaled; when false, the components inject their equilibrium powers. True stops
-        % with GUILDA:build_layout:MissingGetCompPQ if a component has no getCompPQ.
-        UseInternalState (1,1) logical = false
-
-        % Print lambda at each step.
-        Verbose          (1,1) logical = false
+        LoadBus (1,:) string = strings(1,0)  % Tags of the buses whose loads are scaled by (1 + lambda); must not be empty when solving.
+        InitialLambda (1,1) double = 0  % Value of lambda at the starting point (the equilibrium).
+        MaxIterations (1,1) double {mustBePositive,mustBeInteger} = 500  % Maximum number of predictor-corrector steps (the trace stops earlier when lambda falls below 0).
+        StepSize (1,1) double {mustBePositive} = 0.5  % Step size of the predictor (see the class help).
+        ArcLength (1,1) double {mustBePositive} = 1e-3  % Arc length of the corrector: the corrected point satisfies |x - x_current|^2 = ArcLength.
+        Tolerance (1,1) double {mustBePositive} = 1e-5  % Convergence tolerance (ConvTol) of the Newton-Raphson corrector.
+        UseInternalState (1,1) logical = false  % Solve the power flow with the internal states of the generators (see the class help).
+        Verbose (1,1) logical = false  % Print lambda at each step.
     end
 
     properties (Constant) % Settings
-        % Name-Value options of net.calculate_continuation_powerflow and the solver property each one sets.
-        % Input of tools.resolve_options.
-        % MaxIteration, Tolerance and Verbose are common names; LoadBus, InitialLambda, StepSize,
-        % ArcLength and UseInternalState have no common equivalent.
-        % <@Type> struct
         OptionMap = struct( ...
             "LoadBus",          {{"LoadBus", @(b) reshape(string(b), 1, [])}}, ...
             "MaxIteration",     "MaxIterations", ...
@@ -69,7 +52,7 @@ classdef (Sealed = true) SolverCPF < auxiliary
             "ArcLength",        "ArcLength", ...
             "InitialLambda",    "InitialLambda", ...
             "UseInternalState", "UseInternalState", ...
-            "Verbose",          "Verbose")
+            "Verbose",          "Verbose")  % Name-Value options of net.calculate_continuation_powerflow and the property each one sets. <@Type> struct
     end
 
     methods

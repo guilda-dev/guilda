@@ -2,13 +2,23 @@ classdef (Sealed = true) SolverODE < auxiliary
 % Solver of the time simulation (net.simulate).
 %
 % net.solver_ODE holds one; its properties are the stored defaults of net.simulate and are
-% kept between runs. Name-Value options of a call override them for that call only (see OptionMap and
-% get_options). The solver holds settings only: the network, the event time table and the
-% trajectories of a run are local to solve, and the result is returned as an
+% kept between runs. Name-Value options of a call override them for that call only (see
+% OptionMap and get_options). The solver holds settings only: the network, the event time
+% table and the trajectories of a run are local to solve, and the result is returned as a
 % ResultODE. The DAE of the network is integrated phase by phase: a phase is a
 % time interval in which the set of active disturbances (Scenario) does not change. Each
 % phase is solved with the MATLAB ode object (Solver, SolverOptions, RelativeTolerance,
 % AbsoluteTolerance).
+%
+% - The tolerances are the RelativeTolerance and AbsoluteTolerance of ode (RelTol and AbsTol
+%   of odeset).
+% - The Name-Value option Progress also accepts true ("dialog") and false ("none").
+% - `TimeLimit` is checked at each solver step. When it is exceeded, the simulation stops
+%   at the time reached, and the result has flag = 0 ("stopped by TimeLimit").
+% - `OptionMap` is the input of tools.resolve_options. Solver, Tolerance, TimeLimit,
+%   Progress, Verbose and Plot are common names; Tolerance is the relative tolerance.
+%   AbsoluteTolerance, SolverOptions and SeparateComplexParts keep the names of the MATLAB
+%   ode object.
 %
 % <@Examples>
 % ```matlab
@@ -24,49 +34,18 @@ classdef (Sealed = true) SolverODE < auxiliary
 % See also ResultODE, Scenario, PowerNetwork.simulate
 
     properties (Access=public) % Settings
-        % Solver of the MATLAB ode object (Solver property of ode).
-        % The DAE of the network has a singular mass matrix, so it needs a solver for DAEs
-        % (ode15s, ode23t).
-        Solver         matlab.ode.SolverID = "ode15s"
-
-        % Options of the solver (SolverOptions property of ode), e.g.
-        % MaxStep or InitialStep. Its class must match Solver.
-        SolverOptions  matlab.ode.Options  = matlab.ode.options.ODE15s
-
-        % Relative error tolerance of the integration (RelativeTolerance of ode, RelTol of odeset).
-        % Name-Value option Tolerance.
-        RelativeTolerance   (1,1) double {mustBePositive, mustBeBetween(RelativeTolerance,1e-15,1e-3, "closed")} = 1e-4
-
-        % Absolute error tolerance of the integration (AbsoluteTolerance of ode, AbsTol of odeset).
-        % Name-Value option AbsoluteTolerance.
-        AbsoluteTolerance   (1,1) double {mustBePositive, mustBeBetween(AbsoluteTolerance,1e-15,1e-3, "closed")} = 1e-6
-
-        % SeparateComplexParts property of the ode object.
-        SeparateComplexParts matlab.lang.OnOffSwitchState = "off"
-
-        % Progress display during the integration.
-        % "dialog" (a waitbar), "disp" (a text bar in the Command Window) or "none". Name-Value
-        % option Progress, which also accepts true ("dialog") and false ("none").
-        Progress            (1,1) string {mustBeMember(Progress,["none","disp","dialog"])} = "dialog"
-
-        % [s] Limit of the computation (wall-clock) time of the whole run, checked at each solver step.
-        % When it is exceeded, the simulation stops at the time reached, and the result has flag =
-        % 0 ("stopped by TimeLimit"). Inf for no limit.
-        TimeLimit           (1,1) double {mustBePositive} = Inf
-
-        % Print the phases before the integration and the outcome (output.message) after it.
-        Verbose             (1,1) logical = false
-
-        % Call result.Plot() after each simulation.
-        Plot                (1,1) logical = false
+        Solver matlab.ode.SolverID = "ode15s"  % Solver of the MATLAB ode object; the DAE needs a solver for DAEs (ode15s, ode23t).
+        SolverOptions matlab.ode.Options = matlab.ode.options.ODE15s  % Options of the solver (SolverOptions of ode), e.g. MaxStep; its class must match Solver.
+        RelativeTolerance (1,1) double {mustBePositive, mustBeBetween(RelativeTolerance,1e-15,1e-3, "closed")} = 1e-4  % Relative error tolerance of the integration (Name-Value option Tolerance).
+        AbsoluteTolerance (1,1) double {mustBePositive, mustBeBetween(AbsoluteTolerance,1e-15,1e-3, "closed")} = 1e-6  % Absolute error tolerance of the integration (Name-Value option AbsoluteTolerance).
+        SeparateComplexParts matlab.lang.OnOffSwitchState = "off"  % SeparateComplexParts property of the ode object.
+        Progress (1,1) string {mustBeMember(Progress,["none","disp","dialog"])} = "dialog"  % Progress display: "dialog" (a waitbar), "disp" (a text bar) or "none".
+        TimeLimit (1,1) double {mustBePositive} = Inf  % [s] Limit of the wall-clock time of the whole run (Inf: none; see the class help).
+        Verbose (1,1) logical = false  % Print the phases before the integration and the outcome (output.message) after it.
+        Plot (1,1) logical = false  % Call result.Plot() after each simulation.
     end
 
     properties (Constant) % Settings
-        % Name-Value options of net.simulate and the solver property each one sets.
-        % Input of tools.resolve_options. Solver, Tolerance, TimeLimit, Progress, Verbose and Plot are common names; Tolerance is
-        % the relative tolerance. AbsoluteTolerance, SolverOptions and SeparateComplexParts keep
-        % the names of the MATLAB ode object.
-        % <@Type> struct
         OptionMap = struct( ...
             "Solver",               "Solver", ...
             "SolverOptions",        "SolverOptions", ...
@@ -76,16 +55,15 @@ classdef (Sealed = true) SolverODE < auxiliary
             "TimeLimit",            "TimeLimit", ...
             "Progress",             {{"Progress", @(v) SolverODE.progress_mode(v)}}, ...
             "Verbose",              "Verbose", ...
-            "Plot",                 "Plot")
+            "Plot",                 "Plot")  % Name-Value options of net.simulate and the property each one sets (see the class help). <@Type> struct
     end
 
     properties (Dependent, Hidden) % Compatibility
-        Reporter                                    % COMPAT(v3) old name of Progress (v3_ode_reporter)
+        Reporter  % COMPAT(v3) old name of Progress (v3_ode_reporter)
     end
 
     properties (SetAccess=private, Hidden) % Version
-        % Version of this class.
-        Ver (1,1) double = 2.0
+        Ver (1,1) double = 2.0  % Version of this class.
     end
 
     methods

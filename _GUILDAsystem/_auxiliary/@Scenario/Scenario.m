@@ -72,61 +72,35 @@ classdef (Sealed = true) Scenario < auxiliary
 % See also PowerNetwork.add_scenario, PowerNetwork.simulate, ResultODE, SolverODE
 
     properties (SetAccess=private) % Identity
-        % Tag of the scenario, unique among the scenarios of its network.
-        % <@Type> string
-        s_tag (1,1) string = ""
+        s_tag (1,1) string = ""  % Tag of the scenario, unique among the scenarios of its network. <@Type> string
     end
 
     properties (SetAccess=private) % Layer Structure
-        % PowerNetwork the scenario belongs to; empty when it is not attached.
-        % Set by net.add_scenario and cleared by net.remove_scenario.
-        % <@Type> PowerNetwork (1x1 or empty)
-        a_PowerNetwork = []
+        a_PowerNetwork = []  % PowerNetwork the scenario belongs to (set by net.add_scenario; [] when not attached). <@Type> PowerNetwork (1x1 or empty)
     end
 
     properties (SetAccess=private) % Disturbances
-        % Disturbances, one row each, in the order they were added.
-        % Columns: Tag, TimeSpan ([t_start, t_end]; t_end = t_start for an offset), FaultBus,
-        % TripUnit, OpenBranch, OffsetUnit, OffsetState, OffsetValue, InputUnit, InputName,
-        % InputValue. The list columns are cells of column vectors. Add rows with
-        % add_disturbance or add_fault, add_trip, add_open_branch, add_offset, add_input.
-        % <@Type> table (n x 11)
-        tab_disturbance table = table()
+        tab_disturbance table = table()  % Disturbances, one row each, in the order they were added (see the class help). <@Type> table (n x 11)
     end
 
     properties (Access=public) % Settings
-        % [s] Simulation time [t0, tend] used by net.simulate(sc), or [] for the time span of
-        % the disturbances. A time given to net.simulate replaces it.
-        % <@Type> double (0x0 or 1x2)
-        Time double {mustBeSimulationTime} = []
-
-        % Stored Name-Value options of net.simulate, as a struct (e.g.
-        % struct("Tolerance", 1e-6)). The options given in the call replace them. The names are
-        % those of SolverODE.OptionMap and Export.
-        Options (1,1) struct = struct()
-
-        % Function that judges a result: verdict = Judge(result), result a ResultODE (with
-        % result.flag and result.output). Default: Scenario.out_of_step with its default
-        % options. Used by judge.
-        Judge (1,1) function_handle = @Scenario.out_of_step
-
-        % Free text describing the scenario.
-        Description (1,1) string = ""
+        Time double {mustBeSimulationTime} = []  % [s] Simulation time [t0, tend] of net.simulate(sc), or [] for the time span of the disturbances. <@Type> double (0x0 or 1x2)
+        Options (1,1) struct = struct()  % Stored Name-Value options of net.simulate, e.g. struct("Tolerance", 1e-6); options of the call replace them.
+        Judge (1,1) function_handle = @Scenario.out_of_step  % Function verdict = Judge(result) used by judge, result a ResultODE.
+        Description (1,1) string = ""  % Free text describing the scenario.
     end
 
     properties (Hidden) % Compatibility
-        % True for a scenario made by the deprecated ODEevent(tag, net, ...) (set by _VersionSupport/ODEevent.m).
-        l_compat (1,1) logical = false
+        l_compat (1,1) logical = false  % True for a scenario made by the deprecated ODEevent(tag, net, ...) (set by _VersionSupport/ODEevent.m).
     end
 
     properties (SetAccess=private, Hidden) % Version
-        Ver (1,1) double = 2.0 % Version of this class (1.x: ODEevent).
+        Ver (1,1) double = 2.0  % Version of this class (1.x: ODEevent).
     end
 
     properties (Constant, Hidden) % Disturbance fields
-        % Disturbance fields, in the column order of tab_disturbance (after Tag and TimeSpan).
         sr_field = ["FaultBus","TripUnit","OpenBranch","OffsetUnit","OffsetState","OffsetValue", ...
-                    "InputUnit","InputName","InputValue"]
+                    "InputUnit","InputName","InputValue"]  % Disturbance fields, in the column order of tab_disturbance (after Tag and TimeSpan).
     end
 
     methods

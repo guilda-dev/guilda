@@ -6,6 +6,15 @@ classdef SolverPF < auxiliary
 % them for that call only (see OptionMap and get_options). The solver holds settings only:
 % results are returned as a ResultPF.
 %
+% - `Method`: "algebraic" (fsolve on the power equations) or "dynamic" (virtual bus
+%   dynamics that settle at the power flow solution).
+% - `Tolerance`: "algebraic": FunctionTolerance of fsolve; "dynamic": largest P/Q mismatch
+%   [pu]. 0 uses the solver default (1e-6 / 1e-5).
+% - `dynamic` has the fields Mass and Damper of the virtual bus dynamics, foh_PQ, and
+%   t_span (output times [s] of the integration).
+% - `OptionMap` is the input of tools.resolve_options. Only the common option names are
+%   used. Verbose=true sets Display="iter", Verbose=false sets Display="none".
+%
 % <@Examples>
 % ```matlab
 % net = network.IEEE14bus();
@@ -17,52 +26,23 @@ classdef SolverPF < auxiliary
 % See also ResultPF, PowerNetwork.calculate_powerflow
 
     properties(Access=public) % Settings
-        % Calculation method.
-        % "algebraic" (fsolve on the power equations) or "dynamic" (virtual bus dynamics that
-        % settle at the power flow solution).
-        Method        (1,1) string {mustBeMember(Method,["algebraic","dynamic"])} = "algebraic"
-
-        % Convergence tolerance.
-        % "algebraic": FunctionTolerance of fsolve; "dynamic": largest P/Q mismatch [pu]. 0 uses
-        % the solver default (1e-6 / 1e-5).
-        Tolerance     (1,1) double {mustBeNonnegative} = 0
-
-        % MaxIterations option of fsolve ("algebraic"); 0 keeps the fsolve default.
-        MaxIterations (1,1) double {mustBeNonnegative,mustBeInteger}
-
-        % Display option of fsolve ("algebraic").
-        Display       (1,1) string {mustBeMember(Display,["none","iter","iter-detailed","final","final-detailed"])}='none'
-
-        % MaxFunctionEvaluations option of fsolve ("algebraic"); 0 keeps the fsolve default.
-        MaxFunEvals   (1,1) double {mustBeNonnegative,mustBeInteger}
-
-        % UseParallel option of fsolve ("algebraic").
-        UseParallel   (1,1) logical
-
-        % PlotFcn option of fsolve ("algebraic"); "none" for no plot.
-        PlotFcn       (1,1) string {mustBeMember(PlotFcn,["none","optimplotx","optimplotfunccount","optimplotfval","optimplotstepsize","optimplotfirstorderopt"])}="none"
-
-        % Reaction when the calculation does not converge.
-        % "WARN" issues a warning, "ERROR" an error, "DISP" prints output.message, "NONE" does
-        % nothing (check flag).
-        WhenFailed    (1,1) string {mustBeMember(WhenFailed,["WARN","ERROR","DISP","NONE"])}="NONE"
-
-        % Settings of the "dynamic" method.
-        % Fields: Mass and Damper of the virtual bus dynamics, foh_PQ, and t_span (output
-        % times [s] of the integration).
-        dynamic       (1,1) struct  = struct("Mass",0,"Damper",0.1,"foh_PQ",0,"t_span",0:1/120:50);
+        Method (1,1) string {mustBeMember(Method,["algebraic","dynamic"])} = "algebraic"  % Calculation method: "algebraic" (fsolve) or "dynamic" (virtual bus dynamics; see the class help).
+        Tolerance (1,1) double {mustBeNonnegative} = 0  % Convergence tolerance; 0 uses the solver default (see the class help).
+        MaxIterations (1,1) double {mustBeNonnegative,mustBeInteger}  % MaxIterations option of fsolve ("algebraic"); 0 keeps the fsolve default.
+        Display (1,1) string {mustBeMember(Display,["none","iter","iter-detailed","final","final-detailed"])}='none'  % Display option of fsolve ("algebraic").
+        MaxFunEvals (1,1) double {mustBeNonnegative,mustBeInteger}  % MaxFunctionEvaluations option of fsolve ("algebraic"); 0 keeps the fsolve default.
+        UseParallel (1,1) logical  % UseParallel option of fsolve ("algebraic").
+        PlotFcn (1,1) string {mustBeMember(PlotFcn,["none","optimplotx","optimplotfunccount","optimplotfval","optimplotstepsize","optimplotfirstorderopt"])}="none"  % PlotFcn option of fsolve ("algebraic"); "none" for no plot.
+        WhenFailed (1,1) string {mustBeMember(WhenFailed,["WARN","ERROR","DISP","NONE"])}="NONE"  % Reaction to no convergence: "WARN", "ERROR", "DISP" (print output.message) or "NONE" (check flag).
+        dynamic (1,1) struct = struct("Mass",0,"Damper",0.1,"foh_PQ",0,"t_span",0:1/120:50);  % Settings of the "dynamic" method: Mass, Damper, foh_PQ and t_span [s] (see the class help).
     end
 
     properties(Constant) % Settings
-        % Name-Value options of net.calculate_powerflow and the solver property each one sets.
-        % Input of tools.resolve_options. Only the common option names are used. Verbose=true sets Display="iter", Verbose=false
-        % sets Display="none".
-        % <@Type> struct
         OptionMap = struct( ...
             "Method",       "Method", ...
             "Tolerance",    "Tolerance", ...
             "MaxIteration", "MaxIterations", ...
-            "Verbose",      {{"Display", @(l) replace(string(logical(l)), ["true","false"], ["iter","none"])}})
+            "Verbose",      {{"Display", @(l) replace(string(logical(l)), ["true","false"], ["iter","none"])}})  % Name-Value options of net.calculate_powerflow and the property each one sets (see the class help). <@Type> struct
     end
 
     methods

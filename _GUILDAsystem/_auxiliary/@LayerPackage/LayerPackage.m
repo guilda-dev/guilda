@@ -7,6 +7,42 @@ classdef LayerPackage < handle
 % and its subtree. The network, buses, branches, components, controllers (through
 % PowerSystemModel) and Parameter containers derive from it.
 %
+% Edit log:
+%
+% - `tab_editLog` lists the edits since the last initialize of the layer and of every layer
+%   below it (children, recursively), in the order they were made: net.tab_editLog shows
+%   every edit of the network, bus.tab_editLog only those of the bus, its components and
+%   their controllers. Columns: timestamp ("uuuu/MM/dd HH:mm:ss"), ID (tags from the edited
+%   layer up, joined by "/"; a parameter edit starts with its group, e.g.
+%   "powerflow/SG1B005/B005/TestSystem"), log message, tag (kind of edit, see edit_effect),
+%   states before and after. Each layer keeps its own rows once it has been initialized;
+%   initialize clears them (reset_edit), and so does attaching the layer to a new parent
+%   (clear_edit_log). The table is built when read.
+% - The rows of a layer are stored as columns (`n_editLog`, `rv_editSeq`, ...), filled by
+%   log_edit (store_edit). Rows 1:n_editLog are in use; the columns grow by doubling, so an
+%   edit is written in place. They have no validators, which would check the whole column
+%   on each edit.
+% - `sct_edit` is the edit state of the layer (set.sct_edit checks its fields). Its
+%   GetAccess is public (Hidden) because the DebugScript tests, which are scripts, read it.
+%   `l_initialized` is true once initialize has run with the layer in the network (set by
+%   reset_edit at the end of initialize). `s_odefcn` is the state of the cached f_*
+%   function handles built by set_odefcn: "unset" (never built), "editted" (built, but no
+%   longer matching the parameters or the network frequency) or "updated" (built from the
+%   current values). An edit of a "dynamics" parameter (log_edit, on its owner), a network
+%   Hz edit (log_edit, on every layer of the network) and an attach (Component.set_bus,
+%   LocalController.set_parent, GlobalController.set_parent, on the attached subtree) turn
+%   "updated" into "editted"; set_odefcn sets "updated". The handles are built when they
+%   are used: check_edit, at the start of an analysis, calls set_odefcn on every layer that
+%   is not "updated". Only Component, LocalController and GlobalController own handles.
+% - Whether the equilibrium is stale is kept by the network (PowerNetwork.l_staleEquilibrium,
+%   from the edits reported to it; see edit_effect).
+%
+% Tags: `s_tag` identifies the layer within the layer structure; a tag that already exists
+% among the siblings is renamed with a number suffix. A rename is recorded in tab_editLog
+% (tag "Tag") and makes nothing stale. Tags are permanent IDs, so the tags of existing
+% child layers do not follow: after renaming bus B002 to BX, its component SG1B002 keeps
+% its tag and a component added later is SG2BX.
+%
 % <@Examples>
 % ```matlab
 % net = network.IEEE14bus();
@@ -20,80 +56,36 @@ classdef LayerPackage < handle
 
     %% Abstract
     properties(Abstract, Dependent) % Parameter
-        % Parameters of the layer used by the analyses.
-        % <@Type> Parameter
-        tab_parameter
+        tab_parameter  % Parameter table: the para_* tables side by side. <@Type> table
     end
 
 
     %% Layer Structure
     properties(Abstract, Dependent, Access=protected) % Layer structure
-        % Parent layer in the hierarchy.
-        % <@Type> LayerPackage
-        parent
-
-        % Child layers in the hierarchy.
-        % <@Type> LayerPackage cell array (Nx1)
-        children
+        parent  % Parent layer in the hierarchy. <@Type> LayerPackage
+        children  % Child layers in the hierarchy. <@Type> LayerPackage cell array (Nx1)
     end
     %% Edit log
     properties(SetAccess=protected, Hidden) % Edit log
-        % Edit state of the layer, one struct with these fields (set.sct_edit checks them).
-        % GetAccess is public (Hidden) because the DebugScript tests, which are scripts, read it.
-        %
-        % - l_initialized: True once initialize has run with the layer in the network (set by
-        %   reset_edit at the end of initialize).
-        % - s_odefcn: State of the cached f_* function handles built by set_odefcn: "unset"
-        %   (never built), "editted" (built, but no longer matching the parameters or the
-        %   network frequency) or "updated" (built from the current values). An edit of a
-        %   "dynamics" parameter (log_edit, on its owner), a network Hz edit (log_edit, on every
-        %   layer of the network) and an attach (Component.set_bus, LocalController.set_parent,
-        %   GlobalController.set_parent, on the attached subtree) turn "updated" into "editted";
-        %   set_odefcn sets "updated". The handles are built when they are used: check_edit, at
-        %   the start of an analysis, calls set_odefcn on every layer that is not "updated".
-        %   Only Component, LocalController and GlobalController own handles.
-        %
-        % Whether the equilibrium is stale is kept by the network (PowerNetwork.l_staleEquilibrium,
-        % from the edits reported to it; see edit_effect).
-        sct_edit (1,1) struct = struct("l_initialized",false, "s_odefcn","unset")
+        sct_edit (1,1) struct = struct("l_initialized",false, "s_odefcn","unset")  % Edit state of the layer: l_initialized and s_odefcn (see the class help).
     end
     properties(Dependent, SetAccess=private) % Edit log
-        % Edits since the last initialize of the layer and of every layer below it (children,
-        % recursively), in the order they were made: net.tab_editLog shows every edit of the
-        % network, bus.tab_editLog only those of the bus, its components and their controllers.
-        % Columns: timestamp ("uuuu/MM/dd HH:mm:ss"), ID (tags from the edited layer up, joined
-        % by "/"; a parameter edit starts with its group, e.g. "powerflow/SG1B005/B005/TestSystem"),
-        % log message, tag (kind of edit, see edit_effect), states before and after.
-        % Each layer keeps its own rows once it has been initialized; initialize clears them
-        % (reset_edit), and so does attaching the layer to a new parent (clear_edit_log).
-        % Built when read.
-        % <@Type> table (Nx6) <@Stale> nothing
-        tab_editLog
+        tab_editLog  % Edits of the layer and its subtree since the last initialize, in order (see the class help). <@Type> table (Nx6) <@Stale> nothing
     end
     properties(Access=private, Hidden) % Edit log storage
-        % Columns of the layer's own edits, filled by log_edit (store_edit) and read through
-        % tab_editLog. Rows 1:n_editLog are in use; the columns grow by doubling, so an edit
-        % is written in place. No validators: they would check the whole column on each edit.
-        n_editLog    = 0;             % Number of rows in use.
-        rv_editSeq   = zeros(0,1);    % Order of each edit among all layers (next_edit_seq).
-        rv_editTime  = zeros(0,1);    % Time of each edit (datenum of now; formatted when read).
-        sv_editID    = strings(0,1);  % ID column.
-        sv_editLog   = strings(0,1);  % log column.
-        sv_editTag   = strings(0,1);  % tag column.
-        c_editBefore = cell(0,1);     % before column.
-        c_editAfter  = cell(0,1);     % after column.
+        n_editLog = 0;  % Number of rows in use of the edit-log columns.
+        rv_editSeq = zeros(0,1);  % Order of each edit among all layers (next_edit_seq).
+        rv_editTime = zeros(0,1);  % Time of each edit (datenum of now; formatted when read).
+        sv_editID = strings(0,1);  % ID column of the edit log.
+        sv_editLog = strings(0,1);  % log column of the edit log.
+        sv_editTag = strings(0,1);  % tag column of the edit log.
+        c_editBefore = cell(0,1);  % before column of the edit log.
+        c_editAfter = cell(0,1);  % after column of the edit log.
     end
     
     %% Tag
     properties % Tag
-        % User-defined tag of the layer.
-        % Used for identification within the layer structure; a tag that already exists among
-        % the siblings is renamed with a number suffix.
-        % A rename is recorded in tab_editLog (tag "Tag") and makes nothing stale. Tags are permanent
-        % IDs, so the tags of existing child layers do not follow: after renaming bus B002 to BX, its
-        % component SG1B002 keeps its tag and a component added later is SG2BX.
-        % <@Type> string
-        s_tag
+        s_tag  % User-defined tag of the layer, unique among its siblings (see the class help). <@Type> string
     end
 
 
