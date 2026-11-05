@@ -15,7 +15,7 @@ r_step = -0.05;    % SG1B001 の Pmech のステップ (負荷の増加と同じ
 
 %% Governors have the key, ports, tag and figure defaults of the report
 gov = controller.governor.IEEJ_LPT1("g");
-assert(gov.key == "governor" && gov.str_tag == "CGg")
+assert(gov.key == "governor" && gov.s_tag == "CGg")
 assert(isequal(gov.sv_u, ["omega";"Pref";"Plimit"]) && gov.sv_y == "Pmech")
 assert(isequal(gov.sv_x, ["Pgov";"Psv";"Pch";"Prh"]))
 tab = gov.tab_parameter.dynamics;
@@ -39,7 +39,7 @@ tab1 = net1.get_variable_map();  tab2 = net2.get_variable_map();
 assert(isequal(tab1.Label, tab2.Label))
 tab = comp1.get_variable_map();
 sv_owner = unique(tab.Owner(tab.Kind == "x"), "stable");
-assert(isequal(sv_owner, [comp1.str_tag; avr1.str_tag; pss1.str_tag; gov1.str_tag]))
+assert(isequal(sv_owner, [comp1.s_tag; avr1.s_tag; pss1.s_tag; gov1.s_tag]))
 assert(isequal(comp1.rv_Xequilibrium_all, [comp1.rv_Xequilibrium; avr1.rv_Xequilibrium; pss1.rv_Xequilibrium; gov1.rv_Xequilibrium]))
 sys = comp1.get_sys();
 assert(isequal(string(sys.StateName), tab.Label(tab.Kind == "x")))
@@ -55,9 +55,9 @@ DebugScript.helper.quiet(@() net.initialize);
 sol = DebugScript.helper.quiet(@() net.simulate([0,10]));
 assert(sol.flag == 1)
 assert(DebugScript.helper.max_state_drift(sol) < 1e-9, "drift %g", DebugScript.helper.max_state_drift(sol))
-rv_pm = trajectory(sol, comp.str_tag, "Pmech");
+rv_pm = trajectory(sol, comp.s_tag, "Pmech");
 assert(max(abs(rv_pm - comp.rv_Uequilibrium(1))) < 1e-9)
-assert(all(abs(trajectory(sol, gov.str_tag, "Psv") - gov.rv_Xequilibrium(2)) < 1e-9))
+assert(all(abs(trajectory(sol, gov.s_tag, "Psv") - gov.rv_Xequilibrium(2)) < 1e-9))
 
 
 %% Each LPT settles with its droop after a load step
@@ -67,8 +67,8 @@ c_case = {c_cls(1), {"Prate", 1, "PLM", 10}, 25;
 for k = 1:height(c_case)
     gov = feval(c_case{k,1}, "g", c_case{k,2}{:});
     [sol, comp] = simulate_step(gov, r_step, [1,400], 400);
-    rv_pm = trajectory(sol, comp.str_tag, "Pmech");
-    rv_w  = trajectory(sol, comp.str_tag, "omega");
+    rv_pm = trajectory(sol, comp.s_tag, "Pmech");
+    rv_w  = trajectory(sol, comp.s_tag, "omega");
     r_dP = rv_pm(end) - rv_pm(1);
     r_dw = rv_w(end) - rv_w(1);
     assert(sol.flag == 1)
@@ -82,7 +82,7 @@ end
 for k = 1:numel(c_cls)
     gov = feval(c_cls(k), "g", PLM=1);
     [sol, comp] = simulate_step(gov, r_step, [1,100], 100);
-    rv_pm = trajectory(sol, comp.str_tag, "Pmech");
+    rv_pm = trajectory(sol, comp.s_tag, "Pmech");
     r_P0 = comp.rv_Uequilibrium(1);
     assert(gov.rv_Uequilibrium(3) - gov.rv_Uequilibrium(2) - 0.01 < 1e-12)
     assert(max(rv_pm) <= r_P0 + 0.01 + 1e-6, "%s: Pmech %g above 77M", c_cls(k), max(rv_pm) - r_P0)
@@ -96,8 +96,8 @@ for k = 1:numel(c_cls)
     [sol, comp] = simulate_step(gov, r_step, [1,60], 60);
     r_P0 = comp.rv_Uequilibrium(1);
     assert(abs(gov.rv_Uequilibrium(2) - (r_P0 + 0.05)) < 1e-12 && abs(gov.rv_Uequilibrium(3) - r_P0) < 1e-12)
-    rv_pm = trajectory(sol, comp.str_tag, "Pmech");
-    rv_w  = trajectory(sol, comp.str_tag, "omega");
+    rv_pm = trajectory(sol, comp.s_tag, "Pmech");
+    rv_w  = trajectory(sol, comp.s_tag, "omega");
     assert(min(rv_w) < -1e-3)
     assert(max(abs(rv_pm - r_P0)) < 1e-9, "%s: Pmech moved by %g", c_cls(k), max(abs(rv_pm - r_P0)))
 end
@@ -115,19 +115,19 @@ assert(gov.rv_Uequilibrium(3) == 1.05 && gov.rv_Uequilibrium(2) == gov.rv_Xequil
 gov = controller.governor.IEEJ_LPT1("g", PLM=10, pos_max=0.51);
 [sol, comp] = simulate_step(gov, r_step, [1,40], 80);
 rv_t   = sol.rv_t;
-rv_pos = trajectory(sol, gov.str_tag, "Psv");
+rv_pos = trajectory(sol, gov.s_tag, "Psv");
 assert(max(rv_pos) <= 0.51 + 1e-3, "Psv %g above the limit", max(rv_pos))
 assert(max(rv_pos) >= 0.51, "the limit is not reached: %g", max(rv_pos))
 lv_hold = rv_t > 20 & rv_t < 40;    % 制限で止まっている間は動かない
 assert(max(rv_pos(lv_hold)) - min(rv_pos(lv_hold)) < 1e-9, "Psv moves at the limit")
 % LVG の出力 g = Pref - Pgov が上限を下回れば、すぐに戻り始める
-rv_g = gov.rv_Uequilibrium(2) - trajectory(sol, gov.str_tag, "Pgov");
+rv_g = gov.rv_Uequilibrium(2) - trajectory(sol, gov.s_tag, "Pgov");
 t_g = rv_t(find(rv_t > 40 & rv_g < 0.51 - 1e-3, 1));
 assert(~isempty(t_g), "the gate does not fall below the limit")
 r_after = interp1(unique_time(rv_t), rv_pos(unique_index(rv_t)), t_g + 1);
 assert(r_after < max(rv_pos) - 1e-4, "Psv %g stays at the limit after the gate falls (windup)", r_after)
 assert(rv_pos(end) < 0.505, "Psv %g does not return", rv_pos(end))
-rv_pm = trajectory(sol, comp.str_tag, "Pmech");
+rv_pm = trajectory(sol, comp.s_tag, "Pmech");
 assert(max(rv_pm) <= 0.51 + 1e-3)
 
 
@@ -136,7 +136,7 @@ r_rate = 0.002;
 gov = controller.governor.IEEJ_LPT1("g", PLM=10, rate_max=r_rate);
 [sol, ~] = simulate_step(gov, r_step, [1,60], 60);
 rv_t   = sol.rv_t;
-rv_pos = trajectory(sol, gov.str_tag, "Psv");
+rv_pos = trajectory(sol, gov.s_tag, "Psv");
 rv_rise = rv_pos - rv_pos(1);
 assert(all(rv_rise <= r_rate*max(rv_t - 1, 0) + 1e-7), "the servo is faster than rate_max")
 % 要求 25*Δomega (約 0.02) に届くまでの間は rate_max で動く
@@ -155,9 +155,9 @@ for k = 1:numel(c_cls)
         DebugScript.helper.quiet(@() net.initialize);
     catch ME
     end
-    str_cls = extractAfter(c_cls(k), "controller.governor.");
-    assert(~isempty(ME), "%s: no error", str_cls)
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:" + str_cls + ":OutputOutOfRange", "ID " + DebugScript.helper.msg_id(ME))
+    s_cls = extractAfter(c_cls(k), "controller.governor.");
+    assert(~isempty(ME), "%s: no error", s_cls)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:" + s_cls + ":OutputOutOfRange", "ID " + DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "CGg") && contains(ME.message, "Prate"), ME.message)
 end
 
@@ -219,17 +219,17 @@ assert(r_err < 0.01, "relative error %g", r_err)
 
 %% remove_local_controller removes one slot and leaves the other
 [net, comp, avr, pss, gov] = build_full("after");
-comp.remove_local_controller(gov.str_tag);
+comp.remove_local_controller(gov.s_tag);
 assert(same_list(comp.a_LocalController, {avr}) && avr.a_LocalController{1} == pss && isempty(gov.a_Component))
 assert(net.l_staleEquilibrium)
 comp.add_local_controller(gov);
-ME = caught(@() comp.remove_local_controller(avr.str_tag));
+ME = caught(@() comp.remove_local_controller(avr.s_tag));
 assert(ME.identifier == "GUILDA:Component:ControllerHasNested")
 assert(same_list(comp.a_LocalController, {avr; gov}))
-comp.remove_local_controller(pss.str_tag);
+comp.remove_local_controller(pss.s_tag);
 assert(same_list(comp.a_LocalController, {avr; gov}) && isempty(avr.a_LocalController))
 comp.add_local_controller(pss);
-comp.remove_local_controller(avr.str_tag, RemoveNested=true);
+comp.remove_local_controller(avr.s_tag, RemoveNested=true);
 assert(same_list(comp.a_LocalController, {gov}) && gov.a_Component == comp)
 assert(isempty(avr.a_Component) && isempty(pss.a_Component))
 DebugScript.helper.quiet(@() net.initialize);
@@ -248,7 +248,7 @@ lastwarn("", "");
 comp.add_local_controller(gov2);
 [str, id] = lastwarn();
 assert(string(DebugScript.helper.msg_id(str, id)) == "GUILDA:Component:ReplaceController")
-assert(contains(str, gov2.str_tag) && contains(str, gov.str_tag) && contains(str, "Governor"))
+assert(contains(str, gov2.s_tag) && contains(str, gov.s_tag) && contains(str, "Governor"))
 assert(same_list(comp.a_LocalController, {avr; gov2}) && isempty(gov.a_Component))
 % 同じ調速機をもう一度付けても警告しない
 lastwarn("", "");
@@ -261,24 +261,24 @@ assert(numel(comp.a_LocalController) == 2 && comp.a_LocalController{2} == gov2)
 
 
 %% A governor and a local controller cannot drive the same input
-str_id = "GUILDA:Component:ControllerOutputOverlap";
+s_id = "GUILDA:Component:ControllerOutputOverlap";
 [net, comp] = DebugScript.helper.build_3bus("gen-park");
 gov = controller.governor.IEEJ_LPT1("g");
 comp.add_local_controller(gov);
 n_log = height(net.tab_editLog);
 lqr = controller.local_LQR("lqr");    % 既定ではすべての入力 (Pmech を含む) を駆動する
 ME = caught(@() comp.add_local_controller(lqr));
-assert(ME.identifier == str_id)
-assert(contains(ME.message, "Pmech") && contains(ME.message, gov.str_tag) && contains(ME.message, lqr.str_tag))
+assert(ME.identifier == s_id)
+assert(contains(ME.message, "Pmech") && contains(ME.message, gov.s_tag) && contains(ME.message, lqr.s_tag))
 assert(same_list(comp.a_LocalController, {gov}) && isempty(lqr.a_Component) && height(net.tab_editLog) == n_log)
 % 逆の順でも、同じ呼び出しでも
 [~, comp] = DebugScript.helper.build_3bus("gen-park");
 evalc("comp.add_local_controller(controller.local_LQR(""lqr"", Input=""Pmech""))");
 ME = caught(@() comp.add_local_controller(controller.governor.IEEJ_LPT3("g")));
-assert(ME.identifier == str_id && numel(comp.a_LocalController) == 1)
+assert(ME.identifier == s_id && numel(comp.a_LocalController) == 1)
 [~, comp] = DebugScript.helper.build_3bus("gen-park");
 ME = caught(@() comp.add_local_controller(controller.local_LQR("lqr"), controller.governor.IEEJ_LPT3("g")));
-assert(ME.identifier == str_id && isempty(comp.a_LocalController))
+assert(ME.identifier == s_id && isempty(comp.a_LocalController))
 % 入力を分ければ両方付き、平衡点に留まる
 [net, comp] = DebugScript.helper.build_3bus("gen-park");
 lqr = controller.local_LQR("lqr", Input="Vfield");
@@ -298,7 +298,7 @@ assert(ME.identifier == "GUILDA:Component:ControllerOutput" && isempty(comp.a_Lo
 %% replace_component with Controllers="keep" moves both slots
 [net, comp, avr, pss, gov] = build_full("after");
 bus = comp.a_Bus;
-new = bus.replace_component(comp.str_tag, "gen-1axis", Controllers="keep");
+new = bus.replace_component(comp.s_tag, "gen-1axis", Controllers="keep");
 assert(same_list(new.a_LocalController, {avr; gov}) && avr.a_LocalController{1} == pss)
 assert(avr.a_Component == new && gov.a_Component == new && isempty(comp.a_LocalController))
 DebugScript.helper.quiet(@() net.initialize);
@@ -308,12 +308,12 @@ assert(sol.flag == 1 && DebugScript.helper.max_state_drift(sol) < 1e-9)
 
 %% export_csv names the governor it does not write
 [net, comp, ~, ~, gov] = build_full("after");
-str_dir = tempname;  mkdir(str_dir);  c = onCleanup(@() rmdir(str_dir, "s")); %#ok<NASGU>
+s_dir = tempname;  mkdir(s_dir);  c = onCleanup(@() rmdir(s_dir, "s")); %#ok<NASGU>
 lastwarn("", "");
-DebugScript.helper.quiet(@() net.export_csv(fullfile(str_dir, "Net3")));
+DebugScript.helper.quiet(@() net.export_csv(fullfile(s_dir, "Net3")));
 [str, id] = lastwarn();
 assert(string(DebugScript.helper.msg_id(str, id)) == "GUILDA:PowerNetwork:ControllersNotSaved")
-assert(contains(str, comp.str_tag + "/" + gov.str_tag), str)
+assert(contains(str, comp.s_tag + "/" + gov.s_tag), str)
 
 
 %% A trip of the generator restarts its governor from the equilibrium
@@ -324,7 +324,7 @@ gov = controller.governor.IEEJ_LPT1("g3", Prate=2, PLM=5);
 gen.add_local_controller(controller.avr.AVR_ST1("a3"), controller.pss.PSS1("p3"), gov);
 DebugScript.helper.quiet(@() net.initialize);
 rv_eq = net.rv_Xequilibrium;
-ev  = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", gen.str_tag);
+ev  = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", gen.s_tag);
 sol = net.simulate([0,2], ev, Progress="none", TimeLimit=120);
 assert(sol.flag == 1, sol.output.message)
 assert(isequal(net.rv_Xequilibrium, rv_eq))
@@ -332,34 +332,34 @@ tab = gen.get_variable_map();
 val = sol.get_point(1.2, tab, Side="after");
 for c_lc = {gen.a_LocalController{1}, gen.a_LocalController{1}.a_LocalController{1}, gov}
     lc = c_lc{1};
-    rv = val(tab.Kind == "x" & tab.Owner == lc.str_tag);
+    rv = val(tab.Kind == "x" & tab.Owner == lc.s_tag);
     lv = diag(lc.f_Mass([],[],[],[],[])) ~= 0;
-    assert(max(abs(rv(lv) - lc.rv_Xequilibrium(lv))) < 1e-9, lc.str_tag + " does not restart from its equilibrium")
+    assert(max(abs(rv(lv) - lc.rv_Xequilibrium(lv))) < 1e-9, lc.s_tag + " does not restart from its equilibrium")
 end
 
 
 %% An AGC on Pmech adds to the governor output
 [net, comp, ~, ~, gov] = build_full("after");
-agc = controller.agc.broadcast_PI_AGC(net, "agc", comp.str_tag);
+agc = controller.agc.broadcast_PI_AGC(net, "agc", comp.s_tag);
 net.add_global_controller(agc);
 DebugScript.helper.quiet(@() net.initialize);
 flag = comp.validate(false);
-str_src = flag.inputs{"Pmech","source"};
-assert(contains(str_src, gov.str_tag) && contains(str_src, agc.str_tag), str_src)
+s_src = flag.inputs{"Pmech","source"};
+assert(contains(s_src, gov.s_tag) && contains(s_src, agc.s_tag), s_src)
 sol = DebugScript.helper.quiet(@() net.simulate([0,2]));
 assert(sol.flag == 1 && DebugScript.helper.max_state_drift(sol) < 1e-9)
 [r_err, r_max] = error_to_linear(net, "SG1B001", comp, 1e-3);
 assert(r_max > 1e-6 && r_err < 0.01, "relative error %g", r_err)
 
 
-function [net, comp, avr, pss, gov] = build_full(str_order)
+function [net, comp, avr, pss, gov] = build_full(s_order)
 % 3母線系統の SG1B002 に AVR_DC1 + PSS1 と調速機 IEEJ_LPT1 を付けて initialize する
-% str_order: "before" 調速機を先に / "after" 後に / "none" 調速機なし
+% s_order: "before" 調速機を先に / "after" 後に / "none" 調速機なし
     [net, comp] = DebugScript.helper.build_3bus("gen-park");
     avr = controller.avr.AVR_DC1("a", kap=20);
     pss = controller.pss.PSS1("p");
     gov = controller.governor.IEEJ_LPT1("g", PLM=5);
-    switch str_order
+    switch s_order
         case "before"
             comp.add_local_controller(gov);
             comp.add_local_controller(avr, pss);
@@ -386,11 +386,11 @@ function [sol, comp] = simulate_step(gov, r_step, rv_span, t_end)
     sol = DebugScript.helper.quiet(@() net.simulate([0,t_end], ev));
 end
 
-function rv = trajectory(sol, str_owner, str_name)
+function rv = trajectory(sol, s_owner, s_name)
 % 結果から変数の軌道を取り出す
     tab = sol.tab_variable;
-    lv  = tab.Owner == str_owner & tab.Name == str_name;
-    assert(nnz(lv) == 1, "%s.%s not found", str_owner, str_name)
+    lv  = tab.Owner == s_owner & tab.Name == s_name;
+    assert(nnz(lv) == 1, "%s.%s not found", s_owner, s_name)
     rv = sol.rm_variable(:, lv);
 end
 
@@ -423,12 +423,12 @@ function l = same_list(c1, c2)
     l = numel(c1) == numel(c2) && all(cellfun(@(a, b) a == b, reshape(c1,[],1), reshape(c2,[],1)));
 end
 
-function [r_dx, r_y] = jacobian_error(str_cls, x, u, param)
+function [r_dx, r_y] = jacobian_error(s_cls, x, u, param)
 % Jacobi_dx, Jacobi_Y と fcn_dx, fcn_y の中心差分の最大差
-    f_dx = str2func(str_cls + ".fcn_dx");
-    f_y  = str2func(str_cls + ".fcn_y");
-    f_Jx = str2func(str_cls + ".Jacobi_dx");
-    f_Jy = str2func(str_cls + ".Jacobi_Y");
+    f_dx = str2func(s_cls + ".fcn_dx");
+    f_y  = str2func(s_cls + ".fcn_y");
+    f_Jx = str2func(s_cls + ".Jacobi_dx");
+    f_Jy = str2func(s_cls + ".Jacobi_Y");
     V = [1; 0.1];  I = [0.5; -0.2];
     [Axx, Bxv, ~, Bxu] = f_Jx(0, x, V, I, u, param, 60);
     [Cyx, Dyv, ~, Dyu] = f_Jy(0, x, V, I, u, param, 60);
@@ -456,18 +456,18 @@ function J = fd_jacobian(f, z)
     end
 end
 
-function [r_err, r_max] = error_to_linear(net, str_unit, comp, r_step)
-% str_unit の Pmech の小さなステップへの comp の omega の応答と Kron モデルの応答の相対誤差
+function [r_err, r_max] = error_to_linear(net, s_unit, comp, r_step)
+% s_unit の Pmech の小さなステップへの comp の omega の応答と Kron モデルの応答の相対誤差
     rv_time = [0,10];
     net.solver_ODE.RelativeTolerance = 1e-8;
     net.solver_ODE.AbsoluteTolerance = 1e-10;
-    ev  = DebugScript.helper.scenario("step", net, "TimeSpan", rv_time, "InputUnit", str_unit, "InputName", "Pmech", "InputValue", r_step);
+    ev  = DebugScript.helper.scenario("step", net, "TimeSpan", rv_time, "InputUnit", s_unit, "InputName", "Pmech", "InputValue", r_step);
     sol = DebugScript.helper.quiet(@() net.simulate(rv_time, ev));
 
     unit = [];
     for i = 1:numel(net.a_Bus)
         for j = 1:numel(net.a_Bus{i}.a_Component)
-            if string(net.a_Bus{i}.a_Component{j}.str_tag) == str_unit
+            if string(net.a_Bus{i}.a_Component{j}.s_tag) == s_unit
                 unit = net.a_Bus{i}.a_Component{j};
             end
         end
@@ -492,7 +492,7 @@ function [r_err, r_max] = error_to_linear(net, str_unit, comp, r_step)
     end
 
     [rv_tu, iv_u] = unique(sol.rv_t);
-    rv_w = trajectory(sol, comp.str_tag, "omega");
+    rv_w = trajectory(sol, comp.s_tag, "omega");
     rv_non = interp1(rv_tu, rv_w(iv_u), rv_t) - comp.rv_Xequilibrium(comp.sv_x == "omega");
     r_err = norm(rv_non - rv_lin)/norm(rv_lin);
     r_max = max(abs(rv_non));

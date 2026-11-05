@@ -25,7 +25,7 @@ function ax = Plot(obj, opt)
     end
 
     r = obj.odeResults;
-    [Y, sv_legend, str_label] = trajectory(r, obj.sv_bus, obj.c_component, iv_bus, opt.Quantity);
+    [Y, sv_legend, s_label] = trajectory(r, obj.sv_bus, obj.c_component, iv_bus, opt.Quantity);
     if width(Y) == 0
         error(msg("GUILDA:ResultODE:UnknownQuantity", char(opt.Quantity)));
     end
@@ -36,50 +36,50 @@ function ax = Plot(obj, opt)
     ax = axes(opt.Parent);
     plot(ax, r.t, Y, "LineWidth", 1.2);
     xlabel(ax, "t [s]");
-    ylabel(ax, str_label);
+    ylabel(ax, s_label);
     legend(ax, sv_legend, "Location", "best", "Interpreter", "none");
     grid(ax, "on");
-    str_title = "Time response";
+    s_title = "Time response";
     if obj.flag == 0
-        str_title = str_title + " - stopped by TimeLimit";
+        s_title = s_title + " - stopped by TimeLimit";
     elseif ~obj.l_success
-        str_title = str_title + " - stopped by the solver";
+        s_title = s_title + " - stopped by the solver";
     end
-    title(ax, str_title);
+    title(ax, s_title);
 end
 
 
-function [Y, sv_legend, str_label] = trajectory(r, sv_tag, c_component, iv_bus, str_q)
+function [Y, sv_legend, s_label] = trajectory(r, sv_tag, c_component, iv_bus, s_q)
 % Columns to draw and their legend entries
     Y = zeros(numel(r.t), 0);
     sv_legend = strings(1,0);
-    switch str_q
+    switch s_q
         case "Vabs"
-            str_label = "|V| [pu]";
+            s_label = "|V| [pu]";
             for i = iv_bus(:)'
                 Y(:,end+1) = abs(r.Bus(i).V{:,:} * [1;1j]); %#ok<AGROW>
             end
         case "Vangle"
-            str_label = "\angle V [rad]";
+            s_label = "\angle V [rad]";
             for i = iv_bus(:)'
                 Y(:,end+1) = angle(r.Bus(i).V{:,:} * [1;1j]); %#ok<AGROW>
             end
         case {"P","Q"}
-            str_label = str_q + " [pu]";
+            s_label = s_q + " [pu]";
             for i = iv_bus(:)'
-                Y(:,end+1) = r.Bus(i).PQ.(str_q); %#ok<AGROW>
+                Y(:,end+1) = r.Bus(i).PQ.(s_q); %#ok<AGROW>
             end
         otherwise
-            str_label = str_q;
+            s_label = s_q;
             for i = iv_bus(:)'
                 for j = 1:numel(r.Bus(i).Component)
-                    for str_part = ["X","U"]
-                        if ~isfield(r.Bus(i).Component(j), str_part)    % a bus without components
+                    for s_part = ["X","U"]
+                        if ~isfield(r.Bus(i).Component(j), s_part)    % a bus without components
                             continue
                         end
-                        tab = r.Bus(i).Component(j).(str_part);
-                        if width(tab) > 0 && any(string(tab.Properties.VariableNames) == str_q)
-                            Y(:,end+1) = tab.(str_q);                  %#ok<AGROW>
+                        tab = r.Bus(i).Component(j).(s_part);
+                        if width(tab) > 0 && any(string(tab.Properties.VariableNames) == s_q)
+                            Y(:,end+1) = tab.(s_q);                  %#ok<AGROW>
                             sv_legend(end+1) = c_component{i}(j);      %#ok<AGROW>
                         end
                     end

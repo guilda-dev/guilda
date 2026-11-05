@@ -33,16 +33,16 @@ function [tab, summary] = compare_table4_5(opt)
         summary % Agreement per section (Section, Cases, Agree).
     end
 
-    str_dir = fileparts(mfilename("fullpath"));
+    s_dir = fileparts(mfilename("fullpath"));
     % GUILDA (the repository root) is found through the current folder only; add the root
     % for this run when it is neither the current folder nor on the path (after cd, or
     % inside run). which("GUILDA") is not empty there once the class has been loaded.
-    str_root = fileparts(fileparts(str_dir));
-    if ~any(strcmp(str_root, [string(pwd), split(string(path), pathsep).']))
-        addpath(str_root);
-        obj_cleanup = onCleanup(@() rmpath(str_root));
+    s_root = fileparts(fileparts(s_dir));
+    if ~any(strcmp(s_root, [string(pwd), split(string(path), pathsep).']))
+        addpath(s_root);
+        obj_cleanup = onCleanup(@() rmpath(s_root));
     end
-    tab_rep = readtable(fullfile(str_dir, "table4_5_report.csv"), "TextType", "string", "Delimiter", ",");
+    tab_rep = readtable(fullfile(s_dir, "table4_5_report.csv"), "TextType", "string", "Delimiter", ",");
     tab_rep = tab_rep(ismember(tab_rep.Section, opt.Sections), :);
     if ~isempty(opt.Cases)
         tab_rep = tab_rep(ismember(tab_rep.Case, opt.Cases), :);
@@ -52,18 +52,18 @@ function [tab, summary] = compare_table4_5(opt)
     n = height(tab_rep);
     sv_verdict = strings(n,1);  rv_toos = nan(n,1);  rv_per = nan(n,1);
     rv_max = nan(n,1);  rv_flag = nan(n,1);
-    for str_sec = unique(tab_rep.Section, "stable").'
-        net = network.IEEJ_WEST10(Section=str_sec, Governor=opt.Governor);
-        c_sc = Scenario.import_csv(fullfile(str_dir, "table4_5_scenarios.csv"), Network=net);
+    for s_sec = unique(tab_rep.Section, "stable").'
+        net = network.IEEJ_WEST10(Section=s_sec, Governor=opt.Governor);
+        c_sc = Scenario.import_csv(fullfile(s_dir, "table4_5_scenarios.csv"), Network=net);
         sv_tag = cellfun(@string, c_sc);
-        for k = find(tab_rep.Section == str_sec).'
+        for k = find(tab_rep.Section == s_sec).'
             sc = c_sc{sv_tag == tab_rep.Scenario(k)};
             sc.Judge = @judge_table4_5;
 
             % The run stops early (flag) rather than with a warning: an out-of-step case
             % often stops the solver once the angles have passed 360 degrees
-            s_warn = warning("off", "all");
-            o_restore = onCleanup(@() warning(s_warn));
+            sct_warn = warning("off", "all");
+            o_restore = onCleanup(@() warning(sct_warn));
             [result, rv_flag(k)] = net.simulate(sc, c_sim{:});
             clear o_restore
 
@@ -71,10 +71,10 @@ function [tab, summary] = compare_table4_5(opt)
             sv_verdict(k) = v.Verdict;  rv_toos(k) = v.Time;
             rv_per(k) = v.Period;       rv_max(k) = v.MaxAngle;
             if opt.Plot
-                figure("Name", sc.str_tag);
+                figure("Name", sc.s_tag);
                 plot(v.t, v.Angle);
                 xlabel("time [s]");  ylabel("angle from G10 [deg]");
-                title(sprintf("%s: %s (report: %s)", sc.str_tag, v.Verdict, tab_rep.Verdict(k)));
+                title(sprintf("%s: %s (report: %s)", sc.s_tag, v.Verdict, tab_rep.Verdict(k)));
                 legend("G" + (1:size(v.Angle,2)), "Location", "eastoutside");
             end
         end

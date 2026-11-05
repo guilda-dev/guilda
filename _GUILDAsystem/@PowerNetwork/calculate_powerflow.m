@@ -38,7 +38,7 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
 
     varargin = v3_powerflow_args(varargin);                   % COMPAT(v3)
     [c_nv, opt] = take_call_options(varargin);
-    s_options   = obj.solver_PF.get_options(c_nv);
+    sct_options = obj.solver_PF.get_options(c_nv);
 
     lv_isSlack = tools.vcellfun(@(b) b.l_isSlack, obj.a_Bus);
     if ~any(lv_isSlack)
@@ -47,7 +47,7 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
         bus.l_isSlack = true;
     end
 
-    [result, flag, output] = obj.solver_PF.solve(obj, s_options);
+    [result, flag, output] = obj.solver_PF.solve(obj, sct_options);
 
     if opt.Plot
         result.Plot();

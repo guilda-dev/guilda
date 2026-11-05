@@ -15,18 +15,18 @@ function fig = Plot(obj, opt)
         opt.Parent = figure();
     end
 
-    str_bus = string(obj.tab_bus.Properties.RowNames);
-    x       = categorical(str_bus, str_bus);
+    sv_bus  = string(obj.tab_bus.Properties.RowNames);
+    x       = categorical(sv_bus, sv_bus);
 
     fig = tiledlayout(opt.Parent, 2, 1, "TileSpacing", "compact");
-    str_title = "Power flow";
+    s_title = "Power flow";
     if isfield(obj.options, "Method")
-        str_title = str_title + " (" + obj.options.Method + ")";
+        s_title = s_title + " (" + obj.options.Method + ")";
     end
     if ~obj.l_success
-        str_title = str_title + " - not converged";
+        s_title = s_title + " - not converged";
     end
-    title(fig, str_title);
+    title(fig, s_title);
 
     ax = nexttile(fig);
     bar(ax, x, obj.tab_bus.V);

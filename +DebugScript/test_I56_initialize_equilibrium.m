@@ -67,27 +67,27 @@ assert(kcl_residual(net) < 1e-8)
 
 
 %% Edits that the equilibrium method would lose stop with an error
-str_id = "GUILDA:PowerNetwork:InitializeEquilibriumEdited";
+s_id = "GUILDA:PowerNetwork:InitializeEquilibriumEdited";
 
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);
 gen.para_powerflow.P = 0.9;
-assert_edit_stops(net, str_id, "edit P")
+assert_edit_stops(net, s_id, "edit P")
 
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);
 net.a_Bus{3}.add_component("load-power", "P",-0.1, "Q",-0.1);
-assert_edit_stops(net, str_id, "connect")
+assert_edit_stops(net, s_id, "connect")
 
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);
 evalc("net.a_Bus{2}.l_isSlack = true;");
-assert_edit_stops(net, str_id, "slack bus")
+assert_edit_stops(net, s_id, "slack bus")
 
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);
 net.para_base.baseMVA = 2*net.para_base.baseMVA;
-assert_edit_stops(net, str_id, "baseMVA")
+assert_edit_stops(net, s_id, "baseMVA")
 
 
 %% The remedy of the edit error works
@@ -188,9 +188,9 @@ function net = build_shared_bus()
 end
 
 function r = kcl_residual(net)
-    str_Bus = string(net.a_Bus);
+    sv_Bus  = string(net.a_Bus);
     tab_Y   = net.get_admittance_matrix;
-    r = max(abs(tab_Y{str_Bus,str_Bus}*net.cv_Vequilibrium - net.cv_Iequilibrium));
+    r = max(abs(tab_Y{sv_Bus,sv_Bus}*net.cv_Vequilibrium - net.cv_Iequilibrium));
 end
 
 function d = drift(net)
@@ -220,13 +220,13 @@ function assert_component_power(net, res)
     end
 end
 
-function assert_edit_stops(net, str_id, str_log)
+function assert_edit_stops(net, s_id, s_log)
 % エラーで止まり、平衡点も編集記録も変わらない
     V   = net.cv_Vequilibrium;
     n   = height(net.tab_editLog);
     ME  = error_of(@() net.initialize(Method="equilibrium"));
-    assert(DebugScript.helper.msg_id(ME) == str_id, DebugScript.helper.msg_id(ME))
-    assert(contains(ME.message, str_log))
+    assert(DebugScript.helper.msg_id(ME) == s_id, DebugScript.helper.msg_id(ME))
+    assert(contains(ME.message, s_log))
     assert(isequal(net.cv_Vequilibrium, V) && net.l_staleEquilibrium && height(net.tab_editLog) == n)
 end
 

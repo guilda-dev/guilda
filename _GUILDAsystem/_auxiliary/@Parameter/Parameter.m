@@ -58,14 +58,14 @@ classdef Parameter < auxiliary & LayerPackage & dynamicprops
     
     %% Constructor
     methods
-        function obj = Parameter(a_parent,str_tag, CallBackChanged)
+        function obj = Parameter(a_parent,s_tag, CallBackChanged)
         % Create a parameter container for a parent layer.
         %
         % The container is not a managed tag: its tag names the parameter group (e.g.
         % "powerflow", "dynamics") used in the edit log.
             arguments
                 a_parent % Parent layer object.
-                str_tag = "Parameter" % Parameter tag.
+                s_tag = "Parameter" % Parameter tag.
                 CallBackChanged = @(varargin) []; % Callback executed after parameter changes.
             end
             arguments (Output)
@@ -73,7 +73,7 @@ classdef Parameter < auxiliary & LayerPackage & dynamicprops
             end
             obj.a_cls        = a_parent;
             obj.l_managedTag = false;
-            obj.str_tag      = str_tag;
+            obj.s_tag        = s_tag;
             obj.CallbackChanged = CallBackChanged;
         end
     end

@@ -62,20 +62,20 @@ for c_kind = {c_fault, c_trip, c_input}
 end
 
 
-function expect_zero_length(net, str_ts, varargin)
+function expect_zero_length(net, s_ts, varargin)
     % エラーの ID と、メッセージが原因と対処を示すことを確認する
-    [str_id, str_msg] = event_error(@() net.simulate([0,3], DebugScript.helper.scenario("ev", net, varargin{:})));
-    assert(str_id == "GUILDA:Scenario:ZeroLengthTimeSpan", str_id + ": " + str_msg)
-    assert(all(contains(str_msg, ['"ev"', str_ts, "[t_start, t_end]"])), "原因が示されない: " + str_msg)
+    [s_id, s_msg] = event_error(@() net.simulate([0,3], DebugScript.helper.scenario("ev", net, varargin{:})));
+    assert(s_id == "GUILDA:Scenario:ZeroLengthTimeSpan", s_id + ": " + s_msg)
+    assert(all(contains(s_msg, ['"ev"', s_ts, "[t_start, t_end]"])), "原因が示されない: " + s_msg)
 end
 
-function [str_id, str_msg] = event_error(f)
-    str_id  = "";
-    str_msg = "";
+function [s_id, s_msg] = event_error(f)
+    s_id    = "";
+    s_msg   = "";
     try
         f();
     catch ME
-        str_id  = string(DebugScript.helper.msg_id(ME));
-        str_msg = string(ME.message);
+        s_id    = string(DebugScript.helper.msg_id(ME));
+        s_msg   = string(ME.message);
     end
 end

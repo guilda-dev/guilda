@@ -40,19 +40,19 @@ function [tab, r_agree] = compare_table4_9(opt)
         tab table % One row per case: the report's and GUILDA's verdicts and their agreement.
         r_agree (1,2) double % [number of agreeing cases, number of cases].
     end
-    str_dir = fileparts(mfilename("fullpath"));
+    s_dir = fileparts(mfilename("fullpath"));
     % GUILDA (the repository root) is found through the current folder only; add the root
     % for this run when it is neither the current folder nor on the path (after cd, or
     % inside run). which("GUILDA") is not empty there once the class has been loaded.
-    str_root = fileparts(fileparts(str_dir));
-    if ~any(strcmp(str_root, [string(pwd), split(string(path), pathsep).']))
-        addpath(str_root);
-        obj_cleanup = onCleanup(@() rmpath(str_root));
+    s_root = fileparts(fileparts(s_dir));
+    if ~any(strcmp(s_root, [string(pwd), split(string(path), pathsep).']))
+        addpath(s_root);
+        obj_cleanup = onCleanup(@() rmpath(s_root));
     end
-    str_csv = fullfile(str_dir, "table4_9_scenarios.csv");
-    o = detectImportOptions(fullfile(str_dir, "table4_9_report.csv"), "Delimiter", ",", "TextType", "string");
+    s_csv = fullfile(s_dir, "table4_9_scenarios.csv");
+    o = detectImportOptions(fullfile(s_dir, "table4_9_report.csv"), "Delimiter", ",", "TextType", "string");
     o = setvartype(o, setdiff(o.VariableNames, ["Card","Circuits"]), "string");
-    tab_rep = readtable(fullfile(str_dir, "table4_9_report.csv"), o);
+    tab_rep = readtable(fullfile(s_dir, "table4_9_report.csv"), o);
     tab_rep.ReportGenerator = fillmissing(tab_rep.ReportGenerator, "constant", "");
 
     l_run = ismember(tab_rep.Section, opt.Sections) & ismember(tab_rep.Circuits, opt.Circuits);
@@ -67,17 +67,17 @@ function [tab, r_agree] = compare_table4_9(opt)
     tab.Tolerance = nan(n,1);
     tab.Agree     = false(n,1);
 
-    str_ref = "SG1B3010";   % G18, the slack bus B3010
-    str_sec = "";
+    s_ref   = "SG1B3010";   % G18, the slack bus B3010
+    s_sec   = "";
     for k = 1:n
-        if tab.Section(k) ~= str_sec
-            str_sec = tab.Section(k);
-            net = network.IEEJ_EAST30(Section=str_sec, Governor=opt.Governor);
-            c_sc = Scenario.import_csv(str_csv, Network=net);
-            sv_tag = cellfun(@(s) s.str_tag, c_sc);
+        if tab.Section(k) ~= s_sec
+            s_sec = tab.Section(k);
+            net = network.IEEJ_EAST30(Section=s_sec, Governor=opt.Governor);
+            c_sc = Scenario.import_csv(s_csv, Network=net);
+            sv_tag = cellfun(@(s) s.s_tag, c_sc);
         end
         sc = c_sc{sv_tag == tab.Scenario(k)};
-        sc.Judge = @(r) Scenario.out_of_step(r, Reference=str_ref, Threshold=360);
+        sc.Judge = @(r) Scenario.out_of_step(r, Reference=s_ref, Threshold=360);
         tab.Tolerance(k) = net.solver_ODE.RelativeTolerance;
         result = run_case(net, sc, opt);
         v = sc.judge(result);
@@ -86,7 +86,7 @@ function [tab, r_agree] = compare_table4_9(opt)
             result = run_case(net, sc, opt, "Tolerance", opt.RetryTolerance);
             v = sc.judge(result);
         end
-        [sv_gen, rv_t, rm_deg] = generators(result, str_ref);
+        [sv_gen, rv_t, rm_deg] = generators(result, s_ref);
         tab.Verdict(k) = v.Verdict;
         tab.Time(k) = v.Time;
         if v.Verdict == "out-of-step"
@@ -118,13 +118,13 @@ end
 
 function result = run_case(net, sc, opt, varargin)
 % Simulate one scenario quietly: the solver warnings after an out-of-step are expected
-    s_warn = warning("off", "all");
-    c_clean = onCleanup(@() warning(s_warn));
+    sct_warn = warning("off", "all");
+    c_clean = onCleanup(@() warning(sct_warn));
     result = net.simulate(sc, "Progress", "none", "TimeLimit", opt.TimeLimit, varargin{:});
 end
 
 
-function [sv_gen, rv_t, rm_deg] = generators(result, str_ref)
+function [sv_gen, rv_t, rm_deg] = generators(result, s_ref)
 % Rotor angles [deg] relative to the reference, with the report's generator names
 % (generators in bus order: G1 to G8 are nodes 2001 to 2008, G9 to G30 nodes 3001 to 3022)
     tab_var = result.tab_variable;
@@ -132,7 +132,7 @@ function [sv_gen, rv_t, rm_deg] = generators(result, str_ref)
     sv_owner = tab_var.Owner(l_delta);
     rv_t = result.rv_t(:);
     rm_delta = result.rm_variable(:, l_delta);
-    rm_deg = (rm_delta - rm_delta(:, sv_owner == str_ref))*180/pi;
+    rm_deg = (rm_delta - rm_delta(:, sv_owner == s_ref))*180/pi;
     sv_gen = "G" + string(1:numel(sv_owner));
 end
 

@@ -8,6 +8,7 @@
 
 - [status.md](status.md): テスト結果と未決事項。
 - [v4-migration.md](v4-migration.md): スクリプト作者とモデル作者向けの移行ガイド、非推奨の形、互換性の方針。
+- [naming-struct-string.md](naming-struct-string.md): 構造体(`sct_`)と文字列(`s_`/`sv_`/`sr_`)の接頭辞への改名の対応表。
 
 ## コードの問題の記録
 

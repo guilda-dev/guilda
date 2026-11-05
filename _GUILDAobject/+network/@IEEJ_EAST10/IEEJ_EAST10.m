@@ -120,12 +120,12 @@ classdef IEEJ_EAST10 < PowerNetwork
             arguments (Output)
                 obj % IEEJ_EAST10 network.
             end
-            str_dirpath = fullfile(fileparts(mfilename("fullpath")), opt.Section);
-            PowerNetwork.import_csv(str_dirpath, Network=obj, Initialize=false);
+            s_dirpath = fullfile(fileparts(mfilename("fullpath")), opt.Section);
+            PowerNetwork.import_csv(s_dirpath, Network=obj, Initialize=false);
             if opt.LocalController
-                add_avr(obj, str_dirpath);
+                add_avr(obj, s_dirpath);
                 if opt.Governor
-                    add_governor(obj, str_dirpath);
+                    add_governor(obj, s_dirpath);
                 end
             end
             obj.initialize;
@@ -134,9 +134,9 @@ classdef IEEJ_EAST10 < PowerNetwork
 end
 
 
-function add_avr(net, str_dirpath)
+function add_avr(net, s_dirpath)
 % controller/avr/parameter.csv : AVR_DC1 parameters of the generator at each Bus
-    tab_avr = readtable(fullfile(str_dirpath, "controller", "avr", "parameter.csv"));
+    tab_avr = readtable(fullfile(s_dirpath, "controller", "avr", "parameter.csv"));
     for i = 1:height(tab_avr)
         i_bus = tab_avr.Bus(i);
         c_avr = namedargs2cell(table2struct(removevars(tab_avr(i,:), "Bus")));
@@ -145,10 +145,10 @@ function add_avr(net, str_dirpath)
 end
 
 
-function add_governor(net, str_dirpath)
+function add_governor(net, s_dirpath)
 % controller/governor/parameter.csv : governor of the generator at each Bus
 %   LPT selects controller.governor.IEEJ_LPT<LPT>; the other columns are its parameters.
-    tab_gov = readtable(fullfile(str_dirpath, "controller", "governor", "parameter.csv"));
+    tab_gov = readtable(fullfile(s_dirpath, "controller", "governor", "parameter.csv"));
     for i = 1:height(tab_gov)
         i_bus = tab_gov.Bus(i);
         c_gov = namedargs2cell(table2struct(removevars(tab_gov(i,:), ["Bus","LPT"])));

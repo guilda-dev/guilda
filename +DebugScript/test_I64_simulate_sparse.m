@@ -10,11 +10,11 @@
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 box = containers.Map("KeyType", "double", "ValueType", "logical");
-s_options = net.solver_ODE.get_options({"Progress", "none"});
-s_options.PhaseProbe = @(o) store(box, issparse(o.MassMatrix.MassMatrix) && ...
+sct_options = net.solver_ODE.get_options({"Progress", "none"});
+sct_options.PhaseProbe = @(o) store(box, issparse(o.MassMatrix.MassMatrix) && ...
                                        issparse(o.Jacobian.Jacobian(0, o.InitialValue)));
 ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.5,0.6], "FaultBus", "B008");
-[~, flag, output] = net.solver_ODE.solve(net, [0,1], {ev}, s_options);
+[~, flag, output] = net.solver_ODE.solve(net, [0,1], {ev}, sct_options);
 assert(flag == 1 && output.isSparse)
 assert(all(cell2mat(box.values)))
 
@@ -37,10 +37,10 @@ assert(flag == 1 && ~output.isSparse)
 %% Phases after the fallback stay dense and the fault is solved
 net = ring(136);
 box = containers.Map("KeyType", "double", "ValueType", "logical");
-s_options = net.solver_ODE.get_options({"Progress", "none"});
-s_options.PhaseProbe = @(o) store(box, issparse(o.MassMatrix.MassMatrix));
+sct_options = net.solver_ODE.get_options({"Progress", "none"});
+sct_options.PhaseProbe = @(o) store(box, issparse(o.MassMatrix.MassMatrix));
 ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.05,0.06], "FaultBus", string(net.a_Bus{1}));
-[res, flag, output] = net.solver_ODE.solve(net, [0,0.1], {ev}, s_options);
+[res, flag, output] = net.solver_ODE.solve(net, [0,0.1], {ev}, sct_options);
 assert(flag == 1 && ~output.isSparse)
 assert(all(~cell2mat(box.values(num2cell(2:box.Count)))), "2 番目以降の区間は密")
 assert(all(isfinite(res.rm_variable(end,:))))

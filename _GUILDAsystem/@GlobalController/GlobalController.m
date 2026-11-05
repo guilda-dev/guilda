@@ -114,7 +114,7 @@ classdef GlobalController < PowerSystemModel
             %
             % `varargin` lists the controlled components of net, as Component objects or
             % tags. Anything else stops with GUILDA:GlobalController:InvalidComponent.
-            obj.str_tag = tag;
+            obj.s_tag = tag;
             obj.para_dynamics = Parameter(obj,"dynamics");
 
             cls_comp = tools.cellfun(@(b) b.a_Component, net.a_Bus);            
@@ -124,18 +124,18 @@ classdef GlobalController < PowerSystemModel
             while idx <= nargin-2
                 arg = varargin{idx};
                 if isa(arg, 'Component')
-                    varargin{idx} = arg.str_tag;
+                    varargin{idx} = arg.s_tag;
                 end
 
                 lv_comp = strcmp(varargin{idx}, string(cls_comp));
                 % A component of another network can have the same tag as one of net
                 if all(~lv_comp) || (isa(arg, 'Component') && cls_comp{lv_comp} ~= arg)
                     if isa(arg, 'Component') || isstring(arg) || ischar(arg)
-                        str_arg = char(strjoin(string(varargin{idx})));
+                        s_arg = char(strjoin(string(varargin{idx})));
                     else
-                        str_arg = class(arg);
+                        s_arg = class(arg);
                     end
-                    error(msg("GUILDA:GlobalController:InvalidComponent", str_arg, char(tag), char(net.str_tag)))
+                    error(msg("GUILDA:GlobalController:InvalidComponent", s_arg, char(tag), char(net.s_tag)))
                 end
 
                 obj.controlledUnits = [obj.controlledUnits; cls_comp(lv_comp)];
@@ -176,7 +176,7 @@ classdef GlobalController < PowerSystemModel
             for k = 1:numel(a_Comp)
                 s = a_Comp{k};
                 if ~all(ismember(obj.sv_u, s.sv_x)) || ~all(ismember(obj.sv_y, s.sv_u))
-                    error(msg("GUILDA:GlobalController:GlobalControllerPort", obj.str_tag, join(obj.sv_u, " "), join(obj.sv_y, " "), s.str_tag, class(s), join(s.sv_x, " "), join(s.sv_u, " ")))
+                    error(msg("GUILDA:GlobalController:GlobalControllerPort", obj.s_tag, join(obj.sv_u, " "), join(obj.sv_y, " "), s.s_tag, class(s), join(s.sv_x, " "), join(s.sv_u, " ")))
                 end
             end
 
@@ -221,7 +221,7 @@ classdef GlobalController < PowerSystemModel
     methods (Access=protected)
         function set_odefcn(obj)
             % Bind the parameters and the network frequency into the f_* function handles.
-            % Called by check_edit when the handles are not up to date (str_odefcn "unset" or
+            % Called by check_edit when the handles are not up to date (s_odefcn "unset" or
             % "editted": a dynamics edit, a network Hz edit or an attach since the last build).
             %
             % <@Group> Called by analyses
@@ -234,7 +234,7 @@ classdef GlobalController < PowerSystemModel
             
             obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
             obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
-            obj.sct_edit.str_odefcn = "updated";
+            obj.sct_edit.s_odefcn = "updated";
         end
     end
     methods (Access={?Component,?LocalController,?PowerNetwork})        

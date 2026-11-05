@@ -22,17 +22,17 @@ function flag = check_edit(obj, opt)
         [~, lv] = obj.edit_effect(tab);
         lv = lv & tab.tag ~= "Initialize";   % an "Initialize" row: initialize stopped while writing
         if ~obj.sct_edit.l_initialized
-            str_reason = "net.initialize() has not been run";
+            s_reason = "net.initialize() has not been run";
         elseif any(lv)
-            str_edit   = tab.ID(lv) + ": " + tab.log(lv);
-            str_reason = "edited since the last initialize (" + join(str_edit(1:min(end,3)), ", ");
-            if numel(str_edit) > 3
-                str_reason = str_reason + ", ...";
+            sv_edit    = tab.ID(lv) + ": " + tab.log(lv);
+            s_reason   = "edited since the last initialize (" + join(sv_edit(1:min(end,3)), ", ");
+            if numel(sv_edit) > 3
+                s_reason = s_reason + ", ...";
             end
-            str_reason = str_reason + ")";
+            s_reason = s_reason + ")";
         else
-            str_reason = "the last net.initialize() stopped before it finished";
+            s_reason = "the last net.initialize() stopped before it finished";
         end
-        error(msg("GUILDA:PowerNetwork:EquilibriumStale", char(obj.str_tag), char(str_reason)))
+        error(msg("GUILDA:PowerNetwork:EquilibriumStale", char(obj.s_tag), char(s_reason)))
     end
 end

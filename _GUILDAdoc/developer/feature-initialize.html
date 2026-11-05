@@ -227,7 +227,7 @@
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>varargin</code></span><span lang="ja"><code>varargin</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>str_method</code>, <code>c_nv</code> (the other Name-Value pairs)</span><span lang="ja"><code>str_method</code>、<code>c_nv</code>（残りの Name-Value の組）</span></dd>
+          <dd><span lang="en"><code>s_method</code>, <code>c_nv</code> (the other Name-Value pairs)</span><span lang="ja"><code>s_method</code>、<code>c_nv</code>（残りの Name-Value の組）</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="INIT-02">
@@ -242,9 +242,9 @@
             <li>ここでは平衡点は不要</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>sct_edit.str_odefcn</code> of every layer; <code>tab_parameter.dynamics</code>; network <code>Hz</code></span><span lang="ja">各レイヤーの <code>sct_edit.str_odefcn</code>、<code>tab_parameter.dynamics</code>、ネットワークの <code>Hz</code></span></dd>
+          <dd><span lang="en"><code>sct_edit.s_odefcn</code> of every layer; <code>tab_parameter.dynamics</code>; network <code>Hz</code></span><span lang="ja">各レイヤーの <code>sct_edit.s_odefcn</code>、<code>tab_parameter.dynamics</code>、ネットワークの <code>Hz</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>f_Mass</code>, <code>f_dx</code>, <code>f_I</code>, <code>f_Y</code>, <code>f_Jacobi*</code> of components and controllers; <code>str_odefcn = "updated"</code></span><span lang="ja">機器と制御器の <code>f_Mass</code>、<code>f_dx</code>、<code>f_I</code>、<code>f_Y</code>、<code>f_Jacobi*</code>。<code>str_odefcn = "updated"</code></span></dd>
+          <dd><span lang="en"><code>f_Mass</code>, <code>f_dx</code>, <code>f_I</code>, <code>f_Y</code>, <code>f_Jacobi*</code> of components and controllers; <code>s_odefcn = "updated"</code></span><span lang="ja">機器と制御器の <code>f_Mass</code>、<code>f_dx</code>、<code>f_I</code>、<code>f_Y</code>、<code>f_Jacobi*</code>。<code>s_odefcn = "updated"</code></span></dd>
         </dl>
       </li>
       <li class="fs-step" id="INIT-03a">
@@ -299,7 +299,7 @@
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>tab_editLog</code>, <code>LayerPackage.edit_effect</code>; <code>Component.c_Vequilibrium</code>, <code>c_Iequilibrium</code>; <code>get_admittance_matrix</code></span><span lang="ja"><code>tab_editLog</code>、<code>LayerPackage.edit_effect</code>、<code>Component.c_Vequilibrium</code>、<code>c_Iequilibrium</code>、<code>get_admittance_matrix</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>ResultPF</code> with <code>str_solver = "equilibrium"</code>, <code>options = struct(Method="equilibrium", Tolerance=1e-6)</code>, <code>tab_bus</code> n_bus × 6, empty <code>tab_branch</code>; <code>flag = 1</code>; <code>output.residual</code>, <code>output.message</code></span><span lang="ja"><code>str_solver = "equilibrium"</code>、<code>options = struct(Method="equilibrium", Tolerance=1e-6)</code>、n_bus × 6 の <code>tab_bus</code>、空の <code>tab_branch</code> を持つ <code>ResultPF</code>。<code>flag = 1</code>。<code>output.residual</code>、<code>output.message</code></span></dd>
+          <dd><span lang="en"><code>ResultPF</code> with <code>s_solver = "equilibrium"</code>, <code>options = struct(Method="equilibrium", Tolerance=1e-6)</code>, <code>tab_bus</code> n_bus × 6, empty <code>tab_branch</code>; <code>flag = 1</code>; <code>output.residual</code>, <code>output.message</code></span><span lang="ja"><code>s_solver = "equilibrium"</code>、<code>options = struct(Method="equilibrium", Tolerance=1e-6)</code>、n_bus × 6 の <code>tab_bus</code>、空の <code>tab_branch</code> を持つ <code>ResultPF</code>。<code>flag = 1</code>。<code>output.residual</code>、<code>output.message</code></span></dd>
         </dl>
       </li>
       <li class="fs-step" id="INIT-04">

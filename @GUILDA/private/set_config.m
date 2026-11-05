@@ -1,10 +1,10 @@
 function set_config(Env)
     Env = format(Env);
 
-    str_file = arrayfun(@(s) string(s.name), dir(fullfile(GUILDA.pwd,"@GUILDA","config")));
-    lv_def   = cellfun(@(c) contains(c,'Default'), str_file);
+    sv_file  = arrayfun(@(s) string(s.name), dir(fullfile(GUILDA.pwd,"@GUILDA","config")));
+    lv_def   = cellfun(@(c) contains(c,'Default'), sv_file);
     
-    for ele = str_file(lv_def)'
+    for ele = sv_file(lv_def)'
         field = replace(ele,["Default",".json"],["",""]);
         text  = jsonencode(format(Env.(field)), PrettyPrint=true,ConvertInfAndNaN=false);
         path  = fullfile(GUILDA.pwd,'@GUILDA','user',ele);

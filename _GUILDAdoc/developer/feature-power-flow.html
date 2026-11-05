@@ -202,7 +202,7 @@
           <text class="is-inv is-b" x="18" y="120" text-anchor="middle" style="font-size:10px">02</text>
           <text class="dg-mono is-sm fpf-l" x="202" y="110" text-anchor="start">get_options(c_nv)</text>
           <path class="dg-sv-line is-muted" d="M298 148H197" marker-end="url(#fpf-ah-m)"/>
-          <text class="dg-mono is-sm fpf-l" x="294" y="142" text-anchor="end">s_options</text>
+          <text class="dg-mono is-sm fpf-l" x="294" y="142" text-anchor="end">sct_options</text>
           <path class="dg-sv-line" d="M198 180H407" marker-end="url(#fpf-ah)"/>
           <path class="dg-sv-line is-muted" d="M34 180H188" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="172" width="30" height="16" rx="8"/>
@@ -213,7 +213,7 @@
           <path class="dg-sv-line is-muted" d="M34 212H188" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="204" width="30" height="16" rx="8"/>
           <text class="is-inv is-b" x="18" y="216" text-anchor="middle" style="font-size:10px">04</text>
-          <text class="dg-mono is-sm fpf-l" x="202" y="206" text-anchor="start">solve(net, s_options)</text>
+          <text class="dg-mono is-sm fpf-l" x="202" y="206" text-anchor="start">solve(net, sct_options)</text>
           <path class="dg-sv-line" d="M298 244H197" marker-end="url(#fpf-ah)"/>
           <path class="dg-sv-line is-muted" d="M34 244H188" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="236" width="30" height="16" rx="8"/>
@@ -247,7 +247,7 @@
           <path class="dg-sv-line is-muted" d="M34 468H296" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="460" width="30" height="16" rx="8"/>
           <text class="is-inv is-b" x="18" y="472" text-anchor="middle" style="font-size:10px">10</text>
-          <text class="dg-mono is-sm fpf-l" x="310" y="462" text-anchor="start">ResultPF(net, obj, s_options, ...)</text>
+          <text class="dg-mono is-sm fpf-l" x="310" y="462" text-anchor="start">ResultPF(net, obj, sct_options, ...)</text>
           <path class="dg-sv-line" d="M302 494h26v14h-24" marker-end="url(#fpf-ah)"/>
           <path class="dg-sv-line is-muted" d="M34 500H296" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="492" width="30" height="16" rx="8"/>
@@ -318,7 +318,7 @@
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en">public properties of <code>net.solver_PF</code>, <code>c_nv</code></span><span lang="ja"><code>net.solver_PF</code> の公開プロパティ、<code>c_nv</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>s_options</code> <span lang="en">(1×1 struct: Method, Tolerance, MaxIterations, Display, MaxFunEvals, UseParallel, PlotFcn, WhenFailed, dynamic); solver unchanged</span><span lang="ja">（1×1 構造体: Method, Tolerance, MaxIterations, Display, MaxFunEvals, UseParallel, PlotFcn, WhenFailed, dynamic）。ソルバーは変更なし</span></dd>
+          <dd><code>sct_options</code> <span lang="en">(1×1 struct: Method, Tolerance, MaxIterations, Display, MaxFunEvals, UseParallel, PlotFcn, WhenFailed, dynamic); solver unchanged</span><span lang="ja">（1×1 構造体: Method, Tolerance, MaxIterations, Display, MaxFunEvals, UseParallel, PlotFcn, WhenFailed, dynamic）。ソルバーは変更なし</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="PF-03">
@@ -352,7 +352,7 @@
             <li>PF-05 から PF-11 を実行</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>net</code>, <code>s_options</code></dd>
+          <dd><code>net</code>, <code>sct_options</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>[result, flag, output]</code></dd>
         </dl>
@@ -413,7 +413,7 @@
             <li>出力関数が各反復の値を記録</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>cm_Y</code>, <code>tab_PFset</code>, <code>s_options</code> → <code>SolverPF.optimoption</code></dd>
+          <dd><code>cm_Y</code>, <code>tab_PFset</code>, <code>sct_options</code> → <code>SolverPF.optimoption</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>cv_Vbus</code> <span lang="en">(n_bus×1 complex [pu])</span><span lang="ja">（n_bus×1 の複素数 [pu]）</span>, <code>flag</code> = <span lang="en">fsolve exitflag</span><span lang="ja">fsolve の exitflag</span>, <code>output</code> = <span lang="en">fsolve output</span><span lang="ja">fsolve の output</span>, <code>cm_Vhistory</code> (n_bus×n_iter), <code>rv_step = 0:n_iter-1</code></dd>
         </dl>
@@ -436,7 +436,7 @@
             <li>最後の点を解として採用</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>cm_Y</code>, <code>tab_PFset</code>, <code>s_options.dynamic</code> (Mass, Damper, foh_PQ, t_span), <code>Tolerance</code></dd>
+          <dd><code>cm_Y</code>, <code>tab_PFset</code>, <code>sct_options.dynamic</code> (Mass, Damper, foh_PQ, t_span), <code>Tolerance</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>cv_Vbus</code> (n_bus×1), <code>flag</code> <span lang="en">(logical)</span><span lang="ja">（logical）</span>, <code>output.message</code>, <code>cm_Vhistory</code> (n_bus×n_t), <code>rv_step</code> = <span lang="en">times [s]</span><span lang="ja">時刻 [s]</span></dd>
         </dl>
@@ -472,7 +472,7 @@
             <li><code>tic</code> の値を経過時間に変換</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>net</code>, <code>s_options</code>, <code>flag</code>, <code>output</code>, <code>t0</code>, <span lang="en">tables, history</span><span lang="ja">各 table、履歴</span></dd>
+          <dd><code>net</code>, <code>sct_options</code>, <code>flag</code>, <code>output</code>, <code>t0</code>, <span lang="en">tables, history</span><span lang="ja">各 table、履歴</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>ResultPF</code> <span lang="en">(see <a href="#data">Data produced</a>)</span><span lang="ja">（<a href="#data">生成されるデータ</a>参照）</span></dd>
         </dl>
@@ -495,7 +495,7 @@
             <li><code>"NONE"</code>: 何もしない</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>flag</code>, <code>s_options.WhenFailed</code>, <code>output.message</code></dd>
+          <dd><code>flag</code>, <code>sct_options.WhenFailed</code>, <code>output.message</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en">warning or error <code>GUILDA:SolverPF:NotConverged</code> (text = <code>output.message</code>)</span><span lang="ja">警告またはエラー <code>GUILDA:SolverPF:NotConverged</code>（本文 = <code>output.message</code>）</span></dd>
         </dl>
@@ -552,11 +552,11 @@
           <li>dynamic: logical と、<code>message</code> だけを持つ構造体</li>
         </ul></td></tr>
         <tr><td><code>l_success</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">logical</td><td data-label="Content" data-label-ja="内容"><span lang="en">Dependent: true for a logical true or a numeric flag &gt; 0</span><span lang="ja">Dependent: logical の true、または数値の flag &gt; 0 のとき true</span></td></tr>
-        <tr><td><code>options</code>, <code>str_solver</code>, <code>r_elapsed</code>, <code>str_network</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">struct, string, [s], string</td><td data-label="Content" data-label-ja="内容"><ul lang="en">
-          <li><code>s_options</code> of the run, <code>"SolverPF"</code>, elapsed time, network tag</li>
+        <tr><td><code>options</code>, <code>s_solver</code>, <code>r_elapsed</code>, <code>s_network</code></td><td data-label="Size, unit" data-label-ja="サイズ・単位">struct, string, [s], string</td><td data-label="Content" data-label-ja="内容"><ul lang="en">
+          <li><code>sct_options</code> of the run, <code>"SolverPF"</code>, elapsed time, network tag</li>
           <li>Hidden <code>a_PowerNetwork</code>: refers to the analysed network (a handle, not a copy)</li>
         </ul><ul lang="ja">
-          <li>実行時の <code>s_options</code>、<code>"SolverPF"</code>、経過時間、ネットワークのタグ</li>
+          <li>実行時の <code>sct_options</code>、<code>"SolverPF"</code>、経過時間、ネットワークのタグ</li>
           <li>非表示の <code>a_PowerNetwork</code>: 解析したネットワークを参照（コピーではなくハンドル）</li>
         </ul></td></tr>
       </tbody>
@@ -577,7 +577,7 @@
     <ul lang="en">
       <li>Only write to the network: PF-03</li>
       <li>The slack bus it sets stays set after the call; <code>net.initialize()</code> releases it again only when its own power flow fails</li>
-      <li><code>net.solver_PF</code>: read only; <code>s_options</code> is a copy</li>
+      <li><code>net.solver_PF</code>: read only; <code>sct_options</code> is a copy</li>
       <li>No call to <code>check_edit</code>; no use or build of the <code>f_*</code> handles; no read or reset of <code>sct_edit</code> or <code>tab_editLog</code></li>
       <li>Unused: the equilibrium, the dynamics parameters of components, the operation and OPF parameters</li>
       <li>No power-flow cache: every call reads the current parameters, so a later edit is reflected in the next call</li>
@@ -586,7 +586,7 @@
     <ul lang="ja">
       <li>ネットワークへの書き込み: PF-03 のみ</li>
       <li>設定された slack 母線は呼び出し後も残存。<code>net.initialize()</code> は、自身の潮流計算が失敗したときだけ解除</li>
-      <li><code>net.solver_PF</code> は読み取りのみ。<code>s_options</code> はコピー</li>
+      <li><code>net.solver_PF</code> は読み取りのみ。<code>sct_options</code> はコピー</li>
       <li><code>check_edit</code> の呼び出しなし。<code>f_*</code> ハンドルの使用・作成なし。<code>sct_edit</code>・<code>tab_editLog</code> の読み取り・リセットなし</li>
       <li>未使用: 平衡点、機器の dynamics パラメータ、operation・OPF パラメータ</li>
       <li>潮流計算のキャッシュなし。呼び出しのたびに現在のパラメータを読むため、後の編集は次の呼び出しに反映</li>

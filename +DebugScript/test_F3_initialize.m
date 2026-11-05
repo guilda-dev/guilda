@@ -208,7 +208,7 @@ net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 V_before = net.cv_Vequilibrium;
 [res, flag] = DebugScript.helper.quiet(@() net.initialize(Method="equilibrium"));
-assert(isa(res, "ResultPF") && res.str_solver == "equilibrium" && res.l_success)
+assert(isa(res, "ResultPF") && res.s_solver == "equilibrium" && res.l_success)
 assert(isscalar(flag) && flag > 0)
 assert(istable(res.tab_bus))
 assert(norm(net.cv_Vequilibrium - V_before) < 1e-8)
@@ -305,7 +305,7 @@ warning("on", "GUILDA:Deprecated:InitializeMethodValue");
 warning("off", "GUILDA:Deprecated:InitializeMethods");
 res = DebugScript.helper.quiet(@() net.initialize(Method="calculate from Xequilibrium"));
 id = DebugScript.helper.msg_id();
-assert(string(id) == "GUILDA:Deprecated:InitializeMethodValue" && res.str_solver == "equilibrium")
+assert(string(id) == "GUILDA:Deprecated:InitializeMethodValue" && res.s_solver == "equilibrium")
 
 warning("off", "GUILDA:Deprecated:InitializeMethodValue");
 res = DebugScript.helper.quiet(@() net.initialize("methods", "optimal powerflow"));
@@ -362,20 +362,20 @@ assert(isempty(net9.a_Bus{4}.a_Component) && net9.a_Bus{4}.c_Iequilibrium == 0)
 
 
 % ---- local functions ----
-function [V, I, X, tab_log, str_flag] = snapshot(net)
+function [V, I, X, tab_log, s_flag] = snapshot(net)
 % 平衡点 (母線の V, I と機器の状態) と編集ログ
     V = net.cv_Vequilibrium;
     I = net.cv_Iequilibrium;
     X = cellfun(@(b) cellfun(@(c) c.rv_Xequilibrium, b.a_Component, "UniformOutput", false), ...
                 net.a_Bus, "UniformOutput", false);
     tab_log  = net.tab_editLog;
-    str_flag = DebugScript.helper.edit_flag(net);
+    s_flag   = DebugScript.helper.edit_flag(net);
 end
 
 function assert_unchanged(net, V0, I0, X0, log0, flag0)
-    [V, I, X, tab_log, str_flag] = snapshot(net);
+    [V, I, X, tab_log, s_flag] = snapshot(net);
     assert(isequal(V, V0) && isequal(I, I0) && isequal(X, X0), "平衡点が変わった")
-    assert(isequal(tab_log, log0) && str_flag == flag0, "編集ログが変わった")
+    assert(isequal(tab_log, log0) && s_flag == flag0, "編集ログが変わった")
 end
 
 function ME = error_of(fcn)

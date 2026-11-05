@@ -134,7 +134,7 @@ EQ6(AVR 付き発電機のトリップで例外)も 1 行単位の修正で試�
 opt.rm_PQ double = []   % [pu] 機器ごとの [P Q]。指定時はスラックと NaN の配分を行わない
 
 % @PowerNetwork/initialize.m
-c_PQ = component_power(obj, str_method, result);   % "powerflow" は空
+c_PQ = component_power(obj, s_method, result);   % "powerflow" は空
 obj.a_Bus{i_bus}.set_equilibrium(c_Vbus, c_Ibus, r_Pbus, r_Qbus, "rm_PQ", c_PQ{i_bus})
 ```
 
@@ -226,7 +226,7 @@ function check_layer(obj, l_needEquilibrium)
     while ~isa(net,"PowerNetwork") && isa(net,"LayerPackage"), net = net.parent; end
     obj.check_edit();                       % この層以下の f_* を再構築
     if l_needEquilibrium && isa(net,"PowerNetwork") && ...
-            (net.str_editFlag == "unset" || net.l_staleEquilibrium)
+            (net.s_editFlag == "unset" || net.l_staleEquilibrium)
         error('GUILDA:PowerNetwork:EquilibriumStale', ...)   % 文言は既存のものを共有
     end
 end
@@ -302,7 +302,7 @@ P=Q=0 の負荷も同じ処理で入力が残ります(Ishizaki6Bus: 8 → 12 �
 
 | 案 | 内容 | 利点 | 欠点 |
 |---|---|---|---|
-| A(推奨) | logical のまま「`Avv` が数値的に正則で、全要素が有限」とする。理由は `output.message` と `output.str_issue` に入れる | `if flag` が有効なまま。`l_success` も変更不要 | 段階は表せない |
+| A(推奨) | logical のまま「`Avv` が数値的に正則で、全要素が有限」とする。理由は `output.message` と `output.s_issue` に入れる | `if flag` が有効なまま。`l_success` も変更不要 | 段階は表せない |
 | B | `simulate` のように 1 / 0 / -1 | 近特異を区別できる | v4 で形が変わる。`if flag` の意味が曖昧になる(`simulate` で既に注意が必要) |
 
 - **しきい値:** `rcond_Avv < 1e-14` を `false` とします。出荷系統の最小は 1.4e-4(LN §5.1)なので十分離れています。値は [見積] です。
@@ -469,7 +469,7 @@ end
 | Q1 | 層別 `get_sys` は stale でエラーにしますか(ED1) | **はい** | 決定済みの「古い平衡点は止める」と同名同義の原則に合う。試作で既存テスト合格 |
 | Q2 | powerflow / Topology / Slack の編集後の `Method="equilibrium"` をエラーにしますか(EQ2) | **はい。dynamics の編集だけ許す** | 編集が黙って消えない |
 | Q3 | `NonUnit` を v3 互換から外し、静的機器の吸収に変えますか(NU1) | **はい** | 現行は不安定なモデルを返す。v3 互換の例外を 1 つ認めることになる |
-| Q4 | `flag` は logical のままにしますか(FL1) | **はい**。`Avv` の正則性を含め、理由は `output.str_issue` に | `if flag` を保つ |
+| Q4 | `flag` は logical のままにしますか(FL1) | **はい**。`Avv` の正則性を含め、理由は `output.s_issue` に | `if flag` を保つ |
 | Q5 | 入出力の選択 `Input=`, `Output=` を追加しますか(SH1) | **はい。既定は不変** | v3 互換を保って V, I, y を取れる |
 | Q6 | Feedback の既定の形(`Vst` 消去)を変えますか(SH3) | **変えない** | 利益より互換の損失が大きい |
 | Q7 | GC の対象の `replace_component` は拒否しますか、引き継ぎますか(ED3) | **拒否** | 単純で、古い添字の問題を防げる |
@@ -498,7 +498,7 @@ end
 | Q1 | 実装済み(推奨どおり) | `9a69e54`, `33712cb`。全層で `GUILDA:PowerNetwork:EquilibriumStale` |
 | Q2 | 実装済み(推奨どおり。`simulate-improvements.md` §8 に案 1 の決定の記録あり) | `06dfaa3` の `GUILDA:PowerNetwork:InitializeEquilibriumEdited`(`test_I56_initialize_equilibrium.m`) |
 | Q3 | 実装済み(吸収に加えて `NonUnit` を廃止) | `a7eba53` で静的な母線を吸収し、`231e595` で `NonUnit` を廃止。指定は `GUILDA:Deprecated:LinearizeNonUnit` |
-| Q4 | 実装済み(推奨どおり) | `c9e9214`。`flag` は logical で、理由は `output.str_issue` |
+| Q4 | 実装済み(推奨どおり) | `c9e9214`。`flag` は logical で、理由は `output.s_issue` |
 | Q5 | 実装済み(推奨どおり) | `1fd838d`。`Input`, `Output`, `Coordinate` |
 | Q6 | 変更なし(推奨と同じ状態) | `test_F7_linearization.m` の "Default channels of get_sys do not change"。決定の記録はありません |
 | Q7 | 実装済み(推奨どおり) | `ce34199` の `GUILDA:Bus:ComponentControlled` |

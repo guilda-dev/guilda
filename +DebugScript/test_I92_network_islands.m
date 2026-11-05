@@ -8,19 +8,19 @@
 
 %% A balanced island succeeds with a warning that lists the islands
 net = balanced_island();
-[str_id, str_msg] = warning_of(@() net.initialize);
-assert(str_id == "GUILDA:PowerNetwork:NetworkIsland", str_id)
-assert(contains(str_msg, "[B001, B002, B003], [B004, B005]"), str_msg)
+[s_id, s_msg] = warning_of(@() net.initialize);
+assert(s_id == "GUILDA:PowerNetwork:NetworkIsland", s_id)
+assert(contains(s_msg, "[B001, B002, B003], [B004, B005]"), s_msg)
 assert(~net.l_staleEquilibrium && kcl_residual(net) < 1e-6)
 
 
 %% The warning of a balanced island can be turned off
 % error(msg(...)) 系の警告には ID がないので、すべての警告を止める形でだけ止められる
 net = balanced_island();
-s_warn = warning("off", "all");
-c_warn = onCleanup(@() warning(s_warn));
-str_out = evalc("net.initialize;");   % 無効な警告も lastwarn には残るので表示で確かめる
-assert(~contains(str_out, "split into"), str_out)
+sct_warn = warning("off", "all");
+c_warn = onCleanup(@() warning(sct_warn));
+s_out = evalc("net.initialize;");   % 無効な警告も lastwarn には残るので表示で確かめる
+assert(~contains(s_out, "split into"), s_out)
 clear c_warn
 
 
@@ -131,30 +131,30 @@ check_failure_text(net, ["12 islands", "[B010], ..."]);
 
 %% calculate_powerflow alone reports nothing about islands
 net = balanced_island();
-[str_id, ~, res] = warning_of(@() net.calculate_powerflow);
-assert(str_id == "" && res.l_success)
+[s_id, ~, res] = warning_of(@() net.calculate_powerflow);
+assert(s_id == "" && res.l_success)
 
 net = connected_network();
 net.add_bus();
-[str_id, ~, res] = warning_of(@() net.calculate_powerflow);
-assert(str_id == "" && ~res.l_success)
+[s_id, ~, res] = warning_of(@() net.calculate_powerflow);
+assert(s_id == "" && ~res.l_success)
 
 
 %% The built-in networks do not warn
-for str_net = ["IEEE9bus","IEEE14bus","IEEE14bus_lossless","IEEE14bus_NoTap","IEEE68bus", ...
+for s_net = ["IEEE9bus","IEEE14bus","IEEE14bus_lossless","IEEE14bus_NoTap","IEEE68bus", ...
                "Ishizaki6Bus","TEST31bus","Txt3Bus","Tutorial3bus", ...
                "IEEJ_EAST10","IEEJ_EAST30","IEEJ_WEST10","IEEJ_WEST30"]
-    net = network.(str_net)();
-    str_id = warning_of(@() net.initialize);
-    assert(str_id ~= "GUILDA:PowerNetwork:NetworkIsland", str_net)
+    net = network.(s_net)();
+    s_id = warning_of(@() net.initialize);
+    assert(s_id ~= "GUILDA:PowerNetwork:NetworkIsland", s_net)
 end
 
 
 % ---- local functions ----
 function r = kcl_residual(net)
-    str_Bus = string(net.a_Bus);
+    sv_Bus  = string(net.a_Bus);
     tab_Y   = net.get_admittance_matrix;
-    r = max(abs(tab_Y{str_Bus,str_Bus}*net.cv_Vequilibrium - net.cv_Iequilibrium));
+    r = max(abs(tab_Y{sv_Bus,sv_Bus}*net.cv_Vequilibrium - net.cv_Iequilibrium));
 end
 
 function net = connected_network()
@@ -188,16 +188,16 @@ function net = no_branch_network()
     net.a_Bus{2}.add_component("load-power", "P",-0.5, "Q",-0.1);
 end
 
-function check_failure(net, str_method, str_id, str_island)
+function check_failure(net, s_method, s_id, s_island)
 % 失敗の ID と島の一覧を確かめ、ソルバー設定を勧めていないことを確かめる
     ME = [];
     try
-        DebugScript.helper.quiet(@() net.initialize(Method=str_method));
+        DebugScript.helper.quiet(@() net.initialize(Method=s_method));
     catch ME
     end
     assert(~isempty(ME), "initialize did not fail")
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:" + str_id, DebugScript.helper.msg_id(ME))
-    assert(contains(ME.message, str_island), ME.message)
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:" + s_id, DebugScript.helper.msg_id(ME))
+    assert(contains(ME.message, s_island), ME.message)
     assert(~contains(ME.message, ["solver settings", "solver_PF"]), ME.message)
 end
 
@@ -213,7 +213,7 @@ function check_failure_text(net, sv_text)
     assert(~isempty(ME) && all(contains(ME.message, sv_text)), string(ME.message))
 end
 
-function [str_id, str_msg, varargout] = warning_of(fcn)
+function [s_id, s_msg, varargout] = warning_of(fcn)
 % 関数を実行し、最後の警告の ID と文を返す (なければ "")
     lastwarn("", "");
     varargout = cell(1, nargout - 2);
@@ -222,7 +222,7 @@ function [str_id, str_msg, varargout] = warning_of(fcn)
     else
         evalc("fcn();");
     end
-    [str_msg, str_id] = lastwarn(); str_id = DebugScript.helper.msg_id(str_msg, str_id);
-    str_msg = string(str_msg);
-    str_id  = string(str_id);
+    [s_msg, s_id] = lastwarn(); s_id = DebugScript.helper.msg_id(s_msg, s_id);
+    s_msg   = string(s_msg);
+    s_id    = string(s_id);
 end

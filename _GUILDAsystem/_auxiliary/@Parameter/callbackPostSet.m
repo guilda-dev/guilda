@@ -11,7 +11,7 @@ function callbackPostSet(obj,name,event)
     val_post = event.AffectedObject.(name);            
     
     if ~isequaln(val_pre, val_post)    % NaN -> NaN is not a change
-        obj.log_edit("edit "+name, "Parameter("+obj.str_tag+")", val_pre, val_post);
+        obj.log_edit("edit "+name, "Parameter("+obj.s_tag+")", val_pre, val_post);
         obj.CallbackChanged();
     end
 end

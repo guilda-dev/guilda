@@ -7,9 +7,9 @@
 %% remove_branch rejects an unknown tag
 net = DebugScript.helper.build_9bus();
 n_branch = numel(net.a_Branch);
-[id, str_msg] = error_info(@() net.remove_branch("NoSuchTag"));
+[id, s_msg] = error_info(@() net.remove_branch("NoSuchTag"));
 assert(id == "GUILDA:PowerNetwork:BranchNotFound")
-assert(contains(str_msg, "NoSuchTag") && contains(str_msg, net.str_tag) && contains(str_msg, "string(net.a_Branch)"))
+assert(contains(s_msg, "NoSuchTag") && contains(s_msg, net.s_tag) && contains(s_msg, "string(net.a_Branch)"))
 assert(numel(net.a_Branch) == n_branch)
 
 
@@ -17,9 +17,9 @@ assert(numel(net.a_Branch) == n_branch)
 net = DebugScript.helper.build_9bus();
 n_branch = numel(net.a_Branch);
 br = net.a_Branch{1};
-[id, str_msg] = error_info(@() net.remove_branch([string(br), "NoSuchA", "NoSuchB"]));
+[id, s_msg] = error_info(@() net.remove_branch([string(br), "NoSuchA", "NoSuchB"]));
 assert(id == "GUILDA:PowerNetwork:BranchNotFound")
-assert(contains(str_msg, "NoSuchA") && contains(str_msg, "NoSuchB") && ~contains(str_msg, string(br)))
+assert(contains(s_msg, "NoSuchA") && contains(s_msg, "NoSuchB") && ~contains(s_msg, string(br)))
 assert(numel(net.a_Branch) == n_branch && br.a_PowerNetwork == net)
 
 
@@ -41,9 +41,9 @@ assert(~ismember("B009", string(net.a_Bus)))
 net = DebugScript.helper.build_9bus();
 bus = net.a_Bus{5};
 n_comp = numel(bus.a_Component);
-[id, str_msg] = error_info(@() bus.remove_component("NoSuchTag"));
+[id, s_msg] = error_info(@() bus.remove_component("NoSuchTag"));
 assert(id == "GUILDA:Bus:ComponentNotFound")
-assert(contains(str_msg, "NoSuchTag") && contains(str_msg, bus.str_tag) && contains(str_msg, "string(bus.a_Component)"))
+assert(contains(s_msg, "NoSuchTag") && contains(s_msg, bus.s_tag) && contains(s_msg, "string(bus.a_Component)"))
 assert(numel(bus.a_Component) == n_comp)
 
 
@@ -51,20 +51,20 @@ assert(numel(bus.a_Component) == n_comp)
 net = DebugScript.helper.build_9bus();
 bus = net.a_Bus{5};
 comp = bus.a_Component{1};
-[id, str_msg] = error_info(@() bus.replace_component("NoSuchTag", "load-power"));
+[id, s_msg] = error_info(@() bus.replace_component("NoSuchTag", "load-power"));
 assert(id == "GUILDA:Bus:ComponentNotFound")
-assert(contains(str_msg, "NoSuchTag") && contains(str_msg, bus.str_tag))
+assert(contains(s_msg, "NoSuchTag") && contains(s_msg, bus.s_tag))
 assert(bus.a_Component{1} == comp)
 
 
-function [id, str_msg] = error_info(fh)
+function [id, s_msg] = error_info(fh)
 % 実行してエラー ID と文面を返す (エラーにならなければ "")
     id = "";
-    str_msg = "";
+    s_msg = "";
     try
         DebugScript.helper.quiet(fh);
     catch ME
         id = string(DebugScript.helper.msg_id(ME));
-        str_msg = string(ME.message);
+        s_msg = string(ME.message);
     end
 end

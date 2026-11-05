@@ -8,7 +8,7 @@
 % 共通設定 (各テストの前に毎回実行される)
 net = DebugScript.helper.build_ieee14();       % 進捗表示なし (Progress = "none")
 DebugScript.helper.quiet(@() net.initialize);
-str_id = "GUILDA:PowerNetwork:SimulationIncomplete";
+s_id = "GUILDA:PowerNetwork:SimulationIncomplete";
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 % 第 1 区間 [0,1] の代数変数を大きく解き直す入力
 offset = @(n) DebugScript.helper.scenario("offset", n, "TimeSpan", 0, "OffsetUnit", "SG1B002", ...
@@ -18,21 +18,21 @@ offset = @(n) DebugScript.helper.scenario("offset", n, "TimeSpan", 0, "OffsetUni
 %% Partial result warns with any number of outputs
 lastwarn("");
 sol = net.simulate([0,5], ev, TimeLimit=1e-6);
-[str_msg, str_got] = lastwarn(); str_got = DebugScript.helper.msg_id(str_msg, str_got);
-assert(str_got == str_id)
-assert(contains(str_msg, "TimeLimit") && contains(str_msg, "flag = 0"))
+[s_msg, s_got] = lastwarn(); s_got = DebugScript.helper.msg_id(s_msg, s_got);
+assert(s_got == s_id)
+assert(contains(s_msg, "TimeLimit") && contains(s_msg, "flag = 0"))
 assert(sol.flag == 0)
 
 lastwarn("");
 [~, flag] = net.simulate([0,5], ev, TimeLimit=1e-6);
-str_got = DebugScript.helper.msg_id();
-assert(str_got == str_id && flag == 0)
+s_got = DebugScript.helper.msg_id();
+assert(s_got == s_id && flag == 0)
 
 lastwarn("");
 [~, flag, output] = net.simulate([0,5], ev, TimeLimit=1e-6);
-[str_msg, str_got] = lastwarn(); str_got = DebugScript.helper.msg_id(str_msg, str_got);
-assert(str_got == str_id && flag == 0)
-assert(contains(str_msg, output.message))
+[s_msg, s_got] = lastwarn(); s_got = DebugScript.helper.msg_id(s_msg, s_got);
+assert(s_got == s_id && flag == 0)
+assert(contains(s_msg, output.message))
 
 
 %% Stop by the solver warns too
@@ -40,25 +40,25 @@ assert(contains(str_msg, output.message))
 ev_in = DebugScript.helper.scenario("in", net, "TimeSpan", [1,3], "InputUnit", "SG1B002", "InputName", "Pmech", "InputValue", @(t) 1/(1.5-t));
 lastwarn("");
 [~, flag, output] = net.simulate([0,4], ev_in);
-[str_msg, str_got] = lastwarn(); str_got = DebugScript.helper.msg_id(str_msg, str_got);
+[s_msg, s_got] = lastwarn(); s_got = DebugScript.helper.msg_id(s_msg, s_got);
 assert(flag == -1)
-assert(str_got == str_id && contains(str_msg, "flag = -1") && contains(str_msg, output.message))
+assert(s_got == s_id && contains(s_msg, "flag = -1") && contains(s_msg, output.message))
 
 
 %% Completed run does not warn
 lastwarn("");
 [~, flag] = net.simulate([0,2], ev);
-str_got = DebugScript.helper.msg_id();
+s_got = DebugScript.helper.msg_id();
 assert(flag == 1)
-assert(str_got ~= str_id)
+assert(s_got ~= s_id)
 
 
 %% Default TimeLimit is Inf
 mp = ?SolverODE;
 p  = mp.PropertyList(string({mp.PropertyList.Name}) == "TimeLimit");
 assert(isinf(p.DefaultValue))
-s_config = readstruct(fullfile(GUILDA.pwd, "@GUILDA", "config", "DefaultTimeSimulation.json"));
-assert(isinf(s_config.TimeLimit.Value))
+sct_config = readstruct(fullfile(GUILDA.pwd, "@GUILDA", "config", "DefaultTimeSimulation.json"));
+assert(isinf(sct_config.TimeLimit.Value))
 
 
 %% Limit keeps counting through the phases
@@ -106,7 +106,7 @@ function c_ev = faults(net)
 end
 
 function [flag, output] = run_with_delay(net, tspan, c_events, t_delay, t_limit)
-    s_options = net.solver_ODE.get_options({"Progress", "none", "TimeLimit", t_limit});
-    s_options.PhaseProbe = @(o) pause(t_delay);
-    [~, flag, output] = net.solver_ODE.solve(net, tspan, c_events, s_options);
+    sct_options = net.solver_ODE.get_options({"Progress", "none", "TimeLimit", t_limit});
+    sct_options.PhaseProbe = @(o) pause(t_delay);
+    [~, flag, output] = net.solver_ODE.solve(net, tspan, c_events, sct_options);
 end

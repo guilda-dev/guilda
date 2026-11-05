@@ -45,12 +45,12 @@ function [result, flag, output] = linearize(obj, varargin)
     arguments (Output)
         result   % Jacobian blocks, variable map, point and settings.
         flag     % True when the result is usable: all Jacobian entries are finite and Avv is invertible.
-        output   % output.message describes the outcome; str_issue is its reason when flag is false; l_equilibrium, n_x, n_v, n_u, rcond_Avv, r_residual (largest absolute value of result.rv_residual), sv_faultBus (buses with zero voltage at the point).
+        output   % output.message describes the outcome; s_issue is its reason when flag is false; l_equilibrium, n_x, n_v, n_u, rcond_Avv, r_residual (largest absolute value of result.rv_residual), sv_faultBus (buses with zero voltage at the point).
     end
     [c_nv, opt] = take_call_options(varargin);
-    s_options   = obj.solver_LIN.get_options(c_nv);
+    sct_options = obj.solver_LIN.get_options(c_nv);
 
-    [result, flag, output] = obj.solver_LIN.solve(obj, s_options);
+    [result, flag, output] = obj.solver_LIN.solve(obj, sct_options);
 
     if opt.Plot
         result.Plot();

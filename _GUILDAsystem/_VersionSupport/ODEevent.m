@@ -42,24 +42,24 @@ function sc = ODEevent(tag, net, opt)
         sc % Scenario with one disturbance, added to net.
     end
     Deprecated("ODEevent");
-    str_scenario = tag;
-    if strlength(str_scenario) == 0
-        str_scenario = "event";         % the disturbance tag "" stops below (ReservedTag)
+    s_scenario = tag;
+    if strlength(s_scenario) == 0
+        s_scenario = "event";         % the disturbance tag "" stops below (ReservedTag)
     end
-    sc = Scenario(str_scenario);
+    sc = Scenario(s_scenario);
     sc.l_compat = true;
     c_opt = namedargs2cell(opt);
 
-    lv_same = cellfun(@(s) s.str_tag == str_scenario, net.a_Scenario);
+    lv_same = cellfun(@(s) s.s_tag == s_scenario, net.a_Scenario);
     if any(lv_same) && net.a_Scenario{lv_same}.l_compat
-        net.remove_scenario(str_scenario);
+        net.remove_scenario(s_scenario);
     end
     % Added first, so that the disturbance is checked against net in the order of v3
     net.add_scenario(sc);
     try
         sc.add_disturbance(tag, c_opt{:});
     catch ME
-        net.remove_scenario(str_scenario);
+        net.remove_scenario(s_scenario);
         rethrow(ME)
     end
 end

@@ -1,7 +1,7 @@
-function [result,flag,output] = solve(obj, net, s_options)
+function [result,flag,output] = solve(obj, net, sct_options)
 % Trace the PV curve with the given settings.
 %
-% Runs the continuation power flow of net with the effective settings s_options and
+% Runs the continuation power flow of net with the effective settings sct_options and
 % returns the traced path as a ResultCPF. The solver is only read: nothing is written
 % back into it. The CPF working data of the models (bus.iv_CPFV, comp.iv_CPFX,
 % comp.f_PQ2Bus) is rebuilt for this run. Called by net.calculate_continuation_powerflow;
@@ -12,7 +12,7 @@ function [result,flag,output] = solve(obj, net, s_options)
     arguments
         obj % Solver (net.solver_CPF).
         net % Network initialized by net.initialize.
-        s_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
+        sct_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
     end
     arguments (Output)
         result % lambda and bus voltages along the path, and the nose point.
@@ -20,21 +20,21 @@ function [result,flag,output] = solve(obj, net, s_options)
         output % Details: message, iterations, correctorIterations.
     end
     t0 = tic;
-    check_network(net, s_options.LoadBus);
+    check_network(net, sct_options.LoadBus);
 
-    useInt = s_options.UseInternalState;
+    useInt = sct_options.UseInternalState;
     w      = build_layout(net, useInt);
     Ymat   = net.get_admittance_matrix.Variables;
-    f_PF   = @(x) pf_equation(net, w, s_options.LoadBus, useInt, x, Ymat);
+    f_PF   = @(x) pf_equation(net, w, sct_options.LoadBus, useInt, x, Ymat);
 
     % The corrector solves with this Newton-Raphson object; its numerical Jacobian of
     % f_PF is also used by the predictor.
     NRM = NewtonRaphsonMethod("NRMFcn", f_PF, "NRMJac", [], "NRMVal", 0);
-    NRM.ConvTol = s_options.Tolerance;
+    NRM.ConvTol = sct_options.Tolerance;
     f_Jac = NRM.NRMJac;
 
     x_past    = [];
-    x_current = [w.InitVal; s_options.InitialLambda];
+    x_current = [w.InitVal; sct_options.InitialLambda];
     t_old     = [];
 
     sol      = x_current;
@@ -42,17 +42,17 @@ function [result,flag,output] = solve(obj, net, s_options)
     rv_N     = zeros(1,0);
 
     Iteration = 1;
-    while Iteration <= s_options.MaxIterations
+    while Iteration <= sct_options.MaxIterations
 
-        [x_pred,t_old] = predict(f_Jac, s_options.StepSize, x_current, x_past, t_old);
+        [x_pred,t_old] = predict(f_Jac, sct_options.StepSize, x_current, x_past, t_old);
 
-        [x_current,x_past,N] = correct(NRM, f_PF, f_Jac, s_options.ArcLength, x_current, x_pred);
+        [x_current,x_past,N] = correct(NRM, f_PF, f_Jac, sct_options.ArcLength, x_current, x_pred);
 
         sol_pred = [sol_pred,x_pred]; %#ok
         sol      = [sol,x_current];   %#ok
         rv_N     = [rv_N,N];          %#ok
 
-        if s_options.Verbose
+        if sct_options.Verbose
             fprintf("CPF step %4d: lambda = %.6g\n", Iteration, x_current(end));
         end
 
@@ -80,7 +80,7 @@ function [result,flag,output] = solve(obj, net, s_options)
                                  "Increase MaxIteration or StepSize.", output.iterations, r_lambdaMax);
     end
 
-    result = ResultCPF(net, obj, s_options, flag, output, t0, ...
+    result = ResultCPF(net, obj, sct_options, flag, output, t0, ...
                        string(net.a_Bus(:)), rv_lambda, cm_Vbus, rm_x, rm_xPrd);
 end
 

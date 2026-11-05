@@ -46,14 +46,14 @@ if do_check
     sys_fb = feedback(sys_cat, eye(numel(feedin)), feedin, feedout, 1);
     sys_fb = sys_fb({'V_polar_m', 'delta', 'omega', 'E'}, 'u');
 
-    str_idx = num2str(idx);
+    s_idx = num2str(idx);
     sys = net.get_sys_polar();
-    sys.OutputGroup.V_polar_m = sys.OutputGroup.(['V', str_idx]);
-    og_xn = sys.OutputGroup.(['x', str_idx]);
+    sys.OutputGroup.V_polar_m = sys.OutputGroup.(['V', s_idx]);
+    og_xn = sys.OutputGroup.(['x', s_idx]);
     sys.OutputGroup.delta = og_xn(1);
     sys.OutputGroup.omega = og_xn(2);
     sys.OutputGroup.E = og_xn(3);
-    sys = sys({'V_polar_m', 'delta', 'omega', 'E'}, ['u', str_idx]);
+    sys = sys({'V_polar_m', 'delta', 'omega', 'E'}, ['u', s_idx]);
     bode(sys, sys_fb); % 一致を確認
 end
 

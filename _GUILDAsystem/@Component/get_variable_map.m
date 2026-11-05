@@ -1,4 +1,4 @@
-function tab = get_variable_map(obj, str_form)
+function tab = get_variable_map(obj, s_form)
 % Return the variable map of the component: the order of its Point vector.
 %
 % Variable map of the component: the rows of net.get_variable_map() that belong to it,
@@ -22,26 +22,26 @@ function tab = get_variable_map(obj, str_form)
 % <@Group> Called by analyses
     arguments
         obj
-        str_form (1,1) string {mustBeMember(str_form, ["table","rows"])} = "table" % "rows" (internal): return the rows without the table.
+        s_form (1,1) string {mustBeMember(s_form, ["table","rows"])} = "table" % "rows" (internal): return the rows without the table.
     end
     arguments (Output)
         tab   % One row per variable: Index, Kind ("x" | "Vre" | "Vim" | "u"), Owner, Name, Label, Bus.
     end
-    str_bus = "";
+    s_bus   = "";
     sv_V    = strings(2,1);
     if ~isempty(obj.a_Bus)
-        str_bus = string(obj.a_Bus.str_tag);
+        s_bus   = string(obj.a_Bus.s_tag);
         sv_V    = label(obj.a_Bus, ["Vre";"Vim"]);
     end
 
     a_obj = [{obj}; all_controllers(obj)];
     c_x   = cell(numel(a_obj),1);
     for k = 1:numel(a_obj)
-        c_x{k} = rows(a_obj{k}, "x", a_obj{k}.sv_x, str_bus);
+        c_x{k} = rows(a_obj{k}, "x", a_obj{k}.sv_x, s_bus);
     end
-    sm_V   = [["Vre";"Vim"], repmat(str_bus,2,1), ["Vre";"Vim"], sv_V, repmat(str_bus,2,1)];
-    c_rows = {vertcat(c_x{:}); sm_V; rows(obj, "u", obj.sv_u, str_bus)};
-    if str_form == "rows"
+    sm_V   = [["Vre";"Vim"], repmat(s_bus,2,1), ["Vre";"Vim"], sv_V, repmat(s_bus,2,1)];
+    c_rows = {vertcat(c_x{:}); sm_V; rows(obj, "u", obj.sv_u, s_bus)};
+    if s_form == "rows"
         tab = c_rows;
         return
     end
@@ -52,12 +52,12 @@ function tab = get_variable_map(obj, str_form)
 end
 
 
-function sm = rows(owner, str_kind, sv_name, str_bus)
+function sm = rows(owner, s_kind, sv_name, s_bus)
     % Columns Kind, Owner, Name, Label, Bus of the variables of owner
     sv_name = reshape(string(sv_name), [], 1);
     n = numel(sv_name);
-    sm = [repmat(str_kind,n,1), repmat(string(owner.str_tag),n,1), sv_name, ...
-          label(owner, sv_name), repmat(str_bus,n,1)];
+    sm = [repmat(s_kind,n,1), repmat(string(owner.s_tag),n,1), sv_name, ...
+          label(owner, sv_name), repmat(s_bus,n,1)];
 end
 
 function sv = label(owner, sv_name)

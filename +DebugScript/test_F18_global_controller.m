@@ -15,19 +15,19 @@ assert(isequal(string(agc.controlledUnits), ["SG1B001";"SG1B002"]))
 
 %% An unknown tag stops at construction and the message names it
 net = DebugScript.helper.build_ieee14();
-[id, str_msg] = error_info(@() controller.agc.broadcast_PI_AGC(net, "agc", "unknown"));
+[id, s_msg] = error_info(@() controller.agc.broadcast_PI_AGC(net, "agc", "unknown"));
 assert(id == "GUILDA:GlobalController:InvalidComponent", id)
-assert(contains(str_msg, "'unknown'") && contains(str_msg, "'agc'") && contains(str_msg, "'"+net.str_tag+"'"), str_msg)
+assert(contains(s_msg, "'unknown'") && contains(s_msg, "'agc'") && contains(s_msg, "'"+net.s_tag+"'"), s_msg)
 
 
 %% An object that is not a component stops at construction and the message names its class
 net = DebugScript.helper.build_ieee14();
-[id, str_msg] = error_info(@() controller.agc.broadcast_PI_AGC(net, "agc", net.a_Bus{1}));
+[id, s_msg] = error_info(@() controller.agc.broadcast_PI_AGC(net, "agc", net.a_Bus{1}));
 assert(id == "GUILDA:GlobalController:InvalidComponent", id)
-assert(contains(str_msg, class(net.a_Bus{1})), str_msg)
-[id, str_msg] = error_info(@() controller.agc.broadcast_PI_AGC(net, "agc", 1));
+assert(contains(s_msg, class(net.a_Bus{1})), s_msg)
+[id, s_msg] = error_info(@() controller.agc.broadcast_PI_AGC(net, "agc", 1));
 assert(id == "GUILDA:GlobalController:InvalidComponent", id)
-assert(contains(str_msg, "'double'"), str_msg)
+assert(contains(s_msg, "'double'"), s_msg)
 
 
 %% A network without components has nothing to control
@@ -39,18 +39,18 @@ assert(id == "GUILDA:GlobalController:InvalidComponent", id)
 %% A component of another network is rejected at construction, also when the tag exists here
 net   = DebugScript.helper.build_ieee14();
 other = DebugScript.helper.build_ieee14();
-[id, str_msg] = error_info(@() controller.agc.broadcast_PI_AGC(net, "agc", other.a_Bus{1}.a_Component{1}));
+[id, s_msg] = error_info(@() controller.agc.broadcast_PI_AGC(net, "agc", other.a_Bus{1}.a_Component{1}));
 assert(id == "GUILDA:GlobalController:InvalidComponent", id)
-assert(contains(str_msg, "SG1B001"), str_msg)
+assert(contains(s_msg, "SG1B001"), s_msg)
 
 
 %% A controller built on another network is rejected at add, also for an identical network
 net   = DebugScript.helper.build_ieee14();
 other = DebugScript.helper.build_ieee14();
 agc   = controller.agc.broadcast_PI_AGC(other, "agc", "SG1B001");
-[id, str_msg] = error_info(@() net.add_global_controller(agc));
+[id, s_msg] = error_info(@() net.add_global_controller(agc));
 assert(id == "GUILDA:PowerNetwork:GconOtherNetwork", id)
-assert(contains(str_msg, "'agc'") && contains(str_msg, "'SG1B001'"), str_msg)
+assert(contains(s_msg, "'agc'") && contains(s_msg, "'SG1B001'"), s_msg)
 assert(isempty(net.a_GlobalController) && isempty(agc.a_PowerNetwork))
 
 
@@ -68,9 +68,9 @@ net = PowerNetwork("T");
 bus = net.add_bus();
 gen = bus.add_component("gen-droop", "P", 0.5);
 agc = controller.agc.broadcast_PI_AGC(net, "agc", gen);
-[id, str_msg] = error_info(@() net.add_global_controller(agc));
+[id, s_msg] = error_info(@() net.add_global_controller(agc));
 assert(id == "GUILDA:PowerNetwork:GconPorts", id)
-assert(contains(str_msg, "state omega") && contains(str_msg, string(gen.str_tag)) && contains(str_msg, class(gen)), str_msg)
+assert(contains(s_msg, "state omega") && contains(s_msg, string(gen.s_tag)) && contains(s_msg, class(gen)), s_msg)
 assert(isempty(net.a_GlobalController) && isempty(agc.a_PowerNetwork))
 
 
@@ -79,9 +79,9 @@ net = PowerNetwork("T");
 bus = net.add_bus();
 load_comp = bus.add_component("load-power");
 agc = controller.agc.broadcast_PI_AGC(net, "agc", load_comp);
-[id, str_msg] = error_info(@() net.add_global_controller(agc));
+[id, s_msg] = error_info(@() net.add_global_controller(agc));
 assert(id == "GUILDA:PowerNetwork:GconPorts", id)
-assert(contains(str_msg, "state omega, input Pmech"), str_msg)
+assert(contains(s_msg, "state omega, input Pmech"), s_msg)
 assert(isempty(net.a_GlobalController))
 
 
@@ -93,14 +93,14 @@ net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001")
 assert(numel(net.a_GlobalController) == 1)
 
 
-function [id, str_msg] = error_info(fh)
+function [id, s_msg] = error_info(fh)
 % 実行してエラー ID と文面を返す (エラーにならなければ "")
     id = "";
-    str_msg = "";
+    s_msg = "";
     try
         DebugScript.helper.quiet(fh);
     catch ME
         id = string(DebugScript.helper.msg_id(ME));
-        str_msg = string(ME.message);
+        s_msg = string(ME.message);
     end
 end

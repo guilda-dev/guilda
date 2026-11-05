@@ -20,6 +20,6 @@ function M = read_mass(model)
     end
 end
 
-function throw_not_constant(model, nx, str_detail)
-    error(msg("GUILDA:read_mass:NotConstant", model.str_tag, string(nx), string(nx), str_detail));
+function throw_not_constant(model, nx, s_detail)
+    error(msg("GUILDA:read_mass:NotConstant", model.s_tag, string(nx), string(nx), s_detail));
 end
