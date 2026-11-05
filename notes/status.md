@@ -64,6 +64,18 @@ MATLAB、Control System Toolbox、Optimization Toolbox が必要です。GUILDA 
 matlab -batch "DebugScript.run_all"
 ```
 
+`Level` で実行する範囲を選べます。既定は `"large"`(全件)で、上のコマンドの意味は変わりません。medium・large に入るテストは `+DebugScript/test_levels.m` の一覧で決め、一覧にないテストは small です。
+
+- `"small"`: 1 件 1 秒程度までのテスト。変更のたびに実行します。
+- `"medium"`: small に加えて 1 件 3 秒程度までのテスト。ブランチをマージする前に実行します。
+- `"large"`: 全件。統合ブランチの確認とリリース前に実行します。
+
+```
+matlab -batch "DebugScript.run_all('Level','small')"
+```
+
+`Features` と組み合わせると、両方に該当するテストだけを実行します(例: `DebugScript.run_all("Features","F7","Level","medium")`)。
+
 ## `a9afe24` までに加わった機能
 
 `fe9aa3a`(前回の基準)以後に `feature/ieej-report-models` へ入ったものです。コミットとテストで確認しました。
