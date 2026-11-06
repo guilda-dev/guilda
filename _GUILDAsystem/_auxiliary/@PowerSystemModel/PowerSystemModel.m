@@ -32,8 +32,7 @@ classdef PowerSystemModel < LayerPackage
             tp = table(c_tab{:}, 'VariableNames', sv_tag);
         end
         function set.tab_parameter(obj, tp)
-            % Only the changed values are written, so only they are logged. A value of
-            % another class is written even when equal, so that its class is checked.
+            % Each container stores its column and logs only the values that changed.
             sv_tag = string(cellfun(@(p) p.s_tag, obj.a_Parameter, 'UniformOutput', false));
             sv_col = string(tp.Properties.VariableNames);
             s_unknown = setdiff(sv_col, sv_tag, 'stable');
@@ -41,15 +40,8 @@ classdef PowerSystemModel < LayerPackage
                 error(msg("GUILDA:PowerSystemModel:UnknownParameterGroup", char(string(obj)), char(s_unknown(1)), char(strjoin(sv_tag, ", "))))
             end
             for s_col = sv_col
-                a_para  = obj.a_Parameter{sv_tag == s_col};
-                tab_new = tp.(s_col);
-                for s_name = string(tab_new.Properties.VariableNames)
-                    val_old = a_para.(s_name);
-                    val_new = tab_new.(s_name);
-                    if ~(isequaln(val_old, val_new) && strcmp(class(val_old), class(val_new)))
-                        a_para.(s_name) = val_new;
-                    end
-                end
+                a_para = obj.a_Parameter{sv_tag == s_col};
+                a_para.tab_parameter = tp.(s_col);
             end
         end
     end

@@ -38,7 +38,6 @@
         <entry key="SimulateExport">Export of net.simulate does not support the extension ''{0}''. Use a scalar file name with .csv, .txt, .xlsx, .xls or .mat.</entry>
         <entry key="SimulateTime">The time of net.simulate must be [t0, tend] with finite values and t0 &lt; tend, or [] for the Time of the scenarios or the time span of their disturbances: {0}.</entry>
         <entry key="SimulationIncomplete">net.simulate did not reach the end time (flag = {0}); the result holds the trajectories up to the time reached.&#xA;{1}</entry>
-        <entry key="IncompleteLoad">Edits of the object saved below network ''{0}'' are not reported after loading. Save the network itself.</entry>
         <entry key="NotScenario">net.add_scenario takes a Scenario or a cell of Scenario objects, e.g. net.add_scenario(sc) or net.add_scenario(Scenario.import_csv(path)).</entry>
         <entry key="ScenarioTagInUse">A scenario with the tag ''{0}'' is already in ''{1}''.&#xA;Give the scenario another tag, or remove the existing one first with net.remove_scenario(TAG).</entry>
         <entry key="ScenarioNotFound">No scenario with the tag ''{0}'' was found in ''{1}''.</entry>

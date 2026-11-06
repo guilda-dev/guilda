@@ -161,7 +161,7 @@ b1.l_isSlack = true;</code></pre>
           <text class="is-inv is-b" x="18" y="138" text-anchor="middle" style="font-size:10px">01</text>
           <text class="dg-mono is-sm fmb-l" x="92" y="128" text-anchor="start">PowerNetwork(tag)</text>
           <path class="dg-sv-line" d="M207 164H913" marker-end="url(#fmb-ah)"/>
-          <text class="dg-mono is-sm fmb-l" x="211" y="158" text-anchor="start">Parameter(obj, &quot;base&quot;).add_entry</text>
+          <text class="dg-mono is-sm fmb-l" x="211" y="158" text-anchor="start">Parameter(obj, &quot;base&quot;, struct(Hz, baseMVA))</text>
           <path class="dg-sv-line" d="M88 194H200" marker-end="url(#fmb-ah)"/>
           <path class="dg-sv-line is-muted" d="M34 194H78" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="186" width="30" height="16" rx="8"/>
@@ -485,28 +485,28 @@ b1.l_isSlack = true;</code></pre>
         </dl>
       </li>
       <li class="fs-step" id="MB-09">
-        <p class="fs-head"><b class="fs-id">MB-09</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>Parameter</code> <span lang="en">(set method and listeners)</span><span lang="ja">（set メソッドとリスナー）</span></span></p>
+        <p class="fs-head"><b class="fs-id">MB-09</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>Parameter</code> <span lang="en">(set method of <code>tab_parameter</code>)</span><span lang="ja">（<code>tab_parameter</code> の set メソッド）</span></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li><code>obj.tab_parameter = tab</code> (<code>PowerSystemModel</code>): each column goes to the container of <code>a_Parameter</code> whose <code>s_tag</code> is the column name; an unknown column is an error (<code>GUILDA:PowerSystemModel:UnknownParameterGroup</code>) and nothing is written</li>
-            <li>Only the changed values are written (<code>isequaln</code> and the same class); an equal value of another class is written, so its class is checked</li>
-            <li><code>obj.tab_parameter.&lt;group&gt;.&lt;name&gt; = v</code>: reads the table and writes it back, so only that value is written</li>
-            <li>Set method of the dynamic property (<code>Parameter.add_entry</code> → <code>attach_callbacks</code>): check the class</li>
-            <li>PreSet listener: store the old value</li>
-            <li>PostSet listener: compare with <code>isequaln</code>; when the value changed, call <code>log_edit</code> and the <code>CallbackChanged</code> of the container</li>
+            <li><code>obj.tab_parameter.&lt;group&gt;.&lt;name&gt; = v</code>: reads the table and writes it back, so only that value changes</li>
+            <li><code>Parameter.set.tab_parameter</code>: the stored table and the new one must have the same parameter names (any order), height and row names, else <code>GUILDA:Parameter:TableMismatch</code></li>
+            <li>A column is changed when <code>isequaln</code> fails or its class differs; a changed class is <code>GUILDA:Parameter:ClassNameMismatch</code></li>
+            <li>Every column is checked before anything is stored: an error stores nothing and logs nothing</li>
+            <li>Stores the new table, then calls <code>log_edit</code> for each changed column, in column order</li>
           </ul><ul lang="ja">
             <li><code>obj.tab_parameter = tab</code>（<code>PowerSystemModel</code>）: 各列を <code>s_tag</code> が列名と同じ <code>a_Parameter</code> のコンテナへ。未知の列はエラー（<code>GUILDA:PowerSystemModel:UnknownParameterGroup</code>）で書き込みなし</li>
-            <li>変わった値だけを書き込み（<code>isequaln</code> かつ同じクラス）。値が等しくてもクラスが違えば書き込み、クラスを検査</li>
-            <li><code>obj.tab_parameter.&lt;group&gt;.&lt;name&gt; = v</code>: 表を読んで書き戻すため、その値だけを書き込み</li>
-            <li>動的プロパティの set メソッド（<code>Parameter.add_entry</code> → <code>attach_callbacks</code>）: クラスを検査</li>
-            <li>PreSet リスナー: 元の値を保存</li>
-            <li>PostSet リスナー: <code>isequaln</code> で比較。値が変わっていれば <code>log_edit</code> とコンテナの <code>CallbackChanged</code> を呼び出し</li>
+            <li><code>obj.tab_parameter.&lt;group&gt;.&lt;name&gt; = v</code>: 表を読んで書き戻すため、変わるのはその値だけ</li>
+            <li><code>Parameter.set.tab_parameter</code>: 保持する表と新しい表でパラメータ名（順序は不問）、行数、行名が同じであること。違えば <code>GUILDA:Parameter:TableMismatch</code></li>
+            <li><code>isequaln</code> が偽、またはクラスが違う列を変更とみなす。クラスの変更は <code>GUILDA:Parameter:ClassNameMismatch</code></li>
+            <li>保存の前にすべての列を検査。エラーなら保存も記録もなし</li>
+            <li>新しい表を保存し、変わった列ごとに列の順で <code>log_edit</code> を呼び出し</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en">new value, class given to <code>add_entry</code>, old value</span><span lang="ja">新しい値、<code>add_entry</code> で指定したクラス、元の値</span></dd>
+          <dd><span lang="en">new table, stored table (names, height, row names, classes, values)</span><span lang="ja">新しい表、保持している表（名前、行数、行名、クラス、値）</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en">the parameter value, <code>Parameter.s_lastEdited</code>; edit with the tag</span><span lang="ja">パラメータの値、<code>Parameter.s_lastEdited</code>、タグ</span> <code>"&lt;group&gt;"</code> <span lang="en">(e.g. <code>"dynamics"</code>) and log <code>"edit &lt;name&gt;: &lt;old&gt; -&gt; &lt;new&gt;"</code> (short values, <code>tools.value_text</code>)</span><span lang="ja">（例 <code>"dynamics"</code>）とログ <code>"edit &lt;name&gt;: &lt;old&gt; -&gt; &lt;new&gt;"</code>（短い値の表記、<code>tools.value_text</code>）の編集</span></dd>
+          <dd><span lang="en">the stored table, <code>Parameter.s_lastEdited</code>; for each changed column, an edit with the tag</span><span lang="ja">保持する表、<code>Parameter.s_lastEdited</code>、変わった列ごとにタグ</span> <code>"&lt;group&gt;"</code> <span lang="en">(e.g. <code>"dynamics"</code>) and log <code>"edit &lt;name&gt;: &lt;old&gt; -&gt; &lt;new&gt;"</code> (short values, <code>tools.value_text</code>)</span><span lang="ja">（例 <code>"dynamics"</code>）とログ <code>"edit &lt;name&gt;: &lt;old&gt; -&gt; &lt;new&gt;"</code>（短い値の表記、<code>tools.value_text</code>）の編集</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="MB-10">
@@ -772,14 +772,14 @@ b1.l_isSlack = true;</code></pre>
       <li><b>After <code>initialize</code></b>: an edit marked stale in <a href="class-design.html#edits">Class Design: Handling of model edits</a> appends its message to the stale tags it affects; <code>simulate</code>, <code>linearize</code> and <code>get_sys</code> then stop with their stale errors (e.g. <code>GUILDA:SolverODE:Stale</code>) until <code>initialize</code> runs again. Operation, OPF, graph, <code>opffcn</code> and tag edits: nothing stale</li>
       <li><b>Handle cache</b>: constructors do not build <code>f_*</code> (they stay empty). <code>initialize</code> builds the stale ones (<code>build_odefcn</code>, see <a href="feature-initialize.html">Initialization</a>); analyses only check. A direct call of a model function (<code>get_dx_algebraic</code>) after an edit without <code>initialize</code> uses the previous handles; it builds them only when they are empty</li>
       <li><b>Detached objects</b>: a removed object keeps its <code>sct_stale</code>; the removal is a <code>"Topology"</code> edit of the parent (a removed global controller: nothing). Its later edits do not reach the network. Attaching it to a new parent (<code>set_bus</code>, <code>set_parent</code>) marks its <code>equilibrium</code> and <code>odefcn</code> stale until the next <code>initialize</code></li>
-      <li><b>Copies</b>: no deep-copy method; <code>b = a</code> copies a handle. For an independent network, save and load through a MAT file or CSV export. <code>PowerNetwork.loadobj</code> attaches the parameter listeners again after a MAT load (warning <code>GUILDA:PowerNetwork:IncompleteLoad</code> when a layer is still loading)</li>
+      <li><b>Copies</b>: no deep-copy method; <code>b = a</code> copies a handle. For an independent network, save and load through a MAT file or CSV export. A loaded network, or a lower layer saved alone, keeps its parameter tables, so its edits are checked and logged as before saving</li>
     </ul>
     <ul lang="ja">
       <li><b>最初の <code>initialize</code> の前</b>: すべての stale タグがコンストラクタの "initialize has not been run" を保持するため、編集はメッセージを追加しない。<code>handle_edit</code> は slack 母線を 1 つに維持</li>
       <li><b><code>initialize</code> の後</b>: <a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>で古くなるとされる編集は影響する stale タグにメッセージを追加し、<code>simulate</code>・<code>linearize</code>・<code>get_sys</code> は再び <code>initialize</code> を実行するまでそれぞれの stale のエラー（例 <code>GUILDA:SolverODE:Stale</code>）で停止。operation・OPF・graph・<code>opffcn</code>・タグの編集: 何も古くしない</li>
       <li><b>ハンドルキャッシュ</b>: コンストラクタは <code>f_*</code> を作らない（空のまま）。古いものは <code>initialize</code> が作成（<code>build_odefcn</code>、<a href="feature-initialize.html">初期化</a>参照）、解析は確認のみ。編集の後に <code>initialize</code> を挟まずモデル関数を直接呼ぶ場合（<code>get_dx_algebraic</code>）は以前のハンドルを使用し、空のときだけ構築</li>
       <li><b>切り離されたオブジェクト</b>: 削除されたオブジェクトは自分の <code>sct_stale</code> を保持。削除は親の <code>"Topology"</code> の編集（広域制御器の削除: なし）。その後の編集はネットワークに届かない。新しい親への接続（<code>set_bus</code>、<code>set_parent</code>）で、次の <code>initialize</code> まで <code>equilibrium</code> と <code>odefcn</code> を古いと印付け</li>
-      <li><b>コピー</b>: ディープコピーのメソッドはなし。<code>b = a</code> はハンドルのコピー。独立したネットワークには MAT ファイルへの保存と読み込み、または CSV への書き出しを使用。<code>PowerNetwork.loadobj</code> は MAT からの読み込み後にパラメータのリスナーを再設定（層がまだ読み込み中なら警告 <code>GUILDA:PowerNetwork:IncompleteLoad</code>）</li>
+      <li><b>コピー</b>: ディープコピーのメソッドはなし。<code>b = a</code> はハンドルのコピー。独立したネットワークには MAT ファイルへの保存と読み込み、または CSV への書き出しを使用。読み込んだネットワークや単独で保存した下の層もパラメータの表を保持し、編集の検査と記録は保存前と同じ</li>
     </ul>
 
     <!-- ============================== 6. FAILURES ============================== -->
@@ -807,14 +807,14 @@ b1.l_isSlack = true;</code></pre>
     <!-- ============================== 7. EXTENSION ============================== -->
     <h2 id="extension"><span lang="en">7. Where to extend the feature</span><span lang="ja">7. 機能を拡張する箇所</span></h2>
     <ul lang="en">
-      <li><b>Component</b>: a class in <code>+component</code> with the constants <code>key</code>, <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code>, <code>sv_para</code>, and a constructor <code>(index, parameter, opt)</code> that calls the <code>Component</code> constructor with the tag and adds every <code>sv_para</code> to the <code>dynamics</code> container with <code>add_entry</code> (<code>obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.add_entry(...)</code>). Run <code>GUILDA</code> again so that <code>add_component</code> knows the key</li>
+      <li><b>Component</b>: a class in <code>+component</code> with the constants <code>key</code>, <code>sv_x</code>, <code>sv_u</code>, <code>sv_y</code>, <code>sv_para</code>, and a constructor <code>(index, parameter, opt)</code> that calls the <code>Component</code> constructor with the tag and replaces the <code>dynamics</code> container with one that holds every <code>sv_para</code> (<code>obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)} = Parameter(obj, "dynamics", sct)</code>, <code>sct</code>: a struct of the defaults). Run <code>GUILDA</code> again so that <code>add_component</code> knows the key</li>
       <li><b>Branch</b>: a class in <code>+branch</code> with the constants <code>key</code> and <code>header</code> and <code>get_admittance_matrix</code>. The constructor <code>(index, opt)</code> is inherited</li>
       <li><b>Local controller</b>: <code>key</code> <code>"avr"</code>, <code>"pss"</code> or <code>"local"</code>; outputs named after the inputs they drive; inputs named after the outputs or states they observe (<code>"Xall"</code> / <code>"Yall"</code> need an override of <code>set_inputs</code>; <code>resolve_ports</code> may adapt the ports to the component)</li>
       <li><b>Global controller</b>: constructor <code>(net, tag, units...)</code> calling the <code>GlobalController</code> constructor. <code>sv_u</code> must be states and <code>sv_y</code> inputs of every unit</li>
       <li><b>Network class</b>: a <code>PowerNetwork</code> subclass in <code>+network/@&lt;Name&gt;/</code> with the CSV folders, whose constructor calls <code>PowerNetwork.import_csv(dir, Network=obj)</code>. <code>net.export_csv(".../@&lt;Name&gt;")</code> writes such a class</li>
     </ul>
     <ul lang="ja">
-      <li><b>機器</b>: <code>+component</code> のクラス。定数 <code>key</code>・<code>sv_x</code>・<code>sv_u</code>・<code>sv_y</code>・<code>sv_para</code> と、タグを付けて <code>Component</code> のコンストラクタを呼び、すべての <code>sv_para</code> を <code>add_entry</code> で <code>dynamics</code> コンテナに加えるコンストラクタ（<code>obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.add_entry(...)</code>） <code>(index, parameter, opt)</code> を持つ。<code>add_component</code> がキーを認識するよう <code>GUILDA</code> を再実行</li>
+      <li><b>機器</b>: <code>+component</code> のクラス。定数 <code>key</code>・<code>sv_x</code>・<code>sv_u</code>・<code>sv_y</code>・<code>sv_para</code> と、タグを付けて <code>Component</code> のコンストラクタを呼び、すべての <code>sv_para</code> を持つ <code>dynamics</code> コンテナに置き換えるコンストラクタ（<code>obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)} = Parameter(obj, "dynamics", sct)</code>、<code>sct</code> は既定値の struct） <code>(index, parameter, opt)</code> を持つ。<code>add_component</code> がキーを認識するよう <code>GUILDA</code> を再実行</li>
       <li><b>ブランチ</b>: <code>+branch</code> のクラス。定数 <code>key</code>・<code>header</code> と <code>get_admittance_matrix</code> を持つ。コンストラクタ <code>(index, opt)</code> は継承</li>
       <li><b>ローカル制御器</b>: <code>key</code> は <code>"avr"</code>・<code>"pss"</code>・<code>"local"</code>。出力名は駆動する入力の名前、入力名は観測する出力または状態の名前（<code>"Xall"</code> / <code>"Yall"</code> には <code>set_inputs</code> のオーバーライドが必要。<code>resolve_ports</code> でポートを機器に合わせることも可能）</li>
       <li><b>グローバル制御器</b>: コンストラクタ <code>(net, tag, units...)</code> が <code>GlobalController</code> のコンストラクタを呼び出し。<code>sv_u</code> は各対象の状態、<code>sv_y</code> は入力であることが必要</li>

@@ -154,7 +154,6 @@ classdef GlobalController < PowerSystemModel
                 end
 
                 obj.controlledUnits = [obj.controlledUnits; cls_comp(lv_comp)];
-                a_Pd.sv_rowName = string(obj.controlledUnits);
 
                 idx = idx + 1;
             end

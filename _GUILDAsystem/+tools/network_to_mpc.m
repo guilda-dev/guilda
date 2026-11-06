@@ -30,7 +30,7 @@ function mpc = network_to_mpc(net)
     arguments (Output)
         mpc % MATPOWER case (version 2): baseMVA, bus, gen, branch, gencost, plus bus_name, gen_name and branch_name.
     end
-    base    = net.a_Parameter{cellfun(@(p) p.s_tag=="base", net.a_Parameter)}.baseMVA;
+    base    = net.a_Parameter{cellfun(@(p) p.s_tag=="base", net.a_Parameter)}.tab_parameter.baseMVA;
     a_Bus   = net.a_Bus;
     n_bus   = numel(a_Bus);
     sv_bus  = string(a_Bus);
@@ -46,9 +46,9 @@ function mpc = network_to_mpc(net)
     sv_gen  = strings(0, 1);
     for i = 1:n_bus
         bus = a_Bus{i};
-        pf  = bus.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", bus.a_Parameter)};
-        ope = bus.a_Parameter{cellfun(@(p) p.s_tag=="operation", bus.a_Parameter)};
-        dyn = bus.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", bus.a_Parameter)};
+        pf  = bus.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", bus.a_Parameter)}.tab_parameter;
+        ope = bus.a_Parameter{cellfun(@(p) p.s_tag=="operation", bus.a_Parameter)}.tab_parameter;
+        dyn = bus.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", bus.a_Parameter)}.tab_parameter;
         rm_bus(i, [5 6])   = [dyn.Gshunt, dyn.Bshunt] * base;
         rm_bus(i, [8 9])   = [pf.V0, pf.Varg0*180/pi];
         rm_bus(i, 10)      = ope.baseKV;
@@ -64,8 +64,8 @@ function mpc = network_to_mpc(net)
                 rm_bus(i, [3 4]) = rm_bus(i, [3 4]) - PQ * base;
                 continue
             end
-            opf = com.a_Parameter{cellfun(@(p) p.s_tag=="OPF", com.a_Parameter)};
-            cop = com.a_Parameter{cellfun(@(p) p.s_tag=="operation", com.a_Parameter)};
+            opf = com.a_Parameter{cellfun(@(p) p.s_tag=="OPF", com.a_Parameter)}.tab_parameter;
+            cop = com.a_Parameter{cellfun(@(p) p.s_tag=="operation", com.a_Parameter)}.tab_parameter;
             V_g = pf.V;
             if isnan(V_g); V_g = pf.V0; end
             r_gen = zeros(1, 21);
@@ -80,10 +80,10 @@ function mpc = network_to_mpc(net)
     i_ref = tools.slack_bus_index(net);
     if isempty(i_ref); i_ref = 1; end
     rm_bus(i_ref, 2) = 3;
-    if isnan(a_Bus{i_ref}.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", a_Bus{i_ref}.a_Parameter)}.Varg)
+    if isnan(a_Bus{i_ref}.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", a_Bus{i_ref}.a_Parameter)}.tab_parameter.Varg)
         rm_bus(i_ref, 9) = 0;
     else
-        rm_bus(i_ref, 9) = a_Bus{i_ref}.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", a_Bus{i_ref}.a_Parameter)}.Varg*180/pi;
+        rm_bus(i_ref, 9) = a_Bus{i_ref}.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", a_Bus{i_ref}.a_Parameter)}.tab_parameter.Varg*180/pi;
     end
 
     % ---- generator costs: polynomial, P rows then (if any) Q rows -------------------------
@@ -103,8 +103,8 @@ function mpc = network_to_mpc(net)
     sv_branch  = string(a_Branch(:));
     for k = 1:n_br
         br  = a_Branch{k};
-        ope = br.a_Parameter{cellfun(@(p) p.s_tag=="operation", br.a_Parameter)};
-        dyn = br.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", br.a_Parameter)};
+        ope = br.a_Parameter{cellfun(@(p) p.s_tag=="operation", br.a_Parameter)}.tab_parameter;
+        dyn = br.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", br.a_Parameter)}.tab_parameter;
         [~, iv_bus] = ismember(string(br.a_Bus), sv_bus);
         for s_lim = ["Imax","Pmax","Qmax"]
             if ~isnan(ope.(s_lim)) && ~isinf(ope.(s_lim))

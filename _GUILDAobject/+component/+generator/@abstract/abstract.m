@@ -88,10 +88,7 @@ classdef abstract < Component
             end
             mp = mp(:,obj.sv_para);
             
-            name = cellfun(@(d) string(d), mp.Properties.VariableNames);
-            for i=1:numel(name)
-                obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.add_entry(name(i), mp.(name(i)), "double");
-            end
+            obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)} = Parameter(obj, "dynamics", table2struct(mp));
 
             % obj.set_avr( component.generator.avr.base() );
             % obj.set_governor( component.generator.governor.base() );

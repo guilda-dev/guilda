@@ -867,7 +867,7 @@ there.
   content is unchanged (no spurious file changes in a git checkout).
 - **読み込めないクラスの報告。** `GUILDA.dictionary` は読み込めないクラスを `GUILDA:dictionary:ClassNotLoaded` で警告し、元の理由を示します。そのクラスはキーの一覧に載りません。作ったクラスが `add_component` のキーに出ないときは、この警告を確認してください。`+DebugScript` のテスト用クラスは一覧に載らなくなりました。
 - **MAT ファイルから読み込んだ系統。** `save(f, "net")` と `load(f)` で、構成、親への参照、`f_*` が読み込んだ系統を指す状態で戻ります。読み込み後も編集の記録、古い平衡点の検出、パラメータの型の検査が働きます。以前は `load` が内部のエラーを無視して空の系統を返し、警告もありませんでした。
-  - **系統全体を保存してください。** 機器など下の層の変数を保存すると、構成は戻りますが、その編集は記録されないので `GUILDA:PowerNetwork:IncompleteLoad` で警告します。系統と一緒に保存しても同じです。
+  - 機器など下の層の変数だけを保存しても、構成は戻り、読み込んだ層の編集は記録され、型も検査されます(パラメータは表として保存されるため。1.20)。
   - `net.a_Bus`、`net.a_Branch`、`net.a_GlobalController` に直接は代入できません(`MATLAB:class:SetProhibited`)。`add_*` と `remove_*` を使います。
 - 開発者向けに `GUILDA.publish_doc` を追加しました。ドキュメントを `gh-pages` ブランチへ公開します。実行したときだけ公開サイトが変わります。
 
@@ -1011,6 +1011,8 @@ there.
 - 複数の値を変えるときは、表を 1 回読んで変えてから 1 回で書き戻すと速くなります(`tp = obj.tab_parameter; tp.dynamics.D = 2; tp.dynamics.M = 10; obj.tab_parameter = tp;`)。
 - `GlobalController` の `tab_parameter.dynamics` の行名は `controlledUnits` のタグです。
 - `struct(obj)` の結果に `para_*` のフィールドはありません。パラメータは `tab_parameter` のフィールドにあります。
+- 各 `Parameter` はパラメータを 1 つの表(`tab_parameter`)として保持します。動的プロパティ(`para.V` のような読み書き)、`add_entry`、`CallbackChanged` はありません。表への書き込みで、パラメータ名(順序は不問)、行数、行名が変わると `GUILDA:Parameter:TableMismatch`、クラスが変わると `GUILDA:Parameter:ClassNameMismatch` で止まり、どちらも何も保存しません。
+- MAT ファイルからの読み込みに復元の処理は不要になり、`PowerNetwork.loadobj` と警告 `GUILDA:PowerNetwork:IncompleteLoad` はなくなりました。
 
 ---
 
@@ -1029,10 +1031,12 @@ there.
 
   ```matlab
   % 旧: obj.para_dynamics.add_entry("Ka", opt.Ka, "double", "Te", opt.Te, "double");
-  obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.add_entry("Ka", opt.Ka, "double", "Te", opt.Te, "double");
+  obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)} = Parameter(obj, "dynamics", struct("Ka", opt.Ka, "Te", opt.Te));
   ```
 
-  多数の層を回す内部のコードは、表を作らずに同じタグの形で 1 行で読めます(例: `b.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", b.a_Parameter)}.Gshunt`)。
+  `add_entry` はありません。既定値を struct(フィールド: パラメータ名、値: 既定値)で `Parameter` に渡し、`dynamics` のコンテナを 1 行で置き換えます。各パラメータのクラスは既定値のクラスで、`add_entry` の第 3 引数のようなクラスの指定はありません(`"double"` なら既定値を double にします)。行が複数のパラメータ(`GlobalController` の制御対象ごとの値など)は N 行の列ベクトルで渡します。発電機のように table から作るときは `table2struct(tab)` を渡します。
+
+  多数の層を回す内部のコードは、表を作らずに同じタグの形で 1 行で読めます(例: `b.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", b.a_Parameter)}.tab_parameter.Gshunt`)。
 - **Analytic Jacobians** are `Static` methods named exactly `Jacobi_dx`,
   `Jacobi_I`, `Jacobi_Y`, declared in `methods (Static)` and implemented in
   files with the same names (case matters: `Jacobi_Y`, not `Jacobi_y`):

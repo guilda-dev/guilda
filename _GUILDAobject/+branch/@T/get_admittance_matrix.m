@@ -8,7 +8,7 @@ function Ymat = get_admittance_matrix(obj)
     arguments (Output)
         Ymat % [pu] 2-by-2 complex admittance matrix.
     end
-    para  = obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)};
+    para  = obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.tab_parameter;
     yij   = 1/(para.R+1j*para.X);
     cij   = 1j * para.C;
 

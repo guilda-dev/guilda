@@ -2,5 +2,6 @@
 <rsccat version="4.0" locale="en" product="GUILDA">
     <message>
         <entry key="ClassNameMismatch">''{0}'' must be {1}, but a value of class {2} was given. The value was not changed.</entry>
+        <entry key="TableMismatch">The {0} table must keep its parameters ({1}), its height ({2}) and its row names. Nothing was changed.</entry>
     </message>
 </rsccat>
