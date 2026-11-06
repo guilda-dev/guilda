@@ -29,7 +29,7 @@ function w = build_layout(net, useInt)
         a_Comp = i_Bus.a_Component;
         n_Comp = numel(a_Comp);
 
-        tab_PF = i_Bus.get_pf_set();
+        tab_PF = i_Bus.get_pf_condition();
         rv_Veq = [abs(i_Bus.c_Vequilibrium);angle(i_Bus.c_Vequilibrium)];
 
         Ci = cell(n_Comp,1);

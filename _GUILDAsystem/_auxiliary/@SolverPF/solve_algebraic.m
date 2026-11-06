@@ -1,10 +1,10 @@
-function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_algebraic(obj, cm_Y, tab_PFset, sct_options)
+function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_algebraic(obj, cm_Y, tab_PFcondition, sct_options)
 % Solve the power equations with fsolve. cm_Vhistory holds the bus voltages at each
 % iteration (n_bus x n_step), rv_step the iteration numbers.
     arguments (Input)
         obj
-        cm_Y        (:,:) double  % [pu] Bus admittance matrix (complex, in the bus order of tab_PFset).
-        tab_PFset   table         % Power flow settings of the buses (rows of get_pf_set).
+        cm_Y        (:,:) double  % [pu] Bus admittance matrix (complex, in the bus order of tab_PFcondition).
+        tab_PFcondition   table         % Power flow conditions of the buses (rows of get_pf_condition).
         sct_options (1,1) struct  % Effective settings (output of get_options).
     end
     arguments (Output)
@@ -17,27 +17,27 @@ function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_algebraic(obj, cm_Y, 
 
     % Collect Info
     rm_Y  = sparse(tools.complex2matrix(cm_Y));
-    n_Bus = size(tab_PFset,1);
+    n_Bus = size(tab_PFcondition,1);
 
     % Build Power Equation
     fcn_PowerEq = cell(n_Bus,1);
     for i_bus = 1:n_Bus
-        switch tab_PFset{i_bus,"Type"}
+        switch tab_PFcondition{i_bus,"Type"}
             case "PV"
-                star = tab_PFset{i_bus,["P","V"]}.';
+                star = tab_PFcondition{i_bus,["P","V"]}.';
                 fcn_PowerEq{i_bus}  = @(v,i) PFconst_PV(v,i,star) ;
             case "PQ"
-                star = tab_PFset{i_bus,["P","Q"]}.';
+                star = tab_PFcondition{i_bus,["P","Q"]}.';
                 fcn_PowerEq{i_bus}  = @(v,i) PFconst_PQ(v,i,star) ;
             case "slack"
-                star = tab_PFset{i_bus,["Varg","V"]}.';
+                star = tab_PFcondition{i_bus,["Varg","V"]}.';
                 fcn_PowerEq{i_bus}  = @(v,i) PFconst_slack(v,i,star) ;
         end
     end
 
     % initial condition
-    V0 = tab_PFset.V0;
-    T0 = tab_PFset.Varg0;
+    V0 = tab_PFcondition.V0;
+    T0 = tab_PFcondition.Varg0;
     
     rv_V0 = reshape([V0.*cos(T0), V0.*sin(T0)].', [], 1);
 

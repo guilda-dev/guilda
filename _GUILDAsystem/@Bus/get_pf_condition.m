@@ -1,5 +1,5 @@
-function tab_PFset = get_pf_set(obj)
-% Return the power-flow settings of the bus.
+function tab_PFcondition = get_pf_condition(obj)
+% Return the power-flow condition of the bus.
 %
 % The bus type is "slack" for the slack bus, "PV" when the summed Q of its components
 % is NaN and "PQ" otherwise. P and Q are the sums over the components.
@@ -11,14 +11,14 @@ function tab_PFset = get_pf_set(obj)
         obj
     end
     arguments (Output)
-        tab_PFset   % One-row table: Type, Varg, V, P, Q, Varg0, V0 (NaN where the type does not set the value).
+        tab_PFcondition   % One-row table: Type, Varg, V, P, Q, Varg0, V0 (NaN where the type does not set the value).
     end
 
     tab_V = obj.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", obj.a_Parameter)}.tab_parameter;
     a_com = obj.a_Component;
     if obj.l_isSlack
         Type     = "slack";
-        rr_PFset = [tab_V.Varg,tab_V.V,nan(1,2),  tab_V.Varg, tab_V.V];
+        rr_PFcondition = [tab_V.Varg,tab_V.V,nan(1,2),  tab_V.Varg, tab_V.V];
     else
         P = 0;
         Q = 0;
@@ -29,12 +29,12 @@ function tab_PFset = get_pf_set(obj)
         end
         if isnan(Q)
             Type     = "PV";
-            rr_PFset = [ nan, tab_V.V, P, nan, tab_V.Varg0, tab_V.V0];
+            rr_PFcondition = [ nan, tab_V.V, P, nan, tab_V.Varg0, tab_V.V0];
         else
             Type     = "PQ";
-            rr_PFset = [ nan,     nan, P,   Q, tab_V.Varg0, tab_V.V0];
+            rr_PFcondition = [ nan,     nan, P,   Q, tab_V.Varg0, tab_V.V0];
         end
     end
-    tab_PFset = [table(Type), array2table(rr_PFset,"VariableNames",["Varg","V","P","Q","Varg0","V0"])];
-    tab_PFset.Properties.RowNames = string(obj);
+    tab_PFcondition = [table(Type), array2table(rr_PFcondition,"VariableNames",["Varg","V","P","Q","Varg0","V0"])];
+    tab_PFcondition.Properties.RowNames = string(obj);
 end

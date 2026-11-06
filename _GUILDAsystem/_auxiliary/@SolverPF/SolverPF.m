@@ -70,8 +70,8 @@ classdef SolverPF < auxiliary
     end
 
     methods(Hidden)
-        [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_algebraic(obj, cm_Y, tab_PFset, sct_options)
-        [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_dynamic(  obj, cm_Y, tab_PFset, sct_options)
+        [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_algebraic(obj, cm_Y, tab_PFcondition, sct_options)
+        [cv_Vbus,flag,output,cm_Vhistory,rv_step] = solve_dynamic(  obj, cm_Y, tab_PFcondition, sct_options)
         opt = optimoption(obj, sct_options)
     end
 end

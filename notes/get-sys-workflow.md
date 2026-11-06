@@ -52,7 +52,7 @@ flowchart TD
 | `Bus.add_component` | `net` の Hz | 機器を作り `set_bus` で `f_*` を構築、`Topology` を記録 | `@Bus/add_component.template:54-59`, `@Component/set_bus.m:5-6` |
 | `add_local_controller` | 機器の `sv_x/sv_u/sv_y` | 階層の接続、`iv_obsY/iv_obsX` の解決、`f_*` の構築、`Topology` を記録 | `@Component/add_local_controller.m:36-88`, `@LocalController/LocalController.m:148-201` |
 | `add_global_controller` | 構築時の `net`、機器ハンドル | `controlledUnits`(ハンドル)、`a_PowerNetwork`、`f_*`、`Topology` を記録 | `@GlobalController/GlobalController.m:92-106`, `@PowerNetwork/add_global_controller.m:12-14` |
-| `calculate_powerflow` | `solver_PF`、Y、`get_pf_set`、`l_isSlack` | スラックが無ければ先頭母線を設定。それ以外は結果を返すだけ。`check_edit` は呼びません | `@PowerNetwork/calculate_powerflow.m:36-50`, `_auxiliary/@PowerFlowCalculation/solve.m:20-43` |
+| `calculate_powerflow` | `solver_PF`、Y、`get_pf_condition`、`l_isSlack` | スラックが無ければ先頭母線を設定。それ以外は結果を返すだけ。`check_edit` は呼びません | `@PowerNetwork/calculate_powerflow.m:36-50`, `_auxiliary/@PowerFlowCalculation/solve.m:20-43` |
 | `initialize` | 上記に加えパラメータ全般 | `f_*`(古いもののみ)、GC の平衡点、`c_Vequilibrium`、機器と制御器の平衡点、`local_LQR.K`、編集状態のリセット | `@PowerNetwork/initialize.m:47-99` |
 | `get_sys` / `linearize` | `solver_LIN`、編集状態、`f_Jacobi*`、平衡点、Y | `f_*`(古いもののみ)。結果は `LinearizationResult` に入り、モデルには書きません | `@PowerNetwork/linearize.m:41-44`, `_auxiliary/@odeLinearizer/solve.m:22-113` |
 | `simulate` | `solver_ODE`、編集状態、`f_*`、平衡点、Y、イベント | `f_*`(古いもののみ)と作業データ(第5節)。軌道は `odeSimulationResult` に入ります | `@PowerNetwork/simulate.m:53-58`, `_auxiliary/@odeSimulator/odeSimulator.m:167-319` |

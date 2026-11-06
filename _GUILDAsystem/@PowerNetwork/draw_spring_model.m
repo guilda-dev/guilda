@@ -60,7 +60,7 @@ end
 
 
 function [tag,col,rad] = get_BusDat_PF(bus)
-    tab_bus  = bus.get_pf_set;
+    tab_bus  = bus.get_pf_condition;
     sv_type  = tab_bus.Type;
     switch sv_type
         case "slack"
@@ -81,7 +81,7 @@ function [tag,col,rad] = get_BusDat_PF(bus)
 end
 
 function [tag,col,rad] = get_BusDat_Sim(bus)
-    tab_bus  = bus.get_pf_set;
+    tab_bus  = bus.get_pf_condition;
     sv_type  = tab_bus.Type;
 
     c_Vst = bus.c_Vequilibrium;

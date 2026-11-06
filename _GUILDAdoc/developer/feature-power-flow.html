@@ -225,7 +225,7 @@
           <path class="dg-sv-line is-muted" d="M34 308H296" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="300" width="30" height="16" rx="8"/>
           <text class="is-inv is-b" x="18" y="312" text-anchor="middle" style="font-size:10px">06</text>
-          <text class="dg-mono is-sm fpf-l" x="310" y="302" text-anchor="start">get_pf_set()</text>
+          <text class="dg-mono is-sm fpf-l" x="310" y="302" text-anchor="start">get_pf_condition()</text>
           <path class="dg-sv-line" d="M306 340H623" marker-end="url(#fpf-ah)"/>
           <path class="dg-sv-line is-muted" d="M34 340H296" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="332" width="30" height="16" rx="8"/>
@@ -270,7 +270,7 @@
         <li><b>PF-03</b> <code>PowerNetwork</code> → <code>Bus.l_isSlack = true</code></li>
         <li><b>PF-04</b> <code>PowerNetwork</code> → <code>SolverPF.solve</code></li>
         <li><b>PF-05</b> <code>SolverPF</code> → <code>PowerNetwork.get_admittance_matrix</code> → <code>Branch.get_admittance_matrix</code></li>
-        <li><b>PF-06</b> <code>SolverPF</code> → <code>Bus.get_pf_set</code></li>
+        <li><b>PF-06</b> <code>SolverPF</code> → <code>Bus.get_pf_condition</code></li>
         <li><b>PF-07</b> <code>SolverPF.solve_algebraic</code> → <code>fsolve</code></li>
         <li><b>PF-08</b> <code>SolverPF.solve_dynamic</code> → <code>ode15s</code></li>
         <li><b>PF-09</b> <code>SolverPF</code> → <code>branch_flow</code> → <code>Branch.get_admittance_matrix</code></li>
@@ -375,7 +375,7 @@
         </dl>
       </li>
       <li class="fs-step" id="PF-06">
-        <p class="fs-head"><b class="fs-id">PF-06</b> <span class="fs-call"><code>SolverPF</code> → <code>Bus.get_pf_set</code></span></p>
+        <p class="fs-head"><b class="fs-id">PF-06</b> <span class="fs-call"><code>SolverPF</code> → <code>Bus.get_pf_condition</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -392,7 +392,7 @@
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>l_isSlack</code>, <span lang="en">bus</span><span lang="ja">母線の</span> <code>tab_parameter.powerflow</code> (V, Varg, V0, Varg0), <span lang="en">component</span><span lang="ja">機器の</span> <code>tab_parameter.powerflow</code> (P, Q)</dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>tab_PFset</code> <span lang="en">(n_bus×7 table: Type, Varg, V, P, Q, Varg0, V0; NaN where the type does not set a value; row names = bus tags)</span><span lang="ja">（n_bus×7 の table: Type, Varg, V, P, Q, Varg0, V0。種類が決めない値は NaN。行名は母線のタグ）</span></dd>
+          <dd><code>tab_PFcondition</code> <span lang="en">(n_bus×7 table: Type, Varg, V, P, Q, Varg0, V0; NaN where the type does not set a value; row names = bus tags)</span><span lang="ja">（n_bus×7 の table: Type, Varg, V, P, Q, Varg0, V0。種類が決めない値は NaN。行名は母線のタグ）</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="PF-07">
@@ -413,7 +413,7 @@
             <li>出力関数が各反復の値を記録</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>cm_Y</code>, <code>tab_PFset</code>, <code>sct_options</code> → <code>SolverPF.optimoption</code></dd>
+          <dd><code>cm_Y</code>, <code>tab_PFcondition</code>, <code>sct_options</code> → <code>SolverPF.optimoption</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>cv_Vbus</code> <span lang="en">(n_bus×1 complex [pu])</span><span lang="ja">（n_bus×1 の複素数 [pu]）</span>, <code>flag</code> = <span lang="en">fsolve exitflag</span><span lang="ja">fsolve の exitflag</span>, <code>output</code> = <span lang="en">fsolve output</span><span lang="ja">fsolve の output</span>, <code>cm_Vhistory</code> (n_bus×n_iter), <code>rv_step = 0:n_iter-1</code></dd>
         </dl>
@@ -436,7 +436,7 @@
             <li>最後の点を解として採用</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>cm_Y</code>, <code>tab_PFset</code>, <code>sct_options.dynamic</code> (Mass, Damper, foh_PQ, t_span), <code>Tolerance</code></dd>
+          <dd><code>cm_Y</code>, <code>tab_PFcondition</code>, <code>sct_options.dynamic</code> (Mass, Damper, foh_PQ, t_span), <code>Tolerance</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>cv_Vbus</code> (n_bus×1), <code>flag</code> <span lang="en">(logical)</span><span lang="ja">（logical）</span>, <code>output.message</code>, <code>cm_Vhistory</code> (n_bus×n_t), <code>rv_step</code> = <span lang="en">times [s]</span><span lang="ja">時刻 [s]</span></dd>
         </dl>
@@ -653,7 +653,7 @@
       </li>
       <li><b>Bus type</b>: a new type needs
         <ul>
-          <li>a <code>Type</code> in <code>Bus.get_pf_set</code></li>
+          <li>a <code>Type</code> in <code>Bus.get_pf_condition</code></li>
           <li>a <code>private/PFconst_*</code> function returning <code>[con, jacobi_V, jacobi_I]</code> (2×1, 2×2, 2×2)</li>
           <li>a case in <code>solve_algebraic</code> and <code>solve_dynamic</code></li>
         </ul>
@@ -684,7 +684,7 @@
       </li>
       <li><b>母線の種類</b>: 新しい種類に必要なもの
         <ul>
-          <li><code>Bus.get_pf_set</code> の <code>Type</code></li>
+          <li><code>Bus.get_pf_condition</code> の <code>Type</code></li>
           <li><code>[con, jacobi_V, jacobi_I]</code>（2×1、2×2、2×2）を返す <code>private/PFconst_*</code> 関数</li>
           <li><code>solve_algebraic</code> と <code>solve_dynamic</code> の分岐</li>
         </ul>
