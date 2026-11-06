@@ -224,9 +224,9 @@ end
     <p lang="ja"><code>Xs</code> のように同梱の <code>parameter.csv</code> にないパラメータを持つ発電機: <code>add_component</code> の <code>parameter</code> オプションにテーブルが必要。</p>
     <ul>
       <li><span lang="en">A model reads and writes its parameters through <code>tab_parameter</code>, one column per group: <code>dynamics</code>, <code>powerflow</code>, <code>operation</code>, <code>OPF</code>, <code>graph</code> (a network: <code>base</code>). Example: <code>obj.tab_parameter.dynamics.Xs</code>.</span><span lang="ja">モデルのパラメータの読み書きは <code>tab_parameter</code> 経由。列は区分ごと: <code>dynamics</code>、<code>powerflow</code>、<code>operation</code>、<code>OPF</code>、<code>graph</code>（ネットワークは <code>base</code>）。例: <code>obj.tab_parameter.dynamics.Xs</code>。</span></li>
-      <li><span lang="en">Writing <code>tab_parameter</code> writes only the changed values, so only they are logged as edits.</span><span lang="ja"><code>tab_parameter</code> への書き込みは変わった値だけ。編集として記録されるのもその値だけ。</span></li>
-      <li><span lang="en">The containers behind the table are the cell <code>a_Parameter</code>, one <code>Parameter</code> per group, found by its <code>s_tag</code>. A constructor adds its entries with this tag form, e.g. <code>obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.add_entry(...)</code>.</span><span lang="ja">表の元のコンテナは cell の <code>a_Parameter</code>。区分ごとに 1 つの <code>Parameter</code> で、<code>s_tag</code> で特定。コンストラクタはこのタグの形でエントリを追加（例: <code>obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.add_entry(...)</code>）。</span></li>
-      <li><span lang="en">Internal code that loops over many layers may read a container by tag in one line instead of building the table, e.g. <code>b.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", b.a_Parameter)}.Gshunt</code>.</span><span lang="ja">多数の層を回す内部のコードは、表を作らずにタグでコンテナを 1 行で読んでもよい（例: <code>b.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", b.a_Parameter)}.Gshunt</code>）。</span></li>
+      <li><span lang="en">Writing <code>tab_parameter</code> changes only the edited values, so only they are logged as edits. A value of another class is an error and nothing is stored.</span><span lang="ja"><code>tab_parameter</code> への書き込みで変わるのは編集した値だけ。編集として記録されるのもその値だけ。クラスの違う値はエラーで、何も保存しない。</span></li>
+      <li><span lang="en">The containers behind the table are the cell <code>a_Parameter</code>, one <code>Parameter</code> per group, found by its <code>s_tag</code>. Each container stores its parameters as a table; its class and size come from the defaults. A model constructor replaces its <code>dynamics</code> container in one line with this tag form and a struct of the defaults (field: name, value: default), e.g. <code>obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)} = Parameter(obj, "dynamics", struct("Ka", 30, "Te", 0.05))</code>.</span><span lang="ja">表の元のコンテナは cell の <code>a_Parameter</code>。区分ごとに 1 つの <code>Parameter</code> で、<code>s_tag</code> で特定。各コンテナはパラメータを表として保持し、クラスと大きさは既定値から決定。モデルのコンストラクタは、このタグの形と既定値の struct（フィールド: 名前、値: 既定値）で <code>dynamics</code> コンテナを 1 行で置き換え（例: <code>obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)} = Parameter(obj, "dynamics", struct("Ka", 30, "Te", 0.05))</code>）。</span></li>
+      <li><span lang="en">Internal code that loops over many layers may read a container by tag in one line instead of building the table, e.g. <code>b.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", b.a_Parameter)}.tab_parameter.Gshunt</code>.</span><span lang="ja">多数の層を回す内部のコードは、表を作らずにタグでコンテナを 1 行で読んでもよい（例: <code>b.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", b.a_Parameter)}.tab_parameter.Gshunt</code>）。</span></li>
     </ul>
 
     <!-- ============================== NETWORK ============================== -->
@@ -283,7 +283,7 @@ sys = net.get_sys();
                 opt.Te (1,1) double = 0.05  % [s] Time constant.
             end
             obj@LocalController("CA"+tag)
-            obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.add_entry("Ka", opt.Ka, "double", "Te", opt.Te, "double");
+            obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)} = Parameter(obj, "dynamics", struct("Ka", opt.Ka, "Te", opt.Te));
         end
         function get_equilibrium(obj, V, u)
             % Set the equilibrium from the complex voltage V and the component inputs u.

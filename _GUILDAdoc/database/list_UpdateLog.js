@@ -340,5 +340,11 @@ const updateLogData = [
     "date": "2026-11-06",
     "type": "changed",
     "content": "Each model object holds its parameter containers in a_Parameter, and parameters are read and edited through tab_parameter (one column per group: dynamics, powerflow, operation, OPF, graph, base); the para_* properties are removed. Writing tab_parameter changes only the edited values, so only they are logged as edits. The base column of a component (comp.tab_parameter.base, comp.para_base) is removed: the frequency and the system base are in net.tab_parameter.base, and comp.get_Hz() reads the frequency. For model authors: a constructor adds its entries with obj.a_Parameter{cellfun(@(p) p.s_tag==\"dynamics\", obj.a_Parameter)}.add_entry(...)."
+  },
+  {
+    "title": "Parameter stores its table; add_entry removed",
+    "date": "2026-11-06",
+    "type": "changed",
+    "content": "For model authors: Parameter.add_entry is removed. A Parameter container stores its parameters as one table, created from a struct of defaults (field: name, value: default), and a model constructor replaces its dynamics container in one line: obj.a_Parameter{cellfun(@(p) p.s_tag==\"dynamics\", obj.a_Parameter)} = Parameter(obj, \"dynamics\", struct(\"Ka\", opt.Ka, \"Te\", opt.Te)). The class of each parameter is the class of its default; a write of another class, of other names, of another height or of other row names is an error and stores nothing. Internal reads by tag end in .tab_parameter.<name>. A network or a lower layer loaded from a MAT file checks and logs its edits without a restore step, so the IncompleteLoad warning is removed."
   }
 ];
