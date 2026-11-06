@@ -57,14 +57,14 @@ assert(contains(txt, "Total Buses: 14"))
 
 
 %% struct keeps each layer and gives a repeated one its first path
-% 同じタグの別オブジェクト (各機器の para_dynamics はタグ "dynamics") を取り違えない
+% 同じタグの別オブジェクト (各機器のパラメータ表) を取り違えない
 net = DebugScript.helper.build_9bus();
 s   = net.struct(false);
 for i = 1:numel(net.a_Bus)
     for j = 1:numel(net.a_Bus{i}.a_Component)
         sc = s.a_Bus{i}.a_Component{j};
-        assert(isstruct(sc.para_dynamics) && sc.para_dynamics.class == class(net.a_Bus{i}.a_Component{j}.para_dynamics), ...
-               "a_Bus{" + i + "}.a_Component{" + j + "}.para_dynamics")
+        assert(istable(sc.tab_parameter) && isequaln(sc.tab_parameter, net.a_Bus{i}.a_Component{j}.tab_parameter), ...
+               "a_Bus{" + i + "}.a_Component{" + j + "}.tab_parameter")
     end
 end
 % 2 回目に現れたオブジェクトは最初に格納したパス
@@ -288,9 +288,9 @@ DebugScript.helper.quiet(@() n1.initialize);
 assert(~isequal(h_dx, comp.f_dx) && ~DebugScript.helper.is_stale(n1))
 
 % 型の検査も効く (読み込む前と同じく、エラーになり値は変わらない)
-r_D = comp.para_dynamics.D;
+r_D = comp.tab_parameter.dynamics.D;
 assert(error_id(@() set_dynamics_D(comp, "abc")) == "GUILDA:Parameter:ClassNameMismatch")
-assert(isequal(comp.para_dynamics.D, r_D))
+assert(isequal(comp.tab_parameter.dynamics.D, r_D))
 
 % 母線・送電線・系統のパラメータと、読み込み後の構成の編集
 s = load(s_mat);  n2 = s.net;
@@ -328,9 +328,9 @@ s   = load(s_mat);
 avr = s.net.a_Bus{1}.a_Component{1}.a_LocalController{1};
 pss = avr.a_LocalController{1};
 assert(isa(avr, "controller.avr.AVR_ST1") && isa(pss, "controller.pss.PSS1"))
-avr.para_dynamics.kap = avr.para_dynamics.kap * 1.1;
+avr.tab_parameter.dynamics.kap = avr.tab_parameter.dynamics.kap * 1.1;
 assert(numel(DebugScript.helper.stale(s.net)) == 1 && DebugScript.helper.is_stale(s.net))
-pss.para_dynamics.kpss = pss.para_dynamics.kpss * 1.1;
+pss.tab_parameter.dynamics.kpss = pss.tab_parameter.dynamics.kpss * 1.1;
 assert(numel(DebugScript.helper.stale(s.net)) == 2)
 
 % 結果オブジェクトが参照する系統も同じ
@@ -342,7 +342,7 @@ lastwarn("");
 s = load(s_mat);
 assert(isempty(lastwarn), lastwarn)
 assert(numel(s.res.a_PowerNetwork.a_Bus) == 3)
-s.res.a_PowerNetwork.a_Bus{2}.a_Component{1}.para_dynamics.D = 1;
+s.res.a_PowerNetwork.a_Bus{2}.a_Component{1}.tab_parameter.dynamics.D = 1;
 assert(numel(DebugScript.helper.stale(s.res.a_PowerNetwork)) == 1)
 
 % 系統の下の層だけを保存すると、その層の編集は記録できないので警告する
@@ -759,7 +759,7 @@ function set_slack(bus)
 end
 
 function set_dynamics_D(comp, val)
-    comp.para_dynamics.D = val;
+    comp.tab_parameter.dynamics.D = val;
 end
 
 function set_prop(obj, s_prop, val)

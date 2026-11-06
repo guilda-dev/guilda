@@ -9,7 +9,7 @@ function set_opffcn(obj, varargin)
 %   v.Bus.(tag).Varg, v.Bus.(tag).V ("AC OPF"); no fields in "ELD"
 %   v.Branch.(tag).Pfrom, .Pto, .Vargfrom, .Vargto, ... (see Branch.set_opffcn); no fields in "ELD"
 % p holds p.Method and p.base (baseMVA, Hz). Parameters of other objects are read from
-% the objects themselves when the handle is written (e.g. gen.para_operation.Pmax).
+% the objects themselves when the handle is written (e.g. gen.tab_parameter.operation.Pmax).
 % Cost: fcnCost(v, p) returns a scalar expression that is added to the objective (the
 % network itself has no default cost).
 % Constraint: fcnCon(v, p) returns a struct of named constraints that are ADDED to the
@@ -32,7 +32,7 @@ function set_opffcn(obj, varargin)
 % ```matlab
 % % Spinning reserve: the headroom Pmax - P of two generators is at least 0.5 p.u.
 % g1 = net.a_Bus{1}.a_Component{1};  g2 = net.a_Bus{2}.a_Component{1};
-% Pmax1 = g1.para_operation.Pmax;   Pmax2 = g2.para_operation.Pmax;
+% Pmax1 = g1.tab_parameter.operation.Pmax;   Pmax2 = g2.tab_parameter.operation.Pmax;
 % net.set_opffcn("Constraint", @(v, p) struct("Reserve", ...
 %     (Pmax1 - v.Component.(string(g1)).P) + (Pmax2 - v.Component.(string(g2)).P) >= 0.5));
 % res = net.optimize_powerflow(Method="DC OPF");

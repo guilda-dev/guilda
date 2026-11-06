@@ -10,11 +10,10 @@ function l_complete = restore_parameter_listeners(layer)
     arguments (Output)
         l_complete (1,1) logical   % False when a layer is still being loaded.
     end
-    l_complete = true;
-    mc = metaclass(layer);
-    lv = startsWith(string({mc.PropertyList.Name}), "para_") & ~[mc.PropertyList.Dependent];
-    for s_para = string({mc.PropertyList(lv).Name})
-        para = layer.(s_para);
+    % Every layer has at least one container: none yet means it is still being loaded.
+    l_complete = ~isempty(layer.a_Parameter);
+    for i_para = 1:numel(layer.a_Parameter)
+        para = layer.a_Parameter{i_para};
         if ~isa(para, "Parameter")
             l_complete = false;
             continue

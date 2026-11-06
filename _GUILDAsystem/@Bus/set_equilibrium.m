@@ -14,7 +14,7 @@ function set_equilibrium(obj, c_V, c_I, r_P, r_Q, opt)
         r_P = real( c_V*conj(c_I) );   % [pu] Active power injection.
         r_Q = imag( c_V*conj(c_I) );   % [pu] Reactive power injection.
         opt.QdistributionRule (1,1) string {mustBeMember(opt.QdistributionRule,["baseMVA","Qmax"])} = "baseMVA";   % Split of Q: "baseMVA" (by rating) or "Qmax" (by the Q range).
-        opt.rm_PQ double = [];   % [pu] [P Q] of each component, one row per component (e.g. the OPF solution). Default [] distributes r_P and r_Q from para_powerflow.
+        opt.rm_PQ double = [];   % [pu] [P Q] of each component, one row per component (e.g. the OPF solution). Default [] distributes r_P and r_Q from tab_parameter.powerflow.
     end
     
     % The bus owns V. Its current is the sum of the component currents
@@ -41,13 +41,13 @@ end
 
 
 function tab_PQcomp = distribute_power(obj, r_P, r_Q, s_rule)
-% P and Q of each component: para_powerflow, the slack remainder and the split of NaN Q
+% P and Q of each component: tab_parameter.powerflow, the slack remainder and the split of NaN Q
     a_Comp = obj.a_Component;
     n_Comp = numel(a_Comp);
     if isempty(a_Comp)
         tab_PQcomp = array2table(zeros(0,2),"VariableNames",["P","Q"]);
     else
-        tab_PQcomp = tools.vcellfun(@(c) c.para_powerflow.tab_parameter, a_Comp);
+        tab_PQcomp = tools.vcellfun(@(c) c.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", c.a_Parameter)}.tab_parameter, a_Comp);
     end
 
     % distrubute active power(P)
@@ -70,7 +70,7 @@ function tab_PQcomp = distribute_power(obj, r_P, r_Q, s_rule)
         if sum(lv_Qnan) == 1
             tab_PQcomp{lv_Qnan,"Q"} = r_Qrest;
         else 
-            tab_Ocomp = tools.vcellfun(@(c) c.para_operation.tab_parameter, a_Comp);
+            tab_Ocomp = tools.vcellfun(@(c) c.a_Parameter{cellfun(@(p) p.s_tag=="operation", c.a_Parameter)}.tab_parameter, a_Comp);
                 rv_Qmin = tab_Ocomp{lv_Qnan,"Qmin"};
                 rv_Qmax = tab_Ocomp{lv_Qnan,"Qmax"};
             if s_rule=="Qmax" && ~any( isinf([rv_Qmin,rv_Qmax]), "all")

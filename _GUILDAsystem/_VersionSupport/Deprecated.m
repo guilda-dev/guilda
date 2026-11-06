@@ -6,7 +6,7 @@ function Deprecated(key, varargin)
 %
 % - Show them again: `clear Deprecated`
 %
-% Keys: ComponentBaseHz, ComponentBaseHzSet, BusBaseMVA, BusBaseMVAMismatch,
+% Keys: BusBaseMVA, BusBaseMVAMismatch,
 % CsvNetHandlerImport, CsvNetHandlerExport (see Deprecated.xml for all).
 %
 % Convention for a new deprecated form:

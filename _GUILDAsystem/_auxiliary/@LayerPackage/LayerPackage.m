@@ -46,7 +46,7 @@ classdef LayerPackage < handle
 
     %% Abstract
     properties(Abstract, Dependent) % Parameter
-        tab_parameter  % Parameter table: the para_* tables side by side. <@Type> table
+        tab_parameter  % Parameter table of the layer (PowerSystemModel: the a_Parameter tables side by side). <@Type> table
     end
 
     %% Layer Structure

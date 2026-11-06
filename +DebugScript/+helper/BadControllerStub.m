@@ -36,7 +36,7 @@ classdef BadControllerStub < LocalController
                 obj  % 作成したオブジェクト
             end
             obj@LocalController("CLbad")
-            obj.para_dynamics.add_entry("bad", find(obj.sr_bad == s_bad), "double");
+            obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.add_entry("bad", find(obj.sr_bad == s_bad), "double");
         end
         function get_equilibrium(obj, ~, u)
             arguments (Input)
@@ -45,11 +45,11 @@ classdef BadControllerStub < LocalController
                 u    % 機器の平衡点の入力
             end
             obj.rv_Xequilibrium = u(2);
-            if obj.sr_bad(obj.para_dynamics.bad) == "xsize" || obj.l_xsizeLater
+            if obj.sr_bad(obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.bad) == "xsize" || obj.l_xsizeLater
                 obj.rv_Xequilibrium = [u(2); 0];
             end
             obj.rv_Uequilibrium = [0; 0];
-            if obj.sr_bad(obj.para_dynamics.bad) == "input"
+            if obj.sr_bad(obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.bad) == "input"
                 obj.rv_Uequilibrium = [0.2; 0];
             end
         end

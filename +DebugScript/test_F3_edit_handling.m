@@ -49,7 +49,7 @@ assert(isa(res, "ResultLIN"))
 DebugScript.helper.quiet(@() net.initialize);
 assert(~isempty(comp.f_dx) && ~DebugScript.helper.is_stale(net))
 h_dx = comp.f_dx;
-D0 = comp.para_dynamics.D;
+D0 = comp.tab_parameter.dynamics.D;
 
 comp.tab_parameter.dynamics.D = 5;
 s_msg = "dynamics/" + comp.s_tag + "/B002/" + net.s_tag + ": edit D: " + tools.value_text(D0) + " -> 5";
@@ -292,7 +292,7 @@ avr = comp.a_LocalController{1};
 DebugScript.helper.quiet(@() net.initialize);
 h_dx = avr.f_dx;
 
-avr.para_dynamics.kap = 2 * avr.para_dynamics.kap;
+avr.tab_parameter.dynamics.kap = 2 * avr.tab_parameter.dynamics.kap;
 assert(isequal(h_dx, avr.f_dx) && DebugScript.helper.is_stale(net))
 assert(contains(avr.sct_stale.odefcn, "edit kap: ") && isempty(comp.sct_stale.equilibrium))
 assert_stale_error(@() net.get_sys(), "GUILDA:SolverLIN:Stale")
@@ -315,7 +315,7 @@ net.add_global_controller(agc);
 DebugScript.helper.quiet(@() net.initialize);
 h_dx = agc.f_dx;
 
-agc.para_dynamics.kP = [200; 200];
+agc.tab_parameter.dynamics.kP = [200; 200];
 assert(isequal(h_dx, agc.f_dx) && DebugScript.helper.is_stale(net))
 assert(contains(agc.sct_stale.equilibrium, "edit kP: ") && isequal(agc.sct_stale.odefcn, agc.sct_stale.equilibrium))
 
@@ -356,7 +356,7 @@ pss = avr.a_LocalController{1};
 ld  = net.a_Bus{5}.a_Component{1};
 a_model = {c{1}, c{2}, ld, avr, pss, agc};
 assert(~any(cellfun(@(m) isempty(m.f_dx), a_model)))
-assert(isa(c{1}.tab_parameter.base, "ComponentBaseView"))   % 機器は Hz を持たない (旧形式の互換ビューだけ)
+assert(~ismember("base", c{1}.tab_parameter.Properties.VariableNames))   % 機器は Hz を持たない
 Hz0 = net.tab_parameter.base.Hz;
 
 net.tab_parameter.base.Hz = 50;
@@ -580,40 +580,22 @@ dx = comp.fcn_dx(0, x(comp.iv_odeX), V, I, u, para, comp.get_Hz());
 assert(norm(DAEvec(comp.iv_odeX) - dx) < 1e-12, "initialize の後は編集後のハンドルを使う")
 
 
-%% Deprecated component Hz forms still work and warn once
-% 旧形式 comp.tab_parameter.base.Hz / comp.para_base.Hz は系統の Hz を返し、警告を1回だけ出す
-s_id = "GUILDA:Deprecated:ComponentBaseHz";
-[net, comp] = DebugScript.helper.build_3bus("gen-1axis");
-net.tab_parameter.base.Hz = 50;
-clear Deprecated
-assert(warn_id(@() comp.tab_parameter.base.Hz) == s_id)
-assert(comp.tab_parameter.base.Hz == 50 && comp.para_base.Hz == 50)
-assert(comp.para_base.tab_parameter.Hz == 50)
-assert(warn_id(@() comp.para_base.Hz) == "", "警告は1セッションに1回")
-clear Deprecated
-assert(warn_id(@() comp.para_base.Hz) == s_id)
-% 他の列の編集は今まで通り (base は無視される)
-comp.tab_parameter.dynamics.D = 3;
-assert(comp.para_dynamics.D == 3 && net.para_base.Hz == 50)
-
-
-%% Deprecated component Hz write sets the network Hz
-% 旧形式で Hz を書くと系統全体の Hz を変え (警告)、initialize で全機器のハンドルが新しい Hz になる
+%% A component has no base column
+% 周波数は系統だけが持つ。機器の tab_parameter に base 列は無く、base 列を書くとエラーで何も変わらない
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);
-other = net.a_Bus{1}.a_Component{1};
-clear Deprecated
-lastwarn("");
-evalc("comp.tab_parameter.base.Hz = 50;");
-id = DebugScript.helper.msg_id();
-assert(string(id) == "GUILDA:Deprecated:ComponentBaseHzSet")
-assert(net.tab_parameter.base.Hz == 50 && other.get_Hz() == 50)
-assert(DebugScript.helper.handle_Hz(comp) == 60 && DebugScript.helper.handle_Hz(other) == 60 && DebugScript.helper.is_stale(net))
-DebugScript.helper.quiet(@() net.initialize);
-assert(DebugScript.helper.handle_Hz(comp) == 50 && DebugScript.helper.handle_Hz(other) == 50)
-evalc("comp.para_base.Hz = 55;");
-DebugScript.helper.quiet(@() net.initialize);
-assert(net.tab_parameter.base.Hz == 55 && DebugScript.helper.handle_Hz(comp) == 55)
+assert(~ismember("base", comp.tab_parameter.Properties.VariableNames))
+assert(~isprop(comp, "para_base"))
+tp = comp.tab_parameter;
+tp.dynamics.D = 3;
+tp.base = table(50, 'VariableNames', "Hz");
+try
+    comp.tab_parameter = tp;
+    error("DebugScript:noError", "base 列を書いてもエラーにならない")
+catch ME
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerSystemModel:UnknownParameterGroup", DebugScript.helper.msg_id(ME))
+end
+assert(comp.tab_parameter.dynamics.D ~= 3 && net.tab_parameter.base.Hz ~= 50 && ~DebugScript.helper.is_stale(net))
 
 
 % ---- local functions ----

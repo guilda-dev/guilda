@@ -20,7 +20,7 @@ function [rv_Xequilibrium,rv_Uequilibrium] = get_equilibrium(obj,c_V,c_I,r_P,r_Q
     Vabs = abs(c_V);
     Varg = angle(c_V);
 
-    para = obj.para_dynamics.tab_parameter{:,obj.sv_para};
+    para = obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.tab_parameter{:,obj.sv_para};
             
     Xd   = para(3);
     Xq   = para(5);

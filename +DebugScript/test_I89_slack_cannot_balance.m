@@ -28,7 +28,7 @@ assert(set_slack(net.a_Bus{1}) == "")
 assert(net.a_Bus{1}.l_isSlack)
 
 net = load_only_network();
-net.a_Bus{1}.a_Component{1}.para_powerflow.Q = nan;
+net.a_Bus{1}.a_Component{1}.tab_parameter.powerflow.Q = nan;
 assert(set_slack(net.a_Bus{1}) == "")
 
 
@@ -71,7 +71,7 @@ assert(string(s_id) == "")
 DebugScript.helper.quiet(@() net.initialize);
 assert(~DebugScript.helper.is_stale(net) && kcl_residual(net) < 1e-8)
 load1 = net.a_Bus{1}.a_Component{1};
-assert(abs(real(load1.c_Vequilibrium*conj(load1.c_Iequilibrium)) - load1.para_powerflow.P) > 1e-3)
+assert(abs(real(load1.c_Vequilibrium*conj(load1.c_Iequilibrium)) - load1.tab_parameter.powerflow.P) > 1e-3)
 
 
 %% Removing the last component later stops at the KCL check of initialize

@@ -36,7 +36,7 @@ clear c_warn
 net = network_with("none");
 assert(warning_of(@() net.initialize) == "")
 comp = stub(net);
-comp.para_dynamics.bad = find(comp.sr_bad == "equilibrium");
+comp.tab_parameter.dynamics.bad = find(comp.sr_bad == "equilibrium");
 assert(warning_of(@() net.initialize(Method="equilibrium")) == s_warn)
 
 % Method="OPF" も調べる

@@ -30,7 +30,7 @@ function varargout = get_hessian(obj, x, V, I, u)
         varargout   % In this order: H_dx (fcn_dx, n_x x n_z x n_z), H_I ([Ire; Iim] of fcn_I, 2 x n_z x n_z), H_Y (fcn_Y, n_y x n_z x n_z).
     end
     c_method = {"Hessian_dx", numel(obj.sv_x); "Hessian_I", 2; "Hessian_Y", numel(obj.sv_y)};
-    param    = obj.para_dynamics.tab_parameter{:,obj.sv_para};
+    param    = obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.tab_parameter{:,obj.sv_para};
     varargout = hessians(obj, c_method(1:max(nargout,1),:), x, V, I, u, param);
 end
 

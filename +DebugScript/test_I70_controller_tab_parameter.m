@@ -15,9 +15,9 @@ avr = comp.a_LocalController{1};
 DebugScript.helper.quiet(@() net.initialize);
 h_dx = avr.f_dx;
 
-val = 2 * avr.para_dynamics.kap;
+val = 2 * avr.tab_parameter.dynamics.kap;
 avr.tab_parameter.dynamics.kap = val;
-assert(avr.para_dynamics.kap == val && avr.tab_parameter.dynamics.kap == val)
+assert(avr.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", avr.a_Parameter)}.kap == val && avr.tab_parameter.dynamics.kap == val)
 assert(isequal(h_dx, avr.f_dx) && DebugScript.helper.is_stale(net))   % initialize で作り直す
 sv = DebugScript.helper.stale(net);
 assert(numel(sv) == 1 && contains(sv, "edit kap: "))   % 他の列は変更扱いにならない
@@ -40,9 +40,9 @@ pss = comp.a_LocalController{1}.a_LocalController{1};
 DebugScript.helper.quiet(@() net.initialize);
 
 name = pss.sv_para(1);
-val  = 2 * pss.para_dynamics.(name) + 1;
+val  = 2 * pss.tab_parameter.dynamics.(name) + 1;
 pss.tab_parameter.dynamics.(name) = val;
-assert(pss.para_dynamics.(name) == val)
+assert(pss.tab_parameter.dynamics.(name) == val)
 assert(DebugScript.helper.is_stale(net))
 sv = DebugScript.helper.stale(net);
 assert(numel(sv) == 1 && contains(sv, "edit " + name + ": ") && isequal(pss.sct_stale.equilibrium, sv))
@@ -66,13 +66,13 @@ net = DebugScript.helper.build_ieee14();
 comp = net.a_Bus{1}.a_Component{1};
 comp.add_local_controller(controller.avr.AVR_ST1("avr1"));
 avr = comp.a_LocalController{1};
-val_avr  = avr.para_dynamics.kap;
-val_comp = comp.para_dynamics.D;
+val_avr  = avr.tab_parameter.dynamics.kap;
+val_comp = comp.tab_parameter.dynamics.D;
 
 assert(class_error(@() set_avr_kap(avr)), "AVR で型の違う値を拒否しない")
-assert(avr.para_dynamics.kap == val_avr)
+assert(avr.tab_parameter.dynamics.kap == val_avr)
 assert(class_error(@() set_comp_D(comp)), "Component で型の違う値を拒否しない")
-assert(comp.para_dynamics.D == val_comp)
+assert(comp.tab_parameter.dynamics.D == val_comp)
 
 
 %% Global controller tab_parameter edit is logged and rebuilt
@@ -81,7 +81,7 @@ DebugScript.helper.quiet(@() net.initialize);
 h_dx = agc.f_dx;
 
 agc.tab_parameter.dynamics.kP = [200; 300];
-assert(isequal(agc.para_dynamics.kP, [200; 300]))
+assert(isequal(agc.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", agc.a_Parameter)}.kP, [200; 300]))
 assert(isequal(agc.tab_parameter.dynamics.kP, [200; 300]))
 assert(isequal(h_dx, agc.f_dx) && DebugScript.helper.is_stale(net))
 sv = DebugScript.helper.stale(net);
@@ -100,7 +100,7 @@ assert(norm(agc.f_dx(0,x,[],[],u) - agc.fcn_dx(0,x,[],[],u,para,60)) < 1e-12, ..
 DebugScript.helper.quiet(@() net.initialize);
 
 agc.tab_parameter.dynamics.kP(2) = 300;
-assert(isequal(agc.para_dynamics.kP, [100; 300]))
+assert(isequal(agc.tab_parameter.dynamics.kP, [100; 300]))
 sv = DebugScript.helper.stale(net);
 assert(numel(sv) == 1 && contains(sv, "edit kP: "))
 

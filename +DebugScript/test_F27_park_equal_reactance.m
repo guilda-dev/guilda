@@ -55,7 +55,7 @@ for k = 1:numel(net.a_Bus)
     for j = 1:numel(net.a_Bus{k}.a_Component)
         g = net.a_Bus{k}.a_Component{j};
         if ~isa(g, "component.generator.park"), continue, end
-        x_old = old_equilibrium(g.para_dynamics, g.c_Vequilibrium, g.c_Iequilibrium);
+        x_old = old_equilibrium(g.tab_parameter.dynamics, g.c_Vequilibrium, g.c_Iequilibrium);
         assert(norm(g.rv_Xequilibrium - x_old) < 1e-12 * norm(x_old), g.s_tag)
         n = n + 1;
     end
@@ -66,7 +66,7 @@ assert(n > 0)
 for c_S = [0.5+0.2j, 1.2-0.3j, -0.4+0.1j]
     c_V = 1.03*exp(0.2j);
     c_I = conj(c_S/c_V);
-    x_old = old_equilibrium(g.para_dynamics, c_V, c_I);
+    x_old = old_equilibrium(g.tab_parameter.dynamics, c_V, c_I);
     assert(norm(g.get_equilibrium(c_V, c_I) - x_old) < 1e-12 * norm(x_old))
 end
 

@@ -13,7 +13,7 @@ function Hz = get_Hz(obj)
         p = p.parent;
     end
     if isa(p,"PowerNetwork")
-        Hz = p.para_base.Hz;
+        Hz = p.a_Parameter{cellfun(@(c) c.s_tag=="base", p.a_Parameter)}.Hz;
     else
         Hz = GUILDA.config("Model","Hz");
     end

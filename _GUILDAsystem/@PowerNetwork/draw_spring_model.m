@@ -31,7 +31,7 @@ function G = draw_spring_model(obj,mode)
     rv_Radii  = ones(1,n_Bus)*0.08;
 
     for i = 1:n_Bra
-        tab_Bra = a_Bra{i}.para_dynamics;
+        tab_Bra = a_Bra{i}.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", a_Bra{i}.a_Parameter)};
         RX = tab_Bra.Rij + 1j*tab_Bra.Xij;
         GB = 1/RX;
         s_fromto   =  "("+sm_edge(i,1)+"--"+sm_edge(i,2)+")"+newline;

@@ -13,9 +13,9 @@ function p = param(obj, s_method)
     end
     p = struct("Method", s_method);
     for s_group = ["OPF","operation","powerflow","dynamics","base"]
-        s_prop = "para_" + s_group;
-        if isprop(obj, s_prop) && isa(obj.(s_prop), "Parameter")
-            p.(s_group) = table2struct(obj.(s_prop).tab_parameter);
+        lv_para = cellfun(@(c) c.s_tag==s_group, obj.a_Parameter);
+        if any(lv_para)
+            p.(s_group) = table2struct(obj.a_Parameter{lv_para}.tab_parameter);
         end
     end
 end

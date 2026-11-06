@@ -18,7 +18,7 @@ function opt = v3_bus_baseMVA(net, opt)
         return
     end
     if ~isnan(opt.baseMVA)
-        r_base = net.para_base.baseMVA;
+        r_base = net.a_Parameter{cellfun(@(p) p.s_tag=="base", net.a_Parameter)}.baseMVA;
         if opt.baseMVA == r_base
             Deprecated("BusBaseMVA", r_base);
         else

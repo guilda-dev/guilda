@@ -22,7 +22,7 @@ function [rv_Xequilibrium, rv_Uequilibrium] = get_equilibrium(obj,c_V,c_I,r_P,r_
     Varg = angle(c_V);
     
     % パラメータ値の抽出
-    para = obj.para_dynamics;
+    para = obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)};
     Xd   = para.Xd;
     Xq   = para.Xq;
     Xdp  = para.Xd_p;

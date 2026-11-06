@@ -36,8 +36,10 @@ function set_network(obj, net)
         y_main = h_temp.YData;
         close(fig);
         for i = 1:obj.n_bus
-            a_bus{i}.para_graph.Xaxis = x_main(i);
-            a_bus{i}.para_graph.Yaxis = y_main(i);
+            tp = a_bus{i}.tab_parameter;
+            tp.graph.Xaxis = x_main(i);
+            tp.graph.Yaxis = y_main(i);
+            a_bus{i}.tab_parameter = tp;
         end
         obj.tab_bus.graph{:, ["Xaxis","Yaxis"]} = [x_main(:), y_main(:)];
     end

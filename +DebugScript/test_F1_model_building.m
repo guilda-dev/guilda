@@ -647,7 +647,7 @@ DebugScript.helper.quiet(@() net.initialize);
 comp5 = net.a_Bus{5}.a_Component{1};
 comp6 = net.a_Bus{6}.a_Component{1};
 
-P5 = comp5.para_powerflow.P;  P6 = comp6.para_powerflow.P;
+P5 = comp5.tab_parameter.powerflow.P;  P6 = comp6.tab_parameter.powerflow.P;
 for k = 1:5
     comp5.tab_parameter.powerflow.P = P5 - 0.01*k;
     comp6.tab_parameter.powerflow.P = P6 - 0.01*k;
@@ -669,7 +669,7 @@ gen1.add_local_controller(avr);
 DebugScript.helper.quiet(@() net.initialize);
 
 % 制御器の Parameter の編集は制御器自身の equilibrium と odefcn を古くする
-avr.para_dynamics.kap = 31;
+avr.tab_parameter.dynamics.kap = 31;
 s_msg = "dynamics/" + avr.s_tag + "/" + string(gen1) + "/B001/TestSystem: edit kap: ";
 assert(numel(avr.sct_stale.equilibrium) == 1 && startsWith(avr.sct_stale.equilibrium, s_msg))
 assert(isequal(avr.sct_stale.odefcn, avr.sct_stale.equilibrium))
@@ -678,13 +678,13 @@ DebugScript.helper.quiet(@() net.initialize);
 assert(~DebugScript.helper.is_stale(net))
 
 % 制御器の削除は機器の equilibrium を古くする
-avr.para_dynamics.kap = 32;
+avr.tab_parameter.dynamics.kap = 32;
 gen1.remove_local_controller(avr.s_tag);
 assert(any(contains(gen1.sct_stale.equilibrium, "remove")) && DebugScript.helper.is_stale(net))
 assert(~any(contains(DebugScript.helper.stale(net), "kap")))   % 外した制御器の古さは系統に残らない
 
 % 切り離した制御器の編集は系統に届かない。別の機器に付けると機器と制御器が古くなる
-avr.para_dynamics.kap = 33;
+avr.tab_parameter.dynamics.kap = 33;
 assert(~any(contains(DebugScript.helper.stale(net), "kap")))
 gen3.add_local_controller(avr);
 assert(any(contains(avr.sct_stale.equilibrium, "attached to " + string(gen3))))

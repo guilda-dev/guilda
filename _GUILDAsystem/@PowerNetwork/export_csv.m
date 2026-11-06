@@ -68,7 +68,7 @@ function path = export_csv(obj, path, opt)
     end
 
     % Export network base values
-    writetable(obj.para_base.tab_parameter, fullfile(path, "network", "parameter.csv"));
+    writetable(obj.a_Parameter{cellfun(@(p) p.s_tag=="base", obj.a_Parameter)}.tab_parameter, fullfile(path, "network", "parameter.csv"));
 
     % Export bus and branch data
     sv_bus = string(obj.a_Bus);
@@ -137,10 +137,10 @@ function tab_pf = bus_table(net)
         Slack(i) = net.a_Bus{i}.l_isSlack;
     end
 
-    get_tab = @(b) [b.para_powerflow.tab_parameter,...
-                    b.para_operation.tab_parameter,...
-                    b.para_dynamics.tab_parameter,...
-                    b.para_graph.tab_parameter];
+    get_tab = @(b) [b.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", b.a_Parameter)}.tab_parameter,...
+                    b.a_Parameter{cellfun(@(p) p.s_tag=="operation", b.a_Parameter)}.tab_parameter,...
+                    b.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", b.a_Parameter)}.tab_parameter,...
+                    b.a_Parameter{cellfun(@(p) p.s_tag=="graph", b.a_Parameter)}.tab_parameter];
     tab_bus = tools.vcellfun(@(b) get_tab(b), net.a_Bus);
     tab_pf  = [table(Tag, FullTag), tab_bus, table(Slack)];
 end
@@ -159,9 +159,9 @@ function tab_para = branch_table(net, sv_bus)
         To(i)   = find(sv_bus == string(br.a_Bus{2}));
     end
 
-    get_tab = @(b) [b.para_dynamics.tab_parameter,...
-                    b.para_operation.tab_parameter,...
-                    b.para_graph.tab_parameter];
+    get_tab = @(b) [b.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", b.a_Parameter)}.tab_parameter,...
+                    b.a_Parameter{cellfun(@(p) p.s_tag=="operation", b.a_Parameter)}.tab_parameter,...
+                    b.a_Parameter{cellfun(@(p) p.s_tag=="graph", b.a_Parameter)}.tab_parameter];
     tab_bra  = tools.vcellfun(@(b) get_tab(b), net.a_Branch);
     tab_para = [table(Type, From, To, FullTag), tab_bra];
 end
@@ -184,9 +184,9 @@ function [tab_opt, tab_para, tab_opf] = component_table(a_Comp, sv_Bus)
 
     for i = 1:n_comp
         comp = a_Comp{i};
-        para{i} = comp.para_dynamics.tab_parameter;
+        para{i} = comp.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", comp.a_Parameter)}.tab_parameter;
 
-        tab_OPF  = comp.para_OPF.tab_parameter;
+        tab_OPF  = comp.a_Parameter{cellfun(@(p) p.s_tag=="OPF", comp.a_Parameter)}.tab_parameter;
         Bus(i) = find(sv_Bus == string(comp.a_Bus));
         FullTag(i) = string(comp);
         OPFinit_P0(i) = tab_OPF.P0;
@@ -206,9 +206,9 @@ function [tab_opt, tab_para, tab_opf] = component_table(a_Comp, sv_Bus)
     [tab_para, ~, ParameterID] = unique(tab_para,'rows', 'stable');
 
 
-    get_tab = @(b) [b.para_powerflow.tab_parameter,...
-                    b.para_operation.tab_parameter,...
-                    b.para_graph.tab_parameter];
+    get_tab = @(b) [b.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", b.a_Parameter)}.tab_parameter,...
+                    b.a_Parameter{cellfun(@(p) p.s_tag=="operation", b.a_Parameter)}.tab_parameter,...
+                    b.a_Parameter{cellfun(@(p) p.s_tag=="graph", b.a_Parameter)}.tab_parameter];
     tab_comp  = tools.vcellfun(@(c) get_tab(c), a_Comp);
     tab_opt   = [table(Bus, FullTag), tab_comp, table(ParameterID,OpfID)];
 

@@ -52,7 +52,7 @@ assert(kcl_residual(net) < 1e-8)
 net = build_shared_bus();
 DebugScript.helper.quiet(@() net.initialize);
 a_Comp = net.a_Bus{2}.a_Component;
-assert(abs(real(a_Comp{1}.c_Vequilibrium*conj(a_Comp{1}.c_Iequilibrium)) - a_Comp{1}.para_powerflow.P) < 1e-10)
+assert(abs(real(a_Comp{1}.c_Vequilibrium*conj(a_Comp{1}.c_Iequilibrium)) - a_Comp{1}.tab_parameter.powerflow.P) < 1e-10)
 
 
 %% Slack bus whose components all fix Q takes the remaining Q on the first one
@@ -71,7 +71,7 @@ s_id = "GUILDA:PowerNetwork:InitializeEquilibriumEdited";
 
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);
-gen.para_powerflow.P = 0.9;
+gen.tab_parameter.powerflow.P = 0.9;
 assert_edit_stops(net, s_id, "edit P")
 
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
@@ -86,14 +86,14 @@ assert_edit_stops(net, s_id, "slack bus")
 
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);
-net.para_base.baseMVA = 2*net.para_base.baseMVA;
+net.tab_parameter.base.baseMVA = 2*net.tab_parameter.base.baseMVA;
 assert_edit_stops(net, s_id, "baseMVA")
 
 
 %% The remedy of the edit error works
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
 DebugScript.helper.quiet(@() net.initialize);
-gen.para_powerflow.P = 0.9;
+gen.tab_parameter.powerflow.P = 0.9;
 assert(contains(error_of(@() net.initialize(Method="equilibrium")).message, "net.initialize()"))
 DebugScript.helper.quiet(@() net.initialize);
 assert(kcl_residual(net) < 1e-8 && ~DebugScript.helper.is_stale(net))
@@ -105,7 +105,7 @@ assert(abs(real(gen.c_Vequilibrium*conj(gen.c_Iequilibrium)) - 0.9) < 1e-10)
 DebugScript.helper.quiet(@() net.initialize);
 V = net.cv_Vequilibrium;
 U = gen.rv_Uequilibrium;
-gen.para_dynamics.Xd = 1.2*gen.para_dynamics.Xd;
+gen.tab_parameter.dynamics.Xd = 1.2*gen.tab_parameter.dynamics.Xd;
 assert(DebugScript.helper.is_stale(net))
 DebugScript.helper.quiet(@() net.initialize(Method="equilibrium"));
 assert(~DebugScript.helper.is_stale(net))
@@ -132,8 +132,8 @@ assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:Stale", DebugScript.he
 net = build_shared_bus();
 DebugScript.helper.quiet(@() net.initialize);
 a_Comp = net.a_Bus{2}.a_Component;
-a_Comp{1}.para_operation.baseMVA = 0;
-a_Comp{2}.para_operation.baseMVA = 0;
+a_Comp{1}.tab_parameter.operation.baseMVA = 0;
+a_Comp{2}.tab_parameter.operation.baseMVA = 0;
 assert(~DebugScript.helper.is_stale(net))
 DebugScript.helper.quiet(@() net.initialize());
 assert(~DebugScript.helper.is_stale(net))

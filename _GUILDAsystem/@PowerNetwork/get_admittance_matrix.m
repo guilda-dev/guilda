@@ -33,6 +33,6 @@ function tab_Ybus2bus = get_admittance_matrix(obj)
         tab_Ybus2bus{sv_iBus,sv_iBus} = tab_Ybus2bus{sv_iBus,sv_iBus} + Yij;
     end
 
-    cm_Yshunt = tools.dcellfun(@(b) [b.para_dynamics.Gshunt, b.para_dynamics.Bshunt]*[1;1j], obj.a_Bus);
+    cm_Yshunt = tools.dcellfun(@(b) [b.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", b.a_Parameter)}.Gshunt, b.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", b.a_Parameter)}.Bshunt]*[1;1j], obj.a_Bus);
     tab_Ybus2bus.Variables = cm_Yshunt + tab_Ybus2bus.Variables; 
 end

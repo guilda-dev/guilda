@@ -63,8 +63,10 @@ function net = import_matpower(mpc, opt)
     if ~isfield(mpc, "gencost"); mpc.gencost = zeros(0, 4); end
 
     net = PowerNetwork(opt.Tag);
-    net.para_base.Hz      = opt.Hz;
-    net.para_base.baseMVA = base;
+    tp = net.tab_parameter;
+    tp.base.Hz      = opt.Hz;
+    tp.base.baseMVA = base;
+    net.tab_parameter = tp;
 
     rm_bus = mpc.bus;
     rm_gen = mpc.gen;

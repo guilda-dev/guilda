@@ -21,6 +21,9 @@ classdef Parameter < auxiliary & LayerPackage & dynamicprops
     properties(SetAccess=private) % Callback
         CallbackChanged = @() [];  % Callback function executed after parameter changes. <@Type> function_handle
     end
+    properties(SetAccess={?GlobalController}) % Parameter
+        sv_rowName (:,1) string = string.empty(0,1)  % Row names of tab_parameter (empty: none); GlobalController: the tags of its controlled units.
+    end
     properties(SetAccess=private, Hidden) % Edit report
         s_lastEdited (1,1) string = ""  % Name of the parameter of the last edit, set before log_edit.
     end
@@ -77,6 +80,9 @@ classdef Parameter < auxiliary & LayerPackage & dynamicprops
                     sct_para.(s_ipara) = obj.(s_ipara);
                 end
                 tab_para = struct2table(sct_para);
+            end
+            if ~isempty(obj.sv_rowName)
+                tab_para.Properties.RowNames = obj.sv_rowName;
             end
         end
         function p = get.parent(obj); p = obj.a_cls; end
