@@ -2,7 +2,7 @@ function [x_correct,x_current,N] = correct(NRM,f_PF,f_Jac,delta_s,x_current,x_pr
 % Corrector of the CPF: Newton-Raphson on the power flow equations plus the arc
 % length condition |x - x_current|^2 = delta_s, starting from x_pred.
     arguments (Input)
-        NRM       (1,1) NewtonRaphsonMethod  % Newton-Raphson solver of the corrector.
+        NRM       (1,1) MethodNewtonRaphson  % Newton-Raphson solver of the corrector.
         f_PF      (1,1) function_handle      % Power flow equations of the CPF (pf_equation).
         f_Jac     (1,1) function_handle      % Jacobian of f_PF.
         delta_s   (1,1) double               % Arc length of the corrector.

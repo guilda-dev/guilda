@@ -29,7 +29,7 @@ function [result,flag,output] = solve(obj, net, sct_options)
 
     % The corrector solves with this Newton-Raphson object; its numerical Jacobian of
     % f_PF is also used by the predictor.
-    NRM = NewtonRaphsonMethod("NRMFcn", f_PF, "NRMJac", [], "NRMVal", 0);
+    NRM = MethodNewtonRaphson("NRMFcn", f_PF, "NRMJac", [], "NRMVal", 0);
     NRM.ConvTol = sct_options.Tolerance;
     f_Jac = NRM.NRMJac;
 
