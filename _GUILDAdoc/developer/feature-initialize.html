@@ -365,7 +365,7 @@
             <li><code>initialize</code> は既定値を使用</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>Bus.l_isSlack</code>; <code>para_powerflow</code> (P, Q), <code>para_operation</code> (baseMVA, Qmin, Qmax) of the components</span><span lang="ja"><code>Bus.l_isSlack</code>、機器の <code>para_powerflow</code>（P、Q）、<code>para_operation</code>（baseMVA、Qmin、Qmax）</span></dd>
+          <dd><span lang="en"><code>Bus.l_isSlack</code>; <code>tab_parameter.powerflow</code> (P, Q), <code>tab_parameter.operation</code> (baseMVA, Qmin, Qmax) of the components</span><span lang="ja"><code>Bus.l_isSlack</code>、機器の <code>tab_parameter.powerflow</code>（P、Q）、<code>tab_parameter.operation</code>（baseMVA、Qmin、Qmax）</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en"><code>tab_PQcomp</code>: n_comp × 2 table (P, Q [pu])</span><span lang="ja"><code>tab_PQcomp</code>: n_comp × 2 の表（P、Q [pu]）</span></dd>
         </dl>
@@ -384,7 +384,7 @@
             <li>自分の stale タグ <code>equilibrium</code> を消去。続いて各局所制御器に INIT-08 と <code>initialize(true)</code>。制御器は自分の <code>equilibrium</code> を消去し、古いハンドルを再構築</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>c_V</code>, <code>c_I</code>, <code>r_P</code>, <code>r_Q</code> [pu]; <code>para_dynamics</code> of the model</span><span lang="ja"><code>c_V</code>、<code>c_I</code>、<code>r_P</code>、<code>r_Q</code> [pu]、モデルの <code>para_dynamics</code></span></dd>
+          <dd><span lang="en"><code>c_V</code>, <code>c_I</code>, <code>r_P</code>, <code>r_Q</code> [pu]; <code>tab_parameter.dynamics</code> of the model</span><span lang="ja"><code>c_V</code>、<code>c_I</code>、<code>r_P</code>、<code>r_Q</code> [pu]、モデルの <code>tab_parameter.dynamics</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en"><code>c_Iequilibrium</code> [pu], <code>rv_Xequilibrium</code> (numel(sv_x) × 1), <code>rv_Uequilibrium</code> (numel(sv_u) × 1); <code>sct_stale.equilibrium</code> emptied</span><span lang="ja"><code>c_Iequilibrium</code> [pu]、<code>rv_Xequilibrium</code>（numel(sv_x) × 1）、<code>rv_Uequilibrium</code>（numel(sv_u) × 1）、<code>sct_stale.equilibrium</code> を空に</span></dd>
         </dl>

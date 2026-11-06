@@ -61,7 +61,7 @@
 >   `flag = 0` now continues to the end time (1.11).
 > - **`initialize(Method="OPF")` and `Method="equilibrium"` numbers.** The
 >   components now take the powers of the OPF solution or the ones they hold,
->   not `para_powerflow`, so the stored equilibrium and later simulations
+>   not `tab_parameter.powerflow`, so the stored equilibrium and later simulations
 >   differ where the old point violated Y*V = I (1.17).
 > - **Automatic tag numbers.** After a removal, `add_bus`, `add_branch` and
 >   `add_component` number the new object after the largest number in use,
@@ -901,7 +901,7 @@ there.
   see the box at the top). With `"OPF"` the components take P and Q of the
   solution (`result.tab_cub`); with `"equilibrium"` they keep the V and I they
   hold, and their states and inputs are recomputed, so this follows edits of
-  dynamics parameters. Before, both used `para_powerflow`, and `simulate` then
+  dynamics parameters. Before, both used `tab_parameter.powerflow`, and `simulate` then
   returned `flag = 1` while the states drifted.
 - **`"equilibrium"` with a stale power flow is an error.** An edit that makes
   the power flow stale (`net.sct_stale.powerflow`: e.g. P of a component, the
@@ -994,6 +994,24 @@ there.
 - `net.info` と `struct(obj)` の表や構造体の列名、フィールド名も `s_tag`、`s_bustype` になります。
 - 名前の対応表は [naming-struct-string.md](naming-struct-string.md) にあります。
 
+### 1.20 パラメータは `tab_parameter` で読み書き(`para_*` の廃止)
+
+各層のパラメータのコンテナは `a_Parameter`(`Parameter` の cell、区分ごとに 1 つ)にまとまり、`para_*` プロパティはなくなりました(2026-11-06)。パラメータは `tab_parameter` で読み書きします。列は区分のタグ(`dynamics`, `powerflow`, `operation`, `OPF`, `graph`, 系統は `base`)です。互換の別名はありません。
+
+| 旧 | 新 |
+|----|----|
+| `obj.para_X.Y` | `obj.tab_parameter.X.Y`(例: `bus.tab_parameter.powerflow.V`) |
+| `obj.para_X.Y = v` | `obj.tab_parameter.X.Y = v` |
+| `obj.para_X.tab_parameter` | `obj.tab_parameter.X` |
+| `net.para_base.Hz` | `net.tab_parameter.base.Hz`(読むだけなら `obj.get_Hz()`) |
+| `comp.tab_parameter.base`、`comp.para_base` | なし(機器は Hz を持ちません。`net.tab_parameter.base.Hz` と `comp.get_Hz()`) |
+
+- `tab_parameter` への書き込みは、変わった値だけを書き込みます。変わらない値は編集として記録されません。値が等しくてもクラスが違うと書き込まれ、`GUILDA:Parameter:ClassNameMismatch` になります。
+- 知らない列(例: 機器の `base`)を書くと `GUILDA:PowerSystemModel:UnknownParameterGroup` で止まり、何も書き込みません。
+- 複数の値を変えるときは、表を 1 回読んで変えてから 1 回で書き戻すと速くなります(`tp = obj.tab_parameter; tp.dynamics.D = 2; tp.dynamics.M = 10; obj.tab_parameter = tp;`)。
+- `GlobalController` の `tab_parameter.dynamics` の行名は `controlledUnits` のタグです。
+- `struct(obj)` の結果に `para_*` のフィールドはありません。パラメータは `tab_parameter` のフィールドにあります。
+
 ---
 
 ## 2. Changes so far — model authors
@@ -1007,6 +1025,14 @@ there.
   `2*pi` inside the model where needed. It is the network's `get_Hz()`.
 - **Parameters are on the system base** (`net.tab_parameter.base.baseMVA`).
   There is no per-bus or per-component base.
+- **パラメータの読み書きは `tab_parameter`。** モデルのメソッドでも `obj.para_dynamics.Xs` ではなく `obj.tab_parameter.dynamics.Xs` を使います(1.20)。コンストラクタでのエントリの追加は `a_Parameter` のタグの形です:
+
+  ```matlab
+  % 旧: obj.para_dynamics.add_entry("Ka", opt.Ka, "double", "Te", opt.Te, "double");
+  obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.add_entry("Ka", opt.Ka, "double", "Te", opt.Te, "double");
+  ```
+
+  多数の層を回す内部のコードは、表を作らずに同じタグの形で 1 行で読めます(例: `b.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", b.a_Parameter)}.Gshunt`)。
 - **Analytic Jacobians** are `Static` methods named exactly `Jacobi_dx`,
   `Jacobi_I`, `Jacobi_Y`, declared in `methods (Static)` and implemented in
   files with the same names (case matters: `Jacobi_Y`, not `Jacobi_y`):

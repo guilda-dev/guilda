@@ -335,7 +335,7 @@
             <li>INFO を表示して設定</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>Bus.l_isSlack</code>, <code>a_Component</code>, <span lang="en">component</span><span lang="ja">機器の</span> <code>para_powerflow.Q</code></dd>
+          <dd><code>Bus.l_isSlack</code>, <code>a_Component</code>, <span lang="en">component</span><span lang="ja">機器の</span> <code>tab_parameter.powerflow.Q</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>Bus.l_isSlack = true</code>; <span lang="en"><code>set.l_isSlack</code> reports a <code>"Slack"</code> edit (<code>LayerPackage.log_edit</code>), which makes <code>net.sct_stale.powerflow</code> stale</span><span lang="ja"><code>set.l_isSlack</code> が <code>"Slack"</code> の編集を報告（<code>LayerPackage.log_edit</code>）。<code>net.sct_stale.powerflow</code> が古くなる</span></dd>
         </dl>
@@ -369,7 +369,7 @@
             <li>母線のシャント <code>Gshunt + 1j*Bshunt</code> を対角に加算</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en">branch</span><span lang="ja">ブランチの</span> <code>para_dynamics</code> (R, X, C, tap, phase), <code>Branch.a_Bus</code>; <span lang="en">bus</span><span lang="ja">母線の</span> <code>para_dynamics</code> (Gshunt, Bshunt)</dd>
+          <dd><span lang="en">branch</span><span lang="ja">ブランチの</span> <code>tab_parameter.dynamics</code> (R, X, C, tap, phase), <code>Branch.a_Bus</code>; <span lang="en">bus</span><span lang="ja">母線の</span> <code>tab_parameter.dynamics</code> (Gshunt, Bshunt)</dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>cm_Y</code> <span lang="en">(n_bus×n_bus complex [pu], rows and columns in the order of <code>a_Bus</code>)</span><span lang="ja">（n_bus×n_bus の複素数 [pu]。行と列は <code>a_Bus</code> の順）</span></dd>
         </dl>
@@ -390,7 +390,7 @@
             <li><code>Q</code> が NaN → PV、それ以外 → PQ</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>l_isSlack</code>, <span lang="en">bus</span><span lang="ja">母線の</span> <code>para_powerflow</code> (V, Varg, V0, Varg0), <span lang="en">component</span><span lang="ja">機器の</span> <code>para_powerflow</code> (P, Q)</dd>
+          <dd><code>l_isSlack</code>, <span lang="en">bus</span><span lang="ja">母線の</span> <code>tab_parameter.powerflow</code> (V, Varg, V0, Varg0), <span lang="en">component</span><span lang="ja">機器の</span> <code>tab_parameter.powerflow</code> (P, Q)</dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>tab_PFset</code> <span lang="en">(n_bus×7 table: Type, Varg, V, P, Q, Varg0, V0; NaN where the type does not set a value; row names = bus tags)</span><span lang="ja">（n_bus×7 の table: Type, Varg, V, P, Q, Varg0, V0。種類が決めない値は NaN。行名は母線のタグ）</span></dd>
         </dl>

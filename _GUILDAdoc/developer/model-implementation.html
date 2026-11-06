@@ -193,7 +193,7 @@
     methods
         function [x, u] = get_equilibrium(obj, c_V, c_I, r_P, ~)
             % Return the states and inputs at the bus voltage and current.
-            c_E = c_V + 1j*obj.para_dynamics.Xs*c_I;
+            c_E = c_V + 1j*obj.tab_parameter.dynamics.Xs*c_I;
             x   = [angle(c_E); 0];
             u   = [r_P; abs(c_E)];
         end
@@ -222,6 +222,12 @@ end
 </pre>
     <p lang="en">A generator with parameters that are not in the bundled <code>parameter.csv</code>, like <code>Xs</code>, needs a table in the <code>parameter</code> option of <code>add_component</code>.</p>
     <p lang="ja"><code>Xs</code> のように同梱の <code>parameter.csv</code> にないパラメータを持つ発電機: <code>add_component</code> の <code>parameter</code> オプションにテーブルが必要。</p>
+    <ul>
+      <li><span lang="en">A model reads and writes its parameters through <code>tab_parameter</code>, one column per group: <code>dynamics</code>, <code>powerflow</code>, <code>operation</code>, <code>OPF</code>, <code>graph</code> (a network: <code>base</code>). Example: <code>obj.tab_parameter.dynamics.Xs</code>.</span><span lang="ja">モデルのパラメータの読み書きは <code>tab_parameter</code> 経由。列は区分ごと: <code>dynamics</code>、<code>powerflow</code>、<code>operation</code>、<code>OPF</code>、<code>graph</code>（ネットワークは <code>base</code>）。例: <code>obj.tab_parameter.dynamics.Xs</code>。</span></li>
+      <li><span lang="en">Writing <code>tab_parameter</code> writes only the changed values, so only they are logged as edits.</span><span lang="ja"><code>tab_parameter</code> への書き込みは変わった値だけ。編集として記録されるのもその値だけ。</span></li>
+      <li><span lang="en">The containers behind the table are the cell <code>a_Parameter</code>, one <code>Parameter</code> per group, found by its <code>s_tag</code>. A constructor adds its entries with this tag form, e.g. <code>obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.add_entry(...)</code>.</span><span lang="ja">表の元のコンテナは cell の <code>a_Parameter</code>。区分ごとに 1 つの <code>Parameter</code> で、<code>s_tag</code> で特定。コンストラクタはこのタグの形でエントリを追加（例: <code>obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.add_entry(...)</code>）。</span></li>
+      <li><span lang="en">Internal code that loops over many layers may read a container by tag in one line instead of building the table, e.g. <code>b.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", b.a_Parameter)}.Gshunt</code>.</span><span lang="ja">多数の層を回す内部のコードは、表を作らずにタグでコンテナを 1 行で読んでもよい（例: <code>b.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", b.a_Parameter)}.Gshunt</code>）。</span></li>
+    </ul>
 
     <!-- ============================== NETWORK ============================== -->
     <h2 id="network"><span lang="en">Using the new model</span><span lang="ja">新しいモデルの使用</span></h2>
@@ -254,7 +260,7 @@ sys = net.get_sys();
       <li><span lang="en">A first-order AVR. Its output <code>Vfield</code> drives the generator input of that name.</span><span lang="ja">1 次遅れの AVR。出力 <code>Vfield</code> が発電機の同名の入力を駆動。</span></li>
       <li><span lang="en">No generator output is called <code>Vref</code> or <code>Vpss</code>: <code>Vref</code> stays at its equilibrium, <code>Vpss</code> reads a PSS when one is attached.</span><span lang="ja">発電機に <code>Vref</code>、<code>Vpss</code> という名前の出力はない。<code>Vref</code> は平衡点の値のまま、<code>Vpss</code> は PSS が接続されていればその出力。</span></li>
       <li><span lang="en">The Jacobians are written by hand.</span><span lang="ja">ヤコビ行列は手で記述。</span></li>
-      <li><span lang="en">The constructor adds the parameters and builds the function handles; they are built again with the network frequency when the controller is attached.</span><span lang="ja">コンストラクタがパラメータを追加して関数ハンドルを作成。制御器の接続時にネットワークの周波数で再作成。</span></li>
+      <li><span lang="en">The constructor adds the parameters to the <code>dynamics</code> container (tag form) and builds the function handles; they are built again with the network frequency when the controller is attached.</span><span lang="ja">コンストラクタがパラメータを <code>dynamics</code> コンテナに追加（タグの形）して関数ハンドルを作成。制御器の接続時にネットワークの周波数で再作成。</span></li>
     </ul>
     <span class="mi-file">_GUILDAobject/+controller/+avr/simple_avr.m</span>
 <pre class="mi-code" data-file="_GUILDAobject/+controller/+avr/simple_avr.m">classdef simple_avr &lt; LocalController
@@ -277,11 +283,11 @@ sys = net.get_sys();
                 opt.Te (1,1) double = 0.05  % [s] Time constant.
             end
             obj@LocalController("CA"+tag)
-            obj.para_dynamics.add_entry("Ka", opt.Ka, "double", "Te", opt.Te, "double");
+            obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.add_entry("Ka", opt.Ka, "double", "Te", opt.Te, "double");
         end
         function get_equilibrium(obj, V, u)
             % Set the equilibrium from the complex voltage V and the component inputs u.
-            Ka = obj.para_dynamics.Ka;
+            Ka = obj.tab_parameter.dynamics.Ka;
             obj.rv_Xequilibrium = u(2);
             obj.rv_Uequilibrium = [u(2)/Ka + abs(V); 0];
             cellfun(@(c) c.get_equilibrium(V, u), obj.a_LocalController);
