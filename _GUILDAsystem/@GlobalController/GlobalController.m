@@ -59,7 +59,7 @@ classdef GlobalController < PowerSystemModel
         f_JacobiY                                  % Jacobian function of f_Y.
     end
     properties (SetAccess={?PowerNetwork}) % Layer Structure
-        a_PowerNetwork PowerNetwork {mustBeScalarOrEmpty} = PowerNetwork.empty  % PowerNetwork the controller belongs to (set by add_global_controller; empty when removed).
+        a_PowerNetwork = []                        % PowerNetwork the controller belongs to (set by add_global_controller; [] when removed). <@Type> PowerNetwork
     end
     properties (SetAccess=protected, Hidden) % Layer Structure
         controlledUnits                            % Controlled components, in the order given to the constructor.

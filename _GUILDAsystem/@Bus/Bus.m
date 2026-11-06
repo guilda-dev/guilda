@@ -54,7 +54,7 @@ classdef Bus < PowerSystemModel
     end
 
     properties (SetAccess={?PowerNetwork}) % Layer Structure
-        a_PowerNetwork PowerNetwork {mustBeScalarOrEmpty} = PowerNetwork.empty  % PowerNetwork the bus belongs to (empty when removed).
+        a_PowerNetwork = []               % PowerNetwork the bus belongs to ([] when removed). <@Type> PowerNetwork
     end
     properties (SetAccess=protected) % Layer Structure
         a_Component (:,1) = cell(0,1)     % Components connected to the bus. <@Stale> powerflow

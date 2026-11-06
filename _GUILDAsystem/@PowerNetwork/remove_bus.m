@@ -54,6 +54,6 @@ function remove_bus(obj, sr_BusTag, opt)
     obj.a_Bus = obj.a_Bus(~lv_rmBus);
     obj.log_edit(obj.s_tag+" ---remove->> "+join(sv_tagBus(lv_rmBus),", "),"Topology");
     for k = 1:numel(a_rmBus)
-        a_rmBus{k}.a_PowerNetwork = PowerNetwork.empty;
+        a_rmBus{k}.a_PowerNetwork = [];
     end
 end

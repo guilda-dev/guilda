@@ -76,7 +76,7 @@ classdef Component < PowerSystemModel
 
 %% Parameter
     properties(SetAccess={?Bus}) % Layer Structure
-        a_Bus Bus {mustBeScalarOrEmpty} = Bus.empty  % Bus the component is connected to (empty when removed).
+        a_Bus = []                           % Bus the component is connected to ([] when removed). <@Type> Bus
     end
     properties(SetAccess=protected) % Layer Structure
         a_LocalController (:,1) = cell(0,1)  % Top-level local controllers, in slot order whatever the attach order: the AVR or "local" controller (a PSS hangs under an AVR), then the governor. <@Stale> equilibrium
