@@ -16,7 +16,7 @@ classdef Bus < PowerSystemModel
 %   removed make the power flow of the network stale (`net.sct_stale.powerflow`);
 %   operation and graph make nothing stale. A bus has no stale tags of its own.
 % - Down: splits the equilibrium bus power among its components (`set_equilibrium`).
-%   Up: aggregates them (current, linear model, variable map, OPF variables).
+%   Up: aggregates them (current, linear model, variable map).
 % - Does not own the system base (baseMVA belongs to `PowerNetwork`; a bus baseMVA given
 %   to `add_bus` or in a CSV bus table is accepted and ignored), the branches that end at
 %   it (a branch only refers to it; a bus does not know its branches), or any dynamics
@@ -60,11 +60,6 @@ classdef Bus < PowerSystemModel
         a_Component (:,1) = cell(0,1)     % Components connected to the bus. <@Stale> powerflow
         c_Vequilibrium = 1;               % [pu] Voltage phasor at the equilibrium (owned by the bus; components and controllers read it).
     end
-    properties (SetAccess=protected) % OPF
-        f_opfcost = []                    % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the bus ([]: none). <@Stale> nothing
-        f_opfconst = []                   % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing
-        l_opfdefault = true               % Whether the default OPF constraints of the bus are kept (DefaultConstraint of set_opffcn). <@Stale> nothing
-    end
     properties (Dependent, Access=protected) % Layer Structure
         parent                            % Parent in the layer structure: the network.
         children                          % Children in the layer structure: the components, then the Parameter objects.
@@ -94,7 +89,7 @@ classdef Bus < PowerSystemModel
             obj.s_tag          = tag;
             % tab_parameter columns:
             % - dynamics: shunt admittance Gshunt, Bshunt [pu], added to the diagonal of the network admittance matrix
-            % - operation: Vmin, Vmax [pu]: OPF voltage bounds; baseKV [kV]: base voltage, stored but used in no calculation
+            % - operation: Vmin, Vmax [pu]: OPF voltage bounds (-Inf/Inf: none); baseKV [kV]: base voltage, stored but used in no calculation
             % - powerflow: V [pu], Varg [rad]: voltage settings of a slack bus (V also of a PV bus); V0 [pu], Varg0 [rad]: solver initial values
             % - graph: Xaxis, Yaxis: drawing position (NaN: automatic layout); Marker: marker of the bus
 
@@ -134,9 +129,6 @@ classdef Bus < PowerSystemModel
 
         % PF(powerflow) calculation
         tab_PFset    = get_pf_set(obj)
-
-        % OPF
-        [prob, x0, const, Vvar] = build_opf_problem(obj, prob, x0, const, Vvar, option)
 
         %get_sys
         [sys, varargout] = get_sys(obj, opt)

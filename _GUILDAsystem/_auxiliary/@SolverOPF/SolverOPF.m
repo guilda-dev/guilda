@@ -2,10 +2,10 @@ classdef SolverOPF < auxiliary
 % Solver of the optimal power flow (net.optimize_powerflow).
 %
 % net.solver_OPF holds one; its properties are the stored defaults of
-% net.optimize_powerflow and are kept between runs. Name-Value options of a call override
-% them for that call only (see OptionMap and get_options). The solver holds settings only:
-% the optimization problem is built by build_opf_problem of the network, buses, components
-% and branches, and results are returned as a ResultOPF.
+% net.optimize_powerflow and net.build_opf_problem and are kept between runs. Name-Value
+% options of a call override them for that call only (see OptionMap and get_options).
+% build_problem reads tab_parameter of the buses, components and branches and builds the
+% optimization problem; solve solves it and returns a ResultOPF.
 %
 % - `Method`: "ELD" (economic load dispatch, branches ignored), "DC OPF" (DC approximation:
 %   |V| = 1, no losses, b_ij = 1/(X*tap) as in MATPOWER) or "AC OPF" (AC power flow
@@ -15,6 +15,17 @@ classdef SolverOPF < auxiliary
 % - `OptionMap` is the input of tools.resolve_options. Only the common option names are
 %   used. Tolerance sets OptimalityTolerance; Verbose=true sets Display="iter",
 %   Verbose=false sets Display="none".
+% - `Cost` and `Constraint` are function handles @(v, p) applied to the whole network.
+%   v holds the variables by tag: v.Component.(tag).P, .Q ("AC OPF");
+%   v.Bus.(tag).Varg, .V ("AC OPF"); v.Branch.(tag).Pfrom, .Pto, .Vargfrom, .Vargto
+%   (+ Qfrom, Qto, Ifrom_re, Ifrom_im, Ito_re, Ito_im, Vfrom, Vto in "AC OPF"; flows
+%   into the branch). Bus and branch variables do not exist in "ELD". p holds p.Method
+%   and p.base (baseMVA, Hz). Cost returns a scalar added to the objective; Constraint
+%   returns struct(name1, constraint1, ...), and field <name> becomes
+%   prob.Constraints.<name> and result.lambda.Constraints.<name>.
+% - A default limit of one object is removed by setting it to Inf (-Inf for a lower
+%   bound) in its tab_parameter.operation: Vmin, Vmax (bus); Pmin, Pmax, Qmin, Qmax
+%   (component); Pmax, Qmax, Vargmax, Imax, Smax (branch, where NaN also means none).
 %
 % <@Examples>
 % ```matlab
@@ -22,9 +33,10 @@ classdef SolverOPF < auxiliary
 % net.solver_OPF.Method = "DC OPF";              % stored default, kept between runs
 % result = net.optimize_powerflow();             % uses "DC OPF"
 % result = net.optimize_powerflow(Method="ELD", Verbose=true);   % this call only
+% net.solver_OPF.ReferenceBus = "none";           % stored default: no fixed angle
 % ```
 %
-% See also ResultOPF, PowerNetwork.optimize_powerflow, PowerNetwork.set_opffcn
+% See also ResultOPF, PowerNetwork.optimize_powerflow, PowerNetwork.build_opf_problem
 
     properties(Access=public) % Settings
         Method (1,1) string {mustBeMember(Method,["ELD","DC OPF","AC OPF"])} = "AC OPF"                                                                         % Formulation of the problem: "ELD", "DC OPF" or "AC OPF" (see the class help).
@@ -38,6 +50,10 @@ classdef SolverOPF < auxiliary
         StepTolerance (1,1) double = NaN                                                                                                                        % StepTolerance option of the solver; NaN keeps the default.
         MaxFunctionEvaluations (1,1) double = NaN                                                                                                               % MaxFunctionEvaluations option of the solver; NaN keeps the default.
         UseParallel (1,1) logical = false                                                                                                                       % UseParallel option of fmincon (other solvers ignore it).
+        Cost {mustBeHandleOrEmpty(Cost)} = []                                                                                                                   % User cost @(v, p) added to the objective; [] for none (see the class help).
+        Constraint {mustBeHandleOrEmpty(Constraint)} = []                                                                                                       % User constraints @(v, p) returning struct(name, constraint, ...); [] for none (see the class help).
+        DefaultCost (1,1) logical = true                                                                                                                        % Add the cost HP*P^2 + fP*P + HQ*Q^2 + fQ*Q (tab_parameter.OPF) of every component.
+        ReferenceBus (1,1) string = "auto"                                                                                                                      % Bus whose angle is fixed to its power-flow Varg: "auto" (bus of tools.slack_bus_index, else the first bus), a bus tag, or "none".
     end
 
     properties(Constant) % Settings
@@ -46,7 +62,11 @@ classdef SolverOPF < auxiliary
             "Solver",       "Solver", ...
             "Tolerance",    "OptimalityTolerance", ...
             "MaxIteration", "MaxIteration", ...
-            "Verbose",      {{"Display", @(l) replace(string(logical(l)), ["true","false"], ["iter","none"])}})                                                 % Name-Value options of net.optimize_powerflow and the property each one sets (see the class help). <@Type> struct
+            "Verbose",      {{"Display", @(l) replace(string(logical(l)), ["true","false"], ["iter","none"])}}, ...
+            "Cost",         "Cost", ...
+            "Constraint",   "Constraint", ...
+            "DefaultCost",  "DefaultCost", ...
+            "ReferenceBus", "ReferenceBus")                                                 % Name-Value options of net.optimize_powerflow (Method, Cost, Constraint, DefaultCost, ReferenceBus also of net.build_opf_problem) and the property each one sets (see the class help). <@Type> struct
     end
 
     methods
@@ -73,7 +93,8 @@ classdef SolverOPF < auxiliary
         end
 
         sct_options = get_options(obj, nv)
-        [result,flag,output] = solve(obj, net, sct_options)
+        [prob, x0] = build_problem(obj, net, sct_options)
+        [result,flag,output] = solve(obj, net, sct_options, sct_input)
     end
 
     methods(Hidden)

@@ -6,5 +6,9 @@ function validate_options(opt)
         opt.Tolerance    (1,1) double  {mustBePositive}
         opt.MaxIteration (1,1) double  {mustBePositive,mustBeInteger}
         opt.Verbose      (1,1) logical
+        opt.Cost                       {mustBeHandleOrEmpty(opt.Cost)}
+        opt.Constraint                 {mustBeHandleOrEmpty(opt.Constraint)}
+        opt.DefaultCost  (1,1) logical
+        opt.ReferenceBus (1,1) string
     end
 end

@@ -109,11 +109,6 @@ classdef Component < PowerSystemModel
         c_Vequilibrium                       % [pu] Terminal voltage at the equilibrium (= a_Bus.c_Vequilibrium; [] without a bus).
         rv_Xequilibrium_all                  % State equilibrium of the component, then of its controllers depth first (the order of get_variable_map).
     end
-    properties(SetAccess=protected) % OPF
-        f_opfcost = []                       % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the component ([]: none). <@Stale> nothing
-        f_opfconst = []                      % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing
-        l_opfdefault = true                  % Whether the default OPF constraints of the component are kept (DefaultConstraint of set_opffcn). <@Stale> nothing
-    end
     properties(Dependent, Access=protected) % Layer Structure
         parent                               % Parent in the layer structure: the bus.
         children                             % Children in the layer structure: the local controllers, then the Parameter objects.
@@ -186,7 +181,7 @@ classdef Component < PowerSystemModel
             obj.sct_stale      = struct("equilibrium", obj.s_notInitialized, "odefcn", obj.s_notInitialized);
             % tab_parameter columns:
             % - dynamics: model parameters, per unit on the system base; the sv_para columns are passed to the model functions
-            % - operation: baseMVA [MVA]: rating, only to share Q on a bus (not the system base); Pmin, Pmax, Qmin, Qmax [pu]: OPF bounds and "Qmax" rule
+            % - operation: baseMVA [MVA]: rating, only to share Q on a bus (not the system base); Pmin, Pmax, Qmin, Qmax [pu]: OPF bounds (-Inf/Inf: none) and "Qmax" rule
             % - powerflow: P, Q [pu]: injection settings of the power flow (negative for a load); Q = NaN makes the bus a PV bus
             % - OPF: P0, Q0 [pu]: OPF initial values; HP, fP, HQ, fQ: cost coefficients (default 1, 1, 0, 0; 0 for a load); startup, shutdown: reserved
             % - graph: Xaxis, Yaxis, Marker, MidXaxis, MidYaxis: drawing data
@@ -236,9 +231,6 @@ classdef Component < PowerSystemModel
         % Layer Structure
         add_local_controller(obj, a_Controller)
         remove_local_controller(obj, s_tag, opt)
-
-        % OPF
-        [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Busvar, option)
 
         % get_sys
         [sys, varargout] = get_sys(obj, x, V, I, u, opt)

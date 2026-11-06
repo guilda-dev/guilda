@@ -2,5 +2,13 @@
 <rsccat version="4.0" locale="en" product="GUILDA">
     <message>
         <entry key="UnsupportedSolver">Solver "{0}" cannot solve this OPF problem. Usable Solver names: "auto", {1}.</entry>
+        <entry key="InvalidHandle">Cost and Constraint must be function handles @(v, p) ... (or [] for none).</entry>
+        <entry key="InvalidCost">The Cost handle of {0} must return a real scalar (an optimization expression or a number).</entry>
+        <entry key="InvalidConstraint">The Constraint handle of {0} must return a struct of named constraints, e.g. struct("Vband", v.Bus.B001.V &lt;= 1.02).</entry>
+        <entry key="InvalidConstraintField">Field "{0}" of the Constraint handle of {1} is not a constraint (use ==, &lt;= or &gt;=).</entry>
+        <entry key="DuplicateName">Constraint name "{0}" (from {1}) is already used in the OPF problem.</entry>
+        <entry key="UnknownReferenceBus">ReferenceBus "{0}" is not a bus of the network. Use a bus tag, "auto" or "none".</entry>
+        <entry key="ProblemMismatch">Problem is not a "{0}" problem of this network (missing or resized variables: {1}). Build it with net.build_opf_problem and the same Method.</entry>
+        <entry key="InvalidProblem">Problem must be an optimproblem, e.g. the output of net.build_opf_problem.</entry>
     </message>
 </rsccat>

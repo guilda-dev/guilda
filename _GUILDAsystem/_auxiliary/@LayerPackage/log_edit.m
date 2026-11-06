@@ -8,7 +8,7 @@ function log_edit(obj, log, tag)
     arguments (Input)
         obj % Edited layer (a Parameter container for a parameter edit).
         log    (1,1) string  % What was edited, with the values (e.g. "edit D: 0.1 -> 0.2").
-        tag    (1,1) string  % Kind of edit: a parameter group ("dynamics", "powerflow", ...), "Topology", "Slack", "opffcn" or "Tag".
+        tag    (1,1) string  % Kind of edit: a parameter group ("dynamics", "powerflow", ...), "Topology", "Slack" or "Tag".
     end
     s_message = obj.get_tag("/") + ": " + log;
 
