@@ -19,20 +19,23 @@ assert(abs(x(g2.sv_x == "Ed")) < 1e-14)
 X = net.simulate([0,5]).odeResults.Bus(2).Component(1).X;
 assert(max(abs(X{:,:} - x.'), [], "all") < 1e-9)
 
-assert(all(isfinite(eig(net.get_sys()))))
+res = net.get_sys();
+assert(all(isfinite(eig(res.A, res.E))))
 
 
 %% Xq_p close to Xq approaches the case of equality
 [net, g2] = network_with("Xq_p", @(p) p.Xq);
 evalc("net.initialize;");
 x_eq   = g2.rv_Xequilibrium;
-eig_eq = eig(net.get_sys());
+res    = net.get_sys();
+eig_eq = eig(res.A, res.E);
 
 [net, g2] = network_with("Xq_p", @(p) p.Xq*(1-1e-6));
 evalc("net.initialize;");
 assert(norm(g2.rv_Xequilibrium - x_eq) < 1e-5)
 % 等しいときの Ed は入力から届かないので get_sys が状態から除く (固有値 -1/Tq_p が 1 つ減る)
-eig_near = eig(net.get_sys());
+res      = net.get_sys();
+eig_near = eig(res.A, res.E);
 assert(any(numel(eig_near) - numel(eig_eq) == [0,1]))
 for e = eig_eq.'
     assert(min(abs(eig_near - e)) < 1e-5*max(1, abs(e)), string(e))

@@ -10,6 +10,13 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % A controlled unit without the states sv_u or the inputs sv_y stops with the
 % error GUILDA:GlobalController:GlobalControllerPort.
 %
+% Format chooses the form of the model: "ResultLIN" (default) returns a ResultLIN whose
+% properties A, B, C, D, E, StateName, InputName and OutputName hold the model
+% (E dx/dt = A x + B u, y = C x + D u), with rv_point = [x; u] and the Jacobian blocks
+% rm_Axx, rm_Bx and rm_E in the order of the model (tab_variable is empty); "struct"
+% returns a struct with the same eight fields; "ss" returns a descriptor state-space
+% model (dss) and needs the Control System Toolbox.
+%
 % See also GlobalController.get_hessian, PowerNetwork.get_sys
 %
 % <@Group> Called by analyses
@@ -20,13 +27,15 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         I        (:,1) double  = zeros(2,1)   % Not a port: zeros(2,1).
         u        (:,1) double  = obj.rv_Uequilibrium   % Inputs (default: the equilibrium).
         opt.full (1,1) logical = false  % Ignored; kept for old calls.
+        opt.Format (1,1) string {mustBeMember(opt.Format, ["ResultLIN","struct","ss"])} = "ResultLIN"   % Form of the model: ResultLIN, struct or ss (dss; needs the Control System Toolbox).
     end
     arguments (Output)
-        sys   % Descriptor state-space model (dss) with state, input and output names.
+        sys   % Linear model in the form of Format, with state, input and output names.
     end
     arguments (Output, Repeating)
-        varargout   % sys.StateName, sys.InputName and sys.OutputName, as on the other layers.
+        varargout   % StateName, InputName and OutputName (cellstr), as on the other layers.
     end
+    t0 = tic;
 
     a_Comp = obj.controlledUnits;
     for k = 1:numel(a_Comp)
@@ -59,24 +68,38 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     [Cyx,~,~,Dyu] = obj.f_JacobiY( 0,x,V,I,u);
     ny = size(Cyx,1);
 
-    A = reshape(Axx,nx,nx);
-    B = reshape(Bxu,nx,nu);
-    C = reshape(Cyx,ny,nx);
-    D = reshape(Dyu,ny,nu);
+    A = full(reshape(Axx,nx,nx));
+    B = full(reshape(Bxu,nx,nu));
+    C = full(reshape(Cyx,ny,nx));
+    D = full(reshape(Dyu,ny,nu));
 
-    E = obj.f_Mass(0,x,V,I,u);
-
-    sys = dss(A,B,C,D,E);
+    E = full(obj.f_Mass(0,x,V,I,u));
+    if isempty(E)
+        E = eye(nx);
+    end
 
     xNames = obj.attach_tag(obj.sv_x);
     uNames = cellfun(@(s) s.attach_tag(obj.sv_u), a_Comp);
     yNames = cellfun(@(s) s.attach_tag(obj.sv_y), a_Comp);
 
-    sys.StateName  = xNames;
-    sys.InputName  = uNames;
-    sys.OutputName = yNames;
+    sys = struct("A", A, "B", B, "C", C, "D", D, "E", E, ...
+                 "StateName", reshape(string(xNames), [], 1), ...
+                 "InputName", reshape(string(uNames), [], 1), ...
+                 "OutputName", reshape(string(yNames), [], 1));
 
-    varargout{1} = sys.StateName;
-    varargout{2} = sys.InputName;
-    varargout{3} = sys.OutputName;
+    varargout{1} = cellstr(sys.StateName);
+    varargout{2} = cellstr(sys.InputName);
+    varargout{3} = cellstr(sys.OutputName);
+
+    if opt.Format ~= "struct"
+        sct_block = struct("Axx", A, "Bx", B, "E", E);
+        l_eq = isequal(x, reshape(obj.rv_Xequilibrium, [], 1)) && isequal(u, reshape(obj.rv_Uequilibrium, [], 1));
+        sct_output = struct("message", "Linearized the global controller " + obj.s_tag + ".", ...
+                            "s_issue", "", "l_equilibrium", l_eq, "s_layer", "GlobalController");
+        sys = ResultLIN(obj.a_PowerNetwork, "", struct(), true, sct_output, t0, ...
+                        table(), [x; u], sct_block, struct("sct_sys", sys), zeros(0,1));
+        if opt.Format == "ss"
+            sys = sys.get_ss(Format="ss");
+        end
+    end
 end

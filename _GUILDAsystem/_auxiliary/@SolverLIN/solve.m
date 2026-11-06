@@ -23,7 +23,7 @@ function [result, flag, output] = solve(obj, net, sct_options)
     arguments (Output)
         result % Jacobian blocks, variable map, point and settings.
         flag % True when the result is usable: all Jacobian entries are finite and Avv is invertible.
-        output % message, s_issue ("", "NotFinite" or "SingularAvv"), l_equilibrium, n_x, n_v, n_u, rcond_Avv, r_residual, sv_faultBus.
+        output % message, s_issue ("", "NotFinite" or "SingularAvv"), l_equilibrium, n_x, n_v, n_u, rcond_Avv, r_residual, sv_faultBus, s_layer ("PowerNetwork").
     end
     t0 = tic;
     a_bus = net.a_Bus;
@@ -68,23 +68,23 @@ function [result, flag, output] = solve(obj, net, sct_options)
     c_sysY   = cell(n_bus,1);
     for i = 1:n_bus
         if l_eq
-            f_sys = @() a_bus{i}.get_sys("port","V2I");
+            f_sys = @() a_bus{i}.get_sys("port","V2I","Format","struct");
         else
-            f_sys = @() a_bus{i}.get_sys("port","V2I","Point",rv_point(c_idxBus{i}));
+            f_sys = @() a_bus{i}.get_sys("port","V2I","Point",rv_point(c_idxBus{i}),"Format","struct");
         end
         sys_i = model_at_point(f_sys, "bus " + a_bus{i}.s_tag);
         sv_u = tab_map.Label(tab_map.Kind == "u" & tab_map.Bus == string(a_bus{i}.s_tag));
-        [~, iv_u] = ismember(sv_u, string(sys_i.InputName));
-        c_sysBus{i} = sys_i(1:2, [1, 2, reshape(iv_u, 1, [])]);
-        c_sysY{i}   = sys_i(3:end, [1, 2, reshape(iv_u, 1, [])]);
+        [~, iv_u] = ismember(sv_u, sys_i.InputName);
+        c_sysBus{i} = channels(sys_i, 1:2, [1, 2, reshape(iv_u, 1, [])]);
+        c_sysY{i}   = channels(sys_i, 3:numel(sys_i.OutputName), [1, 2, reshape(iv_u, 1, [])]);
     end
     c_sysGC = cell(numel(a_gc),1);
     for k = 1:numel(a_gc)
         if l_eq
-            f_sys = @() a_gc{k}.get_sys();
+            f_sys = @() a_gc{k}.get_sys("Format","struct");
         else
             f_sys = @() a_gc{k}.get_sys(rv_point(c_idxGC{k}), zeros(2,1), zeros(2,1), ...
-                                        gc_input(a_gc{k}, tab_map, rv_point));
+                                        gc_input(a_gc{k}, tab_map, rv_point), "Format","struct");
         end
         c_sysGC{k} = model_at_point(f_sys, "global controller " + a_gc{k}.s_tag);
     end
@@ -179,6 +179,7 @@ function [result, flag, output] = solve(obj, net, sct_options)
                                                   output.r_residual, sv_row(i_max));
     end
     output.l_equilibrium = l_eq;
+    output.s_layer = "PowerNetwork";
     output.n_x = size(sct_block.Axx,1);
     output.n_v = size(sct_block.Avv,1);
     output.n_u = size(sct_block.Bx,2);
@@ -189,15 +190,23 @@ end
 
 
 function sys = model_at_point(f_sys, s_owner)
-% Model of a bus or global controller; dss stops on a non-finite matrix, so say whose it is
-    try
-        sys = f_sys();
-    catch ME
-        if startsWith(ME.identifier, "Control:ltiobject")
+% Model of a bus or global controller (struct); a non-finite matrix stops, saying whose it is
+    sys = f_sys();
+    for str = ["A","B","C","D","E"]
+        if ~all(isfinite(sys.(str)(:)))
             error(msg("GUILDA:SolverLIN:JacobianNotFinite", s_owner))
         end
-        rethrow(ME)
     end
+end
+
+
+function S = channels(S, iv_out, iv_in)
+% Model with the outputs iv_out and the inputs iv_in of the model S (struct)
+    S.B = S.B(:, iv_in);
+    S.C = S.C(iv_out, :);
+    S.D = S.D(iv_out, iv_in);
+    S.InputName  = S.InputName(iv_in);
+    S.OutputName = S.OutputName(iv_out);
 end
 
 

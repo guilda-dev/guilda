@@ -80,7 +80,7 @@ classdef PowerNetwork < PowerSystemModel
 % sc.add_fault("B003", [1,1.05]);
 % net.add_scenario(sc);
 % sim = net.simulate(sc);                   % ResultODE
-% sys = net.get_sys();                      % linear state-space model
+% res = net.get_sys();                      % ResultLIN: linear model in res.A, res.B, ...
 % ```
 %
 % See also Bus, Branch, Component, GlobalController, Scenario, network.IEEE9bus

@@ -2,12 +2,13 @@ function fig = Plot(obj, opt)
 % Plot the eigenvalue map.
 %
 % Draws the eigenvalue map of the linear model: the finite generalized eigenvalues of
-% (A, E) of get_ss(Algorithm) in the complex plane, with the imaginary axis.
+% (A, E) of get_ss(Algorithm) in the complex plane, with the imaginary axis (the port
+% model for an object-level result, see ResultLIN). It needs no toolbox.
 % Eigenvalues with a positive real part (larger than Tolerance) are drawn in red.
 % net.linearize(..., Plot=true) calls it.
     arguments (Input)
         obj
-        opt.Algorithm (1,1) string {mustBeMember(opt.Algorithm, ["Kron","Feedback","DAE"])} = obj.options.Algorithm % Model whose eigenvalues are drawn. Default: the Algorithm of the linearization.
+        opt.Algorithm (1,1) string {mustBeMember(opt.Algorithm, ["Kron","Feedback","DAE"])} = default_algorithm(obj) % Model whose eigenvalues are drawn. Default: the Algorithm of the linearization.
         opt.Tolerance (1,1) double {mustBeNonnegative} = 1e-6 % Real part above which an eigenvalue is drawn as unstable.
         opt.Parent = [] % Container to draw in. A new figure when empty.
     end
@@ -18,8 +19,8 @@ function fig = Plot(obj, opt)
         opt.Parent = figure();
     end
 
-    sys = obj.get_ss(opt.Algorithm);
-    e = eig(sys.A, sys.E);
+    sys = obj.get_ss(opt.Algorithm, Format="struct");
+    e = eig(full(sys.A), full(sys.E));
     e = e(isfinite(e));
     lv_unstable = real(e) > opt.Tolerance;
 
@@ -32,9 +33,22 @@ function fig = Plot(obj, opt)
     grid(fig, "on");
     xlabel(fig, "Real");
     ylabel(fig, "Imag");
-    s_title = "Eigenvalues (" + opt.Algorithm + ")";
+    if isfield(obj.sct_model, "sct_sys")
+        s_title = "Eigenvalues (" + obj.output.s_layer + ")";
+    else
+        s_title = "Eigenvalues (" + opt.Algorithm + ")";
+    end
     if isfield(obj.output, "l_equilibrium") && ~obj.output.l_equilibrium
         s_title = s_title + " at the given point";
     end
     title(fig, s_title);
+end
+
+
+function str = default_algorithm(obj)
+% Algorithm of the linearization ("Feedback" when the result has none)
+    str = "Feedback";
+    if isfield(obj.options, "Algorithm")
+        str = obj.options.Algorithm;
+    end
 end

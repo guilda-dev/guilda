@@ -1,8 +1,11 @@
 function sys = get_ss(obj, Algorithm, opt)
-% Get a state-space model (Kron / Feedback / DAE).
+% Get a reduced linear model (Kron / Feedback / DAE).
 %
-% Returns the linear model of the result, as a descriptor state-space model (dss:
-% E dx/dt = A x + B u, y = C x + D u). The matrices are the same as those of net.get_sys
+% Returns the linear model of the result (E dx/dt = A x + B u, y = C x + D u). Format
+% chooses its form: "ss" (default) is a descriptor state-space model (dss) with
+% StateName, InputName and OutputName and needs the Control System Toolbox; "struct" is
+% a struct with the fields A, B, C, D, E, StateName, InputName, OutputName (string
+% columns) and needs no toolbox. The matrices are the same as those of net.get_sys
 % in v3 for each algorithm, including the state order: "Kron" and "DAE" put the states of
 % the global controllers first, then the components; "Feedback" puts the components first,
 % then the global controllers (in the order they were added). Use StateName to find a state.
@@ -12,13 +15,14 @@ function sys = get_ss(obj, Algorithm, opt)
 % - "Kron": the bus voltages are eliminated from the DAE. States: all states.
 %   Inputs: the inputs u. Outputs: the states, in their order, without output names.
 % - "Feedback": the bus models in I-to-V form are connected through the admittance
-%   matrix, then the global controllers are closed. Non-unit buses (buses without
+%   matrix, then the global controllers are closed (positive feedback). Non-unit buses (buses without
 %   components, and buses without states that have no I-to-V form) are detected automatically
 %   and eliminated with the network: their linearized current is absorbed into the admittance
 %   matrix and their inputs are kept, so the model is equivalent to "Kron". A network without
 %   states has nothing to connect, which is an error (GUILDA:ResultLIN:NoUnitBus).
-%   Inputs: the inputs u, in the same order as "Kron". States: the connection (connect) can
-%   remove some, such as Vst of an AVR, so there can be fewer than in "Kron". Outputs: the
+%   Inputs: the inputs u, in the same order as "Kron". States: the connection removes the
+%   states that no input reaches through the nonzero pattern of the model (such as Vst of an
+%   AVR without a PSS), so there can be fewer than in "Kron". Outputs: the
 %   states of the components and local controllers, including a row for each removed state
 %   and leaving out the states of the global controllers, so they differ from the states.
 % - "DAE": not reduced: the bus voltages are kept as algebraic states (E is singular), in
@@ -44,6 +48,10 @@ function sys = get_ss(obj, Algorithm, opt)
 % order. An unknown name stops with GUILDA:ResultLIN:UnknownInput; an unknown Output name
 % stops with GUILDA:ResultLIN:UnknownOutput.
 %
+% For an object-level result (comp.get_sys, bus.get_sys, con.get_sys, gc.get_sys), get_ss
+% returns the port model held in the result; Input and Output take names of its inputs
+% and outputs, and Algorithm and Coordinate do not apply.
+%
 % A result with flag false (output.s_issue) stops with an error that repeats output.message:
 % GUILDA:ResultLIN:NotFinite for every algorithm, and GUILDA:ResultLIN:SingularAvv
 % for "Kron" and "Feedback", which eliminate the bus voltages. "DAE" keeps them and still works.
@@ -51,10 +59,11 @@ function sys = get_ss(obj, Algorithm, opt)
 % <@Examples>
 % ```matlab
 % res = net.linearize();
-% sysK = res.get_ss("Kron");
+% sysK = res.get_ss("Kron");                    % ss (Control System Toolbox)
 % sysD = res.get_ss("DAE");
 % eig(sysK.A, sysK.E)
-% sysV = res.get_ss("Kron", Output="V");   % bus voltages as outputs
+% sysV = res.get_ss("Kron", Output="V");        % bus voltages as outputs
+% sct  = res.get_ss("Kron", Format="struct");   % matrices and names, no toolbox
 % ```
 %
 % See also PowerNetwork.get_sys, ResultLIN.Plot
@@ -64,9 +73,22 @@ function sys = get_ss(obj, Algorithm, opt)
         opt.Coordinate (1,1) string {mustBeMember(opt.Coordinate, ["theta&V","theta&rho","Vre&Vim"])} = default_coordinate(obj) % Bus variables of "DAE": angle and log magnitude (rho), angle and magnitude, or real and imaginary parts. Default: options.Coordinate of the result.
         opt.Input (1,:) string % Inputs of the model: "u" or Labels. Default: all inputs.
         opt.Output (1,:) string % Outputs of the model: "x", "V", "I", "y" or names. Default: as described for each algorithm.
+        opt.Format (1,1) string {mustBeMember(opt.Format, ["ss","struct"])} = "ss" % Form of the model: "ss" (dss; needs the Control System Toolbox) or "struct" (A, B, C, D, E and names).
     end
     arguments (Output)
-        sys % Descriptor state-space model with StateName, InputName and OutputName.
+        sys % Linear model in the form of Format, with StateName, InputName and OutputName.
+    end
+    if isfield(obj.sct_model, "sct_sys")
+        % Object-level result: its port model
+        sys = obj.sct_model.sct_sys;
+        if isfield(opt, "Output")
+            sys = output_by_name(sys, opt.Output);
+        end
+        if isfield(opt, "Input")
+            sys = input_by_index(sys, input_index(sys, opt.Input));
+        end
+        sys = to_format(sys, opt.Format);
+        return
     end
     if obj.output.s_issue == "NotFinite"
         error(msg("GUILDA:ResultLIN:NotFinite", obj.output.message))
@@ -85,8 +107,50 @@ function sys = get_ss(obj, Algorithm, opt)
         sys = select_output(obj, sys, Algorithm, opt.Coordinate, opt.Output);
     end
     if isfield(opt, "Input")
-        sys = sys(:, input_index(sys, opt.Input));
+        sys = input_by_index(sys, input_index(sys, opt.Input));
     end
+    sys = to_format(sys, opt.Format);
+end
+
+
+function sys = to_format(sct_sys, s_format)
+% The model as a struct or as a dss with the names
+    sys = sct_sys;
+    if s_format == "ss"
+        sys = dss(sct_sys.A, sct_sys.B, sct_sys.C, sct_sys.D, sct_sys.E);
+        sys.StateName  = cellstr(sct_sys.StateName);
+        sys.InputName  = cellstr(sct_sys.InputName);
+        sys.OutputName = cellstr(sct_sys.OutputName);
+    end
+end
+
+
+function sys = model(A, B, C, D, E, sv_x, sv_u, sv_y)
+% Model struct; the names are string columns
+    sys = struct("A", A, "B", B, "C", C, "D", D, "E", E, ...
+                 "StateName", reshape(string(sv_x), [], 1), ...
+                 "InputName", reshape(string(sv_u), [], 1), ...
+                 "OutputName", reshape(string(sv_y), [], 1));
+end
+
+
+function sys = input_by_index(sys, iv)
+    sys.B = sys.B(:, iv);
+    sys.D = sys.D(:, iv);
+    sys.InputName = sys.InputName(iv);
+end
+
+
+function sys = output_by_name(sys, sv_select)
+% Outputs of a port model by name, in the given order (a repeated one is kept once)
+    sv_name = unique(reshape(sv_select, [], 1), "stable");
+    [lv_known, iv] = ismember(sv_name, sys.OutputName);
+    if ~all(lv_known)
+        error(msg("GUILDA:ResultLIN:UnknownOutput", sv_name(find(~lv_known,1))))
+    end
+    sys.C = sys.C(iv, :);
+    sys.D = sys.D(iv, :);
+    sys.OutputName = sys.OutputName(iv);
 end
 
 
@@ -136,10 +200,7 @@ function sys = via_kron(obj)
     Cx_ode = eye(n_x);
     Dx_ode = zeros(n_x,n_u);
 
-    sys = dss(Ax_ode, Bx_ode, Cx_ode, Dx_ode, E_ode);
-    sys.InputName  = sv_u;
-    sys.StateName  = sv_x;
-    sys.OutputName = string.empty(0,1);
+    sys = model(Ax_ode, Bx_ode, Cx_ode, Dx_ode, E_ode, sv_x, sv_u, strings(n_x,1));   % no output names
 end
 
 
@@ -188,10 +249,7 @@ function sys = via_dae(obj, opt)
     sr_busvar  = reshape(sr_busvar+(1:n_b),2,[]);
     sr_busvar  = reshape(sr_busvar',1,[]);
 
-    sys = dss(A_dae, B_dae, C_dae, D_dae, E_dae);
-    sys.InputName  = input;
-    sys.StateName  = [output(:)',sr_busvar];
-    sys.OutputName = output;
+    sys = model(A_dae, B_dae, C_dae, D_dae, E_dae, [output(:); sr_busvar(:)], input, output);
 end
 
 
@@ -235,7 +293,7 @@ function sys = select_output(obj, sys, Algorithm, s_coordinate, sv_select)
     n_v  = numel(sv_v);
     n_u  = numel(sv_u);
     sct_y = obj.sct_model.sct_output;
-    sv_model = string(sys.StateName);
+    sv_model = sys.StateName;
     sv_model = sv_model(ismember(sv_model, sv_x));
 
     % Every output, in the order of the kinds x, V, I, y
@@ -279,20 +337,17 @@ function sys = select_output(obj, sys, Algorithm, s_coordinate, sv_select)
         C = Cx(:,iv_x) - Cv * (obj.rm_Avv \ obj.rm_Avx(:,iv_x));
         D = Du - Cv * (obj.rm_Avv \ obj.rm_Bv);
     end
-    [~, iv_u] = ismember(string(sys.InputName), sv_u);
+    [~, iv_u] = ismember(sys.InputName, sv_u);
 
-    sv_state = sys.StateName;
-    c_input  = sys.InputName;
-    sys = dss(sys.A, sys.B, C, D(:,iv_u), sys.E);
-    sys.StateName  = sv_state;
-    sys.InputName  = c_input;
+    sys.C = C;
+    sys.D = D(:,iv_u);
     sys.OutputName = sv_name;
 end
 
 
 function iv = input_index(sys, sv_select)
 % Positions of the selected inputs in the model
-    sv_u    = string(sys.InputName);
+    sv_u    = sys.InputName;
     sv_name = strings(0,1);
     for str = sv_select(:)'
         if str == "u"
@@ -331,40 +386,38 @@ function sys = via_feedback(obj)
     end
 
     ssFromBus = tools.cellfun(@i2v_full, s.c_sysBus(l_isU));
-    ssG = blkdiag(ssFromBus{:});
 
-    busInames = tools.cellfun(@(S) string(S.InputName(1:2)),  ssFromBus);
-    busVnames = tools.cellfun(@(S) string(S.OutputName(end-1:end)), ssFromBus);
+    busInames = tools.cellfun(@(S) S.InputName(1:2),  ssFromBus);
+    busVnames = tools.cellfun(@(S) S.OutputName(end-1:end), ssFromBus);
 
     input  = obj.tab_variable.Label(obj.tab_variable.Kind == "u");
-    output = cellfun(@(c) string(c), ssG.OutputName);
-
-    lv_output = ismember(output,vertcat(strings(0,1), busVnames{:}));
 
     % Non-unit buses n have no states, so Div_n V_n + Diu_n u_n is their current and
     % I_u = (Y_uu - Y_un Ybar_nn^-1 Y_nu) V_u + Y_un Ybar_nn^-1 Diu_n u_n, with Ybar_nn = Y_nn - Div_n
     sysNon = s.c_sysBus(~l_isU);
     Div = tools.dcellfun(@(S) S.D(:,1:2)  , sysNon);
     Diu = tools.dcellfun(@(S) S.D(:,3:end), sysNon);
-    nonUnames = tools.cellfun(@(S) string(S.InputName(3:end)), sysNon);
+    nonUnames = tools.cellfun(@(S) S.InputName(3:end), sysNon);
 
     [Ymat, Hmat] = complex2matrix(s.cm_Y, Div, Diu);
-    ssN  = ss([Ymat, Hmat]);
-    ssN.InputName  = [vertcat(busVnames{:}); vertcat(strings(0,1), nonUnames{:})];
-    ssN.OutputName = vertcat(busInames{:});
+    ssN = model(zeros(0), zeros(0,size(Ymat,2)+size(Hmat,2)), zeros(size(Ymat,1),0), [Ymat, Hmat], zeros(0), ...
+                strings(0,1), [vertcat(busVnames{:}); vertcat(strings(0,1), nonUnames{:})], vertcat(busInames{:}));
 
-    sysODE = connect(ssG, ssN, input, output(~lv_output));
+    % The bus models and the network connected by name; outputs: the states of the bus models
+    sv_x   = tools.cellfun(@(S) S.StateName, ssFromBus);
+    sysODE = connect_by_name([ssFromBus(:); {ssN}], input, vertcat(strings(0,1), sv_x{:}));
+    sysODE = remove_unreachable_states(sysODE);
 
     % Global controllers (all of them, one after another, as in Kron and DAE):
     % their inputs are component outputs (e.g. omega) and their outputs add to component inputs (e.g. Pmech)
     for k = 1:numel(s.c_sysGC)
         sysGC = s.c_sysGC{k};
-        [lv_out, feedout] = ismember(string(sysGC.InputName),  string(sysODE.OutputName));
-        [lv_in,  feedin ] = ismember(string(sysGC.OutputName), string(sysODE.InputName));
+        [lv_out, feedout] = ismember(sysGC.InputName,  sysODE.OutputName);
+        [lv_in,  feedin ] = ismember(sysGC.OutputName, sysODE.InputName);
         if ~all(lv_out) || ~all(lv_in)
-            error(msg("GUILDA:ResultLIN:GlobalControllerPort", join(string(sysGC.StateName), ", ")))
+            error(msg("GUILDA:ResultLIN:GlobalControllerPort", join(sysGC.StateName, ", ")))
         end
-        sysODE = feedback(sysODE, sysGC, feedin, feedout, +1);
+        sysODE = positive_feedback(sysODE, sysGC, feedin, feedout);
     end
     sys = sysODE;
 
@@ -386,8 +439,8 @@ function tf = is_invertible(D)
 end
 
 function sys = i2v_full(sysV2I)
-% I-to-V form of a bus model (Bus.get_sys("port","I2V","full",true)) from its V-to-I
-% form (Bus.get_sys("port","V2I","full",false)), with the same operations as Bus.get_sys
+% I-to-V form of a bus model (Bus.get_sys("port","I2V") with the states as outputs) from
+% its V-to-I form, with the same operations as Bus.get_sys
     Ax = sysV2I.A;
     Bv = sysV2I.B(:,1:2);
     Bu = sysV2I.B(:,3:end);
@@ -408,8 +461,72 @@ function sys = i2v_full(sysV2I)
     C  = [  eye(nx,nx); -inv_Dv*inv_Cx];
     D  = [zeros(nx,nu); [inv_Dv, -inv_Dv*inv_Du]];
 
-    sys = dss(A,B,C,D,sysV2I.E);
-    sys.StateName  = sysV2I.StateName;
-    sys.InputName  = [sysV2I.OutputName; sysV2I.InputName(3:end)];
-    sys.OutputName = [sysV2I.StateName; sysV2I.InputName(1:2)];
+    sys = model(A, B, C, D, sysV2I.E, sysV2I.StateName, ...
+                [sysV2I.OutputName; sysV2I.InputName(3:end)], [sysV2I.StateName; sysV2I.InputName(1:2)]);
+end
+
+function sys = connect_by_name(c_blk, sv_input, sv_output)
+% Connects the blocks by name, keeping the states in the order of the blocks: an input
+% takes the sum of the outputs of the same name and the external input of the same name.
+% sv_input and sv_output name the external inputs and the outputs.
+    A = tools.cellfun(@(S) S.A, c_blk);  B = tools.cellfun(@(S) S.B, c_blk);
+    C = tools.cellfun(@(S) S.C, c_blk);  D = tools.cellfun(@(S) S.D, c_blk);
+    E = tools.cellfun(@(S) S.E, c_blk);
+    A = blkdiag(A{:});  B = blkdiag(B{:});  C = blkdiag(C{:});  D = blkdiag(D{:});  E = blkdiag(E{:});
+    sv_x   = tools.cellfun(@(S) S.StateName,  c_blk);   sv_x   = vertcat(strings(0,1), sv_x{:});
+    sv_in  = tools.cellfun(@(S) S.InputName,  c_blk);   sv_in  = vertcat(strings(0,1), sv_in{:});
+    sv_out = tools.cellfun(@(S) S.OutputName, c_blk);   sv_out = vertcat(strings(0,1), sv_out{:});
+
+    K = double(sv_in == sv_out.');              % K(i,j) = 1: output j feeds input i
+    P = double(sv_in == sv_input(:).');         % external inputs
+    [~, iv_out] = ismember(sv_output, sv_out);
+
+    % u = P w + K y,  y = C x + D u  =>  y = (I - D K) \ (C x + D P w)
+    M  = eye(numel(sv_out)) - D*K;
+    Cy = M \ C;
+    Dy = M \ (D*P);
+    sys = model(A + B*K*Cy, B*(P + K*Dy), Cy(iv_out,:), Dy(iv_out,:), E, sv_x, sv_input, sv_output);
+end
+
+function sys = remove_unreachable_states(sys)
+% Structural reduction, as connect does: removes the states that no input reaches and the
+% states that reach no output, through the nonzero pattern of A, E, B and C. The outputs do
+% not change (a removed state stays at zero).
+    G = (sys.A ~= 0) | (sys.E ~= 0);            % G(i,j): state j acts on state i
+    lv_in = any(sys.B ~= 0, 2);
+    lv_out = reshape(any(sys.C ~= 0, 1), [], 1);
+    n_in = -1;   n_out = -1;
+    while nnz(lv_in) ~= n_in || nnz(lv_out) ~= n_out
+        n_in = nnz(lv_in);   n_out = nnz(lv_out);
+        lv_in  = lv_in  | any(G(:, lv_in), 2);
+        lv_out = lv_out | reshape(any(G(lv_out, :), 1), [], 1);
+    end
+    lv = lv_in & lv_out;
+    sys.A = sys.A(lv,lv);
+    sys.B = sys.B(lv,:);
+    sys.C = sys.C(:,lv);
+    sys.E = sys.E(lv,lv);
+    sys.StateName = sys.StateName(lv);
+end
+
+function sys = positive_feedback(sys1, sys2, feedin, feedout)
+% Positive feedback of sys2 around sys1: the inputs feedin of sys1 add the outputs of sys2,
+% whose inputs are the outputs feedout of sys1. States [x1; x2]; inputs and outputs of sys1.
+    n1 = size(sys1.A,1);   n2 = size(sys2.A,1);
+    S = zeros(numel(feedout), numel(sys1.OutputName));
+    S(sub2ind(size(S), 1:numel(feedout), reshape(feedout,1,[]))) = 1;     % w2 = S y1
+    T = zeros(numel(sys1.InputName), numel(feedin));
+    T(sub2ind(size(T), reshape(feedin,1,[]), 1:numel(feedin))) = 1;       % u1 = v + T z2
+
+    % y1 = C1 x1 + D1 (v + T (C2 x2 + D2 S y1))
+    M  = eye(numel(sys1.OutputName)) - sys1.D*T*sys2.D*S;
+    Cy = M \ [sys1.C, sys1.D*T*sys2.C];
+    Dy = M \ sys1.D;
+    Cz = [zeros(size(sys2.C,1), n1), sys2.C] + sys2.D*S*Cy;           % z2
+    Dz = sys2.D*S*Dy;
+
+    A = [sys1.A, zeros(n1,n2); zeros(n2,n1), sys2.A] + [sys1.B*T*Cz; sys2.B*S*Cy];
+    B = [sys1.B + sys1.B*T*Dz; sys2.B*S*Dy];
+    sys = model(A, B, Cy, Dy, blkdiag(sys1.E, sys2.E), [sys1.StateName; sys2.StateName], ...
+                sys1.InputName, sys1.OutputName);
 end

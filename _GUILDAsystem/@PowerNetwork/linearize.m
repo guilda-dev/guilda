@@ -2,8 +2,10 @@ function [result, flag, output] = linearize(obj, varargin)
 % Linearize the network and return a ResultLIN.
 %
 % Linearizes the network and returns the unreduced linear DAE (the Jacobian blocks in
-% the order of net.get_variable_map()) as a ResultLIN; result.get_ss(Algorithm)
-% gives a state-space model. The settings are the stored defaults of
+% the order of net.get_variable_map()) as a ResultLIN, whose properties A, B, C, D, E,
+% StateName, InputName and OutputName hold the reduced model of Algorithm;
+% result.get_ss(Algorithm) gives it for another algorithm or with other channels. The
+% linearization needs no toolbox. The settings are the stored defaults of
 % net.solver_LIN; Name-Value options override them for this call only (net.solver_LIN is
 % not changed). Neither is the network: a Point away from the equilibrium is used only
 % for this call.
@@ -32,7 +34,9 @@ function [result, flag, output] = linearize(obj, varargin)
 % <@Examples>
 % ```matlab
 % res = net.linearize();
-% sys = res.get_ss("Kron");
+% eig(res.A, res.E)                 % model of res.options.Algorithm
+% sct = res.get_ss("Kron", Format="struct");
+% sys = res.get_ss("Kron");         % ss (Control System Toolbox)
 % tab = res.tab_variable;           % order of res.rm_Axx, res.rm_Axv, ...
 % x = res.rv_point;  x(1) = x(1) + 0.1;
 % res2 = net.linearize(Point=x);      % at a perturbed state

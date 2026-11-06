@@ -207,8 +207,7 @@ end
 
 function v = ssdata_all(sys)
 % 状態方程式の行列をまとめた列ベクトル
-    [A, B, C, D, E] = dssdata(sys);
-    v = [A(:); B(:); C(:); D(:); E(:)];
+    v = [sys.A(:); sys.B(:); sys.C(:); sys.D(:); sys.E(:)];
 end
 
 function [gen, bus, avr, pss] = layers(net)

@@ -15,8 +15,22 @@ classdef ResultLIN < ResultBase
 % point rv_point. Away from an equilibrium the tangent of the nonlinear system also has the
 % constant rv_residual: its rows add to the right-hand sides above, and get_ss leaves it out.
 % Y is the admittance matrix of the model, also at a point inside a fault.
-% get_ss returns a reduced state-space model (Kron / Feedback / DAE); Plot draws the
-% eigenvalue map.
+% get_ss returns a reduced model (Kron / Feedback / DAE); Plot draws the eigenvalue map.
+%
+% The properties A, B, C, D, E, StateName, InputName and OutputName hold one linear model
+% (E dx/dt = A x + B u, y = C x + D u) with the names of the states, inputs and outputs, as
+% in a state-space (ss) object, without the Control System Toolbox. For net.linearize it is
+% get_ss(options.Algorithm) (all inputs and the default outputs); net.get_sys with Input or
+% Output keeps them in options and selects them here. They are empty when get_ss stops for
+% that Algorithm (flag false, or "Feedback" without a bus to connect); get_ss gives the
+% reason.
+%
+% comp.get_sys, bus.get_sys, con.get_sys and gc.get_sys also return a ResultLIN (an
+% object-level result, output.s_layer "Component", "Bus", "LocalController" or
+% "GlobalController"; "PowerNetwork" for net.linearize). It holds the port model of the
+% layer in A ... OutputName, the point rv_point and the Jacobian blocks that apply
+% (rm_Axx, rm_Axv, rm_Bx, rm_E; see the help of each get_sys); get_ss returns that model,
+% and Algorithm and Coordinate do not apply.
 %
 % - `tab_variable` has one row per variable with Index, Kind ("x" | "Vre" | "Vim" | "u"),
 %   Owner, Name, Label and Bus (see PowerNetwork.get_variable_map).
@@ -34,7 +48,9 @@ classdef ResultLIN < ResultBase
 % net.initialize();
 % [result, flag] = net.linearize();
 % eig(full(result.rm_Axx))          % Jacobian blocks of the unreduced DAE
-% sys = result.get_ss("Kron");      % reduced state-space model
+% eig(result.A, result.E)           % model of options.Algorithm
+% sct = result.get_ss("Kron", Format="struct");   % reduced model as a struct
+% sys = result.get_ss("Kron");      % ss object (Control System Toolbox)
 % result.Plot();                    % eigenvalue map
 % ```
 %
@@ -51,6 +67,16 @@ classdef ResultLIN < ResultBase
         rm_Bv double = zeros(0,0)              % Jacobian of the bus current balance (Y v - I) with respect to the inputs.
         rm_E double = zeros(0,0)               % Mass matrix of the state equations (the algebraic equations have none).
         rv_residual (:,1) double = zeros(0,1)  % Residual of the nonlinear DAE at rv_point, rows x and v of tab_variable; zero at an equilibrium.
+    end
+    properties (SetAccess=private) % Model
+        A double = zeros(0,0)                  % State matrix of the model (E dx/dt = A x + B u, y = C x + D u): get_ss(options.Algorithm), or the port model of an object-level result.
+        B double = zeros(0,0)                  % Input matrix of the model.
+        C double = zeros(0,0)                  % Output matrix of the model.
+        D double = zeros(0,0)                  % Feedthrough matrix of the model.
+        E double = zeros(0,0)                  % Mass matrix of the model (singular for "DAE").
+        StateName (:,1) string = strings(0,1)  % Names of the states of the model.
+        InputName (:,1) string = strings(0,1)  % Names of the inputs of the model.
+        OutputName (:,1) string = strings(0,1) % Names of the outputs of the model ("Kron" has none by default).
     end
     properties (SetAccess=private, Hidden) % Model data
         sct_model struct = struct()            % Model data of get_ss: bus and global controller models, admittance matrix, ... (see the class help).
@@ -71,7 +97,7 @@ classdef ResultLIN < ResultBase
                 tab_variable table  = table() % Variable map.
                 rv_point     double = zeros(0,1) % Point in the order of tab_variable.
                 sct_block    struct = struct() % Fields Axx, Axv, Bx, Avx, Avv, Bv, E.
-                sct_model    struct = struct() % Data for get_ss (bus and controller models, Y, non-unit buses, V).
+                sct_model    struct = struct() % Data for get_ss (bus and controller models, Y, non-unit buses, V), or the port model (field sct_sys) of an object-level result.
                 rv_residual  double = zeros(0,1) % Residual at the point (rows x and v of tab_variable).
             end
             arguments (Output)
@@ -87,9 +113,34 @@ classdef ResultLIN < ResultBase
                 end
             end
             obj.sct_model = sct_model;
+
+            % The model: the port model of an object-level result, or get_ss(Algorithm)
+            if isfield(sct_model, "sct_sys")
+                sct_sys = sct_model.sct_sys;
+            elseif isfield(options, "Algorithm") && isfield(sct_model, "c_sysBus")
+                c_nv = cell(1,0);       % Input and Output of net.get_sys
+                for str = ["Input","Output"]
+                    if isfield(options, str)
+                        c_nv = [c_nv, {str, options.(str)}]; %#ok<AGROW>
+                    end
+                end
+                try
+                    sct_sys = obj.get_ss(options.Algorithm, c_nv{:}, Format="struct");
+                catch
+                    sct_sys = [];   % flag false or no model for this Algorithm: get_ss gives the reason
+                end
+            else
+                sct_sys = [];
+            end
+            if ~isempty(sct_sys)
+                for str = ["A","B","C","D","E","StateName","InputName","OutputName"]
+                    obj.(str) = sct_sys.(str);
+                end
+            end
         end
 
         sys = get_ss(obj, Algorithm, opt)
         fig = Plot(obj, opt)
     end
 end
+

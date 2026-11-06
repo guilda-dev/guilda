@@ -3,8 +3,9 @@ function sys = get_sys_alone(obj, x, V, I, u, opt)
 %
 % Inputs: the port and sv_u. States: sv_x. Outputs: the other port; with
 % controllerPorts also sv_y and, for port "V2I", the voltage that the controllers read.
-% The names are not tagged, and the groups have the names of the channels so that
-% get_sys can connect the controllers by name. The caller checks the edit flags.
+% The model is a struct with the fields A, B, C, D, E (E dx/dt = A x + B u,
+% y = C x + D u) and StateName, InputName, OutputName (string columns, not tagged), so
+% that get_sys can connect the controllers by name. The caller checks the edit flags.
 %
 % See also Component.get_sys, controller.local_LQR
 %
@@ -19,7 +20,7 @@ function sys = get_sys_alone(obj, x, V, I, u, opt)
         opt.controllerPorts (1,1) logical = false   % Also output what the controllers read.
     end
     arguments (Output)
-        sys   % State-space model with untagged names, grouped by channel.
+        sys   % Struct A, B, C, D, E, StateName, InputName, OutputName with untagged names.
     end
 
     nx = numel(obj.sv_x);
@@ -82,14 +83,10 @@ function sys = get_sys_alone(obj, x, V, I, u, opt)
             end
     end
 
-    sys = dss(A, B, C, D, Mass);
-
-    sys.StateName  = obj.sv_x;
-    sys.InputName  = sv_in;
-    sys.OutputName = sv_out;
-
-    sys.InputGroup  = cell2struct(arrayfun(@(n) {n}, (1:numel(sv_in))'), sys.InputName);
-    sys.OutputGroup = cell2struct(arrayfun(@(n) {n}, (1:numel(sv_out))'), sys.OutputName);
+    sys = struct("A", A, "B", B, "C", C, "D", D, "E", Mass, ...
+                 "StateName", reshape(string(obj.sv_x), [], 1), ...
+                 "InputName", reshape(string(sv_in), [], 1), ...
+                 "OutputName", reshape(string(sv_out), [], 1));
 
 end
 
