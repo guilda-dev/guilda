@@ -29,7 +29,7 @@ classdef Branch < PowerSystemModel
 % br  = net.a_Branch{1};               % or net.add_branch("pi", [1,2], R=0.01, X=0.085)
 % br.tab_parameter.dynamics            % R, X, C, tap, phase
 % Y   = br.get_admittance_matrix();    % 2x2 admittance matrix
-% br.set_opffcn("DefaultConstraint", false);
+% br.tab_parameter.operation.Smax = Inf;   % no apparent-power limit in the OPF
 % ```
 %
 % See also PowerNetwork.add_branch, branch.pi, Bus
@@ -44,11 +44,6 @@ classdef Branch < PowerSystemModel
     properties(SetAccess={?PowerNetwork}) % Layer Structure
         a_PowerNetwork = []           % PowerNetwork the branch belongs to ([] when removed). <@Type> PowerNetwork
         a_Bus (:,1) cell = cell(0,1)  % End buses {from; to}: the row and column order of the admittance matrix (empty when removed). <@Type> cell of Bus (2x1)
-    end
-    properties(SetAccess=protected) % OPF
-        f_opfcost = []       % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the branch ([]: none). <@Stale> nothing
-        f_opfconst = []      % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing
-        l_opfdefault = true  % Whether the default OPF constraints of the branch are kept (DefaultConstraint of set_opffcn). <@Stale> nothing
     end
     properties(Dependent) % Parameter
         cv_Vequilibrium      % [pu] Voltage phasors of the end buses at the equilibrium. <@Type> double
@@ -85,7 +80,7 @@ classdef Branch < PowerSystemModel
             
             % tab_parameter columns:
             % - dynamics: R, X [pu]: series impedance; C [pu]: shunt susceptance (meaning set by the subclass); tap: off-nominal ratio; phase [rad]
-            % - operation: OPF limits at both ends: Smax, Imax, Pmax, Qmax [pu] (default Inf); Vargmax [rad]: end-bus angle difference (default pi/2)
+            % - operation: OPF limits at both ends: Smax, Imax, Pmax, Qmax [pu] (default Inf); Vargmax [rad]: end-bus angle difference (default pi/2); Inf or NaN: no limit
             % - graph: MidXaxis, MidYaxis: intermediate points of the line in the diagram; Marker: line style
 
             assert( isreal(opt.R), "ERROR: R must be a real number.")
@@ -116,10 +111,6 @@ classdef Branch < PowerSystemModel
 %% Methods
     methods(Access={?PowerNetwork})
         initialize(obj)
-    end
-    methods
-        % OPF
-        [prob, x0, const] = build_opf_problem(obj, prob, x0, const, rm_V, option)
     end
 
 %% Get Methods

@@ -28,7 +28,7 @@ classdef ResultOPF < ResultBase
 %   the same for reactive power. Branch limits are in
 %   lambda.Constraints.Imax_<branch>_<bus> and Smax_<branch>_<bus>; bound multipliers (e.g.
 %   the branch Pmax) are in lambda.Variables.<name>.Lower/Upper.
-% - `OPFprob` is built by build_opf_problem.
+% - `OPFprob` is the solved problem: built by SolverOPF.build_problem, or the Problem given to optimize_powerflow.
 %
 % <@Examples>
 % ```matlab

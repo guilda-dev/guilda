@@ -6,7 +6,7 @@ function sct_options = get_options(obj, nv)
 % an invalid value stops with the validation error of the option.
     arguments (Input)
         obj % Solver holding the defaults (net.solver_OPF).
-        nv (1,:) cell = {} % Name-Value overrides: Method, Solver, Tolerance, MaxIteration, Verbose.
+        nv (1,:) cell = {} % Name-Value overrides: Method, Solver, Tolerance, MaxIteration, Verbose, Cost, Constraint, DefaultCost, ReferenceBus.
     end
     arguments (Output)
         sct_options % One field per setting (Method, Solver, Algorithm_*, Display, MaxIteration, ...).
@@ -26,4 +26,5 @@ function sct_options = get_options(obj, nv)
     end
     sct_options.Method = string(sct_options.Method);
     sct_options.Solver = string(sct_options.Solver);
+    sct_options.ReferenceBus = string(sct_options.ReferenceBus);
 end

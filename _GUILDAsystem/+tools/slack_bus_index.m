@@ -10,7 +10,7 @@ function i_bus = slack_bus_index(net)
 % i_bus = tools.slack_bus_index(network.IEEE14bus);
 % ```
 %
-% See also PowerNetwork.calculate_powerflow, PowerNetwork.build_opf_problem, tools.network_to_mpc
+% See also PowerNetwork.calculate_powerflow, SolverOPF.build_problem, tools.network_to_mpc
     arguments (Input)
         net   % Network to look at. It is only read.
     end

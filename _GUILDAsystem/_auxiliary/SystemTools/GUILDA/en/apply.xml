@@ -1,9 +1,0 @@
-<!--This is an XML file containing error messages related to the file "apply".-->
-<rsccat version="4.0" locale="en" product="GUILDA">
-    <message>
-        <entry key="InvalidCost">The Cost handle of {0} must return a real scalar (an optimization expression or a number).</entry>
-        <entry key="InvalidConstraint">The Constraint handle of {0} must return a struct of named constraints, e.g. struct("Vband", v.V &lt;= 1.02).</entry>
-        <entry key="InvalidConstraintField">Field "{0}" of the Constraint handle of {1} is not a constraint (use ==, &lt;= or &gt;=).</entry>
-        <entry key="DuplicateName">Constraint name "{0}" (from {1}) is already used in the OPF problem.</entry>
-    </message>
-</rsccat>

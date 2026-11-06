@@ -1,14 +1,20 @@
-function [result,flag,output] = solve(obj, net, sct_options)
+function [result,flag,output] = solve(obj, net, sct_options, sct_input)
 % Build and solve the optimal power flow with the given settings.
 %
-% Builds the optimal power flow problem of net (net.build_opf_problem) for
-% sct_options.Method, solves it with the effective settings sct_options and returns the
-% solution as a ResultOPF. The solver is only read: nothing is written back into it.
-% Called by net.optimize_powerflow; calling it directly is for advanced use.
+% Builds the optimal power flow problem of net with build_problem for the effective
+% settings sct_options, solves it and returns the solution as a ResultOPF. The solver is
+% only read: nothing is written back into it. Called by net.optimize_powerflow; calling it
+% directly is for advanced use.
+% sct_input carries the call-only options Problem and InitialPoint of optimize_powerflow:
+% with Problem, that problem is solved as it is instead of a built one (Cost, Constraint,
+% DefaultCost and ReferenceBus are not applied to it). It must have the variables of the
+% sct_options.Method problem of net (e.g. net.build_opf_problem, modified by the user). InitialPoint replaces the initial point; by default it is the x0 of
+% build_problem, so a Problem with added variables needs an InitialPoint that covers them.
     arguments (Input)
         obj % Solver (net.solver_OPF).
         net % Network to optimize.
         sct_options (1,1) struct = obj.get_options() % Effective settings (output of get_options).
+        sct_input (1,1) struct = struct() % Call-only options: Problem (optimproblem), InitialPoint (struct of initial values by variable name); either may be absent.
     end
     arguments (Output)
         result % Bus, connection and branch values of the solution.
@@ -18,8 +24,21 @@ function [result,flag,output] = solve(obj, net, sct_options)
     t0 = tic;
     s_method = sct_options.Method;
 
-    % get OPF problem
-    [OPFprob,x0] = net.build_opf_problem("Method",s_method);
+    % OPF problem: built, or given by the user
+    if isfield(sct_input, "Problem")
+        % the user terms are in the given problem: build without them for x0 and the check
+        sct_build = sct_options;
+        sct_build.Cost       = [];
+        sct_build.Constraint = [];
+        [OPFprob, x0] = obj.build_problem(net, sct_build);
+        check_problem(sct_input.Problem, OPFprob, s_method);
+        OPFprob = sct_input.Problem;
+    else
+        [OPFprob, x0] = obj.build_problem(net, sct_options);
+    end
+    if isfield(sct_input, "InitialPoint")
+        x0 = sct_input.InitialPoint;
+    end
 
     % solve OPF problem
     [~, c_nv] = obj.optimoption(OPFprob, sct_options);
@@ -145,5 +164,20 @@ function tab = format_branch(net, sol, s_method)
             tab = table(real(cm_S(:,1)), real(cm_S(:,2)), real(sum(cm_S,2)), ...
                         'VariableNames', ["Pfrom","Pto","Ploss"], ...
                         'RowNames', sv_branch);
+    end
+end
+
+
+function check_problem(prob, prob_def, s_method)
+% The given Problem must hold every variable of the built problem with the same size,
+% so that the solution can be formatted into the result tables.
+    if ~isa(prob, "optim.problemdef.OptimizationProblem")
+        error(msg("GUILDA:SolverOPF:InvalidProblem"))
+    end
+    sv_name = string(fieldnames(prob_def.Variables)).';
+    lv_bad  = arrayfun(@(s) ~isfield(prob.Variables, s) ...
+                            || ~isequal(size(prob.Variables.(s)), size(prob_def.Variables.(s))), sv_name);
+    if any(lv_bad)
+        error(msg("GUILDA:SolverOPF:ProblemMismatch", s_method, join(sv_name(lv_bad), ", ")))
     end
 end

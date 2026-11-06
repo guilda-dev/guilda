@@ -2,8 +2,7 @@ classdef PowerNetwork < PowerSystemModel
 % Root of the model: holds the buses, branches and global controllers of one grid and runs the analyses.
 %
 % - Owns the topology (which buses, branches and global controllers exist), the system
-%   base in `tab_parameter.base` (Hz, baseMVA), the solver objects `solver_*` and the
-%   network-wide OPF terms (`f_opfcost`, `f_opfconst`, `l_opfdefault`).
+%   base in `tab_parameter.base` (Hz, baseMVA) and the solver objects `solver_*`.
 % - Every analysis starts here: the method reads its settings from a solver object, hands
 %   the network to it and returns a result object.
 % - Not where the numbers are: bus voltages belong to `Bus`, the model equations to
@@ -59,7 +58,8 @@ classdef PowerNetwork < PowerSystemModel
 % Power-flow settings are parameters of the buses (`tab_parameter.powerflow`: V, Varg)
 % and the components (`tab_parameter.powerflow`: P, Q). OPF limits and costs are in
 % `tab_parameter.operation` and `tab_parameter.OPF` of the buses, components and
-% branches; `set_opffcn` adds user-defined costs and constraints.
+% branches; user-defined costs and constraints are the options Cost and Constraint of
+% `optimize_powerflow` (stored defaults in `solver_OPF`).
 %
 % <@Examples>
 % ```matlab
@@ -106,11 +106,6 @@ classdef PowerNetwork < PowerSystemModel
         cv_Vequilibrium                             % [pu] Bus voltage phasors at the equilibrium, one per bus.
         cv_Iequilibrium                             % [pu] Bus current injections at the equilibrium, one per bus.
         rv_Xequilibrium                             % State equilibrium, in the order of the x rows of get_variable_map.
-    end
-    properties(SetAccess=protected) % OPF
-        f_opfcost = []                              % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the network ([]: none). <@Stale> nothing
-        f_opfconst = []                             % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing
-        l_opfdefault = true                         % Whether the default OPF constraints of the network are kept (DefaultConstraint of set_opffcn). <@Stale> nothing
     end
     properties(Dependent, Access=protected) % Layer Structure
         parent                                      % Parent in the layer structure: none (the network is the top).

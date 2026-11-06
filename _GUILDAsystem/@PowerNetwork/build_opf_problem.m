@@ -1,108 +1,58 @@
 function varargout = build_opf_problem(obj, varargin)
 % Build the optimization problem of the optimal power flow without solving it.
 %
-% `net.optimize_powerflow` solves the same problem. The Name-Value options:
-%
-% - `Method` — "ELD", "DC OPF" or "AC OPF". Default: "AC OPF".
-% - `validate` — Check that the initial point x0 fits the problem. Default: false.
+% Builds the problem that `net.optimize_powerflow` solves (SolverOPF.build_problem), so
+% that it can be inspected or modified before solving it with
+% net.optimize_powerflow(Problem=prob, InitialPoint=x0). The settings are the stored
+% defaults of net.solver_OPF; Name-Value options override them for this call only.
 % With no output the problem is displayed.
+% Constraint names: balancedP_<bus>, balancedQ_<bus> (balancedP in "ELD"), VargRef,
+% VargMax1_<branch>, VargMax2_<branch>, defIre_, defIim_, defP_, defQ_, Imax_, Smax_
+% (<branch>_<bus>), plus the names of Constraint. Variables are named by the tags of the
+% buses (Varg, V), components (P, Q) and branch ends (<branch>_<bus>: P, Q, Ireal, Iimag
+% flowing into the bus).
+%
+% Name-Value options:
+%
+% - `Method` — "ELD", "DC OPF" or "AC OPF" (net.solver_OPF.Method).
+% - `Cost` — Function handle @(v, p) returning a scalar added to the objective (net.solver_OPF.Cost; [] = none).
+% - `Constraint` — Function handle @(v, p) returning struct(name1, constraint1, ...) added to the problem (net.solver_OPF.Constraint; [] = none).
+% - `DefaultCost` — false leaves out the costs of tab_parameter.OPF (net.solver_OPF.DefaultCost).
+% - `ReferenceBus` — Bus with a fixed angle: "auto", a bus tag or "none" (net.solver_OPF.ReferenceBus).
+% - `validate` — Check that the initial point x0 fits the problem. Default: false.
 %
 % <@Examples>
 % ```matlab
 % prob = net.build_opf_problem(Method="DC OPF");
 % [prob, x0] = net.build_opf_problem(Method="AC OPF", validate=true);
+% % Add a constraint and solve the modified problem
+% [prob, x0] = net.build_opf_problem(Method="DC OPF");
+% prob.Constraints.Cap = prob.Variables.SG1B001 <= 0.4;
+% res = net.optimize_powerflow(Method="DC OPF", Problem=prob, InitialPoint=x0);
 % ```
 %
-% See also PowerNetwork.optimize_powerflow, Bus.build_opf_problem, Branch.build_opf_problem
+% See also PowerNetwork.optimize_powerflow, SolverOPF.build_problem
 %
 % <@Group> OPF
     arguments (Input)
         obj
     end
     arguments (Input, Repeating)
-        varargin   % Name-Value options Method and validate.
+        varargin   % Name-Value options Method, Cost, Constraint, DefaultCost, ReferenceBus and validate.
     end
     arguments (Output, Repeating)
         varargout   % prob (the optimproblem), then x0 (the initial point as a struct of the variables).
     end
     varargin = v3_opf_args(varargin, "BuildOpfProblemMethods");    % COMPAT(v3)
-    [varargout{1:nargout}] = build_problem(obj, varargin{:});
-end
+    [c_nv, l_validate] = take_validate(varargin);
 
+    % only the options of the problem (not the solver options such as Tolerance)
+    sct_map = SolverOPF.OptionMap;
+    sct_map = rmfield(sct_map, setdiff(fieldnames(sct_map), ["Method","Cost","Constraint","DefaultCost","ReferenceBus"]));
+    tools.resolve_options(obj.solver_OPF, sct_map, c_nv);
+    sct_options = obj.solver_OPF.get_options(c_nv);
 
-function varargout = build_problem(obj,options)
-arguments (Input)
-    obj 
-    options.Method   (1,1) string {mustBeMember(options.Method,["ELD","DC OPF","AC OPF"])} = "AC OPF";
-    options.validate (1,1) logical = false;
-end
-    
-    % make model description
-    tab_OPF.Bus       = tools.vcellfun(@(b) b.tab_parameter, obj.a_Bus);
-    tab_OPF.Bus       = tab_OPF.Bus(:,["operation","powerflow"]);
-    tab_OPF.Bus.Properties.RowNames = string(obj.a_Bus);
-
-    a_Com             = tools.vcellfun(@(b) b.a_Component, obj.a_Bus);
-    tab_OPF.Component = tools.vcellfun(@(c) c.tab_parameter(:,["OPF","operation"]), a_Com);
-    tab_OPF.Component.Properties.RowNames = string(a_Com);
-
-    tab_OPF.Branch    = tools.vcellfun(@(b) b.tab_parameter, obj.a_Branch);
-    tab_OPF.Branch    = tab_OPF.Branch(:,"operation");
-    tab_OPF.Branch.Properties.RowNames = string(obj.a_Branch);
-    
-    s_text = newline+"Optimal Poer Flow ("+options.Method+")"+newline...
-             + string(repmat('=',1,100))+newline+newline;
-    for s_tag = ["Bus","Component","Branch"]
-        s_text = s_text...
-                 + "<<"+s_tag+" OPF setting>>"+newline...
-                 + formattedDisplayText(tab_OPF.(s_tag))+newline+newline;
-    end
-    s_text = s_text + "<<Network Topology>>"+newline...
-                        + obj.disp_tree + newline...
-                        +string(repmat('=',1,100))+newline;
-
-
-    % define optimproblem
-    x0    = struct();
-    const = struct();
-    Vvar  = struct();
-    prob = optimproblem("ObjectiveSense","minimize",...
-                        "Objective"     ,struct("GenCost",0),...
-                        "Description"   ,s_text);
-    if options.Method=="ELD"
-        const.P = 0;
-    end
-
-    a_Bus = obj.a_Bus;
-    a_Branch = obj.a_Branch;
-
-    for i = 1:numel(a_Bus)
-        [prob, x0, const, Vvar] = a_Bus{i}.build_opf_problem(prob,x0,const,Vvar,"methods",options.Method);
-    end
-
-    % Reference angle: the bus of tools.slack_bus_index (the first bus if no bus has a
-    % component) keeps its power-flow Varg. l_isSlack is not set.
-    % net.set_opffcn(DefaultConstraint=false) removes it.
-    if options.Method ~= "ELD" && obj.l_opfdefault
-        i_ref = tools.slack_bus_index(obj);
-        if isempty(i_ref); i_ref = 1; end
-        Varg_ref = a_Bus{i_ref}.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", a_Bus{i_ref}.a_Parameter)}.tab_parameter.Varg;
-        if isnan(Varg_ref); Varg_ref = 0; end
-        Vref = Vvar.(string(a_Bus{i_ref}));
-        prob.Constraints.VargRef = Vref("Varg") == Varg_ref;
-    end
-    for i = 1:numel(a_Branch)
-        [prob, x0, const] = a_Branch{i}.build_opf_problem(prob,x0,const,Vvar,"methods",options.Method);
-    end
-
-    sv_const = fieldnames(const);
-    for i = 1:numel(sv_const)
-        s_coni = sv_const{i};
-        prob.Constraints.("balanced"+s_coni) = const.(s_coni) == 0;
-    end
-
-    % network-wide set_opffcn terms (variables of all objects, addressed by tag)
-    prob = opffcn.apply(obj, prob, options.Method, Vvar);
+    [prob, x0] = obj.solver_OPF.build_problem(obj, sct_options);
 
     switch nargout
         case 0; disp(prob);
@@ -111,13 +61,37 @@ end
                 varargout{2} = x0;
     end
 
-    if options.validate
+    if l_validate
         validate(prob,x0)
     end
 end
 
 
+function [c_nv, l_validate] = take_validate(c_in)
+% Separates the option validate from the problem options
+    c_nv       = c_in;
+    l_validate = false;
+    if mod(numel(c_in), 2) ~= 0
+        return              % not Name-Value pairs: tools.resolve_options reports it
+    end
+    lv_take = false(size(c_in));
+    for k = 1:2:numel(c_in)
+        if (ischar(c_in{k}) || isstring(c_in{k})) && strcmpi(c_in{k}, "validate")
+            lv_take(k:k+1) = true;
+            l_validate = validate_flag(c_in{k+1});
+        end
+    end
+    c_nv = c_in(~lv_take);
+end
 
+function l = validate_flag(l)
+    arguments (Input)
+        l (1,1) logical   % Value of validate.
+    end
+    arguments (Output)
+        l                 % The value as a logical scalar.
+    end
+end
 
 
 function validate(prob,x0_struct)

@@ -151,7 +151,7 @@ v3 の編集ログ(`tab_editLog`)はありません。各層は、古くなっ�
 
 - **初期値。** 各タグは作成時に `"initialize has not been run"` を持ちます。各クラスは自分のフィールドにだけ追加し、自分のコードで空にします。
 - **メッセージ。** 「編集した層から上のタグを `/` でつないだもの」+ `": "` + 編集内容(値を含む)。例: `"dynamics/SG1B001/B001/IEEE9bus: edit D: 2 -> 2.1"`。重複は解析のエラー表示で除きます。
-- **編集の種類(タグ)。** パラメータのグループ名(`dynamics`、`powerflow`、`base`、`operation`、`OPF`、`graph`)、`opffcn`(`set_opffcn` / `reset_opffcn`)、`Topology`、`Slack`、`Tag`。
+- **編集の種類(タグ)。** パラメータのグループ名(`dynamics`、`powerflow`、`base`、`operation`、`OPF`、`graph`)、`Topology`、`Slack`、`Tag`。
 
 | 編集 | 古くなるもの |
 |---|---|
@@ -165,7 +165,7 @@ v3 の編集ログ(`tab_editLog`)はありません。各層は、古くなっ�
 | 大域制御器の追加 | その制御器の `equilibrium`(系統の `powerflow` は古くならない) |
 | 大域制御器の削除 | なし |
 | 系統の `Hz` | 系統の `odefcn`(子へは届かない。各モデルは `initialize` で、ハンドルを作った周波数 `r_odefcnHz` と比べて作り直す) |
-| `operation`、`OPF`、`graph`、`opffcn`、`Tag`(改名) | なし |
+| `operation`、`OPF`、`graph`、`Tag`(改名) | なし |
 
 - **最新にするのは `net.initialize()` だけです。** `powerflow` が古いか `Method` を明示したときだけ潮流計算を解き、`Bus.set_equilibrium` で書き込みます。その後、母線 → 機器 → ローカル制御器、ブランチ、大域制御器(最後)の順に、各層が自分のタグから判断して、古いハンドルを作り直し、まだ古い平衡点を保持している V と I から計算し直します。最後に系統の `powerflow` と `odefcn` を空にします。何も古くなければ、大域制御器の平衡点の再計算(常に行う)のほかは何も変わりません。
   - 動特性だけの編集: 潮流計算を解かず、編集したモデルだけを計算し直します。
@@ -463,27 +463,27 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
   variables start at the initial bus voltages. Shipped CSVs whose
   `Pmin`/`Qmin` were `#NAME?` (Excel's `-Inf`) are fixed; check your own.
 - New `tools.network_to_mpc(net)` converts a network into a MATPOWER case.
-- **Customizing the problem (`set_opffcn`).** Component, Bus, Branch and
-  PowerNetwork have `obj.set_opffcn("Cost", fcnCost, "Constraint", fcnCon,
-  "DefaultConstraint", tf)` and `obj.reset_opffcn()`:
-  - `fcnCost = @(v, p) <scalar>` **replaces** the object's default cost (on
-    PowerNetwork, which has none, it is added). `fcnCon = @(v, p)
-    struct(name, constraint, ...)` is **added**; each field becomes
-    `prob.Constraints.<name>_<tag>` (`<name>` on PowerNetwork), which is
-    also the label of its dual in `res.lambda.Constraints`.
-  - `v` holds the object's own variables (component `v.P`, `v.Q` in AC OPF;
-    bus `v.Varg`, `v.V`; branch `v.Pfrom`, `v.Pto`, `v.Vargfrom`, … ); `p`
-    its parameters (`p.Method`, `p.OPF`, `p.operation`, …). On PowerNetwork
-    `v.Component.(tag).P`, `v.Bus.(tag).V`, `v.Branch.(tag).Pfrom` address
-    every object.
-  - `"DefaultConstraint", false` removes the default limits (component
-    P/Q bounds and the fixed load P/Q, bus voltage bounds, branch limits,
-    the reference angle on PowerNetwork); the model equations and the bus
-    balance stay.
-  - Bad handles stop with `GUILDA:apply:InvalidCost`,
-    `InvalidConstraint` or `DuplicateName`, or with `GUILDA:opffcn:HandleError`. Branch terms are
-    not used in ELD (no branch variables).
-  - An OPF edit: logged (tag `OPF`); it does not make the equilibrium stale.
+- **Customizing the problem (options).** `SolverOPF` builds the problem from
+  `tab_parameter` of the buses, components and branches; user terms are
+  Name-Value options of `optimize_powerflow` and `build_opf_problem`
+  (stored defaults in `net.solver_OPF`), applied to the whole network:
+  - `Cost=@(v, p) <scalar>` is added to the objective; `Constraint=@(v, p)
+    struct(name, constraint, ...)` is added, each field becoming
+    `prob.Constraints.<name>`, also the label of its dual in
+    `res.lambda.Constraints`.
+  - `v.Component.(tag).P/.Q`, `v.Bus.(tag).Varg/.V`,
+    `v.Branch.(tag).Pfrom/...` address every variable; `p` holds `p.Method`
+    and `p.base`.
+  - `DefaultCost=false` leaves out the `tab_parameter.OPF` costs;
+    `ReferenceBus="auto"|<tag>|"none"` picks the bus with a fixed angle.
+  - A default limit of one object is removed by setting it to ±Inf in its
+    `tab_parameter.operation` (branch limits: NaN also means none).
+  - `optimize_powerflow(Problem=prob, InitialPoint=x0)` solves a problem from
+    `build_opf_problem` modified by the user.
+  - Bad handles stop with `GUILDA:SolverOPF:InvalidCost`,
+    `InvalidConstraint`, `InvalidConstraintField` or `DuplicateName`, or
+    with `GUILDA:SolverOPF:HandleError`.
+  - OPF settings do not make the equilibrium stale.
 - **Default load cost is 0** (silent change in `r_cost`). `add_component`
   gives loads `HP = fP = 0` and other components `HP = fP = 1` (before: 1
   for every component, so a fixed load added a constant to `r_cost`). The

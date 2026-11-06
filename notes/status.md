@@ -147,7 +147,7 @@ matlab -batch "DebugScript.run_all('Level','small')"
 
 要件とロードマップは [opf-requirements.md](opf-requirements.md) にあります。
 
-- **完了:** 段階 1(正しさの修正)と段階 2(`set_opffcn`)です。変更点は [v4-migration.md](v4-migration.md) 1.9 にあります。
+- **完了:** 段階 1(正しさの修正)と段階 2(カスタマイズ。2026-11-07 にオブジェクトごとの `set_opffcn` から `SolverOPF` の `Cost` / `Constraint` などのオプションへ変更)です。変更点は [v4-migration.md](v4-migration.md) 1.9 にあります。
 - **未着手:** 段階 3 の外部バックエンド(`prob2struct` 経由の CPLEX / Gurobi、`tools.network_to_mpc` 経由の MATPOWER)です。
 - **先送り:** 多期間 OPF です。設計上の問いは opf-requirements.md にあります。
 - 記録: 開始点は母線の `V0` / `Varg0` です。潮流による開始点は測定して採用しませんでした。反復が減らず(9 母線 43 → 43、IEEE14 59 → 72)、`calculate_powerflow` がスラック母線を設定して系統を編集することがあるためです。

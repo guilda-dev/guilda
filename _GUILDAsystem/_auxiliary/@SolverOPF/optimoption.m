@@ -54,7 +54,7 @@ end
 
 function check_solver(prob, s_solver)
 % Backend check: a Solver that cannot express the problem (e.g. linprog with a quadratic
-% cost or a nonlinear set_opffcn term) stops here with the Solver names that can.
+% cost or a nonlinear Cost or Constraint term) stops here with the Solver names that can.
 % External backends (stage 3) add their own capability check at this point.
     [~, c_valid] = solvers(prob);
     sr_usable = intersect(["linprog","quadprog","fmincon"], string(c_valid), "stable");
