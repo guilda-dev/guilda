@@ -33,11 +33,13 @@ classdef PowerSystemModel < LayerPackage
         end
         function set.tab_parameter(obj, tp)
             % Each container stores its column and logs only the values that changed.
-            sv_tag = string(cellfun(@(p) p.s_tag, obj.a_Parameter, 'UniformOutput', false));
+            sv_tag = string(cellfun(@(p) p.s_tag, obj.a_Parameter, 'UniformOutput', false)).';
             sv_col = string(tp.Properties.VariableNames);
-            s_unknown = setdiff(sv_col, sv_tag, 'stable');
-            if ~isempty(s_unknown)
-                error(msg("GUILDA:PowerSystemModel:UnknownParameterGroup", char(string(obj)), char(s_unknown(1)), char(strjoin(sv_tag, ", "))))
+            if ~isequal(sv_col, sv_tag)
+                s_unknown = setdiff(sv_col, sv_tag, 'stable');
+                if ~isempty(s_unknown)
+                    error(msg("GUILDA:PowerSystemModel:UnknownParameterGroup", char(string(obj)), char(s_unknown(1)), char(strjoin(sv_tag, ", "))))
+                end
             end
             for s_col = sv_col
                 a_para = obj.a_Parameter{sv_tag == s_col};

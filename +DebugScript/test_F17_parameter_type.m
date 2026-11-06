@@ -32,6 +32,13 @@ assert(isequal(DebugScript.helper.stale(net), "powerflow/B001/" + net.s_tag + ":
 assert(isequal(net.sct_stale.powerflow, DebugScript.helper.stale(net)))
 
 %% Same value is not an edit
+% 同じ表、作り直した等しい表、1 つの値の代入のどれも記録しない
+[net, ~] = initialized_3bus();
+para = net.a_Bus{1}.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", net.a_Bus{1}.a_Parameter)};
+tab  = para.tab_parameter;
+para.tab_parameter = tab;
+para.tab_parameter = struct2table(table2struct(tab));
+assert(isempty(DebugScript.helper.stale(net)))
 [net, ~] = initialized_3bus();
 para = net.a_Bus{1}.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", net.a_Bus{1}.a_Parameter)};
 para.tab_parameter.V = para.tab_parameter.V;
@@ -86,7 +93,8 @@ s = load(s_file);
 para = s.net.a_Bus{1}.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", s.net.a_Bus{1}.a_Parameter)};
 V = para.tab_parameter.V;
 check_error(assign_error(para, "V", "x"), "V", "double", "string");
-assert(para.tab_parameter.V == V && isempty(DebugScript.helper.stale(s.net)))
+check_error(assign_error(para, "V", single(V)), "V", "double", "single");   % 読み込み後も既定値のクラス (sv_class) を保つ
+assert(para.tab_parameter.V == V && isa(para.tab_parameter.V, "double") && isempty(DebugScript.helper.stale(s.net)))
 para.tab_parameter.V = V + 0.01;
 assert(numel(DebugScript.helper.stale(s.net)) == 1 && contains(DebugScript.helper.stale(s.net), "edit V: "))
 
