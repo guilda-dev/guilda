@@ -25,41 +25,38 @@ the end as open questions.
 
 ## Defaults and customization
 
-- Defaults use the standard objective, constraints and algorithms for each
-  problem type.
-- Users customize per object through a `set_opffcn` method, by analogy with
-  `set_odefcn`. It stores user function handles on a Component, Bus or
-  Branch; each object then adds its own terms to the problem.
-- Network-wide terms (e.g. a reserve requirement over many generators) go
-  through the same method name on `PowerNetwork`.
-- Handles (decided 2026-10-30):
-  - `obj.set_opffcn("Cost", fcnCost, "Constraint", fcnCon)`, one handle per
-    term. `fcnCost = @(v, p) <scalar expression>`;
-    `fcnCon = @(v, p) struct(<name>, <constraint>, ...)`.
-  - `v` is the object's own optimization variables, `p` its parameters.
-    An object-level handle sees only its own variables.
-  - `Cost` replaces the default cost of that object. Constraints are added
-    to the defaults; their names become the dual labels.
-    `"DefaultConstraint", false` removes the object's default operating
-    limits (the model equations stay). `reset_opffcn()` restores the
-    defaults.
-  - A `PowerNetwork`-level handle receives the variables of every object,
-    addressed by tag: `v.Component.(tag).P`, `v.Bus.(tag).V`,
-    `v.Branch.(tag).Pfrom`.
-  - Single-snapshot handles stay scalar; multi-period OPF is a separate
-    method.
-  - `set_opffcn` is an OPF edit: logged in the edit log, it does not make
-    the equilibrium stale.
-- Default cost of loads is 0. A price-responsive load is a load with P
-  bounds and its own cost, set explicitly.
-- DC OPF uses the MATPOWER branch susceptance `1/X` (with the tap ratio as
-  MATPOWER does).
-- Rejected:
-  - run-time arguments to `optimize_powerflow` that describe extra terms;
-  - asking users to edit the returned `optimproblem` by hand.
+（2026-11-07 にメンテナーが「案B」として決定。2026-10-30 のオブジェクトごとの
+`set_opffcn` は未リリースのまま置き換え）
 
-  Both scale badly: mid and large systems have too many variables to name
-  at the call site.
+- 既定: 問題の種類ごとに標準の目的関数・制約・アルゴリズム。
+- 問題の構築: 潮流計算と同じ方式。`SolverOPF.build_problem` が母線・機器・ブランチの
+  `tab_parameter`（operation / OPF / powerflow / dynamics）を読み取り、`optimproblem` を
+  構築。Bus / Component / Branch に OPF のメソッドや状態は持たせない。
+  - 理由: OPF を使う解析はほかにない。動特性（`f_dx` など）は `simulate` と `get_sys`
+    が再利用するため、キャッシュしたハンドルをクラスに保持するのとは事情が異なる。
+  - 型による分岐は負荷（`component.load.abstract`）の固定だけ。
+- ユーザー定義の項: `net.optimize_powerflow` / `net.build_opf_problem` の
+  Name-Value オプション（ネットワーク全体に適用。PyPSA の `extra_functionality`、
+  PowerModels の build-then-modify に相当）。`net.solver_OPF` に既定値として保存可能。
+  - `Cost = @(v, p) <スカラーの式>`: 目的関数 `GenCost` に加算。
+  - `Constraint = @(v, p) struct(<名前>, <制約>, ...)`: `prob.Constraints.<名前>` と
+    して追加。名前が双対変数のラベル（`result.lambda.Constraints.<名前>`）。既存の名前は
+    エラー。
+  - `v`: タグで全変数を参照（`v.Component.(tag).P/.Q`、`v.Bus.(tag).Varg/.V`、
+    `v.Branch.(tag).Pfrom` など）。`p`: `p.Method` と `p.base`。
+  - `DefaultCost=false`: 全機器の `tab_parameter.OPF` のコストを除外。
+  - `ReferenceBus`: `"auto"`（`tools.slack_bus_index` の母線、なければ最初の母線）、
+    母線のタグ、`"none"`（位相角を固定しない）。
+  - 単一時点のハンドルはスカラー。多期間 OPF は別のメソッド。
+- オブジェクトごとの既定の制約の解除: フラグではなく `tab_parameter.operation` の値を
+  ±Inf にする（ブランチの制約値は NaN も制約なし）。上下限がともに無限大の負荷は
+  潮流計算の P / Q に固定のまま。母線の需給式は常に残る。
+- 変更した問題の求解: `[prob, x0] = net.build_opf_problem(...)` の `prob` を変更し、
+  `net.optimize_powerflow(Problem=prob, InitialPoint=x0)` で求解（呼び出しのみの
+  オプション、保存しない）。結果の表は通常どおり。
+- OPF の設定（`net.solver_OPF`、operation / OPF の編集）は平衡点を古くしない。
+- 負荷の既定のコストは 0。価格応答する負荷は P の上下限と `Cost` を明示。
+- DC OPF のブランチのサセプタンスは MATPOWER と同じ `1/(X·tap)`。
 
 ## Solvers
 
@@ -87,8 +84,9 @@ the end as open questions.
 ## Roadmap
 
 1. Correctness of ELD, DC OPF and AC OPF. Done.
-2. `set_opffcn` customization, load cost 0, DC susceptance `1/(X·tap)`,
-   backend check (`GUILDA:OptimalPowerFlow:UnsupportedSolver`). Done.
+2. Customization (`Cost` / `Constraint` / `DefaultCost` / `ReferenceBus` /
+   `Problem`), load cost 0, DC susceptance `1/(X·tap)`,
+   backend check (`GUILDA:SolverOPF:UnsupportedSolver`). Done.
 3. External solver backends. Open.
 4. Multi-period OPF. Deferred (possible future extension).
 

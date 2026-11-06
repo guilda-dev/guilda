@@ -186,10 +186,10 @@ const updateLogData = [
     "content": "Simulations whose phases start at rest no longer stop at t = 0 in large networks (e.g. network.IEEE68bus(LocalController=false)). When the solver stops, output.message names the phase, its time interval and the solver's message; an error during a phase stops with GUILDA:odeSimulator:PhaseFailed. GUILDA.dictionary no longer lists the classes in archive folders."
   },
   {
-    "title": "OPF customization with set_opffcn",
-    "date": "2026-10-30",
+    "title": "OPF customization options",
+    "date": "2026-11-07",
     "type": "added",
-    "content": "Component, Bus, Branch and PowerNetwork have set_opffcn and reset_opffcn. Cost=@(v, p) replaces the default cost of the object, Constraint=@(v, p) struct(name, constraint) adds named constraints whose duals are in result.lambda.Constraints, and DefaultConstraint=false removes the default limits. On PowerNetwork the handles see the variables of every object by tag. These edits do not require net.initialize()."
+    "content": "net.optimize_powerflow and net.build_opf_problem take Cost=@(v, p) (added to the objective), Constraint=@(v, p) struct(name, constraint) (named constraints whose duals are in result.lambda.Constraints), DefaultCost and ReferenceBus; v holds the variables of every bus, component and branch by tag, and net.solver_OPF stores the defaults. optimize_powerflow(Problem=prob, InitialPoint=x0) solves a problem from build_opf_problem modified by the user. A default limit is removed by setting it to Inf (-Inf) in tab_parameter.operation."
   },
   {
     "title": "OPF load cost and DC susceptance",

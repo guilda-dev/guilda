@@ -279,7 +279,7 @@
             <li><code>"Method","AC OPF"</code> を他のオプションの後に追加するため常に優先</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>net.solver_OPF</code>, <code>c_nv</code>, <code>tab_parameter.OPF</code> / <code>.operation</code>, <code>f_opfcost</code> / <code>f_opfconst</code> / <code>l_opfdefault</code></span><span lang="ja"><code>net.solver_OPF</code>、<code>c_nv</code>、<code>tab_parameter.OPF</code> / <code>.operation</code>、<code>f_opfcost</code> / <code>f_opfconst</code> / <code>l_opfdefault</code></span></dd>
+          <dd><span lang="en"><code>net.solver_OPF</code>, <code>c_nv</code>, <code>tab_parameter.OPF</code> / <code>.operation</code> (with <code>Cost</code>, <code>Constraint</code>, <code>DefaultCost</code>, <code>ReferenceBus</code> of <code>net.solver_OPF</code>)</span><span lang="ja"><code>net.solver_OPF</code>、<code>c_nv</code>、<code>tab_parameter.OPF</code> / <code>.operation</code>（<code>net.solver_OPF</code> の <code>Cost</code>、<code>Constraint</code>、<code>DefaultCost</code>、<code>ReferenceBus</code> を含む）</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en"><code>ResultOPF</code> with <code>tab_bus</code> (n_bus × 6) and <code>tab_cub</code> (P, Q of each component)</span><span lang="ja"><code>tab_bus</code>（n_bus × 6）と <code>tab_cub</code>（各機器の P、Q）を持つ <code>ResultOPF</code></span></dd>
         </dl>
