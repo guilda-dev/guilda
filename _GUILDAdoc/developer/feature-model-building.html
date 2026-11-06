@@ -563,13 +563,13 @@ b1.l_isSlack = true;</code></pre>
             <li>Check the tags first</li>
             <li>Bus not removable while a global controller controls one of its components</li>
             <li>Bus not removable while branches end at it, unless <code>RemoveBranches=true</code> (then <code>remove_branch</code> runs first)</li>
-            <li>Take the removed objects out of the cell and detach them: <code>bus.a_PowerNetwork</code>, <code>br.a_PowerNetwork</code> and <code>gc.a_PowerNetwork</code> get <code>PowerNetwork.empty</code>, <code>br.a_Bus</code> gets <code>cell(0,1)</code></li>
+            <li>Take the removed objects out of the cell and detach them: <code>bus.a_PowerNetwork</code>, <code>br.a_PowerNetwork</code> and <code>gc.a_PowerNetwork</code> get <code>[]</code>, <code>br.a_Bus</code> gets <code>cell(0,1)</code></li>
             <li>A removed bus keeps its components</li>
           </ul><ul lang="ja">
             <li>先にタグを検査</li>
             <li>グローバル制御器が母線の機器を制御している間は母線の削除不可</li>
             <li>ブランチがその母線につながっている間は母線の削除不可（<code>RemoveBranches=true</code> なら先に <code>remove_branch</code> を実行）</li>
-            <li>削除したオブジェクトを cell から外して切り離し: <code>bus.a_PowerNetwork</code>・<code>br.a_PowerNetwork</code>・<code>gc.a_PowerNetwork</code> に <code>PowerNetwork.empty</code>、<code>br.a_Bus</code> に <code>cell(0,1)</code> を代入</li>
+            <li>削除したオブジェクトを cell から外して切り離し: <code>bus.a_PowerNetwork</code>・<code>br.a_PowerNetwork</code>・<code>gc.a_PowerNetwork</code> に <code>[]</code>、<code>br.a_Bus</code> に <code>cell(0,1)</code> を代入</li>
             <li>削除された母線は機器を保持したまま</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
@@ -584,26 +584,26 @@ b1.l_isSlack = true;</code></pre>
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li>Refuse a component that a global controller controls (<code>private/controlling_gcon</code>, handle comparison)</li>
-            <li><code>remove_component</code>: take it out, set <code>comp.a_Bus = Bus.empty</code></li>
+            <li><code>remove_component</code>: take it out, set <code>comp.a_Bus = []</code></li>
             <li><code>replace_component</code>:
               <ul>
                 <li>create the new type with the powerflow, operation, graph and OPF settings and the number of the old one, and attach it (<code>a_Bus</code>, then a <code>"Topology"</code> edit on it)</li>
                 <li>give it a placeholder equilibrium (the bus voltage and the old current)</li>
                 <li><code>Controllers="keep"</code>: move the local controllers, after checking that the new component has their ports</li>
                 <li><code>"drop"</code>: leave them on the old component with a warning</li>
-                <li>detach the old component (<code>Bus.empty</code>)</li>
+                <li>detach the old component (<code>[]</code>)</li>
               </ul>
             </li>
           </ul><ul lang="ja">
             <li>グローバル制御器が制御している機器は拒否（<code>private/controlling_gcon</code>、ハンドル比較）</li>
-            <li><code>remove_component</code>: 機器を外して <code>comp.a_Bus = Bus.empty</code> を代入</li>
+            <li><code>remove_component</code>: 機器を外して <code>comp.a_Bus = []</code> を代入</li>
             <li><code>replace_component</code>:
               <ul>
                 <li>元の機器の powerflow・operation・graph・OPF の設定と番号で新しい種類を作成して接続（<code>a_Bus</code> の代入、続いてその機器の <code>"Topology"</code> の編集）</li>
                 <li>仮の平衡点（母線電圧と元の電流）を付与</li>
                 <li><code>Controllers="keep"</code>: ローカル制御器を移動（新しい機器にそのポートがあることを先に検査）</li>
                 <li><code>"drop"</code>: 警告付きで元の機器に残す</li>
-                <li>元の機器を切り離し（<code>Bus.empty</code>）</li>
+                <li>元の機器を切り離し（<code>[]</code>）</li>
               </ul>
             </li>
           </ul></dd>
@@ -746,8 +746,8 @@ b1.l_isSlack = true;</code></pre>
         <tr><td><code>PowerNetwork.a_Bus</code>, <code>a_Branch</code>, <code>a_GlobalController</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">buses, branches, global controllers (n×1 cell)</span><span lang="ja">母線・ブランチ・グローバル制御器（n×1 cell）</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">child</span><span lang="ja">子</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><code>add_*</code> / <code>remove_*</code></td></tr>
         <tr><td><code>Bus.a_Component</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">components</span><span lang="ja">機器</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">child</span><span lang="ja">子</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><code>add_component</code>, <code>replace_component</code> / <code>remove_component</code></td></tr>
         <tr><td><code>Component.a_LocalController</code>, <code>LocalController.a_LocalController</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">the AVR or <code>"local"</code> controller, then the governor; the PSS under the AVR</span><span lang="ja">AVR または <code>"local"</code> の制御器、続いてガバナ。AVR の下の PSS</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">child</span><span lang="ja">子</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><code>add_local_controller</code> / <code>remove_local_controller</code></td></tr>
-        <tr><td><code>Bus.a_PowerNetwork</code>, <code>Branch.a_PowerNetwork</code>, <code>GlobalController.a_PowerNetwork</code></td><td data-label="Refers to" data-label-ja="参照先"><code>net</code></td><td data-label="Kind" data-label-ja="種類"><span lang="en">back-reference</span><span lang="ja">逆参照</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><span lang="en"><code>Bus</code> constructor, <code>add_branch</code>, <code>add_global_controller</code> / <code>remove_*</code> (<code>PowerNetwork.empty</code>)</span><span lang="ja"><code>Bus</code> のコンストラクタ・<code>add_branch</code>・<code>add_global_controller</code> / <code>remove_*</code>（<code>PowerNetwork.empty</code>）</span></td></tr>
-        <tr><td><code>Component.a_Bus</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">its bus</span><span lang="ja">接続先の母線</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">back-reference</span><span lang="ja">逆参照</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><code>add_component</code>, <code>replace_component</code> / <code>remove_component</code>, <code>replace_component</code> (<code>Bus.empty</code>)</td></tr>
+        <tr><td><code>Bus.a_PowerNetwork</code>, <code>Branch.a_PowerNetwork</code>, <code>GlobalController.a_PowerNetwork</code></td><td data-label="Refers to" data-label-ja="参照先"><code>net</code></td><td data-label="Kind" data-label-ja="種類"><span lang="en">back-reference</span><span lang="ja">逆参照</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><span lang="en"><code>Bus</code> constructor, <code>add_branch</code>, <code>add_global_controller</code> / <code>remove_*</code> (<code>[]</code>)</span><span lang="ja"><code>Bus</code> のコンストラクタ・<code>add_branch</code>・<code>add_global_controller</code> / <code>remove_*</code>（<code>[]</code>）</span></td></tr>
+        <tr><td><code>Component.a_Bus</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">its bus</span><span lang="ja">接続先の母線</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">back-reference</span><span lang="ja">逆参照</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><code>add_component</code>, <code>replace_component</code> / <code>remove_component</code>, <code>replace_component</code> (<code>[]</code>)</td></tr>
         <tr><td><code>LocalController.a_Component</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">the component, or the AVR for a PSS</span><span lang="ja">機器、PSS の場合は AVR</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">back-reference</span><span lang="ja">逆参照</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><code>Component.add_local_controller</code> / <code>remove_local_controller</code>, <code>add_local_controller</code> (<code>[]</code>)</td></tr>
         <tr><td><span lang="en">parent of each</span><span lang="ja">各</span> <code>Parameter</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">the object that owns it</span><span lang="ja">それを所有するオブジェクト</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">back-reference</span><span lang="ja">逆参照</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><span lang="en"><code>Parameter</code> constructor</span><span lang="ja"><code>Parameter</code> のコンストラクタ</span></td></tr>
         <tr><td><code>Branch.a_Bus</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">{from; to} buses (2×1 cell)</span><span lang="ja">{from; to} の母線（2×1 cell）</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">reference, not a parent</span><span lang="ja">参照（親ではない）</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><code>add_branch</code> / <code>remove_branch</code> (<code>cell(0,1)</code>)</td></tr>
