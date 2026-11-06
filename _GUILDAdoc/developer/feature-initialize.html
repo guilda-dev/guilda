@@ -579,7 +579,7 @@
         <ul>
           <li>each layer marks its own stale tags (see <a href="class-design.html#edits">Class Design: Handling of model edits</a>)</li>
           <li>nothing re-runs <code>initialize</code> automatically</li>
-          <li><code>simulate</code>, <code>linearize</code>, <code>get_sys</code>, and the continuation power flow stop with <code>GUILDA:LayerPackage:Stale</code></li>
+          <li><code>simulate</code>, <code>linearize</code>, <code>get_sys</code>, and the continuation power flow stop with their stale errors (<code>GUILDA:SolverODE:Stale</code>, <code>GUILDA:SolverLIN:Stale</code>, <code>GUILDA:SolverCPF:Stale</code>, and those of the layers' <code>get_sys</code>)</li>
           <li>after edits of dynamics parameters only: <code>initialize()</code> does not solve the power flow; it keeps <code>V</code> and <code>I</code> and recomputes the states and inputs of the edited models</li>
         </ul>
       </li>
@@ -606,7 +606,7 @@
         <ul>
           <li>各層が自分の stale タグを印付け（<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a> を参照）</li>
           <li><code>initialize</code> の自動再実行はなし</li>
-          <li><code>simulate</code>、<code>linearize</code>、<code>get_sys</code>、連続潮流計算は <code>GUILDA:LayerPackage:Stale</code> で停止</li>
+          <li><code>simulate</code>、<code>linearize</code>、<code>get_sys</code>、連続潮流計算はそれぞれの stale のエラー（<code>GUILDA:SolverODE:Stale</code>、<code>GUILDA:SolverLIN:Stale</code>、<code>GUILDA:SolverCPF:Stale</code>、各層の <code>get_sys</code> のもの）で停止</li>
           <li>動特性パラメータだけの編集後: <code>initialize()</code> は潮流計算を解かず、<code>V</code> と <code>I</code> を保ったまま編集したモデルの状態と入力を再計算</li>
         </ul>
       </li>
@@ -700,10 +700,10 @@
           <dt><span lang="en">State of the network after the failure</span><span lang="ja">失敗後のネットワークの状態</span></dt>
           <dd><ul lang="en">
             <li>the equilibrium is written in part; <code>net.sct_stale.powerflow</code> gets "the last initialize stopped before it finished", so the next <code>initialize</code> solves the power flow again</li>
-            <li>later analyses stop with <code>GUILDA:LayerPackage:Stale</code> naming that message</li>
+            <li>later analyses stop with their stale errors (e.g. <code>GUILDA:SolverODE:Stale</code>) naming that message</li>
           </ul><ul lang="ja">
             <li>平衡点は途中まで書き込み済み。<code>net.sct_stale.powerflow</code> に "the last initialize stopped before it finished" を追加し、次の <code>initialize</code> は潮流計算を解き直し</li>
-            <li>後の解析はそのメッセージを示す <code>GUILDA:LayerPackage:Stale</code> で停止</li>
+            <li>後の解析はそのメッセージを示す stale のエラー（例 <code>GUILDA:SolverODE:Stale</code>）で停止</li>
           </ul></dd>
         </dl>
       </li>

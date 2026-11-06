@@ -123,7 +123,7 @@ lqr.Q = ones(1, numel(gen.sv_x) + 1);           % 重みのサイズが違うの
 error_of(@() net.initialize());
 assert(DebugScript.helper.is_stale(net))
 ME = error_of(@() net.simulate([0 1]));
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:LayerPackage:Stale", DebugScript.helper.msg_id(ME))
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:Stale", DebugScript.helper.msg_id(ME))
 
 
 %% A failure without a stale edit is reported as an unfinished initialize
@@ -140,7 +140,7 @@ assert(~DebugScript.helper.is_stale(net))
 error_of(@() net.initialize(Method="powerflow"));
 assert(DebugScript.helper.is_stale(net))
 ME = error_of(@() net.simulate([0 1]));
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:LayerPackage:Stale", DebugScript.helper.msg_id(ME))
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:Stale", DebugScript.helper.msg_id(ME))
 assert(contains(ME.message, "stopped before it finished"), ME.message)
 
 
@@ -168,7 +168,7 @@ net = DebugScript.helper.build_9bus();
 ME  = error_of(@() net.initialize(Tolerance=1e3));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeNotEquilibrium", DebugScript.helper.msg_id(ME))
 assert(DebugScript.helper.is_stale(net))
-assert(DebugScript.helper.msg_id(error_of(@() net.simulate([0 1]))) == "GUILDA:LayerPackage:Stale")
+assert(DebugScript.helper.msg_id(error_of(@() net.simulate([0 1]))) == "GUILDA:SolverODE:Stale")
 DebugScript.helper.quiet(@() net.initialize);
 assert(~DebugScript.helper.is_stale(net) && kcl_residual(net) < 1e-8)
 

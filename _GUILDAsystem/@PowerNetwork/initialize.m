@@ -41,8 +41,8 @@ function [result, flag, output] = initialize(obj, varargin)
 % equilibria that do not satisfy the network equations), initialize stops with an error
 % naming the remedy, and the network keeps its previous equilibrium and stale state (a
 % slack bus set by calculate_powerflow is released again). When a later step fails, or
-% the point does not satisfy Y*V = I, the power flow is left stale, and analyses stop with
-% GUILDA:LayerPackage:Stale until initialize succeeds.
+% the point does not satisfy Y*V = I, the power flow is left stale, and analyses stop
+% (e.g. GUILDA:SolverODE:Stale) until initialize succeeds.
 %
 % A network split into islands is a valid equilibrium when the power of each island
 % balances, so a successful initialize only warns (GUILDA:PowerNetwork:NetworkIsland). A

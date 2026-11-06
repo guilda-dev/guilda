@@ -10,5 +10,6 @@
         <entry key="VariableMap">The states of the bus models do not follow net.get_variable_map(); report this as a bug.</entry>
         <entry key="JacobianNotFinite">The Jacobian of {0} is not finite at the point, so it cannot be linearized there. Check the voltage and states of the point.</entry>
         <entry key="GlobalControllerPort">The ports of the global controller ''{0}'' are not found in the linearized system.</entry>
+        <entry key="Stale">net.linearize / net.get_sys stopped: ''{0}'' is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
     </message>
 </rsccat>

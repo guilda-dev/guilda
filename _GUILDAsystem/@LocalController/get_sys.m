@@ -6,8 +6,8 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % is labelled "Y_" + name). The point is x, V, u (default: the equilibrium).
 % Component.get_sys connects it to the component. The model is not changed.
 %
-% A controller on a network stops with the error GUILDA:LayerPackage:Stale
-% when net.initialize() is needed; a controller without a network builds its stale
+% A controller on a network stops with the error GUILDA:LocalController:Stale
+% when net.initialize() is needed (a stale tag of the network or the controller); a controller without a network builds its stale
 % handles first.
 %
 % See also Component.get_sys
@@ -34,7 +34,16 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         owner = owner.a_Component;
     end
     if ~isempty(owner) && ~isempty(owner.a_Bus) && ~isempty(owner.a_Bus.a_PowerNetwork)
-        owner.a_Bus.a_PowerNetwork.check_edit();
+        net = owner.a_Bus.a_PowerNetwork;
+        sv  = [net.sct_stale.powerflow; net.sct_stale.odefcn; obj.sct_stale.equilibrium; obj.sct_stale.odefcn];
+        if ~isempty(sv)
+            sv = unique(sv, "stable");
+            s_reason = join(sv(1:min(end,3)), "; ");
+            if numel(sv) > 3
+                s_reason = s_reason + "; ...";
+            end
+            error(msg("GUILDA:LocalController:Stale", char(obj.s_tag), char(s_reason), "get_sys"))
+        end
     elseif ~isempty(obj.sct_stale.odefcn) || ~isequal(obj.r_odefcnHz, obj.get_Hz())
         obj.build_odefcn();    % no network to initialize: the handles are built here
     end

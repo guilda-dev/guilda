@@ -27,9 +27,10 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % fcn_I at the point and the inputs of the controllers are the outputs they are
 % connected to (as in the simulation). The model is not changed.
 %
-% A component on a network stops with the error GUILDA:LayerPackage:Stale
-% when net.initialize() is needed; a component without a network builds its stale
-% handles and those of its controllers first.
+% Without Point, a component on a network stops with the error GUILDA:Component:Stale
+% when net.initialize() is needed (a stale tag of the network, the component or its
+% controllers); a component without a network builds its stale handles and those of its
+% controllers first.
 %
 % See also Component.get_variable_map, Bus.get_sys, PowerNetwork.get_sys
 %
@@ -54,14 +55,28 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     end
 
     l_equilibrium = isempty(opt.Point) && ~iscell(opt.Point);
-    if ~isempty(obj.a_Bus) && ~isempty(obj.a_Bus.a_PowerNetwork)
-        obj.a_Bus.a_PowerNetwork.check_edit();
-    else
-        build_stale(obj);    % no network to initialize: the handles are built here
-    end
 
     % All controllers in the tree (e.g. PSS attached under AVR) are separate blocks connected by signal names
     a_LC = all_controllers(obj);
+
+    if isempty(obj.a_Bus) || isempty(obj.a_Bus.a_PowerNetwork)
+        build_stale(obj);    % no network to initialize: the handles are built here
+    elseif l_equilibrium
+        % stale tags of the network, the component and its controllers
+        net = obj.a_Bus.a_PowerNetwork;
+        sv  = [net.sct_stale.powerflow; net.sct_stale.odefcn; obj.sct_stale.equilibrium; obj.sct_stale.odefcn];
+        for k = 1:numel(a_LC)
+            sv = [sv; a_LC{k}.sct_stale.equilibrium; a_LC{k}.sct_stale.odefcn]; %#ok<AGROW>
+        end
+        if ~isempty(sv)
+            sv = unique(sv, "stable");
+            s_reason = join(sv(1:min(end,3)), "; ");
+            if numel(sv) > 3
+                s_reason = s_reason + "; ...";
+            end
+            error(msg("GUILDA:Component:Stale", char(obj.s_tag), char(s_reason)))
+        end
+    end
     if l_equilibrium
         sysCON = tools.cellfun(@(d) d.get_sys_alone("tag",false), a_LC);
     else

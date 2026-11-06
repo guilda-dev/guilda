@@ -282,7 +282,7 @@ h_dx = comp.f_dx;
 comp.tab_parameter.dynamics.D = comp.tab_parameter.dynamics.D * 2;
 assert(numel(DebugScript.helper.stale(n1)) == 1)                     % リスナーは 1 組だけ
 assert(isequal(h_dx, comp.f_dx) && DebugScript.helper.is_stale(n1))
-assert(error_id(@() n1.get_sys) == "GUILDA:LayerPackage:Stale")
+assert(error_id(@() n1.get_sys) == "GUILDA:SolverLIN:Stale")
 assert(isempty(DebugScript.helper.stale(net)) && ~DebugScript.helper.is_stale(net))  % 元の系統は変わらない
 DebugScript.helper.quiet(@() n1.initialize);
 assert(~isequal(h_dx, comp.f_dx) && ~DebugScript.helper.is_stale(n1))
@@ -398,9 +398,9 @@ assert(norm(lqr(s.net).K - K) > 1e-3, "K が古い Hz のまま")
 assert(isequal(lqr(net).K, K), "元の系統の K が変わった")
 g3 = s.net.a_Bus{3}.a_Component{1};
 g3.tab_parameter.dynamics.D = 2 * g3.tab_parameter.dynamics.D;
-assert(error_id(@() g3.get_sys()) == "GUILDA:LayerPackage:Stale")
-assert(error_id(@() s.net.a_Bus{3}.get_sys()) == "GUILDA:LayerPackage:Stale")
-assert(error_id(@() s.net.a_GlobalController{1}.get_sys()) == "GUILDA:LayerPackage:Stale")
+assert(error_id(@() g3.get_sys()) == "GUILDA:Component:Stale")
+assert(error_id(@() s.net.a_Bus{3}.get_sys()) == "GUILDA:Bus:Stale")
+s.net.a_GlobalController{1}.get_sys();   % 大域制御器の get_sys は系統と自分のタグだけを見る
 
 
 %% MATPOWER import reproduces case14

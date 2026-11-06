@@ -20,7 +20,16 @@ function flag = validate(obj, l_message)
     if isempty(comp) || isempty(comp.a_Bus) || isempty(comp.a_Bus.a_PowerNetwork)
         error(msg("GUILDA:LocalController:ValidateNotAttached", obj.s_tag))
     end
-    comp.a_Bus.a_PowerNetwork.check_edit();
+    net = comp.a_Bus.a_PowerNetwork;
+    sv  = [net.sct_stale.powerflow; net.sct_stale.odefcn; obj.sct_stale.equilibrium; obj.sct_stale.odefcn];
+    if ~isempty(sv)
+        sv = unique(sv, "stable");
+        s_reason = join(sv(1:min(end,3)), "; ");
+        if numel(sv) > 3
+            s_reason = s_reason + "; ...";
+        end
+        error(msg("GUILDA:LocalController:Stale", char(obj.s_tag), char(s_reason), "validate"))
+    end
 
     % make variable (names read from a component may repeat, e.g. "Xall" with "Yall")
     sv_x  = unique_names(obj.sv_x);

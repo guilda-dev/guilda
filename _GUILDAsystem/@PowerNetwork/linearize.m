@@ -7,8 +7,8 @@ function [result, flag, output] = linearize(obj, varargin)
 % net.solver_LIN; Name-Value options override them for this call only (net.solver_LIN is
 % not changed). Neither is the network: a Point away from the equilibrium is used only
 % for this call.
-% The network must be initialized (net.initialize()); otherwise this stops with the
-% error of check_edit that asks for it.
+% The network must be initialized (net.initialize()); otherwise this stops with
+% GUILDA:SolverLIN:Stale, which asks for it.
 % Accepted options are the names in SolverLIN.OptionMap plus Plot; any other name
 % stops with GUILDA:resolve_options:UnknownName.
 % A Point with NaN or Inf (such as a tripped unit in {sim, t}) stops with

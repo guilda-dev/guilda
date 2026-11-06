@@ -5,9 +5,9 @@ function [result, flag, output] = solve(obj, net, sct_options)
 % (the Jacobian blocks in the order of net.get_variable_map()) as a ResultLIN.
 % The solver and the network are only read: nothing is written back into them.
 % Called by net.linearize; calling it
-% directly is for advanced use. Like net.linearize, it first checks the network (check_edit)
-% and stops with the error GUILDA:LayerPackage:Stale when net.initialize()
-% is needed. A Point with NaN or Inf stops with GUILDA:SolverLIN:PointNotFinite, and a
+% directly is for advanced use. Like net.linearize, it stops with the error
+% GUILDA:SolverLIN:Stale when net.initialize() is needed. A Point with NaN or Inf stops
+% with GUILDA:SolverLIN:PointNotFinite, and a
 % model that is not finite at the point with GUILDA:SolverLIN:JacobianNotFinite.
 %
 % Point sets the variables only: the network is the one of the model, so a point inside a
@@ -26,10 +26,30 @@ function [result, flag, output] = solve(obj, net, sct_options)
         output % message, s_issue ("", "NotFinite" or "SingularAvv"), l_equilibrium, n_x, n_v, n_u, rcond_Avv, r_residual, sv_faultBus.
     end
     t0 = tic;
-    net.check_edit();    % error if net.initialize() is needed; nothing is rebuilt here
-
     a_bus = net.a_Bus;
     a_gc  = net.a_GlobalController;
+
+    % Stale tags of the network, the components, their local controllers (depth first, as
+    % a list) and the global controllers: net.initialize() is needed when any is not empty
+    sv    = [net.sct_stale.powerflow; net.sct_stale.odefcn];
+    c_obj = tools.cellfun(@(b) b.a_Component, a_bus);
+    c_obj = [vertcat(cell(0,1), c_obj{:}); a_gc];
+    k = 1;
+    while k <= numel(c_obj)
+        sv = [sv; c_obj{k}.sct_stale.equilibrium; c_obj{k}.sct_stale.odefcn]; %#ok<AGROW>
+        if ~isa(c_obj{k}, "GlobalController")
+            c_obj = [c_obj; c_obj{k}.a_LocalController(:)]; %#ok<AGROW>
+        end
+        k = k + 1;
+    end
+    if ~isempty(sv)
+        sv = unique(sv, "stable");
+        s_reason = join(sv(1:min(end,3)), "; ");
+        if numel(sv) > 3
+            s_reason = s_reason + "; ...";
+        end
+        error(msg("GUILDA:SolverLIN:Stale", char(net.s_tag), char(s_reason)))
+    end
     n_bus = numel(a_bus);
     v3_nonunit_range(sct_options, n_bus);        % COMPAT(v3)
 

@@ -20,9 +20,9 @@ classdef LayerPackage < handle
 %   there up to the top. The default does nothing; each class appends the message
 %   ("<tags of the edited layer>: <log>") to its own fields for the edits that make them
 %   stale.
-% - `check_edit` walks the subtree and stops with GUILDA:LayerPackage:Stale,
-%   naming up to three different messages, when any field is not empty. Analyses call it on the
-%   network and rebuild nothing.
+% - Each analysis reads the stale tags it needs (the network, and the components and
+%   controllers it uses) and stops with its own error (e.g. GUILDA:SolverODE:Stale),
+%   naming up to three different messages; it rebuilds nothing.
 % - `sct_stale` has public GetAccess (Hidden) because the DebugScript tests, which are
 %   scripts, read it.
 %
@@ -70,9 +70,6 @@ classdef LayerPackage < handle
     methods(Access=protected)
         log_edit(obj, log, tag)
         handle_edit(obj, a_layer, tag, log)
-    end
-    methods(Access={?LayerPackage, ?SolverODE, ?SolverLIN, ?SolverCPF})
-        check_edit(obj)
     end
     methods(Access=private)
         out = get_tag(obj, s_split)

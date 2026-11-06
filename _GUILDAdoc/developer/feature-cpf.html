@@ -234,15 +234,15 @@
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Stops when:</span><ul lang="en">
               <li>a component has no equilibrium;</li>
-              <li>a layer of the network is not up to date (<code>net.check_edit()</code>);</li>
+              <li>a stale tag it reads is not empty, checked in the same loop over the buses and components: <code>powerflow</code> and <code>odefcn</code> of the network, <code>equilibrium</code> and <code>odefcn</code> of each component (not the controllers). The error <code>GUILDA:SolverCPF:Stale</code> names up to three different messages and asks for <code>net.initialize()</code>;</li>
               <li><code>LoadBus</code> is empty or names a bus not in the network.</li>
             </ul><span lang="ja">次の場合に停止:</span><ul lang="ja">
               <li>平衡点を持たない機器がある</li>
-              <li>ネットワークに最新でない層がある（<code>net.check_edit()</code>）</li>
+              <li>読み取る stale タグが空でない（同じ母線・機器のループで確認）: ネットワークの <code>powerflow</code> と <code>odefcn</code>、各機器の <code>equilibrium</code> と <code>odefcn</code>（制御器は対象外）。エラー <code>GUILDA:SolverCPF:Stale</code> は異なるメッセージを最大 3 件示し、<code>net.initialize()</code> を促す</li>
               <li><code>LoadBus</code> が空、またはネットワークにない母線を含む</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>Component.c_Iequilibrium</code>, <code>sct_stale</code> of every layer, <code>LoadBus</code>, bus tags</span><span lang="ja"><code>Component.c_Iequilibrium</code>、全層の <code>sct_stale</code>、<code>LoadBus</code>、母線のタグ</span></dd>
+          <dd><span lang="en"><code>Component.c_Iequilibrium</code>, <code>sct_stale</code> of the network and the components, <code>LoadBus</code>, bus tags</span><span lang="ja"><code>Component.c_Iequilibrium</code>、ネットワークと機器の <code>sct_stale</code>、<code>LoadBus</code>、母線のタグ</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en">— (errors only)</span><span lang="ja">—（エラーのみ）</span></dd>
         </dl>
@@ -461,13 +461,13 @@
     <ul lang="en">
       <li><strong>Handles:</strong> nothing is built; <code>net.initialize()</code> builds the <code>f_*</code> handles.</li>
       <li><strong>Working data of the run:</strong> <code>Bus.iv_CPFV</code>, <code>Component.f_PQ2Bus</code>, and with <code>UseInternalState</code> <code>Component.iv_CPFX</code>, written by <code>build_layout</code> (settable by <code>SolverCPF</code> only). Kept on the objects after the run, overwritten by the next one, read by nothing else.</li>
-      <li><strong>Stale state:</strong> only read (<code>check_edit</code>). An edit that makes a layer stale (see <a href="class-design.html#edits">Class Design: Handling of model edits</a>), the network <code>Hz</code> included, stops the next call until <code>net.initialize()</code> runs again. Edits of <code>operation</code>, <code>OPF</code>, <code>graph</code> parameters do not.</li>
+      <li><strong>Stale state:</strong> only read (the network and the components, CPF-04). An edit that makes the network or a component stale (see <a href="class-design.html#edits">Class Design: Handling of model edits</a>), the network <code>Hz</code> included, stops the next call until <code>net.initialize()</code> runs again. Edits of <code>operation</code>, <code>OPF</code>, <code>graph</code> parameters and of the local and global controllers do not.</li>
       <li>Solver settings unchanged; the result keeps a reference to the network.</li>
     </ul>
     <ul lang="ja">
       <li><strong>ハンドル:</strong> 作成なし。<code>f_*</code> ハンドルは <code>net.initialize()</code> が作成</li>
       <li><strong>実行中の作業データ:</strong> <code>Bus.iv_CPFV</code>、<code>Component.f_PQ2Bus</code>、<code>UseInternalState</code> では <code>Component.iv_CPFX</code>。<code>build_layout</code> が書き込み（設定は <code>SolverCPF</code> のみ可能）。実行後もオブジェクトに残り、次の実行で上書き。他からの参照なし</li>
-      <li><strong>stale 状態:</strong> 読み取りのみ（<code>check_edit</code>）。層を古くする編集（<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a> を参照。ネットワークの <code>Hz</code> も含む）の後は、<code>net.initialize()</code> を再実行するまで次の呼び出しが停止。<code>operation</code>、<code>OPF</code>、<code>graph</code> のパラメータの編集では停止しない</li>
+      <li><strong>stale 状態:</strong> 読み取りのみ（ネットワークと機器、CPF-04）。ネットワークか機器を古くする編集（<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a> を参照。ネットワークの <code>Hz</code> も含む）の後は、<code>net.initialize()</code> を再実行するまで次の呼び出しが停止。<code>operation</code>、<code>OPF</code>、<code>graph</code> のパラメータと局所・広域制御器の編集では停止しない</li>
       <li>ソルバーの設定は不変。結果はネットワークへの参照を保持</li>
     </ul>
 
@@ -489,7 +489,7 @@
       <thead><tr><th lang="en">When</th><th lang="ja">発生する時点</th><th lang="en">Error or warning</th><th lang="ja">エラー・警告</th></tr></thead>
       <tbody>
         <tr><td>CPF-02</td><td lang="en" data-label="ID"><code>GUILDA:resolve_options:UnknownName</code>; validation errors of <code>validate_options</code></td><td lang="ja" data-label="ID"><code>GUILDA:resolve_options:UnknownName</code>、<code>validate_options</code> の検査エラー</td></tr>
-        <tr><td>CPF-04</td><td lang="en" data-label="ID"><code>GUILDA:SolverCPF:NoEquilibrium</code> (a component has no equilibrium: run <code>net.initialize</code>), <code>GUILDA:LayerPackage:Stale</code>, <code>EmptyLoadBus</code>, <code>UnknownLoadBus</code></td><td lang="ja" data-label="ID"><code>GUILDA:SolverCPF:NoEquilibrium</code>（平衡点のない機器がある。<code>net.initialize</code> を実行）、<code>GUILDA:LayerPackage:Stale</code>、<code>EmptyLoadBus</code>、<code>UnknownLoadBus</code></td></tr>
+        <tr><td>CPF-04</td><td lang="en" data-label="ID"><code>GUILDA:SolverCPF:NoEquilibrium</code> (a component has no equilibrium: run <code>net.initialize</code>), <code>GUILDA:SolverCPF:Stale</code>, <code>EmptyLoadBus</code>, <code>UnknownLoadBus</code></td><td lang="ja" data-label="ID"><code>GUILDA:SolverCPF:NoEquilibrium</code>（平衡点のない機器がある。<code>net.initialize</code> を実行）、<code>GUILDA:SolverCPF:Stale</code>、<code>EmptyLoadBus</code>、<code>UnknownLoadBus</code></td></tr>
         <tr><td>CPF-07</td><td lang="en" data-label="ID"><code>GUILDA:build_layout:MissingGetCompPQ</code>: <code>UseInternalState=true</code> and a component without <code>getCompPQ</code></td><td lang="ja" data-label="ID"><code>GUILDA:build_layout:MissingGetCompPQ</code>: <code>UseInternalState=true</code> で <code>getCompPQ</code> のない機器がある</td></tr>
         <tr><td>CPF-10</td><td lang="en" data-label="ID">warning <code>GUILDA:NewtonRaphsonMethod:MaxIteration</code> after <code>MaxIter</code> Newton iterations</td><td lang="ja" data-label="ID"><code>MaxIter</code> 回のニュートン反復の後に警告 <code>GUILDA:NewtonRaphsonMethod:MaxIteration</code></td></tr>
       </tbody>

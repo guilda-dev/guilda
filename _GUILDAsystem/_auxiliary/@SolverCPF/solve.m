@@ -86,16 +86,26 @@ end
 
 
 function check_network(net, sv_load)
-% Preconditions: an equilibrium, every layer up to date (check_edit) and load buses of this network
+% Preconditions: an equilibrium, up-to-date stale tags (powerflow and odefcn of the
+% network, equilibrium and odefcn of the components) and load buses of this network
+    sv = [net.sct_stale.powerflow; net.sct_stale.odefcn];
     for i = 1:numel(net.a_Bus)
         a_Comp = net.a_Bus{i}.a_Component;
         for j = 1:numel(a_Comp)
             if isempty(a_Comp{j}.c_Iequilibrium)
                 error(msg("GUILDA:SolverCPF:NoEquilibrium", char(string(a_Comp{j}))));
             end
+            sv = [sv; a_Comp{j}.sct_stale.equilibrium; a_Comp{j}.sct_stale.odefcn]; %#ok<AGROW>
         end
     end
-    net.check_edit();    % error if net.initialize() is needed; nothing is rebuilt here
+    if ~isempty(sv)
+        sv = unique(sv, "stable");
+        s_reason = join(sv(1:min(end,3)), "; ");
+        if numel(sv) > 3
+            s_reason = s_reason + "; ...";
+        end
+        error(msg("GUILDA:SolverCPF:Stale", char(net.s_tag), char(s_reason)))
+    end
     if isempty(sv_load)
         error(msg("GUILDA:SolverCPF:EmptyLoadBus"));
     end
