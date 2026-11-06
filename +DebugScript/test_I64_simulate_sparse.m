@@ -88,7 +88,8 @@ function net = ring(N)
         end
     end
     for i = 1:2:N
-        net.a_Bus{i}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr"+i), controller.pss.PSS1("pss"+i));
+        net.a_Bus{i}.a_Component{1}.add_local_controller("avr-ST1");
+        net.a_Bus{i}.a_Component{1}.add_local_controller("pss-PSS1");
     end
     net.solver_ODE.Progress = "none";
     DebugScript.helper.quiet(@() net.initialize);

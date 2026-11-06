@@ -11,7 +11,7 @@
 c_stub = register_stubs();
 
 net = DebugScript.helper.build_3bus("gen-1axis");
-net.a_Bus{3}.add_component("gen-needpq-stub");
+net.a_Bus{3}.add_component("needpq-i105-stub");
 DebugScript.helper.quiet(@() net.initialize);
 s_tag = net.a_Bus{3}.a_Component{end}.s_tag;
 ev = DebugScript.helper.scenario("trip", net, "TimeSpan", [0.2,0.4], "TripUnit", s_tag);
@@ -20,7 +20,7 @@ assert(sol.flag == 1, sol.output.message)
 
 % fcn_Mass of a component that uses x stops with the tag
 net = DebugScript.helper.build_3bus("gen-1axis");
-net.a_Bus{3}.add_component("test-bad-stub", "parameter","massx");
+net.a_Bus{3}.add_component("bad-i105-stub", "parameter","massx");
 DebugScript.helper.quiet(@() net.initialize);
 check_mass_error(net, net.a_Bus{3}.a_Component{end}.s_tag);
 
@@ -29,9 +29,9 @@ assert(~isempty(DebugScript.helper.quiet(@() net.a_Bus{3}.a_Component{end}.get_s
 
 
 %% fcn_Mass of a local controller that uses x stops with the tag
+c_stub = DebugScript.helper.register_stub("BadControllerStub", "controller.test_bad_controller");
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
-con = DebugScript.helper.BadControllerStub("massx");
-comp.add_local_controller(con);
+con = comp.add_local_controller("test-bad-controller", parameter=struct(bad="massx"));
 DebugScript.helper.quiet(@() net.initialize);
 check_mass_error(net, con.s_tag);
 
@@ -90,28 +90,10 @@ end
 
 function c = register_stubs()
 % +DebugScript のクラスは add_component のキーにならないので、写しを登録する
-    s_dir   = fileparts(fileparts(which("component.load.power")));
-    s_gen   = fullfile(fileparts(s_dir), "+generator", "needpq_i105_stub.m");
-    str = fileread(which("DebugScript.helper.NeedPQGeneratorStub"));
-    str = replace(str, "classdef NeedPQGeneratorStub", "classdef needpq_i105_stub");
-    writelines(str, s_gen);
-
-    s_load = fullfile(s_dir, "bad_i105_stub.m");
-    str = fileread(which("DebugScript.helper.BadComponentStub"));
-    str = replace(str, "DebugScript.helper.BadComponentStub", "component.load.bad_i105_stub");
-    str = replace(str, "classdef BadComponentStub", "classdef bad_i105_stub");
-    str = replace(str, "BadComponentStub(s_bad, s_tag, opt)", "bad_i105_stub(s_tag, s_bad, opt)");
-    str = regexprep(str, '(\n\s+)s_bad(\s+%[^\n]*)(\n\s+)s_tag = "1"(\s+%[^\n]*)', '$1s_tag$4$3s_bad$2');
-    writelines(str, s_load);
-
-    rehash
-    evalc("GUILDA;");
-    c = onCleanup(@() unregister_stubs(s_gen, s_load));
-end
-
-function unregister_stubs(s_gen, s_load)
-    delete(s_gen);
-    delete(s_load);
-    rehash
-    evalc("GUILDA;");
+% (キーは needpq-i105-stub と bad-i105-stub)
+    c = DebugScript.helper.register_stub( ...
+        ["NeedPQGeneratorStub", "BadComponentStub"], ...
+        ["component.generator.needpq_i105_stub", "component.load.bad_i105_stub"], ...
+        Replace=["BadComponentStub(s_bad, s_tag, opt)", "bad_i105_stub(s_tag, s_bad, opt)"], ...
+        Regexp=[string('(\n\s+)s_bad(\s+%[^\n]*)(\n\s+)s_tag = "1"(\s+%[^\n]*)'), "$1s_tag$4$3s_bad$2"]);
 end

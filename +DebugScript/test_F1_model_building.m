@@ -155,16 +155,17 @@ assert(all(ismember(comp.sv_para, string(tp.Properties.VariableNames))))
 net = DebugScript.helper.build_ieee14();
 gen = net.a_Bus{1}.a_Component{1};
 
-% AVR と PSS を同時に付ける (旧 Task11)
-avr = controller.avr.AVR_ST1("avr1");
-pss = controller.pss.PSS1("pss1");
-gen.add_local_controller(avr, pss)
+% AVR と PSS をキーで付ける (旧 Task11)。タグは種類の頭文字・番号・機器のタグ
+avr = gen.add_local_controller("avr-ST1");
+pss = gen.add_local_controller("pss-PSS1");
+assert(avr.s_tag == "CA1" + gen.s_tag && pss.s_tag == "CP2" + gen.s_tag)
 
 % 機器には AVR が付き、PSS は AVR の下に付く
 assert(numel(gen.a_LocalController) == 1)
 assert(gen.a_LocalController{1} == avr)
 assert(numel(avr.a_LocalController) == 1 && avr.a_LocalController{1} == pss)
-assert(avr.key == "avr" && pss.key == "pss")
+assert(avr.key == "avr-ST1" && pss.key == "pss-PSS1")
+assert(avr.s_role == "avr" && pss.s_role == "pss")
 
 % 親への参照は追加した側が設定する (PSS の親は AVR、AVR の親は発電機)
 assert(gen.a_Bus == net.a_Bus{1})
@@ -180,14 +181,12 @@ assert(numel(gen.rv_Xequilibrium_all) == numel(gen.sv_x) + numel(avr.sv_x) + num
 %% Replace AVR keeps its PSS
 net = DebugScript.helper.build_ieee14();
 gen = net.a_Bus{1}.a_Component{1};
-avr1 = controller.avr.AVR_ST1("avr1");
-pss1 = controller.pss.PSS1("pss1");
-gen.add_local_controller(avr1, pss1)
+avr1 = gen.add_local_controller("avr-ST1");
+pss1 = gen.add_local_controller("pss-PSS1");
 
 % 新しい AVR で置き換えると (警告が出る)、PSS は新しい AVR へ移る (PSS は AVR へ信号を送る)
-avr2 = controller.avr.AVR_DC1("avr2");
 lastwarn("");
-evalc("gen.add_local_controller(avr2)");
+evalc("avr2 = gen.add_local_controller(""avr-DC1"")");
 id = DebugScript.helper.msg_id();
 assert(string(id) == "GUILDA:Component:ReplaceController")
 assert(numel(gen.a_LocalController) == 1 && gen.a_LocalController{1} == avr2)
@@ -198,17 +197,17 @@ assert(avr2.a_Component == gen && pss1.a_Component == avr2)
 assert(isempty(avr1.a_Component) && isempty(avr1.a_LocalController))
 
 % PSS の置き換え: 古い PSS は外れる
-pss2 = controller.pss.PSS1("pss2");
-evalc("gen.add_local_controller(pss2)");
+evalc("pss2 = gen.add_local_controller(""pss-PSS1"")");
 assert(numel(avr2.a_LocalController) == 1 && avr2.a_LocalController{1} == pss2)
 assert(pss2.a_Component == avr2 && isempty(pss1.a_Component))
 
-% AVR と PSS を同時に与えると、与えた PSS が新しい AVR に付く
-avr3 = controller.avr.AVR_ST1("avr3");
-pss3 = controller.pss.PSS1("pss3");
-evalc("gen.add_local_controller(avr3, pss3)");
+% AVR を置き換えてから PSS を付けると、移った PSS が新しい PSS に置き換わる
+evalc("avr3 = gen.add_local_controller(""avr-ST1"")");
+evalc("pss3 = gen.add_local_controller(""pss-PSS1"")");
 assert(gen.a_LocalController{1} == avr3 && avr3.a_LocalController{1} == pss3)
 assert(isempty(pss2.a_Component) && isempty(avr2.a_LocalController))
+% 番号は使用中の最大 + 1 (外れた制御器の番号は数えない)
+assert(avr3.s_tag == "CA5" + gen.s_tag && pss3.s_tag == "CP6" + gen.s_tag)
 
 % 置き換え後も平衡点を計算できる
 DebugScript.helper.quiet(@() net.initialize);
@@ -220,8 +219,7 @@ assert(DebugScript.helper.max_state_drift(sol) < 1e-6)
 %% Add local controller AVR_DC1
 net = DebugScript.helper.build_ieee14();
 gen = net.a_Bus{2}.a_Component{1};
-avr = controller.avr.AVR_DC1("dc1");
-gen.add_local_controller(avr)
+avr = gen.add_local_controller("avr-DC1");
 DebugScript.helper.quiet(@() net.initialize);
 
 assert(gen.a_LocalController{1} == avr)
@@ -235,7 +233,7 @@ gen = net.a_Bus{1}.a_Component{1};
 
 % PSS は AVR が付いていないと追加できない
 try
-    gen.add_local_controller(controller.pss.PSS1("pss"));
+    gen.add_local_controller("pss-PSS1");
     error("DebugScript:noError", "PSS が AVR 無しで追加できてしまった")
 catch ME
     assert(DebugScript.helper.msg_id(ME) ~= "DebugScript:noError", ME.message)
@@ -244,13 +242,12 @@ assert(isempty(gen.a_LocalController))
 
 
 %% Add local controller LQR
-% 状態フィードバックの LQR (key "local") は AVR の位置に付き、予約語 "Xall" で機器の全状態を観測する
+% 状態フィードバックの LQR (役割 s_role "local") は AVR の位置に付き、予約語 "Xall" で機器の全状態を観測する
 net = DebugScript.helper.build_ieee14();
 gen = net.a_Bus{1}.a_Component{1};
-lqr = controller.local_LQR("lqr1");
-gen.add_local_controller(lqr)
+lqr = gen.add_local_controller("local-LQR");
 assert(isa(gen.a_LocalController{1}, "controller.local_LQR"))
-assert(gen.a_LocalController{1} == lqr && lqr.a_Component == gen && lqr.key == "local")
+assert(gen.a_LocalController{1} == lqr && lqr.a_Component == gen && lqr.s_role == "local")
 
 % 入力 "Xall" は発電機の状態名に展開され、出力 (駆動する入力) は既定で発電機の全入力
 assert(isequal(lqr.sv_u, gen.sv_x))
@@ -264,8 +261,7 @@ assert(isequal(lqr.rv_Uequilibrium, gen.rv_Xequilibrium) && isempty(lqr.rv_Xequi
 assert(norm(lqr.f_Y(0, [], [], [], gen.rv_Xequilibrium) - gen.rv_Uequilibrium) < 1e-12)
 
 % 駆動する入力を選べる。Q, R はベクトルなら対角行列
-lqr2 = controller.local_LQR("lqr2", Input="Vfield", Q=[1 10 1 1 1 1], R=2);
-evalc("gen.add_local_controller(lqr2)");      % 置き換え (警告)
+evalc("lqr2 = gen.add_local_controller(""local-LQR"", parameter=struct(Input=""Vfield"", Q=[1 10 1 1 1 1], R=2))");      % 置き換え (警告)
 assert(gen.a_LocalController{1} == lqr2 && isempty(lqr.a_Component))
 assert(lqr2.sv_y == "Vfield" && isequal(lqr2.Q, diag([1 10 1 1 1 1])) && lqr2.R == 2)
 DebugScript.helper.quiet(@() net.initialize);
@@ -273,7 +269,7 @@ assert(isequal(size(lqr2.K), [1, numel(gen.sv_x)]))
 
 % 機器にない入力を駆動しようとするとエラー
 try
-    evalc("net.a_Bus{2}.a_Component{1}.add_local_controller(controller.local_LQR(""lqr3"", Input=""Vref""))");
+    evalc("net.a_Bus{2}.a_Component{1}.add_local_controller(""local-LQR"", parameter=struct(Input=""Vref""))");
     error("DebugScript:noError", "存在しない入力 Vref を駆動する LQR が付いてしまった")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:Component:ControllerOutput", ME.message)
@@ -282,25 +278,23 @@ end
 
 %% Controller inputs observe the component by name
 % 制御器の入力名は機器の出力 sv_y (優先) か状態 sv_x を指す。予約語 "Xall" / "Yall" は全状態 / 全出力
+c_stub = DebugScript.helper.register_stub("ObserveStub", "controller.test_observe");
 net = DebugScript.helper.build_ieee14();
 gen = net.a_Bus{1}.a_Component{1};
-con = DebugScript.helper.ObserveStub("Xall");
-gen.add_local_controller(con)
+con = gen.add_local_controller("test-observe", parameter=struct(Input="Xall"));
 assert(isequal(con.sv_u, gen.sv_x) && isequal(con.iv_obsX, (1:numel(gen.sv_x))') && all(con.iv_obsY == 0))
 
-con = DebugScript.helper.ObserveStub("Yall");
-evalc("gen.add_local_controller(con)");
+evalc("con = gen.add_local_controller(""test-observe"", parameter=struct(Input=""Yall""))");
 assert(isequal(con.sv_u, gen.sv_y) && isequal(con.iv_obsY, (1:numel(gen.sv_y))') && all(con.iv_obsX == 0))
 
 % 名前で指定: omega は出力と状態の両方にあり出力から読む。delta は状態から読む。無い名前は観測しない
-con = DebugScript.helper.ObserveStub(["delta";"omega";"Vref"]);
-evalc("gen.add_local_controller(con)");
+evalc("con = gen.add_local_controller(""test-observe"", parameter=struct(Input=[""delta"";""omega"";""Vref""]))");
 assert(isequal(con.iv_obsY, [0;1;0]) && isequal(con.iv_obsX, [1;0;0]))
 
 % 旧い予約語 "X" / "Y" はエラーで "Xall" / "Yall" を案内する
 for str = ["X","Y"]
     try
-        evalc("gen.add_local_controller(DebugScript.helper.ObserveStub(str))");
+        evalc("gen.add_local_controller(""test-observe"", parameter=struct(Input=str))");
         error("DebugScript:noError", "入力 " + str + " がエラーにならない")
     catch ME
         assert(DebugScript.helper.msg_id(ME) == "GUILDA:LocalController:ReservedInputNames", DebugScript.helper.msg_id(ME))
@@ -313,31 +307,28 @@ end
 % LQR は AVR と同じ位置に付くので、AVR を置き換え、AVR に付いていた PSS は外れる
 net = DebugScript.helper.build_ieee14();
 gen = net.a_Bus{1}.a_Component{1};
-avr = controller.avr.AVR_ST1("avr1");
-pss = controller.pss.PSS1("pss1");
-gen.add_local_controller(avr, pss)
+avr = gen.add_local_controller("avr-ST1");
+pss = gen.add_local_controller("pss-PSS1");
 
 % PSS は発電機の出力 omega を名前で観測する (状態にも omega があるが出力が優先)
 assert(pss.iv_obsY == 1 && pss.iv_obsX == 0)
 assert(all(avr.iv_obsY == 0) && all(avr.iv_obsX == 0))
 
-lqr = controller.local_LQR("lqr1");
-str = evalc("gen.add_local_controller(lqr)");
+str = evalc("lqr = gen.add_local_controller(""local-LQR"")");
 assert(contains(str, "replaces"))
 assert(gen.a_LocalController{1} == lqr)
 assert(isempty(avr.a_Component) && isempty(pss.a_Component) && isempty(avr.a_LocalController))
 
 % LQR の下には PSS を付けられない
 try
-    gen.add_local_controller(controller.pss.PSS1("pss2"));
+    gen.add_local_controller("pss-PSS1");
     error("DebugScript:noError", "LQR の下に PSS が付いてしまった")
 catch ME
     assert(DebugScript.helper.msg_id(ME) ~= "DebugScript:noError", ME.message)
 end
 
 % AVR を付け直すと LQR が外れる
-avr2 = controller.avr.AVR_ST1("avr2");
-evalc("gen.add_local_controller(avr2)");
+evalc("avr2 = gen.add_local_controller(""avr-ST1"")");
 assert(gen.a_LocalController{1} == avr2 && isempty(lqr.a_Component))
 DebugScript.helper.quiet(@() net.initialize);
 
@@ -348,35 +339,35 @@ net = DebugScript.helper.build_ieee14();
 % 制御対象の発電機を指定して AGC を作成 (旧 Task13)
 c{1} = net.a_Bus{1}.a_Component{1};
 c{2} = net.a_Bus{2}.a_Component{1};
-agc  = controller.agc.broadcast_PI_AGC(net, "agc", c{:}, alpha=[1;1], beta=[1;1], kP=100, kI=500);
-net.add_global_controller(agc);
+agc  = net.add_global_controller("agc-PI", c, parameter=struct(alpha=[1;1], beta=[1;1], kP=100, kI=500));
+assert(agc.key == "agc-PI" && agc.s_role == "agc" && agc.s_tag == "AGC1" + net.s_tag)
 
 assert(numel(net.a_GlobalController) == 1 && net.a_GlobalController{1} == agc)
 assert(agc.a_PowerNetwork == net)                   % 親への参照は add_global_controller が設定する
 assert(isequal(string(agc.controlledUnits)', ["SG1B001","SG1B002"]))
 assert(isequal(agc.tab_parameter.dynamics.kI, [500;500]))
 
-% 機器はタグでも指定できる
-agc2 = controller.agc.broadcast_PI_AGC(net, "agc2", "SG1B003");
-assert(string(agc2.controlledUnits) == "SG1B003")
+% 機器はタグでも指定できる。タグの番号は使用中の最大 + 1
+agc2 = net.add_global_controller("agc-PI", "SG1B003");
+assert(string(agc2.controlledUnits) == "SG1B003" && agc2.s_tag == "AGC2" + net.s_tag)
 
 
 %% AGC default parameters cover all controlled units
 % alpha, beta を省略しても、制御対象の台数分のパラメータが用意されるべき
 net = DebugScript.helper.build_ieee14();
-agc = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002");
+agc = net.add_global_controller("agc-PI", ["SG1B001","SG1B002"]);
 tp  = agc.tab_parameter.dynamics;
 assert(height(tp) == 2 && isequal(tp.kP, [100;100]))
 assert(isequal(tp.alpha, [1;1]) && isequal(tp.beta, [1;1]))
 
 % スカラーで与えた alpha, beta も全台に適用される
-agc = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002", "SG1B003", alpha=2, beta=0.5);
+agc = net.add_global_controller("agc-PI", ["SG1B001","SG1B002","SG1B003"], parameter=struct(alpha=2, beta=0.5));
 tp  = agc.tab_parameter.dynamics;
 assert(isequal(tp.alpha, [2;2;2]) && isequal(tp.beta, [0.5;0.5;0.5]))
 
 % 台数と合わない長さはエラー
 try
-    controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002", alpha=[1;1;1]);
+    net.add_global_controller("agc-PI", ["SG1B001","SG1B002"], parameter=struct(alpha=[1;1;1]));
     error("DebugScript:noError", "台数と合わない alpha がエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:broadcast_PI_AGC:InvalidSize", ME.message)
@@ -385,10 +376,8 @@ end
 
 %% Two global controllers are initialized
 net = DebugScript.helper.build_ieee14();
-agc1 = controller.agc.broadcast_PI_AGC(net, "agc1", "SG1B001");
-agc2 = controller.agc.broadcast_PI_AGC(net, "agc2", "SG1B002");
-net.add_global_controller(agc1);
-net.add_global_controller(agc2);
+agc1 = net.add_global_controller("agc-PI", "SG1B001");
+agc2 = net.add_global_controller("agc-PI", "SG1B002");
 DebugScript.helper.quiet(@() net.initialize);
 
 % すべての大域制御器に平衡点が設定されるべき
@@ -505,21 +494,6 @@ comp = bus.replace_component("LRX1B005", "load-power");
 assert(comp.s_tag == "LPQ1B005")
 
 
-%% Global controller tag in use is rejected
-% 大域制御器のタグは利用者が与えるので、使用中のタグはエラー (系統は変わらない)
-net = DebugScript.helper.build_ieee14();
-net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001"));
-agc2 = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B002");
-try
-    net.add_global_controller(agc2);
-    error("DebugScript:noError", "使用中のタグの大域制御器を追加できてしまう")
-catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:GconTagInUse", ME.message)
-    assert(contains(ME.message, "'agc'"), ME.message)
-end
-assert(numel(net.a_GlobalController) == 1 && isempty(agc2.a_PowerNetwork))
-
-
 %% Remove bus
 net = DebugScript.helper.build_9bus();
 DebugScript.helper.quiet(@() net.initialize);
@@ -562,8 +536,7 @@ assert(numel(unique(string(net.a_Bus))) == 9 && bus.s_tag == "B010")
 
 % 大域制御器が制御している機器のある母線は削除できない
 net = DebugScript.helper.build_ieee14();
-agc = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001");
-net.add_global_controller(agc);
+agc = net.add_global_controller("agc-PI", "SG1B001");
 try
     net.remove_bus("B001", "RemoveBranches", true);
     error("DebugScript:noError", "大域制御器が制御する機器のある母線の削除がエラーにならない")
@@ -575,17 +548,16 @@ assert(numel(net.a_Bus) == 14)
 
 %% Remove global controller
 net = DebugScript.helper.build_ieee14();
-agc = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001");
-net.add_global_controller(agc);
+agc = net.add_global_controller("agc-PI", "SG1B001");
 DebugScript.helper.quiet(@() net.initialize);
-net.remove_global_controller("agc");
+net.remove_global_controller(agc.s_tag);
 assert(isempty(net.a_GlobalController))
 assert(isempty(agc.a_PowerNetwork))                   % 削除した制御器は系統への参照を持たない
 assert(~DebugScript.helper.is_stale(net))             % 削除は何も古くしない
 
 % 存在しないタグはエラー
 try
-    net.remove_global_controller("agc");
+    net.remove_global_controller(agc.s_tag);
     error("DebugScript:noError", "存在しない大域制御器の削除がエラーにならない")
 catch ME
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:GconNotFound", ME.message)
@@ -664,8 +636,7 @@ assert(isempty(DebugScript.helper.stale(net.a_Bus{5})))    % 母線と機器自�
 net = DebugScript.helper.build_9bus();
 gen1 = net.a_Bus{1}.a_Component{1};
 gen3 = net.a_Bus{3}.a_Component{1};
-avr  = controller.avr.AVR_ST1("avr1");
-gen1.add_local_controller(avr);
+avr  = gen1.add_local_controller("avr-ST1");
 DebugScript.helper.quiet(@() net.initialize);
 
 % 制御器の Parameter の編集は制御器自身の equilibrium と odefcn を古くする
@@ -683,10 +654,10 @@ gen1.remove_local_controller(avr.s_tag);
 assert(any(contains(gen1.sct_stale.equilibrium, "remove")) && DebugScript.helper.is_stale(net))
 assert(~any(contains(DebugScript.helper.stale(net), "kap")))   % 外した制御器の古さは系統に残らない
 
-% 切り離した制御器の編集は系統に届かない。別の機器に付けると機器と制御器が古くなる
+% 切り離した制御器の編集は系統に届かない。機器に付けると機器と制御器が古くなる
 avr.tab_parameter.dynamics.kap = 33;
 assert(~any(contains(DebugScript.helper.stale(net), "kap")))
-gen3.add_local_controller(avr);
+avr = gen3.add_local_controller("avr-ST1");
 assert(any(contains(avr.sct_stale.equilibrium, "attached to " + string(gen3))))
 assert(any(contains(gen3.sct_stale.equilibrium, "<<-Add---")))
 DebugScript.helper.quiet(@() net.initialize);

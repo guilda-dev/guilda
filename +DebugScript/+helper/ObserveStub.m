@@ -1,27 +1,34 @@
 classdef ObserveStub < LocalController
-% 観測 (入力名による機器の出力・状態の読み取り) を確かめるための制御器
+% 観測 (入力名による機器の出力・状態の読み取り) と Component.add_local_controller の検査を確かめるための制御器
 %
-%   con = DebugScript.helper.ObserveStub(["Xall"])
-%   gen.add_local_controller(con)
+%   c   = DebugScript.helper.register_stub("ObserveStub", "controller.test_observe");
+%   con = gen.add_local_controller("test-observe", parameter=struct(Input="Xall"));
 %
-% 状態も出力も持たず、入力 sv_u を与えた名前にする (予約語 "Xall" / "Yall" は付けるときに展開)。
+% 状態を持たず、入力 sv_u と出力 sv_y を与えた名前にする (予約語 "Xall" / "Yall" は付けるときに展開)。
+% 役割 s_role は register_stub の Replace で写しごとに変える ("avr", "pss", "governor" など)。
+    properties (Constant, Hidden)
+        key = "test-observe"    % モデルのキー (register_stub が写しのクラス名に置き換える)
+        s_role = "local"        % 役割 ("local": AVR の位置に付ける)
+    end
     properties (SetAccess=protected, Hidden)
-        key = "local"           % 制御器の種類 ("local": AVR の位置に付ける)
         sv_x = strings(0,1)     % 状態の名前
         sv_u = strings(0,1)     % 入力の名前 (コンストラクタで与える。"Xall" / "Yall" は付けるときに展開)
         sv_y = strings(0,1)     % 出力の名前
         sv_para = strings(0,1)  % 動的パラメータの名前
     end
     methods
-        function obj = ObserveStub(sv_u)
+        function obj = ObserveStub(tag, opt)
             arguments (Input)
-                sv_u  % 入力名 (予約語 "Xall" / "Yall" も可)
+                tag         % タグの接尾辞 (タグは "CS" + tag)
+                opt.Input   = strings(0,1)  % 入力名 (予約語 "Xall" / "Yall" も可)
+                opt.Output  = strings(0,1)  % 出力名
             end
             arguments (Output)
                 obj  % 作成したオブジェクト
             end
-            obj@LocalController("CSstub")
-            obj.sv_u = reshape(string(sv_u), [], 1);
+            obj@LocalController("CS"+tag)
+            obj.sv_u = reshape(string(opt.Input), [], 1);
+            obj.sv_y = reshape(string(opt.Output), [], 1);
         end
         function get_equilibrium(obj, V, u)
             arguments (Input)

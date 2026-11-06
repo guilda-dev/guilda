@@ -255,8 +255,6 @@ function tab = test_levels()
     "test_I56_initialize_equilibrium/OPFInitializeWithSeveralComponentsOnOneBus", "medium"
     "test_I56_initialize_equilibrium/EditsThatTheEquilibriumMethodWouldLoseStopWithAnError", "medium"
     "test_I56_initialize_equilibrium/FailedAnalysisStillKeepsThePreviousEquilibrium", "medium"
-    % ---- I57_stale_gc_references -----------------------------------------------------------------
-    "test_I57_stale_gc_references/add_global_controllerRejectsAControllerThatKeptARemovedComponent_AlsoAfterAnEarlierRun", "medium"
     % ---- I58_input_under_local_controller --------------------------------------------------------
     "test_I58_input_under_local_controller/AStepOnAnInputDrivenByAnAVRMatchesGet_sys", "medium"
     "test_I58_input_under_local_controller/AStepOnAnInputNoControllerDrivesStillMatchesGet_sys", "medium"

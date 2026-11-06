@@ -146,12 +146,12 @@ assert(error_id(@() net.add_scenario(loose)) == "GUILDA:Scenario:UnknownFaultBus
 assert(isempty(loose.a_PowerNetwork) && numel(net.a_Scenario) == 1)
 
 % 実行時に、そのときの系統で再び検査する (系統の編集後)
-net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002"));
+agc = net.add_global_controller("agc-PI", ["SG1B001","SG1B002"]);
 DebugScript.helper.quiet(@() net.initialize);
-sc.add_trip("agc", [1,2]);
+sc.add_trip(agc.s_tag, [1,2]);
 [~, flag] = DebugScript.helper.quiet(@() net.simulate([0,2], sc));
 assert(flag == 1)
-net.remove_global_controller("agc");
+net.remove_global_controller(agc.s_tag);
 DebugScript.helper.quiet(@() net.initialize);
 assert(error_id(@() net.simulate([0,2], sc)) == "GUILDA:Scenario:UnknownTripUnit")
 

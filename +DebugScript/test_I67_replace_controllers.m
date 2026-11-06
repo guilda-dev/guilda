@@ -59,8 +59,7 @@ assert(sol.flag == 1)
 %% A kept LQR follows the states of the new component
 net = DebugScript.helper.build_ieee14();
 gen = net.a_Bus{1}.a_Component{1};
-lqr = controller.local_LQR("lqrA", Input="Vfield");
-gen.add_local_controller(lqr);
+lqr = gen.add_local_controller("local-LQR", parameter=struct(Input="Vfield"));
 DebugScript.helper.quiet(@() net.initialize);
 new = net.a_Bus{1}.replace_component(gen.s_tag, "gen-classical", Controllers="keep");
 assert(new.a_LocalController{1} == lqr && lqr.a_Component == new)
@@ -97,7 +96,7 @@ assert(bus.a_Component{1} == gen)
 %% A component under a global controller is still rejected, also with "keep"
 net  = DebugScript.helper.build_ieee14();
 comp = net.a_Bus{2}.a_Component{1};
-net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", comp.s_tag));
+net.add_global_controller("agc-PI", comp.s_tag);
 ME = caught(@() net.a_Bus{2}.replace_component(comp.s_tag, "gen-1axis", Controllers="keep"));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:Bus:ComponentControlled")
 assert(net.a_Bus{2}.a_Component{1} == comp)
@@ -108,9 +107,8 @@ function [net, bus, gen, avr, pss] = network_with_avr_pss()
     net = DebugScript.helper.build_ieee14();
     bus = net.a_Bus{1};
     gen = bus.a_Component{1};
-    avr = controller.avr.AVR_ST1("avrA");
-    pss = controller.pss.PSS1("pssA");
-    gen.add_local_controller(avr, pss);
+    avr = gen.add_local_controller("avr-ST1");
+    pss = gen.add_local_controller("pss-PSS1");
 end
 
 function assert_unchanged(net, bus, gen, avr, pss, sv_log)

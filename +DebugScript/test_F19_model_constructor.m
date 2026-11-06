@@ -106,19 +106,17 @@ end
 %% A PSS under a local controller names the key of the parent
 net = DebugScript.helper.build_ieee14();
 gen = net.a_Bus{1}.a_Component{1};
-lqr = controller.local_LQR("lqr1", Input="Vfield");
-gen.add_local_controller(lqr);
-pss = controller.pss.PSS1("pss1");
-ME = caught(@() gen.add_local_controller(pss));
+lqr = gen.add_local_controller("local-LQR", parameter=struct(Input="Vfield"));
+ME = caught(@() gen.add_local_controller("pss-PSS1"));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:Component:PssParentKey")
 assert(contains(ME.message, "'local'") && contains(ME.message, lqr.s_tag) && contains(ME.message, "'avr'"))
-assert(isempty(pss.a_Component))
+assert(isscalar(gen.a_LocalController) && isempty(lqr.a_LocalController))
 
 
 %% A PSS without an AVR has an ID and says what to do
 net = DebugScript.helper.build_ieee14();
 gen = net.a_Bus{1}.a_Component{1};
-ME = caught(@() gen.add_local_controller(controller.pss.PSS1("pss1")));
+ME = caught(@() gen.add_local_controller("pss-PSS1"));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:Component:NotExtAvr" && contains(ME.message, "Attach an AVR"))
 
 

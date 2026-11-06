@@ -10,12 +10,13 @@
 
 % 共通設定 (各テストの前に毎回実行される)
 c_cls = ["controller.governor.IEEJ_LPT1"; "controller.governor.IEEJ_LPT3"; "controller.governor.IEEJ_LPT4"];
+c_key = ["gov-LPT1"; "gov-LPT3"; "gov-LPT4"];    % c_cls のモデルキー
 r_step = -0.05;    % SG1B001 の Pmech のステップ (負荷の増加と同じ向き)
 
 
 %% Governors have the key, ports, tag and figure defaults of the report
 gov = controller.governor.IEEJ_LPT1("g");
-assert(gov.key == "governor" && gov.s_tag == "CGg")
+assert(gov.s_role == "governor" && gov.key == "gov-LPT1" && gov.s_tag == "CGg")
 assert(isequal(gov.sv_u, ["omega";"Pref";"Plimit"]) && gov.sv_y == "Pmech")
 assert(isequal(gov.sv_x, ["Pgov";"Psv";"Pch";"Prh"]))
 tab = gov.tab_parameter.dynamics;
@@ -36,7 +37,12 @@ assert(tab.pos_max == 1.02 && tab.Tw == 1.5 && tab.Kw == 3 && tab.Kv == -2)
 assert(same_list(comp1.a_LocalController, {avr1; gov1}) && avr1.a_LocalController{1} == pss1)
 assert(same_list(comp2.a_LocalController, {avr2; gov2}) && avr2.a_LocalController{1} == pss2)
 tab1 = net1.get_variable_map();  tab2 = net2.get_variable_map();
-assert(isequal(tab1.Label, tab2.Label))
+% 制御器のタグの番号は接続の順で変わるので、net1 の所有者を net2 のタグへ読み替えて比べる
+sv_own  = string(tab1.Owner);
+sv_tag2 = [avr2.s_tag; pss2.s_tag; gov2.s_tag];
+[lv, iv] = ismember(sv_own, [avr1.s_tag; pss1.s_tag; gov1.s_tag]);
+sv_own(lv) = sv_tag2(iv(lv));
+assert(isequal(sv_own, string(tab2.Owner)) && isequal(tab1.Name, tab2.Name) && isequal(tab1.Kind, tab2.Kind))
 tab = comp1.get_variable_map();
 sv_owner = unique(tab.Owner(tab.Kind == "x"), "stable");
 assert(isequal(sv_owner, [comp1.s_tag; avr1.s_tag; pss1.s_tag; gov1.s_tag]))
@@ -44,13 +50,13 @@ assert(isequal(comp1.rv_Xequilibrium_all, [comp1.rv_Xequilibrium; avr1.rv_Xequil
 sys = comp1.get_sys();
 assert(isequal(string(sys.StateName), tab.Label(tab.Kind == "x")))
 % 調速機だけのときは {1} が調速機
-[~, comp] = build_gov(controller.governor.IEEJ_LPT3("g"));
-assert(numel(comp.a_LocalController) == 1 && comp.a_LocalController{1}.key == "governor")
+[~, comp] = build_gov("gov-LPT3");
+assert(numel(comp.a_LocalController) == 1 && comp.a_LocalController{1}.s_role == "governor")
 
 
 %% Without events the network with AVR, PSS and governors stays at the equilibrium
 [net, comp, ~, ~, gov] = build_full("after");
-net.a_Bus{1}.a_Component{1}.add_local_controller(controller.governor.IEEJ_LPT4("g1", Prate=2, PLM=10));
+net.a_Bus{1}.a_Component{1}.add_local_controller("gov-LPT4", parameter=struct(Prate=2, PLM=10));
 DebugScript.helper.quiet(@() net.initialize);
 sol = DebugScript.helper.quiet(@() net.simulate([0,10]));
 assert(sol.flag == 1)
@@ -61,12 +67,11 @@ assert(all(abs(trajectory(sol, gov.s_tag, "Psv") - gov.rv_Xequilibrium(2)) < 1e-
 
 
 %% Each LPT settles with its droop after a load step
-c_case = {c_cls(1), {"Prate", 1, "PLM", 10}, 25;
-          c_cls(2), {"Prate", 0.8, "PLM", 10}, 0.8*20;
-          c_cls(3), {"Prate", 1, "PLM", 10}, 25};
+c_case = {c_key(1), struct(Prate=1, PLM=10), 25;
+          c_key(2), struct(Prate=0.8, PLM=10), 0.8*20;
+          c_key(3), struct(Prate=1, PLM=10), 25};
 for k = 1:height(c_case)
-    gov = feval(c_case{k,1}, "g", c_case{k,2}{:});
-    [sol, comp] = simulate_step(gov, r_step, [1,400], 400);
+    [sol, comp] = simulate_step(c_case{k,1}, c_case{k,2}, r_step, [1,400], 400);
     rv_pm = trajectory(sol, comp.s_tag, "Pmech");
     rv_w  = trajectory(sol, comp.s_tag, "omega");
     r_dP = rv_pm(end) - rv_pm(1);
@@ -80,8 +85,7 @@ end
 
 %% The load limiter 77M caps the output
 for k = 1:numel(c_cls)
-    gov = feval(c_cls(k), "g", PLM=1);
-    [sol, comp] = simulate_step(gov, r_step, [1,100], 100);
+    [sol, comp, gov] = simulate_step(c_key(k), struct(PLM=1), r_step, [1,100], 100);
     rv_pm = trajectory(sol, comp.s_tag, "Pmech");
     r_P0 = comp.rv_Uequilibrium(1);
     assert(gov.rv_Uequilibrium(3) - gov.rv_Uequilibrium(2) - 0.01 < 1e-12)
@@ -92,8 +96,7 @@ end
 
 %% Load-limit operation (PLM < 0) keeps Pmech for a frequency drop
 for k = 1:numel(c_cls)
-    gov = feval(c_cls(k), "g", PLM=-5);
-    [sol, comp] = simulate_step(gov, r_step, [1,60], 60);
+    [sol, comp, gov] = simulate_step(c_key(k), struct(PLM=-5), r_step, [1,60], 60);
     r_P0 = comp.rv_Uequilibrium(1);
     assert(abs(gov.rv_Uequilibrium(2) - (r_P0 + 0.05)) < 1e-12 && abs(gov.rv_Uequilibrium(3) - r_P0) < 1e-12)
     rv_pm = trajectory(sol, comp.s_tag, "Pmech");
@@ -104,16 +107,14 @@ end
 
 
 %% PLM = 0 sets 77M to the upper limit of the servo position
-gov = controller.governor.IEEJ_LPT3("g", PLM=0);
-build_gov(gov);
+[~, ~, gov] = build_gov("gov-LPT3", struct(PLM=0));
 assert(gov.rv_Uequilibrium(3) == 1.05 && gov.rv_Uequilibrium(2) == gov.rv_Xequilibrium(2))
 
 
 %% The servo position stops at its limit without windup
 % 位置の上限 0.51 で止まり、ステップが終わるとすぐに戻り始める (積分器が溜め込まない)
 % 制限への到達は事象検出をしないので、AVR_DC1 の界磁電圧制限と同じく積分の1ステップ分だけ越えうる
-gov = controller.governor.IEEJ_LPT1("g", PLM=10, pos_max=0.51);
-[sol, comp] = simulate_step(gov, r_step, [1,40], 80);
+[sol, comp, gov] = simulate_step("gov-LPT1", struct(PLM=10, pos_max=0.51), r_step, [1,40], 80);
 rv_t   = sol.rv_t;
 rv_pos = trajectory(sol, gov.s_tag, "Psv");
 assert(max(rv_pos) <= 0.51 + 1e-3, "Psv %g above the limit", max(rv_pos))
@@ -133,8 +134,7 @@ assert(max(rv_pm) <= 0.51 + 1e-3)
 
 %% The rate limit bounds the servo speed
 r_rate = 0.002;
-gov = controller.governor.IEEJ_LPT1("g", PLM=10, rate_max=r_rate);
-[sol, ~] = simulate_step(gov, r_step, [1,60], 60);
+[sol, ~, gov] = simulate_step("gov-LPT1", struct(PLM=10, rate_max=r_rate), r_step, [1,60], 60);
 rv_t   = sol.rv_t;
 rv_pos = trajectory(sol, gov.s_tag, "Psv");
 rv_rise = rv_pos - rv_pos(1);
@@ -147,9 +147,8 @@ assert(abs(r_speed/r_rate - 1) < 1e-3, "servo speed %g (rate_max %g)", r_speed, 
 
 %% An equilibrium outside the servo position limits is an error
 for k = 1:numel(c_cls)
-    gov = feval(c_cls(k), "g", Prate=0.2);    % 0.5/0.2 = 2.5 pu: 上限より大きい
     [net, comp] = DebugScript.helper.build_3bus("gen-park");
-    comp.add_local_controller(gov);
+    gov = comp.add_local_controller(c_key(k), parameter=struct(Prate=0.2));    % 0.5/0.2 = 2.5 pu: 上限より大きい
     ME = [];
     try
         DebugScript.helper.quiet(@() net.initialize);
@@ -158,14 +157,13 @@ for k = 1:numel(c_cls)
     s_cls = extractAfter(c_cls(k), "controller.governor.");
     assert(~isempty(ME), "%s: no error", s_cls)
     assert(DebugScript.helper.msg_id(ME) == "GUILDA:" + s_cls + ":OutputOutOfRange", "ID " + DebugScript.helper.msg_id(ME))
-    assert(contains(ME.message, "CGg") && contains(ME.message, "Prate"), ME.message)
+    assert(contains(ME.message, gov.s_tag) && contains(ME.message, "Prate"), ME.message)
 end
 
 
 %% validate passes and the analytic Jacobians agree at the equilibrium
 for k = 1:numel(c_cls)
-    gov = feval(c_cls(k), "g", PLM=5);
-    build_gov(gov);
+    [~, ~, gov] = build_gov(c_key(k), struct(PLM=5));
     flag = gov.validate(false);
     lv = flag.contract.status == "FAIL";
     assert(~any(lv), "%s: %s", c_cls(k), join(flag.contract.Properties.RowNames(lv), ", "))
@@ -222,13 +220,13 @@ assert(r_err < 0.01, "relative error %g", r_err)
 comp.remove_local_controller(gov.s_tag);
 assert(same_list(comp.a_LocalController, {avr}) && avr.a_LocalController{1} == pss && isempty(gov.a_Component))
 assert(DebugScript.helper.is_stale(net))
-comp.add_local_controller(gov);
+gov = comp.add_local_controller("gov-LPT1", parameter=struct(PLM=5));
 ME = caught(@() comp.remove_local_controller(avr.s_tag));
 assert(ME.identifier == "GUILDA:Component:ControllerHasNested")
 assert(same_list(comp.a_LocalController, {avr; gov}))
 comp.remove_local_controller(pss.s_tag);
 assert(same_list(comp.a_LocalController, {avr; gov}) && isempty(avr.a_LocalController))
-comp.add_local_controller(pss);
+pss = comp.add_local_controller("pss-PSS1");
 comp.remove_local_controller(avr.s_tag, RemoveNested=true);
 assert(same_list(comp.a_LocalController, {gov}) && gov.a_Component == comp)
 assert(isempty(avr.a_Component) && isempty(pss.a_Component))
@@ -236,54 +234,44 @@ DebugScript.helper.quiet(@() net.initialize);
 sol = DebugScript.helper.quiet(@() net.simulate([0,2]));
 assert(sol.flag == 1 && DebugScript.helper.max_state_drift(sol) < 1e-9)
 % PSS は調速機の下には付かない
-ME = caught(@() comp.add_local_controller(controller.pss.PSS1("p")));
+ME = caught(@() comp.add_local_controller("pss-PSS1"));
 assert(ME.identifier == "GUILDA:Component:NotExtAvr")
 assert(same_list(comp.a_LocalController, {gov}))
 
 
 %% A new governor replaces the attached one with a warning
 [net, comp, avr, ~, gov] = build_full("after");
-gov2 = controller.governor.IEEJ_LPT3("g2");
 lastwarn("", "");
-comp.add_local_controller(gov2);
+gov2 = comp.add_local_controller("gov-LPT3");
 [str, id] = lastwarn();
 assert(string(DebugScript.helper.msg_id(str, id)) == "GUILDA:Component:ReplaceController")
 assert(contains(str, gov2.s_tag) && contains(str, gov.s_tag) && contains(str, "Governor"))
 assert(same_list(comp.a_LocalController, {avr; gov2}) && isempty(gov.a_Component))
-% 同じ調速機をもう一度付けても警告しない
-lastwarn("", "");
-comp.add_local_controller(gov2);
-assert(isempty(lastwarn()) && same_list(comp.a_LocalController, {avr; gov2}))
 % AVR を置き換えても調速機は残る
 lastwarn("", "");
-comp.add_local_controller(controller.avr.AVR_ST1("a3"));
+comp.add_local_controller("avr-ST1");
 assert(numel(comp.a_LocalController) == 2 && comp.a_LocalController{2} == gov2)
 
 
 %% A governor and a local controller cannot drive the same input
 s_id = "GUILDA:Component:ControllerOutputOverlap";
 [net, comp] = DebugScript.helper.build_3bus("gen-park");
-gov = controller.governor.IEEJ_LPT1("g");
-comp.add_local_controller(gov);
+gov = comp.add_local_controller("gov-LPT1");
 sv_log = DebugScript.helper.stale(net);
-lqr = controller.local_LQR("lqr");    % 既定ではすべての入力 (Pmech を含む) を駆動する
-ME = caught(@() comp.add_local_controller(lqr));
+ME = caught(@() comp.add_local_controller("local-LQR"));    % 既定ではすべての入力 (Pmech を含む) を駆動する
 assert(ME.identifier == s_id)
-assert(contains(ME.message, "Pmech") && contains(ME.message, gov.s_tag) && contains(ME.message, lqr.s_tag))
-assert(same_list(comp.a_LocalController, {gov}) && isempty(lqr.a_Component) && isequal(DebugScript.helper.stale(net), sv_log))
-% 逆の順でも、同じ呼び出しでも
+assert(contains(ME.message, "Pmech") && contains(ME.message, gov.s_tag) && contains(ME.message, "CL2" + comp.s_tag))
+assert(same_list(comp.a_LocalController, {gov}) && isequal(DebugScript.helper.stale(net), sv_log))
+% 逆の順でも
 [~, comp] = DebugScript.helper.build_3bus("gen-park");
-evalc("comp.add_local_controller(controller.local_LQR(""lqr"", Input=""Pmech""))");
-ME = caught(@() comp.add_local_controller(controller.governor.IEEJ_LPT3("g")));
+evalc("comp.add_local_controller(""local-LQR"", parameter=struct(Input=""Pmech""))");
+ME = caught(@() comp.add_local_controller("gov-LPT3"));
 assert(ME.identifier == s_id && numel(comp.a_LocalController) == 1)
-[~, comp] = DebugScript.helper.build_3bus("gen-park");
-ME = caught(@() comp.add_local_controller(controller.local_LQR("lqr"), controller.governor.IEEJ_LPT3("g")));
-assert(ME.identifier == s_id && isempty(comp.a_LocalController))
 % 入力を分ければ両方付き、平衡点に留まる
 [net, comp] = DebugScript.helper.build_3bus("gen-park");
-lqr = controller.local_LQR("lqr", Input="Vfield");
-comp.add_local_controller(controller.governor.IEEJ_LPT1("g"), lqr);
-assert(numel(comp.a_LocalController) == 2 && comp.a_LocalController{1} == lqr && comp.a_LocalController{2}.key == "governor")
+comp.add_local_controller("gov-LPT1");
+lqr = comp.add_local_controller("local-LQR", parameter=struct(Input="Vfield"));
+assert(numel(comp.a_LocalController) == 2 && comp.a_LocalController{1} == lqr && comp.a_LocalController{2}.s_role == "governor")
 DebugScript.helper.quiet(@() net.initialize);
 sol = DebugScript.helper.quiet(@() net.simulate([0,2]));
 assert(sol.flag == 1 && DebugScript.helper.max_state_drift(sol) < 1e-9)
@@ -291,7 +279,7 @@ assert(sol.flag == 1 && DebugScript.helper.max_state_drift(sol) < 1e-9)
 
 %% A governor on a component without Pmech is rejected
 [~, comp] = DebugScript.helper.build_3bus("load-power");
-ME = caught(@() comp.add_local_controller(controller.governor.IEEJ_LPT1("g")));
+ME = caught(@() comp.add_local_controller("gov-LPT1"));
 assert(ME.identifier == "GUILDA:Component:ControllerOutput" && isempty(comp.a_LocalController))
 
 
@@ -320,8 +308,9 @@ assert(contains(str, comp.s_tag + "/" + gov.s_tag), str)
 % 3母線系統では負荷が発電機1台では賄えないので、I50 と同じ IEEE14 の SG1B003 を解列する
 net = DebugScript.helper.build_ieee14();
 gen = net.a_Bus{3}.a_Component{1};
-gov = controller.governor.IEEJ_LPT1("g3", Prate=2, PLM=5);
-gen.add_local_controller(controller.avr.AVR_ST1("a3"), controller.pss.PSS1("p3"), gov);
+gen.add_local_controller("avr-ST1");
+gen.add_local_controller("pss-PSS1");
+gov = gen.add_local_controller("gov-LPT1", parameter=struct(Prate=2, PLM=5));
 DebugScript.helper.quiet(@() net.initialize);
 rv_eq = net.rv_Xequilibrium;
 ev  = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", gen.s_tag);
@@ -340,8 +329,7 @@ end
 
 %% An AGC on Pmech adds to the governor output
 [net, comp, ~, ~, gov] = build_full("after");
-agc = controller.agc.broadcast_PI_AGC(net, "agc", comp.s_tag);
-net.add_global_controller(agc);
+agc = net.add_global_controller("agc-PI", comp.s_tag);
 DebugScript.helper.quiet(@() net.initialize);
 flag = comp.validate(false);
 s_src = flag.inputs{"Pmech","source"};
@@ -356,32 +344,31 @@ function [net, comp, avr, pss, gov] = build_full(s_order)
 % 3母線系統の SG1B002 に AVR_DC1 + PSS1 と調速機 IEEJ_LPT1 を付けて initialize する
 % s_order: "before" 調速機を先に / "after" 後に / "none" 調速機なし
     [net, comp] = DebugScript.helper.build_3bus("gen-park");
-    avr = controller.avr.AVR_DC1("a", kap=20);
-    pss = controller.pss.PSS1("p");
-    gov = controller.governor.IEEJ_LPT1("g", PLM=5);
-    switch s_order
-        case "before"
-            comp.add_local_controller(gov);
-            comp.add_local_controller(avr, pss);
-        case "after"
-            comp.add_local_controller(avr, pss, gov);
-        otherwise
-            comp.add_local_controller(avr, pss);
-            gov = [];
+    gov = [];
+    if s_order == "before"
+        gov = comp.add_local_controller("gov-LPT1", parameter=struct(PLM=5));
+    end
+    avr = comp.add_local_controller("avr-DC1", parameter=struct(kap=20));
+    pss = comp.add_local_controller("pss-PSS1");
+    if s_order == "after"
+        gov = comp.add_local_controller("gov-LPT1", parameter=struct(PLM=5));
     end
     DebugScript.helper.quiet(@() net.initialize);
 end
 
-function [net, comp] = build_gov(gov)
-% 3母線系統の SG1B002 に調速機だけを付けて initialize する
+function [net, comp, gov] = build_gov(s_key, sct_para)
+% 3母線系統の SG1B002 に調速機 (モデルキー s_key、パラメータ sct_para) だけを付けて initialize する
+    if nargin < 2
+        sct_para = struct();
+    end
     [net, comp] = DebugScript.helper.build_3bus("gen-park");
-    comp.add_local_controller(gov);
+    gov = comp.add_local_controller(s_key, parameter=sct_para);
     DebugScript.helper.quiet(@() net.initialize);
 end
 
-function [sol, comp] = simulate_step(gov, r_step, rv_span, t_end)
-% 調速機を付けた SG1B002 の系統で、SG1B001 の Pmech に r_step を加える
-    [net, comp] = build_gov(gov);
+function [sol, comp, gov] = simulate_step(s_key, sct_para, r_step, rv_span, t_end)
+% 調速機 (モデルキー s_key、パラメータ sct_para) を付けた SG1B002 の系統で、SG1B001 の Pmech に r_step を加える
+    [net, comp, gov] = build_gov(s_key, sct_para);
     ev  = DebugScript.helper.scenario("step", net, "TimeSpan", rv_span, "InputUnit", "SG1B001", "InputName", "Pmech", "InputValue", r_step);
     sol = DebugScript.helper.quiet(@() net.simulate([0,t_end], ev));
 end

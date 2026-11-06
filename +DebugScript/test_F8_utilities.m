@@ -363,9 +363,10 @@ assert(s.comp == s.net.a_Bus{2}.a_Component{1})
 %% MAT file round trip keeps the linear models
 % 制御器 (AVR + PSS, LQR, AGC) 付きの系統で、線形モデルの行列と名前が読み込みの前後で一致する
 net = DebugScript.helper.build_ieee14();
-net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
-net.a_Bus{2}.a_Component{1}.add_local_controller(controller.local_LQR("lqr2"));
-net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B003"));
+net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
+net.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
+net.a_Bus{2}.a_Component{1}.add_local_controller("local-LQR");
+net.add_global_controller("agc-PI", "SG1B003");
 DebugScript.helper.quiet(@() net.initialize);
 res = net.linearize();
 sim = net.simulate([0,1], Progress="none");

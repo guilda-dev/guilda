@@ -181,9 +181,8 @@ assert(~isempty(net.sct_stale.powerflow))
 net  = DebugScript.helper.build_ieee14();
 comp = net.a_Bus{1}.a_Component{1};
 DebugScript.helper.quiet(@() net.initialize);
-comp.add_local_controller(controller.avr.AVR_ST1("avr1"));
-assert(any(contains(comp.sct_stale.equilibrium, "avr1")) && isempty(net.sct_stale.powerflow))
-avr1 = comp.a_LocalController{1};
+avr1 = comp.add_local_controller("avr-ST1");
+assert(any(contains(comp.sct_stale.equilibrium, avr1.s_tag)) && isempty(net.sct_stale.powerflow))
 assert(avr1.sct_stale.odefcn(1) == avr1.s_notInitialized)   % 新しい制御器は未初期化
 assert_stale_error(@() net.get_sys(), "GUILDA:SolverLIN:Stale")
 assert_stale_error(@() net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1])), "GUILDA:SolverODE:Stale")
@@ -192,12 +191,12 @@ assert(res.s_solver == "equilibrium" && ~DebugScript.helper.is_stale(net))   % �
 assert(~isempty(avr1.f_dx) && ~isempty(avr1.rv_Xequilibrium))
 
 % PSS の追加
-comp.add_local_controller(controller.pss.PSS1("pss1"));
-assert(any(contains(comp.sct_stale.equilibrium, "pss1")))
+pss1 = comp.add_local_controller("pss-PSS1");
+assert(any(contains(comp.sct_stale.equilibrium, pss1.s_tag)))
 
 % AVR の置き換え (警告が出る)
 DebugScript.helper.quiet(@() net.initialize);
-assert(warn_id(@() comp.add_local_controller(controller.avr.AVR_DC1("avr2"))) == "GUILDA:Component:ReplaceController")
+assert(warn_id(@() comp.add_local_controller("avr-DC1")) == "GUILDA:Component:ReplaceController")
 assert(any(contains(comp.sct_stale.equilibrium, "replace")))
 DebugScript.helper.quiet(@() net.initialize);
 assert(~DebugScript.helper.is_stale(net))
@@ -206,7 +205,7 @@ assert(~DebugScript.helper.is_stale(net))
 net.a_Bus{1}.remove_component(string(comp));
 evalc("net.a_Bus{2}.l_isSlack = true;");     % スラック母線に機器がないと平衡点にならない
 DebugScript.helper.quiet(@() net.initialize);
-comp.add_local_controller(controller.avr.AVR_ST1("avr3"));
+comp.add_local_controller("avr-ST1");
 assert(~DebugScript.helper.is_stale(net))
 
 
@@ -215,9 +214,8 @@ assert(~DebugScript.helper.is_stale(net))
 net  = DebugScript.helper.build_ieee14();
 comp = net.a_Bus{1}.a_Component{1};
 DebugScript.helper.quiet(@() net.initialize);
-lqr = controller.local_LQR("lqr1");
-comp.add_local_controller(lqr);
-assert(any(contains(comp.sct_stale.equilibrium, "lqr1")))
+lqr = comp.add_local_controller("local-LQR");
+assert(any(contains(comp.sct_stale.equilibrium, lqr.s_tag)))
 
 DebugScript.helper.quiet(@() net.initialize);
 K1 = lqr.K;
@@ -287,7 +285,7 @@ assert(isequal(h1, c1.f_dx))           % 解析は作り直さない
 %% Local controller dynamics edit is rebuilt at initialize
 net = DebugScript.helper.build_ieee14();
 comp = net.a_Bus{1}.a_Component{1};
-comp.add_local_controller(controller.avr.AVR_ST1("avr1"));
+comp.add_local_controller("avr-ST1");
 avr = comp.a_LocalController{1};
 DebugScript.helper.quiet(@() net.initialize);
 h_dx = avr.f_dx;
@@ -310,8 +308,7 @@ assert(norm(avr.f_dx(0,x,V,[0;0],u) - avr.fcn_dx(0,x,V,[0;0],u,para,60)) < 1e-12
 net = DebugScript.helper.build_ieee14();
 c{1} = net.a_Bus{1}.a_Component{1};
 c{2} = net.a_Bus{2}.a_Component{1};
-agc  = controller.agc.broadcast_PI_AGC(net, "agc", c{:}, alpha=[1;1], beta=[1;1], kP=100, kI=500);
-net.add_global_controller(agc);
+agc  = net.add_global_controller("agc-PI", c, parameter=struct(alpha=[1;1], beta=[1;1], kP=100, kI=500));
 DebugScript.helper.quiet(@() net.initialize);
 h_dx = agc.f_dx;
 
@@ -330,13 +327,12 @@ assert(norm(agc.f_dx(0,x,[],[],u) - agc.fcn_dx(0,x,[],[],u,para,60)) < 1e-12, ..
 %% Global controller add marks only the controller and remove marks nothing
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
-agc = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001");
-net.add_global_controller(agc);
+agc = net.add_global_controller("agc-PI", "SG1B001");
 assert(isempty(net.sct_stale.powerflow) && DebugScript.helper.is_stale(net))
 assert(agc.sct_stale.equilibrium(1) == agc.s_notInitialized)   % 新しい制御器は未初期化のまま
 res = DebugScript.helper.quiet(@() net.initialize);
 assert(res.s_solver == "equilibrium" && ~DebugScript.helper.is_stale(net))
-net.remove_global_controller("agc");
+net.remove_global_controller(agc.s_tag);
 assert(~DebugScript.helper.is_stale(net))
 sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
 assert(sol.odeResults.t(end) == 1)
@@ -347,9 +343,9 @@ assert(sol.odeResults.t(end) == 1)
 net = DebugScript.helper.build_ieee14();
 c{1} = net.a_Bus{1}.a_Component{1};
 c{2} = net.a_Bus{2}.a_Component{1};
-c{1}.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
-agc  = controller.agc.broadcast_PI_AGC(net, "agc", c{:}, alpha=[1;1], beta=[1;1], kP=100, kI=500);
-net.add_global_controller(agc);
+c{1}.add_local_controller("avr-ST1");
+c{1}.add_local_controller("pss-PSS1");
+agc  = net.add_global_controller("agc-PI", c, parameter=struct(alpha=[1;1], beta=[1;1], kP=100, kI=500));
 DebugScript.helper.quiet(@() net.initialize);
 avr = c{1}.a_LocalController{1};
 pss = avr.a_LocalController{1};
@@ -378,8 +374,7 @@ assert(norm(avr.f_dx(0,x,V,[0;0],u) - avr.fcn_dx(0,x,V,[0;0],u,para,50)) < 1e-12
 %% Network Hz edit redesigns the LQR gain
 % K は線形モデルの Hz に依存する。Hz 編集後の initialize で、保持している平衡点で作り直し、潮流から解き直した値と同じになる
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
-lqr = controller.local_LQR("lqr1");
-gen.add_local_controller(lqr);
+lqr = gen.add_local_controller("local-LQR");
 DebugScript.helper.quiet(@() net.initialize);
 K60 = lqr.K;
 net.tab_parameter.base.Hz = 50;
@@ -401,8 +396,7 @@ assert(norm(lqr.K - K50) < 1e-6 * norm(K50), "潮流から解き直した値と�
 
 % 動特性の編集で平衡点が古いときは、平衡点と一緒に新しい Hz で設計する
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
-lqr = controller.local_LQR("lqr1");
-gen.add_local_controller(lqr);
+lqr = gen.add_local_controller("local-LQR");
 DebugScript.helper.quiet(@() net.initialize);
 K60 = lqr.K;
 gen.tab_parameter.dynamics.D = 5;
@@ -415,16 +409,14 @@ assert(norm(lqr.K - K60) > 1e-3 && DebugScript.helper.handle_Hz(lqr) == 50)
 
 % 未初期化なら設計しない
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
-lqr = controller.local_LQR("lqr1");
-gen.add_local_controller(lqr);
+lqr = gen.add_local_controller("local-LQR");
 net.tab_parameter.base.Hz = 50;
 assert_stale_error(@() net.get_sys(), "GUILDA:SolverLIN:Stale")
 assert(isempty(lqr.K))
 
 % 同じ Hz に戻しても系統の odefcn は古いまま。initialize は K を設計し直さない
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
-lqr = controller.local_LQR("lqr1");
-gen.add_local_controller(lqr);
+lqr = gen.add_local_controller("local-LQR");
 DebugScript.helper.quiet(@() net.initialize);
 K60 = lqr.K;
 net.tab_parameter.base.Hz = 50;
@@ -438,8 +430,7 @@ assert(isequal(lqr.K, K60))
 % Hz を変えると設計できないときは、initialize が警告し、他の層は新しい Hz にして、LQR の平衡点を古いままにする
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
 last = net.a_Bus{end}.a_Component{1};
-lqr = controller.local_LQR("lqr1");
-gen.add_local_controller(lqr);
+lqr = gen.add_local_controller("local-LQR");
 DebugScript.helper.quiet(@() net.initialize);
 K60 = lqr.K;
 net.tab_parameter.base.Hz = 0;
@@ -451,37 +442,17 @@ assert(any(contains(lqr.sct_stale.equilibrium, "redesign failed")))
 ME = error_of(@() net.get_sys());
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:Stale" && contains(ME.message, "redesign failed"))
 
-% 設計済みの制御器を外して Hz の違う系統へ付け替える: initialize で新しい Hz の K になる
-[net50, gen50] = DebugScript.helper.build_3bus("gen-1axis");
-net50.tab_parameter.base.Hz = 50;
-lqr = controller.local_LQR("lqr1");
-gen50.add_local_controller(lqr);
-DebugScript.helper.quiet(@() net50.initialize);
-gen50.remove_local_controller(lqr.s_tag);
-assert(lqr.get_Hz() == GUILDA.config("Model","Hz") && DebugScript.helper.handle_Hz(lqr) == 50)
-[net, gen] = DebugScript.helper.build_3bus("gen-1axis");
-gen.add_local_controller(lqr);          % 未初期化の系統: 設計しない
-assert(lqr.get_Hz() == net.get_Hz() && DebugScript.helper.handle_Hz(lqr) == 50)
-DebugScript.helper.quiet(@() net.initialize);
-K = lqr.K;
-assert(DebugScript.helper.handle_Hz(lqr) == 60)
-net.tab_parameter.base.Hz = 50;
-DebugScript.helper.quiet(@() net.initialize);
-assert(norm(lqr.K - K) > 1e-3)
-
 
 %% Network Hz edit redesigns the LQR gain through the layers
 % Hz 編集の後は機器・母線・系統の get_sys がどれも initialize を促し、initialize の後のモデルは新しい Hz で作った系統と一致する
 build_lqr = @() DebugScript.helper.build_3bus("gen-1axis");
 [ref, gen_ref] = build_lqr();
-lqr_ref = controller.local_LQR("lqr1");
-gen_ref.add_local_controller(lqr_ref);
+lqr_ref = gen_ref.add_local_controller("local-LQR");
 ref.tab_parameter.base.Hz = 50;
 DebugScript.helper.quiet(@() ref.initialize);
 for s_layer = ["component", "bus", "network"]
     [net, gen] = build_lqr();
-    lqr = controller.local_LQR("lqr1");
-    gen.add_local_controller(lqr);
+    lqr = gen.add_local_controller("local-LQR");
     DebugScript.helper.quiet(@() net.initialize);
     net.tab_parameter.base.Hz = 50;
     switch s_layer
@@ -512,7 +483,7 @@ gen = net.a_Bus{1}.add_component("gen-1axis");
 assert(gen.get_Hz() == 50 && isempty(gen.f_dx))
 avr = controller.avr.AVR_ST1("avr1");
 assert(avr.get_Hz() == GUILDA.config("Model","Hz") && isempty(avr.f_dx))
-gen.add_local_controller(avr);
+avr = gen.add_local_controller("avr-ST1");
 assert(avr.get_Hz() == 50 && isempty(avr.f_dx))
 assert_stale_error(@() gen.get_sys(), "GUILDA:Component:Stale")    % 解析はハンドルを作らない
 assert(isempty(gen.f_dx) && isempty(avr.f_dx))
@@ -526,29 +497,15 @@ assert(norm(gen.f_dx(0,x,V,I,u) - gen.fcn_dx(0,x,V,I,u,para,50)) < 1e-12)
 
 
 %% Handles are built at initialize
-% 作った直後は f_dx が空で、initialize で作る。付け替えても次の initialize までは以前のハンドルのまま
+% 作った直後は f_dx が空で、initialize で作る
 net  = DebugScript.helper.build_ieee14();
 comp = net.a_Bus{1}.a_Component{1};
-avr  = controller.avr.AVR_ST1("avr1");
-pss  = controller.pss.PSS1("pss1");
-assert(isempty(avr.f_dx))
-comp.add_local_controller(avr, pss);
+avr  = comp.add_local_controller("avr-ST1");
+pss  = comp.add_local_controller("pss-PSS1");
 a_model = {comp, avr, pss};
 assert(isempty(avr.f_dx) && isempty(pss.f_dx))
 DebugScript.helper.quiet(@() net.initialize);
 assert(~any(cellfun(@(m) isempty(m.f_dx), a_model)))
-
-% 制御器を付け替えると、付け先の系統の Hz で次の initialize に作る (接続は equilibrium だけを古くする)
-[net50, gen50] = DebugScript.helper.build_3bus("gen-1axis");
-net50.tab_parameter.base.Hz = 50;
-comp.remove_local_controller(avr.s_tag, RemoveNested=true);
-gen50.add_local_controller(avr);
-assert(DebugScript.helper.handle_Hz(avr) == 60 && isempty(gen50.f_dx))
-assert(any(contains(avr.sct_stale.equilibrium, "attached to " + gen50.s_tag)))   % odefcn は r_odefcnHz の比較で作り直す
-assert_stale_error(@() gen50.get_sys(), "GUILDA:Component:Stale")
-assert(DebugScript.helper.handle_Hz(avr) == 60)
-DebugScript.helper.quiet(@() net50.initialize);
-assert(DebugScript.helper.handle_Hz(avr) == 50)
 
 % 系統に属さない機器を直接使う: get_sys と validate がハンドルを作る
 stub = DebugScript.helper.HessianStub();

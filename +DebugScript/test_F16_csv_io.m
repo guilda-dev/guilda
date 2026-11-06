@@ -18,8 +18,8 @@ net = DebugScript.helper.quiet(@() network.IEEE9bus());
 [s_dir, c] = temp_folder(); %#ok<ASGLU>
 [s_msg, id, s_path] = export_with_warning(net, fullfile(s_dir, "Net9"));
 assert(id == s_id)
-assert(contains(s_msg, "Local (6): SG1B001/CAavr1, SG1B001/CAavr1/CPpss1"))
-assert(contains(s_msg, "SG1B003/CAavr3/CPpss3"))
+assert(contains(s_msg, "Local (6): SG1B001/CA1SG1B001, SG1B001/CA1SG1B001/CP2SG1B001"))
+assert(contains(s_msg, "SG1B003/CA1SG1B003/CP2SG1B003"))
 assert(contains(s_msg, "Global (0): none"))
 assert(isfile(fullfile(s_path, "bus", "parameter.csv")), "警告の前に書き出しを終える")
 
@@ -31,8 +31,7 @@ assert(size(net2.get_sys().A, 1) == 9)
 
 %% export_csv names the global controllers it does not write
 net = DebugScript.helper.quiet(@() network.IEEE9bus());
-agc = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002");
-net.add_global_controller(agc);
+agc = net.add_global_controller("agc-PI", ["SG1B001","SG1B002"]);
 [s_dir, c] = temp_folder(); %#ok<ASGLU>
 [s_msg, id] = export_with_warning(net, fullfile(s_dir, "Net9"));
 assert(id == s_id)

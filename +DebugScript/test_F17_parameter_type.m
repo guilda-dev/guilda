@@ -71,7 +71,7 @@ assert(net.a_Parameter{cellfun(@(p) p.s_tag=="base", net.a_Parameter)}.tab_param
 
 %% Assignment through tab_parameter rejects a wrong type
 [net, comp] = initialized_3bus();
-comp.add_local_controller(controller.avr.AVR_ST1("avr1"));
+comp.add_local_controller("avr-ST1");
 DebugScript.helper.quiet(@() net.initialize);
 avr = comp.a_LocalController{1};
 kap = avr.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", avr.a_Parameter)}.tab_parameter.kap;
@@ -145,8 +145,7 @@ assert(bus.tab_parameter.powerflow.V == V && isempty(DebugScript.helper.stale(ne
 net = DebugScript.helper.build_ieee14();
 g1  = net.a_Bus{1}.a_Component{1};
 g2  = net.a_Bus{2}.a_Component{1};
-agc = controller.agc.broadcast_PI_AGC(net, "agc", g1, g2, alpha=[1;1], beta=[1;1], kP=100, kI=500);
-net.add_global_controller(agc);
+agc = net.add_global_controller("agc-PI", {g1, g2}, parameter=struct(alpha=[1;1], beta=[1;1], kP=100, kI=500));
 tp = agc.tab_parameter;
 assert(isequal(string(tp.dynamics.Properties.RowNames), [string(g1); string(g2)]))
 tab = tp.dynamics;
@@ -189,8 +188,7 @@ assert(isequal(para.tab_parameter, tab0) && isempty(DebugScript.helper.stale(net
 net = DebugScript.helper.build_ieee14();
 g1  = net.a_Bus{1}.a_Component{1};
 g2  = net.a_Bus{2}.a_Component{1};
-agc = controller.agc.broadcast_PI_AGC(net, "agc", g1, g2, alpha=[1;1], beta=[1;1], kP=100, kI=500);
-net.add_global_controller(agc);
+agc = net.add_global_controller("agc-PI", {g1, g2}, parameter=struct(alpha=[1;1], beta=[1;1], kP=100, kI=500));
 DebugScript.helper.quiet(@() net.initialize);
 para = agc.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", agc.a_Parameter)};
 tab0 = para.tab_parameter;

@@ -20,15 +20,15 @@ expect_event_error(net, "UnknownTripUnit", "NOPE", "TimeSpan", [1,2], "TripUnit"
 
 
 %% TripUnit does not accept a local controller
-net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"));
+avr = net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 DebugScript.helper.quiet(@() net.initialize);
-expect_event_error(net, "UnknownTripUnit", "avr1", "TimeSpan", [1,1.2], "TripUnit", "avr1");
+expect_event_error(net, "UnknownTripUnit", avr.s_tag, "TimeSpan", [1,1.2], "TripUnit", avr.s_tag);
 
 
 %% TripUnit accepts components and global controllers
-net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002"));
+agc = net.add_global_controller("agc-PI", ["SG1B001","SG1B002"]);
 DebugScript.helper.quiet(@() net.initialize);
-[~, flag] = net.simulate([0,2], DebugScript.helper.scenario("ev", net, "TimeSpan", [1,1.2], "TripUnit", ["LPQ2B003";"agc"]));
+[~, flag] = net.simulate([0,2], DebugScript.helper.scenario("ev", net, "TimeSpan", [1,1.2], "TripUnit", ["LPQ2B003";agc.s_tag]));
 assert(flag == 1)
 
 

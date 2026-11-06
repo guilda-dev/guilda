@@ -6,34 +6,34 @@
 % 実行: runtests("DebugScript.test_I69_avr_range_error")  または  DebugScript.run_all("Features","I69")
 
 %% AVR_ST1 above upper limit
-ME = initialize_error(controller.avr.AVR_ST1("avr1", Vap_max=0.1));
-check_error(ME, "AVR_ST1", "CAavr1", "(-Inf, 0.1)")
+[ME, avr] = initialize_error("avr-ST1", struct(Vap_max=0.1));
+check_error(ME, "AVR_ST1", avr.s_tag, "(-Inf, 0.1)")
 
 %% AVR_ST1 below lower limit
-ME = initialize_error(controller.avr.AVR_ST1("avr1", Vap_min=10));
-check_error(ME, "AVR_ST1", "CAavr1", "(10, Inf)")
+[ME, avr] = initialize_error("avr-ST1", struct(Vap_min=10));
+check_error(ME, "AVR_ST1", avr.s_tag, "(10, Inf)")
 
 %% AVR_DC1 above upper limit
-ME = initialize_error(controller.avr.AVR_DC1("avr1", Vap_max=0.1));
-check_error(ME, "AVR_DC1", "CAavr1", "(-Inf, 0.1)")
+[ME, avr] = initialize_error("avr-DC1", struct(Vap_max=0.1));
+check_error(ME, "AVR_DC1", avr.s_tag, "(-Inf, 0.1)")
 
 %% AVR_DC1 below lower limit
-ME = initialize_error(controller.avr.AVR_DC1("avr1", Vap_min=100));
-check_error(ME, "AVR_DC1", "CAavr1", "(100, Inf)")
+[ME, avr] = initialize_error("avr-DC1", struct(Vap_min=100));
+check_error(ME, "AVR_DC1", avr.s_tag, "(100, Inf)")
 
 %% AVR within limits initializes
-for avr = {controller.avr.AVR_ST1("avr1", Vap_min=-100, Vap_max=100), controller.avr.AVR_DC1("avr1", Vap_min=-100, Vap_max=100)}
+for s_key = ["avr-ST1", "avr-DC1"]
     [net, comp] = DebugScript.helper.build_3bus("gen-park");
-    comp.add_local_controller(avr{1});
+    comp.add_local_controller(s_key, parameter=struct(Vap_min=-100, Vap_max=100));
     res = DebugScript.helper.quiet(@() net.initialize);
     assert(res.l_success)
 end
 
 
-function ME = initialize_error(avr)
-% AVR を付けた系統を initialize し、発生したエラーを返す
+function [ME, avr] = initialize_error(s_key, sct_para)
+% AVR を付けた系統を initialize し、発生したエラーと AVR を返す
     [net, comp] = DebugScript.helper.build_3bus("gen-park");
-    comp.add_local_controller(avr);
+    avr = comp.add_local_controller(s_key, parameter=sct_para);
     ME = [];
     try
         DebugScript.helper.quiet(@() net.initialize);
