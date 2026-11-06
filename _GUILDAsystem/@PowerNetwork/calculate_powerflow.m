@@ -15,8 +15,8 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
 %
 % - `Method` — Calculation method (net.solver_PF.Method).
 % - `Tolerance` — Convergence tolerance; 0 for the solver default (net.solver_PF.Tolerance).
-% - `MaxIteration` — Maximum number of fsolve iterations; 0 for the fsolve default (net.solver_PF.MaxIterations).
-% - `Verbose` — Print fsolve progress (sets Display to "iter" or "none"). Default: net.solver_PF.Display ~= "none".
+% - `MaxIteration` — Maximum number of iterations; 0 for the method default (net.solver_PF.MaxIterations).
+% - `Verbose` — Print the progress of each iteration (sets Display to "iter" or "none"). Default: net.solver_PF.Display ~= "none".
 % - `Plot` — Call result.Plot after the calculation. Default: false.
 % - `Export` — Call result.Export after the calculation: true for the default file name, or the file name. Default: false.
 %
@@ -38,7 +38,7 @@ function [result, flag, output] = calculate_powerflow(obj, varargin)
     end
     arguments (Output)
         result   % Bus voltages, injections and branch flows of the solution.
-        flag     % exitflag of fsolve ("algebraic", positive = converged) or convergence ("dynamic").
+        flag     % Positive or true = converged (see SolverPF for the values of each Method).
         output   % Solver details; output.message describes the outcome.
     end
 

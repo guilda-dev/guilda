@@ -378,10 +378,12 @@ Every analysis is a method `net.verb_noun(Name, Value)` that returns
 | `net.calculate_powerflow("dynamic", "export", true, "filename", f)` | `net.calculate_powerflow(Method="dynamic", Export=f)` or `res.Export(f)` (`.json`) |
 | `net.solver_PF.rm_response`, `rr_step`, `i_iteration` | `res.cm_Vhistory`, `res.rv_step` |
 
-- Options: `Method` (`"algebraic"` | `"dynamic"`), `Tolerance`,
-  `MaxIteration` (solver property `MaxIterations`), `Verbose` (sets
-  `Display`), `Plot`, `Export`. New solver properties `solver_PF.Method`
-  (default `"algebraic"`) and `solver_PF.Tolerance` (0 = fsolve default).
+- Options: `Method` (`"newton"` | `"gradient"` | `"levenberg-marquardt"` |
+  `"fsolve"` | `"dynamic"`), `Tolerance`, `MaxIteration` (solver property
+  `MaxIterations`), `Verbose` (sets `Display`), `Plot`, `Export`. New solver
+  properties `solver_PF.Method` (default `"newton"`, no toolbox needed) and
+  `solver_PF.Tolerance` (0 = method default). The v3 power flow (fsolve) is
+  `Method="fsolve"` and needs Optimization Toolbox.
 - `ResultPF`: `tab_bus` (Varg, V, P, Q, Vphasor, Iphasor per bus;
   the old output table), `tab_branch` (branch flows), `cm_Vhistory`,
   `rv_step`; `Plot` draws the voltage profile, `Export` writes the bus or
@@ -810,12 +812,15 @@ Option names:
 
 ### 1.14 Required toolboxes
 
-- Required: MATLAB, Control System Toolbox, Optimization Toolbox.
+- Required: MATLAB. Optimization Toolbox for the power flow with `Method="fsolve"`
+  and the OPF (`tools.require_toolbox` stops with
+  `GUILDA:require_toolbox:Unavailable` without it); Control System Toolbox for
+  the `ss` output of the linearization and the LQR controllers.
 - **Symbolic Math Toolbox is optional.** No runtime code uses it
   (`ListToolbox.txt` no longer lists it; a test checks it).
-  `NewtonRaphsonMethod` still accepts a symbolic `NRMFcn` when the toolbox
+  `MethodNewtonRaphson` (renamed from `NewtonRaphsonMethod`, no alias) still accepts a symbolic `NRMFcn` when the toolbox
   is installed; without it this stops with
-  `GUILDA:NewtonRaphsonMethod:SymbolicUnavailable` (pass a function handle,
+  `GUILDA:MethodNewtonRaphson:SymbolicUnavailable` (pass a function handle,
   optionally `NRMJac`). A few developer scripts that check hand-written
   Jacobians (`validate.m` of loads and controllers, the unreleased
   `vsm1axis`) still need it.
@@ -1159,7 +1164,7 @@ and simulation results in the order of `get_variable_map`. Open follow-ups
 |----------|----|----------|
 | `net.add_bus(..., "baseMVA", x)` with x = system base | `GUILDA:Deprecated:BusBaseMVA` | warning; ignored |
 | `net.add_bus(..., "baseMVA", x)` with x ≠ system base | `GUILDA:Deprecated:BusBaseMVAMismatch` | warning; ignored, system base used |
-| `calculate_powerflow(mode, ...)` (positional `"algebraic"` / `"dynamic"`) | `GUILDA:Deprecated:CalculatePowerflowMode` | warning; becomes `Method=mode` |
+| `calculate_powerflow(mode, ...)` (positional `"algebraic"` / `"dynamic"`) | `GUILDA:Deprecated:CalculatePowerflowMode` | warning; becomes `Method=mode` (`"algebraic"` → `Method="fsolve"`) |
 | `calculate_powerflow(..., "export", l, "filename", f)` | `GUILDA:Deprecated:CalculatePowerflowExport` | warning; becomes `Export=fullfile(GUILDA.pwd, f)` |
 | `optimize_powerflow("methods", m)` | `GUILDA:Deprecated:OptimizePowerflowMethods` | warning; becomes `Method=m` |
 | `build_opf_problem("methods", m)` | `GUILDA:Deprecated:BuildOpfProblemMethods` | warning; becomes `Method=m` |

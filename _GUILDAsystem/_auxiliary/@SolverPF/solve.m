@@ -3,8 +3,9 @@ function [result,flag,output] = solve(obj, net, sct_options)
 %
 % Runs the power flow calculation of net with the effective settings sct_options and
 % returns the computed values as a ResultPF. The solver is only read: nothing is
-% written back into it. Called by net.calculate_powerflow; calling it directly is for
-% advanced use.
+% written back into it. The calculation itself is done by the Method class of
+% sct_options.Method (see SolverPF), created from the settings. Called by
+% net.calculate_powerflow; calling it directly is for advanced use.
     arguments (Input)
         obj % Solver (net.solver_PF).
         net % Network with a slack bus.
@@ -12,7 +13,7 @@ function [result,flag,output] = solve(obj, net, sct_options)
     end
     arguments (Output)
         result % Bus and branch values of the solution.
-        flag % exitflag of fsolve (algebraic) or convergence (dynamic).
+        flag % 1/0/-2 (newton, gradient, levenberg-marquardt), exitflag of fsolve, or convergence (dynamic); positive or true = converged.
         output % Solver details; output.message describes the outcome.
     end
     t0 = tic;
@@ -22,12 +23,7 @@ function [result,flag,output] = solve(obj, net, sct_options)
     sv_bus    = string(tab_PFcondition.Properties.RowNames);
     cm_Y      = tab_Ymat{sv_bus,sv_bus};
 
-    switch sct_options.Method
-        case "algebraic"
-            [cv_Vbus,flag,output,cm_Vhistory,rv_step] = obj.solve_algebraic(cm_Y, tab_PFcondition, sct_options);
-        case "dynamic"
-            [cv_Vbus,flag,output,cm_Vhistory,rv_step] = obj.solve_dynamic(cm_Y, tab_PFcondition, sct_options);
-    end
+    [cv_Vbus,flag,output,cm_Vhistory,rv_step] = run_method(cm_Y, tab_PFcondition, sct_options);
 
     % Vbus -> Ibus -> Pbus,Qbus
     cv_Ibus = cm_Y*cv_Vbus;
@@ -74,4 +70,93 @@ function tab = branch_flow(net, sv_bus, cv_Vbus)
                 cm_I(:,1), cm_I(:,2), real(sum(cm_S,2)), imag(sum(cm_S,2)), ...
                 'VariableNames', ["Pfrom","Qfrom","Pto","Qto","Ifrom","Ito","Ploss","Qloss"], ...
                 'RowNames', sv_branch);
+end
+
+
+function [cv_Vbus,flag,output,cm_Vhistory,rv_step] = run_method(cm_Y, tab, sct)
+% Create the Method object of sct.Method from the settings and map its results to the bus
+% voltages (cv_Vbus), flag, output, the voltage history and its steps.
+    r_tol = sct.Tolerance;
+    n_max = sct.MaxIterations;
+
+    % a bus without branches (not slack) has no determined voltage: no solution
+    lv_isolated = ~any(cm_Y, 2) & tab.Type ~= "slack";
+    if any(lv_isolated)
+        cv_Vbus     = tab.V0 .* exp(1j*tab.Varg0);
+        cm_Vhistory = cv_Vbus;
+        rv_step     = 0;
+        flag        = -2;
+        if sct.Method == "dynamic"
+            flag = false;
+        end
+        output = struct("iterations", 0, "algorithm", sct.Method, "message", ...
+            sprintf('✘ No power flow solution: the bus %s has no branch, so its voltage is not determined.', ...
+                    join(string(tab.Properties.RowNames(lv_isolated)), ", ")));
+        return
+    end
+
+    if sct.Method == "dynamic"
+        sct_dyn = sct.dynamic;
+        if r_tol == 0
+            r_tol = 1e-5;
+        end
+        [cv_Vbus,flag,output,cm_Vhistory,rv_step] = MethodDynamic(Y=cm_Y, PFcondition=tab, ...
+            Mass=sct_dyn.Mass, Damper=sct_dyn.Damper, foh_PQ=sct_dyn.foh_PQ, ...
+            t_span=sct_dyn.t_span, Tolerance=r_tol).solve();
+        return
+    end
+
+    [f_res, f_jac, rv_x0, f_grad, rv_xp0] = power_equation(cm_Y, tab);
+    switch sct.Method
+        case "newton"
+            nrm = MethodNewtonRaphson(NRMFcn=f_res, NRMJac=f_jac, NRMVal=zeros(size(rv_x0)), ...
+                InitVal=rv_x0, ConvTol=default(r_tol, 1e-8), MaxIter=default(n_max, 50), Display=sct.Display);
+            [rm_x, ~, l_conv, rm_hist] = nrm.solve();
+            rv_step = 0:size(rm_hist,2)-1;
+            output  = struct("iterations", rv_step(end), "algorithm", "newton", "residual", max(abs(f_res(rm_x))));
+            if ~all(isfinite(rm_x))
+                flag = -2;
+                output.message = '✘ The process was terminated: the Newton-Raphson iteration diverged.';
+            elseif l_conv && ~(output.residual <= max(1e-6, r_tol))
+                flag = -2;          % a minimum norm step of a singular Jacobian can be small without a solution
+                output.message = sprintf('✘ No power flow solution was found: the Newton-Raphson step became small, but the largest mismatch is %.3e.', output.residual);
+            elseif l_conv
+                flag = 1;
+                output.message = sprintf('✔ The Newton-Raphson iteration has converged within the tolerance limit (%d iterations).', rv_step(end));
+            else
+                flag = 0;
+                output.message = sprintf('✘ The Newton-Raphson iteration did not converge within MaxIterations (%d).', nrm.MaxIter);
+            end
+            if sct.Display ~= "none"
+                disp(output.message)
+            end
+        case "gradient"
+            r_alpha = sct.gradient.StepSize;
+            if r_alpha == 0
+                r_alpha = 0.5/(max(abs(diag(cm_Y))) * max([tab.V; tab.V0], [], "omitnan")^2);
+            end
+            [rm_xp, flag, output, rm_hist, rv_step] = MethodGradient(Fcn=f_grad, InitVal=rv_xp0, ...
+                StepSize=r_alpha, ConvTol=default(r_tol, 1e-8), MaxIter=default(n_max, 1e6), Display=sct.Display).solve();
+            n_bus       = height(tab);            % [theta; V] -> complex voltages
+            cv_Vbus     = rm_xp(n_bus+1:end) .* exp(1j*rm_xp(1:n_bus));
+            cm_Vhistory = rm_hist(n_bus+1:end,:) .* exp(1j*rm_hist(1:n_bus,:));
+            return
+        case "levenberg-marquardt"
+            [rm_x, flag, output, rm_hist, rv_step] = MethodLevenbergMarquardt(Fcn=f_res, Jac=f_jac, InitVal=rv_x0, ...
+                ConvTol=default(r_tol, 1e-8), MaxIter=default(n_max, 100), Display=sct.Display).solve();
+        case "fsolve"
+            [rm_x, flag, output, rm_hist, rv_step] = MethodFsolve(Fcn=f_res, Jac=f_jac, InitVal=rv_x0, ...
+                FunctionTolerance=r_tol, MaxIterations=n_max, MaxFunEvals=sct.MaxFunEvals, Display=sct.Display, ...
+                UseParallel=sct.UseParallel, PlotFcn=sct.PlotFcn, Feature='Method="fsolve" of the power flow').solve();
+    end
+    cv_Vbus     = rm_x(1:2:end) + 1j*rm_x(2:2:end);
+    cm_Vhistory = rm_hist(1:2:end,:) + 1j*rm_hist(2:2:end,:);
+end
+
+
+function r = default(r, r_default)
+% 0 means the default of the method
+    if r == 0
+        r = r_default;
+    end
 end

@@ -15,10 +15,10 @@ Through these efforts, we aim to establish power systems as an accessible benchm
 ---
 
 ## Requirement
-- MATLAB
-- Control system toolbox
-- Optimization toolbox
-- Symboric Math toolbox
+- MATLAB: enough for the power flow, the continuation power flow, `simulate` and the linearization
+- Optimization Toolbox: needed for the power flow with `Method="fsolve"` and for the optimal power flow (OPF)
+- Control System Toolbox: needed for the `ss` output of the linearization and for the LQR controllers
+- Symbolic Math Toolbox: optional
 ---
 
 ## Setup
@@ -140,10 +140,10 @@ GUILDAは、本研究室と川口助教（群馬大）を中心に開発を進�
 このような活動を通して、電力システムを身近なベンチマークモデルとしてシステム制御分野に定着させることにより、本分野の技術や知見が電力システム改革を推進する一助となることを目指しています。
 
 ## Requirement
-- MATLAB
-- Control system toolbox
-- Optimization toolbox
-- Symboric Math toolbox
+- MATLAB: 潮流計算、連続潮流計算、`simulate`、線形化は MATLAB 本体だけで実行可能
+- Optimization Toolbox: `Method="fsolve"` の潮流計算と最適潮流計算（OPF）に必要
+- Control System Toolbox: 線形化の `ss` 出力と LQR 制御器に必要
+- Symbolic Math Toolbox: 任意
 
 ## Usage
 
