@@ -1,6 +1,6 @@
 function handle_edit(obj, a_layer, tag, log)
 % Mark the stale tags of the controller for its own edits (LayerPackage.log_edit).
-%   dynamics (its para_dynamics, or a property of the controller itself,
+%   dynamics (its tab_parameter.dynamics, or a property of the controller itself,
 %             e.g. Q, R, V0 of local_LQR)   equilibrium, odefcn
 %   Topology (a nested controller)          equilibrium
 % Edits of other layers are not the controller's.

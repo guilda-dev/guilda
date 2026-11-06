@@ -9,7 +9,7 @@ function build_odefcn(obj)
         obj
     end
     omega0 = obj.get_Hz();
-    array = obj.para_dynamics.tab_parameter{:,obj.sv_para};
+    array = obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.tab_parameter{:,obj.sv_para};
 
     if ismethod(obj, "Jacobi_dx")
         obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,array,omega0);

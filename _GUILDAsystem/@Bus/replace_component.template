@@ -45,12 +45,11 @@ function comp = replace_component(obj, s_tag, Key, parameter, opt)
     if s_gcon ~= ""
         error(msg("GUILDA:Bus:ComponentControlled", char(comp_pre.s_tag), char(s_gcon)))
     end
-    tab_pre  = [comp_pre.para_powerflow.tab_parameter, ...
-                comp_pre.para_operation.tab_parameter, ...
-                comp_pre.para_graph.tab_parameter];
+    tp_pre   = comp_pre.tab_parameter;
+    tab_pre  = [tp_pre.powerflow, tp_pre.operation, tp_pre.graph];
     opt_comp = table2struct(tab_pre);
 
-    tab_opf  = comp_pre.para_OPF;
+    tab_opf  = tp_pre.OPF;
     opt_comp.OPFinit_P0       = tab_opf.P0;
     opt_comp.OPFinit_Q0       = tab_opf.Q0;
     opt_comp.OPFcost_HP       = tab_opf.HP;

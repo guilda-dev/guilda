@@ -106,9 +106,9 @@
 
 ### 1.1 Nominal frequency and system base belong to the network
 
-The network holds `Hz` and `baseMVA` in `net.tab_parameter.base`
-(`net.para_base`). Components no longer have their own `Hz`, and buses no
-longer have an operation `baseMVA`.
+The network holds `Hz` and `baseMVA` in `net.tab_parameter.base`.
+Components no longer have their own `Hz` (`comp.tab_parameter.base` and
+`comp.para_base` are removed), and buses no longer have an operation `baseMVA`.
 
 ```matlab
 % old
@@ -1023,8 +1023,7 @@ there.
   `get_sys` and `SolverODE` use the same `f_Jacobi*` handles.
 - **The old `getJacobiAxx` / `getJacobiBxu` / … style is no longer used.**
   Per-matrix files are ignored; port them to the three `Jacobi_*` methods.
-- **Frequency inside a model:** read `obj.get_Hz()`, never a fixed `60` or a
-  component `para_base`.
+- **Frequency inside a model:** read `obj.get_Hz()`, never a fixed `60`.
 - **`set_odefcn` は廃止。** `f_*` ハンドルは `net.initialize()` が作ります。
   古いとき(`sct_stale.odefcn` が空でない、またはハンドルを作った周波数
   `r_odefcnHz` が系統の Hz と違う)だけ、各層の `initialize` から protected メソッド `build_odefcn` を呼び、
@@ -1110,10 +1109,6 @@ and simulation results in the order of `get_variable_map`. Open follow-ups
 
 | Old form | ID | Behavior |
 |----------|----|----------|
-| read `comp.tab_parameter.base.Hz` / `comp.para_base.Hz` | `GUILDA:Deprecated:ComponentBaseHz` | warning; returns the network Hz (`ComponentBaseView`) |
-| set `comp.tab_parameter.base.Hz` / `comp.para_base.Hz` | `GUILDA:Deprecated:ComponentBaseHzSet` | warning; sets `net.tab_parameter.base.Hz` for the **whole network** |
-| set it on a component without a network | `GUILDA:ComponentBaseView:ComponentBaseHzNoNetwork` | error |
-| assign a non-view value to `comp.para_base` | `GUILDA:Deprecated:ComponentBaseHz` | error |
 | `net.add_bus(..., "baseMVA", x)` with x = system base | `GUILDA:Deprecated:BusBaseMVA` | warning; ignored |
 | `net.add_bus(..., "baseMVA", x)` with x ≠ system base | `GUILDA:Deprecated:BusBaseMVAMismatch` | warning; ignored, system base used |
 | `calculate_powerflow(mode, ...)` (positional `"algebraic"` / `"dynamic"`) | `GUILDA:Deprecated:CalculatePowerflowMode` | warning; becomes `Method=mode` |
@@ -1147,11 +1142,6 @@ lists all of them:
 
 | File | Line | Hook |
 |------|------|------|
-| `@Component/Component.m` | `para_base` property | deprecated `ComponentBaseView` property |
-| `@Component/Component.m` | `get.para_base` | returns `ComponentBaseView(obj)` |
-| `@Component/Component.m` | `get.tab_parameter` | `ComponentBaseView.add_column`: adds the `base` column |
-| `@Component/Component.m` | `set.para_base` | `ComponentBaseView.check_assign`: accepts only the view |
-| `@Component/Component.m` | `set.tab_parameter` | `ComponentBaseView.remove_column`: drops the `base` column |
 | `@PowerNetwork/add_bus.m` | `opt.baseMVA` argument | accepts the old option |
 | `@PowerNetwork/add_bus.m` | `v3_bus_baseMVA(obj, opt)` | warns and removes the option |
 | `@PowerNetwork/calculate_powerflow.m` | `v3_powerflow_args(varargin)` | positional mode, `export` / `filename` |
@@ -1190,7 +1180,6 @@ settings (an untagged line, needed by the `get_config` hook).
 |------|---------|
 | `Deprecated.m` | warning once per session, `GUILDA:Deprecated:<Key>` (convention in its header) |
 | `legacy_output.m` | returns the old output tuple when `nargout` matches the old signature |
-| `ComponentBaseView.m` | deprecated `comp.para_base` / `comp.tab_parameter.base` view and its hook helpers |
 | `v3_bus_baseMVA.m` | `add_bus` `baseMVA` option |
 | `Continuation_Power_Flow.m` | old CPF entry point (returns `ContinuationPowerFlowV3`) |
 | `ContinuationPowerFlowV3.m` | v3 CPF object: `CPF*` properties, `solve`, `CPF_Result` |
@@ -1247,10 +1236,7 @@ selects it only for 6 outputs, so 4 or 5 outputs are an error.
    By section title:
    - F1 "Add bus with deprecated baseMVA option"
    - F2 "COMPAT v3 positional mode and export options"
-   - F3 "Deprecated methods option and values warn" (`test_F3_initialize`),
-     "Deprecated component Hz forms still work and warn once",
-     "Deprecated component Hz write sets the network Hz", and the
-     `ComponentBaseView` assert in the network Hz edit test
+   - F3 "Deprecated methods option and values warn" (`test_F3_initialize`)
    - F4 "Legacy six-output form", "Deprecated methods option", and the
      `methods` part of "Build OPF problem with Method and deprecated
      methods option"

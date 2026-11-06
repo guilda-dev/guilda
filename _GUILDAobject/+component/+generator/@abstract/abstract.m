@@ -48,11 +48,12 @@ classdef abstract < Component
                 obj  % Generator object.
             end
             obj@Component("SG"+index, varargin{:})
-            r_Q = obj.para_powerflow.Q;
+            tp  = obj.tab_parameter;
+            r_Q = tp.powerflow.Q;
             if ~isnan(r_Q) && r_Q ~= 0
                 obj.parameter_error("GeneratorQIgnored", char(obj.s_tag), char(string(r_Q)))
             end
-            obj.para_powerflow.Q = nan;
+            obj.tab_parameter.powerflow.Q = nan;
             
             if istable(parameter)
                 mp = parameter;
@@ -83,7 +84,7 @@ classdef abstract < Component
             
             name = cellfun(@(d) string(d), mp.Properties.VariableNames);
             for i=1:numel(name)
-                obj.para_dynamics.add_entry(name(i), mp.(name(i)), "double");
+                obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.add_entry(name(i), mp.(name(i)), "double");
             end
 
             % obj.set_avr( component.generator.avr.base() );

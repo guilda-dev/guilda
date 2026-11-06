@@ -86,7 +86,7 @@ end
     if options.Method ~= "ELD" && obj.l_opfdefault
         i_ref = tools.slack_bus_index(obj);
         if isempty(i_ref); i_ref = 1; end
-        Varg_ref = a_Bus{i_ref}.para_powerflow.Varg;
+        Varg_ref = a_Bus{i_ref}.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", a_Bus{i_ref}.a_Parameter)}.Varg;
         if isnan(Varg_ref); Varg_ref = 0; end
         Vref = Vvar.(string(a_Bus{i_ref}));
         prob.Constraints.VargRef = Vref("Varg") == Varg_ref;

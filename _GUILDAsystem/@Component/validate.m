@@ -32,7 +32,7 @@ function flag = validate(obj, l_message)
 
     r_omega0 = obj.get_Hz();    % omega0 is the nominal frequency in Hz (models multiply by 2*pi)
     r_t      = 0;
-    rr_param = obj.para_dynamics.tab_parameter{:,obj.sv_para};
+    rr_param = obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.tab_parameter{:,obj.sv_para};
 
     com2vec  = @(c) [real(c);imag(c)];
     contract = strings(0,3);

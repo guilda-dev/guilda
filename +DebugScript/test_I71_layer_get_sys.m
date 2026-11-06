@@ -69,8 +69,8 @@ assert(norm(gen.get_sys().A - gen_ref.get_sys().A) < 1e-9)
 DebugScript.helper.quiet(@() net.initialize);
 [gen, bus, avr, pss] = layers(net);
 A_gen = gen.get_sys().A;  A_bus = bus.get_sys().A;
-Hz0 = net.para_base.Hz;
-net.para_base.Hz = 2 * Hz0;
+Hz0 = net.tab_parameter.base.Hz;
+net.tab_parameter.base.Hz = 2 * Hz0;
 assert(DebugScript.helper.is_stale(net) && isempty(net.sct_stale.powerflow) && DebugScript.helper.handle_Hz(gen) == Hz0)
 assert_stale_error(@() gen.get_sys(), "GUILDA:Component:Stale")
 assert_stale_error(@() bus.get_sys(), "GUILDA:Bus:Stale")
@@ -80,12 +80,12 @@ assert(DebugScript.helper.handle_Hz(gen) == Hz0)
 res = DebugScript.helper.quiet(@() net.initialize);
 assert(res.s_solver == "equilibrium")
 A_gen2 = gen.get_sys().A;
-assert(DebugScript.helper.handle_Hz(avr) == net.para_base.Hz && DebugScript.helper.handle_Hz(pss) == net.para_base.Hz)
-assert(DebugScript.helper.handle_Hz(gen) == net.para_base.Hz && ~isequal(A_gen2, A_gen))
+assert(DebugScript.helper.handle_Hz(avr) == net.tab_parameter.base.Hz && DebugScript.helper.handle_Hz(pss) == net.tab_parameter.base.Hz)
+assert(DebugScript.helper.handle_Hz(gen) == net.tab_parameter.base.Hz && ~isequal(A_gen2, A_gen))
 assert(~isequal(bus.get_sys().A, A_bus))
 
 [ref, ~] = build_with_controllers();
-ref.para_base.Hz = net.para_base.Hz;
+ref.tab_parameter.base.Hz = net.tab_parameter.base.Hz;
 DebugScript.helper.quiet(@() ref.initialize);
 [gen_ref, bus_ref] = layers(ref);
 assert(norm(A_gen2 - gen_ref.get_sys().A) < 1e-9)
@@ -124,7 +124,7 @@ assert_stale_error(@() gc.get_sys(), "GUILDA:GlobalController:Stale")
 DebugScript.helper.quiet(@() net.initialize);
 sys0 = gc.get_sys();
 h_dx = gc.f_dx;
-gc.para_dynamics.kI = 2 * gc.para_dynamics.kI;
+gc.tab_parameter.dynamics.kI = 2 * gc.tab_parameter.dynamics.kI;
 assert(isequal(h_dx, gc.f_dx) && DebugScript.helper.is_stale(net))
 assert_stale_error(@() gc.get_sys(), "GUILDA:GlobalController:Stale")
 assert_stale_error(@() gc.get_sys(gc.rv_Xequilibrium, zeros(2,1), zeros(2,1), gc.rv_Uequilibrium), "GUILDA:GlobalController:Stale")
@@ -139,7 +139,7 @@ DebugScript.helper.quiet(@() net.initialize);
 sys1 = gc.get_sys();
 assert(~isequal(ssdata_all(sys1), ssdata_all(sys0)))
 [ref, gc_ref] = build_with_agc();
-gc_ref.para_dynamics.kI = gc.para_dynamics.kI;
+gc_ref.tab_parameter.dynamics.kI = gc.tab_parameter.dynamics.kI;
 DebugScript.helper.quiet(@() ref.initialize);
 assert(norm(ssdata_all(sys1) - ssdata_all(gc_ref.get_sys())) < 1e-9)
 
@@ -147,12 +147,12 @@ assert(norm(ssdata_all(sys1) - ssdata_all(gc_ref.get_sys())) < 1e-9)
 %% Global controller handles follow a network Hz edit
 [net, gc] = build_with_agc();
 DebugScript.helper.quiet(@() net.initialize);
-Hz0 = net.para_base.Hz;
-net.para_base.Hz = 2 * Hz0;
+Hz0 = net.tab_parameter.base.Hz;
+net.tab_parameter.base.Hz = 2 * Hz0;
 assert(DebugScript.helper.handle_Hz(gc) == Hz0 && DebugScript.helper.is_stale(net))
 assert_stale_error(@() gc.get_sys(), "GUILDA:GlobalController:Stale")
 DebugScript.helper.quiet(@() net.initialize);
-assert(DebugScript.helper.handle_Hz(gc) == net.para_base.Hz)
+assert(DebugScript.helper.handle_Hz(gc) == net.tab_parameter.base.Hz)
 gc.get_sys();
 
 
@@ -179,13 +179,13 @@ net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 gen = net.a_Bus{1}.a_Component{1};
 res0 = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=sr_load));
-Hz0 = net.para_base.Hz;
-net.para_base.Hz = 2 * Hz0;
+Hz0 = net.tab_parameter.base.Hz;
+net.tab_parameter.base.Hz = 2 * Hz0;
 assert(DebugScript.helper.handle_Hz(gen) == Hz0 && DebugScript.helper.is_stale(net))
 assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=sr_load)) == "GUILDA:SolverCPF:Stale")
 DebugScript.helper.quiet(@() net.initialize);
 res1 = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=sr_load));
-assert(DebugScript.helper.handle_Hz(gen) == net.para_base.Hz)
+assert(DebugScript.helper.handle_Hz(gen) == net.tab_parameter.base.Hz)
 assert(isequal(res1.rv_lambda, res0.rv_lambda) && isequal(res1.cm_Vbus, res0.cm_Vbus))
 
 

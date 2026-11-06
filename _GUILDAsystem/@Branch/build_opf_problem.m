@@ -28,7 +28,7 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Vvar, optio
     end
     
     % get Parameter (set_opffcn DefaultConstraint=false: no default limits)
-    para_ope  = obj.para_operation;
+    para_ope  = obj.a_Parameter{cellfun(@(p) p.s_tag=="operation", obj.a_Parameter)};
     if ~obj.l_opfdefault
         para_ope = struct("Pmax",nan, "Qmax",nan, "Vargmax",nan, "Imax",nan, "Smax",nan);
     end
@@ -127,7 +127,7 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Vvar, optio
             
             % |V|=1, lossless, MATPOWER convention (makeBdc): the flow from bus i to bus j is
             % b*(θi - θj - phase) with b = 1/(X*tap); the power into bus i is its negative.
-            [b, phase] = dc_susceptance(obj.para_dynamics);
+            [b, phase] = dc_susceptance(obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)});
             prob.Constraints.("defP_"+str(1)) = P_i == b *(Vbusj("Varg")-Vbusi("Varg")+phase);
             prob.Constraints.("defP_"+str(2)) = P_j == b *(Vbusi("Varg")-Vbusj("Varg")-phase);
 

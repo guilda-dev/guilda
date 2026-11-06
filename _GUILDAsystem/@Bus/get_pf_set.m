@@ -14,7 +14,7 @@ function tab_PFset = get_pf_set(obj)
         tab_PFset   % One-row table: Type, Varg, V, P, Q, Varg0, V0 (NaN where the type does not set the value).
     end
 
-    tab_V = obj.para_powerflow;
+    tab_V = obj.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", obj.a_Parameter)};
     a_com = obj.a_Component;
     if obj.l_isSlack
         Type     = "slack";
@@ -23,7 +23,7 @@ function tab_PFset = get_pf_set(obj)
         P = 0;
         Q = 0;
         for i = 1:numel(a_com)
-            para_PQ = a_com{i}.para_powerflow;
+            para_PQ = a_com{i}.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", a_com{i}.a_Parameter)};
             P = P+para_PQ.P;
             Q = Q+para_PQ.Q;
         end

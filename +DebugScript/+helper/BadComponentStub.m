@@ -43,7 +43,7 @@ classdef BadComponentStub < Component
                          "MidXaxis","", "MidYaxis","");
             end
             obj@Component("BS" + s_tag, opt);
-            obj.para_dynamics.add_entry("bad", find(obj.sr_bad == s_bad), "double");
+            obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.add_entry("bad", find(obj.sr_bad == s_bad), "double");
         end
 
         function [x, u] = get_equilibrium(obj, ~, c_I, r_P, ~)
@@ -58,7 +58,7 @@ classdef BadComponentStub < Component
                 x  % 平衡点の状態
                 u  % 平衡点の入力
             end
-            s_bad = obj.sr_bad(obj.para_dynamics.bad);
+            s_bad = obj.sr_bad(obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.bad);
             if s_bad == "needpq"
                 r_P; %#ok<VUNUS> 2 引数で呼ぶと MATLAB:minrhs になる
             end

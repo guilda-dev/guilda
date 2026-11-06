@@ -183,7 +183,6 @@ end
 assert(isempty(sv_bad), "フック以外で Deprecated を使用: " + join(sv_bad, ", "))
 % 現在のフック (追加・削除したらこの一覧と notes/v4-migration.md の4章を更新する)
 sv_file = extractBefore(sv_hook, ":");
-assert(sum(sv_file == fullfile("_GUILDAsystem", "@Component", "Component.m")) == 5, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "add_bus.m")) == 2, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "calculate_powerflow.m")) == 1, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "@PowerNetwork", "optimize_powerflow.m")) == 2, join(sv_hook, ", "))
@@ -197,7 +196,7 @@ assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "get
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@SolverLIN", "solve.m")) == 1, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("_GUILDAsystem", "_auxiliary", "@ResultLIN", "get_ss.m")) == 1, join(sv_hook, ", "))
 assert(sum(sv_file == fullfile("@GUILDA", "private", "get_config.m")) == 1, join(sv_hook, ", "))
-assert(numel(sv_hook) == 25, join(sv_hook, ", "))
+assert(numel(sv_hook) == 20, join(sv_hook, ", "))
 
 
 % ---- local functions ----

@@ -103,12 +103,6 @@ classdef GlobalController < PowerSystemModel
         rv_Xequilibrium (:,1) double = zeros(0,1)  % State equilibrium (from get_equilibrium, set by PowerNetwork.initialize).
         rv_Uequilibrium (:,1) double = zeros(0,1)  % Equilibrium of the observed states, one entry per input of each unit.
     end
-    properties(SetAccess=protected) % Parameter
-        para_dynamics  % Dynamic parameters, one row per controlled unit; the sv_para columns are passed as param.
-    end
-    properties(Dependent) % Parameter
-        tab_parameter  % Parameter table: the para_* tables side by side (row names: the unit tags); writing it writes the parameters.
-    end
     properties(Dependent, Access=protected) % Layer Structure
         parent  % Parent in the layer structure: the network.
         children  % Children in the layer structure: none.
@@ -132,7 +126,10 @@ classdef GlobalController < PowerSystemModel
             end
             obj.s_tag = tag;
             obj.sct_stale = struct("equilibrium", obj.s_notInitialized, "odefcn", obj.s_notInitialized);
-            obj.para_dynamics = Parameter(obj,"dynamics");
+            % tab_parameter column dynamics: one row per controlled unit (row names: the unit
+            % tags); the sv_para columns are passed as param
+            a_Pd = Parameter(obj,"dynamics");
+            obj.a_Parameter = {a_Pd};
 
             cls_comp = tools.cellfun(@(b) b.a_Component, net.a_Bus);            
             cls_comp = vertcat(cls_comp{:});            
@@ -156,6 +153,7 @@ classdef GlobalController < PowerSystemModel
                 end
 
                 obj.controlledUnits = [obj.controlledUnits; cls_comp(lv_comp)];
+                a_Pd.sv_rowName = string(obj.controlledUnits);
 
                 idx = idx + 1;
             end
@@ -181,22 +179,6 @@ classdef GlobalController < PowerSystemModel
         end
         function p = get.children(~) 
             p = {};
-        end
-        function tab = get.tab_parameter(obj)
-            dynamics = obj.para_dynamics.tab_parameter;            
-            dynamics.Properties.RowNames = string(obj.controlledUnits);
-            tab = table(dynamics);
-        end
-        function set.tab_parameter(obj,val)
-            fieldname = val.Properties.VariableNames;
-            for i = 1:numel(fieldname)
-                propname = "para_"+fieldname{i};
-                tabdata  = val.(fieldname{i});
-                paraname = tabdata.Properties.VariableNames;
-                for j = 1:numel(paraname)
-                    obj.(propname).(paraname{j}) = tabdata.(paraname{j});
-                end
-            end
         end
     end
 end

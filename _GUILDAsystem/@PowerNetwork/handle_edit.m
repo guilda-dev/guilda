@@ -12,7 +12,7 @@ function handle_edit(obj, a_layer, tag, log)
 %     a branch        dynamics
 %     a component     powerflow
 % - The stale tag odefcn is marked for a Hz edit of the network (base, told from baseMVA
-%   by para_base.s_lastEdited): the edit does not reach the models, whose handles bind
+%   by s_lastEdited of its base container): the edit does not reach the models, whose handles bind
 %   the frequency.
 % Other edits are ignored here (the components and controllers mark their own tags).
 %
@@ -27,7 +27,7 @@ function handle_edit(obj, a_layer, tag, log)
         keep_one_slack(obj, a_layer);
     end
     if a_layer == obj
-        if tag == "base" && obj.para_base.s_lastEdited == "Hz"
+        if tag == "base" && obj.a_Parameter{cellfun(@(p) p.s_tag=="base", obj.a_Parameter)}.s_lastEdited == "Hz"
             obj.sct_stale.odefcn(end+1,1) = log;
             return
         end

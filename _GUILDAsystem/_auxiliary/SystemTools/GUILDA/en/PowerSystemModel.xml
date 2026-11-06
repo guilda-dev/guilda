@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the class "PowerSystemModel".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="UnknownParameterGroup">{0} has no parameter group ''{1}''; the columns of its tab_parameter are {2}.</entry>
+    </message>
+</rsccat>

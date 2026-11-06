@@ -107,12 +107,6 @@ classdef PowerNetwork < PowerSystemModel
         cv_Iequilibrium  % [pu] Bus current injections at the equilibrium, one per bus.
         rv_Xequilibrium  % State equilibrium, in the order of the x rows of get_variable_map.
     end
-    properties(Dependent) % Parameter
-        tab_parameter  % Parameter table: the para_* tables side by side; writing it writes the parameters.
-    end
-    properties(Hidden,SetAccess=protected) % Parameter
-        para_base  % Hz [Hz]: nominal frequency, read with get_Hz() and passed as omega0; baseMVA [MVA]: system base of all per-unit values (default 100).
-    end
     properties(SetAccess=protected) % OPF
         f_opfcost = []  % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the network ([]: none). <@Stale> nothing
         f_opfconst = []  % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing
@@ -138,9 +132,12 @@ classdef PowerNetwork < PowerSystemModel
             end
             obj.s_tag     = tag;
             obj.sct_stale = struct("powerflow", obj.s_notInitialized, "odefcn", obj.s_notInitialized);
-            obj.para_base = Parameter(obj,"base");
-            obj.para_base.add_entry(     "Hz", GUILDA.config("Model","Hz"), "double",...
-                                    "baseMVA", 100                        , "double");
+            % tab_parameter column base: Hz [Hz]: nominal frequency, read with get_Hz() and
+            % passed as omega0; baseMVA [MVA]: system base of all per-unit values (default 100)
+            a_Pb = Parameter(obj,"base");
+            obj.a_Parameter = {a_Pb};
+            a_Pb.add_entry(     "Hz", GUILDA.config("Model","Hz"), "double",...
+                           "baseMVA", 100                        , "double");
             obj.reset_solver;
         end
     end
@@ -204,15 +201,11 @@ classdef PowerNetwork < PowerSystemModel
 
 %% Get Method
     methods
-        function tp = get.tab_parameter(obj)
-            base = obj.para_base.tab_parameter;
-            tp   = table(base);
-        end
         function p = get.parent(~)
             p = {};
         end
         function p = get.children(obj)
-            p = [obj.a_Bus; obj.a_Branch; obj.a_GlobalController; {obj.para_base}];
+            p = [obj.a_Bus; obj.a_Branch; obj.a_GlobalController; obj.a_Parameter];
         end
         function V = get.cv_Vequilibrium(obj)
             V = tools.vcellfun(@(b) b.c_Vequilibrium, obj.a_Bus);
@@ -229,18 +222,6 @@ classdef PowerNetwork < PowerSystemModel
     end
 %% Get Method
     methods
-        function set.tab_parameter(obj,val)
-            fieldname = val.Properties.VariableNames;
-            for i = 1:numel(fieldname)
-                propname = "para_"+fieldname{i};
-                tabdata  = val.(fieldname{i});
-                paraname = tabdata.Properties.VariableNames;
-                for j = 1:numel(paraname)
-                    obj.(propname).(paraname{j}) = tabdata.(paraname{j});
-                end
-            end
-        end
-        
         % function set.s_methodPF(~,~)
         %     error("Property: Records the power flow calculation method used by obj.initialize()."+newline+...
         %           " Update : Automatically refreshes based on the method used upon each execution of obj.initialize().")

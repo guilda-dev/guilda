@@ -1,6 +1,6 @@
 function handle_edit(obj, a_layer, tag, log)
 % Mark the stale tags of the component for its own edits (LayerPackage.log_edit).
-%   dynamics (its para_dynamics)                       equilibrium, odefcn
+%   dynamics (its tab_parameter.dynamics)              equilibrium, odefcn
 %   Topology (local controller add, replace, remove)   equilibrium
 % Edits of other layers, and powerflow edits (the power flow of the network), are not
 % the component's.

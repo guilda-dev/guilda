@@ -107,7 +107,7 @@ function tab = component_power(net)
         comp = a_Comp{i};
         S = comp.c_Vequilibrium*conj(comp.c_Iequilibrium);
         PQ(i,:) = [real(S), imag(S)];
-        str(i)  = name_of(comp.para_powerflow.P);
+        str(i)  = name_of(comp.tab_parameter.powerflow.P);
     end
     tab = array2table(PQ, "VariableNames",["P","Q"], "RowNames",str);
 end

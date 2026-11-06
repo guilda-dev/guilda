@@ -16,10 +16,12 @@ function [net, gen] = build_smib()
     net.add_branch("pi",[1,2], "R",0, "X",0.3);
     gen = net.a_Bus{1}.add_component("gen-1axis", "P", 0.8, "Q", nan);
     inf = net.a_Bus{2}.add_component("gen-classical");
-    inf.para_dynamics.M  = 1e8;
-    inf.para_dynamics.D  = 0;
-    inf.para_dynamics.Xd = 1e-4;
-    inf.para_dynamics.Xq = 1e-4;
+    tp = inf.tab_parameter;
+    tp.dynamics.M  = 1e8;
+    tp.dynamics.D  = 0;
+    tp.dynamics.Xd = 1e-4;
+    tp.dynamics.Xq = 1e-4;
+    inf.tab_parameter = tp;
     evalc("net.a_Bus{2}.l_isSlack = true;");     % 表示 (INFO) は抑制
     net.solver_ODE.Progress = "none";
 end

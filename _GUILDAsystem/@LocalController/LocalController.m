@@ -141,12 +141,6 @@ classdef LocalController < PowerSystemModel
         c_Iequilibrium  % [pu] Current equilibrium of the parent (zeros(0,1) without a parent).
     end
 
-    properties(SetAccess=protected) % Parameter
-        para_dynamics  % Dynamic parameters; the sv_para columns are passed to the model functions as param.
-    end
-    properties(Dependent) % Parameter
-        tab_parameter  % Parameter table: the para_* tables side by side; writing it writes the parameters.
-    end
     properties(Dependent, Access=protected) % Layer Structure
         parent  % Parent in the layer structure: the component, or the AVR for a PSS.
         children  % Children in the layer structure: the nested controller.
@@ -164,7 +158,8 @@ classdef LocalController < PowerSystemModel
             end
             obj.s_tag = tag;
             obj.sct_stale = struct("equilibrium", obj.s_notInitialized, "odefcn", obj.s_notInitialized);
-            obj.para_dynamics = Parameter(obj,"dynamics");
+            % tab_parameter column dynamics: the sv_para columns are passed to the model functions as param
+            obj.a_Parameter = {Parameter(obj,"dynamics")};
         end        
     end    
 
@@ -230,26 +225,6 @@ classdef LocalController < PowerSystemModel
         end
         function p = get.children(obj) 
             p = obj.a_LocalController;
-        end
-        function tab = get.tab_parameter(obj)
-            tab_tab  = obj.para_dynamics.tab_parameter;
-            tab_name = obj.para_dynamics.s_tag;
-            tab = table(tab_tab, 'VariableNames', tab_name);
-        end
-    end
-
-%% Set Methods
-    methods
-        function set.tab_parameter(obj,val)
-            fieldname = val.Properties.VariableNames;
-            for i = 1:numel(fieldname)
-                propname = "para_"+fieldname{i};
-                tabdata  = val.(fieldname{i});
-                paraname = tabdata.Properties.VariableNames;
-                for j = 1:numel(paraname)
-                    obj.(propname).(paraname{j}) = tabdata.(paraname{j});
-                end
-            end
         end
     end
 end

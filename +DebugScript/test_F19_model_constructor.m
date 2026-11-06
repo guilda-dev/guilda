@@ -30,7 +30,7 @@ assert(contains(ME.message, "Zeta") && contains(ME.message, "parameter.csv"))
 
 %% A complete table is still accepted, also with extra columns
 gen = DebugScript.helper.GeneratorStub("1B001", table(1, 2, 3, VariableNames=["Zeta", "M", "Note"]), default_opt());
-assert(gen.para_dynamics.tab_parameter.Zeta == 1 && gen.para_dynamics.tab_parameter.M == 2)
+assert(gen.tab_parameter.dynamics.Zeta == 1 && gen.tab_parameter.dynamics.M == 2)
 
 
 %% An unknown parameter name lists the allowed names
@@ -47,21 +47,21 @@ bus = PowerNetwork().add_bus();
 gen6 = bus.add_component("gen-1axis", parameter="NGT6");
 gen8 = bus.add_component("gen-1axis", parameter='NGT8');
 gen0 = bus.add_component("gen-1axis");
-assert(gen6.para_dynamics.tab_parameter.Xd_p == 0.38)
-assert(gen8.para_dynamics.tab_parameter.Xd_p == 0.35 && gen8.para_dynamics.tab_parameter.Xd == 1.2)
-assert(gen0.para_dynamics.tab_parameter.Xd == 1.7 && gen0.para_dynamics.tab_parameter.Xd_p == 0.35)
+assert(gen6.tab_parameter.dynamics.Xd_p == 0.38)
+assert(gen8.tab_parameter.dynamics.Xd_p == 0.35 && gen8.tab_parameter.dynamics.Xd == 1.2)
+assert(gen0.tab_parameter.dynamics.Xd == 1.7 && gen0.tab_parameter.dynamics.Xd_p == 0.35)
 
 
 %% A load subclass without a constructor works
 ld = DebugScript.helper.LoadStub("2B003", nan, default_opt());
 assert(ld.s_tag == "L2B003")
-assert(isa(ld, "component.load.abstract") && ld.para_powerflow.P == 0.5)
+assert(isa(ld, "component.load.abstract") && ld.tab_parameter.powerflow.P == 0.5)
 
 
 %% Built-in loads keep their tags
 bus = PowerNetwork().add_bus();
 ld = bus.add_component("load-power", P=-0.8, Q=-0.3);
-assert(startsWith(ld.s_tag, "LPQ1") && ld.para_powerflow.Q == -0.3)
+assert(startsWith(ld.s_tag, "LPQ1") && ld.tab_parameter.powerflow.Q == -0.3)
 assert(startsWith(bus.add_component("load-impedance", P=-0.1).s_tag, "LRX2"))
 
 
@@ -71,7 +71,7 @@ lastwarn("");
 gen = bus.add_component("gen-park", P=0.5, Q=0.3);
 [s_msg, s_id] = lastwarn(); s_id = DebugScript.helper.msg_id(s_msg, s_id);
 assert(string(s_id) == s_q && contains(s_msg, "0.3") && contains(s_msg, gen.s_tag))
-assert(isnan(gen.para_powerflow.Q))
+assert(isnan(gen.tab_parameter.powerflow.Q))
 
 
 %% The default Q and Q=NaN do not warn
@@ -88,7 +88,7 @@ bus = net.a_Bus{1};
 lastwarn("");
 gen = bus.replace_component(bus.a_Component{1}.s_tag, "gen-classical");
 s_id = DebugScript.helper.msg_id();
-assert(string(s_id) ~= s_q && isnan(gen.para_powerflow.Q))
+assert(string(s_id) ~= s_q && isnan(gen.tab_parameter.powerflow.Q))
 
 
 %% Built-in networks and the bundled CSV data do not warn about Q

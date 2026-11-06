@@ -61,7 +61,7 @@ check_failure(net, "powerflow", "InitializePowerflowIsland", "[B004, B005]");
 
 %% An island whose power does not balance is named
 net = balanced_island();
-net.a_Bus{5}.a_Component{1}.para_powerflow.P = -0.9;
+net.a_Bus{5}.a_Component{1}.tab_parameter.powerflow.P = -0.9;
 check_failure(net, "powerflow", "InitializePowerflowIsland", "[B004, B005]");
 
 

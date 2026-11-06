@@ -101,12 +101,14 @@ function net = import_csv(path, opt)
     c_Comp = read_components(path, n_Bus, sr_CompOPF);
 
 % Network (Hz, baseMVA)
+    tp = net.tab_parameter;
     for s_name = sr_NetOpt
         val = tab_net.(s_name)(1);
         if ~isnan(val)
-            net.para_base.(s_name) = val;
+            tp.base.(s_name) = val;
         end
     end
+    net.tab_parameter = tp;
 
 % Add buses
     a_Bus = cell(n_Bus,1);

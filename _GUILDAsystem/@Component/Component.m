@@ -139,22 +139,9 @@ classdef Component < PowerSystemModel
         lv_odeUfromLC = false(0,1);  % Inputs driven by an output of a top-level local controller.
         iv_odeYtoU = zeros(0,1);  % Index of each such input in the outputs of the top-level controllers, stacked in order.
     end
-    properties(Dependent, Hidden) % Compatibility
-        para_base  % COMPAT(v3) ComponentBaseView: Hz is held by the network (use get_Hz)
-    end
     properties(Dependent) % Steady State
         c_Vequilibrium  % [pu] Terminal voltage at the equilibrium (= a_Bus.c_Vequilibrium; [] without a bus).
         rv_Xequilibrium_all  % State equilibrium of the component, then of its controllers depth first (the order of get_variable_map).
-    end
-    properties(Dependent) % Parameter
-        tab_parameter  % Parameter table: the para_* tables side by side; writing it writes the parameters.
-    end
-    properties(SetAccess=protected) % Parameter
-        para_dynamics  % Model parameters, per unit on the system base; the sv_para columns are passed to the model functions.
-        para_powerflow  % P, Q [pu]: injection settings of the power flow (negative for a load); Q = NaN makes the bus a PV bus.
-        para_operation  % baseMVA [MVA]: rating, only to share Q on a bus (not the system base); Pmin, Pmax, Qmin, Qmax [pu]: OPF bounds and "Qmax" rule.
-        para_OPF  % P0, Q0 [pu]: OPF initial values; HP, fP, HQ, fQ: cost coefficients (default 1, 1, 0, 0; 0 for a load); startup, shutdown: reserved.
-        para_graph  % Xaxis, Yaxis, Marker, MidXaxis, MidYaxis: drawing data.
     end
     properties(SetAccess=protected) % OPF
         f_opfcost = []  % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the component ([]: none). <@Stale> nothing
@@ -193,36 +180,43 @@ classdef Component < PowerSystemModel
             end
             obj.s_tag          = s_tag;
             obj.sct_stale      = struct("equilibrium", obj.s_notInitialized, "odefcn", obj.s_notInitialized);
-            obj.para_dynamics  = Parameter(obj,"dynamics");
-            obj.para_powerflow = Parameter(obj,"powerflow");
-            obj.para_OPF       = Parameter(obj,"OPF");
-            obj.para_graph     = Parameter(obj,"graph");
-            obj.para_operation = Parameter(obj,"operation");
+            % tab_parameter columns:
+            % - dynamics: model parameters, per unit on the system base; the sv_para columns are passed to the model functions
+            % - operation: baseMVA [MVA]: rating, only to share Q on a bus (not the system base); Pmin, Pmax, Qmin, Qmax [pu]: OPF bounds and "Qmax" rule
+            % - powerflow: P, Q [pu]: injection settings of the power flow (negative for a load); Q = NaN makes the bus a PV bus
+            % - OPF: P0, Q0 [pu]: OPF initial values; HP, fP, HQ, fQ: cost coefficients (default 1, 1, 0, 0; 0 for a load); startup, shutdown: reserved
+            % - graph: Xaxis, Yaxis, Marker, MidXaxis, MidYaxis: drawing data
+            a_Pd = Parameter(obj,"dynamics");
+            a_Po = Parameter(obj,"operation");
+            a_Pp = Parameter(obj,"powerflow");
+            a_PO = Parameter(obj,"OPF");
+            a_Pg = Parameter(obj,"graph");
+            obj.a_Parameter = {a_Pd; a_Po; a_Pp; a_PO; a_Pg};
             % Default cost (NaN): 0 for a load (a fixed load adds nothing to the cost), 1 otherwise
             r_cost0 = double(~isa(obj,"component.load.abstract"));
             if isnan(opt.OPFcost_HP); opt.OPFcost_HP = r_cost0; end
             if isnan(opt.OPFcost_fP); opt.OPFcost_fP = r_cost0; end
 
-            obj.para_operation.add_entry( "baseMVA", opt.baseMVA          , "double",...
-                                             "Pmin", opt.Pmin             , "double",...
-                                             "Pmax", opt.Pmax             , "double",...
-                                             "Qmin", opt.Qmin             , "double",...
-                                             "Qmax", opt.Qmax             , "double");
-            obj.para_powerflow.add_entry(       "P", opt.P                , "double",...
-                                                "Q", opt.Q                , "double");
-            obj.para_OPF.add_entry(            "P0", opt.OPFinit_P0       , "double",...
-                                               "Q0", opt.OPFinit_Q0       , "double",...
-                                               "HP", opt.OPFcost_HP       , "double",...
-                                               "HQ", opt.OPFcost_HQ       , "double",...
-                                               "fP", opt.OPFcost_fP       , "double",...
-                                               "fQ", opt.OPFcost_fQ       , "double",...
-                                          "startup", opt.OPFcost_startup  , "double",...
-                                         "shutdown", opt.OPFcost_shutdown , "double");
-            obj.para_graph.add_entry(       "Xaxis", opt.Xaxis            , "double",...
-                                            "Yaxis", opt.Yaxis            , "double",...
-                                           "Marker", opt.Marker           , "string",...
-                                         "MidXaxis", opt.MidXaxis         , "string",...
-                                         "MidYaxis", opt.MidYaxis         , "string");
+            a_Po.add_entry(  "baseMVA", opt.baseMVA          , "double",...
+                                "Pmin", opt.Pmin             , "double",...
+                                "Pmax", opt.Pmax             , "double",...
+                                "Qmin", opt.Qmin             , "double",...
+                                "Qmax", opt.Qmax             , "double");
+            a_Pp.add_entry(        "P", opt.P                , "double",...
+                                   "Q", opt.Q                , "double");
+            a_PO.add_entry(       "P0", opt.OPFinit_P0       , "double",...
+                                  "Q0", opt.OPFinit_Q0       , "double",...
+                                  "HP", opt.OPFcost_HP       , "double",...
+                                  "HQ", opt.OPFcost_HQ       , "double",...
+                                  "fP", opt.OPFcost_fP       , "double",...
+                                  "fQ", opt.OPFcost_fQ       , "double",...
+                             "startup", opt.OPFcost_startup  , "double",...
+                            "shutdown", opt.OPFcost_shutdown , "double");
+            a_Pg.add_entry(    "Xaxis", opt.Xaxis            , "double",...
+                               "Yaxis", opt.Yaxis            , "double",...
+                              "Marker", opt.Marker           , "string",...
+                            "MidXaxis", opt.MidXaxis         , "string",...
+                            "MidYaxis", opt.MidYaxis         , "string");
         end        
 
         build_odefcn(obj)
@@ -289,37 +283,7 @@ classdef Component < PowerSystemModel
             p = obj.a_Bus;
         end
         function p = get.children(obj)
-            p = [ obj.a_LocalController  ;...
-                 {obj.para_dynamics      ; obj.para_powerflow     ;...
-                  obj.para_operation     ; obj.para_OPF           ;...
-                  obj.para_graph         }];
-        end
-        function v = get.para_base(obj), v = ComponentBaseView(obj); end                 % COMPAT(v3)
-        function tp = get.tab_parameter(obj)
-            dynamics  = obj.para_dynamics.tab_parameter;
-            powerflow = obj.para_powerflow.tab_parameter;
-            OPF       = obj.para_OPF.tab_parameter;
-            operation = obj.para_operation.tab_parameter;
-            graph     = obj.para_graph.tab_parameter;
-            tp        = table(dynamics,operation,powerflow,OPF,graph);
-            tp        = ComponentBaseView.add_column(obj, tp);   % COMPAT(v3)
+            p = [obj.a_LocalController; obj.a_Parameter];
         end
     end
-
-%% Set Methods
-    methods
-        function set.para_base(~,val), ComponentBaseView.check_assign(val); end         % COMPAT(v3)
-        function set.tab_parameter(obj,val)
-            val       = ComponentBaseView.remove_column(val);    % COMPAT(v3)
-            fieldname = val.Properties.VariableNames;
-            for i = 1:numel(fieldname)
-                propname = "para_"+fieldname{i};
-                tabdata  = val.(fieldname{i});
-                paraname = tabdata.Properties.VariableNames;
-                for j = 1:numel(paraname)
-                    obj.(propname).(paraname{j}) = tabdata.(paraname{j});
-                end
-            end
-        end
-    end   
 end

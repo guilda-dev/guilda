@@ -43,7 +43,7 @@ classdef Branch < PowerSystemModel
         % Return the 2x2 admittance matrix of the branch.
         %
         % The matrix maps the voltages of the end buses [V_from; V_to] to the currents
-        % injected into the branch at those ends, in per unit. It reads para_dynamics and
+        % injected into the branch at those ends, in per unit. It reads tab_parameter.dynamics and
         % must not read or change anything else.
         Ymat = get_admittance_matrix(obj)
     end
@@ -59,16 +59,10 @@ classdef Branch < PowerSystemModel
         l_opfdefault = true  % Whether the default OPF constraints of the branch are kept (DefaultConstraint of set_opffcn). <@Stale> nothing
     end
     properties(Dependent) % Parameter
-        tab_parameter  % Parameter table: the para_* tables side by side; writing it writes the parameters. <@Type> table
         cv_Vequilibrium  % [pu] Voltage phasors of the end buses at the equilibrium. <@Type> double
         cv_Iequilibrium  % [pu] Currents into the branch at its ends at the equilibrium: get_admittance_matrix() * cv_Vequilibrium. <@Type> double
     end
 
-    properties(Hidden,SetAccess=protected) % Parameter
-        para_dynamics  % R, X [pu]: series impedance; C [pu]: shunt susceptance (meaning set by the subclass); tap: off-nominal ratio; phase [rad].
-        para_operation  % OPF limits at both ends: Smax, Imax, Pmax, Qmax [pu] (default Inf); Vargmax [rad]: end-bus angle difference (default pi/2).
-        para_graph  % MidXaxis, MidYaxis: intermediate points of the line in the diagram; Marker: line style.
-    end
     properties(Dependent, Access=protected) % Layer Structure
         parent  % Parent in the layer structure: the network.
         children  % Children in the layer structure: the Parameter objects.
@@ -87,6 +81,10 @@ classdef Branch < PowerSystemModel
             end
             obj.s_tag = obj.header+index;
             
+            % tab_parameter columns:
+            % - dynamics: R, X [pu]: series impedance; C [pu]: shunt susceptance (meaning set by the subclass); tap: off-nominal ratio; phase [rad]
+            % - operation: OPF limits at both ends: Smax, Imax, Pmax, Qmax [pu] (default Inf); Vargmax [rad]: end-bus angle difference (default pi/2)
+            % - graph: MidXaxis, MidYaxis: intermediate points of the line in the diagram; Marker: line style
             a_Pm = Parameter(obj,"dynamics");
             a_Po = Parameter(obj,"operation");
             a_Pg = Parameter(obj,"graph");
@@ -109,9 +107,7 @@ classdef Branch < PowerSystemModel
                             "MidYaxis", opt.MidYaxis , "string",...
                               "Marker", opt.Marker      , "string");
 
-            obj.para_dynamics  = a_Pm;
-            obj.para_operation = a_Po;
-            obj.para_graph     = a_Pg;
+            obj.a_Parameter = {a_Pm; a_Po; a_Pg};
         end
     end
 
@@ -128,12 +124,6 @@ classdef Branch < PowerSystemModel
 
 %% Get Methods
     methods
-        function tp = get.tab_parameter(obj)
-            dynamics  = obj.para_dynamics.tab_parameter;
-            operation = obj.para_operation.tab_parameter;
-            graph     = obj.para_graph.tab_parameter;
-            tp        = table(dynamics,operation,graph);
-        end
         function v = get.cv_Vequilibrium(obj)
             v = cellfun(@(cub) cub.c_Vequilibrium, obj.a_Bus);
         end
@@ -145,22 +135,7 @@ classdef Branch < PowerSystemModel
             p = obj.a_PowerNetwork;
         end
         function p = get.children(obj)
-            p = {obj.para_dynamics; obj.para_operation; obj.para_graph};
-        end
-    end
-
-%% Set Methods
-    methods
-        function set.tab_parameter(obj,val)
-            fieldname = val.Properties.VariableNames;
-            for i = 1:numel(fieldname)
-                propname = "para_"+fieldname{i};
-                tabdata  = val.(fieldname{i});
-                paraname = tabdata.Properties.VariableNames;
-                for j = 1:numel(paraname)
-                    obj.(propname).(paraname{j}) = tabdata.(paraname{j});
-                end
-            end
+            p = obj.a_Parameter;
         end
     end
 end

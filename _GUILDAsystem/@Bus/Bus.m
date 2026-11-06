@@ -63,15 +63,6 @@ classdef Bus < PowerSystemModel
         f_opfconst = []  % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing
         l_opfdefault = true  % Whether the default OPF constraints of the bus are kept (DefaultConstraint of set_opffcn). <@Stale> nothing
     end
-    properties (Dependent) % Parameter
-        tab_parameter  % Parameter table: the para_* tables side by side; writing it writes the parameters.
-    end
-    properties (Hidden,SetAccess=protected) % Parameter
-        para_dynamics  % Shunt admittance Gshunt, Bshunt [pu], added to the diagonal of the network admittance matrix.
-        para_powerflow  % V [pu], Varg [rad]: voltage settings of a slack bus (V also of a PV bus); V0 [pu], Varg0 [rad]: solver initial values.
-        para_operation  % Vmin, Vmax [pu]: OPF voltage bounds; baseKV [kV]: base voltage, stored but used in no calculation.
-        para_graph  % Xaxis, Yaxis: drawing position (NaN: automatic layout); Marker: marker of the bus.
-    end
     properties (Dependent, Access=protected) % Layer Structure
         parent  % Parent in the layer structure: the network.
         children  % Children in the layer structure: the components, then the Parameter objects.
@@ -99,23 +90,29 @@ classdef Bus < PowerSystemModel
             end
             obj.a_PowerNetwork = net;
             obj.s_tag          = tag;
-            obj.para_dynamics  = Parameter(obj,"dynamics");
-            obj.para_operation = Parameter(obj,"operation");
-            obj.para_powerflow = Parameter(obj,"powerflow");
-            obj.para_graph     = Parameter(obj,"graph");
-            
-            obj.para_dynamics.add_entry(  "Gshunt", opt.Gshunt   , "double",...
-                                          "Bshunt", opt.Bshunt   , "double");
-            obj.para_operation.add_entry( "baseKV", opt.baseKV   , "double",...
-                                            "Vmin", opt.Vmin     , "double",...
-                                            "Vmax", opt.Vmax     , "double");
-            obj.para_powerflow.add_entry(      "V", opt.V        , "double",...
-                                            "Varg", opt.Varg     , "double",...
-                                              "V0", opt.V0       , "double",...
-                                           "Varg0", opt.Varg0    , "double");
-            obj.para_graph.add_entry(      "Xaxis", opt.Xaxis    , "double",...
-                                           "Yaxis", opt.Yaxis    , "double",...
-                                          "Marker", opt.Marker   , "string");
+            % tab_parameter columns:
+            % - dynamics: shunt admittance Gshunt, Bshunt [pu], added to the diagonal of the network admittance matrix
+            % - operation: Vmin, Vmax [pu]: OPF voltage bounds; baseKV [kV]: base voltage, stored but used in no calculation
+            % - powerflow: V [pu], Varg [rad]: voltage settings of a slack bus (V also of a PV bus); V0 [pu], Varg0 [rad]: solver initial values
+            % - graph: Xaxis, Yaxis: drawing position (NaN: automatic layout); Marker: marker of the bus
+            a_Pd = Parameter(obj,"dynamics");
+            a_Po = Parameter(obj,"operation");
+            a_Pp = Parameter(obj,"powerflow");
+            a_Pg = Parameter(obj,"graph");
+            obj.a_Parameter = {a_Pd; a_Po; a_Pp; a_Pg};
+
+            a_Pd.add_entry(  "Gshunt", opt.Gshunt   , "double",...
+                             "Bshunt", opt.Bshunt   , "double");
+            a_Po.add_entry(  "baseKV", opt.baseKV   , "double",...
+                               "Vmin", opt.Vmin     , "double",...
+                               "Vmax", opt.Vmax     , "double");
+            a_Pp.add_entry(       "V", opt.V        , "double",...
+                               "Varg", opt.Varg     , "double",...
+                                 "V0", opt.V0       , "double",...
+                              "Varg0", opt.Varg0    , "double");
+            a_Pg.add_entry(   "Xaxis", opt.Xaxis    , "double",...
+                              "Yaxis", opt.Yaxis    , "double",...
+                             "Marker", opt.Marker   , "string");
         end
         
         % Set equilibrium
@@ -150,13 +147,6 @@ classdef Bus < PowerSystemModel
             s = obj.get_pf_set;
             type = s.Type;
         end
-        function tp = get.tab_parameter(obj)
-            dynamics  =  obj.para_dynamics.tab_parameter;
-            operation =  obj.para_operation.tab_parameter;
-            powerflow =  obj.para_powerflow.tab_parameter;
-            graph     =  obj.para_graph.tab_parameter;
-            tp        =  table(dynamics,operation,powerflow,graph);
-        end
         function I = get.c_Iequilibrium(obj)
             % Components without an equilibrium yet (c_Iequilibrium = []) add nothing.
             if isempty(obj.a_Component)
@@ -169,27 +159,12 @@ classdef Bus < PowerSystemModel
             p = obj.a_PowerNetwork; 
         end
         function p = get.children(obj)
-            p = [ obj.a_Component;   ...
-                 {obj.para_dynamics; ...
-                  obj.para_operation;...
-                  obj.para_powerflow;...
-                  obj.para_graph}];
+            p = [obj.a_Component; obj.a_Parameter];
         end
     end
 
 %% Set Methods
     methods
-        function set.tab_parameter(obj,val)
-            fieldname = val.Properties.VariableNames;
-            for i = 1:numel(fieldname)
-                propname = "para_"+fieldname{i};
-                tabdata  = val.(fieldname{i});
-                paraname = tabdata.Properties.VariableNames;
-                for j = 1:numel(paraname)
-                    obj.(propname).(paraname{j}) = tabdata.(paraname{j});
-                end
-            end
-        end
         function set.l_isSlack(obj,val)
             if val == obj.l_isSlack
                 return
@@ -200,7 +175,7 @@ classdef Bus < PowerSystemModel
                     error(msg("GUILDA:Bus:NonUnitBus", string(obj)))
                 else
                     % the component that takes the remaining P (Bus.set_equilibrium)
-                    i_rest = find(cellfun(@(c) isnan(c.para_powerflow.Q), a_com), 1);
+                    i_rest = find(cellfun(@(c) isnan(c.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", c.a_Parameter)}.Q), a_com), 1);
                     disp(msg('GUILDA:Bus:SetSlack' ,string(obj),string(a_com{max([i_rest,1])})))
                     if isempty(i_rest)
                         warning(msg("GUILDA:Bus:SlackWithoutQnan", string(obj), string(a_com{1})))
