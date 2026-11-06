@@ -307,15 +307,14 @@ Outputs of several controllers on the same input add up. Scalar `alpha` /
   gen.remove_local_controller("CA1", RemoveNested=true);  % AVR とその PSS
   ```
 
-  PSS が残っている AVR は `RemoveNested=true` がないと `GUILDA:Component:ControllerHasNested` で止まり、不明なタグは `GUILDA:Component:ControllerNotFound` で止まります。どちらも何も変えません。削除は `Topology` の編集として記録されるので、`net.initialize()` が必要です。削除した制御器は親への参照を持たないので、同じ機器にも別の機器にも付け直せます。
+  PSS が残っている AVR は `RemoveNested=true` がないと `GUILDA:Component:ControllerHasNested` で止まり、不明なタグは `GUILDA:Component:ControllerNotFound` で止まります。どちらも何も変えません。削除は `Topology` の編集として記録されるので、`net.initialize()` が必要です。削除した制御器は親への参照を持ちません。
 - **制御器の接続の検査。** `add_local_controller` は、何かを変える前に次を検査します。
 
   | ID | 条件 | 対応 |
   |----|------|------|
-  | `GUILDA:Component:SharedController` | 別の機器に付いている制御器を付けた(以前は接続でき、`simulate` が DAE の指数のエラーで失敗した) | 機器ごとに制御器のオブジェクトを作る。外した制御器や同じ機器への再接続は使える |
-  | `GUILDA:Component:InvalidControllerKey` | `key` が `"avr"`, `"pss"`, `"local"` のいずれでもない(以前は何も付かなかった) | `key` を直す |
+  | `GUILDA:Component:InvalidControllerKey` | 役割 `s_role`(1.21)が `"avr"`, `"pss"`, `"local"`, `"governor"` のいずれでもない(以前は何も付かなかった) | `s_role` を直す |
   | `GUILDA:Component:ControllerOutput` | 出力が機器や AVR のどの入力にも一致しない。負荷に AVR を付けた場合を含む。`GUILDA:local_LQR:UnknownInput` はこの ID に置き換わった | `sv_y` か `Input=` を直す。ID で捕まえていたコードも直す |
-  | `GUILDA:Component:PssParentKey` | `key` が `"avr"` でない制御器の下に PSS を付けた | 先に AVR を付ける |
+  | `GUILDA:Component:PssParentKey` | `s_role` が `"avr"` でない制御器の下に PSS を付けた | 先に AVR を付ける |
   | `GUILDA:Component:NotExtAvr` | AVR がないのに PSS を付けた | 先に AVR を付ける |
 
   入力名の綴りの誤りはエラーになりません(平衡点の値を読みます)。`con.validate` の `flag.inputs` に `equilibrium (not connected)` と出るので確認できます(第 2 章)。
@@ -1013,6 +1012,25 @@ there.
 - `struct(obj)` の結果に `para_*` のフィールドはありません。パラメータは `tab_parameter` のフィールドにあります。
 - 各 `Parameter` はパラメータを 1 つの表(`tab_parameter`)として保持します。動的プロパティ(`para.V` のような読み書き)、`add_entry`、`CallbackChanged` はありません。表への書き込みで、パラメータ名(順序は不問)、行数、行名が変わると `GUILDA:Parameter:TableMismatch`、クラスが変わると `GUILDA:Parameter:ClassNameMismatch` で止まり、どちらも何も保存しません。
 - MAT ファイルからの読み込みに復元の処理は不要になり、`PowerNetwork.loadobj` と警告 `GUILDA:PowerNetwork:IncompleteLoad` はなくなりました。
+
+### 1.21 制御器はキーで作る(`add_local_controller` / `add_global_controller`)
+
+制御器は `add_component` と同じく、モデルのキーを渡して追加メソッドの中で作ります(2026-11-07)。制御器のオブジェクトを渡す形はなくなりました。互換の形はありません。
+
+| 旧 | 新 |
+|----|----|
+| `gen.add_local_controller(controller.avr.AVR_ST1("avr1", kap=30))` | `avr = gen.add_local_controller("avr-ST1", parameter=struct(kap=30))` |
+| `gen.add_local_controller(avr, pss)` | `gen.add_local_controller("avr-ST1"); gen.add_local_controller("pss-PSS1")`(1 回に 1 つ。PSS は今の AVR の下) |
+| `net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", g1, g2, kP=100))` | `agc = net.add_global_controller("agc-PI", {g1, g2}, parameter=struct(kP=100))`(機器はタグの配列でも可) |
+| `con.key == "avr"`(役割) | `con.s_role == "avr"` |
+| `remove_local_controller("CAavr1")` | `remove_local_controller(avr.s_tag)` |
+
+- キー: `avr-ST1`, `avr-DC1`, `pss-PSS1`, `gov-LPT1`, `gov-LPT3`, `gov-LPT4`, `local-LQR`(局所)、`agc-PI`(大域)。一覧は起動時に `GUILDA.dictionary` から作ります(`add_component` と同じ)。`controller.local_LQR_retrofit` は抽象クラスのままでキーはありません。
+- `parameter` はコンストラクタの Name=Value の struct か 1 行の table です。省いたものはクラスの既定値になります。
+- 両メソッドは作った制御器を返します。タグは自動で付きます。局所: 種類の頭文字・番号・機器のタグ(例: `CA1SG1B001`、`CP2SG1B001`)。大域: `AGC`・番号・系統のタグ。番号は使用中の最大 + 1 です。同梱の系統(`network.IEEE9bus` など)の制御器のタグも変わりました。
+- 制御器クラスの `key` はモデルのキー(機器の `"gen-park"` と同じ)になり、付ける場所を表していた役割(`"avr"`, `"pss"`, `"local"`, `"governor"`, `"agc"`)は定数プロパティ `s_role` に移りました。新しい制御器クラスは具象クラスに `key`、自身か基底クラスに `s_role` を定義し、コンストラクタを `(tag, Name=Value)`(大域は `(net, tag, 機器..., Name=Value)`)にします。追加後に `GUILDA` を実行するとキーの一覧に載ります。
+- `GUILDA:Component:SharedController` はなくなりました。呼び出しのたびに新しい制御器を作るので、別の機器に付いた制御器を付け直すことは起きません。外した制御器を付け直すこともできません(同じキーでもう一度追加します)。`InvalidControllerKey` と `PssParentKey` は `s_role` を調べます。
+- `add_local_controller.m` と `add_global_controller.m` は起動時に生成されるファイルになりました(`.gitignore` 済み)。テンプレートは各クラスフォルダの `template/` にあります(`@Component/template/add_local_controller.template` など。`add_component` ・ `replace_component` ・ `add_branch` のテンプレートも `template/` に移動)。
 
 ---
 

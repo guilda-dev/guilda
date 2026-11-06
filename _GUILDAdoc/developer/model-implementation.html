@@ -39,7 +39,7 @@
     <ol class="dg-list is-numbered">
       <li><div><span class="dg-item-title"><span lang="en">Choose the base class and the place</span><span lang="ja">基底クラスと置き場所を決める</span></span><p lang="en">Put the class in the matching package of <code>_GUILDAobject</code> (see <a href="folder-structure.html#placement">Folder Structure</a>). A small model can be one <code>classdef</code> file. In a class folder <code>@Name/</code>, each method is its own file; the classdef keeps only the properties, the constructor, the accessors, the Abstract declarations and the signatures of methods with attributes (see <a href="folder-structure.html">Folder Structure</a>).</p><p lang="ja">クラスは <code>_GUILDAobject</code> の該当するパッケージに配置（<a href="folder-structure.html#placement">フォルダ構成</a>を参照）。小さなモデルなら <code>classdef</code> ファイル 1 つで可。クラスフォルダ <code>@Name/</code> では 1 メソッド 1 ファイル。classdef に残すのはプロパティ、コンストラクター、アクセサー、Abstract の宣言、属性付きメソッドのシグネチャのみ（<a href="folder-structure.html">フォルダ構成</a>を参照）。</p></div></li>
       <li><div><span class="dg-item-title"><span lang="en">Implement the model contract</span><span lang="ja">モデルの契約を実装する</span></span><p lang="en">Define the constants and methods in <a href="#contracts">Contracts</a>. Document the class with <a href="class-documentation.html">Class Documentation</a> and name new properties with the <a href="naming-conventions.html">Naming Conventions</a>.</p><p lang="ja"><a href="#contracts">契約</a>にある定数とメソッドを定義。クラスの説明は<a href="class-documentation.html">クラスのドキュメント</a>、新しいプロパティの名前は<a href="naming-conventions.html">命名規則</a>に従う。</p></div></li>
-      <li><div><span class="dg-item-title"><span lang="en">Register a component or branch key</span><span lang="ja">機器またはブランチのキーを登録する</span></span><ul><li><span lang="en">Run <code>GUILDA</code> again: it scans the repository, finds the <code>key</code> of each class, and generates <code>Bus.add_component</code> and <code>PowerNetwork.add_branch</code>. Until then the key is rejected.</span><span lang="ja"><code>GUILDA</code> を再実行。リポジトリを走査して各クラスの <code>key</code> を見つけ、<code>Bus.add_component</code> と <code>PowerNetwork.add_branch</code> を生成。それまではそのキーは不可。</span></li><li><span lang="en">A class that does not load: warning <code>GUILDA:dictionary:ClassNotLoaded</code> with the reason.</span><span lang="ja">読み込めないクラス: 理由とともに警告 <code>GUILDA:dictionary:ClassNotLoaded</code>。</span></li><li><span lang="en">Controllers: no such step; create them with their constructor.</span><span lang="ja">制御器: この手順なし。コンストラクタで作成。</span></li></ul></div></li>
+      <li><div><span class="dg-item-title"><span lang="en">Register the model key</span><span lang="ja">モデルのキーを登録する</span></span><ul><li><span lang="en">Run <code>GUILDA</code> again: it scans the repository, finds the <code>key</code> of each class, and generates <code>Bus.add_component</code>, <code>PowerNetwork.add_branch</code>, <code>Component.add_local_controller</code> and <code>PowerNetwork.add_global_controller</code>. Until then the key is rejected.</span><span lang="ja"><code>GUILDA</code> を再実行。リポジトリを走査して各クラスの <code>key</code> を見つけ、<code>Bus.add_component</code>・<code>PowerNetwork.add_branch</code>・<code>Component.add_local_controller</code>・<code>PowerNetwork.add_global_controller</code> を生成。それまではそのキーは不可。</span></li><li><span lang="en">A class that does not load: warning <code>GUILDA:dictionary:ClassNotLoaded</code> with the reason.</span><span lang="ja">読み込めないクラス: 理由とともに警告 <code>GUILDA:dictionary:ClassNotLoaded</code>。</span></li></ul></div></li>
       <li><div><span class="dg-item-title"><span lang="en">Test the model</span><span lang="ja">モデルをテストする</span></span><p lang="en">Check the contract with <code>validate</code>, then run the checks in <a href="#testing">Testing</a>.</p><p lang="ja"><code>validate</code> で契約を確認し、続いて<a href="#testing">テスト</a>の確認。</p></div></li>
     </ol>
 
@@ -61,20 +61,20 @@
         <tr>
           <td><code>key</code></td>
           <td><span lang="en">The key of <code>add_component</code></span><span lang="ja"><code>add_component</code> のキー</span></td>
-          <td><span lang="en">Where it attaches: <code>"avr"</code>, <code>"pss"</code>, <code>"local"</code>, or <code>"governor"</code></span><span lang="ja">接続先: <code>"avr"</code>、<code>"pss"</code>、<code>"local"</code>、または <code>"governor"</code></span></td>
-          <td><span lang="en">A description only</span><span lang="ja">説明のみ</span></td>
+          <td><span lang="en">The key of <code>add_local_controller</code> (e.g. <code>"avr-ST1"</code>, concrete classes only). Where it attaches is <code>s_role</code>: <code>"avr"</code>, <code>"pss"</code>, <code>"local"</code>, or <code>"governor"</code></span><span lang="ja"><code>add_local_controller</code> のキー（例: <code>"avr-ST1"</code>、具象クラスのみ）。接続先は <code>s_role</code>: <code>"avr"</code>、<code>"pss"</code>、<code>"local"</code>、または <code>"governor"</code></span></td>
+          <td><span lang="en">The key of <code>add_global_controller</code> (e.g. <code>"agc-PI"</code>); <code>s_role</code> names the role (e.g. <code>"agc"</code>)</span><span lang="ja"><code>add_global_controller</code> のキー（例: <code>"agc-PI"</code>）。<code>s_role</code> は役割（例: <code>"agc"</code>）</span></td>
         </tr>
         <tr>
-          <td><span lang="en"><code>key</code>, <code>sv_*</code> attributes</span><span lang="ja"><code>key</code>、<code>sv_*</code> の属性</span></td>
-          <td><code>Constant</code></td>
-          <td><code>SetAccess=protected, Hidden</code><small><span lang="en">Not <code>Constant</code>.</span><span lang="ja"><code>Constant</code> ではない。</span></small></td>
+          <td><span lang="en"><code>key</code>, <code>s_role</code>, <code>sv_*</code> attributes</span><span lang="ja"><code>key</code>、<code>s_role</code>、<code>sv_*</code> の属性</span></td>
+          <td><code>Constant</code><small><span lang="en">No <code>s_role</code>.</span><span lang="ja"><code>s_role</code> なし。</span></small></td>
+          <td><span lang="en"><code>key</code>, <code>s_role</code>: <code>Constant, Hidden</code>; <code>sv_*</code>: <code>SetAccess=protected, Hidden</code></span><span lang="ja"><code>key</code>、<code>s_role</code>: <code>Constant, Hidden</code>。<code>sv_*</code>: <code>SetAccess=protected, Hidden</code></span><small><span lang="en"><code>sv_*</code> are not <code>Constant</code>.</span><span lang="ja"><code>sv_*</code> は <code>Constant</code> ではない。</span></small></td>
           <td><code>Constant, Hidden</code></td>
         </tr>
         <tr>
           <td><span lang="en">Created by</span><span lang="ja">作成方法</span></td>
           <td><code>bus.add_component(Key, ...)</code></td>
-          <td><span lang="en">Its constructor, then <code>comp.add_local_controller</code></span><span lang="ja">コンストラクタで作成し、<code>comp.add_local_controller</code> で接続</span></td>
-          <td><span lang="en">Its constructor <code>(net, tag, units...)</code>, then <code>net.add_global_controller</code></span><span lang="ja">コンストラクタ <code>(net, tag, units...)</code> で作成し、<code>net.add_global_controller</code> で追加</span></td>
+          <td><code>comp.add_local_controller(Key, parameter=S)</code><small><span lang="en">Calls the constructor <code>(tag, Name=Value)</code> and attaches the controller.</span><span lang="ja">コンストラクタ <code>(tag, Name=Value)</code> を呼び出して接続。</span></small></td>
+          <td><code>net.add_global_controller(Key, units, parameter=S)</code><small><span lang="en">Calls the constructor <code>(net, tag, units..., Name=Value)</code> and adds the controller.</span><span lang="ja">コンストラクタ <code>(net, tag, units..., Name=Value)</code> を呼び出して追加。</span></small></td>
         </tr>
         <tr>
           <td><span lang="en">Output function</span><span lang="ja">出力関数</span></td>
@@ -259,6 +259,7 @@ sys = net.get_sys();
     <ul>
       <li><span lang="en">A first-order AVR. Its output <code>Vfield</code> drives the generator input of that name.</span><span lang="ja">1 次遅れの AVR。出力 <code>Vfield</code> が発電機の同名の入力を駆動。</span></li>
       <li><span lang="en">No generator output is called <code>Vref</code> or <code>Vpss</code>: <code>Vref</code> stays at its equilibrium, <code>Vpss</code> reads a PSS when one is attached.</span><span lang="ja">発電機に <code>Vref</code>、<code>Vpss</code> という名前の出力はない。<code>Vref</code> は平衡点の値のまま、<code>Vpss</code> は PSS が接続されていればその出力。</span></li>
+      <li><span lang="en">The constant <code>key</code> is the model key of <code>add_local_controller</code>; <code>s_role = "avr"</code> attaches it to the component, with a PSS under it. Run <code>GUILDA</code> again so that the key list of <code>add_local_controller</code> includes <code>"avr-simple"</code>.</span><span lang="ja">定数 <code>key</code> は <code>add_local_controller</code> のモデルのキー。<code>s_role = "avr"</code> で機器に接続し、その下に PSS。<code>add_local_controller</code> のキー一覧に <code>"avr-simple"</code> が入るよう <code>GUILDA</code> を再実行。</span></li>
       <li><span lang="en">The Jacobians are written by hand.</span><span lang="ja">ヤコビ行列は手で記述。</span></li>
       <li><span lang="en">The constructor adds the parameters to the <code>dynamics</code> container (tag form) and builds the function handles; they are built again with the network frequency when the controller is attached.</span><span lang="ja">コンストラクタがパラメータを <code>dynamics</code> コンテナに追加（タグの形）して関数ハンドルを作成。制御器の接続時にネットワークの周波数で再作成。</span></li>
     </ul>
@@ -267,8 +268,11 @@ sys = net.get_sys();
 % First-order AVR: Te*dVfd/dt = -Vfd + Ka*(Vref + Vpss - |V|), Vfield = Vfd.
 %
 % See also controller.avr.AVR_ST1, LocalController
+    properties (Constant, Hidden)
+        key = "avr-simple"      % Model key used by Component.add_local_controller.
+        s_role = "avr"          % Attached to the component; a PSS can hang under it.
+    end
     properties (SetAccess=protected, Hidden)
-        key = "avr"             % Attached to the component; a PSS can hang under it.
         sv_x = "Vfd"            % State names.
         sv_u = ["Vref";"Vpss"]  % Input names; no component output has these names.
         sv_y = "Vfield"         % Output names; drives the input Vfield of the component.
@@ -325,9 +329,8 @@ end
 </pre>
     <p lang="en">Attaching a controller changes the dynamics, so run <code>initialize</code> again. Without it, <code>simulate</code> stops with <code>GUILDA:SolverODE:Stale</code>.</p>
     <p lang="ja">制御器の接続で動特性が変わるため、<code>initialize</code> を再実行。実行しないと <code>simulate</code> は <code>GUILDA:SolverODE:Stale</code> で停止。</p>
-<pre class="mi-code" data-run="controller">avr = controller.avr.simple_avr("a", Ka=30, Te=0.05);
-pss = controller.pss.PSS1("p");
-g2.add_local_controller(avr, pss);
+<pre class="mi-code" data-run="controller">avr = g2.add_local_controller("avr-simple", parameter=struct(Ka=30, Te=0.05));
+pss = g2.add_local_controller("pss-PSS1");   % under the AVR
 net.initialize();
 sim = net.simulate([0,10], sc);
 </pre>
@@ -348,7 +351,7 @@ s.inputs          % where each input is read
 
 s = avr.validate(false);
 s.contract
-s.inputs          % Vref: "equilibrium (not connected)", Vpss: "output of CPp"
+s.inputs          % Vref: "equilibrium (not connected)", Vpss: "output of CP2SG1B002"
 </pre>
     <table class="mi-table">
       <thead>
@@ -397,8 +400,7 @@ assert(norm(eig_new - sort(eig(net.get_sys()))) &lt; 1e-6)
 
 %% AVR: contract, inputs, comparison with AVR_ST1
 [net, g2] = make_network("gen-simple", table(100,10,0.3, VariableNames=["M","D","Xs"]));
-avr = controller.avr.simple_avr("a", Ka=30, Te=0.05);
-g2.add_local_controller(avr);
+avr = g2.add_local_controller("avr-simple", parameter=struct(Ka=30, Te=0.05));
 net.initialize();
 s = avr.validate(false);
 assert(~any(s.contract.status == "FAIL"))
@@ -406,7 +408,7 @@ assert(s.inputs.source("Vref") == "equilibrium (not connected)")
 
 eig_new = sort(eig(net.get_sys()));
 g2.remove_local_controller(avr.s_tag);
-g2.add_local_controller(controller.avr.AVR_ST1("b", kap=30, tap=0.05));
+g2.add_local_controller("avr-ST1", parameter=struct(kap=30, tap=0.05));
 net.initialize();
 assert(norm(eig_new - sort(eig(net.get_sys()))) &lt; 1e-6)
 
