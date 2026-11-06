@@ -46,8 +46,10 @@ function remove_local_controller(obj, s_tag, opt)
         obj.l_hasController = ~isempty(obj.a_LocalController);
         obj.log_edit(obj.s_tag+" ---remove->> "+s_removed, "Topology");
         top.remove_local_controller();
-        top.set_parent([])
-        cellfun(@(con) con.set_parent([]), a_nested);
+        top.a_Component = [];
+        for m = 1:numel(a_nested)
+            a_nested{m}.a_Component = [];
+        end
         return
     end
 
@@ -57,7 +59,7 @@ function remove_local_controller(obj, s_tag, opt)
         if ~isempty(a_nested) && a_nested{1}.s_tag == s_tag
             obj.log_edit(obj.s_tag+" ---remove->> "+s_tag, "Topology");
             top.remove_local_controller();
-            a_nested{1}.set_parent([])
+            a_nested{1}.a_Component = [];
             return
         end
     end

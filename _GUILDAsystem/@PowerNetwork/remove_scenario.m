@@ -24,5 +24,7 @@ function remove_scenario(obj, sr_tag)
     lv_rm = ismember(sv_have, sr_tag);
     a_rm  = obj.a_Scenario(lv_rm);
     obj.a_Scenario = obj.a_Scenario(~lv_rm);
-    cellfun(@(s) s.set_parent([]), a_rm);
+    for k = 1:numel(a_rm)
+        a_rm{k}.a_PowerNetwork = PowerNetwork.empty;
+    end
 end

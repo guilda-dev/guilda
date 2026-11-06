@@ -24,5 +24,5 @@ function remove_component(obj, s_tag)
     end
     obj.a_Component(lv_rmcub) = [];
     obj.log_edit(obj.s_tag+" ---remove->> "+s_tag,"Topology")
-    comp.set_bus([])    % the removed component no longer reads this bus (c_Vequilibrium = [])
+    comp.a_Bus = Bus.empty;    % the removed component no longer reads this bus (c_Vequilibrium = [])
 end

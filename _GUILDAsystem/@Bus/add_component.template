@@ -54,7 +54,8 @@ ___KEY_CASES___
     comp = mkInst(s_index,para,opt);
 
     % register
-    comp.set_bus(obj)
+    comp.a_Bus = obj;
+    comp.log_edit("connected to " + obj.s_tag, "Topology")
     obj.a_Component = [obj.a_Component; {comp}];
     obj.log_edit(obj.s_tag+" <<-connect--- "+comp.s_tag+"","Topology")
 end

@@ -75,8 +75,8 @@ classdef (Sealed = true) Scenario < auxiliary
         s_tag (1,1) string = ""                              % Tag of the scenario, unique among the scenarios of its network. <@Type> string
     end
 
-    properties (SetAccess=private) % Layer Structure
-        a_PowerNetwork = []                                  % PowerNetwork the scenario belongs to (set by net.add_scenario; [] when not attached). <@Type> PowerNetwork (1x1 or empty)
+    properties (SetAccess={?PowerNetwork}) % Layer Structure
+        a_PowerNetwork PowerNetwork {mustBeScalarOrEmpty} = PowerNetwork.empty  % PowerNetwork the scenario belongs to (set by net.add_scenario; empty when not attached).
     end
 
     properties (SetAccess=private) % Disturbances
@@ -155,10 +155,6 @@ classdef (Sealed = true) Scenario < auxiliary
 
     methods (Hidden)
         str = string(obj)
-    end
-
-    methods (Access={?PowerNetwork})
-        set_parent(obj, net)
     end
 
     methods (Access={?PowerNetwork, ?SolverODE, ?Scenario})

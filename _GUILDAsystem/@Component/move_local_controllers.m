@@ -15,7 +15,7 @@ function move_local_controllers(obj, comp_new)
     obj.a_LocalController = cell(0,1);
     obj.l_hasController   = false;
     for k = 1:numel(a_con)
-        a_con{k}.set_parent([])
+        a_con{k}.a_Component = [];
         comp_new.add_local_controller(a_con{k})
     end
 end

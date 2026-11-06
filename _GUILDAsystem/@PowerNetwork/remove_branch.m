@@ -30,6 +30,8 @@ function remove_branch(obj,tag)
     if any(lv_branch)
         obj.log_edit(obj.s_tag+" ---remove->> "+join(branch_tag(lv_branch),", "),"Topology");
     end
-    cellfun(@(b) b.set_bus(cell(0,1)), a_removed);
-    cellfun(@(b) b.set_network([]),    a_removed);
+    for k = 1:numel(a_removed)
+        a_removed{k}.a_Bus          = cell(0,1);
+        a_removed{k}.a_PowerNetwork = PowerNetwork.empty;
+    end
 end

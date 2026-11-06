@@ -53,8 +53,10 @@ classdef Bus < PowerSystemModel
         l_isFault (1,1) logical = false   % True while an active fault of a scenario is applied at the bus (simulation working data).
     end
 
+    properties (SetAccess={?PowerNetwork}) % Layer Structure
+        a_PowerNetwork PowerNetwork {mustBeScalarOrEmpty} = PowerNetwork.empty  % PowerNetwork the bus belongs to (empty when removed).
+    end
     properties (SetAccess=protected) % Layer Structure
-        a_PowerNetwork                    % PowerNetwork the bus belongs to ([] when removed).
         a_Component (:,1) = cell(0,1)     % Components connected to the bus. <@Stale> powerflow
         c_Vequilibrium = 1;               % [pu] Voltage phasor at the equilibrium (owned by the bus; components and controllers read it).
     end
@@ -119,7 +121,6 @@ classdef Bus < PowerSystemModel
         set_equilibrium(obj, c_V, c_I, r_P, r_Q, opt)
     end
     methods (Access={?PowerNetwork})
-        set_network(obj, net)
         initialize(obj)
     end
     

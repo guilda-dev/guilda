@@ -20,8 +20,8 @@ classdef GlobalController < PowerSystemModel
 % - Unlike a `LocalController`: no port V or I (its functions receive [] or zeros(2,1),
 %   which they must not use), no nested controller, no observation by output name. It
 %   does not own its units and is not a child of any bus.
-% - Only the network sets and clears `a_PowerNetwork` (`PowerNetwork.add_global_controller`
-%   calls `set_parent`).
+% - Only the network sets and clears `a_PowerNetwork` (`SetAccess`;
+%   `PowerNetwork.add_global_controller` logs the attachment as a "Topology" edit).
 % - The handles `f_*` @(t,x,V,I,u) bind param and omega0; `build_odefcn` builds them,
 %   called by `initialize` when they are stale (`sct_stale.odefcn`, or a network
 %   frequency other than `r_odefcnHz`).
@@ -58,8 +58,8 @@ classdef GlobalController < PowerSystemModel
         f_JacobiDx                                 % Jacobian function of f_dx.
         f_JacobiY                                  % Jacobian function of f_Y.
     end
-    properties (SetAccess=protected) % Layer Structure
-        a_PowerNetwork                             % PowerNetwork the controller belongs to (set by add_global_controller).
+    properties (SetAccess={?PowerNetwork}) % Layer Structure
+        a_PowerNetwork PowerNetwork {mustBeScalarOrEmpty} = PowerNetwork.empty  % PowerNetwork the controller belongs to (set by add_global_controller; empty when removed).
     end
     properties (SetAccess=protected, Hidden) % Layer Structure
         controlledUnits                            % Controlled components, in the order given to the constructor.
@@ -166,9 +166,6 @@ classdef GlobalController < PowerSystemModel
     methods (Access=protected)
         build_odefcn(obj)
         handle_edit(obj, a_layer, tag, log)
-    end
-    methods (Access={?Component,?LocalController,?PowerNetwork})        
-        set_parent(obj,net)
     end
     methods (Access={?PowerNetwork})
         initialize(obj, l_equilibrium)

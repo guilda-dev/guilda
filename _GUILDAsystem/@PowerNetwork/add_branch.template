@@ -70,8 +70,8 @@ ___KEY_CASES___
     bra = mkInst(s_Index, opt);
 
     % register
-    bra.set_bus(a_Bus)
-    bra.set_network(obj)
+    bra.a_Bus          = a_Bus;
+    bra.a_PowerNetwork = obj;
     obj.a_Branch = [obj.a_Branch;{bra}];
     obj.log_edit(obj.s_tag+" <<-Add--- "+bra.s_tag,"Topology");
     
