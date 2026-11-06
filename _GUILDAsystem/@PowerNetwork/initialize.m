@@ -69,7 +69,7 @@ function [result, flag, output] = initialize(obj, varargin)
     varargin = v3_initialize_args(varargin);                  % COMPAT(v3)
     [s_method, c_nv] = take_method(varargin);
 
-    obj.check_edit();    % build the f_* handles that are not up to date
+    obj.check_edit();    % rebuild the f_* handles
 
     switch s_method
         case "powerflow"

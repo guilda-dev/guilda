@@ -10,5 +10,4 @@ function set_parent(obj,net)
     if ~isempty(net)
         obj.reset_edit(false);   % edits made before do not belong to the new network; not initialized there yet
     end
-    obj.mark_odefcn();        % the handles read the frequency of the network
 end

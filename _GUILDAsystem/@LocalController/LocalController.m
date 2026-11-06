@@ -22,7 +22,7 @@ classdef LocalController < PowerSystemModel
 %   functions, but does not own the voltage or the frequency, and is not a child of the
 %   bus.
 % - Created with its constructor and attached with `Component.add_local_controller`, which
-%   calls `set_parent`; that resolves the observed inputs and marks the handles stale. A
+%   calls `set_parent`; that resolves the observed inputs. A
 %   controller object attaches to one parent at a time.
 % - Differs from `Component` on purpose: no `fcn_I`, the output function is `fcn_y`, and
 %   the Jacobians are required. Inputs named X or Y are not allowed.
@@ -30,9 +30,9 @@ classdef LocalController < PowerSystemModel
 %   sets where each input sv_u(k) is read on the observed component: iv_obsY(k) is its
 %   index in sv_y, iv_obsX(k) its index in sv_x, and both are 0 for an input that is not
 %   observed (its equilibrium value, or the output of a nested controller of the same name).
-% - The handles `f_*` @(t,x,V,I,u) bind param and omega0 (there is no f_I); `set_odefcn`
-%   builds them, called by `check_edit`. An edit of `tab_parameter` makes the handles and
-%   the equilibrium stale.
+% - The handles `f_*` @(t,x,V,I,u) bind param and omega0 (there is no f_I);
+%   `apply_edit("odefcn")` builds them, called by `check_edit` at the start of every
+%   analysis. An edit of `tab_parameter` makes the equilibrium stale.
 %
 % Subclasses in the `controller` package define the static model functions (`fcn_dx`,
 % `fcn_y`, `fcn_Mass`), their Jacobians and the variable names. Controllers are attached
@@ -189,7 +189,7 @@ classdef LocalController < PowerSystemModel
     end
 
     methods (Access=protected)
-        set_odefcn(obj)
+        apply_edit(obj, s_target)
     end
     methods (Access=private)
         val = parent_equilibrium(obj, s_prop)

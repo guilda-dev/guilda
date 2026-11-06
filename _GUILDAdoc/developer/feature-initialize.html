@@ -231,20 +231,20 @@
         </dl>
       </li>
       <li class="fs-step" id="INIT-02">
-        <p class="fs-head"><b class="fs-id">INIT-02</b> <span class="fs-call"><code>initialize</code> → <code>PowerNetwork.check_edit</code><small>→ <code>LayerPackage.check_edit</code> → <code>set_odefcn</code></small></span></p>
+        <p class="fs-head"><b class="fs-id">INIT-02</b> <span class="fs-call"><code>initialize</code> → <code>PowerNetwork.check_edit</code><small>→ <code>PowerSystemModel.check_edit</code> → <code>apply_edit("odefcn")</code></small></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li>Builds the <code>f_*</code> function handles that are not up to date, parent before children</li>
+            <li>Rebuilds the <code>f_*</code> function handles of every layer, parent before children</li>
             <li>Equilibrium not required here</li>
           </ul><ul lang="ja">
-            <li>最新でない <code>f_*</code> 関数ハンドルを親から子の順に構築</li>
+            <li>全層の <code>f_*</code> 関数ハンドルを親から子の順に再構築</li>
             <li>ここでは平衡点は不要</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>s_odefcn</code> of every layer; <code>tab_parameter.dynamics</code>; network <code>Hz</code></span><span lang="ja">各レイヤーの <code>s_odefcn</code>、<code>tab_parameter.dynamics</code>、ネットワークの <code>Hz</code></span></dd>
+          <dd><span lang="en"><code>tab_parameter.dynamics</code> of every layer; network <code>Hz</code></span><span lang="ja">各レイヤーの <code>tab_parameter.dynamics</code>、ネットワークの <code>Hz</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>f_Mass</code>, <code>f_dx</code>, <code>f_I</code>, <code>f_Y</code>, <code>f_Jacobi*</code> of components and controllers; <code>s_odefcn = "updated"</code></span><span lang="ja">機器と制御器の <code>f_Mass</code>、<code>f_dx</code>、<code>f_I</code>、<code>f_Y</code>、<code>f_Jacobi*</code>。<code>s_odefcn = "updated"</code></span></dd>
+          <dd><span lang="en"><code>f_Mass</code>, <code>f_dx</code>, <code>f_I</code>, <code>f_Y</code>, <code>f_Jacobi*</code> of components and controllers</span><span lang="ja">機器と制御器の <code>f_Mass</code>、<code>f_dx</code>、<code>f_I</code>、<code>f_Y</code>、<code>f_Jacobi*</code></span></dd>
         </dl>
       </li>
       <li class="fs-step" id="INIT-03a">

@@ -21,9 +21,10 @@ classdef GlobalController < PowerSystemModel
 %   which they must not use), no nested controller, no observation by output name. It
 %   does not own its units and is not a child of any bus.
 % - Only the network sets and clears `a_PowerNetwork` (`PowerNetwork.add_global_controller`
-%   calls `set_parent`, which marks the handles stale).
-% - The handles `f_*` @(t,x,V,I,u) bind param and omega0; `set_odefcn` builds them, called
-%   by `check_edit`. An edit of `tab_parameter` makes the handles and the equilibrium stale.
+%   calls `set_parent`).
+% - The handles `f_*` @(t,x,V,I,u) bind param and omega0; `apply_edit("odefcn")` builds
+%   them, called by `check_edit` at the start of every analysis. An edit of
+%   `tab_parameter` makes the equilibrium stale.
 %
 % <@Examples>
 % ```matlab
@@ -157,7 +158,7 @@ classdef GlobalController < PowerSystemModel
         [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     end
     methods (Access=protected)
-        set_odefcn(obj)
+        apply_edit(obj, s_target)
     end
     methods (Access={?Component,?LocalController,?PowerNetwork})        
         set_parent(obj,net)

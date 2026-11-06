@@ -212,11 +212,11 @@
         <p class="fs-head"><b class="fs-id">CPF-02</b> <span class="fs-call"><code>calculate_continuation_powerflow</code> → <code>PowerNetwork.check_edit</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Builds the <code>f_*</code> handles that are not up to date (the corrector calls <code>f_dx</code>). Equilibrium check: later, in CPF-05.</span><span lang="ja">最新でない <code>f_*</code> ハンドルを構築（修正子が <code>f_dx</code> を呼ぶため）。平衡点の確認は後の CPF-05</span></dd>
+          <dd><span lang="en">Rebuilds the <code>f_*</code> handles of every layer (the corrector calls <code>f_dx</code>). Equilibrium check: later, in CPF-05.</span><span lang="ja">全層の <code>f_*</code> ハンドルを再構築（修正子が <code>f_dx</code> を呼ぶため）。平衡点の確認は後の CPF-05</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>s_odefcn</code> of every layer</span><span lang="ja">各レイヤーの <code>s_odefcn</code></span></dd>
+          <dd><span lang="en"><code>tab_parameter.dynamics</code> of every layer; network <code>Hz</code></span><span lang="ja">各レイヤーの <code>tab_parameter.dynamics</code>、ネットワークの <code>Hz</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>f_*</code> handles; <code>s_odefcn = "updated"</code></span><span lang="ja"><code>f_*</code> ハンドル、<code>s_odefcn = "updated"</code></span></dd>
+          <dd><span lang="en"><code>f_*</code> handles</span><span lang="ja"><code>f_*</code> ハンドル</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="CPF-03">

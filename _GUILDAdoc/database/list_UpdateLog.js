@@ -328,5 +328,11 @@ const updateLogData = [
     "date": "2026-11-05",
     "type": "removed",
     "content": "tools.closeUI, tools.ssfeedback, tools.input, tools.transTab, tools.DNS, tools.FigureClass and the tools.for_ss package (collect, dae2ode, feedback, kron, reorder) are removed. Nothing in GUILDA called them."
+  },
+  {
+    "title": "Model functions rebuilt at every analysis",
+    "date": "2026-11-06",
+    "type": "changed",
+    "content": "Every analysis (initialize, simulate, linearize, get_sys, calculate_continuation_powerflow and validate) now rebuilds the f_* handles of every layer from the current parameters and network frequency. For model authors: set_odefcn and s_odefcn are removed. A model class that built its own handles overrides the protected method apply_edit(obj, s_target) and builds them when s_target is \"odefcn\"; a constructor no longer calls obj.set_odefcn()."
   }
 ];

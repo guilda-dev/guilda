@@ -278,13 +278,14 @@ assert(sol.odeResults.t(end) == 2)
 
 % 読み込んだ系統でも編集が記録され、平衡点が古くなる
 assert(height(n1.disp_edit()) == 0 && ~n1.l_staleEquilibrium)
+h_dx = comp.f_dx;
 comp.tab_parameter.dynamics.D = comp.tab_parameter.dynamics.D * 2;
 assert(height(n1.disp_edit()) == 1)                     % リスナーは 1 組だけ
-assert(comp.s_odefcn == "editted" && n1.l_staleEquilibrium)
+assert(isequal(h_dx, comp.f_dx) && n1.l_staleEquilibrium)
 assert(error_id(@() n1.get_sys) == "GUILDA:PowerNetwork:EquilibriumStale")
 assert(height(net.disp_edit()) == 0 && ~net.l_staleEquilibrium)  % 元の系統は変わらない
 DebugScript.helper.quiet(@() n1.initialize);
-assert(comp.s_odefcn == "updated" && ~n1.l_staleEquilibrium)
+assert(~isequal(h_dx, comp.f_dx) && ~n1.l_staleEquilibrium)
 
 % 型の検査も効く (読み込む前と同じく、エラーになり値は変わらない)
 r_D = comp.para_dynamics.D;
@@ -300,7 +301,7 @@ n3.a_Branch{1}.tab_parameter.dynamics.R = 0.02;
 assert(height(n3.disp_edit()) == 1 && n3.l_staleEquilibrium)
 s = load(s_mat);  n4 = s.net;
 n4.tab_parameter.base.Hz = 50;
-assert(n4.a_Bus{2}.a_Component{1}.s_odefcn == "editted" && ~n4.l_staleEquilibrium)
+assert(~n4.l_staleEquilibrium)
 n4.get_sys();
 assert(DebugScript.helper.handle_Hz(n4.a_Bus{2}.a_Component{1}) == 50)
 s = load(s_mat);  n5 = s.net;
@@ -328,9 +329,9 @@ avr = s.net.a_Bus{1}.a_Component{1}.a_LocalController{1};
 pss = avr.a_LocalController{1};
 assert(isa(avr, "controller.avr.AVR_ST1") && isa(pss, "controller.pss.PSS1"))
 avr.para_dynamics.kap = avr.para_dynamics.kap * 1.1;
-assert(height(s.net.disp_edit()) == 1 && s.net.l_staleEquilibrium && avr.s_odefcn == "editted")
+assert(height(s.net.disp_edit()) == 1 && s.net.l_staleEquilibrium)
 pss.para_dynamics.kpss = pss.para_dynamics.kpss * 1.1;
-assert(height(s.net.disp_edit()) == 2 && pss.s_odefcn == "editted")
+assert(height(s.net.disp_edit()) == 2)
 
 % 結果オブジェクトが参照する系統も同じ
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
