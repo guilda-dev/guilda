@@ -64,14 +64,72 @@ classdef Component < PowerSystemModel
 %
 % See also Bus.add_component, LocalController, component.generator.abstract
 
-%% Abstract properties/methods
+%% Abstract properties
     properties(Abstract,Constant) % Subclass contract
-        key (1,1) string  % Key of the component type, used by Bus.add_component.
-        sv_x (:,1) string  % Names of the states.
-        sv_u (:,1) string  % Names of the inputs.
-        sv_y (:,1) string  % Names of the outputs.
-        sv_para (:,1) string  % Names of the dynamic parameters passed to the model functions.
+        key (1,1) string                     % Key of the component type, used by Bus.add_component.
+        sv_x (:,1) string                    % Names of the states.
+        sv_u (:,1) string                    % Names of the inputs.
+        sv_y (:,1) string                    % Names of the outputs.
+        sv_para (:,1) string                 % Names of the dynamic parameters passed to the model functions.
     end
+    
+
+%% Parameter
+    properties(SetAccess=protected) % Layer Structure
+        a_Bus                                % Bus the component is connected to ([] when removed).
+        a_LocalController (:,1) = cell(0,1)  % Top-level local controllers, in slot order whatever the attach order: the AVR or "local" controller (a PSS hangs under an AVR), then the governor. <@Stale> equilibrium
+    end
+    properties(SetAccess=protected) % Cached function handles
+        f_Mass                               % Mass matrix function @(t,x,V,I,u) with the parameters bound.
+        f_dx                                 % State equation function @(t,x,V,I,u) with the parameters bound.
+        f_I                                  % Current injection function @(t,x,V,I,u) with the parameters bound.
+        f_Y                                  % Output function @(t,x,V,I,u) with the parameters bound.
+        f_JacobiDx                           % Jacobian function of f_dx (analytic or numerical).
+        f_JacobiI                            % Jacobian function of f_I (analytic or numerical).
+        f_JacobiY                            % Jacobian function of f_Y (analytic or numerical).
+    end
+    properties(SetAccess=protected, Hidden) % Cached function handles
+        r_odefcnHz double = []               % [Hz] Network frequency bound into the f_* handles (empty: never built).
+    end
+    properties(SetAccess=protected) % Steady State
+        rv_Xequilibrium = zeros(0,1)         % State equilibrium.
+        rv_Uequilibrium = zeros(0,1)         % Input equilibrium.
+        c_Iequilibrium                       % [pu] Current injected into the bus at the equilibrium (complex).
+    end
+    properties (SetAccess={?SolverODE, ?Component}, Hidden) % Simulation working data
+        iv_odeX = [];                        % Positions of the states in the simulation vector.
+        iv_odeU = [];                        % Positions of the inputs in the simulation vector.
+        iv_odeY = [];                        % Not set for a component (stays []); read by the Jacobian of the simulation.
+        lv_odeUfromLC = false(0,1);          % Inputs driven by an output of a top-level local controller.
+        iv_odeYtoU = zeros(0,1);             % Index of each such input in the outputs of the top-level controllers, stacked in order.
+    end
+    properties(Dependent) % Steady State
+        c_Vequilibrium                       % [pu] Terminal voltage at the equilibrium (= a_Bus.c_Vequilibrium; [] without a bus).
+        rv_Xequilibrium_all                  % State equilibrium of the component, then of its controllers depth first (the order of get_variable_map).
+    end
+    properties(SetAccess=protected) % OPF
+        f_opfcost = []                       % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the component ([]: none). <@Stale> nothing
+        f_opfconst = []                      % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing
+        l_opfdefault = true                  % Whether the default OPF constraints of the component are kept (DefaultConstraint of set_opffcn). <@Stale> nothing
+    end
+    properties(Dependent, Access=protected) % Layer Structure
+        parent                               % Parent in the layer structure: the bus.
+        children                             % Children in the layer structure: the local controllers, then the Parameter objects.
+    end
+    properties (Access={?SolverODE, ?Component}) % Simulation working data
+        l_hasController = false;             % Whether a local controller is attached.
+        l_isConnect = true                   % False while an active trip of a scenario names the component (simulation working data).
+    end
+    properties (SetAccess={?SolverODE}, Hidden) % Simulation working data
+        rv_Xoffset                           % State offset of the active disturbances in the current phase (built by Scenario.compile).
+        rv_Uoffset                           % Input change of the active disturbances in the current phase (built by Scenario.compile).
+    end
+    properties (SetAccess={?SolverCPF}) % Continuation Power Flow
+        iv_CPFX = zeros(0,1)                 % Indices of the states in the CPF variable vector (CPF working data).
+        f_PQ2Bus = @(t,V,u) zeros(2,1)       % Function of the injected power [P; Q] [pu] used by the CPF (CPF working data).
+    end
+
+%% Abstract methods
     methods(Abstract)
         % Return the state and input equilibria for a bus voltage and current.
         %
@@ -108,62 +166,6 @@ classdef Component < PowerSystemModel
     %     [rm_Cyx,rm_Dyv,rm_Dyi,rm_Dyu] = Jacobi_Y( r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0);
     %     [rm_Cix,rm_Div,rm_Dii,rm_Diu] = Jacobi_I( r_t,rv_x,rv_V,rv_I,rv_u,rr_param,r_omega0);
     % end
-    
-
-%% Parameter
-    properties(SetAccess=protected) % Layer Structure
-        a_Bus  % Bus the component is connected to ([] when removed).
-        a_LocalController (:,1) = cell(0,1)  % Top-level local controllers, in slot order whatever the attach order: the AVR or "local" controller (a PSS hangs under an AVR), then the governor. <@Stale> equilibrium
-    end
-    properties(SetAccess=protected) % Cached function handles
-        f_Mass  % Mass matrix function @(t,x,V,I,u) with the parameters bound.
-        f_dx  % State equation function @(t,x,V,I,u) with the parameters bound.
-        f_I  % Current injection function @(t,x,V,I,u) with the parameters bound.
-        f_Y  % Output function @(t,x,V,I,u) with the parameters bound.
-        f_JacobiDx  % Jacobian function of f_dx (analytic or numerical).
-        f_JacobiI  % Jacobian function of f_I (analytic or numerical).
-        f_JacobiY  % Jacobian function of f_Y (analytic or numerical).
-    end
-    properties(SetAccess=protected, Hidden) % Cached function handles
-        r_odefcnHz double = []  % [Hz] Network frequency bound into the f_* handles (empty: never built).
-    end
-    properties(SetAccess=protected) % Steady State
-        rv_Xequilibrium = zeros(0,1)  % State equilibrium.
-        rv_Uequilibrium = zeros(0,1)  % Input equilibrium.
-        c_Iequilibrium  % [pu] Current injected into the bus at the equilibrium (complex).
-    end
-    properties (SetAccess={?SolverODE, ?Component}, Hidden) % Simulation working data
-        iv_odeX = [];  % Positions of the states in the simulation vector.
-        iv_odeU = [];  % Positions of the inputs in the simulation vector.
-        iv_odeY = [];  % Not set for a component (stays []); read by the Jacobian of the simulation.
-        lv_odeUfromLC = false(0,1);  % Inputs driven by an output of a top-level local controller.
-        iv_odeYtoU = zeros(0,1);  % Index of each such input in the outputs of the top-level controllers, stacked in order.
-    end
-    properties(Dependent) % Steady State
-        c_Vequilibrium  % [pu] Terminal voltage at the equilibrium (= a_Bus.c_Vequilibrium; [] without a bus).
-        rv_Xequilibrium_all  % State equilibrium of the component, then of its controllers depth first (the order of get_variable_map).
-    end
-    properties(SetAccess=protected) % OPF
-        f_opfcost = []  % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the component ([]: none). <@Stale> nothing
-        f_opfconst = []  % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing
-        l_opfdefault = true  % Whether the default OPF constraints of the component are kept (DefaultConstraint of set_opffcn). <@Stale> nothing
-    end
-    properties(Dependent, Access=protected) % Layer Structure
-        parent  % Parent in the layer structure: the bus.
-        children  % Children in the layer structure: the local controllers, then the Parameter objects.
-    end
-    properties (Access={?SolverODE, ?Component}) % Simulation working data
-        l_hasController = false;  % Whether a local controller is attached.
-        l_isConnect = true  % False while an active trip of a scenario names the component (simulation working data).
-    end
-    properties (SetAccess={?SolverODE}, Hidden) % Simulation working data
-        rv_Xoffset  % State offset of the active disturbances in the current phase (built by Scenario.compile).
-        rv_Uoffset  % Input change of the active disturbances in the current phase (built by Scenario.compile).
-    end
-    properties (SetAccess={?SolverCPF}) % Continuation Power Flow
-        iv_CPFX = zeros(0,1)  % Indices of the states in the CPF variable vector (CPF working data).
-        f_PQ2Bus = @(t,V,u) zeros(2,1)  % Function of the injected power [P; Q] [pu] used by the CPF (CPF working data).
-    end
 
 
 

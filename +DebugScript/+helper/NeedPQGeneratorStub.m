@@ -4,10 +4,10 @@ classdef NeedPQGeneratorStub < component.generator.abstract
 % dx = u - x, I = x1 + j x2。 test_I105 が component.generator にコピーして登録する。
     properties (Constant)
         key = "gen-needpq-stub"  % 機器の種類のキー
-        sv_x = ["x1";"x2"]  % 状態の名前
-        sv_u = ["u1";"u2"]  % 入力の名前
-        sv_y = strings(0,1)  % 出力の名前
-        sv_para = ["M","D"]  % 動的パラメータの名前
+        sv_x = ["x1";"x2"]       % 状態の名前
+        sv_u = ["u1";"u2"]       % 入力の名前
+        sv_y = strings(0,1)      % 出力の名前
+        sv_para = ["M","D"]      % 動的パラメータの名前
     end
     methods
         function [x, u] = get_equilibrium(~, ~, c_I, r_P, r_Q)

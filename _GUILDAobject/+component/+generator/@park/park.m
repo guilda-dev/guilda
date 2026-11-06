@@ -76,10 +76,10 @@ classdef park < component.generator.abstract
 % See also component.generator.abstract, Bus.add_component
 
     properties (Constant) % Model definition
-        key = "gen-park";  % Model key that selects this class in `Bus.add_component`.
-        sv_x = ["delta";"omega";"Eq";"Ed";"psiq";"psid"];  % State names.
-        sv_u = ["Pmech";"Vfield"];  % Input port names.
-        sv_y = ["omega"];  % Output names read by local controllers.
+        key = "gen-park";                                                                                 % Model key that selects this class in `Bus.add_component`.
+        sv_x = ["delta";"omega";"Eq";"Ed";"psiq";"psid"];                                                 % State names.
+        sv_u = ["Pmech";"Vfield"];                                                                        % Input port names.
+        sv_y = ["omega"];                                                                                 % Output names read by local controllers.
         sv_para = ["M","D","Xd","Xd_p","Xd_pp","Xq","Xq_p","Xq_pp","Td_p","Td_pp","Tq_p","Tq_pp","X_ls"]  % Dynamic parameter names.
     end        
         

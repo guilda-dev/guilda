@@ -72,35 +72,35 @@ classdef (Sealed = true) Scenario < auxiliary
 % See also PowerNetwork.add_scenario, PowerNetwork.simulate, ResultODE, SolverODE
 
     properties (SetAccess=private) % Identity
-        s_tag (1,1) string = ""  % Tag of the scenario, unique among the scenarios of its network. <@Type> string
+        s_tag (1,1) string = ""                              % Tag of the scenario, unique among the scenarios of its network. <@Type> string
     end
 
     properties (SetAccess=private) % Layer Structure
-        a_PowerNetwork = []  % PowerNetwork the scenario belongs to (set by net.add_scenario; [] when not attached). <@Type> PowerNetwork (1x1 or empty)
+        a_PowerNetwork = []                                  % PowerNetwork the scenario belongs to (set by net.add_scenario; [] when not attached). <@Type> PowerNetwork (1x1 or empty)
     end
 
     properties (SetAccess=private) % Disturbances
-        tab_disturbance table = table()  % Disturbances, one row each, in the order they were added (see the class help). <@Type> table (n x 11)
+        tab_disturbance table = table()                      % Disturbances, one row each, in the order they were added (see the class help). <@Type> table (n x 11)
     end
 
     properties (Access=public) % Settings
-        Time double {mustBeSimulationTime} = []  % [s] Simulation time [t0, tend] of net.simulate(sc), or [] for the time span of the disturbances. <@Type> double (0x0 or 1x2)
-        Options (1,1) struct = struct()  % Stored Name-Value options of net.simulate, e.g. struct("Tolerance", 1e-6); options of the call replace them.
+        Time double {mustBeSimulationTime} = []              % [s] Simulation time [t0, tend] of net.simulate(sc), or [] for the time span of the disturbances. <@Type> double (0x0 or 1x2)
+        Options (1,1) struct = struct()                      % Stored Name-Value options of net.simulate, e.g. struct("Tolerance", 1e-6); options of the call replace them.
         Judge (1,1) function_handle = @Scenario.out_of_step  % Function verdict = Judge(result) used by judge, result a ResultODE.
-        Description (1,1) string = ""  % Free text describing the scenario.
+        Description (1,1) string = ""                        % Free text describing the scenario.
     end
 
     properties (Hidden) % Compatibility
-        l_compat (1,1) logical = false  % True for a scenario made by the deprecated ODEevent(tag, net, ...) (set by _VersionSupport/ODEevent.m).
+        l_compat (1,1) logical = false                       % True for a scenario made by the deprecated ODEevent(tag, net, ...) (set by _VersionSupport/ODEevent.m).
     end
 
     properties (SetAccess=private, Hidden) % Version
-        Ver (1,1) double = 2.0  % Version of this class (1.x: ODEevent).
+        Ver (1,1) double = 2.0                               % Version of this class (1.x: ODEevent).
     end
 
     properties (Constant, Hidden) % Disturbance fields
         sr_field = ["FaultBus","TripUnit","OpenBranch","OffsetUnit","OffsetState","OffsetValue", ...
-                    "InputUnit","InputName","InputValue"]  % Disturbance fields, in the column order of tab_disturbance (after Tag and TimeSpan).
+                    "InputUnit","InputName","InputValue"]    % Disturbance fields, in the column order of tab_disturbance (after Tag and TimeSpan).
     end
 
     methods

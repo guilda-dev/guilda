@@ -46,17 +46,17 @@ classdef LayerPackage < handle
 
     %% Abstract
     properties(Abstract, Dependent) % Parameter
-        tab_parameter  % Parameter table of the layer (PowerSystemModel: the a_Parameter tables side by side). <@Type> table
+        tab_parameter                                     % Parameter table of the layer (PowerSystemModel: the a_Parameter tables side by side). <@Type> table
     end
 
     %% Layer Structure
     properties(Abstract, Dependent, Access=protected) % Layer structure
-        parent  % Parent layer in the hierarchy. <@Type> LayerPackage
-        children  % Child layers in the hierarchy. <@Type> LayerPackage cell array (Nx1)
+        parent                                            % Parent layer in the hierarchy. <@Type> LayerPackage
+        children                                          % Child layers in the hierarchy. <@Type> LayerPackage cell array (Nx1)
     end
     %% Stale state
     properties(SetAccess=protected, Hidden) % Stale state
-        sct_stale (1,1) struct = struct()  % Messages per stale tag of the class (string column each; empty: up to date). See the class help.
+        sct_stale (1,1) struct = struct()                 % Messages per stale tag of the class (string column each; empty: up to date). See the class help.
     end
     properties(Constant, Hidden) % Stale state
         s_notInitialized = "initialize has not been run"  % Initial message of every stale tag.
@@ -64,7 +64,7 @@ classdef LayerPackage < handle
     
     %% Tag
     properties % Tag
-        s_tag  % User-defined tag of the layer, unique among its siblings (see the class help). <@Type> string
+        s_tag                                             % User-defined tag of the layer, unique among its siblings (see the class help). <@Type> string
     end
 
     methods(Access=protected)

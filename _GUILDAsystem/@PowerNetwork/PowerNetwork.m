@@ -88,33 +88,33 @@ classdef PowerNetwork < PowerSystemModel
 %% Properties
 
     properties(SetAccess=private) % Layer Structure
-        a_Bus (:,1) cell = cell(0,1);  % Buses of the network, in the order of the bus index. <@Stale> powerflow
-        a_Branch (:,1) cell = cell(0,1);  % Branches of the network. <@Stale> powerflow
+        a_Bus (:,1) cell = cell(0,1);               % Buses of the network, in the order of the bus index. <@Stale> powerflow
+        a_Branch (:,1) cell = cell(0,1);            % Branches of the network. <@Stale> powerflow
         a_GlobalController (:,1) cell = cell(0,1);  % Global controllers of the network. <@Stale> equilibrium of the added controller
     end
     properties(SetAccess=private) % Scenarios
-        a_Scenario (:,1) cell = cell(0,1);  % Simulation scenarios (Scenario), in the order added by add_scenario; not model data. <@Stale> nothing
+        a_Scenario (:,1) cell = cell(0,1);          % Simulation scenarios (Scenario), in the order added by add_scenario; not model data. <@Stale> nothing
     end
     properties(SetAccess=protected) % Solvers
-        solver_PF  % Solver of calculate_powerflow (returns a ResultPF); stored defaults: Method, Tolerance, MaxIterations, ... <@Type> SolverPF <@Stale> nothing
-        solver_OPF  % Solver of optimize_powerflow (returns a ResultOPF); stored defaults: Method, Solver, Display, MaxIteration, ... <@Type> SolverOPF <@Stale> nothing
-        solver_CPF  % Solver of calculate_continuation_powerflow (returns a ResultCPF); stored defaults: LoadBus, MaxIterations, StepSize, ... <@Type> SolverCPF <@Stale> nothing
-        solver_ODE  % Solver of simulate (returns a ResultODE); stored defaults: Solver, RelativeTolerance, AbsoluteTolerance, Progress, TimeLimit, ... <@Type> SolverODE <@Stale> nothing
-        solver_LIN  % Solver of linearize and get_sys (returns a ResultLIN); stored defaults: Algorithm, Point, Coordinate. <@Type> SolverLIN <@Stale> nothing
+        solver_PF                                   % Solver of calculate_powerflow (returns a ResultPF); stored defaults: Method, Tolerance, MaxIterations, ... <@Type> SolverPF <@Stale> nothing
+        solver_OPF                                  % Solver of optimize_powerflow (returns a ResultOPF); stored defaults: Method, Solver, Display, MaxIteration, ... <@Type> SolverOPF <@Stale> nothing
+        solver_CPF                                  % Solver of calculate_continuation_powerflow (returns a ResultCPF); stored defaults: LoadBus, MaxIterations, StepSize, ... <@Type> SolverCPF <@Stale> nothing
+        solver_ODE                                  % Solver of simulate (returns a ResultODE); stored defaults: Solver, RelativeTolerance, AbsoluteTolerance, Progress, TimeLimit, ... <@Type> SolverODE <@Stale> nothing
+        solver_LIN                                  % Solver of linearize and get_sys (returns a ResultLIN); stored defaults: Algorithm, Point, Coordinate. <@Type> SolverLIN <@Stale> nothing
     end
     properties(Dependent) % Steady State
-        cv_Vequilibrium  % [pu] Bus voltage phasors at the equilibrium, one per bus.
-        cv_Iequilibrium  % [pu] Bus current injections at the equilibrium, one per bus.
-        rv_Xequilibrium  % State equilibrium, in the order of the x rows of get_variable_map.
+        cv_Vequilibrium                             % [pu] Bus voltage phasors at the equilibrium, one per bus.
+        cv_Iequilibrium                             % [pu] Bus current injections at the equilibrium, one per bus.
+        rv_Xequilibrium                             % State equilibrium, in the order of the x rows of get_variable_map.
     end
     properties(SetAccess=protected) % OPF
-        f_opfcost = []  % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the network ([]: none). <@Stale> nothing
-        f_opfconst = []  % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing
-        l_opfdefault = true  % Whether the default OPF constraints of the network are kept (DefaultConstraint of set_opffcn). <@Stale> nothing
+        f_opfcost = []                              % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the network ([]: none). <@Stale> nothing
+        f_opfconst = []                             % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing
+        l_opfdefault = true                         % Whether the default OPF constraints of the network are kept (DefaultConstraint of set_opffcn). <@Stale> nothing
     end
     properties(Dependent, Access=protected) % Layer Structure
-        parent  % Parent in the layer structure: none (the network is the top).
-        children  % Children in the layer structure: the buses, branches and global controllers, then the Parameter object.
+        parent                                      % Parent in the layer structure: none (the network is the top).
+        children                                    % Children in the layer structure: the buses, branches and global controllers, then the Parameter object.
     end
 
 %% Constructor

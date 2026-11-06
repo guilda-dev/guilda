@@ -38,16 +38,16 @@ classdef power < component.load.abstract
 % See also component.load.abstract, component.load.impedance, Bus.add_component
     
     properties % Steady state
-        PQ_st  % [pu] Steady power [P; Q] injected into the bus, set by get_equilibrium.
+        PQ_st                      % [pu] Steady power [P; Q] injected into the bus, set by get_equilibrium.
     end
 
     properties(Constant) % Model definition
-        key = "load-power";  % Model key that selects this class in `Bus.add_component`.
-        sv_x = [];  % State names (none).
+        key = "load-power";        % Model key that selects this class in `Bus.add_component`.
+        sv_x = [];                 % State names (none).
         sv_u = ["Pload","Qload"];  % Input port names.
-        sv_y = [];  % Output names (none).
-        sv_para = [];  % Dynamic parameter names (none).
-        Prefix = "LP";  % Short name of the model (the tag starts with "LPQ").
+        sv_y = [];                 % Output names (none).
+        sv_para = [];              % Dynamic parameter names (none).
+        Prefix = "LP";             % Short name of the model (the tag starts with "LPQ").
     end
 
     methods(Access={?Bus})

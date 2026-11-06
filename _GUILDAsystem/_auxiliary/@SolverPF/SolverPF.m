@@ -26,15 +26,15 @@ classdef SolverPF < auxiliary
 % See also ResultPF, PowerNetwork.calculate_powerflow
 
     properties(Access=public) % Settings
-        Method (1,1) string {mustBeMember(Method,["algebraic","dynamic"])} = "algebraic"  % Calculation method: "algebraic" (fsolve) or "dynamic" (virtual bus dynamics; see the class help).
-        Tolerance (1,1) double {mustBeNonnegative} = 0  % Convergence tolerance; 0 uses the solver default (see the class help).
-        MaxIterations (1,1) double {mustBeNonnegative,mustBeInteger}  % MaxIterations option of fsolve ("algebraic"); 0 keeps the fsolve default.
-        Display (1,1) string {mustBeMember(Display,["none","iter","iter-detailed","final","final-detailed"])}='none'  % Display option of fsolve ("algebraic").
-        MaxFunEvals (1,1) double {mustBeNonnegative,mustBeInteger}  % MaxFunctionEvaluations option of fsolve ("algebraic"); 0 keeps the fsolve default.
-        UseParallel (1,1) logical  % UseParallel option of fsolve ("algebraic").
+        Method (1,1) string {mustBeMember(Method,["algebraic","dynamic"])} = "algebraic"                                                                             % Calculation method: "algebraic" (fsolve) or "dynamic" (virtual bus dynamics; see the class help).
+        Tolerance (1,1) double {mustBeNonnegative} = 0                                                                                                               % Convergence tolerance; 0 uses the solver default (see the class help).
+        MaxIterations (1,1) double {mustBeNonnegative,mustBeInteger}                                                                                                 % MaxIterations option of fsolve ("algebraic"); 0 keeps the fsolve default.
+        Display (1,1) string {mustBeMember(Display,["none","iter","iter-detailed","final","final-detailed"])}='none'                                                 % Display option of fsolve ("algebraic").
+        MaxFunEvals (1,1) double {mustBeNonnegative,mustBeInteger}                                                                                                   % MaxFunctionEvaluations option of fsolve ("algebraic"); 0 keeps the fsolve default.
+        UseParallel (1,1) logical                                                                                                                                    % UseParallel option of fsolve ("algebraic").
         PlotFcn (1,1) string {mustBeMember(PlotFcn,["none","optimplotx","optimplotfunccount","optimplotfval","optimplotstepsize","optimplotfirstorderopt"])}="none"  % PlotFcn option of fsolve ("algebraic"); "none" for no plot.
-        WhenFailed (1,1) string {mustBeMember(WhenFailed,["WARN","ERROR","DISP","NONE"])}="NONE"  % Reaction to no convergence: "WARN", "ERROR", "DISP" (print output.message) or "NONE" (check flag).
-        dynamic (1,1) struct = struct("Mass",0,"Damper",0.1,"foh_PQ",0,"t_span",0:1/120:50);  % Settings of the "dynamic" method: Mass, Damper, foh_PQ and t_span [s] (see the class help).
+        WhenFailed (1,1) string {mustBeMember(WhenFailed,["WARN","ERROR","DISP","NONE"])}="NONE"                                                                     % Reaction to no convergence: "WARN", "ERROR", "DISP" (print output.message) or "NONE" (check flag).
+        dynamic (1,1) struct = struct("Mass",0,"Damper",0.1,"foh_PQ",0,"t_span",0:1/120:50);                                                                         % Settings of the "dynamic" method: Mass, Damper, foh_PQ and t_span [s] (see the class help).
     end
 
     properties(Constant) % Settings
@@ -42,7 +42,7 @@ classdef SolverPF < auxiliary
             "Method",       "Method", ...
             "Tolerance",    "Tolerance", ...
             "MaxIteration", "MaxIterations", ...
-            "Verbose",      {{"Display", @(l) replace(string(logical(l)), ["true","false"], ["iter","none"])}})  % Name-Value options of net.calculate_powerflow and the property each one sets (see the class help). <@Type> struct
+            "Verbose",      {{"Display", @(l) replace(string(logical(l)), ["true","false"], ["iter","none"])}})                                                      % Name-Value options of net.calculate_powerflow and the property each one sets (see the class help). <@Type> struct
     end
 
     methods

@@ -33,14 +33,14 @@ classdef (Sealed = true) SolverCPF < auxiliary
 % See also ResultCPF, PowerNetwork.calculate_continuation_powerflow
 
     properties (Access=public) % Settings
-        LoadBus (1,:) string = strings(1,0)  % Tags of the buses whose loads are scaled by (1 + lambda); must not be empty when solving.
-        InitialLambda (1,1) double = 0  % Value of lambda at the starting point (the equilibrium).
+        LoadBus (1,:) string = strings(1,0)                              % Tags of the buses whose loads are scaled by (1 + lambda); must not be empty when solving.
+        InitialLambda (1,1) double = 0                                   % Value of lambda at the starting point (the equilibrium).
         MaxIterations (1,1) double {mustBePositive,mustBeInteger} = 500  % Maximum number of predictor-corrector steps (the trace stops earlier when lambda falls below 0).
-        StepSize (1,1) double {mustBePositive} = 0.5  % Step size of the predictor (see the class help).
-        ArcLength (1,1) double {mustBePositive} = 1e-3  % Arc length of the corrector: the corrected point satisfies |x - x_current|^2 = ArcLength.
-        Tolerance (1,1) double {mustBePositive} = 1e-5  % Convergence tolerance (ConvTol) of the Newton-Raphson corrector.
-        UseInternalState (1,1) logical = false  % Solve the power flow with the internal states of the generators (see the class help).
-        Verbose (1,1) logical = false  % Print lambda at each step.
+        StepSize (1,1) double {mustBePositive} = 0.5                     % Step size of the predictor (see the class help).
+        ArcLength (1,1) double {mustBePositive} = 1e-3                   % Arc length of the corrector: the corrected point satisfies |x - x_current|^2 = ArcLength.
+        Tolerance (1,1) double {mustBePositive} = 1e-5                   % Convergence tolerance (ConvTol) of the Newton-Raphson corrector.
+        UseInternalState (1,1) logical = false                           % Solve the power flow with the internal states of the generators (see the class help).
+        Verbose (1,1) logical = false                                    % Print lambda at each step.
     end
 
     properties (Constant) % Settings
@@ -52,7 +52,7 @@ classdef (Sealed = true) SolverCPF < auxiliary
             "ArcLength",        "ArcLength", ...
             "InitialLambda",    "InitialLambda", ...
             "UseInternalState", "UseInternalState", ...
-            "Verbose",          "Verbose")  % Name-Value options of net.calculate_continuation_powerflow and the property each one sets. <@Type> struct
+            "Verbose",          "Verbose")                               % Name-Value options of net.calculate_continuation_powerflow and the property each one sets. <@Type> struct
     end
 
     methods

@@ -43,28 +43,28 @@ classdef local_LQR < LocalController
 % See also Component.add_local_controller, controller.avr.abstract, controller.local_LQR_retrofit
 
     properties (SetAccess=protected, Hidden) % Signals
-        key = "local"  % Controller kind ("local": in the place of an AVR).
-        sv_x = strings(0,1)  % Names of the controller states (none).
-        sv_u = "Xall"  % Names of the observed signals ("Xall": all the states of the component).
-        sv_y = strings(0,1)  % Names of the driven inputs of the component.
-        sv_para = strings(0,1)  % Names of the parameters (none).
+        key = "local"                         % Controller kind ("local": in the place of an AVR).
+        sv_x = strings(0,1)                   % Names of the controller states (none).
+        sv_u = "Xall"                         % Names of the observed signals ("Xall": all the states of the component).
+        sv_y = strings(0,1)                   % Names of the driven inputs of the component.
+        sv_para = strings(0,1)                % Names of the parameters (none).
     end
 
     properties % Design weights
-        Q = []  % State weight of the LQR (nx-by-nx; a vector is the diagonal, empty the identity). <@Stale> equilibrium, odefcn
-        R = []  % Input weight of the LQR (nu-by-nu; a vector is the diagonal, empty the identity). <@Stale> equilibrium, odefcn
-        V0 = 1  % [pu] Voltage of the infinite bus of the design model (complex scalar). <@Stale> equilibrium, odefcn
+        Q = []                                % State weight of the LQR (nx-by-nx; a vector is the diagonal, empty the identity). <@Stale> equilibrium, odefcn
+        R = []                                % Input weight of the LQR (nu-by-nu; a vector is the diagonal, empty the identity). <@Stale> equilibrium, odefcn
+        V0 = 1                                % [pu] Voltage of the infinite bus of the design model (complex scalar). <@Stale> equilibrium, odefcn
     end
 
     properties (SetAccess=private) % Design results
-        K = zeros(0,0)  % Feedback gain K in u = u* - K*(x - x*) (nu-by-nx).
-        sys_design  % Linear model used to compute K (ss).
+        K = zeros(0,0)                        % Feedback gain K in u = u* - K*(x - x*) (nu-by-nx).
+        sys_design                            % Linear model used to compute K (ss).
     end
 
     properties (Access=private) % Internal
         sv_input (:,1) string = strings(0,1)  % Input as given (empty: all the inputs).
-        rv_u0 (:,1) double = zeros(0,1)  % Equilibrium of the driven inputs.
-        r_designHz double = []  % [Hz] Frequency K was designed for (empty: not designed).
+        rv_u0 (:,1) double = zeros(0,1)       % Equilibrium of the driven inputs.
+        r_designHz double = []                % [Hz] Frequency K was designed for (empty: not designed).
     end
 
     methods

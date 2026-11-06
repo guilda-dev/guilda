@@ -27,7 +27,7 @@ classdef T < Branch
 
     properties(Constant) % Identification
         header = "EL"  % Tag prefix of this branch type ("EL" for lines).
-        key = "T"  % Type name used by PowerNetwork.add_branch.
+        key = "T"      % Type name used by PowerNetwork.add_branch.
     end
 
 end

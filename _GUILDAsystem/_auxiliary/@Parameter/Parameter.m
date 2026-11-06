@@ -19,28 +19,28 @@ classdef Parameter < auxiliary & LayerPackage & dynamicprops
 %
 % See also LayerPackage
     properties(SetAccess=private) % Callback
-        CallbackChanged = @() [];  % Callback function executed after parameter changes. <@Type> function_handle
+        CallbackChanged = @() [];                    % Callback function executed after parameter changes. <@Type> function_handle
     end
     properties(SetAccess={?GlobalController}) % Parameter
         sv_rowName (:,1) string = string.empty(0,1)  % Row names of tab_parameter (empty: none); GlobalController: the tags of its controlled units.
     end
     properties(SetAccess=private, Hidden) % Edit report
-        s_lastEdited (1,1) string = ""  % Name of the parameter of the last edit, set before log_edit.
+        s_lastEdited (1,1) string = ""               % Name of the parameter of the last edit, set before log_edit.
     end
     properties(Access=private) % Internal state
-        sv_parameter = [];  % Parameter names managed by this container. <@Type> string (1xN)
-        val_stash  % Stashed value used for change comparison. <@Type> any
-        a_cls  % Owner layer of this container. <@Type> LayerPackage
+        sv_parameter = [];                           % Parameter names managed by this container. <@Type> string (1xN)
+        val_stash                                    % Stashed value used for change comparison. <@Type> any
+        a_cls                                        % Owner layer of this container. <@Type> LayerPackage
     end
     properties(Dependent) % Parameter
-        tab_parameter  % Parameter table: one column per parameter (the single column NoData when there are none). <@Type> table (1xN)
+        tab_parameter                                % Parameter table: one column per parameter (the single column NoData when there are none). <@Type> table (1xN)
     end
     properties(Dependent, Access=protected) % Layer structure
-        parent  % Parent in the layer structure: the owner layer. <@Type> LayerPackage
-        children  % Children in the layer structure: none (kept for the LayerPackage interface). <@Type> none (0x1)
+        parent                                       % Parent in the layer structure: the owner layer. <@Type> LayerPackage
+        children                                     % Children in the layer structure: none (kept for the LayerPackage interface). <@Type> none (0x1)
     end
     properties % Parameters
-        NoData = nan;  % Placeholder value of a container without parameters.
+        NoData = nan;                                % Placeholder value of a container without parameters.
     end
     
     %% Constructor

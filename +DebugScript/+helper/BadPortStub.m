@@ -2,10 +2,10 @@ classdef BadPortStub < Component
 % 入力名にポート名 (Vre) を使った機器。validate の検査を確かめる (テスト専用)
     properties (Constant)
         key = "test-bad-port-stub"  % 機器の種類のキー
-        sv_x = strings(0,1)  % 状態の名前
-        sv_u = "Vre"  % 入力の名前 (ポート名 Vre を使った誤り)
-        sv_y = strings(0,1)  % 出力の名前
-        sv_para = strings(0,1)  % 動的パラメータの名前
+        sv_x = strings(0,1)         % 状態の名前
+        sv_u = "Vre"                % 入力の名前 (ポート名 Vre を使った誤り)
+        sv_y = strings(0,1)         % 出力の名前
+        sv_para = strings(0,1)      % 動的パラメータの名前
     end
     methods
         function obj = BadPortStub()

@@ -44,12 +44,12 @@ classdef ResultOPF < ResultBase
 % See also SolverOPF, ResultBase
 
     properties (SetAccess=private) % Result
-        tab_bus table = table()  % Bus values of the solution, one row per bus; columns by method (see the class help).
-        tab_cub table = table()  % Injection into the bus of each connection (components, then branch ends), in bus order (see the class help).
+        tab_bus table = table()     % Bus values of the solution, one row per bus; columns by method (see the class help).
+        tab_cub table = table()     % Injection into the bus of each connection (components, then branch ends), in bus order (see the class help).
         tab_branch table = table()  % Branch flows into the branch at each end, one row per branch; columns by method (see the class help).
-        r_cost (1,1) double = NaN  % Optimal value of the objective (total generation cost of tab_parameter.OPF).
-        lambda struct = struct()  % Lagrange multipliers of the solution, by constraint and variable name (see the class help).
-        OPFprob = []  % Optimization problem that was solved; its Description shows the OPF settings of the run. <@Type> optim.problemdef.OptimizationProblem (1x1 or empty)
+        r_cost (1,1) double = NaN   % Optimal value of the objective (total generation cost of tab_parameter.OPF).
+        lambda struct = struct()    % Lagrange multipliers of the solution, by constraint and variable name (see the class help).
+        OPFprob = []                % Optimization problem that was solved; its Description shows the OPF settings of the run. <@Type> optim.problemdef.OptimizationProblem (1x1 or empty)
     end
 
     methods

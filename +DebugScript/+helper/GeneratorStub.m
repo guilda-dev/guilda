@@ -3,10 +3,10 @@ classdef GeneratorStub < component.generator.abstract
 %
 %   gen = DebugScript.helper.GeneratorStub("1B001", nan, opt)
     properties (Constant)
-        key = "gen-stub"  % 機器の種類のキー
-        sv_x = strings(0,1)  % 状態の名前
-        sv_u = strings(0,1)  % 入力の名前
-        sv_y = strings(0,1)  % 出力の名前
+        key = "gen-stub"        % 機器の種類のキー
+        sv_x = strings(0,1)     % 状態の名前
+        sv_u = strings(0,1)     % 入力の名前
+        sv_y = strings(0,1)     % 出力の名前
         sv_para = ["M","Zeta"]  % 動的パラメータの名前 (Zeta は parameter.csv にない)
     end
     methods

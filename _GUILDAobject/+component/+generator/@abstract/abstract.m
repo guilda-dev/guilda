@@ -29,6 +29,12 @@ classdef abstract < Component
 %
 % See also Component, Bus.add_component, component.generator.classical, component.generator.park
 
+    properties(SetAccess = protected) % Controllers (legacy)
+        avr       % Legacy slot for an AVR. <@Deprecated> Use add_local_controller and a_LocalController.
+        pss       % Legacy slot for a PSS. <@Deprecated> Use add_local_controller and a_LocalController.
+        governor  % Legacy slot for a governor. <@Deprecated> Use add_local_controller and a_LocalController.
+    end
+
     methods (Access={?Component})
         function obj =  abstract(index, parameter, varargin)
             % Create the generator and read its dynamic parameters.
@@ -92,12 +98,6 @@ classdef abstract < Component
             % obj.set_pss( component.generator.pss.base() );
         end
     end    
-
-    properties(SetAccess = protected) % Controllers (legacy)
-        avr  % Legacy slot for an AVR. <@Deprecated> Use add_local_controller and a_LocalController.
-        pss  % Legacy slot for a PSS. <@Deprecated> Use add_local_controller and a_LocalController.
-        governor  % Legacy slot for a governor. <@Deprecated> Use add_local_controller and a_LocalController.
-    end
 
     methods
         % Set a governor through the legacy controller slot.

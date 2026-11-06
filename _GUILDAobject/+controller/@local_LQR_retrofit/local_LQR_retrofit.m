@@ -14,26 +14,26 @@ classdef local_LQR_retrofit <  LocalController
 % See also controller.modeling.get_environment, controller.local_LQR
 
     properties(SetAccess=protected) % Configuration
-        type = 'local';  % Controller type ('local').
-        port_input = 'all';  % Input ports of the generator that the controller drives.
+        type = 'local';        % Controller type ('local').
+        port_input = 'all';    % Input ports of the generator that the controller drives.
         port_observe = 'all';  % Observed ports of the generator ('all'; the controller uses delta, omega, Ed and Vfield).
     end
 
     properties % Design results
-        A  % State matrix of the internal model.
-        Bu  % Input matrix of the internal model for the LQR input.
-        Bw  % Input matrix of the internal model for the deviation of `[delta; E]`.
-        Bv  % Input matrix of the internal model for the deviation of `[angleV; absV]`.
-        K  % LQR gain.
-        nx  % Number of controller states.
-        X0  % Equilibrium state of the generator.
-        V0  % [pu] Equilibrium terminal voltage as `[real; imag]`.
-        I0  % [pu] Equilibrium terminal current as `[real; imag]`.
-        u0  % Equilibrium input of the generator.
-        delta0  % [rad] Equilibrium rotor angle.
-        E0  % [pu] Equilibrium internal voltage.
-        sys_design  % Generator and environment model used for the design (ss).
-        sys_fb  % State-feedback model of the controller (ss).
+        A                      % State matrix of the internal model.
+        Bu                     % Input matrix of the internal model for the LQR input.
+        Bw                     % Input matrix of the internal model for the deviation of `[delta; E]`.
+        Bv                     % Input matrix of the internal model for the deviation of `[angleV; absV]`.
+        K                      % LQR gain.
+        nx                     % Number of controller states.
+        X0                     % Equilibrium state of the generator.
+        V0                     % [pu] Equilibrium terminal voltage as `[real; imag]`.
+        I0                     % [pu] Equilibrium terminal current as `[real; imag]`.
+        u0                     % Equilibrium input of the generator.
+        delta0                 % [rad] Equilibrium rotor angle.
+        E0                     % [pu] Equilibrium internal voltage.
+        sys_design             % Generator and environment model used for the design (ss).
+        sys_fb                 % State-feedback model of the controller (ss).
     end
 
     methods

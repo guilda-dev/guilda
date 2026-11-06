@@ -58,10 +58,10 @@ classdef one_axis < component.generator.abstract
 % See also component.generator.abstract, Bus.add_component
 
     properties (Constant) % Model definition
-        key = "gen-1axis";  % Model key that selects this class in `Bus.add_component`.
-        sv_x = ["delta";"omega";"Eq"];  % State names.
-        sv_u = ["Pmech";"Vfield"];  % Input port names.
-        sv_y = ["omega"];  % Output names read by local controllers.
+        key = "gen-1axis";                           % Model key that selects this class in `Bus.add_component`.
+        sv_x = ["delta";"omega";"Eq"];               % State names.
+        sv_u = ["Pmech";"Vfield"];                   % Input port names.
+        sv_y = ["omega"];                            % Output names read by local controllers.
         sv_para = ["M";"D";"Xd";"Xq";"Xd_p";"Td_p"]  % Dynamic parameter names.
     end        
 

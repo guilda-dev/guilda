@@ -57,14 +57,66 @@ classdef LocalController < PowerSystemModel
 %
 % See also Component.add_local_controller, controller.avr.AVR_ST1, controller.pss.PSS1, controller.governor.IEEJ_LPT1, controller.local_LQR
 
-%% Abstract properties/methods    
+%% Abstract properties
     properties(Abstract, SetAccess=protected, Hidden) % Subclass contract
-        key (1,1) string  % Kind: "avr", "pss", "local" (attached in the place of an AVR) or "governor" (beside it).
-        sv_x (:,1) string  % Names of the states.
-        sv_u (:,1) string  % Names of the inputs.
-        sv_y (:,1) string  % Names of the outputs.
-        sv_para (:,1) string  % Names of the dynamic parameters passed to the model functions.
+        key (1,1) string                           % Kind: "avr", "pss", "local" (attached in the place of an AVR) or "governor" (beside it).
+        sv_x (:,1) string                          % Names of the states.
+        sv_u (:,1) string                          % Names of the inputs.
+        sv_y (:,1) string                          % Names of the outputs.
+        sv_para (:,1) string                       % Names of the dynamic parameters passed to the model functions.
     end
+    
+%% Parameter    
+    properties(SetAccess=protected) % Layer Structure
+        a_Component                                % Parent: the component, or the AVR for a PSS ([] when detached).
+        a_LocalController = cell(0,1)              % Nested controller (the PSS under an AVR), 0x1 or 1x1. <@Stale> equilibrium
+    end
+    properties(SetAccess=protected) % Cached function handles
+        f_Mass                                     % Mass matrix function @(t,x,V,I,u) with the parameters bound.
+        f_dx                                       % State equation function @(t,x,V,I,u) with the parameters bound.
+        f_Y                                        % Output function @(t,x,V,I,u) with the parameters bound.
+        f_JacobiDx                                 % Jacobian function of f_dx.
+        f_JacobiY                                  % Jacobian function of f_Y.
+    end
+    properties (SetAccess={?SolverODE}, Hidden) % Simulation working data
+        iv_odeX = zeros(0,1);                      % Positions of the states in the simulation vector.
+        iv_odeU = zeros(0,1);                      % Positions of the inputs in the simulation vector.
+        iv_odeY = zeros(0,1);                      % Positions of the parent inputs driven by the outputs sv_y, matched by name.
+        lv_odeUfromLC = false(0,1);                % Inputs driven by an output of a nested controller.
+        iv_odeYtoU = zeros(0,1);                   % Index of each such input in the outputs of the nested controllers, stacked in order.
+        rv_Xoffset = 0                             % State offset added to the initial state (0 for a local controller).
+        rv_Uoffset = @(t) 0                        % Input change over time (zero for a local controller).
+        l_hasController (1,1) logical = false      % Whether a nested controller is attached.
+    end
+    properties (SetAccess=private, Hidden) % Layer Structure
+        iv_obsY (:,1) double = zeros(0,1)          % Index in sv_y of the observed component of each input (0: not read from sv_y).
+        iv_obsX (:,1) double = zeros(0,1)          % Index in sv_x of the observed component of each input (0: not read from sv_x).
+    end
+    properties (Access=private) % Layer Structure
+        sv_uRequest (:,1) string = strings(0,1)    % sv_u as defined, before "Xall" / "Yall" are expanded.
+    end
+    properties (Constant, Hidden) % Layer Structure
+        sr_reserved = ["Xall","Yall"]              % Reserved input names: all the states sv_x / all the outputs sv_y of the component.
+    end
+    properties(SetAccess=protected, Hidden) % Cached function handles
+        r_odefcnHz double = []                     % [Hz] Network frequency bound into the f_* handles (empty: never built).
+    end
+    properties(SetAccess=protected) % Steady State
+        rv_Xequilibrium (:,1) double = zeros(0,1)  % State equilibrium (set by get_equilibrium of the subclass).
+        rv_Uequilibrium (:,1) double = zeros(0,1)  % Input equilibrium (set by get_equilibrium of the subclass).
+    end
+
+    properties(Dependent) % Steady State
+        c_Vequilibrium                             % [pu] Voltage equilibrium of the parent (zeros(0,1) without a parent).
+        c_Iequilibrium                             % [pu] Current equilibrium of the parent (zeros(0,1) without a parent).
+    end
+
+    properties(Dependent, Access=protected) % Layer Structure
+        parent                                     % Parent in the layer structure: the component, or the AVR for a PSS.
+        children                                   % Children in the layer structure: the nested controller.
+    end
+
+%% Abstract methods
     methods (Abstract)
         % Set rv_Xequilibrium and rv_Uequilibrium of the controller and of its nested controllers.
         %
@@ -95,56 +147,6 @@ classdef LocalController < PowerSystemModel
         % Return the Jacobians of fcn_y with respect to x, V, I and u.
         [Cyx,Dyv,Dyi,Dyu] = Jacobi_Y(t,x,V,I,u,param,omega0)
     end   
-    
-%% Parameter    
-    properties(SetAccess=protected) % Layer Structure
-        a_Component  % Parent: the component, or the AVR for a PSS ([] when detached).
-        a_LocalController = cell(0,1)  % Nested controller (the PSS under an AVR), 0x1 or 1x1. <@Stale> equilibrium
-    end
-    properties(SetAccess=protected) % Cached function handles
-        f_Mass  % Mass matrix function @(t,x,V,I,u) with the parameters bound.
-        f_dx  % State equation function @(t,x,V,I,u) with the parameters bound.
-        f_Y  % Output function @(t,x,V,I,u) with the parameters bound.
-        f_JacobiDx  % Jacobian function of f_dx.
-        f_JacobiY  % Jacobian function of f_Y.
-    end
-    properties (SetAccess={?SolverODE}, Hidden) % Simulation working data
-        iv_odeX = zeros(0,1);  % Positions of the states in the simulation vector.
-        iv_odeU = zeros(0,1);  % Positions of the inputs in the simulation vector.
-        iv_odeY = zeros(0,1);  % Positions of the parent inputs driven by the outputs sv_y, matched by name.
-        lv_odeUfromLC = false(0,1);  % Inputs driven by an output of a nested controller.
-        iv_odeYtoU = zeros(0,1);  % Index of each such input in the outputs of the nested controllers, stacked in order.
-        rv_Xoffset = 0  % State offset added to the initial state (0 for a local controller).
-        rv_Uoffset = @(t) 0  % Input change over time (zero for a local controller).
-        l_hasController (1,1) logical = false  % Whether a nested controller is attached.
-    end
-    properties (SetAccess=private, Hidden) % Layer Structure
-        iv_obsY (:,1) double = zeros(0,1)  % Index in sv_y of the observed component of each input (0: not read from sv_y).
-        iv_obsX (:,1) double = zeros(0,1)  % Index in sv_x of the observed component of each input (0: not read from sv_x).
-    end
-    properties (Access=private) % Layer Structure
-        sv_uRequest (:,1) string = strings(0,1)  % sv_u as defined, before "Xall" / "Yall" are expanded.
-    end
-    properties (Constant, Hidden) % Layer Structure
-        sr_reserved = ["Xall","Yall"]  % Reserved input names: all the states sv_x / all the outputs sv_y of the component.
-    end
-    properties(SetAccess=protected, Hidden) % Cached function handles
-        r_odefcnHz double = []  % [Hz] Network frequency bound into the f_* handles (empty: never built).
-    end
-    properties(SetAccess=protected) % Steady State
-        rv_Xequilibrium (:,1) double = zeros(0,1)  % State equilibrium (set by get_equilibrium of the subclass).
-        rv_Uequilibrium (:,1) double = zeros(0,1)  % Input equilibrium (set by get_equilibrium of the subclass).
-    end
-
-    properties(Dependent) % Steady State
-        c_Vequilibrium  % [pu] Voltage equilibrium of the parent (zeros(0,1) without a parent).
-        c_Iequilibrium  % [pu] Current equilibrium of the parent (zeros(0,1) without a parent).
-    end
-
-    properties(Dependent, Access=protected) % Layer Structure
-        parent  % Parent in the layer structure: the component, or the AVR for a PSS.
-        children  % Children in the layer structure: the nested controller.
-    end
     
 %% Constructor    
     methods
