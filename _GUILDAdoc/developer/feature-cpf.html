@@ -272,7 +272,7 @@
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Gets the bus type and stores where the bus voltage is in the full vector. Type: <code>"slack"</code>; <code>"PV"</code> when the summed <code>Q</code> of the components is NaN; else <code>"PQ"</code>.</span><span lang="ja">母線の種別を取得し、全体ベクトルでの母線電圧の位置を保存。種別: <code>"slack"</code>、機器の <code>Q</code> の和が NaN なら <code>"PV"</code>、それ以外は <code>"PQ"</code></span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>l_isSlack</code>, <code>para_powerflow</code> of the bus and its components</span><span lang="ja">母線とその機器の <code>l_isSlack</code>、<code>para_powerflow</code></span></dd>
+          <dd><span lang="en"><code>l_isSlack</code>, <code>tab_parameter.powerflow</code> of the bus and its components</span><span lang="ja">母線とその機器の <code>l_isSlack</code>、<code>tab_parameter.powerflow</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en"><code>Bus.iv_CPFV</code> (1 × 2 indices)</span><span lang="ja"><code>Bus.iv_CPFV</code>（1 × 2 のインデックス）</span></dd>
         </dl>

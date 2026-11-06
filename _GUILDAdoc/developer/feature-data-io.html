@@ -160,7 +160,7 @@
           <path class="dg-sv-line is-muted" d="M34 254H236" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="246" width="30" height="16" rx="8"/>
           <text class="is-inv is-b" x="18" y="258" text-anchor="middle" style="font-size:10px">04</text>
-          <text class="dg-mono is-sm fio-l" x="250" y="248" text-anchor="start">para_base.Hz, baseMVA</text>
+          <text class="dg-mono is-sm fio-l" x="250" y="248" text-anchor="start">tab_parameter.base.Hz, baseMVA</text>
           <path class="dg-sv-line" d="M246 284H543" marker-end="url(#fio-ah)"/>
           <path class="dg-sv-line is-muted" d="M34 284H236" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="276" width="30" height="16" rx="8"/>
@@ -271,7 +271,7 @@
         <li><b>IO-01</b> <span lang="en">Caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.import_csv</code></li>
         <li><b>IO-02</b> <code>import_csv</code> → <code>readtable</code> (network, bus, branch)</li>
         <li><b>IO-03</b> <code>import_csv</code> → <code>read_components</code></li>
-        <li><b>IO-04</b> <code>import_csv</code> → <code>net.para_base</code></li>
+        <li><b>IO-04</b> <code>import_csv</code> → <code>net.tab_parameter.base</code></li>
         <li><b>IO-05</b> <code>import_csv</code> → <code>net.add_bus</code></li>
         <li><b>IO-06</b> <code>import_csv</code> → <code>net.add_branch</code></li>
         <li><b>IO-07</b> <code>import_csv</code> → <code>Bus.add_component</code></li>
@@ -361,7 +361,7 @@
         </dl>
       </li>
       <li class="fs-step" id="IO-04">
-        <p class="fs-head"><b class="fs-id">IO-04</b> <span class="fs-call"><code>import_csv</code> → <code>net.para_base</code></span></p>
+        <p class="fs-head"><b class="fs-id">IO-04</b> <span class="fs-call"><code>import_csv</code> → <code>net.tab_parameter.base</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -505,7 +505,7 @@
             <li><code>a_Branch</code> の要素ごとにブランチの行（<code>Type</code> = キー、<code>From</code>/<code>To</code> = 両端の母線の行番号）</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>para_base</code>; <span lang="en">bus</span><span lang="ja">母線の</span> <code>para_powerflow</code>, <code>para_operation</code>, <code>para_dynamics</code>, <code>para_graph</code>, <code>l_isSlack</code>; <span lang="en">branch</span><span lang="ja">ブランチの</span> <code>key</code>, <code>a_Bus</code>, <code>para_*</code></dd>
+          <dd><code>tab_parameter.base</code>; <span lang="en">bus</span><span lang="ja">母線の</span> <code>tab_parameter.powerflow</code>, <code>tab_parameter.operation</code>, <code>tab_parameter.dynamics</code>, <code>tab_parameter.graph</code>, <code>l_isSlack</code>; <span lang="en">branch</span><span lang="ja">ブランチの</span> <code>key</code>, <code>a_Bus</code>, <code>tab_parameter</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>network/parameter.csv</code>, <code>bus/parameter.csv</code>, <code>branch/parameter.csv</code></dd>
         </dl>
@@ -524,7 +524,7 @@
             <li><code>main.csv</code> は <code>ParameterID</code> と <code>OpfID</code> でそれらを参照</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en">component</span><span lang="ja">機器の</span> <code>key</code>, <code>a_Bus</code>, <code>para_powerflow</code>, <code>para_operation</code>, <code>para_graph</code>, <code>para_dynamics</code>, <code>para_OPF</code></dd>
+          <dd><span lang="en">component</span><span lang="ja">機器の</span> <code>key</code>, <code>a_Bus</code>, <code>tab_parameter.powerflow</code>, <code>tab_parameter.operation</code>, <code>tab_parameter.graph</code>, <code>tab_parameter.dynamics</code>, <code>tab_parameter.OPF</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><code>component/&lt;key&gt;/main.csv</code>, <code>dynamics.csv</code>, <code>opf.csv</code></dd>
         </dl>

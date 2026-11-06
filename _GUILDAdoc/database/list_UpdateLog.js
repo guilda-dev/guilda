@@ -334,5 +334,11 @@ const updateLogData = [
     "date": "2026-11-06",
     "type": "changed",
     "content": "net.initialize() is the one step that brings the model up to date after edits. It solves the power flow only when Method is given or an edit changed the power flow (baseMVA, the topology, bus and branch parameters, the slack bus, the P and Q of the components); a dynamics edit recomputes only the edited models from the held voltage and current, a Hz edit only rebuilds the model functions, and with nothing edited initialize changes nothing. simulate, linearize, get_sys, calculate_continuation_powerflow and validate only check the model, and stop with an error of the analysis (GUILDA:SolverODE:Stale, SolverLIN:Stale, SolverCPF:Stale, or the Stale error of the layer for get_sys), naming the edits, until initialize has run. The edit log and disp_edit are removed; each layer keeps the reasons it is out of date in sct_stale (e.g. net.sct_stale.powerflow). For model authors: set_odefcn and s_odefcn are removed. A model class that built its own handles overrides the protected method build_odefcn, and a constructor no longer calls obj.set_odefcn()."
+  },
+  {
+    "title": "Parameters are edited through tab_parameter",
+    "date": "2026-11-06",
+    "type": "changed",
+    "content": "Each model object holds its parameter containers in a_Parameter, and parameters are read and edited through tab_parameter (one column per group: dynamics, powerflow, operation, OPF, graph, base); the para_* properties are removed. Writing tab_parameter changes only the edited values, so only they are logged as edits. The base column of a component (comp.tab_parameter.base, comp.para_base) is removed: the frequency and the system base are in net.tab_parameter.base, and comp.get_Hz() reads the frequency. For model authors: a constructor adds its entries with obj.a_Parameter{cellfun(@(p) p.s_tag==\"dynamics\", obj.a_Parameter)}.add_entry(...)."
   }
 ];
