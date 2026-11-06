@@ -43,7 +43,7 @@ classdef Bus < PowerSystemModel
 
     %% Properties
     properties (Dependent) % Power Flow
-        s_bustype                         % Power-flow type of the bus: "slack", "PV" or "PQ" (from get_pf_set).
+        s_bustype                         % Power-flow type of the bus: "slack", "PV" or "PQ" (from get_pf_condition).
         c_Iequilibrium                    % [pu] Current injection at the equilibrium: sum of the component currents (0 without components).
     end
     properties % Power Flow
@@ -128,7 +128,7 @@ classdef Bus < PowerSystemModel
         comp = replace_component(obj, s_tag, Type, parameter)
 
         % PF(powerflow) calculation
-        tab_PFset    = get_pf_set(obj)
+        tab_PFcondition = get_pf_condition(obj)
 
         %get_sys
         [sys, varargout] = get_sys(obj, opt)
@@ -137,7 +137,7 @@ classdef Bus < PowerSystemModel
 %% Get Methods
     methods
         function type = get.s_bustype(obj)
-            s = obj.get_pf_set;
+            s = obj.get_pf_condition;
             type = s.Type;
         end
         function I = get.c_Iequilibrium(obj)

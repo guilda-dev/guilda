@@ -18,15 +18,15 @@ function [result,flag,output] = solve(obj, net, sct_options)
     t0 = tic;
 
     tab_Ymat  = net.get_admittance_matrix;
-    tab_PFset = tools.vcellfun(@(b) b.get_pf_set, net.a_Bus);
-    sv_bus    = string(tab_PFset.Properties.RowNames);
+    tab_PFcondition = tools.vcellfun(@(b) b.get_pf_condition, net.a_Bus);
+    sv_bus    = string(tab_PFcondition.Properties.RowNames);
     cm_Y      = tab_Ymat{sv_bus,sv_bus};
 
     switch sct_options.Method
         case "algebraic"
-            [cv_Vbus,flag,output,cm_Vhistory,rv_step] = obj.solve_algebraic(cm_Y, tab_PFset, sct_options);
+            [cv_Vbus,flag,output,cm_Vhistory,rv_step] = obj.solve_algebraic(cm_Y, tab_PFcondition, sct_options);
         case "dynamic"
-            [cv_Vbus,flag,output,cm_Vhistory,rv_step] = obj.solve_dynamic(cm_Y, tab_PFset, sct_options);
+            [cv_Vbus,flag,output,cm_Vhistory,rv_step] = obj.solve_dynamic(cm_Y, tab_PFcondition, sct_options);
     end
 
     % Vbus -> Ibus -> Pbus,Qbus

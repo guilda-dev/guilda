@@ -108,13 +108,13 @@
     <p lang="en">Preconditions:</p>
     <ul lang="en">
       <li>a successful <code>net.initialize()</code>, with no edit since that makes a layer stale;</li>
-      <li>bus types from <code>Bus.get_pf_set</code>: the slack bus is the one <code>l_isSlack</code> marks.</li>
+      <li>bus types from <code>Bus.get_pf_condition</code>: the slack bus is the one <code>l_isSlack</code> marks.</li>
     </ul>
     <p lang="en">Other settings of the corrector: <code>GUILDA.config("NewtonRaphsonMethod")</code> (<code>MaxIter = 1000</code>, <code>Increment = 1e-4</code> of the numerical Jacobian, <code>StepSize = 1</code>).</p>
     <p lang="ja">前提条件:</p>
     <ul lang="ja">
       <li><code>net.initialize()</code> が成功済みで、その後に層を古くする編集なし</li>
-      <li>母線の種別は <code>Bus.get_pf_set</code> で決定: スラック母線は <code>l_isSlack</code> が示す母線</li>
+      <li>母線の種別は <code>Bus.get_pf_condition</code> で決定: スラック母線は <code>l_isSlack</code> が示す母線</li>
     </ul>
     <p lang="ja">修正子のその他の設定: <code>GUILDA.config("NewtonRaphsonMethod")</code>（<code>MaxIter = 1000</code>、数値ヤコビアンの <code>Increment = 1e-4</code>、<code>StepSize = 1</code>）。</p>
 
@@ -157,7 +157,7 @@
         <path class="dg-sv-line" d="M270 262H381" marker-end="url(#cpf-ah)"/>
         <text x="276" y="256"><tspan class="cpf-num">05</tspan> <tspan class="dg-mono">build_layout</tspan></text>
         <path class="dg-sv-line" d="M385 290H491" marker-end="url(#cpf-ah)"/>
-        <text x="501" y="294"><tspan class="cpf-num">06</tspan> <tspan class="dg-mono">get_pf_set, iv_CPFV</tspan></text>
+        <text x="501" y="294"><tspan class="cpf-num">06</tspan> <tspan class="dg-mono">get_pf_condition, iv_CPFV</tspan></text>
         <path class="dg-sv-line" d="M385 322H596" marker-end="url(#cpf-ah)"/>
         <text x="606" y="326"><tspan class="cpf-num">07</tspan> <tspan class="dg-mono">iv_CPFX, f_PQ2Bus</tspan></text>
         <path class="dg-sv-line is-muted" d="M385 348H274" marker-end="url(#cpf-ah-m)"/>
@@ -267,7 +267,7 @@
         </dl>
       </li>
       <li class="fs-step" id="CPF-06">
-        <p class="fs-head"><b class="fs-id">CPF-06</b> <span class="fs-call"><code>build_layout</code> → <code>Bus.get_pf_set</code></span></p>
+        <p class="fs-head"><b class="fs-id">CPF-06</b> <span class="fs-call"><code>build_layout</code> → <code>Bus.get_pf_condition</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><span lang="en">Gets the bus type and stores where the bus voltage is in the full vector. Type: <code>"slack"</code>; <code>"PV"</code> when the summed <code>Q</code> of the components is NaN; else <code>"PQ"</code>.</span><span lang="ja">母線の種別を取得し、全体ベクトルでの母線電圧の位置を保存。種別: <code>"slack"</code>、機器の <code>Q</code> の和が NaN なら <code>"PV"</code>、それ以外は <code>"PQ"</code></span></dd>

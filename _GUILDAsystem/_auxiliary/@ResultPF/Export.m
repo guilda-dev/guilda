@@ -46,17 +46,17 @@ function export_json(obj, s_file)
     if isempty(net)
         error(msg("GUILDA:ResultPF:NoNetwork"));
     end
-    tab_PFset = tools.vcellfun(@(b) b.get_pf_set, net.a_Bus);
-    sv_bus    = string(tab_PFset.Properties.RowNames);
+    tab_PFcondition = tools.vcellfun(@(b) b.get_pf_condition, net.a_Bus);
+    sv_bus    = string(tab_PFcondition.Properties.RowNames);
     tab_Ymat  = net.get_admittance_matrix;
     cm_Y      = tab_Ymat{sv_bus,sv_bus};
-    n_Bus     = size(tab_PFset,1);
+    n_Bus     = size(tab_PFcondition,1);
 
     out = struct();
 
-    l_slack = tab_PFset.Type'=="slack";
-    l_PV    = tab_PFset.Type'=="PV";
-    l_PQ    = tab_PFset.Type'=="PQ";
+    l_slack = tab_PFcondition.Type'=="slack";
+    l_PV    = tab_PFcondition.Type'=="PV";
+    l_PQ    = tab_PFcondition.Type'=="PQ";
 
     out.Text =   n_Bus+"Bus Model" +newline + ...
                  " > slack : "              + mat2str(find(l_slack)) + newline + ...
@@ -78,7 +78,7 @@ function export_json(obj, s_file)
             && obj.options.dynamic.foh_PQ ~= 0;
 
     for i_bus = 1:n_Bus
-        tab_i = tab_PFset(i_bus,:);
+        tab_i = tab_PFcondition(i_bus,:);
 
         type = tab_i.Type;
         h = "Bus"+i_bus+" ("+type+")"+newline;

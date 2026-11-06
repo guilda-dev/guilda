@@ -117,8 +117,8 @@ DebugScript.helper.quiet(@() net.calculate_powerflow);
 sv_type = string(cellfun(@(b) b.s_bustype, net.a_Bus, "UniformOutput", false));
 assert(isequal(sv_type(:)', ["slack","PV","PV","PQ","PQ","PQ","PQ","PQ","PQ"]))
 
-% get_pf_set は母線ごとの潮流条件を返す
-tab_set = net.a_Bus{2}.get_pf_set;
+% get_pf_condition は母線ごとの潮流条件を返す
+tab_set = net.a_Bus{2}.get_pf_condition;
 assert(tab_set.Type == "PV" && tab_set.P == 1.0 && tab_set.V == 1.00)
 
 
@@ -167,7 +167,7 @@ assert(flag > 0)
 
 % 各母線の指定値が守られている
 for i = 1:numel(net.a_Bus)
-    s = net.a_Bus{i}.get_pf_set;
+    s = net.a_Bus{i}.get_pf_condition;
     switch s.Type
         case "slack"; assert(abs(tab.V(i)-s.V) < tol && abs(tab.Varg(i)-s.Varg) < tol)
         case "PV";    assert(abs(tab.V(i)-s.V) < tol && abs(tab.P(i)-s.P) < tol)

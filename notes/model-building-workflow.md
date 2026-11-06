@@ -116,7 +116,7 @@ flowchart TD
 | `simulate` / `get_sys` は `initialize` の後 | `GUILDA:PowerNetwork:EquilibriumStale` | F01-F03 |
 | イベントは最終トポロジの後に作る | 母線削除後に古いイベントで `simulate` すると `MATLAB:innerdim`(`odeEventSet.getInitialCondition:377`) | X16 |
 
-**母線の種類の決まり方** **[事実]** `@Bus/get_pf_set.m:14-31`: スラックは `l_isSlack`、機器の Q の合計が NaN なら PV、それ以外は PQ です。母線に種類の指定はありません。発電機は常に PV 扱いで、指定した Q は捨てられます(第6節の問題 7)。
+**母線の種類の決まり方** **[事実]** `@Bus/get_pf_condition.m:14-31`: スラックは `l_isSlack`、機器の Q の合計が NaN なら PV、それ以外は PQ です。母線に種類の指定はありません。発電機は常に PV 扱いで、指定した Q は捨てられます(第6節の問題 7)。
 
 **制御器** **[実行 M2, M3]**
 - ローカル: `gen.add_local_controller(controller.avr.AVR_ST1("a1"), controller.pss.PSS1("p1"))`。key で位置が決まり(`avr`/`local` は機器の下、`pss` は AVR の下)、1回呼ぶごとに `Topology` が記録されます。
