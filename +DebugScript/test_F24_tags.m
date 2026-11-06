@@ -25,12 +25,12 @@ DebugScript.helper.quiet(@() net.initialize);
 h_dx = comp.f_dx;
 net.a_Bus{2}.s_tag = "BX";
 
-assert(comp.s_odefcn == "updated" && ~net.l_staleEquilibrium)
+assert(isequal(h_dx, comp.f_dx) && ~net.l_staleEquilibrium)
 sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
 assert(sol.odeResults.t(end) == 1)
 net.get_sys();
 net.linearize();
-assert(isequal(h_dx, comp.f_dx))
+assert(~isequal(h_dx, comp.f_dx))      % 解析のたびに作り直す
 
 
 %% Component tags do not follow a bus rename

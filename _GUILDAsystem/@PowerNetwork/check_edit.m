@@ -1,8 +1,8 @@
 function flag = check_edit(obj, opt)
-% Build out-of-date handles and optionally require an up-to-date equilibrium.
+% Rebuild the handles and optionally require an up-to-date equilibrium.
 %
 % Prepares the network for an analysis after edits.
-% Builds the f_* handle caches that are not up to date (PowerSystemModel.check_edit) and, when
+% Rebuilds the f_* handle caches of every layer (PowerSystemModel.check_edit) and, when
 % RequireEquilibrium is true, stops with an error if initialize has not run
 % or something that changes the equilibrium was edited since (dynamics,
 % baseMVA or powerflow parameters, topology, slack bus; not the network Hz).

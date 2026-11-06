@@ -266,16 +266,16 @@ sys = result.get_ss(Algorithm, Coordinate=…, Input=…, Output=…)
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-              <li>Builds out-of-date <code>f_*</code> handles (<code>set_odefcn</code>); stops if the equilibrium is missing or stale.</li>
+              <li>Rebuilds the <code>f_*</code> handles of every layer (<code>apply_edit("odefcn")</code>); stops if the equilibrium is missing or stale.</li>
               <li>Rejects a <code>NonUnit</code> bus that does not exist (<code>v3_nonunit_range</code>).</li>
             </ul><ul lang="ja">
-              <li>古い <code>f_*</code> ハンドルを再構築 (<code>set_odefcn</code>)。平衡点がないか古ければ停止</li>
+              <li>全層の <code>f_*</code> ハンドルを再構築 (<code>apply_edit("odefcn")</code>)。平衡点がないか古ければ停止</li>
               <li>存在しない <code>NonUnit</code> 母線を拒否 (<code>v3_nonunit_range</code>)</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>l_initialized</code>, <code>s_odefcn</code>, <code>net.disp_edit()</code></dd>
+          <dd><code>l_initialized</code>, <code>net.disp_edit()</code>, <code>tab_parameter.dynamics</code>, <span lang="en">network</span><span lang="ja">ネットワークの</span> <code>Hz</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>f_*</code>; <code>s_odefcn = "updated"</code></dd>
+          <dd><code>f_*</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="LIN-05">
@@ -577,7 +577,7 @@ sys = result.get_ss(Algorithm, Coordinate=…, Input=…, Output=…)
     <table class="dg-table">
       <thead><tr><th><span lang="en">Object</span><span lang="ja">対象のオブジェクト</span></th><th><span lang="en">Behaviour</span><span lang="ja">振る舞い</span></th></tr></thead>
       <tbody>
-        <tr><td><code>f_*</code> <span lang="en">handles</span><span lang="ja">ハンドル</span></td><td><span lang="en">Built by LIN-04 (and by the <code>check_edit</code> in each layer's <code>get_sys</code>) where <code>s_odefcn</code> is not <code>"updated"</code>; they stay built.</span><span lang="ja">LIN-04 (および各層の <code>get_sys</code> の <code>check_edit</code>) で <code>s_odefcn</code> が <code>"updated"</code> でない層について構築。そのまま残存</span></td></tr>
+        <tr><td><code>f_*</code> <span lang="en">handles</span><span lang="ja">ハンドル</span></td><td><span lang="en">Rebuilt for every layer by LIN-04 (and by the <code>check_edit</code> in each layer's <code>get_sys</code>); they stay built.</span><span lang="ja">LIN-04 (および各層の <code>get_sys</code> の <code>check_edit</code>) で全層について再構築。そのまま残存</span></td></tr>
         <tr><td><span lang="en">Network, equilibrium, edit flags</span><span lang="ja">ネットワーク、平衡点、編集フラグ</span></td><td><span lang="en">Read only. A <code>Point</code> is used for this call only and is not written to the models.</span><span lang="ja">参照のみ。<code>Point</code> はこの呼び出しのみで使用し、モデルには書き込まない</span></td></tr>
         <tr><td><code>net.solver_LIN</code></td><td><span lang="en">Read only; options of the call are not stored.</span><span lang="ja">参照のみ。呼び出しのオプションは保存しない</span></td></tr>
         <tr><td><span lang="en">Command Window</span><span lang="ja">コマンドウィンドウ</span></td><td><span lang="en">An <code>INFO:</code> line when a bus voltage is zero at the point.</span><span lang="ja">点で母線電圧が 0 なら <code>INFO:</code> の行を表示</span></td></tr>

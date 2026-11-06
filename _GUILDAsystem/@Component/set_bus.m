@@ -12,5 +12,4 @@ function set_bus(obj,bus)
     if ~isempty(bus)
         obj.reset_edit(false);   % edits made before do not belong to the new network; not initialized there yet
     end
-    obj.mark_odefcn();    % the handles read the frequency of the network the bus belongs to
 end

@@ -1,13 +1,13 @@
 function [lv_odefcn, lv_equilibrium] = edit_effect(obj, sv_tag, sv_log)
-% What each edit-log row makes stale, from its tag and log (one edit in handle_edit,
-% the rows of the network in PowerNetwork.l_staleEquilibrium, check_edit and
-% initialize).
+% What each edit-log row makes stale, from its tag and log (the rows of the network in
+% PowerNetwork.l_staleEquilibrium, check_edit and initialize). The f_* handles are
+% rebuilt at every check_edit, so the first output only describes the edit.
 %   tag                    f_* handles   equilibrium
 %   Parameter(dynamics)    stale         stale
 %   Parameter(base)        -             stale     (PowerNetwork para_base: baseMVA;
 %                                                   no model handle holds it)
-%   Parameter(base), Hz    -             -         (log "edit Hz": PowerNetwork.handle_edit
-%                                                   marks the handles of every layer; the
+%   Parameter(base), Hz    -             -         (log "edit Hz": every handle reads the
+%                                                   frequency when it is rebuilt; the
 %                                                   equilibrium does not depend on the
 %                                                   nominal frequency)
 %   Parameter(powerflow)   -             stale

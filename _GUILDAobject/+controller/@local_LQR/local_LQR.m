@@ -109,7 +109,7 @@ classdef local_LQR < LocalController
     methods (Access=protected)
         resolve_ports(obj, comp)
         set_inputs(obj, sv_name)
-        set_odefcn(obj)
+        apply_edit(obj, s_target)
     end
 
     methods (Access=private)

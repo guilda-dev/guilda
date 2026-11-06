@@ -298,7 +298,7 @@ b1.l_isSlack = true;</code></pre>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>tag</code>, <code>GUILDA.config("Model","Hz")</code>, <code>GUILDA.config</code> <span lang="en">of each solver</span><span lang="ja">（各ソルバー）</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>net</code> <span lang="en">with empty <code>a_Bus</code>, <code>a_Branch</code>, <code>a_GlobalController</code> (0×1 cell); <code>l_initialized</code> = false, <code>s_odefcn</code> = <code>"unset"</code>; empty edit log</span><span lang="ja">（<code>a_Bus</code>・<code>a_Branch</code>・<code>a_GlobalController</code> は空の 0×1 cell。<code>l_initialized</code> = false、<code>s_odefcn</code> = <code>"unset"</code>、編集ログは空）</span></dd>
+          <dd><code>net</code> <span lang="en">with empty <code>a_Bus</code>, <code>a_Branch</code>, <code>a_GlobalController</code> (0×1 cell); <code>l_initialized</code> = false; empty edit log</span><span lang="ja">（<code>a_Bus</code>・<code>a_Branch</code>・<code>a_GlobalController</code> は空の 0×1 cell。<code>l_initialized</code> = false、編集ログは空）</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="MB-02">
@@ -356,14 +356,14 @@ b1.l_isSlack = true;</code></pre>
             <li>Subclass constructor calls <code>Component(s_tag, opt)</code>: creates five <code>Parameter</code> objects; replaces a NaN cost <code>HP</code> / <code>fP</code> by 0 for a load, 1 otherwise</li>
             <li>Subclass adds <code>sv_para</code> to <code>para_dynamics</code></li>
             <li>Generator: force <code>Q = NaN</code></li>
-            <li>Call <code>comp.set_bus(bus)</code>: marks the handles of the component and its controllers stale (<code>mark_odefcn</code>)</li>
+            <li>Call <code>comp.set_bus(bus)</code>: sets <code>a_Bus</code> and clears the edits of the component and its controllers (<code>reset_edit(false)</code>)</li>
             <li>Append to <code>a_Component</code></li>
           </ul><ul lang="ja">
             <li>タグ: クラスの接頭辞 + この母線の機器の中での次の番号 + 母線のタグ（例: <code>SG1B001</code>）</li>
             <li>サブクラスのコンストラクタが <code>Component(s_tag, opt)</code> を呼び出し: 5 つの <code>Parameter</code> を作成、NaN のコスト <code>HP</code> / <code>fP</code> を負荷なら 0、それ以外は 1 に置換</li>
             <li>サブクラスが <code>sv_para</code> を <code>para_dynamics</code> に追加</li>
             <li>発電機: <code>Q = NaN</code> に固定</li>
-            <li><code>comp.set_bus(bus)</code> を呼び出し: 機器とその制御器のハンドルを古い状態に（<code>mark_odefcn</code>）</li>
+            <li><code>comp.set_bus(bus)</code> を呼び出し: <code>a_Bus</code> を設定し、機器とその制御器の編集を消去（<code>reset_edit(false)</code>）</li>
             <li><code>a_Component</code> に追加</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
@@ -388,7 +388,7 @@ b1.l_isSlack = true;</code></pre>
             <li>AVR or <code>"local"</code> controller: becomes <code>a_LocalController{1}</code>; an existing one is detached with a warning, and its PSS moves to the new AVR unless a PSS is given</li>
             <li>PSS: goes under the AVR</li>
             <li>Governor: placed after the AVR in <code>a_LocalController</code>; an existing governor is detached with a warning</li>
-            <li><code>set_parent</code>: set <code>a_Component</code>, resolve the observed signals (<code>resolve_observe</code>: expand <code>"Xall"</code> / <code>"Yall"</code>, set <code>iv_obsY</code> / <code>iv_obsX</code>), call <code>mark_odefcn</code></li>
+            <li><code>set_parent</code>: set <code>a_Component</code>, resolve the observed signals (<code>resolve_observe</code>: expand <code>"Xall"</code> / <code>"Yall"</code>, set <code>iv_obsY</code> / <code>iv_obsX</code>), clear the edits of the subtree (<code>reset_edit(false)</code>)</li>
           </ul><ul lang="ja">
             <li>変更前にすべての制御器を検査:
               <ul>
@@ -401,7 +401,7 @@ b1.l_isSlack = true;</code></pre>
             <li>AVR・<code>"local"</code> の制御器: <code>a_LocalController{1}</code> に配置。既存のものは警告付きで切り離し、PSS の指定がなければその PSS は新しい AVR へ移動</li>
             <li>PSS: AVR の下に配置</li>
             <li>ガバナ: <code>a_LocalController</code> で AVR の後ろに配置。既存のガバナは警告付きで切り離し</li>
-            <li><code>set_parent</code>: <code>a_Component</code> を設定、観測する信号を解決（<code>resolve_observe</code>: <code>"Xall"</code> / <code>"Yall"</code> を展開、<code>iv_obsY</code> / <code>iv_obsX</code> を設定）、<code>mark_odefcn</code> を呼び出し</li>
+            <li><code>set_parent</code>: <code>a_Component</code> を設定、観測する信号を解決（<code>resolve_observe</code>: <code>"Xall"</code> / <code>"Yall"</code> を展開、<code>iv_obsY</code> / <code>iv_obsX</code> を設定）、部分木の編集を消去（<code>reset_edit(false)</code>）</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>con.key</code>, <code>con.sv_y</code>, <code>con.sv_u</code>, <code>con.a_Component</code>, <code>comp.sv_u</code>, <code>comp.sv_x</code>, <code>comp.sv_y</code></dd>
@@ -439,7 +439,7 @@ b1.l_isSlack = true;</code></pre>
               </ul>
             </li>
             <li>Append the controller</li>
-            <li><code>set_parent(net)</code>: set <code>a_PowerNetwork</code>, call <code>mark_odefcn</code></li>
+            <li><code>set_parent(net)</code>: set <code>a_PowerNetwork</code>, clear its edits (<code>reset_edit(false)</code>)</li>
           </ul><ul lang="ja">
             <li>検査:
               <ul>
@@ -449,7 +449,7 @@ b1.l_isSlack = true;</code></pre>
               </ul>
             </li>
             <li>制御器を追加</li>
-            <li><code>set_parent(net)</code>: <code>a_PowerNetwork</code> を設定、<code>mark_odefcn</code> を呼び出し</li>
+            <li><code>set_parent(net)</code>: <code>a_PowerNetwork</code> を設定、編集を消去（<code>reset_edit(false)</code>）</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>gc.s_tag</code>, <code>gc.controlledUnits</code>, <code>gc.sv_u</code>, <code>gc.sv_y</code>, <span lang="en">unit</span><span lang="ja">対象の</span> <code>sv_x</code>, <code>sv_u</code></dd>
@@ -512,20 +512,20 @@ b1.l_isSlack = true;</code></pre>
           <dd><ul lang="en">
             <li>The edited layer (the owner for a <code>Parameter</code> container), once initialized (<code>l_initialized</code>): append the row (sequence number, time, tag path from the edited layer up, e.g. <code>powerflow/SG1B005/B005/TestSystem</code> for a parameter, log, tag, before, after) to its own <code>sct_editLog</code>; <code>disp_edit</code> collects the subtree when read</li>
             <li>Call <code>handle_edit</code> on every layer from there up the <code>parent</code> chain, also before the first initialize</li>
-            <li>Owner of an edited dynamics parameter (<code>PowerSystemModel.handle_edit</code>, <code>edit_effect</code>): mark its own handles <code>"editted"</code></li>
-            <li>Network (<code>PowerNetwork.handle_edit</code>): keep one slack bus; on a network <code>Hz</code> edit, mark the handles of every layer</li>
+            <li>Network (<code>PowerNetwork.handle_edit</code>): keep one slack bus</li>
+            <li>The <code>f_*</code> handles are not marked: <code>check_edit</code> rebuilds every handle at the next analysis</li>
             <li><code>l_staleEquilibrium</code> is read from the rows (dynamics, base (baseMVA), powerflow, Topology, Slack and Initialize rows) when an analysis asks for it</li>
           </ul><ul lang="ja">
             <li>編集した層（<code>Parameter</code> コンテナの場合は所有者、初期化済み <code>l_initialized</code> の場合）: 行（通し番号、時刻、編集した層から上へのタグのパス（パラメータなら例: <code>powerflow/SG1B005/B005/TestSystem</code>）、ログ、タグ、変更前、変更後）を自分の <code>sct_editLog</code> に追加。<code>disp_edit</code> は読み出し時に部分木を集約</li>
             <li>そこから <code>parent</code> をたどる各層の <code>handle_edit</code> を呼び出し（最初の initialize の前も）</li>
-            <li>編集された dynamics パラメータの所有者（<code>PowerSystemModel.handle_edit</code>、<code>edit_effect</code>）: 自分のハンドルを <code>"editted"</code> に</li>
-            <li>ネットワーク（<code>PowerNetwork.handle_edit</code>）: slack 母線を 1 つに維持。ネットワークの <code>Hz</code> の編集ではすべての層のハンドルを古い状態に</li>
+            <li>ネットワーク（<code>PowerNetwork.handle_edit</code>）: slack 母線を 1 つに維持</li>
+            <li><code>f_*</code> ハンドルへの印付けはなし: 次の解析で <code>check_edit</code> がすべてのハンドルを再構築</li>
             <li><code>l_staleEquilibrium</code> は解析が求めたときに行から算出（dynamics・base（baseMVA）・powerflow・Topology・Slack・Initialize の行）</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en">log row, <code>parent</code> chain, <code>l_initialized</code> of the owner</span><span lang="ja">ログの行、<code>parent</code> の連鎖、所有者の <code>l_initialized</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>s_odefcn</code>, <span lang="en">the edit rows of the edited layer</span><span lang="ja">編集した層の編集の行</span> (<code>sct_editLog</code>), <span lang="en">slack flags of the other buses</span><span lang="ja">他の母線の slack フラグ</span></dd>
+          <dd><span lang="en">the edit rows of the edited layer</span><span lang="ja">編集した層の編集の行</span> (<code>sct_editLog</code>), <span lang="en">slack flags of the other buses</span><span lang="ja">他の母線の slack フラグ</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="MB-11">
@@ -749,12 +749,12 @@ b1.l_isSlack = true;</code></pre>
       </tbody>
     </table>
     <ul lang="en">
-      <li>Protected property <code>children</code>: the children that <code>check_edit</code>, <code>reset_edit</code>, <code>mark_odefcn</code>, <code>disp_tree</code> and <code>struct</code> walk</li>
+      <li>Protected property <code>children</code>: the children that <code>check_edit</code>, <code>reset_edit</code>, <code>collect_edit</code>, <code>disp_tree</code> and <code>struct</code> walk</li>
       <li>Values derived from several owners: <code>Dependent</code> properties that read the owner each time, e.g. <code>Component.c_Vequilibrium</code> (= <code>a_Bus.c_Vequilibrium</code>), <code>Bus.c_Iequilibrium</code> (sum of the component currents), <code>PowerNetwork.cv_Vequilibrium</code></li>
       <li><code>net.disp_tree()</code>: prints the tree</li>
     </ul>
     <ul lang="ja">
-      <li>protected プロパティ <code>children</code>: <code>check_edit</code>・<code>reset_edit</code>・<code>mark_odefcn</code>・<code>disp_tree</code>・<code>struct</code> が巡回する子</li>
+      <li>protected プロパティ <code>children</code>: <code>check_edit</code>・<code>reset_edit</code>・<code>collect_edit</code>・<code>disp_tree</code>・<code>struct</code> が巡回する子</li>
       <li>複数の所有者から導かれる値: そのつど所有者を読む <code>Dependent</code> プロパティ。例: <code>Component.c_Vequilibrium</code>（= <code>a_Bus.c_Vequilibrium</code>）、<code>Bus.c_Iequilibrium</code>（機器の電流の和）、<code>PowerNetwork.cv_Vequilibrium</code></li>
       <li><code>net.disp_tree()</code>: 木を表示</li>
     </ul>
@@ -764,14 +764,14 @@ b1.l_isSlack = true;</code></pre>
     <ul lang="en">
       <li><b>Before the first <code>initialize</code></b>: the network's <code>l_initialized</code> is false, so no row is added to the edit log (the equilibrium is stale anyway). <code>handle_edit</code> still keeps a single slack bus</li>
       <li><b>After <code>initialize</code></b>: an edit marked stale in <a href="class-design.html#edits">Class Design: Handling of model edits</a> adds a row that makes <code>l_staleEquilibrium</code> true; <code>simulate</code>, <code>linearize</code> and <code>get_sys</code> then stop until <code>initialize</code> runs again. Operation, OPF, graph and tag edits: logged, equilibrium stays valid</li>
-      <li><b>Handle cache</b>: constructors do not build <code>f_*</code> (<code>s_odefcn = "unset"</code>). Attaching (<code>Component.set_bus</code>, <code>LocalController.set_parent</code>, <code>GlobalController.set_parent</code>) and a dynamics or network <code>Hz</code> edit turn <code>"updated"</code> into <code>"editted"</code>. <code>check_edit</code> at the start of the next analysis rebuilds them (see <a href="feature-initialize.html">Initialization</a>)</li>
+      <li><b>Handle cache</b>: constructors do not build <code>f_*</code> (they stay empty). Edits and attaching keep no state about them: <code>check_edit</code> at the start of every analysis rebuilds every handle (<code>apply_edit("odefcn")</code>, see <a href="feature-initialize.html">Initialization</a>). A direct call of a model function (<code>get_dx_algebraic</code>) without an analysis after an edit uses the previous handles; it builds them only when they are empty</li>
       <li><b>Detached objects</b>: a removed object takes its own edits with it (its <code>disp_edit</code>); the removal is a <code>"Topology"</code> row of the parent, so the equilibrium stays stale. Its later edits do not reach the network; it keeps them only when it was initialized in a network (<code>l_initialized</code> stays true). Attaching it to a new parent (<code>set_bus</code>, <code>set_parent</code>, <code>set_network</code>) clears the edits of it and its subtree and sets <code>l_initialized</code> to false until the next <code>initialize</code> (<code>reset_edit(false)</code>)</li>
       <li><b>Copies</b>: no deep-copy method; <code>b = a</code> copies a handle. For an independent network, save and load through a MAT file or CSV export. <code>PowerNetwork.loadobj</code> attaches the parameter listeners again after a MAT load (warning <code>GUILDA:PowerNetwork:IncompleteLoad</code> when a layer is still loading)</li>
     </ul>
     <ul lang="ja">
       <li><b>最初の <code>initialize</code> の前</b>: ネットワークの <code>l_initialized</code> は false のため、編集ログへの行の追加なし（平衡点はもともと古い扱い）。<code>handle_edit</code> は slack 母線を 1 つに維持</li>
       <li><b><code>initialize</code> の後</b>: <a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>で古くなるとされる編集は <code>l_staleEquilibrium</code> を true にする行を追加し、<code>simulate</code>・<code>linearize</code>・<code>get_sys</code> は再び <code>initialize</code> を実行するまで停止。operation・OPF・graph・タグの編集: 記録のみ、平衡点は有効なまま</li>
-      <li><b>ハンドルキャッシュ</b>: コンストラクタは <code>f_*</code> を作らない（<code>s_odefcn = "unset"</code>）。接続（<code>Component.set_bus</code>、<code>LocalController.set_parent</code>、<code>GlobalController.set_parent</code>）と、dynamics またはネットワークの <code>Hz</code> の編集で <code>"updated"</code> を <code>"editted"</code> に変更。次の解析の最初の <code>check_edit</code> が再構築（<a href="feature-initialize.html">初期化</a>参照）</li>
+      <li><b>ハンドルキャッシュ</b>: コンストラクタは <code>f_*</code> を作らない（空のまま）。編集や接続はハンドルの状態を持たず、解析の開始ごとに <code>check_edit</code> がすべてのハンドルを再構築（<code>apply_edit("odefcn")</code>、<a href="feature-initialize.html">初期化</a>参照）。編集の後に解析を挟まずモデル関数を直接呼ぶ場合（<code>get_dx_algebraic</code>）は以前のハンドルを使用し、空のときだけ構築</li>
       <li><b>切り離されたオブジェクト</b>: 削除されたオブジェクトは自分の編集（その <code>disp_edit</code>）を持ち去る。削除は親の <code>"Topology"</code> の行のため、平衡点は古いまま。その後の編集はネットワークに届かず、ネットワーク内で初期化済みだった場合だけ（<code>l_initialized</code> は true のまま）自身に記録。新しい親への接続（<code>set_bus</code>、<code>set_parent</code>、<code>set_network</code>）でそのオブジェクトと部分木の編集を消去し、次の <code>initialize</code> まで <code>l_initialized</code> を false に（<code>reset_edit(false)</code>）</li>
       <li><b>コピー</b>: ディープコピーのメソッドはなし。<code>b = a</code> はハンドルのコピー。独立したネットワークには MAT ファイルへの保存と読み込み、または CSV への書き出しを使用。<code>PowerNetwork.loadobj</code> は MAT からの読み込み後にパラメータのリスナーを再設定（層がまだ読み込み中なら警告 <code>GUILDA:PowerNetwork:IncompleteLoad</code>）</li>
     </ul>

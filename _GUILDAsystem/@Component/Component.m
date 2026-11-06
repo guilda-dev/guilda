@@ -27,12 +27,12 @@ classdef Component < PowerSystemModel
 % - The base class turns the static model functions into the cached handles `f_*`, adds its
 %   local controllers to the DAE and the linear model, and computes Jacobians numerically
 %   when the subclass gives none. The handles @(t,x,V,I,u) bind the parameters and omega0;
-%   `set_odefcn` builds them, called by `check_edit` at the start of an analysis, and
-%   `s_odefcn` tells whether they are "unset", "editted" or "updated".
+%   `apply_edit("odefcn")` builds them, called by `check_edit` at the start of every
+%   analysis.
 % - Does not own the bus voltage (it reads `a_Bus.c_Vequilibrium`), the network frequency
 %   (it reads `get_Hz()`) or the system base.
 % - Created only by `Bus.add_component` and `Bus.replace_component`. Only the bus sets and
-%   clears `a_Bus` (through `set_bus`, which also marks the handles of the subtree stale);
+%   clears `a_Bus` (through `set_bus`);
 %   the component sets `LocalController.a_Component` of its controllers. A
 %   `GlobalController` refers to controlled components in `controlledUnits`; a controlled
 %   component cannot be removed or replaced while the controller is on the network.
@@ -216,7 +216,7 @@ classdef Component < PowerSystemModel
                                          "MidYaxis", opt.MidYaxis         , "string");
         end        
 
-        set_odefcn(obj)
+        apply_edit(obj, s_target)
 
         % Raise a constructor message of Component.xml for a subclass in another folder.
         parameter_error(obj, s_key, varargin)

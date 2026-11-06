@@ -16,8 +16,7 @@ classdef PowerNetwork < PowerSystemModel
 %   `GlobalController.a_PowerNetwork`, `Scenario.a_PowerNetwork`).
 % - Each layer keeps its own edits (`LayerPackage`: `log_edit`), and `net.disp_edit()`
 %   shows those of the whole network. Every edit also reaches the network's
-%   `handle_edit`, also before the first initialize: it keeps at most one slack bus and,
-%   on a network Hz edit, marks the f_* handles of every layer (`mark_odefcn`).
+%   `handle_edit`, also before the first initialize: it keeps at most one slack bus.
 % - `l_staleEquilibrium` is true when initialize has not run, or an edit logged since
 %   affects the equilibrium (see edit_effect; edits of "dynamics", "base" (baseMVA) and
 %   "powerflow" parameters, topology and slack-bus changes, and an initialize that stopped
@@ -196,7 +195,7 @@ classdef PowerNetwork < PowerSystemModel
         obj = loadobj(obj)
     end
     methods(Access=protected)
-        % Edit handling: build the f_* handles that are not up to date, check the equilibrium
+        % Edit handling: rebuild the f_* handles, check the equilibrium
         flag = check_edit(obj, opt)
 
         handle_edit(obj, a_layer, tag, log)

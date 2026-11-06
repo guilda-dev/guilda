@@ -74,7 +74,6 @@ classdef LayerPackage < handle
         reset_edit(obj, l_initialized)
         sct_log = collect_edit(obj)
         handle_edit(obj, a_layer, tag, log)
-        l = is_parent_of(obj, a_layer)
     end
     methods(Access=private)
         out = get_tag(obj, s_split)

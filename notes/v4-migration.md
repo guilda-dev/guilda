@@ -971,7 +971,7 @@ there.
 | `bus.str_bustype` | `bus.s_bustype` |
 | `res.str_solver`、`res.str_network` | `res.s_solver`、`res.s_network` |
 | `linearize`/`get_sys` の `output.str_issue` | `output.s_issue` |
-| `comp.sct_edit.str_odefcn`(モデル作者向け) | `comp.s_odefcn` |
+| `comp.sct_edit.str_odefcn`(モデル作者向け) | 廃止(ハンドルは解析のたびに作り直すため、状態を持ちません。2.「`set_odefcn` は廃止」を参照) |
 
 - `net.info` と `struct(obj)` の表や構造体の列名、フィールド名も `s_tag`、`s_bustype` になります。
 - 名前の対応表は [naming-struct-string.md](naming-struct-string.md) にあります。
@@ -1007,12 +1007,19 @@ there.
   Per-matrix files are ignored; port them to the three `Jacobi_*` methods.
 - **Frequency inside a model:** read `obj.get_Hz()`, never a fixed `60` or a
   component `para_base`.
-- **No `set_odefcn` in the constructor.** The `f_*` handles are built when an
-  analysis first uses them (`s_odefcn`: `"unset"`, `"editted"`,
-  `"updated"`), with the frequency of the network the model is attached to.
-  A constructor that still calls `obj.set_odefcn()` keeps working: the handles
-  are then built once with `GUILDA.config("Model","Hz")` and built again after
-  the model is attached.
+- **`set_odefcn` は廃止。** `f_*` ハンドルは解析(`initialize`、`simulate`、
+  `linearize`、`get_sys`、`calculate_continuation_powerflow`、`validate`)の
+  開始ごとに、`check_edit` が全層の `apply_edit("odefcn")` を呼んで、現在の
+  パラメータと接続先の系統の周波数から作り直します。`s_odefcn`、`set_odefcn`、
+  `mark_odefcn` はありません。
+  - コンストラクタで `obj.set_odefcn()` を呼んでいたモデルは、その行を削除します
+    (残すと未定義のメソッドでエラーになります)。
+  - 自分でハンドルを作っていたモデル(`set_odefcn` をオーバーライドしていたクラス)は、
+    protected メソッド `apply_edit(obj, s_target)` をオーバーライドし、
+    `s_target == "odefcn"` のときにハンドルを作ります。それ以外の値は親クラスの
+    `apply_edit` に渡します(例: `controller.local_LQR`)。
+  - 解析を挟まずに `get_dx_algebraic` を直接呼ぶと、編集の後でも前回の解析で作った
+    ハンドルを使います(ハンドルが空のときだけ作ります)。
 - **Equilibrium:** `get_equilibrium(obj, c_V, c_I, r_P, r_Q)`; do not store
   copies of V or I (see 1.2).
 - **Controllers:** local controllers receive their parent through

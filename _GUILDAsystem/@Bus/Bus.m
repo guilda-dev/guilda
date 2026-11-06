@@ -21,8 +21,7 @@ classdef Bus < PowerSystemModel
 %   (components carry the equations).
 % - Created only by `PowerNetwork.add_bus`. Only the parent sets and clears a parent
 %   reference: the network sets `a_PowerNetwork`, and the bus sets `Component.a_Bus` of
-%   its components. Attaching a component marks the handles of that component and its
-%   controllers stale.
+%   its components.
 %
 % What differs from bus to bus (slack, PV, PQ, shunt) is data, not a type, so Bus has
 % no subclasses.
