@@ -99,8 +99,10 @@ assert(DebugScript.helper.max_state_drift(sol) < tol_drift)
 %% No-event simulation with local controllers stays at equilibrium
 % 旧 Task11 の AVR/PSS 構成
 net = DebugScript.helper.build_ieee14();
-net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
-net.a_Bus{2}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr2"), controller.pss.PSS1("pss2"));
+net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
+net.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
+net.a_Bus{2}.a_Component{1}.add_local_controller("avr-ST1");
+net.a_Bus{2}.a_Component{1}.add_local_controller("pss-PSS1");
 DebugScript.helper.quiet(@() net.initialize);
 
 % 制御器の平衡点は有限値
@@ -116,8 +118,7 @@ assert(DebugScript.helper.max_state_drift(sol) < tol_drift)
 net = DebugScript.helper.build_ieee14();
 c{1} = net.a_Bus{1}.a_Component{1};
 c{2} = net.a_Bus{2}.a_Component{1};
-agc  = controller.agc.broadcast_PI_AGC(net, "agc", c{:}, alpha=[1;1], beta=[1;1], kP=100, kI=500);
-net.add_global_controller(agc);
+agc  = net.add_global_controller("agc-PI", c, parameter=struct(alpha=[1;1], beta=[1;1], kP=100, kI=500));
 DebugScript.helper.quiet(@() net.initialize);
 
 % AGC の平衡点 (積分器 = 0、入力 = 0)
@@ -333,7 +334,8 @@ assert(norm(dx_used - dx_new) < 1e-12, "f_dx が変更前の定数 D を使っ�
 %% Equilibrium voltage and current have a single owner
 % 母線が V を、機器が I を持つ。機器・制御器の V と母線の I は持ち主から読む (Dependent)
 net = DebugScript.helper.build_ieee14();
-net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
+net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
+net.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
 DebugScript.helper.quiet(@() net.initialize);
 assert(findprop(net.a_Bus{1}, "c_Iequilibrium").Dependent && ~findprop(net.a_Bus{1}, "c_Vequilibrium").Dependent)
 assert(findprop(net.a_Bus{1}.a_Component{1}, "c_Vequilibrium").Dependent)

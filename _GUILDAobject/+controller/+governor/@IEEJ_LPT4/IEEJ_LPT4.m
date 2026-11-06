@@ -52,11 +52,15 @@ classdef (Sealed = true) IEEJ_LPT4 < controller.governor.abstract
 % ```matlab
 % net = network.IEEE9bus();
 % gen = net.a_Bus{3}.a_Component{1};
-% gen.add_local_controller(controller.governor.IEEJ_LPT4("gov3", Prate=1.5, PLM=10));
+% gen.add_local_controller("gov-LPT4", parameter=struct(Prate=1.5, PLM=10));
 % net.initialize;
 % ```
 %
 % See also controller.governor.IEEJ_LPT1, controller.governor.IEEJ_LPT3, controller.governor.abstract
+
+    properties (Constant, Hidden) % Model definition
+        key = "gov-LPT4"  % Model key that selects this class in `Component.add_local_controller`.
+    end
 
     methods
         function obj = IEEJ_LPT4(tag, param)

@@ -477,9 +477,9 @@ eig(sys.A)</code></pre>
       <h2><span lang="en">5. Add and Evaluate Controllers</span><span lang="ja">5. 制御器の追加と評価</span></h2>
       <p lang="en">Local controllers attach to components; global controllers attach to the network. After changing the controller structure, reinitialize the network, then repeat the simulation or linearization.</p>
       <p lang="ja">ローカル制御器は機器に、グローバル制御器はネットワークに取り付け。制御器の構成の変更後はネットワークを再初期化し、シミュレーションや近似線形化をやり直し。</p>
-<pre><code>avr = controller.avr.AVR_ST1("avr1");
-pss = controller.pss.PSS1("pss1");
-net.a_Bus{1}.a_Component{1}.add_local_controller(avr, pss);
+<pre><code>gen = net.a_Bus{1}.a_Component{1};
+avr = gen.add_local_controller("avr-ST1");
+pss = gen.add_local_controller("pss-PSS1");
 net.initialize();
 
 sc = Scenario("fault");

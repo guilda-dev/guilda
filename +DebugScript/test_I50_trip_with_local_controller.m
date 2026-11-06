@@ -34,7 +34,7 @@ assert(all(isnan(X(sol.odeResults.t > 1,:)), "all"))
 
 
 %% Trip with AVR restarts from the stored equilibrium
-net = ieee14(@(gen) gen.add_local_controller(controller.avr.AVR_ST1("avr3")));
+net = ieee14(@(gen) gen.add_local_controller("avr-ST1"));
 [sol, eq] = run_trip(net, [0,2], trip(net, [1,1.2]));
 assert(sol.flag == 1, sol.output.message)
 assert_unchanged(net, eq)
@@ -42,7 +42,7 @@ assert_restart(sol, net.a_Bus{3}.a_Component{1}, 1.2)
 
 
 %% Trip with AVR and PSS restarts from the stored equilibrium
-net = ieee14(@(gen) gen.add_local_controller(controller.avr.AVR_ST1("avr3"), controller.pss.PSS1("pss3")));
+net = ieee14(@(gen) add_avr_pss(gen));
 [sol, eq] = run_trip(net, [0,2], trip(net, [1,1.2]));
 assert(sol.flag == 1, sol.output.message)
 assert_unchanged(net, eq)
@@ -50,7 +50,7 @@ assert_restart(sol, net.a_Bus{3}.a_Component{1}, 1.2)
 
 
 %% Trip with LQR completes
-net = ieee14(@(gen) gen.add_local_controller(controller.local_LQR("lqr3")));
+net = ieee14(@(gen) gen.add_local_controller("local-LQR"));
 [sol, eq] = run_trip(net, [0,2], trip(net, [1,1.2]));
 assert(sol.flag == 1, sol.output.message)
 assert_unchanged(net, eq)
@@ -70,6 +70,12 @@ function net = ieee9()
     net = network.IEEE9bus();
     net.solver_ODE.Progress = "none";
     DebugScript.helper.quiet(@() net.initialize);
+end
+
+
+function add_avr_pss(gen)
+    gen.add_local_controller("avr-ST1");
+    gen.add_local_controller("pss-PSS1");
 end
 
 

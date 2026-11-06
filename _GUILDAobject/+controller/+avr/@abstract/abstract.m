@@ -7,12 +7,14 @@ classdef abstract < LocalController
 %
 % See also controller.avr.AVR_ST1, controller.avr.AVR_DC1, controller.pss.abstract
     properties (SetAccess=protected, Hidden) % Model definition
-        key                     % Kind of controller (set by the concrete AVRs).
         sv_x                    % Names of the states (set by the concrete AVRs).
         sv_u = ["Vref";"Vpss"]  % Names of the inputs: voltage reference and PSS output.
         sv_y = ["Vfield"]       % Names of the outputs: field voltage of the generator.
         sv_para                 % Names of the dynamic parameters (set by the concrete AVRs).
     end    
+    properties (Constant, Hidden) % Model definition
+        s_role = "avr"  % Role in Component.add_local_controller ("avr": on the component, with the PSS under it).
+    end
     methods
         function obj = abstract(tag) 
         % Create the AVR base object with the tag "CA" + tag.

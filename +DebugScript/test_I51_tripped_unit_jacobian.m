@@ -32,15 +32,14 @@ assert(max(err) < 1e-5, "誤差 " + mat2str(err,3))
 
 
 %% Jacobian matches the right-hand side with a tripped unit under a global controller
-agc = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002", kP=100, kI=500);
-net.add_global_controller(agc);
+agc = net.add_global_controller("agc-PI", ["SG1B001","SG1B002"], parameter=struct(kP=100, kI=500));
 DebugScript.helper.quiet(@() net.initialize);
 err = jacobian_errors(net, [0,2], {DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B002")});
 assert(max(err) < 1e-5, "誤差 " + mat2str(err,3))
 
 
 %% Jacobian matches the right-hand side with local controllers on other units
-net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"));
+net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 DebugScript.helper.quiet(@() net.initialize);
 err = jacobian_errors(net, [0,2], {DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.2], "TripUnit", "SG1B002")});
 assert(max(err) < 1e-5, "誤差 " + mat2str(err,3))

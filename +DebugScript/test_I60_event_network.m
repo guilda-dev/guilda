@@ -12,7 +12,7 @@ DebugScript.helper.quiet(@() net.initialize);
 %% An event created before a topology change gives the same result as a new one
 args = {"TimeSpan", [1,1.05], "FaultBus", "B008"};
 old = DebugScript.helper.scenario("fault", net, args{:});
-net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"));
+net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 DebugScript.helper.quiet(@() net.initialize);
 r_old = DebugScript.helper.quiet(@() net.simulate([0,2], old));
 r_new = DebugScript.helper.quiet(@() net.simulate([0,2], DebugScript.helper.scenario("fault", net, args{:})));
@@ -21,7 +21,7 @@ assert(isequaln(r_old.odeResults, r_new.odeResults))
 
 %% An event created before adding a global controller still works
 old = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
-net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002"));
+net.add_global_controller("agc-PI", ["SG1B001","SG1B002"]);
 DebugScript.helper.quiet(@() net.initialize);
 [~, flag] = DebugScript.helper.quiet(@() net.simulate([0,2], old));
 assert(flag == 1)

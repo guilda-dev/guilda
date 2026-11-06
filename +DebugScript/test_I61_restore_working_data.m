@@ -32,11 +32,10 @@ assert_restored(net)
 
 %% Working data is restored after an error during a fault and trips
 net = DebugScript.helper.build_ieee14();
-agc = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002", kP=100, kI=500);
-net.add_global_controller(agc);
+agc = net.add_global_controller("agc-PI", ["SG1B001","SG1B002"], parameter=struct(kP=100, kI=500));
 DebugScript.helper.quiet(@() net.initialize);
 ev_fault = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.4,5], "FaultBus", "B008");
-ev_trip  = DebugScript.helper.scenario("trip", net, "TimeSpan", [0.4,5], "TripUnit", ["SG1B003";"agc"]);
+ev_trip  = DebugScript.helper.scenario("trip", net, "TimeSpan", [0.4,5], "TripUnit", ["SG1B003";agc.s_tag]);
 ev_error = DebugScript.helper.scenario("input", net, "TimeSpan", [0.4,5], "InputUnit", "SG1B002", "InputName", "Pmech", ...
                        "InputValue", @bad_input);
 s_id = "";

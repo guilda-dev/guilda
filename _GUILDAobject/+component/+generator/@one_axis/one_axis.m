@@ -52,7 +52,7 @@ classdef one_axis < component.generator.abstract
 % gen = bus.add_component("gen-1axis", "P", 0.5);
 % gen.sv_x                          % delta, omega, Eq
 % gen.tab_parameter.dynamics        % M, D, Xd, Xq, ...
-% gen.add_local_controller(controller.avr.AVR_ST1("avr1"))
+% gen.add_local_controller("avr-ST1")
 % ```
 %
 % See also component.generator.abstract, Bus.add_component

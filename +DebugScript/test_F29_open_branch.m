@@ -164,8 +164,10 @@ assert(isequal(full(c_Y{3}), full(full_admittance(net_r))))
 function net = build_avr_pss()
     % IEEE14 の 2 台の発電機に AVR + PSS (F6 "Fault with local controllers" と同じ)
     net = DebugScript.helper.build_ieee14();
-    net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
-    net.a_Bus{2}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr2"), controller.pss.PSS1("pss2"));
+    for i = 1:2
+        net.a_Bus{i}.a_Component{1}.add_local_controller("avr-ST1");
+        net.a_Bus{i}.a_Component{1}.add_local_controller("pss-PSS1");
+    end
     DebugScript.helper.quiet(@() net.initialize);
 end
 
@@ -259,7 +261,8 @@ function net = ring(N)
         end
     end
     for i = 1:2:N
-        net.a_Bus{i}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr"+i), controller.pss.PSS1("pss"+i));
+        net.a_Bus{i}.a_Component{1}.add_local_controller("avr-ST1");
+        net.a_Bus{i}.a_Component{1}.add_local_controller("pss-PSS1");
     end
     net.solver_ODE.Progress = "none";
     DebugScript.helper.quiet(@() net.initialize);

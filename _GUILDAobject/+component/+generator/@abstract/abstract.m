@@ -24,7 +24,7 @@ classdef abstract < Component
 % bus = net.add_bus();
 % gen = bus.add_component("gen-1axis", "P", 0.5, "parameter", "NGT6");
 % gen.tab_parameter.dynamics          % parameters taken from parameter.csv
-% gen.add_local_controller(controller.avr.AVR_ST1("avr1"))
+% gen.add_local_controller("avr-ST1")
 % ```
 %
 % See also Component, Bus.add_component, component.generator.classical, component.generator.park

@@ -10,7 +10,7 @@
 %% Local controller tab_parameter edit is logged and rebuilt
 net = DebugScript.helper.build_ieee14();
 comp = net.a_Bus{1}.a_Component{1};
-comp.add_local_controller(controller.avr.AVR_ST1("avr1"));
+comp.add_local_controller("avr-ST1");
 avr = comp.a_LocalController{1};
 DebugScript.helper.quiet(@() net.initialize);
 h_dx = avr.f_dx;
@@ -35,7 +35,8 @@ assert(norm(avr.f_dx(0,x,V,[0;0],u) - avr.fcn_dx(0,x,V,[0;0],u,para,60)) < 1e-12
 %% Nested local controller tab_parameter edit is logged
 net = DebugScript.helper.build_ieee14();
 comp = net.a_Bus{1}.a_Component{1};
-comp.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
+comp.add_local_controller("avr-ST1");
+comp.add_local_controller("pss-PSS1");
 pss = comp.a_LocalController{1}.a_LocalController{1};
 DebugScript.helper.quiet(@() net.initialize);
 
@@ -51,7 +52,7 @@ assert(numel(sv) == 1 && contains(sv, "edit " + name + ": ") && isequal(pss.sct_
 %% Local controller assignment of the same values is not an edit
 net = DebugScript.helper.build_ieee14();
 comp = net.a_Bus{1}.a_Component{1};
-comp.add_local_controller(controller.avr.AVR_ST1("avr1"));
+comp.add_local_controller("avr-ST1");
 avr = comp.a_LocalController{1};
 DebugScript.helper.quiet(@() net.initialize);
 
@@ -64,7 +65,7 @@ assert(isempty(DebugScript.helper.stale(net)))
 % Component と同じく Parameter の型検査を通り、エラーになって値は変わらない
 net = DebugScript.helper.build_ieee14();
 comp = net.a_Bus{1}.a_Component{1};
-comp.add_local_controller(controller.avr.AVR_ST1("avr1"));
+comp.add_local_controller("avr-ST1");
 avr = comp.a_LocalController{1};
 val_avr  = avr.tab_parameter.dynamics.kap;
 val_comp = comp.tab_parameter.dynamics.D;
@@ -140,6 +141,5 @@ function [net, agc] = build_agc()
     net = DebugScript.helper.build_ieee14();
     g1  = net.a_Bus{1}.a_Component{1};
     g2  = net.a_Bus{2}.a_Component{1};
-    agc = controller.agc.broadcast_PI_AGC(net, "agc", g1, g2, alpha=[1;1], beta=[1;1], kP=100, kI=500);
-    net.add_global_controller(agc);
+    agc = net.add_global_controller("agc-PI", {g1, g2}, parameter=struct(alpha=[1;1], beta=[1;1], kP=100, kI=500));
 end

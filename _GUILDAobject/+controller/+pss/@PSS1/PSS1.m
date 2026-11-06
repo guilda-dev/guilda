@@ -30,7 +30,8 @@ classdef (Sealed = true) PSS1 < controller.pss.abstract
 % ```matlab
 % net = network.IEEE9bus(LocalController=false);
 % gen = net.a_Bus{1}.a_Component{1};
-% gen.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1", kpss=5));
+% gen.add_local_controller("avr-ST1");
+% gen.add_local_controller("pss-PSS1", parameter=struct(kpss=5));
 % net.initialize;
 % sc  = Scenario("fault");
 % sc.add_fault("B007", [1,1.05]);
@@ -39,6 +40,10 @@ classdef (Sealed = true) PSS1 < controller.pss.abstract
 % ```
 %
 % See also controller.avr.AVR_ST1, controller.pss.abstract
+
+    properties (Constant, Hidden) % Model definition
+        key = "pss-PSS1"  % Model key that selects this class in `Component.add_local_controller`.
+    end
 
     methods
         function obj = PSS1(tag, param)
@@ -69,8 +74,6 @@ classdef (Sealed = true) PSS1 < controller.pss.abstract
                      "td2", param.td2, ...
                 "Vpss_max", param.Vpss_max, ...
                 "Vpss_min", param.Vpss_min));
-
-            obj.key      = "pss";
             obj.sv_x    = ["xiWS"; "xi1"; "xi2"];
             obj.sv_u    = "omega";   
             obj.sv_y    = "Vpss";

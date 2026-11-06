@@ -21,9 +21,15 @@ tab = DebugScript.helper.model_classes("Branch");
 assert(all(ismember(["pi","T","pi_transformer","two_winding_transformer"], tab.Key)))
 assert(isequal(sort(tab.Key), sort(generated_keys("@PowerNetwork", "add_branch.m"))), "add_branch")
 assert(numel(unique(tab.Key)) == height(tab) && all(tab.Key ~= ""), "ブランチのキーが重複または空")
-assert(all(ismember(["controller.avr.AVR_ST1","controller.avr.AVR_DC1","controller.pss.PSS1","controller.local_LQR"], ...
-                    DebugScript.helper.model_classes("LocalController").Class)))
-assert(any(DebugScript.helper.model_classes("GlobalController").Class == "controller.agc.broadcast_PI_AGC"))
+tab = DebugScript.helper.model_classes("LocalController");
+assert(all(ismember(["controller.avr.AVR_ST1","controller.avr.AVR_DC1","controller.pss.PSS1","controller.local_LQR"], tab.Class)))
+assert(all(ismember(["avr-ST1","avr-DC1","pss-PSS1","gov-LPT1","gov-LPT3","gov-LPT4","local-LQR"], tab.Key)))
+assert(isequal(sort(tab.Key), sort(generated_keys("@Component", "add_local_controller.m"))), "add_local_controller")
+assert(numel(unique(tab.Key)) == height(tab) && all(tab.Key ~= ""), "局所制御器のキーが重複または空")
+tab = DebugScript.helper.model_classes("GlobalController");
+assert(any(tab.Class == "controller.agc.broadcast_PI_AGC") && any(tab.Key == "agc-PI"))
+assert(isequal(sort(tab.Key), sort(generated_keys("@PowerNetwork", "add_global_controller.m"))), "add_global_controller")
+assert(numel(unique(tab.Key)) == height(tab) && all(tab.Key ~= ""), "大域制御器のキーが重複または空")
 
 
 %% Every component key creates its class
@@ -112,19 +118,20 @@ end
 %% AVR_DC1 with its default gain has a finite equilibrium
 % 既定の kap = 0 では Vref = Inf になり simulate が止まる (known_failures に登録)
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
-con = controller.avr.AVR_DC1("con");
-comp.add_local_controller(con);
+con = comp.add_local_controller("avr-DC1");
 DebugScript.helper.quiet(@() net.initialize);
 assert(all(isfinite(con.rv_Uequilibrium)), "Vref = %g", con.rv_Uequilibrium(1))
 
 
 %% Every global controller works on the generators that have its inputs
-for cls = DebugScript.helper.model_classes("GlobalController").Class'
+tab = DebugScript.helper.model_classes("GlobalController");
+for k = 1:height(tab)
+    cls = tab.Class(k);
     n_used = 0;
     for key = generator_keys()
         [net, comp] = DebugScript.helper.build_3bus(key);
         try
-            net.add_global_controller(feval(cls, net, "gc", comp));   % (系統, タグ, 機器)
+            net.add_global_controller(tab.Key(k), {comp});
         catch ME
             assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:GconPorts", "%s on %s: %s", cls, key, ME.message);
             continue
@@ -164,8 +171,9 @@ assert(contains(join(check(DebugScript.helper.BadComponentStub("xsize"))), "x, u
 assert(contains(join(check(DebugScript.helper.BadComponentStub("equilibrium"))), "dx:"))   % 契約には反しない
 assert(contains(join(check(DebugScript.helper.BadComponentStub("currentreal"))), "I: NaN"))
 assert(contains(join(check(DebugScript.helper.BadJacobianStub())), "Axx:"))
+c_stub = DebugScript.helper.register_stub("BadControllerStub", "controller.test_bad_controller");
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
-comp.add_local_controller(DebugScript.helper.BadControllerStub("jacobian"));
+comp.add_local_controller("test-bad-controller", parameter=struct(bad="jacobian"));
 DebugScript.helper.quiet(@() net.initialize);
 assert(contains(join(check(comp.a_LocalController{1})), "Axx:"))
 sv = check(controller.avr.AVR_ST1("avr1"));   % 接続していないので validate が止まる
@@ -191,7 +199,7 @@ assert(norm(comp.Z - Z0) < 1e-12)
 
 %% Message prints without errors
 [net, comp] = DebugScript.helper.build_3bus("gen-classical");
-comp.add_local_controller(controller.avr.AVR_ST1("avr1"));
+comp.add_local_controller("avr-ST1");
 DebugScript.helper.quiet(@() net.initialize);
 str = evalc("comp.validate();");
 assert(contains(str, "Contract") && contains(str, "Connection source"))
@@ -266,10 +274,9 @@ assert(all(isnan(flag.Bxu{:,:}), "all"))
 
 %% Controller under an AVR passes and inputs show the sources
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
-comp.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
+avr = comp.add_local_controller("avr-ST1");
+pss = comp.add_local_controller("pss-PSS1");
 DebugScript.helper.quiet(@() net.initialize);
-avr = comp.a_LocalController{1};
-pss = avr.a_LocalController{1};
 flag = pss.validate(false);
 assert_no_fail(flag, "pss");
 assert_jacobians_close(flag, tol_jacobi, "pss");
@@ -282,19 +289,20 @@ assert(flag.inputs{"Vpss","source"} == "output of " + pss.s_tag)
 
 %% Component inputs show the sources
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
-comp.add_local_controller(controller.avr.AVR_ST1("avr1"));
-net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", comp.s_tag));
+comp.add_local_controller("avr-ST1");
+agc = net.add_global_controller("agc-PI", comp.s_tag);
 DebugScript.helper.quiet(@() net.initialize);
 flag = comp.validate(false);
 assert(flag.inputs{"Vfield","source"} == "output of " + comp.a_LocalController{1}.s_tag)
-assert(contains(flag.inputs{"Pmech","source"}, "agc"))
+assert(contains(flag.inputs{"Pmech","source"}, agc.s_tag))
 flag = net.a_Bus{1}.a_Component{1}.validate(false);
 assert(all(flag.inputs.source == "equilibrium (not connected)"))
 
 
 %% A misspelled input name is visible in inputs
+c_stub = DebugScript.helper.register_stub("BadControllerStub", "controller.test_bad_controller");
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
-comp.add_local_controller(DebugScript.helper.BadControllerStub("none"));
+comp.add_local_controller("test-bad-controller");
 DebugScript.helper.quiet(@() net.initialize);
 flag = comp.a_LocalController{1}.validate(false);
 assert_no_fail(flag, "none");
@@ -304,8 +312,9 @@ assert(max(flag.Axx{:,:}, [], "all") < tol_jacobi)
 
 
 %% Observed states and duplicate names are shown
+c_stub = DebugScript.helper.register_stub("ObserveStub", "controller.test_observe");
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
-comp.add_local_controller(DebugScript.helper.ObserveStub(["Xall";"Yall"]));
+comp.add_local_controller("test-observe", parameter=struct(Input=["Xall";"Yall"]));
 DebugScript.helper.quiet(@() net.initialize);
 flag = comp.a_LocalController{1}.validate(false);
 assert(height(flag.inputs) == numel(comp.sv_x) + numel(comp.sv_y))
@@ -313,10 +322,11 @@ assert(flag.inputs{"delta","source"} == "state of " + comp.s_tag)
 
 
 %% Controller contract violations are detected
+c_stub = DebugScript.helper.register_stub("BadControllerStub", "controller.test_bad_controller");
 c_case = ["jacsize","Jacobi_dx sizes"; "massx","fcn_Mass constant and square"; "currentdep","no dependence on I"];
 for k = 1:height(c_case)
     [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
-    comp.add_local_controller(DebugScript.helper.BadControllerStub(c_case(k,1)));
+    comp.add_local_controller("test-bad-controller", parameter=struct(bad=c_case(k,1)));
     DebugScript.helper.quiet(@() net.initialize);
     flag = comp.a_LocalController{1}.validate(false);
     assert_only_fail(flag, c_case(k,2));
@@ -324,9 +334,9 @@ end
 
 
 %% A wrong controller state size is detected (initialize stops on it, so it is set afterwards)
+c_stub = DebugScript.helper.register_stub("BadControllerStub", "controller.test_bad_controller");
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
-con = DebugScript.helper.BadControllerStub("none");
-comp.add_local_controller(con);
+con = comp.add_local_controller("test-bad-controller");
 DebugScript.helper.quiet(@() net.initialize);
 con.l_xsizeLater = true;
 con.get_equilibrium(comp.c_Vequilibrium, comp.rv_Uequilibrium);
@@ -335,8 +345,9 @@ assert_only_fail(flag, "x, u sizes");
 
 
 %% Wrong controller Jacobian appears in the difference
+c_stub = DebugScript.helper.register_stub("BadControllerStub", "controller.test_bad_controller");
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
-comp.add_local_controller(DebugScript.helper.BadControllerStub("jacobian"));
+comp.add_local_controller("test-bad-controller", parameter=struct(bad="jacobian"));
 DebugScript.helper.quiet(@() net.initialize);
 flag = comp.a_LocalController{1}.validate(false);
 assert(abs(flag.Axx{1,1} - 5) < 1e-8)
@@ -349,7 +360,7 @@ assert_error(@() con.validate(false), "GUILDA:LocalController:ValidateNotAttache
 
 %% Controller without an equilibrium asks for initialize
 [~, comp] = DebugScript.helper.build_3bus("gen-1axis");
-comp.add_local_controller(controller.avr.AVR_ST1("avr1"));
+comp.add_local_controller("avr-ST1");
 assert_error(@() comp.a_LocalController{1}.validate(false), "GUILDA:LocalController:Stale");
 
 
@@ -359,17 +370,15 @@ function assert_contract(obj, s_name)
 end
 
 function con = attach_controller(comp, cls)
-    % 新しいクラスのコンストラクタも (タグ) で呼べる必要がある
-    c_arg = {};
+    % クラスのキーで付ける (新しいクラスのコンストラクタも (タグ, Name=Value) で呼べる必要がある)
+    sct_para = struct();
     if cls == "controller.avr.AVR_DC1"   % 既定の kap = 0 は別のテストで確認している
-        c_arg = {"kap", 20};
+        sct_para = struct(kap=20);
     end
-    con = feval(cls, "con", c_arg{:});
-    if con.key == "pss"
-        comp.add_local_controller(controller.avr.AVR_ST1("avr"), con);
-    else
-        comp.add_local_controller(con);
+    if eval(cls + ".s_role") == "pss"
+        comp.add_local_controller("avr-ST1");
     end
+    con = comp.add_local_controller(eval(cls + ".key"), parameter=sct_para);
 end
 
 function sv_key = generator_keys()

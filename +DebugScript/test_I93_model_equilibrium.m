@@ -66,16 +66,18 @@ clear c_stub
 
 
 %% Residuals of a local controller name the controller
-c_case = ["residual","'CLbad': |dx| = 0.1"; "input","'CLbad': |dx| = 0.2"];
+c_stub = register_stub();
+c_case = ["residual","|dx| = 0.1"; "input","|dx| = 0.2"];
 for k = 1:height(c_case)
-    net = network_with_controller(c_case(k,1));
+    [net, comp] = network_with_controller(c_case(k,1));
     [s_id, s_msg] = warning_of(@() net.initialize);
     assert(s_id == s_warn, s_id)
-    assert(contains(s_msg, c_case(k,2)), s_msg)
+    assert(contains(s_msg, "'" + comp.a_LocalController{1}.s_tag + "': " + c_case(k,2)), s_msg)
 end
 
 
 %% An output that does not match the input it drives names the component
+c_stub = register_stub();
 [net, comp] = network_with_controller("output");
 [s_id, s_msg] = warning_of(@() net.initialize);
 assert(s_id == s_warn, s_id)
@@ -83,26 +85,30 @@ assert(contains(s_msg, "'" + comp.s_tag + "'") && contains(s_msg, "|u - source| 
 
 
 %% A wrong state size of a local controller stops with its tag
-net = network_with_controller("xsize");
-check_stop(net, "InitializeEquilibriumSize", ["'CLbad'", "x has 2 elements (1 expected)"]);
+c_stub = register_stub();
+[net, comp] = network_with_controller("xsize");
+check_stop(net, "InitializeEquilibriumSize", ["'" + comp.a_LocalController{1}.s_tag + "'", "x has 2 elements (1 expected)"]);
 
 
 %% A controller under an AVR is checked
+c_stub = register_stub();
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
-comp.add_local_controller(controller.avr.AVR_ST1("avr1"), DebugScript.helper.BadPSSStub("bad"));
-check_stop(net, "InitializeEquilibriumSize", "'CPbad'");
+comp.add_local_controller("avr-ST1");
+pss = comp.add_local_controller("test-bad-pss");
+check_stop(net, "InitializeEquilibriumSize", "'" + pss.s_tag + "'");
 
 
 %% A global controller is checked
+c_stub = register_stub();
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
-net.add_global_controller(DebugScript.helper.BadAGCStub(net, "agc", "output", comp));
+agc = net.add_global_controller("test-bad-agc", {comp}, parameter=struct(bad="output"));
 [s_id, s_msg] = warning_of(@() net.initialize);
 assert(s_id == s_warn, s_id)
-assert(contains(s_msg, "'agc'"), s_msg)
+assert(contains(s_msg, "'" + agc.s_tag + "'"), s_msg)
 
 [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
-net.add_global_controller(DebugScript.helper.BadAGCStub(net, "agc", "xsize", comp));
-check_stop(net, "InitializeEquilibriumSize", "'agc'");
+agc = net.add_global_controller("test-bad-agc", {comp}, parameter=struct(bad="xsize"));
+check_stop(net, "InitializeEquilibriumSize", "'" + agc.s_tag + "'");
 
 
 %% The built-in networks are far below the threshold, with their controllers
@@ -117,37 +123,28 @@ end
 net = network.IEEE14bus();
 g1 = net.a_Bus{1}.a_Component{1};
 g2 = net.a_Bus{2}.a_Component{1};
-g1.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
-g2.add_local_controller(controller.local_LQR("lqr1"));
-net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", g1, g2, alpha=[1;1], beta=[1;1], kP=100, kI=500));
+g1.add_local_controller("avr-ST1");
+g1.add_local_controller("pss-PSS1");
+g2.add_local_controller("local-LQR");
+net.add_global_controller("agc-PI", {g1, g2}, parameter=struct(alpha=[1;1], beta=[1;1], kP=100, kI=500));
 s_out = evalc("net.initialize;");
 assert(~contains(s_out, "do not hold"), s_out)
 
 
 % ---- local functions ----
 function c = register_stub()
-% BadComponentStub の写しを add_component のキーにする (+DebugScript のクラスとその子は登録されない)
-    s_file = fullfile(fileparts(fileparts(which("component.load.power"))), "bad_i93_stub.m");
-    str = fileread(which("DebugScript.helper.BadComponentStub"));
-    str = replace(str, "DebugScript.helper.BadComponentStub", "component.load.bad_i93_stub");
-    str = replace(str, "classdef BadComponentStub", "classdef bad_i93_stub");
-    str = replace(str, "BadComponentStub(s_bad, s_tag, opt)", "bad_i93_stub(s_tag, s_bad, opt)");
-    str = regexprep(str, '(\n\s+)s_bad(\s+%[^\n]*)(\n\s+)s_tag = "1"(\s+%[^\n]*)', '$1s_tag$4$3s_bad$2');
-    writelines(str, s_file);
-    rehash
-    evalc("GUILDA;");
-    c = onCleanup(@() unregister_stub(s_file));
-end
-
-function unregister_stub(s_file)
-    delete(s_file);
-    rehash
-    evalc("GUILDA;");
+% スタブの写しを add_component / add_local_controller / add_global_controller のキーにする
+% (+DebugScript のクラスとその子は登録されない)。キーは bad-i93-stub, test-bad-controller など
+    c = DebugScript.helper.register_stub( ...
+        ["BadComponentStub", "BadControllerStub", "BadPSSStub", "BadAGCStub"], ...
+        ["component.load.bad_i93_stub", "controller.test_bad_controller", "controller.test_bad_pss", "controller.test_bad_agc"], ...
+        Replace=["BadComponentStub(s_bad, s_tag, opt)", "bad_i93_stub(s_tag, s_bad, opt)"], ...
+        Regexp=[string('(\n\s+)s_bad(\s+%[^\n]*)(\n\s+)s_tag = "1"(\s+%[^\n]*)'), "$1s_tag$4$3s_bad$2"]);
 end
 
 function net = network_with(s_bad)
     net = DebugScript.helper.build_3bus("gen-1axis");
-    net.a_Bus{3}.add_component("test-bad-stub", "parameter",s_bad);
+    net.a_Bus{3}.add_component("bad-i93-stub", "parameter",s_bad);
 end
 
 function comp = stub(net)
@@ -156,7 +153,7 @@ end
 
 function [net, comp] = network_with_controller(s_bad)
     [net, comp] = DebugScript.helper.build_3bus("gen-1axis");
-    comp.add_local_controller(DebugScript.helper.BadControllerStub(s_bad));
+    comp.add_local_controller("test-bad-controller", parameter=struct(bad=s_bad));
 end
 
 function check_stop(net, s_id, sv_text)

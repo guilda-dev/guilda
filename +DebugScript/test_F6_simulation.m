@@ -55,8 +55,9 @@ assert(abs(V1 - net.a_Bus{1}.c_Vequilibrium) < 1e-8)
 % 結果は軌道を変数の表 (net.get_variable_map) の順に 1 回だけ持つ: rm_variable の列 = tab_variable の行。
 % 局所・大域制御器の状態も入り、odeResults はその見え方 (同じ値)
 net = DebugScript.helper.build_ieee14();
-net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
-net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002"));
+net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
+net.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
+net.add_global_controller("agc-PI", ["SG1B001", "SG1B002"]);
 DebugScript.helper.quiet(@() net.initialize);
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
 sol = net.simulate([0,2], ev);
@@ -315,7 +316,7 @@ assert(all(isfinite(X(r.t < 1,:)), "all"))
 
 %% Trip generator in a network with local controllers
 % 局所制御器 (AVR) が付いた系統でも、解列した機器だけの状態が NaN になる
-net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"));
+net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
 DebugScript.helper.quiet(@() net.initialize);
 ev  = DebugScript.helper.scenario("trip", net, "TimeSpan", [1,1.05], "TripUnit", "SG1B002");
 sol = net.simulate([0,5], ev);
@@ -513,8 +514,10 @@ assert(r.t(end) == 2 && all(diff(r.t) >= 0))
 %% Fault with local controllers
 % AVR + PSS を付けた系統での地絡応答 (旧 Task11 + Task12)
 net = DebugScript.helper.build_ieee14();
-net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
-net.a_Bus{2}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr2"), controller.pss.PSS1("pss2"));
+net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
+net.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
+net.a_Bus{2}.a_Component{1}.add_local_controller("avr-ST1");
+net.a_Bus{2}.a_Component{1}.add_local_controller("pss-PSS1");
 DebugScript.helper.quiet(@() net.initialize);
 
 ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008");
@@ -535,12 +538,14 @@ assert(all(isfinite(Vfd)))
 % 1e-3 は既定の許容誤差 (相対 1e-4) での誤差に対応する: 疎と記録値の差は最大 2.3e-4、
 % Tolerance=1e-10 の解に対する誤差は記録値で最大 2.5e-4、疎で最大 4.8e-4
 net = DebugScript.helper.build_ieee14();
-net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
-net.a_Bus{2}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr2"), controller.pss.PSS1("pss2"));
-net.a_Bus{3}.a_Component{1}.add_local_controller(controller.avr.AVR_DC1("avr3", kap=20));
+net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
+net.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
+net.a_Bus{2}.a_Component{1}.add_local_controller("avr-ST1");
+net.a_Bus{2}.a_Component{1}.add_local_controller("pss-PSS1");
+net.a_Bus{3}.a_Component{1}.add_local_controller("avr-DC1", parameter=struct(kap=20));
 c{1} = net.a_Bus{1}.a_Component{1};
 c{2} = net.a_Bus{2}.a_Component{1};
-net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", c{:}, alpha=[1;1], beta=[1;1]));
+net.add_global_controller("agc-PI", c, parameter=struct(alpha=[1;1], beta=[1;1]));
 DebugScript.helper.quiet(@() net.initialize);
 sol = net.simulate([0,3], DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B008"));
 r   = sol.odeResults;
@@ -556,9 +561,8 @@ assert(norm(r.Bus(8).V{end,:}' - V_ref) < 1e-3)
 %% Fault with LQR
 % 状態フィードバックの LQR を付けた系統の地絡応答: 平衡点は保たれ、事故後の動揺は LQR 無しより小さい
 net = DebugScript.helper.build_ieee14();
-lqr1 = controller.local_LQR("lqr1");
-net.a_Bus{1}.a_Component{1}.add_local_controller(lqr1);
-net.a_Bus{6}.a_Component{1}.add_local_controller(controller.local_LQR("lqr6", Input="Vfield"));
+lqr1 = net.a_Bus{1}.a_Component{1}.add_local_controller("local-LQR");
+net.a_Bus{6}.a_Component{1}.add_local_controller("local-LQR", parameter=struct(Input="Vfield"));
 DebugScript.helper.quiet(@() net.initialize);
 
 sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
@@ -588,8 +592,7 @@ assert(max(abs(w(r.t > 8))) < max(abs(w0(r0.t > 8))))
 net = DebugScript.helper.build_ieee14();
 c{1} = net.a_Bus{1}.a_Component{1};
 c{2} = net.a_Bus{2}.a_Component{1};
-agc  = controller.agc.broadcast_PI_AGC(net, "agc", c{:}, alpha=[1;1], beta=[1;1], kP=100, kI=500);
-net.add_global_controller(agc);
+agc  = net.add_global_controller("agc-PI", c, parameter=struct(alpha=[1;1], beta=[1;1], kP=100, kI=500));
 DebugScript.helper.quiet(@() net.initialize);
 
 ev  = DebugScript.helper.scenario("step", net, "TimeSpan", [1,20], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", -0.1);
@@ -614,12 +617,11 @@ assert(abs(r0.Bus(1).Component(1).X.omega(end)) > 10*abs(omega(end)))
 %% Tripped global controller gives no output
 % 大域制御器を解列すると、解列中の出力は 0 (機器の入力は定常値のまま)
 net = DebugScript.helper.build_ieee14();
-agc = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002", kP=100, kI=500);
-net.add_global_controller(agc);
+agc = net.add_global_controller("agc-PI", ["SG1B001", "SG1B002"], parameter=struct(kP=100, kI=500));
 DebugScript.helper.quiet(@() net.initialize);
 
 ev1 = DebugScript.helper.scenario("step", net, "TimeSpan", [1,20], "InputUnit", "LPQ1B005", "InputName", "Pload", "InputValue", -0.1);
-ev2 = DebugScript.helper.scenario("trip", net, "TimeSpan", [5,10], "TripUnit", "agc");
+ev2 = DebugScript.helper.scenario("trip", net, "TimeSpan", [5,10], "TripUnit", agc.s_tag);
 sol = net.simulate([0,20], ev1, ev2);
 r   = sol.odeResults;
 Pm  = r.Bus(1).Component(1).U.Pmech;
@@ -634,12 +636,10 @@ assert(agc.l_isConnect, "シミュレーション後は接続状態に戻る")
 % 大域制御器は何台でも扱える。同じ発電機を alpha を半分ずつにした 2 台の AGC で制御すると、
 % 出力の和が 1 台の AGC と等しいので、同じ応答になる
 net1 = DebugScript.helper.build_ieee14();
-net1.add_global_controller(controller.agc.broadcast_PI_AGC(net1, "agc", "SG1B001", "SG1B002", alpha=[1;1], kP=100, kI=500));
+net1.add_global_controller("agc-PI", ["SG1B001", "SG1B002"], parameter=struct(alpha=[1;1], kP=100, kI=500));
 net2 = DebugScript.helper.build_ieee14();
-agcA = controller.agc.broadcast_PI_AGC(net2, "agcA", "SG1B001", "SG1B002", alpha=[0.5;0.5], kP=100, kI=500);
-agcB = controller.agc.broadcast_PI_AGC(net2, "agcB", "SG1B001", "SG1B002", alpha=[0.5;0.5], kP=100, kI=500);
-net2.add_global_controller(agcA);
-net2.add_global_controller(agcB);
+net2.add_global_controller("agc-PI", ["SG1B001", "SG1B002"], parameter=struct(alpha=[0.5;0.5], kP=100, kI=500));
+net2.add_global_controller("agc-PI", ["SG1B001", "SG1B002"], parameter=struct(alpha=[0.5;0.5], kP=100, kI=500));
 DebugScript.helper.quiet(@() net1.initialize);
 DebugScript.helper.quiet(@() net2.initialize);
 

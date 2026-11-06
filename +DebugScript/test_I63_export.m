@@ -3,17 +3,18 @@
 % 実行: runtests("DebugScript.test_I63_export")  または  DebugScript.run_all("Features","I63")
 
 % 共通設定 (各テストの前に毎回実行される)
-% 同じタグの AVR を 2 台の発電機に付ける (タグの重複は許されている)
+% AVR を 2 台の発電機に付ける (タグは発電機ごとに自動で付く)
 net = DebugScript.helper.build_ieee14();
-net.a_Bus{1}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr"), controller.pss.PSS1("pss"));
-net.a_Bus{2}.a_Component{1}.add_local_controller(controller.avr.AVR_ST1("avr"));
-net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001", "SG1B002"));
+avr1 = net.a_Bus{1}.a_Component{1}.add_local_controller("avr-ST1");
+pss1 = net.a_Bus{1}.a_Component{1}.add_local_controller("pss-PSS1");
+avr2 = net.a_Bus{2}.a_Component{1}.add_local_controller("avr-ST1");
+agc  = net.add_global_controller("agc-PI", ["SG1B001","SG1B002"]);
 DebugScript.helper.quiet(@() net.initialize);
 ev = DebugScript.helper.scenario("fault", net, "TimeSpan", [0.1,0.15], "FaultBus", "B008");
 s_dir = tempname;  mkdir(s_dir);
 c_dir = onCleanup(@() rmdir(s_dir, "s"));
 tab_ctrl = net.get_variable_map();
-tab_ctrl = tab_ctrl(ismember(tab_ctrl.Owner, ["CAavr","CPpss","agc"]), :);
+tab_ctrl = tab_ctrl(ismember(tab_ctrl.Owner, [avr1.s_tag, pss1.s_tag, avr2.s_tag, agc.s_tag]), :);
 
 
 %% Invalid file name fails before the integration

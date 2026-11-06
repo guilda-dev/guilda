@@ -1,8 +1,8 @@
 classdef BadControllerStub < LocalController
 % validate が制御器の契約違反を検出することを確かめるための制御器 (テスト専用)
 %
-%   con = DebugScript.helper.BadControllerStub("jacobian")
-%   gen.add_local_controller(con)
+%   c   = DebugScript.helper.register_stub("BadControllerStub", "controller.test_bad_controller");
+%   con = gen.add_local_controller("test-bad-controller", parameter=struct(bad="jacobian"));
 %
 % 入力 omega は発電機の出力、Vppss は綴りの誤りで未接続。出力 Vfield を発電機へ返す。
 % 正常な形は dx = u1, y = x, 平衡点 x = Vfield。引数で次の1つの誤りを入れる。
@@ -14,8 +14,11 @@ classdef BadControllerStub < LocalController
 %   residual   : fcn_dx が平衡点で 0 にならない
 %   output     : 出力が発電機の入力と合わない
 %   input      : 入力の平衡点が発電機の出力と合わない
+    properties (Constant, Hidden)
+        key = "test-bad-controller"                                                                      % モデルのキー (register_stub が写しのクラス名に置き換える)
+        s_role = "local"                                                                                 % 役割 ("local": AVR の位置に付ける)
+    end
     properties (SetAccess=protected, Hidden)
-        key = "local"                                                                                    % 制御器の種類 ("local": AVR の位置に付ける)
         sv_x = "x1"                                                                                      % 状態の名前
         sv_u = ["omega";"Vppss"]                                                                         % 入力の名前 (Vppss は綴りの誤りで未接続)
         sv_y = "Vfield"                                                                                  % 出力の名前
@@ -28,16 +31,17 @@ classdef BadControllerStub < LocalController
         sr_bad = ["none","jacobian","jacsize","xsize","massx","currentdep","residual","output","input"]  % 入れられる誤りの種類 ("none" は誤りなし)
     end
     methods
-        function obj = BadControllerStub(s_bad)
+        function obj = BadControllerStub(tag, opt)
             arguments (Input)
-                s_bad    % 入れる誤りの種類 (sv_bad のいずれか)
+                tag      % タグの接尾辞 (タグは "CL" + tag)
+                opt.bad  = "none"  % 入れる誤りの種類 (sr_bad のいずれか)
             end
             arguments (Output)
                 obj  % 作成したオブジェクト
             end
-            obj@LocalController("CLbad")
+            obj@LocalController("CL"+tag)
             obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)} = Parameter(obj, "dynamics", struct( ...
-                "bad", find(obj.sr_bad == s_bad)));
+                "bad", find(obj.sr_bad == opt.bad)));
         end
         function get_equilibrium(obj, ~, u)
             arguments (Input)

@@ -21,47 +21,46 @@ assert(tab{:,"Vfld_max"} == Inf && tab{:,"Vfld_min"} == -Inf)
 
 
 %% Default limits give the same trajectory as no limits
-sol1 = simulate_fault(controller.avr.AVR_DC1("avr1", kap=20));
-sol2 = simulate_fault(controller.avr.AVR_DC1("avr1", kap=20, Vfld_max=Inf, Vfld_min=-Inf));
+sol1 = simulate_fault(struct(kap=20));
+sol2 = simulate_fault(struct(kap=20, Vfld_max=Inf, Vfld_min=-Inf));
 assert(sol1.flag == 1)
 assert(isequal(sol1.rv_t, sol2.rv_t) && isequal(sol1.rm_variable, sol2.rm_variable))
 
 
 %% Upper limit clips the field voltage in a fault
-r_eq = field_equilibrium(controller.avr.AVR_DC1("avr1", kap=20));
+r_eq = field_equilibrium(struct(kap=20));
 r_max = r_eq + 0.05;
-[sol, avr] = simulate_fault(controller.avr.AVR_DC1("avr1", kap=20, Vfld_max=r_max));
+[sol, avr] = simulate_fault(struct(kap=20, Vfld_max=r_max));
 assert(sol.flag == 1, "flag %d", sol.flag)
 rv_fld = field_trajectory(sol, avr);
 assert(max(rv_fld) <= r_max + r_tol, "max Vfld %g > %g", max(rv_fld), r_max)
 assert(max(rv_fld) > r_max - r_tol, "the limit is not reached: %g", max(rv_fld))
-sol0 = simulate_fault(controller.avr.AVR_DC1("avr1", kap=20));
+sol0 = simulate_fault(struct(kap=20));
 assert(max(field_trajectory(sol0, avr)) > r_max + 0.5, "without the limit Vfld rises above it")
 
 
 %% Lower limit 0 clips the field voltage
 % 発電機の Eq を 1 pu 上げて端子電圧を上げると、kap=200 の AVR は Vfld を負へ下げようとする
-c_avr = {"avr1", "kap", 200};
-[sol, avr] = simulate_offset(controller.avr.AVR_DC1(c_avr{:}, Vfld_min=0));
+[sol, avr] = simulate_offset(struct(kap=200, Vfld_min=0));
 assert(sol.flag == 1, "flag %d", sol.flag)
 rv_fld = field_trajectory(sol, avr);
 assert(min(rv_fld) >= -r_tol, "min Vfld %g", min(rv_fld))
 assert(min(rv_fld) < r_tol, "the limit is not reached: %g", min(rv_fld))
-[sol0, avr0] = simulate_offset(controller.avr.AVR_DC1(c_avr{:}));
+[sol0, avr0] = simulate_offset(struct(kap=200));
 assert(min(field_trajectory(sol0, avr0)) < -1, "without the limit Vfld goes below 0")
 
 
 %% Equilibrium outside the field limits is an error
-r_eq = field_equilibrium(controller.avr.AVR_DC1("avr1", kap=20));
-ME = initialize_error(controller.avr.AVR_DC1("avr1", kap=20, Vfld_max=r_eq - 0.1));
-check_error(ME, "CAavr1", "[-Inf, " + num2str(r_eq - 0.1) + "]")
-ME = initialize_error(controller.avr.AVR_DC1("avr1", kap=20, Vfld_min=r_eq + 0.1));
-check_error(ME, "CAavr1", "[" + num2str(r_eq + 0.1) + ", Inf]")
+r_eq = field_equilibrium(struct(kap=20));
+[ME, avr] = initialize_error(struct(kap=20, Vfld_max=r_eq - 0.1));
+check_error(ME, avr.s_tag, "[-Inf, " + num2str(r_eq - 0.1) + "]")
+[ME, avr] = initialize_error(struct(kap=20, Vfld_min=r_eq + 0.1));
+check_error(ME, avr.s_tag, "[" + num2str(r_eq + 0.1) + ", Inf]")
 
 
 %% validate passes and the Jacobian agrees inside the limits
 [net, comp] = DebugScript.helper.build_3bus("gen-park");
-comp.add_local_controller(controller.avr.AVR_DC1("avr1", kap=20, Vfld_max=4, Vfld_min=0));
+comp.add_local_controller("avr-DC1", parameter=struct(kap=20, Vfld_max=4, Vfld_min=0));
 DebugScript.helper.quiet(@() net.initialize);
 flag = comp.a_LocalController{1}.validate(false);
 lv = flag.contract.status == "FAIL";
@@ -105,28 +104,28 @@ r_dx = M \ dx;
 assert(r_dx(3) == 0 && abs(r_dx(4) - (-x(4)/param(11))) < 1e-12)
 
 
-function [sol, avr] = simulate_fault(avr)
-% AVR を付けた3母線系統で B003 の地絡を simulate する
+function [sol, avr] = simulate_fault(sct_para)
+% AVR_DC1 (パラメータ sct_para) を付けた3母線系統で B003 の地絡を simulate する
     [net, comp] = DebugScript.helper.build_3bus("gen-park");
-    comp.add_local_controller(avr);
+    avr = comp.add_local_controller("avr-DC1", parameter=sct_para);
     DebugScript.helper.quiet(@() net.initialize);
     ev  = DebugScript.helper.scenario("fault", net, "TimeSpan", [1,1.05], "FaultBus", "B003");
     sol = DebugScript.helper.quiet(@() net.simulate([0,5], ev));
 end
 
-function [sol, avr] = simulate_offset(avr)
-% AVR を付けた発電機の Eq を 1 pu 上げて simulate する
+function [sol, avr] = simulate_offset(sct_para)
+% AVR_DC1 (パラメータ sct_para) を付けた発電機の Eq を 1 pu 上げて simulate する
     [net, comp] = DebugScript.helper.build_3bus("gen-park");
-    comp.add_local_controller(avr);
+    avr = comp.add_local_controller("avr-DC1", parameter=sct_para);
     DebugScript.helper.quiet(@() net.initialize);
     ev  = DebugScript.helper.scenario("offset", net, "TimeSpan", 0, "OffsetUnit", comp.s_tag, "OffsetState", "Eq", "OffsetValue", 1);
     sol = DebugScript.helper.quiet(@() net.simulate([0,5], ev));
 end
 
-function r_eq = field_equilibrium(avr)
-% AVR を付けた3母線系統を initialize し、平衡点の界磁電圧を返す
+function r_eq = field_equilibrium(sct_para)
+% AVR_DC1 (パラメータ sct_para) を付けた3母線系統を initialize し、平衡点の界磁電圧を返す
     [net, comp] = DebugScript.helper.build_3bus("gen-park");
-    comp.add_local_controller(avr);
+    avr = comp.add_local_controller("avr-DC1", parameter=sct_para);
     DebugScript.helper.quiet(@() net.initialize);
     r_eq = avr.rv_Xequilibrium(3);
 end
@@ -137,10 +136,10 @@ function rv_fld = field_trajectory(sol, avr)
     rv_fld = sol.rm_variable(:, tab.Owner == avr.s_tag & tab.Name == "Vfld");
 end
 
-function ME = initialize_error(avr)
-% AVR を付けた系統を initialize し、発生したエラーを返す
+function [ME, avr] = initialize_error(sct_para)
+% AVR_DC1 (パラメータ sct_para) を付けた系統を initialize し、発生したエラーと AVR を返す
     [net, comp] = DebugScript.helper.build_3bus("gen-park");
-    comp.add_local_controller(avr);
+    avr = comp.add_local_controller("avr-DC1", parameter=sct_para);
     ME = [];
     try
         DebugScript.helper.quiet(@() net.initialize);

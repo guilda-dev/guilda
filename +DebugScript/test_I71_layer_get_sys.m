@@ -158,8 +158,8 @@ gc.get_sys();
 
 %% Initialize of a controller that designs with get_sys still passes
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");     % B002 (1.02 pu): V0 = 1 と異なる母線
-gen.add_local_controller(controller.avr.AVR_ST1("avr1"));
-gen.add_local_controller(controller.local_LQR("lqr1"));
+gen.add_local_controller("avr-ST1");
+gen.add_local_controller("local-LQR");
 DebugScript.helper.quiet(@() net.initialize);
 assert(size(gen.get_sys().A, 1) >= numel(gen.sv_x))
 
@@ -194,13 +194,14 @@ function [net, gen] = build_with_controllers()
 % B001 の発電機に AVR と、その下に PSS を付けた 3 母線系統
     [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
     gen = net.a_Bus{1}.a_Component{1};
-    gen.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
+    gen.add_local_controller("avr-ST1");
+    gen.add_local_controller("pss-PSS1");
 end
 
 function [net, gc] = build_with_agc()
 % B001 の発電機を制御する AGC を付けた 3 母線系統
     [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
-    net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", string(net.a_Bus{1}.a_Component{1}), alpha=1, beta=1));
+    net.add_global_controller("agc-PI", string(net.a_Bus{1}.a_Component{1}), parameter=struct(alpha=1, beta=1));
     gc = net.a_GlobalController{1};
 end
 

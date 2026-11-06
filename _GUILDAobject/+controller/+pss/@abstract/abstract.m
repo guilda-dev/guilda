@@ -6,12 +6,14 @@ classdef abstract < LocalController
 %
 % See also controller.pss.PSS1, controller.avr.abstract
     properties (SetAccess=protected, Hidden) % Model definition
-        key             % Kind of controller (set by the concrete PSSs).
         sv_x            % Names of the states (set by the concrete PSSs).
         sv_u = "omega"  % Names of the inputs: frequency deviation of the generator.
         sv_y = "Vpss"   % Names of the outputs: Vpss input of the AVR.
         sv_para         % Names of the dynamic parameters (set by the concrete PSSs).
     end    
+    properties (Constant, Hidden) % Model definition
+        s_role = "pss"  % Role in Component.add_local_controller ("pss": under the AVR of the component).
+    end
     methods
         function obj = abstract(tag)
         % Create the PSS base object with the tag "CP" + tag.

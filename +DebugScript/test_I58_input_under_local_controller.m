@@ -40,8 +40,8 @@ assert(r_err < 0.01, "relative error %g", r_err)
 % AGC も LQR も SG1B003 の Pmech を駆動する。加算のときだけ AGC を含む線形モデルと一致する
 net = DebugScript.helper.build_ieee14();
 gen = component_of(net, s_unit);
-evalc("gen.add_local_controller(controller.local_LQR(""lqr"", Input=""Pmech""))");
-net.add_global_controller(controller.agc.broadcast_PI_AGC(net, "agc", s_unit, "SG1B001"));
+evalc("gen.add_local_controller(""local-LQR"", parameter=struct(Input=""Pmech""));");
+net.add_global_controller("agc-PI", [s_unit, "SG1B001"]);
 DebugScript.helper.quiet(@() net.initialize);
 [r_err, r_max] = error_to_linear(net, "SG1B002", "Pmech", r_step);
 assert(r_max > 1e-6, "the step has no effect: %g", r_max)
@@ -58,7 +58,9 @@ assert(max(abs(X.omega - gen.rv_Xequilibrium(gen.sv_x == "omega"))) < 1e-9)
 
 function net = build_with_avr(s_unit)
     net = DebugScript.helper.build_ieee14();
-    component_of(net, s_unit).add_local_controller(controller.avr.AVR_ST1("avr"), controller.pss.PSS1("pss"));
+    gen = component_of(net, s_unit);
+    gen.add_local_controller("avr-ST1");
+    gen.add_local_controller("pss-PSS1");
     DebugScript.helper.quiet(@() net.initialize);
 end
 

@@ -43,7 +43,7 @@ assert(isequal(v3_user_config("Model", struct("Reporter", 1)), struct("Reporter"
 
 
 %% Component key map is generated at startup
-% 起動時に add_component.m / replace_component.m が template から生成される
+% 起動時に add_component.m / replace_component.m が template/ の .template から生成される
 assert(isfile(fullfile(s_root, "_GUILDAsystem", "@Bus", "add_component.m")))
 assert(isfile(fullfile(s_root, "_GUILDAsystem", "@Bus", "replace_component.m")))
 txt = fileread(fullfile(s_root, "_GUILDAsystem", "@Bus", "add_component.m"));
@@ -51,8 +51,17 @@ for key = DebugScript.helper.model_classes("Component").Key'
     assert(contains(txt, "'" + key + "'"), key)
 end
 
+% 制御器の追加メソッドも template/ から生成される
+txt = fileread(fullfile(s_root, "_GUILDAsystem", "@Component", "add_local_controller.m"));
+for key = DebugScript.helper.model_classes("LocalController").Key'
+    assert(contains(txt, "'" + key + "'"), key)
+end
+txt = fileread(fullfile(s_root, "_GUILDAsystem", "@PowerNetwork", "add_global_controller.m"));
+assert(contains(txt, "'agc-PI'"))
+
 % 内容が同じなら書き直さない (起動のたびに add_branch.m などを更新しない)
-sv_file = fullfile(s_root, "_GUILDAsystem", ["@PowerNetwork","@Bus","@Bus"], ["add_branch.m","add_component.m","replace_component.m"]);
+sv_file = fullfile(s_root, "_GUILDAsystem", ["@PowerNetwork","@Bus","@Bus","@Component","@PowerNetwork"], ...
+                   ["add_branch.m","add_component.m","replace_component.m","add_local_controller.m","add_global_controller.m"]);
 evalc("GUILDA;");
 d0 = arrayfun(@(f) dir(f).datenum, sv_file);
 pause(1.1)

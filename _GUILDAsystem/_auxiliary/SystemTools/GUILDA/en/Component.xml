@@ -3,9 +3,8 @@
     <message>                        
         <entry key="ReplaceController">{0} ''{1}'' replaces ''{2}'' of ''{3}''.</entry>         
         <entry key="NotExtAvr">You are attempting to connect a PSS even though there is no AVR. Attach an AVR with add_local_controller first.</entry>         
-        <entry key="PssParentKey">PSS ''{0}'' cannot go under ''{1}'' of ''{3}'', whose key is ''{2}''. A PSS needs a parent with the key ''avr'': attach an AVR in its place first.</entry>
-        <entry key="SharedController">{0} ''{1}'' is already attached to ''{2}'' and cannot also be attached to ''{3}''. Create a separate controller object for each component.</entry>
-        <entry key="InvalidControllerKey">Local controller ''{0}'' has the key ''{1}''. The key must be ''avr'', ''pss'', ''local'' or ''governor''.</entry>
+        <entry key="PssParentKey">PSS ''{0}'' cannot go under ''{1}'' of ''{3}'', whose role (s_role) is ''{2}''. A PSS needs a parent with the role ''avr'': attach an AVR in its place first.</entry>
+        <entry key="InvalidControllerKey">Local controller ''{0}'' has the role (s_role) ''{1}''. The role must be ''avr'', ''pss'', ''local'' or ''governor''.</entry>
         <entry key="ControllerOutput">Output ''{0}'' of ''{1}'' matches no input of ''{2}'' (inputs: {3}).</entry>
         <entry key="ControllerOutputOverlap">Governor ''{0}'' and ''{1}'' of ''{3}'' both drive {2}. The top-level controllers of a component must drive different inputs: give the local controller other inputs (e.g. local_LQR with Input="Vfield"), or remove one of them first.</entry>
         <entry key="ControllerNotFound">No local controller with the tag ''{0}'' was found in ''{1}''.</entry>

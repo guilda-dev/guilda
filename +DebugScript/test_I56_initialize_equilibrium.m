@@ -116,8 +116,7 @@ assert(drift(net) < 1e-6)
 
 %% Failure while setting the point leaves the equilibrium stale
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
-lqr = controller.local_LQR("lqr1");
-gen.add_local_controller(lqr);
+lqr = gen.add_local_controller("local-LQR");
 DebugScript.helper.quiet(@() net.initialize);
 lqr.Q = ones(1, numel(gen.sv_x) + 1);           % 重みのサイズが違うので set_equilibrium で失敗する
 error_of(@() net.initialize());

@@ -51,10 +51,10 @@ function net = build_net()
     % AVR と PSS を入れ子にした発電機、制御器なしの発電機、AGC を持つ 9 母線系統
     net  = DebugScript.helper.build_9bus();
     comp = net.a_Bus{1}.a_Component{1};
-    comp.add_local_controller(controller.avr.AVR_ST1("avr1"), controller.pss.PSS1("pss1"));
+    comp.add_local_controller("avr-ST1");
+    comp.add_local_controller("pss-PSS1");
     c    = {net.a_Bus{2}.a_Component{1}; net.a_Bus{3}.a_Component{1}};
-    agc  = controller.agc.broadcast_PI_AGC(net, "agc", c{:}, alpha=[1;1], beta=[1;1], kP=100, kI=500);
-    net.add_global_controller(agc);
+    net.add_global_controller("agc-PI", c, parameter=struct(alpha=[1;1], beta=[1;1], kP=100, kI=500));
     DebugScript.helper.quiet(@() net.initialize);
 end
 
