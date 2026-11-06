@@ -68,7 +68,7 @@ classdef LocalController < PowerSystemModel
     
 %% Parameter    
     properties(SetAccess={?Component, ?LocalController}) % Layer Structure
-        a_Component = []                           % Parent: the component, or the AVR for a PSS ([] when detached).
+        a_Component = []                           % Parent: the component, or the AVR for a PSS ([] when detached). <@Type> Component or LocalController (1x1 or empty)
     end
     properties(SetAccess=protected) % Layer Structure
         a_LocalController = cell(0,1)              % Nested controller (the PSS under an AVR), 0x1 or 1x1. <@Stale> equilibrium

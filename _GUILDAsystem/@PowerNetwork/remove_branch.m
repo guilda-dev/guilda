@@ -32,6 +32,6 @@ function remove_branch(obj,tag)
     end
     for k = 1:numel(a_removed)
         a_removed{k}.a_Bus          = cell(0,1);
-        a_removed{k}.a_PowerNetwork = PowerNetwork.empty;
+        a_removed{k}.a_PowerNetwork = [];
     end
 end

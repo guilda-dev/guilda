@@ -14,14 +14,14 @@ function log_edit(obj, log, tag)
 
     % A Parameter container is not a child of a controller, so the walk starts at its owner.
     a_owner = obj;
-    if isa(obj,"Parameter") && isa(obj.parent,"LayerPackage") && ~isempty(obj.parent)
+    if isa(obj,"Parameter") && isa(obj.parent,"LayerPackage")
         a_owner = obj.parent;
     end
     a_layer = a_owner;
     while true
         a_layer.handle_edit(a_owner, tag, s_message);
         a_parent = a_layer.parent;
-        if ~isa(a_parent,"LayerPackage") || isempty(a_parent)   % an unset parent is an empty object of its class
+        if ~isa(a_parent,"LayerPackage")
             break
         end
         a_layer = a_parent;

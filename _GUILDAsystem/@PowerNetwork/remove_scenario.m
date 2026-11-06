@@ -25,6 +25,6 @@ function remove_scenario(obj, sr_tag)
     a_rm  = obj.a_Scenario(lv_rm);
     obj.a_Scenario = obj.a_Scenario(~lv_rm);
     for k = 1:numel(a_rm)
-        a_rm{k}.a_PowerNetwork = PowerNetwork.empty;
+        a_rm{k}.a_PowerNetwork = [];
     end
 end

@@ -96,7 +96,7 @@ ___KEY_CASES___
             warning(msg("GUILDA:Bus:ControllersDropped", tag_list(a_con), char(comp_pre.s_tag), char(comp.s_tag)))
         end
     end
-    comp_pre.a_Bus = Bus.empty;    % the replaced component no longer reads this bus
+    comp_pre.a_Bus = [];    % the replaced component no longer reads this bus
 end
 
 function a_con = controllers_of(comp)

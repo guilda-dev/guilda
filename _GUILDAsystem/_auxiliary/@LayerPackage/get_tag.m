@@ -10,7 +10,7 @@ function out = get_tag(obj, s_split)
         out % Composed tag string.
     end
     out = obj.s_tag;
-    if isa(obj.parent,"LayerPackage") && ~isempty(obj.parent)
+    if isa(obj.parent,"LayerPackage")
         out = out + s_split + obj.parent.get_tag(s_split);
     end
 end
