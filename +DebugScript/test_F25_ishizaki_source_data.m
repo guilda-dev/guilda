@@ -25,7 +25,7 @@ c_dir = onCleanup(@() rmdir(s_tmp, "s"));
 writelines(["function str = tempname"
             "    s_dir = fileparts(mfilename('fullpath'));"
             "    fclose(fopen(fullfile(s_dir,'called'),'w'));"
-            "    str = fullfile(s_dir,['work_',char(java.util.UUID.randomUUID())]);"
+            "    str = fullfile(s_dir,'work');"
             "end"], fullfile(s_tmp, "tempname.m"));
 addpath(s_tmp);
 c_path = onCleanup(@() rmpath(s_tmp));

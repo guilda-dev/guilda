@@ -21,8 +21,6 @@ function txt = msg(ID, varargin)
     arguments (Output)
         txt       % Message text (char).
     end
-    
-    import java.text.MessageFormat    
 
     if ~ischar(ID)
         if isstring(ID)
@@ -71,14 +69,56 @@ function txt = msg(ID, varargin)
         args = varargin;
         narg = numel(args);
         if MSGnums == narg
-            subs_txt = MessageFormat.format(message, args);
-            txt      = char(subs_txt);
-        elseif MSGnums > args
-            en = MSGnums - args;
+            txt = format_message(message, args);
+        elseif MSGnums > narg
+            en = MSGnums - narg;
             error("There are " + num2str(en) + " fewer arguments than specified.")
         else
-            en = args - MSGnums;
+            en = narg - MSGnums;
             error("There are " + num2str(en) + " more arguments than specified.")
         end
+    end
+end
+
+function txt = format_message(message, args)
+    % Fill the placeholders with the quote rules of Java MessageFormat: '' is one quote and
+    % text between single quotes is literal. {n} is the (n+1)-th argument as text ('' when it
+    % is empty or missing); {n,number,integer} rounds a number to an integer.
+    message  = char(message);
+    txt      = '';
+    l_quoted = false;
+    i = 1;
+    while i <= numel(message)
+        c = message(i);
+        if c == '''' && i < numel(message) && message(i+1) == ''''
+            txt(end+1) = ''''; %#ok<AGROW>
+            i = i + 1;
+        elseif c == ''''
+            l_quoted = ~l_quoted;
+        elseif c == '{' && ~l_quoted
+            i_end     = i + find(message(i+1:end) == '}', 1);
+            c_part    = strtrim(strsplit(message(i+1:i_end-1), ','));
+            l_integer = isequal(c_part(2:end), {'number', 'integer'});
+            if ~(isscalar(c_part) || l_integer)
+                error("msg does not support the placeholder {" + message(i+1:i_end-1) + "}.")
+            end
+            val = args{str2double(c_part{1}) + 1};
+            if isempty(val) || isstring(val) && isscalar(val) && ismissing(val)
+                s_val = '';
+            elseif ischar(val) || isstring(val) && isscalar(val)
+                s_val = char(val);
+            elseif (isnumeric(val) || islogical(val)) && isscalar(val) && l_integer
+                s_val = char(string(round(val)));
+            elseif (isnumeric(val) || islogical(val)) && isscalar(val)
+                s_val = char(string(val));
+            else
+                error("msg cannot show a " + class(val) + " of size " + join(string(size(val)), "x") + ".")
+            end
+            txt = [txt, s_val]; %#ok<AGROW>
+            i   = i_end;
+        else
+            txt(end+1) = c; %#ok<AGROW>
+        end
+        i = i + 1;
     end
 end
