@@ -221,7 +221,7 @@ assert(r_err < 0.01, "relative error %g", r_err)
 [net, comp, avr, pss, gov] = build_full("after");
 comp.remove_local_controller(gov.s_tag);
 assert(same_list(comp.a_LocalController, {avr}) && avr.a_LocalController{1} == pss && isempty(gov.a_Component))
-assert(net.l_staleEquilibrium)
+assert(DebugScript.helper.is_stale(net))
 comp.add_local_controller(gov);
 ME = caught(@() comp.remove_local_controller(avr.s_tag));
 assert(ME.identifier == "GUILDA:Component:ControllerHasNested")
@@ -265,12 +265,12 @@ s_id = "GUILDA:Component:ControllerOutputOverlap";
 [net, comp] = DebugScript.helper.build_3bus("gen-park");
 gov = controller.governor.IEEJ_LPT1("g");
 comp.add_local_controller(gov);
-n_log = height(net.disp_edit());
+sv_log = DebugScript.helper.stale(net);
 lqr = controller.local_LQR("lqr");    % 既定ではすべての入力 (Pmech を含む) を駆動する
 ME = caught(@() comp.add_local_controller(lqr));
 assert(ME.identifier == s_id)
 assert(contains(ME.message, "Pmech") && contains(ME.message, gov.s_tag) && contains(ME.message, lqr.s_tag))
-assert(same_list(comp.a_LocalController, {gov}) && isempty(lqr.a_Component) && height(net.disp_edit()) == n_log)
+assert(same_list(comp.a_LocalController, {gov}) && isempty(lqr.a_Component) && isequal(DebugScript.helper.stale(net), sv_log))
 % 逆の順でも、同じ呼び出しでも
 [~, comp] = DebugScript.helper.build_3bus("gen-park");
 evalc("comp.add_local_controller(controller.local_LQR(""lqr"", Input=""Pmech""))");

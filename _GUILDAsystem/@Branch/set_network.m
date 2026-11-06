@@ -12,7 +12,4 @@ function set_network(obj,a_PowerNetwork)
         mustBeA(a_PowerNetwork, "PowerNetwork")
     end
     obj.a_PowerNetwork = a_PowerNetwork;
-    if ~isempty(a_PowerNetwork)
-        obj.reset_edit(false);   % edits made before do not belong to the new network; not initialized there yet
-    end
 end

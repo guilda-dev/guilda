@@ -6,7 +6,7 @@ function remove_local_controller(obj, s_tag, opt)
 % An AVR that still has a PSS feeding it cannot be removed unless `RemoveNested` is true,
 % which removes the PSS too. Remove the PSS alone by its own tag. The removed controllers
 % no longer refer to this component or to each other, so they can be attached again.
-% The removal is logged as a "Topology" edit, so the equilibrium becomes stale.
+% The removal is a "Topology" edit, so the equilibrium of the component becomes stale.
 %
 % <@Examples>
 % ```matlab

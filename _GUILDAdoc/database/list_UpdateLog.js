@@ -330,9 +330,9 @@ const updateLogData = [
     "content": "tools.closeUI, tools.ssfeedback, tools.input, tools.transTab, tools.DNS, tools.FigureClass and the tools.for_ss package (collect, dae2ode, feedback, kron, reorder) are removed. Nothing in GUILDA called them."
   },
   {
-    "title": "Model functions rebuilt at every analysis",
+    "title": "initialize brings the model up to date",
     "date": "2026-11-06",
     "type": "changed",
-    "content": "Every analysis (initialize, simulate, linearize, get_sys, calculate_continuation_powerflow and validate) now rebuilds the f_* handles of every layer from the current parameters and network frequency. For model authors: set_odefcn and s_odefcn are removed. A model class that built its own handles overrides the protected method apply_edit(obj, s_target) and builds them when s_target is \"odefcn\"; a constructor no longer calls obj.set_odefcn()."
+    "content": "net.initialize() is the one step that brings the model up to date after edits. It solves the power flow only when Method is given or an edit changed the power flow (baseMVA, the topology, bus and branch parameters, the slack bus, the P and Q of the components); a dynamics edit recomputes only the edited models from the held voltage and current, a Hz edit only rebuilds the model functions, and with nothing edited initialize changes nothing. simulate, linearize, get_sys, calculate_continuation_powerflow and validate only check the model, and stop with GUILDA:LayerPackage:Stale, naming the edits, until initialize has run. The edit log and disp_edit are removed; each layer keeps the reasons it is out of date in sct_stale (e.g. net.sct_stale.powerflow). For model authors: set_odefcn and s_odefcn are removed. A model class that built its own handles overrides the protected method build_odefcn, and a constructor no longer calls obj.set_odefcn()."
   }
 ];

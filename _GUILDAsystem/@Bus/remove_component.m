@@ -1,8 +1,8 @@
 function remove_component(obj, s_tag)
 % Remove a component from the bus by tag.
 %
-% The removed component no longer refers to this bus. The removal is logged as a
-% "Topology" edit. A tag that is not found is an error. A component controlled by a global
+% The removed component no longer refers to this bus. The removal is a
+% "Topology" edit, which makes the power flow of the network stale. A tag that is not found is an error. A component controlled by a global
 % controller cannot be removed.
 %
 % See also Bus.add_component

@@ -1,22 +1,34 @@
 function [result, flag, output] = initialize(obj, varargin)
-% Compute the operating point of the network and set it as its equilibrium.
+% Bring every layer of the network up to date: the power flow, the equilibria and the function handles.
 %
-% The operating point is set as the equilibrium of the buses, components, local
-% controllers and global controllers, and the edit log is reset, so the analyses that
-% need the equilibrium (simulate, linearize, get_sys) can run. initialize is one of the
-% few analysis methods that change the model.
+% Only initialize brings the layers up to date (LayerPackage `sct_stale`); the analyses
+% that need the equilibrium (simulate, linearize, get_sys, the continuation power flow)
+% only check them. It is one of the few analysis methods that change the model. Steps:
+%
+% 1. The operating point is solved when Method is given ("powerflow" or "OPF"; always
+%    solved then) or when the power flow of the network is stale (net.sct_stale.powerflow:
+%    edits of baseMVA, the topology, bus and branch parameters, the slack bus or the
+%    powerflow parameters of the components; also before the first initialize). It is
+%    written with Bus.set_equilibrium, which sets the equilibria of the components and
+%    their local controllers.
+% 2. Every bus initializes its components: stale handles are rebuilt, and an equilibrium
+%    that is still stale (an edit of dynamics or of the local controllers) is recomputed
+%    from the held V and I. Then each global controller rebuilds its stale handles and
+%    computes its equilibrium.
+%
+% So a dynamics-only edit does not solve the power flow again, and a Hz edit only rebuilds
+% the handles. With nothing stale, initialize changes nothing.
 %
 % Name-Value options:
 %
-% - `Method` — How the operating point is obtained. Default: "powerflow".
+% - `Method` — How the operating point is obtained when it is solved. Default:
+%   "powerflow".
 %   - "powerflow": net.calculate_powerflow (settings of net.solver_PF).
 %   - "OPF": net.optimize_powerflow with Method="AC OPF" (settings of net.solver_OPF;
 %     the AC formulation gives a complete AC operating point).
-%   - "equilibrium": the equilibria the components already hold (from an earlier
-%     initialize); buses without components get the voltage of Y*V = I. The states
-%     and inputs are recomputed from the held V and I, so this follows edits of
-%     dynamics parameters. Other edits that change the equilibrium (powerflow and
-%     base parameters, topology, slack bus) stop with an error: use net.initialize().
+%   - "equilibrium": never solved; the equilibria the components already hold (from an
+%     earlier initialize) are kept, and buses without components get the voltage of
+%     Y*V = I. A stale power flow stops with an error: use net.initialize().
 % - Other options go unchanged to calculate_powerflow ("powerflow") or
 %   optimize_powerflow ("OPF") and are validated there (unknown names stop with
 %   GUILDA:resolve_options:UnknownName); "equilibrium" takes no other option. The
@@ -25,19 +37,19 @@ function [result, flag, output] = initialize(obj, varargin)
 %
 % When the analysis does not succeed (no convergence, an infeasible OPF, or stored
 % equilibria that do not satisfy the network equations), initialize stops with an error
-% naming the remedy, and the network keeps its previous equilibrium and edit log (a
-% slack bus set by calculate_powerflow is released again). When setting the operating
-% point fails afterwards, or the point does not satisfy Y*V = I, the equilibrium is left
-% out of date, and analyses stop with GUILDA:PowerNetwork:EquilibriumStale until
-% initialize succeeds.
+% naming the remedy, and the network keeps its previous equilibrium and stale state (a
+% slack bus set by calculate_powerflow is released again). When a later step fails, or
+% the point does not satisfy Y*V = I, the power flow is left stale, and analyses stop with
+% GUILDA:LayerPackage:Stale until initialize succeeds.
 %
 % A network split into islands is a valid equilibrium when the power of each island
 % balances, so a successful initialize only warns (GUILDA:PowerNetwork:NetworkIsland). A
 % failed power flow or OPF on such a network names the islands in its error.
 %
-% The models are evaluated at the point that was set, with every Method. A state or input
-% of the wrong size, a model function that returns the wrong size and a model function
-% that stops are errors naming the model, and the equilibrium is left out of date. A
+% When anything was stale, the models are evaluated at the point that was set, with every
+% Method. A state or input of the wrong size, a model function that returns the wrong size
+% and a model function that stops are errors naming the model, and the power flow is left
+% stale. A
 % residual of a component, local controller or global controller of 1e-6 or more only
 % warns (GUILDA:PowerNetwork:EquilibriumResidual), because such a model can still be run:
 % its states then move without a disturbance.
@@ -46,7 +58,9 @@ function [result, flag, output] = initialize(obj, varargin)
 % ```matlab
 % net = network.IEEE9bus();
 % net.initialize();                                % power flow
-% net.initialize(Method="equilibrium");            % re-set the stored equilibria
+% net.a_Bus{1}.a_Component{1}.tab_parameter.dynamics.D = 0.1;
+% net.initialize();                                % only the edited generator
+% net.initialize(Method="equilibrium");            % never solves the power flow
 % res = net.initialize(Method="OPF", Solver="fmincon");
 % res.r_cost                                       % cost of the OPF operating point
 % ```
@@ -61,90 +75,75 @@ function [result, flag, output] = initialize(obj, varargin)
         varargin   % Name-Value options.
     end
     arguments (Output)
-        result   % ResultPF for "powerflow" and "equilibrium" (s_solver = "equilibrium", no branch flows), ResultOPF for "OPF"; result.tab_bus is the bus equilibrium.
+        result   % ResultPF of the power flow, ResultOPF for "OPF"; without a solve, ResultPF of the held equilibrium (s_solver = "equilibrium", no branch flows). result.tab_bus is the bus equilibrium.
         flag     % Success flag of the analysis (positive; a failure stops with an error).
         output   % Details of the analysis; output.message describes the outcome.
     end
 
     varargin = v3_initialize_args(varargin);                  % COMPAT(v3)
-    [s_method, c_nv] = take_method(varargin);
+    [s_method, c_nv, l_given] = take_method(varargin);
 
-    obj.check_edit();    % rebuild the f_* handles
-
+    l_stale = ~isempty(obj.collect_stale());    % anything to bring up to date
+    l_solve = s_method ~= "equilibrium" && (l_given || ~isempty(obj.sct_stale.powerflow));
     switch s_method
         case "powerflow"
-            lv_slack = tools.vcellfun(@(b) b.l_isSlack, obj.a_Bus);
-            try
-                [result, flag, output] = obj.calculate_powerflow(c_nv{:});
-                l_ok = result.l_success;
-            catch ME
-                l_ok = false;
-            end
-            if ~l_ok && ~any(lv_slack)
-                release_slack(obj);
-            end
-            if exist("ME", "var")
-                rethrow(ME)
-            end
-            if ~l_ok
-                stop_powerflow(obj, output)
+            if l_solve
+                [result, flag, output] = solve_powerflow(obj, c_nv);
             end
         case "OPF"
-            try
-                [result, flag, output] = obj.optimize_powerflow(c_nv{:}, "Method", "AC OPF");
-            catch ME
-                % building the OPF problem of a split network can stop with an internal error:
-                % those have an identifier, while error(msg(...)) of GUILDA has none
-                if ~isempty(ME.identifier) && ~startsWith(ME.identifier, "GUILDA:") && network_islands(obj) > 1
-                    stop_opf(obj, struct("message", ME.message))
-                end
-                rethrow(ME)
-            end
-            if ~result.l_success
-                stop_opf(obj, output)
+            if l_solve
+                [result, flag, output] = solve_opf(obj, c_nv);
             end
         case "equilibrium"
             if ~isempty(c_nv)
                 error(msg("GUILDA:PowerNetwork:InitializeEquilibriumOption", char(string(c_nv{1}))))
             end
-            check_edit_for_equilibrium(obj);
-            [result, flag, output] = calculate_from_equilibrium(obj);
+            if ~isempty(obj.sct_stale.powerflow)
+                sv = unique(obj.sct_stale.powerflow, "stable");
+                s_list = join(sv(1:min(end,3)), "; ");
+                if numel(sv) > 3
+                    s_list = s_list + "; ...";
+                end
+                error(msg("GUILDA:PowerNetwork:InitializeEquilibriumEdited", char(s_list)))
+            end
     end
-    tab_PFsol = result.tab_bus;
-    c_PQ      = component_power(obj, s_method, result);
-
-    % stays in the log if a step below fails, so a partly written point is never used
-    % (reset_edit clears it when initialize finishes)
-    obj.log_edit("initialize", "Initialize");
-
-    for i_gc = 1:numel(obj.a_GlobalController)
-        a_GC = obj.a_GlobalController{i_gc};
-        [a_GC.rv_Xequilibrium, a_GC.rv_Uequilibrium] = a_GC.get_equilibrium();
+    if ~l_solve && (nargout > 0 || s_method == "equilibrium")
+        [result, flag, output] = calculate_from_equilibrium(obj);   % also checks Y*V = I
     end
-
-    % distribute Qcomponent
-    for i_bus = 1:numel(obj.a_Bus)
-        rr_PFsol = tab_PFsol{i_bus,["Vphasor","Iphasor","P","Q"]};
-        c_Vbus = rr_PFsol(1);
-        c_Ibus = rr_PFsol(2);
-        r_Pbus = rr_PFsol(3);
-        r_Qbus = rr_PFsol(4);
-        obj.a_Bus{i_bus}.set_equilibrium(c_Vbus,c_Ibus,r_Pbus,r_Qbus,"rm_PQ",c_PQ{i_bus})
+    if ~l_solve && ~l_stale
+        return    % nothing to bring up to date
     end
 
-    % the point that was set must satisfy Kirchhoff's current law at every bus
-    sv_Bus  = string(obj.a_Bus);
-    tab_Y   = obj.get_admittance_matrix;
-    r_resid = max(abs(tab_Y{sv_Bus,sv_Bus}*obj.cv_Vequilibrium - obj.cv_Iequilibrium), [], "includenan");
-    if ~(r_resid < equilibrium_tolerance())
-        error(msg("GUILDA:PowerNetwork:InitializeNotEquilibrium", char(s_method), char(string(r_resid))))
+    try
+        if l_solve
+            write_powerflow(obj, s_method, result);
+        end
+        for i_bus = 1:numel(obj.a_Bus)
+            obj.a_Bus{i_bus}.initialize();
+        end
+        for i_br = 1:numel(obj.a_Branch)
+            obj.a_Branch{i_br}.initialize();
+        end
+        for i_gc = 1:numel(obj.a_GlobalController)
+            obj.a_GlobalController{i_gc}.initialize(true);   % may read the units just set
+        end
+
+        % the point that was set must satisfy Kirchhoff's current law at every bus
+        sv_Bus  = string(obj.a_Bus);
+        tab_Y   = obj.get_admittance_matrix;
+        r_resid = max(abs(tab_Y{sv_Bus,sv_Bus}*obj.cv_Vequilibrium - obj.cv_Iequilibrium), [], "includenan");
+        if ~(r_resid < equilibrium_tolerance())
+            error(msg("GUILDA:PowerNetwork:InitializeNotEquilibrium", char(s_method), char(string(r_resid))))
+        end
+
+        % the models must hold the point; sizes stop here
+        s_residual = large_model_residuals(obj);
+    catch ME
+        % a partly written point is never used: the next initialize solves it again
+        obj.mark_stale("powerflow", obj.s_tag + ": the last initialize stopped before it finished");
+        rethrow(ME)
     end
-
-    % the models must hold the point; sizes stop here, while the equilibrium is out of date
-    s_residual = large_model_residuals(obj);
-
-    % reset log
-    obj.reset_edit(true)
+    obj.clear_stale("powerflow");
 
     if s_residual ~= ""
         warning(msg("GUILDA:PowerNetwork:EquilibriumResidual", char(string(equilibrium_tolerance())), char(s_residual)))
@@ -157,13 +156,66 @@ function [result, flag, output] = initialize(obj, varargin)
 end
 
 
-function [s_method, c_nv] = take_method(c_in)
-% Separates Method (of initialize) from the options passed to the analysis
+function [result, flag, output] = solve_powerflow(obj, c_nv)
+% The power flow; a slack bus that calculate_powerflow set is released when it fails
+    lv_slack = tools.vcellfun(@(b) b.l_isSlack, obj.a_Bus);
+    try
+        [result, flag, output] = obj.calculate_powerflow(c_nv{:});
+        l_ok = result.l_success;
+    catch ME
+        l_ok = false;
+    end
+    if ~l_ok && ~any(lv_slack)
+        release_slack(obj);
+    end
+    if exist("ME", "var")
+        rethrow(ME)
+    end
+    if ~l_ok
+        stop_powerflow(obj, output)
+    end
+end
+
+
+function [result, flag, output] = solve_opf(obj, c_nv)
+% The AC OPF
+    try
+        [result, flag, output] = obj.optimize_powerflow(c_nv{:}, "Method", "AC OPF");
+    catch ME
+        % building the OPF problem of a split network can stop with an internal error:
+        % those have an identifier, while error(msg(...)) of GUILDA has none
+        if ~isempty(ME.identifier) && ~startsWith(ME.identifier, "GUILDA:") && network_islands(obj) > 1
+            stop_opf(obj, struct("message", ME.message))
+        end
+        rethrow(ME)
+    end
+    if ~result.l_success
+        stop_opf(obj, output)
+    end
+end
+
+
+function write_powerflow(obj, s_method, result)
+% Bus.set_equilibrium of every bus with the solved point (the components and their local
+% controllers set theirs)
+    tab_PFsol = result.tab_bus;
+    c_PQ      = component_power(obj, s_method, result);
+    for i_bus = 1:numel(obj.a_Bus)
+        rr_PFsol = tab_PFsol{i_bus,["Vphasor","Iphasor","P","Q"]};
+        obj.a_Bus{i_bus}.set_equilibrium(rr_PFsol(1),rr_PFsol(2),rr_PFsol(3),rr_PFsol(4),"rm_PQ",c_PQ{i_bus})
+    end
+end
+
+
+function [s_method, c_nv, l_given] = take_method(c_in)
+% Separates Method (of initialize) from the options passed to the analysis; l_given is
+% true when Method was given
     sr_method = ["powerflow","OPF","equilibrium"];
     if mod(numel(c_in), 2) ~= 0
         error(msg("GUILDA:PowerNetwork:InitializePairs"))
     end
     s_method   = "powerflow";
+    l_given    = false;
     lv_method  = false(size(c_in));
     for k = 1:2:numel(c_in)
         x = c_in{k};
@@ -175,6 +227,7 @@ function [s_method, c_nv] = take_method(c_in)
                 error(msg("GUILDA:PowerNetwork:InitializeMethod", char(join('"' + sr_method + '"', ", "))))
             end
             s_method = sr_method(strcmpi(v, sr_method));
+            l_given  = true;
         end
     end
     c_nv = c_in(~lv_method);
@@ -403,27 +456,7 @@ function c_PQ = component_power(obj, s_method, result)
         switch s_method
             case "OPF"
                 c_PQ{i_bus} = real(result.tab_cub{string(a_Comp),["P","Q"]});
-            case "equilibrium"
-                cv_S = cellfun(@(c) c.c_Vequilibrium*conj(c.c_Iequilibrium), a_Comp(:));
-                c_PQ{i_bus} = [real(cv_S), imag(cv_S)];
         end
-    end
-end
-
-
-function check_edit_for_equilibrium(obj)
-% Stops when an edit since the last initialize would be lost by Method="equilibrium".
-% Dynamics edits are not lost: the states and inputs are recomputed from the held V and I.
-    tab = obj.disp_edit();
-    [~, lv] = obj.edit_effect(tab.tag, tab.log);
-    lv = lv & ~matches(tab.tag, ["Parameter(dynamics)", "Initialize"]);
-    if any(lv)
-        sv_edit  = tab.ID(lv) + ": " + tab.log(lv);
-        s_list   = join(sv_edit(1:min(end,3)), ", ");
-        if numel(sv_edit) > 3
-            s_list = s_list + ", ...";
-        end
-        error(msg("GUILDA:PowerNetwork:InitializeEquilibriumEdited", char(s_list)))
     end
 end
 

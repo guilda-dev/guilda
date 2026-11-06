@@ -11,7 +11,7 @@ net = balanced_island();
 [s_id, s_msg] = warning_of(@() net.initialize);
 assert(s_id == "GUILDA:PowerNetwork:NetworkIsland", s_id)
 assert(contains(s_msg, "[B001, B002, B003], [B004, B005]"), s_msg)
-assert(~net.l_staleEquilibrium && kcl_residual(net) < 1e-6)
+assert(~DebugScript.helper.is_stale(net) && kcl_residual(net) < 1e-6)
 
 
 %% The warning of a balanced island can be turned off
@@ -29,6 +29,10 @@ net = balanced_island();
 assert(warning_of(@() net.initialize(Method="OPF")) == "GUILDA:PowerNetwork:NetworkIsland")
 net = balanced_island();
 warning_of(@() net.initialize);
+assert(warning_of(@() net.initialize(Method="equilibrium")) == "", "何も古くないときの initialize は何もしない")
+a_Comp = [net.a_Bus{:}];  a_Comp = vertcat(a_Comp.a_Component);
+c = a_Comp{find(cellfun(@(x) isa(x, "component.generator.abstract"), a_Comp), 1)};
+c.tab_parameter.dynamics.D = c.tab_parameter.dynamics.D + 0.1;   % 動特性の編集: 潮流は解かず平衡点を作り直す
 assert(warning_of(@() net.initialize(Method="equilibrium")) == "GUILDA:PowerNetwork:NetworkIsland")
 
 

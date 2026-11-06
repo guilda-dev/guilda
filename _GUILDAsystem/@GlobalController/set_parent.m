@@ -8,6 +8,7 @@ function set_parent(obj,net)
     end
     obj.a_PowerNetwork = net;
     if ~isempty(net)
-        obj.reset_edit(false);   % edits made before do not belong to the new network; not initialized there yet
+        % the network frequency may differ
+        obj.mark_stale(["equilibrium","odefcn"], obj.s_tag + ": attached to " + net.s_tag);
     end
 end

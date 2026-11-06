@@ -2,7 +2,7 @@ function reset_opffcn(obj)
 % Restore the default OPF cost and constraints of the bus.
 %
 % Removes the OPF terms set by set_opffcn: the bus gets its default constraints again
-% and no cost. The edit is logged and does not make the equilibrium stale.
+% and no cost. The edit (tag "opffcn") makes nothing stale.
 %
 % <@Examples>
 % ```matlab
@@ -18,5 +18,5 @@ function reset_opffcn(obj)
     obj.f_opfcost    = [];
     obj.f_opfconst   = [];
     obj.l_opfdefault = true;
-    obj.log_edit("reset_opffcn", "OPF");
+    obj.log_edit("reset_opffcn", "opffcn");
 end

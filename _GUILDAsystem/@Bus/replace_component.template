@@ -2,8 +2,8 @@ function comp = replace_component(obj, s_tag, Key, parameter, opt)
 % Replace a component of the bus by a component of another model.
 %
 % The new component keeps the power-flow, operation, OPF and graph settings and the
-% number of the replaced one. The replacement is logged as a "Topology" edit, so
-% `net.initialize()` is needed before the dynamic analyses.
+% number of the replaced one. The replacement is a "Topology" edit, which makes
+% the power flow stale, so `net.initialize()` is needed before the dynamic analyses.
 % A tag that is not found is an error. A component controlled by a global controller
 % cannot be replaced.
 %

@@ -8,7 +8,8 @@ function set_parent(obj,a_Component)
     end
     obj.a_Component = a_Component;
     if ~isempty(a_Component)
-        obj.reset_edit(false);   % edits made before do not belong to the new parent; not initialized there yet
+        % the equilibrium follows the new parent, and the network frequency may differ
+        obj.mark_stale(["equilibrium","odefcn"], obj.s_tag + ": attached to " + a_Component.s_tag);
     end
     obj.resolve_observe();        % inputs read on the component (also of nested controllers)
 end

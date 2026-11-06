@@ -1,6 +1,6 @@
 function obj = loadobj(obj)
 % A MAT file does not hold listeners: restore those of the parameters so that
-% edits of a loaded network are checked and logged. MATLAB turns an error here
+% edits of a loaded network are checked and reported. MATLAB turns an error here
 % into a warning, so an incomplete restore is reported as a warning.
 %
 % <@Group> Data IO

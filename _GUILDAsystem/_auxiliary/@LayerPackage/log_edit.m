@@ -1,31 +1,20 @@
-function log_edit(obj, log, tag, before, after)
-    % Append a new edit-log record.
+function log_edit(obj, log, tag)
+    % Report an edit of this layer to every layer up to the top.
     %
-    % Stores the edit in the layer's own rows (the rows of the owner for a Parameter
-    % container) once that layer has been initialized, then calls handle_edit on every
-    % layer from there up to the top of the hierarchy.
+    % Calls handle_edit(obj, tag, message) on the edited layer (the owner for a Parameter
+    % container) and on every layer above it; message is "<tags from obj up, joined by
+    % "/">: <log>". Each layer appends it to its own stale tags that the edit affects.
     arguments (Input)
-        obj % Target layer object.
-        log    (1,1) string = ""; % Log message.
-        tag    (1,1) string = ""; % Kind of edit.
-        before = nan;             % State before the edit.
-        after  = nan;             % State after the edit.
+        obj % Edited layer (a Parameter container for a parameter edit).
+        log    (1,1) string  % What was edited, with the values (e.g. "edit D: 0.1 -> 0.2").
+        tag    (1,1) string  % Kind of edit: a parameter group ("dynamics", "powerflow", ...), "Topology", "Slack", "opffcn" or "Tag".
     end
-    % A Parameter container keeps no rows: the containers of the controllers are not their
-    % children, so initialize (reset_edit) and disp_edit reach them through the owner.
-    a_owner = obj;
-    if isa(obj,"Parameter") && isa(obj.parent,"LayerPackage")
-        a_owner = obj.parent;
-    end
-    if a_owner.l_initialized
-        a_owner.sct_editLog(end+1) = struct("i_seq",next_edit_seq(), "r_time",now, ...
-            "s_ID",obj.get_tag("/"), "s_log",log, "s_tag",tag, "before",{before}, "after",{after});
-    end
+    s_message = obj.get_tag("/") + ": " + log;
 
-    % The hook of every layer up to the top: the first layer without a LayerPackage parent.
-    a_layer = a_owner;
+    % A Parameter container is not a child of a controller, so the walk starts at its owner.
+    a_layer = obj.edit_owner();
     while true
-        a_layer.handle_edit(obj, tag, log);
+        a_layer.handle_edit(obj, tag, s_message);
         a_parent = a_layer.parent;
         if ~isa(a_parent,"LayerPackage")
             break

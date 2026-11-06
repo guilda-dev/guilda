@@ -12,7 +12,9 @@ classdef Bus < PowerSystemModel
 %   network clear the flag of the other buses (a bus never changes another bus); with no
 %   slack bus, `calculate_powerflow` selects one.
 % - Parameters (`tab_parameter`) are set by `add_bus` or by writing the table. An edit of
-%   powerflow or dynamics makes the equilibrium stale; operation and graph make nothing stale.
+%   powerflow or dynamics (shunt), a slack-bus change and a component added, replaced or
+%   removed make the power flow of the network stale (`net.sct_stale.powerflow`);
+%   operation and graph make nothing stale. A bus has no stale tags of its own.
 % - Down: splits the equilibrium bus power among its components (`set_equilibrium`).
 %   Up: aggregates them (current, linear model, variable map, OPF variables).
 % - Does not own the system base (baseMVA belongs to `PowerNetwork`; a bus baseMVA given
@@ -45,7 +47,7 @@ classdef Bus < PowerSystemModel
         c_Iequilibrium  % [pu] Current injection at the equilibrium: sum of the component currents (0 without components).
     end
     properties % Power Flow
-        l_isSlack (1,1) logical = false;  % True for the slack bus (at most one per network; setting it requires a component). <@Stale> equilibrium
+        l_isSlack (1,1) logical = false;  % True for the slack bus (at most one per network; setting it requires a component). <@Stale> powerflow
     end
     properties (Access={?SolverODE}) % Simulation working data
         l_isFault (1,1) logical = false  % True while an active fault of a scenario is applied at the bus (simulation working data).
@@ -53,13 +55,13 @@ classdef Bus < PowerSystemModel
 
     properties (SetAccess=protected) % Layer Structure
         a_PowerNetwork  % PowerNetwork the bus belongs to ([] when removed).
-        a_Component (:,1) = cell(0,1)  % Components connected to the bus. <@Stale> equilibrium
+        a_Component (:,1) = cell(0,1)  % Components connected to the bus. <@Stale> powerflow
         c_Vequilibrium = 1;  % [pu] Voltage phasor at the equilibrium (owned by the bus; components and controllers read it).
     end
     properties (SetAccess=protected) % OPF
-        f_opfcost = []  % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the bus ([]: none). <@Stale> nothing (logged)
-        f_opfconst = []  % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing (logged)
-        l_opfdefault = true  % Whether the default OPF constraints of the bus are kept (DefaultConstraint of set_opffcn). <@Stale> nothing (logged)
+        f_opfcost = []  % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the bus ([]: none). <@Stale> nothing
+        f_opfconst = []  % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing
+        l_opfdefault = true  % Whether the default OPF constraints of the bus are kept (DefaultConstraint of set_opffcn). <@Stale> nothing
     end
     properties (Dependent) % Parameter
         tab_parameter  % Parameter table: the para_* tables side by side; writing it writes the parameters.
@@ -121,6 +123,7 @@ classdef Bus < PowerSystemModel
     end
     methods (Access={?PowerNetwork})
         set_network(obj, net)
+        initialize(obj)
     end
     
     methods

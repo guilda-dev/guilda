@@ -1,7 +1,8 @@
 function set_bus(obj,bus)
 % Set the bus of the component; [] detaches it.
 %
-% Called by Bus.add_component, replace_component and remove_component.
+% Called by Bus.add_component, replace_component and remove_component. Attaching makes
+% the equilibrium and the handles stale (the network frequency may differ).
 %
 % <@Group> Construction and editing
     arguments (Input)
@@ -10,6 +11,6 @@ function set_bus(obj,bus)
     end
     obj.a_Bus = bus;
     if ~isempty(bus)
-        obj.reset_edit(false);   % edits made before do not belong to the new network; not initialized there yet
+        obj.mark_stale(["equilibrium","odefcn"], obj.s_tag + ": attached to " + bus.s_tag);
     end
 end

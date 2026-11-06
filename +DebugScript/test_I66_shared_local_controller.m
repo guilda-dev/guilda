@@ -59,9 +59,9 @@ assert(pss.a_Component == avr1)
 avr = controller.avr.AVR_ST1("avrA");
 gen1.add_local_controller(avr);
 DebugScript.helper.quiet(@() net.initialize);
-n_log = height(net.disp_edit());
+sv_log = DebugScript.helper.stale(net);
 assert(DebugScript.helper.msg_id(caught(@() gen2.add_local_controller(avr))) == s_id)
-assert(~net.l_staleEquilibrium && height(net.disp_edit()) == n_log)
+assert(~DebugScript.helper.is_stale(net) && isequal(DebugScript.helper.stale(net), sv_log))
 
 
 %% A replaced AVR is detached and can be attached to another component

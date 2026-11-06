@@ -1,21 +1,28 @@
 classdef Parameter < auxiliary & LayerPackage & dynamicprops
 % Parameter container for LayerPackage-derived objects.
 %
-% It manages dynamic parameters, change callbacks, and edit logging. Each parameter is a
-% dynamic property; a change of its value is checked against its class and written to the
-% edit log of the owner layer (tag "Parameter(<group>)").
+% It manages dynamic parameters, change callbacks, and edit reports. Each parameter is a
+% dynamic property; a change of its value is checked against its class and reported with
+% log_edit (tag: the group, e.g. "dynamics"; log: "edit <name>: <old> -> <new>"), so the
+% owner layer and the layers above it mark what the edit makes stale. `s_lastEdited` is
+% the name of the parameter of that edit, for the layers that tell parameters of one
+% group apart (PowerNetwork: baseMVA and Hz).
 %
 % <@Examples>
 % ```matlab
 % net = network.IEEE14bus();
 % bus = net.a_Bus{1};
 % bus.tab_parameter                  % parameters of the bus as a table
-% net.disp_edit()                    % edits are logged on the owner layer; the network collects them
+% bus.tab_parameter.powerflow.V = 1.02;
+% net.sct_stale.powerflow            % the edit makes the power flow of the network stale
 % ```
 %
 % See also LayerPackage
     properties(SetAccess=private) % Callback
         CallbackChanged = @() [];  % Callback function executed after parameter changes. <@Type> function_handle
+    end
+    properties(SetAccess=private, Hidden) % Edit report
+        s_lastEdited (1,1) string = ""  % Name of the parameter of the last edit, set before log_edit.
     end
     properties(Access=private) % Internal state
         sv_parameter = [];  % Parameter names managed by this container. <@Type> string (1xN)
@@ -38,7 +45,7 @@ classdef Parameter < auxiliary & LayerPackage & dynamicprops
         function obj = Parameter(a_parent,s_tag, CallBackChanged)
         % Create a parameter container for a parent layer.
         %
-        % Its tag names the parameter group (e.g. "powerflow", "dynamics"), used in the edit log.
+        % Its tag names the parameter group (e.g. "powerflow", "dynamics"), the tag of its edits.
             arguments (Input)
                 a_parent                             % Parent layer object.
                 s_tag           = "Parameter"        % Parameter tag.

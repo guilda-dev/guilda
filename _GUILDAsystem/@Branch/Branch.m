@@ -10,7 +10,7 @@ classdef Branch < PowerSystemModel
 %   `get_admittance_matrix`).
 % - Parameters (`tab_parameter`) are per unit on the system base, set by add_branch (R, X,
 %   C, Tap, Phase and the limits) or by writing the table. An edit of dynamics makes the
-%   equilibrium stale; operation and graph make nothing stale.
+%   power flow of the network stale; operation and graph make nothing stale.
 % - Refers to its two end buses (`a_Bus`, from and to), but is not their parent and does
 %   not own their voltages. The end voltages and currents it shows are derived from the
 %   buses. The order of `a_Bus` is the row and column order of the 2x2 matrix.
@@ -54,9 +54,9 @@ classdef Branch < PowerSystemModel
         a_Bus  % End buses {from; to}: the row and column order of the admittance matrix. <@Type> cell of Bus (2x1)
     end
     properties(SetAccess=protected) % OPF
-        f_opfcost = []  % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the branch ([]: none). <@Stale> nothing (logged)
-        f_opfconst = []  % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing (logged)
-        l_opfdefault = true  % Whether the default OPF constraints of the branch are kept (DefaultConstraint of set_opffcn). <@Stale> nothing (logged)
+        f_opfcost = []  % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the branch ([]: none). <@Stale> nothing
+        f_opfconst = []  % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing
+        l_opfdefault = true  % Whether the default OPF constraints of the branch are kept (DefaultConstraint of set_opffcn). <@Stale> nothing
     end
     properties(Dependent) % Parameter
         tab_parameter  % Parameter table: the para_* tables side by side; writing it writes the parameters. <@Type> table
@@ -119,6 +119,7 @@ classdef Branch < PowerSystemModel
     methods(Access={?PowerNetwork})
         set_network(obj,a_PowerNetwork)
         set_bus(obj,a_Bus)
+        initialize(obj)
     end
     methods
         % OPF

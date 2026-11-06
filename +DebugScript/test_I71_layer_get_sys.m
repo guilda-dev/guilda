@@ -1,15 +1,14 @@
 % I71 層別 get_sys と連続型潮流計算の編集の検査
 %
 % comp / bus / con / gc の get_sys と net.calculate_continuation_powerflow は、古いハンドルで結果を返さない。
-%   - どの入口も最初に古い f_* を作り直す
-%   - 平衡点を使う get_sys は、平衡点が古い (または未設定) とき net.initialize() を促すエラーにする
-%   - Point を指定した comp / bus の get_sys は平衡点を使わないので、作り直しだけを行う
-%   - net に接続されていない層は平衡点の検査を省略する
+%   - 系統に属する層は系統の古さを確認し (check_edit)、古いもの (平衡点・ハンドル・周波数) があれば
+%     net.initialize() を促すエラーにする。Point を指定しても同じ。何も作り直さない
+%   - net に接続されていない層は確認を省略し、古いハンドルだけを作る
 %
 % 実行: runtests("DebugScript.test_I71_layer_get_sys")  または  DebugScript.run_all("Features","I71")
 
 % 共通設定 (各テストの前に毎回実行される)
-s_staleID   = "GUILDA:PowerNetwork:EquilibriumStale";
+s_staleID   = "GUILDA:LayerPackage:Stale";
 sr_load     = ["B009","B010","B011","B012","B013","B014"];
 
 
@@ -27,7 +26,7 @@ assert_stale_error(@() pss.get_sys(), s_staleID)
 DebugScript.helper.quiet(@() net.initialize);
 [gen, bus, avr, pss] = layers(net);
 gen.tab_parameter.dynamics.D = 3 * gen.tab_parameter.dynamics.D;
-assert(net.l_staleEquilibrium)
+assert(DebugScript.helper.is_stale(net))
 assert_stale_error(@() gen.get_sys(), s_staleID)
 assert_stale_error(@() gen.get_sys("port", "I2V"), s_staleID)
 assert_stale_error(@() bus.get_sys(), s_staleID)
@@ -63,16 +62,22 @@ DebugScript.helper.quiet(@() ref.initialize);
 assert(norm(gen.get_sys().A - gen_ref.get_sys().A) < 1e-9)
 
 
-%% A network Hz edit rebuilds the handles without initialize
-% Hz は平衡点を古くしないのでエラーにならず、次の解析でハンドルを作り直して新しい周波数の答えを返す
+%% A network Hz edit asks for initialize, which only rebuilds the handles
+% Hz の編集は平衡点を変えないが、ハンドルは古いのでエラーになる。initialize はハンドルだけを作り直す
 [net, ~] = build_with_controllers();
 DebugScript.helper.quiet(@() net.initialize);
 [gen, bus, avr, pss] = layers(net);
 A_gen = gen.get_sys().A;  A_bus = bus.get_sys().A;
 Hz0 = net.para_base.Hz;
 net.para_base.Hz = 2 * Hz0;
-assert(~net.l_staleEquilibrium && DebugScript.helper.handle_Hz(gen) == Hz0)
+assert(DebugScript.helper.is_stale(net) && isempty(net.sct_stale.powerflow) && DebugScript.helper.handle_Hz(gen) == Hz0)
+assert_stale_error(@() gen.get_sys(), s_staleID)
+assert_stale_error(@() bus.get_sys(), s_staleID)
+assert_stale_error(@() avr.get_sys(), s_staleID)
+assert(DebugScript.helper.handle_Hz(gen) == Hz0)
 
+res = DebugScript.helper.quiet(@() net.initialize);
+assert(res.s_solver == "equilibrium")
 A_gen2 = gen.get_sys().A;
 assert(DebugScript.helper.handle_Hz(avr) == net.para_base.Hz && DebugScript.helper.handle_Hz(pss) == net.para_base.Hz)
 assert(DebugScript.helper.handle_Hz(gen) == net.para_base.Hz && ~isequal(A_gen2, A_gen))
@@ -85,15 +90,8 @@ DebugScript.helper.quiet(@() ref.initialize);
 assert(norm(A_gen2 - gen_ref.get_sys().A) < 1e-9)
 assert(norm(bus.get_sys().A - bus_ref.get_sys().A) < 1e-9)
 
-% 制御器の get_sys も、その制御器 (と入れ子の制御器) のハンドルを新しい Hz で作り直す
-Hz2 = net.para_base.Hz;
-net.para_base.Hz = 3 * Hz2;
-assert(DebugScript.helper.handle_Hz(avr) == Hz2 && DebugScript.helper.handle_Hz(pss) == Hz2)
-avr.get_sys();
-assert(DebugScript.helper.handle_Hz(avr) == net.para_base.Hz && DebugScript.helper.handle_Hz(pss) == net.para_base.Hz)
 
-
-%% Point needs no equilibrium but uses the edited model
+%% Point also asks for initialize after an edit
 [net, ~] = build_with_controllers();
 DebugScript.helper.quiet(@() net.initialize);
 [gen, bus] = layers(net);
@@ -103,11 +101,13 @@ A0 = gen.get_sys("Point", rv_point(c_idx{1})).A;
 A0_bus = bus.get_sys("Point", rv_point).A;
 
 gen.tab_parameter.dynamics.D = 3 * gen.tab_parameter.dynamics.D;
-assert(net.l_staleEquilibrium)
+assert(DebugScript.helper.is_stale(net))
+assert_stale_error(@() gen.get_sys("Point", rv_point(c_idx{1})), s_staleID)
+assert_stale_error(@() bus.get_sys("Point", rv_point), s_staleID)
+DebugScript.helper.quiet(@() net.initialize);
 A1 = gen.get_sys("Point", rv_point(c_idx{1})).A;
 assert(~isequal(A1, A0))
 assert(~isequal(bus.get_sys("Point", rv_point).A, A0_bus))
-assert(net.l_staleEquilibrium)      % 平衡点は古いまま
 
 
 %% Layers without a network skip the equilibrium check
@@ -123,10 +123,10 @@ DebugScript.helper.quiet(@() net.initialize);
 sys0 = gc.get_sys();
 h_dx = gc.f_dx;
 gc.para_dynamics.kI = 2 * gc.para_dynamics.kI;
-assert(isequal(h_dx, gc.f_dx) && net.l_staleEquilibrium)
+assert(isequal(h_dx, gc.f_dx) && DebugScript.helper.is_stale(net))
 assert_stale_error(@() gc.get_sys(), s_staleID)
 assert_stale_error(@() gc.get_sys(gc.rv_Xequilibrium, zeros(2,1), zeros(2,1), gc.rv_Uequilibrium), s_staleID)
-assert(~isequal(h_dx, gc.f_dx))      % 確認の前にハンドルを作り直す
+assert(isequal(h_dx, gc.f_dx))       % 確認は作り直さない
 
 % 失敗した net.get_sys の後もエラーのまま
 assert_stale_error(@() net.get_sys(), s_staleID)
@@ -147,9 +147,11 @@ assert(norm(ssdata_all(sys1) - ssdata_all(gc_ref.get_sys())) < 1e-9)
 DebugScript.helper.quiet(@() net.initialize);
 Hz0 = net.para_base.Hz;
 net.para_base.Hz = 2 * Hz0;
-assert(DebugScript.helper.handle_Hz(gc) == Hz0 && ~net.l_staleEquilibrium)
-gc.get_sys();
+assert(DebugScript.helper.handle_Hz(gc) == Hz0 && DebugScript.helper.is_stale(net))
+assert_stale_error(@() gc.get_sys(), s_staleID)
+DebugScript.helper.quiet(@() net.initialize);
 assert(DebugScript.helper.handle_Hz(gc) == net.para_base.Hz)
+gc.get_sys();
 
 
 %% Initialize of a controller that designs with get_sys still passes
@@ -160,24 +162,26 @@ DebugScript.helper.quiet(@() net.initialize);
 assert(size(gen.get_sys().A, 1) >= numel(gen.sv_x))
 
 
-%% CPF after a dynamics edit asks for initialize and rebuilds the handles
+%% CPF after a dynamics edit asks for initialize
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 gen = net.a_Bus{1}.a_Component{1};
 h_dx = gen.f_dx;
 gen.tab_parameter.dynamics.D = 3 * gen.tab_parameter.dynamics.D;
-assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=sr_load)) == "GUILDA:SolverCPF:StaleEquilibrium")
-assert(~isequal(h_dx, gen.f_dx))
+assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=sr_load)) == "GUILDA:LayerPackage:Stale")
+assert(isequal(h_dx, gen.f_dx))      % 確認は作り直さない
 
 
-%% CPF after a network Hz edit keeps the path
+%% CPF after a network Hz edit and initialize keeps the path
 net = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net.initialize);
 gen = net.a_Bus{1}.a_Component{1};
 res0 = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=sr_load));
 Hz0 = net.para_base.Hz;
 net.para_base.Hz = 2 * Hz0;
-assert(DebugScript.helper.handle_Hz(gen) == Hz0 && ~net.l_staleEquilibrium)
+assert(DebugScript.helper.handle_Hz(gen) == Hz0 && DebugScript.helper.is_stale(net))
+assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=sr_load)) == "GUILDA:LayerPackage:Stale")
+DebugScript.helper.quiet(@() net.initialize);
 res1 = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=sr_load));
 assert(DebugScript.helper.handle_Hz(gen) == net.para_base.Hz)
 assert(isequal(res1.rv_lambda, res0.rv_lambda) && isequal(res1.cm_Vbus, res0.cm_Vbus))

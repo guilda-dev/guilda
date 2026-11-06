@@ -4,7 +4,6 @@
         <entry key="SetAbus">Use the method to add or remove Bus classes from a_Bus.&#xA;&#xA; &lt; When adding a Bus class &gt;&#xA;  &gt;&gt; obj.add_bus(BUS_INSTANCE)&#xA; &lt; When removing a Bus class &gt;&#xA;  &gt;&gt;  obj.aremove_bus('BUS_TAG')</entry> 
         <entry key="SetAbranch">Use the method to add or remove Branch classes from a_Bus.&#xA;&#xA; &lt; When adding a Branch class &gt;&#xA;  &gt;&gt; obj.add_bus(BRANCH_INSTANCE,['BUSi_TAG','BUSj_TAG'])&#xA; &lt; When removing a Bus class &gt;&#xA;  &gt;&gt; obj.aremove_bus('BRANCH_TAG')</entry> 
         <entry key="SetGcon">Use the method to add or remove Global Controller classes from a_Bus.&#xA;&#xA; &lt; When adding a Global Controller class &gt;&#xA;  &gt;&gt; obj.add_bus(GlobalCon_INSTANCE,[ComponentTag])&#xA; &lt; When removing a Global Controller class &gt;&#xA;  &gt;&gt; obj.aremove_bus(GlobalCon_TAG)</entry> 
-        <entry key="EquilibriumStale">The equilibrium of ''{0}'' is out of date: {1}.&#xA;Run net.initialize() first to recompute the equilibrium.</entry> 
         <entry key="NoBus">''{0}'' has no buses, so the power flow has no slack bus.&#xA;Add buses with net.add_bus() and components with bus.add_component(...).</entry>
         <entry key="NoSlackCandidate">No bus of ''{0}'' has a component, so the power flow cannot select a slack bus.&#xA;Add a generator to a bus with bus.add_component(...). A bus with a component that has Q = NaN is selected first.</entry>
         <entry key="BusNotFound">No bus with the tag ''{0}'' was found in ''{1}''.</entry> 
@@ -27,7 +26,7 @@
         <entry key="InitializeOPFIsland">net.initialize(Method="OPF") stopped: the AC optimal power flow was not solved ({0}).&#xA;The network was not changed. ''{1}'' is split into {2} islands: {3}.&#xA;Connect the islands with net.add_branch(...) or remove the unused buses with net.remove_bus(...). An island can only be kept when its own power balances.</entry>
         <entry key="NetworkIsland">''{0}'' is split into {1} islands: {2}.&#xA;The power of each island balances, so the operating point is valid, but no power flows between the islands and their angles are unrelated. If this is intended, no change is needed.</entry>
         <entry key="InitializeEquilibriumFailed">net.initialize(Method="equilibrium") stopped: the equilibria of the components do not satisfy the network equations (max |Y*V-I| = {0}).&#xA;The network was not changed. Use net.initialize(Method="powerflow") or net.initialize(Method="OPF").</entry>
-        <entry key="InitializeEquilibriumEdited">net.initialize(Method="equilibrium") stopped: it would ignore the edits since the last initialize ({0}).&#xA;The network was not changed. Run net.initialize() to compute the equilibrium with these edits.</entry>
+        <entry key="InitializeEquilibriumEdited">net.initialize(Method="equilibrium") stopped: the power flow is stale ({0}).&#xA;The network was not changed. Run net.initialize() to solve the power flow with these edits.</entry>
         <entry key="InitializeNotEquilibrium">net.initialize(Method="{0}") stopped: the operating point does not satisfy the network equations (max |Y*V-I| = {1}).&#xA;The equilibrium is out of date. Check that the slack bus has a component and that the solver tolerance is tight enough, then run net.initialize() again.</entry>
         <entry key="InitializeEquilibriumSize">net.initialize stopped: the equilibrium of ''{0}'' has the wrong size: x has {1} elements ({2} expected), u has {3} elements ({4} expected).&#xA;The equilibrium is out of date. Fix get_equilibrium of the model.</entry>
         <entry key="InitializeModelSize">net.initialize stopped: {1} of ''{0}'' returned size {2} at the equilibrium; it must have {3} elements (fcn_I: one complex value).&#xA;The equilibrium is out of date. Fix the model.</entry>
@@ -39,7 +38,7 @@
         <entry key="SimulateExport">Export of net.simulate does not support the extension ''{0}''. Use a scalar file name with .csv, .txt, .xlsx, .xls or .mat.</entry>
         <entry key="SimulateTime">The time of net.simulate must be [t0, tend] with finite values and t0 &lt; tend, or [] for the Time of the scenarios or the time span of their disturbances: {0}.</entry>
         <entry key="SimulationIncomplete">net.simulate did not reach the end time (flag = {0}); the result holds the trajectories up to the time reached.&#xA;{1}</entry>
-        <entry key="IncompleteLoad">Edits of the object saved below network ''{0}'' are not logged after loading. Save the network itself.</entry>
+        <entry key="IncompleteLoad">Edits of the object saved below network ''{0}'' are not reported after loading. Save the network itself.</entry>
         <entry key="NotScenario">net.add_scenario takes a Scenario or a cell of Scenario objects, e.g. net.add_scenario(sc) or net.add_scenario(Scenario.import_csv(path)).</entry>
         <entry key="ScenarioTagInUse">A scenario with the tag ''{0}'' is already in ''{1}''.&#xA;Give the scenario another tag, or remove the existing one first with net.remove_scenario(TAG).</entry>
         <entry key="ScenarioNotFound">No scenario with the tag ''{0}'' was found in ''{1}''.</entry>

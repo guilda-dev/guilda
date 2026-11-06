@@ -2,7 +2,7 @@
 %
 % net.initialize は潮流計算の結果から各母線・機器・制御器の平衡点を設定する。
 %   - 戻り値 [result, flag, output] と Method ("powerflow" / "OPF" / "equilibrium")
-%   - 解析が失敗したらエラーにし、系統 (平衡点・編集ログ) を変えない
+%   - 解析が失敗したらエラーにし、系統 (平衡点・古さ) を変えない
 %   - 旧オプション methods と旧い値は非推奨の警告付きで受け付ける
 %   - 母線電圧・電流、機器ごとの P, Q の配分
 %   - 平衡点で各機器の状態微分 ≈ 0、出力電流 = 潮流計算の電流
@@ -236,13 +236,14 @@ end
 
 
 %% Initialize from Xequilibrium requires stored equilibria
-% 平衡点を一度も計算していない機器があればエラー
+% 潮流を一度も解いていない系統 (powerflow が初期メッセージのまま) はエラー
 net = DebugScript.helper.build_9bus();
 try
     DebugScript.helper.quiet(@() net.initialize(Method="equilibrium"));
     error("DebugScript:noError", "エラーにならなかった")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeNoEquilibrium", DebugScript.helper.msg_id(ME))
+    assert(string(DebugScript.helper.msg_id(ME)) == "GUILDA:PowerNetwork:InitializeEquilibriumEdited", string(DebugScript.helper.msg_id(ME)))
+    assert(contains(ME.message, net.s_notInitialized))
 end
 assert(DebugScript.helper.edit_flag(net) == "unset")
 
@@ -363,19 +364,19 @@ assert(isempty(net9.a_Bus{4}.a_Component) && net9.a_Bus{4}.c_Iequilibrium == 0)
 
 % ---- local functions ----
 function [V, I, X, tab_log, s_flag] = snapshot(net)
-% 平衡点 (母線の V, I と機器の状態) と編集ログ
+% 平衡点 (母線の V, I と機器の状態) と古さ
     V = net.cv_Vequilibrium;
     I = net.cv_Iequilibrium;
     X = cellfun(@(b) cellfun(@(c) c.rv_Xequilibrium, b.a_Component, "UniformOutput", false), ...
                 net.a_Bus, "UniformOutput", false);
-    tab_log  = net.disp_edit();
+    tab_log  = DebugScript.helper.stale(net);
     s_flag   = DebugScript.helper.edit_flag(net);
 end
 
 function assert_unchanged(net, V0, I0, X0, log0, flag0)
     [V, I, X, tab_log, s_flag] = snapshot(net);
     assert(isequal(V, V0) && isequal(I, I0) && isequal(X, X0), "平衡点が変わった")
-    assert(isequal(tab_log, log0) && s_flag == flag0, "編集ログが変わった")
+    assert(isequal(tab_log, log0) && s_flag == flag0, "古さが変わった")
 end
 
 function ME = error_of(fcn)

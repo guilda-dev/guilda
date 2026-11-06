@@ -31,7 +31,7 @@ function add_local_controller(obj, varargin)
 % AVR on a load.
 % A misspelled input is not an error, because it has the same form as an input left
 % unconnected on purpose.
-% Each addition is logged as a "Topology" edit, so the equilibrium becomes stale.
+% Each addition is a "Topology" edit, so the equilibrium of the component becomes stale.
 %
 % <@Examples>
 % ```matlab
@@ -65,7 +65,7 @@ function add_local_controller(obj, varargin)
                 old_avr = chain_of(obj);
                 if isempty(old_avr)
                     set_slots(obj, new_con, governor_of(obj));
-                    new_con.set_parent(obj)    % so that AVR parameter edits reach the edit log
+                    new_con.set_parent(obj)    % so that AVR parameter edits reach the layers above
                     obj.log_edit(obj.s_tag+" <<-Add--- "+new_con.s_tag, "Topology");
                 else
                     warning(msg("GUILDA:Component:ReplaceController", label(new_con), char(new_con.s_tag), char(old_avr.s_tag), char(obj.s_tag)))
