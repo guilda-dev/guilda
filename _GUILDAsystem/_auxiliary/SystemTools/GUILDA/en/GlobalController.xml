@@ -5,5 +5,6 @@
         <entry key="GlobalControllerPort">The global controller ''{0}'' needs the states [{1}] and the inputs [{2}] of its units, but ''{3}'' ({4}) has the states [{5}] and the inputs [{6}].</entry>
         <entry key="HessianNotSupported">{0} does not support Hessian computation: the class does not define the static method {1} (see GlobalController.get_hessian for the contract).</entry>
         <entry key="HessianSize">{0}.{1} returned {2} values; expected {3} x {4} x {5} (equations x [x; V; I; u] x [x; V; I; u]).</entry>
+        <entry key="Stale">get_sys of global controller ''{0}'' stopped: the model is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
     </message>
 </rsccat>

@@ -350,7 +350,7 @@ assert_error(@() con.validate(false), "GUILDA:LocalController:ValidateNotAttache
 %% Controller without an equilibrium asks for initialize
 [~, comp] = DebugScript.helper.build_3bus("gen-1axis");
 comp.add_local_controller(controller.avr.AVR_ST1("avr1"));
-assert_error(@() comp.a_LocalController{1}.validate(false), "GUILDA:LayerPackage:Stale");
+assert_error(@() comp.a_LocalController{1}.validate(false), "GUILDA:LocalController:Stale");
 
 
 function assert_contract(obj, s_name)

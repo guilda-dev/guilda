@@ -1,6 +1,8 @@
 function initialize_index(net)
 % Method for assigning state variable numbers to each device and bus.
-% Execute this before performing analysis using the ODE solver.
+% Execute this before performing analysis using the ODE solver. Stops with
+% GUILDA:SolverODE:Stale when a stale tag it reads is not empty: powerflow and odefcn of
+% the network, equilibrium and odefcn of each component, local and global controller.
     arguments (Input)
         net  % Network of the run.
     end
@@ -19,6 +21,7 @@ function initialize_index(net)
     a_bus = net.a_Bus;
 
     idx_TGT = 0;
+    sv = [net.sct_stale.powerflow; net.sct_stale.odefcn];   % messages of the stale tags
 
     for i=1:numel(a_bus)
         a_comp = a_bus{i}.a_Component;
@@ -35,6 +38,7 @@ function initialize_index(net)
     a_gcon = net.a_GlobalController;
     for k = 1:numel(a_gcon)
         gcon = a_gcon{k};
+        sv   = [sv; gcon.sct_stale.equilibrium; gcon.sct_stale.odefcn]; %#ok<AGROW>
         nxgc = length(gcon.sv_x);
         gcon.iv_odeX = idx_TGT + (1:nxgc)';
         idx_TGT = idx_TGT + nxgc;
@@ -46,6 +50,15 @@ function initialize_index(net)
             gcon.iv_odeU(idx) = nConUnit{idx}.iv_odeX( nConUnit{idx}.sv_x==gcon.sv_u );
             gcon.iv_odeY(idx) = nConUnit{idx}.iv_odeU( nConUnit{idx}.sv_u==gcon.sv_y );
         end
+    end
+
+    if ~isempty(sv)
+        sv = unique(sv, "stable");
+        s_reason = join(sv(1:min(end,3)), "; ");
+        if numel(sv) > 3
+            s_reason = s_reason + "; ...";
+        end
+        error(msg("GUILDA:SolverODE:Stale", char(net.s_tag), char(s_reason)))
     end
 
     for i=1:numel(a_bus)
@@ -74,6 +87,8 @@ function initialize_index(net)
             c_y = cellfun(@(c) reshape(string(c.sv_y),[],1), OBJ.a_LocalController, 'UniformOutput', false);
             [OBJ.lv_odeUfromLC, OBJ.iv_odeYtoU] = ismember(OBJ.sv_u, vertcat(strings(0,1), c_y{:}));
         end
+
+        sv = [sv; OBJ.sct_stale.equilibrium; OBJ.sct_stale.odefcn];
 
         nx = length(OBJ.sv_x);
         nu = length(OBJ.sv_u);

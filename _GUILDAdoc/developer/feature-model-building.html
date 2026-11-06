@@ -369,7 +369,7 @@ b1.l_isSlack = true;</code></pre>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en">options (P 0, Q 0, baseMVA 100, Pmin/Qmin −Inf, Pmax/Qmax Inf, OPF P0/Q0 0, HP/fP NaN, HQ/fQ 0, Marker "o"), <code>parameter</code>, class <code>parameter.csv</code></span><span lang="ja">オプション（P 0, Q 0, baseMVA 100, Pmin/Qmin −Inf, Pmax/Qmax Inf, OPF P0/Q0 0, HP/fP NaN, HQ/fQ 0, Marker "o"）、<code>parameter</code>、クラスの <code>parameter.csv</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>comp</code>; <code>para_operation</code> (baseMVA, Pmin, Pmax, Qmin, Qmax), <code>para_powerflow</code> (P, Q), <code>para_OPF</code> (P0, Q0, HP, HQ, fP, fQ, startup, shutdown), <code>para_graph</code>, <code>para_dynamics</code>; <code>comp.a_Bus</code>; <code>s_odefcn</code> = unset; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
+          <dd><code>comp</code>; <code>para_operation</code> (baseMVA, Pmin, Pmax, Qmin, Qmax), <code>para_powerflow</code> (P, Q), <code>para_OPF</code> (P0, Q0, HP, HQ, fP, fQ, startup, shutdown), <code>para_graph</code>, <code>para_dynamics</code>; <code>comp.a_Bus</code>; <code>sct_stale.equilibrium</code>, <code>.odefcn</code> = "initialize has not been run"; <span lang="en">edit</span><span lang="ja">編集</span> <code>"Topology"</code></dd>
         </dl>
       </li>
       <li class="fs-step" id="MB-05">
@@ -753,12 +753,12 @@ b1.l_isSlack = true;</code></pre>
       </tbody>
     </table>
     <ul lang="en">
-      <li>Protected property <code>children</code>: the children that <code>check_edit</code>, <code>disp_tree</code> and <code>struct</code> walk</li>
+      <li>Protected property <code>children</code>: the children that <code>disp_tree</code> and <code>struct</code> walk</li>
       <li>Values derived from several owners: <code>Dependent</code> properties that read the owner each time, e.g. <code>Component.c_Vequilibrium</code> (= <code>a_Bus.c_Vequilibrium</code>), <code>Bus.c_Iequilibrium</code> (sum of the component currents), <code>PowerNetwork.cv_Vequilibrium</code></li>
       <li><code>net.disp_tree()</code>: prints the tree</li>
     </ul>
     <ul lang="ja">
-      <li>protected プロパティ <code>children</code>: <code>check_edit</code>・<code>disp_tree</code>・<code>struct</code> が巡回する子</li>
+      <li>protected プロパティ <code>children</code>: <code>disp_tree</code>・<code>struct</code> が巡回する子</li>
       <li>複数の所有者から導かれる値: そのつど所有者を読む <code>Dependent</code> プロパティ。例: <code>Component.c_Vequilibrium</code>（= <code>a_Bus.c_Vequilibrium</code>）、<code>Bus.c_Iequilibrium</code>（機器の電流の和）、<code>PowerNetwork.cv_Vequilibrium</code></li>
       <li><code>net.disp_tree()</code>: 木を表示</li>
     </ul>
@@ -767,14 +767,14 @@ b1.l_isSlack = true;</code></pre>
     <h2 id="side-effects"><span lang="en">5. Side effects on the model and caches</span><span lang="ja">5. モデルへの副作用とキャッシュ</span></h2>
     <ul lang="en">
       <li><b>Before the first <code>initialize</code></b>: every stale tag holds "initialize has not been run" from the constructor, so edits add no message. <code>handle_edit</code> still keeps a single slack bus</li>
-      <li><b>After <code>initialize</code></b>: an edit marked stale in <a href="class-design.html#edits">Class Design: Handling of model edits</a> appends its message to the stale tags it affects; <code>simulate</code>, <code>linearize</code> and <code>get_sys</code> then stop with <code>GUILDA:LayerPackage:Stale</code> until <code>initialize</code> runs again. Operation, OPF, graph, <code>opffcn</code> and tag edits: nothing stale</li>
+      <li><b>After <code>initialize</code></b>: an edit marked stale in <a href="class-design.html#edits">Class Design: Handling of model edits</a> appends its message to the stale tags it affects; <code>simulate</code>, <code>linearize</code> and <code>get_sys</code> then stop with their stale errors (e.g. <code>GUILDA:SolverODE:Stale</code>) until <code>initialize</code> runs again. Operation, OPF, graph, <code>opffcn</code> and tag edits: nothing stale</li>
       <li><b>Handle cache</b>: constructors do not build <code>f_*</code> (they stay empty). <code>initialize</code> builds the stale ones (<code>build_odefcn</code>, see <a href="feature-initialize.html">Initialization</a>); analyses only check. A direct call of a model function (<code>get_dx_algebraic</code>) after an edit without <code>initialize</code> uses the previous handles; it builds them only when they are empty</li>
       <li><b>Detached objects</b>: a removed object keeps its <code>sct_stale</code>; the removal is a <code>"Topology"</code> edit of the parent (a removed global controller: nothing). Its later edits do not reach the network. Attaching it to a new parent (<code>set_bus</code>, <code>set_parent</code>) marks its <code>equilibrium</code> and <code>odefcn</code> stale until the next <code>initialize</code></li>
       <li><b>Copies</b>: no deep-copy method; <code>b = a</code> copies a handle. For an independent network, save and load through a MAT file or CSV export. <code>PowerNetwork.loadobj</code> attaches the parameter listeners again after a MAT load (warning <code>GUILDA:PowerNetwork:IncompleteLoad</code> when a layer is still loading)</li>
     </ul>
     <ul lang="ja">
       <li><b>最初の <code>initialize</code> の前</b>: すべての stale タグがコンストラクタの "initialize has not been run" を保持するため、編集はメッセージを追加しない。<code>handle_edit</code> は slack 母線を 1 つに維持</li>
-      <li><b><code>initialize</code> の後</b>: <a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>で古くなるとされる編集は影響する stale タグにメッセージを追加し、<code>simulate</code>・<code>linearize</code>・<code>get_sys</code> は再び <code>initialize</code> を実行するまで <code>GUILDA:LayerPackage:Stale</code> で停止。operation・OPF・graph・<code>opffcn</code>・タグの編集: 何も古くしない</li>
+      <li><b><code>initialize</code> の後</b>: <a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>で古くなるとされる編集は影響する stale タグにメッセージを追加し、<code>simulate</code>・<code>linearize</code>・<code>get_sys</code> は再び <code>initialize</code> を実行するまでそれぞれの stale のエラー（例 <code>GUILDA:SolverODE:Stale</code>）で停止。operation・OPF・graph・<code>opffcn</code>・タグの編集: 何も古くしない</li>
       <li><b>ハンドルキャッシュ</b>: コンストラクタは <code>f_*</code> を作らない（空のまま）。古いものは <code>initialize</code> が作成（<code>build_odefcn</code>、<a href="feature-initialize.html">初期化</a>参照）、解析は確認のみ。編集の後に <code>initialize</code> を挟まずモデル関数を直接呼ぶ場合（<code>get_dx_algebraic</code>）は以前のハンドルを使用し、空のときだけ構築</li>
       <li><b>切り離されたオブジェクト</b>: 削除されたオブジェクトは自分の <code>sct_stale</code> を保持。削除は親の <code>"Topology"</code> の編集（広域制御器の削除: なし）。その後の編集はネットワークに届かない。新しい親への接続（<code>set_bus</code>、<code>set_parent</code>）で、次の <code>initialize</code> まで <code>equilibrium</code> と <code>odefcn</code> を古いと印付け</li>
       <li><b>コピー</b>: ディープコピーのメソッドはなし。<code>b = a</code> はハンドルのコピー。独立したネットワークには MAT ファイルへの保存と読み込み、または CSV への書き出しを使用。<code>PowerNetwork.loadobj</code> は MAT からの読み込み後にパラメータのリスナーを再設定（層がまだ読み込み中なら警告 <code>GUILDA:PowerNetwork:IncompleteLoad</code>）</li>

@@ -6,8 +6,8 @@ function [result, flag, output] = solve(obj, net, time, c_events, sct_options)
 % ResultODE. The solver is only read: nothing is written back into it.
 % The simulation working data of the models (iv_odeX, iv_odeU, iv_odeY, iv_odeI) is
 % rebuilt for this run. Called by net.simulate; calling it directly is for advanced
-% use. Like net.simulate, it first checks the network (check_edit) and stops with the
-% error GUILDA:LayerPackage:Stale when net.initialize() is needed.
+% use. Like net.simulate, it stops with the error GUILDA:SolverODE:Stale when
+% net.initialize() is needed (initialize_index).
 % flag is 1 when the simulation reached the end time, 0 when it stopped because the
 % run exceeded TimeLimit, and -1 when the solver stopped before the end time or could
 % not solve a phase (output.message has the reason; output.exception has the error
@@ -28,13 +28,12 @@ function [result, flag, output] = solve(obj, net, time, c_events, sct_options)
         output % Details: message, tEnd, phases (time table of the phases), nPhases, nPhasesDone, isSparse (false when the run fell back to dense matrices), exception (MException of a phase that could not be solved, with the original as cause; otherwise empty).
     end
     t0 = tic;
-    net.check_edit();    % error if net.initialize() is needed; nothing is rebuilt here
 
     % Phases of the run: checks the scenarios, builds the data of each phase once
     [tab_phase, sct_phase] = Scenario.compile(c_events, net, time);
     check_islands(net, {sct_phase.sv_open}.', tab_phase);
-    SolverODE.initialize_index(net);
     c_restore = onCleanup(@() SolverODE.restore_working_data(net));
+    SolverODE.initialize_index(net);    % also stops when net.initialize() is needed
 
     ctx = struct();
     ctx.net     = net;

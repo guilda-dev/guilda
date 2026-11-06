@@ -17,5 +17,6 @@
         <entry key="NoI2V">Component {0} has no I2V form: D of its V2I model (dI/dV) is singular. Use the port "V2I".</entry>
         <entry key="HessianNotSupported">{0} does not support Hessian computation: the class does not define the static method {1} (see Component.get_hessian for the contract).</entry>
         <entry key="HessianSize">{0}.{1} returned {2} values; expected {3} x {4} x {5} (equations x [x; V; I; u] x [x; V; I; u]).</entry>
+        <entry key="Stale">get_sys of component ''{0}'' stopped: the model is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
     </message>
 </rsccat>

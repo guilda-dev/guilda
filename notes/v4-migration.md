@@ -150,7 +150,7 @@ v3 の編集ログ(`tab_editLog`)はありません。各層は、古くなっ�
 | `Bus`、`Branch` | なし |
 
 - **初期値。** 各タグは作成時に `"initialize has not been run"` を持ちます。各クラスは自分のフィールドにだけ追加し、自分のコードで空にします。
-- **メッセージ。** 「編集した層から上のタグを `/` でつないだもの」+ `": "` + 編集内容(値を含む)。例: `"dynamics/SG1B001/B001/IEEE9bus: edit D: 2 -> 2.1"`。重複は `check_edit` の表示で除きます。
+- **メッセージ。** 「編集した層から上のタグを `/` でつないだもの」+ `": "` + 編集内容(値を含む)。例: `"dynamics/SG1B001/B001/IEEE9bus: edit D: 2 -> 2.1"`。重複は解析のエラー表示で除きます。
 - **編集の種類(タグ)。** パラメータのグループ名(`dynamics`、`powerflow`、`base`、`operation`、`OPF`、`graph`)、`opffcn`(`set_opffcn` / `reset_opffcn`)、`Topology`、`Slack`、`Tag`。
 
 | 編集 | 古くなるもの |
@@ -171,14 +171,26 @@ v3 の編集ログ(`tab_editLog`)はありません。各層は、古くなっ�
   - 動特性だけの編集: 潮流計算を解かず、編集したモデルだけを計算し直します。
   - Hz だけの編集: ハンドルを作り直すだけです(`local_LQR` は保持している平衡点で `K` を設計し直します)。
   - `Method="equilibrium"`: 潮流計算を解きません。`powerflow` が古いときは `GUILDA:PowerNetwork:InitializeEquilibriumEdited` で止まります。
-- **解析は検査だけです。** `simulate`、`linearize`、`get_sys`(各層も)、`calculate_continuation_powerflow`、`LocalController.validate` は系統の `check_edit` を呼び、どこかのタグが空でなければ、メッセージを最大 3 件挙げて `GUILDA:LayerPackage:Stale` で止まります。何も作り直しません。検査は `solver_ODE.solve`、`solver_LIN.solve`、`solver_CPF.solve` にあるので、ソルバーを直接呼んでも検査されます。
+- **解析は検査だけです。** 各解析は自分が使うタグだけを読み、空でないタグがあればメッセージを最大 3 件挙げて、解析ごとのエラーで止まります。何も作り直しません。
+
+  | 解析 | 読むタグ | エラー |
+  |---|---|---|
+  | `simulate`(`solver_ODE.solve`、`initialize_index` のループ内) | 系統の `powerflow`・`odefcn`、機器・ローカル制御器・大域制御器の `equilibrium`・`odefcn` | `GUILDA:SolverODE:Stale` |
+  | `linearize`、`net.get_sys`(`solver_LIN.solve`) | 同上 | `GUILDA:SolverLIN:Stale` |
+  | `calculate_continuation_powerflow`(`solver_CPF.solve`) | 系統の `powerflow`・`odefcn`、機器の `equilibrium`・`odefcn`(制御器は読まない) | `GUILDA:SolverCPF:Stale` |
+  | `comp.get_sys`(`Point` なし) | 系統、機器とその制御器 | `GUILDA:Component:Stale` |
+  | `bus.get_sys`(`Point` なし) | 系統、母線の機器(制御器は `comp.get_sys` が読む) | `GUILDA:Bus:Stale` |
+  | `con.get_sys`、`con.validate` | 系統、その制御器 | `GUILDA:LocalController:Stale` |
+  | `gc.get_sys` | 系統、その大域制御器 | `GUILDA:GlobalController:Stale` |
+
+  検査はソルバーの中にあるので、ソルバーを直接呼んでも検査されます。
 - **改名は何も古くしません。** 母線を改名しても、その機器のタグは変わりません(タグは永続的な ID として扱います)。
 - **パラメータの型の誤りはエラーです。** 宣言と違うクラスの値を代入すると `GUILDA:Parameter:ClassNameMismatch` で止まり、値も編集履歴も変わりません。以前は MATLAB がリスナー内のエラーを警告に変えていたので、スクリプトは止まりませんでした。`try` / `catch` なしで型の違う値を代入しているスクリプトは、正しいクラスの値に直してください。
 
 ```matlab
 net.a_Bus{2}.tab_parameter.powerflow.V = 1.02;
 net.sct_stale.powerflow      % "powerflow/B002/IEEE9bus: edit V: 1.025 -> 1.02"
-net.simulate([0 10]);        % error GUILDA:LayerPackage:Stale
+net.simulate([0 10]);        % error GUILDA:SolverODE:Stale
 net.initialize();
 net.simulate([0 10]);        % OK
 ```
@@ -287,7 +299,7 @@ Outputs of several controllers on the same input add up. Scalar `alpha` /
   pss)` replaces both. A replacement warns
   `GUILDA:Component:ReplaceController` and detaches the replaced
   controller. Before, the PSS was dropped. Adding or replacing is logged (1.3).
-- **`local_LQR` と Hz の編集。** 系統の Hz を編集しても平衡点は古くならないので、`K` は編集の時点では変わらず、次の `net.initialize()` がハンドルを作り直すときに、保持している平衡点から設計し直します(潮流計算は解きません)。それまでの解析は `GUILDA:LayerPackage:Stale` で止まります。同じ Hz に戻したときは設計し直しません。設計し直しに失敗したときは警告を出し、その制御器の `equilibrium` を古い扱いにします(次の `initialize` が平衡点から設計し直し、失敗すればエラー)。
+- **`local_LQR` と Hz の編集。** 系統の Hz を編集しても平衡点は古くならないので、`K` は編集の時点では変わらず、次の `net.initialize()` がハンドルを作り直すときに、保持している平衡点から設計し直します(潮流計算は解きません)。それまでの解析は止まります(例: `GUILDA:SolverODE:Stale`)。同じ Hz に戻したときは設計し直しません。設計し直しに失敗したときは警告を出し、その制御器の `equilibrium` を古い扱いにします(次の `initialize` が平衡点から設計し直し、失敗すればエラー)。
 - **ローカル制御器の削除。** `comp.remove_local_controller(tag)` を追加しました。タグは `s_tag` で指定します。
 
   ```matlab
@@ -710,7 +722,7 @@ Option names:
 - A bus without components (e.g. a pure junction bus) can be linearized: it
   has no states and takes no current.
 - **チャネル名で添字できます。** `sys(出力名, 入力名)` は `sys(行, 列)` と同じ結果です。`comp.get_sys`、`bus.get_sys`、制御器の `get_sys` が返すモデルで使えることをテストで確認しています。以前はチャネルと同じ名前のグループが曖昧さのエラーを起こしていました。そのため、`comp.get_sys` と `con.get_sys` が返すモデルの `InputGroup` と `OutputGroup` は空になりました(`con.get_sys` は `tag=false` のときだけ持ちます)。`sys.InputGroup.<名前>` を読むスクリプトは `sys(:, "<名前>")` に直してください。
-- **各層の `get_sys` も検査します。** `comp.get_sys`、`bus.get_sys`、`con.get_sys`、`gc.get_sys` は系統の `check_edit` を呼び、どこかが古ければ(`Point` を渡したときも) `GUILDA:LayerPackage:Stale` で止まります。系統に属さない機器・制御器は、古いハンドルをその場で作ります。
+- **各層の `get_sys` も検査します。** `comp.get_sys`、`bus.get_sys`、`con.get_sys`、`gc.get_sys` は、平衡点を使うとき系統と自分(と使う下の層)のタグを読み、古ければ層ごとのエラー(`GUILDA:Component:Stale` など、1.3 の表)で止まります。`comp` と `bus` で `Point` を渡したときは検査しません(`initialize` までは以前のハンドルのまま)。系統に属さない機器・制御器は、古いハンドルをその場で作ります。
 - **`net.rv_Xequilibrium`** は `get_variable_map` の状態の行の順で値を返します(以前は読むと常に失敗しました)。`comp.rv_Xequilibrium_all` は AVR の下の PSS も含みます。
 - **解けないモデルのエラー。**
 
@@ -901,7 +913,7 @@ there.
   must be below 1e-6, otherwise `initialize` stops with
   `GUILDA:PowerNetwork:InitializeNotEquilibrium`. Here, and when writing the
   point fails, the network does not keep its previous equilibrium: its power
-  flow is marked stale, and analyses stop with `GUILDA:LayerPackage:Stale`
+  flow is marked stale, and analyses stop (e.g. `GUILDA:SolverODE:Stale`)
   until `initialize` succeeds.
 - **A split network is reported.** When branches do not connect all buses, a
   successful `net.initialize` warns with `GUILDA:PowerNetwork:NetworkIsland` and

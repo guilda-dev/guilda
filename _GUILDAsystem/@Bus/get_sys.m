@@ -16,8 +16,8 @@ function [sys, varargout] = get_sys(obj, opt)
 % the equilibrium, a vector in the order of bus.get_variable_map(), or {sim, t}.
 % The model is not changed.
 %
-% A bus on a network stops with the error GUILDA:LayerPackage:Stale when
-% net.initialize() is needed.
+% Without Point, a bus on a network stops with the error GUILDA:Bus:Stale when
+% net.initialize() is needed (a stale tag of the network or of its components).
 %
 % See also Component.get_sys, Bus.get_variable_map, PowerNetwork.get_sys
 %
@@ -37,8 +37,21 @@ function [sys, varargout] = get_sys(obj, opt)
     end
 
     l_equilibrium = isempty(opt.Point) && ~iscell(opt.Point);
-    if ~isempty(obj.a_PowerNetwork)
-        obj.a_PowerNetwork.check_edit();
+    if l_equilibrium && ~isempty(obj.a_PowerNetwork)
+        % stale tags of the network and the components (Component.get_sys checks their controllers)
+        net = obj.a_PowerNetwork;
+        sv  = [net.sct_stale.powerflow; net.sct_stale.odefcn];
+        for k = 1:numel(obj.a_Component)
+            sv = [sv; obj.a_Component{k}.sct_stale.equilibrium; obj.a_Component{k}.sct_stale.odefcn]; %#ok<AGROW>
+        end
+        if ~isempty(sv)
+            sv = unique(sv, "stable");
+            s_reason = join(sv(1:min(end,3)), "; ");
+            if numel(sv) > 3
+                s_reason = s_reason + "; ...";
+            end
+            error(msg("GUILDA:Bus:Stale", char(obj.s_tag), char(s_reason)))
+        end
     end
 
     if l_equilibrium

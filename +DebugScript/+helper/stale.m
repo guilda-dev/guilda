@@ -1,6 +1,6 @@
 function sv = stale(obj)
 % 層とその下の層の古さのメッセージ (sct_stale の全フィールド) を集める。
-% Hz の編集は系統の odefcn に入る (LayerPackage.check_edit と同じ)。
+% Hz の編集は系統の odefcn に入る。
 %
 %   sv = DebugScript.helper.stale(net)     % 系統全体 (母線・機器・制御器・大域制御器)
 %   sv = DebugScript.helper.stale(bus)     % 母線の機器とその制御器

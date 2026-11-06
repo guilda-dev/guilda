@@ -1,24 +1,24 @@
 % I71 層別 get_sys と連続型潮流計算の編集の検査
 %
 % comp / bus / con / gc の get_sys と net.calculate_continuation_powerflow は、古いハンドルで結果を返さない。
-%   - 系統に属する層は系統の古さを確認し (check_edit)、古いもの (平衡点・ハンドル・周波数) があれば
-%     net.initialize() を促すエラーにする。Point を指定しても同じ。何も作り直さない
+%   - 系統に属する層は、平衡点を使うとき系統と自分 (と使う下の層) の sct_stale を確認し、古いもの
+%     (平衡点・ハンドル・周波数) があれば net.initialize() を促す層ごとのエラーにする。何も作り直さない
+%   - Point を指定した comp / bus の get_sys は平衡点を使わないので確認しない
 %   - net に接続されていない層は確認を省略し、古いハンドルだけを作る
 %
 % 実行: runtests("DebugScript.test_I71_layer_get_sys")  または  DebugScript.run_all("Features","I71")
 
 % 共通設定 (各テストの前に毎回実行される)
-s_staleID   = "GUILDA:LayerPackage:Stale";
 sr_load     = ["B009","B010","B011","B012","B013","B014"];
 
 
 %% Layer get_sys before initialize asks for initialize
 [net, ~] = build_with_controllers();
 [gen, bus, avr, pss] = layers(net);
-assert_stale_error(@() gen.get_sys(), s_staleID)
-assert_stale_error(@() bus.get_sys(), s_staleID)
-assert_stale_error(@() avr.get_sys(), s_staleID)
-assert_stale_error(@() pss.get_sys(), s_staleID)
+assert_stale_error(@() gen.get_sys(), "GUILDA:Component:Stale")
+assert_stale_error(@() bus.get_sys(), "GUILDA:Bus:Stale")
+assert_stale_error(@() avr.get_sys(), "GUILDA:LocalController:Stale")
+assert_stale_error(@() pss.get_sys(), "GUILDA:LocalController:Stale")
 
 
 %% Layer get_sys after a dynamics edit asks for initialize
@@ -27,21 +27,22 @@ DebugScript.helper.quiet(@() net.initialize);
 [gen, bus, avr, pss] = layers(net);
 gen.tab_parameter.dynamics.D = 3 * gen.tab_parameter.dynamics.D;
 assert(DebugScript.helper.is_stale(net))
-assert_stale_error(@() gen.get_sys(), s_staleID)
-assert_stale_error(@() gen.get_sys("port", "I2V"), s_staleID)
-assert_stale_error(@() bus.get_sys(), s_staleID)
-assert_stale_error(@() avr.get_sys(), s_staleID)
-assert_stale_error(@() pss.get_sys(), s_staleID)
+assert_stale_error(@() gen.get_sys(), "GUILDA:Component:Stale")
+assert_stale_error(@() gen.get_sys("port", "I2V"), "GUILDA:Component:Stale")
+assert_stale_error(@() bus.get_sys(), "GUILDA:Bus:Stale")
+% 制御器の get_sys は系統と自分のタグだけを見るので、機器の編集では止まらない
+avr.get_sys();
+pss.get_sys();
 
 % 位置引数で点を与えても制御器は平衡点で線形化するのでエラーのまま
 x = gen.rv_Xequilibrium;  V = [real(gen.c_Vequilibrium); imag(gen.c_Vequilibrium)];
 I = [real(gen.c_Iequilibrium); imag(gen.c_Iequilibrium)];  u = gen.rv_Uequilibrium;
-assert_stale_error(@() gen.get_sys(x, V, I, u), s_staleID)
+assert_stale_error(@() gen.get_sys(x, V, I, u), "GUILDA:Component:Stale")
 
 % 失敗した net.get_sys の後も下位層の答えは変わらない (エラーのまま)
-assert_stale_error(@() net.get_sys(), s_staleID)
-assert_stale_error(@() gen.get_sys(), s_staleID)
-assert_stale_error(@() bus.get_sys(), s_staleID)
+assert_stale_error(@() net.get_sys(), "GUILDA:SolverLIN:Stale")
+assert_stale_error(@() gen.get_sys(), "GUILDA:Component:Stale")
+assert_stale_error(@() bus.get_sys(), "GUILDA:Bus:Stale")
 
 
 %% Layer get_sys after initialize uses the edited model
@@ -71,9 +72,9 @@ A_gen = gen.get_sys().A;  A_bus = bus.get_sys().A;
 Hz0 = net.para_base.Hz;
 net.para_base.Hz = 2 * Hz0;
 assert(DebugScript.helper.is_stale(net) && isempty(net.sct_stale.powerflow) && DebugScript.helper.handle_Hz(gen) == Hz0)
-assert_stale_error(@() gen.get_sys(), s_staleID)
-assert_stale_error(@() bus.get_sys(), s_staleID)
-assert_stale_error(@() avr.get_sys(), s_staleID)
+assert_stale_error(@() gen.get_sys(), "GUILDA:Component:Stale")
+assert_stale_error(@() bus.get_sys(), "GUILDA:Bus:Stale")
+assert_stale_error(@() avr.get_sys(), "GUILDA:LocalController:Stale")
 assert(DebugScript.helper.handle_Hz(gen) == Hz0)
 
 res = DebugScript.helper.quiet(@() net.initialize);
@@ -91,7 +92,7 @@ assert(norm(A_gen2 - gen_ref.get_sys().A) < 1e-9)
 assert(norm(bus.get_sys().A - bus_ref.get_sys().A) < 1e-9)
 
 
-%% Point also asks for initialize after an edit
+%% Point skips the check and keeps the handles until initialize
 [net, ~] = build_with_controllers();
 DebugScript.helper.quiet(@() net.initialize);
 [gen, bus] = layers(net);
@@ -102,8 +103,9 @@ A0_bus = bus.get_sys("Point", rv_point).A;
 
 gen.tab_parameter.dynamics.D = 3 * gen.tab_parameter.dynamics.D;
 assert(DebugScript.helper.is_stale(net))
-assert_stale_error(@() gen.get_sys("Point", rv_point(c_idx{1})), s_staleID)
-assert_stale_error(@() bus.get_sys("Point", rv_point), s_staleID)
+% Point を指定すると確認せず、initialize までは以前のハンドルのまま
+assert(isequal(gen.get_sys("Point", rv_point(c_idx{1})).A, A0))
+assert(isequal(bus.get_sys("Point", rv_point).A, A0_bus))
 DebugScript.helper.quiet(@() net.initialize);
 A1 = gen.get_sys("Point", rv_point(c_idx{1})).A;
 assert(~isequal(A1, A0))
@@ -112,25 +114,25 @@ assert(~isequal(bus.get_sys("Point", rv_point).A, A0_bus))
 
 %% Layers without a network skip the equilibrium check
 avr = controller.avr.AVR_ST1("avr1");
-assert(~isequal(error_id(@() avr.get_sys()), s_staleID))
+assert(~isequal(error_id(@() avr.get_sys()), "GUILDA:LocalController:Stale"))
 
 
 %% Global controller get_sys checks edits
 [net, gc] = build_with_agc();
-assert_stale_error(@() gc.get_sys(), s_staleID)
+assert_stale_error(@() gc.get_sys(), "GUILDA:GlobalController:Stale")
 
 DebugScript.helper.quiet(@() net.initialize);
 sys0 = gc.get_sys();
 h_dx = gc.f_dx;
 gc.para_dynamics.kI = 2 * gc.para_dynamics.kI;
 assert(isequal(h_dx, gc.f_dx) && DebugScript.helper.is_stale(net))
-assert_stale_error(@() gc.get_sys(), s_staleID)
-assert_stale_error(@() gc.get_sys(gc.rv_Xequilibrium, zeros(2,1), zeros(2,1), gc.rv_Uequilibrium), s_staleID)
+assert_stale_error(@() gc.get_sys(), "GUILDA:GlobalController:Stale")
+assert_stale_error(@() gc.get_sys(gc.rv_Xequilibrium, zeros(2,1), zeros(2,1), gc.rv_Uequilibrium), "GUILDA:GlobalController:Stale")
 assert(isequal(h_dx, gc.f_dx))       % 確認は作り直さない
 
 % 失敗した net.get_sys の後もエラーのまま
-assert_stale_error(@() net.get_sys(), s_staleID)
-assert_stale_error(@() gc.get_sys(), s_staleID)
+assert_stale_error(@() net.get_sys(), "GUILDA:SolverLIN:Stale")
+assert_stale_error(@() gc.get_sys(), "GUILDA:GlobalController:Stale")
 
 % initialize の後は編集後のモデルで、同じ kI で作った系統と一致する
 DebugScript.helper.quiet(@() net.initialize);
@@ -148,7 +150,7 @@ DebugScript.helper.quiet(@() net.initialize);
 Hz0 = net.para_base.Hz;
 net.para_base.Hz = 2 * Hz0;
 assert(DebugScript.helper.handle_Hz(gc) == Hz0 && DebugScript.helper.is_stale(net))
-assert_stale_error(@() gc.get_sys(), s_staleID)
+assert_stale_error(@() gc.get_sys(), "GUILDA:GlobalController:Stale")
 DebugScript.helper.quiet(@() net.initialize);
 assert(DebugScript.helper.handle_Hz(gc) == net.para_base.Hz)
 gc.get_sys();
@@ -168,7 +170,7 @@ DebugScript.helper.quiet(@() net.initialize);
 gen = net.a_Bus{1}.a_Component{1};
 h_dx = gen.f_dx;
 gen.tab_parameter.dynamics.D = 3 * gen.tab_parameter.dynamics.D;
-assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=sr_load)) == "GUILDA:LayerPackage:Stale")
+assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=sr_load)) == "GUILDA:SolverCPF:Stale")
 assert(isequal(h_dx, gen.f_dx))      % 確認は作り直さない
 
 
@@ -180,7 +182,7 @@ res0 = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus
 Hz0 = net.para_base.Hz;
 net.para_base.Hz = 2 * Hz0;
 assert(DebugScript.helper.handle_Hz(gen) == Hz0 && DebugScript.helper.is_stale(net))
-assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=sr_load)) == "GUILDA:LayerPackage:Stale")
+assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=sr_load)) == "GUILDA:SolverCPF:Stale")
 DebugScript.helper.quiet(@() net.initialize);
 res1 = DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=sr_load));
 assert(DebugScript.helper.handle_Hz(gen) == net.para_base.Hz)

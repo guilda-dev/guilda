@@ -22,8 +22,9 @@ classdef PowerNetwork < PowerSystemModel
 %   powerflow parameters. A Hz edit marks its stale tag `odefcn` (the function handles of
 %   every model; the edit does not reach them). The components and controllers mark
 %   their own stale tags.
-% - `initialize` brings every layer up to date; the analyses only check them
-%   (`check_edit`) and stop with GUILDA:LayerPackage:Stale, naming the
+% - `initialize` brings every layer up to date; the analyses only read the stale tags
+%   they need and stop with their own error (GUILDA:SolverODE:Stale, SolverLIN:Stale,
+%   SolverCPF:Stale, and the Stale errors of the get_sys of each layer), naming the
 %   reasons, until it has run.
 %
 % A network is built by adding buses (`add_bus`) and branches (`add_branch`); the

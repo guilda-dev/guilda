@@ -4,5 +4,6 @@
         <entry key="EmptyLoadBus">No load bus is specified for the continuation power flow. Give the tags of the buses whose loads are increased: net.calculate_continuation_powerflow(LoadBus=["B009","B010"]), or set net.solver_CPF.LoadBus.</entry>
         <entry key="UnknownLoadBus">LoadBus names buses that are not in the network: {0}. Use the bus tags of the network (string(net.a_Bus)).</entry>
         <entry key="NoEquilibrium">The continuation power flow starts from the equilibrium, but component {0} has none. Run net.initialize first.</entry>
+        <entry key="Stale">The continuation power flow stopped: ''{0}'' is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
     </message>
 </rsccat>

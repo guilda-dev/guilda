@@ -148,7 +148,7 @@ sys = result.get_ss(Algorithm, Coordinate=…, Input=…, Output=…)
           <path class="dg-sv-line" d="M170 150H298" marker-end="url(#lin-ah)"/>
           <text class="is-sm" x="176" y="144"><tspan style="fill:var(--dg-accent)">03</tspan> solve(net, sct_options)</text>
           <path class="dg-sv-line" d="M300 180H172" marker-end="url(#lin-ah)"/>
-          <text class="is-sm" x="176" y="174"><tspan style="fill:var(--dg-accent)">04</tspan> check_edit</text>
+          <text class="is-sm" x="176" y="174"><tspan style="fill:var(--dg-accent)">04</tspan> sct_stale</text>
           <path class="dg-sv-line" d="M300 210H172" marker-end="url(#lin-ah)"/>
           <text class="is-sm" x="176" y="204"><tspan style="fill:var(--dg-accent)">05</tspan> get_variable_map</text>
           <path class="dg-sv-line" d="M300 228h26v14h-24" marker-end="url(#lin-ah)"/>
@@ -188,7 +188,7 @@ sys = result.get_ss(Algorithm, Coordinate=…, Input=…, Output=…)
           <li><span class="lin-id">LIN-01</span> <span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.linearize</code></li>
           <li><span class="lin-id">LIN-02</span> <code>PowerNetwork</code> → <code>SolverLIN.get_options</code></li>
           <li><span class="lin-id">LIN-03</span> <code>PowerNetwork</code> → <code>SolverLIN.solve</code></li>
-          <li><span class="lin-id">LIN-04</span> <code>SolverLIN</code> → <code>LayerPackage.check_edit</code></li>
+          <li><span class="lin-id">LIN-04</span> <code>SolverLIN</code> → <code>sct_stale</code> <span lang="en">of the layers</span><span lang="ja">（各層）</span></li>
           <li><span class="lin-id">LIN-05</span> <code>SolverLIN</code> → <code>PowerNetwork.get_variable_map</code></li>
           <li><span class="lin-id">LIN-06</span> <code>SolverLIN.point_vector</code></li>
           <li class="lin-loop"><span class="lin-id">LIN-07</span> <code>SolverLIN</code> → <code>Bus.get_sys</code></li>
@@ -262,18 +262,18 @@ sys = result.get_ss(Algorithm, Coordinate=…, Input=…, Output=…)
         </dl>
       </li>
       <li class="fs-step" id="LIN-04">
-        <p class="fs-head"><b class="fs-id">LIN-04</b> <span class="fs-call"><code>SolverLIN.solve</code> → <code>LayerPackage.check_edit</code></span></p>
+        <p class="fs-head"><b class="fs-id">LIN-04</b> <span class="fs-call"><code>SolverLIN.solve</code> → <code>sct_stale</code> <span lang="en">of the layers</span><span lang="ja">（各層）</span></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-              <li>Stops with <code>GUILDA:LayerPackage:Stale</code> if a layer is stale (<code>net.check_edit()</code>); rebuilds nothing.</li>
+              <li>Reads the stale tags (<code>sct_stale</code>, public GetAccess) inline: <code>powerflow</code> and <code>odefcn</code> of the network, then <code>equilibrium</code> and <code>odefcn</code> of each component, its local controllers (as one worklist, nested ones included) and each global controller. When any is not empty, stops with <code>GUILDA:SolverLIN:Stale</code>, naming up to three different messages, and asks for <code>net.initialize()</code>. Rebuilds nothing.</li>
               <li>Rejects a <code>NonUnit</code> bus that does not exist (<code>v3_nonunit_range</code>).</li>
             </ul><ul lang="ja">
-              <li>古い層があれば <code>GUILDA:LayerPackage:Stale</code> で停止 (<code>net.check_edit()</code>)。再構築はなし</li>
+              <li>stale タグ（<code>sct_stale</code>、GetAccess は public）をその場で読み取り: ネットワークの <code>powerflow</code> と <code>odefcn</code>、続いて各機器・その局所制御器（入れ子も含め 1 つの作業リストで）・各広域制御器の <code>equilibrium</code> と <code>odefcn</code>。空でないものがあれば、異なるメッセージを最大 3 件示して <code>GUILDA:SolverLIN:Stale</code> で停止し、<code>net.initialize()</code> を促す。再構築はなし</li>
               <li>存在しない <code>NonUnit</code> 母線を拒否 (<code>v3_nonunit_range</code>)</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>sct_stale</code> <span lang="en">of every layer</span><span lang="ja">（全層）</span>, <code>r_odefcnHz</code>, <span lang="en">network</span><span lang="ja">ネットワークの</span> <code>Hz</code>, <code>NonUnit</code></dd>
+          <dd><code>sct_stale</code> <span lang="en">of the network, components, local and global controllers</span><span lang="ja">（ネットワーク・機器・局所制御器・広域制御器）</span>, <code>NonUnit</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
           <dd><span lang="en">— (errors only)</span><span lang="ja">—（エラーのみ）</span></dd>
         </dl>
@@ -603,7 +603,7 @@ sys = result.get_ss(Algorithm, Coordinate=…, Input=…, Output=…)
         <tr><td><span lang="en">Zero bus voltage, point not an equilibrium</span><span lang="ja">母線電圧が 0、点が平衡点でない</span></td><td><span lang="en"><code>flag</code> unchanged; <code>output.message</code>, <code>output.sv_faultBus</code>, <code>result.rv_residual</code></span><span lang="ja"><code>flag</code> は変わらない。<code>output.message</code>、<code>output.sv_faultBus</code>、<code>result.rv_residual</code></span></td></tr>
         <tr><td><span lang="en">Invalid point (LIN-02, LIN-06)</span><span lang="ja">不正な点 (LIN-02, LIN-06)</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:SolverLIN:PointType</code>, <code>PointSize</code>, <code>PointSimType</code>, <code>PointSimSize</code>, <code>PointNotFinite</code>; <code>GUILDA:ResultODE:PointTime</code></td></tr>
         <tr><td><span lang="en">Model not finite at the point (<code>dss</code> rejects it, LIN-07, LIN-11)</span><span lang="ja">点でモデルが有限でない (<code>dss</code> が拒否。LIN-07, LIN-11)</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:SolverLIN:JacobianNotFinite</code></td></tr>
-        <tr><td><span lang="en">Equilibrium missing or stale (LIN-04)</span><span lang="ja">平衡点がない、または古い (LIN-04)</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:LayerPackage:Stale</code></td></tr>
+        <tr><td><span lang="en">Equilibrium missing or stale (LIN-04)</span><span lang="ja">平衡点がない、または古い (LIN-04)</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:SolverLIN:Stale</code></td></tr>
         <tr><td><span lang="en">Model structure</span><span lang="ja">モデルの構造</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:Component:CurrentDependence</code> (LIN-10), <code>GUILDA:GlobalController:GlobalControllerPort</code> (LIN-11), <code>GUILDA:SolverLIN:GlobalControllerPort</code>, <code>GUILDA:SolverLIN:VariableMap</code> (LIN-13)</td></tr>
         <tr><td><span lang="en"><code>get_ss</code> arguments and forms (LIN-19)</span><span lang="ja"><code>get_ss</code> の引数と形 (LIN-19)</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:ResultLIN:UnknownInput</code>, <code>UnknownOutput</code>, <code>StateNotInModel</code>, <code>NoUnitBus</code>, <code>NoI2V</code>, <code>GlobalControllerPort</code></td></tr>
         <tr><td><span lang="en">Invalid option</span><span lang="ja">不正なオプション</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:resolve_options:UnknownName</code></td></tr>
