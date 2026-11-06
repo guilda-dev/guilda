@@ -31,8 +31,7 @@ classdef broadcast_PI_AGC < GlobalController
 % net = network.IEEE9bus();
 % g1  = net.a_Bus{1}.a_Component{1};
 % g2  = net.a_Bus{2}.a_Component{1};
-% agc = controller.agc.broadcast_PI_AGC(net, "agc", g1, g2, kP=100, kI=500);
-% net.add_global_controller(agc);
+% agc = net.add_global_controller("agc-PI", {g1, g2}, parameter=struct(kP=100, kI=500));
 % net.initialize;
 % sc  = Scenario("fault");
 % sc.add_fault("B007", [1,1.05]);
@@ -43,7 +42,8 @@ classdef broadcast_PI_AGC < GlobalController
 % See also GlobalController, PowerNetwork.add_global_controller
 
     properties (Constant, Hidden) % Model definition
-        key = "agc"                           % Kind of controller.
+        key = "agc-PI"                        % Model key that selects this class in `PowerNetwork.add_global_controller`.
+        s_role = "agc"                        % Role of the controller (automatic generation control).
         sv_x = "xi"                           % Names of the states.
         sv_u = "omega"                        % Names of the inputs, one per controlled generator.
         sv_y = "Pmech"                        % Names of the outputs, one per controlled generator.
@@ -52,10 +52,10 @@ classdef broadcast_PI_AGC < GlobalController
     
     methods
         function obj = broadcast_PI_AGC(net, tag, varargin, opt)
-        % Create the AGC for the generators given after the tag.
+        % Create the AGC with the tag "AGC" + tag for the generators given after the tag.
             arguments (Input)
                 net % PowerNetwork that contains the controlled generators.
-                tag % Tag of the controller.
+                tag % Tag suffix; the controller tag is "AGC" + tag.
             end
             arguments (Input, Repeating)
                 varargin % Controlled generators, each a generator object or its tag.
@@ -69,7 +69,7 @@ classdef broadcast_PI_AGC < GlobalController
             arguments (Output)
                 obj % broadcast_PI_AGC object.
             end
-            obj@GlobalController(net, tag, varargin{:})            
+            obj@GlobalController(net, "AGC"+tag, varargin{:})            
 
             % A scalar alpha or beta (e.g. the default) applies to every controlled unit
             nCU = max(numel(obj.controlledUnits), 1);

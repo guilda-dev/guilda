@@ -15,7 +15,7 @@ classdef local_LQR < LocalController
 % gives the equilibrium current (as in GUILDA v2). A network Hz edit keeps the
 % equilibrium, so `net.initialize` only redesigns `K` at that equilibrium.
 %
-% Attach it with `comp.add_local_controller(lqr)`; it takes the place of an AVR
+% Attach it with `comp.add_local_controller("local-LQR")`; it takes the place of an AVR
 % (and of the PSS attached to that AVR). The output of a global controller (e.g. an
 % AGC) on a driven input adds to its output, and the design of `K` does not take it
 % into account (use `Input="Vfield"` with an AGC on Pmech to keep them apart).
@@ -31,8 +31,8 @@ classdef local_LQR < LocalController
 %
 % ```matlab
 % net = network.IEEE9bus(LocalController=false);
-% net.a_Bus{1}.a_Component{1}.add_local_controller(controller.local_LQR("lqr1"));
-% net.a_Bus{2}.a_Component{1}.add_local_controller(controller.local_LQR("lqr2", Input="Vfield", R=2));
+% net.a_Bus{1}.a_Component{1}.add_local_controller("local-LQR");
+% net.a_Bus{2}.a_Component{1}.add_local_controller("local-LQR", parameter=struct(Input="Vfield", R=2));
 % net.initialize;
 % sc  = Scenario("fault");
 % sc.add_fault("B007", [1,1.05]);
@@ -42,8 +42,12 @@ classdef local_LQR < LocalController
 %
 % See also Component.add_local_controller, controller.avr.abstract, controller.local_LQR_retrofit
 
+    properties (Constant, Hidden) % Model definition
+        key = "local-LQR"                     % Model key that selects this class in `Component.add_local_controller`.
+        s_role = "local"                      % Role in Component.add_local_controller ("local": in the place of an AVR).
+    end
+
     properties (SetAccess=protected, Hidden) % Signals
-        key = "local"                         % Controller kind ("local": in the place of an AVR).
         sv_x = strings(0,1)                   % Names of the controller states (none).
         sv_u = "Xall"                         % Names of the observed signals ("Xall": all the states of the component).
         sv_y = strings(0,1)                   % Names of the driven inputs of the component.

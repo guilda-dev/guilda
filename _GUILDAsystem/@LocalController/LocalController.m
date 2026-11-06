@@ -21,9 +21,9 @@ classdef LocalController < PowerSystemModel
 % - Gives no current to the network (no `fcn_I`). It receives the parent voltage V in its
 %   functions, but does not own the voltage or the frequency, and is not a child of the
 %   bus.
-% - Created with its constructor and attached with `Component.add_local_controller`, which
+% - Built and attached by `Component.add_local_controller` from its model key `key`, which
 %   sets `a_Component` (`SetAccess`), resolves the observed inputs and logs a "Topology"
-%   edit. A controller object attaches to one parent at a time.
+%   edit. A controller attaches to one parent at a time.
 % - Differs from `Component` on purpose: no `fcn_I`, the output function is `fcn_y`, and
 %   the Jacobians are required. Inputs named X or Y are not allowed.
 % - `resolve_observe` (called by `Component.add_local_controller` on attachment) expands
@@ -39,8 +39,9 @@ classdef LocalController < PowerSystemModel
 %   then calls `initialize(true)`, with which each controller clears its own tag.
 %
 % Subclasses in the `controller` package define the static model functions (`fcn_dx`,
-% `fcn_y`, `fcn_Mass`), their Jacobians and the variable names. Controllers are attached
-% with `Component.add_local_controller`: the key says where (an "avr" or "local"
+% `fcn_y`, `fcn_Mass`), their Jacobians and the variable names. A concrete class has a
+% model key `key` (e.g. "avr-ST1"), with which `Component.add_local_controller` builds and
+% attaches it, and a role `s_role` that says where it goes (an "avr" or "local"
 % controller and a "governor" on the component, a "pss" under the AVR).
 % The two top-level controllers of a component drive different inputs.
 %
@@ -48,9 +49,8 @@ classdef LocalController < PowerSystemModel
 % ```matlab
 % net = network.IEEE14bus();
 % gen = net.a_Bus{1}.a_Component{1};
-% avr = controller.avr.AVR_ST1("avr1");
-% pss = controller.pss.PSS1("pss1");
-% gen.add_local_controller(avr, pss);          % the PSS is attached under the AVR
+% avr = gen.add_local_controller("avr-ST1");
+% pss = gen.add_local_controller("pss-PSS1");   % the PSS is attached under the AVR
 % net.initialize();
 % avr.rv_Xequilibrium
 % ```
@@ -58,8 +58,11 @@ classdef LocalController < PowerSystemModel
 % See also Component.add_local_controller, controller.avr.AVR_ST1, controller.pss.PSS1, controller.governor.IEEJ_LPT1, controller.local_LQR
 
 %% Abstract properties
+    properties(Abstract, Constant, Hidden) % Subclass contract
+        key (1,1) string                           % Model key that selects the class in Component.add_local_controller (concrete classes only).
+        s_role (1,1) string                        % Role: "avr", "pss", "local" (attached in the place of an AVR) or "governor" (beside it).
+    end
     properties(Abstract, SetAccess=protected, Hidden) % Subclass contract
-        key (1,1) string                           % Kind: "avr", "pss", "local" (attached in the place of an AVR) or "governor" (beside it).
         sv_x (:,1) string                          % Names of the states.
         sv_u (:,1) string                          % Names of the inputs.
         sv_y (:,1) string                          % Names of the outputs.

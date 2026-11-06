@@ -1,6 +1,6 @@
 classdef abstract < LocalController
 % Base class of the governors (speed governor and turbine) attached to a generator.
-% A governor is attached to the generator beside its AVR (key "governor"). It
+% A governor is attached to the generator beside its AVR (role "governor"). It
 % observes the speed deviation `omega` [pu] of the generator and takes the input
 % signals `u = [omega; Pref; Plimit]`: `Pref` is the load setting (65M) and `Plimit` the
 % load limiter (77M), in pu of the rated MW of the machine. They match no output
@@ -26,11 +26,13 @@ classdef abstract < LocalController
 %
 % See also controller.governor.IEEJ_LPT1, controller.governor.IEEJ_LPT3, controller.governor.IEEJ_LPT4, Component.add_local_controller
     properties (SetAccess=protected, Hidden) % Model definition
-        key = "governor"                  % Kind of controller ("governor": beside the AVR).
         sv_x                              % Names of the states (set by the concrete governors).
         sv_u = ["omega";"Pref";"Plimit"]  % Names of the inputs: speed deviation, load setting and load limiter.
         sv_y = "Pmech"                    % Names of the outputs: mechanical power of the generator.
         sv_para                           % Names of the dynamic parameters (set by the concrete governors).
+    end
+    properties (Constant, Hidden) % Model definition
+        s_role = "governor"  % Role in Component.add_local_controller ("governor": beside the AVR).
     end
     methods
         function obj = abstract(tag)

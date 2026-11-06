@@ -38,7 +38,8 @@ classdef (Sealed = true) AVR_ST1 < controller.avr.abstract
 % ```matlab
 % net = network.IEEE9bus(LocalController=false);
 % gen = net.a_Bus{1}.a_Component{1};
-% gen.add_local_controller(controller.avr.AVR_ST1("avr1", kap=30), controller.pss.PSS1("pss1"));
+% gen.add_local_controller("avr-ST1", parameter=struct(kap=30));
+% gen.add_local_controller("pss-PSS1");
 % net.initialize;
 % sc  = Scenario("fault");
 % sc.add_fault("B007", [1,1.05]);
@@ -48,6 +49,10 @@ classdef (Sealed = true) AVR_ST1 < controller.avr.abstract
 %
 % See also controller.avr.AVR_DC1, controller.pss.PSS1, controller.avr.abstract
     
+    properties (Constant, Hidden) % Model definition
+        key = "avr-ST1"  % Model key that selects this class in `Component.add_local_controller`.
+    end
+
     methods
         function obj = AVR_ST1(tag, param)
         % Create an AVR_ST1 regulator with the tag "CA" + tag.
@@ -74,8 +79,6 @@ classdef (Sealed = true) AVR_ST1 < controller.avr.abstract
                     "tap", param.tap, ...
                     "kst", param.kst, ...
                     "tst", param.tst));
-
-            obj.key      = "avr";
             obj.sv_x    = ["Vtr";"Vap";"Vst"];
             obj.sv_u    = ["Vref";"Vpss"];   
             obj.sv_y    = "Vfield";

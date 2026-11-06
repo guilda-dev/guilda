@@ -6,7 +6,7 @@ classdef GlobalController < PowerSystemModel
 % in `sv_u`, and its outputs are inputs of those components. Subclasses in the
 % `controller` package define the static model functions (`fcn_dx`, `fcn_y`, `fcn_Mass`), their Jacobians and the
 % variable names. A global controller is built for a network and added with
-% `PowerNetwork.add_global_controller`.
+% `PowerNetwork.add_global_controller` from its model key `key` (e.g. "agc-PI").
 %
 % - Owns its parameters (one row per controlled unit), its equations (through its
 %   subclass) and its equilibrium. Its parent is the network.
@@ -35,8 +35,7 @@ classdef GlobalController < PowerSystemModel
 % net = network.IEEE14bus();
 % g1  = net.a_Bus{1}.a_Component{1};
 % g2  = net.a_Bus{2}.a_Component{1};
-% agc = controller.agc.broadcast_PI_AGC(net, "agc", g1, g2, alpha=[1;1], beta=[1;1], kP=100, kI=500);
-% net.add_global_controller(agc);
+% agc = net.add_global_controller("agc-PI", {g1, g2}, parameter=struct(alpha=[1;1], beta=[1;1], kP=100, kI=500));
 % net.initialize();
 % sys = agc.get_sys();
 % ```
@@ -44,7 +43,8 @@ classdef GlobalController < PowerSystemModel
 % See also PowerNetwork.add_global_controller, controller.agc.broadcast_PI_AGC, LocalController
 
     properties(Abstract, Constant, Hidden=true) % Subclass contract
-        key (1,1) string                           % Kind of controller.
+        key (1,1) string                           % Model key that selects the class in PowerNetwork.add_global_controller.
+        s_role (1,1) string                        % Role of the controller, e.g. "agc".
         sv_x (:,1) string                          % Names of the states.
         sv_u (:,1) string                          % Names of the inputs (states of the controlled units).
         sv_y (:,1) string                          % Names of the outputs (inputs of the controlled units).

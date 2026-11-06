@@ -50,7 +50,7 @@ classdef (Sealed = true) IEEJ_LPT1 < controller.governor.abstract
 % ```matlab
 % net = network.IEEE9bus();
 % gen = net.a_Bus{1}.a_Component{1};
-% gen.add_local_controller(controller.governor.IEEJ_LPT1("gov1", Prate=2.5, PLM=5));
+% gen.add_local_controller("gov-LPT1", parameter=struct(Prate=2.5, PLM=5));
 % net.initialize;
 % sc  = Scenario("trip");
 % sc.add_trip(net.a_Bus{5}.a_Component{1}.s_tag, [1,Inf]);
@@ -59,6 +59,10 @@ classdef (Sealed = true) IEEJ_LPT1 < controller.governor.abstract
 % ```
 %
 % See also controller.governor.IEEJ_LPT3, controller.governor.IEEJ_LPT4, controller.governor.abstract, controller.avr.AVR_DC1
+
+    properties (Constant, Hidden) % Model definition
+        key = "gov-LPT1"  % Model key that selects this class in `Component.add_local_controller`.
+    end
 
     methods
         function obj = IEEJ_LPT1(tag, param)
