@@ -227,7 +227,6 @@ classdef Component < PowerSystemModel
 
         build_odefcn(obj)
         handle_edit(obj, a_layer, tag, log)
-        sv_message = stale_messages(obj)
 
         % Raise a constructor message of Component.xml for a subclass in another folder.
         parameter_error(obj, s_key, varargin)
@@ -264,9 +263,6 @@ classdef Component < PowerSystemModel
         [rv_dx, rv_I] = point_residual(obj, rv_point)
     end
 
-    methods(Access=private)
-        l = odefcn_stale(obj)
-    end
 
     methods(Access={?Bus})
         initialize(obj)

@@ -164,7 +164,7 @@
         <text x="66" y="84"><tspan class="init-num">01</tspan> <tspan class="dg-mono">initialize(...)</tspan></text>
         <!-- 02 -->
         <path class="dg-sv-line" d="M185 114h26v14h-22" marker-end="url(#init-ah)"/>
-        <text x="218" y="125"><tspan class="init-num">02</tspan> <tspan class="dg-mono">collect_stale()</tspan></text>
+        <text x="218" y="125"><tspan class="init-num">02</tspan> <tspan class="dg-mono">sct_stale.powerflow</tspan></text>
         <!-- 03 -->
         <path class="dg-sv-line" d="M185 158H311" marker-end="url(#init-ah)"/>
         <text x="191" y="152"><tspan class="init-num">03</tspan> <tspan class="dg-mono">solve</tspan></text>
@@ -202,7 +202,7 @@
         <text x="330" y="534"><tspan class="init-num">12</tspan> <tspan class="dg-mono">f_dx, f_I, f_Y</tspan> <tspan lang="en">at the point</tspan><tspan lang="ja">を運転点で評価</tspan></text>
         <!-- 13 -->
         <path class="dg-sv-line" d="M185 558h26v14h-22" marker-end="url(#init-ah)"/>
-        <text x="218" y="569"><tspan class="init-num">13</tspan> <tspan class="dg-mono">clear_stale("powerflow")</tspan></text>
+        <text x="218" y="569"><tspan class="init-num">13</tspan> <tspan class="dg-mono">sct_stale = {}</tspan></text>
         <!-- 14 -->
         <path class="dg-sv-line is-muted" d="M185 588H64" marker-end="url(#init-ah-m)"/>
         <text x="191" y="592"><tspan class="init-num">14</tspan> <tspan class="dg-mono">result, flag, output</tspan> <tspan lang="en">+ warnings</tspan><tspan lang="ja">＋警告</tspan></text>
@@ -213,8 +213,8 @@
 
     <!-- ============================== STEPS ============================== -->
     <h2 id="steps"><span lang="en">Processing steps in detail</span><span lang="ja">処理ステップの詳細</span></h2>
-    <p lang="en">Private functions named here: local functions of <code>_GUILDAsystem/@PowerNetwork/initialize.m</code> or <code>@Bus/set_equilibrium.m</code>. <code>collect_stale</code>, <code>clear_stale</code> and <code>mark_stale</code>: protected methods of <code>LayerPackage</code>.</p>
-    <p lang="ja">ここに挙げる非公開の関数は、すべて <code>_GUILDAsystem/@PowerNetwork/initialize.m</code> または <code>@Bus/set_equilibrium.m</code> のローカル関数。<code>collect_stale</code>、<code>clear_stale</code>、<code>mark_stale</code> は <code>LayerPackage</code> の protected メソッド。</p>
+    <p lang="en">Private functions named here: local functions of <code>_GUILDAsystem/@PowerNetwork/initialize.m</code> or <code>@Bus/set_equilibrium.m</code>.</p>
+    <p lang="ja">ここに挙げる非公開の関数は、すべて <code>_GUILDAsystem/@PowerNetwork/initialize.m</code> または <code>@Bus/set_equilibrium.m</code> のローカル関数。</p>
     <ol class="fs-steps">
       <li class="fs-step" id="INIT-01">
         <p class="fs-head"><b class="fs-id">INIT-01</b> <span class="fs-call">user → <code>PowerNetwork.initialize</code><small><code>v3_initialize_args</code>, <code>take_method</code></small></span></p>
@@ -234,22 +234,20 @@
         </dl>
       </li>
       <li class="fs-step" id="INIT-02">
-        <p class="fs-head"><b class="fs-id">INIT-02</b> <span class="fs-call"><code>initialize</code> → <code>LayerPackage.collect_stale</code></span></p>
+        <p class="fs-head"><b class="fs-id">INIT-02</b> <span class="fs-call"><code>initialize</code> → <code>net.sct_stale.powerflow</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li>Collects the stale messages of every layer, a network frequency other than the one a model built its handles with included</li>
-            <li>Solves the operating point (INIT-03a/b) when <code>Method</code> is given (<code>"powerflow"</code> or <code>"OPF"</code>) or <code>net.sct_stale.powerflow</code> is not empty</li>
-            <li>Nothing stale and no solve: returns after INIT-03c, changing nothing</li>
+            <li>Decides only about the power flow of the network: solves the operating point (INIT-03a/b) when <code>Method</code> is given (<code>"powerflow"</code> or <code>"OPF"</code>) or <code>net.sct_stale.powerflow</code> is not empty</li>
+            <li>No upfront check of the other layers: each decides from its own stale tags in its own <code>initialize</code> (INIT-09, INIT-10)</li>
           </ul><ul lang="ja">
-            <li>全層の stale のメッセージを収集（モデルのハンドル作成時と異なるネットワークの周波数も含む）</li>
-            <li><code>Method</code> の指定時（<code>"powerflow"</code> または <code>"OPF"</code>）か <code>net.sct_stale.powerflow</code> が空でないとき運転点を求解（INIT-03a/b）</li>
-            <li>古いものがなく求解もなし: INIT-03c の後に何も変更せず返却</li>
+            <li>判断するのはネットワークの潮流のみ: <code>Method</code> の指定時（<code>"powerflow"</code> または <code>"OPF"</code>）か <code>net.sct_stale.powerflow</code> が空でないとき運転点を求解（INIT-03a/b）</li>
+            <li>ほかの層の事前確認なし: 各層が自分の <code>initialize</code> で自分の stale タグから判断（INIT-09、INIT-10）</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><span lang="en"><code>sct_stale</code> and <code>r_odefcnHz</code> of every layer; network <code>Hz</code>; <code>s_method</code></span><span lang="ja">全層の <code>sct_stale</code> と <code>r_odefcnHz</code>、ネットワークの <code>Hz</code>、<code>s_method</code></span></dd>
+          <dd><span lang="en"><code>net.sct_stale.powerflow</code>; <code>s_method</code>, <code>l_given</code></span><span lang="ja"><code>net.sct_stale.powerflow</code>、<code>s_method</code>、<code>l_given</code></span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>l_stale</code>, <code>l_solve</code></span><span lang="ja"><code>l_stale</code>、<code>l_solve</code></span></dd>
+          <dd><span lang="en"><code>l_solve</code></span><span lang="ja"><code>l_solve</code></span></dd>
         </dl>
       </li>
       <li class="fs-step" id="INIT-03a">
@@ -379,11 +377,11 @@
           <dd><ul lang="en">
             <li>Rebuilds the handles first when they are stale (<code>build_odefcn</code>): a controller may design from them (<code>controller.local_LQR</code>)</li>
             <li>Calls the model's <code>get_equilibrium</code> with all four arguments and stores the result</li>
-            <li>After INIT-08, clears the stale tag <code>equilibrium</code> of the component and of its local controllers</li>
+            <li>Clears its own stale tag <code>equilibrium</code>; then, for each local controller, INIT-08 and <code>initialize(true)</code>, with which the controller clears its own <code>equilibrium</code> and rebuilds its stale handles</li>
           </ul><ul lang="ja">
             <li>ハンドルが古ければ先に再構築（<code>build_odefcn</code>）。制御器がそれを使って設計する場合があるため（<code>controller.local_LQR</code>）</li>
             <li>モデルの <code>get_equilibrium</code> を 4 つの引数すべてで呼び出し、結果を保存</li>
-            <li>INIT-08 の後、機器とその局所制御器の stale タグ <code>equilibrium</code> を消去</li>
+            <li>自分の stale タグ <code>equilibrium</code> を消去。続いて各局所制御器に INIT-08 と <code>initialize(true)</code>。制御器は自分の <code>equilibrium</code> を消去し、古いハンドルを再構築</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>c_V</code>, <code>c_I</code>, <code>r_P</code>, <code>r_Q</code> [pu]; <code>para_dynamics</code> of the model</span><span lang="ja"><code>c_V</code>、<code>c_I</code>、<code>r_P</code>、<code>r_Q</code> [pu]、モデルの <code>para_dynamics</code></span></dd>
@@ -417,13 +415,13 @@
           <dd><ul lang="en">
             <li>Each bus initializes its components; then each branch (nothing to do)</li>
             <li>Component: rebuilds its handles when <code>odefcn</code> is not empty or <code>r_odefcnHz</code> differs from <code>get_Hz()</code> (<code>build_odefcn</code>)</li>
-            <li>Component: when the equilibrium of the component or of one of its local controllers is still stale (a dynamics or controller edit), recomputes it from the held V and I (INIT-07, INIT-08)</li>
-            <li>Local controller: rebuilds its stale handles in the same way, then its nested controller; <code>controller.local_LQR</code> redesigns its gain when the network frequency differs from the one it was designed for</li>
+            <li>Component: when the equilibrium of the component or of one of its local controllers is still stale (a dynamics or controller edit), recomputes it from the held V and I (INIT-07, INIT-08); otherwise calls <code>initialize(false)</code> of its local controllers</li>
+            <li>Local controller (<code>initialize(l_equilibrium)</code>): with <code>true</code> clears its own <code>equilibrium</code>; rebuilds its stale handles in the same way, then initializes its nested controller with the same <code>l_equilibrium</code>; <code>controller.local_LQR</code> redesigns its gain when the network frequency differs from the one it was designed for</li>
           </ul><ul lang="ja">
             <li>各母線がその機器を初期化。続いて各ブランチ（処理なし）</li>
             <li>機器: <code>odefcn</code> が空でないか、<code>r_odefcnHz</code> が <code>get_Hz()</code> と異なればハンドルを再構築（<code>build_odefcn</code>）</li>
-            <li>機器: 機器またはその局所制御器の平衡点がまだ古い場合（動特性や制御器の編集）、保持中の V と I から再計算（INIT-07、INIT-08）</li>
-            <li>局所制御器: 古いハンドルを同様に再構築し、続いて入れ子の制御器。<code>controller.local_LQR</code> は設計時と異なるネットワークの周波数でゲインを再設計</li>
+            <li>機器: 機器またはその局所制御器の平衡点がまだ古い場合（動特性や制御器の編集）、保持中の V と I から再計算（INIT-07、INIT-08）。それ以外は局所制御器の <code>initialize(false)</code> を呼び出し</li>
+            <li>局所制御器（<code>initialize(l_equilibrium)</code>）: <code>true</code> なら自分の <code>equilibrium</code> を消去。古いハンドルを同様に再構築し、入れ子の制御器を同じ <code>l_equilibrium</code> で初期化。<code>controller.local_LQR</code> は設計時と異なるネットワークの周波数でゲインを再設計</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>sct_stale</code>, <code>r_odefcnHz</code>, <code>tab_parameter.dynamics</code> of the components and controllers; network <code>Hz</code>; <code>c_Vequilibrium</code>, <code>c_Iequilibrium</code></span><span lang="ja">機器と制御器の <code>sct_stale</code>、<code>r_odefcnHz</code>、<code>tab_parameter.dynamics</code>、ネットワークの <code>Hz</code>、<code>c_Vequilibrium</code>、<code>c_Iequilibrium</code></span></dd>
@@ -453,9 +451,9 @@
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li>Checks Kirchhoff's current law at every bus at the point that was written</li>
+            <li>Only when the operating point was solved (INIT-03a/b): checks Kirchhoff's current law at every bus at the point that was written. The other steps recompute from the held V and I</li>
           </ul><ul lang="ja">
-            <li>書き込んだ運転点で、すべての母線のキルヒホッフの電流則を確認</li>
+            <li>運転点を求解したとき（INIT-03a/b）のみ: 書き込んだ運転点で、すべての母線のキルヒホッフの電流則を確認。ほかの手順は保持中の V と I から再計算</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en"><code>net.cv_Vequilibrium</code>, <code>net.cv_Iequilibrium</code> (n_bus × 1, dependent), the admittance matrix</span><span lang="ja"><code>net.cv_Vequilibrium</code>、<code>net.cv_Iequilibrium</code>（n_bus × 1、従属プロパティ）、アドミタンス行列</span></dd>
@@ -485,20 +483,20 @@
         </dl>
       </li>
       <li class="fs-step" id="INIT-13">
-        <p class="fs-head"><b class="fs-id">INIT-13</b> <span class="fs-call"><code>initialize</code> → <code>LayerPackage.clear_stale("powerflow")</code></span></p>
+        <p class="fs-head"><b class="fs-id">INIT-13</b> <span class="fs-call"><code>initialize</code> → <code>net.sct_stale</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-            <li>Marks the power flow of the network up to date, after INIT-05 to INIT-12 succeeded</li>
-            <li>When one of them stops: <code>mark_stale("powerflow", ...)</code> with "the last initialize stopped before it finished" instead, so a point written only in part is never used</li>
+            <li>Empties the stale tags <code>powerflow</code> and <code>odefcn</code> of the network, after INIT-05 to INIT-12 succeeded</li>
+            <li>When one of them stops: appends "the last initialize stopped before it finished" to <code>net.sct_stale.powerflow</code> instead, so a point written only in part is never used</li>
           </ul><ul lang="ja">
-            <li>INIT-05〜INIT-12 の成功後、ネットワークの潮流を最新と印付け</li>
-            <li>いずれかが停止した場合: 代わりに "the last initialize stopped before it finished" で <code>mark_stale("powerflow", ...)</code>。途中まで書かれた運転点は使用されない</li>
+            <li>INIT-05〜INIT-12 の成功後、ネットワークの stale タグ <code>powerflow</code> と <code>odefcn</code> を空に</li>
+            <li>いずれかが停止した場合: 代わりに "the last initialize stopped before it finished" を <code>net.sct_stale.powerflow</code> に追加。途中まで書かれた運転点は使用されない</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en">—</span><span lang="ja">—</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><span lang="en"><code>net.sct_stale.powerflow</code> emptied; every layer up to date</span><span lang="ja"><code>net.sct_stale.powerflow</code> を空に。全層が最新</span></dd>
+          <dd><span lang="en"><code>net.sct_stale.powerflow</code> and <code>.odefcn</code> emptied; every layer up to date</span><span lang="ja"><code>net.sct_stale.powerflow</code> と <code>.odefcn</code> を空に。全層が最新</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="INIT-14">
@@ -572,9 +570,9 @@
       <li><strong>Stale state:</strong>
         <ul>
           <li><code>sct_stale.equilibrium</code> and <code>.odefcn</code> of the components and controllers emptied as each is brought up to date (INIT-07 to INIT-10)</li>
-          <li><code>net.sct_stale.powerflow</code> emptied at INIT-13</li>
+          <li><code>net.sct_stale.powerflow</code> and <code>.odefcn</code> emptied at INIT-13</li>
           <li>a call that stops between INIT-05 and INIT-12 marks <code>powerflow</code> stale instead</li>
-          <li>with nothing stale and no <code>Method</code>, nothing is written</li>
+          <li>with nothing stale and no <code>Method</code>, only the equilibria of the global controllers are written again (INIT-10)</li>
         </ul>
       </li>
       <li><strong>Later edits:</strong>
@@ -585,7 +583,7 @@
           <li>after edits of dynamics parameters only: <code>initialize()</code> does not solve the power flow; it keeps <code>V</code> and <code>I</code> and recomputes the states and inputs of the edited models</li>
         </ul>
       </li>
-      <li><strong>Network frequency:</strong> after an edit of <code>Hz</code>, analyses stop until <code>initialize</code>, which only rebuilds the handles (no power flow; the equilibrium is kept)</li>
+      <li><strong>Network frequency:</strong> an edit of <code>Hz</code> marks <code>net.sct_stale.odefcn</code>; analyses stop until <code>initialize</code>, which only rebuilds the handles (no power flow; the equilibrium is kept)</li>
     </ul>
     <ul lang="ja">
       <li><strong>書き込むもの:</strong>
@@ -599,9 +597,9 @@
       <li><strong>stale 状態:</strong>
         <ul>
           <li>機器と制御器の <code>sct_stale.equilibrium</code> と <code>.odefcn</code> は、それぞれを最新化した時点で空に（INIT-07〜INIT-10）</li>
-          <li><code>net.sct_stale.powerflow</code> は INIT-13 で空に</li>
+          <li><code>net.sct_stale.powerflow</code> と <code>.odefcn</code> は INIT-13 で空に</li>
           <li>INIT-05〜INIT-12 の間で停止した呼び出しでは代わりに <code>powerflow</code> を古いと印付け</li>
-          <li>古いものがなく <code>Method</code> の指定もなければ書き込みなし</li>
+          <li>古いものがなく <code>Method</code> の指定もなければ、書き込みは大域制御器の平衡点のみ（INIT-10）</li>
         </ul>
       </li>
       <li><strong>後からの編集:</strong>
@@ -612,7 +610,7 @@
           <li>動特性パラメータだけの編集後: <code>initialize()</code> は潮流計算を解かず、<code>V</code> と <code>I</code> を保ったまま編集したモデルの状態と入力を再計算</li>
         </ul>
       </li>
-      <li><strong>系統周波数:</strong> <code>Hz</code> の編集後は <code>initialize</code> まで解析が停止。<code>initialize</code> はハンドルの再構築のみ（潮流計算なし、平衡点は維持）</li>
+      <li><strong>系統周波数:</strong> <code>Hz</code> の編集は <code>net.sct_stale.odefcn</code> に記録され、<code>initialize</code> まで解析が停止。<code>initialize</code> はハンドルの再構築のみ（潮流計算なし、平衡点は維持）</li>
     </ul>
 
     <!-- ============================== FAILURE ============================== -->

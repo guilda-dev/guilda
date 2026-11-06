@@ -616,7 +616,7 @@ net = DebugScript.helper.build_9bus();
 
 % initialize 前は "unset" (初期メッセージ "initialize has not been run")
 assert(DebugScript.helper.edit_flag(net) == "unset")
-assert(isequal(net.sct_stale.powerflow, net.s_notInitialized))
+assert(net.sct_stale.powerflow(1) == net.s_notInitialized)   % 構築中の編集はその後に追加される
 
 % initialize 後は "initialized"、古いものはない
 DebugScript.helper.quiet(@() net.initialize);

@@ -35,7 +35,8 @@ classdef LocalController < PowerSystemModel
 %   (`sct_stale.odefcn`, or a network frequency other than `r_odefcnHz`).
 % - Stale tags (`sct_stale`): `equilibrium` (its dynamics, a nested controller, its
 %   attachment) and `odefcn` (its dynamics, its attachment). The component recomputes the
-%   equilibria of its controllers when one of them is stale (Component.initialize).
+%   equilibria of its controllers when one of them is stale (Component.set_equilibrium),
+%   then calls `initialize(true)`, with which each controller clears its own tag.
 %
 % Subclasses in the `controller` package define the static model functions (`fcn_dx`,
 % `fcn_y`, `fcn_Mass`), their Jacobians and the variable names. Controllers are attached
@@ -179,9 +180,8 @@ classdef LocalController < PowerSystemModel
 
         set_parent(obj,a_Component)
 
-        initialize(obj)
+        initialize(obj, l_equilibrium)
         build_odefcn(obj)
-        l = odefcn_stale(obj)
 
         resolve_observe(obj)
 
@@ -201,7 +201,6 @@ classdef LocalController < PowerSystemModel
 
     methods (Access=protected)
         handle_edit(obj, a_layer, tag, log)
-        sv_message = stale_messages(obj)
     end
     methods (Access=private)
         val = parent_equilibrium(obj, s_prop)

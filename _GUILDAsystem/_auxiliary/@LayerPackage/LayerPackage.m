@@ -12,15 +12,16 @@ classdef LayerPackage < handle
 % - `sct_stale` holds one field per stale tag of the class, each a string column of
 %   messages (why that part is out of date); an empty column means up to date. The
 %   constructor of each class creates its own fields with the message "initialize has
-%   not been run": PowerNetwork `powerflow`; Component, LocalController and
-%   GlobalController `equilibrium` and `odefcn`; Bus and Branch have none.
+%   not been run": PowerNetwork `powerflow` and `odefcn` (the network frequency);
+%   Component, LocalController and GlobalController `equilibrium` and `odefcn`; Bus and
+%   Branch have none. Each class appends to and clears only its own fields.
 % - An edit calls `log_edit(log, tag)` on the edited layer (the owner for a Parameter
-%   container), which calls the hook `handle_edit` on every layer from there up to the
-%   top. The default does nothing; each class appends the message ("<tags of the edited
-%   layer>: <log>") to its own fields for the edits that make them stale. A field that
-%   still says "initialize has not been run" takes no other message.
+%   container), which calls the hook `handle_edit` with that layer on every layer from
+%   there up to the top. The default does nothing; each class appends the message
+%   ("<tags of the edited layer>: <log>") to its own fields for the edits that make them
+%   stale.
 % - `check_edit` walks the subtree and stops with GUILDA:LayerPackage:Stale,
-%   naming up to three messages, when any field is not empty. Analyses call it on the
+%   naming up to three different messages, when any field is not empty. Analyses call it on the
 %   network and rebuild nothing.
 % - `sct_stale` has public GetAccess (Hidden) because the DebugScript tests, which are
 %   scripts, read it.
@@ -69,11 +70,6 @@ classdef LayerPackage < handle
     methods(Access=protected)
         log_edit(obj, log, tag)
         handle_edit(obj, a_layer, tag, log)
-        mark_stale(obj, sv_tag, s_message)
-        clear_stale(obj, sv_tag)
-        sv_message = stale_messages(obj)
-        sv_message = collect_stale(obj)
-        a_owner = edit_owner(obj)
     end
     methods(Access={?LayerPackage, ?SolverODE, ?SolverLIN, ?SolverCPF})
         check_edit(obj)

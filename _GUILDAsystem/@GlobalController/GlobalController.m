@@ -168,10 +168,6 @@ classdef GlobalController < PowerSystemModel
     methods (Access=protected)
         build_odefcn(obj)
         handle_edit(obj, a_layer, tag, log)
-        sv_message = stale_messages(obj)
-    end
-    methods (Access=private)
-        l = odefcn_stale(obj)
     end
     methods (Access={?Component,?LocalController,?PowerNetwork})        
         set_parent(obj,net)

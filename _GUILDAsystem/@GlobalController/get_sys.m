@@ -38,7 +38,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 
     if ~isempty(obj.a_PowerNetwork)
         obj.a_PowerNetwork.check_edit();
-    elseif obj.odefcn_stale()
+    elseif ~isempty(obj.sct_stale.odefcn) || ~isequal(obj.r_odefcnHz, obj.get_Hz())
         obj.build_odefcn();    % no network to initialize: the handles are built here
     end
 

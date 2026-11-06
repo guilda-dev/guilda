@@ -298,7 +298,7 @@ b1.l_isSlack = true;</code></pre>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>tag</code>, <code>GUILDA.config("Model","Hz")</code>, <code>GUILDA.config</code> <span lang="en">of each solver</span><span lang="ja">（各ソルバー）</span></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>net</code> <span lang="en">with empty <code>a_Bus</code>, <code>a_Branch</code>, <code>a_GlobalController</code> (0×1 cell); <code>sct_stale.powerflow</code> = "initialize has not been run"</span><span lang="ja">（<code>a_Bus</code>・<code>a_Branch</code>・<code>a_GlobalController</code> は空の 0×1 cell。<code>sct_stale.powerflow</code> = "initialize has not been run"）</span></dd>
+          <dd><code>net</code> <span lang="en">with empty <code>a_Bus</code>, <code>a_Branch</code>, <code>a_GlobalController</code> (0×1 cell); <code>sct_stale.powerflow</code> and <code>.odefcn</code> = "initialize has not been run"</span><span lang="ja">（<code>a_Bus</code>・<code>a_Branch</code>・<code>a_GlobalController</code> は空の 0×1 cell。<code>sct_stale.powerflow</code> と <code>.odefcn</code> = "initialize has not been run"）</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="MB-02">
@@ -513,18 +513,18 @@ b1.l_isSlack = true;</code></pre>
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li>Message: the tag path from the edited layer up and the log, e.g. <code>powerflow/SG1B005/B005/TestSystem: edit P: 0.5 -&gt; 0.6</code></li>
-            <li>Call <code>handle_edit</code> on every layer from the edited one (the owner for a <code>Parameter</code> container) up the <code>parent</code> chain, also before the first initialize</li>
-            <li>Each layer appends the message to its own stale tags that the edit affects (<code>mark_stale</code>; no repeat, and nothing next to "initialize has not been run")</li>
+            <li>Call <code>handle_edit(a_layer, tag, log)</code> on every layer from the edited one up the <code>parent</code> chain, also before the first initialize; <code>a_layer</code> is the edited layer (the owner for a <code>Parameter</code> container)</li>
+            <li>Each layer compares <code>a_layer == obj</code> and the tag, and appends the message to its own stale tags that the edit affects (e.g. <code>obj.sct_stale.equilibrium(end+1,1) = log</code>)</li>
             <li>Network (<code>PowerNetwork.handle_edit</code>): keep one slack bus; mark <code>powerflow</code> for baseMVA, topology of buses and branches, bus parameters (powerflow, dynamics), the slack bus, components connected / replaced / removed, branch dynamics, component powerflow</li>
             <li>Component, local and global controller: mark <code>equilibrium</code> and <code>odefcn</code> for their own dynamics, <code>equilibrium</code> for their own <code>"Topology"</code> (a controller added, replaced or removed)</li>
-            <li>A network <code>Hz</code> edit marks nothing: each model compares <code>r_odefcnHz</code> with <code>get_Hz()</code></li>
+            <li>A network <code>Hz</code> edit marks the network <code>odefcn</code> only (told from baseMVA by <code>para_base.s_lastEdited</code>); in <code>initialize</code> each model compares <code>r_odefcnHz</code> with <code>get_Hz()</code></li>
           </ul><ul lang="ja">
             <li>メッセージ: 編集した層から上へのタグのパスとログ。例: <code>powerflow/SG1B005/B005/TestSystem: edit P: 0.5 -&gt; 0.6</code></li>
-            <li>編集した層（<code>Parameter</code> コンテナの場合は所有者）から <code>parent</code> をたどる各層の <code>handle_edit</code> を呼び出し（最初の initialize の前も）</li>
-            <li>各層は編集が影響する自分の stale タグにメッセージを追加（<code>mark_stale</code>。重複なし、"initialize has not been run" があれば追加なし）</li>
+            <li>編集した層から <code>parent</code> をたどる各層の <code>handle_edit(a_layer, tag, log)</code> を呼び出し（最初の initialize の前も）。<code>a_layer</code> は編集した層（<code>Parameter</code> コンテナの場合は所有者）</li>
+            <li>各層は <code>a_layer == obj</code> とタグを比べ、編集が影響する自分の stale タグにメッセージを追加（例 <code>obj.sct_stale.equilibrium(end+1,1) = log</code>）</li>
             <li>ネットワーク（<code>PowerNetwork.handle_edit</code>）: slack 母線を 1 つに維持。baseMVA、母線とブランチのトポロジー、母線のパラメータ（powerflow、dynamics）、slack 母線、機器の接続・置き換え・削除、ブランチの dynamics、機器の powerflow で <code>powerflow</code> を印付け</li>
             <li>機器、局所・広域制御器: 自分の dynamics で <code>equilibrium</code> と <code>odefcn</code>、自分の <code>"Topology"</code>（制御器の追加・置き換え・削除）で <code>equilibrium</code> を印付け</li>
-            <li>ネットワークの <code>Hz</code> の編集は印付けなし: 各モデルが <code>r_odefcnHz</code> と <code>get_Hz()</code> を比較</li>
+            <li>ネットワークの <code>Hz</code> の編集はネットワークの <code>odefcn</code> のみ印付け（baseMVA とは <code>para_base.s_lastEdited</code> で区別）。<code>initialize</code> で各モデルが <code>r_odefcnHz</code> と <code>get_Hz()</code> を比較</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><span lang="en">log and tag, <code>parent</code> chain, <code>Parameter.s_lastEdited</code> (baseMVA or Hz)</span><span lang="ja">ログとタグ、<code>parent</code> の連鎖、<code>Parameter.s_lastEdited</code>（baseMVA か Hz か）</span></dd>
@@ -753,12 +753,12 @@ b1.l_isSlack = true;</code></pre>
       </tbody>
     </table>
     <ul lang="en">
-      <li>Protected property <code>children</code>: the children that <code>check_edit</code>, <code>collect_stale</code>, <code>disp_tree</code> and <code>struct</code> walk</li>
+      <li>Protected property <code>children</code>: the children that <code>check_edit</code>, <code>disp_tree</code> and <code>struct</code> walk</li>
       <li>Values derived from several owners: <code>Dependent</code> properties that read the owner each time, e.g. <code>Component.c_Vequilibrium</code> (= <code>a_Bus.c_Vequilibrium</code>), <code>Bus.c_Iequilibrium</code> (sum of the component currents), <code>PowerNetwork.cv_Vequilibrium</code></li>
       <li><code>net.disp_tree()</code>: prints the tree</li>
     </ul>
     <ul lang="ja">
-      <li>protected プロパティ <code>children</code>: <code>check_edit</code>・<code>collect_stale</code>・<code>disp_tree</code>・<code>struct</code> が巡回する子</li>
+      <li>protected プロパティ <code>children</code>: <code>check_edit</code>・<code>disp_tree</code>・<code>struct</code> が巡回する子</li>
       <li>複数の所有者から導かれる値: そのつど所有者を読む <code>Dependent</code> プロパティ。例: <code>Component.c_Vequilibrium</code>（= <code>a_Bus.c_Vequilibrium</code>）、<code>Bus.c_Iequilibrium</code>（機器の電流の和）、<code>PowerNetwork.cv_Vequilibrium</code></li>
       <li><code>net.disp_tree()</code>: 木を表示</li>
     </ul>
