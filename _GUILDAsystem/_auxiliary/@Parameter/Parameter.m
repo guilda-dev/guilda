@@ -78,11 +78,16 @@ classdef Parameter < auxiliary & LayerPackage
                 return
             end
             sv_name = string(tab_old.Properties.VariableNames);
-            if ~istable(tab) || width(tab) ~= numel(sv_name) || ~all(ismember(sv_name, string(tab.Properties.VariableNames))) ...
-                    || height(tab) ~= height(tab_old) || ~isequal(tab.Properties.RowNames, tab_old.Properties.RowNames)
+            l_ok = istable(tab) && height(tab) == height(tab_old) && isequal(tab.Properties.RowNames, tab_old.Properties.RowNames);
+            if l_ok && ~isequal(string(tab.Properties.VariableNames), sv_name)
+                l_ok = width(tab) == numel(sv_name) && all(ismember(sv_name, string(tab.Properties.VariableNames)));
+                if l_ok
+                    tab = tab(:, sv_name);
+                end
+            end
+            if ~l_ok
                 error(msg("GUILDA:Parameter:TableMismatch", char(obj.s_tag), char(strjoin(sv_name, ", ")), char(string(height(tab_old)))))
             end
-            tab = tab(:, sv_name);
             sv_class_old = string(tab_old.Properties.VariableTypes);
             sv_class_new = string(tab.Properties.VariableTypes);
             lv_changed = sv_class_old ~= sv_class_new;
