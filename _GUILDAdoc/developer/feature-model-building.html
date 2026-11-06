@@ -175,21 +175,21 @@ b1.l_isSlack = true;</code></pre>
           <text class="is-inv is-b" x="18" y="258" text-anchor="middle" style="font-size:10px">03</text>
           <text class="dg-mono is-sm fmb-l" x="92" y="248" text-anchor="start">add_branch(Key, from_to, ...)</text>
           <path class="dg-sv-line" d="M207 284H438" marker-end="url(#fmb-ah)"/>
-          <text class="dg-mono is-sm fmb-l" x="211" y="278" text-anchor="start">mkInst(index, opt); set_bus; set_network</text>
+          <text class="dg-mono is-sm fmb-l" x="211" y="278" text-anchor="start">mkInst(index, opt); a_Bus; a_PowerNetwork</text>
           <path class="dg-sv-line" d="M88 314H319" marker-end="url(#fmb-ah)"/>
           <path class="dg-sv-line is-muted" d="M34 314H78" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="306" width="30" height="16" rx="8"/>
           <text class="is-inv is-b" x="18" y="318" text-anchor="middle" style="font-size:10px">04</text>
           <text class="dg-mono is-sm fmb-l" x="92" y="308" text-anchor="start">add_component(Key, ...)</text>
           <path class="dg-sv-line" d="M326 344H556" marker-end="url(#fmb-ah)"/>
-          <text class="dg-mono is-sm fmb-l" x="330" y="338" text-anchor="start">mkInst(index, para, opt); set_bus(bus)</text>
+          <text class="dg-mono is-sm fmb-l" x="330" y="338" text-anchor="start">mkInst(...); a_Bus = bus; log_edit</text>
           <path class="dg-sv-line" d="M88 374H556" marker-end="url(#fmb-ah)"/>
           <path class="dg-sv-line is-muted" d="M34 374H78" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="366" width="30" height="16" rx="8"/>
           <text class="is-inv is-b" x="18" y="378" text-anchor="middle" style="font-size:10px">05</text>
           <text class="dg-mono is-sm fmb-l" x="92" y="368" text-anchor="start">add_local_controller(avr, pss)</text>
           <path class="dg-sv-line" d="M563 404H675" marker-end="url(#fmb-ah)"/>
-          <text class="dg-mono is-sm fmb-l" x="567" y="398" text-anchor="start">set_parent → resolve_observe</text>
+          <text class="dg-mono is-sm fmb-l" x="567" y="398" text-anchor="start">a_Component → resolve_observe</text>
           <path class="dg-sv-line" d="M88 434H794" marker-end="url(#fmb-ah)"/>
           <path class="dg-sv-line is-muted" d="M34 434H78" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="426" width="30" height="16" rx="8"/>
@@ -201,7 +201,7 @@ b1.l_isSlack = true;</code></pre>
           <text class="is-inv is-b" x="18" y="468" text-anchor="middle" style="font-size:10px">07</text>
           <text class="dg-mono is-sm fmb-l" x="92" y="458" text-anchor="start">add_global_controller(gc)</text>
           <path class="dg-sv-line" d="M207 494H794" marker-end="url(#fmb-ah)"/>
-          <text class="dg-mono is-sm fmb-l" x="211" y="488" text-anchor="start">set_parent(net)</text>
+          <text class="dg-mono is-sm fmb-l" x="211" y="488" text-anchor="start">a_PowerNetwork = net</text>
           <path class="dg-sv-line" d="M88 524H319" marker-end="url(#fmb-ah)"/>
           <path class="dg-sv-line is-muted" d="M34 524H78" style="stroke-dasharray:1 5"/>
           <rect class="dg-sv-box is-solid" x="3" y="516" width="30" height="16" rx="8"/>
@@ -261,9 +261,9 @@ b1.l_isSlack = true;</code></pre>
         <li><b>MB-02</b> → <code>PowerNetwork.add_bus</code> → <code>Bus</code></li>
         <li><b>MB-03</b> → <code>PowerNetwork.add_branch</code> → <code>Branch</code></li>
         <li><b>MB-04</b> → <code>Bus.add_component</code> → <code>Component</code></li>
-        <li><b>MB-05</b> → <code>Component.add_local_controller</code> → <code>LocalController.set_parent</code></li>
+        <li><b>MB-05</b> → <code>Component.add_local_controller</code> → <code>LocalController.resolve_observe</code></li>
         <li><b>MB-06</b> → <code>GlobalController</code></li>
-        <li><b>MB-07</b> → <code>PowerNetwork.add_global_controller</code> → <code>GlobalController.set_parent</code></li>
+        <li><b>MB-07</b> → <code>PowerNetwork.add_global_controller</code> → <code>GlobalController.log_edit</code></li>
         <li><b>MB-08</b> → <code>Bus.l_isSlack</code></li>
         <li><b>MB-09</b> → <code>Parameter</code> <span lang="en">(set)</span><span lang="ja">（設定）</span></li>
         <li><b>MB-10</b> <code>Parameter</code> → <code>LayerPackage.log_edit</code> → <code>handle_edit</code></li>
@@ -332,13 +332,13 @@ b1.l_isSlack = true;</code></pre>
             <li>Before any change: check <code>Key</code> against the generated key list, resolve <code>from_to</code> (indices of <code>a_Bus</code> or tags), reject equal ends and <code>R = X = 0</code></li>
             <li>Create the class of the key (<code>mkInst</code>)</li>
             <li><code>Branch</code> constructor: set the tag <code>header</code> + three digits, assert real R, X, C, create three <code>Parameter</code> objects</li>
-            <li>Call <code>set_bus({from; to})</code> and <code>set_network(net)</code></li>
+            <li>Set <code>bra.a_Bus = {from; to}</code> and <code>bra.a_PowerNetwork = net</code> (writable only by <code>PowerNetwork</code>)</li>
             <li>Append to <code>a_Branch</code></li>
           </ul><ul lang="ja">
             <li>変更前に検査: <code>Key</code> を生成済みのキー一覧で検査、<code>from_to</code>（<code>a_Bus</code> の番号またはタグ）を解決、両端が同じもの・<code>R = X = 0</code> を拒否</li>
             <li>キーのクラスを作成（<code>mkInst</code>）</li>
             <li><code>Branch</code> のコンストラクタ: タグ <code>header</code> + 3 桁を設定、R・X・C が実数であることを assert、3 つの <code>Parameter</code> を作成</li>
-            <li><code>set_bus({from; to})</code> と <code>set_network(net)</code> を呼び出し</li>
+            <li><code>bra.a_Bus = {from; to}</code> と <code>bra.a_PowerNetwork = net</code> を代入（書き込めるのは <code>PowerNetwork</code> だけ）</li>
             <li><code>a_Branch</code> に追加</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
@@ -356,14 +356,14 @@ b1.l_isSlack = true;</code></pre>
             <li>Subclass constructor calls <code>Component(s_tag, opt)</code>: creates five <code>Parameter</code> objects; replaces a NaN cost <code>HP</code> / <code>fP</code> by 0 for a load, 1 otherwise</li>
             <li>Subclass adds <code>sv_para</code> to the <code>dynamics</code> container of <code>a_Parameter</code></li>
             <li>Generator: force <code>Q = NaN</code></li>
-            <li>Call <code>comp.set_bus(bus)</code>: sets <code>a_Bus</code> and marks <code>equilibrium</code> and <code>odefcn</code> of the component stale ("attached to &lt;bus&gt;"; a new component already holds "initialize has not been run")</li>
+            <li>Set <code>comp.a_Bus = bus</code> (writable only by <code>Bus</code>), then report a <code>"Topology"</code> edit on the component (<code>comp.log_edit("connected to &lt;bus&gt;", "Topology")</code>): its <code>equilibrium</code> becomes stale; a new component already holds "initialize has not been run" in <code>equilibrium</code> and <code>odefcn</code></li>
             <li>Append to <code>a_Component</code></li>
           </ul><ul lang="ja">
             <li>タグ: クラスの接頭辞 + この母線の機器の中での次の番号 + 母線のタグ（例: <code>SG1B001</code>）</li>
             <li>サブクラスのコンストラクタが <code>Component(s_tag, opt)</code> を呼び出し: 5 つの <code>Parameter</code> を作成、NaN のコスト <code>HP</code> / <code>fP</code> を負荷なら 0、それ以外は 1 に置換</li>
             <li>サブクラスが <code>sv_para</code> を <code>a_Parameter</code> の <code>dynamics</code> コンテナに追加</li>
             <li>発電機: <code>Q = NaN</code> に固定</li>
-            <li><code>comp.set_bus(bus)</code> を呼び出し: <code>a_Bus</code> を設定し、機器の <code>equilibrium</code> と <code>odefcn</code> を古いと印付け（"attached to &lt;bus&gt;"。新しい機器は "initialize has not been run" を保持済み）</li>
+            <li><code>comp.a_Bus = bus</code> を代入（書き込めるのは <code>Bus</code> だけ）し、機器の <code>"Topology"</code> の編集として報告（<code>comp.log_edit("connected to &lt;bus&gt;", "Topology")</code>）: 機器の <code>equilibrium</code> が古くなる。新しい機器は <code>equilibrium</code> と <code>odefcn</code> に "initialize has not been run" を保持済み</li>
             <li><code>a_Component</code> に追加</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
@@ -373,7 +373,7 @@ b1.l_isSlack = true;</code></pre>
         </dl>
       </li>
       <li class="fs-step" id="MB-05">
-        <p class="fs-head"><b class="fs-id">MB-05</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>Component.add_local_controller</code> → <code>LocalController.set_parent</code></span></p>
+        <p class="fs-head"><b class="fs-id">MB-05</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>Component.add_local_controller</code> → <code>LocalController.resolve_observe</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -388,7 +388,7 @@ b1.l_isSlack = true;</code></pre>
             <li>AVR or <code>"local"</code> controller: becomes <code>a_LocalController{1}</code>; an existing one is detached with a warning, and its PSS moves to the new AVR unless a PSS is given</li>
             <li>PSS: goes under the AVR</li>
             <li>Governor: placed after the AVR in <code>a_LocalController</code>; an existing governor is detached with a warning</li>
-            <li><code>set_parent</code>: set <code>a_Component</code>, resolve the observed signals (<code>resolve_observe</code>: expand <code>"Xall"</code> / <code>"Yall"</code>, set <code>iv_obsY</code> / <code>iv_obsX</code>), mark <code>equilibrium</code> and <code>odefcn</code> of the controller stale ("attached to &lt;parent&gt;")</li>
+            <li>Attach: set <code>con.a_Component</code> (writable only by <code>Component</code> and <code>LocalController</code>), resolve the observed signals (<code>resolve_observe</code>: expand <code>"Xall"</code> / <code>"Yall"</code>, set <code>iv_obsY</code> / <code>iv_obsX</code>), report a <code>"Topology"</code> edit on the controller ("attached to &lt;parent&gt;"): its <code>equilibrium</code> becomes stale. Detach: <code>[]</code> only</li>
           </ul><ul lang="ja">
             <li>変更前にすべての制御器を検査:
               <ul>
@@ -401,7 +401,7 @@ b1.l_isSlack = true;</code></pre>
             <li>AVR・<code>"local"</code> の制御器: <code>a_LocalController{1}</code> に配置。既存のものは警告付きで切り離し、PSS の指定がなければその PSS は新しい AVR へ移動</li>
             <li>PSS: AVR の下に配置</li>
             <li>ガバナ: <code>a_LocalController</code> で AVR の後ろに配置。既存のガバナは警告付きで切り離し</li>
-            <li><code>set_parent</code>: <code>a_Component</code> を設定、観測する信号を解決（<code>resolve_observe</code>: <code>"Xall"</code> / <code>"Yall"</code> を展開、<code>iv_obsY</code> / <code>iv_obsX</code> を設定）、制御器の <code>equilibrium</code> と <code>odefcn</code> を古いと印付け（"attached to &lt;parent&gt;"）</li>
+            <li>接続: <code>con.a_Component</code> を代入（書き込めるのは <code>Component</code> と <code>LocalController</code> だけ）、観測する信号を解決（<code>resolve_observe</code>: <code>"Xall"</code> / <code>"Yall"</code> を展開、<code>iv_obsY</code> / <code>iv_obsX</code> を設定）、制御器の <code>"Topology"</code> の編集として報告（"attached to &lt;parent&gt;"）: 制御器の <code>equilibrium</code> が古くなる。切り離し: <code>[]</code> の代入のみ</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>con.key</code>, <code>con.sv_y</code>, <code>con.sv_u</code>, <code>con.a_Component</code>, <code>comp.sv_u</code>, <code>comp.sv_x</code>, <code>comp.sv_y</code></dd>
@@ -427,7 +427,7 @@ b1.l_isSlack = true;</code></pre>
         </dl>
       </li>
       <li class="fs-step" id="MB-07">
-        <p class="fs-head"><b class="fs-id">MB-07</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.add_global_controller</code> → <code>GlobalController.set_parent</code></span></p>
+        <p class="fs-head"><b class="fs-id">MB-07</b> <span class="fs-call"><span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.add_global_controller</code> → <code>GlobalController.log_edit</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
@@ -439,8 +439,8 @@ b1.l_isSlack = true;</code></pre>
               </ul>
             </li>
             <li>Append the controller</li>
-            <li><code>set_parent(net)</code>: set <code>a_PowerNetwork</code>, mark <code>equilibrium</code> and <code>odefcn</code> of the controller stale</li>
-            <li>Report a <code>"Topology"</code> edit on the controller (not on the network): the power flow stays up to date</li>
+            <li>Set <code>gc.a_PowerNetwork = net</code> (writable only by <code>PowerNetwork</code>)</li>
+            <li>Report a <code>"Topology"</code> edit on the controller (not on the network): its <code>equilibrium</code> becomes stale, the power flow stays up to date</li>
           </ul><ul lang="ja">
             <li>検査:
               <ul>
@@ -450,8 +450,8 @@ b1.l_isSlack = true;</code></pre>
               </ul>
             </li>
             <li>制御器を追加</li>
-            <li><code>set_parent(net)</code>: <code>a_PowerNetwork</code> を設定、制御器の <code>equilibrium</code> と <code>odefcn</code> を古いと印付け</li>
-            <li>制御器（ネットワークではない）の <code>"Topology"</code> の編集として報告: 潮流は最新のまま</li>
+            <li><code>gc.a_PowerNetwork = net</code> を代入（書き込めるのは <code>PowerNetwork</code> だけ）</li>
+            <li>制御器（ネットワークではない）の <code>"Topology"</code> の編集として報告: 制御器の <code>equilibrium</code> が古くなり、潮流は最新のまま</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>gc.s_tag</code>, <code>gc.controlledUnits</code>, <code>gc.sv_u</code>, <code>gc.sv_y</code>, <span lang="en">unit</span><span lang="ja">対象の</span> <code>sv_x</code>, <code>sv_u</code></dd>
@@ -563,13 +563,13 @@ b1.l_isSlack = true;</code></pre>
             <li>Check the tags first</li>
             <li>Bus not removable while a global controller controls one of its components</li>
             <li>Bus not removable while branches end at it, unless <code>RemoveBranches=true</code> (then <code>remove_branch</code> runs first)</li>
-            <li>Take the removed objects out of the cell and detach them: <code>bus.set_network([])</code>, <code>br.set_bus(cell(0,1))</code> and <code>br.set_network([])</code>, <code>gc.set_parent([])</code></li>
+            <li>Take the removed objects out of the cell and detach them: <code>bus.a_PowerNetwork</code>, <code>br.a_PowerNetwork</code> and <code>gc.a_PowerNetwork</code> get <code>PowerNetwork.empty</code>, <code>br.a_Bus</code> gets <code>cell(0,1)</code></li>
             <li>A removed bus keeps its components</li>
           </ul><ul lang="ja">
             <li>先にタグを検査</li>
             <li>グローバル制御器が母線の機器を制御している間は母線の削除不可</li>
             <li>ブランチがその母線につながっている間は母線の削除不可（<code>RemoveBranches=true</code> なら先に <code>remove_branch</code> を実行）</li>
-            <li>削除したオブジェクトを cell から外して切り離し: <code>bus.set_network([])</code>、<code>br.set_bus(cell(0,1))</code> と <code>br.set_network([])</code>、<code>gc.set_parent([])</code></li>
+            <li>削除したオブジェクトを cell から外して切り離し: <code>bus.a_PowerNetwork</code>・<code>br.a_PowerNetwork</code>・<code>gc.a_PowerNetwork</code> に <code>PowerNetwork.empty</code>、<code>br.a_Bus</code> に <code>cell(0,1)</code> を代入</li>
             <li>削除された母線は機器を保持したまま</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
@@ -584,26 +584,26 @@ b1.l_isSlack = true;</code></pre>
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li>Refuse a component that a global controller controls (<code>private/controlling_gcon</code>, handle comparison)</li>
-            <li><code>remove_component</code>: take it out, call <code>comp.set_bus([])</code></li>
+            <li><code>remove_component</code>: take it out, set <code>comp.a_Bus = Bus.empty</code></li>
             <li><code>replace_component</code>:
               <ul>
-                <li>create the new type with the powerflow, operation, graph and OPF settings and the number of the old one, and attach it</li>
+                <li>create the new type with the powerflow, operation, graph and OPF settings and the number of the old one, and attach it (<code>a_Bus</code>, then a <code>"Topology"</code> edit on it)</li>
                 <li>give it a placeholder equilibrium (the bus voltage and the old current)</li>
                 <li><code>Controllers="keep"</code>: move the local controllers, after checking that the new component has their ports</li>
                 <li><code>"drop"</code>: leave them on the old component with a warning</li>
-                <li>detach the old component</li>
+                <li>detach the old component (<code>Bus.empty</code>)</li>
               </ul>
             </li>
           </ul><ul lang="ja">
             <li>グローバル制御器が制御している機器は拒否（<code>private/controlling_gcon</code>、ハンドル比較）</li>
-            <li><code>remove_component</code>: 機器を外して <code>comp.set_bus([])</code> を呼び出し</li>
+            <li><code>remove_component</code>: 機器を外して <code>comp.a_Bus = Bus.empty</code> を代入</li>
             <li><code>replace_component</code>:
               <ul>
-                <li>元の機器の powerflow・operation・graph・OPF の設定と番号で新しい種類を作成して接続</li>
+                <li>元の機器の powerflow・operation・graph・OPF の設定と番号で新しい種類を作成して接続（<code>a_Bus</code> の代入、続いてその機器の <code>"Topology"</code> の編集）</li>
                 <li>仮の平衡点（母線電圧と元の電流）を付与</li>
                 <li><code>Controllers="keep"</code>: ローカル制御器を移動（新しい機器にそのポートがあることを先に検査）</li>
                 <li><code>"drop"</code>: 警告付きで元の機器に残す</li>
-                <li>元の機器を切り離し</li>
+                <li>元の機器を切り離し（<code>Bus.empty</code>）</li>
               </ul>
             </li>
           </ul></dd>
@@ -619,10 +619,10 @@ b1.l_isSlack = true;</code></pre>
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
             <li>Remove by tag the top controller (with its PSS only when <code>RemoveNested=true</code>) or the PSS alone</li>
-            <li>Detach the removed controllers (<code>set_parent([])</code>); they can be attached again</li>
+            <li>Detach the removed controllers (<code>a_Component = []</code>); they can be attached again</li>
           </ul><ul lang="ja">
             <li>タグで最上位の制御器（<code>RemoveNested=true</code> のときだけその PSS も）または PSS だけを削除</li>
-            <li>削除した制御器を切り離し（<code>set_parent([])</code>）。再接続可能</li>
+            <li>削除した制御器を切り離し（<code>a_Component = []</code>）。再接続可能</li>
           </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
           <dd><code>a_LocalController</code>, <span lang="en">tags</span><span lang="ja">タグ</span></dd>
@@ -746,11 +746,11 @@ b1.l_isSlack = true;</code></pre>
         <tr><td><code>PowerNetwork.a_Bus</code>, <code>a_Branch</code>, <code>a_GlobalController</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">buses, branches, global controllers (n×1 cell)</span><span lang="ja">母線・ブランチ・グローバル制御器（n×1 cell）</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">child</span><span lang="ja">子</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><code>add_*</code> / <code>remove_*</code></td></tr>
         <tr><td><code>Bus.a_Component</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">components</span><span lang="ja">機器</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">child</span><span lang="ja">子</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><code>add_component</code>, <code>replace_component</code> / <code>remove_component</code></td></tr>
         <tr><td><code>Component.a_LocalController</code>, <code>LocalController.a_LocalController</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">the AVR or <code>"local"</code> controller, then the governor; the PSS under the AVR</span><span lang="ja">AVR または <code>"local"</code> の制御器、続いてガバナ。AVR の下の PSS</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">child</span><span lang="ja">子</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><code>add_local_controller</code> / <code>remove_local_controller</code></td></tr>
-        <tr><td><code>Bus.a_PowerNetwork</code>, <code>Branch.a_PowerNetwork</code>, <code>GlobalController.a_PowerNetwork</code></td><td data-label="Refers to" data-label-ja="参照先"><code>net</code></td><td data-label="Kind" data-label-ja="種類"><span lang="en">back-reference</span><span lang="ja">逆参照</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><span lang="en"><code>Bus</code> constructor / <code>set_network([])</code>; <code>set_network</code>; <code>set_parent</code></span><span lang="ja"><code>Bus</code> のコンストラクタ / <code>set_network([])</code>、<code>set_network</code>、<code>set_parent</code></span></td></tr>
-        <tr><td><code>Component.a_Bus</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">its bus</span><span lang="ja">接続先の母線</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">back-reference</span><span lang="ja">逆参照</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><code>set_bus(bus)</code> / <code>set_bus([])</code></td></tr>
-        <tr><td><code>LocalController.a_Component</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">the component, or the AVR for a PSS</span><span lang="ja">機器、PSS の場合は AVR</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">back-reference</span><span lang="ja">逆参照</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><code>set_parent(p)</code> / <code>set_parent([])</code></td></tr>
+        <tr><td><code>Bus.a_PowerNetwork</code>, <code>Branch.a_PowerNetwork</code>, <code>GlobalController.a_PowerNetwork</code></td><td data-label="Refers to" data-label-ja="参照先"><code>net</code></td><td data-label="Kind" data-label-ja="種類"><span lang="en">back-reference</span><span lang="ja">逆参照</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><span lang="en"><code>Bus</code> constructor, <code>add_branch</code>, <code>add_global_controller</code> / <code>remove_*</code> (<code>PowerNetwork.empty</code>)</span><span lang="ja"><code>Bus</code> のコンストラクタ・<code>add_branch</code>・<code>add_global_controller</code> / <code>remove_*</code>（<code>PowerNetwork.empty</code>）</span></td></tr>
+        <tr><td><code>Component.a_Bus</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">its bus</span><span lang="ja">接続先の母線</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">back-reference</span><span lang="ja">逆参照</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><code>add_component</code>, <code>replace_component</code> / <code>remove_component</code>, <code>replace_component</code> (<code>Bus.empty</code>)</td></tr>
+        <tr><td><code>LocalController.a_Component</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">the component, or the AVR for a PSS</span><span lang="ja">機器、PSS の場合は AVR</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">back-reference</span><span lang="ja">逆参照</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><code>Component.add_local_controller</code> / <code>remove_local_controller</code>, <code>add_local_controller</code> (<code>[]</code>)</td></tr>
         <tr><td><span lang="en">parent of each</span><span lang="ja">各</span> <code>Parameter</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">the object that owns it</span><span lang="ja">それを所有するオブジェクト</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">back-reference</span><span lang="ja">逆参照</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><span lang="en"><code>Parameter</code> constructor</span><span lang="ja"><code>Parameter</code> のコンストラクタ</span></td></tr>
-        <tr><td><code>Branch.a_Bus</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">{from; to} buses (2×1 cell)</span><span lang="ja">{from; to} の母線（2×1 cell）</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">reference, not a parent</span><span lang="ja">参照（親ではない）</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><code>set_bus</code> / <code>set_bus(cell(0,1))</code></td></tr>
+        <tr><td><code>Branch.a_Bus</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">{from; to} buses (2×1 cell)</span><span lang="ja">{from; to} の母線（2×1 cell）</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">reference, not a parent</span><span lang="ja">参照（親ではない）</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><code>add_branch</code> / <code>remove_branch</code> (<code>cell(0,1)</code>)</td></tr>
         <tr><td><code>GlobalController.controlledUnits</code></td><td data-label="Refers to" data-label-ja="参照先"><span lang="en">controlled components</span><span lang="ja">制御対象の機器</span></td><td data-label="Kind" data-label-ja="種類"><span lang="en">reference, not a parent</span><span lang="ja">参照（親ではない）</span></td><td data-label="Set / cleared by" data-label-ja="設定・解除"><span lang="en">constructor</span><span lang="ja">コンストラクタ</span></td></tr>
       </tbody>
     </table>
@@ -771,14 +771,14 @@ b1.l_isSlack = true;</code></pre>
       <li><b>Before the first <code>initialize</code></b>: every stale tag holds "initialize has not been run" from the constructor, so edits add no message. <code>handle_edit</code> still keeps a single slack bus</li>
       <li><b>After <code>initialize</code></b>: an edit marked stale in <a href="class-design.html#edits">Class Design: Handling of model edits</a> appends its message to the stale tags it affects; <code>simulate</code>, <code>linearize</code> and <code>get_sys</code> then stop with their stale errors (e.g. <code>GUILDA:SolverODE:Stale</code>) until <code>initialize</code> runs again. Operation, OPF, graph, <code>opffcn</code> and tag edits: nothing stale</li>
       <li><b>Handle cache</b>: constructors do not build <code>f_*</code> (they stay empty). <code>initialize</code> builds the stale ones (<code>build_odefcn</code>, see <a href="feature-initialize.html">Initialization</a>); analyses only check. A direct call of a model function (<code>get_dx_algebraic</code>) after an edit without <code>initialize</code> uses the previous handles; it builds them only when they are empty</li>
-      <li><b>Detached objects</b>: a removed object keeps its <code>sct_stale</code>; the removal is a <code>"Topology"</code> edit of the parent (a removed global controller: nothing). Its later edits do not reach the network. Attaching it to a new parent (<code>set_bus</code>, <code>set_parent</code>) marks its <code>equilibrium</code> and <code>odefcn</code> stale until the next <code>initialize</code></li>
+      <li><b>Detached objects</b>: a removed object keeps its <code>sct_stale</code>; the removal is a <code>"Topology"</code> edit of the parent (a removed global controller: nothing). Its later edits do not reach the network. Attaching it to a new parent is a <code>"Topology"</code> edit of the object, which marks its <code>equilibrium</code> stale until the next <code>initialize</code>; its handles are rebuilt there when <code>r_odefcnHz</code> differs from the new network frequency</li>
       <li><b>Copies</b>: no deep-copy method; <code>b = a</code> copies a handle. For an independent network, save and load through a MAT file or CSV export. A loaded network, or a lower layer saved alone, keeps its parameter tables, so its edits are checked and logged as before saving</li>
     </ul>
     <ul lang="ja">
       <li><b>最初の <code>initialize</code> の前</b>: すべての stale タグがコンストラクタの "initialize has not been run" を保持するため、編集はメッセージを追加しない。<code>handle_edit</code> は slack 母線を 1 つに維持</li>
       <li><b><code>initialize</code> の後</b>: <a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>で古くなるとされる編集は影響する stale タグにメッセージを追加し、<code>simulate</code>・<code>linearize</code>・<code>get_sys</code> は再び <code>initialize</code> を実行するまでそれぞれの stale のエラー（例 <code>GUILDA:SolverODE:Stale</code>）で停止。operation・OPF・graph・<code>opffcn</code>・タグの編集: 何も古くしない</li>
       <li><b>ハンドルキャッシュ</b>: コンストラクタは <code>f_*</code> を作らない（空のまま）。古いものは <code>initialize</code> が作成（<code>build_odefcn</code>、<a href="feature-initialize.html">初期化</a>参照）、解析は確認のみ。編集の後に <code>initialize</code> を挟まずモデル関数を直接呼ぶ場合（<code>get_dx_algebraic</code>）は以前のハンドルを使用し、空のときだけ構築</li>
-      <li><b>切り離されたオブジェクト</b>: 削除されたオブジェクトは自分の <code>sct_stale</code> を保持。削除は親の <code>"Topology"</code> の編集（広域制御器の削除: なし）。その後の編集はネットワークに届かない。新しい親への接続（<code>set_bus</code>、<code>set_parent</code>）で、次の <code>initialize</code> まで <code>equilibrium</code> と <code>odefcn</code> を古いと印付け</li>
+      <li><b>切り離されたオブジェクト</b>: 削除されたオブジェクトは自分の <code>sct_stale</code> を保持。削除は親の <code>"Topology"</code> の編集（広域制御器の削除: なし）。その後の編集はネットワークに届かない。新しい親への接続はそのオブジェクトの <code>"Topology"</code> の編集で、次の <code>initialize</code> まで <code>equilibrium</code> を古いと印付け。<code>r_odefcnHz</code> が新しいネットワークの周波数と異なれば、そこでハンドルを再構築</li>
       <li><b>コピー</b>: ディープコピーのメソッドはなし。<code>b = a</code> はハンドルのコピー。独立したネットワークには MAT ファイルへの保存と読み込み、または CSV への書き出しを使用。読み込んだネットワークや単独で保存した下の層もパラメータの表を保持し、編集の検査と記録は保存前と同じ</li>
     </ul>
 

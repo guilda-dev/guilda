@@ -49,6 +49,6 @@ function add_scenario(obj, sc)
             sc{k}.a_PowerNetwork.remove_scenario(sc{k}.s_tag);
         end
         obj.a_Scenario = [obj.a_Scenario; sc(k)];
-        sc{k}.set_parent(obj);
+        sc{k}.a_PowerNetwork = obj;
     end
 end

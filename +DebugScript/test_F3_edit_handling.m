@@ -538,13 +538,13 @@ assert(isempty(avr.f_dx) && isempty(pss.f_dx))
 DebugScript.helper.quiet(@() net.initialize);
 assert(~any(cellfun(@(m) isempty(m.f_dx), a_model)))
 
-% 制御器を付け替えると、付け先の系統の Hz で次の initialize に作る
+% 制御器を付け替えると、付け先の系統の Hz で次の initialize に作る (接続は equilibrium だけを古くする)
 [net50, gen50] = DebugScript.helper.build_3bus("gen-1axis");
 net50.tab_parameter.base.Hz = 50;
 comp.remove_local_controller(avr.s_tag, RemoveNested=true);
 gen50.add_local_controller(avr);
 assert(DebugScript.helper.handle_Hz(avr) == 60 && isempty(gen50.f_dx))
-assert(any(contains(avr.sct_stale.odefcn, "attached to " + gen50.s_tag)))
+assert(any(contains(avr.sct_stale.equilibrium, "attached to " + gen50.s_tag)))   % odefcn は r_odefcnHz の比較で作り直す
 assert_stale_error(@() gen50.get_sys(), "GUILDA:Component:Stale")
 assert(DebugScript.helper.handle_Hz(avr) == 60)
 DebugScript.helper.quiet(@() net50.initialize);

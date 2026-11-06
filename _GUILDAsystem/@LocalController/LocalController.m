@@ -22,12 +22,12 @@ classdef LocalController < PowerSystemModel
 %   functions, but does not own the voltage or the frequency, and is not a child of the
 %   bus.
 % - Created with its constructor and attached with `Component.add_local_controller`, which
-%   calls `set_parent`; that resolves the observed inputs. A
-%   controller object attaches to one parent at a time.
+%   sets `a_Component` (`SetAccess`), resolves the observed inputs and logs a "Topology"
+%   edit. A controller object attaches to one parent at a time.
 % - Differs from `Component` on purpose: no `fcn_I`, the output function is `fcn_y`, and
 %   the Jacobians are required. Inputs named X or Y are not allowed.
-% - `resolve_observe` (called by `set_parent`) expands "Xall" / "Yall" (`sr_reserved`) and
-%   sets where each input sv_u(k) is read on the observed component: iv_obsY(k) is its
+% - `resolve_observe` (called by `Component.add_local_controller` on attachment) expands
+%   "Xall" / "Yall" (`sr_reserved`) and sets where each input sv_u(k) is read on the observed component: iv_obsY(k) is its
 %   index in sv_y, iv_obsX(k) its index in sv_x, and both are 0 for an input that is not
 %   observed (its equilibrium value, or the output of a nested controller of the same name).
 % - The handles `f_*` @(t,x,V,I,u) bind param and omega0 (there is no f_I);
@@ -67,8 +67,10 @@ classdef LocalController < PowerSystemModel
     end
     
 %% Parameter    
+    properties(SetAccess={?Component, ?LocalController}) % Layer Structure
+        a_Component = []                           % Parent: the component, or the AVR for a PSS ([] when detached).
+    end
     properties(SetAccess=protected) % Layer Structure
-        a_Component                                % Parent: the component, or the AVR for a PSS ([] when detached).
         a_LocalController = cell(0,1)              % Nested controller (the PSS under an AVR), 0x1 or 1x1. <@Stale> equilibrium
     end
     properties(SetAccess=protected) % Cached function handles
@@ -174,8 +176,6 @@ classdef LocalController < PowerSystemModel
         add_local_controller(obj,a_Controller)
 
         remove_local_controller(obj)
-
-        set_parent(obj,a_Component)
 
         initialize(obj, l_equilibrium)
         build_odefcn(obj)

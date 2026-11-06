@@ -26,5 +26,7 @@ function remove_global_controller(obj, sr_GconTag)
     a_rmGC  = obj.a_GlobalController(lv_rm);
 
     obj.a_GlobalController = obj.a_GlobalController(~lv_rm);
-    cellfun(@(g) g.set_parent([]), a_rmGC);
+    for k = 1:numel(a_rmGC)
+        a_rmGC{k}.a_PowerNetwork = PowerNetwork.empty;
+    end
 end

@@ -41,9 +41,9 @@ classdef Branch < PowerSystemModel
     end
 
 %% Properties
-    properties(SetAccess=protected) % Layer Structure
-        a_PowerNetwork       % PowerNetwork the branch belongs to ([] when removed). <@Type> PowerNetwork
-        a_Bus                % End buses {from; to}: the row and column order of the admittance matrix. <@Type> cell of Bus (2x1)
+    properties(SetAccess={?PowerNetwork}) % Layer Structure
+        a_PowerNetwork PowerNetwork {mustBeScalarOrEmpty} = PowerNetwork.empty  % PowerNetwork the branch belongs to (empty when removed).
+        a_Bus (:,1) cell = cell(0,1)                                             % End buses {from; to}: the row and column order of the admittance matrix (empty when removed). <@Type> cell of Bus (2x1)
     end
     properties(SetAccess=protected) % OPF
         f_opfcost = []       % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the branch ([]: none). <@Stale> nothing
@@ -115,8 +115,6 @@ classdef Branch < PowerSystemModel
 
 %% Methods
     methods(Access={?PowerNetwork})
-        set_network(obj,a_PowerNetwork)
-        set_bus(obj,a_Bus)
         initialize(obj)
     end
     methods

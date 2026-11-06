@@ -31,14 +31,14 @@ classdef Component < PowerSystemModel
 %   `build_odefcn` builds them, called by `PowerNetwork.initialize` when they are stale
 %   (`sct_stale.odefcn`, or a network frequency other than `r_odefcnHz`).
 % - Stale tags (`sct_stale`): `equilibrium` (its dynamics, its local controllers, its
-%   attachment) and `odefcn` (its dynamics, its attachment). `initialize`, called by
+%   attachment) and `odefcn` (its dynamics). `initialize`, called by
 %   PowerNetwork.initialize through the bus, rebuilds the handles and recomputes the
 %   equilibrium from the held V and I when they are stale.
 % - Does not own the bus voltage (it reads `a_Bus.c_Vequilibrium`), the network frequency
 %   (it reads `get_Hz()`) or the system base.
 % - Created only by `Bus.add_component` and `Bus.replace_component`. Only the bus sets and
-%   clears `a_Bus` (through `set_bus`);
-%   the component sets `LocalController.a_Component` of its controllers. A
+%   clears `a_Bus` (`SetAccess`) and logs the attachment as a "Topology" edit of the
+%   component; the component sets `LocalController.a_Component` of its controllers. A
 %   `GlobalController` refers to controlled components in `controlledUnits`; a controlled
 %   component cannot be removed or replaced while the controller is on the network.
 %
@@ -75,8 +75,10 @@ classdef Component < PowerSystemModel
     
 
 %% Parameter
+    properties(SetAccess={?Bus}) % Layer Structure
+        a_Bus Bus {mustBeScalarOrEmpty} = Bus.empty  % Bus the component is connected to (empty when removed).
+    end
     properties(SetAccess=protected) % Layer Structure
-        a_Bus                                % Bus the component is connected to ([] when removed).
         a_LocalController (:,1) = cell(0,1)  % Top-level local controllers, in slot order whatever the attach order: the AVR or "local" controller (a PSS hangs under an AVR), then the governor. <@Stale> equilibrium
     end
     properties(SetAccess=protected) % Cached function handles
@@ -262,7 +264,6 @@ classdef Component < PowerSystemModel
 
     methods(Access={?Bus})
         initialize(obj)
-        set_bus(obj,bus)
         set_equilibrium(obj,c_V,c_I,r_P,r_Q)
         move_local_controllers(obj,comp_new)
     end
