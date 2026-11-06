@@ -76,23 +76,22 @@ net.a_Bus{1}.a_Component{1}.tab_parameter.powerflow.P = 0.7;    % B001 が PV �
 net.a_Bus{2}.tab_parameter.powerflow.Varg = 0;                   % スラックにする母線の位相
 net.a_Bus{3}.tab_parameter.powerflow.Varg = 0;
 
-% initialize 前 (編集ログが記録されない状態) でも1つだけ
+% initialize 前 (未初期化の状態) でも1つだけ
 evalc("net.a_Bus{1}.l_isSlack = true;");
 evalc("net.a_Bus{3}.l_isSlack = true;");
 assert(n_slack(net) == 1 && net.a_Bus{3}.l_isSlack)
 
-% initialize 後の切り替えも1つだけで、スラックの編集として記録され平衡点が古くなる
+% initialize 後の切り替えも1つだけで、スラックの編集として潮流が古くなる
 DebugScript.helper.quiet(@() net.initialize);
 assert(n_slack(net) == 1 && net.a_Bus{3}.l_isSlack)
 evalc("net.a_Bus{2}.l_isSlack = true;");
 assert(n_slack(net) == 1 && net.a_Bus{2}.l_isSlack)
-assert(net.l_staleEquilibrium && net.disp_edit().tag(end) == "Slack")
-assert(any(contains(net.disp_edit().log, "slack bus -> B002")))
+assert(DebugScript.helper.is_stale(net) && any(contains(net.sct_stale.powerflow, "slack bus -> B002")))
 
 % 同じ値の再設定は何も記録しない
-n_log = height(net.disp_edit());
+sv_log = DebugScript.helper.stale(net);
 evalc("net.a_Bus{2}.l_isSlack = true;");
-assert(height(net.disp_edit()) == n_log && n_slack(net) == 1)
+assert(isequal(DebugScript.helper.stale(net), sv_log) && n_slack(net) == 1)
 
 % 切り替えた系統で潮流計算でき、指定した母線がスラックとして使われる
 [~, flag] = DebugScript.helper.quiet(@() net.calculate_powerflow);

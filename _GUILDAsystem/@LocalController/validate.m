@@ -20,11 +20,7 @@ function flag = validate(obj, l_message)
     if isempty(comp) || isempty(comp.a_Bus) || isempty(comp.a_Bus.a_PowerNetwork)
         error(msg("GUILDA:LocalController:ValidateNotAttached", obj.s_tag))
     end
-    obj.check_edit();
-    net = comp.a_Bus.a_PowerNetwork;
-    if net.l_staleEquilibrium
-        net.check_edit("RequireEquilibrium", true);
-    end
+    comp.a_Bus.a_PowerNetwork.check_edit();
 
     % make variable (names read from a component may repeat, e.g. "Xall" with "Yall")
     sv_x  = unique_names(obj.sv_x);

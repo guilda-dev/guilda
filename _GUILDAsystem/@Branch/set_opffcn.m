@@ -18,8 +18,8 @@ function set_opffcn(obj, varargin)
 % DefaultConstraint=false removes the default constraints of the branch: the limits
 % Pmax, Vargmax, Imax and Smax. The branch flow equations are always kept.
 % Given names replace the stored ones, the others are kept; Cost=[] or Constraint=[]
-% clears that term. reset_opffcn restores all defaults. The edit is logged in
-% the edit log and does not make the equilibrium stale.
+% clears that term. reset_opffcn restores all defaults. The edit (tag
+% "opffcn") makes nothing stale.
 %
 % Name-Value options:
 %
@@ -46,5 +46,5 @@ function set_opffcn(obj, varargin)
         varargin   % Name-Value options Cost, Constraint and DefaultConstraint.
     end
     [obj.f_opfcost, obj.f_opfconst, obj.l_opfdefault, s_log] = opffcn.update(obj, varargin{:});
-    obj.log_edit(s_log, "OPF");
+    obj.log_edit(s_log, "opffcn");
 end

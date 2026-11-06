@@ -3,7 +3,9 @@ function add_global_controller(obj, a_Gcon)
 %
 % `a_Gcon` is a GlobalController built for this network; its tag must not be in use
 % yet. Its controlled units must be components of this network that have the states
-% `sv_u` and the inputs `sv_y` of the controller. The addition is logged as a "Topology" edit.
+% `sv_u` and the inputs `sv_y` of the controller. The addition is a "Topology" edit of the
+% controller: its own equilibrium and handles are stale until net.initialize(); the power
+% flow is not.
 %
 % See also PowerNetwork.remove_global_controller, GlobalController
 %
@@ -29,5 +31,5 @@ function add_global_controller(obj, a_Gcon)
     end
     obj.a_GlobalController = [obj.a_GlobalController; {a_Gcon}];
     a_Gcon.set_parent(obj);
-    obj.log_edit(obj.s_tag+" <<-Add--- "+a_Gcon.s_tag,"Topology");
+    a_Gcon.log_edit("added to " + obj.s_tag, "Topology");
 end

@@ -117,8 +117,8 @@ assert(error_id(@() net.calculate_continuation_powerflow("LoadBus")) == "GUILDA:
 net3 = DebugScript.helper.build_ieee14();
 DebugScript.helper.quiet(@() net3.initialize);
 evalc("net3.a_Bus{2}.l_isSlack = true;");
-assert(net3.l_staleEquilibrium)
-assert(error_id(@() net3.calculate_continuation_powerflow(LoadBus=sr_load)) == "GUILDA:SolverCPF:StaleEquilibrium")
+assert(DebugScript.helper.is_stale(net3))
+assert(error_id(@() net3.calculate_continuation_powerflow(LoadBus=sr_load)) == "GUILDA:LayerPackage:Stale")
 
 
 %% Plot and Export of the result

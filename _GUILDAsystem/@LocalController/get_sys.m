@@ -6,8 +6,9 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % is labelled "Y_" + name). The point is x, V, u (default: the equilibrium).
 % Component.get_sys connects it to the component. The model is not changed.
 %
-% Out-of-date f_* handles are built first. A controller on a network stops with the error
-% GUILDA:PowerNetwork:EquilibriumStale when net.initialize() is needed.
+% A controller on a network stops with the error GUILDA:LayerPackage:Stale
+% when net.initialize() is needed; a controller without a network builds its stale
+% handles first.
 %
 % See also Component.get_sys
 %
@@ -28,16 +29,14 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         varargout   % sys.StateName, sys.InputName and sys.OutputName, kept for old calls.
     end
 
-    obj.check_edit();
     owner = obj.a_Component;
     while isa(owner, "LocalController")   % a controller may be attached under another one
         owner = owner.a_Component;
     end
     if ~isempty(owner) && ~isempty(owner.a_Bus) && ~isempty(owner.a_Bus.a_PowerNetwork)
-        net = owner.a_Bus.a_PowerNetwork;
-        if net.l_staleEquilibrium
-            net.check_edit("RequireEquilibrium", true);
-        end
+        owner.a_Bus.a_PowerNetwork.check_edit();
+    elseif obj.odefcn_stale()
+        obj.build_odefcn();    % no network to initialize: the handles are built here
     end
 
     sys = obj.get_sys_alone(x, V, I, u, "full", opt.full, "tag", opt.tag);

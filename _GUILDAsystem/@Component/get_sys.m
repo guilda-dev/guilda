@@ -27,8 +27,9 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % fcn_I at the point and the inputs of the controllers are the outputs they are
 % connected to (as in the simulation). The model is not changed.
 %
-% Out-of-date f_* handles are built first. Without Point, a component on a network stops
-% with the error GUILDA:PowerNetwork:EquilibriumStale when net.initialize() is needed.
+% A component on a network stops with the error GUILDA:LayerPackage:Stale
+% when net.initialize() is needed; a component without a network builds its stale
+% handles and those of its controllers first.
 %
 % See also Component.get_variable_map, Bus.get_sys, PowerNetwork.get_sys
 %
@@ -53,12 +54,10 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     end
 
     l_equilibrium = isempty(opt.Point) && ~iscell(opt.Point);
-    obj.check_edit();
-    if l_equilibrium && ~isempty(obj.a_Bus) && ~isempty(obj.a_Bus.a_PowerNetwork)
-        net = obj.a_Bus.a_PowerNetwork;
-        if net.l_staleEquilibrium
-            net.check_edit("RequireEquilibrium", true);
-        end
+    if ~isempty(obj.a_Bus) && ~isempty(obj.a_Bus.a_PowerNetwork)
+        obj.a_Bus.a_PowerNetwork.check_edit();
+    else
+        build_stale(obj);    % no network to initialize: the handles are built here
     end
 
     % All controllers in the tree (e.g. PSS attached under AVR) are separate blocks connected by signal names
@@ -173,6 +172,15 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         sv = reshape(string(owner.sv_y), [], 1);
         lv = ismember(sv, owner.sv_x);
         sv(lv) = "Y_" + sv(lv);
+    end
+
+    function build_stale(layer)
+        if layer.odefcn_stale()
+            layer.build_odefcn();
+        end
+        for k = 1:numel(layer.a_LocalController)
+            build_stale(layer.a_LocalController{k});
+        end
     end
 
     function list = all_controllers(parent)

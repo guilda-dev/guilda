@@ -1,8 +1,9 @@
 function callbackPostSet(obj,name,event)
-    % Record the change when the value differs.
+    % Report the change when the value differs.
     %
-    % Logs edits after a property is changed. The class is checked by the set method of the
-    % property (add_entry) because MATLAB turns an error in a listener into a warning.
+    % Reports the edit with log_edit after a property is changed, with the old and new
+    % values in the message. The class is checked by the set method of the property
+    % (add_entry) because MATLAB turns an error in a listener into a warning.
     arguments (Input)
         obj
         name   % Property name being updated.
@@ -12,7 +13,8 @@ function callbackPostSet(obj,name,event)
     val_post = event.AffectedObject.(name);            
     
     if ~isequaln(val_pre, val_post)    % NaN -> NaN is not a change
-        obj.log_edit("edit "+name, "Parameter("+obj.s_tag+")", val_pre, val_post);
+        obj.s_lastEdited = name;
+        obj.log_edit("edit " + name + ": " + tools.value_text(val_pre) + " -> " + tools.value_text(val_post), obj.s_tag);
         obj.CallbackChanged();
     end
 end

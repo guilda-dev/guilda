@@ -1,28 +1,21 @@
-function apply_edit(obj, s_target)
-% Build the f_* handles from the gain K ("odefcn"; check_edit calls it at the start of
-% every analysis, and get_equilibrium after the design).
-% A Hz edit keeps the equilibrium, so K is redesigned here, at the first analysis
-% after the edit when the design frequency differs (check_edit has already built the
-% component, the parent). When the equilibrium is not up to date, net.initialize
-% redesigns K instead.
+function build_odefcn(obj)
+% Build the f_* handles from the gain K (initialize when they are stale, and
+% get_equilibrium after the design).
+% A Hz edit leaves the equilibrium up to date, so K is redesigned here when the design
+% frequency differs and the equilibrium of the controller is up to date (the component,
+% the parent, has rebuilt its handles first). Otherwise get_equilibrium designs K.
     arguments (Input)
         obj
-        s_target (1,1) string  % What to rebuild: "odefcn" (the f_* handles).
-    end
-    if s_target ~= "odefcn"
-        apply_edit@LocalController(obj, s_target);
-        return
     end
     omega0 = obj.get_Hz();
-    if ~isempty(obj.r_designHz) && obj.r_designHz ~= omega0 && obj.equilibrium_valid()
+    if ~isempty(obj.r_designHz) && obj.r_designHz ~= omega0 && isempty(obj.sct_stale.equilibrium)
         try
             obj.design_gain(obj.a_Component.c_Vequilibrium, obj.a_Component.rv_Uequilibrium);
         catch ME
-            % A warning, not an error: check_edit goes on to build the other layers.
-            % K stays for the old frequency, so the record makes the equilibrium stale
-            % and the analysis that runs check_edit asks for net.initialize.
+            % K stays for the old frequency: the equilibrium is stale, so the analyses ask
+            % for net.initialize, which designs K again in get_equilibrium
             warning(msg("GUILDA:local_LQR:RedesignFailed", obj.s_tag, sprintf("%g", omega0), ME.message))
-            obj.log_edit(obj.s_tag + " redesign failed", "Parameter(dynamics)");
+            obj.mark_stale("equilibrium", obj.s_tag + ": redesign failed at " + omega0 + " Hz");
         end
     end
 
@@ -42,4 +35,6 @@ function apply_edit(obj, s_target)
     obj.f_Y    = @(t,x,V,I,u) obj.fcn_y(t, x, V, I, u, param, omega0);
     obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
     obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
+    obj.r_odefcnHz = omega0;
+    obj.clear_stale("odefcn");
 end

@@ -16,8 +16,8 @@ function [sys, varargout] = get_sys(obj, opt)
 % the equilibrium, a vector in the order of bus.get_variable_map(), or {sim, t}.
 % The model is not changed.
 %
-% Out-of-date f_* handles are built first. Without Point, a bus on a network stops with the
-% error GUILDA:PowerNetwork:EquilibriumStale when net.initialize() is needed.
+% A bus on a network stops with the error GUILDA:LayerPackage:Stale when
+% net.initialize() is needed.
 %
 % See also Component.get_sys, Bus.get_variable_map, PowerNetwork.get_sys
 %
@@ -37,12 +37,8 @@ function [sys, varargout] = get_sys(obj, opt)
     end
 
     l_equilibrium = isempty(opt.Point) && ~iscell(opt.Point);
-    obj.check_edit();
-    if l_equilibrium && ~isempty(obj.a_PowerNetwork)
-        net = obj.a_PowerNetwork;
-        if net.l_staleEquilibrium
-            net.check_edit("RequireEquilibrium", true);
-        end
+    if ~isempty(obj.a_PowerNetwork)
+        obj.a_PowerNetwork.check_edit();
     end
 
     if l_equilibrium

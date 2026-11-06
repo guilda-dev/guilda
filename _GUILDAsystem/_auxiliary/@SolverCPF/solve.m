@@ -86,7 +86,7 @@ end
 
 
 function check_network(net, sv_load)
-% Preconditions: an up-to-date equilibrium and load buses of this network
+% Preconditions: an equilibrium, every layer up to date (check_edit) and load buses of this network
     for i = 1:numel(net.a_Bus)
         a_Comp = net.a_Bus{i}.a_Component;
         for j = 1:numel(a_Comp)
@@ -95,9 +95,7 @@ function check_network(net, sv_load)
             end
         end
     end
-    if net.l_staleEquilibrium
-        error(msg("GUILDA:SolverCPF:StaleEquilibrium"));
-    end
+    net.check_edit();    % error if net.initialize() is needed; nothing is rebuilt here
     if isempty(sv_load)
         error(msg("GUILDA:SolverCPF:EmptyLoadBus"));
     end

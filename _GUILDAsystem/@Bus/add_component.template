@@ -3,7 +3,7 @@ function comp = add_component(obj,Key,opt)
 %
 % `Key` is the model key of a component class (the list is generated from the classes on
 % the path). The component tag is the class header, a number and the bus tag, e.g.
-% "SG1B001". The addition is logged as a "Topology" edit.
+% "SG1B001". The addition is a "Topology" edit, which makes the power flow of the network stale.
 %
 % <@Examples>
 % ```matlab

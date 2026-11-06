@@ -1,16 +1,12 @@
-function apply_edit(obj, s_target)
+function build_odefcn(obj)
 % Bind the parameters and the network frequency into the f_* function handles.
-% check_edit calls it with "odefcn" at the start of every analysis, so the handles
-% follow every edit of the parameters, the network frequency and the attachment.
+% Called by initialize when the stale tag odefcn is not empty or the network frequency
+% differs from r_odefcnHz, and by get_dx_algebraic when the handles were never built.
+% Clears odefcn and stores the frequency in r_odefcnHz.
 %
 % <@Group> Called by analyses
     arguments (Input)
         obj
-        s_target (1,1) string  % What to rebuild: "odefcn" (the f_* handles).
-    end
-    if s_target ~= "odefcn"
-        apply_edit@PowerSystemModel(obj, s_target);
-        return
     end
     omega0 = obj.get_Hz();
     array = obj.para_dynamics.tab_parameter{:,obj.sv_para};
@@ -37,4 +33,7 @@ function apply_edit(obj, s_target)
     obj.f_dx   = @(t,x,V,I,u) obj.fcn_dx(t, x, V, I, u, array, omega0);
     obj.f_I    = @(t,x,V,I,u) obj.fcn_I(t, x, V, I, u, array, omega0);
     obj.f_Y    = @(t,x,V,I,u) obj.fcn_Y(t, x, V, I, u, array, omega0);
+
+    obj.r_odefcnHz = omega0;
+    obj.clear_stale("odefcn");
 end

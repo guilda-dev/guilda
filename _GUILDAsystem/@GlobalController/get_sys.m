@@ -4,8 +4,9 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
 % The inputs are the outputs of the controlled units and the outputs are the
 % controller outputs that feed them; the V and I ports are not used.
 %
-% Out-of-date f_* handles are built first. A controller on a network stops with the
-% error GUILDA:PowerNetwork:EquilibriumStale when net.initialize() is needed.
+% A controller on a network stops with the error GUILDA:LayerPackage:Stale
+% when net.initialize() is needed; a controller without a network builds its stale
+% handles first.
 % A controlled unit without the states sv_u or the inputs sv_y stops with the
 % error GUILDA:GlobalController:GlobalControllerPort.
 %
@@ -35,12 +36,10 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
         end
     end
 
-    obj.check_edit();
     if ~isempty(obj.a_PowerNetwork)
-        net = obj.a_PowerNetwork;
-        if net.l_staleEquilibrium
-            net.check_edit("RequireEquilibrium", true);
-        end
+        obj.a_PowerNetwork.check_edit();
+    elseif obj.odefcn_stale()
+        obj.build_odefcn();    % no network to initialize: the handles are built here
     end
 
     % Same Jacobian contract as SolverODE: f_JacobiDx/Y(t,x,V,I,u).

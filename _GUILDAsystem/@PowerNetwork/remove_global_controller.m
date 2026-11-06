@@ -1,7 +1,9 @@
 function remove_global_controller(obj, sr_GconTag)
 % Remove global controllers by tag.
 %
-% The removed controllers no longer refer to this network.
+% The removed controllers no longer refer to this network. A removal makes nothing stale:
+% it changes no equilibrium, and simulate and linearize take the controllers the network
+% has.
 %
 % <@Examples>
 % ```matlab
@@ -24,6 +26,5 @@ function remove_global_controller(obj, sr_GconTag)
     a_rmGC  = obj.a_GlobalController(lv_rm);
 
     obj.a_GlobalController = obj.a_GlobalController(~lv_rm);
-    obj.log_edit(obj.s_tag+" ---remove->> "+join(sv_tagGcon(lv_rm),", "),"Topology");
     cellfun(@(g) g.set_parent([]), a_rmGC);
 end
