@@ -1,7 +1,6 @@
 function sv = stale(obj)
 % 層とその下の層の古さのメッセージ (sct_stale の全フィールド) を集める。
-% LayerPackage.check_edit と同じく、関数ハンドルを作った周波数が系統の周波数と違う
-% 機器・制御器には "network frequency changed" を加える。
+% Hz の編集は系統の odefcn に入る (LayerPackage.check_edit と同じ)。
 %
 %   sv = DebugScript.helper.stale(net)     % 系統全体 (母線・機器・制御器・大域制御器)
 %   sv = DebugScript.helper.stale(bus)     % 母線の機器とその制御器
@@ -44,9 +43,6 @@ end
 
 function sv = model(obj)
     sv = fields(obj);
-    if isempty(obj.sct_stale.odefcn) && ~isempty(obj.r_odefcnHz) && obj.r_odefcnHz ~= obj.get_Hz()
-        sv(end+1,1) = "network frequency changed";
-    end
     if isprop(obj, "a_LocalController")
         for k = 1:numel(obj.a_LocalController)
             sv = [sv; model(obj.a_LocalController{k})]; %#ok<AGROW>

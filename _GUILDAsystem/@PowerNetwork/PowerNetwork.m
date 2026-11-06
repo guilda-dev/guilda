@@ -19,7 +19,9 @@ classdef PowerNetwork < PowerSystemModel
 %   `powerflow` (`sct_stale`) for the edits that change the power flow: baseMVA, buses and
 %   branches added, removed or replaced, bus parameters (powerflow, dynamics), the slack
 %   bus, components connected, replaced or removed, branch dynamics and component
-%   powerflow parameters. The components and controllers mark their own stale tags.
+%   powerflow parameters. A Hz edit marks its stale tag `odefcn` (the function handles of
+%   every model; the edit does not reach them). The components and controllers mark
+%   their own stale tags.
 % - `initialize` brings every layer up to date; the analyses only check them
 %   (`check_edit`) and stop with GUILDA:LayerPackage:Stale, naming the
 %   reasons, until it has run.
@@ -47,8 +49,8 @@ classdef PowerNetwork < PowerSystemModel
 %
 % - `Hz` [Hz]: nominal frequency. Models read it with get_Hz() and receive it as omega0.
 %   Set by the constructor (GUILDA.config("Model","Hz")), by writing the table and by
-%   import_csv. An edit makes the function handles of every model stale (each compares
-%   the frequency it was built with); initialize only rebuilds them.
+%   import_csv. An edit marks the stale tag `odefcn` of the network: initialize only
+%   rebuilds the function handles (each model compares the frequency it was built with).
 % - `baseMVA` [MVA]: system base of all per-unit values (default 100). Stored per-unit
 %   values are not converted when it changes. Set by the constructor, by writing the
 %   table, import_csv and import_matpower. An edit makes the power flow stale.
@@ -134,7 +136,7 @@ classdef PowerNetwork < PowerSystemModel
                 obj   % New PowerNetwork without buses.
             end
             obj.s_tag     = tag;
-            obj.sct_stale = struct("powerflow", obj.s_notInitialized);
+            obj.sct_stale = struct("powerflow", obj.s_notInitialized, "odefcn", obj.s_notInitialized);
             obj.para_base = Parameter(obj,"base");
             obj.para_base.add_entry(     "Hz", GUILDA.config("Model","Hz"), "double",...
                                     "baseMVA", 100                        , "double");

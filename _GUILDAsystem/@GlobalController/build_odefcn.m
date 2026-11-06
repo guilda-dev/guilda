@@ -18,5 +18,5 @@ function build_odefcn(obj)
     obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
 
     obj.r_odefcnHz = omega0;
-    obj.clear_stale("odefcn");
+    obj.sct_stale.odefcn = strings(0,1);
 end

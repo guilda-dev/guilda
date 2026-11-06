@@ -29,7 +29,7 @@ net = balanced_island();
 assert(warning_of(@() net.initialize(Method="OPF")) == "GUILDA:PowerNetwork:NetworkIsland")
 net = balanced_island();
 warning_of(@() net.initialize);
-assert(warning_of(@() net.initialize(Method="equilibrium")) == "", "何も古くないときの initialize は何もしない")
+assert(warning_of(@() net.initialize(Method="equilibrium")) == "GUILDA:PowerNetwork:NetworkIsland", "何も古くないときも島を警告する")
 a_Comp = [net.a_Bus{:}];  a_Comp = vertcat(a_Comp.a_Component);
 c = a_Comp{find(cellfun(@(x) isa(x, "component.generator.abstract"), a_Comp), 1)};
 c.tab_parameter.dynamics.D = c.tab_parameter.dynamics.D + 0.1;   % 動特性の編集: 潮流は解かず平衡点を作り直す

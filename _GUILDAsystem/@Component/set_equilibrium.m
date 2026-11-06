@@ -1,9 +1,10 @@
 function set_equilibrium(obj,c_V,c_I,r_P,r_Q)
 % Compute and store the state and input equilibria from the bus voltage and current.
 %
-% Called by Bus.set_equilibrium and initialize. The local controllers compute their
-% equilibria too, and the stale tag equilibrium of the component and its controllers is
-% cleared. Stale handles are rebuilt first: a controller may design from them (local_LQR).
+% Called by Bus.set_equilibrium and initialize. Clears the stale tag equilibrium. The
+% local controllers compute their equilibria too and are then initialized with
+% l_equilibrium = true (LocalController.initialize), which clears theirs. Stale handles
+% are rebuilt first: a controller may design from them (local_LQR).
 %
 % <@Group> Called by analyses
     arguments (Input)
@@ -13,7 +14,7 @@ function set_equilibrium(obj,c_V,c_I,r_P,r_Q)
         r_P = real( c_V*conj(c_I) );   % [pu] Active power injected by the component.
         r_Q = imag( c_V*conj(c_I) );   % [pu] Reactive power injected by the component.
     end
-    if obj.odefcn_stale()
+    if ~isempty(obj.sct_stale.odefcn) || ~isequal(obj.r_odefcnHz, obj.get_Hz())
         obj.build_odefcn();
     end
     [cv_Xst,cv_Ust] = obj.get_equilibrium(c_V,c_I,r_P,r_Q);
@@ -23,20 +24,11 @@ function set_equilibrium(obj,c_V,c_I,r_P,r_Q)
     obj.rv_Xequilibrium = cv_Xst;
     obj.rv_Uequilibrium = cv_Ust;
 
-    if ~isempty(obj.a_LocalController)
-        cellfun(@(con) con.get_equilibrium(c_V, cv_Ust), obj.a_LocalController);        
-    end
-    obj.clear_stale("equilibrium");
-    clear_controllers(obj);
-end
+    obj.sct_stale.equilibrium = strings(0,1);
 
-
-function clear_controllers(layer)
-% Clear the stale tag equilibrium of the controllers below layer (get_equilibrium of each
-% set their equilibria)
-    for k = 1:numel(layer.a_LocalController)
-        con = layer.a_LocalController{k};
-        con.clear_stale("equilibrium");
-        clear_controllers(con);
+    % the controllers clear their own stale tag equilibrium (initialize(true))
+    for k = 1:numel(obj.a_LocalController)
+        obj.a_LocalController{k}.get_equilibrium(c_V, cv_Ust);
+        obj.a_LocalController{k}.initialize(true);
     end
 end

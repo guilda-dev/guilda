@@ -35,5 +35,5 @@ function build_odefcn(obj)
     obj.f_Y    = @(t,x,V,I,u) obj.fcn_Y(t, x, V, I, u, array, omega0);
 
     obj.r_odefcnHz = omega0;
-    obj.clear_stale("odefcn");
+    obj.sct_stale.odefcn = strings(0,1);
 end

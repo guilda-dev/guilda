@@ -80,10 +80,11 @@ x_eq = comp.rv_Xequilibrium;
 Hz0  = net.tab_parameter.base.Hz;
 net.tab_parameter.base.Hz = 50;
 assert(isempty(net.sct_stale.powerflow) && isempty(comp.sct_stale.odefcn) && isempty(comp.sct_stale.equilibrium))
+assert(net.sct_stale.odefcn == "base/" + net.s_tag + ": edit Hz: " + Hz0 + " -> 50", "Hz の編集は系統の odefcn に入る")
 assert(DebugScript.helper.is_stale(net) && comp.get_Hz() == 50)
 assert(DebugScript.helper.handle_Hz(comp) == Hz0, "編集しただけでは作り直さない")
 ME = error_of(@() net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1])));
-assert(DebugScript.helper.msg_id(ME) == s_staleID && contains(ME.message, "network frequency changed"))
+assert(DebugScript.helper.msg_id(ME) == s_staleID && contains(ME.message, "edit Hz"))
 
 % initialize はハンドルだけを作り直し、平衡点は変わらない
 res = DebugScript.helper.quiet(@() net.initialize);
@@ -183,7 +184,7 @@ DebugScript.helper.quiet(@() net.initialize);
 comp.add_local_controller(controller.avr.AVR_ST1("avr1"));
 assert(any(contains(comp.sct_stale.equilibrium, "avr1")) && isempty(net.sct_stale.powerflow))
 avr1 = comp.a_LocalController{1};
-assert(isequal(avr1.sct_stale.odefcn, avr1.s_notInitialized))   % 新しい制御器は未初期化
+assert(avr1.sct_stale.odefcn(1) == avr1.s_notInitialized)   % 新しい制御器は未初期化
 assert_stale_error(@() net.get_sys(), s_staleID)
 assert_stale_error(@() net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1])), s_staleID)
 res = DebugScript.helper.quiet(@() net.initialize);
@@ -332,7 +333,7 @@ DebugScript.helper.quiet(@() net.initialize);
 agc = controller.agc.broadcast_PI_AGC(net, "agc", "SG1B001");
 net.add_global_controller(agc);
 assert(isempty(net.sct_stale.powerflow) && DebugScript.helper.is_stale(net))
-assert(isequal(agc.sct_stale.equilibrium, agc.s_notInitialized))   % 新しい制御器は未初期化のまま
+assert(agc.sct_stale.equilibrium(1) == agc.s_notInitialized)   % 新しい制御器は未初期化のまま
 res = DebugScript.helper.quiet(@() net.initialize);
 assert(res.s_solver == "equilibrium" && ~DebugScript.helper.is_stale(net))
 net.remove_global_controller("agc");
@@ -420,7 +421,7 @@ net.tab_parameter.base.Hz = 50;
 assert_stale_error(@() net.get_sys(), s_staleID)
 assert(isempty(lqr.K))
 
-% 同じ Hz に戻したときは何も古くならず、K はそのまま
+% 同じ Hz に戻しても系統の odefcn は古いまま。initialize は K を設計し直さない
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
 lqr = controller.local_LQR("lqr1");
 gen.add_local_controller(lqr);
@@ -428,7 +429,9 @@ DebugScript.helper.quiet(@() net.initialize);
 K60 = lqr.K;
 net.tab_parameter.base.Hz = 50;
 net.tab_parameter.base.Hz = 60;
-assert(~DebugScript.helper.is_stale(net))
+assert(numel(net.sct_stale.odefcn) == 2 && DebugScript.helper.is_stale(net))
+res = DebugScript.helper.quiet(@() net.initialize);
+assert(res.s_solver == "equilibrium" && ~DebugScript.helper.is_stale(net))
 net.get_sys();
 assert(isequal(lqr.K, K60))
 

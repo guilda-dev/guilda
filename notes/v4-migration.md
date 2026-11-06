@@ -145,12 +145,12 @@ v3 の編集ログ(`tab_editLog`)はありません。各層は、古くなっ�
 
 | 層 | 古くなるタグ(`sct_stale` のフィールド) |
 |---|---|
-| `PowerNetwork` | `powerflow` |
+| `PowerNetwork` | `powerflow`、`odefcn`(系統の Hz) |
 | `Component`、`LocalController`、`GlobalController` | `equilibrium`、`odefcn` |
 | `Bus`、`Branch` | なし |
 
-- **初期値。** 各タグは作成時に `"initialize has not been run"` を持ちます。このメッセージがあるタグには、ほかのメッセージを追加しません。
-- **メッセージ。** 「編集した層から上のタグを `/` でつないだもの」+ `": "` + 編集内容(値を含む)。例: `"dynamics/SG1B001/B001/IEEE9bus: edit D: 2 -> 2.1"`。同じメッセージは重複させません。
+- **初期値。** 各タグは作成時に `"initialize has not been run"` を持ちます。各クラスは自分のフィールドにだけ追加し、自分のコードで空にします。
+- **メッセージ。** 「編集した層から上のタグを `/` でつないだもの」+ `": "` + 編集内容(値を含む)。例: `"dynamics/SG1B001/B001/IEEE9bus: edit D: 2 -> 2.1"`。重複は `check_edit` の表示で除きます。
 - **編集の種類(タグ)。** パラメータのグループ名(`dynamics`、`powerflow`、`base`、`operation`、`OPF`、`graph`)、`opffcn`(`set_opffcn` / `reset_opffcn`)、`Topology`、`Slack`、`Tag`。
 
 | 編集 | 古くなるもの |
@@ -164,10 +164,10 @@ v3 の編集ログ(`tab_editLog`)はありません。各層は、古くなっ�
 | 機器・制御器を付ける(`set_bus`、`set_parent`) | 付けた層の `equilibrium`、`odefcn` |
 | 大域制御器の追加 | その制御器の `equilibrium`(系統の `powerflow` は古くならない) |
 | 大域制御器の削除 | なし |
-| 系統の `Hz` | 子へは届かない。各モデルがハンドルを作った周波数(`r_odefcnHz`)と比べ、違えば `odefcn` が古い扱い |
+| 系統の `Hz` | 系統の `odefcn`(子へは届かない。各モデルは `initialize` で、ハンドルを作った周波数 `r_odefcnHz` と比べて作り直す) |
 | `operation`、`OPF`、`graph`、`opffcn`、`Tag`(改名) | なし |
 
-- **最新にするのは `net.initialize()` だけです。** `powerflow` が古いか `Method` を明示したときだけ潮流計算を解き、`Bus.set_equilibrium` で書き込みます。その後、母線 → 機器 → ローカル制御器、ブランチ、大域制御器(最後)の順に、古いハンドルを作り直し、まだ古い平衡点を保持している V と I から計算し直します。何も古くなければ何もしません。
+- **最新にするのは `net.initialize()` だけです。** `powerflow` が古いか `Method` を明示したときだけ潮流計算を解き、`Bus.set_equilibrium` で書き込みます。その後、母線 → 機器 → ローカル制御器、ブランチ、大域制御器(最後)の順に、各層が自分のタグから判断して、古いハンドルを作り直し、まだ古い平衡点を保持している V と I から計算し直します。最後に系統の `powerflow` と `odefcn` を空にします。何も古くなければ、大域制御器の平衡点の再計算(常に行う)のほかは何も変わりません。
   - 動特性だけの編集: 潮流計算を解かず、編集したモデルだけを計算し直します。
   - Hz だけの編集: ハンドルを作り直すだけです(`local_LQR` は保持している平衡点で `K` を設計し直します)。
   - `Method="equilibrium"`: 潮流計算を解きません。`powerflow` が古いときは `GUILDA:PowerNetwork:InitializeEquilibriumEdited` で止まります。
@@ -1015,14 +1015,14 @@ there.
   component `para_base`.
 - **`set_odefcn` は廃止。** `f_*` ハンドルは `net.initialize()` が作ります。
   古いとき(`sct_stale.odefcn` が空でない、またはハンドルを作った周波数
-  `r_odefcnHz` が系統の Hz と違う)だけ、protected メソッド `build_odefcn` が
+  `r_odefcnHz` が系統の Hz と違う)だけ、各層の `initialize` から protected メソッド `build_odefcn` を呼び、
   現在のパラメータと系統の周波数から作り直し、`odefcn` を空にします。解析は
   作り直さず検査だけです。`s_odefcn`、`set_odefcn`、`mark_odefcn` はありません。
   - コンストラクタで `obj.set_odefcn()` を呼んでいたモデルは、その行を削除します
     (残すと未定義のメソッドでエラーになります)。
   - 自分でハンドルを作っていたモデル(`set_odefcn` をオーバーライドしていたクラス)は、
     `build_odefcn` をオーバーライドし、最後に `r_odefcnHz` を設定して
-    `clear_stale("odefcn")` を呼びます(例: `controller.local_LQR`)。
+    `obj.sct_stale.odefcn = strings(0,1);` とします(例: `controller.local_LQR`)。
   - `get_dx_algebraic` はハンドルが空のときだけ `build_odefcn` を呼びます。
 - **Equilibrium:** `get_equilibrium(obj, c_V, c_I, r_P, r_Q)`; do not store
   copies of V or I (see 1.2).

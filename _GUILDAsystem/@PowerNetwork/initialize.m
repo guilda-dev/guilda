@@ -16,8 +16,10 @@ function [result, flag, output] = initialize(obj, varargin)
 %    from the held V and I. Then each global controller rebuilds its stale handles and
 %    computes its equilibrium.
 %
-% So a dynamics-only edit does not solve the power flow again, and a Hz edit only rebuilds
-% the handles. With nothing stale, initialize changes nothing.
+% Each layer decides from its own stale tags, so a dynamics-only edit does not solve the
+% power flow again, and a Hz edit (net.sct_stale.odefcn) only rebuilds the handles. With
+% nothing stale, initialize changes nothing but the equilibria of the global controllers,
+% which are always recomputed. The stale tags of the network are cleared at the end.
 %
 % Name-Value options:
 %
@@ -46,8 +48,7 @@ function [result, flag, output] = initialize(obj, varargin)
 % balances, so a successful initialize only warns (GUILDA:PowerNetwork:NetworkIsland). A
 % failed power flow or OPF on such a network names the islands in its error.
 %
-% When anything was stale, the models are evaluated at the point that was set, with every
-% Method. A state or input of the wrong size, a model function that returns the wrong size
+% The models are evaluated at the point that was set, with every Method. A state or input of the wrong size, a model function that returns the wrong size
 % and a model function that stops are errors naming the model, and the power flow is left
 % stale. A
 % residual of a component, local controller or global controller of 1e-6 or more only
@@ -83,7 +84,6 @@ function [result, flag, output] = initialize(obj, varargin)
     varargin = v3_initialize_args(varargin);                  % COMPAT(v3)
     [s_method, c_nv, l_given] = take_method(varargin);
 
-    l_stale = ~isempty(obj.collect_stale());    % anything to bring up to date
     l_solve = s_method ~= "equilibrium" && (l_given || ~isempty(obj.sct_stale.powerflow));
     switch s_method
         case "powerflow"
@@ -110,10 +110,6 @@ function [result, flag, output] = initialize(obj, varargin)
     if ~l_solve && (nargout > 0 || s_method == "equilibrium")
         [result, flag, output] = calculate_from_equilibrium(obj);   % also checks Y*V = I
     end
-    if ~l_solve && ~l_stale
-        return    % nothing to bring up to date
-    end
-
     try
         if l_solve
             write_powerflow(obj, s_method, result);
@@ -128,22 +124,26 @@ function [result, flag, output] = initialize(obj, varargin)
             obj.a_GlobalController{i_gc}.initialize(true);   % may read the units just set
         end
 
-        % the point that was set must satisfy Kirchhoff's current law at every bus
-        sv_Bus  = string(obj.a_Bus);
-        tab_Y   = obj.get_admittance_matrix;
-        r_resid = max(abs(tab_Y{sv_Bus,sv_Bus}*obj.cv_Vequilibrium - obj.cv_Iequilibrium), [], "includenan");
-        if ~(r_resid < equilibrium_tolerance())
-            error(msg("GUILDA:PowerNetwork:InitializeNotEquilibrium", char(s_method), char(string(r_resid))))
+        % the point that was set must satisfy Kirchhoff's current law at every bus (only a
+        % solve writes V and I; the other steps recompute from the held V and I)
+        if l_solve
+            sv_Bus  = string(obj.a_Bus);
+            tab_Y   = obj.get_admittance_matrix;
+            r_resid = max(abs(tab_Y{sv_Bus,sv_Bus}*obj.cv_Vequilibrium - obj.cv_Iequilibrium), [], "includenan");
+            if ~(r_resid < equilibrium_tolerance())
+                error(msg("GUILDA:PowerNetwork:InitializeNotEquilibrium", char(s_method), char(string(r_resid))))
+            end
         end
 
         % the models must hold the point; sizes stop here
         s_residual = large_model_residuals(obj);
     catch ME
         % a partly written point is never used: the next initialize solves it again
-        obj.mark_stale("powerflow", obj.s_tag + ": the last initialize stopped before it finished");
+        obj.sct_stale.powerflow(end+1,1) = obj.s_tag + ": the last initialize stopped before it finished";
         rethrow(ME)
     end
-    obj.clear_stale("powerflow");
+    obj.sct_stale.powerflow = strings(0,1);
+    obj.sct_stale.odefcn    = strings(0,1);
 
     if s_residual ~= ""
         warning(msg("GUILDA:PowerNetwork:EquilibriumResidual", char(string(equilibrium_tolerance())), char(s_residual)))
