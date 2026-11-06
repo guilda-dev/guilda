@@ -9,15 +9,11 @@ function add_avr_pss(net, s_dirpath)
     tab_pss = readtable(fullfile(s_dirpath, "controller", "pss", "parameter.csv"));
     for i = 1:height(tab_avr)
         i_bus = tab_avr.Bus(i);
-        c_avr = namedargs2cell(table2struct(removevars(tab_avr(i,:), "Bus")));
-        avr   = controller.avr.AVR_ST1("avr" + i_bus, c_avr{:});
-        i_pss = find(tab_pss.Bus == i_bus);
         gen   = net.a_Bus{i_bus}.a_Component{1};
-        if isempty(i_pss)
-            gen.add_local_controller(avr);
-        else
-            c_pss = namedargs2cell(table2struct(removevars(tab_pss(i_pss,:), "Bus")));
-            gen.add_local_controller(avr, controller.pss.PSS1("pss" + i_bus, c_pss{:}));
+        gen.add_local_controller("avr-ST1", parameter=removevars(tab_avr(i,:), "Bus"));
+        i_pss = find(tab_pss.Bus == i_bus);
+        if ~isempty(i_pss)
+            gen.add_local_controller("pss-PSS1", parameter=removevars(tab_pss(i_pss,:), "Bus"));
         end
     end
 end

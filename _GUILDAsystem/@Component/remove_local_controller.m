@@ -5,18 +5,19 @@ function remove_local_controller(obj, s_tag, opt)
 % governor) or the PSS under the AVR; the other top-level controller stays attached.
 % An AVR that still has a PSS feeding it cannot be removed unless `RemoveNested` is true,
 % which removes the PSS too. Remove the PSS alone by its own tag. The removed controllers
-% no longer refer to this component or to each other, so they can be attached again.
+% no longer refer to this component or to each other.
 % The removal is a "Topology" edit, so the equilibrium of the component becomes stale.
 %
 % <@Examples>
 % ```matlab
 % gen = net.a_Bus{1}.a_Component{1};
-% gen.add_local_controller(controller.avr.AVR_ST1("1"), controller.pss.PSS1("1"));
-% gen.remove_local_controller("CP1");                     % the PSS only (tag: s_tag)
-% gen.add_local_controller(controller.pss.PSS1("2"));
-% gen.remove_local_controller("CA1", RemoveNested=true);  % the AVR and its PSS
-% gen.add_local_controller(controller.governor.IEEJ_LPT1("1"));
-% gen.remove_local_controller("CG1");                     % the governor
+% avr = gen.add_local_controller("avr-ST1");
+% pss = gen.add_local_controller("pss-PSS1");
+% gen.remove_local_controller(pss.s_tag);                       % the PSS only
+% gen.add_local_controller("pss-PSS1");
+% gen.remove_local_controller(avr.s_tag, RemoveNested=true);    % the AVR and its PSS
+% gov = gen.add_local_controller("gov-LPT1");
+% gen.remove_local_controller(gov.s_tag);                       % the governor
 % ```
 %
 % See also Component.add_local_controller, LocalController

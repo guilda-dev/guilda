@@ -7,7 +7,6 @@ function add_avr(net, s_section)
     tab_avr = readtable(fullfile(s_section, "controller", "avr", "parameter.csv"));
     for i = 1:height(tab_avr)
         i_bus = tab_avr.Bus(i);
-        c_avr = namedargs2cell(table2struct(removevars(tab_avr(i,:), "Bus")));
-        net.a_Bus{i_bus}.a_Component{1}.add_local_controller(controller.avr.AVR_DC1("avr" + i_bus, c_avr{:}));
+        net.a_Bus{i_bus}.a_Component{1}.add_local_controller("avr-DC1", parameter=removevars(tab_avr(i,:), "Bus"));
     end
 end

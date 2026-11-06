@@ -1,19 +1,27 @@
 function update_class_signature()
 
-    tab_list        = GUILDA.dictionary("PowerSystemModel", "disp", false, "output", ["Component", "Branch"]);
+    tab_list        = GUILDA.dictionary("PowerSystemModel", "disp", false, "output", ["Component", "Branch", "LocalController", "GlobalController"]);
     tab_comp_list   = tab_list{1};
     tab_branch_list = tab_list{2};
+    tab_lcon_list   = tab_list{3};
+    tab_gcon_list   = tab_list{4};
 
     disp(newline+" === Update Key List === ")
     disp(newline+"  @Component: ")
     [s_comp_cases,  s_comp_list    ] = make_class_signature(string(tab_comp_list.filename));
     disp(newline+"  @Branch: ")
     [s_branch_cases,s_branch_list] = make_class_signature(string(tab_branch_list.filename));
+    disp(newline+"  @LocalController: ")
+    [s_lcon_cases,  s_lcon_list  ] = make_class_signature(string(tab_lcon_list.filename));
+    disp(newline+"  @GlobalController: ")
+    [s_gcon_cases,  s_gcon_list  ] = make_class_signature(string(tab_gcon_list.filename));
 
     s_systempath = fullfile(GUILDA.pwd(), '_GUILDAsystem');
     update_signature(fullfile(s_systempath, '@Bus')         , "add_component"    , s_comp_list  , s_comp_cases  )
     update_signature(fullfile(s_systempath, '@Bus')         , "replace_component", s_comp_list  , s_comp_cases  )
     update_signature(fullfile(s_systempath, '@PowerNetwork'), "add_branch"       , s_branch_list, s_branch_cases)
+    update_signature(fullfile(s_systempath, '@Component')   , "add_local_controller" , s_lcon_list, s_lcon_cases)
+    update_signature(fullfile(s_systempath, '@PowerNetwork'), "add_global_controller", s_gcon_list, s_gcon_cases)
 
     % A new copy's first session cannot see the files written above without this
     rehash path

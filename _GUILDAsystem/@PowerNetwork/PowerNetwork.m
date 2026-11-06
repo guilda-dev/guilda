@@ -148,7 +148,7 @@ classdef PowerNetwork < PowerSystemModel
         bus = add_bus(   obj, opt)
         % <@Group> Model building
         bra = add_branch(obj, Type, from_to, opt)
-        add_global_controller(obj, a_Gcon)
+        con = add_global_controller(obj, Key, a_Unit, opt)
         remove_bus( obj, sr_BusTag, opt)
         remove_branch( obj, tag)
         remove_global_controller( obj, sr_GconTag)

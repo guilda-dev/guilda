@@ -56,7 +56,7 @@ classdef Component < PowerSystemModel
 % net = network.IEEE14bus();
 % gen = net.a_Bus{1}.a_Component{1};
 % gen.tab_parameter.powerflow                  % P, Q settings of the power flow
-% gen.add_local_controller(controller.avr.AVR_ST1("avr1"));
+% gen.add_local_controller("avr-ST1");
 % net.initialize();
 % gen.rv_Xequilibrium                          % state equilibrium
 % sys = gen.get_sys();                         % linear model from V to I
@@ -234,7 +234,7 @@ classdef Component < PowerSystemModel
 %% Methods
     methods
         % Layer Structure
-        add_local_controller(obj, a_Controller)
+        con = add_local_controller(obj, Key, opt)
         remove_local_controller(obj, s_tag, opt)
 
         % OPF

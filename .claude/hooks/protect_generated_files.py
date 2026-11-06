@@ -17,6 +17,8 @@ GENERATED = [
     (r"_GUILDAsystem/@Bus/add_component\.m", TEMPLATE_FIX),
     (r"_GUILDAsystem/@Bus/replace_component\.m", TEMPLATE_FIX),
     (r"_GUILDAsystem/@PowerNetwork/add_branch\.m", TEMPLATE_FIX),
+    (r"_GUILDAsystem/@Component/add_local_controller\.m", TEMPLATE_FIX),
+    (r"_GUILDAsystem/@PowerNetwork/add_global_controller\.m", TEMPLATE_FIX),
     (r"_GUILDAdoc/database/list_Classes\.js", DOC_FIX),
     (r"_GUILDAdoc/database/GUILDAsystem/.*", DOC_FIX),
     (r"_GUILDAdoc/database/GUILDAobject/.*", DOC_FIX),
