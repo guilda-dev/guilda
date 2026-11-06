@@ -175,7 +175,7 @@ function [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     end
 
     function build_stale(layer)
-        if layer.odefcn_stale()
+        if ~isempty(layer.sct_stale.odefcn) || ~isequal(layer.r_odefcnHz, layer.get_Hz())
             layer.build_odefcn();
         end
         for k = 1:numel(layer.a_LocalController)

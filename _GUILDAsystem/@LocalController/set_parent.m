@@ -9,7 +9,9 @@ function set_parent(obj,a_Component)
     obj.a_Component = a_Component;
     if ~isempty(a_Component)
         % the equilibrium follows the new parent, and the network frequency may differ
-        obj.mark_stale(["equilibrium","odefcn"], obj.s_tag + ": attached to " + a_Component.s_tag);
+        s_log = obj.s_tag + ": attached to " + a_Component.s_tag;
+        obj.sct_stale.equilibrium(end+1,1) = s_log;
+        obj.sct_stale.odefcn(end+1,1)      = s_log;
     end
     obj.resolve_observe();        % inputs read on the component (also of nested controllers)
 end

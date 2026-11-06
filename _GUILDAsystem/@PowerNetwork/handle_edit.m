@@ -5,43 +5,44 @@ function handle_edit(obj, a_layer, tag, log)
 % - At most one slack bus: a bus reports bus.l_isSlack = true as a "Slack" edit, and the
 %   network releases the others.
 % - The stale tag powerflow is marked for the edits that change the power flow:
-%     the network     base (baseMVA, told from Hz by Parameter.s_lastEdited), Topology
-%                     (buses and branches added, removed or replaced)
+%     the network     base (baseMVA), Topology (buses and branches added, removed or
+%                     replaced)
 %     a bus           dynamics (shunt), powerflow, Slack, Topology (components connected,
 %                     replaced or removed)
 %     a branch        dynamics
 %     a component     powerflow
-%   Other edits are ignored here (the components and controllers mark their own tags).
+% - The stale tag odefcn is marked for a Hz edit of the network (base, told from baseMVA
+%   by para_base.s_lastEdited): the edit does not reach the models, whose handles bind
+%   the frequency.
+% Other edits are ignored here (the components and controllers mark their own tags).
 %
 % <@Group> Called by analyses
     arguments (Input)
         obj
-        a_layer        % Edited layer (a Parameter container for a parameter edit).
+        a_layer        % Edited layer (the owner for a parameter edit).
         tag string     % Kind of edit (see LayerPackage.log_edit).
         log string     % Message of the edit.
     end
     if tag == "Slack"
         keep_one_slack(obj, a_layer);
     end
-    if changes_powerflow(obj, a_layer, tag)
-        obj.mark_stale("powerflow", log);
-    end
-end
-
-
-function l = changes_powerflow(obj, a_layer, tag)
-% True for the edits listed in the help
-    a_owner = a_layer.edit_owner();
-    if a_owner == obj
-        l = (tag == "base" && a_layer.s_lastEdited == "baseMVA") || tag == "Topology";
-    elseif isa(a_owner, "Bus")
-        l = matches(tag, ["dynamics","powerflow","Slack","Topology"]);
-    elseif isa(a_owner, "Branch")
-        l = tag == "dynamics";
-    elseif isa(a_owner, "Component")
-        l = tag == "powerflow" && isa(a_layer, "Parameter");
+    if a_layer == obj
+        if tag == "base" && obj.para_base.s_lastEdited == "Hz"
+            obj.sct_stale.odefcn(end+1,1) = log;
+            return
+        end
+        l_powerflow = matches(tag, ["base","Topology"]);
+    elseif isa(a_layer, "Bus")
+        l_powerflow = matches(tag, ["dynamics","powerflow","Slack","Topology"]);
+    elseif isa(a_layer, "Branch")
+        l_powerflow = tag == "dynamics";
+    elseif isa(a_layer, "Component")
+        l_powerflow = tag == "powerflow";
     else
-        l = false;
+        l_powerflow = false;
+    end
+    if l_powerflow
+        obj.sct_stale.powerflow(end+1,1) = log;
     end
 end
 

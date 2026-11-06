@@ -15,7 +15,7 @@ function build_odefcn(obj)
             % K stays for the old frequency: the equilibrium is stale, so the analyses ask
             % for net.initialize, which designs K again in get_equilibrium
             warning(msg("GUILDA:local_LQR:RedesignFailed", obj.s_tag, sprintf("%g", omega0), ME.message))
-            obj.mark_stale("equilibrium", obj.s_tag + ": redesign failed at " + omega0 + " Hz");
+            obj.sct_stale.equilibrium(end+1,1) = obj.s_tag + ": redesign failed at " + omega0 + " Hz";
         end
     end
 
@@ -36,5 +36,5 @@ function build_odefcn(obj)
     obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
     obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
     obj.r_odefcnHz = omega0;
-    obj.clear_stale("odefcn");
+    obj.sct_stale.odefcn = strings(0,1);
 end
