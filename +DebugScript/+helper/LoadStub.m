@@ -3,10 +3,10 @@ classdef LoadStub < component.load.abstract
 %
 %   ld = DebugScript.helper.LoadStub("2B003", nan, opt)
     properties (Constant)
-        key = "load-stub"  % 機器の種類のキー
-        sv_x = strings(0,1)  % 状態の名前
-        sv_u = strings(0,1)  % 入力の名前
-        sv_y = strings(0,1)  % 出力の名前
+        key = "load-stub"       % 機器の種類のキー
+        sv_x = strings(0,1)     % 状態の名前
+        sv_u = strings(0,1)     % 入力の名前
+        sv_y = strings(0,1)     % 出力の名前
         sv_para = strings(0,1)  % 動的パラメータの名前
     end
     methods

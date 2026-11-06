@@ -6,10 +6,10 @@ classdef ObserveStub < LocalController
 %
 % 状態も出力も持たず、入力 sv_u を与えた名前にする (予約語 "Xall" / "Yall" は付けるときに展開)。
     properties (SetAccess=protected, Hidden)
-        key = "local"  % 制御器の種類 ("local": AVR の位置に付ける)
-        sv_x = strings(0,1)  % 状態の名前
-        sv_u = strings(0,1)  % 入力の名前 (コンストラクタで与える。"Xall" / "Yall" は付けるときに展開)
-        sv_y = strings(0,1)  % 出力の名前
+        key = "local"           % 制御器の種類 ("local": AVR の位置に付ける)
+        sv_x = strings(0,1)     % 状態の名前
+        sv_u = strings(0,1)     % 入力の名前 (コンストラクタで与える。"Xall" / "Yall" は付けるときに展開)
+        sv_y = strings(0,1)     % 出力の名前
         sv_para = strings(0,1)  % 動的パラメータの名前
     end
     methods

@@ -34,15 +34,15 @@ classdef (Sealed = true) SolverODE < auxiliary
 % See also ResultODE, Scenario, PowerNetwork.simulate
 
     properties (Access=public) % Settings
-        Solver matlab.ode.SolverID = "ode15s"  % Solver of the MATLAB ode object; the DAE needs a solver for DAEs (ode15s, ode23t).
-        SolverOptions matlab.ode.Options = matlab.ode.options.ODE15s  % Options of the solver (SolverOptions of ode), e.g. MaxStep; its class must match Solver.
+        Solver matlab.ode.SolverID = "ode15s"                                                                          % Solver of the MATLAB ode object; the DAE needs a solver for DAEs (ode15s, ode23t).
+        SolverOptions matlab.ode.Options = matlab.ode.options.ODE15s                                                   % Options of the solver (SolverOptions of ode), e.g. MaxStep; its class must match Solver.
         RelativeTolerance (1,1) double {mustBePositive, mustBeBetween(RelativeTolerance,1e-15,1e-3, "closed")} = 1e-4  % Relative error tolerance of the integration (Name-Value option Tolerance).
         AbsoluteTolerance (1,1) double {mustBePositive, mustBeBetween(AbsoluteTolerance,1e-15,1e-3, "closed")} = 1e-6  % Absolute error tolerance of the integration (Name-Value option AbsoluteTolerance).
-        SeparateComplexParts matlab.lang.OnOffSwitchState = "off"  % SeparateComplexParts property of the ode object.
-        Progress (1,1) string {mustBeMember(Progress,["none","disp","dialog"])} = "dialog"  % Progress display: "dialog" (a waitbar), "disp" (a text bar) or "none".
-        TimeLimit (1,1) double {mustBePositive} = Inf  % [s] Limit of the wall-clock time of the whole run (Inf: none; see the class help).
-        Verbose (1,1) logical = false  % Print the phases before the integration and the outcome (output.message) after it.
-        Plot (1,1) logical = false  % Call result.Plot() after each simulation.
+        SeparateComplexParts matlab.lang.OnOffSwitchState = "off"                                                      % SeparateComplexParts property of the ode object.
+        Progress (1,1) string {mustBeMember(Progress,["none","disp","dialog"])} = "dialog"                             % Progress display: "dialog" (a waitbar), "disp" (a text bar) or "none".
+        TimeLimit (1,1) double {mustBePositive} = Inf                                                                  % [s] Limit of the wall-clock time of the whole run (Inf: none; see the class help).
+        Verbose (1,1) logical = false                                                                                  % Print the phases before the integration and the outcome (output.message) after it.
+        Plot (1,1) logical = false                                                                                     % Call result.Plot() after each simulation.
     end
 
     properties (Constant) % Settings
@@ -55,15 +55,15 @@ classdef (Sealed = true) SolverODE < auxiliary
             "TimeLimit",            "TimeLimit", ...
             "Progress",             {{"Progress", @(v) SolverODE.progress_mode(v)}}, ...
             "Verbose",              "Verbose", ...
-            "Plot",                 "Plot")  % Name-Value options of net.simulate and the property each one sets (see the class help). <@Type> struct
+            "Plot",                 "Plot")                                                                            % Name-Value options of net.simulate and the property each one sets (see the class help). <@Type> struct
     end
 
     properties (Dependent, Hidden) % Compatibility
-        Reporter  % COMPAT(v3) old name of Progress (v3_ode_reporter)
+        Reporter                                                                                                       % COMPAT(v3) old name of Progress (v3_ode_reporter)
     end
 
     properties (SetAccess=private, Hidden) % Version
-        Ver (1,1) double = 2.0  % Version of this class.
+        Ver (1,1) double = 2.0                                                                                         % Version of this class.
     end
 
     methods

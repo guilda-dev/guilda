@@ -26,18 +26,18 @@ classdef (Abstract) ResultBase < auxiliary
 % See also ResultPF, ResultOPF, ResultCPF, ResultLIN, ResultODE
 
     properties (SetAccess=protected) % Result
-        flag = false  % Success or convergence flag (second output): logical, or a numeric exit flag positive on success. <@Type> logical or double
-        output struct = struct()  % Solver details, as returned by the analysis (third output).
-        options struct = struct()  % Effective settings: the stored defaults of net.solver_* with the Name-Value overrides applied.
-        s_solver (1,1) string = ""  % Class name of the solver object that ran the analysis.
+        flag = false                  % Success or convergence flag (second output): logical, or a numeric exit flag positive on success. <@Type> logical or double
+        output struct = struct()      % Solver details, as returned by the analysis (third output).
+        options struct = struct()     % Effective settings: the stored defaults of net.solver_* with the Name-Value overrides applied.
+        s_solver (1,1) string = ""    % Class name of the solver object that ran the analysis.
         r_elapsed (1,1) double = NaN  % [s] Elapsed time of the analysis.
-        s_network (1,1) string = ""  % Tag of the analysed network at the time of the analysis.
+        s_network (1,1) string = ""   % Tag of the analysed network at the time of the analysis.
     end
     properties (SetAccess=protected, Hidden) % Network
-        a_PowerNetwork = []  % Analysed network: a reference, not a copy (it may have been edited since). <@Type> PowerNetwork (1x1 or empty)
+        a_PowerNetwork = []           % Analysed network: a reference, not a copy (it may have been edited since). <@Type> PowerNetwork (1x1 or empty)
     end
     properties (Dependent) % Result
-        l_success  % True when the analysis succeeded (see is_success). <@Type> logical
+        l_success                     % True when the analysis succeeded (see is_success). <@Type> logical
     end
 
     methods

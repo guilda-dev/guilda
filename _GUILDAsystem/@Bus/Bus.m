@@ -43,37 +43,37 @@ classdef Bus < PowerSystemModel
 
     %% Properties
     properties (Dependent) % Power Flow
-        s_bustype  % Power-flow type of the bus: "slack", "PV" or "PQ" (from get_pf_set).
-        c_Iequilibrium  % [pu] Current injection at the equilibrium: sum of the component currents (0 without components).
+        s_bustype                         % Power-flow type of the bus: "slack", "PV" or "PQ" (from get_pf_set).
+        c_Iequilibrium                    % [pu] Current injection at the equilibrium: sum of the component currents (0 without components).
     end
     properties % Power Flow
         l_isSlack (1,1) logical = false;  % True for the slack bus (at most one per network; setting it requires a component). <@Stale> powerflow
     end
     properties (Access={?SolverODE}) % Simulation working data
-        l_isFault (1,1) logical = false  % True while an active fault of a scenario is applied at the bus (simulation working data).
+        l_isFault (1,1) logical = false   % True while an active fault of a scenario is applied at the bus (simulation working data).
     end
 
     properties (SetAccess=protected) % Layer Structure
-        a_PowerNetwork  % PowerNetwork the bus belongs to ([] when removed).
-        a_Component (:,1) = cell(0,1)  % Components connected to the bus. <@Stale> powerflow
-        c_Vequilibrium = 1;  % [pu] Voltage phasor at the equilibrium (owned by the bus; components and controllers read it).
+        a_PowerNetwork                    % PowerNetwork the bus belongs to ([] when removed).
+        a_Component (:,1) = cell(0,1)     % Components connected to the bus. <@Stale> powerflow
+        c_Vequilibrium = 1;               % [pu] Voltage phasor at the equilibrium (owned by the bus; components and controllers read it).
     end
     properties (SetAccess=protected) % OPF
-        f_opfcost = []  % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the bus ([]: none). <@Stale> nothing
-        f_opfconst = []  % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing
-        l_opfdefault = true  % Whether the default OPF constraints of the bus are kept (DefaultConstraint of set_opffcn). <@Stale> nothing
+        f_opfcost = []                    % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the bus ([]: none). <@Stale> nothing
+        f_opfconst = []                   % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing
+        l_opfdefault = true               % Whether the default OPF constraints of the bus are kept (DefaultConstraint of set_opffcn). <@Stale> nothing
     end
     properties (Dependent, Access=protected) % Layer Structure
-        parent  % Parent in the layer structure: the network.
-        children  % Children in the layer structure: the components, then the Parameter objects.
+        parent                            % Parent in the layer structure: the network.
+        children                          % Children in the layer structure: the components, then the Parameter objects.
     end
     properties (SetAccess={?SolverODE, ?Component}, Hidden) % Simulation working data
-        iv_odeX = zeros(0,1);  % Positions of the bus voltage [Vre; Vim] in the simulation vector.
-        iv_odeI = zeros(0,1);  % Positions of the bus current [Ire; Iim] in the simulation vector.
-        iv_odeU = zeros(0,1);  % Not set by the simulation (a bus has no inputs).
+        iv_odeX = zeros(0,1);             % Positions of the bus voltage [Vre; Vim] in the simulation vector.
+        iv_odeI = zeros(0,1);             % Positions of the bus current [Ire; Iim] in the simulation vector.
+        iv_odeU = zeros(0,1);             % Not set by the simulation (a bus has no inputs).
     end
     properties (SetAccess={?SolverCPF}) % Continuation Power Flow
-        iv_CPFV = zeros(0,1)  % Indices of the bus voltage in the CPF variable vector (CPF working data).
+        iv_CPFV = zeros(0,1)              % Indices of the bus voltage in the CPF variable vector (CPF working data).
     end
 
 %% Constructor

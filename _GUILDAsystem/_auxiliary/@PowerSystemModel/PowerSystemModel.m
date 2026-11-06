@@ -15,7 +15,7 @@ classdef PowerSystemModel < LayerPackage
 % See also auxiliary, LayerPackage, Parameter
 
     properties(Dependent) % Parameter
-        tab_parameter  % Parameter table: the a_Parameter tables side by side; writing it writes the changed parameters. <@Type> table
+        tab_parameter                       % Parameter table: the a_Parameter tables side by side; writing it writes the changed parameters. <@Type> table
     end
     properties(SetAccess=protected, Hidden) % Parameter
         a_Parameter (:,1) cell = cell(0,1)  % Parameter containers, one per column of tab_parameter (column name: the s_tag of the container). <@Type> Parameter cell array (Nx1)

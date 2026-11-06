@@ -44,12 +44,46 @@ classdef GlobalController < PowerSystemModel
 % See also PowerNetwork.add_global_controller, controller.agc.broadcast_PI_AGC, LocalController
 
     properties(Abstract, Constant, Hidden=true) % Subclass contract
-        key (1,1) string  % Kind of controller.
-        sv_x (:,1) string  % Names of the states.
-        sv_u (:,1) string  % Names of the inputs (states of the controlled units).
-        sv_y (:,1) string  % Names of the outputs (inputs of the controlled units).
-        sv_para (:,1) string  % Names of the dynamic parameters passed to the model functions.
+        key (1,1) string                           % Kind of controller.
+        sv_x (:,1) string                          % Names of the states.
+        sv_u (:,1) string                          % Names of the inputs (states of the controlled units).
+        sv_y (:,1) string                          % Names of the outputs (inputs of the controlled units).
+        sv_para (:,1) string                       % Names of the dynamic parameters passed to the model functions.
     end
+
+    properties(SetAccess=protected) % Cached function handles
+        f_Mass                                     % Mass matrix function @(t,x,V,I,u) with the parameters bound.
+        f_dx                                       % State equation function @(t,x,V,I,u) with the parameters bound.
+        f_Y                                        % Output function @(t,x,V,I,u) with the parameters bound.
+        f_JacobiDx                                 % Jacobian function of f_dx.
+        f_JacobiY                                  % Jacobian function of f_Y.
+    end
+    properties (SetAccess=protected) % Layer Structure
+        a_PowerNetwork                             % PowerNetwork the controller belongs to (set by add_global_controller).
+    end
+    properties (SetAccess=protected, Hidden) % Layer Structure
+        controlledUnits                            % Controlled components, in the order given to the constructor.
+    end
+    properties (SetAccess={?SolverODE}, Hidden) % Simulation working data
+        iv_odeX (:,1) double = zeros(0,1);         % Positions of the states in the simulation vector.
+        iv_odeU (:,1) double = zeros(0,1);         % Positions of the observed unit states (the inputs) in the simulation vector.
+        iv_odeY (:,1) double = zeros(0,1);         % Positions of the driven unit inputs (the outputs) in the simulation vector.
+        rv_Xoffset = 0                             % State offset added to the initial state (0 for a global controller).
+        rv_Uoffset = @(t) 0                        % Input change over time (zero for a global controller).
+        l_isConnect (1,1) logical = true           % False while an active trip of a scenario names the controller (set by SolverODE); its output is then zero.
+    end
+    properties(SetAccess=protected, Hidden) % Cached function handles
+        r_odefcnHz double = []                     % [Hz] Network frequency bound into the f_* handles (empty: never built).
+    end
+    properties(SetAccess=protected) % Steady State
+        rv_Xequilibrium (:,1) double = zeros(0,1)  % State equilibrium (from get_equilibrium, set by PowerNetwork.initialize).
+        rv_Uequilibrium (:,1) double = zeros(0,1)  % Equilibrium of the observed states, one entry per input of each unit.
+    end
+    properties(Dependent, Access=protected) % Layer Structure
+        parent                                     % Parent in the layer structure: the network.
+        children                                   % Children in the layer structure: none.
+    end
+
     methods (Abstract)
         % Return the state and input equilibria of the controller.
         %
@@ -74,39 +108,6 @@ classdef GlobalController < PowerSystemModel
         % It must be constant: simulate calls it with empty t, x, V, I and u.
         M  = fcn_Mass(t, x, V, I, u, param, omega0)
     end       
-
-    properties(SetAccess=protected) % Cached function handles
-        f_Mass  % Mass matrix function @(t,x,V,I,u) with the parameters bound.
-        f_dx  % State equation function @(t,x,V,I,u) with the parameters bound.
-        f_Y  % Output function @(t,x,V,I,u) with the parameters bound.
-        f_JacobiDx  % Jacobian function of f_dx.
-        f_JacobiY  % Jacobian function of f_Y.
-    end
-    properties (SetAccess=protected) % Layer Structure
-        a_PowerNetwork  % PowerNetwork the controller belongs to (set by add_global_controller).
-    end
-    properties (SetAccess=protected, Hidden) % Layer Structure
-        controlledUnits  % Controlled components, in the order given to the constructor.
-    end
-    properties (SetAccess={?SolverODE}, Hidden) % Simulation working data
-        iv_odeX (:,1) double = zeros(0,1);  % Positions of the states in the simulation vector.
-        iv_odeU (:,1) double = zeros(0,1);  % Positions of the observed unit states (the inputs) in the simulation vector.
-        iv_odeY (:,1) double = zeros(0,1);  % Positions of the driven unit inputs (the outputs) in the simulation vector.
-        rv_Xoffset = 0  % State offset added to the initial state (0 for a global controller).
-        rv_Uoffset = @(t) 0  % Input change over time (zero for a global controller).
-        l_isConnect (1,1) logical = true  % False while an active trip of a scenario names the controller (set by SolverODE); its output is then zero.
-    end
-    properties(SetAccess=protected, Hidden) % Cached function handles
-        r_odefcnHz double = []  % [Hz] Network frequency bound into the f_* handles (empty: never built).
-    end
-    properties(SetAccess=protected) % Steady State
-        rv_Xequilibrium (:,1) double = zeros(0,1)  % State equilibrium (from get_equilibrium, set by PowerNetwork.initialize).
-        rv_Uequilibrium (:,1) double = zeros(0,1)  % Equilibrium of the observed states, one entry per input of each unit.
-    end
-    properties(Dependent, Access=protected) % Layer Structure
-        parent  % Parent in the layer structure: the network.
-        children  % Children in the layer structure: none.
-    end
 
     methods
         function obj = GlobalController(net, tag, varargin)

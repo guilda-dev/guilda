@@ -27,17 +27,17 @@ classdef SolverOPF < auxiliary
 % See also ResultOPF, PowerNetwork.optimize_powerflow, PowerNetwork.set_opffcn
 
     properties(Access=public) % Settings
-        Method (1,1) string {mustBeMember(Method,["ELD","DC OPF","AC OPF"])} = "AC OPF"  % Formulation of the problem: "ELD", "DC OPF" or "AC OPF" (see the class help).
-        Solver (1,1) string {mustBeMember(Solver,["auto","linprog","quadprog","fmincon"])} = "auto"  % Optimization solver; "auto" uses the one that solve (Optimization Toolbox) chooses.
-        Algorithm_linprog (1,1) string = "dual-simplex-highs"  % Algorithm option of linprog.
-        Algorithm_quadprog (1,1) string = "interior-point-convex"  % Algorithm option of quadprog.
-        Algorithm_fmincon (1,1) string = "interior-point"  % Algorithm option of fmincon.
+        Method (1,1) string {mustBeMember(Method,["ELD","DC OPF","AC OPF"])} = "AC OPF"                                                                         % Formulation of the problem: "ELD", "DC OPF" or "AC OPF" (see the class help).
+        Solver (1,1) string {mustBeMember(Solver,["auto","linprog","quadprog","fmincon"])} = "auto"                                                             % Optimization solver; "auto" uses the one that solve (Optimization Toolbox) chooses.
+        Algorithm_linprog (1,1) string = "dual-simplex-highs"                                                                                                   % Algorithm option of linprog.
+        Algorithm_quadprog (1,1) string = "interior-point-convex"                                                                                               % Algorithm option of quadprog.
+        Algorithm_fmincon (1,1) string = "interior-point"                                                                                                       % Algorithm option of fmincon.
         Display (1,1) string {mustBeMember(Display,["default","none","iter","iter-detailed","final","final-detailed","notify","notify-detailed"])} = "default"  % Display option of the solver; "default" keeps the default of the solver.
-        MaxIteration (1,1) double = NaN  % MaxIterations option of the solver; NaN keeps the default of the solver.
-        OptimalityTolerance (1,1) double = NaN  % OptimalityTolerance option of the solver; NaN keeps the default of the solver.
-        StepTolerance (1,1) double = NaN  % StepTolerance option of the solver; NaN keeps the default.
-        MaxFunctionEvaluations (1,1) double = NaN  % MaxFunctionEvaluations option of the solver; NaN keeps the default.
-        UseParallel (1,1) logical = false  % UseParallel option of fmincon (other solvers ignore it).
+        MaxIteration (1,1) double = NaN                                                                                                                         % MaxIterations option of the solver; NaN keeps the default of the solver.
+        OptimalityTolerance (1,1) double = NaN                                                                                                                  % OptimalityTolerance option of the solver; NaN keeps the default of the solver.
+        StepTolerance (1,1) double = NaN                                                                                                                        % StepTolerance option of the solver; NaN keeps the default.
+        MaxFunctionEvaluations (1,1) double = NaN                                                                                                               % MaxFunctionEvaluations option of the solver; NaN keeps the default.
+        UseParallel (1,1) logical = false                                                                                                                       % UseParallel option of fmincon (other solvers ignore it).
     end
 
     properties(Constant) % Settings
@@ -46,7 +46,7 @@ classdef SolverOPF < auxiliary
             "Solver",       "Solver", ...
             "Tolerance",    "OptimalityTolerance", ...
             "MaxIteration", "MaxIteration", ...
-            "Verbose",      {{"Display", @(l) replace(string(logical(l)), ["true","false"], ["iter","none"])}})  % Name-Value options of net.optimize_powerflow and the property each one sets (see the class help). <@Type> struct
+            "Verbose",      {{"Display", @(l) replace(string(logical(l)), ["true","false"], ["iter","none"])}})                                                 % Name-Value options of net.optimize_powerflow and the property each one sets (see the class help). <@Type> struct
     end
 
     methods

@@ -9,11 +9,11 @@ classdef Inverter < Component
     properties(SetAccess=protected)
         Sbase = 1;
         Vbase = 1;
-        Ibase = nan; % - 
-        Zbase = nan; % |
-        Ybase = nan; % | Calculated when Sbase and Vbase are set
-        Cbase = nan; % |
-        Lbase = nan; % -
+        Ibase = nan;     % - 
+        Zbase = nan;     % |
+        Ybase = nan;     % | Calculated when Sbase and Vbase are set
+        Cbase = nan;     % |
+        Lbase = nan;     % -
     end
 
     methods

@@ -17,14 +17,14 @@ classdef (Sealed = true) NewtonRaphsonMethod < auxiliary
 % See also SolverCPF
     
     properties (Access=public) % Equation
-        NRMFcn  % Function F of the equation F(x) = b: a function handle or a symbolic expression. <@Type> function_handle | sym
-        NRMJac  % Jacobian of NRMFcn; computed by numerical differentiation when not given. <@Type> function_handle
-        NRMVal  % Right-hand side b of F(x) = b; zeros (F(x) = 0) when not given. <@Type> double (n x 1)
-        ConvTol (1,1) double = GUILDA.config("NewtonRaphsonMethod","ConvTol");  % Absolute tolerance of the step dx for convergence.
-        MaxIter (1,1) double = GUILDA.config("NewtonRaphsonMethod","MaxIter");  % Maximum number of iterations (a warning when reached).
-        InitVal (:,1) double = GUILDA.config("NewtonRaphsonMethod","InitVal");  % Initial value of x.
+        NRMFcn                                                                      % Function F of the equation F(x) = b: a function handle or a symbolic expression. <@Type> function_handle | sym
+        NRMJac                                                                      % Jacobian of NRMFcn; computed by numerical differentiation when not given. <@Type> function_handle
+        NRMVal                                                                      % Right-hand side b of F(x) = b; zeros (F(x) = 0) when not given. <@Type> double (n x 1)
+        ConvTol (1,1) double = GUILDA.config("NewtonRaphsonMethod","ConvTol");      % Absolute tolerance of the step dx for convergence.
+        MaxIter (1,1) double = GUILDA.config("NewtonRaphsonMethod","MaxIter");      % Maximum number of iterations (a warning when reached).
+        InitVal (:,1) double = GUILDA.config("NewtonRaphsonMethod","InitVal");      % Initial value of x.
         Increment (1,1) double = GUILDA.config("NewtonRaphsonMethod","Increment");  % Step of the numerical differentiation.
-        StepSize (1,1) double = GUILDA.config("NewtonRaphsonMethod","StepSize");  % Factor of the update x = x - StepSize*dx; large values may not converge.
+        StepSize (1,1) double = GUILDA.config("NewtonRaphsonMethod","StepSize");    % Factor of the update x = x - StepSize*dx; large values may not converge.
     end
     
     methods

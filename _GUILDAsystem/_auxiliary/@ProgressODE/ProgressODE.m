@@ -7,8 +7,8 @@ classdef ProgressODE < auxiliary
 %
 % See also SolverODE
     properties % Display
-        message (1,1) string = "|"  % Text printed at the end of the phase (the outcome of the phase).
-        timeoffset (1,1) double = 0  % [s] Start time of the current phase (ode times start at 0).
+        message (1,1) string = "|"      % Text printed at the end of the phase (the outcome of the phase).
+        timeoffset (1,1) double = 0     % [s] Start time of the current phase (ode times start at 0).
     end
     
     properties(SetAccess=protected) % Callbacks
@@ -16,16 +16,16 @@ classdef ProgressODE < auxiliary
     end
 
     properties%(Access=protected) % State
-        mode  % Display mode: "none", "disp" or "dialog".
-        timelimit  % [s] Limit of the wall-clock time of the whole run.
-        tlim  % [s] Simulation time [t0, tend].
-        tspan  % [s] Length of the simulation time.
-        tlast  % [s] Time of the last update of the display.
-        phase = 0;  % Number of the current phase.
-        last_warn  % Last warning when the display was drawn.
-        start_time  % Value of tic at the start of the run (time keeper).
-        ToBeContinue = true;  % False when the run exceeded timelimit.
-        dialog = nan;  % Waitbar figure (mode "dialog").
+        mode                            % Display mode: "none", "disp" or "dialog".
+        timelimit                       % [s] Limit of the wall-clock time of the whole run.
+        tlim                            % [s] Simulation time [t0, tend].
+        tspan                           % [s] Length of the simulation time.
+        tlast                           % [s] Time of the last update of the display.
+        phase = 0;                      % Number of the current phase.
+        last_warn                       % Last warning when the display was drawn.
+        start_time                      % Value of tic at the start of the run (time keeper).
+        ToBeContinue = true;            % False when the run exceeded timelimit.
+        dialog = nan;                   % Waitbar figure (mode "dialog").
     end
 
     methods

@@ -34,20 +34,20 @@ classdef SolverLIN < auxiliary
 % See also ResultLIN, PowerNetwork.linearize, PowerNetwork.get_sys
 
     properties (Access=public) % Settings
-        Algorithm (1,1) string {mustBeMember(Algorithm, ["Kron","Feedback","DAE"])} = "Feedback"  % Reduction of result.get_ss() and net.get_sys: "Kron", "Feedback" or "DAE" (see the class help).
-        Point = []  % Point of the linearization: [] (equilibrium), a vector in variable-map order, or {sim, t} (see the class help). <@Type> [] | double vector | cell
+        Algorithm (1,1) string {mustBeMember(Algorithm, ["Kron","Feedback","DAE"])} = "Feedback"             % Reduction of result.get_ss() and net.get_sys: "Kron", "Feedback" or "DAE" (see the class help).
+        Point = []                                                                                           % Point of the linearization: [] (equilibrium), a vector in variable-map order, or {sim, t} (see the class help). <@Type> [] | double vector | cell
         Coordinate (1,1) string {mustBeMember(Coordinate, ["theta&V","theta&rho","Vre&Vim"])} = "theta&rho"  % Bus variables of the "DAE" reduction: "theta&rho", "theta&V" or "Vre&Vim" (see the class help).
     end
 
     properties (Hidden) % Compatibility
-        NonUnit (1,:) double {mustBeInteger, mustBePositive} = zeros(1,0)  % COMPAT(v3) retired (v3_solver_nonunit)
+        NonUnit (1,:) double {mustBeInteger, mustBePositive} = zeros(1,0)                                    % COMPAT(v3) retired (v3_solver_nonunit)
     end
 
     properties (Constant) % Settings
         OptionMap = struct( ...
             "Algorithm", "Algorithm", ...
             "Point",     "Point", ...
-            "Coordinate", "Coordinate")  % Name-Value options of net.linearize / net.get_sys and the property each one sets. <@Type> struct
+            "Coordinate", "Coordinate")                                                                      % Name-Value options of net.linearize / net.get_sys and the property each one sets. <@Type> struct
     end
 
     methods

@@ -48,21 +48,21 @@ classdef ResultODE < ResultBase
 % See also SolverODE, Scenario, ResultBase, PowerNetwork.get_variable_map
 
     properties (SetAccess=private) % Result
-        rv_t (:,1) double = zeros(0,1)  % [s] Output times, ascending; a phase boundary appears twice (end of one phase, start of the next).
-        tab_variable table = table()  % Variable map at the time of the simulation: its rows are the columns of rm_variable. <@Type> table ((n_x + n_v + n_u) x 6)
-        rm_variable double = zeros(0,0)  % Trajectory of all variables: row k at rv_t(k), column m the variable tab_variable(m,:). <@Type> double (n_t x (n_x + n_v + n_u))
-        rm_I double = zeros(0,0)  % [pu] Currents injected into the buses: Ireal, Iimag of each bus in the order of sv_bus. <@Type> double (n_t x 2 n_bus)
+        rv_t (:,1) double = zeros(0,1)      % [s] Output times, ascending; a phase boundary appears twice (end of one phase, start of the next).
+        tab_variable table = table()        % Variable map at the time of the simulation: its rows are the columns of rm_variable. <@Type> table ((n_x + n_v + n_u) x 6)
+        rm_variable double = zeros(0,0)     % Trajectory of all variables: row k at rv_t(k), column m the variable tab_variable(m,:). <@Type> double (n_t x (n_x + n_v + n_u))
+        rm_I double = zeros(0,0)            % [pu] Currents injected into the buses: Ireal, Iimag of each bus in the order of sv_bus. <@Type> double (n_t x 2 n_bus)
         sv_bus (:,1) string = strings(0,1)  % Bus tags, in the order of odeResults.Bus.
         c_component (:,1) cell = cell(0,1)  % Component tags of each bus, in the order of odeResults.Bus(i).Component.
     end
 
     properties (Dependent) % Result
-        odeResults  % Trajectories per bus and component: a view of rv_t, rm_variable and rm_I (see the class help). <@Type> struct (1x1)
+        odeResults                          % Trajectories per bus and component: a view of rv_t, rm_variable and rm_I (see the class help). <@Type> struct (1x1)
     end
 
     properties (Access=private, Hidden) % Internal state
-        c_index (:,1) cell = cell(0,1)  % Columns of rm_variable for odeResults: c_index{i}.iv_V, .c_x{j} and .c_u{j} of component j of bus i. <@Type> cell of struct (n_bus x 1)
-        sct_view struct = struct([])  % odeResults, built on first access. <@Type> struct (0x0 or 1x1)
+        c_index (:,1) cell = cell(0,1)      % Columns of rm_variable for odeResults: c_index{i}.iv_V, .c_x{j} and .c_u{j} of component j of bus i. <@Type> cell of struct (n_bus x 1)
+        sct_view struct = struct([])        % odeResults, built on first access. <@Type> struct (0x0 or 1x1)
     end
 
     methods

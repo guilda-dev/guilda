@@ -34,11 +34,33 @@ classdef Branch < PowerSystemModel
 %
 % See also PowerNetwork.add_branch, branch.pi, Bus
 
-%% Abstract Methods/Properties
+%% Abstract Properties
     properties(Abstract, Constant) % Subclass contract
-        key  % Branch type, e.g. "pi": the Type of PowerNetwork.add_branch (running GUILDA regenerates its key list).
-        header  % Tag prefix of branches of this type, e.g. "EL" for lines and "ET" for transformers.
+        key                  % Branch type, e.g. "pi": the Type of PowerNetwork.add_branch (running GUILDA regenerates its key list).
+        header               % Tag prefix of branches of this type, e.g. "EL" for lines and "ET" for transformers.
     end
+
+%% Properties
+    properties(SetAccess=protected) % Layer Structure
+        a_PowerNetwork       % PowerNetwork the branch belongs to ([] when removed). <@Type> PowerNetwork
+        a_Bus                % End buses {from; to}: the row and column order of the admittance matrix. <@Type> cell of Bus (2x1)
+    end
+    properties(SetAccess=protected) % OPF
+        f_opfcost = []       % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the branch ([]: none). <@Stale> nothing
+        f_opfconst = []      % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing
+        l_opfdefault = true  % Whether the default OPF constraints of the branch are kept (DefaultConstraint of set_opffcn). <@Stale> nothing
+    end
+    properties(Dependent) % Parameter
+        cv_Vequilibrium      % [pu] Voltage phasors of the end buses at the equilibrium. <@Type> double
+        cv_Iequilibrium      % [pu] Currents into the branch at its ends at the equilibrium: get_admittance_matrix() * cv_Vequilibrium. <@Type> double
+    end
+
+    properties(Dependent, Access=protected) % Layer Structure
+        parent               % Parent in the layer structure: the network.
+        children             % Children in the layer structure: the Parameter objects.
+    end
+
+%% Abstract Methods
     methods(Abstract)
         % Return the 2x2 admittance matrix of the branch.
         %
@@ -46,26 +68,6 @@ classdef Branch < PowerSystemModel
         % injected into the branch at those ends, in per unit. It reads tab_parameter.dynamics and
         % must not read or change anything else.
         Ymat = get_admittance_matrix(obj)
-    end
-
-%% Properties
-    properties(SetAccess=protected) % Layer Structure
-        a_PowerNetwork  % PowerNetwork the branch belongs to ([] when removed). <@Type> PowerNetwork
-        a_Bus  % End buses {from; to}: the row and column order of the admittance matrix. <@Type> cell of Bus (2x1)
-    end
-    properties(SetAccess=protected) % OPF
-        f_opfcost = []  % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the branch ([]: none). <@Stale> nothing
-        f_opfconst = []  % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing
-        l_opfdefault = true  % Whether the default OPF constraints of the branch are kept (DefaultConstraint of set_opffcn). <@Stale> nothing
-    end
-    properties(Dependent) % Parameter
-        cv_Vequilibrium  % [pu] Voltage phasors of the end buses at the equilibrium. <@Type> double
-        cv_Iequilibrium  % [pu] Currents into the branch at its ends at the equilibrium: get_admittance_matrix() * cv_Vequilibrium. <@Type> double
-    end
-
-    properties(Dependent, Access=protected) % Layer Structure
-        parent  % Parent in the layer structure: the network.
-        children  % Children in the layer structure: the Parameter objects.
     end
 
 %% Constructor

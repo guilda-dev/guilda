@@ -28,10 +28,10 @@ classdef ResultPF < ResultBase
 % See also SolverPF, ResultBase
 
     properties (SetAccess=private) % Result
-        tab_bus table = table()  % Bus values, one row per bus: Varg [rad], V [pu], P, Q (injections into the network) [pu], Vphasor, Iphasor [pu].
-        tab_branch table = table()  % Branch flows, one row per branch: Pfrom, Qfrom, Pto, Qto, Ifrom, Ito, Ploss, Qloss [pu] (see the class help).
+        tab_bus table = table()          % Bus values, one row per bus: Varg [rad], V [pu], P, Q (injections into the network) [pu], Vphasor, Iphasor [pu].
+        tab_branch table = table()       % Branch flows, one row per branch: Pfrom, Qfrom, Pto, Qto, Ifrom, Ito, Ploss, Qloss [pu] (see the class help).
         cm_Vhistory double = zeros(0,0)  % [pu] Bus voltage phasors, one row per bus (tab_bus order), one column per iteration or output time.
-        rv_step double = zeros(1,0)  % Iteration numbers ("algebraic") or times [s] ("dynamic") of cm_Vhistory.
+        rv_step double = zeros(1,0)      % Iteration numbers ("algebraic") or times [s] ("dynamic") of cm_Vhistory.
     end
 
     methods

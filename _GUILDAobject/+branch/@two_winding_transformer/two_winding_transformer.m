@@ -19,7 +19,7 @@ classdef two_winding_transformer < Branch
 % See also branch.pi_transformer, PowerNetwork.add_branch
 
     properties(Constant) % Identification
-        header = "ET"  % Tag prefix of this branch type ("ET" for transformers).
+        header = "ET"                    % Tag prefix of this branch type ("ET" for transformers).
         key = "two_winding_transformer"  % Type name used by PowerNetwork.add_branch.
     end
 
