@@ -42,7 +42,7 @@ classdef Branch < PowerSystemModel
 
 %% Properties
     properties(SetAccess={?PowerNetwork}) % Layer Structure
-        a_PowerNetwork = []           % PowerNetwork the branch belongs to ([] when removed). <@Type> PowerNetwork (1x1 or empty)
+        a_PowerNetwork = []           % PowerNetwork the branch belongs to ([] when removed). <@Type> PowerNetwork
         a_Bus (:,1) cell = cell(0,1)  % End buses {from; to}: the row and column order of the admittance matrix (empty when removed). <@Type> cell of Bus (2x1)
     end
     properties(SetAccess=protected) % OPF

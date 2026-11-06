@@ -76,7 +76,7 @@ classdef (Sealed = true) Scenario < auxiliary
     end
 
     properties (SetAccess={?PowerNetwork}) % Layer Structure
-        a_PowerNetwork = []                                  % PowerNetwork the scenario belongs to (set by net.add_scenario; [] when not attached). <@Type> PowerNetwork (1x1 or empty)
+        a_PowerNetwork = []                                  % PowerNetwork the scenario belongs to (set by net.add_scenario; [] when not attached). <@Type> PowerNetwork
     end
 
     properties (SetAccess=private) % Disturbances
