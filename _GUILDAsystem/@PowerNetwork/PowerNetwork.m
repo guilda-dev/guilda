@@ -134,10 +134,10 @@ classdef PowerNetwork < PowerSystemModel
             obj.sct_stale = struct("powerflow", obj.s_notInitialized, "odefcn", obj.s_notInitialized);
             % tab_parameter column base: Hz [Hz]: nominal frequency, read with get_Hz() and
             % passed as omega0; baseMVA [MVA]: system base of all per-unit values (default 100)
-            a_Pb = Parameter(obj,"base");
+            a_Pb = Parameter(obj, "base", struct( ...
+                     "Hz", GUILDA.config("Model","Hz"), ...
+                "baseMVA", 100));
             obj.a_Parameter = {a_Pb};
-            a_Pb.add_entry(     "Hz", GUILDA.config("Model","Hz"), "double",...
-                           "baseMVA", 100                        , "double");
             obj.reset_solver;
         end
     end
@@ -191,8 +191,6 @@ classdef PowerNetwork < PowerSystemModel
         % IO
         net = import_csv(path, opt)
         net = import_matpower(mpc, opt)
-
-        obj = loadobj(obj)
     end
     methods(Access=protected)
         % Edit handling: the one-slack-bus rule and the stale tag powerflow

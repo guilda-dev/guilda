@@ -28,8 +28,8 @@ function [prob, x0, const, Vvar] = build_opf_problem(obj, prob, x0, const, Vvar,
     str = string(obj);
     switch option.methods
         case "AC OPF"
-            opf  = obj.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", obj.a_Parameter)};   % initial point (Varg0, V0)
-            ope  = obj.a_Parameter{cellfun(@(p) p.s_tag=="operation", obj.a_Parameter)};
+            opf  = obj.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", obj.a_Parameter)}.tab_parameter;   % initial point (Varg0, V0)
+            ope  = obj.a_Parameter{cellfun(@(p) p.s_tag=="operation", obj.a_Parameter)}.tab_parameter;
             Vlim = [ope.Vmin; ope.Vmax];
             if ~obj.l_opfdefault   % set_opffcn: no default voltage bounds
                 Vlim = [-inf; inf];
@@ -41,14 +41,14 @@ function [prob, x0, const, Vvar] = build_opf_problem(obj, prob, x0, const, Vvar,
         
             x0.(str) = [opf.Varg0;opf.V0];
 
-            Gshunt = obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.Gshunt;
+            Gshunt = obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.tab_parameter.Gshunt;
             if Gshunt~=0
                 const.(Convar(1)) = - var("V")^2 * Gshunt;
             else
                 const.(Convar(1)) = 0;
             end
 
-            Bshunt = obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.Bshunt;
+            Bshunt = obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.tab_parameter.Bshunt;
             if Bshunt
                 const.(Convar(2)) =   var("V")^2 * Bshunt;
             else
@@ -58,13 +58,13 @@ function [prob, x0, const, Vvar] = build_opf_problem(obj, prob, x0, const, Vvar,
         case "DC OPF"
             var  = optimvar(str, {'Varg'}, 1, "Type","continuous");
             Vvar.(str) = var;
-            x0.(str) = obj.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", obj.a_Parameter)}.Varg0;
+            x0.(str) = obj.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", obj.a_Parameter)}.tab_parameter.Varg0;
             
             % If |V|=1, Ishunt = (G+jB) * e^(jθ)
             % Then, Pshunt+jQshunt = e^(jθ) * conj((G+jB) * e^(jθ))
             %                      = (G - jB) * e^(jθ) * e^(-jθ))
             %                      =  G - jB 
-            const.(Convar(1)) = - obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.Gshunt;
+            const.(Convar(1)) = - obj.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", obj.a_Parameter)}.tab_parameter.Gshunt;
         
         case "ELD"
             % In case "ELD", Bus variables are not involved at all.

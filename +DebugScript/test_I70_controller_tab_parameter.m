@@ -17,7 +17,7 @@ h_dx = avr.f_dx;
 
 val = 2 * avr.tab_parameter.dynamics.kap;
 avr.tab_parameter.dynamics.kap = val;
-assert(avr.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", avr.a_Parameter)}.kap == val && avr.tab_parameter.dynamics.kap == val)
+assert(avr.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", avr.a_Parameter)}.tab_parameter.kap == val && avr.tab_parameter.dynamics.kap == val)
 assert(isequal(h_dx, avr.f_dx) && DebugScript.helper.is_stale(net))   % initialize で作り直す
 sv = DebugScript.helper.stale(net);
 assert(numel(sv) == 1 && contains(sv, "edit kap: "))   % 他の列は変更扱いにならない
@@ -81,7 +81,7 @@ DebugScript.helper.quiet(@() net.initialize);
 h_dx = agc.f_dx;
 
 agc.tab_parameter.dynamics.kP = [200; 300];
-assert(isequal(agc.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", agc.a_Parameter)}.kP, [200; 300]))
+assert(isequal(agc.a_Parameter{cellfun(@(p) p.s_tag=="dynamics", agc.a_Parameter)}.tab_parameter.kP, [200; 300]))
 assert(isequal(agc.tab_parameter.dynamics.kP, [200; 300]))
 assert(isequal(h_dx, agc.f_dx) && DebugScript.helper.is_stale(net))
 sv = DebugScript.helper.stale(net);

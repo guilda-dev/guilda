@@ -345,22 +345,20 @@ assert(numel(s.res.a_PowerNetwork.a_Bus) == 3)
 s.res.a_PowerNetwork.a_Bus{2}.a_Component{1}.tab_parameter.dynamics.D = 1;
 assert(numel(DebugScript.helper.stale(s.res.a_PowerNetwork)) == 1)
 
-% 系統の下の層だけを保存すると、その層の編集は記録できないので警告する
+% 系統の下の層だけを保存しても、読み込んだ層の編集は記録され、型も検査される
 gen = net.a_Bus{2}.a_Component{1};
 save(s_mat, "gen");
 lastwarn("");
 s = load(s_mat);
-id = DebugScript.helper.msg_id();
-assert(id == "GUILDA:PowerNetwork:IncompleteLoad", id)
+assert(isempty(lastwarn), lastwarn)
 assert(numel(s.gen.a_Bus.a_PowerNetwork.a_Bus) == 3)     % 構成は戻る
+s.gen.tab_parameter.dynamics.D = s.gen.tab_parameter.dynamics.D + 1;
+assert(numel(DebugScript.helper.stale(s.gen.a_Bus.a_PowerNetwork)) == 1)
+assert(error_id(@() set_dynamics_D(s.gen, "abc")) == "GUILDA:Parameter:ClassNameMismatch")
 comp = gen;                                              % 系統と一緒に保存しても同じ
 save(s_mat, "net", "comp");
-lastwarn("");
 s = load(s_mat);
-id = DebugScript.helper.msg_id();
-assert(id == "GUILDA:PowerNetwork:IncompleteLoad", id)
 assert(s.comp == s.net.a_Bus{2}.a_Component{1})
-
 
 %% MAT file round trip keeps the linear models
 % 制御器 (AVR + PSS, LQR, AGC) 付きの系統で、線形モデルの行列と名前が読み込みの前後で一致する

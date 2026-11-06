@@ -20,7 +20,7 @@ function i_bus = slack_bus_index(net)
     a_Bus = net.a_Bus;
     i_bus = find(cellfun(@(b) b.l_isSlack, a_Bus), 1);
     if isempty(i_bus)
-        i_bus = find(cellfun(@(b) any(cellfun(@(c) isnan(c.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", c.a_Parameter)}.Q), b.a_Component)), a_Bus), 1);
+        i_bus = find(cellfun(@(b) any(cellfun(@(c) isnan(c.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", c.a_Parameter)}.tab_parameter.Q), b.a_Component)), a_Bus), 1);
     end
     if isempty(i_bus)
         i_bus = find(cellfun(@(b) ~isempty(b.a_Component), a_Bus), 1);

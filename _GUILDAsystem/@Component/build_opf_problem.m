@@ -24,8 +24,8 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Busvar, opt
 
     % try
     
-        opf  = obj.a_Parameter{cellfun(@(p) p.s_tag=="OPF", obj.a_Parameter)};
-        ope  = obj.a_Parameter{cellfun(@(p) p.s_tag=="operation", obj.a_Parameter)};
+        opf  = obj.a_Parameter{cellfun(@(p) p.s_tag=="OPF", obj.a_Parameter)}.tab_parameter;
+        ope  = obj.a_Parameter{cellfun(@(p) p.s_tag=="operation", obj.a_Parameter)}.tab_parameter;
         str  = string(obj);
 
         % Output limits [P;Q] and initial point.
@@ -40,7 +40,7 @@ function [prob, x0, const] = build_opf_problem(obj, prob, x0, const, Busvar, opt
             lb(:) = -inf;
             ub(:) =  inf;
         elseif isa(obj,"component.load.abstract")
-            pf  = obj.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", obj.a_Parameter)};
+            pf  = obj.a_Parameter{cellfun(@(p) p.s_tag=="powerflow", obj.a_Parameter)}.tab_parameter;
             PQ  = [pf.P; pf.Q];
             l_fix = ~isnan(PQ) & isinf(lb) & isinf(ub);
             lb(l_fix)  = PQ(l_fix);
