@@ -179,7 +179,7 @@ s_out = evalc('bus = net.add_bus(FullTag="B001");');
 assert(string(bus) == "B001002")
 assert(contains(s_out, "Tag changed") && contains(s_out, "B001002"))
 assert(sum(string(net.a_Bus) == "B001") == 1)
-assert(endsWith(string(net.disp_edit().log(end)), "<<-Add--- B001002"), "追加のログは確定したタグを示す")
+assert(endsWith(net.sct_stale.powerflow(end), "<<-Add--- B001002"), "追加のメッセージは確定したタグを示す")
 
 
 %% Importing a bus FullTag logs the addition with that tag and no rename
@@ -192,15 +192,14 @@ net.a_Bus{2}.add_component("load-power", P=-0.1);
 [s_dir, c] = temp_folder(); %#ok<ASGLU>
 s_path = DebugScript.helper.quiet(@() net.export_csv(fullfile(s_dir, "Net")));
 
-% 編集ログは初回の initialize の後から記録されるので、初期化済みの系統へ読み込む
+% 古さのメッセージは初回の initialize の後から積まれるので、初期化済みの系統へ読み込む
 net2 = initialized_network();
 DebugScript.helper.quiet(@() PowerNetwork.import_csv(s_path, Network=net2, Initialize=false));
 assert(all(ismember(["Sub7"; "1234"], string(net2.a_Bus))))
-sv_log = string(net2.disp_edit().log);
+sv_log = net2.sct_stale.powerflow;
 assert(any(endsWith(sv_log, "<<-Add--- Sub7")) && any(endsWith(sv_log, "<<-Add--- 1234")))
 assert(~any(contains(sv_log, "<<-Add--- B")), "自動のタグを経由しない")
-% 既存の系統ではブランチの自動番号がずれるので、ブランチの改名は記録されうる
-assert(~any(contains(sv_log, "-> Sub7") | contains(sv_log, "-> 1234")), "母線の読み込みは改名を記録しない")
+assert(~any(contains(sv_log, "rename")), "改名は何も古くしない")
 
 
 %% An unknown column warns with the file and column, and does not stop the import
@@ -374,7 +373,7 @@ function ME = import_error(s_path, net)
 end
 
 function net = initialized_network()
-    % Network whose edit log is active
+    % Network that has been initialized (edits are reported as stale messages)
     net = DebugScript.helper.build_ieee14();
     evalc("net.initialize();");
 end

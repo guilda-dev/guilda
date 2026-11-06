@@ -21,9 +21,14 @@ classdef GlobalController < PowerSystemModel
 %   which they must not use), no nested controller, no observation by output name. It
 %   does not own its units and is not a child of any bus.
 % - Only the network sets and clears `a_PowerNetwork` (`PowerNetwork.add_global_controller`
-%   calls `set_parent`, which marks the handles stale).
-% - The handles `f_*` @(t,x,V,I,u) bind param and omega0; `set_odefcn` builds them, called
-%   by `check_edit`. An edit of `tab_parameter` makes the handles and the equilibrium stale.
+%   calls `set_parent`).
+% - The handles `f_*` @(t,x,V,I,u) bind param and omega0; `build_odefcn` builds them,
+%   called by `initialize` when they are stale (`sct_stale.odefcn`, or a network
+%   frequency other than `r_odefcnHz`).
+% - Stale tags (`sct_stale`): `equilibrium` (its dynamics, its addition to the network)
+%   and `odefcn` (its dynamics, its attachment). `initialize`, called last by
+%   PowerNetwork.initialize, rebuilds them; the equilibrium is also recomputed whenever
+%   that initialize found anything stale, since it may read the controlled units.
 %
 % <@Examples>
 % ```matlab
@@ -91,7 +96,10 @@ classdef GlobalController < PowerSystemModel
         rv_Uoffset = @(t) 0  % Input change over time (zero for a global controller).
         l_isConnect (1,1) logical = true  % False while an active trip of a scenario names the controller (set by SolverODE); its output is then zero.
     end
-    properties(SetAccess={?PowerNetwork}) % Steady State
+    properties(SetAccess=protected, Hidden) % Cached function handles
+        r_odefcnHz double = []  % [Hz] Network frequency bound into the f_* handles (empty: never built).
+    end
+    properties(SetAccess=protected) % Steady State
         rv_Xequilibrium (:,1) double = zeros(0,1)  % State equilibrium (from get_equilibrium, set by PowerNetwork.initialize).
         rv_Uequilibrium (:,1) double = zeros(0,1)  % Equilibrium of the observed states, one entry per input of each unit.
     end
@@ -123,6 +131,7 @@ classdef GlobalController < PowerSystemModel
                 obj   % New GlobalController object.
             end
             obj.s_tag = tag;
+            obj.sct_stale = struct("equilibrium", obj.s_notInitialized, "odefcn", obj.s_notInitialized);
             obj.para_dynamics = Parameter(obj,"dynamics");
 
             cls_comp = tools.cellfun(@(b) b.a_Component, net.a_Bus);            
@@ -157,10 +166,18 @@ classdef GlobalController < PowerSystemModel
         [sys, varargout] = get_sys(obj, x, V, I, u, opt)
     end
     methods (Access=protected)
-        set_odefcn(obj)
+        build_odefcn(obj)
+        handle_edit(obj, a_layer, tag, log)
+        sv_message = stale_messages(obj)
+    end
+    methods (Access=private)
+        l = odefcn_stale(obj)
     end
     methods (Access={?Component,?LocalController,?PowerNetwork})        
         set_parent(obj,net)
+    end
+    methods (Access={?PowerNetwork})
+        initialize(obj, l_equilibrium)
     end
     methods        
         function p = get.parent(obj)

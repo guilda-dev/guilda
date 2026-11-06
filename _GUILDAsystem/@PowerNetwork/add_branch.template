@@ -3,7 +3,7 @@ function bra = add_branch(obj, Key, from_to, opt)
 %
 % `from_to` names the two end buses by their index in `a_Bus` or by their tags. The
 % branch tag is the class header followed by a three-digit number. The addition is
-% logged as a "Topology" edit.
+% a "Topology" edit, which makes the power flow stale.
 %
 % The end buses must exist and differ, and R and X must not both be 0; otherwise the
 % network stays unchanged and an error explains the fix.

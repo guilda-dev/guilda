@@ -13,15 +13,18 @@ comp = net.a_Bus{1}.a_Component{1};
 comp.add_local_controller(controller.avr.AVR_ST1("avr1"));
 avr = comp.a_LocalController{1};
 DebugScript.helper.quiet(@() net.initialize);
+h_dx = avr.f_dx;
 
 val = 2 * avr.para_dynamics.kap;
 avr.tab_parameter.dynamics.kap = val;
 assert(avr.para_dynamics.kap == val && avr.tab_parameter.dynamics.kap == val)
-assert(avr.s_odefcn == "editted" && comp.s_odefcn == "updated" && net.l_staleEquilibrium)
-assert(height(net.disp_edit()) == 1 && net.disp_edit().log == "edit kap")   % 他の列は変更扱いにならない
+assert(isequal(h_dx, avr.f_dx) && DebugScript.helper.is_stale(net))   % initialize で作り直す
+sv = DebugScript.helper.stale(net);
+assert(numel(sv) == 1 && contains(sv, "edit kap: "))   % 他の列は変更扱いにならない
+assert(isequal(avr.sct_stale.equilibrium, sv) && isequal(avr.sct_stale.odefcn, sv))
 
 DebugScript.helper.quiet(@() net.initialize);
-assert(avr.s_odefcn == "updated")
+assert(~isequal(h_dx, avr.f_dx))
 x = avr.rv_Xequilibrium + 0.01;  u = avr.rv_Uequilibrium;
 V = [real(comp.c_Vequilibrium); imag(comp.c_Vequilibrium)];
 para = avr.tab_parameter.dynamics{:, avr.sv_para}.';
@@ -40,8 +43,9 @@ name = pss.sv_para(1);
 val  = 2 * pss.para_dynamics.(name) + 1;
 pss.tab_parameter.dynamics.(name) = val;
 assert(pss.para_dynamics.(name) == val)
-assert(pss.s_odefcn == "editted" && net.l_staleEquilibrium)
-assert(height(net.disp_edit()) == 1 && net.disp_edit().log == "edit " + name)
+assert(DebugScript.helper.is_stale(net))
+sv = DebugScript.helper.stale(net);
+assert(numel(sv) == 1 && contains(sv, "edit " + name + ": ") && isequal(pss.sct_stale.equilibrium, sv))
 
 
 %% Local controller assignment of the same values is not an edit
@@ -52,8 +56,8 @@ avr = comp.a_LocalController{1};
 DebugScript.helper.quiet(@() net.initialize);
 
 avr.tab_parameter = avr.tab_parameter;
-assert(avr.s_odefcn == "updated" && ~net.l_staleEquilibrium)
-assert(height(net.disp_edit()) == 0)
+assert(~DebugScript.helper.is_stale(net))
+assert(isempty(DebugScript.helper.stale(net)))
 
 
 %% Local controller rejects a value of the wrong class
@@ -74,15 +78,17 @@ assert(comp.para_dynamics.D == val_comp)
 %% Global controller tab_parameter edit is logged and rebuilt
 [net, agc] = build_agc();
 DebugScript.helper.quiet(@() net.initialize);
+h_dx = agc.f_dx;
 
 agc.tab_parameter.dynamics.kP = [200; 300];
 assert(isequal(agc.para_dynamics.kP, [200; 300]))
 assert(isequal(agc.tab_parameter.dynamics.kP, [200; 300]))
-assert(agc.s_odefcn == "editted" && net.l_staleEquilibrium)
-assert(height(net.disp_edit()) == 1 && net.disp_edit().log == "edit kP")
+assert(isequal(h_dx, agc.f_dx) && DebugScript.helper.is_stale(net))
+sv = DebugScript.helper.stale(net);
+assert(numel(sv) == 1 && contains(sv, "edit kP: [100;100] -> [200;300]") && isequal(agc.sct_stale.odefcn, sv))
 
 DebugScript.helper.quiet(@() net.initialize);
-assert(agc.s_odefcn == "updated")
+assert(~isequal(h_dx, agc.f_dx))
 para = agc.tab_parameter.dynamics{:, agc.sv_para};
 x = 0.1;  u = [0.01; 0.02];
 assert(norm(agc.f_dx(0,x,[],[],u) - agc.fcn_dx(0,x,[],[],u,para,60)) < 1e-12, ...
@@ -95,7 +101,8 @@ DebugScript.helper.quiet(@() net.initialize);
 
 agc.tab_parameter.dynamics.kP(2) = 300;
 assert(isequal(agc.para_dynamics.kP, [100; 300]))
-assert(height(net.disp_edit()) == 1 && net.disp_edit().log == "edit kP")
+sv = DebugScript.helper.stale(net);
+assert(numel(sv) == 1 && contains(sv, "edit kP: "))
 
 
 %% Global controller assignment of the same values is not an edit
@@ -103,8 +110,8 @@ assert(height(net.disp_edit()) == 1 && net.disp_edit().log == "edit kP")
 DebugScript.helper.quiet(@() net.initialize);
 
 agc.tab_parameter = agc.tab_parameter;
-assert(agc.s_odefcn == "updated" && ~net.l_staleEquilibrium)
-assert(height(net.disp_edit()) == 0)
+assert(~DebugScript.helper.is_stale(net))
+assert(isempty(DebugScript.helper.stale(net)))
 
 
 function tf = class_error(fcn)

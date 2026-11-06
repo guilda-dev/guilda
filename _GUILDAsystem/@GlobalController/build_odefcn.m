@@ -1,7 +1,7 @@
-function set_odefcn(obj)
+function build_odefcn(obj)
 % Bind the parameters and the network frequency into the f_* function handles.
-% Called by check_edit when the handles are not up to date (s_odefcn "unset" or
-% "editted": a dynamics edit, a network Hz edit or an attach since the last build).
+% Called by initialize when the stale tag odefcn is not empty or the network frequency
+% differs from r_odefcnHz. Clears odefcn and stores the frequency in r_odefcnHz.
 %
 % <@Group> Called by analyses
     arguments (Input)
@@ -16,5 +16,7 @@ function set_odefcn(obj)
 
     obj.f_JacobiDx = @(t,x,V,I,u) obj.Jacobi_dx(t,x,V,I,u,param,omega0);
     obj.f_JacobiY  = @(t,x,V,I,u) obj.Jacobi_Y(t,x,V,I,u,param,omega0);
-    obj.s_odefcn = "updated";
+
+    obj.r_odefcnHz = omega0;
+    obj.clear_stale("odefcn");
 end

@@ -317,8 +317,8 @@ sys = net.get_sys();
     end
 end
 </pre>
-    <p lang="en">Attaching a controller changes the dynamics, so run <code>initialize</code> again. Without it, <code>simulate</code> stops with <code>GUILDA:PowerNetwork:EquilibriumStale</code>.</p>
-    <p lang="ja">制御器の接続で動特性が変わるため、<code>initialize</code> を再実行。実行しないと <code>simulate</code> は <code>GUILDA:PowerNetwork:EquilibriumStale</code> で停止。</p>
+    <p lang="en">Attaching a controller changes the dynamics, so run <code>initialize</code> again. Without it, <code>simulate</code> stops with <code>GUILDA:LayerPackage:Stale</code>.</p>
+    <p lang="ja">制御器の接続で動特性が変わるため、<code>initialize</code> を再実行。実行しないと <code>simulate</code> は <code>GUILDA:LayerPackage:Stale</code> で停止。</p>
 <pre class="mi-code" data-run="controller">avr = controller.avr.simple_avr("a", Ka=30, Te=0.05);
 pss = controller.pss.PSS1("p");
 g2.add_local_controller(avr, pss);

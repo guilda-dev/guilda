@@ -157,20 +157,20 @@ verdict = sc.judge(result)</code></pre>
       </tbody>
     </table>
     <ul lang="en">
-      <li>Scenarios are not model data: adding, removing or editing them does not make the equilibrium stale.</li>
+      <li>Scenarios are not model data: adding, removing or editing them makes nothing stale.</li>
       <li><code>Scenario.import_csv</code>, <code>Scenario.export_csv</code>: several scenarios, one row per disturbance.</li>
       <li>Deprecated <code>ODEevent(tag, net, Name, Value)</code> (<code>_VersionSupport/</code>): returns a scenario with one disturbance, already added to <code>net</code>.</li>
     </ul>
     <ul lang="ja">
-      <li>シナリオはモデルのデータではない: 追加・削除・編集しても平衡点は古くならない</li>
+      <li>シナリオはモデルのデータではない: 追加・削除・編集しても何も古くならない</li>
       <li><code>Scenario.import_csv</code>、<code>Scenario.export_csv</code>: 複数のシナリオを外乱 1 つにつき 1 行で読み書き</li>
       <li>非推奨の <code>ODEevent(tag, net, Name, Value)</code> (<code>_VersionSupport/</code>): 外乱を 1 つ持ち <code>net</code> に追加済みのシナリオを返却</li>
     </ul>
 
     <h3><span lang="en">Preconditions for the call</span><span lang="ja">呼び出しの前提条件</span></h3>
     <ul>
-      <li lang="en"><code>net.initialize()</code> has run, with no edit since that changes the equilibrium (see <a href="class-design.html#edits">Class Design: Handling of model edits</a>). Out-of-date function handles <code>f_*</code>: rebuilt automatically.</li>
-      <li lang="ja"><code>net.initialize()</code> を実行済みで、その後に平衡点を変える編集がないこと (<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a> を参照)。古くなった関数ハンドル <code>f_*</code> は自動で再構築</li>
+      <li lang="en"><code>net.initialize()</code> has run, with no edit since that makes a layer stale, a network <code>Hz</code> edit included (see <a href="class-design.html#edits">Class Design: Handling of model edits</a>). <code>initialize</code> builds the function handles <code>f_*</code>.</li>
+      <li lang="ja"><code>net.initialize()</code> を実行済みで、その後に層を古くする編集（ネットワークの <code>Hz</code> の編集も含む）がないこと (<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a> を参照)。関数ハンドル <code>f_*</code> は <code>initialize</code> が作成</li>
       <li lang="en">Every scenario belongs to this network and the tags of its disturbances exist in it now, and every unit a global controller controls is on this network.</li>
       <li lang="ja">すべてのシナリオがこのネットワークに属し、その外乱のタグが現在のネットワークに存在すること。広域制御器が制御する機器がすべてこのネットワーク上にあること。</li>
       <li lang="en">The mass matrices of all components and controllers are constant (<code>tools.read_mass</code>).</li>
@@ -226,7 +226,7 @@ verdict = sc.judge(result)</code></pre>
           <path class="dg-sv-line" d="M170 150H298" marker-end="url(#sim-ah)"/>
           <text class="is-sm" x="176" y="144"><tspan style="fill:var(--dg-accent)">03</tspan> solve(net, time, c_events, sct_options)</text>
           <path class="dg-sv-line" d="M300 180H172" marker-end="url(#sim-ah)"/>
-          <text class="is-sm" x="176" y="174"><tspan style="fill:var(--dg-accent)">04</tspan> require_equilibrium → check_edit</text>
+          <text class="is-sm" x="176" y="174"><tspan style="fill:var(--dg-accent)">04</tspan> check_edit</text>
           <path class="dg-sv-line" d="M300 210H428" marker-end="url(#sim-ah)"/>
           <text class="is-sm" x="306" y="204"><tspan style="fill:var(--dg-accent)">05</tspan> compile(c_events, net, time) → phases</text>
           <path class="dg-sv-line" d="M300 240H798" marker-end="url(#sim-ah)"/>
@@ -270,7 +270,7 @@ verdict = sc.judge(result)</code></pre>
           <li><span class="sim-id">SIM-01</span> <span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.simulate</code></li>
           <li><span class="sim-id">SIM-02</span> <code>PowerNetwork</code> → <code>SolverODE.get_options</code></li>
           <li><span class="sim-id">SIM-03</span> <code>PowerNetwork</code> → <code>SolverODE.solve</code></li>
-          <li><span class="sim-id">SIM-04</span> <code>SolverODE</code> → <code>PowerNetwork.require_equilibrium</code></li>
+          <li><span class="sim-id">SIM-04</span> <code>SolverODE</code> → <code>LayerPackage.check_edit</code></li>
           <li><span class="sim-id">SIM-05</span> <code>SolverODE</code> → <code>Scenario.compile</code>, <code>check_islands</code></li>
           <li><span class="sim-id">SIM-06</span> <code>SolverODE.initialize_index</code> → <code>Component</code>, <code>Bus</code>, <span lang="en">controllers</span><span lang="ja">制御器</span></li>
           <li><span class="sim-id">SIM-07</span> <code>SolverODE</code> → <code>PowerNetwork.get_admittance_matrix</code>, <code>SolverODE.set_admittance</code></li>
@@ -352,14 +352,14 @@ verdict = sc.judge(result)</code></pre>
         </dl>
       </li>
       <li class="fs-step" id="SIM-04">
-        <p class="fs-head"><b class="fs-id">SIM-04</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>PowerNetwork.require_equilibrium</code></span></p>
+        <p class="fs-head"><b class="fs-id">SIM-04</b> <span class="fs-call"><code>SolverODE.solve</code> → <code>LayerPackage.check_edit</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
-          <dd><span lang="en">Calls <code>check_edit("RequireEquilibrium", true)</code>: <code>LayerPackage.check_edit</code> calls <code>set_odefcn</code> on every layer whose handles are not up to date, then stops if the equilibrium is stale.</span><span lang="ja"><code>check_edit("RequireEquilibrium", true)</code> を呼び出し。<code>LayerPackage.check_edit</code> がハンドルの古い層ごとに <code>set_odefcn</code> を呼び、平衡点が古ければ停止</span></dd>
+          <dd><span lang="en">Calls <code>net.check_edit()</code>: collects the stale messages of every layer (and a network frequency other than the one a model built its handles with) and stops with <code>GUILDA:LayerPackage:Stale</code> when there are any. Rebuilds nothing.</span><span lang="ja"><code>net.check_edit()</code> を呼び出し。全層の stale のメッセージ（とモデルのハンドル作成時と異なるネットワークの周波数）を集め、あれば <code>GUILDA:LayerPackage:Stale</code> で停止。再構築はなし</span></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>l_initialized</code>, <code>l_staleEquilibrium</code>, <code>s_odefcn</code>, <code>net.disp_edit()</code></dd>
+          <dd><code>sct_stale</code> <span lang="en">of every layer</span><span lang="ja">（全層）</span>, <code>r_odefcnHz</code>, <span lang="en">network</span><span lang="ja">ネットワークの</span> <code>Hz</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>f_dx</code>, <code>f_I</code>, <code>f_Y</code>, <code>f_Mass</code>, <code>f_JacobiDx</code>, <code>f_JacobiI</code>, <code>f_JacobiY</code>; <code>s_odefcn = "updated"</code></dd>
+          <dd><span lang="en">— (errors only)</span><span lang="ja">—（エラーのみ）</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="SIM-05">
@@ -715,13 +715,13 @@ verdict = sc.judge(result)</code></pre>
     <table class="dg-table">
       <thead><tr><th><span lang="en">Object</span><span lang="ja">対象のオブジェクト</span></th><th><span lang="en">Behaviour</span><span lang="ja">振る舞い</span></th></tr></thead>
       <tbody>
-        <tr><td><code>f_*</code> <span lang="en">handles</span><span lang="ja">ハンドル</span></td><td><span lang="en">Built by SIM-04 where <code>s_odefcn</code> is not <code>"updated"</code>; they stay built after the run.</span><span lang="ja">SIM-04 で <code>s_odefcn</code> が <code>"updated"</code> でない層について構築。実行後も残存</span></td></tr>
-        <tr><td><span lang="en">Equilibrium, edit flags</span><span lang="ja">平衡点、編集フラグ</span></td><td><span lang="en">Read only. <code>l_initialized</code>, <code>l_staleEquilibrium</code>, the edit log and the equilibrium values are not changed.</span><span lang="ja">参照のみ。<code>l_initialized</code>、<code>l_staleEquilibrium</code>、編集ログ、平衡点の値は不変</span></td></tr>
+        <tr><td><code>f_*</code> <span lang="en">handles</span><span lang="ja">ハンドル</span></td><td><span lang="en">Read only; built by <code>net.initialize()</code>.</span><span lang="ja">参照のみ。<code>net.initialize()</code> が作成</span></td></tr>
+        <tr><td><span lang="en">Equilibrium, stale state</span><span lang="ja">平衡点、stale 状態</span></td><td><span lang="en">Read only. <code>sct_stale</code> and the equilibrium values are not changed.</span><span lang="ja">参照のみ。<code>sct_stale</code> と平衡点の値は不変</span></td></tr>
         <tr><td><code>net.solver_ODE</code></td><td><span lang="en">Read only; options of the call are not stored.</span><span lang="ja">参照のみ。呼び出しのオプションは保存しない</span></td></tr>
         <tr><td><span lang="en">Simulator indices</span><span lang="ja">シミュレータの添字</span></td><td><span lang="en"><code>iv_odeX</code>, <code>iv_odeU</code>, <code>iv_odeY</code>, <code>iv_odeI</code>, <code>lv_odeUfromLC</code>, <code>iv_odeYtoU</code> are written by SIM-06 and kept after the run; every run renumbers them.</span><span lang="ja"><code>iv_odeX</code>、<code>iv_odeU</code>、<code>iv_odeY</code>、<code>iv_odeI</code>、<code>lv_odeUfromLC</code>、<code>iv_odeYtoU</code> : SIM-06 で書き込み、実行後も残存。実行ごとに番号を振り直し</span></td></tr>
         <tr><td><span lang="en">Disturbance state</span><span lang="ja">外乱の状態</span></td><td><span lang="en"><code>Bus.l_isFault</code>, <code>Component.l_isConnect</code>, <code>GlobalController.l_isConnect</code>, <code>Component.rv_Xoffset</code>, <code>rv_Uoffset</code> change during the run and are reset by SIM-21, also after an error. Opened branches are only left out of the admittance matrix of the run (<code>ctx</code>); the branches themselves are not changed.</span><span lang="ja"><code>Bus.l_isFault</code>、<code>Component.l_isConnect</code>、<code>GlobalController.l_isConnect</code>、<code>Component.rv_Xoffset</code>、<code>rv_Uoffset</code> : 実行中に変化し、SIM-21 で復元 (エラー時も同じ)。開放したブランチは実行中のアドミタンス行列 (<code>ctx</code>) から除くのみで、ブランチ自体は不変</span></td></tr>
         <tr><td><code>Scenario</code></td><td><span lang="en">Read only: the disturbances, <code>Time</code> and <code>Options</code> are not changed, and the verdict is computed later by <code>sc.judge(result)</code>.</span><span lang="ja">参照のみ。外乱、<code>Time</code>、<code>Options</code> は不変。判定は後で <code>sc.judge(result)</code> が算出</span></td></tr>
-        <tr><td><code>ResultODE</code></td><td><span lang="en">Holds a reference to the network (<code>a_PowerNetwork</code>) and its own copy of the variable map. A later edit of the network does not change the result; the next <code>simulate</code> after an edit that makes the equilibrium stale stops in SIM-04 until <code>net.initialize()</code> runs.</span><span lang="ja">ネットワークへの参照 (<code>a_PowerNetwork</code>) と変数マップの写しを保持。後のネットワークの編集で結果は不変。平衡点を古くする編集の後の <code>simulate</code> は、<code>net.initialize()</code> を実行するまで SIM-04 で停止</span></td></tr>
+        <tr><td><code>ResultODE</code></td><td><span lang="en">Holds a reference to the network (<code>a_PowerNetwork</code>) and its own copy of the variable map. A later edit of the network does not change the result; the next <code>simulate</code> after an edit that makes a layer stale stops in SIM-04 until <code>net.initialize()</code> runs.</span><span lang="ja">ネットワークへの参照 (<code>a_PowerNetwork</code>) と変数マップの写しを保持。後のネットワークの編集で結果は不変。層を古くする編集の後の <code>simulate</code> は、<code>net.initialize()</code> を実行するまで SIM-04 で停止</span></td></tr>
       </tbody>
     </table>
 
@@ -748,7 +748,7 @@ verdict = sc.judge(result)</code></pre>
         <tr><td><span lang="en">Other numerical failures of the solver (index &gt; 1 with dense matrices, <code>decic</code> convergence, all-zero mass matrix)</span><span lang="ja">その他のソルバーの数値的失敗 (密行列でも指数 &gt; 1、<code>decic</code> の収束失敗、すべて 0 の質量行列)</span></td><td><code>flag = -1</code>; <code>GUILDA:SolverODE:PhaseFailed</code></td></tr>
         <tr><td><span lang="en">Error in an input function or a model during a phase</span><span lang="ja">フェーズ中の入力関数やモデルのエラー</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:SolverODE:PhaseFailed</code>, <span lang="en">original as cause</span><span lang="ja">元のエラーを cause に保持</span></td></tr>
         <tr><td><span lang="en">Invalid call (SIM-01)</span><span lang="ja">不正な呼び出し (SIM-01)</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:PowerNetwork:SimulateTime</code>, <code>SimulateArguments</code>, <code>SimulateExport</code>, <code>ScenarioTimeConflict</code>, <code>ScenarioOptionConflict</code>, <code>GUILDA:resolve_options:UnknownName</code></td></tr>
-        <tr><td><span lang="en">Equilibrium missing or stale (SIM-04)</span><span lang="ja">平衡点がない、または古い (SIM-04)</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:PowerNetwork:EquilibriumStale</code></td></tr>
+        <tr><td><span lang="en">Equilibrium missing or stale (SIM-04)</span><span lang="ja">平衡点がない、または古い (SIM-04)</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:LayerPackage:Stale</code></td></tr>
         <tr><td><span lang="en">Invalid scenario (SIM-05; most checks also run when a disturbance or the scenario is added)</span><span lang="ja">不正なシナリオ (SIM-05。多くの検査は外乱やシナリオの追加時にも実施)</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:Scenario:</code><code>ScenarioArray</code>, <code>OtherNetwork</code>, <code>DuplicateRunTag</code>, <code>InvalidTimeSpan</code>, <code>ZeroLengthTimeSpan</code>, <code>UnknownFaultBus</code>, <code>UnknownOpenBranch</code>, <code>UnknownTripUnit</code>, <code>UnknownOffsetUnit</code>, <code>UnknownOffsetState</code>, <code>UnknownInputUnit</code>, <code>UnknownInputName</code>, <code>ValueCountMismatch</code>, <code>InvalidNargin</code>, <code>InvalidInputType</code>; <span lang="en">when adding</span><span lang="ja">追加時</span> <code>ReservedTag</code>, <code>DuplicateTag</code>. <span lang="en">Warning</span><span lang="ja">警告</span> <code>OutsideTimeSpan</code>.</td></tr>
         <tr><td><span lang="en">Opened branches leave buses without any component (SIM-05)</span><span lang="ja">開放ブランチによって機器のない母線が切り離される (SIM-05)</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:SolverODE:OpenBranchIsland</code> <span lang="en">before the integration. An island with components but without a generator (e.g. a constant-power load) usually gives <code>flag = -1</code>.</span><span lang="ja">(積分の前)。機器はあるが発電機のない単独系統 (定電力負荷など) は多くの場合 <code>flag = -1</code></span></td></tr>
         <tr><td><span lang="en">Model structure</span><span lang="ja">モデルの構造</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:SolverODE:ForeignControlledUnit</code> (SIM-06), <code>GUILDA:read_mass:NotConstant</code> (SIM-11), <code>GUILDA:ResultODE:VariableMap</code> (SIM-20)</td></tr>

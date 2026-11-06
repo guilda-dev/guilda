@@ -1,5 +1,5 @@
 function Hz = handle_Hz(obj)
-% 関数ハンドル f_dx に埋め込まれた周波数 omega0 (set_odefcn が obj.get_Hz() から作る) を読む。
+% 関数ハンドル f_dx に埋め込まれた周波数 omega0 (build_odefcn が obj.get_Hz() から作る) を読む。
     arguments (Input)
         obj
     end

@@ -15,8 +15,8 @@ function set_opffcn(obj, varargin)
 % component's injection into the bus power balance is always kept.
 % Given names replace the stored ones, the others are kept; Cost=[] or Constraint=[]
 % clears that term. reset_opffcn restores all defaults. Terms that need variables of
-% other objects go through net.set_opffcn. The edit is logged in the edit log and does
-% not make the equilibrium stale.
+% other objects go through net.set_opffcn. The edit (tag "opffcn") makes
+% nothing stale.
 %
 % Name-Value options:
 %
@@ -45,5 +45,5 @@ function set_opffcn(obj, varargin)
         varargin   % Name-Value options Cost, Constraint and DefaultConstraint.
     end
     [obj.f_opfcost, obj.f_opfconst, obj.l_opfdefault, s_log] = opffcn.update(obj, varargin{:});
-    obj.log_edit(s_log, "OPF");
+    obj.log_edit(s_log, "opffcn");
 end

@@ -13,7 +13,7 @@ for c_net = {DebugScript.helper.build_9bus(), DebugScript.helper.build_ieee14()}
     net = c_net{1};
     res = DebugScript.helper.quiet(@() net.initialize(Method="OPF", Verbose=false));
     assert(kcl_residual(net) < tol_kcl)
-    assert(~net.l_staleEquilibrium)
+    assert(~DebugScript.helper.is_stale(net))
     assert(drift(net) < tol_drift)
     assert_component_power(net, res)
 
@@ -96,7 +96,7 @@ DebugScript.helper.quiet(@() net.initialize);
 gen.para_powerflow.P = 0.9;
 assert(contains(error_of(@() net.initialize(Method="equilibrium")).message, "net.initialize()"))
 DebugScript.helper.quiet(@() net.initialize);
-assert(kcl_residual(net) < 1e-8 && ~net.l_staleEquilibrium)
+assert(kcl_residual(net) < 1e-8 && ~DebugScript.helper.is_stale(net))
 assert(abs(real(gen.c_Vequilibrium*conj(gen.c_Iequilibrium)) - 0.9) < 1e-10)
 
 
@@ -106,9 +106,9 @@ DebugScript.helper.quiet(@() net.initialize);
 V = net.cv_Vequilibrium;
 U = gen.rv_Uequilibrium;
 gen.para_dynamics.Xd = 1.2*gen.para_dynamics.Xd;
-assert(net.l_staleEquilibrium)
+assert(DebugScript.helper.is_stale(net))
 DebugScript.helper.quiet(@() net.initialize(Method="equilibrium"));
-assert(~net.l_staleEquilibrium)
+assert(~DebugScript.helper.is_stale(net))
 assert(norm(net.cv_Vequilibrium - V) < 1e-10 && kcl_residual(net) < 1e-8)
 assert(norm(gen.rv_Uequilibrium - U) > 1e-6)      % 界磁入力が新しい Xd に合わせて変わる
 assert(drift(net) < 1e-6)
@@ -121,23 +121,26 @@ gen.add_local_controller(lqr);
 DebugScript.helper.quiet(@() net.initialize);
 lqr.Q = ones(1, numel(gen.sv_x) + 1);           % 重みのサイズが違うので set_equilibrium で失敗する
 error_of(@() net.initialize());
-assert(net.l_staleEquilibrium)
+assert(DebugScript.helper.is_stale(net))
 ME = error_of(@() net.simulate([0 1]));
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:EquilibriumStale", DebugScript.helper.msg_id(ME))
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:LayerPackage:Stale", DebugScript.helper.msg_id(ME))
 
 
 %% A failure without a stale edit is reported as an unfinished initialize
-% operation の編集は stale にしないが、baseMVA = 0 だと Q の配分が NaN になる
+% operation の編集は stale にしないので initialize は何もしない。潮流から解き直すと
+% baseMVA = 0 で Q の配分が NaN になり、止まった initialize として潮流が古くなる
 net = build_shared_bus();
 DebugScript.helper.quiet(@() net.initialize);
 a_Comp = net.a_Bus{2}.a_Component;
 a_Comp{1}.para_operation.baseMVA = 0;
 a_Comp{2}.para_operation.baseMVA = 0;
-assert(~net.l_staleEquilibrium)
-error_of(@() net.initialize());
-assert(net.l_staleEquilibrium)
+assert(~DebugScript.helper.is_stale(net))
+DebugScript.helper.quiet(@() net.initialize());
+assert(~DebugScript.helper.is_stale(net))
+error_of(@() net.initialize(Method="powerflow"));
+assert(DebugScript.helper.is_stale(net))
 ME = error_of(@() net.simulate([0 1]));
-assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:EquilibriumStale", DebugScript.helper.msg_id(ME))
+assert(DebugScript.helper.msg_id(ME) == "GUILDA:LayerPackage:Stale", DebugScript.helper.msg_id(ME))
 assert(contains(ME.message, "stopped before it finished"), ME.message)
 
 
@@ -147,7 +150,7 @@ DebugScript.helper.quiet(@() net.initialize);
 V = net.cv_Vequilibrium;
 ME = error_of(@() net.initialize(Method="OPF", MaxIteration=2));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeOPFFailed", DebugScript.helper.msg_id(ME))
-assert(~net.l_staleEquilibrium && isequal(net.cv_Vequilibrium, V))
+assert(~DebugScript.helper.is_stale(net) && isequal(net.cv_Vequilibrium, V))
 
 
 %% Slack bus without a component is not an equilibrium
@@ -156,7 +159,7 @@ DebugScript.helper.quiet(@() net.initialize);    % B001 がスラックになる
 net.a_Bus{1}.remove_component(string(net.a_Bus{1}.a_Component{1}));
 ME = error_of(@() net.initialize());
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeNotEquilibrium", DebugScript.helper.msg_id(ME))
-assert(net.l_staleEquilibrium)
+assert(DebugScript.helper.is_stale(net))
 
 
 %% A point that violates KCL stops initialize and marks the equilibrium stale
@@ -164,10 +167,10 @@ assert(net.l_staleEquilibrium)
 net = DebugScript.helper.build_9bus();
 ME  = error_of(@() net.initialize(Tolerance=1e3));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:InitializeNotEquilibrium", DebugScript.helper.msg_id(ME))
-assert(net.l_staleEquilibrium)
-assert(DebugScript.helper.msg_id(error_of(@() net.simulate([0 1]))) == "GUILDA:PowerNetwork:EquilibriumStale")
+assert(DebugScript.helper.is_stale(net))
+assert(DebugScript.helper.msg_id(error_of(@() net.simulate([0 1]))) == "GUILDA:LayerPackage:Stale")
 DebugScript.helper.quiet(@() net.initialize);
-assert(~net.l_staleEquilibrium && kcl_residual(net) < 1e-8)
+assert(~DebugScript.helper.is_stale(net) && kcl_residual(net) < 1e-8)
 
 
 % ---- local functions ----
@@ -221,13 +224,13 @@ function assert_component_power(net, res)
 end
 
 function assert_edit_stops(net, s_id, s_log)
-% エラーで止まり、平衡点も編集記録も変わらない
+% エラーで止まり、平衡点も古さも変わらない
     V   = net.cv_Vequilibrium;
-    n   = height(net.disp_edit());
+    sv  = DebugScript.helper.stale(net);
     ME  = error_of(@() net.initialize(Method="equilibrium"));
     assert(DebugScript.helper.msg_id(ME) == s_id, DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, s_log))
-    assert(isequal(net.cv_Vequilibrium, V) && net.l_staleEquilibrium && height(net.disp_edit()) == n)
+    assert(isequal(net.cv_Vequilibrium, V) && DebugScript.helper.is_stale(net) && isequal(DebugScript.helper.stale(net), sv))
 end
 
 function ME = error_of(fcn)

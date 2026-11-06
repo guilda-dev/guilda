@@ -4,7 +4,7 @@ function bus = add_bus(obj, opt)
 % The bus tag is `Tag` followed by a three-digit number (the largest number in use + 1),
 % e.g. "B001". `FullTag` gives the complete tag instead, with no automatic number; a
 % tag already used in the network is renamed with a number suffix, as for `s_tag`, and
-% an Info line shows the change. The addition is logged as a "Topology" edit, so the equilibrium becomes
+% an Info line shows the change. The addition is a "Topology" edit, so the power flow is
 % stale until `net.initialize()` runs again.
 %
 % <@Examples>

@@ -21,10 +21,10 @@ function DAEvec = get_dx_algebraic(obj, t, x, Vi, Ii, u, DAEvec)
         DAEvec (:,1) double  % Updated DAE residual of the network.
     end
 
-    % Called directly, the handles may not be built yet. Only the own state is read here:
-    % in a simulation, the solver has already brought every layer up to date.
-    if obj.s_odefcn ~= "updated"
-        obj.check_edit();
+    % Called directly, the handles may not be built yet. Only whether they exist is checked
+    % here: in a simulation, initialize has built them and the solver has checked them.
+    if isempty(obj.f_dx)
+        obj.build_odefcn();
     end
 
     rv_x = obj.iv_odeX;

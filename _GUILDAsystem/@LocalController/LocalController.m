@@ -22,7 +22,7 @@ classdef LocalController < PowerSystemModel
 %   functions, but does not own the voltage or the frequency, and is not a child of the
 %   bus.
 % - Created with its constructor and attached with `Component.add_local_controller`, which
-%   calls `set_parent`; that resolves the observed inputs and marks the handles stale. A
+%   calls `set_parent`; that resolves the observed inputs. A
 %   controller object attaches to one parent at a time.
 % - Differs from `Component` on purpose: no `fcn_I`, the output function is `fcn_y`, and
 %   the Jacobians are required. Inputs named X or Y are not allowed.
@@ -30,9 +30,12 @@ classdef LocalController < PowerSystemModel
 %   sets where each input sv_u(k) is read on the observed component: iv_obsY(k) is its
 %   index in sv_y, iv_obsX(k) its index in sv_x, and both are 0 for an input that is not
 %   observed (its equilibrium value, or the output of a nested controller of the same name).
-% - The handles `f_*` @(t,x,V,I,u) bind param and omega0 (there is no f_I); `set_odefcn`
-%   builds them, called by `check_edit`. An edit of `tab_parameter` makes the handles and
-%   the equilibrium stale.
+% - The handles `f_*` @(t,x,V,I,u) bind param and omega0 (there is no f_I);
+%   `build_odefcn` builds them, called by `initialize` when they are stale
+%   (`sct_stale.odefcn`, or a network frequency other than `r_odefcnHz`).
+% - Stale tags (`sct_stale`): `equilibrium` (its dynamics, a nested controller, its
+%   attachment) and `odefcn` (its dynamics, its attachment). The component recomputes the
+%   equilibria of its controllers when one of them is stale (Component.initialize).
 %
 % Subclasses in the `controller` package define the static model functions (`fcn_dx`,
 % `fcn_y`, `fcn_Mass`), their Jacobians and the variable names. Controllers are attached
@@ -124,6 +127,9 @@ classdef LocalController < PowerSystemModel
     properties (Constant, Hidden) % Layer Structure
         sr_reserved = ["Xall","Yall"]  % Reserved input names: all the states sv_x / all the outputs sv_y of the component.
     end
+    properties(SetAccess=protected, Hidden) % Cached function handles
+        r_odefcnHz double = []  % [Hz] Network frequency bound into the f_* handles (empty: never built).
+    end
     properties(SetAccess=protected) % Steady State
         rv_Xequilibrium (:,1) double = zeros(0,1)  % State equilibrium (set by get_equilibrium of the subclass).
         rv_Uequilibrium (:,1) double = zeros(0,1)  % Input equilibrium (set by get_equilibrium of the subclass).
@@ -156,6 +162,7 @@ classdef LocalController < PowerSystemModel
                 obj   % New controller, not attached yet.
             end
             obj.s_tag = tag;
+            obj.sct_stale = struct("equilibrium", obj.s_notInitialized, "odefcn", obj.s_notInitialized);
             obj.para_dynamics = Parameter(obj,"dynamics");
         end        
     end    
@@ -171,6 +178,10 @@ classdef LocalController < PowerSystemModel
         remove_local_controller(obj)
 
         set_parent(obj,a_Component)
+
+        initialize(obj)
+        build_odefcn(obj)
+        l = odefcn_stale(obj)
 
         resolve_observe(obj)
 
@@ -189,7 +200,8 @@ classdef LocalController < PowerSystemModel
     end
 
     methods (Access=protected)
-        set_odefcn(obj)
+        handle_edit(obj, a_layer, tag, log)
+        sv_message = stale_messages(obj)
     end
     methods (Access=private)
         val = parent_equilibrium(obj, s_prop)

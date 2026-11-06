@@ -3,7 +3,7 @@
 % 系統モデルを組み立てる API の使い方と結果を確認する。
 %   add_bus / add_branch / add_component / add_local_controller / add_global_controller
 %   replace_component / remove_component / remove_branch / remove_bus / remove_global_controller
-%   タグ、tab_parameter の編集、編集ログ (disp_edit, l_initialized)
+%   タグ、tab_parameter の編集、古さ (sct_stale)
 %
 % 実行: runtests("DebugScript.test_F1_model_building")  または  DebugScript.run_all("Features","F1")
 
@@ -522,14 +522,14 @@ assert(numel(net.a_GlobalController) == 1 && isempty(agc2.a_PowerNetwork))
 
 %% Remove bus
 net = DebugScript.helper.build_9bus();
-DebugScript.helper.quiet(@() net.initialize);    % 編集ログは initialize 後に記録される
+DebugScript.helper.quiet(@() net.initialize);
 net.add_bus();                               % 何もつながっていない母線 B010
 bus = net.a_Bus{10};
 net.remove_bus("B010");
 assert(numel(net.a_Bus) == 9)
 assert(~ismember("B010", string(net.a_Bus)))
 assert(isempty(bus.a_PowerNetwork))                 % 削除した母線は系統への参照を持たない
-assert(net.disp_edit().tag(end) == "Topology")
+assert(any(contains(net.sct_stale.powerflow, "---remove->> B010")))   % 潮流が古くなる
 
 % 存在しないタグはエラー
 try
@@ -581,7 +581,7 @@ DebugScript.helper.quiet(@() net.initialize);
 net.remove_global_controller("agc");
 assert(isempty(net.a_GlobalController))
 assert(isempty(agc.a_PowerNetwork))                   % 削除した制御器は系統への参照を持たない
-assert(net.disp_edit().tag(end) == "Topology")
+assert(~DebugScript.helper.is_stale(net))             % 削除は何も古くしない
 
 % 存在しないタグはエラー
 try
@@ -611,72 +611,56 @@ Y  = net.get_admittance_matrix;
 assert(abs(Y{"B004","B005"} + 1/(0.010 + 1j*0.09)) < 1e-12)
 
 
-%% Edit log and edit flag
+%% Stale state and edit flag
 net = DebugScript.helper.build_9bus();
 
-% initialize 前は "unset" で、編集ログは記録されない
+% initialize 前は "unset" (初期メッセージ "initialize has not been run")
 assert(DebugScript.helper.edit_flag(net) == "unset")
+assert(isequal(net.sct_stale.powerflow, net.s_notInitialized))
 
-% initialize 後は "initialized"、ログは空
+% initialize 後は "initialized"、古いものはない
 DebugScript.helper.quiet(@() net.initialize);
 assert(DebugScript.helper.edit_flag(net) == "initialized")
-assert(height(net.disp_edit()) == 0)
+assert(isempty(DebugScript.helper.stale(net)))
 
-% パラメータを変更すると "editted" になり、変更前後の値が記録される
-net.a_Bus{5}.a_Component{1}.tab_parameter.powerflow.P = -1.1;
+% 機器の powerflow を変更すると系統の潮流が古くなり、メッセージに変更前後の値が入る
+comp = net.a_Bus{5}.a_Component{1};
+comp.tab_parameter.powerflow.P = -1.1;
 assert(DebugScript.helper.edit_flag(net) == "editted")
-lv = net.disp_edit().log == "edit P";
-assert(any(lv))
-assert(net.disp_edit().before{find(lv,1)} == -1.0 && net.disp_edit().after{find(lv,1)} == -1.1)
+assert(isequal(net.sct_stale.powerflow, "powerflow/" + string(comp) + "/B005/TestSystem: edit P: -1 -> -1.1"))
+assert(isempty(comp.sct_stale.equilibrium) && isempty(comp.sct_stale.odefcn))   % 機器自身は古くならない
+assert(isempty(DebugScript.helper.stale(net.a_Bus{4})))
 
-% 時刻の書式は "uuuu/MM/dd HH:mm:ss" の文字列
-tab = net.disp_edit();
-assert(isstring(tab.timestamp) && all(matches(tab.timestamp, digitsPattern(4)+"/"+digitsPattern(2)+"/"+digitsPattern(2)+" "+digitsPattern(2)+":"+digitsPattern(2)+":"+digitsPattern(2))))
-assert(abs(datetime(tab.timestamp(end), "InputFormat","uuuu/MM/dd HH:mm:ss") - datetime("now")) < minutes(1))
-assert(isequal(tab.Properties.VariableNames, {'timestamp','ID','log','tag','before','after'}))
-
-% 各層は自分の編集だけを持ち、disp_edit はその層と下の層の編集を集める
-bus = net.a_Bus{5};
-assert(isequal(bus.disp_edit(), net.disp_edit()) && isequal(bus.a_Component{1}.disp_edit(), net.disp_edit()))
-assert(height(net.a_Bus{4}.disp_edit()) == 0)
-
-% 構成の変更 (機器の削除) も記録される
+% 構成の変更 (機器の削除) も潮流を古くする
 net.a_Bus{8}.remove_component(string(net.a_Bus{8}.a_Component{1}));
-assert(any(contains(net.disp_edit().log, "remove")))
+assert(any(contains(net.sct_stale.powerflow, "remove")))
 
-% 再度 initialize するとログはリセットされる
+% 再度 initialize すると最新になる
 net.a_Bus{8}.add_component("load-power", "P", -1.2, "Q", -0.4);
 DebugScript.helper.quiet(@() net.initialize);
-assert(DebugScript.helper.edit_flag(net) == "initialized" && height(net.disp_edit()) == 0)
+assert(DebugScript.helper.edit_flag(net) == "initialized" && isempty(DebugScript.helper.stale(net)))
 
 
-%% Edit log of a layer collects its subtree in edit order
+%% Repeated edits keep one message each and a rename adds none
 net = DebugScript.helper.build_9bus();
 DebugScript.helper.quiet(@() net.initialize);
 comp5 = net.a_Bus{5}.a_Component{1};
 comp6 = net.a_Bus{6}.a_Component{1};
 
-% 1 秒以内に別の層を交互に編集しても、disp_edit は編集の順
 P5 = comp5.para_powerflow.P;  P6 = comp6.para_powerflow.P;
 for k = 1:5
     comp5.tab_parameter.powerflow.P = P5 - 0.01*k;
     comp6.tab_parameter.powerflow.P = P6 - 0.01*k;
 end
 net.a_Bus{5}.s_tag = "BX";
-tab = net.disp_edit();
-assert(height(tab) == 11)   % 1 回の編集は 1 行 (同じ行を 2 回数えない)
-assert(isequal(tab.ID(1:2:10), repmat("powerflow/"+string(comp5)+"/BX/TestSystem", 5, 1)) ...   % 改名前の行も 1 行ずつ
-    || isequal(tab.ID(1:2:10), repmat("powerflow/"+string(comp5)+"/B005/TestSystem", 5, 1)))
-assert(isequal([tab.after{1:2:10}]', P5 - 0.01*(1:5)') && isequal([tab.after{2:2:10}]', P6 - 0.01*(1:5)'))
-assert(tab.tag(end) == "Tag")
+sv = net.sct_stale.powerflow;
+assert(numel(sv) == 10)   % 1 回の編集は 1 件 (同じ件を 2 回数えない)
+assert(all(startsWith(sv(1:2:10), "powerflow/"+string(comp5)+"/B005/TestSystem: edit P: ")))   % タグは編集した時点のもの
+assert(all(startsWith(sv(2:2:10), "powerflow/"+string(comp6)+"/B006/TestSystem: edit P: ")))
+assert(~any(contains(sv, "rename")))     % 改名は何も古くしない
+assert(isempty(DebugScript.helper.stale(net.a_Bus{5})))    % 母線と機器自身は古くならない
 
-% 母線の disp_edit は系統の disp_edit の部分集合 (その母線と機器の行だけ)
-tab5 = net.a_Bus{5}.disp_edit();
-assert(height(tab5) == 6 && all(ismember(tab5.log, tab.log)))
-assert(isequal(tab5, tab([1:2:10, 11],:)))
-assert(isequal(comp6.disp_edit(), tab(2:2:10,:)))
-
-%% Removal keeps staleness; attaching clears the edits made before
+%% Removal keeps staleness; attaching marks the controller
 net = DebugScript.helper.build_9bus();
 gen1 = net.a_Bus{1}.a_Component{1};
 gen3 = net.a_Bus{3}.a_Component{1};
@@ -684,32 +668,36 @@ avr  = controller.avr.AVR_ST1("avr1");
 gen1.add_local_controller(avr);
 DebugScript.helper.quiet(@() net.initialize);
 
-% 制御器の Parameter の編集は制御器の行として系統の disp_edit に出る
+% 制御器の Parameter の編集は制御器自身の equilibrium と odefcn を古くする
 avr.para_dynamics.kap = 31;
-assert(height(avr.disp_edit()) == 1 && height(net.disp_edit()) == 1 && net.l_staleEquilibrium)
+s_msg = "dynamics/" + avr.s_tag + "/" + string(gen1) + "/B001/TestSystem: edit kap: ";
+assert(numel(avr.sct_stale.equilibrium) == 1 && startsWith(avr.sct_stale.equilibrium, s_msg))
+assert(isequal(avr.sct_stale.odefcn, avr.sct_stale.equilibrium))
+assert(isempty(gen1.sct_stale.equilibrium) && isempty(net.sct_stale.powerflow) && DebugScript.helper.is_stale(net))
 DebugScript.helper.quiet(@() net.initialize);
+assert(~DebugScript.helper.is_stale(net))
 
-% 削除した制御器は自分の行を持ち去るが、削除は機器の Topology の行として残り、平衡点は古いまま
+% 制御器の削除は機器の equilibrium を古くする
 avr.para_dynamics.kap = 32;
 gen1.remove_local_controller(avr.s_tag);
-assert(height(avr.disp_edit()) == 1 && net.l_staleEquilibrium)
-assert(height(net.disp_edit()) == 1 && net.disp_edit().tag == "Topology")
+assert(any(contains(gen1.sct_stale.equilibrium, "remove")) && DebugScript.helper.is_stale(net))
+assert(~any(contains(DebugScript.helper.stale(net), "kap")))   % 外した制御器の古さは系統に残らない
 
-% 切り離した制御器の編集は系統に届かない。別の機器に付けると前の行は消える
+% 切り離した制御器の編集は系統に届かない。別の機器に付けると機器と制御器が古くなる
 avr.para_dynamics.kap = 33;
-assert(height(avr.disp_edit()) == 2 && height(net.disp_edit()) == 1)
+assert(~any(contains(DebugScript.helper.stale(net), "kap")))
 gen3.add_local_controller(avr);
-assert(height(avr.disp_edit()) == 0)
-assert(all(net.disp_edit().tag == "Topology") && height(net.disp_edit()) == 2)
+assert(any(contains(avr.sct_stale.equilibrium, "attached to " + string(gen3))))
+assert(any(contains(gen3.sct_stale.equilibrium, "<<-Add---")))
 DebugScript.helper.quiet(@() net.initialize);
-assert(~net.l_staleEquilibrium && height(net.disp_edit()) == 0)
+assert(~DebugScript.helper.is_stale(net) && isempty(DebugScript.helper.stale(net)))
 
 
-%% Edit log records only changed parameters
+%% Only changed parameters are reported
 net = DebugScript.helper.build_9bus();
 DebugScript.helper.quiet(@() net.initialize);
 
-% 1つのパラメータを変更したらログは1行だけのはず
+% 1つのパラメータを変更したらメッセージは1件だけのはず
 net.a_Bus{5}.a_Component{1}.tab_parameter.powerflow.P = -1.1;
-assert(height(net.disp_edit()) == 1, ...
-       "1つの変更で " + height(net.disp_edit()) + " 行記録された: " + join(net.disp_edit().log, ", "))
+sv = DebugScript.helper.stale(net);
+assert(numel(sv) == 1, "1つの変更で " + numel(sv) + " 件記録された: " + join(sv, ", "))

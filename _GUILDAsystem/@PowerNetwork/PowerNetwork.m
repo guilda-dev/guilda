@@ -14,15 +14,15 @@ classdef PowerNetwork < PowerSystemModel
 %   global controllers and the owner of its scenarios; only the network sets and clears
 %   their back references (`Bus.a_PowerNetwork`, `Branch.a_PowerNetwork`, `Branch.a_Bus`,
 %   `GlobalController.a_PowerNetwork`, `Scenario.a_PowerNetwork`).
-% - Each layer keeps its own edits (`LayerPackage`: `log_edit`), and `net.disp_edit()`
-%   shows those of the whole network. Every edit also reaches the network's
-%   `handle_edit`, also before the first initialize: it keeps at most one slack bus and,
-%   on a network Hz edit, marks the f_* handles of every layer (`mark_odefcn`).
-% - `l_staleEquilibrium` is true when initialize has not run, or an edit logged since
-%   affects the equilibrium (see edit_effect; edits of "dynamics", "base" (baseMVA) and
-%   "powerflow" parameters, topology and slack-bus changes, and an initialize that stopped
-%   while writing the equilibrium). It is read from the edit log of the network when an
-%   analysis starts.
+% - Every edit is reported to the network's `handle_edit` (`LayerPackage.log_edit`), also
+%   before the first initialize. It keeps at most one slack bus, and marks the stale tag
+%   `powerflow` (`sct_stale`) for the edits that change the power flow: baseMVA, buses and
+%   branches added, removed or replaced, bus parameters (powerflow, dynamics), the slack
+%   bus, components connected, replaced or removed, branch dynamics and component
+%   powerflow parameters. The components and controllers mark their own stale tags.
+% - `initialize` brings every layer up to date; the analyses only check them
+%   (`check_edit`) and stop with GUILDA:LayerPackage:Stale, naming the
+%   reasons, until it has run.
 %
 % A network is built by adding buses (`add_bus`) and branches (`add_branch`); the
 % components (generators, loads, ...) are added to the buses (`Bus.add_component`) and
@@ -47,10 +47,11 @@ classdef PowerNetwork < PowerSystemModel
 %
 % - `Hz` [Hz]: nominal frequency. Models read it with get_Hz() and receive it as omega0.
 %   Set by the constructor (GUILDA.config("Model","Hz")), by writing the table and by
-%   import_csv. An edit makes the function handles of every layer stale.
+%   import_csv. An edit makes the function handles of every model stale (each compares
+%   the frequency it was built with); initialize only rebuilds them.
 % - `baseMVA` [MVA]: system base of all per-unit values (default 100). Stored per-unit
 %   values are not converted when it changes. Set by the constructor, by writing the
-%   table, import_csv and import_matpower. An edit makes the equilibrium stale.
+%   table, import_csv and import_matpower. An edit makes the power flow stale.
 %
 % Power-flow settings are parameters of the buses (`tab_parameter.powerflow`: V, Varg)
 % and the components (`tab_parameter.powerflow`: P, Q). OPF limits and costs are in
@@ -84,15 +85,12 @@ classdef PowerNetwork < PowerSystemModel
 %% Properties
 
     properties(SetAccess=private) % Layer Structure
-        a_Bus (:,1) cell = cell(0,1);  % Buses of the network, in the order of the bus index. <@Stale> equilibrium
-        a_Branch (:,1) cell = cell(0,1);  % Branches of the network. <@Stale> equilibrium
-        a_GlobalController (:,1) cell = cell(0,1);  % Global controllers of the network. <@Stale> equilibrium
+        a_Bus (:,1) cell = cell(0,1);  % Buses of the network, in the order of the bus index. <@Stale> powerflow
+        a_Branch (:,1) cell = cell(0,1);  % Branches of the network. <@Stale> powerflow
+        a_GlobalController (:,1) cell = cell(0,1);  % Global controllers of the network. <@Stale> equilibrium of the added controller
     end
     properties(SetAccess=private) % Scenarios
-        a_Scenario (:,1) cell = cell(0,1);  % Simulation scenarios (Scenario), in the order added by add_scenario; not model data. <@Stale> nothing (not logged)
-    end
-    properties(Dependent, Hidden) % Edit log
-        l_staleEquilibrium  % True when the equilibrium of initialize no longer matches the model (see the class help). <@Type> logical
+        a_Scenario (:,1) cell = cell(0,1);  % Simulation scenarios (Scenario), in the order added by add_scenario; not model data. <@Stale> nothing
     end
     properties(SetAccess=protected) % Solvers
         solver_PF  % Solver of calculate_powerflow (returns a ResultPF); stored defaults: Method, Tolerance, MaxIterations, ... <@Type> SolverPF <@Stale> nothing
@@ -113,9 +111,9 @@ classdef PowerNetwork < PowerSystemModel
         para_base  % Hz [Hz]: nominal frequency, read with get_Hz() and passed as omega0; baseMVA [MVA]: system base of all per-unit values (default 100).
     end
     properties(SetAccess=protected) % OPF
-        f_opfcost = []  % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the network ([]: none). <@Stale> nothing (logged)
-        f_opfconst = []  % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing (logged)
-        l_opfdefault = true  % Whether the default OPF constraints of the network are kept (DefaultConstraint of set_opffcn). <@Stale> nothing (logged)
+        f_opfcost = []  % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the network ([]: none). <@Stale> nothing
+        f_opfconst = []  % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing
+        l_opfdefault = true  % Whether the default OPF constraints of the network are kept (DefaultConstraint of set_opffcn). <@Stale> nothing
     end
     properties(Dependent, Access=protected) % Layer Structure
         parent  % Parent in the layer structure: none (the network is the top).
@@ -136,6 +134,7 @@ classdef PowerNetwork < PowerSystemModel
                 obj   % New PowerNetwork without buses.
             end
             obj.s_tag     = tag;
+            obj.sct_stale = struct("powerflow", obj.s_notInitialized);
             obj.para_base = Parameter(obj,"base");
             obj.para_base.add_entry(     "Hz", GUILDA.config("Model","Hz"), "double",...
                                     "baseMVA", 100                        , "double");
@@ -196,26 +195,12 @@ classdef PowerNetwork < PowerSystemModel
         obj = loadobj(obj)
     end
     methods(Access=protected)
-        % Edit handling: build the f_* handles that are not up to date, check the equilibrium
-        flag = check_edit(obj, opt)
-
+        % Edit handling: the one-slack-bus rule and the stale tag powerflow
         handle_edit(obj, a_layer, tag, log)
-    end
-    methods(Access={?SolverODE, ?SolverLIN})
-        require_equilibrium(obj)
     end
 
 %% Get Method
     methods
-        function l = get.l_staleEquilibrium(obj)
-            l = ~obj.l_initialized;
-            if ~l
-                sct_log = obj.collect_edit();
-                [~, lv]  = obj.edit_effect(string({sct_log.s_tag}), string({sct_log.s_log}));
-                l = any(lv);
-            end
-        end
-
         function tp = get.tab_parameter(obj)
             base = obj.para_base.tab_parameter;
             tp   = table(base);

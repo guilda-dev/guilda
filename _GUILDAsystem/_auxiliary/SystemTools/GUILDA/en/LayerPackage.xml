@@ -1,0 +1,6 @@
+<!--This is an XML file containing error messages related to the class "LayerPackage".-->
+<rsccat version="4.0" locale="en" product="GUILDA">
+    <message>
+        <entry key="Stale">''{0}'' is not up to date: {1}.&#xA;Run net.initialize() first.</entry>
+    </message>
+</rsccat>

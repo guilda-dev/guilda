@@ -21,10 +21,10 @@ function [DAEvec, y] = get_dx_algebraic(obj, t, x, Vi, Ii, obs, DAEvec)
         y      (:,1) double  % Outputs of the controller, which drive the inputs of its parent of the same name.
     end
 
-    % A controller attached after its component was brought up to date (see
+    % A controller attached after its component's handles were built (see
     % Component.get_dx_algebraic)
-    if obj.s_odefcn ~= "updated"
-        obj.check_edit();
+    if isempty(obj.f_dx)
+        obj.build_odefcn();
     end
 
     rv_U = obj.rv_Uequilibrium;

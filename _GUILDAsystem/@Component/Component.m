@@ -13,8 +13,9 @@ classdef Component < PowerSystemModel
 % Components are created by `Bus.add_component`. Their parameters are in
 % `tab_parameter`: dynamics, operation limits, power-flow settings (P, Q), OPF costs and
 % diagram settings, set by `add_component` (dynamics by the subclass constructor) or by
-% writing the table. An edit of dynamics makes the handles and the equilibrium stale, an
-% edit of powerflow the equilibrium; operation, OPF and graph make nothing stale. The OPF
+% writing the table. An edit of dynamics makes the handles and the equilibrium of the
+% component stale (stale tags odefcn and equilibrium), an edit of powerflow the power flow
+% of the network; operation, OPF and graph make nothing stale. The OPF
 % cost of a component is $H_P P^2 + f_P P + H_Q Q^2 + f_Q Q$. Analytic Jacobians (static
 % methods Jacobi_dx, Jacobi_I, Jacobi_Y) are optional; without them the Jacobians are
 % computed numerically.
@@ -27,12 +28,16 @@ classdef Component < PowerSystemModel
 % - The base class turns the static model functions into the cached handles `f_*`, adds its
 %   local controllers to the DAE and the linear model, and computes Jacobians numerically
 %   when the subclass gives none. The handles @(t,x,V,I,u) bind the parameters and omega0;
-%   `set_odefcn` builds them, called by `check_edit` at the start of an analysis, and
-%   `s_odefcn` tells whether they are "unset", "editted" or "updated".
+%   `build_odefcn` builds them, called by `PowerNetwork.initialize` when they are stale
+%   (`sct_stale.odefcn`, or a network frequency other than `r_odefcnHz`).
+% - Stale tags (`sct_stale`): `equilibrium` (its dynamics, its local controllers, its
+%   attachment) and `odefcn` (its dynamics, its attachment). `initialize`, called by
+%   PowerNetwork.initialize through the bus, rebuilds the handles and recomputes the
+%   equilibrium from the held V and I when they are stale.
 % - Does not own the bus voltage (it reads `a_Bus.c_Vequilibrium`), the network frequency
 %   (it reads `get_Hz()`) or the system base.
 % - Created only by `Bus.add_component` and `Bus.replace_component`. Only the bus sets and
-%   clears `a_Bus` (through `set_bus`, which also marks the handles of the subtree stale);
+%   clears `a_Bus` (through `set_bus`);
 %   the component sets `LocalController.a_Component` of its controllers. A
 %   `GlobalController` refers to controlled components in `controlledUnits`; a controlled
 %   component cannot be removed or replaced while the controller is on the network.
@@ -119,6 +124,9 @@ classdef Component < PowerSystemModel
         f_JacobiI  % Jacobian function of f_I (analytic or numerical).
         f_JacobiY  % Jacobian function of f_Y (analytic or numerical).
     end
+    properties(SetAccess=protected, Hidden) % Cached function handles
+        r_odefcnHz double = []  % [Hz] Network frequency bound into the f_* handles (empty: never built).
+    end
     properties(SetAccess=protected) % Steady State
         rv_Xequilibrium = zeros(0,1)  % State equilibrium.
         rv_Uequilibrium = zeros(0,1)  % Input equilibrium.
@@ -149,9 +157,9 @@ classdef Component < PowerSystemModel
         para_graph  % Xaxis, Yaxis, Marker, MidXaxis, MidYaxis: drawing data.
     end
     properties(SetAccess=protected) % OPF
-        f_opfcost = []  % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the component ([]: none). <@Stale> nothing (logged)
-        f_opfconst = []  % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing (logged)
-        l_opfdefault = true  % Whether the default OPF constraints of the component are kept (DefaultConstraint of set_opffcn). <@Stale> nothing (logged)
+        f_opfcost = []  % OPF cost handle @(v, p) from set_opffcn; replaces the default cost of the component ([]: none). <@Stale> nothing
+        f_opfconst = []  % OPF constraint handle @(v, p) from set_opffcn, returning a struct of named constraints ([]: none). <@Stale> nothing
+        l_opfdefault = true  % Whether the default OPF constraints of the component are kept (DefaultConstraint of set_opffcn). <@Stale> nothing
     end
     properties(Dependent, Access=protected) % Layer Structure
         parent  % Parent in the layer structure: the bus.
@@ -184,6 +192,7 @@ classdef Component < PowerSystemModel
                 obj   % New Component object.
             end
             obj.s_tag          = s_tag;
+            obj.sct_stale      = struct("equilibrium", obj.s_notInitialized, "odefcn", obj.s_notInitialized);
             obj.para_dynamics  = Parameter(obj,"dynamics");
             obj.para_powerflow = Parameter(obj,"powerflow");
             obj.para_OPF       = Parameter(obj,"OPF");
@@ -216,7 +225,9 @@ classdef Component < PowerSystemModel
                                          "MidYaxis", opt.MidYaxis         , "string");
         end        
 
-        set_odefcn(obj)
+        build_odefcn(obj)
+        handle_edit(obj, a_layer, tag, log)
+        sv_message = stale_messages(obj)
 
         % Raise a constructor message of Component.xml for a subclass in another folder.
         parameter_error(obj, s_key, varargin)
@@ -253,7 +264,12 @@ classdef Component < PowerSystemModel
         [rv_dx, rv_I] = point_residual(obj, rv_point)
     end
 
+    methods(Access=private)
+        l = odefcn_stale(obj)
+    end
+
     methods(Access={?Bus})
+        initialize(obj)
         set_bus(obj,bus)
         set_equilibrium(obj,c_V,c_I,r_P,r_Q)
         move_local_controllers(obj,comp_new)

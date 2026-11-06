@@ -92,8 +92,8 @@ sys = result.get_ss(Algorithm, Coordinate=…, Input=…, Output=…)
 
     <h3><span lang="en">Preconditions for the call</span><span lang="ja">呼び出しの前提条件</span></h3>
     <ul>
-      <li lang="en"><code>net.initialize()</code> has run, with no edit since that changes the equilibrium, also when a <code>Point</code> is given (see <a href="class-design.html#edits">Class Design: Handling of model edits</a>). Out-of-date <code>f_*</code> handles: rebuilt automatically.</li>
-      <li lang="ja"><code>net.initialize()</code> を実行済みで、その後に平衡点を変える編集がないこと (<code>Point</code> を与えた場合も同じ。<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a> を参照)。古い <code>f_*</code> ハンドルは自動で再構築</li>
+      <li lang="en"><code>net.initialize()</code> has run, with no edit since that makes a layer stale, a network <code>Hz</code> edit included, also when a <code>Point</code> is given (see <a href="class-design.html#edits">Class Design: Handling of model edits</a>). <code>initialize</code> builds the <code>f_*</code> handles.</li>
+      <li lang="ja"><code>net.initialize()</code> を実行済みで、その後に層を古くする編集（ネットワークの <code>Hz</code> の編集も含む）がないこと (<code>Point</code> を与えた場合も同じ。<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a> を参照)。<code>f_*</code> ハンドルは <code>initialize</code> が作成</li>
       <li lang="en">No component equation depends on the current <code>I</code> (the ports are <code>V</code> in, <code>I</code> out).</li>
       <li lang="ja">機器の式が電流 <code>I</code> に依存しないこと (端子は <code>V</code> が入力、<code>I</code> が出力)。</li>
       <li lang="en">A <code>Point</code> vector has one finite value per row of the variable map.</li>
@@ -148,7 +148,7 @@ sys = result.get_ss(Algorithm, Coordinate=…, Input=…, Output=…)
           <path class="dg-sv-line" d="M170 150H298" marker-end="url(#lin-ah)"/>
           <text class="is-sm" x="176" y="144"><tspan style="fill:var(--dg-accent)">03</tspan> solve(net, sct_options)</text>
           <path class="dg-sv-line" d="M300 180H172" marker-end="url(#lin-ah)"/>
-          <text class="is-sm" x="176" y="174"><tspan style="fill:var(--dg-accent)">04</tspan> require_equilibrium → check_edit</text>
+          <text class="is-sm" x="176" y="174"><tspan style="fill:var(--dg-accent)">04</tspan> check_edit</text>
           <path class="dg-sv-line" d="M300 210H172" marker-end="url(#lin-ah)"/>
           <text class="is-sm" x="176" y="204"><tspan style="fill:var(--dg-accent)">05</tspan> get_variable_map</text>
           <path class="dg-sv-line" d="M300 228h26v14h-24" marker-end="url(#lin-ah)"/>
@@ -188,7 +188,7 @@ sys = result.get_ss(Algorithm, Coordinate=…, Input=…, Output=…)
           <li><span class="lin-id">LIN-01</span> <span lang="en">caller</span><span lang="ja">呼び出し側</span> → <code>PowerNetwork.linearize</code></li>
           <li><span class="lin-id">LIN-02</span> <code>PowerNetwork</code> → <code>SolverLIN.get_options</code></li>
           <li><span class="lin-id">LIN-03</span> <code>PowerNetwork</code> → <code>SolverLIN.solve</code></li>
-          <li><span class="lin-id">LIN-04</span> <code>SolverLIN</code> → <code>PowerNetwork.require_equilibrium</code></li>
+          <li><span class="lin-id">LIN-04</span> <code>SolverLIN</code> → <code>LayerPackage.check_edit</code></li>
           <li><span class="lin-id">LIN-05</span> <code>SolverLIN</code> → <code>PowerNetwork.get_variable_map</code></li>
           <li><span class="lin-id">LIN-06</span> <code>SolverLIN.point_vector</code></li>
           <li class="lin-loop"><span class="lin-id">LIN-07</span> <code>SolverLIN</code> → <code>Bus.get_sys</code></li>
@@ -262,20 +262,20 @@ sys = result.get_ss(Algorithm, Coordinate=…, Input=…, Output=…)
         </dl>
       </li>
       <li class="fs-step" id="LIN-04">
-        <p class="fs-head"><b class="fs-id">LIN-04</b> <span class="fs-call"><code>SolverLIN.solve</code> → <code>PowerNetwork.require_equilibrium</code></span></p>
+        <p class="fs-head"><b class="fs-id">LIN-04</b> <span class="fs-call"><code>SolverLIN.solve</code> → <code>LayerPackage.check_edit</code></span></p>
         <dl class="fs-body">
           <dt><span lang="en">What it does</span><span lang="ja">処理内容</span></dt>
           <dd><ul lang="en">
-              <li>Builds out-of-date <code>f_*</code> handles (<code>set_odefcn</code>); stops if the equilibrium is missing or stale.</li>
+              <li>Stops with <code>GUILDA:LayerPackage:Stale</code> if a layer is stale (<code>net.check_edit()</code>); rebuilds nothing.</li>
               <li>Rejects a <code>NonUnit</code> bus that does not exist (<code>v3_nonunit_range</code>).</li>
             </ul><ul lang="ja">
-              <li>古い <code>f_*</code> ハンドルを再構築 (<code>set_odefcn</code>)。平衡点がないか古ければ停止</li>
+              <li>古い層があれば <code>GUILDA:LayerPackage:Stale</code> で停止 (<code>net.check_edit()</code>)。再構築はなし</li>
               <li>存在しない <code>NonUnit</code> 母線を拒否 (<code>v3_nonunit_range</code>)</li>
             </ul></dd>
           <dt><span lang="en">What it reads</span><span lang="ja">読み取る情報</span></dt>
-          <dd><code>l_initialized</code>, <code>s_odefcn</code>, <code>net.disp_edit()</code></dd>
+          <dd><code>sct_stale</code> <span lang="en">of every layer</span><span lang="ja">（全層）</span>, <code>r_odefcnHz</code>, <span lang="en">network</span><span lang="ja">ネットワークの</span> <code>Hz</code>, <code>NonUnit</code></dd>
           <dt><span lang="en">Returns or changes</span><span lang="ja">戻り値・変更する値</span></dt>
-          <dd><code>f_*</code>; <code>s_odefcn = "updated"</code></dd>
+          <dd><span lang="en">— (errors only)</span><span lang="ja">—（エラーのみ）</span></dd>
         </dl>
       </li>
       <li class="fs-step" id="LIN-05">
@@ -577,11 +577,11 @@ sys = result.get_ss(Algorithm, Coordinate=…, Input=…, Output=…)
     <table class="dg-table">
       <thead><tr><th><span lang="en">Object</span><span lang="ja">対象のオブジェクト</span></th><th><span lang="en">Behaviour</span><span lang="ja">振る舞い</span></th></tr></thead>
       <tbody>
-        <tr><td><code>f_*</code> <span lang="en">handles</span><span lang="ja">ハンドル</span></td><td><span lang="en">Built by LIN-04 (and by the <code>check_edit</code> in each layer's <code>get_sys</code>) where <code>s_odefcn</code> is not <code>"updated"</code>; they stay built.</span><span lang="ja">LIN-04 (および各層の <code>get_sys</code> の <code>check_edit</code>) で <code>s_odefcn</code> が <code>"updated"</code> でない層について構築。そのまま残存</span></td></tr>
-        <tr><td><span lang="en">Network, equilibrium, edit flags</span><span lang="ja">ネットワーク、平衡点、編集フラグ</span></td><td><span lang="en">Read only. A <code>Point</code> is used for this call only and is not written to the models.</span><span lang="ja">参照のみ。<code>Point</code> はこの呼び出しのみで使用し、モデルには書き込まない</span></td></tr>
+        <tr><td><code>f_*</code> <span lang="en">handles</span><span lang="ja">ハンドル</span></td><td><span lang="en">Read only; built by <code>net.initialize()</code> (LIN-04 and the <code>get_sys</code> of each layer only check them).</span><span lang="ja">参照のみ。<code>net.initialize()</code> が作成（LIN-04 と各層の <code>get_sys</code> は確認のみ）</span></td></tr>
+        <tr><td><span lang="en">Network, equilibrium, stale state</span><span lang="ja">ネットワーク、平衡点、stale 状態</span></td><td><span lang="en">Read only. A <code>Point</code> is used for this call only and is not written to the models.</span><span lang="ja">参照のみ。<code>Point</code> はこの呼び出しのみで使用し、モデルには書き込まない</span></td></tr>
         <tr><td><code>net.solver_LIN</code></td><td><span lang="en">Read only; options of the call are not stored.</span><span lang="ja">参照のみ。呼び出しのオプションは保存しない</span></td></tr>
         <tr><td><span lang="en">Command Window</span><span lang="ja">コマンドウィンドウ</span></td><td><span lang="en">An <code>INFO:</code> line when a bus voltage is zero at the point.</span><span lang="ja">点で母線電圧が 0 なら <code>INFO:</code> の行を表示</span></td></tr>
-        <tr><td><code>ResultLIN</code></td><td><span lang="en">Holds a reference to the network and its own copies of the map, blocks and bus models; <code>get_ss</code> works from these, so a later edit of the network does not change it. The next <code>linearize</code> after an edit that makes the equilibrium stale stops in LIN-04.</span><span lang="ja">ネットワークへの参照と、変数マップ・ブロック・母線モデルの写しを保持。<code>get_ss</code> はこれらから計算するため、後のネットワークの編集で不変。平衡点を古くする編集の後の <code>linearize</code> は LIN-04 で停止</span></td></tr>
+        <tr><td><code>ResultLIN</code></td><td><span lang="en">Holds a reference to the network and its own copies of the map, blocks and bus models; <code>get_ss</code> works from these, so a later edit of the network does not change it. The next <code>linearize</code> after an edit that makes a layer stale stops in LIN-04.</span><span lang="ja">ネットワークへの参照と、変数マップ・ブロック・母線モデルの写しを保持。<code>get_ss</code> はこれらから計算するため、後のネットワークの編集で不変。層を古くする編集の後の <code>linearize</code> は LIN-04 で停止</span></td></tr>
       </tbody>
     </table>
 
@@ -603,7 +603,7 @@ sys = result.get_ss(Algorithm, Coordinate=…, Input=…, Output=…)
         <tr><td><span lang="en">Zero bus voltage, point not an equilibrium</span><span lang="ja">母線電圧が 0、点が平衡点でない</span></td><td><span lang="en"><code>flag</code> unchanged; <code>output.message</code>, <code>output.sv_faultBus</code>, <code>result.rv_residual</code></span><span lang="ja"><code>flag</code> は変わらない。<code>output.message</code>、<code>output.sv_faultBus</code>、<code>result.rv_residual</code></span></td></tr>
         <tr><td><span lang="en">Invalid point (LIN-02, LIN-06)</span><span lang="ja">不正な点 (LIN-02, LIN-06)</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:SolverLIN:PointType</code>, <code>PointSize</code>, <code>PointSimType</code>, <code>PointSimSize</code>, <code>PointNotFinite</code>; <code>GUILDA:ResultODE:PointTime</code></td></tr>
         <tr><td><span lang="en">Model not finite at the point (<code>dss</code> rejects it, LIN-07, LIN-11)</span><span lang="ja">点でモデルが有限でない (<code>dss</code> が拒否。LIN-07, LIN-11)</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:SolverLIN:JacobianNotFinite</code></td></tr>
-        <tr><td><span lang="en">Equilibrium missing or stale (LIN-04)</span><span lang="ja">平衡点がない、または古い (LIN-04)</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:PowerNetwork:EquilibriumStale</code></td></tr>
+        <tr><td><span lang="en">Equilibrium missing or stale (LIN-04)</span><span lang="ja">平衡点がない、または古い (LIN-04)</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:LayerPackage:Stale</code></td></tr>
         <tr><td><span lang="en">Model structure</span><span lang="ja">モデルの構造</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:Component:CurrentDependence</code> (LIN-10), <code>GUILDA:GlobalController:GlobalControllerPort</code> (LIN-11), <code>GUILDA:SolverLIN:GlobalControllerPort</code>, <code>GUILDA:SolverLIN:VariableMap</code> (LIN-13)</td></tr>
         <tr><td><span lang="en"><code>get_ss</code> arguments and forms (LIN-19)</span><span lang="ja"><code>get_ss</code> の引数と形 (LIN-19)</span></td><td><span lang="en">Error:</span><span lang="ja">エラー:</span> <code>GUILDA:ResultLIN:UnknownInput</code>, <code>UnknownOutput</code>, <code>StateNotInModel</code>, <code>NoUnitBus</code>, <code>NoI2V</code>, <code>GlobalControllerPort</code></td></tr>
         <tr><td><span lang="en">Invalid option</span><span lang="ja">不正なオプション</span></td><td><span lang="en">Error</span><span lang="ja">エラー</span> <code>GUILDA:resolve_options:UnknownName</code></td></tr>

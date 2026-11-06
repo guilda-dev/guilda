@@ -139,47 +139,51 @@ net.add_bus(...)                    % no baseMVA option
   / `c_Iequilibrium` read the parent.
 - Do not write copies of the voltage into a component or controller.
 
-### 1.3 Edit tracking and the stale-equilibrium error
+### 1.3 編集の追跡と「古い」状態のエラー
 
-Every parameter or topology edit is logged and records what it made stale:
+v3 の編集ログ(`tab_editLog`)はありません。各層は、古くなっている部分ごとに理由のメッセージを `sct_stale`(Hidden、読み取り可)に持ちます。空の列は最新の意味です。
 
-| Edit                                   | f_* handles | equilibrium |
-|----------------------------------------|-------------|-------------|
-| `Parameter(dynamics)`                  | stale       | stale       |
-| `Parameter(base)`, network baseMVA     | stale (every layer) | stale |
-| `Parameter(base)`, network Hz          | stale (every layer) | –     |
-| `Parameter(powerflow)`, `Topology`, `Slack` | –      | stale       |
-| `Parameter(operation/OPF/graph)`       | –           | –           |
-| `OPF` (`set_opffcn`, `reset_opffcn`)   | –           | –           |
-| `Tag`(`s_tag` による改名)          | –           | –           |
+| 層 | 古くなるタグ(`sct_stale` のフィールド) |
+|---|---|
+| `PowerNetwork` | `powerflow` |
+| `Component`、`LocalController`、`GlobalController` | `equilibrium`、`odefcn` |
+| `Bus`、`Branch` | なし |
 
-- A network **Hz** edit only marks the handles of every layer stale, and the
-  next analysis rebuilds them: the equilibrium does not depend on the nominal
-  frequency, so `simulate` and `get_sys` run without
-  `initialize()`. A **baseMVA** edit changes the per-unit values and still
-  needs `net.initialize()`.
-- Adding or replacing an AVR or PSS (`add_local_controller`) is logged as a
-  `Topology` edit, so the equilibrium becomes stale.
-- **改名は記録だけです。** `s_tag` への代入は編集ログ(`disp_edit`)にタグ `Tag` で記録され、何も古くしません。母線を改名しても、その機器のタグは変わりません(タグは永続的な ID として扱います)。
-- **編集ログは各層が持ちます。** 各層は自分の編集を保持し、`disp_edit` はどの層にもあって、その層と下の層の編集を編集順に表示します(出力引数があれば表を返します)。`net.disp_edit()` は系統全体、`bus.disp_edit()` はその母線と機器・制御器だけです。v3 の `tab_editLog` はなくなり、`tab = net.disp_edit();` で同じ列の表を得ます。削除した層は自分の編集を持ち去り(削除は親の `Topology` の行)、別の親に付けるとその層の編集は消え、次の `initialize` まで記録されません。まだ一度も `initialize` されていない層(最後の `initialize` の後に新しく作って追加した層など)の編集は、次の `initialize` まで記録されません(平衡点は追加の `Topology` の行で古いままです)。
+- **初期値。** 各タグは作成時に `"initialize has not been run"` を持ちます。このメッセージがあるタグには、ほかのメッセージを追加しません。
+- **メッセージ。** 「編集した層から上のタグを `/` でつないだもの」+ `": "` + 編集内容(値を含む)。例: `"dynamics/SG1B001/B001/IEEE9bus: edit D: 2 -> 2.1"`。同じメッセージは重複させません。
+- **編集の種類(タグ)。** パラメータのグループ名(`dynamics`、`powerflow`、`base`、`operation`、`OPF`、`graph`)、`opffcn`(`set_opffcn` / `reset_opffcn`)、`Topology`、`Slack`、`Tag`。
+
+| 編集 | 古くなるもの |
+|---|---|
+| 系統の `baseMVA`、母線・ブランチの追加 / 削除 / 置換 | 系統の `powerflow` |
+| 母線の `powerflow`・`dynamics`(シャント)、スラック母線の変更、機器の接続 / 置換 / 削除 | 系統の `powerflow` |
+| ブランチの `dynamics` | 系統の `powerflow` |
+| 機器の `powerflow`(P、Q) | 系統の `powerflow` |
+| 機器・制御器の `dynamics`(`local_LQR` の `Q`、`R`、`V0` を含む) | その層の `equilibrium`、`odefcn` |
+| ローカル制御器の追加 / 置換 / 削除 | 機器の `equilibrium` |
+| 機器・制御器を付ける(`set_bus`、`set_parent`) | 付けた層の `equilibrium`、`odefcn` |
+| 大域制御器の追加 | その制御器の `equilibrium`(系統の `powerflow` は古くならない) |
+| 大域制御器の削除 | なし |
+| 系統の `Hz` | 子へは届かない。各モデルがハンドルを作った周波数(`r_odefcnHz`)と比べ、違えば `odefcn` が古い扱い |
+| `operation`、`OPF`、`graph`、`opffcn`、`Tag`(改名) | なし |
+
+- **最新にするのは `net.initialize()` だけです。** `powerflow` が古いか `Method` を明示したときだけ潮流計算を解き、`Bus.set_equilibrium` で書き込みます。その後、母線 → 機器 → ローカル制御器、ブランチ、大域制御器(最後)の順に、古いハンドルを作り直し、まだ古い平衡点を保持している V と I から計算し直します。何も古くなければ何もしません。
+  - 動特性だけの編集: 潮流計算を解かず、編集したモデルだけを計算し直します。
+  - Hz だけの編集: ハンドルを作り直すだけです(`local_LQR` は保持している平衡点で `K` を設計し直します)。
+  - `Method="equilibrium"`: 潮流計算を解きません。`powerflow` が古いときは `GUILDA:PowerNetwork:InitializeEquilibriumEdited` で止まります。
+- **解析は検査だけです。** `simulate`、`linearize`、`get_sys`(各層も)、`calculate_continuation_powerflow`、`LocalController.validate` は系統の `check_edit` を呼び、どこかのタグが空でなければ、メッセージを最大 3 件挙げて `GUILDA:LayerPackage:Stale` で止まります。何も作り直しません。検査は `solver_ODE.solve`、`solver_LIN.solve`、`solver_CPF.solve` にあるので、ソルバーを直接呼んでも検査されます。
+- **改名は何も古くしません。** 母線を改名しても、その機器のタグは変わりません(タグは永続的な ID として扱います)。
 - **パラメータの型の誤りはエラーです。** 宣言と違うクラスの値を代入すると `GUILDA:Parameter:ClassNameMismatch` で止まり、値も編集履歴も変わりません。以前は MATLAB がリスナー内のエラーを警告に変えていたので、スクリプトは止まりませんでした。`try` / `catch` なしで型の違う値を代入しているスクリプトは、正しいクラスの値に直してください。
-
-`initialize`, `simulate`, `linearize` and `get_sys` rebuild stale `f_*`
-handles, so dynamics edits now take effect without rebuilding the model.
-When the equilibrium is stale, `simulate`, `linearize` and `get_sys` stop
-with `GUILDA:PowerNetwork:EquilibriumStale`; the check is in
-`solver_ODE.solve` and `solver_LIN.solve`, so calling a solver directly
-checks it too:
 
 ```matlab
 net.a_Bus{2}.tab_parameter.powerflow.V = 1.02;
-net.simulate([0 10]);        % error GUILDA:PowerNetwork:EquilibriumStale
+net.sct_stale.powerflow      % "powerflow/B002/IEEE9bus: edit V: 1.025 -> 1.02"
+net.simulate([0 10]);        % error GUILDA:LayerPackage:Stale
 net.initialize();
 net.simulate([0 10]);        % OK
 ```
 
-Scripts that edited parameters and relied on the old (unchanged) equilibrium
-must now call `net.initialize()` after the edit.
+パラメータを編集して古い(変わらない)平衡点のまま解析していたスクリプトは、編集の後に `net.initialize()` を呼ぶ必要があります。
 
 ### 1.4 Topology methods
 
@@ -283,7 +287,7 @@ Outputs of several controllers on the same input add up. Scalar `alpha` /
   pss)` replaces both. A replacement warns
   `GUILDA:Component:ReplaceController` and detaches the replaced
   controller. Before, the PSS was dropped. Adding or replacing is logged (1.3).
-- **`local_LQR` と Hz の編集。** 系統の Hz を編集しても平衡点は古くならないので、`K` は編集の時点では変わらず、次の `get_sys`(機器、母線、系統のどの層でも)か `simulate` で保持している平衡点から設計し直します。値は同じ Hz で `net.initialize()` し直したときと一致します(許容差 `1e-6` の相対誤差で確認)。動特性も一緒に編集したときは `GUILDA:PowerNetwork:EquilibriumStale` で止まり、`K` は `initialize` まで変わりません。同じ Hz に戻したときは設計し直しません。
+- **`local_LQR` と Hz の編集。** 系統の Hz を編集しても平衡点は古くならないので、`K` は編集の時点では変わらず、次の `net.initialize()` がハンドルを作り直すときに、保持している平衡点から設計し直します(潮流計算は解きません)。それまでの解析は `GUILDA:LayerPackage:Stale` で止まります。同じ Hz に戻したときは設計し直しません。設計し直しに失敗したときは警告を出し、その制御器の `equilibrium` を古い扱いにします(次の `initialize` が平衡点から設計し直し、失敗すればエラー)。
 - **ローカル制御器の削除。** `comp.remove_local_controller(tag)` を追加しました。タグは `s_tag` で指定します。
 
   ```matlab
@@ -706,7 +710,7 @@ Option names:
 - A bus without components (e.g. a pure junction bus) can be linearized: it
   has no states and takes no current.
 - **チャネル名で添字できます。** `sys(出力名, 入力名)` は `sys(行, 列)` と同じ結果です。`comp.get_sys`、`bus.get_sys`、制御器の `get_sys` が返すモデルで使えることをテストで確認しています。以前はチャネルと同じ名前のグループが曖昧さのエラーを起こしていました。そのため、`comp.get_sys` と `con.get_sys` が返すモデルの `InputGroup` と `OutputGroup` は空になりました(`con.get_sys` は `tag=false` のときだけ持ちます)。`sys.InputGroup.<名前>` を読むスクリプトは `sys(:, "<名前>")` に直してください。
-- **各層の `get_sys` も編集を検査します。** `comp.get_sys`、`bus.get_sys`、`con.get_sys`、`gc.get_sys` は古い `f_*` を作り直し、平衡点が古ければ `GUILDA:PowerNetwork:EquilibriumStale` で止まります。`comp` と `bus` で `Point` を渡したときは作り直しだけです。
+- **各層の `get_sys` も検査します。** `comp.get_sys`、`bus.get_sys`、`con.get_sys`、`gc.get_sys` は系統の `check_edit` を呼び、どこかが古ければ(`Point` を渡したときも) `GUILDA:LayerPackage:Stale` で止まります。系統に属さない機器・制御器は、古いハンドルをその場で作ります。
 - **`net.rv_Xequilibrium`** は `get_variable_map` の状態の行の順で値を返します(以前は読むと常に失敗しました)。`comp.rv_Xequilibrium_all` は AVR の下の PSS も含みます。
 - **解けないモデルのエラー。**
 
@@ -878,7 +882,8 @@ there.
   equations stop with `GUILDA:PowerNetwork:InitializePowerflowFailed`,
   `InitializeOPFFailed`, `InitializeEquilibriumFailed` (or
   `InitializeNoEquilibrium`); the network keeps its previous equilibrium
-  and edit log, and a slack bus that the power flow set is released again.
+  and stale state (`sct_stale`), and a slack bus that the power flow set is
+  released again.
   Before, a failed analysis was written into the network.
 - **`"OPF"` and `"equilibrium"` set a real operating point** (silent change,
   see the box at the top). With `"OPF"` the components take P and Q of the
@@ -886,17 +891,18 @@ there.
   hold, and their states and inputs are recomputed, so this follows edits of
   dynamics parameters. Before, both used `para_powerflow`, and `simulate` then
   returned `flag = 1` while the states drifted.
-- **`"equilibrium"` after other edits is an error.** An edit that makes the
-  equilibrium stale and is not a dynamics edit (e.g. P of a component, the
+- **`"equilibrium"` with a stale power flow is an error.** An edit that makes
+  the power flow stale (`net.sct_stale.powerflow`: e.g. P of a component, the
   network `baseMVA`, topology, slack bus) stops with
   `GUILDA:PowerNetwork:InitializeEquilibriumEdited`, and the network is not
-  changed. Run `net.initialize()` instead.
+  changed. Run `net.initialize()` instead. Dynamics edits are recomputed from
+  the held V and I, as with the default method.
 - **The point that was set is checked.** With every `Method`, `max|Y*V-I|`
   must be below 1e-6, otherwise `initialize` stops with
   `GUILDA:PowerNetwork:InitializeNotEquilibrium`. Here, and when writing the
-  point fails, the network does not keep its previous equilibrium: it is out
-  of date, and analyses stop with `GUILDA:PowerNetwork:EquilibriumStale` until
-  `initialize` succeeds.
+  point fails, the network does not keep its previous equilibrium: its power
+  flow is marked stale, and analyses stop with `GUILDA:LayerPackage:Stale`
+  until `initialize` succeeds.
 - **A split network is reported.** When branches do not connect all buses, a
   successful `net.initialize` warns with `GUILDA:PowerNetwork:NetworkIsland` and
   lists the islands: the point is valid when the power of each island balances, so
@@ -971,7 +977,7 @@ there.
 | `bus.str_bustype` | `bus.s_bustype` |
 | `res.str_solver`、`res.str_network` | `res.s_solver`、`res.s_network` |
 | `linearize`/`get_sys` の `output.str_issue` | `output.s_issue` |
-| `comp.sct_edit.str_odefcn`(モデル作者向け) | `comp.s_odefcn` |
+| `comp.sct_edit.str_odefcn`(モデル作者向け) | `comp.sct_stale.odefcn`(古い理由のメッセージ。空なら最新。1.3 と 2.「`set_odefcn` は廃止」を参照) |
 
 - `net.info` と `struct(obj)` の表や構造体の列名、フィールド名も `s_tag`、`s_bustype` になります。
 - 名前の対応表は [naming-struct-string.md](naming-struct-string.md) にあります。
@@ -1007,12 +1013,17 @@ there.
   Per-matrix files are ignored; port them to the three `Jacobi_*` methods.
 - **Frequency inside a model:** read `obj.get_Hz()`, never a fixed `60` or a
   component `para_base`.
-- **No `set_odefcn` in the constructor.** The `f_*` handles are built when an
-  analysis first uses them (`s_odefcn`: `"unset"`, `"editted"`,
-  `"updated"`), with the frequency of the network the model is attached to.
-  A constructor that still calls `obj.set_odefcn()` keeps working: the handles
-  are then built once with `GUILDA.config("Model","Hz")` and built again after
-  the model is attached.
+- **`set_odefcn` は廃止。** `f_*` ハンドルは `net.initialize()` が作ります。
+  古いとき(`sct_stale.odefcn` が空でない、またはハンドルを作った周波数
+  `r_odefcnHz` が系統の Hz と違う)だけ、protected メソッド `build_odefcn` が
+  現在のパラメータと系統の周波数から作り直し、`odefcn` を空にします。解析は
+  作り直さず検査だけです。`s_odefcn`、`set_odefcn`、`mark_odefcn` はありません。
+  - コンストラクタで `obj.set_odefcn()` を呼んでいたモデルは、その行を削除します
+    (残すと未定義のメソッドでエラーになります)。
+  - 自分でハンドルを作っていたモデル(`set_odefcn` をオーバーライドしていたクラス)は、
+    `build_odefcn` をオーバーライドし、最後に `r_odefcnHz` を設定して
+    `clear_stale("odefcn")` を呼びます(例: `controller.local_LQR`)。
+  - `get_dx_algebraic` はハンドルが空のときだけ `build_odefcn` を呼びます。
 - **Equilibrium:** `get_equilibrium(obj, c_V, c_I, r_P, r_Q)`; do not store
   copies of V or I (see 1.2).
 - **Controllers:** local controllers receive their parent through

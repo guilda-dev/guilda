@@ -49,7 +49,7 @@ assert(new.a_LocalController{1} == avr)
 [net, bus, gen] = network_with_avr_pss();
 n_x = numel(gen.a_LocalController{1}.sv_x) + numel(gen.a_LocalController{1}.a_LocalController{1}.sv_x);
 new = bus.replace_component(gen.s_tag, "gen-1axis", Controllers="keep");
-assert(net.l_staleEquilibrium)
+assert(DebugScript.helper.is_stale(net))
 DebugScript.helper.quiet(@() net.initialize);
 assert(numel(new.rv_Xequilibrium_all) == numel(new.sv_x) + n_x)
 sol = net.simulate([0,1], DebugScript.helper.noop_event(net,[0,1]));
@@ -71,21 +71,21 @@ assert(isequal(size(lqr.K), [1, numel(new.sv_x)]))
 %% "keep" onto a load is rejected and changes nothing
 [net, bus, gen, avr, pss] = network_with_avr_pss();
 DebugScript.helper.quiet(@() net.initialize);
-n_log = height(net.disp_edit());
+sv_log = DebugScript.helper.stale(net);
 ME = caught(@() bus.replace_component(gen.s_tag, "load-power", Controllers="keep"));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:Bus:ControllersNotKept")
 assert(contains(ME.message, "Vfield") && contains(ME.message, avr.s_tag))
-assert_unchanged(net, bus, gen, avr, pss, n_log)
+assert_unchanged(net, bus, gen, avr, pss, sv_log)
 
 
 %% "keep" is rejected when the new component lacks an observed signal
 [net, bus, gen, avr, pss] = network_with_avr_pss();
 DebugScript.helper.quiet(@() net.initialize);
-n_log = height(net.disp_edit());
+sv_log = DebugScript.helper.stale(net);
 ME = caught(@() bus.replace_component(gen.s_tag, "gen-droop", Controllers="keep"));
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:Bus:ControllersNotKept")
 assert(contains(ME.message, "omega") && contains(ME.message, pss.s_tag))
-assert_unchanged(net, bus, gen, avr, pss, n_log)
+assert_unchanged(net, bus, gen, avr, pss, sv_log)
 
 
 %% An unknown value of Controllers is an error
@@ -113,11 +113,11 @@ function [net, bus, gen, avr, pss] = network_with_avr_pss()
     gen.add_local_controller(avr, pss);
 end
 
-function assert_unchanged(net, bus, gen, avr, pss, n_log)
+function assert_unchanged(net, bus, gen, avr, pss, sv_log)
     assert(bus.a_Component{1} == gen && gen.a_Bus == bus)
     assert(gen.a_LocalController{1} == avr && avr.a_Component == gen)
     assert(avr.a_LocalController{1} == pss && pss.a_Component == avr)
-    assert(~net.l_staleEquilibrium && height(net.disp_edit()) == n_log)
+    assert(~DebugScript.helper.is_stale(net) && isequal(DebugScript.helper.stale(net), sv_log))
 end
 
 function [new, id, str] = replace_warned(fcn)

@@ -276,15 +276,16 @@ ev  = DebugScript.helper.scenario("fault", n1, "TimeSpan", [1,1.05], "FaultBus",
 sol = DebugScript.helper.quiet(@() n1.simulate([0,2], ev));
 assert(sol.odeResults.t(end) == 2)
 
-% 読み込んだ系統でも編集が記録され、平衡点が古くなる
-assert(height(n1.disp_edit()) == 0 && ~n1.l_staleEquilibrium)
+% 読み込んだ系統でも編集が古さとして記録される
+assert(isempty(DebugScript.helper.stale(n1)) && ~DebugScript.helper.is_stale(n1))
+h_dx = comp.f_dx;
 comp.tab_parameter.dynamics.D = comp.tab_parameter.dynamics.D * 2;
-assert(height(n1.disp_edit()) == 1)                     % リスナーは 1 組だけ
-assert(comp.s_odefcn == "editted" && n1.l_staleEquilibrium)
-assert(error_id(@() n1.get_sys) == "GUILDA:PowerNetwork:EquilibriumStale")
-assert(height(net.disp_edit()) == 0 && ~net.l_staleEquilibrium)  % 元の系統は変わらない
+assert(numel(DebugScript.helper.stale(n1)) == 1)                     % リスナーは 1 組だけ
+assert(isequal(h_dx, comp.f_dx) && DebugScript.helper.is_stale(n1))
+assert(error_id(@() n1.get_sys) == "GUILDA:LayerPackage:Stale")
+assert(isempty(DebugScript.helper.stale(net)) && ~DebugScript.helper.is_stale(net))  % 元の系統は変わらない
 DebugScript.helper.quiet(@() n1.initialize);
-assert(comp.s_odefcn == "updated" && ~n1.l_staleEquilibrium)
+assert(~isequal(h_dx, comp.f_dx) && ~DebugScript.helper.is_stale(n1))
 
 % 型の検査も効く (読み込む前と同じく、エラーになり値は変わらない)
 r_D = comp.para_dynamics.D;
@@ -294,21 +295,21 @@ assert(isequal(comp.para_dynamics.D, r_D))
 % 母線・送電線・系統のパラメータと、読み込み後の構成の編集
 s = load(s_mat);  n2 = s.net;
 n2.a_Bus{3}.tab_parameter.powerflow.V = 1.01;
-assert(height(n2.disp_edit()) == 1 && n2.l_staleEquilibrium)
+assert(numel(DebugScript.helper.stale(n2)) == 1 && DebugScript.helper.is_stale(n2))
 s = load(s_mat);  n3 = s.net;
 n3.a_Branch{1}.tab_parameter.dynamics.R = 0.02;
-assert(height(n3.disp_edit()) == 1 && n3.l_staleEquilibrium)
+assert(numel(DebugScript.helper.stale(n3)) == 1 && DebugScript.helper.is_stale(n3))
 s = load(s_mat);  n4 = s.net;
 n4.tab_parameter.base.Hz = 50;
-assert(n4.a_Bus{2}.a_Component{1}.s_odefcn == "editted" && ~n4.l_staleEquilibrium)
-n4.get_sys();
+assert(isempty(n4.sct_stale.powerflow) && DebugScript.helper.is_stale(n4))   % 周波数は関数ハンドルだけを古くする
+DebugScript.helper.quiet(@() n4.initialize);
 assert(DebugScript.helper.handle_Hz(n4.a_Bus{2}.a_Component{1}) == 50)
 s = load(s_mat);  n5 = s.net;
 DebugScript.helper.quiet(@() set_slack(n5.a_Bus{2}));
-assert(n5.a_Bus{2}.l_isSlack && n5.l_staleEquilibrium)
+assert(n5.a_Bus{2}.l_isSlack && DebugScript.helper.is_stale(n5))
 s = load(s_mat);  n6 = s.net;
 n6.add_bus();
-assert(numel(n6.a_Bus) == 4 && n6.l_staleEquilibrium && numel(net.a_Bus) == 3)
+assert(numel(n6.a_Bus) == 4 && DebugScript.helper.is_stale(n6) && numel(net.a_Bus) == 3)
 
 % 直接は代入できない
 for s_prop = ["a_Bus","a_Branch","a_GlobalController"]
@@ -317,7 +318,7 @@ end
 
 
 %% MAT file round trip keeps controllers and lower layers
-% 制御器のパラメータの編集も記録される
+% 制御器のパラメータの編集も古さとして記録される
 net = DebugScript.helper.quiet(@() network.IEEE9bus);
 DebugScript.helper.quiet(@() net.initialize);
 s_mat = tempname + ".mat";
@@ -328,9 +329,9 @@ avr = s.net.a_Bus{1}.a_Component{1}.a_LocalController{1};
 pss = avr.a_LocalController{1};
 assert(isa(avr, "controller.avr.AVR_ST1") && isa(pss, "controller.pss.PSS1"))
 avr.para_dynamics.kap = avr.para_dynamics.kap * 1.1;
-assert(height(s.net.disp_edit()) == 1 && s.net.l_staleEquilibrium && avr.s_odefcn == "editted")
+assert(numel(DebugScript.helper.stale(s.net)) == 1 && DebugScript.helper.is_stale(s.net))
 pss.para_dynamics.kpss = pss.para_dynamics.kpss * 1.1;
-assert(height(s.net.disp_edit()) == 2 && pss.s_odefcn == "editted")
+assert(numel(DebugScript.helper.stale(s.net)) == 2)
 
 % 結果オブジェクトが参照する系統も同じ
 [net, ~] = DebugScript.helper.build_3bus("gen-1axis");
@@ -342,7 +343,7 @@ s = load(s_mat);
 assert(isempty(lastwarn), lastwarn)
 assert(numel(s.res.a_PowerNetwork.a_Bus) == 3)
 s.res.a_PowerNetwork.a_Bus{2}.a_Component{1}.para_dynamics.D = 1;
-assert(height(s.res.a_PowerNetwork.disp_edit()) == 1)
+assert(numel(DebugScript.helper.stale(s.res.a_PowerNetwork)) == 1)
 
 % 系統の下の層だけを保存すると、その層の編集は記録できないので警告する
 gen = net.a_Bus{2}.a_Component{1};
@@ -392,14 +393,14 @@ assert(isequal(s.net.linearize("Point", {s.sim, 0.5}).rm_Axx, net.linearize("Poi
 % 読み込んだ系統でも、Hz の編集は K を作り直し、動特性の編集は各層で initialize を促す
 K = lqr(s.net).K;
 s.net.tab_parameter.base.Hz = 50;
-s.net.get_sys();
+DebugScript.helper.quiet(@() s.net.initialize);
 assert(norm(lqr(s.net).K - K) > 1e-3, "K が古い Hz のまま")
 assert(isequal(lqr(net).K, K), "元の系統の K が変わった")
 g3 = s.net.a_Bus{3}.a_Component{1};
 g3.tab_parameter.dynamics.D = 2 * g3.tab_parameter.dynamics.D;
-assert(error_id(@() g3.get_sys()) == "GUILDA:PowerNetwork:EquilibriumStale")
-assert(error_id(@() s.net.a_Bus{3}.get_sys()) == "GUILDA:PowerNetwork:EquilibriumStale")
-assert(error_id(@() s.net.a_GlobalController{1}.get_sys()) == "GUILDA:PowerNetwork:EquilibriumStale")
+assert(error_id(@() g3.get_sys()) == "GUILDA:LayerPackage:Stale")
+assert(error_id(@() s.net.a_Bus{3}.get_sys()) == "GUILDA:LayerPackage:Stale")
+assert(error_id(@() s.net.a_GlobalController{1}.get_sys()) == "GUILDA:LayerPackage:Stale")
 
 
 %% MATPOWER import reproduces case14

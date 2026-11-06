@@ -13,16 +13,16 @@ classdef local_LQR < LocalController
 % linear model of the component (`comp.get_sys` without its controllers)
 % connected to an infinite bus of voltage `V0` [pu] through the admittance that
 % gives the equilibrium current (as in GUILDA v2). A network Hz edit keeps the
-% equilibrium, so the edit redesigns `K` at that equilibrium without `net.initialize`.
+% equilibrium, so `net.initialize` only redesigns `K` at that equilibrium.
 %
 % Attach it with `comp.add_local_controller(lqr)`; it takes the place of an AVR
 % (and of the PSS attached to that AVR). The output of a global controller (e.g. an
 % AGC) on a driven input adds to its output, and the design of `K` does not take it
 % into account (use `Input="Vfield"` with an AGC on Pmech to keep them apart).
 %
-% - Editing `Q`, `R` or `V0` makes the equilibrium stale; `net.initialize` recomputes `K`.
-%   After a network Hz edit, the next analysis recomputes `K` when the equilibrium is up
-%   to date.
+% - Editing `Q`, `R` or `V0` makes the equilibrium and the handles of the controller
+%   stale; `net.initialize` recomputes `K`. After a network Hz edit, `net.initialize`
+%   rebuilds the handles and redesigns `K` when the equilibrium is up to date.
 % - `sys_design` is the component connected to the infinite bus; its inputs are the
 %   driven inputs and its outputs the states.
 %
@@ -51,9 +51,9 @@ classdef local_LQR < LocalController
     end
 
     properties % Design weights
-        Q = []  % State weight of the LQR (nx-by-nx; a vector is the diagonal, empty the identity). <@Stale> equilibrium
-        R = []  % Input weight of the LQR (nu-by-nu; a vector is the diagonal, empty the identity). <@Stale> equilibrium
-        V0 = 1  % [pu] Voltage of the infinite bus of the design model (complex scalar). <@Stale> equilibrium
+        Q = []  % State weight of the LQR (nx-by-nx; a vector is the diagonal, empty the identity). <@Stale> equilibrium, odefcn
+        R = []  % Input weight of the LQR (nu-by-nu; a vector is the diagonal, empty the identity). <@Stale> equilibrium, odefcn
+        V0 = 1  % [pu] Voltage of the infinite bus of the design model (complex scalar). <@Stale> equilibrium, odefcn
     end
 
     properties (SetAccess=private) % Design results
@@ -109,12 +109,13 @@ classdef local_LQR < LocalController
     methods (Access=protected)
         resolve_ports(obj, comp)
         set_inputs(obj, sv_name)
-        set_odefcn(obj)
+    end
+    methods (Access={?Component,?LocalController})
+        build_odefcn(obj)
     end
 
     methods (Access=private)
         design_gain(obj, V, u)
-        l = equilibrium_valid(obj)
         log_change(obj, s_name)
     end
 
