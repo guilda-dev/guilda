@@ -16,7 +16,7 @@ function s_tag = add_disturbance(obj, tag, opt)
     arguments (Input)
         obj
         tag (1,1) string % Tag of the disturbance, unique in the scenario (the column of output.phases).
-        opt.TimeSpan {mustBeRow, validateTimeSpanSize} = [0,10] % [s] [t_start, t_end], or t_start alone for an offset only.
+        opt.TimeSpan {validateTimeSpanSize} = [0,10] % [s] [t_start, t_end], or t_start alone for an offset only.
         opt.FaultBus    (:,1) string = strings(0,1) % Tags of the buses with a ground fault (voltage 0).
         opt.TripUnit    (:,1) string = strings(0,1) % Tags of the components or global controllers disconnected.
         opt.OpenBranch  (:,1) string = strings(0,1) % Tags of the branches left out of the network (reconnected at t_end).
