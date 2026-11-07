@@ -104,7 +104,7 @@ try
     DebugScript.helper.quiet(@() net.calculate_continuation_powerflow(LoadBus=sr_load, CPFMaxIter=10));
     error("DebugScript:noError", "未知のオプションでエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", "%s", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "CPFMaxIter") && contains(ME.message, "LoadBus, MaxIteration, Tolerance"))
 end
 assert(error_id(@() net.calculate_continuation_powerflow(LoadBus=sr_load, Method="x")) == "GUILDA:resolve_options:UnknownName")

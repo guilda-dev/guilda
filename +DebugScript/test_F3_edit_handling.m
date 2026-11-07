@@ -550,7 +550,7 @@ try
     comp.tab_parameter = tp;
     error("DebugScript:noError", "base 列を書いてもエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerSystemModel:UnknownParameterGroup", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerSystemModel:UnknownParameterGroup", "%s", DebugScript.helper.msg_id(ME))
 end
 assert(comp.tab_parameter.dynamics.D ~= 3 && net.tab_parameter.base.Hz ~= 50 && ~DebugScript.helper.is_stale(net))
 

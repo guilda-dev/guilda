@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1032" width="720" height="1032" role="img" aria-labelledby="t d">
+  <title id="t">GUILDA の基本的な流れ</title>
+  <desc id="d">系統モデルの構築または読み込み、動作点の設定と初期化、制御器の追加、解析の4段階の流れ図。色はクラスを表す。</desc>
+  <style>
+    .h { font-family: -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", Meiryo, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; fill: #1B2127; }
+    .t { font-family: -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", Meiryo, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 700; fill: #1B2127; }
+    .yn { font-family: -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", Meiryo, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 700; fill: #5A6570; }
+    .c { font-family: ui-monospace, Menlo, Consolas, "Liberation Mono", monospace; font-size: 11px; fill: #1B2127; }
+    .cm { font-family: ui-monospace, Menlo, Consolas, "Liberation Mono", monospace; font-size: 10.5px; fill: #5A6570; }
+    .lg { font-family: ui-monospace, Menlo, Consolas, "Liberation Mono", monospace; font-size: 10px; fill: #38424C; }
+    .ln { fill: none; stroke: #5A6570; stroke-width: 1.6; stroke-linejoin: round; }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#5A6570"/></marker>
+  </defs>
+  <rect x="0.5" y="0.5" width="719" height="1031" rx="6" fill="#FFFFFF" stroke="#DADFE4"/>
+  <rect x="24" y="13" width="12" height="12" rx="2" fill="#ECEEF0" stroke="#5A6570" stroke-width="1.5"/>
+  <text class="lg" x="41" y="23">PowerNetwork</text>
+  <rect x="129.0" y="13" width="12" height="12" rx="2" fill="#FBE8D8" stroke="#C2682A" stroke-width="1.5"/>
+  <text class="lg" x="146.0" y="23">Bus</text>
+  <rect x="180.0" y="13" width="12" height="12" rx="2" fill="#F8F0D2" stroke="#B08A18" stroke-width="1.5"/>
+  <text class="lg" x="197.0" y="23">Branch</text>
+  <rect x="249.0" y="13" width="12" height="12" rx="2" fill="#E4EFE6" stroke="#2E6B3F" stroke-width="1.5"/>
+  <text class="lg" x="266.0" y="23">Component</text>
+  <rect x="336.0" y="13" width="12" height="12" rx="2" fill="#E2EBF5" stroke="#0059A7" stroke-width="1.5"/>
+  <text class="lg" x="353.0" y="23">LocalController / GlobalController</text>
+  <rect x="573.0" y="13" width="12" height="12" rx="2" fill="#FFFFFF" stroke="#8A949E" stroke-width="1.5"/>
+  <text class="lg" x="590.0" y="23">Scenario</text>
+  <rect x="12" y="44" width="696" height="332" rx="4" fill="#F5F6F7"/>
+  <text class="h" x="24" y="65">1  系統モデルの構築・読み込み</text>
+  <rect x="250" y="76" width="220" height="28" rx="14" fill="#FFFFFF" stroke="#1B2127" stroke-width="1.5"/>
+  <text class="t" x="360.0" y="94.5" text-anchor="middle">系統モデルを自作する？</text>
+  <path class="ln" d="M250 90 H134 V128" marker-end="url(#a)"/>
+  <path class="ln" d="M470 90 H498 V128" marker-end="url(#a)"/>
+  <text class="yn" x="142" y="106">いいえ</text>
+  <text class="yn" x="506" y="106">はい</text>
+  <rect x="24" y="130" width="220" height="58" rx="4" fill="#ECEEF0" stroke="#5A6570" stroke-width="1.5"/>
+  <text class="t" x="36" y="148">同梱の系統モデルを読み込み</text>
+  <text class="c" x="36" y="166">net = network.IEEE14bus;</text>
+  <text class="cm" x="36" y="181">% IEEE9bus, IEEE68bus, ...</text>
+  <rect x="300" y="130" width="396" height="44" rx="4" fill="#ECEEF0" stroke="#5A6570" stroke-width="1.5"/>
+  <text class="t" x="312" y="148">ネットワークを作成</text>
+  <text class="c" x="312" y="166">net = PowerNetwork("TestSystem");</text>
+  <path class="ln" d="M498 174 V186" marker-end="url(#a)"/>
+  <rect x="300" y="188" width="396" height="44" rx="4" fill="#FBE8D8" stroke="#C2682A" stroke-width="1.5"/>
+  <text class="t" x="312" y="206">母線を追加</text>
+  <text class="c" x="312" y="224">net.add_bus();</text>
+  <path class="ln" d="M498 232 V244" marker-end="url(#a)"/>
+  <rect x="300" y="246" width="396" height="44" rx="4" fill="#F8F0D2" stroke="#B08A18" stroke-width="1.5"/>
+  <text class="t" x="312" y="264">ブランチを追加</text>
+  <text class="c" x="312" y="282">net.add_branch("pi", [1, 2]);</text>
+  <path class="ln" d="M498 290 V302" marker-end="url(#a)"/>
+  <rect x="300" y="304" width="396" height="44" rx="4" fill="#E4EFE6" stroke="#2E6B3F" stroke-width="1.5"/>
+  <text class="t" x="312" y="322">母線に機器を Key で追加</text>
+  <text class="c" x="312" y="340">net.a_Bus{1}.add_component("gen-park");</text>
+  <rect x="12" y="388" width="696" height="228" rx="4" fill="#F5F6F7"/>
+  <text class="h" x="24" y="409">2  動作点の設定と初期化</text>
+  <path class="ln" d="M134 188 V364 H498"/>
+  <path class="ln" d="M498 348 V364"/>
+  <circle cx="360" cy="364" r="3" fill="#5A6570"/>
+  <path class="ln" d="M360 364 V426" marker-end="url(#a)"/>
+  <rect x="160" y="428" width="400" height="58" rx="4" fill="#ECEEF0" stroke="#5A6570" stroke-width="1.5"/>
+  <text class="t" x="172" y="446">潮流計算の条件を設定（母線・機器）</text>
+  <rect x="172" y="456" width="8" height="8" rx="1.5" fill="#FBE8D8" stroke="#C2682A" stroke-width="1.2"/>
+  <text class="c" x="186" y="464">net.a_Bus{1}.tab_parameter.powerflow</text>
+  <rect x="172" y="471" width="8" height="8" rx="1.5" fill="#E4EFE6" stroke="#2E6B3F" stroke-width="1.2"/>
+  <text class="c" x="186" y="479">net.a_Bus{1}.a_Component{1}.tab_parameter.powerflow</text>
+  <path class="ln" d="M360 486 V498" marker-end="url(#a)"/>
+  <rect x="160" y="500" width="400" height="44" rx="4" fill="#ECEEF0" stroke="#5A6570" stroke-width="1.5" stroke-dasharray="5 3"/>
+  <text class="t" x="172" y="518">潮流計算の解を確認（任意）</text>
+  <text class="c" x="172" y="536">powerflow = net.calculate_powerflow();</text>
+  <path class="ln" d="M360 544 V556" marker-end="url(#a)"/>
+  <rect x="160" y="558" width="400" height="44" rx="4" fill="#ECEEF0" stroke="#5A6570" stroke-width="1.5"/>
+  <text class="t" x="172" y="576">初期化: 各オブジェクトに平衡点を設定</text>
+  <text class="c" x="172" y="594">net.initialize();</text>
+  <rect x="12" y="628" width="696" height="174" rx="4" fill="#F5F6F7"/>
+  <text class="h" x="24" y="649">3  制御器の追加（任意）</text>
+  <path class="ln" d="M360 602 V654 M184 654 H536"/>
+  <path class="ln" d="M184 654 V666" marker-end="url(#a)"/>
+  <path class="ln" d="M536 654 V666" marker-end="url(#a)"/>
+  <rect x="24" y="668" width="320" height="58" rx="4" fill="#E2EBF5" stroke="#0059A7" stroke-width="1.5"/>
+  <text class="t" x="36" y="686">ローカル制御器: 機器に Key で追加</text>
+  <text class="c" x="36" y="704">gen = net.a_Bus{1}.a_Component{1};</text>
+  <text class="c" x="36" y="719">gen.add_local_controller("avr-ST1");</text>
+  <rect x="376" y="668" width="320" height="58" rx="4" fill="#E2EBF5" stroke="#0059A7" stroke-width="1.5"/>
+  <text class="t" x="388" y="686">グローバル制御器: ネットワークに追加</text>
+  <text class="c" x="388" y="704">net.add_global_controller("agc-PI", units);</text>
+  <path class="ln" d="M184 726 V766 H198" marker-end="url(#a)"/>
+  <path class="ln" d="M536 726 V766 H522" marker-end="url(#a)"/>
+  <rect x="200" y="744" width="320" height="44" rx="4" fill="#ECEEF0" stroke="#5A6570" stroke-width="1.5"/>
+  <text class="t" x="212" y="762">制御器の構成の変更後に再初期化</text>
+  <text class="c" x="212" y="780">net.initialize();</text>
+  <rect x="12" y="814" width="696" height="206" rx="4" fill="#F5F6F7"/>
+  <text class="h" x="24" y="835">4  解析</text>
+  <path class="ln" d="M360 788 V984"/>
+  <path class="ln" d="M360 840 H184 V852" marker-end="url(#a)"/>
+  <path class="ln" d="M360 876 H374" marker-end="url(#a)"/>
+  <path class="ln" d="M360 930 H374" marker-end="url(#a)"/>
+  <path class="ln" d="M360 984 H374" marker-end="url(#a)"/>
+  <rect x="24" y="854" width="320" height="76" rx="4" fill="#FFFFFF" stroke="#8A949E" stroke-width="1.5"/>
+  <text class="t" x="36" y="872">シナリオで外乱を定義</text>
+  <text class="c" x="36" y="890">sc = Scenario("fault");</text>
+  <text class="c" x="36" y="905">sc.add_fault("B008", [3, 3.1]);</text>
+  <text class="c" x="36" y="920">net.add_scenario(sc);</text>
+  <path class="ln" d="M184 930 V944" marker-end="url(#a)"/>
+  <rect x="24" y="946" width="320" height="60" rx="4" fill="#ECEEF0" stroke="#5A6570" stroke-width="1.5"/>
+  <text class="t" x="36" y="964">時間応答シミュレーション</text>
+  <text class="c" x="36" y="982">sol = net.simulate(sc);</text>
+  <text class="c" x="36" y="997">verdict = sc.judge(sol);</text>
+  <rect x="376" y="854" width="320" height="44" rx="4" fill="#ECEEF0" stroke="#5A6570" stroke-width="1.5"/>
+  <text class="t" x="388" y="872">近似線形化</text>
+  <text class="c" x="388" y="890">sys = net.get_sys();</text>
+  <rect x="376" y="908" width="320" height="44" rx="4" fill="#ECEEF0" stroke="#5A6570" stroke-width="1.5"/>
+  <text class="t" x="388" y="926">連続潮流計算</text>
+  <text class="c" x="388" y="944">net.calculate_continuation_powerflow();</text>
+  <rect x="376" y="962" width="320" height="44" rx="4" fill="#ECEEF0" stroke="#5A6570" stroke-width="1.5"/>
+  <text class="t" x="388" y="980">最適潮流計算</text>
+  <text class="c" x="388" y="998">net.optimize_powerflow();</text>
+</svg>

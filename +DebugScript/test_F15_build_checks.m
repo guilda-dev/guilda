@@ -8,7 +8,7 @@
 %% A bus index is rejected when no buses exist yet
 net = PowerNetwork("T");
 [id, s_msg] = error_info(@() net.add_branch("pi", [1,2], X=0.1));
-assert(id == "GUILDA:PowerNetwork:BranchBusIndex", id)
+assert(id == "GUILDA:PowerNetwork:BranchBusIndex", "%s", id)
 assert(contains(s_msg, "[1 2]") && contains(s_msg, "has 0 buses") && contains(s_msg, "net.add_bus()"), s_msg)
 assert(isempty(net.a_Branch))
 
@@ -17,7 +17,7 @@ assert(isempty(net.a_Branch))
 net = build_two_buses();
 for from_to = {[1,3], [0,1], [-1,2], [1.5,2], [NaN,1], [1,Inf]}
     [id, s_msg] = error_info(@() net.add_branch("pi", from_to{1}, X=0.1));
-    assert(id == "GUILDA:PowerNetwork:BranchBusIndex", id)
+    assert(id == "GUILDA:PowerNetwork:BranchBusIndex", "%s", id)
     assert(contains(s_msg, mat2str(from_to{1})) && contains(s_msg, "has 2 buses"), s_msg)
 end
 assert(isempty(net.a_Branch))
@@ -27,7 +27,7 @@ assert(isempty(net.a_Branch))
 net = build_two_buses();
 for from_to = {["B001","B099"], ["B099","B001"]}
     [id, s_msg] = error_info(@() net.add_branch("pi", from_to{1}, X=0.1));
-    assert(id == "GUILDA:PowerNetwork:BusNotFound", id)
+    assert(id == "GUILDA:PowerNetwork:BusNotFound", "%s", id)
     assert(contains(s_msg, "B099"), s_msg)
 end
 assert(isempty(net.a_Branch))
@@ -37,7 +37,7 @@ assert(isempty(net.a_Branch))
 net = build_two_buses();
 for from_to = {[1,1], ["B001","B001"]}
     [id, s_msg] = error_info(@() net.add_branch("pi", from_to{1}, X=0.1));
-    assert(id == "GUILDA:PowerNetwork:BranchSelfLoop", id)
+    assert(id == "GUILDA:PowerNetwork:BranchSelfLoop", "%s", id)
     assert(contains(s_msg, "B001") && contains(s_msg, "Bshunt"), s_msg)
 end
 assert(isempty(net.a_Branch))
@@ -47,7 +47,7 @@ assert(isempty(net.a_Branch))
 net = build_two_buses();
 for s_type = ["pi","T","pi_transformer","two_winding_transformer"]
     [id, s_msg] = error_info(@() net.add_branch(s_type, [1,2], R=0, X=0));
-    assert(id == "GUILDA:PowerNetwork:BranchZeroImpedance", id)
+    assert(id == "GUILDA:PowerNetwork:BranchZeroImpedance", "%s", id)
     assert(contains(s_msg, "B001") && contains(s_msg, "B002") && contains(s_msg, "nonzero"), s_msg)
 end
 assert(isempty(net.a_Branch))

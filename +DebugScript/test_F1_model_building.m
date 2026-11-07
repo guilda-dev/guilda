@@ -297,7 +297,7 @@ for str = ["X","Y"]
         evalc("gen.add_local_controller(""test-observe"", parameter=struct(Input=str))");
         error("DebugScript:noError", "入力 " + str + " がエラーにならない")
     catch ME
-        assert(DebugScript.helper.msg_id(ME) == "GUILDA:LocalController:ReservedInputNames", DebugScript.helper.msg_id(ME))
+        assert(DebugScript.helper.msg_id(ME) == "GUILDA:LocalController:ReservedInputNames", "%s", DebugScript.helper.msg_id(ME))
         assert(contains(ME.message, "Xall") && contains(ME.message, "Yall"))
     end
 end

@@ -1,374 +1,260 @@
 const updateLogData = [
   {
-    "title": "GUILDA ver5 start",
-    "date": "2025-10-01",
-    "type": "added",
-    "content": "GUILDA ver5 development started."
-  },
-  {
-    "title": "LayerPackage.m",
-    "date": "2025-10-08",
-    "type": "changed",
-    "content": "LayerPackage.m updated."
-  },
-  {
-    "title": "Build Layer Structure",
-    "date": "2025-10-09",
-    "type": "added",
-    "content": "GuildaWorksSpace.m only generate; PowerNeteork.m add/remove bus, branch, and global_controller methods; Bus.m set_network, add/remove component and cubicle; Cubicle.m set_bus; Branch.m set_network."
-  },
-  {
-    "title": "Component and ControllerPackage generation",
-    "date": "2025-10-13",
-    "type": "changed",
-    "content": "Component.m updated; ControllerPackage.m only generate; LocalController.m only generate; GlobalController.m only generate."
-  },
-  {
-    "title": "Parameter Operation",
-    "date": "2025-10-14",
-    "type": "added",
-    "content": "Parameter.m created by inheriting the dynamicprops class."
-  },
-  {
-    "title": "Rename +config to +GUILDAconfig",
-    "date": "2025-10-15",
-    "type": "changed",
-    "content": "Renamed \"+config\" to \"+GUILDAconfig\" and enabled GUILDAconfig.gitpull."
-  },
-  {
-    "title": "OPF works again",
+    "title": "OPF fixes",
     "date": "2026-10-29",
-    "type": "fixed",
-    "content": "ELD, DC OPF and AC OPF run again. Loads keep their power-flow P and Q, and the DC OPF branch flow sign matches AC OPF."
+    "type": "fix",
+    "content": "Economic load dispatch, DC OPF and AC OPF run again. Loads keep their power-flow P and Q, and the branch flow sign of DC OPF matches AC OPF."
   },
   {
-    "title": "Linearization and multiple global controllers",
+    "title": "Linearization with every algorithm and several global controllers",
     "date": "2026-10-29",
-    "type": "added",
-    "content": "get_sys works with every linearization algorithm (Kron, DAE, Feedback) for the shipped generator, load and controller models. Any number of global controllers is supported in initialize, simulate and get_sys."
+    "type": "feature",
+    "content": "get_sys works with every linearization algorithm (Kron, DAE, Feedback) for the bundled generator, load and controller models. initialize, simulate and get_sys accept any number of global controllers."
   },
   {
-    "title": "Edit tracking",
+    "title": "Remove buses and global controllers",
     "date": "2026-10-29",
-    "type": "changed",
-    "content": "Parameter and topology edits now take effect: changed dynamics are rebuilt automatically. When an edit makes the equilibrium out of date, simulate and get_sys stop with GUILDA:PowerNetwork:EquilibriumStale until net.initialize() is run."
-  },
-  {
-    "title": "Network base values",
-    "date": "2026-10-29",
-    "type": "changed",
-    "content": "The nominal frequency and system base are held by the network in net.tab_parameter.base (Hz, baseMVA); models read comp.r_Hz. comp.para_base.Hz and the add_bus option baseMVA are deprecated and warn with GUILDA:Deprecated:* IDs."
-  },
-  {
-    "title": "remove_bus, remove_global_controller and single slack bus",
-    "date": "2026-10-29",
-    "type": "added",
-    "content": "New net.remove_bus (with option RemoveBranches) and net.remove_global_controller. Removed objects are detached from the network. Setting bus.l_isSlack = true makes that bus the only slack bus."
+    "type": "feature",
+    "content": "New net.remove_bus (option RemoveBranches) and net.remove_global_controller. Setting bus.l_isSlack = true makes that bus the only slack bus."
   },
   {
     "title": "Simulation event fixes",
     "date": "2026-10-29",
-    "type": "fixed",
-    "content": "simulate runs without events, keeps phases within the requested time range, and applies input and state offset events correctly, including events that start after t = 0."
+    "type": "fix",
+    "content": "simulate runs without events, stays within the requested time range, and applies input and state offset events correctly, also when they start after t = 0."
   },
   {
-    "title": "Start in batch mode",
+    "title": "Start GUILDA in batch mode",
     "date": "2026-10-29",
-    "type": "changed",
-    "content": "GUILDA now starts in matlab -batch; the tutorial is opened only when the desktop is available."
+    "type": "feature",
+    "content": "GUILDA starts in matlab -batch. The tutorial opens only when the MATLAB desktop is available."
   },
   {
-    "title": "Optimal power flow fixes",
+    "title": "More OPF fixes and MATPOWER export",
     "date": "2026-10-29",
-    "type": "fixed",
-    "content": "AC OPF solves with branch Imax and Smax limits (they stopped fmincon before) and with linear-only costs (HP = HQ = 0). Branch flow variables start at the values of the initial bus voltages. OPFResult.lambda documents the nodal price as -lambda.Constraints.balancedP_<bus>. New tools.network_to_mpc converts a network into a MATPOWER case."
+    "type": "fix",
+    "content": "AC OPF solves with branch current and power limits and with linear-only costs. New tools.network_to_mpc converts a network into a MATPOWER case."
   },
   {
     "title": "IEEE14bus matches MATPOWER case14",
     "date": "2026-10-29",
-    "type": "changed",
-    "content": "network.IEEE14bus now has the MATPOWER case14 line charging, load reactive power, voltage limits 0.94-1.06, generator limits and generator costs; loads have no OPF cost. Power-flow, OPF, simulation and linearization results of IEEE14bus change. CSV import now reads the transformer tap and phase columns (tap/phase, as export writes them; Tap/Phase is also accepted), so imported transformers keep their taps; this also changes IEEE14bus_lossless. New network.IEEE14bus_NoTap is IEEE14bus with every transformer tap set to 1."
+    "type": "model",
+    "content": "network.IEEE14bus has the line charging, load reactive power, voltage and generator limits and generator costs of MATPOWER case14, so its results change. New network.IEEE14bus_NoTap has every transformer tap set to 1. CSV import keeps transformer taps."
   },
   {
-    "title": "Analysis results and per-call options",
+    "title": "Uniform analysis results and per-call options",
     "date": "2026-10-29",
-    "type": "changed",
-    "content": "Power flow, OPF, continuation power flow, simulation and linearization now return [result, flag, output], where result is a result object (PowerFlowResult, OPFResult, CPFResult, odeSimulationResult, LinearizationResult) with Plot and Export methods. Name-Value options such as Method, Tolerance, MaxIteration and Verbose override the defaults in net.solver_* for one call only; an unknown name is an error that lists the accepted names."
+    "type": "feature",
+    "content": "Power flow, OPF, continuation power flow, simulation and linearization return [result, flag, output]; the result object has Plot and Export methods. Name-Value options such as Method, Tolerance and Verbose apply to one call. Scripts that read the old outputs need updating."
   },
   {
-    "title": "Power flow and OPF results",
+    "title": "Continuation power flow",
     "date": "2026-10-29",
-    "type": "changed",
-    "content": "net.calculate_powerflow returns a PowerFlowResult (tab_bus, tab_branch, iteration history) and takes Method=\"algebraic\" or \"dynamic\". net.optimize_powerflow returns an OPFResult (tab_bus, tab_cub, tab_branch, r_cost, lambda) and takes Method and Solver. The positional power flow mode, the export/filename options, the OPF option methods and the 6-output OPF form still work with GUILDA:Deprecated:* warnings; with 1 to 3 outputs optimize_powerflow returns the new outputs."
+    "type": "feature",
+    "content": "net.calculate_continuation_powerflow(LoadBus=...) computes PV curves (Plot), the maximum loading and the nose point. Continuation_Power_Flow(net, opt) still works but is deprecated."
   },
   {
-    "title": "net.calculate_continuation_powerflow",
+    "title": "Simulation options",
     "date": "2026-10-29",
-    "type": "added",
-    "content": "The continuation power flow is now net.calculate_continuation_powerflow(LoadBus=...), returning a CPFResult with the PV curves (Plot), the maximum loading r_lambdaMax and the nose point. Continuation_Power_Flow(net, opt) is deprecated but still works; ContinuationPowerFlow(net, ...) is an error."
-  },
-  {
-    "title": "Simulation outputs and options",
-    "date": "2026-10-29",
-    "type": "changed",
-    "content": "net.simulate(time, events..., Name, Value) accepts Solver, Tolerance, AbsoluteTolerance, TimeLimit, Progress, Verbose, Plot and Export. Its second output changed meaning: flag is 1 when the run completed, 0 when it stopped by TimeLimit and -1 when the solver stopped (it used to be true for an early stop). solver_ODE.Reporter and the option names Reporter and RelativeTolerance are deprecated (use Progress and Tolerance)."
+    "type": "feature",
+    "content": "net.simulate accepts Solver, Tolerance, AbsoluteTolerance, TimeLimit, Progress, Verbose, Plot and Export. Its second output flag is 1 when the run completed, 0 when TimeLimit stopped it and -1 when the solver stopped; scripts that tested it for an early stop need updating."
   },
   {
     "title": "net.linearize and the variable map",
     "date": "2026-10-29",
-    "type": "added",
-    "content": "New net.linearize returns a LinearizationResult with the unreduced Jacobian blocks; result.get_ss(\"Kron\" | \"Feedback\" | \"DAE\") gives the reduced model, and Point linearizes at a given state or at a time of a simulation result. net.get_variable_map (also on buses and components) defines the variable order. net.get_sys now returns [sys, flag, output] (the second output is no longer an odeLinearizer), and the DAE model's B matrix has the corrected sign on the algebraic rows. Components and controllers define an optional get_hessian contract."
+    "type": "feature",
+    "content": "New net.linearize gives the full linearized model; get_ss reduces it by Kron, Feedback or DAE, and Point linearizes at a given state or at a time of a simulation. net.get_variable_map shows the variable order. net.get_sys returns [sys, flag, output]."
   },
   {
     "title": "Network import and export",
     "date": "2026-10-29",
-    "type": "added",
-    "content": "New PowerNetwork.import_csv, net.export_csv and PowerNetwork.import_matpower (MATPOWER cases without MATPOWER). CSV folders now store Hz and baseMVA in network/parameter.csv and the slack bus in the bus column Slack; older folders still import. CsvNetHandler.import and CsvNetHandler.export are deprecated wrappers."
+    "type": "feature",
+    "content": "New PowerNetwork.import_csv, net.export_csv and PowerNetwork.import_matpower (MATPOWER cases, without MATPOWER installed). Older CSV folders still import."
   },
   {
-    "title": "Symbolic Math Toolbox is optional",
-    "date": "2026-10-29",
-    "type": "changed",
-    "content": "GUILDA no longer requires Symbolic Math Toolbox; only MATLAB, Control System Toolbox and Optimization Toolbox are required."
-  },
-  {
-    "title": "IEEE9bus and IEEE68bus networks",
+    "title": "New IEEE 9-bus and 68-bus networks",
     "date": "2026-10-30",
-    "type": "added",
-    "content": "New network.IEEE9bus (WSCC 3-machine) and network.IEEE68bus (16-machine NETS-NYPS), ported from the GUILDA v2 data: gen-1axis generators, load-impedance loads, and an AVR_ST1 and a PSS1 on every generator. LocalController=false builds them without the AVRs and PSSs."
+    "type": "model",
+    "content": "New network.IEEE9bus (WSCC 3-machine) and network.IEEE68bus (16-machine NETS-NYPS) with one-axis generators, impedance loads and an AVR and PSS on every generator. LocalController=false builds them without the AVRs and PSSs."
   },
   {
-    "title": "IEEE14bus_lossless uses the case14 data",
+    "title": "IEEE14bus_lossless follows case14",
     "date": "2026-10-30",
-    "type": "changed",
-    "content": "network.IEEE14bus_lossless is now network.IEEE14bus with the resistance R of every branch set to 0; line charging, the bus shunt and the transformer taps are kept. Its power-flow, OPF, simulation and linearization results change."
+    "type": "model",
+    "content": "network.IEEE14bus_lossless is network.IEEE14bus with every branch resistance set to 0, keeping line charging, the bus shunt and the transformer taps. Its results change."
   },
   {
-    "title": "Unique automatic tags",
+    "title": "Automatic tags are unique",
     "date": "2026-10-30",
-    "type": "fixed",
-    "content": "add_bus, add_branch and add_component number a new tag after the largest number in use, so a tag is no longer repeated after remove_branch or remove_component. add_global_controller with a tag already in use is an error (GUILDA:PowerNetwork:GconTagInUse)."
+    "type": "fix",
+    "content": "add_bus, add_branch and add_component no longer repeat a tag after a removal. Adding a global controller with a tag already in use is an error."
   },
   {
     "title": "Controller fixes",
     "date": "2026-10-30",
-    "type": "fixed",
-    "content": "Adding or replacing an AVR or PSS is now an edit, so net.initialize() is required afterwards. Replacing an AVR keeps its PSS unless a new PSS is given in the same call. A global controller named in a trip event gives no output during the event. Trip events select the right states when they name a global controller or a component with local controllers. The network of a global controller is GlobalController.a_PowerNetwork (was PowerNetwork, a cell)."
+    "type": "fix",
+    "content": "Adding or replacing an AVR or PSS requires net.initialize() afterwards. Replacing an AVR keeps its PSS. Trip events that name a global controller or a component with local controllers act on the right states."
   },
   {
-    "title": "Network frequency edits",
+    "title": "Clearer simulation event errors",
     "date": "2026-10-30",
-    "type": "changed",
-    "content": "Editing net.tab_parameter.base.Hz now rebuilds only the model functions: simulate and get_sys run without net.initialize(). Editing baseMVA still requires net.initialize(). Calling solver_ODE.solve or solver_LIN.solve directly now also checks that the equilibrium is up to date."
+    "type": "feature",
+    "content": "Simulation disturbances are checked before the run, and an invalid input name or value stops with an error that lists the valid inputs. A disturbance entirely outside the simulation time gives a warning."
   },
   {
-    "title": "Simulation event checks",
+    "title": "Smaller fixes",
     "date": "2026-10-30",
-    "type": "changed",
-    "content": "odeEventSet checks InputUnit, InputName and InputValue before the integration starts and stops with a GUILDA:odeEventSet:* error that lists the valid inputs. An event that lies entirely outside the simulation time warns (GUILDA:odeEventSet:OutsideTimeSpan) instead of being ignored silently. (The class is now Scenario and the IDs GUILDA:Scenario:*.)"
+    "type": "fix",
+    "content": "net.linearize and get_sys work with buses that have no components. GUILDA.dictionary works from any current folder and no longer lists archived classes."
   },
   {
-    "title": "Option and setting names",
+    "title": "Simulations of large networks at rest",
     "date": "2026-10-30",
-    "type": "changed",
-    "content": "net.build_opf_problem takes Method, like optimize_powerflow; the option methods is deprecated (GUILDA:Deprecated:BuildOpfProblemMethods). The progress setting in DefaultTimeSimulation.json is now Progress (was Reporter); an old user setting is converted at startup. CSV import errors use the IDs GUILDA:import_csv:*."
+    "type": "fix",
+    "content": "Simulations that start at rest no longer stop at t = 0 in large networks such as network.IEEE68bus(LocalController=false). When the solver stops, the message names the phase and its time interval."
   },
   {
-    "title": "Smaller fixes and removals",
+    "title": "OPF load cost and DC branch susceptance",
     "date": "2026-10-30",
-    "type": "fixed",
-    "content": "net.linearize and get_sys work with buses that have no components. GUILDA.dictionary works from any current folder. The help of get_ss states the state order of each algorithm. The startup no longer rewrites unchanged generated files. Removed: the unused Bus.l_isNonUnit and the unimplemented GUILDA.import_MATPOWER (use PowerNetwork.import_matpower)."
-  },
-  {
-    "title": "Simulation of phases at rest",
-    "date": "2026-10-30",
-    "type": "fixed",
-    "content": "Simulations whose phases start at rest no longer stop at t = 0 in large networks (e.g. network.IEEE68bus(LocalController=false)). When the solver stops, output.message names the phase, its time interval and the solver's message; an error during a phase stops with GUILDA:odeSimulator:PhaseFailed. GUILDA.dictionary no longer lists the classes in archive folders."
-  },
-  {
-    "title": "OPF customization options",
-    "date": "2026-11-07",
-    "type": "added",
-    "content": "net.optimize_powerflow and net.build_opf_problem take Cost=@(v, p) (added to the objective), Constraint=@(v, p) struct(name, constraint) (named constraints whose duals are in result.lambda.Constraints), DefaultCost and ReferenceBus; v holds the variables of every bus, component and branch by tag, and net.solver_OPF stores the defaults. optimize_powerflow(Problem=prob, InitialPoint=x0) solves a problem from build_opf_problem modified by the user. A default limit is removed by setting it to Inf (-Inf) in tab_parameter.operation."
-  },
-  {
-    "title": "OPF load cost and DC susceptance",
-    "date": "2026-10-30",
-    "type": "changed",
-    "content": "The default OPF cost of loads is now 0, also in the bundled networks, so r_cost is the generation cost only; a load with finite P/Q bounds is dispatched within them. DC OPF uses the MATPOWER branch susceptance 1/(X*tap) with the phase shift, so DC OPF results change for branches with resistance, taps or phase shifters. A Solver that cannot solve the problem stops with GUILDA:OptimalPowerFlow:UnsupportedSolver, which lists the usable solvers."
+    "type": "fix",
+    "content": "Loads have no OPF cost by default, so r_cost is the generation cost. DC OPF uses the MATPOWER branch susceptance with taps and phase shifts, which changes DC OPF results for such branches."
   },
   {
     "title": "Controller inputs by name and local_LQR",
     "date": "2026-10-30",
-    "type": "added",
-    "content": "A local controller reads its component by the names of its inputs: an output of that name, otherwise a state; the reserved inputs Xall and Yall read all states or all outputs. controller.local_LQR works again: it takes the place of an AVR, and net.initialize computes its gain from Q and R."
+    "type": "feature",
+    "content": "A local controller reads the outputs or states of its component by the names of its inputs; Xall and Yall read all states or all outputs. controller.local_LQR works again in place of an AVR, with its gain computed from Q and R by net.initialize."
   },
   {
-    "title": "get_sys of components and buses",
+    "title": "Same get_sys layout for components and buses",
     "date": "2026-10-30",
-    "type": "changed",
-    "content": "comp.get_sys and bus.get_sys have the same layout on every layer: inputs [port; component inputs; controller inputs], outputs [port; component outputs; controller outputs]. States are no longer outputs, the option full is ignored, and an output named like a state is labelled Y_<name>. net.get_sys and net.linearize are unchanged."
+    "type": "feature",
+    "content": "comp.get_sys and bus.get_sys order inputs as [port; component inputs; controller inputs] and outputs likewise. States are no longer outputs, so scripts that read states from these outputs need updating."
   },
   {
-    "title": "Simulation results in variable-map order",
+    "title": "Simulation results by variable",
     "date": "2026-10-30",
-    "type": "changed",
-    "content": "odeSimulationResult stores the trajectory in the order of net.get_variable_map() (rv_t, tab_variable, rm_variable), including the states of local and global controllers; odeResults keeps its layout. New result.get_point(t) gives the state at a time, and net.linearize(Point={sim, t}) now works with controllers."
+    "type": "feature",
+    "content": "Simulation results follow the order of net.get_variable_map(), including controller states. New result.get_point(t) gives the state at a time, and net.linearize(Point={sim, t}) works with controllers."
   },
   {
     "title": "net.initialize returns a result",
     "date": "2026-10-30",
-    "type": "changed",
-    "content": "net.initialize now returns [result, flag, output] (was [flag, tab, output]; result.tab_bus is the old tab) and takes Method=\"powerflow\", \"OPF\" or \"equilibrium\". Other options go to the power flow or OPF. A power flow that does not converge or an infeasible OPF is an error, and the network is not changed. The option methods and its old values are deprecated (GUILDA:Deprecated:InitializeMethods, InitializeMethodValue)."
+    "type": "feature",
+    "content": "net.initialize returns [result, flag, output] and takes Method=\"powerflow\", \"OPF\" or \"equilibrium\". A failed power flow or OPF is an error and leaves the network unchanged. Scripts that read [flag, tab] from it need updating (result.tab_bus is the old table)."
   },
   {
-    "title": "get_sys documentation",
-    "date": "2026-11-01",
-    "type": "changed",
-    "content": "The help of net.get_sys, net.linearize and get_ss and the developer pages now describe the actual model: DAE is not reduced, the default outputs differ by Algorithm (Feedback leaves out the global controller states and keeps rows for removed states), the v3 state order is an exception to the variable map, and non-finite points stop with an error instead of flag false. The ports of a linearized model are no longer described as set by GUILDA.config(\"Model\",\"port_vw\"), which has no effect."
-  },
-  {
-    "title": "NonUnit option retired",
+    "title": "Buses without states detected automatically",
     "date": "2026-11-02",
-    "type": "changed",
-    "content": "net.linearize, net.get_sys and net.solver_LIN no longer have a NonUnit setting: buses without states are detected automatically and give the same model. A call or setting that still uses it warns (GUILDA:Deprecated:LinearizeNonUnit, GUILDA:Deprecated:SolverLinNonUnit): a listed bus without states is ignored, and a listed bus with states stops Algorithm=\"Feedback\" with an error as before. get_ss no longer prints an INFO message about NonUnit, which also appeared wrongly for networks with buses without components."
+    "type": "feature",
+    "content": "net.linearize and net.get_sys find buses without states by themselves, so the NonUnit setting is no longer needed; it still works with a warning."
   },
   {
-    "title": "Incomplete simulations are reported and kept",
+    "title": "Incomplete simulations keep their results",
     "date": "2026-11-02",
-    "type": "changed",
-    "content": "net.simulate warns GUILDA:PowerNetwork:SimulationIncomplete whenever flag is not 1. A numerical failure in a phase returns flag = -1 with the completed phases and output.exception instead of an error; errors of input functions and models still stop the run. TimeLimit now covers the whole run and defaults to Inf. Simulation uses sparse matrices with a fallback to dense ones (output.isSparse). A fault, trip or input with a scalar or zero-length TimeSpan is an error (now GUILDA:Scenario:ZeroLengthTimeSpan), and Export is checked before the run and includes controller states."
+    "type": "feature",
+    "content": "When a simulation does not complete, net.simulate warns and returns the completed phases (flag = -1) instead of an error. TimeLimit covers the whole run. Large networks are simulated with sparse matrices."
   },
   {
     "title": "Simulation and initialize fixes",
     "date": "2026-11-02",
-    "type": "fixed",
-    "content": "A generator with a local controller can trip. An input event or global controller on an input driven by a local controller now adds to its output, which changes the numbers of such runs. net.initialize with Method=\"OPF\" or \"equilibrium\" sets a point that satisfies Y*V = I or stops with an error, and Method=\"equilibrium\" stops after edits it would ignore. replace_component takes Controllers=\"drop\" (default, with a warning) or \"keep\". net.simulate restores its working data after every run."
+    "type": "fix",
+    "content": "A generator with a local controller can trip. An input event on an input driven by a local controller adds to its output. net.initialize with Method=\"OPF\" or \"equilibrium\" sets a consistent operating point or stops with an error."
   },
   {
-    "title": "Model Implementation guide",
-    "date": "2026-11-02",
-    "type": "added",
-    "content": "The For Developer tab has a new page, Model Implementation: the contracts of components and controllers, a minimal generator and AVR, and how to test a new model with validate."
-  },
-  {
-    "title": "set_odefcn takes no frequency argument",
-    "date": "2026-11-02",
-    "type": "changed",
-    "content": "For model authors: set_odefcn no longer takes omega0. It reads the network frequency itself, so write obj.set_odefcn() in a constructor; obj.set_odefcn(obj.r_Hz) now stops with a too-many-inputs error. A model that overrides set_odefcn must drop the argument too."
-  },
-  {
-    "title": "Analysis classes renamed",
-    "date": "2026-11-02",
-    "type": "changed",
-    "content": "The solver and result classes have uniform names, with no aliases: SolverPF, ResultPF, SolverOPF, ResultOPF, SolverCPF, ResultCPF, SolverODE, ResultODE, ProgressODE, SolverLIN and ResultLIN replace PowerFlowCalculation, PowerFlowResult, OptimalPowerFlow, OPFResult, ContinuationPowerFlow, CPFResult, odeSimulator, odeSimulationResult, odeProgress, odeLinearizer and LinearizationResult. The event class odeEventSet is replaced by Scenario (see the entry Simulation scenarios), and ODEevent remains as a deprecated wrapper; the name EventODE was never released. Message IDs follow the new names. net.solver_* properties and GUILDA.config section names do not change."
-  },
-  {
-    "title": "Model functions built at analysis time",
-    "date": "2026-11-03",
-    "type": "changed",
-    "content": "Read the nominal frequency of a model with the method comp.get_Hz(), which replaces the frequency property of v5 development builds. The f_* handles are no longer built by the constructors: an analysis builds the ones that are not up to date (initialize, simulate, linearize, get_sys and validate), so a network Hz edit or attaching a model takes effect at the next analysis. For model authors: a constructor does not need obj.set_odefcn(); one that still calls it keeps working."
-  },
-  {
-    "title": "IEEJ standard networks",
+    "title": "New IEEJ standard networks",
     "date": "2026-11-04",
-    "type": "added",
-    "content": "New network.IEEJ_EAST10, network.IEEJ_EAST30, network.IEEJ_WEST10 and network.IEEJ_WEST30, the IEEJ standard power system models converted from the report's Y-method data: gen-park generators (Xq_p = Xq for the report's machines without a q-axis transient circuit), load-impedance loads, the LAT=1 rotating exciter as an AVR_DC1 with the 0 to 4 pu field voltage limit, and the report's governors (IEEJ_LPT1, IEEJ_LPT3, IEEJ_LPT4). Section=\"peak\" (default) or \"night\" selects the power-flow section; Governor=false leaves out the governors and LocalController=false all local controllers. Not modeled: the constant-current part of the report's loads and their frequency dependence. The power flows agree with the report; the stability tables are compared case by case in _GUILDAverification. See each class help for the conversions."
+    "type": "model",
+    "content": "New network.IEEJ_EAST10, IEEJ_EAST30, IEEJ_WEST10 and IEEJ_WEST30, the IEEJ standard power system models with the report's generators, exciters and governors. Section=\"peak\" or \"night\" selects the power-flow case; Governor=false and LocalController=false leave out controllers. See each class help for the conversions."
   },
   {
     "title": "Simulation scenarios",
     "date": "2026-11-04",
-    "type": "added",
-    "content": "The disturbances of a simulation are a Scenario: sc = Scenario(tag), then sc.add_fault, add_trip, add_open_branch, add_offset or add_input, and net.add_scenario(sc). The network owns its scenarios (net.a_Scenario); adding one to another network moves it, and sc.copy() makes a duplicate. net.simulate(sc) uses the stored Time and Options of the scenario, net.simulate(time, sc1, sc2, ...) combines several, and sc.judge(result) gives the verdict (default Scenario.out_of_step). Scenario.import_csv and Scenario.export_csv read and write scenarios as CSV."
+    "type": "feature",
+    "content": "Describe the disturbances of a simulation as a Scenario: add faults, trips, branch openings, offsets and inputs, then net.add_scenario(sc) and net.simulate(sc). sc.judge(result) gives a stability verdict, and scenarios can be read and written as CSV."
   },
   {
-    "title": "ODEevent deprecated",
+    "title": "ODEevent replaced by Scenario",
     "date": "2026-11-04",
-    "type": "deprecated",
-    "content": "ODEevent(tag, net, Name=Value) still works and returns a Scenario with one disturbance, already added to net, but warns GUILDA:Deprecated:ODEevent once per session. Use Scenario and net.add_scenario instead; the checks now run when the event is made and report GUILDA:Scenario:* IDs."
+    "type": "feature",
+    "content": "ODEevent still works and returns a Scenario, with a warning. Use Scenario and net.add_scenario in new scripts."
   },
   {
-    "title": "Branch opening in simulations",
+    "title": "Open branches during a simulation",
     "date": "2026-11-04",
-    "type": "added",
-    "content": "sc.add_open_branch(branches, [t_start, t_end]) opens branches during a simulation: they are left out of the admittance matrix and reconnected at t_end, or stay open when t_end is at or after the end. Opening branches so that buses are left without any component is an error (GUILDA:SolverODE:OpenBranchIsland)."
+    "type": "feature",
+    "content": "sc.add_open_branch(branches, [t_start, t_end]) opens branches during a simulation and reconnects them at t_end."
   },
   {
-    "title": "Governor slot and IEEJ governors",
+    "title": "Governors and IEEJ governor models",
     "date": "2026-11-04",
-    "type": "added",
-    "content": "A component can have a governor (key \"governor\") beside its AVR or \"local\" controller; it is listed after them in a_LocalController and in the variables, and the two must drive different inputs (GUILDA:Component:ControllerOutputOverlap). New controller.governor.IEEJ_LPT1 (thermal and nuclear), IEEJ_LPT3 and IEEJ_LPT4 (hydro), the governors of the IEEJ standard models, drive Pmech."
+    "type": "model",
+    "content": "A component can have a governor beside its AVR. New controller.governor.IEEJ_LPT1 (thermal and nuclear), IEEJ_LPT3 and IEEJ_LPT4 (hydro)."
   },
   {
     "title": "AVR_DC1 field voltage limit",
     "date": "2026-11-04",
-    "type": "added",
-    "content": "controller.avr.AVR_DC1 takes Vfld_max and Vfld_min, a limit of the field voltage without windup. The defaults Inf and -Inf give the same results as before."
+    "type": "model",
+    "content": "controller.avr.AVR_DC1 takes Vfld_max and Vfld_min, a field voltage limit without windup. The defaults give the same results as before."
   },
   {
     "title": "gen-park with Xq_p = Xq",
     "date": "2026-11-04",
-    "type": "fixed",
-    "content": "component.generator.park computes its equilibrium when Xq_p equals Xq (or Xd_p equals Xd), so a machine without a q-axis transient circuit can be modeled with Xq_p = Xq."
-  },
-  {
-    "title": "IEEJ networks use the report's controllers",
-    "date": "2026-11-04",
-    "type": "changed",
-    "content": "network.IEEJ_EAST10, IEEJ_EAST30, IEEJ_WEST10 and IEEJ_WEST30 now build the report's models by default: with governors, with the 0 to 4 pu field voltage limit of the exciters, and with Xq_p = Xq. Governor=false gives the networks without governors."
+    "type": "fix",
+    "content": "component.generator.park computes its equilibrium when Xq_p equals Xq (or Xd_p equals Xd), so a machine without a q-axis transient circuit can be modeled."
   },
   {
     "title": "Verification against published results",
     "date": "2026-11-04",
-    "type": "added",
-    "content": "The new folder _GUILDAverification/<network>/ compares a bundled network with its literature: a README with the reference and the latest agreement, the cases as Scenario CSV files, the published verdicts and a comparison script. It covers the four IEEJ networks; with governors, the stability verdicts agree in 33/44 (EAST10), 55/55 (EAST30), 9/26 (WEST10) and 5/12 (WEST30) cases, while the loads remain constant-impedance."
+    "type": "feature",
+    "content": "The folder _GUILDAverification compares bundled networks with their literature: the reference, the cases as Scenario CSV files, the published verdicts and a comparison script. It covers the four IEEJ networks."
   },
   {
     "title": "Unused tools functions removed",
     "date": "2026-11-05",
-    "type": "removed",
-    "content": "tools.closeUI, tools.ssfeedback, tools.input, tools.transTab, tools.DNS, tools.FigureClass and the tools.for_ss package (collect, dae2ode, feedback, kron, reorder) are removed. Nothing in GUILDA called them."
+    "type": "feature",
+    "content": "tools.closeUI, tools.ssfeedback, tools.input, tools.transTab, tools.DNS, tools.FigureClass and the tools.for_ss package are removed. Scripts that call them need their own copy."
   },
   {
-    "title": "initialize brings the model up to date",
+    "title": "net.initialize updates the model after edits",
     "date": "2026-11-06",
-    "type": "changed",
-    "content": "net.initialize() is the one step that brings the model up to date after edits. It solves the power flow only when Method is given or an edit changed the power flow (baseMVA, the topology, bus and branch parameters, the slack bus, the P and Q of the components); a dynamics edit recomputes only the edited models from the held voltage and current, a Hz edit only rebuilds the model functions, and with nothing edited initialize changes nothing. simulate, linearize, get_sys, calculate_continuation_powerflow and validate only check the model, and stop with an error of the analysis (GUILDA:SolverODE:Stale, SolverLIN:Stale, SolverCPF:Stale, or the Stale error of the layer for get_sys), naming the edits, until initialize has run. The edit log and disp_edit are removed; each layer keeps the reasons it is out of date in sct_stale (e.g. net.sct_stale.powerflow). For model authors: set_odefcn and s_odefcn are removed. A model class that built its own handles overrides the protected method build_odefcn, and a constructor no longer calls obj.set_odefcn()."
+    "type": "feature",
+    "content": "After editing parameters or the topology, run net.initialize(): it recomputes only what the edits affect. simulate, linearize, get_sys and the continuation power flow stop with an error naming the edits until it has run."
   },
   {
-    "title": "Parameters are edited through tab_parameter",
+    "title": "Edit parameters through tab_parameter",
     "date": "2026-11-06",
-    "type": "changed",
-    "content": "Each model object holds its parameter containers in a_Parameter, and parameters are read and edited through tab_parameter (one column per group: dynamics, powerflow, operation, OPF, graph, base); the para_* properties are removed. Writing tab_parameter changes only the edited values, so only they are logged as edits. The base column of a component (comp.tab_parameter.base, comp.para_base) is removed: the frequency and the system base are in net.tab_parameter.base, and comp.get_Hz() reads the frequency. For model authors: a constructor adds its entries with obj.a_Parameter{cellfun(@(p) p.s_tag==\"dynamics\", obj.a_Parameter)}.add_entry(...)."
+    "type": "feature",
+    "content": "Read and edit model parameters through tab_parameter (columns dynamics, powerflow, operation, OPF, graph, base). The para_* properties are removed: scripts that use them switch to tab_parameter. The frequency and system base are in net.tab_parameter.base."
   },
   {
-    "title": "Parameter stores its table; add_entry removed",
-    "date": "2026-11-06",
-    "type": "changed",
-    "content": "For model authors: Parameter.add_entry is removed. A Parameter container stores its parameters as one table, created from a struct of defaults (field: name, value: default), and a model constructor replaces its dynamics container in one line: obj.a_Parameter{cellfun(@(p) p.s_tag==\"dynamics\", obj.a_Parameter)} = Parameter(obj, \"dynamics\", struct(\"Ka\", opt.Ka, \"Te\", opt.Te)). The class of each parameter is the class of its default; a write of another class, of other names, of another height or of other row names is an error and stores nothing. Internal reads by tag end in .tab_parameter.<name>. A network or a lower layer loaded from a MAT file checks and logs its edits without a restore step, so the IncompleteLoad warning is removed."
-  },
-  {
-    "title": "Power flow runs without toolboxes",
+    "title": "OPF costs and constraints of your own",
     "date": "2026-11-07",
-    "type": "changed",
-    "content": "net.calculate_powerflow (and net.solver_PF.Method, which net.initialize uses) takes Method \"newton\" (default, Newton-Raphson), \"gradient\", \"levenberg-marquardt\", \"dynamic\" or \"fsolve\", and only \"fsolve\" needs Optimization Toolbox, so the power flow and everything after it run with MATLAB alone. Method=\"algebraic\" is removed: \"fsolve\" is the former algebraic method (the v3 positional form \"algebraic\" still maps to it). The algorithms are the classes MethodNewtonRaphson, MethodGradient, MethodLevenbergMarquardt, MethodFsolve and MethodDynamic in _auxiliary; NewtonRaphsonMethod is renamed MethodNewtonRaphson without an alias, and so are its configuration file (DefaultMethodNewtonRaphson.json) and section. The step size of \"gradient\" is set in net.solver_PF.gradient.StepSize."
+    "type": "feature",
+    "content": "net.optimize_powerflow takes Cost and Constraint functions added to the problem, with the duals of named constraints in result.lambda.Constraints. optimize_powerflow(Problem=prob) solves a problem from net.build_opf_problem changed by the user."
+  },
+  {
+    "title": "Power flow without toolboxes",
+    "date": "2026-11-07",
+    "type": "feature",
+    "content": "net.calculate_powerflow takes Method \"newton\" (default), \"gradient\", \"levenberg-marquardt\", \"dynamic\" or \"fsolve\"; only \"fsolve\" needs Optimization Toolbox, so the power flow runs with MATLAB alone. Method=\"algebraic\" is now \"fsolve\"."
   },
   {
     "title": "Linearization without Control System Toolbox",
     "date": "2026-11-07",
-    "type": "changed",
-    "content": "get_sys of PowerNetwork, Bus, Component, LocalController and GlobalController builds the linear models with matrices and takes Format: \"GUILDAorigin\" (default; a ResultLIN), \"struct\" or \"ss\". A ResultLIN holds the model in A, B, C, D, E (E dx/dt = A x + B u, y = C x + D u), StateName, InputName and OutputName; \"struct\" gives the same eight fields; ResultLIN.get_ss(Algorithm, Format=\"ss\"|\"struct\") reduces a net.linearize result. Only \"ss\" output and the LQR controllers (controller.local_LQR, local_LQR_retrofit, +controller/+modeling/get_environment) need Control System Toolbox; the matrices are the same as before. get_sys no longer returns an ss object by default: scripts that call ss functions on it (eig(sys), pole, step, sys(out, in)) pass Format=\"ss\", or read res.A, res.E and the names of the ResultLIN (e.g. eig(res.A, res.E))."
+    "type": "feature",
+    "content": "get_sys returns a result with the matrices A, B, C, D, E and the variable names, or a struct, without any toolbox. Scripts that use ss functions on it (eig(sys), step, pole) pass Format=\"ss\", which needs Control System Toolbox."
   },
   {
     "title": "Optional toolboxes and the startup check",
     "date": "2026-11-07",
-    "type": "changed",
-    "content": "GUILDA needs MATLAB only; Optimization, Control System and Symbolic Math Toolbox are optional. The OPF (optimize_powerflow, initialize(Method=\"OPF\")) and Method=\"fsolve\" need Optimization Toolbox and stop with GUILDA:require_toolbox:Unavailable without it. tools.require_toolbox(\"optim\" | \"control\" | \"symbolic\") does this check for a feature. @GUILDA/config/ListToolbox.json replaces ListToolbox.txt: the startup check prints, per toolbox, \"ok\" or the features that are unavailable without it. The Getting Started page has a table of which analysis and option needs which toolbox."
+    "type": "feature",
+    "content": "GUILDA needs MATLAB only. OPF and Method=\"fsolve\" need Optimization Toolbox, ss output and the LQR controllers need Control System Toolbox. The startup prints for each toolbox \"ok\" or the features unavailable without it; Getting Started has the full table."
   },
   {
     "title": "Show a model in a GUI",
     "date": "2026-11-07",
-    "type": "added",
-    "content": "obj.gui() shows any network, bus, branch, component or controller in a new window, and obj.gui(h) fills a uifigure, uipanel, uitab or uigridlayout of another app (a figure made by figure() is not supported). The window shows the tag, the class and the stale state; a tree of the parent and the children, where a click shows that model; editable parameter tables, where an edited cell is written to tab_parameter at once (a rejected value is restored); the equilibrium tables; the equations of the class help (the ```math blocks under **Equations**, drawn with the bundled KaTeX); the image.svg of the class folder; and a button that runs initialize of the network. gui returns a DrawerModelGUI, whose render(model) shows another model in the same place. For model authors: nothing is implemented for the GUI; a new class shows its help equations and image.svg as they are."
+    "type": "feature",
+    "content": "obj.gui() opens a window for a network, bus, branch, component or controller: its parameters, editable in place, the parent and children as a tree, the equilibrium, the equations and figure of the class, and an initialize button. obj.gui(h) puts it in a panel or tab of your own app. A new model class shows its help equations and image.svg with no extra code."
   }
 ];

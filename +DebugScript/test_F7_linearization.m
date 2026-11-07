@@ -149,13 +149,13 @@ clear Deprecated
 lastwarn("");
 sys_nu = net.get_sys("Algorithm", "Feedback", "NonUnit", 7);
 id = DebugScript.helper.msg_id();
-assert(string(id) == s_id, id)
+assert(string(id) == s_id, "%s", id)
 assert(isequal(sys_nu, net.get_sys("Algorithm", "Feedback")))
 % 1 セッションに 1 回。名前の大文字小文字は問わない
 lastwarn("");
 sys_nu = net.get_sys("Algorithm", "Feedback", "nonunit", 7);
 id = DebugScript.helper.msg_id();
-assert(string(id) == "", id)
+assert(string(id) == "", "%s", id)
 assert(isequal(sys_nu, net.get_sys("Algorithm", "Feedback")))
 % 状態のない母線の指定は、負荷があっても Algorithm によらず結果を変えない (B009 は負荷あり)
 lv_static = tools.vcellfun(@(b) sum(cellfun(@(c) numel(c.sv_x), b.a_Component)) == 0, net.a_Bus);
@@ -187,7 +187,7 @@ try
     res.get_ss("Feedback");
     error("DebugScript:NoError", "状態のある母線の NonUnit がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus", "%s", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "bus 2"), ME.message)
 end
 assert(size(res.get_ss("Kron").A,1) == n_x)
@@ -201,7 +201,7 @@ try
     net.linearize("NonUnit", 99);
     error("DebugScript:NoError", "存在しない NonUnit がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:v3_nonunit_range:NonUnit", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:v3_nonunit_range:NonUnit", "%s", DebugScript.helper.msg_id(ME))
 end
 
 
@@ -213,7 +213,7 @@ clear Deprecated
 lastwarn("");
 net_d.solver_LIN.NonUnit = [7 9];
 id = DebugScript.helper.msg_id();
-assert(string(id) == "GUILDA:Deprecated:SolverLinNonUnit", id)
+assert(string(id) == "GUILDA:Deprecated:SolverLinNonUnit", "%s", id)
 assert(isequal(net_d.solver_LIN.NonUnit, [7 9]))
 assert(isequal(net_d.get_sys("Algorithm", "Feedback"), sys_ref))
 % 状態のある母線と存在しない母線は、オプションと同じエラー
@@ -223,7 +223,7 @@ for c = {{2, "GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus"}, {99, "GUILDA:v3_non
         net_d.get_sys("Algorithm", "Feedback");
         error("DebugScript:NoError", "エラーにならない")
     catch ME
-        assert(DebugScript.helper.msg_id(ME) == c{1}{2}, DebugScript.helper.msg_id(ME))
+        assert(DebugScript.helper.msg_id(ME) == c{1}{2}, "%s", DebugScript.helper.msg_id(ME))
     end
 end
 % 呼び出しの指定が優先し、値は解法に保存しない
@@ -234,7 +234,7 @@ clear Deprecated
 lastwarn("");
 net_d.solver_LIN.NonUnit = [];
 id = DebugScript.helper.msg_id();
-assert(string(id) == "", id)
+assert(string(id) == "", "%s", id)
 
 
 %% Feedback keeps the inputs of zero-power loads
@@ -278,7 +278,7 @@ try
     n9.a_Bus{4}.get_sys("port","I2V");
     error("DebugScript:NoError", "機器の無い母線の I2V がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:Bus:NoI2V", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:Bus:NoI2V", "%s", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, n9.a_Bus{4}.s_tag) && contains(ME.message, "V2I"))
 end
 % P=Q=0 の load-power (IEEE14 の B007): 母線と機器のどちらも止まる
@@ -290,13 +290,13 @@ try
     bus.get_sys("port","I2V");
     error("DebugScript:NoError", "P=Q=0 の負荷の母線の I2V がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:Bus:NoI2V", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:Bus:NoI2V", "%s", DebugScript.helper.msg_id(ME))
 end
 try
     bus.a_Component{1}.get_sys("port","I2V");
     error("DebugScript:NoError", "P=Q=0 の負荷の I2V がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:Component:NoI2V", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:Component:NoI2V", "%s", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, bus.a_Component{1}.s_tag))
 end
 % V2I は従来どおり使え、3 方式の線形化もこれらの母線を含む系統で動く (既存の内部呼び出しは I2V を通らない)
@@ -347,7 +347,7 @@ try
     SolverLIN(net, [], "Algorithm", "Kron");
     error("DebugScript:NoError", "SolverLIN(net, ...) がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor", "%s", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "net.linearize"))
 end
 assert(isa(SolverLIN(), "SolverLIN"))
@@ -776,14 +776,14 @@ try
     net.linearize("Point", x(1:end-1));
     error("DebugScript:NoError", "長さの違う Point がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointSize", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointSize", "%s", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "get_variable_map"))
 end
 try
     net.linearize("Point", "equilibrium");
     error("DebugScript:NoError", "文字列の Point がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointType", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointType", "%s", DebugScript.helper.msg_id(ME))
 end
 
 
@@ -829,7 +829,7 @@ try
     net.linearize("Point", {sim, 10});
     error("DebugScript:NoError", "範囲外の時刻がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultODE:PointTime", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultODE:PointTime", "%s", DebugScript.helper.msg_id(ME))
 end
 % Point={sim, t, Side}: 第 3 要素は sim.get_point の Side
 assert(isequal(net.linearize("Point", {sim, t, "before"}).rv_point, res.rv_point))
@@ -837,7 +837,7 @@ try
     net.linearize("Point", {sim, t, "middle"});
     error("DebugScript:NoError", "知らない Side がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointType", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointType", "%s", DebugScript.helper.msg_id(ME))
 end
 
 
@@ -937,7 +937,7 @@ try
     net.linearize("Methd", "Kron");
     error("DebugScript:NoError", "知らない名前がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", "%s", DebugScript.helper.msg_id(ME))
 end
 
 
@@ -953,7 +953,7 @@ try
     net.get_sys(Format="ResultLIN");
     error("DebugScript:NoError", "Format=""ResultLIN"" should stop")
 catch ME
-    assert(ME.identifier == "MATLAB:validators:mustBeMember", ME.identifier)
+    assert(ME.identifier == "MATLAB:validators:mustBeMember", "%s", ME.identifier)
 end
 sct =net.get_sys("Algorithm", "Kron", "Format", "struct");
 assert(isstruct(sct) && isequal(string(fieldnames(sct))', ["A","B","C","D","E","StateName","InputName","OutputName"]))
@@ -983,7 +983,7 @@ for alg = ["Kron", "Feedback"]
         net_s.get_sys("Algorithm", alg);
         error("DebugScript:NoError", alg + ": エラーにならない")
     catch ME
-        assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultLIN:SingularAvv", DebugScript.helper.msg_id(ME))
+        assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultLIN:SingularAvv", "%s", DebugScript.helper.msg_id(ME))
         assert(contains(ME.message, "DAE") && contains(ME.message, "B001"), ME.message)
     end
 end
@@ -1010,7 +1010,7 @@ try
     n14.get_sys("Point", x);
     error("DebugScript:NoError", "NaN の Point がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointNotFinite", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointNotFinite", "%s", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, tab.Label(5)) && contains(ME.message, tab.Label(7)), ME.message)
     assert(~contains(ME.message, tab.Label(6) + ","), ME.message)
 end
@@ -1018,7 +1018,7 @@ try
     n14.linearize("Point", nan(height(tab),1));
     error("DebugScript:NoError", "NaN の Point がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointNotFinite", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointNotFinite", "%s", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "more"), ME.message)
 end
 % トリップ中の {sim, t}: 解列した機器の状態が NaN
@@ -1027,7 +1027,7 @@ try
     n14.get_sys("Point", {sim, 1.2});
     error("DebugScript:NoError", "トリップ中の Point がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointNotFinite", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointNotFinite", "%s", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "SG1B002") && contains(ME.message, "trip"), ME.message)
 end
 assert(n14.linearize("Point", {sim, 0.5}).l_success)
@@ -1045,7 +1045,7 @@ for c_point = {{sim,1}, {sim,1.2}, {sim,1.5,"before"}}
         n14.linearize("Point", c_point{1});
         error("DebugScript:NoError", "トリップ中の Point がエラーにならない")
     catch ME
-        assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointNotFinite", DebugScript.helper.msg_id(ME))
+        assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:PointNotFinite", "%s", DebugScript.helper.msg_id(ME))
         assert(contains(ME.message, "SG1B002") && contains(ME.message, "trip"), ME.message)
     end
 end
@@ -1149,7 +1149,7 @@ try
     n14.linearize("Point", x);
     error("DebugScript:NoError", "V=0 の Point がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:JacobianNotFinite", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverLIN:JacobianNotFinite", "%s", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, "bus B"), ME.message)
 end
 
@@ -1180,7 +1180,7 @@ try
     net.linearize("Algorithm", "Feedback", "NonUnit", [7 2], "Plot", true);
     error("DebugScript:NoError", "状態のある母線の NonUnit がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus", "%s", DebugScript.helper.msg_id(ME))
     close(gcf)
 end
 
@@ -1205,7 +1205,7 @@ try
     net_14.get_sys("NonUnit", 1:14);
     error("DebugScript:NoError", "エラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:v3_nonunit_dynamic:NonUnitDynamicBus", "%s", DebugScript.helper.msg_id(ME))
 end
 % 状態のない系統は Feedback では扱えない (NonUnit の有無によらない)。Kron と DAE は使える
 net_load = PowerNetwork("LoadOnly");
@@ -1220,7 +1220,7 @@ for c_arg = {{}, {"NonUnit", 1:2}}
         net_load.get_sys(c_arg{1}{:});
         error("DebugScript:NoError", "エラーにならない")
     catch ME
-        assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultLIN:NoUnitBus", DebugScript.helper.msg_id(ME))
+        assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultLIN:NoUnitBus", "%s", DebugScript.helper.msg_id(ME))
         assert(contains(ME.message, "Kron") && contains(ME.message, "DAE"), ME.message)
     end
 end
@@ -1234,13 +1234,13 @@ try
     net_droop.add_global_controller("agc-PI", gen_droop);
     error("DebugScript:NoError", "エラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:GconPorts", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:GconPorts", "%s", DebugScript.helper.msg_id(ME))
 end
 try
     agc.get_sys(0, zeros(2,1), zeros(2,1), 0);
     error("DebugScript:NoError", "エラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:GlobalController:GlobalControllerPort", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:GlobalController:GlobalControllerPort", "%s", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, gen_droop.s_tag) && contains(ME.message, "omega"), ME.message)
 end
 
@@ -1263,7 +1263,7 @@ try
     net.get_sys(Coordinate="polar");
     error("DebugScript:NoError", "不正な Coordinate がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) ~= "DebugScript:NoError", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) ~= "DebugScript:NoError", "%s", DebugScript.helper.msg_id(ME))
 end
 
 
@@ -1359,14 +1359,14 @@ for c = {{"Output","nope","UnknownOutput"}, {"Input","nope","UnknownInput"}, {"I
         net.get_sys("Algorithm", "Kron", c{1}{1:2});
         error("DebugScript:NoError", "不明な名前がエラーにならない")
     catch ME
-        assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultLIN:" + c{1}{3}, DebugScript.helper.msg_id(ME))
+        assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultLIN:" + c{1}{3}, "%s", DebugScript.helper.msg_id(ME))
     end
 end
 try
     net.linearize(Output="V");
     error("DebugScript:NoError", "linearize が Output を受けた")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", "%s", DebugScript.helper.msg_id(ME))
 end
 
 
@@ -1383,7 +1383,7 @@ try
     res.get_ss("Feedback", Output=sv_gone(1));
     error("DebugScript:NoError", "消えた状態がエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultLIN:StateNotInModel", DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:ResultLIN:StateNotInModel", "%s", DebugScript.helper.msg_id(ME))
 end
 assert(string(res.get_ss("Kron", Output=sv_gone(1)).OutputName) == sv_gone(1))
 sK = res.get_ss("Kron", Output=["V","I","y"]);
@@ -1408,7 +1408,7 @@ for k = 1:numel(obj)
         obj{k}.get_hessian();
         error("DebugScript:NoError", class(obj{k}) + ".get_hessian がエラーにならない")
     catch ME
-        assert(DebugScript.helper.msg_id(ME) == sr_id(k), DebugScript.helper.msg_id(ME))
+        assert(DebugScript.helper.msg_id(ME) == sr_id(k), "%s", DebugScript.helper.msg_id(ME))
         assert(contains(ME.message, class(obj{k})) && contains(ME.message, "does not support Hessian"))
     end
 end
@@ -1431,7 +1431,7 @@ try
     [~, ~] = c.get_hessian(x, V, I, u);
     error("DebugScript:NoError", "Hessian_I が無いのにエラーにならない")
 catch ME
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:Component:HessianNotSupported" && contains(ME.message, "Hessian_I"), DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:Component:HessianNotSupported" && contains(ME.message, "Hessian_I"), "%s", DebugScript.helper.msg_id(ME))
 end
 
 

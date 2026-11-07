@@ -15,6 +15,7 @@
   </style>
   
   <script src="./database/list_UpdateLog.js"></script>
+  <script src="./doc-updatelog.js"></script>
   <script src="./database/list_Classes.js"></script>
   <script src="./doc-loader.js"></script>
   <script src="./doc-tree.js"></script>
@@ -126,18 +127,16 @@
       </ol>
 
       <h2><span lang="en">Update Log</span><span lang="ja">更新履歴</span></h2>
-      <ul class="ulog-legend" aria-label="Update types" data-aria-label-ja="更新の種類">
-        <li class="is-added"><span lang="en">Added</span><span lang="ja">追加</span></li>
-        <li class="is-changed"><span lang="en">Changed</span><span lang="ja">変更</span></li>
-        <li class="is-deprecated"><span lang="en">Deprecated</span><span lang="ja">非推奨</span></li>
-        <li class="is-removed"><span lang="en">Removed</span><span lang="ja">削除</span></li>
-        <li class="is-fixed"><span lang="en">Fixed</span><span lang="ja">修正</span></li>
-      </ul>
-      <div id="update-log-container" class="ulog" tabindex="0" role="region" aria-label="Update log, newest first. Scroll sideways to see more." data-aria-label-ja="更新履歴（新しい順）。横にスクロールすると続きを表示します。"></div>
+      <div id="update-log-container" class="ulog is-compact"></div>
+      <p class="ulog-more"><a class="btn" href="updatelog.html"><span lang="en">Show more</span><span lang="ja">もっと見る</span> <span aria-hidden="true">→</span></a></p>
 
       <h2><span lang="en">License</span><span lang="ja">ライセンス</span></h2>
       <p lang="en">GUILDA is released under the MIT License. Details: the <a href="../LICENSE" target="_blank"><code>LICENSE</code></a> file at the repository root.</p>
       <p lang="ja">MIT ライセンスで公開。詳細はリポジトリのルートの <a href="../LICENSE" target="_blank"><code>LICENSE</code></a> ファイルを参照。</p>
+
+      <h2><span lang="en">Developers</span><span lang="ja">開発者</span></h2>
+      <p lang="en">GUILDA is developed by the <a href="https://lim.ishizaki-lab.jp" target="_blank">Ishizaki Laboratory</a>, Institute of Science Tokyo. It continues power_simulator, developed by Takahiro Kawaguchi (Gunma University).</p>
+      <p lang="ja">東京科学大学 <a href="https://lim.ishizaki-lab.jp" target="_blank">石崎研究室</a> が開発。前身は川口貴弘先生（群馬大学）が開発した power_simulator で、GUILDA はそれを引き継いだもの。</p>
 
     </div>
 
@@ -145,12 +144,6 @@
       <div class="about-hero">
         <p class="about-eyebrow"><span lang="en">About GUILDA</span><span lang="ja">GUILDA について</span></p>
         <h1 class="about-title"><span lang="en">Power-system knowledge, in the language of systems and control.</span><span lang="ja">電力系統の知識を、システム制御の言葉で。</span></h1>
-        <p class="about-lead" lang="en">Why GUILDA exists and the ideas behind its design. Developed by the Ishizaki Laboratory with Takahiro Kawaguchi (Gunma University).</p>
-        <p class="about-lead" lang="ja">GUILDA が生まれた理由と設計の考え方。開発は石崎研究室と川口貴弘氏（群馬大学）の共同。</p>
-        <figure class="about-demo">
-          <img src="./images/movie.gif" data-alt-ja="GUILDA のアニメーション: ノードの高さと色がシミュレーション結果に合わせて変わる系統グラフ" alt="GUILDA animation: a network graph whose node heights and colours follow the simulated response" class="demo-gif">
-          <figcaption><span lang="en">A simulated fault spreading through a network, drawn by GUILDA's animation tools.</span><span lang="ja">系統に広がる地絡の影響。GUILDA のアニメーション機能で描画。</span></figcaption>
-        </figure>
       </div>
 
       <section class="about-section index-stacked">
@@ -336,6 +329,14 @@ sys = net.get_sys();                  % linearized model</code></pre>
     <div id="tab-getting-started" class="tab-content">
       <h1><span lang="en">Getting Started</span><span lang="ja">はじめに</span></h1>
 
+      <h2><span lang="en">Install GUILDA</span><span lang="ja">GUILDA のインストール</span></h2>
+      <p lang="en">Clone or download the repository from GitHub, or open it directly in MATLAB Online.</p>
+      <p lang="ja">GitHub からリポジトリをクローン・ダウンロード、または MATLAB Online で直接開く。</p>
+      <div class="install-buttons">
+        <a href="https://github.com/guilda-dev/guilda" target="_blank" class="btn-github"><svg class="gh-mark" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg><span><span lang="en">From GitHub</span><span lang="ja">GitHub から入手</span></span></a>
+        <a href="https://matlab.mathworks.com/open/github/v1?repo=guilda-dev/guilda&project=./GUILDA.prj" target="_blank" class="btn-badge"><img src="https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg" alt="Open in MATLAB Online" onerror="this.parentNode.classList.add('is-offline')"><span class="btn-badge-fallback"><span lang="en">Open in MATLAB Online</span><span lang="ja">MATLAB Online で開く</span></span></a>
+      </div>
+
       <h2><span lang="en">Requirements</span><span lang="ja">動作環境</span></h2>
       <p lang="en">GUILDA runs on MATLAB alone; each toolbox is needed only by the features marked below.</p>
       <p lang="ja">MATLAB のみで動作。各 Toolbox は、下表で印の付いた機能でのみ必要。</p>
@@ -351,22 +352,22 @@ sys = net.get_sys();                  % linearized model</code></pre>
             </tr>
           </thead>
           <tbody>
-            <tr class="req-group"><th colspan="5" scope="rowgroup"><span class="req-group-label"><span lang="en">Power flow</span><span lang="ja">潮流計算</span><span class="req-desc"><span lang="en">Steady-state voltages and power flows</span><span lang="ja">定常状態の電圧・電力潮流</span></span><span class="req-sub"><code>net.<wbr>calculate_<wbr>powerflow(<wbr>Method=…)</code></span></span></th></tr>
+            <tr class="req-cat"><th colspan="5" scope="rowgroup"><span class="req-cat-label"><span lang="en">Power flow</span><span lang="ja">潮流計算</span><span class="req-desc"><span lang="en">Steady-state voltages and power flows</span><span lang="ja">定常状態の電圧・電力潮流</span></span><span class="req-sub"><code>net.<wbr>calculate_<wbr>powerflow(<wbr>Method=…)</code></span></span></th></tr>
             <tr class="req-opt"><th scope="row"><span lang="en">Newton-Raphson method (default)</span><span lang="ja">ニュートン・ラフソン法（既定）</span><span class="req-sub"><code>Method="newton"</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
             <tr class="req-opt"><th scope="row"><span lang="en">Gradient method</span><span lang="ja">勾配法</span><span class="req-sub"><code>Method="gradient"</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
             <tr class="req-opt"><th scope="row"><span lang="en">Levenberg-Marquardt method</span><span lang="ja">レーベンバーグ・マーカート法</span><span class="req-sub"><code>Method=<wbr>"levenberg-marquardt"</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
             <tr class="req-opt"><th scope="row"><span lang="en">Virtual bus dynamics (time integration)</span><span lang="ja">仮想母線ダイナミクス（時間積分）</span><span class="req-sub"><code>Method="dynamic"</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
             <tr class="req-opt"><th scope="row"><span lang="en">MATLAB fsolve</span><span lang="ja">MATLAB の fsolve</span><span class="req-sub"><code>Method="fsolve"</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td></tr>
-            <tr class="req-single"><th scope="row"><span lang="en">Continuation power flow (CPF)</span><span lang="ja">連続潮流計算（CPF）</span><span class="req-desc"><span lang="en">Voltage stability: the nose (PV) curve</span><span lang="ja">電圧安定性・PV 曲線</span></span><span class="req-sub"><code>net.<wbr>calculate_<wbr>continuation_<wbr>powerflow</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
-            <tr class="req-single"><th scope="row"><span lang="en">Optimal power flow (OPF)</span><span lang="ja">最適潮流計算（OPF）</span><span class="req-desc"><span lang="en">Generation dispatch that minimizes cost under constraints</span><span lang="ja">制約下でコスト最小の発電配分</span></span><span class="req-sub"><code>net.<wbr>optimize_<wbr>powerflow</code>, <code>net.initialize(<wbr>Method="OPF")</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td></tr>
-            <tr class="req-single"><th scope="row"><span lang="en">Time simulation</span><span lang="ja">時間応答シミュレーション</span><span class="req-desc"><span lang="en">Response to faults and disturbances</span><span lang="ja">事故・外乱に対する時間応答</span></span><span class="req-sub"><code>net.simulate</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
-            <tr class="req-group"><th colspan="5" scope="rowgroup"><span class="req-group-label"><span lang="en">Linearization</span><span lang="ja">近似線形化</span><span class="req-desc"><span lang="en">Linear model around an operating point (eigenvalues, controller design)</span><span lang="ja">動作点まわりの線形モデル（固有値解析・制御器設計）</span></span><span class="req-sub"><code>net.<wbr>get_sys(<wbr>Format=…)</code>, <code>ResultLIN.<wbr>get_ss(<wbr>Format=…)</code></span></span></th></tr>
+            <tr class="req-cat"><th scope="row"><span lang="en">Continuation power flow (CPF)</span><span lang="ja">連続潮流計算（CPF）</span><span class="req-desc"><span lang="en">Voltage stability: the nose (PV) curve</span><span lang="ja">電圧安定性・PV 曲線</span></span><span class="req-sub"><code>net.<wbr>calculate_<wbr>continuation_<wbr>powerflow</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
+            <tr class="req-cat"><th scope="row"><span lang="en">Optimal power flow (OPF)</span><span lang="ja">最適潮流計算（OPF）</span><span class="req-desc"><span lang="en">Generation dispatch that minimizes cost under constraints</span><span lang="ja">制約下でコスト最小の発電配分</span></span><span class="req-sub"><code>net.<wbr>optimize_<wbr>powerflow</code>, <code>net.initialize(<wbr>Method="OPF")</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td></tr>
+            <tr class="req-cat"><th scope="row"><span lang="en">Time simulation</span><span lang="ja">時間応答シミュレーション</span><span class="req-desc"><span lang="en">Response to faults and disturbances</span><span lang="ja">事故・外乱に対する時間応答</span></span><span class="req-sub"><code>net.simulate</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
+            <tr class="req-cat"><th colspan="5" scope="rowgroup"><span class="req-cat-label"><span lang="en">Linearization</span><span lang="ja">近似線形化</span><span class="req-desc"><span lang="en">Linear model around an operating point (eigenvalues, controller design)</span><span lang="ja">動作点まわりの線形モデル（固有値解析・制御器設計）</span></span><span class="req-sub"><code>net.<wbr>get_sys(<wbr>Format=…)</code>, <code>ResultLIN.<wbr>get_ss(<wbr>Format=…)</code></span></span></th></tr>
             <tr class="req-opt"><th scope="row"><span lang="en">Result object with system matrices (default)</span><span lang="ja">システム行列を持つ結果オブジェクト（既定）</span><span class="req-sub"><code>Format="GUILDAorigin"</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
             <tr class="req-opt"><th scope="row"><span lang="en">Plain MATLAB struct of matrices</span><span lang="ja">行列の構造体</span><span class="req-sub"><code>Format="struct"</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td class="req-no">–</td></tr>
             <tr class="req-opt"><th scope="row"><span lang="en">Control System Toolbox state-space model (ss)</span><span lang="ja">Control System Toolbox の状態空間モデル（ss）</span><span class="req-sub"><code>Format="ss"</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td></tr>
-            <tr class="req-group"><th colspan="5" scope="rowgroup"><span class="req-group-label"><span lang="en">Controllers</span><span lang="ja">制御器</span><span class="req-desc"><span lang="en">Controllers bundled with GUILDA</span><span lang="ja">GUILDA 同梱の制御器</span></span></span></th></tr>
+            <tr class="req-cat"><th colspan="5" scope="rowgroup"><span class="req-cat-label"><span lang="en">Controllers</span><span lang="ja">制御器</span><span class="req-desc"><span lang="en">Controllers bundled with GUILDA</span><span lang="ja">GUILDA 同梱の制御器</span></span></span></th></tr>
             <tr class="req-opt"><th scope="row"><span lang="en">LQR (optimal state-feedback) controllers</span><span lang="ja">LQR（最適状態フィードバック）制御器</span><span class="req-sub"><code>controller.<wbr>local_LQR</code>, <code>controller.<wbr>local_LQR_retrofit</code>, <code>+controller/<wbr>+modeling/<wbr>get_environment</code></span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td></tr>
-            <tr class="req-group"><th colspan="5" scope="rowgroup"><span class="req-group-label"><span lang="en">Developer tools</span><span lang="ja">開発者向け</span><span class="req-desc"><span lang="en">For writing and checking models</span><span lang="ja">モデルの作成・検証用</span></span></span></th></tr>
+            <tr class="req-cat"><th colspan="5" scope="rowgroup"><span class="req-cat-label"><span lang="en">Developer tools</span><span lang="ja">開発者向け</span><span class="req-desc"><span lang="en">For writing and checking models</span><span lang="ja">モデルの作成・検証用</span></span></span></th></tr>
             <tr class="req-opt"><th scope="row"><span lang="en">Symbolic equations in the Newton-Raphson solver</span><span lang="ja">ニュートン・ラフソン法ソルバーでの記号式</span><span class="req-sub"><code>Method<wbr>NewtonRaphson</code> (<code>NRMFcn</code>)</span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td></tr>
             <tr class="req-opt"><th scope="row"><span lang="en">Validation scripts for hand-written Jacobians</span><span lang="ja">手書きのヤコビ行列の検証スクリプト</span><span class="req-sub"><code>validate.m</code> (<code>+component/<wbr>+load</code>, <code>+controller</code>)</span></th><td><span class="mark-yes" role="img" aria-label="required">✓</span></td><td class="req-no">–</td><td class="req-no">–</td><td><span class="mark-yes" role="img" aria-label="required">✓</span></td></tr>
           </tbody>
@@ -381,20 +382,16 @@ sys = net.get_sys();                  % linearized model</code></pre>
         <li><code>GUILDA</code> の起動時にも <code>@GUILDA/config/ListToolbox.json</code> に基づき同じ確認を表示。各 Toolbox について <code>ok</code>、または無い場合に使えない機能</li>
       </ul>
 
-      <h2><span lang="en">Install GUILDA</span><span lang="ja">GUILDA のインストール</span></h2>
-      <p lang="en">Clone or download the repository from GitHub, or open it directly in MATLAB Online.</p>
-      <p lang="ja">GitHub からリポジトリをクローン・ダウンロード、または MATLAB Online で直接開く。</p>
-      <div class="install-buttons">
-        <a href="https://github.com/guilda-dev/guilda" target="_blank" class="btn-github"><svg class="gh-mark" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg><span><span lang="en">From GitHub</span><span lang="ja">GitHub から入手</span></span></a>
-        <a href="https://matlab.mathworks.com/open/github/v1?repo=guilda-dev/guilda&project=./GUILDA.prj" target="_blank" class="btn-badge"><img src="https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg" alt="Open in MATLAB Online" onerror="this.parentNode.classList.add('is-offline')"><span class="btn-badge-fallback"><span lang="en">Open in MATLAB Online</span><span lang="ja">MATLAB Online で開く</span></span></a>
-      </div>
-
       <h2><span lang="en">Start GUILDA</span><span lang="ja">GUILDA の起動</span></h2>
       <p lang="en">Open the GUILDA repository folder in MATLAB and run the constructor at the start of each session.</p>
       <p lang="ja">MATLAB で GUILDA のリポジトリフォルダを開き、セッションの最初にコンストラクタを実行。</p>
-<pre><code>&gt;&gt; GUILDA;</code></pre>
-      <p lang="en">Startup tasks the constructor runs, as configured:</p>
-      <p lang="ja">コンストラクタが実行する起動時の処理（設定に応じて）:</p>
+<pre><code>&gt;&gt; cd path/to/guilda
+&gt;&gt; GUILDA;</code></pre>
+      <figure class="gs-demo">
+        <img src="./images/getting-started/start-guilda.gif" alt="MATLAB: cd into the GUILDA folder, run GUILDA, the startup output, and the tutorial Live Script opening" data-alt-ja="MATLAB で GUILDA のフォルダへ移動し GUILDA を実行、起動時の出力とチュートリアルの Live Script が開く様子" loading="lazy" onerror="this.closest('figure').hidden = true;">
+      </figure>
+      <p lang="en">Startup tasks, as configured in <a href="#gs-startup-settings" onclick="openTab('tab-getting-started', 'gs-startup-settings'); return false;">Startup Settings</a>:</p>
+      <p lang="ja">起動時の処理（<a href="#gs-startup-settings" onclick="openTab('tab-getting-started', 'gs-startup-settings'); return false;">起動時の設定</a> に応じて）:</p>
       <ul>
         <li><span lang="en">Print the GUILDA logo.</span><span lang="ja">GUILDA のロゴの表示。</span></li>
         <li><span lang="en">Pull the latest revision when Git update is enabled.</span><span lang="ja">Git による更新が有効なとき、最新のリビジョンの取得。</span></li>
@@ -404,30 +401,24 @@ sys = net.get_sys();                  % linearized model</code></pre>
         <li><span lang="en">Display the update log and open the tutorial when enabled.</span><span lang="ja">有効なとき、更新履歴の表示とチュートリアルの起動。</span></li>
       </ul>
 
-      <h2><span lang="en">Your First Simulation</span><span lang="ja">最初のシミュレーション</span></h2>
-      <p lang="en">Load a packaged network, apply a short fault at one bus and simulate the response. The plot shows the frequency deviation of several generators.</p>
-      <p lang="ja">同梱の系統モデルの読み込み、ある母線での短時間の地絡、応答のシミュレーション。プロットはいくつかの発電機の周波数偏差。</p>
-<pre><code>net = network.IEEE14bus;
-sc = Scenario("fault");
-sc.add_fault("B008", [3, 3.1]);       % ground fault on bus B008 from 3 s to 3.1 s
-net.add_scenario(sc);
-sol = net.simulate([0, 50], sc);
+      <h2 id="gs-next"><span lang="en">Next Step: the Tutorial</span><span lang="ja">次のステップ: チュートリアル</span></h2>
+      <p lang="en">Continue with the tutorial Live Script that just opened: it walks through building a network, simulating it and linearizing it. Close it by mistake? <code>GUILDA.tutorial()</code> opens it again. The Tutorial tab gives the same workflow as plain code and lists every tutorial.</p>
+      <p lang="ja">続きは起動時に開いたチュートリアルの Live Script で。系統モデルの構築、シミュレーション、近似線形化を順に体験。閉じた場合は <code>GUILDA.tutorial()</code> で再表示。チュートリアルタブには同じ流れのコード例と全チュートリアルの一覧。</p>
+      <div class="home-actions">
+        <a class="btn btn-primary" href="#tab-tutorial" onclick="openTab('tab-tutorial'); return false;"><span lang="en">Go to the Tutorial</span><span lang="ja">チュートリアルへ</span> <span aria-hidden="true">→</span></a>
+      </div>
 
-xsol = sol.odeResults;
-figure;
-hold on;
-arrayfun(@(i) plot(xsol.t, xsol.Bus(i).Component(1).X.omega), [1, 2, 3, 6, 8]);</code></pre>
-      <p lang="en">To build your own network, linearize it or add controllers, continue with the <a href="#tab-tutorial" onclick="openTab('tab-tutorial'); return false;">Tutorial</a>.</p>
-      <p lang="ja">独自の系統モデルの構築、近似線形化、制御器の追加は <a href="#tab-tutorial" onclick="openTab('tab-tutorial'); return false;">チュートリアル</a> へ。</p>
+      <h2 id="gs-options"><span lang="en">Options</span><span lang="ja">オプション</span></h2>
+      <p lang="en">Not needed for a first run.</p>
+      <p lang="ja">最初の利用では不要。</p>
 
-      <h2><span lang="en">Startup Settings</span><span lang="ja">起動時の設定</span></h2>
-      <p lang="en">The settings window turns optional startup tasks on or off. Path setup is required to use GUILDA and cannot be turned off.</p>
-      <p lang="ja">設定ウィンドウで、起動時の任意の処理の有効・無効を切り替え。パスの設定は GUILDA の利用に必須のため無効化不可。</p>
+      <h3 id="gs-startup-settings"><span lang="en">Startup Settings</span><span lang="ja">起動時の設定</span></h3>
+      <p lang="en">Change how GUILDA behaves at startup: the settings window turns the optional startup tasks above on or off. Path setup is required to use GUILDA and cannot be turned off.</p>
+      <p lang="ja">GUILDA の起動時の動作の変更。設定ウィンドウで、上記の任意の起動時処理の有効・無効を切り替え。パスの設定は GUILDA の利用に必須のため無効化不可。</p>
 <pre><code>&gt;&gt; GUILDA.setting();</code></pre>
-      
-      <img src="./images/setting_startup.png" data-alt-ja="GUILDA の環境設定" alt="GUILDA Environment Settings" style="width: 50%; max-width: 100%; height: auto; display: block; margin: 20px 0; border: 1px solid var(--line); border-radius: var(--radius);">
+      <img src="./images/setting_startup.png" data-alt-ja="GUILDA の環境設定" alt="GUILDA Environment Settings" class="gs-settings-img">
 
-      <h2><span lang="en">Utility Functions</span><span lang="ja">ユーティリティ関数</span></h2>
+      <h3 id="gs-utility"><span lang="en">Utility Functions</span><span lang="ja">ユーティリティ関数</span></h3>
 <pre><code>&gt;&gt; GUILDA.pwd()         % Get the GUILDA repository path
 &gt;&gt; GUILDA.rmpath()      % Remove GUILDA folders from the MATLAB path
 &gt;&gt; GUILDA.addpath()     % Add the required folders again
@@ -437,16 +428,6 @@ arrayfun(@(i) plot(xsol.t, xsol.Bus(i).Component(1).X.omega), [1, 2, 3, 6, 8]);<
 &gt;&gt; GUILDA.doc()         % Open this documentation
 &gt;&gt; GUILDA.dictionary()  % Search the implemented class hierarchy
 &gt;&gt; GUILDA.newclass()    % Open the class creation tool (under development)</code></pre>
-
-      <h2><span lang="en">Managed GUILDA Folders</span><span lang="ja">GUILDA が管理するフォルダ</span></h2>
-      <p lang="en">Folders under <code>@GUILDA</code> that GUILDA manages. Do not edit them directly.</p>
-      <p lang="ja"><code>@GUILDA</code> 以下で GUILDA が管理するフォルダ。直接の編集は不可。</p>
-      <table>
-        <tr><th><span lang="en">Folder</span><span lang="ja">フォルダ</span></th><th><span lang="en">Purpose</span><span lang="ja">用途</span></th></tr>
-        <tr><td><code>@GUILDA/private</code></td><td><span lang="en">Internal functions used by GUILDA class methods.</span><span lang="ja">GUILDA クラスのメソッドが使う内部関数。</span></td></tr>
-        <tr><td><code>@GUILDA/config</code></td><td><span lang="en">Configuration values used during startup and internal analyses.</span><span lang="ja">起動時や内部の解析で使う設定値。</span></td></tr>
-        <tr><td><code>@GUILDA/user</code></td><td><span lang="en">User settings and tags associated with instantiated objects.</span><span lang="ja">ユーザー設定と、生成したオブジェクトに関連付けたタグ。</span></td></tr>
-      </table>
     </div>
 
     <div id="tab-tutorial" class="tab-content">
@@ -455,6 +436,10 @@ arrayfun(@(i) plot(xsol.t, xsol.Bus(i).Component(1).X.omega), [1, 2, 3, 6, 8]);<
       <p lang="ja">典型的な解析の流れ: 系統モデルの構築 → 動作点の初期化 → 時間応答シミュレーション・近似線形化・制御器の評価。以下の例は <code>+DebugScript</code> の検証の流れに準拠。前提は <a href="#tab-getting-started" onclick="openTab('tab-getting-started'); return false;">はじめに</a> の手順による GUILDA の起動。</p>
       <p lang="en">To learn hands-on, see the <a href="#hands-on-tutorial" onclick="openTab('tab-tutorial', 'hands-on-tutorial'); return false;" style="font-weight: bold;">Hands-on Tutorial</a> below.</p>
       <p lang="ja">手を動かしながら学ぶには、下の <a href="#hands-on-tutorial" onclick="openTab('tab-tutorial', 'hands-on-tutorial'); return false;" style="font-weight: bold;">ハンズオンチュートリアル</a> へ。</p>
+      <figure class="tutorial-flow">
+        <img lang="ja" src="./images/tutorial/basic-workflow.ja.svg" alt="GUILDA での作業の流れ: 系統モデルの定義、制御器の付加、シミュレーションまたは状態空間表現の取得" onerror="this.style.display = 'none';">
+        <img lang="en" src="./images/tutorial/basic-workflow.en.svg" alt="GUILDA workflow: define the network model, add controllers, then simulate or obtain a state-space model" onerror="this.style.display = 'none';">
+      </figure>
 
       <h2><span lang="en">1. Build or Load a Network</span><span lang="ja">1. 系統モデルの構築・読み込み</span></h2>
       <p lang="en">For a quick analysis, load a packaged network. To build a model by hand, create a <code>PowerNetwork</code> and add buses, branches and components in that order.</p>
@@ -659,96 +644,9 @@ sol = net.simulate([0, 50], sc);</code></pre>
       });
     }
 
+    // Home shows the newest entries; updatelog.html lists all (doc-updatelog.js).
     function renderUpdateLog() {
-      const container = document.getElementById('update-log-container');
-      if (!container) return;
-
-      const data = typeof updateLogData !== 'undefined' ? updateLogData : (typeof update_log !== 'undefined' ? update_log : null);
-      if (!Array.isArray(data) || data.length === 0) {
-        container.innerHTML = `<p style="color: var(--muted);">${bilingual('No update log data found.', '更新履歴のデータなし。')}</p>`;
-        return;
-      }
-
-      const esc = (value) => String(value ?? '')
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-      // Newest first
-      const items = [...data].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
-      // Keep a Changelog types; anything else renders neutral with no label
-      const types = {
-        added: bilingual('Added', '追加'), changed: bilingual('Changed', '変更'), deprecated: bilingual('Deprecated', '非推奨'),
-        removed: bilingual('Removed', '削除'), fixed: bilingual('Fixed', '修正')
-      };
-      items.forEach(u => {
-        if (u.type !== undefined && !Object.hasOwn(types, u.type)) console.warn(`Update log: unknown type "${u.type}" in "${u.title}"`);
-      });
-      const cards = (copy) => items.map(u => {
-        const type = Object.hasOwn(types, u.type) ? u.type : null;
-        return `
-        <article class="ulog-card${type ? ` is-${type}` : ''}"${copy ? ' aria-hidden="true"' : ''} title="${esc(u.content)}">
-          <div class="ulog-meta">
-            <time class="ulog-date" datetime="${esc(u.date)}">${esc(u.date)}</time>
-            ${type ? `<span class="ulog-type">${types[type]}</span>` : ''}
-          </div>
-          <h3 class="ulog-title">${esc(u.title)}</h3>
-          <p class="ulog-text">${esc(u.content)}</p>
-        </article>`;
-      }).join('');
-
-      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      container.innerHTML = `<div class="ulog-track">${cards(false)}${reduceMotion ? '' : cards(true)}</div>`;
-      if (!reduceMotion) startUpdateLogMarquee(container);
-    }
-
-    // Slow, seamless marquee: the track holds the cards twice, and scrollLeft wraps
-    // by one copy's width. Hover, focus and drag pause it; manual scroll is kept.
-    function startUpdateLogMarquee(container) {
-      const track = container.querySelector('.ulog-track');
-      const speed = 28; // px per second
-      let pos = container.scrollLeft;
-      let paused = false;
-      let dragging = false;
-      let last = null;
-
-      const loopWidth = () => track.scrollWidth / 2;
-      const pause = (value) => { paused = value; };
-      container.addEventListener('mouseenter', () => pause(true));
-      container.addEventListener('mouseleave', () => { if (!dragging) pause(false); });
-      container.addEventListener('focusin', () => pause(true));
-      container.addEventListener('focusout', () => pause(false));
-      container.addEventListener('touchstart', () => pause(true), { passive: true });
-      container.addEventListener('touchend', () => setTimeout(() => pause(false), 1500), { passive: true });
-
-      // Mouse drag to scroll
-      let dragX = 0, dragStart = 0;
-      container.addEventListener('pointerdown', (e) => {
-        if (e.pointerType !== 'mouse') return;
-        dragging = true; dragX = e.clientX; dragStart = container.scrollLeft;
-        container.classList.add('is-dragging');
-        container.setPointerCapture(e.pointerId);
-      });
-      container.addEventListener('pointermove', (e) => {
-        if (!dragging) return;
-        container.scrollLeft = dragStart - (e.clientX - dragX);
-      });
-      const endDrag = () => { dragging = false; container.classList.remove('is-dragging'); };
-      container.addEventListener('pointerup', endDrag);
-      container.addEventListener('pointercancel', endDrag);
-
-      const step = (now) => {
-        const dt = last === null ? 0 : Math.min((now - last) / 1000, 0.1);
-        last = now;
-        const width = loopWidth();
-        const visible = container.offsetParent !== null && width > container.clientWidth;
-        if (Math.abs(container.scrollLeft - pos) > 1) pos = container.scrollLeft; // user scrolled
-        if (visible && !paused && !dragging && !document.hidden) pos += speed * dt;
-        if (width > 0) {
-          if (pos >= width) pos -= width;
-          if (pos < 0) pos += width;
-        }
-        container.scrollLeft = pos;
-        requestAnimationFrame(step);
-      };
-      requestAnimationFrame(step);
+      window.GuildaUpdateLog?.render(document.getElementById('update-log-container'), { limit: 4 });
     }
 
     function renderTutorials() {

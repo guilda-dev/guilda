@@ -1,10 +1,9 @@
 function validateTimeSpanSize(p)
     arguments (Input)
-        p  % [s] Value of TimeSpan to check (one or two elements).
+        p  % [s] Value of TimeSpan to check (a row of one or two elements).
     end
-    isRow = @(x) mustBeRow(x);
-    is1x2 = @(x) mustBeMember(numel(x), [1,2]);
-
-    isRow(p);
-    is1x2(p);
+    if ~isrow(p)
+        error("MATLAB:validators:mustBeRow", "Value must be a row vector.");
+    end
+    mustBeMember(numel(p), [1,2]);
 end

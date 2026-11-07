@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-title-ja="GUILDA ドキュメント - 更新履歴">GUILDA Documentation - Update Log</title>
+  <script src="doc-lang.js"></script>
+  <link rel="stylesheet" href="style.css">
+
+  <script src="./database/list_UpdateLog.js"></script>
+  <script src="./doc-loader.js"></script>
+  <script src="./doc-updatelog.js"></script>
+</head>
+<body class="doc-layout">
+
+  <nav id="sidebar" style="padding: 20px; box-sizing: border-box; overflow-y: auto;">
+    <a href="index.html" onclick="window.GuildaDocLoader.navigate('index.html'); return false;" style="display: block; margin-bottom: 20px;">
+      <img src="./images/GUILDAicon.png" alt="GUILDA Logo" style="width: 100%;">
+    </a>
+    <a href="index.html#tab-home" onclick="window.GuildaDocLoader.navigate('index.html', 'tab-home'); return false;" class="btn" style="width: 100%; text-align: center; margin-bottom: 20px; box-sizing: border-box;"><span lang="en">← Back to Home</span><span lang="ja">← ホームに戻る</span></a>
+  </nav>
+
+  <main id="main-content" style="flex: 1; min-width: 0;">
+    <h1><span lang="en">Update Log</span><span lang="ja">更新履歴</span></h1>
+    <p lang="en">Changes that matter to users of GUILDA, newest first: new models, new features and bug fixes.</p>
+    <p lang="ja">GUILDA の利用者に関わる変更の一覧（新しい順）。新しいモデル、新機能、バグ修正。</p>
+    <div id="update-log-container" class="ulog"></div>
+  </main>
+
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      window.GuildaUpdateLog.render(document.getElementById('update-log-container'));
+    });
+  </script>
+</body>
+</html>
