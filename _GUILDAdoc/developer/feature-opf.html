@@ -110,8 +110,8 @@ result = net.optimize_powerflow(Problem=prob, InitialPoint=x0)       % solve a m
           <td lang="en" data-label="Property and default">call only, not stored: an <code>optimproblem</code> from <code>net.build_opf_problem</code> (same <code>Method</code>, possibly modified) to solve as it is; the initial point (default: the <code>x0</code> of <code>build_opf_problem</code>)</td>
           <td lang="ja" data-label="プロパティと既定値">呼び出しのみ（保存しない）: そのまま解く <code>net.build_opf_problem</code> の <code>optimproblem</code>（同じ <code>Method</code>、変更可）、初期点（既定: <code>build_opf_problem</code> の <code>x0</code>）</td></tr>
         <tr><td><span lang="en">properties only</span><span lang="ja">プロパティのみ</span></td>
-          <td lang="en" data-label="Property and default"><code>Algorithm_linprog = "dual-simplex-highs"</code>, <code>Algorithm_quadprog = "interior-point-convex"</code>, <code>Algorithm_fmincon = "interior-point"</code>, <code>StepTolerance = NaN</code>, <code>MaxFunctionEvaluations = NaN</code>, <code>UseParallel = false</code> (fmincon only)</td>
-          <td lang="ja" data-label="プロパティと既定値"><code>Algorithm_linprog = "dual-simplex-highs"</code>、<code>Algorithm_quadprog = "interior-point-convex"</code>、<code>Algorithm_fmincon = "interior-point"</code>、<code>StepTolerance = NaN</code>、<code>MaxFunctionEvaluations = NaN</code>、<code>UseParallel = false</code>（fmincon のみ）</td></tr>
+          <td lang="en" data-label="Property and default"><code>Algorithm_linprog = "dual-simplex"</code>, <code>Algorithm_quadprog = "interior-point-convex"</code>, <code>Algorithm_fmincon = "interior-point"</code>, <code>StepTolerance = NaN</code>, <code>MaxFunctionEvaluations = NaN</code>, <code>UseParallel = false</code> (fmincon only)</td>
+          <td lang="ja" data-label="プロパティと既定値"><code>Algorithm_linprog = "dual-simplex"</code>、<code>Algorithm_quadprog = "interior-point-convex"</code>、<code>Algorithm_fmincon = "interior-point"</code>、<code>StepTolerance = NaN</code>、<code>MaxFunctionEvaluations = NaN</code>、<code>UseParallel = false</code>（fmincon のみ）</td></tr>
       </tbody>
     </table>
     <p lang="en">Preconditions:</p>
