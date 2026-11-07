@@ -1,8 +1,8 @@
 % F33 Bus・Branch・PowerNetwork の GUI のページ (gui_content)
 %
-%   h = net.gui(fig);           % Parameter → Summary → Equilibrium → (Equations) → Image
-%   h = bus.gui(fig);           % Parameter → Equilibrium → Image
-%   h = br.gui(fig);            % Parameter → Equilibrium → Image
+%   h = net.gui(fig);           % Parameter → Summary → Equilibrium
+%   h = bus.gui(fig);           % Parameter → Equilibrium
+%   h = br.gui(fig);            % Parameter → Equilibrium
 %
 % 各ページの行数と値が、平衡点のプロパティ (c_Vequilibrium, cv_Vequilibrium など) と
 % 一致することを、initialize の前後で確かめる。GUI は見えない uifigure に描き、テストの
@@ -16,14 +16,13 @@ fig = uifigure("Visible", "off");
 c_fig = onCleanup(@() delete(fig));
 
 
-%% The tabs of each class come before the pages of PowerSystemModel
+%% The Parameter tab comes first, then the tables of each class (PowerSystemModel adds none)
 h = net.gui(fig);
-sv_title = tab_titles(h);
-assert(isequal(sv_title(1:3), ["Parameter","Summary","Equilibrium"]) && isequal(sv_title(end-1:end), ["Image","Initialize"]))
+assert(isequal(tab_titles(h), ["Parameter","Summary","Equilibrium"]))
 h.render(net.a_Bus{1});
-assert(isequal(tab_titles(h), ["Parameter","Equilibrium","Image","Initialize"]))
+assert(isequal(tab_titles(h), ["Parameter","Equilibrium"]))
 h.render(net.a_Branch{1});
-assert(isequal(tab_titles(h), ["Parameter","Equilibrium","Image","Initialize"]))
+assert(isequal(tab_titles(h), ["Parameter","Equilibrium"]))
 
 
 %% PowerNetwork: Summary counts the buses, branches, components and global controllers

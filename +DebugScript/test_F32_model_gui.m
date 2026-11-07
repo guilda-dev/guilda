@@ -4,9 +4,9 @@
 %   h = net.gui(h_panel);       % uifigure 系のコンテナの中
 %   h.render(comp);             % 対象を切り替えて描き直す
 %
-% ヘッダ・ツリー (親 → 自身 → 子。Parameter は出さない)・Parameter タブ (編集で
-% tab_parameter に書き込む)・gui_content のページを確認する。コールバックは見えない
-% uifigure の上で直接呼ぶ。
+% ヘッダ (パンくず・Docs ボタン・stale)・子カード (種類ごと。Parameter は出さない)・
+% Parameter タブ (編集で tab_parameter に書き込む)・gui_content の表のページ・固定の配色を
+% 確認する。コールバックは見えない uifigure の上で直接呼ぶ。
 %
 % 実行: runtests("DebugScript.test_F32_model_gui")  または  DebugScript.run_all("Features","F32")
 
@@ -16,15 +16,16 @@ DebugScript.helper.quiet(@() net.initialize);
 c_fig = onCleanup(@() close_new_figures(findall(groot, "Type", "figure")));
 
 
-%% A new uifigure opens without a container
+%% A new uifigure opens without a container, in the light theme
 h = net.a_Bus{1}.gui();
 assert(isa(h, "DrawerModelGUI") && h.a_target == net.a_Bus{1})
 assert(isa(h.h_container, "matlab.ui.Figure") && isprop(h.h_container, "isUIFigure"))
 assert(contains(header_text(h), "B001") && contains(header_text(h), "Bus"))
-assert(isequal(tab_titles(h), ["Parameter","Equilibrium","Image","Initialize"]))   % no Equations: the help of Bus has no math block
-assert(isempty(findobj(h.h_container, "Type", "uihtml")))
-h_img = findobj(h.h_container, "Type", "uiimage");
-assert(endsWith(string(h_img.ImageSource), fullfile("@Bus","image.svg")))
+assert(isequal(tab_titles(h), ["Parameter","Equilibrium"]))
+assert(isempty(findobj(h.h_container, "Type", "uihtml")) && isempty(findobj(h.h_container, "Type", "uiimage")))
+if isprop(h.h_container, "Theme")
+    assert(h.h_container.Theme.BaseColorStyle == "light")
+end
 
 
 %% The GUI fills a panel of another app and leaves its other components
@@ -57,41 +58,109 @@ assert(error_id(@() net.gui(uipanel(f_old))) == "GUILDA:DrawerModelGUI:NotUICont
 assert(error_id(@() net.gui(axes(fig))) == "GUILDA:DrawerModelGUI:NotUIContainer")
 
 
-%% The tree shows the parent, the model and its children without Parameter containers
+%% The colors are set on every component and do not follow the theme of the host figure
+fig = uifigure("Visible", "off");
+if isprop(fig, "Theme")
+    fig.Theme = "dark";
+end
+p = uipanel(uigridlayout(fig, [1 1]));
+h = net.a_Bus{1}.a_Component{1}.gui(p);
+if isprop(fig, "Theme")
+    assert(fig.Theme.BaseColorStyle == "dark")   % the theme of the host is kept
+end
+h_grid = findobj(p.Children, "flat", "Tag", "DrawerModelGUI");
+assert(isequal(h_grid.BackgroundColor, rgb("#F4F6F9")))
+h_band = findobj(h_grid, "Type", "uigridlayout", "BackgroundColor", rgb("#005BAA"));
+assert(~isempty(h_band) && ~isempty(findobj(h_grid, "Type", "uigridlayout", "BackgroundColor", rgb("#D4DE24"))))
+h_table = parameter_tables(h);
+assert(all(arrayfun(@(t) isequal(t.BackgroundColor, [rgb("#FBFCFD"); rgb("#F2F5F9")]) ...
+    && isequal(t.ForegroundColor, rgb("#23303F")), h_table)))
+h_tab = findobj(h_grid, "Type", "uitab");
+assert(all(arrayfun(@(t) isequal(t.BackgroundColor, rgb("#F4F6F9")), h_tab)))
+h_label = findobj(h_grid, "Type", "uilabel");
+assert(all(arrayfun(@(l) isnumeric(l.BackgroundColor) && numel(l.BackgroundColor) == 3, h_label)))
+h_panel = findobj(h_grid, "Type", "uipanel");
+assert(all(arrayfun(@(q) isequal(q.BackgroundColor, rgb("#FBFCFD")), h_panel)))
+
+
+%% The breadcrumb runs from the root to the model; a link shows that model
+comp = net.a_Bus{1}.a_Component{1};
+h = comp.gui();
+[h_crumb, l_link] = breadcrumb(h);
+assert(numel(h_crumb) == 3 && isequal(l_link, [true true false]))
+assert(h_crumb(1).UserData == net && h_crumb(2).UserData == net.a_Bus{1} && h_crumb(3).UserData == comp)
+assert(isequal(arrayfun(@(c) string(c.Text), h_crumb).', [string(net.s_tag), "B001", string(comp.s_tag)]))
+h_crumb(2).HyperlinkClickedFcn(h_crumb(2), []);
+assert(h.a_target == net.a_Bus{1})
+[h_crumb, l_link] = breadcrumb(h);
+assert(numel(h_crumb) == 2 && isequal(l_link, [true false]))
+h_crumb(1).HyperlinkClickedFcn(h_crumb(1), []);
+assert(h.a_target == net && isscalar(breadcrumb(h)))
+
+
+%% The Docs button opens the reference page of the class
+h = net.a_Bus{1}.a_Component{1}.gui();
+h_docs = findobj(h.h_container, "Type", "uibutton", "Tag", "docs");
+assert(isscalar(h_docs) && h_docs.Text == "Docs")
+% The callback is not run (it would open a browser); its call and its argument are read instead
+sct_fn = functions(h_docs.ButtonPushedFcn);
+assert(contains(sct_fn.function, 'GUILDA.doc("class",s_class)'))
+assert(sct_fn.workspace{1}.s_class == class(net.a_Bus{1}.a_Component{1}))
+h.render(net);
+sct_fn = functions(findobj(h.h_container, "Type", "uibutton", "Tag", "docs").ButtonPushedFcn);
+assert(sct_fn.workspace{1}.s_class == class(net))
+
+
+%% The child cards are grouped by kind, without Parameter containers
+% A network of its own, since controllers are added to it
+net = DebugScript.helper.build_ieee14();
+DebugScript.helper.quiet(@() net.initialize);
 comp = net.a_Bus{1}.a_Component{1};
 h = net.a_Bus{1}.gui();
-h_tree = findobj(h.h_container, "Type", "uitree");
-assert(isscalar(h_tree.Children) && h_tree.Children.NodeData == net)
-h_self = h_tree.Children.Children;
-assert(isscalar(h_self) && h_self.NodeData == net.a_Bus{1} && h_tree.SelectedNodes == h_self)
-c_child = arrayfun(@(n) n.NodeData, h_self.Children, "UniformOutput", false);
-assert(isequal(c_child, {comp}))
-% The network has no parent: it is the root, with buses, branches and global controllers
+[h_card, sv_group] = cards(h);
+assert(isscalar(h_card) && h_card.UserData == comp && sv_group == "Component (1)")
+assert(isequal(h_card.BackgroundColor, rgb("#F1F5D2")) && contains(strjoin(h_card.Text), class(comp)))
+% The network: buses, branches, then global controllers, each in its own color
 agc = net.add_global_controller("agc-PI", {"SG1B001","SG1B002"});
 h.render(net);
-h_tree = findobj(h.h_container, "Type", "uitree");
-assert(isscalar(h_tree.Children) && h_tree.Children.NodeData == net)
-c_child = arrayfun(@(n) n.NodeData, h_tree.Children.Children, "UniformOutput", false);
-assert(numel(c_child) == numel(net.a_Bus) + numel(net.a_Branch) + 1)
-assert(~any(cellfun(@(c) isa(c, "Parameter"), c_child)) && c_child{end} == agc)
+[h_card, sv_group] = cards(h);
+n_bus = numel(net.a_Bus);
+n_br  = numel(net.a_Branch);
+assert(numel(h_card) == n_bus + n_br + 1)
+assert(isequal(sv_group, ["Bus (" + n_bus + ")", "Branch (" + n_br + ")", "GlobalController (1)"]))
+c_model = arrayfun(@(b) b.UserData, h_card, "UniformOutput", false);
+assert(isequal(c_model(1:n_bus), net.a_Bus(:)) && c_model{end} == agc)
+assert(~any(cellfun(@(c) isa(c, "Parameter"), c_model)))
+assert(isequal(h_card(1).BackgroundColor, rgb("#E3EEF8")) && isequal(h_card(n_bus+1).BackgroundColor, rgb("#ECEFF3")))
+assert(isequal(h_card(end).BackgroundColor, rgb("#ECE6F5")))
+assert(startsWith(h_card(1).Text(1), "Bus  B001"))
+h_nav = ancestor(h_card(1), "uigridlayout");
+assert(h_nav.Scrollable == "on")
+% A component with a local controller; a model without children has no cards
+gen = net.a_Bus{1}.a_Component{1};
+avr = gen.add_local_controller("avr-DC1");
+h.render(gen);
+[h_card, sv_group] = cards(h);
+assert(isscalar(h_card) && h_card.UserData == avr && sv_group == "LocalController (1)")
+assert(isequal(h_card.BackgroundColor, rgb("#FBEADB")))
+h.render(avr);
+assert(isempty(cards(h)) && isequal(findobj(h.h_container, "Type", "uitabgroup").Layout.Column, [1 2]))
 
 
-%% Selecting a node shows that model; the context menu opens it in a new window
+%% A click on a card shows that model; the context menu opens it in a new window
 h = net.a_Bus{1}.gui();
-h_tree = findobj(h.h_container, "Type", "uitree");
-h_comp = h_tree.Children.Children.Children(1);
-h_tree.SelectionChangedFcn(h_tree, struct("SelectedNodes", h_comp));
+h_card = cards(h);
+h_card.ButtonPushedFcn(h_card, []);
 comp = net.a_Bus{1}.a_Component{1};
 assert(h.a_target == comp && contains(header_text(h), comp.s_tag))
-h_tree = findobj(h.h_container, "Type", "uitree");
-assert(isscalar(h_tree) && h_tree.SelectedNodes.NodeData == comp)
+h.render(net);
 assert(numel(findall(h.h_container, "Type", "uicontextmenu")) == 1)   % the old menu is removed
 % Open in new window
-h_bus = h_tree.Children.Children(1);
+h_card = cards(h);
 n_fig = numel(findall(groot, "Type", "figure"));
-h_item = h_tree.ContextMenu.Children(1);
+h_item = h_card(1).ContextMenu.Children(1);
 assert(h_item.Text == "Open in new window")
-h_item.MenuSelectedFcn(h_item, struct("ContextObject", h_bus));
+h_item.MenuSelectedFcn(h_item, struct("ContextObject", h_card(1)));
 a_fig = findall(groot, "Type", "figure");
 assert(numel(a_fig) == n_fig + 1 && any(string({a_fig.Name}) == "Bus B001"))
 
@@ -103,6 +172,13 @@ assert(isempty(stale_messages(comp)) && contains(stale_text(h), "none"))
 sv_tag = string(cellfun(@(p) p.s_tag, comp.a_Parameter, "UniformOutput", false));
 h_table = parameter_tables(h);
 assert(isequal(sort(string({h_table.Tag})), sort(sv_tag(:).')))
+assert(all(string({h_table.ColumnWidth}) == "fit"))
+% One column per parameter; the height holds the header, the rows and a scroll bar
+h_dyn = findobj(h.h_container, "Type", "uitable", "Tag", "dynamics");
+assert(height(h_dyn.Data) == 1 && width(h_dyn.Data) == width(comp.tab_parameter.dynamics))
+assert(ancestor(h_dyn, "uigridlayout").RowHeight{1} >= 30 + 24 + 18)
+h_note = findobj(h.h_container, "Type", "uilabel", "Tag", "note");
+assert(h_note.Text == "See Docs for the meaning of each parameter and the model.")
 h_dyn = findobj(h.h_container, "Type", "uitable", "Tag", "dynamics");
 tab = h_dyn.Data;
 tab.M = tab.M * 2;
@@ -141,69 +217,42 @@ h_label = findobj(h2.h_container, "Type", "uilabel");
 assert(isscalar(h_label) && contains(h_label.Text, "deleted"))
 
 
-%% Every page type of gui_content is drawn
+%% gui_content pages are tables; a page of another type shows a message
 s = DebugScript.helper.GuiContentStub();
 h = s.gui();
-assert(isequal(tab_titles(h), ["Parameter","Summary","Equilibrium","Image","Initialize","Equation","Table","Action"]))
+assert(isequal(tab_titles(h), ["Parameter","Summary","Equilibrium","Table","Unknown"]))
 f = h.h_container;
-h_img = findobj(f, "Type", "uiimage");
-assert(endsWith(string(h_img.ImageSource), fullfile("@PowerNetwork","image.svg")))
-h_html = findobj(f, "Type", "uihtml");
-assert(isscalar(h_html) && ancestor(h_html, "uitab").Title == "Equation")
-assert(isequal(h_html.Data.sv_math, ["\dot{x} = f(x,u)"; "y = h(x)"]))
-assert(isfile(h_html.HTMLSource) && contains(h_html.Data.s_js, "katex") && contains(h_html.Data.s_css, "data:font/woff2;base64,"))
-assert(~contains(h_html.Data.s_css, "url(fonts/"))
 h_tab = findobj(findobj(f, "Type", "uitab", "Tag", "table", "Title", "Table"), "Type", "uitable");
-assert(height(h_tab.Data) == 2 && ~any(h_tab.ColumnEditable))
-% The action runs and the GUI is drawn again
-h_btn = findobj(f, "Type", "uibutton", "Text", "Run");
-assert(isscalar(h_btn))
-h_btn.ButtonPushedFcn(h_btn, []);
-assert(s.n_action == 1 && ~isvalid(h_btn))
-% An error of the action shows an alert and leaves the GUI as it is
-s.l_fail = true;
-h_btn = findobj(f, "Type", "uibutton", "Text", "Run");
-lastwarn("");
-DebugScript.helper.quiet(@() h_btn.ButtonPushedFcn(h_btn, []));
-assert(contains(lastwarn(), "action failed"))
-assert(s.n_action == 1 && isvalid(h_btn))
+assert(height(h_tab.Data) == 2 && ~any(h_tab.ColumnEditable) && string(h_tab.ColumnWidth) == "fit")
+h_label = findobj(findobj(f, "Type", "uitab", "Title", "Unknown"), "Type", "uilabel");
+assert(contains(h_label.Text, "Unknown page type: latex"))
+assert(isempty(findobj(f, "Type", "uihtml")) && isempty(findobj(f, "Type", "uiimage")))
+assert(isempty(findobj(f, "Type", "uibutton", "-not", "Tag", "docs", "-not", "Tag", "child")))
 
 
-%% The Equations page shows the math blocks of the help of the class, after Equilibrium and before Image
-[~, gen] = DebugScript.helper.build_3bus("gen-1axis");
-h = gen.gui();
-sv_title = tab_titles(h);
-assert(isequal(sv_title(1:3), ["Parameter","Equilibrium","Equations"]))
-assert(~any(sv_title == "Image") || find(sv_title == "Image") > 3)
-h_html = findobj(h.h_container, "Type", "uihtml");
-assert(isscalar(h_html) && ancestor(h_html, "uitab").Title == "Equations")
-sv_math = h_html.Data.sv_math;
-assert(numel(sv_math) == count(string(help(class(gen))), "```math"))   % 2 blocks in one_axis
-assert(startsWith(sv_math(1), "\left\{") && contains(sv_math(1), "\begin{aligned}") && endsWith(sv_math(1), "\right."))
-assert(contains(sv_math(2), "\frac{E_q - V_q}{X_d'}") && ~any(contains(sv_math, "```")))
-
-
-%% The Equilibrium tables are empty before initialize and filled by the Initialize button
+%% The Equilibrium tables are vertical: one row per variable, with Kind, Name and Value
 [net, gen] = DebugScript.helper.build_3bus("gen-1axis");
 avr = gen.add_local_controller("avr-DC1");
 h = gen.gui();
-assert(isequal(tab_titles(h), ["Parameter","Equilibrium","Equations","Image","Initialize"]))
+assert(isequal(tab_titles(h), ["Parameter","Equilibrium"]))
 assert(height(equilibrium_table(h)) == 0 && ~contains(stale_text(h), "none"))
 h.render(avr);
-assert(height(equilibrium_table(h)) == 0 && any(tab_titles(h) == "Initialize"))
-% The button initializes the network and draws the GUI again
+assert(height(equilibrium_table(h)) == 0)
+% After initialize (run outside the GUI)
+DebugScript.helper.quiet(@() net.initialize);
 h.render(gen);
-h_btn = findobj(h.h_container, "Type", "uibutton", "Text", "initialize");
-DebugScript.helper.quiet(@() h_btn.ButtonPushedFcn(h_btn, []));
 assert(isempty(stale_messages(gen)) && contains(stale_text(h), "none"))
 tab = equilibrium_table(h);
 n_x = numel(gen.rv_Xequilibrium);
 n_u = numel(gen.rv_Uequilibrium);
+assert(isequal(string(tab.Properties.VariableNames), ["Kind","Name","Value"]))
 assert(n_x > 0 && height(tab) == n_x + n_u + 2)
 assert(isequal(tab.Kind, [repmat("State",n_x,1); repmat("Input",n_u,1); "Voltage"; "Current"]))
 assert(isequal(tab.Name(1:n_x), gen.sv_x(:)) && isequal(tab.Name(end-1:end), ["V";"I"]))
 assert(str2double(tab.Value(1)) == round(gen.rv_Xequilibrium(1), 6, "significant"))
 assert(endsWith(tab.Value(end), "j") && abs(str2double(tab.Value(end)) - gen.c_Iequilibrium) < 1e-5)
+h_table = findobj(findobj(h.h_container, "Type", "uitab", "Title", "Equilibrium"), "Type", "uitable");
+assert(string(h_table.ColumnWidth) == "fit" && isequal(h_table.Parent.RowHeight, {'1x'}))
 h.render(avr);
 tab = equilibrium_table(h);
 assert(isempty(stale_messages(avr)) && contains(stale_text(h), "none"))
@@ -215,25 +264,52 @@ DebugScript.helper.quiet(@() net.initialize);
 h.render(agc);
 tab = equilibrium_table(h);
 assert(height(tab) == numel(agc.rv_Xequilibrium) + numel(agc.rv_Uequilibrium))
+assert(isequal(string(tab.Properties.VariableNames), ["Kind","Name","Value"]))
 if numel(agc.sv_u) ~= numel(agc.rv_Uequilibrium)
     assert(tab.Name(end) == "u" + numel(agc.rv_Uequilibrium))
 end
+% A bus: one item per row
+h.render(net.a_Bus{1});
+tab = equilibrium_table(h);
+assert(isequal(string(tab.Properties.VariableNames), ["Name","Value"]) && height(tab) == 5)
 
 
-%% A model outside a network has no Initialize page
+%% The GUI runs no function of the model: no Initialize page and no action button
 [~, gen] = DebugScript.helper.build_3bus("gen-1axis");
-avr = gen.add_local_controller("avr-DC1");
-gen.remove_local_controller(avr.s_tag);
-h = avr.gui();
-sv_title = tab_titles(h);
-assert(~any(sv_title == "Initialize") && any(sv_title == "Equilibrium"))
-assert(isempty(findobj(h.h_container, "Type", "uibutton")))
+h = gen.gui();
+assert(~any(tab_titles(h) == "Initialize"))
+sv_button = string({findobj(h.h_container, "Type", "uibutton").Tag});
+assert(all(ismember(sv_button, ["docs","child"])))
 
 
 function close_new_figures(a_before)
 % テストで開いた図を閉じる
     a_now = findall(groot, "Type", "figure");
     delete(a_now(~ismember(a_now, a_before)))
+end
+
+function rv = rgb(s_hex)
+% "#RRGGBB" の色の RGB (0〜1)
+    rv = double(hex2dec(reshape(char(extractAfter(string(s_hex), 1)), 2, 3).')).' / 255;
+end
+
+function [h_crumb, l_link] = breadcrumb(h)
+% パンくずの項目 (ルートから順) と、それぞれがリンクかどうか
+    h_crumb = findobj(h.h_container, "Tag", "breadcrumb");
+    l_link = arrayfun(@(c) isa(c, "matlab.ui.control.Hyperlink"), h_crumb).';
+end
+
+function [h_card, sv_group] = cards(h)
+% 子カード (並んだ順) と、種類ごとのまとまりの見出し
+    h_card = gobjects(0,1);
+    sv_group = strings(1,0);
+    h_nav = findobj(h.h_container, "Type", "uibutton", "Tag", "child");
+    if isempty(h_nav)
+        return
+    end
+    h_child = h_nav(1).Parent.Children;   % 作った順
+    h_card = h_child(arrayfun(@(c) c.Tag == "child", h_child));
+    sv_group = string({h_child(arrayfun(@(c) c.Tag == "group", h_child)).Text});
 end
 
 function s = header_text(h)

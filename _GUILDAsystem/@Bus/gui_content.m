@@ -13,7 +13,7 @@ function sct_page = gui_content(obj)
         obj
     end
     arguments (Output)
-        sct_page (:,1) struct  % Pages: fields s_title, s_type, content, s_label.
+        sct_page (:,1) struct  % Pages: fields s_title, s_type and content.
     end
     c_V = obj.c_Vequilibrium;
     c_I = obj.c_Iequilibrium;
@@ -23,6 +23,6 @@ function sct_page = gui_content(obj)
         compose("%.6g", abs(c_V)); ...
         compose("%.6g", angle(c_V)); ...
         compose("%.6g%+.6gj", real(c_I), imag(c_I))];
-    sct_page = [struct("s_title","Equilibrium", "s_type","table", "content",table(Name, Value), "s_label",""); ...
+    sct_page = [struct("s_title","Equilibrium", "s_type","table", "content",table(Name, Value)); ...
         gui_content@PowerSystemModel(obj)];
 end
