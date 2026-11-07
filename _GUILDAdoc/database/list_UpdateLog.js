@@ -346,5 +346,23 @@ const updateLogData = [
     "date": "2026-11-06",
     "type": "changed",
     "content": "For model authors: Parameter.add_entry is removed. A Parameter container stores its parameters as one table, created from a struct of defaults (field: name, value: default), and a model constructor replaces its dynamics container in one line: obj.a_Parameter{cellfun(@(p) p.s_tag==\"dynamics\", obj.a_Parameter)} = Parameter(obj, \"dynamics\", struct(\"Ka\", opt.Ka, \"Te\", opt.Te)). The class of each parameter is the class of its default; a write of another class, of other names, of another height or of other row names is an error and stores nothing. Internal reads by tag end in .tab_parameter.<name>. A network or a lower layer loaded from a MAT file checks and logs its edits without a restore step, so the IncompleteLoad warning is removed."
+  },
+  {
+    "title": "Power flow runs without toolboxes",
+    "date": "2026-11-07",
+    "type": "changed",
+    "content": "net.calculate_powerflow (and net.solver_PF.Method, which net.initialize uses) takes Method \"newton\" (default, Newton-Raphson), \"gradient\", \"levenberg-marquardt\", \"dynamic\" or \"fsolve\", and only \"fsolve\" needs Optimization Toolbox, so the power flow and everything after it run with MATLAB alone. Method=\"algebraic\" is removed: \"fsolve\" is the former algebraic method (the v3 positional form \"algebraic\" still maps to it). The algorithms are the classes MethodNewtonRaphson, MethodGradient, MethodLevenbergMarquardt, MethodFsolve and MethodDynamic in _auxiliary; NewtonRaphsonMethod is renamed MethodNewtonRaphson without an alias, and so are its configuration file (DefaultMethodNewtonRaphson.json) and section. The step size of \"gradient\" is set in net.solver_PF.gradient.StepSize."
+  },
+  {
+    "title": "Linearization without Control System Toolbox",
+    "date": "2026-11-07",
+    "type": "changed",
+    "content": "get_sys of PowerNetwork, Bus, Component, LocalController and GlobalController builds the linear models with matrices and takes Format: \"ResultLIN\" (default), \"struct\" or \"ss\". A ResultLIN holds the model in A, B, C, D, E (E dx/dt = A x + B u, y = C x + D u), StateName, InputName and OutputName; \"struct\" gives the same eight fields; ResultLIN.get_ss(Algorithm, Format=\"ss\"|\"struct\") reduces a net.linearize result. Only \"ss\" output and the LQR controllers (controller.local_LQR, local_LQR_retrofit, +controller/+modeling/get_environment) need Control System Toolbox; the matrices are the same as before. get_sys no longer returns an ss object by default: scripts that call ss functions on it (eig(sys), pole, step, sys.A, sys(out, in)) pass Format=\"ss\", or read res.A, res.E and the names of the ResultLIN (e.g. eig(res.A, res.E))."
+  },
+  {
+    "title": "Optional toolboxes and the startup check",
+    "date": "2026-11-07",
+    "type": "changed",
+    "content": "GUILDA needs MATLAB only; Optimization, Control System and Symbolic Math Toolbox are optional. The OPF (optimize_powerflow, initialize(Method=\"OPF\")) and Method=\"fsolve\" need Optimization Toolbox and stop with GUILDA:require_toolbox:Unavailable without it. tools.require_toolbox(\"optim\" | \"control\" | \"symbolic\") does this check for a feature. @GUILDA/config/ListToolbox.json replaces ListToolbox.txt: the startup check prints, per toolbox, \"ok\" or the features that are unavailable without it. The Getting Started page has a table of which analysis and option needs which toolbox."
   }
 ];
