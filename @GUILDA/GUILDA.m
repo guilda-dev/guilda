@@ -15,6 +15,7 @@ classdef GUILDA < handle
 % >> GUILDA.publish_doc(): publish documentation to GitHub Pages (gh-pages)
 % >> GUILDA.newclass()   : Create a new class (GUI launches)
 % >> GUILDA.dictionary() : Search classes implemented in this software
+% >> GUILDA.update_keymap(): Regenerate the methods that take a model key (add_component, ...)
 %
 % Major Folders within the @GUILDA Directory
 % <WARNING> DO NOT modify the files inside the following folders, as they are read and written by the system
@@ -72,7 +73,7 @@ classdef GUILDA < handle
             end
             % update key map
             if cf.UpdateKeyMap.Value
-                update_class_signature;
+                GUILDA.update_keymap;
             end
             % open Tutorial (Mail.mlx)
             if cf.Tutorial.Value
@@ -105,5 +106,6 @@ classdef GUILDA < handle
         rmpath() 
         doc(option)
         publish_doc(option)
+        update_keymap()
     end
 end

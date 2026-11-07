@@ -1031,6 +1031,7 @@ there.
 - 制御器クラスの `key` はモデルのキー(機器の `"gen-park"` と同じ)になり、付ける場所を表していた役割(`"avr"`, `"pss"`, `"local"`, `"governor"`, `"agc"`)は定数プロパティ `s_role` に移りました。新しい制御器クラスは具象クラスに `key`、自身か基底クラスに `s_role` を定義し、コンストラクタを `(tag, Name=Value)`(大域は `(net, tag, 機器..., Name=Value)`)にします。追加後に `GUILDA` を実行するとキーの一覧に載ります。
 - `GUILDA:Component:SharedController` はなくなりました。呼び出しのたびに新しい制御器を作るので、別の機器に付いた制御器を付け直すことは起きません。外した制御器を付け直すこともできません(同じキーでもう一度追加します)。`InvalidControllerKey` と `PssParentKey` は `s_role` を調べます。
 - `add_local_controller.m` と `add_global_controller.m` は起動時に生成されるファイルになりました(`.gitignore` 済み)。テンプレートは各クラスフォルダの `template/` にあります(`@Component/template/add_local_controller.template` など。`add_component` ・ `replace_component` ・ `add_branch` のテンプレートも `template/` に移動)。
+- キーの一覧からこれらのファイルを作り直す処理は静的メソッド `GUILDA.update_keymap` になりました(以前は `@GUILDA/private/update_class_signature.m`)。起動時に呼ばれるほか、モデルクラスを追加・削除した後やテンプレートを編集した後に、GUILDA を再起動せずに `>> GUILDA.update_keymap` で作り直せます。
 
 ---
 
