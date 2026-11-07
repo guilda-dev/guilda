@@ -112,6 +112,9 @@ classdef Branch < PowerSystemModel
     methods(Access={?PowerNetwork})
         initialize(obj)
     end
+    methods(Access=protected)
+        sct_page = gui_content(obj)
+    end
 
 %% Get Methods
     methods

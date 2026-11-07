@@ -36,6 +36,7 @@
 >   `flag` is a logical (all Jacobian entries finite and `Avv` invertible) and
 >   `output.result` is the `ResultLIN`. `[sys, lin] = net.get_sys()`
 >   gives no error; using `lin` as an `odeLinearizer` fails later (1.12).
+> - **`get_sys` は既定で `ss` ではなく `ResultLIN` を返します。** すべての層の `get_sys` の既定は `Format="ResultLIN"` です。`eig(sys)`、`pole`、`step`、`sys(出力名, 入力名)` など `ss` の関数を使うスクリプトは `Format="ss"` を渡す(Control System Toolbox が必要)か、`res.A`、`res.E` と名前のプロパティを読むように直してください(1.12)。
 > - **`optimize_powerflow` with 1–3 outputs has the v4 meaning.**
 >   `[bus, cub, flag] = net.optimize_powerflow()` now gives
 >   `bus = ResultOPF`, `cub = flag`, `flag = output`. Only the 6-output form
@@ -758,6 +759,20 @@ Option names:
 - Removed: `SolverLIN(net, NonUnit, Name, Value)` stops with
   `GUILDA:v3_linearizer_constructor:OdeLinearizerConstructor` (error); `SolverLIN()`
   takes no arguments.
+
+- **行列で線形化し、`Format` で形を選びます。** `net.get_sys`、`bus.get_sys`、`comp.get_sys`、`con.get_sys`、`gc.get_sys` は Control System Toolbox なしで線形化し、`Format` で返す形を選びます。
+
+  | `Format` | `sys` | Toolbox |
+  |----------|-------|---------|
+  | `"ResultLIN"`(既定) | `ResultLIN`。`A`、`B`、`C`、`D`、`E`(`E dx/dt = A x + B u`、`y = C x + D u`)、`StateName`、`InputName`、`OutputName` にモデル | 不要 |
+  | `"struct"` | 同じ 8 フィールドの構造体(名前は string の列) | 不要 |
+  | `"ss"` | 記述子形式の状態空間モデル(`dss`、v3 と同じ) | Control System Toolbox |
+
+  - `net.get_sys` の `ResultLIN` は `net.linearize` の結果で、`A` … `OutputName` は `Algorithm` と `Input`/`Output` で選んだモデル(`result.options` に保持)。`[sys, flag, output]` の `flag`、`output` は以前と同じ。
+  - `res.get_ss(Algorithm, Format=...)` は既定 `"ss"`、`"struct"` なら Toolbox 不要。`net.linearize` の結果の `A` … `OutputName` は `get_ss(options.Algorithm)`(全入力、既定の出力)。
+  - 行列は以前の実装と一致(1030 モデル、最大相対誤差 2e-14)。
+  - 書き換え例: `sys = net.get_sys(); eig(sys)` → `res = net.get_sys(); eig(res.A, res.E)`、または `sys = net.get_sys(Format="ss")`。
+  - LQR 制御器(`controller.local_LQR`、`local_LQR_retrofit`、`+controller/+modeling/get_environment`)は引き続き Control System Toolbox が必要(1.14)。
 
 ### 1.13 Network files (CSV, MATPOWER)
 

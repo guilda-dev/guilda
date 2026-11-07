@@ -133,6 +133,9 @@ classdef Bus < PowerSystemModel
         %get_sys
         [sys, varargout] = get_sys(obj, opt)
     end
+    methods(Access=protected)
+        sct_page = gui_content(obj)
+    end
 
 %% Get Methods
     methods
