@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-title-ja="GUILDA 開発者ガイド - GUI 機能の設計">GUILDA Developer Guide - GUI Feature Design</title>
+  <script src="../doc-lang.js"></script>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    /* Feature: GUI page only (gui-*); shared parts are dg-* in style.css */
+    .gui-layout { overflow-x: auto; }
+    .gui-layout svg { min-width: 560px; }
+    .gui-layout .dg-sv text.gui-sm { font-size: 11px; }
+    .gui-pages td:first-child, .gui-types td:first-child { white-space: nowrap; }
+    .gui-pages td, .gui-types td { overflow-wrap: anywhere; }
+    @media (max-width: 640px) {
+      .gui-pages td:first-child, .gui-types td:first-child { white-space: normal; }
+    }
+  </style>
+</head>
+<body class="developer-layout dg">
+  <svg class="dg-sprite" aria-hidden="true" focusable="false">
+    <symbol id="dg-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+  </svg>
+  <main>
+    <a class="developer-back-button" href="../index.html#tab-developer"><span lang="en">← Back to For Developer</span><span lang="ja">← For Developer に戻る</span></a>
+    <h1><span lang="en">GUI Feature Design</span><span lang="ja">GUI 機能の設計</span></h1>
+    <p class="page-lead" lang="en"><code>obj.gui()</code> shows any model (network, bus, branch, component, controller) in a window: its class and tag, the stale state, editable parameter tables, the parent and children as a tree, and pages of tables, equations, a figure and an Initialize button. The pages come from the six abstract classes, so a new model class shows them without any GUI code.</p>
+    <p class="page-lead" lang="ja"><code>obj.gui()</code>: 任意のモデル（ネットワーク、母線、ブランチ、機器、制御器）をウィンドウに表示する機能。表示内容はクラスとタグ、stale 状態、編集できるパラメータの表、親と子のツリー、表・数式・図・Initialize ボタンのページ。ページは抽象クラス 6 つが作成するため、新しいモデルクラスには GUI 用のコードが不要。</p>
+
+    <nav class="dev-toc" aria-label="Contents">
+      <a href="#purpose"><span lang="en">What the feature does and how to call it</span><span lang="ja">機能の目的と呼び出し方</span></a>
+      <a href="#layout"><span lang="en">Screen layout</span><span lang="ja">画面構成</span></a>
+      <a href="#pages"><span lang="en">Pages of each abstract class</span><span lang="ja">抽象クラスごとのページ</span></a>
+      <a href="#subclass"><span lang="en">What a model class writes for the GUI</span><span lang="ja">モデルクラスが GUI のために書くもの</span></a>
+      <a href="#editing"><span lang="en">Editing parameters</span><span lang="ja">パラメータの編集</span></a>
+      <a href="#mechanism"><span lang="en">How it works</span><span lang="ja">仕組み</span></a>
+      <a href="#embedding"><span lang="en">Embedding in another app</span><span lang="ja">別のアプリへの埋め込み</span></a>
+      <a href="#failure"><span lang="en">Failure behavior</span><span lang="ja">失敗時の動作</span></a>
+      <a href="#extension"><span lang="en">Where to extend the feature</span><span lang="ja">機能を拡張する箇所</span></a>
+      <a href="#related"><span lang="en">Related pages</span><span lang="ja">関連ページ</span></a>
+    </nav>
+
+    <!-- ============================== PURPOSE ============================== -->
+    <h2 id="purpose"><span lang="en">What the feature does and how to call it</span><span lang="ja">機能の目的と呼び出し方</span></h2>
+<pre><code>net = network.IEEE14bus();
+h = net.a_Bus{1}.gui();     % a new uifigure
+h = net.gui(h_container);   % fills h_container</code></pre>
+    <ul lang="en">
+      <li><code>gui(obj, h_container)</code>: public method of <code>PowerSystemModel</code>, so every network, bus, branch, component, local and global controller has it.</li>
+      <li>No container (or <code>[]</code>): a new <code>uifigure</code> named after the class and the tag.</li>
+      <li>A container: the GUI fills a <code>uifigure</code>, <code>uipanel</code>, <code>uitab</code> or <code>uigridlayout</code> whose figure was made by <code>uifigure()</code>; the layout follows the size of the container.</li>
+      <li>Output: <code>h</code>, a <code>DrawerModelGUI</code>. <code>h.a_target</code> is the model shown, <code>h.h_container</code> the container; <code>h.render(model)</code> shows another model in the same place.</li>
+      <li>A figure made by <code>figure()</code> is rejected, also through a panel inside it (<code>GUILDA:DrawerModelGUI:NotUIContainer</code>):
+        <ul>
+          <li>the GUI is built from UI components (<code>uigridlayout</code>, <code>uitree</code>, <code>uitable</code>, <code>uihtml</code>, <code>uiimage</code>, <code>uialert</code>), which belong in a <code>uifigure</code>;</li>
+          <li>before R2025a a <code>figure()</code> does not take them; since R2025a it does, so the check reads the dynamic property <code>isUIFigure</code>, which only <code>uifigure()</code> adds. The same containers work in every release.</li>
+        </ul>
+      </li>
+    </ul>
+    <ul lang="ja">
+      <li><code>gui(obj, h_container)</code>: <code>PowerSystemModel</code> の public メソッド。ネットワーク、母線、ブランチ、機器、局所・広域制御器のすべてが保持</li>
+      <li>コンテナなし（または <code>[]</code>）: クラス名とタグを名前にした新しい <code>uifigure</code></li>
+      <li>コンテナあり: <code>uifigure()</code> で作った図の <code>uifigure</code>、<code>uipanel</code>、<code>uitab</code>、<code>uigridlayout</code> に展開。レイアウトはコンテナの大きさに追従</li>
+      <li>出力: <code>DrawerModelGUI</code> の <code>h</code>。<code>h.a_target</code> は表示中のモデル、<code>h.h_container</code> はコンテナ。<code>h.render(model)</code> で同じ場所に別のモデルを表示</li>
+      <li><code>figure()</code> で作った図は対象外。その中のパネルも同様（<code>GUILDA:DrawerModelGUI:NotUIContainer</code>）:
+        <ul>
+          <li>GUI の部品は UI コンポーネント（<code>uigridlayout</code>、<code>uitree</code>、<code>uitable</code>、<code>uihtml</code>、<code>uiimage</code>、<code>uialert</code>）で、<code>uifigure</code> 用</li>
+          <li>R2025a より前の <code>figure()</code> には配置不可。R2025a 以降は配置可能なため、<code>uifigure()</code> だけが追加する動的プロパティ <code>isUIFigure</code> で判定。どのリリースでも使えるコンテナは同じ</li>
+        </ul>
+      </li>
+    </ul>
+
+    <!-- ============================== LAYOUT ============================== -->
+    <h2 id="layout"><span lang="en">Screen layout</span><span lang="ja">画面構成</span></h2>
+    <figure class="dg-figure gui-layout">
+      <svg class="dg-svg dg-sv" viewBox="0 0 720 300" role="img" aria-labelledby="gui-layout-title">
+        <title id="gui-layout-title">Layout of the GUI: a header across the top, the tree on the left, and the tabs on the right</title>
+        <rect class="dg-sv-box is-soft" x="2" y="2" width="716" height="296" rx="8"/>
+        <rect class="dg-sv-box" x="16" y="14" width="688" height="56" rx="6"/>
+        <text class="is-k" x="28" y="32">HEADER</text>
+        <text class="dg-mono is-b" x="28" y="50">B001   (Bus)</text>
+        <text class="dg-mono gui-sm" x="28" y="64">Stale: none</text>
+        <rect class="dg-sv-box" x="16" y="82" width="230" height="204" rx="6"/>
+        <text class="is-k" x="28" y="100">TREE</text>
+        <text class="dg-mono gui-sm" x="28" y="122">PowerNetwork  (network.IEEE14bus)</text>
+        <text class="dg-mono gui-sm" x="42" y="142">B001  (Bus)  ◀</text>
+        <text class="dg-mono gui-sm" x="56" y="162">SG1B001  (…generator.park)</text>
+        <text class="gui-sm" x="28" y="196" lang="en">parent → model → children</text>
+        <text class="gui-sm" x="28" y="196" lang="ja">親 → モデル → 子</text>
+        <text class="gui-sm" x="28" y="214" lang="en">click: show it here</text>
+        <text class="gui-sm" x="28" y="214" lang="ja">クリック: ここに表示</text>
+        <text class="gui-sm" x="28" y="232" lang="en">menu: Open in new window</text>
+        <text class="gui-sm" x="28" y="232" lang="ja">メニュー: Open in new window</text>
+        <rect class="dg-sv-box" x="258" y="82" width="446" height="204" rx="6"/>
+        <text class="is-k" x="270" y="100">TABS</text>
+        <rect class="dg-sv-box is-solid" x="270" y="110" width="74" height="24" rx="4"/>
+        <text class="dg-mono is-inv gui-sm" x="307" y="126" text-anchor="middle">Parameter</text>
+        <rect class="dg-sv-box is-soft" x="350" y="110" width="84" height="24" rx="4"/>
+        <text class="dg-mono gui-sm" x="392" y="126" text-anchor="middle">Equilibrium</text>
+        <rect class="dg-sv-box is-soft" x="440" y="110" width="76" height="24" rx="4"/>
+        <text class="dg-mono gui-sm" x="478" y="126" text-anchor="middle">Equations</text>
+        <rect class="dg-sv-box is-soft" x="522" y="110" width="52" height="24" rx="4"/>
+        <text class="dg-mono gui-sm" x="548" y="126" text-anchor="middle">Image</text>
+        <rect class="dg-sv-box is-soft" x="580" y="110" width="74" height="24" rx="4"/>
+        <text class="dg-mono gui-sm" x="617" y="126" text-anchor="middle">Initialize</text>
+        <rect class="dg-sv-box is-muted" x="270" y="146" width="422" height="58" rx="4"/>
+        <text class="dg-mono gui-sm" x="282" y="166">dynamics</text>
+        <text class="gui-sm" x="282" y="190" lang="en">one editable table per parameter container</text>
+        <text class="gui-sm" x="282" y="190" lang="ja">パラメータのコンテナごとに編集できる表</text>
+        <rect class="dg-sv-box is-muted" x="270" y="214" width="422" height="58" rx="4"/>
+        <text class="dg-mono gui-sm" x="282" y="234">operation</text>
+      </svg>
+      <figcaption lang="en">A bus in <code>network.IEEE14bus</code>. The tree column is 260 px wide; the tabs take the rest.</figcaption>
+      <figcaption lang="ja"><code>network.IEEE14bus</code> の母線の例。ツリーの列は幅 260 px、残りはタブ。</figcaption>
+    </figure>
+    <ul lang="en">
+      <li><strong>Header:</strong> the tag and the class in bold, and below them the stale state from <code>sct_stale</code>: <code>Stale: none</code> (green), or each stale tag with its first message and the number of the others (orange).</li>
+      <li><strong>Tree:</strong> the parent, the model (selected, marked <code>◀</code>) and its children; the <code>Parameter</code> containers are left out. A click on a node shows that model in the same container; the context menu <code>Open in new window</code> calls <code>gui()</code> of that model.</li>
+      <li><strong>Tabs</strong>, in this order:
+        <ol>
+          <li><code>Parameter</code>: one editable table per container of <code>a_Parameter</code>, titled by its <code>s_tag</code>; <code>No parameters.</code> when there is none;</li>
+          <li>the tables of the abstract class (<code>Summary</code>, <code>Equilibrium</code>);</li>
+          <li><code>Equations</code>;</li>
+          <li><code>Image</code>;</li>
+          <li><code>Initialize</code>.</li>
+        </ol>
+        A page whose source is missing has no tab (see <a href="#pages">Pages of each abstract class</a>).
+      </li>
+    </ul>
+    <ul lang="ja">
+      <li><strong>ヘッダ:</strong> 太字のタグとクラス。その下に <code>sct_stale</code> の stale 状態: <code>Stale: none</code>（緑）、または stale のタグごとに最初のメッセージと残りの件数（橙）</li>
+      <li><strong>ツリー:</strong> 親、モデル（選択状態、<code>◀</code> 付き）、その子。<code>Parameter</code> のコンテナは除外。ノードのクリックでそのモデルを同じコンテナに表示。コンテキストメニュー <code>Open in new window</code> でそのモデルの <code>gui()</code> を実行</li>
+      <li><strong>タブ</strong>（この順）:
+        <ol>
+          <li><code>Parameter</code>: <code>a_Parameter</code> のコンテナごとに編集できる表。題は <code>s_tag</code>。コンテナがない場合は <code>No parameters.</code></li>
+          <li>抽象クラスの表（<code>Summary</code>、<code>Equilibrium</code>）</li>
+          <li><code>Equations</code></li>
+          <li><code>Image</code></li>
+          <li><code>Initialize</code></li>
+        </ol>
+        元になる情報がないページはタブなし（<a href="#pages">抽象クラスごとのページ</a>を参照）
+      </li>
+    </ul>
+
+    <!-- ============================== PAGES ============================== -->
+    <h2 id="pages"><span lang="en">Pages of each abstract class</span><span lang="ja">抽象クラスごとのページ</span></h2>
+    <p lang="en">Each abstract class puts its own pages first, then those of <code>PowerSystemModel</code>. Values in the tables are as of the last <code>net.initialize()</code>; the header shows whether they are stale.</p>
+    <p lang="ja">各抽象クラスは自分のページを先に置き、続いて <code>PowerSystemModel</code> のページ。表の値は最後の <code>net.initialize()</code> の時点のもの。古いかどうかはヘッダに表示。</p>
+    <table class="dg-table gui-pages">
+      <thead><tr><th lang="en">Class</th><th lang="ja">クラス</th><th lang="en">Pages (type)</th><th lang="ja">ページ（種類）</th></tr></thead>
+      <tbody>
+        <tr><td><code>PowerSystemModel</code></td>
+          <td lang="en" data-label="Pages"><ul>
+            <li><code>Equations</code> (<code>latex</code>): the <code>```math</code> blocks of the help of the class of the model, under <code>**Equations**</code>; no tab when there is none.</li>
+            <li><code>Image</code> (<code>image</code>): <code>@Class/image.svg</code> of the class of the model or of the nearest superclass that has one; no tab when none has.</li>
+            <li><code>Initialize</code> (<code>action</code>): a button <code>initialize</code> that runs <code>initialize()</code> of the network the model belongs to (found through the parents), then draws the GUI again; no tab outside a network.</li>
+          </ul></td>
+          <td lang="ja" data-label="ページ"><ul>
+            <li><code>Equations</code>（<code>latex</code>）: モデルのクラスの help で <code>**Equations**</code> の下にある <code>```math</code> ブロック。ない場合はタブなし</li>
+            <li><code>Image</code>（<code>image</code>）: モデルのクラス、またはそれを持つ最も近い上位クラスの <code>@Class/image.svg</code>。どこにもない場合はタブなし</li>
+            <li><code>Initialize</code>（<code>action</code>）: ボタン <code>initialize</code>。モデルが属するネットワーク（親をたどって発見）の <code>initialize()</code> を実行し、GUI を再描画。ネットワーク外ではタブなし</li>
+          </ul></td></tr>
+        <tr><td><code>PowerNetwork</code></td>
+          <td lang="en" data-label="Pages"><ul>
+            <li><code>Summary</code> (<code>table</code>): numbers of buses, branches, components (over all buses) and global controllers.</li>
+            <li><code>Equilibrium</code> (<code>table</code>): one row per bus: <code>Tag</code>, <code>Type</code> (<code>s_bustype</code>), <code>V</code>, <code>|V|</code>, <code>∠V [rad]</code>, <code>I</code>.</li>
+          </ul></td>
+          <td lang="ja" data-label="ページ"><ul>
+            <li><code>Summary</code>（<code>table</code>）: 母線、ブランチ、機器（全母線の合計）、広域制御器の数</li>
+            <li><code>Equilibrium</code>（<code>table</code>）: 母線ごとに 1 行。<code>Tag</code>、<code>Type</code>（<code>s_bustype</code>）、<code>V</code>、<code>|V|</code>、<code>∠V [rad]</code>、<code>I</code></li>
+          </ul></td></tr>
+        <tr><td><code>Bus</code></td>
+          <td lang="en" data-label="Pages"><code>Equilibrium</code> (<code>table</code>): <code>Name</code> and <code>Value</code> (text) for <code>Type</code>, <code>V</code> (a+bj), <code>|V|</code>, <code>∠V [rad]</code>, <code>I</code> (a+bj).</td>
+          <td lang="ja" data-label="ページ"><code>Equilibrium</code>（<code>table</code>）: <code>Type</code>、<code>V</code>（a+bj）、<code>|V|</code>、<code>∠V [rad]</code>、<code>I</code>（a+bj）の <code>Name</code> と <code>Value</code>（文字列）</td></tr>
+        <tr><td><code>Branch</code></td>
+          <td lang="en" data-label="Pages"><code>Equilibrium</code> (<code>table</code>): rows <code>from</code> and <code>to</code>, columns <code>Bus</code> (tag of the end bus), <code>V</code>, <code>I</code>; no rows for a branch without end buses.</td>
+          <td lang="ja" data-label="ページ"><code>Equilibrium</code>（<code>table</code>）: 行は <code>from</code> と <code>to</code>、列は <code>Bus</code>（端の母線のタグ）、<code>V</code>、<code>I</code>。端の母線がないブランチでは行なし</td></tr>
+        <tr><td><code>Component</code></td>
+          <td lang="en" data-label="Pages"><code>Equilibrium</code> (<code>table</code>): <code>Kind</code>, <code>Name</code>, <code>Value</code> (text) for each state (<code>sv_x</code>), each input (<code>sv_u</code>), then <code>V</code> and <code>I</code> (a+bj); no rows before the equilibrium is computed.</td>
+          <td lang="ja" data-label="ページ"><code>Equilibrium</code>（<code>table</code>）: 状態（<code>sv_x</code>）、入力（<code>sv_u</code>）ごと、続いて <code>V</code> と <code>I</code>（a+bj）の <code>Kind</code>、<code>Name</code>、<code>Value</code>（文字列）。平衡点の計算前は行なし</td></tr>
+        <tr><td><code>LocalController</code></td>
+          <td lang="en" data-label="Pages"><code>Equilibrium</code> (<code>table</code>): as for <code>Component</code>; <code>V</code> and <code>I</code> are those of the parent component.</td>
+          <td lang="ja" data-label="ページ"><code>Equilibrium</code>（<code>table</code>）: <code>Component</code> と同じ形式。<code>V</code> と <code>I</code> は親の機器の値</td></tr>
+        <tr><td><code>GlobalController</code></td>
+          <td lang="en" data-label="Pages"><code>Equilibrium</code> (<code>table</code>): <code>Kind</code>, <code>Name</code>, <code>Value</code> for each state and input; names <code>x1, x2, …</code> and <code>u1, u2, …</code> when <code>sv_x</code> or <code>sv_u</code> has another number of entries than the values.</td>
+          <td lang="ja" data-label="ページ"><code>Equilibrium</code>（<code>table</code>）: 状態と入力ごとの <code>Kind</code>、<code>Name</code>、<code>Value</code>。<code>sv_x</code> または <code>sv_u</code> の要素数が値の数と異なる場合、名前は <code>x1, x2, …</code> と <code>u1, u2, …</code></td></tr>
+      </tbody>
+    </table>
+
+    <!-- ============================== SUBCLASS ============================== -->
+    <h2 id="subclass"><span lang="en">What a model class writes for the GUI</span><span lang="ja">モデルクラスが GUI のために書くもの</span></h2>
+    <p lang="en">Nothing beyond what every class has. A class made from an abstract class (a new generator, load, controller, branch, network) adds no method or property for the GUI:</p>
+    <ul lang="en">
+      <li><strong>Equations:</strong> the class help, written as in <a href="class-documentation.html#dynamics">Class Documentation: Dynamic models</a>. Every <code>```math</code> block after the line <code>**Equations**</code>, up to the next <code>**...**</code> heading or <code>&lt;@Examples&gt;</code>, becomes one display equation, in order (the blocks after <code>with</code> included).</li>
+      <li><strong>Image:</strong> <code>image.svg</code> in the class folder, as in <a href="class-documentation.html#image">Class Documentation: Figure</a>. A class without one shows the figure of its nearest superclass that has one.</li>
+      <li><strong>Tables and the Initialize button:</strong> from the properties of the abstract class (<code>sv_x</code>, <code>sv_u</code>, the equilibrium, <code>a_Parameter</code>), which every model already fills.</li>
+    </ul>
+    <p lang="ja">すべてのクラスが持つもの以外は不要。抽象クラスから作るクラス（新しい発電機、負荷、制御器、ブランチ、ネットワーク）には、GUI のためのメソッドもプロパティも追加なし:</p>
+    <ul lang="ja">
+      <li><strong>数式:</strong> クラスの help。<a href="class-documentation.html#dynamics">クラスのドキュメント: 動的モデル</a>の書き方に従う。<code>**Equations**</code> の行から、次の <code>**...**</code> の見出しまたは <code>&lt;@Examples&gt;</code> までのすべての <code>```math</code> ブロックを、順に 1 つずつ別行の数式として表示（<code>with</code> の後のブロックも対象）</li>
+      <li><strong>図:</strong> クラスフォルダの <code>image.svg</code>。<a href="class-documentation.html#image">クラスのドキュメント: 図</a>に従う。ないクラスでは、それを持つ最も近い上位クラスの図を表示</li>
+      <li><strong>表と Initialize ボタン:</strong> 抽象クラスのプロパティ（<code>sv_x</code>、<code>sv_u</code>、平衡点、<code>a_Parameter</code>）から作成。どのモデルも設定済み</li>
+    </ul>
+    <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
+      <p lang="en">The help is read with <code>help(class(obj))</code>, so only the help of the class of the model counts, not that of its superclasses. The same help gives the class page of the reference (<code>GUILDA.doc</code>), so the GUI and the reference show the same equations.</p>
+      <p lang="ja">help は <code>help(class(obj))</code> で読むため、対象はモデルのクラス自身の help のみ。上位クラスの help は対象外。同じ help からリファレンスのクラスのページ（<code>GUILDA.doc</code>）も作るため、GUI とリファレンスの数式は同一。</p>
+    </div>
+
+    <!-- ============================== EDITING ============================== -->
+    <h2 id="editing"><span lang="en">Editing parameters</span><span lang="ja">パラメータの編集</span></h2>
+    <ul lang="en">
+      <li>An edited cell writes the whole table of its panel to <code>tab_parameter</code> of that <code>Parameter</code> container at once (<code>edit_parameter</code>); there is no Apply button.</li>
+      <li><code>Parameter</code> does the rest, as for an edit from the command line: it checks the class, names, height and row names, logs only the changed values, and marks the layers stale (see <a href="class-design.html#edits">Class Design: Handling of model edits</a>). The GUI then refreshes the stale line of the header.</li>
+      <li>On an error, the table goes back to the stored values and an alert shows the message; nothing is stored.</li>
+      <li>The equilibrium tables are not editable and keep the values of the last <code>initialize</code>; the <code>Initialize</code> tab updates them.</li>
+    </ul>
+    <ul lang="ja">
+      <li>セルを編集すると、そのパネルの表全体を <code>Parameter</code> コンテナの <code>tab_parameter</code> に即座に書き込み（<code>edit_parameter</code>）。適用ボタンなし</li>
+      <li>その後の処理は、コマンドラインからの編集と同じく <code>Parameter</code> が担当: クラス・名前・高さ・行名の検査、変更した値だけのログ、層の stale への反映（<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a>を参照）。GUI はヘッダの stale の行を更新</li>
+      <li>エラーの場合: 表を保存済みの値に戻し、アラートでメッセージを表示。何も保存しない</li>
+      <li>平衡点の表は編集不可。値は最後の <code>initialize</code> の時点のもの。<code>Initialize</code> タブで更新</li>
+    </ul>
+
+    <!-- ============================== MECHANISM ============================== -->
+    <h2 id="mechanism"><span lang="en">How it works</span><span lang="ja">仕組み</span></h2>
+    <h3><span lang="en">Files</span><span lang="ja">ファイル</span></h3>
+    <ul lang="en">
+      <li><code>_GUILDAsystem/_auxiliary/@PowerSystemModel/gui.m</code>: the entry; makes <code>f_model</code> and the <code>DrawerModelGUI</code>.</li>
+      <li><code>_GUILDAsystem/_auxiliary/@PowerSystemModel/gui_content.m</code> and <code>_GUILDAsystem/@&lt;AbstractClass&gt;/gui_content.m</code>: the page definitions.</li>
+      <li><code>_GUILDAsystem/_auxiliary/@DrawerModelGUI/</code>: the UI. <code>render.m</code> draws a model; <code>private/</code> holds the parts (<code>build_header</code>, <code>build_tree</code>, <code>build_parameter_tab</code>, <code>build_page</code>, <code>edit_parameter</code>, <code>update_stale</code>, <code>show_alert</code>, <code>is_ui_container</code>) and <code>latex_page.html</code>.</li>
+    </ul>
+    <ul lang="ja">
+      <li><code>_GUILDAsystem/_auxiliary/@PowerSystemModel/gui.m</code>: 入口。<code>f_model</code> と <code>DrawerModelGUI</code> を作成</li>
+      <li><code>_GUILDAsystem/_auxiliary/@PowerSystemModel/gui_content.m</code> と <code>_GUILDAsystem/@&lt;抽象クラス&gt;/gui_content.m</code>: ページ定義</li>
+      <li><code>_GUILDAsystem/_auxiliary/@DrawerModelGUI/</code>: UI。<code>render.m</code> がモデルを描画。<code>private/</code> に部品（<code>build_header</code>、<code>build_tree</code>、<code>build_parameter_tab</code>、<code>build_page</code>、<code>edit_parameter</code>、<code>update_stale</code>、<code>show_alert</code>、<code>is_ui_container</code>）と <code>latex_page.html</code></li>
+    </ul>
+
+    <h3><span lang="en">Page definitions: <code>gui_content</code></span><span lang="ja">ページ定義: <code>gui_content</code></span></h3>
+    <p lang="en"><code>sct_page = gui_content(obj)</code> is a protected method. It returns a struct column, one element per tab after <code>Parameter</code>, with the fields <code>s_title</code> (tab name), <code>s_type</code>, <code>content</code> and <code>s_label</code> (button text of an <code>action</code> page, <code>""</code> otherwise).</p>
+    <p lang="ja"><code>sct_page = gui_content(obj)</code>: protected メソッド。<code>Parameter</code> の後のタブ 1 つにつき 1 要素の構造体の列を返却。フィールドは <code>s_title</code>（タブ名）、<code>s_type</code>、<code>content</code>、<code>s_label</code>（<code>action</code> のボタンの文字。それ以外は <code>""</code>）。</p>
+    <table class="dg-table gui-types">
+      <thead><tr><th><code>s_type</code></th><th lang="en"><code>content</code> and how it is drawn</th><th lang="ja"><code>content</code> と描画方法</th></tr></thead>
+      <tbody>
+        <tr><td><code>latex</code></td><td lang="en" data-label="Content">string column of LaTeX, one display equation each; a <code>uihtml</code> with <code>latex_page.html</code> and the bundled KaTeX</td><td lang="ja" data-label="内容">LaTeX の string 列（1 要素で 1 つの別行の数式）。<code>latex_page.html</code> と同梱の KaTeX による <code>uihtml</code></td></tr>
+        <tr><td><code>image</code></td><td lang="en" data-label="Content">path of an image file; a <code>uiimage</code> scaled to fit</td><td lang="ja" data-label="内容">画像ファイルのパス。大きさを合わせた <code>uiimage</code></td></tr>
+        <tr><td><code>table</code></td><td lang="en" data-label="Content">a MATLAB table; a read-only <code>uitable</code></td><td lang="ja" data-label="内容">MATLAB の table。編集不可の <code>uitable</code></td></tr>
+        <tr><td><code>action</code></td><td lang="en" data-label="Content">a function handle <code>@() ...</code>; a button labelled <code>s_label</code> that runs it and then draws the GUI again</td><td lang="ja" data-label="内容">関数ハンドル <code>@() ...</code>。<code>s_label</code> を表示するボタン。押すと実行し、GUI を再描画</td></tr>
+      </tbody>
+    </table>
+
+    <h3><span lang="en"><code>DrawerModelGUI</code> and <code>render</code></span><span lang="ja"><code>DrawerModelGUI</code> と <code>render</code></span></h3>
+    <ul lang="en">
+      <li><code>DrawerModelGUI(a_target, h_container, f_model)</code> (an <code>_auxiliary</code> class): checks the container (or opens a <code>uifigure</code>), keeps it and <code>f_model</code>, and calls <code>render(a_target)</code>.</li>
+      <li><code>render(a_target)</code> (public): draws the whole GUI of a model. The tree, the <code>Initialize</code> button and an embedding app call it; <code>render()</code> draws the shown model again.</li>
+      <li>It removes only what it drew before: the children of the container with <code>Tag</code> <code>"DrawerModelGUI"</code>, and the context menu of their tree (owned by the figure). Other components of the container stay. In a <code>uigridlayout</code> container the new grid takes the <code>Layout</code> (row and column) of the old one.</li>
+      <li>Then it builds a 2 × 2 <code>uigridlayout</code> (<code>Tag</code> <code>"DrawerModelGUI"</code>): the header across the top, the tree (260 px) and the tab group below. In a <code>uifigure</code> container it also sets the window name.</li>
+      <li>Nothing is cached: each <code>render</code> reads the model again, so it shows the current state.</li>
+    </ul>
+    <ul lang="ja">
+      <li><code>DrawerModelGUI(a_target, h_container, f_model)</code>（<code>_auxiliary</code> のクラス）: コンテナを検査（または <code>uifigure</code> を作成）し、コンテナと <code>f_model</code> を保持して <code>render(a_target)</code> を実行</li>
+      <li><code>render(a_target)</code>（public）: モデルの GUI 全体を描画。ツリー、<code>Initialize</code> ボタン、埋め込み先のアプリが呼び出し。<code>render()</code> は表示中のモデルを再描画</li>
+      <li>削除するのは前に自分が描いたものだけ: コンテナの子のうち <code>Tag</code> が <code>"DrawerModelGUI"</code> のものと、そのツリーのコンテキストメニュー（図が所有）。コンテナの他の部品は残存。<code>uigridlayout</code> のコンテナでは、新しいグリッドが古いグリッドの <code>Layout</code>（行と列）を継承</li>
+      <li>続いて 2 × 2 の <code>uigridlayout</code>（<code>Tag</code> は <code>"DrawerModelGUI"</code>）を作成: 上段にヘッダ、下段にツリー（260 px）とタブグループ。<code>uifigure</code> のコンテナではウィンドウ名も設定</li>
+      <li>キャッシュなし: <code>render</code> のたびにモデルを読み直し、現在の状態を表示</li>
+    </ul>
+
+    <h3><span lang="en">Why <code>f_model</code></span><span lang="ja"><code>f_model</code> を使う理由</span></h3>
+    <ul lang="en">
+      <li><code>parent</code>, <code>children</code> and <code>gui_content</code> are protected members of the model. <code>DrawerModelGUI</code> is outside the model hierarchy, so it cannot read them.</li>
+      <li><code>gui</code> makes an anonymous function inside a method of <code>PowerSystemModel</code>; it keeps the access of the place where it was made:
+<pre><code>f_model = @(o) struct("parent", {o.parent}, "children", {o.children}, "pages", {o.gui_content()});</code></pre></li>
+      <li><code>DrawerModelGUI</code> keeps it in a private property and calls it for every model it shows, including the nodes of the tree. The members stay protected; no public accessor is added for the GUI.</li>
+    </ul>
+    <ul lang="ja">
+      <li><code>parent</code>、<code>children</code>、<code>gui_content</code> はモデルの protected メンバー。<code>DrawerModelGUI</code> はモデルの継承階層の外にあるため、読み取り不可</li>
+      <li><code>gui</code> が <code>PowerSystemModel</code> のメソッド内で無名関数を作成。無名関数は作った場所のアクセス権を保持:
+<pre><code>f_model = @(o) struct("parent", {o.parent}, "children", {o.children}, "pages", {o.gui_content()});</code></pre></li>
+      <li><code>DrawerModelGUI</code> は private プロパティに保持し、表示するすべてのモデル（ツリーのノードを含む）で呼び出し。メンバーは protected のまま。GUI のための public なアクセサーは追加なし</li>
+    </ul>
+
+    <h3><span lang="en">Why KaTeX comes through <code>Data</code></span><span lang="ja">KaTeX を <code>Data</code> で渡す理由</span></h3>
+    <ul lang="en">
+      <li><code>uihtml</code> reads only files in the folder of its HTML file and the folders below it. <code>latex_page.html</code> is in <code>@DrawerModelGUI/private/</code>, and KaTeX is in <code>_GUILDAdoc/vendor/katex/</code>, so the page cannot load it by a path.</li>
+      <li>The local function <code>katex_data</code> of <code>build_page.m</code> reads <code>katex.min.js</code> and <code>katex.min.css</code>, embeds each woff2 font in the CSS as a data URI, and keeps the result in a persistent variable (read once per MATLAB session).</li>
+      <li><code>build_page</code> passes it as <code>Data</code> with the fields <code>s_js</code>, <code>s_css</code> and <code>sv_math</code>. <code>latex_page.html</code> adds the style and the script to the page once, then draws each equation with <code>katex.render</code> in display mode.</li>
+      <li>One copy of KaTeX serves both the reference pages and the GUI; it works offline.</li>
+    </ul>
+    <ul lang="ja">
+      <li><code>uihtml</code> が読めるのは HTML ファイルのフォルダとその下のフォルダのファイルのみ。<code>latex_page.html</code> は <code>@DrawerModelGUI/private/</code>、KaTeX は <code>_GUILDAdoc/vendor/katex/</code> にあるため、パスでの読み込みは不可</li>
+      <li><code>build_page.m</code> のローカル関数 <code>katex_data</code> が <code>katex.min.js</code> と <code>katex.min.css</code> を読み、woff2 のフォントを data URI として CSS に埋め込み、persistent 変数に保持（MATLAB のセッションごとに 1 回の読み込み）</li>
+      <li><code>build_page</code> はこれを <code>Data</code>（フィールド <code>s_js</code>、<code>s_css</code>、<code>sv_math</code>）として渡す。<code>latex_page.html</code> はスタイルとスクリプトを 1 回だけページに追加し、各数式を <code>katex.render</code> の display モードで描画</li>
+      <li>KaTeX の 1 つのコピーをリファレンスのページと GUI で共用。オフラインで動作</li>
+    </ul>
+
+    <!-- ============================== EMBEDDING ============================== -->
+    <h2 id="embedding"><span lang="en">Embedding in another app</span><span lang="ja">別のアプリへの埋め込み</span></h2>
+    <p lang="en">An app passes its own panel and switches the model with <code>render</code>. Here a list on the left chooses the network or a bus:</p>
+    <p lang="ja">アプリは自分のパネルを渡し、<code>render</code> で表示するモデルを切り替え。次の例では左のリストでネットワークか母線を選択:</p>
+<pre><code>net = network.IEEE14bus();
+net.initialize();
+a_model = [{net}, net.a_Bus(:).'];
+sv_name = cellfun(@(m) string(m.s_tag), a_model);
+
+fig    = uifigure("Name", "Model viewer");
+h_grid = uigridlayout(fig, [1 2], "ColumnWidth", {160, "1x"});
+h_list = uilistbox(h_grid, "Items", sv_name, "ItemsData", 1:numel(a_model));
+h_panel = uipanel(h_grid);
+
+h = net.gui(h_panel);                                    % the GUI fills the panel
+h_list.ValueChangedFcn = @(src, ~) h.render(a_model{src.Value});</code></pre>
+    <ul lang="en">
+      <li>The list and the panel belong to the app; <code>render</code> replaces only the GUI inside the panel.</li>
+      <li>A click in the tree of the GUI also calls <code>render</code>, so the panel may show a model that the list does not select; read <code>h.a_target</code> for the model shown.</li>
+      <li>Closing the figure deletes the GUI with it; <code>render</code> on a deleted container does nothing.</li>
+    </ul>
+    <ul lang="ja">
+      <li>リストとパネルはアプリのもの。<code>render</code> が置き換えるのはパネル内の GUI のみ</li>
+      <li>GUI のツリーのクリックでも <code>render</code> が実行されるため、パネルにリストで選んでいないモデルが表示される場合あり。表示中のモデルは <code>h.a_target</code> で確認</li>
+      <li>図を閉じると GUI も削除。削除されたコンテナへの <code>render</code> は何もしない</li>
+    </ul>
+
+    <!-- ============================== FAILURE ============================== -->
+    <h2 id="failure"><span lang="en">Failure behavior</span><span lang="ja">失敗時の動作</span></h2>
+    <table class="dg-table">
+      <thead><tr><th lang="en">When</th><th lang="ja">発生する時点</th><th lang="en">Behavior</th><th lang="ja">動作</th></tr></thead>
+      <tbody>
+        <tr><td lang="en">Container not of a <code>uifigure</code></td><td lang="ja">コンテナが <code>uifigure</code> のものでない</td><td lang="en" data-label="Behavior">error <code>GUILDA:DrawerModelGUI:NotUIContainer</code>, naming the class of the container</td><td lang="ja" data-label="動作">エラー <code>GUILDA:DrawerModelGUI:NotUIContainer</code>（コンテナのクラスを表示）</td></tr>
+        <tr><td lang="en">Edited value rejected</td><td lang="ja">編集した値が不可</td><td lang="en" data-label="Behavior">the table goes back to the stored values; an alert with the message of <code>Parameter</code></td><td lang="ja" data-label="動作">表を保存済みの値に戻し、<code>Parameter</code> のメッセージをアラートで表示</td></tr>
+        <tr><td lang="en">Action fails (e.g. <code>initialize</code>)</td><td lang="ja">アクションが失敗（<code>initialize</code> など）</td><td lang="en" data-label="Behavior">an alert with the message; the GUI is not drawn again</td><td lang="ja" data-label="動作">メッセージをアラートで表示。GUI は再描画なし</td></tr>
+        <tr><td lang="en">Alert in a hidden figure</td><td lang="ja">非表示の図でのアラート</td><td lang="en" data-label="Behavior">warning <code>GUILDA:DrawerModelGUI:HiddenAlert</code> instead (<code>uialert</code> needs a visible figure)</td><td lang="ja" data-label="動作">代わりに警告 <code>GUILDA:DrawerModelGUI:HiddenAlert</code>（<code>uialert</code> は表示中の図が必要）</td></tr>
+        <tr><td lang="en">LaTeX that KaTeX cannot parse</td><td lang="ja">KaTeX が解釈できない LaTeX</td><td lang="en" data-label="Behavior">that equation shows its source and the KaTeX message in red; the others are drawn</td><td lang="ja" data-label="動作">その数式だけソースと KaTeX のメッセージを赤で表示。他の数式は描画</td></tr>
+        <tr><td lang="en">Model deleted</td><td lang="ja">モデルが削除済み</td><td lang="en" data-label="Behavior"><code>The model has been deleted.</code> in place of the GUI</td><td lang="ja" data-label="動作">GUI の代わりに <code>The model has been deleted.</code> を表示</td></tr>
+      </tbody>
+    </table>
+    <div class="dg-callout"><svg class="dg-icon" aria-hidden="true"><use href="#dg-i-info"/></svg>
+      <p lang="en">The IDs name entries of <code>_GUILDAsystem/_auxiliary/SystemTools/GUILDA/en/DrawerModelGUI.xml</code>, read by <code>msg</code>; <code>error(msg(...))</code> passes only the text, so the MATLAB exception has an empty identifier.</p>
+      <p lang="ja">ID は <code>msg</code> が読む <code>_GUILDAsystem/_auxiliary/SystemTools/GUILDA/en/DrawerModelGUI.xml</code> のエントリ名。<code>error(msg(...))</code> は本文だけを渡すため、MATLAB の例外の識別子は空。</p>
+    </div>
+    <p lang="en">Side effects: the GUI changes the model only through a parameter edit or the <code>Initialize</code> button. The KaTeX data stays in memory until <code>clear functions</code> or the end of the MATLAB session.</p>
+    <p lang="ja">副作用: GUI がモデルを変えるのは、パラメータの編集と <code>Initialize</code> ボタンのみ。KaTeX のデータは <code>clear functions</code> または MATLAB のセッション終了までメモリに保持。</p>
+
+    <!-- ============================== EXTENSION ============================== -->
+    <h2 id="extension"><span lang="en">Where to extend the feature</span><span lang="ja">機能を拡張する箇所</span></h2>
+    <ul lang="en">
+      <li><strong>A new model class:</strong> nothing to add; see <a href="#subclass">What a model class writes for the GUI</a>.</li>
+      <li><strong>A page for every model of a kind:</strong> in <code>gui_content</code> of that abstract class (<code>_GUILDAsystem/@&lt;AbstractClass&gt;/gui_content.m</code>). Put the new pages first, then <code>gui_content@PowerSystemModel(obj)</code>, and use only the four types above. The classdef declares it as <code>methods(Access=protected) sct_page = gui_content(obj) end</code>.</li>
+      <li><strong>A page for every model:</strong> in <code>_GUILDAsystem/_auxiliary/@PowerSystemModel/gui_content.m</code>.</li>
+      <li><strong>A new page type:</strong> a <code>case</code> of <code>build_page</code> and the list of types in the help of <code>PowerSystemModel.gui_content</code>.</li>
+      <li>Tests: <code>+DebugScript/test_F32_model_gui.m</code> and <code>test_F33_model_gui_network.m</code> build the GUI in hidden figures; an alert there becomes the <code>HiddenAlert</code> warning.</li>
+    </ul>
+    <ul lang="ja">
+      <li><strong>新しいモデルクラス:</strong> 追加不要。<a href="#subclass">モデルクラスが GUI のために書くもの</a>を参照</li>
+      <li><strong>ある種類のすべてのモデルに共通のページ:</strong> その抽象クラスの <code>gui_content</code>（<code>_GUILDAsystem/@&lt;抽象クラス&gt;/gui_content.m</code>）。新しいページを先に置き、続いて <code>gui_content@PowerSystemModel(obj)</code>。種類は上の 4 つのみ。classdef には <code>methods(Access=protected) sct_page = gui_content(obj) end</code> と宣言</li>
+      <li><strong>すべてのモデルに共通のページ:</strong> <code>_GUILDAsystem/_auxiliary/@PowerSystemModel/gui_content.m</code></li>
+      <li><strong>新しいページの種類:</strong> <code>build_page</code> の <code>case</code> と、<code>PowerSystemModel.gui_content</code> の help の種類の一覧</li>
+      <li>テスト: <code>+DebugScript/test_F32_model_gui.m</code> と <code>test_F33_model_gui_network.m</code> が非表示の図で GUI を作成。そこでのアラートは警告 <code>HiddenAlert</code> に変化</li>
+    </ul>
+
+    <!-- ============================== RELATED ============================== -->
+    <h2 id="related"><span lang="en">Related pages</span><span lang="ja">関連ページ</span></h2>
+    <ul lang="en">
+      <li>Classes: <a href="../class.html#class=PowerNetwork">PowerNetwork</a>, <a href="../class.html#class=Bus">Bus</a>, <a href="../class.html#class=Branch">Branch</a>, <a href="../class.html#class=Component">Component</a>, <a href="../class.html#class=LocalController">LocalController</a>, <a href="../class.html#class=GlobalController">GlobalController</a></li>
+      <li>Features: <a href="feature-model-building.html">Model Building</a>, <a href="feature-initialize.html">Initialization</a></li>
+      <li>Rules: <a href="class-documentation.html#class-page">Class Documentation: Class page sections</a>, <a href="model-implementation.html">Model Implementation</a>, <a href="class-design.html#edits">Class Design: Handling of model edits</a></li>
+    </ul>
+    <ul lang="ja">
+      <li>クラス: <a href="../class.html#class=PowerNetwork">PowerNetwork</a>、<a href="../class.html#class=Bus">Bus</a>、<a href="../class.html#class=Branch">Branch</a>、<a href="../class.html#class=Component">Component</a>、<a href="../class.html#class=LocalController">LocalController</a>、<a href="../class.html#class=GlobalController">GlobalController</a></li>
+      <li>機能: <a href="feature-model-building.html">モデル構築</a>、<a href="feature-initialize.html">初期化</a></li>
+      <li>規約: <a href="class-documentation.html#class-page">クラスのドキュメント: クラスのページの構成</a>、<a href="model-implementation.html">モデルの実装</a>、<a href="class-design.html#edits">クラス設計: モデル編集の扱い</a></li>
+    </ul>
+  </main>
+</body>
+</html>

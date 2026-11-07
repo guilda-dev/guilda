@@ -250,5 +250,11 @@ const updateLogData = [
     "date": "2026-11-07",
     "type": "feature",
     "content": "GUILDA needs MATLAB only. OPF and Method=\"fsolve\" need Optimization Toolbox, ss output and the LQR controllers need Control System Toolbox. The startup prints for each toolbox \"ok\" or the features unavailable without it; Getting Started has the full table."
+  },
+  {
+    "title": "Show a model in a GUI",
+    "date": "2026-11-07",
+    "type": "feature",
+    "content": "obj.gui() opens a window for a network, bus, branch, component or controller: its parameters, editable in place, the parent and children as a tree, the equilibrium, the equations and figure of the class, and an initialize button. obj.gui(h) puts it in a panel or tab of your own app. A new model class shows its help equations and image.svg with no extra code."
   }
 ];
