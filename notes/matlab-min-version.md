@@ -1,24 +1,19 @@
 # MATLAB の最低バージョン調査(静的調査)
 
-> 基準コミット `a29b51e1`(`refactor/design-alignment`)、調査日 2026-11-07。下限を R2023b に下げる修正(`fix/matlab-r2023b-compat`、`58bd238d`)の後に走査をやり直し、結論と一覧を更新しています(同日)。コードから使用機能を集め、MathWorks のドキュメントで導入リリースを調べた静的調査です。古いリリースで実際に動かしてはいません。複数リリースでの実行確認は GitHub Actions のワークフロー(別セッション)の結果で行います。
+> 基準コミット `a29b51e1`(`refactor/design-alignment`)、調査日 2026-11-07。コードから使用機能を集め、MathWorks のドキュメントで導入リリースを調べた静的調査です。古いリリースで実際に動かしてはいません。複数リリースでの実行確認は GitHub Actions のワークフロー(別セッション)の結果で行います。
 
 ## 結論
 
-- **下限は R2023b です。** これを決めているのは次の 3 点です。
-  - `ode` オブジェクト一式(`ode`、`odeEvent`、`matlab.ode.options.ODE15s`、`InitialSlope` など)。時間応答シミュレーション(`SolverODE`)の全体で使います。
-  - `readstruct` の JSON 読み込み(起動時の設定読み込み `@GUILDA/private/get_config.m:28,33`)。
-  - `gitrepo`(`@GUILDA/gitpull.m:10`)。`GUILDA.gitpull` だけです。
-- 2026-11-07 の判断で下限を R2023b に下げ、それまで下限を決めていた 2 つの検証関数を置き換えました。
-  - `mustBeBetween(x,a,b,"closed")`(R2025a)→ `mustBeInRange(x,a,b)`(R2020b、既定で両端を含む)。`_GUILDAsystem/_auxiliary/@SolverODE/SolverODE.m:39-40`、`@SolverODE/private/validate_options.m:6-7`。範囲外のときのエラー ID は `MATLAB:validators:mustBeInRange` になります。
-  - `mustBeRow`(R2024b)→ 非公開の `validateTimeSpanSize` の中で `isrow` を確かめ、行でなければ従来と同じ ID `MATLAB:validators:mustBeRow` のエラーを出す形にしました。`@Scenario/add_disturbance.m:19` の検証関数は `validateTimeSpanSize` だけです。受け付ける値(要素 1 個か 2 個の行)は変わりません。
-- **R2023b より新しい項目で残るもの**
-  - `ode` の `SeparateComplexParts` プロパティ(R2025a)。`SolverODE.m:41` と `DefaultTimeSimulation.json` の既定値にあります。`makeODE`(`@SolverODE/private/makeODE.m:12-20`)は `ode` の公開プロパティのうち設定にあるものだけを代入するので、R2024b 以前ではこの設定が **黙って無視される** だけで、エラーにはならないと見込まれます([推測] 実行では未確認)。そのときの説明(設定が効かない旨)が要ります。
-  - `figure()` に UI コンポーネントを置ける挙動(R2025a)。GUILDA は uifigure を前提に判定しているので下限には効きません。
+- **下限は R2025a です。** これを決めているのは次の 2 点です。
+  - `mustBeBetween`(R2025a)。`SolverODE` のプロパティ検証(`_GUILDAsystem/_auxiliary/@SolverODE/SolverODE.m:39-40`)にあります。`SolverODE` は `PowerNetwork` の作成時に `reset_solver` から作られる(`_GUILDAsystem/@PowerNetwork/PowerNetwork.m:136`、`@PowerNetwork/reset_solver.m:16`)ので、R2024b 以前では **ネットワークの作成自体が失敗する** と見込まれます([推測] 実行では未確認)。
+  - `ode` オブジェクトの `SeparateComplexParts` プロパティ(R2025a)。`SolverODE.m:41` と `DefaultTimeSimulation.json` の既定値にあります。ただし `makeODE`(`@SolverODE/private/makeODE.m:12-20`)は `ode` の公開プロパティのうち設定にあるものだけを代入するので、R2024b 以前ではこの設定が **黙って無視される** だけで、エラーにはならないと見込まれます([推測])。
 - **次に新しい項目**
+  - R2024b: `mustBeRow`(`@Scenario/add_disturbance.m:19`、`@Scenario/private/validateTimeSpanSize.m:5`)。外乱を加えるシミュレーションで必ず通ります。
+  - R2023b: `ode` オブジェクト一式(`ode`、`odeEvent`、`matlab.ode.options.ODE15s`、`InitialSlope` など)、`readstruct` の JSON 読み込み(起動時の設定読み込み `@GUILDA/private/get_config.m:28,33`)、`gitrepo`(`@GUILDA/gitpull.m:10`)。
   - R2022b: `arguments (Output)` / `(Input)`(ほぼ全メソッド)。
   - R2022a: `writelines`、`clim`、`fileread` の `Encoding`、`writetable` の `QuoteStrings="minimal"`、グリッドレイアウトの `"fit"` で表を合わせる挙動。
-- 走査のやり直しでは、`a29b51e1` 以降に入った変更(`get_sys` の整理、モデル GUI など)で増えた組み込みの項目は `repmat`/`rmfield` への文字列引数と `pi` だけで、どれも古いものです。下限を上げる項目はありませんでした。
-- 表記(`check_requirement.m`、README、`_GUILDAdoc`)の「R2025a 以降」は、CI で R2023b の動作を確かめてから改めます。
+- 現在の表記「R2025a 以降」は、この調査の範囲では正しい下限です。
+- `mustBeBetween` を `mustBeInRange`(R2020b)などに、`mustBeRow` を自前の検証に置き換えれば、下限は R2023b(`ode` オブジェクトと `readstruct` JSON)まで下がる見込みです。下げるかどうかは未決です(「未決の点」を参照)。
 
 ## 方法
 
@@ -31,7 +26,7 @@
    - `mtree` で構文解析し、識別子、`matlab.*` などのパッケージ名、Name=Value の名前、組み込み関数への文字列引数("Name",value 形式のオプション名の候補)、`obj.name` のフィールド名を集めます。
    - `which` で MATLAB 本体・ツールボックスのものだけを残します(GUILDA のパスを通した状態で引くので、GUILDA 側の同名関数は除かれます)。
    - 言語機能(`arguments (Output)`/`(Repeating)`、`opt.?Class`、`"..."` など)は正規表現で拾います。
-   - 結果は約 1400 行(`a29b51e1` で組み込みの識別子 411、文字列引数 787、Name=Value 52 など。修正後は 1375 行で、識別子 409、文字列引数 794、Name=Value 52)。
+   - 結果は約 1400 行(組み込みの識別子 411、文字列引数 787、Name=Value 52 など)。
 3. 補足の手作業: `ode` オブジェクトに代入しているプロパティ(`o.Xxx = ...`)、UI コンポーネントにドットで代入しているプロパティ、`"fit"` の使い方、`height`/`width` を表以外に使う箇所は grep で確認しました。
 4. 導入リリース: 各関数・プロパティの MathWorks ドキュメント(現行 R2026b 版)の "Version History" を参照しました。オプションは、そのオプションを追加したリリースを調べています。ページに記載がないものは、旧リリースのアーカイブ文書(オンラインで読めるのは R2021b 以降)との比較や MATLAB Answers で補い、表に「未確認」と書いています。
 5. `+DebugScript` と `_GUILDAverification` も同じスクリプトで走査しましたが、下限を上げる項目はありませんでした(`testsuite`、`regexpPattern`(R2020b)、`matlab.ode.options.ODE23t/ODE45`(R2023b)など。走査スクリプト自身は `dictionary`(R2022b)と非公開の `mtree` を使います)。
@@ -48,16 +43,18 @@
 
 | 項目 | 使用箇所(file:line) | 導入 | 出典 | 確認 |
 |---|---|---|---|---|
-| `ode` の `SeparateComplexParts` | `@SolverODE/SolverODE.m:41`、`@SolverODE/private/validate_options.m:8` | R2025a | …/ode.html("Since R2025a") | 確認。R2024b 以前では `makeODE` が代入しないので下限には効かない見込み([推測]) |
+| `mustBeBetween`(`"closed"`) | `_GUILDAsystem/_auxiliary/@SolverODE/SolverODE.m:39`、`@SolverODE/private/validate_options.m:6` | **R2025a** | …/mustbebetween.html | 確認 |
+| `ode` の `SeparateComplexParts` | `@SolverODE/SolverODE.m:41`、`@SolverODE/private/validate_options.m:8` | **R2025a** | …/ode.html("Since R2025a") | 確認 |
 | `figure()` に UI コンポーネントを置ける | `@DrawerModelGUI/private/is_ui_container.m:18-21`(`isUIFigure` で uifigure と見分ける) | R2025a | …/uibutton.html | 確認。GUILDA は uifigure を前提に判定しているので下限には効かない |
-| `ode` オブジェクト、`solve(o,t0,tf)`、`ODEResults`(`Time`、`Solution`) | `@SolverODE/private/makeODE.m:10`、`@SolverODE/solve.m:147` | **R2023b** | …/ode.html、…/matlab.ode.oderesults.html | 確認 |
+| `mustBeRow` | `@Scenario/add_disturbance.m:19`、`@Scenario/private/validateTimeSpanSize.m:5` | **R2024b** | …/mustberow.html | 確認 |
+| `ode` オブジェクト、`solve(o,t0,tf)`、`ODEResults`(`Time`、`Solution`) | `@SolverODE/private/makeODE.m:10`、`@SolverODE/solve.m:147` | R2023b | …/ode.html、…/matlab.ode.oderesults.html | 確認 |
 | `ode` の `Solver`、`SolverOptions`、`EventDefinition`、`InitialValue`、`InitialSlope`、`MassMatrix`、`Jacobian`、`ODEFcn`、`RelativeTolerance`、`AbsoluteTolerance` | `@SolverODE/solve.m:51,64,65,93,144`、`@SolverODE/set_equations.m:29-35` | R2023b | …/ode.html | 確認(「Since」の表記なし = ode と同時) |
 | 行列を `MassMatrix` に、関数ハンドルを `Jacobian` に代入(自動変換) | `@SolverODE/set_equations.m:29-35` | R2023b | …/odemassmatrix.html、…/odejacobian.html | 推測(変更の記載なし) |
 | `odeEvent`(`EventFcn`、`Response="stop"`) | `@SolverODE/solve.m:65` | R2023b | …/odeevent.html | 確認("stop" は推測) |
 | `matlab.ode.options.ODE15s`(`OutputFcn`) | `@SolverODE/SolverODE.m:38`、`@SolverODE/solve.m:64` | R2023b | …/matlab.ode.options.ode15s-properties.html | 確認 |
 | `matlab.ode.Options`、`matlab.ode.SolverID` | `@SolverODE/SolverODE.m:37-38`、`@SolverODE/private/validate_options.m:4-5` | R2023b(推定) | 単独のページなし(404)。`ode.html` の例の出力に `SolverID` が出る | **未確認** |
-| `readstruct` の JSON 読み込み | `@GUILDA/private/get_config.m:28,33`(`@GUILDA/config/Default*.json`) | **R2023b** | …/readstruct.html | 確認 |
-| `gitrepo` | `@GUILDA/gitpull.m:10` | **R2023b** | …/gitrepo.html | 確認(`GUILDA.gitpull` だけ) |
+| `readstruct` の JSON 読み込み | `@GUILDA/private/get_config.m:28,33`(`@GUILDA/config/Default*.json`) | R2023b | …/readstruct.html | 確認 |
+| `gitrepo` | `@GUILDA/gitpull.m:10` | R2023b | …/gitrepo.html | 確認(`GUILDA.gitpull` だけ) |
 | `arguments (Output)` | 400 か所(例: `@GUILDA/GUILDA.m:45`) | R2022b | …/arguments.html | 確認 |
 | `arguments (Input)` 属性 | 508 か所(例: `@GUILDA/config.m:2`) | R2022b(推定) | …/arguments.html(Output と一緒に記載) | 推測 |
 | `writelines` | `@GUILDA/private/set_config.m:16`、`@PowerNetwork/export_csv.m:95` | R2022a | …/writelines.html | 確認 |
@@ -68,7 +65,6 @@
 | Name=Value 構文 | 例: `@SolverPF/solve.m:113`、`@GUILDA/private/set_config.m:13` | R2021a | matlab_prog/validate-name-value-arguments.html | 確認 |
 | `formattedDisplayText` | `@SolverOPF/build_problem.m:128` | R2021a | …/formatteddisplaytext.html | 確認 |
 | `jsonencode` の `PrettyPrint` | `@GUILDA/private/set_config.m:13,18` | R2021a | R2021b 文書にあり、R2021a 文書はオフライン | 未確認 |
-| `mustBeInRange` | `@SolverODE/SolverODE.m:39-40`、`@SolverODE/private/validate_options.m:6-7` | R2020b | …/mustbeinrange.html | 確認 |
 | `readstruct`(XML) | `_GUILDAsystem/_auxiliary/SystemTools/msg.m:54` | R2020b | …/readstruct.html | 確認 |
 | `readlines` | `@GUILDA/GUILDA.m:57` | R2020b | …/readlines.html | 確認 |
 | `mustBeA`、`mustBeText`、`mustBeNonzeroLengthText`、`mustBeFolder`、`mustBeScalarOrEmpty`、`mustBeValidVariableName` | 例: `@PowerNetwork/simulate.m:214,219`、`@Scenario/Scenario.m:113` | R2020b | …/mustbea.html ほか | 確認 |
@@ -135,11 +131,13 @@
 
 ## 未決の点
 
-1. CI で確かめたい点
-   - R2023b・R2024a・R2024b で、ネットワークの作成と時間応答シミュレーションが通るか。
-   - R2024b 以前で `SeparateComplexParts` が `makeODE` で黙って無視されるか(上記の [推測] の確認)。黙って無視される場合、その旨の説明をどこに書くか。
-   - 「未確認」の項目のうち、下限 R2023b に関わるもの: `matlab.ode.SolverID`/`matlab.ode.Options`(`ode` と同時の R2023b と推定)。`Repeating` と名前-値引数の併用、`opt.?Class`、最適化変数への `sin`/`cos` は R2020b 前後と見込まれ、R2023b より古いので結論には影響しない見込みです。
-   - R2022b で何が失敗するか(`ode` オブジェクトがないので時間応答シミュレーションは動かない見込み)。
-2. CI の結果を見てから、`check_requirement.m`、README、`_GUILDAdoc` の表記を R2023b に改めます。
+1. **下限を R2025a のままにするか、下げるか。** 下げる場合の変更点は次の 2 つで、どちらも検証関数の置き換えだけです。
+   - `mustBeBetween(x,a,b,"closed")` → `mustBeInRange(x,a,b)`(R2020b、既定で両端を含む)。`SolverODE.m:39-40`、`validate_options.m:6-7`。
+   - `mustBeRow` → `mustBeVector` などと自前の行チェック。`add_disturbance.m:19`、`validateTimeSpanSize.m:5`。
+   - これで R2023b(`ode` オブジェクト、`readstruct` JSON)になる見込みです。`SeparateComplexParts` は R2024b 以前では無視されるだけと見込んでいますが([推測])、そのときの説明(設定が効かない旨)が要ります。
+2. CI で確かめたい点
+   - R2024b で `PowerNetwork` の作成が `mustBeBetween` で失敗するか(上記の [推測] の確認)。
+   - R2024b 以前で `SeparateComplexParts` が `makeODE` で黙って無視されるか。
+   - 「未確認」の項目(`matlab.ode.SolverID`/`matlab.ode.Options`、`Repeating` と名前-値引数の併用、`opt.?Class`、最適化変数への `sin`/`cos`)は、下限を下げない限り R2025a より古いので結論には影響しません。
 3. 走査で拾えないもの(「走査の限界」)が残っています。CI の結果で補います。
 4. `str2mat`(`@DrawerNetDiagram/draw_graph_network.m:93,94,134,135`)は古い関数で、上限側(将来の削除)の懸念です。下限には関係しません。
