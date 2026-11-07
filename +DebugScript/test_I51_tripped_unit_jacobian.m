@@ -135,7 +135,7 @@ assert(flag == -1)
 ME = output.exception;
 assert(DebugScript.helper.msg_id(ME) == "GUILDA:SolverODE:InitialConditionFailed", DebugScript.helper.msg_id(ME) + ": " + ME.message)
 assert(contains(ME.message, "phase 2") && contains(ME.message, "t = [1, 1.2]"), ME.message)
-assert(DebugScript.helper.msg_id(ME.cause{1}) == "GUILDA:SolverODE:AlgebraicNotSolved", DebugScript.helper.msg_id(ME.cause{1}))
+assert(DebugScript.helper.msg_id(ME.cause{1}) == "GUILDA:SolverODE:AlgebraicNotSolved", "%s", DebugScript.helper.msg_id(ME.cause{1}))
 
 
 function err = jacobian_errors(net, tspan, c_events)

@@ -10,7 +10,9 @@ function tab = scan_matlab_features(sv_folder, opt)
 %   namevalue  : Name=Value 構文の名前 (呼び出し先の関数名と組)
 %   stringarg  : 組み込み関数へ文字列で渡した引数 ("Name",value 形式のオプション名の候補)
 %   field      : obj.name の name で、組み込み関数・メソッドと同名のもの (要目視確認)
-%   syntax     : 言語機能 (arguments (Output)/(Repeating)、opt.?Class、"..." 文字列、dictionary の {} など)
+%   syntax     : 言語機能 (arguments (Output)/(Repeating)、opt.?Class、"..." 文字列、dictionary の {} など) と、
+%                リリースで挙動が変わる使い方 (表の Properties.VariableTypes、unique の順序と出現位置の併用、
+%                assert のメッセージにエラー ID を渡す箇所)
 % "未" を含むフォルダと archive/ は対象外。which は GUILDA のパスを通した状態で引くので、
 % GUILDA 側の同名関数は除かれる。
     arguments (Input)
@@ -144,6 +146,9 @@ function rows = scan_text(s_text, s_rel)
         "events block",             "^\s*events\>"; ...
         "properties (Constant)",    "^\s*properties\s*\([^)]*Constant"; ...
         "property validation",      "^\s*\w+\s*\(\s*[\d:,]+\s*\)\s*\w+"; ...
+        "table Properties.VariableTypes", "\.Properties\.VariableTypes\>"; ...                                        % R2024b
+        "unique order + occurrence",      "\<unique\(.*(['""](stable|sorted)['""].*['""](first|last)['""]|['""](first|last)['""].*['""](stable|sorted)['""])"; ...  % R2024b ではエラー
+        "assert message is an identifier", "\<assert\(.*,\s*((DebugScript\.helper\.)?msg_id\([^()]*(\([^()]*\))?[^()]*\)|[\w.{}]+\.identifier|(s_)?id)\s*\)\s*;?\s*$"; ...  % R2024b 以前は ID とみなし「メッセージ本文がない」エラーになる
         "local function in script", ""];
     for i = 1:numel(sv_line)
         s = regexprep(sv_line(i), "%.*$", "");  % 粗いコメント除去 ('%' を含む文字列は誤る)

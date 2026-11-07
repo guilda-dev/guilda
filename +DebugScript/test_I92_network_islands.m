@@ -9,7 +9,7 @@
 %% A balanced island succeeds with a warning that lists the islands
 net = balanced_island();
 [s_id, s_msg] = warning_of(@() net.initialize);
-assert(s_id == "GUILDA:PowerNetwork:NetworkIsland", s_id)
+assert(s_id == "GUILDA:PowerNetwork:NetworkIsland", "%s", s_id)
 assert(contains(s_msg, "[B001, B002, B003], [B004, B005]"), s_msg)
 assert(~DebugScript.helper.is_stale(net) && kcl_residual(net) < 1e-6)
 
@@ -104,7 +104,7 @@ try
     DebugScript.helper.quiet(@() net.initialize(Method="OPF", NoSuchOption=1));
 catch ME
 end
-assert(~isempty(ME) && DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", DebugScript.helper.msg_id(ME))
+assert(~isempty(ME) && DebugScript.helper.msg_id(ME) == "GUILDA:resolve_options:UnknownName", "%s", DebugScript.helper.msg_id(ME))
 
 net = PowerNetwork("Empty");
 ME = [];
@@ -112,7 +112,7 @@ try
     DebugScript.helper.quiet(@() net.initialize);
 catch ME
 end
-assert(~isempty(ME) && DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:NoBus", DebugScript.helper.msg_id(ME))
+assert(~isempty(ME) && DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:NoBus", "%s", DebugScript.helper.msg_id(ME))
 
 
 %% Long lists are shortened
@@ -200,7 +200,7 @@ function check_failure(net, s_method, s_id, s_island)
     catch ME
     end
     assert(~isempty(ME), "initialize did not fail")
-    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:" + s_id, DebugScript.helper.msg_id(ME))
+    assert(DebugScript.helper.msg_id(ME) == "GUILDA:PowerNetwork:" + s_id, "%s", DebugScript.helper.msg_id(ME))
     assert(contains(ME.message, s_island), ME.message)
     assert(~contains(ME.message, ["solver settings", "solver_PF"]), ME.message)
 end
