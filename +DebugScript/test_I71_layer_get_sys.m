@@ -1,4 +1,4 @@
-% I71 層別 get_sys と連続型潮流計算の編集の検査
+% I71 層別 get_sys と連続潮流計算の編集の検査
 %
 % comp / bus / con / gc の get_sys と net.calculate_continuation_powerflow は、古いハンドルで結果を返さない。
 %   - 系統に属する層は、平衡点を使うとき系統と自分 (と使う下の層) の sct_stale を確認し、古いもの
