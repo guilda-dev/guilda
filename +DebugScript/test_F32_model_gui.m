@@ -21,7 +21,7 @@ h = net.a_Bus{1}.gui();
 assert(isa(h, "DrawerModelGUI") && h.a_target == net.a_Bus{1})
 assert(isa(h.h_container, "matlab.ui.Figure") && isprop(h.h_container, "isUIFigure"))
 assert(contains(header_text(h), "B001") && contains(header_text(h), "Bus"))
-assert(isequal(tab_titles(h), ["Parameter","Image"]))   % no Equations: the help of Bus has no math block
+assert(isequal(tab_titles(h), ["Parameter","Equilibrium","Image"]))   % no Equations: the help of Bus has no math block
 assert(isempty(findobj(h.h_container, "Type", "uihtml")))
 h_img = findobj(h.h_container, "Type", "uiimage");
 assert(endsWith(string(h_img.ImageSource), fullfile("@Bus","image.svg")))
@@ -144,7 +144,7 @@ assert(isscalar(h_label) && contains(h_label.Text, "deleted"))
 %% Every page type of gui_content is drawn
 s = DebugScript.helper.GuiContentStub();
 h = s.gui();
-assert(isequal(tab_titles(h), ["Parameter","Image","Equation","Table","Action"]))
+assert(isequal(tab_titles(h), ["Parameter","Summary","Equilibrium","Image","Equation","Table","Action"]))
 f = h.h_container;
 h_img = findobj(f, "Type", "uiimage");
 assert(endsWith(string(h_img.ImageSource), fullfile("@PowerNetwork","image.svg")))
@@ -153,7 +153,7 @@ assert(isscalar(h_html) && ancestor(h_html, "uitab").Title == "Equation")
 assert(isequal(h_html.Data.sv_math, ["\dot{x} = f(x,u)"; "y = h(x)"]))
 assert(isfile(h_html.HTMLSource) && contains(h_html.Data.s_js, "katex") && contains(h_html.Data.s_css, "data:font/woff2;base64,"))
 assert(~contains(h_html.Data.s_css, "url(fonts/"))
-h_tab = findobj(findobj(f, "Type", "uitab", "Tag", "table"), "Type", "uitable");
+h_tab = findobj(findobj(f, "Type", "uitab", "Tag", "table", "Title", "Table"), "Type", "uitable");
 assert(height(h_tab.Data) == 2 && ~any(h_tab.ColumnEditable))
 % The action runs and the GUI is drawn again
 h_btn = findobj(f, "Type", "uibutton");
