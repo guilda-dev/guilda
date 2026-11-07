@@ -1,4 +1,18 @@
-function update_class_signature()
+function update_keymap()
+% Regenerate the methods that take a model key from the classes on the path
+%
+% Reads the model keys (`key`) of the Component, Branch, LocalController and
+% GlobalController classes with GUILDA.dictionary, puts them into the templates
+% <class>/template/<name>.template and writes the generated methods <class>/<name>.m:
+% Bus.add_component, Bus.replace_component, PowerNetwork.add_branch,
+% Component.add_local_controller and PowerNetwork.add_global_controller.
+% A generated file whose content is unchanged is not written again.
+%
+% GUILDA calls it at startup (setting UpdateKeyMap). Call it yourself after adding or
+% removing a model class, changing its key or editing a template, to use the new keys
+% without restarting GUILDA.
+%
+% >> GUILDA.update_keymap
 
     tab_list        = GUILDA.dictionary("PowerSystemModel", "disp", false, "output", ["Component", "Branch", "LocalController", "GlobalController"]);
     tab_comp_list   = tab_list{1};
@@ -28,6 +42,12 @@ function update_class_signature()
 end
 
 function update_signature(s_classpath, s_name, s_list, s_cases)
+    arguments (Input)
+        s_classpath (1,1) string  % Class folder, e.g. .../_GUILDAsystem/@Bus.
+        s_name      (1,1) string  % Method name, e.g. "add_component".
+        s_list      (1,1) string  % Quoted model keys joined by commas (___KEY_LIST___).
+        s_cases     (1,1) string  % case lines of the key switch (___KEY_CASES___).
+    end
     % The template is <class>/template/<name>.template; the generated method is <class>/<name>.m
     s_json_template = string(fileread(fullfile(s_classpath, "template", s_name+".template")));
     s_filepath      = fullfile(s_classpath, s_name);
@@ -42,6 +62,13 @@ function update_signature(s_classpath, s_name, s_list, s_cases)
 end
 
 function [s_cases,s_list] = make_class_signature(sv_class)
+    arguments (Input)
+        sv_class (:,1) string  % Class names with their packages.
+    end
+    arguments (Output)
+        s_cases  % case lines of the key switch (___KEY_CASES___).
+        s_list   % Quoted model keys joined by commas (___KEY_LIST___).
+    end
     n_class = numel(sv_class);
     sv_key   = repmat("__",n_class,1);
     for i = 1:n_class

@@ -9,7 +9,7 @@ import re
 
 from gitcmd import block, git, read_input
 
-TEMPLATE_FIX = "Edit the matching .template file in the template/ folder of the class instead; the .m file is generated from it."
+TEMPLATE_FIX = "Edit template/<name>.template in the class folder instead, then run GUILDA.update_keymap in MATLAB; the .m file is generated from it."
 DOC_FIX = 'Regenerate it in MATLAB with GUILDA.doc("update", true) instead.'
 USER_FIX = "@GUILDA/user/ holds per-user generated settings; change them through GUILDA, not by editing files."
 
