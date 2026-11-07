@@ -98,5 +98,12 @@ const developerData = [
     description: "Obtaining a linear model around an equilibrium: how each class contributes its matrices, the call order, and the system it returns.",
     description_ja: "平衡点まわりの線形モデルの導出: 各クラスが行列を提供する方法、呼び出し順、返すシステム。",
     link: "developer/feature-linearization.html"
+    },
+{
+    title: "Features: GUI",
+    title_ja: "機能: GUI",
+    description: "Showing a model in a GUI: the screen, the pages each abstract class provides, parameter editing, and embedding in another app.",
+    description_ja: "モデルの GUI 表示: 画面構成、抽象クラスごとのページ、パラメータの編集、別のアプリへの埋め込み。",
+    link: "developer/feature-gui.html"
     }
 ];

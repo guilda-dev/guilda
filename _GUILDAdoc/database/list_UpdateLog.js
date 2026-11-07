@@ -364,5 +364,11 @@ const updateLogData = [
     "date": "2026-11-07",
     "type": "changed",
     "content": "GUILDA needs MATLAB only; Optimization, Control System and Symbolic Math Toolbox are optional. The OPF (optimize_powerflow, initialize(Method=\"OPF\")) and Method=\"fsolve\" need Optimization Toolbox and stop with GUILDA:require_toolbox:Unavailable without it. tools.require_toolbox(\"optim\" | \"control\" | \"symbolic\") does this check for a feature. @GUILDA/config/ListToolbox.json replaces ListToolbox.txt: the startup check prints, per toolbox, \"ok\" or the features that are unavailable without it. The Getting Started page has a table of which analysis and option needs which toolbox."
+  },
+  {
+    "title": "Show a model in a GUI",
+    "date": "2026-11-07",
+    "type": "added",
+    "content": "obj.gui() shows any network, bus, branch, component or controller in a new window, and obj.gui(h) fills a uifigure, uipanel, uitab or uigridlayout of another app (a figure made by figure() is not supported). The window shows the tag, the class and the stale state; a tree of the parent and the children, where a click shows that model; editable parameter tables, where an edited cell is written to tab_parameter at once (a rejected value is restored); the equilibrium tables; the equations of the class help (the ```math blocks under **Equations**, drawn with the bundled KaTeX); the image.svg of the class folder; and a button that runs initialize of the network. gui returns a DrawerModelGUI, whose render(model) shows another model in the same place. For model authors: nothing is implemented for the GUI; a new class shows its help equations and image.svg as they are."
   }
 ];
